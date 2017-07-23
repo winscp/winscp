@@ -14,6 +14,7 @@
 #include <TextsWin.h>
 #include <HelpWin.h>
 #include <GUITools.h>
+#include <Terminal.h>
 #include <CustomWinConfiguration.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
@@ -235,17 +236,18 @@ TSynchronizeMode __fastcall TFullSynchronizeDialog::GetMode()
 //---------------------------------------------------------------------------
 void __fastcall TFullSynchronizeDialog::SetParams(int value)
 {
-  FParams = value & ~(spDelete | spExistingOnly |
-    spPreviewChanges | spTimestamp | spNotByTime | spBySize | spSelectedOnly | spMirror);
-  SynchronizeDeleteCheck->Checked = FLAGSET(value, spDelete);
-  SynchronizeExistingOnlyCheck->Checked = FLAGSET(value, spExistingOnly);
-  SynchronizePreviewChangesCheck->Checked = FLAGSET(value, spPreviewChanges);
-  SynchronizeSelectedOnlyCheck->Checked = FLAGSET(value, spSelectedOnly);
-  if (FLAGSET(value, spTimestamp) && FLAGCLEAR(Options, fsoDisableTimestamp))
+  FParams = value &
+    ~(TTerminal::spDelete | TTerminal::spExistingOnly | TTerminal::spPreviewChanges | TTerminal::spTimestamp |
+      TTerminal::spNotByTime | TTerminal::spBySize | TTerminal::spSelectedOnly | TTerminal::spMirror);
+  SynchronizeDeleteCheck->Checked = FLAGSET(value, TTerminal::spDelete);
+  SynchronizeExistingOnlyCheck->Checked = FLAGSET(value, TTerminal::spExistingOnly);
+  SynchronizePreviewChangesCheck->Checked = FLAGSET(value, TTerminal::spPreviewChanges);
+  SynchronizeSelectedOnlyCheck->Checked = FLAGSET(value, TTerminal::spSelectedOnly);
+  if (FLAGSET(value, TTerminal::spTimestamp) && FLAGCLEAR(Options, fsoDisableTimestamp))
   {
     SynchronizeTimestampsButton->Checked = true;
   }
-  else if (FLAGSET(value, spMirror))
+  else if (FLAGSET(value, TTerminal::spMirror))
   {
     MirrorFilesButton->Checked = true;
   }
@@ -253,23 +255,23 @@ void __fastcall TFullSynchronizeDialog::SetParams(int value)
   {
     SynchronizeFilesButton->Checked = true;
   }
-  SynchronizeByTimeCheck->Checked = FLAGCLEAR(value, spNotByTime);
-  SynchronizeBySizeCheck->Checked = FLAGSET(value, spBySize);
+  SynchronizeByTimeCheck->Checked = FLAGCLEAR(value, TTerminal::spNotByTime);
+  SynchronizeBySizeCheck->Checked = FLAGSET(value, TTerminal::spBySize);
   UpdateControls();
 }
 //---------------------------------------------------------------------------
 int __fastcall TFullSynchronizeDialog::GetParams()
 {
   return FParams |
-    FLAGMASK(SynchronizeDeleteCheck->Checked, spDelete) |
-    FLAGMASK(SynchronizeExistingOnlyCheck->Checked, spExistingOnly) |
-    FLAGMASK(SynchronizePreviewChangesCheck->Checked, spPreviewChanges) |
-    FLAGMASK(SynchronizeSelectedOnlyCheck->Checked, spSelectedOnly) |
+    FLAGMASK(SynchronizeDeleteCheck->Checked, TTerminal::spDelete) |
+    FLAGMASK(SynchronizeExistingOnlyCheck->Checked, TTerminal::spExistingOnly) |
+    FLAGMASK(SynchronizePreviewChangesCheck->Checked, TTerminal::spPreviewChanges) |
+    FLAGMASK(SynchronizeSelectedOnlyCheck->Checked, TTerminal::spSelectedOnly) |
     FLAGMASK(SynchronizeTimestampsButton->Checked && FLAGCLEAR(Options, fsoDisableTimestamp),
-      spTimestamp) |
-    FLAGMASK(MirrorFilesButton->Checked, spMirror) |
-    FLAGMASK(!SynchronizeByTimeCheck->Checked, spNotByTime) |
-    FLAGMASK(SynchronizeBySizeCheck->Checked, spBySize);
+      TTerminal::spTimestamp) |
+    FLAGMASK(MirrorFilesButton->Checked, TTerminal::spMirror) |
+    FLAGMASK(!SynchronizeByTimeCheck->Checked, TTerminal::spNotByTime) |
+    FLAGMASK(SynchronizeBySizeCheck->Checked, TTerminal::spBySize);
 }
 //---------------------------------------------------------------------------
 void __fastcall TFullSynchronizeDialog::LocalDirectoryBrowseButtonClick(
@@ -377,7 +379,7 @@ TCopyParamType __fastcall TFullSynchronizeDialog::GetCopyParams()
   TCopyParamType Result = FCopyParams;
   // when synchronizing by time, we force preserving time,
   // otherwise it does not make any sense
-  if (FLAGCLEAR(Params, spNotByTime))
+  if (FLAGCLEAR(Params, TTerminal::spNotByTime))
   {
     Result.PreserveTime = true;
   }

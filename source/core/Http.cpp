@@ -64,13 +64,12 @@ void THttp::SendRequest(const char * Method, const UnicodeString & Request)
     FCertificateError.SetLength(0);
     FException.reset(NULL);
 
-    TProxyMethod ProxyMethod = ProxyHost.IsEmpty() ? ::pmNone : pmHTTP;
-
-    ne_session_s * NeonSession =
-      CreateNeonSession(
-        uri, ProxyMethod, ProxyHost, ProxyPort, UnicodeString(), UnicodeString());
+    ne_session_s * NeonSession = CreateNeonSession(uri);
     try
     {
+      TProxyMethod ProxyMethod = ProxyHost.IsEmpty() ? ::pmNone : pmHTTP;
+      InitNeonSession(NeonSession, ProxyMethod, ProxyHost, ProxyPort, UnicodeString(), UnicodeString());
+
       if (IsTls)
       {
         SetNeonTlsInit(NeonSession, InitSslSession);

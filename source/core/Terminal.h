@@ -28,6 +28,8 @@ struct TSpaceAvailable;
 struct TFilesFindParams;
 class TTunnelUI;
 class TCallbackGuard;
+class TParallelOperation;
+class TCollectedFileList;
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure *TQueryUserEvent)
   (TObject * Sender, const UnicodeString Query, TStrings * MoreMessages, unsigned int Answers,
@@ -58,6 +60,8 @@ typedef int __fastcall (__closure *TDirectoryModifiedEvent)
   (TTerminal * Terminal, const UnicodeString Directory, bool SubDirs);
 typedef void __fastcall (__closure *TInformationEvent)
   (TTerminal * Terminal, const UnicodeString & Str, bool Status, int Phase);
+typedef void __fastcall (__closure *TCustomCommandEvent)
+  (TTerminal * Terminal, const UnicodeString & Command, bool & Handled);
 //---------------------------------------------------------------------------
 #define THROW_SKIP_FILE(EXCEPTION, MESSAGE) \
   throw EScpSkipFile(EXCEPTION, MESSAGE)
@@ -105,6 +109,7 @@ const int cpTemporary = 0x04;
 const int cpNoConfirmation = 0x08;
 const int cpAppend = 0x20;
 const int cpResume = 0x40;
+const int cpNoRecurse = 0x80;
 //---------------------------------------------------------------------------
 const int ccApplyToDirectories = 0x01;
 const int ccRecursive = 0x02;
@@ -198,6 +203,7 @@ private:
   TDisplayBannerEvent FOnDisplayBanner;
   TExtendedExceptionEvent FOnShowExtendedException;
   TInformationEvent FOnInformation;
+  TCustomCommandEvent FOnCustomCommand;
   TNotifyEvent FOnClose;
   TCallbackGuard * FCallbackGuard;
   TFindingFileEvent FOnFindingFile;
@@ -207,6 +213,9 @@ private:
   bool FRememberedTunnelPasswordTried;
   int FNesting;
   UnicodeString FFingerprintScanned;
+  DWORD FLastProgressLogged;
+  UnicodeString FDestFileName;
+  bool FMultipleDestinationFiles;
 
   void __fastcall CommandError(Exception * E, const UnicodeString Msg);
   unsigned int __fastcall CommandError(Exception * E, const UnicodeString Msg,
@@ -289,12 +298,14 @@ protected:
   bool __fastcall HandleException(Exception * E);
   void __fastcall CalculateFileSize(UnicodeString FileName,
     const TRemoteFile * File, /*TCalculateSizeParams*/ void * Size);
-  void __fastcall DoCalculateDirectorySize(const UnicodeString FileName,
+  void __fastcall DoCalculateFileSize(UnicodeString FileName,
+    const TRemoteFile * File, void * Param);
+  bool __fastcall DoCalculateDirectorySize(const UnicodeString FileName,
     const TRemoteFile * File, TCalculateSizeParams * Params);
   void __fastcall CalculateLocalFileSize(const UnicodeString FileName,
     const TSearchRec Rec, /*__int64*/ void * Size);
   bool __fastcall CalculateLocalFilesSize(TStrings * FileList, __int64 & Size,
-    const TCopyParamType * CopyParam, bool AllowDirs);
+    const TCopyParamType * CopyParam, bool AllowDirs, TStrings * Files);
   TBatchOverwrite __fastcall EffectiveBatchOverwrite(
     const UnicodeString & SourceFullFileName, const TCopyParamType * CopyParam, int Params,
     TFileOperationProgressType * OperationProgress, bool Special);
@@ -376,7 +387,11 @@ protected:
   void __fastcall LogRemoteFile(TRemoteFile * File);
   UnicodeString __fastcall FormatFileDetailsForLog(const UnicodeString & FileName, TDateTime Modification, __int64 Size);
   void __fastcall LogFileDetails(const UnicodeString & FileName, TDateTime Modification, __int64 Size);
-  void __fastcall LogFileDone(TFileOperationProgressType * OperationProgress);
+  void __fastcall LogFileDone(TFileOperationProgressType * OperationProgress, const UnicodeString & DestFileName);
+  void __fastcall LogTotalTransferDetails(
+    const UnicodeString TargetDir, const TCopyParamType * CopyParam,
+    TFileOperationProgressType * OperationProgress, bool Parallel, TStrings * Files);
+  void __fastcall LogTotalTransferDone(TFileOperationProgressType * OperationProgress);
   virtual TTerminal * __fastcall GetPasswordSource();
   void __fastcall DoEndTransaction(bool Inform);
   bool  __fastcall VerifyCertificate(
@@ -391,8 +406,10 @@ protected:
     const UnicodeString & FileName, TFileOperation Operation1, TFileOperation Operation2 = foNone);
   void __fastcall StartOperationWithFile(
     const UnicodeString & FileName, TFileOperation Operation1, TFileOperation Operation2 = foNone);
-  void __fastcall CommandSessionClose(TObject * Sender);
   bool __fastcall CanRecurseToDirectory(const TRemoteFile * File);
+  bool __fastcall DoOnCustomCommand(const UnicodeString & Command);
+  bool __fastcall CanParallel(const TCopyParamType * CopyParam, int Params, TParallelOperation * ParallelOperation);
+  void __fastcall CopyParallel(TParallelOperation * ParallelOperation, TFileOperationProgressType * OperationProgress);
 
   __property TFileOperationProgressType * OperationProgress = { read=FOperationProgress };
 
@@ -410,7 +427,9 @@ public:
   void __fastcall RecryptPasswords();
   bool __fastcall AllowedAnyCommand(const UnicodeString Command);
   void __fastcall AnyCommand(const UnicodeString Command, TCaptureOutputEvent OutputEvent);
-  void __fastcall CloseOnCompletion(TOnceDoneOperation Operation = odoDisconnect, const UnicodeString Message = L"");
+  void __fastcall CloseOnCompletion(
+    TOnceDoneOperation Operation = odoDisconnect, const UnicodeString & Message = L"",
+    const UnicodeString & TargetLocalPath = L"", const UnicodeString & DestLocalFileName = L"");
   UnicodeString __fastcall AbsolutePath(UnicodeString Path, bool Local);
   void __fastcall BeginTransaction();
   void __fastcall ReadCurrentDirectory();
@@ -422,9 +441,11 @@ public:
   bool __fastcall FileExists(const UnicodeString FileName, TRemoteFile ** File = NULL);
   void __fastcall ReadSymlink(TRemoteFile * SymlinkFile, TRemoteFile *& File);
   bool __fastcall CopyToLocal(TStrings * FilesToCopy,
-    const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params);
+    const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params, TParallelOperation * ParallelOperation);
   bool __fastcall CopyToRemote(TStrings * FilesToCopy,
-    const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params);
+    const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params, TParallelOperation * ParallelOperation);
+  int __fastcall CopyToParallel(TParallelOperation * ParallelOperation, TFileOperationProgressType * OperationProgress);
+  void __fastcall LogParallelTransfer(TParallelOperation * ParallelOperation);
   void __fastcall CreateDirectory(const UnicodeString DirName,
     const TRemoteProperties * Properties = NULL);
   void __fastcall CreateLink(const UnicodeString FileName, const UnicodeString PointTo, bool Symbolic);
@@ -461,7 +482,7 @@ public:
     const UnicodeString FileMask);
   bool __fastcall CalculateFilesSize(TStrings * FileList, __int64 & Size,
     int Params, const TCopyParamType * CopyParam, bool AllowDirs,
-    TCalculateSizeStats * Stats);
+    TCalculateSizeStats & Stats);
   void __fastcall CalculateFilesChecksum(const UnicodeString & Alg, TStrings * FileList,
     TStrings * Checksums, TCalculatedChecksumEvent OnCalculatedChecksum);
   void __fastcall ClearCaches();
@@ -485,6 +506,7 @@ public:
     TFileOperationProgressType * OperationProgress, const UnicodeString Message,
     bool AllowSkip, UnicodeString SpecialRetry = L"", UnicodeString HelpKeyword = L"");
   TUsableCopyParamAttrs __fastcall UsableCopyParamAttrs(int Params);
+  bool __fastcall ContinueReopen(TDateTime Start);
   bool __fastcall QueryReopen(Exception * E, int Params,
     TFileOperationProgressType * OperationProgress);
   UnicodeString __fastcall PeekCurrentDirectory();
@@ -492,6 +514,7 @@ public:
   void __fastcall ReflectSettings();
   void __fastcall CollectUsage();
   bool __fastcall IsThisOrChild(TTerminal * Terminal);
+  TTerminal * __fastcall CreateSecondarySession(const UnicodeString & Name, TSessionData * SessionData);
   void __fastcall FillSessionDataForCode(TSessionData * Data);
 
   const TSessionInfo & __fastcall GetSessionInfo();
@@ -544,6 +567,7 @@ public:
   __property TDisplayBannerEvent OnDisplayBanner = { read = FOnDisplayBanner, write = FOnDisplayBanner };
   __property TExtendedExceptionEvent OnShowExtendedException = { read = FOnShowExtendedException, write = FOnShowExtendedException };
   __property TInformationEvent OnInformation = { read = FOnInformation, write = FOnInformation };
+  __property TCustomCommandEvent OnCustomCommand = { read = FOnCustomCommand, write = FOnCustomCommand };
   __property TNotifyEvent OnClose = { read = FOnClose, write = FOnClose };
   __property int TunnelLocalPortNumber = { read = FTunnelLocalPortNumber };
 };
@@ -606,6 +630,7 @@ struct TCalculateSizeStats
   int Files;
   int Directories;
   int SymLinks;
+  TStrings * FoundFiles;
 };
 //---------------------------------------------------------------------------
 struct TCalculateSizeParams
@@ -615,6 +640,8 @@ struct TCalculateSizeParams
   const TCopyParamType * CopyParam;
   TCalculateSizeStats * Stats;
   bool AllowDirs;
+  TCollectedFileList * Files;
+  UnicodeString LastDirPath;
   bool Result;
 };
 //---------------------------------------------------------------------------
@@ -730,7 +757,8 @@ struct TSpaceAvailable
 class TRobustOperationLoop
 {
 public:
-  TRobustOperationLoop(TTerminal * Terminal, TFileOperationProgressType * OperationProgress);
+  TRobustOperationLoop(TTerminal * Terminal, TFileOperationProgressType * OperationProgress, bool * AnyTransfer = NULL);
+  ~TRobustOperationLoop();
   bool TryReopen(Exception & E);
   bool ShouldRetry();
   bool Retry();
@@ -739,6 +767,86 @@ private:
   TTerminal * FTerminal;
   TFileOperationProgressType * FOperationProgress;
   bool FRetry;
+  bool * FAnyTransfer;
+  bool FPrevAnyTransfer;
+  TDateTime FStart;
+};
+//---------------------------------------------------------------------------
+class TCollectedFileList : public TObject
+{
+public:
+  TCollectedFileList();
+  int Add(const UnicodeString & FileName, TObject * Object, bool Dir);
+  void DidNotRecurse(int Index);
+  void Delete(int Index);
+
+  int Count() const;
+  UnicodeString GetFileName(int Index) const;
+  TObject * GetObject(int Index) const;
+  bool IsDir(int Index) const;
+  bool IsRecursed(int Index) const;
+
+private:
+  struct TFileData
+  {
+    UnicodeString FileName;
+    TObject * Object;
+    bool Dir;
+    bool Recursed;
+  };
+  typedef std::vector<TFileData> TFileDataList;
+  TFileDataList FList;
+};
+//---------------------------------------------------------------------------
+class TParallelOperation
+{
+public:
+  TParallelOperation(TOperationSide Side);
+  ~TParallelOperation();
+
+  void Init(
+    TStrings * AFiles, const UnicodeString & TargetDir, const TCopyParamType * CopyParam, int Params,
+    TFileOperationProgressType * MainOperationProgress, const UnicodeString & MainName);
+
+  bool IsInitialized();
+  void WaitFor();
+  bool ShouldAddClient();
+  void AddClient();
+  void RemoveClient();
+  int GetNext(
+    TTerminal * Terminal, UnicodeString & FileName, TObject *& Object, UnicodeString & TargetDir,
+    bool & Dir, bool & Recursed);
+  void Done(const UnicodeString & FileName, bool Dir, bool Success);
+
+  __property TOperationSide Side = { read = FSide };
+  __property const TCopyParamType * CopyParam = { read = FCopyParam };
+  __property int Params = { read = FParams };
+  __property UnicodeString TargetDir = { read = FTargetDir };
+  __property TFileOperationProgressType * MainOperationProgress = { read = FMainOperationProgress };
+  __property UnicodeString MainName = { read = FMainName };
+
+private:
+  struct TDirectoryData
+  {
+    UnicodeString OppositePath;
+    bool Exists;
+  };
+
+  std::unique_ptr<TStrings> FFileList;
+  int FIndex;
+  typedef std::map<UnicodeString, TDirectoryData> TDirectories;
+  TDirectories FDirectories;
+  UnicodeString FTargetDir;
+  const TCopyParamType * FCopyParam;
+  int FParams;
+  bool FProbablyEmpty;
+  int FClients;
+  std::unique_ptr<TCriticalSection> FSection;
+  TFileOperationProgressType * FMainOperationProgress;
+  TOperationSide FSide;
+  UnicodeString FMainName;
+
+  bool CheckEnd(TCollectedFileList * Files);
 };
 //---------------------------------------------------------------------------
 #endif

@@ -7,6 +7,8 @@ namespace WinSCP
     [ComVisible(true)]
     public sealed class TransferEventArgs : FileOperationEventArgs
     {
+        public ProgressSide Side { get; internal set; }
+
         public string Destination { get; private set; }
 
         public TouchEventArgs Touch { get; internal set; }
@@ -21,9 +23,9 @@ namespace WinSCP
         {
         }
 
-        internal static TransferEventArgs Read(CustomLogReader areader)
+        internal static TransferEventArgs Read(ProgressSide side, CustomLogReader areader)
         {
-            TransferEventArgs args = new TransferEventArgs();
+            TransferEventArgs args = new TransferEventArgs() { Side = side };
 
             using (ElementLogReader reader = new ElementLogReader(areader))
             {

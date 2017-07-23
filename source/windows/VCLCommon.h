@@ -29,10 +29,9 @@ void __fastcall HotTrackLabel(TLabel * Label);
 void __fastcall SetLabelHintPopup(TLabel * Label, const UnicodeString & Hint);
 bool __fastcall HasLabelHintPopup(TLabel * Label, const UnicodeString & HintStr);
 void __fastcall FixComboBoxResizeBug(TCustomComboBox * ComboBox);
-void __fastcall ShowAsModal(TForm * Form, void *& Storage);
+void __fastcall ShowAsModal(TForm * Form, void *& Storage, bool BringToFront = true);
 void __fastcall HideAsModal(TForm * Form, void *& Storage);
-void __fastcall ReleaseAsModal(TForm * Form, void *& Storage);
-TImageList * __fastcall SharedSystemImageList(bool Large);
+bool __fastcall ReleaseAsModal(TForm * Form, void *& Storage);
 bool __fastcall SelectDirectory(UnicodeString & Path, const UnicodeString Prompt,
   bool PreserveFileName);
 enum TListViewCheckAll { caCheck, caUncheck, caToggle };
@@ -70,12 +69,18 @@ TModalResult __fastcall DefaultResult(TCustomForm * Form, TButton * DefaultButto
 void __fastcall DefaultButton(TButton * Button, bool Default);
 void __fastcall MemoKeyDown(TObject * Sender, WORD & Key, TShiftState Shift);
 void __fastcall UseDesktopFont(TControl * Control);
+void __fastcall UpdateDesktopFont();
 UnicodeString __fastcall FormatFormCaption(TCustomForm * Form, const UnicodeString & Caption);
 UnicodeString __fastcall FormatMainFormCaption(const UnicodeString & Caption);
 TShiftState __fastcall AllKeyShiftStates();
 void __fastcall RealignControl(TControl * Control);
 void __fastcall HookFormActivation(TCustomForm * Form);
 void __fastcall UnhookFormActivation(TCustomForm * Form);
+void __fastcall ShowFormNoActivate(TForm * Form);
 TPanel * __fastcall CreateBlankPanel(TComponent * Owner);
+typedef void __fastcall (*TRescaleEvent)(TComponent * Sender, TObject * Token);
+void __fastcall SetRescaleFunction(
+  TComponent * Component, TRescaleEvent OnRescale, TObject * Token = NULL, bool OwnsToken = false);
+void __fastcall RecordFormImplicitRescale(TForm * Form);
 //---------------------------------------------------------------------------
 #endif  // VCLCommonH

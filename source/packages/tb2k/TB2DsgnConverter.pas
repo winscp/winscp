@@ -86,9 +86,7 @@ var
         else
           Dst := TTBSubmenuItem.Create(Owner);
         Dst.Action := Src.Action;
-        {$IFDEF JR_D6}
         Dst.AutoCheck := Src.AutoCheck;
-        {$ENDIF}
         Dst.Caption := Src.Caption;
         Dst.Checked := Src.Checked;
         if Src.Default then
@@ -99,9 +97,7 @@ var
         Dst.ImageIndex := Src.ImageIndex;
         Dst.RadioItem := Src.RadioItem;
         Dst.ShortCut := Src.ShortCut;
-        {$IFDEF JR_D5}
         Dst.SubMenuImages := Src.SubMenuImages;
-        {$ENDIF}
         Dst.OnClick := Src.OnClick;
       end
       else begin
@@ -123,10 +119,8 @@ var
           Src.OnClick := Dst.OnClick;
       end;
       TBItem.Add(Dst);
-      {$IFDEF JR_D5}
       if @Src.OnAdvancedDrawItem <> nil then
         Log(Format(SPropNotTransferred, ['OnAdvancedDrawItem', Dst.Name]));
-      {$ENDIF}
       if @Src.OnDrawItem <> nil then
         Log(Format(SPropNotTransferred, ['OnDrawItem', Dst.Name]));
       if @Src.OnMeasureItem <> nil then

@@ -484,6 +484,8 @@ BOOL CFtpListResult::parseLine(const char *lineToParse, const int linelen, t_dir
 
   nFTPServerType = 0;
   direntry.ownergroup = L"";
+  direntry.owner = L"";
+  direntry.group = L"";
 
   if (parseAsMlsd(lineToParse, linelen, direntry, mlst))
     return TRUE;
@@ -1294,9 +1296,11 @@ BOOL CFtpListResult::parseAsMlsd(const char *line, const int linelen, t_director
   direntry.dir = FALSE;
   direntry.bLink = FALSE;
   direntry.ownergroup = L"";
+  direntry.owner = L"";
+  direntry.group = L"";
   direntry.permissionstr = L"";
 
-  CString owner, group, uid, gid;
+  CString owner, group, uid, gid, ownername, groupname;
 
   while (!facts.IsEmpty())
   {
@@ -1418,20 +1422,32 @@ BOOL CFtpListResult::parseAsMlsd(const char *line, const int linelen, t_director
     {
       gid = value;
     }
+    else if (factname == L"unix.ownername")
+    {
+      ownername = value;
+    }
+    else if (factname == L"unix.groupname")
+    {
+      groupname = value;
+    }
 
     facts = facts.Mid(delim + 1);
   }
 
-  // The order of the facts is undefined, so assemble ownerGroup in correct
-  // order
-  if (!owner.IsEmpty())
-    direntry.ownergroup += owner;
+  // The order of the facts is undefined
+  if (!ownername.IsEmpty())
+    direntry.owner = ownername;
+  else if (!owner.IsEmpty())
+    direntry.owner = owner;
   else if (!uid.IsEmpty())
-    direntry.ownergroup += uid;
-  if (!group.IsEmpty())
-    direntry.ownergroup += L" " + group;
+    direntry.owner = uid;
+
+  if (!groupname.IsEmpty())
+    direntry.group = groupname;
+  else if (!group.IsEmpty())
+    direntry.group = group;
   else if (!gid.IsEmpty())
-    direntry.ownergroup += L" " + gid;
+    direntry.group = gid;
 
   if (line[pos] != L' ')
   {
@@ -2663,89 +2679,92 @@ BOOL CFtpListResult::parseAsIBMMVS(const char *line, const int linelen, t_direct
   if (!str)
     return FALSE;
 
-  // unit
-  str = GetNextToken(line, linelen, tokenlen, pos, 0);
-  if (!str)
-    return FALSE;
-
-  //Referred Date
-  str = GetNextToken(line, linelen, tokenlen, pos, 0);
-  if (!str)
-    return FALSE;
-  if (!ParseShortDate(str, tokenlen, direntry.date))
+  if (strncmp(str, "Migrated", tokenlen) != 0)
   {
-    // Perhaps of the following type:
-    // TSO004 3390 VSAM FOO.BAR
-    if (tokenlen != 4 || strncmp(str, "VSAM", tokenlen))
-      return FALSE;
-
-    str = GetNextToken(line, linelen, tokenlen, pos, 1);
-    if (!str)
-      return FALSE;
-
-    if (strnchr(str, tokenlen, ' '))
-      return FALSE;
-
-    copyStr(direntry.name, 0, str, tokenlen, true);
-    direntry.dir = false;
-    return true;
-  }
-
-  // ext
-  str = GetNextToken(line, linelen, tokenlen, pos, 0);
-  if (!str)
-    return FALSE;
-  if (!IsNumeric(str, tokenlen))
-    return FALSE;
-
-  int prevLen = tokenlen;
-
-  // used
-  str = GetNextToken(line, linelen, tokenlen, pos, 0);
-  if (!str)
-    return FALSE;
-  if (IsNumeric(str, tokenlen))
-  {
-    // recfm
+    // unit
     str = GetNextToken(line, linelen, tokenlen, pos, 0);
     if (!str)
       return FALSE;
 
+    //Referred Date
+    str = GetNextToken(line, linelen, tokenlen, pos, 0);
+    if (!str)
+      return FALSE;
+    if (!ParseShortDate(str, tokenlen, direntry.date))
+    {
+      // Perhaps of the following type:
+      // TSO004 3390 VSAM FOO.BAR
+      if (tokenlen != 4 || strncmp(str, "VSAM", tokenlen))
+        return FALSE;
+
+      str = GetNextToken(line, linelen, tokenlen, pos, 1);
+      if (!str)
+        return FALSE;
+
+      if (strnchr(str, tokenlen, ' '))
+        return FALSE;
+
+      copyStr(direntry.name, 0, str, tokenlen, true);
+      direntry.dir = false;
+      return true;
+    }
+
+    // ext
+    str = GetNextToken(line, linelen, tokenlen, pos, 0);
+    if (!str)
+      return FALSE;
+    if (!IsNumeric(str, tokenlen))
+      return FALSE;
+
+    int prevLen = tokenlen;
+
+    // used
+    str = GetNextToken(line, linelen, tokenlen, pos, 0);
+    if (!str)
+      return FALSE;
     if (IsNumeric(str, tokenlen))
-      return false;
-  }
-  else
-  {
-    if (prevLen < 6)
-      return false;
-  }
+    {
+      // recfm
+      str = GetNextToken(line, linelen, tokenlen, pos, 0);
+      if (!str)
+        return FALSE;
 
-  // lrecl
-  str = GetNextToken(line, linelen, tokenlen, pos, 0);
-  if (!str)
-    return FALSE;
-  if (!IsNumeric(str, tokenlen))
-    return FALSE;
+      if (IsNumeric(str, tokenlen))
+        return false;
+    }
+    else
+    {
+      if (prevLen < 6)
+        return false;
+    }
 
-  // blksize
-  str = GetNextToken(line, linelen, tokenlen, pos, 0);
-  if (!str)
-    return FALSE;
-  if (!IsNumeric(str, tokenlen))
-    return FALSE;
+    // lrecl
+    str = GetNextToken(line, linelen, tokenlen, pos, 0);
+    if (!str)
+      return FALSE;
+    if (!IsNumeric(str, tokenlen))
+      return FALSE;
 
-  // dsorg
-  str = GetNextToken(line, linelen, tokenlen, pos, 0);
-  if (!str)
-    return FALSE;
-  if (tokenlen == 2 && !memcmp(str, "PO", 2))
-  {
-    direntry.dir = TRUE;
-  }
-  else
-  {
-    direntry.dir = FALSE;
-    direntry.size = 100;
+    // blksize
+    str = GetNextToken(line, linelen, tokenlen, pos, 0);
+    if (!str)
+      return FALSE;
+    if (!IsNumeric(str, tokenlen))
+      return FALSE;
+
+    // dsorg
+    str = GetNextToken(line, linelen, tokenlen, pos, 0);
+    if (!str)
+      return FALSE;
+    if (tokenlen == 2 && !memcmp(str, "PO", 2))
+    {
+      direntry.dir = TRUE;
+    }
+    else
+    {
+      direntry.dir = FALSE;
+      direntry.size = 100;
+    }
   }
 
   // name of dataset or sequential name

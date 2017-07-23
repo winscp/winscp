@@ -40,8 +40,6 @@ uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms;
 
 type
-  TTBCustomForm = {$IFDEF JR_D3} TCustomForm {$ELSE} TForm {$ENDIF};
-
   { TTBDock }
 
   TTBDockBoundLinesValues = (blTop, blBottom, blLeft, blRight);
@@ -51,9 +49,6 @@ type
   TTBDockableTo = set of TTBDockPosition;
 
   TTBCustomDockableWindow = class;
-  {$IFNDEF MPEXCLUDE}
-  TTBBasicBackground = class;
-  {$ENDIF}
 
   TTBInsertRemoveEvent = procedure(Sender: TObject; Inserting: Boolean;
     Bar: TTBCustomDockableWindow) of object;
@@ -66,18 +61,12 @@ type
     FPosition: TTBDockPosition;
     FAllowDrag: Boolean;
     FBoundLines: TTBDockBoundLines;
-    {$IFNDEF MPEXCLUDE}
-    FBackground: TTBBasicBackground;
-    {$ENDIF}
     FBkgOnToolbars: Boolean;
     FFixAlign: Boolean;
     FCommitNewPositions: Boolean;
     FLimitToOneRow: Boolean;
     FOnInsertRemoveBar: TTBInsertRemoveEvent;
     FOnRequestDock: TTBRequestDockEvent;
-    {$IFNDEF JR_D4}
-    FOnResize: TNotifyEvent;
-    {$ENDIF}
 
     { Internal }
     FDisableArrangeToolbars: Integer;  { Increment to disable ArrangeToolbars }
@@ -87,10 +76,6 @@ type
     { Property access methods }
     //function GetVersion: TToolbar97Version;
     procedure SetAllowDrag(Value: Boolean);
-    {$IFNDEF MPEXCLUDE}
-    procedure SetBackground(Value: TTBBasicBackground);
-    procedure SetBackgroundOnToolbars(Value: Boolean);
-    {$ENDIF}
     procedure SetBoundLines(Value: TTBDockBoundLines);
     procedure SetFixAlign(Value: Boolean);
     procedure SetPosition(Value: TTBDockPosition);
@@ -100,9 +85,6 @@ type
     function GetToolbars(Index: Integer): TTBCustomDockableWindow;
 
     { Internal }
-    {$IFNDEF MPEXCLUDE}
-    procedure BackgroundChanged(Sender: TObject);
-    {$ENDIF}
     procedure ChangeDockList(const Insert: Boolean; const Bar: TTBCustomDockableWindow);
     procedure CommitPositions;
     procedure DrawNCArea(const DrawToDC: Boolean; const ADC: HDC;
@@ -115,14 +97,8 @@ type
     { Messages }
     procedure CMDialogChar(var Message: TCMDialogChar); message CM_DIALOGCHAR;
     procedure CMDialogKey(var Message: TCMDialogKey); message CM_DIALOGKEY;
-    {$IFNDEF MPEXCLUDE}
-    procedure CMSysColorChange(var Message: TMessage); message CM_SYSCOLORCHANGE;
-    {$ENDIF}
     procedure WMEraseBkgnd(var Message: TWMEraseBkgnd); message WM_ERASEBKGND;
     procedure WMMove(var Message: TWMMove); message WM_MOVE;
-    {$IFNDEF JR_D4}
-    procedure WMSize(var Message: TWMSize); message WM_SIZE;
-    {$ENDIF}
     procedure WMNCCalcSize(var Message: TWMNCCalcSize); message WM_NCCALCSIZE;
     procedure WMNCPaint(var Message: TMessage); message WM_NCPAINT;
     procedure WMPrint(var Message: TMessage); message WM_PRINT;
@@ -136,9 +112,6 @@ type
     procedure AlignControls(AControl: TControl; var Rect: TRect); override;
     procedure ChangeWidthHeight(const NewWidth, NewHeight: Integer);
     procedure DrawBackground(DC: HDC; const DrawRect: TRect); virtual;
-    {$IFNDEF MPEXCLUDE}
-    function GetPalette: HPALETTE; override;
-    {$ENDIF}
     function HasVisibleToolbars: Boolean;
     procedure InvalidateBackgrounds;
     procedure Loaded; override;
@@ -169,32 +142,21 @@ type
     property Toolbars[Index: Integer]: TTBCustomDockableWindow read GetToolbars;
   published
     property AllowDrag: Boolean read FAllowDrag write SetAllowDrag default True;
-    {$IFNDEF MPEXCLUDE}
-    property Background: TTBBasicBackground read FBackground write SetBackground;
-    property BackgroundOnToolbars: Boolean read FBkgOnToolbars write SetBackgroundOnToolbars default True;
-    {$ENDIF}
     property BoundLines: TTBDockBoundLines read FBoundLines write SetBoundLines default [];
     property Color default clBtnFace;
     property FixAlign: Boolean read FFixAlign write SetFixAlign default False;
     property LimitToOneRow: Boolean read FLimitToOneRow write FLimitToOneRow default False;
     property PopupMenu;
     property Position: TTBDockPosition read FPosition write SetPosition default dpTop;
-    //property Version: TToolbar97Version read GetVersion write SetVersion stored False;
     property Visible;
 
-    {$IFDEF JR_D5}
     property OnContextPopup;
-    {$ENDIF}
     property OnInsertRemoveBar: TTBInsertRemoveEvent read FOnInsertRemoveBar write FOnInsertRemoveBar;
     property OnMouseDown;
     property OnMouseMove;
     property OnMouseUp;
     property OnRequestDock: TTBRequestDockEvent read FOnRequestDock write FOnRequestDock;
-    {$IFDEF JR_D4}
     property OnResize;
-    {$ELSE}
-    property OnResize: TNotifyEvent read FOnResize write FOnResize;
-    {$ENDIF}
   end;
 
   { TTBFloatingWindowParent - internal }
@@ -207,7 +169,7 @@ type
   private
     FCloseButtonDown: Boolean; { True if Close button is currently depressed }
     FDockableWindow: TTBCustomDockableWindow;
-    FParentForm: TTBCustomForm;
+    FParentForm: TCustomForm;
     FShouldShow: Boolean;
 
     procedure SetCloseButtonState(Pushed: Boolean);
@@ -237,7 +199,7 @@ type
     property DockableWindow: TTBCustomDockableWindow read FDockableWindow;
     property CloseButtonDown: Boolean read FCloseButtonDown;
   public
-    property ParentForm: TTBCustomForm read FParentForm;
+    property ParentForm: TCustomForm read FParentForm;
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
   end;
@@ -284,7 +246,7 @@ type
     FCurrentSize: Integer;
     FFloating: Boolean;
     FOnClose, FOnDockChanged, FOnMove, FOnRecreated,
-      FOnRecreating, {$IFNDEF JR_D4} FOnResize, {$ENDIF}
+      FOnRecreating,
       FOnVisibleChanged: TNotifyEvent;
     FOnCloseQuery: TCloseQueryEvent;
     FOnDockChanging, FOnDockChangingHidden: TTBDockChangingEvent;
@@ -361,6 +323,8 @@ type
     procedure UpdateVisibility;
     procedure ReadSavedAtRunTime(Reader: TReader);
     procedure WriteSavedAtRunTime(Writer: TWriter);
+    function GetDragHandleSize: Integer;
+    function GetDragHandleXOffset: Integer;
 
     { Messages }
     procedure CMColorChanged(var Message: TMessage); message CM_COLORCHANGED;
@@ -368,9 +332,7 @@ type
     procedure CMTextChanged(var Message: TMessage); message CM_TEXTCHANGED;
     procedure CMShowingChanged(var Message: TMessage); message CM_SHOWINGCHANGED;
     procedure CMVisibleChanged(var Message: TMessage); message CM_VISIBLECHANGED;
-    {$IFDEF JR_D5}
     procedure WMContextMenu(var Message: TWMContextMenu); message WM_CONTEXTMENU;
-    {$ENDIF}
     procedure WMEnable(var Message: TWMEnable); message WM_ENABLE;
     procedure WMEraseBkgnd(var Message: TWMEraseBkgnd); message WM_ERASEBKGND;
     procedure WMMove(var Message: TWMMove); message WM_MOVE;
@@ -386,9 +348,6 @@ type
     procedure WMPrint(var Message: TMessage); message WM_PRINT;
     procedure WMPrintClient(var Message: TMessage); message WM_PRINTCLIENT;
     procedure WMSetCursor(var Message: TWMSetCursor); message WM_SETCURSOR;
-    {$IFNDEF JR_D4}
-    procedure WMSize(var Message: TWMSize); message WM_SIZE;
-    {$ENDIF}
   protected
     property ActivateParent: Boolean read FActivateParent write FActivateParent default True;
     property AutoResize: Boolean read FAutoResize write SetAutoResize default True;
@@ -412,7 +371,6 @@ type
     property SmoothDrag: Boolean read FSmoothDrag write FSmoothDrag default True;
     property Stretch: Boolean read FStretch write SetStretch default False;
     property UseLastDock: Boolean read FUseLastDock write SetUseLastDock default True;
-    //property Version: TToolbar97Version read GetVersion write SetVersion stored False;
 
     property OnClose: TNotifyEvent read FOnClose write FOnClose;
     property OnCloseQuery: TCloseQueryEvent read FOnCloseQuery write FOnCloseQuery;
@@ -422,9 +380,6 @@ type
     property OnMove: TNotifyEvent read FOnMove write FOnMove;
     property OnRecreated: TNotifyEvent read FOnRecreated write FOnRecreated;
     property OnRecreating: TNotifyEvent read FOnRecreating write FOnRecreating;
-    {$IFNDEF JR_D4}
-    property OnResize: TNotifyEvent read FOnResize write FOnResize;
-    {$ENDIF}
     property OnVisibleChanged: TNotifyEvent read FOnVisibleChanged write FOnVisibleChanged;
 
     { Overridden methods }
@@ -491,7 +446,7 @@ type
     function HasParent: Boolean; override;
     procedure SetBounds(ALeft, ATop, AWidth, AHeight: Integer); override;
 
-    procedure AddDockForm(const Form: TTBCustomForm);
+    procedure AddDockForm(const Form: TCustomForm);
     procedure AddDockedNCAreaToSize(var S: TPoint; const LeftRight: Boolean);
     procedure AddFloatingNCAreaToSize(var S: TPoint);
     procedure BeginMoving(const InitX, InitY: Integer);
@@ -506,50 +461,12 @@ type
     function IsMovable: Boolean;
     procedure MoveOnScreen(const OnlyIfFullyOffscreen: Boolean);
     procedure ReadPositionData(const Data: TTBReadPositionData); dynamic;
-    procedure RemoveDockForm(const Form: TTBCustomForm);
+    procedure RemoveDockForm(const Form: TCustomForm);
     procedure WritePositionData(const Data: TTBWritePositionData); dynamic;
   published
     property Height stored IsWidthAndHeightStored;
     property Width stored IsWidthAndHeightStored;
   end;
-
-  {$IFNDEF MPEXCLUDE}
-  TTBBasicBackground = class(TComponent)
-  protected
-    procedure Draw(DC: HDC; const DrawRect: TRect); virtual; abstract;
-    function GetPalette: HPALETTE; virtual; abstract;
-    procedure RegisterChanges(Proc: TNotifyEvent); virtual; abstract;
-    procedure SysColorChanged; virtual; abstract;
-    procedure UnregisterChanges(Proc: TNotifyEvent); virtual; abstract;
-    function UsingBackground: Boolean; virtual; abstract;
-  end;
-
-  TTBBackground = class(TTBBasicBackground)
-  private
-    FBitmap, FBitmapCache: TBitmap;
-    FBkColor: TColor;
-    FNotifyList: TList;
-    FTransparent: Boolean;
-    procedure BitmapChanged(Sender: TObject);
-    procedure SetBitmap(Value: TBitmap);
-    procedure SetBkColor(Value: TColor);
-    procedure SetTransparent(Value: Boolean);
-  protected
-    procedure Draw(DC: HDC; const DrawRect: TRect); override;
-    function GetPalette: HPALETTE; override;
-    procedure RegisterChanges(Proc: TNotifyEvent); override;
-    procedure SysColorChanged; override;
-    procedure UnregisterChanges(Proc: TNotifyEvent); override;
-    function UsingBackground: Boolean; override;
-  public
-    constructor Create(AOwner: TComponent); override;
-    destructor Destroy; override;
-  published
-    property Bitmap: TBitmap read FBitmap write SetBitmap;
-    property BkColor: TColor read FBkColor write SetBkColor default clBtnFace;
-    property Transparent: Boolean read FTransparent write SetTransparent default False;
-  end;
-  {$ENDIF}
 
 procedure TBRegLoadPositions(const OwnerComponent: TComponent;
   const RootKey: DWORD; const BaseRegistryKey: String);
@@ -569,15 +486,15 @@ procedure TBCustomSavePositions(const OwnerComponent: TComponent;
 
 function TBGetDockTypeOf(const Control: TTBDock; const Floating: Boolean): TTBDockType;
 function TBGetToolWindowParentForm(const ToolWindow: TTBCustomDockableWindow):
-  TTBCustomForm;
+  TCustomForm;
 function TBValidToolWindowParentForm(const ToolWindow: TTBCustomDockableWindow):
-  TTBCustomForm;
+  TCustomForm;
 
 implementation
 
 uses
   Registry, IniFiles, Consts, Menus,
-  TB2Common, TB2Hook, TB2Consts, Types;
+  TB2Common, TB2Hook, TB2Consts, Types, PasTools;
 
 type
   TControlAccess = class(TControl);
@@ -623,13 +540,13 @@ threadvar
 
 { Misc. functions }
 
-function GetSmallCaptionHeight: Integer;
+function GetSmallCaptionHeight(Control: TControl): Integer;
 { Returns height of the caption of a small window }
 begin
-  Result := GetSystemMetrics(SM_CYSMCAPTION);
+  Result := GetSystemMetricsForControl(Control, SM_CYSMCAPTION);
 end;
 
-function GetMDIParent(const Form: TTBCustomForm): TTBCustomForm;
+function GetMDIParent(const Form: TCustomForm): TCustomForm;
 { Returns the parent of the specified MDI child form. But, if Form isn't a
   MDI child, it simply returns Form. }
 var
@@ -637,7 +554,7 @@ var
 begin
   Result := Form;
   if Form = nil then Exit;
-  if {$IFDEF JR_D3} (Form is TForm) and {$ENDIF}
+  if (Form is TForm) and
      (TForm(Form).FormStyle = fsMDIChild) then
     for I := 0 to Screen.FormCount-1 do
       with Screen.Forms[I] do begin
@@ -665,15 +582,15 @@ begin
   end;
 end;
 
-function TBGetToolWindowParentForm(const ToolWindow: TTBCustomDockableWindow): TTBCustomForm;
+function TBGetToolWindowParentForm(const ToolWindow: TTBCustomDockableWindow): TCustomForm;
 var
   Ctl: TWinControl;
 begin
   Result := nil;
   Ctl := ToolWindow;
   while Assigned(Ctl.Parent) do begin
-    if Ctl.Parent is TTBCustomForm then
-      Result := TTBCustomForm(Ctl.Parent);
+    if Ctl.Parent is TCustomForm then
+      Result := TCustomForm(Ctl.Parent);
     Ctl := Ctl.Parent;
   end;
   { ^ for compatibility with ActiveX controls, that code is used instead of
@@ -683,19 +600,18 @@ begin
     Result := TTBFloatingWindowParent(Result).ParentForm;
 end;
 
-function TBValidToolWindowParentForm(const ToolWindow: TTBCustomDockableWindow): TTBCustomForm;
+function TBValidToolWindowParentForm(const ToolWindow: TTBCustomDockableWindow): TCustomForm;
 begin
   Result := TBGetToolWindowParentForm(ToolWindow);
   if Result = nil then
-    raise EInvalidOperation.{$IFDEF JR_D3}CreateFmt{$ELSE}CreateResFmt{$ENDIF}
-      (SParentRequired, [ToolWindow.Name]);
+    raise EInvalidOperation.CreateFmt(SParentRequired, [ToolWindow.Name]);
 end;
 
 procedure ToolbarHookProc(Code: THookProcCode; Wnd: HWND; WParam: WPARAM; LParam: LPARAM);
 var
   I: Integer;
   ToolWindow: TTBCustomDockableWindow;
-  Form: TTBCustomForm;
+  Form: TCustomForm;
 begin
   case Code of
     hpSendActivate,
@@ -902,10 +818,6 @@ end;
 
 destructor TTBDock.Destroy;
 begin
-  {$IFNDEF MPEXCLUDE}
-  if Assigned(FBackground) then
-    FBackground.UnregisterChanges(BackgroundChanged);
-  {$ENDIF}
   inherited;
   DockVisibleList.Free;
   DockList.Free;
@@ -1701,27 +1613,12 @@ procedure TTBDock.Notification(AComponent: TComponent; Operation: TOperation);
 begin
   inherited;
   if Operation = opRemove then begin
-    {$IFNDEF MPEXCLUDE}
-    if AComponent = FBackground then
-      Background := nil
-    else {$ENDIF} if AComponent is TTBCustomDockableWindow then begin
+    if AComponent is TTBCustomDockableWindow then begin
       DockList.Remove(AComponent);
       DockVisibleList.Remove(AComponent);
     end;
   end;
 end;
-
-{$IFNDEF MPEXCLUDE}
-function TTBDock.GetPalette: HPALETTE;
-begin
-  if UsingBackground and Assigned(FBackground) then
-    { ^ by default UsingBackground returns False if FBackground isn't assigned,
-      but UsingBackground may be overridden and return True when it isn't }
-    Result := FBackground.GetPalette
-  else
-    Result := 0;
-end;
-{$ENDIF}
 
 procedure TTBDock.WMEraseBkgnd(var Message: TWMEraseBkgnd);
 var
@@ -1773,15 +1670,6 @@ begin
   if UsingBackground then
     InvalidateBackgrounds;
 end;
-
-{$IFNDEF JR_D4}
-procedure TTBDock.WMSize(var Message: TWMSize);
-begin
-  inherited;
-  if not(csLoading in ComponentState) and Assigned(FOnResize) then
-    FOnResize(Self);
-end;
-{$ENDIF}
 
 procedure TTBDock.WMNCCalcSize(var Message: TWMNCCalcSize);
 begin
@@ -1879,29 +1767,20 @@ begin
   DrawNCArea(False, 0, HRGN(Message.WParam));
 end;
 
-procedure DockNCPaintProc(Wnd: HWND; DC: HDC; AppData: Longint);
+procedure DockNCPaintProc(Control: TControl; Wnd: HWND; DC: HDC; AppData: Longint);
 begin
   TTBDock(AppData).DrawNCArea(True, DC, 0);
 end;
 
 procedure TTBDock.WMPrint(var Message: TMessage);
 begin
-  HandleWMPrint(Handle, Message, DockNCPaintProc, Longint(Self));
+  HandleWMPrint(Self, Handle, Message, DockNCPaintProc, Longint(Self));
 end;
 
 procedure TTBDock.WMPrintClient(var Message: TMessage);
 begin
   HandleWMPrintClient(Self, Message);
 end;
-
-{$IFNDEF MPEXCLUDE}
-procedure TTBDock.CMSysColorChange(var Message: TMessage);
-begin
-  inherited;
-  if Assigned(FBackground) then
-    FBackground.SysColorChanged;
-end;
-{$ENDIF}
 
 procedure TTBDock.RelayMsgToFloatingBars(var Message: TMessage);
 var
@@ -1956,18 +1835,12 @@ end;
 
 function TTBDock.UsingBackground: Boolean;
 begin
-  {$IFNDEF MPEXCLUDE}
-  Result := Assigned(FBackground) and FBackground.UsingBackground;
-  {$ELSE}
   Result := False;
-  {$ENDIF}
 end;
 
 procedure TTBDock.DrawBackground(DC: HDC; const DrawRect: TRect);
 begin
-  {$IFNDEF MPEXCLUDE}
-  FBackground.Draw(DC, DrawRect);
-  {$ENDIF}
+  { noop }
 end;
 
 procedure TTBDock.InvalidateBackgrounds;
@@ -1985,35 +1858,6 @@ begin
       InvalidateAll(T);
   end;
 end;
-
-{$IFNDEF MPEXCLUDE}
-procedure TTBDock.SetBackground(Value: TTBBasicBackground);
-begin
-  if FBackground <> Value then begin
-    if Assigned(FBackground) then
-      FBackground.UnregisterChanges(BackgroundChanged);
-    FBackground := Value;
-    if Assigned(Value) then begin
-      Value.FreeNotification(Self);
-      Value.RegisterChanges(BackgroundChanged);
-    end;
-    InvalidateBackgrounds;
-  end;
-end;
-
-procedure TTBDock.BackgroundChanged(Sender: TObject);
-begin
-  InvalidateBackgrounds;
-end;
-
-procedure TTBDock.SetBackgroundOnToolbars(Value: Boolean);
-begin
-  if FBkgOnToolbars <> Value then begin
-    FBkgOnToolbars := Value;
-    InvalidateBackgrounds;
-  end;
-end;
-{$ENDIF}
 
 procedure TTBDock.SetBoundLines(Value: TTBDockBoundLines);
 var
@@ -2177,7 +2021,7 @@ end;
 function GetCaptionRect(const Control: TTBFloatingWindowParent;
   const AdjustForBorder, MinusCloseButton: Boolean): TRect;
 begin
-  Result := Rect(0, 0, Control.ClientWidth, GetSmallCaptionHeight-1);
+  Result := Rect(0, 0, Control.ClientWidth, GetSmallCaptionHeight(Control)-1);
   if MinusCloseButton then
     Dec(Result.Right, Result.Bottom);
   if AdjustForBorder then
@@ -2189,7 +2033,7 @@ function GetCloseButtonRect(const Control: TTBFloatingWindowParent;
   const AdjustForBorder: Boolean): TRect;
 begin
   Result := GetCaptionRect(Control, AdjustForBorder, False);
-  Result.Left := Result.Right - (GetSmallCaptionHeight-1);
+  Result.Left := Result.Right - (GetSmallCaptionHeight(Control)-1);
 end;
 
 procedure TTBFloatingWindowParent.WMNCCalcSize(var Message: TWMNCCalcSize);
@@ -2215,7 +2059,7 @@ begin
   DrawNCArea(False, 0, HRGN(Message.WParam), twrdAll);
 end;
 
-procedure FloatingWindowParentNCPaintProc(Wnd: HWND; DC: HDC; AppData: Longint);
+procedure FloatingWindowParentNCPaintProc(Control: TControl; Wnd: HWND; DC: HDC; AppData: Longint);
 begin
   with TTBFloatingWindowParent(AppData) do
     DrawNCArea(True, DC, 0, twrdAll);
@@ -2223,7 +2067,7 @@ end;
 
 procedure TTBFloatingWindowParent.WMPrint(var Message: TMessage);
 begin
-  HandleWMPrint(Handle, Message, FloatingWindowParentNCPaintProc, Longint(Self));
+  HandleWMPrint(Self, Handle, Message, FloatingWindowParentNCPaintProc, Longint(Self));
 end;
 
 procedure TTBFloatingWindowParent.WMPrintClient(var Message: TMessage);
@@ -2261,7 +2105,7 @@ begin
           if (P.X < Width) and (P.X >= Width-BorderSize.X-1) then Result := HTRIGHT;
         end
         else begin
-          C := BorderSize.X + (GetSmallCaptionHeight-1);
+          C := BorderSize.X + (GetSmallCaptionHeight(Self)-1);
           if (P.X >= 0) and (P.X < BorderSize.X) then begin
             Result := HTLEFT;
             if (P.Y < C) then Result := HTTOPLEFT else
@@ -2337,7 +2181,7 @@ end;
 
 procedure TTBFloatingWindowParent.WMClose(var Message: TWMClose);
 var
-  MDIParentForm: TTBCustomForm;
+  MDIParentForm: TCustomForm;
 begin
   { A floating toolbar does not use WM_CLOSE messages when its close button
     is clicked, but Windows still sends a WM_CLOSE message if the user
@@ -2353,7 +2197,7 @@ end;
 
 procedure TTBFloatingWindowParent.WMActivate(var Message: TWMActivate);
 var
-  ParentForm: TTBCustomForm;
+  ParentForm: TCustomForm;
 begin
   if csDesigning in ComponentState then begin
     inherited;
@@ -2392,7 +2236,7 @@ end;
 
 procedure TTBFloatingWindowParent.WMMouseActivate(var Message: TWMMouseActivate);
 var
-  ParentForm, MDIParentForm: TTBCustomForm;
+  ParentForm, MDIParentForm: TCustomForm;
 begin
   if csDesigning in ComponentState then begin
     inherited;
@@ -2677,15 +2521,6 @@ begin
   Moved;
 end;
 
-{$IFNDEF JR_D4}
-procedure TTBCustomDockableWindow.WMSize(var Message: TWMSize);
-begin
-  inherited;
-  if not(csLoading in ComponentState) and Assigned(FOnResize) then
-    FOnResize(Self);
-end;
-{$ENDIF}
-
 procedure TTBCustomDockableWindow.WMEnable(var Message: TWMEnable);
 begin
   inherited;
@@ -2782,7 +2617,7 @@ function TTBCustomDockableWindow.GetShowingState: Boolean;
 
 var
   HideFloatingToolbars: Boolean;
-  ParentForm: TTBCustomForm;
+  ParentForm: TCustomForm;
 begin
   Result := Showing and (FHidden = 0);
   if Floating and not(csDesigning in ComponentState) then begin
@@ -2821,6 +2656,16 @@ end;
 function IsTopmost(const Wnd: HWND): Boolean;
 begin
   Result := GetWindowLong(Wnd, GWL_EXSTYLE) and WS_EX_TOPMOST <> 0;
+end;
+
+function TTBCustomDockableWindow.GetDragHandleSize: Integer;
+begin
+  Result := ScaleByPixelsPerInch(DragHandleSizes[CloseButtonWhenDocked][DragHandleStyle], Self);
+end;
+
+function TTBCustomDockableWindow.GetDragHandleXOffset: Integer;
+begin
+  Result := ScaleByPixelsPerInch(DragHandleXOffsets[CloseButtonWhenDocked][DragHandleStyle], Self);
 end;
 
 procedure TTBCustomDockableWindow.UpdateTopmostFlag;
@@ -2875,7 +2720,7 @@ const
     SWP_NOSIZE or SWP_NOMOVE or SWP_NOZORDER or SWP_NOACTIVATE or SWP_SHOWWINDOW);
 var
   Show: Boolean;
-  Form: TTBCustomForm;
+  Form: TCustomForm;
 begin
   { inherited isn't called since TTBCustomDockableWindow handles CM_SHOWINGCHANGED
     itself. For reference, the original TWinControl implementation is:
@@ -3064,14 +2909,14 @@ begin
     Arrange;
 end;
 
-procedure TTBCustomDockableWindow.AddDockForm(const Form: TTBCustomForm);
+procedure TTBCustomDockableWindow.AddDockForm(const Form: TCustomForm);
 begin
   if Form = nil then Exit;
   if AddToList(FDockForms, Form) then
     Form.FreeNotification(Self);
 end;
 
-procedure TTBCustomDockableWindow.RemoveDockForm(const Form: TTBCustomForm);
+procedure TTBCustomDockableWindow.RemoveDockForm(const Form: TCustomForm);
 begin
   RemoveFromList(FDockForms, Form);
 end;
@@ -3360,12 +3205,12 @@ begin
   BottomRight.X := Z;
   BottomRight.Y := Z;
   if not LeftRight then begin
-    Inc(TopLeft.X, DragHandleSizes[CloseButtonWhenDocked, DragHandleStyle]);
+    Inc(TopLeft.X, GetDragHandleSize);
     //if FShowChevron then
     //  Inc(BottomRight.X, tbChevronSize);
   end
   else begin
-    Inc(TopLeft.Y, DragHandleSizes[CloseButtonWhenDocked, DragHandleStyle]);
+    Inc(TopLeft.Y, GetDragHandleSize);
     //if FShowChevron then
     //  Inc(BottomRight.Y, tbChevronSize);
   end;
@@ -3379,8 +3224,8 @@ const
   XMetrics: array[Boolean] of Integer = (SM_CXDLGFRAME, SM_CXFRAME);
   YMetrics: array[Boolean] of Integer = (SM_CYDLGFRAME, SM_CYFRAME);
 begin
-  Result.X := GetSystemMetrics(XMetrics[Resizable]);
-  Result.Y := GetSystemMetrics(YMetrics[Resizable]);
+  Result.X := GetSystemMetricsForControl(Self, XMetrics[Resizable]);
+  Result.Y := GetSystemMetricsForControl(Self, YMetrics[Resizable]);
 end;
 
 procedure TTBCustomDockableWindow.GetFloatingNCArea(var TopLeft, BottomRight: TPoint);
@@ -3389,7 +3234,7 @@ begin
     TopLeft.X := X;
     TopLeft.Y := Y;
     if ShowCaption then
-      Inc(TopLeft.Y, GetSmallCaptionHeight);
+      Inc(TopLeft.Y, GetSmallCaptionHeight(Self));
     BottomRight.X := X;
     BottomRight.Y := Y;
   end;
@@ -3399,7 +3244,7 @@ function TTBCustomDockableWindow.GetDockedCloseButtonRect(LeftRight: Boolean): T
 var
   X, Y, Z: Integer;
 begin
-  Z := DragHandleSizes[CloseButtonWhenDocked, FDragHandleStyle] - 3;
+  Z := GetDragHandleSize - 3;
   if not LeftRight then begin
     X := DockedBorderSize+1;
     Y := DockedBorderSize;
@@ -3423,7 +3268,7 @@ begin
     Result.X := DockedBorderSize2;
     Result.Y := DockedBorderSize2;
     if CurrentDock.FAllowDrag then begin
-      Z := DragHandleSizes[FCloseButtonWhenDocked, FDragHandleStyle];
+      Z := GetDragHandleSize;
       if not(CurrentDock.Position in PositionLeftOrRight) then
         Inc(Result.X, Z)
       else
@@ -3442,7 +3287,7 @@ begin
     with Message.CalcSize_Params^ do begin
       InflateRect(rgrc[0], -DockedBorderSize, -DockedBorderSize);
       if CurrentDock.FAllowDrag then begin
-        Z := DragHandleSizes[FCloseButtonWhenDocked, FDragHandleStyle];
+        Z := GetDragHandleSize;
         if not(CurrentDock.Position in PositionLeftOrRight) then
           Inc(rgrc[0].Left, Z)
         else
@@ -3467,7 +3312,7 @@ begin
       I := P.X - R.Left
     else
       I := P.Y - R.Top;
-    if I < DockedBorderSize + DragHandleSizes[CloseButtonWhenDocked, DragHandleStyle] then begin
+    if I < DockedBorderSize + GetDragHandleSize then begin
       SetCursor(LoadCursor(0, IDC_SIZEALL));
       Message.Result := 1;
       Exit;
@@ -3583,10 +3428,10 @@ begin
       else
         Y2 := ClientWidth;
       Inc(Y2, DockedBorderSize);
-      S := DragHandleSizes[FCloseButtonWhenDocked, FDragHandleStyle];
+      S := GetDragHandleSize;
       if FDragHandleStyle <> dhNone then begin
         Y3 := Y2;
-        X := DockedBorderSize + DragHandleXOffsets[FCloseButtonWhenDocked, FDragHandleStyle];
+        X := DockedBorderSize + GetDragHandleXOffset;
         Y := DockedBorderSize;
         YO := Ord(FDragHandleStyle = dhSingle);
         if FCloseButtonWhenDocked then begin
@@ -3655,7 +3500,7 @@ begin
   DrawNCArea(False, 0, HRGN(Message.WParam));
 end;
 
-procedure DockableWindowNCPaintProc(Wnd: HWND; DC: HDC; AppData: Longint);
+procedure DockableWindowNCPaintProc(Control: TControl; Wnd: HWND; DC: HDC; AppData: Longint);
 begin
   with TTBCustomDockableWindow(AppData) do
     DrawNCArea(True, DC, 0)
@@ -3663,7 +3508,7 @@ end;
 
 procedure TTBCustomDockableWindow.WMPrint(var Message: TMessage);
 begin
-  HandleWMPrint(Handle, Message, DockableWindowNCPaintProc, Longint(Self));
+  HandleWMPrint(Self, Handle, Message, DockableWindowNCPaintProc, Longint(Self));
 end;
 
 procedure TTBCustomDockableWindow.WMPrintClient(var Message: TMessage);
@@ -4074,7 +3919,7 @@ var
     end;
 
   var
-    ParentForm: TTBCustomForm;
+    ParentForm: TCustomForm;
     DockFormsList: TList;
     I, J: Integer;
   begin
@@ -4086,8 +3931,8 @@ var
     DockFormsList := TList.Create;
     try
       if Assigned(FDockForms) then begin
-        for I := 0 to Screen.{$IFDEF JR_D3}CustomFormCount{$ELSE}FormCount{$ENDIF}-1 do begin
-          J := FDockForms.IndexOf(Screen.{$IFDEF JR_D3}CustomForms{$ELSE}Forms{$ENDIF}[I]);
+        for I := 0 to Screen.CustomFormCount-1 do begin
+          J := FDockForms.IndexOf(Screen.CustomForms[I]);
           if (J <> -1) and (FDockForms[J] <> ParentForm) then
             DockFormsList.Add(FDockForms[J]);
         end;
@@ -4551,47 +4396,9 @@ begin
 end;
 
 procedure TTBCustomDockableWindow.ShowNCContextMenu(const Pos: TSmallPoint);
-
-  {$IFNDEF JR_D5}
-  { Note: this is identical to TControl.CheckMenuPopup (from Delphi 4),
-    except where noted.
-    TControl.CheckMenuPopup is unfortunately 'private', so it can't be called
-    outside of the Controls unit. }
-  procedure CheckMenuPopup;
-  var
-    Control: TControl;
-    PopupMenu: TPopupMenu;
-  begin
-    if csDesigning in ComponentState then Exit;
-    Control := Self;
-    while Control <> nil do
-    begin
-      { Added TControlAccess cast because GetPopupMenu is 'protected' }
-      PopupMenu := TControlAccess(Control).GetPopupMenu;
-      if (PopupMenu <> nil) then
-      begin
-        if not PopupMenu.AutoPopup then Exit;
-        SendCancelMode(nil);
-        PopupMenu.PopupComponent := Control;
-        { Changed the following. LPARAM of WM_NCRBUTTONUP is in screen
-          coordinates, not client coordinates }
-        {with ClientToScreen(SmallPointToPoint(Pos)) do
-          PopupMenu.Popup(X, Y);}
-        PopupMenu.Popup(Pos.X, Pos.Y);
-        Exit;
-      end;
-      Control := Control.Parent;
-    end;
-  end;
-  {$ENDIF}
-
 begin
-  {$IFDEF JR_D5}
   { Delphi 5 and later use the WM_CONTEXTMENU message for popup menus }
   SendMessage(Handle, WM_CONTEXTMENU, 0, LPARAM(Pos));
-  {$ELSE}
-  CheckMenuPopup;
-  {$ENDIF}
 end;
 
 procedure TTBCustomDockableWindow.WMNCRButtonUp(var Message: TWMNCRButtonUp);
@@ -4599,7 +4406,6 @@ begin
   ShowNCContextMenu(TSmallPoint(TMessage(Message).LParam));
 end;
 
-{$IFDEF JR_D5}
 procedure TTBCustomDockableWindow.WMContextMenu(var Message: TWMContextMenu);
 { Unfortunately TControl.WMContextMenu ignores clicks in the non-client area.
   On docked toolbars, we need right clicks on the border, part of the
@@ -4652,7 +4458,6 @@ begin
   if Message.Result = 0 then
     inherited;
 end;
-{$ENDIF}
 
 procedure TTBCustomDockableWindow.GetMinShrinkSize(var AMinimumSize: Integer);
 begin
@@ -5004,7 +4809,7 @@ end;
 
 procedure TTBCustomDockableWindow.SetFloating(Value: Boolean);
 var
-  ParentFrm: TTBCustomForm;
+  ParentFrm: TCustomForm;
   NewFloatParent: TTBFloatingWindowParent;
 begin
   if FFloating <> Value then begin
@@ -5129,211 +4934,6 @@ begin
       LastDock := FCurrentDock;
   end;
 end;
-
-(*function TTBCustomDockableWindow.GetVersion: TToolbar97Version;
-begin
-  Result := Toolbar97VersionPropText;
-end;
-
-procedure TTBCustomDockableWindow.SetVersion(const Value: TToolbar97Version);
-begin
-  { write method required for the property to show up in Object Inspector }
-end;*)
-
-
-{$IFNDEF MPEXCLUDE}
-
-{ TTBBackground }
-
-type
-  PNotifyEvent = ^TNotifyEvent;
-
-constructor TTBBackground.Create(AOwner: TComponent);
-begin
-  inherited;
-  FBkColor := clBtnFace;
-  FBitmap := TBitmap.Create;
-  FBitmap.OnChange := BitmapChanged;
-end;
-
-destructor TTBBackground.Destroy;
-var
-  I: Integer;
-begin
-  inherited;
-  FBitmapCache.Free;
-  FBitmap.Free;
-  if Assigned(FNotifyList) then begin
-    for I := FNotifyList.Count-1 downto 0 do
-      Dispose(PNotifyEvent(FNotifyList[I]));
-    FNotifyList.Free;
-  end;
-end;
-
-procedure TTBBackground.BitmapChanged(Sender: TObject);
-var
-  I: Integer;
-begin
-  { Erase the cache and notify }
-  FBitmapCache.Free;
-  FBitmapCache := nil;
-  if Assigned(FNotifyList) then
-    for I := 0 to FNotifyList.Count-1 do
-      PNotifyEvent(FNotifyList[I])^(Self);
-end;
-
-procedure TTBBackground.Draw(DC: HDC; const DrawRect: TRect);
-var
-  UseBmp: TBitmap;
-  R2: TRect;
-  SaveIndex: Integer;
-  DC2: HDC;
-  Brush: HBRUSH;
-  P: TPoint;
-begin
-  if FBitmapCache = nil then begin
-    FBitmapCache := TBitmap.Create;
-    FBitmapCache.Palette := CopyPalette(FBitmap.Palette);
-    FBitmapCache.Width := FBitmap.Width;
-    FBitmapCache.Height := FBitmap.Height;
-    if not FTransparent then begin
-      { Copy from a possible DIB to our DDB }
-      BitBlt(FBitmapCache.Canvas.Handle, 0, 0, FBitmapCache.Width,
-        FBitmapCache.Height, FBitmap.Canvas.Handle, 0, 0, SRCCOPY);
-    end
-    else begin
-      with FBitmapCache do begin
-        Canvas.Brush.Color := FBkColor;
-        R2 := Rect(0, 0, Width, Height);
-        Canvas.BrushCopy(R2, FBitmap, R2,
-          FBitmap.Canvas.Pixels[0, Height-1] or $02000000);
-      end;
-    end;
-    FBitmap.Dormant;
-  end;
-  UseBmp := FBitmapCache;
-
-  DC2 := 0;
-  SaveIndex := SaveDC(DC);
-  try
-    if UseBmp.Palette <> 0 then begin
-      SelectPalette(DC, UseBmp.Palette, True);
-      RealizePalette(DC);
-    end;
-    { Note: versions of Toolbar97 prior to 1.68 used 'UseBmp.Canvas.Handle'
-      instead of DC2 in the BitBlt call. This was changed because there
-      seems to be a bug in D2/BCB1's Graphics.pas: if you called
-      <dockname>.Background.LoadFromFile(<filename>) twice the background
-      would not be shown. }
-    if (UseBmp.Width = 8) and (UseBmp.Height = 8) then begin
-      { Use pattern brushes to draw 8x8 bitmaps.
-        Note: Win9x can't use bitmaps <8x8 in size for pattern brushes }
-      Brush := CreatePatternBrush(UseBmp.Handle);
-      GetWindowOrgEx(DC, P);
-      SetBrushOrgEx(DC, DrawRect.Left - P.X, DrawRect.Top - P.Y, nil);
-      FillRect(DC, DrawRect, Brush);
-      DeleteObject(Brush);
-    end
-    else begin
-      { BitBlt is faster than pattern brushes on large bitmaps }
-      DC2 := CreateCompatibleDC(DC);
-      SelectObject(DC2, UseBmp.Handle);
-      R2 := DrawRect;
-      while R2.Left < R2.Right do begin
-        while R2.Top < R2.Bottom do begin
-          BitBlt(DC, R2.Left, R2.Top, UseBmp.Width, UseBmp.Height,
-            DC2, 0, 0, SRCCOPY);
-          Inc(R2.Top, UseBmp.Height);
-        end;
-        R2.Top := DrawRect.Top;
-        Inc(R2.Left, UseBmp.Width);
-      end;
-    end;
-  finally
-    if DC2 <> 0 then
-      DeleteDC(DC2);
-    { Restore the palette and brush origin back }
-    RestoreDC(DC, SaveIndex);
-  end;
-end;
-
-function TTBBackground.GetPalette: HPALETTE;
-begin
-  Result := FBitmap.Palette;
-end;
-
-procedure TTBBackground.SysColorChanged;
-begin
-  if FTransparent and (FBkColor < 0) then
-    BitmapChanged(nil);
-end;
-
-function TTBBackground.UsingBackground: Boolean;
-begin
-  Result := (FBitmap.Width <> 0) and (FBitmap.Height <> 0);
-end;
-
-procedure TTBBackground.RegisterChanges(Proc: TNotifyEvent);
-var
-  I: Integer;
-  P: PNotifyEvent;
-begin
-  if FNotifyList = nil then
-    FNotifyList := TList.Create;
-  for I := 0 to FNotifyList.Count-1 do begin
-    P := FNotifyList[I];
-    if (TMethod(P^).Code = TMethod(Proc).Code) and
-       (TMethod(P^).Data = TMethod(Proc).Data) then
-      Exit;
-  end;
-  FNotifyList.Expand;
-  New(P);
-  P^ := Proc;
-  FNotifyList.Add(P);
-end;
-
-procedure TTBBackground.UnregisterChanges(Proc: TNotifyEvent);
-var
-  I: Integer;
-  P: PNotifyEvent;
-begin
-  if FNotifyList = nil then
-    Exit;
-  for I := 0 to FNotifyList.Count-1 do begin
-    P := FNotifyList[I];
-    if (TMethod(P^).Code = TMethod(Proc).Code) and
-       (TMethod(P^).Data = TMethod(Proc).Data) then begin
-      FNotifyList.Delete(I);
-      Dispose(P);
-      Break;
-    end;
-  end;
-end;
-
-procedure TTBBackground.SetBkColor(Value: TColor);
-begin
-  if FBkColor <> Value then begin
-    FBkColor := Value;
-    if FTransparent then
-      BitmapChanged(nil);
-  end;
-end;
-
-procedure TTBBackground.SetBitmap(Value: TBitmap);
-begin
-  FBitmap.Assign(Value);
-end;
-
-procedure TTBBackground.SetTransparent(Value: Boolean);
-begin
-  if FTransparent <> Value then begin
-    FTransparent := Value;
-    BitmapChanged(nil);
-  end;
-end;
-
-{$ENDIF}
-
 
 { Global procedures }
 
@@ -5594,17 +5194,5 @@ begin
   end;
 end;
 
-var
-  B: Boolean;
-  Style: TTBDragHandleStyle;
 initialization
-  for B := False to True do
-  begin
-    for Style := Low(TTBDragHandleStyle) to High(TTBDragHandleStyle) do
-    begin
-      // DPI-scaling for a lack of better choice here
-      DragHandleSizes[B][Style] := MulDiv(DragHandleSizes[B][Style], Screen.PixelsPerInch, USER_DEFAULT_SCREEN_DPI);
-      DragHandleXOffsets[B][Style] := MulDiv(DragHandleXOffsets[B][Style], Screen.PixelsPerInch, USER_DEFAULT_SCREEN_DPI);
-    end;
-  end;
 end.

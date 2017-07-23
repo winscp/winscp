@@ -57,6 +57,7 @@
 		<OutputExt>bpl</OutputExt>
 		<ProjectType>CppPackage</ProjectType>
 		<SanitizedProjectName>Moje</SanitizedProjectName>
+		<TLIB_PageSize>64</TLIB_PageSize>
 		<VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
 		<VerInfo_Locale>1033</VerInfo_Locale>
 	</PropertyGroup>
@@ -134,12 +135,6 @@
 		</ResFiles>
 		<DelphiCompile Include="packages\my\PathLabel.pas">
 			<BuildOrder>17</BuildOrder>
-		</DelphiCompile>
-		<ResFiles Include="packages\my\UnixPathComboBox.dcr">
-			<BuildOrder>23</BuildOrder>
-		</ResFiles>
-		<DelphiCompile Include="packages\my\UnixPathComboBox.pas">
-			<BuildOrder>22</BuildOrder>
 		</DelphiCompile>
 		<DelphiCompile Include="packages\my\UpDownEdit.pas">
 			<BuildOrder>24</BuildOrder>

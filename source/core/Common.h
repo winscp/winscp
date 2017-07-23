@@ -64,6 +64,8 @@ UnicodeString RemoveEmptyLines(const UnicodeString & S);
 bool IsNumber(const UnicodeString Str);
 UnicodeString __fastcall SystemTemporaryDirectory();
 UnicodeString __fastcall GetShellFolderPath(int CSIdl);
+UnicodeString __fastcall GetPersonalFolder();
+UnicodeString __fastcall GetDesktopFolder();
 UnicodeString __fastcall StripPathQuotes(const UnicodeString Path);
 UnicodeString __fastcall AddQuotes(UnicodeString Str);
 UnicodeString __fastcall AddPathQuotes(UnicodeString Path);
@@ -82,8 +84,8 @@ void __fastcall ReformatFileNameCommand(UnicodeString & Command);
 UnicodeString __fastcall EscapeParam(const UnicodeString & Param);
 UnicodeString __fastcall EscapePuttyCommandParam(UnicodeString Param);
 UnicodeString __fastcall ExpandEnvironmentVariables(const UnicodeString & Str);
-bool __fastcall ComparePaths(const UnicodeString & Path1, const UnicodeString & Path2);
-bool __fastcall CompareFileName(const UnicodeString & Path1, const UnicodeString & Path2);
+bool __fastcall SamePaths(const UnicodeString & Path1, const UnicodeString & Path2);
+bool __fastcall IsPathToSameFile(const UnicodeString & Path1, const UnicodeString & Path2);
 int __fastcall CompareLogicalText(const UnicodeString & S1, const UnicodeString & S2);
 bool __fastcall IsReservedName(UnicodeString FileName);
 UnicodeString __fastcall ApiPath(UnicodeString Path);
@@ -111,6 +113,7 @@ unsigned int __fastcall CancelAnswer(unsigned int Answers);
 unsigned int __fastcall AbortAnswer(unsigned int Answers);
 unsigned int __fastcall ContinueAnswer(unsigned int Answers);
 UnicodeString __fastcall LoadStr(int Ident, unsigned int MaxLength);
+UnicodeString __fastcall LoadStrFrom(HINSTANCE Module, int Ident);
 UnicodeString __fastcall LoadStrPart(int Ident, int Part);
 UnicodeString __fastcall EscapeHotkey(const UnicodeString & Caption);
 bool __fastcall CutToken(UnicodeString & Str, UnicodeString & Token,
@@ -126,6 +129,8 @@ bool __fastcall IsWine();
 TLibModule * __fastcall FindModule(void * Instance);
 __int64 __fastcall Round(double Number);
 bool __fastcall TryRelativeStrToDateTime(UnicodeString S, TDateTime & DateTime, bool Add);
+bool __fastcall TryStrToSize(UnicodeString SizeStr, __int64 & Size);
+UnicodeString __fastcall SizeToStr(__int64 Size);
 LCID __fastcall GetDefaultLCID();
 UnicodeString __fastcall DefaultEncodingName();
 UnicodeString __fastcall WindowsProductName();
@@ -207,6 +212,7 @@ int __fastcall CompareFileTime(TDateTime T1, TDateTime T2);
 int __fastcall TimeToMSec(TDateTime T);
 int __fastcall TimeToSeconds(TDateTime T);
 int __fastcall TimeToMinutes(TDateTime T);
+UnicodeString __fastcall FormatDateTimeSpan(const UnicodeString TimeFormat, TDateTime DateTime);
 //---------------------------------------------------------------------------
 template<class MethodT>
 MethodT __fastcall MakeMethod(void * Data, void * Code)

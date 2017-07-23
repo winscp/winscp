@@ -2,8 +2,8 @@
 {
     internal class CallstackAndLock : Callstack
     {
-        public CallstackAndLock(Logger logger, Lock alock) :
-            base(logger)
+        public CallstackAndLock(Logger logger, Lock alock, object token = null) :
+            base(logger, token)
         {
             _lock = alock;
             _lock.Enter();

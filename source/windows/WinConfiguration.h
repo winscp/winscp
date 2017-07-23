@@ -340,8 +340,6 @@ private:
   bool FDeleteToRecycleBin;
   bool FDimmHiddenFiles;
   bool FRenameWholeName;
-  bool FLogWindowOnStartup;
-  UnicodeString FLogWindowParams;
   TScpCommanderConfiguration FScpCommander;
   TScpExplorerConfiguration FScpExplorer;
   bool FSelectDirectories;
@@ -431,15 +429,17 @@ private:
   UnicodeString FTipsSeen;
   TDateTime FTipsShown;
   int FRunsSinceLastTip;
+  bool FLockedInterface;
   int FDontDecryptPasswords;
   int FMasterPasswordSession;
   bool FMasterPasswordSessionAsked;
-  std::unique_ptr<TFont> FSystemIconFont;
   std::unique_ptr<TStringList> FCustomCommandOptions;
   bool FCustomCommandOptionsModified;
   int FLastMachineInstallations;
   __property int LastMachineInstallations = { read = FLastMachineInstallations, write = FLastMachineInstallations };
   int FMachineInstallations;
+  LCID FDefaultLocale;
+  std::unique_ptr<TStrings> FExtensionTranslations;
 
   void __fastcall SetDoubleClickAction(TDoubleClickAction value);
   void __fastcall SetCopyOnDoubleClickConfirmation(bool value);
@@ -449,8 +449,6 @@ private:
   void __fastcall SetDeleteToRecycleBin(bool value);
   void __fastcall SetDimmHiddenFiles(bool value);
   void __fastcall SetRenameWholeName(bool value);
-  void __fastcall SetLogWindowOnStartup(bool value);
-  void __fastcall SetLogWindowParams(UnicodeString value);
   void __fastcall SetScpCommander(TScpCommanderConfiguration value);
   void __fastcall SetScpExplorer(TScpExplorerConfiguration value);
   void __fastcall SetSelectDirectories(bool value);
@@ -530,9 +528,10 @@ private:
   bool __fastcall GetHonorDrivePolicy();
   void __fastcall SetHonorDrivePolicy(bool value);
   bool __fastcall GetIsBeta();
-  TFont * __fastcall GetSystemIconFont();
   TStrings * __fastcall GetCustomCommandOptions();
   void __fastcall SetCustomCommandOptions(TStrings * value);
+  void __fastcall SetLockedInterface(bool value);
+  int __fastcall GetLocaleCompletenessTreshold();
 
   bool __fastcall GetDDExtInstalled();
   void __fastcall AddVersionToHistory();
@@ -545,7 +544,6 @@ private:
   void __fastcall SaveJumpList(THierarchicalStorage * Storage,
     UnicodeString Name, TStringList * List);
   void __fastcall TrimJumpList(TStringList * List);
-  void __fastcall UpdateSystemIconFont();
   void __fastcall UpdateIconFont();
 
 protected:
@@ -562,7 +560,6 @@ protected:
   bool __fastcall SameStringLists(TStrings * Strings1, TStrings * Strings2);
   virtual HINSTANCE __fastcall LoadNewResourceModule(LCID Locale,
     UnicodeString & FileName);
-  virtual LCID __fastcall GetLocale();
   void __fastcall CheckTranslationVersion(const UnicodeString FileName,
     bool InternalLocaleOnError);
   virtual void __fastcall DefaultLocalized();
@@ -572,6 +569,11 @@ protected:
   void __fastcall AskForMasterPassword();
   void __fastcall DoLoadExtensionList(const UnicodeString & Path, const UnicodeString & PathId, TStringList * DeletedExtensions);
   TStrings * __fastcall GetExtensionsPaths();
+  virtual int __fastcall GetResourceModuleCompleteness(HINSTANCE Module);
+  virtual bool __fastcall IsTranslationComplete(HINSTANCE Module);
+  void __fastcall LoadExtensionList();
+  void __fastcall ReleaseExtensionTranslations();
+  void __fastcall LoadExtensionTranslations();
 
 public:
   __fastcall TWinConfiguration();
@@ -602,10 +604,12 @@ public:
   void __fastcall UpdateJumpList();
   virtual void __fastcall UpdateStaticUsage();
   void __fastcall MinimizeToTrayOnce();
-  void __fastcall LoadExtensionList();
   void __fastcall CustomCommandShortCuts(TShortCuts & ShortCuts) const;
   UnicodeString __fastcall GetUserExtensionsPath();
   UnicodeString __fastcall GetExtensionId(const UnicodeString & ExtensionPath);
+  UnicodeString __fastcall ExtensionStringTranslation(const UnicodeString & ExtensionId, const UnicodeString & S);
+  UnicodeString __fastcall UniqueExtensionName(const UnicodeString & ExtensionName, int Counter);
+  UnicodeString __fastcall GetProvisionaryExtensionId(const UnicodeString & FileName);
 
   static void __fastcall RestoreFont(const TFontConfiguration & Configuration, TFont * Font);
   static void __fastcall StoreFont(TFont * Font, TFontConfiguration & Configuration);
@@ -630,11 +634,9 @@ public:
   __property bool DDAllowMove = { read = FDDAllowMove, write = SetDDAllowMove };
   __property bool DDAllowMoveInit = { read = FDDAllowMoveInit, write = SetDDAllowMoveInit };
   __property TAutoSwitch DDTransferConfirmation = { read = FDDTransferConfirmation, write = SetDDTransferConfirmation };
-  __property bool LogWindowOnStartup = { read = FLogWindowOnStartup, write = SetLogWindowOnStartup };
   __property bool DeleteToRecycleBin = { read = FDeleteToRecycleBin, write = SetDeleteToRecycleBin };
   __property bool DimmHiddenFiles = { read = FDimmHiddenFiles, write = SetDimmHiddenFiles };
   __property bool RenameWholeName = { read = FRenameWholeName, write = SetRenameWholeName };
-  __property UnicodeString LogWindowParams = { read = FLogWindowParams, write = SetLogWindowParams };
   __property bool ConfirmTransferring = { read = FConfirmTransferring, write = SetConfirmTransferring};
   __property bool ConfirmDeleting = { read = FConfirmDeleting, write = SetConfirmDeleting};
   __property bool ConfirmRecycling = { read = FConfirmRecycling, write = SetConfirmRecycling};
@@ -702,8 +704,10 @@ public:
   __property int RunsSinceLastTip = { read = FRunsSinceLastTip, write = SetRunsSinceLastTip };
   __property bool HonorDrivePolicy = { read = GetHonorDrivePolicy, write = SetHonorDrivePolicy };
   __property TMasterPasswordPromptEvent OnMasterPasswordPrompt = { read = FOnMasterPasswordPrompt, write = FOnMasterPasswordPrompt };
-  __property TFont * SystemIconFont = { read = GetSystemIconFont };
   __property TStrings * CustomCommandOptions = { read = GetCustomCommandOptions, write = SetCustomCommandOptions };
+  __property bool LockedInterface = { read = FLockedInterface, write = SetLockedInterface };
+  __property LCID DefaultLocale = { read = FDefaultLocale };
+  __property int LocaleCompletenessTreshold = { read = GetLocaleCompletenessTreshold };
 };
 //---------------------------------------------------------------------------
 class TCustomCommandType

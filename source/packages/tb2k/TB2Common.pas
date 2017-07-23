@@ -35,7 +35,7 @@ uses
 
 type
   TListSortExCompare = function(const Item1, Item2, ExtraData: Pointer): Integer;
-  THandleWMPrintNCPaintProc = procedure(Wnd: HWND; DC: HDC; AppData: Longint);
+  THandleWMPrintNCPaintProc = procedure(Control: TControl; Wnd: HWND; DC: HDC; AppData: Longint);
 
 function AddToFrontOfList(var List: TList; Item: Pointer): Boolean;
 function AddToList(var List: TList; Item: Pointer): Boolean;
@@ -55,9 +55,6 @@ procedure DrawInvertRect(const DC: HDC; const NewRect, OldRect: PRect;
   const NewSize, OldSize: TSize; const Brush: HBRUSH; BrushLast: HBRUSH);
 function EscapeAmpersands(const S: String): String;
 function FindAccelChar(const S: String): Char;
-{$IFNDEF JR_D5}
-procedure FreeAndNil(var Obj);
-{$ENDIF}
 function GetInputLocaleCodePage: UINT;
 function GetMenuShowDelay: Integer;
 function GetRectOfMonitorContainingPoint(const P: TPoint; const WorkArea: Boolean): TRect;
@@ -66,7 +63,7 @@ function GetRectOfMonitorContainingWindow(const W: HWND; const WorkArea: Boolean
 function GetRectOfPrimaryMonitor(const WorkArea: Boolean): TRect;
 function GetTextHeight(const DC: HDC): Integer;
 function GetTextWidth(const DC: HDC; S: String; const Prefix: Boolean): Integer;
-procedure HandleWMPrint(const Wnd: HWND; var Message: TMessage;
+procedure HandleWMPrint(Control: TControl; const Wnd: HWND; var Message: TMessage;
   const NCPaintFunc: THandleWMPrintNCPaintProc; const AppData: Longint);
 procedure HandleWMPrintClient(const Control: TWinControl;
   var Message: TMessage);
@@ -101,26 +98,6 @@ function ApplicationIsActive: Boolean;
 begin
   Result := GetActiveWindow <> 0;
 end;
-
-{$IFNDEF JR_D3}
-function CopyPalette(Palette: HPALETTE): HPALETTE;
-var
-  PaletteSize: Integer;
-  LogPal: TMaxLogPalette;
-begin
-  Result := 0;
-  if Palette = 0 then Exit;
-  PaletteSize := 0;
-  if GetObject(Palette, SizeOf(PaletteSize), @PaletteSize) = 0 then Exit;
-  if PaletteSize = 0 then Exit;
-  with LogPal do begin
-    palVersion := $0300;
-    palNumEntries := PaletteSize;
-    GetPaletteEntries(Palette, 0, PaletteSize, palPalEntry);
-  end;
-  Result := CreatePalette(PLogPalette(@LogPal)^);
-end;
-{$ENDIF}
 
 procedure ListSortEx(const List: TList; const Compare: TListSortExCompare;
   const ExtraData: Pointer);
@@ -193,7 +170,7 @@ begin
   end;
 end;
 
-procedure HandleWMPrint(const Wnd: HWND; var Message: TMessage;
+procedure HandleWMPrint(Control: TControl; const Wnd: HWND; var Message: TMessage;
   const NCPaintFunc: THandleWMPrintNCPaintProc; const AppData: Longint);
 { note: AppData is an application-defined value which is passed to NCPaintFunc }
 var
@@ -210,7 +187,7 @@ begin
       if Message.LParam and PRF_NONCLIENT <> 0 then begin
         SaveIndex := SaveDC(DC);
         if Assigned(NCPaintFunc) then
-          NCPaintFunc(Wnd, DC, AppData);
+          NCPaintFunc(Control, Wnd, DC, AppData);
         RestoreDC(DC, SaveIndex);
       end;
       { Calculate the difference between the top-left corner of the window
@@ -793,17 +770,6 @@ begin
   Track.dwHoverTime := 0;
   Result := TrackMouseEvent(Track);
 end;
-
-{$IFNDEF JR_D5}
-procedure FreeAndNil(var Obj);
-var
-  P: TObject;
-begin
-  P := TObject(Obj);
-  TObject(Obj) := nil;
-  P.Free;
-end;
-{$ENDIF}
 
 function EnumFontsProc(const lplf: TLogFont; const lptm: TTextMetric;
   dwType: DWORD; lpData: LPARAM): Integer; stdcall;

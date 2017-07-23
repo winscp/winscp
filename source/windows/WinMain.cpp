@@ -4,7 +4,6 @@
 
 #include <CoreMain.h>
 
-#include <Log.h>
 #include <TextsWin.h>
 #include <TextsCore.h>
 #include <HelpWin.h>
@@ -108,45 +107,74 @@ void __fastcall Upload(TTerminal * Terminal, TStrings * FileList, bool UseDefaul
       DoCopyDialog(true, false, FileList, TargetDirectory, &CopyParam, Options,
         CopyParamAttrs, Data.get(), NULL))
   {
-    Terminal->CopyToRemote(FileList, TargetDirectory, &CopyParam, 0);
+    Terminal->CopyToRemote(FileList, TargetDirectory, &CopyParam, 0, NULL);
   }
 }
 //---------------------------------------------------------------------------
 void __fastcall Download(TTerminal * Terminal, const UnicodeString FileName,
   bool UseDefaults)
 {
-  UnicodeString TargetDirectory;
-  TGUICopyParamType CopyParam = GUIConfiguration->DefaultCopyParam;
-  TStrings * FileList = NULL;
+  TRemoteFile * File = NULL;
 
   try
   {
-    FileList = new TStringList();
-    TRemoteFile * File = Terminal->Files->FindFile(FileName);
-    if (File == NULL)
+    Terminal->ExceptionOnFail = true;
+    try
     {
-      throw Exception(FMTLOAD(FILE_NOT_EXISTS, (FileName)));
+      Terminal->ReadFile(FileName, File);
     }
-    FileList->AddObject(FileName, File);
+    __finally
+    {
+      Terminal->ExceptionOnFail = false;
+    }
+    File->FullFileName = FileName;
     UnicodeString LocalDirectory = ExpandFileName(Terminal->SessionData->LocalDirectory);
     if (LocalDirectory.IsEmpty())
     {
       LocalDirectory = GetPersonalFolder();
     }
-    TargetDirectory = IncludeTrailingBackslash(LocalDirectory);
+    UnicodeString TargetDirectory = IncludeTrailingBackslash(LocalDirectory);
+
+    TGUICopyParamType CopyParam = GUIConfiguration->DefaultCopyParam;
+    UnicodeString DisplayName = File->FileName;
+
+    bool CustomDisplayName =
+      !File->DisplayName.IsEmpty() &&
+      (File->DisplayName != DisplayName);
+    if (CustomDisplayName)
+    {
+      DisplayName = File->DisplayName;
+    }
+
+    UnicodeString FriendyFileName = UnixIncludeTrailingBackslash(UnixExtractFilePath(FileName)) + DisplayName;
+    std::unique_ptr<TStrings> FileListFriendly(new TStringList());
+    FileListFriendly->AddObject(FriendyFileName, File);
 
     int Options = coDisableQueue;
     int CopyParamAttrs = Terminal->UsableCopyParamAttrs(0).Download;
     if (UseDefaults ||
-        DoCopyDialog(false, false, FileList, TargetDirectory, &CopyParam,
+        DoCopyDialog(false, false, FileListFriendly.get(), TargetDirectory, &CopyParam,
           Options, CopyParamAttrs, NULL, NULL))
     {
-      Terminal->CopyToLocal(FileList, TargetDirectory, &CopyParam, 0);
+      if (CustomDisplayName)
+      {
+        // Set only now, so that it is not redundantly displayed on the copy dialog.
+        // We should escape the * and ?'s.
+        CopyParam.FileMask = DisplayName;
+      }
+
+      std::unique_ptr<TStrings> FileList(new TStringList());
+      FileList->AddObject(FileName, File);
+      Terminal->CopyToLocal(FileList.get(), TargetDirectory, &CopyParam, 0, NULL);
     }
+
+    UnicodeString Directory = UnixExtractFilePath(FileName);
+    Terminal->AutoReadDirectory = true;
+    Terminal->ChangeDirectory(Directory);
   }
   __finally
   {
-    delete FileList;
+    delete File;
   }
 }
 //---------------------------------------------------------------------------
@@ -355,10 +383,9 @@ void __fastcall UpdateStaticUsage()
   Configuration->Usage->Set(L"WindowsProductType", (static_cast<int>(Type)));
   Configuration->Usage->Set(L"Windows64", IsWin64());
   Configuration->Usage->Set(L"DefaultLocale",
-    // See TGUIConfiguration::GetLocaleHex()
+    // See TGUIConfiguration::GetAppliedLocaleHex()
     IntToHex(static_cast<int>(GetDefaultLCID()), 4));
-  Configuration->Usage->Set(L"Locale",
-    IntToHex(static_cast<int>(WinConfiguration->Locale), 4));
+  Configuration->Usage->Set(L"Locale", WinConfiguration->AppliedLocaleHex);
   Configuration->Usage->Set(L"EncodingMultiByteAnsi", !TEncoding::Default->IsSingleByte);
   Configuration->Usage->Set(L"PixelsPerInch", Screen->PixelsPerInch);
 
@@ -703,6 +730,30 @@ int __fastcall Execute()
     }
   }
 
+  if (Params->FindSwitch(LOGSIZE_SWITCH, SwitchValue))
+  {
+    int StarPos = SwitchValue.Pos(LOGSIZE_SEPARATOR);
+    int LogMaxCount = 0;
+    if (StarPos > 1)
+    {
+      if (!TryStrToInt(SwitchValue.SubString(1, StarPos - 1), LogMaxCount))
+      {
+        LogMaxCount = -1;
+      }
+      SwitchValue.Delete(1, StarPos);
+      SwitchValue = SwitchValue.Trim();
+    }
+
+    __int64 LogMaxSize;
+    if ((LogMaxCount >= 0) &&
+        !SwitchValue.IsEmpty() &&
+        TryStrToSize(SwitchValue, LogMaxSize))
+    {
+      Configuration->TemporaryLogMaxCount(LogMaxCount);
+      Configuration->TemporaryLogMaxSize(LogMaxSize);
+    }
+  }
+
   TConsoleMode Mode = cmNone;
   if (Params->FindSwitch(L"help") || Params->FindSwitch(L"h") || Params->FindSwitch(L"?"))
   {
@@ -751,8 +802,6 @@ int __fastcall Execute()
       GUIConfiguration->ChangeResourceModule(ResourceModule);
     }
     NonVisualDataModule = new TNonVisualDataModule(Application);
-
-    LogForm = NULL;
 
     // The default is 2.5s.
     // 20s is used by Office 2010 and Windows 10 Explorer.
@@ -973,8 +1022,7 @@ int __fastcall Execute()
       // from now flash message boxes on background
       SetOnForeground(false);
 
-      bool CommandLineOperation = (ParamCommand != pcNone) || !DownloadFile.IsEmpty();
-      bool NeedSession = CommandLineOperation;
+      bool NeedSession = (ParamCommand != pcNone);
 
       bool Retry;
       do
@@ -1007,8 +1055,16 @@ int __fastcall Execute()
               bool CanStart;
               if (DataList->Count > 0)
               {
-                TerminalManager->ActiveTerminal =
-                  TerminalManager->NewTerminals(DataList);
+                TTerminal * Terminal = TerminalManager->NewTerminals(DataList);
+                if (!DownloadFile.IsEmpty())
+                {
+                  Terminal->AutoReadDirectory = false;
+                  DownloadFile = UnixIncludeTrailingBackslash(Terminal->SessionData->RemoteDirectory) + DownloadFile;
+                  Terminal->SessionData->RemoteDirectory = L"";
+                  TManagedTerminal * ManagedTerminal = DebugNotNull(dynamic_cast<TManagedTerminal *>(Terminal));
+                  ManagedTerminal->StateData->RemoteDirectory = Terminal->SessionData->RemoteDirectory;
+                }
+                TerminalManager->ActiveTerminal = Terminal;
                 CanStart = (TerminalManager->Count > 0);
               }
               else
@@ -1037,7 +1093,7 @@ int __fastcall Execute()
                   // moved inside try .. __finally, because it can fail as well
                   TerminalManager->ScpExplorer = ScpExplorer;
 
-                  if (CommandLineOperation)
+                  if ((ParamCommand != pcNone) || !DownloadFile.IsEmpty())
                   {
                     Configuration->Usage->Inc(L"CommandLineOperation");
                   }
@@ -1093,7 +1149,7 @@ int __fastcall Execute()
   {
     delete NonVisualDataModule;
     NonVisualDataModule = NULL;
-    ReleaseAnimationsModule();
+    ReleaseImagesModules();
     delete GlyphsModule;
     GlyphsModule = NULL;
     TTerminalManager::DestroyInstance();

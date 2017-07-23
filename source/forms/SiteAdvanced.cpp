@@ -102,6 +102,7 @@ void __fastcall TSiteAdvancedDialog::InitControls()
 
   UpdateNavigationTree();
 
+  SelectScaledImageList(ColorImageList);
   SetSessionColor((TColor)0);
 }
 //---------------------------------------------------------------------
@@ -215,7 +216,7 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     AuthGSSAPICheck3->Checked = FSessionData->AuthGSSAPI;
     GSSAPIFwdTGTCheck->Checked = FSessionData->GSSAPIFwdTGT;
     AgentFwdCheck->Checked = FSessionData->AgentFwd;
-    PrivateKeyEdit2->Text = FSessionData->PublicKeyFile;
+    PrivateKeyEdit3->Text = FSessionData->PublicKeyFile;
 
     // SSH page
     Ssh2LegacyDESCheck->Checked = FSessionData->Ssh2DES;
@@ -371,7 +372,7 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     TunnelPortNumberEdit->AsInteger = FSessionData->TunnelPortNumber;
     TunnelHostNameEdit->Text = FSessionData->TunnelHostName;
     TunnelPasswordEdit->Text = FSessionData->TunnelPassword;
-    TunnelPrivateKeyEdit2->Text = FSessionData->TunnelPublicKeyFile;
+    TunnelPrivateKeyEdit3->Text = FSessionData->TunnelPublicKeyFile;
     if (FSessionData->TunnelAutoassignLocalPortNumber)
     {
       TunnelLocalPortNumberEdit->Text = TunnelLocalPortNumberEdit->Items->Strings[0];
@@ -436,7 +437,7 @@ void __fastcall TSiteAdvancedDialog::SaveSession()
   FSessionData->AuthGSSAPI = AuthGSSAPICheck3->Checked;
   FSessionData->GSSAPIFwdTGT = GSSAPIFwdTGTCheck->Checked;
   FSessionData->AgentFwd = AgentFwdCheck->Checked;
-  FSessionData->PublicKeyFile = PrivateKeyEdit2->Text;
+  FSessionData->PublicKeyFile = PrivateKeyEdit3->Text;
 
   // Connection page
   FSessionData->FtpPasvMode = FtpPasvModeCheck->Checked;
@@ -614,7 +615,7 @@ void __fastcall TSiteAdvancedDialog::SaveSession()
   FSessionData->TunnelPortNumber = TunnelPortNumberEdit->AsInteger;
   FSessionData->TunnelHostName = TunnelHostNameEdit->Text;
   FSessionData->TunnelPassword = TunnelPasswordEdit->Text;
-  FSessionData->TunnelPublicKeyFile = TunnelPrivateKeyEdit2->Text;
+  FSessionData->TunnelPublicKeyFile = TunnelPrivateKeyEdit3->Text;
   if (TunnelLocalPortNumberEdit->Text == TunnelLocalPortNumberEdit->Items->Strings[0])
   {
     FSessionData->TunnelLocalPortNumber = 0;
@@ -1011,12 +1012,14 @@ void __fastcall TSiteAdvancedDialog::DataChange(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TSiteAdvancedDialog::FormShow(TObject * /*Sender*/)
 {
-  InstallPathWordBreakProc(PrivateKeyEdit2);
-  InstallPathWordBreakProc(TunnelPrivateKeyEdit2);
+  InstallPathWordBreakProc(PrivateKeyEdit3);
+  InstallPathWordBreakProc(TunnelPrivateKeyEdit3);
   InstallPathWordBreakProc(RemoteDirectoryEdit);
   InstallPathWordBreakProc(LocalDirectoryEdit);
   InstallPathWordBreakProc(RecycleBinPathEdit);
   InstallPathWordBreakProc(TlsCertificateFileEdit);
+  InstallPathWordBreakProc(SftpServerEdit);
+  InstallPathWordBreakProc(ShellEdit);
 
   ChangePage(EnvironmentSheet);
 
@@ -1237,7 +1240,7 @@ void __fastcall TSiteAdvancedDialog::HelpButtonClick(TObject * /*Sender*/)
   FormHelp(this);
 }
 //---------------------------------------------------------------------------
-void __fastcall TSiteAdvancedDialog::PrivateKeyEdit2AfterDialog(TObject * Sender,
+void __fastcall TSiteAdvancedDialog::PrivateKeyEdit3AfterDialog(TObject * Sender,
   UnicodeString & Name, bool & Action)
 {
   PathEditAfterDialog(Sender, Name, Action);
@@ -1255,9 +1258,9 @@ void __fastcall TSiteAdvancedDialog::FormCloseQuery(TObject * /*Sender*/,
   if (ModalResult == DefaultResult(this))
   {
     // StripPathQuotes should not be needed as we do not feed quotes anymore
-    VerifyKey(StripPathQuotes(PrivateKeyEdit2->Text), GetSshProt());
+    VerifyKey(StripPathQuotes(PrivateKeyEdit3->Text), GetSshProt());
     // for tunnel SSH version is not configurable
-    VerifyKey(StripPathQuotes(TunnelPrivateKeyEdit2->Text), ssh2only);
+    VerifyKey(StripPathQuotes(TunnelPrivateKeyEdit3->Text), ssh2only);
     VerifyCertificate(StripPathQuotes(TlsCertificateFileEdit->Text));
   }
 }
@@ -1272,7 +1275,7 @@ void __fastcall TSiteAdvancedDialog::PathEditBeforeDialog(TObject * /*Sender*/,
 void __fastcall TSiteAdvancedDialog::PathEditAfterDialog(TObject * /*Sender*/,
   UnicodeString & Name, bool & /*Action*/)
 {
-  if (CompareFileName(Name, ExpandEnvironmentVariables(FBeforeDialogPath)))
+  if (IsPathToSameFile(Name, ExpandEnvironmentVariables(FBeforeDialogPath)))
   {
     Name = FBeforeDialogPath;
   }

@@ -6,6 +6,8 @@
 
 #include <SysUtils.hpp>
 #include <FileCtrl.hpp>
+#include <StrUtils.hpp>
+#include <System.IOUtils.hpp>
 
 #include "Common.h"
 #include "PuttyTools.h"
@@ -391,7 +393,8 @@ bool __fastcall TTunnelUI::PromptUser(TSessionData * Data, TPromptKind Kind,
   {
     if (IsAuthenticationPrompt(Kind))
     {
-      Instructions = LoadStr(TUNNEL_INSTRUCTION) +
+      Instructions =
+        FMTLOAD(TUNNEL_INSTRUCTION2, (Data->HostName)) +
         (Instructions.IsEmpty() ? L"" : L"\n") +
         Instructions;
     }
@@ -445,6 +448,7 @@ public:
 
   void __fastcall FatalError(Exception * E, const UnicodeString & Msg, const UnicodeString & HelpKeyword);
   inline void __fastcall Verify();
+  inline bool __fastcall Verify(Exception * E);
   void __fastcall Dismiss();
 
 private:
@@ -516,19 +520,67 @@ void __fastcall TCallbackGuard::Verify()
   }
 }
 //---------------------------------------------------------------------------
+bool __fastcall TCallbackGuard::Verify(Exception * E)
+{
+  bool Result =
+    (dynamic_cast<ECallbackGuardAbort *>(E) != NULL);
+  if (Result)
+  {
+    DebugAssert(FGuarding && (FFatalError != NULL));
+    Verify();
+  }
+  return Result;
+}
 //---------------------------------------------------------------------------
-TRobustOperationLoop::TRobustOperationLoop(TTerminal * Terminal, TFileOperationProgressType * OperationProgress) :
+//---------------------------------------------------------------------------
+TRobustOperationLoop::TRobustOperationLoop(TTerminal * Terminal, TFileOperationProgressType * OperationProgress, bool * AnyTransfer) :
   FTerminal(Terminal),
   FOperationProgress(OperationProgress),
-  FRetry(false)
+  FRetry(false),
+  FAnyTransfer(AnyTransfer)
 {
+  if (FAnyTransfer != NULL)
+  {
+    FPrevAnyTransfer = *FAnyTransfer;
+    *FAnyTransfer = false;
+    FStart = Now();
+  }
+}
+//---------------------------------------------------------------------------
+TRobustOperationLoop::~TRobustOperationLoop()
+{
+  if (FAnyTransfer != NULL)
+  {
+    *FAnyTransfer = FPrevAnyTransfer;
+  }
 }
 //---------------------------------------------------------------------------
 bool TRobustOperationLoop::TryReopen(Exception & E)
 {
-  FRetry =
-    !FTerminal->Active &&
-    FTerminal->QueryReopen(&E, ropNoReadDirectory, FOperationProgress);
+  FRetry = !FTerminal->Active;
+  if (FRetry)
+  {
+    if (FAnyTransfer != NULL)
+    {
+      // if there was any transfer, reset the global timestamp
+      if (*FAnyTransfer)
+      {
+        FStart = Now();
+        FPrevAnyTransfer = true;
+        *FAnyTransfer = false;
+      }
+      else
+      {
+        FRetry = FTerminal->ContinueReopen(FStart);
+      }
+    }
+
+    if (FRetry)
+    {
+      FRetry =
+        FTerminal->QueryReopen(&E, ropNoReadDirectory, FOperationProgress);
+    }
+  }
   return FRetry;
 }
 //---------------------------------------------------------------------------
@@ -644,14 +696,342 @@ bool TRetryOperationLoop::Retry()
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
+TCollectedFileList::TCollectedFileList()
+{
+}
+//---------------------------------------------------------------------------
+int TCollectedFileList::Add(const UnicodeString & FileName, TObject * Object, bool Dir)
+{
+  TFileData Data;
+  Data.FileName = FileName;
+  Data.Object = Object;
+  Data.Dir = Dir;
+  Data.Recursed = true;
+  FList.push_back(Data);
+  return Count() - 1;
+}
+//---------------------------------------------------------------------------
+void TCollectedFileList::DidNotRecurse(int Index)
+{
+  FList[Index].Recursed = false;
+}
+//---------------------------------------------------------------------------
+void TCollectedFileList::Delete(int Index)
+{
+  FList.erase(FList.begin() + Index);
+}
+//---------------------------------------------------------------------------
+int TCollectedFileList::Count() const
+{
+  return FList.size();
+}
+//---------------------------------------------------------------------------
+UnicodeString TCollectedFileList::GetFileName(int Index) const
+{
+  return FList[Index].FileName;
+}
+//---------------------------------------------------------------------------
+TObject * TCollectedFileList::GetObject(int Index) const
+{
+  return FList[Index].Object;
+}
+//---------------------------------------------------------------------------
+bool TCollectedFileList::IsDir(int Index) const
+{
+  return FList[Index].Dir;
+}
+//---------------------------------------------------------------------------
+bool TCollectedFileList::IsRecursed(int Index) const
+{
+  return FList[Index].Recursed;
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+TParallelOperation::TParallelOperation(TOperationSide Side)
+{
+  FCopyParam = NULL;
+  FParams = 0;
+  FProbablyEmpty = false;
+  FClients = 0;
+  FMainOperationProgress = NULL;
+  DebugAssert((Side == osLocal) || (Side == osRemote));
+  FSide = Side;
+}
+//---------------------------------------------------------------------------
+void TParallelOperation::Init(
+  TStrings * AFileList, const UnicodeString & TargetDir, const TCopyParamType * CopyParam, int Params,
+  TFileOperationProgressType * MainOperationProgress, const UnicodeString & MainName)
+{
+  DebugAssert(FFileList.get() == NULL);
+  // More lists should really happen in scripting only, which does not support parallel transfers atm.
+  // But in general the code should work with more lists anyway, it just was not tested for it.
+  DebugAssert(AFileList->Count == 1);
+  FFileList.reset(AFileList);
+  FSection.reset(new TCriticalSection());
+  FTargetDir = TargetDir;
+  FCopyParam = CopyParam;
+  FParams = Params;
+  FMainOperationProgress = MainOperationProgress;
+  FMainName = MainName;
+  FIndex = 0;
+}
+//---------------------------------------------------------------------------
+TParallelOperation::~TParallelOperation()
+{
+  WaitFor();
+}
+//---------------------------------------------------------------------------
+bool TParallelOperation::IsInitialized()
+{
+  return (FMainOperationProgress != NULL);
+}
+//---------------------------------------------------------------------------
+bool TParallelOperation::ShouldAddClient()
+{
+  bool Result;
+  // TTransferQueueItem::ProgressUpdated() already checks IsInitialized() before calling this
+  if (!IsInitialized())
+  {
+    Result = false;
+  }
+  else
+  {
+    TGuard Guard(FSection.get());
+    Result = !FProbablyEmpty && (FMainOperationProgress->Cancel < csCancel);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void TParallelOperation::AddClient()
+{
+  TGuard Guard(FSection.get());
+  FClients++;
+}
+//---------------------------------------------------------------------------
+void TParallelOperation::RemoveClient()
+{
+  TGuard Guard(FSection.get());
+  FClients--;
+}
+//---------------------------------------------------------------------------
+void TParallelOperation::WaitFor()
+{
+  // Even initialized?
+  // Won't be, when parallel transfers were not possible (like when preserving of directory timestamps is enabled)
+  if (FSection.get() != NULL)
+  {
+    bool Done;
+
+    do
+    {
+      {
+        TGuard Guard(FSection.get());
+        Done = (FClients == 0);
+      }
+
+      if (!Done)
+      {
+        // propagate the total progress incremented by the parallel operations
+        FMainOperationProgress->Progress();
+        Sleep(200);
+      }
+    }
+    while (!Done);
+    FProbablyEmpty = true;
+  }
+  else
+  {
+    DebugAssert(FClients == 0);
+  }
+
+}
+//---------------------------------------------------------------------------
+void TParallelOperation::Done(const UnicodeString & FileName, bool Dir, bool Success)
+{
+  if (Dir)
+  {
+    TGuard Guard(FSection.get());
+
+    TDirectories::iterator DirectoryIterator = FDirectories.find(FileName);
+    if (DebugAlwaysTrue(DirectoryIterator != FDirectories.end()))
+    {
+      if (Success)
+      {
+        DebugAssert(!DirectoryIterator->second.Exists);
+        DirectoryIterator->second.Exists = true;
+      }
+      else
+      {
+        // This is actually not useful at the moment, as when creating directory fails and "Skip" is pressed,
+        // the current code in CopyToRemote/CreateDirectory will behave as, if it succedded, so Successs will be true here.
+        FDirectories.erase(DirectoryIterator);
+        if (FFileList->Count > 0)
+        {
+          UnicodeString FileNameWithSlash;
+          if (FSide == osLocal)
+          {
+            FileNameWithSlash = IncludeTrailingBackslash(FileName);
+          }
+          else
+          {
+            FileNameWithSlash = UnixIncludeTrailingBackslash(FileName);
+          }
+
+          // It can actually be a different list than the one the directory was taken from,
+          // but that does not matter that much. It should not happen anyway, as more lists should be in scripting only.
+          TCollectedFileList * Files = DebugNotNull(dynamic_cast<TCollectedFileList *>(FFileList->Objects[0]));
+          int Index = 0;
+          while (Index < Files->Count())
+          {
+            if (StartsText(FileNameWithSlash, Files->GetFileName(Index)))
+            {
+              // We should add the file to "skip" counters in the OperationProgress,
+              // but an interactive foreground transfer is not doing that either yet.
+              Files->Delete(Index);
+              if (Index < FIndex)
+              {
+                FIndex--;
+              }
+            }
+            else
+            {
+              Index++;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+//---------------------------------------------------------------------------
+bool TParallelOperation::CheckEnd(TCollectedFileList * Files)
+{
+  bool Result = (FIndex >= Files->Count());
+  if (Result)
+  {
+    FFileList->Delete(0);
+    FIndex = 0;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+int TParallelOperation::GetNext(TTerminal * Terminal, UnicodeString & FileName, TObject *& Object, UnicodeString & TargetDir, bool & Dir, bool & Recursed)
+{
+  TGuard Guard(FSection.get());
+  int Result = 1;
+  TCollectedFileList * Files;
+  do
+  {
+    if (FFileList->Count > 0)
+    {
+      Files = DebugNotNull(dynamic_cast<TCollectedFileList *>(FFileList->Objects[0]));
+      // can happen if the file was excluded by file mask
+      if (CheckEnd(Files))
+      {
+        Files = NULL;
+      }
+    }
+    else
+    {
+      Files = NULL;
+      Result = -1;
+    }
+  }
+  while ((Result == 1) && (Files == NULL));
+
+  if (Files != NULL)
+  {
+    UnicodeString RootPath = FFileList->Strings[0];
+
+    FileName = Files->GetFileName(FIndex);
+    Object = Files->GetObject(FIndex);
+    Dir = Files->IsDir(FIndex);
+    Recursed = Files->IsRecursed(FIndex);
+    UnicodeString DirPath;
+    bool FirstLevel;
+    if (FSide == osLocal)
+    {
+      DirPath = ExtractFileDir(FileName);
+      FirstLevel = SamePaths(DirPath, RootPath);
+    }
+    else
+    {
+      DirPath = UnixExtractFileDir(FileName);
+      FirstLevel = UnixSamePath(DirPath, RootPath);
+    }
+
+    if (FirstLevel)
+    {
+      TargetDir = FTargetDir;
+    }
+    else
+    {
+      TDirectories::const_iterator DirectoryIterator = FDirectories.find(DirPath);
+      if (DebugAlwaysFalse(DirectoryIterator == FDirectories.end()))
+      {
+        throw EInvalidOperation(L"Parent path not known");
+      }
+      const TDirectoryData & DirectoryData = DirectoryIterator->second;
+      if (!DirectoryData.Exists)
+      {
+        Result = 0; // wait for parent directory to be created
+      }
+      else
+      {
+        TargetDir = DirectoryData.OppositePath;
+      }
+    }
+
+    if (!TargetDir.IsEmpty())
+    {
+      if (Dir)
+      {
+        TDirectoryData DirectoryData;
+
+        UnicodeString OnlyFileName;
+        if (FSide == osLocal)
+        {
+          OnlyFileName = ExtractFileName(FileName);
+        }
+        else
+        {
+          OnlyFileName = UnixExtractFileName(FileName);
+        }
+        OnlyFileName = Terminal->ChangeFileName(FCopyParam, OnlyFileName, osRemote, FirstLevel);
+        if (FSide == osLocal)
+        {
+          DirectoryData.OppositePath = UnixCombinePaths(TargetDir, OnlyFileName);
+        }
+        else
+        {
+          DirectoryData.OppositePath = TPath::Combine(TargetDir, OnlyFileName);
+        }
+
+        DirectoryData.Exists = false;
+
+        FDirectories.insert(std::make_pair(FileName, DirectoryData));
+      }
+
+      FIndex++;
+      CheckEnd(Files);
+    }
+  }
+
+  FProbablyEmpty = (FFileList->Count == 0);
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 __fastcall TTerminal::TTerminal(TSessionData * SessionData,
   TConfiguration * Configuration)
 {
   FConfiguration = Configuration;
   FSessionData = new TSessionData(L"");
   FSessionData->Assign(SessionData);
-  FLog = new TSessionLog(this, FSessionData, Configuration);
-  FActionLog = new TActionLog(this, FSessionData, Configuration);
+  TDateTime Started = Now(); // use the same time for session and XML log
+  FLog = new TSessionLog(this, Started, FSessionData, Configuration);
+  FActionLog = new TActionLog(this, Started, FSessionData, Configuration);
   FFiles = new TRemoteDirectory(this);
   FExceptionOnFail = 0;
   FInTransaction = 0;
@@ -670,6 +1050,7 @@ __fastcall TTerminal::TTerminal(TSessionData * SessionData,
   FOnDisplayBanner = NULL;
   FOnShowExtendedException = NULL;
   FOnInformation = NULL;
+  FOnCustomCommand = NULL;
   FOnClose = NULL;
   FOnFindingFile = NULL;
 
@@ -820,8 +1201,7 @@ void __fastcall TTerminal::Close()
 {
   FFileSystem->Close();
 
-  // Cannot rely on CommandSessionOpened here as Status is set to ssClosed
-  // only after the OnClose is called
+  // Cannot rely on CommandSessionOpened here as Status is set to ssClosed too late
   if ((FCommandSession != NULL) && FCommandSession->Active)
   {
     // prevent recursion
@@ -1147,9 +1527,9 @@ void __fastcall TTerminal::OpenTunnel()
     FTunnelData->AuthKI = FSessionData->AuthKI;
     FTunnelData->AuthKIPassword = FSessionData->AuthKIPassword;
 
-    FTunnelLog = new TSessionLog(this, FTunnelData, Configuration);
-    FTunnelLog->Parent = FLog;
-    FTunnelLog->Name = L"Tunnel";
+    // The Started argument is not used with Parent being set
+    FTunnelLog = new TSessionLog(this, TDateTime(), FTunnelData, Configuration);
+    FTunnelLog->SetParent(FLog, L"Tunnel");
     FTunnelLog->ReflectSettings();
     FTunnelUI = new TTunnelUI(this);
     FTunnel = new TSecureShell(FTunnelUI, FTunnelData, FTunnelLog, Configuration);
@@ -1195,8 +1575,18 @@ void __fastcall TTerminal::Closed()
   if (OnClose)
   {
     TCallbackGuard Guard(this);
-    OnClose(this);
-    Guard.Verify();
+    try
+    {
+      OnClose(this);
+      Guard.Verify();
+    }
+    catch (Exception & E)
+    {
+      if (!Guard.Verify(&E))
+      {
+        throw;
+      }
+    }
   }
 
   FStatus = ssClosed;
@@ -1259,14 +1649,6 @@ void __fastcall TTerminal::Reopen(int Params)
     if (SessionData->FSProtocol == fsSFTP)
     {
       SessionData->FSProtocol = (FFSProtocol == cfsSCP ? fsSCPonly : fsSFTPonly);
-    }
-
-    // Could be active before, if fatal error occured in the secondary terminal.
-    // But now, since we handle the secondary terminal's OnClose,
-    // by closing outselves, it should not happen anymore.
-    if (DebugAlwaysFalse(Active))
-    {
-      Close();
     }
 
     Open();
@@ -1368,8 +1750,18 @@ bool __fastcall TTerminal::DoPromptUser(TSessionData * /*Data*/, TPromptKind Kin
     if (OnPromptUser != NULL)
     {
       TCallbackGuard Guard(this);
-      OnPromptUser(this, Kind, Name, Instructions, Prompts, Results, AResult, NULL);
-      Guard.Verify();
+      try
+      {
+        OnPromptUser(this, Kind, Name, Instructions, Prompts, Results, AResult, NULL);
+        Guard.Verify();
+      }
+      catch (Exception & E)
+      {
+        if (!Guard.Verify(&E))
+        {
+          throw;
+        }
+      }
     }
 
     if (AResult && PasswordOrPassphrasePrompt &&
@@ -1399,8 +1791,18 @@ unsigned int __fastcall TTerminal::QueryUser(const UnicodeString Query,
   if (FOnQueryUser)
   {
     TCallbackGuard Guard(this);
-    FOnQueryUser(this, Query, MoreMessages, Answers, Params, Answer, QueryType, NULL);
-    Guard.Verify();
+    try
+    {
+      FOnQueryUser(this, Query, MoreMessages, Answers, Params, Answer, QueryType, NULL);
+      Guard.Verify();
+    }
+    catch (Exception & E)
+    {
+      if (!Guard.Verify(&E))
+      {
+        throw;
+      }
+    }
   }
   return Answer;
 }
@@ -1462,10 +1864,22 @@ void __fastcall TTerminal::DisplayBanner(const UnicodeString & Banner)
       bool NeverShowAgain = false;
       int Options =
         FLAGMASK(Configuration->ForceBanners, boDisableNeverShowAgain);
+
       TCallbackGuard Guard(this);
-      OnDisplayBanner(this, SessionData->SessionName, Banner,
-        NeverShowAgain, Options);
-      Guard.Verify();
+      try
+      {
+        OnDisplayBanner(this, SessionData->SessionName, Banner,
+          NeverShowAgain, Options);
+        Guard.Verify();
+      }
+      catch (Exception & E)
+      {
+        if (!Guard.Verify(&E))
+        {
+          throw;
+        }
+      }
+
       if (!Configuration->ForceBanners && NeverShowAgain)
       {
         Configuration->NeverShowBanner(SessionData->SessionKey, Banner);
@@ -1480,10 +1894,20 @@ void __fastcall TTerminal::HandleExtendedException(Exception * E)
   if (OnShowExtendedException != NULL)
   {
     TCallbackGuard Guard(this);
-    // the event handler may destroy 'this' ...
-    OnShowExtendedException(this, E, NULL);
-    // .. hence guard is dismissed from destructor, to make following call no-op
-    Guard.Verify();
+    try
+    {
+      // the event handler may destroy 'this' ...
+      OnShowExtendedException(this, E, NULL);
+      // .. hence guard is dismissed from destructor, to make following call no-op
+      Guard.Verify();
+    }
+    catch (Exception & E)
+    {
+      if (!Guard.Verify(&E))
+      {
+        throw;
+      }
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -1502,8 +1926,18 @@ void __fastcall TTerminal::DoInformation(const UnicodeString & Str, bool Status,
   if (OnInformation)
   {
     TCallbackGuard Guard(this);
-    OnInformation(this, Str, Status, Phase);
-    Guard.Verify();
+    try
+    {
+      OnInformation(this, Str, Status, Phase);
+      Guard.Verify();
+    }
+    catch (Exception & E)
+    {
+      if (!Guard.Verify(&E))
+      {
+        throw;
+      }
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -1514,11 +1948,33 @@ void __fastcall TTerminal::Information(const UnicodeString & Str, bool Status)
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::DoProgress(TFileOperationProgressType & ProgressData)
 {
+
+  if ((Configuration->ActualLogProtocol >= 1) &&
+      ((ProgressData.Operation == foCopy) || (ProgressData.Operation == foMove)))
+  {
+    DWORD Now = GetTickCount();
+    if (Now - FLastProgressLogged >= 1000)
+    {
+      LogEvent(L"Transfer progress: " + ProgressData.GetLogStr(false));
+      FLastProgressLogged = Now;
+    }
+  }
+
   if (OnProgress != NULL)
   {
     TCallbackGuard Guard(this);
-    OnProgress(ProgressData);
-    Guard.Verify();
+    try
+    {
+      OnProgress(ProgressData);
+      Guard.Verify();
+    }
+    catch (Exception & E)
+    {
+      if (!Guard.Verify(&E))
+      {
+        throw;
+      }
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -1528,8 +1984,18 @@ void __fastcall TTerminal::DoFinished(TFileOperation Operation, TOperationSide S
   if (OnFinished != NULL)
   {
     TCallbackGuard Guard(this);
-    OnFinished(Operation, Side, Temp, FileName, Success, OnceDoneOperation);
-    Guard.Verify();
+    try
+    {
+      OnFinished(Operation, Side, Temp, FileName, Success, OnceDoneOperation);
+      Guard.Verify();
+    }
+    catch (Exception & E)
+    {
+      if (!Guard.Verify(&E))
+      {
+        throw;
+      }
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -1657,6 +2123,13 @@ bool __fastcall TTerminal::DoQueryReopen(Exception * E)
   return Result;
 }
 //---------------------------------------------------------------------------
+bool __fastcall TTerminal::ContinueReopen(TDateTime Start)
+{
+  return
+    (Configuration->SessionReopenTimeout == 0) ||
+    (int(double(Now() - Start) * MSecsPerDay) < Configuration->SessionReopenTimeout);
+}
+//---------------------------------------------------------------------------
 bool __fastcall TTerminal::QueryReopen(Exception * E, int Params,
   TFileOperationProgressType * OperationProgress)
 {
@@ -1678,8 +2151,7 @@ bool __fastcall TTerminal::QueryReopen(Exception * E, int Params,
         if (!Active)
         {
           Result =
-            ((Configuration->SessionReopenTimeout == 0) ||
-             (int(double(Now() - Start) * MSecsPerDay) < Configuration->SessionReopenTimeout)) &&
+            ContinueReopen(Start) &&
             DoQueryReopen(&E);
         }
         else
@@ -1745,7 +2217,7 @@ bool __fastcall TTerminal::FileOperationLoopQuery(Exception & E,
     if (Answer == qaAll)
     {
       DebugAssert(OperationProgress != NULL);
-      OperationProgress->SkipToAll = true;
+      OperationProgress->SetSkipToAll();
       Answer = qaSkip;
     }
     if (Answer == qaYes)
@@ -1759,7 +2231,7 @@ bool __fastcall TTerminal::FileOperationLoopQuery(Exception & E,
   {
     if ((Answer == qaAbort) && (OperationProgress != NULL))
     {
-      OperationProgress->Cancel = csCancel;
+      OperationProgress->SetCancel(csCancel);
     }
 
     if (AllowSkip)
@@ -1961,8 +2433,18 @@ void __fastcall TTerminal::DoInitializeLog()
   if (FOnInitializeLog)
   {
     TCallbackGuard Guard(this);
-    FOnInitializeLog(this);
-    Guard.Verify();
+    try
+    {
+      FOnInitializeLog(this);
+      Guard.Verify();
+    }
+    catch (Exception & E)
+    {
+      if (!Guard.Verify(&E))
+      {
+        throw;
+      }
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -1971,8 +2453,18 @@ void __fastcall TTerminal::DoChangeDirectory()
   if (FOnChangeDirectory)
   {
     TCallbackGuard Guard(this);
-    FOnChangeDirectory(this);
-    Guard.Verify();
+    try
+    {
+      FOnChangeDirectory(this);
+      Guard.Verify();
+    }
+    catch (Exception & E)
+    {
+      if (!Guard.Verify(&E))
+      {
+        throw;
+      }
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -1981,8 +2473,18 @@ void __fastcall TTerminal::DoReadDirectory(bool ReloadOnly)
   if (FOnReadDirectory)
   {
     TCallbackGuard Guard(this);
-    FOnReadDirectory(this, ReloadOnly);
-    Guard.Verify();
+    try
+    {
+      FOnReadDirectory(this, ReloadOnly);
+      Guard.Verify();
+    }
+    catch (Exception & E)
+    {
+      if (!Guard.Verify(&E))
+      {
+        throw;
+      }
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -1991,8 +2493,18 @@ void __fastcall TTerminal::DoStartReadDirectory()
   if (FOnStartReadDirectory)
   {
     TCallbackGuard Guard(this);
-    FOnStartReadDirectory(this);
-    Guard.Verify();
+    try
+    {
+      FOnStartReadDirectory(this);
+      Guard.Verify();
+    }
+    catch (Exception & E)
+    {
+      if (!Guard.Verify(&E))
+      {
+        throw;
+      }
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -2001,14 +2513,34 @@ void __fastcall TTerminal::DoReadDirectoryProgress(int Progress, int ResolvedLin
   if (FReadingCurrentDirectory && (FOnReadDirectoryProgress != NULL))
   {
     TCallbackGuard Guard(this);
-    FOnReadDirectoryProgress(this, Progress, ResolvedLinks, Cancel);
-    Guard.Verify();
+    try
+    {
+      FOnReadDirectoryProgress(this, Progress, ResolvedLinks, Cancel);
+      Guard.Verify();
+    }
+    catch (Exception & E)
+    {
+      if (!Guard.Verify(&E))
+      {
+        throw;
+      }
+    }
   }
   if (FOnFindingFile != NULL)
   {
     TCallbackGuard Guard(this);
-    FOnFindingFile(this, L"", Cancel);
-    Guard.Verify();
+    try
+    {
+      FOnFindingFile(this, L"", Cancel);
+      Guard.Verify();
+    }
+    catch (Exception & E)
+    {
+      if (!Guard.Verify(&E))
+      {
+        throw;
+      }
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -2204,7 +2736,7 @@ unsigned int __fastcall TTerminal::CommandError(Exception * E, const UnicodeStri
       if (Result == qaAll)
       {
         DebugAssert(OperationProgress != NULL);
-        OperationProgress->SkipToAll = true;
+        OperationProgress->SetSkipToAll();
         Result = qaSkip;
       }
     }
@@ -2225,14 +2757,16 @@ bool __fastcall TTerminal::HandleException(Exception * E)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::CloseOnCompletion(TOnceDoneOperation Operation, const UnicodeString Message)
+void __fastcall TTerminal::CloseOnCompletion(
+  TOnceDoneOperation Operation, const UnicodeString & Message,
+  const UnicodeString & TargetLocalPath, const UnicodeString & DestLocalFileName)
 {
   Configuration->Usage->Inc(L"ClosesOnCompletion");
   LogEvent(L"Closing session after completed operation (as requested by user)");
   Close();
   throw ESshTerminate(NULL,
     Message.IsEmpty() ? UnicodeString(LoadStr(CLOSED_ON_COMPLETION)) : Message,
-    Operation);
+    Operation, TargetLocalPath, DestLocalFileName);
 }
 //---------------------------------------------------------------------------
 TBatchOverwrite __fastcall TTerminal::EffectiveBatchOverwrite(
@@ -2276,7 +2810,17 @@ TBatchOverwrite __fastcall TTerminal::EffectiveBatchOverwrite(
 bool __fastcall TTerminal::CheckRemoteFile(
   const UnicodeString & FileName, const TCopyParamType * CopyParam, int Params, TFileOperationProgressType * OperationProgress)
 {
-  return (EffectiveBatchOverwrite(FileName, CopyParam, Params, OperationProgress, true) != boAll);
+  bool Result;
+  OperationProgress->LockUserSelections();
+  try
+  {
+    Result = (EffectiveBatchOverwrite(FileName, CopyParam, Params, OperationProgress, true) != boAll);
+  }
+  __finally
+  {
+    OperationProgress->UnlockUserSelections();
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 unsigned int __fastcall TTerminal::ConfirmFileOverwrite(
@@ -2286,84 +2830,102 @@ unsigned int __fastcall TTerminal::ConfirmFileOverwrite(
   UnicodeString Message)
 {
   unsigned int Result;
-  // duplicated in TSFTPFileSystem::SFTPConfirmOverwrite
+  TBatchOverwrite BatchOverwrite;
   bool CanAlternateResume =
     (FileParams != NULL) &&
     (FileParams->DestSize < FileParams->SourceSize) &&
     !OperationProgress->AsciiTransfer;
-  TBatchOverwrite BatchOverwrite = EffectiveBatchOverwrite(SourceFullFileName, CopyParam, Params, OperationProgress, true);
-  bool Applicable = true;
-  switch (BatchOverwrite)
+
+  OperationProgress->LockUserSelections();
+  try
   {
-    case boOlder:
-      Applicable = (FileParams != NULL);
-      break;
+    // duplicated in TSFTPFileSystem::SFTPConfirmOverwrite
+    BatchOverwrite = EffectiveBatchOverwrite(SourceFullFileName, CopyParam, Params, OperationProgress, true);
+    bool Applicable = true;
+    switch (BatchOverwrite)
+    {
+      case boOlder:
+        Applicable = (FileParams != NULL);
+        break;
 
-    case boAlternateResume:
-      Applicable = CanAlternateResume;
-      break;
+      case boAlternateResume:
+        Applicable = CanAlternateResume;
+        break;
 
-    case boResume:
-      Applicable = CanAlternateResume;
-      break;
+      case boResume:
+        Applicable = CanAlternateResume;
+        break;
+    }
+
+    if (!Applicable)
+    {
+      TBatchOverwrite ABatchOverwrite = EffectiveBatchOverwrite(SourceFullFileName, CopyParam, Params, OperationProgress, false);
+      DebugAssert(BatchOverwrite != ABatchOverwrite);
+      BatchOverwrite = ABatchOverwrite;
+    }
+
+    if (BatchOverwrite == boNo)
+    {
+      // particularly with parallel transfers, the overal operation can be already cancelled by other parallel operation
+      if (OperationProgress->Cancel > csContinue)
+      {
+        Result = qaCancel;
+      }
+      else
+      {
+        if (Message.IsEmpty())
+        {
+          // Side refers to destination side here
+          Message = FMTLOAD((Side == osLocal ? LOCAL_FILE_OVERWRITE2 :
+            REMOTE_FILE_OVERWRITE2), (TargetFileName, TargetFileName));
+        }
+        if (FileParams != NULL)
+        {
+          Message = FMTLOAD(FILE_OVERWRITE_DETAILS, (Message,
+            FormatSize(FileParams->SourceSize),
+            UserModificationStr(FileParams->SourceTimestamp, FileParams->SourcePrecision),
+            FormatSize(FileParams->DestSize),
+            UserModificationStr(FileParams->DestTimestamp, FileParams->DestPrecision)));
+        }
+        if (DebugAlwaysTrue(QueryParams->HelpKeyword.IsEmpty()))
+        {
+          QueryParams->HelpKeyword = HELP_OVERWRITE;
+        }
+        Result = QueryUser(Message, NULL, Answers, QueryParams);
+        switch (Result)
+        {
+          case qaNeverAskAgain:
+            Configuration->ConfirmOverwriting = false;
+            Result = qaYes;
+            break;
+
+          case qaYesToAll:
+            BatchOverwrite = boAll;
+            break;
+
+          case qaAll:
+            BatchOverwrite = boOlder;
+            break;
+
+          case qaNoToAll:
+            BatchOverwrite = boNone;
+            break;
+        }
+
+        // we user has not selected another batch overwrite mode,
+        // keep the current one. note that we may get here even
+        // when batch overwrite was selected already, but it could not be applied
+        // to current transfer (see condition above)
+        if (BatchOverwrite != boNo)
+        {
+          OperationProgress->SetBatchOverwrite(BatchOverwrite);
+        }
+      }
+    }
   }
-
-  if (!Applicable)
+  __finally
   {
-    TBatchOverwrite ABatchOverwrite = EffectiveBatchOverwrite(SourceFullFileName, CopyParam, Params, OperationProgress, false);
-    DebugAssert(BatchOverwrite != ABatchOverwrite);
-    BatchOverwrite = ABatchOverwrite;
-  }
-
-  if (BatchOverwrite == boNo)
-  {
-    if (Message.IsEmpty())
-    {
-      // Side refers to destination side here
-      Message = FMTLOAD((Side == osLocal ? LOCAL_FILE_OVERWRITE2 :
-        REMOTE_FILE_OVERWRITE2), (TargetFileName, TargetFileName));
-    }
-    if (FileParams != NULL)
-    {
-      Message = FMTLOAD(FILE_OVERWRITE_DETAILS, (Message,
-        FormatSize(FileParams->SourceSize),
-        UserModificationStr(FileParams->SourceTimestamp, FileParams->SourcePrecision),
-        FormatSize(FileParams->DestSize),
-        UserModificationStr(FileParams->DestTimestamp, FileParams->DestPrecision)));
-    }
-    if (DebugAlwaysTrue(QueryParams->HelpKeyword.IsEmpty()))
-    {
-      QueryParams->HelpKeyword = HELP_OVERWRITE;
-    }
-    Result = QueryUser(Message, NULL, Answers, QueryParams);
-    switch (Result)
-    {
-      case qaNeverAskAgain:
-        Configuration->ConfirmOverwriting = false;
-        Result = qaYes;
-        break;
-
-      case qaYesToAll:
-        BatchOverwrite = boAll;
-        break;
-
-      case qaAll:
-        BatchOverwrite = boOlder;
-        break;
-
-      case qaNoToAll:
-        BatchOverwrite = boNone;
-        break;
-    }
-
-    // we user has not selected another batch overwrite mode,
-    // keep the current one. note that we may get here even
-    // when batch overwrite was selected already, but it could not be applied
-    // to current transfer (see condition above)
-    if (BatchOverwrite != boNo)
-    {
-      OperationProgress->BatchOverwrite = BatchOverwrite;
-    }
+    OperationProgress->UnlockUserSelections();
   }
 
   if (BatchOverwrite != boNo)
@@ -2757,12 +3319,21 @@ void __fastcall TTerminal::LogFileDetails(const UnicodeString & FileName, TDateT
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::LogFileDone(TFileOperationProgressType * OperationProgress)
+void __fastcall TTerminal::LogFileDone(TFileOperationProgressType * OperationProgress, const UnicodeString & DestFileName)
 {
+  if (FDestFileName.IsEmpty())
+  {
+    FDestFileName = DestFileName;
+  }
+  else
+  {
+    FMultipleDestinationFiles = true;
+  }
+
   // optimization
   if (Log->Logging)
   {
-    LogEvent(FORMAT("Transfer done: '%s' [%s]", (OperationProgress->FullFileName, IntToStr(OperationProgress->TransferedSize))));
+    LogEvent(FORMAT("Transfer done: '%s' => '%s' [%s]", (OperationProgress->FullFileName, DestFileName, IntToStr(OperationProgress->TransferredSize))));
   }
 }
 //---------------------------------------------------------------------------
@@ -2771,7 +3342,10 @@ void __fastcall TTerminal::CustomReadDirectory(TRemoteFileList * FileList)
   DebugAssert(FileList);
   DebugAssert(FFileSystem);
 
-  TRobustOperationLoop RobustLoop(this, OperationProgress);
+  // To match FTP upload/download, we also limit directory listing.
+  // For simiplicity, we limit it unconditionally, for all protocols for any kind of errors.
+  bool FileTransferAny = false;
+  TRobustOperationLoop RobustLoop(this, OperationProgress, &FileTransferAny);
 
   do
   {
@@ -3470,8 +4044,21 @@ void __fastcall TTerminal::CustomCommandOnFiles(UnicodeString Command,
     UnicodeString Cmd =
       TRemoteCustomCommand(Data, CurrentDirectory, L"", FileList).
         Complete(Command, true);
-    DoAnyCommand(Cmd, OutputEvent, NULL);
+    if (!DoOnCustomCommand(Cmd))
+    {
+      DoAnyCommand(Cmd, OutputEvent, NULL);
+    }
   }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TTerminal::DoOnCustomCommand(const UnicodeString & Command)
+{
+  bool Result = false;
+  if (FOnCustomCommand != NULL)
+  {
+    FOnCustomCommand(this, Command, Result);
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::ChangeFileProperties(UnicodeString FileName,
@@ -3564,6 +4151,26 @@ bool __fastcall TTerminal::LoadFilesProperties(TStrings * FileList)
   return Result;
 }
 //---------------------------------------------------------------------------
+void __fastcall TTerminal::DoCalculateFileSize(UnicodeString FileName,
+  const TRemoteFile * File, void * Param)
+{
+  TCalculateSizeParams * AParams = static_cast<TCalculateSizeParams*>(Param);
+
+  if (AParams->Stats->FoundFiles != NULL)
+  {
+    UnicodeString DirPath = UnixExtractFilePath(UnixExcludeTrailingBackslash(File->FullFileName));
+    if ((DirPath != AParams->LastDirPath) ||
+        (AParams->Files == NULL))
+    {
+      AParams->Files = new TCollectedFileList();
+      AParams->LastDirPath = DirPath;
+      AParams->Stats->FoundFiles->AddObject(AParams->LastDirPath, AParams->Files);
+    }
+  }
+
+  CalculateFileSize(FileName, File, Param);
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminal::CalculateFileSize(UnicodeString FileName,
   const TRemoteFile * File, /*TCalculateSizeParams*/ void * Param)
 {
@@ -3579,6 +4186,8 @@ void __fastcall TTerminal::CalculateFileSize(UnicodeString FileName,
   if (!TryStartOperationWithFile(FileName, foCalculateSize))
   {
     AParams->Result = false;
+    // Combined with csIgnoreErrors, this will not abort completelly, but we get called again
+    // with next sibling of our parent directory (and we get again to this branch, throwing again)
     Abort();
   }
 
@@ -3597,6 +4206,13 @@ void __fastcall TTerminal::CalculateFileSize(UnicodeString FileName,
 
   if (AllowTransfer)
   {
+    int CollectionIndex = -1;
+    if (AParams->Files != NULL)
+    {
+      UnicodeString FullFileName = UnixExcludeTrailingBackslash(File->FullFileName);
+      CollectionIndex = AParams->Files->Add(FullFileName, File->Duplicate(), File->IsDirectory);
+    }
+
     if (File->IsDirectory)
     {
       if (CanRecurseToDirectory(File))
@@ -3609,44 +4225,47 @@ void __fastcall TTerminal::CalculateFileSize(UnicodeString FileName,
         {
           LogEvent(FORMAT(L"Getting size of directory \"%s\"", (FileName)));
           // pass in full path so we get it back in file list for AllowTransfer() exclusion
-          DoCalculateDirectorySize(File->FullFileName, File, AParams);
+          if (!DoCalculateDirectorySize(File->FullFileName, File, AParams))
+          {
+            if (CollectionIndex >= 0)
+            {
+              AParams->Files->DidNotRecurse(CollectionIndex);
+            }
+          }
         }
       }
 
-      if (AParams->Stats != NULL)
-      {
-        AParams->Stats->Directories++;
-      }
+      AParams->Stats->Directories++;
     }
     else
     {
       AParams->Size += File->Size;
 
-      if (AParams->Stats != NULL)
-      {
-        AParams->Stats->Files++;
-      }
+      AParams->Stats->Files++;
     }
 
-    if ((AParams->Stats != NULL) && File->IsSymLink)
+    if (File->IsSymLink)
     {
       AParams->Stats->SymLinks++;
     }
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::DoCalculateDirectorySize(const UnicodeString FileName,
+bool __fastcall TTerminal::DoCalculateDirectorySize(const UnicodeString FileName,
   const TRemoteFile * /*File*/, TCalculateSizeParams * Params)
 {
+  bool Result = false;
   TRetryOperationLoop RetryLoop(this);
   do
   {
     try
     {
       ProcessDirectory(FileName, CalculateFileSize, Params);
+      Result = true;
     }
     catch(Exception & E)
     {
+      // We can probably replace the csIgnoreErrors with IgnoreErrors argument of the ProcessDirectory
       if (!Active || ((Params->Params & csIgnoreErrors) == 0))
       {
         RetryLoop.Error(E, FMTLOAD(CALCULATE_SIZE_ERROR, (FileName)));
@@ -3654,11 +4273,12 @@ void __fastcall TTerminal::DoCalculateDirectorySize(const UnicodeString FileName
     }
   }
   while (RetryLoop.Retry());
+  return Result;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TTerminal::CalculateFilesSize(TStrings * FileList,
   __int64 & Size, int Params, const TCopyParamType * CopyParam,
-  bool AllowDirs, TCalculateSizeStats * Stats)
+  bool AllowDirs, TCalculateSizeStats & Stats)
 {
   // With FTP protocol, we may use DSIZ command from
   // draft-peterson-streamlined-ftp-command-extensions-10
@@ -3671,10 +4291,11 @@ bool __fastcall TTerminal::CalculateFilesSize(TStrings * FileList,
   Param.Size = 0;
   Param.Params = Params;
   Param.CopyParam = CopyParam;
-  Param.Stats = Stats;
+  Param.Stats = &Stats;
   Param.AllowDirs = AllowDirs;
   Param.Result = true;
-  ProcessFiles(FileList, foCalculateSize, CalculateFileSize, &Param);
+  Param.Files = NULL;
+  ProcessFiles(FileList, foCalculateSize, DoCalculateFileSize, &Param);
   Size = Param.Size;
   return Param.Result;
 }
@@ -4046,6 +4667,25 @@ bool __fastcall TTerminal::GetCommandSessionOpened()
     (FCommandSession->Status == ssOpened);
 }
 //---------------------------------------------------------------------------
+TTerminal * __fastcall TTerminal::CreateSecondarySession(const UnicodeString & Name, TSessionData * SessionData)
+{
+  std::unique_ptr<TTerminal> Result(new TSecondaryTerminal(this, SessionData, Configuration, Name));
+
+  Result->AutoReadDirectory = false;
+
+  Result->FExceptionOnFail = FExceptionOnFail;
+
+  Result->OnQueryUser = OnQueryUser;
+  Result->OnPromptUser = OnPromptUser;
+  Result->OnShowExtendedException = OnShowExtendedException;
+  Result->OnProgress = OnProgress;
+  Result->OnFinished = OnFinished;
+  Result->OnInformation = OnInformation;
+  Result->OnCustomCommand = OnCustomCommand;
+  // do not copy OnDisplayBanner to avoid it being displayed
+  return Result.release();
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminal::FillSessionDataForCode(TSessionData * Data)
 {
   const TSessionInfo & SessionInfo = GetSessionInfo();
@@ -4065,47 +4705,30 @@ TTerminal * __fastcall TTerminal::GetCommandSession()
     // levels between main and command session
     DebugAssert(FInTransaction == 0);
 
-    try
-    {
-      FCommandSession = new TSecondaryTerminal(this, SessionData,
-        Configuration, L"Shell");
+    std::unique_ptr<TSessionData> CommandSessionData(SessionData->Clone());
+    CommandSessionData->RemoteDirectory = CurrentDirectory;
+    CommandSessionData->FSProtocol = fsSCPonly;
+    CommandSessionData->ClearAliases = false;
+    CommandSessionData->UnsetNationalVars = false;
+    CommandSessionData->LookupUserGroups = asOff;
 
-      FCommandSession->AutoReadDirectory = false;
+    FCommandSession = CreateSecondarySession(L"Shell", CommandSessionData.get());
 
-      TSessionData * CommandSessionData = FCommandSession->FSessionData;
-      CommandSessionData->RemoteDirectory = CurrentDirectory;
-      CommandSessionData->FSProtocol = fsSCPonly;
-      CommandSessionData->ClearAliases = false;
-      CommandSessionData->UnsetNationalVars = false;
-      CommandSessionData->LookupUserGroups = asOff;
+    FCommandSession->AutoReadDirectory = false;
 
-      FCommandSession->FExceptionOnFail = FExceptionOnFail;
+    FCommandSession->FExceptionOnFail = FExceptionOnFail;
 
-      FCommandSession->OnQueryUser = OnQueryUser;
-      FCommandSession->OnPromptUser = OnPromptUser;
-      FCommandSession->OnShowExtendedException = OnShowExtendedException;
-      FCommandSession->OnProgress = OnProgress;
-      FCommandSession->OnFinished = OnFinished;
-      FCommandSession->OnInformation = OnInformation;
-      FCommandSession->OnClose = CommandSessionClose;
-      // do not copy OnDisplayBanner to avoid it being displayed
-    }
-    catch(...)
-    {
-      SAFE_DESTROY(FCommandSession);
-      throw;
-    }
+    FCommandSession->OnQueryUser = OnQueryUser;
+    FCommandSession->OnPromptUser = OnPromptUser;
+    FCommandSession->OnShowExtendedException = OnShowExtendedException;
+    FCommandSession->OnProgress = OnProgress;
+    FCommandSession->OnFinished = OnFinished;
+    FCommandSession->OnInformation = OnInformation;
+    FCommandSession->OnCustomCommand = OnCustomCommand;
+    // do not copy OnDisplayBanner to avoid it being displayed
   }
 
   return FCommandSession;
-}
-//---------------------------------------------------------------------------
-void __fastcall TTerminal::CommandSessionClose(TObject * /*Sender*/)
-{
-  // Keep the states in sync.
-  // This is particularly to invoke ours OnClose,
-  // So that it is triggered before Reopen is called
-  Close();
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::AnyCommand(const UnicodeString Command,
@@ -4215,27 +4838,35 @@ bool __fastcall TTerminal::DoCreateLocalFile(const UnicodeString FileName,
       {
         if (FLAGSET(FileAttr, faReadOnly))
         {
-          if (OperationProgress->BatchOverwrite == boNone)
+          OperationProgress->LockUserSelections();
+          try
           {
-            Result = false;
-          }
-          else if ((OperationProgress->BatchOverwrite != boAll) && !NoConfirmation)
-          {
-            unsigned int Answer;
-
+            if (OperationProgress->BatchOverwrite == boNone)
             {
-              TSuspendFileOperationProgress Suspend(OperationProgress);
-              Answer = QueryUser(
-                MainInstructions(FMTLOAD(READ_ONLY_OVERWRITE, (FileName))), NULL,
-                qaYes | qaNo | qaCancel | qaYesToAll | qaNoToAll, 0);
+              Result = false;
             }
+            else if ((OperationProgress->BatchOverwrite != boAll) && !NoConfirmation)
+            {
+              unsigned int Answer;
 
-            switch (Answer) {
-              case qaYesToAll: OperationProgress->BatchOverwrite = boAll; break;
-              case qaCancel: OperationProgress->Cancel = csCancel; // continue on next case
-              case qaNoToAll: OperationProgress->BatchOverwrite = boNone;
-              case qaNo: Result = false; break;
+              {
+                TSuspendFileOperationProgress Suspend(OperationProgress);
+                Answer = QueryUser(
+                  MainInstructions(FMTLOAD(READ_ONLY_OVERWRITE, (FileName))), NULL,
+                  qaYes | qaNo | qaCancel | qaYesToAll | qaNoToAll, 0);
+              }
+
+              switch (Answer) {
+                case qaYesToAll: OperationProgress->SetBatchOverwrite(boAll); break;
+                case qaCancel: OperationProgress->SetCancel(csCancel); // continue on next case
+                case qaNoToAll: OperationProgress->SetBatchOverwrite(boNone);
+                case qaNo: Result = false; break;
+              }
             }
+          }
+          __finally
+          {
+            OperationProgress->UnlockUserSelections();
           }
         }
         else
@@ -4467,43 +5098,72 @@ void __fastcall TTerminal::CalculateLocalFileSize(const UnicodeString FileName,
 {
   TCalculateSizeParams * AParams = static_cast<TCalculateSizeParams*>(Params);
 
-  bool Dir = FLAGSET(Rec.Attr, faDirectory);
-
-  bool AllowTransfer = (AParams->CopyParam == NULL);
-  // SearchRec.Size in C++B2010 is __int64,
-  // so we should be able to use it instead of FindData.nFileSize*
-  __int64 Size =
-    (static_cast<__int64>(Rec.FindData.nFileSizeHigh) << 32) +
-    Rec.FindData.nFileSizeLow;
-  if (!AllowTransfer)
+  if (!TryStartOperationWithFile(FileName, foCalculateSize))
   {
-    TFileMasks::TParams MaskParams;
-    MaskParams.Size = Size;
-    MaskParams.Modification = FileTimeToDateTime(Rec.FindData.ftLastWriteTime);
-
-    UnicodeString BaseFileName = GetBaseFileName(FileName);
-    AllowTransfer = AParams->CopyParam->AllowTransfer(BaseFileName, osLocal, Dir, MaskParams);
+    AParams->Result = false;
   }
-
-  if (AllowTransfer)
+  else
   {
-    if (!Dir)
+    try
     {
-      AParams->Size += Size;
+      bool Dir = FLAGSET(Rec.Attr, faDirectory);
+
+      bool AllowTransfer = (AParams->CopyParam == NULL);
+      // SearchRec.Size in C++B2010 is __int64,
+      // so we should be able to use it instead of FindData.nFileSize*
+      __int64 Size =
+        (static_cast<__int64>(Rec.FindData.nFileSizeHigh) << 32) +
+        Rec.FindData.nFileSizeLow;
+      if (!AllowTransfer)
+      {
+        TFileMasks::TParams MaskParams;
+        MaskParams.Size = Size;
+        MaskParams.Modification = FileTimeToDateTime(Rec.FindData.ftLastWriteTime);
+
+        UnicodeString BaseFileName = GetBaseFileName(FileName);
+        AllowTransfer = AParams->CopyParam->AllowTransfer(BaseFileName, osLocal, Dir, MaskParams);
+      }
+
+      if (AllowTransfer)
+      {
+        int CollectionIndex = -1;
+        if (AParams->Files != NULL)
+        {
+          UnicodeString FullFileName = ::ExpandFileName(FileName);
+          CollectionIndex = AParams->Files->Add(FullFileName, NULL, Dir);
+        }
+
+        if (!Dir)
+        {
+          AParams->Size += Size;
+        }
+        else
+        {
+          try
+          {
+            ProcessLocalDirectory(FileName, CalculateLocalFileSize, Params);
+          }
+          catch (...)
+          {
+            if (CollectionIndex >= 0)
+            {
+              AParams->Files->DidNotRecurse(CollectionIndex);
+            }
+          }
+        }
+      }
     }
-    else
+    catch (...)
     {
-      ProcessLocalDirectory(FileName, CalculateLocalFileSize, Params);
+      // ignore
     }
   }
-
-  StartOperationWithFile(FileName, foCalculateSize);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TTerminal::CalculateLocalFilesSize(TStrings * FileList,
-  __int64 & Size, const TCopyParamType * CopyParam, bool AllowDirs)
+  __int64 & Size, const TCopyParamType * CopyParam, bool AllowDirs, TStrings * Files)
 {
-  bool Result = true;
+  bool Result = false;
   TFileOperationProgressType OperationProgress(&DoProgress, &DoFinished);
   TOnceDoneOperation OnceDoneOperation = odoIdle;
   OperationProgress.Start(foCalculateSize, osLocal, FileList->Count);
@@ -4513,28 +5173,46 @@ bool __fastcall TTerminal::CalculateLocalFilesSize(TStrings * FileList,
     Params.Size = 0;
     Params.Params = 0;
     Params.CopyParam = CopyParam;
+    Params.Files = NULL;
+    Params.Result = true;
 
     DebugAssert(!FOperationProgress);
     FOperationProgress = &OperationProgress;
-    for (int Index = 0; Result && (Index < FileList->Count); Index++)
+    UnicodeString LastDirPath;
+    for (int Index = 0; Params.Result && (Index < FileList->Count); Index++)
     {
       UnicodeString FileName = FileList->Strings[Index];
       TSearchRec Rec;
       if (FileSearchRec(FileName, Rec))
       {
-        if (FLAGSET(Rec.Attr, faDirectory) && !AllowDirs)
+        bool Dir = FLAGSET(Rec.Attr, faDirectory);
+        if (Dir && !AllowDirs)
         {
-          Result = false;
+          Params.Result = false;
         }
         else
         {
+          if (Files != NULL)
+          {
+            UnicodeString FullFileName = ::ExpandFileName(FileName);
+            UnicodeString DirPath = ExtractFilePath(FullFileName);
+            if (DirPath != LastDirPath)
+            {
+              Params.Files = new TCollectedFileList();
+              LastDirPath = DirPath;
+              Files->AddObject(LastDirPath, Params.Files);
+            }
+          }
+
           CalculateLocalFileSize(FileName, Rec, &Params);
+
           OperationProgress.Finish(FileName, true, OnceDoneOperation);
         }
       }
     }
 
     Size = Params.Size;
+    Result = Params.Result;
   }
   __finally
   {
@@ -5235,7 +5913,7 @@ void __fastcall TTerminal::SynchronizeApply(TSynchronizeChecklist * Checklist,
         else
         {
           if ((DownloadList->Count > 0) &&
-              !CopyToLocal(DownloadList, Data.LocalDirectory, &SyncCopyParam, CopyParams))
+              !CopyToLocal(DownloadList, Data.LocalDirectory, &SyncCopyParam, CopyParams, NULL))
           {
             Abort();
           }
@@ -5247,7 +5925,7 @@ void __fastcall TTerminal::SynchronizeApply(TSynchronizeChecklist * Checklist,
           }
 
           if ((UploadList->Count > 0) &&
-              !CopyToRemote(UploadList, Data.RemoteDirectory, &SyncCopyParam, CopyParams))
+              !CopyToRemote(UploadList, Data.RemoteDirectory, &SyncCopyParam, CopyParams, NULL))
           {
             Abort();
           }
@@ -5586,8 +6264,142 @@ bool __fastcall TTerminal::GetStoredCredentialsTried()
   return Result;
 }
 //---------------------------------------------------------------------------
+int __fastcall TTerminal::CopyToParallel(TParallelOperation * ParallelOperation, TFileOperationProgressType * OperationProgress)
+{
+  UnicodeString FileName;
+  TObject * Object;
+  UnicodeString TargetDir;
+  bool Dir;
+  bool Recursed;
+
+  int Result = ParallelOperation->GetNext(this, FileName, Object, TargetDir, Dir, Recursed);
+  if (Result > 0)
+  {
+    std::unique_ptr<TStrings> FilesToCopy(new TStringList());
+    FilesToCopy->AddObject(FileName, Object);
+
+    if (ParallelOperation->Side == osLocal)
+    {
+      TargetDir = TranslateLockedPath(TargetDir, false);
+    }
+    // OnceDoneOperation is not supported
+    TOnceDoneOperation OnceDoneOperation = odoIdle;
+
+    int Params = ParallelOperation->Params;
+    // If we failed to recurse the directory when enumerating, recurse now (typically only to show the recursion error)
+    if (Dir && Recursed)
+    {
+      Params = Params | cpNoRecurse;
+    }
+
+    int Prev = OperationProgress->FilesFinishedSuccessfully;
+    try
+    {
+      FOperationProgress = OperationProgress;
+      if (ParallelOperation->Side == osLocal)
+      {
+        FFileSystem->CopyToRemote(
+          FilesToCopy.get(), TargetDir, ParallelOperation->CopyParam, Params, OperationProgress, OnceDoneOperation);
+      }
+      else if (DebugAlwaysTrue(ParallelOperation->Side == osRemote))
+      {
+        FFileSystem->CopyToLocal(
+          FilesToCopy.get(), TargetDir, ParallelOperation->CopyParam, Params, OperationProgress, OnceDoneOperation);
+      }
+    }
+    __finally
+    {
+      bool Success = (Prev < OperationProgress->FilesFinishedSuccessfully);
+      ParallelOperation->Done(FileName, Dir, Success);
+      FOperationProgress = NULL;
+    }
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TTerminal::CanParallel(
+  const TCopyParamType * CopyParam, int Params, TParallelOperation * ParallelOperation)
+{
+  return
+    (ParallelOperation != NULL) &&
+    FFileSystem->IsCapable(fsParallelTransfers) &&
+    // parallel transfer is not implemented for operations needed to be done on a folder
+    // after all its files are processed
+    FLAGCLEAR(Params, cpDelete) &&
+    (!CopyParam->PreserveTime || !CopyParam->PreserveTimeDirs);
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminal::CopyParallel(TParallelOperation * ParallelOperation, TFileOperationProgressType * OperationProgress)
+{
+  try
+  {
+    bool Continue = true;
+    do
+    {
+      int GotNext = CopyToParallel(ParallelOperation, OperationProgress);
+      if (GotNext < 0)
+      {
+        Continue = false;
+      }
+      else if (GotNext == 0)
+      {
+        Sleep(100);
+      }
+    }
+    while (Continue && !OperationProgress->Cancel);
+  }
+  __finally
+  {
+    OperationProgress->SetDone();
+    ParallelOperation->WaitFor();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminal::LogParallelTransfer(TParallelOperation * ParallelOperation)
+{
+  LogEvent(
+    FORMAT("Adding a parallel transfer to the transfer started on the connection \"%s\"",
+    (ParallelOperation->MainName)));
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminal::LogTotalTransferDetails(
+  const UnicodeString TargetDir, const TCopyParamType * CopyParam,
+  TFileOperationProgressType * OperationProgress, bool Parallel, TStrings * Files)
+{
+  if (Log->Logging)
+  {
+    UnicodeString TargetSide = ((OperationProgress->Side == osLocal) ? L"remote" : L"local");
+    UnicodeString S =
+      FORMAT(
+        L"Copying %d files/directories to %s directory \"%s\"",
+        (OperationProgress->Count, TargetSide, TargetDir));
+    if (Parallel && DebugAlwaysTrue(Files != NULL))
+    {
+      int Count = 0;
+      for (int Index = 0; Index < Files->Count; Index++)
+      {
+        TCollectedFileList * FileList = dynamic_cast<TCollectedFileList *>(Files->Objects[Index]);
+        Count += FileList->Count();
+      }
+      S += FORMAT(L" - in parallel, with %d total files", (Count));
+    }
+    if (OperationProgress->TotalSizeSet)
+    {
+      S += FORMAT(L" - total size: %s", (FormatSize(OperationProgress->TotalSize)));
+    }
+    LogEvent(S);
+    LogEvent(CopyParam->LogStr);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminal::LogTotalTransferDone(TFileOperationProgressType * OperationProgress)
+{
+  LogEvent(L"Copying finished: " + OperationProgress->GetLogStr(true));
+}
+//---------------------------------------------------------------------------
 bool __fastcall TTerminal::CopyToRemote(TStrings * FilesToCopy,
-  const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params)
+  const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params, TParallelOperation * ParallelOperation)
 {
   DebugAssert(FFileSystem);
   DebugAssert(FilesToCopy);
@@ -5599,13 +6411,21 @@ bool __fastcall TTerminal::CopyToRemote(TStrings * FilesToCopy,
   try
   {
     __int64 Size;
+    std::unique_ptr<TStringList> Files;
+    if (CanParallel(CopyParam, Params, ParallelOperation) &&
+        !CopyParam->ClearArchive)
+    {
+      Files.reset(new TStringList());
+      Files->OwnsObjects = true;
+    }
     // dirty trick: when moving, do not pass copy param to avoid exclude mask
     bool CalculatedSize =
       CalculateLocalFilesSize(
         FilesToCopy, Size,
         (FLAGCLEAR(Params, cpDelete) ? CopyParam : NULL),
-        CopyParam->CalculateSize);
+        CopyParam->CalculateSize, Files.get());
 
+    FLastProgressLogged = GetTickCount();
     TFileOperationProgressType OperationProgress(&DoProgress, &DoFinished);
     OperationProgress.Start((Params & cpDelete ? foMove : foCopy), osLocal,
       FilesToCopy->Count, Params & cpTemporary, TargetDir, CopyParam->CPSLimit);
@@ -5632,15 +6452,22 @@ bool __fastcall TTerminal::CopyToRemote(TStrings * FilesToCopy,
       BeginTransaction();
       try
       {
-        if (Log->Logging)
+        bool Parallel = CalculatedSize && (Files.get() != NULL);
+        LogTotalTransferDetails(TargetDir, CopyParam, &OperationProgress, Parallel, Files.get());
+
+        if (Parallel)
         {
-          LogEvent(FORMAT(L"Copying %d files/directories to remote directory "
-            "\"%s\"", (FilesToCopy->Count, TargetDir)));
-          LogEvent(CopyParam->LogStr);
+          // OnceDoneOperation is not supported
+          ParallelOperation->Init(Files.release(), UnlockedTargetDir, CopyParam, Params, &OperationProgress, Log->Name);
+          CopyParallel(ParallelOperation, &OperationProgress);
+        }
+        else
+        {
+          FFileSystem->CopyToRemote(FilesToCopy, UnlockedTargetDir,
+            CopyParam, Params, &OperationProgress, OnceDoneOperation);
         }
 
-        FFileSystem->CopyToRemote(FilesToCopy, UnlockedTargetDir,
-          CopyParam, Params, &OperationProgress, OnceDoneOperation);
+        LogTotalTransferDone(&OperationProgress);
       }
       __finally
       {
@@ -5683,130 +6510,142 @@ bool __fastcall TTerminal::CopyToRemote(TStrings * FilesToCopy,
 }
 //---------------------------------------------------------------------------
 bool __fastcall TTerminal::CopyToLocal(TStrings * FilesToCopy,
-  const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params)
+  const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params,
+  TParallelOperation * ParallelOperation)
 {
   DebugAssert(FFileSystem);
 
   // see scp.c: sink(), tolocal()
 
   bool Result = false;
-  bool OwnsFileList = (FilesToCopy == NULL);
+  DebugAssert(FilesToCopy != NULL);
   TOnceDoneOperation OnceDoneOperation = odoIdle;
 
+  FDestFileName = L"";
+  FMultipleDestinationFiles = false;
+
+  BeginTransaction();
   try
   {
-    if (OwnsFileList)
+    __int64 TotalSize;
+    bool TotalSizeKnown = false;
+    FLastProgressLogged = GetTickCount();
+    TFileOperationProgressType OperationProgress(&DoProgress, &DoFinished);
+
+    std::unique_ptr<TStringList> Files;
+    if (CanParallel(CopyParam, Params, ParallelOperation))
     {
-      FilesToCopy = new TStringList();
-      FilesToCopy->Assign(Files->SelectedFiles);
+      Files.reset(new TStringList());
+      Files->OwnsObjects = true;
     }
 
-    BeginTransaction();
+    ExceptionOnFail = true;
     try
     {
-      __int64 TotalSize;
-      bool TotalSizeKnown = false;
-      TFileOperationProgressType OperationProgress(&DoProgress, &DoFinished);
-
-      ExceptionOnFail = true;
-      try
+      // dirty trick: when moving, do not pass copy param to avoid exclude mask
+      TCalculateSizeStats Stats;
+      Stats.FoundFiles = Files.get();
+      if (CalculateFilesSize(
+           FilesToCopy, TotalSize, csIgnoreErrors,
+           (FLAGCLEAR(Params, cpDelete) ? CopyParam : NULL),
+           CopyParam->CalculateSize, Stats))
       {
-        // dirty trick: when moving, do not pass copy param to avoid exclude mask
-        if (CalculateFilesSize(
-             FilesToCopy, TotalSize, csIgnoreErrors,
-             (FLAGCLEAR(Params, cpDelete) ? CopyParam : NULL),
-             CopyParam->CalculateSize, NULL))
-        {
-          TotalSizeKnown = true;
-        }
-      }
-      __finally
-      {
-        ExceptionOnFail = false;
-      }
-
-      OperationProgress.Start((Params & cpDelete ? foMove : foCopy), osRemote,
-        FilesToCopy->Count, Params & cpTemporary, TargetDir, CopyParam->CPSLimit);
-
-      FOperationProgress = &OperationProgress;
-      bool CollectingUsage = false;
-      try
-      {
-        if (TotalSizeKnown)
-        {
-          if (Configuration->Usage->Collect)
-          {
-            int CounterTotalSize = TUsage::CalculateCounterSize(TotalSize);
-            Configuration->Usage->Inc(L"Downloads");
-            Configuration->Usage->Inc(L"DownloadedBytes", CounterTotalSize);
-            Configuration->Usage->SetMax(L"MaxDownloadSize", CounterTotalSize);
-            CollectingUsage = true;
-          }
-
-          OperationProgress.SetTotalSize(TotalSize);
-        }
-
-        try
-        {
-          try
-          {
-            if (Log->Logging)
-            {
-              LogEvent(FORMAT(L"Copying %d files/directories to local directory "
-                "\"%s\"", (FilesToCopy->Count, TargetDir)));
-              LogEvent(CopyParam->LogStr);
-            }
-
-            FFileSystem->CopyToLocal(FilesToCopy, TargetDir, CopyParam, Params,
-              &OperationProgress, OnceDoneOperation);
-          }
-          __finally
-          {
-            if (Active)
-            {
-              ReactOnCommand(fsCopyToLocal);
-            }
-          }
-        }
-        catch (Exception &E)
-        {
-          CommandError(&E, MainInstructions(LoadStr(TOLOCAL_COPY_ERROR)));
-          OnceDoneOperation = odoIdle;
-        }
-
-        if (OperationProgress.Cancel == csContinue)
-        {
-          Result = true;
-        }
-      }
-      __finally
-      {
-        if (CollectingUsage)
-        {
-          int CounterTime = TimeToSeconds(OperationProgress.TimeElapsed());
-          Configuration->Usage->Inc(L"DownloadTime", CounterTime);
-          Configuration->Usage->SetMax(L"MaxDownloadTime", CounterTime);
-        }
-        FOperationProgress = NULL;
-        OperationProgress.Stop();
+        TotalSizeKnown = true;
       }
     }
     __finally
     {
-      // If session is still active (no fatal error) we reload directory
-      // by calling EndTransaction
-      EndTransaction();
+      ExceptionOnFail = false;
     }
 
+    OperationProgress.Start((Params & cpDelete ? foMove : foCopy), osRemote,
+      FilesToCopy->Count, Params & cpTemporary, TargetDir, CopyParam->CPSLimit);
+
+    FOperationProgress = &OperationProgress;
+    bool CollectingUsage = false;
+    try
+    {
+      if (TotalSizeKnown)
+      {
+        if (Configuration->Usage->Collect)
+        {
+          int CounterTotalSize = TUsage::CalculateCounterSize(TotalSize);
+          Configuration->Usage->Inc(L"Downloads");
+          Configuration->Usage->Inc(L"DownloadedBytes", CounterTotalSize);
+          Configuration->Usage->SetMax(L"MaxDownloadSize", CounterTotalSize);
+          CollectingUsage = true;
+        }
+
+        OperationProgress.SetTotalSize(TotalSize);
+      }
+
+      try
+      {
+        try
+        {
+          bool Parallel = TotalSizeKnown && (Files.get() != NULL);
+          LogTotalTransferDetails(TargetDir, CopyParam, &OperationProgress, Parallel, Files.get());
+
+          if (Parallel)
+          {
+            // OnceDoneOperation is not supported
+            ParallelOperation->Init(Files.release(), TargetDir, CopyParam, Params, &OperationProgress, Log->Name);
+            CopyParallel(ParallelOperation, &OperationProgress);
+          }
+          else
+          {
+            FFileSystem->CopyToLocal(FilesToCopy, TargetDir, CopyParam, Params,
+              &OperationProgress, OnceDoneOperation);
+          }
+
+          LogTotalTransferDone(&OperationProgress);
+        }
+        __finally
+        {
+          if (Active)
+          {
+            ReactOnCommand(fsCopyToLocal);
+          }
+        }
+      }
+      catch (Exception &E)
+      {
+        CommandError(&E, MainInstructions(LoadStr(TOLOCAL_COPY_ERROR)));
+        OnceDoneOperation = odoIdle;
+      }
+
+      if (OperationProgress.Cancel == csContinue)
+      {
+        Result = true;
+      }
+    }
+    __finally
+    {
+      if (CollectingUsage)
+      {
+        int CounterTime = TimeToSeconds(OperationProgress.TimeElapsed());
+        Configuration->Usage->Inc(L"DownloadTime", CounterTime);
+        Configuration->Usage->SetMax(L"MaxDownloadTime", CounterTime);
+      }
+      FOperationProgress = NULL;
+      OperationProgress.Stop();
+    }
   }
   __finally
   {
-    if (OwnsFileList) delete FilesToCopy;
+    // If session is still active (no fatal error) we reload directory
+    // by calling EndTransaction
+    EndTransaction();
   }
 
   if (OnceDoneOperation != odoIdle)
   {
-    CloseOnCompletion(OnceDoneOperation);
+    UnicodeString DestFileName;
+    if (!FMultipleDestinationFiles)
+    {
+      DestFileName = FDestFileName;
+    }
+    CloseOnCompletion(OnceDoneOperation, UnicodeString(), TargetDir, DestFileName);
   }
 
   return Result;
@@ -6073,8 +6912,7 @@ __fastcall TSecondaryTerminal::TSecondaryTerminal(TTerminal * MainTerminal,
   TTerminal(ASessionData, Configuration),
   FMainTerminal(MainTerminal)
 {
-  Log->Parent = FMainTerminal->Log;
-  Log->Name = Name;
+  Log->SetParent(FMainTerminal->Log, Name);
   ActionLog->Enabled = false;
   SessionData->NonPersistant();
   DebugAssert(FMainTerminal != NULL);

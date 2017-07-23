@@ -10,15 +10,10 @@ unit TBXExtItems;
 interface
 
 {$I TB2Ver.inc}
-{$I TBX.inc}
-
-{$IFNDEF MPEXCLUDE}
-{$DEFINE COMPATIBLE}
-{$ENDIF}
 
 uses
   Windows, Messages, Classes, SysUtils, Graphics, Controls, StdCtrls, ExtCtrls,
-  TBX, TBXThemes, TB2Item, TB2Toolbar, TB2ExtItems, TBXLists{$IFNDEF MPEXCLUDE}, TB2MRU{$ENDIF};
+  TBX, TBXThemes, TB2Item, TB2Toolbar, TB2ExtItems, TBXLists;
 
 const
   tcrNumericProperty = 3;
@@ -91,7 +86,7 @@ type
     function  DoExecute: Boolean; override;
     function  HandleEditMessage(var Message: TMessage): Boolean; virtual;
     function  GetAccRole: Integer; override;
-    procedure GetItemInfo(out ItemInfo: TTBXItemInfo; IsHoverItem, IsPushed, UseMenuColor: Boolean); virtual;
+    procedure GetItemInfo(const Canvas: TCanvas; out ItemInfo: TTBXItemInfo; IsHoverItem, IsPushed, UseMenuColor: Boolean); virtual;
     function  GetEditControlClass: TEditClass; override;
     procedure GetEditInfo(out EditInfo: TTBXEditInfo; const ItemInfo: TTBXItemInfo); virtual;
     function  GetIndentBefore: Integer; virtual;
@@ -106,133 +101,6 @@ type
   public
     function  IsToolbarStyle: Boolean; override;
   end;
-
-  {$IFNDEF MPEXCLUDE}
-  { TTBXSpinEditItem }
-  TTBXCustomSpinEditItem = class;
-
-  TSEValueType = (evtInteger, evtFloat, evtHex);
-  TDecimal = 0..10;
-  TSEChangeEvent = procedure(Sender: TTBXCustomSpinEditItem; const AValue: Extended) of object;
-  TSEConvertEvent = procedure(Sender: TTBXCustomSpinEditItem; const APrefix, APostfix: string; var AValue: Extended; var CanConvert: Boolean) of object;
-  TSEStepEvent = procedure(Sender: TTBXCustomSpinEditItem; Step: Integer; const OldValue: Extended; var NewValue: Extended) of object;
-  TSETextToValueEvent = procedure(Sender: TTBXCustomSpinEditItem; const AText: string; out AValue: Extended; var CanConvert: Boolean) of object;
-  TSEValueToTextEvent = procedure(Sender: TTBXCustomSpinEditItem; const AValue: Extended; var Text: string) of object;
-
-  TTBXCustomSpinEditItem = class(TTBXEditItem)
-  private
-    FDecimal: TDecimal;
-    FLastGoodValue: Extended;
-    FMaxValue: Extended;
-    FMinValue: Extended;
-    FIncrement: Extended;
-    FSpaceBeforePostfix: Boolean;
-    FSpaceAfterPrefix: Boolean;
-    FPostfix: string;
-    FPrefix: string;
-    FSnap: Boolean;
-    FValueType: TSEValueType;
-    FOnConvert: TSEConvertEvent;
-    FOnTextToValue: TSETextToValueEvent;
-    FOnValueChange: TSEChangeEvent;
-    FOnValueToText: TSEValueToTextEvent;
-    FOnStep: TSEStepEvent;
-    function  IsIncrementStored: Boolean;
-    function  IsMinValueStored: Boolean;
-    function  IsMaxValueStored: Boolean;
-    function  IsValueStored: Boolean;
-    function  GetValue: Extended;
-    procedure SetValue(NewValue: Extended);
-    procedure SetValueType(NewType: TSEValueType);
-    procedure SetDecimal(NewDecimal: TDecimal);
-    procedure SetIncrement(const NewIncrement: Extended);
-    procedure SetPostfix(const NewPostfix: string);
-    procedure SetPrefix(const NewPrefix: string);
-    procedure SetSpaceAfterPrefix(UseSpace: Boolean);
-    procedure SetSpaceBeforePostfix(UseSpace: Boolean);
-    function  ValidateUnits(const S: string): Boolean;
-    function  GetAsInteger: Integer;
-    procedure SetAsInteger(AValue: Integer);
-  protected
-    function  CheckValue(const V: Extended): Extended;
-    procedure ClickUp;
-    procedure ClickDown;
-    function  DoAcceptText(var NewText: string): Boolean; override;
-    function  DoConvert(const APrefix, APostfix: string; var AValue: Extended): Boolean; virtual;
-    procedure DoStep(Step: Integer; const OldValue: Extended; var NewValue: Extended); virtual;
-    procedure DoTextChanged(Reason: Integer); override;
-    function  DoTextToValue(const AText: string; out AValue: Extended): Boolean; virtual;
-    procedure DoValueChange(const V: Extended); virtual;
-    procedure DoValueToText(const NewValue: Extended; var NewText: string); virtual;
-    function  GetAsText(AValue: Extended): string;
-    function  GetItemViewerClass(AView: TTBView): TTBItemViewerClass; override;
-    function  ParseValue(const S: string; out V: Extended): Boolean;
-    procedure SetValueEx(NewValue: Extended; Reason: Integer);
-    property Alignment default taRightJustify;
-    property OnConvert: TSEConvertEvent read FOnConvert write FOnConvert;
-    property OnStep: TSEStepEvent read FOnStep write FOnStep;
-    property OnTextToValue: TSETextToValueEvent read FOnTextToValue write FOnTextToValue;
-    property OnValueChange: TSEChangeEvent read FOnValueChange write FOnValueChange;
-    property OnValueToText: TSEValueToTextEvent read FOnValueToText write FOnValueToText;
-  public
-    constructor Create(AOwner: TComponent); override;
-    property ValueType: TSEValueType read FValueType write SetValueType default evtInteger;
-    property AsInteger: Integer read GetAsInteger write SetAsInteger stored False;
-    property Decimal: TDecimal read FDecimal write SetDecimal default 2;
-    property Increment: Extended read FIncrement write SetIncrement stored IsIncrementStored;
-    property MaxValue: Extended read FMaxValue write FMaxValue stored IsMaxValueStored;
-    property MinValue: Extended read FMinValue write FMinValue stored IsMinValueStored;
-    property Postfix: string read FPostfix write SetPostfix;
-    property Prefix: string read FPrefix write SetPrefix;
-    property Snap: Boolean read FSnap write FSnap default True;
-    property SpaceAfterPrefix: Boolean read FSpaceAfterPrefix write SetSpaceAfterPrefix;
-    property SpaceBeforePostfix: Boolean read FSpaceBeforePostfix write SetSpaceBeforePostfix;
-    property Value: Extended read GetValue write SetValue stored IsValueStored;
-  published
-    property Text stored False;
-  end;
-
-  TTBXSpinEditItem = class(TTBXCustomSpinEditItem)
-  published
-    property ValueType;
-    property Alignment;
-    property Decimal;
-    property Increment;
-    property MaxValue;
-    property MinValue;
-    property Postfix;
-    property Prefix;
-    property Snap;
-    property SpaceAfterPrefix;
-    property SpaceBeforePostfix;
-    property Value;
-    property OnConvert;
-    property OnStep;
-    property OnTextToValue;
-    property OnValueChange;
-    property OnValueToText;
-  end;
-
-  TSEBtnState = (ebsNone, ebsUp, ebsDown);
-
-  TTBXSpinEditViewer = class(TTBXEditItemViewer)
-  private
-    FBtnState: TSEBtnState;
-    FBtnTimer: TTimer;
-    procedure TimerHandler(Sender: TObject);
-  protected
-    function  GetIndentAfter: Integer; override;
-    procedure GetEditInfo(out EditInfo: TTBXEditInfo; const ItemInfo: TTBXItemInfo); override;
-    function  HandleEditMessage(var Message: TMessage): Boolean; override;
-    procedure InvalidateButtons;
-    function  IsPtInButtonPart(X, Y: Integer): Boolean; override;
-    procedure LosingCapture; override;
-    procedure MouseDown(Shift: TShiftState; X, Y: Integer; var MouseDownOnMenu: Boolean); override;
-    procedure MouseUp(X, Y: Integer; MouseWasDownOnMenu: Boolean); override;
-  public
-    destructor Destroy; override;
-  end;
-  {$ENDIF}
 
   { TTBXCustomDropDownItem }
   { An extended edit item tb2k with a button. The dropdown list support is
@@ -276,11 +144,6 @@ type
     function  IsPtInButtonPart(X, Y: Integer): Boolean; override;
     procedure KeyDown(var Key: Word; Shift: TShiftState); override;
   end;
-
-{$IFDEF COMPATIBLE}
-  { For compatibility with previous versions }
-  TTBXComboItem = class(TTBXDropDownItem);
-{$ENDIF}
 
   { TTBXComboBoxItem }
   { A combination of dropdown combo with a stringlist subitem }
@@ -334,6 +197,7 @@ type
     constructor Create(AOwner: TComponent); override;
     procedure Loaded; override;
     property ItemIndex: Integer read GetItemIndex write SetItemIndex default -1;
+    procedure ChangeScale(M, D: Integer); override;
   published
     property AutoComplete: Boolean read FAutoComplete write FAutoComplete default True;
     property DropDownList;
@@ -354,11 +218,6 @@ type
     {MP}
     property OnCancel;
   end;
-
-{$IFDEF COMPATIBLE}
-  { For compatibility with previous versions }
-  TTBXComboList = class(TTBXComboBoxItem);
-{$ENDIF}
 
   TTBXComboBoxItemViewer = class(TTBXDropDownItemViewer)
   protected
@@ -473,39 +332,9 @@ type
     constructor Create(AView: TTBView; AItem: TTBCustomItem; AGroupLevel: Integer); override;
   end;
 
-  {$IFNDEF MPEXCLUDE}
-  { TTBXMRUList }
-
-  TTBXMRUList = class(TTBMRUList)
-  private
-    FKeyShift: Integer;
-    procedure SetKeyShift(Value: Integer);
-  protected
-    function GetFirstKey: Integer; override;
-    function GetItemClass: TTBCustomItemClass; override;
-    procedure SetItemCaptions; override;
-  published
-    property KeyShift: Integer read FKeyShift write SetKeyShift default 0;
-  end;
-
-  { TTBXMRUListItem }
-
-  TTBXMRUListItem = class(TTBXCustomItem)
-  private
-    FMRUList: TTBMRUList;
-    procedure SetMRUList(Value: TTBMRUList);
-  protected
-    procedure Notification(AComponent: TComponent; Operation: TOperation); override;
-  public
-    constructor Create(AOwner: TComponent); override;
-  published
-    property MRUList: TTBMRUList read FMRUList write SetMRUList;
-  end;
-  {$ENDIF}
-
 implementation
 
-uses TB2Common, TB2Consts, TypInfo, Math, ImgList, {MP}Menus, Forms {$IFNDEF JR_D5}, DsgnIntf{$ENDIF};
+uses TBXUtils, TB2Common, TB2Consts, TypInfo, Math, ImgList, {MP}Menus, Forms, PasTools;
 
 const
   { Repeat intervals for spin edit items }
@@ -515,9 +344,6 @@ const
 type
   TTBViewAccess = class(TTBView);
   TTBItemAccess = class(TTBCustomItem);
-  {$IFNDEF MPEXCLUDE}
-  TTBMRUListAccess = class(TTBMRUList);
-  {$ENDIF}
   TCustomEditAccess = class(TCustomEdit);
   TFontSettingsAccess = class(TFontSettings);
 
@@ -682,8 +508,7 @@ begin
         Edit.SelLength := Length(S2) - Length(S);
         S := S2;
       end;
-      {if S <> FLastEditChange then} {vb-}
-      if AnsiCompareText(S, FLastEditChange) <> 0 then {vb+}
+      if AnsiCompareText(S, FLastEditChange) <> 0 then
       begin
         DoChange(S); // note, Edit.Text may be different from Self.Text
         FLastEditChange := S;
@@ -751,15 +576,22 @@ var
 begin
   if Self.Item is TTBXEditItem then with CurrentTheme do
   begin
-    B := EditFrameWidth;
+    B := GetIntegerMetrics(Self, TMI_EDIT_FRAMEWIDTH);
 
     AWidth := TTBXEditItem(Item).EditWidth;
     if not IsToolbarStyle then
     begin
       EditCaptionSize := MeasureEditCaption;
       W := EditCaptionSize.CX;
-      if W > 0 then Inc(W, MenuLeftCaptionMargin + MenuRightCaptionMargin + MenuImageTextSpace);
-      Inc(AWidth, GetPopupMargin(Self) + MenuImageTextSpace + W + EditMenuRightIndent);
+      if W > 0 then
+      begin
+        Inc(W,
+            GetIntegerMetrics(Self, TMI_MENU_LCAPTIONMARGIN) + GetIntegerMetrics(Self, TMI_MENU_RCAPTIONMARGIN) +
+              GetIntegerMetrics(Self, TMI_MENU_IMGTEXTSPACE));
+      end;
+      Inc(AWidth,
+          GetPopupMargin(Self) + GetIntegerMetrics(Self, TMI_MENU_IMGTEXTSPACE) + W +
+            GetIntegerMetrics(Self, TMI_EDIT_MENURIGHTINDENT));
     end
     else
     begin
@@ -768,7 +600,7 @@ begin
     end;
 
     EditBoxHeight := MeasureTextHeight + 1;
-    Inc(EditBoxHeight, EditTextMarginVert * 2 + B * 2);
+    Inc(EditBoxHeight, GetIntegerMetrics(Self, TMI_EDIT_TEXTMARGINVERT) * 2 + B * 2);
     AHeight := Max(EditBoxHeight, EditCaptionSize.CY);
     if not IsToolbarStyle then AHeight := AHeight;
     if EditHeightEven then AHeight := (AHeight + 1) and not $01
@@ -800,12 +632,10 @@ const
   ROLE_SYSTEM_COMBOBOX = $2E;
 begin
   Result := inherited GetAccRole;
-  {$IFNDEF MPEXCLUDE}
-  if Self is TTBXSpinEditViewer then Result := ROLE_SYSTEM_SPINBUTTON
-  else {$ENDIF} if Self is TTBXDropDownItemViewer then Result := ROLE_SYSTEM_COMBOBOX;
+  if Self is TTBXDropDownItemViewer then Result := ROLE_SYSTEM_COMBOBOX;
 end;
 
-procedure TTBXEditItemViewer.GetItemInfo(out ItemInfo: TTBXItemInfo; IsHoverItem, IsPushed, UseMenuColor: Boolean);
+procedure TTBXEditItemViewer.GetItemInfo(const Canvas: TCanvas; out ItemInfo: TTBXItemInfo; IsHoverItem, IsPushed, UseMenuColor: Boolean);
 const
   CToolbarStyle: array [Boolean] of Integer = (0, IO_TOOLBARSTYLE);
   CDesigning: array [Boolean] of Integer = (0, IO_DESIGNING);
@@ -815,6 +645,7 @@ begin
   Item := TTBXEditItem(Self.Item);
 
   FillChar(ItemInfo, SizeOf(TTBXItemInfo), 0);
+  ItemInfo.Control := View.Window;
   ItemInfo.ViewType := GetViewType(View);
   ItemInfo.ItemOptions := CToolbarStyle[IsToolbarStyle]
     or CDesigning[csDesigning in Item.ComponentState];
@@ -844,13 +675,19 @@ begin
     if not IsToolbarStyle then
     begin
       W := MeasureEditCaption.CX;
-      if W > 0 then Inc(W, MenuLeftCaptionMargin + MenuRightCaptionMargin + MenuImageTextSpace);
-      Inc(R.Left, GetPopupMargin(Self) + MenuImageTextSpace + W);
-      Dec(R.Right, EditMenuRightIndent);
+      if W > 0 then
+      begin
+        Inc(W,
+            GetIntegerMetrics(Self, TMI_MENU_LCAPTIONMARGIN) + GetIntegerMetrics(Self, TMI_MENU_RCAPTIONMARGIN) +
+              GetIntegerMetrics(Self, TMI_MENU_IMGTEXTSPACE));
+      end;
+      Inc(R.Left, GetPopupMargin(Self) + GetIntegerMetrics(Self, TMI_MENU_IMGTEXTSPACE) + W);
+      Dec(R.Right, GetIntegerMetrics(Self, TMI_EDIT_MENURIGHTINDENT));
     end;
 
-    B := EditFrameWidth - TB2K_EDIT_BORDER;
-    InflateRect(R, -B - EditTextMarginHorz , -B - EditTextMarginVert);
+    B := GetIntegerMetrics(Self, TMI_EDIT_FRAMEWIDTH) - TB2K_EDIT_BORDER;
+    InflateRect(
+      R, -B - GetIntegerMetrics(Self, TMI_EDIT_TEXTMARGINHORZ) , -B - GetIntegerMetrics(Self, TMI_EDIT_TEXTMARGINVERT));
     Inc(R.Left, GetIndentBefore);
     Dec(R.Right, GetIndentAfter);
   end
@@ -922,7 +759,7 @@ var
 begin
   DC := Canvas.Handle;
   Item := TTBXEditItem(Self.Item);
-  GetItemInfo(ItemInfo, IsHoverItem, IsPushed, UseDisabledShadow);
+  GetItemInfo(Canvas, ItemInfo, IsHoverItem, IsPushed, UseDisabledShadow);
   GetEditInfo(EditInfo, ItemInfo);
   R := ClientAreaRect;
 
@@ -935,7 +772,11 @@ begin
       { measure EditCaption }
       Fnt := TTBXEditItem(Item).FontSettings.CreateTransformedFont(TTBViewAccess(View).GetFont.Handle, C);
       OldFnt := SelectObject(DC, Fnt);
-      W := GetTextWidth(DC, S, True) + MenuImageTextSpace + MenuLeftCaptionMargin + MenuRightCaptionMargin;
+      W :=
+        GetTextWidth(DC, S, True) +
+        GetIntegerMetrics(Self, TMI_MENU_IMGTEXTSPACE) +
+        GetIntegerMetrics(Self, TMI_MENU_LCAPTIONMARGIN) +
+        GetIntegerMetrics(Self, TMI_MENU_RCAPTIONMARGIN);
       SelectObject(DC, OldFnt);
     end
     else
@@ -946,14 +787,14 @@ begin
 
     M := GetPopupMargin(Self);
     if not EditMenuFullSelect then R.Right := M + W
-    else Dec(R.Right, EditMenuRightIndent);
+    else Dec(R.Right, GetIntegerMetrics(Self, TMI_EDIT_MENURIGHTINDENT));
     PaintMenuItemFrame(Canvas, R, ItemInfo);
-    Inc(R.Left, M + MenuImageTextSpace);
-    R.Right := ClientAreaRect.Right - EditMenuRightIndent;
+    Inc(R.Left, M + GetIntegerMetrics(Self, TMI_MENU_IMGTEXTSPACE));
+    R.Right := ClientAreaRect.Right - GetIntegerMetrics(Self, TMI_EDIT_MENURIGHTINDENT);
 
     if Length(S) > 0 then
     begin
-      Inc(R.Left, MenuLeftCaptionMargin);
+      Inc(R.Left, GetIntegerMetrics(Self, TMI_MENU_LCAPTIONMARGIN));
       C := ColorToRGB(GetItemTextColor(ItemInfo));
       OldFnt := SelectObject(DC, Fnt);
       OldColor := SetTextColor(DC, C);
@@ -962,13 +803,16 @@ begin
       W := GetTextWidth(DC, S, True);
       SelectObject(DC, OldFnt);
       DeleteObject(Fnt);
-      Inc(R.Left, W + MenuRightCaptionMargin + MenuImageTextSpace);
+      Inc(R.Left,
+          W + GetIntegerMetrics(Self, TMI_MENU_RCAPTIONMARGIN) + GetIntegerMetrics(Self, TMI_MENU_IMGTEXTSPACE));
     end;
   end;
 
-  CurrentTheme.PaintEditFrame(Canvas, R, ItemInfo, EditInfo);
-  W := CurrentTheme.EditFrameWidth;
-  InflateRect(R, -W - CurrentTheme.EditTextMarginHorz, -W - CurrentTheme.EditTextMarginVert);
+  CurrentTheme.PaintEditFrame(View.GetMonitor, Canvas, R, ItemInfo, EditInfo);
+  W := CurrentTheme.GetIntegerMetrics(Self, TMI_EDIT_FRAMEWIDTH);
+  InflateRect(
+    R, -W - CurrentTheme.GetIntegerMetrics(Self, TMI_EDIT_TEXTMARGINHORZ),
+    -W - CurrentTheme.GetIntegerMetrics(Self, TMI_EDIT_TEXTMARGINVERT));
 
   if ShowImage then
   begin
@@ -1191,8 +1035,8 @@ end;
 
 function TTBXDropDownItemViewer.GetIndentAfter: Integer;
 begin
-  if IsToolbarStyle then Result := CurrentTheme.EditBtnWidth
-  else Result := GetSystemMetrics(SM_CXMENUCHECK) + 2;
+  if IsToolbarStyle then Result := CurrentTheme.GetIntegerMetrics(Self, TMI_EDIT_BTNWIDTH)
+  else Result := GetSystemMetricsForControl(View.Window, SM_CXMENUCHECK) + 2;
 end;
 
 function TTBXDropDownItemViewer.HandleEditMessage(var Message: TMessage): Boolean;
@@ -1201,8 +1045,7 @@ begin
   begin
     if TWMKeyDown(Message).CharCode = VK_F4 then
     begin
-      {TTBViewAccess(View).OpenChildPopup(True);} {vb-}
-      if (View.OpenViewer = Self) // WasAlreadyOpen {vb+}
+      if (View.OpenViewer = Self) // WasAlreadyOpen
         then View.CloseChildPopups
         else View.OpenChildPopup(True);
       Result := True;
@@ -1472,6 +1315,13 @@ begin
   FList.Strings := Value;
 end;
 
+procedure TTBXComboBoxItem.ChangeScale(M, D: Integer);
+begin
+  inherited;
+  MinListWidth := MulDiv(MinListWidth, M, D);
+  MaxListWidth := MulDiv(MaxListWidth, M, D);
+end;
+
 
 //============================================================================//
 
@@ -1484,7 +1334,7 @@ begin
     case Message.wParam of
       VK_UP:
         begin
-          if ItemIndex > 0 then {vb+}
+          if ItemIndex > 0 then
             ItemIndex := ItemIndex- 1;
           EditControl.Text := Text;
           EditControl.SelectAll;
@@ -1493,7 +1343,7 @@ begin
 
       VK_DOWN:
         begin
-          if ItemIndex < Strings.Count- 1 then {vb+}
+          if ItemIndex < Strings.Count- 1 then
             ItemIndex := ItemIndex+ 1;
           EditControl.Text := Text;
           EditControl.SelectAll;
@@ -1670,8 +1520,9 @@ begin
 
         Inc(AWidth, Margins.LeftWidth + Margins.RightWidth);
         Inc(AWidth,
-          GetPopupMargin(Self) + CurrentTheme.MenuImageTextSpace +
-          CurrentTheme.MenuLeftCaptionMargin + CurrentTheme.MenuRightCaptionMargin);
+          GetPopupMargin(Self) + CurrentTheme.GetIntegerMetrics(Self, TMI_MENU_IMGTEXTSPACE) +
+          CurrentTheme.GetIntegerMetrics(Self, TMI_MENU_LCAPTIONMARGIN) +
+          CurrentTheme.GetIntegerMetrics(Self, TMI_MENU_RCAPTIONMARGIN));
         // + make sure it's always bit indented compared to menu items
         Inc(AWidth, 2 * 8);
 
@@ -1749,6 +1600,7 @@ var
   R: TRect;
 begin
   FillChar(ItemInfo, SizeOf(ItemInfo), 0);
+  ItemInfo.Control := View.Window;
   ItemInfo.ViewType := GetViewType(View);
   ItemInfo.ItemOptions := IO_TOOLBARSTYLE or CDesigning[csDesigning in Item.ComponentState];
   ItemInfo.Enabled := Item.Enabled or View.Customizing;
@@ -1770,7 +1622,7 @@ begin
   begin
     ItemInfo.PopupMargin := GetPopupMargin(Self);
     CurrentTheme.PaintMenuItem(Canvas, R, ItemInfo);
-    Inc(R.Left, ItemInfo.PopupMargin + CurrentTheme.MenuLeftCaptionMargin - 1);
+    Inc(R.Left, ItemInfo.PopupMargin + CurrentTheme.GetIntegerMetrics(Self, TMI_MENU_LCAPTIONMARGIN) - 1);
     Canvas.Brush.Color := CurrentTheme.GetViewColor(VT_SECTIONHEADER);
     Canvas.FillRect(R);
     Assert(not ItemInfo.IsVertical);
@@ -1884,7 +1736,7 @@ begin
       Size := 16;
     end;
     // do not have a canvas here to scale by text height
-    Size := MulDiv(Size, Screen.PixelsPerInch, USER_DEFAULT_SCREEN_DPI);
+    Size := ScaleByPixelsPerInch(Size, View.GetMonitor);
     Result.CX := Size;
     Result.CY := Size;
   end;
@@ -1901,657 +1753,5 @@ begin
   inherited;
   Wide := False;
 end;
-
-//============================================================================//
-
-{$IFNDEF MPEXCLUDE}
-
-{ TTBXMRUList }
-
-function TTBXMRUList.GetFirstKey:Integer;
-begin
-  Result := FKeyShift;
-end;
-
-function TTBXMRUList.GetItemClass: TTBCustomItemClass;
-begin
-  Result := TTBXCustomItem;
-end;
-
-procedure TTBXMRUList.SetItemCaptions;
-var
-  I: Integer;
-begin
-  inherited;
-  if Container is TTBXCustomItem then
-    for I := 0 to Items.Count - 1 do
-      TTBXCustomItem(Items[I]).FontSettings := TTBXCustomItem(Container).FontSettings;
-end;
-
-procedure TTBXMRUList.SetKeyShift(Value: Integer);
-begin
-  if Value < 0 then Value := 0;
-  FKeyShift := Value;
-  SetItemCaptions;
-end;
-
-
-//============================================================================//
-
-{ TTBXMRUListItem }
-
-constructor TTBXMRUListItem.Create(AOwner: TComponent);
-begin
-  inherited;
-  ItemStyle := ItemStyle + [tbisEmbeddedGroup];
-  Caption := STBMRUListItemDefCaption[1] + 'TBX ' +
-    Copy(STBMRUListItemDefCaption, 2, Length(STBMRUListItemDefCaption) - 1);
-end;
-
-procedure TTBXMRUListItem.Notification(AComponent: TComponent;
-  Operation: TOperation);
-begin
-  inherited;
-  if (AComponent = FMRUList) and (Operation = opRemove) then MRUList := nil;
-end;
-
-procedure TTBXMRUListItem.SetMRUList(Value: TTBMRUList);
-begin
-  if FMRUList <> Value then
-  begin
-    FMRUList := Value;
-    if Assigned(Value) then
-    begin
-      Value.FreeNotification(Self);
-      LinkSubitems := TTBMRUListAccess(Value).Container;
-    end
-    else LinkSubitems := nil;
-  end;
-end;
-
-{ TTBXCustomSpinEditItem }
-
-function TTBXCustomSpinEditItem.CheckValue(const V: Extended): Extended;
-begin
-  Result := V;
-  if FMaxValue <> FMinValue then
-  begin
-    if V < FMinValue then Result := FMinValue
-    else if V > FMaxValue then Result := FMaxValue;
-  end;
-end;
-
-procedure TTBXCustomSpinEditItem.ClickDown;
-var
-  OldValue, NewValue: Extended;
-begin
-  OldValue := GetValue;
-  if Snap then
-    NewValue := Ceil(OldValue / Increment - 1 - Increment * 0.0001) * Increment
-  else
-    NewValue := OldValue - FIncrement;
-  DoStep(-1, OldValue, NewValue);
-  SetValueEx(NewValue, tcrSpinButton);
-end;
-
-procedure TTBXCustomSpinEditItem.ClickUp;
-var
-  OldValue, NewValue: Extended;
-begin
-  OldValue := GetValue;
-  if Snap then
-    NewValue := Floor(OldValue / Increment + 1 + Increment * 0.0001) * Increment
-  else
-    NewValue := OldValue + FIncrement;
-  DoStep(+1, OldValue, NewValue);
-  SetValueEx(NewValue, tcrSpinButton);
-end;
-
-constructor TTBXCustomSpinEditItem.Create(AOwner: TComponent);
-begin
-  inherited;
-  FAlignment := taRightJustify;
-  FDecimal := 2;
-  FIncrement := 1;
-  FSnap := True;
-  Text := '0';
-end;
-
-function TTBXCustomSpinEditItem.DoAcceptText(var NewText: string): Boolean;
-var
-  V: Extended;
-begin
-  if ParseValue(NewText, V) then
-  begin
-    NewText := GetAsText(V);
-    Result := True;
-  end
-  else Result := False;
-end;
-
-function TTBXCustomSpinEditItem.DoConvert(const APrefix, APostfix: string; var AValue: Extended): Boolean;
-begin
-  Result := True;
-  if Assigned(FOnConvert) then FOnConvert(Self, APrefix, APostfix, AValue, Result);
-end;
-
-procedure TTBXCustomSpinEditItem.DoStep(Step: Integer; const OldValue: Extended; var NewValue: Extended);
-begin
-  if Assigned(FOnStep) then FOnStep(Self, Step, OldValue, NewValue);
-end;
-
-procedure TTBXCustomSpinEditItem.DoTextChanged(Reason: Integer);
-begin
-  if Reason = tcrEditControl then
-    SetValueEx(GetValue, tcrNumericProperty);
-end;
-
-function TTBXCustomSpinEditItem.DoTextToValue(const AText: string; out AValue: Extended): Boolean;
-begin
-  Result := False;
-  if Assigned(FOnTextToValue) then FOnTextToValue(Self, AText, AValue, Result);
-end;
-
-procedure TTBXCustomSpinEditItem.DoValueChange(const V: Extended);
-begin
-  if Assigned(FOnValueChange) then FOnValueChange(Self, V);
-end;
-
-procedure TTBXCustomSpinEditItem.DoValueToText(const NewValue: Extended; var NewText: string);
-begin
-  if Assigned(FOnValueToText) then FOnValueToText(Self, NewValue, NewText);
-end;
-
-function TTBXCustomSpinEditItem.GetAsInteger: Integer;
-begin
-  Result := Round(Value);
-end;
-
-function TTBXCustomSpinEditItem.GetAsText(AValue: Extended): string;
-begin
-  AValue := CheckValue(AValue);
-  if ValueType = evtFloat then Result := FloatToStrF(AValue, ffFixed, 15, FDecimal)
-  else if ValueType = evtHex then Result := IntToHex(Round(AValue), 1)
-  else Result := IntToStr(Round(AValue));
-
-  if Length(Prefix) > 0 then
-  begin
-    if SpaceAfterPrefix then Result := ' ' + Result;
-    Result := Prefix + Result;
-  end;
-  if Length(Postfix) > 0 then
-  begin
-    if SpaceBeforePostfix then Result := Result + ' ';
-    Result := Result + Postfix;
-  end;
-  DoValueToText(AValue, Result);
-end;
-
-function TTBXCustomSpinEditItem.GetItemViewerClass(AView: TTBView): TTBItemViewerClass;
-begin
-  if not (tboUseEditWhenVertical in EditOptions) and
-     (AView.Orientation = tbvoVertical) then
-    Result := TTBXItemViewer
-  else
-    Result := TTBXSpinEditViewer;
-end;
-
-function TTBXCustomSpinEditItem.GetValue: Extended;
-begin
-  if not ParseValue(Text, Result) then
-    Result := FLastGoodValue;
-end;
-
-function TTBXCustomSpinEditItem.IsIncrementStored: Boolean;
-begin
-  Result := FIncrement <> 1;
-end;
-
-function TTBXCustomSpinEditItem.IsMaxValueStored: Boolean;
-begin
-  Result := FMaxValue <> 0;
-end;
-
-function TTBXCustomSpinEditItem.IsMinValueStored: Boolean;
-begin
-  Result := FMinValue <> 0;
-end;
-
-function TTBXCustomSpinEditItem.IsValueStored: Boolean;
-begin
-  Result := GetValue <> 0;
-end;
-
-function TTBXCustomSpinEditItem.ParseValue(const S: string; out V: Extended): Boolean;
-const
-  CWhiteSpace = [' ', #9];
-  CDigits = ['0'..'9'];
-  CHexDigits = CDigits + ['A'..'F'];
-  CInvalidUnitChars = [#0..#31, ' ', '*', '+', ',', '-', '.', '/', '0'..'9', '^'];
-  CInvalidHexUnitChars = CInvalidUnitChars + ['A'..'F'];
-var
-  P: PChar;
-  Sign1: Integer;
-  Value1: Extended;
-  Value2: Extended;
-  Operator: Char;
-  PrefixString, PostfixString: string;
-
-  procedure SkipWhiteSpace;
-  begin
-    while P^ in CWhiteSpace do Inc(P);
-  end;
-
-  function GetInt: Integer;
-  begin
-    Result := 0;
-    while P^ in CDigits do
-    begin
-      Result := Result * 10 + (Integer(P^) - Integer('0'));
-      Inc(P);
-    end;
-  end;
-
-  function GetInt2: Extended;
-  begin
-    Result := 0;
-    while P^ in CDigits do
-    begin
-      Result := Result * 10 + (Integer(P^) - Integer('0'));
-      Inc(P);
-    end;
-  end;
-
-  function GetNumber(out PrefixString, PostfixString: string; out R: Extended): Boolean;
-  var
-    PStart: PChar;
-    Tmp: Integer;
-    ExponentSign, IR: Integer;
-    Count1, Count2: Integer;
-    E: Extended;
-  begin
-    R := 0;
-    Result := False;
-
-    { Read prefix }
-    PStart := P;
-    if ValueType <> evtHex then while not (P^ in CInvalidUnitChars) do Inc(P)
-    else while not (P^ in CInvalidHexUnitChars) do Inc(P);
-    SetString(PrefixString, PStart, P - PStart);
-    SkipWhiteSpace;
-
-    { Read value }
-    if ValueType in [evtFloat, evtInteger] then
-    begin
-      if (ValueType = evtInteger) and not (P^ in CDigits) then Exit;
-
-      { get the integer part }
-      PStart := P;
-      R := GetInt2;
-      Count1 := P - PStart;
-
-      if (ValueType = evtFloat) and (P^ = DecimalSeparator) then
-      begin
-        Inc(P);
-        PStart := P;
-        E := GetInt2;
-        R := R + E / IntPower(10, P - PStart);
-        Count2 := P - PStart;
-      end
-      else Count2 := 0;
-
-      if (Count1 = 0) and (Count2 = 0) then Exit; // '.' (or ',') is not a number
-
-      if (ValueType = evtFloat) and (P^ in ['e', 'E']) and (PChar(P + 1)^ in ['+', '-', '0'..'9']) then
-      begin
-        Inc(P);
-        ExponentSign := 1;
-        if P^ = '-' then
-        begin
-          ExponentSign := -1;
-          Inc(P);
-        end
-        else if P^ = '+' then Inc(P);
-        if not (P^ in CDigits) then Exit;
-        Tmp := GetInt;
-        if Tmp >= 5000 then Exit;
-        R := R * IntPower(10, Tmp * ExponentSign);
-      end;
-    end
-    else { evtHex }
-    begin
-      IR := 0;
-      if not (P^ in CHexDigits) then Exit;
-      while P^ in CHexDigits do
-      begin
-        IR := IR shl 4;
-        if P^ in CDigits then Inc(IR, Integer(P^) - Integer('0'))
-        else if P^ in ['a'..'f'] then Inc(IR, Integer(P^) - Integer('a') + 10)
-        else Inc(IR, Integer(P^) - Integer('A') + 10);
-        Inc(P);
-      end;
-      R := IR;
-    end;
-    SkipWhiteSpace;
-
-    { Read postfix }
-    PStart := P;
-    if ValueType <> evtHex then while not (P^ in CInvalidUnitChars) do Inc(P)
-    else while not (P^ in CInvalidHexUnitChars) do Inc(P);
-    SetString(PostfixString, PStart, P - PStart);
-    SkipWhiteSpace;
-
-    Result := True;
-  end;
-
-begin
-  V := 0;
-
-  { Try text-to-value conversion for predefined "constants" }
-  Result := DoTextToValue(S, V);
-  if Result then Exit;
-
-  { Parse the string for values and expressions }
-  if Length(S) = 0 then Exit;
-  P := PChar(S);
-  SkipWhiteSpace;
-
-  { Read the sign }
-  Sign1 := 1;
-  if P^ = '-' then
-  begin
-    Sign1 := -1;
-    Inc(P);
-    SkipWhiteSpace;
-  end
-  else if P^ = '+' then
-  begin
-    Inc(P);
-    SkipWhiteSpace;
-  end;
-
-  { Read value }
-  if not GetNumber(PrefixString, PostfixString, Value1) then Exit;
-  if not DoConvert(PrefixString, PostfixString, Value1) then Exit;
-  Value1 := Value1 * Sign1;
-  V := Value1;
-
-  { Read operator }
-  if P^ in ['*', '+', '-', '/'] then
-  begin
-    Operator := P^;
-    Inc(P);
-    SkipWhiteSpace;
-    if not GetNumber(PrefixString, PostfixString, Value2) then Exit;
-    if not DoConvert(PrefixString, PostfixString, Value2) then Exit;
-    case Operator of
-    '*': V := V * Value2;
-    '+': V := V + Value2;
-    '-': V := V - Value2;
-    '/': if Value2 <> 0 then V := V / Value2 else Exit;
-    end;
-  end;
-
-  if P^ = #0 then Result := True;
-end;
-
-procedure TTBXCustomSpinEditItem.SetAsInteger(AValue: Integer);
-begin
-  Value := AValue;
-end;
-
-procedure TTBXCustomSpinEditItem.SetDecimal(NewDecimal: TDecimal);
-begin
-  if NewDecimal <> FDecimal then
-  begin
-    FDecimal := NewDecimal;
-    SetValueEx(GetValue, tcrNumericProperty);
-  end;
-end;
-
-procedure TTBXCustomSpinEditItem.SetIncrement(const NewIncrement: Extended);
-begin
-  if NewIncrement <= 0 then
-    raise EPropertyError.Create('Increment should be a positive value');
-  FIncrement := NewIncrement;
-end;
-
-procedure TTBXCustomSpinEditItem.SetPostfix(const NewPostfix: string);
-begin
-  if not ValidateUnits(NewPostfix) then
-    raise EPropertyError.Create('Invalid postfix');
-  FPostfix := NewPostfix;
-  SetValueEx(GetValue, tcrNumericProperty);
-end;
-
-procedure TTBXCustomSpinEditItem.SetPrefix(const NewPrefix: string);
-begin
-  if not ValidateUnits(NewPrefix) then
-    raise EPropertyError.Create('Invalid prefix');
-  FPrefix := NewPrefix;
-  SetValueEx(GetValue, tcrNumericProperty);
-end;
-
-procedure TTBXCustomSpinEditItem.SetSpaceAfterPrefix(UseSpace: Boolean);
-begin
-  FSpaceAfterPrefix := UseSpace;
-  SetValueEx(GetValue, tcrNumericProperty);
-end;
-
-procedure TTBXCustomSpinEditItem.SetSpaceBeforePostfix(UseSpace: Boolean);
-begin
-  FSpaceBeforePostfix := UseSpace;
-  SetValueEx(GetValue, tcrNumericProperty);
-end;
-
-procedure TTBXCustomSpinEditItem.SetValue(NewValue: Extended);
-begin
-  SetTextEx(GetAsText(NewValue), tcrNumericProperty);
-  if FLastGoodValue <> NewValue then
-  begin
-    FLastGoodValue := NewValue;
-    DoValueChange(NewValue);
-  end;
-end;
-
-procedure TTBXCustomSpinEditItem.SetValueEx(NewValue: Extended; Reason: Integer);
-begin
-  SetTextEx(GetAsText(NewValue), Reason);
-  if FLastGoodValue <> NewValue then
-  begin
-    FLastGoodValue := NewValue;
-    DoValueChange(NewValue);
-  end;
-end;
-
-procedure TTBXCustomSpinEditItem.SetValueType(NewType: TSEValueType);
-var
-  V: Extended;
-begin
-  if NewType <> FValueType then
-  begin
-    V := GetValue;
-    FValueType := NewType;
-    SetValueEx(V, tcrNumericProperty);
-    if NewType in [evtInteger, evtHex] then FIncrement := Max(Round(FIncrement), 1);
-  end;
-end;
-
-function TTBXCustomSpinEditItem.ValidateUnits(const S: string): Boolean;
-const
-  InvalidChars = [#0..#31, ' ', '*', '+', ',', '-', '.', '/', '0'..'9', '^'];
-var
-  I: Integer;
-begin
-  Result := False;
-  if Length(S) > 0 then
-    for I := 1 to Length(S) do
-     if S[I] in InvalidChars then Exit;
-  Result := True;
-end;
-
-{ TTBXSpinEditViewer }
-
-destructor TTBXSpinEditViewer.Destroy;
-begin
-  FBtnTimer.Free;
-  inherited;
-end;
-
-procedure TTBXSpinEditViewer.GetEditInfo(out EditInfo: TTBXEditInfo; const ItemInfo: TTBXItemInfo);
-const
-  CDisabled: array [Boolean] of Integer = (EBSS_DISABLED, 0);
-  CHot: array [Boolean] of Integer = (0, EBSS_HOT);
-  CUpDnState: array [TSEBtnState] of Integer = (0, EBSS_UP, EBSS_DOWN);
-begin
-  inherited GetEditInfo(EditInfo, ItemInfo);
-  EditInfo.RightBtnInfo.ButtonType := EBT_SPIN;
-  EditInfo.RightBtnInfo.ButtonState := CDisabled[ItemInfo.Enabled] or
-    CHot[ItemInfo.HoverKind = hkMouseHover] or CUpDnState[FBtnState];
-end;
-
-function TTBXSpinEditViewer.GetIndentAfter: Integer;
-begin
-  if IsToolbarStyle then Result := CurrentTheme.EditBtnWidth  + 2
-  else Result := GetSystemMetrics(SM_CXMENUCHECK) + 2;
-end;
-
-function TTBXSpinEditViewer.HandleEditMessage(var Message: TMessage): Boolean;
-var
-  Item: TTBXCustomSpinEditItem;
-
-  function Val: Extended;
-  begin
-    if not Item.ParseValue(EditControl.Text, Result) then Result := Item.FLastGoodValue;
-  end;
-
-begin
-  Item := TTBXCustomSpinEditItem(Self.Item);
-  if Message.Msg = WM_CHAR then
-    case TWMChar(Message).CharCode of
-      VK_TAB:
-        begin
-          Item.Value := Val;
-          EditControl.Text := Item.Text;
-        end;
-      VK_RETURN:
-        begin
-          Item.Value := Val;
-          EditControl.Text := Item.Text;
-        end;
-      VK_ESCAPE:
-        begin
-//          Item.Value := Item.GetValue;
-        end;
-    end
-  else if Message.Msg = WM_KEYDOWN then
-    case TWMKeyDown(Message).CharCode of
-      VK_UP:
-        begin
-          Item.ClickUp;
-          EditControl.Text := Item.Text;
-          EditControl.SelectAll;
-          Result := True;
-          Exit;
-        end;
-      VK_DOWN:
-        begin
-          Item.ClickDown;
-          EditControl.Text := Item.Text;
-          EditControl.SelectAll;
-          Result := True;
-          Exit;
-        end;
-    end;
-
-  Result := inherited HandleEditMessage(Message);
-end;
-
-procedure TTBXSpinEditViewer.InvalidateButtons;
-var
-  R: TRect;
-begin
-  with TTBXSpinEditItem(Item) do
-    if Show and not IsRectEmpty(BoundsRect) then
-      begin
-        R := BoundsRect;
-        R.Left := R.Right - GetIndentAfter;
-        InvalidateRect(View.Window.Handle, @R, False);
-        Include(State, tbisInvalidated);
-      end;
-end;
-
-function TTBXSpinEditViewer.IsPtInButtonPart(X, Y: Integer): Boolean;
-begin
-  Result := X <= (BoundsRect.Right - BoundsRect.Left) - GetIndentAfter;
-end;
-
-procedure TTBXSpinEditViewer.LosingCapture;
-begin
-  FBtnTimer.Free;
-  FBtnTimer := nil;
-  inherited;
-end;
-
-procedure TTBXSpinEditViewer.MouseDown(Shift: TShiftState; X, Y: Integer; var MouseDownOnMenu: Boolean);
-begin
-  if not Item.Enabled then Exit;
-  FBtnState := ebsNone;
-  if X >= BoundsRect.Right - BoundsRect.Left - GetIndentAfter then
-  begin
-    if Y < (BoundsRect.Bottom - BoundsRect.Top) div 2 then
-    begin
-      FBtnState := ebsUp;
-      TTBXSpinEditItem(Item).ClickUp;
-    end
-    else
-    begin
-      FBtnState := ebsDown;
-      TTBXSpinEditItem(Item).ClickDown;
-    end;
-
-    if FBtnTimer = nil then
-    begin
-      FBtnTimer := TTimer.Create(nil);
-      FBtnTimer.OnTimer := TimerHandler;
-    end;
-    FBtnTimer.Interval := SE_FIRSTINTERVAL;
-    FBtnTimer.Enabled := True;
-  end;
-
-  if FBtnState <> ebsNone then
-  begin
-    InvalidateButtons;
-    inherited;
-    View.SetCapture;
-  end
-  else inherited;
-end;
-
-procedure TTBXSpinEditViewer.MouseUp(X, Y: Integer; MouseWasDownOnMenu: Boolean);
-begin
-  if FBtnState <> ebsNone then
-  begin
-    FBtnState := ebsNone;
-    FBtnTimer.Free;
-    FBtnTimer := nil;
-    InvalidateButtons;
-  end;
-  inherited;
-end;
-
-procedure TTBXSpinEditViewer.TimerHandler(Sender: TObject);
-begin
-  FBtnTimer.Interval := SE_INTERVAL;
-  if FBtnState = ebsUp then TTBXSpinEditItem(Item).ClickUp
-  else if FBtnState = ebsDown then TTBXSpinEditItem(Item).ClickDown
-  else
-  begin
-    FBtnTimer.Free;
-    FBtnTimer := nil;
-  end;
-end;
-
-{$ENDIF}
 
 end.

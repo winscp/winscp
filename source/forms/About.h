@@ -42,6 +42,7 @@ private:
   TConfiguration * FConfiguration;
   TNotifyEvent FOnRegistrationLink;
   HICON FIconHandle;
+  TWebBrowserEx * FThirdPartyWebBrowser;
 
   void __fastcall LoadData();
   void __fastcall LoadThirdParty();
@@ -50,6 +51,10 @@ private:
   void __fastcall ExpatLicenceHandler(TObject * Sender);
   void __fastcall AccessViolationTest();
   void __fastcall LookupAddress();
+  void __fastcall DoLoadThirdParty();
+
+protected:
+  virtual void __fastcall Dispatch(void * Message);
 
 public:
   virtual __fastcall TAboutDialog(TComponent * AOwner,

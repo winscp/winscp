@@ -9,13 +9,9 @@ unit TBXOfficeXPTheme;
 interface
 
 {$I TB2Ver.inc}
-{$I TBX.inc}
 
 uses
-  Windows, Messages, Graphics, TBXThemes, ImgList;
-
-{$DEFINE ALTERNATIVE_DISABLED_STYLE} // remove the asterisk to change appearance of disabled images
-{$DEFINE NO_IMAGE_DIMMING}
+  Windows, Messages, Graphics, TBXThemes, ImgList, Controls, TB2Item, Forms;
 
 type
   TItemPart = (ipBody, ipText, ipFrame);
@@ -58,14 +54,14 @@ type
 
     { Metrics access}
     function  GetBooleanMetrics(Index: Integer): Boolean; override;
-    function  GetIntegerMetrics(Index: Integer): Integer; override;
+    function  GetIntegerMetrics(Monitor: TMonitor; Index: Integer): Integer; override;
     procedure GetMargins(MarginID: Integer; out Margins: TTBXMargins); override;
     function  GetImageOffset(Canvas: TCanvas; const ItemInfo: TTBXItemInfo; ImageList: TCustomImageList): TPoint; override;
     function  GetItemColor(const ItemInfo: TTBXItemInfo): TColor; override;
     function  GetItemTextColor(const ItemInfo: TTBXItemInfo): TColor; override;
     function  GetItemImageBackground(const ItemInfo: TTBXItemInfo): TColor; override;
     function  GetPopupShadowType: Integer; override;
-    procedure GetViewBorder(ViewType: Integer; out Border: TPoint); override;
+    procedure GetViewBorder(Control: TControl; ViewType: Integer; out Border: TPoint); override;
     function  GetViewColor(AViewType: Integer): TColor; override;
     procedure GetViewMargins(ViewType: Integer; out Margins: TTBXMargins); override;
 
@@ -76,29 +72,25 @@ type
     procedure PaintCheckMark(Canvas: TCanvas; ARect: TRect; const ItemInfo: TTBXItemInfo); override;
     procedure PaintChevron(Canvas: TCanvas; ARect: TRect; const ItemInfo: TTBXItemInfo); override;
     procedure PaintDock(Canvas: TCanvas; const ClientRect, DockRect: TRect; DockPosition: Integer); override;
-    procedure PaintDockPanelNCArea(Canvas: TCanvas; R: TRect; const DockPanelInfo: TTBXDockPanelInfo); override;
     procedure PaintDropDownArrow(Canvas: TCanvas; const ARect: TRect; const ItemInfo: TTBXItemInfo); override;
     procedure PaintEditButton(Canvas: TCanvas; const ARect: TRect; var ItemInfo: TTBXItemInfo; ButtonInfo: TTBXEditBtnInfo); override;
-    procedure PaintEditFrame(Canvas: TCanvas; const ARect: TRect; var ItemInfo: TTBXItemInfo; const EditInfo: TTBXEditInfo); override;
+    procedure PaintEditFrame(Monitor: TMonitor; Canvas: TCanvas; const ARect: TRect; var ItemInfo: TTBXItemInfo; const EditInfo: TTBXEditInfo); override;
     procedure PaintFloatingBorder(Canvas: TCanvas; const ARect: TRect; const WindowInfo: TTBXWindowInfo); override;
     procedure PaintFrame(Canvas: TCanvas; const ARect: TRect; const ItemInfo: TTBXItemInfo); override;
     procedure PaintImage(Canvas: TCanvas; ARect: TRect; const ItemInfo: TTBXItemInfo; ImageList: TCustomImageList; ImageIndex: Integer); override;
-    procedure PaintMDIButton(Canvas: TCanvas; ARect: TRect; const ItemInfo: TTBXItemInfo; ButtonKind: Cardinal); override;
     procedure PaintMenuItem(Canvas: TCanvas; const ARect: TRect; var ItemInfo: TTBXItemInfo); override;
     procedure PaintMenuItemFrame(Canvas: TCanvas; const ARect: TRect; const ItemInfo: TTBXItemInfo); override;
-    procedure PaintPageScrollButton(Canvas: TCanvas; const ARect: TRect; ButtonType: Integer; Hot: Boolean); override;
     procedure PaintPopupNCArea(Canvas: TCanvas; R: TRect; const PopupInfo: TTBXPopupInfo); override;
     procedure PaintSeparator(Canvas: TCanvas; ARect: TRect; ItemInfo: TTBXItemInfo; Horizontal, LineSeparator: Boolean); override;
-    procedure PaintToolbarNCArea(Canvas: TCanvas; R: TRect; const ToolbarInfo: TTBXToolbarInfo); override;
-    procedure PaintFrameControl(Canvas: TCanvas; R: TRect; Kind, State: Integer; Params: Pointer); override;
-    procedure PaintStatusBar(Canvas: TCanvas; R: TRect; Part: Integer); override;
+    procedure PaintToolbarNCArea(Monitor: TMonitor; Canvas: TCanvas; R: TRect; const ToolbarInfo: TTBXToolbarInfo); override;
+    procedure PaintStatusBar(Control: TWinControl; Canvas: TCanvas; R: TRect; Part: Integer); override;
   end;
 
 implementation
 
 uses
-  TBXUtils, TB2Common, TB2Item, Classes, Controls, Commctrl, Forms, SysUtils,
-  Types, UITypes, UxTheme;
+  TBXUtils, TB2Common, Classes, Commctrl, SysUtils,
+  Types, UITypes, UxTheme, PasTools;
 
 var
   StockImgList: TImageList;
@@ -124,13 +116,12 @@ begin
     TMB_EDITMENUFULLSELECT:        Result := True;
     TMB_EDITHEIGHTEVEN:            Result := False;
     TMB_SOLIDTOOLBARNCAREA:        Result := False;
-    TMB_SOLIDTOOLBARCLIENTAREA:    Result := True;
   else
     Result := False;
   end;
 end;
 
-function TTBXOfficeXPTheme.GetIntegerMetrics(Index: Integer): Integer;
+function TTBXOfficeXPTheme.GetIntegerMetrics(Monitor: TMonitor; Index: Integer): Integer;
 const
   DEFAULT = -1;
 begin
@@ -144,8 +135,6 @@ begin
     TMI_MENU_LCAPTIONMARGIN:         Result := 3;
     TMI_MENU_RCAPTIONMARGIN:         Result := 3;
     TMI_MENU_SEPARATORSIZE:          Result := 3;
-    TMI_MENU_MDI_DW:                 Result := 2;
-    TMI_MENU_MDI_DH:                 Result := 2;
 
     TMI_TLBR_SEPARATORSIZE:          Result := 6;
 
@@ -160,8 +149,7 @@ begin
 
   if Result > 0 then
   begin
-    // DPI-scaling for a lack of better choice here
-    Result := MulDiv(Result, Screen.PixelsPerInch, USER_DEFAULT_SCREEN_DPI);
+    Result := ScaleByPixelsPerInch(Result, Monitor);
   end;
 end;
 
@@ -271,7 +259,7 @@ begin
   if Result = clNone then Result := GetViewColor(ItemInfo.ViewType);
 end;
 
-procedure TTBXOfficeXPTheme.GetViewBorder(ViewType: Integer; out Border: TPoint);
+procedure TTBXOfficeXPTheme.GetViewBorder(Control: TControl; ViewType: Integer; out Border: TPoint);
 const
   XMetrics: array [Boolean] of Integer = (SM_CXDLGFRAME, SM_CXFRAME);
   YMetrics: array [Boolean] of Integer = (SM_CYDLGFRAME, SM_CYFRAME);
@@ -290,8 +278,8 @@ begin
     if (ViewType and TVT_FLOATING) = TVT_FLOATING then
     begin
       Resizable := (ViewType and TVT_RESIZABLE) = TVT_RESIZABLE;
-      Border.X := GetSystemMetrics(XMetrics[Resizable]) - 1;
-      Border.Y := GetSystemMetrics(YMetrics[Resizable]) - 1;
+      Border.X := GetSystemMetricsForControl(Control, XMetrics[Resizable]) - 1;
+      Border.Y := GetSystemMetricsForControl(Control, YMetrics[Resizable]) - 1;
     end
     else SetBorder(2, 2);
   end
@@ -306,8 +294,8 @@ begin
     if (ViewType and DPVT_FLOATING) = DPVT_FLOATING then
     begin
       Resizable := (ViewType and DPVT_RESIZABLE) = DPVT_RESIZABLE;
-      Border.X := GetSystemMetrics(XMetrics[Resizable]) - 1;
-      Border.Y := GetSystemMetrics(YMetrics[Resizable]) - 1;
+      Border.X := GetSystemMetricsForControl(Control, XMetrics[Resizable]) - 1;
+      Border.Y := GetSystemMetricsForControl(Control, YMetrics[Resizable]) - 1;
     end
     else SetBorder(2, 2);
   end
@@ -383,9 +371,9 @@ var
   Diag: Integer;
   I: Integer;
 begin
-  Two := ScaleByTextHeightRunTime(Canvas, 2);
-  Three := ScaleByTextHeightRunTime(Canvas, 3);
-  Four := ScaleByTextHeightRunTime(Canvas, 4);
+  Two := TBXScaleByTextHeightRunTime(Canvas, 2);
+  Three := TBXScaleByTextHeightRunTime(Canvas, 3);
+  Four := TBXScaleByTextHeightRunTime(Canvas, 4);
 
   DC := Canvas.Handle;
   X := (ARect.Left + ARect.Right) div 2 - 1;
@@ -541,7 +529,7 @@ begin
     end;
 end;
 
-procedure TTBXOfficeXPTheme.PaintEditFrame(Canvas: TCanvas;
+procedure TTBXOfficeXPTheme.PaintEditFrame(Monitor: TMonitor; Canvas: TCanvas;
   const ARect: TRect; var ItemInfo: TTBXItemInfo; const EditInfo: TTBXEditInfo);
 var
   DC: HDC;
@@ -552,7 +540,7 @@ begin
   DC := Canvas.Handle;
   R := ARect;
   PaintFrame(Canvas, R, ItemInfo);
-  W := EditFrameWidth;
+  W := GetIntegerMetrics(Monitor, TMI_EDIT_FRAMEWIDTH);
   InflateRect(R, -W, -W);
   Embedded := ((ItemInfo.ViewType and VT_TOOLBAR) = VT_TOOLBAR) and
     ((ItemInfo.ViewType and TVT_EMBEDDED) = TVT_EMBEDDED);
@@ -602,7 +590,7 @@ begin
     Y := (Top + Bottom) div 2 - 1;
     Pen.Color := GetPartColor(ItemInfo, ipText);
     Brush.Color := Pen.Color;
-    Two := ScaleByTextHeightRunTime(Canvas, 2);
+    Two := TBXScaleByTextHeightRunTime(Canvas, 2);
     if ItemInfo.IsVertical then Polygon([Point(X, Y + Two), Point(X, Y - Two), Point(X - Two, Y)])
     else Polygon([Point(X - Two, Y), Point(X + Two, Y), Point(X, Y + Two)]);
   end;
@@ -709,13 +697,13 @@ begin
     { Caption }
     if (WRP_CAPTION and WindowInfo.RedrawPart) <> 0 then
     begin
-      R := Rect(0, 0, WindowInfo.ClientWidth, GetSystemMetrics(SM_CYSMCAPTION) - 1);
+      R := Rect(0, 0, WindowInfo.ClientWidth, GetSystemMetricsForControl(WindowInfo.ParentControl, SM_CYSMCAPTION) - 1);
       with WindowInfo.FloatingBorderSize do OffsetRect(R, X, Y);
       DrawLineEx(Canvas.Handle, R.Left, R.Bottom, R.Right, R.Bottom, BodyColor);
 
       if ((CDBS_VISIBLE and WindowInfo.CloseButtonState) <> 0) and
         ((WRP_CLOSEBTN and WindowInfo.RedrawPart) <> 0) then
-        Dec(R.Right, GetSystemMetrics(SM_CYSMCAPTION) - 1);
+        Dec(R.Right, GetSystemMetricsForControl(WindowInfo.ParentControl, SM_CYSMCAPTION) - 1);
 
       Brush.Color := CaptionColor;
       FillRect(R);
@@ -729,7 +717,7 @@ begin
     { Close button }
     if (CDBS_VISIBLE and WindowInfo.CloseButtonState) <> 0 then
     begin
-      R := Rect(0, 0, WindowInfo.ClientWidth, GetSystemMetrics(SM_CYSMCAPTION) - 1);
+      R := Rect(0, 0, WindowInfo.ClientWidth, GetSystemMetricsForControl(WindowInfo.ParentControl, SM_CYSMCAPTION) - 1);
       with WindowInfo.FloatingBorderSize do OffsetRect(R, X, Y);
       R.Left := R.Right - (R.Bottom - R.Top);
       DrawLineEx(Canvas.Handle, R.Left - 1, R.Bottom, R.Right, R.Bottom, BodyColor);
@@ -788,32 +776,9 @@ begin
       Exit;
     end;
 
-{$IFNDEF ALTERNATIVE_DISABLED_STYLE}
-    HiContrast := IsDarkColor(GetItemImageBackground(ItemInfo), 64);
-
     if not Enabled then
     begin
-      DrawTBXIconFlatShadow(Canvas, ARect, ImageList, ImageIndex,
-        BtnItemColors[bisDisabled, ipText]);
-    end
-    else if Selected or Pushed or (HoverKind <> hkNone) then
-    begin
-      if not (Selected or Pushed and not IsPopupParent) then
-      begin
-        OffsetRect(ARect, 1, 1);
-        DrawTBXIconFullShadow(Canvas, ARect, ImageList, ImageIndex, IconShadowColor);
-        OffsetRect(ARect, -2, -2);
-      end;
-      DrawTBXIcon(Canvas, ARect, ImageList, ImageIndex, HiContrast);
-    end
-    else if HiContrast or TBXHiContrast or TBXLoColor then
-      DrawTBXIcon(Canvas, ARect, ImageList, ImageIndex, HiContrast)
-    else
-      HighlightTBXIcon(Canvas, ARect, ImageList, ImageIndex, clWindow, 178);
-{$ELSE}
-    HiContrast := ColorIntensity(GetItemImageBackground(ItemInfo)) < 80;
-    if not Enabled then
-    begin
+      HiContrast := ColorIntensity(GetItemImageBackground(ItemInfo)) < 80;
       if not HiContrast then
         DrawTBXIconShadow(Canvas, ARect, ImageList, ImageIndex, 0)
       else
@@ -828,37 +793,11 @@ begin
         DrawTBXIconShadow(Canvas, ARect, ImageList, ImageIndex, 1);
         OffsetRect(ARect, -2, -2);
       end;
-      DrawTBXIcon(Canvas, ARect, ImageList, ImageIndex, HiContrast);
+      DrawTBXIcon(Canvas, ARect, ImageList, ImageIndex);
     end
       else
-{$IFNDEF NO_IMAGE_DIMMING}
-    if HiContrast or TBXHiContrast or TBXLoColor then
-{$ENDIF}
-      DrawTBXIcon(Canvas, ARect, ImageList, ImageIndex, HiContrast)
-{$IFNDEF NO_IMAGE_DIMMING}
-    else
-      HighlightTBXIcon(Canvas, ARect, ImageList, ImageIndex, clWindow, 178)
-{$ENDIF}
-    ;
-{$ENDIF}
+    DrawTBXIcon(Canvas, ARect, ImageList, ImageIndex)
   end;
-end;
-
-procedure TTBXOfficeXPTheme.PaintMDIButton(Canvas: TCanvas; ARect: TRect;
-  const ItemInfo: TTBXItemInfo; ButtonKind: Cardinal);
-var
-  Index: Integer;
-begin
-  PaintButton(Canvas, ARect, ItemInfo);
-  Dec(ARect.Bottom);
-  case ButtonKind of
-    DFCS_CAPTIONMIN: Index := 2;
-    DFCS_CAPTIONRESTORE: Index := 3;
-    DFCS_CAPTIONCLOSE: Index := 0;
-  else
-    Exit;
-  end;
-  DrawGlyph(Canvas.Handle, ARect, StockImgList, Index, GetPartColor(ItemInfo, ipText));
 end;
 
 procedure TTBXOfficeXPTheme.PaintMenuItemFrame(Canvas: TCanvas;
@@ -889,7 +828,7 @@ begin
   DC := Canvas.Handle;
   with ItemInfo do
   begin
-    ArrowWidth := GetSystemMetrics(SM_CXMENUCHECK);
+    ArrowWidth := GetSystemMetricsForControl(ItemInfo.Control, SM_CXMENUCHECK);
     PaintMenuItemFrame(Canvas, ARect, ItemInfo);
     ClrText := GetPartColor(ItemInfo, ipText);
     R := ARect;
@@ -1021,7 +960,7 @@ begin
   DrawGlyph(DC, R, 8, 7, Pattern[0], Color);
 end;
 
-procedure TTBXOfficeXPTheme.PaintToolbarNCArea(Canvas: TCanvas; R: TRect; const ToolbarInfo: TTBXToolbarInfo);
+procedure TTBXOfficeXPTheme.PaintToolbarNCArea(Monitor: TMonitor; Canvas: TCanvas; R: TRect; const ToolbarInfo: TTBXToolbarInfo);
 const
   DragHandleOffsets: array [Boolean, DHS_DOUBLE..DHS_SINGLE] of Integer = ((2, 0, 1), (5, 0, 5));
 
@@ -1102,8 +1041,8 @@ begin
       // Using DPI scaling instead of text-height scaling because
       // toolbar NC area pieces are already DPI-scaled in
       // TB2Dock initialization section
-      Two := MulDiv(2, Screen.PixelsPerInch, USER_DEFAULT_SCREEN_DPI);
-      Three := MulDiv(3, Screen.PixelsPerInch, USER_DEFAULT_SCREEN_DPI);
+      Two := ScaleByPixelsPerInch(2, Monitor);
+      Three := ScaleByPixelsPerInch(3, Monitor);
       if Horz then
       begin
         Inc(R2.Left, DragHandleOffsets[BtnVisible, ToolbarInfo.DragHandleStyle]);
@@ -1165,113 +1104,6 @@ procedure TTBXOfficeXPTheme.PaintDock(Canvas: TCanvas; const ClientRect,
   DockRect: TRect; DockPosition: Integer);
 begin
   // this theme does not support dock painting
-end;
-
-procedure TTBXOfficeXPTheme.PaintDockPanelNCArea(Canvas: TCanvas; R: TRect; const DockPanelInfo: TTBXDockPanelInfo);
-
-  function GetBtnItemState(BtnState: Integer): TBtnItemState;
-  begin
-    if (BtnState and CDBS_PRESSED) <> 0 then Result := bisPressed
-    else if (BtnState and CDBS_HOT) <> 0 then Result := bisHot
-    else Result := bisNormal;
-  end;
-
-var
-  DC: HDC;
-  C, HeaderColor: TColor;
-  I, Sz, Flags: Integer;
-  R2: TRect;
-  BtnItemState: TBtnItemState;
-  B: HBrush;
-  OldBkMode: Cardinal;
-  OldFont: HFont;
-  OldTextColor: TColorRef;
-begin
-  DC := Canvas.Handle;
-  with DockPanelInfo do
-  begin
-    I := ColorIntensity(ColorToRGB(clBtnFace));
-    R2 := R;
-    if not TBXLoColor and (I in [64..250]) then
-    begin
-      FrameRectEx(DC, R, clBtnFace, True);
-      FrameRectEx(DC, R, EffectiveColor, False);
-      with R do
-      begin
-        C := GetSysColor(COLOR_BTNFACE);
-        SetPixelV(DC, Left, Top, C);
-        if IsVertical then SetPixelV(DC, Right -  1, Top, C)
-        else SetPixelV(DC, Left, Bottom - 1, C);
-      end;
-    end
-    else
-    begin
-      FrameRectEx(DC, R, EffectiveColor, True);
-
-      if I < 64 then B := CreateDitheredBrush(EffectiveColor, clWhite)
-      else B := CreateDitheredBrush(EffectiveColor, clBtnShadow);
-      Windows.FrameRect(DC, R, B);
-      DeleteObject(B);
-
-      with R do
-      begin
-        SetPixelV(DC, Left, Top, EffectiveColor);
-        if IsVertical then SetPixelV(DC, Right -  1, Top, EffectiveColor)
-        else SetPixelV(DC, Left, Bottom - 1, EffectiveColor);
-      end;
-      InflateRect(R, -1, -1);
-      FrameRectEx(DC, R, EffectiveColor, False);
-    end;
-    R := R2;
-    InflateRect(R, -BorderSize.X, -BorderSize.Y);
-    Sz := GetSystemMetrics(SM_CYSMCAPTION);
-    if IsVertical then
-    begin
-      R.Bottom := R.Top + Sz - 1;
-      DrawLineEx(DC, R.Left, R.Bottom, R.Right, R.Bottom, EffectiveColor);
-    end
-    else
-    begin
-      R.Right := R.Left + Sz - 1;
-      DrawLineEx(DC, R.Right, R.Top, R.Right, R.Bottom, EffectiveColor);
-    end;
-    HeaderColor := clBtnFace;
-    FillRectEx(DC, R, HeaderColor);
-
-    if (CDBS_VISIBLE and CloseButtonState) <> 0 then
-    begin
-      R2 := R;
-      if IsVertical then
-      begin
-        R2.Left := R2.Right - Sz + 1;
-        R.Right := R2.Left;
-      end
-      else
-      begin
-        R2.Top := R2.Bottom - Sz + 1;
-        R.Bottom := R2.Top;
-      end;
-
-      BtnItemState := GetBtnItemState(CloseButtonState);
-      FrameRectEx(DC, R2, BtnItemColors[BtnItemState, ipFrame], True);
-      FillRectEx(DC, R2, BtnItemColors[BtnItemState, ipBody]);
-      DrawButtonBitmap(DC, R2, BtnItemColors[BtnItemState, ipText]);
-    end;
-
-
-    if IsVertical then InflateRect(R, -4, 0)
-    else InflateRect(R, 0, -4);
-
-    OldFont := SelectObject(DC, SmCaptionFont.Handle);
-    OldBkMode := SetBkMode(DC, TRANSPARENT);
-    OldTextColor := SetTextColor(DC, ColorToRGB(SmCaptionFont.Color));
-    Flags := DT_SINGLELINE or DT_VCENTER or DT_END_ELLIPSIS or DT_NOPREFIX;
-    if IsVertical then DrawText(DC, Caption, -1, R, Flags)
-    else DrawRotatedText(DC, string(Caption), R, Flags);
-    SetTextColor(DC, OldTextColor);
-    SetBkMode(DC, OldBkMode);
-    SelectObject(DC, OldFont);
-  end;
 end;
 
 procedure TTBXOfficeXPTheme.SetupColorCache;
@@ -1536,147 +1368,7 @@ begin
   Margins.BottomHeight := 0;
 end;
 
-procedure TTBXOfficeXPTheme.PaintPageScrollButton(Canvas: TCanvas;
-  const ARect: TRect; ButtonType: Integer; Hot: Boolean);
-var
-  DC: HDC;
-  R: TRect;
-  X, Y, Sz: Integer;
-  C: TColor;
-begin
-  DC := Canvas.Handle;
-  R := ARect;
-  if Hot then C := BtnItemColors[bisHot, ipFrame]
-  else C := clBtnShadow;
-  FrameRectEx(DC, R, C, False);
-  InflateRect(R, -1, -1);
-  if Hot then C := BtnItemColors[bisHot, ipBody]
-  else C := clBtnFace;
-  FillRectEx(DC, R, C);
-  X := (R.Left + R.Right) div 2;
-  Y := (R.Top + R.Bottom) div 2;
-  Sz := Min(X - R.Left, Y - R.Top) * 3 div 4;
-
-  if Hot then C := BtnItemColors[bisHot, ipText]
-  else C := BtnItemColors[bisNormal, ipText];
-
-  case ButtonType of
-    PSBT_UP:
-      begin
-        Inc(Y, Sz div 2);
-        PolygonEx(DC, [Point(X + Sz, Y), Point(X, Y - Sz), Point(X - Sz, Y)], C, C);
-      end;
-    PSBT_DOWN:
-      begin
-        Y := (R.Top + R.Bottom - 1) div 2;
-        Dec(Y, Sz div 2);
-        PolygonEx(DC, [Point(X + Sz, Y), Point(X, Y + Sz), Point(X - Sz, Y)], C, C);
-      end;
-    PSBT_LEFT:
-      begin
-        Inc(X, Sz div 2);
-        PolygonEx(DC, [Point(X, Y + Sz), Point(X - Sz, Y), Point(X, Y - Sz)], C, C);
-      end;
-    PSBT_RIGHT:
-      begin
-        X := (R.Left + R.Right - 1) div 2;
-        Dec(X, Sz div 2);
-        PolygonEx(DC, [Point(X, Y + Sz), Point(X + Sz, Y), Point(X, Y - Sz)], C, C);
-      end;
-  end;
-end;
-
-procedure TTBXOfficeXPTheme.PaintFrameControl(Canvas: TCanvas; R: TRect; Kind, State: Integer; Params: Pointer);
-var
-  DC: HDC;
-  X, Y: Integer;
-  Pen, OldPen: HPen;
-  Brush, OldBrush: HBrush;
-  C: TColor;
-
-  function GetPenColor: TColor;
-  begin
-    if Boolean(State and PFS_DISABLED) then Result := clBtnShadow
-    else if Boolean(State and PFS_PUSHED) then Result := BtnItemColors[bisPressed, ipFrame]
-    else if Boolean(State and PFS_HOT) then Result := BtnItemColors[bisHot, ipFrame]
-    else Result := clBtnShadow;
-  end;
-
-  function GetBrush: HBrush;
-  begin
-    if Boolean(State and PFS_DISABLED) then Result := CreateBrushEx(clNone)
-    else if Boolean(State and PFS_PUSHED) then Result := CreateBrushEx(BtnItemColors[bisPressed, ipBody])
-    else if Boolean(State and PFS_HOT) then Result := CreateBrushEx(BtnItemColors[bisHot, ipBody])
-    else if Boolean(State and PFS_MIXED) then Result := CreateDitheredBrush(clWindow, clBtnFace)
-    else Result := CreateBrushEx(clNone);
-  end;
-
-  function GetTextColor: TColor;
-  begin
-    if Boolean(State and PFS_DISABLED) then Result := BtnItemColors[bisDisabled, ipText]
-    else if Boolean(State and PFS_PUSHED) then Result := BtnItemColors[bisPressed, ipText]
-    else if Boolean(State and PFS_MIXED) then Result := clBtnShadow
-    else if Boolean(State and PFS_HOT) then Result := BtnItemColors[bisHot, ipText]
-    else Result := BtnItemColors[bisNormal, ipText];
-  end;
-
-begin
-  DC := Canvas.Handle;
-  case Kind of
-    PFC_CHECKBOX:
-      begin
-        InflateRect(R, -1, -1);
-        FrameRectEx(DC, R, GetPenColor, True);
-        Brush := GetBrush;
-        Windows.FillRect(DC, R, Brush);
-        DeleteObject(Brush);
-        InflateRect(R, 1, 1);
-
-        if Boolean(State and (PFS_CHECKED or PFS_MIXED)) then
-        begin
-          X := (R.Left + R.Right) div 2 - 1;
-          Y := (R.Top + R.Bottom) div 2 + 1;
-          C := GetTextColor;
-          PolygonEx(DC, [Point(X-2, Y), Point(X, Y+2), Point(X+4, Y-2),
-            Point(X+4, Y-4), Point(X, Y), Point(X-2, Y-2), Point(X-2, Y)], C, C);
-        end;
-      end;
-    PFC_RADIOBUTTON:
-      begin
-        InflateRect(R, -1, -1);
-
-        with R do
-        begin
-          Brush := GetBrush;
-          OldBrush := SelectObject(DC, Brush);
-          Pen := CreatePenEx(GetPenColor);
-          OldPen := SelectObject(DC, Pen);
-          Windows.Ellipse(DC, Left, Top, Right, Bottom);
-          SelectObject(DC, OldPen);
-          DeleteObject(Pen);
-          SelectObject(DC, OldBrush);
-          DeleteObject(Brush);
-        end;
-
-        if Boolean(State and PFS_CHECKED) then
-        begin
-          InflateRect(R, -3, -3);
-          C := GetTextColor;
-          Brush := CreateBrushEx(C);
-          OldBrush := SelectObject(DC, Brush);
-          Pen := CreatePenEx(C);
-          OldPen := SelectObject(DC, Pen);
-          with R do Windows.Ellipse(DC, Left, Top, Right, Bottom);
-          SelectObject(DC, OldPen);
-          DeleteObject(Pen);
-          SelectObject(DC, OldBrush);
-          DeleteObject(Brush);
-        end;
-      end;
-  end;
-end;
-
-procedure TTBXOfficeXPTheme.PaintStatusBar(Canvas: TCanvas; R: TRect; Part: Integer);
+procedure TTBXOfficeXPTheme.PaintStatusBar(Control: TWinControl; Canvas: TCanvas; R: TRect; Part: Integer);
 var
   D: Integer;
   DC: HDC;
@@ -1688,6 +1380,8 @@ var
     Inc(D);
   end;
 
+var
+  Theme: THandle;
 begin
   DC := Canvas.Handle;
   case Part of
@@ -1703,7 +1397,9 @@ begin
     SBP_GRIPPER:
       begin
         Inc(R.Right);
-        DrawThemeBackground(STATUSBAR_THEME, DC, SP_GRIPPER, 0, R, nil)
+        Theme := OpenThemeData(Control.Handle, 'STATUS');
+        DrawThemeBackground(Theme, DC, SP_GRIPPER, 0, R, nil);
+        CloseThemeData(Theme);
       end;
   end;
 end;

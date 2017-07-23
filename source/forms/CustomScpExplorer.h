@@ -101,8 +101,6 @@ __published:
   void __fastcall ApplicationRestore(TObject * Sender);
   void __fastcall RemoteDirViewContextPopup(TObject *Sender,
     const TPoint &MousePos, bool &Handled);
-  void __fastcall RemoteDirViewGetSelectFilter(
-    TCustomDirView *Sender, bool Select, TFileFilter &Filter);
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
   void __fastcall RemoteDirViewDisplayProperties(TObject *Sender);
   void __fastcall DirViewColumnRightClick(TObject *Sender,
@@ -198,6 +196,7 @@ private:
   bool FQueueItemInvalidated;
   bool FFormRestored;
   bool FAutoOperation;
+  TFileOperationFinishedEvent FOnFileOperationFinished;
   bool FForceExecution;
   unsigned short FIgnoreNextDialogChar;
   TStringList * FErrorList;
@@ -207,8 +206,7 @@ private:
   TTimer * FDelayedDeletionTimer;
   TStrings * FDDFileList;
   __int64 FDDTotalSize;
-  UnicodeString FDragDropSshTerminate;
-  TOnceDoneOperation FDragDropOnceDoneOperation;
+  std::unique_ptr<ExtException> FDragDropSshTerminate;
   HINSTANCE FOle32Library;
   HCURSOR FDragMoveCursor;
   UnicodeString FDragTempDir;
@@ -253,6 +251,7 @@ private:
   bool FStandaloneEditing;
   TFeedSynchronizeError FOnFeedSynchronizeError;
   bool FNeedSession;
+  TTerminal * FFileFindTerminal;
 
   bool __fastcall GetEnableFocusedOperation(TOperationSide Side, int FilesOnly);
   bool __fastcall GetEnableSelectedOperation(TOperationSide Side, int FilesOnly);
@@ -272,7 +271,7 @@ private:
   void __fastcall QueueSplitterDblClick(TObject * Sender);
   void __fastcall AddQueueItem(TTerminalQueue * Queue, TTransferDirection Direction,
     TStrings * FileList, const UnicodeString TargetDirectory,
-    const TCopyParamType & CopyParam, int Params);
+    const TGUICopyParamType & CopyParam, int Params);
   void __fastcall AddQueueItem(TTerminalQueue * Queue, TQueueItem * QueueItem, TTerminal * Terminal);
   void __fastcall ClearTransferSourceSelection(TTransferDirection Direction);
   void __fastcall SessionsDDDragOver(int KeyState, const TPoint & Point, int & Effect);
@@ -297,6 +296,7 @@ private:
   bool __fastcall CanPasteToDirViewFromClipBoard();
   void __fastcall CMShowingChanged(TMessage & Message);
   void __fastcall WMClose(TMessage & Message);
+  void __fastcall CMDpiChanged(TMessage & Message);
   void __fastcall WMDpiChanged(TMessage & Message);
 
 protected:
@@ -321,7 +321,6 @@ protected:
   unsigned int FLockLevel;
   unsigned int FLockSuspendLevel;
   bool FDisabledOnLockSuspend;
-  TImageList * FSystemImageList;
   bool FAlternativeDelete;
   TDragDropFilesEx * FSessionsDragDropFilesEx;
   TDragDropFilesEx * FQueueDragDropFilesEx;
@@ -332,6 +331,7 @@ protected:
     TTransferType Type, bool Temp, TStrings * FileList,
     UnicodeString & TargetDirectory, TGUICopyParamType & CopyParam, bool Confirm,
     bool DragDrop, int Options);
+  virtual void __fastcall CopyParamDialogAfter(TTransferDirection Direction, bool Temp, const UnicodeString & TargetDirectory);
   virtual bool __fastcall RemoteTransferDialog(TTerminal *& Session,
     TStrings * FileList, UnicodeString & Target, UnicodeString & FileMask, bool & DirectCopy,
     bool NoConfirmation, bool Move);
@@ -352,6 +352,18 @@ protected:
   bool __fastcall SetProperties(TOperationSide Side, TStrings * FileList);
   void __fastcall CustomCommand(TStrings * FileList,
     const TCustomCommandType & Command, TStrings * ALocalFileList);
+  void __fastcall RemoteCustomCommand(
+    TStrings * FileList, const TCustomCommandType & ACommand,
+    const TCustomCommandData & Data, const UnicodeString & CommandCommand);
+  void __fastcall LocalCustomCommandPure(
+    TStrings * FileList, const TCustomCommandType & ACommand, const UnicodeString & Command, TStrings * ALocalFileList,
+    const TCustomCommandData & Data, bool LocalFileCommand, bool FileListCommand, UnicodeString * POutput);
+  void __fastcall LocalCustomCommandWithRemoteFiles(
+    const TCustomCommandType & ACommand, const UnicodeString & Command, const TCustomCommandData & Data,
+    bool FileListCommand, UnicodeString * POutput);
+  void __fastcall LocalCustomCommand(TStrings * FileList,
+    const TCustomCommandType & ACommand, TStrings * ALocalFileList,
+    const TCustomCommandData & Data, const UnicodeString & CommandCommand);
   virtual void __fastcall TerminalChanging();
   virtual void __fastcall TerminalChanged();
   virtual void __fastcall QueueChanged();
@@ -376,6 +388,9 @@ protected:
   inline void __fastcall WMSysCommand(TMessage & Message);
   void __fastcall WMQueryEndSession(TMessage & Message);
   void __fastcall WMEndSession(TWMEndSession & Message);
+#ifdef _DEBUG
+  inline void __fastcall WMWindowPosChanged(TWMWindowPosMsg & Message);
+#endif
   void __fastcall WMCopyData(TMessage & Message);
   virtual void __fastcall SysResizing(unsigned int Cmd);
   DYNAMIC void __fastcall DoShow();
@@ -516,9 +531,13 @@ protected:
   virtual void __fastcall CreateWnd();
   virtual void __fastcall DestroyWnd();
   virtual bool __fastcall OpenBookmark(UnicodeString Local, UnicodeString Remote);
-  void __fastcall DoFindFiles(UnicodeString Directory, const TFileMasks & FileMask,
+  void __fastcall DoFindFiles(TTerminal * Terminal, UnicodeString Directory, const TFileMasks & FileMask,
     TFileFoundEvent OnFileFound, TFindingFileEvent OnFindingFile);
-  virtual void __fastcall DoFocusRemotePath(UnicodeString Path);
+  virtual void __fastcall DoFocusRemotePath(TTerminal * Terminal, const UnicodeString & Path);
+  void __fastcall DoOperationOnFoundFiles(
+    TFileOperation Operation, TTerminal * ATerminal, TStrings * FileList, TFileOperationFinishedEvent OnFileOperationFinished);
+  void __fastcall DoDeleteFoundFiles(TTerminal * Terminal, TStrings * FileList, TFileOperationFinishedEvent OnFileOperationFinished);
+  void __fastcall DoDownloadFoundFiles(TTerminal * ATerminal, TStrings * FileList, TFileOperationFinishedEvent OnFileOperationFinished);
   bool __fastcall ExecuteFileOperation(TFileOperation Operation, TOperationSide Side,
     bool OnFocused, bool NoConfirmation = false, void * Param = NULL);
   void __fastcall UpdateCopyParamCounters(const TCopyParamType & CopyParam);
@@ -566,6 +585,9 @@ protected:
   bool __fastcall SelectedAllFilesInDirView(TCustomDirView * DView);
   TSessionData * __fastcall SessionDataForCode();
   void __fastcall RefreshPanel(const UnicodeString & Session, const UnicodeString & Path);
+  DYNAMIC void __fastcall ChangeScale(int M, int D);
+  virtual void __fastcall UpdateImages();
+  void __fastcall UpdatePixelsPerInchMainWindowCounter();
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();
@@ -591,7 +613,7 @@ public:
     TCustomCommandType & CustomCommand, int & State);
   void __fastcall LastCustomCommand(bool OnFocused);
   void __fastcall BothCustomCommand(const TCustomCommandType & Command);
-  void __fastcall LockWindow();
+  void __fastcall LockWindow(bool Force = false);
   void __fastcall UnlockWindow();
   void __fastcall SuspendWindowLock();
   void __fastcall ResumeWindowLock();
@@ -658,9 +680,11 @@ public:
   void __fastcall ToggleQueueVisibility();
   virtual UnicodeString __fastcall PathForCaption();
   void __fastcall FileListFromClipboard();
+  void __fastcall SelectAll(TOperationSide Side, TSelectMode Mode);
+  void __fastcall SelectByMask(TOperationSide Side, bool Select);
+  void __fastcall RestoreSelectedNames(TOperationSide Side);
   void __fastcall SelectSameExt(bool Select);
   void __fastcall PreferencesDialog(TPreferencesMode APreferencesMode);
-  void __fastcall WhatsThis();
   virtual void __fastcall BeforeAction();
   void __fastcall FileSystemInfo();
   void __fastcall SessionGenerateUrl();
@@ -679,6 +703,8 @@ public:
   virtual void __fastcall DisplaySystemContextMenu();
   virtual void __fastcall GoToAddress() = 0;
   bool __fastcall CanConsole();
+  bool __fastcall CanChangePassword();
+  void __fastcall ChangePassword();
 
   __property bool ComponentVisible[Byte Component] = { read = GetComponentVisible, write = SetComponentVisible };
   __property bool EnableFocusedOperation[TOperationSide Side] = { read = GetEnableFocusedOperation, index = 0 };

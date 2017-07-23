@@ -49,8 +49,10 @@ namespace WinSCP
         public string HostName { get; set; }
         public int PortNumber { get { return _portNumber; } set { SetPortNumber(value); } }
         public string UserName { get; set; }
-        public string Password { get { return GetPassword(); } set { SetPassword(value); } }
-        public SecureString SecurePassword { get; set; }
+        public string Password { get { return GetPassword(_securePassword); } set { SetPassword(ref _securePassword, value); } }
+        public SecureString SecurePassword { get { return _securePassword; } set { _securePassword = value; } }
+        public string NewPassword { get { return GetPassword(_secureNewPassword); } set { SetPassword(ref _secureNewPassword, value); } }
+        public SecureString SecureNewPassword { get { return _secureNewPassword; } set { _secureNewPassword = value; } }
         public TimeSpan Timeout { get { return _timeout; } set { SetTimeout(value); } }
         public int TimeoutInMilliseconds { get { return Tools.TimeSpanToMilliseconds(Timeout); } set { Timeout = Tools.MillisecondsToTimeSpan(value); } }
         public string PrivateKeyPassphrase { get; set; }
@@ -244,11 +246,13 @@ namespace WinSCP
                 Protocol = Protocol.Ftp;
                 FtpSecure = FtpSecure.Explicit;
             }
-            else if (protocol.Equals("http", StringComparison.OrdinalIgnoreCase))
+            else if (protocol.Equals("dav", StringComparison.OrdinalIgnoreCase) ||
+                     protocol.Equals("http", StringComparison.OrdinalIgnoreCase))
             {
                 Protocol = Protocol.Webdav;
             }
-            else if (protocol.Equals("https", StringComparison.OrdinalIgnoreCase))
+            else if (protocol.Equals("davs", StringComparison.OrdinalIgnoreCase) ||
+                     protocol.Equals("https", StringComparison.OrdinalIgnoreCase))
             {
                 Protocol = Protocol.Webdav;
                 WebdavSecure = true;
@@ -364,25 +368,25 @@ namespace WinSCP
             _webdavRoot = value;
         }
 
-        private void SetPassword(string value)
+        private static void SetPassword(ref SecureString securePassword, string value)
         {
             if (value == null)
             {
-                SecurePassword = null;
+                securePassword = null;
             }
             else
             {
-                SecurePassword = new SecureString();
+                securePassword = new SecureString();
                 foreach (char c in value)
                 {
-                    SecurePassword.AppendChar(c);
+                    securePassword.AppendChar(c);
                 }
             }
         }
 
-        private string GetPassword()
+        private static string GetPassword(SecureString securePassword)
         {
-            if (SecurePassword == null)
+            if (securePassword == null)
             {
                 return null;
             }
@@ -391,7 +395,7 @@ namespace WinSCP
                 IntPtr ptr = IntPtr.Zero;
                 try
                 {
-                    ptr = Marshal.SecureStringToGlobalAllocUnicode(SecurePassword);
+                    ptr = Marshal.SecureStringToGlobalAllocUnicode(securePassword);
                     return Marshal.PtrToStringUni(ptr);
                 }
                 finally
@@ -401,6 +405,8 @@ namespace WinSCP
             }
         }
 
+        private SecureString _securePassword;
+        private SecureString _secureNewPassword;
         private string _sshHostKeyFingerprint;
         private string _tlsHostCertificateFingerprint;
         private TimeSpan _timeout;

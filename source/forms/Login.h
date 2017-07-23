@@ -309,6 +309,7 @@ private:
   TSiteSearch FSiteSearch;
   TForm * FLinkedForm;
   TPoint FPrevPos;
+  int FSiteButtonsPadding;
 
   void __fastcall LoadSession(TSessionData * SessionData);
   void __fastcall LoadContents();
@@ -356,7 +357,6 @@ private:
   void __fastcall SetNewSiteNodeLabel();
   inline TSessionData * __fastcall GetNodeSession(TTreeNode * Node);
   void __fastcall ExecuteTool(const UnicodeString & Name);
-  UnicodeString __fastcall ImportExportIniFilePath();
   void __fastcall ReloadSessions(const UnicodeString & SelectSite);
   void __fastcall ResetSitesIncrementalSearch();
   bool __fastcall SitesIncrementalSearch(const UnicodeString & Text,
@@ -392,6 +392,8 @@ private:
   TModalResult __fastcall DefaultResult();
   int __fastcall AddLoginButtonImage(bool Enabled);
   void __fastcall WMMoving(TMessage & Message);
+  void __fastcall CMDpiChanged(TMessage & Message);
+  void __fastcall GenerateButtonImages();
 
 protected:
   void __fastcall Default();
@@ -405,6 +407,7 @@ protected:
   void __fastcall InitControls();
   void __fastcall EditSession();
   void __fastcall Login();
+  DYNAMIC void __fastcall ChangeScale(int M, int D);
   __property TSessionData * SelectedSession  = { read=GetSelectedSession };
 
 public:

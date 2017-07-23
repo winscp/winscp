@@ -9,10 +9,13 @@
 
         public override void Dispose()
         {
-            // Now it's ok if we encounter </session>.
-            _disposing = true;
+            using (Session.Logger.CreateCallstack())
+            {
+                // Now it's ok if we encounter </session>.
+                _disposing = true;
 
-            base.Dispose();
+                base.Dispose();
+            }
         }
 
         public override bool Read(LogReadFlags flags)
@@ -21,7 +24,7 @@
 
             if (_read && !_disposing)
             {
-                throw new SessionLocalException(Session, "Session has unexpectedly closed");
+                throw Session.Logger.WriteException(new SessionLocalException(Session, "Session has unexpectedly closed"));
             }
 
             return result;

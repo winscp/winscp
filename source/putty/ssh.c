@@ -9268,6 +9268,9 @@ static void do_ssh2_authconn(Ssh ssh, const unsigned char *in, int inlen,
 	int kbd_inter_refused;
 	int we_are_in, userauth_success;
 	prompts_t *cur_prompt;
+#ifdef MPEXT
+	int change_password;
+#endif
 	int num_prompts;
 	char *username;
 	char *password;
@@ -10502,6 +10505,17 @@ static void do_ssh2_authconn(Ssh ssh, const unsigned char *in, int inlen,
 
 		ssh->pkt_actx = SSH2_PKTCTX_PASSWORD;
 
+#ifdef MPEXT
+		s->change_password = conf_get_int(ssh->conf, CONF_change_password);
+		if (s->change_password != 0)
+		{
+			s->password = dupstr("");
+			s->type = AUTH_TYPE_PASSWORD;
+		}
+		else
+		{
+		/* no indentation to ease merges */
+#endif
 		s->cur_prompt = new_prompts(ssh->frontend);
 		s->cur_prompt->to_server = TRUE;
 		s->cur_prompt->name = dupstr("SSH password");
@@ -10566,10 +10580,16 @@ static void do_ssh2_authconn(Ssh ssh, const unsigned char *in, int inlen,
 		 * request.
 		 */
 		crWaitUntilV(pktin);
+#ifdef MPEXT
+		}
+#endif
 		changereq_first_time = TRUE;
 
-		while (pktin->type == SSH2_MSG_USERAUTH_PASSWD_CHANGEREQ) {
-
+		while ((pktin->type == SSH2_MSG_USERAUTH_PASSWD_CHANGEREQ)
+#ifdef MPEXT
+		       || (s->change_password != 0)
+#endif
+           ) {
 		    /*
 		     * We're being asked for a new password
 		     * (perhaps not for the first time).
@@ -10580,6 +10600,9 @@ static void do_ssh2_authconn(Ssh ssh, const unsigned char *in, int inlen,
 		    char *prompt;   /* not live over crReturn */
 		    int prompt_len; /* not live over crReturn */
 
+#ifdef MPEXT
+			if (s->change_password == 0)
+#endif
 		    {
 			const char *msg;
 			if (changereq_first_time)
@@ -10590,6 +10613,10 @@ static void do_ssh2_authconn(Ssh ssh, const unsigned char *in, int inlen,
 			c_write_str(ssh, msg);
 			c_write_str(ssh, "\r\n");
 		    }
+
+#ifdef MPEXT
+		    s->change_password = 0;
+#endif
 
 		    ssh_pkt_getstring(pktin, &prompt, &prompt_len);
 

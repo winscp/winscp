@@ -101,7 +101,6 @@ protected:
   int FParams;
   UnicodeString FLocalDirectory;
   UnicodeString FRemoteDirectory;
-  TImageList * FSystemImageList;
   TWndMethod FOrigListViewWindowProc;
   int FTotals[1 + TSynchronizeChecklist::ActionCount];
   int FChecked[1 + TSynchronizeChecklist::ActionCount];
@@ -135,6 +134,9 @@ protected:
   void __fastcall AddSubItem(TListItem * Item, int & Index, const UnicodeString & S);
   TRect __fastcall GetColumnHeaderRect(int Index);
   virtual void __fastcall Dispatch(void * Message);
+  void __fastcall UpdateImages();
+  void __fastcall CMDpiChanged(TMessage & Message);
+  bool __fastcall GetWindowParams(UnicodeString & WindowParams);
   static int __fastcall CompareNumber(__int64 Value1, __int64 Value2);
 };
 //----------------------------------------------------------------------------

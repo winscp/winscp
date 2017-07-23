@@ -50,6 +50,7 @@
 #define HELP_EDITOR_AUTO_CONFIG      "ui_pref_editor#auto"
 #define HELP_IMPORT_SESSIONS         "ui_import"
 #define HELP_IMPORT_CONFIGURATION    "config"
+#define HELP_MOVE_CONFIGURATION      HELP_IMPORT_CONFIGURATION
 #define HELP_DELETE_FILE             "task_delete"
 #define HELP_COLOR                   "task_connections#session_color"
 #define HELP_DRAGEXT_TARGET_NOT_INSTALLED "dragext"
@@ -58,6 +59,7 @@
 #define HELP_TIPS                    "ui_tips"
 #define HELP_DEBUGGING               "debugging"
 #define HELP_EXTENSION_OPTIONS       "ui_pref_commands"
+#define HELP_CHANGE_PASSWORD         "task_change_password"
 #define HELP_FILTER                  "ui_filter"
 
 #endif // TextsWin

@@ -665,12 +665,6 @@ void FreeKey(TPrivateKey * PrivateKey)
   sfree(Ssh2Key);
 }
 //---------------------------------------------------------------------------
-__int64 __fastcall ParseSize(UnicodeString SizeStr)
-{
-  AnsiString AnsiSizeStr = AnsiString(SizeStr);
-  return parse_blocksize64(AnsiSizeStr.c_str());
-}
-//---------------------------------------------------------------------------
 bool __fastcall HasGSSAPI(UnicodeString CustomPath)
 {
   static int has = -1;
@@ -773,6 +767,11 @@ UnicodeString __fastcall Sha256(const char * Data, size_t Size)
   SHA256_Simple(Data, Size, Digest);
   UnicodeString Result(BytesToHex(Digest, LENOF(Digest)));
   return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall DllHijackingProtection()
+{
+  dll_hijacking_protection();
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

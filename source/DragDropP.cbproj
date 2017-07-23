@@ -50,13 +50,14 @@
 		<DCC_EXPLICIT_STRING_CAST>true</DCC_EXPLICIT_STRING_CAST>
 		<DCC_EXPLICIT_STRING_CAST_LOSS>true</DCC_EXPLICIT_STRING_CAST_LOSS>
 		<DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;$(DCC_Namespace)</DCC_Namespace>
+		<DCC_UnitSearchPath>packages\my;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
 		<DCC_UNSAFE_TYPE>true</DCC_UNSAFE_TYPE>
 		<FinalOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</FinalOutputDir>
 		<ILINK_Description>Drag and Drop Components</ILINK_Description>
 		<ILINK_GenerateImportLibrary>true</ILINK_GenerateImportLibrary>
 		<ILINK_GenerateLibFile>true</ILINK_GenerateLibFile>
-		<ILINK_LibraryPath>packages\dragndrop\;$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\psdk;$(ILINK_LibraryPath)</ILINK_LibraryPath>
-		<IncludePath>packages\dragndrop\;$(BDS)\include;$(BDS)\include\windows\vcl;$(IncludePath)</IncludePath>
+		<ILINK_LibraryPath>packages\dragndrop\;packages\my;$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\psdk;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+		<IncludePath>packages\dragndrop\;packages\my;$(BDS)\include;$(BDS)\include\windows\vcl;$(IncludePath)</IncludePath>
 		<IntermediateOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</IntermediateOutputDir>
 		<Multithreaded>true</Multithreaded>
 		<OutputExt>bpl</OutputExt>
@@ -114,6 +115,9 @@
 		<DelphiCompile Include="packages\dragndrop\PIDL.pas">
 			<BuildOrder>7</BuildOrder>
 		</DelphiCompile>
+		<PackageImport Include="Moje.bpi">
+			<BuildOrder>24</BuildOrder>
+		</PackageImport>
 		<PackageImport Include="rtl.bpi">
 			<BuildOrder>1</BuildOrder>
 		</PackageImport>

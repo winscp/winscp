@@ -71,7 +71,6 @@ private:
   struct TFileData
   {
     UnicodeString FileName;
-    HANDLE Monitor;
     bool External;
     HANDLE Process;
     TObject * Token;
@@ -85,7 +84,6 @@ private:
   };
 
   std::vector<TFileData> FFiles;
-  std::vector<HANDLE> FMonitors;
   std::vector<HANDLE> FProcesses;
   std::vector<HANDLE> FUploadCompleteEvents;
   TEditedFileChangedEvent FOnFileChange;
@@ -98,11 +96,12 @@ private:
   bool __fastcall CloseFile(int Index, bool IgnoreErrors, bool Delete);
   void __fastcall CloseProcess(int Index);
   bool __fastcall EarlyClose(int Index);
+  bool __fastcall HasFileChanged(int Index, TDateTime & NewTimestamp);
   void __fastcall CheckFileChange(int Index, bool Force);
   int __fastcall FindFile(const TObject * Token);
   void __fastcall ReleaseFile(int Index);
 
-  enum TWaitHandle { MONITOR, PROCESS, EVENT };
+  enum TWaitHandle { PROCESS, EVENT };
   int __fastcall WaitFor(unsigned int Count, const HANDLE * Handles,
     TWaitHandle WaitFor);
 };

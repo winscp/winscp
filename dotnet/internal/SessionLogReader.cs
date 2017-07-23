@@ -66,7 +66,7 @@ namespace WinSCP
                         }
                         else
                         {
-                            throw e;
+                            throw Session.Logger.WriteException(e);
                         }
                     }
                 }
@@ -148,7 +148,7 @@ namespace WinSCP
                         {
                             message += " - " + s;
                         }
-                        throw new SessionLocalException(Session, message, e);
+                        throw Session.Logger.WriteException(new SessionLocalException(Session, message, e));
                     }
                 }
 
@@ -205,7 +205,7 @@ namespace WinSCP
         {
             if (_closed)
             {
-                throw new InvalidOperationException("Log was closed already");
+                throw Session.Logger.WriteException(new InvalidOperationException("Log was closed already"));
             }
 
             try
@@ -236,7 +236,7 @@ namespace WinSCP
             {
                 if (!_reader.Read())
                 {
-                    throw new SessionLocalException(Session, "Read less nodes than in previous log parsing");
+                    throw Session.Logger.WriteException(new SessionLocalException(Session, "Read less nodes than in previous log parsing"));
                 }
                 --skip;
             }
@@ -248,7 +248,7 @@ namespace WinSCP
             {
                 if (_reader == null)
                 {
-                    throw new SessionLocalException(Session, "Reading has not commenced yet");
+                    throw Session.Logger.WriteException(new SessionLocalException(Session, "Reading has not commenced yet"));
                 }
                 return _reader;
             }

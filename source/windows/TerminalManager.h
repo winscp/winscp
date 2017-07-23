@@ -9,7 +9,6 @@
 #include <Vcl.AppEvnts.hpp>
 //---------------------------------------------------------------------------
 class TCustomScpExplorerForm;
-class TLogMemo;
 class TTerminalQueue;
 class TAuthenticateForm;
 class ITaskbarList3;
@@ -48,7 +47,7 @@ public:
   void __fastcall ReconnectActiveTerminal();
   void __fastcall FreeActiveTerminal();
   void __fastcall CycleTerminals(bool Forward);
-  static void ConnectTerminal(TTerminal * Terminal, bool Reopen);
+  bool __fastcall ConnectTerminal(TTerminal * Terminal);
   void __fastcall SetActiveTerminalWithAutoReconnect(TTerminal * value);
   void __fastcall UpdateAppTitle();
   bool __fastcall CanOpenInPutty();
@@ -62,6 +61,7 @@ public:
   TTerminal * __fastcall FindActiveTerminalForSite(TSessionData * Data);
   TTerminalQueue * __fastcall FindQueueForTerminal(TTerminal * Terminal);
   void __fastcall UpdateSessionCredentials(TSessionData * Data);
+  void __fastcall DoConnectTerminal(TTerminal * Terminal, bool Reopen);
 
   __property TCustomScpExplorerForm * ScpExplorer = { read = FScpExplorer, write = SetScpExplorer };
   __property TTerminal * ActiveTerminal = { read = FActiveTerminal, write = SetActiveTerminal };
@@ -69,7 +69,6 @@ public:
   __property int ActiveTerminalIndex = { read = GetActiveTerminalIndex, write = SetActiveTerminalIndex };
   __property UnicodeString ActiveTerminalTitle = { read = GetActiveTerminalTitle };
   __property TStrings * TerminalList = { read = GetTerminalList };
-  __property TLogMemo * LogMemo = { read = FLogMemo };
   __property TNotifyEvent OnLastTerminalClosed = { read = FOnLastTerminalClosed, write = FOnLastTerminalClosed };
   __property TNotifyEvent OnTerminalListChanged = { read = FOnTerminalListChanged, write = FOnTerminalListChanged };
 
@@ -80,7 +79,6 @@ private:
   static TTerminalManager * FInstance;
   TCustomScpExplorerForm * FScpExplorer;
   TTerminal * FActiveTerminal;
-  TLogMemo * FLogMemo;
   bool FDestroying;
   TTerminalPendingAction FTerminalPendingAction;
   TNotifyEvent FOnLastTerminalClosed;
@@ -107,12 +105,9 @@ private:
   bool __fastcall ConnectActiveTerminalImpl(bool Reopen);
   bool __fastcall ConnectActiveTerminal();
   TTerminalQueue * __fastcall NewQueue(TTerminal * Terminal);
-  void __fastcall CreateLogMemo();
-  void __fastcall FreeLogMemo();
   void __fastcall SetScpExplorer(TCustomScpExplorerForm * value);
   void __fastcall DoSetActiveTerminal(TTerminal * value, bool AutoReconnect);
   void __fastcall SetActiveTerminal(TTerminal * value);
-  void __fastcall SetLogMemo(TLogMemo * value);
   void __fastcall UpdateAll();
   void __fastcall ApplicationException(TObject * Sender, Exception * E);
   void __fastcall ApplicationShowHint(UnicodeString & HintStr, bool & CanShow,
@@ -135,6 +130,7 @@ private:
     int ResolvedLinks, bool & Cancel);
   void __fastcall TerminalInformation(TTerminal * Terminal, const UnicodeString & Str,
     bool Status, int Phase);
+  void __fastcall TerminalCustomCommand(TTerminal * Terminal, const UnicodeString & Command, bool & Handled);
   void __fastcall FreeAll();
   void __fastcall TerminalReady();
   TStrings * __fastcall GetTerminalList();
@@ -166,6 +162,7 @@ private:
   void __fastcall ApplicationModalEnd(TObject * Sender);
   bool __fastcall HandleMouseWheel(WPARAM WParam, LPARAM LParam);
   void __fastcall DoConfigurationChange();
+  bool __fastcall ShouldDisplayQueueStatusOnAppTitle();
 };
 //---------------------------------------------------------------------------
 #endif

@@ -9,7 +9,6 @@ unit TBXLists;
 interface
 
 {$I TB2Ver.inc}
-{$I TBX.inc}
 
 uses
   Windows, Messages, Classes, SysUtils, Controls, Forms, Graphics, TB2Item, TBX,
@@ -139,6 +138,7 @@ type
   public
     constructor Create(AOwner: TComponent); override;
     procedure MakeVisible(AIndex: Integer);
+    procedure ChangeScale(M, D: Integer); override;
     property ItemIndex: Integer read FItemIndex write SetItemIndex default -1;
     property MaxVisibleItems: Integer read FMaxVisibleItems write FMaxVisibleItems default 8;
     property MaxWidth: Integer read FMaxWidth write FMaxWidth default 0;
@@ -191,8 +191,8 @@ type
     procedure Paint(const Canvas: TCanvas; const ClientAreaRect: TRect; IsHoverItem, IsPushed, UseDisabledShadow: Boolean); override;
     procedure UpdateItems;
     property HoverIndex: Integer read FHoverIndex write FHoverIndex;
-    property Offset: Integer read FOffset; {vb+}
-    property VisibleItems: Integer read FVisibleItems; {vb+}
+    property Offset: Integer read FOffset;
+    property VisibleItems: Integer read FVisibleItems;
   public
     constructor Create(AView: TTBView; AItem: TTBCustomItem; AGroupLevel: Integer); override;
     destructor Destroy; override;
@@ -227,27 +227,9 @@ type
 
   TTBXStringListClass = class of TTBXStringList;
 
-  {$IFNDEF MPEXCLUDE}
-
-  { TTBXUndoList }
-
-  TTBXUndoList = class(TTBXStringList)
-  protected
-    procedure DrawItem(ACanvas: TCanvas; AViewer: TTBXCustomListViewer; const ARect: TRect; AIndex, AHoverIndex: Integer); override;
-    function  GetItemViewerClass(AView: TTBView): TTBItemViewerClass; override;
-    procedure HandleHover(AIndex: Integer); override;
-  end;
-
-  TTBXUndoListViewer = class(TTBXCustomListViewer)
-  protected
-    procedure AdjustAutoScrollHover(var AIndex: Integer; Direction: Integer); override;
-    procedure HandleAutoScroll(var Direction, Interval: Integer); override;
-  end;
-  {$ENDIF}
-
 implementation
 
-uses Types;
+uses Types, PasTools;
 
 type TTBViewAccess = class(TTBView);
 
@@ -278,7 +260,7 @@ end;
 
 procedure TTBXScrollBar.CreateWnd;
 begin
-  if FHandle = 0 then FHandle := {$IFDEF JR_D6}Classes.{$ENDIF}AllocateHWnd(SBWndProc);
+  if FHandle = 0 then FHandle := Classes.AllocateHWnd(SBWndProc);
 end;
 
 destructor TTBXScrollBar.Destroy;
@@ -291,7 +273,7 @@ procedure TTBXScrollBar.DestroyWnd;
 begin
   if FHandle <> 0 then
   begin
-    {$IFDEF JR_D6}Classes.{$ENDIF}DeallocateHWnd(FHandle);
+    Classes.DeallocateHWnd(FHandle);
     FHandle := 0;
   end;
 end;
@@ -416,13 +398,16 @@ const
     ABS_RIGHTNORMAL, ABS_DOWNNORMAL);
 var
   StateFlags: Cardinal;
+  Theme: THandle;
 begin
   if USE_THEMES then
   begin
     StateFlags := DirectionXPFlags[Direction];
     if not Enabled then Inc(StateFlags, 3)
     else if Pushed then Inc(StateFlags, 2);
-    DrawThemeBackground(SCROLLBAR_THEME, Canvas.Handle, SBP_ARROWBTN, StateFlags, Rect, nil);
+    Theme := OpenThemeData(Handle, 'SCROLLBAR');
+    DrawThemeBackground(Theme, Canvas.Handle, SBP_ARROWBTN, StateFlags, Rect, nil);
+    CloseThemeData(Theme);
   end
   else
   begin
@@ -436,13 +421,16 @@ const
   PartXPFlags: array [TScrollBarKind] of Cardinal = (SBP_THUMBBTNHORZ, SBP_THUMBBTNVERT);
 var
   StateFlags: Cardinal;
+  Theme: THandle;
 begin
   if USE_THEMES then
   begin
     StateFlags := SCRBS_NORMAL;
     if not Enabled then Inc(StateFlags, 3)
     else if Pushed then Inc(StateFlags, 2);
-    DrawThemeBackground(SCROLLBAR_THEME, Canvas.Handle, PartXPFlags[Kind], StateFlags, Rect, nil);
+    Theme := OpenThemeData(Handle, 'SCROLLBAR');
+    DrawThemeBackground(Theme, Canvas.Handle, PartXPFlags[Kind], StateFlags, Rect, nil);
+    CloseThemeData(Theme);
   end
   else
   begin
@@ -500,14 +488,17 @@ const
     ((SBP_LOWERTRACKHORZ, SBP_LOWERTRACKVERT), (SBP_UPPERTRACKHORZ, SBP_UPPERTRACKVERT));
 var
   StateFlags: Cardinal;
+  Theme: THandle;
 begin
   if USE_THEMES then
   begin
     StateFlags := SCRBS_NORMAL;
     if not Enabled then Inc(StateFlags, 3)
     else if Pushed then Inc(StateFlags, 2);
-    DrawThemeBackground(SCROLLBAR_THEME, Canvas.Handle, PartXPFlags[IsNextZone, Kind],
+    Theme := OpenThemeData(Handle, 'SCROLLBAR');
+    DrawThemeBackground(Theme, Canvas.Handle, PartXPFlags[IsNextZone, Kind],
       StateFlags, Rect, nil);
+    CloseThemeData(Theme);
   end
   else
   begin
@@ -861,6 +852,13 @@ begin
   if Assigned(FOnChange) then FOnChange(Self);
 end;
 
+procedure TTBXCustomList.ChangeScale(M, D: Integer);
+begin
+  inherited;
+  MaxWidth := MulDiv(MaxWidth, M, D);
+  MinWidth := MulDiv(MinWidth, M, D);
+end;
+
 //----------------------------------------------------------------------------//
 
 { TTBXCustomListViewer }
@@ -874,6 +872,7 @@ procedure TTBXCustomListViewer.CalcSize(const Canvas: TCanvas; var AWidth, AHeig
 var
   Item: TTBXCustomList;
   I, W: Integer;
+  AView: TTBView;
 begin
   Item := TTBXCustomList(Self.Item);
   Canvas.Font := TTBViewAccess(View).GetFont;
@@ -893,8 +892,17 @@ begin
     if W > AWidth then AWidth := W;
   end;
 
-  if FItemCount > FVisibleItems then FScrollBarWidth := GetSystemMetrics(SM_CXVSCROLL)
-  else FScrollBarWidth := 0;
+  if FItemCount > FVisibleItems then
+  begin
+    // At this moment, this view window may not be parented yet, so use window of root view
+    AView := View;
+    while AView.ParentView <> nil do AView := AView.ParentView;
+    FScrollBarWidth := GetSystemMetricsForControl(AView.Window, SM_CXVSCROLL);
+  end
+    else
+  begin
+    FScrollBarWidth := 0;
+  end;
   Inc(AWidth, FScrollBarWidth);
 
   if AWidth < Item.MinWidth then AWidth := Item.MinWidth;
@@ -1352,68 +1360,5 @@ procedure TTBXStringList.SetStrings(Value: TStrings);
 begin
   FStrings.Assign(Value);
 end;
-
-
-//----------------------------------------------------------------------------//
-
-{$IFNDEF MPEXCLUDE}
-
-{ TTBXUndoList }
-
-procedure TTBXUndoList.DrawItem(ACanvas: TCanvas; AViewer: TTBXCustomListViewer;
-  const ARect: TRect; AIndex, AHoverIndex: Integer);
-const
-  FillColors: array [Boolean] of TColor = (clWindow, clHighlight);
-  TextColors: array [Boolean] of TColor = (clWindowText, clHighlightText);
-var
-  S: string;
-  R: TRect;
-begin
-  ACanvas.Brush.Color := FillColors[AIndex <= AHoverIndex];
-  ACanvas.FillRect(ARect);
-  S := Strings[AIndex];
-  if Length(S) > 0 then
-  begin
-    R := ARect;
-    InflateRect(R, -4, 1);
-    ACanvas.Font.Color := TextColors[AIndex <= AHoverIndex];
-    ACanvas.Brush.Style := bsClear;
-    DrawText(ACanvas.Handle, PChar(S), Length(S), R, DT_SINGLELINE or DT_VCENTER);
-    ACanvas.Brush.Style := bsSolid;
-  end;
-end;
-
-function TTBXUndoList.GetItemViewerClass(AView: TTBView): TTBItemViewerClass;
-begin
-  Result := TTBXUndoListViewer;
-end;
-
-procedure TTBXUndoList.HandleHover(AIndex: Integer);
-begin
-  ItemIndex := AIndex;
-end;
-
-
-//----------------------------------------------------------------------------//
-
-{ TTBXUndoListViewer }
-
-procedure TTBXUndoListViewer.AdjustAutoScrollHover(var AIndex: Integer; Direction: Integer);
-begin
-  if Direction < 0 then AIndex := FOffset
-  else if Direction > 0 then AIndex := FOffset + FVisibleItems - 1;
-end;
-
-procedure TTBXUndoListViewer.HandleAutoScroll(var Direction, Interval: Integer);
-begin
-  inherited;
-  if Direction < 0 then HoverIndex := FOffset
-  else if Direction > 0 then HoverIndex := FOffset + FVisibleItems - 1
-  else Exit;
-  TTBXCustomList(Item).HandleHover(HoverIndex);
-  UpdateItems;
-end;
-
-{$ENDIF}
 
 end.

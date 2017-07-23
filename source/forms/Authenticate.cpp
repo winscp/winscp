@@ -34,6 +34,7 @@ void __fastcall TAuthenticateForm::Init(TTerminal * Terminal)
   FFocusControl = NULL;
   UseDesktopFont(LogView);
   FAnimationPainted = false;
+  FShowNoActivate = false;
 
   FPromptParent = InstructionsLabel->Parent;
   FPromptLeft = InstructionsLabel->Left;
@@ -52,17 +53,34 @@ void __fastcall TAuthenticateForm::Init(TTerminal * Terminal)
 //---------------------------------------------------------------------------
 __fastcall TAuthenticateForm::~TAuthenticateForm()
 {
-  ReleaseAsModal(this, FShowAsModalStorage);
+  if (ReleaseAsModal(this, FShowAsModalStorage))
+  {
+    UnhookFormActivation(this);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TAuthenticateForm::ShowAsModal()
 {
-  ::ShowAsModal(this, FShowAsModalStorage);
+  if (IsApplicationMinimized())
+  {
+    FShowNoActivate = true;
+  }
+
+  // Do not call BringToFront when minimized, so that we do not have to use the same hack as in TMessageForm::SetZOrder
+  ::ShowAsModal(this, FShowAsModalStorage, !FShowNoActivate);
+  HookFormActivation(this);
 }
 //---------------------------------------------------------------------------
-void __fastcall TAuthenticateForm::HideAsModal()
+void __fastcall TAuthenticateForm::CMShowingChanged(TMessage & Message)
 {
-  ::HideAsModal(this, FShowAsModalStorage);
+  if (Showing && FShowNoActivate)
+  {
+    ShowFormNoActivate(this);
+  }
+  else
+  {
+    TForm::Dispatch(&Message);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TAuthenticateForm::WMNCCreate(TWMNCCreate & Message)
@@ -96,6 +114,10 @@ void __fastcall TAuthenticateForm::Dispatch(void * AMessage)
   {
     // caption managed in TAuthenticateForm::AdjustControls()
     Message.Result = 1;
+  }
+  else if (Message.Msg == CM_SHOWINGCHANGED)
+  {
+    CMShowingChanged(Message);
   }
   else
   {
@@ -574,3 +596,18 @@ void __fastcall TAuthenticateForm::FormResize(TObject * /*Sender*/)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TAuthenticateForm::ChangeScale(int M, int D)
+{
+  TForm::ChangeScale(M, D);
+
+  // Recreate the list to re-measure the items according to the new font
+  if (DebugAlwaysTrue(LogView->HandleAllocated()) &&
+      (LogView->Items->Count > 0))
+  {
+    std::unique_ptr<TStrings> Items(new TStringList());
+    Items->AddStrings(LogView->Items);
+    LogView->Items->Clear();
+    LogView->Items->AddStrings(Items.get());
+    MakeLogItemVisible(LogView->Items->Count - 1);
+  }
+}

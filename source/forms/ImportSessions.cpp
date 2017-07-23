@@ -13,11 +13,15 @@
 #include <WinInterface.h>
 #include <TextsWin.h>
 #include <CoreMain.h>
+#include <Tools.h>
+#include <WinApi.h>
 #include <PasTools.hpp>
 //---------------------------------------------------------------------
 #ifndef NO_RESOURCES
 #pragma resource "*.dfm"
 #endif
+//---------------------------------------------------------------------
+const int KnownHostsIndex = 2;
 //---------------------------------------------------------------------
 bool __fastcall DoImportSessionsDialog(TList * Imported)
 {
@@ -29,35 +33,40 @@ bool __fastcall DoImportSessionsDialog(TList * Imported)
   std::unique_ptr<TStoredSessionList> FilezillaImportSessionList(
     Configuration->SelectFilezillaSessionsForImport(StoredSessions, Error));
   Errors->Add(Error);
+  std::unique_ptr<TStoredSessionList> KnownHostsImportSessionList(
+    Configuration->SelectKnownHostsSessionsForImport(StoredSessions, Error));
+  Errors->Add(Error);
 
   std::unique_ptr<TList> SessionListsList(new TList());
   SessionListsList->Add(PuttyImportSessionList.get());
   SessionListsList->Add(FilezillaImportSessionList.get());
-
-  bool ImportKeys = true;
+  SessionListsList->Add(KnownHostsImportSessionList.get());
 
   std::unique_ptr<TImportSessionsDialog> ImportSessionsDialog(
     SafeFormCreate<TImportSessionsDialog>(Application));
 
   ImportSessionsDialog->Init(SessionListsList.get(), Errors.get());
 
-  bool Result = ImportSessionsDialog->Execute(ImportKeys);
+  bool Result = ImportSessionsDialog->Execute();
 
   if (Result)
   {
+    // Particularly when importing known_hosts, there is no feedback.
+    TInstantOperationVisualizer Visualizer;
+
     StoredSessions->Import(PuttyImportSessionList.get(), true, Imported);
     StoredSessions->Import(FilezillaImportSessionList.get(), true, Imported);
 
-    if (ImportKeys)
-    {
-      UnicodeString TargetKey = Configuration->RegistryStorageKey + L"\\" + Configuration->SshHostKeysSubKey;
-      UnicodeString SourceKey = Configuration->PuttyRegistryStorageKey + L"\\" + Configuration->SshHostKeysSubKey;
+    UnicodeString SourceKey = Configuration->PuttyRegistryStorageKey + L"\\" + Configuration->SshHostKeysSubKey;
 
-      TStoredSessionList::ImportHostKeys(TargetKey, SourceKey, PuttyImportSessionList.get(), true);
+    TStoredSessionList::ImportHostKeys(SourceKey, PuttyImportSessionList.get(), true);
 
-      // Filezilla uses PuTTY's host key store
-      TStoredSessionList::ImportHostKeys(TargetKey, SourceKey, FilezillaImportSessionList.get(), true);
-    }
+    // Filezilla uses PuTTY's host key store
+    TStoredSessionList::ImportHostKeys(SourceKey, FilezillaImportSessionList.get(), true);
+
+    TStoredSessionList * AKnownHostsImportSessionList =
+      static_cast<TStoredSessionList *>(SessionListsList->Items[KnownHostsIndex]);
+    TStoredSessionList::ImportSelectedKnownHosts(AKnownHostsImportSessionList);
   }
   return Result;
 }
@@ -72,11 +81,11 @@ __fastcall TImportSessionsDialog::TImportSessionsDialog(TComponent * AOwner) :
 //---------------------------------------------------------------------
 void __fastcall TImportSessionsDialog::Init(TList * SessionListsList, TStrings * Errors)
 {
+  FSessionListsList = SessionListsList;
   FErrors = Errors;
 
   for (int Index = 0; Index < SessionListsList->Count; Index++)
   {
-    SourceComboBox->Items->Objects[Index] = static_cast<TObject *>(SessionListsList->Items[Index]);
     if ((SourceComboBox->ItemIndex < 0) && (GetSessionList(Index)->Count > 0))
     {
       SourceComboBox->ItemIndex = Index;
@@ -88,8 +97,6 @@ void __fastcall TImportSessionsDialog::Init(TList * SessionListsList, TStrings *
     SourceComboBox->ItemIndex = 0;
   }
 
-  LoadSessions();
-
   int Offset = ScaleByTextHeight(this, 8);
   ErrorPanel->BoundsRect =
     TRect(
@@ -100,27 +107,14 @@ void __fastcall TImportSessionsDialog::Init(TList * SessionListsList, TStrings *
 //---------------------------------------------------------------------
 TStoredSessionList * __fastcall TImportSessionsDialog::GetSessionList(int Index)
 {
-  return dynamic_cast<TStoredSessionList *>(SourceComboBox->Items->Objects[Index]);
+  return reinterpret_cast<TStoredSessionList *>(FSessionListsList->Items[Index]);
 }
 //---------------------------------------------------------------------
 void __fastcall TImportSessionsDialog::UpdateControls()
 {
+  PasteButton->Visible = (SourceComboBox->ItemIndex == KnownHostsIndex);
+  EnableControl(PasteButton, IsFormatInClipboard(CF_TEXT));
   EnableControl(OKButton, ListViewAnyChecked(SessionListView2));
-
-  bool AnySshChecked = false;
-  for (int Index = 0; Index < SessionListView2->Items->Count; Index++)
-  {
-    TListItem * Item = SessionListView2->Items->Item[Index];
-    TSessionData * Data = (TSessionData*)Item->Data;
-    if (Item->Checked && Data->UsesSsh)
-    {
-      AnySshChecked = true;
-      break;
-    }
-  }
-
-  EnableControl(ImportKeysCheck, AnySshChecked);
-
   EnableControl(CheckAllButton, SessionListView2->Items->Count > 0);
   AutoSizeListColumnsWidth(SessionListView2);
 }
@@ -185,7 +179,24 @@ void __fastcall TImportSessionsDialog::LoadSessions()
 void __fastcall TImportSessionsDialog::SessionListView2InfoTip(
       TObject * /*Sender*/, TListItem * Item, UnicodeString & InfoTip)
 {
-  InfoTip = ((TSessionData*)Item->Data)->InfoTip;
+  TSessionData * Data = DebugNotNull(reinterpret_cast<TSessionData *>(Item->Data));
+  if (SourceComboBox->ItemIndex == KnownHostsIndex)
+  {
+    UnicodeString Algs;
+    UnicodeString HostKeys = Data->HostKey;
+    while (!HostKeys.IsEmpty())
+    {
+      UnicodeString HostKey = CutToChar(HostKeys, L';', true);
+      UnicodeString Alg = CutToChar(HostKey, L':', true);
+      AddToList(Algs, Alg, L", ");
+    }
+
+    InfoTip = FMTLOAD(IMPORT_KNOWNHOSTS_INFO_TIP, (Data->HostName, Algs));
+  }
+  else
+  {
+    InfoTip = Data->InfoTip;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TImportSessionsDialog::SessionListView2MouseDown(
@@ -203,7 +214,8 @@ void __fastcall TImportSessionsDialog::SessionListView2KeyUp(
 //---------------------------------------------------------------------------
 void __fastcall TImportSessionsDialog::FormShow(TObject * /*Sender*/)
 {
-  UpdateControls();
+  // Load only now, as earlier loading somehow breaks SessionListView2 layout on initial per-monitor DPI scaling
+  LoadSessions();
 }
 //---------------------------------------------------------------------------
 void __fastcall TImportSessionsDialog::CheckAllButtonClick(TObject * /*Sender*/)
@@ -217,17 +229,14 @@ void __fastcall TImportSessionsDialog::HelpButtonClick(TObject * /*Sender*/)
   FormHelp(this);
 }
 //---------------------------------------------------------------------------
-bool __fastcall TImportSessionsDialog::Execute(bool & ImportKeys)
+bool __fastcall TImportSessionsDialog::Execute()
 {
-  ImportKeysCheck->Checked = ImportKeys;
-
   bool Result = (ShowModal() == DefaultResult(this));
 
   if (Result)
   {
     ClearSelections();
     SaveSelection();
-    ImportKeys = ImportKeysCheck->Enabled && ImportKeysCheck->Checked;
   }
 
   return Result;
@@ -236,6 +245,70 @@ bool __fastcall TImportSessionsDialog::Execute(bool & ImportKeys)
 void __fastcall TImportSessionsDialog::SourceComboBoxSelect(TObject * /*Sender*/)
 {
   SaveSelection();
+  LoadSessions();
+}
+//---------------------------------------------------------------------------
+void __fastcall TImportSessionsDialog::CreateHandle()
+{
+  TForm::CreateHandle();
+
+  if (DebugAlwaysTrue(HandleAllocated()))
+  {
+    HINSTANCE User32Library = LoadLibrary(L"user32.dll");
+    AddClipboardFormatListenerProc AddClipboardFormatListener =
+      (AddClipboardFormatListenerProc)GetProcAddress(User32Library, "AddClipboardFormatListener");
+    if (AddClipboardFormatListener != NULL)
+    {
+      AddClipboardFormatListener(Handle);
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TImportSessionsDialog::DestroyHandle()
+{
+  if (DebugAlwaysTrue(HandleAllocated()))
+  {
+    HINSTANCE User32Library = LoadLibrary(L"user32.dll");
+    RemoveClipboardFormatListenerProc RemoveClipboardFormatListener =
+      (RemoveClipboardFormatListenerProc)GetProcAddress(User32Library, "RemoveClipboardFormatListener");
+    if (RemoveClipboardFormatListener != NULL)
+    {
+      RemoveClipboardFormatListener(Handle);
+    }
+  }
+
+  TForm::DestroyHandle();
+}
+//---------------------------------------------------------------------------
+void __fastcall TImportSessionsDialog::Dispatch(void * Message)
+{
+  TMessage * M = static_cast<TMessage*>(Message);
+  switch (M->Msg)
+  {
+    case WM_CLIPBOARDUPDATE:
+      UpdateControls();
+      TForm::Dispatch(Message);
+      break;
+
+    default:
+      TForm::Dispatch(Message);
+      break;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TImportSessionsDialog::PasteButtonClick(TObject * /*Sender*/)
+{
+  UnicodeString Text;
+  // Proceed even when retriving from clipboard fails, "no host keys" error will show.
+  TextFromClipboard(Text, false);
+  std::unique_ptr<TStrings> Lines(new TStringList());
+  Lines->Text = Text;
+  SessionListView2->Items->Clear();
+  int Index = SourceComboBox->ItemIndex;
+  UnicodeString Error;
+  FPastedKnownHosts.reset(Configuration->SelectKnownHostsSessionsForImport(Lines.get(), StoredSessions, Error));
+  FSessionListsList->Items[Index] = FPastedKnownHosts.get();
+  FErrors->Strings[Index] = Error;
   LoadSessions();
 }
 //---------------------------------------------------------------------------

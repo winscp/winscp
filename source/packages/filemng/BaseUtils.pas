@@ -53,7 +53,6 @@ procedure ReduceDateTimePrecision(var DateTime: TDateTime;
 function SpecialFolderLocation(Folder: Integer; var Path: string;
   var PIDL: PItemIDList): Boolean; overload;
 function SpecialFolderLocation(Folder: Integer; var Path: string): Boolean; overload;
-function ShellImageList(Owner: TComponent; Flags: UINT): TImageList;
 
 function FormatLastOSError(Message: string): string;
 
@@ -185,44 +184,97 @@ begin
     Delete(Result, Length(Result)-Length(Ext)+1, Length(Ext));
 end; {ExtractFileNameOnly}
 
+// Windows Explorer size formatting
+// size  properties/status bar      size column
+// 1023             1023 bytes             1 KB
+// 1 KB                1,00 KB             1 KB
+// 2 KB                2,00 KB             2 KB
+// 2 KB + 1 B          2,00 KB             3 KB
+// 2 KB + 12 B         2,01 KB             3 KB
+// 10 KB - 1B          9,99 KB            10 KB
+// 10 KB              10,0  KB            10 KB
+// 12 KB              12,0  KB            12 KB
+// 12 KB + 1 B        12,0  KB            13 KB
+// 12 KB + 12 B       12,0  KB            13 KB
+// 12 KB + 128 B      12,1  KB            13 KB
+// 100 KB            100    KB           100 KB
+// 100 KB + 1 B      100    KB           101 KB
+// 500 KB            500    KB           500 KB
+// 1000 KB - 1 B     999    KB         1 000 KB
+// 1000 KB             0,97 MB         1 000 KB
+// 1 MB                1,00 MB         1 024 KB
+// 1000 MB - 1 B     999    MB     1 024 000 KB
+// 1000 MB             0,97 GB     1 024 000 KB
+// 1 GB - 1            0,99 GB     1 048 576 KB
+// 1 GB                1,00 GB     1 048 576 KB
+// 1 GB + 10 MB        1,00 GB     1 058 816 KB
+// 1 GB + 12 MB        1,01 GB     1 060 864 KB
+
 function FormatBytes(Bytes: Int64; Style: TFormatBytesStyle; UseUnitsForBytes: Boolean): string;
 var
   SizeUnit: string;
   Value: Int64;
   Order: Int64;
   EValue: Extended;
+  Format: string;
 begin
-  if (Style = fbNone) or ((Style = fbShort) and (Bytes < Int64(100*1024))) then
+  if (Style = fbNone) or ((Style = fbShort) and (Bytes < Int64(1024))) then
   begin
-    Order := 1;
+    EValue := Bytes;
+    Format := '#,##0';
     if UseUnitsForBytes then
-      SizeUnit := SByte;
+      Format := Format + ' "' + SByte + '"';
   end
     else
-  if (Style = fbKilobytes) or (Bytes < Int64(100*1024*1024)) then
+  if Style = fbKilobytes then
   begin
-    Order := 1024;
-    SizeUnit := SKiloByte;
-  end
-    else
-  if Bytes < Int64(Int64(100)*1024*1024*1024) then
-  begin
-    Order := 1024*1024;
-    SizeUnit := SMegaByte;
+    Value := Bytes div 1024;
+    if (Bytes mod 1024) > 0 then
+      Inc(Value);
+    EValue := Value;
+    Format := '#,##0 "' + SKiloByte + '"';
   end
     else
   begin
-    Order := 1024*1024*1024;
-    SizeUnit := SGigaByte;
-  end;
-  Value := Bytes div Order;
-  if (Bytes mod Order) > 0 then
-    Inc(Value);
+    if Bytes < Int64(1000*1024) then
+    begin
+      Order := 1024;
+      SizeUnit := SKiloByte;
+    end
+      else
+    if Bytes < Int64(1000*1024*1024) then
+    begin
+      Order := 1024*1024;
+      SizeUnit := SMegaByte;
+    end
+      else
+    begin
+      Order := 1024*1024*1024;
+      SizeUnit := SGigaByte;
+    end;
 
-  EValue := Value;
-  Result := FormatFloat('#,##0', EValue);
-  if SizeUnit <> '' then
-    Result := Result + ' ' + SizeUnit;
+    EValue := Bytes / Order;
+    if EValue >= 100 then
+    begin
+      EValue := Floor(EValue);
+      Format := '#,##0';
+    end
+      else
+    if EValue >= 10 then
+    begin
+      EValue := Floor(EValue * 10) / 10;
+      Format := '#0.0';
+    end
+      else
+    begin
+      EValue := Floor(EValue * 100) / 100;
+      Format := '0.00';
+    end;
+
+    Format := Format + ' "' + SizeUnit + '"';
+  end;
+
+  Result := FormatFloat(Format, EValue);
 end;
 
 function FormatPanelBytes(Bytes: Int64; Style: TFormatBytesStyle): string;
@@ -287,7 +339,14 @@ begin
   Result :=
     (not Failed(SHGetSpecialFolderLocation(Application.Handle, Folder, PIDL))) and
     SHGetPathFromIDList(PIDL, PChar(Path));
-  if Result then SetLength(Path, StrLen(PChar(Path)));
+  if Result then
+  begin
+    SetLength(Path, StrLen(PChar(Path)));
+  end
+    else
+  begin
+    Path := '';
+  end;
 end;
 
 function SpecialFolderLocation(Folder: Integer; var Path: string): Boolean;
@@ -295,16 +354,6 @@ var
   PIDL: PItemIDList;
 begin
   Result := SpecialFolderLocation(Folder, Path, PIDL);
-end;
-
-function ShellImageList(Owner: TComponent; Flags: UINT): TImageList;
-var
-  FileInfo: TShFileInfo;
-begin
-  Result := TImageList.Create(Owner);
-  Result.Handle := SHGetFileInfo('', 0, FileInfo, SizeOf(FileInfo),
-      SHGFI_SYSICONINDEX or Flags);
-  Result.ShareImages := True;
 end;
 
 function FormatLastOSError(Message: string): string;

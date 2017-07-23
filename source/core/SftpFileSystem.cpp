@@ -720,10 +720,6 @@ public:
           GetCardinal(); // skip access time subseconds
         }
       }
-      else
-      {
-        File->LastAccess = Now();
-      }
       if (Flags & SSH_FILEXFER_ATTR_CREATETIME)
       {
         GetInt64(); // skip create time
@@ -739,10 +735,6 @@ public:
         {
           GetCardinal(); // skip modification time subseconds
         }
-      }
-      else
-      {
-        File->Modification = Now();
       }
       // SFTP-6
       if (Flags & SSH_FILEXFER_ATTR_CTIME)
@@ -1164,53 +1156,53 @@ public:
     return SendRequests();
   }
 
-  virtual void __fastcall Dispose()
+  virtual void __fastcall Dispose(int ExpectedType, int AllowStatus)
   {
     DebugAssert(FFileSystem->FTerminal->Active);
-
-    TSFTPQueuePacket * Request;
-    TSFTPPacket * Response;
 
     while (FRequests->Count)
     {
       DebugAssert(FResponses->Count);
 
-      Request = static_cast<TSFTPQueuePacket*>(FRequests->Items[0]);
-      DebugAssert(Request);
+      std::unique_ptr<TSFTPQueuePacket> Request(DebugNotNull(static_cast<TSFTPQueuePacket*>(FRequests->Items[0])));
+      std::unique_ptr<TSFTPPacket> Response(DebugNotNull(static_cast<TSFTPPacket*>(FResponses->Items[0])));
 
-      Response = static_cast<TSFTPPacket*>(FResponses->Items[0]);
-      DebugAssert(Response);
+      // Particularly when ExpectedType >= 0, the ReceiveResponse may throw, and we have to remove the packets from queue
+      FRequests->Delete(0);
+      FResponses->Delete(0);
 
       try
       {
-        ReceiveResponse(Request, Response);
+        ReceiveResponse(Request.get(), Response.get(), ExpectedType, AllowStatus);
       }
       catch(Exception & E)
       {
-        if (FFileSystem->FTerminal->Active)
+        if (ExpectedType < 0)
         {
-          FFileSystem->FTerminal->LogEvent(L"Error while disposing the SFTP queue.");
-          FFileSystem->FTerminal->Log->AddException(&E);
+          if (FFileSystem->FTerminal->Active)
+          {
+            FFileSystem->FTerminal->LogEvent(L"Error while disposing the SFTP queue.");
+            FFileSystem->FTerminal->Log->AddException(&E);
+          }
+          else
+          {
+            FFileSystem->FTerminal->LogEvent(L"Fatal error while disposing the SFTP queue.");
+            throw;
+          }
         }
         else
         {
-          FFileSystem->FTerminal->LogEvent(L"Fatal error while disposing the SFTP queue.");
           throw;
         }
       }
-
-      FRequests->Delete(0);
-      delete Request;
-      FResponses->Delete(0);
-      delete Response;
     }
   }
 
-  void __fastcall DisposeSafe()
+  void __fastcall DisposeSafe(int ExpectedType = -1, int AllowStatus = -1)
   {
     if (FFileSystem->FTerminal->Active)
     {
-      Dispose();
+      Dispose(ExpectedType, AllowStatus);
     }
   }
 
@@ -1300,8 +1292,8 @@ protected:
   }
 
   virtual void __fastcall ReceiveResponse(
-    const TSFTPPacket * Packet, TSFTPPacket * Response, int ExpectedType = -1,
-    int AllowStatus = -1, bool TryOnly = false)
+    const TSFTPPacket * Packet, TSFTPPacket * Response, int ExpectedType,
+    int AllowStatus, bool TryOnly = false)
   {
     FFileSystem->ReceiveResponse(Packet, Response, ExpectedType, AllowStatus, TryOnly);
   }
@@ -1389,12 +1381,12 @@ public:
     UnregisterReceiveHandler();
   }
 
-  virtual void __fastcall Dispose()
+  virtual void __fastcall Dispose(int ExpectedType, int AllowStatus)
   {
     // we do not want to receive asynchronous notifications anymore,
     // while waiting synchronously for pending responses
     UnregisterReceiveHandler();
-    TSFTPQueue::Dispose();
+    TSFTPQueue::Dispose(ExpectedType, AllowStatus);
   }
 
   bool __fastcall Continue()
@@ -1446,11 +1438,11 @@ public:
   }
   virtual __fastcall ~TSFTPDownloadQueue(){}
 
-  bool __fastcall Init(int QueueLen, const RawByteString & AHandle,__int64 ATransfered,
+  bool __fastcall Init(int QueueLen, const RawByteString & AHandle,__int64 ATransferred,
     TFileOperationProgressType * AOperationProgress)
   {
     FHandle = AHandle;
-    FTransfered = ATransfered;
+    FTransferred = ATransferred;
     OperationProgress = AOperationProgress;
 
     return TSFTPFixedLenQueue::Init(QueueLen);
@@ -1474,9 +1466,9 @@ protected:
   virtual bool __fastcall InitRequest(TSFTPQueuePacket * Request)
   {
     unsigned int BlockSize = FFileSystem->DownloadBlockSize(OperationProgress);
-    InitRequest(Request, FTransfered, BlockSize);
+    InitRequest(Request, FTransferred, BlockSize);
     Request->Token = reinterpret_cast<void*>(BlockSize);
-    FTransfered += BlockSize;
+    FTransferred += BlockSize;
     return true;
   }
 
@@ -1496,7 +1488,7 @@ protected:
 
 private:
   TFileOperationProgressType * OperationProgress;
-  __int64 FTransfered;
+  __int64 FTransferred;
   RawByteString FHandle;
 };
 //---------------------------------------------------------------------------
@@ -1520,17 +1512,22 @@ public:
 
   bool __fastcall Init(const UnicodeString AFileName,
     HANDLE AFile, TFileOperationProgressType * AOperationProgress,
-    const RawByteString AHandle, __int64 ATransfered,
+    const RawByteString AHandle, __int64 ATransferred,
     int ConvertParams)
   {
     FFileName = AFileName;
     FStream = new TSafeHandleStream((THandle)AFile);
     OperationProgress = AOperationProgress;
     FHandle = AHandle;
-    FTransfered = ATransfered;
+    FTransferred = ATransferred;
     FConvertParams = ConvertParams;
 
     return TSFTPAsynchronousQueue::Init();
+  }
+
+  void __fastcall DisposeSafeWithErrorHandling()
+  {
+    DisposeSafe(SSH_FXP_STATUS);
   }
 
 protected:
@@ -1571,16 +1568,16 @@ protected:
         if (FFileSystem->FTerminal->Configuration->ActualLogProtocol >= 1)
         {
           FFileSystem->FTerminal->LogEvent(FORMAT(L"Write request offset: %d, len: %d",
-            (int(FTransfered), int(BlockBuf.Size))));
+            (int(FTransferred), int(BlockBuf.Size))));
         }
 
         Request->ChangeType(SSH_FXP_WRITE);
         Request->AddString(FHandle);
-        Request->AddInt64(FTransfered);
+        Request->AddInt64(FTransferred);
         Request->AddData(BlockBuf.Data, BlockBuf.Size);
         FLastBlockSize = BlockBuf.Size;
 
-        FTransfered += BlockBuf.Size;
+        FTransferred += BlockBuf.Size;
       }
     }
 
@@ -1590,7 +1587,7 @@ protected:
   virtual void __fastcall SendPacket(TSFTPQueuePacket * Packet)
   {
     TSFTPAsynchronousQueue::SendPacket(Packet);
-    OperationProgress->AddTransfered(FLastBlockSize);
+    OperationProgress->AddTransferred(FLastBlockSize);
   }
 
   virtual void __fastcall ReceiveResponse(
@@ -1644,7 +1641,7 @@ private:
   UnicodeString FFileName;
   unsigned long FLastBlockSize;
   bool FEnd;
-  __int64 FTransfered;
+  __int64 FTransferred;
   RawByteString FHandle;
   bool FConvertToken;
   int FConvertParams;
@@ -2075,6 +2072,8 @@ bool __fastcall TSFTPFileSystem::IsCapable(int Capability) const
     case fcMoveToQueue:
     case fcPreservingTimestampDirs:
     case fcResumeSupport:
+    case fsSkipTransfer:
+    case fsParallelTransfers:
       return true;
 
     case fcRename:
@@ -2160,6 +2159,9 @@ bool __fastcall TSFTPFileSystem::IsCapable(int Capability) const
 
     case fcLocking:
       return false;
+
+    case fcChangePassword:
+      return FSecureShell->CanChangePassword();
 
     default:
       DebugFail();
@@ -3455,6 +3457,7 @@ void __fastcall TSFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
 
         if ((FVersion >= 6) &&
             // As of 7.0.9 the Cerberus SFTP server always sets the end-of-list to true.
+            // Fixed in 7.0.10.
             (FSecureShell->SshImplementation != sshiCerberus) &&
             ListingPacket.CanGetBool())
         {
@@ -3754,7 +3757,7 @@ void __fastcall TSFTPFileSystem::CreateDirectory(const UnicodeString DirName)
 void __fastcall TSFTPFileSystem::CreateLink(const UnicodeString FileName,
   const UnicodeString PointTo, bool Symbolic)
 {
-  // Cerberus server does not even response to LINK or SYMLINK,
+  // Cerberus server does not even respond to LINK or SYMLINK,
   // Although its log says:
   // Unrecognized SFTP client command: (20)
   // Unknown SFTP packet - Sending Unsupported OP response
@@ -4352,60 +4355,65 @@ void __fastcall TSFTPFileSystem::SFTPConfirmOverwrite(
   if (CanAppend &&
       ((Answer == qaRetry) || (Answer == qaSkip)))
   {
-    // duplicated in TTerminal::ConfirmFileOverwrite
-    bool CanAlternateResume =
-      (FileParams->DestSize < FileParams->SourceSize) && !OperationProgress->AsciiTransfer;
-    TBatchOverwrite BatchOverwrite =
-      FTerminal->EffectiveBatchOverwrite(SourceFullFileName, CopyParam, Params, OperationProgress, true);
-    // when mode is forced by batch, never query user
-    if (BatchOverwrite == boAppend)
+    OperationProgress->LockUserSelections();
+    try
     {
-      OverwriteMode = omAppend;
-    }
-    else if (CanAlternateResume &&
-             ((BatchOverwrite == boResume) || (BatchOverwrite == boAlternateResume)))
-    {
-      OverwriteMode = omResume;
-    }
-    // no other option, but append
-    else if (!CanAlternateResume)
-    {
-      OverwriteMode = omAppend;
-    }
-    else
-    {
-      TQueryParams Params(0, HELP_APPEND_OR_RESUME);
-
+      // duplicated in TTerminal::ConfirmFileOverwrite
+      bool CanAlternateResume =
+        (FileParams->DestSize < FileParams->SourceSize) && !OperationProgress->AsciiTransfer;
+      TBatchOverwrite BatchOverwrite =
+        FTerminal->EffectiveBatchOverwrite(SourceFullFileName, CopyParam, Params, OperationProgress, true);
+      // when mode is forced by batch, never query user
+      if (BatchOverwrite == boAppend)
       {
-        TSuspendFileOperationProgress Suspend(OperationProgress);
-        Answer = FTerminal->QueryUser(FORMAT(LoadStr(APPEND_OR_RESUME2), (SourceFullFileName)),
-          NULL, qaYes | qaNo | qaNoToAll | qaCancel, &Params);
+        OverwriteMode = omAppend;
       }
-
-      switch (Answer)
+      else if (CanAlternateResume &&
+               ((BatchOverwrite == boResume) || (BatchOverwrite == boAlternateResume)))
       {
-        case qaYes:
-          OverwriteMode = omAppend;
-          break;
-
-        case qaNo:
-          OverwriteMode = omResume;
-          break;
-
-        case qaNoToAll:
-          OverwriteMode = omResume;
-          OperationProgress->BatchOverwrite = boAlternateResume;
-          break;
-
-        default: DebugFail(); //fallthru
-        case qaCancel:
-          if (!OperationProgress->Cancel)
-          {
-            OperationProgress->Cancel = csCancel;
-          }
-          Abort();
-          break;
+        OverwriteMode = omResume;
       }
+      // no other option, but append
+      else if (!CanAlternateResume)
+      {
+        OverwriteMode = omAppend;
+      }
+      else
+      {
+        TQueryParams Params(0, HELP_APPEND_OR_RESUME);
+
+        {
+          TSuspendFileOperationProgress Suspend(OperationProgress);
+          Answer = FTerminal->QueryUser(FORMAT(LoadStr(APPEND_OR_RESUME2), (SourceFullFileName)),
+            NULL, qaYes | qaNo | qaNoToAll | qaCancel, &Params);
+        }
+
+        switch (Answer)
+        {
+          case qaYes:
+            OverwriteMode = omAppend;
+            break;
+
+          case qaNo:
+            OverwriteMode = omResume;
+            break;
+
+          case qaNoToAll:
+            OverwriteMode = omResume;
+            OperationProgress->SetBatchOverwrite(boAlternateResume);
+            break;
+
+          default: DebugFail(); //fallthru
+          case qaCancel:
+            OperationProgress->SetCancelAtLeast(csCancel);
+            Abort();
+            break;
+        }
+      }
+    }
+    __finally
+    {
+      OperationProgress->UnlockUserSelections();
     }
   }
   else if (Answer == qaIgnore)
@@ -4417,10 +4425,7 @@ void __fastcall TSFTPFileSystem::SFTPConfirmOverwrite(
     }
     else
     {
-      if (!OperationProgress->Cancel)
-      {
-        OperationProgress->Cancel = csCancel;
-      }
+      OperationProgress->SetCancelAtLeast(csCancel);
       Abort();
     }
   }
@@ -4430,10 +4435,7 @@ void __fastcall TSFTPFileSystem::SFTPConfirmOverwrite(
     switch (Answer)
     {
       case qaCancel:
-        if (!OperationProgress->Cancel)
-        {
-          OperationProgress->Cancel = csCancel;
-        }
+        OperationProgress->SetCancelAtLeast(csCancel);
         Abort();
         break;
 
@@ -4461,10 +4463,7 @@ bool TSFTPFileSystem::SFTPConfirmResume(const UnicodeString DestFileName,
 
     if (Answer == qaAbort)
     {
-      if (!OperationProgress->Cancel)
-      {
-        OperationProgress->Cancel = csCancel;
-      }
+      OperationProgress->SetCancelAtLeast(csCancel);
       Abort();
     }
     ResumeTransfer = false;
@@ -4495,10 +4494,7 @@ bool TSFTPFileSystem::SFTPConfirmResume(const UnicodeString DestFileName,
         break;
 
       case qaCancel:
-        if (!OperationProgress->Cancel)
-        {
-          OperationProgress->Cancel = csCancel;
-        }
+        OperationProgress->SetCancelAtLeast(csCancel);
         Abort();
         break;
     }
@@ -4614,7 +4610,6 @@ void __fastcall TSFTPFileSystem::SFTPSource(const UnicodeString FileName,
       // Suppose same data size to transfer as to read
       // (not true with ASCII transfer)
       OperationProgress->SetTransferSize(OperationProgress->LocalSize);
-      OperationProgress->TransferingFile = false;
 
       TDateTime Modification = UnixToDateTime(MTime, FTerminal->SessionData->DSTMode);
 
@@ -4693,7 +4688,7 @@ void __fastcall TSFTPFileSystem::SFTPSource(const UnicodeString FileName,
 
           if (ResumeAllowed)
           {
-            FTerminal->LogEvent(L"Checking existence of partially transfered file.");
+            FTerminal->LogEvent(L"Checking existence of partially transferred file.");
             if (RemoteFileExists(DestPartialFullName, &File))
             {
               ResumeOffset = File->Size;
@@ -4834,14 +4829,21 @@ void __fastcall TSFTPFileSystem::SFTPSource(const UnicodeString FileName,
             FLAGMASK(CopyParam->RemoveBOM, cpRemoveBOM);
           Queue.Init(FileName, File, OperationProgress,
             OpenParams.RemoteFileHandle,
-            DestWriteOffset + OperationProgress->TransferedSize,
+            DestWriteOffset + OperationProgress->TransferredSize,
             ConvertParams);
 
           while (Queue.Continue())
           {
             if (OperationProgress->Cancel)
             {
-              Abort();
+              if (OperationProgress->ClearCancelFile())
+              {
+                THROW_SKIP_FILE_NULL;
+              }
+              else
+              {
+                Abort();
+              }
             }
           }
 
@@ -4857,9 +4859,13 @@ void __fastcall TSFTPFileSystem::SFTPSource(const UnicodeString FileName,
             SendPacket(&PropertiesRequest);
             ReserveResponse(&PropertiesRequest, &PropertiesResponse);
           }
+          // No error so far, processes pending responses and throw on first error
+          Queue.DisposeSafeWithErrorHandling();
         }
         __finally
         {
+          // Either queue is empty now (noop call then),
+          // or some error occured (in that case, process remaining responses, ignoring other errors)
           Queue.DisposeSafe();
         }
 
@@ -5003,7 +5009,7 @@ void __fastcall TSFTPFileSystem::SFTPSource(const UnicodeString FileName,
         }
       }
 
-      FTerminal->LogFileDone(OperationProgress);
+      FTerminal->LogFileDone(OperationProgress, DestFullName);
     }
   }
   __finally
@@ -5345,82 +5351,85 @@ void __fastcall TSFTPFileSystem::SFTPDirectorySource(const UnicodeString Directo
     Flags |= tfNewDirectory;
   }
 
-  int FindAttrs = faReadOnly | faHidden | faSysFile | faDirectory | faArchive;
-  TSearchRecChecked SearchRec;
-  bool FindOK;
-
-  FILE_OPERATION_LOOP_BEGIN
+  if (FLAGCLEAR(Params, cpNoRecurse))
   {
-    FindOK =
-      (FindFirstChecked(DirectoryName + L"*.*", FindAttrs, SearchRec) == 0);
-  }
-  FILE_OPERATION_LOOP_END(FMTLOAD(LIST_DIR_ERROR, (DirectoryName)));
+    int FindAttrs = faReadOnly | faHidden | faSysFile | faDirectory | faArchive;
+    TSearchRecChecked SearchRec;
+    bool FindOK;
 
-  try
-  {
-    while (FindOK && !OperationProgress->Cancel)
+    FILE_OPERATION_LOOP_BEGIN
     {
-      UnicodeString FileName = DirectoryName + SearchRec.Name;
-      try
-      {
-        if ((SearchRec.Name != L".") && (SearchRec.Name != L".."))
-        {
-          SFTPSourceRobust(FileName, DestFullName, CopyParam, Params, OperationProgress,
-            Flags & ~tfFirstLevel);
-        }
-      }
-      catch (EScpSkipFile &E)
-      {
-        // If ESkipFile occurs, just log it and continue with next file
-        TSuspendFileOperationProgress Suspend(OperationProgress);
-        // here a message to user was displayed, which was not appropriate
-        // when user refused to overwrite the file in subdirectory.
-        // hopefully it won't be missing in other situations.
-        if (!FTerminal->HandleException(&E))
-        {
-          throw;
-        }
-      }
+      FindOK =
+        (FindFirstChecked(DirectoryName + L"*.*", FindAttrs, SearchRec) == 0);
+    }
+    FILE_OPERATION_LOOP_END(FMTLOAD(LIST_DIR_ERROR, (DirectoryName)));
 
-      FILE_OPERATION_LOOP_BEGIN
-      {
-        FindOK = (FindNextChecked(SearchRec) == 0);
-      }
-      FILE_OPERATION_LOOP_END(FMTLOAD(LIST_DIR_ERROR, (DirectoryName)));
-    };
-  }
-  __finally
-  {
-    FindClose(SearchRec);
-  }
-
-  /* TODO : Delete also read-only directories. */
-  /* TODO : Show error message on failure. */
-  if (!OperationProgress->Cancel)
-  {
-    if (CopyParam->PreserveTime && CopyParam->PreserveTimeDirs)
+    try
     {
-      TRemoteProperties Properties;
-      Properties.Valid << vpModification;
+      while (FindOK && !OperationProgress->Cancel)
+      {
+        UnicodeString FileName = DirectoryName + SearchRec.Name;
+        try
+        {
+          if ((SearchRec.Name != L".") && (SearchRec.Name != L".."))
+          {
+            SFTPSourceRobust(FileName, DestFullName, CopyParam, Params, OperationProgress,
+              Flags & ~tfFirstLevel);
+          }
+        }
+        catch (EScpSkipFile &E)
+        {
+          // If ESkipFile occurs, just log it and continue with next file
+          TSuspendFileOperationProgress Suspend(OperationProgress);
+          // here a message to user was displayed, which was not appropriate
+          // when user refused to overwrite the file in subdirectory.
+          // hopefully it won't be missing in other situations.
+          if (!FTerminal->HandleException(&E))
+          {
+            throw;
+          }
+        }
 
-      FTerminal->OpenLocalFile(
-        ExcludeTrailingBackslash(DirectoryName), GENERIC_READ, NULL, NULL, NULL,
-        &Properties.Modification, &Properties.LastAccess, NULL);
-
-      FTerminal->ChangeFileProperties(DestFullName, NULL, &Properties);
+        FILE_OPERATION_LOOP_BEGIN
+        {
+          FindOK = (FindNextChecked(SearchRec) == 0);
+        }
+        FILE_OPERATION_LOOP_END(FMTLOAD(LIST_DIR_ERROR, (DirectoryName)));
+      };
+    }
+    __finally
+    {
+      FindClose(SearchRec);
     }
 
-    if (FLAGSET(Params, cpDelete))
+    /* TODO : Delete also read-only directories. */
+    /* TODO : Show error message on failure. */
+    if (!OperationProgress->Cancel)
     {
-      RemoveDir(ApiPath(DirectoryName));
-    }
-    else if (CopyParam->ClearArchive && FLAGSET(Attrs, faArchive))
-    {
-      FILE_OPERATION_LOOP_BEGIN
+      if (CopyParam->PreserveTime && CopyParam->PreserveTimeDirs)
       {
-        THROWOSIFFALSE(FileSetAttr(ApiPath(DirectoryName), Attrs & ~faArchive) == 0);
+        TRemoteProperties Properties;
+        Properties.Valid << vpModification;
+
+        FTerminal->OpenLocalFile(
+          ExcludeTrailingBackslash(DirectoryName), GENERIC_READ, NULL, NULL, NULL,
+          &Properties.Modification, &Properties.LastAccess, NULL);
+
+        FTerminal->ChangeFileProperties(DestFullName, NULL, &Properties);
       }
-      FILE_OPERATION_LOOP_END(FMTLOAD(CANT_SET_ATTRS, (DirectoryName)));
+
+      if (FLAGSET(Params, cpDelete))
+      {
+        RemoveDir(ApiPath(DirectoryName));
+      }
+      else if (CopyParam->ClearArchive && FLAGSET(Attrs, faArchive))
+      {
+        FILE_OPERATION_LOOP_BEGIN
+        {
+          THROWOSIFFALSE(FileSetAttr(ApiPath(DirectoryName), Attrs & ~faArchive) == 0);
+        }
+        FILE_OPERATION_LOOP_END(FMTLOAD(CANT_SET_ATTRS, (DirectoryName)));
+      }
     }
   }
 }
@@ -5578,52 +5587,55 @@ void __fastcall TSFTPFileSystem::SFTPSink(const UnicodeString FileName,
       }
       FILE_OPERATION_LOOP_END(FMTLOAD(CREATE_DIR_ERROR, (DestFullName)));
 
-      TSinkFileParams SinkFileParams;
-      SinkFileParams.TargetDir = IncludeTrailingBackslash(DestFullName);
-      SinkFileParams.CopyParam = CopyParam;
-      SinkFileParams.Params = Params;
-      SinkFileParams.OperationProgress = OperationProgress;
-      SinkFileParams.Skipped = false;
-      SinkFileParams.Flags = Flags & ~tfFirstLevel;
-
-      FTerminal->ProcessDirectory(FileName, SFTPSinkFile, &SinkFileParams);
-
-      if (CopyParam->PreserveTime && CopyParam->PreserveTimeDirs)
+      if (FLAGCLEAR(Params, cpNoRecurse))
       {
-        FTerminal->LogEvent(FORMAT(L"Preserving directory timestamp [%s]",
-          (StandardTimestamp(File->Modification))));
-        int SetFileTimeError = ERROR_SUCCESS;
-        // FILE_FLAG_BACKUP_SEMANTICS is needed to "open" directory
-        HANDLE LocalHandle = CreateFile(ApiPath(DestFullName).c_str(), GENERIC_WRITE,
-          FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0);
-        if (LocalHandle == INVALID_HANDLE_VALUE)
+        TSinkFileParams SinkFileParams;
+        SinkFileParams.TargetDir = IncludeTrailingBackslash(DestFullName);
+        SinkFileParams.CopyParam = CopyParam;
+        SinkFileParams.Params = Params;
+        SinkFileParams.OperationProgress = OperationProgress;
+        SinkFileParams.Skipped = false;
+        SinkFileParams.Flags = Flags & ~tfFirstLevel;
+
+        FTerminal->ProcessDirectory(FileName, SFTPSinkFile, &SinkFileParams);
+
+        if (CopyParam->PreserveTime && CopyParam->PreserveTimeDirs)
         {
-          SetFileTimeError = GetLastError();
-        }
-        else
-        {
-          FILETIME AcTime = DateTimeToFileTime(File->LastAccess, FTerminal->SessionData->DSTMode);
-          FILETIME WrTime = DateTimeToFileTime(File->Modification, FTerminal->SessionData->DSTMode);
-          if (!SetFileTime(LocalHandle, NULL, &AcTime, &WrTime))
+          FTerminal->LogEvent(FORMAT(L"Preserving directory timestamp [%s]",
+            (StandardTimestamp(File->Modification))));
+          int SetFileTimeError = ERROR_SUCCESS;
+          // FILE_FLAG_BACKUP_SEMANTICS is needed to "open" directory
+          HANDLE LocalHandle = CreateFile(ApiPath(DestFullName).c_str(), GENERIC_WRITE,
+            FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0);
+          if (LocalHandle == INVALID_HANDLE_VALUE)
           {
             SetFileTimeError = GetLastError();
           }
-          CloseHandle(LocalHandle);
+          else
+          {
+            FILETIME AcTime = DateTimeToFileTime(File->LastAccess, FTerminal->SessionData->DSTMode);
+            FILETIME WrTime = DateTimeToFileTime(File->Modification, FTerminal->SessionData->DSTMode);
+            if (!SetFileTime(LocalHandle, NULL, &AcTime, &WrTime))
+            {
+              SetFileTimeError = GetLastError();
+            }
+            CloseHandle(LocalHandle);
+          }
+
+          if (SetFileTimeError != ERROR_SUCCESS)
+          {
+            FTerminal->LogEvent(FORMAT(L"Preserving timestamp failed, ignoring: %s",
+              (SysErrorMessageForError(SetFileTimeError))));
+          }
         }
 
-        if (SetFileTimeError != ERROR_SUCCESS)
+        // Do not delete directory if some of its files were skip.
+        // Throw "skip file" for the directory to avoid attempt to deletion
+        // of any parent directory
+        if ((Params & cpDelete) && SinkFileParams.Skipped)
         {
-          FTerminal->LogEvent(FORMAT(L"Preserving timestamp failed, ignoring: %s",
-            (SysErrorMessageForError(SetFileTimeError))));
+          THROW_SKIP_FILE_NULL;
         }
-      }
-
-      // Do not delete directory if some of its files were skip.
-      // Throw "skip file" for the directory to avoid attempt to deletion
-      // of any parent directory
-      if ((Params & cpDelete) && SinkFileParams.Skipped)
-      {
-        THROW_SKIP_FILE_NULL;
       }
     }
     else
@@ -5664,14 +5676,13 @@ void __fastcall TSFTPFileSystem::SFTPSink(const UnicodeString FileName,
     }
     FILE_OPERATION_LOOP_END(FMTLOAD(NOT_FILE_ERROR, (DestFullName)));
 
-    OperationProgress->TransferingFile = false; // not set with SFTP protocol
-
     HANDLE LocalHandle = NULL;
     TStream * FileStream = NULL;
     bool DeleteLocalFile = false;
     RawByteString RemoteHandle;
     UnicodeString LocalFileName = DestFullName;
     TSFTPOverwriteMode OverwriteMode = omOverwrite;
+    UnicodeString ExpandedDestFullName;
 
     try
     {
@@ -5680,10 +5691,10 @@ void __fastcall TSFTPFileSystem::SFTPSink(const UnicodeString FileName,
         DestPartialFullName = DestFullName + FTerminal->Configuration->PartialExt;
         LocalFileName = DestPartialFullName;
 
-        FTerminal->LogEvent(L"Checking existence of partially transfered file.");
+        FTerminal->LogEvent(L"Checking existence of partially transferred file.");
         if (FileExists(ApiPath(DestPartialFullName)))
         {
-          FTerminal->LogEvent(L"Partially transfered file exists.");
+          FTerminal->LogEvent(L"Partially transferred file exists.");
           FTerminal->OpenLocalFile(DestPartialFullName, GENERIC_WRITE,
             NULL, &LocalHandle, NULL, NULL, NULL, &ResumeOffset);
 
@@ -5698,7 +5709,7 @@ void __fastcall TSFTPFileSystem::SFTPSink(const UnicodeString FileName,
             ResumeTransfer = !PartialBiggerThanSource;
             if (!ResumeTransfer)
             {
-              FTerminal->LogEvent(L"Partially transfered file is bigger that original file.");
+              FTerminal->LogEvent(L"Partially transferred file is bigger that original file.");
             }
           }
 
@@ -5749,7 +5760,7 @@ void __fastcall TSFTPFileSystem::SFTPSink(const UnicodeString FileName,
       ReceiveResponse(&RemoteFilePacket, &RemoteFilePacket);
       OperationProgress->Progress();
 
-      const TRemoteFile * AFile = File;
+      const TRemoteFile * AFile = NULL;
       try
       {
         // ignore errors
@@ -5760,18 +5771,16 @@ void __fastcall TSFTPFileSystem::SFTPSink(const UnicodeString FileName,
             NULL, false);
         }
 
-        Modification = AFile->Modification;
-        AcTime = DateTimeToFileTime(AFile->LastAccess,
-          FTerminal->SessionData->DSTMode);
-        WrTime = DateTimeToFileTime(Modification,
-          FTerminal->SessionData->DSTMode);
+        Modification =
+          (AFile != NULL) && (AFile->Modification != TDateTime()) ? AFile->Modification : File->Modification;
+        TDateTime LastAccess =
+          (AFile != NULL) && (AFile->LastAccess != TDateTime()) ? AFile->LastAccess : File->LastAccess;
+        AcTime = DateTimeToFileTime(LastAccess, FTerminal->SessionData->DSTMode);
+        WrTime = DateTimeToFileTime(Modification, FTerminal->SessionData->DSTMode);
       }
       __finally
       {
-        if (AFile != File)
-        {
-          delete AFile;
-        }
+        delete AFile;
       }
 
       if ((Attrs >= 0) && !ResumeTransfer)
@@ -5845,7 +5854,8 @@ void __fastcall TSFTPFileSystem::SFTPSink(const UnicodeString FileName,
         }
       }
 
-      Action.Destination(ExpandUNCFileName(DestFullName));
+      ExpandedDestFullName = ExpandUNCFileName(DestFullName);
+      Action.Destination(ExpandedDestFullName);
 
       // if not already opened (resume, append...), create new empty file
       if (!LocalHandle)
@@ -5879,7 +5889,7 @@ void __fastcall TSFTPFileSystem::SFTPSink(const UnicodeString FileName,
           {
             QueueLen = 1;
           }
-          Queue.Init(QueueLen, RemoteHandle, OperationProgress->TransferedSize,
+          Queue.Init(QueueLen, RemoteHandle, OperationProgress->TransferredSize,
             OperationProgress);
 
           bool Eof = false;
@@ -5895,7 +5905,7 @@ void __fastcall TSFTPFileSystem::SFTPSink(const UnicodeString FileName,
           {
             if (Missing > 0)
             {
-              Queue.InitFillGapRequest(OperationProgress->TransferedSize, Missing,
+              Queue.InitFillGapRequest(OperationProgress->TransferredSize, Missing,
                 &DataPacket);
               GapFillCount++;
               SendPacketAndReceiveResponse(&DataPacket, &DataPacket,
@@ -5929,7 +5939,7 @@ void __fastcall TSFTPFileSystem::SFTPSink(const UnicodeString FileName,
                 FTerminal->LogEvent(FORMAT(
                   L"Received incomplete data packet before end of file, "
                    "offset: %s, size: %d, requested: %d",
-                  (IntToStr(OperationProgress->TransferedSize), int(DataLen),
+                  (IntToStr(OperationProgress->TransferredSize), int(DataLen),
                   int(BlockSize))));
                 FTerminal->TerminalError(NULL, LoadStr(SFTP_INCOMPLETE_BEFORE_EOF));
               }
@@ -5947,7 +5957,7 @@ void __fastcall TSFTPFileSystem::SFTPSink(const UnicodeString FileName,
               }
               else if (DataLen < BlockSize)
               {
-                if (OperationProgress->TransferedSize + DataLen !=
+                if (OperationProgress->TransferredSize + DataLen !=
                       OperationProgress->TransferSize)
                 {
                   // with native text transfer mode (SFTP>=4), do not bother about
@@ -5967,7 +5977,7 @@ void __fastcall TSFTPFileSystem::SFTPSink(const UnicodeString FileName,
               DebugAssert(DataLen <= BlockSize);
               BlockBuf.Insert(0, reinterpret_cast<const char *>(DataPacket.GetNextData(DataLen)), DataLen);
               DataPacket.DataConsumed(DataLen);
-              OperationProgress->AddTransfered(DataLen);
+              OperationProgress->AddTransferred(DataLen);
 
               if ((FVersion >= 6) && DataPacket.CanGetBool() && (Missing == 0))
               {
@@ -5993,9 +6003,16 @@ void __fastcall TSFTPFileSystem::SFTPSink(const UnicodeString FileName,
               OperationProgress->AddLocallyUsed(BlockBuf.Size);
             }
 
-            if (OperationProgress->Cancel == csCancel)
+            if (OperationProgress->Cancel != csContinue)
             {
-              Abort();
+              if (OperationProgress->ClearCancelFile())
+              {
+                THROW_SKIP_FILE_NULL;
+              }
+              else
+              {
+                Abort();
+              }
             }
           };
 
@@ -6078,11 +6095,12 @@ void __fastcall TSFTPFileSystem::SFTPSink(const UnicodeString FileName,
       }
     }
 
-    FTerminal->LogFileDone(OperationProgress);
+    FTerminal->LogFileDone(OperationProgress, ExpandedDestFullName);
   }
 
   if (Params & cpDelete)
   {
+    DebugAssert(FLAGCLEAR(Params, cpNoRecurse));
     ChildError = true;
     // If file is directory, do not delete it recursively, because it should be
     // empty already. If not, it should not be deleted (some files were

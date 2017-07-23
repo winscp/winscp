@@ -32,69 +32,62 @@ unit PIDL;
 }
 interface
 
-uses ShlObj, Windows, ActiveX;
+uses
+  ShlObj, Windows, ActiveX;
 
-function PIDL_GetNextItem(PIDL: PItemIDList):PItemIDList;
-function PIDL_GetSize(pidl: PITEMIDLIST): integer;
+function PIDL_GetSize(PIDL: PITEMIDLIST): Integer;
 function PIDL_Create(Size: UINT): PItemIDList;
-function PIDL_Concatenate(pidl1, pidl2: PItemIDList): PItemIDList;
-function PIDL_Copy(pidlSource: PItemIDList): PItemIDList;
-function PIDL_GetDisplayName(piFolder: IShellFolder; pidl: PItemIDList;
-   dwFlags: DWORD; pszName: PChar; cchMax: UINT): boolean;
-function Pidl_GetFullyQualified(const PiParentFolder: IShellFolder;
-   pidl: PItemIDList): PItemIDList;
-procedure PIDL_GetRelative(var pidlFQ, ppidlRoot, ppidlItem: PItemIDList);
+function PIDL_Concatenate(PIDL1, PIDL2: PItemIDList): PItemIDList;
+function PIDL_Copy(PIDLSource: PItemIDList): PItemIDList;
+function PIDL_GetDisplayName(piFolder: IShellFolder; PIDL: PItemIDList;
+  dwFlags: DWORD; pszName: PChar; cchMax: UINT): Boolean;
+procedure PIDL_GetRelative(var PIDLFQ, PPIDLRoot, PPIDLItem: PItemIDList);
 function PIDL_GetFromPath(pszFile: PChar): PItemIDList;
-function PIDL_GetFileFolder(pidl: PItemIDList; var piFolder: IShellFolder):boolean;
+function PIDL_GetFileFolder(PIDL: PItemIDList; var piFolder: IShellFolder): Boolean;
 function PIDL_GetFromParentFolder(pParentFolder: IShellFolder; pszFile: PChar): PItemIDList;
-procedure PIDL_Free(PIDL:PItemIDList);
-function PIDL_Equal(PIDL1,PIDL2:PItemIDList):boolean;
+procedure PIDL_Free(PIDL: PItemIDList);
+function PIDL_Equal(PIDL1, PIDL2: PItemIDList): Boolean;
 
-var ShellMalloc: IMalloc;
+procedure ParseDisplayNameWithTimeout(ParentFolder: IShellFolder; Path: string; var PIDL: PItemIDList);
 
-    CF_FILECONTENTS:UInt; // don't modify value
-    CF_FILEDESCRIPTOR:UInt; // don't modify value
-    CF_FILENAME:UInt; // don't modify value
-    CF_FILENAMEMAP:UInt; // don't modify value
-    CF_FILENAMEMAPW:UInt; // don't modify value
-    CF_INDRAGLOOP:UInt; // don't modify value
-    CF_NETRESOURCES:UInt; // don't modify value
-    CF_PASTESUCCEEDED:UInt; // don't modify value
-    CF_PERFORMEDDROPEFFECT:UInt; // don't modify value
-    CF_PREFERREDDROPEFFECT:UInt; // don't modify value
-    CF_PRINTERGROUP:UInt; // don't modify value
-    CF_SHELLIDLIST:UInt; // don't modify value
-    CF_SHELLIDLISTOFFSET:UInt; // don't modify value
-    CF_SHELLURL:UInt; // don't modify value
+var
+  ShellMalloc: IMalloc;
+
+  CF_FILENAMEMAP: UINT;
+  CF_FILENAMEMAPW: UINT;
+  CF_SHELLIDLIST: UINT;
 
 implementation
 
+uses
+  SysUtils, CompThread;
+
 const NullTerm=2;
 
-function PIDL_GetNextItem(PIDL: PItemIDList):PItemIDList;
+function PIDL_GetNextItem(PIDL: PItemIDList): PItemIDList;
 //  PURPOSE:    Returns a pointer to the next item in the ITEMIDLIST.
 //  PARAMETERS:
 //      pidl - Pointer to an ITEMIDLIST to walk through
 begin
-     if PIDL<>nil then Result:=PItemIDList(PAnsiChar(PIDL)+PIDL^.mkid.cb)
-     else Result:=nil
+  if PIDL<>nil then Result := PItemIDList(PAnsiChar(PIDL) + PIDL^.mkid.cb)
+     else Result := nil;
 end;
 
-function PIDL_GetSize(pidl: PITEMIDLIST): integer;
+function PIDL_GetSize(PIDL: PITEMIDLIST): Integer;
 //  PURPOSE:    Returns the total number of bytes in an ITEMIDLIST.
 //  PARAMETERS:
 //      pidl - Pointer to the ITEMIDLIST that you want the size of.
 begin
-     Result:=0;
-     if pidl<>nil then
-     begin
-          Inc(Result, SizeOf(pidl^.mkid.cb));
-          while pidl^.mkid.cb <> 0 do
-          begin
-               Inc(Result, pidl^.mkid.cb);
-               Inc(longint(pidl), pidl^.mkid.cb);
-          end;
-     end;
+  Result := 0;
+  if PIDL <> nil then
+  begin
+    Inc(Result, SizeOf(PIDL^.mkid.cb));
+    while PIDL^.mkid.cb <> 0 do
+    begin
+      Inc(Result, PIDL^.mkid.cb);
+      Inc(LongInt(PIDL), PIDL^.mkid.cb);
+    end;
+  end;
 end;
 
 function PIDL_Create(Size: UINT): PItemIDList;
@@ -105,12 +98,12 @@ function PIDL_Create(Size: UINT): PItemIDList;
 //  RETURN VALUE:
 //      Returns a pointer to the new ITEMIDLIST, or NULL if a problem occured.
 begin
-     Result:=ShellMalloc.Alloc(Size);
-     if Result<>nil then
-        FillChar(Result^, Size, #0);
+  Result := ShellMalloc.Alloc(Size);
+  if Result <> nil then
+    FillChar(Result^, Size, #0);
 end;
 
-function PIDL_Concatenate(pidl1, pidl2: PItemIDList): PItemIDList;
+function PIDL_Concatenate(PIDL1, PIDL2: PItemIDList): PItemIDList;
 //  PURPOSE:    Creates a new ITEMIDLIST with pidl2 appended to pidl1.
 //  PARAMETERS:
 //  piMalloc - Pointer to the allocator interface that should create the new ITEMIDLIST.
@@ -118,36 +111,38 @@ function PIDL_Concatenate(pidl1, pidl2: PItemIDList): PItemIDList;
 //  pidl2    - Pointer to an ITEMIDLIST that contains what should be appended to the root.
 //  RETURN VALUE:
 //      Returns a new ITEMIDLIST if successful, NULL otherwise.
-var cb1, cb2: UINT;
+var
+  cb1, cb2: UINT;
 begin
-     if (pidl1<>nil) then cb1:=PIDL_GetSize(pidl1)-NullTerm else cb1:=0;
-     cb2:=PIDL_GetSize(pidl2);
-     Result:=PIDL_Create(cb1 + cb2);
-     if Result<>nil then
-     begin
-          if pidl1<>nil then CopyMemory(Result,pidl1,cb1);
-          CopyMemory(PAnsiChar(Result)+cb1,pidl2,cb2);
-     end;
+  if (PIDL1 <> nil) then cb1 := PIDL_GetSize(PIDL1) - NullTerm else cb1 := 0;
+  cb2 := PIDL_GetSize(PIDL2);
+  Result := PIDL_Create(cb1 + cb2);
+  if Result <> nil then
+  begin
+    if PIDL1 <> nil then CopyMemory(Result, PIDL1, cb1);
+    CopyMemory(PAnsiChar(Result) + cb1, PIDL2, cb2);
+  end;
 end;
 
-function PIDL_Copy(pidlSource: PItemIDList): PItemIDList;
+function PIDL_Copy(PIDLSource: PItemIDList): PItemIDList;
 //  PURPOSE:    Creates a new copy of an ITEMIDLIST.
 //  PARAMETERS:
 //      piMalloc - Pointer to the allocator interfaced to be used to allocate the new ITEMIDLIST.
 //  RETURN VALUE:
 //      Returns a pointer to the new ITEMIDLIST, or NULL if an error occurs.
-var cbSource:UINT;
+var
+  cbSource: UINT;
 begin
-     Result:=nil;
-     if pidlSource=nil then exit;
-     cbSource:=PIDL_GetSize(pidlSource);
-     Result:=PIDL_Create(cbSource);
-     if Result=nil then exit;
-     CopyMemory(Result,pidlSource,cbSource);
+  Result := nil;
+  if pidlSource = nil then Exit;
+  cbSource := PIDL_GetSize(PIDLSource);
+  Result := PIDL_Create(cbSource);
+  if Result = nil then Exit;
+  CopyMemory(Result, PIDLSource, cbSource);
 end;
 
-function PIDL_GetDisplayName(piFolder: IShellFolder; pidl: PItemIDList;
-   dwFlags: DWORD; pszName: PChar; cchMax: UINT): boolean;
+function PIDL_GetDisplayName(piFolder: IShellFolder; PIDL: PItemIDList;
+   dwFlags: DWORD; pszName: PChar; cchMax: UINT): Boolean;
 //  PURPOSE:    Returns the display name for the item pointed to by pidl.  The
 //              function assumes the pidl is relative to piFolder.  If piFolder
 //              is NULL, the function assumes the item is fully qualified.
@@ -160,87 +155,68 @@ function PIDL_GetDisplayName(piFolder: IShellFolder; pidl: PItemIDList;
 //  cchMax   - Maximum number of characters in pszName.
 //  RETURN VALUE:
 //      Returns TRUE if successful, FALSE otherwise.
-var Str: TStrRet;
+var
+  Str: TStrRet;
 begin
-     if (piFolder=nil) and (Failed(SHGetDesktopFolder(piFolder))) then
-     begin
-          Result:=false;
-          exit;
-     end;
-     Result:=TRUE;
-     if piFolder.GetDisplayNameOf(pidl, dwFlags, Str) = NOERROR then
-     begin
-          case Str.uType of
-               STRRET_WSTR:
-                  lstrcpyn(pszName, str.pOleStr, cchMax);
-               STRRET_OFFSET:
-                  MultiByteToWideChar(CP_ACP, 0, PAnsiChar(pidl)+str.uOffset, -1, pszName, cchMax);
-               STRRET_CSTR:
-                  MultiByteToWideChar(CP_ACP, 0, str.cStr, -1, pszName, cchMax);
-               else Result := FALSE;
-          end;
-     end
-     else Result:=FALSE;
-     // piFolder._Release; -> automaticly done by D4
+  if (piFolder = nil) and (Failed(SHGetDesktopFolder(piFolder))) then
+  begin
+    Result := False;
+    Exit;
+  end;
+
+  Result := True;
+
+  if piFolder.GetDisplayNameOf(PIDL, dwFlags, Str) = NOERROR then
+  begin
+    case Str.uType of
+      STRRET_WSTR:
+        lstrcpyn(pszName, str.pOleStr, cchMax);
+      STRRET_OFFSET:
+        MultiByteToWideChar(CP_ACP, 0, PAnsiChar(PIDL) + str.uOffset, -1, pszName, cchMax);
+      STRRET_CSTR:
+        MultiByteToWideChar(CP_ACP, 0, str.cStr, -1, pszName, cchMax);
+      else
+        Result := False;
+    end;
+  end
+    else Result := False;
+  // piFolder._Release; -> automaticly done by D4
 end;
 
-function Pidl_GetFullyQualified(const PiParentFolder: IShellFolder;
-   pidl: PItemIDList): PItemIDList;
-//  PURPOSE:    Takes a relative PIDL and it's parent IShellFolder, and returns
-//      a fully qualified ITEMIDLIST.
-//  PARAMETERS:
-//      piParentFolder - Pointer to the IShellFolder of the parent folder.
-//  pidl           - ITEMIDLIST relative to piParentFolder
-//  RETURN VALUE:
-//      Returns a fully qualified ITEMIDLIST or NULL if there is a problem.
-var piDesktopFolder:IShellFolder;
-    szBuffer: array[1..Max_Path] of char;
-    szOleChar: array[1..Max_Path] of TOLECHAR;
-    ulEaten, ulAttribs:ULong;
-begin
-     Result:=nil;
-     if Failed(SHGetDesktopFolder(piDesktopFolder)) then exit;
-     if PIDL_GetDisplayName(piParentFolder, pidl, SHGDN_FORPARSING, @szBuffer, sizeof(szBuffer))=false then
-        exit;
-     MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, @szBuffer, -1, @szOleChar, sizeof(szOleChar));
-     ulAttribs := 0;
-     if Failed(piDesktopFolder.ParseDisplayName(0, nil, @szOleChar, ulEaten,
-        Result, ulAttribs)) then Result:=nil;
-     // piDesktopFolder._Release; automaticly done by D4
-end;
-
-procedure PIDL_GetRelative(var pidlFQ, ppidlRoot, ppidlItem: PItemIDList);
+procedure PIDL_GetRelative(var pidlFQ, PPIDLRoot, PPIDLItem: PItemIDList);
 //  PURPOSE:    Takes a fully qualified pidl and returns the the relative pidl
 //  and the root part of that pidl.
 //  PARAMETERS:
 //  pidlFQ   - Pointer to the fully qualified ITEMIDLIST that needs to be parsed.
 //  pidlRoot - Points to the pidl that will contain the root after parsing.
 //  pidlItem - Points to the item relative to pidlRoot after parsing.
-var pidlTemp, pidlNext: PItemIDList;
+var
+  PIDLTemp, PIDLNext: PItemIDList;
 begin
-     if pidlFQ=nil then
-     begin
-          ppidlRoot:=nil;
-          ppidlItem:=nil;
-          exit;
-     end;
-     ppidlItem:=nil;
-     ppidlRoot:=PIDL_Copy(pidlFQ);
-     pidlTemp:=ppidlRoot;
-     while pidlTemp^.mkid.cb>0 do
-     begin
-          pidlNext:=PIDL_GetNextItem(pidlTemp);
-          if pidlNext^.mkid.cb=0 then
-          begin
-               ppidlItem:=PIDL_Copy(pidlTemp);
-               pidlTemp^.mkid.cb:=0;
-               pidlTemp^.mkid.abID[0]:=0;
-          end;
-          pidlTemp:=pidlNext;
-     end;
+  if PIDLFQ = nil then
+  begin
+    PPIDLRoot := nil;
+    PPIDLItem := nil;
+    Exit;
+  end;
+
+  PPIDLItem := nil;
+  PPIDLRoot := PIDL_Copy(PIDLFQ);
+  PIDLTemp := PPIDLRoot;
+
+  while PIDLTemp^.mkid.cb>0 do
+  begin
+    PIDLNext := PIDL_GetNextItem(PIDLTemp);
+    if PIDLNext^.mkid.cb = 0 then
+    begin
+      PPIDLItem := PIDL_Copy(PIDLTemp);
+      PIDLTemp^.mkid.cb := 0;
+      PIDLTemp^.mkid.abID[0] := 0;
+    end;
+
+    PIDLTemp := PIDLNext;
+  end;
 end;
-
-
 
 function PIDL_GetFromPath(pszFile: PChar): PItemIDList;
 //  PURPOSE:    This routine takes a full path to a file and converts that
@@ -249,19 +225,19 @@ function PIDL_GetFromPath(pszFile: PChar): PItemIDList;
 //      pszFile  - Full path to the file.
 //  RETURN VALUE:
 //      Returns a fully qualified ITEMIDLIST, or NULL if an error occurs.
-var piDesktop: IShellFolder;
-    ulEaten, ulAttribs:ULong;
+var
+  piDesktop: IShellFolder;
+  ulEaten, ulAttribs: ULong;
 begin
-     Result:=nil;
-     if Failed(SHGetDesktopFolder(piDesktop)) then exit;
-     piDesktop._AddRef;
-     ulAttribs := 0;
-     if Failed(piDesktop.ParseDisplayName(0, nil, pszFile, ulEaten,
-        Result, ulAttribs)) then Result:=nil;
-     // piDesktop._Release; -> automaticly done by D4
+  Result := nil;
+  if Failed(SHGetDesktopFolder(piDesktop)) then Exit;
+  piDesktop._AddRef;
+  ulAttribs := 0;
+  if Failed(piDesktop.ParseDisplayName(0, nil, pszFile, ulEaten, Result, ulAttribs)) then Result := nil;
+  // piDesktop._Release; -> automaticly done by D4
 end;
 
-function PIDL_GetFileFolder(pidl: PItemIDList; var piFolder: IShellFolder):boolean;
+function PIDL_GetFileFolder(PIDL: PItemIDList; var piFolder: IShellFolder): Boolean;
 //  PURPOSE:    This routine takes a fully qualified pidl for a folder and returns
 //  the IShellFolder pointer for that pidl
 //  PARAMETERS:
@@ -269,15 +245,82 @@ function PIDL_GetFileFolder(pidl: PItemIDList; var piFolder: IShellFolder):boole
 //      piParentFolder - Pointer to the IShellFolder of the folder (Return value).
 //  RETURN VALUE:
 //      Returns TRUE if successful, FALSE otherwise.
-var piDesktopFolder: IShellFolder;
+var
+  piDesktopFolder: IShellFolder;
 begin
-     Result:=false;
-     if Failed(SHGetDesktopFolder(piDesktopFolder)) then exit;
-     if assigned(PiFolder)=false then
-        if Failed(SHGetDesktopFolder(PiFolder)) then exit;
-     if Failed(piDesktopFolder.BindToObject(pidl, nil, IID_IShellFolder,
-        pointer(PiFolder)))=false then Result:=true;
-     //piDesktopFolder._Release; -> automaticly done by D4
+  Result:=false;
+  if Failed(SHGetDesktopFolder(piDesktopFolder)) then Exit;
+  if (not Assigned(PiFolder)) and Failed(SHGetDesktopFolder(PiFolder)) then Exit;
+  if not Failed(piDesktopFolder.BindToObject(PIDL, nil, IID_IShellFolder, Pointer(PiFolder))) then Result := True;
+  //piDesktopFolder._Release; -> automaticly done by D4
+end;
+
+type
+  TParseDisplayNameThread = class(TCompThread)
+  private
+    FParentFolder: IShellFolder;
+    FPath: string;
+    FPIDL: PItemIDList;
+
+  protected
+    procedure Execute; override;
+
+  public
+    constructor Create(ParentFolder: IShellFolder; Path: string);
+
+    class procedure DoIt(ParentFolder: IShellFolder; Path: string; var PIDL: PItemIDList);
+
+    property PIDL: PItemIDList read FPIDL;
+  end;
+
+constructor TParseDisplayNameThread.Create(ParentFolder: IShellFolder; Path: string);
+begin
+  inherited Create(True);
+  FParentFolder := ParentFolder;
+  FPath := Path;
+end;
+
+class procedure TParseDisplayNameThread.DoIt(ParentFolder: IShellFolder; Path: string; var PIDL: PItemIDList);
+var
+  Eaten: ULONG;
+  ShAttr: ULONG;
+begin
+  ShAttr := 0;
+  if Failed(ParentFolder.ParseDisplayName(0, nil, PChar(Path), Eaten, PIDL, ShAttr)) then
+  begin
+    PIDL := nil;
+  end;
+end;
+
+procedure TParseDisplayNameThread.Execute;
+begin
+  DoIt(FParentFolder, FPath, FPIDL);
+end;
+
+procedure ParseDisplayNameWithTimeout(ParentFolder: IShellFolder; Path: string; var PIDL: PItemIDList);
+{$IFNDEF IDE}
+var
+  Thread: TParseDisplayNameThread;
+{$ENDIF}
+begin
+  { See comment in TDriveView.GetNodeShellAttr }
+  {$IFDEF IDE}
+  TParseDisplayNameThread.DoIt(ParentFolder, Path, PIDL);
+  {$ELSE}
+  Thread := TParseDisplayNameThread.Create(ParentFolder, Path);
+  Thread.Resume;
+  if Thread.WaitFor(2 * MSecsPerSec) then
+  begin
+    PIDL := Thread.PIDL;
+    Thread.Free;
+  end
+    else
+  begin
+    // There's a chance for memory leak, if thread is terminated
+    // between WaitFor() and this line
+    Thread.FreeOnTerminate := True;
+  end;
+  {$ENDIF}
 end;
 
 function PIDL_GetFromParentFolder(pParentFolder: IShellFolder; pszFile: PChar): PItemIDList;
@@ -289,63 +332,45 @@ function PIDL_GetFromParentFolder(pParentFolder: IShellFolder; pszFile: PChar): 
 //      pszFile       - file name in the folder.
 //  RETURN VALUE:
 //      Returns a relative ITEMIDLIST, or NULL if an error occurs.
-var chEaten, dwAttributes: ULONG;
-    NotResult: Boolean;
-    ErrorMode: Word;
 begin
-     ErrorMode := SetErrorMode(SEM_FAILCRITICALERRORS or SEM_NOOPENFILEERRORBOX);
-     try
-       dwAttributes := 0;
-       NotResult := Failed(pParentFolder.ParseDisplayName(0, nil, pszFile, chEaten, Result,
-          dwAttributes));
-     finally
-       SetErrorMode(ErrorMode);
-     end;
-     if NotResult then Result:=nil;
+  ParseDisplayNameWithTimeout(pParentFolder, pszFile, Result);
 end;
 
-procedure PIDL_Free(PIDL:PItemIDList);
+procedure PIDL_Free(PIDL: PItemIDList);
 begin
-     if PIDL<>nil then
-        ShellMalloc.Free(PIDL);
+  if PIDL <> nil then
+    ShellMalloc.Free(PIDL);
 end;
 
-function PIDL_Equal(PIDL1,PIDL2:PItemIDList):boolean;
-var i,size:integer;
-    p1,p2:pchar;
+function PIDL_Equal(PIDL1,PIDL2: PItemIDList): Boolean;
+var
+  I, Size: Integer;
+  P1, P2: PChar;
 begin
-     Result:=false;
-     if (PIDL1=nil) or (PIDL2=nil) then exit;
-     size:=PIDL_GetSize(PIDL1);
-     if size<>PIDL_GetSize(PIDL2) then exit;
-     i:=0;
-     p1:=PChar(PIDL1);
-     p2:=PChar(PIDL2);
-     while i<size do
-           if p1[i]<>p2[i] then exit else inc(i);
-     Result:=true;
+  Result := False;
+  if (PIDL1 = nil) or (PIDL2 = nil) then Exit;
+  Size := PIDL_GetSize(PIDL1);
+  if Size <> PIDL_GetSize(PIDL2) then Exit;
+  I := 0;
+  P1 := PChar(PIDL1);
+  P2 := PChar(PIDL2);
+  while I < Size do
+  begin
+    if P1[I] <> P2[I] then Exit
+      else Inc(I);
+  end;
+  Result := True;
 end;
 
 initialization
 
   SHGetMalloc(ShellMalloc);
-  CF_FILECONTENTS:=RegisterClipboardFormat('FileContents');
-  CF_FILEDESCRIPTOR:=RegisterClipboardFormat('FileGroupDescriptor');
-  CF_FILENAME:=RegisterClipboardFormat('FileName');
-  CF_FILENAMEMAP:=RegisterClipboardFormat('FileNameMap');
-  CF_FILENAMEMAPW:=RegisterClipboardFormat('FileNameMapW');
-  CF_INDRAGLOOP:=RegisterClipboardFormat('InShellDragLoop');
-  CF_NETRESOURCES:=RegisterClipboardFormat('Net Resource');
-  CF_PASTESUCCEEDED:=RegisterClipboardFormat('Paste Succeeded');
-  CF_PERFORMEDDROPEFFECT:=RegisterClipboardFormat('Performed DropEffect');
-  CF_PREFERREDDROPEFFECT:=RegisterClipboardFormat('Preferred DropEffect');
-  CF_PRINTERGROUP:=RegisterClipboardFormat('PrinterFriendlyName');
-  CF_SHELLIDLIST:=RegisterClipboardFormat('Shell IDList Array');
-  CF_SHELLIDLISTOFFSET:=RegisterClipboardFormat('Shell Object Offsets');
-  CF_SHELLURL:=RegisterClipboardFormat('UniformResourceLocator');
+
+  CF_FILENAMEMAP := RegisterClipboardFormat('FileNameMap');
+  CF_FILENAMEMAPW := RegisterClipboardFormat('FileNameMapW');
+  CF_SHELLIDLIST := RegisterClipboardFormat('Shell IDList Array');
 
 finalization
-
   // ShellMalloc._Release; -> automaticly done by D4
 
 end.

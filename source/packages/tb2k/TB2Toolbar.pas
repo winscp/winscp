@@ -31,7 +31,7 @@ interface
 {$I TB2Ver.inc}
 
 uses
-  {$IFDEF JR_D9} Types, {$ENDIF}
+  Types,
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, ImgList,
   Menus, ActnList,
   TB2Item, TB2Dock;
@@ -127,9 +127,6 @@ type
     procedure WMGetObject(var Message: TMessage); message WM_GETOBJECT;
     procedure WMMouseLeave(var Message: TMessage); message WM_MOUSELEAVE;
     procedure WMNCMouseMove(var Message: TWMNCMouseMove); message WM_NCMOUSEMOVE;
-    {$IFNDEF JR_D5}
-    procedure WMRButtonUp(var Message: TWMRButtonUp); message WM_RBUTTONUP;
-    {$ENDIF}
     procedure WMSetCursor(var Message: TWMSetCursor); message WM_SETCURSOR;
     procedure WMSysCommand(var Message: TWMSysCommand); message WM_SYSCOMMAND;
   protected
@@ -142,9 +139,7 @@ type
       override;
     function DoArrange(CanMoveControls: Boolean; PreviousDockType: TTBDockType;
       NewFloating: Boolean; NewDock: TTBDock): TPoint; override;
-    {$IFDEF JR_D5}
     procedure DoContextPopup(MousePos: TPoint; var Handled: Boolean); override;
-    {$ENDIF}
     procedure GetBaseSize(var ASize: TPoint); override;
     procedure GetMinBarSize(var MinimumSize: TPoint);
     procedure GetMinShrinkSize(var AMinimumSize: Integer); override;
@@ -162,6 +157,7 @@ type
     procedure ResizeTrackAccept; override;
     procedure ResizeEnd; override;
     procedure SetChildOrder(Child: TComponent; Order: Integer); override;
+    procedure ChangeScale(M, D: Integer); override;
 
     property SystemFont: Boolean read FSystemFont write SetSystemFont default True;
     property OnShortCut: TShortCutEvent read FOnShortCut write FOnShortCut;
@@ -857,24 +853,12 @@ begin
   inherited;
 end;
 
-{$IFDEF JR_D5}
 procedure TTBCustomToolbar.DoContextPopup(MousePos: TPoint;
   var Handled: Boolean);
 begin
   CancelHover;
   inherited;
 end;
-{$ENDIF}
-
-{$IFNDEF JR_D5}
-{ Delphi 4 and earlier don't have a DoContextPopup method; we instead have to
-  trap WM_RBUTTONUP to determine if a popup menu (might) be displayed }
-procedure TTBCustomToolbar.WMRButtonUp(var Message: TWMRButtonUp);
-begin
-  CancelHover;
-  inherited;
-end;
-{$ENDIF}
 
 procedure TTBCustomToolbar.MouseMove(Shift: TShiftState; X, Y: Integer);
 var
@@ -1709,6 +1693,13 @@ begin
   Dec(HookCount);
   if HookCount = 0 then
     Application.UnhookMainWindow(MainWindowHook);
+end;
+
+procedure TTBCustomToolbar.ChangeScale(M, D: Integer);
+begin
+  inherited;
+  Items.ChangeScale(M, D);
+  View.RecreateAllViewers;
 end;
 
 end.

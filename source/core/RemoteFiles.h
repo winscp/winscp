@@ -87,6 +87,7 @@ private:
   TModificationFmt FModificationFmt;
   __int64 FSize;
   UnicodeString FFileName;
+  UnicodeString FDisplayName;
   Integer FINodeBlocks;
   TDateTime FModification;
   TDateTime FLastAccess;
@@ -100,7 +101,6 @@ private:
   UnicodeString FHumanRights;
   TTerminal *FTerminal;
   wchar_t FType;
-  bool FSelected;
   bool FCyclicLink;
   UnicodeString FFullFileName;
   int FIsHidden;
@@ -156,6 +156,7 @@ public:
   __property TRemoteToken Owner = { read = FOwner, write = FOwner };
   __property TRemoteToken Group = { read = FGroup, write = FGroup };
   __property UnicodeString FileName = { read = FFileName, write = FFileName };
+  __property UnicodeString DisplayName = { read = FDisplayName, write = FDisplayName };
   __property int INodeBlocks = { read = FINodeBlocks };
   __property TDateTime Modification = { read = FModification, write = SetModification };
   __property UnicodeString ModificationStr = { read = GetModificationStr };
@@ -171,7 +172,6 @@ public:
   __property UnicodeString HumanRights = { read = FHumanRights, write = FHumanRights };
   __property TTerminal * Terminal = { read = FTerminal, write = SetTerminal };
   __property wchar_t Type = { read = GetType, write = SetType };
-  __property bool Selected  = { read=FSelected, write=FSelected };
   __property UnicodeString FullFileName  = { read = GetFullFileName, write = FFullFileName };
   __property bool HaveFullFileName  = { read = GetHaveFullFileName };
   __property int IconIndex = { read = GetIconIndex };
@@ -237,11 +237,9 @@ private:
   Boolean FIncludeParentDirectory;
   Boolean FIncludeThisDirectory;
   TTerminal * FTerminal;
-  TStrings * FSelectedFiles;
   TRemoteFile * FParentDirectory;
   TRemoteFile * FThisDirectory;
   virtual void __fastcall SetDirectory(UnicodeString value);
-  TStrings * __fastcall GetSelectedFiles();
   Boolean __fastcall GetLoaded();
   void __fastcall SetIncludeParentDirectory(Boolean value);
   void __fastcall SetIncludeThisDirectory(Boolean value);
@@ -253,7 +251,6 @@ public:
   virtual void __fastcall DuplicateTo(TRemoteFileList * Copy);
   virtual void __fastcall Reset();
   __property TTerminal * Terminal = { read = FTerminal, write = FTerminal };
-  __property TStrings * SelectedFiles  = { read=GetSelectedFiles };
   __property Boolean IncludeParentDirectory = { read = FIncludeParentDirectory, write = SetIncludeParentDirectory };
   __property Boolean IncludeThisDirectory = { read = FIncludeThisDirectory, write = SetIncludeThisDirectory };
   __property Boolean Loaded = { read = GetLoaded };
@@ -441,6 +438,7 @@ bool __fastcall UnixIsAbsolutePath(const UnicodeString & Path);
 UnicodeString __fastcall UnixIncludeTrailingBackslash(const UnicodeString Path);
 UnicodeString __fastcall UnixExcludeTrailingBackslash(const UnicodeString Path, bool Simple = false);
 UnicodeString __fastcall SimpleUnixExcludeTrailingBackslash(const UnicodeString Path);
+UnicodeString __fastcall UnixCombinePaths(const UnicodeString & Path1, const UnicodeString & Path2);
 UnicodeString __fastcall UnixExtractFileDir(const UnicodeString Path);
 UnicodeString __fastcall UnixExtractFilePath(const UnicodeString Path);
 UnicodeString __fastcall UnixExtractFileName(const UnicodeString Path);

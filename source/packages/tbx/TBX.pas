@@ -9,15 +9,10 @@ unit TBX;
 interface
 
 {$I TB2Ver.inc}
-{$I TBX.inc}
-
-{x$DEFINE TBX_NO_ANIMATION}
-  { Enabling the above define disables all menu animation. For debugging
-    purpose only. } {vb+}
 
 uses
   Windows, Messages, Classes, SysUtils, Controls, Graphics, ImgList, Forms,
-  TB2Item, TB2Dock, TB2Toolbar, {$IFNDEF MPEXCLUDE}TB2ToolWindow,{$ENDIF} TB2Anim, TBXUtils, TBXThemes;
+  TB2Item, TB2Dock, TB2Toolbar, TB2Anim, TBXUtils, TBXThemes, PasTools;
 
 const
   TBXVersion = 2.1;
@@ -274,44 +269,6 @@ type
     function  IsToolbarStyle: Boolean; override;
   end;
 
-  {$IFNDEF MPEXCLUDE}
-  TTBXVisibilityToggleItem = class(TTBXCustomItem)
-  private
-    FControl: TControl;
-    procedure SetControl (Value: TControl);
-    procedure UpdateProps;
-  protected
-    procedure Notification (AComponent: TComponent; Operation: TOperation); override;
-  public
-    procedure Click; override;
-    procedure InitiateAction; override;
-  published
-    property Caption;
-    property Control: TControl read FControl write SetControl;
-    property DisplayMode;
-    property Enabled;
-    property FontSettings;
-    property HelpContext;
-    { MP }
-    property HelpKeyword;
-    property Hint;
-    property ImageIndex;
-    property Images;
-    property InheritOptions;
-    property Layout;
-    property MaskOptions;
-    property MinHeight;
-    property MinWidth;
-    property Options;
-    property ShortCut;
-    property Stretch;
-    property Visible;
-    property OnAdjustFont;
-    property OnClick;
-    property OnSelect;
-  end;
-  {$ENDIF}
-
   { TTBXPopupWindow }
 
   TTBXPopupWindow = class(TTBPopupWindow)
@@ -319,7 +276,7 @@ type
     FControlRect: TRect;
     FShadows: TShadows;
     procedure CMHintShow(var Message: TCMHintShow); message CM_HINTSHOW;
-    procedure CMShowingChanged(var Message: TMessage); message CM_SHOWINGCHANGED; {vb+}
+    procedure CMShowingChanged(var Message: TMessage); message CM_SHOWINGCHANGED;
     procedure TBMGetViewType(var Message: TMessage); message TBM_GETVIEWTYPE;
     procedure WMNCCalcSize(var Message: TWMNCCalcSize); message WM_NCCALCSIZE;
     procedure WMNCPaint(var Message: TMessage); message WM_NCPAINT;
@@ -334,7 +291,7 @@ type
     function  GetNCSize: TPoint; override;
     function  GetShowShadow: Boolean; virtual;
     function  GetViewClass: TTBViewClass; override;
-    procedure PaintScrollArrows; override; {vb+}
+    procedure PaintScrollArrows; override;
   public
     destructor Destroy; override;
     function  GetFillColor: TColor;
@@ -366,16 +323,18 @@ type
     procedure TBMGetEffectiveColor(var Message: TMessage); message TBM_GETEFFECTIVECOLOR;
     procedure TBMThemeChange(var Message: TMessage); message TBM_THEMECHANGE;
     procedure WMEraseBkgnd(var Message: TWMEraseBkgnd); message WM_ERASEBKGND;
-    procedure WMSize(var Message: TWMSize); message WM_SIZE;
+    procedure WMDpiChangedBeforeParent(var Message: TMessage); message WM_DPICHANGED_BEFOREPARENT;
+    procedure WMDpiChangedAfterParent(var Message: TMessage); message WM_DPICHANGED_AFTERPARENT;
   protected
     procedure DrawNCArea(const DrawToDC: Boolean; const ADC: HDC; const Clip: HRGN); override;
     function  GetChevronItemClass: TTBChevronItemClass; override;
     function  GetFloatingWindowParentClass: TTBFloatingWindowParentClass; override;
     procedure GetToolbarInfo(out ToolbarInfo: TTBXToolbarInfo); virtual;
     function  GetViewClass: TTBToolbarViewClass; override;
-    procedure Loaded; override; {vb+}
+    procedure Loaded; override;
     procedure SetParent(AParent: TWinControl); override;
     procedure UpdateEffectiveColor;
+    procedure Rebuild;
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
@@ -433,9 +392,7 @@ type
     property Color default clNone;
     property OnClose;
     property OnCloseQuery;
-    {$IFDEF JR_D5}
     property OnContextPopup;
-    {$ENDIF}
     property OnDragDrop;
     property OnDragOver;
     property OnMouseDown;
@@ -522,38 +479,6 @@ type
     property SnapDistance: Integer read FSnapDistance write FSnapDistance default 0;
   end;
 
-  {$IFNDEF MPEXCLUDE}
-  TTBXToolWindow = class(TTBToolWindow)
-  private
-    FEffectiveColor: TColor;
-    FSnapDistance: Integer;
-    procedure CMColorChanged(var Message: TMessage); message CM_COLORCHANGED;
-    procedure CMControlChange(var Message: TCMControlChange); message CM_CONTROLCHANGE;
-    procedure CMTextChanged(var Message: TMessage); message CM_TEXTCHANGED;
-    procedure SetSnapDistance(Value: Integer);
-    procedure TBMGetEffectiveColor(var Message: TMessage); message TBM_GETEFFECTIVECOLOR;
-    procedure TBMGetViewType(var Message: TMessage); message TBM_GETVIEWTYPE;
-    procedure TBMThemeChange(var Message: TMessage); message TBM_THEMECHANGE;
-    procedure WMEraseBkgnd(var Message: TWmEraseBkgnd); message WM_ERASEBKGND;
-  protected
-    procedure DrawNCArea(const DrawToDC: Boolean; const ADC: HDC; const Clip: HRGN); override;
-    function  GetFloatingWindowParentClass: TTBFloatingWindowParentClass; override;
-    procedure GetToolbarInfo(out ToolbarInfo: TTBXToolbarInfo); virtual;
-    procedure SetParent(AParent: TWinControl); override;
-    procedure UpdateEffectiveColor;
-  public
-    constructor Create(AOwner: TComponent); override;
-    destructor Destroy; override;
-    function  GetFloatingBorderSize: TPoint; override;
-    procedure UpdateChildColors;
-    property EffectiveColor: TColor read FEffectiveColor;
-  published
-    property Color default clNone;
-    property DblClickUndock default False;
-    property SnapDistance: Integer read FSnapDistance write SetSnapDistance default 0;
-  end;
-  {$ENDIF}
-
   TTBXDock = class(TTBDock)
   private
     FMoving: Boolean;
@@ -579,7 +504,7 @@ type
     property UseParentBackground: Boolean read FUseParentBackground write SetUseParentBackground default False;
   end;
 
-  { TTBXMenuAnimation } {vb+}
+  { TTBXMenuAnimation }
 
   TMenuAnimation = (maNone, maUnfold, maSlide, maFade);
   TAnimationMode = (amNone, amSysDefault, amRandom, amUnfold, amSlide, amFade);
@@ -601,15 +526,7 @@ type
 
 var
   CurrentTheme: TTBXTheme;
-  TBXMenuAnimation: TTBXMenuAnimation; { vb+ }
-
-{$IFNDEF JR_D6}
-var
-  clMoneyGreen: TColor = TColor($C0DCC0);
-  clSkyBlue: TColor = TColor($F0CAA6);
-  clCream: TColor = TColor($F0FBFF);
-  clMedGray: TColor = TColor($A4A0A0);
-{$ENDIF}
+  TBXMenuAnimation: TTBXMenuAnimation;
 
 procedure TBXSetTheme(const AThemeName: string);
 function TBXCurrentTheme: string;
@@ -639,8 +556,7 @@ implementation
 
 uses
   TBXExtItems, TBXLists, TB2Common, UxTheme, MultiMon, TBXOfficeXPTheme,
-  {ComCtrls, Menus;} {vb-}
-  ComCtrls, Menus, MMSystem, Types, UITypes; {vb+}
+  ComCtrls, Menus, MMSystem, Types, UITypes;
 
 type
   TTBItemAccess = class(TTBCustomItem);
@@ -649,13 +565,10 @@ type
   TTBFloatingWindowParentAccess = class(TTBFloatingWindowParent);
   TTBCustomDockableWindowAccess = class(TTBCustomDockableWindow);
   TTBXToolbarAccess = class(TTBXToolbar);
-  {$IFNDEF MPEXCLUDE}
-  TTBBackgroundAccess = class(TTBBackground);
-  {$ENDIF}
   TControlAccess = class(TControl);
   TTBXThemeAccess = class(TTBXTheme);
   TDockAccess = class(TTBDock);
-  TTBPopupWindowAccess = class(TTBPopupWindow); {vb+}
+  TTBPopupWindowAccess = class(TTBPopupWindow);
 
   { TTBNexus }
   TTBXNexus = class
@@ -725,8 +638,8 @@ begin
     try
       SetWindowOrgEx(DC, Shift.X, Shift.Y, nil);
       Msg.Msg := WM_ERASEBKGND;
-      Msg.WParam := Integer(DC); {vb+}
-      Msg.LParam := Integer(DC); {vb+}
+      Msg.WParam := Integer(DC);
+      Msg.LParam := Integer(DC);
       Msg.Result := 0;
       Parent.Dispatch(Msg);
     finally
@@ -1361,7 +1274,7 @@ begin
 
     if CaptionShown then
     begin
-      Three := ScaleByTextHeightRunTime(Canvas, 3);
+      Three := ScaleByPixelsPerInch(3, View.GetMonitor);
       Inc(AWidth, TextSize.CX);
       Inc(AHeight, TextSize.CY);
       if not IsTextRotated then Inc(AWidth, 2 * Three)
@@ -1385,25 +1298,33 @@ begin
 
     if tbisSubmenu in TTBItemAccess(Item).ItemStyle then with CurrentTheme do
     begin
-      if tbisCombo in TTBItemAccess(Item).ItemStyle then Inc(AWidth, SplitBtnArrowWidth)
+      if tbisCombo in TTBItemAccess(Item).ItemStyle then Inc(AWidth, GetIntegerMetrics(Self, TMI_SPLITBTN_ARROWWIDTH))
       else if tboDropdownArrow in Item.EffectiveOptions then
       begin
         if (ItemLayout <> tbxlGlyphTop) or (ImgSize.CX = 0) or IsTextRotated then
         begin
-          Two := ScaleByTextHeightRunTime(Canvas, 2);
-          if View.Orientation <> tbvoVertical then Inc(AWidth, Two + DropdownArrowWidth)
-          else Inc(AHeight, DropdownArrowWidth + Two + DropdownArrowMargin);
+          Two := ScaleByPixelsPerInch(2, View.GetMonitor);
+          if View.Orientation <> tbvoVertical then
+          begin
+            Inc(AWidth, Two + GetIntegerMetrics(Self, TMI_DROPDOWN_ARROWWIDTH))
+          end
+            else
+          begin
+            Inc(AHeight,
+                GetIntegerMetrics(Self, TMI_DROPDOWN_ARROWWIDTH) + Two +
+                GetIntegerMetrics(Self, TMI_DROPDOWN_ARROWMARGIN));
+          end;
         end
         else
         begin
           if (ItemLayout = tbxlGlyphTop) and (IsTextRotated xor (View.Orientation <> tbvoVertical)) then
           begin
-            W := ImgSize.CX + DropDownArrowWidth + 2;
+            W := ImgSize.CX + GetIntegerMetrics(Self, TMI_DROPDOWN_ARROWWIDTH) + 2;
             if W > AWidth - 7 then AWidth := W + 7;
           end
           else
           begin
-            H := ImgSize.CY + DropDownArrowWidth + 2;
+            H := ImgSize.CY + GetIntegerMetrics(Self, TMI_DROPDOWN_ARROWWIDTH) + 2;
             if H > AHeight - 7 then AHeight := H + 7;
           end;
         end
@@ -1426,7 +1347,9 @@ begin
       Inc(AWidth, Margins.LeftWidth + Margins.RightWidth);
       Inc(AHeight, Margins.TopHeight + Margins.BottomHeight);
 
-      Inc(AWidth, GetPopupMargin(Self) + MenuImageTextSpace + MenuLeftCaptionMargin + MenuRightCaptionMargin);
+      Inc(AWidth,
+          GetPopupMargin(Self) + GetIntegerMetrics(Self, TMI_MENU_IMGTEXTSPACE) +
+            GetIntegerMetrics(Self, TMI_MENU_LCAPTIONMARGIN) + GetIntegerMetrics(Self, TMI_MENU_RCAPTIONMARGIN));
       S := Item.GetShortCutText;
       if Length(S) > 0 then Inc(AWidth, (AHeight - 6) + GetTextWidth(Canvas.Handle, S, True));
       Inc(AWidth, AHeight); { Note: maybe this should be controlled by the theme }
@@ -1584,8 +1507,8 @@ begin
   Result := not (tbisSubmenu in TTBItemAccess(Item).ItemStyle);
   if (tbisCombo in TTBItemAccess(Item).ItemStyle) then
   begin
-    if IsToolbarStyle then W := CurrentTheme.SplitBtnArrowWidth
-    else W := GetSystemMetrics(SM_CXMENUCHECK);
+    if IsToolbarStyle then W := CurrentTheme.GetIntegerMetrics(Self, TMI_SPLITBTN_ARROWWIDTH)
+    else W := GetSystemMetricsForControl(View.Window, SM_CXMENUCHECK);
     Result := X < (BoundsRect.Right - BoundsRect.Left) - W;
   end;
 end;
@@ -1630,7 +1553,6 @@ var
   View: TTBViewAccess;
   ItemInfo: TTBXItemInfo;
 
-  {M: Integer;} {vb-}
   R: TRect;
   ComboRect: TRect;
   CaptionRect: TRect;
@@ -1686,6 +1608,7 @@ begin
   IsSplit := tbisCombo in Item.ItemStyle;
 
   FillChar(ItemInfo, SizeOf(ItemInfo), 0);
+  ItemInfo.Control := View.Window;
   ItemInfo.ViewType := GetViewType(View);
   ItemInfo.ItemOptions := CToolbarStyle[ToolbarStyle] or CCombo[IsSplit] or
     CDesigning[csDesigning in Item.ComponentState] or CSubmenuItem[tbisSubmenu in Item.ItemStyle] or
@@ -1782,23 +1705,33 @@ begin
       begin
         ItemInfo.ComboPart := cpSplitLeft;
         ComboRect := R;
-        Dec(Right, SplitBtnArrowWidth);
+        Dec(Right, GetIntegerMetrics(Self, TMI_SPLITBTN_ARROWWIDTH));
         ComboRect.Left := Right;
       end
       else if not IsSpecialDropDown then
       begin
         if View.Orientation <> tbvoVertical then
-          ComboRect := Rect(Right - DropdownArrowWidth - DropdownArrowMargin, 0,
-            Right - DropdownArrowMargin, Bottom)
-        else
-          ComboRect := Rect(0, Bottom - DropdownArrowWidth - DropdownArrowMargin,
-            Right, Bottom - DropdownArrowMargin);
+        begin
+          ComboRect :=
+            Rect(
+              Right - GetIntegerMetrics(Self, TMI_DROPDOWN_ARROWWIDTH) -
+                GetIntegerMetrics(Self, TMI_DROPDOWN_ARROWMARGIN), 0,
+              Right - GetIntegerMetrics(Self, TMI_DROPDOWN_ARROWMARGIN), Bottom);
+        end
+          else
+        begin
+          ComboRect :=
+            Rect(0,
+              Bottom - GetIntegerMetrics(Self, TMI_DROPDOWN_ARROWWIDTH) -
+                GetIntegerMetrics(Self, TMI_DROPDOWN_ARROWMARGIN),
+              Right, Bottom - GetIntegerMetrics(Self, TMI_DROPDOWN_ARROWMARGIN));
+        end;
       end
       else
       begin
-        ImgAndArrowWidth := ImgSize.CX + DropdownArrowWidth + 2;
+        ImgAndArrowWidth := ImgSize.CX + GetIntegerMetrics(Self, TMI_DROPDOWN_ARROWWIDTH) + 2;
         ComboRect.Right := (R.Left + R.Right + ImgAndArrowWidth + 2) div 2;
-        ComboRect.Left := ComboRect.Right - DropdownArrowWidth;
+        ComboRect.Left := ComboRect.Right - GetIntegerMetrics(Self, TMI_DROPDOWN_ARROWWIDTH);
         ComboRect.Top := (R.Top + R.Bottom - ImgSize.cy - 2 - TextSize.CY) div 2;
         ComboRect.Bottom := ComboRect.Top + ImgSize.CY;
       end;
@@ -1813,8 +1746,8 @@ begin
         PaintDropDownArrow(Canvas, ComboRect, ItemInfo);
         if not IsSpecialDropDown then
         begin
-          if View.Orientation <> tbvoVertical then Dec(R.Right, DropdownArrowWidth)
-          else Dec(R.Bottom, DropdownArrowWidth);
+          if View.Orientation <> tbvoVertical then Dec(R.Right, GetIntegerMetrics(Self, TMI_DROPDOWN_ARROWWIDTH))
+          else Dec(R.Bottom, GetIntegerMetrics(Self, TMI_DROPDOWN_ARROWWIDTH));
         end;
       end;
     end
@@ -1848,7 +1781,7 @@ begin
     begin
       CaptionRect := R;
       TextFlags := TextFlags or DT_CENTER or DT_VCENTER;
-      Three := ScaleByTextHeightRunTime(Canvas, 3);
+      Three := ScaleByPixelsPerInch(3, View.GetMonitor);
       if ImageIsShown then with CaptionRect do
         case ItemLayout of
         tbxlGlyphLeft:
@@ -1895,7 +1828,9 @@ begin
       GetTextMetrics(Canvas.Handle, TextMetrics);
 
       CaptionRect := R;
-      Inc(CaptionRect.Left, ItemInfo.PopupMargin + MenuImageTextSpace + MenuLeftCaptionMargin);
+      Inc(CaptionRect.Left,
+          ItemInfo.PopupMargin + GetIntegerMetrics(Self, TMI_MENU_IMGTEXTSPACE) +
+            GetIntegerMetrics(Self, TMI_MENU_LCAPTIONMARGIN));
       with TextMetrics, CaptionRect do
         if (Bottom - Top) - (tmHeight + tmExternalLeading) = Margins.BottomHeight then Dec(Bottom);
       Inc(CaptionRect.Top, TextMetrics.tmExternalLeading);
@@ -1938,7 +1873,9 @@ begin
 
     if ToolBarStyle then
     begin
-      if IsSpecialDropDown then OffsetRect(ImageRect, (-CurrentTheme.DropdownArrowWidth + 1) div 2, 0);
+      if IsSpecialDropDown then
+        OffsetRect(ImageRect, (-CurrentTheme.GetIntegerMetrics(Self, TMI_DROPDOWN_ARROWWIDTH) + 1) div 2, 0);
+
       if ItemLayout = tbxlGlyphLeft then ImageRect.Right := ImageRect.Left + ImgSize.CX + 2
       else
       begin
@@ -1956,9 +1893,7 @@ begin
       Bottom := Top + CY;
       DrawItemImage(Canvas, ImageRect, ItemInfo);
     end
-    {else if not ToolbarStyle and Item.Checked then
-      CurrentTheme.PaintCheckMark(Canvas, ImageRect, ItemInfo);} {vb-}
-    else {vb+}
+    else
       if not ToolbarStyle and Item.Checked then
       begin
         if Item.RadioItem then
@@ -2033,8 +1968,8 @@ begin
   SZ := TTBXSeparatorItem(Item).Size;
   if SZ < 0 then
   begin
-    if not IsToolbarStyle then SZ := CurrentTheme.MenuSeparatorSize
-    else SZ := CurrentTheme.TlbrSeparatorSize;
+    if not IsToolbarStyle then SZ := CurrentTheme.GetIntegerMetrics(Self, TMI_MENU_SEPARATORSIZE)
+    else SZ := CurrentTheme.GetIntegerMetrics(Self, TMI_TLBR_SEPARATORSIZE);
     if SZ < 0 then inherited CalcSize(Canvas, AWidth, AHeight)
     else
     begin
@@ -2107,50 +2042,6 @@ end;
 
 //============================================================================//
 
-{$IFNDEF MPEXCLUDE}
-
-{ TTBXVisibilityToggleItem }
-
-procedure TTBXVisibilityToggleItem.Click;
-begin
-  if Assigned(FControl) then FControl.Visible := not FControl.Visible;
-  inherited;
-end;
-
-procedure TTBXVisibilityToggleItem.InitiateAction;
-begin
-  UpdateProps;
-end;
-
-procedure TTBXVisibilityToggleItem.Notification(AComponent: TComponent; Operation: TOperation);
-begin
-  inherited;
-  if (Operation = opRemove) and (AComponent = FControl) then Control := nil;
-end;
-
-procedure TTBXVisibilityToggleItem.SetControl(Value: TControl);
-begin
-  if FControl <> Value then
-  begin
-    FControl := Value;
-    if Assigned(Value) then
-    begin
-      Value.FreeNotification(Self);
-      if (Length(Caption) = 0) and not (csLoading in ComponentState) then
-        Caption := TControlAccess(Value).Caption;
-    end;
-    UpdateProps;
-  end;
-end;
-
-procedure TTBXVisibilityToggleItem.UpdateProps;
-begin
-  if (ComponentState * [csDesigning, csLoading, csDestroying] = []) then
-    Checked := Assigned(FControl) and FControl.Visible;
-end;
-
-{$ENDIF}
-
 //============================================================================//
 
 { TTBXPopupWindow }
@@ -2169,7 +2060,7 @@ begin
   end;
 end;
 
-procedure TTBXPopupWindow.CMShowingChanged(var Message: TMessage); {vb+}
+procedure TTBXPopupWindow.CMShowingChanged(var Message: TMessage);
 const
   ShowFlags: array[Boolean] of UINT = (
     SWP_NOSIZE or SWP_NOMOVE or SWP_NOZORDER or SWP_NOACTIVATE or SWP_HIDEWINDOW,
@@ -2185,7 +2076,6 @@ begin
     Windows 95 and NT 4.0 because there's a difference in the way the
     SetWindowPos works on those versions. See the comment in the
     TBStartAnimation function of TB2Anim.pas. }
-  {$IFNDEF TBX_NO_ANIMATION}
   if ((View.ParentView = nil) or not(vsNoAnimation in View.ParentView.State)) and
      Showing and (View.Selected = nil) and not IsWindowVisible(WindowHandle) and
      (TBXMenuAnimation.AnimationMode <> amNone) then
@@ -2207,7 +2097,6 @@ begin
       end;
     end;
   end;
-  {$ENDIF}
 
   { No animation... }
   if not Showing then begin
@@ -2294,7 +2183,7 @@ end;
 function TTBXPopupWindow.GetNCSize: TPoint;
 begin
   Result := inherited GetNCSize;
-  CurrentTheme.GetViewBorder(GetViewType(View), Result);
+  CurrentTheme.GetViewBorder(Self, GetViewType(View), Result);
 end;
 
 function TTBXPopupWindow.GetShowShadow: Boolean;
@@ -2307,7 +2196,7 @@ begin
   Result := TTBXPopupView;
 end;
 
-procedure TTBXPopupWindow.PaintScrollArrows; {vb+}
+procedure TTBXPopupWindow.PaintScrollArrows;
 
   function _GetPopupMargin: Integer;
   begin
@@ -2400,7 +2289,7 @@ procedure TTBXPopupWindow.WMNCCalcSize(var Message: TWMNCCalcSize);
 var
   Sz: TPoint;
 begin
-  CurrentTheme.GetViewBorder(GetViewType(View), Sz);
+  CurrentTheme.GetViewBorder(Self, GetViewType(View), Sz);
   with Message.CalcSize_Params^.rgrc[0], Sz do
   begin
     Inc(Left, X);
@@ -2411,7 +2300,7 @@ begin
   Message.Result := 1;
 end;
 
-procedure TBXPopupNCPaintProc(Wnd: HWND; DC: HDC; AppData: Longint);
+procedure TBXPopupNCPaintProc(Control: TControl; Wnd: HWND; DC: HDC; AppData: Longint);
 var
   R, R2: TRect;
   Canvas: TCanvas;
@@ -2453,7 +2342,7 @@ begin
     end;
     GetWindowRect(Wnd, R);
     OffsetRect(R, -R.Left, -R.Top);
-    CurrentTheme.GetViewBorder(PopupInfo.ViewType, PopupInfo.BorderSize);
+    CurrentTheme.GetViewBorder(Control, PopupInfo.ViewType, PopupInfo.BorderSize);
     R2 := R;
     with PopupInfo.BorderSize do InflateRect(R2, -X, -Y);
     with R2 do ExcludeClipRect(Canvas.Handle, Left, Top, Right, Bottom);
@@ -2472,7 +2361,7 @@ begin
   try
     Assert(DC <> 0, 'TTBXPopupWindow.WMNCPaint');
     SelectNCUpdateRgn(Handle, DC, HRGN(Message.WParam));
-    TBXPopupNCPaintProc(Handle, DC, LongInt(Self.View));
+    TBXPopupNCPaintProc(Self, Handle, DC, LongInt(Self.View));
   finally
     ReleaseDC(Handle, DC);
   end;
@@ -2480,7 +2369,7 @@ end;
 
 procedure TTBXPopupWindow.WMPrint(var Message: TMessage);
 begin
-  HandleWMPrint(Handle, Message, TBXPopupNCPaintProc, LongInt(Self.View));
+  HandleWMPrint(Self, Handle, Message, TBXPopupNCPaintProc, LongInt(Self.View));
 end;
 
 procedure TTBXPopupWindow.WMTB2kPopupShowing(var Message: TMessage);
@@ -2635,10 +2524,6 @@ begin
         R2 := CurrentDock.ClientRect;
         OffsetRect(R2, -Left, -Top);
         TDockAccess(CurrentDock).DrawBackground(DC, R2);
-        {$IFNDEF MPEXCLUDE}
-        if (Color = clNone) and CurrentDock.BackgroundOnToolbars then
-          ACanvas.Brush.Style := bsClear;
-        {$ENDIF}
       end
       else
       begin
@@ -2648,7 +2533,7 @@ begin
         ACanvas.Brush.Style := bsSolid;
       end;
 
-      CurrentTheme.PaintToolbarNCArea(ACanvas, R, ToolbarInfo);
+      CurrentTheme.PaintToolbarNCArea(GetMonitorFromControl(Self), ACanvas, R, ToolbarInfo);
     finally
       ACanvas.Handle := 0;
       ACanvas.Free;
@@ -2670,7 +2555,7 @@ end;
 
 function TTBXToolbar.GetFloatingBorderSize: TPoint;
 begin
-  CurrentTheme.GetViewBorder(GetViewType(View) or TVT_FLOATING, Result);
+  CurrentTheme.GetViewBorder(Self, GetViewType(View) or TVT_FLOATING, Result);
 end;
 
 function TTBXToolbar.GetFloatingWindowParentClass: TTBFloatingWindowParentClass;
@@ -2696,7 +2581,7 @@ begin
     else if CloseButtonHover then ToolbarInfo.CloseButtonState := ToolbarInfo.CloseButtonState or CDBS_HOT;
   end;
   ToolbarInfo.BorderStyle := BorderStyle;
-  CurrentTheme.GetViewBorder(ToolbarInfo.ViewType, ToolbarInfo.BorderSize);
+  CurrentTheme.GetViewBorder(Self, ToolbarInfo.ViewType, ToolbarInfo.BorderSize);
   ToolbarInfo.EffectiveColor := EffectiveColor;
 end;
 
@@ -2711,7 +2596,7 @@ begin
   Invalidate;
 end;
 
-procedure TTBXToolbar.Loaded; {vb+}
+procedure TTBXToolbar.Loaded;
 begin
   inherited;
   UpdateEffectiveColor;
@@ -2752,6 +2637,14 @@ begin
   end;
 end;
 
+procedure TTBXToolbar.Rebuild;
+begin
+  if Floating then UpdateNCArea(TTBXFloatingWindowParent(Parent), GetWinViewType(Self))
+    else UpdateNCArea(Self, GetWinViewType(Self));
+  Invalidate;
+  Arrange;
+end;
+
 procedure TTBXToolbar.TBMThemeChange(var Message: TMessage);
 begin
   case Message.WParam of
@@ -2760,15 +2653,23 @@ begin
       begin
         EndUpdate;
         UpdateEffectiveColor;
-        if Floating then UpdateNCArea(TTBXFloatingWindowParent(Parent), GetWinViewType(Self))
-        else UpdateNCArea(Self, GetWinViewType(Self));
-        Invalidate;
-        Arrange;
+        Rebuild;
         UpdateChildColors;
       end;
     TSC_APPACTIVATE, TSC_APPDEACTIVATE:
       if MenuBar then Invalidate;
   end;
+end;
+
+procedure TTBXToolbar.WMDpiChangedBeforeParent(var Message: TMessage);
+begin
+  BeginUpdate;
+end;
+
+procedure TTBXToolbar.WMDpiChangedAfterParent(var Message: TMessage);
+begin
+  EndUpdate;
+  Rebuild;
 end;
 
 procedure TTBXToolbar.UpdateChildColors;
@@ -2803,18 +2704,7 @@ begin
   Transparent := False;
   CR := ClientRect;
   if Color = clNone then
-    {$IFNDEF MPEXCLUDE}
-    if Docked and (TDockAccess(CurrentDock).UsingBackground) and CurrentDock.BackgroundOnToolbars
-      and not CurrentTheme.SolidToolbarClientArea then
-    begin
-      R := CurrentDock.ClientRect;
-      R.TopLeft := ScreenToClient(CurrentDock.ClientToScreen(R.TopLeft));
-      R.BottomRight := ScreenToClient(CurrentDock.ClientToScreen(R.BottomRight));
-      TDockAccess(CurrentDock).DrawBackground(Message.DC, R);
-      Message.Result := 1;
-      Transparent := True;
-    end
-    else {$ENDIF} if Embedded then
+    if Embedded then
     begin
       Transparent := True;
       DrawParentBackground(Self, Message.DC, CR);
@@ -2837,43 +2727,6 @@ begin
     Canvas.Free;
   end;
 end;
-
-procedure TTBXToolbar.WMSize(var Message: TWMSize);
-{$IFNDEF MPEXCLUDE}
-var
-  I: Integer;
-  V: TTBItemViewer;
-  R: TRect;
-{$ENDIF}
-begin
-  inherited;
-  {$IFNDEF MPEXCLUDE}
-  if Docked and TDockAccess(CurrentDock).UsingBackground and
-    TDockAccess(CurrentDock).BackgroundOnToolbars and
-    ((CurrentDock is TTBXDock) and not TTBXDock(CurrentDock).FResizing) then
-  begin
-    for I := 0 to View.ViewerCount - 1 do
-    begin
-      V := View.Viewers[I];
-      if V.Show and not IsRectEmpty(V.BoundsRect) and not (V.Item is TTBControlItem)
-      then View.Invalidate(V);
-    end;
-    Self.Update;
-    InvalidateRect(Handle, nil, True);
-    for I := 0 to View.ViewerCount - 1 do
-    begin
-      V := View.Viewers[I];
-      if V.Show and not IsRectEmpty(V.BoundsRect) and not (V.Item is TTBControlItem)
-      then
-      begin
-        R := V.BoundsRect;
-        ValidateRect(Handle, @R);
-      end;
-    end;
-  end;
-  {$ENDIF}
-end;
-
 
 //============================================================================//
 
@@ -3012,6 +2865,7 @@ var
   I: Integer;
   MinWidth: Integer;
   Border: TPoint;
+  Control: TControl;
 begin
   ModalHandler := TTBModalHandler.Create(0);
   try
@@ -3020,7 +2874,8 @@ begin
     if not IsRectEmpty(ControlRect) then
     begin
       // see TTBPopupView.AutoSize and TTBXPopupWindow.GetNCSize
-      CurrentTheme.GetViewBorder(PVT_POPUPMENU, Border);
+      Control := FindVCLWindow(Point(ControlRect.Left, ControlRect.Top));
+      CurrentTheme.GetViewBorder(Control, PVT_POPUPMENU, Border);
       MinWidth := ControlRect.Width - (2*Border.X);
       for I := 0 to Count - 1 do
       begin
@@ -3072,13 +2927,7 @@ end;
 function TTBXPopupMenu.PopupEx(const ControlRect: TRect;
   ReturnClickedItemOnly: Boolean = False): TTBCustomItem;
 begin
-  {$IFDEF JR_D5}
-  {$IFDEF JR_D9}
   SetPopupPoint(Point(ControlRect.Left, ControlRect.Bottom));
-  {$ELSE}
-  PPoint(@PopupPoint)^ := Point(ControlRect.Left, ControlRect.Bottom);
-  {$ENDIF}
-  {$ENDIF}
   Result := TTBXRootItem(Items).PopupEx(ControlRect, TrackButton = tbRightButton,
     TTBPopupAlignment(Alignment), ReturnClickedItemOnly);
 end;
@@ -3140,6 +2989,7 @@ begin
       DockWindow := TTBCustomDockableWindowAccess(DockableWindow);
 
       FillChar(WindowInfo, SizeOf(WindowInfo), 0);
+      WindowInfo.ParentControl := Self;
       WindowInfo.ParentHandle := Handle;
       WindowInfo.WindowHandle := DockWindow.Handle;
       WindowInfo.ViewType := GetWinViewType(DockWindow);
@@ -3219,265 +3069,6 @@ begin
   inherited;
 end;
 
-
-//============================================================================//
-
-{$IFNDEF MPEXCLUDE}
-
-{ TTBXToolWindow }
-
-procedure TTBXToolWindow.CMColorChanged(var Message: TMessage);
-begin
-  UpdateEffectiveColor;
-  if Docked and HandleAllocated then
-    RedrawWindow(Handle, nil, 0, RDW_FRAME or RDW_INVALIDATE or
-      RDW_ERASE or RDW_UPDATENOW or RDW_ALLCHILDREN);
-  UpdateChildColors;
-  Invalidate;
-end;
-
-procedure TTBXToolWindow.CMControlChange(var Message: TCMControlChange);
-begin
-  inherited;
-  if Message.Inserting and (Color = clNone) then
-    Message.Control.Perform(CM_PARENTCOLORCHANGED, 1, EffectiveColor);
-end;
-
-procedure TTBXToolWindow.CMTextChanged(var Message: TMessage);
-begin
-  inherited;
-  if HandleAllocated then
-  begin
-    if Docked then RedrawWindow(Handle, nil, 0, RDW_FRAME or RDW_INVALIDATE)
-    else RedrawWindow(TTBXFloatingWindowParent(Parent).Handle, nil, 0, RDW_FRAME or RDW_INVALIDATE);
-  end;
-end;
-
-constructor TTBXToolWindow.Create(AOwner: TComponent);
-begin
-  inherited;
-  AddThemeNotification(Self);
-  DblClickUndock := False;
-  FEffectiveColor := Color;
-  Color := clNone;
-end;
-
-destructor TTBXToolWindow.Destroy;
-begin
-  RemoveThemeNotification(Self);
-  inherited;
-end;
-
-procedure TTBXToolWindow.DrawNCArea(const DrawToDC: Boolean;
-  const ADC: HDC; const Clip: HRGN);
-var
-  DC: HDC;
-  R, CR, R2: TRect;
-  ACanvas: TCanvas;
-  ToolbarInfo: TTBXToolbarInfo;
-  UsingBackground: Boolean;
-begin
-  if not Docked or not HandleAllocated then Exit;
-
-  if not DrawToDC then DC := GetWindowDC(Handle)
-  else DC := ADC;
-
-  UsingBackground := TDockAccess(CurrentDock).UsingBackground;
-
-  try
-    GetToolbarInfo(ToolbarInfo);
-    GetWindowRect(Handle, R);
-    OffsetRect(R, -R.Left, -R.Top);
-    if not DrawToDC then
-    begin
-      SelectNCUpdateRgn(Handle, DC, Clip);
-      CR := R;
-      with ToolbarInfo.BorderSize, CR do
-      begin
-        InflateRect(CR, -X, -Y);
-        if ToolbarInfo.IsVertical then Inc(Top, GetTBXDragHandleSize(ToolbarInfo))
-        else Inc(Left, GetTBXDragHandleSize(ToolbarInfo));
-        ExcludeClipRect(DC, Left, Top, Right, Bottom);
-      end;
-    end;
-    ACanvas := TCanvas.Create;
-    try
-      ACanvas.Handle := DC;
-      ACanvas.Brush.Color := EffectiveColor;
-      if CurrentTheme.SolidToolbarNCArea then
-      begin
-        ACanvas.Brush.Color := EffectiveColor;
-        ACanvas.Brush.Style := bsSolid;
-      end
-      else if UsingBackground then
-      begin
-        ACanvas.Brush.Color := EffectiveColor;
-        R2 := CurrentDock.ClientRect;
-        OffsetRect(R2, -Left, -Top);
-        TDockAccess(CurrentDock).DrawBackground(DC, R2);
-        {$IFNDEF MPEXCLUDE}
-        if (Color = clNone) and CurrentDock.BackgroundOnToolbars then
-          ACanvas.Brush.Style := bsClear;
-        {$ENDIF}
-      end
-      else
-      begin
-        ACanvas.Brush.Color := GetEffectiveColor(CurrentDock);
-        ACanvas.FillRect(R);
-        ACanvas.Brush.Color := EffectiveColor;
-        ACanvas.Brush.Style := bsSolid;
-      end;
-
-      CurrentTheme.PaintToolbarNCArea(ACanvas, R, ToolbarInfo);
-    finally
-      ACanvas.Handle := 0;
-      ACanvas.Free;
-    end;
-  finally
-    if not DrawToDC then ReleaseDC(Handle, DC);
-  end;
-end;
-
-function TTBXToolWindow.GetFloatingBorderSize: TPoint;
-begin
-  CurrentTheme.GetViewBorder(GetWinViewType(Self) or TVT_FLOATING, Result);
-end;
-
-function TTBXToolWindow.GetFloatingWindowParentClass: TTBFloatingWindowParentClass;
-begin
-  Result := TTBXFloatingWindowParent;
-end;
-
-procedure TTBXToolWindow.GetToolbarInfo(out ToolbarInfo: TTBXToolbarInfo);
-begin
-  FillChar(ToolbarInfo, SizeOf(ToolbarInfo), 0);
-  ToolbarInfo.WindowHandle := WindowHandle;
-  ToolbarInfo.ViewType := GetWinViewType(Self);
-  if CurrentDock <> nil then
-    ToolbarInfo.IsVertical := CurrentDock.Position in [dpLeft,dpRight];
-  ToolbarInfo.AllowDrag := CurrentDock.AllowDrag;
-  ToolbarInfo.DragHandleStyle := Ord(DragHandleStyle);
-  ToolbarInfo.ClientWidth := ClientWidth;
-  ToolbarInfo.ClientHeight := ClientHeight;
-  if ToolbarInfo.AllowDrag and CloseButtonWhenDocked then
-  begin
-    ToolbarInfo.CloseButtonState := CDBS_VISIBLE;
-    if CloseButtonDown then ToolbarInfo.CloseButtonState := ToolbarInfo.CloseButtonState or CDBS_PRESSED;
-    if CloseButtonHover then ToolbarInfo.CloseButtonState := ToolbarInfo.CloseButtonState or CDBS_HOT;
-  end;
-  ToolbarInfo.BorderStyle := BorderStyle;
-  ToolbarInfo.EffectiveColor := EffectiveColor;
-  CurrentTheme.GetViewBorder(ToolbarInfo.ViewType, ToolbarInfo.BorderSize);
-end;
-
-procedure TTBXToolWindow.SetParent(AParent: TWinControl);
-begin
-  inherited;
-  if AParent is TTBXFloatingWindowParent then
-    TTBXFloatingWindowParent(AParent).SnapDistance := SnapDistance;
-end;
-
-procedure TTBXToolWindow.SetSnapDistance(Value: Integer);
-begin
-  if Value < 0 then Value := 0;
-  FSnapDistance := Value;
-  if (Parent <> nil) and (Parent is TTBXFloatingWindowParent) then
-    TTBXFloatingWindowParent(Parent).SnapDistance := Value;
-end;
-
-procedure TTBXToolWindow.TBMGetEffectiveColor(var Message: TMessage);
-begin
-  Message.WParam := EffectiveColor;
-  Message.Result := 1;
-end;
-
-procedure TTBXToolWindow.TBMGetViewType(var Message: TMessage);
-begin
-  Message.Result := TVT_TOOLWINDOW;
-  if Floating then Message.Result := Message.Result or TVT_FLOATING;
-  if Resizable then Message.Result := Message.Result or TVT_RESIZABLE;
-end;
-
-procedure TTBXToolWindow.TBMThemeChange(var Message: TMessage);
-begin
-  case Message.WParam of
-    TSC_BEFOREVIEWCHANGE: BeginUpdate;
-    TSC_AFTERVIEWCHANGE:
-      begin
-        EndUpdate;
-        UpdateEffectiveColor;
-        if HandleAllocated and not (csDestroying in ComponentState) then
-          if Parent is TTBXFloatingWindowParent then
-            UpdateNCArea(TTBXFloatingWindowParent(Parent), GetWinViewType(Self))
-          else
-            UpdateNCArea(Self, GetWinViewType(Self));
-        UpdateChildColors;
-        Invalidate;
-      end;
-  end;
-end;
-
-procedure TTBXToolWindow.UpdateChildColors;
-var
-  M: TMessage;
-begin
-  M.Msg := CM_PARENTCOLORCHANGED;
-  M.WParam := 1;
-  M.LParam := EffectiveColor;
-  M.Result := 0;
-  Broadcast(M);
-end;
-
-procedure TTBXToolWindow.UpdateEffectiveColor;
-begin
-  if Color = clNone then FEffectiveColor := CurrentTheme.GetViewColor(GetWinViewType(Self))
-  else FEffectiveColor := Color;
-end;
-
-procedure TTBXToolWindow.WMEraseBkgnd(var Message: TWmEraseBkgnd);
-var
-  Canvas: TCanvas;
-  R, CR: TRect;
-  Transparent: Boolean;
-begin
-  Transparent := False;
-  CR := ClientRect;
-  {$IFNDEF MPEXCLUDE}
-  if Color = clNone then
-    if Docked and (TDockAccess(CurrentDock).UsingBackground) and CurrentDock.BackgroundOnToolbars
-      and not CurrentTheme.SolidToolbarClientArea then
-    begin
-      R := CurrentDock.ClientRect;
-      R.TopLeft := ScreenToClient(CurrentDock.ClientToScreen(R.TopLeft));
-      R.BottomRight := ScreenToClient(CurrentDock.ClientToScreen(R.BottomRight));
-      SaveDC(Message.DC);
-      with CR do IntersectClipRect(Message.DC, Left, Top, Right, Bottom);
-      TDockAccess(CurrentDock).DrawBackground(Message.DC, R);
-      RestoreDC(Message.DC, -1);
-      Message.Result := 1;
-      Transparent := True;
-    end;
-  {$ENDIF}
-
-  Canvas := TCanvas.Create;
-  Canvas.Handle := Message.DC;
-  try
-    if Docked then
-    begin
-      R := CurrentDock.ClientRect;
-      R.TopLeft := ScreenToClient(CurrentDock.ClientToScreen(R.TopLeft));
-      R.BottomRight := ScreenToClient(CurrentDock.ClientToScreen(R.BottomRight));
-    end
-    else R := Rect(0, 0, 0, 0);
-    CurrentTheme.PaintBackgnd(Canvas, R, CR, CR, EffectiveColor, Transparent, GetWinViewType(Self));
-    Message.Result := 1;
-  finally
-    Canvas.Handle := 0;
-    Canvas.Free;
-  end;
-end;
-
-{$ENDIF}
 
 //============================================================================//
 
@@ -3629,19 +3220,6 @@ begin
     Broadcast(TBM_THEMECHANGE, Message.WParam, 0);
 end;
 
-procedure InitAdditionalSysColors;
-begin
-{$IFNDEF JR_D7} {vb+}
-  AddTBXColor(clHotLight, 'clHotLight');
-{$ENDIF} {vb+}
-{$IFNDEF JR_D6}
-  AddTBXColor(clMoneyGreen, 'clMoneyGreen');
-  AddTBXColor(clSkyBlue, 'clSkyBlue');
-  AddTBXColor(clCream, 'clCream');
-  AddTBXColor(clMedGray, 'clMedGray');
-{$ENDIF}
-end;
-
 { TTBXDock }
 
 procedure TTBXDock.CMColorChanged(var Message: TMessage);
@@ -3719,13 +3297,6 @@ begin
           end;
         end;
       end
-      {$IFNDEF MPEXCLUDE}
-      else if Toolbars[J] is TTBXToolWindow then with TTBXToolWindow(Toolbars[J]) do
-      begin
-        if HandleAllocated then
-          RedrawWindow(Handle, nil, 0, RDW_FRAME or RDW_INVALIDATE or RDW_ERASE);
-      end;
-      {$ENDIF}
     end;
   end;
 end;
@@ -3761,7 +3332,7 @@ end;
 
 function TTBXDock.ThemedBackground: Boolean;
 begin
-  Result := {$IFNDEF MPEXCLUDE}(Background = nil) and{$ENDIF} (Color = clNone) and CurrentTheme.PaintDockBackground;
+  Result := (Color = clNone) and CurrentTheme.PaintDockBackground;
 end;
 
 function TTBXDock.UsingBackground: Boolean;
@@ -3804,7 +3375,7 @@ begin
   FResizing := False;
 end;
 
-{ TTBXMenuAnimation } {vb+}
+{ TTBXMenuAnimation }
 
 constructor TTBXMenuAnimation.Create(AAnimationMode: TAnimationMode = amSysDefault);
 begin
@@ -3864,7 +3435,7 @@ begin
   Result := SystemParametersInfo(Param, 0, @B, 0) and B;
 end;
 
-{ Work around delayed menu showing in Windows 2000+ } {vb+}
+{ Work around delayed menu showing in Windows 2000+ }
 var
   FixPlaySoundThreadHandle: Cardinal;
 
@@ -3890,18 +3461,14 @@ begin
 end;
 
 initialization
-  FixPlaySoundDelay; {vb+}
-  {CurrentTheme := nil;} {vb-}
+  FixPlaySoundDelay;
   RegisterTBXTheme('OfficeXP', TTBXOfficeXPTheme);
   TBXNexus := TTBXNexus.Create('OfficeXP');
-  TBXMenuAnimation := TTBXMenuAnimation.Create; {vb+}
-  {$IFNDEF JR_D7} {vb+}
-  InitAdditionalSysColors;
-  {$ENDIF} {vb+}
+  TBXMenuAnimation := TTBXMenuAnimation.Create;
 
 finalization
   TBXNexus.Free;
-  FreeAndNil(TBXMenuAnimation); {vb+}
+  FreeAndNil(TBXMenuAnimation);
   ColorRegistry := nil;
 
 end.

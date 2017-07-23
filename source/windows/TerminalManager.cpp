@@ -6,11 +6,9 @@
 #include "TerminalManager.h"
 #include <Authenticate.h>
 #include "CustomScpExplorer.h"
-#include "LogMemo.h"
 #include "NonVisual.h"
 #include "WinConfiguration.h"
 #include "Tools.h"
-#include <Log.h>
 #include <Common.h>
 #include <CoreMain.h>
 #include <GUITools.h>
@@ -63,7 +61,6 @@ __fastcall TTerminalManager::TTerminalManager() :
   TTerminalList(Configuration)
 {
   FQueueSection = new TCriticalSection();
-  FLogMemo = NULL;
   FActiveTerminal = NULL;
   FScpExplorer = NULL;
   FDestroying = false;
@@ -162,6 +159,7 @@ TTerminal * __fastcall TTerminalManager::DoNewTerminal(TSessionData * Data)
     Terminal->OnDeleteLocalFile = DeleteLocalFile;
     Terminal->OnReadDirectoryProgress = TerminalReadDirectoryProgress;
     Terminal->OnInformation = TerminalInformation;
+    Terminal->OnCustomCommand = TerminalCustomCommand;
   }
   catch(...)
   {
@@ -212,7 +210,7 @@ void __fastcall TTerminalManager::FreeActiveTerminal()
   }
 }
 //---------------------------------------------------------------------------
-void TTerminalManager::ConnectTerminal(TTerminal * Terminal, bool Reopen)
+void __fastcall TTerminalManager::DoConnectTerminal(TTerminal * Terminal, bool Reopen)
 {
   TManagedTerminal * ManagedTerminal = dynamic_cast<TManagedTerminal *>(Terminal);
   // it must be managed terminal, unless it is secondary terminal (of managed terminal)
@@ -273,6 +271,21 @@ void TTerminalManager::ConnectTerminal(TTerminal * Terminal, bool Reopen)
   }
 }
 //---------------------------------------------------------------------------
+bool __fastcall TTerminalManager::ConnectTerminal(TTerminal * Terminal)
+{
+  bool Result = true;
+  try
+  {
+    DoConnectTerminal(Terminal, false);
+  }
+  catch (Exception & E)
+  {
+    ShowExtendedExceptionEx(Terminal, &E);
+    Result = false;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminalManager::TerminalThreadIdle(void * /*Data*/, TObject * /*Sender*/)
 {
   Application->ProcessMessages();
@@ -290,7 +303,7 @@ bool __fastcall TTerminalManager::ConnectActiveTerminalImpl(bool Reopen)
     {
       DebugAssert(ActiveTerminal);
 
-      ConnectTerminal(ActiveTerminal, Reopen);
+      DoConnectTerminal(ActiveTerminal, Reopen);
 
       if (ScpExplorer)
       {
@@ -561,14 +574,6 @@ void __fastcall TTerminalManager::DoSetActiveTerminal(TTerminal * value, bool Au
 
     if (ActiveTerminal)
     {
-      if (!PActiveTerminal)
-      {
-        CreateLogMemo();
-      }
-      DebugAssert(LogMemo);
-      LogMemo->SessionLog = ActiveTerminal->Log;
-      SwitchLogFormSessionLog();
-
       int Index = ActiveTerminalIndex;
       if (!ActiveTerminal->Active && !FTerminationMessages->Strings[Index].IsEmpty())
       {
@@ -596,7 +601,6 @@ void __fastcall TTerminalManager::DoSetActiveTerminal(TTerminal * value, bool Au
     }
     else
     {
-      FreeLogMemo();
       if (OnLastTerminalClosed)
       {
         OnLastTerminalClosed(this);
@@ -613,6 +617,18 @@ void __fastcall TTerminalManager::DoSetActiveTerminal(TTerminal * value, bool Au
 void __fastcall TTerminalManager::QueueStatusUpdated()
 {
   UpdateAppTitle();
+}
+//---------------------------------------------------------------------------
+bool __fastcall TTerminalManager::ShouldDisplayQueueStatusOnAppTitle()
+{
+  bool Result = IsApplicationMinimized();
+  if (!Result && (ScpExplorer != NULL))
+  {
+    HWND Window = GetActiveWindow();
+    Window = GetAncestor(Window, GA_ROOTOWNER);
+    Result = (ScpExplorer->Handle != Window);
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::UpdateAppTitle()
@@ -638,7 +654,7 @@ void __fastcall TTerminalManager::UpdateAppTitle()
     {
       NewTitle = FProgressTitle + L" - " + NewTitle;
     }
-    else if ((ScpExplorer != NULL) && (ScpExplorer->Handle != GetAncestor(GetActiveWindow(), GA_ROOTOWNER)) &&
+    else if (ShouldDisplayQueueStatusOnAppTitle() &&
              !(QueueProgressTitle = ScpExplorer->GetQueueProgressTitle()).IsEmpty())
     {
       NewTitle = QueueProgressTitle + L" - " + NewTitle;
@@ -678,30 +694,6 @@ void __fastcall TTerminalManager::SaveTerminal(TTerminal * Terminal)
       StoredSessions->Save(false, false);
     }
   }
-}
-//---------------------------------------------------------------------------
-void __fastcall TTerminalManager::CreateLogMemo()
-{
-  DebugAssert(!FLogMemo);
-  DebugAssert(ActiveTerminal);
-  FLogMemo = new TLogMemo(Application);
-  try
-  {
-    FLogMemo->SessionLog = ActiveTerminal->Log;
-    FLogMemo->PopupMenu = NonVisualDataModule->LogMemoPopup;
-  }
-  catch (...)
-  {
-    delete FLogMemo;
-    throw;
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall TTerminalManager::FreeLogMemo()
-{
-  DebugAssert(LogMemo);
-  LogMemo->PopupMenu = NULL;
-  SAFE_DESTROY(FLogMemo);
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::HandleException(Exception * E)
@@ -1085,6 +1077,13 @@ void __fastcall TTerminalManager::TerminalReadDirectoryProgress(
       UpdateAppTitle();
     }
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminalManager::TerminalCustomCommand(
+  TTerminal * /*Terminal*/, const UnicodeString & Command, bool & Handled)
+{
+  // Implementation has to be thread-safe
+  Handled = CopyCommandToClipboard(Command);
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::TerminalInformation(

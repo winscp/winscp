@@ -105,9 +105,6 @@ type
   private
     FLastWidth, FLastHeight: Integer;
   end;
-  {$IFNDEF JR_D5}
-  TImageIndex = type Integer;
-  {$ENDIF}
   TTBPopupPositionRec = record
     PositionAsSubmenu: Boolean;
     Alignment: TTBPopupAlignment;
@@ -170,9 +167,7 @@ type
     procedure ImageListChangeHandler(Sender: TObject);
     procedure InternalNotify(Ancestor: TTBCustomItem; NestingLevel: Integer;
       Action: TTBItemChangedAction; Index: Integer; Item: TTBCustomItem);
-    {$IFDEF JR_D6}
     function IsAutoCheckStored: Boolean;
-    {$ENDIF}
     function IsCaptionStored: Boolean;
     function IsCheckedStored: Boolean;
     function IsEnabledStored: Boolean;
@@ -257,9 +252,10 @@ type
     procedure UnregisterNotification(ANotify: TTBItemChangedProc);
     procedure ViewBeginUpdate;
     procedure ViewEndUpdate;
+    procedure ChangeScale(M, D: Integer); virtual;
 
     property Action: TBasicAction read GetAction write SetAction;
-    property AutoCheck: Boolean read FAutoCheck write FAutoCheck {$IFDEF JR_D6} stored IsAutoCheckStored {$ENDIF} default False;
+    property AutoCheck: Boolean read FAutoCheck write FAutoCheck stored IsAutoCheckStored default False;
     property Caption: String read FCaption write SetCaption stored IsCaptionStored;
     property Count: Integer read FItemCount;
     property Checked: Boolean read FChecked write SetChecked stored IsCheckedStored default False;
@@ -293,9 +289,7 @@ type
   protected
     FClient: TTBCustomItem;
     procedure AssignClient(AClient: TObject); override;
-    {$IFDEF JR_D6}
     function IsAutoCheckLinked: Boolean; virtual;
-    {$ENDIF}
     function IsCaptionLinked: Boolean; override;
     function IsCheckedLinked: Boolean; override;
     function IsEnabledLinked: Boolean; override;
@@ -307,9 +301,7 @@ type
     function IsShortCutLinked: Boolean; override;
     function IsVisibleLinked: Boolean; override;
     function IsOnExecuteLinked: Boolean; override;
-    {$IFDEF JR_D6}
     procedure SetAutoCheck(Value: Boolean); override;
-    {$ENDIF}
     procedure SetCaption(const Value: String); override;
     procedure SetChecked(Value: Boolean); override;
     procedure SetEnabled(Value: Boolean); override;
@@ -541,6 +533,7 @@ type
     function UpdatePositions: TPoint;
     procedure ValidatePositions;
     function ViewerFromPoint(const P: TPoint): TTBItemViewer;
+    function GetMonitor: TMonitor; virtual;
 
     property BackgroundColor: TColor read FBackgroundColor write FBackgroundColor;
     property BaseSize: TPoint read FBaseSize;
@@ -688,6 +681,7 @@ type
   protected
     procedure AutoSize(AWidth, AHeight: Integer); override;
   public
+    function GetMonitor: TMonitor; override;
     function GetFont: TFont; override;
   end;
 
@@ -726,7 +720,7 @@ type
     procedure Cancel; dynamic;
   public
     constructor CreatePopupWindow(AOwner: TComponent; const AParentView: TTBView;
-      const AItem: TTBCustomItem; const ACustomizing: Boolean); virtual;
+      const AItem: TTBCustomItem; const ACustomizing: Boolean; const PopupPoint: TPoint); virtual;
     destructor Destroy; override;
     procedure BeforeDestruction; override;
 
@@ -768,9 +762,6 @@ type
     procedure SetLinkSubitems(Value: TTBCustomItem);
     procedure SetOptions(Value: TTBItemOptions);
   protected
-    {$IFNDEF JR_D5}
-    procedure DoPopup(Sender: TObject);
-    {$ENDIF}
     function GetRootItemClass: TTBRootItemClass; dynamic;
     procedure SetChildOrder(Child: TComponent; Order: Integer); override;
   public
@@ -861,9 +852,8 @@ const
   WM_TB2K_CLICKITEM = WM_USER + $100;
 
 procedure TBInitToolbarSystemFont;
-
-var
-  ToolbarFont: TFont;
+function GetToolbarFont(PixelsPerInch: Integer): TFont; overload;
+function GetToolbarFont(Control: TControl): TFont; overload;
 
 type
   TTBModalHandler = class
@@ -880,6 +870,10 @@ type
       AFromMSAA, TrackRightButton: Boolean);
     property RootPopup: TTBPopupWindow read FRootPopup write FRootPopup;
     property Wnd: HWND read FWnd;
+
+    class procedure DoLockForegroundWindow(LockCode: Cardinal);
+    class procedure LockForegroundWindow;
+    class procedure UnlockForegroundWindow;
   end;
 
 function ProcessDoneAction(const DoneActionData: TTBDoneActionData;
@@ -888,7 +882,7 @@ function ProcessDoneAction(const DoneActionData: TTBDoneActionData;
 implementation
 
 uses
-  MMSYSTEM, TB2Consts, TB2Common, IMM, TB2Acc, Winapi.oleacc, Types;
+  MMSYSTEM, TB2Consts, TB2Common, IMM, TB2Acc, Winapi.oleacc, Types, PasTools, Generics.Collections;
 
 var
   LastPos: TPoint;
@@ -918,7 +912,7 @@ const
 procedure DestroyClickWnd;
 begin
   if ClickWnd <> 0 then begin
-    {$IFDEF JR_D6}Classes.{$ENDIF} DeallocateHWnd(ClickWnd);
+    Classes.DeallocateHWnd(ClickWnd);
     ClickWnd := 0;
   end;
   FreeAndNil(ClickList);
@@ -943,7 +937,7 @@ var
   I: Integer;
 begin
   if ClickWnd = 0 then
-    ClickWnd := {$IFDEF JR_D6}Classes.{$ENDIF} AllocateHWnd(TTBCustomItem.ClickWndProc);
+    ClickWnd := Classes.AllocateHWnd(TTBCustomItem.ClickWndProc);
   if ClickList = nil then
     ClickList := TList.Create;
 
@@ -1064,12 +1058,10 @@ begin
   FClient := AClient as TTBCustomItem;
 end;
 
-{$IFDEF JR_D6}
 function TTBCustomItemActionLink.IsAutoCheckLinked: Boolean;
 begin
   Result := (FClient.AutoCheck = (Action as TCustomAction).AutoCheck);
 end;
-{$ENDIF}
 
 function TTBCustomItemActionLink.IsCaptionLinked: Boolean;
 begin
@@ -1135,12 +1127,10 @@ begin
     MethodsEqual(TMethod(FClient.OnClick), TMethod(Action.OnExecute));
 end;
 
-{$IFDEF JR_D6}
 procedure TTBCustomItemActionLink.SetAutoCheck(Value: Boolean);
 begin
   if IsAutoCheckLinked then FClient.AutoCheck := Value;
 end;
-{$ENDIF}
 
 procedure TTBCustomItemActionLink.SetCaption(const Value: string);
 begin
@@ -1243,12 +1233,10 @@ begin
   ReleaseClickWnd;
 end;
 
-{$IFDEF JR_D6}
 function TTBCustomItem.IsAutoCheckStored: Boolean;
 begin
   Result := (ActionLink = nil) or not FActionLink.IsAutoCheckLinked;
 end;
-{$ENDIF}
 
 function TTBCustomItem.IsCaptionStored: Boolean;
 begin
@@ -1319,10 +1307,8 @@ begin
   if Action is TCustomAction then
     with TCustomAction(Sender) do
     begin
-      {$IFDEF JR_D6}
       if not CheckDefaults or (Self.AutoCheck = False) then
         Self.AutoCheck := AutoCheck;
-      {$ENDIF}
       if not CheckDefaults or (Self.Caption = '') then
         Self.Caption := Caption;
       if not CheckDefaults or (Self.Checked = False) then
@@ -1523,12 +1509,8 @@ procedure TTBCustomItem.Click;
 begin
   if Enabled then begin
     { Following code based on D6's TMenuItem.Click }
-    {$IFDEF JR_D6}
     if (not Assigned(ActionLink) and AutoCheck) or
        (Assigned(ActionLink) and not ActionLink.IsAutoCheckLinked and AutoCheck) then
-    {$ELSE}
-    if AutoCheck then
-    {$ENDIF}
       Checked := not Checked;
     { Following code based on D4's TControl.Click }
     { Call OnClick if assigned and not equal to associated action's OnExecute.
@@ -1539,7 +1521,7 @@ begin
       FOnClick(Self)
     else
     if not(csDesigning in ComponentState) and (ActionLink <> nil) then
-      ActionLink.Execute {$IFDEF JR_D6}(Self){$ENDIF}
+      ActionLink.Execute(Self)
     else
     if Assigned(FOnClick) then
       FOnClick(Self);
@@ -1945,7 +1927,7 @@ begin
 
   Opposite := Assigned(ParentView) and (vsOppositePopup in ParentView.FState);
   Result := GetPopupWindowClass.CreatePopupWindow(nil, ParentView, ParentItem,
-    Customizing);
+    Customizing, APopupPoint);
   try
     if Assigned(ChevronParentView) then begin
       ChevronParentView.FreeNotification(Result.View);
@@ -2512,6 +2494,16 @@ begin
   if FVisible <> Value then begin
     FVisible := Value;
     Change(True);
+  end;
+end;
+
+procedure TTBCustomItem.ChangeScale(M, D: Integer);
+var
+  I: Integer;
+begin
+  for I := 0 to Count - 1 do
+  begin
+    Items[I].ChangeScale(M, D);
   end;
 end;
 
@@ -3100,8 +3092,8 @@ begin
   ShowEnabled := Item.Enabled or View.Customizing;
   HasArrow := (tbisSubmenu in Item.ItemStyle) and
     ((tbisCombo in Item.ItemStyle) or (tboDropdownArrow in Item.EffectiveOptions));
-  MenuCheckWidth := GetSystemMetrics(SM_CXMENUCHECK);
-  MenuCheckHeight := GetSystemMetrics(SM_CYMENUCHECK);
+  MenuCheckWidth := GetSystemMetricsForControl(View.FWindow, SM_CXMENUCHECK);
+  MenuCheckHeight := GetSystemMetricsForControl(View.FWindow, SM_CYMENUCHECK);
   ImgList := GetImageList;
   ImageIsShown := ImageShown and Assigned(ImgList);
   LeftMargin := 0;
@@ -3340,7 +3332,7 @@ begin
     if IsToolbarStyle then
       W := tbDropdownComboArrowWidth
     else
-      W := GetSystemMetrics(SM_CXMENUCHECK);
+      W := GetSystemMetricsForControl(View.FWindow, SM_CXMENUCHECK);
     Result := X < (BoundsRect.Right - BoundsRect.Left) - W;
   end;
 end;
@@ -5200,9 +5192,9 @@ end;
 
 function TTBView.GetFont: TFont;
 begin
-  if Assigned(ToolbarFont) then
-    Result := ToolbarFont
-  else begin
+  Result := GetToolbarFont(GetMonitorPixelsPerInch(GetMonitor));
+  if not Assigned(Result) then
+  begin
     { ToolbarFont is destroyed during unit finalization, but in rare cases
       this method may end up being called from ValidatePositions *after*
       unit finalization if Application.Run is never called; see the
@@ -5873,6 +5865,23 @@ begin
   FState := AState;
 end;
 
+function TTBView.GetMonitor: TMonitor;
+begin
+  if ParentView <> nil then
+  begin
+    Result := ParentView.GetMonitor;
+  end
+    else
+  if not IsRectEmpty(FMonitorRect) then
+  begin
+    Result := Screen.MonitorFromRect(FMonitorRect);
+  end
+    else
+  begin
+    Result := GetMonitorFromControl(Window);
+  end;
+end;
+
 { TTBModalHandler }
 
 const
@@ -5886,42 +5895,56 @@ var
 constructor TTBModalHandler.Create(AExistingWnd: HWND);
 begin
   inherited Create;
-  if not LockSetForegroundWindowInited then begin
-    LockSetForegroundWindow := GetProcAddress(GetModuleHandle(user32),
-      'LockSetForegroundWindow');
-    InterlockedExchange(Integer(LockSetForegroundWindowInited), Ord(True));
-  end;
   LastPos := SmallPointToPoint(TSmallPoint(GetMessagePos()));
   if AExistingWnd <> 0 then
     FWnd := AExistingWnd
   else begin
-    FWnd := {$IFDEF JR_D6}Classes.{$ENDIF} AllocateHWnd(WndProc);
+    FWnd := Classes.AllocateHWnd(WndProc);
     FCreatedWnd := True;
   end;
-  if Assigned(LockSetForegroundWindow) then begin
-    { Like standard menus, don't allow other apps to steal the focus during
-      our modal loop. This also prevents us from losing activation when
-      "active window tracking" is enabled and the user moves the mouse over
-      another application's window. }
-    LockSetForegroundWindow(LSFW_LOCK);
-  end;
+  { Like standard menus, don't allow other apps to steal the focus during
+    our modal loop. This also prevents us from losing activation when
+    "active window tracking" is enabled and the user moves the mouse over
+    another application's window. }
+  LockForegroundWindow;
   SetCapture(FWnd);
   SetCursor(LoadCursor(0, IDC_ARROW));
   NotifyWinEvent(EVENT_SYSTEM_MENUSTART, FWnd, OBJID_CLIENT, CHILDID_SELF);
   FInited := True;
 end;
 
+class procedure TTBModalHandler.DoLockForegroundWindow(LockCode: Cardinal);
+begin
+  if not LockSetForegroundWindowInited then begin
+    LockSetForegroundWindow := GetProcAddress(GetModuleHandle(user32),
+      'LockSetForegroundWindow');
+    InterlockedExchange(Integer(LockSetForegroundWindowInited), Ord(True));
+  end;
+  { Should always, as supported since Windows 2000 }
+  if Assigned(LockSetForegroundWindow) then
+    LockSetForegroundWindow(LockCode);
+end;
+
+class procedure TTBModalHandler.LockForegroundWindow;
+begin
+  DoLockForegroundWindow(LSFW_LOCK);
+end;
+
+class procedure TTBModalHandler.UnlockForegroundWindow;
+begin
+  DoLockForegroundWindow(LSFW_UNLOCK);
+end;
+
 destructor TTBModalHandler.Destroy;
 begin
-  if Assigned(LockSetForegroundWindow) then
-    LockSetForegroundWindow(LSFW_UNLOCK);
+  UnlockForegroundWindow;
   if FWnd <> 0 then begin
     if GetCapture = FWnd then
       ReleaseCapture;
     if FInited then
       NotifyWinEvent(EVENT_SYSTEM_MENUEND, FWnd, OBJID_CLIENT, CHILDID_SELF);
     if FCreatedWnd then
-      {$IFDEF JR_D6}Classes.{$ENDIF} DeallocateHWnd(FWnd);
+      Classes.DeallocateHWnd(FWnd);
   end;
   inherited;
 end;
@@ -6369,6 +6392,11 @@ begin
         AHeight + (Y * 2));
 end;
 
+function TTBPopupView.GetMonitor: TMonitor;
+begin
+  Result := Screen.MonitorFromRect(FWindow.BoundsRect);
+end;
+
 function TTBPopupView.GetFont: TFont;
 begin
   Result := (Owner as TTBPopupWindow).Font;
@@ -6379,11 +6407,11 @@ end;
 
 constructor TTBPopupWindow.CreatePopupWindow(AOwner: TComponent;
   const AParentView: TTBView; const AItem: TTBCustomItem;
-  const ACustomizing: Boolean);
+  const ACustomizing: Boolean; const PopupPoint: TPoint);
 begin
   inherited Create(AOwner);
   Visible := False;
-  SetBounds(0, 0, 320, 240);
+  SetBounds(PopupPoint.X, PopupPoint.Y, 320, 240);
   ControlStyle := ControlStyle - [csCaptureMouse];
   ShowHint := True;
   Color := tbMenuBkColor;
@@ -6396,7 +6424,7 @@ begin
   if Assigned(AParentView) then
     Font.Assign(AParentView.GetFont)
   else
-    Font.Assign(ToolbarFont);
+    Font.Assign(GetToolbarFont(GetMonitorPixelsPerInch(Screen.MonitorFromPoint(PopupPoint))));
 
   { Inherit the accelerator visibility state from the parent view. If there
     is no parent view (i.e. it's a standalone popup menu), then default to
@@ -6634,7 +6662,7 @@ begin
   inherited;
 end;
 
-procedure PopupWindowNCPaintProc(Wnd: HWND; DC: HDC; AppData: Longint);
+procedure PopupWindowNCPaintProc(Control: TControl; Wnd: HWND; DC: HDC; AppData: Longint);
 var
   R: TRect;
   {$IFNDEF TB2K_USE_STRICT_O2K_MENU_STYLE}
@@ -6668,7 +6696,7 @@ begin
   DC := GetWindowDC(Handle);
   try
     SelectNCUpdateRgn(Handle, DC, HRGN(Message.WParam));
-    PopupWindowNCPaintProc(Handle, DC, Longint(Self));
+    PopupWindowNCPaintProc(Self, Handle, DC, Longint(Self));
   finally
     ReleaseDC(Handle, DC);
   end;
@@ -6676,7 +6704,7 @@ end;
 
 procedure TTBPopupWindow.WMPrint(var Message: TMessage);
 begin
-  HandleWMPrint(Handle, Message, PopupWindowNCPaintProc, Longint(Self));
+  HandleWMPrint(Self, Handle, Message, PopupWindowNCPaintProc, Longint(Self));
 end;
 
 procedure TTBPopupWindow.WMPrintClient(var Message: TMessage);
@@ -6814,13 +6842,6 @@ begin
   DoPopup(Sender);
 end;
 
-{$IFNDEF JR_D5}
-procedure TTBPopupMenu.DoPopup(Sender: TObject);
-begin
-  if Assigned(OnPopup) then OnPopup(Sender);
-end;
-{$ENDIF}
-
 procedure TTBPopupMenu.Popup(X, Y: Integer);
 begin
   PopupEx(X, Y, False);
@@ -6829,13 +6850,7 @@ end;
 function TTBPopupMenu.PopupEx(X, Y: Integer;
   ReturnClickedItemOnly: Boolean = False): TTBCustomItem;
 begin
-  {$IFDEF JR_D5}
-  {$IFDEF JR_D9}
   SetPopupPoint(Point(X, Y));
-  {$ELSE}
-  PPoint(@PopupPoint)^ := Point(X, Y);
-  {$ENDIF}
-  {$ENDIF}
   Result := FItem.Popup(X, Y, TrackButton = tbRightButton,
     TTBPopupAlignment(Alignment), ReturnClickedItemOnly);
 end;
@@ -7004,21 +7019,111 @@ end;
 
 { Initialization & finalization }
 
+var
+  ToolbarFonts: TDictionary<Integer, TFont>;
+  ToolbarFont: TFont;
+
+function CreateToolbarFont(PixelsPerInch: Integer): HFONT;
+var
+  NonClientMetrics: TNonClientMetrics;
+begin
+  FillChar(NonClientMetrics, SizeOf(NonClientMetrics), 0);
+  NonClientMetrics.cbSize := SizeOf(NonClientMetrics);
+  Assert(HasSystemParametersInfoForPixelsPerInch);
+  if SystemParametersInfoForPixelsPerInch(SPI_GETNONCLIENTMETRICS, SizeOf(NonClientMetrics), @NonClientMetrics, 0, PixelsPerInch) then
+  begin
+    Result := CreateFontIndirect(NonClientMetrics.lfMenuFont);
+  end
+    else
+  begin
+    Result := 0;
+  end;
+end;
+
+function GetToolbarFont(Control: TControl; PixelsPerInch: Integer): TFont; overload;
+var
+  H: HFONT;
+begin
+  // Temporary redundant legacy fallback to limit impact of per-monitor DPI change
+  if not HasSystemParametersInfoForPixelsPerInch then
+  begin
+    Result := ToolbarFont;
+  end
+    else
+  begin
+    // See the comment in TTBView.GetFont
+    if not Assigned(ToolbarFonts) then
+    begin
+      Result := nil;
+    end
+      else
+    begin
+      if PixelsPerInch < 0 then
+      begin
+        PixelsPerInch := GetControlPixelsPerInch(Control);
+      end;
+      if not ToolbarFonts.TryGetValue(PixelsPerInch, Result) then
+      begin
+        H := CreateToolbarFont(PixelsPerInch);
+        if H <> 0 then
+        begin
+          Result := TFont.Create;
+          Result.Handle := H;
+          ToolbarFonts.Add(PixelsPerInch, Result);
+        end
+          else
+        begin
+          Result := nil;
+        end;
+      end
+    end;
+  end;
+end;
+
+function GetToolbarFont(PixelsPerInch: Integer): TFont; overload;
+begin
+  Result := GetToolbarFont(nil, PixelsPerInch);
+end;
+
+function GetToolbarFont(Control: TControl): TFont; overload;
+begin
+  Result := GetToolbarFont(Control, -1);
+end;
+
 procedure TBInitToolbarSystemFont;
 var
   NonClientMetrics: TNonClientMetrics;
+  FontPair: TPair<Integer, TFont>;
 begin
   NonClientMetrics.cbSize := SizeOf(NonClientMetrics);
   if SystemParametersInfo(SPI_GETNONCLIENTMETRICS, 0, @NonClientMetrics, 0) then
   begin
     ToolbarFont.Handle := CreateFontIndirect(NonClientMetrics.lfMenuFont);
   end;
+
+  for FontPair in ToolbarFonts do
+  begin
+    FontPair.Value.Handle := CreateToolbarFont(FontPair.Key);
+  end;
+end;
+
+procedure TBFinalizeToolbarSystemFont;
+var
+  Font: TFont;
+begin
+  for Font in ToolbarFonts.Values do
+  begin
+    Font.Free;
+  end;
 end;
 
 initialization
+  ToolbarFonts := TDictionary<Integer, TFont>.Create;
   ToolbarFont := TFont.Create;
   TBInitToolbarSystemFont;
 finalization
   DestroyClickWnd;
   FreeAndNil(ToolbarFont);
+  TBFinalizeToolbarSystemFont;
+  FreeAndNil(ToolbarFonts);
 end.

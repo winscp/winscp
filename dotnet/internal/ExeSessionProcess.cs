@@ -92,7 +92,7 @@ namespace WinSCP
 
                 string assemblyVersionStr =
                     (assemblyVersion == null) ? "unk" :
-                    string.Format(CultureInfo.InvariantCulture, "{0}{1}{2} ", assemblyVersion.ProductMajorPart, assemblyVersion.ProductMinorPart, assemblyVersion.ProductBuildPart);
+                    string.Format(CultureInfo.InvariantCulture, "{0}.{1}.{2} ", assemblyVersion.ProductMajorPart, assemblyVersion.ProductMinorPart, assemblyVersion.ProductBuildPart);
 
                 string assemblyVersionSwitch =
                     string.Format(CultureInfo.InvariantCulture, "/dotnet={0} ", assemblyVersionStr);
@@ -178,7 +178,7 @@ namespace WinSCP
                     }
                     catch (Exception e)
                     {
-                        throw new SessionLocalException(_session, "Error granting access to window station", e);
+                        throw _logger.WriteException(new SessionLocalException(_session, "Error granting access to window station", e));
                     }
 
                     _logger.WriteLine("Granting access to desktop");
@@ -189,7 +189,7 @@ namespace WinSCP
                     }
                     catch (Exception e)
                     {
-                        throw new SessionLocalException(_session, "Error granting access to desktop", e);
+                        throw _logger.WriteException(new SessionLocalException(_session, "Error granting access to desktop", e));
                     }
                 }
 
@@ -316,7 +316,7 @@ namespace WinSCP
                             break;
 
                         default:
-                            throw new NotImplementedException();
+                            throw _logger.WriteException(new NotImplementedException());
                     }
                 }
 
@@ -365,7 +365,8 @@ namespace WinSCP
                             e.Str = _input[0];
                             e.Result = true;
                             _input.RemoveAt(0);
-                            Print(false, false, e.Str + "\n");
+                            Print(false, false, _log[0] + "\n");
+                            _log.RemoveAt(0);
                             return;
                         }
                     }
@@ -447,38 +448,47 @@ namespace WinSCP
                     "File Name [{0}] - Directory [{1}] - Overall Progress [{2}] - File Progress [{3}] - CPS [{4}]",
                     e.FileName, e.Directory, e.OverallProgress, e.FileProgress, e.CPS);
 
-                FileTransferProgressEventArgs args = new FileTransferProgressEventArgs();
-
-                switch (e.Operation)
+                if (!_cancel)
                 {
-                    case ConsoleProgressEventStruct.ProgressOperation.Copy:
-                        args.Operation = ProgressOperation.Transfer;
-                        break;
+                    FileTransferProgressEventArgs args = new FileTransferProgressEventArgs();
 
-                    default:
-                        throw new ArgumentOutOfRangeException("Unknown progress operation", (Exception)null);
+                    switch (e.Operation)
+                    {
+                        case ConsoleProgressEventStruct.ProgressOperation.Copy:
+                            args.Operation = ProgressOperation.Transfer;
+                            break;
+
+                        default:
+                            throw _logger.WriteException(new ArgumentOutOfRangeException("Unknown progress operation", (Exception)null));
+                    }
+
+                    switch (e.Side)
+                    {
+                        case ConsoleProgressEventStruct.ProgressSide.Local:
+                            args.Side = ProgressSide.Local;
+                            break;
+
+                        case ConsoleProgressEventStruct.ProgressSide.Remote:
+                            args.Side = ProgressSide.Remote;
+                            break;
+
+                        default:
+                            throw _logger.WriteException(new ArgumentOutOfRangeException("Unknown progress side", (Exception)null));
+                    }
+
+                    args.FileName = e.FileName;
+                    args.Directory = e.Directory;
+                    args.OverallProgress = ((double)e.OverallProgress) / 100;
+                    args.FileProgress = ((double)e.FileProgress) / 100;
+                    args.CPS = (int)e.CPS;
+                    args.Cancel = false;
+                    _session.ProcessProgress(args);
                 }
 
-                switch (e.Side)
+                if (_cancel)
                 {
-                    case ConsoleProgressEventStruct.ProgressSide.Local:
-                        args.Side = ProgressSide.Local;
-                        break;
-
-                    case ConsoleProgressEventStruct.ProgressSide.Remote:
-                        args.Side = ProgressSide.Remote;
-                        break;
-
-                    default:
-                        throw new ArgumentOutOfRangeException("Unknown progress side", (Exception)null);
+                    e.Cancel = true;
                 }
-
-                args.FileName = e.FileName;
-                args.Directory = e.Directory;
-                args.OverallProgress = ((double)e.OverallProgress) / 100;
-                args.FileProgress = ((double)e.FileProgress) / 100;
-                args.CPS = (int) e.CPS;
-                _session.ProcessProgress(args);
             }
         }
 
@@ -494,7 +504,7 @@ namespace WinSCP
                 {
                     if (attempts > MaxAttempts)
                     {
-                        throw new SessionLocalException(_session, "Cannot find unique name for event object.");
+                        throw _logger.WriteException(new SessionLocalException(_session, "Cannot find unique name for event object."));
                     }
 
                     int instanceNumber = random.Next(1000);
@@ -516,11 +526,11 @@ namespace WinSCP
                         _fileMapping = CreateFileMapping(fileMappingName);
                         if (Marshal.GetLastWin32Error() == UnsafeNativeMethods.ERROR_ALREADY_EXISTS)
                         {
-                            throw new SessionLocalException(_session, string.Format(CultureInfo.InvariantCulture, "File mapping {0} already exists", fileMappingName));
+                            throw _logger.WriteException(new SessionLocalException(_session, string.Format(CultureInfo.InvariantCulture, "File mapping {0} already exists", fileMappingName)));
                         }
                         if (_fileMapping.IsInvalid)
                         {
-                            throw new SessionLocalException(_session, string.Format(CultureInfo.InvariantCulture, "Cannot create file mapping {0}", fileMappingName));
+                            throw _logger.WriteException(new SessionLocalException(_session, string.Format(CultureInfo.InvariantCulture, "Cannot create file mapping {0}", fileMappingName)));
                         }
                     }
                     ++attempts;
@@ -614,7 +624,7 @@ namespace WinSCP
                 }
                 catch (Exception e)
                 {
-                    throw new SessionLocalException(_session, string.Format(CultureInfo.CurrentCulture, "Error resolving account {0}", _session.ExecutableProcessUserName), e);
+                    throw _logger.WriteException(new SessionLocalException(_session, string.Format(CultureInfo.CurrentCulture, "Error resolving account {0}", _session.ExecutableProcessUserName), e));
                 }
 
                 EventWaitHandleAccessRule rule =
@@ -631,7 +641,7 @@ namespace WinSCP
             EventWaitHandle ev;
             if (!TryCreateEvent(name, out ev))
             {
-                throw new SessionLocalException(_session, string.Format(CultureInfo.InvariantCulture, "Event {0} already exists", name));
+                throw _logger.WriteException(new SessionLocalException(_session, string.Format(CultureInfo.InvariantCulture, "Event {0} already exists", name)));
             }
             return ev;
         }
@@ -653,36 +663,39 @@ namespace WinSCP
             }
         }
 
-        private void AddInput(string str)
+        private void AddInput(string str, string log)
         {
             Type structType = typeof(ConsoleInputEventStruct);
             FieldInfo strField = structType.GetField("Str");
             object[] attributes = strField.GetCustomAttributes(typeof(MarshalAsAttribute), false);
             if (attributes.Length != 1)
             {
-                throw new InvalidOperationException("MarshalAs attribute not found for ConsoleInputEventStruct.Str");
+                throw _logger.WriteException(new InvalidOperationException("MarshalAs attribute not found for ConsoleInputEventStruct.Str"));
             }
             MarshalAsAttribute marshalAsAttribute = (MarshalAsAttribute)attributes[0];
 
             if (marshalAsAttribute.SizeConst <= str.Length)
             {
-                throw new SessionLocalException(
-                    _session,
-                    string.Format(CultureInfo.CurrentCulture, "Input [{0}] is too long ({1} limit)", str, marshalAsAttribute.SizeConst));
+                throw _logger.WriteException(
+                    new SessionLocalException(
+                        _session,
+                        string.Format(CultureInfo.CurrentCulture, "Input [{0}] is too long ({1} limit)", str, marshalAsAttribute.SizeConst)));
             }
 
             lock (_input)
             {
                 _input.Add(str);
+                _log.Add(log);
                 _inputEvent.Set();
             }
         }
 
-        public void ExecuteCommand(string command)
+        public void ExecuteCommand(string command, string log)
         {
             using (_logger.CreateCallstack())
             {
-                AddInput(command);
+                _cancel = false;
+                AddInput(command, log);
             }
         }
 
@@ -788,7 +801,7 @@ namespace WinSCP
                     executablePath = _session.ExecutablePath;
                     if (!File.Exists(executablePath))
                     {
-                        throw new SessionLocalException(_session, string.Format(CultureInfo.CurrentCulture, "{0} does not exists.", executablePath));
+                        throw _logger.WriteException(new SessionLocalException(_session, string.Format(CultureInfo.CurrentCulture, "{0} does not exists.", executablePath)));
                     }
                 }
                 else
@@ -798,10 +811,11 @@ namespace WinSCP
                         !TryFindExecutableInPath(GetInstallationPath(RegistryHive.LocalMachine, Registry.LocalMachine), out executablePath) &&
                         !TryFindExecutableInPath(GetDefaultInstallationPath(), out executablePath))
                     {
-                        throw new SessionLocalException(_session,
-                            string.Format(CultureInfo.CurrentCulture,
-                                "The {0} executable was not found at location of the assembly ({1}), nor in an installation path. You may use Session.ExecutablePath property to explicitly set path to {0}.",
-                                ExeExecutableFileName, GetAssemblyPath()));
+                        throw _logger.WriteException(
+                            new SessionLocalException(_session,
+                                string.Format(CultureInfo.CurrentCulture,
+                                    "The {0} executable was not found at location of the assembly ({1}), nor in an installation path. You may use Session.ExecutablePath property to explicitly set path to {0}.",
+                                    ExeExecutableFileName, GetAssemblyPath())));
                     }
                 }
                 return executablePath;
@@ -899,24 +913,32 @@ namespace WinSCP
         {
             using (_logger.CreateCallstack())
             {
-                FileVersionInfo version = FileVersionInfo.GetVersionInfo(exePath);
-
-                _logger.WriteLine("Version of {0} is {1}, product {2} version is {3}", exePath, version.FileVersion, version.ProductName, version.ProductVersion);
-
-                if (_session.DisableVersionCheck)
-                {
-                    _logger.WriteLine("Version check disabled (not recommended)");
-                }
-                else if (assemblyVersion == null)
+                if (assemblyVersion == null)
                 {
                     _logger.WriteLine("Assembly version not known, cannot check version");
                 }
-                else if (assemblyVersion.ProductVersion != version.ProductVersion)
+                else if (assemblyVersion.ProductVersion == AssemblyConstants.UndefinedProductVersion)
                 {
-                    throw new SessionLocalException(
-                        _session, string.Format(CultureInfo.CurrentCulture,
-                            "The version of {0} ({1}) does not match version of this assembly {2} ({3}).",
-                            exePath, version.ProductVersion, _logger.GetAssemblyFilePath(), assemblyVersion.ProductVersion));
+                    _logger.WriteLine("Undefined assembly version, cannot check version");
+                }
+                else
+                {
+                    FileVersionInfo version = FileVersionInfo.GetVersionInfo(exePath);
+
+                    _logger.WriteLine("Version of {0} is {1}, product {2} version is {3}", exePath, version.FileVersion, version.ProductName, version.ProductVersion);
+
+                    if (_session.DisableVersionCheckInternal)
+                    {
+                        _logger.WriteLine("Version check disabled (not recommended)");
+                    }
+                    else if (assemblyVersion.ProductVersion != version.ProductVersion)
+                    {
+                        throw _logger.WriteException(
+                            new SessionLocalException(
+                                _session, string.Format(CultureInfo.CurrentCulture,
+                                    "The version of {0} ({1}) does not match version of this assembly {2} ({3}).",
+                                    exePath, version.ProductVersion, _logger.GetAssemblyFilePath(), assemblyVersion.ProductVersion)));
+                    }
                 }
             }
         }
@@ -925,6 +947,11 @@ namespace WinSCP
         {
             string executablePath = GetExecutablePath();
             _logger.WriteLine("{0} - exists [{1}]", executablePath, File.Exists(executablePath));
+        }
+
+        public void Cancel()
+        {
+            _cancel = true;
         }
 
         private const int MaxAttempts = 10;
@@ -949,7 +976,9 @@ namespace WinSCP
         private string _lastFromBeginning;
         private string _incompleteLine;
         private readonly List<string> _input = new List<string>();
+        private readonly List<string> _log = new List<string>();
         private AutoResetEvent _inputEvent = new AutoResetEvent(false);
         private Job _job;
+        private bool _cancel;
     }
 }

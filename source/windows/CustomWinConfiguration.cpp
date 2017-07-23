@@ -103,7 +103,6 @@ void __fastcall TCustomWinConfiguration::Default()
   TGUIConfiguration::Default();
 
   FInterface = FDefaultInterface;
-  FLogView = lvNone;
   // 0 means no "custom-pos"
   FSynchronizeChecklist.WindowParams = L"0;" + FormatDefaultWindowParams(600, 450);
   FSynchronizeChecklist.ListParams = L"1;1|150,1;100,1;80,1;130,1;25,1;100,1;80,1;130,1;@" + SaveDefaultPixelsPerInch() + L"|0;1;2;3;4;5;6;7";
@@ -144,9 +143,6 @@ void __fastcall TCustomWinConfiguration::Saved()
     KEY(Bool,     ConfirmExitOnCompletion); \
     KEY(String,   SessionColors); \
     KEY(Bool,     CopyShortCutHintShown); \
-  ) \
-  BLOCK(L"Logging", CANCREATE, \
-    KEY(Integer, LogView); \
   ) \
   BLOCK(L"Interface\\SynchronizeChecklist", CANCREATE, \
     KEY(String,   SynchronizeChecklist.WindowParams); \
@@ -389,11 +385,6 @@ void __fastcall TCustomWinConfiguration::AskForMasterPasswordIfNotSetAndNeededTo
   {
     AskForMasterPasswordIfNotSet();
   }
-}
-//---------------------------------------------------------------------
-void __fastcall TCustomWinConfiguration::SetLogView(TLogView value)
-{
-  SET_CONFIG_PROPERTY(LogView);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomWinConfiguration::SetInterface(TInterface value)

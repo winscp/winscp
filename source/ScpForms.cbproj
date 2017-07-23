@@ -220,13 +220,6 @@
 			<BuildOrder>7</BuildOrder>
 		</CppCompile>
 		<FormResources Include="forms\LocationProfiles.dfm"/>
-		<CppCompile Include="forms\Log.cpp">
-			<BuildOrder>77</BuildOrder>
-			<Form>LogForm</Form>
-			<DependentOn>forms\Log.h</DependentOn>
-			<BuildOrder>4</BuildOrder>
-		</CppCompile>
-		<FormResources Include="forms\Log.dfm"/>
 		<CppCompile Include="forms\Login.cpp">
 			<BuildOrder>80</BuildOrder>
 			<Form>LoginDialog</Form>
@@ -236,8 +229,11 @@
 		<FormResources Include="forms\Login.dfm"/>
 		<CppCompile Include="forms\MessageDlg.cpp">
 			<BuildOrder>8</BuildOrder>
+			<Form>MessageForm</Form>
+			<DependentOn>forms\MessageDlg.h</DependentOn>
 			<BuildOrder>25</BuildOrder>
 		</CppCompile>
+		<FormResources Include="forms\MessageDlg.dfm"/>
 		<CppCompile Include="forms\OpenDirectory.cpp">
 			<BuildOrder>86</BuildOrder>
 			<Form>OpenDirectoryDialog</Form>

@@ -51,7 +51,6 @@ public:
 
   void __fastcall Init(TTerminal * Terminal);
   void __fastcall ShowAsModal();
-  void __fastcall HideAsModal();
   void __fastcall Log(const UnicodeString Message);
   bool __fastcall PromptUser(TPromptKind Kind, UnicodeString Name, UnicodeString Instructions,
     TStrings * Prompts, TStrings * Results, bool ForceLog, bool StoredCredentialsTried);
@@ -78,6 +77,8 @@ protected:
   void __fastcall MakeLogItemVisible(int Index);
   int __fastcall LogItemHeight(int Index);
   void __fastcall RedrawLog();
+  void __fastcall CMShowingChanged(TMessage & Message);
+  DYNAMIC void __fastcall ChangeScale(int M, int D);
 
 private:
   void * FShowAsModalStorage;
@@ -97,6 +98,7 @@ private:
   int FHorizontalLogPadding;
   int FVerticalLogPadding;
   TTextFormat FLogTextFormat;
+  bool FShowNoActivate;
 };
 //---------------------------------------------------------------------------
 #endif

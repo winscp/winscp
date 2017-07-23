@@ -29,4 +29,10 @@ BEGIN
   SCREENSHOT_COMMANDER, "Main screen of Commander interface showing both local and remote file panel"
 
   LICENSE, "WinSCP is free software: you can use it, redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version."
+
+  NEW_5_10_MULTI_CONNECTIONS, "Background transfer operations can use multiple connections"
+  NEW_5_10_DPI_AWARE, "Support for multiple monitors with different DPI/resolutions"
+  NEW_5_10_FIND, "Find dialog does not block main window and found files can be downloaded and deleted on the Find dialog"
+  NEW_5_10_ONEDRIVE, "Support for Microsoft OneDrive"
+  NEW_5_10_AUTOMATION, "Numerous improvements to custom commands/extensions and .NET assembly"
 END

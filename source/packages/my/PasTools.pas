@@ -3,7 +3,7 @@ unit PasTools;
 interface
 
 uses
-  Windows, Types, Classes, ComCtrls, ExtCtrls, Controls, Dialogs, Forms;
+  Windows, Types, Classes, ComCtrls, ExtCtrls, Controls, Dialogs, Forms, Messages;
 
 function Construct(ComponentClass: TComponentClass; Owner: TComponent): TComponent;
 
@@ -30,18 +30,43 @@ procedure FilterToFileTypes(Filter: string; FileTypes: TFileTypeItems);
 
 // Note that while we based our scaling on pixels-per-inch,
 // VCL actually scales based on font size
-function LoadDimension(Dimension: Integer; PixelsPerInch: Integer): Integer;
-function StrToDimensionDef(Str: string; PixelsPerInch: Integer; Default: Integer): Integer;
+
+const
+  CM_DPICHANGED = WM_USER + $2000 + 10;
+  WM_DPICHANGED_BEFOREPARENT = $02E2;
+  WM_DPICHANGED_AFTERPARENT = $02E3;
+
+function HasSystemParametersInfoForPixelsPerInch: Boolean;
+function SystemParametersInfoForPixelsPerInch(
+  uiAction, uiParam: UINT; pvParam: Pointer; fWinIni: UINT; dpi: UINT): BOOL;
+
+procedure GetFormScaleRatio(Form: TForm; var M, D: Integer);
+
+function GetMonitorFromControl(Control: TControl): TMonitor;
+function GetMonitorPixelsPerInch(Monitor: TMonitor): Integer;
+function GetControlPixelsPerInch(Control: TControl): Integer;
+function GetComponentPixelsPerInch(Component: TComponent): Integer;
+function LoadDimension(Dimension: Integer; PixelsPerInch: Integer; Control: TControl): Integer;
+function StrToDimensionDef(Str: string; PixelsPerInch: Integer; Control: TControl; Default: Integer): Integer;
 function SaveDimension(Dimension: Integer): Integer;
 function DimensionToDefaultPixelsPerInch(Dimension: Integer): Integer;
-function ScaleByPixelsPerInch(Dimension: Integer): Integer;
+function ScaleByPixelsPerInch(Dimension: Integer; Monitor: TMonitor): Integer; overload;
+function ScaleByPixelsPerInch(Dimension: Integer; Control: TControl): Integer; overload;
+function ScaleByPixelsPerInchFromSystem(Dimension: Integer; Control: TControl): Integer;
 
-function LoadPixelsPerInch(S: string): Integer;
-function SavePixelsPerInch: string;
+function LoadPixelsPerInch(S: string; Control: TControl): Integer;
+function SavePixelsPerInch(Control: TControl): string;
 function SaveDefaultPixelsPerInch: string;
 
 function ScaleByTextHeight(Control: TControl; Dimension: Integer): Integer;
 function ScaleByTextHeightRunTime(Control: TControl; Dimension: Integer): Integer;
+
+function GetSystemMetricsForControl(Control: TControl; nIndex: Integer): Integer;
+
+type
+  TImageListSize = (ilsSmall, ilsLarge);
+
+function ShellImageListForControl(Control: TControl; Size: TImageListSize): TImageList;
 
 function ControlHasRecreationPersistenceData(Control: TControl): Boolean;
 
@@ -114,7 +139,7 @@ type
 implementation
 
 uses
-  SysUtils, Messages, StdCtrls, Graphics;
+  SysUtils, StdCtrls, Graphics, MultiMon, ShellAPI, Generics.Collections, CommCtrl, ImgList;
 
 const
   DDExpandDelay = 15000000;
@@ -180,16 +205,123 @@ begin
   end;
 end;
 
-function LoadDimension(Dimension: Integer; PixelsPerInch: Integer): Integer;
+type
+  TGetDpiForMonitorFunc =
+    function (hMonitor: HMONITOR; MonitorType: Integer; out DpiX, DpiY: Cardinal): HRESULT; stdcall;
+  TGetSystemMetricsForDpiFunc =
+    function (nIndex: Integer; Dpi: Cardinal): Integer; stdcall;
+  TSystemParametersInfoForDpiFunc =
+    function (uiAction, uiParam: UINT; pvParam: Pointer; fWinIni: UINT; dpi: UINT): BOOL; stdcall;
+
+const
+  MDT_EFFECTIVE_DPI = 0;
+
+var
+  GetDpiForMonitor: TGetDpiForMonitorFunc = nil;
+  GetSystemMetricsForDpi: TGetSystemMetricsForDpiFunc = nil;
+  SystemParametersInfoForDpi: TSystemParametersInfoForDpiFunc = nil;
+
+function HasSystemParametersInfoForPixelsPerInch: Boolean;
 begin
-  Result := MulDiv(Dimension, Screen.PixelsPerInch, PixelsPerInch);
+  Result := Assigned(SystemParametersInfoForDpi);
 end;
 
-function StrToDimensionDef(Str: string; PixelsPerInch: Integer; Default: Integer): Integer;
+function SystemParametersInfoForPixelsPerInch(
+  uiAction, uiParam: UINT; pvParam: Pointer; fWinIni: UINT; dpi: UINT): BOOL;
+begin
+  if HasSystemParametersInfoForPixelsPerInch then
+  begin
+    Result := SystemParametersInfoForDpi(uiAction, uiParam, pvParam, fWinIni, dpi);
+  end
+    else
+  begin
+    Result := SystemParametersInfo(uiAction, uiParam, pvParam, fWinIni);
+  end;
+end;
+
+function GetMonitorPixelsPerInch(Monitor: TMonitor): Integer;
+var
+  DpiX, DpiY: Cardinal;
+begin
+  if Assigned(GetDpiForMonitor) and
+     (GetDpiForMonitor(Monitor.Handle, MDT_EFFECTIVE_DPI, DpiX, DpiY) = S_OK) then
+  begin
+    Result := DpiX;
+  end
+    else
+  begin
+    Result := Screen.PixelsPerInch;
+  end;
+end;
+
+function GetMonitorFromControl(Control: TControl): TMonitor;
+begin
+  if Control.Parent <> nil then
+  begin
+    Result := GetMonitorFromControl(Control.Parent);
+  end
+    else
+  if Control is TCustomForm then
+  begin
+    Result := TCustomForm(Control).Monitor;
+  end
+    else
+  if (Control is TWinControl) and TWinControl(Control).HandleAllocated then
+  begin
+    Result := Screen.MonitorFromWindow(TWinControl(Control).Handle);
+  end
+    else
+  begin
+    Result := nil;
+  end;
+end;
+
+function GetControlPixelsPerInch(Control: TControl): Integer;
+var
+  Form: TCustomForm;
+  Monitor: TMonitor;
+begin
+  if Assigned(GetDpiForMonitor) then // optimization
+  begin
+    Form := GetParentForm(Control);
+    if Assigned(Form) then
+    begin
+      // By default, scale according to what the form is so far rendered on.
+      // If the monitor perceived DPI does not match its monitor DPI, it's because the WM_DPICHANGED is still pending.
+      Result := TForm(Form).PixelsPerInch;
+    end
+      else
+    begin
+      Monitor := GetMonitorFromControl(Control);
+      if Monitor = nil then
+      begin
+        Assert(False);
+        Monitor := Screen.PrimaryMonitor;
+      end;
+      Result := GetMonitorPixelsPerInch(Monitor);
+    end;
+  end
+    else
+  begin
+    Result := Screen.PixelsPerInch;
+  end;
+end;
+
+function GetComponentPixelsPerInch(Component: TComponent): Integer;
+begin
+  Result := GetControlPixelsPerInch(TControl(Component.Owner));
+end;
+
+function LoadDimension(Dimension: Integer; PixelsPerInch: Integer; Control: TControl): Integer;
+begin
+  Result := MulDiv(Dimension, GetControlPixelsPerInch(Control), PixelsPerInch);
+end;
+
+function StrToDimensionDef(Str: string; PixelsPerInch: Integer; Control: TControl; Default: Integer): Integer;
 begin
   if TryStrToInt(Str, Result) then
   begin
-    Result := LoadDimension(Result, PixelsPerInch);
+    Result := LoadDimension(Result, PixelsPerInch, Control);
   end
     else
   begin
@@ -208,22 +340,32 @@ begin
   Result := MulDiv(Dimension, USER_DEFAULT_SCREEN_DPI, Screen.PixelsPerInch);
 end;
 
-function ScaleByPixelsPerInch(Dimension: Integer): Integer;
+function ScaleByPixelsPerInch(Dimension: Integer; Monitor: TMonitor): Integer;
 begin
-  Result := MulDiv(Dimension, Screen.PixelsPerInch, USER_DEFAULT_SCREEN_DPI);
+  Result := MulDiv(Dimension, GetMonitorPixelsPerInch(Monitor), USER_DEFAULT_SCREEN_DPI);
 end;
 
-function LoadPixelsPerInch(S: string): Integer;
+function ScaleByPixelsPerInch(Dimension: Integer; Control: TControl): Integer;
+begin
+  Result := MulDiv(Dimension, GetControlPixelsPerInch(Control), USER_DEFAULT_SCREEN_DPI);
+end;
+
+function ScaleByPixelsPerInchFromSystem(Dimension: Integer; Control: TControl): Integer;
+begin
+  Result := MulDiv(Dimension, GetControlPixelsPerInch(Control), Screen.PixelsPerInch);
+end;
+
+function LoadPixelsPerInch(S: string; Control: TControl): Integer;
 begin
   // for backward compatibility with version that did not save the DPI,
   // make reasonable assumption that the configuration was saved with
   // the same DPI as we run now
-  Result := StrToIntDef(S, Screen.PixelsPerInch);
+  Result := StrToIntDef(S, GetControlPixelsPerInch(Control));
 end;
 
-function SavePixelsPerInch: string;
+function SavePixelsPerInch(Control: TControl): string;
 begin
-  Result := IntToStr(Screen.PixelsPerInch);
+  Result := IntToStr(GetControlPixelsPerInch(Control));
 end;
 
 function SaveDefaultPixelsPerInch: string;
@@ -275,19 +417,34 @@ var
   TextHeight: Integer;
 begin
   // RTL_COPY (TCustomForm.ReadState)
-  Form := ValidParentForm(Control);
-  TextHeight := Form.RetrieveTextHeight;
-  // runtime form (such as TTBFloatingWindowParent)
-  if TextHeight = 0 then
+  Form := GetParentForm(Control);
+  if Form = nil then
   begin
-    Result := ScaleByTextHeightRunTime(Control, Dimension);
+    // This should happen only for screen tip over dropped down menu
+    Assert(Control.ClassName = 'TTBXPopupWindow');
+    Result := ScaleByPixelsPerInch(Dimension, Control);
   end
     else
   begin
-    // that's our design text-size, we do not expect any other value
-    Assert(TextHeight = OurDesignTimeTextHeight);
-    Result := ScaleByTextHeightImpl(Control, Dimension, TextHeight);
+    TextHeight := Form.RetrieveTextHeight;
+    // runtime form (such as TTBFloatingWindowParent)
+    if TextHeight = 0 then
+    begin
+      Result := ScaleByTextHeightRunTime(Control, Dimension);
+    end
+      else
+    begin
+      // that's our design text-size, we do not expect any other value
+      Assert(TextHeight = OurDesignTimeTextHeight);
+      Result := ScaleByTextHeightImpl(Control, Dimension, TextHeight);
+    end;
   end;
+end;
+
+procedure GetFormScaleRatio(Form: TForm; var M, D: Integer);
+begin
+  M := Form.CalculateTextHeight;
+  D := Form.RetrieveTextHeight;
 end;
 
 // this differs from ScaleByTextHeight only by enforcing
@@ -295,6 +452,89 @@ end;
 function ScaleByTextHeightRunTime(Control: TControl; Dimension: Integer): Integer;
 begin
   Result := ScaleByTextHeightImpl(Control, Dimension, OurDesignTimeTextHeight);
+end;
+
+function GetSystemMetricsForControl(Control: TControl; nIndex: Integer): Integer;
+begin
+  if Assigned(GetSystemMetricsForDpi) then
+  begin
+    Result := GetSystemMetricsForDpi(nIndex, GetControlPixelsPerInch(Control))
+  end
+    else
+  begin
+    Result := GetSystemMetrics(nIndex);
+  end;
+end;
+
+type
+  TSHGetImageList = function (iImageList: integer; const riid: TGUID; var ppv: Pointer): hResult; stdcall;
+
+const
+  IID_IImageList: TGUID = '{46EB5926-582E-4017-9FDF-E8998DAA0950}';
+
+var
+  SHGetImageList: TSHGetImageList;
+  ShellImageLists: TDictionary<Integer, TImageList>;
+
+procedure AddShellImageList(ImageList: Integer);
+var
+  Handle: THandle;
+  Height, Width: Integer;
+  ShellImageList: TImageList;
+begin
+  // VCL have declaration for SHGetImageList in ShellAPI, but it does not link
+  if (SHGetImageList(ImageList, IID_IImageList, Pointer(Handle)) = S_OK) and
+     ImageList_GetIconSize(Handle, Width, Height) then
+  begin
+
+    // We could use AddOrSetValue instead, but to be on a safe siz, we prefer e.g. SHIL_SMALL over SHIL_SYSSMALL,
+    // while they actually can be the same
+    if not ShellImageLists.ContainsKey(Width) then
+    begin
+      ShellImageList := TImageList.Create(Application);
+      ShellImageList.Handle := Handle;
+      ShellImageList.ShareImages := True;
+      ShellImageList.DrawingStyle := dsTransparent;
+      ShellImageLists.Add(Width, ShellImageList);
+    end;
+  end;
+end;
+
+function ShellImageListForControl(Control: TControl; Size: TImageListSize): TImageList;
+var
+  ImageListPair: TPair<Integer, TImageList>;
+  Width, ImageListWidth: Integer;
+  Diff, BestDiff: Integer;
+begin
+  case Size of
+    ilsSmall: Width := 16;
+    ilsLarge: Width := 32;
+    else Width := 0; Assert(False);
+  end;
+
+  Width := ScaleByPixelsPerInch(Width, Control);
+
+  Result := nil;
+  BestDiff := -1;
+  for ImageListPair in ShellImageLists do
+  begin
+    ImageListWidth := ImageListPair.Key;
+    if ImageListWidth <= Width then
+    begin
+      Diff := Width - ImageListWidth;
+    end
+      else
+    begin
+      // Prefer smaller images over larger, so for 150%, we use 100% images, not 200%
+      Diff := ImageListWidth - Width + 1;
+    end;
+
+    if (BestDiff < 0) or (BestDiff > Diff) then
+    begin
+      BestDiff := Diff;
+      Result := ImageListPair.Value;
+    end;
+  end;
 end;
 
 type
@@ -703,4 +943,32 @@ begin
   end;
 end;
 
+var
+  Lib: THandle;
+  I: Integer;
+initialization
+  Lib := LoadLibrary('shcore');
+  if Lib <> 0 then
+  begin
+    GetDpiForMonitor := GetProcAddress(Lib, 'GetDpiForMonitor');
+  end;
+
+  Lib := LoadLibrary('user32');
+  if Lib <> 0 then
+  begin
+    GetSystemMetricsForDpi := GetProcAddress(Lib, 'GetSystemMetricsForDpi');
+    SystemParametersInfoForDpi := GetProcAddress(Lib, 'SystemParametersInfoForDpi');
+  end;
+
+  Lib := LoadLibrary('shell32');
+  SHGetImageList := GetProcAddress(Lib, 'SHGetImageList');
+  ShellImageLists := TDictionary<Integer, TImageList>.Create;
+  for I := 0 to SHIL_LAST do
+  begin
+    AddShellImageList(I);
+  end;
+
+finalization
+  // No need to release individual image lists as they are owned by Application object.
+  FreeAndNil(ShellImageLists);
 end.

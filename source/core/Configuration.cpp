@@ -100,6 +100,7 @@ void __fastcall TConfiguration::Default()
   FShowFtpWelcomeMessage = false;
   FExternalIpAddress = L"";
   FTryFtpWhenSshFails = true;
+  FParallelDurationThreshold = 10;
   CollectUsage = FDefaultCollectUsage;
 
   FLogging = false;
@@ -109,7 +110,10 @@ void __fastcall TConfiguration::Default()
   FLogFileAppend = true;
   FLogSensitive = false;
   FPermanentLogSensitive = FLogSensitive;
-  FLogWindowLines = 100;
+  FLogMaxSize = 0;
+  FPermanentLogMaxSize = FLogMaxSize;
+  FLogMaxCount = 0;
+  FPermanentLogMaxCount = FLogMaxCount;
   FLogProtocol = 0;
   FPermanentLogProtocol = FLogProtocol;
   UpdateActualLogProtocol();
@@ -119,6 +123,7 @@ void __fastcall TConfiguration::Default()
   FActionsLogFileName = L"%TEMP%\\!S.xml";
   FPermanentActionsLogFileName = FActionsLogFileName;
   FProgramIniPathWrittable = -1;
+  FCustomIniFileStorageName = LoadCustomIniFileStorageName();
 
   Changed();
 }
@@ -134,6 +139,7 @@ __fastcall TConfiguration::~TConfiguration()
 void __fastcall TConfiguration::UpdateStaticUsage()
 {
   Usage->Set(L"ConfigurationIniFile", (Storage == stIniFile));
+  Usage->Set(L"ConfigurationIniFileCustom", !CustomIniFileStorageName.IsEmpty());
   Usage->Set("Unofficial", IsUnofficial);
 
   // this is called from here, because we are guarded from calling into
@@ -149,6 +155,7 @@ THierarchicalStorage * TConfiguration::CreateConfigStorage()
 //---------------------------------------------------------------------------
 THierarchicalStorage * TConfiguration::CreateScpStorage(bool & SessionList)
 {
+  TGuard Guard(FCriticalSection);
   THierarchicalStorage * Result;
   if (Storage == stRegistry)
   {
@@ -156,11 +163,12 @@ THierarchicalStorage * TConfiguration::CreateScpStorage(bool & SessionList)
   }
   else if (Storage == stNul)
   {
-    Result = new TIniFileStorage(INI_NUL);
+    Result = TIniFileStorage::CreateFromPath(INI_NUL);
   }
   else
   {
-    Result = new TIniFileStorage(IniFileStorageName);
+    UnicodeString StorageName = IniFileStorageName;
+    Result = TIniFileStorage::CreateFromPath(StorageName);
   }
 
   if ((FOptionsStorage.get() != NULL) && (FOptionsStorage->Count > 0))
@@ -212,6 +220,7 @@ UnicodeString __fastcall TConfiguration::PropertyToKey(const UnicodeString & Pro
     KEY(Bool,     ShowFtpWelcomeMessage); \
     KEY(String,   ExternalIpAddress); \
     KEY(Bool,     TryFtpWhenSshFails); \
+    KEY(Integer,  ParallelDurationThreshold); \
     KEY(Bool,     CollectUsage); \
   ); \
   BLOCK(L"Logging", CANCREATE, \
@@ -219,7 +228,8 @@ UnicodeString __fastcall TConfiguration::PropertyToKey(const UnicodeString & Pro
     KEYEX(String,PermanentLogFileName, L"LogFileName"); \
     KEY(Bool,    LogFileAppend); \
     KEYEX(Bool,  PermanentLogSensitive, L"LogSensitive"); \
-    KEY(Integer, LogWindowLines); \
+    KEYEX(Int64, PermanentLogMaxSize, L"LogMaxSize"); \
+    KEYEX(Integer, PermanentLogMaxCount, L"LogMaxCount"); \
     KEYEX(Integer,PermanentLogProtocol, L"LogProtocol"); \
     KEYEX(Bool,  PermanentLogActions, L"LogActions"); \
     KEYEX(String,PermanentActionsLogFileName, L"ActionsLogFileName"); \
@@ -284,6 +294,25 @@ void __fastcall TConfiguration::DoSave(bool All, bool Explicit)
   {
     CleanupIniFile();
   }
+
+  SaveCustomIniFileStorageName();
+
+}
+//---------------------------------------------------------------------------
+void __fastcall TConfiguration::SaveCustomIniFileStorageName()
+{
+  // Particularly, not to create an empty "Override" key, unless the custom INI file is ever set
+  if (CustomIniFileStorageName != LoadCustomIniFileStorageName())
+  {
+    std::unique_ptr<TRegistryStorage> RegistryStorage(new TRegistryStorage(GetRegistryStorageOverrideKey()));
+    RegistryStorage->AccessMode = smReadWrite;
+    RegistryStorage->Explicit = true;
+    if (RegistryStorage->OpenRootKey(true))
+    {
+      RegistryStorage->WriteString(L"IniFile", CustomIniFileStorageName);
+      RegistryStorage->CloseSubKey();
+    }
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::Export(const UnicodeString & FileName)
@@ -298,7 +327,7 @@ void __fastcall TConfiguration::Export(const UnicodeString & FileName)
   THierarchicalStorage * ExportStorage = NULL;
   try
   {
-    ExportStorage = new TIniFileStorage(FileName);
+    ExportStorage = TIniFileStorage::CreateFromPath(FileName);
     ExportStorage->AccessMode = smReadWrite;
     ExportStorage->Explicit = true;
 
@@ -327,7 +356,7 @@ void __fastcall TConfiguration::Import(const UnicodeString & FileName)
   THierarchicalStorage * ImportStorage = NULL;
   try
   {
-    ImportStorage = new TIniFileStorage(FileName);
+    ImportStorage = TIniFileStorage::CreateFromPath(FileName);
     ImportStorage->AccessMode = smRead;
 
     Storage = CreateConfigStorage();
@@ -394,6 +423,24 @@ void __fastcall TConfiguration::LoadFrom(THierarchicalStorage * Storage)
     LoadData(Storage);
     Storage->CloseSubKey();
   }
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TConfiguration::GetRegistryStorageOverrideKey()
+{
+  return GetRegistryStorageKey() + L" Override";
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TConfiguration::LoadCustomIniFileStorageName()
+{
+  UnicodeString Result;
+  std::unique_ptr<TRegistryStorage> RegistryStorage(new TRegistryStorage(GetRegistryStorageOverrideKey()));
+  if (RegistryStorage->OpenRootKey(false))
+  {
+    Result = RegistryStorage->ReadString(L"IniFile", L"");
+    RegistryStorage->CloseSubKey();
+  }
+  RegistryStorage.reset(NULL);
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::Load(THierarchicalStorage * Storage)
@@ -615,21 +662,30 @@ UnicodeString __fastcall TConfiguration::LastFingerprint(const UnicodeString & S
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::Changed()
 {
-  if (FUpdating == 0)
+  TNotifyEvent AOnChange = NULL;
+
   {
-    if (OnChange)
+    TGuard Guard(FCriticalSection);
+    if (FUpdating == 0)
     {
-      OnChange(this);
+      AOnChange = OnChange;
+    }
+    else
+    {
+      FChanged = true;
     }
   }
-  else
+
+  // No specific reason to call this outside of a guard, just that it is less of a change to a previous unguarded code
+  if (AOnChange != NULL)
   {
-    FChanged = true;
+    AOnChange(this);
   }
 }
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::BeginUpdate()
 {
+  FCriticalSection->Enter();
   if (FUpdating == 0)
   {
     FChanged = false;
@@ -648,6 +704,7 @@ void __fastcall TConfiguration::EndUpdate()
     FChanged = false;
     Changed();
   }
+  FCriticalSection->Leave();
 }
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::CleanupConfiguration()
@@ -1004,6 +1061,14 @@ void __fastcall TConfiguration::SetIniFileStorageName(UnicodeString value)
   FStorage = stIniFile;
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall TConfiguration::GetDefaultIniFileExportPath()
+{
+  UnicodeString PersonalDirectory = GetPersonalFolder();
+  UnicodeString FileName = IncludeTrailingBackslash(PersonalDirectory) +
+    ExtractFileName(ExpandEnvironmentVariables(IniFileStorageName));
+  return FileName;
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall TConfiguration::GetIniFileStorageNameForReading()
 {
   return GetIniFileStorageName(true);
@@ -1014,77 +1079,89 @@ UnicodeString __fastcall TConfiguration::GetIniFileStorageNameForReadingWriting(
   return GetIniFileStorageName(false);
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TConfiguration::GetIniFileStorageName(bool ReadingOnly)
+UnicodeString __fastcall TConfiguration::GetAutomaticIniFileStorageName(bool ReadingOnly)
 {
-  if (FIniFileStorageName.IsEmpty())
+  UnicodeString ProgramPath = ParamStr(0);
+
+  UnicodeString ProgramIniPath = ChangeFileExt(ProgramPath, L".ini");
+
+  UnicodeString IniPath;
+  if (FileExists(ApiPath(ProgramIniPath)))
   {
-    UnicodeString ProgramPath = ParamStr(0);
-
-    UnicodeString ProgramIniPath = ChangeFileExt(ProgramPath, L".ini");
-
-    UnicodeString IniPath;
-    if (FileExists(ApiPath(ProgramIniPath)))
-    {
-      IniPath = ProgramIniPath;
-    }
-    else
-    {
-      UnicodeString AppDataIniPath =
-        IncludeTrailingBackslash(GetShellFolderPath(CSIDL_APPDATA)) +
-        ExtractFileName(ProgramIniPath);
-      if (FileExists(ApiPath(AppDataIniPath)))
-      {
-        IniPath = AppDataIniPath;
-      }
-      else
-      {
-        // avoid expensive test if we are interested in existing files only
-        if (!ReadingOnly && (FProgramIniPathWrittable < 0))
-        {
-          UnicodeString ProgramDir = ExtractFilePath(ProgramPath);
-          FProgramIniPathWrittable = IsDirectoryWriteable(ProgramDir) ? 1 : 0;
-        }
-
-        // does not really matter what we return when < 0
-        IniPath = (FProgramIniPathWrittable == 0) ? AppDataIniPath : ProgramIniPath;
-      }
-    }
-
-    // BACKWARD COMPATIBILITY with 4.x
-    if (FVirtualIniFileStorageName.IsEmpty() &&
-        TPath::IsDriveRooted(IniPath))
-    {
-      UnicodeString LocalAppDataPath = GetShellFolderPath(CSIDL_LOCAL_APPDATA);
-      // virtual store for non-system drives have a different virtual store,
-      // do not bother about them
-      if (TPath::IsDriveRooted(LocalAppDataPath) &&
-          SameText(ExtractFileDrive(IniPath), ExtractFileDrive(LocalAppDataPath)))
-      {
-        FVirtualIniFileStorageName =
-          IncludeTrailingBackslash(LocalAppDataPath) +
-          L"VirtualStore\\" +
-          IniPath.SubString(4, IniPath.Length() - 3);
-      }
-    }
-
-    if (!FVirtualIniFileStorageName.IsEmpty() &&
-        FileExists(ApiPath(FVirtualIniFileStorageName)))
-    {
-      return FVirtualIniFileStorageName;
-    }
-    else
-    {
-      return IniPath;
-    }
+    IniPath = ProgramIniPath;
   }
   else
   {
-    return FIniFileStorageName;
+    UnicodeString AppDataIniPath =
+      IncludeTrailingBackslash(GetShellFolderPath(CSIDL_APPDATA)) +
+      ExtractFileName(ProgramIniPath);
+    if (FileExists(ApiPath(AppDataIniPath)))
+    {
+      IniPath = AppDataIniPath;
+    }
+    else
+    {
+      // avoid expensive test if we are interested in existing files only
+      if (!ReadingOnly && (FProgramIniPathWrittable < 0))
+      {
+        UnicodeString ProgramDir = ExtractFilePath(ProgramPath);
+        FProgramIniPathWrittable = IsDirectoryWriteable(ProgramDir) ? 1 : 0;
+      }
+
+      // does not really matter what we return when < 0
+      IniPath = (FProgramIniPathWrittable == 0) ? AppDataIniPath : ProgramIniPath;
+    }
   }
+
+  // BACKWARD COMPATIBILITY with 4.x
+  if (FVirtualIniFileStorageName.IsEmpty() &&
+      TPath::IsDriveRooted(IniPath))
+  {
+    UnicodeString LocalAppDataPath = GetShellFolderPath(CSIDL_LOCAL_APPDATA);
+    // virtual store for non-system drives have a different virtual store,
+    // do not bother about them
+    if (TPath::IsDriveRooted(LocalAppDataPath) &&
+        SameText(ExtractFileDrive(IniPath), ExtractFileDrive(LocalAppDataPath)))
+    {
+      FVirtualIniFileStorageName =
+        IncludeTrailingBackslash(LocalAppDataPath) +
+        L"VirtualStore\\" +
+        IniPath.SubString(4, IniPath.Length() - 3);
+    }
+  }
+
+  if (!FVirtualIniFileStorageName.IsEmpty() &&
+      FileExists(ApiPath(FVirtualIniFileStorageName)))
+  {
+    return FVirtualIniFileStorageName;
+  }
+  else
+  {
+    return IniPath;
+  }
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TConfiguration::GetIniFileStorageName(bool ReadingOnly)
+{
+  UnicodeString Result;
+  if (!FIniFileStorageName.IsEmpty())
+  {
+    Result = FIniFileStorageName;
+  }
+  else if (!FCustomIniFileStorageName.IsEmpty())
+  {
+    Result = FCustomIniFileStorageName;
+  }
+  else
+  {
+    Result = GetAutomaticIniFileStorageName(ReadingOnly);
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::SetOptionsStorage(TStrings * value)
 {
+  TGuard Guard(FCriticalSection);
   if (FOptionsStorage.get() == NULL)
   {
     FOptionsStorage.reset(new TStringList());
@@ -1122,11 +1199,13 @@ UnicodeString __fastcall TConfiguration::GetRootKeyStr()
   return RootKeyToStr(HKEY_CURRENT_USER);
 }
 //---------------------------------------------------------------------------
-void __fastcall TConfiguration::SetStorage(TStorage value)
+void __fastcall TConfiguration::MoveStorage(TStorage AStorage, const UnicodeString & ACustomIniFileStorageName)
 {
-  if (FStorage != value)
+  if ((FStorage != AStorage) ||
+      !IsPathToSameFile(FCustomIniFileStorageName, ACustomIniFileStorageName))
   {
     TStorage StorageBak = FStorage;
+    UnicodeString CustomIniFileStorageNameBak = FCustomIniFileStorageName;
     try
     {
       THierarchicalStorage * SourceStorage = NULL;
@@ -1137,7 +1216,8 @@ void __fastcall TConfiguration::SetStorage(TStorage value)
         SourceStorage = CreateConfigStorage();
         SourceStorage->AccessMode = smRead;
 
-        FStorage = value;
+        FStorage = AStorage;
+        FCustomIniFileStorageName = ACustomIniFileStorageName;
 
         TargetStorage = CreateConfigStorage();
         TargetStorage->AccessMode = smReadWrite;
@@ -1165,9 +1245,17 @@ void __fastcall TConfiguration::SetStorage(TStorage value)
       // - When removing INI file fails, when switching to registry
       //   (possible, when the INI file is in Program Files folder)
       FStorage = StorageBak;
+      FCustomIniFileStorageName = CustomIniFileStorageNameBak;
       throw;
     }
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TConfiguration::ScheduleCustomIniFileStorageUse(const UnicodeString & ACustomIniFileStorageName)
+{
+  FStorage = stIniFile;
+  FCustomIniFileStorageName = ACustomIniFileStorageName;
+  SaveCustomIniFileStorageName();
 }
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::Saved()
@@ -1177,6 +1265,7 @@ void __fastcall TConfiguration::Saved()
 //---------------------------------------------------------------------------
 TStorage __fastcall TConfiguration::GetStorage()
 {
+  TGuard Guard(FCriticalSection);
   if (FStorage == stDetect)
   {
     if (FileExists(ApiPath(IniFileStorageNameForReading)))
@@ -1200,10 +1289,12 @@ TStoredSessionList * __fastcall TConfiguration::SelectFilezillaSessionsForImport
   UnicodeString AppDataPath = GetShellFolderPath(CSIDL_APPDATA);
   UnicodeString FilezillaSiteManagerFile =
     IncludeTrailingBackslash(AppDataPath) + L"FileZilla\\sitemanager.xml";
+  UnicodeString FilezillaConfigurationFile =
+    IncludeTrailingBackslash(AppDataPath) + L"FileZilla\\filezilla.xml";
 
   if (FileExists(ApiPath(FilezillaSiteManagerFile)))
   {
-    ImportSessionList->ImportFromFilezilla(FilezillaSiteManagerFile);
+    ImportSessionList->ImportFromFilezilla(FilezillaSiteManagerFile, FilezillaConfigurationFile);
 
     if (ImportSessionList->Count > 0)
     {
@@ -1234,6 +1325,54 @@ bool __fastcall TConfiguration::AnyFilezillaSessionForImport(TStoredSessionList 
   {
     return false;
   }
+}
+//---------------------------------------------------------------------
+TStoredSessionList * __fastcall TConfiguration::SelectKnownHostsSessionsForImport(
+  TStoredSessionList * Sessions, UnicodeString & Error)
+{
+  std::unique_ptr<TStoredSessionList> ImportSessionList(new TStoredSessionList(true));
+  ImportSessionList->DefaultSettings = Sessions->DefaultSettings;
+
+  UnicodeString ProfilePath = GetShellFolderPath(CSIDL_PROFILE);
+  UnicodeString KnownHostsFile = IncludeTrailingBackslash(ProfilePath) + L".ssh\\known_hosts";
+
+  try
+  {
+    if (FileExists(ApiPath(KnownHostsFile)))
+    {
+      std::unique_ptr<TStrings> Lines(new TStringList());
+      LoadScriptFromFile(KnownHostsFile, Lines.get());
+      ImportSessionList->ImportFromKnownHosts(Lines.get());
+    }
+    else
+    {
+      throw Exception(LoadStr(KNOWN_HOSTS_NOT_FOUND));
+    }
+  }
+  catch (Exception & E)
+  {
+    Error = FORMAT(L"%s\n(%s)", (E.Message, KnownHostsFile));
+  }
+
+  return ImportSessionList.release();
+}
+//---------------------------------------------------------------------
+TStoredSessionList * __fastcall TConfiguration::SelectKnownHostsSessionsForImport(
+  TStrings * Lines, TStoredSessionList * Sessions, UnicodeString & Error)
+{
+  std::unique_ptr<TStoredSessionList> ImportSessionList(new TStoredSessionList(true));
+  ImportSessionList->DefaultSettings = Sessions->DefaultSettings;
+
+  try
+  {
+    ImportSessionList->ImportFromKnownHosts(Lines);
+  }
+  catch (Exception & E)
+  {
+    Error = E.Message;
+  }
+
+  return ImportSessionList.release();
 }
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::SetRandomSeedFile(UnicodeString value)
@@ -1274,6 +1413,11 @@ void __fastcall TConfiguration::SetExternalIpAddress(UnicodeString value)
 void __fastcall TConfiguration::SetTryFtpWhenSshFails(bool value)
 {
   SET_CONFIG_PROPERTY(TryFtpWhenSshFails);
+}
+//---------------------------------------------------------------------
+void __fastcall TConfiguration::SetParallelDurationThreshold(int value)
+{
+  SET_CONFIG_PROPERTY(ParallelDurationThreshold);
 }
 //---------------------------------------------------------------------
 void __fastcall TConfiguration::SetPuttyRegistryStorageKey(UnicodeString value)
@@ -1327,8 +1471,19 @@ void __fastcall TConfiguration::TemporaryLogSensitive(bool ALogSensitive)
   FLogSensitive = ALogSensitive;
 }
 //---------------------------------------------------------------------
+void __fastcall TConfiguration::TemporaryLogMaxSize(__int64 ALogMaxSize)
+{
+  FLogMaxSize = ALogMaxSize;
+}
+//---------------------------------------------------------------------
+void __fastcall TConfiguration::TemporaryLogMaxCount(int ALogMaxCount)
+{
+  FLogMaxCount = ALogMaxCount;
+}
+//---------------------------------------------------------------------
 void __fastcall TConfiguration::SetLogging(bool value)
 {
+  TGuard Guard(FCriticalSection);
   if (Logging != value)
   {
     FPermanentLogging = value;
@@ -1338,8 +1493,15 @@ void __fastcall TConfiguration::SetLogging(bool value)
   }
 }
 //---------------------------------------------------------------------
+bool __fastcall TConfiguration::GetLogging()
+{
+  TGuard Guard(FCriticalSection);
+  return FPermanentLogging;
+}
+//---------------------------------------------------------------------
 void __fastcall TConfiguration::SetLogFileName(UnicodeString value)
 {
+  TGuard Guard(FCriticalSection);
   if (LogFileName != value)
   {
     FPermanentLogFileName = value;
@@ -1348,8 +1510,15 @@ void __fastcall TConfiguration::SetLogFileName(UnicodeString value)
   }
 }
 //---------------------------------------------------------------------
+UnicodeString  __fastcall TConfiguration::GetLogFileName()
+{
+  TGuard Guard(FCriticalSection);
+  return FPermanentLogFileName;
+}
+//---------------------------------------------------------------------
 void __fastcall TConfiguration::SetActionsLogFileName(UnicodeString value)
 {
+  TGuard Guard(FCriticalSection);
   if (ActionsLogFileName != value)
   {
     FPermanentActionsLogFileName = value;
@@ -1358,8 +1527,21 @@ void __fastcall TConfiguration::SetActionsLogFileName(UnicodeString value)
   }
 }
 //---------------------------------------------------------------------
+UnicodeString __fastcall TConfiguration::GetPermanentActionsLogFileName()
+{
+  TGuard Guard(FCriticalSection);
+  return FPermanentActionsLogFileName;
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall TConfiguration::GetActionsLogFileName()
+{
+  TGuard Guard(FCriticalSection);
+  return FActionsLogFileName;
+}
+//---------------------------------------------------------------------
 bool __fastcall TConfiguration::GetLogToFile()
 {
+  // guarded within GetLogFileName
   return !LogFileName.IsEmpty();
 }
 //---------------------------------------------------------------------
@@ -1370,6 +1552,7 @@ void __fastcall TConfiguration::UpdateActualLogProtocol()
 //---------------------------------------------------------------------
 void __fastcall TConfiguration::SetLogProtocol(int value)
 {
+  TGuard Guard(FCriticalSection);
   if (LogProtocol != value)
   {
     FPermanentLogProtocol = value;
@@ -1381,12 +1564,19 @@ void __fastcall TConfiguration::SetLogProtocol(int value)
 //---------------------------------------------------------------------
 void __fastcall TConfiguration::SetLogActions(bool value)
 {
+  TGuard Guard(FCriticalSection);
   if (LogActions != value)
   {
     FPermanentLogActions = value;
     FLogActions = value;
     Changed();
   }
+}
+//---------------------------------------------------------------------
+bool __fastcall TConfiguration::GetLogActions()
+{
+  TGuard Guard(FCriticalSection);
+  return FPermanentLogActions;
 }
 //---------------------------------------------------------------------
 void __fastcall TConfiguration::SetLogFileAppend(bool value)
@@ -1404,23 +1594,37 @@ void __fastcall TConfiguration::SetLogSensitive(bool value)
   }
 }
 //---------------------------------------------------------------------
-void __fastcall TConfiguration::SetLogWindowLines(int value)
+void __fastcall TConfiguration::SetLogMaxSize(__int64 value)
 {
-  SET_CONFIG_PROPERTY(LogWindowLines);
-}
-//---------------------------------------------------------------------
-void __fastcall TConfiguration::SetLogWindowComplete(bool value)
-{
-  if (value != LogWindowComplete)
+  TGuard Guard(FCriticalSection);
+  if (LogMaxSize != value)
   {
-    LogWindowLines = value ? 0 : 50;
+    FPermanentLogMaxSize = value;
+    FLogMaxSize = value;
     Changed();
   }
 }
 //---------------------------------------------------------------------
-bool __fastcall TConfiguration::GetLogWindowComplete()
+__int64 __fastcall TConfiguration::GetLogMaxSize()
 {
-  return (bool)(LogWindowLines == 0);
+  TGuard Guard(FCriticalSection);
+  return FPermanentLogMaxSize;
+}
+//---------------------------------------------------------------------
+void __fastcall TConfiguration::SetLogMaxCount(int value)
+{
+  if (LogMaxCount != value)
+  {
+    FPermanentLogMaxCount = value;
+    FLogMaxCount = value;
+    Changed();
+  }
+}
+//---------------------------------------------------------------------
+int __fastcall TConfiguration::GetLogMaxCount()
+{
+  TGuard Guard(FCriticalSection);
+  return FPermanentLogMaxCount;
 }
 //---------------------------------------------------------------------
 UnicodeString __fastcall TConfiguration::GetDefaultLogFileName()

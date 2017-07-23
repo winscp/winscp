@@ -13,12 +13,16 @@ __published:
   TPngImageList *ExplorerImages;
   TPngImageList *SessionImages;
   TPngImageList *QueueImages;
-  TPngImageList *LogImages;
-  TImageList *ButtonImages;
-  TPngImageList *DialogImages;
 
 public:
   __fastcall TGlyphsModule(TComponent * Owner);
+
+  void __fastcall SetPixelsPerInch(int PixelsPerInch);
+
+private:
+  int FPixelsPerInch;
+
+  __fastcall TGlyphsModule();
 };
 //---------------------------------------------------------------------------
 extern PACKAGE TGlyphsModule * GlyphsModule;

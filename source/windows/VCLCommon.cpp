@@ -129,9 +129,9 @@ void __fastcall AutoSizeListColumnsWidth(TListView * ListView, int ColumnToShrin
     int ClientWidth = ListView->ClientWidth;
     int RowCount = ListView->Items->Count;
     if ((ListView->VisibleRowCount < RowCount) &&
-        (ListView->Width - ListView->ClientWidth < GetSystemMetrics(SM_CXVSCROLL)))
+        (ListView->Width - ListView->ClientWidth < GetSystemMetricsForControl(ListView, SM_CXVSCROLL)))
     {
-      ClientWidth -= GetSystemMetrics(SM_CXVSCROLL);
+      ClientWidth -= GetSystemMetricsForControl(ListView, SM_CXVSCROLL);
     }
 
     if (DebugAlwaysTrue(NonResizableWidth < ClientWidth))
@@ -152,8 +152,8 @@ void __fastcall AutoSizeListColumnsWidth(TListView * ListView, int ColumnToShrin
         // Question is whether we should not shrink to min width instead.
         if ((ResizableWidth - ColumnToShrink->Width) < (Remaining - ColumnToShrinkMinWidth))
         {
-          ListView->Columns->Items[ColumnToShrinkIndex]->Width =
-            Remaining - (ResizableWidth - ListView->Columns->Items[ColumnToShrinkIndex]->Width);
+          int ColumnToShrinkWidth = Remaining - (ResizableWidth - ColumnToShrink->Width);
+          ColumnToShrink->Width = ColumnToShrinkWidth;
           ProportionalResize = false;
         }
       }
@@ -192,6 +192,10 @@ void __fastcall AutoSizeListColumnsWidth(TListView * ListView, int ColumnToShrin
   __finally
   {
     SendMessage(ListView->Handle, WM_SETREDRAW, true, 0);
+    // As recommended by documentation for WM_SETREDRAW.
+    // Without this, session list on Import dialog stops working after the list is reloaded while visible
+    // (i.e. when chaing import source)
+    RedrawWindow(ListView->Handle, NULL, NULL, RDW_ERASE | RDW_FRAME | RDW_INVALIDATE | RDW_ALLCHILDREN);
   }
 }
 //---------------------------------------------------------------------------
@@ -366,6 +370,7 @@ UnicodeString __fastcall FormatFormCaption(TCustomForm * Form, const UnicodeStri
 class TPublicWinControl : public TWinControl
 {
 friend TWndMethod __fastcall ControlWndProc(TWinControl * Control);
+friend void __fastcall InstallPathWordBreakProc(TWinControl * Control);
 };
 //---------------------------------------------------------------------------
 TWndMethod __fastcall ControlWndProc(TWinControl * Control)
@@ -377,6 +382,15 @@ TWndMethod __fastcall ControlWndProc(TWinControl * Control)
 class TPublicControl : public TControl
 {
 friend void __fastcall RealignControl(TControl * Control);
+friend void __fastcall DoFormWindowProc(TCustomForm * Form, TWndMethod WndProc, TMessage & Message);
+};
+//---------------------------------------------------------------------
+class TPublicForm : public TForm
+{
+friend void __fastcall ChangeFormPixelsPerInch(TForm * Form, int PixelsPerInch);
+friend void __fastcall ShowAsModal(TForm * Form, void *& Storage, bool BringToFront);
+friend void __fastcall HideAsModal(TForm * Form, void *& Storage);
+friend void __fastcall ShowFormNoActivate(TForm * Form);
 };
 //---------------------------------------------------------------------------
 void __fastcall RealignControl(TControl * Control)
@@ -387,9 +401,372 @@ void __fastcall RealignControl(TControl * Control)
 //---------------------------------------------------------------------------
 static Forms::TMonitor * LastMonitor = NULL;
 //---------------------------------------------------------------------------
+static int __fastcall GetTextHeightAtPixelsPerInch(TForm * Form, int PixelsPerInch)
+{
+  std::unique_ptr<TCanvas> Canvas(new TCanvas());
+  Canvas->Handle = GetDC(0);
+  Canvas->Font->Assign(Form->Font);
+  Canvas->Font->PixelsPerInch = PixelsPerInch; // Must be set BEFORE size
+  Canvas->Font->Size = Form->Font->Size;
+  // VCLCOPY: this is what TCustomForm.GetTextHeight does
+  return Canvas->TextHeight(L"0");
+}
+//---------------------------------------------------------------------------
+class TRescaleComponent : public TComponent
+{
+public:
+  __fastcall TRescaleComponent(TRescaleEvent AOnRescale, TObject * AToken, bool AOwnsToken) :
+    TComponent(NULL)
+  {
+    OnRescale = AOnRescale;
+    Token = AToken;
+    OwnsToken = AOwnsToken;
+  }
+
+  virtual __fastcall ~TRescaleComponent()
+  {
+    if (OwnsToken)
+    {
+      delete Token;
+    }
+  }
+
+  TRescaleEvent OnRescale;
+  TObject * Token;
+  bool OwnsToken;
+};
+//---------------------------------------------------------------------------
+void __fastcall SetRescaleFunction(
+  TComponent * Component, TRescaleEvent OnRescale, TObject * Token, bool OwnsToken)
+{
+  TRescaleComponent * RescaleComponent = new TRescaleComponent(OnRescale, Token, OwnsToken);
+  RescaleComponent->Name = TRescaleComponent::QualifiedClassName();
+  Component->InsertComponent(RescaleComponent);
+}
+//---------------------------------------------------------------------------
+static void __fastcall ChangeControlScale(TControl * Control, int M, int D)
+{
+  // VCLCOPY This is what TCustomListView.ChangeScale does,
+  // but it does that for initial loading only, when ScalingFlags includes sfWidth.
+  // But ScalingFlags is reset in TControl.ChangeScale (seems like a bug).
+  TCustomListView * CustomListView = dynamic_cast<TCustomListView *>(Control);
+  if (CustomListView != NULL)
+  {
+    TListView * ListView = reinterpret_cast<TListView *>(CustomListView);
+    for (int Index = 0; Index < ListView->Columns->Count; Index++)
+    {
+      TListColumn * Column = ListView->Columns->Items[Index];
+      if ((Column->Width != LVSCW_AUTOSIZE) &&
+          (Column->Width != LVSCW_AUTOSIZE_USEHEADER))
+      {
+        Column->Width = MulDiv(Column->Width, M, D);
+      }
+    }
+  }
+
+  TCustomCombo * CustomCombo = dynamic_cast<TCustomCombo *>(Control);
+  if (CustomCombo != NULL)
+  {
+    // WORKAROUND
+    // Some combo boxes (e.g. path box on Copy dialog) visualize selection after rescaling, even when not focused
+    if (!CustomCombo->Focused())
+    {
+      CustomCombo->SelLength = 0;
+    }
+  }
+
+  for (int Index = 0; Index < Control->ComponentCount; Index++)
+  {
+    TComponent * Component = Control->Components[Index];
+
+    TControl * ChildControl = dynamic_cast<TControl *>(Component);
+    if (ChildControl != NULL)
+    {
+      ChangeControlScale(ChildControl, M, D);
+    }
+
+    TRescaleComponent * RescaleComponent =
+      dynamic_cast<TRescaleComponent *>(Component->FindComponent(TRescaleComponent::QualifiedClassName()));
+    if (RescaleComponent != NULL)
+    {
+      RescaleComponent->OnRescale(Component, RescaleComponent->Token);
+    }
+  }
+
+  Control->Perform(CM_DPICHANGED, M, D);
+}
+//---------------------------------------------------------------------------
+typedef std::pair<int, int> TRatio;
+typedef std::map<TRatio, TRatio > TRatioMap;
+//---------------------------------------------------------------------------
+class TFormRescaleComponent : public TComponent
+{
+public:
+  __fastcall TFormRescaleComponent() :
+    TComponent(NULL)
+  {
+    ImplicitRescaleAdded = false;
+    Rescaling = false;
+  }
+
+  bool Rescaling;
+  bool ImplicitRescaleAdded;
+  TRatioMap RatioMap;
+};
+//---------------------------------------------------------------------------
+static TFormRescaleComponent * GetFormRescaleComponent(TForm * Form)
+{
+  TFormRescaleComponent * FormRescaleComponent =
+    dynamic_cast<TFormRescaleComponent *>(Form->FindComponent(TFormRescaleComponent::QualifiedClassName()));
+  if (FormRescaleComponent == NULL)
+  {
+    FormRescaleComponent = new TFormRescaleComponent();
+    FormRescaleComponent->Name = TFormRescaleComponent::QualifiedClassName();
+    Form->InsertComponent(FormRescaleComponent);
+  }
+  return FormRescaleComponent;
+}
+//---------------------------------------------------------------------------
+void __fastcall RecordFormImplicitRescale(TForm * Form)
+{
+  if (Form->Scaled)
+  {
+    TFormRescaleComponent * FormRescaleComponent = GetFormRescaleComponent(Form);
+    if (!FormRescaleComponent->ImplicitRescaleAdded)
+    {
+      TRatio Ratio;
+      GetFormScaleRatio(Form, Ratio.first, Ratio.second);
+      TRatio RescaleKeyRatio(Form->PixelsPerInch, USER_DEFAULT_SCREEN_DPI);
+      FormRescaleComponent->RatioMap[RescaleKeyRatio] = Ratio;
+      FormRescaleComponent->ImplicitRescaleAdded = true;
+    }
+  }
+}
+//---------------------------------------------------------------------------
+static void __fastcall ChangeFormPixelsPerInch(TForm * Form, int PixelsPerInch)
+{
+  RecordFormImplicitRescale(Form);
+
+  TFormRescaleComponent * FormRescaleComponent = GetFormRescaleComponent(Form);
+
+  if ((Form->PixelsPerInch != PixelsPerInch) && // optimization
+      !FormRescaleComponent->Rescaling)
+  {
+    TAutoFlag RescalingFlag(FormRescaleComponent->Rescaling);
+
+    int M, D;
+    TRatio ReverseRescaleKeyRatio(Form->PixelsPerInch, PixelsPerInch);
+    if (FormRescaleComponent->RatioMap.count(ReverseRescaleKeyRatio) > 0)
+    {
+      M = FormRescaleComponent->RatioMap[ReverseRescaleKeyRatio].second;
+      D = FormRescaleComponent->RatioMap[ReverseRescaleKeyRatio].first;
+    }
+    else
+    {
+      M = GetTextHeightAtPixelsPerInch(Form, PixelsPerInch);
+      D = GetTextHeightAtPixelsPerInch(Form, Form->PixelsPerInch);
+    }
+
+    TRatio RescaleKeyRatio(PixelsPerInch, Form->PixelsPerInch);
+    FormRescaleComponent->RatioMap[RescaleKeyRatio] = TRatio(M, D);
+
+    Form->PixelsPerInch = PixelsPerInch;
+    TPublicForm * PublicCustomForm = static_cast<TPublicForm *>(Form);
+
+    // WORKAROUND
+    // TCustomForm.ChangeScale scales contraints only after rescaling the size,
+    // so the unscaled constraints apply to the new size
+    // (e.g. with TLoginDialog)
+    std::unique_ptr<TSizeConstraints> Constraints(new TSizeConstraints(NULL));
+    Constraints->Assign(PublicCustomForm->Constraints);
+    std::unique_ptr<TSizeConstraints> NoConstraints(new TSizeConstraints(NULL));
+    PublicCustomForm->Constraints = NoConstraints.get();
+
+    // Does not seem to have any effect
+    PublicCustomForm->DisableAlign();
+    try
+    {
+      int PrevFontHeight = Form->Font->Height;
+      PublicCustomForm->ChangeScale(M, D);
+      // Re-rescale by Height as it has higher granularity, hence lower risk of loosing precision due to rounding
+      Form->Font->Height = MulDiv(PrevFontHeight, M, D);
+
+      ChangeControlScale(Form, M, D);
+
+      Constraints->MinWidth = MulDiv(Constraints->MinWidth, M, D);
+      Constraints->MaxWidth = MulDiv(Constraints->MaxWidth, M, D);
+      Constraints->MinHeight = MulDiv(Constraints->MinHeight, M, D);
+      Constraints->MaxHeight = MulDiv(Constraints->MaxHeight, M, D);
+      PublicCustomForm->Constraints = Constraints.get();
+    }
+    __finally
+    {
+      PublicCustomForm->EnableAlign();
+    }
+
+  }
+}
+//---------------------------------------------------------------------------
+static void __fastcall FormShowingChanged(TForm * Form, TWndMethod WndProc, TMessage & Message)
+{
+  if (IsMainFormLike(Form))
+  {
+    if (Form->Showing)
+    {
+      if (Application->MainForm != Form)
+      {
+        MainLikeForm = Form;
+
+        // When main form is hidden, no taskbar button for it is shown and
+        // this window does not become main window, so there won't be no taskbar
+        // icon created automatically (by VCL). So we force it manually here.
+        // This particularly happen for all windows/dialogs of command-line
+        // operations (e.g. /synchronize) after CreateScpExplorer() happens.
+
+        // Also CM_SHOWINGCHANGED happens twice, and the WS_EX_APPWINDOW flag
+        // from the first call is not preserved, re-applying on the second call too.
+
+        // TODO: What about minimize to tray?
+
+        int Style = GetWindowLong(Form->Handle, GWL_EXSTYLE);
+        if (FLAGCLEAR(Style, WS_EX_APPWINDOW))
+        {
+          Style |= WS_EX_APPWINDOW;
+          SetWindowLong(Form->Handle, GWL_EXSTYLE, Style);
+        }
+      }
+
+      if (Form->Perform(WM_MANAGES_CAPTION, 0, 0) == 0)
+      {
+        Form->Caption = FormatFormCaption(Form, Form->Caption);
+      }
+      SendMessage(Form->Handle, WM_SETICON, ICON_BIG, reinterpret_cast<long>(Application->Icon->Handle));
+    }
+    else
+    {
+      if (MainLikeForm == Form)
+      {
+        // Do not bother with hiding the WS_EX_APPWINDOW flag
+        // as the window is closing anyway.
+        MainLikeForm = NULL;
+      }
+    }
+  }
+
+  // Part of following code (but actually not all, TODO), has to happen
+  // for all windows when VCL main window is hidden (particularly the last branch).
+  // This is different from above brach, that should happen only for top-level visible window.
+  if ((Application->MainForm == Form) ||
+      // this particularly happens if error occurs while main
+      // window is being shown (e.g. non existent local directory when opening
+      // explorer)
+      ((Application->MainForm != NULL) && !Application->MainForm->Visible))
+  {
+    if (!Form->Showing)
+    {
+      // when closing main form, remember its monitor,
+      // so that the next form is shown on the same one
+      LastMonitor = Form->Monitor;
+    }
+    else if ((LastMonitor != NULL) && (LastMonitor != Form->Monitor) &&
+              Form->Showing)
+    {
+      // would actually always be poScreenCenter, see _SafeFormCreate
+      if ((Form->Position == poMainFormCenter) ||
+          (Form->Position == poOwnerFormCenter) ||
+          (Form->Position == poScreenCenter))
+      {
+        // this would typically be a standalone message box (e.g. /UninstallCleanup or /Update)
+
+        // If DPI changes (as the form moves to a monitor with a non-system DPI),
+        // we have to re-center as the form size changed too.
+        int PixelsPerInch;
+        do
+        {
+          PixelsPerInch = Form->PixelsPerInch;
+          // taken from TCustomForm::SetWindowToMonitor
+          Form->SetBounds(LastMonitor->Left + ((LastMonitor->Width - Form->Width) / 2),
+            LastMonitor->Top + ((LastMonitor->Height - Form->Height) / 2),
+             Form->Width, Form->Height);
+          Form->Position = poDesigned;
+        }
+        while (PixelsPerInch != Form->PixelsPerInch);
+      }
+      else if ((Form->Position != poDesigned) &&
+               (Form->Position != poDefaultPosOnly))
+      {
+        // we do not expect any other positioning
+        DebugFail();
+      }
+    }
+    // otherwise it would not get centered
+    else if ((Form->Position == poMainFormCenter) ||
+             (Form->Position == poOwnerFormCenter))
+    {
+      Form->Position = poScreenCenter;
+    }
+  }
+
+  if (Form->Showing)
+  {
+    // At least on single monitor setup, monitor DPI is 100% but system DPI is higher,
+    // WM_DPICHANGED is not sent. But VCL scales the form using system DPI.
+    // Also we have to do this always for implicitly placed forms (poDefaultPosOnly), like TEditorForm,
+    // as thay never get the WM_DPICHANGED.
+    // Call this before WndProc below, i.e. before OnShow event (particularly important for the TEditorForm::FormShow.
+
+    // GetControlPixelsPerInch would return Form.PixelsPerInch, but we want to get a new DPI of the form monitor.
+    ChangeFormPixelsPerInch(Form, GetMonitorPixelsPerInch(GetMonitorFromControl(Form)));
+  }
+
+  bool WasFormCenter =
+    (Form->Position == poMainFormCenter) ||
+    (Form->Position == poOwnerFormCenter);
+  WndProc(Message);
+  // Make sure dialogs are shown on-screen even if center of the main window
+  // is off-screen. Occurs e.g. if you move the main window so that
+  // only window title is visible above taksbar.
+  if (Form->Showing && WasFormCenter && (Form->Position == poDesigned))
+  {
+    TRect Rect;
+    // Reading Form.Left/Form.Top instead here does not work, likely due to some
+    // bug, when querying TProgressForm opened from TEditorForm (reloading remote file)
+    GetWindowRect(Form->Handle, &Rect);
+
+    int Left = Rect.Left;
+    int Top = Rect.Top;
+    TRect WorkArea = Form->Monitor->WorkareaRect;
+
+    if (Left + Rect.Width() > WorkArea.Right)
+    {
+      Left = WorkArea.Right - Rect.Width();
+    }
+    if (Left < WorkArea.Left)
+    {
+      Left = WorkArea.Left;
+    }
+    if (Top + Rect.Height() > WorkArea.Bottom)
+    {
+      Top = WorkArea.Bottom - Rect.Height();
+    }
+    if (Top < WorkArea.Top)
+    {
+      Top = WorkArea.Top;
+    }
+    if ((Left != Rect.Left) ||
+        (Top != Rect.Top))
+    {
+      SetWindowPos(Form->Handle, 0, Left, Top, Rect.Width(), Rect.Height(),
+        SWP_NOZORDER + SWP_NOACTIVATE);
+    }
+  }
+}
+//---------------------------------------------------------------------------
 inline void __fastcall DoFormWindowProc(TCustomForm * Form, TWndMethod WndProc,
   TMessage & Message)
 {
+  TForm * AForm = dynamic_cast<TForm *>(Form);
+  DebugAssert(AForm != NULL);
   if ((Message.Msg == WM_SYSCOMMAND) &&
       (Message.WParam == SC_CONTEXTHELP))
   {
@@ -398,144 +775,7 @@ inline void __fastcall DoFormWindowProc(TCustomForm * Form, TWndMethod WndProc,
   }
   else if (Message.Msg == CM_SHOWINGCHANGED)
   {
-    TForm * AForm = dynamic_cast<TForm *>(Form);
-    DebugAssert(AForm != NULL);
-    if (IsMainFormLike(Form))
-    {
-      if (Form->Showing)
-      {
-        if (Application->MainForm != Form)
-        {
-          MainLikeForm = AForm;
-
-          // When main form is hidden, no taskbar button for it is shown and
-          // this window does not become main window, so there won't be no taskbar
-          // icon created automatically (by VCL). So we force it manually here.
-          // This particularly happen for all windows/dialogs of command-line
-          // operations (e.g. /synchronize) after CreateScpExplorer() happens.
-
-          // Also CM_SHOWINGCHANGED happens twice, and the WS_EX_APPWINDOW flag
-          // from the first call is not preserved, re-applying on the second call too.
-
-          // TODO: What about minimize to tray?
-
-          int Style = GetWindowLong(Form->Handle, GWL_EXSTYLE);
-          if (FLAGCLEAR(Style, WS_EX_APPWINDOW))
-          {
-            Style |= WS_EX_APPWINDOW;
-            SetWindowLong(Form->Handle, GWL_EXSTYLE, Style);
-          }
-        }
-
-        if (Form->Perform(WM_MANAGES_CAPTION, 0, 0) == 0)
-        {
-          Form->Caption = FormatFormCaption(Form, Form->Caption);
-        }
-        SendMessage(Form->Handle, WM_SETICON, ICON_BIG, reinterpret_cast<long>(Application->Icon->Handle));
-      }
-      else
-      {
-        if (MainLikeForm == Form)
-        {
-          // Do not bother with hiding the WS_EX_APPWINDOW flag
-          // as the window is closing anyway.
-          MainLikeForm = NULL;
-        }
-      }
-    }
-
-    // Part of following code (but actually not all, TODO), has to happen
-    // for all windows when VCL main window is hidden (particularly the last branch).
-    // This is different from above brach, that should happen only for top-level visible window.
-    if ((Application->MainForm == Form) ||
-        // this particularly happens if error occurs while main
-        // window is being shown (e.g. non existent local directory when opening
-        // explorer)
-        ((Application->MainForm != NULL) && !Application->MainForm->Visible))
-    {
-      if (!Form->Showing)
-      {
-        // when closing main form, remember its monitor,
-        // so that the next form is shown on the same one
-        LastMonitor = Form->Monitor;
-      }
-      else if ((LastMonitor != NULL) && (LastMonitor != Form->Monitor) &&
-                Form->Showing)
-      {
-        // would actually always be poScreenCenter, see _SafeFormCreate
-        if ((AForm->Position == poMainFormCenter) ||
-            (AForm->Position == poOwnerFormCenter) ||
-            (AForm->Position == poScreenCenter))
-        {
-          // this would typically be an authentication dialog,
-          // but it may as well be an message box
-
-          // taken from TCustomForm::SetWindowToMonitor
-          AForm->SetBounds(LastMonitor->Left + ((LastMonitor->Width - AForm->Width) / 2),
-            LastMonitor->Top + ((LastMonitor->Height - AForm->Height) / 2),
-             AForm->Width, AForm->Height);
-          AForm->Position = poDesigned;
-        }
-        else if ((AForm->Position != poDesigned) &&
-                 (AForm->Position != poDefaultPosOnly))
-        {
-          // we do not expect any other positioning
-          DebugFail();
-        }
-      }
-      else
-      {
-        TForm * AForm = dynamic_cast<TForm *>(Form);
-        DebugAssert(AForm != NULL);
-        // otherwise it would not get centered
-        if ((AForm->Position == poMainFormCenter) ||
-            (AForm->Position == poOwnerFormCenter))
-        {
-          AForm->Position = poScreenCenter;
-        }
-      }
-    }
-    bool WasFormCenter =
-      (AForm->Position == poMainFormCenter) ||
-      (AForm->Position == poOwnerFormCenter);
-    WndProc(Message);
-    // Make sure dialogs are shown on-screen even if center of the main window
-    // is off-screen. Occurs e.g. if you move the main window so that
-    // only window title is visible above taksbar.
-    if (Form->Showing && WasFormCenter && (AForm->Position == poDesigned))
-    {
-      TRect Rect;
-      // Reading Form.Left/Form.Top instead here does not work, likely due to some
-      // bug, when querying TProgressForm opened from TEditorForm (reloading remote file)
-      GetWindowRect(Form->Handle, &Rect);
-
-      int Left = Rect.Left;
-      int Top = Rect.Top;
-      TRect WorkArea = AForm->Monitor->WorkareaRect;
-
-      if (Left + Rect.Width() > WorkArea.Right)
-      {
-        Left = WorkArea.Right - Rect.Width();
-      }
-      if (Left < WorkArea.Left)
-      {
-        Left = WorkArea.Left;
-      }
-      if (Top + Rect.Height() > WorkArea.Bottom)
-      {
-        Top = WorkArea.Bottom - Rect.Height();
-      }
-      if (Top < WorkArea.Top)
-      {
-        Top = WorkArea.Top;
-      }
-      if ((Left != Rect.Left) ||
-          (Top != Rect.Top))
-      {
-        SetWindowPos(Form->Handle, 0, Left, Top, Rect.Width(), Rect.Height(),
-          SWP_NOZORDER + SWP_NOACTIVATE);
-      }
-    }
+    FormShowingChanged(AForm, WndProc, Message);
   }
   else if (Message.Msg == WM_SETICON)
   {
@@ -547,6 +787,11 @@ inline void __fastcall DoFormWindowProc(TCustomForm * Form, TWndMethod WndProc,
     {
       WndProc(Message);
     }
+  }
+  else if (Message.Msg == WM_DPICHANGED)
+  {
+    ChangeFormPixelsPerInch(AForm, LOWORD(Message.WParam));
+    WndProc(Message);
   }
   else
   {
@@ -582,7 +827,7 @@ void __fastcall VerifyControl(TControl * Control)
   // (see also a check below)
   if (ControlHasRecreationPersistenceData(Control))
   {
-    // Though is RTL bidi mode is set, the controls are recreated always,
+    // Though if RTL bidi mode is set, the controls are recreated always,
     // as we cannot really prevent it. So we force creation here.
     DebugAssert(Application->BiDiMode != bdLeftToRight);
     TWinControl * WinControl = dynamic_cast<TWinControl *>(Control);
@@ -606,36 +851,6 @@ void __fastcall VerifyControl(TControl * Control)
   }
 }
 #endif
-//---------------------------------------------------------------------------
-static void __fastcall ApplySystemSettingsOnTBItem(TTBCustomToolbar * Toolbar, TTBCustomItem * Item)
-{
-  TTBEditItem * EditItem = dynamic_cast<TTBEditItem *>(Item);
-  if (EditItem != NULL)
-  {
-    EditItem->EditWidth = ScaleByTextHeight(Toolbar, EditItem->EditWidth);
-
-    TTBXComboBoxItem * ComboBoxItem = dynamic_cast<TTBXComboBoxItem *>(EditItem);
-    if (ComboBoxItem != NULL)
-    {
-      ComboBoxItem->MinListWidth =
-        ScaleByTextHeight(Toolbar, ComboBoxItem->MinListWidth);
-      ComboBoxItem->MaxListWidth =
-        ScaleByTextHeight(Toolbar, ComboBoxItem->MaxListWidth);
-    }
-  }
-
-  TTBXCustomList * CustomList = dynamic_cast<TTBXCustomList *>(Item);
-  if (CustomList != NULL)
-  {
-    CustomList->MaxWidth = ScaleByTextHeight(Toolbar, CustomList->MaxWidth);
-    CustomList->MinWidth = ScaleByTextHeight(Toolbar, CustomList->MinWidth);
-  }
-
-  for (int ItemIndex = 0; ItemIndex < Item->Count; ItemIndex++)
-  {
-    ApplySystemSettingsOnTBItem(Toolbar, Item->Items[ItemIndex]);
-  }
-}
 //---------------------------------------------------------------------------
 void __fastcall ApplySystemSettingsOnControl(TControl * Control)
 {
@@ -669,14 +884,10 @@ void __fastcall ApplySystemSettingsOnControl(TControl * Control)
     }
   }
 
-  TTBCustomToolbar * Toolbar = dynamic_cast<TTBCustomToolbar *>(Control);
-  if (Toolbar != NULL)
-  {
-    ApplySystemSettingsOnTBItem(Toolbar, Toolbar->Items);
-  }
-
   TCustomListView * ListView = dynamic_cast<TCustomListView *>(Control);
-  if (ListView != NULL)
+  TCustomIEListView * IEListView = dynamic_cast<TCustomIEListView *>(Control);
+  // For IEListView, this is (somewhat) handled in the TCustomListViewColProperties
+  if ((ListView != NULL) && (IEListView == NULL))
   {
     TListView * PublicListView = reinterpret_cast<TListView *>(ListView);
 
@@ -690,7 +901,6 @@ void __fastcall ApplySystemSettingsOnControl(TControl * Control)
 
   // WORKAROUND for lack of public API so mimicking Explorer-style mouse selection
   // See https://stackoverflow.com/q/15750842/850848
-  TCustomIEListView * IEListView = dynamic_cast<TCustomIEListView *>(Control);
   if (IEListView != NULL)
   {
     // It should not be a problem to call the LVM_QUERYINTERFACE
@@ -768,16 +978,19 @@ static void FlipAnchors(TControl * Control)
 // Settings that must be set only after whole form is constructed
 void __fastcall UseSystemSettingsPost(TCustomForm * Control)
 {
-  UnicodeString FlipStr = LoadStr(FLIP_CHILDREN);
-  int FlipChildrenFlag =
-    AdjustLocaleFlag(FlipStr, WinConfiguration->FlipChildrenOverride, false, true, false);
-  if (static_cast<bool>(FlipChildrenFlag))
+  // When showing an early error message
+  if (WinConfiguration != NULL)
   {
-    Control->FlipChildren(true);
+    UnicodeString FlipStr = LoadStr(FLIP_CHILDREN);
+    int FlipChildrenFlag =
+      AdjustLocaleFlag(FlipStr, WinConfiguration->FlipChildrenOverride, false, true, false);
+    if (static_cast<bool>(FlipChildrenFlag))
+    {
+      Control->FlipChildren(true);
 
-    FlipAnchors(Control);
+      FlipAnchors(Control);
+    }
   }
-
   ResetSystemSettings(Control);
 };
 //---------------------------------------------------------------------------
@@ -792,12 +1005,6 @@ void __fastcall ResetSystemSettings(TCustomForm * /*Control*/)
   // noop
 }
 //---------------------------------------------------------------------------
-class TPublicForm : public TForm
-{
-friend void __fastcall ShowAsModal(TForm * Form, void *& Storage);
-friend void __fastcall HideAsModal(TForm * Form, void *& Storage);
-};
-//---------------------------------------------------------------------------
 struct TShowAsModalStorage
 {
   void * FocusWindowList;
@@ -807,7 +1014,7 @@ struct TShowAsModalStorage
   int SaveCount;
 };
 //---------------------------------------------------------------------------
-void __fastcall ShowAsModal(TForm * Form, void *& Storage)
+void __fastcall ShowAsModal(TForm * Form, void *& Storage, bool BringToFront)
 {
   SetCorrectFormParent(Form);
   CancelDrag();
@@ -831,7 +1038,14 @@ void __fastcall ShowAsModal(TForm * Form, void *& Storage)
   Screen->Cursor = crDefault;
   AStorage->SaveCount = Screen->CursorCount;
   AStorage->FocusWindowList = DisableTaskWindows(0);
-  Form->Show();
+
+  // VCLCOPY (TCustomForm::Show)
+  Form->Visible = true;
+  if (BringToFront)
+  {
+    Form->BringToFront();
+  }
+
   SendMessage(Form->Handle, CM_ACTIVATE, 0, 0);
 
   Storage = AStorage;
@@ -883,12 +1097,14 @@ void __fastcall HideAsModal(TForm * Form, void *& Storage)
   delete AStorage;
 }
 //---------------------------------------------------------------------------
-void __fastcall ReleaseAsModal(TForm * Form, void *& Storage)
+bool __fastcall ReleaseAsModal(TForm * Form, void *& Storage)
 {
-  if (Storage != NULL)
+  bool Result = (Storage != NULL);
+  if (Result)
   {
     HideAsModal(Form, Storage);
   }
+  return Result;
 }
 //---------------------------------------------------------------------------
 bool __fastcall SelectDirectory(UnicodeString & Path, const UnicodeString Prompt,
@@ -1094,6 +1310,42 @@ int CALLBACK PathWordBreakProc(wchar_t * Ch, int Current, int Len, int Code)
   return Result;
 }
 //---------------------------------------------------------------------------
+static void __fastcall PathEditKeyPress(void * /*Data*/, TObject * Sender, char & Key)
+{
+  // Ctrl+Backspace
+  // Have to use OnKeyPress as the Ctrl+Backspace is handled in WM_CHAR as any other char,
+  // so we have to swallow it here to prevent it getting inserted to the text
+  if (Key == '\x7F')
+  {
+    Key = '\0';
+
+    TCustomEdit * Edit = dynamic_cast<TCustomEdit *>(Sender);
+    TCustomComboBox * ComboBox = dynamic_cast<TCustomComboBox *>(Sender);
+    TWinControl * WinControl = DebugNotNull(dynamic_cast<TWinControl *>(Sender));
+
+    if (((Edit != NULL) && (Edit->SelLength == 0)) ||
+        ((ComboBox != NULL) && (ComboBox->SelLength == 0)))
+    {
+      // See TCustomMaskEdit.SetCursor
+      TKeyboardState KeyState;
+      GetKeyboardState(KeyState);
+      TKeyboardState NewKeyState;
+      memset(NewKeyState, 0, sizeof(NewKeyState));
+      NewKeyState[VK_CONTROL] = 0x81;
+      NewKeyState[VK_SHIFT] = 0x81;
+      SetKeyboardState(NewKeyState);
+
+      SendMessage(WinControl->Handle, WM_KEYDOWN, VK_LEFT, 1);
+      NewKeyState[VK_SHIFT] = 0;
+      NewKeyState[VK_CONTROL] = 0;
+      SetKeyboardState(NewKeyState);
+
+      SendMessage(WinControl->Handle, WM_KEYDOWN, VK_DELETE, 1);
+      SetKeyboardState(KeyState);
+    }
+  }
+}
+//---------------------------------------------------------------------------
 class TPublicCustomCombo : public TCustomCombo
 {
 friend void __fastcall InstallPathWordBreakProc(TWinControl * Control);
@@ -1118,6 +1370,12 @@ void __fastcall InstallPathWordBreakProc(TWinControl * Control)
     Wnd = Control->Handle;
   }
   SendMessage(Wnd, EM_SETWORDBREAKPROC, 0, (LPARAM)(EDITWORDBREAKPROC)PathWordBreakProc);
+
+  TPublicWinControl * PublicWinControl = static_cast<TPublicWinControl *>(Control);
+  if (DebugAlwaysTrue(PublicWinControl->OnKeyDown == NULL))
+  {
+    PublicWinControl->OnKeyPress = MakeMethod<TKeyPressEvent>(NULL, PathEditKeyPress);
+  }
 }
 //---------------------------------------------------------------------------
 static void __fastcall RemoveHiddenControlsFromOrder(TControl ** ControlsOrder, int & Count)
@@ -1388,6 +1646,7 @@ static void __fastcall FocusableLabelCanvas(TStaticText * StaticText,
   try
   {
     Canvas->Control = StaticText;
+    Canvas->Font = StaticText->Font;
 
     R = StaticText->ClientRect;
 
@@ -1986,20 +2245,6 @@ TForm * __fastcall _SafeFormCreate(TMetaClass * FormClass, TComponent * Owner)
   return Form;
 }
 //---------------------------------------------------------------------------
-TImageList * __fastcall SharedSystemImageList(bool Large)
-{
-  TSHFileInfo FileInfo;
-  TImageList * Result = new TImageList(Application);
-  int ImageListHandle = SHGetFileInfo(L"", 0, &FileInfo, sizeof(FileInfo),
-    SHGFI_SYSICONINDEX | (Large ? SHGFI_LARGEICON : SHGFI_SMALLICON));
-  if (ImageListHandle != 0)
-  {
-    Result->ShareImages = true;
-    Result->Handle = ImageListHandle;
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
 bool __fastcall SupportsSplitButton()
 {
   return (Win32MajorVersion >= 6);
@@ -2116,7 +2361,9 @@ static void __fastcall FixFormIcon(TForm * Form, int Size, int WidthMetric, int 
   Icon->LoadFromStream(Stream.get());
 
   // Set desired size
-  Icon->SetSize(GetSystemMetrics(WidthMetric), GetSystemMetrics(HeightMetric));
+  int Width = GetSystemMetricsForControl(Form, WidthMetric);
+  int Height = GetSystemMetricsForControl(Form, HeightMetric);
+  Icon->SetSize(Width, Height);
 
   // This calls TIcon::RequireHandle that retrieves the best icon for given size
   LPARAM LParam = reinterpret_cast<LPARAM>(Icon->Handle);
@@ -2142,22 +2389,121 @@ void __fastcall FixFormIcons(TForm * Form)
   // TIcon.ReleaseHandle and setting a correct size.
 }
 //---------------------------------------------------------------------------
+class TDesktopFontManager : public TComponent
+{
+public:
+  TDesktopFontManager();
+  virtual __fastcall ~TDesktopFontManager();
+
+  void AddControl(TControl * Control);
+  void Update();
+
+protected:
+  virtual void __fastcall Notification(TComponent * AComponent, TOperation Operation);
+
+private:
+  HWND FWindowHandle;
+  typedef std::set<TControl *> TControlSet;
+  TControlSet FControls;
+
+  void __fastcall WndProc(TMessage & Message);
+  void UpdateControl(TControl * Control);
+};
+//---------------------------------------------------------------------------
+TDesktopFontManager::TDesktopFontManager() : TComponent(NULL)
+{
+  // Alternative is using Application->HookMainWindow
+  FWindowHandle = AllocateHWnd(WndProc);
+}
+//---------------------------------------------------------------------------
+__fastcall TDesktopFontManager::~TDesktopFontManager()
+{
+  DeallocateHWnd(FWindowHandle);
+}
+//---------------------------------------------------------------------------
+void __fastcall TDesktopFontManager::Notification(TComponent * AComponent, TOperation Operation)
+{
+  if (DebugAlwaysTrue(Operation == opRemove))
+  {
+    TControl * Control = DebugNotNull(dynamic_cast<TControl *>(AComponent));
+    FControls.erase(Control);
+  }
+
+  TComponent::Notification(AComponent, Operation);
+}
+//---------------------------------------------------------------------------
+void TDesktopFontManager::UpdateControl(TControl * Control)
+{
+  class TPublicControl : public TControl
+  {
+  public:
+    __property Font;
+  };
+
+  TPublicControl * PublicControl = reinterpret_cast<TPublicControl *>(Control);
+  std::unique_ptr<TFont> DesktopFont(new TFont());
+  if (WinConfiguration->PanelFont.FontName.IsEmpty())
+  {
+    int PixelsPerInch = GetControlPixelsPerInch(Control);
+    TLogFont LogFont;
+    if (DebugAlwaysTrue(SystemParametersInfoForPixelsPerInch(SPI_GETICONTITLELOGFONT, sizeof(LogFont), &LogFont, 0, PixelsPerInch)))
+    {
+      DesktopFont->Handle = CreateFontIndirect(&LogFont);
+    }
+  }
+  else
+  {
+    TWinConfiguration::RestoreFont(WinConfiguration->PanelFont, DesktopFont.get());
+    DesktopFont->Height = ScaleByPixelsPerInchFromSystem(DesktopFont->Height, Control);
+    DesktopFont->PixelsPerInch = PublicControl->Font->PixelsPerInch;
+  }
+
+  PublicControl->Font->Assign(DesktopFont.get());
+}
+//---------------------------------------------------------------------------
+void TDesktopFontManager::AddControl(TControl * Control)
+{
+  FControls.insert(Control);
+  Control->FreeNotification(this);
+  UpdateControl(Control);
+}
+//---------------------------------------------------------------------------
+void TDesktopFontManager::Update()
+{
+  TControlSet::iterator I = FControls.begin();
+  while (I != FControls.end())
+  {
+    UpdateControl(*I);
+    I++;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TDesktopFontManager::WndProc(TMessage & Message)
+{
+  if (Message.Msg == WM_WININICHANGE)
+  {
+    Update();
+  }
+  Message.Result = DefWindowProc(FWindowHandle, Message.Msg, Message.WParam, Message.LParam);
+}
+//---------------------------------------------------------------------------
+std::unique_ptr<TDesktopFontManager> DesktopFontManager(new TDesktopFontManager());
+//---------------------------------------------------------------------------
 void __fastcall UseDesktopFont(TControl * Control)
 {
   TCustomStatusBar * StatusBar = dynamic_cast<TCustomStatusBar *>(Control);
   if (StatusBar != NULL)
   {
-    // otherwise setting DesktopFont below has no effect
+    // prevent syncing to system font
     StatusBar->UseSystemFont = false;
   }
 
-  class TPublicControl : public TControl
-  {
-  public:
-    __property DesktopFont;
-  };
-
-  reinterpret_cast<TPublicControl *>(Control)->DesktopFont = true;
+  DesktopFontManager->AddControl(Control);
+}
+//---------------------------------------------------------------------------
+void __fastcall UpdateDesktopFont()
+{
+  DesktopFontManager->Update();
 }
 //---------------------------------------------------------------------------
 TShiftState __fastcall AllKeyShiftStates()
@@ -2168,7 +2514,7 @@ TShiftState __fastcall AllKeyShiftStates()
 static bool __fastcall FormActivationHook(void * Data, TMessage & Message)
 {
   bool Result = false;
-  // Some dialogs, when application is restord from minimization,
+  // Some dialogs, when application is restored from minimization,
   // do not get activated. So we do it explicitly here.
   // We cannot do this from TApplication::OnActivate because
   // TApplication.WndProc resets focus to the last active window afterwards.
@@ -2198,6 +2544,62 @@ void __fastcall HookFormActivation(TCustomForm * Form)
 void __fastcall UnhookFormActivation(TCustomForm * Form)
 {
   Application->UnhookMainWindow(MakeMethod<TWindowHook>(Form, FormActivationHook));
+}
+//---------------------------------------------------------------------------
+void __fastcall ShowFormNoActivate(TForm * Form)
+{
+  TPublicForm * PublicForm = static_cast<TPublicForm *>(Form);
+
+  // This is same as SendToBack, except for added SWP_NOACTIVATE (VCLCOPY)
+  SetWindowPos(PublicForm->WindowHandle, HWND_BOTTOM, 0, 0, 0, 0,
+    SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+
+  // This replaces TCustomForm::CMShowingChanged()
+  // which calls ShowWindow(Handle, SW_SHOWNORMAL).
+
+  ShowWindow(Form->Handle, SW_SHOWNOACTIVATE);
+
+  // - so we have to call DoShow explicitly.
+  PublicForm->DoShow();
+
+  // - also we skip applying TForm::Position (VCLCOPY)
+  if (DebugAlwaysTrue(Form->Position == poOwnerFormCenter))
+  {
+    TCustomForm * CenterForm = Application->MainForm;
+    TCustomForm * OwnerForm = dynamic_cast<TCustomForm *>(Form->Owner);
+    if (OwnerForm != NULL)
+    {
+      CenterForm = OwnerForm;
+    }
+    int X, Y;
+    if ((CenterForm != NULL) && (CenterForm != Form))
+    {
+      TRect Bounds = CenterForm->BoundsRect;
+      X = ((Bounds.Width() - Form->Width) / 2) + CenterForm->Left;
+      Y = ((Bounds.Height() - Form->Height) / 2) + CenterForm->Top;
+    }
+    else
+    {
+      X = (Screen->Width - Form->Width) / 2;
+      Y = (Screen->Height - Form->Height) / 2;
+    }
+    if (X < Screen->DesktopLeft)
+    {
+      X = Screen->DesktopLeft;
+    }
+    if (Y < Screen->DesktopTop)
+    {
+      Y = Screen->DesktopTop;
+    }
+    Form->SetBounds(X, Y, Form->Width, Form->Height);
+    // We cannot call SetWindowToMonitor().
+    // We cannot set FPosition = poDesigned, so workarea-checking code
+    // in DoFormWindowProc is not triggered
+
+    // If application is restored, dialog is not activated, do it manually.
+    // Wait for application to be activated to activate ourself.
+    HookFormActivation(Form);
+  }
 }
 //---------------------------------------------------------------------------
 TPanel * __fastcall CreateBlankPanel(TComponent * Owner)

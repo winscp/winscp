@@ -491,6 +491,9 @@ void CAsyncProxySocketLayer::OnReceive(int nErrorCode)
       char *pos = strstr(m_pStrBuffer, "\r\n");
       if (pos)
       {
+        CString status;
+        status.Format(L"HTTP proxy response: %s", UnicodeString(m_pStrBuffer).c_str());
+        LogSocketMessageRaw(FZ_LOG_PROGRESS, status);
         char *pos2 = strstr(m_pStrBuffer, " ");
         if (!pos2 || *(pos2+1)!='2' || pos2>pos)
         {
@@ -771,6 +774,9 @@ void CAsyncProxySocketLayer::OnConnect(int nErrorCode)
       delete [] pHost;
 
       USES_CONVERSION;
+      CString status;
+      status.Format(L"HTTP proxy command: %s", UnicodeString(str).c_str());
+      LogSocketMessageRaw(FZ_LOG_PROGRESS, status);
       int numsent=SendNext(str, strlen(str) );
       int nErrorCode=WSAGetLastError();
       if (numsent==SOCKET_ERROR)//nErrorCode!=WSAEWOULDBLOCK)

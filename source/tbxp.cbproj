@@ -39,14 +39,13 @@
 		<DCC_EXPLICIT_STRING_CAST>true</DCC_EXPLICIT_STRING_CAST>
 		<DCC_EXPLICIT_STRING_CAST_LOSS>true</DCC_EXPLICIT_STRING_CAST_LOSS>
 		<DCC_Namespace>Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;System;Xml;Data;Datasnap;Web;Soap;Vcl;$(DCC_Namespace)</DCC_Namespace>
-		<DCC_UnitSearchPath>packages\tbx;packages\tb2k;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
-		<Defines>MPEXCLUDE;TBX_UNICODE;$(Defines)</Defines>
+		<DCC_UnitSearchPath>packages\tbx;packages\tb2k;packages\my;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
 		<FinalOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</FinalOutputDir>
 		<ILINK_Description>Toolbar2000 -- TBX Extensions (Alex Denisov)</ILINK_Description>
 		<ILINK_GenerateImportLibrary>true</ILINK_GenerateImportLibrary>
 		<ILINK_GenerateLibFile>true</ILINK_GenerateLibFile>
-		<ILINK_LibraryPath>packages\tbx\;packages\tb2k;$(BDS)\lib\obj;$(ILINK_LibraryPath)</ILINK_LibraryPath>
-		<IncludePath>packages\tbx\;packages\tb2k;$(BDS)\include;$(BDS)\include\windows\vcl;$(IncludePath)</IncludePath>
+		<ILINK_LibraryPath>packages\tbx\;packages\tb2k;packages\my;$(BDS)\lib\obj;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+		<IncludePath>packages\tbx\;packages\tb2k;packages\my;$(BDS)\include;$(BDS)\include\windows\vcl;$(IncludePath)</IncludePath>
 		<IntermediateOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</IntermediateOutputDir>
 		<Multithreaded>true</Multithreaded>
 		<OutputExt>bpl</OutputExt>
@@ -115,6 +114,9 @@
 			<BuildOrder>2</BuildOrder>
 			<BuildOrder>10</BuildOrder>
 		</CppCompile>
+		<PackageImport Include="moje.bpi">
+			<BuildOrder>14</BuildOrder>
+		</PackageImport>
 		<PackageImport Include="rtl.bpi">
 			<BuildOrder>32</BuildOrder>
 			<BuildOrder>0</BuildOrder>

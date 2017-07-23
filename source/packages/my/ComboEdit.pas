@@ -623,7 +623,7 @@ var
   I: Integer;
 begin
   I := GetTextHeight;
-  Result := I + GetSystemMetrics(SM_CYBORDER) * 4 + 1;
+  Result := I + GetSystemMetricsForControl(Self, SM_CYBORDER) * 4 + 1;
 end;
 
 procedure TCustomComboEdit.CMFontChanged(var Message: TMessage);

@@ -13,7 +13,7 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
-static std::unique_ptr<TCriticalSection> IgnoredExceptionsCriticalSection(new TCriticalSection());
+static std::unique_ptr<TCriticalSection> IgnoredExceptionsCriticalSection(TraceInitPtr(new TCriticalSection()));
 typedef std::set<UnicodeString> TIgnoredExceptions;
 static TIgnoredExceptions IgnoredExceptions;
 //---------------------------------------------------------------------------
@@ -391,6 +391,11 @@ ExtException * __fastcall ExtException::Clone()
   return CloneFrom(this);
 }
 //---------------------------------------------------------------------------
+void __fastcall ExtException::Rethrow()
+{
+  throw ExtException(this, L"");
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall SysErrorMessageForError(int LastError)
 {
   UnicodeString Result;
@@ -439,7 +444,12 @@ ExtException * __fastcall EFatal::Clone()
 //---------------------------------------------------------------------------
 ExtException * __fastcall ESshTerminate::Clone()
 {
-  return new ESshTerminate(this, L"", Operation);
+  return new ESshTerminate(this, L"", Operation, TargetLocalPath, DestLocalFileName);
+}
+//---------------------------------------------------------------------------
+void __fastcall ESshTerminate::Rethrow()
+{
+  throw ESshTerminate(this, L"", Operation, TargetLocalPath, DestLocalFileName);
 }
 //---------------------------------------------------------------------------
 __fastcall ECallbackGuardAbort::ECallbackGuardAbort() : EAbort(L"callback abort")
@@ -501,6 +511,10 @@ void __fastcall RethrowException(Exception * E)
   else if (WellKnownException(E, NULL, NULL, NULL, true))
   {
     // noop, should never get here
+  }
+  else if (dynamic_cast<ExtException *>(E) != NULL)
+  {
+    dynamic_cast<ExtException *>(E)->Rethrow();
   }
   else
   {

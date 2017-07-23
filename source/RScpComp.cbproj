@@ -77,11 +77,6 @@
 		<TASM_Debugging>None</TASM_Debugging>
 	</PropertyGroup>
 	<ItemGroup>
-		<CppCompile Include="components\LogMemo.cpp">
-			<BuildOrder>5</BuildOrder>
-			<DependentOn>components\LogMemo.h</DependentOn>
-			<BuildOrder>2</BuildOrder>
-		</CppCompile>
 		<CppCompile Include="components\ThemePageControl.cpp">
 			<DependentOn>components\ThemePageControl.h</DependentOn>
 			<BuildOrder>3</BuildOrder>

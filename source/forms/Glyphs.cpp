@@ -20,46 +20,55 @@ TGlyphsModule * GlyphsModule;
 __fastcall TGlyphsModule::TGlyphsModule(TComponent* Owner)
   : TDataModule(Owner)
 {
-  int PixelsPerInch = Screen->PixelsPerInch;
-  TDataModule * ScaledModule;
-  if (PixelsPerInch >= 192)
-  {
-    ScaledModule = new TGlyphs192Module(Application);
-  }
-  else if (PixelsPerInch >= 144)
-  {
-    ScaledModule = new TGlyphs144Module(Application);
-  }
-  else if (PixelsPerInch >= 120)
-  {
-    ScaledModule = new TGlyphs120Module(Application);
-  }
-  else
-  {
-    // Do not have a separate 96 DPI module, as this module needs to
-    // have the images loaded as they are used on design time.
-    // Performance impact of loading 96 DPI images when they are not needed is not that big.
-    ScaledModule = NULL;
-  }
-
-  if (ScaledModule != NULL)
-  {
-    try
-    {
-      CopyDataModule(this, ScaledModule);
-
-      // Not all these are accessed by field name, but we copy all for consistency
-      ExplorerImages = DebugNotNull(dynamic_cast<TPngImageList *>(FindComponent(ExplorerImages->Name)));
-      SessionImages = DebugNotNull(dynamic_cast<TPngImageList *>(FindComponent(SessionImages->Name)));
-      QueueImages = DebugNotNull(dynamic_cast<TPngImageList *>(FindComponent(QueueImages->Name)));
-      LogImages = DebugNotNull(dynamic_cast<TPngImageList *>(FindComponent(LogImages->Name)));
-      ButtonImages = DebugNotNull(dynamic_cast<TImageList *>(FindComponent(ButtonImages->Name)));
-      DialogImages = DebugNotNull(dynamic_cast<TPngImageList *>(FindComponent(DialogImages->Name)));
-    }
-    __finally
-    {
-      delete ScaledModule;
-    }
-  }
+  FPixelsPerInch = USER_DEFAULT_SCREEN_DPI;
+  SetPixelsPerInch(Screen->PixelsPerInch);
 }
 //---------------------------------------------------------------------------
+// Contructor without scaling
+__fastcall TGlyphsModule::TGlyphsModule()
+  : TDataModule(Application)
+{
+}
+//---------------------------------------------------------------------------
+void __fastcall TGlyphsModule::SetPixelsPerInch(int PixelsPerInch)
+{
+  PixelsPerInch = NormalizePixelsPerInch(PixelsPerInch);
+  if (FPixelsPerInch != PixelsPerInch)
+  {
+    std::unique_ptr<TDataModule> ScaledModule;
+    if (PixelsPerInch >= 192)
+    {
+      ScaledModule.reset(new TGlyphs192Module(Application));
+    }
+    else if (PixelsPerInch >= 144)
+    {
+      ScaledModule.reset(new TGlyphs144Module(Application));
+    }
+    else if (PixelsPerInch >= 120)
+    {
+      ScaledModule.reset(new TGlyphs120Module(Application));
+    }
+    else
+    {
+      // Do not have a separate 96 DPI module, as this module needs to
+      // have the images loaded as they are used on design time.
+      // Performance impact of loading 96 DPI images when they are not needed is not that big.
+      ScaledModule.reset(new TGlyphsModule());
+    }
+
+    if (ScaledModule.get() != NULL)
+    {
+      for (int Index = 0; Index < ComponentCount; Index++)
+      {
+        TComponent * TargetComponent = Components[Index];
+        TComponent * SourceComponent = ScaledModule->FindComponent(TargetComponent->Name);
+        if (DebugAlwaysTrue(SourceComponent != NULL))
+        {
+          TargetComponent->Assign(SourceComponent);
+        }
+      }
+    }
+
+    FPixelsPerInch = PixelsPerInch;
+  }
+}

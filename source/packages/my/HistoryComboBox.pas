@@ -113,9 +113,9 @@ begin
   if soDropDown in SaveOn then SaveToHistory;
 
   // taken from TIECustomComboBox:
-  ItemWidth := GetMaxItemWidth + ScaleByPixelsPerInch(8);
-  if Items.Count > DropDowncount then
-    Inc(ItemWidth, GetSystemMetrics(SM_CXVSCROLL));
+  ItemWidth := GetMaxItemWidth + ScaleByPixelsPerInch(8, Self);
+  if Items.Count > DropDownCount then
+    Inc(ItemWidth, GetSystemMetricsForControl(Self, SM_CXVSCROLL));
   Self.Perform(CB_SETDROPPEDWIDTH, ItemWidth, 0);
 end;
 

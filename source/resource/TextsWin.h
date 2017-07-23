@@ -156,6 +156,7 @@
 #define CLOSE_BUTTON            1366
 #define EXTENSION_UNTRUSTED     1367
 #define EXTENSION_NOT_LATEST    1368
+#define CUSTOM_INI_FILE_OVERWRITE 1369
 
 #define WIN_INFORMATION_STRINGS 1400
 #define COMPARE_NO_DIFFERENCES  1402
@@ -231,7 +232,7 @@
 #define MASK_HELP               1521
 #define UTF8_NAME               1522
 #define USAGE_DATA2             1523
-#define USAGE_DATA_NONE         1524
+#define USAGE_DATA_NONE2        1524
 #define SHORTCUT_INFO_TIP_FOLDER 1525
 #define SHORTCUT_INFO_TIP_WORKSPACE 1526
 #define JUMPLIST_WORKSPACES     1527
@@ -281,12 +282,13 @@
 #define KEYGEN_SAVED            1571
 #define USAGE_CERTIFICATE       1572
 #define USAGE_SESSIONNAME       1573
+#define USAGE_REFRESH           1574
+#define USAGE_LOGSIZE           1575
+#define PASSWORD_CHANGED        1576
+#define OPEN_TARGET_FOLDER      1577
+#define OPEN_DOWNLOADED_FILE    1578
 
 #define WIN_FORMS_STRINGS       1600
-#define LOG_NOLOG               1601
-#define LOG_NOLOGFILE           1602
-#define LOG_NOLOGCAPTION        1603
-#define LOG_CAPTION             1604
 #define COPY_FILE               1605
 #define COPY_FILES              1606
 #define COPY_TOLOCAL            1609
@@ -588,6 +590,10 @@
 #define EXTENSION_SESSIONLOG_FILE 1980
 #define EXTENSION_SESSIONLOG_CAPTION 1981
 #define EXTENSION_SESSIONLOG_FILTER 1982
+#define USAGE_CAPTION           1983
+#define USAGE_FILTER            1984
+#define USAGE_COPY              1985
+#define IMPORT_KNOWNHOSTS_INFO_TIP 1986
 
 // 2xxx is reserved for TextsFileZilla.h
 
@@ -611,5 +617,7 @@
 #define DOCUMENTATION_SEARCH_URL3 4012
 #define ERROR_REPORT_URL2       4013
 #define UPGRADE_URL             4014
+
+#define EXTENSION_STRINGS       5000
 
 #endif // TextsWin

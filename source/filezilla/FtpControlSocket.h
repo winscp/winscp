@@ -53,7 +53,7 @@ public:
   void FtpCommand(LPCTSTR pCommand);
   void Disconnect();
   void FileTransfer(t_transferfile * transferfile = 0, BOOL bFinish = FALSE, int nError = 0);
-  void Delete(CString filename, const CServerPath & path);
+  void Delete(CString filename, const CServerPath & path, bool filenameOnly);
   void Rename(CString oldName, CString newName, const CServerPath & path, const CServerPath & newPath);
   void MakeDir(const CServerPath & path);
   void RemoveDir(CString dirname, const CServerPath & path);

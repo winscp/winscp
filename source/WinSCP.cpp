@@ -12,6 +12,7 @@ USEFORM("forms\ScpExplorer.cpp", ScpExplorerForm);
 #include <ProgParams.h>
 #include <VCLCommon.h>
 #include <Setup.h>
+#include <PuttyTools.h>
 //---------------------------------------------------------------------------
 WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
 {

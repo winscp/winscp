@@ -116,6 +116,14 @@ namespace WinSCP
             }
         }
 
+        public void WriteLineLevel(int level, string line, params object[] args)
+        {
+            if (LogLevel >= level)
+            {
+                WriteLine(line, args);
+            }
+        }
+
         private static int GetThread()
         {
             return Thread.CurrentThread.ManagedThreadId;
@@ -229,14 +237,30 @@ namespace WinSCP
             }
         }
 
-        public Callstack CreateCallstack()
+        public Callstack CreateCallstack(object token = null)
         {
-            return new Callstack(this);
+            return new Callstack(this, token);
         }
 
         public Callstack CreateCallstackAndLock()
         {
             return new CallstackAndLock(this, _lock);
+        }
+
+        public Exception WriteException(Exception e)
+        {
+            lock (_logLock)
+            {
+                if (Logging)
+                {
+                    DoWriteLine(string.Format(CultureInfo.CurrentCulture, "Exception: {0}", e));
+                    if (LogLevel >= 1)
+                    {
+                        DoWriteLine(new StackTrace().ToString());
+                    }
+                }
+            }
+            return e;
         }
 
         private int GetIndent()
@@ -284,16 +308,21 @@ namespace WinSCP
 
         private void WriteEnvironmentInfo()
         {
-            string path = GetAssemblyFilePath();
-            FileVersionInfo version = string.IsNullOrEmpty(path) ? null : FileVersionInfo.GetVersionInfo(path);
             Assembly assembly = Assembly.GetExecutingAssembly();
-            WriteLine("Executing Assembly: {0}; Path: {1}; Location: {2}; Product: {3}", assembly, path, assembly.Location, ((version != null) ? version.ProductVersion : "unknown"));
-            WriteLine("Entry Assembly: {0}", Assembly.GetEntryAssembly());
+            WriteLine("Executing assembly: {0}", assembly);
+            WriteLine("Executing assembly codebase: {0}", (assembly.CodeBase ?? "unknown"));
+            WriteLine("Executing assembly location: {0}", (assembly.Location ?? "unknown"));
+            Assembly entryAssembly = Assembly.GetEntryAssembly();
+            WriteLine("Entry Assembly: {0}", (entryAssembly != null ? entryAssembly.ToString() : "unmanaged"));
             WriteLine("Operating system: {0}", Environment.OSVersion);
             WriteLine("User: {0}@{1}@{2}; Interactive: {3}", Environment.UserName, Environment.UserDomainName, Environment.MachineName, Environment.UserInteractive);
             WriteLine("Runtime: {0}", Environment.Version);
             WriteLine("Console encoding: Input: {0} ({1}); Output: {2} ({3})", Console.InputEncoding.EncodingName, Console.InputEncoding.CodePage, Console.OutputEncoding.EncodingName, Console.OutputEncoding.CodePage);
             WriteLine("Working directory: {0}", Environment.CurrentDirectory);
+            string path = GetAssemblyFilePath();
+            FileVersionInfo version = string.IsNullOrEmpty(path) ? null : FileVersionInfo.GetVersionInfo(path);
+            WriteLine("Assembly path: {0}", path);
+            WriteLine("Assembly product version: {0}", ((version != null) ? version.ProductVersion : "unknown"));
         }
 
         public static string LastWin32ErrorMessage()
@@ -305,7 +334,7 @@ namespace WinSCP
         {
             if ((value < 0) || (value > 2))
             {
-                throw new ArgumentOutOfRangeException(string.Format(CultureInfo.CurrentCulture, "Logging level has to be in range 0-2"));
+                throw WriteException(new ArgumentOutOfRangeException(string.Format(CultureInfo.CurrentCulture, "Logging level has to be in range 0-2")));
             }
             _logLevel = value;
         }

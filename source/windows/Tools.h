@@ -10,8 +10,10 @@
 #include <Vcl.Graphics.hpp>
 //---------------------------------------------------------------------------
 void __fastcall CenterFormOn(TForm * Form, TControl * CenterOn);
-bool __fastcall ExecuteShellAndWait(const UnicodeString Path, const UnicodeString Params);
-bool __fastcall ExecuteShellAndWait(const UnicodeString Command);
+void __fastcall ExecuteProcessChecked(
+  const UnicodeString & Command, const UnicodeString & HelpKeyword, UnicodeString * Output);
+void __fastcall ExecuteProcessCheckedAndWait(
+  const UnicodeString & Command, const UnicodeString & HelpKeyword, UnicodeString * Output);
 bool __fastcall IsKeyPressed(int VirtualKey);
 bool __fastcall UseAlternativeFunction();
 bool __fastcall OpenInNewWindow();
@@ -25,7 +27,7 @@ IShellLink * __fastcall CreateDesktopSessionShortCut(
   int SpecialFolder = -1, int IconIndex = SITE_ICON, bool Return = false);
 UnicodeString __fastcall GetListViewStr(TListView * ListView);
 void __fastcall LoadListViewStr(TListView * ListView, UnicodeString LayoutStr);
-void __fastcall RestoreForm(UnicodeString Data, TForm * Form);
+void __fastcall RestoreForm(UnicodeString Data, TForm * Form, bool PositionOnly = false);
 UnicodeString __fastcall StoreForm(TCustomForm * Form);
 void __fastcall RestoreFormSize(UnicodeString Data, TForm * Form);
 UnicodeString __fastcall StoreFormSize(TForm * Form);
@@ -41,6 +43,8 @@ void __fastcall ValidateMaskEdit(TMemo * Edit, bool Directory);
 bool __fastcall IsWinSCPUrl(const UnicodeString & Url);
 UnicodeString __fastcall SecureUrl(const UnicodeString & Url);
 void __fastcall OpenBrowser(UnicodeString URL);
+void __fastcall OpenFileInExplorer(const UnicodeString & Path);
+void __fastcall OpenFolderInExplorer(const UnicodeString & Path);
 void __fastcall ShowHelp(const UnicodeString & HelpKeyword);
 bool __fastcall IsFormatInClipboard(unsigned int Format);
 bool __fastcall TextFromClipboard(UnicodeString & Text, bool Trim);

@@ -116,7 +116,6 @@ private:
   static bool __fastcall MatchesMasks(const UnicodeString FileName, bool Directory,
     const UnicodeString Path, const TParams * Params, const TMasks & Masks, bool Recurse);
   static inline bool __fastcall MatchesMaskMask(const TMaskMask & MaskMask, const UnicodeString & Str);
-  static inline bool __fastcall IsAnyMask(const UnicodeString & Mask);
   void __fastcall ThrowError(int Start, int End);
 };
 //---------------------------------------------------------------------------
@@ -135,6 +134,8 @@ friend class TInteractiveCustomCommand;
 
 public:
   TCustomCommand();
+  // Needs an explicit virtual destructor, as is has virtual methods
+  virtual ~TCustomCommand() {}
 
   UnicodeString __fastcall Complete(const UnicodeString & Command, bool LastPass);
   virtual void __fastcall Validate(const UnicodeString & Command);
@@ -235,5 +236,6 @@ private:
 //---------------------------------------------------------------------------
 typedef TFileCustomCommand TRemoteCustomCommand;
 extern UnicodeString FileMasksDelimiters;
+extern UnicodeString AnyMask;
 //---------------------------------------------------------------------------
 #endif
