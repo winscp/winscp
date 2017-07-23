@@ -1592,7 +1592,7 @@ object FileFindDialog: TFileFindDialog
       OnExecute = DeleteActionExecute
     end
     object FocusAction: TAction
-      Caption = '&Focus'
+      Caption = 'Fo&cus'
       OnExecute = FocusActionExecute
     end
     object SelectAllAction: TAction
@@ -1606,7 +1606,7 @@ object FileFindDialog: TFileFindDialog
       OnExecute = CopyActionExecute
     end
     object DownloadAction: TAction
-      Caption = 'Down&load'
+      Caption = 'Down&load...'
       ShortCut = 116
       OnExecute = DownloadActionExecute
     end
