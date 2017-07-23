@@ -8,7 +8,6 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
   ParentFont = True
   KeyPreview = True
   OldCreateOrder = False
-  OnActivate = FormActivate
   OnClose = FormClose
   OnCloseQuery = FormCloseQuery
   OnConstrainedResize = FormConstrainedResize
@@ -87,6 +86,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       UnixColProperties.ExtWidth = 20
       UnixColProperties.TypeVisible = False
       OnDDDragFileName = RemoteFileControlDDDragFileName
+      OnBusy = DirViewBusy
       OnGetSelectFilter = RemoteDirViewGetSelectFilter
       OnSelectItem = DirViewSelectItem
       OnLoaded = DirViewLoaded
@@ -226,6 +226,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
         Top = 0
         Caption = 'QueueToolbar'
         Images = GlyphsModule.ExplorerImages
+        Options = [tboShowHint]
         ParentShowHint = False
         ShowHint = True
         TabOrder = 0
@@ -278,14 +279,15 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
             RadioItem = True
           end
           object TBXItem225: TTBXItem
-            Action = NonVisualDataModule.QueueDisconnectOnceEmptyAction
+            Action = NonVisualDataModule.QueueDisconnectOnceEmptyAction2
             RadioItem = True
           end
           object TBXItem173: TTBXItem
-            Action = NonVisualDataModule.QueueSuspendOnceEmptyAction
+            Action = NonVisualDataModule.QueueSuspendOnceEmptyAction2
+            RadioItem = True
           end
           object TBXItem226: TTBXItem
-            Action = NonVisualDataModule.QueueShutDownOnceEmptyAction
+            Action = NonVisualDataModule.QueueShutDownOnceEmptyAction2
             RadioItem = True
           end
         end
@@ -307,11 +309,18 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
     TabOrder = 3
     TabStop = False
     OnChange = SessionsPageControlChange
+    OnContextPopup = SessionsPageControlContextPopup
     OnDragDrop = SessionsPageControlDragDrop
     OnDragOver = SessionsPageControlDragOver
     OnMouseDown = SessionsPageControlMouseDown
     object TabSheet1: TTabSheet
       Caption = 'TabSheet1'
     end
+  end
+  object ApplicationEvents: TApplicationEvents
+    OnMinimize = ApplicationMinimize
+    OnRestore = ApplicationRestore
+    Left = 88
+    Top = 200
   end
 end

@@ -18,7 +18,10 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
-// See http://www.iana.org/assignments/hash-function-text-names/hash-function-text-names.xhtml
+const wchar_t * AutoSwitchNames = L"On;Off;Auto";
+const wchar_t * NotAutoSwitchNames = L"Off;On;Auto";
+//---------------------------------------------------------------------------
+// See https://www.iana.org/assignments/hash-function-text-names/hash-function-text-names.xhtml
 const UnicodeString Sha1ChecksumAlg(L"sha-1");
 const UnicodeString Sha224ChecksumAlg(L"sha-224");
 const UnicodeString Sha256ChecksumAlg(L"sha-256");
@@ -27,6 +30,9 @@ const UnicodeString Sha512ChecksumAlg(L"sha-512");
 const UnicodeString Md5ChecksumAlg(L"md5");
 // Not defined by IANA
 const UnicodeString Crc32ChecksumAlg(L"crc32");
+//---------------------------------------------------------------------------
+const UnicodeString SshFingerprintType(L"ssh");
+const UnicodeString TlsFingerprintType(L"tls");
 //---------------------------------------------------------------------------
 __fastcall TConfiguration::TConfiguration()
 {
@@ -37,6 +43,7 @@ __fastcall TConfiguration::TConfiguration()
   FApplicationInfo = NULL;
   FUsage = new TUsage(this);
   FDefaultCollectUsage = false;
+  FScripting = false;
 
   UnicodeString RandomSeedPath;
   if (!GetEnvironmentVariable(L"APPDATA").IsEmpty())
@@ -108,6 +115,7 @@ void __fastcall TConfiguration::Default()
   UpdateActualLogProtocol();
   FLogActions = false;
   FPermanentLogActions = false;
+  FLogActionsRequired = false;
   FActionsLogFileName = L"%TEMP%\\!S.xml";
   FPermanentActionsLogFileName = FActionsLogFileName;
   FProgramIniPathWrittable = -1;
@@ -117,7 +125,7 @@ void __fastcall TConfiguration::Default()
 //---------------------------------------------------------------------------
 __fastcall TConfiguration::~TConfiguration()
 {
-  assert(!FUpdating);
+  DebugAssert(!FUpdating);
   if (FApplicationInfo) FreeFileInfo(FApplicationInfo);
   delete FCriticalSection;
   delete FUsage;
@@ -148,7 +156,7 @@ THierarchicalStorage * TConfiguration::CreateScpStorage(bool & SessionList)
   }
   else if (Storage == stNul)
   {
-    Result = new TIniFileStorage(L"nul");
+    Result = new TIniFileStorage(INI_NUL);
   }
   else
   {
@@ -571,6 +579,40 @@ void __fastcall TConfiguration::NeverShowBanner(const UnicodeString SessionKey,
   }
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall TConfiguration::FormatFingerprintKey(const UnicodeString & SiteKey, const UnicodeString & FingerprintType)
+{
+  return FORMAT(L"%s:%s", (SiteKey, FingerprintType));
+}
+//---------------------------------------------------------------------------
+void __fastcall TConfiguration::RememberLastFingerprint(const UnicodeString & SiteKey, const UnicodeString & FingerprintType, const UnicodeString & Fingerprint)
+{
+  std::unique_ptr<THierarchicalStorage> Storage(CreateConfigStorage());
+  Storage->AccessMode = smReadWrite;
+
+  if (Storage->OpenSubKey(ConfigurationSubKey, true) &&
+      Storage->OpenSubKey(L"LastFingerprints", true))
+  {
+    UnicodeString FingerprintKey = FormatFingerprintKey(SiteKey, FingerprintType);
+    Storage->WriteString(FingerprintKey, Fingerprint);
+  }
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TConfiguration::LastFingerprint(const UnicodeString & SiteKey, const UnicodeString & FingerprintType)
+{
+  UnicodeString Result;
+
+  std::unique_ptr<THierarchicalStorage> Storage(CreateConfigStorage());
+  Storage->AccessMode = smRead;
+
+  if (Storage->OpenSubKey(ConfigurationSubKey, false) &&
+      Storage->OpenSubKey(L"LastFingerprints", false))
+  {
+    UnicodeString FingerprintKey = FormatFingerprintKey(SiteKey, FingerprintType);
+    Result = Storage->ReadString(FingerprintKey, L"");
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall TConfiguration::Changed()
 {
   if (FUpdating == 0)
@@ -594,12 +636,12 @@ void __fastcall TConfiguration::BeginUpdate()
   }
   FUpdating++;
   // Greater value would probably indicate some nesting problem in code
-  assert(FUpdating < 6);
+  DebugAssert(FUpdating < 6);
 }
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::EndUpdate()
 {
-  assert(FUpdating > 0);
+  DebugAssert(FUpdating > 0);
   FUpdating--;
   if ((FUpdating == 0) && FChanged)
   {
@@ -716,29 +758,6 @@ UnicodeString __fastcall TConfiguration::DecryptPassword(RawByteString Password,
 RawByteString __fastcall TConfiguration::StronglyRecryptPassword(RawByteString Password, UnicodeString /*Key*/)
 {
   return Password;
-}
-//---------------------------------------------------------------------------
-UnicodeString __fastcall TConfiguration::GetOSVersionStr()
-{
-  UnicodeString Result;
-  OSVERSIONINFO OSVersionInfo;
-  OSVersionInfo.dwOSVersionInfoSize = sizeof(OSVersionInfo);
-  if (GetVersionEx(&OSVersionInfo) != 0)
-  {
-    Result = FORMAT(L"%d.%d.%d", (int(OSVersionInfo.dwMajorVersion),
-      int(OSVersionInfo.dwMinorVersion), int(OSVersionInfo.dwBuildNumber)));
-    UnicodeString CSDVersion = OSVersionInfo.szCSDVersion;
-    if (!CSDVersion.IsEmpty())
-    {
-      Result += L" " + CSDVersion;
-    }
-    UnicodeString ProductName = WindowsProductName();
-    if (!ProductName.IsEmpty())
-    {
-      Result += L" - " + ProductName;
-    }
-  }
-  return Result;
 }
 //---------------------------------------------------------------------------
 TVSFixedFileInfo *__fastcall TConfiguration::GetFixedApplicationInfo()
@@ -870,7 +889,7 @@ UnicodeString __fastcall TConfiguration::GetVersionStr()
     UnicodeString FullVersion = Version;
 
     UnicodeString AReleaseType = GetReleaseType();
-    if (ALWAYS_TRUE(!AReleaseType.IsEmpty()) &&
+    if (DebugAlwaysTrue(!AReleaseType.IsEmpty()) &&
         !SameText(AReleaseType, L"stable") &&
         !SameText(AReleaseType, L"development"))
     {
@@ -891,12 +910,26 @@ UnicodeString __fastcall TConfiguration::GetVersionStr()
   }
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TConfiguration::GetVersion()
+UnicodeString __fastcall TConfiguration::GetFileVersion(const UnicodeString & FileName)
+{
+  UnicodeString Result;
+  void * FileInfo = CreateFileInfo(FileName);
+  try
+  {
+    Result = GetFileVersion(GetFixedFileInfo(FileInfo));
+  }
+  __finally
+  {
+    FreeFileInfo(FileInfo);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TConfiguration::GetFileVersion(TVSFixedFileInfo * Info)
 {
   TGuard Guard(FCriticalSection);
   try
   {
-    TVSFixedFileInfo * Info = FixedApplicationInfo;
     UnicodeString Result =
       FormatVersion(
         HIWORD(Info->dwFileVersionMS),
@@ -906,8 +939,13 @@ UnicodeString __fastcall TConfiguration::GetVersion()
   }
   catch (Exception &E)
   {
-    throw ExtException(&E, L"Can't get application version");
+    throw ExtException(&E, L"Can't get file version");
   }
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TConfiguration::GetVersion()
+{
+  return GetFileVersion(FixedApplicationInfo);
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TConfiguration::GetFileFileInfoString(const UnicodeString Key,
@@ -927,7 +965,7 @@ UnicodeString __fastcall TConfiguration::GetFileFileInfoString(const UnicodeStri
     }
     else
     {
-      assert(!FileName.IsEmpty());
+      DebugAssert(!FileName.IsEmpty());
     }
   }
   __finally
@@ -1152,6 +1190,51 @@ TStorage __fastcall TConfiguration::GetStorage()
   }
   return FStorage;
 }
+//---------------------------------------------------------------------
+TStoredSessionList * __fastcall TConfiguration::SelectFilezillaSessionsForImport(
+  TStoredSessionList * Sessions, UnicodeString & Error)
+{
+  std::unique_ptr<TStoredSessionList> ImportSessionList(new TStoredSessionList(true));
+  ImportSessionList->DefaultSettings = Sessions->DefaultSettings;
+
+  UnicodeString AppDataPath = GetShellFolderPath(CSIDL_APPDATA);
+  UnicodeString FilezillaSiteManagerFile =
+    IncludeTrailingBackslash(AppDataPath) + L"FileZilla\\sitemanager.xml";
+
+  if (FileExists(ApiPath(FilezillaSiteManagerFile)))
+  {
+    ImportSessionList->ImportFromFilezilla(FilezillaSiteManagerFile);
+
+    if (ImportSessionList->Count > 0)
+    {
+      ImportSessionList->SelectSessionsToImport(Sessions, true);
+    }
+    else
+    {
+      Error = FMTLOAD(FILEZILLA_NO_SITES, (FilezillaSiteManagerFile));
+    }
+  }
+  else
+  {
+    Error = FMTLOAD(FILEZILLA_SITE_MANAGER_NOT_FOUND, (FilezillaSiteManagerFile));
+  }
+
+  return ImportSessionList.release();
+}
+//---------------------------------------------------------------------
+bool __fastcall TConfiguration::AnyFilezillaSessionForImport(TStoredSessionList * Sessions)
+{
+  try
+  {
+    UnicodeString Error;
+    std::unique_ptr<TStoredSessionList> Sesssions(SelectFilezillaSessionsForImport(Sessions, Error));
+    return (Sesssions->Count > 0);
+  }
+  catch (...)
+  {
+    return false;
+  }
+}
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::SetRandomSeedFile(UnicodeString value)
 {
@@ -1179,6 +1262,7 @@ void __fastcall TConfiguration::SetRandomSeedFile(UnicodeString value)
 //---------------------------------------------------------------------
 UnicodeString __fastcall TConfiguration::GetRandomSeedFileName()
 {
+  // StripPathQuotes should not be needed as we do not feed quotes anymore
   return StripPathQuotes(ExpandEnvironmentVariables(FRandomSeedFile)).Trim();
 }
 //---------------------------------------------------------------------
@@ -1235,6 +1319,7 @@ void __fastcall TConfiguration::TemporaryActionsLogging(const UnicodeString ALog
 void __fastcall TConfiguration::TemporaryLogProtocol(int ALogProtocol)
 {
   FLogProtocol = ALogProtocol;
+  UpdateActualLogProtocol();
 }
 //---------------------------------------------------------------------
 void __fastcall TConfiguration::TemporaryLogSensitive(bool ALogSensitive)
@@ -1437,6 +1522,11 @@ void __fastcall TConfiguration::SetCacheDirectoryChangesMaxSize(int value)
 void __fastcall TConfiguration::SetShowFtpWelcomeMessage(bool value)
 {
   SET_CONFIG_PROPERTY(ShowFtpWelcomeMessage);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TConfiguration::GetPersistent()
+{
+  return (Storage != stNul);
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

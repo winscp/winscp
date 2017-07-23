@@ -86,7 +86,7 @@
   CPU386              Defined when target platform is native x86 (win32)
   CPUx86_64           Defined when target platform is native x86_64 (win64)
   CPU32               Defined when target is 32-bit
-  CPU64	              Defined when target is 64-bit
+  CPU64               Defined when target is 64-bit
   CPUASM              Defined when target assembler is available
 
 - Visual library Directives
@@ -1331,7 +1331,7 @@
   {$DEFINE SUPPORTS_SINGLE}
   {$DEFINE SUPPORTS_DOUBLE}
   {$DEFINE SUPPORTS_EXTENDED}
-  {$DEFINE SUPPORTS_PACKAGES} 
+  {$DEFINE SUPPORTS_PACKAGES}
 {$ENDIF COMPILER1_UP}
 
 {$IFDEF COMPILER2_UP}

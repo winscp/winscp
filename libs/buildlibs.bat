@@ -1,4 +1,5 @@
 @echo off
+set BUILDTOOLS_PATH=%1
 if not exist lib mkdir lib
 
 rem ==== OpenSSL ====
@@ -60,5 +61,24 @@ exit
 )
 
 :SKIP_NEON
+
+rem ==== PuTTY VS ====
+
+if exist lib\PuTTYVS.lib (
+echo PuTTYVS already built
+goto SKIP_PUTTYVS
+)
+
+echo Building PuTTYVS ...
+cd puttyvs
+call build.bat %BUILDTOOLS_PATH%
+cd ..
+
+if not exist lib\PuTTYVS.lib (
+echo PuTTYVS build failed
+exit
+)
+
+:SKIP_PUTTYVS
 
 echo All done

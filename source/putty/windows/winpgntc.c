@@ -4,15 +4,16 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 
 #include "putty.h"
+#include "pageant.h" /* for AGENT_MAX_MSGLEN */
 
 #ifndef NO_SECURITY
-#include <aclapi.h>
+#include "winsecur.h"
 #endif
 
 #define AGENT_COPYDATA_ID 0x804e50ba   /* random goop */
-#define AGENT_MAX_MSGLEN  8192
 
 int agent_exists(void)
 {
@@ -24,136 +25,14 @@ int agent_exists(void)
 	return TRUE;
 }
 
-/*
- * Unfortunately, this asynchronous agent request mechanism doesn't
- * appear to work terribly well. I'm going to comment it out for
- * the moment, and see if I can come up with a better one :-/
- */
-#ifdef WINDOWS_ASYNC_AGENT
-
-struct agent_query_data {
-    COPYDATASTRUCT cds;
-    unsigned char *mapping;
-    HANDLE handle;
-    char *mapname;
-    HWND hwnd;
-    void (*callback)(void *, void *, int);
-    void *callback_ctx;
-};
-
-DWORD WINAPI agent_query_thread(LPVOID param)
+void agent_cancel_query(agent_pending_query *q)
 {
-    struct agent_query_data *data = (struct agent_query_data *)param;
-    unsigned char *ret;
-    int id, retlen;
-
-    id = SendMessage(data->hwnd, WM_COPYDATA, (WPARAM) NULL,
-		     (LPARAM) &data->cds);
-    ret = NULL;
-    if (id > 0) {
-	retlen = 4 + GET_32BIT(data->mapping);
-	ret = snewn(retlen, unsigned char);
-	if (ret) {
-	    memcpy(ret, data->mapping, retlen);
-	}
-    }
-    if (!ret)
-	retlen = 0;
-    UnmapViewOfFile(data->mapping);
-    CloseHandle(data->handle);
-    sfree(data->mapname);
-
-    agent_schedule_callback(data->callback, data->callback_ctx, ret, retlen);
-
-    return 0;
+    assert(0 && "Windows agent queries are never asynchronous!");
 }
 
-#endif
-
-/*
- * Dynamically load advapi32.dll for SID manipulation. In its absence,
- * we degrade gracefully.
- */
-#ifndef NO_SECURITY
-int advapi_initialised = FALSE;
-static HMODULE advapi;
-DECL_WINDOWS_FUNCTION(static, BOOL, OpenProcessToken,
-		      (HANDLE, DWORD, PHANDLE));
-DECL_WINDOWS_FUNCTION(static, BOOL, GetTokenInformation,
-		      (HANDLE, TOKEN_INFORMATION_CLASS,
-                       LPVOID, DWORD, PDWORD));
-DECL_WINDOWS_FUNCTION(static, BOOL, InitializeSecurityDescriptor,
-		      (PSECURITY_DESCRIPTOR, DWORD));
-DECL_WINDOWS_FUNCTION(static, BOOL, SetSecurityDescriptorOwner,
-		      (PSECURITY_DESCRIPTOR, PSID, BOOL));
-DECL_WINDOWS_FUNCTION(, DWORD, GetSecurityInfo,
-		      (HANDLE, SE_OBJECT_TYPE, SECURITY_INFORMATION,
-		       PSID *, PSID *, PACL *, PACL *,
-		       PSECURITY_DESCRIPTOR *));
-int init_advapi(void)
-{
-    advapi = load_system32_dll("advapi32.dll");
-    return advapi &&
-	GET_WINDOWS_FUNCTION(advapi, GetSecurityInfo) &&
-        GET_WINDOWS_FUNCTION(advapi, OpenProcessToken) &&
-	GET_WINDOWS_FUNCTION(advapi, GetTokenInformation) &&
-	GET_WINDOWS_FUNCTION(advapi, InitializeSecurityDescriptor) &&
-	GET_WINDOWS_FUNCTION(advapi, SetSecurityDescriptorOwner);
-}
-
-PSID get_user_sid(void)
-{
-    HANDLE proc = NULL, tok = NULL;
-    TOKEN_USER *user = NULL;
-    DWORD toklen, sidlen;
-    PSID sid = NULL, ret = NULL;
-
-    if ((proc = OpenProcess(MAXIMUM_ALLOWED, FALSE,
-                            GetCurrentProcessId())) == NULL)
-        goto cleanup;
-
-    if (!p_OpenProcessToken(proc, TOKEN_QUERY, &tok))
-        goto cleanup;
-
-    if (!p_GetTokenInformation(tok, TokenUser, NULL, 0, &toklen) &&
-        GetLastError() != ERROR_INSUFFICIENT_BUFFER)
-        goto cleanup;
-
-    if ((user = (TOKEN_USER *)LocalAlloc(LPTR, toklen)) == NULL)
-        goto cleanup;
-
-    if (!p_GetTokenInformation(tok, TokenUser, user, toklen, &toklen))
-        goto cleanup;
-
-    sidlen = GetLengthSid(user->User.Sid);
-
-    sid = (PSID)smalloc(sidlen);
-
-    if (!CopySid(sidlen, sid, user->User.Sid))
-        goto cleanup;
-
-    /* Success. Move sid into the return value slot, and null it out
-     * to stop the cleanup code freeing it. */
-    ret = sid;
-    sid = NULL;
-
-  cleanup:
-    if (proc != NULL)
-        CloseHandle(proc);
-    if (tok != NULL)
-        CloseHandle(tok);
-    if (user != NULL)
-        LocalFree(user);
-    if (sid != NULL)
-        sfree(sid);
-
-    return ret;
-}
-
-#endif
-
-int agent_query(void *in, int inlen, void **out, int *outlen,
-		void (*callback)(void *, void *, int), void *callback_ctx)
+agent_pending_query *agent_query(
+    void *in, int inlen, void **out, int *outlen,
+    void (*callback)(void *, void *, int), void *callback_ctx)
 {
     HWND hwnd;
     char *mapname;
@@ -170,12 +49,12 @@ int agent_query(void *in, int inlen, void **out, int *outlen,
 
     hwnd = FindWindow("Pageant", "Pageant");
     if (!hwnd)
-	return 1;		       /* *out == NULL, so failure */
+	return NULL;		       /* *out == NULL, so failure */
     mapname = dupprintf("PageantRequest%08x", (unsigned)GetCurrentThreadId());
 
     psa = NULL;
 #ifndef NO_SECURITY
-    if (advapi_initialised || init_advapi()) {
+    if (got_advapi()) {
         /*
          * Make the file mapping we create for communication with
          * Pageant owned by the user SID rather than the default. This
@@ -211,38 +90,13 @@ int agent_query(void *in, int inlen, void **out, int *outlen,
 				0, AGENT_MAX_MSGLEN, mapname);
     if (filemap == NULL || filemap == INVALID_HANDLE_VALUE) {
         sfree(mapname);
-	return 1;		       /* *out == NULL, so failure */
+	return NULL;		       /* *out == NULL, so failure */
     }
     p = MapViewOfFile(filemap, FILE_MAP_WRITE, 0, 0, 0);
     memcpy(p, in, inlen);
     cds.dwData = AGENT_COPYDATA_ID;
     cds.cbData = 1 + strlen(mapname);
     cds.lpData = mapname;
-#ifdef WINDOWS_ASYNC_AGENT
-    if (callback != NULL && !(flags & FLAG_SYNCAGENT)) {
-	/*
-	 * We need an asynchronous Pageant request. Since I know of
-	 * no way to stop SendMessage from blocking the thread it's
-	 * called in, I see no option but to start a fresh thread.
-	 * When we're done we'll PostMessage the result back to our
-	 * main window, so that the callback is done in the primary
-	 * thread to avoid concurrency.
-	 */
-	struct agent_query_data *data = snew(struct agent_query_data);
-	DWORD threadid;
-	data->mapping = p;
-	data->handle = filemap;
-	data->mapname = mapname;
-	data->callback = callback;
-	data->callback_ctx = callback_ctx;
-	data->cds = cds;	       /* structure copy */
-	data->hwnd = hwnd;
-	if (CreateThread(NULL, 0, agent_query_thread, data, 0, &threadid))
-	    return 0;
-	sfree(mapname);
-	sfree(data);
-    }
-#endif
 
     /*
      * The user either passed a null callback (indicating that the
@@ -264,6 +118,5 @@ int agent_query(void *in, int inlen, void **out, int *outlen,
     sfree(mapname);
     if (psd)
         LocalFree(psd);
-    sfree(usersid);
-    return 1;
+    return NULL;
 }

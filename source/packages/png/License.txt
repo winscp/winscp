@@ -70,4 +70,3 @@ system(s).
 
 Martijn Saly
 martijn@thany.org
-http://www.thany.org/

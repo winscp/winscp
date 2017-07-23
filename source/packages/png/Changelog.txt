@@ -18,7 +18,7 @@ PngComponents 1.0 RC3:
 - PngImageList: Fixed memory leak in CopyPngs.
 - PngImageList: Added BeginUpdate and EndUpdate methods, to temporarily prevent the internal imagelist from being updated.
 - PngImageList: The patched methods are more efficient, because they now manipulate the internal imagelist directly, rather than relying on CopyPngs.
-- PngImageList: Added calls to Change in the patched methods. 
+- PngImageList: Added calls to Change in the patched methods.
 
 PngComponents 1.0 RC2:
 - Editor: Fixed endless loop when repetitively removing the last image in a list of at least 3 (thanks to Aleksander Oven).
@@ -39,7 +39,7 @@ PngComponents 1.0 RC2:
 - Common: Added functions CreatePNG and CreatePNGMasked, which create a new PNG object based on a bitmap and a (color or bitmap) mask.
 - Common: Added function CopyImageFromImageList, which effectively copies an image from a normal imagelist or a PngImageList into a PNG.
 - Common: Added function SlicePNG for future use. This slices a large PNG object into smaller, equally-sized ones.
-- Common: Added zlib version 1.2.2 to the PNG package (thanks to Vladimir Bochkarev). 
+- Common: Added zlib version 1.2.2 to the PNG package (thanks to Vladimir Bochkarev).
 
 PngComponents 1.0 RC1:
 - Initial public release

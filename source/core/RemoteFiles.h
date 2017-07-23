@@ -145,6 +145,9 @@ public:
   bool __fastcall IsTimeShiftingApplicable();
   void __fastcall Complete();
 
+  static bool __fastcall IsTimeShiftingApplicable(TModificationFmt ModificationFmt);
+  static void __fastcall ShiftTimeInSeconds(TDateTime & DateTime, TModificationFmt ModificationFmt, __int64 Seconds);
+
   __property int Attr = { read = GetAttr };
   __property bool BrokenLink = { read = GetBrokenLink };
   __property TRemoteFileList * Directory = { read = FDirectory, write = FDirectory };
@@ -214,6 +217,9 @@ public:
   TRemoteFile * __fastcall FindFile(const UnicodeString &FileName);
   virtual void __fastcall DuplicateTo(TRemoteFileList * Copy);
   virtual void __fastcall AddFile(TRemoteFile * File);
+
+  static TStrings * __fastcall CloneStrings(TStrings * List);
+
   __property UnicodeString Directory = { read = FDirectory, write = SetDirectory };
   __property TRemoteFile * Files[Integer Index] = { read = GetFiles };
   __property UnicodeString FullDirectory  = { read=GetFullDirectory };
@@ -462,5 +468,6 @@ UnicodeString __fastcall ModificationStr(TDateTime DateTime,
 int __fastcall FakeFileImageIndex(UnicodeString FileName, unsigned long Attrs = 0,
   UnicodeString * TypeName = NULL);
 bool __fastcall SameUserName(const UnicodeString & UserName1, const UnicodeString & UserName2);
+UnicodeString __fastcall FormatMultiFilesToOneConfirmation(const UnicodeString & Target, bool Unix);
 //---------------------------------------------------------------------------
 #endif

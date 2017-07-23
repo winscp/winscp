@@ -1,4 +1,4 @@
-	<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<PropertyGroup>
 		<ProjectGuid>{0B0C5EC6-5DCB-4F16-9504-1E6D37FFBB77}</ProjectGuid>
 		<ProjectVersion>15.4</ProjectVersion>
@@ -11,16 +11,6 @@
 		<AppType>Application</AppType>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
-		<Base>true</Base>
-	</PropertyGroup>
-	<PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Base)'=='true') or '$(Base_Win32)'!=''">
-		<Base_Win32>true</Base_Win32>
-		<CfgParent>Base</CfgParent>
-		<Base>true</Base>
-	</PropertyGroup>
-	<PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Base)'=='true') or '$(Base_Win64)'!=''">
-		<Base_Win64>true</Base_Win64>
-		<CfgParent>Base</CfgParent>
 		<Base>true</Base>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Config)'=='Debug' or '$(Cfg_1)'!=''">
@@ -58,243 +48,238 @@
 		<Base>true</Base>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Base)'!=''">
-			<_TCHARMapping>wchar_t</_TCHARMapping>
-			<AllPackageLibs>vcl.lib;rtl.lib;vclx.lib;ws2_32.lib;secur32.lib;Moje.lib;DriveDir.lib;DragDropP.lib;tb2k.lib;tbxp.lib;bcbie.lib;Crypt32.lib;PngComponents.lib;xmlrtl.lib;vclactnband.lib;vclimg.lib;winhttp.lib;jcl.lib;vclie.lib;urlmon.lib;shlwapi.lib;powrprof.lib;soaprtl.lib</AllPackageLibs>
-			<BCC_AllWarnings>true</BCC_AllWarnings>
-			<BCC_ExtendedErrorInfo>true</BCC_ExtendedErrorInfo>
-			<BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
-			<BCC_wdiu>false</BCC_wdiu>
-			<BRCC_CodePage>65001</BRCC_CodePage>
-			<DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
-			<DCC_Namespace>Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;System;Xml;Data;Datasnap;Web;Soap;Vcl;$(DCC_Namespace)</DCC_Namespace>
-			<DCC_SYMBOL_DEPRECATED>false</DCC_SYMBOL_DEPRECATED>
-			<DCC_SYMBOL_PLATFORM>false</DCC_SYMBOL_PLATFORM>
-			<DCC_UNSUPPORTED_CONSTRUCT>false</DCC_UNSUPPORTED_CONSTRUCT>
-			<Icon_MainIcon>resource\Icon256.ico</Icon_MainIcon>
-			<ILINK_GenerateDRC>true</ILINK_GenerateDRC>
-			<ILINK_LibraryPath>windows\;forms\;packages\filemng;packages\tbx;packages\png;..\libs\lib;$(BDS)\lib\win32\release\psdk\;$(BDS)\lib\win32\release\;$(LIB_PATH);$(ILINK_LibraryPath)</ILINK_LibraryPath>
-			<ILINK_MapFileType>DetailedSegments</ILINK_MapFileType>
-			<IncludePath>console;windows\;forms\;core;resource;components;dragext;packages\filemng;packages\dragndrop;packages\my;packages\tb2k;packages\tbx;packages\png;packages\jcl;$(BDS)\include\mfc;$(BDS)\include\windows;$(BDS)\include\windows\sdk;$(BDS)\include\windows\vcl;$(IncludePath)</IncludePath>
-			<LinkPackageStatics>vcl.lib;rtl.lib;vclx.lib;ws2_32.lib;secur32.lib;Moje.lib;DriveDir.lib;DragDropP.lib;tb2k.lib;tbxp.lib;bcbie.lib;Crypt32.lib;PngComponents.lib;xmlrtl.lib;vclactnband.lib;vclimg.lib;winhttp.lib;jcl.lib;vclie.lib;urlmon.lib;shlwapi.lib</LinkPackageStatics>
-			<Manifest_File>windows\WinSCP.exe.manifest</Manifest_File>
-			<Multithreaded>true</Multithreaded>
-			<OutputExt>exe</OutputExt>
-			<ProjectType>CppVCLApplication</ProjectType>
-			<SanitizedProjectName>WinSCP</SanitizedProjectName>
-			<UsingDelphiRTL>true</UsingDelphiRTL>
-			<VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
-			<VerInfo_Keys>CompanyName=Martin Prikryl;FileDescription=WinSCP: SFTP, FTP and SCP client;FileVersion=5.7.8.0;InternalName=winscp;LegalCopyright=(c) 2000-2018 Martin Prikryl;LegalTrademarks=;OriginalFilename=winscp.exe;ProductName=WinSCP;ProductVersion=5.7.8.0;ReleaseType=stable;WWW=http://winscp.net/</VerInfo_Keys>
-			<VerInfo_Locale>1033</VerInfo_Locale>
-			<VerInfo_MajorVer>5</VerInfo_MajorVer>
-			<VerInfo_MinorVer>7</VerInfo_MinorVer>
-			<VerInfo_Release>8</VerInfo_Release>
-		</PropertyGroup>
-	<PropertyGroup Condition="'$(Base_Win32)'!=''">
-			<Defines>IDE;STRICT;$(Defines)</Defines>
-		</PropertyGroup>
-	<PropertyGroup Condition="'$(Base_Win64)'!=''">
-			<Defines>IDE;STRICT;$(Defines)</Defines>
-		</PropertyGroup>
+		<_TCHARMapping>wchar_t</_TCHARMapping>
+		<AllPackageLibs>vcl.lib;rtl.lib;vclx.lib;ws2_32.lib;secur32.lib;Moje.lib;DriveDir.lib;DragDropP.lib;tb2k.lib;tbxp.lib;bcbie.lib;Crypt32.lib;PngComponents.lib;xmlrtl.lib;vclactnband.lib;vclimg.lib;winhttp.lib;jcl.lib;vclie.lib;urlmon.lib;shlwapi.lib;powrprof.lib;soaprtl.lib;fmx.lib</AllPackageLibs>
+		<BCC_AllWarnings>true</BCC_AllWarnings>
+		<BCC_ExtendedErrorInfo>true</BCC_ExtendedErrorInfo>
+		<BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
+		<BCC_wdiu>false</BCC_wdiu>
+		<BRCC_CodePage>65001</BRCC_CodePage>
+		<DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
+		<DCC_Namespace>Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;System;Xml;Data;Datasnap;Web;Soap;Vcl;$(DCC_Namespace)</DCC_Namespace>
+		<DCC_SYMBOL_DEPRECATED>false</DCC_SYMBOL_DEPRECATED>
+		<DCC_SYMBOL_PLATFORM>false</DCC_SYMBOL_PLATFORM>
+		<DCC_UNSUPPORTED_CONSTRUCT>false</DCC_UNSUPPORTED_CONSTRUCT>
+		<Defines>IDE;STRICT;$(Defines)</Defines>
+		<FinalOutputDir>$(FINAL_PATH)\$(Platform)\$(Config)</FinalOutputDir>
+		<Icon_MainIcon>resource\Application.ico</Icon_MainIcon>
+		<ILINK_GenerateDRC>true</ILINK_GenerateDRC>
+		<ILINK_LibraryPath>windows\;forms\;packages\filemng;packages\tbx;packages\png;..\libs\lib;$(LIB_PATH);$(ILINK_LibraryPath)</ILINK_LibraryPath>
+		<ILINK_MapFileType>DetailedSegments</ILINK_MapFileType>
+		<IncludePath>console;windows\;forms\;core;resource;components;dragext;packages\filemng;packages\dragndrop;packages\my;packages\tb2k;packages\tbx;packages\png;packages\jcl;$(BDS)\include\mfc;$(BDS)\include\windows;$(BDS)\include\windows\sdk;$(BDS)\include\windows\vcl;$(IncludePath)</IncludePath>
+		<IntermediateOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</IntermediateOutputDir>
+		<LinkPackageStatics>vcl.lib;rtl.lib;vclx.lib;ws2_32.lib;secur32.lib;Moje.lib;DriveDir.lib;DragDropP.lib;tb2k.lib;tbxp.lib;bcbie.lib;Crypt32.lib;PngComponents.lib;xmlrtl.lib;vclactnband.lib;vclimg.lib;winhttp.lib;jcl.lib;vclie.lib;urlmon.lib;shlwapi.lib;powrprof.lib;soaprtl.lib</LinkPackageStatics>
+		<Manifest_File>windows\WinSCP.exe.manifest</Manifest_File>
+		<Multithreaded>true</Multithreaded>
+		<OutputExt>exe</OutputExt>
+		<ProjectType>CppVCLApplication</ProjectType>
+		<SanitizedProjectName>WinSCP</SanitizedProjectName>
+		<UsingDelphiRTL>true</UsingDelphiRTL>
+		<VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
+		<VerInfo_Keys>CompanyName=Martin Prikryl;FileDescription=WinSCP: SFTP, FTP, WebDAV and SCP client;FileVersion=5.9.7.0;InternalName=winscp;LegalCopyright=(c) 2000-2018 Martin Prikryl;LegalTrademarks=;OriginalFilename=winscp.exe;ProductName=WinSCP;ProductVersion=5.9.7.0;ReleaseType=stable;WWW=https://winscp.net/</VerInfo_Keys>
+		<VerInfo_Locale>1033</VerInfo_Locale>
+		<VerInfo_MajorVer>5</VerInfo_MajorVer>
+		<VerInfo_MinorVer>9</VerInfo_MinorVer>
+		<VerInfo_Release>7</VerInfo_Release>
+	</PropertyGroup>
 	<PropertyGroup Condition="'$(Cfg_1)'!=''">
-			<BCC_DebugLineNumbers>true</BCC_DebugLineNumbers>
-			<BCC_DisableOptimizations>true</BCC_DisableOptimizations>
-			<BCC_InlineFunctionExpansion>false</BCC_InlineFunctionExpansion>
-			<BCC_OptimizeForSpeed>false</BCC_OptimizeForSpeed>
-			<BCC_SourceDebuggingOn>true</BCC_SourceDebuggingOn>
-			<BCC_StackFrames>true</BCC_StackFrames>
-			<BCC_UseRegisterVariables>None</BCC_UseRegisterVariables>
-			<DCC_DebugInfoInExe>true</DCC_DebugInfoInExe>
-			<DCC_Define>DEBUG</DCC_Define>
-			<DCC_Optimize>false</DCC_Optimize>
-			<FinalOutputDir>$(FINAL_PATH)\Debug</FinalOutputDir>
-			<ILINK_FullDebugInfo>true</ILINK_FullDebugInfo>
-			<ILINK_LibraryPath>$(INTERM_PATH)\Debug\;$(BDS)\lib\win32\debug\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
-			<IntermediateOutputDir>$(INTERM_PATH)\Debug</IntermediateOutputDir>
-			<TASM_Debugging>Full</TASM_Debugging>
-			<TASM_DisplaySourceLines>true</TASM_DisplaySourceLines>
-		</PropertyGroup>
+		<BCC_AllCodeguardOptions>true</BCC_AllCodeguardOptions>
+		<BCC_DebugLineNumbers>true</BCC_DebugLineNumbers>
+		<BCC_DisableOptimizations>true</BCC_DisableOptimizations>
+		<BCC_InlineFunctionExpansion>false</BCC_InlineFunctionExpansion>
+		<BCC_MonitorGlobalAndStackData>true</BCC_MonitorGlobalAndStackData>
+		<BCC_MonitorInlinePtrAccess>true</BCC_MonitorInlinePtrAccess>
+		<BCC_MonitorThis>true</BCC_MonitorThis>
+		<BCC_OptimizeForSpeed>false</BCC_OptimizeForSpeed>
+		<BCC_SourceDebuggingOn>true</BCC_SourceDebuggingOn>
+		<BCC_StackFrames>true</BCC_StackFrames>
+		<BCC_UseRegisterVariables>None</BCC_UseRegisterVariables>
+		<DCC_DebugDCUs>true</DCC_DebugDCUs>
+		<DCC_DebugInfoInExe>true</DCC_DebugInfoInExe>
+		<DCC_Define>DEBUG</DCC_Define>
+		<DCC_Optimize>false</DCC_Optimize>
+		<Debugger_DebugSourcePath>packages\my;packages\filemng;packages\jcl;..\libs\openssl\crypto\bio;..\libs\openssl\ssl;..\libs\openssl\crypto\stack;..\libs\openssl\crypto\x509;..\libs\openssl\crypto\evp;..\libs\openssl\crypto\pkcs12;..\libs\openssl\crypto\pem;..\libs\openssl\crypto\asn1;..\libs\openssl\crypto\err;..\libs\neon\src;$(Debugger_DebugSourcePath)</Debugger_DebugSourcePath>
+		<Defines>_DEBUG;$(Defines)</Defines>
+		<ILINK_FullDebugInfo>true</ILINK_FullDebugInfo>
+		<TASM_Debugging>Full</TASM_Debugging>
+		<TASM_DisplaySourceLines>true</TASM_DisplaySourceLines>
+	</PropertyGroup>
 	<PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
-			<BCC_AllCodeguardOptions>true</BCC_AllCodeguardOptions>
-			<BCC_MonitorGlobalAndStackData>true</BCC_MonitorGlobalAndStackData>
-			<BCC_MonitorInlinePtrAccess>true</BCC_MonitorInlinePtrAccess>
-			<BCC_MonitorThis>true</BCC_MonitorThis>
-			<DCC_DebugDCUs>true</DCC_DebugDCUs>
-			<Debugger_DebugSourcePath>packages\my;packages\filemng;packages\jcl;..\libs\openssl\crypto\bio;..\libs\openssl\ssl;..\libs\openssl\crypto\stack;..\libs\openssl\crypto\x509;..\libs\neon\src;$(Debugger_DebugSourcePath)</Debugger_DebugSourcePath>
-			<Defines>_DEBUG;$(Defines)</Defines>
-		</PropertyGroup>
+		<ILINK_DisableIncrementalLinking>true</ILINK_DisableIncrementalLinking>
+		<ILINK_LibraryPath>$(INTERM_PATH)\Win32\Debug\;$(BDS)\lib\Win32\Debug\;$(BDS)\lib\Win32\Release\;$(BDS)\lib\Win32\Release\psdk\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+		<LinkPackageStatics>vcl.lib;rtl.lib;vclx.lib;ws2_32.lib;secur32.lib;Moje.lib;DriveDir.lib;DragDropP.lib;tb2k.lib;tbxp.lib;bcbie.lib;Crypt32.lib;PngComponents.lib;xmlrtl.lib;vclactnband.lib;vclimg.lib;winhttp.lib;jcl.lib;vclie.lib;urlmon.lib;shlwapi.lib;powrprof.lib;soaprtl.lib;fmx.lib</LinkPackageStatics>
+	</PropertyGroup>
 	<PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
-			<Defines>_DEBUG;$(Defines)</Defines>
-		</PropertyGroup>
+		<ILINK_LibraryPath>$(INTERM_PATH)\Win64\Debug\;$(BDS)\lib\Win64\Debug\;$(BDS)\lib\Win64\Release\;$(BDS)\lib\Win64\Release\psdk\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+	</PropertyGroup>
 	<PropertyGroup Condition="'$(Cfg_2)'!=''">
-			<FinalOutputDir>$(FINAL_PATH)\Release</FinalOutputDir>
-			<ILINK_LibraryPath>$(INTERM_PATH)\Release;$(BDS)\lib\win32\release;$(ILINK_LibraryPath)</ILINK_LibraryPath>
-			<IntermediateOutputDir>$(INTERM_PATH)\Release</IntermediateOutputDir>
-			<TASM_Debugging>None</TASM_Debugging>
-		</PropertyGroup>
+		<Defines>NDEBUG;$(Defines)</Defines>
+		<TASM_Debugging>None</TASM_Debugging>
+	</PropertyGroup>
 	<PropertyGroup Condition="'$(Cfg_2_Win32)'!=''">
-			<Defines>NDEBUG;$(Defines)</Defines>
-		</PropertyGroup>
+		<ILINK_LibraryPath>$(INTERM_PATH)\Win32\Release\;$(BDS)\lib\Win32\Release\;$(BDS)\lib\Win32\Release\psdk\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+	</PropertyGroup>
 	<PropertyGroup Condition="'$(Cfg_2_Win64)'!=''">
-			<Defines>NDEBUG;$(Defines)</Defines>
-		</PropertyGroup>
+		<ILINK_LibraryPath>$(INTERM_PATH)\Win64\Release\;$(BDS)\lib\Win64\Release\;$(BDS)\lib\Win64\Release\psdk\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+	</PropertyGroup>
 	<ItemGroup>
-			<CppCompile Include="forms\CustomScpExplorer.cpp">
+		<CppCompile Include="forms\CustomScpExplorer.cpp">
 			<BuildOrder>8</BuildOrder>
 			<Form>CustomScpExplorerForm</Form>
 			<DependentOn>forms\CustomScpExplorer.h</DependentOn>
 			<BuildOrder>21</BuildOrder>
 		</CppCompile>
-			<FormResources Include="forms\CustomScpExplorer.dfm"/>
-			<CppCompile Include="forms\Glyphs.cpp">
-			<Form>GlyphsModule</Form>
-			<DesignClass>TDataModule</DesignClass>
-			<DependentOn>forms\Glyphs.h</DependentOn>
-			<BuildOrder>30</BuildOrder>
-		</CppCompile>
-			<FormResources Include="forms\Glyphs.dfm"/>
-			<CppCompile Include="forms\NonVisual.cpp">
+		<FormResources Include="forms\CustomScpExplorer.dfm"/>
+		<CppCompile Include="forms\NonVisual.cpp">
 			<BuildOrder>23</BuildOrder>
 			<Form>NonVisualDataModule</Form>
 			<DesignClass>TDataModule</DesignClass>
 			<DependentOn>forms\NonVisual.h</DependentOn>
 			<BuildOrder>22</BuildOrder>
 		</CppCompile>
-			<FormResources Include="forms\NonVisual.dfm"/>
-			<CppCompile Include="forms\ScpCommander.cpp">
+		<FormResources Include="forms\NonVisual.dfm"/>
+		<CppCompile Include="forms\ScpCommander.cpp">
 			<BuildOrder>38</BuildOrder>
 			<Form>ScpCommanderForm</Form>
 			<DependentOn>forms\ScpCommander.h</DependentOn>
 			<BuildOrder>23</BuildOrder>
 		</CppCompile>
-			<FormResources Include="forms\ScpCommander.dfm"/>
-			<CppCompile Include="forms\ScpExplorer.cpp">
+		<FormResources Include="forms\ScpCommander.dfm"/>
+		<CppCompile Include="forms\ScpExplorer.cpp">
 			<BuildOrder>41</BuildOrder>
 			<Form>ScpExplorerForm</Form>
 			<DependentOn>forms\ScpExplorer.h</DependentOn>
 			<BuildOrder>24</BuildOrder>
 		</CppCompile>
-			<FormResources Include="forms\ScpExplorer.dfm"/>
-			<CppCompile Include="windows\ConsoleRunner.cpp">
+		<FormResources Include="forms\ScpExplorer.dfm"/>
+		<CppCompile Include="windows\ConsoleRunner.cpp">
 			<BuildOrder>27</BuildOrder>
 			<BuildOrder>26</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="windows\CustomWinConfiguration.cpp">
+		<CppCompile Include="windows\CustomWinConfiguration.cpp">
 			<BuildOrder>18</BuildOrder>
 			<BuildOrder>11</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="windows\EditorManager.cpp">
+		<CppCompile Include="windows\EditorManager.cpp">
 			<BuildOrder>15</BuildOrder>
 			<BuildOrder>14</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="windows\GUIConfiguration.cpp">
+		<CppCompile Include="windows\GUIConfiguration.cpp">
 			<BuildOrder>17</BuildOrder>
 			<BuildOrder>16</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="windows\GUITools.cpp">
+		<CppCompile Include="windows\GUITools.cpp">
 			<BuildOrder>20</BuildOrder>
 			<BuildOrder>17</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="windows\ProgParams.cpp">
+		<CppCompile Include="windows\ProgParams.cpp">
 			<BuildOrder>29</BuildOrder>
 			<BuildOrder>28</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="windows\QueueController.cpp">
+		<CppCompile Include="windows\QueueController.cpp">
 			<BuildOrder>32</BuildOrder>
 			<BuildOrder>29</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="windows\Setup.cpp">
+		<CppCompile Include="windows\Setup.cpp">
 			<BuildOrder>35</BuildOrder>
 			<BuildOrder>26</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="windows\SynchronizeController.cpp">
+		<CppCompile Include="windows\SynchronizeController.cpp">
 			<BuildOrder>44</BuildOrder>
 			<BuildOrder>25</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="windows\TerminalManager.cpp">
+		<CppCompile Include="windows\TerminalManager.cpp">
 			<BuildOrder>47</BuildOrder>
 			<BuildOrder>4</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="windows\Tools.cpp">
+		<CppCompile Include="windows\Tools.cpp">
 			<BuildOrder>50</BuildOrder>
 			<BuildOrder>5</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="windows\UserInterface.cpp">
+		<CppCompile Include="windows\UserInterface.cpp">
 			<BuildOrder>6</BuildOrder>
 			<BuildOrder>53</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="windows\WinConfiguration.cpp">
+		<CppCompile Include="windows\WinConfiguration.cpp">
 			<BuildOrder>56</BuildOrder>
 			<BuildOrder>3</BuildOrder>
 		</CppCompile>
-			<ResourceCompile Include="windows\Windows.rc">
+		<ResourceCompile Include="windows\Windows.rc">
 			<BuildOrder>5</BuildOrder>
 			<BuildOrder>20</BuildOrder>
 		</ResourceCompile>
-			<CppCompile Include="windows\WinHelp.cpp">
+		<CppCompile Include="windows\WinHelp.cpp">
 			<BuildOrder>59</BuildOrder>
 			<BuildOrder>0</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="windows\WinInterface.cpp">
+		<CppCompile Include="windows\WinInterface.cpp">
 			<BuildOrder>62</BuildOrder>
 			<BuildOrder>1</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="windows\WinMain.cpp">
+		<CppCompile Include="windows\WinMain.cpp">
 			<BuildOrder>65</BuildOrder>
 			<BuildOrder>2</BuildOrder>
 		</CppCompile>
-			<CppCompile Include="WinSCP.cpp">
+		<CppCompile Include="WinSCP.cpp">
 			<BuildOrder>2</BuildOrder>
 			<BuildOrder>19</BuildOrder>
 		</CppCompile>
-			
-			<LibFiles Include="FileZilla.lib">
+		<LibFiles Include="FileZilla.lib">
 			<BuildOrder>27</BuildOrder>
 			<IgnorePath>true</IgnorePath>
 		</LibFiles>
-			<LibFiles Include="libeay32.lib">
+		<LibFiles Include="libeay32.lib">
 			<BuildOrder>28</BuildOrder>
 			<IgnorePath>true</IgnorePath>
 		</LibFiles>
-			<LibFiles Include="libexpats_mtd.lib">
+		<LibFiles Include="libexpats_mtd.lib">
 			<BuildOrder>31</BuildOrder>
 			<IgnorePath>true</IgnorePath>
 		</LibFiles>
-			<LibFiles Include="neon.lib">
+		<LibFiles Include="neon.lib">
 			<BuildOrder>33</BuildOrder>
 			<IgnorePath>true</IgnorePath>
 		</LibFiles>
-			<LibFiles Include="Putty.lib">
+		<LibFiles Include="Putty.lib">
 			<BuildOrder>23</BuildOrder>
 			<IgnorePath>true</IgnorePath>
 		</LibFiles>
-			<LibFiles Include="RScpComp.lib">
+		<LibFiles Include="PuTTYVS.lib">
+			<BuildOrder>33</BuildOrder>
+			<IgnorePath>true</IgnorePath>
+		</LibFiles>
+		<LibFiles Include="RScpComp.lib">
 			<BuildOrder>24</BuildOrder>
 			<IgnorePath>true</IgnorePath>
 		</LibFiles>
-			<LibFiles Include="ScpCore.lib">
+		<LibFiles Include="ScpCore.lib">
 			<BuildOrder>25</BuildOrder>
 			<IgnorePath>true</IgnorePath>
 		</LibFiles>
-			<LibFiles Include="ScpForms.lib">
+		<LibFiles Include="ScpForms.lib">
 			<BuildOrder>26</BuildOrder>
 			<IgnorePath>true</IgnorePath>
 		</LibFiles>
-			<LibFiles Include="ssleay32.lib">
+		<LibFiles Include="ScpResources.lib">
+			<BuildOrder>26</BuildOrder>
+			<IgnorePath>true</IgnorePath>
+		</LibFiles>
+		<LibFiles Include="ssleay32.lib">
 			<BuildOrder>29</BuildOrder>
 			<IgnorePath>true</IgnorePath>
 		</LibFiles>
-			<BuildConfiguration Include="Base">
+		<BuildConfiguration Include="Base">
 			<Key>Base</Key>
 		</BuildConfiguration>
-			<BuildConfiguration Include="Debug">
+		<BuildConfiguration Include="Debug">
 			<Key>Cfg_1</Key>
 			<CfgParent>Base</CfgParent>
 		</BuildConfiguration>
-			<BuildConfiguration Include="Release">
+		<BuildConfiguration Include="Release">
 			<Key>Cfg_2</Key>
 			<CfgParent>Base</CfgParent>
 		</BuildConfiguration>
-		</ItemGroup>
+	</ItemGroup>
 	<Import Condition="Exists('$(BDS)\Bin\CodeGear.Cpp.Targets')" Project="$(BDS)\Bin\CodeGear.Cpp.Targets"/>
 	<ProjectExtensions>
 		<Borland.Personality>CPlusPlusBuilder.Personality.12</Borland.Personality>

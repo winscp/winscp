@@ -809,7 +809,7 @@ var
   Flags: Integer;
   R: TRect;
 begin
-  InflateRect(ARect, -1, 0);
+  InflateRect(ARect, ScaleByTextHeightRunTime(Canvas, -3), 0);
   if (APanel.ImageIndex >= 0) and (Images <> nil) then
   begin
     R := ARect;
@@ -819,12 +819,12 @@ begin
       taLeftJustify:
         begin
           R.Right := R.Left + Images.Width;
-          ARect.Left := R.Right + 4;
+          ARect.Left := R.Right + ScaleByTextHeightRunTime(Canvas, 4);
         end;
       taRightJustify:
         begin
           R.Left := R.Right - Images.Width;
-          ARect.Right := R.Left - 4;
+          ARect.Right := R.Left - ScaleByTextHeightRunTime(Canvas, 4);
         end;
       taCenter:
         begin

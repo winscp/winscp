@@ -4,7 +4,7 @@
 #define HELP_UNKNOWN_KEY                       "message_host_key"
 #define HELP_DIFFERENT_KEY                     "message_security_breach"
 #define HELP_RESUME_TRANSFER                   "resume"
-#define HELP_APPEND_OR_RESUME                  "resume#alternate_usage"
+#define HELP_APPEND_OR_RESUME                  "resume#manual"
 #define HELP_PARTIAL_BIGGER_THAN_SOURCE        HELP_RESUME_TRANSFER
 #define HELP_SYNCHRONIZE                       "task_synchronize_full"
 #define HELP_VERIFY_CERTIFICATE                "ftps"
@@ -33,5 +33,6 @@
 #define HELP_FTP_SUGGESTION                    "message_server_rejected_sftp_listens_for_ftp"
 #define HELP_STATUSMSG_DISCONNECTED            "message_disconnected"
 #define HELP_SFTP_INITIALIZE_ERROR             "message_cannot_initialize_sftp_protocol"
+#define HELP_AUTH_TRANSL_KEY_REFUSED           "message_key_refused"
 
 #endif // HelpCoreH

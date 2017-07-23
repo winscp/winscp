@@ -41,6 +41,7 @@ enum TFSCapability { fcUserGroupListing, fcModeChanging, fcGroupChanging,
   fcCheckingSpaceAvailable, fcIgnorePermErrors, fcCalculatingChecksum,
   fcModeChangingUpload, fcPreservingTimestampUpload, fcShellAnyCommand,
   fcSecondaryShell, fcRemoveCtrlZUpload, fcRemoveBOMUpload, fcMoveToQueue,
+  fcLocking, fcPreservingTimestampDirs, fcResumeSupport,
   fcCount };
 //---------------------------------------------------------------------------
 struct TFileSystemInfo
@@ -288,6 +289,7 @@ private:
   UnicodeString __fastcall LogSensitive(const UnicodeString & Str);
   void __fastcall AddOption(const UnicodeString & LogStr);
   void __fastcall AddOptions(TOptions * Options);
+  UnicodeString __fastcall GetCmdLineLog();
 };
 //---------------------------------------------------------------------------
 class TActionLog
@@ -329,6 +331,7 @@ private:
   TSessionUI * FUI;
   TSessionData * FSessionData;
   TList * FPendingActions;
+  bool FFailed;
   bool FClosed;
   bool FInGroup;
   UnicodeString FIndent;

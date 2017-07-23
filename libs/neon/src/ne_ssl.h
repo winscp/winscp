@@ -121,6 +121,12 @@ void ne_ssl_cert_free(ne_ssl_certificate *cert);
  * "decrypted" state.  */
 typedef struct ne_ssl_client_cert_s ne_ssl_client_cert;
 
+#ifdef WINSCP
+typedef struct x509_st X509;
+typedef struct evp_pkey_st EVP_PKEY;
+ne_ssl_client_cert * ne_ssl_clicert_create(X509 * cert, EVP_PKEY * pkey);
+#endif
+
 /* Read a client certificate (and private key) in PKCS#12 format from
  * file 'filename'; returns NULL if the file could not be parsed, or
  * otherwise returning a client certificate object.  The returned

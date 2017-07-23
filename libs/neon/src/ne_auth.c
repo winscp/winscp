@@ -1672,11 +1672,21 @@ static void auth_register(ne_session *sess, int isproxy, unsigned protomask,
         ne_uri uri = {0};
         
         if (isproxy)
+        {
             ne_fill_proxy_uri(sess, &uri);
+        }
         else
+        {
             ne_fill_server_uri(sess, &uri);
+        }
 
+#ifdef WINSCP
+        // bug fix
+        ahs->sspi_host = ne_strdup(uri.host);
+#else
         ahs->sspi_host = uri.host;
+#endif
+
         uri.host = NULL;
 
         ne_uri_free(&uri);
@@ -1721,6 +1731,23 @@ void ne_add_proxy_auth(ne_session *sess, unsigned protocol,
     auth_register(sess, 1, protocol, &ah_proxy_class, HOOK_PROXY_ID,
                   creds, userdata);
 }
+
+#ifdef WINSCP
+void ne_remove_server_auth(ne_session *sess)
+{
+    auth_session *as;
+    if ((as = ne_get_session_private(sess, HOOK_SERVER_ID)) != NULL)
+    {
+        // copied from free_auth
+        struct auth_handler *hdl, *next;
+        for (hdl = as->handlers; hdl; hdl = next) {
+            next = hdl->next;
+            ne_free(hdl);
+        }
+        as->handlers = NULL;
+    }
+}
+#endif
 
 void ne_forget_auth(ne_session *sess)
 {

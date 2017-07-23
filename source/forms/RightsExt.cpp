@@ -73,7 +73,7 @@ void __fastcall TRightsExtFrame::OctalEditExit(TObject * /*Sender*/)
   if (!Visible)
   {
     // should happen only if popup is closed by esc key
-    assert(Popup);
+    DebugAssert(Popup);
 
     // cancel changes
     ForceUpdate();

@@ -19,7 +19,7 @@ struct Socket_proxy_tag {
     const struct socket_function_table *fn;
     /* the above variable absolutely *must* be the first in this structure */
 
-    char * error;
+    const char *error;
 
     Socket sub_socket;
     Plug plug;
@@ -78,7 +78,8 @@ struct Socket_proxy_tag {
     int sent_bufsize;
 
     /* accepting */
-    OSSocket accepting_sock;
+    accept_fn_t accepting_constructor;
+    accept_ctx_t accepting_ctx;
 
     /* configuration, used to look up proxy settings */
     Conf *conf;

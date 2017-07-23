@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -12,9 +12,9 @@
     <AssemblyName>WinSCPnet</AssemblyName>
     <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <OutputPath>$(FINAL_PATH)\$(Configuration)</OutputPath>
-    <IntermediateOutputPath>$(INTERM_PATH)\$(Configuration)</IntermediateOutputPath>
-    <BaseIntermediateOutputPath>$(INTERM_PATH)\$(Configuration)</BaseIntermediateOutputPath>
+    <OutputPath>$(FINAL_PATH)\win32\$(Configuration)</OutputPath>
+    <IntermediateOutputPath>$(INTERM_PATH)\win32\$(Configuration)</IntermediateOutputPath>
+    <BaseIntermediateOutputPath>$(INTERM_PATH)\win32\$(Configuration)</BaseIntermediateOutputPath>
     <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -60,9 +60,11 @@
     <Compile Include="Internal\CallstackAndLock.cs" />
     <Compile Include="Internal\ConsoleCommStruct.cs" />
     <Compile Include="Internal\ExeSessionProcess.cs" />
+    <Compile Include="Internal\GenericSecurity.cs" />
     <Compile Include="Internal\Job.cs" />
     <Compile Include="Internal\Lock.cs" />
     <Compile Include="Internal\Logger.cs" />
+    <Compile Include="Internal\PatientFileStream.cs" />
     <Compile Include="Internal\ProgressHandler.cs" />
     <Compile Include="Internal\SessionElementLogReader.cs" />
     <Compile Include="Internal\Tools.cs" />

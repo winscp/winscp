@@ -49,6 +49,7 @@ __published:
   TButton *IncludeFileMaskButton;
   TCheckBox *NewerOnlyCheck;
   TCheckBox *RemoveCtrlZAndBOMCheck;
+  TCheckBox *PreserveTimeDirsCheck;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall ValidateMaskComboExit(TObject *Sender);
   void __fastcall RightsEditButtonClick(TObject *Sender);

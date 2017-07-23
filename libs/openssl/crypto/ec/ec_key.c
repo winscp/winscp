@@ -377,9 +377,9 @@ int EC_KEY_set_public_key_affine_coordinates(EC_KEY *key, BIGNUM *x,
         return 0;
     }
     ctx = BN_CTX_new();
-    if (!ctx)
-        goto err;
-
+    if (ctx == NULL)
+        return 0;
+    BN_CTX_start(ctx);
     point = EC_POINT_new(key->group);
 
     if (!point)
@@ -387,6 +387,8 @@ int EC_KEY_set_public_key_affine_coordinates(EC_KEY *key, BIGNUM *x,
 
     tx = BN_CTX_get(ctx);
     ty = BN_CTX_get(ctx);
+    if (ty == NULL)
+        goto err;
 
 #ifndef OPENSSL_NO_EC2M
     tmp_nid = EC_METHOD_get_field_type(EC_GROUP_method_of(key->group));
@@ -430,10 +432,9 @@ int EC_KEY_set_public_key_affine_coordinates(EC_KEY *key, BIGNUM *x,
     ok = 1;
 
  err:
-    if (ctx)
-        BN_CTX_free(ctx);
-    if (point)
-        EC_POINT_free(point);
+    BN_CTX_end(ctx);
+    BN_CTX_free(ctx);
+    EC_POINT_free(point);
     return ok;
 
 }

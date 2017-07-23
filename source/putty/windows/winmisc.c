@@ -5,6 +5,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "putty.h"
+#ifndef SECURITY_WIN32
+#define SECURITY_WIN32
+#endif
 #include <security.h>
 #ifdef MPEXT
 #include <assert.h>
@@ -71,6 +74,13 @@ Filename *filename_deserialise(void *vdata, int maxsize, int *used)
     return filename_from_str(data);
 }
 
+char filename_char_sanitise(char c)
+{
+    if (strchr("<>:\"/\\|?*", c))
+        return '.';
+    return c;
+}
+
 #ifdef MPEXT
 
 FILE * mp_wfopen(const char *filename, const char *mode)
@@ -128,6 +138,11 @@ char *get_username(void)
 	if (!tried_usernameex) {
 	    /* Not available on Win9x, so load dynamically */
 	    HMODULE secur32 = load_system32_dll("secur32.dll");
+	    /* If MIT Kerberos is installed, the following call to
+	       GET_WINDOWS_FUNCTION makes Windows implicitly load
+	       sspicli.dll WITHOUT proper path sanitizing, so better
+	       load it properly before */
+	    HMODULE sspicli = load_system32_dll("sspicli.dll");
 	    GET_WINDOWS_FUNCTION(secur32, GetUserNameExA);
 	    tried_usernameex = TRUE;
 	}
@@ -174,6 +189,49 @@ char *get_username(void)
     }
 
     return got_username ? user : NULL;
+}
+
+void dll_hijacking_protection(void)
+{
+    /*
+     * If the OS provides it, call SetDefaultDllDirectories() to
+     * prevent DLLs from being loaded from the directory containing
+     * our own binary, and instead only load from system32.
+     *
+     * This is a protection against hijacking attacks, if someone runs
+     * PuTTY directly from their web browser's download directory
+     * having previously been enticed into clicking on an unwise link
+     * that downloaded a malicious DLL to the same directory under one
+     * of various magic names that seem to be things that standard
+     * Windows DLLs delegate to.
+     *
+     * It shouldn't break deliberate loading of user-provided DLLs
+     * such as GSSAPI providers, because those are specified by their
+     * full pathname by the user-provided configuration.
+     */
+    static HMODULE kernel32_module;
+    DECL_WINDOWS_FUNCTION(static, BOOL, SetDefaultDllDirectories, (DWORD));
+
+    if (!kernel32_module) {
+        kernel32_module = load_system32_dll("kernel32.dll");
+#if (defined _MSC_VER && _MSC_VER < 1900) || defined COVERITY || defined MPEXT
+        /* For older Visual Studio, and also for the system I
+         * currently use for Coveritying the Windows code, this
+         * function isn't available in the header files to
+         * type-check */
+        GET_WINDOWS_FUNCTION_NO_TYPECHECK(
+            kernel32_module, SetDefaultDllDirectories);
+#else
+        GET_WINDOWS_FUNCTION(kernel32_module, SetDefaultDllDirectories);
+#endif
+    }
+
+    if (p_SetDefaultDllDirectories) {
+        /* LOAD_LIBRARY_SEARCH_SYSTEM32 and explicitly specified
+         * directories only */
+        p_SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_SYSTEM32 |
+                                   LOAD_LIBRARY_SEARCH_USER_DIRS);
+    }
 }
 
 BOOL init_winver(void)
@@ -258,26 +316,23 @@ const char *win_strerror(int error)
     es = find234(errstrings, &error, errstring_find);
 
     if (!es) {
-        int bufsize;
+        char msgtext[65536]; /* maximum size for FormatMessage is 64K */
 
         es = snew(struct errstring);
         es->error = error;
-        /* maximum size for FormatMessage is 64K */
-        bufsize = 65535;
-        es->text = snewn(bufsize, char);
         if (!FormatMessage((FORMAT_MESSAGE_FROM_SYSTEM |
                             FORMAT_MESSAGE_IGNORE_INSERTS), NULL, error,
                            MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                           es->text, bufsize, NULL)) {
-            sprintf(es->text,
-                    "Windows error code %d (and FormatMessage returned %d)", 
-                    error, GetLastError());
+                           msgtext, lenof(msgtext)-1, NULL)) {
+            sprintf(msgtext,
+                    "(unable to format: FormatMessage returned %u)",
+                    (unsigned int)GetLastError());
         } else {
-            int len = strlen(es->text);
-            if (len > 0 && es->text[len-1] == '\n')
-                es->text[len-1] = '\0';
+            int len = strlen(msgtext);
+            if (len > 0 && msgtext[len-1] == '\n')
+                msgtext[len-1] = '\0';
         }
-        es->text = sresize(es->text, strlen(es->text) + 1, char);
+        es->text = dupprintf("Error %d: %s", error, msgtext);
         add234(errstrings, es);
     }
 
@@ -289,7 +344,7 @@ static FILE *debug_fp = NULL;
 static HANDLE debug_hdl = INVALID_HANDLE_VALUE;
 static int debug_got_console = 0;
 
-void dputs(char *buf)
+void dputs(const char *buf)
 {
     DWORD dw;
 

@@ -13,7 +13,7 @@
 class TRemoteTransferDialog : public TForm
 {
 __published:
-  TGroupBox *SymlinkGroup;
+  TGroupBox *Group;
   TLabel *SessionLabel;
   TLabel *Label3;
   TComboBox *SessionCombo;
@@ -33,13 +33,14 @@ __published:
 public:
   __fastcall TRemoteTransferDialog(TComponent * Owner);
 
-  void __fastcall Init(TStrings * Sessions, TStrings * Directories,
+  void __fastcall Init(bool Multi, TStrings * Sessions, TStrings * Directories,
     TDirectRemoteCopy AllowDirectCopy, void * CurrentSession);
   bool __fastcall Execute(void *& Session, UnicodeString & Target,
     UnicodeString & FileMask, bool & DirectCopy);
 
 protected:
   void __fastcall UpdateControls();
+  UnicodeString __fastcall GetFileMask();
   bool __fastcall IsCurrentSessionSelected();
   void __fastcall UpdateNotDirectCopyCheck();
 
@@ -47,6 +48,7 @@ private:
   TStrings * FDirectories;
   void * FCurrentSession;
   bool FDirectCopy;
+  bool FMulti;
   TDirectRemoteCopy FAllowDirectCopy;
 };
 //---------------------------------------------------------------------------

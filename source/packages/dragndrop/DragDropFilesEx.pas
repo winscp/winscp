@@ -31,11 +31,6 @@ unit DragDropFilesEx;
 
     • These restrictions and terms apply to you as long as until
       I alter them. Changes can found on my homepage
-
-
-  Contact
-  =======
-    homepage: http://godard.oec.uni-osnabrueck.de/student_home/dsteinwe/delphi/DietersDelphiSite.htm
 }
 
 {$ALIGN ON}

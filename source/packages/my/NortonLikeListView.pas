@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  ComCtrls, ListViewColProperties, CommCtrl;
+  ComCtrls, ListViewColProperties, CommCtrl, Menus;
 
 type
   TCustomNortonLikeListView = class;
@@ -35,11 +35,11 @@ type
     FLButtonDownShiftState: TShiftState;
     FLButtonDownPos: TPoint;
     FLastSelectMethod: TSelectMethod;
-    FPendingInternalFocus: TListItem;
     procedure WMLButtonDown(var Message: TWMLButtonDown); message WM_LBUTTONDOWN;
     procedure WMRButtonDown(var Message: TWMRButtonDown); message WM_RBUTTONDOWN;
     procedure WMLButtonUp(var Message: TWMLButtonUp); message WM_LBUTTONUP;
     procedure WMKeyDown(var Message: TWMKeyDown); message WM_KEYDOWN;
+    procedure WMSysCommand(var Message: TWMSysCommand); message WM_SYSCOMMAND;
     procedure WMChar(var Message: TWMChar); message WM_CHAR;
     procedure WMNotify(var Message: TWMNotify); message WM_NOTIFY;
     procedure CNNotify(var Message: TWMNotify); message CN_NOTIFY;
@@ -70,7 +70,7 @@ type
     function ExCanChange(Item: TListItem; Change: Integer;
       NewState, OldState: Word): Boolean; dynamic;
     procedure InsertItem(Item: TListItem); override;
-    function NewColProperties: TCustomListViewColProperties; virtual;
+    function NewColProperties: TCustomListViewColProperties; virtual; abstract;
     procedure FocusSomething; virtual;
     function EnableDragOnClick: Boolean; virtual;
     procedure FocusItem(Item: TListItem);
@@ -79,7 +79,7 @@ type
     function GetSelCount: Integer; override;
     procedure DDBeforeDrag;
     function CanEdit(Item: TListItem): Boolean; override;
-    procedure DoEnter; override;
+    function GetPopupMenu: TPopupMenu; override;
   public
     { Public declarations }
     constructor Create(AOwner: TComponent); override;
@@ -101,97 +101,10 @@ type
     property LastSelectMethod: TSelectMethod read FLastSelectMethod;
   end;
 
-type
-  TNortonLikeListView = class(TCustomNortonLikeListView)
-  published
-    { Published declarations }
-    property Align;
-    property AllocBy;
-    property Anchors;
-    property BiDiMode;
-    property BorderStyle;
-    property BorderWidth;
-    property Checkboxes;
-    property Color;
-    property ColumnClick;
-    property Constraints;
-    property Ctl3D;
-    property Enabled;
-    property Font;
-    property FlatScrollBars;
-    property FullDrag;
-    property GridLines;
-    property HideSelection;
-    property HotTrack;
-    property HotTrackStyles;
-    property IconOptions;
-    property Items;
-    property LargeImages;
-    property ReadOnly;
-    property RowSelect;
-    property ParentBiDiMode;
-    property ParentColor;
-    property ParentFont;
-    property ParentShowHint;
-    property PopupMenu;
-    property ShowColumnHeaders;
-    property ShowHint;
-    property SmallImages;
-    property StateImages;
-    property TabOrder;
-    property TabStop;
-    property ViewStyle;
-    property Visible;
-    property OnChange;
-    property OnChanging;
-    property OnClick;
-    property OnColumnClick;
-    property OnCustomDraw;
-    property OwnerDraw;
-    property OnCustomDrawItem;
-    property OnCustomDrawSubItem;
-    property OwnerData;
-    property OnGetImageIndex;
-    property OnCompare;
-    property OnData;
-    property OnDataFind;
-    property OnDataHint;
-    property OnDataStateChange;
-    property OnDblClick;
-    property OnDeletion;
-    property OnDrawItem;
-    property OnEdited;
-    property OnEditing;
-    property OnEndDock;
-    property OnEnter;
-    property OnExit;
-    property OnInsert;
-    property OnKeyDown;
-    property OnKeyPress;
-    property OnKeyUp;
-    property OnMouseDown;
-    property OnMouseMove;
-    property OnMouseUp;
-    property OnResize;
-    property OnStartDock;
-    property OnSelectItem;
-
-    property NortonLike;
-    property OnSelectByMask;
-    property ColProperties;
-  end;
-
-procedure Register;
-
 implementation
 
 uses
   PasTools, Types;
-
-procedure Register;
-begin
-  RegisterComponents('Martin', [TNortonLikeListView]);
-end;
 
   { TCustomNortonLikeListView }
 
@@ -212,7 +125,6 @@ begin
   FUpdatingSelection := 0;
   FFocusingItem := False;
   FLastSelectMethod := smNoneYet;
-  FPendingInternalFocus := nil;
   // On Windows Vista, native GetNextItem for selection stops working once we
   // disallow deselecting any item (see ExCanChange).
   // So we need to manage selection state ourselves
@@ -308,10 +220,6 @@ begin
   if (FLastDeletedItem <> Item) and Item.Selected then
   begin
     ItemUnselected(Item, -1);
-  end;
-  if FPendingInternalFocus = Item then
-  begin
-    FPendingInternalFocus := nil;
   end;
   FLastDeletedItem := Item;
   inherited;
@@ -411,6 +319,22 @@ begin
       Result := nil;
   end
     else Result := Item;
+end;
+
+function TCustomNortonLikeListView.GetPopupMenu: TPopupMenu;
+begin
+  // While editing pretend that we do not have a popup menu.
+  // Otherwise Ctrl+V is swallowed by the TWinControl.CNKeyDown,
+  // when it finds out (TWinControl.IsMenuKey) that there's a command with Ctrl+V shortcut in the list view context menu
+  // (the "paste" file action)
+  if IsEditing then
+  begin
+    Result := nil;
+  end
+    else
+  begin
+    Result := inherited;
+  end;
 end;
 
 procedure TCustomNortonLikeListView.WMNotify(var Message: TWMNotify);
@@ -543,7 +467,13 @@ begin
   begin
     if Items.Count > 0 then
     begin
-      SelectCurrentItem(True);
+      PLastSelectMethod := FLastSelectMethod;
+      FLastSelectMethod := smKeyboard;
+      try
+        SelectCurrentItem(True);
+      finally
+        FLastSelectMethod := PLastSelectMethod;
+      end;
       Message.Result := 1;
     end;
   end
@@ -587,7 +517,13 @@ begin
     // prevent Ctrl+Space landing in else branch below,
     // this can safely get processed by default handler as Ctrl+Space
     // toggles only focused item, not affecting others
-    inherited;
+    PLastSelectMethod := FLastSelectMethod;
+    FLastSelectMethod := smKeyboard;
+    try
+      inherited;
+    finally
+      FLastSelectMethod := PLastSelectMethod;
+    end;
   end
     else
   if (Message.CharCode in [VK_SPACE, VK_PRIOR, VK_NEXT, VK_END, VK_HOME, VK_LEFT,
@@ -613,6 +549,18 @@ begin
       FDontUnSelectItem := PDontUnSelectItem;
       FLastSelectMethod := PLastSelectMethod;
     end;
+  end
+    else inherited;
+end;
+
+procedure TCustomNortonLikeListView.WMSysCommand(var Message: TWMSysCommand);
+begin
+  // Ugly workaround to avoid Windows beeping when Alt+Grey +/- are pressed
+  // (for (Us)Select File with Same Ext commands)
+  if (Message.CmdType = SC_KEYMENU) and
+     ((Message.Key = Word('+')) or (Message.Key = Word('-'))) then
+  begin
+    Message.Result := 1;
   end
     else inherited;
 end;
@@ -679,71 +627,16 @@ begin
 end;
 
 procedure TCustomNortonLikeListView.FocusItem(Item: TListItem);
-var
-  P: TPoint;
-  PLastSelectMethod: TSelectMethod;
-  PDontUnSelectItem: Boolean;
-  PDontSelectItem: Boolean;
-  WParam: UINT_PTR;
-  LParam: INT_PTR;
 begin
-  // This whole is replacement for mere ItemFocused := Item
-  // because that does not reset some internal focused pointer,
-  // causing subsequent Shift-Click selects range from the first item,
-  // not from focused item.
-  Item.MakeVisible(False);
-  if Focused then
-  begin
-    P := Item.GetPosition;
-    PLastSelectMethod := FLastSelectMethod;
-    PDontSelectItem := FDontSelectItem;
-    PDontUnSelectItem := FDontUnSelectItem;
-    FLastSelectMethod := smNoneYet;
-    FDontSelectItem := True;
-    FDontUnSelectItem := True;
-    FFocusingItem := True;
-    try
-      // HACK
-      // WM_LBUTTONDOWN enters loop, waiting for WM_LBUTTONUP,
-      // so we have to post it in advance to break the loop immediately
-
-      // Without MK_CONTROL, if there are more items selected,
-      // they won't get unselected on subsequent focus change
-      // (with explorer-style selection).
-      // And it also makes the click the least obtrusive, affecting the focused
-      // file only.
-      WParam := MK_LBUTTON or MK_CONTROL;
-      LParam := MAKELPARAM(P.X, P.Y);
-      PostMessage(Handle, WM_LBUTTONUP, WParam, LParam);
-      SendMessage(Handle, WM_LBUTTONDOWN, WParam, LParam);
-    finally
-      FFocusingItem := False;
-      FLastSelectMethod := PLastSelectMethod;
-      FDontSelectItem := PDontSelectItem;
-      FDontUnSelectItem := PDontUnSelectItem;
-    end;
-    FPendingInternalFocus := nil;
-  end
-    else
-  begin
-    FPendingInternalFocus := Item;
-  end;
-  if ItemFocused <> Item then
-    ItemFocused := Item;
-end;
-
-procedure TCustomNortonLikeListView.DoEnter;
-begin
-  inherited;
-
-  if Assigned(FPendingInternalFocus) then
-  begin
-    if FPendingInternalFocus = ItemFocused then
-    begin
-      FocusItem(FPendingInternalFocus);
-    end;
-    FPendingInternalFocus := nil;
-  end;
+  // This method was introduced in 3.7.6 for reasons long forgotten.
+  // It simulated a mouse click on the item. Possibly because the mere ItemFocused := Item
+  // did not work due to at-the-time-not-realized conflict with FocusSomething.
+  // Now that this is fixed, the method is no longer needed.
+  // Keeping it for a while with this comment, in case some regression is discovered.
+  // References:
+  // - 3.7.6: When reloading directory content, file panel tries to preserve its position.
+  // - Bugs 999 and 1161
+  ItemFocused := Item;
 end;
 
 procedure TCustomNortonLikeListView.SelectAll(Mode: TSelectMode; Exclude: TListItem);
@@ -981,11 +874,6 @@ begin
   inherited;
   if Item.Selected then
     ItemSelected(Item, -1);
-end;
-
-function TCustomNortonLikeListView.NewColProperties: TCustomListViewColProperties;
-begin
-  Result := TListViewColProperties.Create(Self, 5);
 end;
 
 function TCustomNortonLikeListView.GetItemFromHItem(const Item: TLVItem): TListItem;

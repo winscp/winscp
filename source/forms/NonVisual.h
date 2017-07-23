@@ -39,6 +39,7 @@
 #define fcTransferLabel    0x24
 #define fcSessionsTabs     0x25
 #define fcLocalPopup       0x26
+#define fcRemotePathComboBox 0x27
 
 #define fcExplorerMenuBand        0x31
 #define fcExplorerAddressBand     0x32
@@ -74,13 +75,13 @@ class TNonVisualDataModule : public TDataModule
 __published:    // IDE-managed Components
   TActionList *LogActions;
   TAction *LogClearAction;
-  TAction *LogSelectAllAction;
+  TAction *LogSelectAllAction2;
   TAction *LogCopyAction;
   TTBXPopupMenu *LogMemoPopup;
   TTBXItem *Clear1;
   TTBXItem *Close1;
   TTBXItem *Selectall1;
-  TAction *LogPreferencesAction;
+  TAction *LogPreferencesAction2;
   TAction *LocalSortByNameAction;
   TAction *LocalSortAscendingAction;
   TAction *LocalSortBySizeAction;
@@ -195,13 +196,12 @@ __published:    // IDE-managed Components
   TAction *ConsoleAction;
   TAction *LocalExploreDirectoryAction;
   TAction *CurrentEditAction;
-  TAction *CurrentEditAlternative2Action;
   TAction *CurrentOpenAction;
   TAction *SynchronizeBrowsingAction;
   TAction *CurrentAddEditLinkAction;
   TAction *CloseApplicationAction;
   TAction *OpenedSessionsAction;
-  TAction *CustomCommandsAction;
+  TAction *CustomCommandsFileAction;
   TAction *CustomCommandsCustomizeAction;
   TAction *CheckForUpdatesAction;
   TAction *PuttyAction;
@@ -242,7 +242,7 @@ __published:    // IDE-managed Components
   TAction *NewFileAction;
   TAction *RemoteCopyToFocusedAction;
   TAction *RemoteCopyToAction;
-  TAction *FileGenerateUrlAction;
+  TAction *FileGenerateUrlAction2;
   TAction *TableOfContentsAction;
   TTBXPopupMenu *CommanderBarPopup;
   TTBXItem *SessionButtons5;
@@ -298,15 +298,15 @@ __published:    // IDE-managed Components
   TTBXItem *StatusBar10;
   TTBXPopupMenu *RemoteFilePopup;
   TTBXItem *RemoteOpenMenuItem;
-  TTBXItem *RemoteEditMenuItem;
-  TTBXItem *RemoteCopyMenuItem;
+  TTBXSubmenuItem *RemoteEditMenuItem;
+  TTBXSubmenuItem *RemoteCopyMenuItem;
   TTBXItem *Duplicate3;
   TTBXItem *Moveto1;
   TTBXItem *Moveto6;
   TTBXItem *Delete1;
   TTBXItem *Rename1;
   TTBXSeparatorItem *N45;
-  TTBXSubmenuItem *RemoteDirViewCustomCommandsMenu;
+  TTBXSubmenuItem *RemoteFilePopupCustomCommandsMenu;
   TTBXSubmenuItem *FileNames3;
   TTBXItem *InserttoCommandLine2;
   TTBXItem *CopytoClipboard3;
@@ -451,7 +451,7 @@ __published:    // IDE-managed Components
   TTBXItem *TBXItem135;
   TTBXItem *TBXItem136;
   TTBXItem *TBXItem209;
-  TAction *QueueDisconnectOnceEmptyAction;
+  TAction *QueueDisconnectOnceEmptyAction2;
   TTBXItem *TBXItem13;
   TAction *LocalCopyAction;
   TAction *RemoteCopyAction;
@@ -488,7 +488,7 @@ __published:    // IDE-managed Components
   TAction *RemoteFilterAction;
   TTBXItem *TBXItem26;
   TTBXItem *TBXItem27;
-  TAction *QueueShutDownOnceEmptyAction;
+  TAction *QueueShutDownOnceEmptyAction2;
   TAction *QueueIdleOnceEmptyAction;
   TTBXSubmenuItem *TBXSubmenuItem3;
   TTBXItem *TBXItem28;
@@ -549,13 +549,13 @@ __published:    // IDE-managed Components
   TTBXItem *TBXItem49;
   TTBXPopupMenu *LocalFilePopup;
   TTBXItem *LocalOpenMenuItem;
-  TTBXItem *LocalEditMenuItem;
-  TTBXItem *LocalCopyMenuItem;
+  TTBXSubmenuItem *LocalEditMenuItem;
+  TTBXSubmenuItem *LocalCopyMenuItem;
   TTBXItem *TBXItem54;
   TTBXItem *TBXItem57;
   TTBXItem *TBXItem58;
   TTBXSeparatorItem *TBXSeparatorItem3;
-  TTBXSubmenuItem *TBXSubmenuItem4;
+  TTBXSubmenuItem *LocalFilePopupCustomCommandsMenu;
   TTBXSubmenuItem *TBXSubmenuItem5;
   TTBXItem *TBXItem59;
   TTBXItem *TBXItem60;
@@ -571,7 +571,7 @@ __published:    // IDE-managed Components
   TTBXSeparatorItem *TBXSeparatorItem5;
   TTBXSeparatorItem *TBXSeparatorItem6;
   TTBXItem *TBXItem56;
-  TAction *SessionGenerateUrlAction;
+  TAction *SessionGenerateUrlAction2;
   TTBXItem *TBXItem52;
   TAction *FormatSizeBytesKilobytesAction;
   TAction *FormatSizeBytesShortAction;
@@ -584,18 +584,39 @@ __published:    // IDE-managed Components
   TTBXItem *TBXItem64;
   TTBXItem *TBXItem65;
   TTBXItem *TBXItem66;
-  TAction *QueueSuspendOnceEmptyAction;
+  TAction *QueueSuspendOnceEmptyAction2;
   TTBXItem *TBXItem68;
-  TTBXSubmenuItem *TBXItem69;
   TAction *CurrentEditWithFocusedAction;
-  TAction *CurrentEditAlternativeFocusedAction;
   TAction *CurrentEditInternalFocusedAction;
-  TTBXSubmenuItem *TBXSubmenuItem6;
   TTBXSubmenuItem *TBXSubmenuItem7;
   TTBXItem *TBXItem70;
   TTBXItem *TBXItem71;
   TAction *QueueDeleteAllAction;
   TTBXItem *TBXItem142;
+  TTBXItem *TBXItem72;
+  TTBXItem *TBXItem73;
+  TAction *LocalCopyFocusedQueueAction;
+  TAction *LocalCopyQueueAction;
+  TAction *RemoteCopyFocusedQueueAction;
+  TAction *RemoteCopyQueueAction;
+  TAction *LocalCopyFocusedNonQueueAction;
+  TAction *LocalCopyNonQueueAction;
+  TAction *RemoteCopyFocusedNonQueueAction;
+  TAction *RemoteCopyNonQueueAction;
+  TTBXItem *TBXItem69;
+  TTBXSeparatorItem *TBXSeparatorItem9;
+  TTBXItem *TBXItem74;
+  TTBXSeparatorItem *TBXSeparatorItem10;
+  TAction *SelectSameExtAction;
+  TAction *UnselectSameExtAction;
+  TAction *GoToAddressAction;
+  TAction *LockAction;
+  TAction *UnlockAction;
+  TAction *TipsAction;
+  TAction *CustomCommandsNonFileAction;
+  TTBXSubmenuItem *RemoteDirViewPopupCustomCommandsMenu;
+  TTBXItem *TBXItem75;
+  TTBXItem *TBXItem76;
   void __fastcall LogActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall LogActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsUpdate(TBasicAction *Action, bool &Handled);
@@ -605,6 +626,13 @@ __published:    // IDE-managed Components
   void __fastcall QueuePopupSpeedComboBoxItemItemClick(TObject *Sender);
   void __fastcall QueueSpeedComboBoxItemAcceptText(TObject *Sender,
           UnicodeString &NewText, bool &Accept);
+  void __fastcall FocusedEditMenuItemPopup(TTBCustomItem *Sender, bool FromLink);
+  void __fastcall EditMenuItemPopup(TTBCustomItem *Sender, bool FromLink);
+  void __fastcall QueuePopupSpeedComboBoxItemAdjustImageIndex(TTBXComboBoxItem *Sender,
+          const UnicodeString AText, int AIndex, int &ImageIndex);
+  UnicodeString __fastcall CustomCommandCaption(const TCustomCommandType * Command, bool Toolbar);
+  UnicodeString __fastcall CustomCommandHint(const TCustomCommandType * Command);
+
 private:
   TListColumn * FListColumn;
   TCustomScpExplorerForm * FScpExplorer;
@@ -620,17 +648,22 @@ protected:
   UnicodeString __fastcall GetSessionFolderRoot(TSessionData * Data, int Level);
   void __fastcall CreateWorkspacesMenu(TAction * Action);
   void __fastcall WorkspaceItemClick(TObject * Sender);
-  void __fastcall CreateCustomCommandsMenu(TAction * Action);
+  int __fastcall CreateCustomCommandsListMenu(TCustomCommandList * List, TTBCustomItem * Menu, bool OnFocused,
+    bool Toolbar, TCustomCommandListType ListType, int Tag);
+  void __fastcall CreateCustomCommandsMenu(TAction * Action, TCustomCommandListType ListType);
+  bool __fastcall CheckCustomCommandsToolbarList(TTBXToolbar * Toolbar, TCustomCommandList * List, int & Index);
+  void __fastcall UpdateCustomCommandsToolbarList(TTBXToolbar * Toolbar, TCustomCommandList * List, int & Index);
   void __fastcall CreateSessionColorMenu(TAction * Action);
   void __fastcall SessionColorChange(TColor Color);
   void __fastcall CreateOpenedSessionListMenu(TAction * Action);
   TCustomDirView * __fastcall DirView(TOperationSide Side) { return ScpExplorer->DirView(Side); }
+  bool __fastcall DirViewEnabled(TOperationSide Side) { return ScpExplorer->DirViewEnabled(Side); }
   void __fastcall SessionItemClick(TObject * Sender);
   void __fastcall SessionFolderItemClick(TObject * Sender);
   void __fastcall SessionFolderThisItemClick(TObject * Sender);
   void __fastcall OpenedSessionItemClick(TObject * Sender);
   void __fastcall CustomCommandClick(TObject * Sender);
-  void __fastcall CreateEditorListMenu(TAction * Action, bool OnFocused);
+  void __fastcall CreateEditorListMenu(TTBCustomItem * Menu, bool OnFocused);
   void __fastcall EditorItemClick(TObject * Sender);
   void __fastcall EditorItemClickFocused(TObject * Sender);
   void __fastcall DoEditorItemClick(TObject * Sender, bool OnFocused);
@@ -657,8 +690,8 @@ public:
   void __fastcall QueueSpeedComboBoxItem(TTBXComboBoxItem * Item);
   void __fastcall QueueSpeedComboBoxItemUpdate(TTBXComboBoxItem * Item);
   void __fastcall CreateCustomCommandsMenu(TTBCustomItem * Menu, bool OnFocused,
-    bool Toolbar, bool Both);
-  void __fastcall CreateCustomCommandsMenu(TAction * Action, bool OnFocused, bool Both);
+    bool Toolbar, TCustomCommandListType ListType);
+  void __fastcall CreateCustomCommandsMenu(TAction * Action, bool OnFocused, TCustomCommandListType ListType);
   TOnceDoneOperation __fastcall CurrentQueueOnceEmptyOperation();
   void __fastcall ResetQueueOnceEmptyOperation();
   void __fastcall StartBusy();

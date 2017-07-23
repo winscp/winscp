@@ -7,6 +7,7 @@
 #include <math.h>
 
 #include "Preferences.h"
+#include "Custom.h"
 
 #include <CoreMain.h>
 #include <Terminal.h>
@@ -15,12 +16,15 @@
 #include "VCLCommon.h"
 #include "GUITools.h"
 #include "Tools.h"
+#include "TextsCore.h"
 #include "TextsWin.h"
 #include "HelpWin.h"
 #include "WinInterface.h"
 #include "WinConfiguration.h"
 #include "Setup.h"
 #include "ProgParams.h"
+#include "Http.h"
+#include "TerminalManager.h"
 //---------------------------------------------------------------------
 #pragma link "CopyParams"
 #pragma link "UpDownEdit"
@@ -67,18 +71,25 @@ __fastcall TPreferencesDialog::TPreferencesDialog(
   FAfterFilenameEditDialog = false;
   FCustomCommandList = new TCustomCommandList();
   FCustomCommandChanging = false;
+  FExtensionList = new TCustomCommandList();
   FListViewDragDest = -1;
   FCopyParamList = new TCopyParamList();
   FEditorList = new TEditorList();
+  FAutomaticUpdatesPossible = IsInstalled();
+  FCustomCommandsHintItem = NULL;
+  FAddedExtensions.reset(CreateSortedStringList());
+  FCustomCommandOptions.reset(new TStringList());
   UseSystemSettings(this);
 
   FCustomCommandsScrollOnDragOver = new TListViewScrollOnDragOver(CustomCommandsView, true);
-  FixListColumnWidth(CustomCommandsView, -2);
   FixListColumnWidth(CustomCommandsView, -1);
   FCopyParamScrollOnDragOver = new TListViewScrollOnDragOver(CopyParamListView, true);
   FixListColumnWidth(CopyParamListView, -1);
   FEditorScrollOnDragOver = new TListViewScrollOnDragOver(EditorListView3, true);
   FixListColumnWidth(EditorListView3, -1);
+
+  FOrigCustomCommandsViewWindowProc = CustomCommandsView->WindowProc;
+  CustomCommandsView->WindowProc = CustomCommandsViewWindowProc;
 
   ComboAutoSwitchInitialize(UpdatesBetaVersionsCombo);
   EnableControl(UpdatesBetaVersionsCombo, !WinConfiguration->IsBeta);
@@ -89,7 +100,7 @@ __fastcall TPreferencesDialog::TPreferencesDialog(
 
   HintLabel(ShellIconsText2);
   HotTrackLabel(CopyParamLabel);
-  HintLabel(PuttyPathHintText, LoadStr(PUTTY_PATTERNS_HINT));
+  HintLabel(PuttyPathHintText, LoadStr(PUTTY_PATTERNS_HINT2));
 
   EditorEncodingCombo->Items->Add(DefaultEncodingName());
   EditorEncodingCombo->Items->Add(LoadStr(UTF8_NAME));
@@ -102,6 +113,16 @@ __fastcall TPreferencesDialog::TPreferencesDialog(
   PuttyRegistryStorageKeyEdit->Items->Add(KittyRegistryStorageKey);
 
   MenuButton(RegisterAsUrlHandlersButton);
+  MenuButton(EditorFontColorButton);
+  MenuButton(EditorBackgroundColorButton);
+
+  LoadDialogImage(CommanderInterfacePicture, L"Commander");
+  LoadDialogImage(ExplorerInterfacePicture, L"Explorer");
+
+  LinkLabel(UpdatesLink);
+  LinkAppLabel(BackgroundConfirmationsLink);
+
+  HideComponentsPanel(this);
 }
 //---------------------------------------------------------------------------
 __fastcall TPreferencesDialog::~TPreferencesDialog()
@@ -111,6 +132,8 @@ __fastcall TPreferencesDialog::~TPreferencesDialog()
   SAFE_DESTROY(FCustomCommandsScrollOnDragOver);
   delete FCustomCommandList;
   FCustomCommandList = NULL;
+  delete FExtensionList;
+  FExtensionList = NULL;
   delete FCopyParamList;
   FCopyParamList = NULL;
   delete FEditorList;
@@ -121,12 +144,18 @@ bool __fastcall TPreferencesDialog::Execute(TPreferencesDialogData * DialogData)
 {
   PuttyPathEdit->Items = CustomWinConfiguration->History[L"PuttyPath"];
   FDialogData = DialogData;
-  LoadConfiguration();
   bool Result = (ShowModal() == DefaultResult(this));
   if (Result)
   {
     SaveConfiguration();
     CustomWinConfiguration->History[L"PuttyPath"] = PuttyPathEdit->Items;
+  }
+  else
+  {
+    for (int Index = 0; Index < FAddedExtensions->Count; Index++)
+    {
+      DeleteFile(ApiPath(FAddedExtensions->Strings[Index]));
+    }
   }
   return Result;
 }
@@ -148,7 +177,8 @@ void __fastcall TPreferencesDialog::LoadLanguages()
       Item->Selected = Item->Focused;
     }
 
-    FLanguagesLoaded = false;
+    AutoSizeListColumnsWidth(LanguagesView);
+    FLanguagesLoaded = true;
   }
 }
 //---------------------------------------------------------------------------
@@ -162,7 +192,7 @@ TTabSheet * __fastcall TPreferencesDialog::FindPageForTreeNode(TTreeNode * Node)
       return Sheet;
     }
   }
-  FAIL;
+  DebugFail();
   return NULL;
 }
 //---------------------------------------------------------------------------
@@ -174,7 +204,7 @@ void __fastcall TPreferencesDialog::PrepareNavigationTree(TTreeView * Tree)
   {
     TTreeNode * Node = Tree->Items->Item[i];
     TTabSheet * Sheet = FindPageForTreeNode(Node);
-    if (NOT_NULL(Sheet))
+    if (DebugNotNull(Sheet))
     {
       if (Sheet->Enabled)
       {
@@ -216,7 +246,6 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     BOOLPROP(ConfirmResume);
     BOOLPROP(ConfirmDeleting);
     BOOLPROP(ConfirmRecycling);
-    BOOLPROP(ConfirmClosingSession);
     BOOLPROP(ConfirmExitOnCompletion);
     BOOLPROP(ConfirmCommandSession);
     BOOLPROP(ContinueOnError);
@@ -228,6 +257,8 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     BOOLPROP(TemporaryDirectoryCleanup);
     BOOLPROP(ConfirmTemporaryDirectoryCleanup);
     BOOLPROP(FullRowSelect);
+
+    ConfirmClosingSessionCheck2->Checked = WinConfiguration->ConfirmClosingSession;
 
     if (WinConfiguration->DDTransferConfirmation == asAuto)
     {
@@ -310,6 +341,8 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
       EditorEncodingCombo->ItemIndex = 0;
     }
     TWinConfiguration::RestoreFont(WinConfiguration->Editor.Font, FEditorFont.get());
+    FEditorFont->Color = WinConfiguration->Editor.FontColor;
+    FEditorBackgroundColor = WinConfiguration->Editor.BackgroundColor;
     (*FEditorList) = *WinConfiguration->EditorList;
     UpdateEditorListView();
 
@@ -339,7 +372,9 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     RandomSeedFileEdit->Visible = WinConfiguration->ExpertMode;
 
     FCustomCommandList->Assign(WinConfiguration->CustomCommandList);
+    FExtensionList->Assign(WinConfiguration->ExtensionList);
     UpdateCustomCommandsView();
+    FCustomCommandOptions->Assign(WinConfiguration->CustomCommandOptions);
 
     PuttyPathEdit->Text = GUIConfiguration->PuttyPath;
     PuttyPasswordCheck2->Checked = GUIConfiguration->PuttyPassword;
@@ -414,6 +449,8 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     }
     BOOLPROP(MinimizeToTray);
     BOOLPROP(ExternalSessionInExistingInstance);
+    BOOLPROP(KeepOpenWhenNoSession);
+    BOOLPROP(ShowTips);
 
     // panels
     DoubleClickActionCombo->ItemIndex = WinConfiguration->DoubleClickAction;
@@ -434,7 +471,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
         FormatSizeBytesCombo->ItemIndex = 2;
         break;
       default:
-        FAIL;
+        DebugFail();
     }
 
     bool CustomPanelFont = !WinConfiguration->PanelFont.FontName.IsEmpty();
@@ -468,6 +505,8 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     }
 
     UpdatesShowOnStartup->Checked = Updates.ShowOnStartup;
+    UpdatesAuthenticationEmailEdit->Text = Updates.AuthenticationEmail;
+    FVerifiedUpdatesAuthenticationEmail = UpdatesAuthenticationEmailEdit->Text;
 
     CollectUsageCheck->Checked = Configuration->CollectUsage;
 
@@ -510,21 +549,8 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
         break;
 
       default:
-        FAIL;
+        DebugFail();
         break;
-    }
-
-    if (WinConfiguration->Theme == THEME_OFFICEXP)
-    {
-      ThemeCombo->ItemIndex = 1;
-    }
-    else if (WinConfiguration->Theme == THEME_OFFICE2003)
-    {
-      ThemeCombo->ItemIndex = 2;
-    }
-    else
-    {
-      ThemeCombo->ItemIndex = 0;
     }
 
     // security
@@ -550,24 +576,6 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     else
     {
       LogFileOverwriteButton->Checked = true;
-    }
-    LogShowWindowCheck->Checked = (CustomWinConfiguration->LogView == lvWindow);
-    if (Configuration->LogWindowComplete)
-    {
-      LogWindowCompleteButton->Checked = true;
-    }
-    else
-    {
-      LogWindowLinesButton->Checked = true;
-    }
-
-    if (!Configuration->LogWindowComplete)
-    {
-      LogWindowLinesEdit->AsInteger = Configuration->LogWindowLines;
-    }
-    else
-    {
-      LogWindowLinesEdit->AsInteger = 500;
     }
     BOOLPROP(LogSensitive);
 
@@ -605,7 +613,6 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     BOOLPROP(ConfirmResume);
     BOOLPROP(ConfirmDeleting);
     BOOLPROP(ConfirmRecycling);
-    BOOLPROP(ConfirmClosingSession);
     BOOLPROP(ConfirmExitOnCompletion);
     BOOLPROP(ConfirmCommandSession);
     BOOLPROP(ContinueOnError);
@@ -617,6 +624,8 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     BOOLPROP(TemporaryDirectoryCleanup);
     BOOLPROP(ConfirmTemporaryDirectoryCleanup);
     BOOLPROP(FullRowSelect);
+
+    WinConfiguration->ConfirmClosingSession = ConfirmClosingSessionCheck2->Checked;
 
     WinConfiguration->DDTransferConfirmation =
       CheckBoxAutoSwitchSave(DDTransferConfirmationCheck);
@@ -688,6 +697,8 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
         break;
     }
     TWinConfiguration::StoreFont(FEditorFont.get(), WinConfiguration->Editor.Font);
+    WinConfiguration->Editor.FontColor = FEditorFont->Color;
+    WinConfiguration->Editor.BackgroundColor = FEditorBackgroundColor;
     WinConfiguration->EditorList = FEditorList;
 
     // overwrites only TCopyParamType fields
@@ -706,6 +717,8 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     Configuration->SessionReopenTimeout = (SessionReopenTimeoutEdit->AsInteger * MSecsPerSec);
 
     WinConfiguration->CustomCommandList = FCustomCommandList;
+    WinConfiguration->ExtensionList = FExtensionList;
+    WinConfiguration->CustomCommandOptions = FCustomCommandOptions.get();
 
     GUIConfiguration->PuttyPath = PuttyPathEdit->Text;
     GUIConfiguration->PuttyPassword = PuttyPasswordCheck2->Checked;
@@ -784,6 +797,8 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     }
     BOOLPROP(MinimizeToTray);
     BOOLPROP(ExternalSessionInExistingInstance);
+    BOOLPROP(KeepOpenWhenNoSession);
+    BOOLPROP(ShowTips);
 
     // panels
     WinConfiguration->DoubleClickAction = (TDoubleClickAction)DoubleClickActionCombo->ItemIndex;
@@ -804,7 +819,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
         WinConfiguration->FormatSizeBytes = fbShort;
         break;
       default:
-        FAIL;
+        DebugFail();
     }
 
     TFontConfiguration PanelFontConfiguration;
@@ -815,53 +830,9 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     WinConfiguration->PanelFont = PanelFontConfiguration;
 
     // updates
-    TUpdatesConfiguration Updates = WinConfiguration->Updates;
-    if (UpdatesPeriodCombo->ItemIndex == 0)
-    {
-      Updates.Period = 0;
-    }
-    else if (UpdatesPeriodCombo->ItemIndex == 1)
-    {
-      Updates.Period = 1;
-    }
-    else if (UpdatesPeriodCombo->ItemIndex == 2)
-    {
-      Updates.Period = 7;
-    }
-    else
-    {
-      Updates.Period = 30;
-    }
-
-    Updates.ShowOnStartup = UpdatesShowOnStartup->Checked;
+    WinConfiguration->Updates = SaveUpdates();
 
     Configuration->CollectUsage = CollectUsageCheck->Checked;
-
-    Updates.BetaVersions = ComboAutoSwitchSave(UpdatesBetaVersionsCombo);
-
-    if (UpdatesDirectCheck->Checked)
-    {
-      Updates.ConnectionType = ctDirect;
-    }
-    else if (UpdatesAutoCheck->Checked)
-    {
-      Updates.ConnectionType = ctAuto;
-    }
-    else if (UpdatesProxyCheck->Checked)
-    {
-      if (!UpdatesProxyHostEdit->Text.IsEmpty())
-      {
-        Updates.ConnectionType = ctProxy;
-      }
-      else
-      {
-        Updates.ConnectionType = ctDirect;
-      }
-    }
-    Updates.ProxyHost = UpdatesProxyHostEdit->Text;
-    Updates.ProxyPort = UpdatesProxyPortEdit->AsInteger;
-
-    WinConfiguration->Updates = Updates;
 
     // presets
     WinConfiguration->CopyParamList = FCopyParamList;
@@ -873,19 +844,6 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
       Configuration->Usage->Inc(L"InterfaceChanges");
     }
     CustomWinConfiguration->Interface = GetInterface();
-
-    if (ThemeCombo->ItemIndex == 1)
-    {
-      WinConfiguration->Theme = THEME_OFFICEXP;
-    }
-    else if (ThemeCombo->ItemIndex == 2)
-    {
-      WinConfiguration->Theme = THEME_OFFICE2003;
-    }
-    else
-    {
-      WinConfiguration->Theme = THEME_DEFAULT;
-    }
 
     // network
     Configuration->ExternalIpAddress =
@@ -900,12 +858,6 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     Configuration->LogProtocol = LogProtocolCombo->ItemIndex;
     Configuration->LogFileName = LogToFileCheck->Checked ? LogFileNameEdit3->Text : UnicodeString();
     Configuration->LogFileAppend = LogFileAppendButton->Checked;
-    CustomWinConfiguration->LogView = LogShowWindowCheck->Checked ? lvWindow : lvNone;
-    Configuration->LogWindowComplete = LogWindowCompleteButton->Checked;
-    if (!LogWindowCompleteButton->Checked)
-    {
-      Configuration->LogWindowLines = LogWindowLinesEdit->AsInteger;
-    }
     BOOLPROP(LogSensitive);
 
     Configuration->LogActions = EnableActionsLoggingCheck->Checked;
@@ -940,6 +892,56 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
   }
 }
 //---------------------------------------------------------------------------
+TUpdatesConfiguration __fastcall TPreferencesDialog::SaveUpdates()
+{
+  TUpdatesConfiguration Updates = WinConfiguration->Updates;
+  if (UpdatesPeriodCombo->ItemIndex == 0)
+  {
+    Updates.Period = 0;
+  }
+  else if (UpdatesPeriodCombo->ItemIndex == 1)
+  {
+    Updates.Period = 1;
+  }
+  else if (UpdatesPeriodCombo->ItemIndex == 2)
+  {
+    Updates.Period = 7;
+  }
+  else
+  {
+    Updates.Period = 30;
+  }
+
+  Updates.ShowOnStartup = UpdatesShowOnStartup->Checked;
+  Updates.AuthenticationEmail = UpdatesAuthenticationEmailEdit->Text;
+
+  Updates.BetaVersions = ComboAutoSwitchSave(UpdatesBetaVersionsCombo);
+
+  if (UpdatesDirectCheck->Checked)
+  {
+    Updates.ConnectionType = ctDirect;
+  }
+  else if (UpdatesAutoCheck->Checked)
+  {
+    Updates.ConnectionType = ctAuto;
+  }
+  else if (UpdatesProxyCheck->Checked)
+  {
+    if (!UpdatesProxyHostEdit->Text.IsEmpty())
+    {
+      Updates.ConnectionType = ctProxy;
+    }
+    else
+    {
+      Updates.ConnectionType = ctDirect;
+    }
+  }
+  Updates.ProxyHost = UpdatesProxyHostEdit->Text;
+  Updates.ProxyPort = UpdatesProxyPortEdit->AsInteger;
+
+  return Updates;
+}
+//---------------------------------------------------------------------------
 TInterface __fastcall TPreferencesDialog::GetInterface()
 {
   return CommanderInterfaceButton2->Checked ? ifCommander : ifExplorer;
@@ -947,11 +949,18 @@ TInterface __fastcall TPreferencesDialog::GetInterface()
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::FormShow(TObject * /*Sender*/)
 {
+  // Load only now, particularly so that we have handles allocated already.
+  // If called before ShowModal, we end up recreating the handles,
+  // what causes flicker of the currently focused window
+  LoadConfiguration();
+
   InstallPathWordBreakProc(RandomSeedFileEdit);
   InstallPathWordBreakProc(DDTemporaryDirectoryEdit);
   InstallPathWordBreakProc(PuttyPathEdit);
   InstallPathWordBreakProc(LogFileNameEdit3);
   InstallPathWordBreakProc(ActionsLogFileNameEdit);
+
+  ListView_SetExtendedListViewStyle(CustomCommandsView->Handle, (ListView_GetExtendedListViewStyle(CustomCommandsView->Handle) & ~LVS_EX_INFOTIP));
 
   PrepareNavigationTree(NavigationTree);
 
@@ -964,9 +973,11 @@ void __fastcall TPreferencesDialog::FormShow(TObject * /*Sender*/)
     case pmPresets: PageControl->ActivePage = CopyParamListSheet; break;
     case pmEditors: PageControl->ActivePage = EditorSheet; break;
     case pmCommander: PageControl->ActivePage = CommanderSheet; break;
+    case pmEditorInternal: PageControl->ActivePage = EditorInternalSheet; break;
     default: PageControl->ActivePage = PreferencesSheet; break;
   }
   PageControlChange(NULL);
+  ActiveControl = NavigationTree;
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::ControlChange(TObject * /*Sender*/)
@@ -991,6 +1002,50 @@ UnicodeString __fastcall TPreferencesDialog::TabSample(UnicodeString Values)
     Result += Values[Index];
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+TCustomCommandList * __fastcall TPreferencesDialog::GetCommandList(int Index)
+{
+  if (Index < FCustomCommandList->Count)
+  {
+    return FCustomCommandList;
+  }
+  else
+  {
+    return FExtensionList;
+  }
+}
+//---------------------------------------------------------------------------
+int __fastcall TPreferencesDialog::GetCommandIndex(int Index)
+{
+  if (Index >= FCustomCommandList->Count)
+  {
+    Index -= FCustomCommandList->Count;
+  }
+  return Index;
+}
+//---------------------------------------------------------------------------
+int __fastcall TPreferencesDialog::GetListCommandIndex(TCustomCommandList * List)
+{
+  int Index;
+  if (GetCommandList(CustomCommandsView->ItemIndex) == List)
+  {
+    Index = GetCommandIndex(CustomCommandsView->ItemIndex);
+  }
+  else
+  {
+    Index = -1;
+  }
+  return Index;
+}
+//---------------------------------------------------------------------------
+int __fastcall TPreferencesDialog::GetCommandListIndex(TCustomCommandList * List, int Index)
+{
+  if (List == FExtensionList)
+  {
+    Index += FCustomCommandList->Count;
+  }
+  return Index;
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::UpdateControls()
@@ -1038,18 +1093,29 @@ void __fastcall TPreferencesDialog::UpdateControls()
     EditorFontLabelText += TabSample(L"ABCD") + L"\n";
     EditorFontLabelText += TabSample(L"1234");
     EditorFontLabel->Caption = EditorFontLabelText;
-    if (!SameFont(EditorFontLabel->Font, FEditorFont.get()))
+    TColor EditorFontColor = GetWindowTextColor(FEditorFont->Color);
+    if (!SameFont(EditorFontLabel->Font, FEditorFont.get()) ||
+        (EditorFontLabel->Font->Color != EditorFontColor))
     {
-      EditorFontLabel->Font = FEditorFont.get();
+      std::unique_ptr<TFont> Font(new TFont);
+      Font->Assign(FEditorFont.get());
+      Font->Color = EditorFontColor;
+      EditorFontLabel->Font = Font.get();
     }
+    EditorFontLabel->Color = GetWindowColor(FEditorBackgroundColor);
 
+    TCustomCommandList * CommandList = GetCommandList(CustomCommandsView->ItemIndex);
+    int CommandIndex = GetCommandIndex(CustomCommandsView->ItemIndex);
     bool CommandSelected = (CustomCommandsView->Selected != NULL);
-    EnableControl(EditCommandButton, CommandSelected);
+    bool CustomCommandSelected = CommandSelected && (CommandList == FCustomCommandList);
+    bool ExtensionSelected = CommandSelected && (CommandList == FExtensionList);
+    EnableControl(EditCommandButton, CustomCommandSelected);
+    EditCommandButton->Visible = !ExtensionSelected;
+    EnableControl(ConfigureCommandButton, ExtensionSelected && CommandList->Commands[CommandIndex]->AnyOptionWithFlag(TCustomCommandType::ofConfig));
+    ConfigureCommandButton->Visible = ExtensionSelected;
     EnableControl(RemoveCommandButton, CommandSelected);
-    EnableControl(UpCommandButton, CommandSelected &&
-      CustomCommandsView->ItemIndex > 0);
-    EnableControl(DownCommandButton, CommandSelected &&
-      (CustomCommandsView->ItemIndex < CustomCommandsView->Items->Count - 1));
+    EnableControl(UpCommandButton, CommandSelected && (CommandIndex > 0));
+    EnableControl(DownCommandButton, CommandSelected && (CommandIndex < CommandList->Count - 1));
 
     bool CopyParamSelected = (CopyParamListView->Selected != NULL);
     EnableControl(EditCopyParamButton, CopyParamSelected);
@@ -1078,10 +1144,7 @@ void __fastcall TPreferencesDialog::UpdateControls()
         }
       }
     }
-    CopyParamLabel->Caption = InfoStr;
-    CopyParamLabel->Hint = InfoStr;
-    CopyParamLabel->ShowHint =
-      (CopyParamLabel->Canvas->TextWidth(InfoStr) > (CopyParamLabel->Width * 3 / 2));
+    SetLabelHintPopup(CopyParamLabel, InfoStr);
 
     EnableControl(DDExtEnabledButton, WinConfiguration->DDExtInstalled);
     EnableControl(DDExtEnabledLabel, WinConfiguration->DDExtInstalled);
@@ -1109,6 +1172,9 @@ void __fastcall TPreferencesDialog::UpdateControls()
     EnableControl(DownEditorButton, EditorSelected &&
       (EditorListView3->ItemIndex < EditorListView3->Items->Count - 1));
 
+    // updates
+    EnableControl(UpdatesAuthenticationEmailEdit, FAutomaticUpdatesPossible);
+    EnableControl(UpdatesAuthenticationEmailLabel, UpdatesAuthenticationEmailEdit->Enabled);
     EnableControl(UsageViewButton, CollectUsageCheck->Checked);
     EnableControl(UpdatesProxyHostEdit, UpdatesProxyCheck->Checked);
     EnableControl(UpdatesProxyHostLabel, UpdatesProxyHostEdit->Enabled);
@@ -1116,6 +1182,7 @@ void __fastcall TPreferencesDialog::UpdateControls()
     EnableControl(UpdatesProxyPortLabel, UpdatesProxyPortEdit->Enabled);
 
     bool IsSiteCommand = false;
+    bool IsPasswordCommand = false;
     try
     {
       TRemoteCustomCommand RemoteCustomCommand;
@@ -1123,17 +1190,19 @@ void __fastcall TPreferencesDialog::UpdateControls()
       UnicodeString PuttyPath = PuttyPathEdit->Text;
       PuttyPath = InteractiveCustomCommand.Complete(PuttyPath, false);
       IsSiteCommand = RemoteCustomCommand.IsSiteCommand(PuttyPath);
+      IsPasswordCommand = RemoteCustomCommand.IsPasswordCommand(PuttyPath);
     }
     catch (...)
     {
       // noop
     }
-    EnableControl(PuttyPasswordCheck2, !PuttyPathEdit->Text.IsEmpty());
-    EnableControl(AutoOpenInPuttyCheck, PuttyPasswordCheck2->Enabled);
+    bool AnyPuttyPath = !PuttyPathEdit->Text.IsEmpty();
+    EnableControl(PuttyPasswordCheck2, AnyPuttyPath && !IsPasswordCommand);
+    EnableControl(AutoOpenInPuttyCheck, AnyPuttyPath);
     EnableControl(TelnetForFtpInPuttyCheck,
-      PuttyPasswordCheck2->Enabled && !IsSiteCommand);
+      AnyPuttyPath && !IsSiteCommand);
     EnableControl(PuttyRegistryStorageKeyEdit,
-      PuttyPasswordCheck2->Enabled && !IsSiteCommand);
+      AnyPuttyPath && !IsSiteCommand);
     EnableControl(PuttyRegistryStorageKeyLabel, PuttyRegistryStorageKeyEdit->Enabled);
 
     EnableControl(SetMasterPasswordButton, WinConfiguration->UseMasterPassword);
@@ -1150,12 +1219,12 @@ void __fastcall TPreferencesDialog::UpdateControls()
 
     // integration
     // There's no quick launch in Windows 7
-    EnableControl(QuickLaunchIconButton, !::IsWin7());
+    EnableControl(QuickLaunchIconButton, !IsWin7());
     MakeDefaultHandlerItem->Visible = IsWinVista();
 
     // languages
     LanguageChangeLabel->Visible =
-      !GUIConfiguration->CanApplyLocaleImmediately &&
+      DebugAlwaysTrue(!GUIConfiguration->CanApplyLocaleImmediately) &&
       (LanguagesView->ItemFocused != NULL) &&
       (reinterpret_cast<LCID>(LanguagesView->ItemFocused->Data) != GUIConfiguration->AppliedLocale);
 
@@ -1166,12 +1235,6 @@ void __fastcall TPreferencesDialog::UpdateControls()
     EnableControl(LogFileNameHintText, LogFileNameEdit3->Enabled);
     EnableControl(LogFileAppendButton, LogFileNameEdit3->Enabled);
     EnableControl(LogFileOverwriteButton, LogFileNameEdit3->Enabled);
-
-    EnableControl(LogShowWindowCheck, LogProtocolCombo->Enabled);
-    EnableControl(LogWindowCompleteButton, LogShowWindowCheck->Enabled && LogShowWindowCheck->Checked);
-    EnableControl(LogWindowLinesButton, LogWindowCompleteButton->Enabled);
-    EnableControl(LogWindowLinesEdit, LogWindowLinesButton->Enabled && LogWindowLinesButton->Checked);
-    EnableControl(LogWindowLinesText, LogWindowLinesEdit->Enabled);
 
     EnableControl(LogSensitiveCheck, LogProtocolCombo->Enabled);
 
@@ -1191,6 +1254,41 @@ void __fastcall TPreferencesDialog::EditorFontButtonClick(TObject * /*Sender*/)
   {
     UpdateControls();
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::EditorFontColorChange(TColor Color)
+{
+  FEditorFont->Color = Color;
+  UpdateControls();
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::EditorFontColorButtonClick(TObject * /*Sender*/)
+{
+  // WORKAROUND: Compiler keeps crashing randomly (but frequently) with
+  // "internal error" when passing menu directly to unique_ptr.
+  // Splitting it to two statements seems to help.
+  // The same hack exists in TSiteAdvancedDialog::ColorButtonClick
+  TPopupMenu * Menu = CreateColorPopupMenu(FEditorFont->Color, EditorFontColorChange);
+  // Popup menu has to survive the popup as TBX calls click handler asynchronously (post).
+  FColorPopupMenu.reset(Menu);
+  MenuPopup(Menu, EditorFontColorButton);
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::EditorBackgroundColorChange(TColor Color)
+{
+  FEditorBackgroundColor = Color;
+  UpdateControls();
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::EditorBackgroundColorButtonClick(TObject * /*Sender*/)
+{
+  // See comment in EditorFontColorButtonClick.
+  // We are using session color (contrary to editor text color) for background
+  // for a consistency with color selection menu on editor toolbar.
+  TTBXPopupMenu * PopupMenu = new TTBXPopupMenu(Application);
+  FColorPopupMenu.reset(PopupMenu);
+  CreateEditorBackgroundColorMenu(PopupMenu->Items, FEditorBackgroundColor, EditorBackgroundColorChange);
+  MenuPopup(FColorPopupMenu.get(), EditorBackgroundColorButton);
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::PanelFontButtonClick(TObject * /*Sender*/)
@@ -1244,7 +1342,7 @@ void __fastcall TPreferencesDialog::IconButtonClick(TObject *Sender)
     {
       if (Sender == SendToHookButton)
       {
-        IconName = FMTLOAD(SENDTO_HOOK_NAME, (AppName));
+        IconName = FMTLOAD(SENDTO_HOOK_NAME2, (AppName));
         SpecialFolder = CSIDL_SENDTO;
         Params = TProgramParams::FormatSwitch(UPLOAD_SWITCH);
       }
@@ -1271,30 +1369,16 @@ void __fastcall TPreferencesDialog::CustomCommandsViewData(TObject * /*Sender*/,
       TListItem * Item)
 {
   // WORKAROUND We get here on Wine after destructor is called
-  if (FCustomCommandList != NULL)
+  if ((FCustomCommandList != NULL) && (FExtensionList != NULL))
   {
     int Index = Item->Index;
-    assert(Index >= 0 && Index <= FCustomCommandList->Count);
-    const TCustomCommandType * Command = FCustomCommandList->Commands[Index];
+    const TCustomCommandType * Command = GetCommandList(Index)->Commands[GetCommandIndex(Index)];
     UnicodeString Caption = StripHotkey(Command->Name);
-    if (Command->ShortCut != 0)
-    {
-      Caption = FORMAT(L"%s (%s)", (Caption, ShortCutToText(Command->ShortCut)));
-    }
     Item->Caption = Caption;
-    assert(!Item->SubItems->Count);
+    DebugAssert(!Item->SubItems->Count);
     Item->SubItems->Add(Command->Command);
-    int Params = Command->Params;
     Item->SubItems->Add(LoadStr(
-      FLAGSET(Params, ccLocal) ? CUSTOM_COMMAND_LOCAL : CUSTOM_COMMAND_REMOTE));
-    UnicodeString ParamsStr;
-    #define ADDPARAM(PARAM, STR) \
-      if (FLAGSET(Params, PARAM)) \
-        ParamsStr += (ParamsStr.IsEmpty() ? L"" : L"/") + LoadStr(STR);
-    ADDPARAM(ccApplyToDirectories, CUSTOM_COMMAND_DIRECTORIES);
-    ADDPARAM(ccRecursive, CUSTOM_COMMAND_RECURSE);
-    #undef ADDPARAM
-    Item->SubItems->Add(ParamsStr);
+      FLAGSET(Command->Params, ccLocal) ? CUSTOM_COMMAND_LOCAL : CUSTOM_COMMAND_REMOTE));
   }
 }
 //---------------------------------------------------------------------------
@@ -1306,9 +1390,12 @@ void __fastcall TPreferencesDialog::ListViewSelectItem(
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::UpdateCustomCommandsView()
 {
-  CustomCommandsView->Items->Count = FCustomCommandList->Count;
-  AutoSizeListColumnsWidth(CustomCommandsView);
+  CustomCommandsView->Items->Count = FCustomCommandList->Count + FExtensionList->Count;
+  AutoSizeListColumnsWidth(CustomCommandsView, 1);
   CustomCommandsView->Invalidate();
+  // particularly after command is edited/configured, make sure the hint is updated,
+  // even if we manage to display a hint for the same command as before the change
+  FCustomCommandsHintItem = NULL;
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::CustomCommandsViewKeyDown(
@@ -1321,7 +1408,7 @@ void __fastcall TPreferencesDialog::CustomCommandsViewKeyDown(
 
   if (AddCommandButton->Enabled && (Key == VK_INSERT))
   {
-    AddEditCommandButtonClick(AddCommandButton);
+    AddEditCommand(false);
   }
 }
 //---------------------------------------------------------------------------
@@ -1330,21 +1417,38 @@ void __fastcall TPreferencesDialog::CustomCommandsViewDblClick(
 {
   if (EditCommandButton->Enabled)
   {
-    AddEditCommandButtonClick(EditCommandButton);
+    AddEditCommand(true);
+  }
+  else if (ConfigureCommandButton->Enabled)
+  {
+    ConfigureCommand();
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TPreferencesDialog::AddEditCommandButtonClick(TObject * Sender)
+static int __fastcall AddCommandToList(TCustomCommandList * List, int Index, TCustomCommandType * Command)
 {
-  bool Edit = (Sender == EditCommandButton);
+  if (Index >= 0)
+  {
+    List->Insert(Index, Command);
+  }
+  else
+  {
+    List->Add(Command);
+    Index = List->Count - 1;
+  }
+  return Index;
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::AddEditCommand(bool Edit)
+{
   TCustomCommandType Command;
 
   if (Edit)
   {
     int Index = CustomCommandsView->ItemIndex;
-    assert(Index >= 0 && Index <= FCustomCommandList->Count);
+    DebugAssert(GetCommandList(Index) == FCustomCommandList);
 
-    Command = *FCustomCommandList->Commands[Index];
+    Command = *FCustomCommandList->Commands[GetCommandIndex(Index)];
   }
 
   TShortCuts ShortCuts;
@@ -1353,31 +1457,26 @@ void __fastcall TPreferencesDialog::AddEditCommandButtonClick(TObject * Sender)
     WinConfiguration->SharedBookmarks->ShortCuts(ShortCuts);
   }
   FCustomCommandList->ShortCuts(ShortCuts);
+  FExtensionList->ShortCuts(ShortCuts);
 
   if (DoCustomCommandDialog(Command, FCustomCommandList,
         (Edit ? ccmEdit : ccmAdd), 0, NULL, &ShortCuts))
   {
-    int Index = CustomCommandsView->ItemIndex;
+    int Index = GetListCommandIndex(FCustomCommandList);
     TCustomCommandType * ACommand = new TCustomCommandType(Command);
     if (Edit)
     {
+      DebugAssert(Index < FCustomCommandList->Count);
       FCustomCommandList->Change(Index, ACommand);
     }
     else
     {
-      if (Index >= 0)
-      {
-        FCustomCommandList->Insert(Index, ACommand);
-      }
-      else
-      {
-        FCustomCommandList->Add(ACommand);
-        Index = FCustomCommandList->Count - 1;
-      }
+      Index = AddCommandToList(FCustomCommandList, Index, ACommand);
     }
 
     UpdateCustomCommandsView();
-    CustomCommandsView->ItemIndex = Index;
+    CustomCommandsView->ItemIndex = GetCommandListIndex(FCustomCommandList, Index);
+    CustomCommandsView->ItemFocused->MakeVisible(false);
     UpdateControls();
   }
 }
@@ -1385,26 +1484,37 @@ void __fastcall TPreferencesDialog::AddEditCommandButtonClick(TObject * Sender)
 void __fastcall TPreferencesDialog::RemoveCommandButtonClick(
       TObject * /*Sender*/)
 {
-  assert(CustomCommandsView->ItemIndex >= 0 &&
-    CustomCommandsView->ItemIndex < FCustomCommandList->Count);
-  FCustomCommandList->Delete(CustomCommandsView->ItemIndex);
+  TCustomCommandList * List = GetCommandList(CustomCommandsView->ItemIndex);
+  int Index = GetCommandIndex(CustomCommandsView->ItemIndex);
+  if (List == FExtensionList)
+  {
+    const TCustomCommandType * CustomComand = List->Commands[Index];
+
+    // If the extension was added in this "preferences session", remove the file
+    int PathIndex = FAddedExtensions->IndexOf(CustomComand->FileName);
+    if (PathIndex >= 0)
+    {
+      FAddedExtensions->Delete(PathIndex);
+      DeleteFile(ApiPath(CustomComand->FileName));
+    }
+  }
+  List->Delete(Index);
   UpdateCustomCommandsView();
   UpdateControls();
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::CustomCommandMove(int Source, int Dest)
 {
-  if (Source >= 0 && Source < FCustomCommandList->Count &&
-      Dest >= 0 && Dest < FCustomCommandList->Count)
-  {
-    FCustomCommandList->Move(Source, Dest);
-    // workaround for bug in VCL
-    CustomCommandsView->ItemIndex = -1;
-    CustomCommandsView->ItemFocused = CustomCommandsView->Selected;
-    CustomCommandsView->ItemIndex = Dest;
-    UpdateCustomCommandsView();
-    UpdateControls();
-  }
+  TCustomCommandList * List = GetCommandList(CustomCommandsView->ItemIndex);
+  int SourceIndex = GetCommandIndex(Source);
+  int DestIndex = GetCommandIndex(Dest);
+  List->Move(SourceIndex, DestIndex);
+  // workaround for bug in VCL
+  CustomCommandsView->ItemIndex = -1;
+  CustomCommandsView->ItemFocused = CustomCommandsView->Selected;
+  CustomCommandsView->ItemIndex = Dest;
+  UpdateCustomCommandsView();
+  UpdateControls();
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::UpDownCommandButtonClick(TObject * Sender)
@@ -1429,7 +1539,7 @@ TListViewScrollOnDragOver * __fastcall TPreferencesDialog::ScrollOnDragOver(TObj
   }
   else
   {
-    FAIL;
+    DebugFail();
     return NULL;
   }
 }
@@ -1442,10 +1552,15 @@ void __fastcall TPreferencesDialog::ListViewStartDrag(
   ScrollOnDragOver(Sender)->StartDrag();
 }
 //---------------------------------------------------------------------------
-bool __fastcall TPreferencesDialog::AllowListViewDrag(TObject * Sender, int X, int Y)
+static int __fastcall PointToListViewIndex(TObject * Sender, int X, int Y)
 {
   TListItem * Item = dynamic_cast<TListView*>(Sender)->GetItemAt(X, Y);
-  FListViewDragDest = Item ? Item->Index : -1;
+  return Item ? Item->Index : -1;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TPreferencesDialog::AllowListViewDrag(TObject * Sender, int X, int Y)
+{
+  FListViewDragDest = PointToListViewIndex(Sender, X, Y);
   return (FListViewDragDest >= 0) && (FListViewDragDest != FListViewDragSource);
 }
 //---------------------------------------------------------------------------
@@ -1454,9 +1569,25 @@ void __fastcall TPreferencesDialog::CustomCommandsViewDragDrop(
 {
   if (Source == CustomCommandsView)
   {
-    if (AllowListViewDrag(Sender, X, Y))
+    if (AllowListViewDrag(Sender, X, Y) &&
+        (GetCommandList(FListViewDragSource) == GetCommandList(FListViewDragDest)))
     {
       CustomCommandMove(FListViewDragSource, FListViewDragDest);
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::CustomCommandsViewDragOver(
+  TObject *Sender, TObject *Source, int X, int Y, TDragState State, bool & Accept)
+{
+  ListViewDragOver(Sender, Source, X, Y, State, Accept);
+
+  if (Source == Sender)
+  {
+    int Dest = PointToListViewIndex(Sender, X, Y);
+    if (GetCommandList(FListViewDragSource) != GetCommandList(Dest))
+    {
+      Accept = false;
     }
   }
 }
@@ -1528,7 +1659,7 @@ void __fastcall TPreferencesDialog::UpDownCopyParamButtonClick(TObject * Sender)
 void __fastcall TPreferencesDialog::RemoveCopyParamButtonClick(
   TObject * /*Sender*/)
 {
-  assert(CopyParamListView->ItemIndex >= 1 &&
+  DebugAssert(CopyParamListView->ItemIndex >= 1 &&
     CopyParamListView->ItemIndex < (1 + FCopyParamList->Count));
   FCopyParamList->Delete(CopyParamListView->ItemIndex - 1);
   UpdateCopyParamListView();
@@ -1639,7 +1770,7 @@ void __fastcall TPreferencesDialog::UpDownEditorButtonClick(TObject *Sender)
 void __fastcall TPreferencesDialog::RemoveEditorButtonClick(
   TObject * /*Sender*/)
 {
-  assert(EditorListView3->ItemIndex >= 0 &&
+  DebugAssert(EditorListView3->ItemIndex >= 0 &&
     EditorListView3->ItemIndex < FEditorList->Count);
   FEditorList->Delete(EditorListView3->ItemIndex);
   UpdateEditorListView();
@@ -1731,7 +1862,7 @@ void __fastcall TPreferencesDialog::EditorListView3Data(TObject * /*Sender*/,
   if (FEditorList != NULL)
   {
     int Index = Item->Index;
-    assert(Index >= 0 && Index <= FEditorList->Count);
+    DebugAssert(Index >= 0 && Index <= FEditorList->Count);
     const TEditorPreferences * Editor = FEditorList->Editors[Index];
     Item->Caption = Editor->Name;
     Item->SubItems->Add(Editor->Data->FileMask.Masks);
@@ -1745,13 +1876,13 @@ void __fastcall TPreferencesDialog::EditorListView3Data(TObject * /*Sender*/,
 void __fastcall TPreferencesDialog::NavigationTreeChange(TObject * /*Sender*/,
   TTreeNode * Node)
 {
-  if (ALWAYS_TRUE(Node->SelectedIndex > 0))
+  if (DebugAlwaysTrue(Node->SelectedIndex > 0))
   {
-    PageControl->ActivePage = NOT_NULL(FindPageForTreeNode(Node));
+    PageControl->ActivePage = DebugNotNull(FindPageForTreeNode(Node));
     // reshow the accelerators, etc
     ResetSystemSettings(this);
     // This is particularly here to enable EditCopyParamButton,
-    // as to some reason CopyParamListView->Selected is NULL until
+    // as for some reason CopyParamListView->Selected is NULL until
     // its page is shown for the first time
     UpdateControls();
   }
@@ -1761,7 +1892,7 @@ void __fastcall TPreferencesDialog::PageControlChange(TObject * /*Sender*/)
 {
   // this is probably only ever called from FormShow (explicitly)
   bool Found = false;
-  if (ALWAYS_TRUE(PageControl->ActivePage->Tag > 0))
+  if (DebugAlwaysTrue(PageControl->ActivePage->Tag > 0))
   {
     for (int Index = 0; Index < NavigationTree->Items->Count; Index++)
     {
@@ -1774,7 +1905,7 @@ void __fastcall TPreferencesDialog::PageControlChange(TObject * /*Sender*/)
     }
   }
 
-  if (ALWAYS_TRUE(Found))
+  if (DebugAlwaysTrue(Found))
   {
     UpdateControls();
   }
@@ -1809,7 +1940,7 @@ void __fastcall TPreferencesDialog::CMDialogKey(TWMKeyDown & Message)
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::WMHelp(TWMHelp & Message)
 {
-  assert(Message.HelpInfo != NULL);
+  DebugAssert(Message.HelpInfo != NULL);
 
   if (Message.HelpInfo->iContextType == HELPINFO_WINDOW)
   {
@@ -1823,7 +1954,7 @@ void __fastcall TPreferencesDialog::WMHelp(TWMHelp & Message)
 void __fastcall TPreferencesDialog::Dispatch(void *Message)
 {
   TMessage * M = reinterpret_cast<TMessage*>(Message);
-  assert(M);
+  DebugAssert(M);
   if (M->Msg == CM_DIALOGKEY)
   {
     CMDialogKey(*((TWMKeyDown *)Message));
@@ -1924,7 +2055,7 @@ void __fastcall TPreferencesDialog::CopyParamListViewData(TObject * /*Sender*/,
     }
     else
     {
-      assert(Index >= 1 && Index <= 1 + FCopyParamList->Count);
+      DebugAssert(Index >= 1 && Index <= 1 + FCopyParamList->Count);
       Name = StripHotkey(FCopyParamList->Names[Index - 1]);
       Rule = BooleanToStr(FCopyParamList->Rules[Index - 1] != NULL);
     }
@@ -1973,14 +2104,6 @@ void __fastcall TPreferencesDialog::ListViewEndDrag(
   TObject * Sender, TObject * /*Target*/, int /*X*/, int /*Y*/)
 {
   ScrollOnDragOver(Sender)->EndDrag();
-}
-//---------------------------------------------------------------------------
-void __fastcall TPreferencesDialog::PathEditCreateEditDialog(
-  TObject * Sender, TFileDialogKind DialogKind, TOpenDialog *& Dialog)
-{
-  USEDPARAM(DialogKind);
-  assert(DialogKind == dkOpen);
-  Dialog = new TOpenDialog(dynamic_cast<TComponent *>(Sender));
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::SessionReopenTimeoutEditSetValue(
@@ -2188,5 +2311,385 @@ void __fastcall TPreferencesDialog::ExplorerClick(TObject * /*Sender*/)
 void __fastcall TPreferencesDialog::PanelFontLabelDblClick(TObject * Sender)
 {
   PanelFontButtonClick(Sender);
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::UpdatesAuthenticationEmailEditExit(TObject * /*Sender*/)
+{
+  if (FVerifiedUpdatesAuthenticationEmail != UpdatesAuthenticationEmailEdit->Text)
+  {
+    FVerifiedUpdatesAuthenticationEmail = UpdatesAuthenticationEmailEdit->Text;
+
+    if (!FVerifiedUpdatesAuthenticationEmail.IsEmpty())
+    {
+      TUpdatesConfiguration Updates = SaveUpdates();
+
+      {
+        TInstantOperationVisualizer Visualizer;
+        QueryUpdates(Updates);
+      }
+
+      UnicodeString AuthenticationError = Updates.Results.AuthenticationError;
+      if (!AuthenticationError.IsEmpty())
+      {
+        AuthenticationError = FormatUpdatesMessage(AuthenticationError);
+        if (HasParagraphs(AuthenticationError))
+        {
+          AuthenticationError = MainInstructionsFirstParagraph(AuthenticationError);
+        }
+        else
+        {
+          AuthenticationError = MainInstructions(AuthenticationError);
+        }
+
+        UnicodeString HelpUrl = GetEnableAutomaticUpdatesUrl();
+        unsigned int Result =
+          MoreMessageDialog(AuthenticationError, NULL, qtError, qaIgnore | qaAbort, HelpUrl);
+        if (Result == qaAbort)
+        {
+          Abort();
+        }
+      }
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::UpdatesLinkClick(TObject * /*Sender*/)
+{
+  EnableAutomaticUpdates();
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::CustomCommandsViewWindowProc(TMessage & Message)
+{
+  FOrigCustomCommandsViewWindowProc(Message);
+
+  if (Message.Msg == CN_NOTIFY)
+  {
+    TWMNotify & NotifyMessage = reinterpret_cast<TWMNotify &>(Message);
+
+    if (NotifyMessage.NMHdr->code == NM_CUSTOMDRAW)
+    {
+      // request CDDS_ITEMPOSTPAINT notification
+      Message.Result |= CDRF_NOTIFYPOSTPAINT | CDRF_NOTIFYSUBITEMDRAW;
+
+      TNMLVCustomDraw * CustomDraw = reinterpret_cast<TNMLVCustomDraw *>(NotifyMessage.NMHdr);
+      int Index = CustomDraw->nmcd.dwItemSpec;
+      int CommandIndex = GetCommandIndex(Index);
+      TCustomCommandList * List = GetCommandList(Index);
+      // after end of every list, except for the last last list
+      if ((CommandIndex == List->Count - 1) && (Index < CustomCommandsView->Items->Count - 1) &&
+          FLAGSET(CustomDraw->nmcd.dwDrawStage, CDDS_ITEMPOSTPAINT))
+      {
+        TRect Rect;
+        Rect.Top = CustomDraw->iSubItem;
+        Rect.Left = LVIR_BOUNDS;
+        CustomCommandsView->Perform(LVM_GETSUBITEMRECT, CustomDraw->nmcd.dwItemSpec, reinterpret_cast<LPARAM>(&Rect));
+
+        HDC DC = CustomDraw->nmcd.hdc;
+
+        SelectObject(DC, GetStockObject(DC_PEN));
+        SetDCPenColor(DC, ColorToRGB(clWindowFrame));
+
+        MoveToEx(DC, Rect.Left, Rect.Bottom - 1, NULL);
+        LineTo(DC, Rect.Right, Rect.Bottom - 1);
+      }
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::ExtensionHttpError(THttp * /*Sender*/, int Status, const UnicodeString & Message)
+{
+  if ((Status / 10) == 49)
+  {
+    // HTTP 49x indicate user-friendly error message from winscp.net, throw it without HTTP status code
+    throw Exception(Message);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::AddExtension()
+{
+  const UnicodeString HistoryKey(L"ExtensionPath");
+  std::unique_ptr<TStrings> History(CloneStrings(CustomWinConfiguration->History[HistoryKey]));
+  UnicodeString Path;
+  if (InputDialog(LoadStr(ADD_EXTENSION_CAPTION), LoadStr(ADD_EXTENSION_PROMPT), Path,
+        HELP_NONE, History.get(), true) &&
+      !Path.IsEmpty())
+  {
+    CustomWinConfiguration->History[HistoryKey] = History.get();
+
+    bool Trusted;
+    bool Latest;
+    UnicodeString FileName;
+    UnicodeString ExtensionPath;
+    std::unique_ptr<TStringList> Lines(new TStringList());
+    std::unique_ptr<TCustomCommandType> CustomCommand;
+
+    bool IsUrl = IsHttpOrHttpsUrl(Path);
+
+    try
+    {
+      if (IsUrl)
+      {
+        UnicodeString Url = Path;
+        Url = SecureUrl(Url);
+        bool WinSCPURL = IsWinSCPUrl(Url);
+        if (WinSCPURL)
+        {
+          Url = ProgramUrl(Url);
+          // The EncodeUrlString should not be necessary, but as we get the value from regitry, let's be safe
+          Url = AppendUrlParams(Url, FORMAT(L"netframework=%s", (EncodeUrlString(GetNetVersionStr()))));
+          Url = AppendUrlParams(Url, FORMAT(L"powershell=%s", (EncodeUrlString(GetPowerShellVersionStr()))));
+          Url = AppendUrlParams(Url, FORMAT(L"windows=%s", (EncodeUrlString(WindowsVersion()))));
+          Url = CampaignUrl(Url);
+        }
+
+        TOperationVisualizer Visualizer;
+
+        std::unique_ptr<THttp> Http(CreateHttp());
+        Http->URL = Url;
+        std::unique_ptr<TStrings> Headers(new TStringList());
+        Headers->Values[L"Accept"] = L"text/winscpextension,text/plain";
+        Http->RequestHeaders = Headers.get();
+        Http->OnError = ExtensionHttpError;
+        Http->Get();
+
+        UnicodeString TrustedStr = Http->ResponseHeaders->Values["WinSCP-Extension-Trusted"];
+        Trusted = WinSCPURL && (StrToIntDef(TrustedStr, 0) != 0);
+
+        FileName = MakeValidFileName(Http->ResponseHeaders->Values["WinSCP-Extension-Id"]);
+        if (FileName.IsEmpty())
+        {
+          FileName = MakeValidFileName(ExtractFileNameFromUrl(Path));
+        }
+        Lines->Text = Http->Response;
+
+        Latest = Http->ResponseHeaders->Values["WinSCP-Extension-Skipped"].Trim().IsEmpty();
+      }
+      else
+      {
+        if (!FileExists(ApiPath(Path)))
+        {
+          throw Exception(MainInstructions(FMTLOAD(FILE_NOT_EXISTS, (Path))));
+        }
+
+        Trusted = true;
+        Latest = true;
+
+        UnicodeString Id = WinConfiguration->GetExtensionId(Path);
+        FileName = ExtractFileName(Path);
+        if (!Id.IsEmpty())
+        {
+          ExtensionPath = Path;
+        }
+
+        LoadScriptFromFile(Path, Lines.get());
+      }
+
+      // validate syntax
+      CustomCommand.reset(new TCustomCommandType());
+      CustomCommand->LoadExtension(Lines.get(), FileName);
+    }
+    catch (Exception & E)
+    {
+      throw ExtException(&E, MainInstructions(FMTLOAD(EXTENSION_LOAD_ERROR, (Path))));
+    }
+
+    if (!ExtensionPath.IsEmpty())
+    {
+      int Index = FExtensionList->FindIndexByFileName(Path);
+      if (Index > 0)
+      {
+        CustomCommandsView->ItemIndex = GetCommandListIndex(FExtensionList, Index);
+        CustomCommandsView->ItemFocused->MakeVisible(false);
+        CustomCommandsView->SetFocus();
+        throw Exception(MainInstructions(LoadStr(EXTENSION_INSTALLED_ALREADY)));
+      }
+    }
+
+    if (FExtensionList->Find(CustomCommand->Name) != NULL)
+    {
+      throw Exception(MainInstructions(FMTLOAD(EXTENSION_DUPLICATE, (StripHotkey(CustomCommand->Name)))));
+    }
+
+    if (ExtensionPath.IsEmpty())
+    {
+      if (TCustomCommandType::GetExtensionId(FileName).IsEmpty())
+      {
+        UnicodeString FileNameOnly = ExtractFileNameOnly(FileName);
+        if (FileNameOnly.IsEmpty())
+        {
+          FileName = MakeValidFileName(StripHotkey(CustomCommand->Name)) + WinSCPExtensionExt;
+        }
+        else
+        {
+          FileName = ExtractFileNameOnly(FileName) + WinSCPExtensionExt + ExtractFileExt(FileName);
+        }
+      }
+    }
+
+    if (Trusted ||
+        (MessageDialog(MainInstructions(LoadStr(EXTENSION_UNTRUSTED)), qtWarning, qaOK | qaCancel) == qaOK))
+    {
+      if (ExtensionPath.IsEmpty())
+      {
+        UnicodeString UserExtensionsPath = WinConfiguration->GetUserExtensionsPath();
+        if (!DirectoryExists(UserExtensionsPath) &&
+            !ForceDirectories(UserExtensionsPath))
+        {
+          throw EOSExtException(MainInstructions(FMTLOAD(CREATE_LOCAL_DIR_ERROR, (UserExtensionsPath))));
+        }
+
+        ExtensionPath = IncludeTrailingBackslash(UserExtensionsPath) + FileName;
+
+        int Counter = 1;
+        UnicodeString OriginalExtensionPath = ExtensionPath;
+        int P = Pos(UpperCase(WinSCPExtensionExt), UpperCase(OriginalExtensionPath));
+
+        while (FileExists(ApiPath(ExtensionPath)))
+        {
+          Counter++;
+          ExtensionPath = LeftStr(OriginalExtensionPath, P - 1) + IntToStr(Counter) + RightStr(OriginalExtensionPath, OriginalExtensionPath.Length() - P + 1);
+        }
+
+        Lines->SaveToFile(ApiPath(ExtensionPath));
+
+        FAddedExtensions->Add(ExtensionPath);
+      }
+
+      int Index = GetListCommandIndex(FExtensionList);
+
+      std::unique_ptr<TCustomCommandType> CustomCommand(new TCustomCommandType());
+      CustomCommand->Id = WinConfiguration->GetExtensionId(ExtensionPath);
+      CustomCommand->LoadExtension(ExtensionPath);
+
+      Index = AddCommandToList(FExtensionList, Index, CustomCommand.release());
+
+      UpdateCustomCommandsView();
+      CustomCommandsView->ItemIndex = GetCommandListIndex(FExtensionList, Index);
+      CustomCommandsView->ItemFocused->MakeVisible(false);
+      UpdateControls();
+
+      if (!Latest)
+      {
+        MessageDialog(LoadStr(EXTENSION_NOT_LATEST), qtInformation, qaOK);
+      }
+
+      if (IsUrl)
+      {
+        Configuration->Usage->Inc(L"ExtensionAddsFromUrl");
+      }
+      else
+      {
+        Configuration->Usage->Inc(L"ExtensionAddsFromFile");
+      }
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::AddCommandButtonClick(TObject * /*Sender*/)
+{
+  if (GetCommandList(CustomCommandsView->ItemIndex) == FCustomCommandList)
+  {
+    AddEditCommand(false);
+  }
+  else
+  {
+    AddExtension();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::AddCustomCommandMenuItemClick(TObject * /*Sender*/)
+{
+  AddEditCommand(false);
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::AddExtensionMenuItemClick(TObject * /*Sender*/)
+{
+  AddExtension();
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::EditCommandButtonClick(TObject * /*Sender*/)
+{
+  AddEditCommand(true);
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::AddCommandButtonDropDownClick(TObject * /*Sender*/)
+{
+  AddCustomCommandMenuItem->Default = (GetCommandList(CustomCommandsView->ItemIndex) == FCustomCommandList);
+  AddExtensionMenuItem->Default = (GetCommandList(CustomCommandsView->ItemIndex) == FExtensionList);
+  MenuPopup(AddCommandMenu, AddCommandButton);
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TPreferencesDialog::GetSessionKey()
+{
+  TTerminal * Terminal = TTerminalManager::Instance()->ActiveTerminal;
+  UnicodeString Result;
+  if (Terminal != NULL)
+  {
+    Result = Terminal->SessionData->SessionKey;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::CustomCommandsViewMouseMove(TObject * /*Sender*/, TShiftState /*Shift*/, int X, int Y)
+{
+  TListItem * Item = CustomCommandsView->GetItemAt(X, Y);
+  int Index = (Item != NULL) ? Item->Index : -1;
+  if (Index != FCustomCommandsHintItem)
+  {
+    Application->CancelHint();
+
+    UnicodeString Hint;
+    if (Index >= 0)
+    {
+      TCustomCommandList * List = GetCommandList(Index);
+      const TCustomCommandType * Command = List->Commands[GetCommandIndex(Index)];
+      Hint = StripHotkey(Command->Name);
+      if (Command->ShortCut != 0)
+      {
+        Hint = FORMAT(L"%s (%s)", (Hint, ShortCutToText(Command->ShortCut)));
+      }
+      if (!Command->Description.IsEmpty())
+      {
+        Hint += L"\n" + Command->Description;
+      }
+      Hint += L"\n" + Command->GetCommandWithExpandedOptions(FCustomCommandOptions.get(), GetSessionKey());
+      if (List == FExtensionList)
+      {
+        Hint += L"\n" + Command->FileName;
+      }
+    }
+
+    CustomCommandsView->Hint = Hint;
+
+    FCustomCommandsHintItem = Index;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::BackgroundConfirmationsLinkClick(TObject * /*Sender*/)
+{
+  PageControl->ActivePage = QueueSheet;
+  PageControlChange(NULL);
+  QueueNoConfirmationCheck->SetFocus();
+  QueueNoConfirmationCheck->Perform(WM_CHANGEUISTATE, MAKEWPARAM(UIS_CLEAR, UISF_HIDEFOCUS), 0);
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::ConfigureCommandButtonClick(TObject * /*Sender*/)
+{
+  ConfigureCommand();
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::ConfigureCommand()
+{
+  int Index = CustomCommandsView->ItemIndex;
+  const TCustomCommandType * Command = GetCommandList(Index)->Commands[GetCommandIndex(Index)];
+
+  UnicodeString Site = GetSessionKey();
+  if (Command->AnyOptionWithFlag(TCustomCommandType::ofSite) &&
+      Site.IsEmpty())
+  {
+    throw Exception(LoadStr(NO_SITE_FOR_COMMAND));
+  }
+  DoCustomCommandOptionsDialog(Command, FCustomCommandOptions.get(), TCustomCommandType::ofConfig, NULL, GetSessionKey());
+  UpdateCustomCommandsView();
 }
 //---------------------------------------------------------------------------

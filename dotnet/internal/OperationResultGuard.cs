@@ -14,7 +14,7 @@ namespace WinSCP
         {
             _session.UnregisterOperationResult(_operationResult);
         }
-        
+
         private readonly Session _session;
         private readonly OperationResultBase _operationResult;
     }

@@ -9,8 +9,26 @@
 #include "Configuration.h"
 #include "CoreMain.h"
 #include "Interface.h"
+#include <StrUtils.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
+//---------------------------------------------------------------------------
+static std::unique_ptr<TCriticalSection> IgnoredExceptionsCriticalSection(new TCriticalSection());
+typedef std::set<UnicodeString> TIgnoredExceptions;
+static TIgnoredExceptions IgnoredExceptions;
+//---------------------------------------------------------------------------
+static UnicodeString __fastcall NormalizeClassName(const UnicodeString & ClassName)
+{
+  return ReplaceStr(ClassName, L".", L"::").LowerCase();
+}
+//---------------------------------------------------------------------------
+void __fastcall IgnoreException(const std::type_info & ExceptionType)
+{
+  TGuard Guard(IgnoredExceptionsCriticalSection.get());
+  // We should better use type_index as a key, instead of a class name,
+  // but type_index is not available in 32-bit version of STL in XE6.
+  IgnoredExceptions.insert(NormalizeClassName(UnicodeString(AnsiString(ExceptionType.name()))));
+}
 //---------------------------------------------------------------------------
 static bool __fastcall WellKnownException(
   Exception * E, UnicodeString * AMessage, const wchar_t ** ACounterName, Exception ** AClone, bool Rethrow)
@@ -19,10 +37,23 @@ static bool __fastcall WellKnownException(
   const wchar_t * CounterName;
   std::unique_ptr<Exception> Clone;
 
-  bool Result = true;
 
+  bool Result = true;
+  bool IgnoreException = false;
+
+  if (!IgnoredExceptions.empty())
+  {
+    TGuard Guard(IgnoredExceptionsCriticalSection.get());
+    UnicodeString ClassName = NormalizeClassName(E->QualifiedClassName());
+    IgnoreException = (IgnoredExceptions.find(ClassName) != IgnoredExceptions.end());
+  }
+
+  if (IgnoreException)
+  {
+    Result = false;
+  }
   // EAccessViolation is EExternal
-  if (dynamic_cast<EAccessViolation*>(E) != NULL)
+  else if (dynamic_cast<EAccessViolation*>(E) != NULL)
   {
     if (Rethrow)
     {
@@ -33,12 +64,14 @@ static bool __fastcall WellKnownException(
     Clone.reset(new EAccessViolation(E->Message));
   }
   // EIntError and EMathError are EExternal
+  // EClassNotFound is EFilerError
   else if ((dynamic_cast<EListError*>(E) != NULL) ||
            (dynamic_cast<EStringListError*>(E) != NULL) ||
            (dynamic_cast<EIntError*>(E) != NULL) ||
            (dynamic_cast<EMathError*>(E) != NULL) ||
            (dynamic_cast<EVariantError*>(E) != NULL) ||
-           (dynamic_cast<EInvalidOperation*>(E) != NULL))
+           (dynamic_cast<EInvalidOperation*>(E) != NULL) ||
+           (dynamic_cast<EFilerError*>(E) != NULL))
   {
     if (Rethrow)
     {
@@ -85,7 +118,7 @@ static bool __fastcall WellKnownException(
     }
     if (AClone != NULL)
     {
-      (*AClone) = NOT_NULL(Clone.release());
+      (*AClone) = DebugNotNull(Clone.release());
     }
   }
 
@@ -130,6 +163,9 @@ static bool __fastcall ExceptionMessage(Exception * E, bool Count,
   if (Count && (CounterName != NULL) && (Configuration->Usage != NULL))
   {
     Configuration->Usage->Inc(CounterName);
+    UnicodeString ExceptionDebugInfo =
+      E->ClassName() + L":" + GetExceptionDebugInfo();
+    Configuration->Usage->Set(LastInternalExceptionCounter, ExceptionDebugInfo);
   }
 
   return Result;
@@ -171,6 +207,21 @@ TStrings * __fastcall ExceptionToMoreMessages(Exception * E)
     if ((ExtE != NULL) && (ExtE->MoreMessages != NULL))
     {
       Result->AddStrings(ExtE->MoreMessages);
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall ExceptionFullMessage(Exception * E, UnicodeString & Message)
+{
+  bool Result = ExceptionMessage(E, Message);
+  if (Result)
+  {
+    Message += L"\n";
+    ExtException * EE = dynamic_cast<ExtException *>(E);
+    if ((EE != NULL) && (EE->MoreMessages != NULL))
+    {
+      Message += EE->MoreMessages->Text + L"\n";
     }
   }
   return Result;
@@ -419,7 +470,7 @@ Exception * __fastcall CloneException(Exception * E)
   else
   {
     // we do not expect this to happen
-    if (ALWAYS_FALSE(IsInternalException(E)))
+    if (DebugAlwaysFalse(IsInternalException(E)))
     {
       // to save exception stack trace
       Result = ExtException::CloneFrom(E);
@@ -434,8 +485,8 @@ Exception * __fastcall CloneException(Exception * E)
 //---------------------------------------------------------------------------
 void __fastcall RethrowException(Exception * E)
 {
-   // this list has to be in sync with ExceptionMessage
- if (dynamic_cast<EFatal *>(E) != NULL)
+  // this list has to be in sync with ExceptionMessage
+  if (dynamic_cast<EFatal *>(E) != NULL)
   {
     throw EFatal(E, L"");
   }

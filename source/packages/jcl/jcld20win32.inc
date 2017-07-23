@@ -138,4 +138,3 @@
 {.$DEFINE 7ZIP_STATICLINK} // not supported yet
 {.$DEFINE 7ZIP_LINKDLL}
 {.$DEFINE 7ZIP_LINKONREQUEST} // default
-

@@ -97,12 +97,12 @@ bool GetExternalEncryptedPassword(RawByteString Encrypted, RawByteString & Passw
     (SimpleDecryptNextChar(Encrypted) == PWALG_SIMPLE_EXTERNAL);
   if (Result)
   {
-    Password = HexToBytes(UnicodeString(UTF8String(Encrypted.c_str(), Encrypted.Length())));
+    Password = HexToBytes(UTF8ToString(Encrypted));
   }
   return Result;
 }
 //---------------------------------------------------------------------------
-bool WindowsValidateCertificate(const unsigned char * Certificate, size_t Len)
+bool WindowsValidateCertificate(const unsigned char * Certificate, size_t Len, UnicodeString & Error)
 {
   bool Result = false;
 
@@ -122,7 +122,14 @@ bool WindowsValidateCertificate(const unsigned char * Certificate, size_t Len)
     CERT_CHAIN_ENGINE_CONFIG ChainConfig;
 
     memset(&ChainConfig, 0, sizeof(ChainConfig));
-    ChainConfig.cbSize = sizeof(CERT_CHAIN_ENGINE_CONFIG);
+    const size_t ChainConfigSize =
+      reinterpret_cast<const char *>(&ChainConfig.CycleDetectionModulus) + sizeof(ChainConfig.CycleDetectionModulus) -
+      reinterpret_cast<const char *>(&ChainConfig);
+    // The hExclusiveRoot and hExclusiveTrustedPeople were added in Windows 7.
+    // The CertGetCertificateChain fails with E_INVALIDARG when we include them to ChainConfig.cbSize.
+    DebugAssert(ChainConfigSize == 40);
+    DebugAssert(ChainConfigSize == sizeof(CERT_CHAIN_ENGINE_CONFIG) - sizeof(ChainConfig.hExclusiveRoot) - sizeof(ChainConfig.hExclusiveTrustedPeople));
+    ChainConfig.cbSize = ChainConfigSize;
     ChainConfig.hRestrictedRoot = NULL;
     ChainConfig.hRestrictedTrust = NULL;
     ChainConfig.hRestrictedOther = NULL;
@@ -134,7 +141,8 @@ bool WindowsValidateCertificate(const unsigned char * Certificate, size_t Len)
     ChainConfig.CycleDetectionModulus = 0;
 
     HCERTCHAINENGINE ChainEngine;
-    if (CertCreateCertificateChainEngine(&ChainConfig, &ChainEngine))
+    bool ChainEngineResult = CertCreateCertificateChainEngine(&ChainConfig, &ChainEngine);
+    if (ChainEngineResult)
     {
       const CERT_CHAIN_CONTEXT * ChainContext = NULL;
       if (CertGetCertificateChain(ChainEngine, CertContext, NULL, NULL, &ChainPara,
@@ -156,6 +164,10 @@ bool WindowsValidateCertificate(const unsigned char * Certificate, size_t Len)
         {
           // Windows thinks the certificate is valid.
           Result = (PolicyStatus.dwError == S_OK);
+          if (!Result)
+          {
+            Error = FORMAT(L"Error: %x, Chain index: %d, Element index: %d", (PolicyStatus.dwError, PolicyStatus.lChainIndex, PolicyStatus.lElementIndex));
+          }
         }
 
         CertFreeCertificateChain(ChainContext);

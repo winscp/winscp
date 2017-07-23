@@ -9,13 +9,6 @@
 Z_1_SITE ICON "..\\resource\\Site.ico"
 Z_2_SITE_FOLDER ICON "..\\resource\\SiteFolder.ico"
 Z_3_WORKSPACE ICON "..\\resource\\Workspace.ico"
-Z_ICON_LOG_SMALL ICON "..\\resource\\Log16.ico"
-Z_ICON_LOG_BIG ICON "..\\resource\\Log32.ico"
-Z_ICON_EDITOR_SMALL ICON "..\\resource\\Editor16.ico"
-Z_ICON_EDITOR_BIG ICON "..\\resource\\Editor32.ico"
 
 LICENSE RCDATA "License.txt"
 LICENSE_EXPAT RCDATA "LicenseExpat.txt"
-
-DELETE_FILE RCDATA "..\\resource\\DeleteFile.png"
-REMOTE_MOVE_FILE RCDATA "..\\resource\\RemoteMoveFile.png"

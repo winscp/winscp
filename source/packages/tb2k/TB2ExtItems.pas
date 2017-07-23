@@ -847,7 +847,7 @@ begin
   FocusWnd := GetFocus;
 
   { Create the edit control }
-  InflateRect(R, -3, -3);
+  InflateRect(R, -3, -4);
   //View.FreeNotification (Self);
   FEditControl := GetEditControlClass.Create(nil);
   try

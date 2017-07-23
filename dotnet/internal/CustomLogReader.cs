@@ -101,6 +101,20 @@ namespace WinSCP
             }
         }
 
+        public bool TryWaitForEmptyElement(string localName, LogReadFlags flags)
+        {
+            bool result = false;
+            while (!result && Read(flags))
+            {
+                if (IsElement(localName) &&
+                    IsEmptyElement)
+                {
+                    result = true;
+                }
+            }
+            return result;
+        }
+
         public ElementLogReader CreateLogReader()
         {
             return new ElementLogReader(this);

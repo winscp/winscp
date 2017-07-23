@@ -19,14 +19,14 @@
 #include "GUITools.h"
 #include "Tools.h"
 #include "WinApi.h"
+#include <DateUtils.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
 void __fastcall GetLoginData(UnicodeString SessionName, TOptions * Options,
-  TObjectList * DataList, UnicodeString & DownloadFile)
+  TObjectList * DataList, UnicodeString & DownloadFile, bool NeedSession, TForm * LinkedForm)
 {
   bool DefaultsOnly = false;
-  bool Close = false;
 
   if (StoredSessions->IsFolder(SessionName) ||
       StoredSessions->IsWorkspace(SessionName))
@@ -42,35 +42,52 @@ void __fastcall GetLoginData(UnicodeString SessionName, TOptions * Options,
 
     if (DataList->Count == 1)
     {
-      TSessionData * SessionData = NOT_NULL(dynamic_cast<TSessionData *>(DataList->Items[0]));
+      TSessionData * SessionData = DebugNotNull(dynamic_cast<TSessionData *>(DataList->Items[0]));
       if (SessionData->SaveOnly)
       {
         Configuration->Usage->Inc(L"CommandLineSessionSave");
         TSessionData * SavedSession = DoSaveSession(SessionData, NULL, true, NULL);
-        Close = (SavedSession == NULL);
-        if (!Close)
+        if (SavedSession == NULL)
         {
-          WinConfiguration->LastStoredSession = SavedSession->Name;
+          Abort();
         }
+        WinConfiguration->LastStoredSession = SavedSession->Name;
         DataList->Clear();
+      }
+      else if (!SessionData->PuttyProtocol.IsEmpty())
+      {
+        // putty does not support resolving environment variables in session settings
+        // though it's hardly of any use here.
+        SessionData->ExpandEnvironmentVariables();
+        OpenSessionInPutty(GUIConfiguration->PuttyPath, SessionData);
+        Abort();
       }
     }
   }
 
-  if (!Close)
+  if (DefaultsOnly && !NeedSession)
   {
-    if ((DataList->Count == 0) ||
-        !dynamic_cast<TSessionData *>(DataList->Items[0])->CanLogin ||
-        DefaultsOnly)
+    // No URL specified on command-line and no explicit command-line parameter
+    // that requires session was specified => noop
+    DataList->Clear();
+  }
+  else if ((DataList->Count == 0) ||
+      !dynamic_cast<TSessionData *>(DataList->Items[0])->CanLogin ||
+      DefaultsOnly)
+  {
+    // Note that GetFolderOrWorkspace never returns sites that !CanLogin,
+    // so we should not get here with more then one site.
+    // Though we should be good, if we ever do.
+
+    // We get here when:
+    // - we need session for explicit command-line operation
+    // - after we handle "save" URL.
+    // - the specified session does not contain enough information to login [= not even hostname]
+
+    DebugAssert(DataList->Count <= 1);
+    if (!DoLoginDialog(StoredSessions, DataList, LinkedForm))
     {
-      // Note that GetFolderOrWorkspace never returns sites that !CanLogin,
-      // so we should not get here with more then one site.
-      // Though we should be good, if we ever do.
-      assert(DataList->Count <= 1);
-      if (!DoLoginDialog(StoredSessions, DataList, loStartup))
-      {
-        DataList->Clear();
-      }
+      Abort();
     }
   }
 }
@@ -82,11 +99,14 @@ void __fastcall Upload(TTerminal * Terminal, TStrings * FileList, bool UseDefaul
 
   TargetDirectory = UnixIncludeTrailingBackslash(Terminal->CurrentDirectory);
 
+  std::unique_ptr<TSessionData> Data(Terminal->SessionData->Clone());
+  Terminal->FillSessionDataForCode(Data.get());
+
   int Options = coDisableQueue;
   int CopyParamAttrs = Terminal->UsableCopyParamAttrs(0).Upload;
   if (UseDefaults ||
       DoCopyDialog(true, false, FileList, TargetDirectory, &CopyParam, Options,
-        CopyParamAttrs, NULL))
+        CopyParamAttrs, Data.get(), NULL))
   {
     Terminal->CopyToRemote(FileList, TargetDirectory, &CopyParam, 0);
   }
@@ -119,7 +139,7 @@ void __fastcall Download(TTerminal * Terminal, const UnicodeString FileName,
     int CopyParamAttrs = Terminal->UsableCopyParamAttrs(0).Download;
     if (UseDefaults ||
         DoCopyDialog(false, false, FileList, TargetDirectory, &CopyParam,
-          Options, CopyParamAttrs, NULL))
+          Options, CopyParamAttrs, NULL, NULL))
     {
       Terminal->CopyToLocal(FileList, TargetDirectory, &CopyParam, 0);
     }
@@ -228,7 +248,7 @@ void __fastcall ImportSitesIfAny()
       }
       else
       {
-        FAIL;
+        DebugFail();
       }
 
       UnicodeString Message = FORMAT(LoadStrPart(IMPORT_SESSIONS2, 1), (Source));
@@ -248,7 +268,7 @@ void __fastcall Usage(UnicodeString Param)
 {
   while (!Param.IsEmpty())
   {
-    UnicodeString Pair = ::CutToChar(Param, L',', true);
+    UnicodeString Pair = CutToChar(Param, L',', true);
     if (!Pair.IsEmpty())
     {
       if (Pair[Pair.Length()] == L'+')
@@ -258,7 +278,7 @@ void __fastcall Usage(UnicodeString Param)
       }
       else
       {
-        UnicodeString Key = ::CutToChar(Pair, L':', true);
+        UnicodeString Key = CutToChar(Pair, L':', true);
         Configuration->Usage->Set(Key, Pair.Trim());
       }
     }
@@ -328,17 +348,18 @@ void __fastcall UpdateStaticUsage()
 
   Configuration->Usage->UpdateCurrentVersion();
 
-  UnicodeString WindowsVersion = FORMAT("%d.%d.%d %s", (Win32MajorVersion, Win32MinorVersion, Win32BuildNumber, Win32CSDVersion));
-  Configuration->Usage->Set(L"WindowsVersion", (WindowsVersion));
+  Configuration->Usage->Set(L"WindowsVersion", (WindowsVersionLong()));
   Configuration->Usage->Set(L"WindowsProductName", (WindowsProductName()));
   DWORD Type;
   GetWindowsProductType(Type);
   Configuration->Usage->Set(L"WindowsProductType", (static_cast<int>(Type)));
   Configuration->Usage->Set(L"Windows64", IsWin64());
   Configuration->Usage->Set(L"DefaultLocale",
+    // See TGUIConfiguration::GetLocaleHex()
     IntToHex(static_cast<int>(GetDefaultLCID()), 4));
   Configuration->Usage->Set(L"Locale",
     IntToHex(static_cast<int>(WinConfiguration->Locale), 4));
+  Configuration->Usage->Set(L"EncodingMultiByteAnsi", !TEncoding::Default->IsSingleByte);
   Configuration->Usage->Set(L"PixelsPerInch", Screen->PixelsPerInch);
 
   bool PixelsPerInchSystemDiffers = false;
@@ -420,6 +441,8 @@ void __fastcall UpdateStaticUsage()
   Configuration->Usage->Set(L"InProgramFiles", InProgramFiles);
   Configuration->Usage->Set(L"IsInstalled", IsInstalled());
   Configuration->Usage->Set(L"Wine", IsWine());
+  Configuration->Usage->Set(L"NetFrameworkVersion", GetNetVersionStr());
+  Configuration->Usage->Set(L"PowerShellVersion", GetPowerShellVersionStr());
 
   WinConfiguration->UpdateStaticUsage();
 
@@ -430,102 +453,153 @@ void __fastcall MaintenanceTask()
   CoreMaintenanceTask();
 }
 //---------------------------------------------------------------------------
-struct TFindProcessMainWindowParam
-{
-  unsigned long ProcessId;
-  HWND HiddenWindow;
-  HWND MainWindow;
-};
+typedef std::vector<HWND> THandles;
+typedef std::map<unsigned long, THandles> TProcesses;
 //---------------------------------------------------------------------------
-BOOL __stdcall FindProcessMainWindow(HWND Handle, LPARAM AParam)
+BOOL __stdcall EnumOtherInstances(HWND Handle, LPARAM AParam)
 {
-  TFindProcessMainWindowParam & Param = *reinterpret_cast<TFindProcessMainWindowParam *>(AParam);
+  TProcesses & Processes = *reinterpret_cast<TProcesses *>(AParam);
 
   unsigned long ProcessId;
-  if ((Handle != Param.HiddenWindow) &&
-      (Param.MainWindow == 0) && // optimization
-      (GetWindowThreadProcessId(Handle, &ProcessId) != 0) &&
-      (ProcessId == Param.ProcessId))
+  if (GetWindowThreadProcessId(Handle, &ProcessId) != 0)
   {
-    TCopyDataMessage Message;
-    Message.Version = TCopyDataMessage::Version1;
-
-    COPYDATASTRUCT CopyData;
-    CopyData.cbData = sizeof(Message);
-    CopyData.lpData = &Message;
-
-    Message.Command = TCopyDataMessage::CommandCanCommandLine;
-
-    LRESULT SendResult =
-      SendMessage(Handle, WM_COPYDATA, reinterpret_cast<WPARAM>(HInstance),
-        reinterpret_cast<LPARAM>(&CopyData));
-
-    if (SendResult > 0)
-    {
-      Param.MainWindow = Handle;
-    }
+    Processes[ProcessId].push_back(Handle);
   }
 
   return TRUE;
 }
 //---------------------------------------------------------------------------
-bool __fastcall SendToAnotherInstance()
+static bool __fastcall SendCopyDataMessage(HWND Window, TCopyDataMessage & Message)
 {
-  HWND HiddenWindow = FindWindow(HIDDEN_WINDOW_NAME, NULL);
-  bool Result = (HiddenWindow != NULL);
-  if (Result)
+  COPYDATASTRUCT CopyData;
+  CopyData.cbData = sizeof(Message);
+  CopyData.lpData = &Message;
+
+  LRESULT SendResult =
+    SendMessage(Window, WM_COPYDATA,
+       reinterpret_cast<WPARAM>(HInstance), reinterpret_cast<LPARAM>(&CopyData));
+  bool Result = (SendResult > 0);
+  return Result;
+}
+//---------------------------------------------------------------------------
+static void __fastcall FindOtherInstances(THandles & OtherInstances)
+{
+  TProcesses Processes;
+
+  // FindWindow is optimization (if there's no hidden window, no point enumerating all windows to find some)
+  if ((FindWindow(HIDDEN_WINDOW_NAME, NULL) != NULL) &&
+      EnumWindows(EnumOtherInstances, reinterpret_cast<LPARAM>(&Processes)))
   {
     TCopyDataMessage Message;
-    Message.Version = TCopyDataMessage::Version1;
 
-    COPYDATASTRUCT CopyData;
-    CopyData.cbData = sizeof(Message);
-    CopyData.lpData = &Message;
+    Message.Command = TCopyDataMessage::MainWindowCheck;
 
-    // this test is actually redundant, it just a kind of optimization to avoid expensive
-    // EnumWindows, we can achieve the same by testing FindProcessMainWindowParam.MainWindow,
-    // before sending CommandCommandLine
-    Message.Command = TCopyDataMessage::CommandCanCommandLine;
-    LRESULT SendResult =
-      SendMessage(HiddenWindow, WM_COPYDATA, reinterpret_cast<WPARAM>(HInstance),
-        reinterpret_cast<LPARAM>(&CopyData));
-    Result = (SendResult > 0);
-
-    if (Result)
+    TProcesses::const_iterator ProcessI = Processes.begin();
+    while (ProcessI != Processes.end())
     {
-      TFindProcessMainWindowParam FindProcessMainWindowParam;
-      if (GetWindowThreadProcessId(HiddenWindow, &FindProcessMainWindowParam.ProcessId) != 0)
+      HWND HiddenWindow = NULL;
+      THandles::const_iterator WindowI = ProcessI->second.begin();
+
+      while ((HiddenWindow == NULL) && (WindowI != ProcessI->second.end()))
       {
-        FindProcessMainWindowParam.HiddenWindow = HiddenWindow;
-        FindProcessMainWindowParam.MainWindow = 0;
-        if (EnumWindows(FindProcessMainWindow, reinterpret_cast<LPARAM>(&FindProcessMainWindowParam)) &&
-            (FindProcessMainWindowParam.MainWindow != 0))
+        wchar_t ClassName[1024];
+        if (GetClassName(*WindowI, ClassName, LENOF(ClassName)) != 0)
         {
-          // Restore window, if minimized
-          ShowWindow(FindProcessMainWindowParam.MainWindow, SW_RESTORE);
-          // bring it to foreground
-          SetForegroundWindow(FindProcessMainWindowParam.MainWindow);
+          NULL_TERMINATE(ClassName);
+
+          if (wcscmp(ClassName, HIDDEN_WINDOW_NAME) == 0)
+          {
+            HiddenWindow = *WindowI;
+          }
+        }
+        WindowI++;
+      }
+
+      if (HiddenWindow != NULL)
+      {
+        WindowI = ProcessI->second.begin();
+
+        while (WindowI != ProcessI->second.end())
+        {
+          if (*WindowI != HiddenWindow) // optimization
+          {
+            if (SendCopyDataMessage(*WindowI, Message))
+            {
+              OtherInstances.push_back(*WindowI);
+              break;
+            }
+          }
+          WindowI++;
         }
       }
+
+      ProcessI++;
+    }
+  }
+}
+//---------------------------------------------------------------------------
+bool __fastcall SendToAnotherInstance()
+{
+  THandles OtherInstances;
+  FindOtherInstances(OtherInstances);
+
+  bool Result = false;
+  THandles::const_iterator I = OtherInstances.begin();
+  while (!Result && (I != OtherInstances.end()))
+  {
+    HWND Handle = *I;
+
+    TCopyDataMessage Message;
+    Message.Command = TCopyDataMessage::CommandCanCommandLine;
+
+    if (SendCopyDataMessage(Handle, Message))
+    {
+      // Restore window, if minimized
+      ShowWindow(Handle, SW_RESTORE);
+      // bring it to foreground
+      SetForegroundWindow(Handle);
 
       Message.Command = TCopyDataMessage::CommandCommandLine;
       wcsncpy(Message.CommandLine, CmdLine, LENOF(Message.CommandLine));
       NULL_TERMINATE(Message.CommandLine);
 
-
-      LRESULT SendResult =
-        SendMessage(HiddenWindow, WM_COPYDATA,
-          reinterpret_cast<WPARAM>(HInstance), reinterpret_cast<LPARAM>(&CopyData));
-      Result = (SendResult > 0);
+      Result = SendCopyDataMessage(Handle, Message);
     }
+
+    I++;
   }
+
   return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall Refresh(const UnicodeString & Session, const UnicodeString & Path)
+{
+  THandles OtherInstances;
+  FindOtherInstances(OtherInstances);
+
+  THandles::const_iterator I = OtherInstances.begin();
+  while (I != OtherInstances.end())
+  {
+    HWND Handle = *I;
+
+    TCopyDataMessage Message;
+    Message.Command = TCopyDataMessage::RefreshPanel;
+    wcsncpy(Message.Refresh.Session, Session.c_str(), LENOF(Message.Refresh.Session));
+    NULL_TERMINATE(Message.Refresh.Session);
+    wcsncpy(Message.Refresh.Path, Path.c_str(), LENOF(Message.Refresh.Path));
+    NULL_TERMINATE(Message.Refresh.Path);
+
+    SendCopyDataMessage(Handle, Message);
+
+    I++;
+  }
 }
 //---------------------------------------------------------------------------
 bool __fastcall ShowUpdatesIfAvailable()
 {
   TUpdatesConfiguration Updates = WinConfiguration->Updates;
   int CurrentCompoundVer = Configuration->CompoundVersion;
+  bool NoPopup = true;
   bool Result =
     Updates.ShowOnStartup &&
     Updates.HaveValidResultsForVersion(CurrentCompoundVer) &&
@@ -540,15 +614,39 @@ bool __fastcall ShowUpdatesIfAvailable()
     {
       Configuration->Usage->Inc(L"UpdateDownloadOpensStartup");
     }
+    NoPopup = false;
+  }
+  else if (WinConfiguration->ShowTips)
+  {
+    int Days = DaysBetween(WinConfiguration->TipsShown, Now());
+    if ((Days >= Updates.Results.TipsIntervalDays) &&
+        (WinConfiguration->RunsSinceLastTip >= Updates.Results.TipsIntervalDays))
+    {
+      UnicodeString Tip = FirstUnshownTip();
+      if (!Tip.IsEmpty())
+      {
+        AutoShowNewTip();
+        NoPopup = false;
+      }
+      else
+      {
+        Configuration->Usage->Inc(L"TipsNoUnseen");
+      }
+    }
+  }
+
+  if (NoPopup)
+  {
+    WinConfiguration->RunsSinceLastTip = WinConfiguration->RunsSinceLastTip + 1;
   }
   return Result;
 }
 //---------------------------------------------------------------------------
 int __fastcall Execute()
 {
-  assert(StoredSessions);
+  DebugAssert(StoredSessions);
   TProgramParams * Params = TProgramParams::Instance();
-  assert(Params);
+  DebugAssert(Params);
 
   // do not flash message boxes on startup
   SetOnForeground(true);
@@ -614,11 +712,19 @@ int __fastcall Execute()
   {
     Mode = cmBatchSettings;
   }
+  else if (Params->FindSwitch(KEYGEN_SWITCH))
+  {
+    Mode = cmKeyGen;
+  }
+  else if (Params->FindSwitch(FINGERPRINTSCAN_SWITCH))
+  {
+    Mode = cmFingerprintScan;
+  }
   // We have to check for /console only after the other options,
   // as the /console is always used when we are run by winscp.com
   // (ambiguous use to pass console version)
-  else if (Params->FindSwitch(L"Console") || Params->FindSwitch(L"script") ||
-      Params->FindSwitch(L"command"))
+  else if (Params->FindSwitch(L"Console") || Params->FindSwitch(SCRIPT_SWITCH) ||
+      Params->FindSwitch(COMMAND_SWITCH))
   {
     Mode = cmScripting;
   }
@@ -635,7 +741,7 @@ int __fastcall Execute()
   try
   {
     TerminalManager = TTerminalManager::Instance();
-    HANDLE ResourceModule = GUIConfiguration->ChangeResourceModule(NULL);
+    HANDLE ResourceModule = GUIConfiguration->ChangeToDefaultResourceModule();
     try
     {
       GlyphsModule = new TGlyphsModule(Application);
@@ -648,13 +754,18 @@ int __fastcall Execute()
 
     LogForm = NULL;
 
-    Application->HintHidePause = 3000;
+    // The default is 2.5s.
+    // 20s is used by Office 2010 and Windows 10 Explorer.
+    // Some applications use an infinite (Thunderbird, Firefox).
+    // Overriden for some controls using THintInfo.HideTimeout
+    Application->HintHidePause = 20000;
+    HintWindowClass = __classid(TScreenTipHintWindow);
 
-    UnicodeString IniFileName = Params->SwitchValue(L"ini");
+    UnicodeString IniFileName = Params->SwitchValue(INI_SWITCH);
     if (!IniFileName.IsEmpty())
     {
       UnicodeString IniFileNameExpanded = ExpandEnvironmentVariables(IniFileName);
-      if (!FileExists(::ApiPath(IniFileNameExpanded)))
+      if (!FileExists(ApiPath(IniFileNameExpanded)))
       {
         // this should be displayed rather at the very beginning.
         // however for simplicity (GUI-only), we do it only here.
@@ -756,7 +867,7 @@ int __fastcall Execute()
     }
     else
     {
-      enum { pcNone, pcUpload, pcFullSynchronize, pcSynchronize, pcEdit } ParamCommand;
+      enum { pcNone, pcUpload, pcFullSynchronize, pcSynchronize, pcEdit, pcRefresh } ParamCommand;
       ParamCommand = pcNone;
       UnicodeString AutoStartSession;
       UnicodeString DownloadFile;
@@ -806,10 +917,17 @@ int __fastcall Execute()
         {
           ParamCommand = pcEdit;
         }
+        else if (Params->FindSwitch(REFRESH_SWITCH, CommandParams, 1))
+        {
+          ParamCommand = pcRefresh;
+        }
       }
 
       if (Params->ParamCount > 0)
       {
+        AutoStartSession = Params->Param[1];
+        Params->ParamsProcessed(1, 1);
+
         if ((ParamCommand == pcNone) &&
             (WinConfiguration->ExternalSessionInExistingInstance != OpenInNewWindow()) &&
             !Params->FindSwitch(NEWINSTANCE_SWICH) &&
@@ -818,8 +936,6 @@ int __fastcall Execute()
           Configuration->Usage->Inc(L"SendToAnotherInstance");
           return 0;
         }
-        AutoStartSession = Params->Param[1];
-        Params->ParamsProcessed(1, 1);
         UnicodeString CounterName;
         if (Params->FindSwitch(JUMPLIST_SWITCH))
         {
@@ -848,25 +964,33 @@ int __fastcall Execute()
         AutoStartSession = WinConfiguration->AutoStartSession;
       }
 
+      if (ParamCommand == pcRefresh)
+      {
+        Refresh(AutoStartSession, (CommandParams->Count > 0 ? CommandParams->Strings[0] : UnicodeString()));
+        return 0;
+      }
+
       // from now flash message boxes on background
       SetOnForeground(false);
+
+      bool CommandLineOperation = (ParamCommand != pcNone) || !DownloadFile.IsEmpty();
+      bool NeedSession = CommandLineOperation;
 
       bool Retry;
       do
       {
         Retry = false;
         TObjectList * DataList = new TObjectList();
-        GetLoginData(AutoStartSession, Params, DataList, DownloadFile);
-        // from now on, we do not support runtime locale change
-        GUIConfiguration->CanApplyLocaleImmediately = false;
         try
         {
-          if (DataList->Count > 0)
+          GetLoginData(AutoStartSession, Params, DataList, DownloadFile, NeedSession, NULL);
+          // GetLoginData now Aborts when session is needed and none is selected
+          if (DebugAlwaysTrue(!NeedSession || (DataList->Count > 0)))
           {
             if (CheckSafe(Params))
             {
               UnicodeString LogFile;
-              if (Params->FindSwitch(L"Log", LogFile))
+              if (Params->FindSwitch(LOG_SWITCH, LogFile))
               {
                 Configuration->TemporaryLogging(LogFile);
               }
@@ -878,12 +1002,22 @@ int __fastcall Execute()
 
             try
             {
-              assert(!TerminalManager->ActiveTerminal);
+              DebugAssert(!TerminalManager->ActiveTerminal);
 
-              TerminalManager->ActiveTerminal =
-                TerminalManager->NewTerminals(DataList);
+              bool CanStart;
+              if (DataList->Count > 0)
+              {
+                TerminalManager->ActiveTerminal =
+                  TerminalManager->NewTerminals(DataList);
+                CanStart = (TerminalManager->Count > 0);
+              }
+              else
+              {
+                DebugAssert(!NeedSession);
+                CanStart = true;
+              }
 
-              if (TerminalManager->Count == 0)
+              if (!CanStart)
               {
                 // do not prompt with login dialog, if connection of
                 // auto-start session (typically from command line) failed
@@ -903,7 +1037,7 @@ int __fastcall Execute()
                   // moved inside try .. __finally, because it can fail as well
                   TerminalManager->ScpExplorer = ScpExplorer;
 
-                  if ((ParamCommand != pcNone) || !DownloadFile.IsEmpty())
+                  if (CommandLineOperation)
                   {
                     Configuration->Usage->Inc(L"CommandLineOperation");
                   }
@@ -959,6 +1093,7 @@ int __fastcall Execute()
   {
     delete NonVisualDataModule;
     NonVisualDataModule = NULL;
+    ReleaseAnimationsModule();
     delete GlyphsModule;
     GlyphsModule = NULL;
     TTerminalManager::DestroyInstance();

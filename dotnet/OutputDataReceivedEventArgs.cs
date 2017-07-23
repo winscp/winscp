@@ -9,10 +9,12 @@ namespace WinSCP
     public sealed class OutputDataReceivedEventArgs : EventArgs
     {
         public string Data { get; private set; }
+        public bool Error { get; private set; }
 
-        internal OutputDataReceivedEventArgs(string data)
+        internal OutputDataReceivedEventArgs(string data, bool error)
         {
             Data = data;
+            Error = error;
         }
 
         public override string ToString()

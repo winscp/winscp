@@ -7,6 +7,13 @@ uses
 
 type
   TPngBitBtn = class(TBitBtn)
+{$IF RTLVersion >= 24.0 }
+{$IFNDEF BCB}
+  strict private
+    class constructor Create;
+    class destructor Destroy;
+{$IFEND}
+{$IFEND}
   private
     FPngImage: TPngImage;
     FPngOptions: TPngOptions;
@@ -33,6 +40,13 @@ type
     property Glyph stored False;
     property NumGlyphs stored False;
   end;
+
+{$IF RTLVersion >= 24.0 }
+  TPngBitBtnStyleHook = class(TBitBtnStyleHook)
+  strict protected
+    procedure DrawButton(ACanvas: TCanvas; AMouseInControl: Boolean); override;
+  end;
+{$IFEND}
 
 implementation
 
@@ -70,6 +84,20 @@ end;
 
 { TPngBitBtn }
 
+{$IF RTLVersion >= 24.0 }
+{$IFNDEF BCB}
+class constructor TPngBitBtn.Create;
+begin
+  TCustomStyleEngine.RegisterStyleHook(TPngBitBtn, TPngBitBtnStyleHook);
+end;
+
+class destructor TPngBitBtn.Destroy;
+begin
+  TCustomStyleEngine.UnRegisterStyleHook(TPngBitBtn, TPngBitBtnStyleHook);
+end;
+{$IFEND}
+{$IFEND}
+
 constructor TPngBitBtn.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
@@ -79,6 +107,7 @@ begin
   FLastKind := bkCustom;
   FImageFromAction := False;
 end;
+
 
 destructor TPngBitBtn.Destroy;
 begin
@@ -275,5 +304,85 @@ begin
     Repaint;
   end;
 end;
+
+{ TPngBitBtnStyleHook }
+{$IF RTLVersion >= 24.0 }
+procedure TPngBitBtnStyleHook.DrawButton(ACanvas: TCanvas;
+  AMouseInControl: Boolean);
+const
+  WordBreakFlag: array[Boolean] of Integer = (0, DT_WORDBREAK);
+var
+  Details:  TThemedElementDetails;
+  DrawRect, PaintRect, TextRect: TRect;
+  State: TButtonState;
+  btn : TPngBitBtn;
+  GlyphPos, TextPos: TPoint;
+
+  LColor: TColor;
+  LFormats: TTextFormat;
+begin
+  if not (Control is TPngBitBtn) then
+  begin
+    inherited;
+    Exit;
+  end;
+  if FPressed then
+    Details := StyleServices.GetElementDetails(tbPushButtonPressed)
+  else if AMouseInControl then
+    Details := StyleServices.GetElementDetails(tbPushButtonHot)
+  else if Focused or TPngBitBtn(Control).Default then
+    Details := StyleServices.GetElementDetails(tbPushButtonDefaulted)
+  else if Control.Enabled then
+    Details := StyleServices.GetElementDetails(tbPushButtonNormal)
+  else
+    Details := StyleServices.GetElementDetails(tbPushButtonDisabled);
+  DrawRect := Control.ClientRect;
+  StyleServices.DrawElement(ACanvas.Handle, Details, DrawRect);
+
+  btn := Control as TPngBitBtn;
+  ACanvas.Font := btn.Font;
+  if not btn.Enabled then State := bsDisabled
+  else if FPressed then State := bsDown
+  else State := bsUp;
+
+  //Calculate the position of the PNG glyph
+  CalcButtonLayout(ACanvas, btn.FPngImage, btn.ClientRect, FPressed, False, btn.Caption,
+    btn.Layout, btn.Margin, btn.Spacing, GlyphPos, TextPos, btn.DrawTextBiDiModeFlags(0));
+
+  //Draw the image
+  if (btn.FPngImage <> nil) and (btn.Kind = bkCustom) and not btn.FPngImage.Empty then begin
+    PaintRect := Bounds(GlyphPos.X, GlyphPos.Y, btn.FPngImage.Width, btn.FPngImage.Height);
+    if btn.Enabled then
+      DrawPNG(btn.FPngImage, ACanvas, PaintRect, [])
+    else
+      DrawPNG(btn.FPngImage, ACanvas, PaintRect, btn.FPngOptions);
+  end;
+
+  ACanvas.Brush.Style := bsClear;
+  if (State = bsDisabled) or (not StyleServices.IsSystemStyle and (seFont in btn.StyleElements)) then
+  begin
+    if not StyleServices.GetElementColor(Details, ecTextColor, LColor) or (LColor = clNone) then
+      LColor := ACanvas.Font.Color;
+  end
+  else
+    LColor := ACanvas.Font.Color;
+
+  LFormats := TTextFormatFlags(DT_NOCLIP or DT_CENTER or DT_VCENTER
+    or btn.DrawTextBiDiModeFlags(0) or WordBreakFlag[btn.WordWrap]);
+
+  if Length(btn.Caption) > 0 then begin
+    TextRect := Rect(0, 0, btn.ClientRect.Right - btn.ClientRect.Left, 0);
+    DrawText(ACanvas.Handle, PChar(btn.Caption), Length(btn.Caption), TextRect,
+      DT_CALCRECT or btn.DrawTextBiDiModeFlags(0));
+  end
+  else begin
+    TextRect := Rect(0, 0, 0, 0);
+  end;
+
+  OffsetRect(TextRect, TextPos.X + btn.ClientRect.Left, TextPos.Y + btn.ClientRect.Top);
+  StyleServices.DrawText(ACanvas.Handle, Details, btn.Caption, TextRect, LFormats, LColor);
+
+end;
+{$IFEND}
 
 end.

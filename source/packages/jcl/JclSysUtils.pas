@@ -2965,7 +2965,7 @@ begin
   else
     StartupInfo.hStdError := ErrorPipeInfo.PipeWrite;
   UniqueString(CommandLine); // CommandLine must be in a writable memory block
-  ProcessInfo.dwProcessId := 0;
+  ResetMemory(ProcessInfo, SizeOf(ProcessInfo));
   ProcessEvent := nil;
   try
     if CreateProcess(nil, PChar(CommandLine), nil, nil, True, ProcessPriorities[ProcessPriority],
@@ -3049,7 +3049,7 @@ begin
         end;
         if {$IFDEF FPC}Boolean({$ENDIF}AbortPtr^{$IFDEF FPC}){$ENDIF} then
           TerminateProcess(ProcessEvent.Handle, Cardinal(ABORT_EXIT_CODE));
-        if (ProcessEvent.WaitForever = wrSignaled) and not GetExitCodeProcess(ProcessEvent.Handle, Result) then
+        if (ProcessEvent.WaitForever = {$IFDEF RTL280_UP}TJclWaitResult.{$ENDIF RTL280_UP}wrSignaled) and not GetExitCodeProcess(ProcessEvent.Handle, Result) then
           Result := $FFFFFFFF;
         CloseHandle(ProcessInfo.hThread);
         ProcessInfo.hThread := 0;

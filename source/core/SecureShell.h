@@ -67,6 +67,8 @@ private:
   UnicodeString FLastTunnelError;
   UnicodeString FUserName;
   bool FUtfStrings;
+  DWORD FLastSendBufferUpdate;
+  int FSendBuf;
 
   static TCipher __fastcall FuncToSsh1Cipher(const void * Cipher);
   static TCipher __fastcall FuncToSsh2Cipher(const void * Cipher);
@@ -95,6 +97,8 @@ private:
   unsigned int __fastcall TimeoutPrompt(TQueryParamsTimerEvent PoolEvent);
   bool __fastcall TryFtp();
   UnicodeString __fastcall ConvertInput(const RawByteString & Input);
+  void __fastcall GetRealHost(UnicodeString & Host, int & Port);
+  UnicodeString __fastcall RetrieveHostKey(UnicodeString Host, int Port, const UnicodeString KeyType);
 
 protected:
   TCaptureOutputEvent FOnCaptureOutput;
@@ -129,6 +133,7 @@ public:
   void __fastcall SendNull();
 
   const TSessionInfo & __fastcall GetSessionInfo();
+  UnicodeString __fastcall GetHostKeyFingerprint();
   bool __fastcall SshFallbackCmd() const;
   unsigned long __fastcall MaxPacketSize();
   void __fastcall ClearStdError();
@@ -142,6 +147,7 @@ public:
   void __fastcall UpdateSocket(SOCKET value, bool Startup);
   void __fastcall UpdatePortFwdSocket(SOCKET value, bool Startup);
   void __fastcall PuttyFatalError(UnicodeString Error);
+  TPromptKind __fastcall IdentifyPromptKind(UnicodeString & Name);
   bool __fastcall PromptUser(bool ToServer,
     UnicodeString AName, bool NameRequired,
     UnicodeString Instructions, bool InstructionsRequired,
@@ -151,6 +157,7 @@ public:
   const UnicodeString & __fastcall GetStdError();
   void __fastcall VerifyHostKey(UnicodeString Host, int Port,
     const UnicodeString KeyType, UnicodeString KeyStr, UnicodeString Fingerprint);
+  bool __fastcall HaveHostKey(UnicodeString Host, int Port, const UnicodeString KeyType);
   void __fastcall AskAlg(const UnicodeString AlgType, const UnicodeString AlgName);
   void __fastcall DisplayBanner(const UnicodeString & Banner);
   void __fastcall OldKeyfileWarning();

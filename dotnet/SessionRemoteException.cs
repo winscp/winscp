@@ -15,11 +15,6 @@ namespace WinSCP
         {
         }
 
-        internal SessionRemoteException(Session session, string message, Exception innerException) :
-            base(session, message, innerException)
-        {
-        }
-
         internal static bool IsResult(CustomLogReader reader)
         {
             return reader.IsNonEmptyElement("result");
@@ -46,7 +41,6 @@ namespace WinSCP
         {
             using (ElementLogReader reader = new ElementLogReader(areader))
             {
-                string error = null;
                 string message = null;
                 List<string> messages = new List<string>();
                 bool inMessage = false;
@@ -66,26 +60,14 @@ namespace WinSCP
                     else if (inMessage &&
                         reader.IsEndElement("message"))
                     {
-                        if (error == null)
-                        {
-                            error = message;
-                        }
-                        else
-                        {
-                            messages.Add(message);
-                        }
+                        messages.Add(message);
                         message = null;
                         inMessage = false;
                     }
                 }
 
-                Exception inner = null;
-                if (messages.Count > 0)
-                {
-                    inner = new SessionRemoteException(reader.Session, string.Join(Environment.NewLine, messages.ToArray()));
-                }
-
-                return new SessionRemoteException(reader.Session, error, inner);
+                string error = string.Join(Environment.NewLine, messages.ToArray());
+                return new SessionRemoteException(reader.Session, error);
             }
         }
     }

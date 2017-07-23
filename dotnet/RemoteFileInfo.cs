@@ -10,6 +10,7 @@ namespace WinSCP
     public sealed class RemoteFileInfo
     {
         public string Name { get; internal set; }
+        public string FullName { get; internal set; }
         public char FileType { get; internal set; }
         public long Length { get; internal set; }
         public int Length32 { get { return GetLength32(); } set { SetLength32(value); } }
@@ -21,6 +22,8 @@ namespace WinSCP
         public string Group { get; internal set; }
 
         public bool IsDirectory { get { return (Char.ToUpper(FileType, CultureInfo.InvariantCulture) == 'D'); } }
+        public bool IsThisDirectory { get { return IsDirectory && (Name == "."); } }
+        public bool IsParentDirectory { get { return IsDirectory && (Name == ".."); } }
 
         internal RemoteFileInfo()
         {
@@ -30,7 +33,7 @@ namespace WinSCP
         {
             return Name;
         }
-    
+
         private int GetLength32()
         {
             if ((Length < int.MinValue) || (Length > int.MaxValue))

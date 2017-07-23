@@ -6,6 +6,7 @@
 #include <FileMasks.h>
 #include <CoreMain.h>
 #include <TextsWin.h>
+#include <HelpWin.h>
 #include <Tools.h>
 #include <VCLCommon.h>
 
@@ -28,7 +29,7 @@ bool __fastcall DoSelectMaskDialog(TCustomDirView * Parent, bool Select,
     CenterFormOn(Dialog, Parent);
     Dialog->Init(Select ? TSelectMaskDialog::smSelect : TSelectMaskDialog::smDeselect);
     DefaultFileFilter(*Filter);
-    TWinConfiguration * WinConfiguration = NOT_NULL(dynamic_cast<TWinConfiguration *>(Configuration));
+    TWinConfiguration * WinConfiguration = DebugNotNull(dynamic_cast<TWinConfiguration *>(Configuration));
     Filter->Masks = WinConfiguration->SelectMask;
     Filter->Directories = WinConfiguration->SelectDirectories;
     Dialog->FileFilter = *Filter;
@@ -99,7 +100,7 @@ void __fastcall TSelectMaskDialog::Init(TMode Mode)
     case smFilter:
       CaptionStr = FILTER_MASK_CAPTION;
       ApplyToDirectoriesCheck->Hide();
-      HelpKeyword = L"ui_filter";
+      HelpKeyword = HELP_FILTER;
       break;
   }
   Caption = LoadStr(CaptionStr);

@@ -468,6 +468,7 @@ type
   protected
     procedure Paint(const Canvas: TCanvas; const ClientAreaRect: TRect;
       IsHoverItem, IsPushed, UseDisabledShadow: Boolean); override;
+    function CaptionShown: Boolean; override;
   end;
 
   TTBXChevronPopupWindow = class(TTBXPopupWindow);
@@ -637,7 +638,7 @@ implementation
 {$R tbx_glyphs.res}
 
 uses
-  TBXExtItems, TBXLists, TB2Common, UxTheme, MultiMon, TBXDefaultTheme,
+  TBXExtItems, TBXLists, TB2Common, UxTheme, MultiMon, TBXOfficeXPTheme,
   {ComCtrls, Menus;} {vb-}
   ComCtrls, Menus, MMSystem, Types, UITypes; {vb+}
 
@@ -1301,6 +1302,7 @@ var
   TextMetric: TTextMetric;
   TextSize: TSize;
   Margins: TTBXMargins;
+  Two, Three: Integer;
 begin
   Item := TTBCustomItem(Self.Item);
   ToolbarStyle := IsToolbarStyle;
@@ -1346,28 +1348,37 @@ begin
   { Measure size }
   if ToolbarStyle then
   begin
-    AWidth := 6;
-    AHeight := 6;
+    if not IsTextRotated then
+    begin
+      AWidth := 3;
+      AHeight := 6;
+    end
+      else
+    begin
+      AWidth := 6;
+      AHeight := 3;
+    end;
 
     if CaptionShown then
     begin
+      Three := ScaleByTextHeightRunTime(Canvas, 3);
       Inc(AWidth, TextSize.CX);
       Inc(AHeight, TextSize.CY);
-      if not IsTextRotated then Inc(AWidth, 4)
-      else Inc(AHeight, 4);
+      if not IsTextRotated then Inc(AWidth, 2 * Three)
+      else Inc(AHeight, 2 * Three);
     end;
 
     if GetImageShown and (ImgSize.CX > 0) and (ImgSize.CY > 0) then
     begin
       if ItemLayout = tbxlGlyphLeft then
       begin
-        Inc(AWidth, ImgSize.CX);
+        Inc(AWidth, ImgSize.CX + 3);
         if Wide then Inc(AWidth);
         if AHeight < ImgSize.CY + 6 then AHeight := ImgSize.CY + 6;
       end
       else
       begin
-        Inc(AHeight, ImgSize.CY);
+        Inc(AHeight, ImgSize.CY + 3);
         if AWidth < ImgSize.CX + 7 then AWidth := ImgSize.CX + 7;
       end;
     end;
@@ -1379,8 +1390,9 @@ begin
       begin
         if (ItemLayout <> tbxlGlyphTop) or (ImgSize.CX = 0) or IsTextRotated then
         begin
-          if View.Orientation <> tbvoVertical then Inc(AWidth, DropdownArrowWidth)
-          else Inc(AHeight, DropdownArrowWidth);
+          Two := ScaleByTextHeightRunTime(Canvas, 2);
+          if View.Orientation <> tbvoVertical then Inc(AWidth, Two + DropdownArrowWidth)
+          else Inc(AHeight, DropdownArrowWidth + Two + DropdownArrowMargin);
         end
         else
         begin
@@ -1644,6 +1656,7 @@ var
   TextMetrics: TTextMetric;
   TextSize: TSize;
   Margins: TTBXMargins;
+  Three: Integer;
 begin
   Item := TTBXCustomItem(Self.Item);
   View := TTBViewAccess(Self.View);
@@ -1835,11 +1848,12 @@ begin
     begin
       CaptionRect := R;
       TextFlags := TextFlags or DT_CENTER or DT_VCENTER;
+      Three := ScaleByTextHeightRunTime(Canvas, 3);
       if ImageIsShown then with CaptionRect do
         case ItemLayout of
         tbxlGlyphLeft:
           begin
-            Inc(Left, ImgSize.CX + 3);
+            Inc(Left, ImgSize.CX + Three + 1);
             Top := (Top + Bottom  - TextSize.CY) div 2;
             Bottom := Top + TextSize.CY;
             Left := (Left + Right - TextSize.CX) div 2;
@@ -2919,6 +2933,11 @@ begin
   CurrentTheme.PaintChevron(Canvas, ClientAreaRect, ItemInfo);
 end;
 
+function TTBXChevronItemViewer.CaptionShown: Boolean;
+begin
+  Result := False;
+end;
+
 
 //============================================================================//
 
@@ -3873,8 +3892,8 @@ end;
 initialization
   FixPlaySoundDelay; {vb+}
   {CurrentTheme := nil;} {vb-}
-  RegisterTBXTheme('Default', TTBXDefaultTheme);
-  TBXNexus := TTBXNexus.Create('Default');
+  RegisterTBXTheme('OfficeXP', TTBXOfficeXPTheme);
+  TBXNexus := TTBXNexus.Create('OfficeXP');
   TBXMenuAnimation := TTBXMenuAnimation.Create; {vb+}
   {$IFNDEF JR_D7} {vb+}
   InitAdditionalSysColors;

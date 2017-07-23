@@ -81,6 +81,9 @@ public:
   virtual bool __fastcall GetStoredCredentialsTried();
   virtual UnicodeString __fastcall GetUserName();
   virtual void __fastcall GetSupportedChecksumAlgs(TStrings * Algs);
+  virtual void __fastcall LockFile(const UnicodeString & FileName, const TRemoteFile * File);
+  virtual void __fastcall UnlockFile(const UnicodeString & FileName, const TRemoteFile * File);
+  virtual void __fastcall UpdateFromMain(TCustomFileSystem * MainFileSystem);
 
 protected:
   enum TOverwriteMode { omOverwrite, omResume, omComplete };
@@ -130,8 +133,7 @@ protected:
   bool __fastcall HandleListData(const wchar_t * Path, const TListDataEntry * Entries,
     unsigned int Count);
   bool __fastcall HandleTransferStatus(bool Valid, __int64 TransferSize,
-    __int64 Bytes, int Percent, int TimeElapsed, int TimeLeft, int TransferRate,
-    bool FileTransfer);
+    __int64 Bytes, bool FileTransfer);
   bool __fastcall HandleReply(int Command, unsigned int Reply);
   bool __fastcall HandleCapabilities(TFTPServerCapabilities * ServerCapabilities);
   bool __fastcall CheckError(int ReturnCode, const wchar_t * Context);
@@ -187,7 +189,16 @@ protected:
   bool __fastcall VerifyCertificateHostName(const TFtpsCertificateData & Data);
   bool __fastcall SupportsReadingFile();
   void __fastcall AutoDetectTimeDifference(TRemoteFileList * FileList);
+  void __fastcall AutoDetectTimeDifference(const UnicodeString & Directory, const TCopyParamType * CopyParam, int Params);
   void __fastcall ApplyTimeDifference(TRemoteFile * File);
+  void __fastcall ApplyTimeDifference(
+    const UnicodeString & FileName, TDateTime & Modification, TModificationFmt & ModificationFmt);
+  void __fastcall DummyReadDirectory(const UnicodeString & Directory);
+  bool __fastcall IsEmptyFileList(TRemoteFileList * FileList);
+  void __fastcall CheckTimeDifference();
+  inline bool __fastcall NeedAutoDetectTimeDifference();
+  bool __fastcall LookupUploadModificationTime(
+    const UnicodeString & FileName, TDateTime & Modification, TModificationFmt ModificationFmt);
   UnicodeString __fastcall DoCalculateFileChecksum(bool UsingHashCommand, const UnicodeString & Alg, TRemoteFile * File);
   void __fastcall DoCalculateFilesChecksum(bool UsingHashCommand, const UnicodeString & Alg,
     TStrings * FileList, TStrings * Checksums,
@@ -199,9 +210,9 @@ protected:
   bool __fastcall SupportsCommand(const UnicodeString & Command) const;
   void __fastcall RegisterChecksumAlgCommand(const UnicodeString & Alg, const UnicodeString & Command);
   void __fastcall SendCommand(const UnicodeString & Command);
+  bool __fastcall CanTransferSkipList(int Params, unsigned int Flags, const TCopyParamType * CopyParam);
 
   static bool __fastcall Unquote(UnicodeString & Str);
-  static UnicodeString __fastcall ExtractStatusMessage(UnicodeString Status);
 
 private:
   enum TCommand
@@ -224,6 +235,7 @@ private:
   unsigned int FCommandReply;
   TCommand FLastCommand;
   bool FPasswordFailed;
+  bool FStoredPasswordTried;
   bool FMultineResponse;
   int FLastCode;
   int FLastCodeClass;
@@ -251,6 +263,7 @@ private:
   __int64 FFileTransferResumed;
   bool FFileTransferPreserveTime;
   bool FFileTransferRemoveBOM;
+  bool FFileTransferNoList;
   unsigned long FFileTransferCPSLimit;
   bool FAwaitingProgress;
   TCaptureOutputEvent FOnCaptureOutput;
@@ -266,9 +279,17 @@ private:
   std::unique_ptr<TStrings> FSupportedCommands;
   std::unique_ptr<TStrings> FSupportedSiteCommands;
   std::unique_ptr<TStrings> FHashAlgs;
+  typedef std::map<UnicodeString, TDateTime> TUploadedTimes;
+  TUploadedTimes FUploadedTimes;
   bool FSupportsAnyChecksumFeature;
   UnicodeString FLastCommandSent;
+  X509 * FCertificate;
+  EVP_PKEY * FPrivateKey;
   bool FTransferActiveImmediately;
+  bool FWindowsServer;
+  __int64 FBytesAvailable;
+  bool FBytesAvailableSuppoted;
+  bool FMVS;
   mutable UnicodeString FOptionScratch;
 };
 //---------------------------------------------------------------------------

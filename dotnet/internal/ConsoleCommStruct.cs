@@ -11,7 +11,7 @@ namespace WinSCP
     {
         public uint InputType;
         public uint OutputType;
-        public bool WantsProgress;
+        public bool WantsProgress; // since version 6
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
@@ -21,6 +21,8 @@ namespace WinSCP
         public string Message; // wide since version 4
         [MarshalAs(UnmanagedType.I1)]
         public bool FromBeginning;
+        [MarshalAs(UnmanagedType.I1)]
+        public bool Error; // since version 7
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
@@ -64,7 +66,7 @@ namespace WinSCP
         public enum ProgressSide { Local, Remote }
 
         public ProgressOperation Operation;
-        public ProgressSide Side; 
+        public ProgressSide Side;
 
         [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 1024)]
         public string FileName;
@@ -89,13 +91,15 @@ namespace WinSCP
 
     internal class ConsoleCommStruct : IDisposable
     {
-        public const int CurrentVersion = 0x0006;
+        public const int CurrentVersion = 0x0007;
 
         public ConsoleCommStruct(Session session, SafeFileHandle fileMapping)
         {
             _session = session;
             _fileMapping = fileMapping;
+            _session.Logger.WriteLineLevel(1, "Acquiring communication structure");
             _ptr = UnsafeNativeMethods.MapViewOfFile(_fileMapping, FileMapAccess.FileMapAllAccess, 0, 0, UIntPtr.Zero);
+            _session.Logger.WriteLineLevel(1, "Acquired communication structure");
             _payloadPtr = new IntPtr(_ptr.ToInt64() + 12);
             _header = (ConsoleCommHeader)Marshal.PtrToStructure(_ptr, typeof(ConsoleCommHeader));
         }
@@ -122,10 +126,12 @@ namespace WinSCP
                     }
                 }
 
+                _session.Logger.WriteLineLevel(1, "Releasing communication structure");
                 if (!UnsafeNativeMethods.UnmapViewOfFile(_ptr))
                 {
                     throw new SessionLocalException(_session, "Cannot release file mapping");
                 }
+                _session.Logger.WriteLineLevel(1, "Released communication structure");
 
                 _ptr = IntPtr.Zero;
             }

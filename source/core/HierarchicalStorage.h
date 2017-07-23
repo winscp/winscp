@@ -215,7 +215,7 @@ private:
 class TOptionsStorage : public TCustomIniFileStorage
 {
 public:
-  __fastcall TOptionsStorage(TStrings * Options);
+  __fastcall TOptionsStorage(TStrings * Options, bool AllowWrite);
   __fastcall TOptionsStorage(TStrings * Options, const UnicodeString & RootKey, THierarchicalStorage * MasterStorage);
 
 protected:

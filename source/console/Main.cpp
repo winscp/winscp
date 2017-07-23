@@ -401,6 +401,7 @@ void Print(const wchar_t* Message)
 //---------------------------------------------------------------------------
 void Print(bool FromBeginning, const wchar_t* Message)
 {
+  size_t Len = wcslen(Message);
   if ((OutputType == FILE_TYPE_DISK) || (OutputType == FILE_TYPE_PIPE))
   {
     if (FromBeginning && (Message[0] != L'\n'))
@@ -434,7 +435,24 @@ void Print(bool FromBeginning, const wchar_t* Message)
     {
       WriteConsole(ConsoleOutput, L"\r", 1, &Written, NULL);
     }
-    WriteConsole(ConsoleOutput, Message, wcslen(Message), &Written, NULL);
+    bool WriteResult =
+      WriteConsole(ConsoleOutput, Message, Len, &Written, NULL);
+    int Error = GetLastError();
+    // The current console font does not support some characters in the message,
+    // fall back to ansi-writting
+    if (!WriteResult && (Error == ERROR_GEN_FAILURE))
+    {
+      int Size = WideCharToMultiByte(CP_ACP, 0, Message, -1, 0, 0, 0, 0);
+      if (Size > 0)
+      {
+        char* Buffer = new char[Size];
+        if (WideCharToMultiByte(CP_ACP, 0, Message, -1, Buffer, Size, 0, 0) > 0)
+        {
+          WriteConsoleA(ConsoleOutput, Buffer, strlen(Buffer), &Written, NULL);
+        }
+        delete[] Buffer;
+      }
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -467,10 +485,60 @@ void BreakInput()
 DWORD WINAPI InputTimerThreadProc(void* Parameter)
 {
   unsigned int Timer = reinterpret_cast<unsigned int>(Parameter);
+  unsigned int Remaining = Timer;
+  const unsigned int Step = 1000;
+  const int FirstKey = VK_LBUTTON; // 0x01
+  const int LastKey = VK_OEM_CLEAR; // 0xFE
 
-  if (WaitForSingleObject(InputTimerEvent, Timer) == WAIT_TIMEOUT)
+  // reset key state
+  for (int Key = FirstKey; Key <= LastKey; Key++)
   {
-    BreakInput();
+    GetAsyncKeyState(Key);
+  }
+
+  while (Remaining > 0)
+  {
+    unsigned long WaitResult = WaitForSingleObject(InputTimerEvent, Step);
+
+    if (WaitResult == WAIT_OBJECT_0)
+    {
+      // input entered
+      Remaining = 0;
+    }
+    else if (WaitResult == WAIT_TIMEOUT)
+    {
+      bool Input = false;
+
+      for (int Key = FirstKey; Key <= LastKey; Key++)
+      {
+        if ((GetAsyncKeyState(Key) & 0x01) != 0)
+        {
+          Input = true;
+          // Finishing the loop nevertheless to reset state of all keys
+        }
+      }
+
+      if (Input)
+      {
+        // If we have new input, reset timer
+        Remaining = Timer;
+      }
+      else if (Remaining > Step)
+      {
+        Remaining -= Step;
+      }
+      else
+      {
+        BreakInput();
+        Remaining = 0;
+      }
+    }
+    else
+    {
+      // abort input on (unlikely) error
+      BreakInput();
+      Remaining = 0;
+    }
   }
 
   return 0;

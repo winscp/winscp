@@ -231,7 +231,7 @@ namespace WinSCP
                 {
                     symbol = UnsetSymbol;
                 }
-                
+
                 buf[i] = symbol;
 
                 flag <<= 1;

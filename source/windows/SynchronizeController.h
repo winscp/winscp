@@ -83,4 +83,6 @@ private:
   void __fastcall SynchronizeDirectoriesChange(TObject * Sender, int Directories);
 };
 //---------------------------------------------------------------------------
+void __fastcall LogSynchronizeEvent(TTerminal * Terminal, const UnicodeString & Message);
+//---------------------------------------------------------------------------
 #endif

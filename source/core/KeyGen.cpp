@@ -155,7 +155,7 @@ public:
 void KeyGenerationProgressUpdate(void * Thread,
   int Action, int Phase, int IProgress)
 {
-  assert(Thread);
+  DebugAssert(Thread);
   ((TKeyGenerationThread*)Thread)->ProgressUpdate(Action, Phase, IProgress);
 }
 //---------------------------------------------------------------------------
@@ -175,7 +175,7 @@ __fastcall TKeyGenerator::TKeyGenerator():
 //---------------------------------------------------------------------------
 __fastcall TKeyGenerator::~TKeyGenerator()
 {
-  assert(FState != kgGenerating);
+  DebugAssert(FState != kgGenerating);
   if (FEntropy) delete FEntropy;
   delete FSSH2Key;
   delete FRSAKey;
@@ -184,7 +184,7 @@ __fastcall TKeyGenerator::~TKeyGenerator()
 //---------------------------------------------------------------------------
 void __fastcall TKeyGenerator::SetKeySize(int value)
 {
-  assert(FState != kgGenerating);
+  DebugAssert(FState != kgGenerating);
   FState = kgInitializing;
   FKeySize = value;
   FEntropyRequired = (KeySize / 2) * 2;
@@ -195,16 +195,16 @@ void __fastcall TKeyGenerator::SetKeySize(int value)
 //---------------------------------------------------------------------------
 void __fastcall TKeyGenerator::SetKeyType(TKeyType value)
 {
-  assert(FState != kgGenerating);
+  DebugAssert(FState != kgGenerating);
   FState = kgInitializing;
   FKeyType = value;
 }
 //---------------------------------------------------------------------------
 void __fastcall TKeyGenerator::AddEntropy(TEntropyBit Entropy)
 {
-  assert(FState == kgInitializing);
-  assert(FEntropy);
-  assert(FEntropyGot < FEntropyRequired);
+  DebugAssert(FState == kgInitializing);
+  DebugAssert(FEntropy);
+  DebugAssert(FEntropyGot < FEntropyRequired);
   FEntropy[FEntropyGot++] = Entropy;
   if (FEntropyGot == FEntropyRequired)
   {
@@ -217,7 +217,7 @@ void __fastcall TKeyGenerator::AddEntropy(TEntropyBit Entropy)
 //---------------------------------------------------------------------------
 void __fastcall TKeyGenerator::ResetKey()
 {
-  assert(FSSH2Key);
+  DebugAssert(FSSH2Key);
   switch (KeyType) {
     case ktDSA:
       FSSH2Key->data = FDSSKey;
@@ -242,14 +242,14 @@ void __fastcall TKeyGenerator::ResetKey()
 //---------------------------------------------------------------------------
 void __fastcall TKeyGenerator::StartGenerationThread()
 {
-  assert(FState == kgInitialized);
+  DebugAssert(FState == kgInitialized);
   FState = kgGenerating;
   new TKeyGenerationThread(this);
 }
 //---------------------------------------------------------------------------
 void __fastcall TKeyGenerator::Generate()
 {
-  assert(FState == kgInitialized);
+  DebugAssert(FState == kgInitialized);
   THREAD_CLASS * Thread;
   FState = kgGenerating;
   Thread = new TKeyGenerationThread(this);
@@ -259,7 +259,7 @@ void __fastcall TKeyGenerator::Generate()
 void __fastcall TKeyGenerator::ProgressUpdate(int Range, int Position,
   TKeyGenerationComplete Complete)
 {
-  assert(FState == kgGenerating);
+  DebugAssert(FState == kgGenerating);
   if (Complete == kgSuccess)
   {
     FState = kgComplete;
@@ -285,7 +285,7 @@ void __fastcall TKeyGenerator::SetComment(AnsiString value)
   {
     FComment = value;
     FPublicKey = "";
-    assert(FSSH2Key);
+    DebugAssert(FSSH2Key);
     FSSH2Key->comment = FComment.c_str();
     FRSAKey->comment = FComment.c_str();
   }
@@ -297,7 +297,7 @@ AnsiString __fastcall TKeyGenerator::GetFingerprint()
   {
     if (IsSSH2)
     {
-      assert(FSSH2Key);
+      DebugAssert(FSSH2Key);
       FFingerprint = FSSH2Key->alg->fingerprint(FSSH2Key->data);
     }
     else
@@ -324,7 +324,7 @@ AnsiString __fastcall TKeyGenerator::GetPublicKey()
     int pub_len;
     int i;
 
-    assert(FSSH2Key);
+    DebugAssert(FSSH2Key);
     pub_blob = FSSH2Key->alg->public_blob(FSSH2Key->data, &pub_len);
     buffer = new char[4 * ((pub_len + 2) / 3) + 1];
     p = buffer;
@@ -346,16 +346,16 @@ AnsiString __fastcall TKeyGenerator::GetPublicKey()
 //---------------------------------------------------------------------------
 AnsiString __fastcall TKeyGenerator::GetAuthorizedKeysLine()
 {
-  assert(FSSH2Key);
+  DebugAssert(FSSH2Key);
   return FORMAT("%s %s %s", (FSSH2Key->alg->name, PublicKey, Comment));
 }
 //---------------------------------------------------------------------------
 void __fastcall TKeyGenerator::SaveKey(const AnsiString FileName,
   const AnsiString Passphrase, TKeyFormat Format)
 {
-  assert(FSSH2Key);
-  assert(FState == kgComplete);
-  assert((Format != kfOpenSSH && Format != kfSSHCom) || IsSSH2);
+  DebugAssert(FSSH2Key);
+  DebugAssert(FState == kgComplete);
+  DebugAssert((Format != kfOpenSSH && Format != kfSSHCom) || IsSSH2);
 
   int Result;
 
@@ -379,12 +379,12 @@ void __fastcall TKeyGenerator::SaveKey(const AnsiString FileName,
         break;
 
       default:
-        FAIL;
+        DebugFail();
     }
   }
   else
   {
-    assert(Format == kfPutty);
+    DebugAssert(Format == kfPutty);
     Result = saversakey(FileName.c_str(), FRSAKey,
       (char*)Passphrase.data());
   }

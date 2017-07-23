@@ -89,6 +89,9 @@ extern "C" {
 # ifdef PBE_UNICODE
 #  define PKCS12_key_gen PKCS12_key_gen_uni
 #  define PKCS12_add_friendlyname PKCS12_add_friendlyname_uni
+#  ifdef WINSCP
+#   define PKCS12_key_gen_uni PKCS12_key_gen_wrap
+#  endif
 # else
 #  define PKCS12_key_gen PKCS12_key_gen_asc
 #  define PKCS12_add_friendlyname PKCS12_add_friendlyname_asc
@@ -270,7 +273,7 @@ int i2d_PKCS12_bio(BIO *bp, PKCS12 *p12);
 int i2d_PKCS12_fp(FILE *fp, PKCS12 *p12);
 PKCS12 *d2i_PKCS12_bio(BIO *bp, PKCS12 **p12);
 PKCS12 *d2i_PKCS12_fp(FILE *fp, PKCS12 **p12);
-int PKCS12_newpass(PKCS12 *p12, char *oldpass, char *newpass);
+int PKCS12_newpass(PKCS12 *p12, const char *oldpass, const char *newpass);
 
 /* BEGIN ERROR CODES */
 /*

@@ -29,6 +29,9 @@ protected:
   virtual void __fastcall PaintWindow(HDC DC);
   DYNAMIC bool __fastcall CanChange();
   DYNAMIC void __fastcall Change();
+  #ifdef _DEBUG
+  virtual void __fastcall RequestAlign();
+  #endif
 
 private:
   void __fastcall DrawThemesXpTabItem(HDC DC, int Item, const TRect & Rect, bool Body, int State);

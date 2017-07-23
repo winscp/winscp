@@ -42,8 +42,6 @@ type
   public
     constructor Create(DirView: TCustomListView);
   published
-    property MaxWidth;
-    property MinWidth;
     property SortAscending;
 
     property SortDirColumn: TDirViewCol read GetSortDirColumn write SetSortDirColumn default dvName;

@@ -76,6 +76,7 @@ protected:
   void __fastcall SetDriveView(TCustomUnixDriveView * Value);
   virtual int __fastcall HiddenCount();
   virtual int __fastcall FilteredCount();
+  DYNAMIC void __fastcall UpdatePathLabelCaption();
 
   __property TCustomUnixDriveView * DriveView = { read = FDriveView, write = SetDriveView };
 
@@ -104,6 +105,7 @@ __published:
     write = SetDDAllowMove, default = False };
   __property TDDDragFileName OnDDDragFileName = { read = FOnDDDragFileName,
     write = FOnDDDragFileName};
+  __property OnBusy;
   __property bool ShowInaccesibleDirectories  =
     { read=FShowInaccesibleDirectories, write=SetShowInaccesibleDirectories,
       default=true  };

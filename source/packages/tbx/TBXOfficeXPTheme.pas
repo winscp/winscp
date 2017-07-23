@@ -12,7 +12,7 @@ interface
 {$I TBX.inc}
 
 uses
-  Windows, Messages, Graphics, TBXThemes, TBXDefaultTheme, ImgList;
+  Windows, Messages, Graphics, TBXThemes, ImgList;
 
 {$DEFINE ALTERNATIVE_DISABLED_STYLE} // remove the asterisk to change appearance of disabled images
 {$DEFINE NO_IMAGE_DIMMING}
@@ -98,7 +98,7 @@ implementation
 
 uses
   TBXUtils, TB2Common, TB2Item, Classes, Controls, Commctrl, Forms, SysUtils,
-  Types, UITypes;
+  Types, UITypes, UxTheme;
 
 var
   StockImgList: TImageList;
@@ -156,6 +156,12 @@ begin
     TMI_EDIT_MENURIGHTINDENT:        Result := 1;
   else
     Result := DEFAULT;
+  end;
+
+  if Result > 0 then
+  begin
+    // DPI-scaling for a lack of better choice here
+    Result := MulDiv(Result, Screen.PixelsPerInch, USER_DEFAULT_SCREEN_DPI);
   end;
 end;
 
@@ -373,20 +379,37 @@ var
   DC: HDC;
   X, Y: Integer;
   C: TColor;
+  Two, Three, Four: Integer;
+  Diag: Integer;
+  I: Integer;
 begin
+  Two := ScaleByTextHeightRunTime(Canvas, 2);
+  Three := ScaleByTextHeightRunTime(Canvas, 3);
+  Four := ScaleByTextHeightRunTime(Canvas, 4);
+
   DC := Canvas.Handle;
   X := (ARect.Left + ARect.Right) div 2 - 1;
   Y := (ARect.Top + ARect.Bottom) div 2 + 1;
   C := GetBtnColor(ItemInfo, ipText);
   if ItemInfo.ItemOptions and IO_RADIO > 0 then
   begin
-    RoundRectEx(DC, X-2, Y-4, X+4, Y+2, 2, 2,
-      MixColors(C, ToolbarColor, 200), clNone);
-    RoundRectEx(DC, X-2, Y-4, X+4, Y+2, 6, 6, C, C);
+    // Should we use SM_CXMENUCHECK to determine the size?
+    // 10 div 14 is approximation of division by square root of 2 (pythagorean theorem)
+    Diag := (Three * 10 div 14) + 1;
+    RoundRectEx(DC, X-Diag+1, Y-Diag-1, X+Diag+1, Y+Diag-1, Four div 2, Four div 2,
+      MixColors(C, ToolbarColor, 200), C);
+    // Using Ellipse instead of RoundRect to draw circle was an attempt to draw it nicely on
+    // high DPI. It didn't work. But using ellipse seems better anyway, so we kept it.
+    EllipseEx(DC, X-Three+1, Y-Three-1, X+Three+1, Y+Three-1,
+      C, C);
   end
-  else
-    PolylineEx(DC, [Point(X-2, Y-2), Point(X, Y), Point(X+4, Y-4),
-      Point(X+4, Y-3), Point(X, Y+1), Point(X-2, Y-1), Point(X-2, Y-2)], C);
+    else
+  begin
+    for I := 1 to Two do
+    begin
+      PolyLineEx(DC, [Point(X-Two, Y-Two+I), Point(X, Y+I), Point(X+Four+1, Y-Four-1+I)], C);
+    end;
+  end;
 end;
 
 procedure TTBXOfficeXPTheme.PaintChevron(Canvas: TCanvas; ARect: TRect; const ItemInfo: TTBXItemInfo);
@@ -571,6 +594,7 @@ procedure TTBXOfficeXPTheme.PaintDropDownArrow(Canvas: TCanvas;
   const ARect: TRect; const ItemInfo: TTBXItemInfo);
 var
   X, Y: Integer;
+  Two: Integer;
 begin
   with ARect, Canvas do
   begin
@@ -578,8 +602,9 @@ begin
     Y := (Top + Bottom) div 2 - 1;
     Pen.Color := GetPartColor(ItemInfo, ipText);
     Brush.Color := Pen.Color;
-    if ItemInfo.IsVertical then Polygon([Point(X, Y + 2), Point(X, Y - 2), Point(X - 2, Y)])
-    else Polygon([Point(X - 2, Y), Point(X + 2, Y), Point(X, Y + 2)]);
+    Two := ScaleByTextHeightRunTime(Canvas, 2);
+    if ItemInfo.IsVertical then Polygon([Point(X, Y + Two), Point(X, Y - Two), Point(X - Two, Y)])
+    else Polygon([Point(X - Two, Y), Point(X + Two, Y), Point(X, Y + Two)]);
   end;
 end;
 
@@ -871,7 +896,10 @@ begin
 
     if (ItemOptions and IO_COMBO) <> 0 then
     begin
-      X := R.Right - ArrowWidth - 1;
+      // WinSCP: One pixel to the right (+ 1) to make combos with keyboard accelerator look better.
+      // This moves the line into hitarea of the arrow (while it was in hitarea of the command originally)
+      // Further move would require changes in hitarea testing.
+      X := R.Right - ArrowWidth - 1 + 1;
       if not ItemInfo.Enabled then C := ClrText
       else if HoverKind = hkMouseHover then C := GetPartColor(ItemInfo, ipFrame)
       else C := PopupSeparatorColor;
@@ -882,7 +910,7 @@ begin
     begin
       Y := ARect.Bottom div 2;
       X := ARect.Right - ArrowWidth * 2 div 3 - 1;
-      PolygonEx(DC, [Point(X, Y - 3), Point(X, Y + 3), Point(X + 3, Y)], ClrText, ClrText);
+      PolygonEx(DC, [Point(X, Y - (ArrowWidth div 5)), Point(X, Y + (ArrowWidth div 5)), Point(X + (ArrowWidth div 5), Y)], ClrText, ClrText);
     end;
 
     if Selected and Enabled then
@@ -1013,6 +1041,7 @@ var
   I: Integer;
   BtnVisible, Horz: Boolean;
   BtnItemState: TBtnItemState;
+  Two, Three: Integer;
 begin
   DC := Canvas.Handle;
   with Canvas do
@@ -1070,36 +1099,41 @@ begin
     if ToolbarInfo.DragHandleStyle <> DHS_NONE then
     begin
       R2 := R;
+      // Using DPI scaling instead of text-height scaling because
+      // toolbar NC area pieces are already DPI-scaled in
+      // TB2Dock initialization section
+      Two := MulDiv(2, Screen.PixelsPerInch, USER_DEFAULT_SCREEN_DPI);
+      Three := MulDiv(3, Screen.PixelsPerInch, USER_DEFAULT_SCREEN_DPI);
       if Horz then
       begin
         Inc(R2.Left, DragHandleOffsets[BtnVisible, ToolbarInfo.DragHandleStyle]);
         if BtnVisible then Inc(R2.Top, Sz - 2);
-        R2.Right := R2.Left + 3;
+        R2.Right := R2.Left + Three;
       end
       else
       begin
         Inc(R2.Top, DragHandleOffsets[BtnVisible, ToolbarInfo.DragHandleStyle]);
         if BtnVisible then Dec(R2.Right, Sz - 2);
-        R2.Bottom := R2.Top + 3;
+        R2.Bottom := R2.Top + Three;
       end;
 
       Pen.Color := DragHandleColor;
       if Horz then
       begin
-        I := R2.Top + 3;
-        while I < R2.Bottom - 3 do
+        I := R2.Top + Three;
+        while I < R2.Bottom - Three do
         begin
           MoveTo(R2.Left, I); LineTo(R2.Right, I);
-          Inc(I, 2);
+          Inc(I, Two);
         end;
       end
       else
       begin
-        I := R2.Left + 3;
-        while I < R2.Right - 3 do
+        I := R2.Left + Three;
+        while I < R2.Right - Three do
         begin
           MoveTo(I, R2.Top); LineTo(I, R2.Bottom);
-          Inc(I, 2);
+          Inc(I, Two);
         end;
       end;
     end;
@@ -1644,7 +1678,7 @@ end;
 
 procedure TTBXOfficeXPTheme.PaintStatusBar(Canvas: TCanvas; R: TRect; Part: Integer);
 var
-  D, Sz, I: Integer;
+  D: Integer;
   DC: HDC;
 
   procedure DiagLine(C: TColor);
@@ -1668,33 +1702,8 @@ begin
       end;
     SBP_GRIPPER:
       begin
-        D := 0;
-        Sz := Min(R.Right - R.Left, R.Bottom - R.Top);
-        for I := 1 to 3 do
-          case Sz of
-            0..8:
-              begin
-                DiagLine(clBtnShadow);
-                DiagLine(clBtnHighlight);
-              end;
-            9..11:
-              begin
-                DiagLine(clBtnFace);
-                DiagLine(clBtnShadow);
-                DiagLine(clBtnHighlight);
-              end;
-            12..14:
-              begin
-                DiagLine(clBtnShadow);
-                DiagLine(clBtnShadow);
-                DiagLine(clBtnHighlight);
-              end;
-          else
-            DiagLine(clBtnFace);
-            DiagLine(clBtnShadow);
-            DiagLine(clBtnShadow);
-            DiagLine(clBtnHighlight);
-          end;
+        Inc(R.Right);
+        DrawThemeBackground(STATUSBAR_THEME, DC, SP_GRIPPER, 0, R, nil)
       end;
   end;
 end;
@@ -1703,8 +1712,5 @@ procedure TTBXOfficeXPTheme.TBXSysCommand(var Message: TMessage);
 begin
   if Message.WParam = TSC_VIEWCHANGE then SetupColorCache;
 end;
-
-initialization
-  RegisterTBXTheme('OfficeXP', TTBXOfficeXPTheme);
 
 end.

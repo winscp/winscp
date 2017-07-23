@@ -10,7 +10,7 @@
 class TFileOperationProgressType;
 enum TFileOperation { foNone, foCopy, foMove, foDelete, foSetProperties,
   foRename, foCustomCommand, foCalculateSize, foRemoteMove, foRemoteCopy,
-  foGetProperties, foCalculateChecksum };
+  foGetProperties, foCalculateChecksum, foLock, foUnlock };
 // csCancelTransfer and csRemoteAbort are used with SCP only
 enum TCancelStatus { csContinue = 0, csCancel, csCancelTransfer, csRemoteAbort };
 enum TBatchOverwrite { boNo, boAll, boNone, boOlder, boAlternateResume, boAppend, boResume };

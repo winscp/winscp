@@ -24,6 +24,7 @@
 #include "PngImageList.hpp"
 #include <System.Actions.hpp>
 #include "TBXExtItems.hpp"
+#include <Vcl.AppEvnts.hpp>
 //---------------------------------------------------------------------------
 class TRichEdit20;
 //---------------------------------------------------------------------------
@@ -74,6 +75,11 @@ __published:
   TAction *UTF8EncodingAction;
   TTBXColorItem *ColorItem;
   TAction *ColorAction;
+  TAction *SaveAllAction2;
+  TTBXItem *TBXItem1;
+  TPngImageList *EditorImages120;
+  TPngImageList *EditorImages144;
+  TPngImageList *EditorImages192;
   void __fastcall EditorActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall EditorActionsExecute(TBasicAction *Action,
           bool &Handled);
@@ -86,13 +92,14 @@ __published:
   void __fastcall FindDialogFind(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
-  void __fastcall FormActivate(TObject *Sender);
   void __fastcall FormKeyDown(TObject *Sender, WORD &Key, TShiftState Shift);
 private:
   UnicodeString FFileName;
   TNotifyEvent FOnFileChanged;
   TNotifyEvent FOnFileReload;
   TFileClosedEvent FOnWindowClose;
+  TNotifyEvent FOnSaveAll;
+  TAnyModifiedEvent FOnAnyModified;
   TCustomForm * FParentForm;
   TFindDialog * FLastFindDialog;
   TPoint FCaretPos;
@@ -100,22 +107,21 @@ private:
   TReplaceDialog * FReplaceDialog;
   bool FCloseAnnounced;
   TRichEdit20 * EditorMemo;
-  bool FShowStatusBarHint;
-  UnicodeString FStatusBarHint;
   bool FFormRestored;
   UnicodeString FWindowParams;
   unsigned int FInstance;
   TEncoding * FEncoding;
+  TEncoding * FAnsiEncoding;
   UnicodeString FEncodingName;
   bool FSaving;
   bool FStandaloneEditor;
   bool FClosePending;
   TColor FBackgroundColor;
+  bool FReloading;
 
   static unsigned int FInstances;
   void __fastcall SetFileName(const UnicodeString value);
   void __fastcall SetParentForm(TCustomForm * value);
-  void __fastcall ApplicationHint(TObject * Sender);
   void __fastcall SetBackgroundColor(TColor Color);
 public:
   __fastcall TEditorForm(TComponent* Owner);
@@ -123,11 +129,15 @@ public:
   void __fastcall ApplyConfiguration();
   void __fastcall FileUploadComplete();
   void __fastcall LoadFile();
+  void __fastcall SaveFile();
+  bool __fastcall IsFileModified();
   __property UnicodeString FileName = { read = FFileName, write = SetFileName };
   __property bool StandaloneEditor = { read = FStandaloneEditor, write = FStandaloneEditor };
   __property TNotifyEvent OnFileChanged = { read = FOnFileChanged, write = FOnFileChanged };
   __property TNotifyEvent OnFileReload = { read = FOnFileReload, write = FOnFileReload };
   __property TFileClosedEvent OnWindowClose = { read = FOnWindowClose, write = FOnWindowClose };
+  __property TNotifyEvent OnSaveAll = { read = FOnSaveAll, write = FOnSaveAll };
+  __property TAnyModifiedEvent OnAnyModified = { read = FOnAnyModified, write = FOnAnyModified };
   __property TCustomForm * ParentForm = { read = FParentForm, write = SetParentForm };
   __property TColor BackgroundColor = { read = FBackgroundColor, write = SetBackgroundColor };
 protected:
@@ -148,6 +158,7 @@ protected:
   void __fastcall SaveToFile();
   void __fastcall BackupSave();
   void __fastcall CheckFileSize();
+  void __fastcall UpdateBackgroundColor();
 };
 //---------------------------------------------------------------------------
 #endif

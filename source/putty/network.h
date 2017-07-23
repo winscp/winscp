@@ -25,10 +25,6 @@ typedef struct SockAddr_tag *SockAddr;
 typedef struct socket_function_table **Socket;
 typedef struct plug_function_table **Plug;
 
-#ifndef OSSOCKET_DEFINED
-typedef void *OSSocket;
-#endif
-
 struct socket_function_table {
     Plug(*plug) (Socket s, Plug p);
     /* use a different plug (return the old one) */
@@ -39,12 +35,14 @@ struct socket_function_table {
     int (*write_oob) (Socket s, const char *data, int len);
     void (*write_eof) (Socket s);
     void (*flush) (Socket s);
-    void (*set_private_ptr) (Socket s, void *ptr);
-    void *(*get_private_ptr) (Socket s);
     void (*set_frozen) (Socket s, int is_frozen);
     /* ignored by tcp, but vital for ssl */
     const char *(*socket_error) (Socket s);
+    char *(*peer_info) (Socket s);
 };
+
+typedef union { void *p; int i; } accept_ctx_t;
+typedef Socket (*accept_fn_t)(accept_ctx_t ctx, Plug plug);
 
 struct plug_function_table {
     void (*log)(Plug p, int type, SockAddr addr, int port,
@@ -60,13 +58,18 @@ struct plug_function_table {
      * 	  fatal error - we may well have other candidate addresses
      * 	  to fall back to. When it _is_ fatal, the closing()
      * 	  function will be called.
+     *  - type==2 means that error_msg contains a line of generic
+     *    logging information about setting up the connection. This
+     *    will typically be a wodge of standard-error output from a
+     *    proxy command, so the receiver should probably prefix it to
+     *    indicate this.
      */
-    int (*closing)
+    void (*closing)
      (Plug p, const char *error_msg, int error_code, int calling_back);
     /* error_msg is NULL iff it is not an error (ie it closed normally) */
     /* calling_back != 0 iff there is a Plug function */
     /* currently running (would cure the fixme in try_send()) */
-    int (*receive) (Plug p, int urgent, char *data, int len);
+    void (*receive) (Plug p, int urgent, char *data, int len);
     /*
      *  - urgent==0. `data' points to `len' bytes of perfectly
      *    ordinary data.
@@ -83,27 +86,33 @@ struct plug_function_table {
      * on a socket is cleared or partially cleared. The new backlog
      * size is passed in the `bufsize' parameter.
      */
-    int (*accepting)(Plug p, OSSocket sock);
+    int (*accepting)(Plug p, accept_fn_t constructor, accept_ctx_t ctx);
     /*
-     * returns 0 if the host at address addr is a valid host for connecting or error
+     * `accepting' is called only on listener-type sockets, and is
+     * passed a constructor function+context that will create a fresh
+     * Socket describing the connection. It returns nonzero if it
+     * doesn't want the connection for some reason, or 0 on success.
      */
 };
 
 /* proxy indirection layer */
 /* NB, control of 'addr' is passed via new_connection, which takes
  * responsibility for freeing it */
-Socket new_connection(SockAddr addr, char *hostname,
+Socket new_connection(SockAddr addr, const char *hostname,
 		      int port, int privport,
 		      int oobinline, int nodelay, int keepalive,
 		      Plug plug, Conf *conf);
-Socket new_listener(char *srcaddr, int port, Plug plug, int local_host_only,
-		    Conf *conf, int addressfamily);
-SockAddr name_lookup(char *host, int port, char **canonicalname,
-		     Conf *conf, int addressfamily);
+Socket new_listener(const char *srcaddr, int port, Plug plug,
+                    int local_host_only, Conf *conf, int addressfamily);
+SockAddr name_lookup(const char *host, int port, char **canonicalname,
+		     Conf *conf, int addressfamily, void *frontend_for_logging,
+                     const char *lookup_reason_for_logging);
+int proxy_for_destination (SockAddr addr, const char *hostname, int port,
+                           Conf *conf);
 
 /* platform-dependent callback from new_connection() */
 /* (same caveat about addr as new_connection()) */
-Socket platform_new_connection(SockAddr addr, char *hostname,
+Socket platform_new_connection(SockAddr addr, const char *hostname,
 			       int port, int privport,
 			       int oobinline, int nodelay, int keepalive,
 			       Plug plug, Conf *conf);
@@ -116,6 +125,7 @@ void sk_cleanup(void);		       /* called just before program exit */
 SockAddr sk_namelookup(const char *host, char **canonicalname, int address_family);
 SockAddr sk_nonamelookup(const char *host);
 void sk_getaddr(SockAddr addr, char *buf, int buflen);
+int sk_addr_needs_port(SockAddr addr);
 int sk_hostname_is_local(const char *name);
 int sk_address_is_local(SockAddr addr);
 int sk_address_is_special_local(SockAddr addr);
@@ -144,9 +154,8 @@ Socket sk_new(SockAddr addr, int port, int privport, int oobinline,
 #endif
 	      );
 
-Socket sk_newlistener(char *srcaddr, int port, Plug plug, int local_host_only, int address_family);
-
-Socket sk_register(OSSocket sock, Plug plug);
+Socket sk_newlistener(const char *srcaddr, int port, Plug plug,
+                      int local_host_only, int address_family);
 
 #define sk_plug(s,p) (((*s)->plug) (s, p))
 #define sk_close(s) (((*s)->close) (s))
@@ -160,18 +169,8 @@ Socket sk_register(OSSocket sock, Plug plug);
 #define plug_closing(p,msg,code,callback) (((*p)->closing) (p, msg, code, callback))
 #define plug_receive(p,urgent,buf,len) (((*p)->receive) (p, urgent, buf, len))
 #define plug_sent(p,bufsize) (((*p)->sent) (p, bufsize))
-#define plug_accepting(p, sock) (((*p)->accepting)(p, sock))
+#define plug_accepting(p, constructor, ctx) (((*p)->accepting)(p, constructor, ctx))
 #endif
-
-/*
- * Each socket abstraction contains a `void *' private field in
- * which the client can keep state.
- *
- * This is perhaps unnecessary now that we have the notion of a plug,
- * but there is some existing code that uses it, so it stays.
- */
-#define sk_set_private_ptr(s, ptr) (((*s)->set_private_ptr) (s, ptr))
-#define sk_get_private_ptr(s) (((*s)->get_private_ptr) (s))
 
 /*
  * Special error values are returned from sk_namelookup and sk_new
@@ -201,6 +200,13 @@ const char *sk_addr_error(SockAddr addr);
 #define sk_set_frozen(s, is_frozen) (((*s)->set_frozen) (s, is_frozen))
 
 /*
+ * Return a (dynamically allocated) string giving some information
+ * about the other end of the socket, suitable for putting in log
+ * files. May be NULL if nothing is available at all.
+ */
+#define sk_peer_info(s) (((*s)->peer_info) (s))
+
+/*
  * Simple wrapper on getservbyname(), needed by ssh.c. Returns the
  * port number, in host byte order (suitable for printf and so on).
  * Returns 0 on failure. Any platform not supporting getservbyname
@@ -215,40 +221,28 @@ int net_service_lookup(char *service);
  */
 char *get_hostname(void);
 
-/********** SSL stuff **********/
-
 /*
- * This section is subject to change, but you get the general idea
- * of what it will eventually look like.
+ * Trivial socket implementation which just stores an error. Found in
+ * errsock.c.
+ */
+Socket new_error_socket(const char *errmsg, Plug plug);
+
+/* ----------------------------------------------------------------------
+ * Functions defined outside the network code, which have to be
+ * declared in this header file rather than the main putty.h because
+ * they use types defined here.
  */
 
-typedef struct certificate *Certificate;
-typedef struct our_certificate *Our_Certificate;
-    /* to be defined somewhere else, somehow */
-
-typedef struct ssl_client_socket_function_table **SSL_Client_Socket;
-typedef struct ssl_client_plug_function_table **SSL_Client_Plug;
-
-struct ssl_client_socket_function_table {
-    struct socket_function_table base;
-    void (*renegotiate) (SSL_Client_Socket s);
-    /* renegotiate the cipher spec */
-};
-
-struct ssl_client_plug_function_table {
-    struct plug_function_table base;
-    int (*refuse_cert) (SSL_Client_Plug p, Certificate cert[]);
-    /* do we accept this certificate chain?  If not, why not? */
-    /* cert[0] is the server's certificate, cert[] is NULL-terminated */
-    /* the last certificate may or may not be the root certificate */
-     Our_Certificate(*client_cert) (SSL_Client_Plug p);
-    /* the server wants us to identify ourselves */
-    /* may return NULL if we want anonymity */
-};
-
-SSL_Client_Socket sk_ssl_client_over(Socket s,	/* pre-existing (tcp) connection */
-				     SSL_Client_Plug p);
-
-#define sk_renegotiate(s) (((*s)->renegotiate) (s))
+/*
+ * Exports from be_misc.c.
+ */
+void backend_socket_log(void *frontend, int type, SockAddr addr, int port,
+                        const char *error_msg, int error_code, Conf *conf,
+                        int session_started);
+#ifndef BUFCHAIN_TYPEDEF
+typedef struct bufchain_tag bufchain;  /* rest of declaration in misc.c */
+#define BUFCHAIN_TYPEDEF
+#endif
+void log_proxy_stderr(Plug plug, bufchain *buf, const void *vdata, int len);
 
 #endif

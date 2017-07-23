@@ -10,11 +10,12 @@
 #include <ExtCtrls.hpp>
 #include "PasswordEdit.hpp"
 #include "WinInterface.h"
+#include "GUITools.h"
 //---------------------------------------------------------------------------
 class TAuthenticateForm : public TForm
 {
 __published:
-  TListView *LogView;
+  TListBox *LogView;
   TPanel *PasswordPanel;
   TPanel *PromptEditPanel;
   TLabel *PromptLabel1;
@@ -35,8 +36,13 @@ __published:
   TPasswordEdit *PromptEdit2;
   TPanel *SessionRememberPasswordPanel;
   TCheckBox *SessionRememberPasswordCheck;
+  TPanel *TopPanel;
+  TPanel *LeftPanel;
+  TPaintBox *AnimationPaintBox;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall HelpButtonClick(TObject *Sender);
+  void __fastcall LogViewMeasureItem(TWinControl *Control, int Index, int &Height);
+  void __fastcall LogViewDrawItem(TWinControl *Control, int Index, TRect &Rect, TOwnerDrawState State);
   void __fastcall FormResize(TObject *Sender);
 
 public:
@@ -69,6 +75,9 @@ protected:
   TList * __fastcall GeneratePrompt(UnicodeString Instructions, TStrings * Prompts);
   void __fastcall DoCancel();
   void __fastcall AdjustLogView();
+  void __fastcall MakeLogItemVisible(int Index);
+  int __fastcall LogItemHeight(int Index);
+  void __fastcall RedrawLog();
 
 private:
   void * FShowAsModalStorage;
@@ -83,6 +92,11 @@ private:
   int FPromptEditGap;
   int FPromptsGap;
   TNotifyEvent FOnCancel;
+  TFrameAnimation FFrameAnimation;
+  bool FAnimationPainted;
+  int FHorizontalLogPadding;
+  int FVerticalLogPadding;
+  TTextFormat FLogTextFormat;
 };
 //---------------------------------------------------------------------------
 #endif

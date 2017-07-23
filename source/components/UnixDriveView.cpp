@@ -170,12 +170,20 @@ void __fastcall TCustomUnixDriveView::UpdatePath(TTreeNode * Node, bool Force,
   TNodeData * Data = NodeData(Node);
   UnicodeString Path = Data->Directory;
 
-  if (FTerminal->DirectoryFileList(Path, Data->FileList, CanLoad) ||
+  TDateTime Timestamp = (Data->FileList != NULL) ? Data->FileList->Timestamp : TDateTime();
+  TRemoteFileList * FileList = FTerminal->DirectoryFileList(Path, Timestamp, CanLoad);
+  if ((FileList != NULL) ||
       ((Data->FileList != NULL) && Force))
   {
     TStringList * ChildrenDirs = new TStringList();
+    TRemoteFileList * OldFileList = NULL;
     try
     {
+      if (FileList != NULL)
+      {
+        OldFileList = Data->FileList;
+        Data->FileList = FileList;
+      }
       ChildrenDirs->Duplicates = Types::dupAccept;
       ChildrenDirs->CaseSensitive = true;
 
@@ -212,7 +220,7 @@ void __fastcall TCustomUnixDriveView::UpdatePath(TTreeNode * Node, bool Force,
           else
           {
             UnicodeString ChildPath = UnixIncludeTrailingBackslash(Path) + File->FileName;
-            assert(!IsUnixRootPath(ChildPath));
+            DebugAssert(!IsUnixRootPath(ChildPath));
 
             LoadPathEasy(Node, ChildPath, File);
           }
@@ -234,6 +242,8 @@ void __fastcall TCustomUnixDriveView::UpdatePath(TTreeNode * Node, bool Force,
     __finally
     {
       delete ChildrenDirs;
+      // Relese only files only now, once they are no longer references in the tree
+      delete OldFileList; // if not NULL
     }
   }
   else if (Force)
@@ -253,9 +263,9 @@ void __fastcall TCustomUnixDriveView::UpdatePath(TTreeNode * Node, bool Force,
     }
   }
   #else
-  USEDPARAM(Node);
-  USEDPARAM(Force);
-  USEDPARAM(CanLoad);
+  DebugUsedParam(Node);
+  DebugUsedParam(Force);
+  DebugUsedParam(CanLoad);
   #endif
 }
 //---------------------------------------------------------------------------
@@ -263,7 +273,7 @@ TTreeNode * __fastcall TCustomUnixDriveView::LoadPathEasy(TTreeNode * Parent,
   UnicodeString Path, TRemoteFile * File)
 {
   #ifndef DESIGN_ONLY
-  assert(Path == UnixExcludeTrailingBackslash(Path));
+  DebugAssert(Path == UnixExcludeTrailingBackslash(Path));
 
   UnicodeString DirName;
   if (IsUnixRootPath(Path))
@@ -286,8 +296,8 @@ TTreeNode * __fastcall TCustomUnixDriveView::LoadPathEasy(TTreeNode * Parent,
 
   return Node;
   #else
-  USEDPARAM(Parent);
-  USEDPARAM(File);
+  DebugUsedParam(Parent);
+  DebugUsedParam(File);
   return NULL;
   #endif
 }
@@ -352,12 +362,12 @@ TTreeNode * __fastcall TCustomUnixDriveView::LoadPath(UnicodeString Path)
 void __fastcall TCustomUnixDriveView::LoadDirectory()
 {
   #ifndef DESIGN_ONLY
-  assert(!FIgnoreChange);
+  DebugAssert(!FIgnoreChange);
   FIgnoreChange = true;
   try
   {
     Selected = LoadPath(FTerminal->Files->Directory);
-    assert(Selected != NULL);
+    DebugAssert(Selected != NULL);
     FPrevSelected = Selected;
   }
   __finally
@@ -370,21 +380,21 @@ void __fastcall TCustomUnixDriveView::LoadDirectory()
 //---------------------------------------------------------------------------
 TNodeData * __fastcall TCustomUnixDriveView::NodeData(const TTreeNode * Node)
 {
-  assert(Node->Data != NULL);
+  DebugAssert(Node->Data != NULL);
 
   return static_cast<TNodeData*>(Node->Data);
 }
 //---------------------------------------------------------------------------
 TRemoteFileList * __fastcall TCustomUnixDriveView::NodeFileList(const TTreeNode * Node)
 {
-  assert(Node->Data != NULL);
+  DebugAssert(Node->Data != NULL);
 
   return static_cast<TNodeData*>(Node->Data)->FileList;
 }
 //---------------------------------------------------------------------------
 TRemoteFile * __fastcall TCustomUnixDriveView::NodeFile(const TTreeNode * Node)
 {
-  assert(Node->Data != NULL);
+  DebugAssert(Node->Data != NULL);
 
   return static_cast<TNodeData*>(Node->Data)->File;
 }
@@ -479,7 +489,7 @@ void __fastcall TCustomUnixDriveView::Change(TTreeNode * Node)
         {
           if (!FDirectoryLoaded)
           {
-            assert(!FIgnoreChange);
+            DebugAssert(!FIgnoreChange);
             Expand = false;
             FIgnoreChange = true;
             try
@@ -531,7 +541,7 @@ void __fastcall TCustomUnixDriveView::PerformDragDropFileOperation(
     // see a comment in TUnixDirView::PerformItemDragDropOperation
     if (DragDropFilesEx->FileList->Count > 0)
     {
-      assert(Node != NULL);
+      DebugAssert(Node != NULL);
 
       UnicodeString SourceDirectory;
       UnicodeString TargetDirectory;
@@ -588,7 +598,7 @@ void __fastcall TCustomUnixDriveView::UpdateDropSource()
 //---------------------------------------------------------------------------
 TStrings * __fastcall TCustomUnixDriveView::DragFileList()
 {
-  assert(DragNode != NULL);
+  DebugAssert(DragNode != NULL);
   TStrings * FileList = new TStringList();
   try
   {
@@ -669,7 +679,7 @@ bool __fastcall TCustomUnixDriveView::NodePathExists(TTreeNode * /*Node*/)
 //---------------------------------------------------------------------------
 TColor __fastcall TCustomUnixDriveView::NodeColor(TTreeNode * Node)
 {
-  assert(Node != NULL);
+  DebugAssert(Node != NULL);
   TColor Result = static_cast<TColor>(clDefaultItemColor);
   #ifndef DESIGN_ONLY
   if (FDimmHiddenDirs && !Node->Selected)
@@ -680,7 +690,7 @@ TColor __fastcall TCustomUnixDriveView::NodeColor(TTreeNode * Node)
     }
   }
   #else
-  USEDPARAM(Node);
+  DebugUsedParam(Node);
   #endif
   return Result;
 }
@@ -702,7 +712,7 @@ Word __fastcall TCustomUnixDriveView::NodeOverlayIndexes(TTreeNode * Node)
   }
   return Result;
 #else
-  USEDPARAM(Node);
+  DebugUsedParam(Node);
   return 0;
 #endif
 }
@@ -786,7 +796,7 @@ TTreeNode * __fastcall TCustomUnixDriveView::FindPathNode(UnicodeString Path)
       Result = FindNodeToPath(Path);
       if (Result == NULL)
       {
-        assert(!IsUnixRootPath(Path));
+        DebugAssert(!IsUnixRootPath(Path));
         Path = UnixExtractFileDir(UnixExcludeTrailingBackslash(Path));
       }
     }

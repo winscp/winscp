@@ -17,6 +17,9 @@ extern "C"
 #include <ssh.h>
 #include <proxy.h>
 #include <storage.h>
+// Defined in misc.h - Conflicts with std::min/max
+#undef min
+#undef max
 }
 //---------------------------------------------------------------------------
 #endif

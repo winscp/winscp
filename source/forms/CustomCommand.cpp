@@ -47,7 +47,7 @@ __fastcall TCustomCommandDialog::TCustomCommandDialog(TComponent* Owner,
   FCustomCommandList = CustomCommandList;
   FMode = Mode;
   FOnValidate = OnValidate;
-  HintLabel(HintText, LoadStr(CUSTOM_COMMAND_PATTERNS_HINT4));
+  HintLabel(HintText, LoadStr(CUSTOM_COMMAND_PATTERNS_HINT5));
 
   int CaptionRes;
   switch (FMode)
@@ -91,17 +91,19 @@ __fastcall TCustomCommandDialog::TCustomCommandDialog(TComponent* Owner,
   }
   else
   {
-    assert(ShortCuts != NULL);
+    DebugAssert(ShortCuts != NULL);
     InitializeShortCutCombo(ShortCutCombo, *ShortCuts);
   }
 
-  EnableControl(RemoteCommandButton, FLAGCLEAR(Options, ccoDisableRemote));
+  FOptions = Options;
 
   UpdateControls();
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomCommandDialog::UpdateControls()
 {
+  EnableControl(RemoteCommandButton, FLAGCLEAR(FOptions, ccoDisableRemote));
+
   UnicodeString Command = CommandEdit->Text;
   EnableControl(OkButton, !Command.IsEmpty() && !DescriptionEdit->Text.IsEmpty());
 
@@ -135,7 +137,9 @@ void __fastcall TCustomCommandDialog::UpdateControls()
   EnableControl(ApplyToDirectoriesCheck, AllowApplyToDirectories);
   EnableControl(ShowResultsCheck, RemoteCommand);
   EnableControl(CopyResultsCheck, RemoteCommand);
-  EnableControl(RemoteFilesCheck, AllowRemoteFiles && (!RecursiveCheck->Enabled || !RecursiveCheck->Checked));
+  EnableControl(RemoteFilesCheck,
+    FLAGCLEAR(FOptions, ccoDisableRemoteFiles) && AllowRemoteFiles &&
+    (!RecursiveCheck->Enabled || !RecursiveCheck->Checked));
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomCommandDialog::SetParams(int value)
@@ -214,7 +218,7 @@ void __fastcall TCustomCommandDialog::FormCloseQuery(TObject * /*Sender*/,
       }
 
       if (((FMode == ccmAdd) || ((FMode == ccmEdit) && (Desc != FOrigDescription))) &&
-          (FCustomCommandList->Find(Desc) != 0))
+          (FCustomCommandList->Find(Desc) != NULL))
       {
         DescriptionEdit->SetFocus();
         throw Exception(FMTLOAD(CUSTOM_COMMAND_DUPLICATE, (Desc)));

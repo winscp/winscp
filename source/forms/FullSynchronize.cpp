@@ -13,6 +13,7 @@
 #include <Configuration.h>
 #include <TextsWin.h>
 #include <HelpWin.h>
+#include <GUITools.h>
 #include <CustomWinConfiguration.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
@@ -69,6 +70,7 @@ __fastcall TFullSynchronizeDialog::TFullSynchronizeDialog(TComponent* Owner)
   FSynchronizeBySizeCaption = SynchronizeBySizeCheck->Caption;
   HotTrackLabel(CopyParamLabel);
   CopyParamListButton(TransferSettingsButton);
+  LoadDialogImage(Image, L"Synchronize directories");
 }
 //---------------------------------------------------------------------------
 __fastcall TFullSynchronizeDialog::~TFullSynchronizeDialog()
@@ -107,10 +109,8 @@ void __fastcall TFullSynchronizeDialog::UpdateControls()
     !RemoteDirectoryEdit->Text.IsEmpty());
 
   UnicodeString InfoStr = FCopyParams.GetInfoStr(L"; ", ActualCopyParamAttrs());
-  CopyParamLabel->Caption = InfoStr;
-  CopyParamLabel->Hint = InfoStr;
-  CopyParamLabel->ShowHint =
-    (CopyParamLabel->Canvas->TextWidth(InfoStr) > (CopyParamLabel->Width * 3 / 2));
+  SetLabelHintPopup(CopyParamLabel, InfoStr);
+
   SynchronizeBySizeCheck->Caption = SynchronizeTimestampsButton->Checked ?
     LoadStr(SYNCHRONIZE_SAME_SIZE) : UnicodeString(FSynchronizeBySizeCaption);
 
@@ -139,7 +139,7 @@ int __fastcall TFullSynchronizeDialog::ActualCopyParamAttrs()
         break;
 
       default:
-        FAIL;
+        DebugFail();
         //fallthru
       case smBoth:
         Result = CopyParamAttrs.General;
@@ -212,7 +212,7 @@ void __fastcall TFullSynchronizeDialog::SetMode(TSynchronizeMode value)
        break;
 
     default:
-      FAIL;
+      DebugFail();
   }
 }
 //---------------------------------------------------------------------------
@@ -228,7 +228,7 @@ TSynchronizeMode __fastcall TFullSynchronizeDialog::GetMode()
   }
   else
   {
-    assert(SynchronizeBothButton->Checked);
+    DebugAssert(SynchronizeBothButton->Checked);
     return smBoth;
   }
 }
@@ -332,12 +332,12 @@ void __fastcall TFullSynchronizeDialog::TransferSettingsButtonClick(
 //---------------------------------------------------------------------------
 void __fastcall TFullSynchronizeDialog::CopyParamClick(TObject * Sender)
 {
-  assert(FLAGCLEAR(FOptions, fsoDoNotUsePresets));
+  DebugAssert(FLAGCLEAR(FOptions, fsoDoNotUsePresets));
   // PreserveTime is forced for some settings, but avoid hard-setting it until
   // user really confirms it on custom dialog
   TCopyParamType ACopyParams = CopyParams;
   if (CopyParamListPopupClick(Sender, ACopyParams, FPreset,
-        ActualCopyParamAttrs()))
+        ActualCopyParamAttrs()) > 0)
   {
     FCopyParams = ACopyParams;
     UpdateControls();

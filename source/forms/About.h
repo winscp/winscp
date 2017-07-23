@@ -23,10 +23,7 @@ __published:
   TStaticText *ForumUrlLabel;
   TButton *OKButton;
   TButton *LicenseButton;
-  TLabel *TranslatorLabel;
   TButton *HelpButton;
-  TImage *Image;
-  TStaticText *TranslatorUrlLabel;
   TLabel *Label3;
   TLabel *RegistrationLabel;
   TPanel *RegistrationBox;
@@ -34,25 +31,31 @@ __published:
   TStaticText *RegistrationProductIdLabel;
   TLabel *RegistrationSubjectLabel;
   TPanel *ThirdPartyPanel;
+  TPaintBox *IconPaintBox;
   void __fastcall LicenseButtonClick(TObject *Sender);
   void __fastcall HelpButtonClick(TObject *Sender);
   void __fastcall RegistrationProductIdLabelClick(TObject *Sender);
   void __fastcall OKButtonMouseDown(TObject *Sender, TMouseButton Button, TShiftState Shift,
           int X, int Y);
+  void __fastcall IconPaintBoxPaint(TObject *Sender);
 private:
   TConfiguration * FConfiguration;
   TNotifyEvent FOnRegistrationLink;
+  HICON FIconHandle;
 
   void __fastcall LoadData();
   void __fastcall LoadThirdParty();
   void __fastcall AddPara(UnicodeString & Text, const UnicodeString & S);
   UnicodeString __fastcall CreateLink(const UnicodeString & URL, const UnicodeString & Title = L"");
   void __fastcall ExpatLicenceHandler(TObject * Sender);
+  void __fastcall AccessViolationTest();
+  void __fastcall LookupAddress();
 
 public:
   virtual __fastcall TAboutDialog(TComponent * AOwner,
     TConfiguration * Configuration, bool AllowLicense, TRegistration * Registration,
     bool ALoadThirdParty);
+  __fastcall ~TAboutDialog();
 };
 //----------------------------------------------------------------------------
 #endif

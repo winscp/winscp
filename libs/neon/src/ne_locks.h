@@ -144,6 +144,15 @@ typedef void (*ne_lock_result)(void *userdata, const struct ne_lock *lock,
 int ne_lock_discover(ne_session *sess, const char *path,
 		     ne_lock_result result, void *userdata);
 
+#ifdef WINSCP
+
+#include "ne_props.h"
+
+void * ne_lock_register_discovery(ne_propfind_handler * handler);
+void ne_lock_discovery_free(void * ctx);
+
+#endif
+
 /* The ne_lock_using_* functions should be used before dispatching a
  * request which modify resources.  If a lock store has been
  * registered with the session associated with the request, and locks

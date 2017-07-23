@@ -12,7 +12,7 @@
 #include <StrUtils.hpp>
 //---------------------------------------------------------------------------
 extern const wchar_t IncludeExcludeFileMasksDelimiter = L'|';
-static UnicodeString FileMasksDelimiters = L";,";
+UnicodeString FileMasksDelimiters = L";,";
 static UnicodeString AllFileMasksDelimiters = FileMasksDelimiters + IncludeExcludeFileMasksDelimiter;
 static UnicodeString DirectoryMaskDelimiters = L"/\\";
 static UnicodeString FileMasksDelimiterStr = UnicodeString(FileMasksDelimiters[1]) + L' ';
@@ -103,6 +103,16 @@ UnicodeString __fastcall MaskFileName(UnicodeString FileName, const UnicodeStrin
     }
   }
   return FileName;
+}
+//---------------------------------------------------------------------------
+bool __fastcall IsFileNameMask(const UnicodeString & Mask)
+{
+  bool Result = Mask.IsEmpty(); // empty mask is the same as *
+  if (!Result)
+  {
+    MaskFilePart(UnicodeString(), Mask, Result);
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 bool __fastcall IsEffectiveFileNameMask(const UnicodeString & Mask)
@@ -395,7 +405,7 @@ bool __fastcall TFileMasks::MatchesMasks(const UnicodeString FileName, bool Dire
     UnicodeString ParentPath = SimpleUnixExcludeTrailingBackslash(UnixExtractFilePath(Path));
     // Pass Params down or not?
     // Currently it includes Size/Time only, what is not used for directories.
-    // So it depends of future use. Possibly we should make a copy
+    // So it depends on future use. Possibly we should make a copy
     // and pass on only relevant fields.
     Result = MatchesMasks(ParentFileName, true, ParentPath, Params, Masks, Recurse);
   }
@@ -490,7 +500,7 @@ void __fastcall TFileMasks::CreateMaskMask(const UnicodeString & Mask, int Start
 {
   try
   {
-    assert(MaskMask.Mask == NULL);
+    DebugAssert(MaskMask.Mask == NULL);
     if (Ex && IsAnyMask(Mask))
     {
       MaskMask.Kind = TMaskMask::Any;
@@ -510,7 +520,7 @@ void __fastcall TFileMasks::CreateMaskMask(const UnicodeString & Mask, int Start
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TFileMasks::MakeDirectoryMask(UnicodeString Str)
 {
-  assert(!Str.IsEmpty());
+  DebugAssert(!Str.IsEmpty());
   if (Str.IsEmpty() || !Str.IsDelimiter(DirectoryMaskDelimiters, Str.Length()))
   {
     int D = Str.LastDelimiter(DirectoryMaskDelimiters);
@@ -575,7 +585,7 @@ void __fastcall TFileMasks::CreateMask(
 
       TDateTime Modification;
       if (TryStrToDateTime(PartStr, Modification, FormatSettings) ||
-          TryRelativeStrToDateTime(PartStr, Modification))
+          TryRelativeStrToDateTime(PartStr, Modification, false))
       {
         TMask::TMaskBoundary & ModificationMask =
           (Low ? Mask.LowModificationMask : Mask.HighModificationMask);
@@ -779,6 +789,11 @@ void __fastcall TFileMasks::SetStr(const UnicodeString Str, bool SingleMask)
 const wchar_t TCustomCommand::NoQuote = L'\0';
 const UnicodeString TCustomCommand::Quotes = L"\"'";
 //---------------------------------------------------------------------------
+UnicodeString __fastcall TCustomCommand::Escape(const UnicodeString & S)
+{
+  return ReplaceStr(S, L"!", L"!!");
+}
+//---------------------------------------------------------------------------
 TCustomCommand::TCustomCommand()
 {
 }
@@ -786,7 +801,7 @@ TCustomCommand::TCustomCommand()
 void __fastcall TCustomCommand::GetToken(
   const UnicodeString & Command, int Index, int & Len, wchar_t & PatternCmd)
 {
-  assert(Index <= Command.Length());
+  DebugAssert(Index <= Command.Length());
   const wchar_t * Ptr = Command.c_str() + Index - 1;
 
   if (Ptr[0] == L'!')
@@ -832,12 +847,41 @@ void __fastcall TCustomCommand::GetToken(
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomCommand::PatternHint(int /*Index*/, const UnicodeString & /*Pattern*/)
+{
+  // noop
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall TCustomCommand::Complete(const UnicodeString & Command,
   bool LastPass)
 {
-  UnicodeString Result;
   int Index = 1;
+  int PatternIndex = 0;
+  while (Index <= Command.Length())
+  {
+    int Len;
+    wchar_t PatternCmd;
+    GetToken(Command, Index, Len, PatternCmd);
 
+    if (PatternCmd == TEXT_TOKEN)
+    {
+    }
+    else if (PatternCmd == L'!')
+    {
+    }
+    else
+    {
+      UnicodeString Pattern = Command.SubString(Index, Len);
+      PatternHint(PatternIndex, Pattern);
+      PatternIndex++;
+    }
+
+    Index += Len;
+  }
+
+  UnicodeString Result;
+  Index = 1;
+  PatternIndex = 0;
   while (Index <= Command.Length())
   {
     int Len;
@@ -872,11 +916,11 @@ UnicodeString __fastcall TCustomCommand::Complete(const UnicodeString & Command,
       UnicodeString Pattern = Command.SubString(Index, Len);
       UnicodeString Replacement;
       bool Delimit = true;
-      if (PatternReplacement(Pattern, Replacement, Delimit))
+      if (PatternReplacement(PatternIndex, Pattern, Replacement, Delimit))
       {
         if (!LastPass)
         {
-          Replacement = ReplaceStr(Replacement, L"!", L"!!");
+          Replacement = Escape(Replacement);
         }
         if (Delimit)
         {
@@ -888,6 +932,8 @@ UnicodeString __fastcall TCustomCommand::Complete(const UnicodeString & Command,
       {
         Result += Pattern;
       }
+
+      PatternIndex++;
     }
 
     Index += Len;
@@ -933,8 +979,9 @@ bool __fastcall TCustomCommand::FindPattern(const UnicodeString & Command,
     int Len;
     wchar_t APatternCmd;
     GetToken(Command, Index, Len, APatternCmd);
-    if (((PatternCmd != L'!') && (PatternCmd == APatternCmd)) ||
-        ((PatternCmd == L'!') && (Len == 1) && (APatternCmd != TEXT_TOKEN)))
+    if (((PatternCmd != L'!') && (tolower(PatternCmd) == tolower(APatternCmd))) ||
+        ((PatternCmd == L'!') && (Len == 1) && (APatternCmd != TEXT_TOKEN)) ||
+        ((PatternCmd == L'\0') && (APatternCmd != TEXT_TOKEN)))
     {
       Result = true;
     }
@@ -943,6 +990,11 @@ bool __fastcall TCustomCommand::FindPattern(const UnicodeString & Command,
   }
 
   return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TCustomCommand::HasAnyPatterns(const UnicodeString & Command)
+{
+  return FindPattern(Command, L'\0');
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomCommand::ValidatePattern(const UnicodeString & /*Command*/,
@@ -958,7 +1010,7 @@ TInteractiveCustomCommand::TInteractiveCustomCommand(
 }
 //---------------------------------------------------------------------------
 void __fastcall TInteractiveCustomCommand::Prompt(
-  const UnicodeString & /*Prompt*/, UnicodeString & Value)
+  int /*Index*/, const UnicodeString & /*Prompt*/, UnicodeString & Value)
 {
   Value = L"";
 }
@@ -1006,30 +1058,44 @@ int __fastcall TInteractiveCustomCommand::PatternLen(const UnicodeString & Comma
   return Len;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TInteractiveCustomCommand::PatternReplacement(const UnicodeString & Pattern,
+bool __fastcall TInteractiveCustomCommand::IsPromptPattern(const UnicodeString & Pattern)
+{
+  return (Pattern.Length() >= 3) && (Pattern[2] == L'?');
+}
+//---------------------------------------------------------------------------
+void __fastcall TInteractiveCustomCommand::ParsePromptPattern(
+  const UnicodeString & Pattern, UnicodeString & Prompt, UnicodeString & Default, bool & Delimit)
+{
+  int Pos = Pattern.SubString(3, Pattern.Length() - 2).Pos(L"?");
+  if (Pos > 0)
+  {
+    Default = Pattern.SubString(3 + Pos, Pattern.Length() - 3 - Pos);
+    if ((Pos > 1) && (Pattern[3 + Pos - 2] == L'\\'))
+    {
+      Delimit = false;
+      Pos--;
+    }
+    Prompt = Pattern.SubString(3, Pos - 1);
+  }
+  else
+  {
+    Prompt = Pattern.SubString(3, Pattern.Length() - 3);
+  }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TInteractiveCustomCommand::PatternReplacement(int Index, const UnicodeString & Pattern,
   UnicodeString & Replacement, bool & Delimit)
 {
   bool Result;
-  if ((Pattern.Length() >= 3) && (Pattern[2] == L'?'))
+  if (IsPromptPattern(Pattern))
   {
     UnicodeString PromptStr;
-    int Pos = Pattern.SubString(3, Pattern.Length() - 2).Pos(L"?");
-    if (Pos > 0)
-    {
-      Replacement = Pattern.SubString(3 + Pos, Pattern.Length() - 3 - Pos);
-      if ((Pos > 1) && (Pattern[3 + Pos - 2] == L'\\'))
-      {
-        Delimit = false;
-        Pos--;
-      }
-      PromptStr = Pattern.SubString(3, Pos - 1);
-    }
-    else
-    {
-      PromptStr = Pattern.SubString(3, Pattern.Length() - 3);
-    }
+    // The PromptStr and Replacement are actually never used
+    // as the only implementation (TWinInteractiveCustomCommand) uses
+    // prompts and defaults from PatternHint.
+    ParsePromptPattern(Pattern, PromptStr, Replacement, Delimit);
 
-    Prompt(PromptStr, Replacement);
+    Prompt(Index, PromptStr, Replacement);
 
     Result = true;
   }
@@ -1079,7 +1145,7 @@ void __fastcall TCustomCommandData::Init(
 //---------------------------------------------------------------------------
 void __fastcall TCustomCommandData::operator=(const TCustomCommandData & Data)
 {
-  assert(Data.SessionData != NULL);
+  DebugAssert(Data.SessionData != NULL);
   FSessionData.reset(new TSessionData(L""));
   FSessionData->Assign(Data.SessionData);
 }
@@ -1115,15 +1181,17 @@ TFileCustomCommand::TFileCustomCommand(const TCustomCommandData & Data,
 int __fastcall TFileCustomCommand::PatternLen(const UnicodeString & Command, int Index)
 {
   int Len;
-  wchar_t PatternCmd = (Index < Command.Length()) ? Command[Index + 1] : L'\0';
+  wchar_t PatternCmd = (Index < Command.Length()) ? tolower(Command[Index + 1]) : L'\0';
   switch (PatternCmd)
   {
-    case L'S':
+    case L's':
     case L'@':
-    case L'U':
-    case L'P':
+    case L'u':
+    case L'p':
+    case L'#':
     case L'/':
     case L'&':
+    case L'n':
       Len = 2;
       break;
 
@@ -1135,11 +1203,11 @@ int __fastcall TFileCustomCommand::PatternLen(const UnicodeString & Command, int
 }
 //---------------------------------------------------------------------------
 bool __fastcall TFileCustomCommand::PatternReplacement(
-  const UnicodeString & Pattern, UnicodeString & Replacement, bool & Delimit)
+  int /*Index*/, const UnicodeString & Pattern, UnicodeString & Replacement, bool & Delimit)
 {
   // keep consistent with TSessionLog::OpenLogFile
 
-  if (AnsiSameText(Pattern, L"!s"))
+  if (SameText(Pattern, L"!s"))
   {
     Replacement = FData.SessionData->GenerateSessionUrl(sufComplete);
   }
@@ -1147,13 +1215,17 @@ bool __fastcall TFileCustomCommand::PatternReplacement(
   {
     Replacement = FData.SessionData->HostNameExpanded;
   }
-  else if (AnsiSameText(Pattern, L"!u"))
+  else if (SameText(Pattern, L"!u"))
   {
     Replacement = FData.SessionData->UserName;
   }
-  else if (AnsiSameText(Pattern, L"!p"))
+  else if (SameText(Pattern, L"!p"))
   {
     Replacement = FData.SessionData->Password;
+  }
+  else if (SameText(Pattern, L"!#"))
+  {
+    Replacement = IntToStr(FData.SessionData->PortNumber);
   }
   else if (Pattern == L"!/")
   {
@@ -1165,9 +1237,13 @@ bool __fastcall TFileCustomCommand::PatternReplacement(
     // already delimited
     Delimit = false;
   }
+  else if (SameText(Pattern, L"!n"))
+  {
+    Replacement = FData.SessionData->SessionName;
+  }
   else
   {
-    assert(Pattern.Length() == 1);
+    DebugAssert(Pattern.Length() == 1);
     Replacement = FFileName;
   }
 
@@ -1190,7 +1266,7 @@ void __fastcall TFileCustomCommand::ValidatePattern(const UnicodeString & Comman
 {
   int * Found = static_cast<int *>(Arg);
 
-  assert(Index > 0);
+  DebugAssert(Index > 0);
 
   if (PatternCmd == L'&')
   {

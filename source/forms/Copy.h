@@ -31,12 +31,7 @@ __published:
   TButton *TransferSettingsButton;
   TGroupBox *CopyParamGroup;
   TLabel *CopyParamLabel;
-  TImage *CopyImage;
-  TImage *MoveImage;
-  TImage *CopyUploadImage;
-  TImage *CopyDownloadImage;
-  TImage *MoveDownloadImage;
-  TImage *MoveUploadImage;
+  TImage *Image;
   TPanel *ShortCutHintPanel;
   TLabel *ShortCutHintLabel;
   void __fastcall FormShow(TObject *Sender);
@@ -63,6 +58,7 @@ private:
   UnicodeString FPreset;
   TCopyParamType FCopyParams;
   int FCopyParamAttrs;
+  TSessionData * FSessionData;
   bool FSaveSettings;
   UnicodeString __fastcall GetDirectory();
   THistoryComboBox * __fastcall GetDirectoryEdit();
@@ -73,6 +69,7 @@ private:
   void __fastcall SetOutputOptions(int value);
   int __fastcall GetOutputOptions();
   void __fastcall CopyParamClick(TObject * Sender);
+  void __fastcall GenerateCode();
 protected:
   void __fastcall UpdateControls();
   void __fastcall AdjustControls();
@@ -80,7 +77,9 @@ protected:
   bool __fastcall RemotePaths();
   void __fastcall CopyParamListPopup(TRect R, int AdditionalOptions);
 public:
-  __fastcall TCopyDialog(TComponent* Owner, bool ToRemote, bool Move, TStrings * FileList, int Options, int CopyParamAttrs);
+  __fastcall TCopyDialog(
+    TComponent* Owner, bool ToRemote, bool Move, TStrings * FileList, int Options,
+    int CopyParamAttrs, TSessionData * SessionData);
   virtual __fastcall ~TCopyDialog();
   bool __fastcall Execute();
 

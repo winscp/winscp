@@ -16,6 +16,7 @@
 #pragma link "HistoryComboBox"
 #pragma link "IEListView"
 #pragma link "NortonLikeListView"
+#pragma link "PngImageList"
 #ifndef NO_RESOURCES
 #pragma resource "*.dfm"
 #endif
@@ -61,6 +62,8 @@ __fastcall TFileFindDialog::TFileFindDialog(TComponent * Owner, TFindEvent OnFin
   UseDesktopFont(StatusBar);
 
   SetGlobalMinimizeHandler(this, GlobalMinimize);
+  FFrameAnimation.Init(AnimationPaintBox, L"Find");
+  FixFormIcons(this);
 }
 //---------------------------------------------------------------------------
 __fastcall TFileFindDialog::~TFileFindDialog()
@@ -101,6 +104,7 @@ void __fastcall TFileFindDialog::UpdateControls()
   {
     case ffInit:
       StatusBar->SimpleText = L"";
+      break;
 
     case ffFinding:
     case ffAborting:
@@ -123,7 +127,7 @@ void __fastcall TFileFindDialog::UpdateControls()
       break;
 
     default:
-      FAIL;
+      DebugFail();
       break;
   }
 }
@@ -146,6 +150,9 @@ bool __fastcall TFileFindDialog::Execute(UnicodeString Directory, UnicodeString 
   if (Result)
   {
     Path = static_cast<TRemoteFile *>(FileView->ItemFocused->Data)->FullFileName;
+    // To make focussing directories work,
+    // otherwise it would try to focus "empty-named file" in the Path
+    Path = UnixExcludeTrailingBackslash(Path);
   }
 
   TFindFileConfiguration FormConfiguration = CustomWinConfiguration->FindFile;
@@ -182,17 +189,18 @@ void __fastcall TFileFindDialog::Start()
   WinConfiguration->History[L"Mask"] = MaskEdit->Items;
   WinConfiguration->SelectMask = MaskEdit->Text;
 
-  assert(FState != ffFinding);
+  DebugAssert(FState != ffFinding);
 
   FState = ffFinding;
   try
   {
+    FFrameAnimation.Start();
     UpdateControls();
     Repaint();
 
     TOperationVisualizer Visualizer;
 
-    assert(FOnFind != NULL);
+    DebugAssert(FOnFind != NULL);
     UnicodeString Directory = UnixExcludeTrailingBackslash(RemoteDirectoryEdit->Text);
 
     FDirectory = Directory;
@@ -214,6 +222,7 @@ void __fastcall TFileFindDialog::Start()
     {
       FState = ffAborted;
     }
+    FFrameAnimation.Stop();
     if (IsApplicationMinimized() && FMinimizedByMe)
     {
       ShowNotification(
@@ -247,7 +256,7 @@ void __fastcall TFileFindDialog::FileFound(TTerminal * /*Terminal*/,
   }
   else
   {
-    FAIL;
+    DebugFail();
   }
   Item->SubItems->Add(Directory);
 
@@ -416,5 +425,21 @@ void __fastcall TFileFindDialog::CopyToClipboard()
 void __fastcall TFileFindDialog::CopyButtonClick(TObject * /*Sender*/)
 {
   CopyToClipboard();
+}
+//---------------------------------------------------------------------------
+void __fastcall TFileFindDialog::Dispatch(void * Message)
+{
+  TMessage * M = reinterpret_cast<TMessage*>(Message);
+  if (M->Msg == WM_SYSCOMMAND)
+  {
+    if (!HandleMinimizeSysCommand(*M))
+    {
+      TForm::Dispatch(Message);
+    }
+  }
+  else
+  {
+    TForm::Dispatch(Message);
+  }
 }
 //---------------------------------------------------------------------------
