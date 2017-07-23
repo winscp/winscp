@@ -333,7 +333,7 @@ static char *get_cnonce(void)
     }
     else
 #elif defined(HAVE_OPENSSL)
-    if (RAND_status() == 1 && RAND_pseudo_bytes(data, sizeof data) >= 0) {
+    if (RAND_status() == 1 && RAND_bytes(data, sizeof data) >= 0) {
 	ne_md5_process_bytes(data, sizeof data, hash);
     } 
     else 

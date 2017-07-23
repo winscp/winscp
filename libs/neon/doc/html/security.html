@@ -4,7 +4,7 @@
   application) can be tricked into accessing an HTTP server which is
   controlled by an attacker.  This section documents various types of
   possible attack and describes what mitigation is used in
-  neon.</p><div class="sect2"><div class="titlepage"><div><div><h3 class="title"><a name="idm209426217328"></a>CPU or memory consumption attacks</h3></div></div></div><p>neon uses fixed resource limits to prevent the following
+  neon.</p><div class="sect2"><div class="titlepage"><div><div><h3 class="title"><a name="idm139901961092096"></a>CPU or memory consumption attacks</h3></div></div></div><p>neon uses fixed resource limits to prevent the following
     attacks:</p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>memory/CPU consumption attack using an unbounded number
         of response header fields</p></li><li class="listitem"><p>memory consumption attack using an unbounded length of
         individual response header lines (or continuation
@@ -17,7 +17,7 @@
     must be mitigated at application level.  Memory consumption in
     neon itself is fixed and is not proportional to the response
     size.</p><p>Test cases for all the above attacks are present in the
-    neon test suite.</p></div><div class="sect2"><div class="titlepage"><div><div><h3 class="title"><a name="idm209426337968"></a>SSL/TLS connection security</h3></div></div></div><p>When using a connection secured by SSL/TLS, it is necessary
+    neon test suite.</p></div><div class="sect2"><div class="titlepage"><div><div><h3 class="title"><a name="idm139901961222032"></a>SSL/TLS connection security</h3></div></div></div><p>When using a connection secured by SSL/TLS, it is necessary
     for clients to verify that the X.509 certificate presented by the
     server matches the server's expected identity.  The algorithm
     required for this purpose is described in RFC 2818 and RFC 3280,
@@ -35,14 +35,14 @@
     present the certificate details to a user for manual/off-line
     verification, if possible.</p><p>Test cases for the correctness of the implementation of the
     identity verification algorithm are present in the neon test
-    suite.</p></div><div class="sect2"><div class="titlepage"><div><div><h3 class="title"><a name="idm209427290208"></a>Control character insertion in error messages</h3></div></div></div><p>Where error messages (as returned by
+    suite.</p></div><div class="sect2"><div class="titlepage"><div><div><h3 class="title"><a name="idm139901963655840"></a>Control character insertion in error messages</h3></div></div></div><p>Where error messages (as returned by
     (<a class="xref" href="referr.html#ne_get_error">ne_get_error</a>) contain data supplied by the
     server, the untrusted data is sanitised to remove both control
     characters and non-ASCII characters.  This prevents any attacks
     where such error messages are exposed to the user and can
     potentially distort the presentation of the interface (for
     example, through the use of a carriage return character in a text
-    user interface).</p></div><div class="sect2"><div class="titlepage"><div><div><h3 class="title"><a name="idm209425032880"></a>Attacks against authentication credentials</h3></div></div></div><p>Authentication credentials can be compromised by a
+    user interface).</p></div><div class="sect2"><div class="titlepage"><div><div><h3 class="title"><a name="idm139901962213328"></a>Attacks against authentication credentials</h3></div></div></div><p>Authentication credentials can be compromised by a
     "downgrade attack" by an active attacker; for example, where a
     MITM presents a Basic authentication challenge in place of the
     server's Digest challenge.  neon mitigates these attacks by

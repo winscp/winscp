@@ -1,7 +1,94 @@
 ------------------------------------------------------------------------
-r1960 | joe | 2014-09-23 14:22:17 +0100 (Tue, 23 Sep 2014) | 1 line
+r1989 | joe | 2016-09-30 10:01:07 +0100 (Fri, 30 Sep 2016) | 1 line
 
-Tag release 0.30.1.
+Tag release 0.30.2.
+------------------------------------------------------------------------
+r1988 | joe | 2016-09-30 09:53:25 +0100 (Fri, 30 Sep 2016) | 1 line
+
+Bump release.
+------------------------------------------------------------------------
+r1987 | joe | 2016-09-30 09:51:39 +0100 (Fri, 30 Sep 2016) | 1 line
+
+News.
+------------------------------------------------------------------------
+r1986 | joe | 2016-09-30 09:51:26 +0100 (Fri, 30 Sep 2016) | 2 lines
+
+* po/: make update-po.
+
+------------------------------------------------------------------------
+r1985 | joe | 2016-09-30 09:47:02 +0100 (Fri, 30 Sep 2016) | 8 lines
+
+Merge r1976, r1977 from trunk:
+
+* test/makekeys.sh: Don't put generated files in $srcdir.
+
+* test/ssl.c (init, fail_expired, fail_notvalid): Fix for VPATH
+  builds.
+
+
+------------------------------------------------------------------------
+r1984 | joe | 2016-09-30 09:46:00 +0100 (Fri, 30 Sep 2016) | 15 lines
+
+Merge r1973, r1974, r1975 from trunk:
+
+* src/ne_openssl.c, src/ne_auth.c, src/ne_socket.c: Fix build with
+  OpenSSL 1.1.  Patch by Kurt Roeckx.
+
+* src/ne_pkcs11.c: Create RSA_METHOD once per provider, rather than
+  dynamically.  Add OpenSSL 1.1.0 compatibility.
+  (pk11_rsa_finish): Remove.
+  (pk11_init): Create RSA_METHOD here, ...
+  (ne_ssl_pkcs11_provider_destroy): ... destroy it here.
+
+* src/ne_openssl.c (ne__ssl_clicert_exkey_import): Rewrite to be
+  OpenSSL 1.1 compatible.  Catch non-RSA keys early.
+
+
+------------------------------------------------------------------------
+r1983 | joe | 2016-09-30 09:44:03 +0100 (Fri, 30 Sep 2016) | 8 lines
+
+Merge r1967, r1968, r1969 from trunk:
+
+* test/ssl.c (fail_expired, fail_notvalid): Fix CA.
+
+* test/props.c: Remove unused variable.
+
+* test/socket.c: Remove unused variable.
+
+------------------------------------------------------------------------
+r1966 | joe | 2015-09-02 21:53:32 +0100 (Wed, 02 Sep 2015) | 31 lines
+
+Merge r1961, r1962, r1963, r1964, r1965 from trunk:
+
+* test/makekeys.sh, test/openssl.conf: Use 2048-bit RSA keys throughout.
+
+* test/ssl.c (fail_notvalid, fail_expired): Use generated keys.
+
+* test/ssl.c (nulcn_identity): Fail only if the NUL byte was interpreted
+  precisely.
+
+Rewrite GnuTLS PKCS#11 support to work (exclusively) with the new
+GnuTLS 3.x API.
+
+* src/ne_privssl.h: Drop session-wide signing callback in favour of
+  per-clicert signing callback API.
+
+* src/ne_socket.c (ne_sock_connect_ssl): Likewise.
+
+* src/ne_gnutls.c: Store a signing function in the ccert object.
+  (dup_client_cert): Dupe the above.
+  (provide_client_cert): Support new retrieve API and new signing
+  callback.
+  (ne__ssl_clicert_exkey_import): Take callback & userdata.
+  
+* src/ne_pkcs11.c (pk11_sign_callback): Adjust for privkey-based
+  signing API.
+  (ne_ssl_set_pkcs11_provider): Drop session-global callback.
+  
+* macros/neon.m4 (NEON_SSL): Check for new retrieve API,
+  gnutls_privkey_import_ext.  Enable PKCS#11 if latter present.
+
+
 ------------------------------------------------------------------------
 r1959 | joe | 2014-09-23 14:18:59 +0100 (Tue, 23 Sep 2014) | 2 lines
 

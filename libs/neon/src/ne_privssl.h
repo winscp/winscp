@@ -58,6 +58,10 @@ ne__ssl_clicert_exkey_import(const unsigned char *der,
 
 #include <gnutls/gnutls.h>
 
+#ifdef HAVE_GNUTLS_PRIVKEY_IMPORT_EXT
+#include <gnutls/abstract.h>
+#endif
+
 struct ne_ssl_context_s {
     gnutls_certificate_credentials_t cred;
     int verify; /* non-zero if client cert verification required */
@@ -78,17 +82,13 @@ struct ne_ssl_context_s {
         } client;
 #endif
     } cache;
-
-#ifdef HAVE_GNUTLS_SIGN_CALLBACK_SET
-    gnutls_sign_func sign_func;
-    void *sign_data;
-#endif
 };
 
 typedef gnutls_session_t ne_ssl_socket;
 
 NE_PRIVATE ne_ssl_client_cert *
-ne__ssl_clicert_exkey_import(const unsigned char *der, size_t der_len);
+ne__ssl_clicert_exkey_import(const unsigned char *der, size_t der_len,
+                             gnutls_privkey_sign_func sign_func, void *userdata);
 
 #endif /* HAVE_GNUTLS */
 
