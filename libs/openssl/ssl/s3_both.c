@@ -158,13 +158,12 @@ int ssl3_do_write(SSL *s, int type)
 
 int ssl3_send_finished(SSL *s, int a, int b, const char *sender, int slen)
 {
-    unsigned char *p, *d;
+    unsigned char *p;
     int i;
     unsigned long l;
 
     if (s->state == a) {
-        d = (unsigned char *)s->init_buf->data;
-        p = &(d[4]);
+        p = ssl_handshake_start(s);
 
         i = s->method->ssl3_enc->final_finish_mac(s,
                                                   sender, slen,
@@ -173,7 +172,6 @@ int ssl3_send_finished(SSL *s, int a, int b, const char *sender, int slen)
             return 0;
         s->s3->tmp.finish_md_len = i;
         memcpy(p, s->s3->tmp.finish_md, i);
-        p += i;
         l = i;
 
         /*
@@ -196,17 +194,12 @@ int ssl3_send_finished(SSL *s, int a, int b, const char *sender, int slen)
          */
         l &= 0xffff;
 #endif
-
-        *(d++) = SSL3_MT_FINISHED;
-        l2n3(l, d);
-        s->init_num = (int)l + 4;
-        s->init_off = 0;
-
+        ssl_set_handshake_header(s, SSL3_MT_FINISHED, l);
         s->state = b;
     }
 
     /* SSL3_ST_SEND_xxxxxx_HELLO_B */
-    return (ssl3_do_write(s, SSL3_RT_HANDSHAKE));
+    return ssl_do_write(s);
 }
 
 #ifndef OPENSSL_NO_NEXTPROTONEG
@@ -248,7 +241,7 @@ int ssl3_get_finished(SSL *s, int a, int b)
 #ifdef OPENSSL_NO_NEXTPROTONEG
     /*
      * the mac has already been generated when we received the change cipher
-     * spec message and is in s->s3->tmp.peer_finish_md.
+     * spec message and is in s->s3->tmp.peer_finish_md
      */
 #endif
 
@@ -326,84 +319,20 @@ int ssl3_send_change_cipher_spec(SSL *s, int a, int b)
     return (ssl3_do_write(s, SSL3_RT_CHANGE_CIPHER_SPEC));
 }
 
-static int ssl3_add_cert_to_buf(BUF_MEM *buf, unsigned long *l, X509 *x)
-{
-    int n;
-    unsigned char *p;
-
-    n = i2d_X509(x, NULL);
-    if (!BUF_MEM_grow_clean(buf, (int)(n + (*l) + 3))) {
-        SSLerr(SSL_F_SSL3_ADD_CERT_TO_BUF, ERR_R_BUF_LIB);
-        return (-1);
-    }
-    p = (unsigned char *)&(buf->data[*l]);
-    l2n3(n, p);
-    i2d_X509(x, &p);
-    *l += n + 3;
-
-    return (0);
-}
-
-unsigned long ssl3_output_cert_chain(SSL *s, X509 *x)
+unsigned long ssl3_output_cert_chain(SSL *s, CERT_PKEY *cpk)
 {
     unsigned char *p;
-    int i;
-    unsigned long l = 7;
-    BUF_MEM *buf;
-    int no_chain;
+    unsigned long l = 3 + SSL_HM_HEADER_LENGTH(s);
 
-    if ((s->mode & SSL_MODE_NO_AUTO_CHAIN) || s->ctx->extra_certs)
-        no_chain = 1;
-    else
-        no_chain = 0;
+    if (!ssl_add_cert_chain(s, cpk, &l))
+        return 0;
 
-    /* TLSv1 sends a chain with nothing in it, instead of an alert */
-    buf = s->init_buf;
-    if (!BUF_MEM_grow_clean(buf, 10)) {
-        SSLerr(SSL_F_SSL3_OUTPUT_CERT_CHAIN, ERR_R_BUF_LIB);
-        return (0);
-    }
-    if (x != NULL) {
-        if (no_chain) {
-            if (ssl3_add_cert_to_buf(buf, &l, x))
-                return (0);
-        } else {
-            X509_STORE_CTX xs_ctx;
-
-            if (!X509_STORE_CTX_init(&xs_ctx, s->ctx->cert_store, x, NULL)) {
-                SSLerr(SSL_F_SSL3_OUTPUT_CERT_CHAIN, ERR_R_X509_LIB);
-                return (0);
-            }
-            X509_verify_cert(&xs_ctx);
-            /* Don't leave errors in the queue */
-            ERR_clear_error();
-            for (i = 0; i < sk_X509_num(xs_ctx.chain); i++) {
-                x = sk_X509_value(xs_ctx.chain, i);
-
-                if (ssl3_add_cert_to_buf(buf, &l, x)) {
-                    X509_STORE_CTX_cleanup(&xs_ctx);
-                    return 0;
-                }
-            }
-            X509_STORE_CTX_cleanup(&xs_ctx);
-        }
-    }
-    /* Thawte special :-) */
-    for (i = 0; i < sk_X509_num(s->ctx->extra_certs); i++) {
-        x = sk_X509_value(s->ctx->extra_certs, i);
-        if (ssl3_add_cert_to_buf(buf, &l, x))
-            return (0);
-    }
-
-    l -= 7;
-    p = (unsigned char *)&(buf->data[4]);
+    l -= 3 + SSL_HM_HEADER_LENGTH(s);
+    p = ssl_handshake_start(s);
     l2n3(l, p);
     l += 3;
-    p = (unsigned char *)&(buf->data[0]);
-    *(p++) = SSL3_MT_CERTIFICATE;
-    l2n3(l, p);
-    l += 4;
-    return (l);
+    ssl_set_handshake_header(s, SSL3_MT_CERTIFICATE, l);
+    return l + SSL_HM_HEADER_LENGTH(s);
 }
 
 /*
@@ -427,21 +356,22 @@ long ssl3_get_message(SSL *s, int st1, int stn, int mt, long max, int *ok)
         }
         *ok = 1;
         s->state = stn;
-        s->init_msg = s->init_buf->data + 4;
+        s->init_msg = s->init_buf->data + SSL3_HM_HEADER_LENGTH;
         s->init_num = (int)s->s3->tmp.message_size;
         return s->init_num;
     }
 
     p = (unsigned char *)s->init_buf->data;
 
-    if (s->state == st1) {      /* s->init_num < 4 */
+    if (s->state == st1) {      /* s->init_num < SSL3_HM_HEADER_LENGTH */
         int skip_message;
 
         do {
-            while (s->init_num < 4) {
+            while (s->init_num < SSL3_HM_HEADER_LENGTH) {
                 i = s->method->ssl_read_bytes(s, SSL3_RT_HANDSHAKE,
                                               &p[s->init_num],
-                                              4 - s->init_num, 0);
+                                              SSL3_HM_HEADER_LENGTH -
+                                              s->init_num, 0);
                 if (i <= 0) {
                     s->rwstate = SSL_READING;
                     *ok = 0;
@@ -465,28 +395,18 @@ long ssl3_get_message(SSL *s, int st1, int stn, int mt, long max, int *ok)
 
                         if (s->msg_callback)
                             s->msg_callback(0, s->version, SSL3_RT_HANDSHAKE,
-                                            p, 4, s, s->msg_callback_arg);
+                                            p, SSL3_HM_HEADER_LENGTH, s,
+                                            s->msg_callback_arg);
                     }
         }
         while (skip_message);
 
-        /* s->init_num == 4 */
+        /* s->init_num == SSL3_HM_HEADER_LENGTH */
 
         if ((mt >= 0) && (*p != mt)) {
             al = SSL_AD_UNEXPECTED_MESSAGE;
             SSLerr(SSL_F_SSL3_GET_MESSAGE, SSL_R_UNEXPECTED_MESSAGE);
             goto f_err;
-        }
-        if ((mt < 0) && (*p == SSL3_MT_CLIENT_HELLO) &&
-            (st1 == SSL3_ST_SR_CERT_A) && (stn == SSL3_ST_SR_CERT_B)) {
-            /*
-             * At this point we have got an MS SGC second client hello (maybe
-             * we should always allow the client to start a new handshake?).
-             * We need to restart the mac. Don't increment
-             * {num,total}_renegotiations because we have not completed the
-             * handshake.
-             */
-            ssl3_init_finished_mac(s);
         }
 
         s->s3->tmp.message_type = *(p++);
@@ -497,19 +417,20 @@ long ssl3_get_message(SSL *s, int st1, int stn, int mt, long max, int *ok)
             SSLerr(SSL_F_SSL3_GET_MESSAGE, SSL_R_EXCESSIVE_MESSAGE_SIZE);
             goto f_err;
         }
-        if (l > (INT_MAX - 4)) { /* BUF_MEM_grow takes an 'int' parameter */
-            al = SSL_AD_ILLEGAL_PARAMETER;
-            SSLerr(SSL_F_SSL3_GET_MESSAGE, SSL_R_EXCESSIVE_MESSAGE_SIZE);
-            goto f_err;
-        }
-        if (l && !BUF_MEM_grow_clean(s->init_buf, (int)l + 4)) {
+        /*
+         * Make buffer slightly larger than message length as a precaution
+         * against small OOB reads e.g. CVE-2016-6306
+         */
+        if (l
+            && !BUF_MEM_grow_clean(s->init_buf,
+                                   (int)l + SSL3_HM_HEADER_LENGTH + 16)) {
             SSLerr(SSL_F_SSL3_GET_MESSAGE, ERR_R_BUF_LIB);
             goto err;
         }
         s->s3->tmp.message_size = l;
         s->state = stn;
 
-        s->init_msg = s->init_buf->data + 4;
+        s->init_msg = s->init_buf->data + SSL3_HM_HEADER_LENGTH;
         s->init_num = 0;
     }
 
@@ -538,10 +459,12 @@ long ssl3_get_message(SSL *s, int st1, int stn, int mt, long max, int *ok)
 #endif
 
     /* Feed this message into MAC computation. */
-    ssl3_finish_mac(s, (unsigned char *)s->init_buf->data, s->init_num + 4);
+    ssl3_finish_mac(s, (unsigned char *)s->init_buf->data,
+                    s->init_num + SSL3_HM_HEADER_LENGTH);
     if (s->msg_callback)
         s->msg_callback(0, s->version, SSL3_RT_HANDSHAKE, s->init_buf->data,
-                        (size_t)s->init_num + 4, s, s->msg_callback_arg);
+                        (size_t)s->init_num + SSL3_HM_HEADER_LENGTH, s,
+                        s->msg_callback_arg);
     *ok = 1;
     return s->init_num;
  f_err:
@@ -578,7 +501,18 @@ int ssl_cert_type(X509 *x, EVP_PKEY *pkey)
         ret = SSL_PKEY_GOST94;
     } else if (i == NID_id_GostR3410_2001 || i == NID_id_GostR3410_2001_cc) {
         ret = SSL_PKEY_GOST01;
+    } else if (x && (i == EVP_PKEY_DH || i == EVP_PKEY_DHX)) {
+        /*
+         * For DH two cases: DH certificate signed with RSA and DH
+         * certificate signed with DSA.
+         */
+        i = X509_certificate_type(x, pk);
+        if (i & EVP_PKS_RSA)
+            ret = SSL_PKEY_DH_RSA;
+        else if (i & EVP_PKS_DSA)
+            ret = SSL_PKEY_DH_DSA;
     }
+
  err:
     if (!pkey)
         EVP_PKEY_free(pk);
@@ -606,6 +540,9 @@ int ssl_verify_alarm_type(long type)
     case X509_V_ERR_CRL_NOT_YET_VALID:
     case X509_V_ERR_CERT_UNTRUSTED:
     case X509_V_ERR_CERT_REJECTED:
+    case X509_V_ERR_HOSTNAME_MISMATCH:
+    case X509_V_ERR_EMAIL_MISMATCH:
+    case X509_V_ERR_IP_ADDRESS_MISMATCH:
         al = SSL_AD_BAD_CERTIFICATE;
         break;
     case X509_V_ERR_CERT_SIGNATURE_FAILURE:
@@ -619,7 +556,10 @@ int ssl_verify_alarm_type(long type)
     case X509_V_ERR_CERT_REVOKED:
         al = SSL_AD_CERTIFICATE_REVOKED;
         break;
+    case X509_V_ERR_UNSPECIFIED:
     case X509_V_ERR_OUT_OF_MEM:
+    case X509_V_ERR_INVALID_CALL:
+    case X509_V_ERR_STORE_LOOKUP:
         al = SSL_AD_INTERNAL_ERROR;
         break;
     case X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT:
@@ -719,7 +659,7 @@ int ssl3_setup_read_buffer(SSL *s)
     unsigned char *p;
     size_t len, align = 0, headerlen;
 
-    if (SSL_version(s) == DTLS1_VERSION || SSL_version(s) == DTLS1_BAD_VER)
+    if (SSL_IS_DTLS(s))
         headerlen = DTLS1_RT_HEADER_LENGTH;
     else
         headerlen = SSL3_RT_HEADER_LENGTH;
@@ -758,7 +698,7 @@ int ssl3_setup_write_buffer(SSL *s)
     unsigned char *p;
     size_t len, align = 0, headerlen;
 
-    if (SSL_version(s) == DTLS1_VERSION || SSL_version(s) == DTLS1_BAD_VER)
+    if (SSL_IS_DTLS(s))
         headerlen = DTLS1_RT_HEADER_LENGTH + 1;
     else
         headerlen = SSL3_RT_HEADER_LENGTH;

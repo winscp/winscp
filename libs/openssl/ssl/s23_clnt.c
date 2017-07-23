@@ -204,7 +204,10 @@ int ssl23_connect(SSL *s)
                 goto end;
             }
 
-            ssl3_init_finished_mac(s);
+            if (!ssl3_init_finished_mac(s)) {
+                ret = -1;
+                goto end;
+            }
 
             s->state = SSL23_ST_CW_CLNT_HELLO_A;
             s->ctx->stats.sess_connect++;
@@ -279,7 +282,6 @@ static int ssl23_no_ssl2_ciphers(SSL *s)
 int ssl_fill_hello_random(SSL *s, int server, unsigned char *result, int len)
 {
     int send_time = 0;
-
     if (len < 4)
         return 0;
     if (server)
@@ -290,9 +292,9 @@ int ssl_fill_hello_random(SSL *s, int server, unsigned char *result, int len)
         unsigned long Time = (unsigned long)time(NULL);
         unsigned char *p = result;
         l2n(Time, p);
-        return RAND_pseudo_bytes(p, len - 4);
+        return RAND_bytes(p, len - 4);
     } else
-        return RAND_pseudo_bytes(result, len);
+        return RAND_bytes(result, len);
 }
 
 static int ssl23_client_hello(SSL *s)
@@ -303,6 +305,7 @@ static int ssl23_client_hello(SSL *s)
     unsigned long l;
     int ssl2_compat;
     int version = 0, version_major, version_minor;
+    int al = 0;
 #ifndef OPENSSL_NO_COMP
     int j;
     SSL_COMP *comp;
@@ -368,6 +371,8 @@ static int ssl23_client_hello(SSL *s)
             || s->tlsext_opaque_prf_input != NULL)
             ssl2_compat = 0;
 # endif
+        if (s->cert->cli_ext.meths_count != 0)
+            ssl2_compat = 0;
     }
 #endif
 
@@ -388,6 +393,10 @@ static int ssl23_client_hello(SSL *s)
         if (version == TLS1_2_VERSION) {
             version_major = TLS1_2_VERSION_MAJOR;
             version_minor = TLS1_2_VERSION_MINOR;
+        } else if (tls1_suiteb(s)) {
+            SSLerr(SSL_F_SSL23_CLIENT_HELLO,
+                   SSL_R_ONLY_TLS_1_2_ALLOWED_IN_SUITEB_MODE);
+            return -1;
         } else if (version == TLS1_1_VERSION) {
             version_major = TLS1_1_VERSION_MAJOR;
             version_minor = TLS1_1_VERSION_MINOR;
@@ -460,8 +469,8 @@ static int ssl23_client_hello(SSL *s)
                 i = ch_len;
             s2n(i, d);
             memset(&(s->s3->client_random[0]), 0, SSL3_RANDOM_SIZE);
-            if (RAND_pseudo_bytes
-                (&(s->s3->client_random[SSL3_RANDOM_SIZE - i]), i) <= 0)
+            if (RAND_bytes (&(s->s3->client_random[SSL3_RANDOM_SIZE - i]), i)
+                    <= 0)
                 return -1;
 
             memcpy(p, &(s->s3->client_random[SSL3_RANDOM_SIZE - i]), i);
@@ -540,9 +549,9 @@ static int ssl23_client_hello(SSL *s)
             }
             if ((p =
                  ssl_add_clienthello_tlsext(s, p,
-                                            buf +
-                                            SSL3_RT_MAX_PLAIN_LENGTH)) ==
-                NULL) {
+                                            buf + SSL3_RT_MAX_PLAIN_LENGTH,
+                                            &al)) == NULL) {
+                ssl3_send_alert(s, SSL3_AL_FATAL, al);
                 SSLerr(SSL_F_SSL23_CLIENT_HELLO, ERR_R_INTERNAL_ERROR);
                 return -1;
             }
@@ -596,10 +605,13 @@ static int ssl23_client_hello(SSL *s)
         if (ssl2_compat)
             s->msg_callback(1, SSL2_VERSION, 0, s->init_buf->data + 2,
                             ret - 2, s, s->msg_callback_arg);
-        else
+        else {
+            s->msg_callback(1, version, SSL3_RT_HEADER, s->init_buf->data, 5,
+                            s, s->msg_callback_arg);
             s->msg_callback(1, version, SSL3_RT_HANDSHAKE,
                             s->init_buf->data + 5, ret - 5, s,
                             s->msg_callback_arg);
+        }
     }
 
     return ret;
@@ -749,9 +761,12 @@ static int ssl23_get_server_hello(SSL *s)
                 cb(s, SSL_CB_READ_ALERT, j);
             }
 
-            if (s->msg_callback)
+            if (s->msg_callback) {
+                s->msg_callback(0, s->version, SSL3_RT_HEADER, p, 5, s,
+                                s->msg_callback_arg);
                 s->msg_callback(0, s->version, SSL3_RT_ALERT, p + 5, 2, s,
                                 s->msg_callback_arg);
+            }
 
             s->rwstate = SSL_NOTHING;
             SSLerr(SSL_F_SSL23_GET_SERVER_HELLO, SSL_AD_REASON_OFFSET + p[6]);

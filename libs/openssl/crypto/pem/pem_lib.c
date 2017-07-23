@@ -105,17 +105,23 @@ int PEM_def_callback(char *buf, int num, int w, void *key)
         prompt = "Enter PEM pass phrase:";
 
     for (;;) {
-        i = EVP_read_pw_string_min(buf, MIN_LENGTH, num, prompt, w);
+        /*
+         * We assume that w == 0 means decryption,
+         * while w == 1 means encryption
+         */
+        int min_len = w ? MIN_LENGTH : 0;
+
+        i = EVP_read_pw_string_min(buf, min_len, num, prompt, w);
         if (i != 0) {
             PEMerr(PEM_F_PEM_DEF_CALLBACK, PEM_R_PROBLEMS_GETTING_PASSWORD);
             memset(buf, 0, (unsigned int)num);
             return (-1);
         }
         j = strlen(buf);
-        if (j < MIN_LENGTH) {
+        if (min_len && j < min_len) {
             fprintf(stderr,
                     "phrase is too short, needs to be at least %d chars\n",
-                    MIN_LENGTH);
+                    min_len);
         } else
             break;
     }
@@ -229,6 +235,10 @@ static int check_pem(const char *nm, const char *name)
         }
         return 0;
     }
+    /* If reading DH parameters handle X9.42 DH format too */
+    if (!strcmp(nm, PEM_STRING_DHXPARAMS) &&
+        !strcmp(name, PEM_STRING_DHPARAMS))
+        return 1;
 
     /* Permit older strings */
 
@@ -383,7 +393,7 @@ int PEM_ASN1_write_bio(i2d_of_void *i2d, const char *name, BIO *bp,
         }
         RAND_add(data, i, 0);   /* put in the RSA key. */
         OPENSSL_assert(enc->iv_len <= (int)sizeof(iv));
-        if (RAND_pseudo_bytes(iv, enc->iv_len) < 0) /* Generate a salt */
+        if (RAND_bytes(iv, enc->iv_len) <= 0) /* Generate a salt */
             goto err;
         /*
          * The 'iv' is used as the iv and as a salt.  It is NOT taken from
@@ -472,8 +482,9 @@ int PEM_do_header(EVP_CIPHER_INFO *cipher, unsigned char *data, long *plen,
     EVP_CIPHER_CTX_cleanup(&ctx);
     OPENSSL_cleanse((char *)buf, sizeof(buf));
     OPENSSL_cleanse((char *)key, sizeof(key));
-    j += i;
-    if (!o) {
+    if (o)
+        j += i;
+    else {
         PEMerr(PEM_F_PEM_DO_HEADER, PEM_R_BAD_DECRYPT);
         return (0);
     }
@@ -574,8 +585,8 @@ static int load_iv(char **fromp, unsigned char *to, int num)
 }
 
 #ifndef OPENSSL_NO_FP_API
-int PEM_write(FILE *fp, char *name, char *header, unsigned char *data,
-              long len)
+int PEM_write(FILE *fp, const char *name, const char *header,
+              const unsigned char *data, long len)
 {
     BIO *b;
     int ret;
@@ -591,8 +602,8 @@ int PEM_write(FILE *fp, char *name, char *header, unsigned char *data,
 }
 #endif
 
-int PEM_write_bio(BIO *bp, const char *name, char *header,
-                  unsigned char *data, long len)
+int PEM_write_bio(BIO *bp, const char *name, const char *header,
+                  const unsigned char *data, long len)
 {
     int nlen, n, i, j, outl;
     unsigned char *buf = NULL;

@@ -11,9 +11,23 @@
 #include <windows.h>
 #include <stdio.h>		       /* for FILENAME_MAX */
 
+/* We use uintptr_t for Win32/Win64 portability, so we should in
+ * principle include stdint.h, which defines it according to the C
+ * standard. But older versions of Visual Studio - including the one
+ * used for official PuTTY builds as of 2015-09-28 - don't provide
+ * stdint.h at all, but do (non-standardly) define uintptr_t in
+ * stddef.h. So here we try to make sure _some_ standard header is
+ * included which defines uintptr_t. */
+#include <stddef.h>
+#if !defined _MSC_VER || _MSC_VER >= 1600 || defined __clang__
+#include <stdint.h>
+#endif
+
 #include "tree234.h"
 
 #include "winhelp.h"
+
+#define BUILDINFO_PLATFORM "Windows"
 
 struct Filename {
     char *path;
@@ -75,9 +89,27 @@ struct FontSpec *fontspec_new(const char *name,
 #define BOXRESULT (DLGWINDOWEXTRA + sizeof(LONG_PTR))
 #define DF_END 0x0001
 
+#ifdef __WINE__
+#define NO_SECUREZEROMEMORY            /* winelib doesn't have this */
+#endif
+
 #ifndef NO_SECUREZEROMEMORY
 #define PLATFORM_HAS_SMEMCLR /* inhibit cross-platform one in misc.c */
 #endif
+
+#ifndef __WINE__
+/* Up-to-date Windows headers warn that the unprefixed versions of
+ * these names are deprecated. */
+#define stricmp _stricmp
+#define strnicmp _strnicmp
+#else
+/* Compiling with winegcc, _neither_ version of these functions
+ * exists. Use the POSIX names. */
+#define stricmp strcasecmp
+#define strnicmp strncasecmp
+#endif
+
+#define BROKEN_PIPE_ERROR_CODE ERROR_BROKEN_PIPE   /* used in sshshare.c */
 
 /*
  * Dynamically linked functions. These come in two flavours:
@@ -96,15 +128,24 @@ struct FontSpec *fontspec_new(const char *name,
  *
  * (DECL_WINDOWS_FUNCTION works with both these variants.)
  */
-#define DECL_WINDOWS_FUNCTION(linkage, rettype, name, params) \
-    typedef rettype (WINAPI *t_##name) params; \
+#define TYPECHECK(to_check, to_return)          \
+    (sizeof(to_check) ? to_return : to_return)
+#define DECL_WINDOWS_FUNCTION(linkage, rettype, name, params)   \
+    typedef rettype (WINAPI *t_##name) params;                  \
     linkage t_##name p_##name
 #define STR1(x) #x
 #define STR(x) STR1(x)
-#define GET_WINDOWS_FUNCTION_PP(module, name) \
-    (p_##name = module ? (t_##name) GetProcAddress(module, STR(name)) : NULL)
-#define GET_WINDOWS_FUNCTION(module, name) \
-    (p_##name = module ? (t_##name) GetProcAddress(module, #name) : NULL)
+#define GET_WINDOWS_FUNCTION_PP(module, name)                           \
+    TYPECHECK((t_##name)NULL == name,                                   \
+              (p_##name = module ?                                      \
+               (t_##name) GetProcAddress(module, STR(name)) : NULL))
+#define GET_WINDOWS_FUNCTION(module, name)                              \
+    TYPECHECK((t_##name)NULL == name,                                   \
+              (p_##name = module ?                                      \
+               (t_##name) GetProcAddress(module, #name) : NULL))
+#define GET_WINDOWS_FUNCTION_NO_TYPECHECK(module, name) \
+    (p_##name = module ?                                \
+     (t_##name) GetProcAddress(module, #name) : NULL)
 
 /*
  * Global variables. Most modules declare these `extern', but
@@ -241,6 +282,11 @@ GLOBAL void *logctx;
 				 "All Files (*.*)\0*\0\0\0")
 
 /*
+ * Exports from winnet.c.
+ */
+extern void select_result(WPARAM, LPARAM);
+
+/*
  * winnet.c dynamically loads WinSock 2 or WinSock 1 depending on
  * what it can get, which means any WinSock routines used outside
  * that module must be exported from it as function pointers. So
@@ -250,12 +296,21 @@ DECL_WINDOWS_FUNCTION(GLOBAL, int, WSAAsyncSelect,
 		      (SOCKET, HWND, u_int, long));
 DECL_WINDOWS_FUNCTION(GLOBAL, int, WSAEventSelect,
 		      (SOCKET, WSAEVENT, long));
-DECL_WINDOWS_FUNCTION(GLOBAL, int, select,
-		      (int, fd_set FAR *, fd_set FAR *,
-		       fd_set FAR *, const struct timeval FAR *));
 DECL_WINDOWS_FUNCTION(GLOBAL, int, WSAGetLastError, (void));
 DECL_WINDOWS_FUNCTION(GLOBAL, int, WSAEnumNetworkEvents,
 		      (SOCKET, WSAEVENT, LPWSANETWORKEVENTS));
+#ifdef NEED_DECLARATION_OF_SELECT
+/* This declaration is protected by an ifdef for the sake of building
+ * against winelib, in which you have to include winsock2.h before
+ * stdlib.h so that the right fd_set type gets defined. It would be a
+ * pain to do that throughout this codebase, so instead I arrange that
+ * only a modules actually needing to use (or define, or initialise)
+ * this function pointer will see its declaration, and _those_ modules
+ * - which will be Windows-specific anyway - can take more care. */
+DECL_WINDOWS_FUNCTION(GLOBAL, int, select,
+		      (int, fd_set FAR *, fd_set FAR *,
+		       fd_set FAR *, const struct timeval FAR *));
+#endif
 
 extern int socket_writable(SOCKET skt);
 
@@ -274,6 +329,7 @@ struct ctlpos {
     int boxystart, boxid;
     char *boxtext;
 };
+void init_common_controls(void);       /* also does some DLL-loading */
 
 /*
  * Exports from winutils.c.
@@ -459,9 +515,28 @@ void show_help(HWND hwnd);
  * Exports from winmisc.c.
  */
 extern OSVERSIONINFO osVersion;
+void dll_hijacking_protection(void);
 BOOL init_winver(void);
 HMODULE load_system32_dll(const char *libname);
 const char *win_strerror(int error);
+void restrict_process_acl(void);
+GLOBAL int restricted_acl;
+
+/* A few pieces of up-to-date Windows API definition needed for older
+ * compilers. */
+#ifndef LOAD_LIBRARY_SEARCH_SYSTEM32
+#define LOAD_LIBRARY_SEARCH_SYSTEM32 0x00000800
+#endif
+#ifndef LOAD_LIBRARY_SEARCH_USER_DIRS
+#define LOAD_LIBRARY_SEARCH_USER_DIRS 0x00000400
+#endif
+#ifndef LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR
+#define LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR 0x00000100
+#endif
+#ifndef DLL_DIRECTORY_COOKIE
+typedef PVOID DLL_DIRECTORY_COOKIE;
+DECLSPEC_IMPORT DLL_DIRECTORY_COOKIE WINAPI AddDllDirectory (PCWSTR NewDirectory);
+#endif
 
 /*
  * Exports from sizetip.c.
@@ -496,6 +571,8 @@ void handle_got_event(HANDLE event);
 void handle_unthrottle(struct handle *h, int backlog);
 int handle_backlog(struct handle *h);
 void *handle_get_privdata(struct handle *h);
+struct handle *handle_add_foreign_event(HANDLE event,
+                                        void (*callback)(void *), void *ctx);
 
 /*
  * winpgntc.c needs to schedule callbacks for asynchronous agent
@@ -510,14 +587,6 @@ void agent_schedule_callback(void (*callback)(void *, void *, int),
 #define FLAG_SYNCAGENT 0x1000
 
 /*
- * winpgntc.c also exports these two functions which are used by the
- * server side of Pageant as well, to get the user SID for comparing
- * with clients'.
- */
-int init_advapi(void);  /* initialises everything needed by get_user_sid */
-PSID get_user_sid(void);
-
-/*
  * Exports from winser.c.
  */
 extern Backend serial_backend;
@@ -529,6 +598,7 @@ extern Backend serial_backend;
 void add_session_to_jumplist(const char * const sessionname);
 void remove_session_from_jumplist(const char * const sessionname);
 void clear_jumplist(void);
+BOOL set_explicit_app_user_model_id();
 
 /*
  * Extra functions in winstore.c over and above the interface in

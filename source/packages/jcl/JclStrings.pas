@@ -423,7 +423,7 @@ type
 
   // The TStringBuilder class is a Delphi implementation of the .NET
   // System.Text.StringBuilder.
-  // It is zero based and the method that allow an TObject (Append, Insert,
+  // It is zero based and the methods that have a TObject argument (Append, Insert,
   // AppendFormat) are limited to IToString implementors or Delphi 2009+ RTL.
   // This class is not threadsafe. Any instance of TStringBuilder should not
   // be used in different threads at the same time.

@@ -1,0 +1,241 @@
+\cfg{man-identity}{puttygen}{1}{2004-03-24}{PuTTY tool suite}{PuTTY tool suite}
+
+\H{puttygen-manpage} Man page for PuTTYgen
+
+\S{puttygen-manpage-name} NAME
+
+\cw{puttygen} - public-key generator for the PuTTY tools
+
+\S{puttygen-manpage-synopsis} SYNOPSIS
+
+\c puttygen ( keyfile | -t keytype [ -b bits ] )
+\e bbbbbbbb   iiiiiii   bb iiiiiii   bb iiii
+\c          [ -C new-comment ] [ -P ] [ -q ]
+\e            bb iiiiiiiiiii     bb     bb
+\c          [ -O output-type | -l | -L | -p ]
+\e            bb iiiiiiiiiii   bb   bb   bb
+\c          [ -o output-file ]
+\e            bb iiiiiiiiiii
+
+\S{puttygen-manpage-description} DESCRIPTION
+
+\c{puttygen} is a tool to generate and manipulate SSH public and
+private key pairs. It is part of the PuTTY suite, although it can
+also interoperate with the key formats used by some other SSH clients.
+
+When you run \c{puttygen}, it does three things. Firstly, it either
+loads an existing key file (if you specified \e{keyfile}), or
+generates a new key (if you specified \e{keytype}). Then, it
+optionally makes modifications to the key (changing the comment
+and/or the passphrase); finally, it outputs the key, or some
+information about the key, to a file.
+
+All three of these phases are controlled by the options described in
+the following section.
+
+\S{puttygen-manpage-options} OPTIONS
+
+In the first phase, \c{puttygen} either loads or generates a key.
+Note that generating a key requires random data, which can cause
+\c{puttygen} to pause, possibly for some time if your system does
+not have much randomness available.
+
+The options to control this phase are:
+
+\dt \e{keyfile}
+
+\dd Specify a key file to be loaded.
+
+\lcont{
+
+Usually this will be a private key, which can be in the (de facto
+standard) SSH-1 key format, or in PuTTY's SSH-2 key format, or in
+either of the SSH-2 private key formats used by OpenSSH and
+ssh.com's implementation.
+
+You can also specify a file containing only a \e{public} key here.
+The operations you can do are limited to outputting another public
+key format or a fingerprint. Public keys can be in RFC 4716 or
+OpenSSH format, or the standard SSH-1 format.
+
+}
+
+\dt \cw{\-t} \e{keytype}
+
+\dd Specify a type of key to generate. The acceptable values here are
+\c{rsa}, \c{dsa}, \c{ecdsa}, and \c{ed25519} (to generate SSH-2 keys),
+and \c{rsa1} (to generate SSH-1 keys).
+
+\dt \cw{\-b} \e{bits}
+
+\dd Specify the size of the key to generate, in bits. Default is 2048.
+
+\dt \cw{\-q}
+
+\dd Suppress the progress display when generating a new key.
+
+\dt \cw{\-\-old\-passphrase} \e{file}
+
+\dd Specify a file name; the first line will be read from this file
+(removing any trailing newline) and used as the old passphrase.
+\s{CAUTION:} If the passphrase is important, the file should be stored
+on a temporary filesystem or else securely erased after use.
+
+\dt \cw{\-\-random\-device} \e{device}
+
+\dd Specify device to read entropy from (default \c{/dev/random}).
+
+In the second phase, \c{puttygen} optionally alters properties of
+the key it has loaded or generated. The options to control this are:
+
+\dt \cw{\-C} \e{new\-comment}
+
+\dd Specify a comment string to describe the key. This comment string
+will be used by PuTTY to identify the key to you (when asking you to
+enter the passphrase, for example, so that you know which passphrase
+to type).
+
+\dt \cw{\-P}
+
+\dd Indicate that you want to change the key's passphrase. This is
+automatic when you are generating a new key, but not when you are
+modifying an existing key.
+
+In the third phase, \c{puttygen} saves the key or information
+about it. The options to control this are:
+
+\dt \cw{\-O} \e{output\-type}
+
+\dd Specify the type of output you want \c{puttygen} to produce.
+Acceptable options are:
+
+\lcont{
+
+\dt \cw{private}
+
+\dd Save the private key in a format usable by PuTTY. This will either
+be the standard SSH-1 key format, or PuTTY's own SSH-2 key format.
+
+\dt \cw{public}
+
+\dd Save the public key only. For SSH-1 keys, the standard public key
+format will be used (\q{\cw{1024 37 5698745}...}). For SSH-2 keys, the
+public key will be output in the format specified by RFC 4716,
+which is a multi-line text file beginning with the line
+\q{\cw{---- BEGIN SSH2 PUBLIC KEY ----}}.
+
+\dt \cw{public-openssh}
+
+\dd Save the public key only, in a format usable by OpenSSH. For SSH-1
+keys, this output format behaves identically to \c{public}. For
+SSH-2 keys, the public key will be output in the OpenSSH format,
+which is a single line (\q{\cw{ssh-rsa AAAAB3NzaC1yc2}...}).
+
+\dt \cw{fingerprint}
+
+\dd Print the fingerprint of the public key. All fingerprinting
+algorithms are believed compatible with OpenSSH.
+
+\dt \cw{private-openssh}
+
+\dd Save an SSH-2 private key in OpenSSH's format, using the oldest
+format available to maximise backward compatibility. This option is not
+permitted for SSH-1 keys.
+
+\dt \cw{private-openssh-new}
+
+\dd As \c{private-openssh}, except that it forces the use of OpenSSH's
+newer format even for RSA, DSA, and ECDSA keys.
+
+\dt \cw{private-sshcom}
+
+\dd Save an SSH-2 private key in ssh.com's format. This option is not
+permitted for SSH-1 keys.
+
+If no output type is specified, the default is \c{private}.
+
+}
+
+\dt \cw{\-o} \e{output\-file}
+
+\dd Specify the file where \c{puttygen} should write its output. If
+this option is not specified, \c{puttygen} will assume you want to
+overwrite the original file if the input and output file types are
+the same (changing a comment or passphrase), and will assume you
+want to output to stdout if you are asking for a public key or
+fingerprint. Otherwise, the \c{\-o} option is required.
+
+\dt \cw{\-l}
+
+\dd Synonym for \q{\cw{-O fingerprint}}.
+
+\dt \cw{\-L}
+
+\dd Synonym for \q{\cw{-O public-openssh}}.
+
+\dt \cw{\-p}
+
+\dd Synonym for \q{\cw{-O public}}.
+
+\dt \cw{\-\-new\-passphrase} \e{file}
+
+\dd Specify a file name; the first line will be read from this file
+(removing any trailing newline) and used as the new passphrase. If the
+file is empty then the saved key will be unencrypted. \s{CAUTION:} If
+the passphrase is important, the file should be stored on a temporary
+filesystem or else securely erased after use.
+
+The following options do not run PuTTYgen as normal, but print
+informational messages and then quit:
+
+\dt \cw{\-h}, \cw{\-\-help}
+
+\dd Display a message summarizing the available options.
+
+\dt \cw{\-V}, \cw{\-\-version}
+
+\dd Display the version of PuTTYgen.
+
+\dt \cw{\-\-pgpfp}
+
+\dd Display the fingerprints of the PuTTY PGP Master Keys, to aid
+in verifying new files released by the PuTTY team.
+
+\S{puttygen-manpage-examples} EXAMPLES
+
+To generate an SSH-2 RSA key pair and save it in PuTTY's own format
+(you will be prompted for the passphrase):
+
+\c puttygen -t rsa -C "my home key" -o mykey.ppk
+
+To generate a larger (4096-bit) key:
+
+\c puttygen -t rsa -b 4096 -C "my home key" -o mykey.ppk
+
+To change the passphrase on a key (you will be prompted for the old
+and new passphrases):
+
+\c puttygen -P mykey.ppk
+
+To change the comment on a key:
+
+\c puttygen -C "new comment" mykey.ppk
+
+To convert a key into OpenSSH's private key format:
+
+\c puttygen mykey.ppk -O private-openssh -o my-openssh-key
+
+To convert a key \e{from} another format (\c{puttygen} will
+automatically detect the input key type):
+
+\c puttygen my-ssh.com-key -o mykey.ppk
+
+To display the fingerprint of a key (some key types require a
+passphrase to extract even this much information):
+
+\c puttygen -l mykey.ppk
+
+To add the OpenSSH-format public half of a key to your authorised
+keys file:
+
+\c puttygen -L mykey.ppk >> $HOME/.ssh/authorized_keys

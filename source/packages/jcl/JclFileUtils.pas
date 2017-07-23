@@ -2663,8 +2663,8 @@ begin
     try
       // NOTE: DO NOT USE DELIMITER AND DELIMITEDTEXT FROM
       // TSTRINGS, THEY WILL SPLIT PATHS WITH SPACES !!!!
-      StrToStrings(Origin, DirDelimiter, OrigList);
-      StrToStrings(Destination, DirDelimiter, DestList);
+      StrToStrings(Origin, DirDelimiter, OrigList, False);
+      StrToStrings(Destination, DirDelimiter, DestList, False);
       begin
         // find the first directory that is not the same
         DiffIndex := OrigList.Count;

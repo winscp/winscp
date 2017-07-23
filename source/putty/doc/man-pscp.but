@@ -1,0 +1,182 @@
+\cfg{man-identity}{pscp}{1}{2004-03-24}{PuTTY tool suite}{PuTTY tool suite}
+
+\H{pscp-manpage} Man page for PSCP
+
+\S{pscp-manpage-name} NAME
+
+\cw{pscp} \- command-line SCP (secure copy) / SFTP client
+
+\S{pscp-manpage-synopsis} SYNOPSIS
+
+\c pscp [options] [user@]host:source target
+\e bbbb  iiiiiii   iiiib iiiibiiiiii iiiiii
+\c pscp [options] source [source...] [user@]host:target
+\e bbbb  iiiiiii  iiiiii  iiiiii      iiiib iiiibiiiiii
+\c pscp [options] -ls [user@]host:filespec
+\e bbbb  iiiiiii  bbb  iiiib iiiibiiiiiiii
+
+\S{pscp-manpage-description} DESCRIPTION
+
+\cw{pscp} is a command-line client for the SSH-based SCP (secure
+copy) and SFTP (secure file transfer protocol) protocols.
+
+\S{pscp-manpage-options} OPTIONS
+
+The command-line options supported by \e{pscp} are:
+
+\dt \cw{-V}
+
+\dd Show version information and exit.
+
+\dt \cw{-pgpfp}
+
+\dd Display the fingerprints of the PuTTY PGP Master Keys and exit,
+to aid in verifying new files released by the PuTTY team.
+
+\dt \cw{-ls}
+
+\dd Remote directory listing.
+
+\dt \cw{-p}
+
+\dd Preserve file attributes.
+
+\dt \cw{-q}
+
+\dd Quiet, don't show statistics.
+
+\dt \cw{-r}
+
+\dd Copy directories recursively.
+
+\dt \cw{-unsafe}
+
+\dd Allow server-side wildcards (DANGEROUS).
+
+\dt \cw{-v}
+
+\dd Show verbose messages.
+
+\dt \cw{-load} \e{session}
+
+\dd Load settings from saved session.
+
+\dt \cw{-P} \e{port}
+
+\dd Connect to port \e{port}.
+
+\dt \cw{\-proxycmd} \e{command}
+
+\dd Instead of making a TCP connection, use \e{command} as a proxy;
+network traffic will be redirected to the standard input and output
+of \e{command}. \e{command} must be a single word, so is likely to
+need quoting by the shell.
+
+\lcont{
+The special strings \cw{%host} and \cw{%port} in \e{command} will be
+replaced by the hostname and port number you want to connect to; to get
+a literal \c{%} sign, enter \c{%%}.
+
+Backslash escapes are also supported, such as sequences like \c{\\n}
+being replaced by a literal newline; to get a literal backslash,
+enter \c{\\\\}. (Further escaping may be required by the shell.)
+
+(See the main PuTTY manual for full details of the supported \cw{%}-
+and backslash-delimited tokens, although most of them are probably not
+very useful in this context.)
+}
+
+\dt \cw{-l} \e{user}
+
+\dd Set remote username to \e{user}.
+
+\dt \cw{-batch}
+
+\dd Disable interactive prompts.
+
+\dt \cw{-pw} \e{password}
+
+\dd Set remote password to \e{password}. \e{CAUTION:} this will likely
+make the password visible to other users of the local machine (via
+commands such as \q{\c{w}}).
+
+\dt \cw{-1}
+
+\dd Force use of SSH protocol version 1.
+
+\dt \cw{-2}
+
+\dd Force use of SSH protocol version 2.
+
+\dt \cw{-4}, \cw{-6}
+
+\dd Force use of IPv4 or IPv6 for network connections.
+
+\dt \cw{-C}
+
+\dd Enable SSH compression.
+
+\dt \cw{-i} \e{keyfile}
+
+\dd Private key file for user authentication. For SSH-2 keys, this key
+file must be in PuTTY's PPK format, not OpenSSH's format or anyone
+else's.
+
+\lcont{ If you are using an authentication agent, you can also specify
+a \e{public} key here (in RFC 4716 or OpenSSH format), to identify
+which of the agent's keys to use. }
+
+\dt \cw{\-noagent}
+
+\dd Don't try to use an authentication agent.
+
+\dt \cw{\-agent}
+
+\dd Allow use of an authentication agent. (This option is only necessary
+to override a setting in a saved session.)
+
+\dt \cw{\-hostkey} \e{key}
+
+\dd Specify an acceptable host public key. This option may be specified
+multiple times; each key can be either a fingerprint (\cw{99:aa:bb:...}) or
+a base64-encoded blob in OpenSSH's one-line format.
+
+\lcont{ Specifying this option overrides automated host key
+management; \e{only} the key(s) specified on the command-line will be
+accepted (unless a saved session also overrides host keys, in which
+case those will be added to), and the host key cache will not be
+written. }
+
+\dt \cw{-scp}
+
+\dd Force use of SCP protocol.
+
+\dt \cw{-sftp}
+
+\dd Force use of SFTP protocol.
+
+\dt \cw{\-sshlog} \e{logfile}
+
+\dt \cw{\-sshrawlog} \e{logfile}
+
+\dd These options make \cw{pscp} log protocol details to a file.
+(Some of these may be sensitive, although by default an effort is made
+to suppress obvious passwords.)
+
+\lcont{
+\cw{\-sshlog} logs decoded SSH packets and other events (those that
+\cw{\-v} would print). \cw{\-sshrawlog} additionally logs the raw
+encrypted packet data.
+}
+
+\S{pscp-manpage-more-information} MORE INFORMATION
+
+For more information on \cw{pscp} it's probably best to go and look at
+the manual on the PuTTY web page:
+
+\W{https://www.chiark.greenend.org.uk/~sgtatham/putty/}\cw{https://www.chiark.greenend.org.uk/~sgtatham/putty/}
+
+\S{pscp-manpage-bugs} BUGS
+
+This man page isn't terribly complete. See the above web link for
+better documentation.

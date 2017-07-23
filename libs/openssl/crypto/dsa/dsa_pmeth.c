@@ -180,7 +180,7 @@ static int pkey_dsa_ctrl(EVP_PKEY_CTX *ctx, int type, int p1, void *p2)
             DSAerr(DSA_F_PKEY_DSA_CTRL, DSA_R_INVALID_DIGEST_TYPE);
             return 0;
         }
-        dctx->md = p2;
+        dctx->pmd = p2;
         return 1;
 
     case EVP_PKEY_CTRL_MD:
@@ -195,6 +195,10 @@ static int pkey_dsa_ctrl(EVP_PKEY_CTX *ctx, int type, int p1, void *p2)
             return 0;
         }
         dctx->md = p2;
+        return 1;
+
+    case EVP_PKEY_CTRL_GET_MD:
+        *(const EVP_MD **)p2 = dctx->md;
         return 1;
 
     case EVP_PKEY_CTRL_DIGESTINIT:

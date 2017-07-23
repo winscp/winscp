@@ -19,6 +19,7 @@ Putty.res
 RScpComp.res
 ScpCore.res
 ScpForms.res
+ScpResources.res
 WinSCP.res
 *.ddp
 *.dti

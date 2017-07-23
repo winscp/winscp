@@ -1,0 +1,7 @@
+/* Stylesheet for a Windows .CHM help file */
+
+body { font-size: 75%; font-family: Verdana, Arial, Helvetica, Sans-Serif; }
+
+h1 { font-weight: bold; font-size: 150%; }
+h2 { font-weight: bold; font-size: 130%; }
+h3 { font-weight: bold; font-size: 120%; }

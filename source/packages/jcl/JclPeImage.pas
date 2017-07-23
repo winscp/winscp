@@ -6480,17 +6480,16 @@ var
   {$IFDEF CPU32}
   FromProcDebugThunk32, ImportThunk32: PWin9xDebugThunk32;
   IsThunked: Boolean;
+  NtHeader: PImageNtHeaders32;
+  ImportEntry: PImageThunkData32;
   {$ENDIF CPU32}
-  NtHeader32: PImageNtHeaders32;
+  {$IFDEF CPU64}
+  NtHeader: PImageNtHeaders64;
+  ImportEntry: PImageThunkData64;
+  {$ENDIF CPU64}
   ImportDir: TImageDataDirectory;
   ImportDesc: PImageImportDescriptor;
   CurrName, RefName: PAnsiChar;
-  {$IFDEF CPU32}
-  ImportEntry32: PImageThunkData32;
-  {$ENDIF CPU32}
-  {$IFDEF CPU64}
-  ImportEntry64: PImageThunkData64;
-  {$ENDIF CPU64}
   FoundProc: Boolean;
   WrittenBytes: Cardinal;
   UTF8Name: TUTF8String;
@@ -6499,11 +6498,14 @@ begin
   {$IFDEF CPU32}
   FromProcDebugThunk32 := PWin9xDebugThunk32(FromProc);
   IsThunked := (Win32Platform <> VER_PLATFORM_WIN32_NT) and IsWin9xDebugThunk(FromProcDebugThunk32);
+  NtHeader := PeMapImgNtHeaders32(Base);
   {$ENDIF CPU32}
-  NtHeader32 := PeMapImgNtHeaders32(Base);
-  if NtHeader32 = nil then
+  {$IFDEF CPU64}
+  NtHeader := PeMapImgNtHeaders64(Base);
+  {$ENDIF CPU64}
+  if NtHeader = nil then
     Exit;
-  ImportDir := NtHeader32.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT];
+  ImportDir := NtHeader.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT];
   if ImportDir.VirtualAddress = 0 then
     Exit;
   ImportDesc := PImageImportDescriptor(TJclAddr(Base) + ImportDir.VirtualAddress);
@@ -6516,31 +6518,26 @@ begin
     if StrICompA(CurrName, RefName) = 0 then
     begin
       {$IFDEF CPU32}
-      ImportEntry32 := PImageThunkData32(TJclAddr(Base) + ImportDesc^.FirstThunk);
-      while ImportEntry32^.Function_ <> 0 do
+      ImportEntry := PImageThunkData32(TJclAddr(Base) + ImportDesc^.FirstThunk);
+      {$ENDIF CPU32}
+      {$IFDEF CPU64}
+      ImportEntry := PImageThunkData64(TJclAddr(Base) + ImportDesc^.FirstThunk);
+      {$ENDIF CPU64}
+      while ImportEntry^.Function_ <> 0 do
       begin
+        {$IFDEF CPU32}
         if IsThunked then
         begin
-          ImportThunk32 := PWin9xDebugThunk32(ImportEntry32^.Function_);
+          ImportThunk32 := PWin9xDebugThunk32(ImportEntry^.Function_);
           FoundProc := IsWin9xDebugThunk(ImportThunk32) and (ImportThunk32^.Addr = FromProcDebugThunk32^.Addr);
         end
         else
-          FoundProc := Pointer(ImportEntry32^.Function_) = FromProc;
+        {$ENDIF CPU32}
+          FoundProc := Pointer(ImportEntry^.Function_) = FromProc;
         if FoundProc then
-          Result := WriteProtectedMemory(@ImportEntry32^.Function_, @ToProc, SizeOf(ToProc), WrittenBytes);
-        Inc(ImportEntry32);
+          Result := WriteProtectedMemory(@ImportEntry^.Function_, @ToProc, SizeOf(ToProc), WrittenBytes);
+        Inc(ImportEntry);
       end;
-      {$ENDIF CPU32}
-      {$IFDEF CPU64}
-      ImportEntry64 := PImageThunkData64(TJclAddr(Base) + ImportDesc^.FirstThunk);
-      while ImportEntry64^.Function_ <> 0 do
-      begin
-        FoundProc := Pointer(ImportEntry64^.Function_) = FromProc;
-        if FoundProc then
-          Result := WriteProtectedMemory(@ImportEntry64^.Function_, @ToProc, SizeOf(ToProc), WrittenBytes);
-        Inc(ImportEntry64);
-      end;
-      {$ENDIF CPU64}
     end;
     Inc(ImportDesc);
   end;
@@ -6892,7 +6889,7 @@ begin
   if Assigned(UndecorateSymbolNameW) then
   begin
     SetLength(WideBuffer, BufferSize);
-    Res := UnDecorateSymbolNameW(PWideChar(WideString(DecoratedName)), PWideChar(WideBuffer), BufferSize, Flags);
+    Res := UnDecorateSymbolNameW(PWideChar({$IFNDEF UNICODE}WideString{$ENDIF}(DecoratedName)), PWideChar(WideBuffer), BufferSize, Flags);
     if Res > 0 then
     begin
       StrResetLength(WideBuffer);
@@ -6912,6 +6909,10 @@ begin
       Result := True;
     end;
   end;
+
+  // For some functions UnDecorateSymbolName returns 'long'
+  if Result and (UnMangled = 'long') then
+    UnMangled := DecoratedName;
 end;
 
 function PeUnmangleName(const Name: string; out Unmangled: string): TJclPeUmResult;

@@ -251,7 +251,8 @@ type
    (wvUnknown, wvWin95, wvWin95OSR2, wvWin98, wvWin98SE, wvWinME,
     wvWinNT31, wvWinNT35, wvWinNT351, wvWinNT4, wvWin2000, wvWinXP,
     wvWin2003, wvWinXP64, wvWin2003R2, wvWinVista, wvWinServer2008,
-    wvWin7, wvWinServer2008R2, wvWin8, wvWin8RT, wvWinServer2012, wvWin81, wvWin81RT, wvWinServer2012R2);
+    wvWin7, wvWinServer2008R2, wvWin8, wvWin8RT, wvWinServer2012,
+    wvWin81, wvWin81RT, wvWinServer2012R2, wvWin10, wvWinServer2016);
   TWindowsEdition =
    (weUnknown, weWinXPHome, weWinXPPro, weWinXPHomeN, weWinXPProN, weWinXPHomeK,
     weWinXPProK, weWinXPHomeKN, weWinXPProKN, weWinXPStarter, weWinXPMediaCenter,
@@ -259,7 +260,9 @@ type
     weWinVistaHomePremium, weWinVistaBusiness, weWinVistaBusinessN,
     weWinVistaEnterprise, weWinVistaUltimate, weWin7Starter, weWin7HomeBasic,
     weWin7HomePremium, weWin7Professional, weWin7Enterprise, weWin7Ultimate,
-    weWin8, weWin8Pro, weWin8Enterprise, weWin8RT, weWin81, weWin81Pro, weWin81Enterprise, weWin81RT);
+    weWin8, weWin8Pro, weWin8Enterprise, weWin8RT, weWin81, weWin81Pro,
+    weWin81Enterprise, weWin81RT, weWin10, weWin10Home, weWin10Pro,
+    weWin10Enterprise, weWin10Education);
   TNtProductType =
    (ptUnknown, ptWorkStation, ptServer, ptAdvancedServer,
     ptPersonal, ptProfessional, ptDatacenterServer, ptEnterprise, ptWebEdition);
@@ -297,6 +300,8 @@ var
   IsWin81: Boolean = False;
   IsWin81RT: Boolean = False;
   IsWinServer2012R2: Boolean = False;
+  IsWin10: Boolean = False;
+  IsWinServer2016: Boolean = False;
 
 const
   PROCESSOR_ARCHITECTURE_INTEL = 0;
@@ -316,6 +321,9 @@ function GetWindowsEditionString: string;
 function GetWindowsProductString: string;
 function NtProductTypeString: string;
 function GetWindowsBuildNumber: Integer;
+function GetWindowsMajorVersionNumber: Integer;
+function GetWindowsMinorVersionNumber: Integer;
+function GetWindowsVersionNumber: string;
 function GetWindowsServicePackVersion: Integer;
 function GetWindowsServicePackVersionString: string;
 function GetOpenGLVersion(const Win: THandle; out Version, Vendor: AnsiString): Boolean;
@@ -332,6 +340,9 @@ function GetOSVersionString: string;
 function GetMacAddresses(const Machine: string; const Addresses: TStrings): Integer;
 {$ENDIF MSWINDOWS}
 function ReadTimeStampCounter: Int64;
+{$IFDEF WIN64}
+{$EXTERNALSYM ReadTimeStampCounter}
+{$ENDIF WIN64}
 
 type
   TTLBInformation = (tiEntries, tiAssociativity);
@@ -3253,11 +3264,12 @@ var
   TrimmedWin32CSDVersion: string;
   SystemInfo: TSystemInfo;
   OSVersionInfoEx: TOSVersionInfoEx;
-  Win32MinorVersionEx: integer;
+  Win32MajorVersionEx, Win32MinorVersionEx: integer;
   ProductName: string;
 const
   SM_SERVERR2 = 89;
 begin
+  Win32MajorVersionEx := -1;
   Result := wvUnknown;
   TrimmedWin32CSDVersion := Trim(Win32CSDVersion);
   case Win32Platform of
@@ -3318,15 +3330,32 @@ begin
           end;
         6:
         begin
-          Win32MinorVersionEx := Win32MinorVersion;
+          // Starting with Windows 8.1, the GetVersion(Ex) API is deprecated and will detect the
+          // application as Windows 8 (kernel version 6.2) until an application manifest is included
+          // See https://msdn.microsoft.com/en-us/library/windows/desktop/dn302074.aspx
 
-          // Workaround to differentiate Windows 8.1 and Windows Server 2012 R2 from Windows 8 and Windows Server 2012
-          if Win32MinorVersionEx = 2 then
+          if Win32MinorVersion = 2 then
           begin
             ProductName := RegReadStringDef(HKEY_LOCAL_MACHINE, 'SOFTWARE\Microsoft\Windows NT\CurrentVersion', 'ProductName', '');
             if (pos(RsOSVersionWin81, ProductName) = 1) or (pos(RsOSVersionWinServer2012R2, ProductName) = 1) then
-              Win32MinorVersionEx := 3;
-          end;
+              Win32MinorVersionEx := 3 // Windows 8.1 and Windows Server 2012R2
+            else
+            if (pos(RsOSVersionWin8, ProductName) = 1) or (pos(RsOSVersionWinServer2012, ProductName) = 1) then
+              Win32MinorVersionEx := 2 // Windows 8 and Windows Server 2012
+            else
+            begin
+              Win32MajorVersionEx := GetWindowsMajorVersionNumber;
+              if Win32MajorVersionEx = 6 then
+                 Win32MinorVersionEx := 4 // Windows 10 (builds < 9926) and Windows Server 2016 (builds < 10074)
+              else
+              if Win32MajorVersionEx = 10 then
+                 Win32MinorVersionEx := -1 // Windows 10 (builds >= 9926) and Windows Server 2016 (builds >= 10074), set to -1 to escape case block
+              else
+                 Win32MinorVersionEx := Win32MinorVersion;
+            end;
+          end
+          else
+            Win32MinorVersionEx := Win32MinorVersion;
 
           case Win32MinorVersionEx of
             0:
@@ -3365,10 +3394,44 @@ begin
                 else
                   Result := wvWinServer2012R2;
               end;
+            4:
+              begin
+                // Windows 10 (builds < 9926) and Windows Server 2016 (builds < 10074)
+                OSVersionInfoEx.dwOSVersionInfoSize := SizeOf(OSVersionInfoEx);
+                if GetVersionEx(OSVersionInfoEx) and (OSVersionInfoEx.wProductType = VER_NT_WORKSTATION) then
+                  Result := wvWin10
+                else
+                  Result := wvWinServer2016;
+              end;
+          end;
         end;
-        end;
+        10:
+           Win32MajorVersionEx := Win32MajorVersion;
       end;
   end;
+
+  // This part will only be hit with Windows 10 and Windows Server 2016 (and newer) where an application manifest is not included
+  if (Win32MajorVersionEx >= 10) then
+  begin
+    case Win32MajorVersionEx of
+      10:
+      begin
+        Win32MinorVersionEx := GetWindowsMinorVersionNumber;
+        case Win32MinorVersionEx of
+          0:
+            begin
+              // Windows 10 (builds >= 9926) and Windows Server 2016 (builds >= 10074)
+              OSVersionInfoEx.dwOSVersionInfoSize := SizeOf(OSVersionInfoEx);
+              if GetVersionEx(OSVersionInfoEx) and (OSVersionInfoEx.wProductType = VER_NT_WORKSTATION) then
+                Result := wvWin10
+              else
+                Result := wvWinServer2016;
+            end;
+        end;
+      end;
+    end;
+  end;
+
 end;
 
 function GetWindowsEdition: TWindowsEdition;
@@ -3473,7 +3536,7 @@ begin
   if Pos('Windows 8.1', Edition) = 1 then
   begin
    // Windows 8.1 Editions
-   if pos('Pro', Edition) > 0 then
+   if Pos('Pro', Edition) > 0 then
       Result := weWin81Pro
    else
    if Pos('Enterprise', Edition) > 0 then
@@ -3498,7 +3561,26 @@ begin
     Result := weWin81RT
   else
   if Pos('Windows RT', Edition) = 1 then
-    Result := weWin8RT;
+    Result := weWin8RT
+  else
+  if Pos('Windows 10', Edition) = 1 then
+  begin
+   // Windows 10 Editions
+   if Pos('Home', Edition) > 0 then
+      Result := weWin10Home
+   else
+   if Pos('Pro', Edition) > 0 then
+      Result := weWin10Pro
+   else
+   if Pos('Enterprise', Edition) > 0 then
+      Result := weWin10Enterprise
+   else
+   if Pos('Education', Edition) > 0 then
+      Result := weWin10Education
+   else
+      Result := weWin10;
+  end
+
 end;
 
 function NtProductType: TNtProductType;
@@ -3572,11 +3654,11 @@ begin
     end;
   end
   else
-  if JclCheckWinVersion(5, 1) then // WinXP or newer
+  if JclCheckWinVersion(5, 1) then // Windows XP or newer
   begin
     if GetVersionEx(OSVersionInfo) then
     begin
-      //if IsWinXP or IsWinVista or IsWin7 or IsWin8 or IsWin81 then
+      //if IsWinXP or IsWinVista or IsWin7 or IsWin8 or IsWin81 or IsWin10 then
       if OSVersionInfo.wProductType = VER_NT_WORKSTATION then // workstation
       begin
         if (OSVersionInfo.wSuiteMask and VER_SUITE_PERSONAL) = VER_SUITE_PERSONAL then
@@ -3663,6 +3745,10 @@ begin
       Result := LoadResString(@RsOSVersionWin81RT);
     wvWinServer2012R2:
       Result := LoadResString(@RsOSVersionWinServer2012R2);
+    wvWin10:
+      Result := LoadResString(@RsOSVersionWin10);
+    wvWinServer2016:
+      Result := LoadResString(@RsOSVersionWinServer2016);
   else
     Result := '';
   end;
@@ -3733,6 +3819,14 @@ begin
       Result := LoadResString(@RsEditionWin81Enterprise);
     weWin81RT:
       Result := LoadResString(@RsEditionWin81RT);
+    weWin10Home:
+      Result := LoadResString(@RsEditionWin10Home);
+    weWin10Pro:
+      Result := LoadResString(@RsEditionWin10Pro);
+    weWin10Enterprise:
+      Result := LoadResString(@RsEditionWin10Enterprise);
+    weWin10Education:
+      Result := LoadResString(@RsEditionWin10Education);
   else
     Result := '';
   end;
@@ -3771,11 +3865,53 @@ end;
 
 function GetWindowsBuildNumber: Integer;
 begin
-  // Workaround to differentiate Windows 8.1 and Windows Server 2012 R2 from Windows 8 and Windows Server 2012
+  // Starting with Windows 8.1, the GetVersion(Ex) API is deprecated and will detect the
+  // application as Windows 8 (kernel version 6.2) until an application manifest is included
+  // See https://msdn.microsoft.com/en-us/library/windows/desktop/dn302074.aspx
   if (Win32MajorVersion = 6) and (Win32MinorVersion = 2) then
     Result := strToInt(RegReadStringDef(HKEY_LOCAL_MACHINE, 'SOFTWARE\Microsoft\Windows NT\CurrentVersion', 'CurrentBuildNumber', intToStr(Win32BuildNumber)))
   else
     Result := Win32BuildNumber;
+end;
+
+function GetWindowsMajorVersionNumber: Integer;
+begin
+  // Starting with Windows 8.1, the GetVersion(Ex) API is deprecated and will detect the
+  // application as Windows 8 (kernel version 6.2) until an application manifest is included
+  // See https://msdn.microsoft.com/en-us/library/windows/desktop/dn302074.aspx
+  if (Win32MajorVersion = 6) and (Win32MinorVersion = 2) then
+  begin
+    // CurrentMajorVersionNumber present in registry starting with Windows 10
+    // If CurrentMajorVersionNumber not present in registry then use CurrentVersion
+    Result := RegReadIntegerDef(HKEY_LOCAL_MACHINE, 'SOFTWARE\Microsoft\Windows NT\CurrentVersion', 'CurrentMajorVersionNumber', -1);
+    if Result = -1 then
+      Result := strToInt(StrBefore('.', RegReadStringDef(HKEY_LOCAL_MACHINE, 'SOFTWARE\Microsoft\Windows NT\CurrentVersion', 'CurrentVersion', intToStr(Win32MajorVersion) + '.' + intToStr(Win32MinorVersion))));
+  end
+  else
+    Result := Win32MajorVersion;
+end;
+
+function GetWindowsMinorVersionNumber: Integer;
+begin
+  // Starting with Windows 8.1, the GetVersion(Ex) API is deprecated and will detect the
+  // application as Windows 8 (kernel version 6.2) until an application manifest is included
+  // See https://msdn.microsoft.com/en-us/library/windows/desktop/dn302074.aspx
+  if (Win32MajorVersion = 6) and (Win32MinorVersion = 2) then
+  begin
+    // CurrentMinorVersionNumber present in registry starting with Windows 10
+    // If CurrentMinorVersionNumber not present then use CurrentVersion
+    Result := RegReadIntegerDef(HKEY_LOCAL_MACHINE, 'SOFTWARE\Microsoft\Windows NT\CurrentVersion', 'CurrentMinorVersionNumber', -1);
+    if Result = -1 then
+      Result := strToInt(StrAfter('.', RegReadStringDef(HKEY_LOCAL_MACHINE, 'SOFTWARE\Microsoft\Windows NT\CurrentVersion', 'CurrentVersion', intToStr(Win32MajorVersion) + '.' + intToStr(Win32MinorVersion))));
+  end
+  else
+    Result := Win32MajorVersion;
+end;
+
+function GetWindowsVersionNumber: string;
+begin
+  // Returns version number as MajorVersionNumber.MinorVersionNumber (string type)
+  Result := intToStr(GetWindowsMajorVersionNumber) + '.' + intToStr(GetWindowsMinorVersionNumber);
 end;
 
 function GetWindowsServicePackVersion: Integer;
@@ -4022,7 +4158,7 @@ begin
 
   if LibraryHandle <> 0 then
   begin
-    _GetNativeSystemInfo := GetProcAddress(LibraryHandle,'GetNativeSystemInfo');
+    _GetNativeSystemInfo := GetProcAddress(LibraryHandle, PAnsiChar('GetNativeSystemInfo'));
     if Assigned(_GetNativeSystemInfo) then
     begin
       _GetNativeSystemInfo(SystemInfo);
@@ -4138,7 +4274,7 @@ function GetMacAddresses(const Machine: string; const Addresses: TStrings): Inte
       Result := NetBiosLib <> 0;
       if Result then
       begin
-        @_NetBios := GetProcAddress(NetBiosLib, PChar('Netbios'));
+        @_NetBios := GetProcAddress(NetBiosLib, PAnsiChar('Netbios'));
         Result := @_NetBios <> nil;
         if not Result then
           ExitNetbios;
@@ -4499,7 +4635,8 @@ function GetOSEnabledFeatures: TOSEnabledFeatures;
 var
   EnabledFeatures: Int64;
 begin
-  if IsWin7 or IsWinServer2008 or IsWinServer2008R2 or IsWin8 or IsWinServer2012 or IsWin81 or IsWinServer2012R2 then
+  // Windows 7 or newer
+  if JclCheckWinVersion(6, 1) then
   begin
     EnabledFeatures := $FFFFFFFF;
     EnabledFeatures := EnabledFeatures shl 32;
@@ -5722,7 +5859,7 @@ function IsSystemResourcesMeterPresent: Boolean;
     ResmeterLibHandle := SafeLoadLibrary('rsrc32.dll', SEM_FAILCRITICALERRORS);
     if ResmeterLibHandle <> 0 then
     begin
-      @MyGetFreeSystemResources := GetProcAddress(ResmeterLibHandle, '_MyGetFreeSystemResources32@4');
+      @MyGetFreeSystemResources := GetProcAddress(ResmeterLibHandle, PAnsiChar('_MyGetFreeSystemResources32@4'));
       if not Assigned(MyGetFreeSystemResources) then
         UnloadSystemResourcesMeterLib;
     end;
@@ -5917,6 +6054,10 @@ begin
       IsWin81RT := True;
     wvWinServer2012R2:
       IsWinServer2012R2 := True;
+    wvWin10:
+      IsWin10 := True;
+    wvWinServer2016:
+      IsWinServer2016 := True;
   end;
 end;
 

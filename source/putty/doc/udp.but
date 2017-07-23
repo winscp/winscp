@@ -1,0 +1,389 @@
+\# This file is so named for tradition's sake: it contains what we
+\# always used to refer to, before they were written down, as
+\# PuTTY's `unwritten design principles'. It has nothing to do with
+\# the User Datagram Protocol.
+
+\A{udp} PuTTY hacking guide
+
+This appendix lists a selection of the design principles applying to
+the PuTTY source code. If you are planning to send code
+contributions, you should read this first.
+
+\H{udp-portability} Cross-OS portability
+
+Despite Windows being its main area of fame, PuTTY is no longer a
+Windows-only application suite. It has a working Unix port; a Mac
+port is in progress; more ports may or may not happen at a later
+date.
+
+Therefore, embedding Windows-specific code in core modules such as
+\cw{ssh.c} is not acceptable. We went to great lengths to \e{remove}
+all the Windows-specific stuff from our core modules, and to shift
+it out into Windows-specific modules. Adding large amounts of
+Windows-specific stuff in parts of the code that should be portable
+is almost guaranteed to make us reject a contribution.
+
+The PuTTY source base is divided into platform-specific modules and
+platform-generic modules. The Unix-specific modules are all in the
+\c{unix} subdirectory; the Mac-specific modules are in the \c{mac}
+subdirectory; the Windows-specific modules are in the \c{windows}
+subdirectory.
+
+All the modules in the main source directory - notably \e{all} of
+the code for the various back ends - are platform-generic. We want
+to keep them that way.
+
+This also means you should stick to what you are guaranteed by
+ANSI/ISO C (that is, the original C89/C90 standard, not C99). Try
+not to make assumptions about the precise size of basic types such
+as \c{int} and \c{long int}; don't use pointer casts to do
+endianness-dependent operations, and so on.
+
+(There are one or two aspects of ANSI C portability which we
+\e{don't} care about. In particular, we expect PuTTY to be compiled
+on 32-bit architectures \e{or bigger}; so it's safe to assume that
+\c{int} is at least 32 bits wide, not just the 16 you are guaranteed
+by ANSI C.  Similarly, we assume that the execution character
+encoding is a superset of the printable characters of ASCII, though
+we don't assume the numeric values of control characters,
+particularly \cw{'\\n'} and \cw{'\\r'}. Also, the X forwarding code
+assumes that \c{time_t} has the Unix format and semantics, i.e. an
+integer giving the number of seconds since 1970.)
+
+\H{udp-multi-backend} Multiple backends treated equally
+
+PuTTY is not an SSH client with some other stuff tacked on the side.
+PuTTY is a generic, multiple-backend, remote VT-terminal client
+which happens to support one backend which is larger, more popular
+and more useful than the rest. Any extra feature which can possibly
+be general across all backends should be so: localising features
+unnecessarily into the SSH back end is a design error. (For example,
+we had several code submissions for proxy support which worked by
+hacking \cw{ssh.c}. Clearly this is completely wrong: the
+\cw{network.h} abstraction is the place to put it, so that it will
+apply to all back ends equally, and indeed we eventually put it
+there after another contributor sent a better patch.)
+
+The rest of PuTTY should try to avoid knowing anything about
+specific back ends if at all possible. To support a feature which is
+only available in one network protocol, for example, the back end
+interface should be extended in a general manner such that \e{any}
+back end which is able to provide that feature can do so. If it so
+happens that only one back end actually does, that's just the way it
+is, but it shouldn't be relied upon by any code.
+
+\H{udp-globals} Multiple sessions per process on some platforms
+
+Some ports of PuTTY - notably the in-progress Mac port - are
+constrained by the operating system to run as a single process
+potentially managing multiple sessions.
+
+Therefore, the platform-independent parts of PuTTY never use global
+variables to store per-session data. The global variables that do
+exist are tolerated because they are not specific to a particular
+login session: \c{flags} defines properties that are expected to
+apply equally to \e{all} the sessions run by a single PuTTY process,
+the random number state in \cw{sshrand.c} and the timer list in
+\cw{timing.c} serve all sessions equally, and so on. But most data
+is specific to a particular network session, and is therefore stored
+in dynamically allocated data structures, and pointers to these
+structures are passed around between functions.
+
+Platform-specific code can reverse this decision if it likes. The
+Windows code, for historical reasons, stores most of its data as
+global variables. That's OK, because \e{on Windows} we know there is
+only one session per PuTTY process, so it's safe to do that. But
+changes to the platform-independent code should avoid introducing
+global variables, unless they are genuinely cross-session.
+
+\H{udp-pure-c} C, not C++
+
+PuTTY is written entirely in C, not in C++.
+
+We have made \e{some} effort to make it easy to compile our code
+using a C++ compiler: notably, our \c{snew}, \c{snewn} and
+\c{sresize} macros explicitly cast the return values of \cw{malloc}
+and \cw{realloc} to the target type. (This has type checking
+advantages even in C: it means you never accidentally allocate the
+wrong size piece of memory for the pointer type you're assigning it
+to. C++ friendliness is really a side benefit.)
+
+We want PuTTY to continue being pure C, at least in the
+platform-independent parts and the currently existing ports. Patches
+which switch the Makefiles to compile it as C++ and start using
+classes will not be accepted. Also, in particular, we disapprove of
+\cw{//} comments, at least for the moment. (Perhaps once C99 becomes
+genuinely widespread we might be more lenient.)
+
+The one exception: a port to a new platform may use languages other
+than C if they are necessary to code on that platform. If your
+favourite PDA has a GUI with a C++ API, then there's no way you can
+do a port of PuTTY without using C++, so go ahead and use it. But
+keep the C++ restricted to that platform's subdirectory; if your
+changes force the Unix or Windows ports to be compiled as C++, they
+will be unacceptable to us.
+
+\H{udp-security} Security-conscious coding
+
+PuTTY is a network application and a security application. Assume
+your code will end up being fed deliberately malicious data by
+attackers, and try to code in a way that makes it unlikely to be a
+security risk.
+
+In particular, try not to use fixed-size buffers for variable-size
+data such as strings received from the network (or even the user).
+We provide functions such as \cw{dupcat} and \cw{dupprintf}, which
+dynamically allocate buffers of the right size for the string they
+construct. Use these wherever possible.
+
+\H{udp-multi-compiler} Independence of specific compiler
+
+Windows PuTTY can currently be compiled with any of four Windows
+compilers: MS Visual C, Borland's freely downloadable C compiler,
+the Cygwin / \cw{mingw32} GNU tools, and \cw{lcc-win32}.
+
+This is a really useful property of PuTTY, because it means people
+who want to contribute to the coding don't depend on having a
+specific compiler; so they don't have to fork out money for MSVC if
+they don't already have it, but on the other hand if they \e{do}
+have it they also don't have to spend effort installing \cw{gcc}
+alongside it. They can use whichever compiler they happen to have
+available, or install whichever is cheapest and easiest if they
+don't have one.
+
+Therefore, we don't want PuTTY to start depending on which compiler
+you're using. Using GNU extensions to the C language, for example,
+would ruin this useful property (not that anyone's ever tried it!);
+and more realistically, depending on an MS-specific library function
+supplied by the MSVC C library (\cw{_snprintf}, for example) is a
+mistake, because that function won't be available under the other
+compilers. Any function supplied in an official Windows DLL as part
+of the Windows API is fine, and anything defined in the C library
+standard is also fine, because those should be available
+irrespective of compilation environment. But things in between,
+available as non-standard library and language extensions in only
+one compiler, are disallowed.
+
+(\cw{_snprintf} in particular should be unnecessary, since we
+provide \cw{dupprintf}; see \k{udp-security}.)
+
+Compiler independence should apply on all platforms, of course, not
+just on Windows.
+
+\H{udp-small} Small code size
+
+PuTTY is tiny, compared to many other Windows applications. And it's
+easy to install: it depends on no DLLs, no other applications, no
+service packs or system upgrades. It's just one executable. You
+install that executable wherever you want to, and run it.
+
+We want to keep both these properties - the small size, and the ease
+of installation - if at all possible. So code contributions that
+depend critically on external DLLs, or that add a huge amount to the
+code size for a feature which is only useful to a small minority of
+users, are likely to be thrown out immediately.
+
+We do vaguely intend to introduce a DLL plugin interface for PuTTY,
+whereby seriously large extra features can be implemented in plugin
+modules. The important thing, though, is that those DLLs will be
+\e{optional}; if PuTTY can't find them on startup, it should run
+perfectly happily and just won't provide those particular features.
+A full installation of PuTTY might one day contain ten or twenty
+little DLL plugins, which would cut down a little on the ease of
+installation - but if you really needed ease of installation you
+\e{could} still just install the one PuTTY binary, or just the DLLs
+you really needed, and it would still work fine.
+
+Depending on \e{external} DLLs is something we'd like to avoid if at
+all possible (though for some purposes, such as complex SSH
+authentication mechanisms, it may be unavoidable). If it can't be
+avoided, the important thing is to follow the same principle of
+graceful degradation: if a DLL can't be found, then PuTTY should run
+happily and just not supply the feature that depended on it.
+
+\H{udp-single-threaded} Single-threaded code
+
+PuTTY and its supporting tools, or at least the vast majority of
+them, run in only one OS thread.
+
+This means that if you're devising some piece of internal mechanism,
+there's no need to use locks to make sure it doesn't get called by
+two threads at once. The only way code can be called re-entrantly is
+by recursion.
+
+That said, most of Windows PuTTY's network handling is triggered off
+Windows messages requested by \cw{WSAAsyncSelect()}, so if you call
+\cw{MessageBox()} deep within some network event handling code you
+should be aware that you might be re-entered if a network event
+comes in and is passed on to our window procedure by the
+\cw{MessageBox()} message loop.
+
+Also, the front ends (in particular Windows Plink) can use multiple
+threads if they like. However, Windows Plink keeps \e{very} tight
+control of its auxiliary threads, and uses them pretty much
+exclusively as a form of \cw{select()}. Pretty much all the code
+outside \cw{windows/winplink.c} is \e{only} ever called from the one
+primary thread; the others just loop round blocking on file handles
+and send messages to the main thread when some real work needs
+doing. This is not considered a portability hazard because that bit
+of \cw{windows/winplink.c} will need rewriting on other platforms in
+any case.
+
+One important consequence of this: PuTTY has only one thread in
+which to do everything. That \q{everything} may include managing
+more than one login session (\k{udp-globals}), managing multiple
+data channels within an SSH session, responding to GUI events even
+when nothing is happening on the network, and responding to network
+requests from the server (such as repeat key exchange) even when the
+program is dealing with complex user interaction such as the
+re-configuration dialog box. This means that \e{almost none} of the
+PuTTY code can safely block.
+
+\H{udp-keystrokes} Keystrokes sent to the server wherever possible
+
+In almost all cases, PuTTY sends keystrokes to the server. Even
+weird keystrokes that you think should be hot keys controlling
+PuTTY. Even Alt-F4 or Alt-Space, for example. If a keystroke has a
+well-defined escape sequence that it could usefully be sending to
+the server, then it should do so, or at the very least it should be
+configurably able to do so.
+
+To unconditionally turn a key combination into a hot key to control
+PuTTY is almost always a design error. If a hot key is really truly
+required, then try to find a key combination for it which \e{isn't}
+already used in existing PuTTYs (either it sends nothing to the
+server, or it sends the same thing as some other combination). Even
+then, be prepared for the possibility that one day that key
+combination might end up being needed to send something to the
+server - so make sure that there's an alternative way to invoke
+whatever PuTTY feature it controls.
+
+\H{udp-640x480} 640\u00D7{x}480 friendliness in configuration panels
+
+There's a reason we have lots of tiny configuration panels instead
+of a few huge ones, and that reason is that not everyone has a
+1600\u00D7{x}1200 desktop. 640\u00D7{x}480 is still a viable
+resolution for running Windows (and indeed it's still the default if
+you start up in safe mode), so it's still a resolution we care
+about.
+
+Accordingly, the PuTTY configuration box, and the PuTTYgen control
+window, are deliberately kept just small enough to fit comfortably
+on a 640\u00D7{x}480 display. If you're adding controls to either of
+these boxes and you find yourself wanting to increase the size of
+the whole box, \e{don't}. Split it into more panels instead.
+
+\H{udp-makefiles-auto} Automatically generated \cw{Makefile}s
+
+PuTTY is intended to compile on multiple platforms, and with
+multiple compilers. It would be horrifying to try to maintain a
+single \cw{Makefile} which handled all possible situations, and just
+as painful to try to directly maintain a set of matching
+\cw{Makefile}s for each different compilation environment.
+
+Therefore, we have moved the problem up by one level. In the PuTTY
+source archive is a file called \c{Recipe}, which lists which source
+files combine to produce which binaries; and there is also a script
+called \cw{mkfiles.pl}, which reads \c{Recipe} and writes out the
+real \cw{Makefile}s. (The script also reads all the source files and
+analyses their dependencies on header files, so we get an extra
+benefit from doing it this way, which is that we can supply correct
+dependency information even in environments where it's difficult to
+set up an automated \c{make depend} phase.)
+
+You should \e{never} edit any of the PuTTY \cw{Makefile}s directly.
+They are not stored in our source repository at all. They are
+automatically generated by \cw{mkfiles.pl} from the file \c{Recipe}.
+
+If you need to add a new object file to a particular binary, the
+right thing to do is to edit \c{Recipe} and re-run \cw{mkfiles.pl}.
+This will cause the new object file to be added in every tool that
+requires it, on every platform where it matters, in every
+\cw{Makefile} to which it is relevant, \e{and} to get all the
+dependency data right.
+
+If you send us a patch that modifies one of the \cw{Makefile}s, you
+just waste our time, because we will have to convert it into a
+change to \c{Recipe}. If you send us a patch that modifies \e{all}
+of the \cw{Makefile}s, you will have wasted a lot of \e{your} time
+as well!
+
+(There is a comment at the top of every \cw{Makefile} in the PuTTY
+source archive saying this, but many people don't seem to read it,
+so it's worth repeating here.)
+
+\H{udp-ssh-coroutines} Coroutines in \cw{ssh.c}
+
+Large parts of the code in \cw{ssh.c} are structured using a set of
+macros that implement (something close to) Donald Knuth's
+\q{coroutines} concept in C.
+
+Essentially, the purpose of these macros are to arrange that a
+function can call \cw{crReturn()} to return to its caller, and the
+next time it is called control will resume from just after that
+\cw{crReturn} statement.
+
+This means that any local (automatic) variables declared in such a
+function will be corrupted every time you call \cw{crReturn}. If you
+need a variable to persist for longer than that, you \e{must} make
+it a field in one of the persistent state structures: either the
+local state structures \c{s} or \c{st} in each function, or the
+backend-wide structure \c{ssh}.
+
+See
+\W{https://www.chiark.greenend.org.uk/~sgtatham/coroutines.html}\c{https://www.chiark.greenend.org.uk/~sgtatham/coroutines.html}
+for a more in-depth discussion of what these macros are for and how
+they work.
+
+\H{udp-compile-once} Single compilation of each source file
+
+The PuTTY build system for any given platform works on the following
+very simple model:
+
+\b Each source file is compiled precisely once, to produce a single
+object file.
+
+\b Each binary is created by linking together some combination of
+those object files.
+
+Therefore, if you need to introduce functionality to a particular
+module which is only available in some of the tool binaries (for
+example, a cryptographic proxy authentication mechanism which needs
+to be left out of PuTTYtel to maintain its usability in
+crypto-hostile jurisdictions), the \e{wrong} way to do it is by
+adding \cw{#ifdef}s in (say) \cw{proxy.c}. This would require
+separate compilation of \cw{proxy.c} for PuTTY and PuTTYtel, which
+means that the entire \cw{Makefile}-generation architecture (see
+\k{udp-makefiles-auto}) would have to be significantly redesigned.
+Unless you are prepared to do that redesign yourself, \e{and}
+guarantee that it will still port to any future platforms we might
+decide to run on, you should not attempt this!
+
+The \e{right} way to introduce a feature like this is to put the new
+code in a separate source file, and (if necessary) introduce a
+second new source file defining the same set of functions, but
+defining them as stubs which don't provide the feature. Then the
+module whose behaviour needs to vary (\cw{proxy.c} in this example)
+can call the functions defined in these two modules, and it will
+either provide the new feature or not provide it according to which
+of your new modules it is linked with.
+
+Of course, object files are never shared \e{between} platforms; so
+it is allowable to use \cw{#ifdef} to select between platforms. This
+happens in \cw{puttyps.h} (choosing which of the platform-specific
+include files to use), and also in \cw{misc.c} (the Windows-specific
+\q{Minefield} memory diagnostic system). It should be used
+sparingly, though, if at all.
+
+\H{udp-perfection} Do as we say, not as we do
+
+The current PuTTY code probably does not conform strictly to \e{all}
+of the principles listed above. There may be the occasional
+SSH-specific piece of code in what should be a backend-independent
+module, or the occasional dependence on a non-standard X library
+function under Unix.
+
+This should not be taken as a licence to go ahead and violate the
+rules. Where we violate them ourselves, we're not happy about it,
+and we would welcome patches that fix any existing problems. Please
+try to help us make our code better, not worse!

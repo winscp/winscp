@@ -1116,10 +1116,33 @@ begin
 
     //Draw the image at the center of (ARect.Left, ARect.Top, ARect.Left + FMaxWidth, ARect.Bottom)
     with Images.Items[Index] do begin
-      DrawRect.Left := ARect.Left + (FMaxWidth - PngImage.Width) div 2 + 2;
-      DrawRect.Top := ARect.Top + (ARect.Bottom - ARect.Top - PngImage.Height) div 2;
-      DrawRect.Right := DrawRect.Left + PngImage.Width;
-      DrawRect.Bottom := DrawRect.Top + PngImage.Height;
+      {$IF RTLVersion < 23 }
+      if (ARect.Right - ARect.Left) < PngImage.Height then begin
+        DrawRect.Left := ARect.Left + 2;
+        DrawRect.Top := ARect.Top;
+        DrawRect.Right := DrawRect.Left + Round(PngImage.Width * (ARect.Right - ARect.Left)/PngImage.Height);
+        DrawRect.Bottom := ARect.Bottom;
+      end
+      else begin
+        DrawRect.Left := ARect.Left + (FMaxWidth - PngImage.Width) div 2 + 2;
+        DrawRect.Top := ARect.Top + (ARect.Bottom - ARect.Top - PngImage.Height) div 2;
+        DrawRect.Right := DrawRect.Left + PngImage.Width;
+        DrawRect.Bottom := DrawRect.Top + PngImage.Height;
+      end;
+      {$ELSE}
+      if ARect.Height < PngImage.Height then begin
+        DrawRect.Left := ARect.Left + 2;
+        DrawRect.Top := ARect.Top;
+        DrawRect.Right := DrawRect.Left + Round(PngImage.Width * ARect.Height/PngImage.Height);
+        DrawRect.Bottom := ARect.Bottom;
+      end
+      else begin
+        DrawRect.Left := ARect.Left + (FMaxWidth - PngImage.Width) div 2 + 2;
+        DrawRect.Top := ARect.Top + (ARect.Bottom - ARect.Top - PngImage.Height) div 2;
+        DrawRect.Right := DrawRect.Left + PngImage.Width;
+        DrawRect.Bottom := DrawRect.Top + PngImage.Height;
+      end;
+      {$IFEND}
       PngImage.Draw(lbxImages.Canvas, DrawRect);
     end;
 
@@ -1189,6 +1212,8 @@ begin
   Temp := lbxImages.Canvas.TextHeight('0') + 4;
   if Temp > Height then
     Height := Temp;
+  if Height > 255 then
+    Height := 255;
 end;
 
 procedure TPngImageListEditorDlg.lbxImagesMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);

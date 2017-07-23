@@ -198,12 +198,11 @@ static const unsigned long crc32_table[256] = {
 #ifdef GENPROGRAM
 int main(void)
 {
-    unsigned long crcword;
     int i;
 
     crc32_init();
     for (i = 0; i < 256; i++) {
-	printf("%s0x%08XL%s",
+	printf("%s0x%08lXL%s",
 	       (i % 4 == 0 ? "    " : " "),
 	       crc32_table[i],
 	       (i % 4 == 3 ? (i == 255 ? "\n" : ",\n") : ","));

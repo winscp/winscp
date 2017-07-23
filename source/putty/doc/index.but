@@ -1,0 +1,875 @@
+\IM{Unix version} Unix version of PuTTY tools
+\IM{Unix version} Linux version of PuTTY tools
+
+\IM{Unix} Unix
+\IM{Unix} Linux
+
+\IM{Command Prompt}{command prompt window}{MS-DOS Prompt}{console window} Command Prompt
+\IM{Command Prompt}{command prompt window}{MS-DOS Prompt}{console window} MS-DOS Prompt
+\IM{Command Prompt}{command prompt window}{MS-DOS Prompt}{console window} console window
+
+\IM{spoof}{spoofed}{spoofing} spoofing
+
+\IM{verifying the host key} verifying the host key
+\IM{verifying the host key} host key, verifying
+
+\IM{trusting host keys} trusting host keys
+\IM{trusting host keys} host keys, trusting
+
+\IM{host key fingerprint} fingerprint, of SSH host key
+\IM{host key fingerprint} host key fingerprint (SSH)
+\IM{host key fingerprint} SSH host key fingerprint
+
+\IM{manually configuring host keys} manually configuring host keys
+\IM{manually configuring host keys} overriding host keys
+\IM{manually configuring host keys} host keys, manually configuring
+
+\IM{starting a session} starting a session
+\IM{starting a session} session, starting
+
+\IM{commands on the server}{remote command} commands on the server
+\IM{commands on the server}{remote command} remote commands
+\IM{commands on the server}{remote command} server, commands on
+
+\IM{mistyping a password} mistyping a password
+\IM{mistyping a password} password, mistyping
+
+\IM{different usernames}{changes of username} different user names
+\IM{different usernames}{changes of username} changing user names
+\IM{different usernames}{changes of username} user names, different
+\IM{different usernames}{changes of username} login names, different
+\IM{different usernames}{changes of username} account names, different
+
+\IM{differences between SSH, Telnet and Rlogin} differences between
+SSH, Telnet and Rlogin
+\IM{differences between SSH, Telnet and Rlogin} protocols,
+differences between
+\IM{differences between SSH, Telnet and Rlogin} SSH, differences
+from Telnet and Rlogin
+\IM{differences between SSH, Telnet and Rlogin} Telnet, differences
+from SSH and Rlogin
+\IM{differences between SSH, Telnet and Rlogin} Rlogin, differences
+from SSH and Telnet
+\IM{differences between SSH, Telnet and Rlogin} selecting a protocol
+\IM{differences between SSH, Telnet and Rlogin} choosing a protocol
+
+\IM{MUD}{MUDs} MUDs
+
+\IM{talker}{talker systems} talker systems
+
+\IM{security hazard}{security risk} security hazard
+
+\IM{SSH-2}{SSH protocol version 2} SSH-2
+
+\IM{terminal window}{PuTTY window} terminal window
+\IM{terminal window}{PuTTY window} PuTTY terminal window
+\IM{terminal window}{PuTTY window} window, terminal
+
+\IM{copy and paste} copy and paste
+\IM{copy and paste} cut and paste
+\IM{copy and paste} paste, copy and
+
+\IM{three-button mouse} three-button mouse
+\IM{three-button mouse} mouse, three-button
+
+\IM{left mouse button}{left button} left mouse button
+\IM{middle mouse button}{middle button} middle mouse button
+\IM{right mouse button}{right button} right mouse button
+
+\IM{selecting words}{word-by-word selection} selecting whole words
+\IM{selecting words}{word-by-word selection} words, selecting
+
+\IM{selecting lines} selecting whole lines
+\IM{selecting lines} lines, selecting
+
+\IM{rectangular selection} rectangular selection
+\IM{rectangular selection} selection, rectangular
+
+\IM{adjusting a selection} adjusting a selection
+\IM{adjusting a selection} extending a selection
+\IM{adjusting a selection} selection, adjusting
+
+\IM{right mouse button, with Ctrl} right mouse button, with Ctrl
+\IM{right mouse button, with Ctrl} Ctrl, with right mouse button
+
+\IM{system menu} system menu
+\IM{system menu} menu, system
+\IM{system menu} window menu
+
+\IM{context menu} context menu
+\IM{context menu} menu, context
+\IM{context menu} right mouse button menu
+
+\IM{Event Log} Event Log
+\IM{Event Log} PuTTY Event Log
+\IM{Event Log} Log, Event
+
+\IM{Telnet special commands} Telnet special commands
+\IM{Telnet special commands} special commands, in Telnet
+
+\IM{SSH special commands} SSH special commands
+\IM{SSH special commands} special commands, in SSH
+
+\IM{Repeat key exchange, SSH special command} Repeat key exchange, SSH special command
+\IM{Repeat key exchange, SSH special command} key exchange, forcing repeat
+\IM{Repeat key exchange, SSH special command} SSH key exchange, forcing repeat
+
+\IM{accented characters} accented characters
+\IM{accented characters} characters, accented
+
+\IM{line-drawing characters} line-drawing characters
+\IM{line-drawing characters} box-drawing characters
+\IM{line-drawing characters} characters, line-drawing
+\IM{line-drawing characters} ANSI graphics
+
+\IM{port forwarding}{port forwardings} port forwarding in SSH
+\IM{port forwarding}{port forwardings} SSH port forwarding
+\IM{port forwarding}{port forwardings} forwarding ports in SSH
+\IM{port forwarding}{port forwardings} tunnelling using SSH
+\IM{port forwarding}{port forwardings} SSH tunnelling
+
+\IM{port forwarding, changing mid-session} port forwarding in SSH, changing mid-session
+\IM{port forwarding, changing mid-session} SSH port forwarding, changing mid-session
+\IM{port forwarding, changing mid-session} forwarding ports in SSH, changing mid-session
+\IM{port forwarding, changing mid-session} tunnelling using SSH, changing mid-session
+\IM{port forwarding, changing mid-session} SSH tunnelling, changing mid-session
+
+\IM{local port forwarding} local-to-remote port forwarding
+\IM{remote port forwarding} remote-to-local port forwarding
+
+\IM{dynamic port forwarding} dynamic port forwarding
+\IM{dynamic port forwarding} SOCKS port forwarding
+
+\IM{debugging Internet protocols} debugging Internet protocols
+\IM{debugging Internet protocols} Internet protocols, debugging
+\IM{debugging Internet protocols} protocols, debugging
+
+\IM{Internet protocol version} Internet Protocol version
+\IM{Internet protocol version} version, of Internet Protocol
+
+\IM{raw TCP connections} raw TCP connections
+\IM{raw TCP connections} TCP connections, raw
+
+\IM{command-line arguments} command-line arguments
+\IM{command-line arguments} arguments, command-line
+\IM{command-line arguments} options, command-line
+\IM{command-line arguments} switches, command-line
+
+\IM{Windows shortcut} Windows shortcut
+\IM{Windows shortcut} shortcut, Windows
+
+\IM{telnet URLs} Telnet URLs
+\IM{telnet URLs} URLs, Telnet
+
+\IM{saved sessions, loading from command line} saved sessions,
+loading from command line
+\IM{saved sessions, loading from command line} loading saved
+sessions from command line
+\IM{saved sessions, loading from command line} command line, loading
+saved sessions from
+
+\IM{putty @sessionname} \c{putty @sessionname}
+\IM{putty @sessionname} \c{@sessionname} command-line argument
+
+\IM{protocol selection} protocol selection
+\IM{protocol selection} selecting a protocol
+\IM{protocol selection} choosing a protocol
+
+\IM{login name}{username} login name
+\IM{login name}{username} user name
+\IM{login name}{username} account name
+
+\IM{reading commands from a file} reading commands from a file
+\IM{reading commands from a file} commands, reading from a file
+
+\IM{agent forwarding} agent forwarding
+\IM{agent forwarding} authentication agent forwarding
+\IM{agent forwarding} SSH agent forwarding
+\IM{agent forwarding} forwarding, SSH agent
+
+\IM{X11 forwarding}{forwarding of X11} X11 forwarding
+\IM{X11 forwarding}{forwarding of X11} SSH X11 forwarding
+\IM{X11 forwarding}{forwarding of X11} forwarding, of X11
+
+\IM{X11 authentication} X11 authentication
+\IM{X11 authentication} authentication, X11
+
+\IM{pseudo-terminal allocation} pseudo-terminal allocation
+\IM{pseudo-terminal allocation} pty allocation
+\IM{pseudo-terminal allocation} allocation, of pseudo-terminal
+
+\IM{ERASE special character} \cw{ERASE}, special character
+\IM{ERASE special character} \cw{VERASE}, special character
+\IM{QUIT special character} \cw{QUIT}, special character
+\IM{QUIT special character} \cw{VQUIT}, special character
+
+\IM{-telnet} \c{-telnet} command-line option
+\IM{-raw} \c{-raw} command-line option
+\IM{-rlogin} \c{-rlogin} command-line option
+\IM{-ssh} \c{-ssh} command-line option
+\IM{-serial} \c{-serial} command-line option
+\IM{-cleanup} \c{-cleanup} command-line option
+\IM{-load} \c{-load} command-line option
+\IM{-v} \c{-v} command-line option
+\IM{-l} \c{-l} command-line option
+\IM{-L-upper} \c{-L} command-line option
+\IM{-R-upper} \c{-R} command-line option
+\IM{-D-upper} \c{-D} command-line option
+\IM{-m} \c{-m} command-line option
+\IM{-P-upper} \c{-P} command-line option
+\IM{-pw} \c{-pw} command-line option
+\IM{-A-upper} \c{-A} command-line option
+\IM{-a} \c{-a} command-line option
+\IM{-X-upper} \c{-X} command-line option
+\IM{-x} \c{-x} command-line option
+\IM{-T-upper} \c{-T} command-line option
+\IM{-t} \c{-t} command-line option
+\IM{-C-upper} \c{-C} command-line option
+\IM{-N-upper} \c{-N} command-line option
+\IM{-1} \c{-1} command-line option
+\IM{-2} \c{-2} command-line option
+\IM{-i} \c{-i} command-line option
+\IM{-pgpfp} \c{-pgpfp} command-line option
+\IM{-sercfg} \c{-sercfg} command-line option
+
+\IM{removing registry entries} removing registry entries
+\IM{removing registry entries} registry entries, removing
+
+\IM{random seed file} random seed file
+\IM{random seed file} \c{putty.rnd} (random seed file)
+
+\IM{putty.rnd} \c{putty.rnd} (random seed file)
+
+\IM{suppressing remote shell} remote shell, suppressing
+\IM{suppressing remote shell} shell, remote, suppressing
+
+\IM{SSH protocol version} SSH protocol version
+\IM{SSH protocol version} protocol version, SSH
+\IM{SSH protocol version} version, of SSH protocol
+
+\IM{PPK} \cw{PPK} file
+\IM{PPK} private key file, PuTTY
+
+\IM{PGP key fingerprint} PGP key fingerprint
+\IM{PGP key fingerprint} fingerprint, of PGP key
+
+\IM{verifying new versions} verifying new versions of PuTTY
+\IM{verifying new versions} new version, verifying
+\IM{verifying new versions} upgraded version, verifying
+
+\IM{connection}{network connection} network connection
+\IM{connection}{network connection} connection, network
+
+\IM{host name}{hostname} host name
+\IM{host name}{hostname} DNS name
+\IM{host name}{hostname} server name
+
+\IM{IP address}{Internet address} IP address
+\IM{IP address}{Internet address} address, IP
+
+\IM{localhost} \c{localhost}
+
+\IM{loopback IP address}{loopback address} loopback IP address
+\IM{loopback IP address}{loopback address} IP address, loopback
+
+\IM{listen address} listen address
+\IM{listen address} bind address
+
+\IM{DNS} DNS
+\IM{DNS} Domain Name System
+
+\IM{name resolution} name resolution
+\IM{name resolution} DNS resolution
+\IM{name resolution} host name resolution
+\IM{name resolution} server name resolution
+
+\IM{loading and storing saved sessions} sessions, loading and storing
+\IM{loading and storing saved sessions} settings, loading and storing
+\IM{loading and storing saved sessions} saving settings
+\IM{loading and storing saved sessions} storing settings
+\IM{loading and storing saved sessions} loading settings
+
+\IM{Default Settings} Default Settings
+\IM{Default Settings} settings, default
+
+\IM{Registry} Registry (Windows)
+\IM{Registry} Windows Registry
+
+\IM{inactive window} inactive window
+\IM{inactive window} window, inactive
+\IM{inactive window} terminal window, inactive
+
+\IM{SSH packet log} SSH packet log
+\IM{SSH packet log} packet log, SSH
+
+\IM{auto wrap mode}{auto wrap} auto wrap mode
+\IM{auto wrap mode}{auto wrap} wrapping, automatic
+\IM{auto wrap mode}{auto wrap} line wrapping, automatic
+
+\IM{control sequence}{control codes} control sequences
+\IM{control sequence}{control codes} terminal control sequences
+\IM{control sequence}{control codes} escape sequences
+
+\IM{cursor coordinates} cursor coordinates
+\IM{cursor coordinates} coordinates, cursor
+
+\IM{CR} CR (Carriage Return)
+\IM{CR} Carriage Return
+
+\IM{LF} LF (Line Feed)
+\IM{LF} Line Feed
+
+\IM{clear screen} clear screen
+\IM{clear screen} erase screen
+\IM{clear screen} screen, clearing
+
+\IM{blinking text} blinking text
+\IM{blinking text} flashing text
+
+\IM{answerback} answerback string
+
+\IM{local echo} local echo
+\IM{local echo} echo, local
+
+\IM{remote echo} remote echo
+\IM{remote echo} echo, remote
+
+\IM{local line editing} local line editing
+\IM{local line editing} line editing, local
+
+\IM{remote-controlled printing} ANSI printing
+\IM{remote-controlled printing} remote-controlled printing
+\IM{remote-controlled printing} printing, remote-controlled
+\IM{remote-controlled printing} passthrough printing
+
+\IM{Home and End keys} Home key
+\IM{Home and End keys} End key
+
+\IM{keypad} keypad, numeric
+\IM{keypad} numeric keypad
+
+\IM{Application Cursor Keys} Application Cursor Keys
+\IM{Application Cursor Keys} cursor keys, \q{Application} mode
+
+\IM{Application Keypad} Application Keypad
+\IM{Application Keypad} keypad, \q{Application} mode
+\IM{Application Keypad} numeric keypad, \q{Application} mode
+
+\IM{Num Lock}{NumLock} Num Lock
+
+\IM{NetHack keypad mode} NetHack keypad mode
+\IM{NetHack keypad mode} keypad, NetHack mode
+
+\IM{compose key} Compose key
+\IM{compose key} DEC Compose key
+
+\IM{terminal bell} terminal bell
+\IM{terminal bell} bell, terminal
+\IM{terminal bell} beep, terminal
+\IM{terminal bell} feep
+
+\IM{Windows Default Beep} Windows Default Beep sound
+\IM{Windows Default Beep} Default Beep sound, Windows
+
+\IM{terminal bell, disabling} terminal bell, disabling
+\IM{terminal bell, disabling} bell, disabling
+
+\IM{visual bell} visual bell
+\IM{visual bell} bell, visual
+
+\IM{PC speaker} PC speaker
+\IM{PC speaker} beep, with PC speaker
+
+\IM{sound file} sound file
+\IM{sound file} \cw{WAV} file
+
+\IM{bell overload} bell overload mode
+\IM{bell overload} terminal bell overload mode
+
+\IM{mouse reporting} mouse reporting
+\IM{mouse reporting} \c{xterm} mouse reporting
+
+\IM{links} \c{links} (web browser)
+
+\IM{mc} \c{mc}
+\IM{mc} Midnight Commander
+
+\IM{terminal resizing}{window resizing} terminal resizing
+\IM{terminal resizing}{window resizing} window resizing
+\IM{terminal resizing}{window resizing} resizing, terminal
+
+\IM{destructive backspace} destructive backspace
+\IM{destructive backspace} non-destructive backspace
+\IM{destructive backspace} backspace, destructive
+
+\IM{Arabic text shaping} Arabic text shaping
+\IM{Arabic text shaping} shaping, of Arabic text
+
+\IM{Unicode} Unicode
+\IM{Unicode} ISO-10646 (Unicode)
+
+\IM{ASCII} ASCII
+\IM{ASCII} US-ASCII
+
+\IM{bidirectional text} bidirectional text
+\IM{bidirectional text} right-to-left text
+
+\IM{display becomes corrupted} display corruption
+\IM{display becomes corrupted} corruption, of display
+
+\IM{rows} rows, in terminal window
+\IM{columns} columns, in terminal window
+
+\IM{window size} window size
+\IM{window size} size, of window
+
+\IM{font size} font size
+\IM{font size} size, of font
+
+\IM{full screen}{full-screen} full-screen mode
+
+\IM{cursor blinks} blinking cursor
+\IM{cursor blinks} flashing cursor
+\IM{cursor blinks} cursor, blinking
+
+\IM{font} font
+\IM{font} typeface
+
+\IM{minimise} minimise window
+\IM{minimise} window, minimising
+
+\IM{maximise} maximise window
+\IM{maximise} window, maximising
+
+\IM{closing window}{close window} closing window
+\IM{closing window}{close window} window, closing
+
+\IM{Dragon NaturallySpeaking} Dragon NaturallySpeaking
+\IM{Dragon NaturallySpeaking} NaturallySpeaking
+
+\IM{AltGr} \q{AltGr} key
+\IM{Alt} \q{Alt} key
+
+\IM{CJK} CJK
+\IM{CJK} Chinese
+\IM{CJK} Japanese
+\IM{CJK} Korean
+
+\IM{East Asian Ambiguous characters} East Asian Ambiguous characters
+\IM{East Asian Ambiguous characters} CJK ambiguous characters
+
+\IM{character width} character width
+\IM{character width} single-width character
+\IM{character width} double-width character
+
+\IM{Rich Text Format} Rich Text Format
+\IM{Rich Text Format} RTF
+
+\IM{bold}{bold text} bold text
+
+\IM{colour}{colours} colour
+
+\IM{8-bit colour} 8-bit colour
+\IM{8-bit colour} colour, 8-bit
+
+\IM{system colours} system colours
+\IM{system colours} colours, system
+
+\IM{ANSI colours} ANSI colours
+\IM{ANSI colours} colours, ANSI
+
+\IM{cursor colour} cursor colour
+\IM{cursor colour} colour, of cursor
+
+\IM{default background} background colour, default
+\IM{default background} colour, background, default
+
+\IM{default foreground} foreground colour, default
+\IM{default foreground} colour, foreground, default
+
+\IM{bold black} bold black
+\IM{bold black} black, bold
+\IM{bold black} bright black
+
+\IM{TERM} \cw{TERM} environment variable
+
+\IM{logical palettes} logical palettes
+\IM{logical palettes} palettes, logical
+
+\IM{breaks in connectivity} connectivity, breaks in
+\IM{breaks in connectivity} intermittent connectivity
+
+\IM{idle connections} idle connections
+\IM{idle connections} timeout, of connections
+\IM{idle connections} connections, idle
+
+\IM{interactive connections}{interactive session} interactive connections
+\IM{interactive connections}{interactive session} connections, interactive
+
+\IM{keepalives} keepalives, application
+
+\IM{Nagle's algorithm} Nagle's algorithm
+\IM{Nagle's algorithm} \cw{TCP_NODELAY}
+
+\IM{TCP keepalives} TCP keepalives
+\IM{TCP keepalives} keepalives, TCP
+\IM{TCP keepalives} \cw{SO_KEEPALIVE}
+
+\IM{half-open connections} half-open connections
+\IM{half-open connections} connections, half-open
+
+\IM{auto-login username} user name, for auto-login
+\IM{auto-login username} login name, for auto-login
+\IM{auto-login username} account name, for auto-login
+
+\IM{terminal emulation}{terminal-type} terminal emulation
+\IM{terminal emulation}{terminal-type} emulation, terminal
+
+\IM{terminal speed} terminal speed
+\IM{terminal speed} speed, terminal
+\IM{terminal speed} baud rate, of terminal
+
+\IM{environment variables} environment variables
+\IM{environment variables} variables, environment
+
+\IM{proxy} proxy server
+\IM{proxy} server, proxy
+
+\IM{HTTP proxy} HTTP proxy
+\IM{HTTP proxy} proxy, HTTP
+\IM{HTTP proxy} server, HTTP
+\IM{HTTP proxy} \cw{CONNECT} proxy (HTTP)
+
+\IM{SOCKS server} SOCKS proxy
+\IM{SOCKS server} server, SOCKS
+\IM{SOCKS server} proxy, SOCKS
+
+\IM{Telnet proxy} Telnet proxy
+\IM{Telnet proxy} TCP proxy
+\IM{Telnet proxy} ad-hoc proxy
+\IM{Telnet proxy} proxy, Telnet
+
+\IM{Local proxy} local proxy
+\IM{Local proxy} proxy command
+\IM{Local proxy} command, proxy
+
+\IM{proxy DNS} proxy DNS
+\IM{proxy DNS} DNS, with proxy
+\IM{proxy DNS} name resolution, with proxy
+\IM{proxy DNS} host name resolution, with proxy
+\IM{proxy DNS} server name resolution, with proxy
+
+\IM{proxy username} proxy user name
+\IM{proxy username} user name, for proxy
+\IM{proxy username} login name, for proxy
+\IM{proxy username} account name, for proxy
+
+\IM{proxy password} proxy password
+\IM{proxy password} password, for proxy
+
+\IM{proxy authentication} proxy authentication
+\IM{proxy authentication} authentication, to proxy
+
+\IM{HTTP basic} HTTP \q{basic} authentication
+\IM{HTTP basic} \q{basic} authentication (HTTP)
+
+\IM{plaintext password} plain text password
+\IM{plaintext password} password, plain text
+
+\IM{Telnet negotiation} Telnet option negotiation
+\IM{Telnet negotiation} option negotiation, Telnet
+\IM{Telnet negotiation} negotiation, of Telnet options
+
+\IM{firewall}{firewalls} firewalls
+
+\IM{NAT router}{NAT} NAT routers
+\IM{NAT router}{NAT} routers, NAT
+\IM{NAT router}{NAT} Network Address Translation
+\IM{NAT router}{NAT} IP masquerading
+
+\IM{Telnet New Line} Telnet New Line
+\IM{Telnet New Line} new line, in Telnet
+
+\IM{.rhosts} \c{.rhosts} file
+\IM{.rhosts} \q{rhosts} file
+
+\IM{passwordless login} passwordless login
+\IM{passwordless login} login, passwordless
+
+\IM{Windows user name} local user name, in Windows
+\IM{Windows user name} user name, local, in Windows
+\IM{Windows user name} login name, local, in Windows
+\IM{Windows user name} account name, local, in Windows
+
+\IM{local username in Rlogin} local user name, in Rlogin
+\IM{local username in Rlogin} user name, local, in Rlogin
+\IM{local username in Rlogin} login name, local, in Rlogin
+\IM{local username in Rlogin} account name, local, in Rlogin
+
+\IM{privileged port} privileged port
+\IM{privileged port} low-numbered port
+\IM{privileged port} port, privileged
+
+\IM{remote shell} shell, remote
+\IM{remote shell} remote shell
+
+\IM{encryption}{encrypted}{encrypt} encryption
+
+\IM{encryption algorithm} encryption algorithm
+\IM{encryption algorithm} cipher algorithm
+\IM{encryption algorithm} symmetric-key algorithm
+\IM{encryption algorithm} algorithm, encryption
+
+\IM{AES} AES
+\IM{AES} Advanced Encryption Standard
+\IM{AES} Rijndael
+
+\IM{Arcfour} Arcfour
+\IM{Arcfour} RC4
+
+\IM{triple-DES} triple-DES
+
+\IM{single-DES} single-DES
+\IM{single-DES} DES
+
+\IM{key exchange} key exchange
+\IM{key exchange} kex
+
+\IM{shared secret} shared secret
+\IM{shared secret} secret, shared
+
+\IM{key exchange algorithm} key exchange algorithm
+\IM{key exchange algorithm} algorithm, key exchange
+
+\IM{Diffie-Hellman key exchange} Diffie-Hellman key exchange
+\IM{Diffie-Hellman key exchange} key exchange, Diffie-Hellman
+
+\IM{group exchange} Diffie-Hellman group exchange
+\IM{group exchange} group exchange, Diffie-Hellman
+
+\IM{repeat key exchange} repeat key exchange
+\IM{repeat key exchange} key exchange, repeat
+
+\IM{challenge/response authentication} challenge/response authentication
+\IM{challenge/response authentication} authentication, challenge/response
+
+\IM{security token} security token
+\IM{security token} token, security
+
+\IM{one-time passwords} one-time passwords
+\IM{one-time passwords} password, one-time
+
+\IM{keyboard-interactive authentication} keyboard-interactive authentication
+\IM{keyboard-interactive authentication} authentication, keyboard-interactive
+
+\IM{password expiry} password expiry
+\IM{password expiry} expiry, of passwords
+
+\IM{public key authentication}{public-key authentication} public key authentication
+\IM{public key authentication}{public-key authentication} RSA authentication
+\IM{public key authentication}{public-key authentication} DSA authentication
+\IM{public key authentication}{public-key authentication} authentication, public key
+
+\IM{MIT-MAGIC-COOKIE-1} \cw{MIT-MAGIC-COOKIE-1}
+\IM{MIT-MAGIC-COOKIE-1} magic cookie
+\IM{MIT-MAGIC-COOKIE-1} cookie, magic
+
+\IM{SSH server bugs} SSH server bugs
+\IM{SSH server bugs} bugs, in SSH servers
+
+\IM{ignore message} SSH \q{ignore} messages
+\IM{ignore message} \q{ignore} messages, in SSH
+
+\IM{message authentication code}{MAC} message authentication code (MAC)
+\IM{message authentication code}{MAC} MAC (message authentication code)
+
+\IM{signatures} signature
+\IM{signatures} digital signature
+
+\IM{storing configuration in a file} storing settings in a file
+\IM{storing configuration in a file} saving settings in a file
+\IM{storing configuration in a file} loading settings from a file
+
+\IM{transferring files} transferring files
+\IM{transferring files} files, transferring
+
+\IM{receiving files}{download a file} receiving files
+\IM{receiving files}{download a file} files, receiving
+\IM{receiving files}{download a file} downloading files
+
+\IM{sending files}{upload a file} sending files
+\IM{sending files}{upload a file} files, sending
+\IM{sending files}{upload a file} uploading files
+
+\IM{listing files} listing files
+\IM{listing files} files, listing
+
+\IM{wildcard}{wildcards} wildcards
+\IM{wildcard}{wildcards} glob (wildcard)
+
+\IM{PATH} \c{PATH} environment variable
+
+\IM{SFTP} SFTP
+\IM{SFTP} SSH file transfer protocol
+
+\IM{-unsafe} \c{-unsafe} PSCP command-line option
+\IM{-ls-PSCP} \c{-ls} PSCP command-line option
+\IM{-p-PSCP} \c{-p} PSCP command-line option
+\IM{-q-PSCP} \c{-q} PSCP command-line option
+\IM{-r-PSCP} \c{-r} PSCP command-line option
+\IM{-batch-PSCP} \c{-batch} PSCP command-line option
+\IM{-sftp} \c{-sftp} PSCP command-line option
+\IM{-scp} \c{-scp} PSCP command-line option
+
+\IM{return value} return value
+\IM{return value} exit value
+
+\IM{-b-PSFTP} \c{-b} PSFTP command-line option
+\IM{-bc-PSFTP} \c{-bc} PSFTP command-line option
+\IM{-be-PSFTP} \c{-be} PSFTP command-line option
+\IM{-batch-PSFTP} \c{-batch} PSFTP command-line option
+
+\IM{spaces in filenames} spaces in filenames
+\IM{spaces in filenames} filenames containing spaces
+
+\IM{working directory} working directory
+\IM{working directory} current working directory
+
+\IM{resuming file transfers} resuming file transfers
+\IM{resuming file transfers} files, resuming transfer of
+
+\IM{changing permissions on files} changing permissions on files
+\IM{changing permissions on files} permissions on files, changing
+\IM{changing permissions on files} files, changing permissions on
+\IM{changing permissions on files} modes of files, changing
+\IM{changing permissions on files} access to files, changing
+
+\IM{deleting files} deleting files
+\IM{deleting files} files, deleting
+\IM{deleting files} removing files
+
+\IM{create a directory} creating directories
+\IM{create a directory} directories, creating
+
+\IM{remove a directory} removing directories
+\IM{remove a directory} directories, removing
+\IM{remove a directory} deleting directories
+
+\IM{rename remote files} renaming files
+\IM{rename remote files} files, renaming and moving
+\IM{rename remote files} moving files
+
+\IM{local Windows command} local Windows command
+\IM{local Windows command} Windows command
+
+\IM{PLINK_PROTOCOL} \c{PLINK_PROTOCOL} environment variable
+
+\IM{-batch-plink} \c{-batch} Plink command-line option
+\IM{-s-plink} \c{-s} Plink command-line option
+\IM{-shareexists-plink} \c{-shareexists} Plink command-line option
+
+\IM{subsystem} subsystem, SSH
+\IM{subsystem} SSH subsystem
+
+\IM{batch file}{batch files} batch files
+
+\IM{CVS_RSH} \c{CVS_RSH} environment variable
+
+\IM{DSA} DSA
+\IM{DSA} Digital Signature Standard
+
+\IM{public-key algorithm} public-key algorithm
+\IM{public-key algorithm} asymmetric key algorithm
+\IM{public-key algorithm} algorithm, public-key
+
+\IM{generating keys} generating key pairs
+\IM{generating keys} creating key pairs
+\IM{generating keys} key pairs, generating
+\IM{generating keys} public keys, generating
+\IM{generating keys} private keys, generating
+
+\IM{authorized_keys file}{authorized_keys} \cw{authorized_keys} file
+
+\IM{key fingerprint} fingerprint, of SSH authentication key
+\IM{key fingerprint} public key fingerprint (SSH)
+\IM{key fingerprint} SSH public key fingerprint
+
+\IM{SSH-2 public key format} SSH-2 public key file format
+\IM{SSH-2 public key format} public key file, SSH-2
+
+\IM{OpenSSH private key format} OpenSSH private key file format
+\IM{OpenSSH private key format} private key file, OpenSSH
+
+\IM{ssh.com private key format} \cw{ssh.com} private key file format
+\IM{ssh.com private key format} private key file, \cw{ssh.com}
+
+\IM{importing keys} importing private keys
+\IM{importing keys} loading private keys
+
+\IM{export private keys} exporting private keys
+\IM{export private keys} saving private keys
+
+\IM{.ssh} \c{.ssh} directory
+
+\IM{.ssh2} \c{.ssh2} directory
+
+\IM{authentication agent} authentication agent
+\IM{authentication agent} agent, authentication
+
+\IM{-c-pageant} \c{-c} Pageant command-line option
+
+\IM{FAQ} FAQ
+\IM{FAQ} Frequently Asked Questions
+
+\IM{supported features} supported features
+\IM{supported features} features, supported
+
+\IM{remember my password} storing passwords
+\IM{remember my password} password, storing
+
+\IM{login scripts}{startup scripts} login scripts
+\IM{login scripts}{startup scripts} startup scripts
+
+\IM{Red Hat Linux} Red Hat Linux
+\IM{Red Hat Linux} Linux, Red Hat
+
+\IM{SMB} SMB
+\IM{SMB} Windows file sharing
+
+\IM{clean up} clean up after PuTTY
+\IM{clean up} uninstalling
+
+\IM{version of PuTTY} version, of PuTTY
+
+\IM{GPG signatures} PGP signatures, of PuTTY binaries
+\IM{GPG signatures} GPG signatures, of PuTTY binaries
+\IM{GPG signatures} signatures, of PuTTY binaries
+
+\IM{logical host name} logical host name
+\IM{logical host name} host name, logical
+
+\IM{host key cache}{host key management} host key management
+\IM{host key cache}{host key management} cache, of SSH host keys
+
+\IM{web browsers} web browser
+
+\IM{GSSAPI credential delegation} GSSAPI credential delegation
+\IM{GSSAPI credential delegation} credential delegation, GSSAPI
+\IM{GSSAPI credential delegation} delegation, of GSSAPI credentials
+
+\IM{SYSTEM32} \cw{SYSTEM32} directory, on Windows
+
+\IM{32-bit Windows} 32-bit Windows
+\IM{32-bit Windows} Windows, 32-bit
+\IM{32-bit Windows} x86 (32-bit processor architecture)
+\IM{64-bit Windows} 64-bit Windows
+\IM{64-bit Windows} Windows, 64-bit
+
+\IM{Windows process ACL} Windows process ACL
+\IM{Windows process ACL} process ACL (Windows)
+\IM{Windows process ACL} ACL, process (Windows)
+
+\IM{proxy logging} proxy logging
+\IM{proxy logging} logging, proxy
+\IM{proxy logging} diagnostic, proxy
+\IM{proxy logging} standard error, proxy

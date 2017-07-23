@@ -66,6 +66,7 @@
 #include "cryptlib.h"
 #include "o_time.h"
 #include <openssl/asn1t.h>
+#include "asn1_locl.h"
 
 IMPLEMENT_ASN1_MSTRING(ASN1_TIME, B_ASN1_TIME)
 
@@ -136,7 +137,7 @@ int ASN1_TIME_check(ASN1_TIME *t)
 ASN1_GENERALIZEDTIME *ASN1_TIME_to_generalizedtime(ASN1_TIME *t,
                                                    ASN1_GENERALIZEDTIME **out)
 {
-    ASN1_GENERALIZEDTIME *ret;
+    ASN1_GENERALIZEDTIME *ret = NULL;
     char *str;
     int newlen;
 
@@ -145,22 +146,21 @@ ASN1_GENERALIZEDTIME *ASN1_TIME_to_generalizedtime(ASN1_TIME *t,
 
     if (!out || !*out) {
         if (!(ret = ASN1_GENERALIZEDTIME_new()))
-            return NULL;
-        if (out)
-            *out = ret;
-    } else
+            goto err;
+    } else {
         ret = *out;
+    }
 
     /* If already GeneralizedTime just copy across */
     if (t->type == V_ASN1_GENERALIZEDTIME) {
         if (!ASN1_STRING_set(ret, t->data, t->length))
-            return NULL;
-        return ret;
+            goto err;
+        goto done;
     }
 
     /* grow the string */
     if (!ASN1_STRING_set(ret, NULL, t->length + 2))
-        return NULL;
+        goto err;
     /* ASN1_STRING_set() allocated 'len + 1' bytes. */
     newlen = t->length + 2 + 1;
     str = (char *)ret->data;
@@ -172,8 +172,17 @@ ASN1_GENERALIZEDTIME *ASN1_TIME_to_generalizedtime(ASN1_TIME *t,
 
     BUF_strlcat(str, (char *)t->data, newlen);
 
-    return ret;
+ done:
+   if (out != NULL && *out == NULL)
+       *out = ret;
+   return ret;
+
+ err:
+    if (out == NULL || *out != ret)
+        ASN1_GENERALIZEDTIME_free(ret);
+    return NULL;
 }
+
 
 int ASN1_TIME_set_string(ASN1_TIME *s, const char *str)
 {
@@ -195,4 +204,33 @@ int ASN1_TIME_set_string(ASN1_TIME *s, const char *str)
         return 0;
 
     return 1;
+}
+
+static int asn1_time_to_tm(struct tm *tm, const ASN1_TIME *t)
+{
+    if (t == NULL) {
+        time_t now_t;
+        time(&now_t);
+        if (OPENSSL_gmtime(&now_t, tm))
+            return 1;
+        return 0;
+    }
+
+    if (t->type == V_ASN1_UTCTIME)
+        return asn1_utctime_to_tm(tm, t);
+    else if (t->type == V_ASN1_GENERALIZEDTIME)
+        return asn1_generalizedtime_to_tm(tm, t);
+
+    return 0;
+}
+
+int ASN1_TIME_diff(int *pday, int *psec,
+                   const ASN1_TIME *from, const ASN1_TIME *to)
+{
+    struct tm tm_from, tm_to;
+    if (!asn1_time_to_tm(&tm_from, from))
+        return 0;
+    if (!asn1_time_to_tm(&tm_to, to))
+        return 0;
+    return OPENSSL_gmtime_diff(pday, psec, &tm_from, &tm_to);
 }

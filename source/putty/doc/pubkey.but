@@ -1,0 +1,437 @@
+\C{pubkey} Using public keys for SSH authentication
+
+\H{pubkey-intro} \ii{Public key authentication} - an introduction
+
+Public key authentication is an alternative means of identifying
+yourself to a login server, instead of typing a password. It is more
+secure and more flexible, but more difficult to set up.
+
+In conventional password authentication, you prove you are who you
+claim to be by proving that you know the correct password. The only
+way to prove you know the password is to tell the server what you
+think the password is. This means that if the server has been
+hacked, or \i\e{spoofed} (see \k{gs-hostkey}), an attacker can learn
+your password.
+
+Public key authentication solves this problem. You generate a \i\e{key
+pair}, consisting of a \i{public key} (which everybody is allowed to
+know) and a \i{private key} (which you keep secret and do not give to
+anybody). The private key is able to generate \i\e{signatures}.
+A signature created using your private key cannot be forged by
+anybody who does not have that key; but anybody who has your public
+key can verify that a particular signature is genuine.
+
+So you generate a key pair on your own computer, and you copy the
+public key to the server. Then, when the server asks you to prove
+who you are, PuTTY can generate a signature using your private key.
+The server can verify that signature (since it has your public key)
+and allow you to log in. Now if the server is hacked or spoofed, the
+attacker does not gain your private key or password; they only gain
+one signature. And signatures cannot be re-used, so they have gained
+nothing.
+
+There is a problem with this: if your private key is stored
+unprotected on your own computer, then anybody who gains access to
+\e{that} will be able to generate signatures as if they were you. So
+they will be able to log in to your server under your account. For
+this reason, your private key is usually \i\e{encrypted} when it is
+stored on your local machine, using a \i{passphrase} of your choice. In
+order to generate a signature, PuTTY must decrypt the key, so you
+have to type your passphrase.
+
+This can make public-key authentication less convenient than
+password authentication: every time you log in to the server,
+instead of typing a short password, you have to type a longer
+passphrase. One solution to this is to use an \i\e{authentication
+agent}, a separate program which holds decrypted private keys and
+generates signatures on request. PuTTY's authentication agent is
+called \i{Pageant}. When you begin a Windows session, you start Pageant
+and load your private key into it (typing your passphrase once). For
+the rest of your session, you can start PuTTY any number of times
+and Pageant will automatically generate signatures without you
+having to do anything. When you close your Windows session, Pageant
+shuts down, without ever having stored your decrypted private key on
+disk. Many people feel this is a good compromise between security
+and convenience. See \k{pageant} for further details.
+
+There is more than one \i{public-key algorithm} available. The most
+common are \i{RSA} and \i{ECDSA}, but others exist, notably \i{DSA}
+(otherwise known as DSS), the USA's federal Digital Signature Standard.
+The key types supported by PuTTY are described in \k{puttygen-keytype}.
+
+\H{pubkey-puttygen} Using \i{PuTTYgen}, the PuTTY key generator
+
+\cfg{winhelp-topic}{puttygen.general}
+
+PuTTYgen is a key generator. It \I{generating keys}generates pairs of
+public and private keys to be used with PuTTY, PSCP, and Plink, as well
+as the PuTTY authentication agent, Pageant (see \k{pageant}).  PuTTYgen
+generates RSA, DSA, ECDSA, and Ed25519 keys.
+
+When you run PuTTYgen you will see a window where you have two
+choices: \q{Generate}, to generate a new public/private key pair, or
+\q{Load} to load in an existing private key.
+
+\S{puttygen-generating} Generating a new key
+
+This is a general outline of the procedure for generating a new key
+pair. The following sections describe the process in more detail.
+
+\b First, you need to select which type of key you want to generate,
+and also select the strength of the key. This is described in more
+detail in \k{puttygen-keytype} and
+\k{puttygen-strength}.
+
+\b Then press the \q{Generate} button, to actually generate the key.
+\K{puttygen-generate} describes this step.
+
+\b Once you have generated the key, select a comment field
+(\k{puttygen-comment}) and a passphrase (\k{puttygen-passphrase}).
+
+\b Now you're ready to save the private key to disk; press the
+\q{Save private key} button. (See \k{puttygen-savepriv}).
+
+Your key pair is now ready for use. You may also want to copy the
+public key to your server, either by copying it out of the \q{Public
+key for pasting into authorized_keys file} box (see
+\k{puttygen-pastekey}), or by using the \q{Save public key} button
+(\k{puttygen-savepub}). However, you don't need to do this
+immediately; if you want, you can load the private key back into
+PuTTYgen later (see \k{puttygen-load}) and the public key will be
+available for copying and pasting again.
+
+\K{pubkey-gettingready} describes the typical process of configuring
+PuTTY to attempt public-key authentication, and configuring your SSH
+server to accept it.
+
+\S{puttygen-keytype} Selecting the type of key
+
+\cfg{winhelp-topic}{puttygen.keytype}
+
+Before generating a key pair using PuTTYgen, you need to select
+which type of key you need. PuTTYgen currently supports these types
+of key:
+
+\b An \i{RSA} key for use with the SSH-1 protocol.
+
+\b An RSA key for use with the SSH-2 protocol.
+
+\b A \i{DSA} key for use with the SSH-2 protocol.
+
+\b An \i{ECDSA} (\i{elliptic curve} DSA) key for use with the
+SSH-2 protocol.
+
+\b An \i{Ed25519} key (another elliptic curve algorithm) for use
+with the SSH-2 protocol.
+
+The SSH-1 protocol only supports RSA keys; if you will be connecting
+using the SSH-1 protocol, you must select the first key type or your
+key will be completely useless.
+
+The SSH-2 protocol supports more than one key type. The types
+supported by PuTTY are RSA, DSA, ECDSA, and Ed25519.
+
+\S{puttygen-strength} Selecting the size (strength) of the key
+
+\cfg{winhelp-topic}{puttygen.bits}
+
+The \q{Number of bits} input box allows you to choose the strength
+of the key PuTTYgen will generate.
+
+\b For RSA, 2048 bits should currently be sufficient for most purposes.
+
+\#{FIXME: advice for DSA?}
+
+\b For ECDSA, only 256, 384, and 521 bits are supported. (ECDSA offers
+equivalent security to RSA with smaller key sizes.)
+
+\b For Ed25519, the only valid size is 256 bits.
+
+\S{puttygen-generate} The \q{Generate} button
+
+\cfg{winhelp-topic}{puttygen.generate}
+
+Once you have chosen the type of key you want, and the strength of
+the key, press the \q{Generate} button and PuTTYgen will begin the
+process of actually generating the key.
+
+First, a progress bar will appear and PuTTYgen will ask you to move
+the mouse around to generate randomness. Wave the mouse in circles
+over the blank area in the PuTTYgen window, and the progress bar
+will gradually fill up as PuTTYgen collects enough randomness. You
+don't need to wave the mouse in particularly imaginative patterns
+(although it can't hurt); PuTTYgen will collect enough randomness
+just from the fine detail of \e{exactly} how far the mouse has moved
+each time Windows samples its position.
+
+When the progress bar reaches the end, PuTTYgen will begin creating
+the key. The progress bar will reset to the start, and gradually
+move up again to track the progress of the key generation. It will
+not move evenly, and may occasionally slow down to a stop; this is
+unfortunately unavoidable, because key generation is a random
+process and it is impossible to reliably predict how long it will
+take.
+
+When the key generation is complete, a new set of controls will
+appear in the window to indicate this.
+
+\S{puttygen-fingerprint} The \q{\ii{Key fingerprint}} box
+
+\cfg{winhelp-topic}{puttygen.fingerprint}
+
+The \q{Key fingerprint} box shows you a fingerprint value for the
+generated key. This is derived cryptographically from the \e{public}
+key value, so it doesn't need to be kept secret; it is supposed to
+be more manageable for human beings than the public key itself.
+
+The fingerprint value is intended to be cryptographically secure, in
+the sense that it is computationally infeasible for someone to
+invent a second key with the same fingerprint, or to find a key with
+a particular fingerprint. So some utilities, such as the Pageant key
+list box (see \k{pageant-mainwin-keylist}) and the Unix \c{ssh-add}
+utility, will list key fingerprints rather than the whole public key.
+
+\S{puttygen-comment} Setting a comment for your key
+
+\cfg{winhelp-topic}{puttygen.comment}
+
+If you have more than one key and use them for different purposes,
+you don't need to memorise the key fingerprints in order to tell
+them apart. PuTTYgen allows you to enter a \e{comment} for your key,
+which will be displayed whenever PuTTY or Pageant asks you for the
+passphrase.
+
+The default comment format, if you don't specify one, contains the
+key type and the date of generation, such as \c{rsa-key-20011212}.
+Another commonly used approach is to use your name and the name of
+the computer the key will be used on, such as \c{simon@simons-pc}.
+
+To alter the key comment, just type your comment text into the
+\q{Key comment} box before saving the private key. If you want to
+change the comment later, you can load the private key back into
+PuTTYgen, change the comment, and save it again.
+
+\S{puttygen-passphrase} Setting a \i{passphrase} for your key
+
+\cfg{winhelp-topic}{puttygen.passphrase}
+
+The \q{Key passphrase} and \q{Confirm passphrase} boxes allow you to
+choose a passphrase for your key. The passphrase will be used to
+\i{encrypt} the key on disk, so you will not be able to use the key
+without first entering the passphrase.
+
+When you save the key, PuTTYgen will check that the \q{Key passphrase}
+and \q{Confirm passphrase} boxes both contain exactly the same
+passphrase, and will refuse to save the key otherwise.
+
+If you leave the passphrase fields blank, the key will be saved
+unencrypted. You should \e{not} do this without good reason; if you
+do, your private key file on disk will be all an attacker needs to
+gain access to any machine configured to accept that key. If you
+want to be able to \I{passwordless login}log in without having to
+type a passphrase every time, you should consider using Pageant
+(\k{pageant}) so that your decrypted key is only held in memory
+rather than on disk.
+
+Under special circumstances you may genuinely \e{need} to use a key
+with no passphrase; for example, if you need to run an automated
+batch script that needs to make an SSH connection, you can't be
+there to type the passphrase. In this case we recommend you generate
+a special key for each specific batch script (or whatever) that
+needs one, and on the server side you should arrange that each key
+is \e{restricted} so that it can only be used for that specific
+purpose. The documentation for your SSH server should explain how to
+do this (it will probably vary between servers).
+
+Choosing a good passphrase is difficult. Just as you shouldn't use a
+dictionary word as a password because it's easy for an attacker to
+run through a whole dictionary, you should not use a song lyric,
+quotation or other well-known sentence as a passphrase. \i{DiceWare}
+(\W{http://www.diceware.com/}\cw{www.diceware.com}) recommends using
+at least five words each generated randomly by rolling five dice,
+which gives over 2^64 possible passphrases and is probably not a bad
+scheme. If you want your passphrase to make grammatical sense, this
+cuts down the possibilities a lot and you should use a longer one as
+a result.
+
+\e{Do not forget your passphrase}. There is no way to recover it.
+
+\S{puttygen-savepriv} Saving your private key to a disk file
+
+\cfg{winhelp-topic}{puttygen.savepriv}
+
+Once you have generated a key, set a comment field and set a
+passphrase, you are ready to save your private key to disk.
+
+Press the \q{Save private key} button. PuTTYgen will put up a dialog
+box asking you where to save the file. Select a directory, type in a
+file name, and press \q{Save}.
+
+This file is in PuTTY's native format (\c{*.\i{PPK}}); it is the one you
+will need to tell PuTTY to use for authentication (see
+\k{config-ssh-privkey}) or tell Pageant to load (see
+\k{pageant-mainwin-addkey}).
+
+\S{puttygen-savepub} Saving your public key to a disk file
+
+\cfg{winhelp-topic}{puttygen.savepub}
+
+RFC 4716 specifies a \I{SSH-2 public key format}standard format for
+storing SSH-2 public keys on disk. Some SSH servers (such as
+\i\cw{ssh.com}'s) require a public key in this format in order to accept
+authentication with the corresponding private key. (Others, such as
+OpenSSH, use a different format; see \k{puttygen-pastekey}.)
+
+To save your public key in the SSH-2 standard format, press the
+\q{Save public key} button in PuTTYgen. PuTTYgen will put up a
+dialog box asking you where to save the file. Select a directory,
+type in a file name, and press \q{Save}.
+
+You will then probably want to copy the public key file to your SSH
+server machine. See \k{pubkey-gettingready} for general instructions
+on configuring public-key authentication once you have generated a
+key.
+
+If you use this option with an SSH-1 key, the file PuTTYgen saves
+will contain exactly the same text that appears in the \q{Public key
+for pasting} box. This is the only existing standard for SSH-1
+public keys.
+
+\S{puttygen-pastekey} \q{Public key for pasting into \i{authorized_keys
+file}}
+
+\cfg{winhelp-topic}{puttygen.pastekey}
+
+All SSH-1 servers require your public key to be given to it in a
+one-line format before it will accept authentication with your
+private key. The \i{OpenSSH} server also requires this for SSH-2.
+
+The \q{Public key for pasting into authorized_keys file} gives the
+public-key data in the correct one-line format. Typically you will
+want to select the entire contents of the box using the mouse, press
+Ctrl+C to copy it to the clipboard, and then paste the data into a
+PuTTY session which is already connected to the server.
+
+See \k{pubkey-gettingready} for general instructions on configuring
+public-key authentication once you have generated a key.
+
+\S{puttygen-load} Reloading a private key
+
+\cfg{winhelp-topic}{puttygen.load}
+
+PuTTYgen allows you to load an existing private key file into
+memory. If you do this, you can then change the passphrase and
+comment before saving it again; you can also make extra copies of
+the public key.
+
+To load an existing key, press the \q{Load} button. PuTTYgen will
+put up a dialog box where you can browse around the file system and
+find your key file. Once you select the file, PuTTYgen will ask you
+for a passphrase (if necessary) and will then display the key
+details in the same way as if it had just generated the key.
+
+If you use the Load command to load a foreign key format, it will
+work, but you will see a message box warning you that the key you
+have loaded is not a PuTTY native key. See \k{puttygen-conversions}
+for information about importing foreign key formats.
+
+\S{puttygen-conversions} Dealing with private keys in other formats
+
+\cfg{winhelp-topic}{puttygen.conversions}
+
+Most SSH-1 clients use a standard format for storing private keys on
+disk. PuTTY uses this format as well; so if you have generated an
+SSH-1 private key using OpenSSH or \cw{ssh.com}'s client, you can use
+it with PuTTY, and vice versa.
+
+However, SSH-2 private keys have no standard format. \I{OpenSSH private
+key format}OpenSSH and \I{ssh.com private key format}\cw{ssh.com} have
+different formats, and PuTTY's is different again.
+So a key generated with one client cannot immediately be used with
+another.
+
+Using the \I{importing keys}\q{Import} command from the \q{Conversions}
+menu, PuTTYgen can load SSH-2 private keys in OpenSSH's format and
+\cw{ssh.com}'s format. Once you have loaded one of these key types, you
+can then save it back out as a PuTTY-format key (\c{*.\i{PPK}}) so that
+you can use it with the PuTTY suite. The passphrase will be unchanged by this
+process (unless you deliberately change it). You may want to change
+the key comment before you save the key, since OpenSSH's SSH-2 key
+format contains no space for a comment and \cw{ssh.com}'s default
+comment format is long and verbose.
+
+PuTTYgen can also \i{export private keys} in OpenSSH format and in
+\cw{ssh.com} format. To do so, select one of the \q{Export} options
+from the \q{Conversions} menu. Exporting a key works exactly like
+saving it (see \k{puttygen-savepriv}) - you need to have typed your
+passphrase in beforehand, and you will be warned if you are about to
+save a key without a passphrase.
+
+For OpenSSH there are two options. Modern OpenSSH actually has two
+formats it uses for storing private keys. \q{Export OpenSSH key}
+will automatically choose the oldest format supported for the key
+type, for maximum backward compatibility with older versions of
+OpenSSH; for newer key types like Ed25519, it will use the newer
+format as that is the only legal option. If you have some specific
+reason for wanting to use OpenSSH's newer format even for RSA, DSA,
+or ECDSA keys, you can choose \q{Export OpenSSH key (force new file
+format)}.
+
+Note that since only SSH-2 keys come in different formats, the export
+options are not available if you have generated an SSH-1 key.
+
+\H{pubkey-gettingready} Getting ready for public key authentication
+
+Connect to your SSH server using PuTTY with the SSH protocol. When the
+connection succeeds you will be prompted for your user name and
+password to login. Once logged in, you must configure the server to
+accept your public key for authentication:
+
+\b If your server is using the SSH-1 protocol, you should change
+into the \i\c{.ssh} directory and open the file \i\c{authorized_keys}
+with your favourite editor. (You may have to create this file if
+this is the first key you have put in it). Then switch to the
+PuTTYgen window, select all of the text in the \q{Public key for
+pasting into authorized_keys file} box (see \k{puttygen-pastekey}),
+and copy it to the clipboard (\c{Ctrl+C}). Then, switch back to the
+PuTTY window and insert the data into the open file, making sure it
+ends up all on one line. Save the file.
+
+\b If your server is \i{OpenSSH} and is using the SSH-2 protocol, you
+should follow the same instructions, except that in earlier versions
+of OpenSSH 2 the file might be called \c{authorized_keys2}. (In
+modern versions the same \c{authorized_keys} file is used for both
+SSH-1 and SSH-2 keys.)
+
+\b If your server is \i\cw{ssh.com}'s product and is using SSH-2, you
+need to save a \e{public} key file from PuTTYgen (see
+\k{puttygen-savepub}), and copy that into the \i\c{.ssh2} directory on
+the server. Then you should go into that \c{.ssh2} directory, and edit
+(or create) a file called \c{authorization}. In this file you should
+put a line like \c{Key mykey.pub}, with \c{mykey.pub} replaced by the
+name of your key file.
+
+\b For other SSH server software, you should refer to the manual for
+that server.
+
+You may also need to ensure that your home directory, your \c{.ssh}
+directory, and any other files involved (such as
+\c{authorized_keys}, \c{authorized_keys2} or \c{authorization}) are
+not group-writable or world-writable. You can typically do this by
+using a command such as
+
+\c chmod go-w $HOME $HOME/.ssh $HOME/.ssh/authorized_keys
+
+Your server should now be configured to accept authentication using
+your private key. Now you need to configure PuTTY to \e{attempt}
+authentication using your private key. You can do this in any of
+three ways:
+
+\b Select the private key in PuTTY's configuration. See
+\k{config-ssh-privkey} for details.
+
+\b Specify the key file on the command line with the \c{-i} option.
+See \k{using-cmdline-identity} for details.
+
+\b Load the private key into Pageant (see \k{pageant}). In this case
+PuTTY will automatically try to use it for authentication if it can.

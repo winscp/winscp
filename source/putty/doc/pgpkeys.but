@@ -1,0 +1,216 @@
+\A{pgpkeys} PuTTY download keys and signatures
+
+\cfg{winhelp-topic}{pgpfingerprints}
+
+\I{verifying new versions}We create \i{GPG signatures} for all the PuTTY
+files distributed from our web site, so that users can be confident
+that the files have not been tampered with. Here we identify
+our public keys, and explain our signature policy so you can have an
+accurate idea of what each signature guarantees.
+This description is provided as both a web page on the PuTTY site, and
+an appendix in the PuTTY manual.
+
+As of release 0.58, all of the PuTTY executables contain fingerprint
+material (usually accessed via the \i\c{-pgpfp} command-line
+option), such that if you have an executable you trust, you can use
+it to establish a trust path, for instance to a newer version
+downloaded from the Internet.
+
+(Note that none of the keys, signatures, etc mentioned here have
+anything to do with keys used with SSH - they are purely for verifying
+the origin of files distributed by the PuTTY team.)
+
+\H{pgpkeys-pubkey} Public keys
+
+We maintain multiple keys, stored with different levels of security
+due to being used in different ways. See \k{pgpkeys-security} below
+for details.
+
+The keys we provide are:
+
+\dt Snapshot Key
+
+\dd Used to sign routine development builds of PuTTY: nightly
+snapshots, pre-releases, and sometimes also custom diagnostic builds
+we send to particular users.
+
+\dt Release Key
+
+\dd Used to sign manually released versions of PuTTY.
+
+\dt Secure Contact Key
+
+\dd An encryption-capable key suitable for people to send confidential
+messages to the PuTTY team, e.g. reports of vulnerabilities.
+
+\dt Master Key
+
+\dd Used to tie all the above keys into the GPG web of trust. The
+Master Key signs all the other keys, and other GPG users have signed
+it in turn.
+
+The current issue of those keys are available for download from the
+PuTTY website, and are also available on PGP keyservers using the key
+IDs listed below.
+
+\dt \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/keys/master-2015.asc}{\s{Master Key}}
+
+\dd RSA, 4096-bit. Key ID: \cw{4096R/04676F7C} (long version:
+\cw{4096R/AB585DC604676F7C}). Fingerprint:
+\cw{440D\_E3B5\_B7A1\_CA85\_B3CC\_\_1718\_AB58\_5DC6\_0467\_6F7C}
+
+\dt \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/keys/release-2015.asc}{\s{Release Key}}
+
+\dd RSA, 2048-bit. Key ID: \cw{2048R/B43434E4} (long version:
+\cw{2048R/9DFE2648B43434E4}). Fingerprint:
+\cw{0054\_DDAA\_8ADA\_15D2\_768A\_\_6DE7\_9DFE\_2648\_B434\_34E4}
+
+\dt \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/keys/contact-2016.asc}{\s{Secure Contact Key}}
+
+\dd RSA, 2048-bit. Main key ID: \cw{2048R/8A0AF00B} (long version:
+\cw{2048R/C4FCAAD08A0AF00B}). Encryption subkey ID:
+\cw{2048R/50C2CF5C} (long version: \cw{2048R/9EB39CC150C2CF5C}).
+Fingerprint:
+\cw{8A26\_250E\_763F\_E359\_75F3\_\_118F\_C4FC\_AAD0\_8A0A\_F00B}
+
+\dt \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/keys/snapshot-2015.asc}{\s{Snapshot Key}}
+
+\dd RSA, 2048-bit. Key ID: \cw{2048R/D15F7E8A} (long version:
+\cw{2048R/EEF20295D15F7E8A}). Fingerprint:
+\cw{0A3B\_0048\_FE49\_9B67\_A234\_\_FEB6\_EEF2\_0295\_D15F\_7E8A}
+
+\H{pgpkeys-security} Security details
+
+The various keys have various different security levels. This
+section explains what those security levels are, and how far you can
+expect to trust each key.
+
+\S{pgpkeys-snapshot} The Development Snapshots key
+
+The Development Snapshots private key is stored \e{without a
+passphrase}. This is necessary, because the snapshots are generated
+every night without human intervention, so nobody would be able to
+type a passphrase.
+
+The snapshots are built and signed on a team member's home computers,
+before being uploaded to the web server from which you download them.
+
+Therefore, a signature from the Development Snapshots key \e{DOES}
+protect you against:
+
+\b People tampering with the PuTTY binaries between the PuTTY web site
+and you.
+
+\b The maintainers of our web server attempting to abuse their root
+privilege to tamper with the binaries.
+
+But it \e{DOES NOT} protect you against:
+
+\b People tampering with the binaries before they are uploaded to our
+download servers.
+
+\b People tampering with the build machines so that the next set of
+binaries they build will be malicious in some way.
+
+\b People stealing the unencrypted private key from the build machine
+it lives on.
+
+Of course, we take all reasonable precautions to guard the build
+machines. But when you see a signature, you should always be certain
+of precisely what it guarantees and precisely what it does not.
+
+\S{pgpkeys-release} The Releases key
+
+The Releases key is more secure: because it is only used at release
+time, to sign each release by hand, we can store it encrypted.
+
+The Releases private key is kept encrypted on the developers' own
+local machines. So an attacker wanting to steal it would have to also
+steal the passphrase.
+
+\S{pgpkeys-contact} The Secure Contact Key
+
+The Secure Contact Key is stored with a similar level of security to
+the Release Key: it is stored with a passphrase, and no automated
+script has access to it.
+
+\S{pgpkeys-master} The Master Keys
+
+The Master Key signs almost nothing. Its purpose is to bind the other
+keys together and certify that they are all owned by the same people
+and part of the same integrated setup. The only signatures produced by
+the Master Key, \e{ever}, should be the signatures on the other keys.
+
+The Master Key is especially long, and its private key and passphrase
+are stored with special care.
+
+We have collected some third-party signatures on the Master Key, in
+order to increase the chances that you can find a suitable trust path
+to them.
+
+We have uploaded our various keys to public keyservers, so that
+even if you don't know any of the people who have signed our
+keys, you can still be reasonably confident that an attacker would
+find it hard to substitute fake keys on all the public keyservers at
+once.
+
+\H{pgpkeys-rollover} Key rollover
+
+Our current keys were generated in September 2015, except for the
+Secure Contact Key which was generated in February 2016 (we didn't
+think of it until later).
+
+Prior to that, we had a much older set of keys generated in 2000. For
+each of the key types above (other than the Secure Contact Key), we
+provided both an RSA key \e{and} a DSA key (because at the time we
+generated them, RSA was not in practice available to everyone, due to
+export restrictions).
+
+The new Master Key is signed with both of the old ones, to show that
+it really is owned by the same people and not substituted by an
+attacker. Also, we have retrospectively signed the old Release Keys
+with the new Master Key, in case you're trying to verify the
+signatures on a release prior to the rollover and can find a chain of
+trust to those keys from any of the people who have signed our new
+Master Key.
+
+Future releases will be signed with the up-to-date keys shown above.
+Releases prior to the rollover are signed with the old Release Keys.
+
+For completeness, those old keys are given here:
+
+\dt \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/keys/master-rsa.asc}{\s{Master Key} (original RSA)}
+
+\dd RSA, 1024-bit. Key ID: \cw{1024R/1E34AC41} (long version:
+\cw{1024R/9D5877BF1E34AC41}). Fingerprint:
+\cw{8F\_15\_97\_DA\_25\_30\_AB\_0D\_\_88\_D1\_92\_54\_11\_CF\_0C\_4C}
+
+\dt \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/keys/master-dsa.asc}{\s{Master Key} (original DSA)}
+
+\dd DSA, 1024-bit. Key ID: \cw{1024D/6A93B34E} (long version:
+\cw{1024D/4F5E6DF56A93B34E}). Fingerprint:
+\cw{313C\_3E76\_4B74\_C2C5\_F2AE\_\_83A8\_4F5E\_6DF5\_6A93\_B34E}
+
+\dt \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/keys/release-rsa.asc}{\s{Release Key} (original RSA)}
+
+\dd RSA, 1024-bit. Key ID: \cw{1024R/B41CAE29} (long version:
+\cw{1024R/EF39CCC0B41CAE29}). Fingerprint:
+\cw{AE\_65\_D3\_F7\_85\_D3\_18\_E0\_\_3B\_0C\_9B\_02\_FF\_3A\_81\_FE}
+
+\dt \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/keys/release-dsa.asc}{\s{Release Key} (original DSA)}
+
+\dd DSA, 1024-bit. Key ID: \cw{1024D/08B0A90B} (long version:
+\cw{1024D/FECD6F3F08B0A90B}). Fingerprint:
+\cw{00B1\_1009\_38E6\_9800\_6518\_\_F0AB\_FECD\_6F3F\_08B0\_A90B}
+
+\dt \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/keys/snapshot-rsa.asc}{\s{Snapshot Key} (original RSA)}
+
+\dd RSA, 1024-bit. Key ID: \cw{1024R/32B903A9} (long version:
+\cw{1024R/FAAED21532B903A9}). Fingerprint:
+\cw{86\_8B\_1F\_79\_9C\_F4\_7F\_BD\_\_8B\_1B\_D7\_8E\_C6\_4E\_4C\_03}
+
+\dt \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/keys/snapshot-dsa.asc}{\s{Snapshot Key} (original DSA)}
+
+\dd DSA, 1024-bit. Key ID: \cw{1024D/7D3E4A00} (long version:
+\cw{1024D/165E56F77D3E4A00}). Fingerprint:
+\cw{63DD\_8EF8\_32F5\_D777\_9FF0\_\_2947\_165E\_56F7\_7D3E\_4A00}
