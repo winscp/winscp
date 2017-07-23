@@ -386,7 +386,7 @@ object PreferencesDialog: TPreferencesDialog
             Width = 210
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = '&Roll log files after reaching'
+            Caption = '&Rotate log files after reaching'
             TabOrder = 5
             OnClick = ControlChange
           end
