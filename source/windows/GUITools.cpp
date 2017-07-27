@@ -516,6 +516,7 @@ void __fastcall ApplyTabs(
       if (IsEligibleForApplyingTabs(Line, TabPos, Start, Remaining))
       {
         int Width;
+        int Iterations = 0;
         while ((Width = CalculateWidth(Start, CalculateWidthArg)) < MaxWidth)
         {
           int Wider = CalculateWidth(Start + Padding, CalculateWidthArg);
@@ -526,6 +527,12 @@ void __fastcall ApplyTabs(
             break;
           }
           Start += Padding;
+          Iterations++;
+          // In rare case a tab is zero-width with some strange font (like HYLE)
+          if (Iterations > 100)
+          {
+            break;
+          }
         }
         Lines->Strings[Index] = Start + Remaining;
       }
