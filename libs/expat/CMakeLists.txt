@@ -6,7 +6,7 @@ project(expat)
 cmake_minimum_required(VERSION 2.6)
 set(PACKAGE_BUGREPORT "expat-bugs@libexpat.org")
 set(PACKAGE_NAME "expat")
-set(PACKAGE_VERSION "2.2.2")
+set(PACKAGE_VERSION "2.2.3")
 set(PACKAGE_STRING "${PACKAGE_NAME} ${PACKAGE_VERSION}")
 set(PACKAGE_TARNAME "${PACKAGE_NAME}")
 
@@ -54,6 +54,7 @@ if(WIN32)
 endif(WIN32)
 
 set(expat_SRCS
+    lib/loadlibrary.c
     lib/xmlparse.c
     lib/xmlrole.c
     lib/xmltok.c
@@ -76,7 +77,7 @@ endif(BUILD_shared)
 add_library(expat ${_SHARED} ${expat_SRCS})
 
 set(LIBCURRENT 7)   # sync
-set(LIBREVISION 4)  # with
+set(LIBREVISION 5)  # with
 set(LIBAGE 6)       # configure.ac!
 math(EXPR LIBCURRENT_MINUS_AGE "${LIBCURRENT} - ${LIBAGE}")
 
