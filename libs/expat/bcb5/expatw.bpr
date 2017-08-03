@@ -5,7 +5,7 @@
     <VERSION value="BCB.05.03"/>
     <PROJECT value="Release\libexpatw_mtd.dll"/>
     <OBJFILES value="Release\obj\libexpatw\xmlparse.obj Release\obj\libexpatw\xmlrole.obj 
-      Release\obj\libexpatw\xmltok.obj"/>
+      Release\obj\libexpatw\xmltok.obj Release\obj\libexpatw\loadlibrary.obj"/>
     <RESFILES value=""/>
     <IDLFILES value=""/>
     <IDLGENFILES value=""/>

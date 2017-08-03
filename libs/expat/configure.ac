@@ -46,7 +46,7 @@ dnl If the API changes incompatibly set LIBAGE back to 0
 dnl
 
 LIBCURRENT=7   # sync
-LIBREVISION=4  # with
+LIBREVISION=5  # with
 LIBAGE=6       # CMakeLists.txt!
 
 AC_CONFIG_HEADER(expat_config.h)
@@ -126,6 +126,25 @@ AC_LINK_IFELSE([AC_LANG_SOURCE([
     AC_MSG_RESULT([yes])
 ], [
     AC_MSG_RESULT([no])
+
+    AC_MSG_CHECKING([for arc4random (BSD, macOS or libbsd)])
+    AC_LINK_IFELSE([AC_LANG_SOURCE([
+      #if defined(HAVE_LIBBSD)
+      # include <bsd/stdlib.h>
+      #else
+      # include <stdlib.h>
+      #endif
+      int main() {
+          arc4random();
+          return 0;
+      }
+    ])], [
+        AC_DEFINE([HAVE_ARC4RANDOM], [1],
+            [Define to 1 if you have the `arc4random' function.])
+        AC_MSG_RESULT([yes])
+    ], [
+        AC_MSG_RESULT([no])
+    ])
 ])
 
 
@@ -180,6 +199,8 @@ AC_DEFINE([XML_NS], 1,
           [Define to make XML Namespaces functionality available.])
 AC_DEFINE([XML_DTD], 1,
           [Define to make parameter entity parsing functionality available.])
+AC_DEFINE([XML_DEV_URANDOM], 1,
+          [Define to include code reading entropy from `/dev/urandom'.])
 
 AC_ARG_ENABLE([xml-context],
   AS_HELP_STRING([--enable-xml-context @<:@COUNT@:>@],

@@ -15,7 +15,7 @@ VERSION = BCB.05.03
 # ---------------------------------------------------------------------------
 PROJECT = Release\libexpatw_mtd.dll
 OBJFILES = Release\obj\libexpatw\xmlparse.obj Release\obj\libexpatw\xmlrole.obj \
-    Release\obj\libexpatw\xmltok.obj
+    Release\obj\libexpatw\xmltok.obj Release\obj\libexpatw\loadlibrary.obj
 RESFILES = 
 MAINSOURCE = expatw.bpf
 RESDEPEN = $(RESFILES)
