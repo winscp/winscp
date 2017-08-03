@@ -19,7 +19,6 @@ OBJFILES = Release\obj\libexpat_static\xmlparse.obj \
     Release\obj\libexpat_static\xmltok.obj \
     Release\obj\libexpat_static\loadlibrary.obj
 RESFILES = 
-MAINSOURCE = expat_static.bpf
 RESDEPEN = $(RESFILES)
 LIBFILES = 
 IDLFILES = 
