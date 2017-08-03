@@ -146,7 +146,7 @@ supports both.
   doesn't encounter any errors, the input file is simply copied to
   the output directory unchanged.
   This implies no namespaces (turns off <option>-n</option>) and
-  requires <option>-d</option> to specify an output file.
+  requires <option>-d</option> to specify an output directory.
   		</para>
         </listitem>
       </varlistentry>

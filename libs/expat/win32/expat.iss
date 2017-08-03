@@ -7,17 +7,17 @@
 [Setup]
 AppName=Expat
 AppId=expat
-AppVersion=2.2.2
-AppVerName=Expat 2.2.2
+AppVersion=2.2.3
+AppVerName=Expat 2.2.3
 AppCopyright=Copyright � 1998-2017 Thai Open Source Software Center, Clark Cooper, and the Expat maintainers
 AppPublisher=The Expat Developers
 AppPublisherURL=http://www.libexpat.org/
 AppSupportURL=http://www.libexpat.org/
 AppUpdatesURL=http://www.libexpat.org/
-UninstallDisplayName=Expat XML Parser 2.2.2
-VersionInfoVersion=2.2.2
+UninstallDisplayName=Expat XML Parser 2.2.3
+VersionInfoVersion=2.2.3
 
-DefaultDirName={pf}\Expat 2.2.2
+DefaultDirName={pf}\Expat 2.2.3
 UninstallFilesDir={app}\Uninstall
 
 Compression=lzma
@@ -35,7 +35,7 @@ Flags: ignoreversion; Source: win32\MANIFEST.txt;           DestDir: "{app}"
 Flags: ignoreversion; Source: AUTHORS;                      DestDir: "{app}"; DestName: AUTHORS.txt
 Flags: ignoreversion; Source: Changes;                      DestDir: "{app}"; DestName: Changes.txt
 Flags: ignoreversion; Source: COPYING;                      DestDir: "{app}"; DestName: COPYING.txt
-Flags: ignoreversion; Source: README;                       DestDir: "{app}"; DestName: README.txt
+Flags: ignoreversion; Source: README.md;                    DestDir: "{app}"; DestName: README.txt
 Flags: ignoreversion; Source: doc\*.html;                   DestDir: "{app}\Doc"
 Flags: ignoreversion; Source: doc\*.css;                    DestDir: "{app}\Doc"
 Flags: ignoreversion; Source: doc\*.png;                    DestDir: "{app}\Doc"
