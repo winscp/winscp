@@ -78,7 +78,7 @@ CharData_AppendXMLChars(CharData *storage, const XML_Char *s, int len)
 int
 CharData_CheckString(CharData *storage, const char *expected)
 {
-    char buffer[1280];
+    char buffer[4096];
     int len;
     int count;
 
