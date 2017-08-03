@@ -77,7 +77,7 @@ typedef HMODULE (APIENTRY *LOADLIBRARYEX_FN)(LPCTSTR, HANDLE, DWORD);
 HMODULE _Expat_LoadLibrary(LPCTSTR filename)
 {
   HMODULE hModule = NULL;
-  LOADLIBRARYEX_FN pLoadLibraryEx = NULL;
+  LOADLIBRARYEX_FN pLoadLibraryEx;
 
   /* Get a handle to kernel32 so we can access it's functions at runtime */
   HMODULE hKernel32 = GetModuleHandle(TEXT("kernel32"));
