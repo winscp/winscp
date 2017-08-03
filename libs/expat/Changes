@@ -2,6 +2,46 @@ NOTE: We are looking for help with a few things:
       https://github.com/libexpat/libexpat/labels/help%20wanted
       If you can help, please get in touch.  Thanks!
 
+Release 2.2.3 Wed August 2 2017
+        Security fixes:
+             #82  CVE-2017-11742 -- Windows: Fix DLL hijacking vulnerability
+                    using Steve Holme's LoadLibrary wrapper for/of cURL
+
+        Bug fixes:
+             #85  Fix a dangling pointer issue related to realloc
+
+        Other changes:
+                  Increase code coverage
+             #91  Linux: Allow getrandom to fail if nonblocking pool has not
+                    yet been initialized and read /dev/urandom then, instead.
+                    This is in line with what recent Python does.
+             #81  Pre-10.7/Lion macOS: Support entropy from arc4random
+             #86  Check that a UTF-16 encoding in an XML declaration has the
+                    right endianness
+        #4 #5 #7  Recover correctly when some reallocations fail
+                  Repair "./configure && make" for systems without any
+                    provider of high quality entropy
+                    and try reading /dev/urandom on those
+                  Ensure that user-defined character encodings have converter
+                    functions when they are needed
+                  Fix mis-leading description of argument -c in xmlwf.1
+                  Rely on macro HAVE_ARC4RANDOM_BUF (rather than __CloudABI__)
+                    for CloudABI
+            #100  Fix use of SIPHASH_MAIN in siphash.h
+             #23  Test suite: Fix memory leaks
+                  Version info bumped from 7:4:6 to 7:5:6
+
+        Special thanks to:
+            Chanho Park
+            Joe Orton
+            Pascal Cuoq
+            Rhodri James
+            Simon McVittie
+            Vadim Zeitlin
+            Viktor Szakats
+                 and
+            Core Infrastructure Initiative
+
 Release 2.2.2 Wed July 12 2017
         Security fixes:
              #43  Protect against compilation without any source of high

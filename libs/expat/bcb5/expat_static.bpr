@@ -6,7 +6,8 @@
     <PROJECT value="Release\libexpats_mtd.lib"/>
     <OBJFILES value="Release\obj\libexpat_static\xmlparse.obj 
       Release\obj\libexpat_static\xmlrole.obj 
-      Release\obj\libexpat_static\xmltok.obj"/>
+      Release\obj\libexpat_static\xmltok.obj
+      Release\obj\libexpat_static\loadlibrary.obj"/>
     <RESFILES value=""/>
     <IDLFILES value=""/>
     <IDLGENFILES value=""/>
