@@ -5903,30 +5903,31 @@ void __fastcall TCustomScpExplorerForm::LastTerminalClosed(TObject * /*Sender*/)
   UpdateControls();
   SessionColor = TColor(0);
   UpdateRemotePathComboBox(false);
-  try
-  {
-    NeedSession(true);
-  }
-  catch (EAbort &)
-  {
-    // swallow
-    // The TTerminalManager does not expect the OnLastTerminalClose to throw without trying to connect
-  }
+  NeedSession(true);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::NeedSession(bool ReloadSessions)
 {
   try
   {
-    TTerminalManager::Instance()->NewSession(false, L"", ReloadSessions, this);
-  }
-  __finally
-  {
-    if (!WinConfiguration->KeepOpenWhenNoSession &&
-        (!Terminal || !Terminal->Active))
+    try
     {
-      TerminateApplication();
+      TTerminalManager::Instance()->NewSession(false, L"", ReloadSessions, this);
     }
+    __finally
+    {
+      if (!WinConfiguration->KeepOpenWhenNoSession &&
+          (!Terminal || !Terminal->Active))
+      {
+        TerminateApplication();
+      }
+    }
+  }
+  catch (EAbort &)
+  {
+    // swallow
+    // The TTerminalManager does not expect the OnLastTerminalClose to throw without trying to connect.
+    // Also when called from TWinControl.UpdateShowing => CMShowingChanged, the showing is aborted on exception
   }
 }
 //---------------------------------------------------------------------------
