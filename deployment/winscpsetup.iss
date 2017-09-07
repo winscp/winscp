@@ -345,7 +345,7 @@ Source: "{#TranslationDir}\WinSCP.{#Languages[LangI*4]}"; DestDir: "{app}\Transl
 
 #for {LangI = 0; LangI < LanguageCount; LangI++} EmitLang
 
-; Delete translations from instalation root folder (pre-5.10)
+; Delete translations from installation root folder (pre-5.10)
 [InstallDelete]
 #expr AllTranslationsBuf = AllTranslations + '-'
 
