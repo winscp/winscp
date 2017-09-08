@@ -2734,7 +2734,7 @@ UnicodeString __fastcall TSessionData::GetProtocolUrl()
   return Url;
 }
 //---------------------------------------------------------------------
-static bool __fastcall IsIPv6Literal(const UnicodeString & HostName)
+bool __fastcall IsIPv6Literal(const UnicodeString & HostName)
 {
   bool Result = (HostName.Pos(L":") > 0);
   if (Result)
@@ -2746,6 +2746,11 @@ static bool __fastcall IsIPv6Literal(const UnicodeString & HostName)
     }
   }
   return Result;
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall EscapeIPv6Literal(const UnicodeString & IP)
+{
+  return L"[" + IP + L"]";
 }
 //---------------------------------------------------------------------
 UnicodeString __fastcall TSessionData::GenerateSessionUrl(unsigned int Flags)
@@ -2781,7 +2786,7 @@ UnicodeString __fastcall TSessionData::GenerateSessionUrl(unsigned int Flags)
   DebugAssert(!HostNameExpanded.IsEmpty());
   if (IsIPv6Literal(HostNameExpanded))
   {
-    Url += L"[" + HostNameExpanded + L"]";
+    Url += EscapeIPv6Literal(HostNameExpanded);
   }
   else
   {

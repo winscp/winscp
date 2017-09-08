@@ -1493,8 +1493,13 @@ void __fastcall TTerminal::OpenTunnel()
     FTunnelData->UserName = FSessionData->TunnelUserName;
     FTunnelData->Password = FSessionData->TunnelPassword;
     FTunnelData->PublicKeyFile = FSessionData->TunnelPublicKeyFile;
+    UnicodeString HostName = FSessionData->HostNameExpanded;
+    if (IsIPv6Literal(HostName))
+    {
+      HostName = EscapeIPv6Literal(HostName);
+    }
     FTunnelData->TunnelPortFwd = FORMAT(L"L%d\t%s:%d",
-      (FTunnelLocalPortNumber, FSessionData->HostNameExpanded, FSessionData->PortNumber));
+      (FTunnelLocalPortNumber, HostName, FSessionData->PortNumber));
     FTunnelData->HostKey = FSessionData->TunnelHostKey;
 
     // inherit proxy options on the main session

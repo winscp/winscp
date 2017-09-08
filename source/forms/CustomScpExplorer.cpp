@@ -9285,5 +9285,13 @@ void __fastcall TCustomScpExplorerForm::ChangeScale(int M, int D)
 {
   TForm::ChangeScale(M, D);
   int APixelsPerInch = GetControlPixelsPerInch(this);
-  GlyphsModule->SetPixelsPerInch(APixelsPerInch);
+  HANDLE ResourceModule = GUIConfiguration->ChangeToDefaultResourceModule();
+  try
+  {
+    GlyphsModule->SetPixelsPerInch(APixelsPerInch);
+  }
+  __finally
+  {
+    GUIConfiguration->ChangeResourceModule(ResourceModule);
+  }
 }
