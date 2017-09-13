@@ -543,6 +543,7 @@ void __fastcall TWinConfiguration::Default()
   FPanelFont.FontSize = 0;
   FPanelFont.FontStyle = 0;
   FPanelFont.FontCharset = DEFAULT_CHARSET;
+  FNaturalOrderNumericalSorting = true;
   FFullRowSelect = false;
   FOfferedEditorAutoConfig = false;
   FVersionHistory = L"";
@@ -941,6 +942,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEYEX(Integer,PanelFont.FontSize, L"PanelFontSize"); \
     KEYEX(Integer,PanelFont.FontStyle, L"PanelFontStyle"); \
     KEYEX(Integer,PanelFont.FontCharset, L"PanelFontCharset"); \
+    KEY(Bool,     NaturalOrderNumericalSorting); \
     KEY(Bool,     FullRowSelect); \
     KEY(Bool,     OfferedEditorAutoConfig); \
     KEY(Integer,  LastMonitor); \
@@ -2078,6 +2080,11 @@ void __fastcall TWinConfiguration::UpdateIconFont()
 void __fastcall TWinConfiguration::SetPanelFont(const TFontConfiguration & value)
 {
   SET_CONFIG_PROPERTY_EX(PanelFont, UpdateIconFont());
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetNaturalOrderNumericalSorting(bool value)
+{
+  SET_CONFIG_PROPERTY(NaturalOrderNumericalSorting);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetFullRowSelect(bool value)

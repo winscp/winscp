@@ -86,7 +86,8 @@ UnicodeString __fastcall EscapePuttyCommandParam(UnicodeString Param);
 UnicodeString __fastcall ExpandEnvironmentVariables(const UnicodeString & Str);
 bool __fastcall SamePaths(const UnicodeString & Path1, const UnicodeString & Path2);
 bool __fastcall IsPathToSameFile(const UnicodeString & Path1, const UnicodeString & Path2);
-int __fastcall CompareLogicalText(const UnicodeString & S1, const UnicodeString & S2);
+int __fastcall CompareLogicalText(
+  const UnicodeString & S1, const UnicodeString & S2, bool NaturalOrderNumericalSorting);
 bool __fastcall IsReservedName(UnicodeString FileName);
 UnicodeString __fastcall ApiPath(UnicodeString Path);
 UnicodeString __fastcall DisplayableStr(const RawByteString & Str);

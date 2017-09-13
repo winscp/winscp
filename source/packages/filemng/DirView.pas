@@ -1955,9 +1955,12 @@ end; {DeleteSelectedFiles}
 
 function StrCmpLogicalW(const sz1, sz2: UnicodeString): Integer; stdcall; external 'shlwapi.dll';
 
-function CompareLogicalText(const S1, S2: string): Integer;
+function CompareLogicalText(const S1, S2: string; NaturalOrderNumericalSorting: Boolean): Integer;
 begin
-  Result := StrCmpLogicalW(PChar(S1), PChar(S2));
+  if NaturalOrderNumericalSorting then
+    Result := StrCmpLogicalW(PChar(S1), PChar(S2))
+  else
+    Result := lstrcmpi(PChar(S1), PChar(S2));
 end;
 
 function CompareFileType(I1, I2: TListItem; P1, P2: PFileRec): Integer;
@@ -1976,7 +1979,7 @@ begin
     Key1 := P1.TypeName + ' ' + P1.FileExt + ' ' + P1.DisplayName;
     Key2 := P2.TypeName + ' ' + P2.FileExt + ' ' + P2.DisplayName;
   end;
-  Result := CompareLogicalText(Key1, Key2);
+  Result := CompareLogicalText(Key1, Key2, TDirView(I1.ListView).NaturalOrderNumericalSorting);
 end;
 
 function CompareFileTime(P1, P2: PFileRec): Integer;
@@ -2062,7 +2065,8 @@ begin
           if not P1.isDirectory then
           begin
             Result := CompareLogicalText(
-              P1.FileExt + ' ' + P1.DisplayName, P2.FileExt + ' ' + P2.DisplayName);
+              P1.FileExt + ' ' + P1.DisplayName, P2.FileExt + ' ' + P2.DisplayName,
+              AOwner.NaturalOrderNumericalSorting);
           end
             else ; //fallback
 
@@ -2072,7 +2076,7 @@ begin
 
       if Result = fEqual then
       begin
-        Result := CompareLogicalText(P1.DisplayName, P2.DisplayName)
+        Result := CompareLogicalText(P1.DisplayName, P2.DisplayName, AOwner.NaturalOrderNumericalSorting)
       end;
     end;
   end;

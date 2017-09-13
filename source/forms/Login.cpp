@@ -2098,7 +2098,7 @@ void __fastcall TLoginDialog::SessionTreeCompare(TObject * /*Sender*/,
   }
   else if (Node1IsWorkspace || Node1IsFolder)
   {
-    Compare = CompareLogicalText(Node1->Text, Node2->Text);
+    Compare = CompareLogicalText(Node1->Text, Node2->Text, true);
   }
   else
   {

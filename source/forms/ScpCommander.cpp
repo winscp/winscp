@@ -563,6 +563,8 @@ void __fastcall TScpCommanderForm::ConfigurationChanged()
   LocalDirView->NortonLike = WinConfiguration->ScpCommander.NortonLikeMode;
   RemoteDirView->NortonLike = WinConfiguration->ScpCommander.NortonLikeMode;
 
+  LocalDirView->NaturalOrderNumericalSorting = WinConfiguration->NaturalOrderNumericalSorting;
+
   if (LocalDirView->RowSelect != WinConfiguration->FullRowSelect)
   {
     LocalDirView->RowSelect = WinConfiguration->FullRowSelect;

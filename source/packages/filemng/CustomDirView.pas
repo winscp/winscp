@@ -165,6 +165,7 @@ type
     FOnMatchMask: TMatchMaskEvent;
     FOnGetOverlay: TDirViewGetOverlayEvent;
     FMask: string;
+    FNaturalOrderNumericalSorting: Boolean;
     FScrollOnDragOver: TListViewScrollOnDragOver;
     FStatusFileInfo: TStatusFileInfo;
     FDoubleBufferedScrollingWorkaround: Boolean;
@@ -304,6 +305,7 @@ type
     function FileNameMatchesMasks(FileName: string; Directory: Boolean; Size: Int64; Modification: TDateTime; Masks: string; AllowImplicitMatches: Boolean): Boolean;
     function EnableDragOnClick: Boolean; override;
     procedure SetMask(Value: string); virtual;
+    procedure SetNaturalOrderNumericalSorting(Value: Boolean);
     procedure ScrollOnDragOverBeforeUpdate(ObjectToValidate: TObject);
     procedure ScrollOnDragOverAfterUpdate;
     procedure DoHistoryGo(Index: Integer);
@@ -412,6 +414,7 @@ type
     property SelectedNamesSaved: Boolean read GetSelectedNamesSaved;
     {filemask, multiple filters are possible: '*.pas;*.dfm'}
     property Mask: string read FMask write SetMask;
+    property NaturalOrderNumericalSorting: Boolean read FNaturalOrderNumericalSorting write SetNaturalOrderNumericalSorting;
 
     property OnContextPopup;
     property OnStartLoading: TNotifyEvent read FOnStartLoading write FOnStartLoading;
@@ -863,6 +866,7 @@ begin
   FDragDrive := #0;
   FExeDrag := False;
   FMask := '';
+  FNaturalOrderNumericalSorting := True;
   FDoubleBufferedScrollingWorkaround := not IsVistaHard();
 
   FOnHistoryChange := nil;
@@ -3195,6 +3199,15 @@ begin
     if DirOK then Reload(False);
   end;
 end;{SetMask}
+
+procedure TCustomDirView.SetNaturalOrderNumericalSorting(Value: Boolean);
+begin
+  if NaturalOrderNumericalSorting <> Value then
+  begin
+    FNaturalOrderNumericalSorting := Value;
+    SortItems;
+  end;
+end;
 
 // WM_SETFOCUS works even when focus is moved to another window/app,
 // while .Enter works only when focus is moved to order control of the same window.

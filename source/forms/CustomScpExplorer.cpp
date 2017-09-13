@@ -945,6 +945,7 @@ void __fastcall TCustomScpExplorerForm::ConfigurationChanged()
   RemoteDirView->ShowHiddenFiles = WinConfiguration->ShowHiddenFiles;
   RemoteDirView->FormatSizeBytes = WinConfiguration->FormatSizeBytes;
   RemoteDirView->ShowInaccesibleDirectories = WinConfiguration->ShowInaccesibleDirectories;
+  RemoteDirView->NaturalOrderNumericalSorting = WinConfiguration->NaturalOrderNumericalSorting;
 
   if (RemoteDirView->RowSelect != WinConfiguration->FullRowSelect)
   {
