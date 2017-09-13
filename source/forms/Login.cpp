@@ -1569,6 +1569,7 @@ void __fastcall TLoginDialog::CMDpiChanged(TMessage & Message)
 {
   TForm::Dispatch(&Message);
   GenerateButtonImages();
+  CenterButtonImage(LoginButton);
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::Dispatch(void * Message)
