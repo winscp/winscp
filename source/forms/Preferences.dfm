@@ -672,7 +672,7 @@ object PreferencesDialog: TPreferencesDialog
         end
         object DoubleClickGroup: TGroupBox
           Left = 8
-          Top = 184
+          Top = 185
           Width = 389
           Height = 74
           Anchors = [akLeft, akTop, akRight]
@@ -717,7 +717,7 @@ object PreferencesDialog: TPreferencesDialog
         end
         object PanelFontGroup: TGroupBox
           Left = 8
-          Top = 270
+          Top = 265
           Width = 389
           Height = 82
           Anchors = [akLeft, akRight, akBottom]
