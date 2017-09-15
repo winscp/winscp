@@ -1594,7 +1594,7 @@ namespace WinSCP
 
                 List<string> logSwitches = new List<string>(switches);
 
-                if (!string.IsNullOrEmpty(sessionOptions.PrivateKeyPassphrase) && !scanFingerprint)
+                if ((sessionOptions.SecurePrivateKeyPassphrase != null) && !scanFingerprint)
                 {
                     if (string.IsNullOrEmpty(sessionOptions.SshPrivateKeyPath) && string.IsNullOrEmpty(sessionOptions.TlsClientCertificatePath))
                     {

@@ -55,7 +55,8 @@ namespace WinSCP
         public SecureString SecureNewPassword { get { return _secureNewPassword; } set { _secureNewPassword = value; } }
         public TimeSpan Timeout { get { return _timeout; } set { SetTimeout(value); } }
         public int TimeoutInMilliseconds { get { return Tools.TimeSpanToMilliseconds(Timeout); } set { Timeout = Tools.MillisecondsToTimeSpan(value); } }
-        public string PrivateKeyPassphrase { get; set; }
+        public string PrivateKeyPassphrase { get { return GetPassword(_securePrivateKeyPassphrase); } set { SetPassword(ref _securePrivateKeyPassphrase, value); } }
+        public SecureString SecurePrivateKeyPassphrase { get { return _securePrivateKeyPassphrase; } set { _securePrivateKeyPassphrase = value; } }
 
         // SSH
         public string SshHostKeyFingerprint { get { return _sshHostKeyFingerprint; } set { SetSshHostKeyFingerprint(value); } }
@@ -407,6 +408,7 @@ namespace WinSCP
 
         private SecureString _securePassword;
         private SecureString _secureNewPassword;
+        private SecureString _securePrivateKeyPassphrase;
         private string _sshHostKeyFingerprint;
         private string _tlsHostCertificateFingerprint;
         private TimeSpan _timeout;
