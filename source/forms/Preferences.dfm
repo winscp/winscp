@@ -349,9 +349,9 @@ object PreferencesDialog: TPreferencesDialog
               'Debug 2')
           end
           object LogFileNameHintText: TStaticText
-            Left = 293
+            Left = 264
             Top = 84
-            Width = 82
+            Width = 111
             Height = 16
             Alignment = taRightJustify
             Anchors = [akTop, akRight]
@@ -457,9 +457,9 @@ object PreferencesDialog: TPreferencesDialog
             OnChange = ControlChange
           end
           object ActionsLogFileNameHintText: TStaticText
-            Left = 293
+            Left = 264
             Top = 65
-            Width = 82
+            Width = 111
             Height = 16
             Alignment = taRightJustify
             Anchors = [akTop, akRight]
@@ -2656,9 +2656,9 @@ object PreferencesDialog: TPreferencesDialog
             TabOrder = 4
           end
           object PuttyPathHintText: TStaticText
-            Left = 218
+            Left = 184
             Top = 61
-            Width = 79
+            Width = 113
             Height = 16
             Alignment = taRightJustify
             Anchors = [akTop, akRight]
