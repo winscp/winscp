@@ -8,8 +8,8 @@ uses
 function ShellFolderGetAttributesOfWithTimeout(
   ShellFolder: IShellFolder; cidl: UINT; var apidl: PItemIDList; var rgfInOut: UINT; Timeout: Integer): HResult;
 
-function SHGetFileInfoForPidlWithTimeout(
-  PIDL: PItemIDList; dwFileAttributes: DWORD; var psfi: TSHFileInfoW;
+function SHGetFileInfoWithTimeout(
+  pszPath: LPCWSTR; dwFileAttributes: DWORD; var psfi: TSHFileInfoW;
   cbFileInfo, uFlags: UINT; Timeout: Integer): DWORD_PTR;
 
 function ShellFolderParseDisplayNameWithTimeout(
@@ -40,6 +40,7 @@ type
 
     // SHGetFileInfoWithTimeout
     PIDL: PItemIDList;
+    Path: string;
     dwFileAttributes: DWORD;
     psfi: TSHFileInfoW;
     cbFileInfo, uFlags: UINT;
@@ -229,21 +230,39 @@ begin
   end;
 end;
 
-procedure SHGetFileInfoForPidlOperation(Operation: TOperation);
+procedure SHGetFileInfoOperation(Operation: TOperation);
+var
+  pszPath: LPCWSTR;
 begin
+  if Operation.uFlags and SHGFI_PIDL <> 0 then
+  begin
+    pszPath := LPCWSTR(Operation.PIDL);
+  end
+    else
+  begin
+    pszPath := LPCWSTR(Operation.Path);
+  end;
+
   Operation.ResultDWordPtr :=
-    SHGetFileInfo(PChar(Operation.PIDL), Operation.dwFileAttributes, Operation.psfi, Operation.cbFileInfo, Operation.uFlags);
+    SHGetFileInfo(pszPath, Operation.dwFileAttributes, Operation.psfi, Operation.cbFileInfo, Operation.uFlags);
 end;
 
-function SHGetFileInfoForPidlWithTimeout(
-  PIDL: PItemIDList; dwFileAttributes: DWORD; var psfi: TSHFileInfoW;
+function SHGetFileInfoWithTimeout(
+  pszPath: LPCWSTR; dwFileAttributes: DWORD; var psfi: TSHFileInfoW;
   cbFileInfo, uFlags: UINT; Timeout: Integer): DWORD_PTR;
 var
   Operation: TOperation;
 begin
   NeedThread;
-  Operation := TOperation.Create(SHGetFileInfoForPidlOperation);
-  Operation.PIDL := PIDL;
+  Operation := TOperation.Create(SHGetFileInfoOperation);
+  if uFlags and SHGFI_PIDL <> 0 then
+  begin
+    Operation.PIDL := PItemIDList(pszPath);
+  end
+    else
+  begin
+    Operation.Path := pszPath;
+  end;
   Operation.dwFileAttributes := dwFileAttributes;
   Operation.psfi := psfi;
   Operation.cbFileInfo := cbFileInfo;

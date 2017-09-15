@@ -1717,8 +1717,8 @@ begin
             begin
               // Files with PIDL are typically .exe files.
               // It may take long to retrieve an icon from exe file.
-              if SHGetFileInfoForPidlWithTimeout(
-                   PIDL, FILE_ATTRIBUTE_NORMAL, FileInfo, SizeOf(FileInfo),
+              if SHGetFileInfoWithTimeout(
+                   PChar(PIDL), FILE_ATTRIBUTE_NORMAL, FileInfo, SizeOf(FileInfo),
                    SHGFI_TYPENAME or SHGFI_USEFILEATTRIBUTES or SHGFI_SYSICONINDEX or SHGFI_PIDL,
                    MSecsPerSec div 4) = 0 then
               begin
@@ -1728,8 +1728,9 @@ begin
             end
               else
             begin
-              SHGetFileInfo(PChar(FileIconForName), FILE_ATTRIBUTE_NORMAL, FileInfo, SizeOf(FileInfo),
-                SHGFI_TYPENAME or SHGFI_USEFILEATTRIBUTES or SHGFI_SYSICONINDEX);
+              SHGetFileInfoWithTimeout(PChar(FileIconForName), FILE_ATTRIBUTE_NORMAL, FileInfo, SizeOf(FileInfo),
+                SHGFI_TYPENAME or SHGFI_USEFILEATTRIBUTES or SHGFI_SYSICONINDEX,
+                MSecsPerSec div 4);
             end;
 
             TypeName := FileInfo.szTypeName;
