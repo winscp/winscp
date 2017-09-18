@@ -737,6 +737,7 @@ object PreferencesDialog: TPreferencesDialog
             Color = clWindow
             ParentColor = False
             Transparent = False
+            WordWrap = True
             OnDblClick = PanelFontLabelDblClick
           end
           object PanelFontButton: TButton
