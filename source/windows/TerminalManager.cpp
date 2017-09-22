@@ -93,6 +93,9 @@ __fastcall TTerminalManager::TTerminalManager() :
   FTerminalList = new TStringList();
   FQueues = new TList();
   FTerminationMessages = new TStringList();
+  std::unique_ptr<TSessionData> DummyData(new TSessionData(L""));
+  FLocalTerminal = CreateTerminal(DummyData.get());
+  SetupTerminal(FLocalTerminal);
 }
 //---------------------------------------------------------------------------
 __fastcall TTerminalManager::~TTerminalManager()
@@ -109,6 +112,7 @@ __fastcall TTerminalManager::~TTerminalManager()
   DebugAssert(WinConfiguration->OnMasterPasswordPrompt == MasterPasswordPrompt);
   WinConfiguration->OnMasterPasswordPrompt = NULL;
 
+  delete FLocalTerminal;
   delete FQueues;
   delete FTerminationMessages;
   delete FTerminalList;
@@ -141,6 +145,20 @@ TTerminal * __fastcall TTerminalManager::CreateTerminal(TSessionData * Data)
   return new TManagedTerminal(Data, Configuration);
 }
 //---------------------------------------------------------------------------
+void __fastcall TTerminalManager::SetupTerminal(TTerminal * Terminal)
+{
+  Terminal->OnQueryUser = TerminalQueryUser;
+  Terminal->OnPromptUser = TerminalPromptUser;
+  Terminal->OnDisplayBanner = TerminalDisplayBanner;
+  Terminal->OnShowExtendedException = TerminalShowExtendedException;
+  Terminal->OnProgress = OperationProgress;
+  Terminal->OnFinished = OperationFinished;
+  Terminal->OnDeleteLocalFile = DeleteLocalFile;
+  Terminal->OnReadDirectoryProgress = TerminalReadDirectoryProgress;
+  Terminal->OnInformation = TerminalInformation;
+  Terminal->OnCustomCommand = TerminalCustomCommand;
+}
+//---------------------------------------------------------------------------
 TTerminal * __fastcall TTerminalManager::DoNewTerminal(TSessionData * Data)
 {
   FTerminalList->Clear();
@@ -150,16 +168,7 @@ TTerminal * __fastcall TTerminalManager::DoNewTerminal(TSessionData * Data)
     FQueues->Add(NewQueue(Terminal));
     FTerminationMessages->Add(L"");
 
-    Terminal->OnQueryUser = TerminalQueryUser;
-    Terminal->OnPromptUser = TerminalPromptUser;
-    Terminal->OnDisplayBanner = TerminalDisplayBanner;
-    Terminal->OnShowExtendedException = TerminalShowExtendedException;
-    Terminal->OnProgress = OperationProgress;
-    Terminal->OnFinished = OperationFinished;
-    Terminal->OnDeleteLocalFile = DeleteLocalFile;
-    Terminal->OnReadDirectoryProgress = TerminalReadDirectoryProgress;
-    Terminal->OnInformation = TerminalInformation;
-    Terminal->OnCustomCommand = TerminalCustomCommand;
+    SetupTerminal(Terminal);
   }
   catch(...)
   {
