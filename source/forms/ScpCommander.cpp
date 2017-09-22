@@ -816,7 +816,7 @@ void __fastcall TScpCommanderForm::UpdateControls()
     UpdateToolbar2ItemCaption(CurrentMoveToolbar2Item);
   }
 
-  CommandLineCombo->Enabled = CanConsole();
+  CommandLineCombo->Enabled = (FCurrentSide == osLocal) || CanConsole();
   CommandLinePromptLabel->Enabled = CommandLineCombo->Enabled;
 }
 //---------------------------------------------------------------------------
