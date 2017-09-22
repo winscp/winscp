@@ -3679,7 +3679,6 @@ void __fastcall TCustomScpExplorerForm::SideEnter(TOperationSide Side)
 void __fastcall TCustomScpExplorerForm::DeleteFiles(TOperationSide Side,
   TStrings * FileList, bool Alternative)
 {
-  DebugAssert(Terminal);
   TCustomDirView * DView = DirView(Side);
   DView->SaveSelection();
   DView->SaveSelectedNames();
@@ -3690,13 +3689,14 @@ void __fastcall TCustomScpExplorerForm::DeleteFiles(TOperationSide Side,
   {
     if (Side == osRemote)
     {
+      DebugAssert(Terminal != NULL);
       Terminal->DeleteFiles(FileList, FLAGMASK(Alternative, dfAlternative));
     }
     else
     {
       try
       {
-        Terminal->DeleteLocalFiles(FileList, FLAGMASK(Alternative, dfAlternative));
+        TTerminalManager::Instance()->LocalTerminal->DeleteLocalFiles(FileList, FLAGMASK(Alternative, dfAlternative));
       }
       __finally
       {
@@ -3923,7 +3923,7 @@ void __fastcall TCustomScpExplorerForm::CreateDirectory(TOperationSide Side)
   TRemoteProperties * AProperties = (Side == osRemote ? &Properties : NULL);
   UnicodeString Name = LoadStr(NEW_FOLDER);
   int AllowedChanges =
-    FLAGMASK(Terminal->IsCapable[fcModeChanging], cpMode);
+    FLAGMASK((Side == osRemote) && Terminal->IsCapable[fcModeChanging], cpMode);
   bool SaveSettings = false;
 
   if (DoCreateDirectoryDialog(Name, AProperties, AllowedChanges, SaveSettings))

@@ -71,6 +71,7 @@ public:
   __property TStrings * TerminalList = { read = GetTerminalList };
   __property TNotifyEvent OnLastTerminalClosed = { read = FOnLastTerminalClosed, write = FOnLastTerminalClosed };
   __property TNotifyEvent OnTerminalListChanged = { read = FOnTerminalListChanged, write = FOnTerminalListChanged };
+  __property TTerminal * LocalTerminal = { read = FLocalTerminal };
 
 protected:
   virtual TTerminal * __fastcall CreateTerminal(TSessionData * Data);
@@ -79,6 +80,7 @@ private:
   static TTerminalManager * FInstance;
   TCustomScpExplorerForm * FScpExplorer;
   TTerminal * FActiveTerminal;
+  TTerminal * FLocalTerminal;
   bool FDestroying;
   TTerminalPendingAction FTerminalPendingAction;
   TNotifyEvent FOnLastTerminalClosed;
@@ -163,6 +165,7 @@ private:
   bool __fastcall HandleMouseWheel(WPARAM WParam, LPARAM LParam);
   void __fastcall DoConfigurationChange();
   bool __fastcall ShouldDisplayQueueStatusOnAppTitle();
+  void __fastcall SetupTerminal(TTerminal * Terminal);
 };
 //---------------------------------------------------------------------------
 #endif

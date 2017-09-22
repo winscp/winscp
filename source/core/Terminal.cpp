@@ -3666,7 +3666,6 @@ bool __fastcall TTerminal::ProcessFiles(TStrings * FileList,
   TFileOperation Operation, TProcessFileEvent ProcessFile, void * Param,
   TOperationSide Side, bool Ex)
 {
-  DebugAssert(FFileSystem);
   DebugAssert(FileList);
 
   bool Result = false;
@@ -3682,6 +3681,7 @@ bool __fastcall TTerminal::ProcessFiles(TStrings * FileList,
     {
       if (Side == osRemote)
       {
+        DebugAssert(FFileSystem != NULL);
         BeginTransaction();
       }
 
