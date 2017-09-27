@@ -864,7 +864,7 @@ void __fastcall ApplySystemSettingsOnControl(TControl * Control)
   // Neither they scale the status bar size if UseSystemFont is true.
   // they claim it should scale with font size, but it does not,
   // probably because they eat WM_SIZE in TCustomStatusBar.WMSize.
-  // See http://qc.embarcadero.com/wc/qcmain.aspx?d=83599
+  // (used to be issue 83599 on Embarcadero QC, when it was still online)
   // Check TCustomStatusBar.ChangeScale() for changes.
   // For TBX status bars, this is implemented in TTBXCustomStatusBar.ChangeScale
   TStatusBar * StatusBar = dynamic_cast<TStatusBar *>(Control);
