@@ -187,6 +187,11 @@ namespace WinSCP
                     throw Logger.WriteException(new InvalidOperationException("Session is already opened"));
                 }
 
+                if (sessionOptions == null)
+                {
+                    throw Logger.WriteException(new ArgumentNullException("sessionOptions"));
+                }
+
                 try
                 {
                     SetupTempPath();
@@ -305,6 +310,7 @@ namespace WinSCP
                         groupReader.ReadToEnd(LogReadFlags.ThrowFailures);
                     }
 
+                    _sessionTimeout = sessionOptions.Timeout;
                 }
                 catch (Exception e)
                 {
@@ -1743,7 +1749,13 @@ namespace WinSCP
 
         internal void CheckForTimeout(string additional = null)
         {
-            if (DateTime.Now - _lastOutput > Timeout)
+            TimeSpan timeout = Timeout;
+            if (timeout < _sessionTimeout)
+            {
+                timeout = _sessionTimeout + TimeSpan.FromSeconds(1);
+            }
+
+            if (DateTime.Now - _lastOutput > timeout)
             {
                 string message = "Timeout waiting for WinSCP to respond";
                 if (additional != null)
@@ -2237,5 +2249,6 @@ namespace WinSCP
         private SecureString _executableProcessPassword;
         private StringCollection _error;
         private bool _ignoreFailed;
+        private TimeSpan _sessionTimeout;
     }
 }
