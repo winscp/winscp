@@ -1377,7 +1377,7 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
 
   std::vector<unsigned int> Buttons;
   std::vector<UnicodeString> Captions;
-  std::vector<TNotifyEvent> OnClicks;
+  std::vector<TButtonSubmitEvent> OnSubmits;
 
   for (unsigned int Answer = qaFirst; Answer <= qaLast; Answer = Answer << 1)
   {
@@ -1388,7 +1388,7 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
       AnswerNameAndCaption(Answer, Name, Caption);
       Captions.push_back(Caption);
       Buttons.push_back(Answer);
-      OnClicks.push_back(NULL);
+      OnSubmits.push_back(NULL);
       AAnswers -= Answer;
     }
   }
@@ -1409,7 +1409,7 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
           {
             Captions[bi] = Params->Aliases[ai].Alias;
           }
-          OnClicks[bi] = Params->Aliases[ai].OnClick;
+          OnSubmits[bi] = Params->Aliases[ai].OnSubmit;
           break;
         }
       }
@@ -1631,9 +1631,9 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
       PrintLine(AnswerCaption);
       FirstOutput = true;
 
-      if (OnClicks[AnswerIndex - 1] != NULL)
+      if (OnSubmits[AnswerIndex - 1] != NULL)
       {
-        OnClicks[AnswerIndex - 1](NULL);
+        OnSubmits[AnswerIndex - 1](NULL, Answer);
       }
       else
       {

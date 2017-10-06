@@ -2167,6 +2167,49 @@ UnicodeString __fastcall TSecureShell::RetrieveHostKey(UnicodeString Host, int P
   return Result;
 }
 //---------------------------------------------------------------------------
+struct TPasteKeyHandler
+{
+  UnicodeString KeyStr;
+  UnicodeString NormalizedFingerprint;
+  TSessionUI * UI;
+
+  void __fastcall Paste(TObject * /*Sender*/, unsigned int & Answer)
+  {
+    UnicodeString ClipboardText;
+    if (TextFromClipboard(ClipboardText, true))
+    {
+      UnicodeString NormalizedClipboardFingerprint = NormalizeFingerprint(ClipboardText);
+      // case insensitive comparison, contrary to VerifyHostKey (we should change to insesitive there too)
+      if (SameText(NormalizedClipboardFingerprint, NormalizedFingerprint) ||
+          SameText(ClipboardText, KeyStr))
+      {
+        Answer = qaYes;
+      }
+      else
+      {
+        const struct ssh_signkey * Algorithm;
+        try
+        {
+          UnicodeString Key = ParseOpenSshPubLine(ClipboardText, Algorithm);
+          if (Key == KeyStr)
+          {
+            Answer = qaYes;
+          }
+        }
+        catch (...)
+        {
+          // swallow
+        }
+      }
+    }
+
+    if (Answer == 0)
+    {
+      UI->QueryUser(LoadStr(HOSTKEY_NOT_MATCH_CLIPBOARD), NULL, qaOK, NULL, qtError);
+    }
+  }
+};
+//---------------------------------------------------------------------------
 void __fastcall TSecureShell::VerifyHostKey(UnicodeString Host, int Port,
   const UnicodeString KeyType, UnicodeString KeyStr, UnicodeString Fingerprint)
 {
@@ -2270,23 +2313,31 @@ void __fastcall TSecureShell::VerifyHostKey(UnicodeString Host, int Port,
       // it's a small issue.
       TClipboardHandler ClipboardHandler;
       ClipboardHandler.Text = Fingerprint;
+      TPasteKeyHandler PasteKeyHandler;
+      PasteKeyHandler.KeyStr = KeyStr;
+      PasteKeyHandler.NormalizedFingerprint = NormalizedFingerprint;
+      PasteKeyHandler.UI = FUI;
 
       bool Unknown = StoredKeys.IsEmpty();
 
       int Answers;
       int AliasesCount;
-      TQueryButtonAlias Aliases[3];
+      TQueryButtonAlias Aliases[4];
       Aliases[0].Button = qaRetry;
       Aliases[0].Alias = LoadStr(COPY_KEY_BUTTON);
-      Aliases[0].OnClick = &ClipboardHandler.Copy;
-      Answers = qaYes | qaCancel | qaRetry;
-      AliasesCount = 1;
+      Aliases[0].OnSubmit = &ClipboardHandler.Copy;
+      Aliases[1].Button = qaIgnore;
+      Aliases[1].Alias = LoadStr(PASTE_KEY_BUTTON);
+      Aliases[1].OnSubmit = &PasteKeyHandler.Paste;
+      Aliases[1].GroupWith = qaYes;
+      Answers = qaYes | qaCancel | qaRetry | qaIgnore;
+      AliasesCount = 2;
       if (!Unknown)
       {
-        Aliases[1].Button = qaYes;
-        Aliases[1].Alias = LoadStr(UPDATE_KEY_BUTTON);
-        Aliases[2].Button = qaOK;
-        Aliases[2].Alias = LoadStr(ADD_KEY_BUTTON);
+        Aliases[2].Button = qaYes;
+        Aliases[2].Alias = LoadStr(UPDATE_KEY_BUTTON);
+        Aliases[3].Button = qaOK;
+        Aliases[3].Alias = LoadStr(ADD_KEY_BUTTON);
         AliasesCount += 2;
         Answers |= qaSkip | qaOK;
       }

@@ -22,7 +22,7 @@ TStoredSessionList * StoredSessions = NULL;
 //---------------------------------------------------------------------------
 TQueryButtonAlias::TQueryButtonAlias()
 {
-  OnClick = NULL;
+  OnSubmit = NULL;
   GroupWith = -1;
   ElevationRequired = false;
   MenuButton = false;

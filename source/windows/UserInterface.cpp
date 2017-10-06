@@ -135,7 +135,7 @@ struct TOpenLocalPathHandler
   UnicodeString LocalPath;
   UnicodeString LocalFileName;
 
-  void __fastcall Open(TObject * Sender)
+  void __fastcall Open(TObject * Sender, unsigned int & /*Answer*/)
   {
     TButton * Button = DebugNotNull(dynamic_cast<TButton *>(Sender));
     // Reason for separate AMenu variable is given in TPreferencesDialog::EditorFontColorButtonClick
@@ -256,7 +256,7 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
 
           Aliases[0].Button = qaIgnore;
           Aliases[0].Alias = LoadStr(OPEN_BUTTON);
-          Aliases[0].OnClick = OpenLocalPathHandler.Open;
+          Aliases[0].OnSubmit = OpenLocalPathHandler.Open;
           Aliases[0].MenuButton = true;
           Answers |= Aliases[0].Button;
           Params.Aliases = Aliases;

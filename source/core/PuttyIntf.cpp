@@ -721,11 +721,16 @@ static void __fastcall DoNormalizeFingerprint(UnicodeString & Fingerprint, Unico
       int LenStart = Name.Length() + 1;
       Fingerprint[LenStart] = NormalizedSeparator;
       int Space = Fingerprint.Pos(L" ");
-      DebugAssert(IsNumber(Fingerprint.SubString(LenStart + 1, Space - LenStart - 1)));
-      Fingerprint.Delete(LenStart + 1, Space - LenStart);
-      Fingerprint = ReplaceChar(Fingerprint, L':', NormalizedSeparator);
-      KeyType = UnicodeString(SignKey->keytype);
-      return;
+      // If not a number, it's an invalid input,
+      // either something completelly wrong, or it can be OpenSSH base64 public key,
+      // that got here from TPasteKeyHandler::Paste
+      if (IsNumber(Fingerprint.SubString(LenStart + 1, Space - LenStart - 1)))
+      {
+        Fingerprint.Delete(LenStart + 1, Space - LenStart);
+        Fingerprint = ReplaceChar(Fingerprint, L':', NormalizedSeparator);
+        KeyType = UnicodeString(SignKey->keytype);
+        return;
+      }
     }
     else if (StartsStr(Name + NormalizedSeparator, Fingerprint))
     {
@@ -772,6 +777,49 @@ UnicodeString __fastcall Sha256(const char * Data, size_t Size)
 void __fastcall DllHijackingProtection()
 {
   dll_hijacking_protection();
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall ParseOpenSshPubLine(const UnicodeString & Line, const struct ssh_signkey *& Algorithm)
+{
+  UTF8String UtfLine = UTF8String(Line);
+  char * AlgorithmName = NULL;
+  int PubBlobLen = 0;
+  char * CommentPtr = NULL;
+  const char * ErrorStr = NULL;
+  unsigned char * PubBlob = openssh_loadpub_line(UtfLine.c_str(), &AlgorithmName, &PubBlobLen, &CommentPtr, &ErrorStr);
+  UnicodeString Result;
+  if (PubBlob == NULL)
+  {
+    throw Exception(UnicodeString(ErrorStr));
+  }
+  else
+  {
+    try
+    {
+      Algorithm = find_pubkey_alg(AlgorithmName);
+      if (Algorithm == NULL)
+      {
+        throw Exception(FORMAT(L"Unknown public key algorithm \"%s\".", (AlgorithmName)));
+      }
+
+      void * Key = Algorithm->newkey(Algorithm, reinterpret_cast<const char*>(PubBlob), PubBlobLen);
+      if (Key == NULL)
+      {
+        throw Exception(L"Invalid public key.");
+      }
+      char * FmtKey = Algorithm->fmtkey(Key);
+      Result = UnicodeString(FmtKey);
+      sfree(FmtKey);
+      Algorithm->freekey(Key);
+    }
+    __finally
+    {
+      sfree(PubBlob);
+      sfree(AlgorithmName);
+      sfree(CommentPtr);
+    }
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

@@ -233,6 +233,7 @@ BEGIN
   SIZE_INVALID, "'%s' is not a valid size."
   KNOWN_HOSTS_NOT_FOUND, "OpenSSH known_hosts file not found."
   KNOWN_HOSTS_NO_SITES, "No host keys found in known_hosts."
+  HOSTKEY_NOT_MATCH_CLIPBOARD, "Contents of the clipboard does not match the host key nor its fingerprint."
 
   CORE_CONFIRMATION_STRINGS, "CORE_CONFIRMATION"
   CONFIRM_PROLONG_TIMEOUT3, "Host is not communicating for %d seconds.\n\nWait for another %0:d seconds?"
@@ -429,6 +430,7 @@ BEGIN
   TEXT_FILE_ENCODING, "The file must be in UTF-8 or UTF-16 encoding."
   AND_STR, "%s and %s"
   AUTH_CHANGING_PASSWORD, "Changing password."
+  PASTE_KEY_BUTTON, "&Paste key"
 
   CORE_VARIABLE_STRINGS, "CORE_VARIABLE"
   PUTTY_BASED_ON, "SSH and SCP code based on PuTTY %s"

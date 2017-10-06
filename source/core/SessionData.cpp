@@ -4086,104 +4086,64 @@ void __fastcall TStoredSessionList::ImportFromKnownHosts(TStrings * Lines)
           UnicodeString HostNameStr = Line.SubString(1, P - 1);
           Line = Line.SubString(P + 1, Line.Length() - P);
 
-          UTF8String UtfLine = UTF8String(Line);
-          char * AlgorithmName = NULL;
-          int PubBlobLen = 0;
-          char * CommentPtr = NULL;
-          const char * ErrorStr = NULL;
-          unsigned char * PubBlob = openssh_loadpub_line(UtfLine.c_str(), &AlgorithmName, &PubBlobLen, &CommentPtr, &ErrorStr);
-          if (PubBlob == NULL)
+          P = Pos(L',', HostNameStr);
+          if (P > 0)
           {
-            throw Exception(UnicodeString(ErrorStr));
+            HostNameStr.SetLength(P - 1);
           }
-          else
+          P = Pos(L':', HostNameStr);
+          int PortNumber = -1;
+          if (P > 0)
           {
-            try
+            UnicodeString PortNumberStr = HostNameStr.SubString(P + 1, HostNameStr.Length() - P);
+            PortNumber = StrToInt(PortNumberStr);
+            HostNameStr.SetLength(P - 1);
+          }
+          if ((HostNameStr.Length() >= 2) &&
+              (HostNameStr[1] == L'[') && (HostNameStr[HostNameStr.Length()] == L']'))
+          {
+            HostNameStr = HostNameStr.SubString(2, HostNameStr.Length() - 2);
+          }
+
+          UnicodeString NameStr = HostNameStr;
+          if (PortNumber >= 0)
+          {
+            NameStr = FORMAT(L"%s:%d", (NameStr, PortNumber));
+          }
+
+          std::unique_ptr<TSessionData> SessionDataOwner;
+          TSessionData * SessionData = dynamic_cast<TSessionData *>(FindByName(NameStr));
+          if (SessionData == NULL)
+          {
+            SessionData = new TSessionData(L"");
+            SessionDataOwner.reset(SessionData);
+            SessionData->CopyData(DefaultSettings);
+            SessionData->Name = NameStr;
+            SessionData->HostName = HostNameStr;
+            if (PortNumber >= 0)
             {
-              P = Pos(L',', HostNameStr);
-              if (P > 0)
-              {
-                HostNameStr.SetLength(P - 1);
-              }
-              P = Pos(L':', HostNameStr);
-              int PortNumber = -1;
-              if (P > 0)
-              {
-                UnicodeString PortNumberStr = HostNameStr.SubString(P + 1, HostNameStr.Length() - P);
-                PortNumber = StrToInt(PortNumberStr);
-                HostNameStr.SetLength(P - 1);
-              }
-              if ((HostNameStr.Length() >= 2) &&
-                  (HostNameStr[1] == L'[') && (HostNameStr[HostNameStr.Length()] == L']'))
-              {
-                HostNameStr = HostNameStr.SubString(2, HostNameStr.Length() - 2);
-              }
-
-              UnicodeString NameStr = HostNameStr;
-              if (PortNumber >= 0)
-              {
-                NameStr = FORMAT(L"%s:%d", (NameStr, PortNumber));
-              }
-
-              std::unique_ptr<TSessionData> SessionDataOwner;
-              TSessionData * SessionData = dynamic_cast<TSessionData *>(FindByName(NameStr));
-              if (SessionData == NULL)
-              {
-                SessionData = new TSessionData(L"");
-                SessionDataOwner.reset(SessionData);
-                SessionData->CopyData(DefaultSettings);
-                SessionData->Name = NameStr;
-                SessionData->HostName = HostNameStr;
-                if (PortNumber >= 0)
-                {
-                  SessionData->PortNumber = PortNumber;
-                }
-              }
-
-              const struct ssh_signkey * Algorithm = find_pubkey_alg(AlgorithmName);
-              if (Algorithm == NULL)
-              {
-                throw Exception(FORMAT(L"Unknown public key algorithm \"%s\".", (AlgorithmName)));
-              }
-
-              void * Key = Algorithm->newkey(Algorithm, reinterpret_cast<const char*>(PubBlob), PubBlobLen);
-              try
-              {
-                if (Key == NULL)
-                {
-                  throw Exception("Invalid public key.");
-                }
-                char * Fingerprint = Algorithm->fmtkey(Key);
-                UnicodeString KeyKey =
-                  FORMAT(L"%s@%d:%s", (Algorithm->keytype, SessionData->PortNumber, HostNameStr));
-                UnicodeString HostKey =
-                  FORMAT(L"%s:%s=%s", (Algorithm->name, KeyKey, Fingerprint));
-                sfree(Fingerprint);
-                UnicodeString HostKeyList = SessionData->HostKey;
-                AddToList(HostKeyList, HostKey, L";");
-                SessionData->HostKey = HostKeyList;
-                // If there's at least one unknown key type for this host, select it
-                if (KeyList->IndexOf(KeyKey) < 0)
-                {
-                  SessionData->Selected = true;
-                }
-              }
-              __finally
-              {
-                Algorithm->freekey(Key);
-              }
-
-              if (SessionDataOwner.get() != NULL)
-              {
-                Add(SessionDataOwner.release());
-              }
+              SessionData->PortNumber = PortNumber;
             }
-            __finally
-            {
-              sfree(PubBlob);
-              sfree(AlgorithmName);
-              sfree(CommentPtr);
-            }
+          }
+
+          const struct ssh_signkey * Algorithm;
+          UnicodeString Key = ParseOpenSshPubLine(Line, Algorithm);
+          UnicodeString KeyKey =
+            FORMAT(L"%s@%d:%s", (Algorithm->keytype, SessionData->PortNumber, HostNameStr));
+          UnicodeString HostKey =
+            FORMAT(L"%s:%s=%s", (Algorithm->name, KeyKey, Key));
+          UnicodeString HostKeyList = SessionData->HostKey;
+          AddToList(HostKeyList, HostKey, L";");
+          SessionData->HostKey = HostKeyList;
+          // If there's at least one unknown key type for this host, select it
+          if (KeyList->IndexOf(KeyKey) < 0)
+          {
+            SessionData->Selected = true;
+          }
+
+          if (SessionDataOwner.get() != NULL)
+          {
+            Add(SessionDataOwner.release());
           }
         }
       }

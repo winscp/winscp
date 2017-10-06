@@ -89,7 +89,7 @@ __fastcall TMessageForm::~TMessageForm()
   SAFE_DESTROY(FUpdateForShiftStateTimer);
 }
 //---------------------------------------------------------------------------
-void __fastcall TMessageForm::HelpButtonClick(TObject * /*Sender*/)
+void __fastcall TMessageForm::HelpButtonSubmit(TObject * /*Sender*/, unsigned int & /*Answer*/)
 {
   if (HelpKeyword != HELP_NONE)
   {
@@ -101,7 +101,7 @@ void __fastcall TMessageForm::HelpButtonClick(TObject * /*Sender*/)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TMessageForm::ReportButtonClick(TObject * /*Sender*/)
+void __fastcall TMessageForm::ReportButtonSubmit(TObject * /*Sender*/, unsigned int & /*Answer*/)
 {
   // Report text goes last, as it may exceed URL parameters limit (2048) and get truncated.
   // And we need to preserve the other parameters.
@@ -415,6 +415,16 @@ void __fastcall TMessageForm::DoShow()
 
 }
 //---------------------------------------------------------------------------
+void __fastcall TMessageForm::ButtonSubmit(TObject * Sender)
+{
+  unsigned int Answer = 0;
+  FButtonSubmitEvents[Sender](Sender, Answer);
+  if (Answer != 0)
+  {
+    ModalResult = Answer;
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TMessageForm::MenuItemClick(TObject * Sender)
 {
   TMenuItem * Item = DebugNotNull(dynamic_cast<TMenuItem *>(Sender));
@@ -476,7 +486,7 @@ static UnicodeString __fastcall GetKeyNameStr(int Key)
 //---------------------------------------------------------------------------
 TButton * __fastcall TMessageForm::CreateButton(
   UnicodeString Name, UnicodeString Caption, unsigned int Answer,
-  TNotifyEvent OnClick, bool IsTimeoutButton,
+  TButtonSubmitEvent OnSubmit, bool IsTimeoutButton,
   int GroupWith, TShiftState GrouppedShiftState, bool ElevationRequired, bool MenuButton,
   TAnswerButtons & AnswerButtons, bool HasMoreMessages, int & ButtonWidths)
 {
@@ -553,9 +563,10 @@ TButton * __fastcall TMessageForm::CreateButton(
     }
 
     Item->Caption = Caption;
-    if (OnClick != NULL)
+    if (OnSubmit != NULL)
     {
-      Item->OnClick = OnClick;
+      Item->OnClick = ButtonSubmit;
+      FButtonSubmitEvents[Item] = OnSubmit;
     }
     else
     {
@@ -592,9 +603,10 @@ TButton * __fastcall TMessageForm::CreateButton(
     Button->Height = ScaleByTextHeightRunTime(FDummyForm, Button->Height);
     Button->Width = ScaleByTextHeightRunTime(FDummyForm, Button->Width);
 
-    if (OnClick != NULL)
+    if (OnSubmit != NULL)
     {
-      Button->OnClick = OnClick;
+      Button->OnClick = ButtonSubmit;
+      FButtonSubmitEvents[Button] = OnSubmit;
     }
     else
     {
@@ -851,7 +863,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
 
       AnswerNameAndCaption(Answer, Name, Caption);
 
-      TNotifyEvent OnClick = NULL;
+      TButtonSubmitEvent OnSubmit = NULL;
       int GroupWith = -1;
       TShiftState GrouppedShiftState;
       bool ElevationRequired = false;
@@ -866,12 +878,12 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
             {
               Caption = Aliases[i].Alias;
             }
-            OnClick = Aliases[i].OnClick;
+            OnSubmit = Aliases[i].OnSubmit;
             GroupWith = Aliases[i].GroupWith;
             GrouppedShiftState = Aliases[i].GrouppedShiftState;
             ElevationRequired = Aliases[i].ElevationRequired;
             MenuButton = Aliases[i].MenuButton;
-            DebugAssert((OnClick == NULL) || (GrouppedShiftState == TShiftState()));
+            DebugAssert((OnSubmit == NULL) || (GrouppedShiftState == TShiftState()));
             break;
           }
         }
@@ -894,19 +906,19 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
 
       if (Answer == qaHelp)
       {
-        DebugAssert(OnClick == NULL);
-        OnClick = Result->HelpButtonClick;
+        DebugAssert(OnSubmit == NULL);
+        OnSubmit = Result->HelpButtonSubmit;
       }
 
       if (Answer == qaReport)
       {
-        DebugAssert(OnClick == NULL);
-        OnClick = Result->ReportButtonClick;
+        DebugAssert(OnSubmit == NULL);
+        OnSubmit = Result->ReportButtonSubmit;
       }
 
       TButton * Button = Result->CreateButton(
         Name, Caption, Answer,
-        OnClick, IsTimeoutButton, GroupWith, GrouppedShiftState, ElevationRequired, MenuButton,
+        OnSubmit, IsTimeoutButton, GroupWith, GrouppedShiftState, ElevationRequired, MenuButton,
         AnswerButtons, HasMoreMessages, ButtonWidths);
 
       if (Button != NULL)

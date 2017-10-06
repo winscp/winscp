@@ -2409,7 +2409,7 @@ bool TWebDAVFileSystem::VerifyCertificate(const TWebDAVCertificateData & Data, b
       TQueryButtonAlias Aliases[1];
       Aliases[0].Button = qaRetry;
       Aliases[0].Alias = LoadStr(COPY_KEY_BUTTON);
-      Aliases[0].OnClick = &ClipboardHandler.Copy;
+      Aliases[0].OnSubmit = &ClipboardHandler.Copy;
 
       TQueryParams Params;
       Params.HelpKeyword = HELP_VERIFY_CERTIFICATE;

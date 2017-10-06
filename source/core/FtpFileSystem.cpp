@@ -4530,7 +4530,7 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestVerifyCertificate(
         TQueryButtonAlias Aliases[1];
         Aliases[0].Button = qaRetry;
         Aliases[0].Alias = LoadStr(COPY_KEY_BUTTON);
-        Aliases[0].OnClick = &ClipboardHandler.Copy;
+        Aliases[0].OnSubmit = &ClipboardHandler.Copy;
 
         TQueryParams Params(qpWaitInBatch);
         Params.HelpKeyword = HELP_VERIFY_CERTIFICATE;
