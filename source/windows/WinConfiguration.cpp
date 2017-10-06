@@ -2773,7 +2773,9 @@ void __fastcall TCustomCommandType::LoadExtension(TStrings * Lines, const Unicod
 
   UnicodeString ExtensionBaseName = ExtractExtensionBaseName(PathForBaseName);
 
-  for (int Index = 0; Index < Lines->Count; Index++)
+  UnicodeString ExtensionLine;
+  bool Break = false;
+  for (int Index = 0; !Break && (Index < Lines->Count); Index++)
   {
     UnicodeString Line = Lines->Strings[Index].Trim();
     if (!Line.IsEmpty())
@@ -2803,169 +2805,185 @@ void __fastcall TCustomCommandType::LoadExtension(TStrings * Lines, const Unicod
 
       if (!IsComment)
       {
-        break;
+        Break = true;
+        // ignore this and later lines, but finish processing the previous line with ^, if any
+        Line = L"";
       }
       else
       {
         Line = Line.Trim();
-        int P;
-        if (!Line.IsEmpty() && (Line[1] == ExtensionMark) && ((P = Pos(L" ", Line)) >= 2))
-        {
-          UnicodeString Key = Line.SubString(2, P - 2).LowerCase();
-          UnicodeString Directive = UnicodeString(ExtensionMark) + Key;
-          UnicodeString Value = Line.SubString(P + 1, Line.Length() - P).Trim();
-          bool KnownKey = true;
-          if (Key == ExtensionNameDirective)
-          {
-            Name = WinConfiguration->ExtensionStringTranslation(Id, Value);
-          }
-          else if (Key == ExtensionCommandDirective)
-          {
-            Command = Value;
-          }
-          else if (Key == L"require")
-          {
-            UnicodeString DependencyVersion = Value;
-            UnicodeString Dependency = CutToChar(Value, L' ', true).LowerCase();
-            Value = Value.Trim();
-            bool Failed;
-            if (Dependency == L"winscp")
-            {
-              int Version = StrToCompoundVersion(Value);
-              Failed = (Version > WinConfiguration->CompoundVersion);
-            }
-            else if (Dependency == L".net")
-            {
-              Failed = (CompareVersion(Value, GetNetVersionStr()) > 0);
-            }
-            else if (Dependency == L"powershell")
-            {
-              Failed = (CompareVersion(Value, GetPowerShellVersionStr()) > 0);
-            }
-            else if (Dependency == L"windows")
-            {
-              Failed = (CompareVersion(Value, WindowsVersion()) > 0);
-            }
-            else
-            {
-              Failed = true;
-            }
+      }
+    }
 
-            if (Failed)
-            {
-              throw Exception(MainInstructions(FMTLOAD(EXTENSION_DEPENDENCY_ERROR, (DependencyVersion))));
-            }
-          }
-          else if (Key == L"side")
+    bool Continuation = (Line.Length() > 0) && (Line[Line.Length()] == L'^');
+    if (Continuation)
+    {
+      Line = Line.SubString(1, Line.Length() - 1).Trim();
+    }
+
+    AddToList(ExtensionLine, Line, L" ");
+
+    if (!Continuation)
+    {
+      int P;
+      if (!ExtensionLine.IsEmpty() && (ExtensionLine[1] == ExtensionMark) && ((P = Pos(L" ", ExtensionLine)) >= 2))
+      {
+        UnicodeString Key = ExtensionLine.SubString(2, P - 2).LowerCase();
+        UnicodeString Directive = UnicodeString(ExtensionMark) + Key;
+        UnicodeString Value = ExtensionLine.SubString(P + 1, ExtensionLine.Length() - P).Trim();
+        bool KnownKey = true;
+        if (Key == ExtensionNameDirective)
+        {
+          Name = WinConfiguration->ExtensionStringTranslation(Id, Value);
+        }
+        else if (Key == ExtensionCommandDirective)
+        {
+          Command = Value;
+        }
+        else if (Key == L"require")
+        {
+          UnicodeString DependencyVersion = Value;
+          UnicodeString Dependency = CutToChar(Value, L' ', true).LowerCase();
+          Value = Value.Trim();
+          bool Failed;
+          if (Dependency == L"winscp")
           {
-            if (SameText(Value, L"Local"))
-            {
-              Params |= ccLocal;
-            }
-            else if (SameText(Value, L"Remote"))
-            {
-              Params &= ~ccLocal;
-            }
-            else
-            {
-              throw Exception(MainInstructions(FMTLOAD(EXTENSION_DIRECTIVE_ERROR, (Value, Directive))));
-            }
+            int Version = StrToCompoundVersion(Value);
+            Failed = (Version > WinConfiguration->CompoundVersion);
           }
-          else if (Key == L"flag")
+          else if (Dependency == L".net")
           {
-            if (SameText(Value, L"ApplyToDirectories"))
-            {
-              Params |= ccApplyToDirectories;
-            }
-            else if (SameText(Value, L"Recursive"))
-            {
-              Params |= ccRecursive;
-            }
-            else if (SameText(Value, L"ShowResults"))
-            {
-              Params |= ccShowResults;
-            }
-            else if (SameText(Value, L"CopyResults"))
-            {
-              Params |= ccCopyResults;
-            }
-            else if (SameText(Value, L"RemoteFiles"))
-            {
-              Params |= ccRemoteFiles;
-            }
-            else if (SameText(Value, L"ShowResultsInMsgBox"))
-            {
-              Params |= ccShowResultsInMsgBox;
-            }
-            else
-            {
-              throw Exception(MainInstructions(FMTLOAD(EXTENSION_DIRECTIVE_ERROR, (Value, Directive))));
-            }
+            Failed = (CompareVersion(Value, GetNetVersionStr()) > 0);
           }
-          else if (Key == L"shortcut")
+          else if (Dependency == L"powershell")
           {
-            TShortCut AShortCut = TextToShortCut(Value);
-            if (IsCustomShortCut(AShortCut))
-            {
-              ShortCut = AShortCut;
-            }
-            else
-            {
-              throw Exception(MainInstructions(FMTLOAD(EXTENSION_DIRECTIVE_ERROR, (Value, Directive))));
-            }
+            Failed = (CompareVersion(Value, GetPowerShellVersionStr()) > 0);
           }
-          else if (Key == L"option")
+          else if (Dependency == L"windows")
           {
-            TOption Option;
-            if (!ParseOption(Value, Option, ExtensionBaseName) ||
-                (Option.IsControl && (OptionIds.find(Option.Id.LowerCase()) != OptionIds.end())))
-            {
-              throw Exception(MainInstructions(FMTLOAD(EXTENSION_DIRECTIVE_ERROR, (Value, Directive))));
-            }
-            else
-            {
-              FOptions.push_back(Option);
-              if (!Option.IsControl)
-              {
-                OptionIds.insert(Option.Id.LowerCase());
-              }
-            }
-          }
-          else if (Key == L"description")
-          {
-            Description = WinConfiguration->ExtensionStringTranslation(Id, Value);
-          }
-          else if (Key == L"author")
-          {
-            // noop
-          }
-          else if (Key == L"version")
-          {
-            // noop
-          }
-          else if (Key == L"homepage")
-          {
-            HomePage = Value;
-          }
-          else if (Key == L"optionspage")
-          {
-            OptionsPage = Value;
-          }
-          else if (Key == L"source")
-          {
-            // noop
+            Failed = (CompareVersion(Value, WindowsVersion()) > 0);
           }
           else
           {
-            KnownKey = false;
+            Failed = true;
           }
 
-          if (KnownKey)
+          if (Failed)
           {
-            AnythingFound = true;
+            throw Exception(MainInstructions(FMTLOAD(EXTENSION_DEPENDENCY_ERROR, (DependencyVersion))));
           }
         }
+        else if (Key == L"side")
+        {
+          if (SameText(Value, L"Local"))
+          {
+            Params |= ccLocal;
+          }
+          else if (SameText(Value, L"Remote"))
+          {
+            Params &= ~ccLocal;
+          }
+          else
+          {
+            throw Exception(MainInstructions(FMTLOAD(EXTENSION_DIRECTIVE_ERROR, (Value, Directive))));
+          }
+        }
+        else if (Key == L"flag")
+        {
+          if (SameText(Value, L"ApplyToDirectories"))
+          {
+            Params |= ccApplyToDirectories;
+          }
+          else if (SameText(Value, L"Recursive"))
+          {
+            Params |= ccRecursive;
+          }
+          else if (SameText(Value, L"ShowResults"))
+          {
+            Params |= ccShowResults;
+          }
+          else if (SameText(Value, L"CopyResults"))
+          {
+            Params |= ccCopyResults;
+          }
+          else if (SameText(Value, L"RemoteFiles"))
+          {
+            Params |= ccRemoteFiles;
+          }
+          else if (SameText(Value, L"ShowResultsInMsgBox"))
+          {
+            Params |= ccShowResultsInMsgBox;
+          }
+          else
+          {
+            throw Exception(MainInstructions(FMTLOAD(EXTENSION_DIRECTIVE_ERROR, (Value, Directive))));
+          }
+        }
+        else if (Key == L"shortcut")
+        {
+          TShortCut AShortCut = TextToShortCut(Value);
+          if (IsCustomShortCut(AShortCut))
+          {
+            ShortCut = AShortCut;
+          }
+          else
+          {
+            throw Exception(MainInstructions(FMTLOAD(EXTENSION_DIRECTIVE_ERROR, (Value, Directive))));
+          }
+        }
+        else if (Key == L"option")
+        {
+          TOption Option;
+          if (!ParseOption(Value, Option, ExtensionBaseName) ||
+              (Option.IsControl && (OptionIds.find(Option.Id.LowerCase()) != OptionIds.end())))
+          {
+            throw Exception(MainInstructions(FMTLOAD(EXTENSION_DIRECTIVE_ERROR, (Value, Directive))));
+          }
+          else
+          {
+            FOptions.push_back(Option);
+            if (!Option.IsControl)
+            {
+              OptionIds.insert(Option.Id.LowerCase());
+            }
+          }
+        }
+        else if (Key == L"description")
+        {
+          Description = WinConfiguration->ExtensionStringTranslation(Id, Value);
+        }
+        else if (Key == L"author")
+        {
+          // noop
+        }
+        else if (Key == L"version")
+        {
+          // noop
+        }
+        else if (Key == L"homepage")
+        {
+          HomePage = Value;
+        }
+        else if (Key == L"optionspage")
+        {
+          OptionsPage = Value;
+        }
+        else if (Key == L"source")
+        {
+          // noop
+        }
+        else
+        {
+          KnownKey = false;
+        }
+
+        if (KnownKey)
+        {
+          AnythingFound = true;
+        }
       }
+
+      ExtensionLine = L"";
     }
   }
 
