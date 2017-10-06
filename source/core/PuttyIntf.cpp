@@ -268,7 +268,7 @@ int askhk(void * /*frontend*/, const char * /*algname*/, const char * /*betteral
 //---------------------------------------------------------------------------
 void old_keyfile_warning(void)
 {
-  // no reference to TSecureShell instace available
+  // no reference to TSecureShell instance available
 }
 //---------------------------------------------------------------------------
 void display_banner(void * frontend, const char * banner, int size)
