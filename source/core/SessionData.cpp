@@ -25,12 +25,15 @@ const wchar_t * ProxyMethodNames = L"None;SOCKS4;SOCKS5;HTTP;Telnet;Cmd";
 const wchar_t * DefaultName = L"Default Settings";
 const UnicodeString CipherNames[CIPHER_COUNT] = {L"WARN", L"3des", L"blowfish", L"aes", L"des", L"arcfour", L"chacha20"};
 const UnicodeString KexNames[KEX_COUNT] = {L"WARN", L"dh-group1-sha1", L"dh-group14-sha1", L"dh-gex-sha1", L"rsa", L"ecdh"};
+const UnicodeString HostKeyNames[HOSTKEY_COUNT] = {L"WARN", L"rsa", L"dsa", L"ecdsa", L"ed25519"};
 const UnicodeString GssLibNames[GSSLIB_COUNT] = {L"gssapi32", L"sspi", L"custom"};
 const wchar_t SshProtList[][10] = {L"1", L"1>2", L"2>1", L"2"};
 const TCipher DefaultCipherList[CIPHER_COUNT] =
   { cipAES, cipChaCha20, cipBlowfish, cip3DES, cipWarn, cipArcfour, cipDES };
 const TKex DefaultKexList[KEX_COUNT] =
   { kexECDH, kexDHGEx, kexDHGroup14, kexRSA, kexWarn, kexDHGroup1 };
+const THostKey DefaultHostKeyList[HOSTKEY_COUNT] =
+  { hkED25519, hkECDSA, hkRSA, hkDSA, hkWarn };
 const TGssLib DefaultGssLibList[GSSLIB_COUNT] =
   { gssGssApi32, gssSspi, gssCustom };
 const wchar_t FSProtocolNames[FSPROTOCOL_COUNT][16] = { L"SCP", L"SFTP (SCP)", L"SFTP", L"", L"", L"FTP", L"WebDAV" };
@@ -131,6 +134,10 @@ void __fastcall TSessionData::Default()
   for (int Index = 0; Index < KEX_COUNT; Index++)
   {
     Kex[Index] = DefaultKexList[Index];
+  }
+  for (int Index = 0; Index < HOSTKEY_COUNT; Index++)
+  {
+    HostKeys[Index] = DefaultHostKeyList[Index];
   }
   for (int Index = 0; Index < GSSLIB_COUNT; Index++)
   {
@@ -299,6 +306,7 @@ void __fastcall TSessionData::NonPersistant()
   PROPERTY(SshNoUserAuth); \
   PROPERTY(CipherList); \
   PROPERTY(KexList); \
+  PROPERTY(HostKeyList); \
   PROPERTY(GssLibList); \
   PROPERTY(GssLibCustom); \
   PROPERTY(AddressFamily); \
@@ -575,6 +583,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   SshNoUserAuth = Storage->ReadBool(L"SshNoUserAuth", SshNoUserAuth);
   CipherList = Storage->ReadString(L"Cipher", CipherList);
   KexList = Storage->ReadString(L"KEX", KexList);
+  HostKeyList = Storage->ReadString(L"HostKey", HostKeyList);
   GssLibList = Storage->ReadString(L"GSSLibs", GssLibList);
   GssLibCustom = Storage->ReadString(L"GSSCustom", GssLibCustom);
   PublicKeyFile = Storage->ReadString(L"PublicKeyFile", PublicKeyFile);
@@ -778,6 +787,17 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   CIPHER_TEST(L"aes,blowfish,chacha20,3des,WARN,des", L"aes,blowfish,chacha20,3des,WARN,des,arcfour");
   #undef CIPHER_DEFAULT
   #undef CIPHER_TEST
+
+  #define HOSTKEY_TEST(VALUE, EXPECTED) HostKeyList = VALUE; DebugAssert(HostKeyList == EXPECTED);
+  #define HOSTKEY_DEFAULT L"ed25519,ecdsa,rsa,dsa,WARN"
+  // Empty source should result in default list
+  HOSTKEY_TEST(L"", HOSTKEY_DEFAULT);
+  // Missing priority algo
+  HOSTKEY_TEST(L"ecdsa,rsa,dsa,WARN", HOSTKEY_DEFAULT);
+  // Missing non-priority algo
+  HOSTKEY_TEST(L"ed25519,ecdsa,dsa,WARN", L"ed25519,ecdsa,dsa,rsa,WARN");
+  #undef HOSTKEY_DEFAULT
+  #undef HOSTKEY_TEST
 #endif
 }
 //---------------------------------------------------------------------
@@ -886,6 +906,7 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
   WRITE_DATA(Bool, SshNoUserAuth);
   WRITE_DATA_EX(String, L"Cipher", CipherList, );
   WRITE_DATA_EX(String, L"KEX", KexList, );
+  WRITE_DATA_EX(String, L"HostKey", HostKeyList, );
   WRITE_DATA_EX(String, L"GSSLibs", GssLibList, );
   WRITE_DATA_EX(String, L"GSSCustom", GssLibCustom, );
   WRITE_DATA(Integer, AddressFamily);
@@ -2442,6 +2463,33 @@ UnicodeString __fastcall TSessionData::GetKexList() const
   for (int Index = 0; Index < KEX_COUNT; Index++)
   {
     Result += UnicodeString(Index ? L"," : L"") + KexNames[Kex[Index]];
+  }
+  return Result;
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetHostKeys(int Index, THostKey value)
+{
+  DebugAssert(Index >= 0 && Index < HOSTKEY_COUNT);
+  SET_SESSION_PROPERTY(HostKeys[Index]);
+}
+//---------------------------------------------------------------------
+THostKey __fastcall TSessionData::GetHostKeys(int Index) const
+{
+  DebugAssert(Index >= 0 && Index < HOSTKEY_COUNT);
+  return FHostKeys[Index];
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetHostKeyList(UnicodeString value)
+{
+  SetAlgoList(FHostKeys, DefaultHostKeyList, HostKeyNames, HOSTKEY_COUNT, hkWarn, value);
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall TSessionData::GetHostKeyList() const
+{
+  UnicodeString Result;
+  for (int Index = 0; Index < HOSTKEY_COUNT; Index++)
+  {
+    Result += UnicodeString(Index ? L"," : L"") + HostKeyNames[HostKeys[Index]];
   }
   return Result;
 }

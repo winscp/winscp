@@ -23,6 +23,8 @@ enum TProxyMethod { pmNone, pmSocks4, pmSocks5, pmHTTP, pmTelnet, pmCmd };
 enum TSshProt { ssh1only, ssh1deprecated, ssh2deprecated, ssh2only };
 enum TKex { kexWarn, kexDHGroup1, kexDHGroup14, kexDHGEx, kexRSA, kexECDH };
 #define KEX_COUNT (kexECDH+1)
+enum THostKey { hkWarn, hkRSA, hkDSA, hkECDSA, hkED25519, hkMax };
+#define HOSTKEY_COUNT (hkMax)
 enum TGssLib { gssGssApi32, gssSspi, gssCustom };
 #define GSSLIB_COUNT (gssCustom+1)
 // names have to match PuTTY registry entries (see settings.c)
@@ -50,10 +52,12 @@ enum TSessionUrlFlags
 //---------------------------------------------------------------------------
 extern const UnicodeString CipherNames[CIPHER_COUNT];
 extern const UnicodeString KexNames[KEX_COUNT];
+extern const UnicodeString HostKeyNames[HOSTKEY_COUNT];
 extern const UnicodeString GssLibNames[GSSLIB_COUNT];
 extern const wchar_t SshProtList[][10];
 extern const TCipher DefaultCipherList[CIPHER_COUNT];
 extern const TKex DefaultKexList[KEX_COUNT];
+extern const THostKey DefaultHostKeyList[HOSTKEY_COUNT];
 extern const TGssLib DefaultGssLibList[GSSLIB_COUNT];
 extern const wchar_t FSProtocolNames[FSPROTOCOL_COUNT][16];
 extern const int DefaultSendBuf;
@@ -113,6 +117,7 @@ private:
   bool FSshNoUserAuth;
   TCipher FCiphers[CIPHER_COUNT];
   TKex FKex[KEX_COUNT];
+  THostKey FHostKeys[HOSTKEY_COUNT];
   TGssLib FGssLib[GSSLIB_COUNT];
   UnicodeString FGssLibCustom;
   bool FClearAliases;
@@ -244,6 +249,8 @@ private:
   TCipher __fastcall GetCipher(int Index) const;
   void __fastcall SetKex(int Index, TKex value);
   TKex __fastcall GetKex(int Index) const;
+  void __fastcall SetHostKeys(int Index, THostKey value);
+  THostKey __fastcall GetHostKeys(int Index) const;
   void __fastcall SetGssLib(int Index, TGssLib value);
   TGssLib __fastcall GetGssLib(int Index) const;
   void __fastcall SetGssLibCustom(UnicodeString value);
@@ -300,6 +307,8 @@ private:
   UnicodeString __fastcall GetCipherList() const;
   void __fastcall SetKexList(UnicodeString value);
   UnicodeString __fastcall GetKexList() const;
+  void __fastcall SetHostKeyList(UnicodeString value);
+  UnicodeString __fastcall GetHostKeyList() const;
   void __fastcall SetGssLibList(UnicodeString value);
   UnicodeString __fastcall GetGssLibList() const;
   void __fastcall SetProxyMethod(TProxyMethod value);
@@ -495,6 +504,7 @@ public:
   __property bool SshNoUserAuth  = { read=FSshNoUserAuth, write=SetSshNoUserAuth };
   __property TCipher Cipher[int Index] = { read=GetCipher, write=SetCipher };
   __property TKex Kex[int Index] = { read=GetKex, write=SetKex };
+  __property THostKey HostKeys[int Index] = { read=GetHostKeys, write=SetHostKeys };
   __property TGssLib GssLib[int Index] = { read=GetGssLib, write=SetGssLib };
   __property UnicodeString GssLibCustom = { read=FGssLibCustom, write=SetGssLibCustom };
   __property UnicodeString PublicKeyFile  = { read=FPublicKeyFile, write=SetPublicKeyFile };
@@ -541,6 +551,7 @@ public:
   __property UnicodeString SshProtStr  = { read=GetSshProtStr };
   __property UnicodeString CipherList  = { read=GetCipherList, write=SetCipherList };
   __property UnicodeString KexList  = { read=GetKexList, write=SetKexList };
+  __property UnicodeString HostKeyList  = { read=GetHostKeyList, write=SetHostKeyList };
   __property UnicodeString GssLibList  = { read=GetGssLibList, write=SetGssLibList };
   __property TProxyMethod ProxyMethod  = { read=FProxyMethod, write=SetProxyMethod };
   __property UnicodeString ProxyHost  = { read=FProxyHost, write=SetProxyHost };

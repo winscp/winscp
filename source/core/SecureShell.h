@@ -159,7 +159,7 @@ public:
   void __fastcall VerifyHostKey(UnicodeString Host, int Port,
     const UnicodeString KeyType, UnicodeString KeyStr, UnicodeString Fingerprint);
   bool __fastcall HaveHostKey(UnicodeString Host, int Port, const UnicodeString KeyType);
-  void __fastcall AskAlg(const UnicodeString AlgType, const UnicodeString AlgName);
+  void __fastcall AskAlg(UnicodeString AlgType, UnicodeString AlgName);
   void __fastcall DisplayBanner(const UnicodeString & Banner);
   void __fastcall OldKeyfileWarning();
   void __fastcall PuttyLogEvent(const char * Str);

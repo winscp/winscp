@@ -210,6 +210,21 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
     conf_set_int_int(conf, CONF_ssh_kexlist, k, pkex);
   }
 
+  DebugAssert(HK_MAX == HOSTKEY_COUNT);
+  for (int h = 0; h < HOSTKEY_COUNT; h++)
+  {
+    int phk;
+    switch (Data->HostKeys[h]) {
+      case hkWarn: phk = HK_WARN; break;
+      case hkRSA: phk = HK_RSA; break;
+      case hkDSA: phk = hkDSA; break;
+      case hkECDSA: phk = HK_ECDSA; break;
+      case hkED25519: phk = HK_ED25519; break;
+      default: DebugFail();
+    }
+    conf_set_int_int(conf, CONF_ssh_hklist, h, phk);
+  }
+
   DebugAssert(ngsslibs == GSSLIB_COUNT);
   for (int g = 0; g < GSSLIB_COUNT; g++)
   {
@@ -359,13 +374,6 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
   conf_set_int(conf, CONF_tcp_keepalives, 0);
   conf_set_int(conf, CONF_ssh_show_banner, TRUE);
   conf_set_int(conf, CONF_proxy_log_to_term, FORCE_OFF);
-
-  conf_set_int_int(conf, CONF_ssh_hklist, 0, HK_ED25519);
-  conf_set_int_int(conf, CONF_ssh_hklist, 1, HK_ECDSA);
-  conf_set_int_int(conf, CONF_ssh_hklist, 2, HK_RSA);
-  conf_set_int_int(conf, CONF_ssh_hklist, 3, HK_DSA);
-  conf_set_int_int(conf, CONF_ssh_hklist, 4, HK_WARN);
-  DebugAssert(HK_MAX == 5);
 
   conf_set_str(conf, CONF_loghost, AnsiString(Data->LogicalHostName).c_str());
 
@@ -2383,55 +2391,25 @@ bool __fastcall TSecureShell::HaveHostKey(UnicodeString Host, int Port, const Un
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TSecureShell::AskAlg(const UnicodeString AlgType,
-  const UnicodeString AlgName)
+void __fastcall TSecureShell::AskAlg(UnicodeString AlgType, UnicodeString AlgName)
 {
-  UnicodeString Msg;
-  UnicodeString Error;
-  if (AlgType == L"key-exchange algorithm")
-  {
-    Msg = FMTLOAD(KEX_BELOW_TRESHOLD, (AlgName));
-    Error = FMTLOAD(KEX_NOT_VERIFIED, (AlgName));
-  }
-  else if (AlgType == L"hostkey type")
-  {
-    // noop as we do not allow host key algorithm configuration,
-    // so no algorithm can get below WARN level
-  }
-  else
-  {
-    int CipherType;
-    if (AlgType == L"cipher")
-    {
-      CipherType = CIPHER_TYPE_BOTH;
-    }
-    else if (AlgType == L"client-to-server cipher")
-    {
-      CipherType = CIPHER_TYPE_CS;
-    }
-    else if (AlgType == L"server-to-client cipher")
-    {
-      CipherType = CIPHER_TYPE_SC;
-    }
-    else
-    {
-      DebugFail();
-      CipherType = 0;
-    }
+  // beware of changing order
+  static const TPuttyTranslation AlgTranslation[] = {
+    { L"cipher", CIPHER_TYPE_BOTH2 },
+    { L"client-to-server cipher", CIPHER_TYPE_CS2 },
+    { L"server-to-client cipher", CIPHER_TYPE_SC2 },
+    { L"key-exchange algorithm", KEY_EXCHANGE_ALG },
+    { L"hostkey type", KEYKEY_TYPE },
+  };
 
-    if (CipherType != 0)
-    {
-      Msg = FMTLOAD(CIPHER_BELOW_TRESHOLD, (LoadStr(CipherType), AlgName));
-      Error = FMTLOAD(CIPHER_NOT_VERIFIED, (AlgName));
-    }
-  }
+  TranslatePuttyMessage(AlgTranslation, LENOF(AlgTranslation), AlgType);
 
-  if (!Msg.IsEmpty())
+  UnicodeString Msg = FMTLOAD(ALG_BELOW_TRESHOLD, (AlgType, AlgName));
+
+  if (FUI->QueryUser(Msg, NULL, qaYes | qaNo, NULL, qtWarning) == qaNo)
   {
-    if (FUI->QueryUser(Msg, NULL, qaYes | qaNo, NULL, qtWarning) == qaNo)
-    {
-      FUI->FatalError(NULL, Error);
-    }
+    UnicodeString Error = FMTLOAD(ALG_NOT_VERIFIED, (AlgType, AlgName));
+    FUI->FatalError(NULL, Error);
   }
 }
 //---------------------------------------------------------------------------
