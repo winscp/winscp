@@ -1354,8 +1354,11 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
     {
       DebugAssert(Timeout == 0);
       Timeout = InputTimeout();
-      // See a duplicate AbortAnswer call below
-      TimeoutA = AbortAnswer(Answers & ~NoBatchA);
+      if (Timeout != 0)
+      {
+        // See a duplicate AbortAnswer call below
+        TimeoutA = AbortAnswer(Answers & ~NoBatchA);
+      }
     }
   }
 
