@@ -2173,42 +2173,44 @@ struct TPasteKeyHandler
   UnicodeString NormalizedFingerprint;
   TSessionUI * UI;
 
-  void __fastcall Paste(TObject * /*Sender*/, unsigned int & Answer)
+  void __fastcall Paste(TObject * Sender, unsigned int & Answer);
+};
+//---------------------------------------------------------------------------
+void __fastcall TPasteKeyHandler::Paste(TObject * /*Sender*/, unsigned int & Answer)
+{
+  UnicodeString ClipboardText;
+  if (TextFromClipboard(ClipboardText, true))
   {
-    UnicodeString ClipboardText;
-    if (TextFromClipboard(ClipboardText, true))
+    UnicodeString NormalizedClipboardFingerprint = NormalizeFingerprint(ClipboardText);
+    // case insensitive comparison, contrary to VerifyHostKey (we should change to insesitive there too)
+    if (SameText(NormalizedClipboardFingerprint, NormalizedFingerprint) ||
+        SameText(ClipboardText, KeyStr))
     {
-      UnicodeString NormalizedClipboardFingerprint = NormalizeFingerprint(ClipboardText);
-      // case insensitive comparison, contrary to VerifyHostKey (we should change to insesitive there too)
-      if (SameText(NormalizedClipboardFingerprint, NormalizedFingerprint) ||
-          SameText(ClipboardText, KeyStr))
-      {
-        Answer = qaYes;
-      }
-      else
-      {
-        const struct ssh_signkey * Algorithm;
-        try
-        {
-          UnicodeString Key = ParseOpenSshPubLine(ClipboardText, Algorithm);
-          if (Key == KeyStr)
-          {
-            Answer = qaYes;
-          }
-        }
-        catch (...)
-        {
-          // swallow
-        }
-      }
+      Answer = qaYes;
     }
-
-    if (Answer == 0)
+    else
     {
-      UI->QueryUser(LoadStr(HOSTKEY_NOT_MATCH_CLIPBOARD), NULL, qaOK, NULL, qtError);
+      const struct ssh_signkey * Algorithm;
+      try
+      {
+        UnicodeString Key = ParseOpenSshPubLine(ClipboardText, Algorithm);
+        if (Key == KeyStr)
+        {
+          Answer = qaYes;
+        }
+      }
+      catch (...)
+      {
+        // swallow
+      }
     }
   }
-};
+
+  if (Answer == 0)
+  {
+    UI->QueryUser(LoadStr(HOSTKEY_NOT_MATCH_CLIPBOARD), NULL, qaOK, NULL, qtError);
+  }
+}
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::VerifyHostKey(UnicodeString Host, int Port,
   const UnicodeString KeyType, UnicodeString KeyStr, UnicodeString Fingerprint)
