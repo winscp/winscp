@@ -346,7 +346,7 @@ bool __fastcall TTerminalManager::ConnectActiveTerminalImpl(bool Reopen)
 
       Result = true;
     }
-    catch(Exception & E)
+    catch (Exception & E)
     {
       DebugAssert(FTerminalPendingAction == tpNull);
       FTerminalPendingAction = ::tpNone;
