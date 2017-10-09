@@ -299,7 +299,7 @@ void __fastcall TImportSessionsDialog::Dispatch(void * Message)
 void __fastcall TImportSessionsDialog::PasteButtonClick(TObject * /*Sender*/)
 {
   UnicodeString Text;
-  // Proceed even when retriving from clipboard fails, "no host keys" error will show.
+  // Proceed even when retrieving from clipboard fails, "no host keys" error will show.
   TextFromClipboard(Text, false);
   std::unique_ptr<TStrings> Lines(new TStringList());
   Lines->Text = Text;
