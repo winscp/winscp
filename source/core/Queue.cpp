@@ -254,7 +254,7 @@ protected:
   bool FPause;
 
   virtual void __fastcall ProcessEvent();
-  virtual void __fastcall Finished();
+  virtual bool __fastcall Finished();
   bool __fastcall WaitForUserAction(TQueueItem::TStatus ItemStatus, TUserAction * UserAction);
   bool __fastcall OverrideItemStatus(TQueueItem::TStatus & ItemStatus);
 
@@ -288,7 +288,10 @@ int __fastcall TSimpleThread::ThreadProc(void * Thread)
     DebugFail();
   }
   SimpleThread->FFinished = true;
-  SimpleThread->Finished();
+  if (SimpleThread->Finished())
+  {
+    delete SimpleThread;
+  }
   return 0;
 }
 //---------------------------------------------------------------------------
@@ -322,8 +325,9 @@ void __fastcall TSimpleThread::Start()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSimpleThread::Finished()
+bool __fastcall TSimpleThread::Finished()
 {
+  return false;
 }
 //---------------------------------------------------------------------------
 void __fastcall TSimpleThread::Close()
@@ -1428,11 +1432,13 @@ bool __fastcall TTerminalItem::WaitForUserAction(
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminalItem::Finished()
+bool __fastcall TTerminalItem::Finished()
 {
-  TSignalThread::Finished();
+  bool Result = TSignalThread::Finished();
 
   FQueue->TerminalFinished(this);
+
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalItem::TerminalQueryUser(TObject * Sender,
@@ -2323,6 +2329,8 @@ __fastcall TTerminalThread::TTerminalThread(TTerminal * Terminal) :
   FOnIdle = NULL;
   FUserAction = NULL;
   FCancel = false;
+  FAbandoned = false;
+  FAllowAbandon = false;
   FMainThread = GetCurrentThreadId();
   FSection = new TCriticalSection();
 
@@ -2380,11 +2388,16 @@ __fastcall TTerminalThread::~TTerminalThread()
   FTerminal->OnInitializeLog = FOnInitializeLog;
 
   delete FSection;
+  if (FAbandoned)
+  {
+    delete FTerminal;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalThread::Cancel()
 {
   FCancel = true;
+  FCancelAfter = IncMilliSecond(Now(), 1000);
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalThread::Idle()
@@ -2467,11 +2480,25 @@ void __fastcall TTerminalThread::RunAction(TNotifyEvent Action)
           default:
             throw Exception(L"Error waiting for background session task to complete");
         }
+
+        if (AllowAbandon && !Done && FCancel && (Now() >= FCancelAfter))
+        {
+          TGuard Guard(FSection);
+          if (WaitForSingleObject(FActionEvent, 0) != WAIT_OBJECT_0)
+          {
+            FAbandoned = true;
+            FCancelled = true;
+            FatalAbort();
+          }
+        }
       }
       while (!Done);
 
 
-      Rethrow(FException);
+      if (Done)
+      {
+        Rethrow(FException);
+      }
     }
     __finally
     {
@@ -2519,7 +2546,13 @@ void __fastcall TTerminalThread::ProcessEvent()
     SaveException(E, FException);
   }
 
-  SetEvent(FActionEvent);
+  {
+    TGuard Guard(FSection);
+    if (!FAbandoned)
+    {
+      SetEvent(FActionEvent);
+    }
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalThread::Rethrow(Exception *& Exception)
@@ -2577,7 +2610,7 @@ void __fastcall TTerminalThread::WaitForUserAction(TUserAction * UserAction)
     DebugAssert(Thread == FThreadId);
 
     bool DoCheckCancel =
-      DebugAlwaysFalse(UserAction == NULL) || !UserAction->Force();
+      DebugAlwaysFalse(UserAction == NULL) || !UserAction->Force() || FAbandoned;
     if (DoCheckCancel)
     {
       CheckCancel();
@@ -2799,3 +2832,22 @@ void __fastcall TTerminalThread::TerminalReadDirectoryProgress(
   Cancel = Action.Cancel;
 }
 //---------------------------------------------------------------------------
+bool __fastcall TTerminalThread::Release()
+{
+  bool Result = !FAbandoned;
+  if (Result)
+  {
+    delete this;
+  }
+  else
+  {
+    // only now has the owner released ownership of the thread, so we are safe to kill outselves.
+    Terminate();
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TTerminalThread::Finished()
+{
+  return TSimpleThread::Finished() || FAbandoned;
+}

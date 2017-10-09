@@ -23,7 +23,7 @@ protected:
   bool FFinished;
 
   virtual void __fastcall Execute() = 0;
-  virtual void __fastcall Finished();
+  virtual bool __fastcall Finished();
 
   static int __fastcall ThreadProc(void * Thread);
 };
@@ -370,13 +370,17 @@ public:
   void __fastcall TerminalReopen();
 
   void __fastcall Cancel();
+  bool __fastcall Release();
   void __fastcall Idle();
 
   __property TNotifyEvent OnIdle = { read = FOnIdle, write = FOnIdle };
   __property bool Cancelling = { read = FCancel };
+  __property bool AllowAbandon = { read = FAllowAbandon, write = FAllowAbandon };
+
 
 protected:
   virtual void __fastcall ProcessEvent();
+  virtual bool __fastcall Finished();
 
 private:
   TTerminal * FTerminal;
@@ -401,8 +405,11 @@ private:
   Exception * FException;
   Exception * FIdleException;
   bool FCancel;
+  TDateTime FCancelAfter;
+  bool FAbandoned;
   bool FCancelled;
   bool FPendingIdle;
+  bool FAllowAbandon;
 
   DWORD FMainThread;
   TCriticalSection * FSection;
