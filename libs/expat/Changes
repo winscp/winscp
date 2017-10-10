@@ -2,6 +2,34 @@ NOTE: We are looking for help with a few things:
       https://github.com/libexpat/libexpat/labels/help%20wanted
       If you can help, please get in touch.  Thanks!
 
+Release 2.2.4 Sat Auguest 19 2017
+        Bug fixes:
+            #115  Fix copying of partial characters for UTF-8 input
+
+        Other changes:
+            #109  Fix "make check" for non-x86 architectures that default
+                    to unsigned type char (-128..127 rather than 0..255)
+            #109  coverage.sh: Cover -funsigned-char
+                  Autotools: Introduce --without-xmlwf argument
+             #65  Autotools: Replace handwritten Makefile with GNU Automake
+             #43  CMake: Auto-detect high quality entropy extractors, add new
+                    option USE_libbsd=ON to use arc4random_buf of libbsd
+             #74  CMake: Add -fno-strict-aliasing only where supported
+            #114  CMake: Always honor manually set BUILD_* options
+            #114  CMake: Compile man page if docbook2x-man is available, only
+            #117  Include file tests/xmltest.log.expected in source tarball
+                    (required for "make run-xmltest")
+            #117  Include (existing) Visual Studio 2013 files in source tarball
+                  Improve test suite error output
+            #111  Fix some typos in documentation
+                  Version info bumped from 7:5:6 to 7:6:6
+
+        Special thanks to:
+            Jakub Wilk
+            Joe Orton
+            Lin Tian
+            Rolf Eike Beer
+
 Release 2.2.3 Wed August 2 2017
         Security fixes:
              #82  CVE-2017-11742 -- Windows: Fix DLL hijacking vulnerability
@@ -73,7 +101,7 @@ Release 2.2.2 Wed July 12 2017
              #68  Fix "./buildconf.sh && ./configure" for some versions
                     of Dash for /bin/sh
              #72  CMake: Ease use of Expat in context of a parent project
-                    with multipe CMakeLists.txt files
+                    with multiple CMakeLists.txt files
              #72  CMake: Resolve mistaken executable permissions
              #76  Address compile warning with -DNDEBUG (not recommended!)
              #77  Address compile warning about macro redefinition
@@ -289,7 +317,7 @@ Release 2.1.0 Sat March 24 2012
           #2855609: Dangling positionPtr after error.
           #2990652: CMake support.
           #3010819: UNEXPECTED_STATE with a trailing "%" in entity value.
-          #3206497: Unitialized memory returned from XML_Parse.
+          #3206497: Uninitialized memory returned from XML_Parse.
           #3287849: make check fails on mingw-w64.
         - Patches:
           #1749198: pkg-config support.

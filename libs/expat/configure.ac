@@ -31,6 +31,7 @@ undefine([expat_version])
 
 AC_CONFIG_SRCDIR(Makefile.in)
 AC_CONFIG_AUX_DIR(conftools)
+AM_INIT_AUTOMAKE
 AC_CONFIG_MACRO_DIR([m4])
 
 
@@ -46,9 +47,10 @@ dnl If the API changes incompatibly set LIBAGE back to 0
 dnl
 
 LIBCURRENT=7   # sync
-LIBREVISION=5  # with
+LIBREVISION=6  # with
 LIBAGE=6       # CMakeLists.txt!
 
+CPPFLAGS="${CPPFLAGS} -DHAVE_EXPAT_CONFIG_H"
 AC_CONFIG_HEADER(expat_config.h)
 
 sinclude(conftools/ac_c_bigendian_cross.m4)
@@ -98,6 +100,11 @@ AC_C_BIGENDIAN_CROSS
 AC_C_CONST
 AC_TYPE_SIZE_T
 AC_CHECK_FUNCS(memmove bcopy)
+
+
+AC_ARG_WITH([xmlwf], [
+AS_HELP_STRING([--without-xmlwf], [do not build xmlwf])], [], [with_xmlwf=yes])
+AM_CONDITIONAL([WITH_XMLWF], [test x${with_xmlwf} = xyes])
 
 
 AC_ARG_WITH([libbsd], [
@@ -219,11 +226,13 @@ AS_IF([test "x${enable_xml_context}" != "xno"], [
 ])
 
 AC_CONFIG_FILES([Makefile expat.pc])
+AC_CONFIG_FILES([
+  doc/Makefile
+  examples/Makefile
+  lib/Makefile
+  tests/Makefile
+  tests/benchmark/Makefile
+  xmlwf/Makefile
+])
 AC_CONFIG_FILES([run.sh], [chmod +x run.sh])
 AC_OUTPUT
-
-abs_srcdir="`cd $srcdir && pwd`"
-abs_builddir="`pwd`"
-if test "$abs_srcdir" != "$abs_builddir"; then
-  make mkdir-init
-fi
