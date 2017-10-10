@@ -1,7 +1,33 @@
-/* Copyright (c) 1998, 1999, 2000 Thai Open Source Software Center Ltd
-   See the file COPYING for copying permission.
+/* Run the Expat test suite
+                            __  __            _
+                         ___\ \/ /_ __   __ _| |_
+                        / _ \\  /| '_ \ / _` | __|
+                       |  __//  \| |_) | (_| | |_
+                        \___/_/\_\ .__/ \__,_|\__|
+                                 |_| XML parser
 
-   runtest.c : run the Expat test suite
+   Copyright (c) 1997-2000 Thai Open Source Software Center Ltd
+   Copyright (c) 2000-2017 Expat development team
+   Licensed under the MIT license:
+
+   Permission is  hereby granted,  free of charge,  to any  person obtaining
+   a  copy  of  this  software   and  associated  documentation  files  (the
+   "Software"),  to  deal in  the  Software  without restriction,  including
+   without  limitation the  rights  to use,  copy,  modify, merge,  publish,
+   distribute, sublicense, and/or sell copies of the Software, and to permit
+   persons  to whom  the Software  is  furnished to  do so,  subject to  the
+   following conditions:
+
+   The above copyright  notice and this permission notice  shall be included
+   in all copies or substantial portions of the Software.
+
+   THE  SOFTWARE  IS  PROVIDED  "AS  IS",  WITHOUT  WARRANTY  OF  ANY  KIND,
+   EXPRESS  OR IMPLIED,  INCLUDING  BUT  NOT LIMITED  TO  THE WARRANTIES  OF
+   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+   NO EVENT SHALL THE AUTHORS OR  COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+   DAMAGES OR  OTHER LIABILITY, WHETHER  IN AN  ACTION OF CONTRACT,  TORT OR
+   OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+   USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 #ifdef HAVE_EXPAT_CONFIG_H
@@ -5671,7 +5697,7 @@ static int XMLCALL
 prefix_converter(void *UNUSED_P(data), const char *s)
 {
     /* If the first byte is 0xff, raise an error */
-    if (s[0] == -1)
+    if (s[0] == (char)-1)
         return -1;
     /* Just add the low bits of the first byte to the second */
     return (s[1] + (s[0] & 0x7f)) & 0x01ff;
@@ -7738,7 +7764,7 @@ START_TEST(test_misc_version)
         fail("Version mismatch");
 
 #if ! defined(XML_UNICODE)
-    if (strcmp(version_text, "expat_2.2.3"))  /* needs bump on releases */
+    if (strcmp(version_text, "expat_2.2.4"))  /* needs bump on releases */
         fail("XML_*_VERSION in expat.h out of sync?\n");
 #endif  /* ! defined(XML_UNICODE) */
 }
