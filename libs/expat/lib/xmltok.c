@@ -393,6 +393,8 @@ utf8_toUtf8(const ENCODING *UNUSED_P(enc),
             const char **fromP, const char *fromLim,
             char **toP, const char *toLim)
 {
+  const char * fromLimBefore;
+  ptrdiff_t bytesToCopy;
   bool input_incomplete = false;
   bool output_exhausted = false;
 
@@ -405,13 +407,13 @@ utf8_toUtf8(const ENCODING *UNUSED_P(enc),
   }
 
   /* Avoid copying partial characters (from incomplete input). */
-  const char * const fromLimBefore = fromLim;
+  fromLimBefore = fromLim;
   align_limit_to_full_utf8_characters(*fromP, &fromLim);
   if (fromLim < fromLimBefore) {
     input_incomplete = true;
   }
 
-  const ptrdiff_t bytesToCopy = fromLim - *fromP;
+  bytesToCopy = fromLim - *fromP;
   memcpy((void *)*toP, (const void *)*fromP, (size_t)bytesToCopy);
   *fromP += bytesToCopy;
   *toP += bytesToCopy;
