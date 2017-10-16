@@ -1,0 +1,73 @@
+
+To install libs3 on a POSIX system (except Microsoft Windows):
+--------------------------------------------------------------
+
+Note that all POSIX builds have prerequisites, such as development libraries
+that libs3 requires and that must be installed at the time that libs3 is
+built.  The easiest way to find out what those are, is to run the build
+command and then observe the results.
+
+*** For RPM-based systems (Fedora Core, Mandrake, etc) ***
+
+* rpmbuild -ta <libs3 archive>
+
+for example:
+
+rpmbuild -ta libs3-0.3.tar.gz
+
+
+*** For dpkg-based systems (Debian, Ubuntu, etc) ***
+
+* make deb
+
+This will produce a Debian package in the build/pkg directory.
+
+
+*** For all other systems ***
+
+* make [DESTDIR=destination root] install
+
+DESTDIR defaults to /usr
+
+
+To install libs3 on a Microsoft Windows system:
+-----------------------------------------------
+
+*** Using MingW ***
+
+* libs3 can be built on Windows using the MingW compiler.  No other tool
+  is needed.  However, the following libraries are needed to build libs3:
+
+  - curl development libraries
+  - libxml2 development libraries, and the libraries that it requires:
+    - iconv
+    - zlib
+
+  These projects are independent of libs3, and their release schedule and
+  means of distribution would make it very difficult to provide links to
+  the files to download and keep them up-to-date in this file, so no attempt
+  is made here.
+
+  Development libraries and other files can be placed in:
+  c:\libs3-libs\bin
+  c:\libs3-libs\include
+
+  If the above locations are used, then the GNUmakefile.mingw will work with
+  no special caveats.  If the above locations are not used, then the following
+  environment variables should be set:
+  CURL_LIBS should be set to the MingW compiler flags needed to locate and
+      link in the curl libraries
+  CURL_CFLAGS should be set to the MingW compiler flags needed to locate and
+      include the curl headers
+  LIBXML2_LIBS should be set to the MingW compiler flags needed to locate and
+      link in the libxml2 libraries
+  LIBXML2_CFLAGS should be set to the MingW compiler flags needed to locate and
+      include the libxml2 headers
+
+* mingw32-make [DESTDIR=destination] -f GNUmakefile.mingw install
+
+DESTDIR defaults to libs3-<version>
+
+* DESTDIR can be zipped up into a .zip file for distribution.  For best
+  results, the dependent libraries (curl, openssl, etc) should be included,
+  along with their licenses.
