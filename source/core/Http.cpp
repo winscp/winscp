@@ -68,7 +68,7 @@ void THttp::SendRequest(const char * Method, const UnicodeString & Request)
     try
     {
       TProxyMethod ProxyMethod = ProxyHost.IsEmpty() ? ::pmNone : pmHTTP;
-      InitNeonSession(NeonSession, ProxyMethod, ProxyHost, ProxyPort, UnicodeString(), UnicodeString());
+      InitNeonSession(NeonSession, ProxyMethod, ProxyHost, ProxyPort, UnicodeString(), UnicodeString(), NULL);
 
       if (IsTls)
       {

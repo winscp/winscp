@@ -7,13 +7,19 @@
 #include "CoreMain.h"
 #include "Exceptions.h"
 #include "Security.h"
+#include "Terminal.h"
 #include <TextsCore.h>
 #include <ne_auth.h>
+#define WINSCP
+extern "C"
+{
 #include <ne_redirect.h>
+}
 #include <StrUtils.hpp>
 //---------------------------------------------------------------------------
 #define SESSION_PROXY_AUTH_KEY "proxyauth"
 #define SESSION_TLS_INIT_KEY "tlsinit"
+#define SESSION_TERMINAL_KEY "terminal"
 //---------------------------------------------------------------------------
 void NeonParseUrl(const UnicodeString & Url, ne_uri & uri)
 {
@@ -69,7 +75,7 @@ ne_session * CreateNeonSession(const ne_uri & uri)
 }
 //---------------------------------------------------------------------------
 void InitNeonSession(ne_session * Session, TProxyMethod ProxyMethod, const UnicodeString & ProxyHost,
-  int ProxyPort, const UnicodeString & ProxyUsername, const UnicodeString & ProxyPassword)
+  int ProxyPort, const UnicodeString & ProxyUsername, const UnicodeString & ProxyPassword, TTerminal * Terminal)
 {
   if (ProxyMethod != ::pmNone)
   {
@@ -102,6 +108,11 @@ void InitNeonSession(ne_session * Session, TProxyMethod ProxyMethod, const Unico
 
   ne_redirect_register(Session);
   ne_set_useragent(Session, StrToNeon(FORMAT(L"%s/%s", (AppNameString(), Configuration->Version))));
+
+  if (Terminal != NULL)
+  {
+    ne_set_session_private(Session, SESSION_TERMINAL_KEY, Terminal);
+  }
 }
 //---------------------------------------------------------------------------
 void DestroyNeonSession(ne_session * Session)
@@ -302,4 +313,94 @@ UnicodeString NeonCertificateFailuresErrorStr(int Failures, const UnicodeString 
     AddToList(Result, LoadStr(CERT_ERR_UNKNOWN), L" ");
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+static std::unique_ptr<TCriticalSection> DebugSection(TraceInitPtr(new TCriticalSection));
+static std::set<TTerminal *> NeonTerminals;
+//---------------------------------------------------------------------------
+extern "C"
+{
+
+void ne_debug(void * Context, int Channel, const char * Format, ...)
+{
+  bool DoLog;
+
+  if (FLAGSET(Channel, NE_DBG_SOCKET) ||
+      FLAGSET(Channel, NE_DBG_HTTP) ||
+      FLAGSET(Channel, NE_DBG_HTTPAUTH) ||
+      FLAGSET(Channel, NE_DBG_SSL))
+  {
+    DoLog = true;
+  }
+  else if (FLAGSET(Channel, NE_DBG_XML) ||
+           FLAGSET(Channel, NE_DBG_WINSCP_HTTP_DETAIL))
+  {
+    DoLog = (Configuration->ActualLogProtocol >= 1);
+  }
+  else if (FLAGSET(Channel, NE_DBG_LOCKS) ||
+           FLAGSET(Channel, NE_DBG_XMLPARSE) ||
+           FLAGSET(Channel, NE_DBG_HTTPBODY))
+  {
+    DoLog = (Configuration->ActualLogProtocol >= 2);
+  }
+  else
+  {
+    DoLog = false;
+    DebugFail();
+  }
+
+  #ifndef _DEBUG
+  if (DoLog)
+  #endif
+  {
+    va_list Args;
+    va_start(Args, Format);
+    UTF8String UTFMessage;
+    UTFMessage.vprintf(Format, Args);
+    va_end(Args);
+
+    UnicodeString Message = TrimRight(UTFMessage);
+
+    if (DoLog)
+    {
+      // Note that this gets called for THttp sessions too.
+      // It does no harm atm.
+      TTerminal * Terminal = NULL;
+      if (Context != NULL)
+      {
+        ne_session * Session = static_cast<ne_session *>(Context);
+
+        Terminal =
+          static_cast<TTerminal *>(ne_get_session_private(Session, SESSION_TERMINAL_KEY));
+      }
+      else
+      {
+        TGuard Guard(DebugSection.get());
+
+        if (NeonTerminals.size() == 1)
+        {
+          Terminal = *NeonTerminals.begin();
+        }
+      }
+
+      if (Terminal != NULL)
+      {
+        Terminal->LogEvent(Message);
+      }
+    }
+  }
+}
+
+} // extern "C"
+//---------------------------------------------------------------------------
+void __fastcall RegisterForNeonDebug(TTerminal * Terminal)
+{
+  TGuard Guard(DebugSection.get());
+  NeonTerminals.insert(Terminal);
+}
+//---------------------------------------------------------------------------
+void __fastcall UnregisterFromNeonDebug(TTerminal * Terminal)
+{
+  TGuard Guard(DebugSection.get());
+  NeonTerminals.erase(Terminal);
 }

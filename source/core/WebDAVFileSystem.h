@@ -83,8 +83,6 @@ public:
   virtual void __fastcall UnlockFile(const UnicodeString & FileName, const TRemoteFile * File);
   virtual void __fastcall UpdateFromMain(TCustomFileSystem * MainFileSystem);
 
-  void __fastcall NeonDebug(const UnicodeString & Message);
-
 protected:
   virtual UnicodeString __fastcall GetCurrentDirectory();
 
@@ -185,8 +183,6 @@ private:
     TRemoteFile *& File, TRemoteFile * ALinkedByFile);
   int __fastcall CustomReadFileInternal(const UnicodeString FileName,
     TRemoteFile *& File, TRemoteFile * ALinkedByFile);
-  void __fastcall RegisterForDebug();
-  void __fastcall UnregisterFromDebug();
   bool VerifyCertificate(const TWebDAVCertificateData & Data, bool Aux);
   void OpenUrl(const UnicodeString & Url);
   void __fastcall CollectTLSSessionInfo();
