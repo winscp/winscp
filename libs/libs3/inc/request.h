@@ -112,10 +112,14 @@ typedef struct RequestParams
 // (and thus live while a curl_multi is in use).
 typedef struct Request
 {
+#ifdef WINSCP
+    struct S3RequestContext *requestContext;
+#else
     // These put the request on a doubly-linked list of requests in a
     // request context, *if* the request is in a request context (else these
     // will both be 0)
     struct Request *prev, *next;
+#endif
 
     // The status of this Request, as will be reported to the user via the
     // complete callback
@@ -126,11 +130,8 @@ typedef struct Request
     // errors the same way
     int httpResponseCode;
 
-    // The HTTP headers to use for the curl request
-    struct curl_slist *headers;
-
-    // The CURL structure driving the request
-    CURL *curl;
+    ne_session *NeonSession; // WINSCP (neon)
+    ne_request *NeonRequest;
 
     // libcurl requires that the uri be stored outside of the curl handle
     char uri[MAX_URI_SIZE + 1];
@@ -184,8 +185,7 @@ void request_perform(const RequestParams *params, S3RequestContext *context);
 // curl has finished the request
 void request_finish(Request *request);
 
-// Convert a CURLE code to an S3Status
-S3Status request_curl_code_to_status(CURLcode code);
+S3Status request_neon_code_to_status(NeonCode code); // WINSCP (neon)
 
 
 #endif /* REQUEST_H */

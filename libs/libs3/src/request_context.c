@@ -24,7 +24,9 @@
  *
  ************************************************************************** **/
 
+#ifndef WINSCP
 #include <curl/curl.h>
+#endif
 #include <stdlib.h>
 #include <sys/select.h>
 #include "request.h"
@@ -40,6 +42,9 @@ S3Status S3_create_request_context(S3RequestContext **requestContextReturn)
         return S3StatusOutOfMemory;
     }
     
+#ifdef WINSCP
+    (*requestContextReturn)->sslCallback = NULL;
+#else
     if (!((*requestContextReturn)->curlm = curl_multi_init())) {
         free(*requestContextReturn);
         return S3StatusOutOfMemory;
@@ -48,6 +53,7 @@ S3Status S3_create_request_context(S3RequestContext **requestContextReturn)
     (*requestContextReturn)->requests = 0;
     (*requestContextReturn)->verifyPeer = 0;
     (*requestContextReturn)->verifyPeerSet = 0;
+#endif
 
     return S3StatusOK;
 }
@@ -55,6 +61,7 @@ S3Status S3_create_request_context(S3RequestContext **requestContextReturn)
 
 void S3_destroy_request_context(S3RequestContext *requestContext)
 {
+#ifndef WINSCP
     // For each request in the context, remove curl handle, call back its done
     // method with 'interrupted' status
     Request *r = requestContext->requests, *rFirst = r;
@@ -69,10 +76,21 @@ void S3_destroy_request_context(S3RequestContext *requestContext)
     } while (r != rFirst);
 
     curl_multi_cleanup(requestContext->curlm);
+#endif
 
     free(requestContext);
 }
 
+
+#ifdef WINSCP
+
+void S3_set_request_context_ssl_callback(S3RequestContext *requestContext,
+                                         S3SslCallback sslCallback)
+{
+    requestContext->sslCallback = sslCallback;
+}
+
+#else
 
 S3Status S3_runall_request_context(S3RequestContext *requestContext)
 {
@@ -199,3 +217,5 @@ void S3_set_request_context_verify_peer(S3RequestContext *requestContext,
     requestContext->verifyPeerSet = 1;
     requestContext->verifyPeer = (verifyPeer != 0);
 }
+
+#endif

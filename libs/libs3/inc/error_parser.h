@@ -70,7 +70,7 @@ typedef struct ErrorParser
 // Always call this
 void error_parser_initialize(ErrorParser *errorParser);
 
-S3Status error_parser_add(ErrorParser *errorParser, char *buffer,
+S3Status error_parser_add(ErrorParser *errorParser, const /*WINSCP (const)*/ char *buffer,
                           int bufferSize);
 
 void error_parser_convert_status(ErrorParser *errorParser, S3Status *status);

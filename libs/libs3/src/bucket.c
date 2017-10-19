@@ -478,7 +478,7 @@ static S3Status make_list_bucket_callback(ListBucketData *lbData)
                        !strcmp(lbData->isTruncated, "1")) ? 1 : 0;
 
     // Convert the contents
-    S3ListBucketContent contents[lbData->contentsCount];
+    S3ListBucketContent * contents = new S3ListBucketContent[lbData->contentsCount]; // WINSCP (heap allocation)
 
     int contentsCount = lbData->contentsCount;
     for (i = 0; i < contentsCount; i++) {
@@ -497,15 +497,18 @@ static S3Status make_list_bucket_callback(ListBucketData *lbData)
 
     // Make the common prefixes array
     int commonPrefixesCount = lbData->commonPrefixesCount;
-    char *commonPrefixes[commonPrefixesCount];
+    char **commonPrefixes = new char*[commonPrefixesCount]; // WINSCP (heap allocation)
     for (i = 0; i < commonPrefixesCount; i++) {
         commonPrefixes[i] = lbData->commonPrefixes[i];
     }
 
-    return (*(lbData->listBucketCallback))
+    S3Status status = (*(lbData->listBucketCallback))
         (isTruncated, lbData->nextMarker,
          contentsCount, contents, commonPrefixesCount,
          (const char **) commonPrefixes, lbData->callbackData);
+    delete[] contents; // WINSCP (heap allocation)
+    delete[] commonPrefixes;
+    return status;
 }
 
 

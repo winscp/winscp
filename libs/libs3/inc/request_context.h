@@ -31,12 +31,16 @@
 
 struct S3RequestContext
 {
+#ifdef WINSCP
+    S3SslCallback *sslCallback;
+#else
     CURLM *curlm;
     
     int verifyPeerSet;
     long verifyPeer;
 
     struct Request *requests;
+#endif
 };
 
 

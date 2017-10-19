@@ -531,7 +531,7 @@ static S3Status make_list_multipart_callback(ListMultipartData *lmData)
                        !strcmp(lmData->isTruncated, "1")) ? 1 : 0;
 
     // Convert the contents
-    S3ListMultipartUpload uploads[lmData->uploadsCount];
+    S3ListMultipartUpload * uploads = new S3ListMultipartUpload[lmData->uploadsCount]; // WINSCP (heap allocation)
 
     int uploadsCount = lmData->uploadsCount;
     for (i = 0; i < uploadsCount; i++) {
@@ -551,15 +551,18 @@ static S3Status make_list_multipart_callback(ListMultipartData *lmData)
 
     // Make the common prefixes array
     int commonPrefixesCount = lmData->commonPrefixesCount;
-    char *commonPrefixes[commonPrefixesCount];
+    char **commonPrefixes = new char*[commonPrefixesCount]; // WINSCP (heap allocation)
     for (i = 0; i < commonPrefixesCount; i++) {
         commonPrefixes[i] = lmData->commonPrefixes[i];
     }
 
-    return (*(lmData->listMultipartCallback))
+    S3Status status = (*(lmData->listMultipartCallback))
         (isTruncated, lmData->nextKeyMarker, lmData->nextUploadIdMarker,
          uploadsCount, uploads, commonPrefixesCount,
          (const char **) commonPrefixes, lmData->callbackData);
+    delete[] uploads; // WINSCP (heap allocation)
+    delete[] commonPrefixes;
+    return status;
 }
 
 
@@ -572,7 +575,7 @@ static S3Status make_list_parts_callback(ListPartsData *lpData)
                        !strcmp(lpData->isTruncated, "1")) ? 1 : 0;
 
     // Convert the contents
-    S3ListPart Parts[lpData->partsCount];
+    S3ListPart * Parts = new S3ListPart[lpData->partsCount]; // WINSCP (heap allocation)
     int partsCount = lpData->partsCount;
     for (i = 0; i < partsCount; i++) {
         S3ListPart *partDest = &(Parts[i]);
@@ -583,11 +586,14 @@ static S3Status make_list_parts_callback(ListPartsData *lpData)
         partDest->lastModified = parseIso8601Time(partSrc->lastModified);
     }
 
-    return (*(lpData->listPartsCallback))
+    S3Status status =
+        (*(lpData->listPartsCallback))
         (isTruncated, lpData->nextPartNumberMarker, lpData->initiatorId,
          lpData->initiatorDisplayName, lpData->ownerId,
          lpData->ownerDisplayName, lpData->storageClass, partsCount,
          lpData->handlePartsStart, Parts, lpData->callbackData);
+    delete[] Parts; // WINSCP (heap allocation)
+    return status;
 }
 
 

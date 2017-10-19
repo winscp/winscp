@@ -82,7 +82,7 @@ static S3Status errorXmlCallback(const char *elementPath, const char *data,
         }
         // OK, must add another unknown error element, if it will fit.
         if (errorParser->s3ErrorDetails.extraDetailsCount ==
-            sizeof(errorParser->extraDetails)) {
+            (int)sizeof(errorParser->extraDetails)) { // WINSCP (cast)
             // Won't fit.  Ignore this one.
             return S3StatusOK;
         }
@@ -131,7 +131,7 @@ void error_parser_initialize(ErrorParser *errorParser)
 }
 
 
-S3Status error_parser_add(ErrorParser *errorParser, char *buffer,
+S3Status error_parser_add(ErrorParser *errorParser, const /*WINSCP (const)*/ char *buffer,
                           int bufferSize)
 {
     if (!errorParser->errorXmlParserInitialized) {

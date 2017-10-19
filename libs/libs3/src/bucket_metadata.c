@@ -559,7 +559,7 @@ void S3_set_lifecycle(const S3BucketContext *bucketContext,
         0,                                       // contentDispositionFilename
         0,                                       // contentEncoding
        -1,                                       // expires
-        0,                                       // cannedAcl
+        (S3CannedAcl)0,                          // cannedAcl WINSCP (cast)
         0,                                       // metaDataCount
         0,                                       // metaData
         0                                        // useServerSideEncryption

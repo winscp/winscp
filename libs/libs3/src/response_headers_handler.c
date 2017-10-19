@@ -26,8 +26,13 @@
 
 #include <ctype.h>
 #include <string.h>
+#ifndef WINSCP
 #include <strings.h>
+#endif
 #include "response_headers_handler.h"
+#ifdef WINSCP
+#include "ne_dates.h"
+#endif
 
 
 void response_headers_handler_initialize(ResponseHeadersHandler *handler)
@@ -49,10 +54,9 @@ void response_headers_handler_initialize(ResponseHeadersHandler *handler)
 
 
 void response_headers_handler_add(ResponseHeadersHandler *handler,
-                                  char *header, int len)
+                                  const char * header_name, const char * header_value) // WINSCP (neon API)
 {
     S3ResponseProperties *responseProperties = &(handler->responseProperties);
-    char *end = &(header[len]);
     
     // Curl might call back the header function after the body has been
     // received, for 'chunked encoded' contents.  We don't handle this as of
@@ -65,54 +69,16 @@ void response_headers_handler_add(ResponseHeadersHandler *handler,
     // This sucks, but it shouldn't happen - S3 should not be sending back
     // really long headers.
     if (handler->responsePropertyStringsSize == 
-        (sizeof(handler->responsePropertyStrings) - 1)) {
+        (int)(sizeof(handler->responsePropertyStrings) - 1)) { // WINSCP (cast)
         return;
     }
 
-    // It should not be possible to have a header line less than 3 long
-    if (len < 3) {
-        return;
-    }
+    int valuelen = strlen(header_value), fit;
+    const char * c = header_value;
+    int namelen = strlen(header_name);
+    const char * header = header_name;
 
-    // Skip whitespace at beginning of header; there never should be any,
-    // but just to be safe
-    while (is_blank(*header)) {
-        header++;
-    }
-
-    // The header must end in \r\n, so skip back over it, and also over any
-    // trailing whitespace
-    end -= 3;
-    while ((end > header) && is_blank(*end)) {
-        end--;
-    }
-    if (!is_blank(*end)) {
-        end++;
-    }
-
-    if (end == header) {
-        // totally bogus
-        return;
-    }
-
-    *end = 0;
-    
-    // Find the colon to split the header up
-    char *c = header;
-    while (*c && (*c != ':')) {
-        c++;
-    }
-    
-    int namelen = c - header;
-
-    // Now walk c past the colon
-    c++;
-    // Now skip whitespace to the beginning of the value
-    while (is_blank(*c)) {
-        c++;
-    }
-
-    int valuelen = (end - c) + 1, fit;
+    #define strncasecmp strnicmp // WINSCP
 
     if (!strncasecmp(header, "x-amz-request-id", namelen)) {
         responseProperties->requestId = 
@@ -155,11 +121,11 @@ void response_headers_handler_add(ResponseHeadersHandler *handler,
                       sizeof(S3_METADATA_HEADER_NAME_PREFIX) - 1)) {
         // Make sure there is room for another x-amz-meta header
         if (handler->responseProperties.metaDataCount ==
-            sizeof(handler->responseMetaData)) {
+            (int)sizeof(handler->responseMetaData)) { // WINSCP (cast)
             return;
         }
         // Copy the name in
-        char *metaName = &(header[sizeof(S3_METADATA_HEADER_NAME_PREFIX) - 1]);
+        const char *metaName = &(header[sizeof(S3_METADATA_HEADER_NAME_PREFIX) - 1]);
         int metaNameLen = 
             (namelen - (sizeof(S3_METADATA_HEADER_NAME_PREFIX) - 1));
         char *copiedName = 
@@ -201,14 +167,11 @@ void response_headers_handler_add(ResponseHeadersHandler *handler,
 }
 
 
-void response_headers_handler_done(ResponseHeadersHandler *handler, CURL *curl)
+void response_headers_handler_done(ResponseHeadersHandler *handler, ne_request *NeonRequest) // WINSCP (neon API)
 {
-    // Now get the last modification time from curl, since it's easiest to let
-    // curl parse it
-    time_t lastModified;
-    if (curl_easy_getinfo
-        (curl, CURLINFO_FILETIME, &lastModified) == CURLE_OK) {
-        handler->responseProperties.lastModified = lastModified;
+    const char * value = ne_get_response_header(NeonRequest, "Last-Modified");
+    if (value != NULL) {
+        handler->responseProperties.lastModified = ne_httpdate_parse(value);
     }
     
     handler->done = 1;

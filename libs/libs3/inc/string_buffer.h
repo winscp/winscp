@@ -46,18 +46,17 @@
 
 // Append [len] bytes of [str] to [sb], setting [all_fit] to 1 if it fit, and
 // 0 if it did not
+// WINSCP (CodeGuard compatible implementation)
 #define string_buffer_append(sb, str, len, all_fit)                     \
-    do {                                                                \
-        sb##Len += snprintf(&(sb[sb##Len]), sizeof(sb) - sb##Len - 1,   \
-                            "%.*s", (int) (len), str);                  \
-        if (sb##Len > (int) (sizeof(sb) - 1)) {                         \
-            sb##Len = sizeof(sb) - 1;                                   \
-            all_fit = 0;                                                \
+    {                                                                   \
+        int _sbai = sizeof(sb) - sb##Len - 1;                           \
+        if (_sbai > (int)len)                                           \
+        {                                                               \
+          _sbai = len;                                                  \
         }                                                               \
-        else {                                                          \
-            all_fit = 1;                                                \
-        }                                                               \
-    } while (0)
+        strncat(sb, str, _sbai);                                        \
+        sb##Len += _sbai;                                               \
+    }
 
 
 // Declare a string multibuffer with the given name of the given maximum size

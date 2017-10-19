@@ -24,9 +24,11 @@
  *
  ************************************************************************** **/
 
-#include <libxml/parser.h>
+#include <expat.h> // WINSCP (expat)
 #include <string.h>
 #include "simplexml.h"
+
+typedef XML_Char xmlChar; // WINSCP (expat)
 
 // Use libxml2 for parsing XML.  XML is severely overused in modern
 // computing.  It is useful for only a very small subset of tasks, but
@@ -45,12 +47,14 @@
 // S3 appears to only use ASCII anyway.
 
 
+#ifndef WINSCP
 static xmlEntityPtr saxGetEntity(void *user_data, const xmlChar *name)
 {
     (void) user_data;
 
     return xmlGetPredefinedEntity(name);
 }
+#endif
 
 
 static void saxStartElement(void *user_data, const xmlChar *nameUtf8,
@@ -135,6 +139,7 @@ static void saxError(void *user_data, const char *msg, ...)
 }
 
 
+#ifndef WINSCP
 static struct _xmlSAXHandler saxHandlerG =
 {
     0, // internalSubsetSAXFunc
@@ -170,6 +175,7 @@ static struct _xmlSAXHandler saxHandlerG =
     0, // endElementNsSAX2Func
     0 // xmlStructuredErrorFunc serror;
 };
+#endif
 
 void simplexml_initialize(SimpleXml *simpleXml, 
                           SimpleXmlCallback *callback, void *callbackData)
@@ -185,7 +191,7 @@ void simplexml_initialize(SimpleXml *simpleXml,
 void simplexml_deinitialize(SimpleXml *simpleXml)
 {
     if (simpleXml->xmlParser) {
-        xmlFreeParserCtxt(simpleXml->xmlParser);
+        XML_ParserFree((XML_Parser)simpleXml->xmlParser); // WINSCP (expat)
     }
 }
 
@@ -193,13 +199,16 @@ void simplexml_deinitialize(SimpleXml *simpleXml)
 S3Status simplexml_add(SimpleXml *simpleXml, const char *data, int dataLen)
 {
     if (!simpleXml->xmlParser &&
-        (!(simpleXml->xmlParser = xmlCreatePushParserCtxt
-           (&saxHandlerG, simpleXml, 0, 0, 0)))) {
+        ((simpleXml->xmlParser = XML_ParserCreate(NULL)) == NULL)) { // WINSCP (expat)
         return S3StatusInternalError;
     }
 
-    if (xmlParseChunk((xmlParserCtxtPtr) simpleXml->xmlParser, 
-                      data, dataLen, 0)) {
+    XML_SetElementHandler((XML_Parser)simpleXml->xmlParser, saxStartElement, saxEndElement); // WINSCP (expat)
+    XML_SetCharacterDataHandler((XML_Parser)simpleXml->xmlParser, saxCharacters); // WINSCP (expat)
+    XML_SetUserData((XML_Parser)simpleXml->xmlParser, (void *) simpleXml);
+
+    if (XML_Parse((XML_Parser)simpleXml->xmlParser,
+                      data, dataLen, 0) == 0) {
         return S3StatusXmlParseFailure;
     }
 

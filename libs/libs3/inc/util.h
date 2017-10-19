@@ -27,8 +27,10 @@
 #ifndef UTIL_H
 #define UTIL_H
 
+#ifndef WINSCP
 #include <curl/curl.h>
 #include <curl/multi.h>
+#endif
 #include <stdint.h>
 #include "libs3.h"
 

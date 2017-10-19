@@ -29,7 +29,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/utsname.h>
-#include <libxml/parser.h>
+#include <expat.h>
 #include "request.h"
 #include "request_context.h"
 #include "response_headers_handler.h"
@@ -48,8 +48,6 @@
 #define SIGNATURE_SCOPE_SIZE 64
 
 //#define SIGNATURE_DEBUG
-
-static int verifyPeer;
 
 static char userAgentG[USER_AGENT_SIZE];
 
@@ -157,21 +155,10 @@ static void request_headers_done(Request *request)
 
     request->propertiesCallbackMade = 1;
 
-    // Get the http response code
-    long httpResponseCode;
-    request->httpResponseCode = 0;
-    if (curl_easy_getinfo(request->curl, CURLINFO_RESPONSE_CODE,
-                          &httpResponseCode) != CURLE_OK) {
-        // Not able to get the HTTP response code - error
-        request->status = S3StatusInternalError;
-        return;
-    }
-    else {
-        request->httpResponseCode = httpResponseCode;
-    }
+    request->httpResponseCode = ne_get_status(request->NeonRequest)->code; // WINSCP (neon)
 
     response_headers_handler_done(&(request->responseHeadersHandler),
-                                  request->curl);
+                                  request->NeonRequest); // WINSCP (neon)
 
     // Only make the callback if it was a successful request; otherwise we're
     // returning information about the error response itself
@@ -185,25 +172,31 @@ static void request_headers_done(Request *request)
 }
 
 
-static size_t curl_header_func(void *ptr, size_t size, size_t nmemb,
-                               void *data)
+// WINSCP (neon)
+static int neon_header_func(void * userdata, ne_request * NeonRequest, const ne_status * status)
 {
-    Request *request = (Request *) data;
+    Request *request = (Request *) userdata;
 
-    int len = size * nmemb;
+    void * cursor = NULL;
+    const char * header_name;
+    const char * header_value;
+    while ((cursor = ne_response_header_iterate(NeonRequest, cursor, &header_name, &header_value)) != NULL)
+    {
+        response_headers_handler_add
+            (&(request->responseHeadersHandler), header_name, header_value);
+    }
 
-    response_headers_handler_add
-        (&(request->responseHeadersHandler), (char *) ptr, len);
-
-    return len;
+    return ne_accept_2xx(userdata, NeonRequest, status);
 }
 
 
-static size_t curl_read_func(void *ptr, size_t size, size_t nmemb, void *data)
-{
-    Request *request = (Request *) data;
 
-    int len = size * nmemb;
+// WINSCP (neon)
+static int neon_read_func(void * userdata, char * buf, size_t len)
+{
+    Request *request = (Request *) userdata;
+
+    const void * ptr = buf;
 
     // CURL may call this function before response headers are available,
     // so don't assume response headers are available and attempt to parse
@@ -211,7 +204,7 @@ static size_t curl_read_func(void *ptr, size_t size, size_t nmemb, void *data)
     // only after headers are available.
 
     if (request->status != S3StatusOK) {
-        return CURL_READFUNC_ABORT;
+        return 0;
     }
 
     // If there is no data callback, or the data callback has already returned
@@ -231,7 +224,7 @@ static size_t curl_read_func(void *ptr, size_t size, size_t nmemb, void *data)
         (len, (char *) ptr, request->callbackData);
     if (ret < 0) {
         request->status = S3StatusAbortedByCallback;
-        return CURL_READFUNC_ABORT;
+        return 0;
     }
     else {
         if (ret > request->toS3CallbackBytesRemaining) {
@@ -243,29 +236,33 @@ static size_t curl_read_func(void *ptr, size_t size, size_t nmemb, void *data)
 }
 
 
-static size_t curl_write_func(void *ptr, size_t size, size_t nmemb,
-                              void *data)
+// WINSCP (neon)
+static int neon_write_func(void * data, const char * buf, size_t len)
 {
     Request *request = (Request *) data;
 
-    int len = size * nmemb;
+    // WinSCP (ignore empty responses)
+    if (len == 0)
+    {
+        return 0;
+    }
 
     request_headers_done(request);
 
     if (request->status != S3StatusOK) {
-        return 0;
+        return 1;
     }
 
     // On HTTP error, we expect to parse an HTTP error response
     if ((request->httpResponseCode < 200) ||
         (request->httpResponseCode > 299)) {
         request->status = error_parser_add
-            (&(request->errorParser), (char *) ptr, len);
+            (&(request->errorParser), buf, len);
     }
     // If there was a callback registered, make it
     else if (request->fromS3Callback) {
         request->status = (*(request->fromS3Callback))
-            (len, (char *) ptr, request->callbackData);
+            (len, buf, request->callbackData);
     }
     // Else, consider this an error - S3 has sent back data when it was not
     // expected
@@ -273,7 +270,7 @@ static size_t curl_write_func(void *ptr, size_t size, size_t nmemb,
         request->status = S3StatusInternalError;
     }
 
-    return ((request->status == S3StatusOK) ? len : 0);
+    return ((request->status == S3StatusOK) ? 0 : 1);
 }
 
 
@@ -558,41 +555,16 @@ static S3Status compose_standard_headers(const RequestParams *params,
                   S3StatusContentEncodingTooLong);
 
     // Expires
-    if (params->putProperties && (params->putProperties->expires >= 0)) {
-        time_t t = (time_t) params->putProperties->expires;
-        struct tm gmt;
-        strftime(values->expiresHeader, sizeof(values->expiresHeader),
-                 "Expires: %a, %d %b %Y %H:%M:%S UTC", gmtime_r(&t, &gmt));
-    }
-    else {
-        values->expiresHeader[0] = 0;
-    }
+    // WINSCP (not implemented)
+    values->expiresHeader[0] = 0;
 
     // If-Modified-Since
-    if (params->getConditions &&
-        (params->getConditions->ifModifiedSince >= 0)) {
-        time_t t = (time_t) params->getConditions->ifModifiedSince;
-        struct tm gmt;
-        strftime(values->ifModifiedSinceHeader,
-                 sizeof(values->ifModifiedSinceHeader),
-                 "If-Modified-Since: %a, %d %b %Y %H:%M:%S UTC", gmtime_r(&t, &gmt));
-    }
-    else {
-        values->ifModifiedSinceHeader[0] = 0;
-    }
+    // WINSCP (not implemented)
+    values->ifModifiedSinceHeader[0] = 0;
 
     // If-Unmodified-Since header
-    if (params->getConditions &&
-        (params->getConditions->ifNotModifiedSince >= 0)) {
-        time_t t = (time_t) params->getConditions->ifNotModifiedSince;
-        struct tm gmt;
-        strftime(values->ifUnmodifiedSinceHeader,
-                 sizeof(values->ifUnmodifiedSinceHeader),
-                 "If-Unmodified-Since: %a, %d %b %Y %H:%M:%S UTC", gmtime_r(&t, &gmt));
-    }
-    else {
-        values->ifUnmodifiedSinceHeader[0] = 0;
-    }
+    // WINSCP (not implemented)
+    values->ifUnmodifiedSinceHeader[0] = 0;
 
     // If-Match header
     do_get_header("If-Match: %s", ifMatchETag, ifMatchHeader,
@@ -655,7 +627,9 @@ static int headerle(const char *s1, const char *s2, char delim)
         }
         s1++, s2++;
     }
+#ifndef WINSCP
     return 0;
+#endif
 }
 
 
@@ -819,9 +793,9 @@ static void sort_query_string(const char *queryString, char *result)
         tmp++;
     }
 
-    const char* params[numParams];
+    const char** params = new const char*[numParams]; // WINSCP (heap allocation)
 
-    char tokenized[strlen(queryString) + 1];
+    char * tokenized = new char[strlen(queryString) + 1]; // WINSCP (heap allocation)
     strncpy(tokenized, queryString, strlen(queryString) + 1);
 
     char *tok = tokenized;
@@ -849,6 +823,9 @@ static void sort_query_string(const char *queryString, char *result)
         strncat(result, "&", 1);
     }
     result[strlen(result) - 1] = '\0';
+
+    delete[] params; // WINSCP (heap allocation)
+    delete[] tokenized;
 }
 
 
@@ -863,10 +840,11 @@ static void canonicalize_query_string(const char *queryParams,
 #define append(str) len += sprintf(&(buffer[len]), "%s", str)
 
     if (queryParams && queryParams[0]) {
-        char sorted[strlen(queryParams) * 2];
+        char * sorted = new char[strlen(queryParams) * 2]; // WINSCP (heap allocation)
         sorted[0] = '\0';
         sort_query_string(queryParams, sorted);
         append(sorted);
+        delete[] sorted; // WINSCP (heap allocation)
     }
 
     if (subResource && subResource[0]) {
@@ -943,13 +921,15 @@ static S3Status compose_auth_header(const RequestParams *params,
 
     int len = 0;
 
-    char canonicalRequest[canonicalRequestLen];
+    char * canonicalRequest = new char[canonicalRequestLen]; // WINSCP (heap allocation)
 
+// WINSCP (heap allocation)
 #define buf_append(buf, format, ...)                    \
-    len += snprintf(&(buf[len]), sizeof(buf) - len,     \
+    len += snprintf(&(buf[len]), size - len,     \
                     format, __VA_ARGS__)
 
     canonicalRequest[0] = '\0';
+    int size = canonicalRequestLen; // WINSCP
     buf_append(canonicalRequest, "%s\n", httpMethod);
     buf_append(canonicalRequest, "%s\n", values->canonicalURI);
     buf_append(canonicalRequest, "%s\n", values->canonicalQueryString);
@@ -970,7 +950,9 @@ static S3Status compose_auth_header(const RequestParams *params,
     const unsigned char *rqstData = (const unsigned char*) canonicalRequest;
     SHA256(rqstData, strlen(canonicalRequest), canonicalRequestHash);
 #endif
+    delete[] canonicalRequest; // WINSCP
     char canonicalRequestHashHex[2 * S3_SHA256_DIGEST_LENGTH + 1];
+    size = sizeof(canonicalRequestHashHex); // WINSCP
     canonicalRequestHashHex[0] = '\0';
     int i = 0;
     for (; i < S3_SHA256_DIGEST_LENGTH; i++) {
@@ -985,9 +967,10 @@ static S3Status compose_auth_header(const RequestParams *params,
     snprintf(scope, sizeof(scope), "%.8s/%s/s3/aws4_request",
              values->requestDateISO8601, awsRegion);
 
-    char stringToSign[17 + 17 + SIGNATURE_SCOPE_SIZE + 1
-        + strlen(canonicalRequestHashHex)];
-    snprintf(stringToSign, sizeof(stringToSign), "AWS4-HMAC-SHA256\n%s\n%s\n%s",
+    const int stringToSignLen = 17 + 17 + SIGNATURE_SCOPE_SIZE + 1
+        + strlen(canonicalRequestHashHex); // WINSCP (heap allocation)
+    char * stringToSign = new char[stringToSignLen];
+    snprintf(stringToSign, stringToSignLen, "AWS4-HMAC-SHA256\n%s\n%s\n%s",
              values->requestDateISO8601, scope, canonicalRequestHashHex);
 
 #ifdef SIGNATURE_DEBUG
@@ -995,8 +978,9 @@ static S3Status compose_auth_header(const RequestParams *params,
 #endif
 
     const char *secretAccessKey = params->bucketContext.secretAccessKey;
-    char accessKey[strlen(secretAccessKey) + 5];
-    snprintf(accessKey, sizeof(accessKey), "AWS4%s", secretAccessKey);
+    const int accessKeyLen = strlen(secretAccessKey) + 5; // WINSCP (heap allocation)
+    char * accessKey = new char[accessKeyLen];
+    snprintf(accessKey, accessKeyLen, "AWS4%s", secretAccessKey);
 
 #ifdef __APPLE__
     unsigned char dateKey[S3_SHA256_DIGEST_LENGTH];
@@ -1039,8 +1023,11 @@ static S3Status compose_auth_header(const RequestParams *params,
          (const unsigned char*) stringToSign, strlen(stringToSign),
          finalSignature, NULL);
 #endif
+    delete[] accessKey; // WINSCP
+    delete[] stringToSign; // WINSCP
 
     len = 0;
+    size = sizeof(values->requestSignatureHex); // WINSCP
     values->requestSignatureHex[0] = '\0';
     for (i = 0; i < S3_SHA256_DIGEST_LENGTH; i++) {
         buf_append(values->requestSignatureHex, "%02x", finalSignature[i]);
@@ -1127,111 +1114,132 @@ static S3Status compose_uri(char *buffer, int bufferSize,
     return S3StatusOK;
 }
 
-// Sets up the curl handle given the completely computed RequestParams
-static S3Status setup_curl(Request *request,
+#ifdef WINSCP
+int neon_ssl_callback(void * user_data, int failures, const ne_ssl_certificate * certificate)
+{
+    Request *request = (Request *) user_data;
+
+    int result = NE_ERROR;
+    if (request->requestContext->sslCallback != NULL)
+    {
+        result = request->requestContext->sslCallback(failures, certificate, request->callbackData);
+    }
+    return result;
+}
+#endif
+
+
+// WINSCP (neon)
+// Sets up the neon handle given the completely computed RequestParams
+static S3Status setup_neon(Request *request,
                            const RequestParams *params,
                            const RequestComputedValues *values)
 {
-    CURLcode status;
+    NeonCode status;
 
-#define curl_easy_setopt_safe(opt, val)                                 \
-    if ((status = curl_easy_setopt                                      \
-         (request->curl, opt, val)) != CURLE_OK) {                      \
-        return S3StatusFailedToInitializeRequest;                       \
+    ne_uri uri;
+    if (ne_uri_parse(request->uri, &uri) != 0)
+    {
+        return S3StatusFailedToInitializeRequest;
     }
 
-    // Debugging only
-    // curl_easy_setopt_safe(CURLOPT_VERBOSE, 1);
+    int port = uri.port;
+    if (port == 0)
+    {
+      port = ne_uri_defaultport(uri.scheme);
+    }
+    request->NeonSession = ne_session_create(uri.scheme, uri.host, port);
 
-    // Set private data to request for the benefit of S3RequestContext
-    curl_easy_setopt_safe(CURLOPT_PRIVATE, request);
+    char method[64];
+    strcpy(method, "GET");
+    switch (params->httpRequestType) {
+    case HttpRequestTypeHEAD:
+        strcpy(method, "HEAD");
+        break;
+    case HttpRequestTypePOST:
+        strcpy(method, "POST");
+        break;
+
+    case HttpRequestTypePUT:
+    case HttpRequestTypeCOPY:
+        strcpy(method, "PUT");
+        break;
+    case HttpRequestTypeDELETE:
+        strcpy(method, "DELETE");
+        break;
+    default: // HttpRequestTypeGET
+        break;
+    }
+
+    ne_buffer * buf = ne_buffer_create();
+    ne_buffer_zappend(buf, uri.path);
+    if (uri.query != NULL)
+    {
+        ne_buffer_concat(buf, "?", uri.query, NULL);
+    }
+    request->NeonRequest = ne_request_create(request->NeonSession, method, buf->data);
+    ne_buffer_destroy(buf);
+    ne_uri_free(&uri);
 
     // Set header callback and data
-    curl_easy_setopt_safe(CURLOPT_HEADERDATA, request);
-    curl_easy_setopt_safe(CURLOPT_HEADERFUNCTION, &curl_header_func);
-
     // Set read callback, data, and readSize
-    curl_easy_setopt_safe(CURLOPT_READFUNCTION, &curl_read_func);
-    curl_easy_setopt_safe(CURLOPT_READDATA, request);
+    ne_add_response_body_reader(request->NeonRequest, neon_header_func, neon_write_func, request);
 
     // Set write callback and data
-    curl_easy_setopt_safe(CURLOPT_WRITEFUNCTION, &curl_write_func);
-    curl_easy_setopt_safe(CURLOPT_WRITEDATA, request);
+    if ((params->httpRequestType == HttpRequestTypePUT) ||
+        (params->httpRequestType == HttpRequestTypePOST))
+    {
+        ne_set_request_body_provider(request->NeonRequest, (ne_off_t)params->toS3CallbackTotalSize, neon_read_func, request);
+    }
 
-    // Ask curl to parse the Last-Modified header.  This is easier than
-    // parsing it ourselves.
-    curl_easy_setopt_safe(CURLOPT_FILETIME, 1);
-
-    // Curl docs suggest that this is necessary for multithreaded code.
-    // However, it also points out that DNS timeouts will not be honored
-    // during DNS lookup, which can be worked around by using the c-ares
-    // library, which we do not do yet.
-    curl_easy_setopt_safe(CURLOPT_NOSIGNAL, 1);
-
-    // Turn off Curl's built-in progress meter
-    curl_easy_setopt_safe(CURLOPT_NOPROGRESS, 1);
+    // WINSCP (Last-Modified parsed in response_headers_handler_done)
 
     // xxx todo - support setting the proxy for Curl to use (can't use https
     // for proxies though)
 
     // xxx todo - support setting the network interface for Curl to use
 
-    // I think this is useful - we don't need interactive performance, we need
-    // to complete large operations quickly
-    curl_easy_setopt_safe(CURLOPT_TCP_NODELAY, 1);
+    // WINSCP (neon sets "nodelay" unconditionally)
 
-    // Don't use Curl's 'netrc' feature
-    curl_easy_setopt_safe(CURLOPT_NETRC, CURL_NETRC_IGNORED);
-
-    // Don't verify S3's certificate unless S3_INIT_VERIFY_PEER is set.
-    // The request_context may be set to override this
-    curl_easy_setopt_safe(CURLOPT_SSL_VERIFYPEER, verifyPeer);
+    // WINSCP (we should verify peer always)
+    ne_ssl_set_verify(request->NeonSession, neon_ssl_callback, request);
+    ne_ssl_trust_default_ca(request->NeonSession);
 
     // Follow any redirection directives that S3 sends
-    curl_easy_setopt_safe(CURLOPT_FOLLOWLOCATION, 1);
-
-    // A safety valve in case S3 goes bananas with redirects
-    curl_easy_setopt_safe(CURLOPT_MAXREDIRS, 10);
+    // TODO
 
     // Set the User-Agent; maybe Amazon will track these?
-    curl_easy_setopt_safe(CURLOPT_USERAGENT, userAgentG);
-
-    // Set the low speed limit and time; we abort transfers that stay at
-    // less than 1K per second for more than 15 seconds.
-    // xxx todo - make these configurable
-    // xxx todo - allow configurable max send and receive speed
-    curl_easy_setopt_safe(CURLOPT_LOW_SPEED_LIMIT, 1024);
-    curl_easy_setopt_safe(CURLOPT_LOW_SPEED_TIME, 15);
-
+    ne_set_useragent(request->NeonSession, userAgentG);
 
     if (params->timeoutMs > 0) {
-        curl_easy_setopt_safe(CURLOPT_TIMEOUT_MS, params->timeoutMs);
+        ne_set_read_timeout(request->NeonSession, params->timeoutMs);
+
+        ne_set_connect_timeout(request->NeonSession, params->timeoutMs);
+    }
+
+#define do_add_header(header) \
+    { \
+        char * buf = new char[strlen(header) + 1]; \
+        strcpy(buf, header); \
+        char * p = strchr(buf, ':'); \
+        if (p != NULL) \
+        { \
+            *p = '\0'; \
+            p++; \
+            while (is_blank(p[0])) p++; \
+            ne_add_request_header(request->NeonRequest, buf, p); \
+        } \
+        delete[] buf; \
     }
 
 
     // Append standard headers
 #define append_standard_header(fieldName)                               \
     if (values-> fieldName [0]) {                                       \
-        request->headers = curl_slist_append(request->headers,          \
-                                             values-> fieldName);       \
+        do_add_header(values-> fieldName);                               \
     }
 
-    // Would use CURLOPT_INFILESIZE_LARGE, but it is buggy in libcurl
-    if ((params->httpRequestType == HttpRequestTypePUT) ||
-        (params->httpRequestType == HttpRequestTypePOST)) {
-        char header[256];
-        snprintf(header, sizeof(header), "Content-Length: %llu",
-                 (unsigned long long) params->toS3CallbackTotalSize);
-        request->headers = curl_slist_append(request->headers, header);
-        request->headers = curl_slist_append(request->headers,
-                                             "Transfer-Encoding:");
-    }
-    else if (params->httpRequestType == HttpRequestTypeCOPY) {
-        request->headers = curl_slist_append(request->headers,
-                                             "Transfer-Encoding:");
-    }
-
-    append_standard_header(hostHeader);
+    // WINSCP (hostHeader is added implicitly by neon based on uri)
     append_standard_header(cacheControlHeader);
     append_standard_header(contentTypeHeader);
     append_standard_header(md5Header);
@@ -1248,35 +1256,7 @@ static S3Status setup_curl(Request *request,
     // Append x-amz- headers
     int i;
     for (i = 0; i < values->amzHeadersCount; i++) {
-        request->headers =
-            curl_slist_append(request->headers, values->amzHeaders[i]);
-    }
-
-    // Set the HTTP headers
-    curl_easy_setopt_safe(CURLOPT_HTTPHEADER, request->headers);
-
-    // Set URI
-    curl_easy_setopt_safe(CURLOPT_URL, request->uri);
-
-    // Set request type.
-    switch (params->httpRequestType) {
-    case HttpRequestTypeHEAD:
-        curl_easy_setopt_safe(CURLOPT_NOBODY, 1);
-        break;
-    case HttpRequestTypePOST:
-        curl_easy_setopt_safe(CURLOPT_CUSTOMREQUEST, "POST");
-        curl_easy_setopt_safe(CURLOPT_UPLOAD, 1);
-        break;
-
-    case HttpRequestTypePUT:
-    case HttpRequestTypeCOPY:
-        curl_easy_setopt_safe(CURLOPT_UPLOAD, 1);
-        break;
-    case HttpRequestTypeDELETE:
-        curl_easy_setopt_safe(CURLOPT_CUSTOMREQUEST, "DELETE");
-        break;
-    default: // HttpRequestTypeGET
-        break;
+        do_add_header(values->amzHeaders[i]);
     }
 
     return S3StatusOK;
@@ -1285,17 +1265,10 @@ static S3Status setup_curl(Request *request,
 
 static void request_deinitialize(Request *request)
 {
-    if (request->headers) {
-        curl_slist_free_all(request->headers);
-    }
+    ne_request_destroy(request->NeonRequest);
+    ne_session_destroy(request->NeonSession);
 
     error_parser_deinitialize(&(request->errorParser));
-
-    // curl_easy_reset prevents connections from being re-used for some
-    // reason.  This makes HTTP Keep-Alive meaningless and is very bad for
-    // performance.  But it is necessary to allow curl to work properly.
-    // xxx todo figure out why
-    curl_easy_reset(request->curl);
 }
 
 
@@ -1321,18 +1294,17 @@ static S3Status request_get(const RequestParams *params,
     }
     // Else there wasn't one available in the request stack, so create one
     else {
-        if (!(request = (Request *) malloc(sizeof(Request)))) {
+        if ((request = (Request *) malloc(sizeof(Request))) == NULL) {
             return S3StatusOutOfMemory;
         }
-        if (!(request->curl = curl_easy_init())) {
-            free(request);
-            return S3StatusFailedToInitializeRequest;
-        }
+        request->NeonSession = NULL;
     }
 
     // Initialize the request
+    #ifndef WINSCP
     request->prev = 0;
     request->next = 0;
+    #endif
 
     // Request status is initialized to no error, will be updated whenever
     // an error occurs
@@ -1340,22 +1312,17 @@ static S3Status request_get(const RequestParams *params,
 
     S3Status status;
 
-    // Start out with no headers
-    request->headers = 0;
-
     // Compute the URL
     if ((status = compose_uri
          (request->uri, sizeof(request->uri),
           &(params->bucketContext), values->urlEncodedKey,
           params->subResource, params->queryParams)) != S3StatusOK) {
-        curl_easy_cleanup(request->curl);
         free(request);
         return status;
     }
 
-    // Set all of the curl handle options
-    if ((status = setup_curl(request, params, values)) != S3StatusOK) {
-        curl_easy_cleanup(request->curl);
+    // Set all of the handle options
+    if ((status = setup_neon(request, params, values)) != S3StatusOK) {
         free(request);
         return status;
     }
@@ -1387,7 +1354,6 @@ static S3Status request_get(const RequestParams *params,
 static void request_destroy(Request *request)
 {
     request_deinitialize(request);
-    curl_easy_cleanup(request->curl);
     free(request);
 }
 
@@ -1415,12 +1381,7 @@ static void request_release(Request *request)
 S3Status request_api_initialize(const char *userAgentInfo, int flags,
                                 const char *defaultHostName)
 {
-    if (curl_global_init(CURL_GLOBAL_ALL &
-                         ~((flags & S3_INIT_WINSOCK) ? 0 : CURL_GLOBAL_WIN32))
-        != CURLE_OK) {
-        return S3StatusInternalError;
-    }
-    verifyPeer = (flags & S3_INIT_VERIFY_PEER) != 0;
+    // WINSCP (winsock must be initialized by caller)
 
     if (!defaultHostName) {
         defaultHostName = S3_DEFAULT_HOSTNAME;
@@ -1453,7 +1414,7 @@ S3Status request_api_initialize(const char *userAgentInfo, int flags,
              "Mozilla/4.0 (Compatible; %s; libs3 %s.%s; %s)",
              userAgentInfo, LIBS3_VER_MAJOR, LIBS3_VER_MINOR, platform);
 
-    xmlInitParser();
+    // WINSCP (Expat does not need global initialization)
     return S3StatusOK;
 }
 
@@ -1462,7 +1423,7 @@ void request_api_deinitialize()
 {
     pthread_mutex_destroy(&requestStackMutexG);
 
-    xmlCleanupParser();
+    // WINSCP (Expat does not need global initialization)
     while (requestStackCountG--) {
         request_destroy(requestStackG[requestStackCountG]);
     }
@@ -1484,7 +1445,7 @@ static S3Status setup_request(const RequestParams *params,
 
     time_t now = time(NULL);
     struct tm gmt;
-    gmtime_r(&now, &gmt);
+    gmtime_s(&now, &gmt); // WINSCP (gmtime_s)
     strftime(computed->requestDateISO8601, sizeof(computed->requestDateISO8601),
              "%Y%m%dT%H%M%SZ", &gmt);
 
@@ -1533,8 +1494,6 @@ void request_perform(const RequestParams *params, S3RequestContext *context)
 {
     Request *request;
     S3Status status;
-    int verifyPeerRequest = verifyPeer;
-    CURLcode curlstatus;
 
 #define return_status(status)                                           \
     (*(params->completeCallback))(status, 0, params->callbackData);     \
@@ -1551,19 +1510,11 @@ void request_perform(const RequestParams *params, S3RequestContext *context)
     if ((status = request_get(params, &computed, &request)) != S3StatusOK) {
         return_status(status);
     }
-    if (context && context->verifyPeerSet) {
-        verifyPeerRequest = context->verifyPeerSet;
-    }
-    // Allow per-context override of verifyPeer
-    if (verifyPeerRequest != verifyPeer) {
-        if ((curlstatus = curl_easy_setopt(request->curl,
-                                           CURLOPT_SSL_VERIFYPEER,
-                                           context->verifyPeer))
-            != CURLE_OK) {
-            return_status(S3StatusFailedToInitializeRequest);
-        }
-    }
+    // WINSCP (we should always verify the peer)
 
+    #ifdef WINSCP
+    request->requestContext = context;
+    #else
     // If a RequestContext was provided, add the request to the curl multi
     if (context) {
         CURLMcode code = curl_multi_add_handle(context->curlm, request->curl);
@@ -1587,10 +1538,12 @@ void request_perform(const RequestParams *params, S3RequestContext *context)
         }
     }
     // Else, perform the request immediately
-    else {
-        CURLcode code = curl_easy_perform(request->curl);
-        if ((code != CURLE_OK) && (request->status == S3StatusOK)) {
-            request->status = request_curl_code_to_status(code);
+    else 
+    #endif
+    {
+        NeonCode code = ne_request_dispatch(request->NeonRequest);
+        if ((code != NE_OK) && (request->status == S3StatusOK)) {
+            request->status = request_neon_code_to_status(code);
         }
 
         // Finish the request, ensuring that all callbacks have been made, and
@@ -1680,28 +1633,15 @@ void request_finish(Request *request)
 }
 
 
-S3Status request_curl_code_to_status(CURLcode code)
+S3Status request_neon_code_to_status(NeonCode code)
 {
     switch (code) {
-    case CURLE_OUT_OF_MEMORY:
-        return S3StatusOutOfMemory;
-    case CURLE_COULDNT_RESOLVE_PROXY:
-    case CURLE_COULDNT_RESOLVE_HOST:
+    case NE_LOOKUP:
         return S3StatusNameLookupError;
-    case CURLE_COULDNT_CONNECT:
+    case NE_CONNECT:
         return S3StatusFailedToConnect;
-    case CURLE_WRITE_ERROR:
-    case CURLE_OPERATION_TIMEDOUT:
+    case NE_TIMEOUT:
         return S3StatusErrorRequestTimeout;
-    case CURLE_PARTIAL_FILE:
-        return S3StatusOK;
-#if LIBCURL_VERSION_NUM >= 0x071101 /* 7.17.1 */
-    case CURLE_PEER_FAILED_VERIFICATION:
-#else
-    case CURLE_SSL_PEER_CERTIFICATE:
-#endif
-    case CURLE_SSL_CACERT:
-        return S3StatusServerFailedVerification;
     default:
         return S3StatusInternalError;
     }
@@ -1723,8 +1663,11 @@ S3Status S3_generate_authenticated_query_string
         expires = MAX_EXPIRES;
     }
 
+    // WinSCP
     RequestParams params =
-    { http_request_method_to_type(httpMethod), *bucketContext, key, NULL,
+    { http_request_method_to_type(httpMethod),
+        { bucketContext->hostName, bucketContext->bucketName, bucketContext->protocol, bucketContext->uriStyle, bucketContext->accessKeyId, bucketContext->secretAccessKey, bucketContext->securityToken, bucketContext->authRegion },
+        key, NULL,
         resource,
         NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, 0};
 

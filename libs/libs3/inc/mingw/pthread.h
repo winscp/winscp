@@ -27,6 +27,12 @@
 #ifndef PTHREAD_H
 #define PTHREAD_H
 
+#ifdef WINSCP
+#include <windows.h>
+#include <tchar.h>
+#include <stdio.h>
+#endif
+
 // This is a minimal implementation of pthreads on Windows, implementing just
 // the APIs needed by libs3
 
@@ -41,5 +47,12 @@ int pthread_mutex_init(pthread_mutex_t *mutex, void *);
 int pthread_mutex_lock(pthread_mutex_t *mutex);
 int pthread_mutex_unlock(pthread_mutex_t *mutex);
 int pthread_mutex_destroy(pthread_mutex_t *mutex);
+
+#ifdef WINSCP
+char* strtok_r(
+    char *str, 
+    const char *delim, 
+    char **nextp);
+#endif
 
 #endif /* PTHREAD_H */

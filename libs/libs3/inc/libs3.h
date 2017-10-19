@@ -28,7 +28,14 @@
 #define LIBS3_H
 
 #include <stdint.h>
+#ifndef WINSCP
 #include <sys/select.h>
+#endif
+
+#ifdef WINSCP
+#define LIBS3_VER_MAJOR "4"
+#define LIBS3_VER_MINOR "1"
+#endif
 
 
 #ifdef __cplusplus
@@ -1594,6 +1601,13 @@ S3Status S3_create_request_context(S3RequestContext **requestContextReturn);
 void S3_destroy_request_context(S3RequestContext *requestContext);
 
 
+#ifdef WINSCP
+struct ne_ssl_certificate_s;
+typedef int (S3SslCallback)(int failures, const ne_ssl_certificate_s * certificate, void *callbackData);
+
+void S3_set_request_context_ssl_callback(S3RequestContext *requestContext,
+                                         S3SslCallback sslCallback);
+#else
 /**
  * Runs the S3RequestContext until all requests within it have completed,
  * or until an error occurs.
@@ -1703,6 +1717,7 @@ int64_t S3_get_request_context_timeout(S3RequestContext *requestContext);
  */
 void S3_set_request_context_verify_peer(S3RequestContext *requestContext,
                                         int verifyPeer);
+#endif
 
 
 /** **************************************************************************

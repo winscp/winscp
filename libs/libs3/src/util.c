@@ -26,6 +26,8 @@
 
 #include <ctype.h>
 #include <string.h>
+#include <time.h>
+
 #include "util.h"
 
 
