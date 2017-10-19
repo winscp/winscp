@@ -153,7 +153,6 @@ BEGIN
   FTP_ACCESS_DENIED, "Access denied."
   FTP_CREDENTIAL_PROMPT, "Prompting for credentials..."
   FTP_RESPONSE_ERROR, "Invalid response to %s command '%s'."
-  FTP_UNSUPPORTED, "This version does not support FTP protocol."
   SCRIPT_UNKNOWN_SWITCH, "Unknown switch '%s'."
   TRANSFER_ERROR, "Error transferring file '%s'."
   EXECUTE_APP_ERROR, "Cannot execute '%s'."

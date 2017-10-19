@@ -17,9 +17,7 @@
 #include "SecureShell.h"
 #include "ScpFileSystem.h"
 #include "SftpFileSystem.h"
-#ifndef NO_FILEZILLA
 #include "FtpFileSystem.h"
-#endif
 #include "WebDAVFileSystem.h"
 #include "TextsCore.h"
 #include "HelpCore.h"
@@ -1296,16 +1294,11 @@ void __fastcall TTerminal::Open()
           {
             if (SessionData->FSProtocol == fsFTP)
             {
-              #ifdef NO_FILEZILLA
-              LogEvent(L"FTP protocol is not supported by this build.");
-              FatalError(NULL, LoadStr(FTP_UNSUPPORTED));
-              #else
               FFSProtocol = cfsFTP;
               FFileSystem = new TFTPFileSystem(this);
               FFileSystem->Open();
               Log->AddSeparator();
               LogEvent(L"Using FTP protocol.");
-              #endif
             }
             else if (SessionData->FSProtocol == fsWebDAV)
             {

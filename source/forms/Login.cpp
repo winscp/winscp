@@ -201,11 +201,6 @@ void __fastcall TLoginDialog::Init()
 
   InitControls();
 
-  #ifdef NO_FILEZILLA
-  DebugAssert(TransferProtocolCombo->Items->Count == FSPROTOCOL_COUNT - 2 - 1);
-  TransferProtocolCombo->Items->Delete(TransferProtocolCombo->Items->Count - 1);
-  #endif
-
   ReadOnlyControl(ContentsNameEdit);
   ReadOnlyControl(ContentsMemo);
 

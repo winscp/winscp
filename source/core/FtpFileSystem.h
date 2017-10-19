@@ -2,7 +2,6 @@
 #ifndef FtpFileSystemH
 #define FtpFileSystemH
 
-#ifndef NO_FILEZILLA
 //---------------------------------------------------------------------------
 #include <time.h>
 #include <FileSystems.h>
@@ -297,7 +296,5 @@ private:
 };
 //---------------------------------------------------------------------------
 UnicodeString __fastcall GetOpenSSLVersionText();
-//---------------------------------------------------------------------------
-#endif NO_FILEZILLA
 //---------------------------------------------------------------------------
 #endif // FtpFileSystemH

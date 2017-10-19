@@ -24,9 +24,7 @@
 #include <WebBrowserEx.hpp>
 #include <StrUtils.hpp>
 #include <Dialogs.hpp>
-#ifndef NO_FILEZILLA
 #include <FtpFileSystem.h>
-#endif
 //---------------------------------------------------------------------
 #pragma link "SHDocVw_OCX"
 #ifndef NO_RESOURCES
@@ -241,8 +239,6 @@ void __fastcall TAboutDialog::DoLoadThirdParty()
     CreateLink(LoadStr(PUTTY_LICENSE_URL), LoadStr(ABOUT_THIRDPARTY_LICENSE)) + Br +
     CreateLink(LoadStr(PUTTY_URL)));
 
-#ifndef NO_FILEZILLA
-
   UnicodeString OpenSSLVersionText = GetOpenSSLVersionText();
   CutToChar(OpenSSLVersionText, L' ', true); // "OpenSSL"
   UnicodeString OpenSSLVersion = CutToChar(OpenSSLVersionText, L' ', true);
@@ -259,8 +255,6 @@ void __fastcall TAboutDialog::DoLoadThirdParty()
     LoadStr(FILEZILLA_BASED_ON2) + Br +
     LoadStr(FILEZILLA_COPYRIGHT2) + Br +
     CreateLink(LoadStr(FILEZILLA_URL)));
-
-#endif
 
   AddPara(ThirdParty,
     FMTLOAD(NEON_BASED_ON, (NeonVersion())) + Br +

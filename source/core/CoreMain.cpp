@@ -10,9 +10,7 @@
 #include "PuttyIntf.h"
 #include "Cryptography.h"
 #include <DateUtils.hpp>
-#ifndef NO_FILEZILLA
 #include "FileZillaIntf.h"
-#endif
 #include "WebDAVFileSystem.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
@@ -133,9 +131,7 @@ void CoreInitialize()
   Configuration = CreateConfiguration();
 
   PuttyInitialize();
-  #ifndef NO_FILEZILLA
   TFileZillaIntf::Initialize();
-  #endif
   NeonInitialize();
 
   CoreLoad();
@@ -153,9 +149,7 @@ void CoreFinalize()
   }
 
   NeonFinalize();
-  #ifndef NO_FILEZILLA
   TFileZillaIntf::Finalize();
-  #endif
   PuttyFinalize();
 
   delete StoredSessions;
@@ -168,11 +162,7 @@ void CoreFinalize()
 //---------------------------------------------------------------------------
 void CoreSetResourceModule(void * ResourceHandle)
 {
-  #ifndef NO_FILEZILLA
   TFileZillaIntf::SetResourceModule(ResourceHandle);
-  #else
-  DebugUsedParam(ResourceHandle);
-  #endif
 }
 //---------------------------------------------------------------------------
 void CoreMaintenanceTask()

@@ -1,6 +1,4 @@
-#ifndef NO_FILEZILLA
 #include "..\\resource\\TextsFileZilla.rc"
-#endif
 #include "..\\resource\\TextsCore1.rc"
 #include "..\\resource\\TextsCore2.rc"
 #include "..\\resource\\TextsWin1.rc"

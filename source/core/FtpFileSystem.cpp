@@ -2,7 +2,6 @@
 #include <vcl.h>
 #pragma hdrstop
 
-#ifndef NO_FILEZILLA
 //---------------------------------------------------------------------------
 #include <list>
 #define MPEXT
@@ -5050,4 +5049,3 @@ UnicodeString __fastcall GetOpenSSLVersionText()
   return OPENSSL_VERSION_TEXT;
 }
 //---------------------------------------------------------------------------
-#endif NO_FILEZILLA
