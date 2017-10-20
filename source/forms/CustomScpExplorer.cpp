@@ -4202,14 +4202,15 @@ void __fastcall TCustomScpExplorerForm::KeyDown(Word & Key, Classes::TShiftState
       TTerminalManager::Instance()->CycleTerminals(!Shift.Contains(ssShift));
     }
 
-    if (IsCustomShortCut(KeyShortCut))
+    TShortCut CustomShortCut = NormalizeCustomShortCut(KeyShortCut);
+    if (IsCustomShortCut(CustomShortCut))
     {
-      CheckCustomCommandShortCut(WinConfiguration->CustomCommandList, Key, Shift, KeyShortCut);
-      CheckCustomCommandShortCut(WinConfiguration->ExtensionList, Key, Shift, KeyShortCut);
+      CheckCustomCommandShortCut(WinConfiguration->CustomCommandList, Key, Shift, CustomShortCut);
+      CheckCustomCommandShortCut(WinConfiguration->ExtensionList, Key, Shift, CustomShortCut);
 
       if (WinConfiguration->SharedBookmarks != NULL)
       {
-        TBookmark * Bookmark = WinConfiguration->SharedBookmarks->FindByShortCut(KeyShortCut);
+        TBookmark * Bookmark = WinConfiguration->SharedBookmarks->FindByShortCut(CustomShortCut);
         if ((Bookmark != NULL) &&
             OpenBookmark(Bookmark->Local, Bookmark->Remote))
         {

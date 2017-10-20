@@ -483,6 +483,7 @@ void __fastcall InitializeShortCutCombo(TComboBox * ComboBox,
 void __fastcall SetShortCutCombo(TComboBox * ComboBox, TShortCut Value);
 TShortCut __fastcall GetShortCutCombo(TComboBox * ComboBox);
 bool __fastcall IsCustomShortCut(TShortCut ShortCut);
+TShortCut __fastcall NormalizeCustomShortCut(TShortCut ShortCut);
 
 #ifdef _DEBUG
 void __fastcall ForceTracing();
