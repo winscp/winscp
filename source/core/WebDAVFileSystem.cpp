@@ -310,9 +310,9 @@ void __fastcall TWebDAVFileSystem::InitSession(ne_session_s * Session)
     Session, Data->ProxyMethod, Data->ProxyHost, Data->ProxyPort,
     Data->ProxyUsername, Data->ProxyPassword, FTerminal);
 
-  ne_set_read_timeout(FNeonSession, Data->Timeout);
+  ne_set_read_timeout(Session, Data->Timeout);
 
-  ne_set_connect_timeout(FNeonSession, Data->Timeout);
+  ne_set_connect_timeout(Session, Data->Timeout);
 
   ne_set_session_private(Session, SESSION_FS_KEY, this);
 }
