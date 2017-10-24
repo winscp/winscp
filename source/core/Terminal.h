@@ -400,6 +400,8 @@ protected:
     const UnicodeString & CertificateSubject, int Failures);
   void __fastcall CacheCertificate(const UnicodeString & CertificateStorageKey,
     const UnicodeString & SiteKey, const UnicodeString & Fingerprint, int Failures);
+  bool __fastcall ConfirmCertificate(
+    TSessionInfo & SessionInfo, int Failures, const UnicodeString & CertificateStorageKey, bool CanRemember);
   void __fastcall CollectTlsUsage(const UnicodeString & TlsVersionStr);
   bool __fastcall LoadTlsCertificate(X509 *& Certificate, EVP_PKEY *& PrivateKey);
   bool __fastcall TryStartOperationWithFile(

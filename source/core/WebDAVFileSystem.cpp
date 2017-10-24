@@ -2313,46 +2313,8 @@ bool TWebDAVFileSystem::VerifyCertificate(const TWebDAVCertificateData & Data, b
 
     if (!Result)
     {
-      TClipboardHandler ClipboardHandler;
-      ClipboardHandler.Text = Data.Fingerprint;
-
-      TQueryButtonAlias Aliases[1];
-      Aliases[0].Button = qaRetry;
-      Aliases[0].Alias = LoadStr(COPY_KEY_BUTTON);
-      Aliases[0].OnSubmit = &ClipboardHandler.Copy;
-
-      TQueryParams Params;
-      Params.HelpKeyword = HELP_VERIFY_CERTIFICATE;
-      Params.NoBatchAnswers = qaYes | qaRetry;
-      Params.Aliases = Aliases;
-      Params.AliasesCount = LENOF(Aliases);
-      unsigned int Answer = FTerminal->QueryUser(
-        FMTLOAD(VERIFY_CERT_PROMPT3, (FSessionInfo.Certificate)),
-        NULL, qaYes | qaNo | qaCancel | qaRetry, &Params, qtWarning);
-      switch (Answer)
-      {
-        case qaYes:
-          FTerminal->CacheCertificate(CertificateStorageKey, SiteKey, Data.Fingerprint, Failures);
-          Result = true;
-          break;
-
-        case qaNo:
-          Result = true;
-          break;
-
-        default:
-          DebugFail();
-        case qaCancel:
-          FTerminal->Configuration->Usage->Inc(L"HostNotVerified");
-          Result = false;
-          break;
-      }
-
-      if (Result && !Aux)
-      {
-        FTerminal->Configuration->RememberLastFingerprint(
-          FTerminal->SessionData->SiteKey, TlsFingerprintType, FSessionInfo.CertificateFingerprint);
-      }
+      Result =
+        FTerminal->ConfirmCertificate(FSessionInfo, Failures, CertificateStorageKey, !Aux);
     }
 
     if (Result && !Aux)

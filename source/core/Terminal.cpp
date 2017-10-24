@@ -6781,6 +6781,60 @@ bool  __fastcall TTerminal::VerifyCertificate(
   return Result;
 }
 //---------------------------------------------------------------------------
+bool __fastcall TTerminal::ConfirmCertificate(
+  TSessionInfo & SessionInfo, int Failures, const UnicodeString & CertificateStorageKey, bool CanRemember)
+{
+  TClipboardHandler ClipboardHandler;
+  ClipboardHandler.Text = SessionInfo.CertificateFingerprint;
+
+  TQueryButtonAlias Aliases[1];
+  Aliases[0].Button = qaRetry;
+  Aliases[0].Alias = LoadStr(COPY_KEY_BUTTON);
+  Aliases[0].OnSubmit = &ClipboardHandler.Copy;
+
+  TQueryParams Params(qpWaitInBatch);
+  Params.HelpKeyword = HELP_VERIFY_CERTIFICATE;
+  Params.NoBatchAnswers = qaYes | qaRetry;
+  Params.Aliases = Aliases;
+  Params.AliasesCount = LENOF(Aliases);
+  unsigned int Answer =
+    QueryUser(
+      FMTLOAD(VERIFY_CERT_PROMPT3, (SessionInfo.Certificate)),
+      NULL, qaYes | qaNo | qaCancel | qaRetry, &Params, qtWarning);
+
+  bool Result;
+  switch (Answer)
+  {
+    case qaYes:
+      CacheCertificate(
+        CertificateStorageKey, SessionData->SiteKey, SessionInfo.CertificateFingerprint, Failures);
+      Result = true;
+      break;
+
+    case qaNo:
+      Result = true;
+      break;
+
+    case qaCancel:
+      Configuration->Usage->Inc(L"HostNotVerified");
+      Result = false;
+      break;
+
+    default:
+      DebugFail();
+      Result = false;
+      break;
+  }
+
+  // Cache only if the certificate was accepted manually
+  if (Result && CanRemember)
+  {
+    Configuration->RememberLastFingerprint(
+      SessionData->SiteKey, TlsFingerprintType, SessionInfo.CertificateFingerprint);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminal::CacheCertificate(const UnicodeString & CertificateStorageKey,
   const UnicodeString & SiteKey, const UnicodeString & Fingerprint, int Failures)
 {

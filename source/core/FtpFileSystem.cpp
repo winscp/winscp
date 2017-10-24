@@ -4455,11 +4455,9 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestVerifyCertificate(
         TryWindowsSystemCertificateStore = false;
       }
 
-      UnicodeString SiteKey = FTerminal->SessionData->SiteKey;
-
       if (!VerificationResult)
       {
-        if (FTerminal->VerifyCertificate(CertificateStorageKey, SiteKey,
+        if (FTerminal->VerifyCertificate(CertificateStorageKey, FTerminal->SessionData->SiteKey,
               FSessionInfo.CertificateFingerprint, CertificateSubject, Data.VerificationResult))
         {
           // certificate is trusted, but for not purposes of info dialog
@@ -4523,59 +4521,10 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestVerifyCertificate(
 
       if (RequestResult == 0)
       {
-        TClipboardHandler ClipboardHandler;
-        ClipboardHandler.Text = FSessionInfo.CertificateFingerprint;
-
-        TQueryButtonAlias Aliases[1];
-        Aliases[0].Button = qaRetry;
-        Aliases[0].Alias = LoadStr(COPY_KEY_BUTTON);
-        Aliases[0].OnSubmit = &ClipboardHandler.Copy;
-
-        TQueryParams Params(qpWaitInBatch);
-        Params.HelpKeyword = HELP_VERIFY_CERTIFICATE;
-        Params.NoBatchAnswers = qaYes | qaRetry;
-        Params.Aliases = Aliases;
-        Params.AliasesCount = LENOF(Aliases);
-        unsigned int Answer = FTerminal->QueryUser(
-          FMTLOAD(VERIFY_CERT_PROMPT3, (FSessionInfo.Certificate)),
-          NULL, qaYes | qaNo | qaCancel | qaRetry, &Params, qtWarning);
-
-        switch (Answer)
-        {
-          case qaYes:
-            // 2 = always, as used by FZ's VerifyCertDlg.cpp,
-            // however FZAPI takes all non-zero values equally
-            RequestResult = 2;
-            break;
-
-          case qaNo:
-            RequestResult = 1;
-            break;
-
-          case qaCancel:
-            FTerminal->Configuration->Usage->Inc(L"HostNotVerified");
-            RequestResult = 0;
-            break;
-
-          default:
-            DebugFail();
-            RequestResult = 0;
-            break;
-        }
-
-        if (RequestResult == 2)
-        {
-          FTerminal->CacheCertificate(
-            CertificateStorageKey, SiteKey,
-            FSessionInfo.CertificateFingerprint, Data.VerificationResult);
-        }
-
-        // Cache only if the certificate was accepted manually
-        if (RequestResult != 0)
-        {
-          FTerminal->Configuration->RememberLastFingerprint(
-            FTerminal->SessionData->SiteKey, TlsFingerprintType, FSessionInfo.CertificateFingerprint);
-        }
+        bool Confirmed = FTerminal->ConfirmCertificate(FSessionInfo, Data.VerificationResult, CertificateStorageKey, true);
+        // FZ's VerifyCertDlg.cpp returns 2 for "cached", what we do nto distinguish here,
+        // however FZAPI takes all non-zero values equally.
+        RequestResult = Confirmed ? 1 : 0;
       }
     }
 
