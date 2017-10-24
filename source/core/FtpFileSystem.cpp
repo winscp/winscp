@@ -4569,13 +4569,13 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestVerifyCertificate(
             CertificateStorageKey, SiteKey,
             FSessionInfo.CertificateFingerprint, Data.VerificationResult);
         }
-      }
 
-      // Cache only if the certificate was accepted manually
-      if (!VerificationResult && (RequestResult != 0))
-      {
-        FTerminal->Configuration->RememberLastFingerprint(
-          FTerminal->SessionData->SiteKey, TlsFingerprintType, FSessionInfo.CertificateFingerprint);
+        // Cache only if the certificate was accepted manually
+        if (RequestResult != 0)
+        {
+          FTerminal->Configuration->RememberLastFingerprint(
+            FTerminal->SessionData->SiteKey, TlsFingerprintType, FSessionInfo.CertificateFingerprint);
+        }
       }
     }
 
