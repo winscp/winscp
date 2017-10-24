@@ -899,7 +899,7 @@ void __fastcall ApplySystemSettingsOnControl(TControl * Control)
     }
   }
 
-  // WORKAROUND for lack of public API so mimicking Explorer-style mouse selection
+  // WORKAROUND for lack of public API for mimicking Explorer-style mouse selection
   // See https://stackoverflow.com/q/15750842/850848
   if (IEListView != NULL)
   {
