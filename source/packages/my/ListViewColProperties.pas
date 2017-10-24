@@ -36,6 +36,7 @@ type
   protected
     FListView: TCustomListView;
     FListViewManaged: Boolean;
+    FConstraintsInitialized: Boolean;
     function GetAlignments(Index: Integer): TAlignment;
     function GetParamsStr: string; virtual;
     function GetVisible(Index: Integer): Boolean;
@@ -115,6 +116,7 @@ begin
   // TCustomNortonLikeListView.NewColProperties
   inherited Create;
 
+  FConstraintsInitialized := False;
   FCreated := False;
   FUpdating := 0;
   FChanged := False;
@@ -437,9 +439,15 @@ begin
 
   Properties := GetProperties(Index);
 
-  if Value < Properties.MinWidth then Value := Properties.MinWidth
+  if (Properties.MinWidth > 0) and (Value < Properties.MinWidth) then
+  begin
+    Value := Properties.MinWidth;
+  end
     else
-  if Value > Properties.MaxWidth then Value := Properties.MaxWidth;
+  if (Properties.MaxWidth > 0) and (Value > Properties.MaxWidth) then
+  begin
+    Value := Properties.MaxWidth;
+  end;
 
   if Widths[Index] <> Value then
   begin
@@ -524,15 +532,16 @@ begin
   for Index := 0 to ACount - 1 do
   begin
     Properties := TCustomListViewColProperty.Create(Index);
-
-    // We do not have list view handle yet to use ScaleByTextHeight, against primary monitor
-    Properties.MaxWidth := ScaleByPixelsPerInch(DefaultListViewMaxWidth, Screen.PrimaryMonitor);
-    Properties.MinWidth := ScaleByPixelsPerInch(DefaultListViewMinWidth, Screen.PrimaryMonitor);
     FProperties.Add(Properties);
   end;
 end;
 
 procedure TCustomListViewColProperties.ListViewWndCreated;
+var
+  Index: Integer;
+  Properties: TCustomListViewColProperty;
+  Column: TListColumn;
+  W: Integer;
 begin
   if FListViewManaged then
   begin
@@ -540,6 +549,34 @@ begin
       CreateProperties(Columns.Count);
 
     UpdateFromListView;
+
+    if not FConstraintsInitialized then
+    begin
+      FConstraintsInitialized := True;
+
+      for Index := 0 to Count - 1 do
+      begin
+        Column := GetColumn(Index);
+        Properties := GetProperties(Index);
+
+        // Is this branching needed?
+        if Properties.Visible then
+        begin
+          W := Column.MaxWidth;
+          if W = 0 then W := DefaultListViewMaxWidth;
+          Properties.MaxWidth := ScaleByTextHeight(FListView, W);
+
+          W := Column.MinWidth;
+          if W = 0 then W := DefaultListViewMinWidth;
+          Properties.MinWidth := ScaleByTextHeight(FListView, W);
+        end
+          else
+        begin
+          Column.MaxWidth := ScaleByTextHeight(FListView, Column.MaxWidth);
+          Column.MinWidth := ScaleByTextHeight(FListView, Column.MinWidth);
+        end;
+      end;
+    end;
 
     // To apply the default constraints to columns that do not have their own
     UpdateListViewMaxMinWidth;
