@@ -1064,7 +1064,7 @@ void __fastcall TSynchronizeChecklistDialog::Dispatch(void * Message)
       TForm::Dispatch(Message);
     }
   }
-  if (M->Msg == CM_DPICHANGED)
+  else if (M->Msg == CM_DPICHANGED)
   {
     CMDpiChanged(*M);
   }
