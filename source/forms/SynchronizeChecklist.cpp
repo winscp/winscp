@@ -403,7 +403,7 @@ __int64 __fastcall TSynchronizeChecklistDialog::GetItemSize(const TSynchronizeCh
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::FormShow(TObject * /*Sender*/)
 {
-  // Moved here form CreateParams (see also TEditorForm::CreateParams), because there it breaks per-monitor DPI.
+  // Moved here from CreateParams (see also TEditorForm::CreateParams), because there it breaks per-monitor DPI.
   // For example BoundsRect is matched to the main form too soon, so it gets rescaled later.
   // Also it happens before constructor, what causes UseDesktopFont-flagged controls to rescale twice.
   // But Position is already set in the CreateParams, as it cannot be set here anymore.
