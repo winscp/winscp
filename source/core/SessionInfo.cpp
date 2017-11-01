@@ -156,8 +156,14 @@ public:
             {
               FLog->AddIndented(FORMAT(L"      <size value=\"%s\" />", (IntToStr(File->Size))));
             }
-            FLog->AddIndented(FORMAT(L"      <modification value=\"%s\" />", (StandardTimestamp(File->Modification))));
-            FLog->AddIndented(FORMAT(L"      <permissions value=\"%s\" />", (XmlAttributeEscape(File->Rights->Text))));
+            if (File->ModificationFmt != mfNone)
+            {
+              FLog->AddIndented(FORMAT(L"      <modification value=\"%s\" />", (StandardTimestamp(File->Modification))));
+            }
+            if (!File->Rights->Unknown)
+            {
+              FLog->AddIndented(FORMAT(L"      <permissions value=\"%s\" />", (XmlAttributeEscape(File->Rights->Text))));
+            }
             if (File->Owner.IsSet)
             {
               FLog->AddIndented(FORMAT(L"      <owner value=\"%s\" />", (XmlAttributeEscape(File->Owner.DisplayText))));
@@ -178,8 +184,14 @@ public:
           {
             FLog->AddIndented(FORMAT(L"    <size value=\"%s\" />", (IntToStr(FFile->Size))));
           }
-          FLog->AddIndented(FORMAT(L"    <modification value=\"%s\" />", (StandardTimestamp(FFile->Modification))));
-          FLog->AddIndented(FORMAT(L"    <permissions value=\"%s\" />", (XmlAttributeEscape(FFile->Rights->Text))));
+          if (FFile->ModificationFmt != mfNone)
+          {
+            FLog->AddIndented(FORMAT(L"    <modification value=\"%s\" />", (StandardTimestamp(FFile->Modification))));
+          }
+          if (!FFile->Rights->Unknown)
+          {
+            FLog->AddIndented(FORMAT(L"    <permissions value=\"%s\" />", (XmlAttributeEscape(FFile->Rights->Text))));
+          }
           FLog->AddIndented(L"  </file>");
         }
         if (FState == RolledBack)
