@@ -2716,3 +2716,8 @@ void __fastcall TSCPFileSystem::UpdateFromMain(TCustomFileSystem * /*MainFileSys
 {
   // noop
 }
+//---------------------------------------------------------------------------
+void __fastcall TSCPFileSystem::ClearCaches()
+{
+  // noop
+}

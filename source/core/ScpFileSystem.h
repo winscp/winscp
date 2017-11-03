@@ -73,6 +73,7 @@ public:
   virtual void __fastcall LockFile(const UnicodeString & FileName, const TRemoteFile * File);
   virtual void __fastcall UnlockFile(const UnicodeString & FileName, const TRemoteFile * File);
   virtual void __fastcall UpdateFromMain(TCustomFileSystem * MainFileSystem);
+  virtual void __fastcall ClearCaches();
 
 protected:
   __property TStrings * Output = { read = FOutput };

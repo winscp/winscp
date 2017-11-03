@@ -15,6 +15,7 @@ namespace WinSCP
         Scp = 1,
         Ftp = 2,
         Webdav = 3,
+        S3 = 4,
     }
 
     [Guid("D924FAB9-FCE7-47B8-9F23-5717698384D3")]
@@ -45,7 +46,7 @@ namespace WinSCP
             RawSettings = new Dictionary<string,string>();
         }
 
-        public Protocol Protocol { get; set; }
+        public Protocol Protocol { get { return _protocol; } set { SetProtocol(value); } }
         public string HostName { get; set; }
         public int PortNumber { get { return _portNumber; } set { SetPortNumber(value); } }
         public string UserName { get; set; }
@@ -258,6 +259,10 @@ namespace WinSCP
                 Protocol = Protocol.Webdav;
                 WebdavSecure = true;
             }
+            else if (protocol.Equals("s3", StringComparison.OrdinalIgnoreCase))
+            {
+                Protocol = Protocol.S3;
+            }
             else
             {
                 result = false;
@@ -307,7 +312,8 @@ namespace WinSCP
         {
             return
                 ((Protocol == Protocol.Ftp) && (FtpSecure != FtpSecure.None)) ||
-                ((Protocol == Protocol.Webdav) && WebdavSecure);
+                ((Protocol == Protocol.Webdav) && WebdavSecure) ||
+                (Protocol == Protocol.S3);
         }
 
         private void SetSshHostKeyFingerprint(string s)
@@ -358,6 +364,15 @@ namespace WinSCP
             }
 
             _portNumber = value;
+        }
+
+        private void SetProtocol(Protocol value)
+        {
+            _protocol = value;
+            if ((_protocol == Protocol.S3) && string.IsNullOrEmpty(HostName))
+            {
+                HostName = "s3.amazonaws.com";
+            }
         }
 
         private void SetWebdavRoot(string value)
@@ -414,6 +429,7 @@ namespace WinSCP
         private TimeSpan _timeout;
         private int _portNumber;
         private string _webdavRoot;
+        private Protocol _protocol;
 
         private const string _listPattern = @"{0}(;{0})*";
         private const string _sshHostKeyPattern = @"((ssh-rsa|ssh-dss|ssh-ed25519|ecdsa-sha2-nistp(256|384|521))( |-))?(\d+ )?([0-9a-f]{2}(:|-)){15}[0-9a-f]{2}";

@@ -6167,3 +6167,8 @@ void __fastcall TSFTPFileSystem::UpdateFromMain(TCustomFileSystem * /*MainFileSy
 {
   // noop
 }
+//---------------------------------------------------------------------------
+void __fastcall TSFTPFileSystem::ClearCaches()
+{
+  // noop
+}

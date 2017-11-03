@@ -188,7 +188,7 @@ struct TFileTransferData
 //---------------------------------------------------------------------------
 const int tfFirstLevel = 0x01;
 const int tfAutoResume = 0x02;
-const wchar_t CertificateStorageKey[] = L"FtpsCertificates";
+const UnicodeString CertificateStorageKey(L"FtpsCertificates");
 const UnicodeString SiteCommand(L"SITE");
 const UnicodeString SymlinkSiteCommand(L"SYMLINK");
 const UnicodeString CopySiteCommand(L"COPY");
@@ -4989,6 +4989,11 @@ void __fastcall TFTPFileSystem::UnlockFile(const UnicodeString & /*FileName*/, c
 }
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::UpdateFromMain(TCustomFileSystem * /*MainFileSystem*/)
+{
+  // noop
+}
+//---------------------------------------------------------------------------
+void __fastcall TFTPFileSystem::ClearCaches()
 {
   // noop
 }

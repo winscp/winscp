@@ -1253,7 +1253,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
               'USER %user@%host %proxyuser'
               'USER %user@%proxyuser@%host')
           end
-          object WebDavProxyMethodCombo: TComboBox
+          object NeonProxyMethodCombo: TComboBox
             Left = 128
             Top = 15
             Width = 110

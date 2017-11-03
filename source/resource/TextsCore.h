@@ -7,7 +7,7 @@
 
 #define SCRIPT_HELP_HELP        4
 #define SCRIPT_EXIT_HELP        5
-#define SCRIPT_OPEN_HELP9       6
+#define SCRIPT_OPEN_HELP10      6
 #define SCRIPT_CLOSE_HELP       7
 #define SCRIPT_SESSION_HELP     8
 #define SCRIPT_PWD_HELP         9
@@ -248,7 +248,7 @@
 #define UNLOCK_FILE_ERROR       725
 #define NOT_LOCKED              726
 #define KEY_SAVE_ERROR          727
-#define NEON_INIT_FAILED        728
+#define NEON_INIT_FAILED2       728
 #define SCRIPT_AMBIGUOUS_SLASH_IN_PATH 729
 #define CERT_IP_CANNOT_VERIFY   730
 #define HOSTKEY_NOT_CONFIGURED  731
@@ -263,6 +263,10 @@
 #define KNOWN_HOSTS_NOT_FOUND   740
 #define KNOWN_HOSTS_NO_SITES    741
 #define HOSTKEY_NOT_MATCH_CLIPBOARD 742
+#define S3_ERROR_RESOURCE       743
+#define S3_ERROR_FURTHER_DETAILS 744
+#define S3_ERROR_EXTRA_DETAILS  745
+#define S3_STATUS_ACCESS_DENIED 746
 
 #define CORE_CONFIRMATION_STRINGS 300
 #define CONFIRM_PROLONG_TIMEOUT3 301
@@ -312,6 +316,10 @@
 #define MULTI_FILES_TO_ONE      353
 #define KEY_EXCHANGE_ALG        354
 #define KEYKEY_TYPE             355
+#define S3_ACCESS_KEY_ID_TITLE  356
+#define S3_ACCESS_KEY_ID_PROMPT 357
+#define S3_SECRET_ACCESS_KEY_TITLE 358
+#define S3_SECRET_ACCESS_KEY_PROMPT 359
 
 #define CORE_INFORMATION_STRINGS 400
 #define YES_STR                 401
@@ -471,7 +479,7 @@
 #define OPENSSL_BASED_ON        609
 #define OPENSSL_COPYRIGHT2      610
 #define OPENSSL_URL             612
-#define NEON_BASED_ON           613
+#define NEON_BASED_ON2          613
 #define NEON_COPYRIGHT          614
 #define NEON_URL                615
 #define EXPAT_BASED_ON          616
@@ -479,6 +487,10 @@
 #define PUTTY_LICENSE_URL       625
 #define MAIN_MSG_TAG            631
 #define INTERACTIVE_MSG_TAG     632
+#define S3_BASED_ON             633
+#define S3_COPYRIGHT            634
+#define S3_URL                  635
+#define S3_LICENSE_URL          636
 
 // 7xxx used by errors as secondary sequence
 

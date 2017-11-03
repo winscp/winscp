@@ -565,7 +565,7 @@ static S3Status listBucketXmlCallback(const char *elementPath,
             int which = lbData->commonPrefixesCount;
             size_t oldLen = lbData->commonPrefixLens[which];
             lbData->commonPrefixLens[which] +=
-                snprintf(lbData->commonPrefixes[which]+oldLen,
+                snprintf_S(lbData->commonPrefixes[which]+oldLen,
                          sizeof(lbData->commonPrefixes[which]) -
                          oldLen - 1,
                          "%.*s", dataLen, data);

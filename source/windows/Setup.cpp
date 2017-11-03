@@ -467,6 +467,7 @@ static void __fastcall RegisterAsNonBrowserUrlHandler(const UnicodeString & Pref
   RegisterAsUrlHandler(Prefix + ScpProtocol.UpperCase());
   RegisterAsUrlHandler(Prefix + WebDAVProtocol.UpperCase());
   RegisterAsUrlHandler(Prefix + WebDAVSProtocol.UpperCase());
+  RegisterAsUrlHandler(Prefix + S3Protocol.UpperCase());
 }
 //---------------------------------------------------------------------------
 static void __fastcall UnregisterAsUrlHandlers(const UnicodeString & Prefix, bool UnregisterProtocol)
@@ -475,6 +476,7 @@ static void __fastcall UnregisterAsUrlHandlers(const UnicodeString & Prefix, boo
   UnregisterAsUrlHandler(Prefix + ScpProtocol, UnregisterProtocol);
   UnregisterAsUrlHandler(Prefix + WebDAVProtocol, UnregisterProtocol);
   UnregisterAsUrlHandler(Prefix + WebDAVSProtocol, UnregisterProtocol);
+  UnregisterAsUrlHandler(Prefix + S3Protocol, UnregisterProtocol);
 }
 //---------------------------------------------------------------------------
 static const UnicodeString GenericUrlHandler(L"WinSCP.Url");
@@ -580,6 +582,7 @@ static void __fastcall RegisterProtocolsForDefaultPrograms(HKEY RootKey)
   RegisterProtocolForDefaultPrograms(RootKey, SshProtocol);
   RegisterProtocolForDefaultPrograms(RootKey, WebDAVProtocol);
   RegisterProtocolForDefaultPrograms(RootKey, WebDAVSProtocol);
+  RegisterProtocolForDefaultPrograms(RootKey, S3Protocol);
   // deliberately not including http,
   // it's unlikely that anyone would like to change http handler
   // to non-browser application
@@ -594,6 +597,7 @@ static void __fastcall UnregisterProtocolsForDefaultPrograms(HKEY RootKey, bool 
   UnregisterProtocolForDefaultPrograms(RootKey, ScpProtocol, ForceHandlerUnregistration);
   UnregisterProtocolForDefaultPrograms(RootKey, WebDAVProtocol, ForceHandlerUnregistration);
   UnregisterProtocolForDefaultPrograms(RootKey, WebDAVSProtocol, ForceHandlerUnregistration);
+  UnregisterProtocolForDefaultPrograms(RootKey, S3Protocol, ForceHandlerUnregistration);
 
   // we should not really need the "force" flag here, but why not
   UnregisterAsUrlHandler(RootKey, GenericUrlHandler, true, true);

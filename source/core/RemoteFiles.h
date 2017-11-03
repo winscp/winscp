@@ -201,6 +201,7 @@ friend class TSCPFileSystem;
 friend class TSFTPFileSystem;
 friend class TFTPFileSystem;
 friend class TWebDAVFileSystem;
+friend class TS3FileSystem;
 protected:
   UnicodeString FDirectory;
   TDateTime FTimestamp;

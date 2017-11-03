@@ -19,6 +19,7 @@
 #include "SftpFileSystem.h"
 #include "FtpFileSystem.h"
 #include "WebDAVFileSystem.h"
+#include "S3FileSystem.h"
 #include "TextsCore.h"
 #include "HelpCore.h"
 #include "CoreMain.h"
@@ -1308,6 +1309,14 @@ void __fastcall TTerminal::Open()
               Log->AddSeparator();
               LogEvent(L"Using WebDAV protocol.");
             }
+            else if (SessionData->FSProtocol == fsS3)
+            {
+              FFSProtocol = cfsS3;
+              FFileSystem = new TS3FileSystem(this);
+              FFileSystem->Open();
+              Log->AddSeparator();
+              LogEvent(L"Using S3 protocol.");
+            }
             else
             {
               DebugAssert(FSecureShell == NULL);
@@ -2292,6 +2301,7 @@ void __fastcall TTerminal::ClearCaches()
   {
     FCommandSession->ClearCaches();
   }
+  FFileSystem->ClearCaches();
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::ClearCachedFileList(const UnicodeString Path,
@@ -6691,6 +6701,10 @@ void __fastcall TTerminal::CollectUsage()
       {
         Configuration->Usage->Inc(L"OpenedSessionsWebDAVS");
       }
+      break;
+
+    case fsS3:
+      Configuration->Usage->Inc(L"OpenedSessionsS3");
       break;
   }
 

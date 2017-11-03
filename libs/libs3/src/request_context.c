@@ -84,10 +84,28 @@ void S3_destroy_request_context(S3RequestContext *requestContext)
 
 #ifdef WINSCP
 
+void S3_set_request_context_session_callback(S3RequestContext *requestContext,
+                                             S3SessionCallback sessionCallback,
+                                             void * sessionCallbackData)
+{
+    requestContext->sessionCallback = sessionCallback;
+    requestContext->sessionCallbackData = sessionCallbackData;
+}
+
 void S3_set_request_context_ssl_callback(S3RequestContext *requestContext,
-                                         S3SslCallback sslCallback)
+                                         S3SslCallback sslCallback,
+                                         void * sslCallbackData)
 {
     requestContext->sslCallback = sslCallback;
+    requestContext->sslCallbackData = sslCallbackData;
+}
+
+void S3_set_request_context_response_data_callback(S3RequestContext *requestContext,
+                                                   S3ResponseDataCallback responseDataCallback,
+                                                   void * responseDataCallbackData)
+{
+    requestContext->responseDataCallback = responseDataCallback;
+    requestContext->responseDataCallbackData = responseDataCallbackData;
 }
 
 #else

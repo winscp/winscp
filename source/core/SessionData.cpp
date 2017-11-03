@@ -12,6 +12,7 @@
 #include "PuttyIntf.h"
 #include "RemoteFiles.h"
 #include "SFTPFileSystem.h"
+#include "S3FileSystem.h"
 #include <Soap.EncdDecd.hpp>
 #include <StrUtils.hpp>
 #include <XMLDoc.hpp>
@@ -36,7 +37,7 @@ const THostKey DefaultHostKeyList[HOSTKEY_COUNT] =
   { hkED25519, hkECDSA, hkRSA, hkDSA, hkWarn };
 const TGssLib DefaultGssLibList[GSSLIB_COUNT] =
   { gssGssApi32, gssSspi, gssCustom };
-const wchar_t FSProtocolNames[FSPROTOCOL_COUNT][16] = { L"SCP", L"SFTP (SCP)", L"SFTP", L"", L"", L"FTP", L"WebDAV" };
+const wchar_t FSProtocolNames[FSPROTOCOL_COUNT][16] = { L"SCP", L"SFTP (SCP)", L"SFTP", L"", L"", L"FTP", L"WebDAV", L"S3" };
 const int SshPortNumber = 22;
 const int FtpPortNumber = 21;
 const int FtpsImplicitPortNumber = 990;
@@ -56,6 +57,7 @@ const UnicodeString FtpsProtocol(L"ftps");
 const UnicodeString FtpesProtocol(L"ftpes");
 const UnicodeString WebDAVProtocol(L"dav");
 const UnicodeString WebDAVSProtocol(L"davs");
+const UnicodeString S3Protocol(L"s3");
 const UnicodeString SshProtocol(L"ssh");
 const UnicodeString WinSCPProtocolPrefix(L"winscp-");
 const wchar_t UrlParamSeparator = L';';
@@ -63,6 +65,7 @@ const wchar_t UrlParamValueSeparator = L'=';
 const UnicodeString UrlHostKeyParamName(L"fingerprint");
 const UnicodeString UrlSaveParamName(L"save");
 const UnicodeString PassphraseOption(L"passphrase");
+const UnicodeString S3HostName(S3LibDefaultHostName());
 //---------------------------------------------------------------------
 TDateTime __fastcall SecToDateTime(int Sec)
 {
@@ -1674,6 +1677,14 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
     MoveStr(Url, MaskedUrl, ProtocolLen);
     ProtocolDefined = true;
   }
+  else if (IsProtocolUrl(Url, S3Protocol, ProtocolLen))
+  {
+    AFSProtocol = fsS3;
+    AFtps = ftpsImplicit;
+    APortNumber = HTTPSPortNumber;
+    MoveStr(Url, MaskedUrl, ProtocolLen);
+    ProtocolDefined = true;
+  }
   else if (IsProtocolUrl(Url, SshProtocol, ProtocolLen))
   {
     // For most uses, handling ssh:// the same way as sftp://
@@ -2723,6 +2734,7 @@ bool __fastcall TSessionData::IsSecure()
 
     case fsFTP:
     case fsWebDAV:
+    case fsS3:
       Result = (Ftps != ftpsNone);
       break;
 
@@ -2774,6 +2786,10 @@ UnicodeString __fastcall TSessionData::GetProtocolUrl()
       {
         Url = WebDAVProtocol;
       }
+      break;
+
+    case fsS3:
+      Url = S3Protocol;
       break;
   }
 
@@ -3047,6 +3063,10 @@ void __fastcall TSessionData::GenerateAssemblyCode(
     case fsWebDAV:
       ProtocolMember = "Webdav";
       break;
+
+    case fsS3:
+      ProtocolMember = "S3";
+      break;
   }
 
   // Before we reset the FSProtocol
@@ -3115,6 +3135,10 @@ void __fastcall TSessionData::GenerateAssemblyCode(
 
       case fsWebDAV:
         AddAssemblyProperty(Head, Language, L"WebdavSecure", (SessionData->Ftps != ftpsNone));
+        break;
+
+      case fsS3:
+        // implicit
         break;
 
       default:
@@ -4256,6 +4280,7 @@ void __fastcall TStoredSessionList::UpdateStaticUsage()
   int FTPS = 0;
   int WebDAV = 0;
   int WebDAVS = 0;
+  int S3 = 0;
   int Password = 0;
   int Advanced = 0;
   int Color = 0;
@@ -4306,6 +4331,10 @@ void __fastcall TStoredSessionList::UpdateStaticUsage()
             WebDAVS++;
           }
           break;
+
+        case fsS3:
+          S3++;
+          break;
       }
 
       if (Data->HasAnySessionPassword())
@@ -4348,6 +4377,7 @@ void __fastcall TStoredSessionList::UpdateStaticUsage()
   Configuration->Usage->Set(L"StoredSessionsCountFTPS", FTPS);
   Configuration->Usage->Set(L"StoredSessionsCountWebDAV", WebDAV);
   Configuration->Usage->Set(L"StoredSessionsCountWebDAVS", WebDAVS);
+  Configuration->Usage->Set(L"StoredSessionsCountS3", S3);
   Configuration->Usage->Set(L"StoredSessionsCountPassword", Password);
   Configuration->Usage->Set(L"StoredSessionsCountColor", Color);
   Configuration->Usage->Set(L"StoredSessionsCountNote", Note);
@@ -4842,6 +4872,7 @@ int __fastcall DefaultPort(TFSProtocol FSProtocol, TFtps Ftps)
       break;
 
     case fsWebDAV:
+    case fsS3:
       if (Ftps == ftpsNone)
       {
         Result = HTTPPortNumber;

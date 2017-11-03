@@ -2070,7 +2070,7 @@ __fastcall TManagementScript::TManagementScript(TStoredSessionList * StoredSessi
 
   FCommands->Register(L"exit", SCRIPT_EXIT_DESC, SCRIPT_EXIT_HELP, &ExitProc, 0, 0, false);
   FCommands->Register(L"bye", 0, SCRIPT_EXIT_HELP, &ExitProc, 0, 0, false);
-  FCommands->Register(L"open", SCRIPT_OPEN_DESC, SCRIPT_OPEN_HELP9, &OpenProc, 0, -1, true);
+  FCommands->Register(L"open", SCRIPT_OPEN_DESC, SCRIPT_OPEN_HELP10, &OpenProc, 0, -1, true);
   FCommands->Register(L"close", SCRIPT_CLOSE_DESC, SCRIPT_CLOSE_HELP, &CloseProc, 0, 1, false);
   FCommands->Register(L"session", SCRIPT_SESSION_DESC, SCRIPT_SESSION_HELP, &SessionProc, 0, 1, false);
   FCommands->Register(L"lpwd", SCRIPT_LPWD_DESC, SCRIPT_LPWD_HELP, &LPwdProc, 0, 0, false);

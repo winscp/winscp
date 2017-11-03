@@ -33,7 +33,6 @@
 #include "Security.h"
 #include <StrUtils.hpp>
 #include <NeonIntf.h>
-#include <openssl/ssl.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -51,22 +50,7 @@ struct TSinkFileParams
   unsigned int Flags;
 };
 //---------------------------------------------------------------------------
-struct TWebDAVCertificateData
-{
-  UnicodeString Subject;
-  UnicodeString Issuer;
-
-  TDateTime ValidFrom;
-  TDateTime ValidUntil;
-
-  UnicodeString Fingerprint;
-  AnsiString AsciiCert;
-
-  int Failures;
-};
-//---------------------------------------------------------------------------
 #define SESSION_FS_KEY "filesystem"
-static const char CertificateStorageKey[] = "HttpsCertificates";
 static const UnicodeString CONST_WEBDAV_PROTOCOL_BASE_NAME = L"WebDAV";
 static const int HttpUnauthorized = 401;
 //---------------------------------------------------------------------------
@@ -143,6 +127,19 @@ void __fastcall NeonFinalize()
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall RequireNeon(TTerminal * Terminal)
+{
+  if (!NeonInitialized)
+  {
+    throw Exception(LoadStr(NEON_INIT_FAILED2));
+  }
+
+  if (!NeonSspiInitialized)
+  {
+    Terminal->LogEvent(L"Warning: SSPI initialization failed.");
+  }
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall NeonVersion()
 {
   UnicodeString Str = StrFromNeon(ne_version_string());
@@ -192,15 +189,7 @@ __fastcall TWebDAVFileSystem::~TWebDAVFileSystem()
 void __fastcall TWebDAVFileSystem::Open()
 {
 
-  if (!NeonInitialized)
-  {
-    throw Exception(LoadStr(NEON_INIT_FAILED));
-  }
-
-  if (!NeonSspiInitialized)
-  {
-    FTerminal->LogEvent(L"Warning: SSPI initialization failed.");
-  }
+  RequireNeon(FTerminal);
 
   RegisterForNeonDebug(FTerminal);
 
@@ -343,20 +332,7 @@ void TWebDAVFileSystem::NeonOpen(UnicodeString & CorrectedUrl, const UnicodeStri
   ne_uri_free(&uri);
   ne_set_aux_request_init(FNeonSession, NeonAuxRequestInit, this);
 
-  // Other flags:
-  // NE_DBG_FLUSH - used only in native implementation of ne_debug
-  // NE_DBG_HTTPPLAIN - log credentials in HTTP authentication
-
-  ne_debug_mask =
-    NE_DBG_SOCKET |
-    NE_DBG_HTTP |
-    NE_DBG_XML | // detail
-    NE_DBG_HTTPAUTH |
-    NE_DBG_LOCKS | // very details
-    NE_DBG_XMLPARSE | // very details
-    NE_DBG_HTTPBODY | // very details
-    NE_DBG_SSL |
-    FLAGMASK(Configuration->LogSensitive, NE_DBG_HTTPPLAIN);
+  UpdateNeonDebugMask();
 
   NeonAddAuthentiation(Ssl);
 
@@ -2254,7 +2230,8 @@ void __fastcall TWebDAVFileSystem::SinkFile(const UnicodeString FileName,
   }
 }
 //---------------------------------------------------------------------------
-bool TWebDAVFileSystem::VerifyCertificate(const TWebDAVCertificateData & Data, bool Aux)
+// Similar to TS3FileSystem::VerifyCertificate
+bool TWebDAVFileSystem::VerifyCertificate(TNeonCertificateData Data, bool Aux)
 {
   FSessionInfo.CertificateFingerprint = Data.Fingerprint;
 
@@ -2265,56 +2242,24 @@ bool TWebDAVFileSystem::VerifyCertificate(const TWebDAVCertificateData & Data, b
   }
   else
   {
-    FTerminal->LogEvent(
-      FORMAT(L"Verifying certificate for \"%s\" with fingerprint %s and %2.2X failures",
-        (Data.Subject, Data.Fingerprint, Data.Failures)));
-
-    int Failures = Data.Failures;
+    FTerminal->LogEvent(CertificateVerificationMessage(Data));
 
     UnicodeString SiteKey = TSessionData::FormatSiteKey(FHostName, FPortNumber);
     Result =
-      FTerminal->VerifyCertificate(CertificateStorageKey, SiteKey, Data.Fingerprint, Data.Subject, Failures);
+      FTerminal->VerifyCertificate(HttpsCertificateStorageKey, SiteKey, Data.Fingerprint, Data.Subject, Data.Failures);
 
     if (!Result)
     {
-      UnicodeString WindowsCertificateError;
-      if (NeonWindowsValidateCertificate(Failures, Data.AsciiCert, WindowsCertificateError))
-      {
-        FTerminal->LogEvent(L"Certificate verified against Windows certificate store");
-        // There can be also other flags, not just the NE_SSL_UNTRUSTED.
-        Result = (Failures == 0);
-      }
-      else
-      {
-        FTerminal->LogEvent(
-          FORMAT(L"Certificate failed to verify against Windows certificate store: %s", (DefaultStr(WindowsCertificateError, L"no details"))));
-      }
+      UnicodeString Message;
+      Result = NeonWindowsValidateCertificateWithMessage(Data, Message);
+      FTerminal->LogEvent(Message);
     }
 
-    UnicodeString Summary;
-    if (Failures == 0)
-    {
-      Summary = LoadStr(CERT_OK);
-    }
-    else
-    {
-      Summary = NeonCertificateFailuresErrorStr(Failures, FHostName);
-    }
-
-    UnicodeString ValidityTimeFormat = L"ddddd tt";
-    FSessionInfo.Certificate =
-      FMTLOAD(CERT_TEXT, (
-        Data.Issuer + L"\n",
-        Data.Subject + L"\n",
-        FormatDateTime(ValidityTimeFormat, Data.ValidFrom),
-        FormatDateTime(ValidityTimeFormat, Data.ValidUntil),
-        Data.Fingerprint,
-        Summary));
+    FSessionInfo.Certificate = CertificateSummary(Data, FHostName);
 
     if (!Result)
     {
-      Result =
-        FTerminal->ConfirmCertificate(FSessionInfo, Failures, CertificateStorageKey, !Aux);
+      Result = FTerminal->ConfirmCertificate(FSessionInfo, Data.Failures, HttpsCertificateStorageKey, !Aux);
     }
 
     if (Result && !Aux)
@@ -2330,18 +2275,9 @@ void __fastcall TWebDAVFileSystem::CollectTLSSessionInfo()
 {
   // See also TFTPFileSystem::Open().
   // Have to cache the value as the connection (the neon HTTP session, not "our" session)
-  // can be closed as the time we need it in CollectUsage().
-  FTlsVersionStr = StrFromNeon(ne_ssl_get_version(FNeonSession));
-  AddToList(FSessionInfo.SecurityProtocolName, FTlsVersionStr, L", ");
-
-  char * Buf = ne_ssl_get_cipher(FNeonSession);
-  UnicodeString Cipher = StrFromNeon(Buf);
-  ne_free(Buf);
-  FSessionInfo.CSCipher = Cipher;
-  FSessionInfo.SCCipher = Cipher;
-
-  // see CAsyncSslSocketLayer::PrintSessionInfo()
-  FTerminal->LogEvent(FORMAT(L"Using %s, cipher %s", (FTlsVersionStr, Cipher)));
+  // can be closed at the time we need it in CollectUsage().
+  UnicodeString Message = NeonTlsSessionInfo(FNeonSession, FSessionInfo, FTlsVersionStr);
+  FTerminal->LogEvent(Message);
 }
 //------------------------------------------------------------------------------
 // A neon-session callback to validate the SSL certificate when the CA
@@ -2349,33 +2285,9 @@ void __fastcall TWebDAVFileSystem::CollectTLSSessionInfo()
 // certificate problems.
 int TWebDAVFileSystem::DoNeonServerSSLCallback(void * UserData, int Failures, const ne_ssl_certificate * Certificate, bool Aux)
 {
-  TWebDAVCertificateData Data;
-
-  char Fingerprint[NE_SSL_DIGESTLEN] = {0};
-  if (ne_ssl_cert_digest(Certificate, Fingerprint) != 0)
-  {
-    strcpy(Fingerprint, "<unknown>");
-  }
-  Data.Fingerprint = StrFromNeon(Fingerprint);
-  Data.AsciiCert = NeonExportCertificate(Certificate);
-
-  char * Subject = ne_ssl_readable_dname(ne_ssl_cert_subject(Certificate));
-  Data.Subject = StrFromNeon(Subject);
-  ne_free(Subject);
-  char * Issuer = ne_ssl_readable_dname(ne_ssl_cert_issuer(Certificate));
-  Data.Issuer = StrFromNeon(Issuer);
-  ne_free(Issuer);
-
-  Data.Failures = Failures;
-
-  time_t ValidFrom;
-  time_t ValidUntil;
-  ne_ssl_cert_validity_time(Certificate, &ValidFrom, &ValidUntil);
-  Data.ValidFrom = UnixToDateTime(ValidFrom, dstmWin);
-  Data.ValidUntil = UnixToDateTime(ValidUntil, dstmWin);
-
+  TNeonCertificateData Data;
+  RetrieveNeonCertificateData(Failures, Certificate, Data);
   TWebDAVFileSystem * FileSystem = static_cast<TWebDAVFileSystem *>(UserData);
-
   return FileSystem->VerifyCertificate(Data, Aux) ? NE_OK : NE_ERROR;
 }
 //------------------------------------------------------------------------------
@@ -2543,26 +2455,10 @@ void TWebDAVFileSystem::NeonNotifier(void * UserData, ne_session_status Status, 
   }
 }
 //------------------------------------------------------------------------------
-void TWebDAVFileSystem::InitSslSession(ssl_st * Ssl, ne_session * Session)
-{
-  TWebDAVFileSystem * FileSystem =
-    static_cast<TWebDAVFileSystem *>(ne_get_session_private(Session, SESSION_FS_KEY));
-  FileSystem->InitSslSessionImpl(Ssl);
-}
-//------------------------------------------------------------------------------
-void __fastcall TWebDAVFileSystem::InitSslSessionImpl(ssl_st * Ssl)
+void TWebDAVFileSystem::InitSslSession(ssl_st * Ssl, ne_session * /*Session*/)
 {
   // See also CAsyncSslSocketLayer::InitSSLConnection
-  TSessionData * Data = FTerminal->SessionData;
-  #define MASK_TLS_VERSION(VERSION, FLAG) ((Data->MinTlsVersion > VERSION) || (Data->MaxTlsVersion < VERSION) ? FLAG : 0)
-  int Options =
-    MASK_TLS_VERSION(ssl2, SSL_OP_NO_SSLv2) |
-    MASK_TLS_VERSION(ssl3, SSL_OP_NO_SSLv3) |
-    MASK_TLS_VERSION(tls10, SSL_OP_NO_TLSv1) |
-    MASK_TLS_VERSION(tls11, SSL_OP_NO_TLSv1_1) |
-    MASK_TLS_VERSION(tls12, SSL_OP_NO_TLSv1_2);
-  // SSL_ctrl() with SSL_CTRL_OPTIONS adds flags (not sets)
-  SSL_ctrl(Ssl, SSL_CTRL_OPTIONS, Options, NULL);
+  SetupSsl(Ssl, FTerminal->SessionData->MinTlsVersion, FTerminal->SessionData->MaxTlsVersion);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWebDAVFileSystem::GetSupportedChecksumAlgs(TStrings * /*Algs*/)
@@ -2729,3 +2625,8 @@ void __fastcall TWebDAVFileSystem::UpdateFromMain(TCustomFileSystem * AMainFileS
   }
 }
 //------------------------------------------------------------------------------
+void __fastcall TWebDAVFileSystem::ClearCaches()
+{
+  // noop
+}
+//---------------------------------------------------------------------------

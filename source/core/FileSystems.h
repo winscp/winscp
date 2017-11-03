@@ -90,6 +90,7 @@ public:
   virtual void __fastcall LockFile(const UnicodeString & FileName, const TRemoteFile * File) = 0;
   virtual void __fastcall UnlockFile(const UnicodeString & FileName, const TRemoteFile * File) = 0;
   virtual void __fastcall UpdateFromMain(TCustomFileSystem * MainFileSystem) = 0;
+  virtual void __fastcall ClearCaches() = 0;
 
   __property UnicodeString CurrentDirectory = { read = GetCurrentDirectory };
 

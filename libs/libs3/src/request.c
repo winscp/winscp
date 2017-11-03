@@ -186,7 +186,7 @@ static int neon_header_func(void * userdata, ne_request * NeonRequest, const ne_
             (&(request->responseHeadersHandler), header_name, header_value);
     }
 
-    return ne_accept_2xx(userdata, NeonRequest, status);
+    return 1;
 }
 
 
@@ -248,6 +248,11 @@ static int neon_write_func(void * data, const char * buf, size_t len)
     }
 
     request_headers_done(request);
+
+    if (request->requestContext->responseDataCallback != NULL)
+    {
+        request->requestContext->responseDataCallback(buf, len, request->requestContext->responseDataCallbackData);
+    }
 
     if (request->status != S3StatusOK) {
         return 1;
@@ -1122,7 +1127,7 @@ int neon_ssl_callback(void * user_data, int failures, const ne_ssl_certificate *
     int result = NE_ERROR;
     if (request->requestContext->sslCallback != NULL)
     {
-        result = request->requestContext->sslCallback(failures, certificate, request->callbackData);
+        result = request->requestContext->sslCallback(failures, certificate, request->requestContext->sslCallbackData);
     }
     return result;
 }
@@ -1149,6 +1154,10 @@ static S3Status setup_neon(Request *request,
       port = ne_uri_defaultport(uri.scheme);
     }
     request->NeonSession = ne_session_create(uri.scheme, uri.host, port);
+    if (request->requestContext->sessionCallback != NULL)
+    {
+        request->requestContext->sessionCallback(request->NeonSession, request->requestContext->sessionCallbackData);
+    }
 
     char method[64];
     strcpy(method, "GET");
@@ -1273,6 +1282,7 @@ static void request_deinitialize(Request *request)
 
 
 static S3Status request_get(const RequestParams *params,
+                            S3RequestContext *context,
                             const RequestComputedValues *values,
                             Request **reqReturn)
 {
@@ -1304,6 +1314,8 @@ static S3Status request_get(const RequestParams *params,
     #ifndef WINSCP
     request->prev = 0;
     request->next = 0;
+    #else
+    request->requestContext = context;
     #endif
 
     // Request status is initialized to no error, will be updated whenever
@@ -1443,9 +1455,21 @@ static S3Status setup_request(const RequestParams *params,
         return status;
     }
 
-    time_t now = time(NULL);
+    // WINSCP (inspired by PuTTY ltime())
+    // Original time()/gmtime() combination did not work correctly in winter time
+    SYSTEMTIME st;
+    GetSystemTime(&st);
     struct tm gmt;
-    gmtime_s(&now, &gmt); // WINSCP (gmtime_s)
+    memset(&gmt, 0, sizeof(gmt));
+    gmt.tm_sec=st.wSecond;
+    gmt.tm_min=st.wMinute;
+    gmt.tm_hour=st.wHour;
+    gmt.tm_mday=st.wDay;
+    gmt.tm_mon=st.wMonth-1;
+    gmt.tm_year=(st.wYear>=1900?st.wYear-1900:0);
+    gmt.tm_wday=st.wDayOfWeek;
+    gmt.tm_yday=-1; /* GetSystemTime doesn't tell us */
+    gmt.tm_isdst=0; /* GetSystemTime doesn't tell us */
     strftime(computed->requestDateISO8601, sizeof(computed->requestDateISO8601),
              "%Y%m%dT%H%M%SZ", &gmt);
 
@@ -1507,14 +1531,12 @@ void request_perform(const RequestParams *params, S3RequestContext *context)
     }
 
     // Get an initialized Request structure now
-    if ((status = request_get(params, &computed, &request)) != S3StatusOK) {
+    if ((status = request_get(params, context /*WINSCP*/, &computed, &request)) != S3StatusOK) {
         return_status(status);
     }
     // WINSCP (we should always verify the peer)
 
-    #ifdef WINSCP
-    request->requestContext = context;
-    #else
+    #ifndef WINSCP
     // If a RequestContext was provided, add the request to the curl multi
     if (context) {
         CURLMcode code = curl_multi_add_handle(context->curlm, request->curl);
@@ -1642,6 +1664,8 @@ S3Status request_neon_code_to_status(NeonCode code)
         return S3StatusFailedToConnect;
     case NE_TIMEOUT:
         return S3StatusErrorRequestTimeout;
+    case NE_REDIRECT:
+        return S3StatusErrorTemporaryRedirect;
     default:
         return S3StatusInternalError;
     }

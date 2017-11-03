@@ -46,18 +46,18 @@
 
 // Append [len] bytes of [str] to [sb], setting [all_fit] to 1 if it fit, and
 // 0 if it did not
-// WINSCP (CodeGuard compatible implementation)
 #define string_buffer_append(sb, str, len, all_fit)                     \
-    {                                                                   \
-        int _sbai = sizeof(sb) - sb##Len - 1;                           \
-        if (_sbai > (int)len)                                           \
-        {                                                               \
-          _sbai = len;                                                  \
+    do {                                                                \
+        sb##Len += snprintf_S(&(sb[sb##Len]), sizeof(sb) - sb##Len - 1,   \
+                            "%.*s", (int) (len), str);                  \
+        if (sb##Len > (int) (sizeof(sb) - 1)) {                         \
+            sb##Len = sizeof(sb) - 1;                                   \
+            all_fit = 0;                                                \
         }                                                               \
-        strncat(sb, str, _sbai);                                        \
-        sb##Len += _sbai;                                               \
-    }
-
+        else {                                                          \
+            all_fit = 1;                                                \
+        }                                                               \
+    } while (0)
 
 // Declare a string multibuffer with the given name of the given maximum size
 #define string_multibuffer(name, size)                                  \
@@ -80,7 +80,7 @@
 // Adds a new string to the string_multibuffer
 #define string_multibuffer_add(smb, str, len, all_fit)                  \
     do {                                                                \
-        smb##Size += (snprintf(&(smb[smb##Size]),                       \
+        smb##Size += (snprintf_S(&(smb[smb##Size]),                       \
                                sizeof(smb) - smb##Size,                 \
                                "%.*s", (int) (len), str) + 1);          \
         if (smb##Size > (int) sizeof(smb)) {                            \

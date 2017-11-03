@@ -389,6 +389,7 @@ typedef enum
     S3StatusErrorUnresolvableGrantByEmailAddress            ,
     S3StatusErrorUserKeyMustBeSpecified                     ,
     S3StatusErrorQuotaExceeded                              ,
+    S3StatusErrorAuthorizationHeaderMalformed               , // WINSCP
     S3StatusErrorUnknown                                    ,
 
     /**
@@ -1602,11 +1603,22 @@ void S3_destroy_request_context(S3RequestContext *requestContext);
 
 
 #ifdef WINSCP
-struct ne_ssl_certificate_s;
-typedef int (S3SslCallback)(int failures, const ne_ssl_certificate_s * certificate, void *callbackData);
+struct ne_session_s;
+typedef void (S3SessionCallback)(ne_session_s *session, void *callbackData);
+void S3_set_request_context_session_callback(S3RequestContext *requestContext,
+                                             S3SessionCallback sessionCallback,
+                                             void * sessionCallbackData);
 
+struct ne_ssl_certificate_s;
+typedef int (S3SslCallback)(int failures, const ne_ssl_certificate_s *certificate, void *callbackData);
 void S3_set_request_context_ssl_callback(S3RequestContext *requestContext,
-                                         S3SslCallback sslCallback);
+                                         S3SslCallback sslCallback,
+                                         void * sslCallbackData);
+
+typedef void (S3ResponseDataCallback)(const char *data, size_t size, void *callbackData);
+void S3_set_request_context_response_data_callback(S3RequestContext *requestContext,
+                                                   S3ResponseDataCallback responseDataCallback,
+                                                   void * responseDataCallbackData);
 #else
 /**
  * Runs the S3RequestContext until all requests within it have completed,
@@ -1786,6 +1798,7 @@ S3Status S3_generate_authenticated_query_string
 void S3_list_service(S3Protocol protocol, const char *accessKeyId,
                      const char *secretAccessKey, const char *securityToken,
                      const char *hostName, const char *authRegion,
+                     int maxkeys, // WINSCP
                      S3RequestContext *requestContext,
                      int timeoutMs,
                      const S3ListServiceHandler *handler, void *callbackData);
@@ -2535,6 +2548,10 @@ void S3_list_multipart_uploads(S3BucketContext *bucketContext,
                                int timeoutMs,
                                const S3ListMultipartUploadsHandler *handler,
                                void *callbackData);
+
+#ifdef WINSCP
+int snprintf_S(char * s, size_t n, const char * format, size_t len, const char * data);
+#endif
 
 #ifdef __cplusplus
 }

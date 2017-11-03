@@ -337,4 +337,6 @@ extern const UnicodeString Crc32ChecksumAlg;
 extern const UnicodeString SshFingerprintType;
 extern const UnicodeString TlsFingerprintType;
 //---------------------------------------------------------------------------
+extern const UnicodeString HttpsCertificateStorageKey;
+//---------------------------------------------------------------------------
 #endif

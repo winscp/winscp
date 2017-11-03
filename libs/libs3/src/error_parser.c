@@ -238,6 +238,7 @@ void error_parser_convert_status(ErrorParser *errorParser, S3Status *status)
     HANDLE_CODE(UnresolvableGrantByEmailAddress);
     HANDLE_CODE(UserKeyMustBeSpecified);
     HANDLE_CODE(QuotaExceeded);
+    HANDLE_CODE(AuthorizationHeaderMalformed); // WINSCP
     *status = S3StatusErrorUnknown;
 
  code_set:

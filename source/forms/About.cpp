@@ -25,6 +25,7 @@
 #include <StrUtils.hpp>
 #include <Dialogs.hpp>
 #include <FtpFileSystem.h>
+#include <S3FileSystem.h>
 //---------------------------------------------------------------------
 #pragma link "SHDocVw_OCX"
 #ifndef NO_RESOURCES
@@ -257,9 +258,15 @@ void __fastcall TAboutDialog::DoLoadThirdParty()
     CreateLink(LoadStr(FILEZILLA_URL)));
 
   AddPara(ThirdParty,
-    FMTLOAD(NEON_BASED_ON, (NeonVersion())) + Br +
+    FMTLOAD(NEON_BASED_ON2, (NeonVersion())) + Br +
     LoadStr(NEON_COPYRIGHT) + Br +
     CreateLink(LoadStr(NEON_URL)));
+
+  AddPara(ThirdParty,
+    FMTLOAD(S3_BASED_ON, (S3LibVersion())) + Br +
+    LoadStr(S3_COPYRIGHT) + Br +
+    CreateLink(LoadStr(S3_LICENSE_URL), LoadStr(ABOUT_THIRDPARTY_LICENSE)) + Br +
+    CreateLink(LoadStr(S3_URL)));
 
   #define EXPAT_LICENSE_URL L"license:expat"
 

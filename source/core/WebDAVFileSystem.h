@@ -9,7 +9,7 @@
 #include <ne_request.h>
 #include <FileSystems.h>
 //------------------------------------------------------------------------------
-struct TWebDAVCertificateData;
+struct TNeonCertificateData;
 struct ne_ssl_certificate_s;
 struct ne_session_s;
 struct ne_prop_result_set_s;
@@ -82,6 +82,7 @@ public:
   virtual void __fastcall LockFile(const UnicodeString & FileName, const TRemoteFile * File);
   virtual void __fastcall UnlockFile(const UnicodeString & FileName, const TRemoteFile * File);
   virtual void __fastcall UpdateFromMain(TCustomFileSystem * MainFileSystem);
+  virtual void __fastcall ClearCaches();
 
 protected:
   virtual UnicodeString __fastcall GetCurrentDirectory();
@@ -143,8 +144,7 @@ protected:
   static void LockResult(void * UserData, const struct ne_lock * Lock,
    const ne_uri * Uri, const ne_status * Status);
   void __fastcall RequireLockStore();
-  static void InitSslSession(ssl_st * Ssl, ne_session * Session);
-  void __fastcall InitSslSessionImpl(ssl_st * Ssl);
+  void InitSslSession(ssl_st * Ssl, ne_session * Session);
   void __fastcall NeonAddAuthentiation(bool UseNegotiate);
   void __fastcall HttpAuthenticationFailed();
 
@@ -183,7 +183,7 @@ private:
     TRemoteFile *& File, TRemoteFile * ALinkedByFile);
   int __fastcall CustomReadFileInternal(const UnicodeString FileName,
     TRemoteFile *& File, TRemoteFile * ALinkedByFile);
-  bool VerifyCertificate(const TWebDAVCertificateData & Data, bool Aux);
+  bool VerifyCertificate(TNeonCertificateData Data, bool Aux);
   void OpenUrl(const UnicodeString & Url);
   void __fastcall CollectTLSSessionInfo();
   UnicodeString __fastcall GetRedirectUrl();
@@ -201,8 +201,5 @@ private:
   void __fastcall SetSessionTls(ne_session_s * Session, bool Aux);
   void __fastcall InitSession(ne_session_s * Session);
 };
-//------------------------------------------------------------------------------
-void __fastcall NeonInitialize();
-void __fastcall NeonFinalize();
 //------------------------------------------------------------------------------
 #endif

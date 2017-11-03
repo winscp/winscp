@@ -299,7 +299,7 @@ static S3Status convertAclXmlCallback(const char *elementPath,
     if (data) {
         if (!strcmp(elementPath, "AccessControlPolicy/Owner/ID")) {
             caData->ownerIdLen +=
-                snprintf(&(caData->ownerId[caData->ownerIdLen]),
+                snprintf_S(&(caData->ownerId[caData->ownerIdLen]),
                          S3_MAX_GRANTEE_USER_ID_SIZE - caData->ownerIdLen - 1,
                          "%.*s", dataLen, data);
             if (caData->ownerIdLen >= S3_MAX_GRANTEE_USER_ID_SIZE) {
@@ -309,7 +309,7 @@ static S3Status convertAclXmlCallback(const char *elementPath,
         else if (!strcmp(elementPath, "AccessControlPolicy/Owner/"
                          "DisplayName")) {
             caData->ownerDisplayNameLen +=
-                snprintf(&(caData->ownerDisplayName
+                snprintf_S(&(caData->ownerDisplayName
                            [caData->ownerDisplayNameLen]),
                          S3_MAX_GRANTEE_DISPLAY_NAME_SIZE -
                          caData->ownerDisplayNameLen - 1,
@@ -487,4 +487,36 @@ int S3_status_is_retryable(S3Status status)
     default:
         return 0;
     }
+}
+
+#include <assert.h>
+
+// CodeGuard compatible implementation of snprintf with "%.*s" format
+int snprintf_S(char * s, size_t n, const char * format, size_t len, const char * data)
+{
+    int result;
+    if (strcmp(format, "%.*s") == 0)
+    {
+        result = 0;
+        while ((n > 0) && (len > 0) && (*data != '\0'))
+        {
+            *s = *data;
+            ++s;
+            ++data;
+            --len;
+            --n;
+            ++result;
+        }
+
+        if (n > 0)
+        {
+            *s = '\0';
+        }
+    }
+    else
+    {
+        assert(false);
+        result = snprintf(s, n, format, len, data);
+    }
+    return result;
 }

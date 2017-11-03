@@ -59,9 +59,9 @@ BEGIN
     "  Closes all sessions and terminates the program.\n"
     "alias:\n"
     "  bye\n"
-  SCRIPT_OPEN_HELP9,
+  SCRIPT_OPEN_HELP10,
     "open <site>\n"
-    "open sftp|scp|ftp[es]|dav[s] :// [ <user> [ :password ] @ ] <host> [ :<port> ]\n"
+    "open sftp|scp|ftp[es]|dav[s]|s3 :// [ <user> [ :password ] @ ] <host> [ :<port> ]\n"
     "  Establishes connection to given host. Use either name of the site or\n"
     "  specify host, username, port and protocol directly.\n"
     "switches:\n"

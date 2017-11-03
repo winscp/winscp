@@ -34,6 +34,8 @@ const UnicodeString Crc32ChecksumAlg(L"crc32");
 const UnicodeString SshFingerprintType(L"ssh");
 const UnicodeString TlsFingerprintType(L"tls");
 //---------------------------------------------------------------------------
+const UnicodeString HttpsCertificateStorageKey(L"HttpsCertificates");
+//---------------------------------------------------------------------------
 __fastcall TConfiguration::TConfiguration()
 {
   FCriticalSection = new TCriticalSection();

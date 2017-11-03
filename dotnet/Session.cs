@@ -1420,6 +1420,10 @@ namespace WinSCP
                         }
                         break;
 
+                    case Protocol.S3:
+                        head = "s3://";
+                        break;
+
                     default:
                         throw Logger.WriteException(new ArgumentException(string.Format(CultureInfo.CurrentCulture, "{0} is not supported", sessionOptions.Protocol)));
                 }
@@ -1547,7 +1551,7 @@ namespace WinSCP
                 {
                     if (!sessionOptions.IsTls)
                     {
-                        throw Logger.WriteException(new ArgumentException("SessionOptions.TlsClientCertificatePath is set, but neither SessionOptions.FtpSecure nor SessionOptions.WebdavSecure is enabled."));
+                        throw Logger.WriteException(new ArgumentException("SessionOptions.TlsClientCertificatePath is set, but neither SessionOptions.FtpSecure nor SessionOptions.WebdavSecure is enabled nor is the protocol S3."));
                     }
                     switches.Add(FormatSwitch("clientcert", sessionOptions.TlsClientCertificatePath));
                 }
@@ -1580,7 +1584,7 @@ namespace WinSCP
                 {
                     if (!sessionOptions.IsTls)
                     {
-                        throw Logger.WriteException(new ArgumentException("SessionOptions.TlsHostCertificateFingerprint or SessionOptions.GiveUpSecurityAndAcceptAnyTlsHostCertificate is set, but neither SessionOptions.FtpSecure nor SessionOptions.WebdavSecure is enabled."));
+                        throw Logger.WriteException(new ArgumentException("SessionOptions.TlsHostCertificateFingerprint or SessionOptions.GiveUpSecurityAndAcceptAnyTlsHostCertificate is set, but neither SessionOptions.FtpSecure nor SessionOptions.WebdavSecure is enabled nor is the protocol S3."));
                     }
                     string tlsHostCertificateFingerprint = sessionOptions.TlsHostCertificateFingerprint;
                     if (sessionOptions.GiveUpSecurityAndAcceptAnyTlsHostCertificate)

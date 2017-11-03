@@ -16,8 +16,8 @@
 enum TCipher { cipWarn, cip3DES, cipBlowfish, cipAES, cipDES, cipArcfour, cipChaCha20 };
 #define CIPHER_COUNT (cipChaCha20+1)
 // explicit values to skip obsoleted fsExternalSSH, fsExternalSFTP
-enum TFSProtocol { fsSCPonly = 0, fsSFTP = 1, fsSFTPonly = 2, fsFTP = 5, fsWebDAV = 6 };
-#define FSPROTOCOL_COUNT (fsWebDAV+1)
+enum TFSProtocol { fsSCPonly = 0, fsSFTP = 1, fsSFTPonly = 2, fsFTP = 5, fsWebDAV = 6, fsS3 = 7 };
+#define FSPROTOCOL_COUNT (fsS3+1)
 extern const wchar_t * ProxyMethodNames;
 enum TProxyMethod { pmNone, pmSocks4, pmSocks5, pmHTTP, pmTelnet, pmCmd };
 enum TSshProt { ssh1only, ssh1deprecated, ssh2deprecated, ssh2only };
@@ -79,6 +79,7 @@ extern const UnicodeString FtpsProtocol;
 extern const UnicodeString FtpesProtocol;
 extern const UnicodeString WebDAVProtocol;
 extern const UnicodeString WebDAVSProtocol;
+extern const UnicodeString S3Protocol;
 extern const UnicodeString SshProtocol;
 extern const UnicodeString WinSCPProtocolPrefix;
 extern const wchar_t UrlParamSeparator;
@@ -86,6 +87,7 @@ extern const wchar_t UrlParamValueSeparator;
 extern const UnicodeString UrlHostKeyParamName;
 extern const UnicodeString UrlSaveParamName;
 extern const UnicodeString PassphraseOption;
+extern const UnicodeString S3HostName;
 //---------------------------------------------------------------------------
 class TStoredSessionList;
 //---------------------------------------------------------------------------

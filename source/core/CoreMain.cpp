@@ -11,7 +11,7 @@
 #include "Cryptography.h"
 #include <DateUtils.hpp>
 #include "FileZillaIntf.h"
-#include "WebDAVFileSystem.h"
+#include "NeonIntf.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------

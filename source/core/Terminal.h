@@ -102,7 +102,7 @@ typedef void __fastcall (__closure *TCustomCommandEvent)
 #define FILE_OPERATION_LOOP_END(MESSAGE) \
   FILE_OPERATION_LOOP_END_EX(MESSAGE, true)
 //---------------------------------------------------------------------------
-enum TCurrentFSProtocol { cfsUnknown, cfsSCP, cfsSFTP, cfsFTP, cfsWebDAV };
+enum TCurrentFSProtocol { cfsUnknown, cfsSCP, cfsSFTP, cfsFTP, cfsWebDAV, cfsS3 };
 //---------------------------------------------------------------------------
 const int cpDelete = 0x01;
 const int cpTemporary = 0x04;
@@ -148,6 +148,7 @@ friend class TSCPFileSystem;
 friend class TSFTPFileSystem;
 friend class TFTPFileSystem;
 friend class TWebDAVFileSystem;
+friend class TS3FileSystem;
 friend class TTunnelUI;
 friend class TCallbackGuard;
 friend class TSecondaryTerminal;
