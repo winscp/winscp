@@ -2579,7 +2579,16 @@ void __fastcall TTerminalThread::SaveException(Exception & E, Exception *& Excep
 //---------------------------------------------------------------------------
 void __fastcall TTerminalThread::FatalAbort()
 {
-  FTerminal->FatalAbort();
+  if (FAbandoned)
+  {
+    // We cannot use TTerminal::FatalError as the terminal still runs on a backgroud thread,
+    // may have its TCallbackGuard armed right now.
+    throw ESshFatal(NULL, L"");
+  }
+  else
+  {
+    FTerminal->FatalAbort();
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalThread::CheckCancel()
