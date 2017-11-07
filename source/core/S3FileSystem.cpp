@@ -703,10 +703,10 @@ void TS3FileSystem::ReadDirectoryInternal(
     DebugAssert(FileName.IsEmpty());
 
     S3ListServiceHandler ListServiceHandler =
-    {
-      { &LibS3ResponsePropertiesCallback, &LibS3ResponseCompleteCallback },
-      &LibS3ListServiceCallback
-    };
+      {
+        { &LibS3ResponsePropertiesCallback, &LibS3ResponseCompleteCallback },
+        &LibS3ListServiceCallback
+      };
 
     RequestInit();
 
@@ -734,22 +734,22 @@ void TS3FileSystem::ReadDirectoryInternal(
       UTF8String Region = UTF8String(GetBucketRegion(BucketName));
       UTF8String HostName = UTF8String(GetBucketHostName(BucketName));
       S3BucketContext BucketContext =
-      {
-        HostName.c_str(),
-        BucketNameUtf.c_str(),
-        FLibS3Protocol,
-        S3UriStyleVirtualHost,
-        FAccessKeyId.c_str(),
-        FSecretAccessKey.c_str(),
-        0,
-        Region.c_str()
-      };
+        {
+          HostName.c_str(),
+          BucketNameUtf.c_str(),
+          FLibS3Protocol,
+          S3UriStyleVirtualHost,
+          FAccessKeyId.c_str(),
+          FSecretAccessKey.c_str(),
+          0,
+          Region.c_str()
+        };
 
       S3ListBucketHandler ListBucketHandler =
-      {
-        { &LibS3ResponsePropertiesCallback, &LibS3ResponseCompleteCallback },
-        &LibS3ListBucketCallback
-      };
+        {
+          { &LibS3ResponsePropertiesCallback, &LibS3ResponseCompleteCallback },
+          &LibS3ListBucketCallback
+        };
 
       TLibS3ListBucketCallbackData Data;
       bool Continue;
