@@ -3684,20 +3684,8 @@ void __fastcall TSFTPFileSystem::DeleteFile(const UnicodeString FileName,
   const TRemoteFile * File, int Params, TRmSessionAction & Action)
 {
   unsigned char Type;
-  if (File && File->IsDirectory && FTerminal->CanRecurseToDirectory(File))
+  if (FTerminal->DeleteContentsIfDirectory(FileName, File, Params, Action))
   {
-    if (FLAGCLEAR(Params, dfNoRecursive))
-    {
-      try
-      {
-        FTerminal->ProcessDirectory(FileName, FTerminal->DeleteFile, &Params);
-      }
-      catch(...)
-      {
-        Action.Cancel();
-        throw;
-      }
-    }
     Type = SSH_FXP_RMDIR;
   }
   else

@@ -2240,20 +2240,7 @@ void __fastcall TFTPFileSystem::DeleteFile(const UnicodeString AFileName,
   UnicodeString FileNameOnly = UnixExtractFileName(FileName);
   UnicodeString FilePath = UnixExtractFilePath(FileName);
 
-  bool Dir = (File != NULL) && File->IsDirectory && FTerminal->CanRecurseToDirectory(File);
-
-  if (Dir && FLAGCLEAR(Params, dfNoRecursive))
-  {
-    try
-    {
-      FTerminal->ProcessDirectory(FileName, FTerminal->DeleteFile, &Params);
-    }
-    catch(...)
-    {
-      Action.Cancel();
-      throw;
-    }
-  }
+  bool Dir = FTerminal->DeleteContentsIfDirectory(FileName, File, Params, Action);
 
   {
     // ignore file list

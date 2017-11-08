@@ -6,6 +6,8 @@
 //------------------------------------------------------------------------------
 struct TNeonCertificateData;
 struct TLibS3CallbackData;
+struct TLibS3BucketContext;
+struct TLibS3ListBucketCallbackData;
 struct ssl_st;
 #ifdef NEED_LIBS3
 // resolve clash
@@ -19,6 +21,7 @@ struct S3ResponseProperties;
 struct S3RequestContext;
 struct S3ErrorDetails;
 struct S3ListBucketContent;
+struct S3ResponseHandler;
 enum S3Status { };
 enum _S3Protocol { };
 #endif
@@ -116,14 +119,16 @@ protected:
   void CollectTLSSessionInfo();
   void CheckLibS3Error(const TLibS3CallbackData & Data);
   void InitSslSession(ssl_st * Ssl, ne_session_s * Session);
-  void RequestInit();
+  void RequestInit(TLibS3CallbackData & Data);
   void TryOpenDirectory(const UnicodeString & Directory);
   void ReadDirectoryInternal(const UnicodeString & Path, TRemoteFileList * FileList, int MaxKeys, const UnicodeString & FileName);
   void ParsePath(UnicodeString Path, UnicodeString & BucketName, UnicodeString & Prefix);
-  UnicodeString GetBucketRegion(const UnicodeString & BucketName);
-  UnicodeString GetBucketHostName(const UnicodeString & BucketName);
-  bool RetryBucket(const TLibS3CallbackData & Data, const UnicodeString & BucketName);
   TRemoteToken MakeRemoteToken(const char * OwnerId, const char * OwnerDisplayName);
+  TLibS3BucketContext GetBucketContext(const UnicodeString & BucketName);
+  void DoListBucket(
+    const UnicodeString & Prefix, TRemoteFileList * FileList, int MaxKeys, const TLibS3BucketContext & BucketContext,
+    TLibS3ListBucketCallbackData & Data);
+  UnicodeString GetFolderPath(const UnicodeString & Path);
 
   static TS3FileSystem * GetFileSystem(void * CallbackData);
   static void LibS3SessionCallback(ne_session_s * Session, void * CallbackData);
@@ -141,5 +146,6 @@ protected:
 //------------------------------------------------------------------------------
 UnicodeString __fastcall S3LibVersion();
 UnicodeString __fastcall S3LibDefaultHostName();
+UnicodeString __fastcall S3LibDefaultRegion();
 //------------------------------------------------------------------------------
 #endif

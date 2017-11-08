@@ -215,6 +215,8 @@ void __fastcall TSessionData::Default()
   SCPLsFullTime = asAuto;
   NotUtf = asAuto;
 
+  S3DefaultRegion = S3LibDefaultRegion();
+
   // SFTP
   SftpServer = L"";
   SFTPDownloadQueue = 32;
@@ -355,6 +357,8 @@ void __fastcall TSessionData::NonPersistant()
   PROPERTY(RecycleBinPath); \
   PROPERTY(NotUtf); \
   PROPERTY(PostLoginCommands); \
+  \
+  PROPERTY(S3DefaultRegion); \
   \
   PROPERTY(ProxyMethod); \
   PROPERTY(ProxyHost); \
@@ -629,6 +633,8 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   EOLType = (TEOLType)Storage->ReadInteger(L"EOLType", EOLType);
   TrimVMSVersions = Storage->ReadBool(L"TrimVMSVersions", TrimVMSVersions);
   NotUtf = TAutoSwitch(Storage->ReadInteger(L"Utf", Storage->ReadInteger(L"SFTPUtfBug", NotUtf)));
+
+  S3DefaultRegion = Storage->ReadString(L"Utf", S3DefaultRegion);
 
   // PuTTY defaults to TcpNoDelay, but the psftp/pscp ignores this preference, and always set this to off (what is our default too)
   if (!PuttyImport)
@@ -978,6 +984,7 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
     WRITE_DATA(Bool, TrimVMSVersions);
     Storage->DeleteValue(L"SFTPUtfBug");
     WRITE_DATA_EX(Integer, L"Utf", NotUtf, );
+    WRITE_DATA(String, S3DefaultRegion);
     WRITE_DATA(Integer, SendBuf);
     WRITE_DATA(Bool, SshSimple);
   }
@@ -3692,6 +3699,11 @@ void __fastcall TSessionData::SetTlsCertificateFile(UnicodeString value)
 void __fastcall TSessionData::SetNotUtf(TAutoSwitch value)
 {
   SET_SESSION_PROPERTY(NotUtf);
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetS3DefaultRegion(UnicodeString value)
+{
+  SET_SESSION_PROPERTY(S3DefaultRegion);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetIsWorkspace(bool value)

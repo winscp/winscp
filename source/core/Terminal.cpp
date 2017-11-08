@@ -3515,6 +3515,26 @@ TRemoteFileList * __fastcall TTerminal::DoReadDirectoryListing(UnicodeString Dir
   return FileList;
 }
 //---------------------------------------------------------------------------
+bool __fastcall TTerminal::DeleteContentsIfDirectory(
+  const UnicodeString & FileName, const TRemoteFile * File, int Params, TRmSessionAction & Action)
+{
+  bool Dir = (File != NULL) && File->IsDirectory && CanRecurseToDirectory(File);
+
+  if (Dir && FLAGCLEAR(Params, dfNoRecursive))
+  {
+    try
+    {
+      ProcessDirectory(FileName, DeleteFile, &Params);
+    }
+    catch(...)
+    {
+      Action.Cancel();
+      throw;
+    }
+  }
+  return Dir;
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminal::ProcessDirectory(const UnicodeString DirName,
   TProcessFileEvent CallBackFunc, void * Param, bool UseCache, bool IgnoreErrors)
 {

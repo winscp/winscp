@@ -209,6 +209,7 @@ private:
   TTlsVersion FMinTlsVersion;
   TTlsVersion FMaxTlsVersion;
   TAutoSwitch FNotUtf;
+  UnicodeString FS3DefaultRegion;
   bool FIsWorkspace;
   UnicodeString FLink;
   UnicodeString FHostKey;
@@ -378,6 +379,7 @@ private:
   void __fastcall SetMinTlsVersion(TTlsVersion value);
   void __fastcall SetMaxTlsVersion(TTlsVersion value);
   void __fastcall SetNotUtf(TAutoSwitch value);
+  void __fastcall SetS3DefaultRegion(UnicodeString value);
   void __fastcall SetLogicalHostName(UnicodeString value);
   void __fastcall SetIsWorkspace(bool value);
   void __fastcall SetLink(UnicodeString value);
@@ -615,6 +617,7 @@ public:
   __property TTlsVersion MaxTlsVersion = { read = FMaxTlsVersion, write = SetMaxTlsVersion };
   __property UnicodeString LogicalHostName = { read = FLogicalHostName, write = SetLogicalHostName };
   __property TAutoSwitch NotUtf = { read = FNotUtf, write = SetNotUtf };
+  __property UnicodeString S3DefaultRegion = { read = FS3DefaultRegion, write = SetS3DefaultRegion };
   __property bool IsWorkspace = { read = FIsWorkspace, write = SetIsWorkspace };
   __property UnicodeString Link = { read = FLink, write = SetLink };
   __property UnicodeString HostKey = { read = FHostKey, write = SetHostKey };

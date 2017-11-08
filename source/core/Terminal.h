@@ -283,6 +283,8 @@ protected:
   void __fastcall ProcessDirectory(const UnicodeString DirName,
     TProcessFileEvent CallBackFunc, void * Param = NULL, bool UseCache = false,
     bool IgnoreErrors = false);
+  bool __fastcall DeleteContentsIfDirectory(
+    const UnicodeString & FileName, const TRemoteFile * File, int Params, TRmSessionAction & Action);
   void __fastcall AnnounceFileListOperation();
   UnicodeString __fastcall TranslateLockedPath(UnicodeString Path, bool Lock);
   void __fastcall ReadDirectory(TRemoteFileList * FileList);
