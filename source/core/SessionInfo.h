@@ -76,7 +76,6 @@ public:
   virtual void __fastcall ProcessGUI() = 0;
 };
 //---------------------------------------------------------------------------
-// Duplicated in LogMemo.h for design-time-only purposes
 enum TLogLineType { llOutput, llInput, llStdError, llMessage, llException };
 enum TLogAction
 {
