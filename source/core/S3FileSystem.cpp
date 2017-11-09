@@ -947,10 +947,7 @@ void __fastcall TS3FileSystem::CreateDirectory(const UnicodeString ADirName)
 
     S3PutObjectHandler PutObjectHandler = { CreateResponseHandler(), NULL };
 
-    S3PutProperties PutProperties =
-      { NULL, NULL, NULL, NULL, NULL, -1, S3CannedAclPrivate, 0, NULL, 0 };
-
-    S3_put_object(&BucketContext, StrToS3(Key), 0, &PutProperties, FRequestContext, FTimeout, &PutObjectHandler, &Data);
+    S3_put_object(&BucketContext, StrToS3(Key), 0, NULL, FRequestContext, FTimeout, &PutObjectHandler, &Data);
   }
 
   CheckLibS3Error(Data);
