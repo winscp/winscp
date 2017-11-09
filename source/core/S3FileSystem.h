@@ -122,13 +122,13 @@ protected:
   void RequestInit(TLibS3CallbackData & Data);
   void TryOpenDirectory(const UnicodeString & Directory);
   void ReadDirectoryInternal(const UnicodeString & Path, TRemoteFileList * FileList, int MaxKeys, const UnicodeString & FileName);
-  void ParsePath(UnicodeString Path, UnicodeString & BucketName, UnicodeString & Prefix);
+  void ParsePath(UnicodeString Path, UnicodeString & BucketName, UnicodeString & Key);
   TRemoteToken MakeRemoteToken(const char * OwnerId, const char * OwnerDisplayName);
   TLibS3BucketContext GetBucketContext(const UnicodeString & BucketName);
   void DoListBucket(
     const UnicodeString & Prefix, TRemoteFileList * FileList, int MaxKeys, const TLibS3BucketContext & BucketContext,
     TLibS3ListBucketCallbackData & Data);
-  UnicodeString GetFolderPath(const UnicodeString & Path);
+  UnicodeString GetFolderKey(const UnicodeString & Key);
 
   static TS3FileSystem * GetFileSystem(void * CallbackData);
   static void LibS3SessionCallback(ne_session_s * Session, void * CallbackData);

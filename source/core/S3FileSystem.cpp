@@ -363,12 +363,12 @@ void TS3FileSystem::LibS3Deinitialize()
   S3_deinitialize();
 }
 //---------------------------------------------------------------------------
-UnicodeString TS3FileSystem::GetFolderPath(const UnicodeString & Path)
+UnicodeString TS3FileSystem::GetFolderKey(const UnicodeString & Key)
 {
-  return Path + L"/";
+  return Key + L"/";
 }
 //---------------------------------------------------------------------------
-void TS3FileSystem::ParsePath(UnicodeString Path, UnicodeString & BucketName, UnicodeString & Prefix)
+void TS3FileSystem::ParsePath(UnicodeString Path, UnicodeString & BucketName, UnicodeString & Key)
 {
   if (DebugAlwaysTrue(Path.SubString(1, 1) == L"/"))
   {
@@ -379,12 +379,12 @@ void TS3FileSystem::ParsePath(UnicodeString Path, UnicodeString & BucketName, Un
   if (P == 0)
   {
     BucketName = Path;
-    Prefix = L"";
+    Key = L"";
   }
   else
   {
     BucketName = Path.SubString(0, P - 1);
-    Prefix = Path.SubString(P + 1, Path.Length() - P);
+    Key = Path.SubString(P + 1, Path.Length() - P);
   }
 }
 //---------------------------------------------------------------------------
@@ -797,7 +797,7 @@ void TS3FileSystem::ReadDirectoryInternal(
     ParsePath(Path, BucketName, Prefix);
     if (!Prefix.IsEmpty())
     {
-      Prefix = GetFolderPath(Prefix);
+      Prefix = GetFolderKey(Prefix);
     }
     Prefix += FileName;
     TLibS3BucketContext BucketContext = GetBucketContext(BucketName);
@@ -877,8 +877,8 @@ void __fastcall TS3FileSystem::DeleteFile(const UnicodeString AFileName,
 
   bool Dir = FTerminal->DeleteContentsIfDirectory(FileName, File, Params, Action);
 
-  UnicodeString BucketName, Prefix;
-  ParsePath(FileName, BucketName, Prefix);
+  UnicodeString BucketName, Key;
+  ParsePath(FileName, BucketName, Key);
 
   TLibS3BucketContext BucketContext = GetBucketContext(BucketName);
 
@@ -887,7 +887,7 @@ void __fastcall TS3FileSystem::DeleteFile(const UnicodeString AFileName,
   TLibS3CallbackData Data;
   RequestInit(Data);
 
-  if (Prefix.IsEmpty())
+  if (Key.IsEmpty())
   {
     S3_delete_bucket(
       BucketContext.protocol, BucketContext.uriStyle, BucketContext.accessKeyId, BucketContext.secretAccessKey,
@@ -898,9 +898,9 @@ void __fastcall TS3FileSystem::DeleteFile(const UnicodeString AFileName,
   {
     if (Dir)
     {
-      Prefix = GetFolderPath(Prefix);
+      Key = GetFolderKey(Key);
     }
-    S3_delete_object(&BucketContext, StrToS3(Prefix), FRequestContext, FTimeout, &ResponseHandler, &Data);
+    S3_delete_object(&BucketContext, StrToS3(Key), FRequestContext, FTimeout, &ResponseHandler, &Data);
   }
 
   CheckLibS3Error(Data);
@@ -923,13 +923,13 @@ void __fastcall TS3FileSystem::CreateDirectory(const UnicodeString ADirName)
   TOperationVisualizer Visualizer(FTerminal->UseBusyCursor);
   UnicodeString DirName = AbsolutePath(ADirName, false);
 
-  UnicodeString BucketName, Prefix;
-  ParsePath(DirName, BucketName, Prefix);
+  UnicodeString BucketName, Key;
+  ParsePath(DirName, BucketName, Key);
 
   TLibS3CallbackData Data;
   RequestInit(Data);
 
-  if (Prefix.IsEmpty())
+  if (Key.IsEmpty())
   {
     S3ResponseHandler ResponseHandler = CreateResponseHandler();
 
@@ -941,7 +941,7 @@ void __fastcall TS3FileSystem::CreateDirectory(const UnicodeString ADirName)
   }
   else
   {
-    Prefix = GetFolderPath(Prefix);
+    Key = GetFolderKey(Key);
 
     TLibS3BucketContext BucketContext = GetBucketContext(BucketName);
 
@@ -950,7 +950,7 @@ void __fastcall TS3FileSystem::CreateDirectory(const UnicodeString ADirName)
     S3PutProperties PutProperties =
       { NULL, NULL, NULL, NULL, NULL, -1, S3CannedAclPrivate, 0, NULL, 0 };
 
-    S3_put_object(&BucketContext, StrToS3(Prefix), 0, &PutProperties, FRequestContext, FTimeout, &PutObjectHandler, &Data);
+    S3_put_object(&BucketContext, StrToS3(Key), 0, &PutProperties, FRequestContext, FTimeout, &PutObjectHandler, &Data);
   }
 
   CheckLibS3Error(Data);
