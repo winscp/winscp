@@ -376,4 +376,18 @@ BEGIN
     "  Calculates checksum of remote file.\n"
     "example:\n"
     "  checksum sha-1 index.html\n"
+  SCRIPT_CP_HELP,
+    "cp <file> [ <file2> ... ] [ <directory>/ ][ <newname> ]\n"
+    "  Duplicates one or more remote files. Destination directory or new\n"
+    "  name or both must be specified. Destination directory must end with\n"
+    "  slash. Operation mask can be used instead of new name.\n"
+    "  Filename can be replaced with wildcard to select multiple files.\n"
+    "effective option:\n"
+    "  failonnomatch\n"
+    "examples:\n"
+    "  cp index.html public_html/\n"
+    "  cp index.html about.*\n"
+    "  cp index.html public_html/about.*\n"
+    "  cp public_html/index.html public_html/about.html /home/martin/*.bak\n"
+    "  cp *.html /home/backup/*.bak\n"
 END

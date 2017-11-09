@@ -237,6 +237,7 @@ BEGIN
   S3_ERROR_FURTHER_DETAILS, "Further details: %s"
   S3_ERROR_EXTRA_DETAILS, "Extra Details: "
   S3_STATUS_ACCESS_DENIED, "Access denied."
+  DUPLICATE_FOLDER_NOT_SUPPORTED, "Direct duplication of folders is not supported. Use a duplication via a local temporary copy."
 
   CORE_CONFIRMATION_STRINGS, "CORE_CONFIRMATION"
   CONFIRM_PROLONG_TIMEOUT3, "Host is not communicating for %d seconds.\n\nWait for another %0:d seconds?"
@@ -438,6 +439,7 @@ BEGIN
   AND_STR, "%s and %s"
   AUTH_CHANGING_PASSWORD, "Changing password."
   PASTE_KEY_BUTTON, "&Paste key"
+  SCRIPT_CP_DESC, "Duplicates remote file"
 
   CORE_VARIABLE_STRINGS, "CORE_VARIABLE"
   PUTTY_BASED_ON, "SSH and SCP code based on PuTTY %s"

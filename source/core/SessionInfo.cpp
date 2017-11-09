@@ -296,6 +296,7 @@ protected:
       case laMkdir: return L"mkdir";
       case laRm: return L"rm";
       case laMv: return L"mv";
+      case laCp: return L"cp";
       case laCall: return L"call";
       case laLs: return L"ls";
       case laStat: return L"stat";
@@ -528,6 +529,13 @@ void __fastcall TRmSessionAction::Recursive()
 __fastcall TMvSessionAction::TMvSessionAction(TActionLog * Log,
     const UnicodeString & FileName, const UnicodeString & ADestination) :
   TFileLocationSessionAction(Log, laMv, FileName)
+{
+  Destination(ADestination);
+}
+//---------------------------------------------------------------------------
+__fastcall TCpSessionAction::TCpSessionAction(TActionLog * Log,
+    const UnicodeString & FileName, const UnicodeString & ADestination) :
+  TFileLocationSessionAction(Log, laCp, FileName)
 {
   Destination(ADestination);
 }

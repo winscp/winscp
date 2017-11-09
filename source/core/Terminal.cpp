@@ -4485,6 +4485,7 @@ void __fastcall TTerminal::DoCopyFile(const UnicodeString FileName,
   TRetryOperationLoop RetryLoop(this);
   do
   {
+    TCpSessionAction Action(ActionLog, AbsolutePath(FileName, true), AbsolutePath(NewName, true));
     try
     {
       DebugAssert(FFileSystem);
@@ -4503,7 +4504,7 @@ void __fastcall TTerminal::DoCopyFile(const UnicodeString FileName,
     }
     catch(Exception & E)
     {
-      RetryLoop.Error(E, FMTLOAD(COPY_FILE_ERROR, (FileName, NewName)));
+      RetryLoop.Error(E, Action, FMTLOAD(COPY_FILE_ERROR, (FileName, NewName)));
     }
   }
   while (RetryLoop.Retry());

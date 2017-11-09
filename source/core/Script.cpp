@@ -365,6 +365,7 @@ void __fastcall TScript::Init()
   FCommands->Register(L"rmdir", SCRIPT_RMDIR_DESC, SCRIPT_RMDIR_HELP, &RmDirProc, 1, -1, false);
   FCommands->Register(L"mv", SCRIPT_MV_DESC, SCRIPT_MV_HELP2, &MvProc, 2, -1, false);
   FCommands->Register(L"rename", 0, SCRIPT_MV_HELP2, &MvProc, 2, -1, false);
+  FCommands->Register(L"cp", SCRIPT_CP_DESC, SCRIPT_CP_HELP, &CpProc, 2, -1, false);
   FCommands->Register(L"chmod", SCRIPT_CHMOD_DESC, SCRIPT_CHMOD_HELP2, &ChModProc, 2, -1, false);
   FCommands->Register(L"ln", SCRIPT_LN_DESC, SCRIPT_LN_HELP, &LnProc, 2, 2, false);
   FCommands->Register(L"symlink", 0, SCRIPT_LN_HELP, &LnProc, 2, 2, false);
@@ -1331,9 +1332,14 @@ void __fastcall TScript::RmDirProc(TScriptProcParams * Parameters)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TScript::MvProc(TScriptProcParams * Parameters)
+void __fastcall TScript::DoMvOrCp(TScriptProcParams * Parameters, TFSCapability Capability, bool Cp)
 {
   CheckSession();
+
+  if (!FTerminal->IsCapable[Capability])
+  {
+    NotSupported();
+  }
 
   TStrings * FileList = CreateFileList(Parameters, 1, Parameters->ParamCount - 1,
     fltMask);
@@ -1346,12 +1352,29 @@ void __fastcall TScript::MvProc(TScriptProcParams * Parameters)
 
     Target = UnixIncludeTrailingBackslash(TargetDirectory) + FileMask;
     CheckMultiFilesToOne(FileList, Target, true);
-    FTerminal->MoveFiles(FileList, TargetDirectory, FileMask);
+    if (Cp)
+    {
+      FTerminal->CopyFiles(FileList, TargetDirectory, FileMask);
+    }
+    else
+    {
+      FTerminal->MoveFiles(FileList, TargetDirectory, FileMask);
+    }
   }
   __finally
   {
     FreeFileList(FileList);
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TScript::MvProc(TScriptProcParams * Parameters)
+{
+  DoMvOrCp(Parameters, fcRemoteMove, false);
+}
+//---------------------------------------------------------------------------
+void __fastcall TScript::CpProc(TScriptProcParams * Parameters)
+{
+  DoMvOrCp(Parameters, fcRemoteCopy, true);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScript::ChModProc(TScriptProcParams * Parameters)

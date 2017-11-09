@@ -31,6 +31,7 @@
 #define SCRIPT_ECHO_HELP        27
 #define SCRIPT_STAT_HELP        28
 #define SCRIPT_CHECKSUM_HELP    29
+#define SCRIPT_CP_HELP          30
 
 #define CORE_ERROR_STRINGS      100
 #define KEY_NOT_VERIFIED        101
@@ -320,6 +321,7 @@
 #define S3_ACCESS_KEY_ID_PROMPT 357
 #define S3_SECRET_ACCESS_KEY_TITLE 358
 #define S3_SECRET_ACCESS_KEY_PROMPT 359
+#define DUPLICATE_FOLDER_NOT_SUPPORTED 360
 
 #define CORE_INFORMATION_STRINGS 400
 #define YES_STR                 401
@@ -468,6 +470,7 @@
 #define AND_STR                 556
 #define AUTH_CHANGING_PASSWORD  557
 #define PASTE_KEY_BUTTON        558
+#define SCRIPT_CP_DESC          559
 
 #define CORE_VARIABLE_STRINGS   600
 #define PUTTY_BASED_ON          601

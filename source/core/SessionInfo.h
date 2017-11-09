@@ -80,7 +80,7 @@ public:
 enum TLogLineType { llOutput, llInput, llStdError, llMessage, llException };
 enum TLogAction
 {
-  laUpload, laDownload, laTouch, laChmod, laMkdir, laRm, laMv, laCall, laLs,
+  laUpload, laDownload, laTouch, laChmod, laMkdir, laRm, laMv, laCp, laCall, laLs,
   laStat, laChecksum, laCwd
 };
 //---------------------------------------------------------------------------
@@ -177,6 +177,13 @@ class TMvSessionAction : public TFileLocationSessionAction
 {
 public:
   __fastcall TMvSessionAction(TActionLog * Log, const UnicodeString & FileName,
+    const UnicodeString & Destination);
+};
+//---------------------------------------------------------------------------
+class TCpSessionAction : public TFileLocationSessionAction
+{
+public:
+  __fastcall TCpSessionAction(TActionLog * Log, const UnicodeString & FileName,
     const UnicodeString & Destination);
 };
 //---------------------------------------------------------------------------

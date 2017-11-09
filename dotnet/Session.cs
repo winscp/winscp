@@ -1054,6 +1054,35 @@ namespace WinSCP
             }
         }
 
+        public void DuplicateFile(string sourcePath, string targetPath)
+        {
+            using (Logger.CreateCallstackAndLock())
+            {
+                CheckOpened();
+
+                string sourceArgument = Tools.ArgumentEscape(EscapeFileMask(sourcePath));
+                string targetArgument = Tools.ArgumentEscape(targetPath);
+                string command = string.Format(CultureInfo.InvariantCulture, "cp \"{0}\" \"{1}\"", sourceArgument, targetArgument);
+                WriteCommand(command);
+
+                using (ElementLogReader groupReader = _reader.WaitForGroupAndCreateLogReader())
+                {
+                    if (!groupReader.TryWaitForNonEmptyElement("cp", LogReadFlags.ThrowFailures))
+                    {
+                        throw Logger.WriteException(new SessionRemoteException(this, string.Format(CultureInfo.CurrentCulture, "{0} not found.", sourcePath)));
+                    }
+                    else
+                    {
+                        using (ElementLogReader cpReader = groupReader.CreateLogReader())
+                        {
+                            ReadElement(cpReader, 0);
+                            groupReader.ReadToEnd(LogReadFlags.ThrowFailures);
+                        }
+                    }
+                }
+            }
+        }
+
         // This is not static method only to make it visible to COM
         public string EscapeFileMask(string fileMask)
         {
