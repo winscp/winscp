@@ -2918,7 +2918,7 @@ void __fastcall TFTPFileSystem::RenameFile(const UnicodeString AFileName,
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TFTPFileSystem::CopyFile(const UnicodeString FileName,
+void __fastcall TFTPFileSystem::CopyFile(const UnicodeString FileName, const TRemoteFile * /*File*/,
   const UnicodeString NewName)
 {
   DebugAssert(SupportsSiteCommand(CopySiteCommand));

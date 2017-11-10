@@ -1166,7 +1166,7 @@ void __fastcall TSCPFileSystem::RenameFile(const UnicodeString FileName,
   ExecCommand(fsRenameFile, ARRAYOFCONST((DelimitStr(FileName), DelimitStr(NewName))));
 }
 //---------------------------------------------------------------------------
-void __fastcall TSCPFileSystem::CopyFile(const UnicodeString FileName,
+void __fastcall TSCPFileSystem::CopyFile(const UnicodeString FileName, const TRemoteFile * /*File*/,
   const UnicodeString NewName)
 {
   UnicodeString DelimitedFileName = DelimitStr(FileName);

@@ -59,7 +59,7 @@ public:
     TRemoteFile *& File);
   virtual void __fastcall RenameFile(const UnicodeString FileName,
     const UnicodeString NewName);
-  virtual void __fastcall CopyFile(const UnicodeString FileName,
+  virtual void __fastcall CopyFile(const UnicodeString FileName, const TRemoteFile * File,
     const UnicodeString NewName);
   virtual TStrings * __fastcall GetFixedPaths();
   virtual void __fastcall SpaceAvailable(const UnicodeString Path,

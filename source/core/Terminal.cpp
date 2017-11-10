@@ -4479,7 +4479,7 @@ bool __fastcall TTerminal::MoveFiles(TStrings * FileList, const UnicodeString Ta
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::DoCopyFile(const UnicodeString FileName,
+void __fastcall TTerminal::DoCopyFile(const UnicodeString FileName, const TRemoteFile * File,
   const UnicodeString NewName)
 {
   TRetryOperationLoop RetryLoop(this);
@@ -4491,7 +4491,7 @@ void __fastcall TTerminal::DoCopyFile(const UnicodeString FileName,
       DebugAssert(FFileSystem);
       if (IsCapable[fcRemoteCopy])
       {
-        FFileSystem->CopyFile(FileName, NewName);
+        FFileSystem->CopyFile(FileName, File, NewName);
       }
       else
       {
@@ -4499,7 +4499,7 @@ void __fastcall TTerminal::DoCopyFile(const UnicodeString FileName,
         DebugAssert(FCommandSession->FSProtocol == cfsSCP);
         LogEvent(L"Copying file on command session.");
         FCommandSession->CurrentDirectory = CurrentDirectory;
-        FCommandSession->FFileSystem->CopyFile(FileName, NewName);
+        FCommandSession->FFileSystem->CopyFile(FileName, File, NewName);
       }
     }
     catch(Exception & E)
@@ -4511,7 +4511,7 @@ void __fastcall TTerminal::DoCopyFile(const UnicodeString FileName,
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::CopyFile(const UnicodeString FileName,
-  const TRemoteFile * /*File*/, /*const TMoveFileParams*/ void * Param)
+  const TRemoteFile * File, /*const TMoveFileParams*/ void * Param)
 {
   StartOperationWithFile(FileName, foRemoteCopy);
   DebugAssert(Param != NULL);
@@ -4519,7 +4519,7 @@ void __fastcall TTerminal::CopyFile(const UnicodeString FileName,
   UnicodeString NewName = UnixIncludeTrailingBackslash(Params.Target) +
     MaskFileName(UnixExtractFileName(FileName), Params.FileMask);
   LogEvent(FORMAT(L"Copying file \"%s\" to \"%s\".", (FileName, NewName)));
-  DoCopyFile(FileName, NewName);
+  DoCopyFile(FileName, File, NewName);
   ReactOnCommand(fsCopyFile);
 }
 //---------------------------------------------------------------------------

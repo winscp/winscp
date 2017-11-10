@@ -262,7 +262,7 @@ protected:
     const TRemoteFile * File, UnicodeString Command, int Params, TCaptureOutputEvent OutputEvent);
   void __fastcall DoRenameFile(const UnicodeString FileName,
     const UnicodeString NewName, bool Move);
-  void __fastcall DoCopyFile(const UnicodeString FileName, const UnicodeString NewName);
+  void __fastcall DoCopyFile(const UnicodeString FileName, const TRemoteFile * File, const UnicodeString NewName);
   void __fastcall DoChangeFileProperties(const UnicodeString FileName,
     const TRemoteFile * File, const TRemoteProperties * Properties);
   void __fastcall DoChangeDirectory();

@@ -564,6 +564,7 @@ bool __fastcall TS3FileSystem::IsCapable(int Capability) const
     // Only to make double-click on file edit/open the file,
     // instead of trying to open it as directory
     case fcResolveSymlink:
+    case fcRemoteCopy:
       return true;
 
     case fcRename:
@@ -573,7 +574,6 @@ bool __fastcall TS3FileSystem::IsCapable(int Capability) const
     case fcCheckingSpaceAvailable:
     case fsSkipTransfer:
     case fsParallelTransfers:
-    case fcRemoteCopy:
     case fcUserGroupListing:
     case fcModeChanging:
     case fcModeChangingUpload:
@@ -912,10 +912,43 @@ void __fastcall TS3FileSystem::RenameFile(const UnicodeString FileName,
   throw Exception(L"Not implemented");
 }
 //---------------------------------------------------------------------------
-void __fastcall TS3FileSystem::CopyFile(const UnicodeString FileName,
-    const UnicodeString NewName)
+void __fastcall TS3FileSystem::CopyFile(const UnicodeString AFileName, const TRemoteFile * File,
+  const UnicodeString ANewName)
 {
-  throw Exception(L"Not implemented");
+  if (DebugAlwaysTrue(File != NULL) && File->IsDirectory)
+  {
+    throw Exception(LoadStr(DUPLICATE_FOLDER_NOT_SUPPORTED));
+  }
+
+  UnicodeString FileName = AbsolutePath(AFileName, false);
+  UnicodeString NewName = AbsolutePath(ANewName, false);
+
+  UnicodeString SourceBucketName, SourceKey;
+  ParsePath(FileName, SourceBucketName, SourceKey);
+  DebugAssert(!SourceKey.IsEmpty()); // it's not a folder, so it cannot be a bucket or root
+
+  UnicodeString DestBucketName, DestKey;
+  ParsePath(NewName, DestBucketName, DestKey);
+
+  if (DestKey.IsEmpty())
+  {
+    throw Exception(LoadStr(MISSING_TARGET_BUCKET));
+  }
+
+  TLibS3BucketContext BucketContext = GetBucketContext(DestBucketName);
+  BucketContext.BucketNameBuf = SourceBucketName;
+  BucketContext.bucketName = BucketContext.BucketNameBuf.c_str();
+
+  S3ResponseHandler ResponseHandler = CreateResponseHandler();
+
+  TLibS3CallbackData Data;
+  RequestInit(Data);
+
+  S3_copy_object(
+    &BucketContext, StrToS3(SourceKey), StrToS3(DestBucketName), StrToS3(DestKey),
+    NULL, NULL, 0, NULL, FRequestContext, FTimeout, &ResponseHandler, &Data);
+
+  CheckLibS3Error(Data);
 }
 //---------------------------------------------------------------------------
 void __fastcall TS3FileSystem::CreateDirectory(const UnicodeString ADirName)

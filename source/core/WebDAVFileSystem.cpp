@@ -1055,8 +1055,8 @@ int __fastcall TWebDAVFileSystem::CopyFileInternal(const UnicodeString & FileNam
   return ne_copy(FNeonSession, 0, NE_DEPTH_INFINITE, PathToNeon(FileName), PathToNeon(NewName));
 }
 //---------------------------------------------------------------------------
-void __fastcall TWebDAVFileSystem::CopyFile(const UnicodeString FileName,
-    const UnicodeString NewName)
+void __fastcall TWebDAVFileSystem::CopyFile(const UnicodeString FileName, const TRemoteFile * /*File*/,
+  const UnicodeString NewName)
 {
   ClearNeonError();
   TOperationVisualizer Visualizer(FTerminal->UseBusyCursor);
