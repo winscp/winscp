@@ -4335,14 +4335,6 @@ void __fastcall TTerminal::CalculateFilesChecksum(const UnicodeString & Alg,
   FFileSystem->CalculateFilesChecksum(Alg, FileList, Checksums, OnCalculatedChecksum);
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::RenameFile(const UnicodeString FileName,
-  const UnicodeString NewName)
-{
-  LogEvent(FORMAT(L"Renaming file \"%s\" to \"%s\".", (FileName, NewName)));
-  DoRenameFile(FileName, NewName, false);
-  ReactOnCommand(fsRenameFile);
-}
-//---------------------------------------------------------------------------
 void __fastcall TTerminal::RenameFile(const TRemoteFile * File,
   const UnicodeString NewName, bool CheckExistence)
 {
@@ -4384,7 +4376,9 @@ void __fastcall TTerminal::RenameFile(const TRemoteFile * File,
   if (Proceed)
   {
     FileModified(File, File->FileName);
-    RenameFile(File->FileName, NewName);
+    LogEvent(FORMAT(L"Renaming file \"%s\" to \"%s\".", (File->FileName, NewName)));
+    DoRenameFile(File->FileName, NewName, false);
+    ReactOnCommand(fsRenameFile);
   }
 }
 //---------------------------------------------------------------------------

@@ -475,7 +475,6 @@ public:
   void __fastcall TerminalError(Exception * E, UnicodeString Msg, UnicodeString HelpKeyword = L"");
   void __fastcall ReloadDirectory();
   void __fastcall RefreshDirectory();
-  void __fastcall RenameFile(const UnicodeString FileName, const UnicodeString NewName);
   void __fastcall RenameFile(const TRemoteFile * File, const UnicodeString NewName, bool CheckExistence);
   void __fastcall MoveFile(const UnicodeString FileName, const TRemoteFile * File,
     /*const TMoveFileParams*/ void * Param);
