@@ -3696,7 +3696,7 @@ void __fastcall TSFTPFileSystem::DeleteFile(const UnicodeString FileName,
   DoDeleteFile(FileName, Type);
 }
 //---------------------------------------------------------------------------
-void __fastcall TSFTPFileSystem::RenameFile(const UnicodeString FileName,
+void __fastcall TSFTPFileSystem::RenameFile(const UnicodeString FileName, const TRemoteFile * /*File*/,
   const UnicodeString NewName)
 {
   TSFTPPacket Packet(SSH_FXP_RENAME);
@@ -4911,7 +4911,7 @@ void __fastcall TSFTPFileSystem::SFTPSource(const UnicodeString FileName,
         // on VShell it failed
         FILE_OPERATION_LOOP_BEGIN
         {
-          RenameFile(OpenParams.RemoteFileName, DestFileName);
+          RenameFile(OpenParams.RemoteFileName, NULL, DestFileName);
         }
         FILE_OPERATION_LOOP_END_CUSTOM(
           FMTLOAD(RENAME_AFTER_RESUME_ERROR,

@@ -180,7 +180,7 @@ private:
   void __fastcall NotSupported();
   void __fastcall CheckMultiFilesToOne(TStrings * FileList, const UnicodeString & Target, bool Unix);
   void __fastcall LogOption(const UnicodeString & LogStr);
-  void __fastcall DoMvOrCp(TScriptProcParams * Parameters, TFSCapability Capability, bool Cp, TFileListType FileListMask);
+  void __fastcall DoMvOrCp(TScriptProcParams * Parameters, TFSCapability Capability, bool Cp);
 };
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure *TScriptInputEvent)(TScript * Script, const UnicodeString Prompt, UnicodeString & Str);

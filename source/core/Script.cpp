@@ -1332,7 +1332,7 @@ void __fastcall TScript::RmDirProc(TScriptProcParams * Parameters)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TScript::DoMvOrCp(TScriptProcParams * Parameters, TFSCapability Capability, bool Cp, TFileListType FileListMask)
+void __fastcall TScript::DoMvOrCp(TScriptProcParams * Parameters, TFSCapability Capability, bool Cp)
 {
   CheckSession();
 
@@ -1342,7 +1342,7 @@ void __fastcall TScript::DoMvOrCp(TScriptProcParams * Parameters, TFSCapability 
   }
 
   TStrings * FileList =
-    CreateFileList(Parameters, 1, Parameters->ParamCount - 1, TFileListType(fltMask | FileListMask));
+    CreateFileList(Parameters, 1, Parameters->ParamCount - 1, TFileListType(fltMask | fltQueryServer));
   try
   {
     DebugAssert(Parameters->ParamCount >= 1);
@@ -1369,12 +1369,12 @@ void __fastcall TScript::DoMvOrCp(TScriptProcParams * Parameters, TFSCapability 
 //---------------------------------------------------------------------------
 void __fastcall TScript::MvProc(TScriptProcParams * Parameters)
 {
-  DoMvOrCp(Parameters, fcRemoteMove, false, fltDefault);
+  DoMvOrCp(Parameters, fcRemoteMove, false);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScript::CpProc(TScriptProcParams * Parameters)
 {
-  DoMvOrCp(Parameters, fcRemoteCopy, true, fltQueryServer);
+  DoMvOrCp(Parameters, fcRemoteCopy, true);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScript::ChModProc(TScriptProcParams * Parameters)

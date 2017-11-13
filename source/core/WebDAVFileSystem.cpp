@@ -1031,7 +1031,7 @@ int __fastcall TWebDAVFileSystem::RenameFileInternal(const UnicodeString & FileN
   return ne_move(FNeonSession, 0, PathToNeon(FileName), PathToNeon(NewName));
 }
 //---------------------------------------------------------------------------
-void __fastcall TWebDAVFileSystem::RenameFile(const UnicodeString FileName,
+void __fastcall TWebDAVFileSystem::RenameFile(const UnicodeString FileName, const TRemoteFile * /*File*/,
   const UnicodeString NewName)
 {
   ClearNeonError();

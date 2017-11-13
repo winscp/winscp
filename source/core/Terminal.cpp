@@ -4377,12 +4377,12 @@ void __fastcall TTerminal::RenameFile(const TRemoteFile * File,
   {
     FileModified(File, File->FileName);
     LogEvent(FORMAT(L"Renaming file \"%s\" to \"%s\".", (File->FileName, NewName)));
-    DoRenameFile(File->FileName, NewName, false);
+    DoRenameFile(File->FileName, File, NewName, false);
     ReactOnCommand(fsRenameFile);
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::DoRenameFile(const UnicodeString FileName,
+void __fastcall TTerminal::DoRenameFile(const UnicodeString FileName, const TRemoteFile * File,
   const UnicodeString NewName, bool Move)
 {
   TRetryOperationLoop RetryLoop(this);
@@ -4392,7 +4392,7 @@ void __fastcall TTerminal::DoRenameFile(const UnicodeString FileName,
     try
     {
       DebugAssert(FFileSystem);
-      FFileSystem->RenameFile(FileName, NewName);
+      FFileSystem->RenameFile(FileName, File, NewName);
     }
     catch(Exception & E)
     {
@@ -4413,7 +4413,7 @@ void __fastcall TTerminal::MoveFile(const UnicodeString FileName,
     MaskFileName(UnixExtractFileName(FileName), Params.FileMask);
   LogEvent(FORMAT(L"Moving file \"%s\" to \"%s\".", (FileName, NewName)));
   FileModified(File, FileName);
-  DoRenameFile(FileName, NewName, true);
+  DoRenameFile(FileName, File, NewName, true);
   ReactOnCommand(fsMoveFile);
 }
 //---------------------------------------------------------------------------

@@ -565,10 +565,10 @@ bool __fastcall TS3FileSystem::IsCapable(int Capability) const
     // instead of trying to open it as directory
     case fcResolveSymlink:
     case fcRemoteCopy:
-      return true;
-
     case fcRename:
     case fcRemoteMove:
+      return true;
+
     case fcMoveToQueue:
     case fcPreservingTimestampUpload:
     case fcCheckingSpaceAvailable:
@@ -906,10 +906,13 @@ void __fastcall TS3FileSystem::DeleteFile(const UnicodeString AFileName,
   CheckLibS3Error(Data);
 }
 //---------------------------------------------------------------------------
-void __fastcall TS3FileSystem::RenameFile(const UnicodeString FileName,
+void __fastcall TS3FileSystem::RenameFile(const UnicodeString FileName, const TRemoteFile * File,
   const UnicodeString NewName)
 {
-  throw Exception(L"Not implemented");
+  CopyFile(FileName, File, NewName);
+  TRmSessionAction DummyAction(FTerminal->ActionLog, FileName);
+  DeleteFile(FileName, File, dfForceDelete, DummyAction);
+  DummyAction.Cancel();
 }
 //---------------------------------------------------------------------------
 void __fastcall TS3FileSystem::CopyFile(const UnicodeString AFileName, const TRemoteFile * File,

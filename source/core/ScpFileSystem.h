@@ -57,7 +57,7 @@ public:
     TRemoteFile *& File);
   virtual void __fastcall ReadSymlink(TRemoteFile * SymlinkFile,
     TRemoteFile *& File);
-  virtual void __fastcall RenameFile(const UnicodeString FileName,
+  virtual void __fastcall RenameFile(const UnicodeString FileName, const TRemoteFile * File,
     const UnicodeString NewName);
   virtual void __fastcall CopyFile(const UnicodeString FileName, const TRemoteFile * File,
     const UnicodeString NewName);

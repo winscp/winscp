@@ -2896,7 +2896,7 @@ void __fastcall TFTPFileSystem::ReadSymlink(TRemoteFile * SymlinkFile,
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TFTPFileSystem::RenameFile(const UnicodeString AFileName,
+void __fastcall TFTPFileSystem::RenameFile(const UnicodeString AFileName, const TRemoteFile * /*File*/,
   const UnicodeString ANewName)
 {
   UnicodeString FileName = AbsolutePath(AFileName, false);
