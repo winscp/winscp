@@ -707,10 +707,10 @@ void ProcessChoiceEvent(TConsoleCommStruct::TChoiceEvent& Event)
                      Record.Event.KeyEvent.bKeyDown)
             {
               // This happens when Shift key is pressed
-              if (Record.Event.KeyEvent.uChar.AsciiChar != 0)
+              if (Record.Event.KeyEvent.uChar.UnicodeChar != 0)
               {
                 wchar_t CStr[2];
-                CStr[0] = Record.Event.KeyEvent.uChar.AsciiChar;
+                CStr[0] = Record.Event.KeyEvent.uChar.UnicodeChar;
                 CStr[1] = L'\0';
                 CharUpperBuff(CStr, 1);
                 wchar_t C = CStr[0];
