@@ -60,6 +60,7 @@ type
     FOnDDEnd: TNotifyEvent;
     FOnDDCreateDataObject: TDDOnCreateDataObject;
     FLastDDResult: TDragResult;
+    FOnBusy: TDirViewBusy;
 
     function GetTargetPopupMenu: Boolean;
     procedure SetTargetPopUpMenu(Value: Boolean);
@@ -145,6 +146,10 @@ type
     procedure ScrollOnDragOverBeforeUpdate(ObjectToValidate: TObject);
     procedure ScrollOnDragOverAfterUpdate;
 
+    function DoBusy(Busy: Integer): Boolean;
+    function StartBusy: Boolean;
+    procedure EndBusy;
+
     property ImageList: TImageList read FImageList;
 
   public
@@ -201,6 +206,8 @@ type
     property OnDDCreateDataObject: TDDOnCreateDataObject
       read FOnDDCreateDataObject write FOnDDCreateDataObject;
     property OnDDMenuPopup: TOnMenuPopup read FOnDDMenuPopup write FOnDDMenuPopup;
+
+    property OnBusy: TDirViewBusy read FOnBusy write FOnBusy;
 
     { Show popupmenu when dropping a file with the right mouse button }
     property TargetPopUpMenu: Boolean read GetTargetPopUpMenu write SetTargetPopUpMenu default True;
@@ -1221,5 +1228,24 @@ begin
   if csDesigning in ComponentState then
     Selected := nil;
 end; {SetDirectory}
+
+function TCustomDriveView.DoBusy(Busy: Integer): Boolean;
+begin
+  Result := True;
+  if Assigned(OnBusy) then
+  begin
+    OnBusy(Self, Busy, Result);
+  end;
+end;
+
+function TCustomDriveView.StartBusy: Boolean;
+begin
+  Result := DoBusy(1);
+end;
+
+procedure TCustomDriveView.EndBusy;
+begin
+  DoBusy(-1);
+end;
 
 end.

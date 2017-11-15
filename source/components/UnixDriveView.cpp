@@ -480,6 +480,7 @@ void __fastcall TCustomUnixDriveView::Change(TTreeNode * Node)
         }
 
         FDirectoryLoaded = false;
+        StartBusy();
         try
         {
           Terminal->ChangeDirectory(NodePathName(Node));
@@ -487,6 +488,7 @@ void __fastcall TCustomUnixDriveView::Change(TTreeNode * Node)
         }
         __finally
         {
+          EndBusy();
           if (!FDirectoryLoaded)
           {
             DebugAssert(!FIgnoreChange);
