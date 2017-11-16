@@ -543,6 +543,26 @@ void __fastcall RecordFormImplicitRescale(TForm * Form)
   }
 }
 //---------------------------------------------------------------------------
+static void GetFormRescaleRatio(TForm * Form, int PixelsPerInch, int & M, int & D)
+{
+  TFormRescaleComponent * FormRescaleComponent = GetFormRescaleComponent(Form);
+  TRatio ReverseRescaleKeyRatio(Form->PixelsPerInch, PixelsPerInch);
+  if (FormRescaleComponent->RatioMap.count(ReverseRescaleKeyRatio) > 0)
+  {
+    M = FormRescaleComponent->RatioMap[ReverseRescaleKeyRatio].second;
+    D = FormRescaleComponent->RatioMap[ReverseRescaleKeyRatio].first;
+  }
+  else
+  {
+    M = GetTextHeightAtPixelsPerInch(Form, PixelsPerInch);
+    D = GetTextHeightAtPixelsPerInch(Form, Form->PixelsPerInch);
+  }
+
+
+  TRatio RescaleKeyRatio(PixelsPerInch, Form->PixelsPerInch);
+  FormRescaleComponent->RatioMap[RescaleKeyRatio] = TRatio(M, D);
+}
+//---------------------------------------------------------------------------
 static void __fastcall ChangeFormPixelsPerInch(TForm * Form, int PixelsPerInch)
 {
   RecordFormImplicitRescale(Form);
@@ -555,20 +575,7 @@ static void __fastcall ChangeFormPixelsPerInch(TForm * Form, int PixelsPerInch)
     TAutoFlag RescalingFlag(FormRescaleComponent->Rescaling);
 
     int M, D;
-    TRatio ReverseRescaleKeyRatio(Form->PixelsPerInch, PixelsPerInch);
-    if (FormRescaleComponent->RatioMap.count(ReverseRescaleKeyRatio) > 0)
-    {
-      M = FormRescaleComponent->RatioMap[ReverseRescaleKeyRatio].second;
-      D = FormRescaleComponent->RatioMap[ReverseRescaleKeyRatio].first;
-    }
-    else
-    {
-      M = GetTextHeightAtPixelsPerInch(Form, PixelsPerInch);
-      D = GetTextHeightAtPixelsPerInch(Form, Form->PixelsPerInch);
-    }
-
-    TRatio RescaleKeyRatio(PixelsPerInch, Form->PixelsPerInch);
-    FormRescaleComponent->RatioMap[RescaleKeyRatio] = TRatio(M, D);
+    GetFormRescaleRatio(Form, PixelsPerInch, M, D);
 
     Form->PixelsPerInch = PixelsPerInch;
     TPublicForm * PublicCustomForm = static_cast<TPublicForm *>(Form);
@@ -787,6 +794,16 @@ inline void __fastcall DoFormWindowProc(TCustomForm * Form, TWndMethod WndProc,
     {
       WndProc(Message);
     }
+  }
+  else if (Message.Msg == WM_GETDPISCALEDSIZE)
+  {
+    WndProc(Message);
+    int M, D;
+    GetFormRescaleRatio(AForm, LOWORD(Message.WParam), M, D);
+    SIZE & Size = *(reinterpret_cast<SIZE *>(Message.LParam));
+    Size.cx = MulDiv(Size.cx, M, D);
+    Size.cy = MulDiv(Size.cy, M, D);
+    Message.Result = TRUE;
   }
   else if (Message.Msg == WM_DPICHANGED)
   {
