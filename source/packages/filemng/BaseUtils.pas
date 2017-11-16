@@ -35,14 +35,12 @@ type
   // and true maps to new default fbKilobytes, although functionaly it is fbShort
   TFormatBytesStyle = (fbNone, fbKilobytes, fbShort);
 
-function CheckFileExists(FileName: string): Boolean;
 function ExtractFileNameOnly(Name: string): string;
 function FileOrDirExists(FileName: string): Boolean;
 function FormatBytes(Bytes: Int64; Style: TFormatBytesStyle = fbShort; UseUnitsForBytes: Boolean = True): string;
 function FormatPanelBytes(Bytes: Int64; Style: TFormatBytesStyle): string;
 procedure FreePIDL(var PIDL: PItemIDList);
 function StrContains(Str1, Str2: string): Boolean;
-procedure StrTranslate(var Str: string; Code: string);
 function IsUncPath(Path: string): Boolean;
 function AnyValidPath: string;
 
@@ -95,16 +93,6 @@ begin
   Result := (Copy(Path, 1, 2) = '\\') or (Copy(Path, 1, 2) = '//');
 end;
 
-procedure StrTranslate(var Str: string; Code: string);
-var
-  Index: Integer;
-begin
-  if (Length(Code) > 0) and (Length(Code) mod 2 = 0) then
-    for Index := 1 to Length(Code) div 2 do
-      while Pos(Code[Index*2-1], Str) <> 0 do
-        Str[Pos(Code[Index*2-1], Str)] := Code[Index*2];
-end; {StrTranslate}
-
 function StrContains(Str1, Str2: string): Boolean;
 var
   Index: Integer;
@@ -122,24 +110,6 @@ function FileOrDirExists(FileName: string): Boolean;
 begin
   Result := FileExists(FileName) or DirectoryExists(FileName);
 end; {FileOrDirExists}
-
-function CheckFileExists(FileName: string): Boolean;
-var
-  SaveFileMode : Integer;
-  F: file;
-begin
-  SaveFileMode := System.FileMode;
-  System.FileMode := 0;
-  try
-    AssignFile(F, ApiPath(FileName));
-    Reset(F, 1);
-    Result := IOResult = 0;
-    if Result then
-      CloseFile(F);
-  finally
-    System.FileMode := SaveFileMode;
-  end;
-end; {CheckFileExists}
 
 function ExtractFileNameOnly(Name: string): string;
 var

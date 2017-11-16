@@ -288,7 +288,6 @@ type
     {Create a new subdirectory:}
     procedure CreateDirectory(DirName: string); override;
     {Delete all selected files:}
-    function DeleteSelectedFiles(AllowUndo: Boolean): Boolean; dynamic;
 
     {Check, if file or files still exists:}
     procedure ValidateFile(Item: TListItem); overload;
@@ -1823,96 +1822,6 @@ begin
   Assert(Assigned(Item) and Assigned(Item.Data));
   Result := ExtractFileExt(PFileRec(Item.Data)^.FileName);
 end; {ItemFileExt}
-
-function TDirView.DeleteSelectedFiles(AllowUndo: Boolean): Boolean;
-const
-  MaxSel = 10;
-var
-  ItemIndex: Integer;
-  Item, NextItem: TListItem;
-  FileOperator: TFileOperator;
-  UpdateEnabled: Boolean;
-  WatchDir: Boolean;
-  Updating: Boolean;
-  DirDeleted: Boolean;
-begin
-  AllowUndo := AllowUndo and (not IsRecycleBin);
-  DirDeleted := False;
-  if Assigned(FDriveView) then
-    TDriveView(FDriveView).StopWatchThread;
-  WatchDir := WatchForChanges;
-  WatchForChanges := False;
-  UpdateEnabled := (SelCount < MaxSel);
-  if not UpdateEnabled then Items.BeginUpdate;
-
-  FileOperator := TFileOperator.Create(Self);
-  try
-    ItemIndex := Selected.Index;
-    FileOperator.Operation := foDelete;
-    FileOperator.Flags := [foNoConfirmMkDir];
-    FileOperator.ProgressTitle := coFileOperatorTitle;
-    CreateFileList(False, True, FileOperator.OperandFrom);
-
-    if not ConfirmDelete then
-      FileOperator.Flags := FileOperator.Flags + [foNoConfirmation];
-
-    if AllowUndo then
-      FileOperator.Flags := FileOperator.Flags + [foAllowUndo];
-
-    StopIconUpdateThread;
-    Result := FileOperator.Execute;
-    Result := Result and (not FileOperator.OperationAborted);
-    Sleep(0);
-
-    Updating := False;
-    Item := GetNextItem(nil, sdAll, [isSelected]);
-    while Assigned(Item) do
-    begin
-      NextItem := GetNextItem(Item, sdAll, [isSelected]);
-      case PFileRec(Item.Data)^.IsDirectory of
-        True:
-          if not DirectoryExists(ItemFullFileName(Item)) then
-          begin
-            DirDeleted := True;
-            Item.Delete;
-          end;
-        False:
-          if not CheckFileExists(ItemFullFileName(Item)) then
-          begin
-            if (SelCount > 3) and (not Updating) then
-            begin
-              Items.BeginUpdate;
-              Updating := True;
-            end;
-            Item.Delete;
-          end;
-      end;
-      Item := NextItem;
-    end;
-    if Updating then
-      Items.EndUpdate;
-
-  finally
-    if not UpdateEnabled then
-      Items.EndUpdate;
-    FileOperator.Free;
-  end;
-
-  if Assigned(DriveView) then
-    with DriveView do
-    begin
-      if DirDeleted and Assigned(Selected) then
-        ValidateDirectory(Selected);
-      TDriveView(FDriveView).StartWatchThread;
-    end;
-
-  if UseIconUpdateThread then StartIconUpdateThread;
-
-  WatchForChanges := WatchDir;
-
-  if (not Assigned(Selected)) and (Items.Count > 0) then
-    Selected := Items[Min(ItemIndex, Pred(Items.Count))];
-end; {DeleteSelectedFiles}
 
 function StrCmpLogicalW(const sz1, sz2: UnicodeString): Integer; stdcall; external 'shlwapi.dll';
 
