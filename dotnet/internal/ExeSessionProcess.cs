@@ -199,8 +199,10 @@ namespace WinSCP
 
                 _logger.WriteLine("Started process {0}", _process.Id);
 
-                _thread = new Thread(ProcessEvents);
-                _thread.IsBackground = true;
+                _thread = new Thread(ProcessEvents)
+                {
+                    IsBackground = true
+                };
                 _thread.Start();
             }
         }

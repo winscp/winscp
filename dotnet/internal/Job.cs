@@ -18,11 +18,15 @@ namespace WinSCP
             {
                 _logger.WriteLine("Job created");
 
-                JobObjectBasicLimitInformation info = new JobObjectBasicLimitInformation();
-                info.LimitFlags = 0x2000; // JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
+                JobObjectBasicLimitInformation info = new JobObjectBasicLimitInformation
+                {
+                    LimitFlags = 0x2000 // JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
+                };
 
-                JobObjectExtendedLimitInformation extendedInfo = new JobObjectExtendedLimitInformation();
-                extendedInfo.BasicLimitInformation = info;
+                JobObjectExtendedLimitInformation extendedInfo = new JobObjectExtendedLimitInformation
+                {
+                    BasicLimitInformation = info
+                };
 
                 int length = Marshal.SizeOf(typeof(JobObjectExtendedLimitInformation));
                 IntPtr extendedInfoPtr = Marshal.AllocHGlobal(length);
