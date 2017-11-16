@@ -37,7 +37,6 @@ type
 
 function CheckFileExists(FileName: string): Boolean;
 function DirExists(Dir: string): Boolean; overload;
-function DirExists(Dir: string; var Attrs: Integer): Boolean; overload;
 function ExtractFileNameOnly(Name: string): string;
 function FileOrDirExists(FileName: string): Boolean;
 function FormatBytes(Bytes: Int64; Style: TFormatBytesStyle = fbShort; UseUnitsForBytes: Boolean = True): string;
@@ -150,28 +149,19 @@ begin
   end;
 end; {CheckFileExists}
 
-function DirExists(Dir: string; var Attrs: Integer): Boolean;
+function DirExists(Dir: string): Boolean;
 var
   SRec: TSearchRec;
 begin
   Result := ((Length(Dir) <= 3) and (Length(Dir) >= 2)) and (Dir[2] = ':');
-  if Result then Attrs := 0
-    else
+  if not Result then
   begin
     if FindFirst(ApiPath(Dir), faAnyFile, SRec) = 0 then
     begin
       Result := (SRec.Attr and faDirectory <> 0);
-      Attrs := SRec.Attr;
     end;
     SysUtils.FindClose(SRec);
   end;
-end; {DirExists}
-
-function DirExists(Dir: string): Boolean;
-var
-  Dummy: Integer;
-begin
-  Result := DirExists(Dir, Dummy);
 end; {DirExists}
 
 function ExtractFileNameOnly(Name: string): string;
