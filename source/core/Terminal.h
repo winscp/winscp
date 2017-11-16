@@ -30,6 +30,7 @@ class TTunnelUI;
 class TCallbackGuard;
 class TParallelOperation;
 class TCollectedFileList;
+struct TLocalFileHandle;
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure *TQueryUserEvent)
   (TObject * Sender, const UnicodeString Query, TStrings * MoreMessages, unsigned int Answers,
@@ -120,6 +121,12 @@ const int csIgnoreErrors = 0x01;
 const int ropNoReadDirectory = 0x02;
 //---------------------------------------------------------------------------
 const int boDisableNeverShowAgain = 0x01;
+//---------------------------------------------------------------------------
+const int tfFirstLevel = 0x01;
+const int tfNewDirectory = 0x02;
+const int tfAutoResume = 0x04;
+const int tfPreCreateDir = 0x08;
+const int tfUseFileTransferAny = 0x10;
 //---------------------------------------------------------------------------
 class TTerminal : public TObject, public TSessionUI
 {
@@ -217,6 +224,7 @@ private:
   DWORD FLastProgressLogged;
   UnicodeString FDestFileName;
   bool FMultipleDestinationFiles;
+  bool FFileTransferAny;
 
   void __fastcall CommandError(Exception * E, const UnicodeString Msg);
   unsigned int __fastcall CommandError(Exception * E, const UnicodeString Msg,
@@ -243,6 +251,7 @@ private:
   bool __fastcall GetStoredCredentialsTried();
   inline bool __fastcall InTransaction();
   void __fastcall SaveCapabilities(TFileSystemInfo & FileSystemInfo);
+  void __fastcall CreateTargetDirectory(const UnicodeString & DirectoryPath, int Attrs, const TCopyParamType * CopyParam);
   static UnicodeString __fastcall SynchronizeModeStr(TSynchronizeMode Mode);
   static UnicodeString __fastcall SynchronizeParamsStr(int Params);
 
@@ -296,6 +305,8 @@ protected:
   void __fastcall OpenLocalFile(const UnicodeString FileName, unsigned int Access,
     int * Attrs, HANDLE * Handle, __int64 * ACTime, __int64 * MTime,
     __int64 * ATime, __int64 * Size, bool TryWriteReadOnly = true);
+  void __fastcall OpenLocalFile(
+    const UnicodeString & FileName, unsigned int Access, TLocalFileHandle & Handle, bool TryWriteReadOnly = true);
   bool __fastcall AllowLocalFileTransfer(UnicodeString FileName,
     const TCopyParamType * CopyParam, TFileOperationProgressType * OperationProgress);
   bool __fastcall HandleException(Exception * E);
@@ -415,6 +426,21 @@ protected:
   bool __fastcall DoOnCustomCommand(const UnicodeString & Command);
   bool __fastcall CanParallel(const TCopyParamType * CopyParam, int Params, TParallelOperation * ParallelOperation);
   void __fastcall CopyParallel(TParallelOperation * ParallelOperation, TFileOperationProgressType * OperationProgress);
+  void __fastcall DoCopyToRemote(
+    TStrings * FilesToCopy, const UnicodeString & TargetDir, const TCopyParamType * CopyParam, int Params,
+    TFileOperationProgressType * OperationProgress, unsigned int Flags, TOnceDoneOperation & OnceDoneOperation);
+  void __fastcall SourceRobust(
+    const UnicodeString & FileName, const UnicodeString & TargetDir, const TCopyParamType * CopyParam, int Params,
+    TFileOperationProgressType * OperationProgress, unsigned int Flags);
+  void __fastcall Source(
+    const UnicodeString & FileName, const UnicodeString & TargetDir, const TCopyParamType * CopyParam, int Params,
+    TFileOperationProgressType * OperationProgress, unsigned int Flags, TUploadSessionAction & Action, bool & ChildError);
+  void __fastcall DirectorySource(
+    const UnicodeString & DirectoryName, const UnicodeString & TargetDir, const UnicodeString & DestDirectoryName,
+    int Attrs, const TCopyParamType * CopyParam, int Params,
+    TFileOperationProgressType * OperationProgress, unsigned int Flags);
+  void __fastcall SelectSourceTransferMode(const TLocalFileHandle & Handle, const TCopyParamType * CopyParam);
+  void __fastcall UpdateSource(const TLocalFileHandle & Handle, const TCopyParamType * CopyParam, int Params);
 
   __property TFileOperationProgressType * OperationProgress = { read=FOperationProgress };
 
@@ -851,6 +877,25 @@ private:
   UnicodeString FMainName;
 
   bool CheckEnd(TCollectedFileList * Files);
+};
+//---------------------------------------------------------------------------
+struct TLocalFileHandle
+{
+  TLocalFileHandle();
+  ~TLocalFileHandle();
+
+  void Dismiss();
+  void Close();
+  void Release();
+
+  UnicodeString FileName;
+  HANDLE Handle;
+  int Attrs;
+  bool Directory;
+  TDateTime Modification;
+  __int64 MTime;
+  __int64 ATime;
+  __int64 Size;
 };
 //---------------------------------------------------------------------------
 #endif

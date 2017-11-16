@@ -25,8 +25,6 @@
 //---------------------------------------------------------------------------
 #define FILE_OPERATION_LOOP_TERMINAL FTerminal
 //---------------------------------------------------------------------------
-const int tfFirstLevel = 0x01;
-//---------------------------------------------------------------------------
 static std::unique_ptr<TCriticalSection> LibS3Section(TraceInitPtr(new TCriticalSection()));
 //---------------------------------------------------------------------------
 UTF8String LibS3Delimiter(L"/");
@@ -1042,6 +1040,15 @@ void __fastcall TS3FileSystem::CopyToRemote(TStrings * /*FilesToCopy*/,
   const UnicodeString ATargetDir, const TCopyParamType * /*CopyParam*/,
   int /*Params*/, TFileOperationProgressType * /*OperationProgress*/,
   TOnceDoneOperation & /*OnceDoneOperation*/)
+{
+  throw Exception(L"Not implemented");
+}
+//---------------------------------------------------------------------------
+void __fastcall TS3FileSystem::Source(
+  TLocalFileHandle & /*Handle*/, const UnicodeString & /*TargetDir*/, UnicodeString & /*DestFileName*/,
+  const TCopyParamType * /*CopyParam*/, int /*Params*/,
+  TFileOperationProgressType * /*OperationProgress*/, unsigned int /*Flags*/,
+  TUploadSessionAction & /*Action*/, bool & /*ChildError*/)
 {
   throw Exception(L"Not implemented");
 }
