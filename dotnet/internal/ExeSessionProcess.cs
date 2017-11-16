@@ -385,10 +385,7 @@ namespace WinSCP
                 _lastFromBeginning = message;
                 _logger.WriteLine("Buffered from-beginning message [{0}]", _lastFromBeginning);
 
-                if (OutputDataReceived != null)
-                {
-                    OutputDataReceived(this, null);
-                }
+                OutputDataReceived?.Invoke(this, null);
             }
             else
             {
@@ -419,10 +416,7 @@ namespace WinSCP
 
             for (int i = 0; i < lines.Length - 1; ++i)
             {
-                if (OutputDataReceived != null)
-                {
-                    OutputDataReceived(this, new OutputDataReceivedEventArgs(lines[i], error));
-                }
+                OutputDataReceived?.Invoke(this, new OutputDataReceivedEventArgs(lines[i], error));
             }
         }
 

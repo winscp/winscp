@@ -1796,10 +1796,7 @@ namespace WinSCP
         {
             Logger.WriteLine("FileTransferredEvent: [{0}]", args.FileName);
 
-            if (FileTransferred != null)
-            {
-                FileTransferred(this, args);
-            }
+            FileTransferred?.Invoke(this, args);
         }
 
         internal void RaiseFailed(SessionRemoteException e)
@@ -1850,10 +1847,7 @@ namespace WinSCP
         {
             Logger.WriteLine("Output: [{0}]", data);
 
-            if (OutputDataReceived != null)
-            {
-                OutputDataReceived(this, new OutputDataReceivedEventArgs(data, error));
-            }
+            OutputDataReceived?.Invoke(this, new OutputDataReceivedEventArgs(data, error));
         }
 
         internal void DispatchEvents(int interval)
