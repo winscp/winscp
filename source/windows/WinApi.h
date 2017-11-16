@@ -12,6 +12,7 @@ typedef BOOL WINAPI (* AddClipboardFormatListenerProc)(HWND hwnd);
 typedef BOOL WINAPI (* RemoveClipboardFormatListenerProc)(HWND hwnd);
 //---------------------------------------------------------------------------
 #define WM_DPICHANGED 0x02E0
+#define WM_GETDPISCALEDSIZE 0x02E4
 //---------------------------------------------------------------------------
 typedef enum _Monitor_DPI_Type {
   MDT_Effective_DPI  = 0,

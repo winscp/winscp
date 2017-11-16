@@ -220,20 +220,32 @@ void __fastcall RestoreForm(UnicodeString Data, TForm * Form, bool PositionOnly)
            (Bounds.Top < Monitor->Top) ||
            (Bounds.Top > Monitor->Top + Monitor->WorkareaRect.Height() - 20)))
       {
-        if (Monitor->Primary)
+        bool ExplicitPlacing = !Monitor->Primary;
+        if (!ExplicitPlacing)
         {
+          TPosition Position;
           if ((Application->MainForm == NULL) || (Application->MainForm == Form))
           {
-            Form->Position = poDefaultPosOnly;
+            Position = poDefaultPosOnly;
           }
           else
           {
-            Form->Position = poOwnerFormCenter;
+            Position = poOwnerFormCenter;
           }
-          Form->Width = Bounds.Width();
-          Form->Height = Bounds.Height();
+
+          // If handle is allocated already, changing Position reallocates it, what brings lot of nasty side effects.
+          if (Form->HandleAllocated() && (Form->Position != Position))
+          {
+            ExplicitPlacing = true;
+          }
+          else
+          {
+            Form->Width = Bounds.Width();
+            Form->Height = Bounds.Height();
+          }
         }
-        else
+
+        if (ExplicitPlacing)
         {
           // when positioning on non-primary monitor, we need
           // to handle that ourselves, so place window to center
