@@ -88,6 +88,7 @@ type
     procedure WMLButtonUp(var Msg: TWMLButtonDown); message WM_LBUTTONUP;
     procedure WMRButtonDown(var Msg: TWMRButtonDown); message WM_RBUTTONDOWN;
     procedure WMContextMenu(var Msg: TWMContextMenu); message WM_CONTEXTMENU;
+    procedure WMKeyDown(var Message: TWMKeyDown); message WM_KEYDOWN;
     procedure CMDPIChanged(var Message: TMessage); message CM_DPICHANGED;
 
     procedure Delete(Node: TTreeNode); override;
@@ -149,6 +150,7 @@ type
     function DoBusy(Busy: Integer): Boolean;
     function StartBusy: Boolean;
     procedure EndBusy;
+    function IsBusy: Boolean;
 
     property ImageList: TImageList read FImageList;
 
@@ -962,6 +964,14 @@ begin
   inherited;
 end; {OnDelete}
 
+procedure TCustomDriveView.WMKeyDown(var Message: TWMKeyDown);
+begin
+  if not IsBusy then
+  begin
+    inherited;
+  end;
+end;
+
 procedure TCustomDriveView.KeyDown(var Key: Word; Shift: TShiftState);
 begin
   if (Key = VK_RETURN) and (ssAlt in Shift) and (not IsEditing) and
@@ -1241,6 +1251,11 @@ end;
 function TCustomDriveView.StartBusy: Boolean;
 begin
   Result := DoBusy(1);
+end;
+
+function TCustomDriveView.IsBusy: Boolean;
+begin
+  Result := DoBusy(0);
 end;
 
 procedure TCustomDriveView.EndBusy;
