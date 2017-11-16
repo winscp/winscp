@@ -596,12 +596,11 @@ namespace WinSCP
 
         private bool TryCreateEvent(string name, out EventWaitHandle ev)
         {
-            bool createdNew;
             _logger.WriteLine("Creating event {0}", name);
 
             EventWaitHandleSecurity security = CreateSecurity(EventWaitHandleRights.FullControl);
 
-            ev = new EventWaitHandle(false, EventResetMode.AutoReset, name, out createdNew, security);
+            ev = new EventWaitHandle(false, EventResetMode.AutoReset, name, out bool createdNew, security);
             _logger.WriteLine(
                 "Created event {0} with handle {1} with security {2}, new {3}",
                 name, ev.SafeWaitHandle.DangerousGetHandle(),
@@ -638,8 +637,7 @@ namespace WinSCP
 
         private EventWaitHandle CreateEvent(string name)
         {
-            EventWaitHandle ev;
-            if (!TryCreateEvent(name, out ev))
+            if (!TryCreateEvent(name, out EventWaitHandle ev))
             {
                 throw _logger.WriteException(new SessionLocalException(_session, string.Format(CultureInfo.InvariantCulture, "Event {0} already exists", name)));
             }
@@ -651,8 +649,7 @@ namespace WinSCP
             if (_session.TestHandlesClosedInternal)
             {
                 _logger.WriteLine("Testing that event {0} is closed", name);
-                EventWaitHandle ev;
-                if (TryCreateEvent(name, out ev))
+                if (TryCreateEvent(name, out EventWaitHandle ev))
                 {
                     ev.Close();
                 }
@@ -856,12 +853,11 @@ namespace WinSCP
                 result = null;
 
                 IntPtr data = IntPtr.Zero;
-                RegistryType type;
                 uint len = 0;
                 RegistryFlags flags = RegistryFlags.RegSz | RegistryFlags.SubKeyWow6432Key;
                 UIntPtr key = (UIntPtr)((uint)hive);
 
-                if (UnsafeNativeMethods.RegGetValue(key, uninstallKey, appPathValue, flags, out type, data, ref len) == 0)
+                if (UnsafeNativeMethods.RegGetValue(key, uninstallKey, appPathValue, flags, out RegistryType type, data, ref len) == 0)
                 {
                     data = Marshal.AllocHGlobal((int)len);
                     if (UnsafeNativeMethods.RegGetValue(key, uninstallKey, appPathValue, flags, out type, data, ref len) == 0)

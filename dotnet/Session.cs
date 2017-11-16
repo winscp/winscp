@@ -222,9 +222,7 @@ namespace WinSCP
                         string.Format(CultureInfo.InvariantCulture, "option reconnecttime {0}", reconnectTimeValue);
                     WriteCommand(reconnectTimeCommand);
 
-                    string command;
-                    string log;
-                    SessionOptionsToUrlAndSwitches(sessionOptions, false, out command, out log);
+                    SessionOptionsToUrlAndSwitches(sessionOptions, false, out string command, out string log);
                     const string openCommand = "open ";
                     command = openCommand + command;
                     log = openCommand + log;
@@ -300,8 +298,7 @@ namespace WinSCP
                     {
                         while (cwdReader.Read(0))
                         {
-                            string value;
-                            if (cwdReader.GetEmptyElementValue("cwd", out value))
+                            if (cwdReader.GetEmptyElementValue("cwd", out string value))
                             {
                                 _homePath = value;
                             }
@@ -356,9 +353,7 @@ namespace WinSCP
                 {
                     ResetOutput();
 
-                    string command;
-                    string log; // unused
-                    SessionOptionsToUrlAndSwitches(sessionOptions, true, out command, out log);
+                    SessionOptionsToUrlAndSwitches(sessionOptions, true, out string command, out string log);
 
                     string additionalArguments = "/fingerprintscan " + command;
 
@@ -443,8 +438,7 @@ namespace WinSCP
                                 {
                                     while (fileReader.Read(0))
                                     {
-                                        string value;
-                                        if (fileReader.GetEmptyElementValue("filename", out value))
+                                        if (fileReader.GetEmptyElementValue("filename", out string value))
                                         {
                                             fileInfo.Name = value;
                                             fileInfo.FullName = destination + value;
@@ -914,8 +908,7 @@ namespace WinSCP
                 {
                     while (callReader.Read(0))
                     {
-                        string value;
-                        if (callReader.GetEmptyElementValue("output", out value))
+                        if (callReader.GetEmptyElementValue("output", out string value))
                         {
                             result.Output = value;
                         }
@@ -983,8 +976,7 @@ namespace WinSCP
                 {
                     while (checksumReader.Read(0))
                     {
-                        string value;
-                        if (checksumReader.GetEmptyElementValue("checksum", out value))
+                        if (checksumReader.GetEmptyElementValue("checksum", out string value))
                         {
                             hex = value;
                         }
@@ -1263,8 +1255,7 @@ namespace WinSCP
         {
             using (Logger.CreateCallstack())
             {
-                string value;
-                if (fileReader.GetEmptyElementValue("type", out value))
+                if (fileReader.GetEmptyElementValue("type", out string value))
                 {
                     fileInfo.FileType = value[0];
                 }
@@ -1518,9 +1509,7 @@ namespace WinSCP
                 url += tail;
                 logUrl += tail;
 
-                string arguments;
-                string logArguments;
-                SessionOptionsToSwitches(sessionOptions, scanFingerprint, out arguments, out logArguments);
+                SessionOptionsToSwitches(sessionOptions, scanFingerprint, out string arguments, out string logArguments);
 
                 const string switchName = "-rawsettings";
                 Tools.AddRawParameters(ref arguments, sessionOptions.RawSettings, "-rawsettings");
@@ -1676,8 +1665,7 @@ namespace WinSCP
                 {
                     while (statReader.Read(0))
                     {
-                        string value;
-                        if (statReader.GetEmptyElementValue("filename", out value))
+                        if (statReader.GetEmptyElementValue("filename", out string value))
                         {
                             string name = value;
                             int p = name.LastIndexOf('/');

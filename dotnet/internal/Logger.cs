@@ -134,8 +134,7 @@ namespace WinSCP
             lock (_logLock)
             {
                 int threadId = GetThread();
-                int indent;
-                if (!_indents.TryGetValue(threadId, out indent))
+                if (!_indents.TryGetValue(threadId, out int indent))
                 {
                     indent = 0;
                 }
@@ -265,8 +264,7 @@ namespace WinSCP
 
         private int GetIndent()
         {
-            int indent;
-            if (!_indents.TryGetValue(GetThread(), out indent))
+            if (!_indents.TryGetValue(GetThread(), out int indent))
             {
                 indent = 0;
             }

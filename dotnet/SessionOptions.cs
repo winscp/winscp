@@ -180,8 +180,7 @@ namespace WinSCP
             else
             {
                 portNumber = UriUnescape(portNumber);
-                int number;
-                if (!int.TryParse(portNumber, 0, CultureInfo.InvariantCulture, out number))
+                if (!int.TryParse(portNumber, 0, CultureInfo.InvariantCulture, out int number))
                 {
                     throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, "{0} is not a valid port number", portNumber), "url");
                 }
