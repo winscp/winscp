@@ -1192,7 +1192,7 @@ begin
       else FDriveType := DRIVE_UNKNOWN;
 
     FDirOK := (Length(FPath) > 0) and
-      DriveInfo[FPath[1]].DriveReady and DirExists(FPath);
+      DriveInfo[FPath[1]].DriveReady and DirectoryExists(FPath);
 
     if DirOK then
     begin
@@ -1312,7 +1312,7 @@ begin
     if IsRecycleBin then Reload(True)
       else
     begin
-      if not DirExists(Path) then
+      if not DirectoryExists(Path) then
       begin
         ClearItems;
         FDirOK := False;
@@ -1871,7 +1871,7 @@ begin
       NextItem := GetNextItem(Item, sdAll, [isSelected]);
       case PFileRec(Item.Data)^.IsDirectory of
         True:
-          if not DirExists(ItemFullFileName(Item)) then
+          if not DirectoryExists(ItemFullFileName(Item)) then
           begin
             DirDeleted := True;
             Item.Delete;
@@ -2714,7 +2714,7 @@ begin
     if PFileRec(Item.Data)^.IsDirectory then
     begin
       FileName := ItemFullFileName(Item);
-      if not DirExists(FileName) then
+      if not DirectoryExists(FileName) then
       begin
         Reload2;
         if Assigned(FDriveView) and Assigned(FDriveView.Selected) then
@@ -2726,7 +2726,7 @@ begin
       else
     FileName := ResolveFileShortCut(ItemFullFileName(Item), True);
 
-    if DirExists(FileName) then
+    if DirectoryExists(FileName) then
     begin
       Path := FileName;
       Exit;
@@ -2824,7 +2824,7 @@ var
   IsDirectory: Boolean;
 begin
   Item := GetItemFromHItem(HItem);
-  IsDirectory := DirExists(ItemFullFileName(Item));
+  IsDirectory := DirectoryExists(ItemFullFileName(Item));
   NewCaption := HItem.pszText;
 
   StopWatchThread;
@@ -3108,7 +3108,7 @@ var
 begin
   if DragDropFilesEx.FileList.Count > 0 then
   begin
-    if not DirExists(TargetPath) then
+    if not DirectoryExists(TargetPath) then
     begin
       Reload(True);
       DDError(DDPathNotFoundError);
@@ -3152,7 +3152,7 @@ begin
 
               if SourcePath = '' then
               begin
-                if DirExists(TFDDListItem(DragDropFilesEx.FileList[Index]^).Name) then
+                if DirectoryExists(TFDDListItem(DragDropFilesEx.FileList[Index]^).Name) then
                 begin
                   SourcePath := TFDDListItem(DragDropFilesEx.FileList[Index]^).Name;
                   SourceIsDirectory := True;

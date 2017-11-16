@@ -797,7 +797,7 @@ end;
 
 function TDriveView.NodePathExists(Node: TTreeNode): Boolean;
 begin
-  Result := DirExists(NodePathName(Node));
+  Result := DirectoryExists(NodePathName(Node));
 end;
 
 function TDriveView.CanEdit(Node: TTreeNode): Boolean;
@@ -962,7 +962,7 @@ begin
   {Create the drive nodes:}
   RefreshRootNodes(dsDisplayName or dvdsFloppy);
   {Set the initial directory:}
-  if (Length(FDirectory) > 0) and DirExists(FDirectory) then
+  if (Length(FDirectory) > 0) and DirectoryExists(FDirectory) then
     Directory := FDirectory;
 
   FCreating := False;
@@ -1093,7 +1093,7 @@ begin
 
           if DriveReady then
           begin
-            if not DirExists(NewDir) then
+            if not DirectoryExists(NewDir) then
             begin
               ValidateDirectory(DriveStatus[Upcase(NewDir[1])].RootNode);
               Exit;
@@ -1686,7 +1686,7 @@ begin {CallBackValidateDir}
 
   {Check, if directory still exists: (but not with root directory) }
   if Assigned(Node.Parent) and (PScanDirInfo(Data)^.StartNode = Node) then
-    if not DirExists(NodePathName(Node)) then
+    if not DirectoryExists(NodePathName(Node)) then
     begin
       WorkNode := Node.Parent;
       if Selected = Node then
@@ -1935,13 +1935,13 @@ begin
       FileOperator.Flags := FileOperator.Flags + [foNoConfirmation];
 
     try
-      if DirExists(DelDir) then
+      if DirectoryExists(DelDir) then
       begin
         StopWatchThread;
         OperatorResult := FileOperator.Execute;
 
         if OperatorResult and (not FileOperator.OperationAborted) and
-           (not DirExists(DelDir)) then
+           (not DirectoryExists(DelDir)) then
         begin
           Node.Delete
         end

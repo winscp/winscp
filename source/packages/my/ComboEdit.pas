@@ -408,14 +408,6 @@ begin
   if Result then Result := Pos('\', ExtractFileName(FileName)) = 0;
 end;
 
-function DirExists(Name: string): Boolean;
-var
-  Code: Integer;
-begin
-  Code := GetFileAttributes(PChar(ApiPath(Name)));
-  Result := (Code <> -1) and (FILE_ATTRIBUTE_DIRECTORY and Code <> 0);
-end;
-
 { TCustomComboEdit }
 
 constructor TCustomComboEdit.Create(AOwner: TComponent);
@@ -970,7 +962,7 @@ begin
   if not Action then Exit;
   if ValidFileName(Temp) then
     try
-      if DirExists(ExtractFilePath(Temp)) then
+      if DirectoryExists(ExtractFilePath(Temp)) then
         SetInitialDir(ExtractFilePath(Temp));
       if (ExtractFileName(Temp) = '') or
         not ValidFileName(ExtractFileName(Temp)) then Temp := '';
@@ -1140,7 +1132,7 @@ begin
     if (InitialDir <> '') then Temp := InitialDir
     else Temp := '\';
   end;
-  if not DirExists(Temp) then Temp := '\';
+  if not DirectoryExists(Temp) then Temp := '\';
   DisableSysErrors;
   try
     Action := SelectDirectory(FDialogText, '', Temp);
@@ -1153,7 +1145,7 @@ begin
     SelText := '';
     if (Text = '') or not MultipleDirs then Text := Temp
     else Text := Text + ';' + Temp;
-    if (Temp <> '') and DirExists(Temp) then InitialDir := Temp;
+    if (Temp <> '') and DirectoryExists(Temp) then InitialDir := Temp;
   end;
 end;
 

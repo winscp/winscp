@@ -36,7 +36,6 @@ type
   TFormatBytesStyle = (fbNone, fbKilobytes, fbShort);
 
 function CheckFileExists(FileName: string): Boolean;
-function DirExists(Dir: string): Boolean; overload;
 function ExtractFileNameOnly(Name: string): string;
 function FileOrDirExists(FileName: string): Boolean;
 function FormatBytes(Bytes: Int64; Style: TFormatBytesStyle = fbShort; UseUnitsForBytes: Boolean = True): string;
@@ -120,15 +119,8 @@ begin
 end; {StringCountains}
 
 function FileOrDirExists(FileName: string): Boolean;
-var
-  SRec : TSearchRec;
 begin
-  if Length(FileName) = 0 then Result := False
-    else
-  begin
-    Result := (FindFirst(ApiPath(FileName), faAnyFile, SRec) = 0);
-    SysUtils.FindCLose(SRec);
-  end;
+  Result := FileExists(FileName) or DirectoryExists(FileName);
 end; {FileOrDirExists}
 
 function CheckFileExists(FileName: string): Boolean;
@@ -148,21 +140,6 @@ begin
     System.FileMode := SaveFileMode;
   end;
 end; {CheckFileExists}
-
-function DirExists(Dir: string): Boolean;
-var
-  SRec: TSearchRec;
-begin
-  Result := ((Length(Dir) <= 3) and (Length(Dir) >= 2)) and (Dir[2] = ':');
-  if not Result then
-  begin
-    if FindFirst(ApiPath(Dir), faAnyFile, SRec) = 0 then
-    begin
-      Result := (SRec.Attr and faDirectory <> 0);
-    end;
-    SysUtils.FindClose(SRec);
-  end;
-end; {DirExists}
 
 function ExtractFileNameOnly(Name: string): string;
 var
