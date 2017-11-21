@@ -2905,7 +2905,7 @@ void __fastcall TCustomScpExplorerForm::CustomExecuteFile(TOperationSide Side,
         Editor = ShowEditorForm(FileName, this, FEditorManager->FileChanged,
           FEditorManager->FileReload, FEditorManager->FileClosed,
           SaveAllInternalEditors, AnyInternalEditorModified,
-          Caption, FStandaloneEditing, SessionColor);
+          Caption, FStandaloneEditing, SessionColor, Terminal->SessionData->InternalEditorEncoding);
       }
       catch(...)
       {
@@ -2924,7 +2924,7 @@ void __fastcall TCustomScpExplorerForm::CustomExecuteFile(TOperationSide Side,
       TForm * Editor =
         ShowEditorForm(FileName, this, NULL, NULL, LocalEditorClosed,
           SaveAllInternalEditors, AnyInternalEditorModified,
-          L"", false, SessionColor);
+          L"", false, SessionColor, -1);
       FLocalEditors->Add(Editor);
     }
   }

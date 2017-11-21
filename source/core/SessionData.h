@@ -209,6 +209,7 @@ private:
   TTlsVersion FMinTlsVersion;
   TTlsVersion FMaxTlsVersion;
   TAutoSwitch FNotUtf;
+  int FInternalEditorEncoding;
   UnicodeString FS3DefaultRegion;
   bool FIsWorkspace;
   UnicodeString FLink;
@@ -379,6 +380,7 @@ private:
   void __fastcall SetMinTlsVersion(TTlsVersion value);
   void __fastcall SetMaxTlsVersion(TTlsVersion value);
   void __fastcall SetNotUtf(TAutoSwitch value);
+  void __fastcall SetInternalEditorEncoding(int value);
   void __fastcall SetS3DefaultRegion(UnicodeString value);
   void __fastcall SetLogicalHostName(UnicodeString value);
   void __fastcall SetIsWorkspace(bool value);
@@ -617,6 +619,7 @@ public:
   __property TTlsVersion MaxTlsVersion = { read = FMaxTlsVersion, write = SetMaxTlsVersion };
   __property UnicodeString LogicalHostName = { read = FLogicalHostName, write = SetLogicalHostName };
   __property TAutoSwitch NotUtf = { read = FNotUtf, write = SetNotUtf };
+  __property int InternalEditorEncoding = { read = FInternalEditorEncoding, write = SetInternalEditorEncoding };
   __property UnicodeString S3DefaultRegion = { read = FS3DefaultRegion, write = SetS3DefaultRegion };
   __property bool IsWorkspace = { read = FIsWorkspace, write = SetIsWorkspace };
   __property UnicodeString Link = { read = FLink, write = SetLink };

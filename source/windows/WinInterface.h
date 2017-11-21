@@ -353,7 +353,7 @@ typedef void __fastcall (__closure *TAnyModifiedEvent)
 TForm * __fastcall ShowEditorForm(const UnicodeString FileName, TForm * ParentForm,
   TNotifyEvent OnFileChanged, TNotifyEvent OnFileReload, TFileClosedEvent OnClose,
   TNotifyEvent OnSaveAll, TAnyModifiedEvent OnAnyModified,
-  const UnicodeString Caption, bool StandaloneEditor, TColor Color);
+  const UnicodeString Caption, bool StandaloneEditor, TColor Color, int InternalEditorEncodingOverride);
 void __fastcall ReconfigureEditorForm(TForm * Form);
 void __fastcall EditorFormFileUploadComplete(TForm * Form);
 void __fastcall EditorFormFileSave(TForm * Form);

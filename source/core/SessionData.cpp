@@ -158,6 +158,7 @@ void __fastcall TSessionData::Default()
   FOverrideCachedHostKey = true;
   Note = L"";
   WinTitle = L"";
+  InternalEditorEncoding = -1;
 
   ProxyMethod = ::pmNone;
   ProxyHost = L"proxy";
@@ -319,6 +320,7 @@ void __fastcall TSessionData::NonPersistant()
   PROPERTY(RekeyTime); \
   PROPERTY(HostKey); \
   PROPERTY(FingerprintScan); \
+  PROPERTY(InternalEditorEncoding); \
   \
   PROPERTY(UpdateDirectories); \
   PROPERTY(CacheDirectories); \
@@ -633,6 +635,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   EOLType = (TEOLType)Storage->ReadInteger(L"EOLType", EOLType);
   TrimVMSVersions = Storage->ReadBool(L"TrimVMSVersions", TrimVMSVersions);
   NotUtf = TAutoSwitch(Storage->ReadInteger(L"Utf", Storage->ReadInteger(L"SFTPUtfBug", NotUtf)));
+  InternalEditorEncoding = Storage->ReadInteger(L"InternalEditorEncoding", InternalEditorEncoding);
 
   S3DefaultRegion = Storage->ReadString(L"Utf", S3DefaultRegion);
 
@@ -984,6 +987,7 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
     WRITE_DATA(Bool, TrimVMSVersions);
     Storage->DeleteValue(L"SFTPUtfBug");
     WRITE_DATA_EX(Integer, L"Utf", NotUtf, );
+    WRITE_DATA(Integer, InternalEditorEncoding);
     WRITE_DATA(String, S3DefaultRegion);
     WRITE_DATA(Integer, SendBuf);
     WRITE_DATA(Bool, SshSimple);
@@ -3699,6 +3703,11 @@ void __fastcall TSessionData::SetTlsCertificateFile(UnicodeString value)
 void __fastcall TSessionData::SetNotUtf(TAutoSwitch value)
 {
   SET_SESSION_PROPERTY(NotUtf);
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetInternalEditorEncoding(int value)
+{
+  SET_SESSION_PROPERTY(InternalEditorEncoding);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetS3DefaultRegion(UnicodeString value)

@@ -28,7 +28,7 @@
 TForm * __fastcall ShowEditorForm(const UnicodeString FileName, TForm * ParentForm,
   TNotifyEvent OnFileChanged, TNotifyEvent OnFileReload, TFileClosedEvent OnClose,
   TNotifyEvent OnSaveAll, TAnyModifiedEvent OnAnyModified,
-  const UnicodeString Caption, bool StandaloneEditor, TColor Color)
+  const UnicodeString Caption, bool StandaloneEditor, TColor Color, int InternalEditorEncodingOverride)
 {
   TEditorForm * Dialog = new TEditorForm(Application);
   try
@@ -43,6 +43,7 @@ TForm * __fastcall ShowEditorForm(const UnicodeString FileName, TForm * ParentFo
     Dialog->OnAnyModified = OnAnyModified;
     Dialog->StandaloneEditor = StandaloneEditor;
     Dialog->BackgroundColor = Color;
+    Dialog->InternalEditorEncodingOverride = InternalEditorEncodingOverride;
     // load before showing, so when loading failes,
     // we do not show an empty editor
     Dialog->LoadFile();
@@ -707,6 +708,7 @@ __fastcall TEditorForm::TEditorForm(TComponent* Owner)
   FStandaloneEditor = false;
   FClosePending = false;
   FReloading = false;
+  FInternalEditorEncodingOverride = -1;
   SetSubmenu(ColorItem);
 
   InitCodePage();
@@ -1282,7 +1284,14 @@ void __fastcall TEditorForm::LoadFromFile(bool PrimaryEncoding)
       }
       else
       {
-        Encoding = WinConfiguration->Editor.Encoding;
+        if (InternalEditorEncodingOverride >= 0)
+        {
+          Encoding = InternalEditorEncodingOverride;
+        }
+        else
+        {
+          Encoding = WinConfiguration->Editor.Encoding;
+        }
         CanTrySecondary = true;
       }
 

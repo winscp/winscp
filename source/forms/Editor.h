@@ -117,6 +117,7 @@ private:
   bool FStandaloneEditor;
   bool FClosePending;
   TColor FBackgroundColor;
+  int FInternalEditorEncodingOverride;
   bool FReloading;
 
   static unsigned int FInstances;
@@ -139,6 +140,7 @@ public:
   __property TAnyModifiedEvent OnAnyModified = { read = FOnAnyModified, write = FOnAnyModified };
   __property TForm * ParentForm = { read = FParentForm, write = FParentForm };
   __property TColor BackgroundColor = { read = FBackgroundColor, write = SetBackgroundColor };
+  __property int InternalEditorEncodingOverride = { read = FInternalEditorEncodingOverride, write = FInternalEditorEncodingOverride };
 protected:
   bool __fastcall CursorInUpperPart();
   void __fastcall Find();
