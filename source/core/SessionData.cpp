@@ -65,6 +65,7 @@ const wchar_t UrlParamValueSeparator = L'=';
 const UnicodeString UrlHostKeyParamName(L"fingerprint");
 const UnicodeString UrlSaveParamName(L"save");
 const UnicodeString PassphraseOption(L"passphrase");
+const UnicodeString RawSettingsOption(L"rawsettings");
 const UnicodeString S3HostName(S3LibDefaultHostName());
 //---------------------------------------------------------------------
 TDateTime __fastcall SecToDateTime(int Sec)
@@ -1622,6 +1623,35 @@ bool __fastcall TSessionData::IsSensitiveOption(const UnicodeString & Option)
     SameText(Option, NEWPASSWORD_SWITCH);
 }
 //---------------------------------------------------------------------
+bool __fastcall TSessionData::IsOptionWithParameters(const UnicodeString & Option)
+{
+  return SameText(Option, RawSettingsOption);
+}
+//---------------------------------------------------------------------
+bool __fastcall TSessionData::MaskPasswordInOptionParameter(const UnicodeString & Option, UnicodeString & Param)
+{
+  bool Result = false;
+  if (SameText(Option, RawSettingsOption))
+  {
+    int P = Param.Pos(L"=");
+    if (P > 0)
+    {
+      // TStrings.IndexOfName does not trim
+      UnicodeString Key = Param.SubString(1, P - 1);
+
+      if (SameText(Key, L"ProxyPassword") ||
+          SameText(Key, L"ProxyPasswordEnc") ||
+          SameText(Key, L"TunnelPassword") ||
+          SameText(Key, L"TunnelPasswordPlain"))
+      {
+        Param = Key + L"=" + PasswordMask;
+        Result = true;
+      }
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------
 bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
   TStoredSessionList * StoredSessions, bool & DefaultsOnly, UnicodeString * FileName,
   bool * AProtocolDefined, UnicodeString * MaskedUrl)
@@ -1998,7 +2028,7 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
         PortNumber = FtpPortNumber;
       }
     }
-    if (Options->FindSwitch(L"rawsettings"))
+    if (Options->FindSwitch(RawSettingsOption))
     {
       TStrings * RawSettings = NULL;
       TOptionsStorage * OptionsStorage = NULL;
@@ -2006,7 +2036,7 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
       {
         RawSettings = new TStringList();
 
-        if (Options->FindSwitch(L"rawsettings", RawSettings))
+        if (Options->FindSwitch(RawSettingsOption, RawSettings))
         {
           OptionsStorage = new TOptionsStorage(RawSettings, false);
           ApplyRawSettings(OptionsStorage);
@@ -2974,7 +3004,7 @@ UnicodeString __fastcall TSessionData::GenerateOpenCommandArgs(bool Rtf)
 
   if (RawSettings->Count > 0)
   {
-    AddSwitch(Result, L"rawsettings", Rtf);
+    AddSwitch(Result, RawSettingsOption, Rtf);
 
     for (int Index = 0; Index < RawSettings->Count; Index++)
     {

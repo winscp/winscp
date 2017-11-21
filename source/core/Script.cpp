@@ -2463,6 +2463,7 @@ void __fastcall TManagementScript::MaskPasswordInCommandLine(UnicodeString & Com
   UnicodeString RawParam;
   UnicodeString Separator;
   UnicodeString Separator2;
+  UnicodeString OptionWithParameters;
   bool AnyMaskedParam = false;
 
   TOptions Options;
@@ -2486,17 +2487,31 @@ void __fastcall TManagementScript::MaskPasswordInCommandLine(UnicodeString & Com
       wchar_t SwitchMark;
       if (Options.WasSwitchAdded(Switch, SwitchMark))
       {
+        OptionWithParameters = L"";
         if (TSessionData::IsSensitiveOption(Switch))
         {
           // We should use something like TProgramParams::FormatSwitch here
-          RawParam = FORMAT(L"%s%s=***", (SwitchMark, Switch));
+          RawParam = FORMAT(L"%s%s=%s", (SwitchMark, Switch, PasswordMask));
           AnyMaskedParam = true;
+        }
+        else if (TSessionData::IsOptionWithParameters(Switch))
+        {
+          OptionWithParameters = Switch;
         }
 
         SubCommands = SameText(Switch, COMMAND_SWITCH);
       }
       else
       {
+        if (!OptionWithParameters.IsEmpty())
+        {
+          if (TSessionData::MaskPasswordInOptionParameter(OptionWithParameters, Param))
+          {
+            RawParam = Param;
+            AnyMaskedParam = true;
+          }
+        }
+
         if (Recurse && SubCommands)
         {
           UnicodeString Cmd2 = Param;
