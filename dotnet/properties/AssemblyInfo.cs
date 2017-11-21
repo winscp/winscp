@@ -21,7 +21,7 @@ using System.Runtime.InteropServices;
 
 [assembly: AssemblyVersion(WinSCP.AssemblyConstants.Version)]
 [assembly: AssemblyFileVersion(WinSCP.AssemblyConstants.Version)]
-[assembly: AssemblyInformationalVersionAttribute(WinSCP.AssemblyConstants.ProductVersion)]
+[assembly: AssemblyInformationalVersion(WinSCP.AssemblyConstants.ProductVersion)]
 
 [assembly: CLSCompliant(true)]
 
