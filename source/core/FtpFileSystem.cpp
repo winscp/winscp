@@ -2836,6 +2836,7 @@ void __fastcall TFTPFileSystem::ReadFile(const UnicodeString FileName,
       AFile = new TRemoteDirectoryFile();
       AFile->FullFileName = FileName;
       AFile->FileName = L"";
+      Own = true;
     }
     else
     {
