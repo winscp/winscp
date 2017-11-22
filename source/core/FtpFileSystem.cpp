@@ -2531,7 +2531,20 @@ void __fastcall TFTPFileSystem::ReadFile(const UnicodeString FileName,
     else
     {
       UnicodeString Path = UnixExtractFilePath(FileName);
-      UnicodeString NameOnly = UnixExtractFileName(FileName);
+      UnicodeString NameOnly;
+      int P;
+      bool MVSPath =
+        FMVS && Path.IsEmpty() &&
+        (FileName.SubString(1, 1) == L"'") && (FileName.SubString(FileName.Length(), 1) == L"'") &&
+        ((P = FileName.Pos(L".")) > 0);
+      if (!MVSPath)
+      {
+        NameOnly = UnixExtractFileName(FileName);
+      }
+      else
+      {
+        NameOnly = FileName.SubString(P + 1, FileName.Length() - P - 1);
+      }
       TRemoteFile * AFile = NULL;
       // FZAPI does not have efficient way to read properties of one file.
       // In case we need properties of set of files from the same directory,
@@ -2570,6 +2583,11 @@ void __fastcall TFTPFileSystem::ReadFile(const UnicodeString FileName,
       if (AFile != NULL)
       {
         File = AFile->Duplicate();
+        if (MVSPath)
+        {
+          File->FileName = FileName;
+          File->FullFileName = FileName;
+        }
       }
     }
   }
