@@ -26,7 +26,7 @@
 #include "TBXExtItems.hpp"
 #include <Vcl.AppEvnts.hpp>
 //---------------------------------------------------------------------------
-class TRichEdit20;
+class TEditorRichEdit;
 //---------------------------------------------------------------------------
 class TEditorForm : public TForm
 {
@@ -106,7 +106,7 @@ private:
   TFindDialog * FFindDialog;
   TReplaceDialog * FReplaceDialog;
   bool FCloseAnnounced;
-  TRichEdit20 * EditorMemo;
+  TEditorRichEdit * EditorMemo;
   bool FFormRestored;
   UnicodeString FWindowParams;
   unsigned int FInstance;

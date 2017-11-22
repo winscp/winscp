@@ -15,8 +15,6 @@
 #include <Vcl.StdActns.hpp>
 #include <WinInterface.h>
 //---------------------------------------------------------------------------
-class TRichEdit41;
-//---------------------------------------------------------------------------
 class TGenerateUrlDialog : public TForm
 {
 __published:
@@ -57,7 +55,7 @@ private:
   std::unique_ptr<TStrings> FPaths;
   bool FPathsSample;
   bool FChanging;
-  TRichEdit41 * FResultMemo41;
+  TRichEdit * FResultMemoWithLinks;
   bool FTransfer;
   bool FToRemote;
   bool FMove;

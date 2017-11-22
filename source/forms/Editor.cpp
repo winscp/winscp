@@ -144,10 +144,10 @@ int __fastcall TPreambleFilteringFileStream::Write(
   EXCEPTION;
 }
 //---------------------------------------------------------------------------
-class TRichEdit20 : public TRichEdit
+class TEditorRichEdit : public TNewRichEdit
 {
 public:
-  virtual __fastcall TRichEdit20(TComponent * AOwner);
+  virtual __fastcall TEditorRichEdit(TComponent * AOwner);
 
   bool __fastcall LoadFromStream(TStream * Stream, TEncoding * Encoding, bool & EncodingError);
 
@@ -166,7 +166,6 @@ protected:
   friend unsigned long __stdcall StreamLoad(DWORD_PTR Cookie, unsigned char * Buff, long Read, long * WasRead);
 
   virtual void __fastcall CreateParams(TCreateParams & Params);
-  virtual void __fastcall DestroyWnd();
   void __fastcall Dispatch(void * Message);
   bool __fastcall GetCanRedo();
   void __fastcall SetTabSize(unsigned int TabSize);
@@ -187,8 +186,8 @@ private:
   TColor FFontColor;
 };
 //---------------------------------------------------------------------------
-__fastcall TRichEdit20::TRichEdit20(TComponent * AOwner) :
-  TRichEdit(AOwner),
+__fastcall TEditorRichEdit::TEditorRichEdit(TComponent * AOwner) :
+  TNewRichEdit(AOwner),
   FLibrary(0),
   FTabSize(0),
   FWordWrap(true),
@@ -197,7 +196,7 @@ __fastcall TRichEdit20::TRichEdit20(TComponent * AOwner) :
 {
 }
 //---------------------------------------------------------------------------
-void __fastcall TRichEdit20::ApplyFont()
+void __fastcall TEditorRichEdit::ApplyFont()
 {
   std::unique_ptr<TFont> NewFont(new TFont());
   TWinConfiguration::RestoreFont(FFontConfiguration, NewFont.get());
@@ -214,7 +213,7 @@ void __fastcall TRichEdit20::ApplyFont()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TRichEdit20::SetFormat(
+void __fastcall TEditorRichEdit::SetFormat(
   const TFontConfiguration & FontConfiguration, TColor FontColor, unsigned int TabSize,
   bool AWordWrap)
 {
@@ -258,14 +257,14 @@ void __fastcall TRichEdit20::SetFormat(
 
 }
 //---------------------------------------------------------------------------
-void __fastcall TRichEdit20::ResetFormat()
+void __fastcall TEditorRichEdit::ResetFormat()
 {
   // tabs are paragraph attributes, which default values cannot be set,
   // so we need to reapply them after loading file
   SetTabSize(FTabSize);
 }
 //---------------------------------------------------------------------------
-int __fastcall TRichEdit20::FindText(const UnicodeString SearchStr, int StartPos,
+int __fastcall TEditorRichEdit::FindText(const UnicodeString SearchStr, int StartPos,
   int /*Length*/, TSearchTypes Options, bool Down)
 {
   ::FINDTEXTEX Find;
@@ -282,28 +281,15 @@ int __fastcall TRichEdit20::FindText(const UnicodeString SearchStr, int StartPos
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TRichEdit20::Redo()
+void __fastcall TEditorRichEdit::Redo()
 {
   SendMessage(Handle, EM_REDO, 0, 0);
 }
 //---------------------------------------------------------------------------
-void __fastcall TRichEdit20::CreateParams(TCreateParams & Params)
+void __fastcall TEditorRichEdit::CreateParams(TCreateParams & Params)
 {
-  UnicodeString RichEditModuleName(L"RICHED20.DLL");
-  long int OldError;
+  TNewRichEdit::CreateParams(Params);
 
-  OldError = SetErrorMode(SEM_NOOPENFILEERRORBOX);
-  FLibrary = LoadLibrary(RichEditModuleName.c_str());
-  SetErrorMode(OldError);
-
-  // No fallback, RichEdit 2.0 is available since Windows NT/98
-  if (FLibrary == 0)
-  {
-    throw Exception(FORMAT(L"Cannot load %s", (RichEditModuleName)));
-  }
-
-  TCustomMemo::CreateParams(Params);
-  CreateSubClass(Params, RICHEDIT_CLASS);
   Params.Style = Params.Style |
     (HideScrollBars ? 0 : ES_DISABLENOSCROLL) |
     (HideSelection ? 0 : ES_NOHIDESEL);
@@ -311,17 +297,7 @@ void __fastcall TRichEdit20::CreateParams(TCreateParams & Params)
     ~(CS_HREDRAW | CS_VREDRAW);
 }
 //---------------------------------------------------------------------------
-void __fastcall TRichEdit20::DestroyWnd()
-{
-  TRichEdit::DestroyWnd();
-
-  if (DebugAlwaysTrue(FLibrary != 0))
-  {
-    FreeLibrary(FLibrary);
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall TRichEdit20::WMPaste()
+void __fastcall TEditorRichEdit::WMPaste()
 {
   // override default pasting to prevent inserting formatted text (RTF).
   const wchar_t * Text = NULL;
@@ -396,7 +372,7 @@ static int __fastcall AdjustLineBreaks(unsigned char * Dest, const TBytes & Sour
 struct TStreamLoadInfo
 {
   TRichEditStreamInfo * StreamInfo;
-  TRichEdit20 * RichEdit;
+  TEditorRichEdit * RichEdit;
 };
 //---------------------------------------------------------------------------
 // VCLCOPY Vcl.ComCtrls.pas,
@@ -410,7 +386,7 @@ static unsigned long __stdcall StreamLoad(DWORD_PTR Cookie, unsigned char * Buff
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TRichEdit20::EMStreamIn(TMessage & Message)
+void __fastcall TEditorRichEdit::EMStreamIn(TMessage & Message)
 {
   TEditStream * EditStream = reinterpret_cast<TEditStream *>(Message.LParam);
   EditStream->pfnCallback = &::StreamLoad;
@@ -418,10 +394,10 @@ void __fastcall TRichEdit20::EMStreamIn(TMessage & Message)
   LoadInfo.StreamInfo = reinterpret_cast<TRichEditStreamInfo *>(EditStream->dwCookie);
   LoadInfo.RichEdit = this;
   EditStream->dwCookie = reinterpret_cast<DWORD_PTR>(&LoadInfo);
-  TRichEdit::Dispatch(&Message);
+  TNewRichEdit::Dispatch(&Message);
 }
 //---------------------------------------------------------------------------
-void __fastcall TRichEdit20::Dispatch(void * Message)
+void __fastcall TEditorRichEdit::Dispatch(void * Message)
 {
   TMessage * M = static_cast<TMessage *>(Message);
   switch (M->Msg)
@@ -435,17 +411,17 @@ void __fastcall TRichEdit20::Dispatch(void * Message)
       break;
 
     default:
-      TRichEdit::Dispatch(Message);
+      TNewRichEdit::Dispatch(Message);
       break;
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall TRichEdit20::GetCanRedo()
+bool __fastcall TEditorRichEdit::GetCanRedo()
 {
   return (SendMessage(Handle, EM_CANREDO, 0, 0) != 0);
 }
 //---------------------------------------------------------------------------
-void __fastcall TRichEdit20::SetTabSize(unsigned int TabSize)
+void __fastcall TEditorRichEdit::SetTabSize(unsigned int TabSize)
 {
   DebugAssert(TabSize > 0);
 
@@ -490,7 +466,7 @@ void __fastcall TRichEdit20::SetTabSize(unsigned int TabSize)
   SendMessage(Handle, EM_EXSETSEL, 0, (LPARAM)&CharRange);
 }
 //---------------------------------------------------------------------------
-bool __stdcall TRichEdit20::StreamLoad(
+bool __stdcall TEditorRichEdit::StreamLoad(
   TRichEditStreamInfo * StreamInfo, unsigned char * Buff, long Read, long & WasRead)
 {
   WasRead = 0;
@@ -583,7 +559,7 @@ bool __stdcall TRichEdit20::StreamLoad(
   return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TRichEdit20::LoadFromStream(TStream * Stream, TEncoding * Encoding, bool & EncodingError)
+bool __fastcall TEditorRichEdit::LoadFromStream(TStream * Stream, TEncoding * Encoding, bool & EncodingError)
 {
   FStreamLoadEncodingError = false;
   FStreamLoadError = false;
@@ -669,7 +645,7 @@ __fastcall TEditorForm::TEditorForm(TComponent* Owner)
     // Based on TEncoding.GetANSI.
     FAnsiEncoding = new TMBCSEncoding(GetACP(), MB_ERR_INVALID_CHARS, 0);
   }
-  EditorMemo = new TRichEdit20(this);
+  EditorMemo = new TEditorRichEdit(this);
   EditorMemo->Parent = this;
   EditorMemo->Align = alClient;
   EditorMemo->HideSelection = false;
