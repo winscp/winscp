@@ -2514,8 +2514,6 @@ bool __fastcall TFTPFileSystem::SupportsReadingFile()
 void __fastcall TFTPFileSystem::ReadFile(const UnicodeString FileName,
   TRemoteFile *& File)
 {
-  UnicodeString Path = UnixExtractFilePath(FileName);
-  UnicodeString NameOnly = UnixExtractFileName(FileName);
   TRemoteFile *AFile = NULL;
   bool Own;
   if (SupportsReadingFile())
@@ -2534,6 +2532,8 @@ void __fastcall TFTPFileSystem::ReadFile(const UnicodeString FileName,
     }
     else
     {
+      UnicodeString Path = UnixExtractFilePath(FileName);
+      UnicodeString NameOnly = UnixExtractFileName(FileName);
       // FZAPI does not have efficient way to read properties of one file.
       // In case we need properties of set of files from the same directory,
       // cache the file list for future
