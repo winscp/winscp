@@ -2514,27 +2514,25 @@ bool __fastcall TFTPFileSystem::SupportsReadingFile()
 void __fastcall TFTPFileSystem::ReadFile(const UnicodeString FileName,
   TRemoteFile *& File)
 {
-  TRemoteFile *AFile = NULL;
-  bool Own;
+  File = NULL;
   if (SupportsReadingFile())
   {
-    DoReadFile(FileName, AFile);
-    Own = true;
+    DoReadFile(FileName, File);
   }
   else
   {
     if (IsUnixRootPath(FileName))
     {
       FTerminal->LogEvent(FORMAT(L"%s is a root path", (FileName)));
-      AFile = new TRemoteDirectoryFile();
-      AFile->FullFileName = FileName;
-      AFile->FileName = L"";
-      Own = true;
+      File = new TRemoteDirectoryFile();
+      File->FullFileName = FileName;
+      File->FileName = L"";
     }
     else
     {
       UnicodeString Path = UnixExtractFilePath(FileName);
       UnicodeString NameOnly = UnixExtractFileName(FileName);
+      TRemoteFile * AFile = NULL;
       // FZAPI does not have efficient way to read properties of one file.
       // In case we need properties of set of files from the same directory,
       // cache the file list for future
@@ -2569,18 +2567,17 @@ void __fastcall TFTPFileSystem::ReadFile(const UnicodeString FileName,
         AFile = FFileListCache->FindFile(NameOnly);
       }
 
-      Own = false;
+      if (AFile != NULL)
+      {
+        File = AFile->Duplicate();
+      }
     }
   }
 
-  if (AFile == NULL)
+  if (File == NULL)
   {
-    File = NULL;
     throw Exception(FMTLOAD(FILE_NOT_EXISTS, (FileName)));
   }
-
-  DebugAssert(AFile != NULL);
-  File = Own ? AFile : AFile->Duplicate();
 }
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::ReadSymlink(TRemoteFile * SymlinkFile,
