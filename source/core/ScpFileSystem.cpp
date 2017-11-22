@@ -2275,7 +2275,7 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
     // We can finally use full path here, as we get current path in FileName param
     // (we used to set the file into OperationProgress->FileName, but it collided
     // with progress outputting, particularly for scripting)
-    UnicodeString AbsoluteFileName = FileName;
+    UnicodeString FullFileName = FileName;
 
     try
     {
@@ -2384,8 +2384,8 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
             FTerminal->LogEvent(FORMAT(L"Warning: Remote host set a compound pathname '%s'", (Line)));
           }
 
-          AbsoluteFileName = SourceDir + OnlyFileName;
-          OperationProgress->SetFile(AbsoluteFileName);
+          FullFileName = SourceDir + OnlyFileName;
+          OperationProgress->SetFile(FullFileName);
           OperationProgress->SetTransferSize(TSize);
         }
         catch (Exception &E)
@@ -2404,16 +2404,16 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
         }
 
         bool Dir = (Ctrl == L'D');
-        UnicodeString BaseFileName = FTerminal->GetBaseFileName(AbsoluteFileName);
+        UnicodeString BaseFileName = FTerminal->GetBaseFileName(FullFileName);
         if (!CopyParam->AllowTransfer(BaseFileName, osRemote, Dir, MaskParams))
         {
           FTerminal->LogEvent(FORMAT(L"File \"%s\" excluded from transfer",
-            (AbsoluteFileName)));
+            (FullFileName)));
           SkipConfirmed = true;
           SCPError(L"", false);
         }
 
-        if (CopyParam->SkipTransfer(AbsoluteFileName, Dir))
+        if (CopyParam->SkipTransfer(FullFileName, Dir))
         {
           SkipConfirmed = true;
           SCPError(L"", false);
@@ -2456,7 +2456,7 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
         else if (Ctrl == L'C')
         {
           TDownloadSessionAction Action(FTerminal->ActionLog);
-          Action.FileName(AbsoluteFileName);
+          Action.FileName(FTerminal->AbsolutePath(FullFileName, true));
 
           try
           {
@@ -2642,7 +2642,7 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
       {
         TSuspendFileOperationProgress Suspend(OperationProgress);
         TQueryParams Params(qpAllowContinueOnError);
-        if (FTerminal->QueryUserException(FMTLOAD(COPY_ERROR, (AbsoluteFileName)),
+        if (FTerminal->QueryUserException(FMTLOAD(COPY_ERROR, (FullFileName)),
               &E, qaOK | qaAbort, &Params, qtError) == qaAbort)
         {
           OperationProgress->SetCancel(csCancel);
