@@ -2486,7 +2486,7 @@ UnicodeString __fastcall DoEncodeUrl(UnicodeString S, bool EncodeSlash)
     wchar_t C = S[Index];
     if (IsLetter(C) ||
         IsDigit(C) ||
-        (C == L'_') || (C == L'-') || (C == L'.') ||
+        (C == L'_') || (C == L'-') || (C == L'.') || (C == L'*') ||
         ((C == L'/') && !EncodeSlash))
     {
       Index++;

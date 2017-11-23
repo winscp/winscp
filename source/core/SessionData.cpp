@@ -1652,6 +1652,30 @@ bool __fastcall TSessionData::MaskPasswordInOptionParameter(const UnicodeString 
   return Result;
 }
 //---------------------------------------------------------------------
+void __fastcall TSessionData::MaskPasswords()
+{
+  if (!Password.IsEmpty())
+  {
+    Password = PasswordMask;
+  }
+  if (!NewPassword.IsEmpty())
+  {
+    NewPassword = PasswordMask;
+  }
+  if (!ProxyPassword.IsEmpty())
+  {
+    ProxyPassword = PasswordMask;
+  }
+  if (!TunnelPassword.IsEmpty())
+  {
+    TunnelPassword = PasswordMask;
+  }
+  if (!Passphrase.IsEmpty())
+  {
+    Passphrase = PasswordMask;
+  }
+}
+//---------------------------------------------------------------------
 bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
   TStoredSessionList * StoredSessions, bool & DefaultsOnly, UnicodeString * FileName,
   bool * AProtocolDefined, UnicodeString * MaskedUrl)

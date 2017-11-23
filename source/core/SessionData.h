@@ -454,6 +454,7 @@ public:
   bool __fastcall HasAnySessionPassword();
   bool __fastcall HasAnyPassword();
   void __fastcall ClearSessionPasswords();
+  void __fastcall MaskPasswords();
   void __fastcall Remove();
   void __fastcall CacheHostKeyIfNotCached();
   virtual void __fastcall Assign(TPersistent * Source);
