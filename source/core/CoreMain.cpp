@@ -12,6 +12,7 @@
 #include <DateUtils.hpp>
 #include "FileZillaIntf.h"
 #include "NeonIntf.h"
+#include "TextsCore.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -24,6 +25,44 @@ TQueryButtonAlias::TQueryButtonAlias()
   GroupWith = -1;
   ElevationRequired = false;
   MenuButton = false;
+}
+//---------------------------------------------------------------------------
+TQueryButtonAlias TQueryButtonAlias::CreateYesToAllGrouppedWithYes()
+{
+  TQueryButtonAlias Result;
+  Result.Button = qaYesToAll;
+  Result.GroupWith = qaYes;
+  Result.GrouppedShiftState = TShiftState() << ssShift;
+  return Result;
+}
+//---------------------------------------------------------------------------
+TQueryButtonAlias TQueryButtonAlias::CreateNoToAllGrouppedWithNo()
+{
+  TQueryButtonAlias Result;
+  Result.Button = qaNoToAll;
+  Result.GroupWith = qaNo;
+  Result.GrouppedShiftState = TShiftState() << ssShift;
+  return Result;
+}
+//---------------------------------------------------------------------------
+TQueryButtonAlias TQueryButtonAlias::CreateAllAsYesToNewerGrouppedWithYes()
+{
+  TQueryButtonAlias Result;
+  Result.Button = qaAll;
+  Result.Alias = LoadStr(YES_TO_NEWER_BUTTON);
+  Result.GroupWith = qaYes;
+  Result.GrouppedShiftState = TShiftState() << ssCtrl;
+  return Result;
+}
+//---------------------------------------------------------------------------
+TQueryButtonAlias TQueryButtonAlias::CreateIgnoreAsRenameGrouppedWithNo()
+{
+  TQueryButtonAlias Result;
+  Result.Button = qaIgnore;
+  Result.Alias = LoadStr(RENAME_BUTTON);
+  Result.GroupWith = qaNo;
+  Result.GrouppedShiftState = TShiftState() << ssCtrl;
+  return Result;
 }
 //---------------------------------------------------------------------------
 TQueryParams::TQueryParams(unsigned int AParams, UnicodeString AHelpKeyword)
