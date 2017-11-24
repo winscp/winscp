@@ -4295,7 +4295,7 @@ void __fastcall TSFTPFileSystem::SFTPConfirmOverwrite(
     Answer = FTerminal->ConfirmFileOverwrite(
       SourceFullFileName, TargetFileName, FileParams,
       Answers, &QueryParams,
-      OperationProgress->Side == osLocal ? osRemote : osLocal,
+      ReverseOperationSide(OperationProgress->Side),
       CopyParam, Params, OperationProgress);
   }
 

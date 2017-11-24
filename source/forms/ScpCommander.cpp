@@ -2069,7 +2069,7 @@ void __fastcall TScpCommanderForm::DoFocusRemotePath(TTerminal * Terminal, const
 TOperationSide __fastcall TScpCommanderForm::GetOtherSize(TOperationSide Side)
 {
   Side = GetSide(Side);
-  return ((Side == osLocal) ? osRemote : osLocal);
+  return ReverseOperationSide(Side);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::HistoryGo(TOperationSide Side, int Index)

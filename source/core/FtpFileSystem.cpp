@@ -1358,7 +1358,7 @@ bool __fastcall TFTPFileSystem::ConfirmOverwrite(
       TSuspendFileOperationProgress Suspend(OperationProgress);
       Answer = FTerminal->ConfirmFileOverwrite(
         SourceFullFileName, TargetFileName, FileParams, Answers, &QueryParams,
-        OperationProgress->Side == osLocal ? osRemote : osLocal,
+        ReverseOperationSide(OperationProgress->Side),
         CopyParam, Params, OperationProgress);
     }
   }
