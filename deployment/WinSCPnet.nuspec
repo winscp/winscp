@@ -23,7 +23,7 @@ The NuGet package includes the assembly itself and a required WinSCP executable.
   </metadata>
   <files>
     <file src="$DotNetBuildConfigDir$\WinSCPnet.dll" target="lib"/>
-    <file src="$BuildConfigDir$\WinSCP.exe" target="content"/>
-    <file src="install.ps1" target="tools"/>
+    <file src="$BuildConfigDir$\WinSCP.exe" target="tools"/>
+    <file src="WinSCP.targets" target="build"/>
   </files>
 </package>
