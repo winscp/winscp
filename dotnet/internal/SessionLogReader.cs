@@ -131,6 +131,8 @@ namespace WinSCP
                         // (at least top-level <session/> tag is not closed),
                         // so we swallow the parsing errors here.
                         Session.Logger.WriteLine("Error parsing session log file, but it is not closed yet, will retry");
+                        Session.Logger.WriteException(e);
+                        Session.CheckForTimeout();
                         result = false;
                     }
                     else
