@@ -121,37 +121,19 @@ namespace WinSCP
                 {
                     Cleanup();
 
-                    // We hope this code is not needed anymore.
-                    // keeping it just in case the XmlLogReader by passes
-                    // our override of PatientFileStream.Read using other read method.
-#if !DEBUG
-                    if (!_closed)
+                    // check if the the root cause was session abort
+                    Session.CheckForTimeout();
+                    LogContents();
+                    string message = "Error parsing session log file";
+                    // This is possibly a race condition, as we may not have processed the event with the error yet
+                    // The ExeSessionProcess loops every 100ms
+                    Thread.Sleep(200);
+                    string s = Session.GetErrorOutputMessage();
+                    if (!string.IsNullOrEmpty(s))
                     {
-                        // If log was not closed, it is likely the XML is not well-formed
-                        // (at least top-level <session/> tag is not closed),
-                        // so we swallow the parsing errors here.
-                        Session.Logger.WriteLine("Error parsing session log file, but it is not closed yet, will retry");
-                        Session.Logger.WriteException(e);
-                        Session.CheckForTimeout();
-                        result = false;
+                        message += " - " + s;
                     }
-                    else
-#endif
-                    {
-                        // check if the the root cause was session abort
-                        Session.CheckForTimeout();
-                        LogContents();
-                        string message = "Error parsing session log file";
-                        // This is possibly a race condition, as we may not have processed the event with the error yet
-                        // The ExeSessionProcess loops every 100ms
-                        Thread.Sleep(200);
-                        string s = Session.GetErrorOutputMessage();
-                        if (!string.IsNullOrEmpty(s))
-                        {
-                            message += " - " + s;
-                        }
-                        throw Session.Logger.WriteException(new SessionLocalException(Session, message, e));
-                    }
+                    throw Session.Logger.WriteException(new SessionLocalException(Session, message, e));
                 }
 
                 if (!result && !_closed)
