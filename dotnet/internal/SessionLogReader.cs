@@ -230,7 +230,9 @@ namespace WinSCP
 
             Session.Logger.WriteLine("Log opened");
 
-            _reader = XmlReader.Create(_stream);
+            // Allow control characters in log
+            var settings = new XmlReaderSettings() { CheckCharacters = false };
+            _reader = XmlReader.Create(_stream, settings);
 
             int skip = _position;
             Session.Logger.WriteLine("Skipping {0} nodes", skip);
