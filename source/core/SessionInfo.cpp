@@ -21,9 +21,43 @@ UnicodeString __fastcall DoXmlEscape(UnicodeString Str, bool NewLine)
 {
   for (int i = 1; i <= Str.Length(); i++)
   {
-    const wchar_t * Repl = NULL;
+    UnicodeString Repl;
     switch (Str[i])
     {
+      case L'\x00': // \0 Is not valid in XML anyway
+      case L'\x01':
+      case L'\x02':
+      case L'\x03':
+      case L'\x04':
+      case L'\x05':
+      case L'\x06':
+      case L'\x07':
+      case L'\x08':
+      // \n is handled below
+      case L'\x0B':
+      case L'\x0C':
+      // \r is handled below
+      case L'\x0E':
+      case L'\x0F':
+      case L'\x10':
+      case L'\x11':
+      case L'\x12':
+      case L'\x13':
+      case L'\x14':
+      case L'\x15':
+      case L'\x16':
+      case L'\x17':
+      case L'\x18':
+      case L'\x19':
+      case L'\x1A':
+      case L'\x1B':
+      case L'\x1C':
+      case L'\x1D':
+      case L'\x1E':
+      case L'\x1F':
+        Repl = L"#x" + ByteToHex((unsigned char)Str[i]) + L";";
+        break;
+
       case L'&':
         Repl = L"amp;";
         break;
@@ -53,11 +87,11 @@ UnicodeString __fastcall DoXmlEscape(UnicodeString Str, bool NewLine)
         break;
     }
 
-    if (Repl != NULL)
+    if (!Repl.IsEmpty())
     {
       Str[i] = L'&';
       Str.Insert(Repl, i + 1);
-      i += wcslen(Repl);
+      i += Repl.Length();
     }
   }
   return Str;
