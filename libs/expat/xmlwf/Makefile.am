@@ -28,8 +28,6 @@
 # OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 # USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-AM_CPPFLAGS = -I$(srcdir)/../lib
-
 bin_PROGRAMS = xmlwf
 
 xmlwf_LDADD = ../lib/libexpat.la
@@ -38,6 +36,15 @@ xmlwf_SOURCES = \
     xmlfile.c \
     codepage.c \
     @FILEMAP@.c
+
+xmlwf_CPPFLAGS = -I$(srcdir)/../lib
+
+if MINGW
+if UNICODE
+xmlwf_CPPFLAGS += -mwindows
+xmlwf_LDFLAGS = -municode
+endif
+endif
 
 EXTRA_DIST = \
     codepage.h \

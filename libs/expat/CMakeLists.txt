@@ -6,7 +6,7 @@ project(expat)
 cmake_minimum_required(VERSION 2.6)
 set(PACKAGE_BUGREPORT "expat-bugs@libexpat.org")
 set(PACKAGE_NAME "expat")
-set(PACKAGE_VERSION "2.2.4")
+set(PACKAGE_VERSION "2.2.5")
 set(PACKAGE_STRING "${PACKAGE_NAME} ${PACKAGE_VERSION}")
 set(PACKAGE_TARNAME "${PACKAGE_NAME}")
 
@@ -18,7 +18,7 @@ endif()
 if(MSVC OR NOT BUILD_tools_default)
     set(BUILD_doc_default OFF)
 else()
-    find_program(DOCBOOK_TO_MAN NAMES docbook2x-man)
+    find_program(DOCBOOK_TO_MAN NAMES docbook2x-man docbook2man docbook-to-man)
     if(DOCBOOK_TO_MAN)
         set(BUILD_doc_default ON)
     else()
@@ -113,7 +113,7 @@ if(USE_libbsd)
 endif()
 
 set(LIBCURRENT 7)   # sync
-set(LIBREVISION 6)  # with
+set(LIBREVISION 7)  # with
 set(LIBAGE 6)       # configure.ac!
 math(EXPR LIBCURRENT_MINUS_AGE "${LIBCURRENT} - ${LIBAGE}")
 
@@ -155,13 +155,7 @@ if(BUILD_tools)
     target_link_libraries(xmlwf expat)
     expat_install(TARGETS xmlwf DESTINATION bin)
     if(BUILD_doc)
-        if(CMAKE_GENERATOR STREQUAL "Unix Makefiles")
-            set(make_command "$(MAKE)")
-        else()
-            set(make_command "make")
-        endif()
-
-        add_custom_command(TARGET expat PRE_BUILD COMMAND "${make_command}" -f "${PROJECT_SOURCE_DIR}/doc/doc.mk" -C "${PROJECT_SOURCE_DIR}/doc" xmlwf.1 "DOCBOOK_TO_MAN=${DOCBOOK_TO_MAN}")
+        add_custom_command(TARGET expat PRE_BUILD COMMAND "${DOCBOOK_TO_MAN}" "${PROJECT_SOURCE_DIR}/doc/xmlwf.xml" && mv "XMLWF.1" "${PROJECT_SOURCE_DIR}/doc/xmlwf.1")
         expat_install(FILES "${PROJECT_SOURCE_DIR}/doc/xmlwf.1" DESTINATION share/man/man1)
     endif()
 endif()
@@ -178,12 +172,12 @@ endif(BUILD_examples)
 
 if(BUILD_tests)
     ## these are unittests that can be run on any platform
-    add_executable(runtests tests/runtests.c tests/chardata.c tests/minicheck.c tests/memcheck.c)
+    add_executable(runtests tests/runtests.c tests/chardata.c tests/structdata.c tests/minicheck.c tests/memcheck.c)
     set_property(TARGET runtests PROPERTY RUNTIME_OUTPUT_DIRECTORY tests)
     target_link_libraries(runtests expat)
     add_test(runtests tests/runtests)
 
-    add_executable(runtestspp tests/runtestspp.cpp tests/chardata.c tests/minicheck.c tests/memcheck.c)
+    add_executable(runtestspp tests/runtestspp.cpp tests/chardata.c tests/structdata.c tests/minicheck.c tests/memcheck.c)
     set_property(TARGET runtestspp PROPERTY RUNTIME_OUTPUT_DIRECTORY tests)
     target_link_libraries(runtestspp expat)
     add_test(runtestspp tests/runtestspp)

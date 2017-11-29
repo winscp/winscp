@@ -206,6 +206,7 @@ CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
 DLLTOOL = @DLLTOOL@
+DOCBOOK_TO_MAN = @DOCBOOK_TO_MAN@
 DSYMUTIL = @DSYMUTIL@
 DUMPBIN = @DUMPBIN@
 ECHO_C = @ECHO_C@
@@ -311,7 +312,6 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 dist_man_MANS = xmlwf.1
 EXTRA_DIST = \
-    doc.mk \
     expat.png \
     reference.html \
     style.css \
@@ -559,8 +559,11 @@ uninstall-man: uninstall-man1
 .PRECIOUS: Makefile
 
 
-xmlwf.1: doc.mk xmlwf.xml
-	$(MAKE) -f $(srcdir)/doc.mk xmlwf.1 srcdir=$(srcdir)
+xmlwf.1: xmlwf.xml
+@WITH_DOCBOOK_TRUE@	$(DOCBOOK_TO_MAN) $<
+@WITH_DOCBOOK_TRUE@	mv XMLWF.1 $@
+@WITH_DOCBOOK_FALSE@	@echo 'ERROR: Configure with --with-docbook for "make dist".' 1>&2
+@WITH_DOCBOOK_FALSE@	@false
 
 # https://www.gnu.org/software/automake/manual/automake.html#What-Gets-Cleaned
 .PHONY: clean-local
@@ -568,7 +571,7 @@ clean-local: clean-local-check
 
 .PHONY: clean-local-check
 clean-local-check:
-	$(MAKE) -f $(srcdir)/doc.mk clean
+	$(RM) xmlwf.1
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

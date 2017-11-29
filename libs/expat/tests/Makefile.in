@@ -142,8 +142,8 @@ am__v_AR_0 = @echo "  AR      " $@;
 am__v_AR_1 = 
 libruntests_a_AR = $(AR) $(ARFLAGS)
 libruntests_a_LIBADD =
-am_libruntests_a_OBJECTS = chardata.$(OBJEXT) memcheck.$(OBJEXT) \
-	minicheck.$(OBJEXT)
+am_libruntests_a_OBJECTS = chardata.$(OBJEXT) structdata.$(OBJEXT) \
+	memcheck.$(OBJEXT) minicheck.$(OBJEXT)
 libruntests_a_OBJECTS = $(am_libruntests_a_OBJECTS)
 am_runtests_OBJECTS = runtests.$(OBJEXT)
 runtests_OBJECTS = $(am_runtests_OBJECTS)
@@ -505,6 +505,7 @@ CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
 DLLTOOL = @DLLTOOL@
+DOCBOOK_TO_MAN = @DOCBOOK_TO_MAN@
 DSYMUTIL = @DSYMUTIL@
 DUMPBIN = @DUMPBIN@
 ECHO_C = @ECHO_C@
@@ -616,6 +617,7 @@ noinst_LIBRARIES = libruntests.a
 LOG_DRIVER = $(srcdir)/../test-driver-wrapper.sh
 libruntests_a_SOURCES = \
     chardata.c \
+    structdata.c \
     memcheck.c \
     minicheck.c
 
@@ -629,9 +631,11 @@ runtests_LDADD = libruntests.a ../lib/libexpat.la
 runtestspp_LDADD = libruntests.a ../lib/libexpat.la
 EXTRA_DIST = \
     chardata.h \
+    structdata.h \
     minicheck.h \
     memcheck.h \
     README.txt \
+    udiffer.py \
     xmltest.log.expected \
     xmltest.sh
 
@@ -705,6 +709,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/minicheck.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/runtests.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/runtestspp.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/structdata.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

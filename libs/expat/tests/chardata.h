@@ -51,11 +51,7 @@ typedef struct {
 
 void CharData_Init(CharData *storage);
 
-void CharData_AppendString(CharData *storage, const char *s);
-
 void CharData_AppendXMLChars(CharData *storage, const XML_Char *s, int len);
-
-int CharData_CheckString(CharData *storage, const char *s);
 
 int CharData_CheckXMLChars(CharData *storage, const XML_Char *s);
 

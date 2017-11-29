@@ -119,6 +119,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 bin_PROGRAMS = xmlwf$(EXEEXT)
+@MINGW_TRUE@@UNICODE_TRUE@am__append_1 = -mwindows
 subdir = xmlwf
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/libtool.m4 \
@@ -135,14 +136,17 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_xmlwf_OBJECTS = xmlwf.$(OBJEXT) xmlfile.$(OBJEXT) \
-	codepage.$(OBJEXT) @FILEMAP@.$(OBJEXT)
+am_xmlwf_OBJECTS = xmlwf-xmlwf.$(OBJEXT) xmlwf-xmlfile.$(OBJEXT) \
+	xmlwf-codepage.$(OBJEXT) xmlwf-@FILEMAP@.$(OBJEXT)
 xmlwf_OBJECTS = $(am_xmlwf_OBJECTS)
 xmlwf_DEPENDENCIES = ../lib/libexpat.la
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
+xmlwf_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(xmlwf_LDFLAGS) $(LDFLAGS) -o $@
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -228,6 +232,7 @@ CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
 DLLTOOL = @DLLTOOL@
+DOCBOOK_TO_MAN = @DOCBOOK_TO_MAN@
 DSYMUTIL = @DSYMUTIL@
 DUMPBIN = @DUMPBIN@
 ECHO_C = @ECHO_C@
@@ -331,7 +336,6 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-AM_CPPFLAGS = -I$(srcdir)/../lib
 xmlwf_LDADD = ../lib/libexpat.la
 xmlwf_SOURCES = \
     xmlwf.c \
@@ -339,6 +343,8 @@ xmlwf_SOURCES = \
     codepage.c \
     @FILEMAP@.c
 
+xmlwf_CPPFLAGS = -I$(srcdir)/../lib $(am__append_1)
+@MINGW_TRUE@@UNICODE_TRUE@xmlwf_LDFLAGS = -municode
 EXTRA_DIST = \
     codepage.h \
     ct.c \
@@ -438,7 +444,7 @@ clean-binPROGRAMS:
 
 xmlwf$(EXEEXT): $(xmlwf_OBJECTS) $(xmlwf_DEPENDENCIES) $(EXTRA_xmlwf_DEPENDENCIES) 
 	@rm -f xmlwf$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(xmlwf_OBJECTS) $(xmlwf_LDADD) $(LIBS)
+	$(AM_V_CCLD)$(xmlwf_LINK) $(xmlwf_OBJECTS) $(xmlwf_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -446,10 +452,10 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/@FILEMAP@.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/codepage.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xmlfile.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xmlwf.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xmlwf-@FILEMAP@.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xmlwf-codepage.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xmlwf-xmlfile.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xmlwf-xmlwf.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -471,6 +477,62 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
+
+xmlwf-xmlwf.o: xmlwf.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(xmlwf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT xmlwf-xmlwf.o -MD -MP -MF $(DEPDIR)/xmlwf-xmlwf.Tpo -c -o xmlwf-xmlwf.o `test -f 'xmlwf.c' || echo '$(srcdir)/'`xmlwf.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/xmlwf-xmlwf.Tpo $(DEPDIR)/xmlwf-xmlwf.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='xmlwf.c' object='xmlwf-xmlwf.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(xmlwf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o xmlwf-xmlwf.o `test -f 'xmlwf.c' || echo '$(srcdir)/'`xmlwf.c
+
+xmlwf-xmlwf.obj: xmlwf.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(xmlwf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT xmlwf-xmlwf.obj -MD -MP -MF $(DEPDIR)/xmlwf-xmlwf.Tpo -c -o xmlwf-xmlwf.obj `if test -f 'xmlwf.c'; then $(CYGPATH_W) 'xmlwf.c'; else $(CYGPATH_W) '$(srcdir)/xmlwf.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/xmlwf-xmlwf.Tpo $(DEPDIR)/xmlwf-xmlwf.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='xmlwf.c' object='xmlwf-xmlwf.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(xmlwf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o xmlwf-xmlwf.obj `if test -f 'xmlwf.c'; then $(CYGPATH_W) 'xmlwf.c'; else $(CYGPATH_W) '$(srcdir)/xmlwf.c'; fi`
+
+xmlwf-xmlfile.o: xmlfile.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(xmlwf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT xmlwf-xmlfile.o -MD -MP -MF $(DEPDIR)/xmlwf-xmlfile.Tpo -c -o xmlwf-xmlfile.o `test -f 'xmlfile.c' || echo '$(srcdir)/'`xmlfile.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/xmlwf-xmlfile.Tpo $(DEPDIR)/xmlwf-xmlfile.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='xmlfile.c' object='xmlwf-xmlfile.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(xmlwf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o xmlwf-xmlfile.o `test -f 'xmlfile.c' || echo '$(srcdir)/'`xmlfile.c
+
+xmlwf-xmlfile.obj: xmlfile.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(xmlwf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT xmlwf-xmlfile.obj -MD -MP -MF $(DEPDIR)/xmlwf-xmlfile.Tpo -c -o xmlwf-xmlfile.obj `if test -f 'xmlfile.c'; then $(CYGPATH_W) 'xmlfile.c'; else $(CYGPATH_W) '$(srcdir)/xmlfile.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/xmlwf-xmlfile.Tpo $(DEPDIR)/xmlwf-xmlfile.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='xmlfile.c' object='xmlwf-xmlfile.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(xmlwf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o xmlwf-xmlfile.obj `if test -f 'xmlfile.c'; then $(CYGPATH_W) 'xmlfile.c'; else $(CYGPATH_W) '$(srcdir)/xmlfile.c'; fi`
+
+xmlwf-codepage.o: codepage.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(xmlwf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT xmlwf-codepage.o -MD -MP -MF $(DEPDIR)/xmlwf-codepage.Tpo -c -o xmlwf-codepage.o `test -f 'codepage.c' || echo '$(srcdir)/'`codepage.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/xmlwf-codepage.Tpo $(DEPDIR)/xmlwf-codepage.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='codepage.c' object='xmlwf-codepage.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(xmlwf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o xmlwf-codepage.o `test -f 'codepage.c' || echo '$(srcdir)/'`codepage.c
+
+xmlwf-codepage.obj: codepage.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(xmlwf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT xmlwf-codepage.obj -MD -MP -MF $(DEPDIR)/xmlwf-codepage.Tpo -c -o xmlwf-codepage.obj `if test -f 'codepage.c'; then $(CYGPATH_W) 'codepage.c'; else $(CYGPATH_W) '$(srcdir)/codepage.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/xmlwf-codepage.Tpo $(DEPDIR)/xmlwf-codepage.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='codepage.c' object='xmlwf-codepage.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(xmlwf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o xmlwf-codepage.obj `if test -f 'codepage.c'; then $(CYGPATH_W) 'codepage.c'; else $(CYGPATH_W) '$(srcdir)/codepage.c'; fi`
+
+xmlwf-@FILEMAP@.o: @FILEMAP@.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(xmlwf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT xmlwf-@FILEMAP@.o -MD -MP -MF $(DEPDIR)/xmlwf-@FILEMAP@.Tpo -c -o xmlwf-@FILEMAP@.o `test -f '@FILEMAP@.c' || echo '$(srcdir)/'`@FILEMAP@.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/xmlwf-@FILEMAP@.Tpo $(DEPDIR)/xmlwf-@FILEMAP@.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='@FILEMAP@.c' object='xmlwf-@FILEMAP@.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(xmlwf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o xmlwf-@FILEMAP@.o `test -f '@FILEMAP@.c' || echo '$(srcdir)/'`@FILEMAP@.c
+
+xmlwf-@FILEMAP@.obj: @FILEMAP@.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(xmlwf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT xmlwf-@FILEMAP@.obj -MD -MP -MF $(DEPDIR)/xmlwf-@FILEMAP@.Tpo -c -o xmlwf-@FILEMAP@.obj `if test -f '@FILEMAP@.c'; then $(CYGPATH_W) '@FILEMAP@.c'; else $(CYGPATH_W) '$(srcdir)/@FILEMAP@.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/xmlwf-@FILEMAP@.Tpo $(DEPDIR)/xmlwf-@FILEMAP@.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='@FILEMAP@.c' object='xmlwf-@FILEMAP@.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(xmlwf_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o xmlwf-@FILEMAP@.obj `if test -f '@FILEMAP@.c'; then $(CYGPATH_W) '@FILEMAP@.c'; else $(CYGPATH_W) '$(srcdir)/@FILEMAP@.c'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo

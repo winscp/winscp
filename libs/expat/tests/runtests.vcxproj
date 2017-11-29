@@ -128,11 +128,13 @@
     <ClCompile Include="minicheck.c" />
     <ClCompile Include="memcheck.c" />
     <ClCompile Include="runtests.c" />
+    <ClCompile Include="structdata.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="chardata.h" />
     <ClInclude Include="minicheck.h" />
     <ClInclude Include="memcheck.h" />
+    <ClInclude Include="structdata.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -30,8 +30,14 @@
 
 dist_man_MANS = xmlwf.1
 
-xmlwf.1: doc.mk xmlwf.xml
-	$(MAKE) -f $(srcdir)/doc.mk xmlwf.1 srcdir=$(srcdir)
+xmlwf.1: xmlwf.xml
+if WITH_DOCBOOK
+	$(DOCBOOK_TO_MAN) $<
+	mv XMLWF.1 $@
+else
+	@echo 'ERROR: Configure with --with-docbook for "make dist".' 1>&2
+	@false
+endif
 
 # https://www.gnu.org/software/automake/manual/automake.html#What-Gets-Cleaned
 .PHONY: clean-local
@@ -39,10 +45,9 @@ clean-local: clean-local-check
 
 .PHONY: clean-local-check
 clean-local-check:
-	$(MAKE) -f $(srcdir)/doc.mk clean
+	$(RM) xmlwf.1
 
 EXTRA_DIST = \
-    doc.mk \
     expat.png \
     reference.html \
     style.css \

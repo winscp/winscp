@@ -31,7 +31,7 @@
 */
 
 #ifdef HAVE_EXPAT_CONFIG_H
-#include <expat_config.h>
+# include <expat_config.h>
 #endif
 #include "minicheck.h"
 
@@ -61,25 +61,6 @@ CharData_Init(CharData *storage)
 }
 
 void
-CharData_AppendString(CharData *storage, const char *s)
-{
-    int maxchars = sizeof(storage->data) / sizeof(storage->data[0]);
-    int len;
-
-    assert(s != NULL);
-    len = strlen(s);
-    if (storage->count < 0)
-        storage->count = 0;
-    if ((len + storage->count) > maxchars) {
-        len = (maxchars - storage->count);
-    }
-    if (len + storage->count < (int)sizeof(storage->data)) {
-        memcpy(storage->data + storage->count, s, len);
-        storage->count += len;
-    }
-}
-
-void
 CharData_AppendXMLChars(CharData *storage, const XML_Char *s, int len)
 {
     int maxchars;
@@ -99,35 +80,6 @@ CharData_AppendXMLChars(CharData *storage, const XML_Char *s, int len)
                len * sizeof(storage->data[0]));
         storage->count += len;
     }
-}
-
-int
-CharData_CheckString(CharData *storage, const char *expected)
-{
-    char buffer[4096];
-    int len;
-    int count;
-
-    assert(storage != NULL);
-    assert(expected != NULL);
-    count = (storage->count < 0) ? 0 : storage->count;
-    len = strlen(expected);
-    if (len != count) {
-        if (sizeof(XML_Char) == 1)
-            sprintf(buffer, "wrong number of data characters:"
-                    " got %d, expected %d:\n%s", count, len, storage->data);
-        else
-            sprintf(buffer,
-                    "wrong number of data characters: got %d, expected %d",
-                    count, len);
-        fail(buffer);
-        return 0;
-    }
-    if (memcmp(expected, storage->data, len) != 0) {
-        fail("got bad data bytes");
-        return 0;
-    }
-    return 1;
 }
 
 int

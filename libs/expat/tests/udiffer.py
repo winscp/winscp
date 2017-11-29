@@ -1,4 +1,4 @@
-#
+#! /usr/bin/env python3
 #                          __  __            _
 #                       ___\ \/ /_ __   __ _| |_
 #                      / _ \\  /| '_ \ / _` | __|
@@ -28,39 +28,35 @@
 # OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 # USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-SUBDIRS = . benchmark
+import argparse
+import difflib
+import sys
 
-AM_CPPFLAGS = -I$(srcdir)/../lib
 
-noinst_LIBRARIES = libruntests.a
+def _read_lines(filename):
+    try:
+        with open(filename) as f:
+            return f.readlines()
+    except UnicodeDecodeError:
+        with open(filename, encoding='utf_16') as f:
+            return f.readlines()
 
-check_PROGRAMS = runtests runtestspp
-TESTS = runtests runtestspp
 
-# To support MinGW and Non-MinGW at the same time:
-LOG_DRIVER = $(srcdir)/../test-driver-wrapper.sh
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('first', metavar='FILE')
+    parser.add_argument('second', metavar='FILE')
+    config = parser.parse_args()
 
-libruntests_a_SOURCES = \
-    chardata.c \
-    structdata.c \
-    memcheck.c \
-    minicheck.c
+    first = _read_lines(config.first)
+    second = _read_lines(config.second)
 
-runtests_SOURCES = \
-    runtests.c
+    diffs = list(difflib.unified_diff(first, second, fromfile=config.first,
+                                      tofile=config.second))
+    if diffs:
+        sys.stdout.writelines(diffs)
+        sys.exit(1)
 
-runtestspp_SOURCES = \
-    runtestspp.cpp
 
-runtests_LDADD = libruntests.a ../lib/libexpat.la
-runtestspp_LDADD = libruntests.a ../lib/libexpat.la
-
-EXTRA_DIST = \
-    chardata.h \
-    structdata.h \
-    minicheck.h \
-    memcheck.h \
-    README.txt \
-    udiffer.py \
-    xmltest.log.expected \
-    xmltest.sh
+if __name__ == '__main__':
+    main()

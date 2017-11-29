@@ -36,13 +36,19 @@
 #include <expat.h>
 
 #ifdef XML_LARGE_SIZE
-#if defined(XML_USE_MSC_EXTENSIONS) && _MSC_VER < 1400
-#define XML_FMT_INT_MOD "I64"
+# if defined(XML_USE_MSC_EXTENSIONS) && _MSC_VER < 1400
+#  define XML_FMT_INT_MOD "I64"
+# else
+#  define XML_FMT_INT_MOD "ll"
+# endif
 #else
-#define XML_FMT_INT_MOD "ll"
+# define XML_FMT_INT_MOD "l"
 #endif
+
+#ifdef XML_UNICODE_WCHAR_T
+# define XML_FMT_STR "ls"
 #else
-#define XML_FMT_INT_MOD "l"
+# define XML_FMT_STR "s"
 #endif
 
 #define BUFFSIZE        8192
@@ -52,7 +58,7 @@ char Buff[BUFFSIZE];
 int Depth;
 
 static void XMLCALL
-start(void *data, const char *el, const char **attr)
+start(void *data, const XML_Char *el, const XML_Char **attr)
 {
   int i;
   (void)data;
@@ -60,10 +66,10 @@ start(void *data, const char *el, const char **attr)
   for (i = 0; i < Depth; i++)
     printf("  ");
 
-  printf("%s", el);
+  printf("%" XML_FMT_STR, el);
 
   for (i = 0; attr[i]; i += 2) {
-    printf(" %s='%s'", attr[i], attr[i + 1]);
+    printf(" %" XML_FMT_STR "='%" XML_FMT_STR "'", attr[i], attr[i + 1]);
   }
 
   printf("\n");
@@ -71,7 +77,7 @@ start(void *data, const char *el, const char **attr)
 }
 
 static void XMLCALL
-end(void *data, const char *el)
+end(void *data, const XML_Char *el)
 {
   (void)data;
   (void)el;
@@ -105,7 +111,8 @@ main(int argc, char *argv[])
     done = feof(stdin);
 
     if (XML_Parse(p, Buff, len, done) == XML_STATUS_ERROR) {
-      fprintf(stderr, "Parse error at line %" XML_FMT_INT_MOD "u:\n%s\n",
+      fprintf(stderr,
+              "Parse error at line %" XML_FMT_INT_MOD "u:\n%" XML_FMT_STR "\n",
               XML_GetCurrentLineNumber(p),
               XML_ErrorString(XML_GetErrorCode(p)));
       exit(-1);
