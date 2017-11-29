@@ -103,7 +103,7 @@ buildlib:
 	@echo 'ERROR:' >&2
 	@echo 'ERROR:  * Mass-patch Makefile.am, e.g.' >&2
 	@echo 'ERROR:    # find -name Makefile.am -exec sed \' >&2
-	@echo 'ERROR:          -e "s,libexpat\.la,libexpatw\.la," \' >&2
+	@echo 'ERROR:          -e "s,libexpat\.la,libexpatw.la," \' >&2
 	@echo 'ERROR:          -e "s,libexpat_la,libexpatw_la," \' >&2
 	@echo 'ERROR:          -i {} +' >&2
 	@echo 'ERROR:' >&2
@@ -119,7 +119,7 @@ buildlib:
 .PHONY: run-benchmark
 run-benchmark:
 	$(MAKE) -C tests/benchmark
-	tests/benchmark/benchmark@EXEEXT@ -n $(top_srcdir)/../testdata/largefiles/recset.xml 65535 3
+	./run.sh tests/benchmark/benchmark@EXEEXT@ -n $(top_srcdir)/../testdata/largefiles/recset.xml 65535 3
 
 tests/xmlts.zip:
 	if test "$(XMLTS_ZIP)" = ""; then \

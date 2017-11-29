@@ -1,4 +1,5 @@
-/*
+/* Interface to some helper routines used to accumulate and check
+   structured content.
                             __  __            _
                          ___\ \/ /_ __   __ _| |_
                         / _ \\  /| '_ \ / _` | __|
@@ -30,75 +31,46 @@
    USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#include <sys/types.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <string.h>
-#include <stdio.h>
-#include <unistd.h>
-
-#ifndef MAP_FILE
-#define MAP_FILE 0
+#ifdef __cplusplus
+extern "C" {
 #endif
 
-#include "xmltchar.h"
-#include "filemap.h"
+#ifndef XML_STRUCTDATA_H
+#define XML_STRUCTDATA_H 1
 
-#ifdef XML_UNICODE_WCHAR_T
-# define XML_FMT_STR "ls"
-#else
-# define XML_FMT_STR "s"
-#endif
+#include "expat.h"
 
-int
-filemap(const tchar *name,
-        void (*processor)(const void *, size_t, const tchar *, void *arg),
-        void *arg)
-{
-  int fd;
-  size_t nbytes;
-  struct stat sb;
-  void *p;
+typedef struct {
+    const XML_Char *str;
+    int data0;
+    int data1;
+    int data2;
+} StructDataEntry;
 
-  fd = topen(name, O_RDONLY);
-  if (fd < 0) {
-    tperror(name);
-    return 0;
-  }
-  if (fstat(fd, &sb) < 0) {
-    tperror(name);
-    close(fd);
-    return 0;
-  }
-  if (!S_ISREG(sb.st_mode)) {
-    close(fd);
-    fprintf(stderr, "%" XML_FMT_STR ": not a regular file\n", name);
-    return 0;
-  }
-  if (sb.st_size > XML_MAX_CHUNK_LEN) {
-    close(fd);
-    return 2;  /* Cannot be passed to XML_Parse in one go */
-  }
+typedef struct {
+    int count;       /* Number of entries used */
+    int max_count;   /* Number of StructDataEntry items in `entries` */
+    StructDataEntry *entries;
+} StructData;
 
-  nbytes = sb.st_size;
-  /* mmap fails for zero length files */
-  if (nbytes == 0) {
-    static const char c = '\0';
-    processor(&c, 0, name, arg);
-    close(fd);
-    return 1;
-  }
-  p = (void *)mmap((void *)0, (size_t)nbytes, PROT_READ,
-                   MAP_FILE|MAP_PRIVATE, fd, (off_t)0);
-  if (p == (void *)-1) {
-    tperror(name);
-    close(fd);
-    return 0;
-  }
-  processor(p, nbytes, name, arg);
-  munmap((void *)p, nbytes);
-  close(fd);
-  return 1;
+
+void StructData_Init(StructData *storage);
+
+void StructData_AddItem(StructData *storage,
+                        const XML_Char *s,
+                        int data0,
+                        int data1,
+                        int data2);
+
+void StructData_CheckItems(StructData *storage,
+                           const StructDataEntry *expected,
+                           int count);
+
+void StructData_Dispose(StructData *storage);
+
+
+#endif  /* XML_STRUCTDATA_H */
+
+#ifdef __cplusplus
 }
+#endif

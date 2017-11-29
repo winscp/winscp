@@ -37,9 +37,15 @@
 #include "expat.h"
 
 #ifdef XML_LARGE_SIZE
-#define XML_FMT_INT_MOD "ll"
+# define XML_FMT_INT_MOD "ll"
 #else
-#define XML_FMT_INT_MOD "l"
+# define XML_FMT_INT_MOD "l"
+#endif
+
+#ifdef XML_UNICODE_WCHAR_T
+# define XML_FMT_STR "ls"
+#else
+# define XML_FMT_STR "s"
 #endif
 
 static void
@@ -116,7 +122,8 @@ int main (int argc, char *argv[])
       else
         parseBufferSize = bufferSize;
       if (!XML_Parse (parser, XMLBufPtr, parseBufferSize, isFinal)) {
-        fprintf (stderr, "error '%s' at line %" XML_FMT_INT_MOD \
+        fprintf (stderr,
+                 "error '%" XML_FMT_STR "' at line %" XML_FMT_INT_MOD   \
                      "u character %" XML_FMT_INT_MOD "u\n",
                  XML_ErrorString (XML_GetErrorCode (parser)),
                  XML_GetCurrentLineNumber (parser),

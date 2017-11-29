@@ -85,7 +85,11 @@ reportError(XML_Parser parser, const XML_Char *filename)
   enum XML_Error code = XML_GetErrorCode(parser);
   const XML_Char *message = XML_ErrorString(code);
   if (message)
-    ftprintf(stdout, T("%s:%" XML_FMT_INT_MOD "u:%" XML_FMT_INT_MOD "u: %s\n"),
+    ftprintf(stdout,
+             T("%s")
+               T(":%") T(XML_FMT_INT_MOD) T("u")
+               T(":%") T(XML_FMT_INT_MOD) T("u")
+               T(": %s\n"),
              filename,
              XML_GetErrorLineNumber(parser),
              XML_GetErrorColumnNumber(parser),
@@ -202,18 +206,18 @@ processStream(const XML_Char *filename, XML_Parser parser)
       if (filename != NULL)
         close(fd);
       ftprintf(stderr, T("%s: out of memory\n"),
-               filename != NULL ? filename : "xmlwf");
+               filename != NULL ? filename : T("xmlwf"));
       return 0;
     }
     nread = read(fd, buf, READ_SIZE);
     if (nread < 0) {
-      tperror(filename != NULL ? filename : "STDIN");
+      tperror(filename != NULL ? filename : T("STDIN"));
       if (filename != NULL)
         close(fd);
       return 0;
     }
     if (XML_ParseBuffer(parser, nread, nread == 0) == XML_STATUS_ERROR) {
-      reportError(parser, filename != NULL ? filename : "STDIN");
+        reportError(parser, filename != NULL ? filename : T("STDIN"));
       if (filename != NULL)
         close(fd);
       return 0;

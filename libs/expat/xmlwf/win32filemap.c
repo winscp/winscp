@@ -34,14 +34,14 @@
 #define WIN32_LEAN_AND_MEAN 1
 
 #ifdef XML_UNICODE_WCHAR_T
-#ifndef XML_UNICODE
-#define XML_UNICODE
-#endif
+# ifndef XML_UNICODE
+#  define XML_UNICODE
+# endif
 #endif
 
 #ifdef XML_UNICODE
-#define UNICODE
-#define _UNICODE
+# define UNICODE
+# define _UNICODE
 #endif /* XML_UNICODE */
 #include <windows.h>
 #include <stdio.h>
