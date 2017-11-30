@@ -218,7 +218,14 @@ static bool __fastcall DoExecuteShell(const UnicodeString Path, const UnicodeStr
 {
   bool Result = CopyCommandToClipboard(FormatCommand(Path, Params));
 
-  if (!Result)
+  if (Result)
+  {
+    if (Handle != NULL)
+    {
+      *Handle = NULL;
+    }
+  }
+  else
   {
     UnicodeString Directory = ExtractFilePath(Path);
 
@@ -280,24 +287,27 @@ void __fastcall ExecuteShellCheckedAndWait(const UnicodeString Command,
   }
   else
   {
-    if (ProcessMessages != NULL)
+    if (ProcessHandle != NULL) // only if command was copied to clipboard only
     {
-      unsigned long WaitResult;
-      do
+      if (ProcessMessages != NULL)
       {
-        // Same as in ExecuteProcessAndReadOutput
-        WaitResult = WaitForSingleObject(ProcessHandle, 200);
-        if (WaitResult == WAIT_FAILED)
+        unsigned long WaitResult;
+        do
         {
-          throw Exception(LoadStr(DOCUMENT_WAIT_ERROR));
+          // Same as in ExecuteProcessAndReadOutput
+          WaitResult = WaitForSingleObject(ProcessHandle, 200);
+          if (WaitResult == WAIT_FAILED)
+          {
+            throw Exception(LoadStr(DOCUMENT_WAIT_ERROR));
+          }
+          ProcessMessages();
         }
-        ProcessMessages();
+        while (WaitResult == WAIT_TIMEOUT);
       }
-      while (WaitResult == WAIT_TIMEOUT);
-    }
-    else
-    {
-      WaitForSingleObject(ProcessHandle, INFINITE);
+      else
+      {
+        WaitForSingleObject(ProcessHandle, INFINITE);
+      }
     }
   }
 }
