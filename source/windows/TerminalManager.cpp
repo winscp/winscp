@@ -1302,17 +1302,20 @@ TTerminalQueue * __fastcall TTerminalManager::GetActiveQueue()
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::CycleTerminals(bool Forward)
 {
-  int Index = ActiveTerminalIndex;
-  Index += Forward ? 1 : -1;
-  if (Index < 0)
+  if (Count > 0)
   {
-    Index = Count-1;
+    int Index = ActiveTerminalIndex;
+    Index += Forward ? 1 : -1;
+    if (Index < 0)
+    {
+      Index = Count-1;
+    }
+    else if (Index >= Count)
+    {
+      Index = 0;
+    }
+    ActiveTerminalIndex = Index;
   }
-  else if (Index >= Count)
-  {
-    Index = 0;
-  }
-  ActiveTerminalIndex = Index;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TTerminalManager::CanOpenInPutty()
