@@ -9781,7 +9781,7 @@ static void do_ssh2_authconn(Ssh ssh, const unsigned char *in, int inlen,
                     /* Try loading the GSS libraries and see if we
                      * have any. */
                     if (!ssh->gsslibs)
-                        ssh->gsslibs = ssh_gss_setup(ssh->conf);
+                        ssh->gsslibs = ssh_gss_setup(ssh->conf, ssh->frontend); // MPEXT
                     s->can_gssapi = (ssh->gsslibs->nlibraries > 0);
                 } else {
                     /* No point in even bothering to try to load the

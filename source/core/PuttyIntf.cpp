@@ -677,7 +677,7 @@ bool __fastcall HasGSSAPI(UnicodeString CustomPath)
       Filename * filename = filename_from_str(UTF8String(CustomPath).c_str());
       conf_set_filename(conf, CONF_ssh_gss_custom, filename);
       filename_free(filename);
-      List = ssh_gss_setup(conf);
+      List = ssh_gss_setup(conf, NULL);
       for (int Index = 0; (has <= 0) && (Index < List->nlibraries); Index++)
       {
         ssh_gss_library * library = &List->libraries[Index];
