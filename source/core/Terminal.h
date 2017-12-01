@@ -72,7 +72,8 @@ typedef void __fastcall (__closure *TCustomCommandEvent)
 #define FILE_OPERATION_LOOP_BEGIN \
   { \
     bool DoRepeat; \
-    do { \
+    do \
+    { \
       DoRepeat = false; \
       try \
 
