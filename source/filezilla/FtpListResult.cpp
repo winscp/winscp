@@ -1466,6 +1466,10 @@ BOOL CFtpListResult::parseAsMlsd(const char *line, const int linelen, t_director
       direntry.name = fileName;
     }
   }
+  else
+  {
+    direntry.name = fileName;
+  }
   return TRUE;
 }
 
