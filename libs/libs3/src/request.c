@@ -51,11 +51,13 @@
 
 static char userAgentG[USER_AGENT_SIZE];
 
+#ifndef WINSCP
 static pthread_mutex_t requestStackMutexG;
 
 static Request *requestStackG[REQUEST_STACK_SIZE];
 
 static int requestStackCountG;
+#endif
 
 char defaultHostNameG[S3_MAX_HOSTNAME_SIZE];
 
@@ -1288,6 +1290,7 @@ static S3Status request_get(const RequestParams *params,
 {
     Request *request = 0;
 
+    #ifndef WINSCP
     // Try to get one from the request stack.  We hold the lock for the
     // shortest time possible here.
     pthread_mutex_lock(&requestStackMutexG);
@@ -1304,11 +1307,14 @@ static S3Status request_get(const RequestParams *params,
     }
     // Else there wasn't one available in the request stack, so create one
     else {
+    #endif
         if ((request = (Request *) malloc(sizeof(Request))) == NULL) {
             return S3StatusOutOfMemory;
         }
         request->NeonSession = NULL;
+    #ifndef WINSCP
     }
+    #endif
 
     // Initialize the request
     #ifndef WINSCP
@@ -1372,12 +1378,15 @@ static void request_destroy(Request *request)
 
 static void request_release(Request *request)
 {
+    #ifndef WINSCP
     pthread_mutex_lock(&requestStackMutexG);
 
     // If the request stack is full, destroy this one
     if (requestStackCountG == REQUEST_STACK_SIZE) {
         pthread_mutex_unlock(&requestStackMutexG);
+    #endif
         request_destroy(request);
+    #ifndef WINSCP
     }
     // Else put this one at the front of the request stack; we do this because
     // we want the most-recently-used curl handle to be re-used on the next
@@ -1387,6 +1396,7 @@ static void request_release(Request *request)
         requestStackG[requestStackCountG++] = request;
         pthread_mutex_unlock(&requestStackMutexG);
     }
+    #endif
 }
 
 
@@ -1404,9 +1414,11 @@ S3Status request_api_initialize(const char *userAgentInfo, int flags,
         return S3StatusUriTooLong;
     }
 
+    #ifndef WINSCP
     pthread_mutex_init(&requestStackMutexG, 0);
 
     requestStackCountG = 0;
+    #endif
 
     if (!userAgentInfo || !*userAgentInfo) {
         userAgentInfo = "Unknown";
@@ -1433,12 +1445,14 @@ S3Status request_api_initialize(const char *userAgentInfo, int flags,
 
 void request_api_deinitialize()
 {
+    #ifndef WINSCP
     pthread_mutex_destroy(&requestStackMutexG);
 
     // WINSCP (Expat does not need global initialization)
     while (requestStackCountG--) {
         request_destroy(requestStackG[requestStackCountG]);
     }
+    #endif
 }
 
 static S3Status setup_request(const RequestParams *params,
