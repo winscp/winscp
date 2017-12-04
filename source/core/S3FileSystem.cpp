@@ -955,7 +955,7 @@ void __fastcall TS3FileSystem::CopyFile(const UnicodeString AFileName, const TRe
 void __fastcall TS3FileSystem::CreateDirectory(const UnicodeString ADirName)
 {
   TOperationVisualizer Visualizer(FTerminal->UseBusyCursor);
-  UnicodeString DirName = AbsolutePath(ADirName, false);
+  UnicodeString DirName = UnixExcludeTrailingBackslash(AbsolutePath(ADirName, false));
 
   UnicodeString BucketName, Key;
   ParsePath(DirName, BucketName, Key);
