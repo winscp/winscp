@@ -67,6 +67,10 @@ typedef void __fastcall (__closure *TCustomCommandEvent)
 #define THROW_SKIP_FILE(EXCEPTION, MESSAGE) \
   throw EScpSkipFile(EXCEPTION, MESSAGE)
 #define THROW_SKIP_FILE_NULL THROW_SKIP_FILE(NULL, L"")
+//---------------------------------------------------------------------------
+const unsigned int folNone = 0x00;
+const unsigned int folAllowSkip = 0x01;
+const unsigned int folRetryOnFatal = 0x02;
 
 /* TODO : Better user interface (query to user) */
 #define FILE_OPERATION_LOOP_BEGIN \
@@ -77,32 +81,19 @@ typedef void __fastcall (__closure *TCustomCommandEvent)
       DoRepeat = false; \
       try \
 
-#define FILE_OPERATION_LOOP_END_CUSTOM(MESSAGE, ALLOW_SKIP, HELPKEYWORD) \
-      catch (EAbort & E) \
-      { \
-        throw; \
-      } \
-      catch (EScpSkipFile & E) \
-      { \
-        throw; \
-      } \
-      catch (EFatal & E) \
-      { \
-        throw; \
-      } \
+#define FILE_OPERATION_LOOP_END_CUSTOM(MESSAGE, FLAGS, HELPKEYWORD) \
       catch (Exception & E) \
       { \
-        FILE_OPERATION_LOOP_TERMINAL->FileOperationLoopQuery( \
-          E, OperationProgress, MESSAGE, ALLOW_SKIP, L"", HELPKEYWORD); \
+        FILE_OPERATION_LOOP_TERMINAL->FileOperationLoopEnd(E, OperationProgress, MESSAGE, FLAGS, L"", HELPKEYWORD); \
         DoRepeat = true; \
       } \
     } while (DoRepeat); \
   }
 
-#define FILE_OPERATION_LOOP_END_EX(MESSAGE, ALLOW_SKIP) \
-  FILE_OPERATION_LOOP_END_CUSTOM(MESSAGE, ALLOW_SKIP, L"")
+#define FILE_OPERATION_LOOP_END_EX(MESSAGE, FLAGS) \
+  FILE_OPERATION_LOOP_END_CUSTOM(MESSAGE, FLAGS, L"")
 #define FILE_OPERATION_LOOP_END(MESSAGE) \
-  FILE_OPERATION_LOOP_END_EX(MESSAGE, true)
+  FILE_OPERATION_LOOP_END_EX(MESSAGE, folAllowSkip)
 //---------------------------------------------------------------------------
 enum TCurrentFSProtocol { cfsUnknown, cfsSCP, cfsSFTP, cfsFTP, cfsWebDAV, cfsS3 };
 //---------------------------------------------------------------------------
@@ -282,7 +273,7 @@ protected:
   void __fastcall FileModified(const TRemoteFile * File,
     const UnicodeString FileName, bool ClearDirectoryChange = false);
   int __fastcall FileOperationLoop(TFileOperationEvent CallBackFunc,
-    TFileOperationProgressType * OperationProgress, bool AllowSkip,
+    TFileOperationProgressType * OperationProgress, unsigned int Flags,
     const UnicodeString Message, void * Param1 = NULL, void * Param2 = NULL);
   bool __fastcall GetIsCapable(TFSCapability Capability) const;
   bool __fastcall ProcessFiles(TStrings * FileList, TFileOperation Operation,
@@ -535,7 +526,10 @@ public:
     const TSearchRec Rec, void * Param);
   bool __fastcall FileOperationLoopQuery(Exception & E,
     TFileOperationProgressType * OperationProgress, const UnicodeString Message,
-    bool AllowSkip, UnicodeString SpecialRetry = L"", UnicodeString HelpKeyword = L"");
+    unsigned int Flags, UnicodeString SpecialRetry = L"", UnicodeString HelpKeyword = L"");
+  void __fastcall FileOperationLoopEnd(Exception & E,
+    TFileOperationProgressType * OperationProgress, const UnicodeString & Message,
+    unsigned int Flags, const UnicodeString & SpecialRetry, const UnicodeString & HelpKeyword);
   TUsableCopyParamAttrs __fastcall UsableCopyParamAttrs(int Params);
   bool __fastcall ContinueReopen(TDateTime Start);
   bool __fastcall QueryReopen(Exception * E, int Params,

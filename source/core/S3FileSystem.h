@@ -5,9 +5,11 @@
 #include <FileSystems.h>
 //------------------------------------------------------------------------------
 struct TNeonCertificateData;
+struct TOverwriteFileParams;
 struct TLibS3CallbackData;
 struct TLibS3BucketContext;
 struct TLibS3ListBucketCallbackData;
+struct TLibS3PutObjectDataCallbackData;
 struct ssl_st;
 #ifdef NEED_LIBS3
 // resolve clash
@@ -122,7 +124,7 @@ protected:
   void LibS3Deinitialize();
   bool VerifyCertificate(TNeonCertificateData Data);
   void CollectTLSSessionInfo();
-  void CheckLibS3Error(const TLibS3CallbackData & Data);
+  void CheckLibS3Error(const TLibS3CallbackData & Data, bool FatalOnConnectError = false);
   void InitSslSession(ssl_st * Ssl, ne_session_s * Session);
   void RequestInit(TLibS3CallbackData & Data);
   void TryOpenDirectory(const UnicodeString & Directory);
@@ -134,6 +136,12 @@ protected:
     const UnicodeString & Prefix, TRemoteFileList * FileList, int MaxKeys, const TLibS3BucketContext & BucketContext,
     TLibS3ListBucketCallbackData & Data);
   UnicodeString GetFolderKey(const UnicodeString & Key);
+  void DoReadFile(const UnicodeString & FileName, TRemoteFile *& File);
+  void ConfirmOverwrite(
+    const UnicodeString & SourceFullFileName, UnicodeString & TargetFileName,
+    TFileOperationProgressType * OperationProgress, const TOverwriteFileParams * FileParams,
+    const TCopyParamType * CopyParam, int Params);
+  int PutObjectData(int BufferSize, char * Buffer, TLibS3PutObjectDataCallbackData & Data);
 
   static TS3FileSystem * GetFileSystem(void * CallbackData);
   static void LibS3SessionCallback(ne_session_s * Session, void * CallbackData);
@@ -147,6 +155,12 @@ protected:
   static S3Status LibS3ListBucketCallback(
     int IsTruncated, const char * NextMarker, int ContentsCount, const S3ListBucketContent * Contents,
     int CommonPrefixesCount, const char ** CommonPrefixes, void * CallbackData);
+  static int LibS3PutObjectDataCallback(int BufferSize, char * Buffer, void * CallbackData);
+  static S3Status LibS3MultipartInitialCallback(const char * UploadId, void * CallbackData);
+  static int LibS3MultipartCommitPutObjectDataCallback(int BufferSize, char * Buffer, void * CallbackData);
+  static S3Status LibS3MultipartResponsePropertiesCallback(const S3ResponseProperties * Properties, void * CallbackData);
+
+  static const int S3MultiPartChunkSize;
 };
 //------------------------------------------------------------------------------
 UnicodeString __fastcall S3LibVersion();

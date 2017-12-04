@@ -4592,7 +4592,7 @@ void __fastcall TSFTPFileSystem::Source(
   OpenParams.Confirmed = false;
 
   FTerminal->LogEvent(L"Opening remote file.");
-  FTerminal->FileOperationLoop(SFTPOpenRemote, OperationProgress, true,
+  FTerminal->FileOperationLoop(SFTPOpenRemote, OperationProgress, folAllowSkip,
     FMTLOAD(SFTP_CREATE_FILE_ERROR, (OpenParams.RemoteFileName)),
     &OpenParams);
   OperationProgress->Progress();
@@ -4765,7 +4765,7 @@ void __fastcall TSFTPFileSystem::Source(
     FILE_OPERATION_LOOP_END_CUSTOM(
       FMTLOAD(RENAME_AFTER_RESUME_ERROR,
         (UnixExtractFileName(OpenParams.RemoteFileName), DestFileName)),
-      true, HELP_RENAME_AFTER_RESUME_ERROR);
+      folAllowSkip, HELP_RENAME_AFTER_RESUME_ERROR);
   }
 
   if (SetProperties)
@@ -4829,7 +4829,7 @@ void __fastcall TSFTPFileSystem::Source(
       }
       FILE_OPERATION_LOOP_END_CUSTOM(
         FMTLOAD(PRESERVE_TIME_PERM_ERROR3, (DestFileName)),
-        true, HELP_PRESERVE_TIME_PERM_ERROR);
+        folAllowSkip, HELP_PRESERVE_TIME_PERM_ERROR);
     }
     catch(Exception & E)
     {
@@ -5059,7 +5059,7 @@ int __fastcall TSFTPFileSystem::SFTPOpenRemote(void * AOpenParams, void * /*Para
 
         if (FTerminal->FileOperationLoopQuery(E, OperationProgress,
               FMTLOAD(SFTP_OVERWRITE_FILE_ERROR2, (OpenParams->RemoteFileName)),
-              true, LoadStr(SFTP_OVERWRITE_DELETE_BUTTON)))
+              folAllowSkip, LoadStr(SFTP_OVERWRITE_DELETE_BUTTON)))
         {
           OperationProgress->Progress();
           int Params = dfNoRecursive;

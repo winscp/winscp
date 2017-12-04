@@ -2506,7 +2506,9 @@ void S3_list_parts(S3BucketContext *bucketContext, const char *key,
 void S3_abort_multipart_upload(S3BucketContext *bucketContext, const char *key,
                                const char *uploadId,
                                int timeoutMs,
-                               S3AbortMultipartUploadHandler *handler);
+                               S3AbortMultipartUploadHandler *handler,
+                               S3RequestContext *requestContext, // WINSCP
+                               void *callbackData); // WINSCP
 
 
 /**

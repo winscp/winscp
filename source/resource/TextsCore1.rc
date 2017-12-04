@@ -441,6 +441,7 @@ BEGIN
   AUTH_CHANGING_PASSWORD, "Changing password."
   PASTE_KEY_BUTTON, "&Paste key"
   SCRIPT_CP_DESC, "Duplicates remote file"
+  TIME_UNKNOWN, "Unknown"
 
   CORE_VARIABLE_STRINGS, "CORE_VARIABLE"
   PUTTY_BASED_ON, "SSH and SCP code based on PuTTY %s"

@@ -226,7 +226,7 @@ static int neon_read_func(void * userdata, char * buf, size_t len)
         (len, (char *) ptr, request->callbackData);
     if (ret < 0) {
         request->status = S3StatusAbortedByCallback;
-        return 0;
+        return -1;
     }
     else {
         if (ret > request->toS3CallbackBytesRemaining) {
@@ -1322,6 +1322,8 @@ static S3Status request_get(const RequestParams *params,
     request->next = 0;
     #else
     request->requestContext = context;
+
+    string_buffer_initialize(request->statusMessage);
     #endif
 
     // Request status is initialized to no error, will be updated whenever
@@ -1580,6 +1582,10 @@ void request_perform(const RequestParams *params, S3RequestContext *context)
         NeonCode code = ne_request_dispatch(request->NeonRequest);
         if ((code != NE_OK) && (request->status == S3StatusOK)) {
             request->status = request_neon_code_to_status(code);
+            const char * neonError = ne_get_error(request->NeonSession);
+            int allFit;
+            string_buffer_append(request->statusMessage, neonError, strlen(neonError), allFit);
+            request->errorParser.s3ErrorDetails.message = request->statusMessage;
         }
 
         // Finish the request, ensuring that all callbacks have been made, and
@@ -1677,9 +1683,8 @@ S3Status request_neon_code_to_status(NeonCode code)
     case NE_CONNECT:
         return S3StatusFailedToConnect;
     case NE_TIMEOUT:
-        return S3StatusErrorRequestTimeout;
-    case NE_REDIRECT:
-        return S3StatusErrorTemporaryRedirect;
+    case NE_SOCKET:
+        return S3StatusConnectionFailed;
     default:
         return S3StatusInternalError;
     }

@@ -164,6 +164,8 @@ typedef struct Request
 
     // Parser of errors
     ErrorParser errorParser;
+
+    string_buffer(statusMessage, 1024); // WINSCP
 } Request;
 
 

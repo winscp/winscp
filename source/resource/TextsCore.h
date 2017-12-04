@@ -472,6 +472,7 @@
 #define AUTH_CHANGING_PASSWORD  557
 #define PASTE_KEY_BUTTON        558
 #define SCRIPT_CP_DESC          559
+#define TIME_UNKNOWN            560
 
 #define CORE_VARIABLE_STRINGS   600
 #define PUTTY_BASED_ON          601

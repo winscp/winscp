@@ -1770,7 +1770,7 @@ void __fastcall TSCPFileSystem::SCPSource(const UnicodeString FileName,
         }
         FILE_OPERATION_LOOP_END_EX(
           FMTLOAD(READ_ERROR, (FileName)),
-          !OperationProgress->TransferringFile);
+          FLAGMASK(!OperationProgress->TransferringFile, folAllowSkip));
 
         OperationProgress->AddLocallyUsed(BlockBuf.Size);
 
@@ -2549,8 +2549,7 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
                   {
                     BlockBuf.WriteToStream(FileStream, BlockBuf.Size);
                   }
-                  FILE_OPERATION_LOOP_END_EX(
-                    FMTLOAD(WRITE_ERROR, (DestFileName)), false);
+                  FILE_OPERATION_LOOP_END_EX(FMTLOAD(WRITE_ERROR, (DestFileName)), folNone);
 
                   OperationProgress->AddLocallyUsed(BlockBuf.Size);
 

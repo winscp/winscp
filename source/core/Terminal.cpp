@@ -2180,11 +2180,12 @@ bool __fastcall TTerminal::QueryReopen(Exception * E, int Params,
 //---------------------------------------------------------------------------
 bool __fastcall TTerminal::FileOperationLoopQuery(Exception & E,
   TFileOperationProgressType * OperationProgress, const UnicodeString Message,
-  bool AllowSkip, UnicodeString SpecialRetry, UnicodeString HelpKeyword)
+  unsigned int Flags, UnicodeString SpecialRetry, UnicodeString HelpKeyword)
 {
   bool Result = false;
   Log->AddException(&E);
   unsigned int Answer;
+  bool AllowSkip = FLAGSET(Flags, folAllowSkip);
   bool SkipToAllPossible = AllowSkip && (OperationProgress != NULL);
 
   if (SkipToAllPossible && OperationProgress->SkipToAll)
@@ -2260,8 +2261,40 @@ bool __fastcall TTerminal::FileOperationLoopQuery(Exception & E,
   return Result;
 }
 //---------------------------------------------------------------------------
+void __fastcall TTerminal::FileOperationLoopEnd(Exception & E,
+  TFileOperationProgressType * OperationProgress, const UnicodeString & Message,
+  unsigned int Flags, const UnicodeString & SpecialRetry, const UnicodeString & HelpKeyword)
+{
+  if ((dynamic_cast<EAbort *>(&E) != NULL) ||
+      (dynamic_cast<EScpSkipFile *>(&E) != NULL) ||
+      (dynamic_cast<EScpSkipFile *>(&E) != NULL))
+  {
+    RethrowException(&E);
+  }
+  else if (dynamic_cast<EFatal *>(&E) != NULL)
+  {
+    if (FLAGCLEAR(Flags, folRetryOnFatal))
+    {
+      RethrowException(&E);
+    }
+    else
+    {
+      DebugAssert(SpecialRetry.IsEmpty());
+      std::unique_ptr<Exception> E2(new EFatal(&E, Message, HelpKeyword));
+      if (!DoQueryReopen(E2.get()))
+      {
+        RethrowException(E2.get());
+      }
+    }
+  }
+  else
+  {
+    FileOperationLoopQuery(E, OperationProgress, Message, Flags, SpecialRetry, HelpKeyword);
+  }
+}
+//---------------------------------------------------------------------------
 int __fastcall TTerminal::FileOperationLoop(TFileOperationEvent CallBackFunc,
-  TFileOperationProgressType * OperationProgress, bool AllowSkip,
+  TFileOperationProgressType * OperationProgress, unsigned int Flags,
   const UnicodeString Message, void * Param1, void * Param2)
 {
   DebugAssert(CallBackFunc);
@@ -2270,7 +2303,7 @@ int __fastcall TTerminal::FileOperationLoop(TFileOperationEvent CallBackFunc,
   {
     Result = CallBackFunc(Param1, Param2);
   }
-  FILE_OPERATION_LOOP_END_EX(Message, AllowSkip);
+  FILE_OPERATION_LOOP_END_EX(Message, Flags);
 
   return Result;
 }
@@ -2896,9 +2929,9 @@ unsigned int __fastcall TTerminal::ConfirmFileOverwrite(
         {
           Message = FMTLOAD(FILE_OVERWRITE_DETAILS, (Message,
             FormatSize(FileParams->SourceSize),
-            UserModificationStr(FileParams->SourceTimestamp, FileParams->SourcePrecision),
+            DefaultStr(UserModificationStr(FileParams->SourceTimestamp, FileParams->SourcePrecision), LoadStr(TIME_UNKNOWN)),
             FormatSize(FileParams->DestSize),
-            UserModificationStr(FileParams->DestTimestamp, FileParams->DestPrecision)));
+            DefaultStr(UserModificationStr(FileParams->DestTimestamp, FileParams->DestPrecision), LoadStr(TIME_UNKNOWN))));
         }
         if (DebugAlwaysTrue(QueryParams->HelpKeyword.IsEmpty()))
         {

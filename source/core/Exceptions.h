@@ -112,6 +112,10 @@ private:
     { \
       return new NAME(this, L""); \
     } \
+    virtual void __fastcall Rethrow() \
+    { \
+      throw NAME(this, L""); \
+    } \
   };
 //---------------------------------------------------------------------------
 DERIVE_EXT_EXCEPTION(ESsh, ExtException);

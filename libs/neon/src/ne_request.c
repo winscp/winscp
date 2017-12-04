@@ -188,7 +188,7 @@ static int aborted(ne_request *req, const char *doing, ssize_t code)
 {
     ne_session *sess = req->session;
     NE_DEBUG_WINSCP_CONTEXT(sess);
-    int ret = NE_ERROR;
+    int ret = NE_SOCKET; // WINSCP
 
     NE_DEBUG(NE_DBG_HTTP, "Aborted request (%" NE_FMT_SSIZE_T "): %s\n",
 	     code, doing);

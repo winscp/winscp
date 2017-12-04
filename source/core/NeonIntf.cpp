@@ -153,6 +153,7 @@ void CheckNeonStatus(ne_session * Session, int NeonStatus,
       switch (NeonStatus)
       {
         case NE_ERROR:
+        case NE_SOCKET:
           // noop
           DebugAssert(!NeonError.IsEmpty());
           Error = NeonError;

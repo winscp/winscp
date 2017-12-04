@@ -67,6 +67,7 @@ static void InitialMultipartCompleteCallback
     free(mdata);
 }
 
+#ifndef WINSCP
 static void AbortMultipartUploadCompleteCallback
     (S3Status requestStatus, const S3ErrorDetails *s3ErrorDetails,
      void *callbackData)
@@ -76,6 +77,7 @@ static void AbortMultipartUploadCompleteCallback
     fprintf(stderr, "\nERROR: %s\n", S3_get_status_name(requestStatus));
 
 }
+#endif
 
 static S3Status initialMultipartXmlCallback(const char *elementPath,
                                             const char *data,
@@ -146,7 +148,9 @@ void S3_initiate_multipart(S3BucketContext *bucketContext, const char *key,
 void S3_abort_multipart_upload(S3BucketContext *bucketContext, const char *key,
                                const char *uploadId,
                                int timeoutMs,
-                               S3AbortMultipartUploadHandler *handler)
+                               S3AbortMultipartUploadHandler *handler,
+                               S3RequestContext *requestContext, // WINSCP
+                               void *callbackData) // WINSCP
 {
     char subResource[512];
     snprintf(subResource, 512, "uploadId=%s", uploadId);
@@ -175,13 +179,13 @@ void S3_abort_multipart_upload(S3BucketContext *bucketContext, const char *key,
         0,                                            // toS3Callback
         0,                                            // toS3CallbackTotalSize
         0,                                            // fromS3Callback
-        AbortMultipartUploadCompleteCallback,         // completeCallback
-        0,                                            // callbackData
+        handler->responseHandler.completeCallback,    // completeCallback WINSCP
+        callbackData,                                 // callbackData WINSCP
         timeoutMs                                     // timeoutMs
     };
 
     // Perform the request
-    request_perform(&params, 0);
+    request_perform(&params, requestContext); // WINSCP
 }
 
 
