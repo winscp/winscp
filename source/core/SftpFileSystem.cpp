@@ -4240,16 +4240,8 @@ void __fastcall TSFTPFileSystem::CopyToRemote(TStrings * FilesToCopy,
   int Params, TFileOperationProgressType * OperationProgress,
   TOnceDoneOperation & OnceDoneOperation)
 {
-  DebugAssert(!FAvoidBusy);
-  FAvoidBusy = true;
-  try
-  {
-    FTerminal->DoCopyToRemote(FilesToCopy, TargetDir, CopyParam, Params, OperationProgress, tfPreCreateDir, OnceDoneOperation);
-  }
-  __finally
-  {
-    FAvoidBusy = false;
-  }
+  TAutoFlag AvoidBusyFlag(FAvoidBusy);
+  FTerminal->DoCopyToRemote(FilesToCopy, TargetDir, CopyParam, Params, OperationProgress, tfPreCreateDir, OnceDoneOperation);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSFTPFileSystem::SFTPConfirmOverwrite(
