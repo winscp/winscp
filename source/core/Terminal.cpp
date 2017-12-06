@@ -6587,8 +6587,8 @@ bool __fastcall TTerminal::CopyToRemote(TStrings * FilesToCopy,
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::DoCopyToRemote(
-  TStrings * FilesToCopy, const UnicodeString & ATargetDir, const TCopyParamType * CopyParam,
-  int Params, TFileOperationProgressType * OperationProgress, unsigned int Flags, TOnceDoneOperation & OnceDoneOperation)
+  TStrings * FilesToCopy, const UnicodeString & ATargetDir, const TCopyParamType * CopyParam, int Params,
+  TFileOperationProgressType * OperationProgress, unsigned int Flags, TOnceDoneOperation & OnceDoneOperation)
 {
   DebugAssert((FilesToCopy != NULL) && (OperationProgress != NULL));
 
