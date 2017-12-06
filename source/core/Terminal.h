@@ -40,7 +40,7 @@ typedef void __fastcall (__closure *TPromptUserEvent)
    TStrings * Prompts, TStrings * Results, bool & Result, void * Arg);
 typedef void __fastcall (__closure *TDisplayBannerEvent)
   (TTerminal * Terminal, UnicodeString SessionName, const UnicodeString & Banner,
-   bool & NeverShowAgain, int Options);
+   bool & NeverShowAgain, int Options, unsigned int & Params);
 typedef void __fastcall (__closure *TExtendedExceptionEvent)
   (TTerminal * Terminal, Exception * E, void * Arg);
 typedef void __fastcall (__closure *TReadDirectoryEvent)(System::TObject * Sender, Boolean ReloadOnly);
@@ -113,6 +113,7 @@ const int csIgnoreErrors = 0x01;
 const int ropNoReadDirectory = 0x02;
 //---------------------------------------------------------------------------
 const int boDisableNeverShowAgain = 0x01;
+const int bpMonospacedFont = 0x01;
 //---------------------------------------------------------------------------
 const int tfFirstLevel = 0x01;
 const int tfNewDirectory = 0x02;

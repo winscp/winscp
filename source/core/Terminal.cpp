@@ -1865,18 +1865,19 @@ void __fastcall TTerminal::DisplayBanner(const UnicodeString & Banner)
 {
   if (OnDisplayBanner != NULL)
   {
+    unsigned int OrigParams, Params;
     if (Configuration->ForceBanners ||
-        Configuration->ShowBanner(SessionData->SessionKey, Banner))
+        Configuration->ShowBanner(SessionData->SessionKey, Banner, Params))
     {
       bool NeverShowAgain = false;
       int Options =
         FLAGMASK(Configuration->ForceBanners, boDisableNeverShowAgain);
+      OrigParams = Params;
 
       TCallbackGuard Guard(this);
       try
       {
-        OnDisplayBanner(this, SessionData->SessionName, Banner,
-          NeverShowAgain, Options);
+        OnDisplayBanner(this, SessionData->SessionName, Banner, NeverShowAgain, Options, Params);
         Guard.Verify();
       }
       catch (Exception & E)
@@ -1890,6 +1891,10 @@ void __fastcall TTerminal::DisplayBanner(const UnicodeString & Banner)
       if (!Configuration->ForceBanners && NeverShowAgain)
       {
         Configuration->NeverShowBanner(SessionData->SessionKey, Banner);
+      }
+      if (OrigParams != Params)
+      {
+        Configuration->SetBannerParams(SessionData->SessionKey, Params);
       }
     }
   }

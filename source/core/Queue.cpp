@@ -172,7 +172,7 @@ public:
   {
     if (OnDisplayBanner != NULL)
     {
-      OnDisplayBanner(Terminal, SessionName, Banner, NeverShowAgain, Options);
+      OnDisplayBanner(Terminal, SessionName, Banner, NeverShowAgain, Options, Params);
     }
   }
 
@@ -182,6 +182,7 @@ public:
   UnicodeString Banner;
   bool NeverShowAgain;
   int Options;
+  unsigned int Params;
 };
 //---------------------------------------------------------------------------
 class TReadDirectoryAction : public TUserAction
@@ -2788,7 +2789,7 @@ void __fastcall TTerminalThread::TerminalShowExtendedException(
 //---------------------------------------------------------------------------
 void __fastcall TTerminalThread::TerminalDisplayBanner(TTerminal * Terminal,
   UnicodeString SessionName, const UnicodeString & Banner,
-  bool & NeverShowAgain, int Options)
+  bool & NeverShowAgain, int Options, unsigned int & Params)
 {
   TDisplayBannerAction Action(FOnDisplayBanner);
   Action.Terminal = Terminal;
@@ -2796,10 +2797,12 @@ void __fastcall TTerminalThread::TerminalDisplayBanner(TTerminal * Terminal,
   Action.Banner = Banner;
   Action.NeverShowAgain = NeverShowAgain;
   Action.Options = Options;
+  Action.Params = Params;
 
   WaitForUserAction(&Action);
 
   NeverShowAgain = Action.NeverShowAgain;
+  Params = Action.Params;
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalThread::TerminalChangeDirectory(TObject * Sender)

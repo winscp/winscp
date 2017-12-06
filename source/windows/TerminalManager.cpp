@@ -1009,7 +1009,7 @@ void __fastcall TTerminalManager::TerminalPromptUser(
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::TerminalDisplayBanner(
   TTerminal * Terminal, UnicodeString SessionName,
-  const UnicodeString & Banner, bool & NeverShowAgain, int Options)
+  const UnicodeString & Banner, bool & NeverShowAgain, int Options, unsigned int & Params)
 {
   DebugAssert(FAuthenticateForm != NULL);
   TAuthenticateForm * AuthenticateForm = FAuthenticateForm;
@@ -1020,7 +1020,7 @@ void __fastcall TTerminalManager::TerminalDisplayBanner(
 
   try
   {
-    AuthenticateForm->Banner(Banner, NeverShowAgain, Options);
+    AuthenticateForm->Banner(Banner, NeverShowAgain, Options, Params);
   }
   __finally
   {

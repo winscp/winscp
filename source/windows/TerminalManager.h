@@ -125,7 +125,7 @@ private:
     TStrings * Results, bool & Result, void * Arg);
   void __fastcall TerminalDisplayBanner(TTerminal * Terminal,
     UnicodeString SessionName, const UnicodeString & Banner, bool & NeverShowAgain,
-    int Options);
+    int Options, unsigned int & Params);
   void __fastcall TerminalShowExtendedException(TTerminal * Terminal,
     Exception * E, void * Arg);
   void __fastcall TerminalReadDirectoryProgress(TObject * Sender, int Progress,

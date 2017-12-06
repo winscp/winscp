@@ -11,6 +11,10 @@
 #include "PasswordEdit.hpp"
 #include "WinInterface.h"
 #include "GUITools.h"
+#include <System.Actions.hpp>
+#include <Vcl.ActnList.hpp>
+#include <Vcl.Menus.hpp>
+#include <Vcl.StdActns.hpp>
 //---------------------------------------------------------------------------
 class TAuthenticateForm : public TForm
 {
@@ -39,11 +43,22 @@ __published:
   TPanel *TopPanel;
   TPanel *LeftPanel;
   TPaintBox *AnimationPaintBox;
+  TActionList *BannerActionList;
+  TEditCopy *EditCopy;
+  TEditSelectAll *EditSelectAll;
+  TAction *BannerMonospacedFontAction;
+  TPopupMenu *BannerPopupMenu;
+  TMenuItem *CopyItem;
+  TMenuItem *SelectAllItem;
+  TMenuItem *N1;
+  TMenuItem *AdjustWindowItem;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall HelpButtonClick(TObject *Sender);
   void __fastcall LogViewMeasureItem(TWinControl *Control, int Index, int &Height);
   void __fastcall LogViewDrawItem(TWinControl *Control, int Index, TRect &Rect, TOwnerDrawState State);
   void __fastcall FormResize(TObject *Sender);
+  void __fastcall BannerMemoContextPopup(TObject *Sender, TPoint &MousePos, bool &Handled);
+  void __fastcall BannerMonospacedFontActionExecute(TObject *Sender);
 
 public:
   __fastcall TAuthenticateForm(TComponent * Owner);
@@ -55,7 +70,7 @@ public:
   bool __fastcall PromptUser(TPromptKind Kind, UnicodeString Name, UnicodeString Instructions,
     TStrings * Prompts, TStrings * Results, bool ForceLog, bool StoredCredentialsTried);
   void __fastcall Banner(const UnicodeString & Banner, bool & NeverShowAgain,
-    int Options);
+    int Options, unsigned int & Params);
 
   __property TTerminal * Terminal = { read = FTerminal };
   __property TNotifyEvent OnCancel = { read = FOnCancel, write = FOnCancel };
@@ -79,6 +94,8 @@ protected:
   void __fastcall RedrawLog();
   void __fastcall CMShowingChanged(TMessage & Message);
   DYNAMIC void __fastcall ChangeScale(int M, int D);
+  void __fastcall UpdateBannerFont();
+  void __fastcall DoAdjustWindow();
 
 private:
   void * FShowAsModalStorage;

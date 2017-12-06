@@ -437,7 +437,7 @@ private:
     Exception * E, void * Arg);
   void __fastcall TerminalDisplayBanner(TTerminal * Terminal,
     UnicodeString SessionName, const UnicodeString & Banner,
-    bool & NeverShowAgain, int Options);
+    bool & NeverShowAgain, int Options, unsigned int & Params);
   void __fastcall TerminalChangeDirectory(TObject * Sender);
   void __fastcall TerminalReadDirectory(TObject * Sender, Boolean ReloadOnly);
   void __fastcall TerminalStartReadDirectory(TObject * Sender);
