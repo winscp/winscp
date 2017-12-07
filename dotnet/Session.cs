@@ -1224,6 +1224,80 @@ namespace WinSCP
             return result;
         }
 
+        public string GetDirectoryName(string path)
+        {
+            string result;
+            if (path == null)
+            {
+                result = null;
+            }
+            else if (path.Length == 0)
+            {
+                throw Logger.WriteException(new ArgumentException("Path cannot be empty", "path"));
+            }
+            else
+            {
+                int i = path.LastIndexOf('/');
+                if (i < 0)
+                {
+                    result = null;
+                }
+                else if (i == 0)
+                {
+                    if (path.Length == 1)
+                    {
+                        result = null;
+                    }
+                    else
+                    {
+                        result = "/";
+                    }
+                }
+                else
+                {
+                    result = path.Substring(0, i);
+                }
+            }
+            return result;
+        }
+
+        public string AddDirectorySeparator(string path)
+        {
+            if (string.IsNullOrEmpty(path))
+            {
+                throw Logger.WriteException(new ArgumentException("Path cannot be empty", "path"));
+            }
+
+            if (!path.EndsWith("/", StringComparison.Ordinal))
+            {
+                path += "/";
+            }
+
+            return path;
+        }
+
+        public string GetFileName(string path)
+        {
+            string result;
+            if (string.IsNullOrEmpty(path))
+            {
+                result = null;
+            }
+            else
+            {
+                int i = path.LastIndexOf('/');
+                if (i >= 0)
+                {
+                    result = path.Substring(i + 1);
+                }
+                else
+                {
+                    result = string.Empty;
+                }
+            }
+            return result;
+        }
+
         public void AddRawConfiguration(string setting, string value)
         {
             CheckNotOpened();
