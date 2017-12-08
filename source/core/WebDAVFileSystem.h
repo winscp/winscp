@@ -92,16 +92,11 @@ public:
 protected:
   virtual UnicodeString __fastcall GetCurrentDirectory();
 
-  void __fastcall Sink(const UnicodeString FileName,
-    const TRemoteFile * File, const UnicodeString TargetDir,
-    const TCopyParamType * CopyParam, int Params,
-    TFileOperationProgressType * OperationProgress, unsigned int Flags,
-    TDownloadSessionAction & Action, bool & ChildError);
-  void __fastcall SinkRobust(const UnicodeString FileName,
-    const TRemoteFile * File, const UnicodeString TargetDir,
-    const TCopyParamType * CopyParam, int Params,
-    TFileOperationProgressType * OperationProgress, unsigned int Flags);
-  void __fastcall SinkFile(const UnicodeString FileName, const TRemoteFile * File, void * Param);
+  virtual void __fastcall Sink(
+    const UnicodeString & FileName, const TRemoteFile * File,
+    const UnicodeString & TargetDir, UnicodeString & DestFileName, int Attrs,
+    const TCopyParamType * CopyParam, int Params, TFileOperationProgressType * OperationProgress,
+    unsigned int Flags, TDownloadSessionAction & Action);
   void __fastcall ConfirmOverwrite(
     const UnicodeString & SourceFullFileName, UnicodeString & DestFileName,
     TFileOperationProgressType * OperationProgress,

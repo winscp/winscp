@@ -57,6 +57,13 @@ public:
     const TCopyParamType * CopyParam, int Params,
     TFileOperationProgressType * OperationProgress, unsigned int Flags,
     TUploadSessionAction & Action, bool & ChildError);
+  virtual void __fastcall DirectorySunk(
+    const UnicodeString & DestFullName, const TRemoteFile * File, const TCopyParamType * CopyParam);
+  virtual void __fastcall Sink(
+    const UnicodeString & FileName, const TRemoteFile * File,
+    const UnicodeString & TargetDir, UnicodeString & DestFileName, int Attrs,
+    const TCopyParamType * CopyParam, int Params, TFileOperationProgressType * OperationProgress,
+    unsigned int Flags, TDownloadSessionAction & Action);
   virtual void __fastcall CreateDirectory(const UnicodeString DirName);
   virtual void __fastcall CreateLink(const UnicodeString FileName, const UnicodeString PointTo, bool Symbolic);
   virtual void __fastcall DeleteFile(const UnicodeString FileName,
@@ -175,17 +182,6 @@ protected:
     TSFTPOverwriteMode & Mode, const TOverwriteFileParams * FileParams);
   bool SFTPConfirmResume(const UnicodeString DestFileName, bool PartialBiggerThanSource,
     TFileOperationProgressType * OperationProgress);
-  void __fastcall SFTPSinkRobust(const UnicodeString FileName,
-    const TRemoteFile * File, const UnicodeString TargetDir,
-    const TCopyParamType * CopyParam, int Params,
-    TFileOperationProgressType * OperationProgress, unsigned int Flags);
-  void __fastcall SFTPSink(const UnicodeString FileName,
-    const TRemoteFile * File, const UnicodeString TargetDir,
-    const TCopyParamType * CopyParam, int Params,
-    TFileOperationProgressType * OperationProgress, unsigned int Flags,
-    TDownloadSessionAction & Action, bool & ChildError);
-  void __fastcall SFTPSinkFile(UnicodeString FileName,
-    const TRemoteFile * File, void * Param);
   char * __fastcall GetEOL() const;
   inline void __fastcall BusyStart();
   inline void __fastcall BusyEnd();

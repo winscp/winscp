@@ -38,16 +38,6 @@
 //---------------------------------------------------------------------------
 #define FILE_OPERATION_LOOP_TERMINAL FTerminal
 //---------------------------------------------------------------------------
-struct TSinkFileParams
-{
-  UnicodeString TargetDir;
-  const TCopyParamType * CopyParam;
-  int Params;
-  TFileOperationProgressType * OperationProgress;
-  bool Skipped;
-  unsigned int Flags;
-};
-//---------------------------------------------------------------------------
 #define SESSION_FS_KEY "filesystem"
 static const UnicodeString CONST_WEBDAV_PROTOCOL_BASE_NAME = L"WebDAV";
 static const int HttpUnauthorized = 401;
@@ -1378,82 +1368,8 @@ void __fastcall TWebDAVFileSystem::CopyToLocal(TStrings * FilesToCopy,
   TOnceDoneOperation & OnceDoneOperation)
 {
   Params &= ~cpAppend;
-  UnicodeString FullTargetDir = ::IncludeTrailingBackslash(TargetDir);
 
-  int Index = 0;
-  while (Index < FilesToCopy->Count && !OperationProgress->Cancel)
-  {
-    UnicodeString FileName = FilesToCopy->Strings[Index];
-    const TRemoteFile * File = dynamic_cast<const TRemoteFile *>(FilesToCopy->Objects[Index]);
-    bool Success = false;
-    try
-    {
-      try
-      {
-        SinkRobust(AbsolutePath(FileName, false), File, FullTargetDir, CopyParam, Params,
-          OperationProgress, tfFirstLevel);
-        Success = true;
-      }
-      catch (EScpSkipFile & E)
-      {
-        TSuspendFileOperationProgress Suspend(OperationProgress);
-        if (!FTerminal->HandleException(&E))
-        {
-          throw;
-        }
-      }
-    }
-    __finally
-    {
-      OperationProgress->Finish(FileName, Success, OnceDoneOperation);
-    }
-    Index++;
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall TWebDAVFileSystem::SinkRobust(const UnicodeString FileName,
-  const TRemoteFile * File, const UnicodeString TargetDir,
-  const TCopyParamType * CopyParam, int Params,
-  TFileOperationProgressType * OperationProgress, unsigned int Flags)
-{
-  // the same in TSFTPFileSystem
-
-  TDownloadSessionAction Action(FTerminal->ActionLog);
-  TRobustOperationLoop RobustLoop(FTerminal, OperationProgress);
-
-  do
-  {
-    bool ChildError = false;
-    try
-    {
-      Sink(FileName, File, TargetDir, CopyParam, Params, OperationProgress,
-        Flags, Action, ChildError);
-    }
-    catch (Exception & E)
-    {
-      if (!RobustLoop.TryReopen(E))
-      {
-        if (!ChildError)
-        {
-          FTerminal->RollbackAction(Action, OperationProgress, &E);
-        }
-        throw;
-      }
-    }
-
-    if (RobustLoop.ShouldRetry())
-    {
-      OperationProgress->RollbackTransfer();
-      Action.Restart();
-      DebugAssert(File != NULL);
-      if (!File->IsDirectory)
-      {
-        // prevent overwrite confirmations
-        Params |= cpNoConfirmation;
-      }
-    }
-  }
-  while (RobustLoop.Retry());
+  FTerminal->DoCopyToLocal(FilesToCopy, TargetDir, CopyParam, Params, OperationProgress, tfNone, OnceDoneOperation);
 }
 //---------------------------------------------------------------------------
 void TWebDAVFileSystem::NeonCreateRequest(
@@ -1729,249 +1645,93 @@ int TWebDAVFileSystem::NeonBodyReader(void * UserData, const char * Buf, size_t 
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TWebDAVFileSystem::Sink(const UnicodeString FileName,
-  const TRemoteFile * File, const UnicodeString TargetDir,
-  const TCopyParamType * CopyParam, int Params,
-  TFileOperationProgressType * OperationProgress, unsigned int Flags,
-  TDownloadSessionAction & Action, bool & ChildError)
+void __fastcall TWebDAVFileSystem::Sink(
+  const UnicodeString & FileName, const TRemoteFile * File,
+  const UnicodeString & TargetDir, UnicodeString & DestFileName, int Attrs,
+  const TCopyParamType * CopyParam, int Params, TFileOperationProgressType * OperationProgress,
+  unsigned int /*Flags*/, TDownloadSessionAction & Action)
 {
-  UnicodeString FileNameOnly = UnixExtractFileName(FileName);
-
-  Action.FileName(FileName);
-
-  DebugAssert(File);
-  TFileMasks::TParams MaskParams;
-  MaskParams.Size = File->Size;
-  MaskParams.Modification = File->Modification;
-
-  UnicodeString BaseFileName = FTerminal->GetBaseFileName(FileName);
-  if (!CopyParam->AllowTransfer(BaseFileName, osRemote, File->IsDirectory, MaskParams))
-  {
-    FTerminal->LogEvent(FORMAT(L"File \"%s\" excluded from transfer", (FileName)));
-    THROW_SKIP_FILE_NULL;
-  }
-
-  if (CopyParam->SkipTransfer(FileName, File->IsDirectory))
-  {
-    OperationProgress->AddSkippedFileSize(File->Size);
-    THROW_SKIP_FILE_NULL;
-  }
-
-  FTerminal->LogFileDetails(FileName, TDateTime(), File->Size);
-
-  OperationProgress->SetFile(FileName);
-
-  UnicodeString DestFileName =
-    FTerminal->ChangeFileName(
-      CopyParam, FileNameOnly, osRemote, FLAGSET(Flags, tfFirstLevel));
   UnicodeString DestFullName = TargetDir + DestFileName;
-
-  if (File->IsDirectory)
+  if (FileExists(ApiPath(DestFullName)))
   {
-    Action.Cancel();
-    if (DebugAlwaysTrue(FTerminal->CanRecurseToDirectory(File)))
-    {
-      FILE_OPERATION_LOOP_BEGIN
-      {
-        int Attrs = FileGetAttrFix(ApiPath(DestFullName));
-        if (FLAGCLEAR(Attrs, faDirectory)) { EXCEPTION; }
-      }
-      FILE_OPERATION_LOOP_END(FMTLOAD(NOT_DIRECTORY_ERROR, (DestFullName)));
+    __int64 Size;
+    __int64 MTime;
+    FTerminal->OpenLocalFile(DestFullName, GENERIC_READ, NULL, NULL, NULL, &MTime, NULL, &Size);
+    TOverwriteFileParams FileParams;
 
-      FILE_OPERATION_LOOP_BEGIN
-      {
-        THROWOSIFFALSE(ForceDirectories(ApiPath(DestFullName)));
-      }
-      FILE_OPERATION_LOOP_END(FMTLOAD(CREATE_DIR_ERROR, (DestFullName)));
+    FileParams.SourceSize = File->Size;
+    FileParams.SourceTimestamp = File->Modification;
+    FileParams.DestSize = Size;
+    FileParams.DestTimestamp = UnixToDateTime(MTime, FTerminal->SessionData->DSTMode);
 
-      if (FLAGCLEAR(Params, cpNoRecurse))
-      {
-        TSinkFileParams SinkFileParams;
-        SinkFileParams.TargetDir = IncludeTrailingBackslash(DestFullName);
-        SinkFileParams.CopyParam = CopyParam;
-        SinkFileParams.Params = Params;
-        SinkFileParams.OperationProgress = OperationProgress;
-        SinkFileParams.Skipped = false;
-        SinkFileParams.Flags = Flags & ~tfFirstLevel;
-
-        FTerminal->ProcessDirectory(FileName, SinkFile, &SinkFileParams);
-
-        // Do not delete directory if some of its files were skip.
-        // Throw "skip file" for the directory to avoid attempt to deletion
-        // of any parent directory
-        if (FLAGSET(Params, cpDelete) && SinkFileParams.Skipped)
-        {
-          THROW_SKIP_FILE_NULL;
-        }
-      }
-    }
-    else
-    {
-      // file is symlink to directory, currently do nothing, but it should be
-      // reported to user
-    }
+    ConfirmOverwrite(FileName, DestFileName, OperationProgress, &FileParams, CopyParam, Params);
   }
-  else
+
+  UnicodeString FilePath = ::UnixExtractFilePath(FileName);
+  if (FilePath.IsEmpty())
   {
-    FTerminal->LogEvent(FORMAT(L"Copying \"%s\" to local directory started.", (FileName)));
-    if (FileExists(ApiPath(DestFullName)))
+    FilePath = L"/";
+  }
+
+  UnicodeString ExpandedDestFullName = ExpandUNCFileName(DestFullName);
+  Action.Destination(ExpandedDestFullName);
+
+  FILE_OPERATION_LOOP_BEGIN
+  {
+    HANDLE LocalHandle;
+    if (!FTerminal->CreateLocalFile(DestFullName, OperationProgress, &LocalHandle, FLAGSET(Params, cpNoConfirmation)))
     {
-      __int64 Size;
-      __int64 MTime;
-      FTerminal->OpenLocalFile(DestFullName, GENERIC_READ, NULL,
-        NULL, NULL, &MTime, NULL, &Size);
-      TOverwriteFileParams FileParams;
-
-      FileParams.SourceSize = File->Size;
-      FileParams.SourceTimestamp = File->Modification;
-      FileParams.DestSize = Size;
-      FileParams.DestTimestamp = UnixToDateTime(MTime,
-        FTerminal->SessionData->DSTMode);
-
-      ConfirmOverwrite(FileName, DestFileName, OperationProgress,
-        &FileParams, CopyParam, Params);
+      THROW_SKIP_FILE_NULL;
     }
 
-    // Suppose same data size to transfer as to write
-    OperationProgress->SetTransferSize(File->Size);
-    OperationProgress->SetLocalSize(OperationProgress->TransferSize);
+    bool DeleteLocalFile = true;
 
-    int Attrs = -1;
-    FILE_OPERATION_LOOP_BEGIN
+    int FD = -1;
+    try
     {
-      Attrs = FileGetAttrFix(ApiPath(DestFullName));
-      if ((Attrs >= 0) && FLAGSET(Attrs, faDirectory)) { EXCEPTION; }
-    }
-    FILE_OPERATION_LOOP_END(FMTLOAD(NOT_FILE_ERROR, (DestFullName)));
-
-    UnicodeString FilePath = ::UnixExtractFilePath(FileName);
-    if (FilePath.IsEmpty())
-    {
-      FilePath = L"/";
-    }
-
-    UnicodeString ExpandedDestFullName = ExpandUNCFileName(DestFullName);
-    Action.Destination(ExpandedDestFullName);
-
-    FILE_OPERATION_LOOP_BEGIN
-    {
-      HANDLE LocalHandle;
-      if (!FTerminal->CreateLocalFile(DestFullName, OperationProgress,
-             &LocalHandle, FLAGSET(Params, cpNoConfirmation)))
+      FD = _open_osfhandle((intptr_t)LocalHandle, O_BINARY);
+      if (FD < 0)
       {
         THROW_SKIP_FILE_NULL;
       }
 
-      bool DeleteLocalFile = true;
+      TAutoFlag DownloadingFlag(FDownloading);
 
-      int FD = -1;
-      try
+      ClearNeonError();
+      CheckStatus(ne_get(FNeonSession, PathToNeon(FileName), FD));
+      DeleteLocalFile = false;
+
+      if (CopyParam->PreserveTime)
       {
-        FD = _open_osfhandle((intptr_t)LocalHandle, O_BINARY);
-        if (FD < 0)
-        {
-          THROW_SKIP_FILE_NULL;
-        }
-
-        TAutoFlag DownloadingFlag(FDownloading);
-
-        ClearNeonError();
-        CheckStatus(ne_get(FNeonSession, PathToNeon(FileName), FD));
-        DeleteLocalFile = false;
-
-        if (CopyParam->PreserveTime)
-        {
-          TDateTime Modification = File->Modification;
-          FILETIME WrTime = DateTimeToFileTime(Modification, FTerminal->SessionData->DSTMode);
-          FTerminal->LogEvent(FORMAT(L"Preserving timestamp [%s]",
-            (StandardTimestamp(Modification))));
-          SetFileTime(LocalHandle, NULL, NULL, &WrTime);
-        }
-      }
-      __finally
-      {
-        if (FD >= 0)
-        {
-          // _close calls CloseHandle internally (even doc states, we should not call CloseHandle),
-          // but it crashes code guard
-          _close(FD);
-        }
-        else
-        {
-          CloseHandle(LocalHandle);
-        }
-
-        if (DeleteLocalFile)
-        {
-          FILE_OPERATION_LOOP_BEGIN
-          {
-            THROWOSIFFALSE(Sysutils::DeleteFile(ApiPath(DestFullName)));
-          }
-          FILE_OPERATION_LOOP_END(FMTLOAD(DELETE_LOCAL_FILE_ERROR, (DestFullName)));
-        }
+        FTerminal->UpdateTargetTime(LocalHandle, File->Modification, FTerminal->SessionData->DSTMode);
       }
     }
-    FILE_OPERATION_LOOP_END(FMTLOAD(TRANSFER_ERROR, (FileName)));
-
-    if (Attrs == -1)
+    __finally
     {
-      Attrs = faArchive;
-    }
-    int NewAttrs = CopyParam->LocalFileAttrs(*File->Rights);
-    if ((NewAttrs & Attrs) != NewAttrs)
-    {
-      FILE_OPERATION_LOOP_BEGIN
+      if (FD >= 0)
       {
-        THROWOSIFFALSE(FileSetAttr(ApiPath(DestFullName), Attrs | NewAttrs) == 0);
+        // _close calls CloseHandle internally (even doc states, we should not call CloseHandle),
+        // but it crashes code guard
+        _close(FD);
       }
-      FILE_OPERATION_LOOP_END(FMTLOAD(CANT_SET_ATTRS, (DestFullName)));
-    }
-
-    FTerminal->LogFileDone(OperationProgress, ExpandedDestFullName);
-  }
-
-  if (FLAGSET(Params, cpDelete))
-  {
-    DebugAssert(FLAGCLEAR(Params, cpNoRecurse));
-    ChildError = true;
-    // If file is directory, do not delete it recursively, because it should be
-    // empty already. If not, it should not be deleted (some files were
-    // skipped or some new files were copied to it, while we were downloading)
-    int Params = dfNoRecursive;
-    FTerminal->DeleteFile(FileName, File, &Params);
-    ChildError = false;
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall TWebDAVFileSystem::SinkFile(const UnicodeString FileName,
-  const TRemoteFile * File, void * Param)
-{
-  TSinkFileParams * Params = static_cast<TSinkFileParams *>(Param);
-  DebugAssert(Params->OperationProgress);
-  try
-  {
-    SinkRobust(FileName, File, Params->TargetDir, Params->CopyParam,
-      Params->Params, Params->OperationProgress, Params->Flags);
-  }
-  catch (EScpSkipFile & E)
-  {
-    TFileOperationProgressType * OperationProgress = Params->OperationProgress;
-
-    Params->Skipped = true;
-
-    {
-      TSuspendFileOperationProgress Suspend(OperationProgress);
-      if (!FTerminal->HandleException(&E))
+      else
       {
-        throw;
+        CloseHandle(LocalHandle);
+      }
+
+      if (DeleteLocalFile)
+      {
+        FILE_OPERATION_LOOP_BEGIN
+        {
+          THROWOSIFFALSE(Sysutils::DeleteFile(ApiPath(DestFullName)));
+        }
+        FILE_OPERATION_LOOP_END(FMTLOAD(DELETE_LOCAL_FILE_ERROR, (DestFullName)));
       }
     }
-
-    if (OperationProgress->Cancel)
-    {
-      Abort();
-    }
   }
+  FILE_OPERATION_LOOP_END(FMTLOAD(TRANSFER_ERROR, (FileName)));
+
+  FTerminal->UpdateTargetAttrs(DestFullName, File, CopyParam, Attrs);
 }
 //---------------------------------------------------------------------------
 // Similar to TS3FileSystem::VerifyCertificate

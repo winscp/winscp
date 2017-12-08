@@ -1435,6 +1435,15 @@ void __fastcall TS3FileSystem::CopyToLocal(TStrings * /*FilesToCopy*/,
   throw Exception(L"Not implemented");
 }
 //---------------------------------------------------------------------------
+void __fastcall TS3FileSystem::Sink(
+  const UnicodeString & /*FileName*/, const TRemoteFile * /*File*/,
+  const UnicodeString & /*TargetDir*/, UnicodeString & /*DestFileName*/, int /*Attrs*/,
+  const TCopyParamType * /*CopyParam*/, int /*Params*/, TFileOperationProgressType * /*OperationProgress*/,
+  unsigned int /*Flags*/, TDownloadSessionAction & /*Action*/)
+{
+  throw Exception(L"Not implemented");
+}
+//---------------------------------------------------------------------------
 void __fastcall TS3FileSystem::GetSupportedChecksumAlgs(TStrings * /*Algs*/)
 {
   // NOOP

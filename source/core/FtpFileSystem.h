@@ -58,6 +58,11 @@ public:
     const TCopyParamType * CopyParam, int Params,
     TFileOperationProgressType * OperationProgress, unsigned int Flags,
     TUploadSessionAction & Action, bool & ChildError);
+  virtual void __fastcall Sink(
+    const UnicodeString & FileName, const TRemoteFile * File,
+    const UnicodeString & TargetDir, UnicodeString & DestFileName, int Attrs,
+    const TCopyParamType * CopyParam, int Params, TFileOperationProgressType * OperationProgress,
+    unsigned int Flags, TDownloadSessionAction & Action);
   virtual void __fastcall CreateDirectory(const UnicodeString DirName);
   virtual void __fastcall CreateLink(const UnicodeString FileName, const UnicodeString PointTo, bool Symbolic);
   virtual void __fastcall DeleteFile(const UnicodeString FileName,
@@ -157,11 +162,6 @@ protected:
     const TCopyParamType * CopyParam, int Params,
     TFileOperationProgressType * OperationProgress, unsigned int Flags,
     TDownloadSessionAction & Action);
-  void __fastcall SinkRobust(const UnicodeString FileName,
-    const TRemoteFile * File, const UnicodeString TargetDir,
-    const TCopyParamType * CopyParam, int Params,
-    TFileOperationProgressType * OperationProgress, unsigned int Flags);
-  void __fastcall SinkFile(UnicodeString FileName, const TRemoteFile * File, void * Param);
   bool __fastcall ConfirmOverwrite(const UnicodeString & SourceFullFileName, UnicodeString & TargetFileName,
     TOverwriteMode & OverwriteMode, TFileOperationProgressType * OperationProgress,
     const TOverwriteFileParams * FileParams, const TCopyParamType * CopyParam,

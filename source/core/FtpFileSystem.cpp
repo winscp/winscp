@@ -195,16 +195,6 @@ const UnicodeString AvblCommand(L"AVBL");
 const UnicodeString XQuotaCommand(L"XQUOTA");
 const UnicodeString DirectoryHasBytesPrefix(L"226-Directory has");
 //---------------------------------------------------------------------------
-struct TSinkFileParams
-{
-  UnicodeString TargetDir;
-  const TCopyParamType * CopyParam;
-  int Params;
-  TFileOperationProgressType * OperationProgress;
-  bool Skipped;
-  unsigned int Flags;
-};
-//---------------------------------------------------------------------------
 class TFileListHelper
 {
 public:
@@ -1530,286 +1520,59 @@ void __fastcall TFTPFileSystem::CopyToLocal(TStrings * FilesToCopy,
   TOnceDoneOperation & OnceDoneOperation)
 {
   Params &= ~cpAppend;
-  UnicodeString FullTargetDir = IncludeTrailingBackslash(TargetDir);
 
-  int Index = 0;
-  while (Index < FilesToCopy->Count && !OperationProgress->Cancel)
-  {
-    UnicodeString FileName = FilesToCopy->Strings[Index];
-    const TRemoteFile * File = dynamic_cast<const TRemoteFile *>(FilesToCopy->Objects[Index]);
-    bool Success = false;
-
-    try
-    {
-      try
-      {
-        SinkRobust(AbsolutePath(FileName, false), File, FullTargetDir, CopyParam, Params,
-          OperationProgress, tfFirstLevel);
-        Success = true;
-        FLastDataSent = Now();
-      }
-      catch(EScpSkipFile & E)
-      {
-        TSuspendFileOperationProgress Suspend(OperationProgress);
-        if (!FTerminal->HandleException(&E))
-        {
-          throw;
-        }
-      }
-    }
-    __finally
-    {
-      OperationProgress->Finish(FileName, Success, OnceDoneOperation);
-    }
-    Index++;
-  }
+  FTerminal->DoCopyToLocal(
+    FilesToCopy, TargetDir, CopyParam, Params, OperationProgress, tfUseFileTransferAny, OnceDoneOperation);
 }
 //---------------------------------------------------------------------------
-void __fastcall TFTPFileSystem::SinkRobust(const UnicodeString FileName,
-  const TRemoteFile * File, const UnicodeString TargetDir,
-  const TCopyParamType * CopyParam, int Params,
-  TFileOperationProgressType * OperationProgress, unsigned int Flags)
+void __fastcall TFTPFileSystem::Sink(
+  const UnicodeString & FileName, const TRemoteFile * File,
+  const UnicodeString & TargetDir, UnicodeString & DestFileName, int Attrs,
+  const TCopyParamType * CopyParam, int Params, TFileOperationProgressType * OperationProgress,
+  unsigned int Flags, TDownloadSessionAction & Action)
 {
-  // the same in TSFTPFileSystem
+  AutoDetectTimeDifference(UnixExtractFileDir(FileName), CopyParam, Params);
 
-  TDownloadSessionAction Action(FTerminal->ActionLog);
-  TRobustOperationLoop RobustLoop(FTerminal, OperationProgress, &FFileTransferAny);
+  ResetFileTransfer();
 
-  do
-  {
-    try
-    {
-      Sink(FileName, File, TargetDir, CopyParam, Params, OperationProgress,
-        Flags, Action);
-    }
-    catch(Exception & E)
-    {
-      if (!RobustLoop.TryReopen(E))
-      {
-        FTerminal->RollbackAction(Action, OperationProgress, &E);
-        throw;
-      }
-    }
+  TFileTransferData UserData;
 
-    if (RobustLoop.ShouldRetry())
-    {
-      OperationProgress->RollbackTransfer();
-      Action.Restart();
-      DebugAssert(File != NULL);
-      if (!File->IsDirectory)
-      {
-        // prevent overwrite confirmations
-        Params |= cpNoConfirmation;
-        Flags |= tfAutoResume;
-      }
-    }
-  }
-  while (RobustLoop.Retry());
-}
-//---------------------------------------------------------------------------
-void __fastcall TFTPFileSystem::Sink(const UnicodeString FileName,
-  const TRemoteFile * File, const UnicodeString TargetDir,
-  const TCopyParamType * CopyParam, int Params,
-  TFileOperationProgressType * OperationProgress, unsigned int Flags,
-  TDownloadSessionAction & Action)
-{
-  UnicodeString OnlyFileName = UnixExtractFileName(FileName);
-
-  Action.FileName(FileName);
-
-  TFileMasks::TParams MaskParams;
-  DebugAssert(File);
-  MaskParams.Size = File->Size;
-  MaskParams.Modification = File->Modification;
-
-  UnicodeString BaseFileName = FTerminal->GetBaseFileName(FileName);
-  if (!CopyParam->AllowTransfer(BaseFileName, osRemote, File->IsDirectory, MaskParams))
-  {
-    FTerminal->LogEvent(FORMAT(L"File \"%s\" excluded from transfer", (FileName)));
-    THROW_SKIP_FILE_NULL;
-  }
-
-  if (CopyParam->SkipTransfer(FileName, File->IsDirectory))
-  {
-    OperationProgress->AddSkippedFileSize(File->Size);
-    THROW_SKIP_FILE_NULL;
-  }
-
-  FTerminal->LogFileDetails(FileName, File->Modification, File->Size);
-
-  OperationProgress->SetFile(FileName);
-
-  UnicodeString DestFileName =
-    FTerminal->ChangeFileName(
-      CopyParam, OnlyFileName, osRemote, FLAGSET(Flags, tfFirstLevel));
   UnicodeString DestFullName = TargetDir + DestFileName;
+  UnicodeString FilePath = UnixExtractFilePath(FileName);
+  unsigned int TransferType = (OperationProgress->AsciiTransfer ? 1 : 2);
 
-  if (File->IsDirectory)
   {
-    Action.Cancel();
-    if (FTerminal->CanRecurseToDirectory(File))
-    {
-      FILE_OPERATION_LOOP_BEGIN
-      {
-        int Attrs = FileGetAttrFix(ApiPath(DestFullName));
-        if (FLAGCLEAR(Attrs, faDirectory))
-        {
-          EXCEPTION;
-        }
-      }
-      FILE_OPERATION_LOOP_END(FMTLOAD(NOT_DIRECTORY_ERROR, (DestFullName)));
+    // ignore file list
+    TFileListHelper Helper(this, NULL, true);
 
-      FILE_OPERATION_LOOP_BEGIN
-      {
-        THROWOSIFFALSE(ForceDirectories(ApiPath(DestFullName)));
-      }
-      FILE_OPERATION_LOOP_END(FMTLOAD(CREATE_DIR_ERROR, (DestFullName)));
-
-      if (FLAGCLEAR(Params, cpNoRecurse))
-      {
-        TSinkFileParams SinkFileParams;
-        SinkFileParams.TargetDir = IncludeTrailingBackslash(DestFullName);
-        SinkFileParams.CopyParam = CopyParam;
-        SinkFileParams.Params = Params;
-        SinkFileParams.OperationProgress = OperationProgress;
-        SinkFileParams.Skipped = false;
-        SinkFileParams.Flags = Flags & ~(tfFirstLevel | tfAutoResume);
-
-        FTerminal->ProcessDirectory(FileName, SinkFile, &SinkFileParams);
-
-        // Do not delete directory if some of its files were skip.
-        // Throw "skip file" for the directory to avoid attempt to deletion
-        // of any parent directory
-        if (FLAGSET(Params, cpDelete) && SinkFileParams.Skipped)
-        {
-          THROW_SKIP_FILE_NULL;
-        }
-      }
-    }
-    else
-    {
-      FTerminal->LogEvent(FORMAT(L"Skipping symlink to directory \"%s\".", (FileName)));
-    }
-  }
-  else
-  {
-    AutoDetectTimeDifference(UnixExtractFileDir(FileName), CopyParam, Params);
-
-    FTerminal->LogEvent(FORMAT(L"Copying \"%s\" to local directory started.", (FileName)));
-
-    // Will we use ASCII of BINARY file transfer?
-    OperationProgress->SetAsciiTransfer(
-      CopyParam->UseAsciiTransfer(BaseFileName, osRemote, MaskParams));
-    FTerminal->LogEvent(UnicodeString((OperationProgress->AsciiTransfer ? L"Ascii" : L"Binary")) +
-      L" transfer mode selected.");
-
-    // Suppose same data size to transfer as to write
-    OperationProgress->SetTransferSize(File->Size);
-    OperationProgress->SetLocalSize(OperationProgress->TransferSize);
-
-    int Attrs;
-    FILE_OPERATION_LOOP_BEGIN
-    {
-      Attrs = FileGetAttrFix(ApiPath(DestFullName));
-      if ((Attrs >= 0) && FLAGSET(Attrs, faDirectory))
-      {
-        EXCEPTION;
-      }
-    }
-    FILE_OPERATION_LOOP_END(FMTLOAD(NOT_FILE_ERROR, (DestFullName)));
-
-    ResetFileTransfer();
-
-    TFileTransferData UserData;
-
-    UnicodeString FilePath = UnixExtractFilePath(FileName);
-    unsigned int TransferType = (OperationProgress->AsciiTransfer ? 1 : 2);
-
-    {
-      // ignore file list
-      TFileListHelper Helper(this, NULL, true);
-
-      SetCPSLimit(OperationProgress);
-      FFileTransferPreserveTime = CopyParam->PreserveTime;
-      // not used for downloads anyway
-      FFileTransferRemoveBOM = CopyParam->RemoveBOM;
-      FFileTransferNoList = CanTransferSkipList(Params, Flags, CopyParam);
-      UserData.FileName = DestFileName;
-      UserData.Params = Params;
-      UserData.AutoResume = FLAGSET(Flags, tfAutoResume);
-      UserData.CopyParam = CopyParam;
-      UserData.Modification = File->Modification;
-      FileTransfer(FileName, DestFullName, OnlyFileName,
-        FilePath, true, File->Size, TransferType, UserData, OperationProgress);
-    }
-
-    // in case dest filename is changed from overwrite dialog
-    if (DestFileName != UserData.FileName)
-    {
-      DestFullName = TargetDir + UserData.FileName;
-      Attrs = FileGetAttrFix(ApiPath(DestFullName));
-    }
-
-    UnicodeString ExpandedDestFullName = ExpandUNCFileName(DestFullName);
-    Action.Destination(ExpandedDestFullName);
-
-    if (Attrs == -1)
-    {
-      Attrs = faArchive;
-    }
-    int NewAttrs = CopyParam->LocalFileAttrs(*File->Rights);
-    if ((NewAttrs & Attrs) != NewAttrs)
-    {
-      FILE_OPERATION_LOOP_BEGIN
-      {
-        THROWOSIFFALSE(FileSetAttr(ApiPath(DestFullName), Attrs | NewAttrs) == 0);
-      }
-      FILE_OPERATION_LOOP_END(FMTLOAD(CANT_SET_ATTRS, (DestFullName)));
-    }
-
-    FTerminal->LogFileDone(OperationProgress, ExpandedDestFullName);
+    SetCPSLimit(OperationProgress);
+    FFileTransferPreserveTime = CopyParam->PreserveTime;
+    // not used for downloads anyway
+    FFileTransferRemoveBOM = CopyParam->RemoveBOM;
+    FFileTransferNoList = CanTransferSkipList(Params, Flags, CopyParam);
+    UserData.FileName = DestFileName;
+    UserData.Params = Params;
+    UserData.AutoResume = FLAGSET(Flags, tfAutoResume);
+    UserData.CopyParam = CopyParam;
+    UserData.Modification = File->Modification;
+    UnicodeString OnlyFileName = UnixExtractFileName(FileName);
+    FileTransfer(FileName, DestFullName, OnlyFileName,
+      FilePath, true, File->Size, TransferType, UserData, OperationProgress);
   }
 
-  if (FLAGSET(Params, cpDelete))
+  // in case dest filename is changed from overwrite dialog
+  if (DestFileName != UserData.FileName)
   {
-    DebugAssert(FLAGCLEAR(Params, cpNoRecurse));
-    // If file is directory, do not delete it recursively, because it should be
-    // empty already. If not, it should not be deleted (some files were
-    // skipped or some new files were copied to it, while we were downloading)
-    int Params = dfNoRecursive;
-    FTerminal->DeleteFile(FileName, File, &Params);
+    DestFullName = TargetDir + UserData.FileName;
+    Attrs = FileGetAttrFix(ApiPath(DestFullName));
   }
-}
-//---------------------------------------------------------------------------
-void __fastcall TFTPFileSystem::SinkFile(UnicodeString FileName,
-  const TRemoteFile * File, void * Param)
-{
-  TSinkFileParams * Params = (TSinkFileParams *)Param;
-  DebugAssert(Params->OperationProgress);
-  try
-  {
-    SinkRobust(FileName, File, Params->TargetDir, Params->CopyParam,
-      Params->Params, Params->OperationProgress, Params->Flags);
-  }
-  catch(EScpSkipFile & E)
-  {
-    TFileOperationProgressType * OperationProgress = Params->OperationProgress;
 
-    Params->Skipped = true;
+  UnicodeString ExpandedDestFullName = ExpandUNCFileName(DestFullName);
+  Action.Destination(ExpandedDestFullName);
 
-    {
-      TSuspendFileOperationProgress Suspend(OperationProgress);
-      if (!FTerminal->HandleException(&E))
-      {
-        throw;
-      }
-    }
+  FTerminal->UpdateTargetAttrs(DestFullName, File, CopyParam, Attrs);
 
-    if (OperationProgress->Cancel)
-    {
-      Abort();
-    }
-  }
+  FLastDataSent = Now();
 }
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::TransferOnDirectory(
@@ -4588,8 +4351,7 @@ bool __fastcall TFTPFileSystem::Unquote(UnicodeString & Str)
 void __fastcall TFTPFileSystem::PreserveDownloadFileTime(HANDLE Handle, void * UserData)
 {
   TFileTransferData * Data = static_cast<TFileTransferData *>(UserData);
-  FILETIME WrTime = DateTimeToFileTime(Data->Modification, dstmUnix);
-  SetFileTime(Handle, NULL, NULL, &WrTime);
+  FTerminal->UpdateTargetTime(Handle, Data->Modification, dstmUnix);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TFTPFileSystem::GetFileModificationTimeInUtc(const wchar_t * FileName, struct tm & Time)

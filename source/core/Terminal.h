@@ -115,6 +115,7 @@ const int ropNoReadDirectory = 0x02;
 const int boDisableNeverShowAgain = 0x01;
 const int bpMonospacedFont = 0x01;
 //---------------------------------------------------------------------------
+const int tfNone = 0x00;
 const int tfFirstLevel = 0x01;
 const int tfNewDirectory = 0x02;
 const int tfAutoResume = 0x04;
@@ -432,8 +433,25 @@ protected:
     const UnicodeString & DirectoryName, const UnicodeString & TargetDir, const UnicodeString & DestDirectoryName,
     int Attrs, const TCopyParamType * CopyParam, int Params,
     TFileOperationProgressType * OperationProgress, unsigned int Flags);
+  void __fastcall SelectTransferMode(
+    const UnicodeString & BaseFileName, TOperationSide Side, const TCopyParamType * CopyParam,
+    const TFileMasks::TParams & MaskParams);
   void __fastcall SelectSourceTransferMode(const TLocalFileHandle & Handle, const TCopyParamType * CopyParam);
   void __fastcall UpdateSource(const TLocalFileHandle & Handle, const TCopyParamType * CopyParam, int Params);
+  void __fastcall DoCopyToLocal(
+    TStrings * FilesToCopy, const UnicodeString & TargetDir, const TCopyParamType * CopyParam, int Params,
+    TFileOperationProgressType * OperationProgress, unsigned int Flags, TOnceDoneOperation & OnceDoneOperation);
+  void __fastcall SinkRobust(
+    const UnicodeString & FileName, const TRemoteFile * File, const UnicodeString & TargetDir,
+    const TCopyParamType * CopyParam, int Params, TFileOperationProgressType * OperationProgress, unsigned int Flags);
+  void __fastcall Sink(
+    const UnicodeString & FileName, const TRemoteFile * File, const UnicodeString & TargetDir,
+    const TCopyParamType * CopyParam, int Params, TFileOperationProgressType * OperationProgress, unsigned int Flags,
+    TDownloadSessionAction & Action, bool & ChildError);
+  void __fastcall SinkFile(UnicodeString FileName, const TRemoteFile * File, void * Param);
+  void __fastcall UpdateTargetAttrs(
+    const UnicodeString & DestFullName, const TRemoteFile * File, const TCopyParamType * CopyParam, int Attrs);
+  void __fastcall UpdateTargetTime(HANDLE Handle, TDateTime Modification, TDSTMode DSTMode);
 
   __property TFileOperationProgressType * OperationProgress = { read=FOperationProgress };
 

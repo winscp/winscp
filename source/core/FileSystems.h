@@ -65,6 +65,13 @@ public:
     const TCopyParamType * CopyParam, int Params,
     TFileOperationProgressType * OperationProgress, unsigned int Flags,
     TUploadSessionAction & Action, bool & ChildError) = 0;
+  virtual void __fastcall DirectorySunk(
+    const UnicodeString & DestFullName, const TRemoteFile * File, const TCopyParamType * CopyParam) {};
+  virtual void __fastcall Sink(
+    const UnicodeString & FileName, const TRemoteFile * File,
+    const UnicodeString & TargetDir, UnicodeString & DestFileName, int Attrs,
+    const TCopyParamType * CopyParam, int Params, TFileOperationProgressType * OperationProgress,
+    unsigned int Flags, TDownloadSessionAction & Action) = 0;
   virtual void __fastcall CreateDirectory(const UnicodeString DirName) = 0;
   virtual void __fastcall CreateLink(const UnicodeString FileName, const UnicodeString PointTo, bool Symbolic) = 0;
   virtual void __fastcall DeleteFile(const UnicodeString FileName,

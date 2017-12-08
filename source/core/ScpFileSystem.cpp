@@ -2218,6 +2218,15 @@ void __fastcall TSCPFileSystem::CopyToLocal(TStrings * FilesToCopy,
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TSCPFileSystem::Sink(
+  const UnicodeString & /*FileName*/, const TRemoteFile * /*File*/,
+  const UnicodeString & /*TargetDir*/, UnicodeString & /*DestFileName*/, int /*Attrs*/,
+  const TCopyParamType * /*CopyParam*/, int /*Params*/, TFileOperationProgressType * /*OperationProgress*/,
+  unsigned int /*Flags*/, TDownloadSessionAction & /*Action*/)
+{
+  DebugFail();
+}
+//---------------------------------------------------------------------------
 void __fastcall TSCPFileSystem::SCPError(const UnicodeString Message, bool Fatal)
 {
   SCPSendError(Message, Fatal);
@@ -2244,13 +2253,11 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
   struct
   {
     int SetTime;
-    FILETIME AcTime;
-    FILETIME WrTime;
+    TDateTime Modification;
     TRights RemoteRights;
     int Attrs;
     bool Exists;
   } FileData;
-  TDateTime SourceTimestamp;
 
   bool SkipConfirmed = false;
   bool Initialized = (Level > 0);
@@ -2335,12 +2342,7 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
             unsigned long MTime, ATime;
             if (swscanf(Line.c_str(), L"%ld %*d %ld %*d",  &MTime, &ATime) == 2)
             {
-              FileData.AcTime = DateTimeToFileTime(UnixToDateTime(ATime,
-                FTerminal->SessionData->DSTMode), FTerminal->SessionData->DSTMode);
-              FileData.WrTime = DateTimeToFileTime(UnixToDateTime(MTime,
-                FTerminal->SessionData->DSTMode), FTerminal->SessionData->DSTMode);
-              SourceTimestamp = UnixToDateTime(MTime,
-                FTerminal->SessionData->DSTMode);
+              FileData.Modification = UnixToDateTime(MTime, FTerminal->SessionData->DSTMode);
               FSecureShell->SendNull();
               // File time is only valid until next pass
               FileData.SetTime = 2;
@@ -2360,7 +2362,7 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
         }
 
         TFileMasks::TParams MaskParams;
-        MaskParams.Modification = SourceTimestamp;
+        MaskParams.Modification = FileData.Modification;
 
         // We reach this point only if control record was 'C' or 'D'
         try
@@ -2413,7 +2415,7 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
           OperationProgress->AddSkippedFileSize(MaskParams.Size);
         }
 
-        FTerminal->LogFileDetails(FileName, SourceTimestamp, MaskParams.Size);
+        FTerminal->LogFileDetails(FileName, FileData.Modification, MaskParams.Size);
 
         UnicodeString DestFileNameOnly =
           FTerminal->ChangeFileName(
@@ -2467,7 +2469,7 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
                   __int64 MTime;
                   TOverwriteFileParams FileParams;
                   FileParams.SourceSize = OperationProgress->TransferSize;
-                  FileParams.SourceTimestamp = SourceTimestamp;
+                  FileParams.SourceTimestamp = FileData.Modification;
                   FTerminal->OpenLocalFile(DestFileName, GENERIC_READ,
                     NULL, NULL, NULL, &MTime, NULL,
                     &FileParams.DestSize);
@@ -2591,7 +2593,7 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
 
               if (FileData.SetTime && CopyParam->PreserveTime)
               {
-                SetFileTime(File, NULL, &FileData.AcTime, &FileData.WrTime);
+                FTerminal->UpdateTargetTime(File, FileData.Modification, FTerminal->SessionData->DSTMode);
               }
             }
             __finally
