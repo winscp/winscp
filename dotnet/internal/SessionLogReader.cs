@@ -19,6 +19,7 @@ namespace WinSCP
         {
             using (Session.Logger.CreateCallstack())
             {
+                LogContents();
                 Cleanup();
             }
             base.Dispose();
