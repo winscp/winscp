@@ -2215,7 +2215,10 @@ void __fastcall TPasteKeyHandler::Paste(TObject * /*Sender*/, unsigned int & Ans
 void __fastcall TSecureShell::VerifyHostKey(UnicodeString Host, int Port,
   const UnicodeString KeyType, UnicodeString KeyStr, UnicodeString Fingerprint)
 {
-  LogEvent(FORMAT(L"Verifying host key %s %s with fingerprint %s", (KeyType, FormatKeyStr(KeyStr), Fingerprint)));
+  if (Configuration->ActualLogProtocol >= 1)
+  {
+    LogEvent(FORMAT(L"Verifying host key %s %s with fingerprints %s", (KeyType, FormatKeyStr(KeyStr), Fingerprint)));
+  }
 
   GotHostKey();
 
@@ -2257,8 +2260,15 @@ void __fastcall TSecureShell::VerifyHostKey(UnicodeString Host, int Port,
     }
     else
     {
-      UnicodeString FormattedKey = Fingerprint ? StoredKey : FormatKeyStr(StoredKey);
-      LogEvent(FORMAT(L"Host key does not match cached key %s", (FormattedKey)));
+      if (Configuration->ActualLogProtocol >= 1)
+      {
+        UnicodeString FormattedKey = Fingerprint ? StoredKey : FormatKeyStr(StoredKey);
+        LogEvent(FORMAT(L"Host key does not match cached key %s", (FormattedKey)));
+      }
+      else
+      {
+        LogEvent(L"Host key does not match cached key");
+      }
     }
   }
 
