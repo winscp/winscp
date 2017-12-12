@@ -1,8 +1,8 @@
 #ifndef TextsCoreH
 #define TextsCoreH
 
-#define UNKNOWN_KEY3    1
-#define DIFFERENT_KEY4  2
+#define UNKNOWN_KEY4    1
+#define DIFFERENT_KEY5  2
 #define OLD_KEY         3
 
 #define SCRIPT_HELP_HELP        4
@@ -473,6 +473,7 @@
 #define PASTE_KEY_BUTTON        558
 #define SCRIPT_CP_DESC          559
 #define TIME_UNKNOWN            560
+#define KEY_DETAILS             561
 
 #define CORE_VARIABLE_STRINGS   600
 #define PUTTY_BASED_ON          601

@@ -34,4 +34,6 @@ void __fastcall DllHijackingProtection();
 //---------------------------------------------------------------------------
 UnicodeString __fastcall ParseOpenSshPubLine(const UnicodeString & Line, const struct ssh_signkey *& Algorithm);
 //---------------------------------------------------------------------------
+UnicodeString __fastcall GetKeyTypeHuman(const UnicodeString & KeyType);
+//---------------------------------------------------------------------------
 #endif

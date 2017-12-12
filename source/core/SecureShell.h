@@ -156,8 +156,9 @@ public:
   void __fastcall FromBackend(bool IsStdErr, const unsigned char * Data, int Length);
   void __fastcall CWrite(const char * Data, int Length);
   const UnicodeString & __fastcall GetStdError();
-  void __fastcall VerifyHostKey(UnicodeString Host, int Port,
-    const UnicodeString KeyType, UnicodeString KeyStr, UnicodeString Fingerprint);
+  void __fastcall VerifyHostKey(
+    const UnicodeString & Host, int Port, const UnicodeString & KeyType, const UnicodeString & KeyStr,
+    const UnicodeString & Fingerprint);
   bool __fastcall HaveHostKey(UnicodeString Host, int Port, const UnicodeString KeyType);
   void __fastcall AskAlg(UnicodeString AlgType, UnicodeString AlgName);
   void __fastcall DisplayBanner(const UnicodeString & Banner);

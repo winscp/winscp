@@ -727,6 +727,7 @@ static void __fastcall DoNormalizeFingerprint(UnicodeString & Fingerprint, Unico
       if (IsNumber(Fingerprint.SubString(LenStart + 1, Space - LenStart - 1)))
       {
         Fingerprint.Delete(LenStart + 1, Space - LenStart);
+        // noop for SHA256 fingerprints
         Fingerprint = ReplaceChar(Fingerprint, L':', NormalizedSeparator);
         KeyType = UnicodeString(SignKey->keytype);
         return;
@@ -818,6 +819,41 @@ UnicodeString __fastcall ParseOpenSshPubLine(const UnicodeString & Line, const s
       sfree(AlgorithmName);
       sfree(CommentPtr);
     }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall GetKeyTypeHuman(const UnicodeString & KeyType)
+{
+  UnicodeString Result;
+  if (KeyType == ssh_dss.keytype)
+  {
+    Result = L"DSA";
+  }
+  else if (KeyType == ssh_rsa.keytype)
+  {
+    Result = L"RSA";
+  }
+  else if (KeyType == ssh_ecdsa_ed25519.keytype)
+  {
+    Result = L"Ed25519";
+  }
+  else if (KeyType == ssh_ecdsa_nistp256.keytype)
+  {
+    Result = L"ECDSA/nistp256";
+  }
+  else if (KeyType == ssh_ecdsa_nistp384.keytype)
+  {
+    Result = L"ECDSA/nistp384";
+  }
+  else if (KeyType == ssh_ecdsa_nistp521.keytype)
+  {
+    Result = L"ECDSA/nistp521";
+  }
+  else
+  {
+    DebugFail();
+    Result = KeyType;
   }
   return Result;
 }

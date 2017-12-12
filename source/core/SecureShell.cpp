@@ -2170,7 +2170,8 @@ UnicodeString __fastcall TSecureShell::RetrieveHostKey(UnicodeString Host, int P
 struct TPasteKeyHandler
 {
   UnicodeString KeyStr;
-  UnicodeString NormalizedFingerprint;
+  UnicodeString NormalizedFingerprintMD5;
+  UnicodeString NormalizedFingerprintSHA256;
   TSessionUI * UI;
 
   void __fastcall Paste(TObject * Sender, unsigned int & Answer);
@@ -2183,7 +2184,8 @@ void __fastcall TPasteKeyHandler::Paste(TObject * /*Sender*/, unsigned int & Ans
   {
     UnicodeString NormalizedClipboardFingerprint = NormalizeFingerprint(ClipboardText);
     // case insensitive comparison, contrary to VerifyHostKey (we should change to insesitive there too)
-    if (SameText(NormalizedClipboardFingerprint, NormalizedFingerprint) ||
+    if (SameText(NormalizedClipboardFingerprint, NormalizedFingerprintMD5) ||
+        SameText(NormalizedClipboardFingerprint, NormalizedFingerprintSHA256) ||
         SameText(ClipboardText, KeyStr))
     {
       Answer = qaYes;
@@ -2212,8 +2214,9 @@ void __fastcall TPasteKeyHandler::Paste(TObject * /*Sender*/, unsigned int & Ans
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSecureShell::VerifyHostKey(UnicodeString Host, int Port,
-  const UnicodeString KeyType, UnicodeString KeyStr, UnicodeString Fingerprint)
+void __fastcall TSecureShell::VerifyHostKey(
+  const UnicodeString & AHost, int Port, const UnicodeString & KeyType, const UnicodeString & KeyStr,
+  const UnicodeString & Fingerprint)
 {
   if (Configuration->ActualLogProtocol >= 1)
   {
@@ -2224,21 +2227,31 @@ void __fastcall TSecureShell::VerifyHostKey(UnicodeString Host, int Port,
 
   DebugAssert(KeyStr.Pos(HostKeyDelimiter) == 0);
 
+  UnicodeString Host = AHost;
   GetRealHost(Host, Port);
 
-  FSessionInfo.HostKeyFingerprint = Fingerprint;
+  UnicodeString Buf = Fingerprint;
+  UnicodeString SignKeyAlg = CutToChar(Buf, L' ', false);
+  UnicodeString SignKeySize = CutToChar(Buf, L' ', false);
+  UnicodeString SignKeyType = SignKeyAlg + L' ' + SignKeySize;
+  UnicodeString MD5 = CutToChar(Buf, L' ', false);
+  UnicodeString FingerprintMD5 = SignKeyType + L' ' + MD5;
+  UnicodeString SHA256 = Buf;
+  UnicodeString FingerprintSHA256 = SignKeyType + L' ' + SHA256;
+  UnicodeString NormalizedFingerprintMD5 = NormalizeFingerprint(FingerprintMD5);
+  UnicodeString NormalizedFingerprintSHA256 = NormalizeFingerprint(FingerprintSHA256);
+
+  FSessionInfo.HostKeyFingerprint = FingerprintSHA256;
 
   if (FSessionData->FingerprintScan)
   {
     Abort();
   }
 
-  UnicodeString NormalizedFingerprint = NormalizeFingerprint(Fingerprint);
-
   bool Result = false;
 
   UnicodeString StoredKeys = RetrieveHostKey(Host, Port, KeyType);
-  UnicodeString Buf = StoredKeys;
+  Buf = StoredKeys;
   while (!Result && !Buf.IsEmpty())
   {
     UnicodeString StoredKey = CutToChar(Buf, HostKeyDelimiter, false);
@@ -2253,7 +2266,7 @@ void __fastcall TSecureShell::VerifyHostKey(UnicodeString Host, int Port,
       NormalizedExpectedKey = NormalizeFingerprint(StoredKey);
     }
     if ((!Fingerprint && (StoredKey == KeyStr)) ||
-        (Fingerprint && (NormalizedExpectedKey == NormalizedFingerprint)))
+        (Fingerprint && ((NormalizedExpectedKey == NormalizedFingerprintMD5) || (NormalizedExpectedKey == NormalizedFingerprintSHA256))))
     {
       LogEvent(L"Host key matches cached key");
       Result = true;
@@ -2289,7 +2302,7 @@ void __fastcall TSecureShell::VerifyHostKey(UnicodeString Host, int Port,
         FLog->Add(llException, Message);
         Result = true;
       }
-      else if (NormalizedExpectedKey == NormalizedFingerprint)
+      else if ((NormalizedExpectedKey == NormalizedFingerprintMD5) || (NormalizedExpectedKey == NormalizedFingerprintSHA256))
       {
         LogEvent(L"Host key matches configured key");
         Result = true;
@@ -2324,10 +2337,11 @@ void __fastcall TSecureShell::VerifyHostKey(UnicodeString Host, int Port,
       // but as scripting mode is handled earlier and in GUI it hardly happens,
       // it's a small issue.
       TClipboardHandler ClipboardHandler;
-      ClipboardHandler.Text = Fingerprint;
+      ClipboardHandler.Text = FingerprintSHA256 + L"\n" + FingerprintMD5;
       TPasteKeyHandler PasteKeyHandler;
       PasteKeyHandler.KeyStr = KeyStr;
-      PasteKeyHandler.NormalizedFingerprint = NormalizedFingerprint;
+      PasteKeyHandler.NormalizedFingerprintMD5 = NormalizedFingerprintMD5;
+      PasteKeyHandler.NormalizedFingerprintSHA256 = NormalizedFingerprintSHA256;
       PasteKeyHandler.UI = FUI;
 
       bool Unknown = StoredKeys.IsEmpty();
@@ -2364,7 +2378,9 @@ void __fastcall TSecureShell::VerifyHostKey(UnicodeString Host, int Port,
       Params.Aliases = Aliases;
       Params.AliasesCount = AliasesCount;
 
-      UnicodeString Message = FMTLOAD((Unknown ? UNKNOWN_KEY3 : DIFFERENT_KEY4), (KeyType, Fingerprint));
+      UnicodeString KeyTypeHuman = GetKeyTypeHuman(KeyType);
+      UnicodeString KeyDetails = FMTLOAD(KEY_DETAILS, (SignKeyType, SHA256, MD5));
+      UnicodeString Message = FMTLOAD((Unknown ? UNKNOWN_KEY4 : DIFFERENT_KEY5), (KeyTypeHuman, KeyDetails));
       if (Configuration->Scripting)
       {
         AddToList(Message, LoadStr(SCRIPTING_USE_HOSTKEY), L"\n");
@@ -2372,14 +2388,15 @@ void __fastcall TSecureShell::VerifyHostKey(UnicodeString Host, int Port,
 
       unsigned int R =
         FUI->QueryUser(Message, NULL, Answers, &Params, qtWarning);
+      UnicodeString StoreKeyStr = KeyStr;
 
       switch (R) {
         case qaOK:
           DebugAssert(!Unknown);
-          KeyStr = (StoredKeys + HostKeyDelimiter + KeyStr);
+          StoreKeyStr = (StoredKeys + HostKeyDelimiter + StoreKeyStr);
           // fall thru
         case qaYes:
-          store_host_key(AnsiString(Host).c_str(), Port, AnsiString(KeyType).c_str(), AnsiString(KeyStr).c_str());
+          store_host_key(AnsiString(Host).c_str(), Port, AnsiString(KeyType).c_str(), AnsiString(StoreKeyStr).c_str());
           Verified = true;
           break;
 
@@ -2414,7 +2431,7 @@ void __fastcall TSecureShell::VerifyHostKey(UnicodeString Host, int Port,
       Exception * E = new Exception(MainInstructions(Message));
       try
       {
-        FUI->FatalError(E, FMTLOAD(HOSTKEY, (Fingerprint)));
+        FUI->FatalError(E, FMTLOAD(HOSTKEY, (FingerprintSHA256)));
       }
       __finally
       {
@@ -2423,7 +2440,7 @@ void __fastcall TSecureShell::VerifyHostKey(UnicodeString Host, int Port,
     }
   }
 
-  Configuration->RememberLastFingerprint(FSessionData->SiteKey, SshFingerprintType, Fingerprint);
+  Configuration->RememberLastFingerprint(FSessionData->SiteKey, SshFingerprintType, FingerprintSHA256);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TSecureShell::HaveHostKey(UnicodeString Host, int Port, const UnicodeString KeyType)
