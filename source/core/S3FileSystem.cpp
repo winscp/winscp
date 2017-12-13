@@ -598,9 +598,9 @@ bool __fastcall TS3FileSystem::IsCapable(int Capability) const
     case fcRemoteCopy:
     case fcRename:
     case fcRemoteMove:
+    case fcMoveToQueue:
       return true;
 
-    case fcMoveToQueue:
     case fcPreservingTimestampUpload:
     case fcCheckingSpaceAvailable:
     case fsSkipTransfer:
