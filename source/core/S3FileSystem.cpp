@@ -50,7 +50,8 @@ const int TS3FileSystem::S3MultiPartChunkSize = 5 * 1024 * 1024;
 //---------------------------------------------------------------------------
 TS3FileSystem::TS3FileSystem(TTerminal * ATerminal) :
   TCustomFileSystem(ATerminal),
-  FActive(false)
+  FActive(false),
+  FResponseIgnore(false)
 {
   FFileSystemInfo.ProtocolBaseName = L"S3";
   FFileSystemInfo.ProtocolName = FFileSystemInfo.ProtocolBaseName;
@@ -243,7 +244,7 @@ S3Status TS3FileSystem::LibS3ResponsePropertiesCallback(const S3ResponseProperti
 void TS3FileSystem::LibS3ResponseDataCallback(const char * Data, size_t Size, void * CallbackData)
 {
   TS3FileSystem * FileSystem = static_cast<TS3FileSystem *>(CallbackData);
-  if (FileSystem->FTerminal->Log->Logging)
+  if (FileSystem->FTerminal->Log->Logging && !FileSystem->FResponseIgnore)
   {
     UnicodeString Content = UnicodeString(UTF8String(Data, Size)).Trim();
     FileSystem->FResponse += Content;
@@ -1427,21 +1428,158 @@ void __fastcall TS3FileSystem::Source(
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TS3FileSystem::CopyToLocal(TStrings * /*FilesToCopy*/,
-  const UnicodeString TargetDir, const TCopyParamType * /*CopyParam*/,
-  int /*Params*/, TFileOperationProgressType * /*OperationProgress*/,
-  TOnceDoneOperation & /*OnceDoneOperation*/)
+void __fastcall TS3FileSystem::CopyToLocal(
+  TStrings * FilesToCopy, const UnicodeString TargetDir, const TCopyParamType * CopyParam,
+  int Params, TFileOperationProgressType * OperationProgress, TOnceDoneOperation & OnceDoneOperation)
 {
-  throw Exception(L"Not implemented");
+  Params &= ~cpAppend;
+
+  FTerminal->DoCopyToLocal(FilesToCopy, TargetDir, CopyParam, Params, OperationProgress, tfNone, OnceDoneOperation);
+}
+//---------------------------------------------------------------------------
+struct TLibS3GetObjectDataCallbackData : TLibS3CallbackData
+{
+  UnicodeString FileName;
+  TStream * Stream;
+  TFileOperationProgressType * OperationProgress;
+  std::auto_ptr<Exception> Exception;
+};
+//---------------------------------------------------------------------------
+S3Status TS3FileSystem::LibS3GetObjectDataCallback(int BufferSize, const char * Buffer, void * CallbackData)
+{
+  TLibS3GetObjectDataCallbackData & Data = *static_cast<TLibS3GetObjectDataCallbackData *>(CallbackData);
+
+  return Data.FileSystem->GetObjectData(BufferSize, Buffer, Data);
+}
+//---------------------------------------------------------------------------
+S3Status TS3FileSystem::GetObjectData(int BufferSize, const char * Buffer, TLibS3GetObjectDataCallbackData & Data)
+{
+  S3Status Result = S3StatusOK;
+
+  TFileOperationProgressType * OperationProgress = Data.OperationProgress;
+  if (OperationProgress->Cancel != csContinue)
+  {
+    Data.Exception.reset(new EAbort(L""));
+    Result = S3StatusAbortedByCallback;
+  }
+  else
+  {
+    try
+    {
+      FILE_OPERATION_LOOP_BEGIN
+      {
+        Data.Stream->Write(Buffer, BufferSize);
+      }
+      FILE_OPERATION_LOOP_END(FMTLOAD(WRITE_ERROR, (Data.FileName)));
+
+      OperationProgress->AddTransferred(BufferSize);
+    }
+    catch (Exception & E)
+    {
+      Data.Exception.reset(CloneException(&E));
+      Result = S3StatusAbortedByCallback;
+    }
+  }
+
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TS3FileSystem::Sink(
-  const UnicodeString & /*FileName*/, const TRemoteFile * /*File*/,
-  const UnicodeString & /*TargetDir*/, UnicodeString & /*DestFileName*/, int /*Attrs*/,
-  const TCopyParamType * /*CopyParam*/, int /*Params*/, TFileOperationProgressType * /*OperationProgress*/,
-  unsigned int /*Flags*/, TDownloadSessionAction & /*Action*/)
+  const UnicodeString & FileName, const TRemoteFile * File,
+  const UnicodeString & TargetDir, UnicodeString & DestFileName, int Attrs,
+  const TCopyParamType * CopyParam, int Params, TFileOperationProgressType * OperationProgress,
+  unsigned int /*Flags*/, TDownloadSessionAction & Action)
 {
-  throw Exception(L"Not implemented");
+  UnicodeString DestFullName = TargetDir + DestFileName;
+  if (FileExists(ApiPath(DestFullName)))
+  {
+    __int64 Size;
+    __int64 MTime;
+    FTerminal->OpenLocalFile(DestFullName, GENERIC_READ, NULL, NULL, NULL, &MTime, NULL, &Size);
+    TOverwriteFileParams FileParams;
+
+    FileParams.SourceSize = File->Size;
+    FileParams.SourceTimestamp = File->Modification; // noop
+    FileParams.DestSize = Size;
+    FileParams.DestTimestamp = UnixToDateTime(MTime, FTerminal->SessionData->DSTMode);
+
+    ConfirmOverwrite(FileName, DestFileName, OperationProgress, &FileParams, CopyParam, Params);
+  }
+
+  UnicodeString BucketName, Key;
+  ParsePath(FileName, BucketName, Key);
+
+  TLibS3BucketContext BucketContext = GetBucketContext(BucketName);
+
+  UnicodeString ExpandedDestFullName = ExpandUNCFileName(DestFullName);
+  Action.Destination(ExpandedDestFullName);
+
+  FILE_OPERATION_LOOP_BEGIN
+  {
+    HANDLE LocalHandle;
+    if (!FTerminal->CreateLocalFile(DestFullName, OperationProgress, &LocalHandle, FLAGSET(Params, cpNoConfirmation)))
+    {
+      THROW_SKIP_FILE_NULL;
+    }
+
+    std::unique_ptr<TStream> Stream(new TSafeHandleStream(reinterpret_cast<THandle>(LocalHandle)));
+
+    bool DeleteLocalFile = true;
+
+    try
+    {
+      TLibS3GetObjectDataCallbackData Data;
+
+      FILE_OPERATION_LOOP_BEGIN
+      {
+        RequestInit(Data);
+        Data.FileName = FileName;
+        Data.Stream = Stream.get();
+        Data.OperationProgress = OperationProgress;
+        Data.Exception.reset(NULL);
+
+        TAutoFlag ResponseIgnoreSwitch(FResponseIgnore);
+        S3GetObjectHandler GetObjectHandler = { CreateResponseHandler(), LibS3GetObjectDataCallback };
+        S3_get_object(
+          &BucketContext, StrToS3(Key), NULL, Stream->Position, 0, FRequestContext, FTimeout, &GetObjectHandler, &Data);
+
+        // The "exception" was already seen by the user, its presence mean an accepted abort of the operation.
+        if (Data.Exception.get() == NULL)
+        {
+          CheckLibS3Error(Data, true);
+        }
+      }
+      FILE_OPERATION_LOOP_END_EX(FMTLOAD(TRANSFER_ERROR, (FileName)), (folAllowSkip | folRetryOnFatal));
+
+      if (Data.Exception.get() != NULL)
+      {
+        RethrowException(Data.Exception.get());
+      }
+
+      DeleteLocalFile = false;
+
+      if (CopyParam->PreserveTime)
+      {
+        FTerminal->UpdateTargetTime(LocalHandle, File->Modification, FTerminal->SessionData->DSTMode);
+      }
+    }
+    __finally
+    {
+      CloseHandle(LocalHandle);
+
+      if (DeleteLocalFile)
+      {
+        FILE_OPERATION_LOOP_BEGIN
+        {
+          THROWOSIFFALSE(Sysutils::DeleteFile(ApiPath(DestFullName)));
+        }
+        FILE_OPERATION_LOOP_END(FMTLOAD(DELETE_LOCAL_FILE_ERROR, (DestFullName)));
+      }
+    }
+  }
+  FILE_OPERATION_LOOP_END(FMTLOAD(TRANSFER_ERROR, (FileName)));
+
+  FTerminal->UpdateTargetAttrs(DestFullName, File, CopyParam, Attrs);
 }
 //---------------------------------------------------------------------------
 void __fastcall TS3FileSystem::GetSupportedChecksumAlgs(TStrings * /*Algs*/)

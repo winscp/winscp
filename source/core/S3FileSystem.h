@@ -10,6 +10,7 @@ struct TLibS3CallbackData;
 struct TLibS3BucketContext;
 struct TLibS3ListBucketCallbackData;
 struct TLibS3PutObjectDataCallbackData;
+struct TLibS3GetObjectDataCallbackData;
 struct ssl_st;
 #ifdef NEED_LIBS3
 // resolve clash
@@ -120,6 +121,7 @@ protected:
   ne_session_s * FNeonSession;
   UnicodeString FTlsVersionStr;
   UnicodeString FResponse;
+  bool FResponseIgnore;
   typedef std::map<UnicodeString, UnicodeString> TRegions;
   TRegions FRegions;
   TRegions FHostNames;
@@ -147,6 +149,7 @@ protected:
     TFileOperationProgressType * OperationProgress, const TOverwriteFileParams * FileParams,
     const TCopyParamType * CopyParam, int Params);
   int PutObjectData(int BufferSize, char * Buffer, TLibS3PutObjectDataCallbackData & Data);
+  S3Status GetObjectData(int BufferSize, const char * Buffer, TLibS3GetObjectDataCallbackData & Data);
 
   static TS3FileSystem * GetFileSystem(void * CallbackData);
   static void LibS3SessionCallback(ne_session_s * Session, void * CallbackData);
@@ -164,6 +167,7 @@ protected:
   static S3Status LibS3MultipartInitialCallback(const char * UploadId, void * CallbackData);
   static int LibS3MultipartCommitPutObjectDataCallback(int BufferSize, char * Buffer, void * CallbackData);
   static S3Status LibS3MultipartResponsePropertiesCallback(const S3ResponseProperties * Properties, void * CallbackData);
+  static S3Status LibS3GetObjectDataCallback(int BufferSize, const char * Buffer, void * CallbackData);
 
   static const int S3MultiPartChunkSize;
 };
