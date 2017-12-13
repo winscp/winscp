@@ -23,6 +23,8 @@
 #include <IEListView.hpp>
 #include <WinApi.h>
 //---------------------------------------------------------------------------
+const UnicodeString LinkAppLabelMark(TraceInitStr(L" \x00BB"));
+//---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
 void __fastcall FixListColumnWidth(TListView * TListView, int Index)
@@ -1797,7 +1799,8 @@ static void __fastcall FocusableLabelWindowProc(void * Data, TMessage & Message,
       {
         Canvas->DrawFocusRect(R);
       }
-      else if (!StaticText->Font->Style.Contains(fsUnderline))
+      else if ((StaticText->Font->Color != LinkColor) && // LinkActionLabel and LinkLabel
+               !EndsStr(LinkAppLabelMark, StaticText->Caption)) // LinkAppLabel
       {
         Canvas->Pen->Style = psDot;
         Canvas->Brush->Style = bsClear;
@@ -2087,7 +2090,6 @@ static void __fastcall DoLinkLabel(TStaticText * StaticText)
 {
   StaticText->Transparent = false;
   StaticText->ParentFont = true;
-  StaticText->Font->Style = StaticText->Font->Style << fsUnderline;
   StaticText->Cursor = crHandPoint;
 
   TWndMethod WindowProc;
@@ -2100,6 +2102,8 @@ void __fastcall LinkLabel(TStaticText * StaticText, UnicodeString Url,
   TNotifyEvent OnEnter)
 {
   DoLinkLabel(StaticText);
+
+  StaticText->Font->Style = StaticText->Font->Style << fsUnderline;
 
   reinterpret_cast<TButton*>(StaticText)->OnEnter = OnEnter;
 
@@ -2146,9 +2150,18 @@ void __fastcall LinkLabel(TStaticText * StaticText, UnicodeString Url,
   StaticText->Font->Color = LinkColor;
 }
 //---------------------------------------------------------------------------
+void __fastcall LinkActionLabel(TStaticText * StaticText)
+{
+  DoLinkLabel(StaticText);
+
+  StaticText->Font->Color = LinkColor;
+}
+//---------------------------------------------------------------------------
 void __fastcall LinkAppLabel(TStaticText * StaticText)
 {
   DoLinkLabel(StaticText);
+
+  StaticText->Caption = StaticText->Caption + LinkAppLabelMark;
 }
 //---------------------------------------------------------------------------
 static void __fastcall HotTrackLabelMouseEnter(void * /*Data*/, TObject * Sender)

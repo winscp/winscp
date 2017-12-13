@@ -7472,6 +7472,7 @@ bool __fastcall TTerminal::ConfirmCertificate(
   TQueryButtonAlias Aliases[1];
   Aliases[0].Button = qaRetry;
   Aliases[0].Alias = LoadStr(COPY_KEY_BUTTON);
+  Aliases[0].ActionAlias = LoadStr(COPY_CERTIFICATE_ACTION);
   Aliases[0].OnSubmit = &ClipboardHandler.Copy;
 
   TQueryParams Params(qpWaitInBatch);

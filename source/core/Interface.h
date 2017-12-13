@@ -94,6 +94,7 @@ struct TQueryButtonAlias
   TShiftState GrouppedShiftState;
   bool ElevationRequired;
   bool MenuButton;
+  UnicodeString ActionAlias;
 
   static TQueryButtonAlias CreateYesToAllGrouppedWithYes();
   static TQueryButtonAlias CreateNoToAllGrouppedWithNo();

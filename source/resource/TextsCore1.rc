@@ -443,6 +443,8 @@ BEGIN
   SCRIPT_CP_DESC, "Duplicates remote file"
   TIME_UNKNOWN, "Unknown"
   KEY_DETAILS, "    Algorithm:\t%s\n    SHA-256:\t%s\n    MD5:\t%s"
+  COPY_KEY_ACTION, "&Copy key fingerprints to clipboard"
+  COPY_CERTIFICATE_ACTION, "&Copy certificate fingerprint to clipboard"
 
   CORE_VARIABLE_STRINGS, "CORE_VARIABLE"
   PUTTY_BASED_ON, "SSH and SCP code based on PuTTY %s"

@@ -852,6 +852,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
   int ButtonWidths = 0;
   int ButtonHeight = -1;
   std::vector<TButton *> ButtonControls;
+  TStaticText * LinkControl = NULL;
   TAnswerButtons AnswerButtons;
   for (unsigned int Answer = qaFirst; Answer <= qaLast; Answer = Answer << 1)
   {
@@ -868,6 +869,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
       TShiftState GrouppedShiftState;
       bool ElevationRequired = false;
       bool MenuButton = false;
+      UnicodeString ActionAlias;
       if (Aliases != NULL)
       {
         for (unsigned int i = 0; i < AliasesCount; i++)
@@ -883,61 +885,80 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
             GrouppedShiftState = Aliases[i].GrouppedShiftState;
             ElevationRequired = Aliases[i].ElevationRequired;
             MenuButton = Aliases[i].MenuButton;
+            ActionAlias = Aliases[i].ActionAlias;
             DebugAssert((OnSubmit == NULL) || (GrouppedShiftState == TShiftState()));
             break;
           }
         }
       }
 
-      // we hope that all grouped-with buttons are for answer with greater
-      // value that the answer to be grouped with
-      if (GroupWith >= 0)
+      // implemented for a one link only for now
+      if (!ActionAlias.IsEmpty() &&
+          DebugAlwaysTrue(LinkControl == NULL) &&
+          DebugAlwaysTrue(OnSubmit != NULL) &&
+          DebugAlwaysTrue(GroupWith < 0))
       {
-        if (DebugAlwaysFalse(GroupWith >= static_cast<int>(Answer)) ||
-            DebugAlwaysFalse(Answer == TimeoutAnswer) &&
-            DebugAlwaysFalse(Answer == DefaultAnswer) &&
-            DebugAlwaysFalse(Answer == CancelAnswer))
+        LinkControl = new TStaticText(Result);
+        LinkControl->Name = Name;
+        LinkControl->Caption = ActionAlias;
+        LinkControl->Alignment = taRightJustify;
+        LinkControl->Anchors = TAnchors() << akRight << akTop;
+        LinkActionLabel(LinkControl);
+        LinkControl->OnClick = Result->ButtonSubmit;
+        Result->FButtonSubmitEvents[LinkControl] = OnSubmit;
+      }
+      else
+      {
+        // we hope that all grouped-with buttons are for answer with greater
+        // value that the answer to be grouped with
+        if (GroupWith >= 0)
         {
-          GroupWith = -1;
+          if (DebugAlwaysFalse(GroupWith >= static_cast<int>(Answer)) ||
+              DebugAlwaysFalse(Answer == TimeoutAnswer) &&
+              DebugAlwaysFalse(Answer == DefaultAnswer) &&
+              DebugAlwaysFalse(Answer == CancelAnswer))
+          {
+            GroupWith = -1;
+          }
         }
-      }
 
-      bool IsTimeoutButton = (TimeoutButton != NULL) && (Answer == TimeoutAnswer);
+        bool IsTimeoutButton = (TimeoutButton != NULL) && (Answer == TimeoutAnswer);
 
-      if (Answer == qaHelp)
-      {
-        DebugAssert(OnSubmit == NULL);
-        OnSubmit = Result->HelpButtonSubmit;
-      }
-
-      if (Answer == qaReport)
-      {
-        DebugAssert(OnSubmit == NULL);
-        OnSubmit = Result->ReportButtonSubmit;
-      }
-
-      TButton * Button = Result->CreateButton(
-        Name, Caption, Answer,
-        OnSubmit, IsTimeoutButton, GroupWith, GrouppedShiftState, ElevationRequired, MenuButton,
-        AnswerButtons, HasMoreMessages, ButtonWidths);
-
-      if (Button != NULL)
-      {
-        ButtonControls.push_back(Button);
-
-        Button->Default = (Answer == DefaultAnswer);
-        Button->Cancel = (Answer == CancelAnswer);
-        if (ButtonHeight < 0)
+        if (Answer == qaHelp)
         {
-          ButtonHeight = Button->Height;
+          DebugAssert(OnSubmit == NULL);
+          OnSubmit = Result->HelpButtonSubmit;
         }
-        DebugAssert(ButtonHeight == Button->Height);
 
-        AnswerButtons.insert(TAnswerButtons::value_type(Answer, Button));
-
-        if (IsTimeoutButton)
+        if (Answer == qaReport)
         {
-          *TimeoutButton = Button;
+          DebugAssert(OnSubmit == NULL);
+          OnSubmit = Result->ReportButtonSubmit;
+        }
+
+        TButton * Button = Result->CreateButton(
+          Name, Caption, Answer,
+          OnSubmit, IsTimeoutButton, GroupWith, GrouppedShiftState, ElevationRequired, MenuButton,
+          AnswerButtons, HasMoreMessages, ButtonWidths);
+
+        if (Button != NULL)
+        {
+          ButtonControls.push_back(Button);
+
+          Button->Default = (Answer == DefaultAnswer);
+          Button->Cancel = (Answer == CancelAnswer);
+          if (ButtonHeight < 0)
+          {
+            ButtonHeight = Button->Height;
+          }
+          DebugAssert(ButtonHeight == Button->Height);
+
+          AnswerButtons.insert(TAnswerButtons::value_type(Answer, Button));
+
+          if (IsTimeoutButton)
+          {
+            *TimeoutButton = Button;
+          }
         }
       }
     }
@@ -1106,6 +1127,15 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
       Message->SetBounds(ALeft, VertMargin + IconTextHeight, TextRect.Right, TextRect.Bottom);
       IconTextHeight += TextRect.Bottom;
     }
+  }
+
+  int LinkControlHeight = 0;
+  if (LinkControl != NULL)
+  {
+    LinkControl->Parent = Panel;
+    LinkControl->Left = Panel->ClientWidth - HorzMargin - LinkControl->Width;
+    LinkControl->Top = VertMargin + IconTextHeight + VertMargin;
+    IconTextHeight += VertMargin + LinkControl->Height;
   }
 
   DebugAssert((IconTextWidth > 0) && (IconTextHeight > 0));

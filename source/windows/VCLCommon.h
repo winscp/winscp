@@ -23,6 +23,7 @@ void __fastcall UseSystemSettings(TCustomForm * Control);
 void __fastcall ResetSystemSettings(TCustomForm * Control);
 void __fastcall LinkLabel(TStaticText * StaticText, UnicodeString Url = L"",
   TNotifyEvent OnEnter = NULL);
+void __fastcall LinkActionLabel(TStaticText * StaticText);
 void __fastcall LinkAppLabel(TStaticText * StaticText);
 void __fastcall HintLabel(TStaticText * StaticText, UnicodeString Hint = L"");
 void __fastcall HotTrackLabel(TLabel * Label);

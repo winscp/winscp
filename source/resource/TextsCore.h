@@ -474,6 +474,8 @@
 #define SCRIPT_CP_DESC          559
 #define TIME_UNKNOWN            560
 #define KEY_DETAILS             561
+#define COPY_KEY_ACTION         562
+#define COPY_CERTIFICATE_ACTION 563
 
 #define CORE_VARIABLE_STRINGS   600
 #define PUTTY_BASED_ON          601

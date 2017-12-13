@@ -2351,6 +2351,7 @@ void __fastcall TSecureShell::VerifyHostKey(
       TQueryButtonAlias Aliases[4];
       Aliases[0].Button = qaRetry;
       Aliases[0].Alias = LoadStr(COPY_KEY_BUTTON);
+      Aliases[0].ActionAlias = LoadStr(COPY_KEY_ACTION);
       Aliases[0].OnSubmit = &ClipboardHandler.Copy;
       Aliases[1].Button = qaIgnore;
       Aliases[1].Alias = LoadStr(PASTE_KEY_BUTTON);
