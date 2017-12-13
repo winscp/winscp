@@ -1667,12 +1667,6 @@ void __fastcall TWebDAVFileSystem::Sink(
     ConfirmOverwrite(FileName, DestFileName, OperationProgress, &FileParams, CopyParam, Params);
   }
 
-  UnicodeString FilePath = ::UnixExtractFilePath(FileName);
-  if (FilePath.IsEmpty())
-  {
-    FilePath = L"/";
-  }
-
   UnicodeString ExpandedDestFullName = ExpandUNCFileName(DestFullName);
   Action.Destination(ExpandedDestFullName);
 
