@@ -1309,7 +1309,7 @@ void __fastcall TS3FileSystem::Source(
 
     __int64 Position = 0;
 
-    std::unique_ptr<TStream> Stream(new TSafeHandleStream((THandle)Handle.Handle));
+    std::unique_ptr<TStream> Stream(new TSafeHandleStream(reinterpret_cast<THandle>(Handle.Handle)));
 
     for (int Part = 1; Part <= Parts; Part++)
     {
