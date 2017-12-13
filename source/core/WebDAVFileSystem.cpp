@@ -631,7 +631,7 @@ void __fastcall TWebDAVFileSystem::CheckStatus(int NeonStatus)
     {
       DebugAssert(FSkipped);
       FSkipped = false;
-      THROW_SKIP_FILE_NULL;
+      throw ESkipFile();
     }
   }
   else
@@ -1125,7 +1125,7 @@ void __fastcall TWebDAVFileSystem::ConfirmOverwrite(
       break;
 
     case qaNo:
-      THROW_SKIP_FILE_NULL;
+      throw ESkipFile();
 
     default:
       DebugFail();
@@ -1290,7 +1290,7 @@ void __fastcall TWebDAVFileSystem::Source(
       FD = _open_osfhandle((intptr_t)Handle.Handle, O_BINARY);
       if (FD < 0)
       {
-        THROW_SKIP_FILE_NULL;
+        throw ESkipFile();
       }
 
       TAutoFlag UploadingFlag(FUploading);
@@ -1675,7 +1675,7 @@ void __fastcall TWebDAVFileSystem::Sink(
     HANDLE LocalHandle;
     if (!FTerminal->CreateLocalFile(DestFullName, OperationProgress, &LocalHandle, FLAGSET(Params, cpNoConfirmation)))
     {
-      THROW_SKIP_FILE_NULL;
+      throw ESkipFile();
     }
 
     bool DeleteLocalFile = true;
@@ -1686,7 +1686,7 @@ void __fastcall TWebDAVFileSystem::Sink(
       FD = _open_osfhandle((intptr_t)LocalHandle, O_BINARY);
       if (FD < 0)
       {
-        THROW_SKIP_FILE_NULL;
+        throw ESkipFile();
       }
 
       TAutoFlag DownloadingFlag(FDownloading);

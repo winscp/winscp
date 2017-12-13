@@ -2254,7 +2254,7 @@ bool __fastcall TTerminal::FileOperationLoopQuery(Exception & E,
 
     if (AllowSkip)
     {
-      THROW_SKIP_FILE(&E, Message);
+      throw ESkipFile(&E, Message);
     }
     else
     {
@@ -2271,8 +2271,8 @@ void __fastcall TTerminal::FileOperationLoopEnd(Exception & E,
   unsigned int Flags, const UnicodeString & SpecialRetry, const UnicodeString & HelpKeyword)
 {
   if ((dynamic_cast<EAbort *>(&E) != NULL) ||
-      (dynamic_cast<EScpSkipFile *>(&E) != NULL) ||
-      (dynamic_cast<EScpSkipFile *>(&E) != NULL))
+      (dynamic_cast<ESkipFile *>(&E) != NULL) ||
+      (dynamic_cast<ESkipFile *>(&E) != NULL))
   {
     RethrowException(&E);
   }
@@ -3165,11 +3165,11 @@ void __fastcall inline TTerminal::LogEvent(const UnicodeString & Str)
 void __fastcall TTerminal::RollbackAction(TSessionAction & Action,
   TFileOperationProgressType * OperationProgress, Exception * E)
 {
-  // EScpSkipFile without "cancel" is file skip,
+  // ESkipFile without "cancel" is file skip,
   // and we do not want to record skipped actions.
-  // But EScpSkipFile with "cancel" is abort and we want to record that.
+  // But ESkipFile with "cancel" is abort and we want to record that.
   // Note that TSCPFileSystem modifies the logic of RollbackAction little bit.
-  if ((dynamic_cast<EScpSkipFile *>(E) != NULL) &&
+  if ((dynamic_cast<ESkipFile *>(E) != NULL) &&
       ((OperationProgress == NULL) ||
        (OperationProgress->Cancel == csContinue)))
   {
@@ -3623,8 +3623,8 @@ void __fastcall TTerminal::ProcessDirectory(const UnicodeString DirName,
         if (!File->IsParentDirectory && !File->IsThisDirectory)
         {
           CallBackFunc(Directory + File->FileName, File, Param);
-          // We should catch EScpSkipFile here as we do in ProcessFiles.
-          // Now we have to handle EScpSkipFile in every callback implementation.
+          // We should catch ESkipFile here as we do in ProcessFiles.
+          // Now we have to handle ESkipFile in every callback implementation.
         }
       }
     }
@@ -3781,7 +3781,7 @@ bool __fastcall TTerminal::ProcessFiles(TStrings * FileList,
               Progress.Finish(FileName, Success, OnceDoneOperation);
             }
           }
-          catch(EScpSkipFile & E)
+          catch(ESkipFile & E)
           {
             TSuspendFileOperationProgress Suspend(OperationProgress);
             if (!HandleException(&E))
@@ -5632,7 +5632,7 @@ void __fastcall TTerminal::SynchronizeCollectFile(const UnicodeString FileName,
   {
     DoSynchronizeCollectFile(FileName, File, Param);
   }
-  catch(EScpSkipFile & E)
+  catch(ESkipFile & E)
   {
     TSuspendFileOperationProgress Suspend(OperationProgress);
     if (!HandleException(&E))
@@ -6619,7 +6619,7 @@ void __fastcall TTerminal::DoCopyToRemote(
         SourceRobust(FileName, FullTargetDir, CopyParam, Params, OperationProgress, Flags | tfFirstLevel);
         Success = true;
       }
-      catch (EScpSkipFile & E)
+      catch (ESkipFile & E)
       {
         TSuspendFileOperationProgress Suspend(OperationProgress);
         if (!HandleException(&E))
@@ -6741,7 +6741,7 @@ void __fastcall TTerminal::DirectorySource(
             PostCreateDir = false;
           }
         }
-        catch (EScpSkipFile &E)
+        catch (ESkipFile &E)
         {
           // If ESkipFile occurs, just log it and continue with next file
           TSuspendFileOperationProgress Suspend(OperationProgress);
@@ -6868,7 +6868,7 @@ void __fastcall TTerminal::Source(
 
   if (!AllowLocalFileTransfer(FileName, CopyParam, OperationProgress))
   {
-    THROW_SKIP_FILE_NULL;
+    throw ESkipFile();
   }
 
   TLocalFileHandle Handle;
@@ -7076,7 +7076,7 @@ void __fastcall TTerminal::DoCopyToLocal(
         SinkRobust(AbsoluteFileName, File, FullTargetDir, CopyParam, Params, OperationProgress, Flags | tfFirstLevel);
         Success = true;
       }
-      catch (EScpSkipFile & E)
+      catch (ESkipFile & E)
       {
         TSuspendFileOperationProgress Suspend(OperationProgress);
         if (!HandleException(&E))
@@ -7162,13 +7162,13 @@ void __fastcall TTerminal::Sink(
   if (!CopyParam->AllowTransfer(BaseFileName, osRemote, File->IsDirectory, MaskParams))
   {
     LogEvent(FORMAT(L"File \"%s\" excluded from transfer", (FileName)));
-    THROW_SKIP_FILE_NULL;
+    throw ESkipFile();
   }
 
   if (CopyParam->SkipTransfer(FileName, File->IsDirectory))
   {
     OperationProgress->AddSkippedFileSize(File->Size);
-    THROW_SKIP_FILE_NULL;
+    throw ESkipFile();
   }
 
   LogFileDetails(FileName, File->Modification, File->Size);
@@ -7219,7 +7219,7 @@ void __fastcall TTerminal::Sink(
         // of any parent directory
         if (FLAGSET(Params, cpDelete) && SinkFileParams.Skipped)
         {
-          THROW_SKIP_FILE_NULL;
+          throw ESkipFile();
         }
       }
     }
@@ -7308,7 +7308,7 @@ void __fastcall TTerminal::SinkFile(UnicodeString FileName, const TRemoteFile * 
     SinkRobust(FileName, File, Params->TargetDir, Params->CopyParam,
       Params->Params, Params->OperationProgress, Params->Flags);
   }
-  catch (EScpSkipFile & E)
+  catch (ESkipFile & E)
   {
     Params->Skipped = true;
 

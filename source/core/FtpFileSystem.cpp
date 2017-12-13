@@ -1498,7 +1498,7 @@ void __fastcall TFTPFileSystem::FileTransfer(const UnicodeString & FileName,
   switch (FFileTransferAbort)
   {
     case ftaSkip:
-      THROW_SKIP_FILE_NULL;
+      throw ESkipFile();
 
     case ftaCancel:
       Abort();

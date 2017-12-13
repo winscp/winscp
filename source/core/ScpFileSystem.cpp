@@ -31,11 +31,7 @@ const int ecIgnoreWarnings = 2;
 const int ecReadProgress = 4;
 const int ecDefault = ecRaiseExcept;
 //---------------------------------------------------------------------------
-#define THROW_FILE_SKIPPED(EXCEPTION, MESSAGE) \
-  throw EScpFileSkipped(EXCEPTION, MESSAGE)
-
-#define THROW_SCP_ERROR(EXCEPTION, MESSAGE) \
-  throw EScp(EXCEPTION, MESSAGE)
+DERIVE_EXT_EXCEPTION(EScpFileSkipped, ESkipFile);
 //===========================================================================
 #define MaxShellCommand fsLang
 #define ShellCommandCount MaxShellCommand + 1
@@ -1465,11 +1461,11 @@ void __fastcall TSCPFileSystem::SCPResponse(bool * GotLastLine)
 
       if (Resp == 1)
       {
-        THROW_FILE_SKIPPED(NULL, Msg);
+        throw EScpFileSkipped(NULL, Msg);
       }
       else
       {
-        THROW_SCP_ERROR(NULL, Msg);
+        throw EScp(NULL, Msg);
       }
   }
 }
@@ -1636,7 +1632,7 @@ void __fastcall TSCPFileSystem::CopyToRemote(TStrings * FilesToCopy,
             throw;
           }
         }
-        catch (EScpSkipFile &E)
+        catch (ESkipFile &E)
         {
           OperationProgress->Finish(FileName, false, OnceDoneOperation);
 
@@ -1714,7 +1710,7 @@ void __fastcall TSCPFileSystem::SCPSource(const UnicodeString FileName,
 
   if (!FTerminal->AllowLocalFileTransfer(FileName, CopyParam, OperationProgress))
   {
-    THROW_SKIP_FILE_NULL;
+    throw ESkipFile();
   }
 
   TLocalFileHandle Handle;
@@ -1916,7 +1912,7 @@ void __fastcall TSCPFileSystem::SCPSource(const UnicodeString FileName,
     }
     catch (Exception &E)
     {
-      // EScpFileSkipped is derived from EScpSkipFile,
+      // EScpFileSkipped is derived from ESkipFile,
       // but is does not indicate file skipped by user here
       if (dynamic_cast<EScpFileSkipped *>(&E) != NULL)
       {
@@ -2022,8 +2018,8 @@ void __fastcall TSCPFileSystem::SCPDirectorySource(const UnicodeString Directory
             SCPSource(FileName, TargetDirFull, CopyParam, Params, OperationProgress, Level + 1);
           }
         }
-        // Previously we caught EScpSkipFile, making error being displayed
-        // even when file was excluded by mask. Now the EScpSkipFile is special
+        // Previously we caught ESkipFile, making error being displayed
+        // even when file was excluded by mask. Now the ESkipFile is special
         // case without error message.
         catch (EScpFileSkipped &E)
         {
@@ -2040,7 +2036,7 @@ void __fastcall TSCPFileSystem::SCPDirectorySource(const UnicodeString Directory
             throw;
           }
         }
-        catch (EScpSkipFile &E)
+        catch (ESkipFile &E)
         {
           // If ESkipFile occurs, just log it and continue with next file
           TSuspendFileOperationProgress Suspend(OperationProgress);
@@ -2230,7 +2226,7 @@ void __fastcall TSCPFileSystem::Sink(
 void __fastcall TSCPFileSystem::SCPError(const UnicodeString Message, bool Fatal)
 {
   SCPSendError(Message, Fatal);
-  THROW_FILE_SKIPPED(NULL, Message);
+  throw EScpFileSkipped(NULL, Message);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSCPFileSystem::SCPSendError(const UnicodeString Message, bool Fatal)
@@ -2327,7 +2323,7 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
         switch (Ctrl) {
           case 1:
             // Error (already logged by ReceiveLine())
-            THROW_FILE_SKIPPED(NULL, FMTLOAD(REMOTE_ERROR, (Line)));
+            throw EScpFileSkipped(NULL, FMTLOAD(REMOTE_ERROR, (Line)));
 
           case 2:
             // Fatal error, terminate copying
@@ -2395,7 +2391,7 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
         // last possibility to cancel transfer before it starts
         if (OperationProgress->Cancel)
         {
-          THROW_SKIP_FILE(NULL, MainInstructions(LoadStr(USER_TERMINATED)));
+          throw ESkipFile(NULL, MainInstructions(LoadStr(USER_TERMINATED)));
         }
 
         bool Dir = (Ctrl == L'D');
@@ -2647,7 +2643,7 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
       // successful, even when for example user refused to overwrite file
       Success = false;
     }
-    catch (EScpSkipFile &E)
+    catch (ESkipFile &E)
     {
       SCPSendError(E.Message, false);
       Success = false;

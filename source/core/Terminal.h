@@ -64,10 +64,6 @@ typedef void __fastcall (__closure *TInformationEvent)
 typedef void __fastcall (__closure *TCustomCommandEvent)
   (TTerminal * Terminal, const UnicodeString & Command, bool & Handled);
 //---------------------------------------------------------------------------
-#define THROW_SKIP_FILE(EXCEPTION, MESSAGE) \
-  throw EScpSkipFile(EXCEPTION, MESSAGE)
-#define THROW_SKIP_FILE_NULL THROW_SKIP_FILE(NULL, L"")
-//---------------------------------------------------------------------------
 const unsigned int folNone = 0x00;
 const unsigned int folAllowSkip = 0x01;
 const unsigned int folRetryOnFatal = 0x02;

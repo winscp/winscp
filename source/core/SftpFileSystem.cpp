@@ -4359,7 +4359,7 @@ void __fastcall TSFTPFileSystem::SFTPConfirmOverwrite(
         break;
 
       case qaNo:
-        THROW_SKIP_FILE_NULL;
+        throw ESkipFile();
     }
   }
 }
@@ -4657,7 +4657,7 @@ void __fastcall TSFTPFileSystem::Source(
         {
           if (OperationProgress->ClearCancelFile())
           {
-            THROW_SKIP_FILE_NULL;
+            throw ESkipFile();
           }
           else
           {
@@ -5314,7 +5314,7 @@ void __fastcall TSFTPFileSystem::Sink(
       if (!FTerminal->CreateLocalFile(LocalFileName, OperationProgress,
              &LocalHandle, FLAGSET(Params, cpNoConfirmation)))
       {
-        THROW_SKIP_FILE_NULL;
+        throw ESkipFile();
       }
     }
     DebugAssert(LocalHandle);
@@ -5451,7 +5451,7 @@ void __fastcall TSFTPFileSystem::Sink(
           {
             if (OperationProgress->ClearCancelFile())
             {
-              THROW_SKIP_FILE_NULL;
+              throw ESkipFile();
             }
             else
             {

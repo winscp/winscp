@@ -1122,7 +1122,7 @@ void TS3FileSystem::ConfirmOverwrite(
       break;
 
     case qaNo:
-      THROW_SKIP_FILE_NULL;
+      throw ESkipFile();
 
     default:
       DebugFail();
@@ -1156,7 +1156,7 @@ int TS3FileSystem::PutObjectData(int BufferSize, char * Buffer, TLibS3PutObjectD
   TFileOperationProgressType * OperationProgress = Data.OperationProgress;
   if (OperationProgress->Cancel != csContinue)
   {
-    Data.Exception.reset(new EAbort(L""));
+      Data.Exception.reset(new EAbort(L""));
     Result = -1;
   }
   else
@@ -1519,7 +1519,7 @@ void __fastcall TS3FileSystem::Sink(
     HANDLE LocalHandle;
     if (!FTerminal->CreateLocalFile(DestFullName, OperationProgress, &LocalHandle, FLAGSET(Params, cpNoConfirmation)))
     {
-      THROW_SKIP_FILE_NULL;
+      throw ESkipFile();
     }
 
     std::unique_ptr<TStream> Stream(new TSafeHandleStream(reinterpret_cast<THandle>(LocalHandle)));
