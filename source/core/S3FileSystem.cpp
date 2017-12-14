@@ -600,11 +600,11 @@ bool __fastcall TS3FileSystem::IsCapable(int Capability) const
     case fcRemoteMove:
     case fcMoveToQueue:
     case fsSkipTransfer:
+    case fsParallelTransfers:
       return true;
 
     case fcPreservingTimestampUpload:
     case fcCheckingSpaceAvailable:
-    case fsParallelTransfers:
     case fcUserGroupListing:
     case fcModeChanging:
     case fcModeChangingUpload:
