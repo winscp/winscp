@@ -1129,7 +1129,6 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
     }
   }
 
-  int LinkControlHeight = 0;
   if (LinkControl != NULL)
   {
     LinkControl->Parent = Panel;
