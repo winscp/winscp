@@ -599,11 +599,11 @@ bool __fastcall TS3FileSystem::IsCapable(int Capability) const
     case fcRename:
     case fcRemoteMove:
     case fcMoveToQueue:
+    case fsSkipTransfer:
       return true;
 
     case fcPreservingTimestampUpload:
     case fcCheckingSpaceAvailable:
-    case fsSkipTransfer:
     case fsParallelTransfers:
     case fcUserGroupListing:
     case fcModeChanging:
@@ -1133,12 +1133,16 @@ void TS3FileSystem::ConfirmOverwrite(
   }
 }
 //---------------------------------------------------------------------------
-struct TLibS3PutObjectDataCallbackData : TLibS3CallbackData
+struct TLibS3TransferObjectDataCallbackData : TLibS3CallbackData
 {
   UnicodeString FileName;
   TStream * Stream;
   TFileOperationProgressType * OperationProgress;
   std::auto_ptr<Exception> Exception;
+};
+//---------------------------------------------------------------------------
+struct TLibS3PutObjectDataCallbackData : TLibS3TransferObjectDataCallbackData
+{
   RawByteString ETag;
 };
 //---------------------------------------------------------------------------
@@ -1149,18 +1153,34 @@ int TS3FileSystem::LibS3PutObjectDataCallback(int BufferSize, char * Buffer, voi
   return Data.FileSystem->PutObjectData(BufferSize, Buffer, Data);
 }
 //---------------------------------------------------------------------------
+bool TS3FileSystem::ShouldCancelTransfer(TLibS3TransferObjectDataCallbackData & Data)
+{
+  bool Result = (Data.OperationProgress->Cancel != csContinue);
+  if (Result)
+  {
+    if (Data.OperationProgress->ClearCancelFile())
+    {
+      Data.Exception.reset(new ESkipFile());
+    }
+    else
+    {
+      Data.Exception.reset(new EAbort(L""));
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 int TS3FileSystem::PutObjectData(int BufferSize, char * Buffer, TLibS3PutObjectDataCallbackData & Data)
 {
   int Result;
 
-  TFileOperationProgressType * OperationProgress = Data.OperationProgress;
-  if (OperationProgress->Cancel != csContinue)
+  if (ShouldCancelTransfer(Data))
   {
-      Data.Exception.reset(new EAbort(L""));
     Result = -1;
   }
   else
   {
+    TFileOperationProgressType * OperationProgress = Data.OperationProgress;
     try
     {
       FILE_OPERATION_LOOP_BEGIN
@@ -1437,12 +1457,8 @@ void __fastcall TS3FileSystem::CopyToLocal(
   FTerminal->DoCopyToLocal(FilesToCopy, TargetDir, CopyParam, Params, OperationProgress, tfNone, OnceDoneOperation);
 }
 //---------------------------------------------------------------------------
-struct TLibS3GetObjectDataCallbackData : TLibS3CallbackData
+struct TLibS3GetObjectDataCallbackData : TLibS3TransferObjectDataCallbackData
 {
-  UnicodeString FileName;
-  TStream * Stream;
-  TFileOperationProgressType * OperationProgress;
-  std::auto_ptr<Exception> Exception;
 };
 //---------------------------------------------------------------------------
 S3Status TS3FileSystem::LibS3GetObjectDataCallback(int BufferSize, const char * Buffer, void * CallbackData)
@@ -1456,14 +1472,13 @@ S3Status TS3FileSystem::GetObjectData(int BufferSize, const char * Buffer, TLibS
 {
   S3Status Result = S3StatusOK;
 
-  TFileOperationProgressType * OperationProgress = Data.OperationProgress;
-  if (OperationProgress->Cancel != csContinue)
+  if (ShouldCancelTransfer(Data))
   {
-    Data.Exception.reset(new EAbort(L""));
     Result = S3StatusAbortedByCallback;
   }
   else
   {
+    TFileOperationProgressType * OperationProgress = Data.OperationProgress;
     try
     {
       FILE_OPERATION_LOOP_BEGIN

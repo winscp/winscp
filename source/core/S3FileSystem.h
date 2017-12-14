@@ -9,6 +9,7 @@ struct TOverwriteFileParams;
 struct TLibS3CallbackData;
 struct TLibS3BucketContext;
 struct TLibS3ListBucketCallbackData;
+struct TLibS3TransferObjectDataCallbackData;
 struct TLibS3PutObjectDataCallbackData;
 struct TLibS3GetObjectDataCallbackData;
 struct ssl_st;
@@ -150,6 +151,7 @@ protected:
     const TCopyParamType * CopyParam, int Params);
   int PutObjectData(int BufferSize, char * Buffer, TLibS3PutObjectDataCallbackData & Data);
   S3Status GetObjectData(int BufferSize, const char * Buffer, TLibS3GetObjectDataCallbackData & Data);
+  bool ShouldCancelTransfer(TLibS3TransferObjectDataCallbackData & Data);
 
   static TS3FileSystem * GetFileSystem(void * CallbackData);
   static void LibS3SessionCallback(ne_session_s * Session, void * CallbackData);
