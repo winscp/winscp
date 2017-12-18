@@ -408,6 +408,11 @@ begin
     try
       CopyImageFromImageList(Png, Value, Index);
       result := AddPng(Png);
+      { Since Berlin AddImage returns the new size of the list, while before it returned the index of the added image.
+        Although this behaviour seems somewhat strange, it actually matches the documentation. }
+      {$IF RTLVersion >= 31.00}
+      result := FPngImages.Count;
+      {$IFEND}
     finally
       Png.Free;
     end;

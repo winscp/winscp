@@ -15,6 +15,7 @@ type
     procedure SetPngImage(const Value: TPngImage);
     procedure SetPngOptions(const Value: TPngOptions);
     procedure CreatePngGlyph;
+    function HasValidPng: Boolean;
   protected
     procedure ActionChange(Sender: TObject; CheckDefaults: Boolean); override;
     procedure Paint; override;
@@ -73,7 +74,7 @@ var
 begin
   inherited Paint;
 
-  if FPngImage <> nil then begin
+  if HasValidPng then begin
     //Calculate the position of the PNG glyph
     CalcButtonLayout(Canvas, FPngImage, ClientRect, FState = bsDown, Down,
       Caption, Layout, Margin, Spacing, GlyphPos, TextPos, DrawTextBiDiModeFlags(0));
@@ -106,13 +107,15 @@ begin
     FPngImage.Free;
     FPngImage := TPngImage.Create;
   end
-  else
+  else begin
     FPngImage.Assign(Value);
+  end;
 
-  //To work around the gamma-problem
-  with FPngImage do
-    if Header.ColorType in [COLOR_RGB, COLOR_RGBALPHA, COLOR_PALETTE] then
-      Chunks.RemoveChunk(Chunks.ItemFromClass(TChunkgAMA));
+  if HasValidPng then begin
+    //To work around the gamma-problem
+    if FPngImage.Header.ColorType in [COLOR_RGB, COLOR_RGBALPHA, COLOR_PALETTE] then
+      FPngImage.Chunks.RemoveChunk(FPngImage.Chunks.ItemFromClass(TChunkgAMA));
+  end;
 
   FImageFromAction := False;
   CreatePngGlyph;
@@ -144,6 +147,11 @@ begin
   finally
     Bmp.Free;
   end;
+end;
+
+function TPngSpeedButton.HasValidPng: Boolean;
+begin
+  Result := (FPngImage <> nil) and not FPngImage.Empty;
 end;
 
 end.
