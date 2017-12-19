@@ -19,9 +19,10 @@ type
   private
     FEnabledImages: Boolean;
     FLocked: Integer;
+    FOverlayIndex: array[TOverlay] of Integer;
     FPngImages: TPngImageCollectionItems;
     FPngOptions: TPngOptions;
-  class var
+    function ExtractOverlayIndex(Style: Cardinal): Integer;
     function GetHeight: Integer;
     function GetWidth: Integer;
     procedure SetHeight(const Value: Integer);
@@ -56,10 +57,10 @@ type
     procedure EndUpdate(Update: Boolean = True);
     procedure Insert(Index: Integer; Image, Mask: TBitmap); virtual;
     procedure InsertIcon(Index: Integer; Image: TIcon); virtual;
-    procedure InsertPng(Index: Integer; Image: TPngImage; Background: TColor =
-        clNone);
+    procedure InsertPng(Index: Integer; Image: TPngImage; Background: TColor = clNone);
     procedure InsertMasked(Index: Integer; Image: TBitmap; MaskColor: TColor); virtual;
     procedure Move(CurIndex, NewIndex: Integer); virtual;
+    function Overlay(ImageIndex: Integer; Overlay: TOverlay): Boolean;
     procedure Replace(Index: Integer; Image, Mask: TBitmap); virtual;
     procedure ReplaceIcon(Index: Integer; Image: TIcon); virtual;
     procedure ReplaceMasked(Index: Integer; NewImage: TBitmap; MaskColor: TColor); virtual;
@@ -223,7 +224,7 @@ var
   I: Integer;
 begin
   if ImageListCount = 0 then begin
-    SetLength(Pointers, 14);
+    SetLength(Pointers, 15);
     Pointers[0] := Combo(@TCustomImageList.Add, @TPngImageList.Add, 'Add');
     Pointers[1] := Combo(@TCustomImageList.AddIcon, @TPngImageList.AddIcon, 'AddIcon');
     Pointers[2] := Combo(@TCustomImageList.AddImage, @TPngImageList.AddImage, 'AddImage');
@@ -238,6 +239,7 @@ begin
     Pointers[11] := Combo(@TCustomImageList.Replace, @TPngImageList.Replace, 'Replace');
     Pointers[12] := Combo(@TCustomImageList.ReplaceIcon, @TPngImageList.ReplaceIcon, 'ReplaceIcon');
     Pointers[13] := Combo(@TCustomImageList.ReplaceMasked, @TPngImageList.ReplaceMasked, 'ReplaceMasked');
+    Pointers[14] := Combo(@TCustomImageList.Overlay, @TPngImageList.Overlay, 'Overlay');
 
     MethodPatches := TObjectList.Create;
     for I := Low(Pointers) to High(Pointers) do begin
@@ -296,7 +298,12 @@ begin
 end;
 
 constructor TPngImageList.Create(AOwner: TComponent);
+var
+  I: Integer;
 begin
+  for I := Low(FOverlayIndex) to High(FOverlayIndex) do begin
+    FOverlayIndex[I] := -1;
+  end;
   inherited Create(AOwner);
   ColorDepth := cd32Bit;
   if ImageListCount = 0 then
@@ -644,6 +651,7 @@ procedure TPngImageList.DoDraw(Index: Integer; Canvas: TCanvas; X, Y: Integer; S
 var
   PaintRect: TRect;
   Options: TPngOptions;
+  IndexOfOverlay: Integer;
   Png: TPngImageCollectionItem;
 begin
   //Draw a PNG directly to the Canvas. This is the preferred method to call,
@@ -654,8 +662,16 @@ begin
   else
     Options := FPngOptions;
   Png := FPngImages.Items[Index];
-  if Png <> nil then
+  if Png <> nil then begin
     DrawPNG(Png.PngImage, Canvas, PaintRect, Options);
+    IndexOfOverlay := ExtractOverlayIndex(Style);
+    if (IndexOfOverlay >= 0) and (IndexOfOverlay < Count) then begin
+      Png := PngImages.Items[IndexOfOverlay];
+      if Png <> nil then begin
+        DrawPNG(Png.PngImage, Canvas, PaintRect, Options);
+      end;
+    end;
+  end;
 end;
 
 procedure TPngImageList.EndUpdate(Update: Boolean);
@@ -663,6 +679,23 @@ begin
   Dec(FLocked);
   if Update and (FLocked = 0) then
     CopyPngs;
+end;
+
+function TPngImageList.ExtractOverlayIndex(Style: Cardinal): Integer;
+var
+  idx: Cardinal;
+begin
+  Result := -1;
+  idx := Style and ILD_OVERLAYMASK;
+  if idx > 0 then begin
+    idx := idx shr 8;
+    if (idx > 0) then begin
+      Dec(idx);
+      if (idx >= Low(FOverlayIndex)) and (idx <= High(FOverlayIndex)) then begin
+        Result := FOverlayIndex[idx];
+      end;
+    end;
+  end;
 end;
 
 function TPngImageList.GetHeight: Integer;
@@ -855,6 +888,12 @@ begin
       end;
     end;
   end;
+end;
+
+function TPngImageList.Overlay(ImageIndex: Integer; Overlay: TOverlay): Boolean;
+begin
+  Result := (ImageIndex >= 0) and (ImageIndex < Count);
+  FOverlayIndex[Overlay] := ImageIndex;
 end;
 
 function TPngImageList.PngToIcon(const Png: TPngImage; Background: TColor): HICON;
