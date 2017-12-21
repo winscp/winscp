@@ -2717,7 +2717,7 @@ UnicodeString __fastcall TSFTPFileSystem::RealPath(const UnicodeString Path)
 
     // Note that earlier drafts of SFTP-6 (filexfer-07 and -08) had optional compose-path field
     // before control-byte field. If we ever use this against a server conforming to those drafts,
-    // if may cause trouble.
+    // it may cause trouble.
     if (FVersion >= 6)
     {
       if (FSecureShell->SshImplementation != sshiProFTPD)
