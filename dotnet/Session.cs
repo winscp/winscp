@@ -548,7 +548,7 @@ namespace WinSCP
 
                         if (fileInfo.IsDirectory && allDirectories)
                         {
-                            foreach (RemoteFileInfo fileInfo2 in DoEnumerateRemoteFiles(CombinePaths(path, fileInfo.Name), regex, options, false))
+                            foreach (RemoteFileInfo fileInfo2 in DoEnumerateRemoteFiles(RemotePath.CombinePaths(path, fileInfo.Name), regex, options, false))
                             {
                                 yield return fileInfo2;
                             }
@@ -1052,7 +1052,7 @@ namespace WinSCP
             {
                 CheckOpened();
 
-                string sourceArgument = Tools.ArgumentEscape(EscapeFileMask(sourcePath));
+                string sourceArgument = Tools.ArgumentEscape(RemotePath.EscapeFileMask(sourcePath));
                 string targetArgument = Tools.ArgumentEscape(targetPath);
                 string command = string.Format(CultureInfo.InvariantCulture, "cp \"{0}\" \"{1}\"", sourceArgument, targetArgument);
                 WriteCommand(command);
@@ -1075,227 +1075,28 @@ namespace WinSCP
             }
         }
 
-        // This is not static method only to make it visible to COM
+        [Obsolete("Use RemotePath.EscapeFileMask")]
         public string EscapeFileMask(string fileMask)
         {
-            if (fileMask == null)
-            {
-                throw Logger.WriteException(new ArgumentNullException("fileMask"));
-            }
-            int lastSlash = fileMask.LastIndexOf('/');
-            string path = lastSlash > 0 ? fileMask.Substring(0, lastSlash + 1) : string.Empty;
-            string mask = lastSlash > 0 ? fileMask.Substring(lastSlash + 1) : fileMask;
-            // Keep in sync with EscapeFileMask in GenerateUrl.cpp
-            mask = mask.Replace("[", "[[]").Replace("*", "[*]").Replace("?", "[?]");
-            return path + mask;
+            return RemotePath.EscapeFileMask(fileMask);
         }
 
+        [Obsolete("Use RemotePath.TranslateRemotePathToLocal")]
         public string TranslateRemotePathToLocal(string remotePath, string remoteRoot, string localRoot)
         {
-            if (remotePath == null)
-            {
-                throw Logger.WriteException(new ArgumentNullException("remotePath"));
-            }
-
-            if (remoteRoot == null)
-            {
-                throw Logger.WriteException(new ArgumentNullException("remoteRoot"));
-            }
-
-            if (localRoot == null)
-            {
-                throw Logger.WriteException(new ArgumentNullException("localRoot"));
-            }
-
-            if ((localRoot.Length > 0) && !localRoot.EndsWith("\\", StringComparison.Ordinal))
-            {
-                localRoot += "\\";
-            }
-
-            // not adding to empty root paths, because the path may not even start with slash
-            if ((remoteRoot.Length > 0) && !remoteRoot.EndsWith("/", StringComparison.Ordinal))
-            {
-                remoteRoot += "/";
-            }
-
-            string localPath;
-            // special case
-            if (remotePath == remoteRoot)
-            {
-                localPath = localRoot;
-            }
-            else
-            {
-                if (!remotePath.StartsWith(remoteRoot, StringComparison.Ordinal))
-                {
-                    throw Logger.WriteException(new InvalidOperationException(string.Format(CultureInfo.CurrentCulture, "{0} does not start with {1}", remotePath, remoteRoot)));
-                }
-
-                string subPath = remotePath.Substring(remoteRoot.Length);
-                // can happen only when remoteRoot is empty
-                if (subPath.StartsWith("/", StringComparison.Ordinal))
-                {
-                    subPath = subPath.Substring(1);
-                }
-                subPath = subPath.Replace('/', '\\');
-                localPath = localRoot + subPath;
-            }
-            return localPath;
+            return RemotePath.TranslateRemotePathToLocal(remotePath, remoteRoot, localRoot);
         }
 
+        [Obsolete("Use RemotePath.TranslateLocalPathToRemote")]
         public string TranslateLocalPathToRemote(string localPath, string localRoot, string remoteRoot)
         {
-            if (localPath == null)
-            {
-                throw Logger.WriteException(new ArgumentNullException("localPath"));
-            }
-
-            if (localRoot == null)
-            {
-                throw Logger.WriteException(new ArgumentNullException("localRoot"));
-            }
-
-            if (remoteRoot == null)
-            {
-                throw Logger.WriteException(new ArgumentNullException("remoteRoot"));
-            }
-
-            if ((localRoot.Length > 0) && !localRoot.EndsWith("\\", StringComparison.Ordinal))
-            {
-                localRoot += "\\";
-            }
-
-            // not adding to empty root paths, because the path may not even start with slash
-            if ((remoteRoot.Length > 0) && !remoteRoot.EndsWith("/", StringComparison.Ordinal))
-            {
-                remoteRoot += "/";
-            }
-
-            string remotePath;
-            // special case
-            if (localPath == localRoot)
-            {
-                remotePath = remoteRoot;
-            }
-            else
-            {
-                if (!localPath.StartsWith(localRoot, StringComparison.Ordinal))
-                {
-                    throw Logger.WriteException(new InvalidOperationException(string.Format(CultureInfo.CurrentCulture, "{0} does not start with {1}", localPath, localRoot)));
-                }
-
-                string subPath = localPath.Substring(localRoot.Length);
-                // can happen only when localRoot is empty
-                if (subPath.StartsWith("\\", StringComparison.Ordinal))
-                {
-                    subPath = subPath.Substring(1);
-                }
-                subPath = subPath.Replace('\\', '/');
-                remotePath = remoteRoot + subPath;
-            }
-            return remotePath;
+            return RemotePath.TranslateLocalPathToRemote(localPath, localRoot, remoteRoot);
         }
 
+        [Obsolete("Use RemotePath.CombinePaths")]
         public string CombinePaths(string path1, string path2)
         {
-            if (path1 == null)
-            {
-                throw Logger.WriteException(new ArgumentNullException("path1"));
-            }
-
-            if (path2 == null)
-            {
-                throw Logger.WriteException(new ArgumentNullException("path2"));
-            }
-
-            string result;
-
-            if (path2.StartsWith("/", StringComparison.Ordinal))
-            {
-                result = path2;
-            }
-            else
-            {
-                result =
-                    path1 +
-                    ((path1.Length == 0) || (path2.Length == 0) || path1.EndsWith("/", StringComparison.Ordinal) ? string.Empty : "/") +
-                    path2;
-            }
-            return result;
-        }
-
-        public string GetDirectoryName(string path)
-        {
-            string result;
-            if (path == null)
-            {
-                result = null;
-            }
-            else if (path.Length == 0)
-            {
-                throw Logger.WriteException(new ArgumentException("Path cannot be empty", "path"));
-            }
-            else
-            {
-                int i = path.LastIndexOf('/');
-                if (i < 0)
-                {
-                    result = null;
-                }
-                else if (i == 0)
-                {
-                    if (path.Length == 1)
-                    {
-                        result = null;
-                    }
-                    else
-                    {
-                        result = "/";
-                    }
-                }
-                else
-                {
-                    result = path.Substring(0, i);
-                }
-            }
-            return result;
-        }
-
-        public string AddDirectorySeparator(string path)
-        {
-            if (string.IsNullOrEmpty(path))
-            {
-                throw Logger.WriteException(new ArgumentException("Path cannot be empty", "path"));
-            }
-
-            if (!path.EndsWith("/", StringComparison.Ordinal))
-            {
-                path += "/";
-            }
-
-            return path;
-        }
-
-        public string GetFileName(string path)
-        {
-            string result;
-            if (string.IsNullOrEmpty(path))
-            {
-                result = null;
-            }
-            else
-            {
-                int i = path.LastIndexOf('/');
-                if (i >= 0)
-                {
-                    result = path.Substring(i + 1);
-                }
-                else
-                {
-                    result = string.Empty;
-                }
-            }
-            return result;
+            return RemotePath.CombinePaths(path1, path2);
         }
 
         public void AddRawConfiguration(string setting, string value)
