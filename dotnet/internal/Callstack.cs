@@ -13,7 +13,7 @@ namespace WinSCP
             if (_logger.Logging)
             {
                 _token = token;
-                Type type = GetType();
+                Type type = typeof(Callstack);
                 StackTrace stackTrace = new StackTrace();
                 int i = 0;
                 MethodBase method;
@@ -21,8 +21,8 @@ namespace WinSCP
                 {
                     StackFrame frame = stackTrace.GetFrame(i);
                     method = frame.GetMethod();
-                    if ((method.IsConstructor && method.DeclaringType.IsAssignableFrom(type)) ||
-                        ((method.MemberType == MemberTypes.Method) && ((MethodInfo)method).ReturnType.IsAssignableFrom(type)))
+                    if ((method.IsConstructor && ((method.DeclaringType == type) || method.DeclaringType.IsSubclassOf(type))) ||
+                        ((method.MemberType == MemberTypes.Method) && ((MethodInfo)method).ReturnType == type))
                     {
                         method = null;
                     }
