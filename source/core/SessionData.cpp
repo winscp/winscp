@@ -545,7 +545,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
       FPassword = Storage->ReadStringAsBinaryData(L"Password", FPassword);
     }
   }
-  HostKey = Storage->ReadString(L"HostKey", HostKey);
+  HostKey = Storage->ReadString(L"SshHostKey", HostKey); // probably never used
   Note = Storage->ReadString(L"Note", Note);
   // Putty uses PingIntervalSecs
   int PingIntervalSecs = Storage->ReadInteger(L"PingIntervalSecs", -1);
