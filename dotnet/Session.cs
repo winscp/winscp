@@ -2156,6 +2156,30 @@ namespace WinSCP
             }
         }
 
+        private void LogInvokeMember(string name, BindingFlags invokeAttr, Binder binder, object target, object[] args, ParameterModifier[] modifiers, CultureInfo culture, string[] namedParameters)
+        {
+            Logger.WriteLine("Name [{0}]", name);
+            Logger.WriteLine("BindingFlags [{0}]", invokeAttr);
+            Logger.WriteLine("Binder [{0}]", binder);
+            Logger.WriteLine("Target [{0}]", target);
+            if (args != null)
+            {
+                Logger.WriteLine("Args [{0}] [{1}]", args.Length, modifiers != null ? modifiers.Length.ToString(CultureInfo.InvariantCulture) : "null");
+                for (int i = 0; i < args.Length; ++i)
+                {
+                    Logger.WriteLine("Arg [{0}] [{1}] [{1}] [{2}]", i, args[i], (args[i] != null ? args[i].GetType().ToString() : "null"), (modifiers != null ? modifiers[i].ToString() : "null"));
+                }
+            }
+            Logger.WriteLine("Culture [{0}]", culture);
+            if (namedParameters != null)
+            {
+                foreach (string namedParameter in namedParameters)
+                {
+                    Logger.WriteLine("NamedParameter [{0}]", namedParameter);
+                }
+            }
+        }
+
         object IReflect.InvokeMember(string name, BindingFlags invokeAttr, Binder binder, object target, object[] args, ParameterModifier[] modifiers, CultureInfo culture, string[] namedParameters)
         {
             using (Logger.CreateCallstack())
@@ -2164,28 +2188,11 @@ namespace WinSCP
 
                 try
                 {
-                    if (Logger.Logging)
+                    bool wasLogging = Logger.Logging;
+                    if (wasLogging)
                     {
-                        Logger.WriteLine("Name [{0}]", name);
-                        Logger.WriteLine("BindingFlags [{0}]", invokeAttr);
-                        Logger.WriteLine("Binder [{0}]", binder);
-                        Logger.WriteLine("Target [{0}]", target);
-                        if (args != null)
-                        {
-                            Logger.WriteLine("Args [{0}] [{1}]", args.Length, modifiers != null ? modifiers.Length.ToString(CultureInfo.InvariantCulture) : "null");
-                            for (int i = 0; i < args.Length; ++i)
-                            {
-                                Logger.WriteLine("Arg [{0}] [{1}] [{1}] [{2}]", i, args[i], (args[i] != null ? args[i].GetType().ToString() : "null"), (modifiers != null ? modifiers[i].ToString() : "null"));
-                            }
-                        }
-                        Logger.WriteLine("Culture [{0}]", culture);
-                        if (namedParameters != null)
-                        {
-                            foreach (string namedParameter in namedParameters)
-                            {
-                                Logger.WriteLine("NamedParameter [{0}]", namedParameter);
-                            }
-                        }
+                        // factored out to reduce this method complexity
+                        LogInvokeMember(name, invokeAttr, binder, target, args, modifiers, culture, namedParameters);
                     }
 
                     if (target == null)
@@ -2286,6 +2293,11 @@ namespace WinSCP
                         result = type.InvokeMember(name, invokeAttr, binder, target, args, modifiers, culture, namedParameters);
                     }
 
+                    if (!wasLogging && Logger.Logging)
+                    {
+                        Logger.WriteLine("Invoking member {0} enabled debug logging", name);
+                        // Might call LogInvokeMember here, but it's not really useful.
+                    }
                     Logger.WriteLine("Result [{0}] [{1}]", result, (result != null ? result.GetType().ToString() : "null"));
                 }
                 catch (Exception e)
