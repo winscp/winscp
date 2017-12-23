@@ -174,7 +174,7 @@ namespace WinSCP
                 int i = path.LastIndexOf('/');
                 if (i < 0)
                 {
-                    result = null;
+                    result = string.Empty;
                 }
                 else if (i == 0)
                 {
@@ -226,7 +226,7 @@ namespace WinSCP
                 }
                 else
                 {
-                    result = string.Empty;
+                    result = path;
                 }
             }
             return result;
