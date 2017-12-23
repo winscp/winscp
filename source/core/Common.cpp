@@ -3395,7 +3395,7 @@ UnicodeString __fastcall AssemblyString(TAssemblyLanguage Language, UnicodeStrin
       break;
 
     case alPowerShell:
-      S = FORMAT(L"\"%s\"", (ReplaceStr(S, L"\"", L"`\"")));
+      S = FORMAT(L"\"%s\"", (ReplaceStr(ReplaceStr(ReplaceStr(S, L"`", L"``"), L"$", L"`$"), L"\"", L"`\"")));
       break;
 
     default:
