@@ -1753,7 +1753,7 @@ static bool __fastcall AddJumpListCategory(TStrings * Names,
             Names->Strings[Index], L"", AdditionalParams, -1, IconIndex, true);
 
         wchar_t Desc[2048];
-        if (SUCCEEDED(Link->GetDescription(Desc, sizeof(Desc) - 1)))
+        if (SUCCEEDED(Link->GetDescription(Desc, LENOF(Desc) - 1)))
         {
           if (Removed->IndexOf(Desc) < 0)
           {
@@ -1832,7 +1832,7 @@ void __fastcall UpdateJumpList(TStrings * SessionNames, TStrings * WorkspaceName
           IShellLink * Link;
           wchar_t Desc[2048];
           if (SUCCEEDED(RemovedArray->GetAt(Index, IID_IShellLink, (void**)&Link)) &&
-              SUCCEEDED(Link->GetDescription(Desc, sizeof(Desc) - 1)))
+              SUCCEEDED(Link->GetDescription(Desc, LENOF(Desc) - 1)))
           {
             Removed->Add(Desc);
           }
