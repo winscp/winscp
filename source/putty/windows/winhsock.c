@@ -92,7 +92,9 @@ static int handle_stderr(struct handle *h, void *data, int len)
     Handle_Socket ps = (Handle_Socket) handle_get_privdata(h);
 
     if (len > 0)
+    {
         log_proxy_stderr(ps->plug, &ps->stderrdata, data, len);
+    }
 
     return 0;
 }
