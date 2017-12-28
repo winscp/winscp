@@ -1384,7 +1384,7 @@ void __fastcall TTerminalManager::NewSession(bool /*FromSite*/, const UnicodeStr
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminalManager::Idle()
+void __fastcall TTerminalManager::Idle(bool SkipCurrentTerminal)
 {
 
   if (FPendingConfigurationChange > 0) // optimization
@@ -1411,27 +1411,30 @@ void __fastcall TTerminalManager::Idle()
     TTerminal * Terminal = Terminals[Index];
     try
     {
-      TManagedTerminal * ManagedTerminal = dynamic_cast<TManagedTerminal *>(Terminal);
-      DebugAssert(ManagedTerminal != NULL);
-      // make sure Idle is called on the thread that runs the terminal
-      if (ManagedTerminal->TerminalThread != NULL)
+      if (!SkipCurrentTerminal || (Terminal != ActiveTerminal))
       {
-        ManagedTerminal->TerminalThread->Idle();
-      }
-      else
-      {
+        TManagedTerminal * ManagedTerminal = dynamic_cast<TManagedTerminal *>(Terminal);
+        DebugAssert(ManagedTerminal != NULL);
+        // make sure Idle is called on the thread that runs the terminal
+        if (ManagedTerminal->TerminalThread != NULL)
+        {
+          ManagedTerminal->TerminalThread->Idle();
+        }
+        else
+        {
+          if (Terminal->Active)
+          {
+            Terminal->Idle();
+          }
+        }
+
         if (Terminal->Active)
         {
-          Terminal->Idle();
-        }
-      }
-
-      if (Terminal->Active)
-      {
-        DebugAssert(Index < FQueues->Count);
-        if (Index < FQueues->Count)
-        {
-          reinterpret_cast<TTerminalQueue *>(FQueues->Items[Index])->Idle();
+          DebugAssert(Index < FQueues->Count);
+          if (Index < FQueues->Count)
+          {
+            reinterpret_cast<TTerminalQueue *>(FQueues->Items[Index])->Idle();
+          }
         }
       }
     }

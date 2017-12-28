@@ -53,7 +53,7 @@ public:
   bool __fastcall CanOpenInPutty();
   void __fastcall OpenInPutty();
   void __fastcall NewSession(bool FromSite, const UnicodeString & SessionUrl, bool ReloadSessions = true, TForm * LinkedForm = NULL);
-  void __fastcall Idle();
+  void __fastcall Idle(bool SkipCurrentTerminal);
   UnicodeString __fastcall TerminalTitle(TTerminal * Terminal);
   void __fastcall HandleException(Exception * E);
   void __fastcall SaveWorkspace(TList * DataList);

@@ -326,6 +326,7 @@ protected:
   TDragDropFilesEx * FQueueDragDropFilesEx;
   TPoint FLastContextPopupScreenPoint;
   bool FRemoteDirViewWasFocused;
+  bool FDoNotIdleCurrentTerminal;
 
   virtual bool __fastcall CopyParamDialog(TTransferDirection Direction,
     TTransferType Type, bool Temp, TStrings * FileList,
