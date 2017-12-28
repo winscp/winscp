@@ -7725,19 +7725,6 @@ TTerminal * __fastcall TTerminalList::GetTerminal(int Index)
   return dynamic_cast<TTerminal *>(Items[Index]);
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminalList::Idle()
-{
-  TTerminal * Terminal;
-  for (int i = 0; i < Count; i++)
-  {
-    Terminal = Terminals[i];
-    if (Terminal->Status == ssOpened)
-    {
-      Terminal->Idle();
-    }
-  }
-}
-//---------------------------------------------------------------------------
 void __fastcall TTerminalList::RecryptPasswords()
 {
   for (int Index = 0; Index < Count; Index++)

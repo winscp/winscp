@@ -642,7 +642,6 @@ public:
   virtual TTerminal * __fastcall NewTerminal(TSessionData * Data);
   virtual void __fastcall FreeTerminal(TTerminal * Terminal);
   void __fastcall FreeAndNullTerminal(TTerminal * & Terminal);
-  virtual void __fastcall Idle();
   void __fastcall RecryptPasswords();
 
   __property TTerminal * Terminals[int Index]  = { read=GetTerminal };
