@@ -443,7 +443,7 @@ protected:
   void __fastcall Sink(
     const UnicodeString & FileName, const TRemoteFile * File, const UnicodeString & TargetDir,
     const TCopyParamType * CopyParam, int Params, TFileOperationProgressType * OperationProgress, unsigned int Flags,
-    TDownloadSessionAction & Action, bool & ChildError);
+    TDownloadSessionAction & Action);
   void __fastcall SinkFile(UnicodeString FileName, const TRemoteFile * File, void * Param);
   void __fastcall UpdateTargetAttrs(
     const UnicodeString & DestFullName, const TRemoteFile * File, const TCopyParamType * CopyParam, int Attrs);

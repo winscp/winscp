@@ -7100,19 +7100,35 @@ void __fastcall TTerminal::SinkRobust(
   TDownloadSessionAction Action(ActionLog);
   bool * AFileTransferAny = FLAGSET(Flags, tfUseFileTransferAny) ? &FFileTransferAny : NULL;
   TRobustOperationLoop RobustLoop(this, OperationProgress, AFileTransferAny);
+  bool Sunk = false;
 
   do
   {
-    bool ChildError = false;
     try
     {
-      Sink(FileName, File, TargetDir, CopyParam, Params, OperationProgress, Flags, Action, ChildError);
+      // If connection is lost while deleting the file, so not retry download on the next round.
+      // The file may not exist anymore and the download attempt might overwrite the (only) local copy.
+      if (!Sunk)
+      {
+        Sink(FileName, File, TargetDir, CopyParam, Params, OperationProgress, Flags, Action);
+        Sunk = true;
+      }
+
+      if (FLAGSET(Params, cpDelete))
+      {
+        DebugAssert(FLAGCLEAR(Params, cpNoRecurse));
+        // If file is directory, do not delete it recursively, because it should be
+        // empty already. If not, it should not be deleted (some files were
+        // skipped or some new files were copied to it, while we were downloading)
+        int Params = dfNoRecursive;
+        DeleteFile(FileName, File, &Params);
+      }
     }
     catch (Exception & E)
     {
       if (!RobustLoop.TryReopen(E))
       {
-        if (!ChildError)
+        if (!Sunk)
         {
           RollbackAction(Action, OperationProgress, &E);
         }
@@ -7149,7 +7165,7 @@ struct TSinkFileParams
 void __fastcall TTerminal::Sink(
   const UnicodeString & FileName, const TRemoteFile * File, const UnicodeString & TargetDir,
   const TCopyParamType * CopyParam, int Params, TFileOperationProgressType * OperationProgress, unsigned int Flags,
-  TDownloadSessionAction & Action, bool & ChildError)
+  TDownloadSessionAction & Action)
 {
   Action.FileName(FileName);
 
@@ -7255,18 +7271,6 @@ void __fastcall TTerminal::Sink(
       FileName, File, TargetDir, DestFileName, Attrs, CopyParam, Params, OperationProgress, Flags, Action);
 
     LogFileDone(OperationProgress, ExpandUNCFileName(DestFullName));
-  }
-
-  if (FLAGSET(Params, cpDelete))
-  {
-    DebugAssert(FLAGCLEAR(Params, cpNoRecurse));
-    ChildError = true;
-    // If file is directory, do not delete it recursively, because it should be
-    // empty already. If not, it should not be deleted (some files were
-    // skipped or some new files were copied to it, while we were downloading)
-    int Params = dfNoRecursive;
-    DeleteFile(FileName, File, &Params);
-    ChildError = false;
   }
 }
 //---------------------------------------------------------------------------
