@@ -952,12 +952,6 @@ void __fastcall TGenerateUrlDialog::CreateParams(TCreateParams & Params)
   Params.Style = Params.Style | WS_THICKFRAME;
 }
 //---------------------------------------------------------------------------
-void __fastcall TGenerateUrlDialog::ResultMemoContextPopup(TObject * Sender,
-  TPoint & MousePos, bool & Handled)
-{
-  MenuPopup(Sender, MousePos, Handled);
-}
-//---------------------------------------------------------------------------
 void __fastcall TGenerateUrlDialog::FormShow(TObject * /*Sender*/)
 {
   UpdateControls();

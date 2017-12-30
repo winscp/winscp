@@ -388,7 +388,6 @@ BEGIN
         EDITOR_EDIT, "Edit editor"
         ABOUT_BASED_ON_PRODUCT, "%s, Based on %s version %s"
         URL_LINK_OPEN, "&Open"
-        URL_LINK_COPY, "&Copy"
         SYNCHRONIZE_SAME_SIZE, "Same si&ze only"
         ABOUT_REGISTRATION_LICENSES, "Number of Licenses: %s|Unlimited"
         ABOUT_REGISTRATION_PRODUCTID, "Product ID: %s"
@@ -597,6 +596,8 @@ BEGIN
         USAGE_FILTER, "&Filter:"
         USAGE_COPY, "&Copy to Clipboard"
         IMPORT_KNOWNHOSTS_INFO_TIP, "Host: %s\nHost key: %s"
+        EDIT_COPY, "&Copy"
+        EDIT_SELECT_ALL, "Select &All"
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
         WINSCP_COPYRIGHT, "Copyright © 2000-2017 Martin Prikryl"

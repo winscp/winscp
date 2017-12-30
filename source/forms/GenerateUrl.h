@@ -39,15 +39,10 @@ __published:
   TComboBox *AssemblyLanguageCombo;
   TLabel *ScriptDescriptionLabel;
   TLabel *AssemblyDescriptionLabel;
-  TPopupMenu *ResultPopupMenu;
-  TActionList *ResultActionList;
-  TEditCopy *EditCopyAction;
-  TEditSelectAll *EditSelectAllAction;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall ClipboardButtonClick(TObject *Sender);
   void __fastcall HelpButtonClick(TObject *Sender);
   void __fastcall WMNCCreate(TWMNCCreate & Message);
-  void __fastcall ResultMemoContextPopup(TObject *Sender, TPoint &MousePos, bool &Handled);
   void __fastcall FormShow(TObject *Sender);
 
 private:

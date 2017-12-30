@@ -384,7 +384,6 @@
 #define EDITOR_EDIT             1739
 #define ABOUT_BASED_ON_PRODUCT  1740
 #define URL_LINK_OPEN           1741
-#define URL_LINK_COPY           1742
 #define SYNCHRONIZE_SAME_SIZE   1743
 #define ABOUT_REGISTRATION_LICENSES 1744
 #define ABOUT_REGISTRATION_PRODUCTID 1745
@@ -594,6 +593,8 @@
 #define USAGE_FILTER            1984
 #define USAGE_COPY              1985
 #define IMPORT_KNOWNHOSTS_INFO_TIP 1986
+#define EDIT_COPY               1987
+#define EDIT_SELECT_ALL         1988
 
 // 2xxx is reserved for TextsFileZilla.h
 

@@ -2117,7 +2117,7 @@ void __fastcall TCustomScpExplorerForm::LocalCustomCommand(TStrings * FileList,
       TMessageParams Params;
       TQueryButtonAlias Aliases[1];
       Aliases[0].Button = qaRetry;
-      Aliases[0].Alias = LoadStr(URL_LINK_COPY); // misuse
+      Aliases[0].Alias = LoadStr(EDIT_COPY);
       Aliases[0].OnSubmit = &ClipboardHandler.Copy;
       Params.Aliases = Aliases;
       Params.AliasesCount = LENOF(Aliases);

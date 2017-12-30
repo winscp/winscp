@@ -12,6 +12,8 @@
 #include <Tools.h>
 #include <CustomWinConfiguration.h>
 
+#include <Vcl.StdActns.hpp>
+#include <PasswordEdit.hpp>
 #include <FileCtrl.hpp>
 #include <PathLabel.hpp>
 #include <PasTools.hpp>
@@ -306,11 +308,17 @@ void __fastcall ReadOnlyAndEnabledControl(TControl * Control, bool ReadOnly, boo
   }
 }
 //---------------------------------------------------------------------------
+static void __fastcall ReadOnlyEditContextPopup(void * /*Data*/, TObject * Sender, const TPoint & MousePos, bool & Handled)
+{
+  MenuPopup(Sender, MousePos, Handled);
+}
+//---------------------------------------------------------------------------
 void __fastcall ReadOnlyControl(TControl * Control, bool ReadOnly)
 {
   if (dynamic_cast<TCustomEdit *>(Control) != NULL)
   {
-    ((TEdit*)Control)->ReadOnly = ReadOnly;
+    TEdit * Edit = static_cast<TEdit *>(Control);
+    Edit->ReadOnly = ReadOnly;
     TMemo * Memo = dynamic_cast<TMemo *>(Control);
     if (ReadOnly)
     {
@@ -322,12 +330,33 @@ void __fastcall ReadOnlyControl(TControl * Control, bool ReadOnly)
         // See also MemoKeyDown
         Memo->WantReturns = false;
       }
+
+      if ((Edit->PopupMenu == NULL) && (dynamic_cast<TPasswordEdit *>(Control) == NULL))
+      {
+        std::unique_ptr<TPopupMenu> PopupMenu(new TPopupMenu(Edit));
+
+        TMenuItem * Item;
+        Item = new TMenuItem(PopupMenu.get());
+        PopupMenu->Items->Add(Item);
+        Item->Action = new TEditCopy(Item);
+        Item->Caption = LoadStr(EDIT_COPY);
+        Item->ShortCut = ShortCut(L'C', TShiftState() << ssCtrl);
+        Item = new TMenuItem(PopupMenu.get());
+        PopupMenu->Items->Add(Item);
+        Item->Action = new TEditSelectAll(Item);
+        Item->Caption = LoadStr(EDIT_SELECT_ALL);
+        Item->ShortCut = ShortCut(L'A', TShiftState() << ssCtrl);
+
+        Edit->PopupMenu = PopupMenu.release();
+        Edit->OnContextPopup = MakeMethod<TContextPopupEvent>(NULL, ReadOnlyEditContextPopup);
+      }
     }
     else
     {
-      ((TEdit*)Control)->Color = clWindow;
+      Edit->Color = clWindow;
       // not supported atm, we need to persist previous value of WantReturns
       DebugAssert(Memo == NULL);
+      delete Edit->PopupMenu;
     }
   }
   else if ((dynamic_cast<TCustomComboBox *>(Control) != NULL) ||
@@ -2167,7 +2196,7 @@ void __fastcall LinkLabel(TStaticText * StaticText, UnicodeString Url,
       StaticText->PopupMenu->Items->Add(Item);
 
       Item = new TMenuItem(StaticText->PopupMenu);
-      Item->Caption = LoadStr(URL_LINK_COPY);
+      Item->Caption = LoadStr(EDIT_COPY);
       Item->Tag = 1;
       Item->ShortCut = ShortCut(L'C', TShiftState() << ssCtrl);
       Item->OnClick = ContextMenuOnClick;
