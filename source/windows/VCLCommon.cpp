@@ -22,6 +22,7 @@
 #include <TBXExtItems.hpp>
 #include <IEListView.hpp>
 #include <WinApi.h>
+#include <vssym32.h>
 //---------------------------------------------------------------------------
 const UnicodeString LinkAppLabelMark(TraceInitStr(L" \x00BB"));
 //---------------------------------------------------------------------------
@@ -204,6 +205,39 @@ void __fastcall AutoSizeListColumnsWidth(TListView * ListView, int ColumnToShrin
 static void __fastcall SetParentColor(TControl * Control)
 {
   TColor Color = clBtnFace;
+  if (UseThemes)
+  {
+    bool OnTabSheet = false;
+    TWinControl * Parent = Control->Parent;
+    while ((Parent != NULL) && !OnTabSheet)
+    {
+      TTabSheet * TabSheet = dynamic_cast<TTabSheet *>(Parent);
+      OnTabSheet = (TabSheet != NULL) && TabSheet->TabVisible;
+      Parent = Parent->Parent;
+    }
+
+    if (OnTabSheet)
+    {
+      HTHEME Theme = OpenThemeData(NULL, L"tab");
+      if (Theme != NULL)
+      {
+        COLORREF RGB;
+        // XP with classic theme: Does not get past OpenThemeData, clBtnFace is exact color
+        // XP with XP theme: not the exact color (probably same as clBtnFace), but close
+        // Vista - ok
+        // 2016 without desktop - ok
+        // 7 with classic and high contrast themes: Do not get past OpenThemeData, clBtnFace is exact color
+        // 7 with 7 and basic themes - ok
+        // 10 with high contrast themes - ok (note the difference to 7 with high contract themes)
+        // 10 - ok
+        if (GetThemeColor(Theme, TABP_AEROWIZARDBODY, TIS_NORMAL, TMT_FILLCOLOR, &RGB) == S_OK)
+        {
+          Color = static_cast<TColor>(RGB);
+        }
+        CloseThemeData(Theme);
+      }
+    }
+  }
 
   ((TEdit*)Control)->Color = Color;
 }
