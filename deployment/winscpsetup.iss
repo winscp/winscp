@@ -7,7 +7,7 @@
 #define WebForum WebRoot+"forum/"
 #define WebDocumentation WebRoot+"eng/docs/"
 #define WebReport "http://winscp.net/install.php"
-#define Year 2017
+#define Year 2018
 #define EnglishLang "English"
 #define SetupTypeData "SetupType"
 #define InnoSetupReg "Software\Microsoft\Windows\CurrentVersion\Uninstall\" + AppId + "_is1"
