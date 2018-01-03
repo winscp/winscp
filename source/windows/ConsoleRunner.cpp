@@ -2513,6 +2513,7 @@ int __fastcall FingerprintScan(TConsole * Console, TProgramParams * Params)
     Result = HandleException(Console, E);
   }
 
+  Console->WaitBeforeExit();
   return Result;
 }
 //---------------------------------------------------------------------------
