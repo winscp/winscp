@@ -125,9 +125,10 @@ const TSessionInfo & __fastcall TSecureShell::GetSessionInfo()
   return FSessionInfo;
 }
 //---------------------------------------------------------------------
-UnicodeString __fastcall TSecureShell::GetHostKeyFingerprint()
+void __fastcall TSecureShell::GetHostKeyFingerprint(UnicodeString & SHA256, UnicodeString & MD5)
 {
-  return FSessionInfo.HostKeyFingerprint;
+  SHA256 = FSessionInfo.HostKeyFingerprintSHA256;
+  MD5 = FSessionInfo.HostKeyFingerprintMD5;
 }
 //---------------------------------------------------------------------
 Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
@@ -2241,7 +2242,8 @@ void __fastcall TSecureShell::VerifyHostKey(
   UnicodeString NormalizedFingerprintMD5 = NormalizeFingerprint(FingerprintMD5);
   UnicodeString NormalizedFingerprintSHA256 = NormalizeFingerprint(FingerprintSHA256);
 
-  FSessionInfo.HostKeyFingerprint = FingerprintSHA256;
+  FSessionInfo.HostKeyFingerprintSHA256 = FingerprintSHA256;
+  FSessionInfo.HostKeyFingerprintMD5 = FingerprintMD5;
 
   if (FSessionData->FingerprintScan)
   {

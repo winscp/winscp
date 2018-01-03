@@ -356,7 +356,11 @@ void __fastcall ReadOnlyControl(TControl * Control, bool ReadOnly)
       Edit->Color = clWindow;
       // not supported atm, we need to persist previous value of WantReturns
       DebugAssert(Memo == NULL);
-      delete Edit->PopupMenu;
+
+      if ((Edit->PopupMenu != NULL) && (Edit->PopupMenu->Owner == Edit))
+      {
+        delete Edit->PopupMenu;
+      }
     }
   }
   else if ((dynamic_cast<TCustomComboBox *>(Control) != NULL) ||

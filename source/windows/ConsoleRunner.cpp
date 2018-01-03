@@ -2506,7 +2506,17 @@ int __fastcall FingerprintScan(TConsole * Console, TProgramParams * Params)
     }
 
     std::unique_ptr<TTerminal> Terminal(new TTerminal(SessionData.get(), Configuration));
-    ConsolePrintLine(Console, Terminal->FingerprintScan());
+    UnicodeString SHA256;
+    UnicodeString MD5;
+    Terminal->FingerprintScan(SHA256, MD5);
+    if (!SHA256.IsEmpty())
+    {
+      ConsolePrintLine(Console, FORMAT(L"SHA-256: %s", (SHA256)));
+    }
+    if (!MD5.IsEmpty())
+    {
+      ConsolePrintLine(Console, FORMAT(L"MD5:     %s", (MD5)));
+    }
   }
   catch (Exception & E)
   {

@@ -23,7 +23,8 @@ struct TSessionInfo
 
   UnicodeString SshVersionString;
   UnicodeString SshImplementation;
-  UnicodeString HostKeyFingerprint;
+  UnicodeString HostKeyFingerprintSHA256;
+  UnicodeString HostKeyFingerprintMD5;
 
   UnicodeString CertificateFingerprint;
   UnicodeString Certificate;

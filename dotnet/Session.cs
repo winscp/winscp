@@ -336,10 +336,16 @@ namespace WinSCP
             return s;
         }
 
-        public string ScanFingerprint(SessionOptions sessionOptions)
+        public string ScanFingerprint(SessionOptions sessionOptions, string algorithm)
         {
             using (Logger.CreateCallstackAndLock())
             {
+                string normalizeAlgorithm = NormalizeIdent(algorithm);
+                if (string.IsNullOrEmpty(normalizeAlgorithm))
+                {
+                    throw Logger.WriteException(new ArgumentException("Algorithm cannot be empty", "algorithm"));
+                }
+
                 string result;
 
                 CheckNotDisposed();
@@ -372,14 +378,32 @@ namespace WinSCP
                         CheckForTimeout();
                     }
 
-                    string output = string.Join(Environment.NewLine, new List<string>(Output).ToArray());
                     if (_process.ExitCode == 0)
                     {
-                        result = output;
+                        result = null;
+                        foreach (string s in Output)
+                        {
+                            int p = s.IndexOf(":", StringComparison.Ordinal);
+                            if (p < 0)
+                            {
+                                throw Logger.WriteException(new SessionLocalException(this, string.Format(CultureInfo.CurrentCulture, "Unexpected fingerprint scan result line '{0}'", s)));
+                            }
+                            string a = NormalizeIdent(s.Substring(0, p).Trim());
+                            if (normalizeAlgorithm.Equals(a, StringComparison.OrdinalIgnoreCase))
+                            {
+                                result = s.Substring(p + 1).Trim();
+                                break;
+                            }
+                        }
+
+                        if (result == null)
+                        {
+                            throw Logger.WriteException(new SessionLocalException(this, string.Format(CultureInfo.CurrentCulture, "Fingerprint for algorithm {0} not supported", algorithm)));
+                        }
                     }
                     else
                     {
-                        throw Logger.WriteException(new SessionRemoteException(this, output));
+                        throw Logger.WriteException(new SessionRemoteException(this, ListToString(Output)));
                     }
                 }
                 catch (Exception e)
@@ -394,6 +418,11 @@ namespace WinSCP
 
                 return result;
             }
+        }
+
+        private static string NormalizeIdent(string algorithm)
+        {
+            return algorithm.Replace("-", string.Empty);
         }
 
         public void Close()

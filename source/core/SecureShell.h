@@ -133,7 +133,7 @@ public:
   void __fastcall SendNull();
 
   const TSessionInfo & __fastcall GetSessionInfo();
-  UnicodeString __fastcall GetHostKeyFingerprint();
+  void __fastcall GetHostKeyFingerprint(UnicodeString & SHA256, UnicodeString & MD5);
   bool __fastcall SshFallbackCmd() const;
   unsigned long __fastcall MaxPacketSize();
   void __fastcall ClearStdError();

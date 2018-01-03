@@ -1228,25 +1228,28 @@ void __fastcall TTerminal::ResetConnection()
   // as they can still be referenced in the GUI atm
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TTerminal::FingerprintScan()
+void __fastcall TTerminal::FingerprintScan(UnicodeString & SHA256, UnicodeString & MD5)
 {
   SessionData->FingerprintScan = true;
   try
   {
     Open();
     // we should never get here
+    DebugFail();
     Abort();
   }
   catch (...)
   {
-    if (!FFingerprintScanned.IsEmpty())
+    if (!FFingerprintScannedSHA256.IsEmpty() || !FFingerprintScannedMD5.IsEmpty())
     {
-      return FFingerprintScanned;
+      SHA256 = FFingerprintScannedSHA256;
+      MD5 = FFingerprintScannedMD5;
     }
-    throw;
+    else
+    {
+      throw;
+    }
   }
-  DebugFail();
-  return UnicodeString();
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::Open()
@@ -1334,7 +1337,7 @@ void __fastcall TTerminal::Open()
                   DebugAssert(!FSecureShell->Active);
                   if (SessionData->FingerprintScan)
                   {
-                    FFingerprintScanned = FSecureShell->GetHostKeyFingerprint();
+                    FSecureShell->GetHostKeyFingerprint(FFingerprintScannedSHA256, FFingerprintScannedMD5);
                   }
                   if (!FSecureShell->Active && !FTunnelError.IsEmpty())
                   {
@@ -1420,7 +1423,8 @@ void __fastcall TTerminal::Open()
         if (SessionData->FingerprintScan && (FFileSystem != NULL) &&
             DebugAlwaysTrue(SessionData->Ftps != ftpsNone))
         {
-          FFingerprintScanned = FFileSystem->GetSessionInfo().CertificateFingerprint;
+          FFingerprintScannedSHA256 = UnicodeString();
+          FFingerprintScannedMD5 = FFileSystem->GetSessionInfo().CertificateFingerprint;
         }
         // Particularly to prevent reusing a wrong client certificate passphrase
         // in the next login attempt
@@ -4755,7 +4759,7 @@ TTerminal * __fastcall TTerminal::CreateSecondarySession(const UnicodeString & N
 void __fastcall TTerminal::FillSessionDataForCode(TSessionData * Data)
 {
   const TSessionInfo & SessionInfo = GetSessionInfo();
-  Data->HostKey = SessionInfo.HostKeyFingerprint;
+  Data->HostKey = SessionInfo.HostKeyFingerprintSHA256;
 }
 //---------------------------------------------------------------------------
 TTerminal * __fastcall TTerminal::GetCommandSession()
