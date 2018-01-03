@@ -330,9 +330,9 @@ namespace WinSCP
 
         private static string ListToString(StringCollection list)
         {
-            string[] error = new string[list.Count];
-            list.CopyTo(error, 0);
-            string s = string.Join(Environment.NewLine, error);
+            string[] stringArray = new string[list.Count];
+            list.CopyTo(stringArray, 0);
+            string s = string.Join(Environment.NewLine, stringArray);
             return s;
         }
 
