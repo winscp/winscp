@@ -330,19 +330,47 @@ namespace WinSCP
         {
             using (_logger.CreateCallstack())
             {
-                if (e.Timeouting)
+                _logger.WriteLine(
+                    "Options: [{0}], Timer: [{1}], Timeouting: [{2}], Timeouted: [{3}], Break: [{4}]",
+                    e.Options, e.Timer, e.Timeouting, e.Timeouted, e.Break);
+
+                QueryReceivedEventArgs args = new QueryReceivedEventArgs
                 {
-                    Thread.Sleep((int)e.Timer);
-                    e.Result = e.Timeouted;
+                    Message = e.Message
+                };
+
+                _session.ProcessChoice(args);
+
+                if (args.SelectedAction == QueryReceivedEventArgs.Action.None)
+                {
+                    if (e.Timeouting)
+                    {
+                        Thread.Sleep((int)e.Timer);
+                        e.Result = e.Timeouted;
+                    }
+                    else
+                    {
+                        e.Result = e.Break;
+                    }
                 }
-                else
+                else if (args.SelectedAction == QueryReceivedEventArgs.Action.Continue)
+                {
+                    if (e.Timeouting)
+                    {
+                        Thread.Sleep((int)e.Timer);
+                        e.Result = e.Timeouted;
+                    }
+                    else
+                    {
+                        e.Result = e.Continue;
+                    }
+                }
+                else if (args.SelectedAction == QueryReceivedEventArgs.Action.Abort)
                 {
                     e.Result = e.Break;
                 }
 
-                _logger.WriteLine(
-                    "Options: [{0}], Timer: [{1}], Timeouting: [{2}], Timeouted: [{3}], Break: [{4}], Result: [{5}]",
-                    e.Options, e.Timer, e.Timeouting, e.Timeouted, e.Break, e.Result);
+                _logger.WriteLine("Options Result: [{0}]", e.Result);
             }
         }
 

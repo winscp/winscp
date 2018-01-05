@@ -12,8 +12,8 @@ struct TConsoleCommStruct
 {
   enum TVersion
   {
-    CurrentVersion =          0x0008,
-    CurrentVersionConfirmed = 0x0108
+    CurrentVersion =          0x0009,
+    CurrentVersionConfirmed = 0x0109
   };
 
   struct TInitEvent
@@ -47,6 +47,9 @@ struct TConsoleCommStruct
     int Timeouted; // since version 2
     unsigned int Timer; // since version 2
     bool Timeouting; // since version 4
+    int Continue; // since version 9
+    unsigned int Timeout; // since version 9
+    wchar_t Message[5120]; // since version 9
   };
 
   struct TTitleEvent

@@ -56,6 +56,7 @@ namespace WinSCP
     public delegate void FileTransferredEventHandler(object sender, TransferEventArgs e);
     public delegate void FileTransferProgressEventHandler(object sender, FileTransferProgressEventArgs e);
     public delegate void FailedEventHandler(object sender, FailedEventArgs e);
+    public delegate void QueryReceivedEventHandler(object sender, QueryReceivedEventArgs e);
 
     [Guid("56FFC5CE-3867-4EF0-A3B5-CFFBEB99EA35")]
     [ClassInterface(Constants.ClassInterface)]
@@ -115,6 +116,36 @@ namespace WinSCP
             }
         }
 
+        public event QueryReceivedEventHandler QueryReceived { add { AddQueryReceived(value); } remove { RemoveQueryReceived(value); } }
+
+        private void AddQueryReceived(QueryReceivedEventHandler value)
+        {
+            using (Logger.CreateCallstackAndLock())
+            {
+                bool send = (_queryReceived == null);
+                _queryReceived += value;
+                if (Opened && send)
+                {
+                    SendOptionBatchCommand();
+                }
+            }
+        }
+
+        private void RemoveQueryReceived(QueryReceivedEventHandler value)
+        {
+            using (Logger.CreateCallstackAndLock())
+            {
+                if (_queryReceived != null)
+                {
+                    _queryReceived -= value;
+                    if (Opened && (_queryReceived == null))
+                    {
+                        SendOptionBatchCommand();
+                    }
+                }
+            }
+        }
+
         public Session()
         {
             Logger = new Logger();
@@ -127,6 +158,7 @@ namespace WinSCP
                 _operationResults = new List<OperationResultBase>();
                 _events = new List<Action>();
                 _eventsEvent = new AutoResetEvent(false);
+                _choiceEvent = new ManualResetEvent(false);
                 _disposed = false;
                 _defaultConfiguration = true;
                 _logUnique = 0;
@@ -154,6 +186,12 @@ namespace WinSCP
                 {
                     _eventsEvent.Close();
                     _eventsEvent = null;
+                }
+
+                if (_choiceEvent != null)
+                {
+                    _choiceEvent.Close();
+                    _choiceEvent = null;
                 }
 
                 GC.SuppressFinalize(this);
@@ -206,7 +244,7 @@ namespace WinSCP
                     GotOutput();
 
                     // setup batch mode
-                    WriteCommand("option batch on");
+                    SendOptionBatchCommand();
                     WriteCommand("option confirm off");
 
                     object reconnectTimeValue;
@@ -316,6 +354,12 @@ namespace WinSCP
                     throw;
                 }
             }
+        }
+
+        private void SendOptionBatchCommand()
+        {
+            string command = string.Format(CultureInfo.InvariantCulture, "option batch {0}", (_queryReceived != null ? "off" : "on"));
+            WriteCommand(command);
         }
 
         internal string GetErrorOutputMessage()
@@ -1821,6 +1865,22 @@ namespace WinSCP
             }
         }
 
+        internal void ProcessChoice(QueryReceivedEventArgs args)
+        {
+            if (_queryReceived != null) // optimization
+            {
+                _choiceEvent.Reset();
+                ScheduleEvent(() => Choice(args));
+                _choiceEvent.WaitOne();
+            }
+        }
+
+        private void Choice(QueryReceivedEventArgs args)
+        {
+            _queryReceived?.Invoke(this, args);
+            _choiceEvent.Set();
+        }
+
         internal void ProcessProgress(FileTransferProgressEventArgs args)
         {
             ScheduleEvent(() => Progress(args));
@@ -2161,6 +2221,7 @@ namespace WinSCP
         private delegate void Action();
         private readonly IList<Action> _events;
         private AutoResetEvent _eventsEvent;
+        private ManualResetEvent _choiceEvent;
         private bool _disposed;
         private string _executablePath;
         private string _additionalExecutableArguments;
@@ -2181,5 +2242,6 @@ namespace WinSCP
         private StringCollection _error;
         private bool _ignoreFailed;
         private TimeSpan _sessionTimeout;
+        private QueryReceivedEventHandler _queryReceived;
     }
 }

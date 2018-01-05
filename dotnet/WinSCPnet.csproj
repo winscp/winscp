@@ -71,6 +71,7 @@
     <Compile Include="Internal\UnsafeNativeMethods.cs" />
     <Compile Include="OutputDataReceivedEventArgs.cs" />
     <Compile Include="FileTransferProgressEventArgs.cs" />
+    <Compile Include="QueryReceivedEventArgs.cs" />
     <Compile Include="RemoteDirectoryInfo.cs" />
     <Compile Include="FailedEventArgs.cs" />
     <Compile Include="FileOperationEventArgs.cs" />

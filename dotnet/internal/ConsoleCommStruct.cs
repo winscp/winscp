@@ -49,6 +49,9 @@ namespace WinSCP
         public uint Timer; // since version 2
         [MarshalAs(UnmanagedType.I1)]
         public bool Timeouting; // since version 4
+        public int Continue; // since version 9
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 5120)]
+        public string Message; // since version 9
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
@@ -92,7 +95,7 @@ namespace WinSCP
 
     internal class ConsoleCommStruct : IDisposable
     {
-        public const int CurrentVersion = 0x0008;
+        public const int CurrentVersion = 0x0009;
 
         public ConsoleCommStruct(Session session, SafeFileHandle fileMapping)
         {
