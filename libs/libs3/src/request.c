@@ -47,8 +47,6 @@
 #define REQUEST_STACK_SIZE 32
 #define SIGNATURE_SCOPE_SIZE 64
 
-//#define SIGNATURE_DEBUG
-
 static char userAgentG[USER_AGENT_SIZE];
 
 #ifndef WINSCP
@@ -789,9 +787,7 @@ static void canonicalize_resource(const S3BucketContext *context,
 
 static void sort_query_string(const char *queryString, char *result)
 {
-#ifdef SIGNATURE_DEBUG
-    printf("\n--\nsort_and_urlencode\nqueryString: %s\n", queryString);
-#endif
+    ne_debug(NULL, NE_DBG_HTTPBODY, "\n--\nsort_and_urlencode\nqueryString: %s\n", queryString);
 
     unsigned int numParams = 1;
     const char *tmp = queryString;
@@ -817,11 +813,9 @@ static void sort_query_string(const char *queryString, char *result)
 
     kv_gnome_sort(params, numParams, '=');
 
-#ifdef SIGNATURE_DEBUG
     for (i = 0; i < numParams; i++) {
-        printf("%d: %s\n", i, params[i]);
+        ne_debug(NULL, NE_DBG_HTTPBODY, "%d: %s\n", i, params[i]);
     }
-#endif
 
     unsigned int pi = 0;
     for (; pi < numParams; pi++) {
@@ -945,9 +939,7 @@ static S3Status compose_auth_header(const RequestParams *params,
 
     buf_append(canonicalRequest, "%s", values->payloadHash);
 
-#ifdef SIGNATURE_DEBUG
-    printf("--\nCanonical Request:\n%s\n", canonicalRequest);
-#endif
+    ne_debug(NULL, NE_DBG_HTTPBODY, "--\nCanonical Request:\n%s\n", canonicalRequest);
 
     len = 0;
     unsigned char canonicalRequestHash[S3_SHA256_DIGEST_LENGTH];
@@ -980,9 +972,7 @@ static S3Status compose_auth_header(const RequestParams *params,
     snprintf(stringToSign, stringToSignLen, "AWS4-HMAC-SHA256\n%s\n%s\n%s",
              values->requestDateISO8601, scope, canonicalRequestHashHex);
 
-#ifdef SIGNATURE_DEBUG
-    printf("--\nString to Sign:\n%s\n", stringToSign);
-#endif
+    ne_debug(NULL, NE_DBG_HTTPBODY, "--\nString to Sign:\n%s\n", stringToSign);
 
     const char *secretAccessKey = params->bucketContext.secretAccessKey;
     const int accessKeyLen = strlen(secretAccessKey) + 5; // WINSCP (heap allocation)
@@ -1051,9 +1041,7 @@ static S3Status compose_auth_header(const RequestParams *params,
             values->authCredential, values->signedHeaders,
             values->requestSignatureHex);
 
-#ifdef SIGNATURE_DEBUG
-    printf("--\nAuthorization Header:\n%s\n", values->authorizationHeader);
-#endif
+    ne_debug(NULL, NE_DBG_HTTPBODY, "--\nAuthorization Header:\n%s\n", values->authorizationHeader);
 
     return S3StatusOK;
 
@@ -1519,13 +1507,11 @@ static S3Status setup_request(const RequestParams *params,
         return status;
     }
 
-#ifdef SIGNATURE_DEBUG
     int i = 0;
-    printf("\n--\nAMZ Headers:\n");
+    ne_debug(NULL, NE_DBG_HTTPBODY, "\n--\nAMZ Headers:\n");
     for (; i < computed->amzHeadersCount; i++) {
-        printf("%s\n", computed->amzHeaders[i]);
+        ne_debug(NULL, NE_DBG_HTTPBODY, "%s\n", computed->amzHeaders[i]);
     }
-#endif
 
     return status;
 }
