@@ -123,7 +123,19 @@ void __fastcall TS3FileSystem::Open()
   FActive = false;
   try
   {
-    TryOpenDirectory(ROOTDIRECTORY);
+    UnicodeString Path;
+    if (IsUnixRootPath(Data->RemoteDirectory))
+    {
+      Path = ROOTDIRECTORY;
+    }
+    else
+    {
+      UnicodeString BucketName;
+      UnicodeString UnusedKey;
+      ParsePath(Data->RemoteDirectory, BucketName, UnusedKey);
+      Path = LibS3Delimiter + BucketName;
+    }
+    TryOpenDirectory(Path);
   }
   catch (Exception & E)
   {
