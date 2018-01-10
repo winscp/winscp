@@ -1075,8 +1075,13 @@ static S3Status compose_uri(char *buffer, int bufferSize,
     if (bucketContext->bucketName &&
         bucketContext->bucketName[0]) {
         if (bucketContext->uriStyle == S3UriStyleVirtualHost) {
+#ifndef WINSCP
+            // We cannot change Host: header with neon.
+            // Instead we tweak host name validation
             if (strchr(bucketContext->bucketName, '.') == NULL) {
+#endif
                 uri_append("%s.%s", bucketContext->bucketName, hostName);
+#ifndef WINSCP
             }
             else {
                 // We'll use the hostName in the URL, and then explicitly set
@@ -1084,6 +1089,7 @@ static S3Status compose_uri(char *buffer, int bufferSize,
                 // works.
                 uri_append("%s", hostName);
             }
+#endif
         }
         else {
             uri_append("%s/%s", hostName, bucketContext->bucketName);
@@ -1238,7 +1244,9 @@ static S3Status setup_neon(Request *request,
         do_add_header(values-> fieldName);                               \
     }
 
-    // WINSCP (hostHeader is added implicitly by neon based on uri)
+    // WINSCP (hostHeader is added implicitly by neon based on uri, but for certificate check, we use base hostname
+    // as the bucket name can contain dots, for which the certificate check would fail)
+    ne_set_realhost(request->NeonSession, params->bucketContext.hostName ? params->bucketContext.hostName : defaultHostNameG);
     append_standard_header(cacheControlHeader);
     append_standard_header(contentTypeHeader);
     append_standard_header(md5Header);

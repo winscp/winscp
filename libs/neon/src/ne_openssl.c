@@ -473,7 +473,11 @@ static int check_certificate(ne_session *sess, SSL *ssl, ne_ssl_certificate *cha
     /* Check certificate was issued to this server; pass URI of
      * server. */
     memset(&server, 0, sizeof server);
+    #ifdef WINSCP
+    ne_fill_real_server_uri(sess, &server);
+    #else
     ne_fill_server_uri(sess, &server);
+    #endif
     ret = check_identity(&server, cert, NULL);
     ne_uri_free(&server);
     if (ret < 0) {
