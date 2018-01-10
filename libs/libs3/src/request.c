@@ -1574,22 +1574,15 @@ void request_perform(const RequestParams *params, S3RequestContext *context)
     #endif
     {
         NeonCode code = ne_request_dispatch(request->NeonRequest);
-        if ((code != NE_OK) && (request->status == S3StatusOK)) {
-            request->status = request_neon_code_to_status(code);
-            const char * neonError = ne_get_error(request->NeonSession);
-            int allFit;
-            string_buffer_append(request->statusMessage, neonError, strlen(neonError), allFit);
-            request->errorParser.s3ErrorDetails.message = request->statusMessage;
-        }
 
         // Finish the request, ensuring that all callbacks have been made, and
         // also releases the request
-        request_finish(request);
+        request_finish(request, code);
     }
 }
 
 
-void request_finish(Request *request)
+void request_finish(Request *request, NeonCode code)
 {
     // If we haven't detected this already, we now know that the headers are
     // definitely done being read in
@@ -1597,12 +1590,30 @@ void request_finish(Request *request)
 
     // If there was no error processing the request, then possibly there was
     // an S3 error parsed, which should be converted into the request status
+    // WINSCP: We get "OK", even if there's TCP or HTTP error
     if (request->status == S3StatusOK) {
+        // First handle S3 errors
+        // TemporaryRedirect S3 error has a precedence over HTTP 3xx error that carries it.
         error_parser_convert_status(&(request->errorParser),
                                     &(request->status));
+        #ifdef WINSCP
+        // This handles TCP and HTTP errors
+        if (request->status == S3StatusOK) {
+            if (code != NE_OK) {
+                request->status = request_neon_code_to_status(code);
+                if (request->errorParser.s3ErrorDetails.message == NULL) {
+                    const char * neonError = ne_get_error(request->NeonSession);
+                    int allFit;
+                    string_buffer_append(request->statusMessage, neonError, strlen(neonError), allFit);
+                    request->errorParser.s3ErrorDetails.message = request->statusMessage;
+                }
+            }
+        }
+        #endif
         // If there still was no error recorded, then it is possible that
         // there was in fact an error but that there was no error XML
         // detailing the error
+        // WINSCP: We possibly never get here with neon
         if ((request->status == S3StatusOK) &&
             ((request->httpResponseCode < 200) ||
              (request->httpResponseCode > 299))) {

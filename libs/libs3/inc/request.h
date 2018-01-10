@@ -185,7 +185,7 @@ void request_perform(const RequestParams *params, S3RequestContext *context);
 
 // Called by the internal request code or internal request context code when a
 // curl has finished the request
-void request_finish(Request *request);
+void request_finish(Request *request, NeonCode code); // WINSCP (code)
 
 S3Status request_neon_code_to_status(NeonCode code); // WINSCP (neon)
 
