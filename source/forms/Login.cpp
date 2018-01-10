@@ -488,7 +488,6 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * SessionData)
   {
     UserNameEdit->Text = SessionData->UserName;
     PortNumberEdit->AsInteger = SessionData->PortNumber;
-    HostNameEdit->Text = SessionData->HostName;
 
     bool Editable = IsEditable();
     if (Editable)
@@ -511,6 +510,9 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * SessionData)
     bool AllowScpFallback;
     TransferProtocolCombo->ItemIndex = FSProtocolToIndex(SessionData->FSProtocol, AllowScpFallback);
     TransferProtocolView->Text = TransferProtocolCombo->Text;
+
+    // Only after loading TransferProtocolCombo, so that we do not overwrite it with default S3 hostname
+    HostNameEdit->Text = SessionData->HostName;
 
     NoteGroup->Visible = !Trim(SessionData->Note).IsEmpty();
     NoteMemo->Lines->Text = SessionData->Note;
