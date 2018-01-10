@@ -1024,11 +1024,19 @@ void __fastcall TS3FileSystem::CreateDirectory(const UnicodeString ADirName)
   {
     S3ResponseHandler ResponseHandler = CreateResponseHandler();
 
-    // Not using GetBucketContext here, as the bucket does not exist, so we have to explicitly use S3DefaultRegion
+    // Not using GetBucketContext here, as the bucket does not exist
+
+    UTF8String RegionBuf;
+    char * Region = NULL;
+    if (FTerminal->SessionData->S3DefaultRegion != S3LibDefaultRegion())
+    {
+      RegionBuf = UTF8String(FTerminal->SessionData->S3DefaultRegion);
+      Region = RegionBuf.c_str();
+    }
+
     S3_create_bucket(
       FLibS3Protocol, FAccessKeyId.c_str(), FSecretAccessKey.c_str(), NULL, FHostName.c_str(), StrToS3(BucketName),
-      StrToS3(FTerminal->SessionData->S3DefaultRegion), S3CannedAclPrivate, NULL, FRequestContext, FTimeout,
-      &ResponseHandler, &Data);
+      StrToS3(S3LibDefaultRegion()), S3CannedAclPrivate, Region, FRequestContext, FTimeout, &ResponseHandler, &Data);
   }
   else
   {
