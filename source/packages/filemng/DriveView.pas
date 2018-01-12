@@ -1537,9 +1537,13 @@ var
       if (UpperCase(GetDirName(Node)) = Dir) or (TNodeData(Node.Data).ShortName = Dir) then
       begin
         if Length(Path) > 0 then
+        begin
           Result := SearchSubDirs(Node, Path)
-        else
+        end
+          else
+        begin
           Result := Node;
+        end;
         Exit;
       end;
       Node := ParentNode.GetNextChild(Node);
