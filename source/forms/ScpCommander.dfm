@@ -1620,6 +1620,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       WatchDirectory = True
       DirView = LocalDirView
       OnRefreshDrives = LocalDriveViewRefreshDrives
+      OnBusy = DirViewBusy
       OnDDDragEnter = LocalFileControlDDDragEnter
       OnDDDragLeave = FileControlDDDragLeave
       OnDDDragOver = LocalFileControlDDDragOver

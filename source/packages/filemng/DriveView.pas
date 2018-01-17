@@ -326,6 +326,7 @@ type
       write FOnDisplayContextMenu;
     property OnRefreshDrives: TNotifyEvent read FOnRefreshDrives
       write FOnRefreshDrives;
+    property OnBusy;
 
     property DDLinkOnExeDrag;
 
