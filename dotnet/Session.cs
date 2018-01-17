@@ -127,6 +127,7 @@ namespace WinSCP
                 if (Opened && send)
                 {
                     SendOptionBatchCommand();
+                    WaitForGroup();
                 }
             }
         }
@@ -141,6 +142,7 @@ namespace WinSCP
                     if (Opened && (_queryReceived == null))
                     {
                         SendOptionBatchCommand();
+                        WaitForGroup();
                     }
                 }
             }
@@ -324,10 +326,7 @@ namespace WinSCP
                     _reader = new SessionElementLogReader(_logReader);
 
                     // Skip "open" command <group>
-                    using (ElementLogReader groupReader = _reader.WaitForGroupAndCreateLogReader())
-                    {
-                        ReadElement(groupReader, LogReadFlags.ThrowFailures);
-                    }
+                    WaitForGroup();
 
                     WriteCommand("pwd");
 
@@ -360,6 +359,14 @@ namespace WinSCP
         {
             string command = string.Format(CultureInfo.InvariantCulture, "option batch {0}", (_queryReceived != null ? "off" : "on"));
             WriteCommand(command);
+        }
+
+        private void WaitForGroup()
+        {
+            using (ElementLogReader groupReader = _reader.WaitForGroupAndCreateLogReader())
+            {
+                ReadElement(groupReader, LogReadFlags.ThrowFailures);
+            }
         }
 
         internal string GetErrorOutputMessage()
