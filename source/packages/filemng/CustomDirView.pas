@@ -1421,6 +1421,8 @@ begin
 end;
 
 procedure TCustomDirView.KeyDown(var Key: Word; Shift: TShiftState);
+var
+  AKey: Word;
 begin
   if Valid and (not IsEditing) and (not Loading) then
   begin
@@ -1429,10 +1431,11 @@ begin
     begin
       if Assigned(ItemFocused) then
       begin
+         AKey := Key;
          Key := 0;
-         if (Key = VK_RETURN) and (Shift = [ssAlt]) then DoDisplayPropertiesMenu
+         if (AKey = VK_RETURN) and (Shift = [ssAlt]) then DoDisplayPropertiesMenu
            else
-         if (Key <> VK_RETURN) or (Shift = []) then DoExecute(ItemFocused);
+         if (AKey <> VK_RETURN) or (Shift = []) then DoExecute(ItemFocused);
       end;
     end
       else
