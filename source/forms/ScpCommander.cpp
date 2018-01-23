@@ -1021,6 +1021,17 @@ UnicodeString __fastcall TScpCommanderForm::ChangeFilePath(UnicodeString Path, T
   return Result;
 }
 //---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::CreateRemoteDirectory(const UnicodeString & Path)
+{
+  UnicodeString Dir = UnixExtractFileDir(Path);
+  if (!IsUnixRootPath(Dir) && !Terminal->FileExists(Dir))
+  {
+    CreateRemoteDirectory(Dir);
+  }
+  TRemoteProperties Properties = GUIConfiguration->NewDirectoryProperties;
+  RemoteDirView->CreateDirectoryEx(Path, &Properties);
+}
+//---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::SynchronizeBrowsingLocal(
   UnicodeString PrevPath, UnicodeString & NewPath, bool Create)
 {
@@ -1057,8 +1068,7 @@ void __fastcall TScpCommanderForm::SynchronizeBrowsingLocal(
 
     if (Create)
     {
-      TRemoteProperties Properties = GUIConfiguration->NewDirectoryProperties;
-      RemoteDirView->CreateDirectoryEx(NewPath, &Properties);
+      CreateRemoteDirectory(UnixExcludeTrailingBackslash(NewPath));
     }
 
     RemoteDirView->Path = NewPath;
@@ -1068,6 +1078,16 @@ void __fastcall TScpCommanderForm::SynchronizeBrowsingLocal(
     Terminal->ExceptionOnFail = false;
     delete Paths;
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::CreateLocalDirectory(const UnicodeString & Path)
+{
+  UnicodeString Dir = ExtractFileDir(Path);
+  if (!Dir.IsEmpty() && !DirectoryExists(Dir))
+  {
+    CreateLocalDirectory(Dir);
+  }
+  LocalDirView->CreateDirectory(Path);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::SynchronizeBrowsingRemote(
@@ -1116,7 +1136,7 @@ void __fastcall TScpCommanderForm::SynchronizeBrowsingRemote(
 
   if (Create)
   {
-    LocalDirView->CreateDirectory(NewPath);
+    CreateLocalDirectory(ExcludeTrailingBackslash(NewPath));
   }
 
   LocalDirView->Path = NewPath;
