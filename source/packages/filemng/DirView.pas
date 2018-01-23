@@ -2108,7 +2108,7 @@ begin
 
   StopIconUpdateThread;
   try
-    {create the phyical directory:}
+    {create the physical directory:}
     Win32Check(Windows.CreateDirectory(PChar(ApiPath(DirName)), nil));
 
     if IncludeTrailingBackslash(ExtractFilePath(ExpandFileName(DirName))) =
