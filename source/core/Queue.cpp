@@ -347,11 +347,18 @@ void __fastcall TSimpleThread::WaitFor(unsigned int Milliseconds)
 //---------------------------------------------------------------------------
 // TSignalThread
 //---------------------------------------------------------------------------
-__fastcall TSignalThread::TSignalThread(bool LowPriority) :
+__fastcall TSignalThread::TSignalThread(bool LowPriority, HANDLE Event) :
   TSimpleThread(),
   FTerminated(true), FEvent(NULL)
 {
-  FEvent = CreateEvent(NULL, false, false, NULL);
+  if (Event == NULL)
+  {
+    FEvent = CreateEvent(NULL, false, false, NULL);
+  }
+  else
+  {
+    FEvent = Event;
+  }
   DebugAssert(FEvent != NULL);
 
   if (LowPriority)

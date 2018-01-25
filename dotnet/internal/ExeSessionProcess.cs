@@ -969,6 +969,56 @@ namespace WinSCP
             _logger.WriteLine("{0} - exists [{1}]", executablePath, File.Exists(executablePath));
         }
 
+        public void RequestCallstack()
+        {
+            using (_logger.CreateCallstack())
+            {
+                lock (_lock)
+                {
+                    if (_process == null)
+                    {
+                        _logger.WriteLine("Process is closed already");
+                    }
+                    else
+                    {
+                        try
+                        {
+                            string eventName = string.Format(CultureInfo.InvariantCulture, "WinSCPCallstack{0}", _process.Id);
+                            using (EventWaitHandle ev = EventWaitHandle.OpenExisting(eventName))
+                            {
+                                _logger.WriteLine("Setting event {0}", eventName);
+                                ev.Set();
+                                string callstackFileName = string.Format(CultureInfo.InvariantCulture, "{0}.txt", eventName);
+                                string callstackPath = Path.Combine(Path.GetTempPath(), callstackFileName);
+                                int timeout = 2000;
+                                while (!File.Exists(callstackPath))
+                                {
+                                    if (timeout < 0)
+                                    {
+                                        string message = string.Format(CultureInfo.CurrentCulture, "Timeout waiting for callstack file {0} to be created ", callstackPath);
+                                        throw new TimeoutException(message);
+                                    }
+
+                                    int step = 50;
+                                    timeout -= 50;
+                                    Thread.Sleep(step);
+                                }
+                                _logger.WriteLine("Callstack file {0} has been created", callstackPath);
+                                // allow writting to be finished
+                                Thread.Sleep(100);
+                                _logger.WriteLine(File.ReadAllText(callstackPath));
+                                File.Delete(callstackPath);
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            _logger.WriteException(e);
+                        }
+                    }
+                }
+            }
+        }
+
         public void Cancel()
         {
             _cancel = true;

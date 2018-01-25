@@ -5,6 +5,7 @@
 #include <shlwapi.h>
 
 #include <Common.h>
+#include <Queue.h>
 #include <Exceptions.h>
 #include <CoreMain.h>
 #include <TextsCore.h>
@@ -23,6 +24,7 @@
 #include "GUITools.h"
 #include "JclDebug.hpp"
 #include "JclHookExcept.hpp"
+#include <System.IOUtils.hpp>
 #include <StrUtils.hpp>
 #include <WinApi.h>
 #include "Tools.h"
@@ -1458,12 +1460,72 @@ void __fastcall ClickToolbarItem(TTBCustomItem * Item, bool PositionCursor)
   PostMessage(Toolbar->Handle, WM_LBUTTONDOWN, MK_LBUTTON, MAKELPARAM(X, Y));
 }
 //---------------------------------------------------------------------------
+class TCallstackThread : public TSignalThread
+{
+public:
+  __fastcall TCallstackThread() : TSignalThread(true, DoCreateEvent())
+  {
+  }
+
+protected:
+  virtual void __fastcall ProcessEvent()
+  {
+    try
+    {
+      UnicodeString FileName = FORMAT(L"%s.txt", (DoGetName()));
+      UnicodeString Path = TPath::Combine(SystemTemporaryDirectory(), FileName);
+      std::unique_ptr<TStrings> StackStrings;
+      HANDLE MainThreadHandle = reinterpret_cast<HANDLE>(MainThreadID);
+      if (SuspendThread(MainThreadHandle) < 0)
+      {
+        RaiseLastOSError();
+      }
+      try
+      {
+        TJclStackInfoList * StackInfoList = JclCreateThreadStackTraceFromID(true, MainThreadID);
+        if (StackInfoList == NULL)
+        {
+          RaiseLastOSError();
+        }
+        StackStrings.reset(StackInfoListToStrings(StackInfoList));
+      }
+      __finally
+      {
+        if (ResumeThread(MainThreadHandle) < 0)
+        {
+          RaiseLastOSError();
+        }
+      }
+      TFile::WriteAllText(Path, StackStrings->Text);
+    }
+    catch (...)
+    {
+    }
+  }
+
+private:
+  static UnicodeString DoGetName()
+  {
+    return FORMAT("WinSCPCallstack%d", (GetCurrentProcessId ()));
+  }
+
+  static HANDLE DoCreateEvent()
+  {
+    UnicodeString Name = DoGetName();
+    return CreateEvent(NULL, false, false, Name.c_str());
+  }
+};
+//---------------------------------------------------------------------------
+std::unique_ptr<TCallstackThread> CallstackThread;
+//---------------------------------------------------------------------------
 void __fastcall WinInitialize()
 {
   if (JclHookExceptions())
   {
     JclStackTrackingOptions << stAllModules;
     JclAddExceptNotifier(DoExceptNotify, npFirstChain);
+    CallstackThread.reset(new TCallstackThread());
+    CallstackThread->Start();
   }
 
   SetErrorMode(SEM_FAILCRITICALERRORS);
@@ -1477,6 +1539,7 @@ void __fastcall WinInitialize()
 //---------------------------------------------------------------------------
 void __fastcall WinFinalize()
 {
+  CallstackThread.reset(NULL);
   JclRemoveExceptNotifier(DoExceptNotify);
 }
 //---------------------------------------------------------------------------

@@ -171,3 +171,5 @@ using System.Diagnostics.CodeAnalysis;
 [assembly: SuppressMessage("Microsoft.Interoperability", "CA1407:AvoidStaticMembersInComVisibleTypes", Scope = "member", Target = "WinSCP.RemotePath.#GetFileName(System.String)")]
 [assembly: SuppressMessage("Microsoft.Interoperability", "CA1409:ComVisibleTypesShouldBeCreatable", Scope = "type", Target = "WinSCP.QueryReceivedEventArgs")]
 [assembly: SuppressMessage("Microsoft.Design", "CA1003:UseGenericEventHandlerInstances", Scope = "type", Target = "WinSCP.QueryReceivedEventHandler")]
+[assembly: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope = "member", Target = "WinSCP.ExeSessionProcess.#RequestCallstack()")]
+[assembly: SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes", Scope = "member", Target = "WinSCP.ExeSessionProcess.#RequestCallstack()")]

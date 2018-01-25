@@ -1733,6 +1733,8 @@ namespace WinSCP
 
             if (DateTime.Now - _lastOutput > timeout)
             {
+                Logger.WriteLine("Timeout waiting for WinSCP to respond - asking for callstack");
+                _process.RequestCallstack();
                 string message = "Timeout waiting for WinSCP to respond";
                 if (additional != null)
                 {

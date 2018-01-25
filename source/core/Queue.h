@@ -39,7 +39,7 @@ protected:
   HANDLE FEvent;
   bool FTerminated;
 
-  __fastcall TSignalThread(bool LowPriority);
+  __fastcall TSignalThread(bool LowPriority, HANDLE Event = NULL);
   virtual __fastcall ~TSignalThread();
 
   virtual bool __fastcall WaitForEvent();
