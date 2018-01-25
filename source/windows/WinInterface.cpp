@@ -1460,61 +1460,71 @@ void __fastcall ClickToolbarItem(TTBCustomItem * Item, bool PositionCursor)
   PostMessage(Toolbar->Handle, WM_LBUTTONDOWN, MK_LBUTTON, MAKELPARAM(X, Y));
 }
 //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 class TCallstackThread : public TSignalThread
 {
 public:
-  __fastcall TCallstackThread() : TSignalThread(true, DoCreateEvent())
-  {
-  }
+  __fastcall TCallstackThread();
 
 protected:
-  virtual void __fastcall ProcessEvent()
+  virtual void __fastcall ProcessEvent();
+
+private:
+  static UnicodeString DoGetName();
+  static HANDLE DoCreateEvent();
+};
+//---------------------------------------------------------------------------
+__fastcall TCallstackThread::TCallstackThread() :
+  TSignalThread(true, DoCreateEvent())
+{
+}
+//---------------------------------------------------------------------------
+void __fastcall TCallstackThread::ProcessEvent()
+{
+  try
   {
+    UnicodeString FileName = FORMAT(L"%s.txt", (DoGetName()));
+    UnicodeString Path = TPath::Combine(SystemTemporaryDirectory(), FileName);
+    std::unique_ptr<TStrings> StackStrings;
+    HANDLE MainThreadHandle = reinterpret_cast<HANDLE>(MainThreadID);
+    if (SuspendThread(MainThreadHandle) < 0)
+    {
+      RaiseLastOSError();
+    }
     try
     {
-      UnicodeString FileName = FORMAT(L"%s.txt", (DoGetName()));
-      UnicodeString Path = TPath::Combine(SystemTemporaryDirectory(), FileName);
-      std::unique_ptr<TStrings> StackStrings;
-      HANDLE MainThreadHandle = reinterpret_cast<HANDLE>(MainThreadID);
-      if (SuspendThread(MainThreadHandle) < 0)
+      TJclStackInfoList * StackInfoList = JclCreateThreadStackTraceFromID(true, MainThreadID);
+      if (StackInfoList == NULL)
       {
         RaiseLastOSError();
       }
-      try
-      {
-        TJclStackInfoList * StackInfoList = JclCreateThreadStackTraceFromID(true, MainThreadID);
-        if (StackInfoList == NULL)
-        {
-          RaiseLastOSError();
-        }
-        StackStrings.reset(StackInfoListToStrings(StackInfoList));
-      }
-      __finally
-      {
-        if (ResumeThread(MainThreadHandle) < 0)
-        {
-          RaiseLastOSError();
-        }
-      }
-      TFile::WriteAllText(Path, StackStrings->Text);
+      StackStrings.reset(StackInfoListToStrings(StackInfoList));
     }
-    catch (...)
+    __finally
     {
+      if (ResumeThread(MainThreadHandle) < 0)
+      {
+        RaiseLastOSError();
+      }
     }
+    TFile::WriteAllText(Path, StackStrings->Text);
   }
-
-private:
-  static UnicodeString DoGetName()
+  catch (...)
   {
-    return FORMAT("WinSCPCallstack%d", (GetCurrentProcessId ()));
   }
-
-  static HANDLE DoCreateEvent()
-  {
-    UnicodeString Name = DoGetName();
-    return CreateEvent(NULL, false, false, Name.c_str());
-  }
-};
+}
+//---------------------------------------------------------------------------
+UnicodeString TCallstackThread::DoGetName()
+{
+  return FORMAT("WinSCPCallstack%d", (GetCurrentProcessId()));
+}
+//---------------------------------------------------------------------------
+HANDLE TCallstackThread::DoCreateEvent()
+{
+  UnicodeString Name = DoGetName();
+  return CreateEvent(NULL, false, false, Name.c_str());
+}
+//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 std::unique_ptr<TCallstackThread> CallstackThread;
 //---------------------------------------------------------------------------
