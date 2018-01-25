@@ -3686,3 +3686,15 @@ UnicodeString __fastcall StripEllipsis(const UnicodeString & S)
   }
   return Result;
 }
+//---------------------------------------------------------------------------
+UnicodeString __fastcall GetFileMimeType(const UnicodeString & FileName)
+{
+  wchar_t * MimeOut = NULL;
+  UnicodeString Result;
+  if (FindMimeFromData(NULL, FileName.c_str(), NULL, 0, NULL, FMFD_URLASFILENAME, &MimeOut, 0) == S_OK)
+  {
+    Result = MimeOut;
+    CoTaskMemFree(MimeOut);
+  }
+  return Result;
+}
