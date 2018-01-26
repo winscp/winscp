@@ -58,6 +58,7 @@
 
 	  <arg><option>-r</option></arg>
 	  <arg><option>-t</option></arg>
+          <arg><option>-N</option></arg>
 
 	  <arg><option>-v</option></arg>
 
@@ -159,8 +160,8 @@ supports both.
   representations of the input files.
   By default, <option>-d</option> outputs a canonical representation
   (described below).
-  You can select different output formats using <option>-c</option>
-  and <option>-m</option>.
+  You can select different output formats using <option>-c</option>,
+  <option>-m</option> and <option>-N</option>.
 	  </para>
 	  <para>
   The output filenames will
@@ -216,6 +217,17 @@ supports both.
   Turns on namespace processing.  (describe namespaces)
   <option>-c</option> disables namespaces.
 	   </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>-N</option></term>
+        <listitem>
+          <para>
+  Adds a doctype and notation declarations to canonical XML output.
+  This matches the example output used by the formal XML test cases.
+  Requires <option>-d</option> to specify an output file.
+          </para>
         </listitem>
       </varlistentry>
 

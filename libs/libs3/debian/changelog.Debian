@@ -1,0 +1,6 @@
+libs3 (all) unstable; urgency=low
+
+      * libs3 Debian maintainer and upstream author are identical.
+        Therefore see normal changelog file for Debian changes.
+
+ -- Bryan Ischo <bryan@ischo.com>  Wed, 06 Aug 2008 09:36:43 -0400

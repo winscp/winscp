@@ -1,0 +1,12 @@
+Package: libs3
+Source: THIS LINE WILL BE REMOVED, dpkg-shlibdepends NEEDS IT
+Version: LIBS3_VERSION
+Architecture: DEBIAN_ARCHITECTURE
+Section: net
+Priority: extra
+Maintainer: Bryan Ischo <bryan@ischo.com>
+Homepage: https://github.com/bji/libs3
+Description: C Library and Tools for Amazon S3 Access
+ This package includes the libs3 shared object library, needed to run
+ applications compiled against libs3, and additionally contains the s3
+ utility for accessing Amazon S3.

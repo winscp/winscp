@@ -31,6 +31,7 @@ undefine([expat_version])
 
 AC_CONFIG_SRCDIR(Makefile.in)
 AC_CONFIG_AUX_DIR(conftools)
+AM_INIT_AUTOMAKE
 AC_CONFIG_MACRO_DIR([m4])
 
 
@@ -46,9 +47,10 @@ dnl If the API changes incompatibly set LIBAGE back to 0
 dnl
 
 LIBCURRENT=7   # sync
-LIBREVISION=5  # with
+LIBREVISION=7  # with
 LIBAGE=6       # CMakeLists.txt!
 
+CPPFLAGS="${CPPFLAGS} -DHAVE_EXPAT_CONFIG_H"
 AC_CONFIG_HEADER(expat_config.h)
 
 sinclude(conftools/ac_c_bigendian_cross.m4)
@@ -98,6 +100,14 @@ AC_C_BIGENDIAN_CROSS
 AC_C_CONST
 AC_TYPE_SIZE_T
 AC_CHECK_FUNCS(memmove bcopy)
+
+
+AC_ARG_WITH([xmlwf], [
+AS_HELP_STRING([--without-xmlwf], [do not build xmlwf])], [], [with_xmlwf=yes])
+AM_CONDITIONAL([WITH_XMLWF], [test x${with_xmlwf} = xyes])
+
+AM_CONDITIONAL([MINGW], [echo -- "${host}" | fgrep -q mingw])
+AM_CONDITIONAL([UNICODE], [echo -- "${CPPFLAGS}${CFLAGS}" | fgrep -q XML_UNICODE])
 
 
 AC_ARG_WITH([libbsd], [
@@ -218,12 +228,29 @@ AS_IF([test "x${enable_xml_context}" != "xno"], [
     [Define to specify how much context to retain around the current parse point.])
 ])
 
+AC_ARG_WITH([docbook], [AS_HELP_STRING([--with-docbook],
+    [enforce XML to man page compilation @<:@default=check@:>@])
+AS_HELP_STRING([--without-docbook],
+    [skip XML to man page compilation @<:@default=check@:>@])],
+  [],
+  [with_docbook=check])
+
+AC_ARG_VAR([DOCBOOK_TO_MAN], [docbook2x-man command])
+AS_IF([test "x$with_docbook" != xno],
+  [AC_CHECK_PROGS([DOCBOOK_TO_MAN], [docbook2x-man docbook2man docbook-to-man],
+  [if test "x$with_docbook" != xcheck; then 
+    AC_MSG_ERROR([Required program 'docbook2x-man' not found.])])])
+
+AM_CONDITIONAL(WITH_DOCBOOK, [test x${DOCBOOK_TO_MAN} != x])
+
 AC_CONFIG_FILES([Makefile expat.pc])
+AC_CONFIG_FILES([
+  doc/Makefile
+  examples/Makefile
+  lib/Makefile
+  tests/Makefile
+  tests/benchmark/Makefile
+  xmlwf/Makefile
+])
 AC_CONFIG_FILES([run.sh], [chmod +x run.sh])
 AC_OUTPUT
-
-abs_srcdir="`cd $srcdir && pwd`"
-abs_builddir="`pwd`"
-if test "$abs_srcdir" != "$abs_builddir"; then
-  make mkdir-init
-fi
