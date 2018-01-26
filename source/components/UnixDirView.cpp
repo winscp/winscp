@@ -251,15 +251,8 @@ bool __fastcall TUnixDirView::ItemMatchesFilter(TListItem * Item,
 #ifndef DESIGN_ONLY
   ASSERT_VALID_ITEM;
   TRemoteFile *File = ITEMFILE;
-  int Attr = File->Attr;
 
   return
-    ((Attr & Filter.IncludeAttr) == Filter.IncludeAttr) &&
-    ((Attr & Filter.ExcludeAttr) == 0) &&
-    ((Filter.FileSizeFrom == 0) || (File->Size >= Filter.FileSizeFrom)) &&
-    ((Filter.FileSizeTo == 0) || (File->Size <= Filter.FileSizeTo)) &&
-    ((!(int)Filter.ModificationFrom) || (File->Modification >= Filter.ModificationFrom)) &&
-    ((!(int)Filter.ModificationTo) || (File->Modification <= Filter.ModificationTo)) &&
     ((Filter.Masks.IsEmpty()) ||
      FileNameMatchesMasks(File->FileName, File->IsDirectory, File->Size, File->Modification, Filter.Masks, false) ||
      (File->IsDirectory && Filter.Directories &&

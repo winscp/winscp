@@ -130,6 +130,57 @@ void __fastcall TerminateApplication()
   Application->Terminate();
 }
 //---------------------------------------------------------------------------
+struct TOpenLocalPathHandler
+{
+  UnicodeString LocalPath;
+  UnicodeString LocalFileName;
+
+  void __fastcall Open(TObject * Sender)
+  {
+    TButton * Button = DebugNotNull(dynamic_cast<TButton *>(Sender));
+    // Reason for separate AMenu variable is given in TPreferencesDialog::EditorFontColorButtonClick
+    TPopupMenu * AMenu = new TPopupMenu(Application);
+    // Popup menu has to survive the popup as TBX calls click handler asynchronously (post).
+    Menu.reset(AMenu);
+    TMenuItem * Item;
+
+    Item = new TMenuItem(Menu.get());
+    Menu->Items->Add(Item);
+    Item->Caption = LoadStr(OPEN_TARGET_FOLDER);
+    Item->OnClick = OpenFolderClick;
+
+    if (!LocalFileName.IsEmpty())
+    {
+      Item = new TMenuItem(Menu.get());
+      Menu->Items->Add(Item);
+      Item->Caption = LoadStr(OPEN_DOWNLOADED_FILE);
+      Item->OnClick = OpenFileClick;
+    }
+
+    MenuPopup(Menu.get(), Button);
+  }
+
+private:
+  std::unique_ptr<TPopupMenu> Menu;
+
+  void __fastcall OpenFolderClick(TObject * /*Sender*/)
+  {
+    if (LocalFileName.IsEmpty())
+    {
+      OpenFolderInExplorer(LocalPath);
+    }
+    else
+    {
+      OpenFileInExplorer(LocalFileName);
+    }
+  }
+
+  void __fastcall OpenFileClick(TObject * /*Sender*/)
+  {
+    ExecuteShellChecked(LocalFileName, L"");
+  }
+};
+//---------------------------------------------------------------------------
 void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
   Exception * E)
 {
@@ -147,7 +198,9 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
       DoNotDisplay = true;
       if (Show && CheckXmlLogParam(Params))
       {
-        std::unique_ptr<TActionLog> ActionLog(new TActionLog(Configuration));
+        // The Started argument won't be used with .NET assembly, as it never uses patterns in XML log file name.
+        // But it theoretically can be used, when started manually.
+        std::unique_ptr<TActionLog> ActionLog(new TActionLog(Now(), Configuration));
         ActionLog->AddFailure(E);
         // unnecessary explicit release
         ActionLog.reset(NULL);
@@ -163,130 +216,146 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
   {
     TTerminalManager * Manager = TTerminalManager::Instance(false);
 
-    TQueryType Type;
     ESshTerminate * Terminate = dynamic_cast<ESshTerminate*>(E);
     bool CloseOnCompletion = (Terminate != NULL);
-    Type = CloseOnCompletion ? qtInformation : qtError;
-    bool ConfirmExitOnCompletion =
-      CloseOnCompletion &&
-      ((Terminate->Operation == odoDisconnect) || (Terminate->Operation == odoSuspend)) &&
-      WinConfiguration->ConfirmExitOnCompletion;
 
-    if (E->InheritsFrom(__classid(EFatal)) && (Terminal != NULL) &&
-        (Manager != NULL) && (Manager->ActiveTerminal != NULL) && Manager->ActiveTerminal->IsThisOrChild(Terminal))
+    bool ForActiveTerminal =
+      E->InheritsFrom(__classid(EFatal)) && (Terminal != NULL) &&
+      (Manager != NULL) && (Manager->ActiveTerminal == Terminal);
+
+    unsigned int Result;
+    if (CloseOnCompletion)
     {
-      int SessionReopenTimeout = 0;
-      TManagedTerminal * ManagedTerminal = dynamic_cast<TManagedTerminal *>(Manager->ActiveTerminal);
-      if ((ManagedTerminal != NULL) &&
-          ((Configuration->SessionReopenTimeout == 0) ||
-           ((double)ManagedTerminal->ReopenStart == 0) ||
-           (int(double(Now() - ManagedTerminal->ReopenStart) * MSecsPerDay) < Configuration->SessionReopenTimeout)))
-      {
-        SessionReopenTimeout = GUIConfiguration->SessionReopenAutoIdle;
-      }
-
-      unsigned int Result;
-      if (CloseOnCompletion)
+      if (ForActiveTerminal)
       {
         Manager->DisconnectActiveTerminal();
+      }
 
-        if (Terminate->Operation == odoSuspend)
+      if (Terminate->Operation == odoSuspend)
+      {
+        // suspend, so that exit prompt is shown only after windows resume
+        SuspendWindows();
+      }
+
+      DebugAssert(Show);
+      bool ConfirmExitOnCompletion =
+        CloseOnCompletion &&
+        ((Terminate->Operation == odoDisconnect) || (Terminate->Operation == odoSuspend)) &&
+        WinConfiguration->ConfirmExitOnCompletion;
+
+      if (ConfirmExitOnCompletion)
+      {
+        TMessageParams Params(mpNeverAskAgainCheck);
+        unsigned int Answers = 0;
+        TQueryButtonAlias Aliases[1];
+        TOpenLocalPathHandler OpenLocalPathHandler;
+        if (!Terminate->TargetLocalPath.IsEmpty() && !ForActiveTerminal)
         {
-          // suspend, so that exit prompt is shown only after windows resume
-          SuspendWindows();
+          OpenLocalPathHandler.LocalPath = Terminate->TargetLocalPath;
+          OpenLocalPathHandler.LocalFileName = Terminate->DestLocalFileName;
+
+          Aliases[0].Button = qaIgnore;
+          Aliases[0].Alias = LoadStr(OPEN_BUTTON);
+          Aliases[0].OnClick = OpenLocalPathHandler.Open;
+          Aliases[0].MenuButton = true;
+          Answers |= Aliases[0].Button;
+          Params.Aliases = Aliases;
+          Params.AliasesCount = LENOF(Aliases);
         }
 
-        DebugAssert(Show);
-        if (ConfirmExitOnCompletion)
+        if (ForActiveTerminal)
         {
-          TMessageParams Params(mpNeverAskAgainCheck);
           UnicodeString MessageFormat =
             MainInstructions((Manager->Count > 1) ?
               FMTLOAD(DISCONNECT_ON_COMPLETION, (Manager->Count - 1)) :
               LoadStr(EXIT_ON_COMPLETION));
-          Result = FatalExceptionMessageDialog(E, Type, 0,
+          Result = FatalExceptionMessageDialog(E, qtInformation, 0,
             MessageFormat,
-            qaYes | qaNo, HELP_NONE, &Params);
-
-          if (Result == qaNeverAskAgain)
-          {
-            Result = qaYes;
-            WinConfiguration->ConfirmExitOnCompletion = false;
-          }
+            Answers | qaYes | qaNo, HELP_NONE, &Params);
         }
         else
         {
-          Result = qaYes;
+          Result =
+            ExceptionMessageDialog(E, qtInformation, L"", Answers | qaOK, HELP_NONE, &Params);
         }
       }
       else
       {
-        if (Show)
-        {
-          Result = FatalExceptionMessageDialog(E, Type, SessionReopenTimeout);
-        }
-        else
-        {
-          Result = qaOK;
-        }
-      }
-
-      if (Result == qaYes)
-      {
-        DebugAssert(CloseOnCompletion);
-        DebugAssert(Terminate != NULL);
-        DebugAssert(Terminate->Operation != odoIdle);
-        TerminateApplication();
-
-        switch (Terminate->Operation)
-        {
-          case odoDisconnect:
-            break;
-
-          case odoSuspend:
-            // suspended before already
-            break;
-
-          case odoShutDown:
-            ShutDownWindows();
-            break;
-
-          default:
-            DebugFail();
-        }
-      }
-      else if (Result == qaRetry)
-      {
-        Manager->ReconnectActiveTerminal();
-      }
-      else
-      {
-        Manager->FreeActiveTerminal();
+        Result = qaYes;
       }
     }
     else
     {
-      // this should not happen as we never use Terminal->CloseOnCompletion
-      // on inactive terminal
-      if (CloseOnCompletion)
+      if (Show)
       {
-        DebugAssert(Show);
-        if (ConfirmExitOnCompletion)
+        if (ForActiveTerminal)
         {
-          TMessageParams Params(mpNeverAskAgainCheck);
-          if (ExceptionMessageDialog(E, Type, L"", qaOK, HELP_NONE, &Params) ==
-                qaNeverAskAgain)
+          int SessionReopenTimeout = 0;
+          TManagedTerminal * ManagedTerminal = dynamic_cast<TManagedTerminal *>(Manager->ActiveTerminal);
+          if ((ManagedTerminal != NULL) &&
+              ((Configuration->SessionReopenTimeout == 0) ||
+               ((double)ManagedTerminal->ReopenStart == 0) ||
+               (int(double(Now() - ManagedTerminal->ReopenStart) * MSecsPerDay) < Configuration->SessionReopenTimeout)))
           {
-            WinConfiguration->ConfirmExitOnCompletion = false;
+            SessionReopenTimeout = GUIConfiguration->SessionReopenAutoIdle;
           }
+          Result = FatalExceptionMessageDialog(E, qtError, SessionReopenTimeout);
+        }
+        else
+        {
+          Result = ExceptionMessageDialog(E, qtError);
         }
       }
       else
       {
-        if (Show)
-        {
-          ExceptionMessageDialog(E, Type);
-        }
+        Result = qaOK;
+      }
+    }
+
+    if (Result == qaNeverAskAgain)
+    {
+      DebugAssert(CloseOnCompletion);
+      Result = qaYes;
+      WinConfiguration->ConfirmExitOnCompletion = false;
+    }
+
+    if (Result == qaYes)
+    {
+      DebugAssert(CloseOnCompletion);
+      DebugAssert(Terminate != NULL);
+      DebugAssert(Terminate->Operation != odoIdle);
+      TerminateApplication();
+
+      switch (Terminate->Operation)
+      {
+        case odoDisconnect:
+          break;
+
+        case odoSuspend:
+          // suspended before already
+          break;
+
+        case odoShutDown:
+          ShutDownWindows();
+          break;
+
+        default:
+          DebugFail();
+      }
+    }
+    else if (Result == qaRetry)
+    {
+      // qaRetry is used by FatalExceptionMessageDialog
+      if (DebugAlwaysTrue(ForActiveTerminal))
+      {
+        Manager->ReconnectActiveTerminal();
+      }
+    }
+    else
+    {
+      if (ForActiveTerminal)
+      {
+        Manager->FreeActiveTerminal();
       }
     }
   }
@@ -332,12 +401,12 @@ void __fastcall DoProductLicense()
 //---------------------------------------------------------------------------
 const UnicodeString PixelsPerInchKey = L"PixelsPerInch";
 //---------------------------------------------------------------------
-int __fastcall GetToolbarLayoutPixelsPerInch(TStrings * Storage)
+int __fastcall GetToolbarLayoutPixelsPerInch(TStrings * Storage, TControl * Control)
 {
   int Result;
   if (Storage->IndexOfName(PixelsPerInchKey))
   {
-    Result = LoadPixelsPerInch(Storage->Values[PixelsPerInchKey]);
+    Result = LoadPixelsPerInch(Storage->Values[PixelsPerInchKey], Control);
   }
   else
   {
@@ -450,15 +519,15 @@ static void __fastcall ToolbarWriteString(const UnicodeString ToolbarName,
   Storage->Values[ToolbarKey] = Data;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall GetToolbarsLayoutStr(TComponent * OwnerComponent)
+UnicodeString __fastcall GetToolbarsLayoutStr(TControl * OwnerControl)
 {
   UnicodeString Result;
   TStrings * Storage = new TStringList();
   try
   {
-    TBCustomSavePositions(OwnerComponent, ToolbarWriteInt, ToolbarWriteString,
+    TBCustomSavePositions(OwnerControl, ToolbarWriteInt, ToolbarWriteString,
       Storage);
-    Storage->Values[PixelsPerInchKey] = SavePixelsPerInch();
+    Storage->Values[PixelsPerInchKey] = SavePixelsPerInch(OwnerControl);
     Result = Storage->CommaText;
   }
   __finally
@@ -468,32 +537,32 @@ UnicodeString __fastcall GetToolbarsLayoutStr(TComponent * OwnerComponent)
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall LoadToolbarsLayoutStr(TComponent * OwnerComponent, UnicodeString LayoutStr)
+void __fastcall LoadToolbarsLayoutStr(TControl * OwnerControl, UnicodeString LayoutStr)
 {
   TStrings * Storage = new TStringList();
   try
   {
     Storage->CommaText = LayoutStr;
-    TBCustomLoadPositions(OwnerComponent, ToolbarReadInt, ToolbarReadString,
+    TBCustomLoadPositions(OwnerControl, ToolbarReadInt, ToolbarReadString,
       Storage);
-    int PixelsPerInch = GetToolbarLayoutPixelsPerInch(Storage);
+    int PixelsPerInch = GetToolbarLayoutPixelsPerInch(Storage, OwnerControl);
     // Scale toolbars stretched to the first other toolbar to the right
-    if ((PixelsPerInch > 0) && (PixelsPerInch != Screen->PixelsPerInch)) // optimization
+    if ((PixelsPerInch > 0) && (PixelsPerInch != GetControlPixelsPerInch(OwnerControl))) // optimization
     {
-      for (int Index = 0; Index < OwnerComponent->ComponentCount; Index++)
+      for (int Index = 0; Index < OwnerControl->ComponentCount; Index++)
       {
         TTBXToolbar * Toolbar =
-          dynamic_cast<TTBXToolbar *>(OwnerComponent->Components[Index]);
+          dynamic_cast<TTBXToolbar *>(OwnerControl->Components[Index]);
         if ((Toolbar != NULL) && Toolbar->Stretch &&
             (Toolbar->OnGetBaseSize != NULL) &&
             // we do not support floating of stretched toolbars
             DebugAlwaysTrue(!Toolbar->Floating))
         {
           TTBXToolbar * FollowingToolbar = NULL;
-          for (int Index2 = 0; Index2 < OwnerComponent->ComponentCount; Index2++)
+          for (int Index2 = 0; Index2 < OwnerControl->ComponentCount; Index2++)
           {
             TTBXToolbar * Toolbar2 =
-              dynamic_cast<TTBXToolbar *>(OwnerComponent->Components[Index2]);
+              dynamic_cast<TTBXToolbar *>(OwnerControl->Components[Index2]);
             if ((Toolbar2 != NULL) && !Toolbar2->Floating &&
                 (Toolbar2->Parent == Toolbar->Parent) &&
                 (Toolbar2->DockRow == Toolbar->DockRow) &&
@@ -506,7 +575,7 @@ void __fastcall LoadToolbarsLayoutStr(TComponent * OwnerComponent, UnicodeString
 
           if (FollowingToolbar != NULL)
           {
-            int NewWidth = LoadDimension(Toolbar->Width, PixelsPerInch);
+            int NewWidth = LoadDimension(Toolbar->Width, PixelsPerInch, Toolbar);
             FollowingToolbar->DockPos += NewWidth - Toolbar->Width;
           }
         }

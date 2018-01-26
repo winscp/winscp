@@ -7,11 +7,12 @@ namespace WinSCP
 {
     internal class Callstack : IDisposable
     {
-        public Callstack(Logger logger)
+        public Callstack(Logger logger, object token = null)
         {
             _logger = logger;
             if (_logger.Logging)
             {
+                _token = token;
                 Type type = GetType();
                 StackTrace stackTrace = new StackTrace();
                 int i = 0;
@@ -36,6 +37,10 @@ namespace WinSCP
                 if (method != null)
                 {
                     _name = string.Format(CultureInfo.InvariantCulture, "{0}.{1}", method.DeclaringType.Name, method.Name);
+                    if (_token != null)
+                    {
+                        _name += string.Format(CultureInfo.InvariantCulture, "({0})", _token);
+                    }
                     _logger.WriteLine("{0} entering", _name);
                     _logger.Indent();
                 }
@@ -53,5 +58,6 @@ namespace WinSCP
 
         private readonly Logger _logger;
         private readonly string _name;
+        private readonly object _token;
     }
 }

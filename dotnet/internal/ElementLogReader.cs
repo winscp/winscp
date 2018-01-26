@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Xml;
 
 namespace WinSCP
@@ -13,17 +14,18 @@ namespace WinSCP
             if ((NodeType != XmlNodeType.Element) ||
                 IsEmptyElement)
             {
-                throw new InvalidOperationException("Cannot use ElementLogReader with non-element node or empty element");
+                throw Session.Logger.WriteException(new InvalidOperationException("Cannot use ElementLogReader with non-element node or empty element"));
             }
 
             _localName = _parentReader.Reader.LocalName;
             _depth = _parentReader.Reader.Depth;
+            _token = _localName + "@" + _depth;
             _read = false;
         }
 
         public override void Dispose()
         {
-            using (Session.Logger.CreateCallstack())
+            using (Session.Logger.CreateCallstack(_token))
             {
                 try
                 {
@@ -43,7 +45,9 @@ namespace WinSCP
         {
             if (_read)
             {
-                throw new InvalidOperationException("Element already read to the end");
+                throw Session.Logger.WriteException(
+                    new InvalidOperationException(
+                        string.Format(CultureInfo.CurrentCulture, "Element {0} already read to the end", _token)));
             }
 
             bool result = _parentReader.Read(flags);
@@ -53,6 +57,7 @@ namespace WinSCP
                 (Depth == _depth))
             {
                 result = false;
+                Session.Logger.WriteLineLevel(1, "Element {0} read to the end", _token);
                 _read = true;
             }
 
@@ -61,7 +66,7 @@ namespace WinSCP
 
         public void ReadToEnd(LogReadFlags flags)
         {
-            using (Session.Logger.CreateCallstack())
+            using (Session.Logger.CreateCallstack(_token))
             {
                 if (!_read)
                 {
@@ -81,5 +86,6 @@ namespace WinSCP
         private readonly string _localName;
         private readonly int _depth;
         protected bool _read;
+        private string _token;
     }
 }

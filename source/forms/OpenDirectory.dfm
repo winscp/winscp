@@ -48,6 +48,7 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
     Width = 351
     Height = 21
     Anchors = [akLeft, akTop, akRight]
+    DropDownCount = 16
     MaxLength = 1000
     TabOrder = 0
     Text = 'RemoteDirectoryEdit'

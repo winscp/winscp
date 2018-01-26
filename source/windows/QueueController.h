@@ -47,7 +47,7 @@ private:
   void __fastcall RememberConfiguration();
 
   static void __fastcall FillQueueViewItem(TListItem * Item,
-    TQueueItemProxy * QueueItem, bool Detail);
+    TQueueItemProxy * QueueItem, bool Detail, bool OnlyLine);
   TListItem * __fastcall InsertItemFor(TQueueItemProxy * QueueItem, int Index);
   bool __fastcall UseDetailsLine(int ItemIndex, TQueueItemProxy * QueueItem);
 };

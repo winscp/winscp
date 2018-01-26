@@ -11,7 +11,6 @@ type
   TSelectMode = (smAll, smNone, smInvert);
   TNortonLikeMode = (nlOn, nlOff, nlKeyboard);
   TSelectMethod = (smNoneYet, smMouse, smKeyboard);
-  TSelectByMaskEvent = procedure(Control: TCustomNortonLikeListView; Select: Boolean) of object;
 
   TCustomNortonLikeListView = class(TCustomListView)
   private
@@ -21,7 +20,6 @@ type
     FDontUnSelectItem: Boolean;
     FSelCount: Integer;
     FNortonLike: TNortonLikeMode;
-    FOnSelectByMask: TSelectByMaskEvent;
     FLastDeletedItem: TListItem; // aby sme nepocitali smazany item 2x
     FFocusingItem: Boolean;
     FManageSelection: Boolean;
@@ -66,7 +64,6 @@ type
     procedure ItemsReordered;
     procedure ColRightClick(Column: TListColumn; Point: TPoint); override;
     procedure Delete(Item: TListItem); override;
-    function DoSelectByMask(Select: Boolean): Boolean; virtual;
     function ExCanChange(Item: TListItem; Change: Integer;
       NewState, OldState: Word): Boolean; dynamic;
     procedure InsertItem(Item: TListItem); override;
@@ -80,6 +77,7 @@ type
     procedure DDBeforeDrag;
     function CanEdit(Item: TListItem): Boolean; override;
     function GetPopupMenu: TPopupMenu; override;
+    procedure ChangeScale(M, D: Integer); override;
   public
     { Public declarations }
     constructor Create(AOwner: TComponent); override;
@@ -89,12 +87,12 @@ type
     procedure SelectCurrentItem(FocusNext: Boolean);
     function GetNextItem(StartItem: TListItem; Direction: TSearchDirection;
       States: TItemStates): TListItem;
+    procedure MakeProgressVisible(Item: TListItem);
 
     property ColProperties: TCustomListViewColProperties read FColProperties write FColProperties stored False;
 
     property MultiSelect default True;
     property NortonLike: TNortonLikeMode read FNortonLike write FNortonLike default nlOn;
-    property OnSelectByMask: TSelectByMaskEvent read FOnSelectByMask write FOnSelectByMask;
     property MarkedCount: Integer read GetMarkedCount;
     property MarkedFile: TListItem read GetMarkedFile;
     property Valid: Boolean read GetValid;
@@ -216,24 +214,28 @@ begin
 end;
 
 procedure TCustomNortonLikeListView.Delete(Item: TListItem);
+var
+  Index: Integer;
 begin
-  if (FLastDeletedItem <> Item) and Item.Selected then
+  if FLastDeletedItem <> Item then
   begin
-    ItemUnselected(Item, -1);
+    Index := Item.Index;
+
+    if Item.Selected then
+      ItemUnselected(Item, Index);
+
+    if FManageSelection then
+    begin
+      if (FLastSelected >= 0) and (Index <= FLastSelected) then
+        Dec(FLastSelected);
+
+      if (FFirstSelected >= 0) and (Index <= FFirstSelected) then
+        Dec(FFirstSelected);
+    end;
   end;
   FLastDeletedItem := Item;
   inherited;
   FLastDeletedItem := nil;
-end;
-
-function TCustomNortonLikeListView.DoSelectByMask(Select: Boolean): Boolean;
-begin
-  if Assigned(FOnSelectByMask) then
-  begin
-    FOnSelectByMask(Self, Select);
-    Result := True;
-  end
-    else Result := False;
 end;
 
 function TCustomNortonLikeListView.ExCanChange(Item: TListItem; Change: Integer;
@@ -971,6 +973,37 @@ begin
 
   if IsEditing and (Message.CharCode = VK_TAB) then
     Message.Result := 1;
+end;
+
+procedure TCustomNortonLikeListView.MakeProgressVisible(Item: TListItem);
+var
+  DisplayRect: TRect;
+begin
+  if ViewStyle = vsReport then
+  begin
+    DisplayRect := Item.DisplayRect(drBounds);
+
+    if DisplayRect.Bottom > ClientHeight then
+    begin
+      Scroll(0, Item.Top - TopItem.Top);
+    end;
+  end;
+
+  Item.MakeVisible(False);
+end;
+
+procedure TCustomNortonLikeListView.ChangeScale(M, D: Integer);
+begin
+  if M <> D then
+  begin
+    // When font is scaled, while the control is being re-created, previous font is restored once
+    // read from the persistence data in TCustomListView.CreateWnd.
+    // Requiring handle, makes sure the re-create phase is closed.
+    // We could limit impact by checking ControlHasRecreationPersistenceData,
+    // but for now, we actually prefer larger impact to test this change better.
+    HandleNeeded;
+  end;
+  inherited;
 end;
 
 end.

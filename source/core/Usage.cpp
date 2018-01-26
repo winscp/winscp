@@ -279,27 +279,44 @@ void __fastcall TUsage::SetCollect(bool value)
   }
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TUsage::Serialize() const
+UnicodeString __fastcall TUsage::Serialize(const UnicodeString & Delimiter, const UnicodeString & Filter) const
 {
   TGuard Guard(FCriticalSection);
   UnicodeString Result;
 
-  AddToList(Result, FValues->DelimitedText, L"&");
+  UnicodeString FilterUpper = Filter.UpperCase();
+  for (int Index = 0; Index < FValues->Count; Index++)
+  {
+    Serialize(Result, FValues->Names[Index], FValues->ValueFromIndex[Index], Delimiter, FilterUpper);
+  }
 
-  Serialize(Result, L"Period", FPeriodCounters);
-  Serialize(Result, L"Lifetime", FLifetimeCounters);
+  Serialize(Result, L"Period", FPeriodCounters, Delimiter, FilterUpper);
+  Serialize(Result, L"Lifetime", FLifetimeCounters, Delimiter, FilterUpper);
 
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TUsage::Serialize(UnicodeString& List,
-  const UnicodeString & Name, const TCounters & Counters) const
+void __fastcall TUsage::Serialize(
+  UnicodeString & List, const UnicodeString & Name, const TCounters & Counters,
+  const UnicodeString & Delimiter, const UnicodeString & FilterUpper) const
 {
   TCounters::const_iterator i = Counters.begin();
   while (i != Counters.end())
   {
-    AddToList(List, FORMAT(L"%s%s=%d", (Name, i->first, i->second)), L"&");
+    Serialize(List, Name + i->first, IntToStr(i->second), Delimiter, FilterUpper);
     i++;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TUsage::Serialize(
+  UnicodeString & List, const UnicodeString & Name, const UnicodeString & Value,
+  const UnicodeString & Delimiter, const UnicodeString & FilterUpper) const
+{
+  if (FilterUpper.IsEmpty() ||
+      (Name.UpperCase().Pos(FilterUpper) > 0) ||
+      (Value.UpperCase().Pos(FilterUpper) > 0))
+  {
+    AddToList(List, FORMAT(L"%s=%s", (Name, Value)), Delimiter);
   }
 }
 //---------------------------------------------------------------------------

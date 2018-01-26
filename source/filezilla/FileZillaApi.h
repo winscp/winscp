@@ -185,7 +185,6 @@ public:
 #define FZ_SERVERTYPE_LAYERMASK 0x0FF0
 
 #define FZ_SERVERTYPE_FTP    0x1000
-#define FZ_SERVERTYPE_LOCAL    0x2000
 
 #define FZ_SERVERTYPE_LAYER_SSL_IMPLICIT 0x0100
 #define FZ_SERVERTYPE_LAYER_SSL_EXPLICIT 0x0200
@@ -221,7 +220,7 @@ public:
   void SetDebugLevel(int nDebugLevel);
 
   int CustomCommand(CString command);
-  int Delete(CString FileName, const CServerPath & path = CServerPath());
+  int Delete(CString FileName, const CServerPath & path, bool filenameOnly);
   int RemoveDir(CString DirName, const CServerPath & path = CServerPath());
   int Rename(CString oldName, CString newName, const CServerPath & path = CServerPath(), const CServerPath & newPath = CServerPath());
   int MakeDir(const CServerPath & path);

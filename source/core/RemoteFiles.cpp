@@ -63,6 +63,11 @@ UnicodeString __fastcall SimpleUnixExcludeTrailingBackslash(const UnicodeString 
   return UnixExcludeTrailingBackslash(Path, true);
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall UnixCombinePaths(const UnicodeString & Path1, const UnicodeString & Path2)
+{
+  return UnixIncludeTrailingBackslash(Path1) + Path2;
+}
+//---------------------------------------------------------------------------
 Boolean __fastcall UnixSamePath(const UnicodeString Path1, const UnicodeString Path2)
 {
   return (UnixIncludeTrailingBackslash(Path1) == UnixIncludeTrailingBackslash(Path2));
@@ -830,6 +835,7 @@ TRemoteFile * __fastcall TRemoteFile::Duplicate(bool Standalone) const
     COPY_FP(ModificationFmt);
     COPY_FP(Size);
     COPY_FP(FileName);
+    COPY_FP(DisplayName);
     COPY_FP(INodeBlocks);
     COPY_FP(Modification);
     COPY_FP(LastAccess);
@@ -839,7 +845,6 @@ TRemoteFile * __fastcall TRemoteFile::Duplicate(bool Standalone) const
     COPY_FP(IsSymLink);
     COPY_FP(LinkTo);
     COPY_FP(Type);
-    COPY_FP(Selected);
     COPY_FP(CyclicLink);
     COPY_FP(HumanRights);
     #undef COPY_FP
@@ -1552,7 +1557,6 @@ TRemoteFile * __fastcall TRemoteFileList::FindFile(const UnicodeString &FileName
 __fastcall TRemoteDirectory::TRemoteDirectory(TTerminal * aTerminal, TRemoteDirectory * Template) :
   TRemoteFileList(), FTerminal(aTerminal)
 {
-  FSelectedFiles = NULL;
   FThisDirectory = NULL;
   FParentDirectory = NULL;
   if (Template == NULL)
@@ -1626,28 +1630,6 @@ void __fastcall TRemoteDirectory::DuplicateTo(TRemoteFileList * Copy)
 bool __fastcall TRemoteDirectory::GetLoaded()
 {
   return ((Terminal != NULL) && Terminal->Active && !Directory.IsEmpty());
-}
-//---------------------------------------------------------------------------
-TStrings * __fastcall TRemoteDirectory::GetSelectedFiles()
-{
-  if (!FSelectedFiles)
-  {
-    FSelectedFiles = new TStringList();
-  }
-  else
-  {
-    FSelectedFiles->Clear();
-  }
-
-  for (int Index = 0; Index < Count; Index ++)
-  {
-    if (Files[Index]->Selected)
-    {
-      FSelectedFiles->Add(Files[Index]->FullFileName);
-    }
-  }
-
-  return FSelectedFiles;
 }
 //---------------------------------------------------------------------------
 void __fastcall TRemoteDirectory::SetIncludeParentDirectory(Boolean value)

@@ -18,8 +18,6 @@ void SaveKey(TKeyType KeyType, const UnicodeString & FileName,
   const UnicodeString & Passphrase, TPrivateKey * PrivateKey);
 void FreeKey(TPrivateKey * PrivateKey);
 //---------------------------------------------------------------------------
-__int64 __fastcall ParseSize(UnicodeString SizeStr);
-//---------------------------------------------------------------------------
 bool __fastcall HasGSSAPI(UnicodeString CustomPath);
 //---------------------------------------------------------------------------
 void __fastcall AES256EncodeWithMAC(char * Data, size_t Len, const char * Password,
@@ -31,5 +29,7 @@ UnicodeString __fastcall KeyTypeFromFingerprint(UnicodeString Fingerprint);
 UnicodeString __fastcall GetPuTTYVersion();
 //---------------------------------------------------------------------------
 UnicodeString __fastcall Sha256(const char * Data, size_t Size);
+//---------------------------------------------------------------------------
+void __fastcall DllHijackingProtection();
 //---------------------------------------------------------------------------
 #endif

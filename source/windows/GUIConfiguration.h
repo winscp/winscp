@@ -7,7 +7,6 @@
 //---------------------------------------------------------------------------
 class TGUIConfiguration;
 class TStoredSessionList;
-enum TLogView { lvNone, lvWindow, pvPanel };
 enum TInterface { ifCommander, ifExplorer };
 //---------------------------------------------------------------------------
 extern const int ccLocal;
@@ -15,6 +14,7 @@ extern const int ccShowResults;
 extern const int ccCopyResults;
 extern const int ccSet;
 extern const int ccRemoteFiles;
+extern const int ccShowResultsInMsgBox;
 //---------------------------------------------------------------------------
 const int soRecurse =         0x01;
 const int soSynchronize =     0x02;
@@ -38,7 +38,7 @@ public:
 
   __property bool Queue = { read = FQueue, write = FQueue };
   __property bool QueueNoConfirmation = { read = FQueueNoConfirmation, write = FQueueNoConfirmation };
-  __property bool QueueIndividually = { read = FQueueIndividually, write = FQueueIndividually };
+  __property bool QueueParallel = { read = FQueueParallel, write = FQueueParallel };
 
 protected:
   void __fastcall GUIDefault();
@@ -47,7 +47,7 @@ protected:
 private:
   bool FQueue;
   bool FQueueNoConfirmation;
-  bool FQueueIndividually;
+  bool FQueueParallel;
 };
 //---------------------------------------------------------------------------
 struct TCopyParamRuleData
@@ -84,6 +84,14 @@ private:
   inline bool __fastcall Match(const UnicodeString & Mask,
     const UnicodeString & Value, bool Path, bool Local, int ForceDirectoryMasks) const;
   bool __fastcall GetEmpty() const;
+};
+//---------------------------------------------------------------------------
+class TLocaleInfo : public TObject
+{
+public:
+  LCID Locale;
+  UnicodeString Name;
+  int Completeness;
 };
 //---------------------------------------------------------------------------
 class TCopyParamList
@@ -146,12 +154,11 @@ private:
 class TGUIConfiguration : public TConfiguration
 {
 private:
-  TStrings * FLocales;
+  TObjectList * FLocales;
   UnicodeString FLastLocalesExts;
   bool FContinueOnError;
   bool FConfirmCommandSession;
   UnicodeString FPuttyPath;
-  UnicodeString FPSftpPath;
   bool FPuttyPassword;
   bool FTelnetForFtpInPutty;
   UnicodeString FPuttySession;
@@ -180,22 +187,24 @@ private:
   UnicodeString FChecksumAlg;
   int FSessionReopenAutoIdle;
   LCID FAppliedLocale;
+  // Corresponds to FAppliedLocale
+  UnicodeString FLocaleModuleName;
 
 protected:
   LCID FLocale;
-  UnicodeString FLocaleModuleName;
 
   virtual void __fastcall SaveData(THierarchicalStorage * Storage, bool All);
   virtual void __fastcall LoadData(THierarchicalStorage * Storage);
-  virtual LCID __fastcall GetLocale();
+  LCID __fastcall GetLocale();
   void __fastcall SetLocale(LCID value);
   void __fastcall SetLocaleSafe(LCID value);
-  UnicodeString __fastcall GetLocaleHex();
+  UnicodeString __fastcall GetAppliedLocaleHex();
   virtual HINSTANCE __fastcall LoadNewResourceModule(LCID Locale,
     UnicodeString & FileName);
   HANDLE __fastcall GetResourceModule();
   void __fastcall SetResourceModule(HINSTANCE Instance);
-  TStrings * __fastcall GetLocales();
+  TObjectList * __fastcall GetLocales();
+  void __fastcall AddLocale(LCID Locale, const UnicodeString & Name);
   void __fastcall FreeResourceModule(HANDLE Instance);
   void __fastcall SetDefaultCopyParam(const TGUICopyParamType & value);
   virtual bool __fastcall GetRememberPassword();
@@ -213,9 +222,15 @@ protected:
   void __fastcall SetQueueTransfersLimit(int value);
   void __fastcall SetQueueKeepDoneItems(bool value);
   void __fastcall SetQueueKeepDoneItemsFor(int value);
-  void __fastcall SetLocaleInternal(LCID value, bool Safe);
-  void __fastcall SetInitialLocale(LCID value);
+  void __fastcall SetLocaleInternal(LCID value, bool Safe, bool CompleteOnly);
+  void __fastcall SetAppliedLocale(LCID AppliedLocale, const UnicodeString & LocaleModuleName);
   bool __fastcall GetCanApplyLocaleImmediately();
+  UnicodeString __fastcall GetTranslationModule(const UnicodeString & Path);
+  UnicodeString __fastcall AddTranslationsSubFolder(const UnicodeString & Path);
+  void __fastcall FindLocales(const UnicodeString & LocalesMask, TStrings * Exts, UnicodeString & LocalesExts);
+  virtual int __fastcall GetResourceModuleCompleteness(HINSTANCE Module);
+  virtual bool __fastcall IsTranslationComplete(HINSTANCE Module);
+  static int __fastcall LocalesCompare(void * Item1, void * Item2);
 
 public:
   __fastcall TGUIConfiguration();
@@ -226,8 +241,8 @@ public:
   HANDLE __fastcall ChangeToDefaultResourceModule();
   HANDLE __fastcall ChangeResourceModule(HANDLE Instance);
   LCID __fastcall InternalLocale();
-  UnicodeString __fastcall LocaleCopyright();
-  UnicodeString __fastcall LocaleVersion();
+  UnicodeString __fastcall AppliedLocaleCopyright();
+  UnicodeString __fastcall AppliedLocaleVersion();
   TStoredSessionList * __fastcall SelectPuttySessionsForImport(TStoredSessionList * Sessions, UnicodeString & Error);
   bool __fastcall AnyPuttySessionForImport(TStoredSessionList * Sessions);
 
@@ -245,11 +260,10 @@ public:
   __property bool SessionRememberPassword = { read = FSessionRememberPassword, write = FSessionRememberPassword };
   __property LCID Locale = { read = GetLocale, write = SetLocale };
   __property LCID LocaleSafe = { read = GetLocale, write = SetLocaleSafe };
-  __property UnicodeString LocaleHex = { read = GetLocaleHex };
-  __property TStrings * Locales = { read = GetLocales };
+  __property UnicodeString AppliedLocaleHex = { read = GetAppliedLocaleHex };
+  __property TObjectList * Locales = { read = GetLocales };
   __property UnicodeString PuttyPath = { read = FPuttyPath, write = FPuttyPath };
   __property UnicodeString DefaultPuttyPath = { read = FDefaultPuttyPath };
-  __property UnicodeString PSftpPath = { read = FPSftpPath, write = FPSftpPath };
   __property bool PuttyPassword = { read = FPuttyPassword, write = FPuttyPassword };
   __property bool TelnetForFtpInPutty = { read = FTelnetForFtpInPutty, write = FTelnetForFtpInPutty };
   __property UnicodeString PuttySession = { read = FPuttySession, write = FPuttySession };

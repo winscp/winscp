@@ -20,7 +20,7 @@ object ImportSessionsDialog: TImportSessionsDialog
   TextHeight = 13
   object Label: TLabel
     Left = 8
-    Top = 11
+    Top = 13
     Width = 61
     Height = 13
     Anchors = [akLeft, akTop, akRight]
@@ -50,9 +50,9 @@ object ImportSessionsDialog: TImportSessionsDialog
   end
   object SessionListView2: TListView
     Left = 8
-    Top = 35
+    Top = 39
     Width = 361
-    Height = 177
+    Height = 197
     Anchors = [akLeft, akTop, akRight, akBottom]
     Checkboxes = True
     Columns = <
@@ -67,7 +67,7 @@ object ImportSessionsDialog: TImportSessionsDialog
     ParentShowHint = False
     ShowColumnHeaders = False
     ShowHint = True
-    TabOrder = 1
+    TabOrder = 2
     ViewStyle = vsReport
     OnInfoTip = SessionListView2InfoTip
     OnKeyUp = SessionListView2KeyUp
@@ -83,15 +83,6 @@ object ImportSessionsDialog: TImportSessionsDialog
     TabOrder = 3
     OnClick = CheckAllButtonClick
   end
-  object ImportKeysCheck: TCheckBox
-    Left = 16
-    Top = 218
-    Width = 345
-    Height = 17
-    Anchors = [akLeft, akBottom]
-    Caption = 'Import cached host &keys for checked sites'
-    TabOrder = 2
-  end
   object HelpButton: TButton
     Left = 294
     Top = 242
@@ -104,7 +95,7 @@ object ImportSessionsDialog: TImportSessionsDialog
   end
   object SourceComboBox: TComboBox
     Left = 106
-    Top = 8
+    Top = 10
     Width = 120
     Height = 21
     Style = csDropDownList
@@ -112,11 +103,12 @@ object ImportSessionsDialog: TImportSessionsDialog
     OnSelect = SourceComboBoxSelect
     Items.Strings = (
       'PuTTY'
-      'FileZilla')
+      'FileZilla'
+      'known_hosts')
   end
   object ErrorPanel: TPanel
     Left = 48
-    Top = 80
+    Top = 92
     Width = 281
     Height = 97
     BevelOuter = bvNone
@@ -126,13 +118,22 @@ object ImportSessionsDialog: TImportSessionsDialog
     object ErrorLabel: TLabel
       Left = 0
       Top = 0
-      Width = 281
-      Height = 97
+      Width = 49
+      Height = 13
       Align = alClient
       Alignment = taCenter
       Caption = 'ErrorLabel'
       Layout = tlCenter
       WordWrap = True
     end
+  end
+  object PasteButton: TButton
+    Left = 232
+    Top = 8
+    Width = 75
+    Height = 25
+    Caption = '&Paste'
+    TabOrder = 1
+    OnClick = PasteButtonClick
   end
 end

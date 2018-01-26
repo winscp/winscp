@@ -306,11 +306,13 @@ void __fastcall TScriptCommands::Execute(const UnicodeString & Command, const Un
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
+// keep in sync with Session constructor in .NET
+const int BatchSessionReopenTimeout = 2 * MSecsPerSec * SecsPerMin; // 2 mins
+//---------------------------------------------------------------------------
 __fastcall TScript::TScript(bool LimitedOutput)
 {
   FLimitedOutput = LimitedOutput;
   FTerminal = NULL;
-  FSessionReopenTimeout = Configuration->SessionReopenTimeout;
   FGroups = false;
   FWantsProgress = false;
   FIncludeFileMaskOptionUsed = false;
@@ -331,6 +333,13 @@ void __fastcall TScript::Init()
   FInteractiveBatch = BatchOff;
   FConfirm = false;
   FInteractiveConfirm = true;
+  FSessionReopenTimeout = Configuration->SessionReopenTimeout;
+  FInteractiveSessionReopenTimeout = FSessionReopenTimeout;
+  if (FSessionReopenTimeout == 0)
+  {
+    FSessionReopenTimeout = BatchSessionReopenTimeout;
+  }
+
   FEcho = false;
   FFailOnNoMatch = false;
   FSynchronizeParams = 0;
@@ -370,7 +379,7 @@ void __fastcall TScript::Init()
   FCommands->Register(L"ascii", 0, SCRIPT_OPTION_HELP7, &AsciiProc, 0, 0, false);
   FCommands->Register(L"binary", 0, SCRIPT_OPTION_HELP7, &BinaryProc, 0, 0, false);
   FCommands->Register(L"synchronize", SCRIPT_SYNCHRONIZE_DESC, SCRIPT_SYNCHRONIZE_HELP7, &SynchronizeProc, 1, 3, true);
-  FCommands->Register(L"keepuptodate", SCRIPT_KEEPUPTODATE_DESC, SCRIPT_KEEPUPTODATE_HELP4, &KeepUpToDateProc, 0, 2, true);
+  FCommands->Register(L"keepuptodate", SCRIPT_KEEPUPTODATE_DESC, SCRIPT_KEEPUPTODATE_HELP5, &KeepUpToDateProc, 0, 2, true);
   // the echo command does not have switches actually, but it must handle dashes in its arguments
   FCommands->Register(L"echo", SCRIPT_ECHO_DESC, SCRIPT_ECHO_HELP, &EchoProc, -1, -1, true);
   FCommands->Register(L"stat", SCRIPT_STAT_DESC, SCRIPT_STAT_HELP, &StatProc, 1, 1, false);
@@ -475,6 +484,7 @@ void __fastcall TScript::StartInteractive()
 {
   FBatch = FInteractiveBatch;
   FConfirm = FInteractiveConfirm;
+  FSessionReopenTimeout = FInteractiveSessionReopenTimeout;
 }
 //---------------------------------------------------------------------------
 void __fastcall TScript::Command(UnicodeString Cmd)
@@ -1422,7 +1432,7 @@ void __fastcall TScript::GetProc(TScriptProcParams * Parameters)
     CopyParamParams(CopyParam, Parameters);
     CheckParams(Parameters);
 
-    FTerminal->CopyToLocal(FileList, TargetDirectory, &CopyParam, Params);
+    FTerminal->CopyToLocal(FileList, TargetDirectory, &CopyParam, Params, NULL);
   }
   __finally
   {
@@ -1469,7 +1479,7 @@ void __fastcall TScript::PutProc(TScriptProcParams * Parameters)
     CopyParamParams(CopyParam, Parameters);
     CheckParams(Parameters);
 
-    FTerminal->CopyToRemote(FileList, TargetDirectory, &CopyParam, Params);
+    FTerminal->CopyToRemote(FileList, TargetDirectory, &CopyParam, Params, NULL);
   }
   __finally
   {
@@ -1548,8 +1558,8 @@ void __fastcall TScript::OptionImpl(UnicodeString OptionName, UnicodeString Valu
 
       if (SetValue && (FBatch != BatchOff) && (FSessionReopenTimeout == 0))
       {
-        // keep in sync with Session constructor in .NET
-        FSessionReopenTimeout = 2 * MSecsPerSec * SecsPerMin; // 2 mins
+        FSessionReopenTimeout = BatchSessionReopenTimeout;
+        FInteractiveSessionReopenTimeout = FSessionReopenTimeout;
         PrintReconnectTime = true;
       }
     }
@@ -1655,6 +1665,7 @@ void __fastcall TScript::OptionImpl(UnicodeString OptionName, UnicodeString Valu
         }
       }
       FSessionReopenTimeout = Value;
+      FInteractiveSessionReopenTimeout = FSessionReopenTimeout;
     }
 
     if (FSessionReopenTimeout == 0)
@@ -2059,7 +2070,7 @@ __fastcall TManagementScript::TManagementScript(TStoredSessionList * StoredSessi
 
   FCommands->Register(L"exit", SCRIPT_EXIT_DESC, SCRIPT_EXIT_HELP, &ExitProc, 0, 0, false);
   FCommands->Register(L"bye", 0, SCRIPT_EXIT_HELP, &ExitProc, 0, 0, false);
-  FCommands->Register(L"open", SCRIPT_OPEN_DESC, SCRIPT_OPEN_HELP8, &OpenProc, 0, -1, true);
+  FCommands->Register(L"open", SCRIPT_OPEN_DESC, SCRIPT_OPEN_HELP9, &OpenProc, 0, -1, true);
   FCommands->Register(L"close", SCRIPT_CLOSE_DESC, SCRIPT_CLOSE_HELP, &CloseProc, 0, 1, false);
   FCommands->Register(L"session", SCRIPT_SESSION_DESC, SCRIPT_SESSION_HELP, &SessionProc, 0, 1, false);
   FCommands->Register(L"lpwd", SCRIPT_LPWD_DESC, SCRIPT_LPWD_HELP, &LPwdProc, 0, 0, false);
@@ -2228,12 +2239,18 @@ void __fastcall TManagementScript::TerminalOperationProgress(
         TScriptProgress Progress;
         Progress.Operation = ProgressData.Operation;
         Progress.Side = ProgressData.Side;
-        Progress.FileName = ProgressData.FileName;
+        Progress.FileName = ProgressData.FullFileName;
         Progress.Directory = ProgressData.Directory;
         Progress.OverallProgress = ProgressData.OverallProgress();
         Progress.FileProgress = ProgressData.TransferProgress();
         Progress.CPS = ProgressData.CPS();
+        Progress.Cancel = false;
         OnProgress(this, Progress);
+
+        if (Progress.Cancel)
+        {
+          ProgressData.SetCancel(csCancel);
+        }
       }
 
       if (!DoPrint && ((FLastProgressTime != Time) || ProgressData.IsTransferDone()))
@@ -2254,19 +2271,19 @@ void __fastcall TManagementScript::TerminalOperationProgress(
         {
           FileName = ProgressFileName;
         }
-        UnicodeString TransferedSizeStr;
-        if (ProgressData.TransferedSize < 1024)
+        UnicodeString TransferredSizeStr;
+        if (ProgressData.TransferredSize < 1024)
         {
-          TransferedSizeStr = FORMAT("%d B", (static_cast<int>(ProgressData.TransferedSize)));
+          TransferredSizeStr = FORMAT("%d B", (static_cast<int>(ProgressData.TransferredSize)));
         }
         else
         {
-          TransferedSizeStr = FORMAT("%d KB", (static_cast<int>(ProgressData.TransferedSize / 1024)));
+          TransferredSizeStr = FORMAT("%d KB", (static_cast<int>(ProgressData.TransferredSize / 1024)));
         }
 
         UnicodeString ProgressMessage = FORMAT(L"%-*s | %14s | %6.1f KB/s | %-6.6s | %3d%%",
           (WidthFileName, FileName,
-           TransferedSizeStr,
+           TransferredSizeStr,
            static_cast<float>(ProgressData.CPS()) / 1024,
            ProgressData.AsciiTransfer ? L"ascii" : L"binary",
            ProgressData.TransferProgress()));
@@ -2287,7 +2304,7 @@ void __fastcall TManagementScript::TerminalOperationProgress(
 
   if (QueryCancel())
   {
-    ProgressData.Cancel = csCancel;
+    ProgressData.SetCancel(csCancel);
   }
 }
 //---------------------------------------------------------------------------

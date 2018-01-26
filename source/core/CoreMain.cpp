@@ -25,6 +25,7 @@ TQueryButtonAlias::TQueryButtonAlias()
   OnClick = NULL;
   GroupWith = -1;
   ElevationRequired = false;
+  MenuButton = false;
 }
 //---------------------------------------------------------------------------
 TQueryParams::TQueryParams(unsigned int AParams, UnicodeString AHelpKeyword)

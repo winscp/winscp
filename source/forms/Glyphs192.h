@@ -13,9 +13,6 @@ __published:
   TPngImageList *ExplorerImages;
   TPngImageList *SessionImages;
   TPngImageList *QueueImages;
-  TImageList *ButtonImages;
-  TPngImageList *LogImages;
-  TPngImageList *DialogImages;
 
 public:
   __fastcall TGlyphs192Module(TComponent * Owner);

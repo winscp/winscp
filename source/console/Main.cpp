@@ -189,6 +189,26 @@ bool __fastcall CutToken(const wchar_t*& Str, wchar_t* Token)
   return Result;
 }
 //---------------------------------------------------------------------------
+char* WideStringToString(const wchar_t* Message)
+{
+  char* Buffer;
+  int Size = WideCharToMultiByte(CP_UTF8, 0, Message, -1, 0, 0, 0, 0);
+  if (Size > 0)
+  {
+    Buffer = new char[(Size * 2) + 1];
+    if (WideCharToMultiByte(CP_UTF8, 0, Message, -1, Buffer, Size, 0, 0) > 0)
+    {
+      Buffer[Size] = '\0';
+    }
+    else
+    {
+      delete[] Buffer;
+      Buffer = NULL;
+    }
+  }
+  return Buffer;
+}
+//---------------------------------------------------------------------------
 void GetProductVersion(wchar_t* ProductVersion)
 {
   wchar_t Buffer[MAX_PATH];
@@ -212,14 +232,11 @@ void GetProductVersion(wchar_t* ProductVersion)
         int ProductMajor = HIWORD(FixedFileInfo->dwProductVersionMS);
         int ProductMinor = LOWORD(FixedFileInfo->dwProductVersionMS);
         int ProductBuild = HIWORD(FixedFileInfo->dwProductVersionLS);
-        if ((ProductMajor >= 0) && (ProductMajor <= 9) &&
-            (ProductMinor >= 0) && (ProductMinor <= 9) &&
-            (ProductBuild >= 0) && (ProductBuild <= 9))
+        if ((ProductMajor >= 1) && (ProductMajor <= 99) &&
+            (ProductMinor >= 0) && (ProductMinor <= 99) &&
+            (ProductBuild >= 0) && (ProductBuild <= 99))
         {
-          ProductVersion[0] = static_cast<wchar_t>(L'0' + ProductMajor);
-          ProductVersion[1] = static_cast<wchar_t>(L'0' + ProductMinor);
-          ProductVersion[2] = static_cast<wchar_t>(L'0' + ProductBuild);
-          ProductVersion[3] = L'\0';
+          wsprintf(ProductVersion, L"%d.%d.%d", ProductMajor, ProductMinor, ProductBuild);
         }
       }
     }
@@ -289,7 +306,7 @@ void InitializeChild(const wchar_t* CommandLine, const wchar_t* InstanceName, HA
     wcscat(ChildPath, L".exe");
   }
 
-  wchar_t ProductVersion[4];
+  wchar_t ProductVersion[32];
   GetProductVersion(ProductVersion);
 
   wchar_t* Parameters = new wchar_t[(CommandLineLen * 2) + 100 + (Count * 3) + 1];
@@ -340,7 +357,24 @@ void InitializeChild(const wchar_t* CommandLine, const wchar_t* InstanceName, HA
   }
   else
   {
-    throw runtime_error("Cannot start WinSCP application.");
+    size_t Len = MAX_PATH + 1024;
+    DWORD Error = GetLastError();
+    wchar_t * Buffer = NULL;
+    Len += FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER, 0, Error, 0, (LPTSTR)&Buffer, 0, NULL);
+
+    wchar_t* Message = new wchar_t[Len];
+    wsprintf(Message, L"Cannot start WinSCP application \"%s\".", ChildPath);
+    if (Buffer != NULL)
+    {
+      wcscat(Message, L"\n");
+      wcscat(Message, Buffer);
+      LocalFree(Buffer);
+    }
+    char* MessageString = WideStringToString(Message);
+    delete[] Message;
+    std::string ErrorString(MessageString);
+    delete[] MessageString;
+    throw runtime_error(ErrorString);
   }
 }
 //---------------------------------------------------------------------------
@@ -378,23 +412,18 @@ inline void Flush()
 //---------------------------------------------------------------------------
 void Print(const wchar_t* Message)
 {
-  int Size = WideCharToMultiByte(CP_UTF8, 0, Message, -1, 0, 0, 0, 0);
-  if (Size > 0)
+  char* Buffer = WideStringToString(Message);
+  if (Buffer != NULL)
   {
-    char* Buffer = new char[(Size * 2) + 1];
-    if (WideCharToMultiByte(CP_UTF8, 0, Message, -1, Buffer, Size, 0, 0) > 0)
+    char* Ptr = Buffer;
+    while ((Ptr = strchr(Ptr, '\n')) != NULL)
     {
-      Buffer[Size] = '\0';
-      char* Ptr = Buffer;
-      while ((Ptr = strchr(Ptr, '\n')) != NULL)
-      {
-        memmove(Ptr + 1, Ptr, strlen(Ptr) + 1);
-        *Ptr = '\r';
-        Ptr += 2;
-      }
-      unsigned long Written;
-      WriteFile(ConsoleOutput, Buffer, strlen(Buffer), &Written, NULL);
+      memmove(Ptr + 1, Ptr, strlen(Ptr) + 1);
+      *Ptr = '\r';
+      Ptr += 2;
     }
+    unsigned long Written;
+    WriteFile(ConsoleOutput, Buffer, strlen(Buffer), &Written, NULL);
     delete[] Buffer;
   }
 }
@@ -678,10 +707,10 @@ void ProcessChoiceEvent(TConsoleCommStruct::TChoiceEvent& Event)
                      Record.Event.KeyEvent.bKeyDown)
             {
               // This happens when Shift key is pressed
-              if (Record.Event.KeyEvent.uChar.AsciiChar != 0)
+              if (Record.Event.KeyEvent.uChar.UnicodeChar != 0)
               {
                 wchar_t CStr[2];
-                CStr[0] = Record.Event.KeyEvent.uChar.AsciiChar;
+                CStr[0] = Record.Event.KeyEvent.uChar.UnicodeChar;
                 CStr[1] = L'\0';
                 CharUpperBuff(CStr, 1);
                 wchar_t C = CStr[0];

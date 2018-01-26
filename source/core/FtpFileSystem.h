@@ -139,6 +139,7 @@ protected:
   bool __fastcall CheckError(int ReturnCode, const wchar_t * Context);
   void __fastcall PreserveDownloadFileTime(HANDLE Handle, void * UserData);
   bool __fastcall GetFileModificationTimeInUtc(const wchar_t * FileName, struct tm & Time);
+  void __fastcall EnsureLocation(const UnicodeString & Directory, bool Log);
   void __fastcall EnsureLocation();
   UnicodeString __fastcall ActualCurrentDirectory();
   void __fastcall Discard();
@@ -290,6 +291,8 @@ private:
   __int64 FBytesAvailable;
   bool FBytesAvailableSuppoted;
   bool FMVS;
+  bool FVMS;
+  bool FFileTransferAny;
   mutable UnicodeString FOptionScratch;
 };
 //---------------------------------------------------------------------------

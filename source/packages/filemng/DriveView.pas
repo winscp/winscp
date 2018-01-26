@@ -562,20 +562,80 @@ begin
   inherited Destroy;
 end; {Destroy}
 
+type
+  PDevBroadcastHdr = ^TDevBroadcastHdr;
+  TDevBroadcastHdr = record
+    dbch_size: DWORD;
+    dbch_devicetype: DWORD;
+    dbch_reserved: DWORD;
+  end;
+
+  PDevBroadcastVolume = ^TDevBroadcastVolume;
+  TDevBroadcastVolume = record
+    dbcv_size: DWORD;
+    dbcv_devicetype: DWORD;
+    dbcv_reserved: DWORD;
+    dbcv_unitmask: DWORD;
+    dbcv_flags: WORD;
+  end;
+
+const
+  DBT_CONFIGCHANGED = $0018;
+  DBT_DEVICEARRIVAL = $8000;
+  DBT_DEVICEREMOVEPENDING = $8003;
+  DBT_DEVICEREMOVECOMPLETE = $8004;
+  DBT_DEVTYP_VOLUME = $00000002;
+
 procedure TDriveView.InternalWndProc(var Msg: TMessage);
+var
+  UnitMask: DWORD;
+  Drive: Char;
 begin
   with Msg do
   begin
-    if (Msg = WM_DEVICECHANGE) and
-       ((wParam = {DBT_CONFIGCHANGED} $0018) or (wParam = {DBT_DEVICEARRIVAL} $8000) or
-          (wParam = {DBT_DEVICEREMOVECOMPLETE} $8004)) then
+    if Msg = WM_DEVICECHANGE then
     begin
-      // Delay refreshing drives for a sec.
-      // Particularly with CD/DVD drives, if we query display name
-      // immediately after receiving DBT_DEVICEARRIVAL, we do not get media label.
-      // Actually one sec does not help usually, but we do not want to wait any longer,
-      // because we want to add USB drives asap.
-      SetTimer(FInternalWindowHandle, 1, MSecsPerSec, nil);
+       if (wParam = DBT_CONFIGCHANGED) or
+          (wParam = DBT_DEVICEARRIVAL) or
+          (wParam = DBT_DEVICEREMOVECOMPLETE) then
+      begin
+        // Delay refreshing drives for a sec.
+        // Particularly with CD/DVD drives, if we query display name
+        // immediately after receiving DBT_DEVICEARRIVAL, we do not get media label.
+        // Actually one sec does not help usually, but we do not want to wait any longer,
+        // because we want to add USB drives asap.
+        SetTimer(FInternalWindowHandle, 1, MSecsPerSec, nil);
+      end
+        else
+      if wParam = DBT_DEVICEREMOVEPENDING then
+      begin
+        if PDevBroadcastHdr(lParam)^.dbch_devicetype = DBT_DEVTYP_VOLUME then
+        begin
+          UnitMask := PDevBroadcastVolume(lParam)^.dbcv_unitmask;
+          Drive := 'A';
+          while UnitMask > 0 do
+          begin
+            if UnitMask and $01 <> 0 then
+            begin
+              // Disable disk monitor to release the handle to the drive.
+              // It may happen that the dirve is not removed in the end. In this case we do not currently resume the
+              // monitoring. We can watch for DBT_DEVICEQUERYREMOVEFAILED to resume the monitoring.
+              // But currently we implement this for VeraCrypt, which does not send this notification.
+              with DriveStatus[Drive] do
+              begin
+                if Assigned(DiscMonitor) then
+                begin
+                  DiscMonitor.Enabled := False;
+                  DiscMonitor.Free;
+                  DiscMonitor := nil;
+                end;
+              end;
+            end;
+            UnitMask := UnitMask shr 1;
+            Drive := Chr(Ord(Drive) + 1);
+          end;
+        end;
+      end;
     end
       else
     if Msg = WM_TIMER then
@@ -1213,7 +1273,7 @@ begin
     else
       shAttr := SFGAO_DISPLAYATTRMASK;
 
-    // Resoving attributes make take ages, so we run it from a separate thread
+    // Resoving attributes may take ages, so we run it from a separate thread
     // and timeout waiting for the thread after a second.
     // But when running from IDE, it triggers starting/exiting the thread,
     // again taking ages. So in IDE we revert to single-thread approach

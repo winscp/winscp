@@ -6,11 +6,9 @@
 #include "TerminalManager.h"
 #include <Authenticate.h>
 #include "CustomScpExplorer.h"
-#include "LogMemo.h"
 #include "NonVisual.h"
 #include "WinConfiguration.h"
 #include "Tools.h"
-#include <Log.h>
 #include <Common.h>
 #include <CoreMain.h>
 #include <GUITools.h>
@@ -63,7 +61,6 @@ __fastcall TTerminalManager::TTerminalManager() :
   TTerminalList(Configuration)
 {
   FQueueSection = new TCriticalSection();
-  FLogMemo = NULL;
   FActiveTerminal = NULL;
   FScpExplorer = NULL;
   FDestroying = false;
@@ -96,6 +93,9 @@ __fastcall TTerminalManager::TTerminalManager() :
   FTerminalList = new TStringList();
   FQueues = new TList();
   FTerminationMessages = new TStringList();
+  std::unique_ptr<TSessionData> DummyData(new TSessionData(L""));
+  FLocalTerminal = CreateTerminal(DummyData.get());
+  SetupTerminal(FLocalTerminal);
 }
 //---------------------------------------------------------------------------
 __fastcall TTerminalManager::~TTerminalManager()
@@ -112,6 +112,7 @@ __fastcall TTerminalManager::~TTerminalManager()
   DebugAssert(WinConfiguration->OnMasterPasswordPrompt == MasterPasswordPrompt);
   WinConfiguration->OnMasterPasswordPrompt = NULL;
 
+  delete FLocalTerminal;
   delete FQueues;
   delete FTerminationMessages;
   delete FTerminalList;
@@ -144,6 +145,20 @@ TTerminal * __fastcall TTerminalManager::CreateTerminal(TSessionData * Data)
   return new TManagedTerminal(Data, Configuration);
 }
 //---------------------------------------------------------------------------
+void __fastcall TTerminalManager::SetupTerminal(TTerminal * Terminal)
+{
+  Terminal->OnQueryUser = TerminalQueryUser;
+  Terminal->OnPromptUser = TerminalPromptUser;
+  Terminal->OnDisplayBanner = TerminalDisplayBanner;
+  Terminal->OnShowExtendedException = TerminalShowExtendedException;
+  Terminal->OnProgress = OperationProgress;
+  Terminal->OnFinished = OperationFinished;
+  Terminal->OnDeleteLocalFile = DeleteLocalFile;
+  Terminal->OnReadDirectoryProgress = TerminalReadDirectoryProgress;
+  Terminal->OnInformation = TerminalInformation;
+  Terminal->OnCustomCommand = TerminalCustomCommand;
+}
+//---------------------------------------------------------------------------
 TTerminal * __fastcall TTerminalManager::DoNewTerminal(TSessionData * Data)
 {
   FTerminalList->Clear();
@@ -153,15 +168,7 @@ TTerminal * __fastcall TTerminalManager::DoNewTerminal(TSessionData * Data)
     FQueues->Add(NewQueue(Terminal));
     FTerminationMessages->Add(L"");
 
-    Terminal->OnQueryUser = TerminalQueryUser;
-    Terminal->OnPromptUser = TerminalPromptUser;
-    Terminal->OnDisplayBanner = TerminalDisplayBanner;
-    Terminal->OnShowExtendedException = TerminalShowExtendedException;
-    Terminal->OnProgress = OperationProgress;
-    Terminal->OnFinished = OperationFinished;
-    Terminal->OnDeleteLocalFile = DeleteLocalFile;
-    Terminal->OnReadDirectoryProgress = TerminalReadDirectoryProgress;
-    Terminal->OnInformation = TerminalInformation;
+    SetupTerminal(Terminal);
   }
   catch(...)
   {
@@ -212,7 +219,7 @@ void __fastcall TTerminalManager::FreeActiveTerminal()
   }
 }
 //---------------------------------------------------------------------------
-void TTerminalManager::ConnectTerminal(TTerminal * Terminal, bool Reopen)
+void __fastcall TTerminalManager::DoConnectTerminal(TTerminal * Terminal, bool Reopen)
 {
   TManagedTerminal * ManagedTerminal = dynamic_cast<TManagedTerminal *>(Terminal);
   // it must be managed terminal, unless it is secondary terminal (of managed terminal)
@@ -273,6 +280,21 @@ void TTerminalManager::ConnectTerminal(TTerminal * Terminal, bool Reopen)
   }
 }
 //---------------------------------------------------------------------------
+bool __fastcall TTerminalManager::ConnectTerminal(TTerminal * Terminal)
+{
+  bool Result = true;
+  try
+  {
+    DoConnectTerminal(Terminal, false);
+  }
+  catch (Exception & E)
+  {
+    ShowExtendedExceptionEx(Terminal, &E);
+    Result = false;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminalManager::TerminalThreadIdle(void * /*Data*/, TObject * /*Sender*/)
 {
   Application->ProcessMessages();
@@ -290,7 +312,7 @@ bool __fastcall TTerminalManager::ConnectActiveTerminalImpl(bool Reopen)
     {
       DebugAssert(ActiveTerminal);
 
-      ConnectTerminal(ActiveTerminal, Reopen);
+      DoConnectTerminal(ActiveTerminal, Reopen);
 
       if (ScpExplorer)
       {
@@ -561,14 +583,6 @@ void __fastcall TTerminalManager::DoSetActiveTerminal(TTerminal * value, bool Au
 
     if (ActiveTerminal)
     {
-      if (!PActiveTerminal)
-      {
-        CreateLogMemo();
-      }
-      DebugAssert(LogMemo);
-      LogMemo->SessionLog = ActiveTerminal->Log;
-      SwitchLogFormSessionLog();
-
       int Index = ActiveTerminalIndex;
       if (!ActiveTerminal->Active && !FTerminationMessages->Strings[Index].IsEmpty())
       {
@@ -596,7 +610,6 @@ void __fastcall TTerminalManager::DoSetActiveTerminal(TTerminal * value, bool Au
     }
     else
     {
-      FreeLogMemo();
       if (OnLastTerminalClosed)
       {
         OnLastTerminalClosed(this);
@@ -613,6 +626,18 @@ void __fastcall TTerminalManager::DoSetActiveTerminal(TTerminal * value, bool Au
 void __fastcall TTerminalManager::QueueStatusUpdated()
 {
   UpdateAppTitle();
+}
+//---------------------------------------------------------------------------
+bool __fastcall TTerminalManager::ShouldDisplayQueueStatusOnAppTitle()
+{
+  bool Result = IsApplicationMinimized();
+  if (!Result && (ScpExplorer != NULL))
+  {
+    HWND Window = GetActiveWindow();
+    Window = GetAncestor(Window, GA_ROOTOWNER);
+    Result = (ScpExplorer->Handle != Window);
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::UpdateAppTitle()
@@ -638,7 +663,7 @@ void __fastcall TTerminalManager::UpdateAppTitle()
     {
       NewTitle = FProgressTitle + L" - " + NewTitle;
     }
-    else if ((ScpExplorer != NULL) && (ScpExplorer->Handle != GetAncestor(GetActiveWindow(), GA_ROOTOWNER)) &&
+    else if (ShouldDisplayQueueStatusOnAppTitle() &&
              !(QueueProgressTitle = ScpExplorer->GetQueueProgressTitle()).IsEmpty())
     {
       NewTitle = QueueProgressTitle + L" - " + NewTitle;
@@ -678,30 +703,6 @@ void __fastcall TTerminalManager::SaveTerminal(TTerminal * Terminal)
       StoredSessions->Save(false, false);
     }
   }
-}
-//---------------------------------------------------------------------------
-void __fastcall TTerminalManager::CreateLogMemo()
-{
-  DebugAssert(!FLogMemo);
-  DebugAssert(ActiveTerminal);
-  FLogMemo = new TLogMemo(Application);
-  try
-  {
-    FLogMemo->SessionLog = ActiveTerminal->Log;
-    FLogMemo->PopupMenu = NonVisualDataModule->LogMemoPopup;
-  }
-  catch (...)
-  {
-    delete FLogMemo;
-    throw;
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall TTerminalManager::FreeLogMemo()
-{
-  DebugAssert(LogMemo);
-  LogMemo->PopupMenu = NULL;
-  SAFE_DESTROY(FLogMemo);
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::HandleException(Exception * E)
@@ -1087,6 +1088,13 @@ void __fastcall TTerminalManager::TerminalReadDirectoryProgress(
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TTerminalManager::TerminalCustomCommand(
+  TTerminal * /*Terminal*/, const UnicodeString & Command, bool & Handled)
+{
+  // Implementation has to be thread-safe
+  Handled = CopyCommandToClipboard(Command);
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminalManager::TerminalInformation(
   TTerminal * Terminal, const UnicodeString & Str, bool /*Status*/, int Phase)
 {
@@ -1272,17 +1280,20 @@ TTerminalQueue * __fastcall TTerminalManager::GetActiveQueue()
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::CycleTerminals(bool Forward)
 {
-  int Index = ActiveTerminalIndex;
-  Index += Forward ? 1 : -1;
-  if (Index < 0)
+  if (Count > 0)
   {
-    Index = Count-1;
+    int Index = ActiveTerminalIndex;
+    Index += Forward ? 1 : -1;
+    if (Index < 0)
+    {
+      Index = Count-1;
+    }
+    else if (Index >= Count)
+    {
+      Index = 0;
+    }
+    ActiveTerminalIndex = Index;
   }
-  else if (Index >= Count)
-  {
-    Index = 0;
-  }
-  ActiveTerminalIndex = Index;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TTerminalManager::CanOpenInPutty()

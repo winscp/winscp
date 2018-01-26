@@ -19,10 +19,14 @@
 #include <StrUtils.hpp>
 #include <limits>
 #include <Glyphs.h>
-#include <Animations.h>
 #include <PasTools.hpp>
 #include <VCLCommon.h>
 #include <Vcl.ScreenTips.hpp>
+
+#include "Animations96.h"
+#include "Animations120.h"
+#include "Animations144.h"
+#include "Animations192.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -122,6 +126,7 @@ void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
             ExportData->Assign(SessionData);
             ExportData->Modified = true;
             ExportData->Name = GUIConfiguration->PuttySession;
+            ExportData->WinTitle = SessionData->SessionName;
             ExportData->Password = L"";
 
             if (SessionData->FSProtocol == fsFTP)
@@ -152,7 +157,12 @@ void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
         delete SourceStorage;
       }
 
-      AddToList(PuttyParams, FORMAT(L"-load %s", (EscapePuttyCommandParam(SessionName))), L" ");
+      UnicodeString LoadSwitch = L"-load";
+      int P = Params.LowerCase().Pos(LoadSwitch + L" ");
+      if ((P == 0) || ((P > 1) && (Params[P - 1] != L' ')))
+      {
+        AddToList(PuttyParams, FORMAT(L"%s %s", (LoadSwitch, EscapePuttyCommandParam(SessionName))), L" ");
+      }
     }
 
     if (!Password.IsEmpty() && !RemoteCustomCommand.IsPasswordCommand(AParams))
@@ -164,10 +174,7 @@ void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
 
     // PuTTY is started in its binary directory to allow relative paths in private key,
     // when opening PuTTY's own stored session.
-    if (!ExecuteShell(Program, PuttyParams, true))
-    {
-      throw Exception(FMTLOAD(EXECUTE_APP_ERROR, (Program)));
-    }
+    ExecuteShellChecked(Program, PuttyParams, true);
   }
   else
   {
@@ -195,82 +202,99 @@ bool __fastcall FindTool(const UnicodeString & Name, UnicodeString & Path)
   return Result;
 }
 //---------------------------------------------------------------------------
-static bool __fastcall CopyShellCommandToClipboard(const UnicodeString & Path, const UnicodeString & Params)
+bool __fastcall CopyCommandToClipboard(const UnicodeString & Command)
 {
   bool Result = UseAlternativeFunction() && IsKeyPressed(VK_CONTROL);
   if (Result)
   {
     TInstantOperationVisualizer Visualizer;
-    CopyToClipboard(FormatCommand(Path, Params));
+    CopyToClipboard(Command);
   }
   return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall ExecuteShell(const UnicodeString Path, const UnicodeString Params, bool ChangeWorkingDirectory)
+static bool __fastcall DoExecuteShell(const UnicodeString Path, const UnicodeString Params,
+  bool ChangeWorkingDirectory, HANDLE * Handle)
 {
-  bool Result = true;
-  if (!CopyShellCommandToClipboard(Path, Params))
+  bool Result = CopyCommandToClipboard(FormatCommand(Path, Params));
+
+  if (Result)
+  {
+    if (Handle != NULL)
+    {
+      *Handle = NULL;
+    }
+  }
+  else
   {
     UnicodeString Directory = ExtractFilePath(Path);
-    const wchar_t * PDirectory = (ChangeWorkingDirectory ? Directory.c_str() : NULL);
-    Result =
-      ((int)ShellExecute(NULL, L"open", (wchar_t*)Path.data(),
-        (wchar_t*)Params.data(), PDirectory, SW_SHOWNORMAL) > 32);
+
+    TShellExecuteInfoW ExecuteInfo;
+    memset(&ExecuteInfo, 0, sizeof(ExecuteInfo));
+    ExecuteInfo.cbSize = sizeof(ExecuteInfo);
+    ExecuteInfo.fMask =
+      SEE_MASK_FLAG_NO_UI |
+      FLAGMASK((Handle != NULL), SEE_MASK_NOCLOSEPROCESS);
+    ExecuteInfo.hwnd = Application->Handle;
+    ExecuteInfo.lpFile = (wchar_t*)Path.data();
+    ExecuteInfo.lpParameters = (wchar_t*)Params.data();
+    ExecuteInfo.lpDirectory = (ChangeWorkingDirectory ? Directory.c_str() : NULL);
+    ExecuteInfo.nShow = SW_SHOW;
+
+    Result = (ShellExecuteEx(&ExecuteInfo) != 0);
+    if (Result)
+    {
+      if (Handle != NULL)
+      {
+        *Handle = ExecuteInfo.hProcess;
+      }
+    }
   }
   return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall ExecuteShell(const UnicodeString Command)
+void __fastcall ExecuteShellChecked(const UnicodeString Path, const UnicodeString Params, bool ChangeWorkingDirectory)
+{
+  if (!DoExecuteShell(Path, Params, ChangeWorkingDirectory, NULL))
+  {
+    throw EOSExtException(FMTLOAD(EXECUTE_APP_ERROR, (Path)));
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall ExecuteShellChecked(const UnicodeString Command)
 {
   UnicodeString Program, Params, Dir;
   SplitCommand(Command, Program, Params, Dir);
-  return ExecuteShell(Program, Params);
-}
-//---------------------------------------------------------------------------
-static bool __fastcall DoExecuteShell(HWND ApplicationHandle, const UnicodeString Path, const UnicodeString Params,
-  HANDLE & Handle)
-{
-  bool Result;
-
-  TShellExecuteInfoW ExecuteInfo;
-  memset(&ExecuteInfo, 0, sizeof(ExecuteInfo));
-  ExecuteInfo.cbSize = sizeof(ExecuteInfo);
-  ExecuteInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
-  ExecuteInfo.hwnd = ApplicationHandle;
-  ExecuteInfo.lpFile = (wchar_t*)Path.data();
-  ExecuteInfo.lpParameters = (wchar_t*)Params.data();
-  ExecuteInfo.nShow = SW_SHOW;
-
-  Result = (ShellExecuteEx(&ExecuteInfo) != 0);
-  if (Result)
-  {
-    Handle = ExecuteInfo.hProcess;
-  }
-  return Result;
+  ExecuteShellChecked(Program, Params);
 }
 //---------------------------------------------------------------------------
 bool __fastcall ExecuteShell(const UnicodeString Path, const UnicodeString Params,
   HANDLE & Handle)
 {
-  return DoExecuteShell(Application->Handle, Path, Params, Handle);
+  return DoExecuteShell(Path, Params, false, &Handle);
 }
 //---------------------------------------------------------------------------
-bool __fastcall ExecuteShellAndWait(HWND Handle, const UnicodeString Path,
-  const UnicodeString Params, TProcessMessagesEvent ProcessMessages)
+void __fastcall ExecuteShellCheckedAndWait(const UnicodeString Command,
+  TProcessMessagesEvent ProcessMessages)
 {
+  UnicodeString Program, Params, Dir;
+  SplitCommand(Command, Program, Params, Dir);
   HANDLE ProcessHandle;
-  bool Result = true;
-  if (!CopyShellCommandToClipboard(Path, Params))
+  bool Result = DoExecuteShell(Program, Params, false, &ProcessHandle);
+  if (!Result)
   {
-    Result = DoExecuteShell(Handle, Path, Params, ProcessHandle);
-
-    if (Result)
+    throw EOSExtException(FMTLOAD(EXECUTE_APP_ERROR, (Program)));
+  }
+  else
+  {
+    if (ProcessHandle != NULL) // only if command was copied to clipboard only
     {
       if (ProcessMessages != NULL)
       {
         unsigned long WaitResult;
         do
         {
+          // Same as in ExecuteProcessAndReadOutput
           WaitResult = WaitForSingleObject(ProcessHandle, 200);
           if (WaitResult == WAIT_FAILED)
           {
@@ -286,15 +310,6 @@ bool __fastcall ExecuteShellAndWait(HWND Handle, const UnicodeString Path,
       }
     }
   }
-  return Result;
-}
-//---------------------------------------------------------------------------
-bool __fastcall ExecuteShellAndWait(HWND Handle, const UnicodeString Command,
-  TProcessMessagesEvent ProcessMessages)
-{
-  UnicodeString Program, Params, Dir;
-  SplitCommand(Command, Program, Params, Dir);
-  return ExecuteShellAndWait(Handle, Program, Params, ProcessMessages);
 }
 //---------------------------------------------------------------------------
 bool __fastcall SpecialFolderLocation(int PathID, UnicodeString & Path)
@@ -308,81 +323,6 @@ bool __fastcall SpecialFolderLocation(int PathID, UnicodeString & Path)
     return true;
   }
   return false;
-}
-//---------------------------------------------------------------------------
-static UnicodeString __fastcall GetWineHomeFolder()
-{
-  UnicodeString Result;
-
-  UnicodeString WineHostHome = GetEnvironmentVariable(L"WINE_HOST_HOME");
-  if (!WineHostHome.IsEmpty())
-  {
-    Result = L"Z:" + FromUnixPath(WineHostHome);
-  }
-  else
-  {
-    // Should we use WinAPI GetUserName() instead?
-    UnicodeString UserName = GetEnvironmentVariable(L"USERNAME");
-    if (!UserName.IsEmpty())
-    {
-      Result = L"Z:\\home\\" + UserName;
-    }
-  }
-
-  if (!DirectoryExists(Result))
-  {
-    Result = L"";
-  }
-
-  return Result;
-}
-//---------------------------------------------------------------------------
-UnicodeString __fastcall GetPersonalFolder()
-{
-  UnicodeString Result;
-  ::SpecialFolderLocation(CSIDL_PERSONAL, Result);
-
-  if (IsWine())
-  {
-    UnicodeString WineHome = GetWineHomeFolder();
-
-    if (!WineHome.IsEmpty())
-    {
-      // if at least home exists, use it
-      Result = WineHome;
-
-      // but try to go deeper to "Documents"
-      UnicodeString WineDocuments =
-        IncludeTrailingBackslash(WineHome) + L"Documents";
-      if (DirectoryExists(WineDocuments))
-      {
-        Result = WineDocuments;
-      }
-    }
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
-UnicodeString __fastcall GetDesktopFolder()
-{
-  UnicodeString Result;
-  ::SpecialFolderLocation(CSIDL_DESKTOPDIRECTORY, Result);
-
-  if (IsWine())
-  {
-    UnicodeString WineHome = GetWineHomeFolder();
-
-    if (!WineHome.IsEmpty())
-    {
-      UnicodeString WineDesktop =
-        IncludeTrailingBackslash(WineHome) + L"Desktop";
-      if (DirectoryExists(WineHome))
-      {
-        Result = WineDesktop;
-      }
-    }
-  }
-  return Result;
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall UniqTempDir(const UnicodeString BaseDir, const UnicodeString Identity,
@@ -444,19 +384,6 @@ bool __fastcall DeleteDirectory(const UnicodeString DirName)
   FindClose(sr);
   if (retval) retval = RemoveDir(ApiPath(DirName)); // VCL function
   return retval;
-}
-//---------------------------------------------------------------------------
-UnicodeString __fastcall FormatDateTimeSpan(const UnicodeString TimeFormat, TDateTime DateTime)
-{
-  UnicodeString Result;
-  if (int(DateTime) > 0)
-  {
-    Result = IntToStr(int(DateTime)) + L", ";
-  }
-  // days are decremented, because when there are to many of them,
-  // "integer overflow" error occurs
-  Result += FormatDateTime(TimeFormat, DateTime - int(DateTime));
-  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall AddSessionColorImage(
@@ -599,6 +526,7 @@ void __fastcall ApplyTabs(
       if (IsEligibleForApplyingTabs(Line, TabPos, Start, Remaining))
       {
         int Width;
+        int Iterations = 0;
         while ((Width = CalculateWidth(Start, CalculateWidthArg)) < MaxWidth)
         {
           int Wider = CalculateWidth(Start + Padding, CalculateWidthArg);
@@ -609,6 +537,12 @@ void __fastcall ApplyTabs(
             break;
           }
           Start += Padding;
+          Iterations++;
+          // In rare case a tab is zero-width with some strange font (like HYLE)
+          if (Iterations > 100)
+          {
+            break;
+          }
         }
         Lines->Strings[Index] = Start + Remaining;
       }
@@ -620,11 +554,11 @@ void __fastcall ApplyTabs(
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall SelectScaledImageList(TImageList * ImageList)
+static void __fastcall DoSelectScaledImageList(TImageList * ImageList)
 {
   TImageList * MatchingList = NULL;
   int MachingPixelsPerInch = 0;
-  int PixelsPerInch = Screen->PixelsPerInch;
+  int PixelsPerInch = GetComponentPixelsPerInch(ImageList);
 
   for (int Index = 0; Index < ImageList->Owner->ComponentCount; Index++)
   {
@@ -650,12 +584,46 @@ void __fastcall SelectScaledImageList(TImageList * ImageList)
 
   if (MatchingList != NULL)
   {
+    UnicodeString ImageListBackupName = ImageList->Name + IntToStr(USER_DEFAULT_SCREEN_DPI);
+
+    if (ImageList->Owner->FindComponent(ImageListBackupName) == NULL)
+    {
+      TImageList * ImageListBackup;
+      TPngImageList * PngImageList = dynamic_cast<TPngImageList *>(ImageList);
+      if (PngImageList != NULL)
+      {
+        ImageListBackup = new TPngImageList(ImageList->Owner);
+      }
+      else
+      {
+        ImageListBackup = new TImageList(ImageList->Owner);
+      }
+
+      ImageListBackup->Name = ImageListBackupName;
+      ImageList->Owner->InsertComponent(ImageListBackup);
+      CopyImageList(ImageListBackup, ImageList);
+    }
+
     CopyImageList(ImageList, MatchingList);
   }
 }
 //---------------------------------------------------------------------------
+static void __fastcall ImageListRescale(TComponent * Sender, TObject * /*Token*/)
+{
+  TImageList * ImageList = DebugNotNull(dynamic_cast<TImageList *>(Sender));
+  DoSelectScaledImageList(ImageList);
+}
+//---------------------------------------------------------------------------
+void __fastcall SelectScaledImageList(TImageList * ImageList)
+{
+  DoSelectScaledImageList(ImageList);
+
+  SetRescaleFunction(ImageList, ImageListRescale);
+}
+//---------------------------------------------------------------------------
 void __fastcall CopyImageList(TImageList * TargetList, TImageList * SourceList)
 {
+  // Maybe this is not necessary, once the TPngImageList::Assign was fixed
   TPngImageList * PngTargetList = dynamic_cast<TPngImageList *>(TargetList);
   TPngImageList * PngSourceList = dynamic_cast<TPngImageList *>(SourceList);
 
@@ -675,44 +643,12 @@ void __fastcall CopyImageList(TImageList * TargetList, TImageList * SourceList)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall CopyDataModule(TDataModule * TargetModule, TDataModule * SourceModule)
+static bool __fastcall DoLoadDialogImage(TImage * Image, const UnicodeString & ImageName)
 {
-  DebugAssert(TargetModule->ComponentCount == SourceModule->ComponentCount);
-
-  typedef std::vector<std::pair<TComponent *, TComponent *> > TComponentPairs;
-  TComponentPairs ComponentPairs;
-
-  for (int Index = 0; Index < TargetModule->ComponentCount; Index++)
-  {
-    TComponent * TargetComponent = TargetModule->Components[Index];
-    TComponent * SourceComponent = SourceModule->FindComponent(TargetComponent->Name);
-    if (DebugAlwaysTrue(SourceComponent != NULL))
-    {
-      ComponentPairs.push_back(std::make_pair(TargetComponent, SourceComponent));
-    }
-  }
-
-  TComponentPairs::const_iterator Iterator = ComponentPairs.begin();
-  while (Iterator != ComponentPairs.end())
-  {
-    TComponent * TargetComponent = Iterator->first;
-    TComponent * SourceComponent = Iterator->second;
-
-    TargetModule->RemoveComponent(TargetComponent);
-    SourceModule->RemoveComponent(SourceComponent);
-
-    TargetModule->InsertComponent(SourceComponent);
-    SourceModule->InsertComponent(TargetComponent);
-
-    Iterator++;
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall LoadDialogImage(TImage * Image, const UnicodeString & ImageName)
-{
+  bool Result = false;
   if (GlyphsModule != NULL)
   {
-    TPngImageList * DialogImages = GlyphsModule->DialogImages;
+    TPngImageList * DialogImages = GetDialogImages(Image);
 
     int Index;
     for (Index = 0; Index < DialogImages->PngImages->Count; Index++)
@@ -726,8 +662,10 @@ void __fastcall LoadDialogImage(TImage * Image, const UnicodeString & ImageName)
     }
 
     DebugAssert(Index < DialogImages->PngImages->Count);
+    Result = true;
   }
-  // When showing an exception from wWinMain, the glyphs module does not exist anymore.
+  // When showing an exception from wWinMain, the images are released already.
+  // Non-existence of the glyphs module is just a good indication of that.
   // We expect errors only.
   else if (ImageName == L"Error")
   {
@@ -738,11 +676,35 @@ void __fastcall LoadDialogImage(TImage * Image, const UnicodeString & ImageName)
   {
     Image->Picture->Icon->Handle = LoadIcon(0, IDI_APPLICATION);
   }
+  return Result;
 }
 //---------------------------------------------------------------------------
-int __fastcall DialogImageSize()
+class TDialogImageName : public TObject
 {
-  return ScaleByPixelsPerInch(32);
+public:
+  UnicodeString ImageName;
+};
+//---------------------------------------------------------------------------
+static void __fastcall DialogImageRescale(TComponent * Sender, TObject * Token)
+{
+  TImage * Image = DebugNotNull(dynamic_cast<TImage *>(Sender));
+  TDialogImageName * DialogImageName = DebugNotNull(dynamic_cast<TDialogImageName *>(Token));
+  DoLoadDialogImage(Image, DialogImageName->ImageName);
+}
+//---------------------------------------------------------------------------
+void __fastcall LoadDialogImage(TImage * Image, const UnicodeString & ImageName)
+{
+  if (DoLoadDialogImage(Image, ImageName))
+  {
+    TDialogImageName * DialogImageName = new TDialogImageName();
+    DialogImageName->ImageName = ImageName;
+    SetRescaleFunction(Image, DialogImageRescale, DialogImageName, true);
+  }
+}
+//---------------------------------------------------------------------------
+int __fastcall DialogImageSize(TForm * Form)
+{
+  return ScaleByPixelsPerInch(32, Form);
 }
 //---------------------------------------------------------------------------
 void __fastcall HideComponentsPanel(TForm * Form)
@@ -752,6 +714,7 @@ void __fastcall HideComponentsPanel(TForm * Form)
   DebugAssert(Panel->Align == alBottom);
   int Offset = Panel->Height;
   Panel->Visible = false;
+  Panel->Height = 0;
   Form->Height -= Offset;
 
   for (int Index = 0; Index < Form->ControlCount; Index++)
@@ -1016,6 +979,114 @@ bool __fastcall TLocalCustomCommand::IsFileCommand(const UnicodeString & Command
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
+typedef std::set<TDataModule *> TImagesModules;
+static TImagesModules ImagesModules;
+static std::map<int, TPngImageList *> AnimationsImages;
+static std::map<int, TImageList *> ButtonImages;
+static std::map<int, TPngImageList *> DialogImages;
+//---------------------------------------------------------------------------
+int __fastcall NormalizePixelsPerInch(int PixelsPerInch)
+{
+  if (PixelsPerInch >= 192)
+  {
+    PixelsPerInch = 192;
+  }
+  else if (PixelsPerInch >= 144)
+  {
+    PixelsPerInch = 144;
+  }
+  else if (PixelsPerInch >= 120)
+  {
+    PixelsPerInch = 120;
+  }
+  else
+  {
+    PixelsPerInch = 96;
+  }
+  return PixelsPerInch;
+}
+//---------------------------------------------------------------------------
+static int __fastcall NeedImagesModule(TControl * Control)
+{
+  int PixelsPerInch = NormalizePixelsPerInch(GetControlPixelsPerInch(Control));
+
+  if (AnimationsImages.find(PixelsPerInch) == AnimationsImages.end())
+  {
+    TDataModule * ImagesModule;
+    HANDLE ResourceModule = GUIConfiguration->ChangeToDefaultResourceModule();
+    try
+    {
+      if (PixelsPerInch == 192)
+      {
+        ImagesModule = new TAnimations192Module(Application);
+      }
+      else if (PixelsPerInch == 144)
+      {
+        ImagesModule = new TAnimations144Module(Application);
+      }
+      else if (PixelsPerInch == 120)
+      {
+        ImagesModule = new TAnimations120Module(Application);
+      }
+      else
+      {
+        DebugAssert(PixelsPerInch == 96);
+        ImagesModule = new TAnimations96Module(Application);
+      }
+
+      ImagesModules.insert(ImagesModule);
+
+      TPngImageList * AAnimationImages =
+        DebugNotNull(dynamic_cast<TPngImageList *>(ImagesModule->FindComponent(L"AnimationImages")));
+      AnimationsImages.insert(std::make_pair(PixelsPerInch, AAnimationImages));
+
+      TImageList * AButtonImages =
+        DebugNotNull(dynamic_cast<TImageList *>(ImagesModule->FindComponent(L"ButtonImages")));
+      ButtonImages.insert(std::make_pair(PixelsPerInch, AButtonImages));
+
+      TPngImageList * ADialogImages =
+        DebugNotNull(dynamic_cast<TPngImageList *>(ImagesModule->FindComponent(L"DialogImages")));
+      DialogImages.insert(std::make_pair(PixelsPerInch, ADialogImages));
+    }
+    __finally
+    {
+      GUIConfiguration->ChangeResourceModule(ResourceModule);
+    }
+  }
+
+  return PixelsPerInch;
+}
+//---------------------------------------------------------------------------
+TPngImageList * __fastcall GetAnimationsImages(TControl * Control)
+{
+  int PixelsPerInch = NeedImagesModule(Control);
+  return DebugNotNull(AnimationsImages[PixelsPerInch]);
+}
+//---------------------------------------------------------------------------
+TImageList * __fastcall GetButtonImages(TControl * Control)
+{
+  int PixelsPerInch = NeedImagesModule(Control);
+  return DebugNotNull(ButtonImages[PixelsPerInch]);
+}
+//---------------------------------------------------------------------------
+TPngImageList * __fastcall GetDialogImages(TControl * Control)
+{
+  int PixelsPerInch = NeedImagesModule(Control);
+  return DebugNotNull(DialogImages[PixelsPerInch]);
+}
+//---------------------------------------------------------------------------
+void __fastcall ReleaseImagesModules()
+{
+
+  TImagesModules::iterator i = ImagesModules.begin();
+  while (i != ImagesModules.end())
+  {
+    delete (*i);
+    i++;
+  }
+  ImagesModules.clear();
+}
+//---------------------------------------------------------------------------
 __fastcall TFrameAnimation::TFrameAnimation()
 {
   FFirstFrame = -1;
@@ -1023,22 +1094,26 @@ __fastcall TFrameAnimation::TFrameAnimation()
 //---------------------------------------------------------------------------
 void __fastcall TFrameAnimation::Init(TPaintBox * PaintBox, const UnicodeString & Name)
 {
-  DoInit(PaintBox, NULL, Name, Name.IsEmpty());
-}
-//---------------------------------------------------------------------------
-void __fastcall TFrameAnimation::DoInit(TPaintBox * PaintBox, TPngImageList * ImageList, const UnicodeString & Name, bool Null)
-{
-  FImageList = (ImageList != NULL) ? ImageList : GetAnimationsModule()->AnimationImages;
-  FFirstFrame = -1;
-  FFirstLoopFrame = -1;
-  DebugAssert((PaintBox->OnPaint == NULL) || (PaintBox->OnPaint == PaintBoxPaint));
-  PaintBox->ControlStyle = PaintBox->ControlStyle << csOpaque;
-  PaintBox->OnPaint = PaintBoxPaint;
-  PaintBox->Width = FImageList->Width;
-  PaintBox->Height = FImageList->Height;
+  FName = Name;
   FPaintBox = PaintBox;
 
-  if (!Null)
+  FPaintBox->ControlStyle = FPaintBox->ControlStyle << csOpaque;
+  DebugAssert((FPaintBox->OnPaint == NULL) || (FPaintBox->OnPaint == PaintBoxPaint));
+  FPaintBox->OnPaint = PaintBoxPaint;
+  SetRescaleFunction(FPaintBox, PaintBoxRescale, reinterpret_cast<TObject *>(this));
+
+  DoInit();
+}
+//---------------------------------------------------------------------------
+void __fastcall TFrameAnimation::DoInit()
+{
+  FImageList = GetAnimationsImages(FPaintBox);
+  FFirstFrame = -1;
+  FFirstLoopFrame = -1;
+  FPaintBox->Width = FImageList->Width;
+  FPaintBox->Height = FImageList->Height;
+
+  if (!FName.IsEmpty())
   {
     int Frame = 0;
     while (Frame < FImageList->PngImages->Count)
@@ -1047,7 +1122,7 @@ void __fastcall TFrameAnimation::DoInit(TPaintBox * PaintBox, TPngImageList * Im
       UnicodeString FrameName;
       FrameName = CutToChar(FrameData, L'_', false);
 
-      if (SameText(Name, FrameName))
+      if (SameText(FName, FrameName))
       {
         int FrameIndex = StrToInt(CutToChar(FrameData, L'_', false));
         if (FFirstFrame < 0)
@@ -1076,6 +1151,22 @@ void __fastcall TFrameAnimation::DoInit(TPaintBox * PaintBox, TPngImageList * Im
   }
 
   Stop();
+}
+//---------------------------------------------------------------------------
+void __fastcall TFrameAnimation::PaintBoxRescale(TComponent * /*Sender*/, TObject * Token)
+{
+  TFrameAnimation * FrameAnimation = reinterpret_cast<TFrameAnimation *>(Token);
+  FrameAnimation->Rescale();
+}
+//---------------------------------------------------------------------------
+void __fastcall TFrameAnimation::Rescale()
+{
+  bool Started = (FTimer != NULL) && FTimer->Enabled;
+  DoInit();
+  if (Started)
+  {
+    Start();
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TFrameAnimation::Start()
@@ -1119,10 +1210,8 @@ void __fastcall TFrameAnimation::PaintBoxPaint(TObject * Sender)
     TRect Rect(0, 0, Bitmap->Width, Bitmap->Height);
     Bitmap->Canvas->FillRect(Rect);
     TGraphic * Graphic = GetCurrentImage()->PngImage;
-    // Do not trigger assertion when animation size does not match scaled
-    // paint box as we do not have scaled animations available yet
-    DebugAssert((Graphic->Width == FPaintBox->Width) || (Screen->PixelsPerInch != USER_DEFAULT_SCREEN_DPI));
-    DebugAssert((Graphic->Height == FPaintBox->Height) || (Screen->PixelsPerInch != USER_DEFAULT_SCREEN_DPI));
+    DebugAssert(Graphic->Width == FPaintBox->Width);
+    DebugAssert(Graphic->Height == FPaintBox->Height);
     Bitmap->Canvas->Draw(0, 0, Graphic);
     FPaintBox->Canvas->Draw(0, 0, Bitmap.get());
   }
@@ -1132,7 +1221,7 @@ void __fastcall TFrameAnimation::PaintBoxPaint(TObject * Sender)
 void __fastcall TFrameAnimation::Repaint()
 {
   FPainted = false;
-  // Ff the form is not showing yet, the Paint() is not even called
+  // If the form is not showing yet, the Paint() is not even called
   FPaintBox->Repaint();
   if (!FPainted)
   {
@@ -1247,7 +1336,7 @@ int __fastcall TScreenTipHintWindow::GetMargin(TControl * HintControl, const Uni
     Result = 6;
   }
 
-  Result = ScaleByPixelsPerInch(Result);
+  Result = ScaleByTextHeight(HintControl, Result);
 
   return Result;
 }
@@ -1261,7 +1350,10 @@ TFont * __fastcall TScreenTipHintWindow::GetFont(TControl * HintControl, const U
   }
   else
   {
-    Result = Screen->HintFont;
+    FScaledHintFont.reset(new TFont());
+    FScaledHintFont->Assign(Screen->HintFont);
+    FScaledHintFont->Size = ScaleByPixelsPerInchFromSystem(FScaledHintFont->Size, HintControl);
+    Result = FScaledHintFont.get();
   }
   return Result;
 }
@@ -1281,8 +1373,7 @@ TRect __fastcall TScreenTipHintWindow::CalcHintRect(int MaxWidth, const UnicodeS
 
   Canvas->Font->Assign(GetFont(HintControl, AHint));
 
-  // we do not have a parent form here, so we cannot scale by text height
-  const int ScreenTipTextOnlyWidth = ScaleByPixelsPerInch(cScreenTipTextOnlyWidth);
+  const int ScreenTipTextOnlyWidth = ScaleByTextHeight(HintControl, cScreenTipTextOnlyWidth);
 
   if (!LongHint.IsEmpty())
   {

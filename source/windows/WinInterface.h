@@ -35,6 +35,8 @@ const int mpAllowContinueOnError = 0x02;
 #define KEYGEN_COMMENT_SWITCH L"Comment"
 #define KEYGEN_CHANGE_PASSPHRASE_SWITCH L"ChangePassphrase"
 #define LOG_SWITCH L"Log"
+#define LOGSIZE_SWITCH L"LogSize"
+#define LOGSIZE_SEPARATOR L"*"
 #define INI_SWITCH L"Ini"
 #define FINGERPRINTSCAN_SWITCH L"FingerprintScan"
 
@@ -89,8 +91,8 @@ bool __fastcall CheckSafe(TProgramParams * Params);
 void __fastcall CheckLogParam(TProgramParams * Params);
 bool __fastcall CheckXmlLogParam(TProgramParams * Params);
 
-UnicodeString __fastcall GetToolbarsLayoutStr(TComponent * OwnerComponent);
-void __fastcall LoadToolbarsLayoutStr(TComponent * OwnerComponent, UnicodeString LayoutStr);
+UnicodeString __fastcall GetToolbarsLayoutStr(TControl * OwnerControl);
+void __fastcall LoadToolbarsLayoutStr(TControl * OwnerControl, UnicodeString LayoutStr);
 
 namespace Tb2item { class TTBCustomItem; }
 namespace Tbx { class TTBXSeparatorItem; }
@@ -135,6 +137,7 @@ bool __fastcall DoShortCutDialog(TShortCut & ShortCut,
 bool __fastcall DoCustomCommandOptionsDialog(
   const TCustomCommandType * Command, TStrings * CustomCommandOptions, unsigned int Flags,
   TCustomCommand * CustomCommandForOptions, const UnicodeString & Site);
+void __fastcall DoUsageStatisticsDialog();
 
 // windows\UserInterface.cpp
 bool __fastcall DoMasterPasswordDialog();
@@ -190,7 +193,6 @@ const coDisableSaveSettings = 0x040; // not used anymore
 const coDoNotUsePresets     = 0x080;
 const coAllowRemoteTransfer = 0x100;
 const coNoQueue             = 0x200;
-const coNoQueueIndividually = 0x400;
 const coShortCutHint        = 0x800;
 const coAllFiles            = 0x1000;
 const cooDoNotShowAgain     = 0x01;
@@ -304,16 +306,6 @@ bool __fastcall DoFilterMaskDialog(TCustomDirView * Parent,
 // forms\EditMask.cpp
 bool __fastcall DoEditMaskDialog(TFileMasks & Mask);
 
-const spDelete = 0x01;
-const spNoConfirmation = 0x02;
-const spExistingOnly = 0x04;
-const spPreviewChanges = 0x40; // not used by core
-const spTimestamp = 0x100;
-const spNotByTime = 0x200;
-const spBySize = 0x400;
-const spSelectedOnly = 0x800;
-const spMirror = 0x1000;
-
 // forms\Synchronize.cpp
 const soDoNotUsePresets =  0x01;
 const soNoMinimize =       0x02;
@@ -358,7 +350,7 @@ typedef void __fastcall (__closure *TFileClosedEvent)
   (TObject * Sender, bool Forced);
 typedef void __fastcall (__closure *TAnyModifiedEvent)
   (TObject * Sender, bool & Modified);
-TForm * __fastcall ShowEditorForm(const UnicodeString FileName, TCustomForm * ParentForm,
+TForm * __fastcall ShowEditorForm(const UnicodeString FileName, TForm * ParentForm,
   TNotifyEvent OnFileChanged, TNotifyEvent OnFileReload, TFileClosedEvent OnClose,
   TNotifyEvent OnSaveAll, TAnyModifiedEvent OnAnyModified,
   const UnicodeString Caption, bool StandaloneEditor, TColor Color);
@@ -413,10 +405,18 @@ bool __fastcall DoEditorPreferencesDialog(TEditorData * Editor,
 
 // forms\Find.cpp
 typedef void __fastcall (__closure *TFindEvent)
-  (UnicodeString Directory, const TFileMasks & FileMask,
+  (TTerminal * Terminal, UnicodeString Directory, const TFileMasks & FileMask,
    TFileFoundEvent OnFileFound, TFindingFileEvent OnFindingFile);
-bool __fastcall DoFileFindDialog(UnicodeString Directory,
-  TFindEvent OnFind, UnicodeString & Path);
+typedef void __fastcall (__closure *TFocusFileEvent)
+  (TTerminal * Terminal, const UnicodeString & Path);
+typedef void __fastcall (__closure *TFileOperationFinishedEvent)
+  (const UnicodeString & FileName, bool Success);
+typedef void __fastcall (__closure *TFileListOperationEvent)
+  (TTerminal * Terminal, TStrings * FileList, TFileOperationFinishedEvent OnFileOperationFinished);
+void __fastcall ShowFileFindDialog(
+  TTerminal * Terminal, UnicodeString Directory, TFindEvent OnFind, TFocusFileEvent OnFocusFile,
+  TFileListOperationEvent OnDeleteFiles, TFileListOperationEvent OnDownloadFiles);
+void __fastcall HideFileFindDialog();
 
 // forms\GenerateUrl.cpp
 void __fastcall DoGenerateUrlDialog(TSessionData * Data, TStrings * Paths);
@@ -483,10 +483,6 @@ void __fastcall InitializeShortCutCombo(TComboBox * ComboBox,
 void __fastcall SetShortCutCombo(TComboBox * ComboBox, TShortCut Value);
 TShortCut __fastcall GetShortCutCombo(TComboBox * ComboBox);
 bool __fastcall IsCustomShortCut(TShortCut ShortCut);
-
-class TAnimationsModule;
-TAnimationsModule * __fastcall GetAnimationsModule();
-void __fastcall ReleaseAnimationsModule();
 
 #ifdef _DEBUG
 void __fastcall ForceTracing();

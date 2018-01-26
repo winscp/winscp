@@ -1788,8 +1788,10 @@ void select_result(WPARAM wParam, LPARAM lParam)
 	    }
 	}
 	if (err != 0)
+	{
 	    plug_closing(s->plug, winsock_error_string(err), err, 0);
-	return;
+	    return;
+	}
     }
 
     noise_ultralight(lParam);
@@ -1893,7 +1895,9 @@ void select_result(WPARAM wParam, LPARAM lParam)
 		if (ret)
 		    plug_receive(s->plug, 0, buf, ret);
 		else
+		{
 		    plug_closing(s->plug, NULL, 0, 0);
+		}
 	    }
 	} while (ret > 0);
 	return;

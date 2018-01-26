@@ -113,7 +113,7 @@ resourceString
 implementation
 
 uses
-  Math, CompThread;
+  Math, PIDL;
 
 constructor TDriveInfo.Create;
 begin
@@ -300,45 +300,12 @@ begin
   Result := @FData[Upcase(Drive)];
 end; {TDriveInfo.GetData}
 
-type
-  TParseDisplayNameThread = class(TCompThread)
-  private
-    FDesktop: IShellFolder;
-    FDrive: TDrive;
-    FPIDL: PItemIDList;
-
-  protected
-    procedure Execute; override;
-
-  public
-    constructor Create(Desktop: IShellFolder; Drive: TDrive);
-
-    property PIDL: PItemIDList read FPIDL;
-  end;
-
-constructor TParseDisplayNameThread.Create(Desktop: IShellFolder; Drive: TDrive);
-begin
-  inherited Create(True);
-  FDesktop := Desktop;
-  FDrive := Drive;
-end;
-
-procedure TParseDisplayNameThread.Execute;
-var
-  Eaten: ULONG;
-  ShAttr: ULONG;
-begin
-  ShAttr := 0;
-  FDesktop.ParseDisplayName(Application.Handle, nil, PChar(FDrive + ':\'), Eaten, FPIDL, ShAttr);
-end;
-
 function TDriveInfo.ReadDriveStatus(Drive: TDrive; Flags: Integer): Boolean;
 var
   ErrorMode: Word;
   FileInfo: TShFileInfo;
   DriveID: string;
   CPos: Integer;
-  Thread: TParseDisplayNameThread;
   Eaten: ULONG;
   ShAttr: ULONG;
   MaxFileNameLength: DWORD;
@@ -362,19 +329,7 @@ begin
       begin
         if DriveType = DRIVE_REMOTE then
         begin
-          Thread := TParseDisplayNameThread.Create(FDesktop, Drive);
-          Thread.Resume;
-          if Thread.WaitFor(2 * MSecsPerSec) then
-          begin
-            PIDL := Thread.PIDL;
-            Thread.Free;
-          end
-            else
-          begin
-            // There's a chance for memory leak, if thread is terminated
-            // between WaitFor() and this line
-            Thread.FreeOnTerminate := True;
-          end;
+          ParseDisplayNameWithTimeout(FDesktop, Drive + ':\', PIDL);
         end
           else
         begin

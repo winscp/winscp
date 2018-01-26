@@ -97,7 +97,7 @@ namespace WinSCP
         {
             if (!TryWaitForNonEmptyElement(localName, flags))
             {
-                throw SessionLocalException.CreateElementNotFound(Session, localName);
+                throw Session.Logger.WriteException(SessionLocalException.CreateElementNotFound(Session, localName));
             }
         }
 

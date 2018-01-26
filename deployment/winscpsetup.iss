@@ -7,7 +7,7 @@
 #define WebForum WebRoot+"forum/"
 #define WebDocumentation WebRoot+"eng/docs/"
 #define WebReport "http://winscp.net/install.php"
-#define Year 2017
+#define Year 2018
 #define EnglishLang "English"
 #define SetupTypeData "SetupType"
 #define InnoSetupReg "Software\Microsoft\Windows\CurrentVersion\Uninstall\" + AppId + "_is1"
@@ -17,6 +17,12 @@
   #define CompletenessThreshold 100
 #else
   #define CompletenessThreshold Int(CompletenessThreshold)
+#endif
+
+#ifndef InclusionThreshold
+  #define InclusionThreshold 100
+#else
+  #define InclusionThreshold Int(InclusionThreshold)
 #endif
 
 #ifndef PuttySourceDir
@@ -133,6 +139,8 @@ Name: {#DefaultLang}; MessagesFile: {#MessagesPath(DefaultLang)}
 #define LanguageCount 0
 #define AnyLanguageComplete 0
 #define LangI
+; For some reason the variable cannot be defined near the code where we use it
+#define AllTranslationsBuf
 
 #sub ProcessTranslationFile
 
@@ -150,12 +158,14 @@ Name: {#DefaultLang}; MessagesFile: {#MessagesPath(DefaultLang)}
   #define LangCompleteness Int(ReadIni(MessagesPath(Lang), "CustomOptions", "TranslationCompleteness"))
 
   #expr Languages[LanguageCount*4] = Lang
+  ; Not used atm
   #expr Languages[LanguageCount*4+1] = LangName
+  ; Not used atm
   #expr Languages[LanguageCount*4+2] = LangID
   #expr Languages[LanguageCount*4+3] = LangCompleteness
   #expr LanguageCount++
 
-#if LangCompleteness > CompletenessThreshold
+#if LangCompleteness >= CompletenessThreshold
 Name: {#Lang}; MessagesFile: {#MessagesPath(Lang)}
   #expr AnyLanguageComplete = 1
 #endif
@@ -321,39 +331,32 @@ Root: HKLM; SubKey: "{#RegistryKey}"; \
   ValueType: dword; ValueName: "DefaultCollectUsage"; ValueData: 1; \
   Tasks: enableupdates\enablecollectusage; Flags: noerror
 
-#if AnyLanguageComplete == 1
-
-[Components]
-Name: transl\eng; Description: {#EnglishLang}; Types: full custom compact; \
-  Flags: fixed
-
-#endif
-
 #sub EmitLang
 
-  #if Languages[LangI*4+3] > CompletenessThreshold
-
-[Components]
-Name: transl\{#Languages[LangI*4]}; Description: {#Languages[LangI*4+1]}; \
-  Types: full compact custom; Check: IsLang('{#Languages[LangI*4]}')
-Name: transl\{#Languages[LangI*4]}; Description: {#Languages[LangI*4+1]}; \
-  Check: not IsLang('{#Languages[LangI*4]}')
+  #if Languages[LangI*4+3] >= InclusionThreshold
 
 [Files]
-Source: "{#TranslationDir}\WinSCP.{#Languages[LangI*4]}"; DestDir: "{app}"; \
-  Components: transl\{#Languages[LangI*4]}; Flags: ignoreversion
-
-[Registry]
-; set program default language to setup language, but only if user installs it
-Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface"; \
-  ValueType: dword; ValueName: "LocaleSafe"; ValueData: {#Languages[LangI*4+2]}; \
-  Components: transl\{#Languages[LangI*4]}; Languages: {#Languages[LangI*4]}
+Source: "{#TranslationDir}\WinSCP.{#Languages[LangI*4]}"; DestDir: "{app}\Translations"; \
+  Components: transl; Flags: ignoreversion
 
   #endif
 
 #endsub /* sub EmitLang */
 
 #for {LangI = 0; LangI < LanguageCount; LangI++} EmitLang
+
+; Delete translations from installation root folder (pre-5.10)
+[InstallDelete]
+#expr AllTranslationsBuf = AllTranslations + '-'
+
+#sub DeleteRootTranslation
+  #define P Pos('-', AllTranslationsBuf)
+  #define Lang Copy(AllTranslationsBuf, 1, P - 1)
+  #expr AllTranslationsBuf = Copy(AllTranslationsBuf, P + 1)
+Type: files; Name: "{app}\WinSCP.{#Lang}"
+#endsub
+
+#for { 0; Len(AllTranslationsBuf) > 0; 0 } DeleteRootTranslation
 
 [UninstallRun]
 ; Make sure no later uninstall task recreate the configuration
@@ -378,7 +381,6 @@ var
   AreUpdatesEnabled: Boolean;
   AutomaticUpdate: Boolean;
   Upgrade: Boolean;
-  MissingTranslations: string;
   PrevVersion: string;
   ShellExtNewerCacheFileName: string;
   ShellExtNewerCacheResult: Boolean;
@@ -400,11 +402,6 @@ var
 procedure ShowMessage(Text: string);
 begin
   MsgBox(Text, mbInformation, MB_OK);
-end;
-
-function IsLang(Lang: string): Boolean;
-begin
-  Result := (Lang = ActiveLanguage);
 end;
 
 function IsWinVista: Boolean;
@@ -529,32 +526,6 @@ begin
   end;
 end;
 
-function LanguageName(Lang: string; Unknown: string): string;
-begin
-  #sub EmitLang2
-  if Lang = '{#Languages[LangI*4]}' then Result := '{#Languages[LangI*4+1]}'
-    else
-  #endsub /* sub EmitLang2 */
-
-  #for {LangI = 0; LangI < LanguageCount; LangI++} EmitLang2
-
-  Result := Unknown;
-end;
-
-function ContainsLanguage(Lang: string): Boolean;
-begin
-  #sub EmitLang3
-    #if Languages[LangI*4+3] > CompletenessThreshold
-  if (Lang = '{#Languages[LangI*4]}') then Result := True
-    else
-    #endif
-  #endsub /* sub EmitLang3 */
-
-  #for {LangI = 0; LangI < LanguageCount; LangI++} EmitLang3
-
-  Result := False;
-end;
-
 function LanguageCompleteness(Lang: string): Integer;
 begin
   #sub EmitLang4
@@ -640,53 +611,6 @@ end;
 procedure ImageClick(Sender: TObject);
 begin
   WizardForm.ActiveControl := TWinControl(TControl(Sender).Tag);
-end;
-
-type
-  TProcessTranslationEvent = procedure(Lang: string; FileName: string);
-
-procedure CollectNames(Lang: string; FileName: string);
-begin
-  if Length(MissingTranslations) > 0 then
-    MissingTranslations := MissingTranslations + ', ';
-  MissingTranslations := MissingTranslations + LanguageName(Lang, Lang);
-end;
-
-procedure DeleteTranslation(Lang: string; FileName: string);
-begin
-  DeleteFile(FileName);
-end;
-
-procedure ProcessMissingTranslations(OnProcessTranslation: TProcessTranslationEvent);
-var
-  Path: string;
-  FindRec: TFindRec;
-  Ext: string;
-  LExt: string;
-begin
-  Path := AddBackslash(WizardDirValue);
-
-  if FindFirst(Path + '{#TranslationFileMask}', FindRec) then
-  begin
-    try
-      repeat
-        if FindRec.Attributes and FILE_ATTRIBUTE_DIRECTORY = 0 then
-        begin
-          Ext := Uppercase(ExtractFileExt(FindRec.Name));
-          if Pos('.', Ext) = 1  then
-          begin
-            Ext := Uppercase(Copy(Ext, 2, Length(Ext) - 1));
-            LExt := Lowercase(Ext);
-            if (Pos('-' + Ext + '-', '-{#AllTranslations}-') > 0) and
-               not ContainsLanguage(LExt) then
-              OnProcessTranslation(LExt, Path + FindRec.Name);
-          end;
-        end;
-      until not FindNext(FindRec);
-    finally
-      FindClose(FindRec);
-    end;
-  end;
 end;
 
 function WillRestart: Boolean;
@@ -982,8 +906,6 @@ begin
     PrevVersion := Copy(PrevVersion, 1, 5);
   end;
 
-  ProcessMissingTranslations(@CollectNames);
-
   WizardForm.KeyPreview := True;
   WizardForm.OnKeyDown := @FormKeyDown;
   // to accomodate one more task
@@ -1085,30 +1007,15 @@ begin
   Caption.WordWrap := True;
   if not Upgrade then
   begin
-    if DefaultLang then
-      S := CustomMessage('TypicalType2Eng')
-    else
-      S := FmtMessage(CustomMessage('TypicalType2Intl'), [CustomMessage('LocalLanguageName')]);
     Caption.Caption :=
       CustomMessage('TypicalType1') + NewLine +
-      S + NewLine +
+      CustomMessage('TypicalType2') + NewLine +
       CustomMessage('TypicalType3');
   end
     else
   begin
-    if Length(MissingTranslations) > 0 then
-    begin
-      #if AnyLanguageComplete
-        S := FmtMessage(CustomMessage('TypicalUpgradeTypeMissingTransl'), [MissingTranslations]);
-      #else
-        S := CustomMessage('TypicalUpgradeTypeNoTransl');
-      #endif
-      S := NewLine + S;
-    end
-      else S := '';
-
     Caption.Caption :=
-      CustomMessage('TypicalUpgradeType1') + S;
+      CustomMessage('TypicalUpgradeType1');
   end;
   Caption.Left := ScaleX(4) + ScaleX(20);
   Caption.Width := SetupTypePage.SurfaceWidth - Caption.Left;
@@ -1530,13 +1437,6 @@ begin
   if CurStep = ssPostInstall then
   begin
     Log('Post install');
-    if Length(MissingTranslations) > 0 then
-    begin
-      Log('Removing obsolete translations');
-      WizardForm.StatusLabel.Caption :=
-        CustomMessage('RemovingObsoleteTranslations');
-      ProcessMissingTranslations(@DeleteTranslation);
-    end;
     InstallationDone := True;
   end
     else

@@ -9,6 +9,7 @@
 #include "WinConfiguration.h"
 #include "EditorManager.h"
 #include <algorithm>
+#include <DateUtils.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -213,7 +214,6 @@ void __fastcall TEditorManager::AddFileInternal(const UnicodeString FileName,
   FileData.External = false;
   FileData.Process = INVALID_HANDLE_VALUE;
   FileData.Token = Token;
-  FileData.Monitor = INVALID_HANDLE_VALUE;
 
   AddFile(FileData, Data.release());
 }
@@ -228,15 +228,6 @@ void __fastcall TEditorManager::AddFileExternal(const UnicodeString FileName,
   FileData.Process = Process;
   FileData.Token = NULL;
   UnicodeString FilePath = ExtractFilePath(FileData.FileName);
-  FileData.Monitor =
-    FindFirstChangeNotification(
-      FilePath.c_str(), false, FILE_NOTIFY_CHANGE_LAST_WRITE);
-  if (FileData.Monitor == INVALID_HANDLE_VALUE)
-  {
-    throw Exception(FMTLOAD(FILE_WATCH_ERROR, (FileData.FileName)));
-  }
-
-  FMonitors.push_back(FileData.Monitor);
   if (Process != INVALID_HANDLE_VALUE)
   {
     FProcesses.push_back(Process);
@@ -248,26 +239,22 @@ void __fastcall TEditorManager::Check()
 {
   int Index;
 
-  if (FMonitors.size() > 0)
+  for (Index = 0; Index < static_cast<int>(FFiles.size()); Index++)
   {
-    do
+    TDateTime NewTimestamp;
+    if (HasFileChanged(Index, NewTimestamp))
     {
-      Index = WaitFor(FMonitors.size(), &(FMonitors[0]), MONITOR);
-
-      if (Index >= 0)
+      TDateTime N = Now();
+      // Let the editor finish writing to the file
+      // (first to avoid uploading partially saved file, second
+      // because the timestamp may change more than once during saving).
+      // WORKAROUND WithinPastMilliSeconds seems buggy that it return true even if NewTimestamp is within future
+      if ((NewTimestamp <= N) &&
+          !WithinPastMilliSeconds(N, NewTimestamp, GUIConfiguration->KeepUpToDateChangeDelay))
       {
-        // let the editor finish writing to the file
-        // (first to avoid uploading partially saved file, second
-        // because the timestamp may change more than once during saving)
-        Sleep(GUIConfiguration->KeepUpToDateChangeDelay);
-
-        TFileData * FileData = &FFiles[Index];
-        FindNextChangeNotification(FileData->Monitor);
-
         CheckFileChange(Index, false);
       }
     }
-    while (Index >= 0);
   }
 
   if (FProcesses.size() > 0)
@@ -286,7 +273,7 @@ void __fastcall TEditorManager::Check()
         {
           if (!EarlyClose(Index))
           {
-            // CheckFileChange may fail (file is already being uploaded),
+            // CheckFileChange may fail,
             // but we want to close handles anyway
             CloseFile(Index, false, true);
           }
@@ -440,13 +427,6 @@ bool __fastcall TEditorManager::CloseFile(int Index, bool IgnoreErrors, bool Del
     CloseProcess(Index);
   }
 
-  if (FileData->Monitor != INVALID_HANDLE_VALUE)
-  {
-    DebugCheck(FindCloseChangeNotification(FileData->Monitor));
-    FMonitors.erase(std::find(FMonitors.begin(), FMonitors.end(), FileData->Monitor));
-    FileData->Monitor = INVALID_HANDLE_VALUE;
-  }
-
   if (FileData->UploadCompleteEvent != INVALID_HANDLE_VALUE)
   {
     FileData->Closed = true;
@@ -472,44 +452,52 @@ bool __fastcall TEditorManager::CloseFile(int Index, bool IgnoreErrors, bool Del
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TEditorManager::CheckFileChange(int Index, bool Force)
+bool __fastcall TEditorManager::HasFileChanged(int Index, TDateTime & NewTimestamp)
 {
   TFileData * FileData = &FFiles[Index];
-
-  TDateTime NewTimestamp;
   FileAge(FileData->FileName, NewTimestamp);
-  if (Force || (FileData->Timestamp != NewTimestamp))
+  return (FileData->Timestamp != NewTimestamp);
+}
+//---------------------------------------------------------------------------
+void __fastcall TEditorManager::CheckFileChange(int Index, bool Force)
+{
+  TDateTime NewTimestamp;
+  bool Changed = HasFileChanged(Index, NewTimestamp);
+  if (Force || Changed)
   {
+    TFileData * FileData = &FFiles[Index];
     if (FileData->UploadCompleteEvent != INVALID_HANDLE_VALUE)
     {
       FileData->Reupload = true;
-      Abort();
     }
-    FileData->UploadCompleteEvent = CreateEvent(NULL, false, false, NULL);
-    FUploadCompleteEvents.push_back(FileData->UploadCompleteEvent);
+    else
+    {
+      FileData->UploadCompleteEvent = CreateEvent(NULL, false, false, NULL);
+      FUploadCompleteEvents.push_back(FileData->UploadCompleteEvent);
 
-    FileData->Timestamp = NewTimestamp;
-    FileData->Saves++;
-    if (FileData->Saves == 1)
-    {
-      Configuration->Usage->Inc(L"RemoteFilesSaved");
-    }
-    Configuration->Usage->Inc(L"RemoteFileSaves");
-
-    try
-    {
-      DebugAssert(OnFileChange != NULL);
-      OnFileChange(FileData->FileName, FileData->Data,
-        FileData->UploadCompleteEvent);
-    }
-    catch(...)
-    {
-      // upload failed (was not even started)
-      if (FileData->UploadCompleteEvent != INVALID_HANDLE_VALUE)
+      FileData->Timestamp = NewTimestamp;
+      FileData->Saves++;
+      if (FileData->Saves == 1)
       {
-        UploadComplete(Index);
+        Configuration->Usage->Inc(L"RemoteFilesSaved");
       }
-      throw;
+      Configuration->Usage->Inc(L"RemoteFileSaves");
+
+      try
+      {
+        DebugAssert(OnFileChange != NULL);
+        OnFileChange(FileData->FileName, FileData->Data,
+          FileData->UploadCompleteEvent);
+      }
+      catch(...)
+      {
+        // upload failed (was not even started)
+        if (FileData->UploadCompleteEvent != INVALID_HANDLE_VALUE)
+        {
+          UploadComplete(Index);
+        }
+        throw;
+      }
     }
   }
 }
@@ -557,10 +545,6 @@ int __fastcall TEditorManager::WaitFor(unsigned int Count, const HANDLE * Handle
         HANDLE FHandle;
         switch (WaitFor)
         {
-          case MONITOR:
-            FHandle = Data->Monitor;
-            break;
-
           case PROCESS:
             FHandle = Data->Process;
             break;

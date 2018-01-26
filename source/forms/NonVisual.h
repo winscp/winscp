@@ -73,15 +73,6 @@
 class TNonVisualDataModule : public TDataModule
 {
 __published:    // IDE-managed Components
-  TActionList *LogActions;
-  TAction *LogClearAction;
-  TAction *LogSelectAllAction2;
-  TAction *LogCopyAction;
-  TTBXPopupMenu *LogMemoPopup;
-  TTBXItem *Clear1;
-  TTBXItem *Close1;
-  TTBXItem *Selectall1;
-  TAction *LogPreferencesAction2;
   TAction *LocalSortByNameAction;
   TAction *LocalSortAscendingAction;
   TAction *LocalSortBySizeAction;
@@ -117,7 +108,6 @@ __published:    // IDE-managed Components
   TAction *ExplorerSelectionBandAction;
   TAction *ClearSelectionAction;
   TTimer *SessionIdleTimer;
-  TAction *ViewLogAction;
   TAction *NewSessionAction;
   TAction *SiteManagerAction;
   TAction *CloseSessionAction;
@@ -511,17 +501,17 @@ __published:    // IDE-managed Components
   TAction *LocalRenameAction;
   TAction *LocalEditAction;
   TAction *LocalMoveAction;
-  TAction *LocalCreateDirAction;
+  TAction *LocalCreateDirAction2;
   TAction *LocalDeleteAction;
   TAction *LocalPropertiesAction;
   TAction *RemoteRenameAction;
   TAction *RemoteEditAction;
   TAction *RemoteMoveAction;
-  TAction *RemoteCreateDirAction;
+  TAction *RemoteCreateDirAction2;
   TAction *RemoteDeleteAction;
   TAction *RemotePropertiesAction;
-  TAction *LocalAddEditLinkAction;
-  TAction *RemoteAddEditLinkAction;
+  TAction *LocalAddEditLinkAction2;
+  TAction *RemoteAddEditLinkAction2;
   TAction *CommanderLocalFileBandAction;
   TAction *CommanderRemoteFileBandAction;
   TTBXItem *TBXItem14;
@@ -617,8 +607,9 @@ __published:    // IDE-managed Components
   TTBXSubmenuItem *RemoteDirViewPopupCustomCommandsMenu;
   TTBXItem *TBXItem75;
   TTBXItem *TBXItem76;
-  void __fastcall LogActionsUpdate(TBasicAction *Action, bool &Handled);
-  void __fastcall LogActionsExecute(TBasicAction *Action, bool &Handled);
+  TAction *ChangePasswordAction;
+  TAction *RemoteNewFileAction;
+  TAction *LocalNewFileAction;
   void __fastcall ExplorerActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall SessionIdleTimerTimer(TObject *Sender);

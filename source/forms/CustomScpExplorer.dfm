@@ -87,7 +87,6 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       UnixColProperties.TypeVisible = False
       OnDDDragFileName = RemoteFileControlDDDragFileName
       OnBusy = DirViewBusy
-      OnGetSelectFilter = RemoteDirViewGetSelectFilter
       OnSelectItem = DirViewSelectItem
       OnLoaded = DirViewLoaded
       OnExecFile = DirViewExecFile

@@ -25,7 +25,7 @@
 
 #ifdef WIN32
 
-#define NEON_VERSION "0.30.1"
+#define NEON_VERSION "0.30.2"
 #define NE_VERSION_MAJOR (0)
 #define NE_VERSION_MINOR (30)
 

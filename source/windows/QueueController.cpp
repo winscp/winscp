@@ -291,7 +291,7 @@ void __fastcall TQueueController::ExecuteOperation(TQueueOperation Operation,
 }
 //---------------------------------------------------------------------------
 void __fastcall TQueueController::FillQueueViewItem(TListItem * Item,
-  TQueueItemProxy * QueueItem, bool Detail)
+  TQueueItemProxy * QueueItem, bool Detail, bool OnlyLine)
 {
   DebugAssert(!Detail || (QueueItem->Status != TQueueItem::qsPending));
 
@@ -345,7 +345,7 @@ void __fastcall TQueueController::FillQueueViewItem(TListItem * Item,
   TFileOperationProgressType * ProgressData = QueueItem->ProgressData;
   TQueueItem::TInfo * Info = QueueItem->Info;
 
-  if (!Detail)
+  if (!Detail && Info->Primary)
   {
     switch (Info->Operation)
     {
@@ -356,6 +356,12 @@ void __fastcall TQueueController::FillQueueViewItem(TListItem * Item,
       case foMove:
         State = ((Info->Side == osLocal) ? 3 : 1);
         break;
+    }
+
+    if (!OnlyLine)
+    {
+      Image = -1;
+      ProgressStr = L"";
     }
 
     // cannot use ProgressData->Temp as it is set only after the transfer actually starts
@@ -401,7 +407,6 @@ void __fastcall TQueueController::FillQueueViewItem(TListItem * Item,
   }
   else
   {
-    Image = -1;
     if (ProgressData != NULL)
     {
       if ((Info->Side == osRemote) || !ProgressData->Temp)
@@ -416,14 +421,15 @@ void __fastcall TQueueController::FillQueueViewItem(TListItem * Item,
       if (ProgressData->Operation == Info->Operation)
       {
         Values[2] =
-          FormatPanelBytes(ProgressData->TransferedSize, WinConfiguration->FormatSizeBytes);
-        Values[5] = FORMAT(L"%d%%", (ProgressData->TransferProgress()));
+          FormatPanelBytes(ProgressData->TransferredSize, WinConfiguration->FormatSizeBytes);
+
+        if (ProgressStr.IsEmpty())
+        {
+          ProgressStr = FORMAT(L"%d%%", (ProgressData->TransferProgress()));
+        }
       }
     }
-    else
-    {
-      Values[0] = ProgressStr;
-    }
+    Values[5] = ProgressStr;
   }
 
   Item->StateIndex = (!BlinkHide ? State : -1);
@@ -491,16 +497,17 @@ void __fastcall TQueueController::UpdateQueueStatus(
       }
 
       Item = InsertItemFor(QueueItem, Index);
-      FillQueueViewItem(Item, QueueItem, false);
+      bool HasDetailsLine = UseDetailsLine(ItemIndex, QueueItem);
+      FillQueueViewItem(Item, QueueItem, false, !HasDetailsLine);
       Index++;
 
       DebugAssert((QueueItem->Status != TQueueItem::qsPending) ==
         (ItemIndex < FQueueStatus->DoneAndActiveCount));
 
-      if (UseDetailsLine(ItemIndex, QueueItem))
+      if (HasDetailsLine)
       {
         Item = InsertItemFor(QueueItem, Index);
-        FillQueueViewItem(Item, QueueItem, true);
+        FillQueueViewItem(Item, QueueItem, true, false);
         Index++;
       }
     }
@@ -523,7 +530,9 @@ bool __fastcall TQueueController::UseDetailsLine(int ItemIndex, TQueueItemProxy 
   return
     (ItemIndex >= FQueueStatus->DoneCount) &&
     (ItemIndex < FQueueStatus->DoneAndActiveCount) &&
-    !QueueItem->Info->SingleFile;
+    QueueItem->Info->Primary &&
+    !QueueItem->Info->SingleFile &&
+    ((QueueItem->ProgressData == NULL) || !QueueItem->ProgressData->Done);
 }
 //---------------------------------------------------------------------------
 void __fastcall TQueueController::RefreshQueueItem(TQueueItemProxy * QueueItem)
@@ -544,15 +553,23 @@ void __fastcall TQueueController::RefreshQueueItem(TQueueItemProxy * QueueItem)
     }
   }
 
-  FillQueueViewItem(ListItem, QueueItem, false);
+  bool HasDetailsLine = UseDetailsLine(QueueItem->Index, QueueItem);
+  FillQueueViewItem(ListItem, QueueItem, false, !HasDetailsLine);
 
-  if (UseDetailsLine(QueueItem->Index, QueueItem))
+  if (HasDetailsLine)
   {
     if (NextListItem == NULL)
     {
       NextListItem = FListView->Items->Insert(Index + 1);
     }
-    FillQueueViewItem(NextListItem, QueueItem, true);
+    FillQueueViewItem(NextListItem, QueueItem, true, false);
+  }
+  else
+  {
+    if (NextListItem != NULL)
+    {
+      NextListItem->Delete();
+    }
   }
 
   DoChange();

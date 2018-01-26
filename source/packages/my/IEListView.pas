@@ -185,7 +185,6 @@ type
     property OnStartDock;
 
     property NortonLike;
-    property OnSelectByMask;
   end; {Type TCustomIEListView}
 
 type

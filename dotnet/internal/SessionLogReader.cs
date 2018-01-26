@@ -66,7 +66,7 @@ namespace WinSCP
                         }
                         else
                         {
-                            throw e;
+                            throw Session.Logger.WriteException(e);
                         }
                     }
                 }
@@ -131,6 +131,8 @@ namespace WinSCP
                         // (at least top-level <session/> tag is not closed),
                         // so we swallow the parsing errors here.
                         Session.Logger.WriteLine("Error parsing session log file, but it is not closed yet, will retry");
+                        Session.Logger.WriteException(e);
+                        Session.CheckForTimeout();
                         result = false;
                     }
                     else
@@ -148,7 +150,7 @@ namespace WinSCP
                         {
                             message += " - " + s;
                         }
-                        throw new SessionLocalException(Session, message, e);
+                        throw Session.Logger.WriteException(new SessionLocalException(Session, message, e));
                     }
                 }
 
@@ -205,7 +207,7 @@ namespace WinSCP
         {
             if (_closed)
             {
-                throw new InvalidOperationException("Log was closed already");
+                throw Session.Logger.WriteException(new InvalidOperationException("Log was closed already"));
             }
 
             try
@@ -228,7 +230,9 @@ namespace WinSCP
 
             Session.Logger.WriteLine("Log opened");
 
-            _reader = XmlReader.Create(_stream);
+            // Allow control characters in log
+            var settings = new XmlReaderSettings() { CheckCharacters = false };
+            _reader = XmlReader.Create(_stream, settings);
 
             int skip = _position;
             Session.Logger.WriteLine("Skipping {0} nodes", skip);
@@ -236,7 +240,7 @@ namespace WinSCP
             {
                 if (!_reader.Read())
                 {
-                    throw new SessionLocalException(Session, "Read less nodes than in previous log parsing");
+                    throw Session.Logger.WriteException(new SessionLocalException(Session, "Read less nodes than in previous log parsing"));
                 }
                 --skip;
             }
@@ -248,7 +252,7 @@ namespace WinSCP
             {
                 if (_reader == null)
                 {
-                    throw new SessionLocalException(Session, "Reading has not commenced yet");
+                    throw Session.Logger.WriteException(new SessionLocalException(Session, "Reading has not commenced yet"));
                 }
                 return _reader;
             }

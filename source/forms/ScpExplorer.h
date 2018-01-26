@@ -151,7 +151,6 @@ __published:
   TTBXItem *TBXItem11;
   TTBXItem *TBXItem12;
   TTBXItem *TBXItem13;
-  TTBXItem *TBXItem14;
   TTBXItem *TBXItem15;
   TTBXSeparatorItem *TBXSeparatorItem3;
   TTBXItem *TBXItem16;
@@ -179,9 +178,7 @@ __published:
   TTBXItem *TBXItem58;
   TTBXItem *TBXItem59;
   TTBXItem *TBXItem60;
-  TTBXItem *TBXItem61;
   TTBXSeparatorItem *TBXSeparatorItem16;
-  TTBXItem *TBXItem62;
   TTBXItem *TBXItem63;
   TTBXSeparatorItem *TBXSeparatorItem17;
   TTBXItem *TBXItem64;
@@ -202,7 +199,6 @@ __published:
   TTBXToolbar *PreferencesToolbar;
   TTBXItem *TBXItem126;
   TTBXSeparatorItem *TBXSeparatorItem36;
-  TTBXItem *TBXItem127;
   TTBXSubmenuItem *TBXSubmenuItem24;
   TTBXItem *TBXItem128;
   TTBXItem *TBXItem129;
@@ -312,6 +308,11 @@ __published:
   TTBXItem *TBXItem216;
   TTBXItem *TBXItem159;
   TTBXSubmenuItem *TBXSubmenuItem28;
+  TTBXItem *TBXItem160;
+  TTBXSubmenuItem *NewSubmenuItem;
+  TTBXItem *TBXItem247;
+  TTBXItem *TBXItem244;
+  TTBXItem *TBXItem246;
   void __fastcall RemoteDirViewUpdateStatusBar(TObject *Sender,
           const TStatusFileInfo &FileInfo);
   void __fastcall UnixPathComboBoxBeginEdit(TTBEditItem *Sender,
@@ -333,6 +334,7 @@ protected:
     TTransferType Type, bool Temp, TStrings * FileList,
     UnicodeString & TargetDirectory, TGUICopyParamType & CopyParam, bool Confirm,
     bool DragDrop, int Options);
+  virtual void __fastcall CopyParamDialogAfter(TTransferDirection Direction, bool Temp, const UnicodeString & TargetDirectory);
   virtual void __fastcall RestoreFormParams();
   virtual void __fastcall RestoreParams();
   virtual void __fastcall ConfigurationChanged();
@@ -345,6 +347,7 @@ protected:
   virtual void __fastcall ToolbarItemResize(TTBXCustomDropDownItem * Item, int Width);
   virtual bool __fastcall UpdateToolbarDisplayMode();
   virtual UnicodeString __fastcall DefaultDownloadTargetDirectory();
+  virtual void __fastcall UpdateImages();
 
 public:
   __fastcall TScpExplorerForm(TComponent* Owner);

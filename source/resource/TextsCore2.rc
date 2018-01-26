@@ -59,9 +59,9 @@ BEGIN
     "  Closes all sessions and terminates the program.\n"
     "alias:\n"
     "  bye\n"
-  SCRIPT_OPEN_HELP8,
+  SCRIPT_OPEN_HELP9,
     "open <site>\n"
-    "open sftp|scp|ftp[es]|http[s] :// [ <user> [ :password ] @ ] <host> [ :<port> ]\n"
+    "open sftp|scp|ftp[es]|dav[s] :// [ <user> [ :password ] @ ] <host> [ :<port> ]\n"
     "  Establishes connection to given host. Use either name of the site or\n"
     "  specify host, username, port and protocol directly.\n"
     "switches:\n"
@@ -79,6 +79,7 @@ BEGIN
     "                     Configures any site settings using raw format\n"
     "                     as in an INI file\n"
     "  -filezilla         Load <site> from FileZilla site manager\n"
+    "  -newpassword=<password> Changes password to <password>\n"
     "examples:\n"
     "  open\n"
     "  open sftp://martin@example.com:2222 -privatekey=mykey.ppk\n"
@@ -329,7 +330,7 @@ BEGIN
     "examples:\n"
     "  synchronize remote -delete\n"
     "  synchronize both d:\\www /home/martin/public_html\n"
-  SCRIPT_KEEPUPTODATE_HELP4,
+  SCRIPT_KEEPUPTODATE_HELP5,
     "keepuptodate [ <local directory> [ <remote directory> ] ]\n"
     "  Watches for changes in local directory and reflects them on remote one.\n"
     "  When directories are not specified, current working directories are\n"
@@ -337,7 +338,6 @@ BEGIN
     "  Note: Overwrite confirmations are always off for the command.\n"
     "switches:\n"
     "  -delete             Delete obsolete files\n"
-    "  -continueonerror    Continue synchronizing when non-fatal error occurs\n"
     "  -permissions=<mode> Set permissions\n"
     "  -nopermissions      Keep default permissions\n"
     "  -speed=<kbps>       Limit transfer speed\n"

@@ -16,6 +16,7 @@ UnicodeString FileMasksDelimiters = L";,";
 static UnicodeString AllFileMasksDelimiters = FileMasksDelimiters + IncludeExcludeFileMasksDelimiter;
 static UnicodeString DirectoryMaskDelimiters = L"/\\";
 static UnicodeString FileMasksDelimiterStr = UnicodeString(FileMasksDelimiters[1]) + L' ';
+UnicodeString AnyMask = L"*.*";
 //---------------------------------------------------------------------------
 __fastcall EFileMasksException::EFileMasksException(
     UnicodeString Message, int AErrorStart, int AErrorLen) :
@@ -117,7 +118,7 @@ bool __fastcall IsFileNameMask(const UnicodeString & Mask)
 //---------------------------------------------------------------------------
 bool __fastcall IsEffectiveFileNameMask(const UnicodeString & Mask)
 {
-  return !Mask.IsEmpty() && (Mask != L"*") && (Mask != L"*.*");
+  return !Mask.IsEmpty() && (Mask != L"*") && (Mask != AnyMask);
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall DelimitFileNameMask(UnicodeString Mask)
@@ -150,14 +151,9 @@ bool __fastcall TFileMasks::IsMask(const UnicodeString Mask)
   return (Mask.LastDelimiter(L"?*[") > 0);
 }
 //---------------------------------------------------------------------------
-bool __fastcall TFileMasks::IsAnyMask(const UnicodeString & Mask)
-{
-  return Mask.IsEmpty() || (Mask == L"*.*") || (Mask == L"*");
-}
-//---------------------------------------------------------------------------
 UnicodeString __fastcall TFileMasks::NormalizeMask(const UnicodeString & Mask, const UnicodeString & AnyMask)
 {
-  if (IsAnyMask(Mask))
+  if (!IsEffectiveFileNameMask(Mask))
   {
     return AnyMask;
   }
@@ -501,7 +497,7 @@ void __fastcall TFileMasks::CreateMaskMask(const UnicodeString & Mask, int Start
   try
   {
     DebugAssert(MaskMask.Mask == NULL);
-    if (Ex && IsAnyMask(Mask))
+    if (Ex && !IsEffectiveFileNameMask(Mask))
     {
       MaskMask.Kind = TMaskMask::Any;
       MaskMask.Mask = NULL;
@@ -584,7 +580,8 @@ void __fastcall TFileMasks::CreateMask(
       FormatSettings.ShortTimeFormat = "hh:nn:ss";
 
       TDateTime Modification;
-      if (TryStrToDateTime(PartStr, Modification, FormatSettings) ||
+      __int64 DummySize;
+      if ((!TryStrToInt64(PartStr, DummySize) && TryStrToDateTime(PartStr, Modification, FormatSettings)) ||
           TryRelativeStrToDateTime(PartStr, Modification, false))
       {
         TMask::TMaskBoundary & ModificationMask =
@@ -611,7 +608,10 @@ void __fastcall TFileMasks::CreateMask(
         }
 
         SizeMask = Boundary;
-        Size = ParseSize(PartStr);
+        if (!TryStrToSize(PartStr, Size))
+        {
+          ThrowError(PartStart, PartEnd);
+        }
       }
     }
     else if (!PartStr.IsEmpty())
@@ -1209,23 +1209,38 @@ bool __fastcall TFileCustomCommand::PatternReplacement(
 
   if (SameText(Pattern, L"!s"))
   {
-    Replacement = FData.SessionData->GenerateSessionUrl(sufComplete);
+    if (FData.SessionData != NULL)
+    {
+      Replacement = FData.SessionData->GenerateSessionUrl(sufComplete);
+    }
   }
   else if (Pattern == L"!@")
   {
-    Replacement = FData.SessionData->HostNameExpanded;
+    if (FData.SessionData != NULL)
+    {
+      Replacement = FData.SessionData->HostNameExpanded;
+    }
   }
   else if (SameText(Pattern, L"!u"))
   {
-    Replacement = FData.SessionData->UserName;
+    if (FData.SessionData != NULL)
+    {
+      Replacement = FData.SessionData->UserName;
+    }
   }
   else if (SameText(Pattern, L"!p"))
   {
-    Replacement = FData.SessionData->Password;
+    if (FData.SessionData != NULL)
+    {
+      Replacement = FData.SessionData->Password;
+    }
   }
   else if (SameText(Pattern, L"!#"))
   {
-    Replacement = IntToStr(FData.SessionData->PortNumber);
+    if (FData.SessionData != NULL)
+    {
+      Replacement = IntToStr(FData.SessionData->PortNumber);
+    }
   }
   else if (Pattern == L"!/")
   {
@@ -1239,7 +1254,10 @@ bool __fastcall TFileCustomCommand::PatternReplacement(
   }
   else if (SameText(Pattern, L"!n"))
   {
-    Replacement = FData.SessionData->SessionName;
+    if (FData.SessionData != NULL)
+    {
+      Replacement = FData.SessionData->SessionName;
+    }
   }
   else
   {

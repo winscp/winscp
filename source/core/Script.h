@@ -23,13 +23,14 @@ public:
   unsigned int OverallProgress;
   unsigned int FileProgress;
   unsigned int CPS;
+  bool Cancel;
 };
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure *TScriptPrintEvent)(TScript * Script, const UnicodeString Str, bool Error);
 typedef void __fastcall (__closure *TScriptSynchronizeStartStop)(TScript * Script,
   const UnicodeString LocalDirectory, const UnicodeString RemoteDirectory,
   const TCopyParamType & CopyParam, int SynchronizeParams);
-typedef void __fastcall (__closure *TScriptProgressEvent)(TScript * Script, const TScriptProgress & Progress);
+typedef void __fastcall (__closure *TScriptProgressEvent)(TScript * Script, TScriptProgress & Progress);
 //---------------------------------------------------------------------------
 class TScriptProcParams : public TOptions
 {
@@ -95,6 +96,7 @@ protected:
   UnicodeString FSynchronizeIntro;
   bool FLimitedOutput;
   int FSessionReopenTimeout;
+  int FInteractiveSessionReopenTimeout;
   bool FGroups;
   bool FWantsProgress;
   TStrings * FPendingLogLines;

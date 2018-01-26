@@ -259,7 +259,7 @@ unsigned int __fastcall ExecuteMessageDialog(TForm * Dialog, unsigned int Answer
   unsigned int Answer = Dialog->ShowModal();
   // mrCancel is returned always when X button is pressed, despite
   // no Cancel button was on the dialog. Find valid "cancel" answer.
-  // mrNone is retuned when Windows session is closing (log off)
+  // mrNone is returned when Windows session is closing (log off)
   if ((Answer == mrCancel) || (Answer == mrNone))
   {
     Answer = CancelAnswer(Answers);
@@ -569,7 +569,7 @@ static TStrings * __fastcall StackInfoListToStrings(
   return StackTrace.release();
 }
 //---------------------------------------------------------------------------
-static std::unique_ptr<TCriticalSection> StackTraceCriticalSection(new TCriticalSection());
+static std::unique_ptr<TCriticalSection> StackTraceCriticalSection(TraceInitPtr(new TCriticalSection()));
 typedef std::map<DWORD, TStrings *> TStackTraceMap;
 static TStackTraceMap StackTraceMap;
 //---------------------------------------------------------------------------
@@ -1219,12 +1219,24 @@ TComponent * __fastcall GetPopupComponent(TObject * Sender)
   return PopupMenu->PopupComponent;
 }
 //---------------------------------------------------------------------------
+static void __fastcall SetMenuButtonImages(TButton * Button)
+{
+  Button->Images = GetButtonImages(Button);
+}
+//---------------------------------------------------------------------------
+static void __fastcall MenuButtonRescale(TComponent * Sender, TObject * /*Token*/)
+{
+  TButton * Button = DebugNotNull(dynamic_cast<TButton *>(Sender));
+  SetMenuButtonImages(Button);
+}
+//---------------------------------------------------------------------------
 void __fastcall MenuButton(TButton * Button)
 {
-  Button->Images = GlyphsModule->ButtonImages;
+  SetMenuButtonImages(Button);
   Button->ImageIndex = 0;
   Button->DisabledImageIndex = 1;
   Button->ImageAlignment = iaRight;
+  SetRescaleFunction(Button, MenuButtonRescale);
 }
 //---------------------------------------------------------------------------
 TRect __fastcall CalculatePopupRect(TButton * Button)
@@ -1265,8 +1277,9 @@ void __fastcall CenterButtonImage(TButton * Button)
 
     std::unique_ptr<TControlCanvas> Canvas(new TControlCanvas());
     Canvas->Control = Button;
+    Canvas->Font = Button->Font;
 
-    UnicodeString Caption = Button->Caption;
+    UnicodeString Caption = Button->Caption.Trim();
     UnicodeString Padding;
     while (Canvas->TextWidth(Padding) < ImageWidth)
     {

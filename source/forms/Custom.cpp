@@ -111,6 +111,24 @@ bool __fastcall TCustomDialog::CloseQuery()
   return TForm::CloseQuery();
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomDialog::RemoveCancelButton()
+{
+  CancelButton->Visible = false;
+  OKButton->Left = CancelButton->Left;
+  OKButton->Cancel = true;
+  DebugAssert(OKButton->Width == CancelButton->Width);
+  DebugAssert(OKButton->Top == CancelButton->Top);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomDialog::AddDialogButton(TButton * Button)
+{
+  Button->Parent = this;
+  Button->Top = OKButton->Top;
+  Button->Left = FHorizontalMargin;
+  Button->Height = OKButton->Height;
+  AddWinControl(Button);
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomDialog::AddImage(const UnicodeString & ImageName)
 {
   TImage * Image = new TImage(this);
@@ -170,19 +188,22 @@ void __fastcall TCustomDialog::AddEditLikeControl(TWinControl * Edit, TLabel * L
   // this updates Height property to real value
   Edit->HandleNeeded();
 
-  Label->Parent = GetDefaultParent();
-  Label->Left = FIndent;
-
-  if (OneLine)
+  if (Label != NULL)
   {
-    DebugAssert(Edit->Height > Label->Height);
-    Label->Top = FPos + ((Edit->Height - Label->Height) / 2);
-  }
-  else
-  {
-    Label->Top = FPos;
+    Label->Parent = GetDefaultParent();
+    Label->Left = FIndent;
 
-    FPos += Label->Height + ScaleByTextHeight(this, 4);
+    if (OneLine)
+    {
+      DebugAssert(Edit->Height > Label->Height);
+      Label->Top = FPos + ((Edit->Height - Label->Height) / 2);
+    }
+    else
+    {
+      Label->Top = FPos;
+
+      FPos += Label->Height + ScaleByTextHeight(this, 4);
+    }
   }
 
   Edit->Top = FPos;
@@ -198,21 +219,24 @@ void __fastcall TCustomDialog::AddEditLikeControl(TWinControl * Edit, TLabel * L
 
   AdjustHeight(Edit);
 
-  if (Label->FocusControl == NULL)
+  if (Label != NULL)
   {
-    Label->FocusControl = Edit;
-  }
-  else
-  {
-    DebugAssert(Label->FocusControl == Edit);
+    if (Label->FocusControl == NULL)
+    {
+      Label->FocusControl = Edit;
+    }
+    else
+    {
+      DebugAssert(Label->FocusControl == Edit);
+    }
   }
 
   AddWinControl(Edit);
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomDialog::AddEdit(TCustomEdit * Edit, TLabel * Label)
+void __fastcall TCustomDialog::AddEdit(TCustomEdit * Edit, TLabel * Label, bool OneLine)
 {
-  AddEditLikeControl(Edit, Label, false);
+  AddEditLikeControl(Edit, Label, OneLine);
 
   TEdit * PublicEdit = reinterpret_cast<TEdit *>(Edit);
   if (PublicEdit->OnChange == NULL)
@@ -1302,4 +1326,78 @@ bool __fastcall DoCustomCommandOptionsDialog(
   std::unique_ptr<TCustomCommandOptionsDialog> Dialog(
     new TCustomCommandOptionsDialog(Command, CustomCommandOptions, Flags, CustomCommandForOptions, Site));
   return Dialog->Execute();
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+class TUsageStatisticsDialog : public TCustomDialog
+{
+public:
+  __fastcall TUsageStatisticsDialog();
+
+protected:
+  virtual void __fastcall DoChange(bool & CanSubmit);
+
+private:
+  TEdit * FilterEdit;
+  TMemo * UsageMemo;
+  TButton * ClipboardButton;
+
+  void __fastcall ClipboardButtonClick(TObject * Sender);
+};
+//---------------------------------------------------------------------------
+__fastcall TUsageStatisticsDialog::TUsageStatisticsDialog() :
+  TCustomDialog(HELP_USAGE)
+{
+  Caption = LoadStr(USAGE_CAPTION);
+  Width = ScaleByTextHeight(this, 400);
+
+  TLabel * Label = new TLabel(this);
+  // UnformatMessage is called, because previously, ** markup was used and translations may still contain that
+  Label->Caption = UnformatMessage(LoadStr(USAGE_DATA2));
+  AddText(Label);
+
+  FilterEdit = new TEdit(this);
+  FilterEdit->Width = ScaleByTextHeight(this, 250);
+  TLabel * FilterLabel = new TLabel(this);
+  FilterLabel->Caption = LoadStr(USAGE_FILTER);
+  AddEdit(FilterEdit, FilterLabel, true);
+
+  UsageMemo = new TMemo(this);
+  UsageMemo->Height = ScaleByTextHeight(this, 300);
+  UsageMemo->ScrollBars = ssVertical;
+  AddEdit(UsageMemo, NULL);
+  ReadOnlyControl(UsageMemo);
+
+  ClipboardButton = new TButton(this);
+  ClipboardButton->Caption = LoadStr(USAGE_COPY);
+  ClipboardButton->Width = ScaleByTextHeight(this, 121);
+  ClipboardButton->OnClick = ClipboardButtonClick;
+  AddDialogButton(ClipboardButton);
+
+  RemoveCancelButton();
+}
+//---------------------------------------------------------------------------
+void __fastcall TUsageStatisticsDialog::ClipboardButtonClick(TObject * /*Sender*/)
+{
+  TInstantOperationVisualizer Visualizer;
+  CopyToClipboard(UsageMemo->Lines);
+}
+//---------------------------------------------------------------------------
+void __fastcall TUsageStatisticsDialog::DoChange(bool & CanSubmit)
+{
+  TCustomDialog::DoChange(CanSubmit);
+  UnicodeString Text = Configuration->Usage->Serialize(L"\n", FilterEdit->Text);
+  bool NoUsage = Text.IsEmpty();
+  ClipboardButton->Enabled = !NoUsage;
+  if (NoUsage)
+  {
+    Text = LoadStr(USAGE_DATA_NONE2);
+  }
+  UsageMemo->Lines->Text = Text;
+}
+//---------------------------------------------------------------------------
+void __fastcall DoUsageStatisticsDialog()
+{
+  std::unique_ptr<TUsageStatisticsDialog> Dialog(new TUsageStatisticsDialog());
+  Dialog->Execute();
 }

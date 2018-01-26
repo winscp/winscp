@@ -319,7 +319,6 @@ type
     property DirColProperties: TDirViewColProperties read GetDirColProperties write SetDirColProperties;
     property PathLabel;
     property OnUpdateStatusBar;
-    property OnGetSelectFilter;
 
     property LoadAnimation;
     property DimmHiddenFiles;
@@ -751,7 +750,8 @@ begin
     else
   begin
     Result := UserDocumentDirectory;
-    if IsUNCPath(Result) then
+    if (Result = '') or // in rare case the CSIDL_PERSONAL cannot be resolved
+       IsUNCPath(Result) then
     begin
       Result := AnyValidPath;
     end;
@@ -1097,22 +1097,11 @@ end;
 function TDirView.ItemMatchesFilter(Item: TListItem; const Filter: TFileFilter): Boolean;
 var
   FileRec: PFileRec;
-  Modification: TDateTime;
 begin
   Assert(Assigned(Item) and Assigned(Item.Data));
   FileRec := PFileRec(Item.Data);
-  if (Filter.ModificationFrom > 0) or (Filter.ModificationTo > 0) then
-    Modification := FileTimeToDateTime(FileRec^.FileTime)
-  else
-    Modification := 0;
 
   Result :=
-    ((FileRec^.Attr and Filter.IncludeAttr) = Filter.IncludeAttr) and
-    ((FileRec^.Attr and Filter.ExcludeAttr) = 0) and
-    ((Filter.FileSizeFrom = 0) or (FileRec^.Size >= Filter.FileSizeFrom)) and
-    ((Filter.FileSizeTo = 0) or (FileRec^.Size <= Filter.FileSizeTo)) and
-    ((Filter.ModificationFrom = 0) or (Modification >= Filter.ModificationFrom)) and
-    ((Filter.ModificationTo = 0) or (Modification <= Filter.ModificationTo)) and
     ((Filter.Masks = '') or
      FileNameMatchesMasks(FileRec^.FileName, FileRec^.IsDirectory,
        FileRec^.Size, FileTimeToDateTime(FileRec^.FileTime), Filter.Masks, False) or

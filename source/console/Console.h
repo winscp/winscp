@@ -12,8 +12,8 @@ struct TConsoleCommStruct
 {
   enum TVersion
   {
-    CurrentVersion =          0x0007,
-    CurrentVersionConfirmed = 0x0107
+    CurrentVersion =          0x0008,
+    CurrentVersionConfirmed = 0x0108
   };
 
   struct TInitEvent
@@ -64,6 +64,7 @@ struct TConsoleCommStruct
     unsigned int OverallProgress;
     unsigned int FileProgress;
     unsigned int CPS;
+    bool Cancel; // since version 8
   };
 
   size_t Size;

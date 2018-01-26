@@ -59,7 +59,7 @@ UnicodeString __fastcall TProgressForm::ProgressStr(TFileOperationProgressType *
   return Result;
 }
 //---------------------------------------------------------------------
-__fastcall TProgressForm::TProgressForm(TComponent * AOwner, bool AllowMoveToQueue)
+__fastcall TProgressForm::TProgressForm(TComponent * AOwner, bool AllowMoveToQueue, bool AllowSkip)
     : FData(), TForm(AOwner)
 {
   FLastOperation = foNone;
@@ -76,6 +76,7 @@ __fastcall TProgressForm::TProgressForm(TComponent * AOwner, bool AllowMoveToQue
   FStarted = Now();
   FModalBeginHooked = false;
   FModalLevel = -1;
+  FPendingSkip = false;
   UseSystemSettings(this);
 
   if (CustomWinConfiguration->OperationProgressOnTop)
@@ -99,6 +100,7 @@ __fastcall TProgressForm::TProgressForm(TComponent * AOwner, bool AllowMoveToQue
 
   SetGlobalMinimizeHandler(this, GlobalMinimize);
   MoveToQueueItem->Visible = AllowMoveToQueue;
+  SkipItem->Visible = AllowSkip;
 }
 //---------------------------------------------------------------------------
 __fastcall TProgressForm::~TProgressForm()
@@ -126,8 +128,9 @@ void __fastcall TProgressForm::UpdateControls()
   bool TransferOperation =
     ((FData.Operation == foCopy) || (FData.Operation == foMove));
 
-  CancelItem->Enabled = !FReadOnly && (FCancel == csContinue);
-  MoveToQueueItem->Enabled = !FMoveToQueue && (FCancel == csContinue);
+  CancelItem->Enabled = !FReadOnly && (FCancel < csCancel);
+  SkipItem->Enabled = !FReadOnly && (FCancel < csCancelFile) && !FPendingSkip;
+  MoveToQueueItem->Enabled = !FMoveToQueue && (FCancel == csContinue) && !FPendingSkip;
   CycleOnceDoneItem->Visible =
     !FReadOnly &&
     (FData.Operation != foCalculateSize) &&
@@ -141,6 +144,7 @@ void __fastcall TProgressForm::UpdateControls()
     UnicodeString Animation;
     UnicodeString CancelCaption = Vcl_Consts_SMsgDlgCancel;
     int MoveToQueueImageIndex = -1;
+    FPendingSkip = false; // just in case
 
     int MoveTransferToQueueImageIndex;
     if (FData.Side == osRemote)
@@ -242,24 +246,30 @@ void __fastcall TProgressForm::UpdateControls()
     FLastTotalSizeSet = FData.TotalSizeSet;
   }
 
+  UnicodeString FileCaption;
   if ((FData.Operation == foCalculateSize) && DebugAlwaysTrue(!FData.Temp))
   {
     if (FData.Side == osRemote)
     {
-      FileLabel->Caption = UnixExtractFileDir(FData.FullFileName);
+      FileCaption = UnixExtractFileDir(FData.FullFileName);
     }
     else
     {
-      FileLabel->Caption = ExtractFileDir(FData.FullFileName);
+      FileCaption = ExtractFileDir(FData.FullFileName);
     }
   }
   else if ((FData.Side == osRemote) || !FData.Temp)
   {
-    FileLabel->Caption = FData.FileName;
+    FileCaption = FData.FileName;
   }
   else
   {
-    FileLabel->Caption = ExtractFileName(FData.FileName);
+    FileCaption = ExtractFileName(FData.FileName);
+  }
+  if (FileLabel->Caption != FileCaption)
+  {
+    FileLabel->Caption = FileCaption;
+    FPendingSkip = false;
   }
   int OverallProgress = FData.OverallProgress();
   FOperationProgress->Position = OverallProgress;
@@ -284,7 +294,7 @@ void __fastcall TProgressForm::UpdateControls()
         FData.TotalTimeLeft());
     }
     TimeElapsedLabel->Caption = FormatDateTimeSpan(Configuration->TimeFormat, FData.TimeElapsed());
-    BytesTransferedLabel->Caption = FormatBytes(FData.TotalTransfered);
+    BytesTransferredLabel->Caption = FormatBytes(FData.TotalTransferred);
     CPSLabel->Caption = FORMAT(L"%s/s", (FormatBytes(FData.CPS())));
     FFileProgress->Position = FData.TransferProgress();
     FFileProgress->Hint = FORMAT(L"%d%%", (FFileProgress->Position));
@@ -385,7 +395,7 @@ void __fastcall TProgressForm::SetProgressData(TFileOperationProgressType & ADat
   }
   FUpdateCounter++;
 
-  AData.CPSLimit = FCPSLimit;
+  AData.SetCPSLimit(FCPSLimit);
 }
 //---------------------------------------------------------------------------
 void __fastcall TProgressForm::UpdateTimerTimer(TObject * /*Sender*/)
@@ -463,7 +473,7 @@ void __fastcall TProgressForm::CancelOperation()
     try
     {
       TCancelStatus ACancel;
-      if (FData.TransferingFile &&
+      if (FData.TransferringFile &&
           (FData.TimeExpected() > GUIConfiguration->IgnoreCancelBeforeFinish))
       {
         int Result = MessageDialog(LoadStr(CANCEL_OPERATION_FATAL2), qtWarning,
@@ -483,11 +493,7 @@ void __fastcall TProgressForm::CancelOperation()
         ACancel = csCancel;
       }
 
-      if (FCancel < ACancel)
-      {
-        FCancel = ACancel;
-        UpdateControls();
-      }
+      SetCancelLower(ACancel);
     }
     __finally
     {
@@ -666,5 +672,29 @@ void __fastcall TProgressForm::SpeedComboBoxItemAdjustImageIndex(
 void __fastcall TProgressForm::SpeedComboBoxItemClick(TObject * Sender)
 {
   ClickToolbarItem(DebugNotNull(dynamic_cast<TTBCustomItem *>(Sender)), false);
+}
+//---------------------------------------------------------------------------
+void __fastcall TProgressForm::ClearCancel()
+{
+  if (DebugAlwaysTrue(FCancel == csCancelFile))
+  {
+    FPendingSkip = true;
+  }
+  FCancel = csContinue;
+  UpdateControls();
+}
+//---------------------------------------------------------------------------
+void __fastcall TProgressForm::SetCancelLower(TCancelStatus ACancel)
+{
+  if (FCancel < ACancel)
+  {
+    FCancel = ACancel;
+    UpdateControls();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TProgressForm::SkipItemClick(TObject * /*Sender*/)
+{
+  SetCancelLower(csCancelFile);
 }
 //---------------------------------------------------------------------------

@@ -25,7 +25,7 @@
 #pragma resource "*.dfm"
 #endif
 //---------------------------------------------------------------------------
-TForm * __fastcall ShowEditorForm(const UnicodeString FileName, TCustomForm * ParentForm,
+TForm * __fastcall ShowEditorForm(const UnicodeString FileName, TForm * ParentForm,
   TNotifyEvent OnFileChanged, TNotifyEvent OnFileReload, TFileClosedEvent OnClose,
   TNotifyEvent OnSaveAll, TAnyModifiedEvent OnAnyModified,
   const UnicodeString Caption, bool StandaloneEditor, TColor Color)
@@ -156,6 +156,7 @@ public:
   int __fastcall FindText(const UnicodeString SearchStr, int StartPos, int Length,
     TSearchTypes Options, bool Down);
   void __fastcall Redo();
+  void __fastcall ApplyFont();
 
   __property bool CanRedo = { read = GetCanRedo };
   __property bool LoadedWithPreamble = { read = FLoadedWithPreamble };
@@ -181,6 +182,8 @@ private:
   bool FStreamLoadEncodingError;
   bool FStreamLoadError;
   bool FLoadedWithPreamble;
+  TFontConfiguration FFontConfiguration;
+  TColor FFontColor;
 };
 //---------------------------------------------------------------------------
 __fastcall TRichEdit20::TRichEdit20(TComponent * AOwner) :
@@ -191,6 +194,23 @@ __fastcall TRichEdit20::TRichEdit20(TComponent * AOwner) :
   FInitialized(false),
   FLoadedWithPreamble(false)
 {
+}
+//---------------------------------------------------------------------------
+void __fastcall TRichEdit20::ApplyFont()
+{
+  std::unique_ptr<TFont> NewFont(new TFont());
+  TWinConfiguration::RestoreFont(FFontConfiguration, NewFont.get());
+  NewFont->Size = ScaleByPixelsPerInchFromSystem(NewFont->Size, this);
+  NewFont->Color = GetWindowTextColor(FFontColor);
+  // setting DefAttributes may take quite time, even if the font attributes
+  // do not change, so avoid that if not necessary
+  if (!FInitialized ||
+      !SameFont(Font, NewFont.get()) ||
+      (Font->Color != NewFont->Color))
+  {
+    Font->Assign(NewFont.get());
+    DefAttributes->Assign(Font);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TRichEdit20::SetFormat(
@@ -210,18 +230,9 @@ void __fastcall TRichEdit20::SetFormat(
 
   LockWindowUpdate(Handle);
 
-  std::unique_ptr<TFont> NewFont(new TFont());
-  TWinConfiguration::RestoreFont(FontConfiguration, NewFont.get());
-  NewFont->Color = GetWindowTextColor(FontColor);
-  // setting DefAttributes may take quite time, even if the font attributes
-  // do not change, so avoid that if not necessary
-  if (!FInitialized ||
-      !SameFont(Font, NewFont.get()) ||
-      (Font->Color != NewFont->Color))
-  {
-    Font->Assign(NewFont.get());
-    DefAttributes->Assign(Font);
-  }
+  FFontConfiguration = FontConfiguration;
+  FFontColor = FontColor;
+  ApplyFont();
 
   if (!FInitialized ||
       (FTabSize != TabSize))
@@ -329,7 +340,7 @@ void __fastcall TRichEdit20::WMPaste()
   }
 }
 //---------------------------------------------------------------------------
-// Copy from Vcl.ComCtrls.pas
+// VCLCOPY Vcl.ComCtrls.pas
 static int __fastcall AdjustLineBreaks(unsigned char * Dest, const TBytes & Source, int Start, int Len)
 {
   unsigned char * P = Dest;
@@ -387,7 +398,7 @@ struct TStreamLoadInfo
   TRichEdit20 * RichEdit;
 };
 //---------------------------------------------------------------------------
-// Copy from Vcl.ComCtrls.pas,
+// VCLCOPY Vcl.ComCtrls.pas,
 // WORKAROUND for bug in BCB XE2-XE6 VCL
 // Fixes conversion from UTF-8, when read buffer ends in the middle of UTF-8 char
 static unsigned long __stdcall StreamLoad(DWORD_PTR Cookie, unsigned char * Buff, long Read, long * WasRead)
@@ -483,6 +494,7 @@ bool __stdcall TRichEdit20::StreamLoad(
 {
   WasRead = 0;
 
+  // VCLCOPY StreamLoad
   bool Result;
   try
   {
@@ -771,19 +783,6 @@ void __fastcall TEditorForm::SetFileName(const UnicodeString value)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TEditorForm::SetParentForm(TCustomForm * value)
-{
-  if (FParentForm != value)
-  {
-    FParentForm = value;
-    if (value)
-    {
-      Width = value->BoundsRect.Width();
-      Height = value->BoundsRect.Height();
-    }
-  }
-}
-//---------------------------------------------------------------------------
 void __fastcall TEditorForm::EditorActionsUpdate(TBasicAction *Action,
       bool &Handled)
 {
@@ -1014,6 +1013,7 @@ void __fastcall TEditorForm::ApplyConfiguration()
   UpdateBackgroundColor();
   EditorMemo->Modified = PrevModified;
   EditorMemo->ClearUndo();
+  Enabled = !WinConfiguration->LockedInterface;
   UpdateControls();
 }
 //---------------------------------------------------------------------------
@@ -1211,6 +1211,14 @@ void __fastcall TEditorForm::Find()
 void __fastcall TEditorForm::FormShow(TObject * /*Sender*/)
 {
 
+  if (DebugAlwaysTrue(FParentForm != NULL))
+  {
+    // Forms should be at the same monitor
+    DebugAssert(PixelsPerInch == FParentForm->PixelsPerInch);
+    Width = MulDiv(FParentForm->BoundsRect.Width(), PixelsPerInch, FParentForm->PixelsPerInch);
+    Height = MulDiv(FParentForm->BoundsRect.Height(), PixelsPerInch, FParentForm->PixelsPerInch);
+  }
+
   CutFormToDesktop(this);
 
   DebugAssert(FWindowParams.IsEmpty());
@@ -1220,7 +1228,7 @@ void __fastcall TEditorForm::FormShow(TObject * /*Sender*/)
   }
 }
 //---------------------------------------------------------------------------
-// copy from ComCtrls.pas
+// VCLCOPY ComCtrls.pas
 bool __fastcall TEditorForm::ContainsPreamble(TStream * Stream, const TBytes & Signature)
 {
   bool Result;
@@ -1615,3 +1623,29 @@ void __fastcall TEditorForm::UpdateBackgroundColor()
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TEditorForm::CMDpiChanged(TMessage & Message)
+{
+  bool WasModified = EditorMemo->Modified;
+  EditorMemo->ApplyFont();
+  EditorMemo->Modified = WasModified;
+  // we do not want this, but we want to prevent undo of the font change too, should be improved
+  EditorMemo->ClearUndo();
+  // Clear "modified" status in the status bar, invoked by font change
+  UpdateControls();
+  TForm::Dispatch(&Message);
+}
+//---------------------------------------------------------------------------
+void __fastcall TEditorForm::Dispatch(void * Message)
+{
+  TMessage * M = static_cast<TMessage*>(Message);
+  switch (M->Msg)
+  {
+    case CM_DPICHANGED:
+      CMDpiChanged(*M);
+      break;
+
+    default:
+      TForm::Dispatch(Message);
+      break;
+  }
+}

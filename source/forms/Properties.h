@@ -79,7 +79,6 @@ private:
   const TRemoteTokenList * FUserList;
   TStrings * FChecksumAlgs;
   TRemoteProperties FOrigProperties;
-  TImageList * FShellImageList;
   bool FMultiple;
   bool FAllowCalculateStats;
   bool FStatsNotCalculated;
@@ -98,6 +97,7 @@ private:
   void __fastcall SetFileProperties(const TRemoteProperties & value);
   TRemoteProperties __fastcall GetFileProperties();
   TModalResult __fastcall DefaultResult();
+  void __fastcall CMDpiChanged(TMessage & Message);
 
 protected:
   void __fastcall LoadInfo();
@@ -117,6 +117,8 @@ protected:
     const TRemoteTokenList * List);
   void __fastcall UpdateControls();
   void __fastcall LoadStats(__int64 FilesSize, const TCalculateSizeStats & Stats);
+  virtual void __fastcall Dispatch(void * Message);
+  void __fastcall UpdateFileImage();
 
 public:
   virtual __fastcall TPropertiesDialog(TComponent * AOwner,

@@ -4,7 +4,6 @@ using System.Runtime.InteropServices;
 namespace WinSCP
 {
     public enum ProgressOperation { Transfer }
-    public enum ProgressSide { Local, Remote }
 
     [Guid("E421924E-87F0-433E-AF38-CE034DC8E8CB")]
     [ClassInterface(Constants.ClassInterface)]
@@ -18,6 +17,7 @@ namespace WinSCP
         public double OverallProgress { get; internal set; }
         public double FileProgress { get; internal set; }
         public int CPS { get; internal set; }
+        public bool Cancel { get; set; }
 
         internal FileTransferProgressEventArgs()
         {

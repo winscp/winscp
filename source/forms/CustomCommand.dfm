@@ -133,9 +133,9 @@ object CustomCommandDialog: TCustomCommandDialog
       OnClick = ControlChange
     end
     object HintText: TStaticText
-      Left = 310
+      Left = 272
       Top = 103
-      Width = 79
+      Width = 117
       Height = 16
       Alignment = taRightJustify
       Anchors = [akTop, akRight]

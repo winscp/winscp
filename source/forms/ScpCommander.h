@@ -59,7 +59,6 @@ __published:
   TTBXToolbar *PreferencesToolbar;
   TTBXItem *TBXItem126;
   TTBXSeparatorItem *TBXSeparatorItem36;
-  TTBXItem *TBXItem127;
   TTBXSubmenuItem *TBXSubmenuItem24;
   TTBXItem *TBXItem128;
   TTBXItem *TBXItem129;
@@ -201,7 +200,6 @@ __published:
   TTBXItem *TBXItem73;
   TTBXItem *TBXItem74;
   TTBXItem *TBXItem75;
-  TTBXItem *TBXItem76;
   TTBXSubmenuItem *TBXSubmenuItem14;
   TTBXItem *TBXItem77;
   TTBXItem *TBXItem78;
@@ -364,7 +362,6 @@ __published:
   TTBXSeparatorItem *TBXSeparatorItem35;
   TTBXItem *TBXItem236;
   TTBXSeparatorItem *TBXSeparatorItem54;
-  TTBXItem *TBXItem237;
   TTBXToolbar *RemoteFileToolbar;
   TTBXSubmenuItem *TBXItem238;
   TTBXItem *TBXItem239;
@@ -374,9 +371,6 @@ __published:
   TTBXSubmenuItem *TBXItem242;
   TTBXItem *TBXItem243;
   TTBXSeparatorItem *TBXSeparatorItem56;
-  TTBXItem *TBXItem244;
-  TTBXItem *TBXItem245;
-  TTBXItem *TBXItem246;
   TTBXItem *TBXItem59;
   TTBXItem *TBXItem136;
   TTBXLabelItem *TransferSettingsLabelItem;
@@ -420,6 +414,15 @@ __published:
   TTBXItem *TBXItem216;
   TTBXItem *TBXItem217;
   TTBXSubmenuItem *TBXSubmenuItem28;
+  TTBXItem *TBXItem227;
+  TTBXSubmenuItem *RemoteNewSubmenuItem;
+  TTBXItem *TBXItem244;
+  TTBXItem *TBXItem246;
+  TTBXItem *TBXItem247;
+  TTBXSubmenuItem *LocalNewSubmenuItem;
+  TTBXItem *TBXItem248;
+  TTBXItem *TBXItem249;
+  TTBXItem *TBXItem250;
   void __fastcall SplitterMoved(TObject *Sender);
   void __fastcall SplitterCanResize(TObject *Sender, int &NewSize,
     bool &Accept);
@@ -477,6 +480,8 @@ __published:
   void __fastcall LocalDirViewContextPopup(TObject *Sender, TPoint &MousePos, bool &Handled);
   void __fastcall LocalStatusBarPanelClick(TTBXCustomStatusBar *Sender, TTBXStatusPanel *Panel);
   void __fastcall RemoteStatusBarPanelClick(TTBXCustomStatusBar *Sender, TTBXStatusPanel *Panel);
+  void __fastcall RemotePathLabelMaskClick(TObject *Sender);
+  void __fastcall LocalPathLabelMaskClick(TObject *Sender);
 
 private:
   bool FConstructed;
@@ -562,13 +567,14 @@ protected:
   virtual void __fastcall ToolbarItemResize(TTBXCustomDropDownItem * Item, int Width);
   void __fastcall DoOpenBookmark(UnicodeString Local, UnicodeString Remote);
   virtual bool __fastcall OpenBookmark(UnicodeString Local, UnicodeString Remote);
-  virtual void __fastcall DoFocusRemotePath(UnicodeString Path);
+  virtual void __fastcall DoFocusRemotePath(TTerminal * Terminal, const UnicodeString & Path);
   UnicodeString __fastcall ChangeFilePath(UnicodeString Path, TOperationSide Side);
   virtual bool __fastcall EligibleForImageDisplayMode(TTBCustomItem * Item);
   virtual bool __fastcall UpdateToolbarDisplayMode();
   virtual void __fastcall QueueLabelUpdateStatus();
   virtual UnicodeString __fastcall DefaultDownloadTargetDirectory();
   virtual void __fastcall StartingDisconnected();
+  virtual void __fastcall UpdateImages();
 
 public:
   __fastcall TScpCommanderForm(TComponent* Owner);

@@ -101,8 +101,9 @@ int __fastcall FontStylesToInt(const TFontStyles value)
 bool __fastcall SameFont(TFont * Font1, TFont * Font2)
 {
   // keep in sync with TFontConfiguration::operator !=
-  return SameText(Font1->Name, Font2->Name) && (Font1->Size == Font2->Size) &&
-      (Font1->Charset == Font2->Charset) && (Font1->Style == Font2->Style);
+  return
+    SameText(Font1->Name, Font2->Name) && (Font1->Height == Font2->Height) &&
+    (Font1->Charset == Font2->Charset) && (Font1->Style == Font2->Style);
 }
 //---------------------------------------------------------------------------
 TColor __fastcall GetWindowTextColor(TColor Color)
@@ -146,27 +147,27 @@ UnicodeString __fastcall GetListViewStr(TListView * ListView)
   // stop at the comma, otherwise they try to parse the
   // "last-column-width;pixels-per-inch" as integer and throw.
   // For the other instance of this hack, see TCustomListViewColProperties.GetParamsStr
-  Result += L",;" + SavePixelsPerInch();
+  Result += L",;" + SavePixelsPerInch(ListView);
   return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall LoadListViewStr(TListView * ListView, UnicodeString ALayoutStr)
 {
   UnicodeString LayoutStr = CutToChar(ALayoutStr, L';', true);
-  int PixelsPerInch = LoadPixelsPerInch(CutToChar(ALayoutStr, L';', true));
+  int PixelsPerInch = LoadPixelsPerInch(CutToChar(ALayoutStr, L';', true), ListView);
   int Index = 0;
   while (!LayoutStr.IsEmpty() && (Index < ListView->Columns->Count))
   {
     int Width;
     if (TryStrToInt(CutToChar(LayoutStr, L',', true), Width))
     {
-      ListView->Column[Index]->Width = LoadDimension(Width, PixelsPerInch);
+      ListView->Column[Index]->Width = LoadDimension(Width, PixelsPerInch, ListView);
     }
     Index++;
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall RestoreForm(UnicodeString Data, TForm * Form)
+void __fastcall RestoreForm(UnicodeString Data, TForm * Form, bool PositionOnly)
 {
   DebugAssert(Form);
   if (!Data.IsEmpty())
@@ -178,11 +179,11 @@ void __fastcall RestoreForm(UnicodeString Data, TForm * Form)
     UnicodeString RightStr = CutToChar(Data, L';', true);
     UnicodeString BottomStr = CutToChar(Data, L';', true);
     TWindowState State = (TWindowState)StrToIntDef(CutToChar(Data, L';', true), (int)wsNormal);
-    int PixelsPerInch = LoadPixelsPerInch(CutToChar(Data, L';', true));
+    int PixelsPerInch = LoadPixelsPerInch(CutToChar(Data, L';', true), Form);
 
     TRect Bounds = Form->BoundsRect;
-    int Left = StrToDimensionDef(LeftStr, PixelsPerInch, Bounds.Left);
-    int Top = StrToDimensionDef(TopStr, PixelsPerInch, Bounds.Top);
+    int Left = StrToDimensionDef(LeftStr, PixelsPerInch, Form, Bounds.Left);
+    int Top = StrToDimensionDef(TopStr, PixelsPerInch, Form, Bounds.Top);
     bool DefaultPos = (Left == -1) && (Top == -1);
     if (!DefaultPos)
     {
@@ -194,8 +195,8 @@ void __fastcall RestoreForm(UnicodeString Data, TForm * Form)
       Bounds.Left = 0;
       Bounds.Top = 0;
     }
-    Bounds.Right = StrToDimensionDef(RightStr, PixelsPerInch, Bounds.Right);
-    Bounds.Bottom = StrToDimensionDef(BottomStr, PixelsPerInch, Bounds.Bottom);
+    Bounds.Right = StrToDimensionDef(RightStr, PixelsPerInch, Form, Bounds.Right);
+    Bounds.Bottom = StrToDimensionDef(BottomStr, PixelsPerInch, Form, Bounds.Bottom);
     Form->WindowState = State;
     if (State == wsNormal)
     {
@@ -219,42 +220,63 @@ void __fastcall RestoreForm(UnicodeString Data, TForm * Form)
            (Bounds.Top < Monitor->Top) ||
            (Bounds.Top > Monitor->Top + Monitor->WorkareaRect.Height() - 20)))
       {
-        if (Monitor->Primary)
+        bool ExplicitPlacing = !Monitor->Primary;
+        if (!ExplicitPlacing)
         {
+          TPosition Position;
           if ((Application->MainForm == NULL) || (Application->MainForm == Form))
           {
-            Form->Position = poDefaultPosOnly;
+            Position = poDefaultPosOnly;
           }
           else
           {
-            Form->Position = poOwnerFormCenter;
+            Position = poOwnerFormCenter;
           }
-          Form->Width = Bounds.Width();
-          Form->Height = Bounds.Height();
+
+          // If handle is allocated already, changing Position reallocates it, what brings lot of nasty side effects.
+          if (Form->HandleAllocated() && (Form->Position != Position))
+          {
+            ExplicitPlacing = true;
+          }
+          else
+          {
+            Form->Width = Bounds.Width();
+            Form->Height = Bounds.Height();
+          }
         }
-        else
+
+        if (ExplicitPlacing)
         {
           // when positioning on non-primary monitor, we need
           // to handle that ourselves, so place window to center
-          Form->SetBounds(Monitor->Left + ((Monitor->Width - Bounds.Width()) / 2),
-            Monitor->Top + ((Monitor->Height - Bounds.Height()) / 2),
-            Bounds.Width(), Bounds.Height());
+          if (!PositionOnly)
+          {
+            Form->SetBounds(Monitor->Left + ((Monitor->Width - Bounds.Width()) / 2),
+              Monitor->Top + ((Monitor->Height - Bounds.Height()) / 2),
+              Bounds.Width(), Bounds.Height());
+          }
           Form->Position = poDesigned;
         }
       }
       else
       {
         Form->Position = poDesigned;
-        Form->BoundsRect = Bounds;
+        if (!PositionOnly)
+        {
+          Form->BoundsRect = Bounds;
+        }
       }
     }
     else if (State == wsMaximized)
     {
       Form->Position = poDesigned;
 
-      Bounds = Form->BoundsRect;
-      OffsetRect(Bounds, Monitor->Left, Monitor->Top);
-      Form->BoundsRect = Bounds;
+      if (!PositionOnly)
+      {
+        Bounds = Form->BoundsRect;
+        OffsetRect(Bounds, Monitor->Left, Monitor->Top);
+        Form->BoundsRect = Bounds;
+      }
     }
   }
   else if (Form->Position == poDesigned)
@@ -274,7 +296,7 @@ UnicodeString __fastcall StoreForm(TCustomForm * Form)
     // note that WindowState is wsNormal when window in minimized for some reason.
     // actually it is wsMinimized only when minimized by MSVDM
     (int)(Form->WindowState == wsMinimized ? wsNormal : Form->WindowState),
-    SavePixelsPerInch()));
+    SavePixelsPerInch(Form)));
 }
 //---------------------------------------------------------------------------
 void __fastcall RestoreFormSize(UnicodeString Data, TForm * Form)
@@ -283,28 +305,123 @@ void __fastcall RestoreFormSize(UnicodeString Data, TForm * Form)
   // See comment in ResizeForm.
   UnicodeString WidthStr = CutToChar(Data, L',', true);
   UnicodeString HeightStr = CutToChar(Data, L',', true);
-  int PixelsPerInch = LoadPixelsPerInch(CutToChar(Data, L',', true));
+  int PixelsPerInch = LoadPixelsPerInch(CutToChar(Data, L',', true), Form);
 
-  int Width = StrToDimensionDef(WidthStr, PixelsPerInch, Form->Width);
-  int Height = StrToDimensionDef(HeightStr, PixelsPerInch, Form->Height);
+  int Width = StrToDimensionDef(WidthStr, PixelsPerInch, Form, Form->Width);
+  int Height = StrToDimensionDef(HeightStr, PixelsPerInch, Form, Form->Height);
   ResizeForm(Form, Width, Height);
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall StoreFormSize(TForm * Form)
 {
-  return FORMAT(L"%d,%d,%s", (Form->Width, Form->Height, SavePixelsPerInch()));
+  return FORMAT(L"%d,%d,%s", (Form->Width, Form->Height, SavePixelsPerInch(Form)));
 }
 //---------------------------------------------------------------------------
-bool __fastcall ExecuteShellAndWait(const UnicodeString Path, const UnicodeString Params)
+static void __fastcall ExecuteProcessAndReadOutput(const
+  UnicodeString & Command, const UnicodeString & HelpKeyword, UnicodeString & Output)
 {
-  return ExecuteShellAndWait(Application->Handle, Path, Params,
-    &Application->ProcessMessages);
+  if (!CopyCommandToClipboard(Command))
+  {
+    SECURITY_ATTRIBUTES SecurityAttributes;
+    ZeroMemory(&SecurityAttributes, sizeof(SecurityAttributes));
+    SecurityAttributes.nLength = sizeof(SECURITY_ATTRIBUTES);
+    SecurityAttributes.bInheritHandle = TRUE;
+    SecurityAttributes.lpSecurityDescriptor = NULL;
+
+    HANDLE PipeRead = INVALID_HANDLE_VALUE;
+    HANDLE PipeWrite = INVALID_HANDLE_VALUE;
+
+    if (!CreatePipe(&PipeRead, &PipeWrite, &SecurityAttributes, 0) ||
+        !SetHandleInformation(PipeRead, HANDLE_FLAG_INHERIT, 0))
+    {
+      throw EOSExtException(FMTLOAD(EXECUTE_APP_ERROR, (Command)));
+    }
+
+    PROCESS_INFORMATION ProcessInformation;
+    ZeroMemory(&ProcessInformation, sizeof(ProcessInformation));
+
+    try
+    {
+      try
+      {
+        STARTUPINFO StartupInfo;
+        ZeroMemory(&StartupInfo, sizeof(StartupInfo));
+        StartupInfo.cb = sizeof(STARTUPINFO);
+        StartupInfo.hStdError = PipeWrite;
+        StartupInfo.hStdOutput = PipeWrite;
+        StartupInfo.wShowWindow = SW_HIDE;
+        StartupInfo.dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
+
+        if (!CreateProcess(NULL, Command.c_str(), NULL, NULL, TRUE, 0, NULL, NULL, &StartupInfo, &ProcessInformation))
+        {
+          throw EOSExtException(FMTLOAD(EXECUTE_APP_ERROR, (Command)));
+        }
+      }
+      __finally
+      {
+        // If we do not close the handle here, the ReadFile below would get stuck once the app finishes writting,
+        // as it still sees that someone "can" write to the pipe.
+        CloseHandle(PipeWrite);
+      }
+
+      char Buffer[4096];
+      DWORD BytesRead;
+      while (ReadFile(PipeRead, Buffer, sizeof(Buffer), &BytesRead, NULL))
+      {
+        Output += UnicodeString(UTF8String(Buffer, BytesRead));
+        // Same as in ExecuteShellCheckedAndWait
+        Sleep(200);
+        Application->ProcessMessages();
+      }
+
+      DWORD ExitCode;
+      if (DebugAlwaysTrue(GetExitCodeProcess(ProcessInformation.hProcess, &ExitCode)) &&
+          (ExitCode != 0))
+      {
+        UnicodeString Buf = Output;
+        UnicodeString Buf2;
+        if (ExtractMainInstructions(Buf, Buf2))
+        {
+          throw ExtException(Output, UnicodeString(), HelpKeyword);
+        }
+        else
+        {
+          throw ExtException(MainInstructions(FMTLOAD(COMMAND_FAILED_CODEONLY, (static_cast<int>(ExitCode)))), Output, HelpKeyword);
+        }
+      }
+    }
+    __finally
+    {
+      CloseHandle(ProcessInformation.hProcess);
+      CloseHandle(ProcessInformation.hThread);
+    }
+  }
 }
 //---------------------------------------------------------------------------
-bool __fastcall ExecuteShellAndWait(const UnicodeString Command)
+void __fastcall ExecuteProcessChecked(
+  const UnicodeString & Command, const UnicodeString & HelpKeyword, UnicodeString * Output)
 {
-  return ExecuteShellAndWait(Application->Handle, Command,
-    &Application->ProcessMessages);
+  if (Output == NULL)
+  {
+    ExecuteShellChecked(Command);
+  }
+  else
+  {
+    ExecuteProcessAndReadOutput(Command, HelpKeyword, *Output);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall ExecuteProcessCheckedAndWait(
+  const UnicodeString & Command, const UnicodeString & HelpKeyword, UnicodeString * Output)
+{
+  if (Output == NULL)
+  {
+    ExecuteShellCheckedAndWait(Command, &Application->ProcessMessages);
+  }
+  else
+  {
+    ExecuteProcessAndReadOutput(Command, HelpKeyword, *Output);
+  }
 }
 //---------------------------------------------------------------------------
 bool __fastcall IsKeyPressed(int VirtualKey)
@@ -330,10 +447,7 @@ void __fastcall ExecuteNewInstance(const UnicodeString & Param)
     Arg = FORMAT(L"\"%s\" %s", (Arg, TProgramParams::FormatSwitch(NEWINSTANCE_SWICH)));
   }
 
-  if (!ExecuteShell(Application->ExeName, Arg))
-  {
-    throw Exception(FMTLOAD(EXECUTE_APP_ERROR, (Application->ExeName)));
-  }
+  ExecuteShellChecked(Application->ExeName, Arg);
 }
 //---------------------------------------------------------------------------
 IShellLink * __fastcall CreateDesktopShortCut(const UnicodeString & Name,
@@ -560,13 +674,28 @@ void __fastcall OpenBrowser(UnicodeString URL)
   ShellExecute(Application->Handle, L"open", URL.c_str(), NULL, NULL, SW_SHOWNORMAL);
 }
 //---------------------------------------------------------------------------
+void __fastcall OpenFolderInExplorer(const UnicodeString & Path)
+{
+  if ((int)ShellExecute(Application->Handle, L"explore",
+      (wchar_t*)Path.data(), NULL, NULL, SW_SHOWNORMAL) <= 32)
+  {
+    throw Exception(FMTLOAD(EXPLORE_LOCAL_DIR_ERROR, (Path)));
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall OpenFileInExplorer(const UnicodeString & Path)
+{
+  PCIDLIST_ABSOLUTE Folder = ILCreateFromPathW(ApiPath(Path).c_str());
+  SHOpenFolderAndSelectItems(Folder, 0, NULL, 0);
+}
+//---------------------------------------------------------------------------
 void __fastcall ShowHelp(const UnicodeString & AHelpKeyword)
 {
   // see also AppendUrlParams
   UnicodeString HelpKeyword = AHelpKeyword;
   const wchar_t FragmentSeparator = L'#';
   UnicodeString HelpPath = CutToChar(HelpKeyword, FragmentSeparator, false);
-  UnicodeString HelpUrl = FMTLOAD(DOCUMENTATION_KEYWORD_URL2, (HelpPath, Configuration->ProductVersion, GUIConfiguration->LocaleHex));
+  UnicodeString HelpUrl = FMTLOAD(DOCUMENTATION_KEYWORD_URL2, (HelpPath, Configuration->ProductVersion, GUIConfiguration->AppliedLocaleHex));
   AddToList(HelpUrl, HelpKeyword, FragmentSeparator);
   OpenBrowser(HelpUrl);
 }
@@ -738,7 +867,7 @@ void __fastcall BrowseForExecutableT(T * Control, UnicodeString Title,
       try
       {
         // preserve unexpanded file, if the destination has not changed actually
-        if (!CompareFileName(ExpandedProgram, FileDialog->FileName))
+        if (!IsPathToSameFile(ExpandedProgram, FileDialog->FileName))
         {
           Program = FileDialog->FileName;
           if (Escape)

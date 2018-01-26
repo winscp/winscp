@@ -40,7 +40,7 @@ __published:
   TLabel *StartTimeLabelLabel;
   TLabel *StartTimeLabel;
   TLabel *Label4;
-  TLabel *BytesTransferedLabel;
+  TLabel *BytesTransferredLabel;
   TLabel *Label12;
   TLabel *CPSLabel;
   TProgressBar *BottomProgress;
@@ -66,6 +66,7 @@ __published:
   TPngImageList *ImageList144;
   TPngImageList *ImageList192;
   TApplicationEvents *ApplicationEvents;
+  TTBXItem *SkipItem;
   void __fastcall UpdateTimerTimer(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall FormHide(TObject *Sender);
@@ -81,9 +82,11 @@ __published:
           int AIndex, int &ImageIndex);
   void __fastcall ApplicationModalBegin(TObject * Sender);
   void __fastcall SpeedComboBoxItemClick(TObject *Sender);
+  void __fastcall SkipItemClick(TObject *Sender);
 
 private:
   TCancelStatus FCancel;
+  bool FPendingSkip;
   bool FMoveToQueue;
   TFileOperationProgressType FData;
   bool FDataGot;
@@ -117,7 +120,6 @@ private:
   void __fastcall SetReadOnly(bool value);
   void __fastcall GlobalMinimize(TObject * Sender);
   UnicodeString __fastcall ItemSpeed(const UnicodeString & Text, TTBXComboBoxItem * Item);
-  bool __fastcall ApplicationHook(TMessage & Message);
   void __fastcall CMDialogKey(TCMDialogKey & Message);
 
 protected:
@@ -127,15 +129,17 @@ protected:
   bool __fastcall ReceiveData(bool Force, int ModalLevelOffset);
   void __fastcall Minimize(TObject * Sender);
   virtual void __fastcall Dispatch(void * Message);
+  void __fastcall SetCancelLower(TCancelStatus ACancel);
 
   static bool __fastcall IsIndeterminateOperation(TFileOperation Operation);
 
 public:
   static UnicodeString __fastcall ProgressStr(TFileOperationProgressType * ProgressData);
 
-  virtual __fastcall TProgressForm(TComponent * AOwner, bool AllowMoveToQueue);
+  virtual __fastcall TProgressForm(TComponent * AOwner, bool AllowMoveToQueue, bool AllowSkip);
   virtual __fastcall ~TProgressForm();
   void __fastcall SetProgressData(TFileOperationProgressType & AData);
+  void __fastcall ClearCancel();
   __property TCancelStatus Cancel = { read = FCancel };
   __property bool MoveToQueue = { read = FMoveToQueue };
   __property TOnceDoneOperation OnceDoneOperation = { read=GetOnceDoneOperation, write=SetOnceDoneOperation };

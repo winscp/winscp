@@ -58,12 +58,9 @@ type
     FDropDownFixedWidth: Integer;
     FOnCloseUp: TIECloseUpEvent;
     FCanceled: Boolean;
-    FUseSystemImageList: Boolean;
-    FSystemImageList: TImageList;
 
     function GetTopIndex: Integer;
     procedure SetTopIndex(Value: Integer);
-    procedure SetUseSystemImageList(Value: Boolean);
     procedure CMFontChanged(var Message: TMessage); message CM_FONTCHANGED;
 
   protected
@@ -72,7 +69,6 @@ type
     function GetItemIndent(Index: Integer): Integer; virtual;
     function GetItemText(Index: Integer): string;
     function GetItemTextEx(Index: Integer; ForList: Boolean): string; virtual;
-    function ImageList: TImageList; virtual;
     procedure CNCommand(var Message: TWMCommand); message CN_COMMAND;
     procedure DoCloseUp(Canceled: Boolean); virtual;
     procedure DropDown; override;
@@ -81,7 +77,6 @@ type
 
   public
     constructor Create(AOwner: TComponent); override;
-    destructor Destroy; override;
     function GetTextWidth(Str: string): Integer;
     procedure DoPreloadImages;
 
@@ -89,7 +84,6 @@ type
     property ItemIndent[Index: Integer]: Integer read GetItemIndent;
     property ItemText[Index: Integer]: string read GetItemText;
     property TopIndex: Integer read GetTopIndex write SetTopIndex;
-    property UseSystemImageList: Boolean read FUseSystemImageList write SetUseSystemImageList;
     property DropDownFixedWidth: Integer read FDropDownFixedWidth write FDropDownFixedWidth default 0;
     property OnCloseUp: TIECloseUpEvent read FOnCloseUp write FOnCloseUp;
   published
@@ -175,15 +169,7 @@ constructor TIECustomComboBox.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
   FCanceled := True;
-  FUseSystemImageList := False;
-  FSystemImageList := nil;
 end; {TIECustomComboBox.Create}
-
-destructor TIECustomComboBox.Destroy;
-begin
-  FreeAndNil(FSystemImageList);
-  inherited;
-end;
 
 procedure TIECustomComboBox.CMFontChanged(var Message: TMessage);
 begin
@@ -213,9 +199,10 @@ begin
       Self.Perform(CB_SETDROPPEDWIDTH, FDropDownFixedWidth, 0)
     else
   begin
-    ItemWidth := GetMaxItemWidth + ScaleByPixelsPerInch(8);
-    if Items.Count > DropDowncount then
-      Inc(ItemWidth, GetSystemMetrics(SM_CXVSCROLL));
+    // The same code is in THistoryComboBox.DropDown
+    ItemWidth := GetMaxItemWidth + ScaleByPixelsPerInch(8, Self);
+    if Items.Count > DropDownCount then
+      Inc(ItemWidth, GetSystemMetricsForControl(Self, SM_CXVSCROLL));
     Self.Perform(CB_SETDROPPEDWIDTH, ItemWidth, 0);
   end;
 
@@ -253,8 +240,6 @@ begin
     for Index := 0 to Items.Count - 1 do
     begin
       GetTextExtentPoint32(DC, PChar(ItemText[Index]), Length(ItemText[Index]), Size);
-      if (ImageList <> nil) and (ItemImage[Index] >= 0) then
-        Inc(Size.Cx, IconWidth + 6);
       Inc(Size.Cx, ItemIndent[Index]);
       if Size.Cx > Result then Result := Size.Cx;
     end;
@@ -336,7 +321,6 @@ end; {GetItemHeight}
 procedure TIECustomComboBox.DrawItem(Index: Integer; Rect: TRect; State: TOwnerDrawState);
 var
   Text: string;
-  Image: Integer;
   InList: Boolean;
 begin
   inherited;
@@ -352,17 +336,7 @@ begin
 
     if InList then Rect.Left := Rect.Left + ItemIndent[Index];
 
-    if ImageList <> nil then
-    begin
-      Image := ItemImage[Index];
-      if Image >= 0 then
-      begin
-        ImageList.Draw(Canvas, Rect.Left + 2, Rect.Top, Image);
-        Rect.Left := Rect.Left + IconWidth + 6;
-      end
-        else Rect.Left := Rect.Left + 2;
-    end
-      else Rect.Left := Rect.Left + 2;
+    Rect.Left := Rect.Left + 2;
 
     DrawText(Canvas.Handle, PChar(Text), Length(Text), Rect,
       DrawTextBiDiModeFlags(DT_SINGLELINE or DT_VCENTER or DT_NOPREFIX));
@@ -387,45 +361,6 @@ end;
 function TIECustomComboBox.GetItemTextEx(Index: Integer; ForList: Boolean): string;
 begin
   Result := Items[Index];
-end;
-
-function TIECustomComboBox.ImageList: TImageList;
-var
-  ImageListHandle: HImageList;
-  FileInfo: TSHFileInfo;
-begin
-  if FUseSystemImageList then
-  begin
-    if not Assigned(FSystemImageList) then
-    begin
-      FSystemImageList := TImageList.Create(Self);
-      ImageListHandle := SHGetFileInfo('', 0, FileInfo, SizeOf(FileInfo),
-        SHGFI_SYSICONINDEX or SHGFI_SMALLICON);
-      if ImageListHandle <> 0 then
-        with FSystemImageList do
-        begin
-          ShareImages  := True;
-          Handle := ImageListHandle;
-          DrawingStyle := dsTransparent;
-        end;
-    end;
-    Result := FSystemImageList;
-  end
-    else Result := nil;
-end;
-
-procedure TIECustomComboBox.SetUseSystemImageList(Value: Boolean);
-begin
-  if FUseSystemImageList <> Value then
-  begin
-    if not FUseSystemImageList then
-    begin
-      if ImageList <> nil then
-        raise Exception.Create('ImageList is already created.');
-    end
-      else FreeAndNil(FSystemImageList);
-    FUseSystemImageList := Value;
-  end;
 end;
 
 initialization

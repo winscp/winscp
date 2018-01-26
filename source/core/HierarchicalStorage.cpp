@@ -1181,8 +1181,17 @@ void __fastcall TCustomIniFileStorage::WriteBinaryData(const UnicodeString Name,
   DoWriteBinaryData(Name, Buffer, Size);
 }
 //===========================================================================
-__fastcall TIniFileStorage::TIniFileStorage(const UnicodeString AStorage):
-  TCustomIniFileStorage(AStorage, new TMemIniFile(AStorage))
+TIniFileStorage * __fastcall TIniFileStorage::CreateFromPath(const UnicodeString AStorage)
+{
+  // The code was originally inline in the parent contructor call in the TIniFileStorage::TIniFileStorage [public originally].
+  // But if the TMemIniFile contructor throws (e.g. because the INI file is locked), the exception causes access violation.
+  // Moving the code to a factory solves this.
+  TMemIniFile * IniFile = new TMemIniFile(AStorage);
+  return new TIniFileStorage(AStorage, IniFile);
+}
+//---------------------------------------------------------------------------
+__fastcall TIniFileStorage::TIniFileStorage(const UnicodeString AStorage, TCustomIniFile * IniFile):
+  TCustomIniFileStorage(AStorage, IniFile)
 {
   FOriginal = new TStringList();
   dynamic_cast<TMemIniFile *>(FIniFile)->GetStrings(FOriginal);

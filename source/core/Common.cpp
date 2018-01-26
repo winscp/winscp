@@ -30,9 +30,9 @@ const char Bom[3] = "\xEF\xBB\xBF";
 const wchar_t TokenPrefix = L'%';
 const wchar_t NoReplacement = wchar_t(false);
 const wchar_t TokenReplacement = wchar_t(true);
-const UnicodeString LocalInvalidChars = L"/\\:*?\"<>|";
-const UnicodeString PasswordMask = L"***";
-const UnicodeString Ellipsis = L"...";
+const UnicodeString LocalInvalidChars(TraceInitStr(L"/\\:*?\"<>|"));
+const UnicodeString PasswordMask(TraceInitStr(L"***"));
+const UnicodeString Ellipsis(TraceInitStr(L"..."));
 //---------------------------------------------------------------------------
 UnicodeString ReplaceChar(UnicodeString Str, wchar_t A, wchar_t B)
 {
@@ -442,6 +442,79 @@ UnicodeString __fastcall GetShellFolderPath(int CSIdl)
   return Result;
 }
 //---------------------------------------------------------------------------
+static UnicodeString __fastcall GetWineHomeFolder()
+{
+  UnicodeString Result;
+
+  UnicodeString WineHostHome = GetEnvironmentVariable(L"WINE_HOST_HOME");
+  if (!WineHostHome.IsEmpty())
+  {
+    Result = L"Z:" + FromUnixPath(WineHostHome);
+  }
+  else
+  {
+    // Should we use WinAPI GetUserName() instead?
+    UnicodeString UserName = GetEnvironmentVariable(L"USERNAME");
+    if (!UserName.IsEmpty())
+    {
+      Result = L"Z:\\home\\" + UserName;
+    }
+  }
+
+  if (!DirectoryExists(Result))
+  {
+    Result = L"";
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall GetPersonalFolder()
+{
+  UnicodeString Result = GetShellFolderPath(CSIDL_PERSONAL);
+
+  if (IsWine())
+  {
+    UnicodeString WineHome = GetWineHomeFolder();
+
+    if (!WineHome.IsEmpty())
+    {
+      // if at least home exists, use it
+      Result = WineHome;
+
+      // but try to go deeper to "Documents"
+      UnicodeString WineDocuments =
+        IncludeTrailingBackslash(WineHome) + L"Documents";
+      if (DirectoryExists(WineDocuments))
+      {
+        Result = WineDocuments;
+      }
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall GetDesktopFolder()
+{
+  UnicodeString Result = GetShellFolderPath(CSIDL_DESKTOPDIRECTORY);
+
+  if (IsWine())
+  {
+    UnicodeString WineHome = GetWineHomeFolder();
+
+    if (!WineHome.IsEmpty())
+    {
+      UnicodeString WineDesktop =
+        IncludeTrailingBackslash(WineHome) + L"Desktop";
+      if (DirectoryExists(WineHome))
+      {
+        Result = WineDesktop;
+      }
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 // Particularly needed when using file name selected by TFilenameEdit,
 // as it wraps a path to double-quotes, when there is a space in the path.
 UnicodeString __fastcall StripPathQuotes(const UnicodeString Path)
@@ -715,7 +788,7 @@ UnicodeString __fastcall ExpandEnvironmentVariables(const UnicodeString & Str)
   return Buf;
 }
 //---------------------------------------------------------------------------
-bool __fastcall CompareFileName(const UnicodeString & Path1, const UnicodeString & Path2)
+bool __fastcall IsPathToSameFile(const UnicodeString & Path1, const UnicodeString & Path2)
 {
   UnicodeString ShortPath1 = ExtractShortPathName(Path1);
   UnicodeString ShortPath2 = ExtractShortPathName(Path2);
@@ -733,7 +806,7 @@ bool __fastcall CompareFileName(const UnicodeString & Path1, const UnicodeString
   return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall ComparePaths(const UnicodeString & Path1, const UnicodeString & Path2)
+bool __fastcall SamePaths(const UnicodeString & Path1, const UnicodeString & Path2)
 {
   // TODO: ExpandUNCFileName
   return AnsiSameText(IncludeTrailingBackslash(Path1), IncludeTrailingBackslash(Path2));
@@ -1372,7 +1445,7 @@ struct TDateTimeParams
 };
 typedef std::map<int, TDateTimeParams> TYearlyDateTimeParams;
 static TYearlyDateTimeParams YearlyDateTimeParams;
-static std::unique_ptr<TCriticalSection> DateTimeParamsSection(new TCriticalSection());
+static std::unique_ptr<TCriticalSection> DateTimeParamsSection(TraceInitPtr(new TCriticalSection()));
 static void __fastcall EncodeDSTMargin(const SYSTEMTIME & Date, unsigned short Year,
   TDateTime & Result);
 //---------------------------------------------------------------------------
@@ -1630,6 +1703,80 @@ bool __fastcall TryRelativeStrToDateTime(UnicodeString S, TDateTime & DateTime, 
     else
     {
       Result = false;
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+const wchar_t KiloSize = L'K';
+const wchar_t MegaSize = L'M';
+const wchar_t GigaSize = L'G';
+//---------------------------------------------------------------------------
+// Keep consistent with parse_blocksize
+bool __fastcall TryStrToSize(UnicodeString SizeStr, __int64 & Size)
+{
+  int Index = 0;
+  while ((Index + 1 <= SizeStr.Length()) && IsDigit(SizeStr[Index + 1]))
+  {
+    Index++;
+  }
+  bool Result =
+    (Index > 0) && TryStrToInt64(SizeStr.SubString(1, Index), Size);
+  if (Result)
+  {
+    SizeStr = SizeStr.SubString(Index + 1, SizeStr.Length() - Index).Trim();
+    if (!SizeStr.IsEmpty())
+    {
+      Result = (SizeStr.Length() == 1);
+      if (Result)
+      {
+        wchar_t Unit = (wchar_t)toupper(SizeStr[1]);
+        switch (Unit)
+        {
+          case GigaSize:
+            Size *= 1024;
+            // fallthru
+          case MegaSize:
+            Size *= 1024;
+            // fallthru
+          case KiloSize:
+            Size *= 1024;
+            break;
+          default:
+            Result = false;
+        }
+      }
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall SizeToStr(__int64 Size)
+{
+  UnicodeString Result;
+  if ((Size <= 0) || ((Size % 1024) != 0))
+  {
+    Result = IntToStr(Size);
+  }
+  else
+  {
+    Size /= 1024;
+    if ((Size % 1024) != 0)
+    {
+      Result = IntToStr(Size) + KiloSize;
+    }
+    else
+    {
+      Size /= 1024;
+      if ((Size % 1024) != 0)
+      {
+        Result = IntToStr(Size) + MegaSize;
+      }
+      else
+      {
+        Size /= 1024;
+        Result = IntToStr(Size) + GigaSize;
+      }
     }
   }
   return Result;
@@ -2251,17 +2398,27 @@ TLibModule * __fastcall FindModule(void * Instance)
   return CurModule;
 }
 //---------------------------------------------------------------------------
+static UnicodeString __fastcall DoLoadStrFrom(HINSTANCE Module, int Ident, unsigned int MaxLength)
+{
+  UnicodeString Result;
+  Result.SetLength(MaxLength);
+  int Length = LoadString(Module, Ident, Result.c_str(), MaxLength);
+  Result.SetLength(Length);
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall LoadStrFrom(HINSTANCE Module, int Ident)
+{
+  // 1024 = what VCL LoadStr limits the string to
+  return DoLoadStrFrom(Module, Ident, 1024);
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall LoadStr(int Ident, unsigned int MaxLength)
 {
   TLibModule * MainModule = FindModule(HInstance);
   DebugAssert(MainModule != NULL);
-
-  UnicodeString Result;
-  Result.SetLength(MaxLength);
-  int Length = LoadString((HINSTANCE)MainModule->ResInstance, Ident, Result.c_str(), MaxLength);
-  Result.SetLength(Length);
-
-  return Result;
+  return DoLoadStrFrom((HINSTANCE)MainModule->ResInstance, Ident, MaxLength);
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall LoadStrPart(int Ident, int Part)
@@ -2638,6 +2795,19 @@ UnicodeString __fastcall FormatSize(__int64 Size)
   return FormatNumber(Size);
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall FormatDateTimeSpan(const UnicodeString TimeFormat, TDateTime DateTime)
+{
+  UnicodeString Result;
+  if (int(DateTime) > 0)
+  {
+    Result = IntToStr(int(DateTime)) + L", ";
+  }
+  // days are decremented, because when there are to many of them,
+  // "integer overflow" error occurs
+  Result += FormatDateTime(TimeFormat, DateTime - int(DateTime));
+  return Result;
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall ExtractFileBaseName(const UnicodeString & Path)
 {
   return ChangeFileExt(ExtractFileName(Path), L"");
@@ -2997,13 +3167,13 @@ UnicodeString __fastcall ChangeUrlProtocol(const UnicodeString & S, const Unicod
   return Protocol + ProtocolSeparator + RightStr(S, S.Length() - P - ProtocolSeparator.Length() + 1);
 }
 //---------------------------------------------------------------------------
-const UnicodeString RtfPara = L"\\par\n";
-const UnicodeString AssemblyNamespace = L"WinSCP";
-const UnicodeString TransferOptionsClassName(L"TransferOptions");
-const UnicodeString SessionClassName(L"Session");
-const UnicodeString RtfHyperlinkField = L"HYPERLINK";
-const UnicodeString RtfHyperlinkFieldPrefix = RtfHyperlinkField + L" \"";
-const UnicodeString RtfHyperlinkFieldSuffix = L"\" ";
+const UnicodeString RtfPara(TraceInitStr(L"\\par\n"));
+const UnicodeString AssemblyNamespace(TraceInitStr(L"WinSCP"));
+const UnicodeString TransferOptionsClassName(TraceInitStr(L"TransferOptions"));
+const UnicodeString SessionClassName(TraceInitStr(L"Session"));
+const UnicodeString RtfHyperlinkField(TraceInitStr(L"HYPERLINK"));
+const UnicodeString RtfHyperlinkFieldPrefix(TraceInitStr(RtfHyperlinkField + L" \""));
+const UnicodeString RtfHyperlinkFieldSuffix(TraceInitStr(L"\" "));
 //---------------------------------------------------------------------
 UnicodeString __fastcall RtfColor(int Index)
 {

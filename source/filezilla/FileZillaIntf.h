@@ -30,7 +30,9 @@ struct TListDataEntry
   const wchar_t * Name;
   const wchar_t * Permissions;
   const wchar_t * HumanPerm;
-  const wchar_t * OwnerGroup;
+  const wchar_t * OwnerGroup; // deprecated, to be replaced with Owner/Group
+  const wchar_t * Owner;
+  const wchar_t * Group;
   __int64 Size;
   bool Dir;
   bool Link;
@@ -185,7 +187,7 @@ public:
 
   bool __fastcall MakeDir(const wchar_t* Path);
   bool __fastcall Chmod(int Value, const wchar_t* FileName, const wchar_t* Path);
-  bool __fastcall Delete(const wchar_t* FileName, const wchar_t* Path);
+  bool __fastcall Delete(const wchar_t* FileName, const wchar_t* Path, bool FileNameOnly);
   bool __fastcall RemoveDir(const wchar_t* FileName, const wchar_t* Path);
   bool __fastcall Rename(const wchar_t* OldName, const wchar_t* NewName,
     const wchar_t* Path, const wchar_t* NewPath);

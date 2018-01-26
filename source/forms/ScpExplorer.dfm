@@ -57,7 +57,7 @@ inherited ScpExplorerForm: TScpExplorerForm
           OnPopup = EditMenuItemPopup
         end
         object TBXItem4: TTBXItem
-          Action = NonVisualDataModule.RemoteAddEditLinkAction
+          Action = NonVisualDataModule.RemoteAddEditLinkAction2
         end
         object TBXSeparatorItem7: TTBXSeparatorItem
         end
@@ -301,6 +301,9 @@ inherited ScpExplorerForm: TScpExplorerForm
         object TBXItem144: TTBXItem
           Action = NonVisualDataModule.SessionGenerateUrlAction2
         end
+        object TBXItem160: TTBXItem
+          Action = NonVisualDataModule.ChangePasswordAction
+        end
         object TBXSeparatorItem29: TTBXSeparatorItem
         end
         object TBXSubmenuItem21: TTBXSubmenuItem
@@ -367,9 +370,6 @@ inherited ScpExplorerForm: TScpExplorerForm
         end
         object TBXItem13: TTBXItem
           Action = NonVisualDataModule.StatusBarAction
-        end
-        object TBXItem14: TTBXItem
-          Action = NonVisualDataModule.ViewLogAction
         end
         object TBXSubmenuItem14: TTBXSubmenuItem
           Caption = '&Queue'
@@ -670,11 +670,21 @@ inherited ScpExplorerForm: TScpExplorerForm
       end
       object TBXSeparatorItem16: TTBXSeparatorItem
       end
-      object TBXItem61: TTBXItem
-        Action = NonVisualDataModule.RemoteCreateDirAction
-      end
-      object TBXItem62: TTBXItem
-        Action = NonVisualDataModule.RemoteAddEditLinkAction
+      object NewSubmenuItem: TTBXSubmenuItem
+        Caption = '&New'
+        DisplayMode = nbdmImageAndText
+        Hint = 'Create object|Create new object'
+        ImageIndex = 5
+        Options = [tboDropdownArrow]
+        object TBXItem247: TTBXItem
+          Action = NonVisualDataModule.RemoteNewFileAction
+        end
+        object TBXItem244: TTBXItem
+          Action = NonVisualDataModule.RemoteCreateDirAction2
+        end
+        object TBXItem246: TTBXItem
+          Action = NonVisualDataModule.RemoteAddEditLinkAction2
+        end
       end
       object TBXItem63: TTBXItem
         Action = NonVisualDataModule.ConsoleAction
@@ -787,9 +797,6 @@ inherited ScpExplorerForm: TScpExplorerForm
         object TBXItem75: TTBXItem
           Action = NonVisualDataModule.CurrentReportAction
         end
-      end
-      object TBXItem127: TTBXItem
-        Action = NonVisualDataModule.ViewLogAction
       end
       object TBXSubmenuItem24: TTBXSubmenuItem
         Action = NonVisualDataModule.QueueToggleShowAction

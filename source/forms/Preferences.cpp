@@ -29,8 +29,9 @@
 #pragma link "CopyParams"
 #pragma link "UpDownEdit"
 #pragma link "ComboEdit"
-#ifndef NO_RESOURCES
 #pragma link "HistoryComboBox"
+#pragma link "PathLabel"
+#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
 #endif
 //---------------------------------------------------------------------
@@ -122,6 +123,8 @@ __fastcall TPreferencesDialog::TPreferencesDialog(
   LinkLabel(UpdatesLink);
   LinkAppLabel(BackgroundConfirmationsLink);
 
+  AutomaticIniFileStorageLabel->Caption = ExpandEnvironmentVariables(Configuration->GetAutomaticIniFileStorageName(false));
+
   HideComponentsPanel(this);
 }
 //---------------------------------------------------------------------------
@@ -166,14 +169,21 @@ void __fastcall TPreferencesDialog::LoadLanguages()
   {
     LanguagesView->Items->Clear();
 
-    TStrings * Locales = GUIConfiguration->Locales;
+    LCID Locale = GUIConfiguration->Locale;
+    if (Locale == NULL)
+    {
+      DebugAssert(GUIConfiguration->AppliedLocale == WinConfiguration->DefaultLocale);
+      Locale = WinConfiguration->DefaultLocale;
+    }
+
+    TObjectList * Locales = GUIConfiguration->Locales;
     for (int Index = 0; Index < Locales->Count; Index++)
     {
       TListItem * Item = LanguagesView->Items->Add();
-      Item->Caption = Locales->Strings[Index];
-      Item->Data = Locales->Objects[Index];
-      Item->Focused =
-        (reinterpret_cast<LCID>(Locales->Objects[Index]) == GUIConfiguration->Locale);
+      TLocaleInfo * LocaleInfo = DebugNotNull(dynamic_cast<TLocaleInfo *>(Locales->Items[Index]));
+      Item->Caption = LocaleInfo->Name;
+      Item->Data = LocaleInfo;
+      Item->Focused = (LocaleInfo->Locale == Locale);
       Item->Selected = Item->Focused;
     }
 
@@ -325,7 +335,18 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
 
     // select none when stNul
     RegistryStorageButton->Checked = (Configuration->Storage == stRegistry);
-    IniFileStorageButton2->Checked = (Configuration->Storage == stIniFile);
+    AutomaticIniFileStorageButton->Checked = (Configuration->Storage == stIniFile) && Configuration->CustomIniFileStorageName.IsEmpty();
+    CustomIniFileStorageButton->Checked = (Configuration->Storage == stIniFile) && !Configuration->CustomIniFileStorageName.IsEmpty();
+    CustomIniFileStorageEdit->Text = Configuration->CustomIniFileStorageName;
+    if (Configuration->CustomIniFileStorageName.IsEmpty())
+    {
+      CustomIniFileStorageEdit->Text = Configuration->GetDefaultIniFileExportPath();
+    }
+    else
+    {
+      CustomIniFileStorageEdit->Text = Configuration->CustomIniFileStorageName;
+    }
+    FCustomIniFileStorageName = GetCustomIniFileStorageName();
 
     RandomSeedFileEdit->Text = Configuration->RandomSeedFile;
 
@@ -387,7 +408,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     EnableQueueByDefaultCheck->Checked = WinConfiguration->EnableQueueByDefault;
     QueueAutoPopupCheck->Checked = GUIConfiguration->QueueAutoPopup;
     QueueCheck->Checked = GUIConfiguration->DefaultCopyParam.Queue;
-    QueueIndividuallyCheck->Checked = GUIConfiguration->DefaultCopyParam.QueueIndividually;
+    QueueParallelCheck->Checked = GUIConfiguration->DefaultCopyParam.QueueParallel;
     QueueNoConfirmationCheck->Checked = GUIConfiguration->DefaultCopyParam.QueueNoConfirmation;
     if (!GUIConfiguration->QueueKeepDoneItems)
     {
@@ -482,7 +503,8 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     }
     else
     {
-      FPanelFont->Assign(WinConfiguration->SystemIconFont);
+      // Default to system icon font, when starting customization
+      FPanelFont->Assign(Screen->IconFont);
     }
 
     // updates
@@ -566,7 +588,6 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     // logging
     EnableLoggingCheck->Checked = Configuration->Logging;
     LogProtocolCombo->ItemIndex = Configuration->LogProtocol;
-    LogToFileCheck->Checked = Configuration->LogToFile;
     LogFileNameEdit3->Text =
       !Configuration->LogFileName.IsEmpty() ? Configuration->LogFileName : Configuration->DefaultLogFileName;
     if (Configuration->LogFileAppend)
@@ -577,6 +598,10 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     {
       LogFileOverwriteButton->Checked = true;
     }
+    LogMaxSizeCheck->Checked = (Configuration->LogMaxSize > 0);
+    LogMaxSizeCombo->Text = SizeToStr((Configuration->LogMaxSize > 0) ? Configuration->LogMaxSize : (1 * 1024 * 1024));
+    LogMaxSizeCountCheck->Checked = (Configuration->LogMaxCount > 0);
+    LogMaxSizeCountEdit->AsInteger = ((Configuration->LogMaxCount > 0) ? Configuration->LogMaxCount : 5);
     BOOLPROP(LogSensitive);
 
     EnableActionsLoggingCheck->Checked = Configuration->LogActions;
@@ -735,7 +760,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     WinConfiguration->EnableQueueByDefault = EnableQueueByDefaultCheck->Checked;
     GUIConfiguration->QueueAutoPopup = QueueAutoPopupCheck->Checked;
     CopyParam.Queue = QueueCheck->Checked;
-    CopyParam.QueueIndividually = QueueIndividuallyCheck->Checked;
+    CopyParam.QueueParallel = QueueParallelCheck->Checked;
     CopyParam.QueueNoConfirmation = QueueNoConfirmationCheck->Checked;
     GUIConfiguration->QueueKeepDoneItems = (QueueKeepDoneItemsForCombo->ItemIndex != 0);
     switch (QueueKeepDoneItemsForCombo->ItemIndex)
@@ -854,41 +879,72 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     GUIConfiguration->SessionRememberPassword = SessionRememberPasswordCheck->Checked;
 
     // logging
-    Configuration->Logging = EnableLoggingCheck->Checked;
+    Configuration->Logging = EnableLoggingCheck->Checked && !LogFileNameEdit3->Text.IsEmpty();
     Configuration->LogProtocol = LogProtocolCombo->ItemIndex;
-    Configuration->LogFileName = LogToFileCheck->Checked ? LogFileNameEdit3->Text : UnicodeString();
+    Configuration->LogFileName = LogFileNameEdit3->Text;
     Configuration->LogFileAppend = LogFileAppendButton->Checked;
+    __int64 LogMaxSize;
+    if (LogMaxSizeCheck->Checked && DebugAlwaysTrue(TryStrToSize(LogMaxSizeCombo->Text, LogMaxSize)))
+    {
+      Configuration->LogMaxSize = LogMaxSize;
+    }
+    else
+    {
+      Configuration->LogMaxSize = 0;
+    }
+    Configuration->LogMaxCount = (LogMaxSizeCountCheck->Checked ? LogMaxSizeCountEdit->AsInteger : 0);
     BOOLPROP(LogSensitive);
 
     Configuration->LogActions = EnableActionsLoggingCheck->Checked;
     Configuration->ActionsLogFileName = ActionsLogFileNameEdit->Text;
 
     // languages
-    // As this dialog does not explicitly support run-time locale changing,
-    // make this last, otherwise we lose some settings (or even worse
-    // we end-up saving default text box values=control names as our configuration)
     if (LanguagesView->ItemFocused != NULL)
     {
-      GUIConfiguration->Locale =
-        reinterpret_cast<LCID>(LanguagesView->ItemFocused->Data);
+      TLocaleInfo * LocaleInfo = static_cast<TLocaleInfo *>(LanguagesView->ItemFocused->Data);
+      LCID Locale;
+      // Do not change the locale settings, unless changed explicitly by user
+      // to allow an automatic upgrade to new translation once the UI language translation
+      // becomes available
+      if (LocaleInfo->Locale == WinConfiguration->DefaultLocale)
+      {
+        Locale = NULL;
+      }
+      else
+      {
+        Locale = LocaleInfo->Locale;
+      }
+      GUIConfiguration->Locale = Locale;
     }
-
-    // This possibly fails, make it last, so that the other settings are preserved.
-    // Do nothing when no option is selected (i.e. storage is stNul).
-    if (RegistryStorageButton->Checked)
-    {
-      Configuration->Storage = stRegistry;
-    }
-    else if (IniFileStorageButton2->Checked)
-    {
-      Configuration->Storage = stIniFile;
-    }
-
     #undef BOOLPROP
   }
   __finally
   {
     Configuration->EndUpdate();
+  }
+
+  bool MoveStorage = true;
+  TStorage Storage;
+  if (RegistryStorageButton->Checked)
+  {
+    Storage = stRegistry;
+  }
+  else if (AutomaticIniFileStorageButton->Checked)
+  {
+    Storage = stIniFile;
+  }
+  else if (CustomIniFileStorageButton->Checked)
+  {
+    Storage = stIniFile;
+  }
+  else
+  {
+    MoveStorage = false;
+  }
+
+  if (MoveStorage)
+  {
+    Configuration->MoveStorage(Storage, GetCustomIniFileStorageName());
   }
 }
 //---------------------------------------------------------------------------
@@ -1074,14 +1130,24 @@ void __fastcall TPreferencesDialog::UpdateControls()
     EnableControl(CopyOnDoubleClickConfirmationCheck,
       (DoubleClickActionCombo->ItemIndex == 1) && ConfirmTransferringCheck->Checked);
 
-    TFont * ActualPanelFont = PanelFontCheck->Checked ? FPanelFont.get() : WinConfiguration->SystemIconFont;
+    TFont * ActualPanelFont = PanelFontCheck->Checked ? FPanelFont.get() : Screen->IconFont;
+    std::unique_ptr<TFont> PanelFont(new TFont());
+    PanelFont->Assign(ActualPanelFont);
+    if (PanelFontCheck->Checked)
+    {
+      PanelFont->Height = ScaleByPixelsPerInchFromSystem(PanelFont->Height, this);
+    }
+    else
+    {
+      PanelFont->Height = ScaleByPixelsPerInchFromSystem(PanelFont->Height, this);
+    }
     UnicodeString PanelFontLabelText;
     PanelFontLabelText = FMTLOAD(EDITOR_FONT_FMT,
       (ActualPanelFont->Name, ActualPanelFont->Size));
     PanelFontLabel->Caption = PanelFontLabelText;
-    if (!SameFont(PanelFontLabel->Font, ActualPanelFont))
+    if (!SameFont(PanelFontLabel->Font, PanelFont.get()))
     {
-      PanelFontLabel->Font = ActualPanelFont;
+      PanelFontLabel->Font = PanelFont.get();
     }
 
     EnableControl(RefreshRemotePanelIntervalEdit, RefreshRemotePanelCheck->Checked);
@@ -1093,14 +1159,14 @@ void __fastcall TPreferencesDialog::UpdateControls()
     EditorFontLabelText += TabSample(L"ABCD") + L"\n";
     EditorFontLabelText += TabSample(L"1234");
     EditorFontLabel->Caption = EditorFontLabelText;
-    TColor EditorFontColor = GetWindowTextColor(FEditorFont->Color);
-    if (!SameFont(EditorFontLabel->Font, FEditorFont.get()) ||
-        (EditorFontLabel->Font->Color != EditorFontColor))
+    std::unique_ptr<TFont> EditorFont(new TFont());
+    EditorFont->Assign(FEditorFont.get());
+    EditorFont->Color = GetWindowTextColor(FEditorFont->Color);
+    EditorFont->Size = ScaleByPixelsPerInchFromSystem(FEditorFont->Size, this);
+    if (!SameFont(EditorFontLabel->Font, EditorFont.get()) ||
+        (EditorFontLabel->Font->Color != EditorFont->Color))
     {
-      std::unique_ptr<TFont> Font(new TFont);
-      Font->Assign(FEditorFont.get());
-      Font->Color = EditorFontColor;
-      EditorFontLabel->Font = Font.get();
+      EditorFontLabel->Font = EditorFont.get();
     }
     EditorFontLabel->Color = GetWindowColor(FEditorBackgroundColor);
 
@@ -1158,10 +1224,10 @@ void __fastcall TPreferencesDialog::UpdateControls()
     // allow only when some of the known storages is selected,
     // and particularly do not allow switching storage, when we start with stNul,
     // as that would destroy the stored configuration
-    EnableControl(StorageGroup, RegistryStorageButton->Checked || IniFileStorageButton2->Checked);
-    IniFileStorageButton2->Caption =
-      AnsiReplaceStr(IniFileStorageButton2->Caption, L"(winscp.ini)",
-        FORMAT(L"(%s)", (ExpandEnvironmentVariables(Configuration->IniFileStorageName))));
+    EnableControl(StorageGroup,
+      RegistryStorageButton->Checked || AutomaticIniFileStorageButton->Checked || CustomIniFileStorageButton->Checked);
+    AutomaticIniFileStorageLabel->UpdateStatus();
+    EnableControl(CustomIniFileStorageEdit, CustomIniFileStorageButton->Checked);
 
     EditorFontLabel->WordWrap = EditorWordWrapCheck->Checked;
     bool EditorSelected = (EditorListView3->Selected != NULL);
@@ -1226,15 +1292,19 @@ void __fastcall TPreferencesDialog::UpdateControls()
     LanguageChangeLabel->Visible =
       DebugAlwaysTrue(!GUIConfiguration->CanApplyLocaleImmediately) &&
       (LanguagesView->ItemFocused != NULL) &&
-      (reinterpret_cast<LCID>(LanguagesView->ItemFocused->Data) != GUIConfiguration->AppliedLocale);
+      (static_cast<TLocaleInfo *>(LanguagesView->ItemFocused->Data)->Locale != GUIConfiguration->AppliedLocale);
 
     // logging
     EnableControl(LogProtocolCombo, EnableLoggingCheck->Checked);
-    EnableControl(LogToFileCheck, LogProtocolCombo->Enabled);
-    EnableControl(LogFileNameEdit3, LogToFileCheck->Enabled && LogToFileCheck->Checked);
+    EnableControl(LogFileNameEdit3, LogProtocolCombo->Enabled);
     EnableControl(LogFileNameHintText, LogFileNameEdit3->Enabled);
     EnableControl(LogFileAppendButton, LogFileNameEdit3->Enabled);
     EnableControl(LogFileOverwriteButton, LogFileNameEdit3->Enabled);
+    EnableControl(LogMaxSizeCheck, LogFileNameEdit3->Enabled);
+    EnableControl(LogMaxSizeCombo, LogMaxSizeCheck->Enabled && LogMaxSizeCheck->Checked);
+    EnableControl(LogMaxSizeCountCheck, LogMaxSizeCombo->Enabled);
+    EnableControl(LogMaxSizeCountEdit, LogMaxSizeCountCheck->Enabled && LogMaxSizeCountCheck->Checked);
+    EnableControl(LogMaxSizeCountFilesLabel, LogMaxSizeCountEdit->Enabled);
 
     EnableControl(LogSensitiveCheck, LogProtocolCombo->Enabled);
 
@@ -1267,7 +1337,7 @@ void __fastcall TPreferencesDialog::EditorFontColorButtonClick(TObject * /*Sende
   // WORKAROUND: Compiler keeps crashing randomly (but frequently) with
   // "internal error" when passing menu directly to unique_ptr.
   // Splitting it to two statements seems to help.
-  // The same hack exists in TSiteAdvancedDialog::ColorButtonClick
+  // The same hack exists in TSiteAdvancedDialog::ColorButtonClick and TOpenLocalPathHandler::Open
   TPopupMenu * Menu = CreateColorPopupMenu(FEditorFont->Color, EditorFontColorChange);
   // Popup menu has to survive the popup as TBX calls click handler asynchronously (post).
   FColorPopupMenu.reset(Menu);
@@ -1951,6 +2021,14 @@ void __fastcall TPreferencesDialog::WMHelp(TWMHelp & Message)
   TForm::Dispatch(&Message);
 }
 //---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::CMDpiChanged(TMessage & Message)
+{
+  // To update font sizes - Note that they get scaled automatically, but as we use our own algorithm,
+  // we may end up using a slightly different size, so apply it straight away for consistency
+  UpdateControls();
+  TForm::Dispatch(&Message);
+}
+//---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::Dispatch(void *Message)
 {
   TMessage * M = reinterpret_cast<TMessage*>(Message);
@@ -1958,6 +2036,10 @@ void __fastcall TPreferencesDialog::Dispatch(void *Message)
   if (M->Msg == CM_DIALOGKEY)
   {
     CMDialogKey(*((TWMKeyDown *)Message));
+  }
+  else if (M->Msg == CM_DPICHANGED)
+  {
+    CMDpiChanged(*M);
   }
   else if (M->Msg == WM_HELP)
   {
@@ -2088,7 +2170,7 @@ void __fastcall TPreferencesDialog::PathEditBeforeDialog(
 void __fastcall TPreferencesDialog::PathEditAfterDialog(
   TObject * /*Sender*/, UnicodeString & Name, bool & /*Action*/)
 {
-  if (CompareFileName(Name, ExpandEnvironmentVariables(FBeforeDialogPath)))
+  if (IsPathToSameFile(Name, ExpandEnvironmentVariables(FBeforeDialogPath)))
   {
     Name = FBeforeDialogPath;
   }
@@ -2237,10 +2319,7 @@ void __fastcall TPreferencesDialog::SetMasterPasswordButtonClick(
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::UsageViewButtonClick(TObject * /*Sender*/)
 {
-  std::unique_ptr<TStrings> Data(TextToStringList(GetUsageData()));
-  UnicodeString Message =
-    Data->Text.IsEmpty() ? MainInstructions(LoadStr(USAGE_DATA_NONE)) : LoadStr(USAGE_DATA2);
-  MoreMessageDialog(Message, Data.get(), qtInformation, qaOK, HELP_USAGE);
+  DoUsageStatisticsDialog();
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::CopyParamLabelClick(TObject * /*Sender*/)
@@ -2317,9 +2396,7 @@ void __fastcall TPreferencesDialog::UpdatesAuthenticationEmailEditExit(TObject *
 {
   if (FVerifiedUpdatesAuthenticationEmail != UpdatesAuthenticationEmailEdit->Text)
   {
-    FVerifiedUpdatesAuthenticationEmail = UpdatesAuthenticationEmailEdit->Text;
-
-    if (!FVerifiedUpdatesAuthenticationEmail.IsEmpty())
+    if (!UpdatesAuthenticationEmailEdit->Text.IsEmpty())
     {
       TUpdatesConfiguration Updates = SaveUpdates();
 
@@ -2350,6 +2427,8 @@ void __fastcall TPreferencesDialog::UpdatesAuthenticationEmailEditExit(TObject *
         }
       }
     }
+
+    FVerifiedUpdatesAuthenticationEmail = UpdatesAuthenticationEmailEdit->Text;
   }
 }
 //---------------------------------------------------------------------------
@@ -2427,6 +2506,8 @@ void __fastcall TPreferencesDialog::AddExtension()
 
     try
     {
+      UnicodeString ProvisionaryId;
+
       if (IsUrl)
       {
         UnicodeString Url = Path;
@@ -2452,17 +2533,18 @@ void __fastcall TPreferencesDialog::AddExtension()
         Http->OnError = ExtensionHttpError;
         Http->Get();
 
-        UnicodeString TrustedStr = Http->ResponseHeaders->Values["WinSCP-Extension-Trusted"];
+        UnicodeString TrustedStr = Http->ResponseHeaders->Values[L"WinSCP-Extension-Trusted"];
         Trusted = WinSCPURL && (StrToIntDef(TrustedStr, 0) != 0);
 
-        FileName = MakeValidFileName(Http->ResponseHeaders->Values["WinSCP-Extension-Id"]);
+        FileName = MakeValidFileName(Http->ResponseHeaders->Values[L"WinSCP-Extension-Id"]);
         if (FileName.IsEmpty())
         {
           FileName = MakeValidFileName(ExtractFileNameFromUrl(Path));
         }
+        ProvisionaryId = WinConfiguration->GetProvisionaryExtensionId(FileName);
         Lines->Text = Http->Response;
 
-        Latest = Http->ResponseHeaders->Values["WinSCP-Extension-Skipped"].Trim().IsEmpty();
+        Latest = Http->ResponseHeaders->Values[L"WinSCP-Extension-Skipped"].Trim().IsEmpty();
       }
       else
       {
@@ -2479,6 +2561,11 @@ void __fastcall TPreferencesDialog::AddExtension()
         if (!Id.IsEmpty())
         {
           ExtensionPath = Path;
+          ProvisionaryId = Id;
+        }
+        else
+        {
+          ProvisionaryId = WinConfiguration->GetProvisionaryExtensionId(FileName);
         }
 
         LoadScriptFromFile(Path, Lines.get());
@@ -2486,6 +2573,8 @@ void __fastcall TPreferencesDialog::AddExtension()
 
       // validate syntax
       CustomCommand.reset(new TCustomCommandType());
+      // Provisionary Id, just for the ExtensionStringTranslation, so that the test for EXTENSION_DUPLICATE below works
+      CustomCommand->Id = ProvisionaryId;
       CustomCommand->LoadExtension(Lines.get(), FileName);
     }
     catch (Exception & E)
@@ -2496,7 +2585,7 @@ void __fastcall TPreferencesDialog::AddExtension()
     if (!ExtensionPath.IsEmpty())
     {
       int Index = FExtensionList->FindIndexByFileName(Path);
-      if (Index > 0)
+      if (Index >= 0)
       {
         CustomCommandsView->ItemIndex = GetCommandListIndex(FExtensionList, Index);
         CustomCommandsView->ItemFocused->MakeVisible(false);
@@ -2547,7 +2636,7 @@ void __fastcall TPreferencesDialog::AddExtension()
         while (FileExists(ApiPath(ExtensionPath)))
         {
           Counter++;
-          ExtensionPath = LeftStr(OriginalExtensionPath, P - 1) + IntToStr(Counter) + RightStr(OriginalExtensionPath, OriginalExtensionPath.Length() - P + 1);
+          ExtensionPath = WinConfiguration->UniqueExtensionName(LeftStr(OriginalExtensionPath, P - 1), Counter) + RightStr(OriginalExtensionPath, OriginalExtensionPath.Length() - P + 1);
         }
 
         Lines->SaveToFile(ApiPath(ExtensionPath));
@@ -2691,5 +2780,129 @@ void __fastcall TPreferencesDialog::ConfigureCommand()
   }
   DoCustomCommandOptionsDialog(Command, FCustomCommandOptions.get(), TCustomCommandType::ofConfig, NULL, GetSessionKey());
   UpdateCustomCommandsView();
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::LanguagesViewCustomDrawItem(
+  TCustomListView * Sender, TListItem * Item, TCustomDrawState /*State*/, bool & /*DefaultDraw*/)
+{
+  TLocaleInfo * LocaleInfo = static_cast<TLocaleInfo *>(Item->Data);
+  if (LocaleInfo->Locale == WinConfiguration->DefaultLocale)
+  {
+    Sender->Canvas->Font->Style = Sender->Canvas->Font->Style << fsBold;
+  }
+
+  if (LocaleInfo->Completeness < 0)
+  {
+    Sender->Canvas->Font->Color = clRed;
+  }
+  else if (LocaleInfo->Completeness < 100)
+  {
+    Sender->Canvas->Font->Color = clGrayText;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::LogMaxSizeComboExit(TObject * /*Sender*/)
+{
+  __int64 Size;
+  if (!TryStrToSize(LogMaxSizeCombo->Text, Size))
+  {
+    LogMaxSizeCombo->SetFocus();
+    throw Exception(FMTLOAD(SIZE_INVALID, (LogMaxSizeCombo->Text)));
+  }
+  else
+  {
+    LogMaxSizeCombo->Text = SizeToStr(Size);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::PuttyPathEditExit(TObject * /*Sender*/)
+{
+  try
+  {
+    UnicodeString Program, AParams, Dir;
+    SplitCommand(PuttyPathEdit->Text, Program, AParams, Dir);
+  }
+  catch(...)
+  {
+    PuttyPathEdit->SelectAll();
+    PuttyPathEdit->SetFocus();
+    throw;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::AutomaticIniFileStorageLabelGetStatus(TCustomPathLabel * /*Sender*/, bool & Active)
+{
+  Active = AutomaticIniFileStorageButton->Checked;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TPreferencesDialog::GetCustomIniFileStorageName()
+{
+  UnicodeString Result;
+  if (CustomIniFileStorageButton->Checked)
+  {
+    Result = CustomIniFileStorageEdit->Text;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::CustomIniFileStorageChanged()
+{
+  UnicodeString CustomIniFileStorageName = GetCustomIniFileStorageName();
+  if (!CustomIniFileStorageName.IsEmpty() &&
+      !IsPathToSameFile(CustomIniFileStorageName, FCustomIniFileStorageName) &&
+      FileExists(CustomIniFileStorageName))
+  {
+    UnicodeString Message = FORMAT(LoadStrPart(CUSTOM_INI_FILE_OVERWRITE, 1), (CustomIniFileStorageName));
+    TMessageParams Params;
+    TQueryButtonAlias Aliases[2];
+    Aliases[0].Button = qaYes;
+    Aliases[0].Alias = LoadStrPart(CUSTOM_INI_FILE_OVERWRITE, 2);
+    Aliases[1].Button = qaNo;
+    Aliases[1].Alias = LoadStrPart(CUSTOM_INI_FILE_OVERWRITE, 3);
+    Params.Aliases = Aliases;
+    Params.AliasesCount = 2;
+    unsigned int Result = MessageDialog(Message, qtConfirmation, qaYes | qaNo | qaCancel, HELP_MOVE_CONFIGURATION, &Params);
+    if (Result == qaYes)
+    {
+      // noop
+    }
+    else if (Result == qaNo)
+    {
+      Configuration->ScheduleCustomIniFileStorageUse(GetCustomIniFileStorageName());
+      ExecuteNewInstance(L"");
+      TerminateApplication();
+    }
+    else
+    {
+      Abort();
+    }
+  }
+  FCustomIniFileStorageName = CustomIniFileStorageName;
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::CustomIniFileStorageEditExit(TObject * /*Sender*/)
+{
+  CustomIniFileStorageChanged();
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::CustomIniFileStorageEditAfterDialog(TObject * Sender, UnicodeString & Name, bool & Action)
+{
+  PathEditAfterDialog(Sender, Name, Action);
+  if (Action)
+  {
+    CustomIniFileStorageEdit->Text = Name;
+    CustomIniFileStorageChanged();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::CustomIniFileStorageButtonClick(TObject * /*Sender*/)
+{
+  UpdateControls();
+  // Handler is shown also when Checked is set from LoadConfiguration
+  if (FNoUpdate == 0)
+  {
+    // Focus to force validation
+    CustomIniFileStorageEdit->SetFocus();
+  }
 }
 //---------------------------------------------------------------------------

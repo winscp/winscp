@@ -139,6 +139,7 @@ public:
   void __fastcall ClearStdError();
   bool __fastcall GetStoredCredentialsTried();
   void __fastcall CollectUsage();
+  bool __fastcall CanChangePassword();
 
   void __fastcall RegisterReceiveHandler(TNotifyEvent Handler);
   void __fastcall UnregisterReceiveHandler(TNotifyEvent Handler);

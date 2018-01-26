@@ -81,6 +81,8 @@ __fastcall TLoginDialog::TLoginDialog(TComponent* AOwner)
 
   FBasicGroupBaseHeight = BasicGroup->Height - BasicSshPanel->Height - BasicFtpPanel->Height;
   FNoteGroupOffset = NoteGroup->Top - (BasicGroup->Top + BasicGroup->Height);
+
+  FSiteButtonsPadding = SitesPanel->ClientHeight - ToolsMenuButton->Top - ToolsMenuButton->Height;
   HideComponentsPanel(this);
 }
 //---------------------------------------------------------------------
@@ -146,6 +148,16 @@ void __fastcall TLoginDialog::InitControls()
   UpdateNodeImages();
   SelectScaledImageList(ActionImageList);
 
+  GenerateButtonImages();
+
+  if (SessionTree->Items->Count > 0)
+  {
+    SetNewSiteNodeLabel();
+  }
+}
+//---------------------------------------------------------------------
+void __fastcall TLoginDialog::GenerateButtonImages()
+{
   // Generate button images.
   // The button does not support alpha channel,
   // so we have to copy the PNG's to BMP's and use plain transparent color
@@ -155,11 +167,6 @@ void __fastcall TLoginDialog::InitControls()
 
   LoginButton->ImageIndex = AddLoginButtonImage(true);
   LoginButton->DisabledImageIndex = AddLoginButtonImage(false);
-
-  if (SessionTree->Items->Count > 0)
-  {
-    SetNewSiteNodeLabel();
-  }
 }
 //---------------------------------------------------------------------
 int __fastcall TLoginDialog::AddLoginButtonImage(bool Enabled)
@@ -686,6 +693,12 @@ void __fastcall TLoginDialog::FormShow(TObject * /*Sender*/)
     Init();
   }
 
+  // WORKAROUND for a bug in the VCL layout code for bottom aligned controls
+  int Offset = (SitesPanel->ClientHeight - FSiteButtonsPadding - ToolsMenuButton->Height) - ToolsMenuButton->Top;
+  ToolsMenuButton->Top = ToolsMenuButton->Top + Offset;
+  ManageButton->Top = ManageButton->Top + Offset;
+  SessionTree->Height = SessionTree->Height + Offset;
+
   // among other this makes the expanded nodes look like expanded,
   // because the LoadState call in Execute would be too early,
   // and some stray call to collapsed event during showing process,
@@ -1065,16 +1078,13 @@ void __fastcall TLoginDialog::ReloadSessions(const UnicodeString & SelectSite)
 void __fastcall TLoginDialog::ImportSessionsActionExecute(TObject * /*Sender*/)
 {
   std::unique_ptr<TList> Imported(new TList());
-  if (DoImportSessionsDialog(Imported.get()))
+  if (DoImportSessionsDialog(Imported.get()) &&
+      // Can be empty when imported known_hosts
+      (Imported->Count > 0))
   {
-    UnicodeString SelectSite;
-    if (DebugAlwaysTrue(Imported->Count > 0))
-    {
-      // Focus the first imported session.
-      // We should also consider expanding all newly created folders
-      SelectSite = static_cast<TSessionData *>(Imported->Items[0])->Name;
-    }
-
+    // Focus the first imported session.
+    // We should also consider expanding all newly created folders
+    UnicodeString SelectSite = static_cast<TSessionData *>(Imported->Items[0])->Name;
     ReloadSessions(SelectSite);
 
     // Focus the tree with focused imported session(s).
@@ -1555,6 +1565,13 @@ void __fastcall TLoginDialog::WMMoving(TMessage & Message)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TLoginDialog::CMDpiChanged(TMessage & Message)
+{
+  TForm::Dispatch(&Message);
+  GenerateButtonImages();
+  CenterButtonImage(LoginButton);
+}
+//---------------------------------------------------------------------------
 void __fastcall TLoginDialog::Dispatch(void * Message)
 {
   TMessage * M = reinterpret_cast<TMessage*>(Message);
@@ -1569,6 +1586,10 @@ void __fastcall TLoginDialog::Dispatch(void * Message)
     M->Result = 1;
   }
   else if (M->Msg == WM_WANTS_MOUSEWHEEL)
+  {
+    M->Result = 1;
+  }
+  else if (M->Msg == WM_CAN_DISPLAY_UPDATES)
   {
     M->Result = 1;
   }
@@ -1592,6 +1613,10 @@ void __fastcall TLoginDialog::Dispatch(void * Message)
   else if (M->Msg == WM_MOVING)
   {
     WMMoving(*M);
+  }
+  else if (M->Msg == CM_DPICHANGED)
+  {
+    CMDpiChanged(*M);
   }
   else
   {
@@ -2380,11 +2405,12 @@ void __fastcall TLoginDialog::SessionTreeExpanding(TObject * /*Sender*/,
 void __fastcall TLoginDialog::ExecuteTool(const UnicodeString & Name)
 {
   UnicodeString Path;
-  if (!FindTool(Name, Path) ||
-      !ExecuteShell(Path, L""))
+  if (!FindTool(Name, Path))
   {
     throw Exception(FMTLOAD(EXECUTE_APP_ERROR, (Name)));
   }
+
+  ExecuteShellChecked(Path, L"");
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::RunPageantActionExecute(TObject * /*Sender*/)
@@ -2467,17 +2493,9 @@ void __fastcall TLoginDialog::PortNumberEditChange(TObject * Sender)
   DataChange(Sender);
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TLoginDialog::ImportExportIniFilePath()
-{
-  UnicodeString PersonalDirectory = GetPersonalFolder();
-  UnicodeString FileName = IncludeTrailingBackslash(PersonalDirectory) +
-    ExtractFileName(ExpandEnvironmentVariables(Configuration->IniFileStorageName));
-  return FileName;
-}
-//---------------------------------------------------------------------------
 void __fastcall TLoginDialog::ExportActionExecute(TObject * /*Sender*/)
 {
-  UnicodeString FileName = ImportExportIniFilePath();
+  UnicodeString FileName = Configuration->GetDefaultIniFileExportPath();
   if (SaveDialog(LoadStr(EXPORT_CONF_TITLE), LoadStr(EXPORT_CONF_FILTER), L"ini", FileName))
   {
     Configuration->Export(FileName);
@@ -2493,7 +2511,7 @@ void __fastcall TLoginDialog::ImportActionExecute(TObject * /*Sender*/)
     OpenDialog->Title = LoadStr(IMPORT_CONF_TITLE);
     OpenDialog->Filter = LoadStr(EXPORT_CONF_FILTER);
     OpenDialog->DefaultExt = L"ini";
-    OpenDialog->FileName = ImportExportIniFilePath();
+    OpenDialog->FileName = Configuration->GetDefaultIniFileExportPath();
 
     if (OpenDialog->Execute())
     {
@@ -3043,5 +3061,13 @@ void __fastcall TLoginDialog::SearchSiteNameActionExecute(TObject * /*Sender*/)
 void __fastcall TLoginDialog::SearchSiteActionExecute(TObject * /*Sender*/)
 {
   FSiteSearch = ssSite;
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::ChangeScale(int M, int D)
+{
+  TForm::ChangeScale(M, D);
+  FSiteButtonsPadding = MulDiv(FSiteButtonsPadding, M, D);
+  FBasicGroupBaseHeight = MulDiv(FBasicGroupBaseHeight, M, D);
+  FNoteGroupOffset = MulDiv(FNoteGroupOffset, M, D);
 }
 //---------------------------------------------------------------------------

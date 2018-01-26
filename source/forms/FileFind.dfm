@@ -1359,6 +1359,7 @@ object FileFindDialog: TFileFindDialog
   KeyPreview = True
   OldCreateOrder = False
   Position = poOwnerFormCenter
+  OnClose = FormClose
   OnCloseQuery = FormCloseQuery
   OnKeyDown = FormKeyDown
   OnShow = FormShow
@@ -1370,13 +1371,13 @@ object FileFindDialog: TFileFindDialog
   object FilterGroup: TGroupBox
     Left = 8
     Top = 6
-    Width = 461
+    Width = 434
     Height = 127
     Anchors = [akLeft, akTop, akRight]
     Caption = 'Filter'
     TabOrder = 0
     DesignSize = (
-      461
+      434
       127)
     object MaskLabel: TLabel
       Left = 49
@@ -1403,7 +1404,7 @@ object FileFindDialog: TFileFindDialog
     object RemoteDirectoryEdit: THistoryComboBox
       Left = 49
       Top = 87
-      Width = 401
+      Width = 374
       Height = 21
       AutoComplete = False
       Anchors = [akLeft, akTop, akRight]
@@ -1415,7 +1416,7 @@ object FileFindDialog: TFileFindDialog
     object MaskEdit: THistoryComboBox
       Left = 49
       Top = 36
-      Width = 315
+      Width = 288
       Height = 21
       AutoComplete = False
       Anchors = [akLeft, akTop, akRight]
@@ -1426,7 +1427,7 @@ object FileFindDialog: TFileFindDialog
       OnExit = MaskEditExit
     end
     object MaskHintText: TStaticText
-      Left = 240
+      Left = 213
       Top = 59
       Width = 124
       Height = 17
@@ -1438,8 +1439,8 @@ object FileFindDialog: TFileFindDialog
       TabStop = True
     end
     object MaskButton: TButton
-      Left = 370
-      Top = 33
+      Left = 343
+      Top = 34
       Width = 80
       Height = 25
       Anchors = [akTop, akRight]
@@ -1448,21 +1449,10 @@ object FileFindDialog: TFileFindDialog
       OnClick = MaskButtonClick
     end
   end
-  object CancelButton: TButton
-    Left = 476
-    Top = 43
-    Width = 80
-    Height = 25
-    Anchors = [akTop, akRight]
-    Cancel = True
-    Caption = 'Close'
-    ModalResult = 2
-    TabOrder = 2
-  end
   object StartStopButton: TButton
-    Left = 476
+    Left = 448
     Top = 11
-    Width = 80
+    Width = 108
     Height = 25
     Anchors = [akTop, akRight]
     Caption = '&StartX'
@@ -1471,28 +1461,31 @@ object FileFindDialog: TFileFindDialog
     OnClick = StartStopButtonClick
   end
   object HelpButton: TButton
-    Left = 476
-    Top = 75
-    Width = 80
+    Left = 448
+    Top = 42
+    Width = 108
     Height = 25
     Anchors = [akTop, akRight]
     Caption = '&Help'
-    TabOrder = 4
+    TabOrder = 2
     OnClick = HelpButtonClick
   end
   object FileView: TIEListView
     Left = 8
     Top = 142
-    Width = 461
+    Width = 434
     Height = 252
     Anchors = [akLeft, akTop, akRight, akBottom]
     ColumnClick = False
     FullDrag = True
     ReadOnly = True
     RowSelect = True
-    TabOrder = 5
+    PopupMenu = FileViewPopupMenu
+    TabOrder = 3
     ViewStyle = vsReport
     OnDblClick = FileViewDblClick
+    OnEnter = ControlChange
+    OnExit = ControlChange
     NortonLike = nlOff
     Columns = <
       item
@@ -1512,7 +1505,7 @@ object FileFindDialog: TFileFindDialog
         Caption = 'Changed'
         Width = 90
       end>
-    MultiSelect = False
+    OnContextPopup = FileViewContextPopup
     OnSelectItem = FileViewSelectItem
   end
   object StatusBar: TStatusBar
@@ -1524,34 +1517,98 @@ object FileFindDialog: TFileFindDialog
     SimplePanel = True
   end
   object FocusButton: TButton
-    Left = 476
+    Left = 448
     Top = 142
-    Width = 80
+    Width = 108
     Height = 25
+    Action = FocusAction
     Anchors = [akTop, akRight]
-    Caption = 'Fo&cus'
-    ModalResult = 1
-    TabOrder = 6
-    OnClick = FocusButtonClick
-  end
-  object MinimizeButton: TButton
-    Left = 476
-    Top = 43
-    Width = 80
-    Height = 25
-    Anchors = [akTop, akRight]
-    Caption = '&Minimize'
-    TabOrder = 3
-    OnClick = MinimizeButtonClick
+    TabOrder = 4
   end
   object CopyButton: TButton
-    Left = 475
-    Top = 173
-    Width = 80
+    Left = 448
+    Top = 369
+    Width = 106
     Height = 25
-    Anchors = [akTop, akRight]
-    Caption = '&Copy'
+    Action = CopyAction
+    Anchors = [akRight, akBottom]
     TabOrder = 7
-    OnClick = CopyButtonClick
+  end
+  object DeleteButton: TButton
+    Left = 448
+    Top = 204
+    Width = 108
+    Height = 25
+    Action = DeleteAction
+    Anchors = [akTop, akRight]
+    TabOrder = 6
+  end
+  object DownloadButton: TButton
+    Left = 448
+    Top = 173
+    Width = 108
+    Height = 25
+    Action = DownloadAction
+    Anchors = [akTop, akRight]
+    TabOrder = 5
+  end
+  object FileViewPopupMenu: TPopupMenu
+    Left = 478
+    Top = 237
+    object Focus1: TMenuItem
+      Action = FocusAction
+      Default = True
+    end
+    object N1: TMenuItem
+      Caption = '-'
+    end
+    object Download1: TMenuItem
+      Action = DownloadAction
+    end
+    object Delete1: TMenuItem
+      Action = DeleteAction
+    end
+    object N2: TMenuItem
+      Caption = '-'
+    end
+    object SelectAllItem: TMenuItem
+      Action = SelectAllAction
+    end
+    object N3: TMenuItem
+      Caption = '-'
+    end
+    object CopyResults1: TMenuItem
+      Action = CopyAction
+    end
+  end
+  object ActionList: TActionList
+    Left = 478
+    Top = 293
+    object DeleteAction: TAction
+      Caption = '&Delete'
+      SecondaryShortCuts.Strings = (
+        'F8')
+      ShortCut = 46
+      OnExecute = DeleteActionExecute
+    end
+    object FocusAction: TAction
+      Caption = 'Fo&cus'
+      OnExecute = FocusActionExecute
+    end
+    object SelectAllAction: TAction
+      Caption = 'Select &All'
+      ShortCut = 16449
+      OnExecute = SelectAllActionExecute
+    end
+    object CopyAction: TAction
+      Caption = '&Copy Results'
+      ShortCut = 16451
+      OnExecute = CopyActionExecute
+    end
+    object DownloadAction: TAction
+      Caption = 'Down&load...'
+      ShortCut = 116
+      OnExecute = DownloadActionExecute
+    end
   end
 end

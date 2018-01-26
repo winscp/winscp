@@ -242,6 +242,7 @@ void __fastcall TConsoleDialog::ExecuteCommand()
   catch(Exception & E)
   {
     DebugAssert(FLastTerminal != NULL);
+    // Should use the command session, if there's one, not to close the main session
     FLastTerminal->ShowExtendedException(&E);
   }
 }

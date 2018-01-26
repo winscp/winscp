@@ -55,9 +55,6 @@ __fastcall TPropertiesDialog::TPropertiesDialog(TComponent* AOwner,
   FOnCalculateChecksum = OnCalculateChecksum;
   RightsFrame->OnChange = ControlChange;
 
-  FShellImageList = SharedSystemImageList(true);
-  FShellImageList->DrawingStyle = dsTransparent;
-
   FFileList = new TStringList();
   FFileList->Assign(FileList);
   FAllowedChanges = AllowedChanges;
@@ -83,8 +80,6 @@ __fastcall TPropertiesDialog::~TPropertiesDialog()
 {
   delete FFileList;
   FFileList = NULL;
-  delete FShellImageList;
-  FShellImageList = NULL;
 }
 //---------------------------------------------------------------------
 bool __fastcall TPropertiesDialog::Execute(TRemoteProperties & Properties)
@@ -248,34 +243,9 @@ void __fastcall TPropertiesDialog::LoadInfo()
   if (!FMultiple)
   {
     TRemoteFile * File = (TRemoteFile *)(FFileList->Objects[0]);
-    DebugAssert(File && FShellImageList);
+    DebugAssert(File);
 
-    FileIconImage->Picture->Bitmap = NULL;
-
-    // shell image list does not have fixed large icon size
-    // (it is probably 32x32 min, but can be larger, on xp it is 48x48 if
-    // large icons are enabled, on vista can be even larger).
-    // so we stretch (shrink) the icon to 32x32 here to be sure.
-    Graphics::TBitmap * Bitmap = new Graphics::TBitmap;
-    try
-    {
-      FShellImageList->GetBitmap(File->IconIndex, Bitmap);
-      int Size = DialogImageSize();
-      // Use exact DPI-scaled size, not approximate scaling by font size.
-      // Otherwise we stretch icons unnecessarily because the canvas
-      // is one or two pixels off the icon size
-      FileIconImage->Width = Size;
-      FileIconImage->Height = Size;
-      FileIconImage->Picture->Bitmap->Width = Size;
-      FileIconImage->Picture->Bitmap->Height = Size;
-      FileIconImage->Picture->Bitmap->Canvas->StretchDraw(
-        TRect(0, 0, Size, Size),
-        Bitmap);
-    }
-    __finally
-    {
-      delete Bitmap;
-    }
+    UpdateFileImage();
 
     LinksToLabelLabel->Visible = File->IsSymLink;
     LinksToLabel->Visible = File->IsSymLink;
@@ -299,6 +269,40 @@ void __fastcall TPropertiesDialog::LoadInfo()
 
   ChecksumGroup->Visible = !FMultipleChecksum;
   ChecksumView->Visible = FMultipleChecksum;
+}
+//---------------------------------------------------------------------------
+void __fastcall TPropertiesDialog::UpdateFileImage()
+{
+  TImageList * ImageList = ShellImageListForControl(this, ilsLarge);
+
+  FileIconImage->Picture->Bitmap = NULL;
+
+  TRemoteFile * File = (TRemoteFile *)(FFileList->Objects[0]);
+
+  // shell image list does not have fixed large icon size
+  // (it is probably 32x32 min, but can be larger, on xp it is 48x48 if
+  // large icons are enabled, on vista can be even larger).
+  // so we stretch (shrink) the icon to 32x32 here to be sure.
+  Graphics::TBitmap * Bitmap = new Graphics::TBitmap;
+  try
+  {
+    ImageList->GetBitmap(File->IconIndex, Bitmap);
+    int Size = DialogImageSize(this);
+    // Use exact DPI-scaled size, not approximate scaling by font size.
+    // Otherwise we stretch icons unnecessarily because the canvas
+    // is one or two pixels off the icon size
+    FileIconImage->Width = Size;
+    FileIconImage->Height = Size;
+    FileIconImage->Picture->Bitmap->Width = Size;
+    FileIconImage->Picture->Bitmap->Height = Size;
+    FileIconImage->Picture->Bitmap->Canvas->StretchDraw(
+      TRect(0, 0, Size, Size),
+      Bitmap);
+  }
+  __finally
+  {
+    delete Bitmap;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TPropertiesDialog::LoadStats(__int64 FilesSize,
@@ -753,5 +757,27 @@ void __fastcall TPropertiesDialog::OwnerComboBoxExit(TObject * Sender)
 void __fastcall TPropertiesDialog::FormShow(TObject * /*Sender*/)
 {
   UpdateControls();
+}
+//---------------------------------------------------------------------------
+void __fastcall TPropertiesDialog::CMDpiChanged(TMessage & Message)
+{
+  TForm::Dispatch(&Message);
+  if (!FMultiple)
+  {
+    UpdateFileImage();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPropertiesDialog::Dispatch(void * Message)
+{
+  TMessage * M = reinterpret_cast<TMessage*>(Message);
+  if (M->Msg == CM_DPICHANGED)
+  {
+    CMDpiChanged(*M);
+  }
+  else
+  {
+    TForm::Dispatch(Message);
+  }
 }
 //---------------------------------------------------------------------------

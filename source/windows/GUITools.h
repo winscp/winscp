@@ -2,15 +2,6 @@
 #ifndef GUIToolsH
 #define GUIToolsH
 //---------------------------------------------------------------------------
-// from shlobj.h
-#define CSIDL_DESKTOP                   0x0000        // <desktop>
-#define CSIDL_SENDTO                    0x0009        // <user name>\SendTo
-#define CSIDL_DESKTOPDIRECTORY          0x0010        // <user name>\Desktop
-#define CSIDL_COMMON_DESKTOPDIRECTORY   0x0019        // All Users\Desktop
-#define CSIDL_APPDATA                   0x001a        // <user name>\Application Data
-#define CSIDL_PROGRAM_FILES             0x0026        // C:\Program Files
-#define CSIDL_PERSONAL                  0x0005        // My Documents
-//---------------------------------------------------------------------------
 #include <FileMasks.H>
 #include <Tbx.hpp>
 //---------------------------------------------------------------------------
@@ -20,23 +11,19 @@ typedef void __fastcall (__closure* TProcessMessagesEvent)();
 //---------------------------------------------------------------------------
 bool __fastcall FindFile(UnicodeString & Path);
 bool __fastcall FindTool(const UnicodeString & Name, UnicodeString & Path);
-bool __fastcall ExecuteShell(const UnicodeString Path, const UnicodeString Params, bool ChangeWorkingDirectory = false);
-bool __fastcall ExecuteShell(const UnicodeString Command);
+void __fastcall ExecuteShellChecked(const UnicodeString Path, const UnicodeString Params,
+  bool ChangeWorkingDirectory = false);
+void __fastcall ExecuteShellChecked(const UnicodeString Command);
 bool __fastcall ExecuteShell(const UnicodeString Path, const UnicodeString Params,
   HANDLE & Handle);
-bool __fastcall ExecuteShellAndWait(HWND Handle, const UnicodeString Path,
-  const UnicodeString Params, TProcessMessagesEvent ProcessMessages);
-bool __fastcall ExecuteShellAndWait(HWND Handle, const UnicodeString Command,
-  TProcessMessagesEvent ProcessMessages);
+void __fastcall ExecuteShellCheckedAndWait(const UnicodeString Command, TProcessMessagesEvent ProcessMessages);
+bool __fastcall CopyCommandToClipboard(const UnicodeString & Command);
 void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
   TSessionData * SessionData);
 bool __fastcall SpecialFolderLocation(int PathID, UnicodeString & Path);
-UnicodeString __fastcall GetPersonalFolder();
-UnicodeString __fastcall GetDesktopFolder();
 UnicodeString __fastcall UniqTempDir(const UnicodeString BaseDir,
   const UnicodeString Identity, bool Mask = false);
 bool __fastcall DeleteDirectory(const UnicodeString DirName);
-UnicodeString __fastcall FormatDateTimeSpan(const UnicodeString TimeFormat, TDateTime DateTime);
 void __fastcall AddSessionColorImage(TCustomImageList * ImageList, TColor Color, int MaskIndex);
 void __fastcall SetSubmenu(TTBXCustomItem * Item);
 typedef int __fastcall (*TCalculateWidth)(UnicodeString Text, void * Arg);
@@ -45,10 +32,10 @@ void __fastcall ApplyTabs(
   TCalculateWidth CalculateWidth, void * CalculateWidthArg);
 TPanel * __fastcall CreateLabelPanel(TPanel * Parent, const UnicodeString & Label);
 void __fastcall SelectScaledImageList(TImageList * ImageList);
-void __fastcall CopyDataModule(TDataModule * TargetModule, TDataModule * SourceModule);
 void __fastcall CopyImageList(TImageList * TargetList, TImageList * SourceList);
 void __fastcall LoadDialogImage(TImage * Image, const UnicodeString & ImageName);
-int __fastcall DialogImageSize();
+int __fastcall DialogImageSize(TForm * Form);
+int __fastcall NormalizePixelsPerInch(int PixelsPerInch);
 void __fastcall HideComponentsPanel(TForm * Form);
 namespace Webbrowserex
 {
@@ -94,6 +81,11 @@ namespace Pngimagelist
 }
 using namespace Pngimagelist;
 //---------------------------------------------------------------------------
+TPngImageList * __fastcall GetAnimationsImages(TControl * Control);
+TImageList * __fastcall GetButtonImages(TControl * Control);
+TPngImageList * __fastcall GetDialogImages(TControl * Control);
+void __fastcall ReleaseImagesModules();
+//---------------------------------------------------------------------------
 class TFrameAnimation
 {
 public:
@@ -103,6 +95,7 @@ public:
   void __fastcall Stop();
 
 private:
+  UnicodeString FName;
   TPaintBox * FPaintBox;
   TPngImageList * FImageList;
   int FFirstFrame;
@@ -113,13 +106,15 @@ private:
   TTimer * FTimer;
   bool FPainted;
 
-  void __fastcall DoInit(TPaintBox * PaintBox, TPngImageList * ImageList, const UnicodeString & Name, bool Null);
+  void __fastcall DoInit();
   void __fastcall PaintBoxPaint(TObject * Sender);
   void __fastcall CalculateNextFrameTick();
   TPngImageCollectionItem * __fastcall GetCurrentImage();
   void __fastcall Animate();
   void __fastcall Timer(TObject * Sender);
   void __fastcall Repaint();
+  void __fastcall Rescale();
+  static void __fastcall PaintBoxRescale(TComponent * Sender, TObject * Token);
 };
 //---------------------------------------------------------------------------
 class TScreenTipHintWindow : public THintWindow
@@ -142,6 +137,7 @@ private:
   UnicodeString FLongHint;
   TControl * FHintControl;
   bool FHintPopup;
+  std::unique_ptr<TFont> FScaledHintFont;
 
   UnicodeString __fastcall GetLongHintIfAny(const UnicodeString & AHint);
   static int __fastcall GetTextFlags(TControl * Control);

@@ -308,7 +308,7 @@ int CFileZillaApi::CustomCommand(CString CustomCommand)
   return m_pMainThread->LastOperationSuccessful()?FZ_REPLY_OK:FZ_REPLY_ERROR;
 }
 
-int CFileZillaApi::Delete(CString FileName, const CServerPath &path /*=CServerPath()*/)
+int CFileZillaApi::Delete(CString FileName, const CServerPath &path, bool filenameOnly)
 {
   //Check if call allowed
   if (!m_bInitialized)
@@ -332,6 +332,7 @@ int CFileZillaApi::Delete(CString FileName, const CServerPath &path /*=CServerPa
   command.id=FZ_COMMAND_DELETE;
   command.param1=FileName;
   command.path=path2;
+  command.param4 = (filenameOnly ? 1 : 0);
   m_pMainThread->Command(command);
   return m_pMainThread->LastOperationSuccessful()?FZ_REPLY_OK:FZ_REPLY_ERROR;
 }

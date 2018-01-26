@@ -204,9 +204,9 @@ void __fastcall TSynchronizeDialog::SetParams(const TSynchronizeParamType& value
   FParams = value;
   RemoteDirectoryEdit->Text = value.RemoteDirectory;
   LocalDirectoryEdit->Text = value.LocalDirectory;
-  SynchronizeDeleteCheck->Checked = FLAGSET(value.Params, spDelete);
-  SynchronizeExistingOnlyCheck->Checked = FLAGSET(value.Params, spExistingOnly);
-  SynchronizeSelectedOnlyCheck->Checked = FLAGSET(value.Params, spSelectedOnly);
+  SynchronizeDeleteCheck->Checked = FLAGSET(value.Params, TTerminal::spDelete);
+  SynchronizeExistingOnlyCheck->Checked = FLAGSET(value.Params, TTerminal::spExistingOnly);
+  SynchronizeSelectedOnlyCheck->Checked = FLAGSET(value.Params, TTerminal::spSelectedOnly);
   SynchronizeRecursiveCheck->Checked = FLAGSET(value.Options, soRecurse);
   SynchronizeSynchronizeCheck->State =
     FLAGSET(value.Options, soSynchronizeAsk) ? cbGrayed :
@@ -220,10 +220,10 @@ TSynchronizeParamType __fastcall TSynchronizeDialog::GetParams()
   Result.RemoteDirectory = RemoteDirectoryEdit->Text;
   Result.LocalDirectory = LocalDirectoryEdit->Text;
   Result.Params =
-    (Result.Params & ~(spDelete | spExistingOnly | spSelectedOnly | spTimestamp)) |
-    FLAGMASK(SynchronizeDeleteCheck->Checked, spDelete) |
-    FLAGMASK(SynchronizeExistingOnlyCheck->Checked, spExistingOnly) |
-    FLAGMASK(SynchronizeSelectedOnlyCheck->Checked, spSelectedOnly);
+    (Result.Params & ~(TTerminal::spDelete | TTerminal::spExistingOnly | TTerminal::spSelectedOnly | TTerminal::spTimestamp)) |
+    FLAGMASK(SynchronizeDeleteCheck->Checked, TTerminal::spDelete) |
+    FLAGMASK(SynchronizeExistingOnlyCheck->Checked, TTerminal::spExistingOnly) |
+    FLAGMASK(SynchronizeSelectedOnlyCheck->Checked, TTerminal::spSelectedOnly);
   Result.Options =
     (Result.Options & ~(soRecurse | soSynchronize | soSynchronizeAsk | soContinueOnError)) |
     FLAGMASK(SynchronizeRecursiveCheck->Checked, soRecurse) |

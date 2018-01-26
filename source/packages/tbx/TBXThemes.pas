@@ -9,10 +9,9 @@ unit TBXThemes;
 interface
 
 {$I TB2Ver.inc}
-{$I TBX.inc}
 
 uses
-  Windows, Messages, Classes, Forms, Graphics, ImgList;
+  Windows, Messages, Classes, Forms, Graphics, ImgList, Controls, TB2Item;
 
 { TBX_SYSCOMMAND message }
 const
@@ -32,8 +31,6 @@ const
   TMI_MENU_LCAPTIONMARGIN    = 33;
   TMI_MENU_RCAPTIONMARGIN    = 34;
   TMI_MENU_SEPARATORSIZE     = 35;
-  TMI_MENU_MDI_DW            = 36;
-  TMI_MENU_MDI_DH            = 37;
   TMI_TLBR_SEPARATORSIZE     = 50;
   TMI_EDIT_FRAMEWIDTH        = 60;
   TMI_EDIT_TEXTMARGINHORZ    = 61;
@@ -48,9 +45,6 @@ const
   TMB_EDITHEIGHTEVEN         = 4; // forces the height of the edit item to be even number (otherwise it will be odd)
   TMB_PAINTDOCKBACKGROUND    = 5; // docks are painted by the theme instead of having a uniform color
   TMB_SOLIDTOOLBARNCAREA     = 6; // no transparency in NC area of toolbars
-  TMB_SOLIDTOOLBARCLIENTAREA = 7; // no transparency in client area of toolbars
-
-  TMB_SOLIDTOOLBARS          = TMB_SOLIDTOOLBARNCAREA; // for compatibility only
 
 { Margins Metric IDs}
 const
@@ -154,19 +148,6 @@ const
   PSBT_LEFT                  = 3;
   PSBT_RIGHT                 = 4;
 
-{ PaintFrameControl kinds }
-const
-  PFC_CHECKBOX                = 1;
-  PFC_RADIOBUTTON             = 2;
-
-{ PaintFrameControl states }
-  PFS_CHECKED                 = $01;
-  PFS_MIXED                   = $02;
-  PFS_DISABLED                = $04;
-  PFS_HOT                     = $08;
-  PFS_PUSHED                  = $10;
-  PFS_FOCUSED                 = $20;
-
 { Item state flags }
 const
   ISF_DISABLED               = $001;
@@ -205,6 +186,7 @@ type
   TTBXHoverKind = (hkNone, hkKeyboardHover, hkMouseHover);
   TTBXComboPart = (cpNone, cpCombo, cpSplitLeft, cpSplitRight);
   TTBXItemInfo = record
+    Control: TControl;
     ViewType: Integer;          // VT_*, TVT_*, PVT_*, or DPVT_* constant
     ItemOptions: Integer;       // IO_* flags
     Enabled: Boolean;
@@ -223,6 +205,7 @@ type
   end;
 
   TTBXWindowInfo = record
+    ParentControl: TControl;
     ParentHandle: HWND;         // handle of a parent floating window
     WindowHandle: HWND;         // handle of a toolbar or dockable panel
     ViewType: Integer;          // TVT_* or DPVT_* view types (loating)
@@ -308,7 +291,7 @@ type
     function  GetItemImageBackground(const ItemInfo: TTBXItemInfo): TColor; virtual; abstract;
     procedure GetMargins(MarginID: Integer; out Margins: TTBXMargins); virtual; abstract;
     function  GetPopupShadowType: Integer; virtual; abstract; // returns one of the PST_ constants
-    procedure GetViewBorder(ViewType: Integer; out Border: TPoint); virtual; abstract;
+    procedure GetViewBorder(Control: TControl; ViewType: Integer; out Border: TPoint); virtual; abstract;
     function  GetViewColor(ViewType: Integer): TColor; virtual; abstract;
     procedure GetViewMargins(ViewType: Integer; out Margins: TTBXMargins); virtual; abstract;
 
@@ -318,41 +301,22 @@ type
     procedure PaintCaption(Canvas: TCanvas; const ARect: TRect; const ItemInfo: TTBXItemInfo; const ACaption: string; AFormat: Cardinal; Rotated: Boolean); virtual; abstract;
     procedure PaintCheckMark(Canvas: TCanvas; ARect: TRect; const ItemInfo: TTBXItemInfo); virtual; abstract;
     procedure PaintChevron(Canvas: TCanvas; ARect: TRect; const ItemInfo: TTBXItemInfo); virtual; abstract;
-    procedure PaintEditFrame(Canvas: TCanvas; const ARect: TRect; var ItemInfo: TTBXItemInfo; const EditInfo: TTBXEditInfo); virtual; abstract;
+    procedure PaintEditFrame(Monitor: TMonitor; Canvas: TCanvas; const ARect: TRect; var ItemInfo: TTBXItemInfo; const EditInfo: TTBXEditInfo); virtual; abstract;
     procedure PaintEditButton(Canvas: TCanvas; const ARect: TRect; var ItemInfo: TTBXItemInfo; ButtonInfo: TTBXEditBtnInfo); virtual; abstract;
     procedure PaintDock(Canvas: TCanvas; const ClientRect, DockRect: TRect; DockPosition: Integer); virtual; abstract;
-    procedure PaintDockPanelNCArea(Canvas: TCanvas; R: TRect; const DockPanelInfo: TTBXDockPanelInfo); virtual; abstract;
     procedure PaintDropDownArrow(Canvas: TCanvas; const ARect: TRect; const ItemInfo: TTBXItemInfo); virtual; abstract;
     procedure PaintFloatingBorder(Canvas: TCanvas; const ARect: TRect; const WindowInfo: TTBXWindowInfo); virtual; abstract;
     procedure PaintFrame(Canvas: TCanvas; const ARect: TRect; const ItemInfo: TTBXItemInfo); virtual; abstract;
     procedure PaintImage(Canvas: TCanvas; ARect: TRect; const ItemInfo: TTBXItemInfo; ImageList: TCustomImageList; ImageIndex: Integer); virtual; abstract;
-    procedure PaintMDIButton(Canvas: TCanvas; ARect: TRect; const ItemInfo: TTBXItemInfo; ButtonKind: Cardinal); virtual; abstract;
     procedure PaintMenuItem(Canvas: TCanvas; const ARect: TRect; var ItemInfo: TTBXItemInfo); virtual; abstract;
     procedure PaintMenuItemFrame(Canvas: TCanvas; const ARect: TRect; const ItemInfo: TTBXItemInfo); virtual; abstract;
-    procedure PaintPageScrollButton(Canvas: TCanvas; const ARect: TRect; ButtonType: Integer; Hot: Boolean); virtual; abstract;
     procedure PaintPopupNCArea(Canvas: TCanvas; R: TRect; const PopupInfo: TTBXPopupInfo); virtual; abstract;
     procedure PaintSeparator(Canvas: TCanvas; ARect: TRect; ItemInfo: TTBXItemInfo; Horizontal, LineSeparator: Boolean); virtual; abstract;
-    procedure PaintToolbarNCArea(Canvas: TCanvas; R: TRect; const WindowInfo: TTBXToolbarInfo); virtual; abstract;
-    procedure PaintFrameControl(Canvas: TCanvas; R: TRect; Kind, State: Integer; Params: Pointer); virtual; abstract;
-    procedure PaintStatusBar(Canvas: TCanvas; R: TRect; Part: Integer); virtual; abstract;
+    procedure PaintToolbarNCArea(Monitor: TMonitor; Canvas: TCanvas; R: TRect; const WindowInfo: TTBXToolbarInfo); virtual; abstract;
+    procedure PaintStatusBar(Control: TWinControl; Canvas: TCanvas; R: TRect; Part: Integer); virtual; abstract;
 
-    { Integer metrics access }
-    function GetIntegerMetrics(Index: Integer): Integer; virtual; abstract;
-    property SplitBtnArrowWidth: Integer index TMI_SPLITBTN_ARROWWIDTH read GetIntegerMetrics;
-    property DropdownArrowWidth: Integer index TMI_DROPDOWN_ARROWWIDTH read GetIntegerMetrics;
-    property DropdownArrowMargin: Integer index TMI_DROPDOWN_ARROWMARGIN read GetIntegerMetrics;
-    property MenuImageTextSpace: Integer index TMI_MENU_IMGTEXTSPACE read GetIntegerMetrics;
-    property MenuLeftCaptionMargin: Integer index TMI_MENU_LCAPTIONMARGIN read GetIntegerMetrics;
-    property MenuRightCaptionMargin: Integer index TMI_MENU_RCAPTIONMARGIN read GetIntegerMetrics;
-    property MenuSeparatorSize: Integer index TMI_MENU_SEPARATORSIZE read GetIntegerMetrics;
-    property MenuMDIDW: Integer index TMI_MENU_MDI_DW read GetIntegerMetrics;
-    property MenuMDIDH: Integer index TMI_MENU_MDI_DH read GetIntegerMetrics;
-    property TlbrSeparatorSize: Integer index TMI_TLBR_SEPARATORSIZE read GetIntegerMetrics;
-    property EditFrameWidth: Integer index TMI_EDIT_FRAMEWIDTH read GetIntegerMetrics;
-    property EditTextMarginHorz: Integer index TMI_EDIT_TEXTMARGINHORZ read GetIntegerMetrics;
-    property EditTextMarginVert: Integer index TMI_EDIT_TEXTMARGINVERT read GetIntegerMetrics;
-    property EditBtnWidth: Integer index TMI_EDIT_BTNWIDTH read GetIntegerMetrics;
-    property EditMenuRightIndent: Integer index TMI_EDIT_MENURIGHTINDENT read GetIntegerMetrics;
+    function GetIntegerMetrics(Viewer: TTBItemViewer; Index: Integer): Integer; overload;
+    function GetIntegerMetrics(Monitor: TMonitor; Index: Integer): Integer; overload; virtual; abstract;
 
     { Boolean metrics access }
     function GetBooleanMetrics(Index: Integer): Boolean; virtual; abstract;
@@ -361,7 +325,6 @@ type
     property EditHeightEven: Boolean index TMB_EDITHEIGHTEVEN read GetBooleanMetrics;
     property PaintDockBackground: Boolean index TMB_PAINTDOCKBACKGROUND read GetBooleanMetrics;
     property SolidToolbarNCArea: Boolean index TMB_SOLIDTOOLBARNCAREA read GetBooleanMetrics;
-    property SolidToolbarClientArea: Boolean index TMB_SOLIDTOOLBARCLIENTAREA read GetBooleanMetrics;
 
     property Name: string read FName;
     property Tag: Integer read FTag write FTag;
@@ -409,19 +372,6 @@ var
 
   { Auxiliary flags corresponding to the system color scheme }
   TBXLoColor: Boolean;
-  TBXHiContrast: Boolean; // this can me removed in future
-  TBXNoBlending: Boolean; // TBXNoColor or TBXHiContrast
-
-  { Handles for Windows XP visual styles }
-  SCROLLBAR_THEME: THandle;
-  REBAR_THEME: THandle;
-  BUTTON_THEME: THandle;
-  TOOLBAR_THEME: THandle;
-  WINDOW_THEME: THandle;
-  COMBO_THEME: THandle;
-  EXPLORERBAR_THEME: THandle;
-  STATUSBAR_THEME: THandle;
-  SPIN_THEME: THandle;
 
 var
   USE_FLATMENUS: Boolean;
@@ -438,7 +388,7 @@ function GetTBXDragHandleSize(const ToolbarInfo: TTBXToolbarInfo): Integer;
 implementation
 
 uses
-  SysUtils, TBXUtils, UxTheme, Types;
+  SysUtils, TBXUtils, UxTheme, Types, PasTools;
 
 const
   SPI_GETFLATMENU = $1022;
@@ -623,12 +573,18 @@ begin
   FName := AName;
 end;
 
+function TTBXTheme.GetIntegerMetrics(Viewer: TTBItemViewer; Index: Integer): Integer;
+begin
+  Result := GetIntegerMetrics(Viewer.View.GetMonitor, Index);
+end;
+
+
 { Misc. Functions }
 
 function GetTBXCaptionRect(const WindowInfo: TTBXWindowInfo;
   AdjustForBorder, MinusCloseButton: Boolean): TRect;
 begin
-  Result := Rect(0, 0, WindowInfo.ClientWidth, GetSystemMetrics(SM_CYSMCAPTION) - 1);
+  Result := Rect(0, 0, WindowInfo.ClientWidth, GetSystemMetricsForControl(WindowInfo.ParentControl, SM_CYSMCAPTION) - 1);
   if MinusCloseButton then Dec(Result.Right, Result.Bottom);
   if AdjustForBorder then
     with WindowInfo.FloatingBorderSize do OffsetRect(Result, X, Y);
@@ -669,7 +625,10 @@ begin
   with ToolbarInfo do
   begin
     if AllowDrag then
-      Result := MulDiv(DragHandleSizes[(CloseButtonState and CDBS_VISIBLE) <> 0, DragHandleStyle], Screen.PixelsPerInch, USER_DEFAULT_SCREEN_DPI)
+      Result :=
+        ScaleByPixelsPerInch(
+          DragHandleSizes[(CloseButtonState and CDBS_VISIBLE) <> 0, DragHandleStyle],
+          Screen.MonitorFromWindow(ToolbarInfo.WindowHandle, mdNearest))
     else
       Result := 0;
   end;
@@ -704,14 +663,14 @@ begin
   FEnableVisualStyles := True;
   FFlatMenuStyle := FMS_AUTOMATIC;
   FNotifies := TList.Create;
-  FWindowHandle := {$IFDEF JR_D6}Classes.{$ENDIF}AllocateHWnd(WndProc);
+  FWindowHandle := Classes.AllocateHWnd(WndProc);
   UpdateVariables;
 end;
 
 destructor TTBXThemeManager.Destroy;
 begin
   VisualStylesClose;
-  {$IFDEF JR_D6}Classes.{$ENDIF}DeallocateHWnd(FWindowHandle);
+  Classes.DeallocateHWnd(FWindowHandle);
   FNotifies.Free;
   VisualStylesClose;
   inherited;
@@ -756,14 +715,13 @@ procedure TTBXThemeManager.UpdateVariables;
 var
   DC: HDC;
   SysFlatMenus: Boolean;
+  ToolbarTheme: THandle;
 begin
   TBXUtils.RecreateStock;
 
   DC := GetDC(0);
   try
     TBXLoColor := GetDeviceCaps(DC, BITSPIXEL) * GetDeviceCaps(DC, PLANES) < 12;
-    TBXHiContrast := GetSysColor(COLOR_BTNFACE) = $00FFFFFF;
-    TBXNoBlending := TBXLoColor or TBXHiContrast;
   finally
     ReleaseDC(0, DC);
   end;
@@ -775,8 +733,10 @@ begin
   clToolbarText := clBtnText;
   if USE_THEMES then
   begin
-    GetThemeColor(TOOLBAR_THEME, 0, 0, TMT_FILLCOLOR, Cardinal(clToolbar));
-    GetThemeColor(TOOLBAR_THEME, 0, 0, TMT_TEXTCOLOR, Cardinal(clToolbarText));
+    ToolbarTheme := OpenThemeData(FWindowHandle, 'TOOLBAR');
+    GetThemeColor(ToolbarTheme, 0, 0, TMT_FILLCOLOR, Cardinal(clToolbar));
+    GetThemeColor(ToolbarTheme, 0, 0, TMT_TEXTCOLOR, Cardinal(clToolbarText));
+    CloseThemeData(ToolbarTheme);
   end;
 
   SysFlatMenus := False;
@@ -816,25 +776,7 @@ begin
 end;
 
 procedure TTBXThemeManager.VisualStylesClose;
-
-  procedure Close(var ATheme: THandle);
-  begin
-    if ATheme <> 0 then begin CloseThemeData(ATheme); ATheme := 0; end;
-  end;
-
 begin
-  if USE_THEMES then
-  begin
-    Close(BUTTON_THEME);
-    Close(SCROLLBAR_THEME);
-    Close(REBAR_THEME);
-    Close(TOOLBAR_THEME);
-    Close(WINDOW_THEME);
-    Close(COMBO_THEME);
-    Close(EXPLORERBAR_THEME);
-    Close(STATUSBAR_THEME);
-    Close(SPIN_THEME);
-  end;
   if InitedThemeLibrary then
   begin
     InitedThemeLibrary := False;
@@ -849,19 +791,6 @@ begin
   begin
     InitedThemeLibrary := InitThemeLibrary;
     USE_THEMES := UseThemes;
-    try
-      BUTTON_THEME := OpenThemeData(FWindowHandle, 'BUTTON');
-      SCROLLBAR_THEME := OpenThemeData(FWindowHandle, 'SCROLLBAR');
-      REBAR_THEME := OpenThemeData(FWindowHandle, 'REBAR');
-      TOOLBAR_THEME := OpenThemeData(FWindowHandle, 'TOOLBAR');
-      WINDOW_THEME := OpenThemeData(FWindowHandle, 'WINDOW');
-      COMBO_THEME := OpenThemeData(FWindowHandle, 'COMBOBOX');
-      EXPLORERBAR_THEME := OpenThemeData(FWindowHandle, 'EXPLORERBAR');
-      STATUSBAR_THEME := OpenThemeData(FWindowHandle, 'STATUS');
-      SPIN_THEME := OpenThemeData(FWindowHandle, 'SPIN');
-    except
-      VisualStylesClose;
-    end;
   end;
 end;
 
@@ -873,7 +802,6 @@ begin
     WM_DISPLAYCHANGE, WM_SYSCOLORCHANGE, WM_THEMECHANGED:
       begin
         UpdateVariables;
-        ResetBrushedFillCache;
         Notify;
       end;
     WM_ACTIVATEAPP:

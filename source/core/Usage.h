@@ -26,7 +26,7 @@ public:
   void __fastcall Default();
   void __fastcall Load(THierarchicalStorage * Storage);
   void __fastcall Save(THierarchicalStorage * Storage) const;
-  UnicodeString __fastcall Serialize() const;
+  UnicodeString __fastcall Serialize(const UnicodeString & Delimiter = L"&", const UnicodeString & Filter = L"") const;
 
   static int __fastcall CalculateCounterSize(__int64 Size);
 
@@ -49,8 +49,12 @@ private:
     const UnicodeString & Name, const TCounters & Counters) const;
   void __fastcall Inc(const UnicodeString & Key, TCounters & Counters, int Increment);
   void __fastcall SetMax(const UnicodeString & Key, int Value, TCounters & Counters);
-  void __fastcall Serialize(UnicodeString& List,
-    const UnicodeString & Name, const TCounters & Counters) const;
+  void __fastcall Serialize(
+    UnicodeString& List, const UnicodeString & Name, const TCounters & Counters,
+    const UnicodeString & Delimiter, const UnicodeString & FilterUpper) const;
+  void __fastcall Serialize(
+    UnicodeString & List, const UnicodeString & Name, const UnicodeString & Value,
+    const UnicodeString & Delimiter, const UnicodeString & FilterUpper) const;
   void __fastcall ResetLastExceptions();
   void __fastcall ResetValue(const UnicodeString & Key);
 };

@@ -152,7 +152,7 @@ void __fastcall TOpenDirectoryDialog::UpdateBookmarkControls(
     MaxWidth += ScaleByTextHeight(this, 6);
     if (BookmarksList->Items->Count > BookmarksList->ClientHeight / BookmarksList->ItemHeight)
     {
-      MaxWidth += GetSystemMetrics(SM_CXVSCROLL);
+      MaxWidth += GetSystemMetricsForControl(this, SM_CXVSCROLL);
     }
     if (MaxWidth > BookmarksList->Width)
     {

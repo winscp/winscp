@@ -78,10 +78,6 @@ __fastcall TScpCommanderForm::TScpCommanderForm(TComponent* Owner)
   FInternalDDDownloadList = new TStringList();
   FLocalPathComboBoxPaths = new TStringList();
 
-  RemotePathComboBox->Images = FSystemImageList;
-  RemotePathComboBox->SubMenuImages = FSystemImageList;
-  LocalPathComboBox->Images = FSystemImageList;
-  LocalPathComboBox->SubMenuImages = FSystemImageList;
   LocalPathComboUpdateDrives();
 
   LocalBackButton->LinkSubitems = HistoryMenu(osLocal, true)->Items;
@@ -170,9 +166,9 @@ void __fastcall TScpCommanderForm::RestoreParams()
     PANEL ## StatusBar->Visible = WinConfiguration->ScpCommander.PANEL ## Panel.StatusBar; \
     PANEL ## DriveView->Visible = WinConfiguration->ScpCommander.PANEL ## Panel.DriveView; \
     if (PANEL ## DriveView->Align == alTop) \
-      PANEL ## DriveView->Height = LoadDimension(WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewHeight, WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewHeightPixelsPerInch); \
+      PANEL ## DriveView->Height = LoadDimension(WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewHeight, WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewHeightPixelsPerInch, this); \
     else \
-      PANEL ## DriveView->Width = LoadDimension(WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewWidth, WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewWidthPixelsPerInch)
+      PANEL ## DriveView->Width = LoadDimension(WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewWidth, WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewWidthPixelsPerInch, this)
   RESTORE_PANEL_PARAMS(Local);
   RESTORE_PANEL_PARAMS(Remote);
   #undef RESTORE_PANEL_PARAMS
@@ -208,12 +204,12 @@ void __fastcall TScpCommanderForm::StoreParams()
       if (PANEL ## DriveView->Align == alTop) \
       { \
         WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewHeight = PANEL ## DriveView->Height; \
-        WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewHeightPixelsPerInch = Screen->PixelsPerInch; \
+        WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewHeightPixelsPerInch = GetControlPixelsPerInch(this); \
       } \
       else \
       { \
         WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewWidth = PANEL ## DriveView->Width; \
-        WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewWidthPixelsPerInch = Screen->PixelsPerInch; \
+        WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewWidthPixelsPerInch = GetControlPixelsPerInch(this); \
       }
     STORE_PANEL_PARAMS(Local);
     STORE_PANEL_PARAMS(Remote);
@@ -427,7 +423,7 @@ bool __fastcall TScpCommanderForm::IsFileControl(TObject * Control,
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::ReloadLocalDirectory(const UnicodeString Directory)
 {
-  if (Directory.IsEmpty() || ComparePaths(Directory, LocalDirView->Path))
+  if (Directory.IsEmpty() || SamePaths(Directory, LocalDirView->Path))
   {
     LocalDirView->ReloadDirectory();
     LocalDriveView->ValidateDirectory(LocalDriveView->Selected);
@@ -950,11 +946,7 @@ void __fastcall TScpCommanderForm::FullSynchronizeDirectories()
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::ExploreLocalDirectory()
 {
-  if ((int)ShellExecute(Application->Handle, L"explore",
-      (wchar_t*)LocalDirView->Path.data(), NULL, NULL, SW_SHOWNORMAL) <= 32)
-  {
-    throw Exception(FORMAT(EXPLORE_LOCAL_DIR_ERROR, (LocalDirView->Path)));
-  }
+  OpenFolderInExplorer(LocalDirView->Path);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::LocalDirViewExecFile(TObject *Sender,
@@ -1042,7 +1034,7 @@ void __fastcall TScpCommanderForm::SynchronizeBrowsingLocal(
       PrevPath = IncludeTrailingBackslash(PrevPath);
       CommonPath = IncludeTrailingBackslash(CommonPath);
       NewPath = RemoteDirView->Path;
-      while (!ComparePaths(PrevPath, CommonPath))
+      while (!SamePaths(PrevPath, CommonPath))
       {
         if (NewPath == UnixExcludeTrailingBackslash(NewPath))
         {
@@ -1586,12 +1578,7 @@ bool __fastcall TScpCommanderForm::ExecuteCommandLine()
     }
     else
     {
-      UnicodeString Program, Params, Dir;
-      SplitCommand(Command, Program, Params, Dir);
-      if (!ExecuteShell(Program, Params))
-      {
-        throw Exception(FMTLOAD(EXECUTE_APP_ERROR, (Program)));
-      }
+      ExecuteShellChecked(Command);
     }
   }
   return Result;
@@ -1751,7 +1738,7 @@ void __fastcall TScpCommanderForm::RemotePathLabelGetStatus(
 void __fastcall TScpCommanderForm::LocalPathLabelPathClick(
   TCustomPathLabel * /*Sender*/, UnicodeString Path)
 {
-  if (ComparePaths(Path, LocalDirView->Path))
+  if (SamePaths(Path, LocalDirView->Path))
   {
     OpenDirectory(osLocal);
   }
@@ -1860,6 +1847,17 @@ void __fastcall TScpCommanderForm::RemoteDirViewPathChange(TCustomDirView * /*Se
   UpdateRemotePathComboBox(false);
 }
 //---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::UpdateImages()
+{
+  TCustomScpExplorerForm::UpdateImages();
+
+  TImageList * ImageList = ShellImageListForControl(this, ilsSmall);
+  RemotePathComboBox->Images = ImageList;
+  RemotePathComboBox->SubMenuImages = ImageList;
+  LocalPathComboBox->Images = ImageList;
+  LocalPathComboBox->SubMenuImages = ImageList;
+}
+//---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::LocalPathComboUpdateDrives()
 {
   TStrings* Strings = LocalPathComboBox->Strings;
@@ -1901,7 +1899,7 @@ void __fastcall TScpCommanderForm::LocalPathComboUpdate()
 
     int Index = 0;
     while ((Index < FLocalPathComboBoxPaths->Count) &&
-           !ComparePaths(FLocalPathComboBoxPaths->Strings[Index],
+           !SamePaths(FLocalPathComboBoxPaths->Strings[Index],
              LocalDirView->Path.SubString(1, FLocalPathComboBoxPaths->Strings[Index].Length())))
     {
       Index++;
@@ -2060,10 +2058,10 @@ void __fastcall TScpCommanderForm::QueueSubmenuItemPopup(
   NonVisualDataModule->QueueSpeedComboBoxItemUpdate(QueueSpeedComboBoxItem);
 }
 //---------------------------------------------------------------------------
-void __fastcall TScpCommanderForm::DoFocusRemotePath(UnicodeString Path)
+void __fastcall TScpCommanderForm::DoFocusRemotePath(TTerminal * Terminal, const UnicodeString & Path)
 {
   TSynchronizedBrowsingGuard SynchronizedBrowsingGuard;
-  TCustomScpExplorerForm::DoFocusRemotePath(Path);
+  TCustomScpExplorerForm::DoFocusRemotePath(Terminal, Path);
 }
 //---------------------------------------------------------------------------
 TOperationSide __fastcall TScpCommanderForm::GetOtherSize(TOperationSide Side)
@@ -2164,5 +2162,15 @@ void __fastcall TScpCommanderForm::RemoteStatusBarPanelClick(TTBXCustomStatusBar
 void __fastcall TScpCommanderForm::GoToAddress()
 {
   OpenDirectory(GetSide(osCurrent));
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::RemotePathLabelMaskClick(TObject * /*Sender*/)
+{
+  Filter(osRemote);
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::LocalPathLabelMaskClick(TObject * /*Sender*/)
+{
+  Filter(osLocal);
 }
 //---------------------------------------------------------------------------

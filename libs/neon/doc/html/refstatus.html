@@ -4,7 +4,7 @@ typedef struct {
     int major_version, minor_version;
     int code, klass;
     const char *reason_phrase;
-} <em class="type">ne_status</em>;</pre></div></div><div class="refsect1"><a name="idm209422177984"></a><h2>Description</h2><p>An <em class="type">ne_status</em> type represents an HTTP
+} <em class="type">ne_status</em>;</pre></div></div><div class="refsect1"><a name="idm139901958422848"></a><h2>Description</h2><p>An <em class="type">ne_status</em> type represents an HTTP
 response status; used in response messages giving a result of request.
 The <em class="structfield"><code>major_version</code></em> and
 <em class="structfield"><code>minor_version</code></em> fields give the HTTP version
@@ -12,11 +12,11 @@ supported by the server issuing the response.  The
 <em class="structfield"><code>code</code></em> field gives the status code of the
 result (lying between 100 and 999 inclusive), and the
 <em class="structfield"><code>klass</code></em> field gives the
-class<a href="#ftn.idm209422174960" class="footnote" name="idm209422174960"><sup class="footnote">[2]</sup></a>, which is equal to the most significant digit
+class<a href="#ftn.idm139901958419824" class="footnote" name="idm139901958419824"><sup class="footnote">[2]</sup></a>, which is equal to the most significant digit
 of the status.</p><p>There are five classes of HTTP status code defined by
 	RFC2616:</p><div class="variablelist"><table border="0" class="variablelist"><colgroup><col align="left" valign="top"><col></colgroup><tbody><tr><td><p><span class="term"><code class="literal">1xx</code></span></p></td><td>Informational response.</td></tr><tr><td><p><span class="term"><code class="literal">2xx</code></span></p></td><td>Success: the operation was successful</td></tr><tr><td><p><span class="term"><code class="literal">3xx</code></span></p></td><td>Redirection</td></tr><tr><td><p><span class="term"><code class="literal">4xx</code></span></p></td><td>Client
 	    error: the request made was incorrect in some
-	    manner.</td></tr><tr><td><p><span class="term"><code class="literal">5xx</code></span></p></td><td>Server error</td></tr></tbody></table></div></div><div class="refsect1"><a name="idm209422163792"></a><h2>See also</h2><p><a class="xref" href="refgetst.html#ne_get_status">ne_get_status</a>.</p></div><div class="footnotes"><br><hr style="width:100; text-align:left;margin-left: 0"><div id="ftn.idm209422174960" class="footnote"><p><a href="#idm209422174960" class="para"><sup class="para">[2] </sup></a>the field is named <span class="quote">“<span class="quote">klass</span>”</span> not
+	    manner.</td></tr><tr><td><p><span class="term"><code class="literal">5xx</code></span></p></td><td>Server error</td></tr></tbody></table></div></div><div class="refsect1"><a name="idm139901958408656"></a><h2>See also</h2><p><a class="xref" href="refgetst.html#ne_get_status">ne_get_status</a>.</p></div><div class="footnotes"><br><hr style="width:100; text-align:left;margin-left: 0"><div id="ftn.idm139901958419824" class="footnote"><p><a href="#idm139901958419824" class="para"><sup class="para">[2] </sup></a>the field is named <span class="quote">“<span class="quote">klass</span>”</span> not
 <span class="quote">“<span class="quote">class</span>”</span> so that the header can be used from a C++
 program, in which <span class="quote">“<span class="quote">class</span>”</span> is a reserved
 word)</p></div></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="refclicert.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="ref.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="reftok.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">ne_ssl_client_cert </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> ne_token</td></tr></table></div></body></html>

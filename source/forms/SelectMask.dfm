@@ -7,7 +7,7 @@ object SelectMaskDialog: TSelectMaskDialog
   BorderStyle = bsDialog
   Caption = 'SelectX'
   ClientHeight = 142
-  ClientWidth = 361
+  ClientWidth = 417
   Color = clBtnFace
   ParentFont = True
   OldCreateOrder = True
@@ -15,19 +15,19 @@ object SelectMaskDialog: TSelectMaskDialog
   OnCloseQuery = FormCloseQuery
   OnShow = FormShow
   DesignSize = (
-    361
+    417
     142)
   PixelsPerInch = 96
   TextHeight = 13
   object MaskGroup: TGroupBox
     Left = 8
     Top = 6
-    Width = 345
+    Width = 401
     Height = 94
     Anchors = [akLeft, akTop, akRight, akBottom]
     TabOrder = 0
     DesignSize = (
-      345
+      401
       94)
     object Label3: TLabel
       Left = 16
@@ -43,12 +43,12 @@ object SelectMaskDialog: TSelectMaskDialog
       Width = 209
       Height = 17
       Caption = 'Apply to &directories'
-      TabOrder = 2
+      TabOrder = 3
     end
     object MaskEdit: THistoryComboBox
       Left = 16
       Top = 36
-      Width = 313
+      Width = 283
       Height = 21
       AutoComplete = False
       Anchors = [akLeft, akTop, akRight]
@@ -58,7 +58,7 @@ object SelectMaskDialog: TSelectMaskDialog
       OnExit = MaskEditExit
     end
     object HintText: TStaticText
-      Left = 224
+      Left = 194
       Top = 64
       Width = 105
       Height = 17
@@ -69,9 +69,19 @@ object SelectMaskDialog: TSelectMaskDialog
       TabOrder = 1
       TabStop = True
     end
+    object MaskButton: TButton
+      Left = 305
+      Top = 34
+      Width = 80
+      Height = 25
+      Anchors = [akTop, akRight]
+      Caption = '&Edit...'
+      TabOrder = 2
+      OnClick = MaskButtonClick
+    end
   end
   object OKBtn: TButton
-    Left = 109
+    Left = 165
     Top = 109
     Width = 75
     Height = 25
@@ -82,7 +92,7 @@ object SelectMaskDialog: TSelectMaskDialog
     TabOrder = 2
   end
   object CancelBtn: TButton
-    Left = 194
+    Left = 250
     Top = 109
     Width = 75
     Height = 25
@@ -93,7 +103,7 @@ object SelectMaskDialog: TSelectMaskDialog
     TabOrder = 3
   end
   object HelpButton: TButton
-    Left = 277
+    Left = 333
     Top = 109
     Width = 75
     Height = 25
@@ -103,7 +113,7 @@ object SelectMaskDialog: TSelectMaskDialog
     OnClick = HelpButtonClick
   end
   object ClearButton: TButton
-    Left = 24
+    Left = 84
     Top = 109
     Width = 75
     Height = 25

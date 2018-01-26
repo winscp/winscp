@@ -268,7 +268,6 @@ void __fastcall TCopyDialog::SetParams(const TGUICopyParamType & value)
   FCopyParams = value;
   DirectoryEdit->Text = Directory + FParams.FileMask;
   QueueCheck2->Checked = FParams.Queue;
-  QueueIndividuallyCheck->Checked = FParams.QueueIndividually;
   UpdateControls();
 }
 //---------------------------------------------------------------------------
@@ -278,7 +277,6 @@ TGUICopyParamType __fastcall TCopyDialog::GetParams()
   FParams = FCopyParams;
   FParams.FileMask = GetFileMask();
   FParams.Queue = QueueCheck2->Checked;
-  FParams.QueueIndividually = QueueIndividuallyCheck->Checked;
   return FParams;
 }
 //---------------------------------------------------------------------------
@@ -337,10 +335,6 @@ void __fastcall TCopyDialog::UpdateControls()
   bool RemoteTransfer = FLAGSET(FOutputOptions, cooRemoteTransfer);
   EnableControl(QueueCheck2,
     ((FOptions & (coDisableQueue | coTemp)) == 0) && !RemoteTransfer);
-  QueueIndividuallyCheck->Visible =
-    FLAGCLEAR(FOptions, coNoQueueIndividually) &&
-    QueueCheck2->Enabled && QueueCheck2->Checked &&
-    (FFileList != NULL) && (FFileList->Count > 1);
 
   TransferSettingsButton->Style =
     FLAGCLEAR(FOptions, coDoNotUsePresets) ?

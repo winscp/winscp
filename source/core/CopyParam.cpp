@@ -45,7 +45,7 @@ void __fastcall TCopyParamType::Default()
   InvalidCharsReplacement = TokenReplacement;
   LocalInvalidChars = ::LocalInvalidChars;
   CalculateSize = true;
-  FileMask = L"*.*";
+  FileMask = AnyMask;
   IncludeFileMask.Masks = L"";
   TransferSkipList = NULL;
   TransferResumeFile = L"";

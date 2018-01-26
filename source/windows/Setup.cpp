@@ -465,12 +465,16 @@ static void __fastcall RegisterAsNonBrowserUrlHandler(const UnicodeString & Pref
 {
   RegisterAsUrlHandler(Prefix + SftpProtocol.UpperCase());
   RegisterAsUrlHandler(Prefix + ScpProtocol.UpperCase());
+  RegisterAsUrlHandler(Prefix + WebDAVProtocol.UpperCase());
+  RegisterAsUrlHandler(Prefix + WebDAVSProtocol.UpperCase());
 }
 //---------------------------------------------------------------------------
 static void __fastcall UnregisterAsUrlHandlers(const UnicodeString & Prefix, bool UnregisterProtocol)
 {
   UnregisterAsUrlHandler(Prefix + SftpProtocol, UnregisterProtocol);
   UnregisterAsUrlHandler(Prefix + ScpProtocol, UnregisterProtocol);
+  UnregisterAsUrlHandler(Prefix + WebDAVProtocol, UnregisterProtocol);
+  UnregisterAsUrlHandler(Prefix + WebDAVSProtocol, UnregisterProtocol);
 }
 //---------------------------------------------------------------------------
 static const UnicodeString GenericUrlHandler(L"WinSCP.Url");
@@ -574,7 +578,9 @@ static void __fastcall RegisterProtocolsForDefaultPrograms(HKEY RootKey)
   RegisterProtocolForDefaultPrograms(RootKey, SftpProtocol);
   RegisterProtocolForDefaultPrograms(RootKey, ScpProtocol);
   RegisterProtocolForDefaultPrograms(RootKey, SshProtocol);
-  // deliberately not including WebDAV/http,
+  RegisterProtocolForDefaultPrograms(RootKey, WebDAVProtocol);
+  RegisterProtocolForDefaultPrograms(RootKey, WebDAVSProtocol);
+  // deliberately not including http,
   // it's unlikely that anyone would like to change http handler
   // to non-browser application
 }
@@ -586,7 +592,8 @@ static void __fastcall UnregisterProtocolsForDefaultPrograms(HKEY RootKey, bool 
   UnregisterProtocolForDefaultPrograms(RootKey, FtpesProtocol, ForceHandlerUnregistration);
   UnregisterProtocolForDefaultPrograms(RootKey, SftpProtocol, ForceHandlerUnregistration);
   UnregisterProtocolForDefaultPrograms(RootKey, ScpProtocol, ForceHandlerUnregistration);
-  UnregisterProtocolForDefaultPrograms(RootKey, SshProtocol, ForceHandlerUnregistration);
+  UnregisterProtocolForDefaultPrograms(RootKey, WebDAVProtocol, ForceHandlerUnregistration);
+  UnregisterProtocolForDefaultPrograms(RootKey, WebDAVSProtocol, ForceHandlerUnregistration);
 
   // we should not really need the "force" flag here, but why not
   UnregisterAsUrlHandler(RootKey, GenericUrlHandler, true, true);
@@ -635,8 +642,8 @@ void __fastcall RegisterForDefaultProtocols()
   RegisterAsUrlHandler(WinSCPProtocolPrefix + FtpProtocol.UpperCase());
   RegisterAsUrlHandler(WinSCPProtocolPrefix + FtpsProtocol.UpperCase());
   RegisterAsUrlHandler(WinSCPProtocolPrefix + FtpesProtocol.UpperCase());
-  RegisterAsUrlHandler(WinSCPProtocolPrefix + WebDAVProtocol.UpperCase());
-  RegisterAsUrlHandler(WinSCPProtocolPrefix + WebDAVSProtocol.UpperCase());
+  RegisterAsUrlHandler(WinSCPProtocolPrefix + HttpProtocol.UpperCase());
+  RegisterAsUrlHandler(WinSCPProtocolPrefix + HttpsProtocol.UpperCase());
   RegisterAsUrlHandler(WinSCPProtocolPrefix + SshProtocol.UpperCase());
 
   NotifyChangedAssociations();
@@ -649,8 +656,8 @@ void __fastcall UnregisterForProtocols()
   UnregisterAsUrlHandler(WinSCPProtocolPrefix + FtpProtocol.UpperCase(), true);
   UnregisterAsUrlHandler(WinSCPProtocolPrefix + FtpsProtocol.UpperCase(), true);
   UnregisterAsUrlHandler(WinSCPProtocolPrefix + FtpesProtocol.UpperCase(), true);
-  UnregisterAsUrlHandler(WinSCPProtocolPrefix + WebDAVProtocol.UpperCase(), true);
-  UnregisterAsUrlHandler(WinSCPProtocolPrefix + WebDAVSProtocol.UpperCase(), true);
+  UnregisterAsUrlHandler(WinSCPProtocolPrefix + HttpProtocol.UpperCase(), true);
+  UnregisterAsUrlHandler(WinSCPProtocolPrefix + HttpsProtocol.UpperCase(), true);
   UnregisterAsUrlHandler(WinSCPProtocolPrefix + SshProtocol.UpperCase(), true);
 
   UnregisterProtocolsForDefaultPrograms(HKEY_CURRENT_USER, false);
@@ -789,11 +796,6 @@ UnicodeString __fastcall CampaignUrl(UnicodeString URL)
   return AppendUrlParams(URL, Params);
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall GetUsageData()
-{
-  return Configuration->Usage->Serialize();
-}
-//---------------------------------------------------------------------------
 UnicodeString __fastcall ProgramUrl(UnicodeString URL)
 {
   TVSFixedFileInfo * FileInfo = Configuration->FixedApplicationInfo;
@@ -804,7 +806,7 @@ UnicodeString __fastcall ProgramUrl(UnicodeString URL)
   UnicodeString Params =
     FORMAT(L"v=%s&lang=%s&isinstalled=%d",
       (CurrentVersionStr,
-      GUIConfiguration->LocaleHex,
+      GUIConfiguration->AppliedLocaleHex,
       int(IsInstalled())));
 
   if (Configuration->IsUnofficial)
@@ -891,7 +893,7 @@ static bool __fastcall DoQueryUpdates(TUpdatesConfiguration & Updates, bool Coll
     URL = WantBetaUrl(URL, false);
     URL += L"&dotnet=" + Updates.DotNetVersion;
     URL += L"&console=" + Updates.ConsoleVersion;
-    UnicodeString LocaleVersion = WinConfiguration->LocaleVersion();
+    UnicodeString LocaleVersion = WinConfiguration->AppliedLocaleVersion();
     if (!LocaleVersion.IsEmpty())
     {
       URL += L"&localever=" + LocaleVersion;
@@ -910,7 +912,7 @@ static bool __fastcall DoQueryUpdates(TUpdatesConfiguration & Updates, bool Coll
     {
       if (CollectUsage)
       {
-        UnicodeString Usage = GetUsageData();
+        UnicodeString Usage = Configuration->Usage->Serialize();
 
         CheckForUpdatesHTTP->Post(Usage);
       }
@@ -1344,8 +1346,8 @@ void __fastcall TUpdateDownloadThread::UpdateDownloaded()
   {
     Index++;
     SetupPath =
-     ExtractFilePath(SetupPathBase) + ExtractFileNameOnly(SetupPathBase) +
-     FORMAT(".%d", (Index)) + ExtractFileExt(SetupPathBase);
+      ExtractFilePath(SetupPathBase) + ExtractFileNameOnly(SetupPathBase) +
+      FORMAT(".%d", (Index)) + ExtractFileExt(SetupPathBase);
   }
 
   std::unique_ptr<TFileStream> FileStream(new TFileStream(SetupPath, fmCreate));
@@ -1358,10 +1360,7 @@ void __fastcall TUpdateDownloadThread::UpdateDownloaded()
     Params += L" /OpenGettingStarted";
   }
 
-  if (!ExecuteShell(SetupPath, Params))
-  {
-    throw Exception(FMTLOAD(EXECUTE_APP_ERROR, (SetupPath)));
-  }
+  ExecuteShellChecked(SetupPath, Params);
 
   Configuration->Usage->Inc(L"UpdateRuns");
   TerminateApplication();
@@ -1750,7 +1749,7 @@ static bool __fastcall AddJumpListCategory(TStrings * Names,
             Names->Strings[Index], L"", AdditionalParams, -1, IconIndex, true);
 
         wchar_t Desc[2048];
-        if (SUCCEEDED(Link->GetDescription(Desc, sizeof(Desc) - 1)))
+        if (SUCCEEDED(Link->GetDescription(Desc, LENOF(Desc) - 1)))
         {
           if (Removed->IndexOf(Desc) < 0)
           {
@@ -1829,7 +1828,7 @@ void __fastcall UpdateJumpList(TStrings * SessionNames, TStrings * WorkspaceName
           IShellLink * Link;
           wchar_t Desc[2048];
           if (SUCCEEDED(RemovedArray->GetAt(Index, IID_IShellLink, (void**)&Link)) &&
-              SUCCEEDED(Link->GetDescription(Desc, sizeof(Desc) - 1)))
+              SUCCEEDED(Link->GetDescription(Desc, LENOF(Desc) - 1)))
           {
             Removed->Add(Desc);
           }
@@ -1914,7 +1913,7 @@ static bool __fastcall DoIsInstalled(HKEY RootKey)
     UnicodeString ExePath = ExcludeTrailingBackslash(ExtractFilePath(Application->ExeName));
     Result =
       !InstallPath.IsEmpty() &&
-      CompareFileName(ExePath, InstallPath);
+      IsPathToSameFile(ExePath, InstallPath);
   }
   return Result;
 }

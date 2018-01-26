@@ -166,6 +166,7 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
   conf_set_str(conf, CONF_username, UTF8String(Data->UserNameExpanded).c_str());
   conf_set_int(conf, CONF_port, Data->PortNumber);
   conf_set_int(conf, CONF_protocol, PROT_SSH);
+  conf_set_int(conf, CONF_change_password, Data->ChangePassword);
   // always set 0, as we will handle keepalives ourselves to avoid
   // multi-threaded issues in putty timer list
   conf_set_int(conf, CONF_ping_interval, 0);
@@ -208,6 +209,22 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
     }
     conf_set_int_int(conf, CONF_ssh_kexlist, k, pkex);
   }
+
+  DebugAssert(ngsslibs == GSSLIB_COUNT);
+  for (int g = 0; g < GSSLIB_COUNT; g++)
+  {
+    int pgsslib;
+    switch (Data->GssLib[g]) {
+      case gssGssApi32: pgsslib = 0; break;
+      case gssSspi: pgsslib = 1; break;
+      case gssCustom: pgsslib = 2; break;
+      default: DebugFail();
+    }
+    conf_set_int_int(conf, CONF_ssh_gsslist, g, pgsslib);
+  }
+  Filename * GssLibCustomFileName = filename_from_str(UTF8String(Data->GssLibCustom).c_str());
+  conf_set_filename(conf, CONF_ssh_gss_custom, GssLibCustomFileName);
+  filename_free(GssLibCustomFileName);
 
   UnicodeString SPublicKeyFile = Data->PublicKeyFile;
   if (SPublicKeyFile.IsEmpty()) SPublicKeyFile = Configuration->DefaultKeyFile;
@@ -341,10 +358,6 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
   conf_set_int(conf, CONF_nopty, TRUE);
   conf_set_int(conf, CONF_tcp_keepalives, 0);
   conf_set_int(conf, CONF_ssh_show_banner, TRUE);
-  for (int Index = 0; Index < ngsslibs; Index++)
-  {
-    conf_set_int_int(conf, CONF_ssh_gsslist, Index, gsslibkeywords[Index].v);
-  }
   conf_set_int(conf, CONF_proxy_log_to_term, FORCE_OFF);
 
   conf_set_int_int(conf, CONF_ssh_hklist, 0, HK_ED25519);
@@ -855,6 +868,24 @@ bool __fastcall TSecureShell::PromptUser(bool /*ToServer*/,
       FStoredPassphraseTried = true;
     }
   }
+  else if (PromptKind == pkNewPassword)
+  {
+    if (FSessionData->ChangePassword)
+    {
+      FUI->Information(LoadStr(AUTH_CHANGING_PASSWORD), false);
+
+      if (!FSessionData->Password.IsEmpty() && !FSessionData->NewPassword.IsEmpty() && !FStoredPasswordTried)
+      {
+        LogEvent(L"Using stored password and new password.");
+        Result = true;
+        DebugAssert(Results->Count == 3);
+        Results->Strings[0] = FSessionData->Password;
+        Results->Strings[1] = FSessionData->NewPassword;
+        Results->Strings[2] = FSessionData->NewPassword;
+        FStoredPasswordTried = true;
+      }
+    }
+  }
 
   if (!Result)
   {
@@ -885,7 +916,10 @@ void __fastcall TSecureShell::GotHostKey()
   if (!FAuthenticating && !FAuthenticated)
   {
     FAuthenticating = true;
-    FUI->Information(LoadStr(STATUS_AUTHENTICATE), true);
+    if (!FSessionData->ChangePassword)
+    {
+      FUI->Information(LoadStr(STATUS_AUTHENTICATE), true);
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -1795,12 +1829,14 @@ void __fastcall TSecureShell::HandleNetworkEvents(SOCKET Socket, WSANETWORKEVENT
 {
   static const struct { int Bit, Mask; const wchar_t * Desc; } EventTypes[] =
   {
-    { FD_READ_BIT, FD_READ, L"read" },
     { FD_WRITE_BIT, FD_WRITE, L"write" },
     { FD_OOB_BIT, FD_OOB, L"oob" },
     { FD_ACCEPT_BIT, FD_ACCEPT, L"accept" },
     { FD_CONNECT_BIT, FD_CONNECT, L"connect" },
     { FD_CLOSE_BIT, FD_CLOSE, L"close" },
+    // Read goes last, as it can cause an exception.
+    // Though a correct solution would be to process all events, even if one causes exception
+    { FD_READ_BIT, FD_READ, L"read" },
   };
 
   for (unsigned int Event = 0; Event < LENOF(EventTypes); Event++)
@@ -2152,7 +2188,7 @@ void __fastcall TSecureShell::VerifyHostKey(UnicodeString Host, int Port,
     UnicodeString StoredKey = CutToChar(Buf, HostKeyDelimiter, false);
     // skip leading ECDH subtype identification
     int P = StoredKey.Pos(L",");
-    // start from beginning or after the comma, if there 's any
+    // start from beginning or after the comma, if there's any
     bool Fingerprint = (StoredKey.SubString(P + 1, 2) != L"0x");
     // it's probably a fingerprint (stored by TSessionData::CacheHostKey)
     UnicodeString NormalizedExpectedKey;
@@ -2504,4 +2540,12 @@ void __fastcall TSecureShell::CollectUsage()
   {
     Configuration->Usage->Inc(L"OpenedSessionsSSHOther");
   }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TSecureShell::CanChangePassword()
+{
+  return
+    // These major SSH servers explicitly do not support password change.
+    (SshImplementation != sshiOpenSSH) && // See userauth_passwd
+    (SshImplementation != sshiProFTPD); // See sftp_auth_password
 }
