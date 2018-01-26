@@ -36,8 +36,7 @@
 #include "utils.h"
 
 static const ne_propname p_alpha = {"DAV:", "alpha"},
-    p_beta = {"http://webdav.org/random/namespace", "beta"},
-    p_delta = {NULL, "delta"};
+    p_beta = {"http://webdav.org/random/namespace", "beta"};
 
 /* Tests little except that ne_proppatch() doesn't segfault. */
 static int patch_simple(void)

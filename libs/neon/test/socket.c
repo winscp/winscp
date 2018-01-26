@@ -222,7 +222,6 @@ static const unsigned char raw_127[4] = "\x7f\0\0\01", /* 127.0.0.1 */
     raw6_nuls[16] = /* :: */ "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
 #ifdef TEST_IPV6
 static const unsigned char 
-raw6_local[16] = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\1",
 raw6_cafe[16] = /* feed::cafe */ "\xfe\xed\0\0\0\0\0\0\0\0\0\0\0\0\xca\xfe",
 raw6_babe[16] = /* cafe:babe:: */ "\xca\xfe\xba\xbe\0\0\0\0\0\0\0\0\0\0\0\0";
 #endif

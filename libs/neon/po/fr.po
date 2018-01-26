@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: sitecopy 0.9.3\n"
 "Report-Msgid-Bugs-To: neon@lists.manyfish.co.uk\n"
-"POT-Creation-Date: 2014-09-22 16:25+0100\n"
+"POT-Creation-Date: 2016-09-30 09:51+0100\n"
 "PO-Revision-Date: 2000-01-31 00:00+0100\n"
 "Last-Translator: Sylvain Glaize <mokona@puupuu.org>\n"
 "Language-Team: fr\n"
@@ -168,50 +168,55 @@ msgstr "%s: erreur: impossible d'ouvrir le fichier de ressources: %s\n"
 msgid "Could not initialize zlib"
 msgstr "%s: erreur: impossible d'ouvrir le fichier de ressources: %s\n"
 
-#: src/ne_gnutls.c:176
+#: src/ne_gnutls.c:183
 #, c-format
 msgid "[unprintable:#%lu]"
 msgstr ""
 
-#: src/ne_gnutls.c:205
+#: src/ne_gnutls.c:212
 msgid "[unprintable]"
 msgstr ""
 
-#: src/ne_gnutls.c:848
+#: src/ne_gnutls.c:659
+#, c-format
+msgid "Failed to import private key: %s"
+msgstr ""
+
+#: src/ne_gnutls.c:903
 msgid "signed using insecure algorithm"
 msgstr ""
 
-#: src/ne_gnutls.c:851
+#: src/ne_gnutls.c:906
 #, c-format
 msgid "unrecognized errors (%u)"
 msgstr ""
 
-#: src/ne_gnutls.c:896 src/ne_openssl.c:470
+#: src/ne_gnutls.c:951 src/ne_openssl.c:477
 #, c-format
 msgid "Server certificate was missing commonName attribute in subject name"
 msgstr ""
 
-#: src/ne_gnutls.c:910
+#: src/ne_gnutls.c:965
 #, fuzzy, c-format
 msgid "Could not verify server certificate: %s"
 msgstr "%s: erreur: impossible d'ouvrir le fichier de ressources: %s\n"
 
-#: src/ne_gnutls.c:922 src/ne_openssl.c:457
+#: src/ne_gnutls.c:977 src/ne_openssl.c:464
 #, c-format
 msgid "Certificate verification error: %s"
 msgstr ""
 
-#: src/ne_gnutls.c:955 src/ne_openssl.c:702
+#: src/ne_gnutls.c:1010 src/ne_openssl.c:710
 #, c-format
 msgid "SSL handshake failed, client certificate was requested: %s"
 msgstr ""
 
-#: src/ne_gnutls.c:960 src/ne_openssl.c:707
+#: src/ne_gnutls.c:1015 src/ne_openssl.c:715
 #, fuzzy, c-format
 msgid "SSL handshake failed: %s"
 msgstr "%s: erreur: impossible d'ouvrir le fichier de ressources: %s\n"
 
-#: src/ne_gnutls.c:970
+#: src/ne_gnutls.c:1025
 #, c-format
 msgid "Server did not send certificate chain"
 msgstr ""
@@ -230,7 +235,7 @@ msgstr ""
 msgid "No activelock for <%s> returned in LOCK refresh response"
 msgstr ""
 
-#: src/ne_openssl.c:727
+#: src/ne_openssl.c:735
 #, c-format
 msgid "SSL server did not present certificate"
 msgstr ""
