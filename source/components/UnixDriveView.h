@@ -194,6 +194,7 @@ __published:
   __property OnMouseUp;
   __property OnStartDock;
   __property OnStartDrag;
+  __property OnBusy;
 
 public:
   __fastcall TUnixDriveView(TComponent * Owner);

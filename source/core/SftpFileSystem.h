@@ -52,6 +52,18 @@ public:
     const UnicodeString TargetDir, const TCopyParamType * CopyParam,
     int Params, TFileOperationProgressType * OperationProgress,
     TOnceDoneOperation & OnceDoneOperation);
+  virtual void __fastcall Source(
+    TLocalFileHandle & Handle, const UnicodeString & TargetDir, UnicodeString & DestFileName,
+    const TCopyParamType * CopyParam, int Params,
+    TFileOperationProgressType * OperationProgress, unsigned int Flags,
+    TUploadSessionAction & Action, bool & ChildError);
+  virtual void __fastcall DirectorySunk(
+    const UnicodeString & DestFullName, const TRemoteFile * File, const TCopyParamType * CopyParam);
+  virtual void __fastcall Sink(
+    const UnicodeString & FileName, const TRemoteFile * File,
+    const UnicodeString & TargetDir, UnicodeString & DestFileName, int Attrs,
+    const TCopyParamType * CopyParam, int Params, TFileOperationProgressType * OperationProgress,
+    unsigned int Flags, TDownloadSessionAction & Action);
   virtual void __fastcall CreateDirectory(const UnicodeString DirName);
   virtual void __fastcall CreateLink(const UnicodeString FileName, const UnicodeString PointTo, bool Symbolic);
   virtual void __fastcall DeleteFile(const UnicodeString FileName,
@@ -68,9 +80,9 @@ public:
     TRemoteFile *& File);
   virtual void __fastcall ReadSymlink(TRemoteFile * SymlinkFile,
     TRemoteFile *& File);
-  virtual void __fastcall RenameFile(const UnicodeString FileName,
+  virtual void __fastcall RenameFile(const UnicodeString FileName, const TRemoteFile * File,
     const UnicodeString NewName);
-  virtual void __fastcall CopyFile(const UnicodeString FileName,
+  virtual void __fastcall CopyFile(const UnicodeString FileName, const TRemoteFile * File,
     const UnicodeString NewName);
   virtual TStrings * __fastcall GetFixedPaths();
   virtual void __fastcall SpaceAvailable(const UnicodeString Path,
@@ -84,6 +96,7 @@ public:
   virtual void __fastcall LockFile(const UnicodeString & FileName, const TRemoteFile * File);
   virtual void __fastcall UnlockFile(const UnicodeString & FileName, const TRemoteFile * File);
   virtual void __fastcall UpdateFromMain(TCustomFileSystem * MainFileSystem);
+  virtual void __fastcall ClearCaches();
 
 protected:
   TSecureShell * FSecureShell;
@@ -154,9 +167,6 @@ protected:
   void __fastcall RegisterChecksumAlg(const UnicodeString & Alg, const UnicodeString & SftpAlg);
   void __fastcall DoDeleteFile(const UnicodeString FileName, unsigned char Type);
 
-  void __fastcall SFTPSourceRobust(const UnicodeString FileName,
-    const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params,
-    TFileOperationProgressType * OperationProgress, unsigned int Flags);
   void __fastcall SFTPSource(const UnicodeString FileName,
     const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params,
     TFileOperationProgressType * OperationProgress, unsigned int Flags,
@@ -167,25 +177,11 @@ protected:
   void __fastcall SFTPCloseRemote(const RawByteString Handle,
     const UnicodeString FileName, TFileOperationProgressType * OperationProgress,
     bool TransferFinished, bool Request, TSFTPPacket * Packet);
-  void __fastcall SFTPDirectorySource(const UnicodeString DirectoryName,
-    const UnicodeString TargetDir, int Attrs, const TCopyParamType * CopyParam,
-    int Params, TFileOperationProgressType * OperationProgress, unsigned int Flags);
   void __fastcall SFTPConfirmOverwrite(const UnicodeString & FullFileName, UnicodeString & FileName,
     const TCopyParamType * CopyParam, int Params, TFileOperationProgressType * OperationProgress,
     TSFTPOverwriteMode & Mode, const TOverwriteFileParams * FileParams);
   bool SFTPConfirmResume(const UnicodeString DestFileName, bool PartialBiggerThanSource,
     TFileOperationProgressType * OperationProgress);
-  void __fastcall SFTPSinkRobust(const UnicodeString FileName,
-    const TRemoteFile * File, const UnicodeString TargetDir,
-    const TCopyParamType * CopyParam, int Params,
-    TFileOperationProgressType * OperationProgress, unsigned int Flags);
-  void __fastcall SFTPSink(const UnicodeString FileName,
-    const TRemoteFile * File, const UnicodeString TargetDir,
-    const TCopyParamType * CopyParam, int Params,
-    TFileOperationProgressType * OperationProgress, unsigned int Flags,
-    TDownloadSessionAction & Action, bool & ChildError);
-  void __fastcall SFTPSinkFile(UnicodeString FileName,
-    const TRemoteFile * File, void * Param);
   char * __fastcall GetEOL() const;
   inline void __fastcall BusyStart();
   inline void __fastcall BusyEnd();

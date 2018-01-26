@@ -9,7 +9,7 @@
 #include <ne_request.h>
 #include <FileSystems.h>
 //------------------------------------------------------------------------------
-struct TWebDAVCertificateData;
+struct TNeonCertificateData;
 struct ne_ssl_certificate_s;
 struct ne_session_s;
 struct ne_prop_result_set_s;
@@ -50,6 +50,11 @@ public:
     const UnicodeString TargetDir, const TCopyParamType * CopyParam,
     int Params, TFileOperationProgressType * OperationProgress,
     TOnceDoneOperation & OnceDoneOperation);
+  virtual void __fastcall Source(
+    TLocalFileHandle & Handle, const UnicodeString & TargetDir, UnicodeString & DestFileName,
+    const TCopyParamType * CopyParam, int Params,
+    TFileOperationProgressType * OperationProgress, unsigned int Flags,
+    TUploadSessionAction & Action, bool & ChildError);
   virtual void __fastcall CreateDirectory(const UnicodeString DirName);
   virtual void __fastcall CreateLink(const UnicodeString FileName, const UnicodeString PointTo, bool Symbolic);
   virtual void __fastcall DeleteFile(const UnicodeString FileName,
@@ -66,9 +71,9 @@ public:
     TRemoteFile *& File);
   virtual void __fastcall ReadSymlink(TRemoteFile * SymlinkFile,
     TRemoteFile *& File);
-  virtual void __fastcall RenameFile(const UnicodeString FileName,
+  virtual void __fastcall RenameFile(const UnicodeString FileName, const TRemoteFile * File,
     const UnicodeString NewName);
-  virtual void __fastcall CopyFile(const UnicodeString FileName,
+  virtual void __fastcall CopyFile(const UnicodeString FileName, const TRemoteFile * File,
     const UnicodeString NewName);
   virtual TStrings * __fastcall GetFixedPaths();
   virtual void __fastcall SpaceAvailable(const UnicodeString Path,
@@ -82,32 +87,16 @@ public:
   virtual void __fastcall LockFile(const UnicodeString & FileName, const TRemoteFile * File);
   virtual void __fastcall UnlockFile(const UnicodeString & FileName, const TRemoteFile * File);
   virtual void __fastcall UpdateFromMain(TCustomFileSystem * MainFileSystem);
-
-  void __fastcall NeonDebug(const UnicodeString & Message);
+  virtual void __fastcall ClearCaches();
 
 protected:
   virtual UnicodeString __fastcall GetCurrentDirectory();
 
-  void __fastcall Sink(const UnicodeString FileName,
-    const TRemoteFile * File, const UnicodeString TargetDir,
-    const TCopyParamType * CopyParam, int Params,
-    TFileOperationProgressType * OperationProgress, unsigned int Flags,
-    TDownloadSessionAction & Action, bool & ChildError);
-  void __fastcall SinkRobust(const UnicodeString FileName,
-    const TRemoteFile * File, const UnicodeString TargetDir,
-    const TCopyParamType * CopyParam, int Params,
-    TFileOperationProgressType * OperationProgress, unsigned int Flags);
-  void __fastcall SinkFile(const UnicodeString FileName, const TRemoteFile * File, void * Param);
-  void __fastcall SourceRobust(const UnicodeString FileName,
-    const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params,
-    TFileOperationProgressType * OperationProgress, unsigned int Flags);
-  void __fastcall Source(const UnicodeString FileName,
-    const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params,
-    TFileOperationProgressType * OperationProgress, unsigned int Flags,
-    TUploadSessionAction & Action, bool & ChildError);
-  void __fastcall DirectorySource(const UnicodeString DirectoryName,
-    const UnicodeString TargetDir, int Attrs, const TCopyParamType * CopyParam,
-    int Params, TFileOperationProgressType * OperationProgress, unsigned int Flags);
+  virtual void __fastcall Sink(
+    const UnicodeString & FileName, const TRemoteFile * File,
+    const UnicodeString & TargetDir, UnicodeString & DestFileName, int Attrs,
+    const TCopyParamType * CopyParam, int Params, TFileOperationProgressType * OperationProgress,
+    unsigned int Flags, TDownloadSessionAction & Action);
   void __fastcall ConfirmOverwrite(
     const UnicodeString & SourceFullFileName, UnicodeString & DestFileName,
     TFileOperationProgressType * OperationProgress,
@@ -145,8 +134,7 @@ protected:
   static void LockResult(void * UserData, const struct ne_lock * Lock,
    const ne_uri * Uri, const ne_status * Status);
   void __fastcall RequireLockStore();
-  static void InitSslSession(ssl_st * Ssl, ne_session * Session);
-  void __fastcall InitSslSessionImpl(ssl_st * Ssl);
+  void InitSslSession(ssl_st * Ssl, ne_session * Session);
   void __fastcall NeonAddAuthentiation(bool UseNegotiate);
   void __fastcall HttpAuthenticationFailed();
 
@@ -185,9 +173,7 @@ private:
     TRemoteFile *& File, TRemoteFile * ALinkedByFile);
   int __fastcall CustomReadFileInternal(const UnicodeString FileName,
     TRemoteFile *& File, TRemoteFile * ALinkedByFile);
-  void __fastcall RegisterForDebug();
-  void __fastcall UnregisterFromDebug();
-  bool VerifyCertificate(const TWebDAVCertificateData & Data, bool Aux);
+  bool VerifyCertificate(TNeonCertificateData Data, bool Aux);
   void OpenUrl(const UnicodeString & Url);
   void __fastcall CollectTLSSessionInfo();
   UnicodeString __fastcall GetRedirectUrl();
@@ -205,8 +191,5 @@ private:
   void __fastcall SetSessionTls(ne_session_s * Session, bool Aux);
   void __fastcall InitSession(ne_session_s * Session);
 };
-//------------------------------------------------------------------------------
-void __fastcall NeonInitialize();
-void __fastcall NeonFinalize();
 //------------------------------------------------------------------------------
 #endif

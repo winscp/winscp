@@ -7,6 +7,9 @@
 #include <Vcl.Controls.hpp>
 #include <Vcl.Menus.hpp>
 #include <Vcl.StdCtrls.hpp>
+#include <System.Actions.hpp>
+#include <Vcl.ActnList.hpp>
+#include <Vcl.StdActns.hpp>
 //----------------------------------------------------------------------------
 typedef void __fastcall (__closure *TFeedFileSystemData)
   (TControl * Control, int Label, UnicodeString Value);
@@ -19,7 +22,7 @@ __published:
   TPageControl *PageControl;
   TTabSheet *ProtocolSheet;
   TGroupBox *HostKeyGroup;
-  TEdit *HostKeyFingerprintEdit;
+  TEdit *HostKeyFingerprintSHA256Edit;
   TTabSheet *CapabilitiesSheet;
   TGroupBox *InfoGroup;
   TMemo *InfoMemo;
@@ -36,6 +39,16 @@ __published:
   TGroupBox *CertificateGroup;
   TEdit *CertificateFingerprintEdit;
   TButton *CertificateViewButton;
+  TLabel *Label2;
+  TEdit *HostKeyAlgorithmEdit;
+  TLabel *Label3;
+  TLabel *Label4;
+  TEdit *HostKeyFingerprintMD5Edit;
+  TPopupMenu *FingerprintPopupMenu;
+  TActionList *FingerprintActionList;
+  TEditCopy *EditCopyAction;
+  TEditSelectAll *EditSelectAllAction;
+  TMenuItem *Copy1;
   void __fastcall HelpButtonClick(TObject *Sender);
   void __fastcall ClipboardButtonClick(TObject *Sender);
   void __fastcall CopyClick(TObject *Sender);
@@ -50,6 +63,9 @@ __published:
   void __fastcall CertificateViewButtonClick(TObject *Sender);
   void __fastcall SpaceAvailableViewCustomDrawItem(TCustomListView *Sender, TListItem *Item,
           TCustomDrawState State, bool &DefaultDraw);
+  void __fastcall EditCopyActionExecute(TObject *Sender);
+  void __fastcall HostKeyFingerprintSHA256EditContextPopup(TObject *Sender, TPoint &MousePos, bool &Handled);
+  void __fastcall EditCopyActionUpdate(TObject *Sender);
 public:
   virtual __fastcall TFileSystemInfoDialog(TComponent * AOwner,
     TGetSpaceAvailable OnGetSpaceAvailable);

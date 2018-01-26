@@ -20,7 +20,7 @@
 #define WRITE_REGISTRY(Method) \
   try { FRegistry->Method(Name, Value); } catch(...) { FFailed++; }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall MungeStr(const UnicodeString & Str, bool ForceAnsi)
+UnicodeString __fastcall MungeStr(const UnicodeString & Str, bool ForceAnsi, bool Value)
 {
   RawByteString Source;
   if (ForceAnsi)
@@ -40,6 +40,11 @@ UnicodeString __fastcall MungeStr(const UnicodeString & Str, bool ForceAnsi)
   Dest.SetLength(Source.Length() * 3 + 1);
   putty_mungestr(Source.c_str(), Dest.c_str());
   PackStr(Dest);
+  if (Value)
+  {
+    // We do not want to munge * in PasswordMask
+    Dest = ReplaceStr(Dest, L"%2A", L"*");
+  }
   return UnicodeString(Dest.c_str(), Dest.Length());
 }
 //---------------------------------------------------------------------------
@@ -67,7 +72,7 @@ UnicodeString __fastcall UnMungeStr(const UnicodeString & Str)
 //---------------------------------------------------------------------------
 UnicodeString __fastcall PuttyMungeStr(const UnicodeString Str)
 {
-  return MungeStr(Str, false);
+  return MungeStr(Str, false, false);
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall MungeIniName(const UnicodeString & Str)
@@ -143,11 +148,11 @@ bool __fastcall THierarchicalStorage::OpenRootKey(bool CanCreate)
 //---------------------------------------------------------------------------
 UnicodeString __fastcall THierarchicalStorage::MungeKeyName(UnicodeString Key)
 {
-  UnicodeString Result = MungeStr(Key, ForceAnsi);
+  UnicodeString Result = MungeStr(Key, ForceAnsi, false);
   // if there's already ANSI-munged subkey, keep ANSI munging
   if ((Result != Key) && !ForceAnsi && DoKeyExists(Key, true))
   {
-    Result = MungeStr(Key, true);
+    Result = MungeStr(Key, true, false);
   }
   return Result;
 }
@@ -333,7 +338,7 @@ UnicodeString __fastcall THierarchicalStorage::ReadString(const UnicodeString Na
   UnicodeString Result;
   if (MungeStringValues)
   {
-    Result = UnMungeStr(ReadStringRaw(Name, MungeStr(Default, ForceAnsi)));
+    Result = UnMungeStr(ReadStringRaw(Name, MungeStr(Default, ForceAnsi, true)));
   }
   else
   {
@@ -367,7 +372,7 @@ void __fastcall THierarchicalStorage::WriteString(const UnicodeString Name, cons
 {
   if (MungeStringValues)
   {
-    WriteStringRaw(Name, MungeStr(Value, ForceAnsi));
+    WriteStringRaw(Name, MungeStr(Value, ForceAnsi, true));
   }
   else
   {
@@ -457,7 +462,7 @@ bool __fastcall TRegistryStorage::Copy(TRegistryStorage * Storage)
     int Index = 0;
     while ((Index < Names->Count) && Result)
     {
-      UnicodeString Name = MungeStr(Names->Strings[Index], ForceAnsi);
+      UnicodeString Name = MungeStr(Names->Strings[Index], ForceAnsi, false);
       unsigned long Size = Buffer.size();
       unsigned long Type;
       int RegResult;
@@ -558,7 +563,7 @@ bool __fastcall TRegistryStorage::DeleteValue(const UnicodeString Name)
 //---------------------------------------------------------------------------
 bool __fastcall TRegistryStorage::DoKeyExists(const UnicodeString SubKey, bool AForceAnsi)
 {
-  UnicodeString K = MungeStr(SubKey, AForceAnsi);
+  UnicodeString K = MungeStr(SubKey, AForceAnsi, false);
   bool Result = FRegistry->KeyExists(K);
   return Result;
 }
@@ -894,7 +899,7 @@ bool __fastcall TCustomIniFileStorage::DoKeyExists(const UnicodeString SubKey, b
 {
   return
     (HandleByMasterStorage() && FMasterStorage->DoKeyExists(SubKey, AForceAnsi)) ||
-    FIniFile->SectionExists(CurrentSubKey + MungeStr(SubKey, AForceAnsi));
+    FIniFile->SectionExists(CurrentSubKey + MungeStr(SubKey, AForceAnsi, false));
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCustomIniFileStorage::DoValueExists(const UnicodeString & Value)

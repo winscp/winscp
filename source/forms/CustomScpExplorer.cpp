@@ -206,6 +206,7 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   FStandaloneEditing = false;
   FOnFeedSynchronizeError = NULL;
   FNeedSession = false;
+  FDoNotIdleCurrentTerminal = false;
 
   FEditorManager = new TEditorManager();
   FEditorManager->OnFileChange = ExecutedFileChanged;
@@ -945,6 +946,7 @@ void __fastcall TCustomScpExplorerForm::ConfigurationChanged()
   RemoteDirView->ShowHiddenFiles = WinConfiguration->ShowHiddenFiles;
   RemoteDirView->FormatSizeBytes = WinConfiguration->FormatSizeBytes;
   RemoteDirView->ShowInaccesibleDirectories = WinConfiguration->ShowInaccesibleDirectories;
+  RemoteDirView->NaturalOrderNumericalSorting = WinConfiguration->NaturalOrderNumericalSorting;
 
   if (RemoteDirView->RowSelect != WinConfiguration->FullRowSelect)
   {
@@ -1391,6 +1393,9 @@ void __fastcall TCustomScpExplorerForm::OperationComplete(
 void __fastcall TCustomScpExplorerForm::OperationProgress(
   TFileOperationProgressType & ProgressData)
 {
+  // For example, when calling TFileOperationProgressType::Suspend in TTerminal::QueryReopen,
+  // we cannot recurse back to TTerminal::Idle as that may detect another error, calling "suspend" again.
+  TAutoFlag Flag(FDoNotIdleCurrentTerminal);
   FileOperationProgress(ProgressData);
 }
 //---------------------------------------------------------------------------
@@ -1470,6 +1475,7 @@ void __fastcall TCustomScpExplorerForm::OperationFinished(
   bool Temp, const UnicodeString & FileName, Boolean Success,
   TOnceDoneOperation & OnceDoneOperation)
 {
+  TAutoFlag Flag(FDoNotIdleCurrentTerminal);
   DoOperationFinished(Operation, Side, Temp, FileName, Success,
     OnceDoneOperation);
 }
@@ -2111,8 +2117,8 @@ void __fastcall TCustomScpExplorerForm::LocalCustomCommand(TStrings * FileList,
       TMessageParams Params;
       TQueryButtonAlias Aliases[1];
       Aliases[0].Button = qaRetry;
-      Aliases[0].Alias = LoadStr(URL_LINK_COPY); // misuse
-      Aliases[0].OnClick = &ClipboardHandler.Copy;
+      Aliases[0].Alias = LoadStr(EDIT_COPY);
+      Aliases[0].OnSubmit = &ClipboardHandler.Copy;
       Params.Aliases = Aliases;
       Params.AliasesCount = LENOF(Aliases);
 
@@ -2904,7 +2910,7 @@ void __fastcall TCustomScpExplorerForm::CustomExecuteFile(TOperationSide Side,
         Editor = ShowEditorForm(FileName, this, FEditorManager->FileChanged,
           FEditorManager->FileReload, FEditorManager->FileClosed,
           SaveAllInternalEditors, AnyInternalEditorModified,
-          Caption, FStandaloneEditing, SessionColor);
+          Caption, FStandaloneEditing, SessionColor, Terminal->SessionData->InternalEditorEncoding);
       }
       catch(...)
       {
@@ -2923,7 +2929,7 @@ void __fastcall TCustomScpExplorerForm::CustomExecuteFile(TOperationSide Side,
       TForm * Editor =
         ShowEditorForm(FileName, this, NULL, NULL, LocalEditorClosed,
           SaveAllInternalEditors, AnyInternalEditorModified,
-          L"", false, SessionColor);
+          L"", false, SessionColor, -1);
       FLocalEditors->Add(Editor);
     }
   }
@@ -4201,14 +4207,15 @@ void __fastcall TCustomScpExplorerForm::KeyDown(Word & Key, Classes::TShiftState
       TTerminalManager::Instance()->CycleTerminals(!Shift.Contains(ssShift));
     }
 
-    if (IsCustomShortCut(KeyShortCut))
+    TShortCut CustomShortCut = NormalizeCustomShortCut(KeyShortCut);
+    if (IsCustomShortCut(CustomShortCut))
     {
-      CheckCustomCommandShortCut(WinConfiguration->CustomCommandList, Key, Shift, KeyShortCut);
-      CheckCustomCommandShortCut(WinConfiguration->ExtensionList, Key, Shift, KeyShortCut);
+      CheckCustomCommandShortCut(WinConfiguration->CustomCommandList, Key, Shift, CustomShortCut);
+      CheckCustomCommandShortCut(WinConfiguration->ExtensionList, Key, Shift, CustomShortCut);
 
       if (WinConfiguration->SharedBookmarks != NULL)
       {
-        TBookmark * Bookmark = WinConfiguration->SharedBookmarks->FindByShortCut(KeyShortCut);
+        TBookmark * Bookmark = WinConfiguration->SharedBookmarks->FindByShortCut(CustomShortCut);
         if ((Bookmark != NULL) &&
             OpenBookmark(Bookmark->Local, Bookmark->Remote))
         {
@@ -4320,7 +4327,7 @@ void __fastcall TCustomScpExplorerForm::Idle()
 
     // make sure that Idle is called before update queue, as it may invoke QueueEvent
     // that needs to know if queue view is visible (and it may be closed after queue update)
-    TTerminalManager::Instance()->Idle();
+    TTerminalManager::Instance()->Idle(FDoNotIdleCurrentTerminal);
   }
 
   if (FShowing)

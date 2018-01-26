@@ -133,7 +133,7 @@ public:
   void __fastcall SendNull();
 
   const TSessionInfo & __fastcall GetSessionInfo();
-  UnicodeString __fastcall GetHostKeyFingerprint();
+  void __fastcall GetHostKeyFingerprint(UnicodeString & SHA256, UnicodeString & MD5);
   bool __fastcall SshFallbackCmd() const;
   unsigned long __fastcall MaxPacketSize();
   void __fastcall ClearStdError();
@@ -156,10 +156,11 @@ public:
   void __fastcall FromBackend(bool IsStdErr, const unsigned char * Data, int Length);
   void __fastcall CWrite(const char * Data, int Length);
   const UnicodeString & __fastcall GetStdError();
-  void __fastcall VerifyHostKey(UnicodeString Host, int Port,
-    const UnicodeString KeyType, UnicodeString KeyStr, UnicodeString Fingerprint);
+  void __fastcall VerifyHostKey(
+    const UnicodeString & Host, int Port, const UnicodeString & KeyType, const UnicodeString & KeyStr,
+    const UnicodeString & Fingerprint);
   bool __fastcall HaveHostKey(UnicodeString Host, int Port, const UnicodeString KeyType);
-  void __fastcall AskAlg(const UnicodeString AlgType, const UnicodeString AlgName);
+  void __fastcall AskAlg(UnicodeString AlgType, UnicodeString AlgName);
   void __fastcall DisplayBanner(const UnicodeString & Banner);
   void __fastcall OldKeyfileWarning();
   void __fastcall PuttyLogEvent(const char * Str);

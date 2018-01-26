@@ -407,6 +407,7 @@ private:
   bool FRefreshRemotePanel;
   TDateTime FRefreshRemotePanelInterval;
   TFontConfiguration FPanelFont;
+  bool FNaturalOrderNumericalSorting;
   bool FFullRowSelect;
   bool FOfferedEditorAutoConfig;
   bool FUseMasterPassword;
@@ -506,6 +507,7 @@ private:
   void __fastcall SetRefreshRemotePanel(bool value);
   void __fastcall SetRefreshRemotePanelInterval(TDateTime value);
   void __fastcall SetPanelFont(const TFontConfiguration & value);
+  void __fastcall SetNaturalOrderNumericalSorting(bool value);
   void __fastcall SetFullRowSelect(bool value);
   void __fastcall SetOfferedEditorAutoConfig(bool value);
   void __fastcall SetLastMonitor(int value);
@@ -682,6 +684,7 @@ public:
   __property bool RefreshRemotePanel = { read = FRefreshRemotePanel, write = SetRefreshRemotePanel };
   __property TDateTime RefreshRemotePanelInterval = { read = FRefreshRemotePanelInterval, write = SetRefreshRemotePanelInterval };
   __property TFontConfiguration PanelFont = { read = FPanelFont, write = SetPanelFont };
+  __property bool NaturalOrderNumericalSorting = { read = FNaturalOrderNumericalSorting, write = SetNaturalOrderNumericalSorting };
   __property bool FullRowSelect = { read = FFullRowSelect, write = SetFullRowSelect };
   __property bool OfferedEditorAutoConfig = { read = FOfferedEditorAutoConfig, write = SetOfferedEditorAutoConfig };
   __property int LastMonitor = { read = GetLastMonitor, write = SetLastMonitor };

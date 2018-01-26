@@ -233,6 +233,7 @@ void __fastcall TTerminalManager::DoConnectTerminal(TTerminal * Terminal, bool R
   try
   {
     TTerminalThread * TerminalThread = new TTerminalThread(Terminal);
+    TerminalThread->AllowAbandon = (Terminal == FActiveTerminal);
     try
     {
       if (ManagedTerminal != NULL)
@@ -262,12 +263,31 @@ void __fastcall TTerminalManager::DoConnectTerminal(TTerminal * Terminal, bool R
     }
     __finally
     {
-      if (ManagedTerminal != NULL)
+      TerminalThread->OnIdle = NULL;
+      if (!TerminalThread->Release() && (DebugAlwaysTrue(Terminal == FActiveTerminal)))
       {
-        ManagedTerminal->TerminalThread = NULL;
-      }
+        // terminal was abandoned, must create a new one to replace it
+        Terminal = CreateTerminal(new TSessionData(L""));
+        SetupTerminal(Terminal);
+        OwnsObjects = false;
+        Items[ActiveTerminalIndex] = Terminal;
+        OwnsObjects = true;
+        FActiveTerminal = Terminal;
 
-      delete TerminalThread;
+        // when abandoning cancelled terminal, the form remains open
+        if (FAuthenticateForm != NULL)
+        {
+          delete FAuthenticateForm;
+          FAuthenticateForm = NULL;
+        }
+      }
+      else
+      {
+        if (ManagedTerminal != NULL)
+        {
+          ManagedTerminal->TerminalThread = NULL;
+        }
+      }
     }
   }
   __finally
@@ -283,6 +303,8 @@ void __fastcall TTerminalManager::DoConnectTerminal(TTerminal * Terminal, bool R
 bool __fastcall TTerminalManager::ConnectTerminal(TTerminal * Terminal)
 {
   bool Result = true;
+  // were it an active terminal, it would allow abandoning, what this API cannot deal with
+  DebugAssert(Terminal != FActiveTerminal);
   try
   {
     DoConnectTerminal(Terminal, false);
@@ -324,7 +346,7 @@ bool __fastcall TTerminalManager::ConnectActiveTerminalImpl(bool Reopen)
 
       Result = true;
     }
-    catch(Exception & E)
+    catch (Exception & E)
     {
       DebugAssert(FTerminalPendingAction == tpNull);
       FTerminalPendingAction = ::tpNone;
@@ -987,7 +1009,7 @@ void __fastcall TTerminalManager::TerminalPromptUser(
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::TerminalDisplayBanner(
   TTerminal * Terminal, UnicodeString SessionName,
-  const UnicodeString & Banner, bool & NeverShowAgain, int Options)
+  const UnicodeString & Banner, bool & NeverShowAgain, int Options, unsigned int & Params)
 {
   DebugAssert(FAuthenticateForm != NULL);
   TAuthenticateForm * AuthenticateForm = FAuthenticateForm;
@@ -998,7 +1020,7 @@ void __fastcall TTerminalManager::TerminalDisplayBanner(
 
   try
   {
-    AuthenticateForm->Banner(Banner, NeverShowAgain, Options);
+    AuthenticateForm->Banner(Banner, NeverShowAgain, Options, Params);
   }
   __finally
   {
@@ -1362,7 +1384,7 @@ void __fastcall TTerminalManager::NewSession(bool /*FromSite*/, const UnicodeStr
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminalManager::Idle()
+void __fastcall TTerminalManager::Idle(bool SkipCurrentTerminal)
 {
 
   if (FPendingConfigurationChange > 0) // optimization
@@ -1389,27 +1411,30 @@ void __fastcall TTerminalManager::Idle()
     TTerminal * Terminal = Terminals[Index];
     try
     {
-      TManagedTerminal * ManagedTerminal = dynamic_cast<TManagedTerminal *>(Terminal);
-      DebugAssert(ManagedTerminal != NULL);
-      // make sure Idle is called on the thread that runs the terminal
-      if (ManagedTerminal->TerminalThread != NULL)
+      if (!SkipCurrentTerminal || (Terminal != ActiveTerminal))
       {
-        ManagedTerminal->TerminalThread->Idle();
-      }
-      else
-      {
+        TManagedTerminal * ManagedTerminal = dynamic_cast<TManagedTerminal *>(Terminal);
+        DebugAssert(ManagedTerminal != NULL);
+        // make sure Idle is called on the thread that runs the terminal
+        if (ManagedTerminal->TerminalThread != NULL)
+        {
+          ManagedTerminal->TerminalThread->Idle();
+        }
+        else
+        {
+          if (Terminal->Active)
+          {
+            Terminal->Idle();
+          }
+        }
+
         if (Terminal->Active)
         {
-          Terminal->Idle();
-        }
-      }
-
-      if (Terminal->Active)
-      {
-        DebugAssert(Index < FQueues->Count);
-        if (Index < FQueues->Count)
-        {
-          reinterpret_cast<TTerminalQueue *>(FQueues->Items[Index])->Idle();
+          DebugAssert(Index < FQueues->Count);
+          if (Index < FQueues->Count)
+          {
+            reinterpret_cast<TTerminalQueue *>(FQueues->Items[Index])->Idle();
+          }
         }
       }
     }

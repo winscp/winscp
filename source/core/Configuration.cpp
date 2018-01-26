@@ -34,6 +34,8 @@ const UnicodeString Crc32ChecksumAlg(L"crc32");
 const UnicodeString SshFingerprintType(L"ssh");
 const UnicodeString TlsFingerprintType(L"tls");
 //---------------------------------------------------------------------------
+const UnicodeString HttpsCertificateStorageKey(L"HttpsCertificates");
+//---------------------------------------------------------------------------
 __fastcall TConfiguration::TConfiguration()
 {
   FCriticalSection = new TCriticalSection();
@@ -584,46 +586,59 @@ UnicodeString __fastcall TConfiguration::BannerHash(const UnicodeString & Banner
   return BytesToHex(Result);
 }
 //---------------------------------------------------------------------------
-bool __fastcall TConfiguration::ShowBanner(const UnicodeString SessionKey,
-  const UnicodeString & Banner)
+void __fastcall TConfiguration::GetBannerData(
+  const UnicodeString & SessionKey, UnicodeString & BannerHash, unsigned int & Params)
 {
-  bool Result;
-  THierarchicalStorage * Storage = CreateConfigStorage();
-  try
-  {
-    Storage->AccessMode = smRead;
-    Result =
-      !Storage->OpenSubKey(ConfigurationSubKey, false) ||
-      !Storage->OpenSubKey(L"Banners", false) ||
-      !Storage->ValueExists(SessionKey) ||
-      (Storage->ReadString(SessionKey, L"") != BannerHash(Banner));
-  }
-  __finally
-  {
-    delete Storage;
-  }
+  BannerHash = UnicodeString();
+  Params = 0;
 
+  std::unique_ptr<THierarchicalStorage> Storage(CreateConfigStorage());
+  Storage->AccessMode = smRead;
+  if (Storage->OpenSubKey(ConfigurationSubKey, false) &&
+      Storage->OpenSubKey(L"Banners", false))
+  {
+    UnicodeString S = Storage->ReadString(SessionKey, L"");
+    BannerHash = CutToChar(S, L',', true);
+    Params = StrToIntDef(L"$" + CutToChar(S, L',', true), 0);
+  }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TConfiguration::ShowBanner(
+  const UnicodeString & SessionKey, const UnicodeString & Banner, unsigned int & Params)
+{
+  UnicodeString StoredBannerHash;
+  GetBannerData(SessionKey, StoredBannerHash, Params);
+  bool Result = (StoredBannerHash != BannerHash(Banner));
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TConfiguration::NeverShowBanner(const UnicodeString SessionKey,
-  const UnicodeString & Banner)
+void __fastcall TConfiguration::SetBannerData(
+  const UnicodeString & SessionKey, const UnicodeString & BannerHash, unsigned int Params)
 {
-  THierarchicalStorage * Storage = CreateConfigStorage();
-  try
-  {
-    Storage->AccessMode = smReadWrite;
+  std::unique_ptr<THierarchicalStorage> Storage(CreateConfigStorage());
+  Storage->AccessMode = smReadWrite;
 
-    if (Storage->OpenSubKey(ConfigurationSubKey, true) &&
-        Storage->OpenSubKey(L"Banners", true))
-    {
-      Storage->WriteString(SessionKey, BannerHash(Banner));
-    }
-  }
-  __finally
+  if (Storage->OpenSubKey(ConfigurationSubKey, true) &&
+      Storage->OpenSubKey(L"Banners", true))
   {
-    delete Storage;
+    Storage->WriteString(SessionKey, BannerHash + L"," + UIntToStr(Params));
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TConfiguration::NeverShowBanner(const UnicodeString & SessionKey, const UnicodeString & Banner)
+{
+  UnicodeString DummyBannerHash;
+  unsigned int Params;
+  GetBannerData(SessionKey, DummyBannerHash, Params);
+  SetBannerData(SessionKey, BannerHash(Banner), Params);
+}
+//---------------------------------------------------------------------------
+void __fastcall TConfiguration::SetBannerParams(const UnicodeString & SessionKey, unsigned int Params)
+{
+  UnicodeString BannerHash;
+  unsigned int DummyParams;
+  GetBannerData(SessionKey, BannerHash, DummyParams);
+  SetBannerData(SessionKey, BannerHash, Params);
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TConfiguration::FormatFingerprintKey(const UnicodeString & SiteKey, const UnicodeString & FingerprintType)

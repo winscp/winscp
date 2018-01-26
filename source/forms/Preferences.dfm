@@ -588,16 +588,16 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 8
           Width = 389
-          Height = 171
+          Height = 195
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Common'
           TabOrder = 0
           DesignSize = (
             389
-            171)
+            195)
           object Label1: TLabel
             Left = 16
-            Top = 143
+            Top = 167
             Width = 84
             Height = 13
             Caption = 'Show file si&zes in:'
@@ -656,23 +656,33 @@ object PreferencesDialog: TPreferencesDialog
           end
           object FormatSizeBytesCombo: TComboBox
             Left = 264
-            Top = 140
+            Top = 164
             Width = 108
             Height = 21
             Style = csDropDownList
             Anchors = [akTop, akRight]
             MaxLength = 1
-            TabOrder = 5
+            TabOrder = 6
             OnChange = ControlChange
             Items.Strings = (
               'Bytes'
               'Kilobytes'
               'Short format')
           end
+          object NaturalOrderNumericalSortingCheck: TCheckBox
+            Left = 16
+            Top = 141
+            Width = 357
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = '&Use &natural order numerical sorting'
+            TabOrder = 5
+            OnClick = ControlChange
+          end
         end
         object DoubleClickGroup: TGroupBox
           Left = 8
-          Top = 184
+          Top = 209
           Width = 389
           Height = 74
           Anchors = [akLeft, akTop, akRight]
@@ -717,7 +727,7 @@ object PreferencesDialog: TPreferencesDialog
         end
         object PanelFontGroup: TGroupBox
           Left = 8
-          Top = 270
+          Top = 289
           Width = 389
           Height = 82
           Anchors = [akLeft, akRight, akBottom]

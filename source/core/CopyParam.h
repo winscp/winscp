@@ -140,5 +140,6 @@ public:
 unsigned long __fastcall GetSpeedLimit(const UnicodeString & Text);
 UnicodeString __fastcall SetSpeedLimit(unsigned long Limit);
 void __fastcall CopySpeedLimits(TStrings * Source, TStrings * Dest);
+TOperationSide ReverseOperationSide(TOperationSide Side);
 //---------------------------------------------------------------------------
 #endif

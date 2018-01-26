@@ -47,7 +47,6 @@ void __fastcall OpenFileInExplorer(const UnicodeString & Path);
 void __fastcall OpenFolderInExplorer(const UnicodeString & Path);
 void __fastcall ShowHelp(const UnicodeString & HelpKeyword);
 bool __fastcall IsFormatInClipboard(unsigned int Format);
-bool __fastcall TextFromClipboard(UnicodeString & Text, bool Trim);
 bool __fastcall NonEmptyTextFromClipboard(UnicodeString & Text);
 HANDLE __fastcall OpenTextFromClipboard(const wchar_t *& Text);
 void __fastcall CloseTextFromClipboard(HANDLE Handle);

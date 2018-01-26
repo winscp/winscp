@@ -60,6 +60,7 @@ type
     FOnDDEnd: TNotifyEvent;
     FOnDDCreateDataObject: TDDOnCreateDataObject;
     FLastDDResult: TDragResult;
+    FOnBusy: TDirViewBusy;
 
     function GetTargetPopupMenu: Boolean;
     procedure SetTargetPopUpMenu(Value: Boolean);
@@ -87,6 +88,7 @@ type
     procedure WMLButtonUp(var Msg: TWMLButtonDown); message WM_LBUTTONUP;
     procedure WMRButtonDown(var Msg: TWMRButtonDown); message WM_RBUTTONDOWN;
     procedure WMContextMenu(var Msg: TWMContextMenu); message WM_CONTEXTMENU;
+    procedure WMKeyDown(var Message: TWMKeyDown); message WM_KEYDOWN;
     procedure CMDPIChanged(var Message: TMessage); message CM_DPICHANGED;
 
     procedure Delete(Node: TTreeNode); override;
@@ -145,6 +147,11 @@ type
     procedure ScrollOnDragOverBeforeUpdate(ObjectToValidate: TObject);
     procedure ScrollOnDragOverAfterUpdate;
 
+    function DoBusy(Busy: Integer): Boolean;
+    function StartBusy: Boolean;
+    procedure EndBusy;
+    function IsBusy: Boolean;
+
     property ImageList: TImageList read FImageList;
 
   public
@@ -201,6 +208,8 @@ type
     property OnDDCreateDataObject: TDDOnCreateDataObject
       read FOnDDCreateDataObject write FOnDDCreateDataObject;
     property OnDDMenuPopup: TOnMenuPopup read FOnDDMenuPopup write FOnDDMenuPopup;
+
+    property OnBusy: TDirViewBusy read FOnBusy write FOnBusy;
 
     { Show popupmenu when dropping a file with the right mouse button }
     property TargetPopUpMenu: Boolean read GetTargetPopUpMenu write SetTargetPopUpMenu default True;
@@ -955,6 +964,14 @@ begin
   inherited;
 end; {OnDelete}
 
+procedure TCustomDriveView.WMKeyDown(var Message: TWMKeyDown);
+begin
+  if not IsBusy then
+  begin
+    inherited;
+  end;
+end;
+
 procedure TCustomDriveView.KeyDown(var Key: Word; Shift: TShiftState);
 begin
   if (Key = VK_RETURN) and (ssAlt in Shift) and (not IsEditing) and
@@ -1221,5 +1238,29 @@ begin
   if csDesigning in ComponentState then
     Selected := nil;
 end; {SetDirectory}
+
+function TCustomDriveView.DoBusy(Busy: Integer): Boolean;
+begin
+  Result := True;
+  if Assigned(OnBusy) then
+  begin
+    OnBusy(Self, Busy, Result);
+  end;
+end;
+
+function TCustomDriveView.StartBusy: Boolean;
+begin
+  Result := DoBusy(1);
+end;
+
+function TCustomDriveView.IsBusy: Boolean;
+begin
+  Result := DoBusy(0);
+end;
+
+procedure TCustomDriveView.EndBusy;
+begin
+  DoBusy(-1);
+end;
 
 end.

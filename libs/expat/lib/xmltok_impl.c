@@ -1,8 +1,35 @@
-/* Copyright (c) 1998, 1999 Thai Open Source Software Center Ltd
-   See the file COPYING for copying permission.
+/* This file is included!
+                            __  __            _
+                         ___\ \/ /_ __   __ _| |_
+                        / _ \\  /| '_ \ / _` | __|
+                       |  __//  \| |_) | (_| | |_
+                        \___/_/\_\ .__/ \__,_|\__|
+                                 |_| XML parser
+
+   Copyright (c) 1997-2000 Thai Open Source Software Center Ltd
+   Copyright (c) 2000-2017 Expat development team
+   Licensed under the MIT license:
+
+   Permission is  hereby granted,  free of charge,  to any  person obtaining
+   a  copy  of  this  software   and  associated  documentation  files  (the
+   "Software"),  to  deal in  the  Software  without restriction,  including
+   without  limitation the  rights  to use,  copy,  modify, merge,  publish,
+   distribute, sublicense, and/or sell copies of the Software, and to permit
+   persons  to whom  the Software  is  furnished to  do so,  subject to  the
+   following conditions:
+
+   The above copyright  notice and this permission notice  shall be included
+   in all copies or substantial portions of the Software.
+
+   THE  SOFTWARE  IS  PROVIDED  "AS  IS",  WITHOUT  WARRANTY  OF  ANY  KIND,
+   EXPRESS  OR IMPLIED,  INCLUDING  BUT  NOT LIMITED  TO  THE WARRANTIES  OF
+   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+   NO EVENT SHALL THE AUTHORS OR  COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+   DAMAGES OR  OTHER LIABILITY, WHETHER  IN AN  ACTION OF CONTRACT,  TORT OR
+   OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+   USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-/* This file is included! */
 #ifdef XML_TOK_IMPL_C
 
 #ifndef IS_INVALID_CHAR
@@ -1625,79 +1652,6 @@ PREFIX(predefinedEntityName)(const ENCODING *UNUSED_P(enc), const char *ptr,
   }
   return 0;
 }
-
-/* This function does not appear to be called from anywhere within the
- * library code.  It is used via the macro XmlSameName(), which is
- * defined but never used.  Since it appears in the encoding function
- * table, removing it is not a thing to be undertaken lightly.  For
- * the moment, we simply exclude it from coverage tests.
- *
- * LCOV_EXCL_START
- */
-static int PTRCALL
-PREFIX(sameName)(const ENCODING *enc, const char *ptr1, const char *ptr2)
-{
-  for (;;) {
-    switch (BYTE_TYPE(enc, ptr1)) {
-#define LEAD_CASE(n) \
-    case BT_LEAD ## n: \
-      if (*ptr1++ != *ptr2++) \
-        return 0;
-    LEAD_CASE(4) LEAD_CASE(3) LEAD_CASE(2)
-#undef LEAD_CASE
-      /* fall through */
-      if (*ptr1++ != *ptr2++)
-        return 0;
-      break;
-    case BT_NONASCII:
-    case BT_NMSTRT:
-#ifdef XML_NS
-    case BT_COLON:
-#endif
-    case BT_HEX:
-    case BT_DIGIT:
-    case BT_NAME:
-    case BT_MINUS:
-      if (*ptr2++ != *ptr1++)
-        return 0;
-      if (MINBPC(enc) > 1) {
-        if (*ptr2++ != *ptr1++)
-          return 0;
-        if (MINBPC(enc) > 2) {
-          if (*ptr2++ != *ptr1++)
-            return 0;
-          if (MINBPC(enc) > 3) {
-            if (*ptr2++ != *ptr1++)
-              return 0;
-          }
-        }
-      }
-      break;
-    default:
-      if (MINBPC(enc) == 1 && *ptr1 == *ptr2)
-        return 1;
-      switch (BYTE_TYPE(enc, ptr2)) {
-      case BT_LEAD2:
-      case BT_LEAD3:
-      case BT_LEAD4:
-      case BT_NONASCII:
-      case BT_NMSTRT:
-#ifdef XML_NS
-      case BT_COLON:
-#endif
-      case BT_HEX:
-      case BT_DIGIT:
-      case BT_NAME:
-      case BT_MINUS:
-        return 0;
-      default:
-        return 1;
-      }
-    }
-  }
-  /* not reached */
-}
-/* LCOV_EXCL_STOP */
 
 static int PTRCALL
 PREFIX(nameMatchesAscii)(const ENCODING *UNUSED_P(enc), const char *ptr1,

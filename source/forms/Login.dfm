@@ -231,7 +231,8 @@ object LoginDialog: TLoginDialog
             'SFTP'
             'SCP'
             'FTP'
-            'WebDAV')
+            'WebDAV'
+            'Amazon S3')
         end
         object FtpsCombo: TComboBox
           Left = 163

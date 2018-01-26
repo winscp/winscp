@@ -1532,3 +1532,45 @@ void __fastcall TScreenTipHintWindow::Paint()
     DrawText(Canvas->Handle, FLongHint.c_str(), -1, &Rect, Flags);
   }
 }
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+__fastcall TNewRichEdit::TNewRichEdit(TComponent * AOwner) :
+  TRichEdit(AOwner),
+  FLibrary(0)
+{
+}
+//---------------------------------------------------------------------------
+void __fastcall TNewRichEdit::CreateParams(TCreateParams & Params)
+{
+  UnicodeString RichEditModuleName(L"MSFTEDIT.DLL");
+  long int OldError;
+
+  OldError = SetErrorMode(SEM_NOOPENFILEERRORBOX);
+  FLibrary = LoadLibrary(RichEditModuleName.c_str());
+  SetErrorMode(OldError);
+
+  // No fallback, MSFTEDIT.DLL is available since Windows XP
+  // https://blogs.msdn.microsoft.com/murrays/2006/10/13/richedit-versions/
+  if (FLibrary == 0)
+  {
+    throw Exception(FORMAT(L"Cannot load %s", (RichEditModuleName)));
+  }
+
+  TCustomMemo::CreateParams(Params);
+  // MSDN says that we should use MSFTEDIT_CLASS to load Rich Edit 4.1:
+  // https://msdn.microsoft.com/en-us/library/windows/desktop/bb787873.aspx
+  // But MSFTEDIT_CLASS is defined as "RICHEDIT50W",
+  // so not sure what version we are loading.
+  // Seem to work on Windows XP SP3.
+  CreateSubClass(Params, MSFTEDIT_CLASS);
+}
+//---------------------------------------------------------------------------
+void __fastcall TNewRichEdit::DestroyWnd()
+{
+  TRichEdit::DestroyWnd();
+
+  if (FLibrary != 0)
+  {
+    FreeLibrary(FLibrary);
+  }
+}

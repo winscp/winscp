@@ -136,6 +136,7 @@ protected:
   void __fastcall RmProc(TScriptProcParams * Parameters);
   void __fastcall RmDirProc(TScriptProcParams * Parameters);
   void __fastcall MvProc(TScriptProcParams * Parameters);
+  void __fastcall CpProc(TScriptProcParams * Parameters);
   void __fastcall ChModProc(TScriptProcParams * Parameters);
   void __fastcall LnProc(TScriptProcParams * Parameters);
   void __fastcall MkDirProc(TScriptProcParams * Parameters);
@@ -179,6 +180,7 @@ private:
   void __fastcall NotSupported();
   void __fastcall CheckMultiFilesToOne(TStrings * FileList, const UnicodeString & Target, bool Unix);
   void __fastcall LogOption(const UnicodeString & LogStr);
+  void __fastcall DoMvOrCp(TScriptProcParams * Parameters, TFSCapability Capability, bool Cp);
 };
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure *TScriptInputEvent)(TScript * Script, const UnicodeString Prompt, UnicodeString & Str);

@@ -45,8 +45,9 @@ public:
   virtual __fastcall ~TConsole() {};
   virtual void __fastcall Print(UnicodeString Str, bool FromBeginning = false, bool Error = false) = 0;
   virtual bool __fastcall Input(UnicodeString & Str, bool Echo, unsigned int Timer) = 0;
-  virtual int __fastcall Choice(UnicodeString Options, int Cancel, int Break,
-    int Timeouted, bool Timeouting, unsigned int Timer) = 0;
+  virtual int __fastcall Choice(
+    UnicodeString Options, int Cancel, int Break, int Continue, int Timeouted, bool Timeouting, unsigned int Timer,
+    UnicodeString Message) = 0;
   virtual bool __fastcall PendingAbort() = 0;
   virtual void __fastcall SetTitle(UnicodeString Title) = 0;
   virtual bool __fastcall LimitedOutput() = 0;
@@ -66,8 +67,9 @@ public:
 
   virtual void __fastcall Print(UnicodeString Str, bool FromBeginning = false, bool Error = false);
   virtual bool __fastcall Input(UnicodeString & Str, bool Echo, unsigned int Timer);
-  virtual int __fastcall Choice(UnicodeString Options, int Cancel, int Break,
-    int Timeouted, bool Timeouting, unsigned int Timer);
+  virtual int __fastcall Choice(
+    UnicodeString Options, int Cancel, int Break, int Continue, int Timeouted, bool Timeouting, unsigned int Timer,
+    UnicodeString Message);
   virtual bool __fastcall PendingAbort();
   virtual void __fastcall SetTitle(UnicodeString Title);
   virtual bool __fastcall LimitedOutput();
@@ -394,8 +396,9 @@ bool __fastcall TOwnConsole::Input(UnicodeString & Str, bool Echo, unsigned int 
   return Result;
 }
 //---------------------------------------------------------------------------
-int __fastcall TOwnConsole::Choice(UnicodeString Options, int Cancel, int Break,
-  int Timeouted, bool /*Timeouting*/, unsigned int Timer)
+int __fastcall TOwnConsole::Choice(
+  UnicodeString Options, int Cancel, int Break, int /*Continue*/, int Timeouted, bool /*Timeouting*/, unsigned int Timer,
+  UnicodeString Message)
 {
   unsigned int ATimer = Timer;
   int Result = 0;
@@ -537,8 +540,9 @@ public:
 
   virtual void __fastcall Print(UnicodeString Str, bool FromBeginning = false, bool Error = false);
   virtual bool __fastcall Input(UnicodeString & Str, bool Echo, unsigned int Timer);
-  virtual int __fastcall Choice(UnicodeString Options, int Cancel, int Break,
-    int Timeouted, bool Timeouting, unsigned int Timer);
+  virtual int __fastcall Choice(
+    UnicodeString Options, int Cancel, int Break, int Continue, int Timeouted, bool Timeouting, unsigned int Timer,
+    UnicodeString Message);
   virtual bool __fastcall PendingAbort();
   virtual void __fastcall SetTitle(UnicodeString Title);
   virtual bool __fastcall LimitedOutput();
@@ -753,8 +757,9 @@ bool __fastcall TExternalConsole::Input(UnicodeString & Str, bool Echo, unsigned
   return Result;
 }
 //---------------------------------------------------------------------------
-int __fastcall TExternalConsole::Choice(UnicodeString Options, int Cancel, int Break,
-  int Timeouted, bool Timeouting, unsigned int Timer)
+int __fastcall TExternalConsole::Choice(
+  UnicodeString Options, int Cancel, int Break, int Continue, int Timeouted, bool Timeouting, unsigned int Timer,
+  UnicodeString Message)
 {
   TConsoleCommStruct * CommStruct = GetCommStruct();
   try
@@ -766,9 +771,13 @@ int __fastcall TExternalConsole::Choice(UnicodeString Options, int Cancel, int B
     CommStruct->ChoiceEvent.Cancel = Cancel;
     CommStruct->ChoiceEvent.Break = Break;
     CommStruct->ChoiceEvent.Result = Break;
+    CommStruct->ChoiceEvent.Continue = Continue;
     CommStruct->ChoiceEvent.Timeouted = Timeouted;
     CommStruct->ChoiceEvent.Timer = Timer;
     CommStruct->ChoiceEvent.Timeouting = Timeouting;
+    size_t MaxLen = LENOF(CommStruct->ChoiceEvent.Message) - 1;
+    Message = Message.SubString(1, MaxLen);
+    wcscpy(CommStruct->ChoiceEvent.Message, Message.c_str());
   }
   __finally
   {
@@ -946,8 +955,9 @@ public:
 
   virtual void __fastcall Print(UnicodeString Str, bool FromBeginning = false, bool Error = false);
   virtual bool __fastcall Input(UnicodeString & Str, bool Echo, unsigned int Timer);
-  virtual int __fastcall Choice(UnicodeString Options, int Cancel, int Break,
-    int Timeouted, bool Timeouting, unsigned int Timer);
+  virtual int __fastcall Choice(
+    UnicodeString Options, int Cancel, int Break, int Continue, int Timeouted, bool Timeouting, unsigned int Timer,
+    UnicodeString Message);
   virtual bool __fastcall PendingAbort();
   virtual void __fastcall SetTitle(UnicodeString Title);
   virtual bool __fastcall LimitedOutput();
@@ -976,8 +986,9 @@ bool __fastcall TNullConsole::Input(UnicodeString & /*Str*/, bool /*Echo*/,
   return false;
 }
 //---------------------------------------------------------------------------
-int __fastcall TNullConsole::Choice(UnicodeString /*Options*/, int /*Cancel*/,
-  int Break, int Timeouted, bool Timeouting, unsigned int Timer)
+int __fastcall TNullConsole::Choice(
+  UnicodeString /*Options*/, int /*Cancel*/, int Break, int /*Continue*/, int Timeouted, bool Timeouting,
+  unsigned int Timer, UnicodeString /*Message*/)
 {
   int Result;
   if (Timeouting)
@@ -1354,8 +1365,11 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
     {
       DebugAssert(Timeout == 0);
       Timeout = InputTimeout();
-      // See a duplicate AbortAnswer call below
-      TimeoutA = AbortAnswer(Answers & ~NoBatchA);
+      if (Timeout != 0)
+      {
+        // See a duplicate AbortAnswer call below
+        TimeoutA = AbortAnswer(Answers & ~NoBatchA);
+      }
     }
   }
 
@@ -1366,15 +1380,17 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
 
   unsigned int AAnswers = Answers;
 
+  UnicodeString Message = AQuery;
   PrintMessage(AQuery);
   if ((MoreMessages != NULL) && (MoreMessages->Count > 0))
   {
     PrintMessage(MoreMessages->Text);
+    Message += L"\n" + MoreMessages->Text;
   }
 
   std::vector<unsigned int> Buttons;
   std::vector<UnicodeString> Captions;
-  std::vector<TNotifyEvent> OnClicks;
+  std::vector<TButtonSubmitEvent> OnSubmits;
 
   for (unsigned int Answer = qaFirst; Answer <= qaLast; Answer = Answer << 1)
   {
@@ -1385,7 +1401,7 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
       AnswerNameAndCaption(Answer, Name, Caption);
       Captions.push_back(Caption);
       Buttons.push_back(Answer);
-      OnClicks.push_back(NULL);
+      OnSubmits.push_back(NULL);
       AAnswers -= Answer;
     }
   }
@@ -1406,7 +1422,7 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
           {
             Captions[bi] = Params->Aliases[ai].Alias;
           }
-          OnClicks[bi] = Params->Aliases[ai].OnClick;
+          OnSubmits[bi] = Params->Aliases[ai].OnSubmit;
           break;
         }
       }
@@ -1574,10 +1590,47 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
       }
       else
       {
-        unsigned int ActualTimer =
-          (Timeouting && ((Timer == 0) || (Timer > MSecsPerSec)) ? MSecsPerSec : Timer);
-        AnswerIndex = FConsole->Choice(Accels, CancelIndex, -1, -2,
-          Timeouting, ActualTimer);
+        unsigned int ActualTimer;
+        if (Timeouting)
+        {
+          if (Timer == 0)
+          {
+            if (FConsole->NoInteractiveInput())
+            {
+              ActualTimer = Timeout;
+            }
+            else
+            {
+              ActualTimer = MSecsPerSec;
+            }
+          }
+          else
+          {
+            if (Timer < MSecsPerSec)
+            {
+              ActualTimer = Timer;
+            }
+            else
+            {
+              ActualTimer = MSecsPerSec;
+            }
+          }
+        }
+        else
+        {
+          ActualTimer = Timer;
+        }
+        // Not to get preliminary "host is not responding" messages to .NET assembly
+        if (FConsole->NoInteractiveInput() && (Timer > 0))
+        {
+          Sleep(Timer);
+          AnswerIndex = -2;
+        }
+        else
+        {
+          AnswerIndex =
+            FConsole->Choice(Accels, CancelIndex, -1, ContinueIndex, -2, Timeouting, ActualTimer, Message);
+        }
         if (AnswerIndex == -1)
         {
           NotifyAbort();
@@ -1628,9 +1681,9 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
       PrintLine(AnswerCaption);
       FirstOutput = true;
 
-      if (OnClicks[AnswerIndex - 1] != NULL)
+      if (OnSubmits[AnswerIndex - 1] != NULL)
       {
-        OnClicks[AnswerIndex - 1](NULL);
+        OnSubmits[AnswerIndex - 1](NULL, Answer);
       }
       else
       {
@@ -2128,7 +2181,7 @@ void __fastcall Usage(TConsole * Console)
   if (!Console->CommandLineOnly())
   {
     PrintUsageSyntax(Console, L"site|workspace|folder");
-    PrintUsageSyntax(Console, L"(sftp|scp|ftp[es]|dav[s])://[user[:password]@]host[:port][/path/[file]]");
+    PrintUsageSyntax(Console, L"(sftp|scp|ftp[es]|dav[s]|s3)://[user[:password]@]host[:port][/path/[file]]");
     PrintUsageSyntax(Console, FORMAT(L"[mysession] /%s=<name>", (LowerCase(SESSIONNAME_SWICH))));
     PrintUsageSyntax(Console, L"[mysession] /newinstance");
     PrintUsageSyntax(Console, L"[mysession] /edit <path>");
@@ -2503,13 +2556,24 @@ int __fastcall FingerprintScan(TConsole * Console, TProgramParams * Params)
     }
 
     std::unique_ptr<TTerminal> Terminal(new TTerminal(SessionData.get(), Configuration));
-    ConsolePrintLine(Console, Terminal->FingerprintScan());
+    UnicodeString SHA256;
+    UnicodeString MD5;
+    Terminal->FingerprintScan(SHA256, MD5);
+    if (!SHA256.IsEmpty())
+    {
+      ConsolePrintLine(Console, FORMAT(L"SHA-256: %s", (SHA256)));
+    }
+    if (!MD5.IsEmpty())
+    {
+      ConsolePrintLine(Console, FORMAT(L"MD5:     %s", (MD5)));
+    }
   }
   catch (Exception & E)
   {
     Result = HandleException(Console, E);
   }
 
+  Console->WaitBeforeExit();
   return Result;
 }
 //---------------------------------------------------------------------------

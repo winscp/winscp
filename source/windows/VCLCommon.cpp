@@ -12,6 +12,8 @@
 #include <Tools.h>
 #include <CustomWinConfiguration.h>
 
+#include <Vcl.StdActns.hpp>
+#include <PasswordEdit.hpp>
 #include <FileCtrl.hpp>
 #include <PathLabel.hpp>
 #include <PasTools.hpp>
@@ -22,6 +24,9 @@
 #include <TBXExtItems.hpp>
 #include <IEListView.hpp>
 #include <WinApi.h>
+#include <vssym32.h>
+//---------------------------------------------------------------------------
+const UnicodeString LinkAppLabelMark(TraceInitStr(L" \x00BB"));
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -202,6 +207,39 @@ void __fastcall AutoSizeListColumnsWidth(TListView * ListView, int ColumnToShrin
 static void __fastcall SetParentColor(TControl * Control)
 {
   TColor Color = clBtnFace;
+  if (UseThemes)
+  {
+    bool OnTabSheet = false;
+    TWinControl * Parent = Control->Parent;
+    while ((Parent != NULL) && !OnTabSheet)
+    {
+      TTabSheet * TabSheet = dynamic_cast<TTabSheet *>(Parent);
+      OnTabSheet = (TabSheet != NULL) && TabSheet->TabVisible;
+      Parent = Parent->Parent;
+    }
+
+    if (OnTabSheet)
+    {
+      HTHEME Theme = OpenThemeData(NULL, L"tab");
+      if (Theme != NULL)
+      {
+        COLORREF RGB;
+        // XP with classic theme: Does not get past OpenThemeData, clBtnFace is exact color
+        // XP with XP theme: not the exact color (probably same as clBtnFace), but close
+        // Vista - ok
+        // 2016 without desktop - ok
+        // 7 with classic and high contrast themes: Do not get past OpenThemeData, clBtnFace is exact color
+        // 7 with 7 and basic themes - ok
+        // 10 with high contrast themes - ok (note the difference to 7 with high contract themes)
+        // 10 - ok
+        if (GetThemeColor(Theme, TABP_AEROWIZARDBODY, TIS_NORMAL, TMT_FILLCOLOR, &RGB) == S_OK)
+        {
+          Color = static_cast<TColor>(RGB);
+        }
+        CloseThemeData(Theme);
+      }
+    }
+  }
 
   ((TEdit*)Control)->Color = Color;
 }
@@ -270,11 +308,17 @@ void __fastcall ReadOnlyAndEnabledControl(TControl * Control, bool ReadOnly, boo
   }
 }
 //---------------------------------------------------------------------------
+static void __fastcall ReadOnlyEditContextPopup(void * /*Data*/, TObject * Sender, const TPoint & MousePos, bool & Handled)
+{
+  MenuPopup(Sender, MousePos, Handled);
+}
+//---------------------------------------------------------------------------
 void __fastcall ReadOnlyControl(TControl * Control, bool ReadOnly)
 {
   if (dynamic_cast<TCustomEdit *>(Control) != NULL)
   {
-    ((TEdit*)Control)->ReadOnly = ReadOnly;
+    TEdit * Edit = static_cast<TEdit *>(Control);
+    Edit->ReadOnly = ReadOnly;
     TMemo * Memo = dynamic_cast<TMemo *>(Control);
     if (ReadOnly)
     {
@@ -286,12 +330,37 @@ void __fastcall ReadOnlyControl(TControl * Control, bool ReadOnly)
         // See also MemoKeyDown
         Memo->WantReturns = false;
       }
+
+      if ((Edit->PopupMenu == NULL) && (dynamic_cast<TPasswordEdit *>(Control) == NULL))
+      {
+        std::unique_ptr<TPopupMenu> PopupMenu(new TPopupMenu(Edit));
+
+        TMenuItem * Item;
+        Item = new TMenuItem(PopupMenu.get());
+        PopupMenu->Items->Add(Item);
+        Item->Action = new TEditCopy(Item);
+        Item->Caption = LoadStr(EDIT_COPY);
+        Item->ShortCut = ShortCut(L'C', TShiftState() << ssCtrl);
+        Item = new TMenuItem(PopupMenu.get());
+        PopupMenu->Items->Add(Item);
+        Item->Action = new TEditSelectAll(Item);
+        Item->Caption = LoadStr(EDIT_SELECT_ALL);
+        Item->ShortCut = ShortCut(L'A', TShiftState() << ssCtrl);
+
+        Edit->PopupMenu = PopupMenu.release();
+        Edit->OnContextPopup = MakeMethod<TContextPopupEvent>(NULL, ReadOnlyEditContextPopup);
+      }
     }
     else
     {
-      ((TEdit*)Control)->Color = clWindow;
+      Edit->Color = clWindow;
       // not supported atm, we need to persist previous value of WantReturns
       DebugAssert(Memo == NULL);
+
+      if ((Edit->PopupMenu != NULL) && (Edit->PopupMenu->Owner == Edit))
+      {
+        delete Edit->PopupMenu;
+      }
     }
   }
   else if ((dynamic_cast<TCustomComboBox *>(Control) != NULL) ||
@@ -916,7 +985,7 @@ void __fastcall ApplySystemSettingsOnControl(TControl * Control)
     }
   }
 
-  // WORKAROUND for lack of public API so mimicking Explorer-style mouse selection
+  // WORKAROUND for lack of public API for mimicking Explorer-style mouse selection
   // See https://stackoverflow.com/q/15750842/850848
   if (IEListView != NULL)
   {
@@ -1797,7 +1866,8 @@ static void __fastcall FocusableLabelWindowProc(void * Data, TMessage & Message,
       {
         Canvas->DrawFocusRect(R);
       }
-      else if (!StaticText->Font->Style.Contains(fsUnderline))
+      else if ((StaticText->Font->Color != LinkColor) && // LinkActionLabel and LinkLabel
+               !EndsStr(LinkAppLabelMark, StaticText->Caption)) // LinkAppLabel
       {
         Canvas->Pen->Style = psDot;
         Canvas->Brush->Style = bsClear;
@@ -2087,7 +2157,6 @@ static void __fastcall DoLinkLabel(TStaticText * StaticText)
 {
   StaticText->Transparent = false;
   StaticText->ParentFont = true;
-  StaticText->Font->Style = StaticText->Font->Style << fsUnderline;
   StaticText->Cursor = crHandPoint;
 
   TWndMethod WindowProc;
@@ -2100,6 +2169,8 @@ void __fastcall LinkLabel(TStaticText * StaticText, UnicodeString Url,
   TNotifyEvent OnEnter)
 {
   DoLinkLabel(StaticText);
+
+  StaticText->Font->Style = StaticText->Font->Style << fsUnderline;
 
   reinterpret_cast<TButton*>(StaticText)->OnEnter = OnEnter;
 
@@ -2129,7 +2200,7 @@ void __fastcall LinkLabel(TStaticText * StaticText, UnicodeString Url,
       StaticText->PopupMenu->Items->Add(Item);
 
       Item = new TMenuItem(StaticText->PopupMenu);
-      Item->Caption = LoadStr(URL_LINK_COPY);
+      Item->Caption = LoadStr(EDIT_COPY);
       Item->Tag = 1;
       Item->ShortCut = ShortCut(L'C', TShiftState() << ssCtrl);
       Item->OnClick = ContextMenuOnClick;
@@ -2146,9 +2217,18 @@ void __fastcall LinkLabel(TStaticText * StaticText, UnicodeString Url,
   StaticText->Font->Color = LinkColor;
 }
 //---------------------------------------------------------------------------
+void __fastcall LinkActionLabel(TStaticText * StaticText)
+{
+  DoLinkLabel(StaticText);
+
+  StaticText->Font->Color = LinkColor;
+}
+//---------------------------------------------------------------------------
 void __fastcall LinkAppLabel(TStaticText * StaticText)
 {
   DoLinkLabel(StaticText);
+
+  StaticText->Caption = StaticText->Caption + LinkAppLabelMark;
 }
 //---------------------------------------------------------------------------
 static void __fastcall HotTrackLabelMouseEnter(void * /*Data*/, TObject * Sender)

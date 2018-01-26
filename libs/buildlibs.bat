@@ -80,4 +80,23 @@ exit
 
 :SKIP_PUTTYVS
 
+rem ==== libs3 ====
+
+if exist lib\libs3.lib (
+echo libs3 already built
+goto SKIP_LIBS3
+)
+
+echo Building libs3 ...
+cd libs3
+make all
+cd ..
+
+if not exist lib\libs3.lib (
+echo libs3 build failed
+exit
+)
+
+:SKIP_LIBS3
+
 echo All done

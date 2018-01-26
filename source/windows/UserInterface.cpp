@@ -135,7 +135,7 @@ struct TOpenLocalPathHandler
   UnicodeString LocalPath;
   UnicodeString LocalFileName;
 
-  void __fastcall Open(TObject * Sender)
+  void __fastcall Open(TObject * Sender, unsigned int & /*Answer*/)
   {
     TButton * Button = DebugNotNull(dynamic_cast<TButton *>(Sender));
     // Reason for separate AMenu variable is given in TPreferencesDialog::EditorFontColorButtonClick
@@ -256,7 +256,7 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
 
           Aliases[0].Button = qaIgnore;
           Aliases[0].Alias = LoadStr(OPEN_BUTTON);
-          Aliases[0].OnClick = OpenLocalPathHandler.Open;
+          Aliases[0].OnSubmit = OpenLocalPathHandler.Open;
           Aliases[0].MenuButton = true;
           Answers |= Aliases[0].Button;
           Params.Aliases = Aliases;
@@ -1107,6 +1107,8 @@ int __fastcall StartThread(void * SecurityAttributes, unsigned StackSize,
 //---------------------------------------------------------------------------
 static TShortCut FirstCtrlNumberShortCut = ShortCut(L'0', TShiftState() << ssCtrl);
 static TShortCut LastCtrlNumberShortCut = ShortCut(L'9', TShiftState() << ssCtrl);
+static TShortCut FirstCtrlKeyPadShortCut = ShortCut(VK_NUMPAD0, TShiftState() << ssCtrl);
+static TShortCut LastCtrlKeyPadShortCut = ShortCut(VK_NUMPAD9, TShiftState() << ssCtrl);
 static TShortCut FirstShiftCtrlAltLetterShortCut = ShortCut(L'A', TShiftState() << ssShift << ssCtrl << ssAlt);
 static TShortCut LastShiftCtrlAltLetterShortCut = ShortCut(L'Z', TShiftState() << ssShift << ssCtrl << ssAlt);
 //---------------------------------------------------------------------------
@@ -1170,6 +1172,15 @@ void __fastcall SetShortCutCombo(TComboBox * ComboBox, TShortCut Value)
 TShortCut __fastcall GetShortCutCombo(TComboBox * ComboBox)
 {
   return TShortCut(ComboBox->Items->Objects[ComboBox->ItemIndex]);
+}
+//---------------------------------------------------------------------------
+TShortCut __fastcall NormalizeCustomShortCut(TShortCut ShortCut)
+{
+  if ((FirstCtrlKeyPadShortCut <= ShortCut) && (ShortCut <= LastCtrlKeyPadShortCut))
+  {
+    ShortCut = FirstCtrlNumberShortCut + (ShortCut - FirstCtrlKeyPadShortCut);
+  }
+  return ShortCut;
 }
 //---------------------------------------------------------------------------
 bool __fastcall IsCustomShortCut(TShortCut ShortCut)

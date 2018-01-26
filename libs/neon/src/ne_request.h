@@ -38,6 +38,7 @@ NE_BEGIN_DECLS
 #define NE_FAILED (7) /* The precondition failed */
 #define NE_RETRY (8) /* Retry request (ne_end_request ONLY) */
 #define NE_REDIRECT (9) /* See ne_redirect.h */
+#define NE_SOCKET (10) /* Socket error - WINSCP */
 
 /* Opaque object representing a single HTTP request. */
 typedef struct ne_request_s ne_request;

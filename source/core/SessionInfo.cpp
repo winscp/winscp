@@ -182,39 +182,13 @@ public:
           for (int Index = 0; Index < FFileList->Count; Index++)
           {
             TRemoteFile * File = FFileList->Files[Index];
-
-            FLog->AddIndented(L"    <file>");
-            FLog->AddIndented(FORMAT(L"      <filename value=\"%s\" />", (XmlAttributeEscape(File->FileName))));
-            FLog->AddIndented(FORMAT(L"      <type value=\"%s\" />", (XmlAttributeEscape(File->Type))));
-            if (!File->IsDirectory)
-            {
-              FLog->AddIndented(FORMAT(L"      <size value=\"%s\" />", (IntToStr(File->Size))));
-            }
-            FLog->AddIndented(FORMAT(L"      <modification value=\"%s\" />", (StandardTimestamp(File->Modification))));
-            FLog->AddIndented(FORMAT(L"      <permissions value=\"%s\" />", (XmlAttributeEscape(File->Rights->Text))));
-            if (File->Owner.IsSet)
-            {
-              FLog->AddIndented(FORMAT(L"      <owner value=\"%s\" />", (XmlAttributeEscape(File->Owner.DisplayText))));
-            }
-            if (File->Group.IsSet)
-            {
-              FLog->AddIndented(FORMAT(L"      <group value=\"%s\" />", (XmlAttributeEscape(File->Group.DisplayText))));
-            }
-            FLog->AddIndented(L"    </file>");
+            RecordFile(L"    ", File, true);
           }
           FLog->AddIndented(L"  </files>");
         }
         if (FFile != NULL)
         {
-          FLog->AddIndented(L"  <file>");
-          FLog->AddIndented(FORMAT(L"    <type value=\"%s\" />", (XmlAttributeEscape(FFile->Type))));
-          if (!FFile->IsDirectory)
-          {
-            FLog->AddIndented(FORMAT(L"    <size value=\"%s\" />", (IntToStr(FFile->Size))));
-          }
-          FLog->AddIndented(FORMAT(L"    <modification value=\"%s\" />", (StandardTimestamp(FFile->Modification))));
-          FLog->AddIndented(FORMAT(L"    <permissions value=\"%s\" />", (XmlAttributeEscape(FFile->Rights->Text))));
-          FLog->AddIndented(L"  </file>");
+          RecordFile(L"  ", FFile, false);
         }
         if (FState == RolledBack)
         {
@@ -356,6 +330,7 @@ protected:
       case laMkdir: return L"mkdir";
       case laRm: return L"rm";
       case laMv: return L"mv";
+      case laCp: return L"cp";
       case laCall: return L"call";
       case laLs: return L"ls";
       case laStat: return L"stat";
@@ -369,6 +344,34 @@ protected:
   {
     FNames->Add(Name);
     FValues->Add(Value);
+  }
+
+  void __fastcall RecordFile(const UnicodeString & Indent, TRemoteFile * File, bool IncludeFileName)
+  {
+    FLog->AddIndented(Indent + L"<file>");
+    FLog->AddIndented(Indent + FORMAT(L"  <filename value=\"%s\" />", (XmlAttributeEscape(File->FileName))));
+    FLog->AddIndented(Indent + FORMAT(L"  <type value=\"%s\" />", (XmlAttributeEscape(File->Type))));
+    if (!File->IsDirectory)
+    {
+      FLog->AddIndented(Indent + FORMAT(L"  <size value=\"%s\" />", (IntToStr(File->Size))));
+    }
+    if (File->ModificationFmt != mfNone)
+    {
+      FLog->AddIndented(Indent + FORMAT(L"  <modification value=\"%s\" />", (StandardTimestamp(File->Modification))));
+    }
+    if (!File->Rights->Unknown)
+    {
+      FLog->AddIndented(Indent + FORMAT(L"  <permissions value=\"%s\" />", (XmlAttributeEscape(File->Rights->Text))));
+    }
+    if (File->Owner.IsSet)
+    {
+      FLog->AddIndented(Indent + FORMAT(L"  <owner value=\"%s\" />", (XmlAttributeEscape(File->Owner.DisplayText))));
+    }
+    if (File->Group.IsSet)
+    {
+      FLog->AddIndented(Indent + FORMAT(L"  <group value=\"%s\" />", (XmlAttributeEscape(File->Group.DisplayText))));
+    }
+    FLog->AddIndented(Indent + L"</file>");
   }
 
 private:
@@ -560,6 +563,13 @@ void __fastcall TRmSessionAction::Recursive()
 __fastcall TMvSessionAction::TMvSessionAction(TActionLog * Log,
     const UnicodeString & FileName, const UnicodeString & ADestination) :
   TFileLocationSessionAction(Log, laMv, FileName)
+{
+  Destination(ADestination);
+}
+//---------------------------------------------------------------------------
+__fastcall TCpSessionAction::TCpSessionAction(TActionLog * Log,
+    const UnicodeString & FileName, const UnicodeString & ADestination) :
+  TFileLocationSessionAction(Log, laCp, FileName)
 {
   Destination(ADestination);
 }
@@ -1167,8 +1177,8 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
          BooleanToEngStr(Data->AuthKI), BooleanToEngStr(Data->AuthGSSAPI)));
       if (Data->AuthGSSAPI)
       {
-        ADF(L"GSSAPI: Forwarding: %s",
-          (BooleanToEngStr(Data->GSSAPIFwdTGT)));
+        ADF(L"GSSAPI: Forwarding: %s; Libs: %s; Custom: %s",
+          (BooleanToEngStr(Data->GSSAPIFwdTGT), Data->GssLibList, Data->GssLibCustom));
       }
       ADF(L"Ciphers: %s; Ssh2DES: %s",
         (Data->CipherList, BooleanToEngStr(Data->Ssh2DES)));
@@ -1249,6 +1259,15 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
       FtpsOn = (Data->Ftps != ftpsNone);
       ADF(L"HTTPS: %s [Client certificate: %s]",
         (BooleanToEngStr(FtpsOn), LogSensitive(Data->TlsCertificateFile)));
+    }
+    if (Data->FSProtocol == fsS3)
+    {
+      FtpsOn = (Data->Ftps != ftpsNone);
+      ADF(L"HTTPS: %s", (BooleanToEngStr(FtpsOn)));
+      if (!Data->S3DefaultRegion.IsEmpty())
+      {
+        ADF(L"S3: Default region: %s", (Data->S3DefaultRegion));
+      }
     }
     if (FtpsOn)
     {

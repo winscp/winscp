@@ -3,7 +3,7 @@ This is the README file for source code package of WinSCP.
 To build WinSCP you need:
 - Embarcadero C++ Builder XE6 Professional.
   https://www.embarcadero.com/products/cbuilder
-- Visual Studio 2015 (for MSBuild 14.0)
+- Build Tools and Agents for Visual Studio 2017 (for C# 7.0)
   https://www.visualstudio.com/
 - nasm from http://www.nasm.us/
   (store it to buildtools/tools/nasm.exe)

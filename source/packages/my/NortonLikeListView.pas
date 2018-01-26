@@ -217,7 +217,7 @@ procedure TCustomNortonLikeListView.Delete(Item: TListItem);
 var
   Index: Integer;
 begin
-  if FLastDeletedItem <> Item then
+  if (FLastDeletedItem <> Item) and (not FClearingItems) then
   begin
     Index := Item.Index;
 

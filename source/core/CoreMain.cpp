@@ -10,10 +10,9 @@
 #include "PuttyIntf.h"
 #include "Cryptography.h"
 #include <DateUtils.hpp>
-#ifndef NO_FILEZILLA
 #include "FileZillaIntf.h"
-#endif
-#include "WebDAVFileSystem.h"
+#include "NeonIntf.h"
+#include "TextsCore.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -22,10 +21,48 @@ TStoredSessionList * StoredSessions = NULL;
 //---------------------------------------------------------------------------
 TQueryButtonAlias::TQueryButtonAlias()
 {
-  OnClick = NULL;
+  OnSubmit = NULL;
   GroupWith = -1;
   ElevationRequired = false;
   MenuButton = false;
+}
+//---------------------------------------------------------------------------
+TQueryButtonAlias TQueryButtonAlias::CreateYesToAllGrouppedWithYes()
+{
+  TQueryButtonAlias Result;
+  Result.Button = qaYesToAll;
+  Result.GroupWith = qaYes;
+  Result.GrouppedShiftState = TShiftState() << ssShift;
+  return Result;
+}
+//---------------------------------------------------------------------------
+TQueryButtonAlias TQueryButtonAlias::CreateNoToAllGrouppedWithNo()
+{
+  TQueryButtonAlias Result;
+  Result.Button = qaNoToAll;
+  Result.GroupWith = qaNo;
+  Result.GrouppedShiftState = TShiftState() << ssShift;
+  return Result;
+}
+//---------------------------------------------------------------------------
+TQueryButtonAlias TQueryButtonAlias::CreateAllAsYesToNewerGrouppedWithYes()
+{
+  TQueryButtonAlias Result;
+  Result.Button = qaAll;
+  Result.Alias = LoadStr(YES_TO_NEWER_BUTTON);
+  Result.GroupWith = qaYes;
+  Result.GrouppedShiftState = TShiftState() << ssCtrl;
+  return Result;
+}
+//---------------------------------------------------------------------------
+TQueryButtonAlias TQueryButtonAlias::CreateIgnoreAsRenameGrouppedWithNo()
+{
+  TQueryButtonAlias Result;
+  Result.Button = qaIgnore;
+  Result.Alias = LoadStr(RENAME_BUTTON);
+  Result.GroupWith = qaNo;
+  Result.GrouppedShiftState = TShiftState() << ssCtrl;
+  return Result;
 }
 //---------------------------------------------------------------------------
 TQueryParams::TQueryParams(unsigned int AParams, UnicodeString AHelpKeyword)
@@ -133,9 +170,7 @@ void CoreInitialize()
   Configuration = CreateConfiguration();
 
   PuttyInitialize();
-  #ifndef NO_FILEZILLA
   TFileZillaIntf::Initialize();
-  #endif
   NeonInitialize();
 
   CoreLoad();
@@ -153,9 +188,7 @@ void CoreFinalize()
   }
 
   NeonFinalize();
-  #ifndef NO_FILEZILLA
   TFileZillaIntf::Finalize();
-  #endif
   PuttyFinalize();
 
   delete StoredSessions;
@@ -168,11 +201,7 @@ void CoreFinalize()
 //---------------------------------------------------------------------------
 void CoreSetResourceModule(void * ResourceHandle)
 {
-  #ifndef NO_FILEZILLA
   TFileZillaIntf::SetResourceModule(ResourceHandle);
-  #else
-  DebugUsedParam(ResourceHandle);
-  #endif
 }
 //---------------------------------------------------------------------------
 void CoreMaintenanceTask()

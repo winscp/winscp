@@ -326,6 +326,7 @@ type
       write FOnDisplayContextMenu;
     property OnRefreshDrives: TNotifyEvent read FOnRefreshDrives
       write FOnRefreshDrives;
+    property OnBusy;
 
     property DDLinkOnExeDrag;
 
@@ -417,7 +418,7 @@ procedure Register;
 implementation
 
 uses
-  CompThread, PasTools, UITypes, Types;
+  CompThread, PasTools, UITypes, Types, OperationWithTimeout;
 
 resourcestring
    SErrorInvalidDirName = 'New name contains invalid characters %s';
@@ -797,7 +798,7 @@ end;
 
 function TDriveView.NodePathExists(Node: TTreeNode): Boolean;
 begin
-  Result := DirExists(NodePathName(Node));
+  Result := DirectoryExists(NodePathName(Node));
 end;
 
 function TDriveView.CanEdit(Node: TTreeNode): Boolean;
@@ -962,7 +963,7 @@ begin
   {Create the drive nodes:}
   RefreshRootNodes(dsDisplayName or dvdsFloppy);
   {Set the initial directory:}
-  if (Length(FDirectory) > 0) and DirExists(FDirectory) then
+  if (Length(FDirectory) > 0) and DirectoryExists(FDirectory) then
     Directory := FDirectory;
 
   FCreating := False;
@@ -1093,7 +1094,7 @@ begin
 
           if DriveReady then
           begin
-            if not DirExists(NewDir) then
+            if not DirectoryExists(NewDir) then
             begin
               ValidateDirectory(DriveStatus[Upcase(NewDir[1])].RootNode);
               Exit;
@@ -1203,63 +1204,8 @@ begin
     else Result := Drive + ':';
 end; {GetDriveText}
 
-type
-  TFolderAttributesGetterThread = class(TCompThread)
-  private
-    FParentFolder: iShellFolder;
-    FPIDL: PItemIDList;
-    FshAttr: UINT;
-
-  protected
-    procedure Execute; override;
-
-  public
-    constructor Create(ParentFolder: iShellFolder; PIDL: PItemIDList; shAttr: UINT);
-
-    property shAttr: UINT read FshAttr;
-
-    class procedure GetFolderAttributes(ParentFolder: iShellFolder; PIDL: PItemIDList; var shAttr: UINT);
-  end;
-
-class procedure TFolderAttributesGetterThread.GetFolderAttributes(
-  ParentFolder: iShellFolder; PIDL: PItemIDList; var shAttr: UINT);
-var
-  NotResult: Boolean;
-  ErrorMode: Word;
-begin
-  ErrorMode := SetErrorMode(SEM_FAILCRITICALERRORS or SEM_NOOPENFILEERRORBOX);
-  try
-    try
-      NotResult := not Succeeded(ParentFolder.GetAttributesOf(1, PIDL, shAttr));
-    finally
-      SetErrorMode(ErrorMode);
-    end;
-    if NotResult then shAttr := 0;
-  except
-    shAttr := 0;
-  end;
-end;
-
-constructor TFolderAttributesGetterThread.Create(ParentFolder: iShellFolder; PIDL: PItemIDList; shAttr: UINT);
-begin
-  inherited Create(True);
-  FParentFolder := ParentFolder;
-  FPIDL := PIDL;
-  FshAttr := shAttr;
-end;
-
-procedure TFolderAttributesGetterThread.Execute;
-begin
-  GetFolderAttributes(FParentFolder, FPIDL, FshAttr);
-end;
-
 procedure TDriveView.GetNodeShellAttr(ParentFolder: IShellFolder;
   NodeData: TNodeData; Path: string; ContentMask: Boolean = True);
-var
-{$IFNDEF IDE}
-  Thread: TFolderAttributesGetterThread;
-{$ENDIF}
-  shAttr: ULONG;
 begin
   if (not Assigned(ParentFolder)) or (not Assigned(NodeData)) then
     Exit;
@@ -1269,33 +1215,14 @@ begin
   if Assigned(NodeData.PIDL) then
   begin
     if ContentMask then
-      shAttr := SFGAO_DISPLAYATTRMASK or SFGAO_CONTENTSMASK
+      NodeData.shAttr := SFGAO_DISPLAYATTRMASK or SFGAO_CONTENTSMASK
     else
-      shAttr := SFGAO_DISPLAYATTRMASK;
+      NodeData.shAttr := SFGAO_DISPLAYATTRMASK;
 
-    // Resoving attributes may take ages, so we run it from a separate thread
-    // and timeout waiting for the thread after a second.
-    // But when running from IDE, it triggers starting/exiting the thread,
-    // again taking ages. So in IDE we revert to single-thread approach
-    {$IFDEF IDE}
-    TFolderAttributesGetterThread.GetFolderAttributes(ParentFolder, NodeData.PIDL, shAttr);
-    NodeData.shAttr := shAttr;
-    {$ELSE}
-    Thread := TFolderAttributesGetterThread.Create(ParentFolder, NodeData.PIDL, shAttr);
-    Thread.Resume;
-    if Thread.WaitFor(MSecsPerSec) then
+    if not Succeeded(ShellFolderGetAttributesOfWithTimeout(ParentFolder, 1, NodeData.PIDL, NodeData.shAttr, MSecsPerSec)) then
     begin
-      NodeData.shAttr := Thread.shAttr;
-      Thread.Free;
-    end
-      else
-    begin
-      // There's a chance for memory leak, if thread is terminated
-      // between WaitFor() and this line
-      Thread.FreeOnTerminate := True;
       NodeData.shAttr := 0;
     end;
-    {$ENDIF}
 
     if not ContentMask then
       NodeData.shAttr := NodeData.shAttr or SFGAO_HASSUBFOLDER;
@@ -1611,9 +1538,13 @@ var
       if (UpperCase(GetDirName(Node)) = Dir) or (TNodeData(Node.Data).ShortName = Dir) then
       begin
         if Length(Path) > 0 then
+        begin
           Result := SearchSubDirs(Node, Path)
-        else
+        end
+          else
+        begin
           Result := Node;
+        end;
         Exit;
       end;
       Node := ParentNode.GetNextChild(Node);
@@ -1760,7 +1691,7 @@ begin {CallBackValidateDir}
 
   {Check, if directory still exists: (but not with root directory) }
   if Assigned(Node.Parent) and (PScanDirInfo(Data)^.StartNode = Node) then
-    if not DirExists(NodePathName(Node)) then
+    if not DirectoryExists(NodePathName(Node)) then
     begin
       WorkNode := Node.Parent;
       if Selected = Node then
@@ -2009,13 +1940,13 @@ begin
       FileOperator.Flags := FileOperator.Flags + [foNoConfirmation];
 
     try
-      if DirExists(DelDir) then
+      if DirectoryExists(DelDir) then
       begin
         StopWatchThread;
         OperatorResult := FileOperator.Execute;
 
         if OperatorResult and (not FileOperator.OperationAborted) and
-           (not DirExists(DelDir)) then
+           (not DirectoryExists(DelDir)) then
         begin
           Node.Delete
         end

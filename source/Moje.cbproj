@@ -124,6 +124,9 @@
 		<DelphiCompile Include="packages\my\NortonLikeListView.pas">
 			<BuildOrder>13</BuildOrder>
 		</DelphiCompile>
+		<DelphiCompile Include="packages\my\OperationWithTimeout.pas">
+			<BuildOrder>22</BuildOrder>
+		</DelphiCompile>
 		<DelphiCompile Include="packages\my\PasswordEdit.pas">
 			<BuildOrder>15</BuildOrder>
 		</DelphiCompile>

@@ -54,7 +54,7 @@ private:
   void SendRequest(const char * Method, const UnicodeString & Request);
   UnicodeString GetResponse();
   __int64 GetResponseLength();
-  static void InitSslSession(ssl_st * Ssl, ne_session_s * Session);
+  void InitSslSession(ssl_st * Ssl, ne_session_s * Session);
   static int NeonServerSSLCallback(void * UserData, int Failures, const ne_ssl_certificate_s * Certificate);
   int NeonServerSSLCallbackImpl(int Failures, const ne_ssl_certificate_s * Certificate);
 };

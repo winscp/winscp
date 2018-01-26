@@ -156,6 +156,8 @@ protected:
   virtual void __fastcall Saved();
   void __fastcall CleanupRegistry(UnicodeString CleanupSubKey);
   UnicodeString __fastcall BannerHash(const UnicodeString & Banner);
+  void __fastcall SetBannerData(const UnicodeString & SessionKey, const UnicodeString & BannerHash, unsigned int Params);
+  void __fastcall GetBannerData(const UnicodeString & SessionKey, UnicodeString & BannerHash, unsigned int & Params);
   static UnicodeString __fastcall PropertyToKey(const UnicodeString & Property);
   virtual void __fastcall DoSave(bool All, bool Explicit);
   UnicodeString __fastcall FormatFingerprintKey(const UnicodeString & SiteKey, const UnicodeString & FingerprintType);
@@ -217,8 +219,9 @@ public:
     TRemoteDirectoryChangesCache * DirectoryChangesCache);
   void __fastcall SaveDirectoryChangesCache(const UnicodeString SessionKey,
     TRemoteDirectoryChangesCache * DirectoryChangesCache);
-  bool __fastcall ShowBanner(const UnicodeString SessionKey, const UnicodeString & Banner);
-  void __fastcall NeverShowBanner(const UnicodeString SessionKey, const UnicodeString & Banner);
+  bool __fastcall ShowBanner(const UnicodeString & SessionKey, const UnicodeString & Banner, unsigned int & Params);
+  void __fastcall NeverShowBanner(const UnicodeString & SessionKey, const UnicodeString & Banner);
+  void __fastcall SetBannerParams(const UnicodeString & SessionKey, unsigned int Params);
   void __fastcall RememberLastFingerprint(const UnicodeString & SiteKey, const UnicodeString & FingerprintType, const UnicodeString & Fingerprint);
   UnicodeString __fastcall LastFingerprint(const UnicodeString & SiteKey, const UnicodeString & FingerprintType);
   THierarchicalStorage * CreateConfigStorage();
@@ -336,5 +339,7 @@ extern const UnicodeString Crc32ChecksumAlg;
 //---------------------------------------------------------------------------
 extern const UnicodeString SshFingerprintType;
 extern const UnicodeString TlsFingerprintType;
+//---------------------------------------------------------------------------
+extern const UnicodeString HttpsCertificateStorageKey;
 //---------------------------------------------------------------------------
 #endif

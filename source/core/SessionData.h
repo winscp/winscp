@@ -16,13 +16,15 @@
 enum TCipher { cipWarn, cip3DES, cipBlowfish, cipAES, cipDES, cipArcfour, cipChaCha20 };
 #define CIPHER_COUNT (cipChaCha20+1)
 // explicit values to skip obsoleted fsExternalSSH, fsExternalSFTP
-enum TFSProtocol { fsSCPonly = 0, fsSFTP = 1, fsSFTPonly = 2, fsFTP = 5, fsWebDAV = 6 };
-#define FSPROTOCOL_COUNT (fsWebDAV+1)
+enum TFSProtocol { fsSCPonly = 0, fsSFTP = 1, fsSFTPonly = 2, fsFTP = 5, fsWebDAV = 6, fsS3 = 7 };
+#define FSPROTOCOL_COUNT (fsS3+1)
 extern const wchar_t * ProxyMethodNames;
 enum TProxyMethod { pmNone, pmSocks4, pmSocks5, pmHTTP, pmTelnet, pmCmd };
 enum TSshProt { ssh1only, ssh1deprecated, ssh2deprecated, ssh2only };
 enum TKex { kexWarn, kexDHGroup1, kexDHGroup14, kexDHGEx, kexRSA, kexECDH };
 #define KEX_COUNT (kexECDH+1)
+enum THostKey { hkWarn, hkRSA, hkDSA, hkECDSA, hkED25519, hkMax };
+#define HOSTKEY_COUNT (hkMax)
 enum TGssLib { gssGssApi32, gssSspi, gssCustom };
 #define GSSLIB_COUNT (gssCustom+1)
 // names have to match PuTTY registry entries (see settings.c)
@@ -50,10 +52,12 @@ enum TSessionUrlFlags
 //---------------------------------------------------------------------------
 extern const UnicodeString CipherNames[CIPHER_COUNT];
 extern const UnicodeString KexNames[KEX_COUNT];
+extern const UnicodeString HostKeyNames[HOSTKEY_COUNT];
 extern const UnicodeString GssLibNames[GSSLIB_COUNT];
 extern const wchar_t SshProtList[][10];
 extern const TCipher DefaultCipherList[CIPHER_COUNT];
 extern const TKex DefaultKexList[KEX_COUNT];
+extern const THostKey DefaultHostKeyList[HOSTKEY_COUNT];
 extern const TGssLib DefaultGssLibList[GSSLIB_COUNT];
 extern const wchar_t FSProtocolNames[FSPROTOCOL_COUNT][16];
 extern const int DefaultSendBuf;
@@ -75,6 +79,7 @@ extern const UnicodeString FtpsProtocol;
 extern const UnicodeString FtpesProtocol;
 extern const UnicodeString WebDAVProtocol;
 extern const UnicodeString WebDAVSProtocol;
+extern const UnicodeString S3Protocol;
 extern const UnicodeString SshProtocol;
 extern const UnicodeString WinSCPProtocolPrefix;
 extern const wchar_t UrlParamSeparator;
@@ -82,6 +87,7 @@ extern const wchar_t UrlParamValueSeparator;
 extern const UnicodeString UrlHostKeyParamName;
 extern const UnicodeString UrlSaveParamName;
 extern const UnicodeString PassphraseOption;
+extern const UnicodeString S3HostName;
 //---------------------------------------------------------------------------
 class TStoredSessionList;
 //---------------------------------------------------------------------------
@@ -113,6 +119,7 @@ private:
   bool FSshNoUserAuth;
   TCipher FCiphers[CIPHER_COUNT];
   TKex FKex[KEX_COUNT];
+  THostKey FHostKeys[HOSTKEY_COUNT];
   TGssLib FGssLib[GSSLIB_COUNT];
   UnicodeString FGssLibCustom;
   bool FClearAliases;
@@ -202,6 +209,8 @@ private:
   TTlsVersion FMinTlsVersion;
   TTlsVersion FMaxTlsVersion;
   TAutoSwitch FNotUtf;
+  int FInternalEditorEncoding;
+  UnicodeString FS3DefaultRegion;
   bool FIsWorkspace;
   UnicodeString FLink;
   UnicodeString FHostKey;
@@ -244,6 +253,8 @@ private:
   TCipher __fastcall GetCipher(int Index) const;
   void __fastcall SetKex(int Index, TKex value);
   TKex __fastcall GetKex(int Index) const;
+  void __fastcall SetHostKeys(int Index, THostKey value);
+  THostKey __fastcall GetHostKeys(int Index) const;
   void __fastcall SetGssLib(int Index, TGssLib value);
   TGssLib __fastcall GetGssLib(int Index) const;
   void __fastcall SetGssLibCustom(UnicodeString value);
@@ -300,6 +311,8 @@ private:
   UnicodeString __fastcall GetCipherList() const;
   void __fastcall SetKexList(UnicodeString value);
   UnicodeString __fastcall GetKexList() const;
+  void __fastcall SetHostKeyList(UnicodeString value);
+  UnicodeString __fastcall GetHostKeyList() const;
   void __fastcall SetGssLibList(UnicodeString value);
   UnicodeString __fastcall GetGssLibList() const;
   void __fastcall SetProxyMethod(TProxyMethod value);
@@ -367,6 +380,8 @@ private:
   void __fastcall SetMinTlsVersion(TTlsVersion value);
   void __fastcall SetMaxTlsVersion(TTlsVersion value);
   void __fastcall SetNotUtf(TAutoSwitch value);
+  void __fastcall SetInternalEditorEncoding(int value);
+  void __fastcall SetS3DefaultRegion(UnicodeString value);
   void __fastcall SetLogicalHostName(UnicodeString value);
   void __fastcall SetIsWorkspace(bool value);
   void __fastcall SetLink(UnicodeString value);
@@ -439,6 +454,7 @@ public:
   bool __fastcall HasAnySessionPassword();
   bool __fastcall HasAnyPassword();
   void __fastcall ClearSessionPasswords();
+  void __fastcall MaskPasswords();
   void __fastcall Remove();
   void __fastcall CacheHostKeyIfNotCached();
   virtual void __fastcall Assign(TPersistent * Source);
@@ -468,6 +484,8 @@ public:
   static UnicodeString __fastcall ExtractFolderName(const UnicodeString & Name);
   static UnicodeString __fastcall ComposePath(const UnicodeString & Path, const UnicodeString & Name);
   static bool __fastcall IsSensitiveOption(const UnicodeString & Option);
+  static bool __fastcall IsOptionWithParameters(const UnicodeString & Option);
+  static bool __fastcall MaskPasswordInOptionParameter(const UnicodeString & Option, UnicodeString & Param);
   static UnicodeString __fastcall FormatSiteKey(const UnicodeString & HostName, int PortNumber);
 
   __property UnicodeString HostName  = { read=FHostName, write=SetHostName };
@@ -495,6 +513,7 @@ public:
   __property bool SshNoUserAuth  = { read=FSshNoUserAuth, write=SetSshNoUserAuth };
   __property TCipher Cipher[int Index] = { read=GetCipher, write=SetCipher };
   __property TKex Kex[int Index] = { read=GetKex, write=SetKex };
+  __property THostKey HostKeys[int Index] = { read=GetHostKeys, write=SetHostKeys };
   __property TGssLib GssLib[int Index] = { read=GetGssLib, write=SetGssLib };
   __property UnicodeString GssLibCustom = { read=FGssLibCustom, write=SetGssLibCustom };
   __property UnicodeString PublicKeyFile  = { read=FPublicKeyFile, write=SetPublicKeyFile };
@@ -541,6 +560,7 @@ public:
   __property UnicodeString SshProtStr  = { read=GetSshProtStr };
   __property UnicodeString CipherList  = { read=GetCipherList, write=SetCipherList };
   __property UnicodeString KexList  = { read=GetKexList, write=SetKexList };
+  __property UnicodeString HostKeyList  = { read=GetHostKeyList, write=SetHostKeyList };
   __property UnicodeString GssLibList  = { read=GetGssLibList, write=SetGssLibList };
   __property TProxyMethod ProxyMethod  = { read=FProxyMethod, write=SetProxyMethod };
   __property UnicodeString ProxyHost  = { read=FProxyHost, write=SetProxyHost };
@@ -602,6 +622,8 @@ public:
   __property TTlsVersion MaxTlsVersion = { read = FMaxTlsVersion, write = SetMaxTlsVersion };
   __property UnicodeString LogicalHostName = { read = FLogicalHostName, write = SetLogicalHostName };
   __property TAutoSwitch NotUtf = { read = FNotUtf, write = SetNotUtf };
+  __property int InternalEditorEncoding = { read = FInternalEditorEncoding, write = SetInternalEditorEncoding };
+  __property UnicodeString S3DefaultRegion = { read = FS3DefaultRegion, write = SetS3DefaultRegion };
   __property bool IsWorkspace = { read = FIsWorkspace, write = SetIsWorkspace };
   __property UnicodeString Link = { read = FLink, write = SetLink };
   __property UnicodeString HostKey = { read = FHostKey, write = SetHostKey };

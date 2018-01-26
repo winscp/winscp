@@ -812,9 +812,17 @@ bool __fastcall SamePaths(const UnicodeString & Path1, const UnicodeString & Pat
   return AnsiSameText(IncludeTrailingBackslash(Path1), IncludeTrailingBackslash(Path2));
 }
 //---------------------------------------------------------------------------
-int __fastcall CompareLogicalText(const UnicodeString & S1, const UnicodeString & S2)
+int __fastcall CompareLogicalText(
+  const UnicodeString & S1, const UnicodeString & S2, bool NaturalOrderNumericalSorting)
 {
-  return StrCmpLogicalW(S1.c_str(), S2.c_str());
+  if (NaturalOrderNumericalSorting)
+  {
+    return StrCmpLogicalW(S1.c_str(), S2.c_str());
+  }
+  else
+  {
+    return lstrcmpi(S1.c_str(), S2.c_str());
+  }
 }
 //---------------------------------------------------------------------------
 bool __fastcall IsReservedName(UnicodeString FileName)
@@ -2478,7 +2486,7 @@ UnicodeString __fastcall DoEncodeUrl(UnicodeString S, bool EncodeSlash)
     wchar_t C = S[Index];
     if (IsLetter(C) ||
         IsDigit(C) ||
-        (C == L'_') || (C == L'-') || (C == L'.') ||
+        (C == L'_') || (C == L'-') || (C == L'.') || (C == L'*') ||
         ((C == L'/') && !EncodeSlash))
     {
       Index++;
@@ -3387,7 +3395,7 @@ UnicodeString __fastcall AssemblyString(TAssemblyLanguage Language, UnicodeStrin
       break;
 
     case alPowerShell:
-      S = FORMAT(L"\"%s\"", (ReplaceStr(S, L"\"", L"`\"")));
+      S = FORMAT(L"\"%s\"", (ReplaceStr(ReplaceStr(ReplaceStr(S, L"`", L"``"), L"$", L"`$"), L"\"", L"`\"")));
       break;
 
     default:
@@ -3675,6 +3683,18 @@ UnicodeString __fastcall StripEllipsis(const UnicodeString & S)
   {
     Result.SetLength(Result.Length() - Ellipsis.Length());
     Result = Result.TrimRight();
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall GetFileMimeType(const UnicodeString & FileName)
+{
+  wchar_t * MimeOut = NULL;
+  UnicodeString Result;
+  if (FindMimeFromData(NULL, FileName.c_str(), NULL, 0, NULL, FMFD_URLASFILENAME, &MimeOut, 0) == S_OK)
+  {
+    Result = MimeOut;
+    CoTaskMemFree(MimeOut);
   }
   return Result;
 }

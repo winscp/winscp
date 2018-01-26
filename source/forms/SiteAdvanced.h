@@ -218,7 +218,7 @@ __published:
   TCheckBox *GSSAPIFwdTGTCheck;
   TLabel *BugIgnore2Label;
   TComboBox *BugIgnore2Combo;
-  TComboBox *WebDavProxyMethodCombo;
+  TComboBox *NeonProxyMethodCombo;
   TLabel *Label24;
   TComboBox *FtpUseMlsdCombo;
   TLabel *FtpForcePasvIpLabel;
@@ -321,7 +321,7 @@ private:
   int __fastcall LastSupportedFtpProxyMethod();
   bool __fastcall SupportedFtpProxyMethod(int Method);
   int __fastcall GetSupportedFtpProxyMethod(int Method);
-  int __fastcall GetSupportedWebDavProxyMethod(int Method);
+  int __fastcall GetSupportedNeonProxyMethod(int Method);
   TProxyMethod __fastcall GetProxyMethod();
   int __fastcall GetFtpProxyLogonType();
   void __fastcall UpdateNavigationTree();
@@ -330,6 +330,7 @@ private:
   void __fastcall SessionColorChange(TColor Color);
   TTlsVersion __fastcall IndexToTlsVersion(int Index);
   int __fastcall TlsVersionToIndex(TTlsVersion TlsVersion);
+  bool __fastcall IsNeon(TFSProtocol FSProtocol);
 };
 //----------------------------------------------------------------------------
 #endif

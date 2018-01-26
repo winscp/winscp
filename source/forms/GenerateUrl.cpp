@@ -11,6 +11,7 @@
 #include <PuttyTools.h>
 #include <TextsWin.h>
 #include <ProgParams.h>
+#include <GUITools.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #ifndef NO_RESOURCES
@@ -36,58 +37,29 @@ void __fastcall DoGenerateTransferCodeDialog(
   Dialog->Execute();
 }
 //---------------------------------------------------------------------------
-// Rich edit 4.1 supports "Friendly name hyperlinks"
-class TRichEdit41 : public TRichEdit
+class TRichEditWithLinks : public TNewRichEdit
 {
 public:
-  virtual __fastcall TRichEdit41(TComponent * AOwner);
+  virtual __fastcall TRichEditWithLinks(TComponent * AOwner);
 
 protected:
   virtual void __fastcall CreateWnd();
-  virtual void __fastcall CreateParams(TCreateParams & Params);
-  virtual void __fastcall DestroyWnd();
   void __fastcall Dispatch(void * Message);
-
-private:
-  HINSTANCE FLibrary;
 };
 //---------------------------------------------------------------------------
-__fastcall TRichEdit41::TRichEdit41(TComponent * AOwner) :
-  TRichEdit(AOwner),
-  FLibrary(0)
+__fastcall TRichEditWithLinks::TRichEditWithLinks(TComponent * AOwner) :
+  TNewRichEdit(AOwner)
 {
 }
 //---------------------------------------------------------------------------
-void __fastcall TRichEdit41::CreateParams(TCreateParams & Params)
+void __fastcall TRichEditWithLinks::CreateWnd()
 {
-  UnicodeString RichEditModuleName(L"MSFTEDIT.DLL");
-  long int OldError;
-
-  OldError = SetErrorMode(SEM_NOOPENFILEERRORBOX);
-  FLibrary = LoadLibrary(RichEditModuleName.c_str());
-  SetErrorMode(OldError);
-
-  TCustomMemo::CreateParams(Params);
-  // Should not happen as
-  if (FLibrary != 0)
-  {
-    // MSDN says that we should use MSFTEDIT_CLASS to load Rich Edit 4.1:
-    // https://msdn.microsoft.com/en-us/library/windows/desktop/bb787873.aspx
-    // But MSFTEDIT_CLASS is defined as "RICHEDIT50W",
-    // so not sure what version we are loading.
-    // Seem to work on Windows XP SP3.
-    CreateSubClass(Params, MSFTEDIT_CLASS);
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall TRichEdit41::CreateWnd()
-{
-  TRichEdit::CreateWnd();
+  TNewRichEdit::CreateWnd();
   int Mask = SendMessage(Handle, EM_GETEVENTMASK, 0, 0);
   SendMessage(Handle, EM_SETEVENTMASK, 0, Mask | ENM_LINK);
 }
 //---------------------------------------------------------------------------
-void __fastcall TRichEdit41::Dispatch(void * AMessage)
+void __fastcall TRichEditWithLinks::Dispatch(void * AMessage)
 {
   TMessage & Message = *reinterpret_cast<TMessage *>(AMessage);
   if (Message.Msg == CN_NOTIFY)
@@ -110,21 +82,11 @@ void __fastcall TRichEdit41::Dispatch(void * AMessage)
         }
       }
     }
-    TRichEdit::Dispatch(AMessage);
+    TNewRichEdit::Dispatch(AMessage);
   }
   else
   {
-    TRichEdit::Dispatch(AMessage);
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall TRichEdit41::DestroyWnd()
-{
-  TRichEdit::DestroyWnd();
-
-  if (FLibrary != 0)
-  {
-    FreeLibrary(FLibrary);
+    TNewRichEdit::Dispatch(AMessage);
   }
 }
 //---------------------------------------------------------------------------
@@ -191,20 +153,20 @@ __fastcall TGenerateUrlDialog::TGenerateUrlDialog(
   FPath = Path;
   FChanging = false;
 
-  FResultMemo41 = new TRichEdit41(this);
-  FResultMemo41->Parent = ResultMemo->Parent;
-  FResultMemo41->SetBounds(ResultMemo->Left, ResultMemo->Top, ResultMemo->Width, ResultMemo->Height);
-  FResultMemo41->Anchors = ResultMemo->Anchors;
-  FResultMemo41->BevelInner = ResultMemo->BevelInner;
-  FResultMemo41->BevelOuter = ResultMemo->BevelOuter;
-  FResultMemo41->BorderStyle = ResultMemo->BorderStyle;
-  FResultMemo41->PopupMenu = ResultMemo->PopupMenu;
-  FResultMemo41->TabOrder = ResultMemo->TabOrder;
-  FResultMemo41->PlainText = false;
-  FResultMemo41->WantReturns = false; // affects Esc too, what we want
+  FResultMemoWithLinks = new TRichEditWithLinks(this);
+  FResultMemoWithLinks->Parent = ResultMemo->Parent;
+  FResultMemoWithLinks->SetBounds(ResultMemo->Left, ResultMemo->Top, ResultMemo->Width, ResultMemo->Height);
+  FResultMemoWithLinks->Anchors = ResultMemo->Anchors;
+  FResultMemoWithLinks->BevelInner = ResultMemo->BevelInner;
+  FResultMemoWithLinks->BevelOuter = ResultMemo->BevelOuter;
+  FResultMemoWithLinks->BorderStyle = ResultMemo->BorderStyle;
+  FResultMemoWithLinks->PopupMenu = ResultMemo->PopupMenu;
+  FResultMemoWithLinks->TabOrder = ResultMemo->TabOrder;
+  FResultMemoWithLinks->PlainText = false;
+  FResultMemoWithLinks->WantReturns = false; // affects Esc too, what we want
   ResultMemo->Visible = false;
 
-  ReadOnlyControl(FResultMemo41);
+  ReadOnlyControl(FResultMemoWithLinks);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TGenerateUrlDialog::IsFileUrl()
@@ -771,11 +733,11 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
 
     if (FixedWidth)
     {
-      FResultMemo41->Font->Name = CustomWinConfiguration->DefaultFixedWidthFontName;
+      FResultMemoWithLinks->Font->Name = CustomWinConfiguration->DefaultFixedWidthFontName;
     }
     else
     {
-      FResultMemo41->Font->Name = Font->Name;
+      FResultMemoWithLinks->Font->Name = Font->Name;
     }
 
     if (!CounterName.IsEmpty() && !(*Counted))
@@ -796,21 +758,21 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
        RtfColorEntry(0x993333) + // command-line argument (reddish)
        RtfColorEntry(0x808080) + // script command (gray)
       L"}\n"
-       "{\\fonttbl{\\f0\\fnil\\fcharset0 " + FResultMemo41->Font->Name + L";}}\n"
-       "\\f0\\fs" + IntToStr(FResultMemo41->Font->Size * 2) + L" " +
+       "{\\fonttbl{\\f0\\fnil\\fcharset0 " + FResultMemoWithLinks->Font->Name + L";}}\n"
+       "\\f0\\fs" + IntToStr(FResultMemoWithLinks->Font->Size * 2) + L" " +
        Result +
       "}";
 
-    FResultMemo41->WordWrap = WordWrap;
-    FResultMemo41->ScrollBars = WordWrap ? ssVertical : ssBoth;
+    FResultMemoWithLinks->WordWrap = WordWrap;
+    FResultMemoWithLinks->ScrollBars = WordWrap ? ssVertical : ssBoth;
 
     std::unique_ptr<TMemoryStream> Stream(new TMemoryStream());
     UTF8String ResultUtf = Result;
     Stream->Write(ResultUtf.c_str(), ResultUtf.Length());
     Stream->Position = 0;
 
-    FResultMemo41->Perform(WM_VSCROLL, SB_TOP, 0);
-    FResultMemo41->Lines->LoadFromStream(Stream.get(), TEncoding::UTF8);
+    FResultMemoWithLinks->Perform(WM_VSCROLL, SB_TOP, 0);
+    FResultMemoWithLinks->Lines->LoadFromStream(Stream.get(), TEncoding::UTF8);
   }
 }
 //---------------------------------------------------------------------------
@@ -932,12 +894,12 @@ void __fastcall TGenerateUrlDialog::ClipboardButtonClick(TObject * /*Sender*/)
 {
   TInstantOperationVisualizer Visualizer;
 
-  // Cannot read the text from FResultMemo41->Lines as TRichEdit (as opposite to TMemo)
+  // Cannot read the text from FResultMemoWithLinks->Lines as TRichEdit (as opposite to TMemo)
   // breaks wrapped lines
-  UnicodeString Text = FResultMemo41->Text;
+  UnicodeString Text = FResultMemoWithLinks->Text;
   UnicodeString EOL = sLineBreak;
   int P = Pos(EOL, Text);
-  // Trim the EOL of the only string, what CopyToClipboard(FResultMemo41->Lines) would have done.
+  // Trim the EOL of the only string, what CopyToClipboard(FResultMemoWithLinks->Lines) would have done.
   // It probably never happens as rich edit does not return EOL on the last line.
   if (DebugAlwaysFalse(P == Text.Length() - EOL.Length() + 1))
   {
@@ -988,12 +950,6 @@ void __fastcall TGenerateUrlDialog::CreateParams(TCreateParams & Params)
   // reason receive focus, if window is shown atop non-main window
   // (like editor)
   Params.Style = Params.Style | WS_THICKFRAME;
-}
-//---------------------------------------------------------------------------
-void __fastcall TGenerateUrlDialog::ResultMemoContextPopup(TObject * Sender,
-  TPoint & MousePos, bool & Handled)
-{
-  MenuPopup(Sender, MousePos, Handled);
 }
 //---------------------------------------------------------------------------
 void __fastcall TGenerateUrlDialog::FormShow(TObject * /*Sender*/)

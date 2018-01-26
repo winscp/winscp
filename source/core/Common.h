@@ -86,7 +86,8 @@ UnicodeString __fastcall EscapePuttyCommandParam(UnicodeString Param);
 UnicodeString __fastcall ExpandEnvironmentVariables(const UnicodeString & Str);
 bool __fastcall SamePaths(const UnicodeString & Path1, const UnicodeString & Path2);
 bool __fastcall IsPathToSameFile(const UnicodeString & Path1, const UnicodeString & Path2);
-int __fastcall CompareLogicalText(const UnicodeString & S1, const UnicodeString & S2);
+int __fastcall CompareLogicalText(
+  const UnicodeString & S1, const UnicodeString & S2, bool NaturalOrderNumericalSorting);
 bool __fastcall IsReservedName(UnicodeString FileName);
 UnicodeString __fastcall ApiPath(UnicodeString Path);
 UnicodeString __fastcall DisplayableStr(const RawByteString & Str);
@@ -162,6 +163,7 @@ bool __fastcall IsHttpOrHttpsUrl(const UnicodeString & S);
 UnicodeString __fastcall ChangeUrlProtocol(const UnicodeString & S, const UnicodeString & Protocol);
 void __fastcall LoadScriptFromFile(UnicodeString FileName, TStrings * Lines);
 UnicodeString __fastcall StripEllipsis(const UnicodeString & S);
+UnicodeString __fastcall GetFileMimeType(const UnicodeString & FileName);
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure* TProcessLocalFileEvent)
   (const UnicodeString FileName, const TSearchRec Rec, void * Param);

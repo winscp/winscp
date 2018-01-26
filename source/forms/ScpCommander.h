@@ -562,6 +562,8 @@ protected:
     UnicodeString & NewPath, bool Create);
   void __fastcall SynchronizeBrowsingLocal(UnicodeString PrevPath, UnicodeString & NewPath, bool Create);
   void __fastcall SynchronizeBrowsingRemote(UnicodeString PrevPath, UnicodeString & NewPath, bool Create);
+  void __fastcall CreateLocalDirectory(const UnicodeString & Path);
+  void __fastcall CreateRemoteDirectory(const UnicodeString & Path);
   void __fastcall LocalPathComboUpdateDrives();
   void __fastcall LocalPathComboUpdate();
   virtual void __fastcall ToolbarItemResize(TTBXCustomDropDownItem * Item, int Width);

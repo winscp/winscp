@@ -13,6 +13,7 @@ class TCopyParamType;
 struct TSpaceAvailable;
 class TFileOperationProgressType;
 class TRemoteProperties;
+struct TLocalFileHandle;
 //---------------------------------------------------------------------------
 enum TFSCommand { fsNull = 0, fsVarValue, fsLastLine, fsFirstLine,
   fsCurrentDirectory, fsChangeDirectory, fsListDirectory, fsListCurrentDirectory,
@@ -57,6 +58,20 @@ public:
     const UnicodeString TargetDir, const TCopyParamType * CopyParam,
     int Params, TFileOperationProgressType * OperationProgress,
     TOnceDoneOperation & OnceDoneOperation) = 0;
+  virtual void __fastcall TransferOnDirectory(
+    const UnicodeString & Directory, const TCopyParamType * CopyParam, int Params) {};
+  virtual void __fastcall Source(
+    TLocalFileHandle & Handle, const UnicodeString & TargetDir, UnicodeString & DestFileName,
+    const TCopyParamType * CopyParam, int Params,
+    TFileOperationProgressType * OperationProgress, unsigned int Flags,
+    TUploadSessionAction & Action, bool & ChildError) = 0;
+  virtual void __fastcall DirectorySunk(
+    const UnicodeString & DestFullName, const TRemoteFile * File, const TCopyParamType * CopyParam) {};
+  virtual void __fastcall Sink(
+    const UnicodeString & FileName, const TRemoteFile * File,
+    const UnicodeString & TargetDir, UnicodeString & DestFileName, int Attrs,
+    const TCopyParamType * CopyParam, int Params, TFileOperationProgressType * OperationProgress,
+    unsigned int Flags, TDownloadSessionAction & Action) = 0;
   virtual void __fastcall CreateDirectory(const UnicodeString DirName) = 0;
   virtual void __fastcall CreateLink(const UnicodeString FileName, const UnicodeString PointTo, bool Symbolic) = 0;
   virtual void __fastcall DeleteFile(const UnicodeString FileName,
@@ -74,9 +89,9 @@ public:
     TRemoteFile *& File) = 0;
   virtual void __fastcall ReadSymlink(TRemoteFile * SymLinkFile,
     TRemoteFile *& File) = 0;
-  virtual void __fastcall RenameFile(const UnicodeString FileName,
+  virtual void __fastcall RenameFile(const UnicodeString FileName, const TRemoteFile * File,
     const UnicodeString NewName) = 0;
-  virtual void __fastcall CopyFile(const UnicodeString FileName,
+  virtual void __fastcall CopyFile(const UnicodeString FileName, const TRemoteFile * File,
     const UnicodeString NewName) = 0;
   virtual TStrings * __fastcall GetFixedPaths() = 0;
   virtual void __fastcall SpaceAvailable(const UnicodeString Path,
@@ -90,6 +105,7 @@ public:
   virtual void __fastcall LockFile(const UnicodeString & FileName, const TRemoteFile * File) = 0;
   virtual void __fastcall UnlockFile(const UnicodeString & FileName, const TRemoteFile * File) = 0;
   virtual void __fastcall UpdateFromMain(TCustomFileSystem * MainFileSystem) = 0;
+  virtual void __fastcall ClearCaches() = 0;
 
   __property UnicodeString CurrentDirectory = { read = GetCurrentDirectory };
 

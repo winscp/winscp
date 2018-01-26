@@ -36,7 +36,7 @@ int __fastcall TNamedObject::Compare(TNamedObject * Other)
   }
   else
   {
-    Result = CompareLogicalText(Name, Other->Name);
+    Result = CompareLogicalText(Name, Other->Name, true);
   }
   return Result;
 }

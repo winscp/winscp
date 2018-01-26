@@ -35,6 +35,7 @@ protected:
   DYNAMIC void __fastcall DoShow();
   virtual void __fastcall Dispatch(void * Message);
   void __fastcall MenuItemClick(TObject * Sender);
+  void __fastcall ButtonSubmit(TObject * Sender);
   void __fastcall ButtonDropDownClick(TObject * Sender);
   void __fastcall UpdateForShiftStateTimer(TObject * Sender);
   DYNAMIC void __fastcall SetZOrder(bool TopMost);
@@ -54,15 +55,16 @@ private:
   TTimer * FUpdateForShiftStateTimer;
   TForm * FDummyForm;
   bool FShowNoActivate;
+  std::map<TObject *, TButtonSubmitEvent> FButtonSubmitEvents;
 
-  void __fastcall HelpButtonClick(TObject * Sender);
-  void __fastcall ReportButtonClick(TObject * Sender);
+  void __fastcall HelpButtonSubmit(TObject * Sender, unsigned int & Answer);
+  void __fastcall ReportButtonSubmit(TObject * Sender, unsigned int & Answer);
   void __fastcall CMDialogKey(TWMKeyDown & Message);
   void __fastcall CMShowingChanged(TMessage & Message);
   void __fastcall UpdateForShiftState();
   TButton * __fastcall CreateButton(
     UnicodeString Name, UnicodeString Caption, unsigned int Answer,
-    TNotifyEvent OnClick, bool IsTimeoutButton,
+    TButtonSubmitEvent OnSubmit, bool IsTimeoutButton,
     int GroupWith, TShiftState GrouppedShiftState, bool ElevationRequired, bool MenuButton,
     TAnswerButtons & AnswerButtons, bool HasMoreMessages, int & ButtonWidths);
 };

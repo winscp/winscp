@@ -467,6 +467,7 @@ static void __fastcall RegisterAsNonBrowserUrlHandler(const UnicodeString & Pref
   RegisterAsUrlHandler(Prefix + ScpProtocol.UpperCase());
   RegisterAsUrlHandler(Prefix + WebDAVProtocol.UpperCase());
   RegisterAsUrlHandler(Prefix + WebDAVSProtocol.UpperCase());
+  RegisterAsUrlHandler(Prefix + S3Protocol.UpperCase());
 }
 //---------------------------------------------------------------------------
 static void __fastcall UnregisterAsUrlHandlers(const UnicodeString & Prefix, bool UnregisterProtocol)
@@ -475,6 +476,7 @@ static void __fastcall UnregisterAsUrlHandlers(const UnicodeString & Prefix, boo
   UnregisterAsUrlHandler(Prefix + ScpProtocol, UnregisterProtocol);
   UnregisterAsUrlHandler(Prefix + WebDAVProtocol, UnregisterProtocol);
   UnregisterAsUrlHandler(Prefix + WebDAVSProtocol, UnregisterProtocol);
+  UnregisterAsUrlHandler(Prefix + S3Protocol, UnregisterProtocol);
 }
 //---------------------------------------------------------------------------
 static const UnicodeString GenericUrlHandler(L"WinSCP.Url");
@@ -580,6 +582,7 @@ static void __fastcall RegisterProtocolsForDefaultPrograms(HKEY RootKey)
   RegisterProtocolForDefaultPrograms(RootKey, SshProtocol);
   RegisterProtocolForDefaultPrograms(RootKey, WebDAVProtocol);
   RegisterProtocolForDefaultPrograms(RootKey, WebDAVSProtocol);
+  RegisterProtocolForDefaultPrograms(RootKey, S3Protocol);
   // deliberately not including http,
   // it's unlikely that anyone would like to change http handler
   // to non-browser application
@@ -594,6 +597,7 @@ static void __fastcall UnregisterProtocolsForDefaultPrograms(HKEY RootKey, bool 
   UnregisterProtocolForDefaultPrograms(RootKey, ScpProtocol, ForceHandlerUnregistration);
   UnregisterProtocolForDefaultPrograms(RootKey, WebDAVProtocol, ForceHandlerUnregistration);
   UnregisterProtocolForDefaultPrograms(RootKey, WebDAVSProtocol, ForceHandlerUnregistration);
+  UnregisterProtocolForDefaultPrograms(RootKey, S3Protocol, ForceHandlerUnregistration);
 
   // we should not really need the "force" flag here, but why not
   UnregisterAsUrlHandler(RootKey, GenericUrlHandler, true, true);
@@ -1188,7 +1192,7 @@ void __fastcall EnableAutomaticUpdates()
   OpenBrowser(GetEnableAutomaticUpdatesUrl());
 }
 //---------------------------------------------------------------------------
-static void __fastcall OpenHistory(void * /*Data*/, TObject * /*Sender*/)
+static void __fastcall OpenHistory(void * /*Data*/, TObject * /*Sender*/, unsigned int & /*Answer*/)
 {
   Configuration->Usage->Inc(L"UpdateHistoryOpens");
   OpenBrowser(LoadStr(HISTORY_URL));
@@ -1458,7 +1462,7 @@ static void __fastcall DownloadClose(void * /*Data*/, TObject * Sender, TCloseAc
   }
 }
 //---------------------------------------------------------------------------
-static void __fastcall DownloadUpdate(void * /*Data*/, TObject * Sender)
+static void __fastcall DownloadUpdate(void * /*Data*/, TObject * Sender, unsigned int & /*Answer*/)
 {
   Configuration->Usage->Inc(L"UpdateDownloadStarts");
   TButton * Button = DebugNotNull(dynamic_cast<TButton *>(Sender));
@@ -1603,7 +1607,7 @@ bool __fastcall CheckForUpdates(bool CachedResults)
     }
     Aliases[1].Button = qaAll;
     Aliases[1].Alias = LoadStr(WHATS_NEW_BUTTON);
-    Aliases[1].OnClick = MakeMethod<TNotifyEvent>(NULL, OpenHistory);
+    Aliases[1].OnSubmit = MakeMethod<TButtonSubmitEvent>(NULL, OpenHistory);
     Aliases[2].Button = qaCancel;
     Aliases[2].Alias = Vcl_Consts_SMsgDlgClose;
     // Used only when New == true, see AliasesCount below
@@ -1611,7 +1615,7 @@ bool __fastcall CheckForUpdates(bool CachedResults)
     Aliases[3].Alias = LoadStr(UPGRADE_BUTTON);
     if (!Updates.Results.DownloadUrl.IsEmpty())
     {
-      Aliases[3].OnClick = MakeMethod<TNotifyEvent>(NULL, DownloadUpdate);
+      Aliases[3].OnSubmit = MakeMethod<TButtonSubmitEvent>(NULL, DownloadUpdate);
       Aliases[3].ElevationRequired = true;
     }
 
@@ -2013,7 +2017,7 @@ static void __fastcall TipSeen(const UnicodeString & Tip)
   WinConfiguration->Save();
 }
 //---------------------------------------------------------------------------
-static void __fastcall PrevNextTipClick(void * Data, TObject * Sender)
+static void __fastcall PrevNextTipClick(void * Data, TObject * Sender, unsigned int & /*Answer*/)
 {
   TCustomForm * Form = GetParentForm(dynamic_cast<TControl *>(Sender));
   TTipsData * TipsData = TTipsData::Retrieve(Form);
@@ -2051,10 +2055,10 @@ static void __fastcall ShowTip(bool AutoShow)
   TQueryButtonAlias Aliases[3];
   Aliases[0].Button = qaYes;
   Aliases[0].Alias = LoadStr(PREV_BUTTON);
-  Aliases[0].OnClick = MakeMethod<TNotifyEvent>(reinterpret_cast<void *>(-1), PrevNextTipClick);
+  Aliases[0].OnSubmit = MakeMethod<TButtonSubmitEvent>(reinterpret_cast<void *>(-1), PrevNextTipClick);
   Aliases[1].Button = qaNo;
   Aliases[1].Alias = LoadStr(NEXT_BUTTON);
-  Aliases[1].OnClick = MakeMethod<TNotifyEvent>(reinterpret_cast<void *>(+1), PrevNextTipClick);
+  Aliases[1].OnSubmit = MakeMethod<TButtonSubmitEvent>(reinterpret_cast<void *>(+1), PrevNextTipClick);
   Aliases[2].Button = qaCancel;
   Aliases[2].Alias = LoadStr(CLOSE_BUTTON);
 

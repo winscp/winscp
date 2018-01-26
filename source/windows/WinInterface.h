@@ -353,7 +353,7 @@ typedef void __fastcall (__closure *TAnyModifiedEvent)
 TForm * __fastcall ShowEditorForm(const UnicodeString FileName, TForm * ParentForm,
   TNotifyEvent OnFileChanged, TNotifyEvent OnFileReload, TFileClosedEvent OnClose,
   TNotifyEvent OnSaveAll, TAnyModifiedEvent OnAnyModified,
-  const UnicodeString Caption, bool StandaloneEditor, TColor Color);
+  const UnicodeString Caption, bool StandaloneEditor, TColor Color, int InternalEditorEncodingOverride);
 void __fastcall ReconfigureEditorForm(TForm * Form);
 void __fastcall EditorFormFileUploadComplete(TForm * Form);
 void __fastcall EditorFormFileSave(TForm * Form);
@@ -483,6 +483,7 @@ void __fastcall InitializeShortCutCombo(TComboBox * ComboBox,
 void __fastcall SetShortCutCombo(TComboBox * ComboBox, TShortCut Value);
 TShortCut __fastcall GetShortCutCombo(TComboBox * ComboBox);
 bool __fastcall IsCustomShortCut(TShortCut ShortCut);
+TShortCut __fastcall NormalizeCustomShortCut(TShortCut ShortCut);
 
 #ifdef _DEBUG
 void __fastcall ForceTracing();

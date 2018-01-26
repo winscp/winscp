@@ -1327,6 +1327,20 @@ void base64_encode(FILE *fp, const unsigned char *data, int datalen, int cpl)
     fputc('\n', fp);
 }
 
+void base64_encode_buf(const unsigned char *data, int datalen, unsigned char *out)
+{
+    int n;
+
+    while (datalen > 0) {
+	n = (datalen < 3 ? datalen : 3);
+	base64_encode_atom(data, n, out);
+	data += n;
+	out += 4;
+	datalen -= n;
+    }
+    *out = 0;
+}
+
 int ssh2_save_userkey(const Filename *filename, struct ssh2_userkey *key,
 		      char *passphrase)
 {
@@ -1601,8 +1615,9 @@ void ssh2_write_pubkey(FILE *fp, const char *comment,
  */
 char *ssh2_fingerprint_blob(const void *blob, int bloblen)
 {
-    unsigned char digest[16];
-    char fingerprint_str[16*3];
+    unsigned char digest[32];
+    char fingerprint_str_md5[16*3];
+    char fingerprint_str_sha256[45]; /* ceil(32/3)*4+1 */
     const char *algstr;
     int alglen;
     const struct ssh_signkey *alg;
@@ -1613,7 +1628,10 @@ char *ssh2_fingerprint_blob(const void *blob, int bloblen)
      */
     MD5Simple(blob, bloblen, digest);
     for (i = 0; i < 16; i++)
-        sprintf(fingerprint_str + i*3, "%02x%s", digest[i], i==15 ? "" : ":");
+        sprintf(fingerprint_str_md5 + i*3, "%02x%s", digest[i], i==15 ? "" : ":");
+
+    SHA256_Simple(blob, bloblen, digest);
+    base64_encode_buf(digest, 32, fingerprint_str_sha256);
 
     /*
      * Identify the key algorithm, if possible.
@@ -1629,17 +1647,17 @@ char *ssh2_fingerprint_blob(const void *blob, int bloblen)
         alg = find_pubkey_alg_len(alglen, algstr);
         if (alg) {
             int bits = alg->pubkey_bits(alg, blob, bloblen);
-            return dupprintf("%.*s %d %s", alglen, algstr,
-                             bits, fingerprint_str);
+            return dupprintf("%.*s %d %s %s", alglen, algstr,
+                             bits, fingerprint_str_md5, fingerprint_str_sha256);
         } else {
-            return dupprintf("%.*s %s", alglen, algstr, fingerprint_str);
+            return dupprintf("%.*s %s %s", alglen, algstr, fingerprint_str_md5, fingerprint_str_sha256);
         }
     } else {
         /*
          * No algorithm available (which means a seriously confused
          * key blob, but there we go). Return only the hash.
          */
-        return dupstr(fingerprint_str);
+        return dupprintf("%s %s", fingerprint_str_md5, fingerprint_str_sha256);
     }
 }
 

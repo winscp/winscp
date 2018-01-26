@@ -288,7 +288,6 @@ type
     {Create a new subdirectory:}
     procedure CreateDirectory(DirName: string); override;
     {Delete all selected files:}
-    function DeleteSelectedFiles(AllowUndo: Boolean): Boolean; dynamic;
 
     {Check, if file or files still exists:}
     procedure ValidateFile(Item: TListItem); overload;
@@ -407,7 +406,7 @@ var
 implementation
 
 uses
-  DriveView,
+  DriveView, OperationWithTimeout,
   PIDL, Forms, Dialogs,
   ShellAPI, ComObj,
   ActiveX, ImgList,
@@ -1192,7 +1191,7 @@ begin
       else FDriveType := DRIVE_UNKNOWN;
 
     FDirOK := (Length(FPath) > 0) and
-      DriveInfo[FPath[1]].DriveReady and DirExists(FPath);
+      DriveInfo[FPath[1]].DriveReady and DirectoryExists(FPath);
 
     if DirOK then
     begin
@@ -1312,7 +1311,7 @@ begin
     if IsRecycleBin then Reload(True)
       else
     begin
-      if not DirExists(Path) then
+      if not DirectoryExists(Path) then
       begin
         ClearItems;
         FDirOK := False;
@@ -1599,36 +1598,6 @@ begin
   end;
 end; {GetAttrString}
 
-type
-  TSHGetFileInfoThread = class(TCompThread)
-  private
-    FPIDL: PItemIDList;
-    FFileAttributes: DWORD;
-    FFlags: UINT;
-    FFileInfo: TSHFileInfo;
-
-  protected
-    procedure Execute; override;
-
-  public
-    constructor Create(PIDL: PItemIDList; FileAttributes: DWORD; Flags: UINT);
-
-    property FileInfo: TSHFileInfo read FFileInfo;
-  end;
-
-constructor TSHGetFileInfoThread.Create(PIDL: PItemIDList; FileAttributes: DWORD; Flags: UINT);
-begin
-  inherited Create(True);
-  FPIDL := PIDL;
-  FFileAttributes := FileAttributes;
-  FFlags := Flags;
-end;
-
-procedure TSHGetFileInfoThread.Execute;
-begin
-  SHGetFileInfo(PChar(FPIDL), FFileAttributes, FFileInfo, SizeOf(FFileInfo), FFlags);
-end;
-
 procedure TDirView.GetDisplayData(Item: TListItem; FetchIcon: Boolean);
 var
   FileInfo: TShFileInfo;
@@ -1640,7 +1609,6 @@ var
   Eaten: ULONG;
   shAttr: ULONG;
   FileIconForName, FullName: string;
-  Thread: TSHGetFileInfoThread;
 begin
   Assert(Assigned(Item) and Assigned(Item.Data));
   with PFileRec(Item.Data)^ do
@@ -1748,28 +1716,20 @@ begin
             begin
               // Files with PIDL are typically .exe files.
               // It may take long to retrieve an icon from exe file.
-              Thread :=
-                TSHGetFileInfoThread.Create(
-                  PIDL, FILE_ATTRIBUTE_NORMAL, SHGFI_TYPENAME or SHGFI_USEFILEATTRIBUTES or SHGFI_SYSICONINDEX or SHGFI_PIDL);
-              Thread.Resume;
-              if Thread.WaitFor(MSecsPerSec div 4) then
+              if SHGetFileInfoWithTimeout(
+                   PChar(PIDL), FILE_ATTRIBUTE_NORMAL, FileInfo, SizeOf(FileInfo),
+                   SHGFI_TYPENAME or SHGFI_USEFILEATTRIBUTES or SHGFI_SYSICONINDEX or SHGFI_PIDL,
+                   MSecsPerSec div 4) = 0 then
               begin
-                FileInfo := Thread.FileInfo;
-                Thread.Free;
-              end
-                else
-              begin
-                // There's a chance for memory leak, if thread is terminated
-                // between WaitFor() and this line
-                Thread.FreeOnTerminate := True;
                 FileInfo.szTypeName[0] := #0;
                 FileInfo.iIcon := DefaultExeIcon;
               end;
             end
               else
             begin
-              SHGetFileInfo(PChar(FileIconForName), FILE_ATTRIBUTE_NORMAL, FileInfo, SizeOf(FileInfo),
-                SHGFI_TYPENAME or SHGFI_USEFILEATTRIBUTES or SHGFI_SYSICONINDEX);
+              SHGetFileInfoWithTimeout(PChar(FileIconForName), FILE_ATTRIBUTE_NORMAL, FileInfo, SizeOf(FileInfo),
+                SHGFI_TYPENAME or SHGFI_USEFILEATTRIBUTES or SHGFI_SYSICONINDEX,
+                MSecsPerSec div 4);
             end;
 
             TypeName := FileInfo.szTypeName;
@@ -1863,101 +1823,14 @@ begin
   Result := ExtractFileExt(PFileRec(Item.Data)^.FileName);
 end; {ItemFileExt}
 
-function TDirView.DeleteSelectedFiles(AllowUndo: Boolean): Boolean;
-const
-  MaxSel = 10;
-var
-  ItemIndex: Integer;
-  Item, NextItem: TListItem;
-  FileOperator: TFileOperator;
-  UpdateEnabled: Boolean;
-  WatchDir: Boolean;
-  Updating: Boolean;
-  DirDeleted: Boolean;
-begin
-  AllowUndo := AllowUndo and (not IsRecycleBin);
-  DirDeleted := False;
-  if Assigned(FDriveView) then
-    TDriveView(FDriveView).StopWatchThread;
-  WatchDir := WatchForChanges;
-  WatchForChanges := False;
-  UpdateEnabled := (SelCount < MaxSel);
-  if not UpdateEnabled then Items.BeginUpdate;
-
-  FileOperator := TFileOperator.Create(Self);
-  try
-    ItemIndex := Selected.Index;
-    FileOperator.Operation := foDelete;
-    FileOperator.Flags := [foNoConfirmMkDir];
-    FileOperator.ProgressTitle := coFileOperatorTitle;
-    CreateFileList(False, True, FileOperator.OperandFrom);
-
-    if not ConfirmDelete then
-      FileOperator.Flags := FileOperator.Flags + [foNoConfirmation];
-
-    if AllowUndo then
-      FileOperator.Flags := FileOperator.Flags + [foAllowUndo];
-
-    StopIconUpdateThread;
-    Result := FileOperator.Execute;
-    Result := Result and (not FileOperator.OperationAborted);
-    Sleep(0);
-
-    Updating := False;
-    Item := GetNextItem(nil, sdAll, [isSelected]);
-    while Assigned(Item) do
-    begin
-      NextItem := GetNextItem(Item, sdAll, [isSelected]);
-      case PFileRec(Item.Data)^.IsDirectory of
-        True:
-          if not DirExists(ItemFullFileName(Item)) then
-          begin
-            DirDeleted := True;
-            Item.Delete;
-          end;
-        False:
-          if not CheckFileExists(ItemFullFileName(Item)) then
-          begin
-            if (SelCount > 3) and (not Updating) then
-            begin
-              Items.BeginUpdate;
-              Updating := True;
-            end;
-            Item.Delete;
-          end;
-      end;
-      Item := NextItem;
-    end;
-    if Updating then
-      Items.EndUpdate;
-
-  finally
-    if not UpdateEnabled then
-      Items.EndUpdate;
-    FileOperator.Free;
-  end;
-
-  if Assigned(DriveView) then
-    with DriveView do
-    begin
-      if DirDeleted and Assigned(Selected) then
-        ValidateDirectory(Selected);
-      TDriveView(FDriveView).StartWatchThread;
-    end;
-
-  if UseIconUpdateThread then StartIconUpdateThread;
-
-  WatchForChanges := WatchDir;
-
-  if (not Assigned(Selected)) and (Items.Count > 0) then
-    Selected := Items[Min(ItemIndex, Pred(Items.Count))];
-end; {DeleteSelectedFiles}
-
 function StrCmpLogicalW(const sz1, sz2: UnicodeString): Integer; stdcall; external 'shlwapi.dll';
 
-function CompareLogicalText(const S1, S2: string): Integer;
+function CompareLogicalText(const S1, S2: string; NaturalOrderNumericalSorting: Boolean): Integer;
 begin
-  Result := StrCmpLogicalW(PChar(S1), PChar(S2));
+  if NaturalOrderNumericalSorting then
+    Result := StrCmpLogicalW(PChar(S1), PChar(S2))
+  else
+    Result := lstrcmpi(PChar(S1), PChar(S2));
 end;
 
 function CompareFileType(I1, I2: TListItem; P1, P2: PFileRec): Integer;
@@ -1976,7 +1849,7 @@ begin
     Key1 := P1.TypeName + ' ' + P1.FileExt + ' ' + P1.DisplayName;
     Key2 := P2.TypeName + ' ' + P2.FileExt + ' ' + P2.DisplayName;
   end;
-  Result := CompareLogicalText(Key1, Key2);
+  Result := CompareLogicalText(Key1, Key2, TDirView(I1.ListView).NaturalOrderNumericalSorting);
 end;
 
 function CompareFileTime(P1, P2: PFileRec): Integer;
@@ -2062,7 +1935,8 @@ begin
           if not P1.isDirectory then
           begin
             Result := CompareLogicalText(
-              P1.FileExt + ' ' + P1.DisplayName, P2.FileExt + ' ' + P2.DisplayName);
+              P1.FileExt + ' ' + P1.DisplayName, P2.FileExt + ' ' + P2.DisplayName,
+              AOwner.NaturalOrderNumericalSorting);
           end
             else ; //fallback
 
@@ -2072,7 +1946,7 @@ begin
 
       if Result = fEqual then
       begin
-        Result := CompareLogicalText(P1.DisplayName, P2.DisplayName)
+        Result := CompareLogicalText(P1.DisplayName, P2.DisplayName, AOwner.NaturalOrderNumericalSorting)
       end;
     end;
   end;
@@ -2234,7 +2108,7 @@ begin
 
   StopIconUpdateThread;
   try
-    {create the phyical directory:}
+    {create the physical directory:}
     Win32Check(Windows.CreateDirectory(PChar(ApiPath(DirName)), nil));
 
     if IncludeTrailingBackslash(ExtractFilePath(ExpandFileName(DirName))) =
@@ -2749,7 +2623,7 @@ begin
     if PFileRec(Item.Data)^.IsDirectory then
     begin
       FileName := ItemFullFileName(Item);
-      if not DirExists(FileName) then
+      if not DirectoryExists(FileName) then
       begin
         Reload2;
         if Assigned(FDriveView) and Assigned(FDriveView.Selected) then
@@ -2761,7 +2635,7 @@ begin
       else
     FileName := ResolveFileShortCut(ItemFullFileName(Item), True);
 
-    if DirExists(FileName) then
+    if DirectoryExists(FileName) then
     begin
       Path := FileName;
       Exit;
@@ -2859,7 +2733,7 @@ var
   IsDirectory: Boolean;
 begin
   Item := GetItemFromHItem(HItem);
-  IsDirectory := DirExists(ItemFullFileName(Item));
+  IsDirectory := DirectoryExists(ItemFullFileName(Item));
   NewCaption := HItem.pszText;
 
   StopWatchThread;
@@ -3143,7 +3017,7 @@ var
 begin
   if DragDropFilesEx.FileList.Count > 0 then
   begin
-    if not DirExists(TargetPath) then
+    if not DirectoryExists(TargetPath) then
     begin
       Reload(True);
       DDError(DDPathNotFoundError);
@@ -3187,7 +3061,7 @@ begin
 
               if SourcePath = '' then
               begin
-                if DirExists(TFDDListItem(DragDropFilesEx.FileList[Index]^).Name) then
+                if DirectoryExists(TFDDListItem(DragDropFilesEx.FileList[Index]^).Name) then
                 begin
                   SourcePath := TFDDListItem(DragDropFilesEx.FileList[Index]^).Name;
                   SourceIsDirectory := True;

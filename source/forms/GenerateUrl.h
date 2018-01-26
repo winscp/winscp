@@ -15,8 +15,6 @@
 #include <Vcl.StdActns.hpp>
 #include <WinInterface.h>
 //---------------------------------------------------------------------------
-class TRichEdit41;
-//---------------------------------------------------------------------------
 class TGenerateUrlDialog : public TForm
 {
 __published:
@@ -41,15 +39,10 @@ __published:
   TComboBox *AssemblyLanguageCombo;
   TLabel *ScriptDescriptionLabel;
   TLabel *AssemblyDescriptionLabel;
-  TPopupMenu *ResultPopupMenu;
-  TActionList *ResultActionList;
-  TEditCopy *EditCopyAction;
-  TEditSelectAll *EditSelectAllAction;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall ClipboardButtonClick(TObject *Sender);
   void __fastcall HelpButtonClick(TObject *Sender);
   void __fastcall WMNCCreate(TWMNCCreate & Message);
-  void __fastcall ResultMemoContextPopup(TObject *Sender, TPoint &MousePos, bool &Handled);
   void __fastcall FormShow(TObject *Sender);
 
 private:
@@ -57,7 +50,7 @@ private:
   std::unique_ptr<TStrings> FPaths;
   bool FPathsSample;
   bool FChanging;
-  TRichEdit41 * FResultMemo41;
+  TRichEdit * FResultMemoWithLinks;
   bool FTransfer;
   bool FToRemote;
   bool FMove;

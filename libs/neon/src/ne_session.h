@@ -318,6 +318,10 @@ void ne_set_connect_timeout(ne_session *sess, int timeout);
  * where token is any alpha-numeric-y string [a-zA-Z0-9]* */
 void ne_set_useragent(ne_session *sess, const char *product);
 
+#ifdef WINSCP
+void ne_set_realhost(ne_session *sess, const char *realhost);
+#endif
+
 /* Returns non-zero if next-hop server does not claim compliance to
  * HTTP/1.1 or later. */
 int ne_version_pre_http11(ne_session *sess);

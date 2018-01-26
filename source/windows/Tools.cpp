@@ -290,13 +290,15 @@ UnicodeString __fastcall StoreForm(TCustomForm * Form)
   DebugAssert(Form);
   TRect Bounds = Form->BoundsRect;
   OffsetRect(Bounds, -Form->Monitor->Left, -Form->Monitor->Top);
-  return FORMAT(L"%d;%d;%d;%d;%d;%s", (SaveDimension(Bounds.Left), SaveDimension(Bounds.Top),
-    SaveDimension(Bounds.Right), SaveDimension(Bounds.Bottom),
-    // we do not want WinSCP to start minimized next time (we cannot handle that anyway).
-    // note that WindowState is wsNormal when window in minimized for some reason.
-    // actually it is wsMinimized only when minimized by MSVDM
-    (int)(Form->WindowState == wsMinimized ? wsNormal : Form->WindowState),
-    SavePixelsPerInch(Form)));
+  UnicodeString Result =
+    FORMAT(L"%d;%d;%d;%d;%d;%s", (SaveDimension(Bounds.Left), SaveDimension(Bounds.Top),
+      SaveDimension(Bounds.Right), SaveDimension(Bounds.Bottom),
+      // we do not want WinSCP to start minimized next time (we cannot handle that anyway).
+      // note that WindowState is wsNormal when window in minimized for some reason.
+      // actually it is wsMinimized only when minimized by MSVDM
+      (int)(Form->WindowState == wsMinimized ? wsNormal : Form->WindowState),
+      SavePixelsPerInch(Form)));
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall RestoreFormSize(UnicodeString Data, TForm * Form)

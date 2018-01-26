@@ -52,7 +52,7 @@ bool __fastcall DoLoginDialog(TStoredSessionList *SessionList, TList * DataList,
   return Result;
 }
 //---------------------------------------------------------------------
-static const TFSProtocol FSOrder[] = { fsSFTPonly, fsSCPonly, fsFTP, fsWebDAV };
+static const TFSProtocol FSOrder[] = { fsSFTPonly, fsSCPonly, fsFTP, fsWebDAV, fsS3 };
 //---------------------------------------------------------------------
 __fastcall TLoginDialog::TLoginDialog(TComponent* AOwner)
         : TForm(AOwner)
@@ -81,6 +81,8 @@ __fastcall TLoginDialog::TLoginDialog(TComponent* AOwner)
 
   FBasicGroupBaseHeight = BasicGroup->Height - BasicSshPanel->Height - BasicFtpPanel->Height;
   FNoteGroupOffset = NoteGroup->Top - (BasicGroup->Top + BasicGroup->Height);
+  FUserNameLabel = UserNameLabel->Caption;
+  FPasswordLabel = PasswordLabel->Caption;
 
   FSiteButtonsPadding = SitesPanel->ClientHeight - ToolsMenuButton->Top - ToolsMenuButton->Height;
   HideComponentsPanel(this);
@@ -200,11 +202,6 @@ void __fastcall TLoginDialog::Init()
   Caption = FormatFormCaption(this, Caption);
 
   InitControls();
-
-  #ifdef NO_FILEZILLA
-  DebugAssert(TransferProtocolCombo->Items->Count == FSPROTOCOL_COUNT - 2 - 1);
-  TransferProtocolCombo->Items->Delete(TransferProtocolCombo->Items->Count - 1);
-  #endif
 
   ReadOnlyControl(ContentsNameEdit);
   ReadOnlyControl(ContentsMemo);
@@ -491,7 +488,6 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * SessionData)
   {
     UserNameEdit->Text = SessionData->UserName;
     PortNumberEdit->AsInteger = SessionData->PortNumber;
-    HostNameEdit->Text = SessionData->HostName;
 
     bool Editable = IsEditable();
     if (Editable)
@@ -514,6 +510,9 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * SessionData)
     bool AllowScpFallback;
     TransferProtocolCombo->ItemIndex = FSProtocolToIndex(SessionData->FSProtocol, AllowScpFallback);
     TransferProtocolView->Text = TransferProtocolCombo->Text;
+
+    // Only after loading TransferProtocolCombo, so that we do not overwrite it with default S3 hostname
+    HostNameEdit->Text = SessionData->HostName;
 
     NoteGroup->Visible = !Trim(SessionData->Note).IsEmpty();
     NoteMemo->Lines->Text = SessionData->Note;
@@ -589,6 +588,7 @@ void __fastcall TLoginDialog::UpdateControls()
     bool SshProtocol = IsSshProtocol(FSProtocol);
     bool FtpProtocol = (FSProtocol == fsFTP);
     bool WebDavProtocol = (FSProtocol == fsWebDAV);
+    bool S3Protocol = (FSProtocol == fsS3);
 
     // session
     FtpsCombo->Visible = Editable && FtpProtocol;
@@ -623,6 +623,8 @@ void __fastcall TLoginDialog::UpdateControls()
     EnableControl(UserNameLabel, UserNameEdit->Enabled);
     ReadOnlyAndEnabledControl(PasswordEdit, !Editable, !NoAuth);
     EnableControl(PasswordLabel, PasswordEdit->Enabled);
+    UserNameLabel->Caption = S3Protocol ? LoadStr(S3_ACCESS_KEY_ID_PROMPT) : FUserNameLabel;
+    PasswordLabel->Caption = S3Protocol ? LoadStr(S3_SECRET_ACCESS_KEY_PROMPT) : FPasswordLabel;
 
     // sites
     if (SitesIncrementalSearchLabel->Visible != !FSitesIncrementalSearch.IsEmpty())
@@ -2030,6 +2032,15 @@ int __fastcall TLoginDialog::DefaultPort()
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::TransferProtocolComboChange(TObject * Sender)
 {
+  if (!NoUpdate)
+  {
+    if (GetFSProtocol(false) == fsS3)
+    {
+      FtpsCombo->ItemIndex = FtpsToIndex(ftpsImplicit);
+      HostNameEdit->Text = S3HostName;
+    }
+  }
+
   int ADefaultPort = DefaultPort();
   if (!NoUpdate && FUpdatePortWithProtocol)
   {
@@ -2098,7 +2109,7 @@ void __fastcall TLoginDialog::SessionTreeCompare(TObject * /*Sender*/,
   }
   else if (Node1IsWorkspace || Node1IsFolder)
   {
-    Compare = CompareLogicalText(Node1->Text, Node2->Text);
+    Compare = CompareLogicalText(Node1->Text, Node2->Text, true);
   }
   else
   {

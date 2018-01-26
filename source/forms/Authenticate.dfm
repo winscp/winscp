@@ -236,10 +236,12 @@ object AuthenticateForm: TAuthenticateForm
       Height = 34
       Anchors = [akLeft, akTop, akRight, akBottom]
       Color = clBtnFace
+      PopupMenu = BannerPopupMenu
       ReadOnly = True
       ScrollBars = ssVertical
       TabOrder = 0
       WantReturns = False
+      OnContextPopup = BannerMemoContextPopup
     end
     object NeverShowAgainCheck: TCheckBox
       Left = 15
@@ -269,6 +271,40 @@ object AuthenticateForm: TAuthenticateForm
       Caption = '&Help'
       TabOrder = 3
       OnClick = HelpButtonClick
+    end
+  end
+  object BannerActionList: TActionList
+    Left = 32
+    Top = 304
+    object EditCopy: TEditCopy
+      Caption = '&Copy'
+      ImageIndex = 0
+      ShortCut = 16451
+    end
+    object EditSelectAll: TEditSelectAll
+      Caption = 'Select &All'
+      ImageIndex = 1
+      ShortCut = 16449
+    end
+    object BannerMonospacedFontAction: TAction
+      Caption = 'Use &Monospaced Font'
+      OnExecute = BannerMonospacedFontActionExecute
+    end
+  end
+  object BannerPopupMenu: TPopupMenu
+    Left = 144
+    Top = 304
+    object CopyItem: TMenuItem
+      Action = EditCopy
+    end
+    object SelectAllItem: TMenuItem
+      Action = EditSelectAll
+    end
+    object N1: TMenuItem
+      Caption = '-'
+    end
+    object AdjustWindowItem: TMenuItem
+      Action = BannerMonospacedFontAction
     end
   end
 end
