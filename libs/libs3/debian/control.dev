@@ -8,7 +8,7 @@ Maintainer: Bryan Ischo <bryan@ischo.com>
 Homepage: https://github.com/bji/libs3
 Description: C Development Library for Amazon S3 Access
  This library provides an API for using Amazon's S3 service (see
- http://s3.amazonaws.com).  Its design goals are:
+ https://s3.amazonaws.com/).  Its design goals are:
  .
   - To provide a simple and straightforward API for accessing all of S3's
     functionality
