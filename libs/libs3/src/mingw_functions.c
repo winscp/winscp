@@ -20,7 +20,7 @@
  *
  * You should have received a copy of the GNU Lesser General Public License
  * version 3 along with libs3, in a file named COPYING.  If not, see
- * <http://www.gnu.org/licenses/>.
+ * <https://www.gnu.org/licenses/>.
  *
  ************************************************************************** **/
 
@@ -125,10 +125,10 @@ int uname(struct utsname *u)
  *
  *   from comp.lang.c  9/14/2007
  *
- *      http://groups.google.com/group/comp.lang.c/msg/2ab1ecbb86646684
+ *      https://groups.google.com/d/msg/comp.lang.c/akY2fEnquSU/hGZkhrvssSoJ
  *
  *     (Declaration that it's public domain):
- *      http://groups.google.com/group/comp.lang.c/msg/7c7b39328fefab9c
+ *      https://groups.google.com/d/msg/comp.lang.c/akY2fEnquSU/hGZkhrvssSoJ
  */
 
 char* strtok_r(

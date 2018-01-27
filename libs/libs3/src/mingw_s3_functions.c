@@ -20,7 +20,7 @@
  *
  * You should have received a copy of the GNU Lesser General Public License
  * version 3 along with libs3, in a file named COPYING.  If not, see
- * <http://www.gnu.org/licenses/>.
+ * <https://www.gnu.org/licenses/>.
  *
  ************************************************************************** **/
 

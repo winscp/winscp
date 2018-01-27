@@ -20,7 +20,7 @@
  *
  * You should have received a copy of the GNU Lesser General Public License
  * version 3 along with libs3, in a file named COPYING.  If not, see
- * <http://www.gnu.org/licenses/>.
+ * <https://www.gnu.org/licenses/>.
  *
  ************************************************************************** **/
 
@@ -49,7 +49,7 @@ extern "C" {
  * --------
  *
  * This library provides an API for using Amazon's S3 service (see
- * http://s3.amazonaws.com).  Its design goals are:
+ * https://s3.amazonaws.com/).  Its design goals are:
  *
  * - To provide a simple and straightforward API for accessing all of S3's
  *   functionality
