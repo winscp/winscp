@@ -1164,7 +1164,12 @@ bool __fastcall TTerminalQueue::TryAddParallelOperation(TQueueItem * Item, bool 
 
   if (Result)
   {
-    AddItem(DebugNotNull(Item->CreateParallelOperation()));
+    TQueueItem * ParallelItem = DebugNotNull(Item->CreateParallelOperation());
+    if (!FEnabled)
+    {
+      FForcedItems->Add(ParallelItem);
+    }
+    AddItem(ParallelItem);
   }
 
   return Result;
