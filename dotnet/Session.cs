@@ -924,6 +924,7 @@ namespace WinSCP
                 using (CreateProgressHandler())
                 {
                     TransferEventArgs transfer = null;
+                    bool mkdir = false;
 
                     while (groupReader.Read(0))
                     {
@@ -941,26 +942,40 @@ namespace WinSCP
                         {
                             AddSynchronizationTransfer(result, transfer);
                             transfer = TransferEventArgs.Read(newSide.Value, groupReader);
+                            mkdir = false;
                         }
                         else if (groupReader.IsNonEmptyElement(RemovalEventArgs.Tag))
                         {
                             result.AddRemoval(RemovalEventArgs.Read(groupReader));
                         }
+                        else if (groupReader.IsNonEmptyElement(TransferEventArgs.MkDirTag))
+                        {
+                            transfer = null;
+                            mkdir = true;
+                            // For now, silently ignoring results (even errors)
+                            // of mkdir operation, including future chmod/touch
+                        }
                         else if (groupReader.IsNonEmptyElement(ChmodEventArgs.Tag))
                         {
-                            if (transfer == null)
+                            if (!mkdir)
                             {
-                                throw Logger.WriteException(new InvalidOperationException("Tag chmod before tag download"));
+                                if (transfer == null)
+                                {
+                                    throw Logger.WriteException(new InvalidOperationException("Tag chmod before tag download"));
+                                }
+                                transfer.Chmod = ChmodEventArgs.Read(groupReader);
                             }
-                            transfer.Chmod = ChmodEventArgs.Read(groupReader);
                         }
                         else if (groupReader.IsNonEmptyElement(TouchEventArgs.Tag))
                         {
-                            if (transfer == null)
+                            if (!mkdir)
                             {
-                                throw Logger.WriteException(new InvalidOperationException("Tag touch before tag download"));
+                                if (transfer == null)
+                                {
+                                    throw Logger.WriteException(new InvalidOperationException("Tag touch before tag download"));
+                                }
+                                transfer.Touch = TouchEventArgs.Read(groupReader);
                             }
-                            transfer.Touch = TouchEventArgs.Read(groupReader);
                         }
                     }
 
