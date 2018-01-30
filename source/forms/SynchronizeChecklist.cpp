@@ -433,6 +433,7 @@ TRect __fastcall TSynchronizeChecklistDialog::GetColumnHeaderRect(int Index)
   TRect R;
   Header_GetItemRect(HeaderHandle, Index, &R);
 
+  // Can be simplified using GetScrollPos
   TScrollInfo ScrollInfo;
   ZeroMemory(&ScrollInfo, sizeof(ScrollInfo));
   ScrollInfo.cbSize = sizeof(ScrollInfo);

@@ -4820,7 +4820,6 @@ void __fastcall TCustomScpExplorerForm::DirViewColumnRightClick(
 {
   DebugAssert(NonVisualDataModule && Column && Sender);
   NonVisualDataModule->ListColumn = Column;
-  TPoint ScreenPoint = ((TControl*)Sender)->ClientToScreen(Point);
   TPopupMenu * DirViewColumnMenu;
   if (Sender == RemoteDirView)
   {
@@ -4838,6 +4837,12 @@ void __fastcall TCustomScpExplorerForm::DirViewColumnRightClick(
     NonVisualDataModule->LocalFormatSizeBytesPopupItem->Visible =
       (Column->Index == dvSize);
   }
+
+  TCustomListView * ListView = DebugNotNull(dynamic_cast<TCustomListView *>(Sender));
+  TPoint ScreenPoint = ListView->ClientToScreen(Point);
+
+  ScreenPoint.x -= GetScrollPos(ListView->Handle, SB_HORZ);
+
   DirViewColumnMenu->Popup(ScreenPoint.x, ScreenPoint.y);
 }
 //---------------------------------------------------------------------------
