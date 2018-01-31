@@ -1272,7 +1272,7 @@ void __fastcall TWebDAVFileSystem::Source(
     // (not really true as we do not support changing file name on overwrite dialog)
     Action.Destination(DestFullName);
 
-    FUploadMimeType = GetFileMimeType(DestFileName);
+    FUploadMimeType = Configuration->GetFileMimeType(DestFileName);
 
     FILE_OPERATION_LOOP_BEGIN
     {
