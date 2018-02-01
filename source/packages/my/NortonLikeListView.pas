@@ -62,7 +62,6 @@ type
     function CanChangeSelection(Item: TListItem; Select: Boolean): Boolean; virtual;
     procedure ClearItems; virtual;
     procedure ItemsReordered;
-    procedure ColRightClick(Column: TListColumn; Point: TPoint); override;
     procedure Delete(Item: TListItem); override;
     function ExCanChange(Item: TListItem; Change: Integer;
       NewState, OldState: Word): Boolean; dynamic;
@@ -289,17 +288,6 @@ begin
     FFirstSelected := -1;
     FLastSelected := -1;
   end;
-end;
-
-procedure TCustomNortonLikeListView.ColRightClick(Column: TListColumn; Point: TPoint);
-var
-  HitInfo: TLVHitTestInfo;
-begin
-  // Fix: Otherwise we get wrong column when view is horizontally scrolled
-  HitInfo.pt := Point;
-  if ListView_SubItemHitTest(Handle, @HitInfo) = 0 then
-    Column := Columns[HitInfo.iSubItem];
-  inherited ColRightClick(Column, Point);
 end;
 
 function TCustomNortonLikeListView.ClosestUnselected(Item: TListItem): TListItem;

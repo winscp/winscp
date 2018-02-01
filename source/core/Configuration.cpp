@@ -12,6 +12,7 @@
 #include "Interface.h"
 #include "CoreMain.h"
 #include "Security.h"
+#include "FileMasks.h"
 #include <shlobj.h>
 #include <System.IOUtils.hpp>
 #include <System.StrUtils.hpp>
@@ -103,6 +104,7 @@ void __fastcall TConfiguration::Default()
   FExternalIpAddress = L"";
   FTryFtpWhenSshFails = true;
   FParallelDurationThreshold = 10;
+  FMimeTypes = UnicodeString();
   CollectUsage = FDefaultCollectUsage;
 
   FLogging = false;
@@ -223,6 +225,7 @@ UnicodeString __fastcall TConfiguration::PropertyToKey(const UnicodeString & Pro
     KEY(String,   ExternalIpAddress); \
     KEY(Bool,     TryFtpWhenSshFails); \
     KEY(Integer,  ParallelDurationThreshold); \
+    KEY(String,   MimeTypes); \
     KEY(Bool,     CollectUsage); \
   ); \
   BLOCK(L"Logging", CANCREATE, \
@@ -1055,6 +1058,36 @@ UnicodeString __fastcall TConfiguration::GetFileInfoString(const UnicodeString K
   return GetFileFileInfoString(Key, L"");
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall TConfiguration::GetFileMimeType(const UnicodeString & FileName)
+{
+  UnicodeString Result;
+  bool Found = false;
+
+  if (!MimeTypes.IsEmpty())
+  {
+    UnicodeString FileNameOnly = ExtractFileName(FileName);
+    UnicodeString AMimeTypes = MimeTypes;
+    while (!Found && !AMimeTypes.IsEmpty())
+    {
+      UnicodeString Token = CutToChar(AMimeTypes, L',', true);
+      UnicodeString MaskStr = CutToChar(Token, L'=', true);
+      TFileMasks Mask(MaskStr);
+      if (Mask.Matches(FileNameOnly))
+      {
+        Result = Token.Trim();
+        Found = true;
+      }
+    }
+  }
+
+  if (!Found) // allow an override to "no" Content-Type
+  {
+    Result = ::GetFileMimeType(FileName);
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall TConfiguration::GetRegistryStorageKey()
 {
   return GetRegistryKey();
@@ -1423,6 +1456,11 @@ UnicodeString __fastcall TConfiguration::GetRandomSeedFileName()
 void __fastcall TConfiguration::SetExternalIpAddress(UnicodeString value)
 {
   SET_CONFIG_PROPERTY(ExternalIpAddress);
+}
+//---------------------------------------------------------------------
+void __fastcall TConfiguration::SetMimeTypes(UnicodeString value)
+{
+  SET_CONFIG_PROPERTY(MimeTypes);
 }
 //---------------------------------------------------------------------
 void __fastcall TConfiguration::SetTryFtpWhenSshFails(bool value)
