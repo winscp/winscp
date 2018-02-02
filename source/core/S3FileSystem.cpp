@@ -1312,6 +1312,11 @@ void __fastcall TS3FileSystem::Source(
   UnicodeString BucketName, Key;
   ParsePath(DestFullName, BucketName, Key);
 
+  if (Key.IsEmpty())
+  {
+    throw Exception(LoadStr(MISSING_TARGET_BUCKET));
+  }
+
   TLibS3BucketContext BucketContext = GetBucketContext(BucketName);
 
   UTF8String ContentType = UTF8String(FTerminal->Configuration->GetFileMimeType(Handle.FileName));
