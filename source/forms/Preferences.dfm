@@ -675,7 +675,7 @@ object PreferencesDialog: TPreferencesDialog
             Width = 357
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = '&Use &natural order numerical sorting'
+            Caption = 'Use &natural order numerical sorting'
             TabOrder = 5
             OnClick = ControlChange
           end
