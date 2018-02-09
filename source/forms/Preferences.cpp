@@ -2518,7 +2518,7 @@ void __fastcall TPreferencesDialog::AddExtension()
         if (WinSCPURL)
         {
           Url = ProgramUrl(Url);
-          // The EncodeUrlString should not be necessary, but as we get the value from regitry, let's be safe
+          // The EncodeUrlString should not be necessary, but as we get the value from registry, let's be safe
           Url = AppendUrlParams(Url, FORMAT(L"netframework=%s", (EncodeUrlString(GetNetVersionStr()))));
           Url = AppendUrlParams(Url, FORMAT(L"powershell=%s", (EncodeUrlString(GetPowerShellVersionStr()))));
           Url = AppendUrlParams(Url, FORMAT(L"windows=%s", (EncodeUrlString(WindowsVersion()))));
