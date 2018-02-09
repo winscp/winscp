@@ -940,6 +940,7 @@ void __fastcall TExternalConsole::Progress(TScriptProgress & Progress)
   CommStruct = GetCommStruct();
   try
   {
+    ProgressEvent = CommStruct->ProgressEvent;
     Progress.Cancel = ProgressEvent.Cancel;
   }
   __finally
