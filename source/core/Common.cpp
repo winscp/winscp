@@ -30,6 +30,7 @@ const char Bom[3] = "\xEF\xBB\xBF";
 const wchar_t TokenPrefix = L'%';
 const wchar_t NoReplacement = wchar_t(false);
 const wchar_t TokenReplacement = wchar_t(true);
+// Note similar list in MakeValidFileName
 const UnicodeString LocalInvalidChars(TraceInitStr(L"/\\:*?\"<>|"));
 const UnicodeString PasswordMask(TraceInitStr(L"***"));
 const UnicodeString Ellipsis(TraceInitStr(L"..."));
@@ -109,8 +110,10 @@ UnicodeString AnsiToString(const char * S, size_t Len)
   return UnicodeString(AnsiString(S, Len));
 }
 //---------------------------------------------------------------------------
+// Note similar function ValidLocalFileName
 UnicodeString MakeValidFileName(UnicodeString FileName)
 {
+  // Note similar list in LocalInvalidChars
   UnicodeString IllegalChars = L":;,=+<>|\"[] \\/?*";
   for (int Index = 0; Index < IllegalChars.Length(); Index++)
   {
@@ -569,6 +572,7 @@ static wchar_t * __fastcall ReplaceChar(
   return InvalidChar;
 }
 //---------------------------------------------------------------------------
+//  Note similar function MakeValidFileName
 UnicodeString __fastcall ValidLocalFileName(UnicodeString FileName)
 {
   return ValidLocalFileName(FileName, L'_', L"", LocalInvalidChars);

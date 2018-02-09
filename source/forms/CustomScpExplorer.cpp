@@ -3058,7 +3058,7 @@ void __fastcall TCustomScpExplorerForm::TemporaryDirectoryForRemoteFiles(
 
   if (WinConfiguration->TemporaryDirectoryAppendSession)
   {
-    Result = IncludeTrailingBackslash(Result + CopyParam.ValidLocalPath(Terminal->SessionData->SessionName));
+    Result = IncludeTrailingBackslash(Result + MakeValidFileName(Terminal->SessionData->SessionName));
   }
 
   if (WinConfiguration->TemporaryDirectoryAppendPath)
