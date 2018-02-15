@@ -889,10 +889,11 @@ void __fastcall TExternalConsole::Progress(TScriptProgress & Progress)
   TConsoleCommStruct * CommStruct = GetCommStruct();
 
   typedef TConsoleCommStruct::TProgressEvent TProgressEvent;
-  TProgressEvent & ProgressEvent = CommStruct->ProgressEvent;
 
   try
   {
+    TProgressEvent & ProgressEvent = CommStruct->ProgressEvent;
+
     CommStruct->Event = TConsoleCommStruct::PROGRESS;
 
     switch (Progress.Operation)
@@ -940,7 +941,7 @@ void __fastcall TExternalConsole::Progress(TScriptProgress & Progress)
   CommStruct = GetCommStruct();
   try
   {
-    ProgressEvent = CommStruct->ProgressEvent;
+    TProgressEvent & ProgressEvent = CommStruct->ProgressEvent;
     Progress.Cancel = ProgressEvent.Cancel;
   }
   __finally
