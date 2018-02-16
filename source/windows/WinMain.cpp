@@ -27,10 +27,11 @@ void __fastcall GetLoginData(UnicodeString SessionName, TOptions * Options,
 {
   bool DefaultsOnly = false;
 
-  if (StoredSessions->IsFolder(SessionName) ||
-      StoredSessions->IsWorkspace(SessionName))
+  UnicodeString FolderOrWorkspaceName = DecodeUrlChars(SessionName);
+  if (StoredSessions->IsFolder(FolderOrWorkspaceName) ||
+      StoredSessions->IsWorkspace(FolderOrWorkspaceName))
   {
-    StoredSessions->GetFolderOrWorkspace(SessionName, DataList);
+    StoredSessions->GetFolderOrWorkspace(FolderOrWorkspaceName, DataList);
   }
   else
   {
