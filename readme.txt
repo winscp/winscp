@@ -19,7 +19,7 @@ Directory structure:
 /source/components  native WinSCP visual components
 /source/console     console interface
 /source/core        core (non-visual) part of WinSCP
-                    (SSH, SFTP, FTP, WebDAV and SCP code)
+                    (SSH, SFTP, FTP, WebDAV, S3 and SCP code)
 /source/dragext     drag&drop shell extension
 /source/filezilla   source code of FileZilla FTP client
 /source/forms       visual part of WinSCP (dialogs and windows)
