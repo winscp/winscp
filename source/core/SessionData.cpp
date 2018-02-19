@@ -512,10 +512,10 @@ bool __fastcall TSessionData::IsSame(const TSessionData * Default, bool Advanced
 bool __fastcall TSessionData::IsSameSite(const TSessionData * Other)
 {
   return
-      (FSProtocol == Other->FSProtocol) &&
-      (HostName == Other->HostName) &&
-      (PortNumber == Other->PortNumber) &&
-      (UserName == Other->UserName);
+    (FSProtocol == Other->FSProtocol) &&
+    (HostName == Other->HostName) &&
+    (PortNumber == Other->PortNumber) &&
+    (UserName == Other->UserName);
 }
 //---------------------------------------------------------------------
 bool __fastcall TSessionData::IsInFolderOrWorkspace(UnicodeString AFolder)
