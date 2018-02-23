@@ -489,7 +489,6 @@
 #define OPENSSL_URL             612
 #define NEON_BASED_ON2          613
 #define NEON_COPYRIGHT          614
-#define NEON_URL                615
 #define EXPAT_BASED_ON          616
 #define EXPAT_URL               618
 #define PUTTY_LICENSE_URL       625

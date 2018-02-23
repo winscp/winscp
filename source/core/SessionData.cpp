@@ -509,13 +509,25 @@ bool __fastcall TSessionData::IsSame(const TSessionData * Default, bool Advanced
   return IsSame(Default, AdvancedOnly, NULL);
 }
 //---------------------------------------------------------------------
+static TFSProtocol NormalizeFSProtocol(TFSProtocol FSProtocol)
+{
+  if ((FSProtocol == fsSCPonly) || (FSProtocol == fsSFTPonly))
+  {
+    FSProtocol = fsSFTP;
+  }
+  return FSProtocol;
+}
+//---------------------------------------------------------------------
 bool __fastcall TSessionData::IsSameSite(const TSessionData * Other)
 {
   return
-      (FSProtocol == Other->FSProtocol) &&
-      (HostName == Other->HostName) &&
-      (PortNumber == Other->PortNumber) &&
-      (UserName == Other->UserName);
+    // Particularly when handling /refresh,
+    // fsSFTPonly sites when compared against sftp:// URLs (fsSFTP) have to match.
+    // But similarly also falled back SCP sites.
+    (NormalizeFSProtocol(FSProtocol) == NormalizeFSProtocol(Other->FSProtocol)) &&
+    (HostName == Other->HostName) &&
+    (PortNumber == Other->PortNumber) &&
+    (UserName == Other->UserName);
 }
 //---------------------------------------------------------------------
 bool __fastcall TSessionData::IsInFolderOrWorkspace(UnicodeString AFolder)

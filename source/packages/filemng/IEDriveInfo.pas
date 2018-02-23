@@ -396,7 +396,7 @@ begin
           else
         begin
           DriveID := GetNetWorkName(Drive);
-          PrettyName := Drive + ': ' + ExtractFileName(DriveID);
+          PrettyName := Format('%s: %s (%s)', [Drive, ExtractFileName(DriveID), ExtractFileDir(DriveID)]);
         end;
       end;
 

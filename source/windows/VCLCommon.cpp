@@ -310,7 +310,11 @@ void __fastcall ReadOnlyAndEnabledControl(TControl * Control, bool ReadOnly, boo
 //---------------------------------------------------------------------------
 static void __fastcall ReadOnlyEditContextPopup(void * /*Data*/, TObject * Sender, const TPoint & MousePos, bool & Handled)
 {
-  MenuPopup(Sender, MousePos, Handled);
+  TEdit * Edit = static_cast<TEdit *>(Sender);
+  if (Edit->ReadOnly)
+  {
+    MenuPopup(Sender, MousePos, Handled);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall ReadOnlyControl(TControl * Control, bool ReadOnly)

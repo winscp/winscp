@@ -80,6 +80,7 @@ namespace WinSCP
         public int DebugLogLevel { get { CheckNotDisposed(); return Logger.LogLevel; } set { CheckNotDisposed(); Logger.LogLevel = value; } }
         public string SessionLogPath { get { return _sessionLogPath; } set { CheckNotOpened(); _sessionLogPath = value; } }
         public string XmlLogPath { get { return _xmlLogPath; } set { CheckNotOpened(); _xmlLogPath = value; } }
+        public bool XmlLogPreserve { get; set; }
         #if DEBUG
         public bool GuardProcessWithJob { get { return GuardProcessWithJobInternal; } set { GuardProcessWithJobInternal = value; } }
         public bool TestHandlesClosed { get { return TestHandlesClosedInternal; } set { TestHandlesClosedInternal = value; } }
@@ -1328,7 +1329,7 @@ namespace WinSCP
                 }
 
                 // Cleanup log file
-                if ((XmlLogPath != null) && File.Exists(XmlLogPath))
+                if ((XmlLogPath != null) && File.Exists(XmlLogPath) && !XmlLogPreserve)
                 {
                     Logger.WriteLine("Deleting XML log file [{0}]", XmlLogPath);
                     try

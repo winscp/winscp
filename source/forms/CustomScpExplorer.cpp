@@ -3058,7 +3058,7 @@ void __fastcall TCustomScpExplorerForm::TemporaryDirectoryForRemoteFiles(
 
   if (WinConfiguration->TemporaryDirectoryAppendSession)
   {
-    Result = IncludeTrailingBackslash(Result + CopyParam.ValidLocalPath(Terminal->SessionData->SessionName));
+    Result = IncludeTrailingBackslash(Result + MakeValidFileName(Terminal->SessionData->SessionName));
   }
 
   if (WinConfiguration->TemporaryDirectoryAppendPath)
@@ -4860,6 +4860,7 @@ void __fastcall TCustomScpExplorerForm::DoDirViewExecFile(TObject * Sender,
   TCustomDirView * ADirView = (TCustomDirView *)Sender;
   bool Remote = (ADirView == DirView(osRemote));
   bool ResolvedSymlinks = !Remote || Terminal->ResolvingSymlinks;
+  TOperationSide Side = (Remote ? osRemote : osLocal);
 
   // Anything special is done on double click only (not on "open" indicated by FForceExecution),
   // on files only (not directories)
@@ -4877,9 +4878,8 @@ void __fastcall TCustomScpExplorerForm::DoDirViewExecFile(TObject * Sender,
         UnlockWindow();
         try
         {
-          ExecuteFileOperation(foCopy,
-            (ADirView == DirView(osRemote) ? osRemote : osLocal),
-            true, !WinConfiguration->CopyOnDoubleClickConfirmation);
+          ExecuteFileOperation(
+            foCopy, Side, true, !WinConfiguration->CopyOnDoubleClickConfirmation);
         }
         __finally
         {
@@ -4891,7 +4891,7 @@ void __fastcall TCustomScpExplorerForm::DoDirViewExecFile(TObject * Sender,
       {
         if (!Remote || !WinConfiguration->DisableOpenEdit)
         {
-          ExecuteFile(osCurrent, efDefaultEditor);
+          ExecuteFile(Side, efDefaultEditor);
           AllowExec = false;
         }
       }
