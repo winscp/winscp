@@ -492,6 +492,7 @@ protected:
   void __fastcall ConfigureCommand();
   void __fastcall CustomIniFileStorageChanged();
   UnicodeString __fastcall GetCustomIniFileStorageName();
+  TShortCuts __fastcall GetShortCuts();
 };
 //----------------------------------------------------------------------------
 #endif

@@ -967,6 +967,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Integer,  LastMachineInstallations); \
     KEYEX(String, FExtensionsDeleted, L"ExtensionsDeleted"); \
     KEYEX(String, FExtensionsOrder, L"ExtensionsOrder"); \
+    KEYEX(String, FExtensionsShortCuts, L"ExtensionsShortCuts"); \
   ); \
   BLOCK(L"Interface\\Editor", CANCREATE, \
     KEYEX(String,   Editor.Font.FontName, L"FontName2"); \
@@ -1393,6 +1394,20 @@ void __fastcall TWinConfiguration::LoadExtensionList()
   std::unique_ptr<TStringList> OrderedExtensions(new TStringList());
   ParseExtensionList(OrderedExtensions.get(), FExtensionsOrder);
   FExtensionList->SortBy(OrderedExtensions.get());
+
+  UnicodeString ShortCuts = FExtensionsShortCuts;
+  while (!ShortCuts.IsEmpty())
+  {
+    UnicodeString S = CutToChar(ShortCuts, L'|', false);
+    TShortCut ShortCut = static_cast<TShortCut>(StrToInt(CutToChar(S, L'=', false)));
+    for (int Index = 0; Index < FExtensionList->Count; Index++)
+    {
+      if (FExtensionList->Commands[Index]->Id == S)
+      {
+        const_cast<TCustomCommandType *>(FExtensionList->Commands[Index])->ShortCut = ShortCut;
+      }
+    }
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::LoadData(THierarchicalStorage * Storage)
@@ -1408,7 +1423,7 @@ void __fastcall TWinConfiguration::LoadData(THierarchicalStorage * Storage)
 
   // Load after Locale
   LoadExtensionTranslations();
-  // Load after the ExtensionsDeleted and ExtensionsOrder
+  // Load after the ExtensionsDeleted,  ExtensionsOrder and ExtensionsShortCuts
   LoadExtensionList();
 
   // to reflect changes to PanelFont
@@ -2238,6 +2253,16 @@ void __fastcall TWinConfiguration::SetExtensionList(TCustomCommandList * value)
       AddToList(FExtensionsDeleted, DeletedExtensions->Strings[Index], L"|");
     }
 
+    FExtensionsShortCuts = L"";
+    for (int Index = 0; Index < value->Count; Index++)
+    {
+      const TCustomCommandType * Extension = value->Commands[Index];
+      if (Extension->HasCustomShortCut())
+      {
+        AddToList(FExtensionsShortCuts, FORMAT(L"%d=%s", (Extension->ShortCut, Extension->Id)), L"|");
+      }
+    }
+
     Changed();
   }
 }
@@ -2690,7 +2715,7 @@ void __fastcall TWinConfiguration::StoreFont(
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 __fastcall TCustomCommandType::TCustomCommandType() :
-  FParams(0), FShortCut(0)
+  FParams(0), FShortCut(0), FShortCutOriginal(0)
 {
 }
 //---------------------------------------------------------------------------
@@ -2699,6 +2724,7 @@ __fastcall TCustomCommandType::TCustomCommandType(const TCustomCommandType & Oth
   FCommand(Other.FCommand),
   FParams(Other.FParams),
   FShortCut(Other.FShortCut),
+  FShortCutOriginal(Other.FShortCutOriginal),
   FId(Other.FId),
   FFileName(Other.FFileName),
   FDescription(Other.FDescription),
@@ -2714,6 +2740,7 @@ TCustomCommandType & TCustomCommandType::operator=(const TCustomCommandType & Ot
   FCommand = Other.FCommand;
   FParams = Other.FParams;
   FShortCut = Other.FShortCut;
+  FShortCutOriginal = Other.FShortCutOriginal;
   FId = Other.FId;
   FFileName = Other.FFileName;
   FDescription = Other.FDescription;
@@ -2730,6 +2757,7 @@ bool __fastcall TCustomCommandType::Equals(const TCustomCommandType * Other) con
     (FCommand == Other->FCommand) &&
     (FParams == Other->FParams) &&
     (FShortCut == Other->FShortCut) &&
+    (FShortCutOriginal == Other->FShortCutOriginal) &&
     (FId == Other->FId) &&
     (FFileName == Other->FFileName) &&
     (FDescription == Other->FDescription) &&
@@ -2925,6 +2953,7 @@ void __fastcall TCustomCommandType::LoadExtension(TStrings * Lines, const Unicod
           if (IsCustomShortCut(AShortCut))
           {
             ShortCut = AShortCut;
+            FShortCutOriginal = AShortCut;
           }
           else
           {
@@ -3245,6 +3274,11 @@ UnicodeString __fastcall TCustomCommandType::GetOptionCommand(const TOption & Op
   }
 
   return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TCustomCommandType::HasCustomShortCut() const
+{
+  return (ShortCut != FShortCutOriginal);
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

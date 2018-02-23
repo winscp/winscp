@@ -135,8 +135,8 @@ class TShortCuts;
 bool __fastcall DoShortCutDialog(TShortCut & ShortCut,
   const TShortCuts & ShortCuts, UnicodeString HelpKeyword);
 bool __fastcall DoCustomCommandOptionsDialog(
-  const TCustomCommandType * Command, TStrings * CustomCommandOptions, unsigned int Flags,
-  TCustomCommand * CustomCommandForOptions, const UnicodeString & Site);
+  const TCustomCommandType * Command, TStrings * CustomCommandOptions, TShortCut * ShortCut, unsigned int Flags,
+  TCustomCommand * CustomCommandForOptions, const UnicodeString & Site, const TShortCuts * ShortCuts);
 void __fastcall DoUsageStatisticsDialog();
 
 // windows\UserInterface.cpp

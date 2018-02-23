@@ -595,6 +595,8 @@
 #define IMPORT_KNOWNHOSTS_INFO_TIP 1986
 #define EDIT_COPY               1987
 #define EDIT_SELECT_ALL         1988
+#define EXTENSION_SHORTCUT      1989
+#define EXTENSION_GENERAL_GROUP 1999
 
 // 2xxx is reserved for TextsFileZilla.h
 

@@ -1179,7 +1179,7 @@ void __fastcall TPreferencesDialog::UpdateControls()
     bool ExtensionSelected = CommandSelected && (CommandList == FExtensionList);
     EnableControl(EditCommandButton, CustomCommandSelected);
     EditCommandButton->Visible = !ExtensionSelected;
-    EnableControl(ConfigureCommandButton, ExtensionSelected && CommandList->Commands[CommandIndex]->AnyOptionWithFlag(TCustomCommandType::ofConfig));
+    EnableControl(ConfigureCommandButton, ExtensionSelected);
     ConfigureCommandButton->Visible = ExtensionSelected;
     EnableControl(RemoveCommandButton, CommandSelected);
     EnableControl(UpCommandButton, CommandSelected && (CommandIndex > 0));
@@ -1511,6 +1511,18 @@ static int __fastcall AddCommandToList(TCustomCommandList * List, int Index, TCu
   return Index;
 }
 //---------------------------------------------------------------------------
+TShortCuts __fastcall TPreferencesDialog::GetShortCuts()
+{
+  TShortCuts ShortCuts;
+  if (WinConfiguration->SharedBookmarks != NULL)
+  {
+    WinConfiguration->SharedBookmarks->ShortCuts(ShortCuts);
+  }
+  FCustomCommandList->ShortCuts(ShortCuts);
+  FExtensionList->ShortCuts(ShortCuts);
+  return ShortCuts;
+}
+//---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::AddEditCommand(bool Edit)
 {
   TCustomCommandType Command;
@@ -1523,13 +1535,7 @@ void __fastcall TPreferencesDialog::AddEditCommand(bool Edit)
     Command = *FCustomCommandList->Commands[GetCommandIndex(Index)];
   }
 
-  TShortCuts ShortCuts;
-  if (WinConfiguration->SharedBookmarks != NULL)
-  {
-    WinConfiguration->SharedBookmarks->ShortCuts(ShortCuts);
-  }
-  FCustomCommandList->ShortCuts(ShortCuts);
-  FExtensionList->ShortCuts(ShortCuts);
+  TShortCuts ShortCuts = GetShortCuts();
 
   if (DoCustomCommandDialog(Command, FCustomCommandList,
         (Edit ? ccmEdit : ccmAdd), 0, NULL, &ShortCuts))
@@ -2772,7 +2778,9 @@ void __fastcall TPreferencesDialog::ConfigureCommandButtonClick(TObject * /*Send
 void __fastcall TPreferencesDialog::ConfigureCommand()
 {
   int Index = CustomCommandsView->ItemIndex;
-  const TCustomCommandType * Command = GetCommandList(Index)->Commands[GetCommandIndex(Index)];
+  TCustomCommandList * CommandList = GetCommandList(Index);
+  int CommandIndex = GetCommandIndex(Index);
+  const TCustomCommandType * Command = CommandList->Commands[CommandIndex];
 
   UnicodeString Site = GetSessionKey();
   if (Command->AnyOptionWithFlag(TCustomCommandType::ofSite) &&
@@ -2780,8 +2788,17 @@ void __fastcall TPreferencesDialog::ConfigureCommand()
   {
     throw Exception(LoadStr(NO_SITE_FOR_COMMAND));
   }
-  DoCustomCommandOptionsDialog(Command, FCustomCommandOptions.get(), TCustomCommandType::ofConfig, NULL, GetSessionKey());
-  UpdateCustomCommandsView();
+  TShortCut ShortCut = Command->ShortCut;
+  TShortCuts ShortCuts = GetShortCuts();
+  if (DoCustomCommandOptionsDialog(
+        Command, FCustomCommandOptions.get(), &ShortCut, TCustomCommandType::ofConfig, NULL, GetSessionKey(), &ShortCuts))
+  {
+    TCustomCommandType * UpdatedCommand = new TCustomCommandType(*Command);
+    UpdatedCommand->ShortCut = ShortCut;
+    CommandList->Change(CommandIndex, UpdatedCommand);
+
+    UpdateCustomCommandsView();
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::LanguagesViewCustomDrawItem(

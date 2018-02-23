@@ -598,6 +598,8 @@ BEGIN
         IMPORT_KNOWNHOSTS_INFO_TIP, "Host: %s\nHost key: %s"
         EDIT_COPY, "&Copy"
         EDIT_SELECT_ALL, "Select &All"
+        EXTENSION_SHORTCUT, "&Keyboard shortcut:"
+        EXTENSION_GENERAL_GROUP, "General"
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
         WINSCP_COPYRIGHT, "Copyright © 2000-2018 Martin Prikryl"

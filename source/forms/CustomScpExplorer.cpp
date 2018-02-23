@@ -2149,7 +2149,7 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
     }
 
     if (!DoCustomCommandOptionsDialog(
-           &ACommand, CustomCommandOptions.get(), TCustomCommandType::ofRun, CustomCommandForOptions.get(), Site))
+           &ACommand, CustomCommandOptions.get(), NULL, TCustomCommandType::ofRun, CustomCommandForOptions.get(), Site, NULL))
     {
       Abort();
     }

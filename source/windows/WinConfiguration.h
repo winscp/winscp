@@ -366,6 +366,7 @@ private:
   TCustomCommandList * FExtensionList;
   UnicodeString FExtensionsDeleted;
   UnicodeString FExtensionsOrder;
+  UnicodeString FExtensionsShortCuts;
   bool FCustomCommandsDefaults;
   TEditorConfiguration FEditor;
   TQueueViewConfiguration FQueueView;
@@ -770,6 +771,7 @@ public:
   UnicodeString __fastcall GetOptionKey(const TOption & Option, const UnicodeString & Site) const;
   UnicodeString __fastcall GetCommandWithExpandedOptions(
     TStrings * CustomCommandOptions, const UnicodeString & Site) const;
+  bool __fastcall HasCustomShortCut() const;
 
 protected:
   bool __fastcall ParseOption(const UnicodeString & Value, TOption & Option, const UnicodeString & ExtensionBaseName);
@@ -781,6 +783,7 @@ private:
   UnicodeString FCommand;
   int FParams;
   TShortCut FShortCut;
+  TShortCut FShortCutOriginal;
   UnicodeString FId;
   UnicodeString FFileName;
   UnicodeString FDescription;
