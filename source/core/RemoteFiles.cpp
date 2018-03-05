@@ -2162,7 +2162,7 @@ void __fastcall TRights::SetText(const UnicodeString & value)
     bool KeepText = false;
     for (int i = TextLen; i >= 1; i--)
     {
-      if (value[i] == UnsetSymbol)
+      if ((value[i] == UnsetSymbol) || (value[i] == UnsetSymbolWin))
       {
         FUnset |= static_cast<unsigned short>(Flag | ExtendedFlag);
       }

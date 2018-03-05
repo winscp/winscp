@@ -315,6 +315,9 @@ public:
   static const int TextLen = 9;
   static const wchar_t UndefSymbol = L'$';
   static const wchar_t UnsetSymbol = L'-';
+  // Used by Win32-OpenSSH for permissions that are not applicable on Windows.
+  // See strmode() in contrib\win32\win32compat\misc.c
+  static const wchar_t UnsetSymbolWin = L'*';
   static const wchar_t BasicSymbols[];
   static const wchar_t CombinedSymbols[];
   static const wchar_t ExtendedSymbols[];
