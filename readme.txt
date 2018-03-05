@@ -31,6 +31,7 @@ Directory structure:
                     (see /deployment/readme)
 /dotnet             source code of WinSCP .NET assembly
 /libs               3rd party libraries
+/translations       translations of WinSCP strings
 
 WinSCP homepage is https://winscp.net/
 
