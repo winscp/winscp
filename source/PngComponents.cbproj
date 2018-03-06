@@ -64,12 +64,12 @@
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Base_Win32)'!=''">
 		<DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
-		<PackageImports>vcldbx;vclib;inetdbbde;tbxp;ibxpress;vclimg;vclactnband;vcldb;vcldsnap;bindcompvcl;vclie;vcltouch;bcbsmp;websnap;vclribbon;Moje;vcl;DriveDir;CloudService;CodeSiteExpressPkg;dsnapcon;vclx;webdsnap;tb2k;bdertl;DragDropP;bcbie;adortl;$(PackageImports)</PackageImports>
+		<PackageImports>vcldbx;vclib;inetdbbde;tbxp;ibxpress;vclimg;vclactnband;vcldb;vcldsnap;bindcompvcl;vclie;vcltouch;bcbsmp;websnap;vclribbon;My;vcl;DriveDir;CloudService;CodeSiteExpressPkg;dsnapcon;vclx;webdsnap;tb2k;bdertl;DragDropP;bcbie;adortl;$(PackageImports)</PackageImports>
 		<VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
 		<VerInfo_Keys>CompanyName=;FileDescription=Png Components Runtime;FileVersion=1.2.0.0;InternalName=PngComponents;LegalCopyright=;LegalTrademarks=;OriginalFilename=PngComponents;ProductName=Png Components;ProductVersion=1.0;Comments=</VerInfo_Keys>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Base_Win64)'!=''">
-		<PackageImports>vcldbx;vclib;inetdbbde;tbxp;ibxpress;vclimg;vclactnband;vcldb;vcldsnap;bindcompvcl;vclie;vcltouch;bcbsmp;websnap;vclribbon;Moje;vcl;DriveDir;CloudService;CodeSiteExpressPkg;dsnapcon;vclx;webdsnap;tb2k;bdertl;DragDropP;bcbie;adortl;$(PackageImports)</PackageImports>
+		<PackageImports>vcldbx;vclib;inetdbbde;tbxp;ibxpress;vclimg;vclactnband;vcldb;vcldsnap;bindcompvcl;vclie;vcltouch;bcbsmp;websnap;vclribbon;My;vcl;DriveDir;CloudService;CodeSiteExpressPkg;dsnapcon;vclx;webdsnap;tb2k;bdertl;DragDropP;bcbie;adortl;$(PackageImports)</PackageImports>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Cfg_1)'!=''">
 		<BCC_DebugLineNumbers>true</BCC_DebugLineNumbers>

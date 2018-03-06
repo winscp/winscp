@@ -109,7 +109,7 @@
 		<PackageImport Include="DriveDir.bpi">
 			<BuildOrder>9</BuildOrder>
 		</PackageImport>
-		<PackageImport Include="Moje.bpi">
+		<PackageImport Include="My.bpi">
 			<BuildOrder>10</BuildOrder>
 		</PackageImport>
 		<PackageImport Include="rtl.bpi">

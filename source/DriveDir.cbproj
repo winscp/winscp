@@ -176,7 +176,7 @@
 		<PackageImport Include="DragDropP.bpi">
 			<BuildOrder>25</BuildOrder>
 		</PackageImport>
-		<PackageImport Include="Moje.bpi">
+		<PackageImport Include="My.bpi">
 			<BuildOrder>24</BuildOrder>
 		</PackageImport>
 		<PackageImport Include="rtl.bpi">

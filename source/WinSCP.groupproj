@@ -3,7 +3,7 @@
 			<ProjectGuid>{0211076C-4E8D-456E-8C3C-088ECD83BA67}</ProjectGuid>
 		</PropertyGroup>
 		<ItemGroup>
-			<Projects Include="Moje.cbproj">
+			<Projects Include="My.cbproj">
 				<Dependencies/>
 			</Projects>
 			<Projects Include="DragDropP.cbproj">
@@ -59,14 +59,14 @@
 				<Default.Personality/>
 			</BorlandProject>
 		</ProjectExtensions>
-		<Target Name="Moje">
-			<MSBuild Projects="Moje.cbproj"/>
+		<Target Name="My">
+			<MSBuild Projects="My.cbproj"/>
 		</Target>
-		<Target Name="Moje:Clean">
-			<MSBuild Projects="Moje.cbproj" Targets="Clean"/>
+		<Target Name="My:Clean">
+			<MSBuild Projects="My.cbproj" Targets="Clean"/>
 		</Target>
-		<Target Name="Moje:Make">
-			<MSBuild Projects="Moje.cbproj" Targets="Make"/>
+		<Target Name="My:Make">
+			<MSBuild Projects="My.cbproj" Targets="Make"/>
 		</Target>
 		<Target Name="DragDropP">
 			<MSBuild Projects="DragDropP.cbproj"/>
@@ -204,13 +204,13 @@
 			<MSBuild Projects="DragExt.cbproj" Targets="Make"/>
 		</Target>
 		<Target Name="Build">
-			<CallTarget Targets="Moje;DragDropP;DriveDir;tb2k;tbxp;Jcl;PngComponents;Putty;FileZilla;ScpCore;RScpComp;ScpForms;ScpResources;WinSCP;Console;DragExt"/>
+			<CallTarget Targets="My;DragDropP;DriveDir;tb2k;tbxp;Jcl;PngComponents;Putty;FileZilla;ScpCore;RScpComp;ScpForms;ScpResources;WinSCP;Console;DragExt"/>
 		</Target>
 		<Target Name="Clean">
-			<CallTarget Targets="Moje:Clean;DragDropP:Clean;DriveDir:Clean;tb2k:Clean;tbxp:Clean;Jcl:Clean;PngComponents:Clean;Putty:Clean;FileZilla:Clean;ScpCore:Clean;RScpComp:Clean;ScpForms:Clean;ScpResources:Clean;WinSCP:Clean;Console:Clean;DragExt:Clean"/>
+			<CallTarget Targets="My:Clean;DragDropP:Clean;DriveDir:Clean;tb2k:Clean;tbxp:Clean;Jcl:Clean;PngComponents:Clean;Putty:Clean;FileZilla:Clean;ScpCore:Clean;RScpComp:Clean;ScpForms:Clean;ScpResources:Clean;WinSCP:Clean;Console:Clean;DragExt:Clean"/>
 		</Target>
 		<Target Name="Make">
-			<CallTarget Targets="Moje:Make;DragDropP:Make;DriveDir:Make;tb2k:Make;tbxp:Make;Jcl:Make;PngComponents:Make;Putty:Make;FileZilla:Make;ScpCore:Make;RScpComp:Make;ScpForms:Make;ScpResources:Make;WinSCP:Make;Console:Make;DragExt:Make"/>
+			<CallTarget Targets="My:Make;DragDropP:Make;DriveDir:Make;tb2k:Make;tbxp:Make;Jcl:Make;PngComponents:Make;Putty:Make;FileZilla:Make;ScpCore:Make;RScpComp:Make;ScpForms:Make;ScpResources:Make;WinSCP:Make;Console:Make;DragExt:Make"/>
 		</Target>
 		<Import Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')" Project="$(BDS)\Bin\CodeGear.Group.Targets"/>
 	</Project>
