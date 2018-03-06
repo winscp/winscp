@@ -492,7 +492,10 @@ void __fastcall TScpCommanderForm::TerminalChanged()
         catch(Exception & E)
         {
           DocumentsDir = true;
-          Terminal->ShowExtendedException(&E);
+          if (!Terminal->SessionData->UpdateDirectories)
+          {
+            Terminal->ShowExtendedException(&E);
+          }
         }
       }
 

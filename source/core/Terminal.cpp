@@ -3203,7 +3203,27 @@ void __fastcall TTerminal::DoStartup()
 
     if (!SessionData->RemoteDirectory.IsEmpty())
     {
-      ChangeDirectory(SessionData->RemoteDirectory);
+      if (SessionData->UpdateDirectories)
+      {
+        ExceptionOnFail = true;
+        try
+        {
+          ChangeDirectory(SessionData->RemoteDirectory);
+        }
+        catch (...)
+        {
+          if (!Active)
+          {
+            LogEvent(L"Configured initial remote directory cannot be opened, staying in the home directory.");
+            throw;
+          }
+        }
+        ExceptionOnFail = false;
+      }
+      else
+      {
+        ChangeDirectory(SessionData->RemoteDirectory);
+      }
     }
   }
   __finally
