@@ -642,6 +642,7 @@ void __fastcall TWinConfiguration::Default()
        "Transfer_Visible=1,Transfer_DockedTo=TopDock,Transfer_LastDock=TopDock,Transfer_DockRow=4,Transfer_DockPos=194,Transfer_FloatLeft=0,Transfer_FloatTop=0,Transfer_FloatRightX=0,"
        "CustomCommands_Visible=0,CustomCommands_DockedTo=TopDock,CustomCommands_LastDock=TopDock,CustomCommands_DockRow=7,CustomCommands_DockPos=0,CustomCommands_FloatLeft=0,CustomCommands_FloatTop=0,CustomCommands_FloatRightX=0,") +
     PixelsPerInchToolbarValue;
+  FScpExplorer.ToolbarsButtons = UnicodeString();
   FScpExplorer.SessionsTabs = true;
   FScpExplorer.StatusBar = true;
   FScpExplorer.LastLocalTargetDirectory = GetPersonalFolder();
@@ -686,6 +687,7 @@ void __fastcall TWinConfiguration::Default()
        "Toolbar2_Visible=0,Toolbar2_DockedTo=BottomDock,Toolbar2_LastDock=BottomDock,Toolbar2_DockRow=1,Toolbar2_DockPos=0,Toolbar2_FloatLeft=0,Toolbar2_FloatTop=0,Toolbar2_FloatRightX=1,"
        "CommandLine_Visible=0,CommandLine_DockedTo=BottomDock,CommandLine_LastDock=BottomDock,CommandLine_DockRow=0,CommandLine_DockPos=0,CommandLine_FloatLeft=0,CommandLine_FloatTop=0,CommandLine_FloatRightX=0,") +
     PixelsPerInchToolbarValue;
+  FScpCommander.ToolbarsButtons = UnicodeString();
   FScpCommander.CurrentPanel = osLocal;
   FScpCommander.CompareByTime = true;
   FScpCommander.CompareBySize = false;
@@ -1039,6 +1041,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
   ); \
   BLOCK(L"Interface\\Explorer", CANCREATE, \
     KEY(String,  ScpExplorer.ToolbarsLayout); \
+    KEY(String,  ScpExplorer.ToolbarsButtons); \
     KEY(String,  ScpExplorer.DirViewParams); \
     KEY(String,  ScpExplorer.LastLocalTargetDirectory); \
     KEY(Bool,    ScpExplorer.SessionsTabs); \
@@ -1052,6 +1055,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
   ); \
   BLOCK(L"Interface\\Commander", CANCREATE, \
     KEY(String,  ScpCommander.ToolbarsLayout); \
+    KEY(String,  ScpCommander.ToolbarsButtons); \
     KEY(Integer, ScpCommander.CurrentPanel); \
     KEY(Float,   ScpCommander.LocalPanelWidth); \
     KEY(Bool,    ScpCommander.SwappedPanels); \

@@ -16,6 +16,7 @@ struct TScpExplorerConfiguration {
   UnicodeString WindowParams;
   UnicodeString DirViewParams;
   UnicodeString ToolbarsLayout;
+  UnicodeString ToolbarsButtons;
   bool SessionsTabs;
   bool StatusBar;
   UnicodeString LastLocalTargetDirectory;
@@ -25,7 +26,7 @@ struct TScpExplorerConfiguration {
   int DriveViewWidth;
   int DriveViewWidthPixelsPerInch;
   bool __fastcall operator !=(TScpExplorerConfiguration & rhc)
-    { return C(WindowParams) C(DirViewParams) C(ToolbarsLayout)
+    { return C(WindowParams) C(DirViewParams) C(ToolbarsLayout) C(ToolbarsButtons)
         C(SessionsTabs) C(StatusBar)
         C(LastLocalTargetDirectory) C(ViewStyle) C(ShowFullAddress)
         C(DriveView) C(DriveViewWidth) C(DriveViewWidthPixelsPerInch) 0; };
@@ -49,6 +50,7 @@ struct TScpCommanderConfiguration {
   UnicodeString WindowParams;
   double LocalPanelWidth;
   UnicodeString ToolbarsLayout;
+  UnicodeString ToolbarsButtons;
   bool SessionsTabs;
   bool StatusBar;
   TOperationSide CurrentPanel;
@@ -63,7 +65,7 @@ struct TScpCommanderConfiguration {
   bool ExplorerKeyboardShortcuts;
   bool SystemContextMenu;
   bool __fastcall operator !=(TScpCommanderConfiguration & rhc)
-    { return C(WindowParams) C(LocalPanelWidth) C(ToolbarsLayout)
+    { return C(WindowParams) C(LocalPanelWidth) C(ToolbarsLayout) C(ToolbarsButtons)
       C(SessionsTabs) C(StatusBar)
       C(LocalPanel) C(RemotePanel) C(CurrentPanel)
       C(NortonLikeMode) C(PreserveLocalDirectory)

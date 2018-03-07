@@ -95,7 +95,7 @@ void __fastcall TScpExplorerForm::RestoreParams()
     RemoteDirView->HandleNeeded();
   }
 
-  LoadToolbarsLayoutStr(WinConfiguration->ScpExplorer.ToolbarsLayout);
+  LoadToolbarsLayoutStr(WinConfiguration->ScpExplorer.ToolbarsLayout, WinConfiguration->ScpExplorer.ToolbarsButtons);
   SessionsPageControl->Visible = WinConfiguration->ScpExplorer.SessionsTabs;
   RemoteStatusBar->Visible = WinConfiguration->ScpExplorer.StatusBar;
   RemoteDriveView->Visible = WinConfiguration->ScpExplorer.DriveView;
@@ -112,6 +112,7 @@ void __fastcall TScpExplorerForm::StoreParams()
   try
   {
     WinConfiguration->ScpExplorer.ToolbarsLayout = GetToolbarsLayoutStr();
+    WinConfiguration->ScpExplorer.ToolbarsButtons = GetToolbarsButtonsStr();
     WinConfiguration->ScpExplorer.SessionsTabs = SessionsPageControl->Visible;
     WinConfiguration->ScpExplorer.StatusBar = RemoteStatusBar->Visible;
 

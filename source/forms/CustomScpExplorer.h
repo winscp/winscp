@@ -341,7 +341,6 @@ protected:
   bool __fastcall RemoteTransferFiles(TStrings * FileList, bool NoConfirmation,
     bool Move, TTerminal * Session);
   virtual void __fastcall DoDirViewExecFile(TObject * Sender, TListItem * Item, bool & AllowExec);
-  virtual TControl * __fastcall GetComponent(Byte Component);
   bool __fastcall GetComponentVisible(Byte Component);
   virtual Boolean __fastcall GetHasDirView(TOperationSide Side);
   DYNAMIC void __fastcall KeyDown(Word & Key, Classes::TShiftState Shift);
@@ -498,8 +497,10 @@ protected:
   inline bool __fastcall CustomCommandRemoteAllowed();
   void __fastcall CustomCommandMenu(
     TAction * Action, TStrings * LocalFileList, TStrings * RemoteFileList);
-  void __fastcall LoadToolbarsLayoutStr(UnicodeString LayoutStr);
+  void __fastcall LoadToolbarsLayoutStr(UnicodeString LayoutStr, UnicodeString ButtonsStr);
+  UnicodeString __fastcall GetToolbarItemName(TTBCustomItem * Item);
   UnicodeString __fastcall GetToolbarsLayoutStr();
+  UnicodeString __fastcall GetToolbarsButtonsStr();
   virtual void __fastcall Dispatch(void * Message);
   void __fastcall PostComponentHide(Byte Component);
   void __fastcall GetSpaceAvailable(const UnicodeString Path,
@@ -618,6 +619,7 @@ public:
   void __fastcall UnlockWindow();
   void __fastcall SuspendWindowLock();
   void __fastcall ResumeWindowLock();
+  virtual TControl * __fastcall GetComponent(Byte Component);
 
   void __fastcall NewSession(bool FromSite, const UnicodeString & SessionUrl = L"");
   void __fastcall DuplicateSession();

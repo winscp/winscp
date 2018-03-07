@@ -2233,20 +2233,30 @@ object NonVisualDataModule: TNonVisualDataModule
     object Address2: TTBXItem
       Action = ExplorerAddressBandAction
     end
-    object StandardButtons1: TTBXItem
+    object StandardButtons1: TTBXSubmenuItem
       Action = ExplorerToolbarBandAction
+      DropdownCombo = True
+      OnPopup = ToolbarComponentPopup
     end
-    object SelectionButtons1: TTBXItem
+    object SelectionButtons1: TTBXSubmenuItem
       Action = ExplorerSelectionBandAction
+      DropdownCombo = True
+      OnPopup = ToolbarComponentPopup
     end
-    object SessionButtons2: TTBXItem
+    object SessionButtons2: TTBXSubmenuItem
       Action = ExplorerSessionBandAction
+      DropdownCombo = True
+      OnPopup = ToolbarComponentPopup
     end
-    object PreferencesButtons1: TTBXItem
+    object PreferencesButtons1: TTBXSubmenuItem
       Action = ExplorerPreferencesBandAction
+      DropdownCombo = True
+      OnPopup = ToolbarComponentPopup
     end
-    object SortButtons3: TTBXItem
+    object SortButtons3: TTBXSubmenuItem
       Action = ExplorerSortBandAction
+      DropdownCombo = True
+      OnPopup = ToolbarComponentPopup
     end
     object TBXItem3: TTBXItem
       Action = ExplorerUpdatesBandAction
@@ -2316,17 +2326,25 @@ object NonVisualDataModule: TNonVisualDataModule
     Options = [tboShowHint]
     Left = 424
     Top = 264
-    object CommandsButtons2: TTBXItem
+    object CommandsButtons2: TTBXSubmenuItem
       Action = CommanderCommandsBandAction
+      DropdownCombo = True
+      OnPopup = ToolbarComponentPopup
     end
-    object SessionButtons5: TTBXItem
+    object SessionButtons5: TTBXSubmenuItem
       Action = CommanderSessionBandAction
+      DropdownCombo = True
+      OnPopup = ToolbarComponentPopup
     end
-    object PreferencesButtons4: TTBXItem
+    object PreferencesButtons4: TTBXSubmenuItem
       Action = CommanderPreferencesBandAction
+      DropdownCombo = True
+      OnPopup = ToolbarComponentPopup
     end
-    object SortButtons2: TTBXItem
+    object SortButtons2: TTBXSubmenuItem
       Action = CommanderSortBandAction
+      DropdownCombo = True
+      OnPopup = ToolbarComponentPopup
     end
     object TBXItem2: TTBXItem
       Action = CommanderUpdatesBandAction
@@ -2363,17 +2381,25 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = '&Local Panel'
       HelpKeyword = 'ui_file_panel'
       Hint = 'Change local panel layout'
-      object HistoryButtons3: TTBXItem
+      object HistoryButtons3: TTBXSubmenuItem
         Action = CommanderLocalHistoryBandAction
+        DropdownCombo = True
+        OnPopup = ToolbarComponentPopup
       end
-      object NavigationButtons3: TTBXItem
+      object NavigationButtons3: TTBXSubmenuItem
         Action = CommanderLocalNavigationBandAction
+        DropdownCombo = True
+        OnPopup = ToolbarComponentPopup
       end
-      object TBXItem40: TTBXItem
+      object TBXItem40: TTBXSubmenuItem
         Action = CommanderLocalFileBandAction
+        DropdownCombo = True
+        OnPopup = ToolbarComponentPopup
       end
-      object TBXItem43: TTBXItem
+      object TBXItem43: TTBXSubmenuItem
         Action = CommanderLocalSelectionBandAction
+        DropdownCombo = True
+        OnPopup = ToolbarComponentPopup
       end
       object N23: TTBXSeparatorItem
       end
@@ -2390,17 +2416,25 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = '&Remote Panel'
       HelpKeyword = 'ui_file_panel'
       Hint = 'Change remote panel layout'
-      object HistoryButtons4: TTBXItem
+      object HistoryButtons4: TTBXSubmenuItem
         Action = CommanderRemoteHistoryBandAction
+        DropdownCombo = True
+        OnPopup = ToolbarComponentPopup
       end
-      object NavigationButtons4: TTBXItem
+      object NavigationButtons4: TTBXSubmenuItem
         Action = CommanderRemoteNavigationBandAction
+        DropdownCombo = True
+        OnPopup = ToolbarComponentPopup
       end
-      object TBXItem41: TTBXItem
+      object TBXItem41: TTBXSubmenuItem
         Action = CommanderRemoteFileBandAction
+        DropdownCombo = True
+        OnPopup = ToolbarComponentPopup
       end
-      object TBXItem42: TTBXItem
+      object TBXItem42: TTBXSubmenuItem
         Action = CommanderRemoteSelectionBandAction
+        DropdownCombo = True
+        OnPopup = ToolbarComponentPopup
       end
       object N25: TTBXSeparatorItem
       end
@@ -2463,17 +2497,25 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object N51: TTBXSeparatorItem
     end
-    object HistoryButtons5: TTBXItem
+    object HistoryButtons5: TTBXSubmenuItem
       Action = CommanderRemoteHistoryBandAction
+      DropdownCombo = True
+      OnPopup = ToolbarComponentPopup
     end
-    object NavigationButtons5: TTBXItem
+    object NavigationButtons5: TTBXSubmenuItem
       Action = CommanderRemoteNavigationBandAction
+      DropdownCombo = True
+      OnPopup = ToolbarComponentPopup
     end
-    object TBXItem14: TTBXItem
+    object TBXItem14: TTBXSubmenuItem
       Action = CommanderRemoteFileBandAction
+      DropdownCombo = True
+      OnPopup = ToolbarComponentPopup
     end
-    object TBXItem45: TTBXItem
+    object TBXItem45: TTBXSubmenuItem
       Action = CommanderRemoteSelectionBandAction
+      DropdownCombo = True
+      OnPopup = ToolbarComponentPopup
     end
     object TBXItem37: TTBXItem
       Action = LockToolbarsAction
@@ -2514,17 +2556,25 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object N52: TTBXSeparatorItem
     end
-    object HistoryButtons6: TTBXItem
+    object HistoryButtons6: TTBXSubmenuItem
       Action = CommanderLocalHistoryBandAction
+      DropdownCombo = True
+      OnPopup = ToolbarComponentPopup
     end
-    object NavigationButtons6: TTBXItem
+    object NavigationButtons6: TTBXSubmenuItem
       Action = CommanderLocalNavigationBandAction
+      DropdownCombo = True
+      OnPopup = ToolbarComponentPopup
     end
-    object TBXItem39: TTBXItem
+    object TBXItem39: TTBXSubmenuItem
       Action = CommanderLocalFileBandAction
+      DropdownCombo = True
+      OnPopup = ToolbarComponentPopup
     end
-    object TBXItem44: TTBXItem
+    object TBXItem44: TTBXSubmenuItem
       Action = CommanderLocalSelectionBandAction
+      DropdownCombo = True
+      OnPopup = ToolbarComponentPopup
     end
     object TBXItem38: TTBXItem
       Action = LockToolbarsAction

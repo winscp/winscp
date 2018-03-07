@@ -80,6 +80,34 @@ TNonVisualDataModule *NonVisualDataModule;
 #define EXESHCOL(SIDE, PREFIX, COL) \
   EXE(ShowHide ## SIDE ## COL ## ColumnAction, \
     COLPROPS(SIDE)->Visible[PREFIX ## COL] = !COLPROPS(SIDE)->Visible[PREFIX ## COL])
+
+#define BAND_COMPONENTS \
+  EMIT_BAND_COMPONENT(ExplorerMenuBand) \
+  EMIT_BAND_COMPONENT(ExplorerAddressBand) \
+  EMIT_BAND_COMPONENT(ExplorerToolbarBand) \
+  EMIT_BAND_COMPONENT(ExplorerSelectionBand) \
+  EMIT_BAND_COMPONENT(ExplorerSessionBand) \
+  EMIT_BAND_COMPONENT(ExplorerPreferencesBand) \
+  EMIT_BAND_COMPONENT(ExplorerSortBand) \
+  EMIT_BAND_COMPONENT(ExplorerUpdatesBand) \
+  EMIT_BAND_COMPONENT(ExplorerTransferBand) \
+  EMIT_BAND_COMPONENT(ExplorerCustomCommandsBand) \
+  EMIT_BAND_COMPONENT(CommanderMenuBand) \
+  EMIT_BAND_COMPONENT(CommanderSessionBand) \
+  EMIT_BAND_COMPONENT(CommanderPreferencesBand) \
+  EMIT_BAND_COMPONENT(CommanderSortBand) \
+  EMIT_BAND_COMPONENT(CommanderCommandsBand) \
+  EMIT_BAND_COMPONENT(CommanderUpdatesBand) \
+  EMIT_BAND_COMPONENT(CommanderTransferBand) \
+  EMIT_BAND_COMPONENT(CommanderCustomCommandsBand) \
+  EMIT_BAND_COMPONENT(CommanderLocalHistoryBand) \
+  EMIT_BAND_COMPONENT(CommanderLocalNavigationBand) \
+  EMIT_BAND_COMPONENT(CommanderLocalFileBand) \
+  EMIT_BAND_COMPONENT(CommanderLocalSelectionBand) \
+  EMIT_BAND_COMPONENT(CommanderRemoteHistoryBand) \
+  EMIT_BAND_COMPONENT(CommanderRemoteNavigationBand) \
+  EMIT_BAND_COMPONENT(CommanderRemoteFileBand) \
+  EMIT_BAND_COMPONENT(CommanderRemoteSelectionBand)
 //---------------------------------------------------------------------------
 __fastcall TNonVisualDataModule::TNonVisualDataModule(TComponent* Owner)
         : TDataModule(Owner)
@@ -283,32 +311,11 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPDCOMP(CommandLinePanel)
   UPDCOMP(RemoteTree)
   UPDCOMP(LocalTree)
-  UPDCOMP(ExplorerMenuBand)
-  UPDCOMP(ExplorerAddressBand)
-  UPDCOMP(ExplorerToolbarBand)
-  UPDCOMP(ExplorerSelectionBand)
-  UPDCOMP(ExplorerSessionBand)
-  UPDCOMP(ExplorerPreferencesBand)
-  UPDCOMP(ExplorerSortBand)
-  UPDCOMP(ExplorerUpdatesBand)
-  UPDCOMP(ExplorerTransferBand)
-  UPDCOMP(ExplorerCustomCommandsBand)
-  UPDCOMP(CommanderMenuBand)
-  UPDCOMP(CommanderSessionBand)
-  UPDCOMP(CommanderPreferencesBand)
-  UPDCOMP(CommanderSortBand)
-  UPDCOMP(CommanderCommandsBand)
-  UPDCOMP(CommanderUpdatesBand)
-  UPDCOMP(CommanderTransferBand)
-  UPDCOMP(CommanderCustomCommandsBand)
-  UPDCOMP(CommanderLocalHistoryBand)
-  UPDCOMP(CommanderLocalNavigationBand)
-  UPDCOMP(CommanderLocalFileBand)
-  UPDCOMP(CommanderLocalSelectionBand)
-  UPDCOMP(CommanderRemoteHistoryBand)
-  UPDCOMP(CommanderRemoteNavigationBand)
-  UPDCOMP(CommanderRemoteFileBand)
-  UPDCOMP(CommanderRemoteSelectionBand)
+  #define EMIT_BAND_COMPONENT(COMP) UPDCOMP(COMP)
+  BAND_COMPONENTS
+  #undef EMIT_BAND_COMPONENT
+
+
 
   UPD(GoToCommandLineAction, true)
   UPD(GoToTreeAction, true)
@@ -621,32 +628,9 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXECOMP(ToolBar2)
     EXECOMP(LocalStatusBar)
     EXECOMP(RemoteStatusBar)
-    EXECOMP(ExplorerMenuBand)
-    EXECOMP(ExplorerAddressBand)
-    EXECOMP(ExplorerToolbarBand)
-    EXECOMP(ExplorerSelectionBand)
-    EXECOMP(ExplorerSessionBand)
-    EXECOMP(ExplorerPreferencesBand)
-    EXECOMP(ExplorerSortBand)
-    EXECOMP(ExplorerUpdatesBand)
-    EXECOMP(ExplorerTransferBand)
-    EXECOMP(ExplorerCustomCommandsBand)
-    EXECOMP(CommanderMenuBand)
-    EXECOMP(CommanderSessionBand)
-    EXECOMP(CommanderPreferencesBand)
-    EXECOMP(CommanderSortBand)
-    EXECOMP(CommanderCommandsBand)
-    EXECOMP(CommanderUpdatesBand)
-    EXECOMP(CommanderTransferBand)
-    EXECOMP(CommanderCustomCommandsBand)
-    EXECOMP(CommanderLocalHistoryBand)
-    EXECOMP(CommanderLocalNavigationBand)
-    EXECOMP(CommanderLocalFileBand)
-    EXECOMP(CommanderLocalSelectionBand)
-    EXECOMP(CommanderRemoteHistoryBand)
-    EXECOMP(CommanderRemoteNavigationBand)
-    EXECOMP(CommanderRemoteFileBand)
-    EXECOMP(CommanderRemoteSelectionBand)
+    #define EMIT_BAND_COMPONENT(COMP) EXECOMP(COMP)
+    BAND_COMPONENTS
+    #undef EMIT_BAND_COMPONENT
     EXECOMP(CommandLinePanel)
     EXECOMP(RemoteTree)
     EXECOMP(LocalTree)
@@ -1818,5 +1802,52 @@ void __fastcall TNonVisualDataModule::QueuePopupSpeedComboBoxItemAdjustImageInde
 {
   // Use fixed image (do not change image by item index)
   ImageIndex = Sender->ImageIndex;
+}
+//---------------------------------------------------------------------------
+void __fastcall TNonVisualDataModule::ToolbarButtonItemClick(TObject * Sender)
+{
+  TTBCustomItem * Item = DebugNotNull(dynamic_cast<TTBCustomItem *>(Sender));
+  TTBCustomItem * ButtonItem = reinterpret_cast<TTBCustomItem *>(Item->Tag);
+  ButtonItem->Visible = !ButtonItem->Visible;
+}
+//---------------------------------------------------------------------------
+void __fastcall TNonVisualDataModule::ToolbarComponentPopup(TTBCustomItem * Sender, bool /*FromLink*/)
+{
+  Byte Component = 0;
+  #define EMIT_BAND_COMPONENT(COMP) if (Sender->Action == COMP ## Action) { Component = fc ## COMP; }
+  BAND_COMPONENTS
+  #undef EMIT_BAND_COMPONENT
+
+  if (DebugAlwaysTrue(Component != 0))
+  {
+    TTBCustomToolbar * Toolbar = dynamic_cast<TTBCustomToolbar *>(ScpExplorer->GetComponent(Component));
+    if (DebugAlwaysTrue(Toolbar != NULL))
+    {
+      Sender->Clear();
+
+      for (int Index = 0; Index < Toolbar->Items->Count; Index++)
+      {
+        TTBCustomItem * ButtonItem = Toolbar->Items->Items[Index];
+
+        TTBCustomItem * Item;
+        if (dynamic_cast<TTBSeparatorItem *>(ButtonItem) != NULL)
+        {
+          Item = new TTBSeparatorItem(Sender);
+        }
+        else
+        {
+          Item = new TTBXItem(Sender);
+          Item->Caption = StripEllipsis(ButtonItem->Caption);
+          Item->ImageIndex = ButtonItem->ImageIndex;
+          Item->Tag = reinterpret_cast<int>(ButtonItem);
+          Item->OnClick = ToolbarButtonItemClick;
+          Item->Checked = ButtonItem->Visible;
+          Item->Enabled = Toolbar->Visible;
+        }
+
+        Sender->Insert(Sender->Count, Item);
+      }
+    }
+  }
 }
 //---------------------------------------------------------------------------

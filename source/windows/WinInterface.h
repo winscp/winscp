@@ -91,6 +91,7 @@ bool __fastcall CheckSafe(TProgramParams * Params);
 void __fastcall CheckLogParam(TProgramParams * Params);
 bool __fastcall CheckXmlLogParam(TProgramParams * Params);
 
+UnicodeString __fastcall GetToolbarKey(const UnicodeString & ToolbarName);
 UnicodeString __fastcall GetToolbarsLayoutStr(TControl * OwnerControl);
 void __fastcall LoadToolbarsLayoutStr(TControl * OwnerControl, UnicodeString LayoutStr);
 

@@ -415,20 +415,17 @@ int __fastcall GetToolbarLayoutPixelsPerInch(TStrings * Storage, TControl * Cont
   return Result;
 }
 //---------------------------------------------------------------------
+UnicodeString __fastcall GetToolbarKey(const UnicodeString & ToolbarName)
+{
+  UnicodeString Result = ToolbarName;
+  Result = RemoveSuffix(Result, L"Toolbar");
+  return Result;
+}
+//---------------------------------------------------------------------
 static inline void __fastcall GetToolbarKey(const UnicodeString & ToolbarName,
   const UnicodeString & Value, UnicodeString & ToolbarKey)
 {
-  int ToolbarNameLen;
-  if ((ToolbarName.Length() > 7) &&
-      (ToolbarName.SubString(ToolbarName.Length() - 7 + 1, 7) == L"Toolbar"))
-  {
-    ToolbarNameLen = ToolbarName.Length() - 7;
-  }
-  else
-  {
-    ToolbarNameLen = ToolbarName.Length();
-  }
-  ToolbarKey = ToolbarName.SubString(1, ToolbarNameLen) + L"_" + Value;
+  ToolbarKey = GetToolbarKey(ToolbarName) + L"_" + Value;
 }
 //---------------------------------------------------------------------------
 static int __fastcall ToolbarReadInt(const UnicodeString ToolbarName,

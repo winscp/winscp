@@ -1238,9 +1238,39 @@ void __fastcall TCustomScpExplorerForm::SetDockAllowDrag(bool value)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::LoadToolbarsLayoutStr(UnicodeString LayoutStr)
+void __fastcall TCustomScpExplorerForm::LoadToolbarsLayoutStr(UnicodeString LayoutStr, UnicodeString ButtonsStr)
 {
   SetDockAllowDrag(true);
+
+  while (!ButtonsStr.IsEmpty())
+  {
+    UnicodeString S = CutToChar(ButtonsStr, L';', true);
+    UnicodeString Name = CutToChar(S, L'=', true);
+    for (int ToolbarIndex = 0; ToolbarIndex < ComponentCount; ToolbarIndex++)
+    {
+      TTBCustomToolbar * Toolbar = dynamic_cast<TTBCustomToolbar *>(Components[ToolbarIndex]);
+      if ((Toolbar != NULL) && SameText(Name, GetToolbarKey(Toolbar->Name)))
+      {
+        while (!S.IsEmpty())
+        {
+          UnicodeString S2 = CutToChar(S, L',', true);
+          UnicodeString Name = CutToChar(S2, L':', true);
+          for (int ItemIndex = 0; ItemIndex < Toolbar->Items->Count; ItemIndex++)
+          {
+            TTBCustomItem * Item = Toolbar->Items->Items[ItemIndex];
+            if (SameText(GetToolbarItemName(Item), Name))
+            {
+              // forward compatibility
+              UnicodeString S3 = CutToChar(S2, L':', true);
+              bool Visible = StrToIntDef(S3, 0);
+              Item->Visible = Visible;
+            }
+          }
+        }
+      }
+    }
+  }
+
   ::LoadToolbarsLayoutStr(this, LayoutStr);
   SetDockAllowDrag(!WinConfiguration->LockToolbars);
 }
@@ -1251,6 +1281,56 @@ UnicodeString __fastcall TCustomScpExplorerForm::GetToolbarsLayoutStr()
   SetDockAllowDrag(true);
   Result = ::GetToolbarsLayoutStr(this);
   SetDockAllowDrag(!WinConfiguration->LockToolbars);
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TCustomScpExplorerForm::GetToolbarItemName(TTBCustomItem * Item)
+{
+  UnicodeString Result;
+  if (Item->Action != NULL)
+  {
+    Result = Item->Action->Name;
+    Result = RemoveSuffix(Result, L"Action");
+  }
+  else
+  {
+    Result = Item->Name;
+    Result = RemoveSuffix(Result, L"SubmenuItem");
+    Result = RemoveSuffix(Result, L"Item");
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TCustomScpExplorerForm::GetToolbarsButtonsStr()
+{
+  UnicodeString Result;
+  for (int ToolbarIndex = 0; ToolbarIndex < ComponentCount; ToolbarIndex++)
+  {
+    UnicodeString ToolbarStr;
+    TTBCustomToolbar * Toolbar = dynamic_cast<TTBCustomToolbar *>(Components[ToolbarIndex]);
+    if ((Toolbar != NULL) && (Toolbar != QueueToolbar))
+    {
+      for (int ItemIndex = 0; ItemIndex < Toolbar->Items->Count; ItemIndex++)
+      {
+        TTBCustomItem * Item = Toolbar->Items->Items[ItemIndex];
+        // Currently all buttons are visible by default, so we can safely remember all hidden buttons.
+        // Once we introduce any buttons that aer hidden by default, we would have to remember their initial state
+        // and save the changes here only.
+        if (!Item->Visible)
+        {
+          UnicodeString Name = GetToolbarItemName(Item);
+          DebugAssert(Name.Pos(L"TBX") == 0);
+          AddToList(ToolbarStr, FORMAT(L"%s:0", (Name)), L",");
+        }
+      }
+    }
+
+    if (!ToolbarStr.IsEmpty())
+    {
+      AddToList(Result, FORMAT(L"%s=%s", (GetToolbarKey(Toolbar->Name), ToolbarStr)), L";");
+    }
+  }
+
   return Result;
 }
 //---------------------------------------------------------------------------

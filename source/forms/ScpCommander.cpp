@@ -157,7 +157,7 @@ void __fastcall TScpCommanderForm::RestoreParams()
 
   TCustomScpExplorerForm::RestoreParams();
   LeftPanelWidth = WinConfiguration->ScpCommander.LocalPanelWidth;
-  LoadToolbarsLayoutStr(WinConfiguration->ScpCommander.ToolbarsLayout);
+  LoadToolbarsLayoutStr(WinConfiguration->ScpCommander.ToolbarsLayout, WinConfiguration->ScpCommander.ToolbarsButtons);
   SessionsPageControl->Visible = WinConfiguration->ScpCommander.SessionsTabs;
   StatusBar->Visible = WinConfiguration->ScpCommander.StatusBar;
 
@@ -187,6 +187,7 @@ void __fastcall TScpCommanderForm::StoreParams()
   try
   {
     WinConfiguration->ScpCommander.ToolbarsLayout = GetToolbarsLayoutStr();
+    WinConfiguration->ScpCommander.ToolbarsButtons = GetToolbarsButtonsStr();
     WinConfiguration->ScpCommander.LocalPanelWidth = LeftPanelWidth;
     WinConfiguration->ScpCommander.SessionsTabs = SessionsPageControl->Visible;
     WinConfiguration->ScpCommander.StatusBar = StatusBar->Visible;

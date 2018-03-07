@@ -260,6 +260,16 @@ UnicodeString CopyToChar(const UnicodeString & Str, wchar_t Ch, bool Trim)
   return CopyToChars(Str, From, UnicodeString(Ch), Trim);
 }
 //---------------------------------------------------------------------------
+UnicodeString RemoveSuffix(const UnicodeString & Str, const UnicodeString & Suffix)
+{
+  UnicodeString Result = Str;
+  if (EndsStr(Suffix, Result))
+  {
+    Result.SetLength(Result.Length() - Suffix.Length());
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 UnicodeString DelimitStr(UnicodeString Str, UnicodeString Chars)
 {
   for (int i = 1; i <= Str.Length(); i++)
