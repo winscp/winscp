@@ -34,7 +34,7 @@ namespace WinSCP
                 }
             }
             // We always want to return something.
-            // No attempt to detect end real of file is needed,
+            // No attempt to detect real end of file is needed,
             // as we should not try to read beyond the final closing tag
             while (result == 0);
 
