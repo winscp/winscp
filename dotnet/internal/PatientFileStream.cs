@@ -28,6 +28,10 @@ namespace WinSCP
                         interval *= 2;
                     }
                 }
+                else
+                {
+                    _session.Logger.WriteLineLevel(2, "Read {0} bytes from log", result);
+                }
             }
             // We always want to return something.
             // No attempt to detect end real of file is needed,
