@@ -425,7 +425,11 @@ UnicodeString __fastcall GetToolbarKey(const UnicodeString & ToolbarName)
 static inline void __fastcall GetToolbarKey(const UnicodeString & ToolbarName,
   const UnicodeString & Value, UnicodeString & ToolbarKey)
 {
-  ToolbarKey = GetToolbarKey(ToolbarName) + L"_" + Value;
+  ToolbarKey = GetToolbarKey(ToolbarName);
+  if (!Value.IsEmpty())
+  {
+    ToolbarKey += L"_" + Value;
+  }
 }
 //---------------------------------------------------------------------------
 static int __fastcall ToolbarReadInt(const UnicodeString ToolbarName,
@@ -496,6 +500,7 @@ static UnicodeString __fastcall ToolbarReadString(const UnicodeString ToolbarNam
 static void __fastcall ToolbarWriteInt(const UnicodeString ToolbarName,
   const UnicodeString Value, const int Data, const void * ExtraData)
 {
+  DebugFail();
   if (Value != L"Rev")
   {
     TStrings * Storage = static_cast<TStrings *>(const_cast<void*>(ExtraData));
@@ -509,6 +514,7 @@ static void __fastcall ToolbarWriteInt(const UnicodeString ToolbarName,
 static void __fastcall ToolbarWriteString(const UnicodeString ToolbarName,
   const UnicodeString Value, const UnicodeString Data, const void * ExtraData)
 {
+  DebugAssert(Value.IsEmpty());
   TStrings * Storage = static_cast<TStrings *>(const_cast<void*>(ExtraData));
   UnicodeString ToolbarKey;
   GetToolbarKey(ToolbarName, Value, ToolbarKey);
