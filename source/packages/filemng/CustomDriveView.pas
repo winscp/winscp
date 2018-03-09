@@ -87,6 +87,7 @@ type
     procedure WMLButtonDown(var Msg: TWMLButtonDown); message WM_LBUTTONDOWN;
     procedure WMLButtonUp(var Msg: TWMLButtonDown); message WM_LBUTTONUP;
     procedure WMRButtonDown(var Msg: TWMRButtonDown); message WM_RBUTTONDOWN;
+    procedure WMLButtonDblClk(var Message: TWMLButtonDblClk); message WM_LBUTTONDBLCLK;
     procedure WMContextMenu(var Msg: TWMContextMenu); message WM_CONTEXTMENU;
     procedure WMKeyDown(var Message: TWMKeyDown); message WM_KEYDOWN;
     procedure CMDPIChanged(var Message: TMessage); message CM_DPICHANGED;
@@ -864,9 +865,12 @@ end;
 
 procedure TCustomDriveView.WMLButtonDown(var Msg: TWMLButtonDown);
 begin
-  FCanChange := False;
-  GetCursorPos(FStartPos);
-  inherited;
+  if not IsBusy then
+  begin
+    FCanChange := False;
+    GetCursorPos(FStartPos);
+    inherited;
+  end;
 end; {WMLButtonDown}
 
 procedure TCustomDriveView.WMLButtonUp(var Msg: TWMLButtonDown);
@@ -880,11 +884,22 @@ end; {WMLButtonUp}
 
 procedure TCustomDriveView.WMRButtonDown(var Msg: TWMRButtonDown);
 begin
-  GetCursorPos(FStartPos);
-  if FDragDropFilesEx.DragDetectStatus <> ddsDrag then
-    FContextMenu := True;
-  inherited;
+  if not IsBusy then
+  begin
+    GetCursorPos(FStartPos);
+    if FDragDropFilesEx.DragDetectStatus <> ddsDrag then
+      FContextMenu := True;
+    inherited;
+  end;
 end; {WMRButtonDown}
+
+procedure TCustomDriveView.WMLButtonDblClk(var Message: TWMLButtonDblClk);
+begin
+  if not IsBusy then
+  begin
+    inherited;
+  end;
+end;
 
 procedure TCustomDriveView.WMContextMenu(var Msg: TWMContextMenu);
 var
