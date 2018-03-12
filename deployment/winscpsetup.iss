@@ -6,7 +6,7 @@
 #define WebRoot "https://winscp.net/"
 #define WebForum WebRoot+"forum/"
 #define WebDocumentation WebRoot+"eng/docs/"
-#define WebReport "http://winscp.net/install.php"
+#define WebReport "https://winscp.net/install.php"
 #define Year 2018
 #define EnglishLang "English"
 #define SetupTypeData "SetupType"
