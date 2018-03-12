@@ -29,6 +29,7 @@ inherited ScpCommanderForm: TScpCommanderForm
   inherited TopDock: TTBXDock
     Width = 898
     Height = 156
+    OnContextPopup = DockContextPopup
     object MenuToolbar: TTBXToolbar
       Left = 0
       Top = 0
@@ -1108,6 +1109,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       Height = 79
       Color = clBtnFace
       FixAlign = True
+      OnContextPopup = DockContextPopup
       object RemoteHistoryToolbar: TTBXToolbar
         Left = 0
         Top = 27
@@ -1445,6 +1447,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       Height = 79
       Color = clBtnFace
       FixAlign = True
+      OnContextPopup = DockContextPopup
       object LocalHistoryToolbar: TTBXToolbar
         Left = 0
         Top = 27
@@ -1654,6 +1657,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     Height = 53
     FixAlign = True
     Position = dpBottom
+    OnContextPopup = DockContextPopup
     object Toolbar2Toolbar: TTBXToolbar
       Left = 0
       Top = 27

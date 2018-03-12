@@ -46,13 +46,13 @@ __fastcall TScpExplorerForm::TScpExplorerForm(TComponent* Owner)
   ForwardButton->LinkSubitems = HistoryMenu(osRemote, false)->Items;
 
   TopDock->PopupMenu = NonVisualDataModule->ExplorerBarPopup;
-  RemoteStatusBar->PopupMenu = TopDock->PopupMenu;
-  QueueDock->PopupMenu = TopDock->PopupMenu;
-  QueueLabel->PopupMenu = TopDock->PopupMenu;
-  RemoteDriveView->PopupMenu = TopDock->PopupMenu;
-  BottomDock->PopupMenu = TopDock->PopupMenu;
-  LeftDock->PopupMenu = TopDock->PopupMenu;
-  RightDock->PopupMenu = TopDock->PopupMenu;
+  CopyPopup(RemoteStatusBar, TopDock);
+  CopyPopup(QueueDock, TopDock);
+  CopyPopup(QueueLabel, TopDock);
+  CopyPopup(RemoteDriveView, TopDock);
+  CopyPopup(BottomDock, TopDock);
+  CopyPopup(LeftDock, TopDock);
+  CopyPopup(RightDock, TopDock);
   reinterpret_cast<TLabel*>(RemotePanelSplitter)->OnDblClick = RemotePanelSplitterDblClick;
 
   QueuePanel->Parent = RemotePanel;

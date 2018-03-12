@@ -45,6 +45,9 @@ object NonVisualDataModule: TNonVisualDataModule
     object Rename1: TTBXItem
       Action = CurrentRenameAction
     end
+    object TBXSubmenuItem8: TTBXSubmenuItem
+      Action = CustomizeToolbarAction
+    end
     object N45: TTBXSeparatorItem
     end
     object RemoteFilePopupCustomCommandsMenu: TTBXSubmenuItem
@@ -2224,6 +2227,13 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 'Create file|Create new file and open it in editor'
       ImageIndex = 77
     end
+    object CustomizeToolbarAction: TAction
+      Tag = 15
+      Category = 'View'
+      Caption = '&Customize Toolbar'
+      HelpKeyword = 'ui_toolbars'
+      Hint = 'Show/hide toolbar buttons'
+    end
   end
   object ExplorerBarPopup: TTBXPopupMenu
     Images = GlyphsModule.ExplorerImages
@@ -2233,30 +2243,20 @@ object NonVisualDataModule: TNonVisualDataModule
     object Address2: TTBXItem
       Action = ExplorerAddressBandAction
     end
-    object StandardButtons1: TTBXSubmenuItem
+    object StandardButtons1: TTBXItem
       Action = ExplorerToolbarBandAction
-      DropdownCombo = True
-      OnPopup = ToolbarComponentPopup
     end
-    object SelectionButtons1: TTBXSubmenuItem
+    object SelectionButtons1: TTBXItem
       Action = ExplorerSelectionBandAction
-      DropdownCombo = True
-      OnPopup = ToolbarComponentPopup
     end
-    object SessionButtons2: TTBXSubmenuItem
+    object SessionButtons2: TTBXItem
       Action = ExplorerSessionBandAction
-      DropdownCombo = True
-      OnPopup = ToolbarComponentPopup
     end
-    object PreferencesButtons1: TTBXSubmenuItem
+    object PreferencesButtons1: TTBXItem
       Action = ExplorerPreferencesBandAction
-      DropdownCombo = True
-      OnPopup = ToolbarComponentPopup
     end
-    object SortButtons3: TTBXSubmenuItem
+    object SortButtons3: TTBXItem
       Action = ExplorerSortBandAction
-      DropdownCombo = True
-      OnPopup = ToolbarComponentPopup
     end
     object TBXItem3: TTBXItem
       Action = ExplorerUpdatesBandAction
@@ -2272,6 +2272,9 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object TBXItem48: TTBXItem
       Action = SelectiveToolbarTextAction
+    end
+    object TBXSubmenuItem4: TTBXSubmenuItem
+      Action = CustomizeToolbarAction
     end
     object N5: TTBXSeparatorItem
     end
@@ -2326,25 +2329,17 @@ object NonVisualDataModule: TNonVisualDataModule
     Options = [tboShowHint]
     Left = 424
     Top = 264
-    object CommandsButtons2: TTBXSubmenuItem
+    object CommandsButtons2: TTBXItem
       Action = CommanderCommandsBandAction
-      DropdownCombo = True
-      OnPopup = ToolbarComponentPopup
     end
-    object SessionButtons5: TTBXSubmenuItem
+    object SessionButtons5: TTBXItem
       Action = CommanderSessionBandAction
-      DropdownCombo = True
-      OnPopup = ToolbarComponentPopup
     end
-    object PreferencesButtons4: TTBXSubmenuItem
+    object PreferencesButtons4: TTBXItem
       Action = CommanderPreferencesBandAction
-      DropdownCombo = True
-      OnPopup = ToolbarComponentPopup
     end
-    object SortButtons2: TTBXSubmenuItem
+    object SortButtons2: TTBXItem
       Action = CommanderSortBandAction
-      DropdownCombo = True
-      OnPopup = ToolbarComponentPopup
     end
     object TBXItem2: TTBXItem
       Action = CommanderUpdatesBandAction
@@ -2360,6 +2355,9 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object TBXItem46: TTBXItem
       Action = SelectiveToolbarTextAction
+    end
+    object TBXItem77: TTBXSubmenuItem
+      Action = CustomizeToolbarAction
     end
     object N26: TTBXSeparatorItem
     end
@@ -2381,25 +2379,17 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = '&Local Panel'
       HelpKeyword = 'ui_file_panel'
       Hint = 'Change local panel layout'
-      object HistoryButtons3: TTBXSubmenuItem
+      object HistoryButtons3: TTBXItem
         Action = CommanderLocalHistoryBandAction
-        DropdownCombo = True
-        OnPopup = ToolbarComponentPopup
       end
-      object NavigationButtons3: TTBXSubmenuItem
+      object NavigationButtons3: TTBXItem
         Action = CommanderLocalNavigationBandAction
-        DropdownCombo = True
-        OnPopup = ToolbarComponentPopup
       end
-      object TBXItem40: TTBXSubmenuItem
+      object TBXItem40: TTBXItem
         Action = CommanderLocalFileBandAction
-        DropdownCombo = True
-        OnPopup = ToolbarComponentPopup
       end
-      object TBXItem43: TTBXSubmenuItem
+      object TBXItem43: TTBXItem
         Action = CommanderLocalSelectionBandAction
-        DropdownCombo = True
-        OnPopup = ToolbarComponentPopup
       end
       object N23: TTBXSeparatorItem
       end
@@ -2416,25 +2406,17 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = '&Remote Panel'
       HelpKeyword = 'ui_file_panel'
       Hint = 'Change remote panel layout'
-      object HistoryButtons4: TTBXSubmenuItem
+      object HistoryButtons4: TTBXItem
         Action = CommanderRemoteHistoryBandAction
-        DropdownCombo = True
-        OnPopup = ToolbarComponentPopup
       end
-      object NavigationButtons4: TTBXSubmenuItem
+      object NavigationButtons4: TTBXItem
         Action = CommanderRemoteNavigationBandAction
-        DropdownCombo = True
-        OnPopup = ToolbarComponentPopup
       end
-      object TBXItem41: TTBXSubmenuItem
+      object TBXItem41: TTBXItem
         Action = CommanderRemoteFileBandAction
-        DropdownCombo = True
-        OnPopup = ToolbarComponentPopup
       end
-      object TBXItem42: TTBXSubmenuItem
+      object TBXItem42: TTBXItem
         Action = CommanderRemoteSelectionBandAction
-        DropdownCombo = True
-        OnPopup = ToolbarComponentPopup
       end
       object N25: TTBXSeparatorItem
       end
@@ -2497,31 +2479,26 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object N51: TTBXSeparatorItem
     end
-    object HistoryButtons5: TTBXSubmenuItem
+    object HistoryButtons5: TTBXItem
       Action = CommanderRemoteHistoryBandAction
-      DropdownCombo = True
-      OnPopup = ToolbarComponentPopup
     end
-    object NavigationButtons5: TTBXSubmenuItem
+    object NavigationButtons5: TTBXItem
       Action = CommanderRemoteNavigationBandAction
-      DropdownCombo = True
-      OnPopup = ToolbarComponentPopup
     end
-    object TBXItem14: TTBXSubmenuItem
+    object TBXItem14: TTBXItem
       Action = CommanderRemoteFileBandAction
-      DropdownCombo = True
-      OnPopup = ToolbarComponentPopup
     end
-    object TBXItem45: TTBXSubmenuItem
+    object TBXItem45: TTBXItem
       Action = CommanderRemoteSelectionBandAction
-      DropdownCombo = True
-      OnPopup = ToolbarComponentPopup
     end
     object TBXItem37: TTBXItem
       Action = LockToolbarsAction
     end
     object TBXItem49: TTBXItem
       Action = SelectiveToolbarTextAction
+    end
+    object TBXSubmenuItem9: TTBXSubmenuItem
+      Action = CustomizeToolbarAction
     end
     object N28: TTBXSeparatorItem
     end
@@ -2556,31 +2533,26 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object N52: TTBXSeparatorItem
     end
-    object HistoryButtons6: TTBXSubmenuItem
+    object HistoryButtons6: TTBXItem
       Action = CommanderLocalHistoryBandAction
-      DropdownCombo = True
-      OnPopup = ToolbarComponentPopup
     end
-    object NavigationButtons6: TTBXSubmenuItem
+    object NavigationButtons6: TTBXItem
       Action = CommanderLocalNavigationBandAction
-      DropdownCombo = True
-      OnPopup = ToolbarComponentPopup
     end
-    object TBXItem39: TTBXSubmenuItem
+    object TBXItem39: TTBXItem
       Action = CommanderLocalFileBandAction
-      DropdownCombo = True
-      OnPopup = ToolbarComponentPopup
     end
-    object TBXItem44: TTBXSubmenuItem
+    object TBXItem44: TTBXItem
       Action = CommanderLocalSelectionBandAction
-      DropdownCombo = True
-      OnPopup = ToolbarComponentPopup
     end
     object TBXItem38: TTBXItem
       Action = LockToolbarsAction
     end
     object TBXItem47: TTBXItem
       Action = SelectiveToolbarTextAction
+    end
+    object TBXSubmenuItem6: TTBXSubmenuItem
+      Action = CustomizeToolbarAction
     end
     object N29: TTBXSeparatorItem
     end

@@ -86,23 +86,23 @@ __fastcall TScpCommanderForm::TScpCommanderForm(TComponent* Owner)
   RemoteForwardButton->LinkSubitems = HistoryMenu(osRemote, false)->Items;
 
   TopDock->PopupMenu = NonVisualDataModule->CommanderBarPopup;
-  StatusBar->PopupMenu = TopDock->PopupMenu;
-  QueueDock->PopupMenu = TopDock->PopupMenu;
-  QueueLabel->PopupMenu = TopDock->PopupMenu;
-  BottomDock->PopupMenu = TopDock->PopupMenu;
-  QueueSeparatorPanel->PopupMenu = TopDock->PopupMenu;
+  CopyPopup(StatusBar, TopDock);
+  CopyPopup(QueueDock, TopDock);
+  CopyPopup(QueueLabel, TopDock);
+  CopyPopup(BottomDock, TopDock);
+  CopyPopup(QueueSeparatorPanel, TopDock);
 
   LocalTopDock->PopupMenu = NonVisualDataModule->LocalPanelPopup;
-  LocalPathLabel->PopupMenu = LocalTopDock->PopupMenu;
-  LocalStatusBar->PopupMenu = LocalTopDock->PopupMenu;
-  LocalDriveView->PopupMenu = LocalTopDock->PopupMenu;
-  LocalBottomDock->PopupMenu = LocalTopDock->PopupMenu;
+  CopyPopup(LocalPathLabel, LocalTopDock);
+  CopyPopup(LocalStatusBar, LocalTopDock);
+  CopyPopup(LocalDriveView, LocalTopDock);
+  CopyPopup(LocalBottomDock, LocalTopDock);
 
   RemoteTopDock->PopupMenu = NonVisualDataModule->RemotePanelPopup;
-  RemotePathLabel->PopupMenu = RemoteTopDock->PopupMenu;
-  RemoteStatusBar->PopupMenu = RemoteTopDock->PopupMenu;
-  RemoteDriveView->PopupMenu = RemoteTopDock->PopupMenu;
-  RemoteBottomDock->PopupMenu = RemoteTopDock->PopupMenu;
+  CopyPopup(RemotePathLabel, RemoteTopDock);
+  CopyPopup(RemoteStatusBar, RemoteTopDock);
+  CopyPopup(RemoteDriveView, RemoteTopDock);
+  CopyPopup(RemoteBottomDock, RemoteTopDock);
 
   SetShortcuts();
   Splitter->ShowHint = True;

@@ -114,6 +114,7 @@ __fastcall TNonVisualDataModule::TNonVisualDataModule(TComponent* Owner)
 {
   FListColumn = NULL;
   FSessionIdleTimerExecuting = false;
+  FCustomizedToolbar = NULL;
   FBusy = 0;
 
   QueueSpeedComboBoxItem(QueuePopupSpeedComboBoxItem);
@@ -338,6 +339,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPDCOMP(CustomCommandsBand)
   UPD(ColorMenuAction, HasTerminal)
   UPD(GoToAddressAction, true)
+  UPD(CustomizeToolbarAction, IsToolbarCustomizable())
 
   // SORT
   UPDSORTA(Local)
@@ -649,6 +651,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXECOMP(CustomCommandsBand)
     EXE(ColorMenuAction, CreateSessionColorMenu(ColorMenuAction))
     EXE(GoToAddressAction, ScpExplorer->GoToAddress())
+    EXE(CustomizeToolbarAction, CreateToolbarButtonsList())
 
     #define COLVIEWPROPS ((TCustomDirViewColProperties*)(((TCustomDirView*)(((TListColumns*)(ListColumn->Collection))->Owner()))->ColProperties))
     // SORT
@@ -1811,43 +1814,75 @@ void __fastcall TNonVisualDataModule::ToolbarButtonItemClick(TObject * Sender)
   ButtonItem->Visible = !ButtonItem->Visible;
 }
 //---------------------------------------------------------------------------
-void __fastcall TNonVisualDataModule::ToolbarComponentPopup(TTBCustomItem * Sender, bool /*FromLink*/)
+bool __fastcall TNonVisualDataModule::IsCustomizableToolbarItem(TTBCustomItem * Item)
 {
-  Byte Component = 0;
-  #define EMIT_BAND_COMPONENT(COMP) if (Sender->Action == COMP ## Action) { Component = fc ## COMP; }
-  BAND_COMPONENTS
-  #undef EMIT_BAND_COMPONENT
-
-  if (DebugAlwaysTrue(Component != 0))
+  return
+    (dynamic_cast<TTBXItem *>(Item) != NULL) ||
+    (dynamic_cast<TTBXSubmenuItem *>(Item) != NULL);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TNonVisualDataModule::IsToolbarCustomizable()
+{
+  bool Result = false;
+  if (FCustomizedToolbar != NULL)
   {
-    TTBCustomToolbar * Toolbar = dynamic_cast<TTBCustomToolbar *>(ScpExplorer->GetComponent(Component));
-    if (DebugAlwaysTrue(Toolbar != NULL))
+    for (int Index = 0; Index < FCustomizedToolbar->Items->Count; Index++)
     {
-      Sender->Clear();
-
-      for (int Index = 0; Index < Toolbar->Items->Count; Index++)
+      if (IsCustomizableToolbarItem(FCustomizedToolbar->Items->Items[Index]))
       {
-        TTBCustomItem * ButtonItem = Toolbar->Items->Items[Index];
+        Result = true;
+        break;
+      }
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TNonVisualDataModule::CreateToolbarButtonsList()
+{
+  if (FCustomizedToolbar != NULL)
+  {
+    TTBCustomItem * CustomizeItem = DebugNotNull(dynamic_cast<TTBCustomItem *>(CustomizeToolbarAction->ActionComponent));
+    CustomizeItem->Clear();
 
-        TTBCustomItem * Item;
-        if (dynamic_cast<TTBSeparatorItem *>(ButtonItem) != NULL)
-        {
-          Item = new TTBSeparatorItem(Sender);
-        }
-        else
-        {
-          Item = new TTBXItem(Sender);
-          Item->Caption = StripEllipsis(ButtonItem->Caption);
-          Item->ImageIndex = ButtonItem->ImageIndex;
-          Item->Tag = reinterpret_cast<int>(ButtonItem);
-          Item->OnClick = ToolbarButtonItemClick;
-          Item->Checked = ButtonItem->Visible;
-          Item->Enabled = Toolbar->Visible;
-        }
+    for (int Index = 0; Index < FCustomizedToolbar->Items->Count; Index++)
+    {
+      TTBCustomItem * ButtonItem = FCustomizedToolbar->Items->Items[Index];
 
-        Sender->Insert(Sender->Count, Item);
+      TTBCustomItem * Item = NULL;
+      if (dynamic_cast<TTBSeparatorItem *>(ButtonItem) != NULL)
+      {
+        Item = new TTBSeparatorItem(CustomizeItem);
+      }
+      else if (IsCustomizableToolbarItem(ButtonItem))
+      {
+        Item = new TTBXItem(CustomizeItem);
+        Item->Caption = StripEllipsis(ButtonItem->Caption);
+        Item->ImageIndex = ButtonItem->ImageIndex;
+        Item->Tag = reinterpret_cast<int>(ButtonItem);
+        Item->OnClick = ToolbarButtonItemClick;
+        Item->Checked = ButtonItem->Visible;
+      }
+
+      if (Item != NULL)
+      {
+        CustomizeItem->Insert(CustomizeItem->Count, Item);
       }
     }
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TNonVisualDataModule::ControlContextPopup(TObject * Sender, const TPoint & MousePos)
+{
+  TTBDock * Dock = dynamic_cast<TTBDock *>(Sender);
+  if (Dock != NULL)
+  {
+    // While we can identify toolbar for which context menu is popping up in OnExecute,
+    // we cannot in OnUpdate, so we have to remeber it here.
+    FCustomizedToolbar = dynamic_cast<TTBCustomToolbar *>(Dock->ControlAtPos(MousePos, true, true, false));
+  }
+  else
+  {
+    FCustomizedToolbar = NULL;
+  }
+}

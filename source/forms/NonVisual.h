@@ -235,25 +235,25 @@ __published:    // IDE-managed Components
   TAction *FileGenerateUrlAction2;
   TAction *TableOfContentsAction;
   TTBXPopupMenu *CommanderBarPopup;
-  TTBXSubmenuItem *SessionButtons5;
-  TTBXSubmenuItem *PreferencesButtons4;
-  TTBXSubmenuItem *SortButtons2;
-  TTBXSubmenuItem *CommandsButtons2;
+  TTBXItem *SessionButtons5;
+  TTBXItem *PreferencesButtons4;
+  TTBXItem *SortButtons2;
+  TTBXItem *CommandsButtons2;
   TTBXSeparatorItem *N26;
   TTBXItem *CommandLine2;
   TTBXItem *CommandsToolbar1;
   TTBXItem *StatusBar8;
   TTBXSeparatorItem *N27;
   TTBXSubmenuItem *LocalPanel1;
-  TTBXSubmenuItem *HistoryButtons3;
-  TTBXSubmenuItem *NavigationButtons3;
+  TTBXItem *HistoryButtons3;
+  TTBXItem *NavigationButtons3;
   TTBXSeparatorItem *N23;
   TTBXItem *Tree7;
   TTBXSeparatorItem *N77;
   TTBXItem *StatusBar6;
   TTBXSubmenuItem *RemotePanel2;
-  TTBXSubmenuItem *HistoryButtons4;
-  TTBXSubmenuItem *NavigationButtons4;
+  TTBXItem *HistoryButtons4;
+  TTBXItem *NavigationButtons4;
   TTBXSeparatorItem *N25;
   TTBXItem *Tree8;
   TTBXSeparatorItem *N78;
@@ -270,8 +270,8 @@ __published:    // IDE-managed Components
   TTBXItem *CopyPathtoClipboard1;
   TTBXItem *OpenDirectoryBookmark1;
   TTBXSeparatorItem *N51;
-  TTBXSubmenuItem *HistoryButtons5;
-  TTBXSubmenuItem *NavigationButtons5;
+  TTBXItem *HistoryButtons5;
+  TTBXItem *NavigationButtons5;
   TTBXSeparatorItem *N28;
   TTBXItem *Tree5;
   TTBXSeparatorItem *N75;
@@ -280,8 +280,8 @@ __published:    // IDE-managed Components
   TTBXItem *CopyPathtoClipboard2;
   TTBXItem *OpenDirectoryBookmark2;
   TTBXSeparatorItem *N52;
-  TTBXSubmenuItem *HistoryButtons6;
-  TTBXSubmenuItem *NavigationButtons6;
+  TTBXItem *HistoryButtons6;
+  TTBXItem *NavigationButtons6;
   TTBXSeparatorItem *N29;
   TTBXItem *Tree6;
   TTBXSeparatorItem *N76;
@@ -379,11 +379,11 @@ __published:    // IDE-managed Components
   TTBXItem *Customize3;
   TTBXPopupMenu *ExplorerBarPopup;
   TTBXItem *Address2;
-  TTBXSubmenuItem *StandardButtons1;
-  TTBXSubmenuItem *SelectionButtons1;
-  TTBXSubmenuItem *SessionButtons2;
-  TTBXSubmenuItem *PreferencesButtons1;
-  TTBXSubmenuItem *SortButtons3;
+  TTBXItem *StandardButtons1;
+  TTBXItem *SelectionButtons1;
+  TTBXItem *SessionButtons2;
+  TTBXItem *PreferencesButtons1;
+  TTBXItem *SortButtons3;
   TTBXSeparatorItem *N5;
   TTBXItem *StatusBar2;
   TTBXSeparatorItem *N72;
@@ -514,10 +514,10 @@ __published:    // IDE-managed Components
   TAction *RemoteAddEditLinkAction2;
   TAction *CommanderLocalFileBandAction;
   TAction *CommanderRemoteFileBandAction;
-  TTBXSubmenuItem *TBXItem14;
-  TTBXSubmenuItem *TBXItem39;
-  TTBXSubmenuItem *TBXItem40;
-  TTBXSubmenuItem *TBXItem41;
+  TTBXItem *TBXItem14;
+  TTBXItem *TBXItem39;
+  TTBXItem *TBXItem40;
+  TTBXItem *TBXItem41;
   TAction *RemoteCopyFocusedAction;
   TAction *RemoteMoveFocusedAction;
   TAction *LocalSelectAction;
@@ -528,10 +528,10 @@ __published:    // IDE-managed Components
   TAction *RemoteSelectAllAction;
   TAction *CommanderLocalSelectionBandAction;
   TAction *CommanderRemoteSelectionBandAction;
-  TTBXSubmenuItem *TBXItem42;
-  TTBXSubmenuItem *TBXItem43;
-  TTBXSubmenuItem *TBXItem44;
-  TTBXSubmenuItem *TBXItem45;
+  TTBXItem *TBXItem42;
+  TTBXItem *TBXItem43;
+  TTBXItem *TBXItem44;
+  TTBXItem *TBXItem45;
   TAction *SelectiveToolbarTextAction;
   TTBXItem *TBXItem46;
   TTBXItem *TBXItem47;
@@ -610,6 +610,12 @@ __published:    // IDE-managed Components
   TAction *ChangePasswordAction;
   TAction *RemoteNewFileAction;
   TAction *LocalNewFileAction;
+  TTBXSubmenuItem *TBXItem77;
+  TAction *CustomizeToolbarAction;
+  TTBXSubmenuItem *TBXSubmenuItem4;
+  TTBXSubmenuItem *TBXSubmenuItem6;
+  TTBXSubmenuItem *TBXSubmenuItem8;
+  TTBXSubmenuItem *TBXSubmenuItem9;
   void __fastcall ExplorerActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall SessionIdleTimerTimer(TObject *Sender);
@@ -623,13 +629,13 @@ __published:    // IDE-managed Components
           const UnicodeString AText, int AIndex, int &ImageIndex);
   UnicodeString __fastcall CustomCommandCaption(const TCustomCommandType * Command, bool Toolbar);
   UnicodeString __fastcall CustomCommandHint(const TCustomCommandType * Command);
-  void __fastcall ToolbarComponentPopup(TTBCustomItem *Sender, bool FromLink);
 
 private:
   TListColumn * FListColumn;
   TCustomScpExplorerForm * FScpExplorer;
   bool FSessionIdleTimerExecuting;
   int FBusy;
+  TTBCustomToolbar * FCustomizedToolbar;
 
   void __fastcall SetScpExplorer(TCustomScpExplorerForm * value);
   bool __fastcall GetBusy();
@@ -637,6 +643,9 @@ private:
 protected:
   void __fastcall CreateSessionListMenu(TAction * Action);
   void __fastcall CreateSessionListMenuLevel(TTBCustomItem * Menu, int Index, int Level);
+  void __fastcall CreateToolbarButtonsList();
+  bool __fastcall IsCustomizableToolbarItem(TTBCustomItem * Item);
+  bool __fastcall IsToolbarCustomizable();
   UnicodeString __fastcall GetSessionFolderRoot(TSessionData * Data, int Level);
   void __fastcall CreateWorkspacesMenu(TAction * Action);
   void __fastcall WorkspaceItemClick(TObject * Sender);
@@ -689,6 +698,7 @@ public:
   void __fastcall ResetQueueOnceEmptyOperation();
   void __fastcall StartBusy();
   void __fastcall EndBusy();
+  void __fastcall ControlContextPopup(TObject * Sender, const TPoint & MousePos);
 
   __property TListColumn * ListColumn = { read = FListColumn, write = FListColumn };
   __property TCustomScpExplorerForm * ScpExplorer = { read = FScpExplorer, write = SetScpExplorer };

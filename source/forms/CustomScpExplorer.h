@@ -186,6 +186,7 @@ __published:
   void __fastcall EditMenuItemPopup(TTBCustomItem *Sender, bool FromLink);
   void __fastcall DirViewBusy(TObject *Sender, int Busy, bool & Allow);
   void __fastcall SessionsPageControlContextPopup(TObject *Sender, TPoint &MousePos, bool &Handled);
+  void __fastcall DockContextPopup(TObject *Sender, TPoint &MousePos, bool &Handled);
 
 private:
   TTerminal * FTerminal;
@@ -341,6 +342,7 @@ protected:
   bool __fastcall RemoteTransferFiles(TStrings * FileList, bool NoConfirmation,
     bool Move, TTerminal * Session);
   virtual void __fastcall DoDirViewExecFile(TObject * Sender, TListItem * Item, bool & AllowExec);
+  virtual TControl * __fastcall GetComponent(Byte Component);
   bool __fastcall GetComponentVisible(Byte Component);
   virtual Boolean __fastcall GetHasDirView(TOperationSide Side);
   DYNAMIC void __fastcall KeyDown(Word & Key, Classes::TShiftState Shift);
@@ -590,6 +592,7 @@ protected:
   DYNAMIC void __fastcall ChangeScale(int M, int D);
   virtual void __fastcall UpdateImages();
   void __fastcall UpdatePixelsPerInchMainWindowCounter();
+  void __fastcall CopyPopup(TControl * DestControl, TControl * SourceControl);
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();
@@ -619,7 +622,6 @@ public:
   void __fastcall UnlockWindow();
   void __fastcall SuspendWindowLock();
   void __fastcall ResumeWindowLock();
-  virtual TControl * __fastcall GetComponent(Byte Component);
 
   void __fastcall NewSession(bool FromSite, const UnicodeString & SessionUrl = L"");
   void __fastcall DuplicateSession();

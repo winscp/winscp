@@ -9387,3 +9387,20 @@ void __fastcall TCustomScpExplorerForm::ChangeScale(int M, int D)
     GUIConfiguration->ChangeResourceModule(ResourceModule);
   }
 }
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::DockContextPopup(TObject * Sender, TPoint & MousePos, bool & /*Handled*/)
+{
+  NonVisualDataModule->ControlContextPopup(Sender, MousePos);
+}
+//---------------------------------------------------------------------
+class TPublicControl : public TControl
+{
+friend class TCustomScpExplorerForm;
+};
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::CopyPopup(TControl * DestControl, TControl * SourceControl)
+{
+  static_cast<TPublicControl *>(DestControl)->PopupMenu = static_cast<TPublicControl *>(SourceControl)->PopupMenu;
+  static_cast<TPublicControl *>(DestControl)->OnContextPopup = static_cast<TPublicControl *>(SourceControl)->OnContextPopup;
+}
+//---------------------------------------------------------------------------

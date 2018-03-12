@@ -17,6 +17,7 @@ inherited ScpExplorerForm: TScpExplorerForm
   inherited TopDock: TTBXDock
     Width = 632
     Height = 209
+    OnContextPopup = DockContextPopup
     object MenuToolbar: TTBXToolbar
       Left = 0
       Top = 0
