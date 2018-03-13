@@ -49,7 +49,7 @@ type
 implementation
 
 uses
-  ActnList, Themes, PngButtonFunctions;
+  ActnList, Themes, PngButtonFunctions, PngImageList;
 
 {$IF RTLVersion < 23.0 }
 type
@@ -107,9 +107,9 @@ end;
 
 destructor TPngBitBtn.Destroy;
 begin
+  inherited Destroy;
   FPngImage.Free;
   FCanvas.Free;
-  inherited Destroy;
 end;
 
 procedure TPngBitBtn.ActionChange(Sender: TObject; CheckDefaults: Boolean);
