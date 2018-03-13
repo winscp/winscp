@@ -542,7 +542,7 @@ BEGIN
         ABOUT_FILEMANAGER_COPYRIGHT, "Copyright © Ingo Eckel"
         ABOUT_JCL, "JEDI Code Library (JCL) %s"
         ABOUT_JCL_URL, "http://jcl.delphi-jedi.org/"
-        ABOUT_PNG, "PngComponents 1.1"
+        ABOUT_PNG, "PngComponents 1.4.0"
         ABOUT_PNG_COPYRIGHT, "Copyright © Uwe Raabe and Martijn Saly"
         ABOUT_PNG_URL, "https://cc.embarcadero.com/item/26127"
         EDITOR_SAVING, "Saving..."
