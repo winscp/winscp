@@ -748,7 +748,18 @@ bool __fastcall TextFromClipboard(UnicodeString & Text, bool Trim)
   bool Result = (Handle != NULL);
   if (Result)
   {
-    Text = AText;
+    // For all current uses (URL pasting, key/fingerprint pasting, known_hosts pasting, "more messages" copying,
+    // permissions pasting), 64KB is large enough.
+    const size_t Limit = 64*1024;
+    size_t Size = GlobalSize(Handle);
+    if (Size > Limit)
+    {
+      Text = UnicodeString(AText, Limit);
+    }
+    else
+    {
+      Text = AText;
+    }
     if (Trim)
     {
       Text = Text.Trim();
