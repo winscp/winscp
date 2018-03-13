@@ -752,7 +752,7 @@ begin
     if (Result = '') or // in rare case the CSIDL_PERSONAL cannot be resolved
        IsUNCPath(Result) then
     begin
-      Result := AnyValidPath;
+      Result := DriveInfo.AnyValidPath;
     end;
   end;
 end; { GetHomeDirectory }

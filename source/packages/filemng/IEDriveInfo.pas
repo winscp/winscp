@@ -78,16 +78,20 @@ type
     FDesktop: IShellFolder;
     FFolders: array[TSpecialFolder] of TSpecialFolderRec;
     FHonorDrivePolicy: Boolean;
+    FLoaded: Boolean;
     function GetData(Drive: TDrive): PDriveInfoRec;
     function GetFolder(Folder: TSpecialFolder): PSpecialFolderRec;
     procedure ReadDriveBasicStatus(Drive: TDrive);
     procedure ResetDrive(Drive: TDrive);
     procedure SetHonorDrivePolicy(Value: Boolean);
+    procedure NeedData;
+    procedure Load;
 
   public
     property Data[Drive: TDrive]: PDriveInfoRec read GetData; default;
     property SpecialFolder[Folder: TSpecialFolder]: PSpecialFolderRec read GetFolder;
 
+    function AnyValidPath: string;
     function GetImageIndex(Drive: TDrive): Integer;
     function GetDisplayName(Drive: TDrive): string;
     function GetPrettyName(Drive: TDrive): string;
@@ -95,11 +99,10 @@ type
     property HonorDrivePolicy: Boolean read FHonorDrivePolicy write SetHonorDrivePolicy;
     constructor Create;
     destructor Destroy; override;
-    procedure Load;
   end;
 
 function GetShellFileName(const Name: string): string; overload;
-function GetShellFileName(PIDL: PItemIDList): string; overLoad;
+function GetShellFileName(PIDL: PItemIDList): string; overload;
 function GetNetWorkName(Drive: Char): string;
 function GetNetWorkConnected(Drive: Char): Boolean;
 
@@ -113,14 +116,14 @@ resourceString
 implementation
 
 uses
-  Math, PIDL, OperationWithTimeout;
+  Math, PIDL, OperationWithTimeout, PasTools;
 
 constructor TDriveInfo.Create;
 begin
   inherited;
 
   FHonorDrivePolicy := True;
-  Load;
+  FLoaded := False;
 end; {TDriveInfo.Create}
 
 destructor TDriveInfo.Destroy;
@@ -138,12 +141,45 @@ begin
   inherited;
 end; {TDriveInfo.Destroy}
 
+procedure TDriveInfo.NeedData;
+begin
+  if not FLoaded then
+  begin
+    Load;
+    FLoaded := True;
+  end;
+end;
+
+function TDriveInfo.AnyValidPath: string;
+var
+  Drive: TDrive;
+begin
+  for Drive := 'C' to 'Z' do
+    if GetData(Drive).Valid and
+       (GetData(Drive).DriveType = DRIVE_FIXED) and
+       DirectoryExists(ApiPath(Drive + ':\')) then
+    begin
+      Result := Drive + ':\';
+      Exit;
+    end;
+  for Drive := 'C' to 'Z' do
+    if GetData(Drive).Valid and
+       (GetData(Drive).DriveType = DRIVE_REMOTE) and
+       DirectoryExists(ApiPath(Drive + ':\')) then
+    begin
+      Result := Drive + ':\';
+      Exit;
+    end;
+  raise Exception.Create(SNoValidPath);
+end;
+
 function TDriveInfo.GetFolder(Folder: TSpecialFolder): PSpecialFolderRec;
 var
   FileInfo: TShFileInfo;
   Path: PChar;
   Flags: Word;
 begin
+  NeedData;
   Assert((Folder >= Low(FFolders)) and (Folder <= High(FFolders)));
 
   with FFolders[Folder] do
@@ -180,9 +216,12 @@ begin
   if HonorDrivePolicy <> Value then
   begin
     FHonorDrivePolicy := Value;
-    for Drive := FirstDrive to LastDrive do
+    if FLoaded then
     begin
-      ReadDriveBasicStatus(Drive);
+      for Drive := FirstDrive to LastDrive do
+      begin
+        ReadDriveBasicStatus(Drive);
+      end;
     end;
   end;
 end;
@@ -249,6 +288,7 @@ end;
 
 function TDriveInfo.GetImageIndex(Drive: TDrive): Integer;
 begin
+  NeedData;
   if (Drive < FirstDrive) or (Drive > LastDrive) then
     raise EConvertError.Create(Format(ErrorInvalidDrive, [Drive]));
 
@@ -264,6 +304,7 @@ end; {TDriveInfo.GetImageIndex}
 
 function TDriveInfo.GetDisplayName(Drive: TDrive): string;
 begin
+  NeedData;
   if (Drive < FirstDrive) or (Drive > LastDrive) then
     raise EConvertError.Create(Format(ErrorInvalidDrive, [Drive]));
 
@@ -279,6 +320,7 @@ end; {TDriveInfo.GetDisplayname}
 
 function TDriveInfo.GetPrettyName(Drive: TDrive): string;
 begin
+  NeedData;
   if (Drive < FirstDrive) or (Drive > LastDrive) then
     raise EConvertError.Create(Format(ErrorInvalidDrive, [Drive]));
 
@@ -294,6 +336,7 @@ end; {TDriveInfo.GetPrettyName}
 
 function TDriveInfo.GetData(Drive: TDrive): PDriveInfoRec;
 begin
+  NeedData;
   if not CharInSet(Upcase(Drive), ['A'..'Z']) then
     raise EConvertError.Create(Format(ErrorInvalidDrive, [Drive]));
 

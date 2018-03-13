@@ -42,7 +42,6 @@ function FormatPanelBytes(Bytes: Int64; Style: TFormatBytesStyle): string;
 procedure FreePIDL(var PIDL: PItemIDList);
 function StrContains(Str1, Str2: string): Boolean;
 function IsUncPath(Path: string): Boolean;
-function AnyValidPath: string;
 
 procedure ReduceDateTimePrecision(var DateTime: TDateTime;
   Precision: TDateTimePrecision);
@@ -64,29 +63,6 @@ implementation
 
 uses
   IEDriveInfo, DateUtils, ShellApi, SysConst, PasTools, Math;
-
-function AnyValidPath: string;
-var
-  Drive: TDrive;
-begin
-  for Drive := 'C' to 'Z' do
-    if DriveInfo[Drive].Valid and
-       (DriveInfo[Drive].DriveType = DRIVE_FIXED) and
-       DirectoryExists(ApiPath(Drive + ':\')) then
-    begin
-      Result := Drive + ':\';
-      Exit;
-    end;
-  for Drive := 'C' to 'Z' do
-    if DriveInfo[Drive].Valid and
-       (DriveInfo[Drive].DriveType = DRIVE_REMOTE) and
-       DirectoryExists(ApiPath(Drive + ':\')) then
-    begin
-      Result := Drive + ':\';
-      Exit;
-    end;
-  raise Exception.Create(SNoValidPath);
-end;
 
 function IsUncPath(Path: string): Boolean;
 begin

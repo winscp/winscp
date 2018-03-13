@@ -466,36 +466,42 @@ begin
   end;
 end;
 
+var
+  ShellImageLists: TDictionary<Integer, TImageList> = nil;
+
+procedure InitializeShellImageLists;
 type
   TSHGetImageList = function (iImageList: integer; const riid: TGUID; var ppv: Pointer): hResult; stdcall;
-
 const
   IID_IImageList: TGUID = '{46EB5926-582E-4017-9FDF-E8998DAA0950}';
-
 var
-  SHGetImageList: TSHGetImageList;
-  ShellImageLists: TDictionary<Integer, TImageList>;
-
-procedure AddShellImageList(ImageList: Integer);
-var
+  Lib: THandle;
+  ImageList: Integer;
   Handle: THandle;
   Height, Width: Integer;
   ShellImageList: TImageList;
+  SHGetImageList: TSHGetImageList;
 begin
-  // VCL have declaration for SHGetImageList in ShellAPI, but it does not link
-  if (SHGetImageList(ImageList, IID_IImageList, Pointer(Handle)) = S_OK) and
-     ImageList_GetIconSize(Handle, Width, Height) then
+  Lib := LoadLibrary('shell32');
+  SHGetImageList := GetProcAddress(Lib, 'SHGetImageList');
+  ShellImageLists := TDictionary<Integer, TImageList>.Create;
+  for ImageList := 0 to SHIL_LAST do
   begin
-
-    // We could use AddOrSetValue instead, but to be on a safe siz, we prefer e.g. SHIL_SMALL over SHIL_SYSSMALL,
-    // while they actually can be the same
-    if not ShellImageLists.ContainsKey(Width) then
+    // VCL have declaration for SHGetImageList in ShellAPI, but it does not link
+    if (SHGetImageList(ImageList, IID_IImageList, Pointer(Handle)) = S_OK) and
+       ImageList_GetIconSize(Handle, Width, Height) then
     begin
-      ShellImageList := TImageList.Create(Application);
-      ShellImageList.Handle := Handle;
-      ShellImageList.ShareImages := True;
-      ShellImageList.DrawingStyle := dsTransparent;
-      ShellImageLists.Add(Width, ShellImageList);
+
+      // We could use AddOrSetValue instead, but to be on a safe siz, we prefer e.g. SHIL_SMALL over SHIL_SYSSMALL,
+      // while they actually can be the same
+      if not ShellImageLists.ContainsKey(Width) then
+      begin
+        ShellImageList := TImageList.Create(Application);
+        ShellImageList.Handle := Handle;
+        ShellImageList.ShareImages := True;
+        ShellImageList.DrawingStyle := dsTransparent;
+        ShellImageLists.Add(Width, ShellImageList);
+      end;
     end;
   end;
 end;
@@ -506,6 +512,12 @@ var
   Width, ImageListWidth: Integer;
   Diff, BestDiff: Integer;
 begin
+  // Delay load image lists, not to waste resources in console/scripting mode
+  if ShellImageLists = nil then
+  begin
+    InitializeShellImageLists;
+  end;
+
   case Size of
     ilsSmall: Width := 16;
     ilsLarge: Width := 32;
@@ -945,7 +957,6 @@ end;
 
 var
   Lib: THandle;
-  I: Integer;
 initialization
   Lib := LoadLibrary('shcore');
   if Lib <> 0 then
@@ -958,14 +969,6 @@ initialization
   begin
     GetSystemMetricsForDpi := GetProcAddress(Lib, 'GetSystemMetricsForDpi');
     SystemParametersInfoForDpi := GetProcAddress(Lib, 'SystemParametersInfoForDpi');
-  end;
-
-  Lib := LoadLibrary('shell32');
-  SHGetImageList := GetProcAddress(Lib, 'SHGetImageList');
-  ShellImageLists := TDictionary<Integer, TImageList>.Create;
-  for I := 0 to SHIL_LAST do
-  begin
-    AddShellImageList(I);
   end;
 
 finalization
