@@ -4590,7 +4590,7 @@ void __fastcall TCustomScpExplorerForm::DuplicateSession()
   {
     if (OpenInNewWindow())
     {
-      UnicodeString SessionName = StoredSessions->HiddenPrefix + Terminal->SessionData->Name;
+      UnicodeString SessionName = StoredSessions->HiddenPrefix + Terminal->SessionData->SessionName;
       StoredSessions->NewSession(SessionName, SessionData);
       // modified only, explicit
       StoredSessions->Save(false, true);
