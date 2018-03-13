@@ -10,6 +10,17 @@ namespace WinSCP
             _session = session;
         }
 
+        override public void Close()
+        {
+            if (_stream != null)
+            {
+                _stream.Close();
+                _stream = null;
+            }
+
+            base.Close();
+        }
+
         private const int InitialInterval = 50;
 
         public override int Read(byte[] array, int offset, int count)
