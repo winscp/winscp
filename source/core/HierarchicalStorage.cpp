@@ -1334,6 +1334,8 @@ private:
 
   bool __fastcall AllowWrite();
   void __fastcall NotImplemented();
+  bool __fastcall AllowSection(const UnicodeString & Section);
+  UnicodeString __fastcall FormatKey(const UnicodeString & Section, const UnicodeString & Ident);
 };
 //---------------------------------------------------------------------------
 __fastcall TOptionsIniFile::TOptionsIniFile(TStrings * Options, TWriteMode WriteMode, const UnicodeString & RootKey) :
@@ -1373,22 +1375,42 @@ bool __fastcall TOptionsIniFile::AllowWrite()
   }
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TOptionsIniFile::ReadString(const UnicodeString Section, const UnicodeString Ident, const UnicodeString Default)
+bool __fastcall TOptionsIniFile::AllowSection(const UnicodeString & Section)
 {
   UnicodeString Name = Section;
   if (!Name.IsEmpty())
   {
     Name += PathDelim;
   }
+  bool Result = SameText(Name.SubString(1, FRootKey.Length()), FRootKey);
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TOptionsIniFile::FormatKey(const UnicodeString & Section, const UnicodeString & Ident)
+{
+  UnicodeString Result = Section;
+  if (!Result.IsEmpty())
+  {
+    Result += PathDelim;
+  }
+  Result += Ident; // Can be empty, when called from a contructor, AllowSection or ReadSection
+  if (DebugAlwaysTrue(AllowSection(Section)))
+  {
+    Result.Delete(1, FRootKey.Length());
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TOptionsIniFile::ReadString(const UnicodeString Section, const UnicodeString Ident, const UnicodeString Default)
+{
   UnicodeString Value;
-  if (!SameText(Name.SubString(1, FRootKey.Length()), FRootKey))
+  if (!AllowSection(Section))
   {
     Value = Default;
   }
   else
   {
-    Name.Delete(1, FRootKey.Length());
-    Name += Ident;
+    UnicodeString Name = FormatKey(Section, Ident);
 
     int Index = FOptions->IndexOfName(Name);
     if (Index >= 0)
@@ -1406,25 +1428,19 @@ UnicodeString __fastcall TOptionsIniFile::ReadString(const UnicodeString Section
 void __fastcall TOptionsIniFile::WriteString(const UnicodeString Section, const UnicodeString Ident, const UnicodeString Value)
 {
   if (AllowWrite() &&
-      // Implemented for TSessionData.DoSave only
-      DebugAlwaysTrue(Section.IsEmpty() && FRootKey.IsEmpty()))
+      DebugAlwaysTrue(AllowSection(Section)))
   {
-    FOptions->Values[Ident] = Value;
+    UnicodeString Name = FormatKey(Section, Ident);
+    FOptions->Values[Name] = Value;
   }
 }
 //---------------------------------------------------------------------------
 void __fastcall TOptionsIniFile::ReadSection(const UnicodeString Section, TStrings * Strings)
 {
 
-  UnicodeString SectionPrefix = Section;
-  if (!SectionPrefix.IsEmpty())
+  if (AllowSection(Section))
   {
-    SectionPrefix += PathDelim;
-  }
-
-  if (SameText(SectionPrefix.SubString(1, FRootKey.Length()), FRootKey))
-  {
-    SectionPrefix.Delete(1, FRootKey.Length());
+    UnicodeString SectionPrefix = FormatKey(Section, UnicodeString());
 
     Strings->BeginUpdate();
     try
@@ -1486,10 +1502,11 @@ void __fastcall TOptionsIniFile::EraseSection(const UnicodeString Section)
 void __fastcall TOptionsIniFile::DeleteKey(const UnicodeString Section, const UnicodeString Ident)
 {
   if (AllowWrite() &&
-      // Implemented for TSessionData.DoSave only
-      DebugAlwaysTrue(Section.IsEmpty() && FRootKey.IsEmpty()))
+      DebugAlwaysTrue(AllowSection(Section)))
   {
-    int Index = FOptions->IndexOfName(Ident);
+    UnicodeString Name = FormatKey(Section, Ident);
+
+    int Index = FOptions->IndexOfName(Name);
     if (Index >= 0)
     {
       FOptions->Delete(Index);

@@ -247,6 +247,15 @@ void __fastcall Synchronize(TTerminal * Terminal, TCustomScpExplorerForm * ScpEx
 
   SynchronizeDirectories(Terminal, CommandParams, LocalDirectory, RemoteDirectory);
 
+  // Undocumented syntax for "Start in New Window"
+  if (CommandParams->Count >= 4)
+  {
+    GUIConfiguration->SynchronizeParams = StrToIntDef(CommandParams->Strings[2], -1);
+    GUIConfiguration->SynchronizeOptions = StrToIntDef(CommandParams->Strings[3], -1);
+
+    Configuration->DontSave();
+  }
+
   ScpExplorer->DoSynchronizeDirectories(LocalDirectory, RemoteDirectory, UseDefaults);
   Abort();
 }
@@ -934,7 +943,7 @@ int __fastcall Execute()
 
       if (!Params->Empty)
       {
-        if (Params->FindSwitch(L"Defaults") && CheckSafe(Params))
+        if (Params->FindSwitch(DEFAULTS_SWITCH) && CheckSafe(Params))
         {
           UseDefaults = true;
         }
@@ -958,7 +967,7 @@ int __fastcall Execute()
         {
           ParamCommand = pcFullSynchronize;
         }
-        else if (Params->FindSwitch(L"KeepUpToDate", CommandParams, 2))
+        else if (Params->FindSwitch(KEEP_UP_TO_DATE_SWITCH, CommandParams, 4))
         {
           ParamCommand = pcSynchronize;
         }

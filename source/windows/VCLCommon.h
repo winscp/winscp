@@ -33,6 +33,7 @@ void __fastcall FixComboBoxResizeBug(TCustomComboBox * ComboBox);
 void __fastcall ShowAsModal(TForm * Form, void *& Storage, bool BringToFront = true);
 void __fastcall HideAsModal(TForm * Form, void *& Storage);
 bool __fastcall ReleaseAsModal(TForm * Form, void *& Storage);
+bool __fastcall IsMainFormLike(TCustomForm * Form);
 bool __fastcall SelectDirectory(UnicodeString & Path, const UnicodeString Prompt,
   bool PreserveFileName);
 enum TListViewCheckAll { caCheck, caUncheck, caToggle };

@@ -441,12 +441,16 @@ bool __fastcall OpenInNewWindow()
   return UseAlternativeFunction();
 }
 //---------------------------------------------------------------------------
-void __fastcall ExecuteNewInstance(const UnicodeString & Param)
+void __fastcall ExecuteNewInstance(const UnicodeString & Param, const UnicodeString & AdditionalParams)
 {
   UnicodeString Arg = Param;
   if (!Arg.IsEmpty())
   {
     Arg = FORMAT(L"\"%s\" %s", (Arg, TProgramParams::FormatSwitch(NEWINSTANCE_SWICH)));
+    if (!AdditionalParams.IsEmpty())
+    {
+      Arg += L" " + AdditionalParams;
+    }
   }
 
   ExecuteShellChecked(Application->ExeName, Arg);

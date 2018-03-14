@@ -414,6 +414,7 @@ protected:
     TSynchronizeOptions * Options);
   void __fastcall SynchronizeSessionLog(const UnicodeString & Message);
   void __fastcall GetSynchronizeOptions(int Params, TSynchronizeOptions & Options);
+  void __fastcall SynchronizeInNewWindow(const TSynchronizeParamType & Params, const TCopyParamType * CopyParams);
   bool __fastcall SynchronizeAllowSelectedOnly();
   virtual void __fastcall BatchStart(void *& Storage);
   virtual void __fastcall BatchEnd(void * Storage);
@@ -633,6 +634,7 @@ public:
   void __fastcall Idle();
   __fastcall TCustomScpExplorerForm(TComponent* Owner);
   void __fastcall SaveCurrentSession();
+  UnicodeString __fastcall CreateHiddenDuplicateSession();
   TSessionData * __fastcall CloneCurrentSessionData();
   bool __fastcall SaveWorkspace(bool EnableAutoSave);
   virtual void __fastcall CompareDirectories();

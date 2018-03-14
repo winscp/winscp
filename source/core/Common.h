@@ -84,6 +84,7 @@ UnicodeString __fastcall ExpandFileNameCommand(const UnicodeString Command,
 void __fastcall ReformatFileNameCommand(UnicodeString & Command);
 UnicodeString __fastcall EscapeParam(const UnicodeString & Param);
 UnicodeString __fastcall EscapePuttyCommandParam(UnicodeString Param);
+UnicodeString __fastcall StringsToParams(TStrings * Strings);
 UnicodeString __fastcall ExpandEnvironmentVariables(const UnicodeString & Str);
 bool __fastcall SamePaths(const UnicodeString & Path1, const UnicodeString & Path2);
 bool __fastcall IsPathToSameFile(const UnicodeString & Path1, const UnicodeString & Path2);

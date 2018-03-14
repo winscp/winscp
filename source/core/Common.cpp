@@ -781,6 +781,24 @@ UnicodeString __fastcall EscapePuttyCommandParam(UnicodeString Param)
   return Param;
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall StringsToParams(TStrings * Strings)
+{
+  UnicodeString Result;
+
+  for (int Index = 0; Index < Strings->Count; Index++)
+  {
+    UnicodeString Name = Strings->Names[Index];
+    UnicodeString Value = Strings->ValueFromIndex[Index];
+    // Do not quote if it is all-numeric
+    if (IntToStr(StrToIntDef(Value, -1)) != Value)
+    {
+      Value = FORMAT(L"\"%s\"", (EscapeParam(Value)));
+    }
+    Result += FORMAT(L" %s=%s", (Name, Value));
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall ExpandEnvironmentVariables(const UnicodeString & Str)
 {
   UnicodeString Buf;

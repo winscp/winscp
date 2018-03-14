@@ -4582,31 +4582,34 @@ void __fastcall TCustomScpExplorerForm::NewSession(bool FromSite, const UnicodeS
   }
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall TCustomScpExplorerForm::CreateHiddenDuplicateSession()
+{
+  UnicodeString SessionName = StoredSessions->HiddenPrefix + Terminal->SessionData->SessionName;
+
+  // current working directories become defaults here, what is not right
+  std::unique_ptr<TSessionData> SessionData(CloneCurrentSessionData());
+  StoredSessions->NewSession(SessionName, SessionData.get());
+  // modified only, explicit
+  StoredSessions->Save(false, true);
+
+  // encode session name because of slashes in hierarchical sessions
+  return EncodeUrlString(SessionName);
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::DuplicateSession()
 {
-  // current working directories become defaults here, what is not right
-  TSessionData * SessionData = CloneCurrentSessionData();
-  try
+  if (OpenInNewWindow())
   {
-    if (OpenInNewWindow())
-    {
-      UnicodeString SessionName = StoredSessions->HiddenPrefix + Terminal->SessionData->SessionName;
-      StoredSessions->NewSession(SessionName, SessionData);
-      // modified only, explicit
-      StoredSessions->Save(false, true);
-      // encode session name because of slashes in hierarchical sessions
-      ExecuteNewInstance(EncodeUrlString(SessionName));
-    }
-    else
-    {
-      TTerminalManager * Manager = TTerminalManager::Instance();
-      TTerminal * Terminal = Manager->NewTerminal(SessionData);
-      Manager->ActiveTerminal = Terminal;
-    }
+    ExecuteNewInstance(CreateHiddenDuplicateSession());
   }
-  __finally
+  else
   {
-    delete SessionData;
+    // current working directories become defaults here, what is not right
+    std::unique_ptr<TSessionData> SessionData(CloneCurrentSessionData());
+
+    TTerminalManager * Manager = TTerminalManager::Instance();
+    TTerminal * Terminal = Manager->NewTerminal(SessionData.get());
+    Manager->ActiveTerminal = Terminal;
   }
 }
 //---------------------------------------------------------------------------
@@ -5034,7 +5037,7 @@ bool __fastcall TCustomScpExplorerForm::DoSynchronizeDirectories(
     DebugAssert(FOnFeedSynchronizeError == NULL);
     Result = DoSynchronizeDialog(Params, &CopyParam, Controller.StartStop,
       SaveSettings, Options, CopyParamAttrs, GetSynchronizeOptions, SynchronizeSessionLog,
-      FOnFeedSynchronizeError, UseDefaults);
+      FOnFeedSynchronizeError, SynchronizeInNewWindow, UseDefaults);
     if (Result)
     {
       if (SaveSettings)
@@ -5253,6 +5256,39 @@ void __fastcall TCustomScpExplorerForm::GetSynchronizeOptions(
     }
     Options.Filter->Sort();
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::SynchronizeInNewWindow(
+  const TSynchronizeParamType & Params, const TCopyParamType * CopyParams)
+{
+  UnicodeString SessionName = CreateHiddenDuplicateSession();
+
+  UnicodeString AdditionalParams =
+    FORMAT(L"%s \"%s\" \"%s\" %d %d %s", (
+      TProgramParams::FormatSwitch(KEEP_UP_TO_DATE_SWITCH),
+      Params.LocalDirectory, Params.RemoteDirectory, Params.Params, Params.Options,
+      TProgramParams::FormatSwitch(DEFAULTS_SWITCH)));
+
+  TCopyParamType Defaults;
+  std::unique_ptr<THierarchicalStorage> ConfigStorage(Configuration->CreateConfigStorage());
+  ConfigStorage->AccessMode = smRead;
+  if (ConfigStorage->OpenSubKey(Configuration->ConfigurationSubKey, false, false))
+  {
+    GUIConfiguration->LoadCopyParam(ConfigStorage.get(), &Defaults);
+  }
+  ConfigStorage.reset(NULL);
+
+  std::unique_ptr<TStringList> Options(new TStringList());
+  std::unique_ptr<TOptionsStorage> OptionsStorage(new TOptionsStorage(Options.get(), true));
+  GUIConfiguration->SaveCopyParam(OptionsStorage.get(), CopyParams, &Defaults);
+
+  if (Options->Count > 0)
+  {
+    AdditionalParams +=
+      FORMAT(L" %s%s", (TProgramParams::FormatSwitch(RAW_CONFIG_SWITCH), StringsToParams(Options.get())));
+  }
+
+  ExecuteNewInstance(SessionName, AdditionalParams);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(

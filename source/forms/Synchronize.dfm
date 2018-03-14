@@ -201,6 +201,7 @@ object SynchronizeDialog: TSynchronizeDialog
     Default = True
     TabOrder = 3
     OnClick = StartButtonClick
+    OnDropDownClick = StartButtonDropDownClick
   end
   object MinimizeButton: TButton
     Left = 277
@@ -310,6 +311,19 @@ object SynchronizeDialog: TSynchronizeDialog
     object MinimizetoTray1: TMenuItem
       Caption = 'Minimize to System &Tray'
       OnClick = MinimizetoTray1Click
+    end
+  end
+  object StartMenu: TPopupMenu
+    Left = 288
+    Top = 376
+    object Start1: TMenuItem
+      Caption = '&Start'
+      Default = True
+      OnClick = StartButtonClick
+    end
+    object StartInNewWindow1: TMenuItem
+      Caption = 'Start in &New Window'
+      OnClick = StartInNewWindow1Click
     end
   end
 end

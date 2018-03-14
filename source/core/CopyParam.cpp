@@ -822,33 +822,47 @@ void __fastcall TCopyParamType::Load(THierarchicalStorage * Storage)
   NewerOnly = Storage->ReadBool(L"NewerOnly", NewerOnly);
 }
 //---------------------------------------------------------------------------
-void __fastcall TCopyParamType::Save(THierarchicalStorage * Storage) const
+void __fastcall TCopyParamType::Save(THierarchicalStorage * Storage, const TCopyParamType * Defaults) const
 {
-  Storage->WriteBool(L"AddXToDirectories", AddXToDirectories);
-  Storage->WriteString(L"Masks", AsciiFileMask.Masks);
-  Storage->WriteInteger(L"FileNameCase", FileNameCase);
-  Storage->WriteBool(L"PreserveReadOnly", PreserveReadOnly);
-  Storage->WriteBool(L"PreserveTime", PreserveTime);
-  Storage->WriteBool(L"PreserveTimeDirs", PreserveTimeDirs);
-  Storage->WriteBool(L"PreserveRights", PreserveRights);
-  Storage->WriteBool(L"IgnorePermErrors", IgnorePermErrors);
-  Storage->WriteString(L"Text", Rights.Text);
-  Storage->WriteInteger(L"TransferMode", TransferMode);
-  Storage->WriteInteger(L"ResumeSupport", ResumeSupport);
-  Storage->WriteInt64(L"ResumeThreshold", ResumeThreshold);
-  Storage->WriteInteger(L"ReplaceInvalidChars", (unsigned int)InvalidCharsReplacement);
-  Storage->WriteString(L"LocalInvalidChars", LocalInvalidChars);
-  Storage->WriteBool(L"CalculateSize", CalculateSize);
-  Storage->WriteString(L"IncludeFileMask", IncludeFileMask.Masks);
+  // Same as in TSessionData::DoSave
+  #define WRITE_DATA_EX(TYPE, NAME, PROPERTY, CONV) \
+    if ((Defaults != NULL) && (CONV(Defaults->PROPERTY) == CONV(PROPERTY))) \
+    { \
+      Storage->DeleteValue(NAME); \
+    } \
+    else \
+    { \
+      Storage->Write ## TYPE(NAME, CONV(PROPERTY)); \
+    }
+  #define WRITE_DATA_CONV(TYPE, NAME, PROPERTY) WRITE_DATA_EX(TYPE, NAME, PROPERTY, WRITE_DATA_CONV_FUNC)
+  #define WRITE_DATA(TYPE, PROPERTY) WRITE_DATA_EX(TYPE, TEXT(#PROPERTY), PROPERTY, )
+
+  WRITE_DATA(Bool, AddXToDirectories);
+  WRITE_DATA_EX(String, L"Masks", AsciiFileMask.Masks, );
+  WRITE_DATA(Integer, FileNameCase);
+  WRITE_DATA(Bool, PreserveReadOnly);
+  WRITE_DATA(Bool, PreserveTime);
+  WRITE_DATA(Bool, PreserveTimeDirs);
+  WRITE_DATA(Bool, PreserveRights);
+  WRITE_DATA(Bool, IgnorePermErrors);
+  WRITE_DATA_EX(String, L"Text", Rights.Text, );
+  WRITE_DATA(Integer, TransferMode);
+  WRITE_DATA(Integer, ResumeSupport);
+  WRITE_DATA(Int64, ResumeThreshold);
+  #define WRITE_DATA_CONV_FUNC(X) (unsigned int)(X)
+  WRITE_DATA_CONV(Integer, L"ReplaceInvalidChars", InvalidCharsReplacement);
+  WRITE_DATA(String, LocalInvalidChars);
+  WRITE_DATA(Bool, CalculateSize);
+  WRITE_DATA_EX(String, L"IncludeFileMask", IncludeFileMask.Masks, );
   Storage->DeleteValue(L"ExcludeFileMask"); // obsolete
   Storage->DeleteValue(L"NegativeExclude"); // obsolete
   DebugAssert(FTransferSkipList.get() == NULL);
   DebugAssert(FTransferResumeFile.IsEmpty());
-  Storage->WriteBool(L"ClearArchive", ClearArchive);
-  Storage->WriteBool(L"RemoveCtrlZ", RemoveCtrlZ);
-  Storage->WriteBool(L"RemoveBOM", RemoveBOM);
-  Storage->WriteInteger(L"CPSLimit", CPSLimit);
-  Storage->WriteBool(L"NewerOnly", NewerOnly);
+  WRITE_DATA(Bool, ClearArchive);
+  WRITE_DATA(Bool, RemoveCtrlZ);
+  WRITE_DATA(Bool, RemoveBOM);
+  WRITE_DATA(Integer, CPSLimit);
+  WRITE_DATA(Bool, NewerOnly);
 }
 //---------------------------------------------------------------------------
 #define C(Property) (Property == rhp.Property)

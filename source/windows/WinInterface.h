@@ -25,10 +25,12 @@ const int mpAllowContinueOnError = 0x02;
 
 #define UPLOAD_IF_ANY_SWITCH L"UploadIfAny"
 #define UPLOAD_SWITCH L"Upload"
+#define KEEP_UP_TO_DATE_SWITCH L"KeepUpToDate"
 #define JUMPLIST_SWITCH L"JumpList"
 #define DESKTOP_SWITCH L"Desktop"
 #define SEND_TO_HOOK_SWITCH L"SendToHook"
 #define UNSAFE_SWITCH L"Unsafe"
+#define DEFAULTS_SWITCH L"Defaults"
 #define NEWINSTANCE_SWICH L"NewInstance"
 #define KEYGEN_SWITCH L"KeyGen"
 #define KEYGEN_OUTPUT_SWITCH L"Output"
@@ -38,6 +40,7 @@ const int mpAllowContinueOnError = 0x02;
 #define LOGSIZE_SWITCH L"LogSize"
 #define LOGSIZE_SEPARATOR L"*"
 #define INI_SWITCH L"Ini"
+#define RAW_CONFIG_SWITCH L"RawConfig"
 #define FINGERPRINTSCAN_SWITCH L"FingerprintScan"
 
 struct TMessageParams
@@ -318,12 +321,15 @@ typedef void __fastcall (__closure *TSynchronizeSessionLog)
 typedef void __fastcall (__closure *TFeedSynchronizeError)
   (const UnicodeString & Message, TStrings * MoreMessages, TQueryType Type,
    const UnicodeString & HelpKeyword);
+typedef void __fastcall (__closure *TSynchronizeInNewWindow)
+  (const TSynchronizeParamType & Params, const TCopyParamType * CopyParams);
 bool __fastcall DoSynchronizeDialog(TSynchronizeParamType & Params,
   const TCopyParamType * CopyParams, TSynchronizeStartStopEvent OnStartStop,
   bool & SaveSettings, int Options, int CopyParamAttrs,
   TGetSynchronizeOptionsEvent OnGetOptions,
   TSynchronizeSessionLog OnSynchronizeSessionLog,
   TFeedSynchronizeError & OnFeedSynchronizeError,
+  TSynchronizeInNewWindow OnSynchronizeInNewWindow,
   bool Start);
 
 // forms\FullSynchronize.cpp

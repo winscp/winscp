@@ -231,12 +231,15 @@ protected:
   virtual int __fastcall GetResourceModuleCompleteness(HINSTANCE Module);
   virtual bool __fastcall IsTranslationComplete(HINSTANCE Module);
   static int __fastcall LocalesCompare(void * Item1, void * Item2);
+  bool __fastcall DoSaveCopyParam(THierarchicalStorage * Storage, const TCopyParamType * CopyParam, const TCopyParamType * Defaults);
 
 public:
   __fastcall TGUIConfiguration();
   virtual __fastcall ~TGUIConfiguration();
   virtual void __fastcall Default();
   virtual void __fastcall UpdateStaticUsage();
+  bool __fastcall SaveCopyParam(THierarchicalStorage * Storage, const TCopyParamType * CopyParam, const TCopyParamType * Defaults);
+  bool __fastcall LoadCopyParam(THierarchicalStorage * Storage, TCopyParamType * CopyParam);
 
   HANDLE __fastcall ChangeToDefaultResourceModule();
   HANDLE __fastcall ChangeResourceModule(HANDLE Instance);

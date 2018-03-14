@@ -52,7 +52,7 @@ TConfiguration * __fastcall CreateConfiguration()
   if (CheckSafe(Params))
   {
     std::unique_ptr<TStrings> RawConfig(new TStringList());
-    if (Params->FindSwitch(L"rawconfig", RawConfig.get()))
+    if (Params->FindSwitch(RAW_CONFIG_SWITCH, RawConfig.get()))
     {
       WinConfiguration->OptionsStorage = RawConfig.get();
     }

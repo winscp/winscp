@@ -881,6 +881,7 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage, bool PuttyImp
 void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
   bool PuttyExport, const TSessionData * Default, bool DoNotEncryptPasswords)
 {
+  // Same as in TCopyParamType::Save
   #define WRITE_DATA_EX(TYPE, NAME, PROPERTY, CONV) \
     if ((Default != NULL) && (CONV(Default->PROPERTY) == CONV(PROPERTY))) \
     { \
@@ -3042,17 +3043,7 @@ UnicodeString __fastcall TSessionData::GenerateOpenCommandArgs(bool Rtf)
   {
     AddSwitch(Result, RawSettingsOption, Rtf);
 
-    for (int Index = 0; Index < RawSettings->Count; Index++)
-    {
-      UnicodeString Name = RawSettings->Names[Index];
-      UnicodeString Value = RawSettings->ValueFromIndex[Index];
-      // Do not quote if it is all-numeric
-      if (IntToStr(StrToIntDef(Value, -1)) != Value)
-      {
-        Value = FORMAT(L"\"%s\"", (EscapeParam(Value)));
-      }
-      Result += FORMAT(L" %s=%s", (Name, Value));
-    }
+    Result += StringsToParams(RawSettings.get());
   }
 
   return Result;

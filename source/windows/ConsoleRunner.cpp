@@ -2187,8 +2187,8 @@ void __fastcall Usage(TConsole * Console)
     PrintUsageSyntax(Console, FORMAT(L"[mysession] /%s=<name>", (LowerCase(SESSIONNAME_SWICH))));
     PrintUsageSyntax(Console, L"[mysession] /newinstance");
     PrintUsageSyntax(Console, L"[mysession] /edit <path>");
-    PrintUsageSyntax(Console, L"[mysession] /synchronize [local_dir] [remote_dir] [/defaults]");
-    PrintUsageSyntax(Console, L"[mysession] /keepuptodate [local_dir] [remote_dir] [/defaults]");
+    PrintUsageSyntax(Console, FORMAT(L"[mysession] /synchronize [local_dir] [remote_dir] [/%s]", (LowerCase(DEFAULTS_SWITCH))));
+    PrintUsageSyntax(Console, FORMAT(L"[mysession] /%s [local_dir] [remote_dir] [/%s]", (LowerCase(KEEP_UP_TO_DATE_SWITCH), LowerCase(DEFAULTS_SWITCH))));
     PrintUsageSyntax(Console, FORMAT(L"[mysession] /%s [path]", (LowerCase(REFRESH_SWITCH))));
     PrintUsageSyntax(Console, L"[mysession] [/privatekey=<file>] [/hostkey=<fingerprint>]");
     PrintUsageSyntax(Console, L"[mysession] [/clientcert=<file>] [/certificate=<fingerprint>]");
@@ -2204,7 +2204,7 @@ void __fastcall Usage(TConsole * Console)
   PrintUsageSyntax(Console, L"[/xmllog=<logfile> [/xmlgroups]]");
   PrintUsageSyntax(Console,
     FORMAT(L"[/%s=<inifile>]", (LowerCase(INI_SWITCH))));
-  PrintUsageSyntax(Console, L"[/rawconfig config1=value1 config2=value2 ...]");
+  PrintUsageSyntax(Console, FORMAT(L"[/%s config1=value1 config2=value2 ...]", (LowerCase(RAW_CONFIG_SWITCH))));
   PrintUsageSyntax(Console, L"/batchsettings <site_mask> setting1=value1 setting2=value2 ...");
   PrintUsageSyntax(Console, FORMAT(L"/%s keyfile [/%s=output] [/%s] [/%s=comment]",
     (LowerCase(KEYGEN_SWITCH), LowerCase(KEYGEN_OUTPUT_SWITCH), LowerCase(KEYGEN_CHANGE_PASSPHRASE_SWITCH), LowerCase(KEYGEN_COMMENT_SWITCH))));
@@ -2224,9 +2224,9 @@ void __fastcall Usage(TConsole * Console)
     RegisterSwitch(SwitchesUsage, L"/newinstance", USAGE_NEWINSTANCE);
     RegisterSwitch(SwitchesUsage, L"/edit", USAGE_EDIT);
     RegisterSwitch(SwitchesUsage, L"/synchronize", USAGE_SYNCHRONIZE);
-    RegisterSwitch(SwitchesUsage, L"/keepuptodate", USAGE_KEEPUPTODATE);
+    RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(KEEP_UP_TO_DATE_SWITCH), USAGE_KEEPUPTODATE);
     RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(REFRESH_SWITCH), USAGE_REFRESH);
-    RegisterSwitch(SwitchesUsage, L"/defaults", USAGE_DEFAULTS);
+    RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(DEFAULTS_SWITCH), USAGE_DEFAULTS);
     RegisterSwitch(SwitchesUsage, L"/privatekey=", USAGE_PRIVATEKEY);
     RegisterSwitch(SwitchesUsage, L"/hostkey=", USAGE_HOSTKEY);
     RegisterSwitch(SwitchesUsage, L"/clientcert=", USAGE_CLIENTCERT);
@@ -2247,7 +2247,7 @@ void __fastcall Usage(TConsole * Console)
   RegisterSwitch(SwitchesUsage, L"/xmllog=", USAGE_XMLLOG);
   RegisterSwitch(SwitchesUsage, L"/xmlgroups", USAGE_XMLGROUPS);
   RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(INI_SWITCH) + L"=", USAGE_INI);
-  RegisterSwitch(SwitchesUsage, L"/rawconfig", USAGE_RAWCONFIG);
+  RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(RAW_CONFIG_SWITCH), USAGE_RAWCONFIG);
   RegisterSwitch(SwitchesUsage, L"/batchsettings", USAGE_BATCHSETTINGS);
   UnicodeString KeyGenDesc =
     FMTLOAD(USAGE_KEYGEN, (

@@ -652,6 +652,26 @@ void __fastcall TGUIConfiguration::UpdateStaticUsage()
     KEY(Integer,  SessionReopenAutoIdle); \
   ); \
 //---------------------------------------------------------------------------
+bool __fastcall TGUIConfiguration::DoSaveCopyParam(THierarchicalStorage * Storage, const TCopyParamType * CopyParam, const TCopyParamType * Defaults)
+{
+  bool Result = Storage->OpenSubKey(L"Interface\\CopyParam", true, true);
+  if (Result)
+  {
+    CopyParam->Save(Storage, Defaults);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TGUIConfiguration::SaveCopyParam(THierarchicalStorage * Storage, const TCopyParamType * CopyParam, const TCopyParamType * Defaults)
+{
+  bool Result = DoSaveCopyParam(Storage, CopyParam, Defaults);
+  if (Result)
+  {
+    Storage->CloseSubKey();
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall TGUIConfiguration::SaveData(THierarchicalStorage * Storage, bool All)
 {
   TConfiguration::SaveData(Storage, All);
@@ -661,7 +681,7 @@ void __fastcall TGUIConfiguration::SaveData(THierarchicalStorage * Storage, bool
   REGCONFIG(true);
   #undef KEYEX
 
-  if (Storage->OpenSubKey(L"Interface\\CopyParam", true, true))
+  if (DoSaveCopyParam(Storage, &FDefaultCopyParam, NULL))
   try
   {
     FDefaultCopyParam.Save(Storage);
@@ -693,6 +713,25 @@ void __fastcall TGUIConfiguration::SaveData(THierarchicalStorage * Storage, bool
   }
 }
 //---------------------------------------------------------------------------
+bool __fastcall TGUIConfiguration::LoadCopyParam(THierarchicalStorage * Storage, TCopyParamType * CopyParam)
+{
+  bool Result =
+    Storage->OpenSubKey(L"Interface\\CopyParam", false, true);
+  if (Result)
+  {
+    try
+    {
+      CopyParam->Load(Storage);
+    }
+    catch (...)
+    {
+      Storage->CloseSubKey();
+      throw;
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall TGUIConfiguration::LoadData(THierarchicalStorage * Storage)
 {
   TConfiguration::LoadData(Storage);
@@ -704,12 +743,10 @@ void __fastcall TGUIConfiguration::LoadData(THierarchicalStorage * Storage)
   #pragma warn +eas
   #undef KEYEX
 
-  if (Storage->OpenSubKey(L"Interface\\CopyParam", false, true))
+  // FDefaultCopyParam must be loaded before eventual setting defaults for CopyParamList
+  if (LoadCopyParam(Storage, &FDefaultCopyParam))
   try
   {
-    // must be loaded before eventual setting defaults for CopyParamList
-    FDefaultCopyParam.Load(Storage);
-
     int CopyParamListCount = Storage->ReadInteger(L"CopyParamList", -1);
     FCopyParamListDefaults = (CopyParamListCount < 0);
     if (!FCopyParamListDefaults)
