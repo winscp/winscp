@@ -208,6 +208,7 @@ namespace WinSCP
                 {
                     string parameter = CutToChar(ref parameters, ';');
                     string parameterName = CutToChar(ref parameter, '=');
+                    parameter = UriUnescape(parameter);
                     if (parameterName.Equals("fingerprint", StringComparison.OrdinalIgnoreCase))
                     {
                         SshHostKeyFingerprint = parameter;
