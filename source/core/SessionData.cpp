@@ -1923,7 +1923,7 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
         UnicodeString ConnectionParamName = CutToChar(ConnectionParam, UrlParamValueSeparator, false);
         if (SameText(ConnectionParamName, UrlHostKeyParamName))
         {
-          HostKey = ConnectionParam;
+          HostKey = DecodeUrlChars(ConnectionParam);
           FOverrideCachedHostKey = false;
         }
       }
@@ -2916,9 +2916,20 @@ UnicodeString __fastcall TSessionData::GenerateSessionUrl(unsigned int Flags)
 
     if (FLAGSET(Flags, sufHostKey) && !HostKey.IsEmpty())
     {
+      UnicodeString S = NormalizeFingerprint(HostKey);
+      // Many SHA-256 fingeprints end with an equal sign and we do not really need it to be encoded, so avoid that.
+      if (EndsStr(L"=", S))
+      {
+        S = EncodeUrlString(S.SubString(1, S.Length() - 1)) + L"=";
+      }
+      else
+      {
+        S = EncodeUrlString(S);
+      }
+
       Url +=
         UnicodeString(UrlParamSeparator) + UrlHostKeyParamName +
-        UnicodeString(UrlParamValueSeparator) + NormalizeFingerprint(HostKey);
+        UnicodeString(UrlParamValueSeparator) + S;
     }
 
     Url += L"@";
