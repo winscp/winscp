@@ -750,7 +750,7 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
       L"{\\rtf1\n"
        "{\\colortbl ;" +
        // The same RGB as on wiki
-       RtfColorEntry(0x010101) + // near-black fake color to be used with no-style link to ovreride the default blue underline
+       RtfColorEntry(0x010101) + // near-black fake color to be used with no-style link to override the default blue underline
        RtfColorEntry(0x008000) + // code comment (green)
        RtfColorEntry(0x008080) + // class (teal)
        RtfColorEntry(0x800000) + // string (maroon)
