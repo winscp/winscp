@@ -614,7 +614,6 @@ __published:    // IDE-managed Components
   TAction *CustomizeToolbarAction;
   TTBXSubmenuItem *TBXSubmenuItem4;
   TTBXSubmenuItem *TBXSubmenuItem6;
-  TTBXSubmenuItem *TBXSubmenuItem8;
   TTBXSubmenuItem *TBXSubmenuItem9;
   void __fastcall ExplorerActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsExecute(TBasicAction *Action, bool &Handled);

@@ -45,9 +45,6 @@ object NonVisualDataModule: TNonVisualDataModule
     object Rename1: TTBXItem
       Action = CurrentRenameAction
     end
-    object TBXSubmenuItem8: TTBXSubmenuItem
-      Action = CustomizeToolbarAction
-    end
     object N45: TTBXSeparatorItem
     end
     object RemoteFilePopupCustomCommandsMenu: TTBXSubmenuItem
