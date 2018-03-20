@@ -1,18 +1,13 @@
-This is the README file for source code package of WinSCP.
+[WinSCP](https://winscp.net/) is a popular SFTP client and FTP client for Microsoft Windows! Copy file between a local computer and remote servers using FTP, FTPS, SCP, SFTP, WebDAV or S3 file transfer protocols. 
 
 To build WinSCP you need:
-- Embarcadero C++ Builder XE6 Professional.
-  https://www.embarcadero.com/products/cbuilder
-- Build Tools and Agents for Visual Studio 2017 (for C# 7.0)
-  https://www.visualstudio.com/
-- nasm from http://www.nasm.us/
-  (store it to buildtools/tools/nasm.exe)
-- Object file converter from http://www.agner.org/optimize/#objconv
-  (store it to buildtools/tools/objconv.exe)
-- Build MFC (see [readme_mfc.txt](readme_mfc.txt)).
+- [Embarcadero C++ Builder XE6 Professional](https://www.embarcadero.com/products/cbuilder).
+- [Build Tools and Agents for Visual Studio 2017](https://www.visualstudio.com/) (for C# 7.0)
+- [nasm](http://www.nasm.us/) (store it to `buildtools/tools/nasm.exe`)
+- [Object file converter](http://www.agner.org/optimize/#objconv) (store it to `buildtools/tools/objconv.exe`)
+- Build MFC (see [`readme_mfc.txt`](readme_mfc.txt)).
 
-To build WinSCP from source by yourself, modify and use 'build.bat' in root
-folder of source code package.
+To build WinSCP from source by yourself, modify and use [`build.bat`](build.bat) in root folder.
 
 Directory structure:
 
@@ -34,6 +29,6 @@ Directory structure:
     /libs               3rd party libraries
     /translations       translations of WinSCP strings
 
-WinSCP homepage is https://winscp.net/
+See the file [`license.txt`](license.txt) for the license conditions.
 
-See the file 'license.txt' for the license conditions.
+[![NuGet](https://img.shields.io/nuget/v/WinSCP.svg)](https://www.nuget.org/packages/WinSCP/)
