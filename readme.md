@@ -1,4 +1,4 @@
-[WinSCP](https://winscp.net/) is a popular SFTP client and FTP client for Microsoft Windows! Copy file between a local computer and remote servers using FTP, FTPS, SCP, SFTP, WebDAV or S3 file transfer protocols. 
+[WinSCP](https://winscp.net/) is a popular SFTP client and FTP client for Microsoft Windows! Copy file between a local computer and remote servers using FTP, FTPS, SCP, SFTP, WebDAV or S3 file transfer protocols.
 
 To build WinSCP you need:
 - [Embarcadero C++ Builder XE6 Professional](https://www.embarcadero.com/products/cbuilder).
