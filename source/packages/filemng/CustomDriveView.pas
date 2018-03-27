@@ -26,7 +26,7 @@ type
     FDragFileList: TStringList;
     FDragDropFilesEx: TCustomizableDragDropFilesEx;
     FDragImageList: TDragImageList;
-    FDragDrive: TDrive;
+    FDragDrive: string;
     FExeDrag: Boolean;
     FDDLinkOnExeDrag: Boolean;
     FDragNode: TTreeNode;
@@ -238,7 +238,7 @@ begin
 
   DragMode := dmAutomatic;
   FDragFileList := TStringList.Create;
-  FDragDrive := #0;
+  FDragDrive := '';
   FExeDrag := False;
   FDDLinkOnExeDrag := True;
   FContextMenu := False;
@@ -414,7 +414,7 @@ begin
   if (FDragDropFilesEx.FileList.Count > 0) and
      (Length(TFDDListItem(FDragDropFilesEx.FileList[0]^).Name) > 0) Then
   begin
-    FDragDrive := Upcase(TFDDListItem(FDragDropFilesEx.FileList[0]^).Name[1]);
+    FDragDrive := DriveInfo.GetDriveKey(TFDDListItem(FDragDropFilesEx.FileList[0]^).Name);
     FExeDrag := FDDLinkOnExeDrag and
       (deLink in DragDropFilesEx.TargetEffects) and
       ((DragDropFilesEx.AvailableDropEffects and DropEffect_Link) <> 0);
@@ -431,7 +431,7 @@ begin
   end
     else
   begin
-    FDragDrive := #0;
+    FDragDrive := '';
   end;
 
   FScrollOnDragOver.StartDrag;
@@ -695,7 +695,7 @@ begin
       Exit;
     end;
 
-    FDragDrive := #0;
+    FDragDrive := '';
 
     ClearDragFileList(FDragDropFilesEx.FileList);
     FDragDropFilesEx.CompleteFileList := DragCompleteFileList;
@@ -761,7 +761,7 @@ begin
     finally
       ClearDragFileList(FDragDropFilesEx.FileList);
 
-      FDragDrive := #0;
+      FDragDrive := '';
       DropTarget := nil;
 
       try
@@ -1157,15 +1157,19 @@ function TCustomDriveView.IterateSubTree(var StartNode : TTreeNode;
 begin {IterateSubTree}
   Result := False;
   FContinue := True;
-  if not Assigned(CallBackFunc) then Exit;
+  if Assigned(CallBackFunc) then
+  begin
+    if ScanStartNode = coScanStartNode then
+    begin
+      CallBackFunc(StartNode, Data);
+    end;
 
-  if ScanStartNode = coScanStartNode then
-    CallBackFunc(StartNode, Data);
-
-  if Assigned(StartNode) then
-    if (not FContinue) or (not ScanSubTree(StartNode)) then Exit;
-
-  Result := True;
+    if (not Assigned(StartNode)) or
+       FContinue and ScanSubTree(StartNode) then
+    begin
+      Result := True;
+    end;
+  end;
 end; {IterateSubTree}
 
 procedure TCustomDriveView.ClearDragFileList(FileList: TFileList);

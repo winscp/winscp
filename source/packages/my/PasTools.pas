@@ -76,6 +76,8 @@ procedure SetAppMainForm(Value: TForm);
 
 procedure ForceColorChange(Control: TWinControl);
 
+function IsUncPath(Path: string): Boolean;
+
 type
   TApiPathEvent = function(Path: string): string;
 
@@ -953,6 +955,11 @@ begin
     end
       else FVScrollCount := 0;
   end;
+end;
+
+function IsUncPath(Path: string): Boolean;
+begin
+  Result := (Copy(Path, 1, 2) = '\\') or (Copy(Path, 1, 2) = '//');
 end;
 
 var

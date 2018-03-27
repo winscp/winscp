@@ -109,7 +109,6 @@ type
     FUseSystemContextMenu: Boolean;
     FOnStartLoading: TNotifyEvent;
     FOnLoaded: TNotifyEvent;
-    FDragDrive: TDrive;
     FExeDrag: Boolean;
     FDDLinkOnExeDrag: Boolean;
     FOnDDDragEnter: TDDOnDragEnter;
@@ -215,6 +214,7 @@ type
     FSelectFile: string;
     FWatchForChanges: Boolean;
     FInvalidNameChars: string;
+    FDragDrive: string;
 
     procedure AddToDragFileList(FileList: TFileList; Item: TListItem); virtual;
     function CanEdit(Item: TListItem): Boolean; override;
@@ -400,7 +400,6 @@ type
     property IsRecycleBin: Boolean read FIsRecycleBin;
     property DDLinkOnExeDrag: Boolean read FDDLinkOnExeDrag
       write FDDLinkOnExeDrag default False;
-    property DragDrive: TDrive read FDragDrive;
     property DragOnDriveIsMove: Boolean read FDragOnDriveIsMove write FDragOnDriveIsMove;
     property DragSourceEffects: TDropEffectSet read GetDragSourceEffects{ write FDragSourceEffects};
     property ExeDrag: Boolean read FExeDrag;
@@ -863,7 +862,7 @@ begin
   FDragEnabled := False;
   FDDOwnerIsSource := False;
   FDDLinkOnExeDrag := False;
-  FDragDrive := #0;
+  FDragDrive := '';
   FExeDrag := False;
   FMask := '';
   FNaturalOrderNumericalSorting := True;
@@ -2054,7 +2053,7 @@ begin
      (Length(TFDDListItem(DragDropFilesEx.FileList[0]^).Name) > 0) and
      (not IsRecycleBin or not DragDropFilesEx.FileNamesAreMapped) then
   begin
-    FDragDrive := Upcase(TFDDListItem(DragDropFilesEx.FileList[0]^).Name[1]);
+    FDragDrive := DriveInfo.GetDriveKey(TFDDListItem(DragDropFilesEx.FileList[0]^).Name);
     FExeDrag := FDDLinkOnExeDrag and
       (deLink in DragDropFilesEx.TargetEffects) and
       ((DragDropFilesEx.AvailableDropEffects and DropEffect_Link) <> 0);
@@ -2071,7 +2070,7 @@ begin
   end
     else
   begin
-    FDragDrive := #0;
+    FDragDrive := '';
   end;
 
   FScrollOnDragOver.StartDrag;

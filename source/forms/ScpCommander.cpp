@@ -1886,6 +1886,7 @@ void __fastcall TScpCommanderForm::UpdateImages()
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::LocalPathComboUpdateDrives()
 {
+  FLocalSpecialPaths = 0;
   TStrings* Strings = LocalPathComboBox->Strings;
   Strings->BeginUpdate();
   try
@@ -1895,17 +1896,27 @@ void __fastcall TScpCommanderForm::LocalPathComboUpdateDrives()
     Strings->Add(LoadStr(SPECIAL_FOLDER_MY_DOCUMENTS));
     FLocalPathComboBoxPaths->AddObject(GetPersonalFolder(),
       (TObject *)DriveInfo->SpecialFolder[CSIDL_PERSONAL]->ImageIndex);
+    FLocalSpecialPaths++;
     Strings->Add(LoadStr(SPECIAL_FOLDER_DESKTOP));
     FLocalPathComboBoxPaths->AddObject(GetDesktopFolder(),
       (TObject *)DriveInfo->SpecialFolder[CSIDL_DESKTOP]->ImageIndex);
+    FLocalSpecialPaths++;
 
-    for (TDrive Drive = FirstDrive; Drive <= LastDrive; Drive++)
+    std::unique_ptr<TStrings> Drives(LocalDriveView->GetDrives());
+    for (int Index = 0; Index < Drives->Count; Index++)
     {
-      if (DriveInfo->Data[Drive]->Valid)
+      UnicodeString Drive = Drives->Strings[Index];
+      if (DriveInfo->Get(Drive)->Valid)
       {
-        Strings->Add(UnicodeString(L"&") + DriveInfo->GetPrettyName(Drive));
-        FLocalPathComboBoxPaths->AddObject(UnicodeString(Drive) + L":\\",
-          (TObject *)DriveInfo->GetImageIndex(Drive));
+        UnicodeString Caption = DriveInfo->GetPrettyName(Drive);
+        if (DriveInfo->IsRealDrive(Drive))
+        {
+          Caption.Insert(L"&", 0);
+        }
+        Strings->Add(Caption);
+        UnicodeString RootPath = DriveInfo->GetDriveRoot(Drive);
+        int ImageIndex = DriveInfo->GetImageIndex(Drive);
+        FLocalPathComboBoxPaths->AddObject(RootPath, reinterpret_cast<TObject *>(ImageIndex));
       }
     }
   }
@@ -1942,6 +1953,10 @@ void __fastcall TScpCommanderForm::LocalPathComboUpdate()
 void __fastcall TScpCommanderForm::LocalDirViewPathChange(TCustomDirView * /*Sender*/)
 {
   LocalPathComboUpdate();
+  if (IsUncPath(LocalDirView->Path))
+  {
+    Configuration->Usage->Inc(L"BrowsedUncPath");
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::LocalPathComboBoxCancel(TObject * /*Sender*/)
@@ -1978,13 +1993,13 @@ void __fastcall TScpCommanderForm::LocalPathComboBoxItemClick(TObject * /*Sender
   DebugAssert((LocalPathComboBox->ItemIndex >= 0) && (LocalPathComboBox->ItemIndex < FLocalPathComboBoxPaths->Count));
 
   UnicodeString Path = FLocalPathComboBoxPaths->Strings[LocalPathComboBox->ItemIndex];
-  if (Path.Length() == 3)
+  if (LocalPathComboBox->ItemIndex >= FLocalSpecialPaths)
   {
-    LocalDirView->ExecuteDrive(Path[1]);
+    LocalDirView->ExecuteDrive(DriveInfo->GetDriveKey(Path));
   }
   else
   {
-    LocalDirView->Path = FLocalPathComboBoxPaths->Strings[LocalPathComboBox->ItemIndex];
+    LocalDirView->Path = Path;
   }
 }
 //---------------------------------------------------------------------------

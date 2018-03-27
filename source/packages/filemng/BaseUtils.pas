@@ -27,7 +27,7 @@ unit BaseUtils;
 interface
 
 uses
-  SysUtils, Windows, Forms, ShlObj, PIDL, Classes, Controls;
+  SysUtils, Windows, Forms, ShlObj, PIDL, Classes, Controls, DragDropFilesEx;
 
 type
   TDateTimePrecision = (tpNone, tpDay, tpMinute, tpSecond, tpMillisecond);
@@ -41,7 +41,6 @@ function FormatBytes(Bytes: Int64; Style: TFormatBytesStyle = fbShort; UseUnitsF
 function FormatPanelBytes(Bytes: Int64; Style: TFormatBytesStyle): string;
 procedure FreePIDL(var PIDL: PItemIDList);
 function StrContains(Str1, Str2: string): Boolean;
-function IsUncPath(Path: string): Boolean;
 
 procedure ReduceDateTimePrecision(var DateTime: TDateTime;
   Precision: TDateTimePrecision);
@@ -53,7 +52,6 @@ function FormatLastOSError(Message: string): string;
 
 resourcestring
   SNoValidPath = 'Can''t find any valid path.';
-  SUcpPathsNotSupported = 'UNC paths are not supported.';
   SByte = 'B';
   SKiloByte = 'KB';
   SMegaByte = 'MB';
@@ -62,12 +60,7 @@ resourcestring
 implementation
 
 uses
-  IEDriveInfo, DateUtils, ShellApi, SysConst, PasTools, Math;
-
-function IsUncPath(Path: string): Boolean;
-begin
-  Result := (Copy(Path, 1, 2) = '\\') or (Copy(Path, 1, 2) = '//');
-end;
+  IEDriveInfo, DateUtils, ShellApi, SysConst, PasTools, Math, CustomDirView, FileOperator, DragDrop;
 
 function StrContains(Str1, Str2: string): Boolean;
 var

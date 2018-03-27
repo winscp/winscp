@@ -496,6 +496,7 @@ private:
   UnicodeString FDDExtTarget;
   bool FCommandLineComboPopulated;
   TStrings* FLocalPathComboBoxPaths;
+  int FLocalSpecialPaths;
   unsigned int FSpecialFolders;
   TEdit * FCommandLineComboEdit;
   TWndMethod FToolbarEditOldWndProc;
