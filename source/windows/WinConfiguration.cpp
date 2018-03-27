@@ -2654,6 +2654,8 @@ void __fastcall TWinConfiguration::UpdateStaticUsage()
       ScpExplorer.DriveView :
       (ScpCommander.LocalPanel.DriveView || ScpCommander.RemotePanel.DriveView));
   Usage->Set(L"MinimizeToTray", MinimizeToTray);
+  UnicodeString ToolbarsButtons = (Interface == ifExplorer) ? ScpExplorer.ToolbarsButtons : ScpCommander.ToolbarsButtons;
+  Usage->Set(L"AnyHiddenToolbarButtons", !ToolbarsButtons.IsEmpty());
   Usage->Set(L"ShowingTips", ShowTips);
   TipsUpdateStaticUsage();
 
