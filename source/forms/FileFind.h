@@ -113,6 +113,7 @@ private:
   UnicodeString FFocusPath;
   typedef std::map<UnicodeString, TListItem *> TFileItemMap;
   TFileItemMap FFileItemMap;
+  bool FClosePending;
 
   void __fastcall FileFound(TTerminal * Terminal,
     const UnicodeString FileName, const TRemoteFile * File, bool & Cancel);

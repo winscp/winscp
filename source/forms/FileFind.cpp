@@ -222,6 +222,7 @@ void __fastcall TFileFindDialog::Start()
   DebugAssert(FState != ffFinding);
 
   FState = ffFinding;
+  FClosePending = false;
   try
   {
     FFrameAnimation.Start();
@@ -268,6 +269,12 @@ void __fastcall TFileFindDialog::Start()
     }
 
     UpdateControls();
+  }
+
+  if (FClosePending)
+  {
+    FClosePending = false;
+    Close();
   }
 }
 //---------------------------------------------------------------------------
@@ -387,9 +394,13 @@ bool __fastcall TFileFindDialog::StopIfFinding()
 }
 //---------------------------------------------------------------------------
 void __fastcall TFileFindDialog::FormCloseQuery(TObject * /*Sender*/,
-  bool & /*CanClose*/)
+  bool & CanClose)
 {
-  StopIfFinding();
+  if (StopIfFinding())
+  {
+    FClosePending = true;
+    CanClose = false;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TFileFindDialog::HelpButtonClick(TObject * /*Sender*/)
