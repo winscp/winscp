@@ -1886,17 +1886,19 @@ begin
           Lines.Free;
         end;
 
-        if SponsorImage = nil then
-        begin
-          Log('Incomplete sponsor data');
-          SponsorStatus := 'P';
-          ShowSponsor := -1;
-        end;
-
         if ShowSponsor = 0 then
         begin
-          SponsorStatus := 'S';
-          ShowSponsor := 1;
+          if SponsorImage = nil then
+          begin
+            Log('Incomplete sponsor data');
+            SponsorStatus := 'P';
+            ShowSponsor := -1;
+          end
+            else
+          begin
+            SponsorStatus := 'S';
+            ShowSponsor := 1;
+          end;
         end;
       end;
     except
