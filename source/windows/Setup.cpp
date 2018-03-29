@@ -30,6 +30,7 @@
 #include <VCLCommon.h>
 #include <WebBrowserEx.hpp>
 #include <DateUtils.hpp>
+#include <OperationWithTimeout.hpp>
 //---------------------------------------------------------------------------
 #define KEY _T("SYSTEM\\CurrentControlSet\\Control\\") \
             _T("Session Manager\\Environment")
@@ -1803,7 +1804,7 @@ static bool __fastcall AddJumpListCategory(TStrings * Names,
 void __fastcall UpdateJumpList(TStrings * SessionNames, TStrings * WorkspaceNames)
 {
   ICustomDestinationList * DestinationList = NULL;
-  IObjectArray * RemovedArray = NULL;
+  IObjectArray * RemovedArray;
   TStringList * Removed = NULL;
   int OldErrMode = SetErrorMode(SEM_FAILCRITICALERRORS);
 
@@ -1814,9 +1815,7 @@ void __fastcall UpdateJumpList(TStrings * SessionNames, TStrings * WorkspaceName
     {
 
       unsigned int MinSlots;
-      unsigned int * PMinSlots = &MinSlots;
-      void ** PRemovedArray = (void**)&RemovedArray;
-      HRESULT Result = DestinationList->BeginList(PMinSlots, IID_IObjectArray, PRemovedArray);
+      HRESULT Result = DestinationListBeginList(DestinationList, MinSlots, IID_IObjectArray, reinterpret_cast<void *>(RemovedArray), 50000);
       if (SUCCEEDED(Result) && DebugAlwaysTrue(RemovedArray != NULL))
       {
         Removed = new TStringList();
@@ -1856,10 +1855,6 @@ void __fastcall UpdateJumpList(TStrings * SessionNames, TStrings * WorkspaceName
   __finally
   {
     SetErrorMode(OldErrMode);
-    if (RemovedArray != NULL)
-    {
-      RemovedArray->Release();
-    }
     if (DestinationList != NULL)
     {
       DestinationList->Release();
