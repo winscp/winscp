@@ -116,6 +116,8 @@ procedure TOperationWithTimeoutThread.Execute;
 var
   Operation: TOperation;
 begin
+  CoInitialize(nil);
+
   while WaitForSingleObject(FRequestEvent, INFINITE) = WAIT_OBJECT_0 do
   begin
     if Terminated then
