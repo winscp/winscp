@@ -26,6 +26,7 @@ void __fastcall GetLoginData(UnicodeString SessionName, TOptions * Options,
   TObjectList * DataList, UnicodeString & DownloadFile, bool NeedSession, TForm * LinkedForm)
 {
   bool DefaultsOnly = false;
+  bool Handled = false;
 
   UnicodeString FolderOrWorkspaceName = DecodeUrlChars(SessionName);
   if (StoredSessions->IsFolder(FolderOrWorkspaceName) ||
@@ -60,12 +61,17 @@ void __fastcall GetLoginData(UnicodeString SessionName, TOptions * Options,
         // though it's hardly of any use here.
         SessionData->ExpandEnvironmentVariables();
         OpenSessionInPutty(GUIConfiguration->PuttyPath, SessionData);
-        Abort();
+        DataList->Clear();
+        Handled = true;
       }
     }
   }
 
-  if (DefaultsOnly && !NeedSession)
+  if (Handled)
+  {
+     // noop
+  }
+  else if (DefaultsOnly && !NeedSession)
   {
     // No URL specified on command-line and no explicit command-line parameter
     // that requires session was specified => noop
