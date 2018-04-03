@@ -116,6 +116,9 @@ procedure TOperationWithTimeoutThread.Execute;
 var
   Operation: TOperation;
 begin
+  // Needed for various API, particularly:
+  // - SHGetFileInfo fails to return icon index on some systems;
+  // - ICustomDestinationList.BeginList returns invalid "removed" array.
   CoInitialize(nil);
 
   while WaitForSingleObject(FRequestEvent, INFINITE) = WAIT_OBJECT_0 do
