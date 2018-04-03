@@ -1301,7 +1301,7 @@ void __fastcall TEditorForm::LoadFromFile(bool PrimaryEncoding)
       {
         UnicodeString Message = FMTLOAD(EDITOR_ENCODING_ERROR, (FFileName, FEncodingName));
 
-        if (CanTrySecondary)
+        if (PrimaryEncoding && CanTrySecondary)
         {
           TEncoding * EncodingBackup = FEncoding;
           UnicodeString EncodingNameBackup = FEncodingName;
