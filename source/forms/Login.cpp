@@ -329,14 +329,22 @@ TTreeNode * __fastcall TLoginDialog::AddSession(TSessionData * Data)
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::UpdateNodeImages()
 {
-  TTreeNode * Node = SessionTree->Items->GetFirstNode();
-  while (Node != NULL)
+  SessionTree->Images->BeginUpdate();
+  try
   {
-    if (IsSiteNode(Node))
+    TTreeNode * Node = SessionTree->Items->GetFirstNode();
+    while (Node != NULL)
     {
-      UpdateNodeImage(Node);
+      if (IsSiteNode(Node))
+      {
+        UpdateNodeImage(Node);
+      }
+      Node = Node->GetNext();
     }
-    Node = Node->GetNext();
+  }
+  __finally
+  {
+    SessionTree->Images->EndUpdate();
   }
 }
 //---------------------------------------------------------------------------
@@ -387,6 +395,7 @@ void __fastcall TLoginDialog::LoadSessions()
 {
   TAutoFlag LoadingFlag(FLoading);
   SessionTree->Items->BeginUpdate();
+  SessionTree->Images->BeginUpdate();
   try
   {
     // optimization
@@ -411,6 +420,7 @@ void __fastcall TLoginDialog::LoadSessions()
     // SortType is set (not having set the data property), so we would have to
     // call AlphaSort here explicitly
     SessionTree->SortType = Comctrls::stBoth;
+    SessionTree->Images->EndUpdate();
     SessionTree->Items->EndUpdate();
   }
   SessionTree->Selected = SessionTree->Items->GetFirstNode();
