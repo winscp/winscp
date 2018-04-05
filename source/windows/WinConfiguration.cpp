@@ -1144,8 +1144,9 @@ void __fastcall TWinConfiguration::LoadFrom(THierarchicalStorage * Storage)
 
     TCustomWinConfiguration::LoadFrom(Storage);
 
-    // This needs to be done even if there's no Configuration key in the storage,
+    // Following needs to be done even if there's no Configuration key in the storage,
     // so it cannot be in LoadData
+
     int EditorCount = FEditorList->Count;
     if (EditorCount == 0)
     {
@@ -1187,6 +1188,11 @@ void __fastcall TWinConfiguration::LoadFrom(THierarchicalStorage * Storage)
         FEditorList->Add(AlternativeEditor);
       }
     }
+
+    // Additionally, this needs to be after Locale is loaded
+    LoadExtensionTranslations();
+    // and this after the ExtensionsDeleted, ExtensionsOrder and ExtensionsShortCuts are loaded
+    LoadExtensionList();
   }
   __finally
   {
@@ -1435,11 +1441,6 @@ void __fastcall TWinConfiguration::LoadData(THierarchicalStorage * Storage)
   REGCONFIG(false);
   #pragma warn +eas
   #undef KEYEX
-
-  // Load after Locale
-  LoadExtensionTranslations();
-  // Load after the ExtensionsDeleted,  ExtensionsOrder and ExtensionsShortCuts
-  LoadExtensionList();
 
   // to reflect changes to PanelFont
   UpdateIconFont();
