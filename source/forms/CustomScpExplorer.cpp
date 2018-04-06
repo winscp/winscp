@@ -495,7 +495,16 @@ bool __fastcall TCustomScpExplorerForm::CommandLineFromAnotherInstance(
       UnicodeString SessionName = Params.Param[1];
       std::unique_ptr<TObjectList> DataList(new TObjectList());
       UnicodeString DownloadFile; // unused
-      GetLoginData(SessionName, &Params, DataList.get(), DownloadFile, true, this);
+      try
+      {
+        GetLoginData(SessionName, &Params, DataList.get(), DownloadFile, true, this);
+      }
+      catch (EAbort &)
+      {
+        // Happens when opening session in PuTTY and in other situations,
+        // in which we do not want to fail WM_COPYDATA, as that would cause master instance
+        // to process the command-line on its own (or to pass it to yet another instance)
+      }
       if (DataList->Count > 0)
       {
         TTerminalManager * Manager = TTerminalManager::Instance();
