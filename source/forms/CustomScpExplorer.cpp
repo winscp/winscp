@@ -4351,17 +4351,14 @@ void __fastcall TCustomScpExplorerForm::InitStatusBar()
 
   SessionStatusBar->Panels->Items[Offset + 2]->Enabled =
     (!SessionInfo.CSCompression.IsEmpty() || !SessionInfo.SCCompression.IsEmpty());
-  if (SessionInfo.CSCompression == SessionInfo.SCCompression)
+  UnicodeString CSCompressionStr = DefaultStr(SessionInfo.CSCompression, LoadStr(NO_STR));
+  UnicodeString SCCompressionStr = DefaultStr(SessionInfo.SCCompression, LoadStr(NO_STR));
+  UnicodeString CompressionStr = CSCompressionStr;
+  if (CSCompressionStr != SCCompressionStr)
   {
-    SessionStatusBar->Panels->Items[Offset + 2]->Hint =
-      FMTLOAD(STATUS_COMPRESSION_HINT, (DefaultStr(SessionInfo.CSCompression, LoadStr(NO_STR))));
+    CompressionStr += UnicodeString(L"/") + SCCompressionStr;
   }
-  else
-  {
-    SessionStatusBar->Panels->Items[Offset + 2]->Hint = FMTLOAD(STATUS_COMPRESSION2_HINT,
-      (DefaultStr(SessionInfo.CSCompression, LoadStr(NO_STR)),
-       DefaultStr(SessionInfo.SCCompression, LoadStr(NO_STR))));
-  }
+  SessionStatusBar->Panels->Items[Offset + 2]->Hint = FMTLOAD(STATUS_COMPRESSION_HINT, (CompressionStr));
 
   SessionStatusBar->Panels->Items[Offset + 3]->Hint = LoadStr(STATUS_DURATION_HINT);
 

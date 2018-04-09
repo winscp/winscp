@@ -318,7 +318,6 @@ BEGIN
         EXPLORER_FORWARD_HINT, "Forward to %s"
         STATUS_DURATION_HINT, "Connection time"
         STATUS_COMPRESSION_HINT, "Compression (%s)"
-        STATUS_COMPRESSION2_HINT, "Compression (client \273 server: %s, server \273 client: %s)"
         STATUS_FILEINFO_HINT, "File selection info"
         SAVEDSESSION_HINT, "Open site '%s' (hold down Shift to open site in new window)"
         LICENSE_CAPTION, "%s license"
