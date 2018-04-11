@@ -2801,7 +2801,7 @@ begin
   begin
     if DriveInfo.IsRealDrive(Drive) then
     begin
-      GetDir(Integer(Drive) - Integer('A') + 1, APath);
+      GetDir(Integer(Drive[1]) - Integer('A') + 1, APath);
       APath := ExcludeTrailingPathDelimiter(APath);
     end
       else
