@@ -3312,6 +3312,7 @@ void __fastcall TCustomScpExplorerForm::ExecuteFile(TOperationSide Side,
 
   UnicodeString Counter;
   UnicodeString LocalFileName;
+  bool Handled = false;
   if (Side == osRemote)
   {
     // We need to trim VMS version here, so that we use name without version
@@ -3335,7 +3336,7 @@ void __fastcall TCustomScpExplorerForm::ExecuteFile(TOperationSide Side,
         {
           Form->SetFocus();
         }
-        Abort();
+        Handled = true;
       }
       else
       {
@@ -3343,36 +3344,39 @@ void __fastcall TCustomScpExplorerForm::ExecuteFile(TOperationSide Side,
       }
     }
 
-    TStringList * FileList1 = new TStringList();
-    try
+    if (!Handled)
     {
-      FileList1->AddObject(FullFileName, Object);
-      TemporarilyDownloadFiles(FileList1,
-        RemoteExecuteForceText(ExecuteFileBy, ExternalEditor),
-        LocalRootDirectory, LocalDirectory, true, true, true);
-      LocalFileName = LocalDirectory + FileList1->Strings[0];
-    }
-    __finally
-    {
-      delete FileList1;
-    }
+      TStringList * FileList1 = new TStringList();
+      try
+      {
+        FileList1->AddObject(FullFileName, Object);
+        TemporarilyDownloadFiles(FileList1,
+          RemoteExecuteForceText(ExecuteFileBy, ExternalEditor),
+          LocalRootDirectory, LocalDirectory, true, true, true);
+        LocalFileName = LocalDirectory + FileList1->Strings[0];
+      }
+      __finally
+      {
+        delete FileList1;
+      }
 
-    switch (ExecuteFileBy)
-    {
-      case efShell:
-        Counter = "RemoteFilesExecuted";
-        break;
+      switch (ExecuteFileBy)
+      {
+        case efShell:
+          Counter = "RemoteFilesExecuted";
+          break;
 
-      case efInternalEditor:
-        Counter = "RemoteFilesOpenedInInternalEditor";
-        break;
+        case efInternalEditor:
+          Counter = "RemoteFilesOpenedInInternalEditor";
+          break;
 
-      case efExternalEditor:
-        Counter = "RemoteFilesOpenedInExternalEditor";
-        break;
+        case efExternalEditor:
+          Counter = "RemoteFilesOpenedInExternalEditor";
+          break;
 
-      default:
-        DebugFail();
+        default:
+          DebugFail();
+      }
     }
   }
   else
@@ -3399,10 +3403,13 @@ void __fastcall TCustomScpExplorerForm::ExecuteFile(TOperationSide Side,
     }
   }
 
-  Configuration->Usage->Inc(Counter);
+  if (!Handled)
+  {
+    Configuration->Usage->Inc(Counter);
 
-  CustomExecuteFile(Side, ExecuteFileBy, LocalFileName, OriginalFileName,
-    ExternalEditor, LocalRootDirectory, RemoteDirectory);
+    CustomExecuteFile(Side, ExecuteFileBy, LocalFileName, OriginalFileName,
+      ExternalEditor, LocalRootDirectory, RemoteDirectory);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::ExecuteFile(TOperationSide Side,
