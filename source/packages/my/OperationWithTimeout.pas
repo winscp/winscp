@@ -3,7 +3,7 @@ unit OperationWithTimeout;
 interface
 
 uses
-  Winapi.Windows, Winapi.ShlObj, Winapi.ShellAPI, ActiveX, Winapi.ObjectArray;
+  Winapi.Windows, Winapi.ShlObj, Winapi.ShellAPI, ActiveX;
 
 function ShellFolderGetAttributesOfWithTimeout(
   ShellFolder: IShellFolder; cidl: UINT; var apidl: PItemIDList; var rgfInOut: UINT; Timeout: Integer): HResult;
@@ -22,7 +22,7 @@ function DestinationListBeginList(
 implementation
 
 uses
-  System.Classes, System.Types, System.SysUtils, System.SyncObjs, System.Contnrs, CompThread;
+  System.Classes, System.Types, System.SysUtils, CompThread;
 
 type
   TOperation = class;
@@ -31,8 +31,6 @@ type
 
   TOperation = class(TObject)
   public
-    OperationEvent: TOperationEvent;
-
     // ShellFolderGetAttributesOfWithTimeout
     ShellFolder: IShellFolder;
     cidl: UINT;
@@ -63,146 +61,68 @@ type
     pcMaxSlots: UINT;
     riid: TIID;
     ppv: Pointer;
-
-    constructor Create(AOperationEvent: TOperationEvent);
   end;
-
-constructor TOperation.Create(AOperationEvent: TOperationEvent);
-begin
-  OperationEvent := AOperationEvent;
-end;
 
 type
   TOperationWithTimeoutThread = class(TCompThread)
   public
-    constructor Create;
-    destructor Destroy; override;
-    procedure Terminate; override;
-
-    procedure Queue(Operation: TOperation);
-    function WaitForOperation(Milliseconds: Cardinal): Boolean;
-    procedure Remove(Operation: TOperation);
+    constructor Create(Operation: TOperation; OperationEvent: TOperationEvent);
 
   protected
     procedure Execute; override;
 
   private
-    FCriticalSection: TCriticalSection;
-    FRequestEvent: THandle;
-    FResultEvent: THandle;
-    FQueue: TObjectList;
-    FResults: TObjectList;
+    FOperation: TOperation;
+    FOperationEvent: TOperationEvent;
   end;
 
-constructor TOperationWithTimeoutThread.Create;
+constructor TOperationWithTimeoutThread.Create(Operation: TOperation; OperationEvent: TOperationEvent);
 begin
   inherited Create(True);
-  FRequestEvent := CreateEvent(nil, False, False, nil);
-  FResultEvent := CreateEvent(nil, False, False, nil);
-  FCriticalSection := TCriticalSection.Create;
-  FQueue := TObjectList.Create;
-  FResults := TObjectList.Create;
-  Resume;
-end;
-
-destructor TOperationWithTimeoutThread.Destroy;
-begin
-  inherited;
-  FQueue.Free;
-  FResults.Free;
-  FCriticalSection.Free;
-  CloseHandle(FRequestEvent);
-  CloseHandle(FResultEvent);
-end;
-
-procedure TOperationWithTimeoutThread.Terminate;
-begin
-  inherited;
-  SetEvent(FRequestEvent);
+  FOperation := Operation;
+  FOperationEvent := OperationEvent;
 end;
 
 procedure TOperationWithTimeoutThread.Execute;
-var
-  Operation: TOperation;
 begin
   // Needed for various API, particularly:
   // - SHGetFileInfo fails to return icon index on some systems;
   // - ICustomDestinationList.BeginList returns invalid "removed" array.
   CoInitialize(nil);
-
-  while WaitForSingleObject(FRequestEvent, INFINITE) = WAIT_OBJECT_0 do
-  begin
-    if Terminated then
-    begin
-      break;
-    end
-      else
-    begin
-      FCriticalSection.Enter;
-      try
-        Operation := TOperation(FQueue[0]);
-        FQueue.Extract(Operation);
-      finally
-        FCriticalSection.Leave;
-      end;
-
-      Operation.OperationEvent(Operation);
-      FResults.Add(Operation);
-      SetEvent(FResultEvent);
-    end;
-  end;
+  FOperationEvent(FOperation);
 end;
 
-procedure TOperationWithTimeoutThread.Queue(Operation: TOperation);
-begin
-  FCriticalSection.Enter;
-  try
-    FQueue.Add(Operation);
-  finally
-    FCriticalSection.Leave;
-  end;
-
-  SetEvent(FRequestEvent);
-end;
-
-function TOperationWithTimeoutThread.WaitForOperation(Milliseconds: Cardinal): Boolean;
-begin
-  ResetEvent(FResultEvent);
-  Result := (WaitForSingleObject(FResultEvent, Milliseconds) = WAIT_OBJECT_0);
-end;
-
-procedure TOperationWithTimeoutThread.Remove(Operation: TOperation);
-begin
-  FCriticalSection.Enter;
-  try
-    FResults.Remove(Operation);
-  finally
-    FCriticalSection.Leave;
-  end;
-end;
-
+function WaitForOperation(
+  Operation: TOperation; OperationEvent: TOperationEvent; Milliseconds: Cardinal): Boolean;
+{$IFNDEF IDE}
 var
-  Thread: TOperationWithTimeoutThread = nil;
-
-procedure NeedThread;
+  Thread: TOperationWithTimeoutThread;
+{$ENDIF}
 begin
-  if not Assigned(Thread) then
+// When running from IDE, it triggers starting/exiting the thread taking ages.
+// So in IDE we revert to single-thread approach.
+{$IFDEF IDE}
+  OperationEvent(Operation);
+  Result := True;
+{$ELSE}
+  // Have to start new thread for each request. When shared thread is used, it eventually hangs.
+  // Most probably do to the fact that we violate COM threading model.
+  // So using a new thread for each request, is only a hack that happens to work by pure luck.
+  // We may want to use shared thread at least for COM-free operations, like SHGetFileInfo.
+  Thread := TOperationWithTimeoutThread.Create(Operation, OperationEvent);
+  Thread.Resume;
+  Result := Thread.WaitFor(MSecsPerSec);
+  if Result then
   begin
-    Thread := TOperationWithTimeoutThread.Create;
-  end;
-end;
-
-function WaitForOperation(Milliseconds: Cardinal): Boolean;
-begin
-  Result := Thread.WaitForOperation(Milliseconds);
-  if not Result then
+    Thread.Free;
+  end
+    else
   begin
     // There's a chance for memory leak, if thread is terminated
     // between WaitFor() and this line
     Thread.FreeOnTerminate := True;
-    Thread.Terminate;
-    Thread := nil;
   end;
+{$ENDIF}
 end;
 
 procedure ShellFolderGetAttributesOfOperation(Operation: TOperation);
@@ -223,19 +143,17 @@ function ShellFolderGetAttributesOfWithTimeout(
 var
   Operation: TOperation;
 begin
-  NeedThread;
-  Operation := TOperation.Create(ShellFolderGetAttributesOfOperation);
+  Operation := TOperation.Create;
   Operation.ShellFolder := ShellFolder;
   Operation.cidl := cidl;
   Operation.apidl := apidl;
   Operation.rgfInOut := rgfInOut;
-  Thread.Queue(Operation);
-  if WaitForOperation(Timeout) then
+  if WaitForOperation(Operation, ShellFolderGetAttributesOfOperation, Timeout) then
   begin
     apidl := Operation.apidl;
     rgfInOut := Operation.rgfInOut;
     Result := Operation.ResultHResult;
-    Thread.Remove(Operation);
+    Operation.Free;
   end
     else
   begin
@@ -267,8 +185,7 @@ function SHGetFileInfoWithTimeout(
 var
   Operation: TOperation;
 begin
-  NeedThread;
-  Operation := TOperation.Create(SHGetFileInfoOperation);
+  Operation := TOperation.Create;
   if uFlags and SHGFI_PIDL <> 0 then
   begin
     Operation.PIDL := PItemIDList(pszPath);
@@ -281,12 +198,11 @@ begin
   Operation.psfi := psfi;
   Operation.cbFileInfo := cbFileInfo;
   Operation.uFlags := uFlags;
-  Thread.Queue(Operation);
-  if WaitForOperation(Timeout) then
+  if WaitForOperation(Operation, SHGetFileInfoOperation, Timeout) then
   begin
     psfi := Operation.psfi;
     Result := Operation.ResultDWordPtr;
-    Thread.Remove(Operation);
+    Operation.Free;
   end
     else
   begin
@@ -309,8 +225,7 @@ function ShellFolderParseDisplayNameWithTimeout(
 var
   Operation: TOperation;
 begin
-  NeedThread;
-  Operation := TOperation.Create(ShellFolderParseDisplayNameOperation);
+  Operation := TOperation.Create;
   Operation.ShellFolder := ShellFolder;
   Operation.hwndOwner := hwndOwner;
   Operation.pbcReserved := pbcReserved;
@@ -318,13 +233,12 @@ begin
   Operation.pchEaten := 0;
   Operation.ppidl := nil;
   Operation.dwAttributes := 0;
-  Thread.Queue(Operation);
-  if WaitForOperation(Timeout) then
+  if WaitForOperation(Operation, ShellFolderParseDisplayNameOperation, Timeout) then
   begin
     ppidl := Operation.ppidl;
     dwAttributes := Operation.dwAttributes;
     Result := Operation.ResultHResult;
-    Thread.Remove(Operation);
+    Operation.Free;
   end
     else
   begin
@@ -344,19 +258,17 @@ function DestinationListBeginList(
 var
   Operation: TOperation;
 begin
-  NeedThread;
-  Operation := TOperation.Create(DestinationListBeginListOperation);
+  Operation := TOperation.Create;
   Operation.DestinationList := DestinationList;
   Operation.pcMaxSlots := pcMaxSlots;
   Operation.riid := riid;
   Operation.ppv := ppv;
-  Thread.Queue(Operation);
-  if WaitForOperation(Timeout) then
+  if WaitForOperation(Operation, DestinationListBeginListOperation, Timeout) then
   begin
     pcMaxSlots := Operation.pcMaxSlots;
     ppv := Operation.ppv;
     Result := Operation.ResultHResult;
-    Thread.Remove(Operation);
+    Operation.Free;
   end
     else
   begin
@@ -365,12 +277,4 @@ begin
   end;
 end;
 
-
-initialization
-
-finalization
-  if Assigned(Thread) then
-  begin
-    Thread.Free;
-  end;
 end.
