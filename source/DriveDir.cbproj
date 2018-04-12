@@ -47,6 +47,7 @@
 		<DCC_TYPEINFO_IMPLICITLY_ADDED>false</DCC_TYPEINFO_IMPLICITLY_ADDED>
 		<DCC_UnitSearchPath>packages\my;packages\dragndrop;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
 		<DCC_UNSAFE_TYPE>true</DCC_UNSAFE_TYPE>
+		<Defines>$(Defines)</Defines>
 		<FinalOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</FinalOutputDir>
 		<ILINK_Description>Filemanager Toolset</ILINK_Description>
 		<ILINK_GenerateImportLibrary>true</ILINK_GenerateImportLibrary>
@@ -63,10 +64,6 @@
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Base_Win32)'!=''">
 		<DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
-		<Defines>IDE;$(Defines)</Defines>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Base_Win64)'!=''">
-		<Defines>IDE;$(Defines)</Defines>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Cfg_1)'!=''">
 		<BCC_DebugLineNumbers>true</BCC_DebugLineNumbers>

@@ -52,6 +52,7 @@
 		<DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;$(DCC_Namespace)</DCC_Namespace>
 		<DCC_UnitSearchPath>packages\my;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
 		<DCC_UNSAFE_TYPE>true</DCC_UNSAFE_TYPE>
+		<Defines>$(Defines)</Defines>
 		<FinalOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</FinalOutputDir>
 		<ILINK_Description>Drag and Drop Components</ILINK_Description>
 		<ILINK_GenerateImportLibrary>true</ILINK_GenerateImportLibrary>
@@ -68,12 +69,8 @@
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Base_Win32)'!=''">
 		<DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
-		<Defines>IDE;$(Defines)</Defines>
 		<Manifest_File>$(BDS)\bin\default_app.manifest</Manifest_File>
 		<VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Base_Win64)'!=''">
-		<Defines>IDE;$(Defines)</Defines>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Cfg_1)'!=''">
 		<BCC_DebugLineNumbers>true</BCC_DebugLineNumbers>
