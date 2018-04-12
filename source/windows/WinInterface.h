@@ -422,7 +422,8 @@ typedef void __fastcall (__closure *TFileListOperationEvent)
   (TTerminal * Terminal, TStrings * FileList, TFileOperationFinishedEvent OnFileOperationFinished);
 void __fastcall ShowFileFindDialog(
   TTerminal * Terminal, UnicodeString Directory, TFindEvent OnFind, TFocusFileEvent OnFocusFile,
-  TFileListOperationEvent OnDeleteFiles, TFileListOperationEvent OnDownloadFiles);
+  TFileListOperationEvent OnDeleteFiles, TFileListOperationEvent OnDownloadFiles,
+  TFileListOperationEvent OnEditFiles);
 void __fastcall HideFileFindDialog();
 
 // forms\GenerateUrl.cpp
