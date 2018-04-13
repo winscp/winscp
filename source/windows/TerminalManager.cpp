@@ -161,7 +161,6 @@ void __fastcall TTerminalManager::SetupTerminal(TTerminal * Terminal)
 //---------------------------------------------------------------------------
 TTerminal * __fastcall TTerminalManager::DoNewTerminal(TSessionData * Data)
 {
-  FTerminalList->Clear();
   TTerminal * Terminal = TTerminalList::NewTerminal(Data);
   try
   {
@@ -507,7 +506,6 @@ void __fastcall TTerminalManager::FreeTerminal(TTerminal * Terminal)
   __finally
   {
     int Index = IndexOf(Terminal);
-    FTerminalList->Clear();
     Extract(Terminal);
 
     TTerminalQueue * Queue;
@@ -666,15 +664,7 @@ void __fastcall TTerminalManager::UpdateAppTitle()
 {
   if (ScpExplorer)
   {
-    UnicodeString NewTitle;
-    if (ActiveTerminal)
-    {
-      NewTitle = FormatMainFormCaption(ActiveTerminalTitle);
-    }
-    else
-    {
-      NewTitle = FormatMainFormCaption(L"");
-    }
+    UnicodeString NewTitle = FormatMainFormCaption(GetActiveTerminalTitle(false));
 
     UnicodeString QueueProgressTitle;
     if (!FForegroundProgressTitle.IsEmpty())
@@ -692,11 +682,7 @@ void __fastcall TTerminalManager::UpdateAppTitle()
     }
     else if (ActiveTerminal && (ScpExplorer != NULL))
     {
-      UnicodeString Path = ScpExplorer->PathForCaption();
-      if (!Path.IsEmpty())
-      {
-        NewTitle = Path + L" - " + NewTitle;
-      }
+      AddToList(NewTitle, ScpExplorer->PathForCaption(), L" - ");
     }
 
     ScpExplorer->Caption = NewTitle;
@@ -1234,25 +1220,12 @@ void __fastcall TTerminalManager::TerminalReady()
 //---------------------------------------------------------------------------
 TStrings * __fastcall TTerminalManager::GetTerminalList()
 {
-  if (FTerminalList->Count != Count)
+  FTerminalList->Clear();
+  for (int i = 0; i < Count; i++)
   {
-    for (int i = 0; i < Count; i++)
-    {
-      UnicodeString NameN;
-      UnicodeString Name = Terminals[i]->SessionData->SessionName;
-      int Number = 1;
-      NameN = Name;
-      while (FTerminalList->IndexOf(NameN) >= 0)
-      {
-        Number++;
-        NameN = FORMAT(L"%s (%d)", (Name, Number));
-      }
-      if (Number > 1)
-      {
-        Name = FORMAT(L"%s (%d)", (Name, Number));
-      }
-      FTerminalList->AddObject(Name, Terminals[i]);
-    }
+    TTerminal * Terminal = Terminals[i];
+    UnicodeString Name = GetTerminalTitle(Terminal, true);
+    FTerminalList->AddObject(Name, Terminal);
   }
   return FTerminalList;
 }
@@ -1267,26 +1240,51 @@ void __fastcall TTerminalManager::SetActiveTerminalIndex(int value)
   ActiveTerminal = Terminals[value];
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TTerminalManager::TerminalTitle(TTerminal * Terminal)
+UnicodeString __fastcall TTerminalManager::GetTerminalShortPath(TTerminal * Terminal)
 {
-  int Index = IndexOf(Terminal);
-  UnicodeString Result;
-  if (Index >= 0)
+  UnicodeString Result = UnixExtractFileName(Terminal->CurrentDirectory);
+  if (Result.IsEmpty())
   {
-    Result = TerminalList->Strings[Index];
-  }
-  else
-  {
-    // this is the case of background transfer sessions
-    Result = Terminal->SessionData->SessionName;
+    Result = Terminal->CurrentDirectory;
   }
   return Result;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TTerminalManager::GetActiveTerminalTitle()
+UnicodeString __fastcall TTerminalManager::GetTerminalTitle(TTerminal * Terminal, bool Unique)
 {
-  UnicodeString Result = ActiveTerminal ?
-    TerminalTitle(ActiveTerminal) : UnicodeString(L"");
+  UnicodeString Result = Terminal->SessionData->SessionName;
+  if (Unique)
+  {
+    int Index = IndexOf(Terminal);
+    // not for background transfer sessions
+    if (Index >= 0)
+    {
+      for (int Index2 = 0; Index2 < Count; Index2++)
+      {
+        UnicodeString Name = Terminals[Index2]->SessionData->SessionName;
+        if ((Terminals[Index2] != Terminal) &&
+            SameText(Name, Result))
+        {
+          UnicodeString Path = GetTerminalShortPath(Terminal);
+          if (!Path.IsEmpty())
+          {
+            Result = FORMAT(L"%s (%s)", (Result, Path));
+          }
+          break;
+        }
+      }
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TTerminalManager::GetActiveTerminalTitle(bool Unique)
+{
+  UnicodeString Result;
+  if (ActiveTerminal != NULL)
+  {
+    Result = GetTerminalTitle(ActiveTerminal, Unique);
+  }
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -1523,7 +1521,6 @@ void __fastcall TTerminalManager::MasterPasswordPrompt()
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::Move(TTerminal * Source, TTerminal * Target)
 {
-  FTerminalList->Clear();
   int SourceIndex = IndexOf(Source);
   int TargetIndex = IndexOf(Target);
   TTerminalList::Move(SourceIndex, TargetIndex);

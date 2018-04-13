@@ -54,7 +54,9 @@ public:
   void __fastcall OpenInPutty();
   void __fastcall NewSession(bool FromSite, const UnicodeString & SessionUrl, bool ReloadSessions = true, TForm * LinkedForm = NULL);
   void __fastcall Idle(bool SkipCurrentTerminal);
-  UnicodeString __fastcall TerminalTitle(TTerminal * Terminal);
+  UnicodeString __fastcall GetTerminalShortPath(TTerminal * Terminal);
+  UnicodeString __fastcall GetTerminalTitle(TTerminal * Terminal, bool Unique);
+  UnicodeString __fastcall GetActiveTerminalTitle(bool Unique);
   void __fastcall HandleException(Exception * E);
   void __fastcall SaveWorkspace(TList * DataList);
   void __fastcall QueueStatusUpdated();
@@ -67,7 +69,6 @@ public:
   __property TTerminal * ActiveTerminal = { read = FActiveTerminal, write = SetActiveTerminal };
   __property TTerminalQueue * ActiveQueue = { read = GetActiveQueue };
   __property int ActiveTerminalIndex = { read = GetActiveTerminalIndex, write = SetActiveTerminalIndex };
-  __property UnicodeString ActiveTerminalTitle = { read = GetActiveTerminalTitle };
   __property TStrings * TerminalList = { read = GetTerminalList };
   __property TNotifyEvent OnLastTerminalClosed = { read = FOnLastTerminalClosed, write = FOnLastTerminalClosed };
   __property TNotifyEvent OnTerminalListChanged = { read = FOnTerminalListChanged, write = FOnTerminalListChanged };
@@ -137,7 +138,6 @@ private:
   void __fastcall TerminalReady();
   TStrings * __fastcall GetTerminalList();
   int __fastcall GetActiveTerminalIndex();
-  UnicodeString __fastcall GetActiveTerminalTitle();
   TTerminalQueue * __fastcall GetActiveQueue();
   void __fastcall SaveTerminal(TTerminal * Terminal);
   void __fastcall SetActiveTerminalIndex(int value);

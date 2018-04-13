@@ -6165,6 +6165,7 @@ void __fastcall TCustomScpExplorerForm::UpdateSessionTab(TTabSheet * TabSheet)
         (ManagedTerminal == FTerminal) ? FSessionColor : ManagedTerminal->StateData->Color;
 
       TabSheet->ImageIndex = AddSessionColor(Color);
+      TabSheet->Caption = TTerminalManager::Instance()->GetTerminalTitle(ManagedTerminal, true);
 
       TThemeTabSheet * ThemeTabSheet = dynamic_cast<TThemeTabSheet *>(TabSheet);
       if (DebugAlwaysTrue(ThemeTabSheet != NULL))
@@ -6470,7 +6471,7 @@ void __fastcall TCustomScpExplorerForm::PopupTrayBalloon(TTerminal * Terminal,
       if (Terminal != NULL)
       {
         Title = FORMAT(L"%s - %s",
-          (TTerminalManager::Instance()->TerminalTitle(Terminal), Title));
+          (TTerminalManager::Instance()->GetTerminalTitle(Terminal, true), Title));
       }
     }
 
@@ -6601,7 +6602,7 @@ void __fastcall TCustomScpExplorerForm::Notify(TTerminal * Terminal,
     if (Terminal != NULL)
     {
       NoteMessage = FORMAT(L"%s: %s",
-        (TTerminalManager::Instance()->TerminalTitle(Terminal), NoteMessage));
+        (TTerminalManager::Instance()->GetTerminalTitle(Terminal, true), NoteMessage));
     }
 
     if (WinConfiguration->BalloonNotifications)
@@ -7922,13 +7923,7 @@ UnicodeString __fastcall TCustomScpExplorerForm::PathForCaption()
     switch (WinConfiguration->PathInCaption)
     {
       case picShort:
-        {
-          Result = UnixExtractFileName(FTerminal->CurrentDirectory);
-          if (Result.IsEmpty())
-          {
-            Result = FTerminal->CurrentDirectory;
-          }
-        }
+        Result = TTerminalManager::Instance()->GetTerminalShortPath(FTerminal);
         break;
 
       case picFull:
@@ -7951,6 +7946,12 @@ void __fastcall TCustomScpExplorerForm::UpdateControls()
     bool HasTerminal = (Terminal != NULL);
     if (HasTerminal)
     {
+      // Update path when it changes
+      if ((SessionsPageControl->ActivePage != NULL) && (GetSessionTabTerminal(SessionsPageControl->ActivePage) == Terminal))
+      {
+        UpdateSessionTab(SessionsPageControl->ActivePage);
+      }
+
       if (!RemoteDirView->Enabled)
       {
         RemoteDirView->Enabled = true;
