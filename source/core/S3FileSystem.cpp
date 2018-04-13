@@ -18,6 +18,7 @@
 #include "NeonIntf.h"
 #include <ne_request.h>
 #include <StrUtils.hpp>
+#include <limits>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -1395,7 +1396,9 @@ void __fastcall TS3FileSystem::Source(
         {
           S3PutObjectHandler UploadPartHandler =
             { CreateResponseHandlerCustom(LibS3MultipartResponsePropertiesCallback), LibS3PutObjectDataCallback };
-          int PartLength = std::min(S3MultiPartChunkSize, static_cast<int>(Stream->Size - Stream->Position));
+          __int64 Remaining = Stream->Size - Stream->Position;
+          int RemainingInt = static_cast<int>(std::min(static_cast<__int64>(std::numeric_limits<int>::max()), Remaining));
+          int PartLength = std::min(S3MultiPartChunkSize, RemainingInt);
           FTerminal->LogEvent(FORMAT(L"Uploading part %d [%s]", (Part, IntToStr(PartLength))));
           S3_upload_part(
             &BucketContext, StrToS3(Key), &PutProperties, &UploadPartHandler, Part, MultipartUploadId.c_str(),
