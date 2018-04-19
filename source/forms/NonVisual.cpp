@@ -317,8 +317,6 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   BAND_COMPONENTS
   #undef EMIT_BAND_COMPONENT
 
-
-
   UPD(GoToCommandLineAction, true)
   UPD(GoToTreeAction, true)
   UPDEX(ShowHiddenFilesAction, true,
