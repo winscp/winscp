@@ -1219,6 +1219,10 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction * BasicAction,
   {
     Action->Checked = (FSiteSearch == ssSite);
   }
+  else if (Action == CheckForUpdatesAction)
+  {
+    Action->Visible = !IsUWP();
+  }
   Handled = true;
 
   // to update buttons visibility

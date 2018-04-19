@@ -639,6 +639,7 @@ bool __fastcall ShowUpdatesIfAvailable()
   int CurrentCompoundVer = Configuration->CompoundVersion;
   bool NoPopup = true;
   bool Result =
+    !IsUWP() &&
     Updates.ShowOnStartup &&
     Updates.HaveValidResultsForVersion(CurrentCompoundVer) &&
     !Updates.Results.Disabled &&

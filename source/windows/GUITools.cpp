@@ -93,75 +93,96 @@ void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
 
     if (!RemoteCustomCommand.IsSiteCommand(AParams))
     {
-      UnicodeString SessionName;
-      TRegistryStorage * Storage = NULL;
-      TSessionData * ExportData = NULL;
-      TRegistryStorage * SourceStorage = NULL;
-      try
+      if (IsUWP())
       {
-        Storage = new TRegistryStorage(Configuration->PuttySessionsKey);
-        Storage->AccessMode = smReadWrite;
-        // make it compatible with putty
-        Storage->MungeStringValues = false;
-        Storage->ForceAnsi = true;
-        if (Storage->OpenRootKey(true))
+        if ((SessionData->FSProtocol == fsFTP) && GUIConfiguration->TelnetForFtpInPutty)
         {
-          if (Storage->KeyExists(SessionData->StorageKey))
-          {
-            SessionName = SessionData->SessionName;
-          }
-          else
-          {
-            SourceStorage = new TRegistryStorage(Configuration->PuttySessionsKey);
-            SourceStorage->MungeStringValues = false;
-            SourceStorage->ForceAnsi = true;
-            if (SourceStorage->OpenSubKey(StoredSessions->DefaultSettings->Name, false) &&
-                Storage->OpenSubKey(GUIConfiguration->PuttySession, true))
-            {
-              Storage->Copy(SourceStorage);
-              Storage->CloseSubKey();
-            }
-
-            ExportData = new TSessionData(L"");
-            ExportData->Assign(SessionData);
-            ExportData->Modified = true;
-            ExportData->Name = GUIConfiguration->PuttySession;
-            ExportData->WinTitle = SessionData->SessionName;
-            ExportData->Password = L"";
-
-            if (SessionData->FSProtocol == fsFTP)
-            {
-              if (GUIConfiguration->TelnetForFtpInPutty)
-              {
-                ExportData->PuttyProtocol = PuttyTelnetProtocol;
-                ExportData->PortNumber = TelnetPortNumber;
-                // PuTTY  does not allow -pw for telnet
-                Password = L"";
-              }
-              else
-              {
-                ExportData->PuttyProtocol = PuttySshProtocol;
-                ExportData->PortNumber = SshPortNumber;
-              }
-            }
-
-            ExportData->Save(Storage, true);
-            SessionName = GUIConfiguration->PuttySession;
-          }
+          AddToList(PuttyParams, L"-telnet", L" ");
+          // PuTTY  does not allow -pw for telnet
+          Password = L"";
+        }
+        AddToList(PuttyParams, EscapePuttyCommandParam(SessionData->HostName), L" ");
+        if (!SessionData->UserName.IsEmpty())
+        {
+          AddToList(PuttyParams, FORMAT(L"-l %s", (EscapePuttyCommandParam(SessionData->UserName))), L" ");
+        }
+        if ((SessionData->FSProtocol != fsFTP) && (SessionData->PortNumber != SshPortNumber))
+        {
+          AddToList(PuttyParams, FORMAT(L"-P %d", (SessionData->PortNumber)), L" ");
         }
       }
-      __finally
+      else
       {
-        delete Storage;
-        delete ExportData;
-        delete SourceStorage;
-      }
+        UnicodeString SessionName;
+        TRegistryStorage * Storage = NULL;
+        TSessionData * ExportData = NULL;
+        TRegistryStorage * SourceStorage = NULL;
+        try
+        {
+          Storage = new TRegistryStorage(Configuration->PuttySessionsKey);
+          Storage->AccessMode = smReadWrite;
+          // make it compatible with putty
+          Storage->MungeStringValues = false;
+          Storage->ForceAnsi = true;
+          if (Storage->OpenRootKey(true))
+          {
+            if (Storage->KeyExists(SessionData->StorageKey))
+            {
+              SessionName = SessionData->SessionName;
+            }
+            else
+            {
+              SourceStorage = new TRegistryStorage(Configuration->PuttySessionsKey);
+              SourceStorage->MungeStringValues = false;
+              SourceStorage->ForceAnsi = true;
+              if (SourceStorage->OpenSubKey(StoredSessions->DefaultSettings->Name, false) &&
+                  Storage->OpenSubKey(GUIConfiguration->PuttySession, true))
+              {
+                Storage->Copy(SourceStorage);
+                Storage->CloseSubKey();
+              }
 
-      UnicodeString LoadSwitch = L"-load";
-      int P = Params.LowerCase().Pos(LoadSwitch + L" ");
-      if ((P == 0) || ((P > 1) && (Params[P - 1] != L' ')))
-      {
-        AddToList(PuttyParams, FORMAT(L"%s %s", (LoadSwitch, EscapePuttyCommandParam(SessionName))), L" ");
+              ExportData = new TSessionData(L"");
+              ExportData->Assign(SessionData);
+              ExportData->Modified = true;
+              ExportData->Name = GUIConfiguration->PuttySession;
+              ExportData->WinTitle = SessionData->SessionName;
+              ExportData->Password = L"";
+
+              if (SessionData->FSProtocol == fsFTP)
+              {
+                if (GUIConfiguration->TelnetForFtpInPutty)
+                {
+                  ExportData->PuttyProtocol = PuttyTelnetProtocol;
+                  ExportData->PortNumber = TelnetPortNumber;
+                  // PuTTY  does not allow -pw for telnet
+                  Password = L"";
+                }
+                else
+                {
+                  ExportData->PuttyProtocol = PuttySshProtocol;
+                  ExportData->PortNumber = SshPortNumber;
+                }
+              }
+
+              ExportData->Save(Storage, true);
+              SessionName = GUIConfiguration->PuttySession;
+            }
+          }
+        }
+        __finally
+        {
+          delete Storage;
+          delete ExportData;
+          delete SourceStorage;
+        }
+
+        UnicodeString LoadSwitch = L"-load";
+        int P = Params.LowerCase().Pos(LoadSwitch + L" ");
+        if ((P == 0) || ((P > 1) && (Params[P - 1] != L' ')))
+        {
+          AddToList(PuttyParams, FORMAT(L"%s %s", (LoadSwitch, EscapePuttyCommandParam(SessionName))), L" ");
+        }
       }
     }
 

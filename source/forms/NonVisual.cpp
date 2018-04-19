@@ -42,6 +42,7 @@ TNonVisualDataModule *NonVisualDataModule;
 #define UPDACT(HandleAction, Command) \
   EXE(HandleAction, ((TCustomAction *)Action)->Enabled = true; Command)
 #define UPDCOMP(COMP) if (Action == COMP ## Action) { COMP ## Action->Enabled = true; \
+  COMP ## Action->Visible = ScpExplorer->IsComponentPossible(fc ## COMP); \
   COMP ## Action->Checked = ScpExplorer->ComponentVisible[fc ## COMP]; Handled = true; } else
 #define EXECOMP(COMP) EXE(COMP ## Action, \
   ScpExplorer->ComponentVisible[fc ## COMP] = !ScpExplorer->ComponentVisible[fc ## COMP] )
@@ -1601,6 +1602,7 @@ void __fastcall TNonVisualDataModule::ShowUpdatesUpdate()
         ((Updates.Results.Version > CurrentCompoundVer) ||
          !Updates.Results.Message.IsEmpty())))) ? 80 :
      ((int(Updates.Period) <= 0) ? 81 : 63));
+  CheckForUpdatesAction->Visible = !IsUWP();
 }
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::PreferencesDialog(TPreferencesMode APreferencesMode)
