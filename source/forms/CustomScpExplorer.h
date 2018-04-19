@@ -706,6 +706,7 @@ public:
   bool __fastcall CanConsole();
   bool __fastcall CanChangePassword();
   void __fastcall ChangePassword();
+  bool __fastcall IsComponentPossible(Byte Component);
 
   __property bool ComponentVisible[Byte Component] = { read = GetComponentVisible, write = SetComponentVisible };
   __property bool EnableFocusedOperation[TOperationSide Side] = { read = GetEnableFocusedOperation, index = 0 };

@@ -127,6 +127,7 @@ bool __fastcall IsWin7();
 bool __fastcall IsWin8();
 bool __fastcall IsWin10();
 bool __fastcall IsWine();
+bool __fastcall IsUWP();
 TLibModule * __fastcall FindModule(void * Instance);
 __int64 __fastcall Round(double Number);
 bool __fastcall TryRelativeStrToDateTime(UnicodeString S, TDateTime & DateTime, bool Add);

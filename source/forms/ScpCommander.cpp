@@ -158,6 +158,10 @@ void __fastcall TScpCommanderForm::RestoreParams()
   TCustomScpExplorerForm::RestoreParams();
   LeftPanelWidth = WinConfiguration->ScpCommander.LocalPanelWidth;
   LoadToolbarsLayoutStr(WinConfiguration->ScpCommander.ToolbarsLayout);
+  if (IsUWP())
+  {
+    UpdatesToolbar->Visible = false;
+  }
   SessionsPageControl->Visible = WinConfiguration->ScpCommander.SessionsTabs;
   StatusBar->Visible = WinConfiguration->ScpCommander.StatusBar;
 

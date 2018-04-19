@@ -96,6 +96,10 @@ void __fastcall TScpExplorerForm::RestoreParams()
   }
 
   LoadToolbarsLayoutStr(WinConfiguration->ScpExplorer.ToolbarsLayout);
+  if (IsUWP())
+  {
+    UpdatesToolbar->Visible = false;
+  }
   SessionsPageControl->Visible = WinConfiguration->ScpExplorer.SessionsTabs;
   RemoteStatusBar->Visible = WinConfiguration->ScpExplorer.StatusBar;
   RemoteDriveView->Visible = WinConfiguration->ScpExplorer.DriveView;

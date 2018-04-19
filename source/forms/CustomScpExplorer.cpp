@@ -4801,6 +4801,20 @@ bool __fastcall TCustomScpExplorerForm::GetComponentVisible(Byte Component)
   }
 }
 //---------------------------------------------------------------------------
+bool __fastcall TCustomScpExplorerForm::IsComponentPossible(Byte Component)
+{
+  bool Result;
+  if ((Component == fcExplorerUpdatesBand) || (Component == fcCommanderUpdatesBand))
+  {
+    Result = !IsUWP();
+  }
+  else
+  {
+    Result = true;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::FixControlsPlacement()
 {
   if (RemoteDirView->ItemFocused != NULL)
@@ -7889,7 +7903,12 @@ void __fastcall TCustomScpExplorerForm::StartUpdates()
   else if ((double(Updates.Period) > 0) &&
            (Now() - Updates.LastCheck >= Updates.Period))
   {
-    StartUpdateThread(UpdatesChecked);
+    TThreadMethod OnUpdatesChecked = NULL;
+    if (!IsUWP())
+    {
+      OnUpdatesChecked = UpdatesChecked;
+    }
+    StartUpdateThread(OnUpdatesChecked);
   }
 }
 //---------------------------------------------------------------------------

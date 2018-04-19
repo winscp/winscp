@@ -93,7 +93,7 @@ __fastcall TPreferencesDialog::TPreferencesDialog(
   CustomCommandsView->WindowProc = CustomCommandsViewWindowProc;
 
   ComboAutoSwitchInitialize(UpdatesBetaVersionsCombo);
-  EnableControl(UpdatesBetaVersionsCombo, !WinConfiguration->IsBeta);
+  EnableControl(UpdatesBetaVersionsCombo, !WinConfiguration->IsBeta && !IsUWP());
   EnableControl(UpdatesBetaVersionsLabel, UpdatesBetaVersionsCombo->Enabled);
 
   HintLabel(LogFileNameHintText, LoadStr(LOG_FILE_HINT3));
@@ -1243,6 +1243,7 @@ void __fastcall TPreferencesDialog::UpdateControls()
     // updates
     EnableControl(UpdatesAuthenticationEmailEdit, FAutomaticUpdatesPossible);
     EnableControl(UpdatesAuthenticationEmailLabel, UpdatesAuthenticationEmailEdit->Enabled);
+    EnableControl(UpdatesShowOnStartup, !IsUWP());
     EnableControl(UsageViewButton, CollectUsageCheck->Checked);
     EnableControl(UpdatesProxyHostEdit, UpdatesProxyCheck->Checked);
     EnableControl(UpdatesProxyHostLabel, UpdatesProxyHostEdit->Enabled);
@@ -1270,7 +1271,7 @@ void __fastcall TPreferencesDialog::UpdateControls()
     EnableControl(TelnetForFtpInPuttyCheck,
       AnyPuttyPath && !IsSiteCommand);
     EnableControl(PuttyRegistryStorageKeyEdit,
-      AnyPuttyPath && !IsSiteCommand);
+      AnyPuttyPath && !IsSiteCommand && !IsUWP());
     EnableControl(PuttyRegistryStorageKeyLabel, PuttyRegistryStorageKeyEdit->Enabled);
 
     EnableControl(SetMasterPasswordButton, WinConfiguration->UseMasterPassword);
@@ -1286,8 +1287,9 @@ void __fastcall TPreferencesDialog::UpdateControls()
       AutoWorkspaceCombo->Enabled);
 
     // integration
+    EnableControl(ShellIconsGroup, !IsUWP());
     // There's no quick launch in Windows 7
-    EnableControl(QuickLaunchIconButton, !IsWin7());
+    EnableControl(QuickLaunchIconButton, ShellIconsGroup->Enabled && !IsWin7());
     MakeDefaultHandlerItem->Visible = IsWinVista();
 
     // languages

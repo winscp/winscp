@@ -2702,6 +2702,25 @@ bool __fastcall IsWine()
     (GetProcAddress(NtDll, "wine_get_version") != NULL);
 }
 //---------------------------------------------------------------------------
+int GIsUWP = -1;
+//---------------------------------------------------------------------------
+bool __fastcall IsUWP()
+{
+  if (GIsUWP < 0)
+  {
+    HINSTANCE Kernel32 = GetModuleHandle(kernel32);
+    typedef LONG WINAPI (* GetPackageFamilyNameProc)(HANDLE hProcess, UINT32 *packageFamilyNameLength, PWSTR packageFamilyName);
+    GetPackageFamilyNameProc GetPackageFamilyName =
+      (GetPackageFamilyNameProc)GetProcAddress(Kernel32, "GetPackageFamilyName");
+    UINT32 Len = 0;
+    bool Result =
+      (GetPackageFamilyName != NULL) &&
+      (GetPackageFamilyName(GetCurrentProcess(), &Len, NULL) == ERROR_INSUFFICIENT_BUFFER);
+    GIsUWP = (Result ? 1 : 0);
+  }
+  return (GIsUWP > 0);
+}
+//---------------------------------------------------------------------------
 LCID __fastcall GetDefaultLCID()
 {
   return GetUserDefaultLCID();
