@@ -201,8 +201,9 @@ namespace WinSCP
                 string parameters = userInfo;
                 userInfo = CutToChar(ref parameters, ';');
 
+                bool hasPassword = (userInfo.IndexOf(':') >= 0);
                 UserName = EmptyToNull(UriUnescape(CutToChar(ref userInfo, ':')));
-                Password = EmptyToNull(UriUnescape(userInfo));
+                Password = hasPassword ? UriUnescape(userInfo) : null;
 
                 while (!string.IsNullOrEmpty(parameters))
                 {

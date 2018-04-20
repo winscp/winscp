@@ -1866,7 +1866,7 @@ int TWebDAVFileSystem::NeonRequestAuth(
     {
       if (!SessionData->Password.IsEmpty() && !FileSystem->FStoredPasswordTried)
       {
-        APassword = SessionData->Password;
+        APassword = NormalizeString(SessionData->Password);
         FileSystem->FStoredPasswordTried = true;
       }
       else

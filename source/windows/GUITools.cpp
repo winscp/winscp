@@ -188,6 +188,7 @@ void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
 
     if (!Password.IsEmpty() && !RemoteCustomCommand.IsPasswordCommand(AParams))
     {
+      Password = NormalizeString(Password); // if password is empty, we should quote it always
       AddToList(PuttyParams, FORMAT(L"-pw %s", (EscapePuttyCommandParam(Password))), L" ");
     }
 

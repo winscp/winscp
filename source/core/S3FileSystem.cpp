@@ -98,7 +98,7 @@ void __fastcall TS3FileSystem::Open()
   }
   FAccessKeyId = UTF8String(AccessKeyId);
 
-  UnicodeString SecretAccessKey = UTF8String(Data->Password);
+  UnicodeString SecretAccessKey = UTF8String(NormalizeString(Data->Password));
   if (SecretAccessKey.IsEmpty())
   {
     if (!FTerminal->PromptUser(Data, pkPassword, LoadStr(S3_SECRET_ACCESS_KEY_TITLE), L"",

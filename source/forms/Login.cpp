@@ -502,7 +502,7 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * SessionData)
     bool Editable = IsEditable();
     if (Editable)
     {
-      PasswordEdit->Text = SessionData->Password;
+      PasswordEdit->Text = NormalizeString(SessionData->Password);
     }
     else
     {

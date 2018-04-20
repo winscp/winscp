@@ -26,6 +26,7 @@ extern const wchar_t TokenReplacement;
 extern const UnicodeString LocalInvalidChars;
 extern const UnicodeString PasswordMask;
 extern const UnicodeString Ellipsis;
+extern const UnicodeString EmptyString;
 //---------------------------------------------------------------------------
 extern const UnicodeString HttpProtocol;
 extern const UnicodeString HttpsProtocol;
@@ -62,6 +63,7 @@ UnicodeString RemoveMainInstructionsTag(UnicodeString S);
 UnicodeString UnformatMessage(UnicodeString S);
 UnicodeString RemoveInteractiveMsgTag(UnicodeString S);
 UnicodeString RemoveEmptyLines(const UnicodeString & S);
+UnicodeString NormalizeString(const UnicodeString & S);
 bool IsNumber(const UnicodeString Str);
 UnicodeString __fastcall SystemTemporaryDirectory();
 UnicodeString __fastcall GetShellFolderPath(int CSIdl);

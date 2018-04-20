@@ -847,7 +847,7 @@ bool __fastcall TSecureShell::PromptUser(bool /*ToServer*/,
       LogEvent(L"Using stored password.");
       FUI->Information(LoadStr(AUTH_PASSWORD), false);
       Result = true;
-      Results->Strings[0] = FSessionData->Password;
+      Results->Strings[0] = NormalizeString(FSessionData->Password);
       FStoredPasswordTriedForKI = true;
     }
     else if (Instructions.IsEmpty() && !InstructionsRequired && (Prompts->Count == 0))
@@ -863,7 +863,7 @@ bool __fastcall TSecureShell::PromptUser(bool /*ToServer*/,
       LogEvent(L"Using stored password.");
       FUI->Information(LoadStr(AUTH_PASSWORD), false);
       Result = true;
-      Results->Strings[0] = FSessionData->Password;
+      Results->Strings[0] = NormalizeString(FSessionData->Password);
       FStoredPasswordTried = true;
     }
   }
@@ -888,9 +888,9 @@ bool __fastcall TSecureShell::PromptUser(bool /*ToServer*/,
         LogEvent(L"Using stored password and new password.");
         Result = true;
         DebugAssert(Results->Count == 3);
-        Results->Strings[0] = FSessionData->Password;
-        Results->Strings[1] = FSessionData->NewPassword;
-        Results->Strings[2] = FSessionData->NewPassword;
+        Results->Strings[0] = NormalizeString(FSessionData->Password);
+        Results->Strings[1] = NormalizeString(FSessionData->NewPassword);
+        Results->Strings[2] = NormalizeString(FSessionData->NewPassword);
         FStoredPasswordTried = true;
       }
     }

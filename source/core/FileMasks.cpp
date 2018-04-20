@@ -1232,7 +1232,7 @@ bool __fastcall TFileCustomCommand::PatternReplacement(
   {
     if (FData.SessionData != NULL)
     {
-      Replacement = FData.SessionData->Password;
+      Replacement = NormalizeString(FData.SessionData->Password);
     }
   }
   else if (SameText(Pattern, L"!#"))

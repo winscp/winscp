@@ -1109,7 +1109,7 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
     ADF(L"Session name: %s (%s)", (Data->SessionName, Data->Source));
     ADF(L"Host name: %s (Port: %d)", (Data->HostNameExpanded, Data->PortNumber));
     ADF(L"User name: %s (Password: %s, Key file: %s, Passphrase: %s)",
-      (Data->UserNameExpanded, LogSensitive(Data->Password),
+      (Data->UserNameExpanded, LogSensitive(NormalizeString(Data->Password)),
        LogSensitive(Data->PublicKeyFile), LogSensitive(Data->Passphrase)));
     if (Data->UsesSsh)
     {

@@ -34,6 +34,7 @@ const wchar_t TokenReplacement = wchar_t(true);
 const UnicodeString LocalInvalidChars(TraceInitStr(L"/\\:*?\"<>|"));
 const UnicodeString PasswordMask(TraceInitStr(L"***"));
 const UnicodeString Ellipsis(TraceInitStr(L"..."));
+const UnicodeString EmptyString(TraceInitStr(L"\1\1\1")); // magic
 //---------------------------------------------------------------------------
 UnicodeString ReplaceChar(UnicodeString Str, wchar_t A, wchar_t B)
 {
@@ -3746,6 +3747,16 @@ UnicodeString __fastcall GetFileMimeType(const UnicodeString & FileName)
   {
     Result = MimeOut;
     CoTaskMemFree(MimeOut);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString NormalizeString(const UnicodeString & S)
+{
+  UnicodeString Result = S;
+  if (Result == EmptyString)
+  {
+    Result = UnicodeString();
   }
   return Result;
 }

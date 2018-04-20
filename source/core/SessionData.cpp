@@ -1929,10 +1929,15 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
         }
       }
 
+      bool HasPassword = (UserInfo.Pos(L':') > 0);
       UnicodeString RawUserName = CutToChar(UserInfo, L':', false);
       UserName = DecodeUrlChars(RawUserName);
 
       Password = DecodeUrlChars(UserInfo);
+      if (HasPassword && Password.IsEmpty())
+      {
+        Password = EmptyString;
+      }
 
       UnicodeString RemoteDirectoryWithSessionParams = Url.SubString(PSlash, Url.Length() - PSlash + 1);
       ARemoteDirectory = CutToChar(RemoteDirectoryWithSessionParams, UrlParamSeparator, false);
@@ -1954,11 +1959,11 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
       if (MaskedUrl != NULL)
       {
         (*MaskedUrl) += RawUserName;
-        if (!UserInfo.IsEmpty())
+        if (HasPassword)
         {
           (*MaskedUrl) += L":" + PasswordMask;
         }
-        if (!RawUserName.IsEmpty() || !UserInfo.IsEmpty())
+        if (!RawUserName.IsEmpty() || HasPassword)
         {
           (*MaskedUrl) += L"@";
         }
@@ -2912,7 +2917,7 @@ UnicodeString __fastcall TSessionData::GenerateSessionUrl(unsigned int Flags)
 
     if (FLAGSET(Flags, sufPassword) && !Password.IsEmpty())
     {
-      Url += L":" + EncodeUrlString(Password);
+      Url += L":" + EncodeUrlString(NormalizeString(Password));
     }
 
     if (FLAGSET(Flags, sufHostKey) && !HostKey.IsEmpty())
@@ -3175,7 +3180,7 @@ void __fastcall TSessionData::GenerateAssemblyCode(
   }
   if (SessionData->Password != FactoryDefaults->Password)
   {
-    AddAssemblyProperty(Head, Language, L"Password", Password);
+    AddAssemblyProperty(Head, Language, L"Password", NormalizeString(Password));
     SessionData->Password = FactoryDefaults->Password;
   }
 
