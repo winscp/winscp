@@ -393,6 +393,7 @@ void __fastcall UpdateStaticUsage()
   GetWindowsProductType(Type);
   Configuration->Usage->Set(L"WindowsProductType", (static_cast<int>(Type)));
   Configuration->Usage->Set(L"Windows64", IsWin64());
+  Configuration->Usage->Set(L"UWP", IsUWP());
   Configuration->Usage->Set(L"DefaultLocale",
     // See TGUIConfiguration::GetAppliedLocaleHex()
     IntToHex(static_cast<int>(GetDefaultLCID()), 4));
