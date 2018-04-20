@@ -261,6 +261,7 @@ __fastcall TFTPFileSystem::TFTPFileSystem(TTerminal * ATerminal):
   FPrivateKey = NULL;
   FBytesAvailable = -1;
   FBytesAvailableSuppoted = false;
+  FLoggedIn = false;
 
   FChecksumAlgs.reset(new TStringList());
   FChecksumCommands.reset(new TStringList());
@@ -316,6 +317,7 @@ void __fastcall TFTPFileSystem::Open()
   ResetCaches();
   FReadCurrentDirectory = true;
   FHomeDirectory = L"";
+  FLoggedIn = false;
 
   FLastDataSent = Now();
 
@@ -332,6 +334,10 @@ void __fastcall TFTPFileSystem::Open()
       switch (FTerminal->Configuration->ActualLogProtocol)
       {
         default:
+        case -1:
+          LogLevel = TFileZillaIntf::LOG_WARNING;
+          break;
+
         case 0:
         case 1:
           LogLevel = TFileZillaIntf::LOG_PROGRESS;
@@ -516,6 +522,7 @@ void __fastcall TFTPFileSystem::Open()
   FSessionInfo.SCCipher = FSessionInfo.CSCipher;
   UnicodeString TlsVersionStr = FFileZillaIntf->GetTlsVersionStr().c_str();
   AddToList(FSessionInfo.SecurityProtocolName, TlsVersionStr, L", ");
+  FLoggedIn = true;
 }
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::Close()
@@ -2623,7 +2630,7 @@ int __fastcall TFTPFileSystem::GetOptionVal(int OptionID) const
       break;
 
     case OPTION_DEBUGSHOWLISTING:
-      Result = true;
+      Result = (FTerminal->Configuration->ActualLogProtocol >= 0);
       break;
 
     case OPTION_PASV:
@@ -3437,7 +3444,10 @@ bool __fastcall TFTPFileSystem::HandleStatus(const wchar_t * AStatus, int Type)
       {
         FLastCommand = CMD_UNKNOWN;
       }
-      LogType = llInput;
+      if (!FLoggedIn || (FTerminal->Configuration->ActualLogProtocol >= 0))
+      {
+        LogType = llInput;
+      }
       break;
 
     case TFileZillaIntf::LOG_ERROR:
@@ -3474,7 +3484,10 @@ bool __fastcall TFTPFileSystem::HandleStatus(const wchar_t * AStatus, int Type)
 
     case TFileZillaIntf::LOG_REPLY:
       HandleReplyStatus(AStatus);
-      LogType = llOutput;
+      if (!FLoggedIn || (FTerminal->Configuration->ActualLogProtocol >= 0))
+      {
+        LogType = llOutput;
+      }
       break;
 
     case TFileZillaIntf::LOG_INFO:

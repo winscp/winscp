@@ -35,6 +35,8 @@
 #pragma resource "*.dfm"
 #endif
 //---------------------------------------------------------------------
+const int BelowNormalLogLevels = 1;
+//---------------------------------------------------------------------
 bool __fastcall DoPreferencesDialog(TPreferencesMode APreferencesMode,
   TPreferencesDialogData * DialogData)
 {
@@ -588,7 +590,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
 
     // logging
     EnableLoggingCheck->Checked = Configuration->Logging;
-    LogProtocolCombo->ItemIndex = Configuration->LogProtocol;
+    LogProtocolCombo->ItemIndex = Configuration->LogProtocol + BelowNormalLogLevels;
     LogFileNameEdit3->Text =
       !Configuration->LogFileName.IsEmpty() ? Configuration->LogFileName : Configuration->DefaultLogFileName;
     if (Configuration->LogFileAppend)
@@ -882,7 +884,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
 
     // logging
     Configuration->Logging = EnableLoggingCheck->Checked && !LogFileNameEdit3->Text.IsEmpty();
-    Configuration->LogProtocol = LogProtocolCombo->ItemIndex;
+    Configuration->LogProtocol = LogProtocolCombo->ItemIndex - BelowNormalLogLevels;
     Configuration->LogFileName = LogFileNameEdit3->Text;
     Configuration->LogFileAppend = LogFileAppendButton->Checked;
     __int64 LogMaxSize;

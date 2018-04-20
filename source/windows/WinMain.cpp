@@ -737,7 +737,7 @@ int __fastcall Execute()
       Configuration->TemporaryLogSensitive(LogSensitive);
     }
     int LogProtocol;
-    if (!SwitchValue.IsEmpty() && TryStrToInt(SwitchValue, LogProtocol) && (LogProtocol >= 0))
+    if (!SwitchValue.IsEmpty() && TryStrToInt(SwitchValue, LogProtocol) && (LogProtocol >= -1))
     {
       Configuration->TemporaryLogProtocol(LogProtocol);
     }

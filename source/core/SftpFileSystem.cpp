@@ -2277,7 +2277,7 @@ void __fastcall TSFTPFileSystem::SendPacket(const TSFTPPacket * Packet)
   BusyStart();
   try
   {
-    if (FTerminal->Log->Logging)
+    if (FTerminal->Log->Logging && (FTerminal->Configuration->ActualLogProtocol >= 0))
     {
       if ((FPreviousLoggedPacket != SSH_FXP_READ &&
            FPreviousLoggedPacket != SSH_FXP_WRITE) ||
@@ -2397,7 +2397,8 @@ unsigned long __fastcall TSFTPFileSystem::GotStatusPacket(TSFTPPacket * Packet,
     {
       ServerMessage = LoadStr(SFTP_SERVER_MESSAGE_UNSUPPORTED);
     }
-    if (FTerminal->Log->Logging)
+    if (FTerminal->Log->Logging &&
+        (FTerminal->Configuration->ActualLogProtocol >= 0))
     {
       FTerminal->Log->Add(llOutput, FORMAT(L"Status code: %d, Message: %d, Server: %s, Language: %s ",
         (int(Code), (int)Packet->MessageNumber, ServerMessage, LanguageTag)));
@@ -2431,7 +2432,10 @@ unsigned long __fastcall TSFTPFileSystem::GotStatusPacket(TSFTPPacket * Packet,
   {
     if (!FNotLoggedPackets || Code)
     {
-      FTerminal->Log->Add(llOutput, FORMAT(L"Status code: %d", ((int)Code)));
+      if (FTerminal->Configuration->ActualLogProtocol >= 0)
+      {
+        FTerminal->Log->Add(llOutput, FORMAT(L"Status code: %d", ((int)Code)));
+      }
     }
     return Code;
   }
@@ -2515,7 +2519,7 @@ int __fastcall TSFTPFileSystem::ReceivePacket(TSFTPPacket * Packet,
         FSecureShell->Receive(Packet->Data, Length);
         Packet->DataUpdated(Length);
 
-        if (FTerminal->Log->Logging)
+        if (FTerminal->Log->Logging && (FTerminal->Configuration->ActualLogProtocol >= 0))
         {
           if ((FPreviousLoggedPacket != SSH_FXP_READ &&
                FPreviousLoggedPacket != SSH_FXP_WRITE) ||
@@ -2555,12 +2559,18 @@ int __fastcall TSFTPFileSystem::ReceivePacket(TSFTPPacket * Packet,
               IsReserved = true;
               if (ReservedPacket)
               {
-                FTerminal->LogEvent(L"Storing reserved response");
+                if (FTerminal->Configuration->ActualLogProtocol >= 0)
+                {
+                  FTerminal->LogEvent(L"Storing reserved response");
+                }
                 *ReservedPacket = *Packet;
               }
               else
               {
-                FTerminal->LogEvent(L"Discarding reserved response");
+                if (FTerminal->Configuration->ActualLogProtocol >= 0)
+                {
+                  FTerminal->LogEvent(L"Discarding reserved response");
+                }
                 RemoveReservation(Index);
                 if ((Reservation >= 0) && (Reservation > Index))
                 {
@@ -2695,8 +2705,10 @@ UnicodeString __fastcall TSFTPFileSystem::RealPath(const UnicodeString Path)
 {
   try
   {
-    FTerminal->LogEvent(FORMAT(L"Getting real path for '%s'",
-      (Path)));
+    if (FTerminal->Configuration->ActualLogProtocol >= 0)
+    {
+      FTerminal->LogEvent(FORMAT(L"Getting real path for '%s'", (Path)));
+    }
 
     TSFTPPacket Packet(SSH_FXP_REALPATH);
     Packet.AddPathString(Path, FUtfStrings);
@@ -2742,7 +2754,10 @@ UnicodeString __fastcall TSFTPFileSystem::RealPath(const UnicodeString Path)
     UnicodeString RealDir = UnixExcludeTrailingBackslash(Packet.GetPathString(FUtfStrings));
     // ignore rest of SSH_FXP_NAME packet
 
-    FTerminal->LogEvent(FORMAT(L"Real path is '%s'", (RealDir)));
+    if (FTerminal->Configuration->ActualLogProtocol >= 0)
+    {
+      FTerminal->LogEvent(FORMAT(L"Real path is '%s'", (RealDir)));
+    }
 
     return RealDir;
   }
@@ -3127,8 +3142,11 @@ void __fastcall TSFTPFileSystem::DoStartup()
       }
       else
       {
-        FTerminal->LogEvent(FORMAT(L"Unknown server extension %s=%s",
-          (ExtensionName, ExtensionDisplayData)));
+        if (FTerminal->Configuration->ActualLogProtocol >= 0)
+        {
+          FTerminal->LogEvent(FORMAT(L"Unknown server extension %s=%s",
+            (ExtensionName, ExtensionDisplayData)));
+        }
       }
       FExtensions->Values[ExtensionName] = ExtensionDisplayData;
     }
@@ -4573,7 +4591,10 @@ void __fastcall TSFTPFileSystem::Source(
   OpenParams.FileParams = &FileParams;
   OpenParams.Confirmed = false;
 
-  FTerminal->LogEvent(L"Opening remote file.");
+  if (FTerminal->Configuration->ActualLogProtocol >= 0)
+  {
+    FTerminal->LogEvent(L"Opening remote file.");
+  }
   FTerminal->FileOperationLoop(SFTPOpenRemote, OperationProgress, folAllowSkip,
     FMTLOAD(SFTP_CREATE_FILE_ERROR, (OpenParams.RemoteFileName)),
     &OpenParams);

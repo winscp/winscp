@@ -330,7 +330,7 @@ namespace WinSCP
 
         private void SetLogLevel(int value)
         {
-            if ((value < 0) || (value > 2))
+            if ((value < -1) || (value > 2))
             {
                 throw WriteException(new ArgumentOutOfRangeException(string.Format(CultureInfo.CurrentCulture, "Logging level has to be in range 0-2")));
             }

@@ -1063,7 +1063,11 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
       wcscpy(UserName, L"<Failed to retrieve username>");
     }
     UnicodeString LogStr;
-    if (FConfiguration->LogProtocol <= 0)
+    if (FConfiguration->LogProtocol <= -1)
+    {
+      LogStr = L"Reduced";
+    }
+    else if (FConfiguration->LogProtocol <= 0)
     {
       LogStr = L"Normal";
     }

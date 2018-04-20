@@ -290,6 +290,7 @@ private:
   bool FMVS;
   bool FVMS;
   bool FFileTransferAny;
+  bool FLoggedIn;
   mutable UnicodeString FOptionScratch;
 };
 //---------------------------------------------------------------------------

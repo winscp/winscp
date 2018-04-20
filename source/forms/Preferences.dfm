@@ -344,6 +344,7 @@ object PreferencesDialog: TPreferencesDialog
             TabOrder = 1
             OnChange = ControlChange
             Items.Strings = (
+              'Reduced'
               'Normal'
               'Debug 1'
               'Debug 2')

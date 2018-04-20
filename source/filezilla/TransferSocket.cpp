@@ -966,7 +966,7 @@ int CTransferSocket::OnLayerCallback(std::list<t_callbackMsg>& callbacks)
         switch (iter->nParam1)
         {
         case PROXYERROR_NOERROR:
-          m_pOwner->ShowStatus(IDS_PROXY_CONNECTED, FZ_LOG_STATUS);
+          m_pOwner->ShowStatus(IDS_PROXY_CONNECTED, FZ_LOG_PROGRESS);
           break;
         case PROXYERROR_NOCONN:
           m_pOwner->ShowStatus(IDS_ERRORMSG_PROXY_NOCONN, FZ_LOG_ERROR);
@@ -1001,7 +1001,7 @@ int CTransferSocket::OnLayerCallback(std::list<t_callbackMsg>& callbacks)
             CloseAndEnsureSendClose(0);
             break;
           case SSL_INFO_ESTABLISHED:
-            m_pOwner->ShowStatus(IDS_STATUSMSG_SSLESTABLISHEDTRANSFER, FZ_LOG_STATUS);
+            m_pOwner->ShowStatus(IDS_STATUSMSG_SSLESTABLISHEDTRANSFER, FZ_LOG_PROGRESS);
             TriggerEvent(FD_FORCEREAD);
             break;
           }

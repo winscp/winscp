@@ -3443,7 +3443,7 @@ void __fastcall TTerminal::CustomReadDirectory(TRemoteFileList * FileList)
   while (RobustLoop.Retry());
 
 
-  if (Log->Logging)
+  if (Log->Logging && (Configuration->ActualLogProtocol >= 0))
   {
     for (int Index = 0; Index < FileList->Count; Index++)
     {
@@ -5519,13 +5519,19 @@ void __fastcall TTerminal::DoSynchronizeCollectDirectory(const UnicodeString Loc
             FileData->Modified = false;
             Data.LocalFileList->AddObject(FileName,
               reinterpret_cast<TObject*>(FileData));
-            LogEvent(FORMAT(L"Local file %s included to synchronization",
-              (FormatFileDetailsForLog(FullLocalFileName, Modification, Size))));
+            if (Configuration->ActualLogProtocol >= 0)
+            {
+              LogEvent(FORMAT(L"Local file %s included to synchronization",
+                (FormatFileDetailsForLog(FullLocalFileName, Modification, Size))));
+            }
           }
           else
           {
-            LogEvent(FORMAT(L"Local file %s excluded from synchronization",
-              (FormatFileDetailsForLog(FullLocalFileName, Modification, Size))));
+            if (Configuration->ActualLogProtocol >= 0)
+            {
+              LogEvent(FORMAT(L"Local file %s excluded from synchronization",
+                (FormatFileDetailsForLog(FullLocalFileName, Modification, Size))));
+            }
           }
 
           FILE_OPERATION_LOOP_BEGIN
@@ -5862,8 +5868,11 @@ void __fastcall TTerminal::DoSynchronizeCollectFile(const UnicodeString FileName
   }
   else
   {
-    LogEvent(FORMAT(L"Remote file %s excluded from synchronization",
-      (FormatFileDetailsForLog(FullRemoteFileName, File->Modification, File->Size))));
+    if (Configuration->ActualLogProtocol >= 0)
+    {
+      LogEvent(FORMAT(L"Remote file %s excluded from synchronization",
+        (FormatFileDetailsForLog(FullRemoteFileName, File->Modification, File->Size))));
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -6490,7 +6499,10 @@ void __fastcall TTerminal::LogTotalTransferDetails(
       S += FORMAT(L" - total size: %s", (FormatSize(OperationProgress->TotalSize)));
     }
     LogEvent(S);
-    LogEvent(CopyParam->LogStr);
+    if (Configuration->ActualLogProtocol >= 0)
+    {
+      LogEvent(CopyParam->LogStr);
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -6844,8 +6856,11 @@ void __fastcall TTerminal::SelectTransferMode(
   const TFileMasks::TParams & MaskParams)
 {
   OperationProgress->SetAsciiTransfer(CopyParam->UseAsciiTransfer(BaseFileName, Side, MaskParams));
-  UnicodeString ModeName = (OperationProgress->AsciiTransfer ? L"Ascii" : L"Binary");
-  LogEvent(FORMAT(L"%s transfer mode selected.", (ModeName)));
+  if (Configuration->ActualLogProtocol >= 0)
+  {
+    UnicodeString ModeName = (OperationProgress->AsciiTransfer ? L"Ascii" : L"Binary");
+    LogEvent(FORMAT(L"%s transfer mode selected.", (ModeName)));
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::SelectSourceTransferMode(const TLocalFileHandle & Handle, const TCopyParamType * CopyParam)

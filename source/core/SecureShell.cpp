@@ -1180,7 +1180,10 @@ UnicodeString __fastcall TSecureShell::ConvertInput(const RawByteString & Input)
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::SendSpecial(int Code)
 {
-  LogEvent(FORMAT(L"Sending special code: %d", (Code)));
+  if (Configuration->ActualLogProtocol >= 0)
+  {
+    LogEvent(FORMAT(L"Sending special code: %d", (Code)));
+  }
   CheckConnection();
   FBackend->special(FBackendHandle, (Telnet_Special)Code);
   CheckConnection();
