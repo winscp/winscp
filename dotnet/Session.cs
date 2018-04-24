@@ -65,8 +65,10 @@ namespace WinSCP
     public sealed class Session : IDisposable, IReflect
     {
         public string ExecutablePath { get { return _executablePath; } set { CheckNotOpened(); _executablePath = value; } }
+#if !NETSTANDARD
         public string ExecutableProcessUserName { get { return _executableProcessUserName; } set { CheckNotOpened(); _executableProcessUserName = value; } }
         public SecureString ExecutableProcessPassword { get { return _executableProcessPassword; } set { CheckNotOpened(); _executableProcessPassword = value; } }
+#endif
         public string AdditionalExecutableArguments { get { return _additionalExecutableArguments; } set { CheckNotOpened(); _additionalExecutableArguments = value; } }
         [Obsolete("Use AddRawConfiguration")]
         public bool DefaultConfiguration { get { return _defaultConfiguration; } set { CheckNotOpened(); _defaultConfiguration = value; } }
@@ -297,7 +299,9 @@ namespace WinSCP
 
                         if (_process.HasExited && !File.Exists(XmlLogPath))
                         {
+#if !NETSTANDARD
                             Logger.WriteCounters();
+#endif
                             Logger.WriteProcesses();
                             _process.WriteStatus();
                             string exitCode = string.Format(CultureInfo.CurrentCulture, "{0}", _process.ExitCode);
@@ -1201,6 +1205,7 @@ namespace WinSCP
             RawConfiguration.Add(setting, value);
         }
 
+#if !NETSTANDARD
         [ComRegisterFunction]
         private static void ComRegister(Type t)
         {
@@ -1221,6 +1226,7 @@ namespace WinSCP
             string subKey = GetTypeLibKey(t);
             Registry.ClassesRoot.DeleteSubKey(subKey, false);
         }
+#endif
 
         private void ReadFile(RemoteFileInfo fileInfo, CustomLogReader fileReader)
         {
@@ -2262,8 +2268,10 @@ namespace WinSCP
         private int _progressHandling;
         private bool _guardProcessWithJob;
         private string _homePath;
+#if !NETSTANDARD
         private string _executableProcessUserName;
         private SecureString _executableProcessPassword;
+#endif
         private StringCollection _error;
         private bool _ignoreFailed;
         private TimeSpan _sessionTimeout;

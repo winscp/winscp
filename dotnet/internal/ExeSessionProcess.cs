@@ -152,6 +152,7 @@ namespace WinSCP
                 // The /console is redundant for CreateForConsole
                 _process.StartInfo.Arguments += string.Format(CultureInfo.InvariantCulture, " /console /consoleinstance={0}", _instanceName);
 
+#if !NETSTANDARD
                 // When running under IIS in "impersonated" mode, the process starts, but does not do anything.
                 // Supposedly it "displayes" some invisible error message when starting and hangs.
                 // Running it "as the user" helps, eventhough it already runs as the user.
@@ -192,6 +193,7 @@ namespace WinSCP
                         throw _logger.WriteException(new SessionLocalException(_session, "Error granting access to desktop", e));
                     }
                 }
+#endif
 
                 _logger.WriteLine("Starting \"{0}\" {1}", _process.StartInfo.FileName, _process.StartInfo.Arguments);
 
@@ -226,6 +228,7 @@ namespace WinSCP
             }
         }
 
+#if !NETSTANDARD
         private void GrantAccess(IntPtr handle, int accessMask)
         {
             using (SafeHandle safeHandle = new NoopSafeHandle(handle))
@@ -238,6 +241,7 @@ namespace WinSCP
                 security.Persist(safeHandle, AccessControlSections.Access);
             }
         }
+#endif
 
         private void ProcessExited(object sender, EventArgs e)
         {
@@ -580,6 +584,7 @@ namespace WinSCP
             {
                 IntPtr securityAttributesPtr = IntPtr.Zero;
 
+#if !NETSTANDARD
                 // We use the EventWaitHandleSecurity only to generate the descriptor binary form
                 // that does not differ for object types, so we abuse the existing "event handle" implementation,
                 // not to have to create the file mapping SecurityAttributes via P/Invoke.
@@ -605,6 +610,7 @@ namespace WinSCP
                     securityAttributesPtr = Marshal.AllocHGlobal(length);
                     Marshal.StructureToPtr(securityAttributes, securityAttributesPtr, false);
                 }
+#endif
 
                 return
                     UnsafeNativeMethods.CreateFileMapping(
@@ -622,16 +628,23 @@ namespace WinSCP
         {
             _logger.WriteLine("Creating event {0}", name);
 
+            string securityDesc;
+#if !NETSTANDARD
             EventWaitHandleSecurity security = CreateSecurity(EventWaitHandleRights.FullControl);
 
             ev = new EventWaitHandle(false, EventResetMode.AutoReset, name, out bool createdNew, security);
+            securityDesc = (security != null ? security.GetSecurityDescriptorSddlForm(AccessControlSections.All) : "none");
+#else
+            ev = new EventWaitHandle(false, EventResetMode.AutoReset, name, out bool createdNew);
+            securityDesc = "not impl";
+#endif
             _logger.WriteLine(
                 "Created event {0} with handle {1} with security {2}, new {3}",
-                name, ev.SafeWaitHandle.DangerousGetHandle(),
-                (security != null ? security.GetSecurityDescriptorSddlForm(AccessControlSections.All) : "none"), createdNew);
+                name, ev.SafeWaitHandle.DangerousGetHandle(), securityDesc, createdNew);
             return createdNew;
         }
 
+#if !NETSTANDARD
         private EventWaitHandleSecurity CreateSecurity(EventWaitHandleRights eventRights)
         {
             EventWaitHandleSecurity security = null;
@@ -658,6 +671,7 @@ namespace WinSCP
 
             return security;
         }
+#endif
 
         private EventWaitHandle CreateEvent(string name)
         {
@@ -828,8 +842,10 @@ namespace WinSCP
                 else
                 {
                     if (!TryFindExecutableInPath(GetAssemblyPath(), out executablePath) &&
+#if !NETSTANDARD
                         !TryFindExecutableInPath(GetInstallationPath(RegistryHive.CurrentUser, Registry.CurrentUser), out executablePath) &&
                         !TryFindExecutableInPath(GetInstallationPath(RegistryHive.LocalMachine, Registry.LocalMachine), out executablePath) &&
+#endif
                         !TryFindExecutableInPath(GetDefaultInstallationPath(), out executablePath))
                     {
                         throw _logger.WriteException(
@@ -858,6 +874,7 @@ namespace WinSCP
             return Path.Combine(programFiles, "WinSCP");
         }
 
+#if !NETSTANDARD
         private static string GetInstallationPath(RegistryHive hive, RegistryKey rootKey)
         {
             OperatingSystem OS = Environment.OSVersion;
@@ -893,6 +910,7 @@ namespace WinSCP
 
             return result;
         }
+#endif
 
         private bool TryFindExecutableInPath(string path, out string result)
         {

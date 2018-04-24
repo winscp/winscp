@@ -51,6 +51,7 @@ namespace WinSCP
             return path;
         }
 
+#if !NETSTANDARD
         private void CreateCounters()
         {
             try
@@ -85,6 +86,7 @@ namespace WinSCP
             counter.NextValue();
             _performanceCounters.Add(counter);
         }
+#endif
 
         public void WriteLine(string line)
         {
@@ -157,19 +159,24 @@ namespace WinSCP
             {
                 if (Logging)
                 {
+#if !NETSTANDARD
                     WriteCounters();
+#endif
                     WriteProcesses();
                     _writter.Dispose();
                     _writter = null;
                 }
 
+#if !NETSTANDARD
                 foreach (PerformanceCounter counter in _performanceCounters)
                 {
                     counter.Dispose();
                 }
+#endif
             }
         }
 
+#if !NETSTANDARD
         public void WriteCounters()
         {
             if (Logging && (LogLevel >= 1))
@@ -191,6 +198,7 @@ namespace WinSCP
                 }
             }
         }
+#endif
 
         public void WriteProcesses()
         {
@@ -295,10 +303,12 @@ namespace WinSCP
                         _writter = File.CreateText(_logPath);
                         _writter.AutoFlush = true;
                         WriteEnvironmentInfo();
+#if !NETSTANDARD
                         if (_logLevel >= 1)
                         {
                             CreateCounters();
                         }
+#endif
                     }
                 }
             }
@@ -307,14 +317,25 @@ namespace WinSCP
         private void WriteEnvironmentInfo()
         {
             Assembly assembly = Assembly.GetExecutingAssembly();
+#if NETSTANDARD
+            WriteLine(".NET Standard build");
+#else
+            WriteLine(".NET Framework build");
+#endif
             WriteLine("Executing assembly: {0}", assembly);
             WriteLine("Executing assembly codebase: {0}", (assembly.CodeBase ?? "unknown"));
             WriteLine("Executing assembly location: {0}", (assembly.Location ?? "unknown"));
             Assembly entryAssembly = Assembly.GetEntryAssembly();
             WriteLine("Entry Assembly: {0}", (entryAssembly != null ? entryAssembly.ToString() : "unmanaged"));
             WriteLine("Operating system: {0}", Environment.OSVersion);
+#if NETSTANDARD
+            WriteLine("Operating system information: {0} {1} {2}", RuntimeInformation.OSDescription, RuntimeInformation.OSArchitecture, RuntimeInformation.ProcessArchitecture);
+#endif
             WriteLine("User: {0}@{1}@{2}; Interactive: {3}", Environment.UserName, Environment.UserDomainName, Environment.MachineName, Environment.UserInteractive);
             WriteLine("Runtime: {0}", Environment.Version);
+#if NETSTANDARD
+            WriteLine("Framework description: {0}", RuntimeInformation.FrameworkDescription);
+#endif
             WriteLine("Console encoding: Input: {0} ({1}); Output: {2} ({3})", Console.InputEncoding.EncodingName, Console.InputEncoding.CodePage, Console.OutputEncoding.EncodingName, Console.OutputEncoding.CodePage);
             WriteLine("Working directory: {0}", Environment.CurrentDirectory);
             string path = GetAssemblyFilePath();
@@ -342,7 +363,9 @@ namespace WinSCP
         private readonly Dictionary<int, int> _indents = new Dictionary<int, int>();
         private readonly object _logLock = new object();
         private readonly Lock _lock = new Lock();
+#if !NETSTANDARD
         private List<PerformanceCounter> _performanceCounters = new List<PerformanceCounter>();
+#endif
         private int _logLevel;
     }
 }
