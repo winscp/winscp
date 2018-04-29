@@ -286,8 +286,8 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
       int(static_cast<double>(GUIConfiguration->BeepOnFinishAfter) * SecsPerDay);
     BOOLPROP(BalloonNotifications);
 
-    DDExtEnabledButton->Checked = WinConfiguration->DDExtEnabled;
-    DDExtDisabledButton->Checked = !DDExtEnabledButton->Checked;
+    DDFakeFileEnabledButton->Checked = WinConfiguration->DDFakeFile;
+    DDFakeFileDisabledButton->Checked = !DDFakeFileEnabledButton->Checked;
     DDWarnOnMoveCheck->Checked = !WinConfiguration->DDAllowMove;
 
     if (WinConfiguration->DDTemporaryDirectory.IsEmpty())
@@ -664,7 +664,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     BOOLPROP(BalloonNotifications);
 
     WinConfiguration->DDAllowMove = !DDWarnOnMoveCheck->Checked;
-    WinConfiguration->DDExtEnabled = DDExtEnabledButton->Checked;
+    WinConfiguration->DDFakeFile = DDFakeFileEnabledButton->Checked;
 
     if (DDSystemTemporaryDirectoryButton->Checked)
     {
@@ -1216,13 +1216,28 @@ void __fastcall TPreferencesDialog::UpdateControls()
     }
     SetLabelHintPopup(CopyParamLabel, InfoStr);
 
-    EnableControl(DDExtEnabledButton, WinConfiguration->DDExtInstalled);
-    EnableControl(DDExtEnabledLabel, WinConfiguration->DDExtInstalled);
-    EnableControl(DDExtDisabledPanel, DDExtDisabledButton->Checked);
+    if (!WinConfiguration->DDExtInstalled)
+    {
+      DragExtStatusLabel->Caption = LoadStr(PREFERENCES_DRAGEXT_NOT_INSTALLED);
+      DragExtStatusLabel->Enabled = false;
+      DragExtStatusLabel->Font->Color = clWindowText;
+    }
+    else if (!WinConfiguration->IsDDExtRunning())
+    {
+      DragExtStatusLabel->Caption = LoadStr(PREFERENCES_DRAGEXT_NOT_RUNNING);
+      DragExtStatusLabel->Enabled = true;
+      DragExtStatusLabel->Font->Color = clGrayText;
+    }
+    else
+    {
+      DragExtStatusLabel->Caption = LoadStr(PREFERENCES_DRAGEXT_RUNNING);
+      DragExtStatusLabel->Enabled = true;
+      DragExtStatusLabel->Font->Color = clWindowText;
+    }
+    EnableControl(DDFakeFileDisabledPanel, DDFakeFileDisabledButton->Checked);
     EnableControl(DDTemporaryDirectoryEdit, DDCustomTemporaryDirectoryButton->Enabled &&
       DDCustomTemporaryDirectoryButton->Checked);
-    EnableControl(DDWarnOnMoveCheck, DDExtDisabledButton->Checked &&
-      DDAllowMoveInitCheck->Checked);
+    EnableControl(DDWarnOnMoveCheck, DDFakeFileDisabledButton->Checked && DDAllowMoveInitCheck->Checked);
     EnableControl(ConfirmTemporaryDirectoryCleanupCheck,
       TemporaryDirectoryCleanupCheck->Checked);
     // allow only when some of the known storages is selected,
@@ -2101,10 +2116,9 @@ void __fastcall TPreferencesDialog::MakeDefaultHandlerItemClick(TObject * /*Send
   LaunchAdvancedAssociationUI();
 }
 //---------------------------------------------------------------------------
-void __fastcall TPreferencesDialog::DDExtLabelClick(TObject * Sender)
+void __fastcall TPreferencesDialog::DDLabelClick(TObject * Sender)
 {
-  ((Sender == DDExtEnabledLabel) ? DDExtEnabledButton : DDExtDisabledButton)->
-    SetFocus();
+  ((Sender != DDFakeFileDisabledLabel) ? DDFakeFileEnabledButton : DDFakeFileDisabledButton)->SetFocus();
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::AddSearchPathButtonClick(

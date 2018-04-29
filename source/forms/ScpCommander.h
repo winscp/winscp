@@ -493,7 +493,7 @@ private:
   TStrings * FInternalDDDownloadList;
   UnicodeString FPrevPath[2];
   bool FFirstTerminal;
-  UnicodeString FDDExtTarget;
+  UnicodeString FDDFakeFileTarget;
   bool FCommandLineComboPopulated;
   TStrings* FLocalPathComboBoxPaths;
   int FLocalSpecialPaths;
@@ -537,8 +537,8 @@ protected:
     TOperationSide Side);
   bool __fastcall InternalDDDownload(UnicodeString & TargetDirectory);
   virtual bool __fastcall DDGetTarget(
-    UnicodeString & Directory, bool & ForceQueue, bool & Internal);
-  virtual void __fastcall DDExtInitDrag(TFileList * FileList, bool & Created);
+    UnicodeString & Directory, bool & ForceQueue, UnicodeString & CounterName);
+  virtual void __fastcall DDFakeFileInitDrag(TFileList * FileList, bool & Created);
   virtual void __fastcall SideEnter(TOperationSide Side);
   void __fastcall SaveCommandLine();
   bool __fastcall ExecuteCommandLine();

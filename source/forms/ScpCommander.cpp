@@ -581,10 +581,8 @@ void __fastcall TScpCommanderForm::ConfigurationChanged()
   }
 
   // See also LocalDirViewDDTargetHasDropHandler
-  LocalDirView->DragDropFilesEx->ShellExtensions->DropHandler =
-    !WinConfiguration->DDExtEnabled;
-  LocalDriveView->DragDropFilesEx->ShellExtensions->DropHandler =
-    !WinConfiguration->DDExtEnabled;
+  LocalDirView->DragDropFilesEx->ShellExtensions->DropHandler = !WinConfiguration->DDFakeFile;
+  LocalDriveView->DragDropFilesEx->ShellExtensions->DropHandler = !WinConfiguration->DDFakeFile;
 
   if (Panel(true)->Left > Panel(false)->Left)
   {
@@ -1431,7 +1429,7 @@ void __fastcall TScpCommanderForm::LocalDirViewDDTargetHasDropHandler(
   // cannot allow drop when when using shellex,
   // as drop handlers are disabled, so drop would error
   // (see TShellExtension.DropHandler assignment in ConfigurationChanged),
-  if (WinConfiguration->DDExtEnabled &&
+  if (WinConfiguration->DDFakeFile &&
       !LocalDirView->ItemIsDirectory(Item))
   {
     DropHandler = false;
@@ -1453,29 +1451,29 @@ void __fastcall TScpCommanderForm::LocalFileControlDDDragOver(TObject * /*Sender
 }
 //---------------------------------------------------------------------------
 bool __fastcall TScpCommanderForm::DDGetTarget(
-  UnicodeString & Directory, bool & ForceQueue, bool & Internal)
+  UnicodeString & Directory, bool & ForceQueue, UnicodeString & CounterName)
 {
   bool Result;
-  if (!FDDExtTarget.IsEmpty())
+  if (!FDDFakeFileTarget.IsEmpty())
   {
-    Directory = FDDExtTarget;
-    FDDExtTarget = L"";
+    Directory = FDDFakeFileTarget;
+    FDDFakeFileTarget = L"";
     Result = true;
-    Internal = true;
+    CounterName = L"DownloadsDragDropInternal";
     ForceQueue = false;
   }
   else
   {
-    Result = TCustomScpExplorerForm::DDGetTarget(Directory, ForceQueue, Internal);
+    Result = TCustomScpExplorerForm::DDGetTarget(Directory, ForceQueue, CounterName);
   }
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TScpCommanderForm::DDExtInitDrag(TFileList * FileList,
+void __fastcall TScpCommanderForm::DDFakeFileInitDrag(TFileList * FileList,
   bool & Created)
 {
-  FDDExtTarget = L"";
-  TCustomScpExplorerForm::DDExtInitDrag(FileList, Created);
+  FDDFakeFileTarget = L"";
+  TCustomScpExplorerForm::DDFakeFileInitDrag(FileList, Created);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::LocalFileControlDDFileOperation(
@@ -1490,7 +1488,7 @@ void __fastcall TScpCommanderForm::LocalFileControlDDFileOperation(
       // See TCustomScpExplorerForm::QueueDDProcessDropped
       if (FDDExtMapFile != NULL)
       {
-        FDDExtTarget = TargetDirectory;
+        FDDFakeFileTarget = TargetDirectory;
       }
       else
       {

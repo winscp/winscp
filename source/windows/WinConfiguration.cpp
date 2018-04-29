@@ -494,7 +494,7 @@ void __fastcall TWinConfiguration::Default()
   FDDTemporaryDirectory = L"";
   FDDWarnLackOfTempSpace = true;
   FDDWarnLackOfTempSpaceRatio = 1.1;
-  FDDExtEnabled = DDExtInstalled;
+  FDDFakeFile = true;
   FDDExtTimeout = MSecsPerSec;
   FDeleteToRecycleBin = true;
   FSelectDirectories = false;
@@ -917,7 +917,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Bool,     UseLocationProfiles); \
     KEY(Bool,     UseSharedBookmarks); \
     KEY(Integer,  LocaleSafe); \
-    KEY(Bool,     DDExtEnabled); \
+    KEY(Bool,     DDFakeFile); \
     KEY(Integer,  DDExtTimeout); \
     KEY(Bool,     DefaultDirIsHome); \
     KEY(Bool,     TemporaryDirectoryAppendSession); \
@@ -1635,6 +1635,23 @@ bool __fastcall TWinConfiguration::GetDDExtInstalled()
   return (FDDExtInstalled > 0);
 }
 //---------------------------------------------------------------------------
+bool __fastcall TWinConfiguration::IsDDExtRunning()
+{
+  bool Result;
+  if (!DDExtInstalled)
+  {
+    Result = false;
+  }
+  else
+  {
+    HANDLE H = OpenMutex(SYNCHRONIZE, False, DRAG_EXT_RUNNING_MUTEX);
+    Result = (H != NULL);
+    CloseHandle(H);
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------------
 RawByteString __fastcall TWinConfiguration::StronglyRecryptPassword(RawByteString Password, UnicodeString Key)
 {
   RawByteString Dummy;
@@ -1829,9 +1846,9 @@ void __fastcall TWinConfiguration::SetDDTemporaryDirectory(UnicodeString value)
   SET_CONFIG_PROPERTY(DDTemporaryDirectory);
 }
 //---------------------------------------------------------------------------
-void __fastcall TWinConfiguration::SetDDExtEnabled(bool value)
+void __fastcall TWinConfiguration::SetDDFakeFile(bool value)
 {
-  SET_CONFIG_PROPERTY(DDExtEnabled);
+  SET_CONFIG_PROPERTY(DDFakeFile);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetDDExtTimeout(int value)

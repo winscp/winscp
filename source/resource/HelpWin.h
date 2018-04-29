@@ -53,8 +53,7 @@
 #define HELP_MOVE_CONFIGURATION      HELP_IMPORT_CONFIGURATION
 #define HELP_DELETE_FILE             "task_delete"
 #define HELP_COLOR                   "task_connections#session_color"
-#define HELP_DRAGEXT_TARGET_NOT_INSTALLED "dragext"
-#define HELP_DRAGEXT_TARGET_UNKNOWN  HELP_DRAGEXT_TARGET_NOT_INSTALLED
+#define HELP_DRAGEXT_TARGET_UNKNOWN  "dragext"
 #define HELP_KEY_TYPE_UNSUPPORTED    "ui_puttygen#other_formats"
 #define HELP_TIPS                    "ui_tips"
 #define HELP_DEBUGGING               "debugging"

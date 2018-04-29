@@ -1303,14 +1303,14 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 8
           Width = 389
-          Height = 252
+          Height = 277
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Drag && Drop downloads'
           TabOrder = 0
           DesignSize = (
             389
-            252)
-          object DDExtEnabledLabel: TLabel
+            277)
+          object DDFakeFileEnabledLabel: TLabel
             Left = 35
             Top = 68
             Width = 345
@@ -1318,15 +1318,16 @@ object PreferencesDialog: TPreferencesDialog
             Anchors = [akLeft, akTop, akRight]
             AutoSize = False
             Caption = 
-              'Allows direct downloads to regular local folders (e.g. Window Ex' +
-              'plorer). Does not allow downloads to other destinations (ZIP arc' +
-              'hives,  FTP, etc.)'
+              'Allow direct downloads to regular local folders (e.g. Window Exp' +
+              'lorer). Does not allow downloads to other destinations (ZIP arch' +
+              'ives,  FTP, etc.). Uses drag&&drop shell extension, when availab' +
+              'le.'
             WordWrap = True
-            OnClick = DDExtLabelClick
+            OnClick = DDLabelClick
           end
-          object DDExtDisabledLabel: TLabel
+          object DDFakeFileDisabledLabel: TLabel
             Left = 35
-            Top = 144
+            Top = 165
             Width = 346
             Height = 54
             Anchors = [akLeft, akTop, akRight]
@@ -1336,31 +1337,42 @@ object PreferencesDialog: TPreferencesDialog
               'ves,  FTP, etc.). Files are downloaded first to temporary folder' +
               ', from where they are delivered to the destination.'
             WordWrap = True
-            OnClick = DDExtLabelClick
+            OnClick = DDLabelClick
           end
-          object DDExtEnabledButton: TRadioButton
+          object DragExtStatusLabel: TLabel
+            Left = 35
+            Top = 120
+            Width = 345
+            Height = 26
+            Anchors = [akLeft, akTop, akRight]
+            AutoSize = False
+            Caption = 'DragExtStatusLabel'
+            WordWrap = True
+            OnClick = DDLabelClick
+          end
+          object DDFakeFileEnabledButton: TRadioButton
             Left = 16
             Top = 48
             Width = 364
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Use &shell extension'
+            Caption = 'Determine drop target by dragging a &fake file'
             TabOrder = 1
             OnClick = ControlChange
           end
-          object DDExtDisabledButton: TRadioButton
+          object DDFakeFileDisabledButton: TRadioButton
             Left = 16
-            Top = 124
+            Top = 145
             Width = 356
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Use &temporary folder'
+            Caption = 'Download files via &temporary folder'
             TabOrder = 2
             OnClick = ControlChange
           end
-          object DDExtDisabledPanel: TPanel
+          object DDFakeFileDisabledPanel: TPanel
             Left = 34
-            Top = 195
+            Top = 216
             Width = 315
             Height = 51
             BevelOuter = bvNone

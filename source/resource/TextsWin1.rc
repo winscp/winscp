@@ -33,7 +33,6 @@ BEGIN
         DRAGEXT_TARGET_UNKNOWN2, "**WinSCP was not able to detect folder, where the dragged file(s) was dropped.** Either you have not dropped the file(s) to regular folder (e.g. Windows Explorer) or you have not restarted your computer yet after installation to load drag&drop shell extension. \n\nAlternatively you can switch to compatible drag&drop mode (from Preferences window), which uses temporary folder for downloads. It allows you to drop files to any destination."
         UNKNOWN_TRANSLATION, "File '%s' does not contain translation for this product version."
         INCOMPATIBLE_TRANSLATION, "File '%s' contains translation for %s version %s."
-        DRAGEXT_TARGET_NOT_INSTALLED2, "**Drag&drop shell extension use is enabled, but the extension is not installed.** Install the extension or switch to compatible drag&drop mode (from Preferences window), which uses temporary folder for downloads."
         GSSAPI_NOT_INSTALLED2, "GSSAPI/SSPI with Kerberos is not supported on this system."
         WATCH_ERROR_GENERAL, "Error watching for changes."
         WATCH_ERROR_DIRECTORY, "Error watching for changes in directory '%s'."
@@ -599,6 +598,9 @@ BEGIN
         EDIT_SELECT_ALL, "Select &All"
         EXTENSION_SHORTCUT, "&Keyboard shortcut:"
         EXTENSION_GENERAL_GROUP, "General"
+        PREFERENCES_DRAGEXT_NOT_INSTALLED, "Shell extension is not installed."
+        PREFERENCES_DRAGEXT_NOT_RUNNING, "Shell extension is installed, but is not loaded."
+        PREFERENCES_DRAGEXT_RUNNING, "Shell extension is installed and loaded."
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
         WINSCP_COPYRIGHT, "Copyright © 2000-2018 Martin Prikryl"

@@ -208,7 +208,7 @@ DllMain(HINSTANCE HInstance, DWORD Reason, LPVOID /*Reserved*/)
 
     if (GRefThisDll == 0)
     {
-      GLogMutex = CreateMutex(NULL, false, L"WinSCPDragExtLogMutex");
+      GLogMutex = CreateMutex(NULL, false, DRAG_EXT_RUNNING_MUTEX);
 
       for (int Root = 0; Root <= 1; Root++)
       {

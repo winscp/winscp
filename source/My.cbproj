@@ -96,7 +96,10 @@
 			<BuildOrder>3</BuildOrder>
 		</DelphiCompile>
 		<DelphiCompile Include="packages\my\CompThread.pas">
-			<BuildOrder>4</BuildOrder>
+			<BuildOrder>22</BuildOrder>
+		</DelphiCompile>
+		<DelphiCompile Include="packages\my\DirectoryMonitor.pas">
+			<BuildOrder>23</BuildOrder>
 		</DelphiCompile>
 		<ResFiles Include="packages\my\DiscMon.dcr">
 			<BuildOrder>6</BuildOrder>

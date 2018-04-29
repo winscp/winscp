@@ -35,6 +35,7 @@
 #include <Consts.hpp>
 #include <DateUtils.hpp>
 #include <TB2Common.hpp>
+#include <DirectoryMonitor.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "CustomDirView"
@@ -6702,29 +6703,62 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDCreateDragFileList(
     FDDExtMapFile = NULL;
   }
 
-  if (WinConfiguration->DDExtEnabled)
+  if (WinConfiguration->DDFakeFile)
   {
-    if (!WinConfiguration->DDExtInstalled)
-    {
-      Configuration->Usage->Inc(L"DownloadsDragDropExternalExtNotInstalled");
-      throw ExtException(NULL, LoadStr(DRAGEXT_TARGET_NOT_INSTALLED2), HELP_DRAGEXT_TARGET_NOT_INSTALLED);
-    }
-    DDExtInitDrag(FileList, Created);
+    DDFakeFileInitDrag(FileList, Created);
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::DDExtInitDrag(TFileList * FileList,
+void __fastcall TCustomScpExplorerForm::DDFakeCreated(TObject * /*Sender*/, const UnicodeString FileName)
+{
+  if (DebugAlwaysTrue(!FDragFakeDirectory.IsEmpty()) &&
+      SameText(ExtractFileName(FileName), ExtractFileName(FDragFakeDirectory)))
+  {
+    FFakeFileDropTarget = FileName;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::DDFakeFileInitDrag(TFileList * FileList,
   bool & Created)
 {
-  FDragExtFakeDirectory =
+  FFakeFileDropTarget = UnicodeString();
+  FDragFakeDirectory =
     ExcludeTrailingBackslash(WinConfiguration->TemporaryDir());
-  if (!ForceDirectories(ApiPath(FDragExtFakeDirectory)))
+  if (!ForceDirectories(ApiPath(FDragFakeDirectory)))
   {
-    throw Exception(FMTLOAD(CREATE_TEMP_DIR_ERROR, (FDragExtFakeDirectory)));
+    throw Exception(FMTLOAD(CREATE_TEMP_DIR_ERROR, (FDragFakeDirectory)));
   }
-  FileList->AddItem(NULL, FDragExtFakeDirectory);
+  FileSetAttr(ApiPath(FDragFakeDirectory), faHidden);
+  FileList->AddItem(NULL, FDragFakeDirectory);
 
   Created = true;
+
+  if (!WinConfiguration->IsDDExtRunning())
+  {
+    FDragFakeMonitors = new TObjectList();
+    for (char Drive = FirstDrive; Drive <= LastDrive; Drive++)
+    {
+      std::unique_ptr<TDirectoryMonitor> Monitor(new TDirectoryMonitor(this));
+      TDriveInfoRec * DriveInfoRec = DriveInfo->Get(Drive);
+      if (DriveInfoRec->Valid &&
+          (DriveInfoRec->DriveType != DRIVE_CDROM))
+      {
+        try
+        {
+          Monitor->Path = DriveInfo->GetDriveRoot(Drive);
+          Monitor->WatchSubtree = true;
+          Monitor->WatchFilters = FILE_NOTIFY_CHANGE_DIR_NAME;
+          Monitor->OnCreated = DDFakeCreated;
+          Monitor->Active = true;
+          FDragFakeMonitors->Add(Monitor.release());
+        }
+        catch (Exception & E)
+        {
+          // Ignore errors watching not-ready drives
+        }
+      }
+    }
+  }
 
   FDDExtMapFile = CreateFileMappingA((HANDLE)0xFFFFFFFF, NULL, PAGE_READWRITE,
     0, sizeof(TDragExtCommStruct), AnsiString(DRAG_EXT_MAPPING).c_str());
@@ -6737,7 +6771,7 @@ void __fastcall TCustomScpExplorerForm::DDExtInitDrag(TFileList * FileList,
     DebugAssert(CommStruct != NULL);
     CommStruct->Version = TDragExtCommStruct::CurrentVersion;
     CommStruct->Dragging = true;
-    wcsncpy(CommStruct->DropDest, FDragExtFakeDirectory.c_str(),
+    wcsncpy(CommStruct->DropDest, FDragFakeDirectory.c_str(),
       LENOF(CommStruct->DropDest));
     NULL_TERMINATE(CommStruct->DropDest);
     UnmapViewOfFile(CommStruct);
@@ -6790,6 +6824,11 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDEnd(TObject * Sender)
   // Drops of local files (uploads) are handled in QueueDDProcessDropped.
   SAFE_DESTROY(FDDFileList);
 
+  if (!FFakeFileDropTarget.IsEmpty())
+  {
+    RemoveDir(ApiPath(FFakeFileDropTarget));
+  }
+
   if ((FDDExtMapFile != NULL) || (FDDTargetControl == QueueView3))
   {
     try
@@ -6833,9 +6872,9 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDEnd(TObject * Sender)
         }
 
         TTransferOperationParam Param;
-        bool Internal;
+        UnicodeString CounterName;
         bool ForceQueue;
-        if (!DDGetTarget(Param.TargetDirectory, ForceQueue, Internal))
+        if (!DDGetTarget(Param.TargetDirectory, ForceQueue, CounterName))
         {
           // we get drInvalid both if d&d was intercepted by ddext,
           // and when users drops on no-drop location.
@@ -6852,7 +6891,7 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDEnd(TObject * Sender)
         }
         else
         {
-          // download using ddext
+          // download using fake file
           Param.Temp = false;
           Param.DragDrop = true;
           if (ForceQueue)
@@ -6867,8 +6906,7 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDEnd(TObject * Sender)
           if (RemoteFileControlFileOperation(Sender, Operation,
                 (WinConfiguration->DDTransferConfirmation == asOff), &Param))
           {
-            Configuration->Usage->Inc(
-              Internal ? L"DownloadsDragDropInternal" : L"DownloadsDragDropExternalExt");
+            Configuration->Usage->Inc(CounterName);
           }
         }
       }
@@ -6877,8 +6915,11 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDEnd(TObject * Sender)
     {
       CloseHandle(FDDExtMapFile);
       FDDExtMapFile = NULL;
-      RemoveDir(ApiPath(FDragExtFakeDirectory));
-      FDragExtFakeDirectory = L"";
+      delete FDragFakeMonitors;
+      FDragFakeMonitors = NULL;
+      RemoveDir(ApiPath(FDragFakeDirectory));
+      FDragFakeDirectory = L"";
+      FFakeFileDropTarget = UnicodeString();
     }
   }
 
@@ -6910,15 +6951,22 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDGiveFeedback(
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::DDGetTarget(
-  UnicodeString & Directory, bool & ForceQueue, bool & Internal)
+  UnicodeString & Directory, bool & ForceQueue, UnicodeString & CounterName)
 {
   bool Result;
   if (FDDTargetControl == QueueView3)
   {
     Directory = DefaultDownloadTargetDirectory();
     Result = true;
-    Internal = true;
+    CounterName = L"DownloadsDragDropQueue";
     ForceQueue = true;
+  }
+  else if (!FFakeFileDropTarget.IsEmpty())
+  {
+    Directory = ExcludeTrailingBackslash(ExtractFilePath(FFakeFileDropTarget));
+    Result = true;
+    ForceQueue = false;
+    CounterName = L"DownloadsDragDropFakeFile";
   }
   else
   {
@@ -6941,7 +6989,7 @@ bool __fastcall TCustomScpExplorerForm::DDGetTarget(
           if (Result)
           {
             Directory = ExtractFilePath(CommStruct->DropDest);
-            Internal = false;
+            CounterName = L"DownloadsDragDropExternalExt";
           }
           UnmapViewOfFile(CommStruct);
         }

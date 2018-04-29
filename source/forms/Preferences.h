@@ -83,11 +83,11 @@ __published:
   TButton *RegisterAsUrlHandlersButton;
   TTabSheet *DragDropSheet;
   TGroupBox *DragDropDownloadsGroup;
-  TLabel *DDExtEnabledLabel;
-  TLabel *DDExtDisabledLabel;
-  TRadioButton *DDExtEnabledButton;
-  TRadioButton *DDExtDisabledButton;
-  TPanel *DDExtDisabledPanel;
+  TLabel *DDFakeFileEnabledLabel;
+  TLabel *DDFakeFileDisabledLabel;
+  TRadioButton *DDFakeFileEnabledButton;
+  TRadioButton *DDFakeFileDisabledButton;
+  TPanel *DDFakeFileDisabledPanel;
   TCheckBox *DDWarnLackOfTempSpaceCheck;
   TCheckBox *DDWarnOnMoveCheck;
   TCheckBox *ConfirmExitOnCompletionCheck;
@@ -320,6 +320,7 @@ __published:
   TFilenameEdit *CustomIniFileStorageEdit;
   TPathLabel *AutomaticIniFileStorageLabel;
   TCheckBox *NaturalOrderNumericalSortingCheck;
+  TLabel *DragExtStatusLabel;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);
@@ -341,7 +342,7 @@ __published:
   void __fastcall NavigationTreeChange(TObject *Sender, TTreeNode *Node);
   void __fastcall PageControlChange(TObject *Sender);
   void __fastcall RegisterAsUrlHandlersButtonClick(TObject *Sender);
-  void __fastcall DDExtLabelClick(TObject *Sender);
+  void __fastcall DDLabelClick(TObject *Sender);
   void __fastcall CustomCommandsViewDblClick(TObject *Sender);
   void __fastcall AddSearchPathButtonClick(TObject *Sender);
   void __fastcall EditorFontLabelDblClick(TObject *Sender);
