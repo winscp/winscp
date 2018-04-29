@@ -1719,27 +1719,52 @@ bool __fastcall TryRelativeStrToDateTime(UnicodeString S, TDateTime & DateTime, 
     }
     S.Delete(1, Index - 1);
     S = S.Trim().UpperCase();
+    bool Start = !S.IsEmpty() && EndsStr(L"S", S);
+    if (Start)
+    {
+      S.SetLength(S.Length() - 1);
+    }
     DateTime = Now();
     // These may not overlap with ParseSize (K, M and G)
     if (S == "S")
     {
       DateTime = IncSecond(DateTime, Number);
+      if (Start)
+      {
+        DateTime = IncMilliSecond(DateTime, -static_cast<int>(MilliSecondOfTheSecond(DateTime)));
+      }
     }
     else if (S == "N")
     {
       DateTime = IncMinute(DateTime, Number);
+      if (Start)
+      {
+        DateTime = IncMilliSecond(DateTime, -static_cast<int>(MilliSecondOfTheMinute(DateTime)));
+      }
     }
     else if (S == "H")
     {
       DateTime = IncHour(DateTime, Number);
+      if (Start)
+      {
+        DateTime = IncMilliSecond(DateTime, -static_cast<int>(MilliSecondOfTheHour(DateTime)));
+      }
     }
     else if (S == "D")
     {
       DateTime = IncDay(DateTime, Number);
+      if (Start)
+      {
+        DateTime = IncMilliSecond(DateTime, -static_cast<int>(MilliSecondOfTheDay(DateTime)));
+      }
     }
     else if (S == "Y")
     {
       DateTime = IncYear(DateTime, Number);
+      if (Start)
+      {
+        DateTime = IncMilliSecond(DateTime, -MilliSecondOfTheYear(DateTime));
+      }
     }
     else
     {
