@@ -1704,6 +1704,15 @@ bool __fastcall TryRelativeStrToDateTime(UnicodeString S, TDateTime & DateTime, 
 {
   S = S.Trim();
   int Index = 1;
+  if (SameText(S, L"today"))
+  {
+    S = L"0DS";
+  }
+  else if (SameText(S, L"yesterday"))
+  {
+    S = L"1DS";
+  }
+
   while ((Index <= S.Length()) && IsDigit(S[Index]))
   {
     Index++;
