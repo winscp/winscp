@@ -202,6 +202,7 @@ private:
   TStringList * FErrorList;
   HANDLE FDDExtMutex;
   UnicodeString FDragExtFakeDirectory;
+  TObjectList * FDragFakeMonitors;
   TStrings * FDelayedDeletionList;
   TTimer * FDelayedDeletionTimer;
   TStrings * FDDFileList;
@@ -327,6 +328,7 @@ protected:
   TPoint FLastContextPopupScreenPoint;
   bool FRemoteDirViewWasFocused;
   bool FDoNotIdleCurrentTerminal;
+  UnicodeString FFakeFileDropTarget;
 
   virtual bool __fastcall CopyParamDialog(TTransferDirection Direction,
     TTransferType Type, bool Temp, TStrings * FileList,
@@ -419,8 +421,9 @@ protected:
   bool __fastcall ExecuteFileOperation(TFileOperation Operation, TOperationSide Side,
     TStrings * FileList, bool NoConfirmation, void * Param);
   virtual bool __fastcall DDGetTarget(UnicodeString & Directory,
-    bool & ForceQueue, bool & Internal);
+    bool & ForceQueue, UnicodeString & CounterName);
   virtual void __fastcall DDExtInitDrag(TFileList * FileList, bool & Created);
+  void __fastcall DDFakeCreated(TObject * Sender, const UnicodeString FileName);
   virtual void __fastcall SideEnter(TOperationSide Side);
   virtual TOperationSide __fastcall GetSide(TOperationSide Side);
   TStrings * __fastcall PanelExport(TOperationSide Side, TPanelExport Export);

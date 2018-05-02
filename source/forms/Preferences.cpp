@@ -1214,8 +1214,8 @@ void __fastcall TPreferencesDialog::UpdateControls()
     }
     SetLabelHintPopup(CopyParamLabel, InfoStr);
 
-    EnableControl(DDExtEnabledButton, WinConfiguration->DDExtInstalled);
-    EnableControl(DDExtEnabledLabel, WinConfiguration->DDExtInstalled);
+    EnableControl(DDExtEnabledButton, IsUWP() || WinConfiguration->DDExtInstalled);
+    EnableControl(DDExtEnabledLabel, DDExtEnabledButton->Enabled);
     EnableControl(DDExtDisabledPanel, DDExtDisabledButton->Checked);
     EnableControl(DDTemporaryDirectoryEdit, DDCustomTemporaryDirectoryButton->Enabled &&
       DDCustomTemporaryDirectoryButton->Checked);

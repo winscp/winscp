@@ -493,6 +493,7 @@ void __fastcall TWinConfiguration::Default()
   FDDWarnLackOfTempSpace = true;
   FDDWarnLackOfTempSpaceRatio = 1.1;
   FDDExtEnabled = DDExtInstalled;
+  FDDFakeFile = true;
   FDDExtTimeout = MSecsPerSec;
   FDeleteToRecycleBin = true;
   FSelectDirectories = false;
@@ -915,6 +916,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Bool,     UseSharedBookmarks); \
     KEY(Integer,  LocaleSafe); \
     KEY(Bool,     DDExtEnabled); \
+    KEY(Bool,     DDFakeFile); \
     KEY(Integer,  DDExtTimeout); \
     KEY(Bool,     DefaultDirIsHome); \
     KEY(Bool,     TemporaryDirectoryAppendSession); \
@@ -1605,6 +1607,23 @@ bool __fastcall TWinConfiguration::GetDDExtInstalled()
   return (FDDExtInstalled > 0);
 }
 //---------------------------------------------------------------------------
+bool __fastcall TWinConfiguration::IsDDExtRunning()
+{
+  bool Result;
+  if (!DDExtInstalled)
+  {
+    Result = false;
+  }
+  else
+  {
+    HANDLE H = OpenMutex(SYNCHRONIZE, False, DRAG_EXT_RUNNING_MUTEX);
+    Result = (H != NULL);
+    CloseHandle(H);
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------------
 RawByteString __fastcall TWinConfiguration::StronglyRecryptPassword(RawByteString Password, UnicodeString Key)
 {
   RawByteString Dummy;
@@ -1799,9 +1818,28 @@ void __fastcall TWinConfiguration::SetDDTemporaryDirectory(UnicodeString value)
   SET_CONFIG_PROPERTY(DDTemporaryDirectory);
 }
 //---------------------------------------------------------------------------
+bool __fastcall TWinConfiguration::GetDDExtEnabled()
+{
+  if (IsUWP())
+  {
+    return FDDFakeFile;
+  }
+  else
+  {
+    return FDDExtEnabled;
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetDDExtEnabled(bool value)
 {
-  SET_CONFIG_PROPERTY(DDExtEnabled);
+  if (IsUWP())
+  {
+    SET_CONFIG_PROPERTY(DDFakeFile);
+  }
+  else
+  {
+    SET_CONFIG_PROPERTY(DDExtEnabled);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetDDExtTimeout(int value)

@@ -1449,7 +1449,7 @@ void __fastcall TScpCommanderForm::LocalFileControlDDDragOver(TObject * /*Sender
 }
 //---------------------------------------------------------------------------
 bool __fastcall TScpCommanderForm::DDGetTarget(
-  UnicodeString & Directory, bool & ForceQueue, bool & Internal)
+  UnicodeString & Directory, bool & ForceQueue, UnicodeString & CounterName)
 {
   bool Result;
   if (!FDDExtTarget.IsEmpty())
@@ -1457,12 +1457,12 @@ bool __fastcall TScpCommanderForm::DDGetTarget(
     Directory = FDDExtTarget;
     FDDExtTarget = L"";
     Result = true;
-    Internal = true;
+    CounterName = L"DownloadsDragDropInternal";
     ForceQueue = false;
   }
   else
   {
-    Result = TCustomScpExplorerForm::DDGetTarget(Directory, ForceQueue, Internal);
+    Result = TCustomScpExplorerForm::DDGetTarget(Directory, ForceQueue, CounterName);
   }
   return Result;
 }

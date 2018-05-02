@@ -35,6 +35,7 @@
 #include <Consts.hpp>
 #include <DateUtils.hpp>
 #include <TB2Common.hpp>
+#include <DirectoryMonitor.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "CustomDirView"
@@ -6583,7 +6584,7 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDCreateDragFileList(
 
   if (WinConfiguration->DDExtEnabled)
   {
-    if (!WinConfiguration->DDExtInstalled)
+    if (!IsUWP() && !WinConfiguration->DDExtInstalled)
     {
       Configuration->Usage->Inc(L"DownloadsDragDropExternalExtNotInstalled");
       throw ExtException(NULL, LoadStr(DRAGEXT_TARGET_NOT_INSTALLED2), HELP_DRAGEXT_TARGET_NOT_INSTALLED);
@@ -6592,18 +6593,60 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDCreateDragFileList(
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::DDFakeCreated(TObject * /*Sender*/, const UnicodeString FileName)
+{
+  if (DebugAlwaysTrue(!FDragExtFakeDirectory.IsEmpty()) &&
+      SameText(ExtractFileName(FileName), ExtractFileName(FDragExtFakeDirectory)))
+  {
+    FFakeFileDropTarget = FileName;
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::DDExtInitDrag(TFileList * FileList,
   bool & Created)
 {
+  FFakeFileDropTarget = UnicodeString();
   FDragExtFakeDirectory =
     ExcludeTrailingBackslash(WinConfiguration->TemporaryDir());
   if (!ForceDirectories(ApiPath(FDragExtFakeDirectory)))
   {
     throw Exception(FMTLOAD(CREATE_TEMP_DIR_ERROR, (FDragExtFakeDirectory)));
   }
+  if (IsUWP())
+  {
+    FileSetAttr(ApiPath(FDragExtFakeDirectory), faHidden);
+  }
   FileList->AddItem(NULL, FDragExtFakeDirectory);
 
   Created = true;
+
+  if (IsUWP() && !WinConfiguration->IsDDExtRunning())
+  {
+    FDragFakeMonitors = new TObjectList();
+    for (char Drive = FirstDrive; Drive <= LastDrive; Drive++)
+    {
+      std::unique_ptr<TDirectoryMonitor> Monitor(new TDirectoryMonitor(this));
+      DriveInfo->ReadDriveStatus(Drive, dsSize | dsImageIndex);
+      TDriveInfoRec * DriveInfoRec = DriveInfo->Data[Drive];
+      if (DriveInfoRec->Valid &&
+          (DriveInfoRec->DriveType != DRIVE_CDROM))
+      {
+        try
+        {
+          Monitor->Path = UnicodeString(Drive) + L":\\";
+          Monitor->WatchSubtree = true;
+          Monitor->WatchFilters = FILE_NOTIFY_CHANGE_DIR_NAME;
+          Monitor->OnCreated = DDFakeCreated;
+          Monitor->Active = true;
+          FDragFakeMonitors->Add(Monitor.release());
+        }
+        catch (Exception & E)
+        {
+          // Ignore errors watching not-ready drives
+        }
+      }
+    }
+  }
 
   FDDExtMapFile = CreateFileMappingA((HANDLE)0xFFFFFFFF, NULL, PAGE_READWRITE,
     0, sizeof(TDragExtCommStruct), AnsiString(DRAG_EXT_MAPPING).c_str());
@@ -6669,6 +6712,11 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDEnd(TObject * Sender)
   // Drops of local files (uploads) are handled in QueueDDProcessDropped.
   SAFE_DESTROY(FDDFileList);
 
+  if (IsUWP() && !FFakeFileDropTarget.IsEmpty())
+  {
+    RemoveDir(ApiPath(FFakeFileDropTarget));
+  }
+
   if ((FDDExtMapFile != NULL) || (FDDTargetControl == QueueView3))
   {
     try
@@ -6712,9 +6760,9 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDEnd(TObject * Sender)
         }
 
         TTransferOperationParam Param;
-        bool Internal;
+        UnicodeString CounterName;
         bool ForceQueue;
-        if (!DDGetTarget(Param.TargetDirectory, ForceQueue, Internal))
+        if (!DDGetTarget(Param.TargetDirectory, ForceQueue, CounterName))
         {
           // we get drInvalid both if d&d was intercepted by ddext,
           // and when users drops on no-drop location.
@@ -6731,7 +6779,7 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDEnd(TObject * Sender)
         }
         else
         {
-          // download using ddext
+          // download using fake file
           Param.Temp = false;
           Param.DragDrop = true;
           if (ForceQueue)
@@ -6746,8 +6794,7 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDEnd(TObject * Sender)
           if (RemoteFileControlFileOperation(Sender, Operation,
                 (WinConfiguration->DDTransferConfirmation == asOff), &Param))
           {
-            Configuration->Usage->Inc(
-              Internal ? L"DownloadsDragDropInternal" : L"DownloadsDragDropExternalExt");
+            Configuration->Usage->Inc(CounterName);
           }
         }
       }
@@ -6756,8 +6803,14 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDEnd(TObject * Sender)
     {
       CloseHandle(FDDExtMapFile);
       FDDExtMapFile = NULL;
+      if (IsUWP())
+      {
+        delete FDragFakeMonitors;
+        FDragFakeMonitors = NULL;
+      }
       RemoveDir(ApiPath(FDragExtFakeDirectory));
       FDragExtFakeDirectory = L"";
+      FFakeFileDropTarget = UnicodeString();
     }
   }
 
@@ -6789,15 +6842,22 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDGiveFeedback(
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::DDGetTarget(
-  UnicodeString & Directory, bool & ForceQueue, bool & Internal)
+  UnicodeString & Directory, bool & ForceQueue, UnicodeString & CounterName)
 {
   bool Result;
   if (FDDTargetControl == QueueView3)
   {
     Directory = DefaultDownloadTargetDirectory();
     Result = true;
-    Internal = true;
+    CounterName = L"DownloadsDragDropQueue";
     ForceQueue = true;
+  }
+  else if (IsUWP() && !FFakeFileDropTarget.IsEmpty())
+  {
+    Directory = ExcludeTrailingBackslash(ExtractFilePath(FFakeFileDropTarget));
+    Result = true;
+    ForceQueue = false;
+    CounterName = L"DownloadsDragDropFakeFile";
   }
   else
   {
@@ -6820,7 +6880,7 @@ bool __fastcall TCustomScpExplorerForm::DDGetTarget(
           if (Result)
           {
             Directory = ExtractFilePath(CommStruct->DropDest);
-            Internal = false;
+            CounterName = L"DownloadsDragDropExternalExt";
           }
           UnmapViewOfFile(CommStruct);
         }

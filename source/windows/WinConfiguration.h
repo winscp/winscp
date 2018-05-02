@@ -355,6 +355,7 @@ private:
   UnicodeString FDDTemporaryDirectory;
   bool FDDWarnLackOfTempSpace;
   bool FDDExtEnabled;
+  bool FDDFakeFile;
   int FDDExtInstalled;
   int FDDExtTimeout;
   bool FConfirmClosingSession;
@@ -464,6 +465,7 @@ private:
   void __fastcall SetDDTemporaryDirectory(UnicodeString value);
   void __fastcall SetDDWarnLackOfTempSpace(bool value);
   void __fastcall SetDDExtEnabled(bool value);
+  bool __fastcall GetDDExtEnabled();
   void __fastcall SetDDExtTimeout(int value);
   void __fastcall SetConfirmClosingSession(bool value);
   void __fastcall SetDDWarnLackOfTempSpaceRatio(double value);
@@ -577,6 +579,8 @@ protected:
   void __fastcall ReleaseExtensionTranslations();
   void __fastcall LoadExtensionTranslations();
 
+  __property bool DDFakeFile = { read=FDDFakeFile, write=FDDFakeFile };
+
 public:
   __fastcall TWinConfiguration();
   virtual __fastcall ~TWinConfiguration();
@@ -612,6 +616,7 @@ public:
   UnicodeString __fastcall ExtensionStringTranslation(const UnicodeString & ExtensionId, const UnicodeString & S);
   UnicodeString __fastcall UniqueExtensionName(const UnicodeString & ExtensionName, int Counter);
   UnicodeString __fastcall GetProvisionaryExtensionId(const UnicodeString & FileName);
+  bool __fastcall IsDDExtRunning();
 
   static void __fastcall RestoreFont(const TFontConfiguration & Configuration, TFont * Font);
   static void __fastcall StoreFont(TFont * Font, TFontConfiguration & Configuration);
@@ -646,7 +651,7 @@ public:
   __property bool UseSharedBookmarks = { read = FUseSharedBookmarks, write = SetUseSharedBookmarks};
   __property UnicodeString DDTemporaryDirectory  = { read=FDDTemporaryDirectory, write=SetDDTemporaryDirectory };
   __property bool DDWarnLackOfTempSpace  = { read=FDDWarnLackOfTempSpace, write=SetDDWarnLackOfTempSpace };
-  __property bool DDExtEnabled = { read=FDDExtEnabled, write=SetDDExtEnabled };
+  __property bool DDExtEnabled = { read=GetDDExtEnabled, write=SetDDExtEnabled };
   __property bool DDExtInstalled = { read=GetDDExtInstalled };
   __property int DDExtTimeout = { read=FDDExtTimeout, write=SetDDExtTimeout };
   __property bool ConfirmClosingSession  = { read=FConfirmClosingSession, write=SetConfirmClosingSession };

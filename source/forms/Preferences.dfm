@@ -1343,7 +1343,7 @@ object PreferencesDialog: TPreferencesDialog
             Width = 364
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Use &shell extension'
+            Caption = 'Determine drop target by dragging a &fake file'
             TabOrder = 1
             OnClick = ControlChange
           end
@@ -1353,7 +1353,7 @@ object PreferencesDialog: TPreferencesDialog
             Width = 356
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Use &temporary folder'
+            Caption = 'Download files via &temporary folder'
             TabOrder = 2
             OnClick = ControlChange
           end
