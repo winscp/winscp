@@ -96,19 +96,21 @@ end;
 procedure TDirectoryMonitorThread.HandleEvent;
 var
   FileOpNotification: PFileNotifyInformation;
-  Offset: Longint;
+  Offset: DWord;
+  FileName: string;
 begin
-  Pointer(FileOpNotification) := @FParent.FNotificationBuffer[0];
+  FileOpNotification := PFileNotifyInformation(@FParent.FNotificationBuffer[0]);
   repeat
     Offset := FileOpNotification^.NextEntryOffset;
+    FileName := WideCharLenToString(@(FileOpNotification^.FileName), FileOpNotification^.FileNameLength div SizeOf(Char));
     case FileOpNotification^.Action of
-      1: FParent.DoCreated(FParent, WideCharTostring(@(FileOpNotification^.FileName)));
-      2: FParent.DoDeleted(FParent, WideCharTostring(@(FileOpNotification^.FileName)));
-      3: FParent.DoModified(FParent, WideCharTostring(@(FileOpNotification^.FileName)));
-      4: FRenamedFrom := WideCharTostring(@(FileOpNotification^.FileName));
-      5: FParent.DoRenamed(FParent, FRenamedFrom, WideCharToString(@(FileOpNotification^.FileName)));
+      1: FParent.DoCreated(FParent, FileName);
+      2: FParent.DoDeleted(FParent, FileName);
+      3: FParent.DoModified(FParent, FileName);
+      4: FRenamedFrom := FileName;
+      5: FParent.DoRenamed(FParent, FRenamedFrom, FileName);
     end;
-    PChar(FileOpNotification) := PChar(FileOpNotification)+Offset;
+    FileOpNotification := PFileNotifyInformation(IntPtr(FileOpNotification) + IntPtr(Offset));
   until (Offset = 0);
 end;
 
