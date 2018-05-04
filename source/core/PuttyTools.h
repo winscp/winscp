@@ -17,6 +17,7 @@ void ChangeKeyComment(TPrivateKey * PrivateKey, const UnicodeString & Comment);
 void SaveKey(TKeyType KeyType, const UnicodeString & FileName,
   const UnicodeString & Passphrase, TPrivateKey * PrivateKey);
 void FreeKey(TPrivateKey * PrivateKey);
+extern const UnicodeString PuttyKeyExt;
 //---------------------------------------------------------------------------
 bool __fastcall HasGSSAPI(UnicodeString CustomPath);
 //---------------------------------------------------------------------------

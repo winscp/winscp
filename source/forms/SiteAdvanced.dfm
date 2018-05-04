@@ -2004,13 +2004,13 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           Left = 0
           Top = 154
           Width = 393
-          Height = 94
+          Height = 120
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Authentication parameters'
           TabOrder = 2
           DesignSize = (
             393
-            94)
+            120)
           object PrivateKeyLabel: TLabel
             Left = 12
             Top = 42
@@ -2048,10 +2048,20 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Text = 'PrivateKeyEdit3'
             OnChange = DataChange
           end
+          object PrivateKeyGenerateButton: TButton
+            Left = 12
+            Top = 86
+            Width = 101
+            Height = 25
+            Anchors = [akTop, akRight]
+            Caption = 'Ge&nerate...'
+            TabOrder = 2
+            OnClick = PrivateKeyGenerateButtonClick
+          end
         end
         object GSSAPIGroup: TGroupBox
           Left = 0
-          Top = 254
+          Top = 279
           Width = 393
           Height = 71
           Anchors = [akLeft, akTop, akRight]

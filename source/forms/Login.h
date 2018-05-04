@@ -358,7 +358,6 @@ private:
   TTreeNode * __fastcall GetNewSiteNode();
   void __fastcall SetNewSiteNodeLabel();
   inline TSessionData * __fastcall GetNodeSession(TTreeNode * Node);
-  void __fastcall ExecuteTool(const UnicodeString & Name);
   void __fastcall ReloadSessions(const UnicodeString & SelectSite);
   void __fastcall ResetSitesIncrementalSearch();
   bool __fastcall SitesIncrementalSearch(const UnicodeString & Text,

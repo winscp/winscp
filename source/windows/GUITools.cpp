@@ -224,6 +224,46 @@ bool __fastcall FindTool(const UnicodeString & Name, UnicodeString & Path)
   return Result;
 }
 //---------------------------------------------------------------------------
+void __fastcall ExecuteTool(const UnicodeString & Name)
+{
+  UnicodeString Path;
+  if (!FindTool(Name, Path))
+  {
+    throw Exception(FMTLOAD(EXECUTE_APP_ERROR, (Name)));
+  }
+
+  ExecuteShellChecked(Path, L"");
+}
+//---------------------------------------------------------------------------
+TObjectList * StartCreationDirectoryMonitorsOnEachDrive(unsigned int Filter, TFileChangedEvent OnChanged)
+{
+  std::unique_ptr<TObjectList> Result(new TObjectList());
+  for (char Drive = FirstDrive; Drive <= LastDrive; Drive++)
+  {
+    std::unique_ptr<TDirectoryMonitor> Monitor(new TDirectoryMonitor(Application));
+    TDriveInfoRec * DriveInfoRec = DriveInfo->Get(Drive);
+    if (DriveInfoRec->Valid &&
+        (DriveInfoRec->DriveType != DRIVE_CDROM))
+    {
+      try
+      {
+        Monitor->Path = DriveInfo->GetDriveRoot(Drive);
+        Monitor->WatchSubtree = true;
+        Monitor->WatchFilters = Filter;
+        Monitor->OnCreated = OnChanged;
+        Monitor->OnModified = OnChanged;
+        Monitor->Active = true;
+        Result->Add(Monitor.release());
+      }
+      catch (Exception & E)
+      {
+        // Ignore errors watching not-ready drives
+      }
+    }
+  }
+  return Result.release();
+}
+//---------------------------------------------------------------------------
 bool __fastcall CopyCommandToClipboard(const UnicodeString & Command)
 {
   bool Result = UseAlternativeFunction() && IsKeyPressed(VK_CONTROL);

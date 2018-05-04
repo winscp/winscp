@@ -4,6 +4,7 @@
 //---------------------------------------------------------------------------
 #include <FileMasks.H>
 #include <Tbx.hpp>
+#include <DirectoryMonitor.hpp>
 //---------------------------------------------------------------------------
 class TSessionData;
 //---------------------------------------------------------------------------
@@ -11,12 +12,14 @@ typedef void __fastcall (__closure* TProcessMessagesEvent)();
 //---------------------------------------------------------------------------
 bool __fastcall FindFile(UnicodeString & Path);
 bool __fastcall FindTool(const UnicodeString & Name, UnicodeString & Path);
+void __fastcall ExecuteTool(const UnicodeString & Name);
 void __fastcall ExecuteShellChecked(const UnicodeString Path, const UnicodeString Params,
   bool ChangeWorkingDirectory = false);
 void __fastcall ExecuteShellChecked(const UnicodeString Command);
 bool __fastcall ExecuteShell(const UnicodeString Path, const UnicodeString Params,
   HANDLE & Handle);
 void __fastcall ExecuteShellCheckedAndWait(const UnicodeString Command, TProcessMessagesEvent ProcessMessages);
+TObjectList * StartCreationDirectoryMonitorsOnEachDrive(unsigned int Filter, TFileChangedEvent OnChanged);
 bool __fastcall CopyCommandToClipboard(const UnicodeString & Command);
 void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
   TSessionData * SessionData);

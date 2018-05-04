@@ -29,6 +29,7 @@ const UnicodeString OriginalPuttyRegistryStorageKey(_T(PUTTY_REG_POS));
 const UnicodeString KittyRegistryStorageKey(L"Software\\9bis.com\\KiTTY");
 const UnicodeString OriginalPuttyExecutable("putty.exe");
 const UnicodeString KittyExecutable("kitty.exe");
+const UnicodeString PuttyKeyExt(L"ppk");
 //---------------------------------------------------------------------------
 void __fastcall PuttyInitialize()
 {

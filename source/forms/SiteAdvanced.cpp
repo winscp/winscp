@@ -104,6 +104,9 @@ void __fastcall TSiteAdvancedDialog::InitControls()
 
   SelectScaledImageList(ColorImageList);
   SetSessionColor((TColor)0);
+
+  UnicodeString Dummy;
+  PrivateKeyGenerateButton->Enabled = FindTool(PuttygenTool, Dummy);
 }
 //---------------------------------------------------------------------
 void __fastcall TSiteAdvancedDialog::LoadSession()
@@ -1069,6 +1072,7 @@ void __fastcall TSiteAdvancedDialog::ChangePage(TTabSheet * Tab)
 {
   PageControl->ActivePage = Tab;
   PageControlChange(PageControl);
+  FPrivateKeyMonitors.reset(NULL);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSiteAdvancedDialog::PageControlChange(TObject *Sender)
@@ -1511,5 +1515,20 @@ void __fastcall TSiteAdvancedDialog::TlsCertificateFileEditAfterDialog(TObject *
   {
     VerifyCertificate(Name);
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSiteAdvancedDialog::PrivateKeyCreatedOrModified(TObject * /*Sender*/, const UnicodeString FileName)
+{
+  if (SameText(ExtractFileExt(FileName), FORMAT(L".%s", (PuttyKeyExt))))
+  {
+    PrivateKeyEdit3->FileName = FileName;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSiteAdvancedDialog::PrivateKeyGenerateButtonClick(TObject * /*Sender*/)
+{
+  unsigned int Filters = FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_LAST_WRITE;
+  FPrivateKeyMonitors.reset(StartCreationDirectoryMonitorsOnEachDrive(Filters, PrivateKeyCreatedOrModified));
+  ExecuteTool(PuttygenTool);
 }
 //---------------------------------------------------------------------------

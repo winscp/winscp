@@ -6735,29 +6735,7 @@ void __fastcall TCustomScpExplorerForm::DDFakeFileInitDrag(TFileList * FileList,
 
   if (!WinConfiguration->IsDDExtRunning())
   {
-    FDragFakeMonitors = new TObjectList();
-    for (char Drive = FirstDrive; Drive <= LastDrive; Drive++)
-    {
-      std::unique_ptr<TDirectoryMonitor> Monitor(new TDirectoryMonitor(this));
-      TDriveInfoRec * DriveInfoRec = DriveInfo->Get(Drive);
-      if (DriveInfoRec->Valid &&
-          (DriveInfoRec->DriveType != DRIVE_CDROM))
-      {
-        try
-        {
-          Monitor->Path = DriveInfo->GetDriveRoot(Drive);
-          Monitor->WatchSubtree = true;
-          Monitor->WatchFilters = FILE_NOTIFY_CHANGE_DIR_NAME;
-          Monitor->OnCreated = DDFakeCreated;
-          Monitor->Active = true;
-          FDragFakeMonitors->Add(Monitor.release());
-        }
-        catch (Exception & E)
-        {
-          // Ignore errors watching not-ready drives
-        }
-      }
-    }
+    FDragFakeMonitors = StartCreationDirectoryMonitorsOnEachDrive(FILE_NOTIFY_CHANGE_DIR_NAME, DDFakeCreated);
   }
 
   FDDExtMapFile = CreateFileMappingA((HANDLE)0xFFFFFFFF, NULL, PAGE_READWRITE,

@@ -257,6 +257,7 @@ __published:
   TImageList *ColorImageList120;
   TImageList *ColorImageList144;
   TImageList *ColorImageList192;
+  TButton *PrivateKeyGenerateButton;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall PageControlChange(TObject *Sender);
@@ -289,6 +290,7 @@ __published:
   void __fastcall NoteMemoKeyDown(TObject *Sender, WORD &Key, TShiftState Shift);
   void __fastcall TlsCertificateFileEditAfterDialog(TObject *Sender, UnicodeString &Name,
           bool &Action);
+  void __fastcall PrivateKeyGenerateButtonClick(TObject *Sender);
 
 
 public:
@@ -312,6 +314,7 @@ private:
   TSessionData * FSessionData;
   TColor FColor;
   std::unique_ptr<TPopupMenu> FColorPopupMenu;
+  std::unique_ptr<TObjectList> FPrivateKeyMonitors;
 
   void __fastcall LoadSession();
   void __fastcall UpdateControls();
@@ -331,6 +334,7 @@ private:
   TTlsVersion __fastcall IndexToTlsVersion(int Index);
   int __fastcall TlsVersionToIndex(TTlsVersion TlsVersion);
   bool __fastcall IsNeon(TFSProtocol FSProtocol);
+  void __fastcall PrivateKeyCreatedOrModified(TObject * Sender, const UnicodeString FileName);
 };
 //----------------------------------------------------------------------------
 #endif
