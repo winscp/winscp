@@ -1735,7 +1735,7 @@ bool __fastcall TryRelativeStrToDateTime(UnicodeString S, TDateTime & DateTime, 
     }
     DateTime = Now();
     // These may not overlap with ParseSize (K, M and G)
-    if (S == "S")
+    if (S == L"S")
     {
       DateTime = IncSecond(DateTime, Number);
       if (Start)
@@ -1743,7 +1743,7 @@ bool __fastcall TryRelativeStrToDateTime(UnicodeString S, TDateTime & DateTime, 
         DateTime = IncMilliSecond(DateTime, -static_cast<int>(MilliSecondOfTheSecond(DateTime)));
       }
     }
-    else if (S == "N")
+    else if (S == L"N")
     {
       DateTime = IncMinute(DateTime, Number);
       if (Start)
@@ -1751,7 +1751,7 @@ bool __fastcall TryRelativeStrToDateTime(UnicodeString S, TDateTime & DateTime, 
         DateTime = IncMilliSecond(DateTime, -static_cast<int>(MilliSecondOfTheMinute(DateTime)));
       }
     }
-    else if (S == "H")
+    else if (S == L"H")
     {
       DateTime = IncHour(DateTime, Number);
       if (Start)
@@ -1759,7 +1759,7 @@ bool __fastcall TryRelativeStrToDateTime(UnicodeString S, TDateTime & DateTime, 
         DateTime = IncMilliSecond(DateTime, -static_cast<int>(MilliSecondOfTheHour(DateTime)));
       }
     }
-    else if (S == "D")
+    else if (S == L"D")
     {
       DateTime = IncDay(DateTime, Number);
       if (Start)
@@ -1767,7 +1767,7 @@ bool __fastcall TryRelativeStrToDateTime(UnicodeString S, TDateTime & DateTime, 
         DateTime = IncMilliSecond(DateTime, -static_cast<int>(MilliSecondOfTheDay(DateTime)));
       }
     }
-    else if (S == "Y")
+    else if (S == L"Y")
     {
       DateTime = IncYear(DateTime, Number);
       if (Start)
