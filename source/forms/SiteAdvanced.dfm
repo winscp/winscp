@@ -2001,7 +2001,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           end
         end
         object AuthenticationParamsGroup: TGroupBox
-          Left = 2
+          Left = 0
           Top = 154
           Width = 393
           Height = 94
