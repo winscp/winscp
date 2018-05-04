@@ -1728,7 +1728,7 @@ bool __fastcall TryRelativeStrToDateTime(UnicodeString S, TDateTime & DateTime, 
     }
     S.Delete(1, Index - 1);
     S = S.Trim().UpperCase();
-    bool Start = !S.IsEmpty() && EndsStr(L"S", S);
+    bool Start = (S.Length() == 2) && (S[2] == L'S');
     if (Start)
     {
       S.SetLength(S.Length() - 1);
