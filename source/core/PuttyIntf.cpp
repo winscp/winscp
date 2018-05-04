@@ -547,25 +547,32 @@ TKeyType KeyType(UnicodeString FileName)
 bool IsKeyEncrypted(TKeyType KeyType, const UnicodeString & FileName, UnicodeString & Comment)
 {
   UTF8String UtfFileName = UTF8String(FileName);
-  Filename * KeyFile = filename_from_str(UtfFileName.c_str());
   bool Result;
   char * CommentStr = NULL;
-  switch (KeyType)
+  Filename * KeyFile = filename_from_str(UtfFileName.c_str());
+  try
   {
-    case ktSSH2:
-      Result = (ssh2_userkey_encrypted(KeyFile, &CommentStr) != 0);
-      break;
+    switch (KeyType)
+    {
+      case ktSSH2:
+        Result = (ssh2_userkey_encrypted(KeyFile, &CommentStr) != 0);
+        break;
 
-    case ktOpenSSHPEM:
-    case ktOpenSSHNew:
-    case ktSSHCom:
-      Result = (import_encrypted(KeyFile, KeyType, &CommentStr) != NULL);
-      break;
+      case ktOpenSSHPEM:
+      case ktOpenSSHNew:
+      case ktSSHCom:
+        Result = (import_encrypted(KeyFile, KeyType, &CommentStr) != NULL);
+        break;
 
-    default:
-      DebugFail();
-      Result = false;
-      break;
+      default:
+        DebugFail();
+        Result = false;
+        break;
+    }
+  }
+  __finally
+  {
+    filename_free(KeyFile);
   }
 
   if (CommentStr != NULL)
@@ -586,28 +593,33 @@ TPrivateKey * LoadKey(TKeyType KeyType, const UnicodeString & FileName, const Un
 {
   UTF8String UtfFileName = UTF8String(FileName);
   Filename * KeyFile = filename_from_str(UtfFileName.c_str());
-  AnsiString AnsiPassphrase = Passphrase;
   struct ssh2_userkey * Ssh2Key = NULL;
   const char * ErrorStr = NULL;
-
-  switch (KeyType)
+  AnsiString AnsiPassphrase = Passphrase;
+  try
   {
-    case ktSSH2:
-      Ssh2Key = ssh2_load_userkey(KeyFile, AnsiPassphrase.c_str(), &ErrorStr);
-      break;
+    switch (KeyType)
+    {
+      case ktSSH2:
+        Ssh2Key = ssh2_load_userkey(KeyFile, AnsiPassphrase.c_str(), &ErrorStr);
+        break;
 
-    case ktOpenSSHPEM:
-    case ktOpenSSHNew:
-    case ktSSHCom:
-      Ssh2Key = import_ssh2(KeyFile, KeyType, AnsiPassphrase.c_str(), &ErrorStr);
-      break;
+      case ktOpenSSHPEM:
+      case ktOpenSSHNew:
+      case ktSSHCom:
+        Ssh2Key = import_ssh2(KeyFile, KeyType, AnsiPassphrase.c_str(), &ErrorStr);
+        break;
 
-    default:
-      DebugFail();
-      break;
+      default:
+        DebugFail();
+        break;
+    }
   }
-
-  Shred(AnsiPassphrase);
+  __finally
+  {
+    Shred(AnsiPassphrase);
+    filename_free(KeyFile);
+  }
 
   if (Ssh2Key == NULL)
   {
@@ -639,22 +651,29 @@ void SaveKey(TKeyType KeyType, const UnicodeString & FileName,
 {
   UTF8String UtfFileName = UTF8String(FileName);
   Filename * KeyFile = filename_from_str(UtfFileName.c_str());
-  struct ssh2_userkey * Ssh2Key = reinterpret_cast<struct ssh2_userkey *>(PrivateKey);
-  AnsiString AnsiPassphrase = Passphrase;
-  char * PassphrasePtr = (AnsiPassphrase.IsEmpty() ? NULL : AnsiPassphrase.c_str());
-  switch (KeyType)
+  try
   {
-    case ktSSH2:
-      if (!ssh2_save_userkey(KeyFile, Ssh2Key, PassphrasePtr))
-      {
-        int Error = errno;
-        throw EOSExtException(FMTLOAD(KEY_SAVE_ERROR, (FileName)), Error);
-      }
-      break;
+    struct ssh2_userkey * Ssh2Key = reinterpret_cast<struct ssh2_userkey *>(PrivateKey);
+    AnsiString AnsiPassphrase = Passphrase;
+    char * PassphrasePtr = (AnsiPassphrase.IsEmpty() ? NULL : AnsiPassphrase.c_str());
+    switch (KeyType)
+    {
+      case ktSSH2:
+        if (!ssh2_save_userkey(KeyFile, Ssh2Key, PassphrasePtr))
+        {
+          int Error = errno;
+          throw EOSExtException(FMTLOAD(KEY_SAVE_ERROR, (FileName)), Error);
+        }
+        break;
 
-    default:
-      DebugFail();
-      break;
+      default:
+        DebugFail();
+        break;
+    }
+  }
+  __finally
+  {
+    filename_free(KeyFile);
   }
 }
 //---------------------------------------------------------------------------
@@ -662,6 +681,7 @@ void FreeKey(TPrivateKey * PrivateKey)
 {
   struct ssh2_userkey * Ssh2Key = reinterpret_cast<struct ssh2_userkey *>(PrivateKey);
   Ssh2Key->alg->freekey(Ssh2Key->data);
+  sfree(Ssh2Key->comment);
   sfree(Ssh2Key);
 }
 //---------------------------------------------------------------------------
