@@ -60,5 +60,6 @@
 #define HELP_EXTENSION_OPTIONS       "ui_pref_commands"
 #define HELP_CHANGE_PASSWORD         "task_change_password"
 #define HELP_FILTER                  "ui_filter"
+#define HELP_LOGIN_AUTHORIZED_KEYS   "guide_public_key"
 
 #endif // TextsWin

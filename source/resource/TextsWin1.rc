@@ -601,6 +601,13 @@ BEGIN
         PREFERENCES_DRAGEXT_NOT_INSTALLED, "Shell extension is not installed."
         PREFERENCES_DRAGEXT_NOT_RUNNING, "Shell extension is installed, but is not loaded."
         PREFERENCES_DRAGEXT_RUNNING, "Shell extension is installed and loaded."
+        LOGIN_AUTHORIZED_KEYS, "**Public key for pasting into OpenSSH authorized_keys file:**"
+        LOGIN_NOT_OPENSSH, "**Install public key to non-OpenSSH server?**\n\nInstalling public key is supported for OpenSSH server only (authorized_keys file).\n\nYour server is %s."
+        LOGIN_PUBLIC_KEY_UPLOAD, "Installing public key \"%s\"..."
+        LOGIN_PUBLIC_KEY_UPLOADED, "**Public key \"%s\" was installed.**\n\nYou can now login to the server using the key pair."
+        LOGIN_PUBLIC_KEY_PERMISSIONS, "Though potentially wrong permissions of \"%s\" file and/or its parent folder were detected. Please check them."
+        LOGIN_PUBLIC_KEY_TITLE, "Select key to install into server"
+        LOGIN_PUBLIC_KEY_FILTER, "PuTTY Private Key Files (*.ppk)|*.ppk|All Private Key Files (*.ppk;*.pem;*.key;id_*)|*.ppk;*.pem;*.key;id_*|All Files (*.*)|*.*"
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
         WINSCP_COPYRIGHT, "Copyright © 2000-2018 Martin Prikryl"

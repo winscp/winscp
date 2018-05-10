@@ -63,7 +63,7 @@ public:
   TTerminal * __fastcall FindActiveTerminalForSite(TSessionData * Data);
   TTerminalQueue * __fastcall FindQueueForTerminal(TTerminal * Terminal);
   void __fastcall UpdateSessionCredentials(TSessionData * Data);
-  void __fastcall DoConnectTerminal(TTerminal * Terminal, bool Reopen);
+  bool __fastcall UploadPublicKey(TTerminal * Terminal, TSessionData * Data, UnicodeString & FileName);
 
   __property TCustomScpExplorerForm * ScpExplorer = { read = FScpExplorer, write = SetScpExplorer };
   __property TTerminal * ActiveTerminal = { read = FActiveTerminal, write = SetActiveTerminal };
@@ -76,6 +76,7 @@ public:
 
 protected:
   virtual TTerminal * __fastcall CreateTerminal(TSessionData * Data);
+  void __fastcall DoConnectTerminal(TTerminal * Terminal, bool Reopen, bool AdHoc);
 
 private:
   static TTerminalManager * FInstance;
@@ -104,6 +105,7 @@ private:
   void * FBusyToken;
   bool FAuthenticationCancelled;
   std::unique_ptr<TApplicationEvents> FApplicationsEvents;
+  bool FKeepAuthenticateForm;
 
   bool __fastcall ConnectActiveTerminalImpl(bool Reopen);
   bool __fastcall ConnectActiveTerminal();
@@ -166,6 +168,9 @@ private:
   void __fastcall DoConfigurationChange();
   bool __fastcall ShouldDisplayQueueStatusOnAppTitle();
   void __fastcall SetupTerminal(TTerminal * Terminal);
+  void __fastcall CloseAutheticateForm();
+  TRemoteFile * __fastcall CheckRights(
+    TTerminal * Terminal, const UnicodeString & EntryType, const UnicodeString & FileName, bool & WrongRights);
 };
 //---------------------------------------------------------------------------
 #endif

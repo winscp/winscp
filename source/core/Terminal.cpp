@@ -4681,6 +4681,11 @@ void __fastcall TTerminal::HomeDirectory()
   }
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall TTerminal::GetHomeDirectory()
+{
+  return FFileSystem->GetHomeDirectory();
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminal::ChangeDirectory(const UnicodeString Directory)
 {
   DebugAssert(FFileSystem);

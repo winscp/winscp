@@ -313,6 +313,7 @@ __published:
   TTBXItem *TBXItem247;
   TTBXItem *TBXItem244;
   TTBXItem *TBXItem246;
+  TTBXItem *TBXItem14;
   void __fastcall RemoteDirViewUpdateStatusBar(TObject *Sender,
           const TStatusFileInfo &FileInfo);
   void __fastcall UnixPathComboBoxBeginEdit(TTBEditItem *Sender,

@@ -455,10 +455,7 @@ void __fastcall TSecureShell::Open()
   FOpened = true;
 
   UnicodeString SshImplementation = GetSessionInfo().SshImplementation;
-  if (// e.g. "OpenSSH_5.3"
-      (SshImplementation.Pos(L"OpenSSH") == 1) ||
-      // Sun SSH is based on OpenSSH (suffers the same bugs)
-      (SshImplementation.Pos(L"Sun_SSH") == 1))
+  if (IsOpenSSH(SshImplementation))
   {
     FSshImplementation = sshiOpenSSH;
   }

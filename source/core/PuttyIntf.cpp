@@ -10,6 +10,7 @@
 #include "CoreMain.h"
 #include "TextsCore.h"
 #include <StrUtils.hpp>
+#include <Soap.EncdDecd.hpp>
 //---------------------------------------------------------------------------
 char sshver[50];
 extern const char commitid[] = "";
@@ -686,6 +687,49 @@ void FreeKey(TPrivateKey * PrivateKey)
   sfree(Ssh2Key);
 }
 //---------------------------------------------------------------------------
+RawByteString LoadPublicKey(const UnicodeString & FileName, UnicodeString & Algorithm, UnicodeString & Comment)
+{
+  RawByteString Result;
+  UTF8String UtfFileName = UTF8String(FileName);
+  Filename * KeyFile = filename_from_str(UtfFileName.c_str());
+  try
+  {
+    char * AlgorithmStr = NULL;
+    int PublicKeyLen = 0;
+    char * CommentStr = NULL;
+    const char * ErrorStr = NULL;
+    unsigned char * PublicKeyPtr =
+      ssh2_userkey_loadpub(KeyFile, &AlgorithmStr, &PublicKeyLen, &CommentStr, &ErrorStr);
+    if (PublicKeyPtr == NULL)
+    {
+      UnicodeString Error = UnicodeString(AnsiString(ErrorStr));
+      throw Exception(Error);
+    }
+    Algorithm = UnicodeString(AnsiString(AlgorithmStr));
+    sfree(AlgorithmStr);
+    Comment = UnicodeString(AnsiString(CommentStr));
+    sfree(CommentStr);
+    Result = RawByteString(reinterpret_cast<char *>(PublicKeyPtr), PublicKeyLen);
+    free(PublicKeyPtr);
+  }
+  __finally
+  {
+    filename_free(KeyFile);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString GetPublicKeyLine(const UnicodeString & FileName, UnicodeString & Comment)
+{
+  UnicodeString Algorithm;
+  RawByteString PublicKey = LoadPublicKey(FileName, Algorithm, Comment);
+  UnicodeString PublicKeyBase64 = EncodeBase64(PublicKey.c_str(), PublicKey.Length());
+  PublicKeyBase64 = ReplaceStr(PublicKeyBase64, L"\r", L"");
+  PublicKeyBase64 = ReplaceStr(PublicKeyBase64, L"\n", L"");
+  UnicodeString Result = FORMAT(L"%s %s %s", (Algorithm, PublicKeyBase64, Comment));
+  return Result;
+}
+//---------------------------------------------------------------------------
 bool __fastcall HasGSSAPI(UnicodeString CustomPath)
 {
   static int has = -1;
@@ -877,6 +921,15 @@ UnicodeString __fastcall GetKeyTypeHuman(const UnicodeString & KeyType)
     Result = KeyType;
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+bool IsOpenSSH(const UnicodeString & SshImplementation)
+{
+  return
+    // e.g. "OpenSSH_5.3"
+    (SshImplementation.Pos(L"OpenSSH") == 1) ||
+    // Sun SSH is based on OpenSSH (suffers the same bugs)
+    (SshImplementation.Pos(L"Sun_SSH") == 1);
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

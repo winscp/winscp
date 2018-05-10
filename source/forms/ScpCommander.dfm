@@ -429,6 +429,9 @@ inherited ScpCommanderForm: TScpCommanderForm
         object TBXItem227: TTBXItem
           Action = NonVisualDataModule.ChangePasswordAction
         end
+        object TBXItem76: TTBXItem
+          Action = NonVisualDataModule.PrivateKeyUploadAction
+        end
         object TBXSeparatorItem29: TTBXSeparatorItem
         end
         object TBXSubmenuItem21: TTBXSubmenuItem

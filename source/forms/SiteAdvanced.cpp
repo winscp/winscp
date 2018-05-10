@@ -16,6 +16,8 @@
 #include "Tools.h"
 #include "WinConfiguration.h"
 #include "PuttyTools.h"
+#include "TerminalManager.h"
+#include "Authenticate.h"
 //---------------------------------------------------------------------
 #pragma link "ComboEdit"
 #pragma link "PasswordEdit"
@@ -105,8 +107,7 @@ void __fastcall TSiteAdvancedDialog::InitControls()
   SelectScaledImageList(ColorImageList);
   SetSessionColor((TColor)0);
 
-  UnicodeString Dummy;
-  PrivateKeyGenerateButton->Enabled = FindTool(PuttygenTool, Dummy);
+  MenuButton(PrivateKeyToolsButton);
 }
 //---------------------------------------------------------------------
 void __fastcall TSiteAdvancedDialog::LoadSession()
@@ -752,8 +753,7 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
     TAutoNestingCounter NoUpdateCounter(NoUpdate);
 
     bool SshProtocol = FSessionData->UsesSsh;
-    bool SftpProtocol =
-      (FSessionData->FSProtocol == fsSFTPonly) || (FSessionData->FSProtocol == fsSFTP);
+    bool SftpProtocol = (NormalizeFSProtocol(FSessionData->FSProtocol) == fsSFTP);
     bool ScpProtocol = (FSessionData->FSProtocol == fsSCPonly);
     bool FtpProtocol = (FSessionData->FSProtocol == fsFTP);
     bool WebDavProtocol = (FSessionData->FSProtocol == fsWebDAV);
@@ -794,6 +794,7 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
       ((AuthTISCheck->Enabled && AuthTISCheck->Checked) ||
        (AuthKICheck->Enabled && AuthKICheck->Checked)));
     EnableControl(AuthenticationParamsGroup, AuthenticationGroup->Enabled);
+    EnableControl(PrivateKeyViewButton, PrivateKeyEdit3->Enabled && !PrivateKeyEdit3->Text.IsEmpty());
     EnableControl(AuthGSSAPICheck3,
       AuthenticationGroup->Enabled && (GetSshProt() == ssh2only));
     EnableControl(GSSAPIFwdTGTCheck,
@@ -1255,7 +1256,7 @@ void __fastcall TSiteAdvancedDialog::PrivateKeyEdit3AfterDialog(TObject * Sender
   TFilenameEdit * Edit = dynamic_cast<TFilenameEdit *>(Sender);
   if (Name != Edit->Text)
   {
-    VerifyAndConvertKey(Name, GetSshProt());
+    VerifyAndConvertKey(Name, GetSshProt(), true);
   }
 }
 //---------------------------------------------------------------------------
@@ -1521,14 +1522,61 @@ void __fastcall TSiteAdvancedDialog::PrivateKeyCreatedOrModified(TObject * /*Sen
 {
   if (SameText(ExtractFileExt(FileName), FORMAT(L".%s", (PuttyKeyExt))))
   {
-    PrivateKeyEdit3->FileName = FileName;
+    PrivateKeyEdit3->Text = FileName;
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSiteAdvancedDialog::PrivateKeyGenerateButtonClick(TObject * /*Sender*/)
+void __fastcall TSiteAdvancedDialog::PrivateKeyToolsButtonClick(TObject * /*Sender*/)
+{
+  UnicodeString Dummy;
+  PrivateKeyGenerateItem->Enabled = FindTool(PuttygenTool, Dummy);
+  PrivateKeyUploadItem->Enabled = (GetSshProt() == ssh2only) && (NormalizeFSProtocol(FSessionData->FSProtocol) == fsSFTP);
+  MenuPopup(PrivateKeyMenu, PrivateKeyToolsButton);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSiteAdvancedDialog::PrivateKeyGenerateItemClick(TObject * /*Sender*/)
 {
   unsigned int Filters = FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_LAST_WRITE;
   FPrivateKeyMonitors.reset(StartCreationDirectoryMonitorsOnEachDrive(Filters, PrivateKeyCreatedOrModified));
   ExecuteTool(PuttygenTool);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSiteAdvancedDialog::PrivateKeyUploadItemClick(TObject * /*Sender*/)
+{
+  SaveSession();
+  FSessionData->FSProtocol = fsSFTPonly; // no SCP fallback, as SCP does not implement GetHomeDirectory
+  FSessionData->RemoteDirectory = UnicodeString();
+
+  UnicodeString FileName = PrivateKeyEdit3->Text;
+  if (TTerminalManager::Instance()->UploadPublicKey(NULL, FSessionData, FileName))
+  {
+    PrivateKeyEdit3->Text = FileName;
+    PrivateKeyEdit3->SetFocus();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSiteAdvancedDialog::PrivateKeyViewButtonClick(TObject * /*Sender*/)
+{
+  UnicodeString FileName = PrivateKeyEdit3->Text;
+  VerifyAndConvertKey(FileName, GetSshProt(), false);
+  PrivateKeyEdit3->Text = FileName;
+  UnicodeString CommentDummy;
+  UnicodeString Line = GetPublicKeyLine(FileName, CommentDummy);
+  std::unique_ptr<TStrings> Messages(TextToStringList(Line));
+
+  TClipboardHandler ClipboardHandler;
+  ClipboardHandler.Text = Line;
+
+  TMessageParams Params;
+  TQueryButtonAlias Aliases[1];
+  Aliases[0].Button = qaRetry;
+  Aliases[0].Alias = LoadStr(COPY_KEY_BUTTON);
+  Aliases[0].OnSubmit = &ClipboardHandler.Copy;
+  Params.Aliases = Aliases;
+  Params.AliasesCount = LENOF(Aliases);
+
+  UnicodeString Message = LoadStr(LOGIN_AUTHORIZED_KEYS);
+  int Answers = qaOK | qaRetry;
+  MoreMessageDialog(Message, Messages.get(), qtInformation, Answers, HELP_LOGIN_AUTHORIZED_KEYS, &Params);
 }
 //---------------------------------------------------------------------------

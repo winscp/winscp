@@ -423,6 +423,7 @@ __published:
   TTBXItem *TBXItem248;
   TTBXItem *TBXItem249;
   TTBXItem *TBXItem250;
+  TTBXItem *TBXItem76;
   void __fastcall SplitterMoved(TObject *Sender);
   void __fastcall SplitterCanResize(TObject *Sender, int &NewSize,
     bool &Accept);

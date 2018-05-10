@@ -417,6 +417,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(NewFileAction, DirViewEnabled(osCurrent) && !WinConfiguration->DisableOpenEdit)
   UPD(EditorListCustomizeAction, true)
   UPD(ChangePasswordAction, ScpExplorer->CanChangePassword())
+  UPD(PrivateKeyUploadAction, ScpExplorer->CanPrivateKeyUpload())
 
   // CUSTOM COMMANDS
   UPD(CustomCommandsFileAction, true)
@@ -730,6 +731,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(NewFileAction, ScpExplorer->EditNew(osCurrent))
     EXE(EditorListCustomizeAction, PreferencesDialog(pmEditor))
     EXE(ChangePasswordAction, ScpExplorer->ChangePassword())
+    EXE(PrivateKeyUploadAction, ScpExplorer->PrivateKeyUpload())
 
     // CUSTOM COMMANDS
     EXE(CustomCommandsFileAction, CreateCustomCommandsMenu(CustomCommandsFileAction, ccltFile))

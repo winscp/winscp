@@ -500,6 +500,7 @@ public:
   void __fastcall ChangeDirectory(const UnicodeString Directory);
   void __fastcall EndTransaction();
   void __fastcall HomeDirectory();
+  UnicodeString __fastcall GetHomeDirectory();
   void __fastcall ChangeFileProperties(UnicodeString FileName,
     const TRemoteFile * File, /*const TRemoteProperties */ void * Properties);
   void __fastcall ChangeFilesProperties(TStrings * FileList,

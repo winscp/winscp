@@ -9486,6 +9486,19 @@ void __fastcall TCustomScpExplorerForm::ChangePassword()
   }
 }
 //---------------------------------------------------------------------------
+bool __fastcall TCustomScpExplorerForm::CanPrivateKeyUpload()
+{
+  // No nice way to assert SSH2
+  return (Terminal != NULL) && Terminal->Active && (Terminal->FSProtocol == cfsSFTP);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::PrivateKeyUpload()
+{
+  TOperationVisualizer OperationVisualizer;
+  UnicodeString FileName = Terminal->SessionData->PublicKeyFile;
+  TTerminalManager::Instance()->UploadPublicKey(Terminal, NULL, FileName);
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::ChangeScale(int M, int D)
 {
   TForm::ChangeScale(M, D);

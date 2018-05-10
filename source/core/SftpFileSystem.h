@@ -72,6 +72,7 @@ public:
     const TRemoteFile * File, UnicodeString Command, int Params, TCaptureOutputEvent OutputEvent);
   virtual void __fastcall DoStartup();
   virtual void __fastcall HomeDirectory();
+  virtual UnicodeString __fastcall GetHomeDirectory();
   virtual bool __fastcall IsCapable(int Capability) const;
   virtual void __fastcall LookupUsersGroups();
   virtual void __fastcall ReadCurrentDirectory();
@@ -132,7 +133,6 @@ protected:
     TRemoteFile *& File, unsigned char Type, TRemoteFile * ALinkedByFile = NULL,
     int AllowStatus = -1);
   virtual UnicodeString __fastcall GetCurrentDirectory();
-  UnicodeString __fastcall GetHomeDirectory();
   unsigned long __fastcall GotStatusPacket(TSFTPPacket * Packet, int AllowStatus);
   bool __fastcall RemoteFileExists(const UnicodeString FullPath, TRemoteFile ** File = NULL);
   TRemoteFile * __fastcall LoadFile(TSFTPPacket * Packet,

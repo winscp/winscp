@@ -2048,15 +2048,23 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Text = 'PrivateKeyEdit3'
             OnChange = DataChange
           end
-          object PrivateKeyGenerateButton: TButton
-            Left = 12
+          object PrivateKeyToolsButton: TButton
+            Left = 151
             Top = 86
             Width = 101
             Height = 25
-            Anchors = [akTop, akRight]
-            Caption = 'Ge&nerate...'
+            Caption = '&Tools'
             TabOrder = 2
-            OnClick = PrivateKeyGenerateButtonClick
+            OnClick = PrivateKeyToolsButtonClick
+          end
+          object PrivateKeyViewButton: TButton
+            Left = 12
+            Top = 86
+            Width = 133
+            Height = 25
+            Caption = '&Display Public Key'
+            TabOrder = 3
+            OnClick = PrivateKeyViewButtonClick
           end
         end
         object GSSAPIGroup: TGroupBox
@@ -3661,5 +3669,17 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
       C0000003000000000000000000000000FFFFFFFF000000000000000000000000
       FFFFFFFF00000000000000000000000000000000000000000000000000000000
       000000000000}
+  end
+  object PrivateKeyMenu: TPopupMenu
+    Left = 128
+    Top = 384
+    object PrivateKeyGenerateItem: TMenuItem
+      Caption = '&Generate New Key Pair with PuTTYgen...'
+      OnClick = PrivateKeyGenerateItemClick
+    end
+    object PrivateKeyUploadItem: TMenuItem
+      Caption = '&Install Public Key into Server...'
+      OnClick = PrivateKeyUploadItemClick
+    end
   end
 end

@@ -2208,6 +2208,13 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'task_change_password'
       Hint = 'Change account password'
     end
+    object PrivateKeyUploadAction: TAction
+      Tag = 15
+      Category = 'Session'
+      Caption = '&Install Public Key into Server...'
+      HelpKeyword = 'guide_public_key'
+      Hint = 'Install public key for authentication into the server'
+    end
     object RemoteNewFileAction: TAction
       Tag = 15
       Category = 'Remote Selected Operation'

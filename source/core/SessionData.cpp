@@ -509,7 +509,7 @@ bool __fastcall TSessionData::IsSame(const TSessionData * Default, bool Advanced
   return IsSame(Default, AdvancedOnly, NULL);
 }
 //---------------------------------------------------------------------
-static TFSProtocol NormalizeFSProtocol(TFSProtocol FSProtocol)
+TFSProtocol NormalizeFSProtocol(TFSProtocol FSProtocol)
 {
   if ((FSProtocol == fsSCPonly) || (FSProtocol == fsSFTPonly))
   {

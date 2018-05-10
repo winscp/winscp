@@ -711,5 +711,6 @@ bool __fastcall IsSshProtocol(TFSProtocol FSProtocol);
 int __fastcall DefaultPort(TFSProtocol FSProtocol, TFtps Ftps);
 bool __fastcall IsIPv6Literal(const UnicodeString & HostName);
 UnicodeString __fastcall EscapeIPv6Literal(const UnicodeString & IP);
+TFSProtocol NormalizeFSProtocol(TFSProtocol FSProtocol);
 //---------------------------------------------------------------------------
 #endif

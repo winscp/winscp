@@ -1162,7 +1162,7 @@ static void __fastcall ConvertKey(UnicodeString & FileName, TKeyType Type)
 }
 //---------------------------------------------------------------------------
 static void __fastcall DoVerifyKey(
-  UnicodeString & FileName, TSshProt SshProt, bool Convert)
+  UnicodeString & FileName, TSshProt SshProt, bool Convert, bool CanIgnore)
 {
   if (!FileName.Trim().IsEmpty())
   {
@@ -1242,8 +1242,8 @@ static void __fastcall DoVerifyKey(
     if (!Message.IsEmpty())
     {
       Configuration->Usage->Inc(L"PrivateKeySelectErrors");
-      if (MoreMessageDialog(Message, MoreMessages.get(), qtWarning, qaIgnore | qaAbort,
-           HelpKeyword) == qaAbort)
+      unsigned int Answers = (CanIgnore ? (qaIgnore | qaAbort) : qaOK);
+      if (MoreMessageDialog(Message, MoreMessages.get(), qtWarning, Answers, HelpKeyword) != qaIgnore)
       {
         Abort();
       }
@@ -1251,14 +1251,14 @@ static void __fastcall DoVerifyKey(
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall VerifyAndConvertKey(UnicodeString & FileName, TSshProt SshProt)
+void __fastcall VerifyAndConvertKey(UnicodeString & FileName, TSshProt SshProt, bool CanIgnore)
 {
-  DoVerifyKey(FileName, SshProt, true);
+  DoVerifyKey(FileName, SshProt, true, CanIgnore);
 }
 //---------------------------------------------------------------------------
 void __fastcall VerifyKey(UnicodeString FileName, TSshProt SshProt)
 {
-  DoVerifyKey(FileName, SshProt, false);
+  DoVerifyKey(FileName, SshProt, false, true);
 }
 //---------------------------------------------------------------------------
 void __fastcall VerifyCertificate(const UnicodeString & FileName)

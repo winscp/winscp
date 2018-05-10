@@ -257,7 +257,11 @@ __published:
   TImageList *ColorImageList120;
   TImageList *ColorImageList144;
   TImageList *ColorImageList192;
-  TButton *PrivateKeyGenerateButton;
+  TButton *PrivateKeyToolsButton;
+  TPopupMenu *PrivateKeyMenu;
+  TMenuItem *PrivateKeyGenerateItem;
+  TMenuItem *PrivateKeyUploadItem;
+  TButton *PrivateKeyViewButton;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall PageControlChange(TObject *Sender);
@@ -290,7 +294,10 @@ __published:
   void __fastcall NoteMemoKeyDown(TObject *Sender, WORD &Key, TShiftState Shift);
   void __fastcall TlsCertificateFileEditAfterDialog(TObject *Sender, UnicodeString &Name,
           bool &Action);
-  void __fastcall PrivateKeyGenerateButtonClick(TObject *Sender);
+  void __fastcall PrivateKeyUploadItemClick(TObject *Sender);
+  void __fastcall PrivateKeyGenerateItemClick(TObject *Sender);
+  void __fastcall PrivateKeyToolsButtonClick(TObject *Sender);
+  void __fastcall PrivateKeyViewButtonClick(TObject *Sender);
 
 
 public:

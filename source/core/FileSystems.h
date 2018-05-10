@@ -81,6 +81,7 @@ public:
     const TRemoteFile * File, UnicodeString Command, int Params, TCaptureOutputEvent OutputEvent) = 0;
   virtual void __fastcall DoStartup() = 0;
   virtual void __fastcall HomeDirectory() = 0;
+  virtual UnicodeString __fastcall GetHomeDirectory() { throw Exception(L"Not implemented"); };
   virtual bool __fastcall IsCapable(int Capability) const = 0;
   virtual void __fastcall LookupUsersGroups() = 0;
   virtual void __fastcall ReadCurrentDirectory() = 0;
