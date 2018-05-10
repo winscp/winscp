@@ -2222,7 +2222,7 @@ var
   Item: TListItem;
 begin
   // keep absolute path as is
-  if ExtractFileDrive(DirName) <> '' then
+  if ExtractFileDrive(DirName) = '' then
     DirName := Path + '\' + DirName;
 
   if WatchForChanges then StopWatchThread;
