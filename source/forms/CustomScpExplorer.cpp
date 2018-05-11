@@ -156,6 +156,11 @@ public:
   TTerminal * Terminal;
 };
 //---------------------------------------------------------------------------
+bool UseDirectoryMonitorDragDrop()
+{
+  return IsUWP() || (GetWindowsBuild() >= 17134);
+}
+//---------------------------------------------------------------------------
 __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
     FFormRestored(false),
     TForm(Owner)
@@ -6584,7 +6589,7 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDCreateDragFileList(
 
   if (WinConfiguration->DDExtEnabled)
   {
-    if (!IsUWP() && !WinConfiguration->DDExtInstalled)
+    if (!UseDirectoryMonitorDragDrop() && !WinConfiguration->DDExtInstalled)
     {
       Configuration->Usage->Inc(L"DownloadsDragDropExternalExtNotInstalled");
       throw ExtException(NULL, LoadStr(DRAGEXT_TARGET_NOT_INSTALLED2), HELP_DRAGEXT_TARGET_NOT_INSTALLED);
@@ -6612,7 +6617,7 @@ void __fastcall TCustomScpExplorerForm::DDExtInitDrag(TFileList * FileList,
   {
     throw Exception(FMTLOAD(CREATE_TEMP_DIR_ERROR, (FDragExtFakeDirectory)));
   }
-  if (IsUWP())
+  if (UseDirectoryMonitorDragDrop())
   {
     FileSetAttr(ApiPath(FDragExtFakeDirectory), faHidden);
   }
@@ -6620,7 +6625,7 @@ void __fastcall TCustomScpExplorerForm::DDExtInitDrag(TFileList * FileList,
 
   Created = true;
 
-  if (IsUWP() && !WinConfiguration->IsDDExtRunning())
+  if ((IsUWP() && !WinConfiguration->IsDDExtRunning()) || (GetWindowsBuild() >= 17134))
   {
     FDragFakeMonitors = new TObjectList();
     for (char Drive = FirstDrive; Drive <= LastDrive; Drive++)
@@ -6712,7 +6717,7 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDEnd(TObject * Sender)
   // Drops of local files (uploads) are handled in QueueDDProcessDropped.
   SAFE_DESTROY(FDDFileList);
 
-  if (IsUWP() && !FFakeFileDropTarget.IsEmpty())
+  if (UseDirectoryMonitorDragDrop() && !FFakeFileDropTarget.IsEmpty())
   {
     RemoveDir(ApiPath(FFakeFileDropTarget));
   }
@@ -6803,7 +6808,7 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDEnd(TObject * Sender)
     {
       CloseHandle(FDDExtMapFile);
       FDDExtMapFile = NULL;
-      if (IsUWP())
+      if (UseDirectoryMonitorDragDrop())
       {
         delete FDragFakeMonitors;
         FDragFakeMonitors = NULL;
@@ -6852,7 +6857,7 @@ bool __fastcall TCustomScpExplorerForm::DDGetTarget(
     CounterName = L"DownloadsDragDropQueue";
     ForceQueue = true;
   }
-  else if (IsUWP() && !FFakeFileDropTarget.IsEmpty())
+  else if (UseDirectoryMonitorDragDrop() && !FFakeFileDropTarget.IsEmpty())
   {
     Directory = ExcludeTrailingBackslash(ExtractFilePath(FFakeFileDropTarget));
     Result = true;

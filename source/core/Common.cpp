@@ -2779,17 +2779,26 @@ UnicodeString __fastcall WindowsProductName()
   return Result;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall WindowsVersion()
+static OSVERSIONINFO __fastcall GetWindowsVersion()
 {
-  UnicodeString Result;
-  OSVERSIONINFO OSVersionInfo;
-  OSVersionInfo.dwOSVersionInfoSize = sizeof(OSVersionInfo);
+  OSVERSIONINFO Result;
+  memset(&Result, 0, sizeof(Result));
+  Result.dwOSVersionInfoSize = sizeof(Result);
   // Cannot use the VCL Win32MajorVersion+Win32MinorVersion+Win32BuildNumber as
   // on Windows 10 due to some hacking in InitPlatformId, the Win32BuildNumber is lost
-  if (GetVersionEx(&OSVersionInfo) != 0)
-  {
-    Result = FORMAT(L"%d.%d.%d", (int(OSVersionInfo.dwMajorVersion), int(OSVersionInfo.dwMinorVersion), int(OSVersionInfo.dwBuildNumber)));
-  }
+  GetVersionEx(&Result);
+  return Result;
+}
+//---------------------------------------------------------------------------
+int __fastcall GetWindowsBuild()
+{
+  return GetWindowsVersion().dwBuildNumber;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall WindowsVersion()
+{
+  OSVERSIONINFO OSVersionInfo = GetWindowsVersion();
+  UnicodeString Result = FORMAT(L"%d.%d.%d", (int(OSVersionInfo.dwMajorVersion), int(OSVersionInfo.dwMinorVersion), int(OSVersionInfo.dwBuildNumber)));
   return Result;
 }
 //---------------------------------------------------------------------------
