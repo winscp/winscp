@@ -6733,7 +6733,7 @@ void __fastcall TCustomScpExplorerForm::DDFakeFileInitDrag(TFileList * FileList,
 
   Created = true;
 
-  if (!WinConfiguration->IsDDExtRunning())
+  if (!WinConfiguration->IsDDExtRunning() || (GetWindowsBuild() >= 17134))
   {
     FDragFakeMonitors = StartCreationDirectoryMonitorsOnEachDrive(FILE_NOTIFY_CHANGE_DIR_NAME, DDFakeCreated);
   }
