@@ -29,6 +29,13 @@ BEGIN
 
   SCREENSHOT_COMMANDER, "Main screen of Commander interface showing both local and remote file panel"
 
+  SCREENSHOT_COMMANDER_SHORT, "Commander Interface"
+  SCREENSHOT_EXPLORER, "Explorer Interface"
+  SCREENSHOT_LOGIN, "Login Dialog"
+  SCREENSHOT_EDITOR, "Internal Text Editor"
+  SCREENSHOT_TRANSFER, "Window for Setting Transfer Options"
+  SCREENSHOT_PROPERTIES, "Changing Properties of Files"
+
   LICENSE, "WinSCP is free software: you can use it, redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version."
 
   NEW_5_10_MULTI_CONNECTIONS, "Background transfer operations can use multiple connections"
