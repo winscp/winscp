@@ -47,4 +47,6 @@ BEGIN
   NEW_5_12_S3, "Support for Amazon S3 protocol"
   NEW_5_12_SHA256_HOSTKEY, "Support for SHA-256 host key fingerprint algorithm"
   NEW_5_12_AUTOMATION, "Numerous improvements to .NET assembly, including support for PackageReference package management in NuGet package"
+
+  NEW_5_14_TBD, "TBD"
 END
