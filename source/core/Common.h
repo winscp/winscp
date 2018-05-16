@@ -103,7 +103,7 @@ bool __fastcall IsLetter(wchar_t Ch);
 bool __fastcall IsDigit(wchar_t Ch);
 bool __fastcall IsHex(wchar_t Ch);
 UnicodeString __fastcall DecodeUrlChars(UnicodeString S);
-UnicodeString __fastcall EncodeUrlString(UnicodeString S);
+UnicodeString __fastcall EncodeUrlString(UnicodeString S, const UnicodeString & DoNotEncode = UnicodeString());
 UnicodeString __fastcall EncodeUrlPath(UnicodeString S);
 UnicodeString __fastcall AppendUrlParams(UnicodeString URL, UnicodeString Params);
 UnicodeString __fastcall ExtractFileNameFromUrl(const UnicodeString & Url);

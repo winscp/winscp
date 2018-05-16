@@ -2482,7 +2482,7 @@ UnicodeString __fastcall DecodeUrlChars(UnicodeString S)
   return S;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall DoEncodeUrl(UnicodeString S, bool EncodeSlash)
+UnicodeString __fastcall DoEncodeUrl(UnicodeString S, const UnicodeString & DoNotEncode)
 {
   int Index = 1;
   while (Index <= S.Length())
@@ -2491,7 +2491,7 @@ UnicodeString __fastcall DoEncodeUrl(UnicodeString S, bool EncodeSlash)
     if (IsLetter(C) ||
         IsDigit(C) ||
         (C == L'_') || (C == L'-') || (C == L'.') || (C == L'*') ||
-        ((C == L'/') && !EncodeSlash))
+        (DoNotEncode.Pos(C) > 0))
     {
       Index++;
     }
@@ -2511,14 +2511,14 @@ UnicodeString __fastcall DoEncodeUrl(UnicodeString S, bool EncodeSlash)
   return S;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall EncodeUrlString(UnicodeString S)
+UnicodeString __fastcall EncodeUrlString(UnicodeString S, const UnicodeString & DoNotEncode)
 {
-  return DoEncodeUrl(S, true);
+  return DoEncodeUrl(S, DoNotEncode);
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall EncodeUrlPath(UnicodeString S)
 {
-  return DoEncodeUrl(S, false);
+  return DoEncodeUrl(S, L"/");
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall AppendUrlParams(UnicodeString AURL, UnicodeString Params)
