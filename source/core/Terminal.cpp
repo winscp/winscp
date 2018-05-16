@@ -4784,7 +4784,14 @@ TTerminal * __fastcall TTerminal::CreateSecondarySession(const UnicodeString & N
 void __fastcall TTerminal::FillSessionDataForCode(TSessionData * Data)
 {
   const TSessionInfo & SessionInfo = GetSessionInfo();
-  Data->HostKey = SessionInfo.HostKeyFingerprintSHA256;
+  if (!SessionInfo.HostKeyFingerprintSHA256.IsEmpty())
+  {
+    Data->HostKey = SessionInfo.HostKeyFingerprintSHA256;
+  }
+  else if (!SessionInfo.CertificateFingerprint.IsEmpty())
+  {
+    Data->HostKey = SessionInfo.CertificateFingerprint;
+  }
 }
 //---------------------------------------------------------------------------
 TTerminal * __fastcall TTerminal::GetCommandSession()
