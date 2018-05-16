@@ -64,6 +64,7 @@ const wchar_t UrlParamSeparator = L';';
 const wchar_t UrlParamValueSeparator = L'=';
 const UnicodeString UrlHostKeyParamName(L"fingerprint");
 const UnicodeString UrlSaveParamName(L"save");
+const UnicodeString UrlRawSettingsParamNamePrefix(L"x-");
 const UnicodeString PassphraseOption(L"passphrase");
 const UnicodeString RawSettingsOption(L"rawsettings");
 const UnicodeString S3HostName(S3LibDefaultHostName());
@@ -1918,6 +1919,8 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
       UnicodeString ConnectionParams = UserInfo;
       UserInfo = UserInfoWithoutConnectionParams;
 
+      std::unique_ptr<TStrings> RawSettings(new TStringList());
+
       while (!ConnectionParams.IsEmpty())
       {
         UnicodeString ConnectionParam = CutToChar(ConnectionParams, UrlParamSeparator, false);
@@ -1927,6 +1930,17 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
           HostKey = DecodeUrlChars(ConnectionParam);
           FOverrideCachedHostKey = false;
         }
+        else if (StartsText(UrlRawSettingsParamNamePrefix, ConnectionParamName))
+        {
+          UnicodeString Name = RightStr(ConnectionParamName, ConnectionParamName.Length() - UrlRawSettingsParamNamePrefix.Length());
+          Name = DecodeUrlChars(Name);
+          RawSettings->Values[Name] = DecodeUrlChars(ConnectionParam);
+        }
+      }
+
+      if (RawSettings->Count > 0) // optimization
+      {
+        ApplyRawSettings(RawSettings.get());
       }
 
       bool HasPassword = (UserInfo.Pos(L':') > 0);
@@ -2072,27 +2086,21 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
     }
     if (Options->FindSwitch(RawSettingsOption))
     {
-      TStrings * RawSettings = NULL;
-      TOptionsStorage * OptionsStorage = NULL;
-      try
+      std::unique_ptr<TStrings> RawSettings(new TStringList());
+      if (Options->FindSwitch(RawSettingsOption, RawSettings.get()))
       {
-        RawSettings = new TStringList();
-
-        if (Options->FindSwitch(RawSettingsOption, RawSettings))
-        {
-          OptionsStorage = new TOptionsStorage(RawSettings, false);
-          ApplyRawSettings(OptionsStorage);
-        }
-      }
-      __finally
-      {
-        delete RawSettings;
-        delete OptionsStorage;
+        ApplyRawSettings(RawSettings.get());
       }
     }
   }
 
   return true;
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::ApplyRawSettings(TStrings * RawSettings)
+{
+  std::unique_ptr<TOptionsStorage> OptionsStorage(new TOptionsStorage(RawSettings, false));
+  ApplyRawSettings(OptionsStorage.get());
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::ApplyRawSettings(THierarchicalStorage * Storage)
@@ -2900,6 +2908,27 @@ UnicodeString __fastcall EscapeIPv6Literal(const UnicodeString & IP)
   return L"[" + IP + L"]";
 }
 //---------------------------------------------------------------------
+TStrings * __fastcall TSessionData::GetRawSettingsForUrl()
+{
+  std::unique_ptr<TSessionData> FactoryDefaults(new TSessionData(L""));
+  std::unique_ptr<TSessionData> SessionData(Clone());
+  SessionData->FSProtocol = FactoryDefaults->FSProtocol;
+  SessionData->HostName = FactoryDefaults->HostName;
+  SessionData->PortNumber = FactoryDefaults->PortNumber;
+  SessionData->UserName = FactoryDefaults->UserName;
+  SessionData->Password = FactoryDefaults->Password;
+  SessionData->Ftps = FactoryDefaults->Ftps;
+  SessionData->HostKey = FactoryDefaults->HostKey;
+  SessionData->CopyNonCoreData(FactoryDefaults.get());
+  return SessionData->SaveToOptions(FactoryDefaults.get());
+}
+//---------------------------------------------------------------------
+bool __fastcall TSessionData::HasRawSettingsForUrl()
+{
+  std::unique_ptr<TStrings> RawSettings(GetRawSettingsForUrl());
+  return (RawSettings->Count > 0);
+}
+//---------------------------------------------------------------------
 UnicodeString __fastcall TSessionData::GenerateSessionUrl(unsigned int Flags)
 {
   UnicodeString Url;
@@ -2929,6 +2958,18 @@ UnicodeString __fastcall TSessionData::GenerateSessionUrl(unsigned int Flags)
       Url +=
         UnicodeString(UrlParamSeparator) + UrlHostKeyParamName +
         UnicodeString(UrlParamValueSeparator) + S;
+    }
+
+    if (FLAGSET(Flags, sufRawSettings))
+    {
+      std::unique_ptr<TStrings> RawSettings(GetRawSettingsForUrl());
+      for (int Index = 0; Index < RawSettings->Count; Index++)
+      {
+        Url +=
+          UnicodeString(UrlParamSeparator) +
+          UrlRawSettingsParamNamePrefix + EncodeUrlString(LowerCase(RawSettings->Names[Index])) +
+          UnicodeString(UrlParamValueSeparator) + EncodeUrlString(RawSettings->ValueFromIndex[Index]);
+      }
     }
 
     Url += L"@";

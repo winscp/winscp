@@ -210,9 +210,14 @@ namespace WinSCP
                     string parameter = CutToChar(ref parameters, ';');
                     string parameterName = CutToChar(ref parameter, '=');
                     parameter = UriUnescape(parameter);
+                    const string RawSettingsPrefix = "x-";
                     if (parameterName.Equals("fingerprint", StringComparison.OrdinalIgnoreCase))
                     {
                         SshHostKeyFingerprint = parameter;
+                    }
+                    else if (parameterName.StartsWith(RawSettingsPrefix, StringComparison.OrdinalIgnoreCase))
+                    {
+                        AddRawSettings(UriUnescape(parameterName.Substring(RawSettingsPrefix.Length)), parameter);
                     }
                     else
                     {

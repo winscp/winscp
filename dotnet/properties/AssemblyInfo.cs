@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 // General Information about an assembly is controlled through the following
@@ -24,6 +25,8 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyInformationalVersion(WinSCP.AssemblyConstants.ProductVersion)]
 
 [assembly: CLSCompliant(true)]
+
+[assembly: InternalsVisibleTo("Tests")]
 
 namespace WinSCP
 {

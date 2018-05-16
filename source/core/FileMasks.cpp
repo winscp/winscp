@@ -1185,6 +1185,7 @@ int __fastcall TFileCustomCommand::PatternLen(const UnicodeString & Command, int
   switch (PatternCmd)
   {
     case L's':
+    case L'e':
     case L'@':
     case L'u':
     case L'p':
@@ -1208,6 +1209,13 @@ bool __fastcall TFileCustomCommand::PatternReplacement(
   // keep consistent with TSessionLog::OpenLogFile
 
   if (SameText(Pattern, L"!s"))
+  {
+    if (FData.SessionData != NULL)
+    {
+      Replacement = FData.SessionData->GenerateSessionUrl(sufSession);
+    }
+  }
+  else if (SameText(Pattern, L"!e"))
   {
     if (FData.SessionData != NULL)
     {

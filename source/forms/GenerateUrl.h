@@ -39,6 +39,7 @@ __published:
   TComboBox *AssemblyLanguageCombo;
   TLabel *ScriptDescriptionLabel;
   TLabel *AssemblyDescriptionLabel;
+  TCheckBox *RawSettingsCheck;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall ClipboardButtonClick(TObject *Sender);
   void __fastcall HelpButtonClick(TObject *Sender);

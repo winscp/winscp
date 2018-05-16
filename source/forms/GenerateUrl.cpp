@@ -181,7 +181,8 @@ UnicodeString __fastcall TGenerateUrlDialog::GenerateUrl(UnicodeString Path)
       FLAGMASK(WinSCPSpecificCheck->Checked, sufSpecific) |
       FLAGMASK(UserNameCheck->Enabled && UserNameCheck->Checked, sufUserName) |
       FLAGMASK(PasswordCheck->Enabled && PasswordCheck->Checked, sufPassword) |
-      FLAGMASK(HostKeyCheck->Enabled && HostKeyCheck->Checked, sufHostKey));
+      FLAGMASK(HostKeyCheck->Enabled && HostKeyCheck->Checked, sufHostKey) |
+      FLAGMASK(RawSettingsCheck->Enabled && RawSettingsCheck->Checked, sufRawSettings));
 
   if ((RemoteDirectoryCheck->Enabled && RemoteDirectoryCheck->Checked) ||
       IsFileUrl())
@@ -663,6 +664,7 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
     EnableControl(HostKeyCheck, UserNameIncluded && !FData->HostKey.IsEmpty());
     EnableControl(RemoteDirectoryCheck, !FData->RemoteDirectory.IsEmpty() && !IsFileUrl());
     EnableControl(SaveExtensionCheck, !IsFileUrl());
+    EnableControl(RawSettingsCheck, UserNameIncluded && FData->HasRawSettingsForUrl());
 
     UnicodeString Result;
 

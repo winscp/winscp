@@ -46,7 +46,9 @@ enum TSessionUrlFlags
   sufUserName = 0x02,
   sufPassword = 0x04,
   sufHostKey = 0x08,
-  sufComplete = sufUserName | sufPassword | sufHostKey,
+  sufRawSettings = 0x10,
+  sufSession = sufUserName | sufPassword | sufHostKey,
+  sufComplete = sufSession | sufRawSettings,
   sufOpen = sufUserName | sufPassword
 };
 //---------------------------------------------------------------------------
@@ -431,6 +433,8 @@ private:
     UnicodeString & Result, TAssemblyLanguage Language,
     const UnicodeString & Name, bool Value);
   TStrings * __fastcall SaveToOptions(const TSessionData * Default);
+  void __fastcall ApplyRawSettings(TStrings * RawSettings);
+  TStrings * __fastcall GetRawSettingsForUrl();
   template<class AlgoT>
   void __fastcall SetAlgoList(AlgoT * List, const AlgoT * DefaultList, const UnicodeString * Names,
     int Count, AlgoT WarnAlgo, UnicodeString value);
@@ -473,6 +477,8 @@ public:
   bool __fastcall IsSameSite(const TSessionData * Default);
   bool __fastcall IsInFolderOrWorkspace(UnicodeString Name);
   UnicodeString __fastcall GenerateSessionUrl(unsigned int Flags);
+  bool __fastcall TSessionData::HasRawSettingsForUrl();
+
   UnicodeString __fastcall GenerateOpenCommandArgs(bool Rtf);
   void __fastcall GenerateAssemblyCode(TAssemblyLanguage Language, UnicodeString & Head, UnicodeString & Tail, int & Indent);
   void __fastcall LookupLastFingerprint();
