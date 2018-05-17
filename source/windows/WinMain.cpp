@@ -23,7 +23,7 @@
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
 void __fastcall GetLoginData(UnicodeString SessionName, TOptions * Options,
-  TObjectList * DataList, UnicodeString & DownloadFile, bool NeedSession, TForm * LinkedForm)
+  TObjectList * DataList, UnicodeString & DownloadFile, bool NeedSession, TForm * LinkedForm, int Flags)
 {
   bool DefaultsOnly = false;
 
@@ -36,8 +36,7 @@ void __fastcall GetLoginData(UnicodeString SessionName, TOptions * Options,
   else
   {
     TSessionData * SessionData =
-      StoredSessions->ParseUrl(SessionName, Options, DefaultsOnly,
-        &DownloadFile);
+      StoredSessions->ParseUrl(SessionName, Options, DefaultsOnly, &DownloadFile, NULL, NULL, Flags);
     DataList->Add(SessionData);
 
     if (DataList->Count == 1)
@@ -1044,7 +1043,7 @@ int __fastcall Execute()
         TObjectList * DataList = new TObjectList();
         try
         {
-          GetLoginData(AutoStartSession, Params, DataList, DownloadFile, NeedSession, NULL);
+          GetLoginData(AutoStartSession, Params, DataList, DownloadFile, NeedSession, NULL, pufAllowStoredSiteWithProtocol);
           // GetLoginData now Aborts when session is needed and none is selected
           if (DebugAlwaysTrue(!NeedSession || (DataList->Count > 0)))
           {

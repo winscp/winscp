@@ -1692,7 +1692,7 @@ void __fastcall TSessionData::MaskPasswords()
 //---------------------------------------------------------------------
 bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
   TStoredSessionList * StoredSessions, bool & DefaultsOnly, UnicodeString * FileName,
-  bool * AProtocolDefined, UnicodeString * MaskedUrl)
+  bool * AProtocolDefined, UnicodeString * MaskedUrl, int Flags)
 {
   bool ProtocolDefined = false;
   bool PortNumberDefined = false;
@@ -1793,7 +1793,8 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
     // by creating stored session named by host)
     TSessionData * Data = NULL;
     // When using to paste URL on Login dialog, we do not want to lookup the stored sites
-    if (StoredSessions != NULL)
+    if ((StoredSessions != NULL) &&
+        (!ProtocolDefined || FLAGSET(Flags, pufAllowStoredSiteWithProtocol)))
     {
       // this can be optimized as the list is sorted
       for (Integer Index = 0; Index < StoredSessions->CountIncludingHidden; Index++)
@@ -4842,12 +4843,12 @@ bool __fastcall TStoredSessionList::HasAnyWorkspace()
 //---------------------------------------------------------------------------
 TSessionData * __fastcall TStoredSessionList::ParseUrl(UnicodeString Url,
   TOptions * Options, bool & DefaultsOnly, UnicodeString * FileName,
-  bool * AProtocolDefined, UnicodeString * MaskedUrl)
+  bool * AProtocolDefined, UnicodeString * MaskedUrl, int Flags)
 {
   TSessionData * Data = new TSessionData(L"");
   try
   {
-    Data->ParseUrl(Url, Options, this, DefaultsOnly, FileName, AProtocolDefined, MaskedUrl);
+    Data->ParseUrl(Url, Options, this, DefaultsOnly, FileName, AProtocolDefined, MaskedUrl, Flags);
   }
   catch(...)
   {

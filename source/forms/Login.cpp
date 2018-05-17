@@ -2969,7 +2969,7 @@ void __fastcall TLoginDialog::ParseUrl(const UnicodeString & Url)
   // parsed as pointing to a stored site.
   // It also prevents resetting to defaults (do we want this?)
   bool DefaultsOnly; // unused
-  SessionData->ParseUrl(Url, NULL, NULL, DefaultsOnly, NULL, NULL, NULL);
+  SessionData->ParseUrl(Url, NULL, NULL, DefaultsOnly, NULL, NULL, NULL, 0);
 
   LoadSession(SessionData.get());
 }
