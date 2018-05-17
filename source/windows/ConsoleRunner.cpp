@@ -2675,9 +2675,6 @@ int __fastcall Console(TConsoleMode Mode)
           }
         }
 
-        bool DefaultsOnly;
-        delete StoredSessions->ParseUrl(Session, Params, DefaultsOnly);
-
         CheckLogParam(Params);
         CheckXmlLogParam(Params);
 
