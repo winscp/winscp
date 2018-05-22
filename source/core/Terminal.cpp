@@ -3599,7 +3599,7 @@ bool __fastcall TTerminal::DeleteContentsIfDirectory(
       throw;
     }
   }
-  return Dir;
+  return Dir && !File->IsSymLink;
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::ProcessDirectory(const UnicodeString DirName,
