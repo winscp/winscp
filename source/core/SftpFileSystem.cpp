@@ -5509,7 +5509,7 @@ void __fastcall TSFTPFileSystem::Sink(
         {
           DeleteFileChecked(DestFullName);
         }
-        THROWOSIFFALSE(Sysutils::RenameFile(DestPartialFullName, DestFullName));
+        THROWOSIFFALSE(Sysutils::RenameFile(ApiPath(DestPartialFullName), ApiPath(DestFullName)));
       }
       FILE_OPERATION_LOOP_END(FMTLOAD(RENAME_AFTER_RESUME_ERROR, (ExtractFileName(DestPartialFullName), DestFileName)));
     }
