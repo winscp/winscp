@@ -1493,7 +1493,7 @@ void __fastcall TFTPFileSystem::FileTransfer(const UnicodeString & FileName,
 {
   FILE_OPERATION_LOOP_BEGIN
   {
-    FFileZillaIntf->FileTransfer(LocalFile.c_str(), RemoteFile.c_str(),
+    FFileZillaIntf->FileTransfer(ApiPath(LocalFile).c_str(), RemoteFile.c_str(),
       RemotePath.c_str(), Get, Size, Type, &UserData);
     // we may actually catch response code of the listing
     // command (when checking for existence of the remote file)
