@@ -4096,10 +4096,6 @@ bool __fastcall TFTPFileSystem::HandleListData(const wchar_t * Path,
   else
   {
     DebugAssert(FFileList != NULL);
-    // This can actually fail in real life,
-    // when connected to server with case insensitive paths.
-    // Is empty when called from DoReadFile
-    DebugAssert(FFileList->Directory.IsEmpty() || UnixSamePath(AbsolutePath(FFileList->Directory, false), Path));
     DebugUsedParam(Path);
 
     for (unsigned int Index = 0; Index < Count; Index++)
