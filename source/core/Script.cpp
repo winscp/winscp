@@ -1404,6 +1404,10 @@ void __fastcall TScript::ChModProc(TScriptProcParams * Parameters)
 void __fastcall TScript::LnProc(TScriptProcParams * Parameters)
 {
   CheckSession();
+  if (!FTerminal->IsCapable[fcSymbolicLink])
+  {
+    NotSupported();
+  }
 
   DebugAssert(Parameters->ParamCount == 2);
 
