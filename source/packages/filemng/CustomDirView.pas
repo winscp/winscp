@@ -528,7 +528,7 @@ var
 implementation
 
 uses
-  Math, DirViewColProperties, UITypes, Types;
+  Math, DirViewColProperties, UITypes, Types, OperationWithTimeout;
 
 const
   Space = ' ';
@@ -710,7 +710,7 @@ end; {GetIconIndex}
 function GetshFileInfo(const AFile: string; Attrs: DWORD; Flags: UINT): TSHFileInfo;
 begin
   try
-    SHGetFileInfo(PChar(AFile), Attrs, Result, SizeOf(TSHFileInfo), Flags);
+    SHGetFileInfoWithTimeout(PChar(AFile), Attrs, Result, SizeOf(TSHFileInfo), Flags, 1000);
   except
     FillChar(Result, SizeOf(Result), 0);
   end;
