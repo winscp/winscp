@@ -449,7 +449,7 @@ bool __fastcall AES256DecryptWithMAC(RawByteString Input, UnicodeString Password
 //---------------------------------------------------------------------------
 void __fastcall AES256CreateVerifier(UnicodeString Input, RawByteString & Verifier)
 {
-  RawByteString Salt = AES256Salt();
+  RawByteString Salt;
   RawByteString Dummy = AES256Salt();
 
   RawByteString Encrypted;
