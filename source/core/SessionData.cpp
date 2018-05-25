@@ -1049,7 +1049,7 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
   if (PuttyExport)
   {
     WRITE_DATA_EX(String, L"Protocol", GetNormalizedPuttyProtocol(), );
-    WRITE_DATA_EX(String, L"WinTitle", WinTitle, );
+    WRITE_DATA(String, WinTitle);
   }
 
   if (!PuttyExport)
