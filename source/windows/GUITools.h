@@ -158,6 +158,7 @@ public:
 
 protected:
   virtual void __fastcall CreateParams(TCreateParams & Params);
+  virtual void __fastcall CreateWnd();
   virtual void __fastcall DestroyWnd();
 
 private:
