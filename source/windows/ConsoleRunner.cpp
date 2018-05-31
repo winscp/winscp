@@ -2579,6 +2579,52 @@ int __fastcall FingerprintScan(TConsole * Console, TProgramParams * Params)
   return Result;
 }
 //---------------------------------------------------------------------------
+int __fastcall DumpCallstack(TConsole * Console, TProgramParams * Params)
+{
+  int Result = RESULT_SUCCESS;
+  try
+  {
+    int ProcessId = StrToInt(Params->SwitchValue(DUMPCALLSTACK_SWITCH));
+    UnicodeString EventName = DumpCallstackEventName(ProcessId);
+    UnicodeString FileName = DumpCallstackFileName(ProcessId);
+    if (FileExists(FileName))
+    {
+      DeleteFileChecked(FileName);
+    }
+
+    HANDLE Event = OpenEvent(EVENT_ALL_ACCESS, false, EventName.c_str());
+    if (Event == NULL)
+    {
+      throw ExtException(FORMAT(L"Error communicating with process %d.", (ProcessId)), LastSysErrorMessage());
+    }
+
+    SetEvent(Event);
+    CloseHandle(Event);
+
+    ConsolePrintLine(Console, FORMAT(L"Requested callstack dump for process %d...", (ProcessId)));
+
+    int Timeout = 10;
+    while (!FileExists(FileName))
+    {
+      Sleep(1000);
+      Timeout--;
+      if (Timeout == 0)
+      {
+        throw Exception(L"Timeout");
+      }
+    }
+
+    ConsolePrintLine(Console, FORMAT(L"Callstack dumped to file \"%s\".", (FileName)));
+  }
+  catch (Exception & E)
+  {
+    Result = HandleException(Console, E);
+  }
+
+  Console->WaitBeforeExit();
+  return Result;
+}
+//---------------------------------------------------------------------------
 int __fastcall Console(TConsoleMode Mode)
 {
   DebugAssert(Mode != cmNone);
@@ -2638,6 +2684,10 @@ int __fastcall Console(TConsoleMode Mode)
         Configuration->Usage->Inc(L"FingerprintScan");
         Result = FingerprintScan(Console, Params);
       }
+    }
+    else if (Mode == cmDumpCallstack)
+    {
+      Result = DumpCallstack(Console, Params);
     }
     else
     {

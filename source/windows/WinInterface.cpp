@@ -1461,6 +1461,18 @@ void __fastcall ClickToolbarItem(TTBCustomItem * Item, bool PositionCursor)
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
+UnicodeString DumpCallstackEventName(int ProcessId)
+{
+  return FORMAT(DUMPCALLSTACK_EVENT, (ProcessId));
+}
+//---------------------------------------------------------------------------
+UnicodeString DumpCallstackFileName(int ProcessId)
+{
+  UnicodeString FileName = FORMAT(L"%s.txt", (DumpCallstackEventName(ProcessId)));
+  UnicodeString Result = TPath::Combine(SystemTemporaryDirectory(), FileName);
+  return Result;
+}
+//---------------------------------------------------------------------------
 class TCallstackThread : public TSignalThread
 {
 public:
@@ -1470,7 +1482,6 @@ protected:
   virtual void __fastcall ProcessEvent();
 
 private:
-  static UnicodeString DoGetName();
   static HANDLE DoCreateEvent();
 };
 //---------------------------------------------------------------------------
@@ -1483,8 +1494,7 @@ void __fastcall TCallstackThread::ProcessEvent()
 {
   try
   {
-    UnicodeString FileName = FORMAT(L"%s.txt", (DoGetName()));
-    UnicodeString Path = TPath::Combine(SystemTemporaryDirectory(), FileName);
+    UnicodeString Path = DumpCallstackFileName(GetCurrentProcessId());
     std::unique_ptr<TStrings> StackStrings;
     HANDLE MainThreadHandle = reinterpret_cast<HANDLE>(MainThreadID);
     if (SuspendThread(MainThreadHandle) < 0)
@@ -1514,14 +1524,9 @@ void __fastcall TCallstackThread::ProcessEvent()
   }
 }
 //---------------------------------------------------------------------------
-UnicodeString TCallstackThread::DoGetName()
-{
-  return FORMAT("WinSCPCallstack%d", (GetCurrentProcessId()));
-}
-//---------------------------------------------------------------------------
 HANDLE TCallstackThread::DoCreateEvent()
 {
-  UnicodeString Name = DoGetName();
+  UnicodeString Name = DumpCallstackEventName(GetCurrentProcessId());
   return CreateEvent(NULL, false, false, Name.c_str());
 }
 //---------------------------------------------------------------------------

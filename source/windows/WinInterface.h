@@ -42,6 +42,9 @@ const int mpAllowContinueOnError = 0x02;
 #define INI_SWITCH L"Ini"
 #define RAW_CONFIG_SWITCH L"RawConfig"
 #define FINGERPRINTSCAN_SWITCH L"FingerprintScan"
+#define DUMPCALLSTACK_SWITCH L"DumpCallstack"
+
+#define DUMPCALLSTACK_EVENT L"WinSCPCallstack%d"
 
 struct TMessageParams
 {
@@ -401,7 +404,7 @@ extern const UnicodeString YesButtonName;
 extern const UnicodeString OKButtonName;
 
 // windows\Console.cpp
-enum TConsoleMode { cmNone, cmScripting, cmHelp, cmBatchSettings, cmKeyGen, cmFingerprintScan };
+enum TConsoleMode { cmNone, cmScripting, cmHelp, cmBatchSettings, cmKeyGen, cmFingerprintScan, cmDumpCallstack };
 int __fastcall Console(TConsoleMode Mode);
 
 // forms\EditorPreferences.cpp
@@ -492,6 +495,9 @@ void __fastcall SetShortCutCombo(TComboBox * ComboBox, TShortCut Value);
 TShortCut __fastcall GetShortCutCombo(TComboBox * ComboBox);
 bool __fastcall IsCustomShortCut(TShortCut ShortCut);
 TShortCut __fastcall NormalizeCustomShortCut(TShortCut ShortCut);
+
+UnicodeString DumpCallstackEventName(int ProcessId);
+UnicodeString DumpCallstackFileName(int ProcessId);
 
 #ifdef _DEBUG
 void __fastcall ForceTracing();
