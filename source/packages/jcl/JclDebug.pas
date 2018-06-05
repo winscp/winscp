@@ -5050,8 +5050,10 @@ begin
     AlignedContext^.ContextFlags := CONTEXT_FULL;
     {$IFDEF CPU32}
     if GetThreadContext(ThreadHandle, AlignedContext^) then
+    begin
       Result := JclCreateStackList(Raw, -1, Pointer(AlignedContext^.Eip), False, Pointer(AlignedContext^.Ebp),
                   Pointer(GetThreadTopOfStack(ThreadHandle)));
+    end;
     {$ENDIF CPU32}
     {$IFDEF CPU64}
     if GetThreadContext(ThreadHandle, AlignedContext^) then
