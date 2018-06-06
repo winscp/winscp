@@ -2603,7 +2603,7 @@ int __fastcall DumpCallstack(TConsole * Console, TProgramParams * Params)
 
     ConsolePrintLine(Console, FORMAT(L"Requested callstack dump for process %d...", (ProcessId)));
 
-    int Timeout = 10;
+    int Timeout = 30;
     while (!FileExists(FileName))
     {
       Sleep(1000);

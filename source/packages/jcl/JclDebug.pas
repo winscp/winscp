@@ -5246,8 +5246,10 @@ begin
   Strings.BeginUpdate;
   try
     for I := 0 to Count - 1 do
+    begin
       Strings.Add(GetLocationInfoStr(Items[I].CallerAddr, IncludeModuleName, IncludeAddressOffset,
         IncludeStartProcLineOffset, IncludeVAddress));
+    end;
   finally
     Strings.EndUpdate;
   end;
