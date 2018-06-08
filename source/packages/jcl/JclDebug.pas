@@ -5241,14 +5241,16 @@ procedure TJclStackInfoList.AddToStrings(Strings: TStrings; IncludeModuleName, I
   IncludeStartProcLineOffset, IncludeVAddress: Boolean);
 var
   I: Integer;
+  S: string;
 begin
   ForceStackTracing;
   Strings.BeginUpdate;
   try
     for I := 0 to Count - 1 do
     begin
-      Strings.Add(GetLocationInfoStr(Items[I].CallerAddr, IncludeModuleName, IncludeAddressOffset,
-        IncludeStartProcLineOffset, IncludeVAddress));
+      S := GetLocationInfoStr(Items[I].CallerAddr, IncludeModuleName, IncludeAddressOffset,
+        IncludeStartProcLineOffset, IncludeVAddress);
+      Strings.Add(S);
     end;
   finally
     Strings.EndUpdate;
