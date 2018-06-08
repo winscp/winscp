@@ -1,3 +1,9 @@
 *.dfm linguist-detectable=false
 libs/* linguist-vendored
 source/putty/* linguist-vendored
+source/packages/dragndrop/* linguist-vendored
+source/packages/jcl/* linguist-vendored
+source/packages/png/* linguist-vendored
+source/packages/tb2k/* linguist-vendored
+source/packages/tbx/* linguist-vendored
+source/packages/filemng/Documentation/* linguist-vendored
