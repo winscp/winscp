@@ -1,0 +1,3 @@
+*.dfm linguist-detectable=false
+libs/* linguist-vendored
+source/putty/* linguist-vendored
