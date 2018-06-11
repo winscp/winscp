@@ -244,7 +244,8 @@ TObjectList * StartCreationDirectoryMonitorsOnEachDrive(unsigned int Filter, TFi
     std::unique_ptr<TDirectoryMonitor> Monitor(new TDirectoryMonitor(Application));
     TDriveInfoRec * DriveInfoRec = DriveInfo->Get(Drive);
     if (DriveInfoRec->Valid &&
-        (DriveInfoRec->DriveType != DRIVE_CDROM))
+        (DriveInfoRec->DriveType != DRIVE_CDROM) &&
+        ((DriveInfoRec->DriveType != DRIVE_REMOVABLE) || (Drive >= FirstFixedDrive)))
     {
       try
       {
