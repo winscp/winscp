@@ -6634,7 +6634,8 @@ void __fastcall TCustomScpExplorerForm::DDExtInitDrag(TFileList * FileList,
       DriveInfo->ReadDriveStatus(Drive, dsSize | dsImageIndex);
       TDriveInfoRec * DriveInfoRec = DriveInfo->Data[Drive];
       if (DriveInfoRec->Valid &&
-          (DriveInfoRec->DriveType != DRIVE_CDROM))
+          (DriveInfoRec->DriveType != DRIVE_CDROM) &&
+          ((DriveInfoRec->DriveType != DRIVE_REMOVABLE) || (Drive >= FirstFixedDrive)))
       {
         try
         {
