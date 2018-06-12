@@ -5,6 +5,7 @@
 #include "Common.h"
 #include "PuttyIntf.h"
 #include "Cryptography.h"
+#include <openssl\rand.h>
 #include <process.h>
 
 /*
@@ -302,7 +303,6 @@ static void fcrypt_init(
     const unsigned char pwd[],              /* the user specified password (input)  */
     unsigned int pwd_len,                   /* the length of the password (input)   */
     const unsigned char salt[],             /* the salt (input)                     */
-    unsigned char pwd_ver[PWD_VER_LENGTH],  /* 2 byte password verifier (output)    */
     fcrypt_ctx      cx[1])                  /* the file encryption context (output) */
 {
     unsigned char kbuf[2 * MAX_KEY_LENGTH + PWD_VER_LENGTH];
@@ -327,11 +327,6 @@ static void fcrypt_init(
     /* initialise for authentication using key 2        */
     hmac_sha1_begin(&cx->auth_ctx);
     hmac_sha1_key(kbuf + KEY_LENGTH(mode), KEY_LENGTH(mode), &cx->auth_ctx);
-
-    if (pwd_ver != NULL)
-    {
-      memmove(pwd_ver, kbuf + 2 * KEY_LENGTH(mode), PWD_VER_LENGTH);
-    }
 }
 
 /* perform 'in place' encryption and authentication */
@@ -361,22 +356,10 @@ static int fcrypt_end(unsigned char mac[], fcrypt_ctx cx[1])
 //---------------------------------------------------------------------------
 #define PASSWORD_MANAGER_AES_MODE 3
 //---------------------------------------------------------------------------
-static void __fastcall FillBufferWithRandomData(char * Buf, int Len)
+static void AES256Salt(RawByteString & Salt)
 {
-  while (Len > 0)
-  {
-    *Buf = static_cast<char>((rand() >> 7) & 0xFF);
-    Buf++;
-    Len--;
-  }
-}
-//---------------------------------------------------------------------------
-static RawByteString __fastcall AES256Salt()
-{
-  RawByteString Result;
-  Result.SetLength(SALT_LENGTH(PASSWORD_MANAGER_AES_MODE));
-  FillBufferWithRandomData(Result.c_str(), Result.Length());
-  return Result;
+  Salt.SetLength(SALT_LENGTH(PASSWORD_MANAGER_AES_MODE));
+  RAND_pseudo_bytes(reinterpret_cast<unsigned char *>(Salt.c_str()), Salt.Length());
 }
 //---------------------------------------------------------------------------
 void __fastcall AES256EncyptWithMAC(RawByteString Input, UnicodeString Password,
@@ -385,13 +368,13 @@ void __fastcall AES256EncyptWithMAC(RawByteString Input, UnicodeString Password,
   fcrypt_ctx aes;
   if (Salt.IsEmpty())
   {
-    Salt = AES256Salt();
+    AES256Salt(Salt);
   }
   DebugAssert(Salt.Length() == SALT_LENGTH(PASSWORD_MANAGER_AES_MODE));
   UTF8String UtfPassword = Password;
   fcrypt_init(PASSWORD_MANAGER_AES_MODE,
     reinterpret_cast<const unsigned char *>(UtfPassword.c_str()), UtfPassword.Length(),
-    reinterpret_cast<const unsigned char *>(Salt.c_str()), NULL, &aes);
+    reinterpret_cast<const unsigned char *>(Salt.c_str()), &aes);
   Output = Input;
   Output.Unique();
   fcrypt_encrypt(reinterpret_cast<unsigned char *>(Output.c_str()), Output.Length(), &aes);
@@ -417,7 +400,7 @@ bool __fastcall AES256DecryptWithMAC(RawByteString Input, UnicodeString Password
   UTF8String UtfPassword = Password;
   fcrypt_init(PASSWORD_MANAGER_AES_MODE,
     reinterpret_cast<const unsigned char *>(UtfPassword.c_str()), UtfPassword.Length(),
-    reinterpret_cast<const unsigned char *>(Salt.c_str()), NULL, &aes);
+    reinterpret_cast<const unsigned char *>(Salt.c_str()), &aes);
   Output = Input;
   Output.Unique();
   fcrypt_decrypt(reinterpret_cast<unsigned char *>(Output.c_str()), Output.Length(), &aes);
@@ -450,7 +433,8 @@ bool __fastcall AES256DecryptWithMAC(RawByteString Input, UnicodeString Password
 void __fastcall AES256CreateVerifier(UnicodeString Input, RawByteString & Verifier)
 {
   RawByteString Salt;
-  RawByteString Dummy = AES256Salt();
+  RawByteString Dummy;
+  AES256Salt(Dummy);
 
   RawByteString Encrypted;
   RawByteString Mac;
@@ -585,6 +569,7 @@ void __fastcall CryptographyInitialize()
     UnscrambleTable[SScrambleTable[Index]] = (unsigned char)Index;
   }
   srand((unsigned int)time(NULL) ^ (unsigned int)getpid());
+  RAND_poll();
 }
 //---------------------------------------------------------------------------
 void __fastcall CryptographyFinalize()
