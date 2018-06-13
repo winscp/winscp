@@ -1057,7 +1057,7 @@ void __fastcall TWebDAVFileSystem::CopyFile(const UnicodeString FileName, const 
   CheckStatus(NeonStatus);
 }
 //---------------------------------------------------------------------------
-void __fastcall TWebDAVFileSystem::CreateDirectory(const UnicodeString DirName)
+void __fastcall TWebDAVFileSystem::CreateDirectory(const UnicodeString & DirName, bool /*Encrypt*/)
 {
   ClearNeonError();
   TOperationVisualizer Visualizer(FTerminal->UseBusyCursor);

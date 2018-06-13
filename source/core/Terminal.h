@@ -216,6 +216,10 @@ private:
   UnicodeString FDestFileName;
   bool FMultipleDestinationFiles;
   bool FFileTransferAny;
+  typedef std::map<UnicodeString, UnicodeString> TEncryptedFileNames;
+  TEncryptedFileNames FEncryptedFileNames;
+  std::set<UnicodeString> FFoldersScannedForEncryptedFiles;
+  RawByteString FEncryptKey;
 
   void __fastcall CommandError(Exception * E, const UnicodeString Msg);
   unsigned int __fastcall CommandError(Exception * E, const UnicodeString Msg,
@@ -255,7 +259,7 @@ protected:
   void __fastcall DoStartReadDirectory();
   void __fastcall DoReadDirectoryProgress(int Progress, int ResolvedLinks, bool & Cancel);
   void __fastcall DoReadDirectory(bool ReloadOnly);
-  void __fastcall DoCreateDirectory(const UnicodeString DirName);
+  void __fastcall DoCreateDirectory(const UnicodeString & DirName, bool Encrypt);
   void __fastcall DoDeleteFile(const UnicodeString FileName, const TRemoteFile * File,
     int Params);
   void __fastcall DoCustomCommandOnFile(UnicodeString FileName,
@@ -450,6 +454,11 @@ protected:
     const UnicodeString & DestFullName, const TRemoteFile * File, const TCopyParamType * CopyParam, int Attrs);
   void __fastcall UpdateTargetTime(HANDLE Handle, TDateTime Modification, TDSTMode DSTMode);
 
+  UnicodeString __fastcall EncryptFileName(const UnicodeString & Path, bool EncryptNewFiles);
+  UnicodeString __fastcall DecryptFileName(const UnicodeString & Path);
+  TEncryptedFileNames::const_iterator __fastcall GetEncryptedFileName(const UnicodeString & Path);
+  bool __fastcall IsFileEncrypted(const UnicodeString & Path, bool EncryptNewFiles = false);
+
   __property TFileOperationProgressType * OperationProgress = { read=FOperationProgress };
 
 public:
@@ -485,8 +494,7 @@ public:
     const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params, TParallelOperation * ParallelOperation);
   int __fastcall CopyToParallel(TParallelOperation * ParallelOperation, TFileOperationProgressType * OperationProgress);
   void __fastcall LogParallelTransfer(TParallelOperation * ParallelOperation);
-  void __fastcall CreateDirectory(const UnicodeString DirName,
-    const TRemoteProperties * Properties = NULL);
+  void __fastcall CreateDirectory(const UnicodeString & DirName, const TRemoteProperties * Properties);
   void __fastcall CreateLink(const UnicodeString FileName, const UnicodeString PointTo, bool Symbolic);
   void __fastcall DeleteFile(UnicodeString FileName,
     const TRemoteFile * File = NULL, void * Params = NULL);
@@ -566,6 +574,8 @@ public:
   UnicodeString __fastcall ChangeFileName(const TCopyParamType * CopyParam,
     UnicodeString FileName, TOperationSide Side, bool FirstLevel);
   UnicodeString __fastcall GetBaseFileName(UnicodeString FileName);
+  bool __fastcall IsEncryptingFiles() { return !FEncryptKey.IsEmpty(); }
+  RawByteString __fastcall GetEncryptKey() { return FEncryptKey; }
 
   static UnicodeString __fastcall ExpandFileName(UnicodeString Path,
     const UnicodeString BasePath);

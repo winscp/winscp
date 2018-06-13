@@ -55,7 +55,7 @@ public:
     const TCopyParamType * CopyParam, int Params,
     TFileOperationProgressType * OperationProgress, unsigned int Flags,
     TUploadSessionAction & Action, bool & ChildError);
-  virtual void __fastcall CreateDirectory(const UnicodeString DirName);
+  virtual void __fastcall CreateDirectory(const UnicodeString & DirName, bool Encrypt);
   virtual void __fastcall CreateLink(const UnicodeString FileName, const UnicodeString PointTo, bool Symbolic);
   virtual void __fastcall DeleteFile(const UnicodeString FileName,
     const TRemoteFile * File, int Params, TRmSessionAction & Action);

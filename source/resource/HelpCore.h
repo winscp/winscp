@@ -34,5 +34,6 @@
 #define HELP_STATUSMSG_DISCONNECTED            "message_disconnected"
 #define HELP_SFTP_INITIALIZE_ERROR             "message_cannot_initialize_sftp_protocol"
 #define HELP_AUTH_TRANSL_KEY_REFUSED           "message_key_refused"
+#define HELP_FILE_ENCRYPTION                   "file_encryption"
 
 #endif // HelpCoreH

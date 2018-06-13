@@ -25,6 +25,7 @@ const int cpaNoRemoveCtrlZ      = 0x200;
 const int cpaNoRemoveBOM        = 0x400;
 const int cpaNoPreserveTimeDirs = 0x800;
 const int cpaNoResumeSupport    = 0x1000;
+const int cpaNoEncryptNewFiles  = 0x2000;
 //---------------------------------------------------------------------------
 struct TUsableCopyParamAttrs
 {
@@ -62,6 +63,7 @@ private:
   bool FRemoveBOM;
   unsigned long FCPSLimit;
   bool FNewerOnly;
+  bool FEncryptNewFiles;
   static const wchar_t TokenPrefix = L'%';
   static const wchar_t NoReplacement = wchar_t(false);
   static const wchar_t TokenReplacement = wchar_t(true);
@@ -135,6 +137,7 @@ public:
   __property bool RemoveBOM = { read = FRemoveBOM, write = FRemoveBOM };
   __property unsigned long CPSLimit = { read = FCPSLimit, write = FCPSLimit };
   __property bool NewerOnly = { read = FNewerOnly, write = FNewerOnly };
+  __property bool EncryptNewFiles = { read = FEncryptNewFiles, write = FEncryptNewFiles };
 };
 //---------------------------------------------------------------------------
 unsigned long __fastcall GetSpeedLimit(const UnicodeString & Text);

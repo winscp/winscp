@@ -599,6 +599,7 @@ protected:
   virtual void __fastcall UpdateImages();
   void __fastcall UpdatePixelsPerInchMainWindowCounter();
   void __fastcall CopyPopup(TControl * DestControl, TControl * SourceControl);
+  void __fastcall CreateRemoteDirectory(const UnicodeString & Path, TRemoteProperties & Properties);
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();

@@ -54,6 +54,7 @@ void __fastcall TCopyParamType::Default()
   RemoveBOM = false;
   CPSLimit = 0;
   NewerOnly = false;
+  EncryptNewFiles = true;
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TCopyParamType::GetInfoStr(
@@ -426,6 +427,20 @@ void __fastcall TCopyParamType::DoGetInfoStr(
     }
   }
 
+  if (EncryptNewFiles != Defaults.EncryptNewFiles)
+  {
+    if (!DebugAlwaysFalse(EncryptNewFiles))
+    {
+      const int Except = cpaIncludeMaskOnly | cpaNoEncryptNewFiles;
+      ADD(StripHotkey(LoadStr(COPY_INFO_DONT_ENCRYPT_NEW_FILES)), Except);
+      if (FLAGCLEAR(Options, Except))
+      {
+        NoScriptArgs = true;
+        NoCodeProperties = true;
+      }
+    }
+  }
+
   bool ResumeThresholdDiffers = ((ResumeSupport == rsSmart) && (ResumeThreshold != Defaults.ResumeThreshold));
   if (((ResumeSupport != Defaults.ResumeSupport) || ResumeThresholdDiffers) &&
       (TransferMode != tmAscii) && FLAGCLEAR(Options, cpaNoResumeSupport))
@@ -509,6 +524,7 @@ void __fastcall TCopyParamType::Assign(const TCopyParamType * Source)
   COPY(RemoveBOM);
   COPY(CPSLimit);
   COPY(NewerOnly);
+  COPY(EncryptNewFiles);
   #undef COPY
 }
 //---------------------------------------------------------------------------
@@ -679,7 +695,7 @@ UnicodeString __fastcall TCopyParamType::GetLogStr() const
        BooleanToEngStr(CalculateSize),
        FileMask)) +
     FORMAT(
-      L"  TM: %s; ClAr: %s; RemEOF: %s; RemBOM: %s; CPS: %u; NewerOnly: %s; InclM: %s; ResumeL: %d\n"
+      L"  TM: %s; ClAr: %s; RemEOF: %s; RemBOM: %s; CPS: %u; NewerOnly: %s; EncryptNewFiles: %s; InclM: %s; ResumeL: %d\n"
        "  AscM: %s\n",
       (ModeC[TransferMode],
        BooleanToEngStr(ClearArchive),
@@ -687,6 +703,7 @@ UnicodeString __fastcall TCopyParamType::GetLogStr() const
        BooleanToEngStr(RemoveBOM),
        int(CPSLimit),
        BooleanToEngStr(NewerOnly),
+       BooleanToEngStr(EncryptNewFiles),
        IncludeFileMask.Masks,
        ((FTransferSkipList.get() != NULL) ? FTransferSkipList->Count : 0) + (!FTransferResumeFile.IsEmpty() ? 1 : 0),
        AsciiFileMask.Masks));
@@ -820,6 +837,7 @@ void __fastcall TCopyParamType::Load(THierarchicalStorage * Storage)
   RemoveBOM = Storage->ReadBool(L"RemoveBOM", RemoveBOM);
   CPSLimit = Storage->ReadInteger(L"CPSLimit", CPSLimit);
   NewerOnly = Storage->ReadBool(L"NewerOnly", NewerOnly);
+  EncryptNewFiles = Storage->ReadBool(L"EncryptNewFiles", EncryptNewFiles);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamType::Save(THierarchicalStorage * Storage, const TCopyParamType * Defaults) const
@@ -863,6 +881,7 @@ void __fastcall TCopyParamType::Save(THierarchicalStorage * Storage, const TCopy
   WRITE_DATA(Bool, RemoveBOM);
   WRITE_DATA(Integer, CPSLimit);
   WRITE_DATA(Bool, NewerOnly);
+  WRITE_DATA(Bool, EncryptNewFiles);
 }
 //---------------------------------------------------------------------------
 #define C(Property) (Property == rhp.Property)
@@ -894,6 +913,7 @@ bool __fastcall TCopyParamType::operator==(const TCopyParamType & rhp) const
     C(RemoveBOM) &&
     C(CPSLimit) &&
     C(NewerOnly) &&
+    C(EncryptNewFiles) &&
     true;
 }
 #undef C

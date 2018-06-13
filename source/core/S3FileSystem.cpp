@@ -1010,7 +1010,7 @@ void __fastcall TS3FileSystem::CopyFile(const UnicodeString AFileName, const TRe
   CheckLibS3Error(Data);
 }
 //---------------------------------------------------------------------------
-void __fastcall TS3FileSystem::CreateDirectory(const UnicodeString ADirName)
+void __fastcall TS3FileSystem::CreateDirectory(const UnicodeString & ADirName, bool /*Encrypt*/)
 {
   TOperationVisualizer Visualizer(FTerminal->UseBusyCursor);
   UnicodeString DirName = UnixExcludeTrailingBackslash(AbsolutePath(ADirName, false));

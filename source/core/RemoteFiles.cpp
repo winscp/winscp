@@ -14,6 +14,7 @@
 #include "Terminal.h"
 #include "TextsCore.h"
 #include "HelpCore.h"
+#include "Cryptography.h"
 /* TODO 1 : Path class instead of UnicodeString (handle relativity...) */
 //---------------------------------------------------------------------------
 bool __fastcall IsUnixStyleWindowsPath(const UnicodeString & Path)
@@ -809,6 +810,7 @@ __fastcall TRemoteFile::TRemoteFile(TRemoteFile * ALinkedByFile):
   FTerminal = NULL;
   FDirectory = NULL;
   FIsHidden = -1;
+  FIsEncrypted = false;
 }
 //---------------------------------------------------------------------------
 __fastcall TRemoteFile::~TRemoteFile()
@@ -847,6 +849,7 @@ TRemoteFile * __fastcall TRemoteFile::Duplicate(bool Standalone) const
     COPY_FP(Type);
     COPY_FP(CyclicLink);
     COPY_FP(HumanRights);
+    COPY_FP(IsEncrypted);
     #undef COPY_FP
     if (Standalone && (!FFullFileName.IsEmpty() || (Directory != NULL)))
     {
@@ -1335,6 +1338,15 @@ void __fastcall TRemoteFile::Complete()
   if (IsSymLink && Terminal->ResolvingSymlinks)
   {
     FindLinkedFile();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TRemoteFile::SetEncrypted()
+{
+  FIsEncrypted = true;
+  if (Size > TEncryption::GetOverhead())
+  {
+    Size -= TEncryption::GetOverhead();
   }
 }
 //---------------------------------------------------------------------------
@@ -2534,7 +2546,8 @@ __fastcall TRemoteProperties::TRemoteProperties(const TRemoteProperties & rhp) :
   Group(rhp.Group),
   Owner(rhp.Owner),
   Modification(rhp.Modification),
-  LastAccess(rhp.Modification)
+  LastAccess(rhp.Modification),
+  Encrypt(rhp.Encrypt)
 {
 }
 //---------------------------------------------------------------------------
@@ -2547,6 +2560,7 @@ void __fastcall TRemoteProperties::Default()
   Group.Clear();
   Owner.Clear();
   Recursive = false;
+  Encrypt = false;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TRemoteProperties::operator ==(const TRemoteProperties & rhp) const
@@ -2560,7 +2574,8 @@ bool __fastcall TRemoteProperties::operator ==(const TRemoteProperties & rhp) co
         (Valid.Contains(vpOwner) && (Owner != rhp.Owner)) ||
         (Valid.Contains(vpGroup) && (Group != rhp.Group)) ||
         (Valid.Contains(vpModification) && (Modification != rhp.Modification)) ||
-        (Valid.Contains(vpLastAccess) && (LastAccess != rhp.LastAccess)))
+        (Valid.Contains(vpLastAccess) && (LastAccess != rhp.LastAccess)) ||
+        (Valid.Contains(vpEncrypt) && (Encrypt != rhp.Encrypt)))
     {
       Result = false;
     }
@@ -2622,6 +2637,7 @@ TRemoteProperties __fastcall TRemoteProperties::CommonProperties(TStrings * File
 TRemoteProperties __fastcall TRemoteProperties::ChangedProperties(
   const TRemoteProperties & OriginalProperties, TRemoteProperties NewProperties)
 {
+  DebugAssert(!OriginalProperties.Valid.Contains(vpEncrypt));
   // TODO: Modification and LastAccess
   if (!NewProperties.Recursive)
   {

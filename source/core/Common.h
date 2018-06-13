@@ -40,6 +40,7 @@ void PackStr(AnsiString & Str);
 void __fastcall Shred(UnicodeString & Str);
 void __fastcall Shred(UTF8String & Str);
 void __fastcall Shred(AnsiString & Str);
+void __fastcall Shred(RawByteString & Str);
 UnicodeString AnsiToString(const RawByteString & S);
 UnicodeString AnsiToString(const char * S, size_t Len);
 UnicodeString MakeValidFileName(UnicodeString FileName);

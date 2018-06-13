@@ -101,6 +101,11 @@ void __fastcall Shred(AnsiString & Str)
   DoShred(Str);
 }
 //---------------------------------------------------------------------------
+void __fastcall Shred(RawByteString & Str)
+{
+  DoShred(Str);
+}
+//---------------------------------------------------------------------------
 UnicodeString AnsiToString(const RawByteString & S)
 {
   return UnicodeString(AnsiString(S));

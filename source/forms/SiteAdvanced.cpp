@@ -7,8 +7,10 @@
 #include <Common.h>
 #include <TextsWin.h>
 #include <TextsCore.h>
+#include <HelpCore.h>
 #include <HelpWin.h>
 #include <VCLCommon.h>
+#include <Cryptography.h>
 
 #include "WinInterface.h"
 #include "SiteAdvanced.h"
@@ -397,6 +399,10 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     // Note page
     NoteMemo->Lines->Text = FSessionData->Note;
 
+    // Encryption page
+    EncryptFilesCheck->Checked = !FSessionData->EncryptKey.IsEmpty();
+    GetEncryptKeyEdit()->Text = FSessionData->EncryptKey;
+
     // color
     SetSessionColor((TColor)FSessionData->Color);
   }
@@ -637,6 +643,9 @@ void __fastcall TSiteAdvancedDialog::SaveSession()
 
   // Note page
   FSessionData->Note = NoteMemo->Lines->Text;
+
+  // Encryption page
+  FSessionData->EncryptKey = EncryptFilesCheck->Checked ? GetEncryptKeyEdit()->Text : UnicodeString();
 
   // color
   FSessionData->Color = FColor;
@@ -993,6 +1002,10 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
     // TLS/SSL session reuse is not configurable for WebDAV/S3 yet
     SslSessionReuseCheck->Enabled = SslSheet->Enabled && FtpProtocol;
 
+    // encryption sheet
+    EncryptionSheet->Enabled = SftpProtocol;
+    EnableControl(EncryptFilesGroup, EncryptFilesCheck->Checked);
+
     UpdateNavigationTree();
 
     // color
@@ -1270,6 +1283,8 @@ void __fastcall TSiteAdvancedDialog::FormCloseQuery(TObject * /*Sender*/,
     // for tunnel SSH version is not configurable
     VerifyKey(StripPathQuotes(TunnelPrivateKeyEdit3->Text), ssh2only);
     VerifyCertificate(StripPathQuotes(TlsCertificateFileEdit->Text));
+    // Particularly for EncryptKey*Edit's
+    ExitActiveControl(this);
   }
 }
 //---------------------------------------------------------------------------
@@ -1578,5 +1593,53 @@ void __fastcall TSiteAdvancedDialog::PrivateKeyViewButtonClick(TObject * /*Sende
   UnicodeString Message = LoadStr(LOGIN_AUTHORIZED_KEYS);
   int Answers = qaOK | qaRetry;
   MoreMessageDialog(Message, Messages.get(), qtInformation, Answers, HELP_LOGIN_AUTHORIZED_KEYS, &Params);
+}
+//---------------------------------------------------------------------------
+TCustomEdit * __fastcall TSiteAdvancedDialog::GetEncryptKeyEdit(bool AShow)
+{
+  bool Show = (ShowEncryptionKeyCheck->Checked == AShow);
+  return (Show ? static_cast<TCustomEdit *>(EncryptKeyVisibleEdit) : static_cast<TCustomEdit *>(EncryptKeyPasswordEdit));
+}
+//---------------------------------------------------------------------------
+void __fastcall TSiteAdvancedDialog::ShowEncryptionKeyCheckClick(TObject * /*Sender*/)
+{
+  TCustomEdit * ShowEdit = GetEncryptKeyEdit();
+  TCustomEdit * HideEdit = GetEncryptKeyEdit(false);
+  if (DebugAlwaysTrue(ShowEdit->Visible != HideEdit->Visible) &&
+      DebugAlwaysTrue(!ShowEdit->Visible))
+  {
+    UnicodeString Key = HideEdit->Text;
+    ShowEdit->Visible = true;
+    ShowEdit->Text = Key;
+    HideEdit->Visible = false;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSiteAdvancedDialog::GenerateKeyButtonClick(TObject * /*Sender*/)
+{
+  UnicodeString Key = BytesToHex(GenerateEncryptKey());
+  GetEncryptKeyEdit()->Text = Key;
+
+  TClipboardHandler ClipboardHandler;
+  ClipboardHandler.Text = Key;
+
+  TMessageParams Params;
+  TQueryButtonAlias Aliases[1];
+  Aliases[0].Button = qaRetry;
+  Aliases[0].Alias = LoadStr(COPY_KEY_BUTTON);
+  Aliases[0].OnSubmit = &ClipboardHandler.Copy;
+  Params.Aliases = Aliases;
+  Params.AliasesCount = LENOF(Aliases);
+
+  MessageDialog(LoadStr(ENCRYPT_KEY_GENERATED), qtInformation, qaOK | qaRetry, HELP_FILE_ENCRYPTION, &Params);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSiteAdvancedDialog::EncryptKeyEditExit(TObject * /*Sender*/)
+{
+  UnicodeString HexKey = GetEncryptKeyEdit()->Text;
+  if (!HexKey.IsEmpty())
+  {
+    ValidateEncryptKey(HexToBytes(HexKey));
+  }
 }
 //---------------------------------------------------------------------------

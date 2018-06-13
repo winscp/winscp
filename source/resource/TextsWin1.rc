@@ -289,6 +289,7 @@ BEGIN
         PASSWORD_CHANGED, "Password has been changed."
         OPEN_TARGET_FOLDER, "Open &Target Folder"
         OPEN_DOWNLOADED_FILE, "Open &Downloaded File"
+        ENCRYPT_KEY_GENERATED, "**Encryption key was generated.**\n\nYou should safely backup the generated encryption key. If you lose it, you won't be able to read your files."
 
         WIN_FORMS_STRINGS, "WIN_FORMS_STRINGS"
         COPY_FILE, "%s file '%s' to %s:"

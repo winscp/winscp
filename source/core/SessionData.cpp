@@ -162,6 +162,8 @@ void __fastcall TSessionData::Default()
   WinTitle = L"";
   InternalEditorEncoding = -1;
 
+  EncryptKey = UnicodeString();
+
   ProxyMethod = ::pmNone;
   ProxyHost = L"proxy";
   ProxyPort = ProxyPortNumber;
@@ -420,6 +422,9 @@ void __fastcall TSessionData::NonPersistant()
   PROPERTY(MaxTlsVersion); \
   \
   PROPERTY(WinTitle); \
+  \
+  PROPERTY(EncryptKey); \
+  \
   PROPERTY(CustomParam1); \
   PROPERTY(CustomParam2);
 #define META_PROPERTIES \
@@ -769,6 +774,16 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   MinTlsVersion = static_cast<TTlsVersion>(Storage->ReadInteger(L"MinTlsVersion", MinTlsVersion));
   MaxTlsVersion = static_cast<TTlsVersion>(Storage->ReadInteger(L"MaxTlsVersion", MaxTlsVersion));
 
+  if (Storage->ValueExists(L"EncryptKeyPlain"))
+  {
+    EncryptKey = Storage->ReadString(L"EncryptKeyPlain", EncryptKey);
+    RewritePassword = true;
+  }
+  else
+  {
+    FEncryptKey = Storage->ReadStringAsBinaryData(L"EncryptKey", FEncryptKey);
+  }
+
   IsWorkspace = Storage->ReadBool(L"IsWorkspace", IsWorkspace);
   Link = Storage->ReadString(L"Link", Link);
 
@@ -863,6 +878,11 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage, bool PuttyImp
         if (!TunnelPassword.IsEmpty())
         {
           Storage->WriteBinaryDataAsString(L"TunnelPassword", FTunnelPassword);
+        }
+        Storage->DeleteValue(L"EncryptKeyPlain");
+        if (!EncryptKey.IsEmpty())
+        {
+          Storage->WriteBinaryDataAsString(L"EncryptKey", FEncryptKey);
         }
         Storage->CloseSubKey();
       }
@@ -1479,6 +1499,31 @@ void __fastcall TSessionData::SavePasswords(THierarchicalStorage * Storage, bool
         Storage->DeleteValue(L"TunnelPassword");
       }
     }
+
+    if (DoNotEncryptPasswords)
+    {
+      if (!FEncryptKey.IsEmpty())
+      {
+        Storage->WriteString(L"EncryptKeyPlain", EncryptKey);
+      }
+      else
+      {
+        Storage->DeleteValue(L"EncryptKeyPlain");
+      }
+      Storage->DeleteValue(L"EncryptKey");
+    }
+    else
+    {
+      if (!FEncryptKey.IsEmpty())
+      {
+        Storage->WriteBinaryDataAsString(L"EncryptKey", StronglyRecryptPassword(FEncryptKey, UserName+HostName));
+      }
+      else
+      {
+        Storage->DeleteValue(L"EncryptKey");
+      }
+      Storage->DeleteValue(L"EncryptKeyPlain");
+    }
   }
 }
 //---------------------------------------------------------------------
@@ -1489,6 +1534,7 @@ void __fastcall TSessionData::RecryptPasswords()
   ProxyPassword = ProxyPassword;
   TunnelPassword = TunnelPassword;
   Passphrase = Passphrase;
+  EncryptKey = EncryptKey;
 }
 //---------------------------------------------------------------------
 bool __fastcall TSessionData::HasPassword()
@@ -1656,7 +1702,8 @@ bool __fastcall TSessionData::MaskPasswordInOptionParameter(const UnicodeString 
       if (SameText(Key, L"ProxyPassword") ||
           SameText(Key, L"ProxyPasswordEnc") ||
           SameText(Key, L"TunnelPassword") ||
-          SameText(Key, L"TunnelPasswordPlain"))
+          SameText(Key, L"TunnelPasswordPlain") ||
+          SameText(Key, L"EncryptKey"))
       {
         Param = Key + L"=" + PasswordMask;
         Result = true;
@@ -1683,6 +1730,10 @@ void __fastcall TSessionData::MaskPasswords()
   if (!TunnelPassword.IsEmpty())
   {
     TunnelPassword = PasswordMask;
+  }
+  if (!EncryptKey.IsEmpty())
+  {
+    EncryptKey = PasswordMask;
   }
   if (!Passphrase.IsEmpty())
   {
@@ -2233,6 +2284,7 @@ void __fastcall TSessionData::SetHostName(UnicodeString value)
     // HostName is key for password encryption
     UnicodeString XPassword = Password;
     UnicodeString XNewPassword = Password;
+    UnicodeString XEncryptKey = EncryptKey;
 
     // This is now hardly used as hostname is parsed directly on login dialog.
     // But can be used when importing sites from PuTTY, as it allows same format too.
@@ -2247,8 +2299,10 @@ void __fastcall TSessionData::SetHostName(UnicodeString value)
 
     Password = XPassword;
     NewPassword = XNewPassword;
+    EncryptKey = XEncryptKey;
     Shred(XPassword);
     Shred(XNewPassword);
+    Shred(XEncryptKey);
   }
 }
 //---------------------------------------------------------------------
@@ -2300,11 +2354,14 @@ void __fastcall TSessionData::SetUserName(UnicodeString value)
     // UserName is key for password encryption
     UnicodeString XPassword = Password;
     UnicodeString XNewPassword = NewPassword;
+    UnicodeString XEncryptKey = EncryptKey;
     SET_SESSION_PROPERTY(UserName);
     Password = XPassword;
     NewPassword = XNewPassword;
+    EncryptKey = XEncryptKey;
     Shred(XPassword);
     Shred(XNewPassword);
+    Shred(XEncryptKey);
   }
 }
 //---------------------------------------------------------------------
@@ -3846,6 +3903,17 @@ void __fastcall TSessionData::SetNote(UnicodeString value)
 void __fastcall TSessionData::SetWinTitle(UnicodeString value)
 {
   SET_SESSION_PROPERTY(WinTitle);
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall TSessionData::GetEncryptKey() const
+{
+  return DecryptPassword(FEncryptKey, UserName+HostName);
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetEncryptKey(UnicodeString avalue)
+{
+  RawByteString value = EncryptPassword(avalue, UserName+HostName);
+  SET_SESSION_PROPERTY(EncryptKey);
 }
 //---------------------------------------------------------------------
 UnicodeString __fastcall TSessionData::GetInfoTip()

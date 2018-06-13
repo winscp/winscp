@@ -1296,5 +1296,10 @@ void call_aes_decrypt(void * ctx, unsigned int * block)
   aes_decrypt((AESContext *)ctx, block);
 }
 
+void call_aes_sdctr(unsigned char *blk, int len, void *ctx)
+{
+  aes_sdctr(blk, len, (AESContext *)ctx);
+}
+
 #endif
 #endif // WINSCP_VS

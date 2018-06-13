@@ -1035,7 +1035,7 @@ void __fastcall TScpCommanderForm::CreateRemoteDirectory(const UnicodeString & P
     CreateRemoteDirectory(Dir);
   }
   TRemoteProperties Properties = GUIConfiguration->NewDirectoryProperties;
-  RemoteDirView->CreateDirectoryEx(Path, &Properties);
+  TCustomScpExplorerForm::CreateRemoteDirectory(Path, Properties);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::SynchronizeBrowsingLocal(

@@ -705,11 +705,18 @@ Word __fastcall TCustomUnixDriveView::NodeOverlayIndexes(TTreeNode * Node)
   if (Node->Parent != NULL)
   {
     TRemoteFile * File = NodeFile(Node);
-    if ((File != NULL) && (File->IsSymLink))
+    if (File != NULL)
     {
-      // broken link cannot probably happen anyway
-      // as broken links are treated as files
-      Result |= File->BrokenLink ? oiBrokenLink : oiLink;
+      if (File->IsSymLink)
+      {
+        // broken link cannot probably happen anyway
+        // as broken links are treated as files
+        Result |= File->BrokenLink ? oiBrokenLink : oiLink;
+      }
+      if (File->IsEncrypted)
+      {
+        Result |= oiEncrypted;
+      }
     }
   }
   return Result;

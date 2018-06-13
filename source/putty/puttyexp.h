@@ -68,6 +68,8 @@ void call_aes_free_context(void * handle);
 void call_aes_setup(void * ctx, int blocklen, unsigned char * key, int keylen);
 void call_aes_encrypt(void * ctx, unsigned int * block);
 void call_aes_decrypt(void * ctx, unsigned int * block);
+void call_aes_sdctr(unsigned char *blk, int len, void *ctx);
+void aes_iv(void *handle, unsigned char *iv);
 
 // from sshsha.c
 

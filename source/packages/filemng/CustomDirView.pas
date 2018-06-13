@@ -22,7 +22,7 @@ const
   oiLink = $02;
   oiBrokenLink = $04;
   oiPartial = $08;
-  oiShared = $10; // not used
+  oiEncrypted = $10;
   DefaultHistoryCount = 200;
 
 const
@@ -536,6 +536,7 @@ const
   ResLink = 'LINK%2.2d';
   ResBrokenLink = 'BROKEN%2.2d';
   ResPartial = 'PARTIAL%2.2d';
+  ResEncrypted = 'ENCRYPTED%2.2d';
 
 var
   WinDir: string;
@@ -771,6 +772,7 @@ begin
   GetOverlayBitmap(Result, Format(ResLink, [Size]));
   GetOverlayBitmap(Result, Format(ResBrokenLink, [Size]));
   GetOverlayBitmap(Result, Format(ResPartial, [Size]));
+  GetOverlayBitmap(Result, Format(ResEncrypted, [Size]));
 end;
 
 

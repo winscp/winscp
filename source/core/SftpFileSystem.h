@@ -8,6 +8,7 @@ class TSFTPPacket;
 class TOverwriteFileParams;
 struct TSFTPSupport;
 class TSecureShell;
+class TEncryption;
 //---------------------------------------------------------------------------
 enum TSFTPOverwriteMode { omOverwrite, omAppend, omResume };
 extern const int SFTPMaxVersion;
@@ -64,7 +65,7 @@ public:
     const UnicodeString & TargetDir, UnicodeString & DestFileName, int Attrs,
     const TCopyParamType * CopyParam, int Params, TFileOperationProgressType * OperationProgress,
     unsigned int Flags, TDownloadSessionAction & Action);
-  virtual void __fastcall CreateDirectory(const UnicodeString DirName);
+  virtual void __fastcall CreateDirectory(const UnicodeString & DirName, bool Encrypt);
   virtual void __fastcall CreateLink(const UnicodeString FileName, const UnicodeString PointTo, bool Symbolic);
   virtual void __fastcall DeleteFile(const UnicodeString FileName,
     const TRemoteFile * File, int Params, TRmSessionAction & Action);
@@ -172,7 +173,7 @@ protected:
     TFileOperationProgressType * OperationProgress, unsigned int Flags,
     TUploadSessionAction & Action, bool & ChildError);
   RawByteString __fastcall SFTPOpenRemoteFile(const UnicodeString & FileName,
-    unsigned int OpenType, __int64 Size = -1);
+    unsigned int OpenType, bool EncryptNewFiles = false, __int64 Size = -1);
   int __fastcall SFTPOpenRemote(void * AOpenParams, void * Param2);
   void __fastcall SFTPCloseRemote(const RawByteString Handle,
     const UnicodeString FileName, TFileOperationProgressType * OperationProgress,
@@ -193,6 +194,10 @@ protected:
     TFileOperationProgressType * OperationProgress);
   inline int __fastcall PacketLength(unsigned char * LenBuf, int ExpectedType);
   void __fastcall Progress(TFileOperationProgressType * OperationProgress);
+  void AddPathString(TSFTPPacket & Packet, const UnicodeString & Value, bool EncryptNewFiles = false);
+  void __fastcall WriteLocalFile(
+    TStream * FileStream, TFileBuffer & BlockBuf, const UnicodeString & LocalFileName,
+    TFileOperationProgressType * OperationProgress);
 };
 //---------------------------------------------------------------------------
 #endif // SftpFileSystemH

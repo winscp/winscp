@@ -262,6 +262,14 @@ __published:
   TMenuItem *PrivateKeyGenerateItem;
   TMenuItem *PrivateKeyUploadItem;
   TButton *PrivateKeyViewButton;
+  TTabSheet *EncryptionSheet;
+  TCheckBox *EncryptFilesCheck;
+  TGroupBox *EncryptFilesGroup;
+  TLabel *Label13;
+  TPasswordEdit *EncryptKeyPasswordEdit;
+  TCheckBox *ShowEncryptionKeyCheck;
+  TButton *GenerateKeyButton;
+  TEdit *EncryptKeyVisibleEdit;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall PageControlChange(TObject *Sender);
@@ -298,6 +306,9 @@ __published:
   void __fastcall PrivateKeyGenerateItemClick(TObject *Sender);
   void __fastcall PrivateKeyToolsButtonClick(TObject *Sender);
   void __fastcall PrivateKeyViewButtonClick(TObject *Sender);
+  void __fastcall ShowEncryptionKeyCheckClick(TObject *Sender);
+  void __fastcall GenerateKeyButtonClick(TObject *Sender);
+  void __fastcall EncryptKeyEditExit(TObject *Sender);
 
 
 public:
@@ -342,6 +353,7 @@ private:
   int __fastcall TlsVersionToIndex(TTlsVersion TlsVersion);
   bool __fastcall IsNeon(TFSProtocol FSProtocol);
   void __fastcall PrivateKeyCreatedOrModified(TObject * Sender, const UnicodeString FileName);
+  TCustomEdit * __fastcall GetEncryptKeyEdit(bool AShow = true);
 };
 //----------------------------------------------------------------------------
 #endif

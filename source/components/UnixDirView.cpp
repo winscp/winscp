@@ -277,6 +277,10 @@ Word __fastcall TUnixDirView::ItemOverlayIndexes(TListItem * Item)
   {
     Result |= ITEMFILE->BrokenLink ? oiBrokenLink : oiLink;
   }
+  if (ITEMFILE->IsEncrypted)
+  {
+    Result |= oiEncrypted;
+  }
   return Result;
 #else
   DebugUsedParam(Item);

@@ -163,6 +163,15 @@ object CopyParamsFrame: TCopyParamsFrame
       TabOrder = 4
       OnClick = ControlChange
     end
+    object EncryptNewFilesCheck: TCheckBox
+      Left = 16
+      Top = 150
+      Width = 173
+      Height = 17
+      Caption = '&Encrypt new files'
+      TabOrder = 5
+      OnClick = ControlChange
+    end
   end
   object ChangeCaseGroup: TGroupBox
     Left = 267

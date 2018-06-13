@@ -1418,7 +1418,10 @@ void __fastcall TScript::MkDirProc(TScriptProcParams * Parameters)
 {
   CheckSession();
 
-  FTerminal->CreateDirectory(Parameters->Param[1]);
+  TRemoteProperties Properties;
+  Properties.Valid = TValidProperties() << vpEncrypt;
+  Properties.Encrypt = FCopyParam.EncryptNewFiles;
+  FTerminal->CreateDirectory(Parameters->Param[1], &Properties);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScript::GetProc(TScriptProcParams * Parameters)

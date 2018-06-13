@@ -50,6 +50,7 @@ __published:
   TCheckBox *NewerOnlyCheck;
   TCheckBox *RemoveCtrlZAndBOMCheck;
   TCheckBox *PreserveTimeDirsCheck;
+  TCheckBox *EncryptNewFilesCheck;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall ValidateMaskComboExit(TObject *Sender);
   void __fastcall RightsEditButtonClick(TObject *Sender);

@@ -286,6 +286,7 @@
 #define PASSWORD_CHANGED        1576
 #define OPEN_TARGET_FOLDER      1577
 #define OPEN_DOWNLOADED_FILE    1578
+#define ENCRYPT_KEY_GENERATED   1579
 
 #define WIN_FORMS_STRINGS       1600
 #define COPY_FILE               1605

@@ -4019,6 +4019,14 @@ bool __fastcall TCustomScpExplorerForm::RemoteTransferFiles(
   return Result;
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::CreateRemoteDirectory(
+  const UnicodeString & Path, TRemoteProperties & Properties)
+{
+  Properties.Valid = Properties.Valid << vpEncrypt;
+  Properties.Encrypt = GUIConfiguration->CurrentCopyParam.EncryptNewFiles;
+  RemoteDirView->CreateDirectoryEx(Path, &Properties);
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::CreateDirectory(TOperationSide Side)
 {
   Side = GetSide(Side);
@@ -4038,7 +4046,7 @@ void __fastcall TCustomScpExplorerForm::CreateDirectory(TOperationSide Side)
       {
         GUIConfiguration->NewDirectoryProperties = Properties;
       }
-      RemoteDirView->CreateDirectoryEx(Name, &Properties);
+      CreateRemoteDirectory(Name, Properties);
     }
     else
     {

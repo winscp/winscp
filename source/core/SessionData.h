@@ -224,6 +224,7 @@ private:
   bool FOverrideCachedHostKey;
   UnicodeString FNote;
   UnicodeString FWinTitle;
+  RawByteString FEncryptKey;
 
   UnicodeString FOrigHostName;
   int FOrigPortNumber;
@@ -394,6 +395,9 @@ private:
   void __fastcall SetHostKey(UnicodeString value);
   void __fastcall SetNote(UnicodeString value);
   void __fastcall SetWinTitle(UnicodeString value);
+  UnicodeString __fastcall GetEncryptKey() const;
+  void __fastcall SetEncryptKey(UnicodeString value);
+
   TDateTime __fastcall GetTimeoutDT();
   void __fastcall SavePasswords(THierarchicalStorage * Storage, bool PuttyExport, bool DoNotEncryptPasswords);
   UnicodeString __fastcall GetLocalName();
@@ -641,6 +645,8 @@ public:
   __property bool OverrideCachedHostKey = { read = FOverrideCachedHostKey };
   __property UnicodeString Note = { read = FNote, write = SetNote };
   __property UnicodeString WinTitle = { read = FWinTitle, write = SetWinTitle };
+  __property UnicodeString EncryptKey = { read = GetEncryptKey, write = SetEncryptKey };
+
   __property UnicodeString StorageKey = { read = GetStorageKey };
   __property UnicodeString SiteKey = { read = GetSiteKey };
   __property UnicodeString OrigHostName = { read = FOrigHostName };

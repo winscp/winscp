@@ -1188,7 +1188,7 @@ void __fastcall TSCPFileSystem::CopyFile(const UnicodeString FileName, const TRe
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSCPFileSystem::CreateDirectory(const UnicodeString DirName)
+void __fastcall TSCPFileSystem::CreateDirectory(const UnicodeString & DirName, bool /*Encrypt*/)
 {
   ExecCommand(fsCreateDirectory, ARRAYOFCONST((DelimitStr(DirName))));
 }

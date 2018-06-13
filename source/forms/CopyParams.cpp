@@ -99,6 +99,7 @@ void __fastcall TCopyParamsFrame::SetParams(TCopyParamType value)
   SpeedCombo->Text = SetSpeedLimit(value.CPSLimit);
 
   NewerOnlyCheck->Checked = value.NewerOnly;
+  EncryptNewFilesCheck->Checked = value.EncryptNewFiles;
 
   *FParams = value;
 
@@ -153,6 +154,7 @@ TCopyParamType __fastcall TCopyParamsFrame::GetParams()
   Result.CPSLimit = GetSpeedLimit(SpeedCombo->Text);
 
   Result.NewerOnly = NewerOnlyCheck->Checked;
+  Result.EncryptNewFiles = EncryptNewFilesCheck->Checked;
 
   return Result;
 }
@@ -212,6 +214,8 @@ void __fastcall TCopyParamsFrame::UpdateControls()
     FLAGCLEAR(CopyParamAttrs, cpaIncludeMaskOnly));
   EnableControl(NewerOnlyCheck, FLAGCLEAR(CopyParamAttrs, cpaIncludeMaskOnly) &&
     FLAGCLEAR(CopyParamAttrs, cpaNoNewerOnly) && Enabled);
+  EnableControl(EncryptNewFilesCheck, FLAGCLEAR(CopyParamAttrs, cpaIncludeMaskOnly) &&
+    FLAGCLEAR(CopyParamAttrs, cpaNoEncryptNewFiles) && Enabled);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamsFrame::ControlChange(TObject * /*Sender*/)

@@ -1674,7 +1674,7 @@ void __fastcall TFTPFileSystem::Source(
   FLastDataSent = Now();
 }
 //---------------------------------------------------------------------------
-void __fastcall TFTPFileSystem::CreateDirectory(const UnicodeString ADirName)
+void __fastcall TFTPFileSystem::CreateDirectory(const UnicodeString & ADirName, bool /*Encrypt*/)
 {
   UnicodeString DirName = AbsolutePath(ADirName, false);
 

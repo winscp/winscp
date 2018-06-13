@@ -105,6 +105,7 @@ private:
   UnicodeString FFullFileName;
   int FIsHidden;
   UnicodeString FTypeName;
+  bool FIsEncrypted;
   int __fastcall GetAttr();
   bool __fastcall GetBrokenLink();
   bool __fastcall GetIsDirectory() const;
@@ -144,6 +145,7 @@ public:
   void __fastcall ShiftTimeInSeconds(__int64 Seconds);
   bool __fastcall IsTimeShiftingApplicable();
   void __fastcall Complete();
+  void __fastcall SetEncrypted();
 
   static bool __fastcall IsTimeShiftingApplicable(TModificationFmt ModificationFmt);
   static void __fastcall ShiftTimeInSeconds(TDateTime & DateTime, TModificationFmt ModificationFmt, __int64 Seconds);
@@ -181,6 +183,7 @@ public:
   __property bool IsThisDirectory = { read = GetIsThisDirectory };
   __property bool IsInaccesibleDirectory  = { read=GetIsInaccesibleDirectory };
   __property UnicodeString Extension  = { read=GetExtension };
+  __property bool IsEncrypted  = { read = FIsEncrypted };
 };
 //---------------------------------------------------------------------------
 class TRemoteDirectoryFile : public TRemoteFile
@@ -410,8 +413,8 @@ private:
   void __fastcall SetRightUndef(TRight Right, TState value);
 };
 //---------------------------------------------------------------------------
-enum TValidProperty { vpRights, vpGroup, vpOwner, vpModification, vpLastAccess };
-typedef Set<TValidProperty, vpRights, vpLastAccess> TValidProperties;
+enum TValidProperty { vpRights, vpGroup, vpOwner, vpModification, vpLastAccess, vpEncrypt };
+typedef Set<TValidProperty, vpRights, vpEncrypt> TValidProperties;
 class TRemoteProperties
 {
 public:
@@ -423,6 +426,7 @@ public:
   TRemoteToken Owner;
   __int64 Modification; // unix time
   __int64 LastAccess; // unix time
+  bool Encrypt;
 
   __fastcall TRemoteProperties();
   __fastcall TRemoteProperties(const TRemoteProperties & rhp);

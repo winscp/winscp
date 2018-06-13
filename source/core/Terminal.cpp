@@ -24,6 +24,7 @@
 #include "HelpCore.h"
 #include "CoreMain.h"
 #include "Queue.h"
+#include "Cryptography.h"
 #include <openssl/pkcs12.h>
 #include <openssl/err.h>
 
@@ -1258,6 +1259,8 @@ void __fastcall TTerminal::Open()
   ReflectSettings();
   try
   {
+    FEncryptKey = HexToBytes(FSessionData->EncryptKey);
+
     DoInformation(L"", true, 1);
     try
     {
@@ -2349,6 +2352,8 @@ void __fastcall TTerminal::ClearCaches()
     FCommandSession->ClearCaches();
   }
   FFileSystem->ClearCaches();
+  FEncryptedFileNames.clear();
+  FFoldersScannedForEncryptedFiles.clear();
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::ClearCachedFileList(const UnicodeString Path,
@@ -3426,6 +3431,12 @@ void __fastcall TTerminal::CustomReadDirectory(TRemoteFileList * FileList)
   {
     try
     {
+      // Record even an attempt, to avoid listing a directory over and over again, when it is not readable actually
+      if (IsEncryptingFiles())
+      {
+        FFoldersScannedForEncryptedFiles.insert(FileList->Directory);
+      }
+
       FFileSystem->ReadDirectory(FileList);
     }
     catch (Exception & E)
@@ -3887,11 +3898,12 @@ TUsableCopyParamAttrs __fastcall TTerminal::UsableCopyParamAttrs(int Params)
     FLAGMASK(!IsCapable[fcRemoveCtrlZUpload], cpaNoRemoveCtrlZ) |
     FLAGMASK(!IsCapable[fcRemoveBOMUpload], cpaNoRemoveBOM) |
     FLAGMASK(!IsCapable[fcPreservingTimestampDirs], cpaNoPreserveTimeDirs) |
-    FLAGMASK(!IsCapable[fcResumeSupport], cpaNoResumeSupport);
+    FLAGMASK(!IsCapable[fcResumeSupport], cpaNoResumeSupport) |
+    FLAGMASK(!IsEncryptingFiles(), cpaNoEncryptNewFiles);
   Result.Download = Result.General | cpaNoClearArchive |
     cpaNoIgnorePermErrors |
     // May be already set in General flags, but it's unconditional here
-    cpaNoRights | cpaNoRemoveCtrlZ | cpaNoRemoveBOM;
+    cpaNoRights | cpaNoRemoveCtrlZ | cpaNoRemoveBOM | cpaNoEncryptNewFiles;
   Result.Upload = Result.General | cpaNoPreserveReadOnly |
     FLAGMASK(!IsCapable[fcPreservingTimestampUpload], cpaNoPreserveTime);
   return Result;
@@ -3985,6 +3997,8 @@ void __fastcall TTerminal::DeleteFile(UnicodeString FileName,
     LogEvent(FORMAT(L"Deleting file \"%s\".", (FileName)));
     FileModified(File, FileName, true);
     DoDeleteFile(FileName, File, Params);
+    // Forget if file was or was not encrypted and use user preferences, if we ever recreate it.
+    FEncryptedFileNames.erase(AbsolutePath(FileName, true));
     ReactOnCommand(fsDeleteFile);
   }
 }
@@ -4594,17 +4608,19 @@ bool __fastcall TTerminal::CopyFiles(TStrings * FileList, const UnicodeString Ta
   return ProcessFiles(FileList, foRemoteCopy, CopyFile, &Params);
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::CreateDirectory(const UnicodeString DirName,
-  const TRemoteProperties * Properties)
+void __fastcall TTerminal::CreateDirectory(const UnicodeString & DirName, const TRemoteProperties * Properties)
 {
   DebugAssert(FFileSystem);
+  DebugAssert(Properties != NULL);
   EnsureNonExistence(DirName);
   FileModified(NULL, DirName);
 
   LogEvent(FORMAT(L"Creating directory \"%s\".", (DirName)));
-  DoCreateDirectory(DirName);
+  bool Encrypt = Properties->Valid.Contains(vpEncrypt) && Properties->Encrypt;
+  DoCreateDirectory(DirName, Encrypt);
 
-  if ((Properties != NULL) && !Properties->Valid.Empty())
+  TValidProperties RemainingPropeties = Properties->Valid - (TValidProperties() << vpEncrypt);
+  if (!RemainingPropeties.Empty())
   {
     DoChangeFileProperties(DirName, NULL, Properties);
   }
@@ -4612,7 +4628,7 @@ void __fastcall TTerminal::CreateDirectory(const UnicodeString DirName,
   ReactOnCommand(fsCreateDirectory);
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::DoCreateDirectory(const UnicodeString DirName)
+void __fastcall TTerminal::DoCreateDirectory(const UnicodeString & DirName, bool Encrypt)
 {
   TRetryOperationLoop RetryLoop(this);
   do
@@ -4621,7 +4637,7 @@ void __fastcall TTerminal::DoCreateDirectory(const UnicodeString DirName)
     try
     {
       DebugAssert(FFileSystem);
-      FFileSystem->CreateDirectory(DirName);
+      FFileSystem->CreateDirectory(DirName, Encrypt);
     }
     catch(Exception & E)
     {
@@ -6731,9 +6747,11 @@ void __fastcall TTerminal::CreateTargetDirectory(
   TRemoteProperties Properties;
   if (CopyParam->PreserveRights)
   {
-    Properties.Valid = TValidProperties() << vpRights;
+    Properties.Valid = Properties.Valid << vpRights;
     Properties.Rights = CopyParam->RemoteFileRights(Attrs);
   }
+  Properties.Valid = Properties.Valid << vpEncrypt;
+  Properties.Encrypt = CopyParam->EncryptNewFiles;
   CreateDirectory(DirectoryPath, &Properties);
 }
 //---------------------------------------------------------------------------
@@ -7304,8 +7322,13 @@ void __fastcall TTerminal::Sink(
 
     // Suppose same data size to transfer as to write
     // (not true with ASCII transfer)
-    OperationProgress->SetTransferSize(File->Size);
-    OperationProgress->SetLocalSize(OperationProgress->TransferSize);
+    __int64 TransferSize = File->Size;
+    OperationProgress->SetLocalSize(TransferSize);
+    if (IsFileEncrypted(FileName))
+    {
+      TransferSize += TEncryption::GetOverhead();
+    }
+    OperationProgress->SetTransferSize(TransferSize);
 
     int Attrs;
     FILE_OPERATION_LOOP_BEGIN
@@ -7694,6 +7717,96 @@ bool __fastcall TTerminal::IsThisOrChild(TTerminal * Terminal)
   return
     (this == Terminal) ||
     ((FCommandSession != NULL) && (FCommandSession == Terminal));
+}
+//---------------------------------------------------------------------------
+TTerminal::TEncryptedFileNames::const_iterator __fastcall TTerminal::GetEncryptedFileName(const UnicodeString & Path)
+{
+  UnicodeString FileDir = UnixExtractFileDir(Path);
+
+  // If we haven't been in this folder yet, read it to collect mapping to encrypted file names.
+  if (FFoldersScannedForEncryptedFiles.find(FileDir) == FFoldersScannedForEncryptedFiles.end())
+  {
+    try
+    {
+      delete DoReadDirectoryListing(FileDir, true);
+    }
+    catch (Exception & E)
+    {
+      if (!Active)
+      {
+        throw;
+      }
+    }
+
+    FFoldersScannedForEncryptedFiles.insert(FileDir);
+  }
+
+  TEncryptedFileNames::const_iterator Result = FEncryptedFileNames.find(Path);
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TTerminal::IsFileEncrypted(const UnicodeString & Path, bool EncryptNewFiles)
+{
+  // can be optimized
+  bool Result = (EncryptFileName(Path, EncryptNewFiles) != Path);
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TTerminal::EncryptFileName(const UnicodeString & Path, bool EncryptNewFiles)
+{
+  UnicodeString Result = Path;
+  if (IsEncryptingFiles() && !IsUnixRootPath(Path))
+  {
+    UnicodeString FileName = UnixExtractFileName(Path);
+    UnicodeString FileDir = UnixExtractFileDir(Path);
+
+    if (!FileName.IsEmpty() && (FileName != PARENTDIRECTORY) && (FileName != THISDIRECTORY))
+    {
+      TEncryptedFileNames::const_iterator I = GetEncryptedFileName(Path);
+      if (I != FEncryptedFileNames.end())
+      {
+        FileName = I->second;
+      }
+      else if (EncryptNewFiles)
+      {
+        TEncryption Encryption(FEncryptKey);
+        FileName = Encryption.EncryptFileName(FileName);
+        FEncryptedFileNames.insert(std::make_pair(Path, FileName));
+      }
+    }
+
+    FileDir = EncryptFileName(FileDir, EncryptNewFiles);
+    Result = UnixCombinePaths(FileDir, FileName);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TTerminal::DecryptFileName(const UnicodeString & Path)
+{
+  UnicodeString Result = Path;
+  if (IsEncryptingFiles() && !IsUnixRootPath(Path))
+  {
+    UnicodeString FileName = UnixExtractFileName(Path);
+    UnicodeString FileNameEncrypted = FileName;
+
+    bool Encrypted = TEncryption::IsEncryptedFileName(FileName);
+    if (Encrypted)
+    {
+      TEncryption Encryption(FEncryptKey);
+      FileName = Encryption.DecryptFileName(FileName);
+
+      UnicodeString FileDir = UnixExtractFileDir(Path);
+      FileDir = DecryptFileName(FileDir);
+      Result = UnixCombinePaths(FileDir, FileName);
+    }
+
+    if (Encrypted || (FEncryptedFileNames.find(Result) == FEncryptedFileNames.end()))
+    {
+      // This may overwrite another variant of encryption
+      FEncryptedFileNames[Result] = FileNameEncrypted;
+    }
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
