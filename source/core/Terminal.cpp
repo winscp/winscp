@@ -7712,13 +7712,6 @@ bool __fastcall TTerminal::CanRecurseToDirectory(const TRemoteFile * File)
   return !File->IsSymLink || FSessionData->FollowDirectorySymlinks;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TTerminal::IsThisOrChild(TTerminal * Terminal)
-{
-  return
-    (this == Terminal) ||
-    ((FCommandSession != NULL) && (FCommandSession == Terminal));
-}
-//---------------------------------------------------------------------------
 TTerminal::TEncryptedFileNames::const_iterator __fastcall TTerminal::GetEncryptedFileName(const UnicodeString & Path)
 {
   UnicodeString FileDir = UnixExtractFileDir(Path);
