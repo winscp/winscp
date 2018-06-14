@@ -21,6 +21,16 @@
 const UnicodeString AllFilesMask(L"*");
 const UnicodeString NoOpOperationMask(L"*");
 //---------------------------------------------------------------------------
+static UnicodeString ExcludeTrailingBackslashUnlessRoot(const UnicodeString & Path)
+{
+  UnicodeString Result = ExcludeTrailingBackslash(Path);
+  if (SameText(Result, ExtractFileDrive(Result)))
+  {
+    Result = IncludeTrailingBackslash(Path);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall DoGenerateUrlDialog(TSessionData * Data, TStrings * Paths)
 {
   std::unique_ptr<TGenerateUrlDialog> Dialog(
@@ -133,7 +143,7 @@ __fastcall TGenerateUrlDialog::TGenerateUrlDialog(
     if (FToRemote)
     {
       UnicodeString FirstPath = Paths->Strings[0];
-      FSourcePath = FToRemote ? ExcludeTrailingBackslash(ExtractFilePath(FirstPath)) : UnixExtractFilePath(FirstPath);
+      FSourcePath = FToRemote ? ExcludeTrailingBackslashUnlessRoot(ExtractFilePath(FirstPath)) : UnixExtractFilePath(FirstPath);
       for (int Index = 0; Index < FPaths->Count; Index++)
       {
         FPaths->Strings[Index] = ExtractFileName(FPaths->Strings[Index]);
@@ -306,7 +316,7 @@ UnicodeString __fastcall TGenerateUrlDialog::GenerateScript(UnicodeString & Scri
     else
     {
       Commands.push_back(RtfScriptCommand(L"cd") + L" " + RtfText(QuoteStringParam(FSourcePath)));
-      Commands.push_back(RtfScriptCommand(L"lcd") + L" " + RtfText(QuoteStringParam(ExcludeTrailingBackslash(FPath))));
+      Commands.push_back(RtfScriptCommand(L"lcd") + L" " + RtfText(QuoteStringParam(ExcludeTrailingBackslashUnlessRoot(FPath))));
       TransferCommand = L"get";
     }
 
