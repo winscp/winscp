@@ -793,9 +793,10 @@ UnicodeString __fastcall CampaignUrl(UnicodeString URL)
 {
   int CurrentCompoundVer = Configuration->CompoundVersion;
   UnicodeString Version = VersionStrFromCompoundVersion(CurrentCompoundVer);
+  UnicodeString Medium = IsUWP() ? L"uwp" : L"app";
   // Beware that these parameters may get truncated if URL is too long,
   // such as with ERROR_REPORT_URL2
-  UnicodeString Params = FORMAT(L"utm_source=winscp&utm_medium=app&utm_campaign=%s", (Version));
+  UnicodeString Params = FORMAT(L"utm_source=winscp&utm_medium=%s&utm_campaign=%s", (Medium, Version));
 
   return AppendUrlParams(URL, Params);
 }
