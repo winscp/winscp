@@ -126,7 +126,7 @@ object GenerateUrlDialog: TGenerateUrlDialog
       object ScriptFormatCombo: TComboBox
         Left = 112
         Top = 5
-        Width = 103
+        Width = 121
         Height = 21
         Style = csDropDownList
         TabOrder = 0
@@ -134,7 +134,8 @@ object GenerateUrlDialog: TGenerateUrlDialog
         Items.Strings = (
           'Script file'
           'Batch file'
-          'Command-line')
+          'Command-line'
+          'PowerShell script')
       end
     end
     object AssemblySheet: TTabSheet
@@ -160,7 +161,7 @@ object GenerateUrlDialog: TGenerateUrlDialog
       object AssemblyLanguageCombo: TComboBox
         Left = 112
         Top = 5
-        Width = 103
+        Width = 121
         Height = 21
         Style = csDropDownList
         TabOrder = 0

@@ -8,7 +8,7 @@
 //---------------------------------------------------------------------------
 enum TEditor { edInternal, edExternal, edOpen };
 enum TGenerateUrlCodeTarget { guctUrl, guctScript, guctAssembly };
-enum TScriptFormat { sfScriptFile, sfBatchFile, sfCommandLine };
+enum TScriptFormat { sfScriptFile, sfBatchFile, sfCommandLine, sfPowerShell };
 enum TLocaleFlagOverride { lfoLanguageIfRecommended, lfoLanguage, lfoAlways, lfoNever };
 //---------------------------------------------------------------------------
 #define C(Property) (Property != rhc.Property) ||

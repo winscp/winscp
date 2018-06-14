@@ -255,7 +255,7 @@ UnicodeString __fastcall RtfSwitch(
   const UnicodeString & Name, const UnicodeString & Link, const UnicodeString & Value, bool Rtf = true);
 UnicodeString __fastcall RtfSwitch(
   const UnicodeString & Name, const UnicodeString & Link, int Value, bool Rtf = true);
-UnicodeString __fastcall RtfEscapeParam(UnicodeString Param);
+UnicodeString __fastcall RtfEscapeParam(UnicodeString Param, bool PowerShellEscape);
 UnicodeString __fastcall RtfRemoveHyperlinks(UnicodeString Text);
 UnicodeString __fastcall ScriptCommandLink(const UnicodeString & Command);
 UnicodeString __fastcall AssemblyBoolean(TAssemblyLanguage Language, bool Value);

@@ -3415,9 +3415,14 @@ UnicodeString __fastcall RtfRemoveHyperlinks(UnicodeString Text)
   return Text;
 }
 //---------------------------------------------------------------------
-UnicodeString __fastcall RtfEscapeParam(UnicodeString Param)
+UnicodeString __fastcall RtfEscapeParam(UnicodeString Param, bool PowerShellEscape)
 {
   const UnicodeString Quote(L"\"");
+  UnicodeString Escape(Quote);
+  if (PowerShellEscape)
+  {
+    Escape = "`" + Escape + "`";
+  }
   // Equivalent of EscapeParam, except that it does not double quotes in HYPERLINK.
   // See also RtfRemoveHyperlinks.
   int Index = 1;
@@ -3440,8 +3445,8 @@ UnicodeString __fastcall RtfEscapeParam(UnicodeString Param)
       }
       else
       {
-        Param.Insert(Quote, P1);
-        Index = P1 + (Quote.Length() * 2);
+        Param.Insert(Escape, P1);
+        Index = P1 + (Escape.Length() + Quote.Length());
       }
     }
   }

@@ -240,7 +240,7 @@ UnicodeString __fastcall RtfCommandlineSwitch(const UnicodeString & Switch, cons
 //---------------------------------------------------------------------------
 static UnicodeString __fastcall QuoteStringParam(UnicodeString S)
 {
-  return AddQuotes(RtfEscapeParam(S));
+  return AddQuotes(RtfEscapeParam(S, false));
 }
 //---------------------------------------------------------------------------
 // Keep in sync with .NET Session.EscapeFileMask
@@ -366,6 +366,8 @@ UnicodeString __fastcall TGenerateUrlDialog::GenerateScript(UnicodeString & Scri
   Commands.push_back(UnicodeString());
   Commands.push_back(RtfScriptCommand(L"exit"));
 
+  UnicodeString ComExeName = ChangeFileExt(ExeName, L".com");
+
   if (ScriptFormatCombo->ItemIndex == sfScriptFile)
   {
     for (TCommands::const_iterator I = Commands.begin(); I != Commands.end(); I++)
@@ -395,8 +397,6 @@ UnicodeString __fastcall TGenerateUrlDialog::GenerateScript(UnicodeString & Scri
   }
   else if (ScriptFormatCombo->ItemIndex == sfBatchFile)
   {
-    UnicodeString ComExeName = ChangeFileExt(ExeName, L".com");
-
     Result =
       RtfScriptPlaceholder(L"@echo off") + RtfPara +
       RtfPara +
@@ -420,7 +420,7 @@ UnicodeString __fastcall TGenerateUrlDialog::GenerateScript(UnicodeString & Scri
         }
         else
         {
-          Result += RtfEscapeParam(ReplaceStr(Command, L"%", L"%%"));
+          Result += RtfEscapeParam(ReplaceStr(Command, L"%", L"%%"), false);
         }
         Result += L"\"";
       }
@@ -458,11 +458,54 @@ UnicodeString __fastcall TGenerateUrlDialog::GenerateScript(UnicodeString & Scri
         }
         else
         {
-          Result += RtfEscapeParam(Command);
+          Result += RtfEscapeParam(Command, false);
         }
         Result += L"\"";
       }
     }
+  }
+  else if (ScriptFormatCombo->ItemIndex == sfPowerShell)
+  {
+    Result =
+      RtfText(L"& \"" + ComExeName + "\" `") + RtfPara +
+      RtfText(L"  ") + LogParameter + L" " + IniParameter + RtfText(L" `") + RtfPara +
+      RtfText(L"  ") + CommandParameter;
+
+    for (TCommands::const_iterator I = Commands.begin(); I != Commands.end(); I++)
+    {
+      UnicodeString Command = *I;
+      if (!Command.IsEmpty())
+      {
+        Result += RtfText(L" `") + RtfPara + RtfText(L"    \"");
+        if (Command[1] == L'#')
+        {
+          Command.Delete(1, 1);
+          Result += RtfScriptPlaceholder(Command.TrimLeft());
+        }
+        else
+        {
+          Command = ReplaceStr(Command, L"`", L"``");
+          Command = ReplaceStr(Command, L"$", L"`$");
+          Result += RtfEscapeParam(Command, true);
+        }
+        Result += L"\"";
+      }
+    }
+
+    Result +=
+      RtfPara +
+      RtfPara +
+      RtfText(L"$winscpResult = $LastExitCode") + RtfPara +
+      RtfKeyword(L"if") + RtfText(L" ($winscpResult -eq 0)") + RtfPara +
+      RtfText(L"{") + RtfPara +
+      RtfText(L"  ") + RtfKeyword(L"Write-Host") + L" " + RtfString(L"\"Success\"") + RtfPara +
+      RtfText(L"}") + RtfPara +
+      RtfText(L"else") + RtfPara +
+      RtfText(L"{") + RtfPara +
+      RtfText(L"  ") + RtfKeyword(L"Write-Host") + L" " + RtfString(L"\"Error\"") + RtfPara +
+      RtfText(L"}") + RtfPara +
+      RtfPara +
+      RtfKeyword(L"exit") + RtfText(L" $winscpResult") + RtfPara;
   }
 
   return Result;
@@ -713,6 +756,11 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
         FixedWidth = false;
 
         ScriptDescription = FMTLOAD(GENERATE_URL_COMMANDLINE_DESC, (FORMAT("\"%s\"", (Application->ExeName)))) + L"\n";
+      }
+      else if (ScriptFormatCombo->ItemIndex == sfPowerShell)
+      {
+        WordWrap = false;
+        FixedWidth = true;
       }
 
       if (HostKeyUnknown)
