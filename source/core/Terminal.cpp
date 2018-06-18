@@ -7478,6 +7478,10 @@ void __fastcall TTerminal::CollectUsage()
   {
     Configuration->Usage->Inc(L"OpenedSessionsFtpProxy");
   }
+  if (IsEncryptingFiles())
+  {
+    Configuration->Usage->Inc(L"OpenedSessionsEncrypted");
+  }
 
   FCollectFileSystemUsage = true;
 }
