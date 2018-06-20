@@ -88,7 +88,7 @@ void __fastcall TUnixDirView::ExecuteFile(TListItem * Item)
 #ifndef DESIGN_ONLY
   ASSERT_VALID_ITEM;
   if (ITEMFILE->IsDirectory ||
-      !Terminal->ResolvingSymlinks)
+      (!Terminal->ResolvingSymlinks && !Terminal->IsEncryptingFiles()))
   {
     PathChanging(true);
     ChangeDirectory(ITEMFILE->FileName);

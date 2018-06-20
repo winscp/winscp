@@ -2340,7 +2340,7 @@ void __fastcall TCustomScpExplorerForm::DirViewContextPopupDefaultItem(
       (WinConfiguration->DoubleClickAction == DoubleClickAction) &&
       // when resolving links is disabled, default action is to enter the directory,
       // no matter what DoubleClickAction is configured to
-      ((Side != osRemote) || Terminal->ResolvingSymlinks) &&
+      ((Side != osRemote) || Terminal->ResolvingSymlinks || Terminal->IsEncryptingFiles()) &&
       // Can only Edit files, but can Open/Copy even directories
       ((DoubleClickAction != dcaEdit) ||
        !DView->ItemIsDirectory(DView->ItemFocused)))
@@ -4985,11 +4985,11 @@ void __fastcall TCustomScpExplorerForm::DoDirViewExecFile(TObject * Sender,
   // on files only (not directories)
   // and only when symlinks are resolved (apply to remote panel only)
   if (!ADirView->ItemIsDirectory(Item) &&
-      (ResolvedSymlinks || FForceExecution))
+      (ResolvedSymlinks || FForceExecution || Terminal->IsEncryptingFiles()))
   {
     if ((WinConfiguration->DoubleClickAction != dcaOpen) &&
         !FForceExecution &&
-        ResolvedSymlinks)
+        (ResolvedSymlinks || Terminal->IsEncryptingFiles()))
     {
       if (WinConfiguration->DoubleClickAction == dcaCopy)
       {
