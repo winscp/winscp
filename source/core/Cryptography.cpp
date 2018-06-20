@@ -834,8 +834,7 @@ UnicodeString TEncryption::DecryptFileName(const UnicodeString & FileName)
   SetSalt();
   Buffer.Delete(1, FSalt.Length());
   Aes(Buffer);
-  UTF8String FileNameUtf(Buffer);
-  UnicodeString Result(FileNameUtf);
+  UnicodeString Result(UTF8ToString(Buffer));
   return Result;
 }
 //---------------------------------------------------------------------------
