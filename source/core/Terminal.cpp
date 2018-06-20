@@ -6885,7 +6885,8 @@ void __fastcall TTerminal::SelectTransferMode(
   const UnicodeString & BaseFileName, TOperationSide Side, const TCopyParamType * CopyParam,
   const TFileMasks::TParams & MaskParams)
 {
-  OperationProgress->SetAsciiTransfer(CopyParam->UseAsciiTransfer(BaseFileName, Side, MaskParams));
+  bool AsciiTransfer = IsCapable[fcTextMode] && CopyParam->UseAsciiTransfer(BaseFileName, Side, MaskParams);
+  OperationProgress->SetAsciiTransfer(AsciiTransfer);
   if (Configuration->ActualLogProtocol >= 0)
   {
     UnicodeString ModeName = (OperationProgress->AsciiTransfer ? L"Ascii" : L"Binary");
