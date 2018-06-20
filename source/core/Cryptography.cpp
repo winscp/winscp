@@ -651,10 +651,18 @@ TEncryption::TEncryption(const RawByteString & Key)
     FContext = call_aes_make_context();
     aes_set_encrypt_key(reinterpret_cast<unsigned char *>(FKey.c_str()), FKey.Length(), FContext);
   }
+  else
+  {
+    FContext = NULL;
+  }
 }
 //---------------------------------------------------------------------------
 TEncryption::~TEncryption()
 {
+  if (FContext != NULL)
+  {
+    call_aes_free_context(FContext);
+  }
   Shred(FKey);
   if ((FInputHeader.Length() > 0) && (FInputHeader.Length() < GetOverhead()))
   {
