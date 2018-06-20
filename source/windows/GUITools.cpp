@@ -94,9 +94,10 @@ void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
 
     if (!RemoteCustomCommand.IsSiteCommand(AParams))
     {
-      if (IsUWP())
+      if (true/*IsUWP()*/)
       {
-        if ((SessionData->FSProtocol == fsFTP) && GUIConfiguration->TelnetForFtpInPutty)
+        bool Telnet = (SessionData->FSProtocol == fsFTP) && GUIConfiguration->TelnetForFtpInPutty;
+        if (Telnet)
         {
           AddToList(PuttyParams, L"-telnet", L" ");
           // PuTTY  does not allow -pw for telnet
@@ -110,6 +111,38 @@ void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
         if ((SessionData->FSProtocol != fsFTP) && (SessionData->PortNumber != SshPortNumber))
         {
           AddToList(PuttyParams, FORMAT(L"-P %d", (SessionData->PortNumber)), L" ");
+        }
+
+        if (!Telnet)
+        {
+          if (!SessionData->PublicKeyFile.IsEmpty())
+          {
+            AddToList(PuttyParams, FORMAT(L"-i \"%s\"", (SessionData->PublicKeyFile)), L" ");
+          }
+          AddToList(PuttyParams, (SessionData->TryAgent ? L"-agent" : L"-noagent"), L" ");
+          if (SessionData->TryAgent)
+          {
+            AddToList(PuttyParams, (SessionData->AgentFwd ? L"-A" : L"-a"), L" ");
+          }
+          if (SessionData->Compression)
+          {
+            AddToList(PuttyParams, L"-C", L" ");
+          }
+          AddToList(PuttyParams,
+            ((SessionData->SshProt == ssh1only || SessionData->SshProt == ssh1deprecated) ? L"-1" : L"-2"), L" ");
+          if (!SessionData->LogicalHostName.IsEmpty())
+          {
+            AddToList(PuttyParams, FORMAT(L"-loghost \"%s\"", (SessionData->LogicalHostName)), L" ");
+          }
+        }
+
+        if (SessionData->AddressFamily == afIPv4)
+        {
+          AddToList(PuttyParams, L"-4", L" ");
+        }
+        else if (SessionData->AddressFamily == afIPv6)
+        {
+          AddToList(PuttyParams, L"-6", L" ");
         }
       }
       else
