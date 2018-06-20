@@ -750,13 +750,13 @@ void TEncryption::Encrypt(TFileBuffer & Buffer, bool Last)
 //---------------------------------------------------------------------------
 void TEncryption::Decrypt(TFileBuffer & Buffer)
 {
-  if (FInputHeader < GetOverhead())
+  if (FInputHeader.Length() < GetOverhead())
   {
     int HeaderSize = std::min(GetOverhead() - FInputHeader.Length(), Buffer.Size);
     FInputHeader += RawByteString(Buffer.Data, HeaderSize);
     Buffer.Delete(0, HeaderSize);
 
-    if (FInputHeader >= GetOverhead())
+    if (FInputHeader.Length() >= GetOverhead())
     {
       if (FInputHeader.SubString(1, AesCtrMagic.Length()) != AesCtrMagic)
       {
