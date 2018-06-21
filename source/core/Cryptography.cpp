@@ -807,7 +807,9 @@ UnicodeString TEncryption::EncryptFileName(const UnicodeString & FileName)
   RawByteString Buffer(FileNameUtf);
   Aes(Buffer);
   Buffer = FSalt + Buffer;
-  UnicodeString Base64 = ReplaceChar(UnicodeString(EncodeBase64(Buffer.c_str(), Buffer.Length())), L'/', L'_');
+  UnicodeString Base64 = UnicodeString(EncodeBase64(Buffer.c_str(), Buffer.Length()));
+  Base64 = ReplaceChar(Base64, L'/', L'_');
+  Base64 = ReplaceStr(Base64, L"\r\n", "");
   while (DebugAlwaysTrue(!Base64.IsEmpty()) && (Base64.SubString(Base64.Length(), 1) == L'='))
   {
     Base64.SetLength(Base64.Length() - 1);
