@@ -94,7 +94,7 @@ void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
 
     if (!RemoteCustomCommand.IsSiteCommand(AParams))
     {
-      if (true/*IsUWP()*/)
+      if (IsUWP())
       {
         bool Telnet = (SessionData->FSProtocol == fsFTP) && GUIConfiguration->TelnetForFtpInPutty;
         if (Telnet)
