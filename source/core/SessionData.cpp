@@ -4685,52 +4685,34 @@ THierarchicalStorage * __fastcall TStoredSessionList::CreateHostKeysStorageForWr
 }
 //---------------------------------------------------------------------------
 void __fastcall TStoredSessionList::ImportHostKeys(
-  const UnicodeString SourceKey, TStoredSessionList * Sessions,
-  bool OnlySelected)
+  const UnicodeString & SourceKey, TStoredSessionList * Sessions, bool OnlySelected)
 {
-  TRegistryStorage * SourceStorage = NULL;
-  THierarchicalStorage * TargetStorage = NULL;
-  TStringList * KeyList = NULL;
-  try
+  std::auto_ptr<THierarchicalStorage> TargetStorage(CreateHostKeysStorageForWritting());
+  std::auto_ptr<THierarchicalStorage> SourceStorage(new TRegistryStorage(SourceKey));
+
+  if ((TargetStorage.get() != NULL) &&
+      SourceStorage->OpenRootKey(false))
   {
-    TargetStorage = CreateHostKeysStorageForWritting();
-    SourceStorage = new TRegistryStorage(SourceKey);
-    KeyList = new TStringList();
+    std::auto_ptr<TStringList> KeyList(new TStringList());
+    SourceStorage->GetValueNames(KeyList.get());
 
-    if ((TargetStorage != NULL) &&
-        SourceStorage->OpenRootKey(false))
+    DebugAssert(Sessions != NULL);
+    for (int Index = 0; Index < Sessions->Count; Index++)
     {
-      SourceStorage->GetValueNames(KeyList);
-
-      TSessionData * Session;
-      UnicodeString HostKeyName;
-      DebugAssert(Sessions != NULL);
-      for (int Index = 0; Index < Sessions->Count; Index++)
+      TSessionData * Session = Sessions->Sessions[Index];
+      if (!OnlySelected || Session->Selected)
       {
-        Session = Sessions->Sessions[Index];
-        if (!OnlySelected || Session->Selected)
+        UnicodeString HostKeyName = PuttyMungeStr(FORMAT(L"@%d:%s", (Session->PortNumber, Session->HostNameExpanded)));
+        for (int KeyIndex = 0; KeyIndex < KeyList->Count; KeyIndex++)
         {
-          HostKeyName = PuttyMungeStr(FORMAT(L"@%d:%s", (Session->PortNumber, Session->HostNameExpanded)));
-          UnicodeString KeyName;
-          for (int KeyIndex = 0; KeyIndex < KeyList->Count; KeyIndex++)
+          UnicodeString KeyName = KeyList->Strings[KeyIndex];
+          if (EndsText(HostKeyName, KeyName))
           {
-            KeyName = KeyList->Strings[KeyIndex];
-            int P = KeyName.Pos(HostKeyName);
-            if ((P > 0) && (P == KeyName.Length() - HostKeyName.Length() + 1))
-            {
-              TargetStorage->WriteStringRaw(KeyName,
-                SourceStorage->ReadStringRaw(KeyName, L""));
-            }
+            TargetStorage->WriteStringRaw(KeyName, SourceStorage->ReadStringRaw(KeyName, L""));
           }
         }
       }
     }
-  }
-  __finally
-  {
-    delete SourceStorage;
-    delete TargetStorage;
-    delete KeyList;
   }
 }
 //---------------------------------------------------------------------------

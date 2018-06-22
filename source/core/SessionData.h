@@ -698,8 +698,7 @@ public:
   __property TSessionData * DefaultSettings  = { read=FDefaultSettings, write=SetDefaultSettings };
 
   static void __fastcall ImportHostKeys(
-    const UnicodeString SourceKey, TStoredSessionList * Sessions,
-    bool OnlySelected);
+    const UnicodeString & SourceKey, TStoredSessionList * Sessions, bool OnlySelected);
   static void __fastcall ImportSelectedKnownHosts(TStoredSessionList * Sessions);
 
 private:
