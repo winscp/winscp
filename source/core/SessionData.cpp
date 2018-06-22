@@ -4677,21 +4677,14 @@ THierarchicalStorage * __fastcall TStoredSessionList::CreateHostKeysStorageForWr
   std::unique_ptr<THierarchicalStorage> Storage(Configuration->CreateScpStorage(SessionList));
   Storage->Explicit = true;
   Storage->AccessMode = smReadWrite;
-  if (!OpenHostKeysSubKey(Storage.get(), true))
-  {
-    Storage.reset(NULL);
-  }
   return Storage.release();
 }
 //---------------------------------------------------------------------------
 void __fastcall TStoredSessionList::ImportHostKeys(
-  const UnicodeString & SourceKey, TStoredSessionList * Sessions, bool OnlySelected)
+  THierarchicalStorage * SourceStorage, THierarchicalStorage * TargetStorage, TStoredSessionList * Sessions, bool OnlySelected)
 {
-  std::auto_ptr<THierarchicalStorage> TargetStorage(CreateHostKeysStorageForWritting());
-  std::auto_ptr<THierarchicalStorage> SourceStorage(new TRegistryStorage(SourceKey));
-
-  if ((TargetStorage.get() != NULL) &&
-      SourceStorage->OpenRootKey(false))
+  if (OpenHostKeysSubKey(SourceStorage, false) &&
+      OpenHostKeysSubKey(TargetStorage, true))
   {
     std::auto_ptr<TStringList> KeyList(new TStringList());
     SourceStorage->GetValueNames(KeyList.get());
@@ -4716,10 +4709,19 @@ void __fastcall TStoredSessionList::ImportHostKeys(
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TStoredSessionList::ImportHostKeys(
+  const UnicodeString & SourceKey, TStoredSessionList * Sessions, bool OnlySelected)
+{
+  std::auto_ptr<THierarchicalStorage> TargetStorage(CreateHostKeysStorageForWritting());
+  std::auto_ptr<THierarchicalStorage> SourceStorage(new TRegistryStorage(SourceKey));
+
+  ImportHostKeys(SourceStorage.get(), TargetStorage.get(), Sessions, OnlySelected);
+}
+//---------------------------------------------------------------------------
 void __fastcall TStoredSessionList::ImportSelectedKnownHosts(TStoredSessionList * Sessions)
 {
   std::unique_ptr<THierarchicalStorage> Storage(CreateHostKeysStorageForWritting());
-  if (Storage.get() != NULL)
+  if (OpenHostKeysSubKey(Storage.get(), true))
   {
     for (int Index = 0; Index < Sessions->Count; Index++)
     {

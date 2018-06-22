@@ -57,7 +57,7 @@ bool __fastcall DoImportSessionsDialog(TList * Imported)
     StoredSessions->Import(PuttyImportSessionList.get(), true, Imported);
     StoredSessions->Import(FilezillaImportSessionList.get(), true, Imported);
 
-    UnicodeString SourceKey = Configuration->PuttyRegistryStorageKey + L"\\" + Configuration->SshHostKeysSubKey;
+    UnicodeString SourceKey = Configuration->PuttyRegistryStorageKey;
 
     TStoredSessionList::ImportHostKeys(SourceKey, PuttyImportSessionList.get(), true);
 

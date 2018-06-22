@@ -94,6 +94,18 @@ void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
 
     if (!RemoteCustomCommand.IsSiteCommand(AParams))
     {
+      {
+        bool SessionList = false;
+        std::unique_ptr<THierarchicalStorage> SourceHostKeyStorage(Configuration->CreateScpStorage(SessionList));
+        std::unique_ptr<THierarchicalStorage> TargetHostKeyStorage(new TRegistryStorage(Configuration->PuttyRegistryStorageKey));
+        TargetHostKeyStorage->Explicit = true;
+        TargetHostKeyStorage->AccessMode = smReadWrite;
+        std::unique_ptr<TStoredSessionList> HostKeySessionList(new TStoredSessionList());
+        HostKeySessionList->OwnsObjects = false;
+        HostKeySessionList->Add(SessionData);
+        TStoredSessionList::ImportHostKeys(SourceHostKeyStorage.get(), TargetHostKeyStorage.get(), HostKeySessionList.get(), false);
+      }
+
       if (IsUWP())
       {
         bool Telnet = (SessionData->FSProtocol == fsFTP) && GUIConfiguration->TelnetForFtpInPutty;

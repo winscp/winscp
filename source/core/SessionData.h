@@ -698,8 +698,11 @@ public:
   __property TSessionData * DefaultSettings  = { read=FDefaultSettings, write=SetDefaultSettings };
 
   static void __fastcall ImportHostKeys(
+    THierarchicalStorage * SourceStorage, THierarchicalStorage * TargetStorage, TStoredSessionList * Sessions, bool OnlySelected);
+  static void __fastcall ImportHostKeys(
     const UnicodeString & SourceKey, TStoredSessionList * Sessions, bool OnlySelected);
   static void __fastcall ImportSelectedKnownHosts(TStoredSessionList * Sessions);
+  static bool __fastcall OpenHostKeysSubKey(THierarchicalStorage * Storage, bool CanCreate);
 
 private:
   TSessionData * FDefaultSettings;
@@ -718,7 +721,6 @@ private:
     TSessionData * Data, const UnicodeString & Name);
   void __fastcall ImportLevelFromFilezilla(_di_IXMLNode Node, const UnicodeString & Path, _di_IXMLNode SettingsNode);
   static THierarchicalStorage * __fastcall CreateHostKeysStorageForWritting();
-  static bool __fastcall OpenHostKeysSubKey(THierarchicalStorage * Storage, bool CanCreate);
 };
 //---------------------------------------------------------------------------
 UnicodeString GetExpandedLogFileName(UnicodeString LogFileName, TDateTime Started, TSessionData * SessionData);
