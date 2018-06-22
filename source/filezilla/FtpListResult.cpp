@@ -1473,11 +1473,17 @@ BOOL CFtpListResult::parseAsMlsd(const char *line, const int linelen, t_director
   return TRUE;
 }
 
-bool CFtpListResult::parseMlsdDateTime(const CString value, t_directory::t_direntry::t_date &date) const
+bool CFtpListResult::parseMlsdDateTime(CString value, t_directory::t_direntry::t_date &date) const
 {
   if (value.IsEmpty())
   {
     return FALSE;
+  }
+
+  int P = value.Find('.');
+  if (P >= 0)
+  {
+    value = value.Left(P);
   }
 
   bool result = FALSE;
