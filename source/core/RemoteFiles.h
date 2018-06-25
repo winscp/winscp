@@ -124,7 +124,7 @@ private:
   bool __fastcall GetHaveFullFileName() const;
   int __fastcall GetIconIndex() const;
   UnicodeString __fastcall GetTypeName();
-  bool __fastcall GetIsHidden();
+  bool __fastcall GetIsHidden() const;
   void __fastcall SetIsHidden(bool value);
   bool __fastcall GetIsParentDirectory() const;
   bool __fastcall GetIsThisDirectory() const;

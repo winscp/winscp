@@ -4310,7 +4310,7 @@ void __fastcall TTerminal::CalculateFileSize(UnicodeString FileName,
     UnicodeString BaseFileName =
       GetBaseFileName(UnixExcludeTrailingBackslash(File->FullFileName));
     AllowTransfer = AParams->CopyParam->AllowTransfer(
-      BaseFileName, osRemote, File->IsDirectory, MaskParams);
+      BaseFileName, osRemote, File->IsDirectory, MaskParams, File->IsHidden);
   }
 
   if (AllowTransfer)
@@ -5174,6 +5174,7 @@ bool __fastcall TTerminal::AllowLocalFileTransfer(UnicodeString FileName,
     FILE_OPERATION_LOOP_END(FMTLOAD(FILE_NOT_EXISTS, (FileName)));
     ::FindClose(Handle);
     bool Directory = FLAGSET(FindData.dwFileAttributes, FILE_ATTRIBUTE_DIRECTORY);
+    bool Hidden = FLAGSET(FindData.dwFileAttributes, FILE_ATTRIBUTE_HIDDEN);
     TFileMasks::TParams Params;
     // SearchRec.Size in C++B2010 is __int64,
     // so we should be able to use it instead of FindData.nFileSize*
@@ -5182,7 +5183,7 @@ bool __fastcall TTerminal::AllowLocalFileTransfer(UnicodeString FileName,
       FindData.nFileSizeLow;
     Params.Modification = FileTimeToDateTime(FindData.ftLastWriteTime);
     UnicodeString BaseFileName = GetBaseFileName(FileName);
-    if (!CopyParam->AllowTransfer(BaseFileName, osLocal, Directory, Params))
+    if (!CopyParam->AllowTransfer(BaseFileName, osLocal, Directory, Params, Hidden))
     {
       LogEvent(FORMAT(L"File \"%s\" excluded from transfer", (FileName)));
       Result = false;
@@ -5248,9 +5249,10 @@ void __fastcall TTerminal::CalculateLocalFileSize(const UnicodeString FileName,
         TFileMasks::TParams MaskParams;
         MaskParams.Size = Size;
         MaskParams.Modification = FileTimeToDateTime(Rec.FindData.ftLastWriteTime);
+        bool Hidden = FLAGSET(Rec.Attr, faHidden);
 
         UnicodeString BaseFileName = GetBaseFileName(FileName);
-        AllowTransfer = AParams->CopyParam->AllowTransfer(BaseFileName, osLocal, Dir, MaskParams);
+        AllowTransfer = AParams->CopyParam->AllowTransfer(BaseFileName, osLocal, Dir, MaskParams, Hidden);
       }
 
       if (AllowTransfer)
@@ -5521,13 +5523,14 @@ void __fastcall TTerminal::DoSynchronizeCollectDirectory(const UnicodeString Loc
           TFileMasks::TParams MaskParams;
           MaskParams.Size = Size;
           MaskParams.Modification = Modification;
+          bool Hidden = FLAGSET(SearchRec.Attr, faHidden);
           UnicodeString RemoteFileName =
             ChangeFileName(CopyParam, FileName, osLocal, false);
           UnicodeString FullLocalFileName = Data.LocalDirectory + FileName;
           UnicodeString BaseFileName = GetBaseFileName(FullLocalFileName);
           if ((FileName != L".") && (FileName != L"..") &&
               CopyParam->AllowTransfer(BaseFileName, osLocal,
-                FLAGSET(SearchRec.Attr, faDirectory), MaskParams) &&
+                FLAGSET(SearchRec.Attr, faDirectory), MaskParams, Hidden) &&
               !FFileSystem->TemporaryTransferFile(FileName) &&
               (FLAGCLEAR(Flags, sfFirstLevel) ||
                (Options == NULL) ||
@@ -5713,9 +5716,7 @@ void __fastcall TTerminal::DoSynchronizeCollectFile(const UnicodeString FileName
   UnicodeString FullRemoteFileName =
     UnixExcludeTrailingBackslash(File->FullFileName);
   UnicodeString BaseFileName = GetBaseFileName(FullRemoteFileName);
-  if (Data->CopyParam->AllowTransfer(
-        BaseFileName, osRemote,
-        File->IsDirectory, MaskParams) &&
+  if (Data->CopyParam->AllowTransfer(BaseFileName, osRemote, File->IsDirectory, MaskParams, File->IsHidden) &&
       !FFileSystem->TemporaryTransferFile(File->FileName) &&
       (FLAGCLEAR(Data->Flags, sfFirstLevel) ||
        (Data->Options == NULL) ||
@@ -7245,7 +7246,7 @@ void __fastcall TTerminal::Sink(
   MaskParams.Modification = File->Modification;
 
   UnicodeString BaseFileName = GetBaseFileName(FileName);
-  if (!CopyParam->AllowTransfer(BaseFileName, osRemote, File->IsDirectory, MaskParams))
+  if (!CopyParam->AllowTransfer(BaseFileName, osRemote, File->IsDirectory, MaskParams, File->IsHidden))
   {
     LogEvent(FORMAT(L"File \"%s\" excluded from transfer", (FileName)));
     throw ESkipFile();

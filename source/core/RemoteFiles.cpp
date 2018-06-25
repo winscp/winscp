@@ -900,7 +900,7 @@ UnicodeString __fastcall TRemoteFile::GetTypeName()
   return FTypeName;
 }
 //---------------------------------------------------------------------------
-Boolean __fastcall TRemoteFile::GetIsHidden()
+Boolean __fastcall TRemoteFile::GetIsHidden() const
 {
   bool Result;
   switch (FIsHidden)

@@ -2399,7 +2399,7 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
 
         bool Dir = (Ctrl == L'D');
         UnicodeString BaseFileName = FTerminal->GetBaseFileName(FullFileName);
-        if (!CopyParam->AllowTransfer(BaseFileName, osRemote, Dir, MaskParams))
+        if (!CopyParam->AllowTransfer(BaseFileName, osRemote, Dir, MaskParams, IsUnixHiddenFile(BaseFileName)))
         {
           FTerminal->LogEvent(FORMAT(L"File \"%s\" excluded from transfer",
             (FullFileName)));

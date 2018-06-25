@@ -55,6 +55,7 @@ void __fastcall TCopyParamType::Default()
   CPSLimit = 0;
   NewerOnly = false;
   EncryptNewFiles = true;
+  ExcludeHiddenFiles = false;
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TCopyParamType::GetInfoStr(
@@ -441,6 +442,20 @@ void __fastcall TCopyParamType::DoGetInfoStr(
     }
   }
 
+  if (ExcludeHiddenFiles != Defaults.ExcludeHiddenFiles)
+  {
+    if (DebugAlwaysTrue(ExcludeHiddenFiles))
+    {
+      const int Except = cpaNoIncludeMask;
+      ADD(StripHotkey(LoadStr(COPY_INFO_EXCLUDE_HIDDEN_FILES)), Except);
+      if (FLAGCLEAR(Options, Except))
+      {
+        NoScriptArgs = true;
+        NoCodeProperties = true;
+      }
+    }
+  }
+
   bool ResumeThresholdDiffers = ((ResumeSupport == rsSmart) && (ResumeThreshold != Defaults.ResumeThreshold));
   if (((ResumeSupport != Defaults.ResumeSupport) || ResumeThresholdDiffers) &&
       (TransferMode != tmAscii) && FLAGCLEAR(Options, cpaNoResumeSupport))
@@ -525,6 +540,7 @@ void __fastcall TCopyParamType::Assign(const TCopyParamType * Source)
   COPY(CPSLimit);
   COPY(NewerOnly);
   COPY(EncryptNewFiles);
+  COPY(ExcludeHiddenFiles);
   #undef COPY
 }
 //---------------------------------------------------------------------------
@@ -695,7 +711,7 @@ UnicodeString __fastcall TCopyParamType::GetLogStr() const
        BooleanToEngStr(CalculateSize),
        FileMask)) +
     FORMAT(
-      L"  TM: %s; ClAr: %s; RemEOF: %s; RemBOM: %s; CPS: %u; NewerOnly: %s; EncryptNewFiles: %s; InclM: %s; ResumeL: %d\n"
+      L"  TM: %s; ClAr: %s; RemEOF: %s; RemBOM: %s; CPS: %u; NewerOnly: %s; EncryptNewFiles: %s; ExcludeHiddenFiles: %s; InclM: %s; ResumeL: %d\n"
        "  AscM: %s\n",
       (ModeC[TransferMode],
        BooleanToEngStr(ClearArchive),
@@ -704,6 +720,7 @@ UnicodeString __fastcall TCopyParamType::GetLogStr() const
        int(CPSLimit),
        BooleanToEngStr(NewerOnly),
        BooleanToEngStr(EncryptNewFiles),
+       BooleanToEngStr(ExcludeHiddenFiles),
        IncludeFileMask.Masks,
        ((FTransferSkipList.get() != NULL) ? FTransferSkipList->Count : 0) + (!FTransferResumeFile.IsEmpty() ? 1 : 0),
        AsciiFileMask.Masks));
@@ -734,15 +751,20 @@ bool __fastcall TCopyParamType::AllowAnyTransfer() const
 {
   return
     IncludeFileMask.Masks.IsEmpty() &&
+    !ExcludeHiddenFiles &&
     ((FTransferSkipList.get() == NULL) || (FTransferSkipList->Count == 0)) &&
     FTransferResumeFile.IsEmpty();
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCopyParamType::AllowTransfer(UnicodeString FileName,
-  TOperationSide Side, bool Directory, const TFileMasks::TParams & Params) const
+  TOperationSide Side, bool Directory, const TFileMasks::TParams & Params, bool Hidden) const
 {
   bool Result = true;
-  if (!IncludeFileMask.Masks.IsEmpty())
+  if (Hidden && ExcludeHiddenFiles)
+  {
+    Result = false;
+  }
+  else if (!IncludeFileMask.Masks.IsEmpty())
   {
     Result = IncludeFileMask.Matches(FileName, (Side == osLocal),
       Directory, &Params);
@@ -838,6 +860,7 @@ void __fastcall TCopyParamType::Load(THierarchicalStorage * Storage)
   CPSLimit = Storage->ReadInteger(L"CPSLimit", CPSLimit);
   NewerOnly = Storage->ReadBool(L"NewerOnly", NewerOnly);
   EncryptNewFiles = Storage->ReadBool(L"EncryptNewFiles", EncryptNewFiles);
+  ExcludeHiddenFiles = Storage->ReadBool(L"ExcludeHiddenFiles", ExcludeHiddenFiles);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamType::Save(THierarchicalStorage * Storage, const TCopyParamType * Defaults) const
@@ -882,6 +905,7 @@ void __fastcall TCopyParamType::Save(THierarchicalStorage * Storage, const TCopy
   WRITE_DATA(Integer, CPSLimit);
   WRITE_DATA(Bool, NewerOnly);
   WRITE_DATA(Bool, EncryptNewFiles);
+  WRITE_DATA(Bool, ExcludeHiddenFiles);
 }
 //---------------------------------------------------------------------------
 #define C(Property) (Property == rhp.Property)
@@ -914,6 +938,7 @@ bool __fastcall TCopyParamType::operator==(const TCopyParamType & rhp) const
     C(CPSLimit) &&
     C(NewerOnly) &&
     C(EncryptNewFiles) &&
+    C(ExcludeHiddenFiles) &&
     true;
 }
 #undef C
