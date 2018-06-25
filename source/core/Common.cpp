@@ -1401,8 +1401,8 @@ int __fastcall FileGetAttrFix(const UnicodeString FileName)
 {
   // The default for FileGetAttr is to follow links
   bool FollowLink = true;
-  // But the FileGetAttr whe called for link with FollowLink set will always fail
   // WORKAROUND:
+  // But the FileGetAttr when called for link with FollowLink set will always fail
   // as its calls InternalGetFileNameFromSymLink, which test for CheckWin32Version(6, 0)
   if (!IsWinVista())
   {
