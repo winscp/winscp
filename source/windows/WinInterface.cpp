@@ -1370,36 +1370,57 @@ void __fastcall CallGlobalMinimizeHandler(TObject * Sender)
 //---------------------------------------------------------------------------
 static void __fastcall DoApplicationMinimizeRestore(bool Minimize)
 {
-  // WORKAROUND
-  // When main window is hidden (command-line operation),
-  // we do not want it to be shown by TApplication.Restore,
-  // so we temporarily detach it from an application.
-  // Probably not really necessary for minimizing phase,
-  // but we do it for consistency anyway.
   TForm * MainForm = Application->MainForm;
-  bool RestoreMainForm = false;
-  if (DebugAlwaysTrue(MainForm != NULL) &&
-      !MainForm->Visible)
+  TForm * MainLikeForm = GetMainForm();
+  if ((MainLikeForm != MainForm) && !WinConfiguration->MinimizeToTray)
   {
-    SetAppMainForm(NULL);
-    RestoreMainForm = true;
-  }
-  try
-  {
+    TWindowState PreviousWindowState;
     if (Minimize)
     {
-      Application->Minimize();
+      PreviousWindowState = MainLikeForm->WindowState;
+      MainLikeForm->WindowState = wsMinimized;
     }
     else
     {
-      Application->Restore();
+      MainLikeForm->WindowState = PreviousWindowState;
     }
   }
-  __finally
+  else
   {
-    if (RestoreMainForm)
+    // What is described below should not ever happen, except when minimizing to tray,
+    // as we capture command-line operation above.
+    // Had we called TApplication::Minimize, it would hide all non-MainForm windows, including MainLineForm,
+    // so it actually also hides taskbar button, what we do not want.
+    // WORKAROUND
+    // When main window is hidden (command-line operation),
+    // we do not want it to be shown by TApplication.Restore,
+    // so we temporarily detach it from an application.
+    // Probably not really necessary for minimizing phase,
+    // but we do it for consistency anyway.
+    bool RestoreMainForm = false;
+    if (DebugAlwaysTrue(MainForm != NULL) &&
+        !MainForm->Visible)
     {
-      SetAppMainForm(MainForm);
+      SetAppMainForm(NULL);
+      RestoreMainForm = true;
+    }
+    try
+    {
+      if (Minimize)
+      {
+        Application->Minimize();
+      }
+      else
+      {
+        Application->Restore();
+      }
+    }
+    __finally
+    {
+      if (RestoreMainForm)
+      {
+        SetAppMainForm(MainForm);
+      }
     }
   }
 }
