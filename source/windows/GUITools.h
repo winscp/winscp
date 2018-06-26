@@ -144,7 +144,6 @@ private:
 
   UnicodeString __fastcall GetLongHintIfAny(const UnicodeString & AHint);
   static int __fastcall GetTextFlags(TControl * Control);
-  bool __fastcall IsHintPopup(TControl * HintControl, const UnicodeString & Hint);
   bool __fastcall IsPathLabel(TControl * HintControl);
   bool __fastcall UseBoldShortHint(TControl * HintControl);
   int __fastcall GetMargin(TControl * HintControl, const UnicodeString & Hint);

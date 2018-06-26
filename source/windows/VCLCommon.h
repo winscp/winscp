@@ -28,7 +28,7 @@ void __fastcall LinkAppLabel(TStaticText * StaticText);
 void __fastcall HintLabel(TStaticText * StaticText, UnicodeString Hint = L"");
 void __fastcall HotTrackLabel(TLabel * Label);
 void __fastcall SetLabelHintPopup(TLabel * Label, const UnicodeString & Hint);
-bool __fastcall HasLabelHintPopup(TLabel * Label, const UnicodeString & HintStr);
+bool __fastcall HasLabelHintPopup(TControl * Control, const UnicodeString & HintStr);
 void __fastcall FixComboBoxResizeBug(TCustomComboBox * ComboBox);
 void __fastcall ShowAsModal(TForm * Form, void *& Storage, bool BringToFront = true);
 void __fastcall HideAsModal(TForm * Form, void *& Storage);

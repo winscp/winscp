@@ -1426,17 +1426,11 @@ bool __fastcall TScreenTipHintWindow::IsPathLabel(TControl * HintControl)
   return (dynamic_cast<TPathLabel *>(HintControl) != NULL);
 }
 //---------------------------------------------------------------------------
-bool __fastcall TScreenTipHintWindow::IsHintPopup(TControl * HintControl, const UnicodeString & Hint)
-{
-  TLabel * HintLabel = dynamic_cast<TLabel *>(HintControl);
-  return (HintLabel != NULL) && HasLabelHintPopup(HintLabel, Hint);
-}
-//---------------------------------------------------------------------------
 int __fastcall TScreenTipHintWindow::GetMargin(TControl * HintControl, const UnicodeString & Hint)
 {
   int Result;
 
-  if (IsHintPopup(HintControl, Hint) || IsPathLabel(HintControl))
+  if (HasLabelHintPopup(HintControl, Hint) || IsPathLabel(HintControl))
   {
     Result = 3;
   }
@@ -1453,7 +1447,7 @@ int __fastcall TScreenTipHintWindow::GetMargin(TControl * HintControl, const Uni
 TFont * __fastcall TScreenTipHintWindow::GetFont(TControl * HintControl, const UnicodeString & Hint)
 {
   TFont * Result;
-  if (IsHintPopup(HintControl, Hint) || IsPathLabel(HintControl))
+  if (HasLabelHintPopup(HintControl, Hint) || IsPathLabel(HintControl))
   {
     Result = reinterpret_cast<TLabel *>(dynamic_cast<TCustomLabel *>(HintControl))->Font;
   }
@@ -1498,7 +1492,7 @@ TRect __fastcall TScreenTipHintWindow::CalcHintRect(int MaxWidth, const UnicodeS
     MaxWidth *= 2;
   }
 
-  bool HintPopup = IsHintPopup(HintControl, AHint);
+  bool HintPopup = HasLabelHintPopup(HintControl, AHint);
   if (HintPopup)
   {
     MaxWidth = HintControl->Width;
@@ -1551,7 +1545,7 @@ void __fastcall TScreenTipHintWindow::ActivateHintData(const TRect & ARect, cons
   FLongHint = GetLongHintIfAny(AHint);
   FHintControl = GetHintControl(AData);
   FMargin = GetMargin(FHintControl, AHint);
-  FHintPopup = IsHintPopup(FHintControl, AHint);
+  FHintPopup = HasLabelHintPopup(FHintControl, AHint);
 
   Canvas->Font->Assign(GetFont(FHintControl, AHint));
 

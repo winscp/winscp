@@ -745,8 +745,7 @@ void __fastcall TTerminalManager::ApplicationShowHint(UnicodeString & HintStr,
   bool & /*CanShow*/, THintInfo & HintInfo)
 {
   HintInfo.HintData = HintInfo.HintControl;
-  TLabel * HintLabel = dynamic_cast<TLabel *>(HintInfo.HintControl);
-  if ((HintLabel != NULL) && HasLabelHintPopup(HintLabel, HintStr))
+  if (HasLabelHintPopup(HintInfo.HintControl, HintStr))
   {
     // Hack for transfer setting labels.
     // Should be converted to something like HintLabel()
