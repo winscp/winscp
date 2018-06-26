@@ -6560,12 +6560,8 @@ bool __fastcall TTerminal::CopyToRemote(TStrings * FilesToCopy,
       Files.reset(new TStringList());
       Files->OwnsObjects = true;
     }
-    // dirty trick: when moving, do not pass copy param to avoid exclude mask
     bool CalculatedSize =
-      CalculateLocalFilesSize(
-        FilesToCopy, Size,
-        (FLAGCLEAR(Params, cpDelete) ? CopyParam : NULL),
-        CopyParam->CalculateSize, Files.get());
+      CalculateLocalFilesSize(FilesToCopy, Size, CopyParam, CopyParam->CalculateSize, Files.get());
 
     FLastProgressLogged = GetTickCount();
     TFileOperationProgressType OperationProgress(&DoProgress, &DoFinished);
@@ -7016,13 +7012,9 @@ bool __fastcall TTerminal::CopyToLocal(TStrings * FilesToCopy,
     ExceptionOnFail = true;
     try
     {
-      // dirty trick: when moving, do not pass copy param to avoid exclude mask
       TCalculateSizeStats Stats;
       Stats.FoundFiles = Files.get();
-      if (CalculateFilesSize(
-           FilesToCopy, TotalSize, csIgnoreErrors,
-           (FLAGCLEAR(Params, cpDelete) ? CopyParam : NULL),
-           CopyParam->CalculateSize, Stats))
+      if (CalculateFilesSize(FilesToCopy, TotalSize, csIgnoreErrors, CopyParam, CopyParam->CalculateSize, Stats))
       {
         TotalSizeKnown = true;
       }
