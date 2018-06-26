@@ -472,7 +472,7 @@ bool __fastcall TCustomScpExplorerForm::CanConsole()
 //---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::CanCommandLineFromAnotherInstance()
 {
-  bool Result = !NonVisualDataModule->Busy;
+  bool Result = Visible && !NonVisualDataModule->Busy;
   return Result;
 }
 //---------------------------------------------------------------------------
