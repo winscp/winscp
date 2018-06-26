@@ -1374,7 +1374,7 @@ static void __fastcall DoApplicationMinimizeRestore(bool Minimize)
   TForm * MainLikeForm = GetMainForm();
   if ((MainLikeForm != MainForm) && !WinConfiguration->MinimizeToTray)
   {
-    TWindowState PreviousWindowState;
+    static TWindowState PreviousWindowState = wsNormal;
     if (Minimize)
     {
       PreviousWindowState = MainLikeForm->WindowState;
