@@ -149,6 +149,8 @@ private:
   int __fastcall GetMargin(TControl * HintControl, const UnicodeString & Hint);
   TFont * __fastcall GetFont(TControl * HintControl, const UnicodeString & Hint);
   TControl * __fastcall GetHintControl(void * Data);
+  void __fastcall SplitHint(
+    TControl * HintControl, const UnicodeString & Hint, UnicodeString & ShortHint, UnicodeString & LongHint);
 };
 //---------------------------------------------------------------------------
 // Newer version rich edit that supports "Friendly name hyperlinks" and

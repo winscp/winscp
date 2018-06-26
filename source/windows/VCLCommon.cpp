@@ -2266,7 +2266,7 @@ void __fastcall SetLabelHintPopup(TLabel * Label, const UnicodeString & Hint)
 bool __fastcall HasLabelHintPopup(TControl * Control, const UnicodeString & HintStr)
 {
   TLabel * HintLabel = dynamic_cast<TLabel *>(Control);
-  return (HintLabel != NULL) && (HintLabel->Caption == HintStr);
+  return (HintLabel != NULL) && (GetShortHint(HintLabel->Caption) == HintStr);
 }
 //---------------------------------------------------------------------------
 Forms::TMonitor *  __fastcall FormMonitor(TCustomForm * Form)

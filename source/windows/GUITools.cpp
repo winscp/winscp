@@ -1471,8 +1471,9 @@ TRect __fastcall TScreenTipHintWindow::CalcHintRect(int MaxWidth, const UnicodeS
 {
   TControl * HintControl = GetHintControl(AData);
   int Margin = GetMargin(HintControl, AHint);
-  const UnicodeString ShortHint = GetShortHint(AHint);
-  const UnicodeString LongHint = GetLongHintIfAny(AHint);
+  UnicodeString ShortHint;
+  UnicodeString LongHint;
+  SplitHint(HintControl, AHint, ShortHint, LongHint);
 
   Canvas->Font->Assign(GetFont(HintControl, AHint));
 
@@ -1539,11 +1540,24 @@ TRect __fastcall TScreenTipHintWindow::CalcHintRect(int MaxWidth, const UnicodeS
   return Result;
 }
 //---------------------------------------------------------------------------
+void __fastcall TScreenTipHintWindow::SplitHint(
+  TControl * HintControl, const UnicodeString & Hint, UnicodeString & ShortHint, UnicodeString & LongHint)
+{
+  if (HasLabelHintPopup(HintControl, Hint))
+  {
+    ShortHint = HintControl->Hint;
+  }
+  else
+  {
+    ShortHint = GetShortHint(Hint);
+    LongHint = GetLongHintIfAny(Hint);
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TScreenTipHintWindow::ActivateHintData(const TRect & ARect, const UnicodeString AHint, void * AData)
 {
-  FShortHint = GetShortHint(AHint);
-  FLongHint = GetLongHintIfAny(AHint);
   FHintControl = GetHintControl(AData);
+  SplitHint(FHintControl, AHint, FShortHint, FLongHint);
   FMargin = GetMargin(FHintControl, AHint);
   FHintPopup = HasLabelHintPopup(FHintControl, AHint);
 
