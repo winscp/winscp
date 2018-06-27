@@ -169,6 +169,7 @@ private:
   bool __fastcall ShouldDisplayQueueStatusOnAppTitle();
   void __fastcall SetupTerminal(TTerminal * Terminal);
   void __fastcall CloseAutheticateForm();
+  void __fastcall AuthenticatingDone();
   TRemoteFile * __fastcall CheckRights(
     TTerminal * Terminal, const UnicodeString & EntryType, const UnicodeString & FileName, bool & WrongRights);
 };

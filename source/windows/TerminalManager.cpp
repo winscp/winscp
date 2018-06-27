@@ -281,8 +281,12 @@ void __fastcall TTerminalManager::DoConnectTerminal(TTerminal * Terminal, bool R
           FActiveTerminal = Terminal;
         }
 
-        // when abandoning cancelled terminal, the form remains open
-        CloseAutheticateForm();
+        // When abandoning cancelled terminal, DoInformation(Phase = 0) does not make it to TerminalInformation handler.
+        if (DebugAlwaysTrue(FAuthenticating > 0))
+        {
+          FKeepAuthenticateForm = false;
+          AuthenticatingDone();
+        }
       }
       else
       {
@@ -1111,6 +1115,20 @@ void __fastcall TTerminalManager::TerminalCustomCommand(
   Handled = CopyCommandToClipboard(Command);
 }
 //---------------------------------------------------------------------------
+void __fastcall TTerminalManager::AuthenticatingDone()
+{
+  FAuthenticating--;
+  if (FAuthenticating == 0)
+  {
+    BusyEnd(FBusyToken);
+    FBusyToken = NULL;
+  }
+  if (!FKeepAuthenticateForm)
+  {
+    CloseAutheticateForm();
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminalManager::TerminalInformation(
   TTerminal * Terminal, const UnicodeString & Str, bool /*Status*/, int Phase)
 {
@@ -1126,16 +1144,7 @@ void __fastcall TTerminalManager::TerminalInformation(
   else if (Phase == 0)
   {
     DebugAssert(FAuthenticating > 0);
-    FAuthenticating--;
-    if (FAuthenticating == 0)
-    {
-      BusyEnd(FBusyToken);
-      FBusyToken = NULL;
-    }
-    if (!FKeepAuthenticateForm)
-    {
-      CloseAutheticateForm();
-    }
+    AuthenticatingDone();
   }
   else
   {

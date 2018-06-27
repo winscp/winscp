@@ -1438,6 +1438,8 @@ void __fastcall TTerminal::Open()
     }
     __finally
     {
+      // This does not make it through, if terminal thread is abandonded,
+      // see also TTerminalManager::DoConnectTerminal
       DoInformation(L"", true, 0);
     }
   }
