@@ -4102,18 +4102,16 @@ void __fastcall TStoredSessionList::Load(THierarchicalStorage * Storage,
   }
 }
 //---------------------------------------------------------------------
-void __fastcall TStoredSessionList::Load()
+void __fastcall TStoredSessionList::Reload()
 {
-  bool SessionList = true;
-  THierarchicalStorage * Storage = Configuration->CreateScpStorage(SessionList);
-  try
+  if (Count <= Configuration->DontReloadMoreThanSessions)
   {
+    bool SessionList = true;
+    std::unique_ptr<THierarchicalStorage> Storage(Configuration->CreateScpStorage(SessionList));
     if (Storage->OpenSubKey(Configuration->StoredSessionsSubKey, False))
-      Load(Storage);
-  }
-  __finally
-  {
-    delete Storage;
+    {
+      Load(Storage.get());
+    }
   }
 }
 //---------------------------------------------------------------------

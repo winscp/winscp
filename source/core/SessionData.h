@@ -661,7 +661,7 @@ class TStoredSessionList : public TNamedObjectList
 {
 public:
   __fastcall TStoredSessionList(bool aReadOnly = false);
-  void __fastcall Load();
+  void __fastcall Reload();
   void __fastcall Save(bool All, bool Explicit);
   void __fastcall Saved();
   void __fastcall ImportFromFilezilla(const UnicodeString FileName, const UnicodeString ConfigurationFileName);

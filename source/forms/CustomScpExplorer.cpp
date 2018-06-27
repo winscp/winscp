@@ -492,7 +492,7 @@ bool __fastcall TCustomScpExplorerForm::CommandLineFromAnotherInstance(
       Application->BringToFront();
       // reload sessions as we may be asked to open a session
       // just stored by another instance
-      StoredSessions->Load();
+      StoredSessions->Reload();
       UnicodeString SessionName = Params.Param[1];
       std::unique_ptr<TObjectList> DataList(new TObjectList());
       UnicodeString DownloadFile; // unused

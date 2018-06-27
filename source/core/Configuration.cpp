@@ -105,6 +105,7 @@ void __fastcall TConfiguration::Default()
   FTryFtpWhenSshFails = true;
   FParallelDurationThreshold = 10;
   FMimeTypes = UnicodeString();
+  FDontReloadMoreThanSessions = 1000;
   CollectUsage = FDefaultCollectUsage;
 
   FLogging = false;
@@ -226,6 +227,7 @@ UnicodeString __fastcall TConfiguration::PropertyToKey(const UnicodeString & Pro
     KEY(Bool,     TryFtpWhenSshFails); \
     KEY(Integer,  ParallelDurationThreshold); \
     KEY(String,   MimeTypes); \
+    KEY(Integer,  DontReloadMoreThanSessions); \
     KEY(Bool,     CollectUsage); \
   ); \
   BLOCK(L"Logging", CANCREATE, \

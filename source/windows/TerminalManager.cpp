@@ -1388,7 +1388,7 @@ void __fastcall TTerminalManager::NewSession(bool /*FromSite*/, const UnicodeStr
 {
   if (ReloadSessions)
   {
-    StoredSessions->Load();
+    StoredSessions->Reload();
   }
 
   UnicodeString DownloadFile; // unused

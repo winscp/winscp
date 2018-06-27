@@ -1245,7 +1245,7 @@ void __fastcall TNonVisualDataModule::SessionColorChange(TColor Color)
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::CreateSessionListMenu(TAction * Action)
 {
-  StoredSessions->Load();
+  StoredSessions->Reload();
   CreateSessionListMenuLevel(
     dynamic_cast<TTBCustomItem *>(Action->ActionComponent), 0, 0);
 }
@@ -1370,7 +1370,7 @@ void __fastcall TNonVisualDataModule::SessionItemClick(TObject * Sender)
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::CreateWorkspacesMenu(TAction * Action)
 {
-  StoredSessions->Load();
+  StoredSessions->Reload();
   if (!StoredSessions->HasAnyWorkspace())
   {
     Abort();

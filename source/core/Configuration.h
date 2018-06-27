@@ -73,6 +73,7 @@ private:
   int FParallelDurationThreshold;
   bool FScripting;
   UnicodeString FMimeTypes;
+  int FDontReloadMoreThanSessions;
 
   bool FDisablePasswordStoring;
   bool FForceBanners;
@@ -300,6 +301,7 @@ public:
   __property bool TryFtpWhenSshFails = { read = FTryFtpWhenSshFails, write = SetTryFtpWhenSshFails };
   __property int ParallelDurationThreshold = { read = FParallelDurationThreshold, write = SetParallelDurationThreshold };
   __property UnicodeString MimeTypes = { read = FMimeTypes, write = SetMimeTypes };
+  __property int DontReloadMoreThanSessions = { read = FDontReloadMoreThanSessions, write = FDontReloadMoreThanSessions };
 
   __property UnicodeString TimeFormat = { read = GetTimeFormat };
   __property TStorage Storage  = { read=GetStorage };
