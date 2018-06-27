@@ -166,6 +166,7 @@ private:
   void __fastcall DoConfigurationChange();
   bool __fastcall ShouldDisplayQueueStatusOnAppTitle();
   void __fastcall SetupTerminal(TTerminal * Terminal);
+  void __fastcall AuthenticatingDone();
 };
 //---------------------------------------------------------------------------
 #endif
