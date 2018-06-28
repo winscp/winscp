@@ -1613,7 +1613,7 @@ void __fastcall TNewRichEdit::CreateParams(TCreateParams & Params)
 
   TCustomMemo::CreateParams(Params);
   // MSDN says that we should use MSFTEDIT_CLASS to load Rich Edit 4.1:
-  // https://msdn.microsoft.com/en-us/library/windows/desktop/bb787873.aspx
+  // https://docs.microsoft.com/en-us/windows/desktop/controls/about-rich-edit-controls
   // But MSFTEDIT_CLASS is defined as "RICHEDIT50W",
   // so not sure what version we are loading.
   // Seem to work on Windows XP SP3.
