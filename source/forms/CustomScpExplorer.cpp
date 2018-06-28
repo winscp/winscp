@@ -5236,7 +5236,7 @@ void __fastcall TCustomScpExplorerForm::Synchronize(const UnicodeString LocalDir
 
     // No need to call if !AnyOperation
     Terminal->SynchronizeApply(AChecklist, LocalDirectory, RemoteDirectory,
-      &CopyParam, Params | TTerminal::spNoConfirmation, TerminalSynchronizeDirectory);
+      &CopyParam, Params | TTerminal::spNoConfirmation, TerminalSynchronizeDirectory, NULL);
   }
   __finally
   {
@@ -5327,6 +5327,49 @@ void __fastcall TCustomScpExplorerForm::SynchronizeInNewWindow(
   ExecuteNewInstance(SessionName, AdditionalParams);
 }
 //---------------------------------------------------------------------------
+struct TSynchronizeParams
+{
+  UnicodeString LocalDirectory;
+  UnicodeString RemoteDirectory;
+  TSynchronizeMode Mode;
+  TSynchronizeChecklist * Checklist;
+  int Params;
+  TCopyParamType * CopyParam;
+  TDateTime * StartTime;
+};
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::FullSynchronize(TSynchronizeParams & Params, TProcessedItem OnProcessedItem)
+{
+  DebugAssert(!FAutoOperation);
+  void * BatchStorage;
+  BatchStart(BatchStorage);
+  FAutoOperation = true;
+
+  try
+  {
+    FSynchronizeProgressForm = new TSynchronizeProgressForm(Application, true, false);
+    FSynchronizeProgressForm->Start();
+
+    Terminal->SynchronizeApply(
+      Params.Checklist, Params.LocalDirectory, Params.RemoteDirectory,
+      Params.CopyParam, Params.Params | TTerminal::spNoConfirmation, TerminalSynchronizeDirectory, OnProcessedItem);
+  }
+  __finally
+  {
+    FAutoOperation = false;
+    SAFE_DESTROY(FSynchronizeProgressForm);
+    BatchEnd(BatchStorage);
+    ReloadLocalDirectory();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::DoFullSynchronize(void * Token, TProcessedItem OnProcessedItem)
+{
+  TSynchronizeParams & Params = *static_cast<TSynchronizeParams *>(Token);
+  *Params.StartTime = Now();
+  FullSynchronize(Params, OnProcessedItem);
+}
+//---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
   UnicodeString & LocalDirectory, UnicodeString & RemoteDirectory,
   TSynchronizeMode & Mode, bool & SaveMode, bool UseDefaults)
@@ -5390,34 +5433,24 @@ bool __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
         MessageDialog(Message, qtInformation, qaOK,
           HELP_SYNCHRONIZE_NO_DIFFERENCES);
       }
-      else if (FLAGCLEAR(Params, TTerminal::spPreviewChanges) ||
-               DoSynchronizeChecklistDialog(Checklist, Mode, Params,
-                 LocalDirectory, RemoteDirectory, CustomCommandMenu))
+      else
       {
-        DebugAssert(!FAutoOperation);
-        void * BatchStorage;
-        BatchStart(BatchStorage);
-        FAutoOperation = true;
-
+        TSynchronizeParams SynchronizeParams;
+        SynchronizeParams.LocalDirectory = LocalDirectory;
+        SynchronizeParams.RemoteDirectory = RemoteDirectory;
+        SynchronizeParams.Mode = Mode;
+        SynchronizeParams.CopyParam = &CopyParam;
+        SynchronizeParams.Params = Params;
+        SynchronizeParams.Checklist = Checklist;
+        SynchronizeParams.StartTime = &StartTime;
         if (FLAGSET(Params, TTerminal::spPreviewChanges))
         {
-          StartTime = Now();
+          DoSynchronizeChecklistDialog(
+            Checklist, Mode, Params, LocalDirectory, RemoteDirectory, CustomCommandMenu, DoFullSynchronize, &SynchronizeParams);
         }
-
-        try
+        else
         {
-          FSynchronizeProgressForm = new TSynchronizeProgressForm(Application, true, false);
-          FSynchronizeProgressForm->Start();
-
-          Terminal->SynchronizeApply(Checklist, LocalDirectory, RemoteDirectory,
-            &CopyParam, Params | TTerminal::spNoConfirmation, TerminalSynchronizeDirectory);
-        }
-        __finally
-        {
-          FAutoOperation = false;
-          SAFE_DESTROY(FSynchronizeProgressForm);
-          BatchEnd(BatchStorage);
-          ReloadLocalDirectory();
+          FullSynchronize(SynchronizeParams, NULL);
         }
       }
     }

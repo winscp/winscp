@@ -4,7 +4,7 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
   HelpType = htKeyword
   HelpKeyword = 'ui_synchronize_checklist'
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
-  Caption = 'Synchronization checklist'
+  Caption = 'Synchronization checklist X'
   ClientHeight = 521
   ClientWidth = 695
   Color = clBtnFace
@@ -1382,6 +1382,7 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       Default = True
       ModalResult = 1
       TabOrder = 0
+      OnClick = OkButtonClick
     end
     object CancelButton: TButton
       Left = 8

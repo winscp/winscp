@@ -47,6 +47,7 @@ class TEditorData;
 class TTransferPresetNoteData;
 struct TEditedFileData;
 class ITaskbarList3;
+struct TSynchronizeParams;
 //---------------------------------------------------------------------------
 enum TActionAllowed { aaShortCut, aaUpdate, aaExecute };
 enum TActionFlag { afLocal = 1, afRemote = 2, afExplorer = 4 , afCommander = 8 };
@@ -600,6 +601,8 @@ protected:
   void __fastcall UpdatePixelsPerInchMainWindowCounter();
   void __fastcall CopyPopup(TControl * DestControl, TControl * SourceControl);
   void __fastcall CreateRemoteDirectory(const UnicodeString & Path, TRemoteProperties & Properties);
+  void __fastcall DoFullSynchronize(void * Token, TProcessedItem OnProcessedItem);
+  void __fastcall FullSynchronize(TSynchronizeParams & Params, TProcessedItem OnProcessedItem);
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();

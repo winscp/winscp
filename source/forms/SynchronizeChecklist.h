@@ -84,15 +84,17 @@ __published:
   void __fastcall UncheckAllActionExecute(TObject *Sender);
   void __fastcall ReverseActionExecute(TObject *Sender);
   void __fastcall ListViewClick(TObject *Sender);
+  void __fastcall OkButtonClick(TObject *Sender);
 
 
 public:
   __fastcall TSynchronizeChecklistDialog(TComponent * AOwner,
     TSynchronizeMode Mode, int Params, const UnicodeString LocalDirectory,
-    const UnicodeString RemoteDirectory, TCustomCommandMenuEvent OnCustomCommandMenu);
+    const UnicodeString RemoteDirectory, TCustomCommandMenuEvent OnCustomCommandMenu,
+    TFullSynchronizeEvent OnSynchronize, void * Token);
   virtual __fastcall ~TSynchronizeChecklistDialog();
 
-  bool __fastcall Execute(TSynchronizeChecklist * Checklist);
+  void __fastcall Execute(TSynchronizeChecklist * Checklist);
 
 protected:
   bool FFormRestored;
@@ -113,6 +115,11 @@ protected:
   TCustomCommandMenuEvent FOnCustomCommandMenu;
   typedef std::map<const TSynchronizeChecklist::TItem *, TSynchronizeChecklist::TAction> TActions;
   TActions FActions;
+  TFullSynchronizeEvent FOnSynchronize;
+  void * FToken;
+  typedef std::map<const void *, TListItem *> TTokens;
+  TTokens FTokens;
+  bool FSynchronizing;
 
   void __fastcall UpdateControls();
   virtual void __fastcall CreateParams(TCreateParams & Params);
@@ -137,6 +144,7 @@ protected:
   void __fastcall UpdateImages();
   void __fastcall CMDpiChanged(TMessage & Message);
   bool __fastcall GetWindowParams(UnicodeString & WindowParams);
+  void __fastcall ProcessedItem(const void * Token);
   static int __fastcall CompareNumber(__int64 Value1, __int64 Value2);
 };
 //----------------------------------------------------------------------------

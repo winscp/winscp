@@ -27,28 +27,20 @@
 //---------------------------------------------------------------------
 const int ImageColumnIndex = 4;
 //---------------------------------------------------------------------
-bool __fastcall DoSynchronizeChecklistDialog(TSynchronizeChecklist * Checklist,
-  TSynchronizeMode Mode, int Params, const UnicodeString LocalDirectory,
-  const UnicodeString RemoteDirectory, TCustomCommandMenuEvent OnCustomCommandMenu)
+void __fastcall DoSynchronizeChecklistDialog(TSynchronizeChecklist * Checklist,
+  TSynchronizeMode Mode, int Params,
+  const UnicodeString LocalDirectory, const UnicodeString RemoteDirectory,
+  TCustomCommandMenuEvent OnCustomCommandMenu, TFullSynchronizeEvent OnSynchronize, void * Token)
 {
-  bool Result;
-  TSynchronizeChecklistDialog * Dialog = new TSynchronizeChecklistDialog(
-    Application, Mode, Params, LocalDirectory, RemoteDirectory, OnCustomCommandMenu);
-  try
-  {
-    Result = Dialog->Execute(Checklist);
-  }
-  __finally
-  {
-    delete Dialog;
-  }
-  return Result;
+  std::unique_ptr<TSynchronizeChecklistDialog> Dialog(
+    new TSynchronizeChecklistDialog(Application, Mode, Params, LocalDirectory, RemoteDirectory, OnCustomCommandMenu, OnSynchronize, Token));
+  Dialog->Execute(Checklist);
 }
 //---------------------------------------------------------------------
 __fastcall TSynchronizeChecklistDialog::TSynchronizeChecklistDialog(
   TComponent * AOwner, TSynchronizeMode Mode, int Params,
   const UnicodeString LocalDirectory, const UnicodeString RemoteDirectory,
-  TCustomCommandMenuEvent OnCustomCommandMenu)
+  TCustomCommandMenuEvent OnCustomCommandMenu, TFullSynchronizeEvent OnSynchronize, void * Token)
   : TForm(AOwner)
 {
   FFormRestored = false;
@@ -57,6 +49,9 @@ __fastcall TSynchronizeChecklistDialog::TSynchronizeChecklistDialog(
   FLocalDirectory = ExcludeTrailingBackslash(LocalDirectory);
   FRemoteDirectory = UnixExcludeTrailingBackslash(RemoteDirectory);
   FOnCustomCommandMenu = OnCustomCommandMenu;
+  DebugAssert(OnSynchronize != NULL);
+  FOnSynchronize = OnSynchronize;
+  FToken = Token;
   UseSystemSettings(this);
   UseDesktopFont(ListView);
   UseDesktopFont(StatusBar);
@@ -65,6 +60,7 @@ __fastcall TSynchronizeChecklistDialog::TSynchronizeChecklistDialog(
   FChangingItemIgnore = false;
   FChangingItemMass = false;
   FGeneralHint = StatusBar->Hint;
+  FSynchronizing = false;
 
   SelectScaledImageList(ActionImages);
 
@@ -84,7 +80,7 @@ __fastcall TSynchronizeChecklistDialog::~TSynchronizeChecklistDialog()
   ListView->WindowProc = FOrigListViewWindowProc;
 }
 //---------------------------------------------------------------------
-bool __fastcall TSynchronizeChecklistDialog::Execute(TSynchronizeChecklist * Checklist)
+void __fastcall TSynchronizeChecklistDialog::Execute(TSynchronizeChecklist * Checklist)
 {
   FChecklist = Checklist;
 
@@ -92,13 +88,6 @@ bool __fastcall TSynchronizeChecklistDialog::Execute(TSynchronizeChecklist * Che
 
   if (Result)
   {
-    for (int Index = 0; Index < ListView->Items->Count; Index++)
-    {
-      TListItem * Item = ListView->Items->Item[Index];
-      const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(Item);
-      Checklist->Update(ChecklistItem, Item->Checked, GetChecklistItemAction(ChecklistItem));
-    }
-
     TSynchronizeChecklistConfiguration FormConfiguration =
       CustomWinConfiguration->SynchronizeChecklist;
     FormConfiguration.ListParams = ListView->ColProperties->ParamsStr;
@@ -115,12 +104,12 @@ bool __fastcall TSynchronizeChecklistDialog::Execute(TSynchronizeChecklist * Che
 
     CustomWinConfiguration->SynchronizeChecklist = FormConfiguration;
   }
-
-  return Result;
 }
 //---------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::UpdateControls()
 {
+  Caption = FormatFormCaption(this, LoadStr(FSynchronizing ? SYNCHRONIZE_PROGRESS_SYNCHRONIZE2 : SYNCHRONIZE_CHECKLIST_CAPTION));
+
   StatusBar->Invalidate();
 
   bool AllChecked = true;
@@ -152,15 +141,17 @@ void __fastcall TSynchronizeChecklistDialog::UpdateControls()
     Item = ListView->GetNextItem(Item, sdAll, TItemStates() << isSelected);
   }
 
-  EnableControl(OkButton, (FChecked[0] > 0));
-  CheckAction->Enabled = !AllChecked;
-  UncheckAction->Enabled = !AllUnchecked;
-  CheckAllAction->Enabled = (FChecked[0] < FTotals[0]);
-  UncheckAllAction->Enabled = (FChecked[0] > 0);
-  CustomCommandsAction->Enabled = AnyBoth && !AnyNonBoth;
-  ReverseAction->Enabled = (ListView->SelCount > 0);
+  EnableControl(OkButton, (FChecked[0] > 0) && !FSynchronizing);
+  EnableControl(CancelButton, !FSynchronizing);
+  EnableControl(HelpButton, !FSynchronizing);
+  CheckAction->Enabled = !AllChecked && !FSynchronizing;
+  UncheckAction->Enabled = !AllUnchecked && !FSynchronizing;
+  CheckAllAction->Enabled = (FChecked[0] < FTotals[0]) && !FSynchronizing;
+  UncheckAllAction->Enabled = (FChecked[0] > 0) && !FSynchronizing;
+  CustomCommandsAction->Enabled = AnyBoth && !AnyNonBoth && DebugAlwaysTrue(!FSynchronizing);
+  ReverseAction->Enabled = (ListView->SelCount > 0) && DebugAlwaysTrue(!FSynchronizing);
 
-  SelectAllAction->Enabled = (ListView->SelCount < ListView->Items->Count);
+  SelectAllAction->Enabled = (ListView->SelCount < ListView->Items->Count) && !FSynchronizing;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TSynchronizeChecklistDialog::GetWindowParams(UnicodeString & WindowParams)
@@ -1084,5 +1075,38 @@ void __fastcall TSynchronizeChecklistDialog::CMDpiChanged(TMessage & Message)
 {
   TForm::Dispatch(&Message);
   UpdateImages();
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeChecklistDialog::ProcessedItem(const void * Token)
+{
+  TTokens::const_iterator I = FTokens.find(Token);
+  if (DebugAlwaysTrue(I != FTokens.end()))
+  {
+    TListItem * Item = I->second;
+    DebugAssert(Item->Checked);
+    Item->Checked = false;
+    Item->MakeVisible(false);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeChecklistDialog::OkButtonClick(TObject * /*Sender*/)
+{
+  ListView->SelectAll(smNone);
+  FTokens.clear();
+  for (int Index = 0; Index < ListView->Items->Count; Index++)
+  {
+    TListItem * Item = ListView->Items->Item[Index];
+    const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(Item);
+    FChecklist->Update(ChecklistItem, Item->Checked, GetChecklistItemAction(ChecklistItem));
+    FTokens.insert(std::make_pair(ChecklistItem, Item));
+    if (ChecklistItem->RemoteFile != NULL)
+    {
+      FTokens.insert(std::make_pair(ChecklistItem->RemoteFile, Item));
+    }
+  }
+
+  TAutoFlag Flag(FSynchronizing);
+  UpdateControls();
+  FOnSynchronize(FToken, ProcessedItem);
 }
 //---------------------------------------------------------------------------

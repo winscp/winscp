@@ -6,6 +6,7 @@
 #include <Buttons.hpp>
 #include <Interface.h>
 #include <WinConfiguration.h>
+#include <Terminal.h>
 #include <SynchronizeController.h>
 
 #ifdef LOCALINTERFACE
@@ -350,10 +351,11 @@ bool __fastcall DoFullSynchronizeDialog(TSynchronizeMode & Mode, int & Params,
 class TSynchronizeChecklist;
 typedef void __fastcall (__closure *TCustomCommandMenuEvent)
   (TAction * Action, TStrings * LocalFileList, TStrings * RemoteFileList);
-bool __fastcall DoSynchronizeChecklistDialog(TSynchronizeChecklist * Checklist,
+typedef void __fastcall (__closure *TFullSynchronizeEvent)(void * Token, TProcessedItem OnProcessedItem);
+void __fastcall DoSynchronizeChecklistDialog(TSynchronizeChecklist * Checklist,
   TSynchronizeMode Mode, int Params,
   const UnicodeString LocalDirectory, const UnicodeString RemoteDirectory,
-  TCustomCommandMenuEvent OnCustomCommandMenu);
+  TCustomCommandMenuEvent OnCustomCommandMenu, TFullSynchronizeEvent OnSynchronize, void * Token);
 
 // forms\Editor.cpp
 typedef void __fastcall (__closure *TFileClosedEvent)

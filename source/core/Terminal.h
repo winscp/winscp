@@ -55,6 +55,7 @@ typedef int __fastcall (__closure *TFileOperationEvent)
 typedef void __fastcall (__closure *TSynchronizeDirectory)
   (const UnicodeString LocalDirectory, const UnicodeString RemoteDirectory,
    bool & Continue, bool Collect);
+typedef void __fastcall (__closure *TProcessedItem)(const void * Token);
 typedef void __fastcall (__closure *TDeleteLocalFileEvent)(
   const UnicodeString FileName, bool Alternative);
 typedef int __fastcall (__closure *TDirectoryModifiedEvent)
@@ -220,6 +221,7 @@ private:
   TEncryptedFileNames FEncryptedFileNames;
   std::set<UnicodeString> FFoldersScannedForEncryptedFiles;
   RawByteString FEncryptKey;
+  TProcessedItem FOnProcessedItem;
 
   void __fastcall CommandError(Exception * E, const UnicodeString Msg);
   unsigned int __fastcall CommandError(Exception * E, const UnicodeString Msg,
@@ -366,6 +368,9 @@ protected:
   void __fastcall UnlockFile(const UnicodeString FileName, const TRemoteFile * File, void * Param);
   void __fastcall DoLockFile(const UnicodeString & FileName, const TRemoteFile * File);
   void __fastcall DoUnlockFile(const UnicodeString & FileName, const TRemoteFile * File);
+  void __fastcall OperationFinish(
+    TFileOperationProgressType * Progress, const void * Item, const UnicodeString & FileName,
+    bool Success, TOnceDoneOperation & OnceDoneOperation);
 
   virtual void __fastcall Information(const UnicodeString & Str, bool Status);
   virtual unsigned int __fastcall QueryUser(const UnicodeString Query,
@@ -540,7 +545,7 @@ public:
   void __fastcall SynchronizeApply(TSynchronizeChecklist * Checklist,
     const UnicodeString LocalDirectory, const UnicodeString RemoteDirectory,
     const TCopyParamType * CopyParam, int Params,
-    TSynchronizeDirectory OnSynchronizeDirectory);
+    TSynchronizeDirectory OnSynchronizeDirectory, TProcessedItem OnProcessedItem);
   void __fastcall FilesFind(UnicodeString Directory, const TFileMasks & FileMask,
     TFileFoundEvent OnFileFound, TFindingFileEvent OnFindingFile);
   void __fastcall SpaceAvailable(const UnicodeString Path, TSpaceAvailable & ASpaceAvailable);

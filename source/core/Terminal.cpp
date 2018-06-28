@@ -1053,6 +1053,7 @@ __fastcall TTerminal::TTerminal(TSessionData * SessionData,
   FOnCustomCommand = NULL;
   FOnClose = NULL;
   FOnFindingFile = NULL;
+  FOnProcessedItem = NULL;
 
   FUseBusyCursor = True;
   FLockDirectory = L"";
@@ -3765,6 +3766,18 @@ void __fastcall TTerminal::AnnounceFileListOperation()
   FFileSystem->AnnounceFileListOperation();
 }
 //---------------------------------------------------------------------------
+void __fastcall TTerminal::OperationFinish(
+  TFileOperationProgressType * Progress, const void * Item, const UnicodeString & FileName,
+  bool Success, TOnceDoneOperation & OnceDoneOperation)
+{
+  Progress->Finish(FileName, Success, OnceDoneOperation);
+
+  if ((Item != NULL) && (FOnProcessedItem != NULL) && (Progress->Operation != foCalculateSize))
+  {
+    FOnProcessedItem(Item);
+  }
+}
+//---------------------------------------------------------------------------
 bool __fastcall TTerminal::ProcessFiles(TStrings * FileList,
   TFileOperation Operation, TProcessFileEvent ProcessFile, void * Param,
   TOperationSide Side, bool Ex)
@@ -3796,6 +3809,7 @@ bool __fastcall TTerminal::ProcessFiles(TStrings * FileList,
         while ((Index < FileList->Count) && (Progress.Cancel == csContinue))
         {
           FileName = FileList->Strings[Index];
+          TRemoteFile * File = reinterpret_cast<TRemoteFile *>(FileList->Objects[Index]);
           try
           {
             try
@@ -3803,19 +3817,19 @@ bool __fastcall TTerminal::ProcessFiles(TStrings * FileList,
               Success = false;
               if (!Ex)
               {
-                ProcessFile(FileName, (TRemoteFile *)FileList->Objects[Index], Param);
+                ProcessFile(FileName, File, Param);
               }
               else
               {
                 // not used anymore
                 TProcessFileEventEx ProcessFileEx = (TProcessFileEventEx)ProcessFile;
-                ProcessFileEx(FileName, (TRemoteFile *)FileList->Objects[Index], Param, Index);
+                ProcessFileEx(FileName, File, Param, Index);
               }
               Success = true;
             }
             __finally
             {
-              Progress.Finish(FileName, Success, OnceDoneOperation);
+              OperationFinish(&Progress, File, FileName, Success, OnceDoneOperation);
             }
           }
           catch(ESkipFile & E)
@@ -5339,7 +5353,7 @@ bool __fastcall TTerminal::CalculateLocalFilesSize(TStrings * FileList,
 
           CalculateLocalFileSize(FileName, Rec, &Params);
 
-          OperationProgress.Finish(FileName, true, OnceDoneOperation);
+          OperationFinish(&OperationProgress, FileList->Objects[Index], FileName, true, OnceDoneOperation);
         }
       }
     }
@@ -5910,7 +5924,7 @@ void __fastcall TTerminal::DoSynchronizeCollectFile(const UnicodeString FileName
 void __fastcall TTerminal::SynchronizeApply(TSynchronizeChecklist * Checklist,
   const UnicodeString LocalDirectory, const UnicodeString RemoteDirectory,
   const TCopyParamType * CopyParam, int Params,
-  TSynchronizeDirectory OnSynchronizeDirectory)
+  TSynchronizeDirectory OnSynchronizeDirectory, TProcessedItem OnProcessedItem)
 {
   TSynchronizeData Data;
 
@@ -5931,6 +5945,9 @@ void __fastcall TTerminal::SynchronizeApply(TSynchronizeChecklist * Checklist,
   TStringList * DeleteRemoteList = new TStringList();
   TStringList * UploadList = new TStringList();
   TStringList * DeleteLocalList = new TStringList();
+
+  DebugAssert(FOnProcessedItem == NULL);
+  FOnProcessedItem = OnProcessedItem;
 
   BeginTransaction();
 
@@ -5962,6 +5979,7 @@ void __fastcall TTerminal::SynchronizeApply(TSynchronizeChecklist * Checklist,
              (Checklist->Item[IIndex]->Remote.Directory == CurrentRemoteDirectory))
       {
         ChecklistItem = Checklist->Item[IIndex];
+        TObject * ChecklistItemToken = const_cast<TObject *>(reinterpret_cast<const TObject *>(ChecklistItem));
         if (ChecklistItem->Checked)
         {
           Count++;
@@ -5972,16 +5990,14 @@ void __fastcall TTerminal::SynchronizeApply(TSynchronizeChecklist * Checklist,
             {
               case TSynchronizeChecklist::saDownloadUpdate:
                 DownloadList->AddObject(
-                  UnixIncludeTrailingBackslash(ChecklistItem->Remote.Directory) +
-                    ChecklistItem->Remote.FileName,
-                  (TObject *)(ChecklistItem));
+                  UnixIncludeTrailingBackslash(ChecklistItem->Remote.Directory) + ChecklistItem->Remote.FileName,
+                  ChecklistItemToken);
                 break;
 
               case TSynchronizeChecklist::saUploadUpdate:
                 UploadList->AddObject(
-                  IncludeTrailingBackslash(ChecklistItem->Local.Directory) +
-                    ChecklistItem->Local.FileName,
-                  (TObject *)(ChecklistItem));
+                  IncludeTrailingBackslash(ChecklistItem->Local.Directory) + ChecklistItem->Local.FileName,
+                  ChecklistItemToken);
                 break;
 
               default:
@@ -5996,29 +6012,27 @@ void __fastcall TTerminal::SynchronizeApply(TSynchronizeChecklist * Checklist,
               case TSynchronizeChecklist::saDownloadNew:
               case TSynchronizeChecklist::saDownloadUpdate:
                 DownloadList->AddObject(
-                  UnixIncludeTrailingBackslash(ChecklistItem->Remote.Directory) +
-                    ChecklistItem->Remote.FileName,
+                  UnixIncludeTrailingBackslash(ChecklistItem->Remote.Directory) + ChecklistItem->Remote.FileName,
                   ChecklistItem->RemoteFile);
                 break;
 
               case TSynchronizeChecklist::saDeleteRemote:
                 DeleteRemoteList->AddObject(
-                  UnixIncludeTrailingBackslash(ChecklistItem->Remote.Directory) +
-                    ChecklistItem->Remote.FileName,
+                  UnixIncludeTrailingBackslash(ChecklistItem->Remote.Directory) + ChecklistItem->Remote.FileName,
                   ChecklistItem->RemoteFile);
                 break;
 
               case TSynchronizeChecklist::saUploadNew:
               case TSynchronizeChecklist::saUploadUpdate:
-                UploadList->Add(
-                  IncludeTrailingBackslash(ChecklistItem->Local.Directory) +
-                    ChecklistItem->Local.FileName);
+                UploadList->AddObject(
+                  IncludeTrailingBackslash(ChecklistItem->Local.Directory) + ChecklistItem->Local.FileName,
+                  ChecklistItemToken);
                 break;
 
               case TSynchronizeChecklist::saDeleteLocal:
-                DeleteLocalList->Add(
-                  IncludeTrailingBackslash(ChecklistItem->Local.Directory) +
-                    ChecklistItem->Local.FileName);
+                DeleteLocalList->AddObject(
+                  IncludeTrailingBackslash(ChecklistItem->Local.Directory) + ChecklistItem->Local.FileName,
+                  ChecklistItemToken);
                 break;
 
               default:
@@ -6082,6 +6096,7 @@ void __fastcall TTerminal::SynchronizeApply(TSynchronizeChecklist * Checklist,
   }
   __finally
   {
+    FOnProcessedItem = NULL;
     delete DownloadList;
     delete DeleteRemoteList;
     delete UploadList;
@@ -6693,7 +6708,7 @@ void __fastcall TTerminal::DoCopyToRemote(
     }
     __finally
     {
-      OperationProgress->Finish(FileName, Success, OnceDoneOperation);
+      OperationFinish(OperationProgress, FilesToCopy->Objects[Index], FileName, Success, OnceDoneOperation);
     }
     Index++;
   }
@@ -7131,13 +7146,13 @@ void __fastcall TTerminal::DoCopyToLocal(
   {
     bool Success = false;
     UnicodeString FileName = FilesToCopy->Strings[Index];
+    const TRemoteFile * File = dynamic_cast<const TRemoteFile *>(FilesToCopy->Objects[Index]);
 
     try
     {
       try
       {
         UnicodeString AbsoluteFileName = AbsolutePath(FileName, true);
-        const TRemoteFile * File = dynamic_cast<const TRemoteFile *>(FilesToCopy->Objects[Index]);
         SinkRobust(AbsoluteFileName, File, FullTargetDir, CopyParam, Params, OperationProgress, Flags | tfFirstLevel);
         Success = true;
       }
@@ -7152,7 +7167,7 @@ void __fastcall TTerminal::DoCopyToLocal(
     }
     __finally
     {
-      OperationProgress->Finish(FileName, Success, OnceDoneOperation);
+      OperationFinish(OperationProgress, File, FileName, Success, OnceDoneOperation);
     }
     Index++;
   }

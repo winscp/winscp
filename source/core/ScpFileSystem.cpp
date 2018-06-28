@@ -1609,11 +1609,13 @@ void __fastcall TSCPFileSystem::CopyToRemote(TStrings * FilesToCopy,
           }
         }
 
+        void * Item = static_cast<void *>(FilesToCopy->Objects[IFile]);
+
         try
         {
           SCPSource(FileName, TargetDirFull,
             CopyParam, Params, OperationProgress, 0);
-          OperationProgress->Finish(FileName, true, OnceDoneOperation);
+          FTerminal->OperationFinish(OperationProgress, Item, FileName, true, OnceDoneOperation);
         }
         catch (EScpFileSkipped &E)
         {
@@ -1626,7 +1628,7 @@ void __fastcall TSCPFileSystem::CopyToRemote(TStrings * FilesToCopy,
           {
             OperationProgress->SetCancel(csCancel);
           }
-          OperationProgress->Finish(FileName, false, OnceDoneOperation);
+          FTerminal->OperationFinish(OperationProgress, Item, FileName, false, OnceDoneOperation);
           if (!FTerminal->HandleException(&E))
           {
             throw;
@@ -1634,7 +1636,7 @@ void __fastcall TSCPFileSystem::CopyToRemote(TStrings * FilesToCopy,
         }
         catch (ESkipFile &E)
         {
-          OperationProgress->Finish(FileName, false, OnceDoneOperation);
+          FTerminal->OperationFinish(OperationProgress, Item, FileName, false, OnceDoneOperation);
 
           {
             TSuspendFileOperationProgress Suspend(OperationProgress);
@@ -1647,7 +1649,7 @@ void __fastcall TSCPFileSystem::CopyToRemote(TStrings * FilesToCopy,
         }
         catch (...)
         {
-          OperationProgress->Finish(FileName, false, OnceDoneOperation);
+          FTerminal->OperationFinish(OperationProgress, Item, FileName, false, OnceDoneOperation);
           throw;
         }
       }
@@ -2176,12 +2178,12 @@ void __fastcall TSCPFileSystem::CopyToLocal(TStrings * FilesToCopy,
           }
         }
 
-        OperationProgress->Finish(FileName,
-          (!OperationProgress->Cancel && Success), OnceDoneOperation);
+        FTerminal->OperationFinish(
+          OperationProgress, File, FileName, (!OperationProgress->Cancel && Success), OnceDoneOperation);
       }
       catch (...)
       {
-        OperationProgress->Finish(FileName, false, OnceDoneOperation);
+        FTerminal->OperationFinish(OperationProgress, File, FileName, false, OnceDoneOperation);
         CloseSCP = (OperationProgress->Cancel != csRemoteAbort);
         throw;
       }
