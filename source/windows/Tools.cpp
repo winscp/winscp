@@ -33,7 +33,7 @@
 // VCL includes wininet.h (even with NO_WIN32_LEAN_AND_MEAN)
 // and it cannot be combined with winhttp.h as of current Windows SDK.
 // This is hack to allow that.
-// https://social.msdn.microsoft.com/Forums/windowsdesktop/en-US/8f468d9f-3f15-452c-803d-fc63ab3f684e/cannot-use-both-winineth-and-winhttph
+// https://social.msdn.microsoft.com/Forums/windowsdesktop/en-US/8f468d9f-3f15-452c-803d-fc63ab3f684e/cannot-use-both-ltwininethgt-and-ltwinhttphgt
 #undef BOOLAPI
 #undef SECURITY_FLAG_IGNORE_CERT_DATE_INVALID
 #undef SECURITY_FLAG_IGNORE_CERT_CN_INVALID
@@ -1105,7 +1105,7 @@ void __fastcall SuspendWindows()
 {
   AcquireShutDownPrivileges();
 
-  // https://msdn.microsoft.com/en-us/library/windows/desktop/aa373201.aspx
+  // https://docs.microsoft.com/en-us/windows/desktop/api/powrprof/nf-powrprof-setsuspendstate
   Win32Check(SetSuspendState(false, false, false));
 }
 //---------------------------------------------------------------------------
