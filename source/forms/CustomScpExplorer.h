@@ -329,7 +329,7 @@ protected:
   TDragDropFilesEx * FQueueDragDropFilesEx;
   TPoint FLastContextPopupScreenPoint;
   bool FRemoteDirViewWasFocused;
-  bool FDoNotIdleCurrentTerminal;
+  int FDoNotIdleCurrentTerminal;
   UnicodeString FFakeFileDropTarget;
 
   virtual bool __fastcall CopyParamDialog(TTransferDirection Direction,

@@ -207,7 +207,7 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   FStandaloneEditing = false;
   FOnFeedSynchronizeError = NULL;
   FNeedSession = false;
-  FDoNotIdleCurrentTerminal = false;
+  FDoNotIdleCurrentTerminal = 0;
 
   FEditorManager = new TEditorManager();
   FEditorManager->OnFileChange = ExecutedFileChanged;
@@ -1485,7 +1485,7 @@ void __fastcall TCustomScpExplorerForm::OperationProgress(
 {
   // For example, when calling TFileOperationProgressType::Suspend in TTerminal::QueryReopen,
   // we cannot recurse back to TTerminal::Idle as that may detect another error, calling "suspend" again.
-  TAutoFlag Flag(FDoNotIdleCurrentTerminal);
+  TAutoNestingCounter Counter(FDoNotIdleCurrentTerminal);
   FileOperationProgress(ProgressData);
 }
 //---------------------------------------------------------------------------
@@ -1565,7 +1565,7 @@ void __fastcall TCustomScpExplorerForm::OperationFinished(
   bool Temp, const UnicodeString & FileName, Boolean Success,
   TOnceDoneOperation & OnceDoneOperation)
 {
-  TAutoFlag Flag(FDoNotIdleCurrentTerminal);
+  TAutoNestingCounter Counter(FDoNotIdleCurrentTerminal);
   DoOperationFinished(Operation, Side, Temp, FileName, Success,
     OnceDoneOperation);
 }
@@ -4429,7 +4429,7 @@ void __fastcall TCustomScpExplorerForm::Idle()
 
     // make sure that Idle is called before update queue, as it may invoke QueueEvent
     // that needs to know if queue view is visible (and it may be closed after queue update)
-    TTerminalManager::Instance()->Idle(FDoNotIdleCurrentTerminal);
+    TTerminalManager::Instance()->Idle(FDoNotIdleCurrentTerminal > 0);
   }
 
   if (FShowing)
