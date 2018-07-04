@@ -1144,6 +1144,13 @@ UnicodeString __fastcall MakeUnicodeLargePath(UnicodeString Path)
 //---------------------------------------------------------------------------
 UnicodeString __fastcall ApiPath(UnicodeString Path)
 {
+  UnicodeString Drive = ExtractFileDrive(Path);
+  // This may match even a path like "C:" or "\\server\\share", but we do not really care
+  if (Drive.IsEmpty() || (Path.SubString(Drive.Length() + 1, 1) != L"\\"))
+  {
+    Path = ExpandFileName(Path);
+  }
+
   if (Path.Length() >= MAX_PATH)
   {
     if (Configuration != NULL)
