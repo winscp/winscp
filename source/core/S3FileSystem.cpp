@@ -816,7 +816,7 @@ void TS3FileSystem::DoListBucket(
 void TS3FileSystem::ReadDirectoryInternal(
   const UnicodeString & APath, TRemoteFileList * FileList, int MaxKeys, const UnicodeString & FileName)
 {
-  UnicodeString Path = AbsolutePath(APath, false);
+  UnicodeString Path = UnixExcludeTrailingBackslash(AbsolutePath(APath, false));
   if (IsUnixRootPath(Path))
   {
     DebugAssert(FileList != NULL);
