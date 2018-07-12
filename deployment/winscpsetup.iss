@@ -963,7 +963,7 @@ begin
   WizardForm.LicenseNotAcceptedRadio.Visible := False;
   WizardForm.LicenseMemo.Height :=
     GetBottom(WizardForm.LicenseNotAcceptedRadio) -
-    WizardForm.LicenseMemo.Top - 5;
+    WizardForm.LicenseMemo.Top - ScaleY(5);
 
   // hide installation types combo
   WizardForm.TypesCombo.Visible := False;
