@@ -338,8 +338,8 @@ __published:
   TTBXToolbar *CommandLineToolbar;
   TTBXComboBoxItem *CommandLineCombo;
   TTBXLabelItem *CommandLinePromptLabel;
-  TTBXItem *TBXItem163;
-  TTBXItem *TBXItem169;
+  TTBXSubmenuItem *LocalOpenDirButton;
+  TTBXSubmenuItem *RemoteOpenDirButton;
   TTBXComboBoxItem *QueueSpeedComboBoxItem;
   TTBXItem *TBXItem220;
   TTBXItem *TBXItem221;
@@ -483,6 +483,8 @@ __published:
   void __fastcall RemoteStatusBarPanelClick(TTBXCustomStatusBar *Sender, TTBXStatusPanel *Panel);
   void __fastcall RemotePathLabelMaskClick(TObject *Sender);
   void __fastcall LocalPathLabelMaskClick(TObject *Sender);
+  void __fastcall LocalOpenDirButtonPopup(TTBCustomItem *Sender, bool FromLink);
+  void __fastcall RemoteOpenDirButtonPopup(TTBCustomItem *Sender, bool FromLink);
 
 private:
   bool FConstructed;
@@ -570,7 +572,7 @@ protected:
   void __fastcall LocalPathComboUpdate();
   virtual void __fastcall ToolbarItemResize(TTBXCustomDropDownItem * Item, int Width);
   void __fastcall DoOpenBookmark(UnicodeString Local, UnicodeString Remote);
-  virtual bool __fastcall OpenBookmark(UnicodeString Local, UnicodeString Remote);
+  virtual bool __fastcall OpenBookmark(TOperationSide Side, TBookmark * Bookmark);
   virtual void __fastcall DoFocusRemotePath(TTerminal * Terminal, const UnicodeString & Path);
   UnicodeString __fastcall ChangeFilePath(UnicodeString Path, TOperationSide Side);
   virtual bool __fastcall EligibleForImageDisplayMode(TTBCustomItem * Item);

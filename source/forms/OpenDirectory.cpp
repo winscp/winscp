@@ -189,7 +189,7 @@ TStrings * __fastcall TOpenDirectoryDialog::GetDirectories()
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TOpenDirectoryDialog::BookmarkDirectory(TBookmark * Bookmark)
 {
-  return OperationSide == osLocal ? Bookmark->Local : Bookmark->Remote;
+  return Bookmark->GetSideDirectory(OperationSide);
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TOpenDirectoryDialog::BookmarkText(TBookmark * Bookmark)

@@ -48,6 +48,7 @@ class TTransferPresetNoteData;
 struct TEditedFileData;
 class ITaskbarList3;
 struct TSynchronizeParams;
+class TBookmark;
 //---------------------------------------------------------------------------
 enum TActionAllowed { aaShortCut, aaUpdate, aaExecute };
 enum TActionFlag { afLocal = 1, afRemote = 2, afExplorer = 4 , afCommander = 8 };
@@ -301,6 +302,9 @@ private:
   void __fastcall WMClose(TMessage & Message);
   void __fastcall CMDpiChanged(TMessage & Message);
   void __fastcall WMDpiChanged(TMessage & Message);
+  void __fastcall DoBookmarkClick(TOperationSide Side, TObject * Sender);
+  void __fastcall LocalBookmarkClick(TObject * Sender);
+  void __fastcall RemoteBookmarkClick(TObject * Sender);
 
 protected:
   TOperationSide FCurrentSide;
@@ -539,7 +543,7 @@ protected:
   virtual void __fastcall ToolbarItemResize(TTBXCustomDropDownItem * Item, int Width);
   virtual void __fastcall CreateWnd();
   virtual void __fastcall DestroyWnd();
-  virtual bool __fastcall OpenBookmark(UnicodeString Local, UnicodeString Remote);
+  virtual bool __fastcall OpenBookmark(TOperationSide Side, TBookmark * Bookmark);
   void __fastcall DoFindFiles(TTerminal * Terminal, UnicodeString Directory, const TFileMasks & FileMask,
     TFileFoundEvent OnFileFound, TFindingFileEvent OnFindingFile);
   virtual void __fastcall DoFocusRemotePath(TTerminal * Terminal, const UnicodeString & Path);
@@ -603,6 +607,8 @@ protected:
   void __fastcall CreateRemoteDirectory(const UnicodeString & Path, TRemoteProperties & Properties);
   void __fastcall DoFullSynchronize(void * Token, TProcessedItem OnProcessedItem);
   void __fastcall FullSynchronize(TSynchronizeParams & Params, TProcessedItem OnProcessedItem);
+  void __fastcall CreateOpenDirMenuList(TTBCustomItem * Menu, TOperationSide Side, TBookmarkList * BookmarkList);
+  void __fastcall CreateOpenDirMenu(TTBCustomItem * Menu, TOperationSide Side);
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();

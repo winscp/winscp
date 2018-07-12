@@ -20,6 +20,7 @@
 #include "Tools.h"
 #include "WinConfiguration.h"
 #include "TerminalManager.h"
+#include "Bookmarks.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "CustomDirView"
@@ -1406,17 +1407,17 @@ void __fastcall TScpCommanderForm::DoOpenBookmark(UnicodeString Local, UnicodeSt
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall TScpCommanderForm::OpenBookmark(UnicodeString Local, UnicodeString Remote)
+bool __fastcall TScpCommanderForm::OpenBookmark(TOperationSide Side, TBookmark * Bookmark)
 {
   bool Result;
   if (WinConfiguration->UseLocationProfiles)
   {
-    DoOpenBookmark(Local, Remote);
+    DoOpenBookmark(Bookmark->Local, Bookmark->Remote);
     Result = true;
   }
   else
   {
-    Result = TCustomScpExplorerForm::OpenBookmark(Local, Remote);
+    Result = TCustomScpExplorerForm::OpenBookmark(Side, Bookmark);
   }
   return Result;
 }
@@ -2215,5 +2216,15 @@ void __fastcall TScpCommanderForm::RemotePathLabelMaskClick(TObject * /*Sender*/
 void __fastcall TScpCommanderForm::LocalPathLabelMaskClick(TObject * /*Sender*/)
 {
   Filter(osLocal);
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::LocalOpenDirButtonPopup(TTBCustomItem * /*Sender*/, bool /*FromLink*/)
+{
+  CreateOpenDirMenu(LocalOpenDirButton, osLocal);
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::RemoteOpenDirButtonPopup(TTBCustomItem * /*Sender*/, bool /*FromLink*/)
+{
+  CreateOpenDirMenu(RemoteOpenDirButton, osRemote);
 }
 //---------------------------------------------------------------------------
