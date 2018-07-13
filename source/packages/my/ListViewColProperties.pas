@@ -549,42 +549,42 @@ begin
       CreateProperties(Columns.Count);
 
     UpdateFromListView;
-
-    if not FConstraintsInitialized then
-    begin
-      FConstraintsInitialized := True;
-
-      for Index := 0 to Count - 1 do
-      begin
-        Column := GetColumn(Index);
-        Properties := GetProperties(Index);
-
-        // Is this branching needed?
-        if Properties.Visible then
-        begin
-          W := Column.MaxWidth;
-          if W = 0 then W := DefaultListViewMaxWidth;
-          Properties.MaxWidth := ScaleByTextHeight(FListView, W);
-
-          W := Column.MinWidth;
-          if W = 0 then W := DefaultListViewMinWidth;
-          Properties.MinWidth := ScaleByTextHeight(FListView, W);
-        end
-          else
-        begin
-          Column.MaxWidth := ScaleByTextHeight(FListView, Column.MaxWidth);
-          Column.MinWidth := ScaleByTextHeight(FListView, Column.MinWidth);
-        end;
-      end;
-    end;
-
-    // To apply the default constraints to columns that do not have their own
-    UpdateListViewMaxMinWidth;
   end
     else
   begin
     UpdateListView;
   end;
+
+  if not FConstraintsInitialized then
+  begin
+    FConstraintsInitialized := True;
+
+    for Index := 0 to Count - 1 do
+    begin
+      Column := GetColumn(Index);
+      Properties := GetProperties(Index);
+
+      // Is this branching needed?
+      if Properties.Visible then
+      begin
+        W := Column.MaxWidth;
+        if W = 0 then W := DefaultListViewMaxWidth;
+        Properties.MaxWidth := ScaleByTextHeight(FListView, W);
+
+        W := Column.MinWidth;
+        if W = 0 then W := DefaultListViewMinWidth;
+        Properties.MinWidth := ScaleByTextHeight(FListView, W);
+      end
+        else
+      begin
+        Column.MaxWidth := ScaleByTextHeight(FListView, Column.MaxWidth);
+        Column.MinWidth := ScaleByTextHeight(FListView, Column.MinWidth);
+      end;
+    end;
+  end;
+
+  // To apply the default constraints to columns that do not have their own
+  UpdateListViewMaxMinWidth;
 end;
 
 procedure TCustomListViewColProperties.ListViewWndDestroying;
@@ -633,7 +633,9 @@ begin
     if Properties.Visible then
     begin
       Column.MaxWidth := Properties.MaxWidth;
+      if Column.Width > Column.MaxWidth then Column.Width := Column.MaxWidth;
       Column.MinWidth := Properties.MinWidth;
+      if Column.Width < Column.MinWidth then Column.Width := Column.MinWidth;
     end;
   end;
 end;
