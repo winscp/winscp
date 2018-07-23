@@ -383,7 +383,7 @@ void __fastcall TCopyParamType::DoGetInfoStr(
       if (DebugAlwaysTrue(RemoveCtrlZ))
       {
         const int Except = cpaIncludeMaskOnly | cpaNoRemoveCtrlZ | cpaNoTransferMode;
-        ADD(LoadStr(COPY_INFO_REMOVE_CTRLZ),Except);
+        ADD(LoadStr(COPY_INFO_REMOVE_CTRLZ), Except);
         if (FLAGCLEAR(Options, Except))
         {
           NoScriptArgs = true;
