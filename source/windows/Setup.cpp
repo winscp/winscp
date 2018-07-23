@@ -1585,7 +1585,7 @@ bool __fastcall CheckForUpdates(bool CachedResults)
 
     if (Updates.HaveResults &&
         (double(Updates.Period) > 0) &&
-        // do not chow next check time, if we have new version info
+        // do not show next check time, if we have new version info
         !New)
     {
       Message += L"\n\n" +
