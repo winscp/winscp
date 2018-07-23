@@ -1210,46 +1210,39 @@ void __fastcall TWinConfiguration::LoadFrom(THierarchicalStorage * Storage)
 void __fastcall TWinConfiguration::DoLoadExtensionList(
   const UnicodeString & Path, const UnicodeString & PathId, TStringList * DeletedExtensions)
 {
-  TSearchRecChecked SearchRec;
+  TSearchRecOwned SearchRec;
   int FindAttrs = faReadOnly | faArchive;
   if (FindFirstUnchecked(IncludeTrailingBackslash(Path) + L"*.*", FindAttrs, SearchRec) == 0)
   {
-    try
+    do
     {
-      do
+      UnicodeString Id = TCustomCommandType::GetExtensionId(SearchRec.Name);
+      if (!Id.IsEmpty())
       {
-        UnicodeString Id = TCustomCommandType::GetExtensionId(SearchRec.Name);
-        if (!Id.IsEmpty())
+        Id = IncludeTrailingBackslash(PathId) + Id;
+        if (DeletedExtensions->IndexOf(Id) >= 0)
         {
-          Id = IncludeTrailingBackslash(PathId) + Id;
-          if (DeletedExtensions->IndexOf(Id) >= 0)
-          {
-            // reconstruct the list, so that we remove the commands that no longer exists
-            AddToList(FExtensionsDeleted, Id, L"|");
-          }
-          else
-          {
-            std::unique_ptr<TCustomCommandType> CustomCommand(new TCustomCommandType());
-            CustomCommand->Id = Id;
+          // reconstruct the list, so that we remove the commands that no longer exists
+          AddToList(FExtensionsDeleted, Id, L"|");
+        }
+        else
+        {
+          std::unique_ptr<TCustomCommandType> CustomCommand(new TCustomCommandType());
+          CustomCommand->Id = Id;
 
-            try
-            {
-              CustomCommand->LoadExtension(IncludeTrailingBackslash(Path) + SearchRec.Name);
-              FExtensionList->Add(CustomCommand.release());
-            }
-            catch (...)
-            {
-              // skip invalid extension files
-            }
+          try
+          {
+            CustomCommand->LoadExtension(IncludeTrailingBackslash(Path) + SearchRec.Name);
+            FExtensionList->Add(CustomCommand.release());
+          }
+          catch (...)
+          {
+            // skip invalid extension files
           }
         }
       }
-      while (FindNextChecked(SearchRec) == 0);
     }
-    __finally
-    {
-      FindClose(SearchRec);
-    }
+    while (FindNextChecked(SearchRec) == 0);
   }
 }
 //---------------------------------------------------------------------------
@@ -2365,7 +2358,7 @@ TStrings * __fastcall TWinConfiguration::FindTemporaryFolders()
   TStrings * Result = new TStringList();
   try
   {
-    TSearchRecChecked SRec;
+    TSearchRecOwned SRec;
     UnicodeString Mask = TemporaryDir(true);
     UnicodeString Directory = ExtractFilePath(Mask);
     if (FindFirstUnchecked(Mask, faDirectory, SRec) == 0)

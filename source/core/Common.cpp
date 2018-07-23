@@ -1324,6 +1324,20 @@ bool __fastcall IsHex(wchar_t Ch)
     ((Ch >= 'a') && (Ch <= 'f'));
 }
 //---------------------------------------------------------------------------
+TSearchRecOwned::~TSearchRecOwned()
+{
+  if (Opened)
+  {
+    FindClose(*this);
+  }
+}
+//---------------------------------------------------------------------------
+void TSearchRecOwned::Close()
+{
+  FindClose(*this);
+  Opened = false;
+}
+//---------------------------------------------------------------------------
 int __fastcall FindCheck(int Result, const UnicodeString & Path)
 {
   if ((Result != ERROR_SUCCESS) &&
@@ -1338,7 +1352,9 @@ int __fastcall FindCheck(int Result, const UnicodeString & Path)
 int __fastcall FindFirstUnchecked(const UnicodeString & Path, int Attr, TSearchRecChecked & F)
 {
   F.Path = Path;
-  return FindFirst(ApiPath(Path), Attr, F);
+  int Result = FindFirst(ApiPath(Path), Attr, F);
+  F.Opened = (Result == 0);
+  return Result;
 }
 //---------------------------------------------------------------------------
 int __fastcall FindFirstChecked(const UnicodeString & Path, int Attr, TSearchRecChecked & F)
@@ -1381,26 +1397,19 @@ void __fastcall ProcessLocalDirectory(UnicodeString DirName,
   {
     FindAttrs = faReadOnly | faHidden | faSysFile | faDirectory | faArchive;
   }
-  TSearchRecChecked SearchRec;
 
   DirName = IncludeTrailingBackslash(DirName);
+  TSearchRecOwned SearchRec;
   if (FindFirstChecked(DirName + L"*.*", FindAttrs, SearchRec) == 0)
   {
-    try
+    do
     {
-      do
+      if ((SearchRec.Name != L".") && (SearchRec.Name != L".."))
       {
-        if ((SearchRec.Name != L".") && (SearchRec.Name != L".."))
-        {
-          CallBackFunc(DirName + SearchRec.Name, SearchRec, Param);
-        }
+        CallBackFunc(DirName + SearchRec.Name, SearchRec, Param);
+      }
 
-      } while (FindNextChecked(SearchRec) == 0);
-    }
-    __finally
-    {
-      FindClose(SearchRec);
-    }
+    } while (FindNextChecked(SearchRec) == 0);
   }
 }
 //---------------------------------------------------------------------------

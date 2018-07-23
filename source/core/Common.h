@@ -178,6 +178,12 @@ bool __fastcall FileSearchRec(const UnicodeString FileName, TSearchRec & Rec);
 struct TSearchRecChecked : public TSearchRec
 {
   UnicodeString Path;
+  bool Opened;
+};
+struct TSearchRecOwned : public TSearchRecChecked
+{
+  ~TSearchRecOwned();
+  void Close();
 };
 int __fastcall FindCheck(int Result, const UnicodeString & Path);
 int __fastcall FindFirstUnchecked(const UnicodeString & Path, int Attr, TSearchRecChecked & F);

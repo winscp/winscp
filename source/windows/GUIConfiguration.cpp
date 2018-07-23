@@ -1082,31 +1082,21 @@ void __fastcall TGUIConfiguration::SetResourceModule(HINSTANCE Instance)
 void __fastcall TGUIConfiguration::FindLocales(const UnicodeString & LocalesMask, TStrings * Exts, UnicodeString & LocalesExts)
 {
   int FindAttrs = faReadOnly | faArchive;
-  TSearchRecChecked SearchRec;
-  bool Found;
 
-  Found =
-    (FindFirstUnchecked(LocalesMask, FindAttrs, SearchRec) == 0);
-  try
+  TSearchRecOwned SearchRec;
+  bool Found = (FindFirstUnchecked(LocalesMask, FindAttrs, SearchRec) == 0);
+  while (Found)
   {
-    UnicodeString Ext;
-    while (Found)
+    UnicodeString Ext = ExtractFileExt(SearchRec.Name).UpperCase();
+    // DLL is a remnant from times the .NET assembly was winscp.dll, not winscpnet.dll
+    if ((Ext.Length() >= 3) && (Ext != L".EXE") && (Ext != L".COM") &&
+        (Ext != L".DLL") && (Ext != L".INI") && (Ext != L".MAP"))
     {
-      Ext = ExtractFileExt(SearchRec.Name).UpperCase();
-      // DLL is a remnant from times the .NET assembly was winscp.dll, not winscpnet.dll
-      if ((Ext.Length() >= 3) && (Ext != L".EXE") && (Ext != L".COM") &&
-          (Ext != L".DLL") && (Ext != L".INI") && (Ext != L".MAP"))
-      {
-        Ext = Ext.SubString(2, Ext.Length() - 1);
-        LocalesExts += Ext;
-        Exts->Add(Ext);
-      }
-      Found = (FindNextChecked(SearchRec) == 0);
+      Ext = Ext.SubString(2, Ext.Length() - 1);
+      LocalesExts += Ext;
+      Exts->Add(Ext);
     }
-  }
-  __finally
-  {
-    FindClose(SearchRec);
+    Found = (FindNextChecked(SearchRec) == 0);
   }
 }
 //---------------------------------------------------------------------------

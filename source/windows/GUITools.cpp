@@ -458,7 +458,7 @@ UnicodeString __fastcall UniqTempDir(const UnicodeString BaseDir, const UnicodeS
 //---------------------------------------------------------------------------
 bool __fastcall DeleteDirectory(const UnicodeString DirName)
 {
-  TSearchRecChecked sr;
+  TSearchRecOwned sr;
   bool retval = true;
   if (FindFirstUnchecked(DirName + L"\\*", faAnyFile, sr) == 0) // VCL Function
   {
@@ -490,7 +490,7 @@ bool __fastcall DeleteDirectory(const UnicodeString DirName)
       }
     }
   }
-  FindClose(sr);
+  sr.Close();
   if (retval) retval = RemoveDir(ApiPath(DirName)); // VCL function
   return retval;
 }

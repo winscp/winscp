@@ -1996,69 +1996,51 @@ void __fastcall TSCPFileSystem::SCPDirectorySource(const UnicodeString Directory
 
   try
   {
-    int FindAttrs = faReadOnly | faHidden | faSysFile | faDirectory | faArchive;
-    TSearchRecChecked SearchRec;
-    bool FindOK;
+    TSearchRecOwned SearchRec;
+    bool FindOK = FTerminal->LocalFindFirstLoop(IncludeTrailingBackslash(DirectoryName), SearchRec);
 
-    FILE_OPERATION_LOOP_BEGIN
+    while (FindOK && !OperationProgress->Cancel)
     {
-      FindOK =
-        (FindFirstChecked(IncludeTrailingBackslash(DirectoryName) + L"*.*",
-           FindAttrs, SearchRec) == 0);
-    }
-    FILE_OPERATION_LOOP_END(FMTLOAD(LIST_DIR_ERROR, (DirectoryName)));
-
-    try
-    {
-      while (FindOK && !OperationProgress->Cancel)
+      UnicodeString FileName = IncludeTrailingBackslash(DirectoryName) + SearchRec.Name;
+      try
       {
-        UnicodeString FileName = IncludeTrailingBackslash(DirectoryName) + SearchRec.Name;
-        try
+        if ((SearchRec.Name != L".") && (SearchRec.Name != L".."))
         {
-          if ((SearchRec.Name != L".") && (SearchRec.Name != L".."))
-          {
-            SCPSource(FileName, TargetDirFull, CopyParam, Params, OperationProgress, Level + 1);
-          }
+          SCPSource(FileName, TargetDirFull, CopyParam, Params, OperationProgress, Level + 1);
         }
-        // Previously we caught ESkipFile, making error being displayed
-        // even when file was excluded by mask. Now the ESkipFile is special
-        // case without error message.
-        catch (EScpFileSkipped &E)
-        {
-          TQueryParams Params(qpAllowContinueOnError);
-          TSuspendFileOperationProgress Suspend(OperationProgress);
-
-          if (FTerminal->QueryUserException(FMTLOAD(COPY_ERROR, (FileName)), &E,
-                qaOK | qaAbort, &Params, qtError) == qaAbort)
-          {
-            OperationProgress->SetCancel(csCancel);
-          }
-          if (!FTerminal->HandleException(&E))
-          {
-            throw;
-          }
-        }
-        catch (ESkipFile &E)
-        {
-          // If ESkipFile occurs, just log it and continue with next file
-          TSuspendFileOperationProgress Suspend(OperationProgress);
-          if (!FTerminal->HandleException(&E))
-          {
-            throw;
-          }
-        }
-
-        FILE_OPERATION_LOOP_BEGIN
-        {
-          FindOK = (FindNextChecked(SearchRec) == 0);
-        }
-        FILE_OPERATION_LOOP_END(FMTLOAD(LIST_DIR_ERROR, (DirectoryName)));
       }
+      // Previously we caught ESkipFile, making error being displayed
+      // even when file was excluded by mask. Now the ESkipFile is special
+      // case without error message.
+      catch (EScpFileSkipped &E)
+      {
+        TQueryParams Params(qpAllowContinueOnError);
+        TSuspendFileOperationProgress Suspend(OperationProgress);
+
+        if (FTerminal->QueryUserException(FMTLOAD(COPY_ERROR, (FileName)), &E,
+              qaOK | qaAbort, &Params, qtError) == qaAbort)
+        {
+          OperationProgress->SetCancel(csCancel);
+        }
+        if (!FTerminal->HandleException(&E))
+        {
+          throw;
+        }
+      }
+      catch (ESkipFile &E)
+      {
+        // If ESkipFile occurs, just log it and continue with next file
+        TSuspendFileOperationProgress Suspend(OperationProgress);
+        if (!FTerminal->HandleException(&E))
+        {
+          throw;
+        }
+      }
+
+      FindOK = FTerminal->LocalFindNextLoop(SearchRec);
     }
-    __finally
-    {
-      FindClose(SearchRec);
-    }
+
+    SearchRec.Close();
 
     /* TODO : Delete also read-only directories. */
     /* TODO : Show error message on failure. */

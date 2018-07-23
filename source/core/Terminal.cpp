@@ -5479,6 +5479,29 @@ UnicodeString __fastcall TTerminal::SynchronizeParamsStr(int Params)
   return ParamsStr;
 }
 //---------------------------------------------------------------------------
+bool __fastcall TTerminal::LocalFindFirstLoop(const UnicodeString & Directory, TSearchRecChecked & SearchRec)
+{
+  bool Result;
+  FILE_OPERATION_LOOP_BEGIN
+  {
+    const int FindAttrs = faReadOnly | faHidden | faSysFile | faDirectory | faArchive;
+    Result = (FindFirstChecked(Directory + L"*.*", FindAttrs, SearchRec) == 0);
+  }
+  FILE_OPERATION_LOOP_END(FMTLOAD(LIST_DIR_ERROR, (ExcludeTrailingBackslash(Directory))));
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TTerminal::LocalFindNextLoop(TSearchRecChecked & SearchRec)
+{
+  bool Result;
+  FILE_OPERATION_LOOP_BEGIN
+  {
+    Result = (FindNextChecked(SearchRec) == 0);
+  }
+  FILE_OPERATION_LOOP_END(FMTLOAD(LIST_DIR_ERROR, (SearchRec.Path)));
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminal::DoSynchronizeCollectDirectory(const UnicodeString LocalDirectory,
   const UnicodeString RemoteDirectory, TSynchronizeMode Mode,
   const TCopyParamType * CopyParam, int Params,
@@ -5509,87 +5532,67 @@ void __fastcall TTerminal::DoSynchronizeCollectDirectory(const UnicodeString Loc
 
   try
   {
-    bool Found;
-    TSearchRecChecked SearchRec;
     Data.LocalFileList = CreateSortedStringList();
 
-    FILE_OPERATION_LOOP_BEGIN
+    TSearchRecOwned SearchRec;
+    if (LocalFindFirstLoop(Data.LocalDirectory, SearchRec))
     {
-      int FindAttrs = faReadOnly | faHidden | faSysFile | faDirectory | faArchive;
-      Found = (FindFirstChecked(Data.LocalDirectory + L"*.*", FindAttrs, SearchRec) == 0);
-    }
-    FILE_OPERATION_LOOP_END(FMTLOAD(LIST_DIR_ERROR, (LocalDirectory)));
-
-    if (Found)
-    {
-      try
+      do
       {
-        UnicodeString FileName;
-        while (Found)
+        UnicodeString FileName = SearchRec.Name;
+        // SearchRec.Size in C++B2010 is __int64,
+        // so we should be able to use it instead of FindData.nFileSize*
+        __int64 Size =
+          (static_cast<__int64>(SearchRec.FindData.nFileSizeHigh) << 32) +
+          SearchRec.FindData.nFileSizeLow;
+        TDateTime Modification = FileTimeToDateTime(SearchRec.FindData.ftLastWriteTime);
+        TFileMasks::TParams MaskParams;
+        MaskParams.Size = Size;
+        MaskParams.Modification = Modification;
+        bool Hidden = FLAGSET(SearchRec.Attr, faHidden);
+        UnicodeString RemoteFileName =
+          ChangeFileName(CopyParam, FileName, osLocal, false);
+        UnicodeString FullLocalFileName = Data.LocalDirectory + FileName;
+        UnicodeString BaseFileName = GetBaseFileName(FullLocalFileName);
+        if ((FileName != L".") && (FileName != L"..") &&
+            CopyParam->AllowTransfer(BaseFileName, osLocal, FLAGSET(SearchRec.Attr, faDirectory), MaskParams, Hidden) &&
+            !FFileSystem->TemporaryTransferFile(FileName) &&
+            (FLAGCLEAR(Flags, sfFirstLevel) ||
+             (Options == NULL) ||
+             Options->MatchesFilter(FileName) ||
+             Options->MatchesFilter(RemoteFileName)))
         {
-          FileName = SearchRec.Name;
-          // SearchRec.Size in C++B2010 is __int64,
-          // so we should be able to use it instead of FindData.nFileSize*
-          __int64 Size =
-            (static_cast<__int64>(SearchRec.FindData.nFileSizeHigh) << 32) +
-            SearchRec.FindData.nFileSizeLow;
-          TDateTime Modification = FileTimeToDateTime(SearchRec.FindData.ftLastWriteTime);
-          TFileMasks::TParams MaskParams;
-          MaskParams.Size = Size;
-          MaskParams.Modification = Modification;
-          bool Hidden = FLAGSET(SearchRec.Attr, faHidden);
-          UnicodeString RemoteFileName =
-            ChangeFileName(CopyParam, FileName, osLocal, false);
-          UnicodeString FullLocalFileName = Data.LocalDirectory + FileName;
-          UnicodeString BaseFileName = GetBaseFileName(FullLocalFileName);
-          if ((FileName != L".") && (FileName != L"..") &&
-              CopyParam->AllowTransfer(BaseFileName, osLocal,
-                FLAGSET(SearchRec.Attr, faDirectory), MaskParams, Hidden) &&
-              !FFileSystem->TemporaryTransferFile(FileName) &&
-              (FLAGCLEAR(Flags, sfFirstLevel) ||
-               (Options == NULL) ||
-               Options->MatchesFilter(FileName) ||
-               Options->MatchesFilter(RemoteFileName)))
-          {
-            TSynchronizeFileData * FileData = new TSynchronizeFileData;
+          TSynchronizeFileData * FileData = new TSynchronizeFileData;
 
-            FileData->IsDirectory = FLAGSET(SearchRec.Attr, faDirectory);
-            FileData->Info.FileName = FileName;
-            FileData->Info.Directory = Data.LocalDirectory;
-            FileData->Info.Modification = Modification;
-            FileData->Info.ModificationFmt = mfFull;
-            FileData->Info.Size = Size;
-            FileData->LocalLastWriteTime = SearchRec.FindData.ftLastWriteTime;
-            FileData->New = true;
-            FileData->Modified = false;
-            Data.LocalFileList->AddObject(FileName,
-              reinterpret_cast<TObject*>(FileData));
-            if (Configuration->ActualLogProtocol >= 0)
-            {
-              LogEvent(FORMAT(L"Local file %s included to synchronization",
-                (FormatFileDetailsForLog(FullLocalFileName, Modification, Size))));
-            }
-          }
-          else
+          FileData->IsDirectory = FLAGSET(SearchRec.Attr, faDirectory);
+          FileData->Info.FileName = FileName;
+          FileData->Info.Directory = Data.LocalDirectory;
+          FileData->Info.Modification = Modification;
+          FileData->Info.ModificationFmt = mfFull;
+          FileData->Info.Size = Size;
+          FileData->LocalLastWriteTime = SearchRec.FindData.ftLastWriteTime;
+          FileData->New = true;
+          FileData->Modified = false;
+          Data.LocalFileList->AddObject(FileName, reinterpret_cast<TObject*>(FileData));
+          if (Configuration->ActualLogProtocol >= 0)
           {
-            if (Configuration->ActualLogProtocol >= 0)
-            {
-              LogEvent(FORMAT(L"Local file %s excluded from synchronization",
-                (FormatFileDetailsForLog(FullLocalFileName, Modification, Size))));
-            }
+            LogEvent(FORMAT(L"Local file %s included to synchronization",
+              (FormatFileDetailsForLog(FullLocalFileName, Modification, Size))));
           }
-
-          FILE_OPERATION_LOOP_BEGIN
-          {
-            Found = (FindNextChecked(SearchRec) == 0);
-          }
-          FILE_OPERATION_LOOP_END(FMTLOAD(LIST_DIR_ERROR, (LocalDirectory)));
         }
+        else
+        {
+          if (Configuration->ActualLogProtocol >= 0)
+          {
+            LogEvent(FORMAT(L"Local file %s excluded from synchronization",
+              (FormatFileDetailsForLog(FullLocalFileName, Modification, Size))));
+          }
+        }
+
       }
-      __finally
-      {
-        FindClose(SearchRec);
-      }
+      while (LocalFindNextLoop(SearchRec));
+
+      SearchRec.Close();
 
       // can we expect that ProcessDirectory would take so little time
       // that we can postpone showing progress window until anything actually happens?
@@ -6793,56 +6796,38 @@ void __fastcall TTerminal::DirectorySource(
 
   if (FLAGCLEAR(Params, cpNoRecurse))
   {
-    int FindAttrs = faReadOnly | faHidden | faSysFile | faDirectory | faArchive;
-    TSearchRecChecked SearchRec;
-    bool FindOK;
-
-    FILE_OPERATION_LOOP_BEGIN
+    TSearchRecOwned SearchRec;
+    bool FindOK = LocalFindFirstLoop(DirectoryName, SearchRec);
+    while (FindOK && !OperationProgress->Cancel)
     {
-      FindOK =
-        (FindFirstChecked(DirectoryName + L"*.*", FindAttrs, SearchRec) == 0);
-    }
-    FILE_OPERATION_LOOP_END(FMTLOAD(LIST_DIR_ERROR, (DirectoryName)));
-
-    try
-    {
-      while (FindOK && !OperationProgress->Cancel)
+      UnicodeString FileName = DirectoryName + SearchRec.Name;
+      try
       {
-        UnicodeString FileName = DirectoryName + SearchRec.Name;
-        try
+        if ((SearchRec.Name != L".") && (SearchRec.Name != L".."))
         {
-          if ((SearchRec.Name != L".") && (SearchRec.Name != L".."))
-          {
-            SourceRobust(FileName, DestFullName, CopyParam, Params, OperationProgress, (Flags & ~(tfFirstLevel | tfAutoResume)));
-            // FTP: if any file got uploaded (i.e. there were any file in the directory and at least one was not skipped),
-            // do not try to create the directory, as it should be already created by FZAPI during upload
-            PostCreateDir = false;
-          }
+          SourceRobust(FileName, DestFullName, CopyParam, Params, OperationProgress, (Flags & ~(tfFirstLevel | tfAutoResume)));
+          // FTP: if any file got uploaded (i.e. there were any file in the directory and at least one was not skipped),
+          // do not try to create the directory, as it should be already created by FZAPI during upload
+          PostCreateDir = false;
         }
-        catch (ESkipFile &E)
-        {
-          // If ESkipFile occurs, just log it and continue with next file
-          TSuspendFileOperationProgress Suspend(OperationProgress);
-          // here a message to user was displayed, which was not appropriate
-          // when user refused to overwrite the file in subdirectory.
-          // hopefully it won't be missing in other situations.
-          if (!HandleException(&E))
-          {
-            throw;
-          }
-        }
-
-        FILE_OPERATION_LOOP_BEGIN
-        {
-          FindOK = (FindNextChecked(SearchRec) == 0);
-        }
-        FILE_OPERATION_LOOP_END(FMTLOAD(LIST_DIR_ERROR, (DirectoryName)));
       }
+      catch (ESkipFile &E)
+      {
+        // If ESkipFile occurs, just log it and continue with next file
+        TSuspendFileOperationProgress Suspend(OperationProgress);
+        // here a message to user was displayed, which was not appropriate
+        // when user refused to overwrite the file in subdirectory.
+        // hopefully it won't be missing in other situations.
+        if (!HandleException(&E))
+        {
+          throw;
+        }
+      }
+
+      FindOK = LocalFindNextLoop(SearchRec);
     }
-    __finally
-    {
-      FindClose(SearchRec);
-    }
+
+    SearchRec.Close();
 
     // FTP
     if (PostCreateDir)

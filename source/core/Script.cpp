@@ -736,35 +736,28 @@ TStrings * __fastcall TScript::CreateLocalFileList(TScriptProcParams * Parameter
 
       if (FLAGSET(ListType, fltMask))
       {
-        TSearchRecChecked SearchRec;
+        TSearchRecOwned SearchRec;
         int FindAttrs = faReadOnly | faHidden | faSysFile | faDirectory | faArchive;
         UnicodeString Error;
         bool AnyFound = false;
         if (FindFirstUnchecked(FileName, FindAttrs, SearchRec) == 0)
         {
           UnicodeString Directory = ExtractFilePath(FileName);
-          try
+          do
           {
-            do
+            if ((SearchRec.Name != L".") && (SearchRec.Name != L".."))
             {
-              if ((SearchRec.Name != L".") && (SearchRec.Name != L".."))
+              UnicodeString FileName = Directory + SearchRec.Name;
+              Result->Add(FileName);
+              if (SearchRec.TimeStamp > LatestModification)
               {
-                UnicodeString FileName = Directory + SearchRec.Name;
-                Result->Add(FileName);
-                if (SearchRec.TimeStamp > LatestModification)
-                {
-                  LatestFileName = FileName;
-                  LatestModification = SearchRec.TimeStamp;
-                }
-                AnyFound = true;
+                LatestFileName = FileName;
+                LatestModification = SearchRec.TimeStamp;
               }
+              AnyFound = true;
             }
-            while (FindNextChecked(SearchRec) == 0);
           }
-          __finally
-          {
-            FindClose(SearchRec);
-          }
+          while (FindNextChecked(SearchRec) == 0);
         }
         else
         {
@@ -2878,7 +2871,7 @@ void __fastcall TManagementScript::LLsProc(TScriptProcParams * Parameters)
     Mask = L"*.*";
   }
 
-  TSearchRecChecked SearchRec;
+  TSearchRecOwned SearchRec;
   int FindAttrs = faReadOnly | faHidden | faSysFile | faDirectory | faArchive;
   if (FindFirstUnchecked(IncludeTrailingBackslash(Directory) + Mask, FindAttrs, SearchRec) != 0)
   {
@@ -2886,52 +2879,45 @@ void __fastcall TManagementScript::LLsProc(TScriptProcParams * Parameters)
   }
   else
   {
-    try
-    {
-      UnicodeString TimeFormat = FixedLenDateTimeFormat(FormatSettings.ShortTimeFormat);
-      UnicodeString DateFormat = FixedLenDateTimeFormat(FormatSettings.ShortDateFormat);
-      int DateLen = 0;
-      int TimeLen = 0;
-      bool First = true;
+    UnicodeString TimeFormat = FixedLenDateTimeFormat(FormatSettings.ShortTimeFormat);
+    UnicodeString DateFormat = FixedLenDateTimeFormat(FormatSettings.ShortDateFormat);
+    int DateLen = 0;
+    int TimeLen = 0;
+    bool First = true;
 
-      do
-      {
-        if (SearchRec.Name != L".")
-        {
-          TDateTime DateTime = FileTimeToDateTime(SearchRec.FindData.ftLastWriteTime);
-          UnicodeString TimeStr = FormatDateTime(TimeFormat, DateTime);
-          UnicodeString DateStr = FormatDateTime(DateFormat, DateTime);
-          if (First)
-          {
-            if (TimeLen < TimeStr.Length())
-            {
-              TimeLen = TimeStr.Length();
-            }
-            if (DateLen < DateStr.Length())
-            {
-              DateLen = DateStr.Length();
-            }
-            First = false;
-          }
-          UnicodeString SizeStr;
-          if (FLAGSET(SearchRec.Attr, faDirectory))
-          {
-            SizeStr = L"<DIR>";
-          }
-          else
-          {
-            SizeStr = FORMAT(L"%14.0n", (double(SearchRec.Size)));
-          }
-          PrintLine(FORMAT(L"%-*s  %-*s    %-14s %s", (
-            DateLen, DateStr, TimeLen, TimeStr, SizeStr, SearchRec.Name)));
-        }
-      }
-      while (FindNextChecked(SearchRec) == 0);
-    }
-    __finally
+    do
     {
-      FindClose(SearchRec);
+      if (SearchRec.Name != L".")
+      {
+        TDateTime DateTime = FileTimeToDateTime(SearchRec.FindData.ftLastWriteTime);
+        UnicodeString TimeStr = FormatDateTime(TimeFormat, DateTime);
+        UnicodeString DateStr = FormatDateTime(DateFormat, DateTime);
+        if (First)
+        {
+          if (TimeLen < TimeStr.Length())
+          {
+            TimeLen = TimeStr.Length();
+          }
+          if (DateLen < DateStr.Length())
+          {
+            DateLen = DateStr.Length();
+          }
+          First = false;
+        }
+        UnicodeString SizeStr;
+        if (FLAGSET(SearchRec.Attr, faDirectory))
+        {
+          SizeStr = L"<DIR>";
+        }
+        else
+        {
+          SizeStr = FORMAT(L"%14.0n", (double(SearchRec.Size)));
+        }
+        PrintLine(FORMAT(L"%-*s  %-*s    %-14s %s", (
+          DateLen, DateStr, TimeLen, TimeStr, SizeStr, SearchRec.Name)));
+      }
     }
+    while (FindNextChecked(SearchRec) == 0);
   }
 }
 //---------------------------------------------------------------------------

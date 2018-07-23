@@ -333,6 +333,8 @@ protected:
     const TCopyParamType * CopyParam, int Params,
     TSynchronizeDirectory OnSynchronizeDirectory,
     TSynchronizeOptions * Options, int Level, TSynchronizeChecklist * Checklist);
+  bool __fastcall LocalFindFirstLoop(const UnicodeString & Directory, TSearchRecChecked & SearchRec);
+  bool __fastcall LocalFindNextLoop(TSearchRecChecked & SearchRec);
   void __fastcall DoSynchronizeCollectFile(const UnicodeString FileName,
     const TRemoteFile * File, /*TSynchronizeData*/ void * Param);
   void __fastcall SynchronizeCollectFile(const UnicodeString FileName,
