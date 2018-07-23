@@ -1518,25 +1518,32 @@ static void __fastcall UpdatesDonateClick(void * /*Data*/, TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 static void __fastcall InsertDonateLink(void * /*Data*/, TObject * Sender)
 {
+  const UnicodeString DonatePanelName = L"DonatePanel";
   TForm * Dialog = DebugNotNull(dynamic_cast<TForm *>(Sender));
-  TPanel * Panel = CreateBlankPanel(Dialog);
+  // OnShow can happen multiple times, for example when showing dialog on start up (being main window)
+  if (FindComponentRecursively(Dialog, DonatePanelName) == NULL)
+  {
+    TPanel * Panel = CreateBlankPanel(Dialog);
+    Panel->Name = DonatePanelName;
+    Panel->Caption = UnicodeString(); // override default use of Name
 
-  TStaticText * StaticText = new TStaticText(Panel);
-  StaticText->Top = 0;
-  StaticText->Left = 0;
-  StaticText->AutoSize = true;
-  StaticText->Caption = LoadStr(UPDATES_DONATE_LINK);
-  StaticText->Parent = Panel;
-  StaticText->OnClick = MakeMethod<TNotifyEvent>(NULL, UpdatesDonateClick);
-  StaticText->TabStop = true;
+    TStaticText * StaticText = new TStaticText(Panel);
+    StaticText->Top = 0;
+    StaticText->Left = 0;
+    StaticText->AutoSize = true;
+    StaticText->Caption = LoadStr(UPDATES_DONATE_LINK);
+    StaticText->Parent = Panel;
+    StaticText->OnClick = MakeMethod<TNotifyEvent>(NULL, UpdatesDonateClick);
+    StaticText->TabStop = true;
 
-  LinkLabel(StaticText);
+    LinkLabel(StaticText);
 
-  Panel->Height = StaticText->Height;
+    Panel->Height = StaticText->Height;
 
-  // Currently this is noop (will fail assertion), if MoreMessagesUrl is not set
-  // (what should not happen)
-  InsertPanelToMessageDialog(Dialog, Panel);
+    // Currently this is noop (will fail assertion), if MoreMessagesUrl is not set
+    // (what should not happen)
+    InsertPanelToMessageDialog(Dialog, Panel);
+  }
 }
 //---------------------------------------------------------------------------
 bool __fastcall CheckForUpdates(bool CachedResults)
