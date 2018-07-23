@@ -5528,8 +5528,6 @@ void __fastcall TTerminal::DoSynchronizeCollectDirectory(const UnicodeString Loc
         while (Found)
         {
           FileName = SearchRec.Name;
-          // add dirs for recursive mode or when we are interested in newly
-          // added subdirs
           // SearchRec.Size in C++B2010 is __int64,
           // so we should be able to use it instead of FindData.nFileSize*
           __int64 Size =
