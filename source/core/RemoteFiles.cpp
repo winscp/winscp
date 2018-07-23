@@ -1140,11 +1140,9 @@ void __fastcall TRemoteFile::SetListingStr(UnicodeString value)
     }
     while (ASize < 0);
 
-    // do not read modification time and filename if it is already set
-    if (double(FModification) == 0 && FileName.IsEmpty())
+    // Do not read modification time and filename (test close to the end of this block) if it is already set.
+    if (double(FModification) == 0)
     {
-      FSize = ASize;
-
       bool FullTime = false;
       bool DayMonthFormat = false;
       Word Day, Month, Year, Hour, Min, Sec, P;
@@ -1301,7 +1299,11 @@ void __fastcall TRemoteFile::SetListingStr(UnicodeString value)
 
       // separating space is already deleted, other spaces are treated as part of name
 
+      // see comment at the beginning of the block
+      if (FileName.IsEmpty())
       {
+        FSize = ASize;
+
         int P;
 
         FLinkTo = L"";
