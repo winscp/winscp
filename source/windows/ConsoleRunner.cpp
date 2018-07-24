@@ -2098,13 +2098,16 @@ int __fastcall TConsoleRunner::Run(const UnicodeString Session, TOptions * Optio
 
     if (FScript != NULL)
     {
-      FScript->Log(llMessage, FORMAT(L"Exit code: %d", (ExitCode)));
+      UnicodeString ExitCodeMessage = FORMAT(L"Exit code: %d", (ExitCode));
+      FScript->Log(llMessage, ExitCodeMessage);
       if (Configuration->LogProtocol >= 1)
       {
+        FConsole->Print(ExitCodeMessage + L"\n");
         UnicodeString LogMessage = FConsole->FinalLogMessage();
         if (!LogMessage.IsEmpty())
         {
           FScript->Log(llMessage, LogMessage);
+          FConsole->Print(LogMessage + L"\n");
         }
       }
     }
