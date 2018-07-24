@@ -204,7 +204,7 @@ void __fastcall TCustomUnixDriveView::UpdatePath(TTreeNode * Node, bool Force,
       for (int i = 0; i < Data->FileList->Count; i++)
       {
         TRemoteFile * File = Data->FileList->Files[i];
-        if (File->IsDirectory && !File->IsParentDirectory && !File->IsThisDirectory &&
+        if (File->IsDirectory && IsRealFile(File->FileName) &&
             (ShowHiddenDirs || !File->IsHidden) &&
             (ShowInaccesibleDirectories || !File->IsInaccesibleDirectory))
         {

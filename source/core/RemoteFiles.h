@@ -8,8 +8,6 @@
 enum TModificationFmt { mfNone, mfMDHM, mfMDY, mfFull };
 //---------------------------------------------------------------------------
 #define SYMLINKSTR L" -> "
-#define PARENTDIRECTORY L".."
-#define THISDIRECTORY L"."
 #define ROOTDIRECTORY L"/"
 #define FILETYPE_DEFAULT L'-'
 #define FILETYPE_SYMLINK L'L'

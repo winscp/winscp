@@ -806,7 +806,7 @@ void TWebDAVFileSystem::NeonPropsResult(
     UnicodeString FileListPath = Data.FileSystem->AbsolutePath(Data.FileList->Directory, false);
     if (UnixSamePath(Path, FileListPath))
     {
-      Path = UnixIncludeTrailingBackslash(UnixIncludeTrailingBackslash(Path) + L"..");
+      Path = UnixIncludeTrailingBackslash(UnixIncludeTrailingBackslash(Path) + PARENTDIRECTORY);
     }
     std::unique_ptr<TRemoteFile> File(new TRemoteFile(NULL));
     File->Terminal = Data.FileSystem->FTerminal;

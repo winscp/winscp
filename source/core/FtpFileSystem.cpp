@@ -1167,7 +1167,7 @@ void __fastcall TFTPFileSystem::DoCalculateFilesChecksum(bool UsingHashCommand,
     if (File->IsDirectory)
     {
       if (FTerminal->CanRecurseToDirectory(File) &&
-          !File->IsParentDirectory && !File->IsThisDirectory &&
+          IsRealFile(File->FileName) &&
           // recurse into subdirectories only if we have callback function
           (OnCalculatedChecksum != NULL))
       {

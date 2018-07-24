@@ -1180,7 +1180,7 @@ UnicodeString __fastcall TTerminal::ExpandFileName(UnicodeString Path,
   if (!UnixIsAbsolutePath(Path) && !BasePath.IsEmpty())
   {
     // TODO: Handle more complicated cases like "../../xxx"
-    if (Path == L"..")
+    if (Path == PARENTDIRECTORY)
     {
       Path = UnixExcludeTrailingBackslash(UnixExtractFilePath(
         UnixExcludeTrailingBackslash(BasePath)));
@@ -3658,7 +3658,7 @@ void __fastcall TTerminal::ProcessDirectory(const UnicodeString DirName,
       for (int Index = 0; Index < FileList->Count; Index++)
       {
         File = FileList->Files[Index];
-        if (!File->IsParentDirectory && !File->IsThisDirectory)
+        if (IsRealFile(File->FileName))
         {
           CallBackFunc(Directory + File->FileName, File, Param);
           // We should catch ESkipFile here as we do in ProcessFiles.
@@ -5554,7 +5554,7 @@ void __fastcall TTerminal::DoSynchronizeCollectDirectory(const UnicodeString Loc
           ChangeFileName(CopyParam, FileName, osLocal, false);
         UnicodeString FullLocalFileName = Data.LocalDirectory + FileName;
         UnicodeString BaseFileName = GetBaseFileName(FullLocalFileName);
-        if ((FileName != L".") && (FileName != L"..") &&
+        if (IsRealFile(FileName) &&
             CopyParam->AllowTransfer(BaseFileName, osLocal, FLAGSET(SearchRec.Attr, faDirectory), MaskParams, Hidden) &&
             !FFileSystem->TemporaryTransferFile(FileName) &&
             (FLAGCLEAR(Flags, sfFirstLevel) ||
@@ -6803,7 +6803,7 @@ void __fastcall TTerminal::DirectorySource(
       UnicodeString FileName = DirectoryName + SearchRec.Name;
       try
       {
-        if ((SearchRec.Name != L".") && (SearchRec.Name != L".."))
+        if (IsRealFile(SearchRec.Name))
         {
           SourceRobust(FileName, DestFullName, CopyParam, Params, OperationProgress, (Flags & ~(tfFirstLevel | tfAutoResume)));
           // FTP: if any file got uploaded (i.e. there were any file in the directory and at least one was not skipped),
@@ -7751,7 +7751,7 @@ UnicodeString __fastcall TTerminal::EncryptFileName(const UnicodeString & Path, 
     UnicodeString FileName = UnixExtractFileName(Path);
     UnicodeString FileDir = UnixExtractFileDir(Path);
 
-    if (!FileName.IsEmpty() && (FileName != PARENTDIRECTORY) && (FileName != THISDIRECTORY))
+    if (!FileName.IsEmpty() && IsRealFile(FileName))
     {
       TEncryptedFileNames::const_iterator I = GetEncryptedFileName(Path);
       if (I != FEncryptedFileNames.end())

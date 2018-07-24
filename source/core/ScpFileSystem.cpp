@@ -2004,7 +2004,7 @@ void __fastcall TSCPFileSystem::SCPDirectorySource(const UnicodeString Directory
       UnicodeString FileName = IncludeTrailingBackslash(DirectoryName) + SearchRec.Name;
       try
       {
-        if ((SearchRec.Name != L".") && (SearchRec.Name != L".."))
+        if (IsRealFile(SearchRec.Name))
         {
           SCPSource(FileName, TargetDirFull, CopyParam, Params, OperationProgress, Level + 1);
         }

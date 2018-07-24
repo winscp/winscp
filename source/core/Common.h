@@ -18,6 +18,9 @@
 #define SWAP(TYPE, FIRST, SECOND) \
   { TYPE __Backup = FIRST; FIRST = SECOND; SECOND = __Backup; }
 //---------------------------------------------------------------------------
+#define PARENTDIRECTORY L".."
+#define THISDIRECTORY L"."
+//---------------------------------------------------------------------------
 extern const wchar_t EngShortMonthNames[12][4];
 extern const char Bom[3];
 extern const wchar_t TokenPrefix;
@@ -171,6 +174,7 @@ UnicodeString __fastcall ChangeUrlProtocol(const UnicodeString & S, const Unicod
 void __fastcall LoadScriptFromFile(UnicodeString FileName, TStrings * Lines);
 UnicodeString __fastcall StripEllipsis(const UnicodeString & S);
 UnicodeString __fastcall GetFileMimeType(const UnicodeString & FileName);
+bool __fastcall IsRealFile(const UnicodeString & FileName);
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure* TProcessLocalFileEvent)
   (const UnicodeString FileName, const TSearchRec Rec, void * Param);

@@ -1778,7 +1778,7 @@ protected:
       Result = !File->IsDirectory;
       if (Result)
       {
-        DebugAssert(!File->IsParentDirectory && !File->IsThisDirectory);
+        DebugAssert(IsRealFile(File->FileName));
 
         Request->ChangeType(SSH_FXP_EXTENDED);
         Request->AddString(SFTP_EXT_CHECK_FILE_NAME);
@@ -2859,7 +2859,7 @@ UnicodeString __fastcall TSFTPFileSystem::Canonify(UnicodeString Path)
   {
     UnicodeString APath = UnixExcludeTrailingBackslash(Path);
     UnicodeString Name = UnixExtractFileName(APath);
-    if (Name == L"." || Name == L"..")
+    if (!IsRealFile(Name))
     {
       Result = Path;
     }
@@ -3453,7 +3453,7 @@ void __fastcall TSFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
           File = LoadFile(&ListingPacket, NULL, L"", FileList);
           FileList->AddFile(File);
           if (FTerminal->IsEncryptingFiles() && // optimization
-              !File->IsParentDirectory && !File->IsThisDirectory)
+              IsRealFile(File->FileName))
           {
             UnicodeString FullFileName = UnixExcludeTrailingBackslash(File->FullFileName);
             UnicodeString FileName = UnixExtractFileName(FTerminal->DecryptFileName(FullFileName));
@@ -4010,7 +4010,7 @@ void __fastcall TSFTPFileSystem::DoCalculateFilesChecksum(
       TRemoteFile * File = (TRemoteFile *)FileList->Objects[Index];
       DebugAssert(File != NULL);
       if (File->IsDirectory && FTerminal->CanRecurseToDirectory(File) &&
-          !File->IsParentDirectory && !File->IsThisDirectory)
+          IsRealFile(File->FileName))
       {
         OperationProgress->SetFile(File->FileName);
         TRemoteFileList * SubFiles =

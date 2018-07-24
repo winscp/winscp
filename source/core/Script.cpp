@@ -631,7 +631,7 @@ TStrings * __fastcall TScript::CreateFileList(TScriptProcParams * Parameters, in
               TFileMasks::TParams Params;
               Params.Size = File->Size;
               Params.Modification = File->Modification;
-              if (!File->IsThisDirectory && !File->IsParentDirectory &&
+              if (IsRealFile(File->FileName) &&
                   Mask.Matches(File->FileName, false, UnicodeString(), &Params))
               {
                 Result->AddObject(FileDirectory + File->FileName,
@@ -745,7 +745,7 @@ TStrings * __fastcall TScript::CreateLocalFileList(TScriptProcParams * Parameter
           UnicodeString Directory = ExtractFilePath(FileName);
           do
           {
-            if ((SearchRec.Name != L".") && (SearchRec.Name != L".."))
+            if (IsRealFile(SearchRec.Name))
             {
               UnicodeString FileName = Directory + SearchRec.Name;
               Result->Add(FileName);

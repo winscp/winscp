@@ -464,7 +464,7 @@ bool __fastcall DeleteDirectory(const UnicodeString DirName)
   {
     if (FLAGSET(sr.Attr, faDirectory))
     {
-      if (sr.Name != L"." && sr.Name != L"..")
+      if (IsRealFile(sr.Name))
         retval = DeleteDirectory(DirName + L"\\" + sr.Name);
     }
     else
@@ -478,7 +478,7 @@ bool __fastcall DeleteDirectory(const UnicodeString DirName)
       { // VCL Function
         if (FLAGSET(sr.Attr, faDirectory))
         {
-          if (sr.Name != L"." && sr.Name != L"..")
+          if (IsRealFile(sr.Name))
             retval = DeleteDirectory(DirName + L"\\" + sr.Name);
         }
         else

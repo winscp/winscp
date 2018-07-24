@@ -1388,6 +1388,11 @@ bool __fastcall FileSearchRec(const UnicodeString FileName, TSearchRec & Rec)
   return Result;
 }
 //---------------------------------------------------------------------------
+bool __fastcall IsRealFile(const UnicodeString & FileName)
+{
+  return (FileName != THISDIRECTORY) && (FileName != PARENTDIRECTORY);
+}
+//---------------------------------------------------------------------------
 void __fastcall ProcessLocalDirectory(UnicodeString DirName,
   TProcessLocalFileEvent CallBackFunc, void * Param,
   int FindAttrs)
@@ -1404,7 +1409,7 @@ void __fastcall ProcessLocalDirectory(UnicodeString DirName,
   {
     do
     {
-      if ((SearchRec.Name != L".") && (SearchRec.Name != L".."))
+      if (IsRealFile(SearchRec.Name))
       {
         CallBackFunc(DirName + SearchRec.Name, SearchRec, Param);
       }
@@ -2308,7 +2313,7 @@ static bool __fastcall DoRecursiveDeleteFile(const UnicodeString FileName, bool 
               UnicodeString FileName2 = FileName + L"\\" + SearchRec.Name;
               if (FLAGSET(SearchRec.Attr, faDirectory))
               {
-                if ((SearchRec.Name != L".") && (SearchRec.Name != L".."))
+                if (IsRealFile(SearchRec.Name))
                 {
                   Result = DoRecursiveDeleteFile(FileName2, DebugAlwaysFalse(ToRecycleBin), AErrorPath);
                 }

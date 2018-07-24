@@ -205,8 +205,7 @@ bool __fastcall IsUnixRootPath(const UnicodeString Path)
 //---------------------------------------------------------------------------
 bool __fastcall IsUnixHiddenFile(const UnicodeString FileName)
 {
-  return (FileName != THISDIRECTORY) && (FileName != PARENTDIRECTORY) &&
-    !FileName.IsEmpty() && (FileName[1] == L'.');
+  return IsRealFile(FileName) && !FileName.IsEmpty() && (FileName[1] == L'.');
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall AbsolutePath(const UnicodeString & Base, const UnicodeString & Path)
@@ -463,7 +462,7 @@ int __fastcall FakeFileImageIndex(UnicodeString FileName, unsigned long Attrs,
 
   TSHFileInfoW SHFileInfo;
   // On Win2k we get icon of "ZIP drive" for ".." (parent directory)
-  if ((FileName == L"..") ||
+  if ((FileName == PARENTDIRECTORY) ||
       ((FileName.Length() == 2) && (FileName[2] == L':') && IsLetter(FileName[1])) ||
       IsReservedName(FileName))
   {
