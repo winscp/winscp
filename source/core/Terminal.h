@@ -313,8 +313,8 @@ protected:
     const TRemoteFile * File, void * Param);
   bool __fastcall DoCalculateDirectorySize(const UnicodeString FileName,
     const TRemoteFile * File, TCalculateSizeParams * Params);
-  void __fastcall CalculateLocalFileSize(const UnicodeString FileName,
-    const TSearchRec Rec, /*__int64*/ void * Size);
+  void __fastcall CalculateLocalFileSize(
+    const UnicodeString & FileName, const TSearchRecSmart & Rec, /*__int64*/ void * Size);
   bool __fastcall CalculateLocalFilesSize(TStrings * FileList, __int64 & Size,
     const TCopyParamType * CopyParam, bool AllowDirs, TStrings * Files);
   TBatchOverwrite __fastcall EffectiveBatchOverwrite(
@@ -335,6 +335,8 @@ protected:
     TSynchronizeOptions * Options, int Level, TSynchronizeChecklist * Checklist);
   bool __fastcall LocalFindFirstLoop(const UnicodeString & Directory, TSearchRecChecked & SearchRec);
   bool __fastcall LocalFindNextLoop(TSearchRecChecked & SearchRec);
+  bool __fastcall DoAllowLocalFileTransfer(
+    const UnicodeString & FileName, const TSearchRecSmart & SearchRec, const TCopyParamType * CopyParam);
   void __fastcall DoSynchronizeCollectFile(const UnicodeString FileName,
     const TRemoteFile * File, /*TSynchronizeData*/ void * Param);
   void __fastcall SynchronizeCollectFile(const UnicodeString FileName,
@@ -554,8 +556,8 @@ public:
   void __fastcall LockFiles(TStrings * FileList);
   void __fastcall UnlockFiles(TStrings * FileList);
   TRemoteFileList * __fastcall DirectoryFileList(const UnicodeString Path, TDateTime Timestamp, bool CanLoad);
-  void __fastcall MakeLocalFileList(const UnicodeString FileName,
-    const TSearchRec Rec, void * Param);
+  void __fastcall MakeLocalFileList(
+    const UnicodeString & FileName, const TSearchRecSmart & Rec, void * Param);
   bool __fastcall FileOperationLoopQuery(Exception & E,
     TFileOperationProgressType * OperationProgress, const UnicodeString Message,
     unsigned int Flags, UnicodeString SpecialRetry = L"", UnicodeString HelpKeyword = L"");

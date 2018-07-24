@@ -1997,14 +1997,14 @@ void __fastcall TSCPFileSystem::SCPDirectorySource(const UnicodeString Directory
   try
   {
     TSearchRecOwned SearchRec;
-    bool FindOK = FTerminal->LocalFindFirstLoop(IncludeTrailingBackslash(DirectoryName), SearchRec);
+    bool FindOK = FTerminal->LocalFindFirstLoop(IncludeTrailingBackslash(DirectoryName) + L"*.*", SearchRec);
 
     while (FindOK && !OperationProgress->Cancel)
     {
       UnicodeString FileName = IncludeTrailingBackslash(DirectoryName) + SearchRec.Name;
       try
       {
-        if (IsRealFile(SearchRec.Name))
+        if (SearchRec.IsRealFile())
         {
           SCPSource(FileName, TargetDirFull, CopyParam, Params, OperationProgress, Level + 1);
         }

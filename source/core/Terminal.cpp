@@ -5170,6 +5170,16 @@ void __fastcall TTerminal::OpenLocalFile(
   Handle.Directory = FLAGSET(Handle.Attrs, faDirectory);
 }
 //---------------------------------------------------------------------------
+bool __fastcall TTerminal::DoAllowLocalFileTransfer(
+  const UnicodeString & FileName, const TSearchRecSmart & SearchRec, const TCopyParamType * CopyParam)
+{
+  TFileMasks::TParams Params;
+  Params.Size = SearchRec.Size;
+  Params.Modification = SearchRec.GetLastWriteTime();
+  UnicodeString BaseFileName = GetBaseFileName(FileName);
+  return CopyParam->AllowTransfer(BaseFileName, osLocal, SearchRec.IsDirectory(), Params, SearchRec.IsHidden());
+}
+//---------------------------------------------------------------------------
 bool __fastcall TTerminal::AllowLocalFileTransfer(UnicodeString FileName,
   const TCopyParamType * CopyParam, TFileOperationProgressType * OperationProgress)
 {
@@ -5177,70 +5187,57 @@ bool __fastcall TTerminal::AllowLocalFileTransfer(UnicodeString FileName,
   // optimization
   if (Log->Logging || !CopyParam->AllowAnyTransfer())
   {
-    WIN32_FIND_DATA FindData;
-    HANDLE Handle;
+    TSearchRecSmart SearchRec;
     FILE_OPERATION_LOOP_BEGIN
     {
-      Handle = FindFirstFile(ApiPath(ExcludeTrailingBackslash(FileName)).c_str(), &FindData);
-      if (Handle == INVALID_HANDLE_VALUE)
+      if (!FileSearchRec(FileName, SearchRec))
       {
         RaiseLastOSError();
       }
     }
     FILE_OPERATION_LOOP_END(FMTLOAD(FILE_NOT_EXISTS, (FileName)));
-    ::FindClose(Handle);
-    bool Directory = FLAGSET(FindData.dwFileAttributes, FILE_ATTRIBUTE_DIRECTORY);
-    bool Hidden = FLAGSET(FindData.dwFileAttributes, FILE_ATTRIBUTE_HIDDEN);
-    TFileMasks::TParams Params;
-    // SearchRec.Size in C++B2010 is __int64,
-    // so we should be able to use it instead of FindData.nFileSize*
-    Params.Size =
-      (static_cast<__int64>(FindData.nFileSizeHigh) << 32) +
-      FindData.nFileSizeLow;
-    Params.Modification = FileTimeToDateTime(FindData.ftLastWriteTime);
-    UnicodeString BaseFileName = GetBaseFileName(FileName);
-    if (!CopyParam->AllowTransfer(BaseFileName, osLocal, Directory, Params, Hidden))
+
+    if (!DoAllowLocalFileTransfer(FileName, SearchRec, CopyParam))
     {
       LogEvent(FORMAT(L"File \"%s\" excluded from transfer", (FileName)));
       Result = false;
     }
-    else if (CopyParam->SkipTransfer(FileName, Directory))
+    else if (CopyParam->SkipTransfer(FileName, SearchRec.IsDirectory()))
     {
-      OperationProgress->AddSkippedFileSize(Params.Size);
+      OperationProgress->AddSkippedFileSize(SearchRec.Size);
       Result = false;
     }
 
     if (Result)
     {
-      LogFileDetails(FileName, Params.Modification, Params.Size);
+      LogFileDetails(FileName, SearchRec.GetLastWriteTime(), SearchRec.Size);
     }
   }
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::MakeLocalFileList(const UnicodeString FileName,
-  const TSearchRec Rec, void * Param)
+void __fastcall TTerminal::MakeLocalFileList(
+  const UnicodeString & FileName, const TSearchRecSmart & Rec, void * Param)
 {
   TMakeLocalFileListParams & Params = *static_cast<TMakeLocalFileListParams*>(Param);
 
-  bool Directory = FLAGSET(Rec.Attr, faDirectory);
-  if (Directory && Params.Recursive)
+  if (Rec.IsDirectory() && Params.Recursive)
   {
     ProcessLocalDirectory(FileName, MakeLocalFileList, &Params);
   }
 
-  if (!Directory || Params.IncludeDirs)
+  if (!Rec.IsDirectory() || Params.IncludeDirs)
   {
     Params.FileList->Add(FileName);
     if (Params.FileTimes != NULL)
     {
-      Params.FileTimes->push_back(const_cast<TSearchRec &>(Rec).TimeStamp);
+      Params.FileTimes->push_back(const_cast<TSearchRecSmart &>(Rec).TimeStamp);
     }
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::CalculateLocalFileSize(const UnicodeString FileName,
-  const TSearchRec Rec, /*TCalculateSizeParams*/ void * Params)
+void __fastcall TTerminal::CalculateLocalFileSize(
+  const UnicodeString & FileName, const TSearchRecSmart & Rec, /*TCalculateSizeParams*/ void * Params)
 {
   TCalculateSizeParams * AParams = static_cast<TCalculateSizeParams*>(Params);
 
@@ -5252,37 +5249,19 @@ void __fastcall TTerminal::CalculateLocalFileSize(const UnicodeString FileName,
   {
     try
     {
-      bool Dir = FLAGSET(Rec.Attr, faDirectory);
-
-      bool AllowTransfer = (AParams->CopyParam == NULL);
-      // SearchRec.Size in C++B2010 is __int64,
-      // so we should be able to use it instead of FindData.nFileSize*
-      __int64 Size =
-        (static_cast<__int64>(Rec.FindData.nFileSizeHigh) << 32) +
-        Rec.FindData.nFileSizeLow;
-      if (!AllowTransfer)
-      {
-        TFileMasks::TParams MaskParams;
-        MaskParams.Size = Size;
-        MaskParams.Modification = FileTimeToDateTime(Rec.FindData.ftLastWriteTime);
-        bool Hidden = FLAGSET(Rec.Attr, faHidden);
-
-        UnicodeString BaseFileName = GetBaseFileName(FileName);
-        AllowTransfer = AParams->CopyParam->AllowTransfer(BaseFileName, osLocal, Dir, MaskParams, Hidden);
-      }
-
-      if (AllowTransfer)
+      if ((AParams->CopyParam == NULL) ||
+          DoAllowLocalFileTransfer(FileName, Rec, AParams->CopyParam))
       {
         int CollectionIndex = -1;
         if (AParams->Files != NULL)
         {
           UnicodeString FullFileName = ::ExpandFileName(FileName);
-          CollectionIndex = AParams->Files->Add(FullFileName, NULL, Dir);
+          CollectionIndex = AParams->Files->Add(FullFileName, NULL, Rec.IsDirectory());
         }
 
-        if (!Dir)
+        if (!Rec.IsDirectory())
         {
-          AParams->Size += Size;
+          AParams->Size += Rec.Size;
         }
         else
         {
@@ -5329,11 +5308,10 @@ bool __fastcall TTerminal::CalculateLocalFilesSize(TStrings * FileList,
     for (int Index = 0; Params.Result && (Index < FileList->Count); Index++)
     {
       UnicodeString FileName = FileList->Strings[Index];
-      TSearchRec Rec;
+      TSearchRecSmart Rec;
       if (FileSearchRec(FileName, Rec))
       {
-        bool Dir = FLAGSET(Rec.Attr, faDirectory);
-        if (Dir && !AllowDirs)
+        if (Rec.IsDirectory() && !AllowDirs)
         {
           Params.Result = false;
         }
@@ -5479,15 +5457,15 @@ UnicodeString __fastcall TTerminal::SynchronizeParamsStr(int Params)
   return ParamsStr;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TTerminal::LocalFindFirstLoop(const UnicodeString & Directory, TSearchRecChecked & SearchRec)
+bool __fastcall TTerminal::LocalFindFirstLoop(const UnicodeString & Path, TSearchRecChecked & SearchRec)
 {
   bool Result;
   FILE_OPERATION_LOOP_BEGIN
   {
     const int FindAttrs = faReadOnly | faHidden | faSysFile | faDirectory | faArchive;
-    Result = (FindFirstChecked(Directory + L"*.*", FindAttrs, SearchRec) == 0);
+    Result = (FindFirstChecked(Path, FindAttrs, SearchRec) == 0);
   }
-  FILE_OPERATION_LOOP_END(FMTLOAD(LIST_DIR_ERROR, (ExcludeTrailingBackslash(Directory))));
+  FILE_OPERATION_LOOP_END(FMTLOAD(LIST_DIR_ERROR, (Path)));
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -5535,27 +5513,16 @@ void __fastcall TTerminal::DoSynchronizeCollectDirectory(const UnicodeString Loc
     Data.LocalFileList = CreateSortedStringList();
 
     TSearchRecOwned SearchRec;
-    if (LocalFindFirstLoop(Data.LocalDirectory, SearchRec))
+    if (LocalFindFirstLoop(Data.LocalDirectory + L"*.*", SearchRec))
     {
       do
       {
         UnicodeString FileName = SearchRec.Name;
-        // SearchRec.Size in C++B2010 is __int64,
-        // so we should be able to use it instead of FindData.nFileSize*
-        __int64 Size =
-          (static_cast<__int64>(SearchRec.FindData.nFileSizeHigh) << 32) +
-          SearchRec.FindData.nFileSizeLow;
-        TDateTime Modification = FileTimeToDateTime(SearchRec.FindData.ftLastWriteTime);
-        TFileMasks::TParams MaskParams;
-        MaskParams.Size = Size;
-        MaskParams.Modification = Modification;
-        bool Hidden = FLAGSET(SearchRec.Attr, faHidden);
         UnicodeString RemoteFileName =
           ChangeFileName(CopyParam, FileName, osLocal, false);
         UnicodeString FullLocalFileName = Data.LocalDirectory + FileName;
-        UnicodeString BaseFileName = GetBaseFileName(FullLocalFileName);
-        if (IsRealFile(FileName) &&
-            CopyParam->AllowTransfer(BaseFileName, osLocal, FLAGSET(SearchRec.Attr, faDirectory), MaskParams, Hidden) &&
+        if (SearchRec.IsRealFile() &&
+            DoAllowLocalFileTransfer(FullLocalFileName, SearchRec, CopyParam) &&
             !FFileSystem->TemporaryTransferFile(FileName) &&
             (FLAGCLEAR(Flags, sfFirstLevel) ||
              (Options == NULL) ||
@@ -5564,12 +5531,12 @@ void __fastcall TTerminal::DoSynchronizeCollectDirectory(const UnicodeString Loc
         {
           TSynchronizeFileData * FileData = new TSynchronizeFileData;
 
-          FileData->IsDirectory = FLAGSET(SearchRec.Attr, faDirectory);
+          FileData->IsDirectory = SearchRec.IsDirectory();
           FileData->Info.FileName = FileName;
           FileData->Info.Directory = Data.LocalDirectory;
-          FileData->Info.Modification = Modification;
+          FileData->Info.Modification = SearchRec.GetLastWriteTime();
           FileData->Info.ModificationFmt = mfFull;
-          FileData->Info.Size = Size;
+          FileData->Info.Size = SearchRec.Size;
           FileData->LocalLastWriteTime = SearchRec.FindData.ftLastWriteTime;
           FileData->New = true;
           FileData->Modified = false;
@@ -5577,7 +5544,7 @@ void __fastcall TTerminal::DoSynchronizeCollectDirectory(const UnicodeString Loc
           if (Configuration->ActualLogProtocol >= 0)
           {
             LogEvent(FORMAT(L"Local file %s included to synchronization",
-              (FormatFileDetailsForLog(FullLocalFileName, Modification, Size))));
+              (FormatFileDetailsForLog(FullLocalFileName, SearchRec.GetLastWriteTime(), SearchRec.Size))));
           }
         }
         else
@@ -5585,7 +5552,7 @@ void __fastcall TTerminal::DoSynchronizeCollectDirectory(const UnicodeString Loc
           if (Configuration->ActualLogProtocol >= 0)
           {
             LogEvent(FORMAT(L"Local file %s excluded from synchronization",
-              (FormatFileDetailsForLog(FullLocalFileName, Modification, Size))));
+              (FormatFileDetailsForLog(FullLocalFileName, SearchRec.GetLastWriteTime(), SearchRec.Size))));
           }
         }
 
@@ -6797,13 +6764,13 @@ void __fastcall TTerminal::DirectorySource(
   if (FLAGCLEAR(Params, cpNoRecurse))
   {
     TSearchRecOwned SearchRec;
-    bool FindOK = LocalFindFirstLoop(DirectoryName, SearchRec);
+    bool FindOK = LocalFindFirstLoop(DirectoryName + L"*.*", SearchRec);
     while (FindOK && !OperationProgress->Cancel)
     {
       UnicodeString FileName = DirectoryName + SearchRec.Name;
       try
       {
-        if (IsRealFile(SearchRec.Name))
+        if (SearchRec.IsRealFile())
         {
           SourceRobust(FileName, DestFullName, CopyParam, Params, OperationProgress, (Flags & ~(tfFirstLevel | tfAutoResume)));
           // FTP: if any file got uploaded (i.e. there were any file in the directory and at least one was not skipped),

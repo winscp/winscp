@@ -462,9 +462,9 @@ bool __fastcall DeleteDirectory(const UnicodeString DirName)
   bool retval = true;
   if (FindFirstUnchecked(DirName + L"\\*", faAnyFile, sr) == 0) // VCL Function
   {
-    if (FLAGSET(sr.Attr, faDirectory))
+    if (sr.IsDirectory())
     {
-      if (IsRealFile(sr.Name))
+      if (sr.IsRealFile())
         retval = DeleteDirectory(DirName + L"\\" + sr.Name);
     }
     else
@@ -476,9 +476,9 @@ bool __fastcall DeleteDirectory(const UnicodeString DirName)
     {
       while (FindNextChecked(sr) == 0)
       { // VCL Function
-        if (FLAGSET(sr.Attr, faDirectory))
+        if (sr.IsDirectory())
         {
-          if (IsRealFile(sr.Name))
+          if (sr.IsRealFile())
             retval = DeleteDirectory(DirName + L"\\" + sr.Name);
         }
         else

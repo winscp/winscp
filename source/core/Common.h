@@ -176,10 +176,23 @@ UnicodeString __fastcall StripEllipsis(const UnicodeString & S);
 UnicodeString __fastcall GetFileMimeType(const UnicodeString & FileName);
 bool __fastcall IsRealFile(const UnicodeString & FileName);
 //---------------------------------------------------------------------------
+struct TSearchRecSmart : public TSearchRec
+{
+public:
+  TSearchRecSmart();
+  TDateTime GetLastWriteTime() const;
+  bool IsRealFile() const;
+  bool IsDirectory() const;
+  bool IsHidden() const;
+private:
+  mutable FILETIME FLastWriteTimeSource;
+  mutable TDateTime FLastWriteTime;
+};
+//---------------------------------------------------------------------------
 typedef void __fastcall (__closure* TProcessLocalFileEvent)
-  (const UnicodeString FileName, const TSearchRec Rec, void * Param);
+  (const UnicodeString & FileName, const TSearchRecSmart & Rec, void * Param);
 bool __fastcall FileSearchRec(const UnicodeString FileName, TSearchRec & Rec);
-struct TSearchRecChecked : public TSearchRec
+struct TSearchRecChecked : public TSearchRecSmart
 {
   UnicodeString Path;
   bool Opened;

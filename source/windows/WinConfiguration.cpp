@@ -2365,7 +2365,7 @@ TStrings * __fastcall TWinConfiguration::FindTemporaryFolders()
     {
       do
       {
-        if (FLAGSET(SRec.Attr, faDirectory))
+        if (SRec.IsDirectory())
         {
           Result->Add(Directory + SRec.Name);
         }

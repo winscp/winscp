@@ -745,7 +745,7 @@ TStrings * __fastcall TScript::CreateLocalFileList(TScriptProcParams * Parameter
           UnicodeString Directory = ExtractFilePath(FileName);
           do
           {
-            if (IsRealFile(SearchRec.Name))
+            if (SearchRec.IsRealFile())
             {
               UnicodeString FileName = Directory + SearchRec.Name;
               Result->Add(FileName);
@@ -2889,7 +2889,7 @@ void __fastcall TManagementScript::LLsProc(TScriptProcParams * Parameters)
     {
       if (SearchRec.Name != L".")
       {
-        TDateTime DateTime = FileTimeToDateTime(SearchRec.FindData.ftLastWriteTime);
+        TDateTime DateTime = SearchRec.GetLastWriteTime();
         UnicodeString TimeStr = FormatDateTime(TimeFormat, DateTime);
         UnicodeString DateStr = FormatDateTime(DateFormat, DateTime);
         if (First)
@@ -2905,7 +2905,7 @@ void __fastcall TManagementScript::LLsProc(TScriptProcParams * Parameters)
           First = false;
         }
         UnicodeString SizeStr;
-        if (FLAGSET(SearchRec.Attr, faDirectory))
+        if (SearchRec.IsDirectory())
         {
           SizeStr = L"<DIR>";
         }

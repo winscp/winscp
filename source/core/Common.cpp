@@ -1324,6 +1324,38 @@ bool __fastcall IsHex(wchar_t Ch)
     ((Ch >= 'a') && (Ch <= 'f'));
 }
 //---------------------------------------------------------------------------
+TSearchRecSmart::TSearchRecSmart()
+{
+  FLastWriteTimeSource.dwLowDateTime = 0;
+  FLastWriteTimeSource.dwLowDateTime = 0;
+}
+//---------------------------------------------------------------------------
+TDateTime TSearchRecSmart::GetLastWriteTime() const
+{
+  if ((FindData.ftLastWriteTime.dwLowDateTime != FLastWriteTimeSource.dwLowDateTime) ||
+      (FindData.ftLastWriteTime.dwHighDateTime != FLastWriteTimeSource.dwHighDateTime))
+  {
+    FLastWriteTimeSource = FindData.ftLastWriteTime;
+    FLastWriteTime = FileTimeToDateTime(FLastWriteTimeSource);
+  }
+  return FLastWriteTime;
+}
+//---------------------------------------------------------------------------
+bool TSearchRecSmart::IsRealFile() const
+{
+  return ::IsRealFile(Name);
+}
+//---------------------------------------------------------------------------
+bool TSearchRecSmart::IsDirectory() const
+{
+  return FLAGSET(Attr, faDirectory);
+}
+//---------------------------------------------------------------------------
+bool TSearchRecSmart::IsHidden() const
+{
+  return FLAGSET(Attr, faHidden);
+}
+//---------------------------------------------------------------------------
 TSearchRecOwned::~TSearchRecOwned()
 {
   if (Opened)
@@ -1409,7 +1441,7 @@ void __fastcall ProcessLocalDirectory(UnicodeString DirName,
   {
     do
     {
-      if (IsRealFile(SearchRec.Name))
+      if (SearchRec.IsRealFile())
       {
         CallBackFunc(DirName + SearchRec.Name, SearchRec, Param);
       }
@@ -2296,7 +2328,7 @@ static bool __fastcall DoRecursiveDeleteFile(const UnicodeString FileName, bool 
     Result = FileSearchRec(FileName, SearchRec);
     if (Result)
     {
-      if (FLAGCLEAR(SearchRec.Attr, faDirectory))
+      if (!SearchRec.IsDirectory())
       {
         Result = DeleteFile(ApiPath(FileName));
       }
@@ -2311,9 +2343,9 @@ static bool __fastcall DoRecursiveDeleteFile(const UnicodeString FileName, bool 
             do
             {
               UnicodeString FileName2 = FileName + L"\\" + SearchRec.Name;
-              if (FLAGSET(SearchRec.Attr, faDirectory))
+              if (SearchRec.IsDirectory())
               {
-                if (IsRealFile(SearchRec.Name))
+                if (SearchRec.IsRealFile())
                 {
                   Result = DoRecursiveDeleteFile(FileName2, DebugAlwaysFalse(ToRecycleBin), AErrorPath);
                 }
