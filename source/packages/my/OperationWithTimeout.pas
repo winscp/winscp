@@ -16,6 +16,9 @@ function ShellFolderParseDisplayNameWithTimeout(
   ShellFolder: IShellFolder; hwndOwner: HWND; pbcReserved: Pointer; lpszDisplayName: POLESTR;
   out pchEaten: ULONG; out ppidl: PItemIDList; var dwAttributes: ULONG; Timeout: Integer): HResult;
 
+var
+  TimeoutShellOperations: Boolean = True;
+
 implementation
 
 uses
@@ -93,26 +96,33 @@ var
 begin
 // When running from IDE, it triggers starting/exiting the thread taking ages.
 // So in IDE we revert to single-thread approach.
-{$IFDEF IDE}
-  OperationEvent(Operation);
-  Result := True;
-{$ELSE}
-  // Have to start new thread for each request. When shared thread is used, it eventually hangs.
-  // Most probably do to the fact that we violate COM threading model.
-  // So using a new thread for each request, is only a hack that happens to work by pure luck.
-  // We may want to use shared thread at least for COM-free operations, like SHGetFileInfo.
-  Thread := TOperationWithTimeoutThread.Create(Operation, OperationEvent);
-  Thread.Resume;
-  Result := Thread.WaitFor(MSecsPerSec);
-  if Result then
+{$IFNDEF IDE}
+  if not TimeoutShellOperations then
+{$ENDIF}
   begin
-    Thread.Free;
+    OperationEvent(Operation);
+    Result := True;
   end
+{$IFNDEF IDE}
     else
   begin
-    // There's a chance for memory leak, if thread is terminated
-    // between WaitFor() and this line
-    Thread.FreeOnTerminate := True;
+    // Have to start new thread for each request. When shared thread is used, it eventually hangs.
+    // Most probably do to the fact that we violate COM threading model.
+    // So using a new thread for each request, is only a hack that happens to work by pure luck.
+    // We may want to use shared thread at least for COM-free operations, like SHGetFileInfo.
+    Thread := TOperationWithTimeoutThread.Create(Operation, OperationEvent);
+    Thread.Resume;
+    Result := Thread.WaitFor(MSecsPerSec);
+    if Result then
+    begin
+      Thread.Free;
+    end
+      else
+    begin
+      // There's a chance for memory leak, if thread is terminated
+      // between WaitFor() and this line
+      Thread.FreeOnTerminate := True;
+    end;
   end;
 {$ENDIF}
 end;

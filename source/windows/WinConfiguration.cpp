@@ -20,6 +20,7 @@
 #include <Math.hpp>
 #include <StrUtils.hpp>
 #include <Generics.Defaults.hpp>
+#include <OperationWithTimeout.hpp>
 #include "FileInfo.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
@@ -969,6 +970,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Integer,  LastMachineInstallations); \
     KEYEX(String, FExtensionsDeleted, L"ExtensionsDeleted"); \
     KEYEX(String, FExtensionsOrder, L"ExtensionsOrder"); \
+    KEY(Bool,  TimeoutShellOperations); \
   ); \
   BLOCK(L"Interface\\Editor", CANCREATE, \
     KEYEX(String,   Editor.Font.FontName, L"FontName2"); \
@@ -2531,6 +2533,16 @@ void __fastcall TWinConfiguration::SetCustomCommandOptions(TStrings * value)
 void __fastcall TWinConfiguration::SetLockedInterface(bool value)
 {
   SET_CONFIG_PROPERTY(LockedInterface);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TWinConfiguration::GetTimeoutShellOperations()
+{
+  return ::TimeoutShellOperations;
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetTimeoutShellOperations(bool value)
+{
+  ::TimeoutShellOperations = value;
 }
 //---------------------------------------------------------------------------
 TStringList * __fastcall TWinConfiguration::LoadJumpList(
