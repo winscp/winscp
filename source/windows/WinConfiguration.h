@@ -536,6 +536,8 @@ private:
   TStrings * __fastcall GetCustomCommandOptions();
   void __fastcall SetCustomCommandOptions(TStrings * value);
   void __fastcall SetLockedInterface(bool value);
+  bool __fastcall GetTimeoutShellOperations();
+  void __fastcall SetTimeoutShellOperations(bool value);
   int __fastcall GetLocaleCompletenessTreshold();
 
   bool __fastcall GetDDExtInstalled();
@@ -713,6 +715,7 @@ public:
   __property TMasterPasswordPromptEvent OnMasterPasswordPrompt = { read = FOnMasterPasswordPrompt, write = FOnMasterPasswordPrompt };
   __property TStrings * CustomCommandOptions = { read = GetCustomCommandOptions, write = SetCustomCommandOptions };
   __property bool LockedInterface = { read = FLockedInterface, write = SetLockedInterface };
+  __property bool TimeoutShellOperations = { read = GetTimeoutShellOperations, write = SetTimeoutShellOperations };
   __property LCID DefaultLocale = { read = FDefaultLocale };
   __property int LocaleCompletenessTreshold = { read = GetLocaleCompletenessTreshold };
 };
