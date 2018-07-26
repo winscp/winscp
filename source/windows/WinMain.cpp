@@ -815,7 +815,7 @@ int __fastcall Execute()
     HintWindowClass = __classid(TScreenTipHintWindow);
 
     UnicodeString IniFileName = Params->SwitchValue(INI_SWITCH);
-    if (!IniFileName.IsEmpty())
+    if (!IniFileName.IsEmpty() && (IniFileName != INI_NUL))
     {
       UnicodeString IniFileNameExpanded = ExpandEnvironmentVariables(IniFileName);
       if (!FileExists(ApiPath(IniFileNameExpanded)))
