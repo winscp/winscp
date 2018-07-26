@@ -93,6 +93,13 @@ TCalculateSizeStats::TCalculateSizeStats()
   memset(this, 0, sizeof(*this));
 }
 //---------------------------------------------------------------------------
+TCalculateSizeParams::TCalculateSizeParams()
+{
+  memset(this, 0, sizeof(*this));
+  Result = true;
+  AllowDirs = true;
+}
+//---------------------------------------------------------------------------
 TSynchronizeOptions::TSynchronizeOptions()
 {
   memset(this, 0, sizeof(*this));
@@ -4316,20 +4323,8 @@ void __fastcall TTerminal::CalculateFileSize(UnicodeString FileName,
     Abort();
   }
 
-  bool AllowTransfer = (AParams->CopyParam == NULL);
-  if (!AllowTransfer)
-  {
-    TFileMasks::TParams MaskParams;
-    MaskParams.Size = File->Size;
-    MaskParams.Modification = File->Modification;
-
-    UnicodeString BaseFileName =
-      GetBaseFileName(UnixExcludeTrailingBackslash(File->FullFileName));
-    AllowTransfer = AParams->CopyParam->AllowTransfer(
-      BaseFileName, osRemote, File->IsDirectory, MaskParams, File->IsHidden);
-  }
-
-  if (AllowTransfer)
+  if ((AParams->CopyParam == NULL) ||
+      DoAllowRemoteFileTransfer(File, AParams->CopyParam, FLAGSET(AParams->Params, csDisallowTemporaryTransferFiles)))
   {
     int CollectionIndex = -1;
     if (AParams->Files != NULL)
@@ -4346,11 +4341,19 @@ void __fastcall TTerminal::CalculateFileSize(UnicodeString FileName,
         {
           AParams->Result = false;
         }
+        else if (FLAGSET(AParams->Params, csStopOnFirstFile) && (AParams->Stats->Files > 0))
+        {
+          // do not waste time recursing into a folder, if we already found some files
+        }
         else
         {
-          LogEvent(FORMAT(L"Getting size of directory \"%s\"", (FileName)));
+          if (FLAGCLEAR(AParams->Params, csStopOnFirstFile))
+          {
+            LogEvent(FORMAT(L"Getting size of directory \"%s\"", (FileName)));
+          }
+
           // pass in full path so we get it back in file list for AllowTransfer() exclusion
-          if (!DoCalculateDirectorySize(File->FullFileName, File, AParams))
+          if (!DoCalculateDirectorySize(File->FullFileName, AParams))
           {
             if (CollectionIndex >= 0)
             {
@@ -4376,10 +4379,14 @@ void __fastcall TTerminal::CalculateFileSize(UnicodeString FileName,
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall TTerminal::DoCalculateDirectorySize(const UnicodeString FileName,
-  const TRemoteFile * /*File*/, TCalculateSizeParams * Params)
+bool __fastcall TTerminal::DoCalculateDirectorySize(const UnicodeString & FileName, TCalculateSizeParams * Params)
 {
   bool Result = false;
+  if (FLAGSET(Params->Params, csStopOnFirstFile) && (Configuration->ActualLogProtocol >= 1))
+  {
+    LogEvent(FORMAT(L"Checking if remote directory \"%s\" is empty", (FileName)));
+  }
+
   TRetryOperationLoop RetryLoop(this);
   do
   {
@@ -4398,6 +4405,19 @@ bool __fastcall TTerminal::DoCalculateDirectorySize(const UnicodeString FileName
     }
   }
   while (RetryLoop.Retry());
+
+  if (Configuration->ActualLogProtocol >= 1)
+  {
+    if (Params->Stats->Files == 0)
+    {
+      LogEvent(FORMAT(L"Remote directory \"%s\" is empty", (FileName)));
+    }
+    else
+    {
+      LogEvent(FORMAT(L"Remote directory \"%s\" is not empty", (FileName)));
+    }
+  }
+
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -4413,13 +4433,10 @@ bool __fastcall TTerminal::CalculateFilesSize(TStrings * FileList,
   FUseBusyCursor = false;
 
   TCalculateSizeParams Param;
-  Param.Size = 0;
   Param.Params = Params;
   Param.CopyParam = CopyParam;
   Param.Stats = &Stats;
   Param.AllowDirs = AllowDirs;
-  Param.Result = true;
-  Param.Files = NULL;
   ProcessFiles(FileList, foCalculateSize, DoCalculateFileSize, &Param);
   Size = Param.Size;
   return Param.Result;
@@ -5171,20 +5188,41 @@ void __fastcall TTerminal::OpenLocalFile(
 }
 //---------------------------------------------------------------------------
 bool __fastcall TTerminal::DoAllowLocalFileTransfer(
-  const UnicodeString & FileName, const TSearchRecSmart & SearchRec, const TCopyParamType * CopyParam)
+  const UnicodeString & FileName, const TSearchRecSmart & SearchRec, const TCopyParamType * CopyParam, bool DisallowTemporaryTransferFiles)
 {
   TFileMasks::TParams Params;
   Params.Size = SearchRec.Size;
   Params.Modification = SearchRec.GetLastWriteTime();
   UnicodeString BaseFileName = GetBaseFileName(FileName);
-  return CopyParam->AllowTransfer(BaseFileName, osLocal, SearchRec.IsDirectory(), Params, SearchRec.IsHidden());
+  // Note that for synchronization, we do not need to check "TSynchronizeOptions::MatchesFilter" here as
+  // that is checked for top-level entries only and we are never top-level here.
+  return
+    CopyParam->AllowTransfer(BaseFileName, osLocal, SearchRec.IsDirectory(), Params, SearchRec.IsHidden()) &&
+    (!DisallowTemporaryTransferFiles || !FFileSystem->TemporaryTransferFile(FileName)) &&
+    (!SearchRec.IsDirectory() || !CopyParam->ExcludeEmptyDirectories ||
+       !IsEmptyLocalDirectory(FileName, CopyParam, DisallowTemporaryTransferFiles));
+}
+//---------------------------------------------------------------------------
+bool __fastcall TTerminal::DoAllowRemoteFileTransfer(
+  const TRemoteFile * File, const TCopyParamType * CopyParam, bool DisallowTemporaryTransferFiles)
+{
+  TFileMasks::TParams MaskParams;
+  MaskParams.Size = File->Size;
+  MaskParams.Modification = File->Modification;
+  UnicodeString FullRemoteFileName = UnixExcludeTrailingBackslash(File->FullFileName);
+  UnicodeString BaseFileName = GetBaseFileName(FullRemoteFileName);
+  return
+    CopyParam->AllowTransfer(BaseFileName, osRemote, File->IsDirectory, MaskParams, File->IsHidden) &&
+    (!DisallowTemporaryTransferFiles || !FFileSystem->TemporaryTransferFile(File->FileName)) &&
+    (!File->IsDirectory || !CopyParam->ExcludeEmptyDirectories ||
+       !IsEmptyRemoteDirectory(File, CopyParam, DisallowTemporaryTransferFiles));
 }
 //---------------------------------------------------------------------------
 bool __fastcall TTerminal::AllowLocalFileTransfer(UnicodeString FileName,
   const TCopyParamType * CopyParam, TFileOperationProgressType * OperationProgress)
 {
   bool Result = true;
-  // optimization
+  // optimization (though in most uses of the method, the caller actually knows TSearchRec already, so it could pass it here)
   if (Log->Logging || !CopyParam->AllowAnyTransfer())
   {
     TSearchRecSmart SearchRec;
@@ -5197,7 +5235,7 @@ bool __fastcall TTerminal::AllowLocalFileTransfer(UnicodeString FileName,
     }
     FILE_OPERATION_LOOP_END(FMTLOAD(FILE_NOT_EXISTS, (FileName)));
 
-    if (!DoAllowLocalFileTransfer(FileName, SearchRec, CopyParam))
+    if (!DoAllowLocalFileTransfer(FileName, SearchRec, CopyParam, false))
     {
       LogEvent(FORMAT(L"File \"%s\" excluded from transfer", (FileName)));
       Result = false;
@@ -5250,7 +5288,7 @@ void __fastcall TTerminal::CalculateLocalFileSize(
     try
     {
       if ((AParams->CopyParam == NULL) ||
-          DoAllowLocalFileTransfer(FileName, Rec, AParams->CopyParam))
+          DoAllowLocalFileTransfer(FileName, Rec, AParams->CopyParam, false))
       {
         int CollectionIndex = -1;
         if (AParams->Files != NULL)
@@ -5480,6 +5518,49 @@ bool __fastcall TTerminal::LocalFindNextLoop(TSearchRecChecked & SearchRec)
   return Result;
 }
 //---------------------------------------------------------------------------
+bool __fastcall TTerminal::IsEmptyLocalDirectory(
+  const UnicodeString & Path, const TCopyParamType * CopyParam, bool DisallowTemporaryTransferFiles)
+{
+  UnicodeString Contents;
+  if (Configuration->ActualLogProtocol >= 1)
+  {
+    LogEvent(FORMAT(L"Checking if local directory \"%s\" is empty", (Path)));
+  }
+
+  TSearchRecOwned SearchRec;
+  if (LocalFindFirstLoop(IncludeTrailingBackslash(Path) + L"*.*", SearchRec))
+  {
+    do
+    {
+      UnicodeString FullLocalFileName = IncludeTrailingBackslash(Path) + SearchRec.Name;
+      if (SearchRec.IsRealFile() &&
+          DoAllowLocalFileTransfer(FullLocalFileName, SearchRec, CopyParam, true))
+      {
+        if (!SearchRec.IsDirectory() ||
+            !IsEmptyLocalDirectory(FullLocalFileName, CopyParam, DisallowTemporaryTransferFiles))
+        {
+          Contents = SearchRec.Name;
+        }
+      }
+    }
+    while (Contents.IsEmpty() && LocalFindNextLoop(SearchRec));
+  }
+
+  if (Configuration->ActualLogProtocol >= 1)
+  {
+    if (Contents.IsEmpty())
+    {
+      LogEvent(FORMAT(L"Local directory \"%s\" is empty", (Path)));
+    }
+    else
+    {
+      LogEvent(FORMAT(L"Local directory \"%s\" is not empty, it contains \"%s\"", (Path, Contents)));
+    }
+  }
+
+  return Contents.IsEmpty();
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminal::DoSynchronizeCollectDirectory(const UnicodeString LocalDirectory,
   const UnicodeString RemoteDirectory, TSynchronizeMode Mode,
   const TCopyParamType * CopyParam, int Params,
@@ -5518,12 +5599,10 @@ void __fastcall TTerminal::DoSynchronizeCollectDirectory(const UnicodeString Loc
       do
       {
         UnicodeString FileName = SearchRec.Name;
-        UnicodeString RemoteFileName =
-          ChangeFileName(CopyParam, FileName, osLocal, false);
         UnicodeString FullLocalFileName = Data.LocalDirectory + FileName;
+        UnicodeString RemoteFileName = ChangeFileName(CopyParam, FileName, osLocal, false);
         if (SearchRec.IsRealFile() &&
-            DoAllowLocalFileTransfer(FullLocalFileName, SearchRec, CopyParam) &&
-            !FFileSystem->TemporaryTransferFile(FileName) &&
+            DoAllowLocalFileTransfer(FullLocalFileName, SearchRec, CopyParam, true) &&
             (FLAGCLEAR(Flags, sfFirstLevel) ||
              (Options == NULL) ||
              Options->MatchesFilter(FileName) ||
@@ -5687,21 +5766,32 @@ void __fastcall TTerminal::SynchronizeCollectFile(const UnicodeString FileName,
   }
 }
 //---------------------------------------------------------------------------
+bool __fastcall TTerminal::IsEmptyRemoteDirectory(
+  const TRemoteFile * File, const TCopyParamType * ACopyParam, bool DisallowTemporaryTransferFiles)
+{
+  TCalculateSizeStats Stats;
+
+  TCopyParamType CopyParam(*ACopyParam);
+  CopyParam.ExcludeEmptyDirectories = false; // to avoid endless recursion
+
+  TCalculateSizeParams Params;
+  Params.Params = csStopOnFirstFile | csIgnoreErrors | FLAGMASK(DisallowTemporaryTransferFiles, csDisallowTemporaryTransferFiles);
+  Params.CopyParam = &CopyParam;
+  Params.Stats = &Stats;
+
+  DoCalculateDirectorySize(UnixExcludeTrailingBackslash(File->FullFileName), &Params);
+
+  return Params.Result && (Stats.Files == 0);
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminal::DoSynchronizeCollectFile(const UnicodeString FileName,
   const TRemoteFile * File, /*TSynchronizeData*/ void * Param)
 {
   TSynchronizeData * Data = static_cast<TSynchronizeData *>(Param);
 
-  TFileMasks::TParams MaskParams;
-  MaskParams.Size = File->Size;
-  MaskParams.Modification = File->Modification;
-  UnicodeString LocalFileName =
-    ChangeFileName(Data->CopyParam, File->FileName, osRemote, false);
-  UnicodeString FullRemoteFileName =
-    UnixExcludeTrailingBackslash(File->FullFileName);
-  UnicodeString BaseFileName = GetBaseFileName(FullRemoteFileName);
-  if (Data->CopyParam->AllowTransfer(BaseFileName, osRemote, File->IsDirectory, MaskParams, File->IsHidden) &&
-      !FFileSystem->TemporaryTransferFile(File->FileName) &&
+  UnicodeString LocalFileName = ChangeFileName(Data->CopyParam, File->FileName, osRemote, false);
+  UnicodeString FullRemoteFileName = UnixExcludeTrailingBackslash(File->FullFileName);
+  if (DoAllowRemoteFileTransfer(File, Data->CopyParam, true) &&
       (FLAGCLEAR(Data->Flags, sfFirstLevel) ||
        (Data->Options == NULL) ||
         Data->Options->MatchesFilter(File->FileName) ||
@@ -7198,14 +7288,9 @@ void __fastcall TTerminal::Sink(
   TDownloadSessionAction & Action)
 {
   Action.FileName(FileName);
-
-  TFileMasks::TParams MaskParams;
   DebugAssert(File);
-  MaskParams.Size = File->Size;
-  MaskParams.Modification = File->Modification;
 
-  UnicodeString BaseFileName = GetBaseFileName(FileName);
-  if (!CopyParam->AllowTransfer(BaseFileName, osRemote, File->IsDirectory, MaskParams, File->IsHidden))
+  if (!DoAllowRemoteFileTransfer(File, CopyParam, false))
   {
     LogEvent(FORMAT(L"File \"%s\" excluded from transfer", (FileName)));
     throw ESkipFile();
@@ -7279,6 +7364,10 @@ void __fastcall TTerminal::Sink(
     LogEvent(FORMAT(L"Copying \"%s\" to local directory started.", (FileName)));
 
     // Will we use ASCII of BINARY file transfer?
+    UnicodeString BaseFileName = GetBaseFileName(FileName);
+    TFileMasks::TParams MaskParams;
+    MaskParams.Size = File->Size;
+    MaskParams.Modification = File->Modification;
     SelectTransferMode(BaseFileName, osRemote, CopyParam, MaskParams);
 
     // Suppose same data size to transfer as to write

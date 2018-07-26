@@ -101,6 +101,7 @@ void __fastcall TCopyParamsFrame::SetParams(TCopyParamType value)
   NewerOnlyCheck->Checked = value.NewerOnly;
   EncryptNewFilesCheck->Checked = value.EncryptNewFiles;
   ExcludeHiddenFilesCheck->Checked = value.ExcludeHiddenFiles;
+  ExcludeEmptyDirectoriesCheck->Checked = value.ExcludeEmptyDirectories;
 
   *FParams = value;
 
@@ -157,6 +158,7 @@ TCopyParamType __fastcall TCopyParamsFrame::GetParams()
   Result.NewerOnly = NewerOnlyCheck->Checked;
   Result.EncryptNewFiles = EncryptNewFilesCheck->Checked;
   Result.ExcludeHiddenFiles = ExcludeHiddenFilesCheck->Checked;
+  Result.ExcludeEmptyDirectories = ExcludeEmptyDirectoriesCheck->Checked;
 
   return Result;
 }
@@ -219,6 +221,7 @@ void __fastcall TCopyParamsFrame::UpdateControls()
   EnableControl(EncryptNewFilesCheck, FLAGCLEAR(CopyParamAttrs, cpaIncludeMaskOnly) &&
     FLAGCLEAR(CopyParamAttrs, cpaNoEncryptNewFiles) && Enabled);
   EnableControl(ExcludeHiddenFilesCheck, IncludeFileMaskCombo->Enabled);
+  EnableControl(ExcludeEmptyDirectoriesCheck, FLAGCLEAR(CopyParamAttrs, cpaIncludeMaskOnly));
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamsFrame::ControlChange(TObject * /*Sender*/)

@@ -52,6 +52,7 @@ __published:
   TCheckBox *PreserveTimeDirsCheck;
   TCheckBox *EncryptNewFilesCheck;
   TCheckBox *ExcludeHiddenFilesCheck;
+  TCheckBox *ExcludeEmptyDirectoriesCheck;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall ValidateMaskComboExit(TObject *Sender);
   void __fastcall RightsEditButtonClick(TObject *Sender);

@@ -56,6 +56,7 @@ void __fastcall TCopyParamType::Default()
   NewerOnly = false;
   EncryptNewFiles = true;
   ExcludeHiddenFiles = false;
+  ExcludeEmptyDirectories = false;
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TCopyParamType::GetInfoStr(
@@ -456,6 +457,20 @@ void __fastcall TCopyParamType::DoGetInfoStr(
     }
   }
 
+  if (ExcludeEmptyDirectories != Defaults.ExcludeEmptyDirectories)
+  {
+    if (DebugAlwaysTrue(ExcludeEmptyDirectories))
+    {
+      const int Except = 0;
+      ADD(StripHotkey(LoadStr(COPY_INFO_EXCLUDE_EMPTY_DIRS)), Except);
+      if (FLAGCLEAR(Options, Except))
+      {
+        NoScriptArgs = true;
+        NoCodeProperties = true;
+      }
+    }
+  }
+
   bool ResumeThresholdDiffers = ((ResumeSupport == rsSmart) && (ResumeThreshold != Defaults.ResumeThreshold));
   if (((ResumeSupport != Defaults.ResumeSupport) || ResumeThresholdDiffers) &&
       (TransferMode != tmAscii) && FLAGCLEAR(Options, cpaNoResumeSupport))
@@ -541,6 +556,7 @@ void __fastcall TCopyParamType::Assign(const TCopyParamType * Source)
   COPY(NewerOnly);
   COPY(EncryptNewFiles);
   COPY(ExcludeHiddenFiles);
+  COPY(ExcludeEmptyDirectories);
   #undef COPY
 }
 //---------------------------------------------------------------------------
@@ -711,7 +727,7 @@ UnicodeString __fastcall TCopyParamType::GetLogStr() const
        BooleanToEngStr(CalculateSize),
        FileMask)) +
     FORMAT(
-      L"  TM: %s; ClAr: %s; RemEOF: %s; RemBOM: %s; CPS: %u; NewerOnly: %s; EncryptNewFiles: %s; ExcludeHiddenFiles: %s; InclM: %s; ResumeL: %d\n"
+      L"  TM: %s; ClAr: %s; RemEOF: %s; RemBOM: %s; CPS: %u; NewerOnly: %s; EncryptNewFiles: %s; ExcludeHiddenFiles: %s; ExcludeEmptyDirectories: %s; InclM: %s; ResumeL: %d\n"
        "  AscM: %s\n",
       (ModeC[TransferMode],
        BooleanToEngStr(ClearArchive),
@@ -721,6 +737,7 @@ UnicodeString __fastcall TCopyParamType::GetLogStr() const
        BooleanToEngStr(NewerOnly),
        BooleanToEngStr(EncryptNewFiles),
        BooleanToEngStr(ExcludeHiddenFiles),
+       BooleanToEngStr(ExcludeEmptyDirectories),
        IncludeFileMask.Masks,
        ((FTransferSkipList.get() != NULL) ? FTransferSkipList->Count : 0) + (!FTransferResumeFile.IsEmpty() ? 1 : 0),
        AsciiFileMask.Masks));
@@ -752,6 +769,7 @@ bool __fastcall TCopyParamType::AllowAnyTransfer() const
   return
     IncludeFileMask.Masks.IsEmpty() &&
     !ExcludeHiddenFiles &&
+    !ExcludeEmptyDirectories &&
     ((FTransferSkipList.get() == NULL) || (FTransferSkipList->Count == 0)) &&
     FTransferResumeFile.IsEmpty();
 }
@@ -861,6 +879,7 @@ void __fastcall TCopyParamType::Load(THierarchicalStorage * Storage)
   NewerOnly = Storage->ReadBool(L"NewerOnly", NewerOnly);
   EncryptNewFiles = Storage->ReadBool(L"EncryptNewFiles", EncryptNewFiles);
   ExcludeHiddenFiles = Storage->ReadBool(L"ExcludeHiddenFiles", ExcludeHiddenFiles);
+  ExcludeEmptyDirectories = Storage->ReadBool(L"ExcludeEmptyDirectories", ExcludeEmptyDirectories);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamType::Save(THierarchicalStorage * Storage, const TCopyParamType * Defaults) const
@@ -906,6 +925,7 @@ void __fastcall TCopyParamType::Save(THierarchicalStorage * Storage, const TCopy
   WRITE_DATA(Bool, NewerOnly);
   WRITE_DATA(Bool, EncryptNewFiles);
   WRITE_DATA(Bool, ExcludeHiddenFiles);
+  WRITE_DATA(Bool, ExcludeEmptyDirectories);
 }
 //---------------------------------------------------------------------------
 #define C(Property) (Property == rhp.Property)
@@ -939,6 +959,7 @@ bool __fastcall TCopyParamType::operator==(const TCopyParamType & rhp) const
     C(NewerOnly) &&
     C(EncryptNewFiles) &&
     C(ExcludeHiddenFiles) &&
+    C(ExcludeEmptyDirectories) &&
     true;
 }
 #undef C

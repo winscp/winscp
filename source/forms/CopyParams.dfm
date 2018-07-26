@@ -2,7 +2,7 @@ object CopyParamsFrame: TCopyParamsFrame
   Left = 0
   Top = 0
   Width = 420
-  Height = 463
+  Height = 489
   HelpType = htKeyword
   TabOrder = 0
   object CommonPropertiesGroup: TGroupBox
@@ -295,12 +295,12 @@ object CopyParamsFrame: TCopyParamsFrame
     Left = 8
     Top = 347
     Width = 405
-    Height = 109
+    Height = 135
     Caption = 'Other'
     TabOrder = 5
     DesignSize = (
       405
-      109)
+      135)
     object IncludeFileMaskLabel: TLabel
       Left = 16
       Top = 20
@@ -357,10 +357,21 @@ object CopyParamsFrame: TCopyParamsFrame
       Top = 79
       Width = 176
       Height = 17
-      Caption = 'E&xclude hidden files'
+      Caption = 'Exclude h&idden files'
       ParentShowHint = False
       ShowHint = True
       TabOrder = 4
+      OnClick = ControlChange
+    end
+    object ExcludeEmptyDirectoriesCheck: TCheckBox
+      Left = 16
+      Top = 105
+      Width = 197
+      Height = 17
+      Caption = 'E&xclude empty directories'
+      ParentShowHint = False
+      ShowHint = True
+      TabOrder = 5
       OnClick = ControlChange
     end
   end

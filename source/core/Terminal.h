@@ -106,6 +106,8 @@ const int ccRecursive = 0x02;
 const int ccUser = 0x100;
 //---------------------------------------------------------------------------
 const int csIgnoreErrors = 0x01;
+const int csStopOnFirstFile = 0x02;
+const int csDisallowTemporaryTransferFiles = 0x04;
 //---------------------------------------------------------------------------
 const int ropNoReadDirectory = 0x02;
 //---------------------------------------------------------------------------
@@ -311,8 +313,7 @@ protected:
     const TRemoteFile * File, /*TCalculateSizeParams*/ void * Size);
   void __fastcall DoCalculateFileSize(UnicodeString FileName,
     const TRemoteFile * File, void * Param);
-  bool __fastcall DoCalculateDirectorySize(const UnicodeString FileName,
-    const TRemoteFile * File, TCalculateSizeParams * Params);
+  bool __fastcall DoCalculateDirectorySize(const UnicodeString & FileName, TCalculateSizeParams * Params);
   void __fastcall CalculateLocalFileSize(
     const UnicodeString & FileName, const TSearchRecSmart & Rec, /*__int64*/ void * Size);
   bool __fastcall CalculateLocalFilesSize(TStrings * FileList, __int64 & Size,
@@ -336,7 +337,13 @@ protected:
   bool __fastcall LocalFindFirstLoop(const UnicodeString & Directory, TSearchRecChecked & SearchRec);
   bool __fastcall LocalFindNextLoop(TSearchRecChecked & SearchRec);
   bool __fastcall DoAllowLocalFileTransfer(
-    const UnicodeString & FileName, const TSearchRecSmart & SearchRec, const TCopyParamType * CopyParam);
+    const UnicodeString & FileName, const TSearchRecSmart & SearchRec, const TCopyParamType * CopyParam, bool DisallowTemporaryTransferFiles);
+  bool __fastcall DoAllowRemoteFileTransfer(
+    const TRemoteFile * File, const TCopyParamType * CopyParam, bool DisallowTemporaryTransferFiles);
+  bool __fastcall IsEmptyLocalDirectory(
+    const UnicodeString & LocalDirectory, const TCopyParamType * CopyParam, bool DisallowTemporaryTransferFiles);
+  bool __fastcall IsEmptyRemoteDirectory(
+    const TRemoteFile * File, const TCopyParamType * CopyParam, bool DisallowTemporaryTransferFiles);
   void __fastcall DoSynchronizeCollectFile(const UnicodeString FileName,
     const TRemoteFile * File, /*TSynchronizeData*/ void * Param);
   void __fastcall SynchronizeCollectFile(const UnicodeString FileName,
@@ -694,6 +701,8 @@ struct TCalculateSizeStats
 //---------------------------------------------------------------------------
 struct TCalculateSizeParams
 {
+  TCalculateSizeParams();
+
   __int64 Size;
   int Params;
   const TCopyParamType * CopyParam;
