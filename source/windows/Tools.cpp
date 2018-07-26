@@ -255,7 +255,10 @@ void __fastcall RestoreForm(UnicodeString Data, TForm * Form, bool PositionOnly)
               Monitor->Top + ((Monitor->Height - Bounds.Height()) / 2),
               Bounds.Width(), Bounds.Height());
           }
-          Form->Position = poDesigned;
+          if (!Form->HandleAllocated())
+          {
+            Form->Position = poDesigned;
+          }
         }
       }
       else

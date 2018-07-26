@@ -95,7 +95,7 @@ void __fastcall TSynchronizeChecklistDialog::Execute(TSynchronizeChecklist * Che
     UnicodeString WindowParams = FormConfiguration.WindowParams;
     // if there is no main window, keep previous "custom pos" indication,
     bool CustomPos = (StrToIntDef(CutToChar(WindowParams, L';', true), 0) != 0);
-    if (Application->MainForm != NULL)
+    if (!IsMainFormLike(this))
     {
       CustomPos = (Application->MainForm->BoundsRect != BoundsRect);
     }
@@ -158,7 +158,7 @@ bool __fastcall TSynchronizeChecklistDialog::GetWindowParams(UnicodeString & Win
 {
   WindowParams = CustomWinConfiguration->SynchronizeChecklist.WindowParams;
   bool CustomPos = (StrToIntDef(CutToChar(WindowParams, L';', true), 0) != 0);
-  return CustomPos || (Application->MainForm == NULL);
+  return CustomPos || IsMainFormLike(this);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::CreateParams(TCreateParams & Params)

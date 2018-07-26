@@ -10,6 +10,7 @@
 #include "CustomWinConfiguration.h"
 #include <Exceptions.h>
 #include <PasTools.hpp>
+#include <Math.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -103,8 +104,13 @@ void __fastcall TCustomWinConfiguration::Default()
   TGUIConfiguration::Default();
 
   FInterface = FDefaultInterface;
+  int WorkAreaWidthScaled = DimensionToDefaultPixelsPerInch(Screen->WorkAreaWidth);
+  int WorkAreaHeightScaled = DimensionToDefaultPixelsPerInch(Screen->WorkAreaHeight);
+  // Same as commander interface (really used only with /synchronize)
+  int ChecklistWidth = Min(WorkAreaWidthScaled - 40, 1090);
+  int ChecklistHeight = Min(WorkAreaHeightScaled - 30, 700);
   // 0 means no "custom-pos"
-  FSynchronizeChecklist.WindowParams = L"0;" + FormatDefaultWindowParams(600, 450);
+  FSynchronizeChecklist.WindowParams = L"0;" + FormatDefaultWindowParams(ChecklistWidth, ChecklistHeight);
   FSynchronizeChecklist.ListParams = L"1;1|150,1;100,1;80,1;130,1;25,1;100,1;80,1;130,1;@" + SaveDefaultPixelsPerInch() + L"|0;1;2;3;4;5;6;7";
   FFindFile.WindowParams = FormatDefaultWindowSize(646, 481);
   FFindFile.ListParams = L"3;1|125,1;181,1;80,1;122,1;@" + SaveDefaultPixelsPerInch() + L"|0;1;2;3";
