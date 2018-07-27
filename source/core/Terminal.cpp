@@ -2044,7 +2044,14 @@ void __fastcall TTerminal::SaveCapabilities(TFileSystemInfo & FileSystemInfo)
 bool __fastcall TTerminal::GetIsCapable(TFSCapability Capability) const
 {
   DebugAssert(FFileSystem);
-  return FFileSystem->IsCapable(Capability);
+  switch (Capability)
+  {
+    case fsBackgroundTransfers:
+      return !IsEncryptingFiles();
+
+    default:
+      return FFileSystem->IsCapable(Capability);
+  }
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TTerminal::AbsolutePath(UnicodeString Path, bool Local)

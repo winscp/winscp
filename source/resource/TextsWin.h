@@ -608,6 +608,7 @@
 #define LOGIN_PUBLIC_KEY_TITLE  6008
 #define LOGIN_PUBLIC_KEY_FILTER 6009
 #define SYNCHRONIZE_CHECKLIST_CAPTION 6010
+#define EDITOR_READONLY         6011
 
 // 2xxx is reserved for TextsFileZilla.h
 

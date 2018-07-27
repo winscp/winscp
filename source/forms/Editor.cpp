@@ -771,7 +771,7 @@ void __fastcall TEditorForm::EditorActionsUpdate(TBasicAction *Action,
   }
   else if (Action == SaveAllAction2)
   {
-    bool Enabled = !FStandaloneEditor;
+    bool Enabled = !EditorMemo->ReadOnly && !FStandaloneEditor;
     if (Enabled)
     {
       Enabled = IsFileModified();
@@ -782,6 +782,10 @@ void __fastcall TEditorForm::EditorActionsUpdate(TBasicAction *Action,
       }
     }
     SaveAllAction2->Enabled = Enabled;
+  }
+  else if (Action == ReplaceAction)
+  {
+    ReplaceAction->Enabled = !EditorMemo->ReadOnly;
   }
   else if (Action == FindNextAction)
   {
@@ -1008,6 +1012,8 @@ void __fastcall TEditorForm::FileUploadComplete()
 //---------------------------------------------------------------------------
 void __fastcall TEditorForm::UpdateControls()
 {
+  EditorMemo->ReadOnly = (OnFileChanged == NULL);
+
   TPoint ACaretPos = EditorMemo->CaretPos;
 
   if (ACaretPos.x != FCaretPos.x || ACaretPos.y != FCaretPos.y)
@@ -1072,9 +1078,20 @@ void __fastcall TEditorForm::UpdateControls()
     StatusBar->Panels->Items[2]->Caption = Character;
   }
   StatusBar->Panels->Items[3]->Caption = FMTLOAD(EDITOR_ENCODING_STATUS, (FEncodingName));
-  StatusBar->Panels->Items[4]->Caption =
-    (FSaving ? LoadStr(EDITOR_SAVING) :
-      (IsFileModified() ? LoadStr(EDITOR_MODIFIED) : UnicodeString(L"")));
+  UnicodeString Status;
+  if (EditorMemo->ReadOnly)
+  {
+    Status = LoadStr(EDITOR_READONLY);
+  }
+  else if (FSaving)
+  {
+    Status = LoadStr(EDITOR_SAVING);
+  }
+  else if (IsFileModified())
+  {
+    Status = LoadStr(EDITOR_MODIFIED);
+  }
+  StatusBar->Panels->Items[4]->Caption = Status;
 
   EditorActions->UpdateAction(SaveAction);
 }

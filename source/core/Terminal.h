@@ -589,7 +589,7 @@ public:
   UnicodeString __fastcall ChangeFileName(const TCopyParamType * CopyParam,
     UnicodeString FileName, TOperationSide Side, bool FirstLevel);
   UnicodeString __fastcall GetBaseFileName(UnicodeString FileName);
-  bool __fastcall IsEncryptingFiles() { return !FEncryptKey.IsEmpty(); }
+  bool __fastcall IsEncryptingFiles() const { return !FEncryptKey.IsEmpty(); }
   RawByteString __fastcall GetEncryptKey() { return FEncryptKey; }
 
   static UnicodeString __fastcall ExpandFileName(UnicodeString Path,

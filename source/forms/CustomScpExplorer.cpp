@@ -709,7 +709,7 @@ void __fastcall TCustomScpExplorerForm::UpdateQueueView()
 {
   ComponentVisible[fcQueueView] =
     (WinConfiguration->QueueView.Show == qvShow) ||
-    ((WinConfiguration->QueueView.Show == qvHideWhenEmpty) &&
+     ((WinConfiguration->QueueView.Show == qvHideWhenEmpty) &&
      (FQueueStatus != NULL) && (FQueueStatus->Count > 0));
 }
 //---------------------------------------------------------------------------
@@ -1069,6 +1069,7 @@ bool __fastcall TCustomScpExplorerForm::CopyParamDialog(
       ToTemp;
     Options |=
       FLAGMASK(ToTemp, coTemp) |
+      FLAGMASK(!Terminal->IsCapable[fsBackgroundTransfers], coDisableQueue) |
       coDoNotShowAgain;
     TUsableCopyParamAttrs UsableCopyParamAttrs = Terminal->UsableCopyParamAttrs(Params);
     int CopyParamAttrs = (Direction == tdToRemote ?
@@ -1113,7 +1114,7 @@ bool __fastcall TCustomScpExplorerForm::CopyParamDialog(
     }
   }
 
-  if (Result && CopyParam.Queue && !ToTemp)
+  if (Result && CopyParam.Queue && !ToTemp && Terminal->IsCapable[fsBackgroundTransfers])
   {
 
     Configuration->Usage->Inc(L"TransfersOnBackground");
@@ -2997,9 +2998,19 @@ void __fastcall TCustomScpExplorerForm::CustomExecuteFile(TOperationSide Side,
       TForm * Editor;
       try
       {
-        Editor = ShowEditorForm(FileName, this, FEditorManager->FileChanged,
+        TNotifyEvent OnFileChanged = NULL;
+        TNotifyEvent OnSaveAll = NULL;
+        TAnyModifiedEvent OnAnyModified = NULL;
+        // Edited files are uploaded in background queue, what we do not support with encrypted files
+        if (Terminal->IsCapable[fsBackgroundTransfers])
+        {
+          OnFileChanged = FEditorManager->FileChanged;
+          OnSaveAll = SaveAllInternalEditors;
+          OnAnyModified = AnyInternalEditorModified;
+        }
+        Editor = ShowEditorForm(FileName, this, OnFileChanged,
           FEditorManager->FileReload, FEditorManager->FileClosed,
-          SaveAllInternalEditors, AnyInternalEditorModified,
+          OnSaveAll, OnAnyModified,
           Caption, FStandaloneEditing, SessionColor, Terminal->SessionData->InternalEditorEncoding);
       }
       catch(...)
@@ -8050,7 +8061,7 @@ void __fastcall TCustomScpExplorerForm::UpdateControls()
       }
       EnableControl(RemoteDriveView, false);
     }
-    EnableControl(QueueView3, HasTerminal);
+    EnableControl(QueueView3, HasTerminal && Terminal->IsCapable[fsBackgroundTransfers]);
     QueueLabelUpdateStatus();
     reinterpret_cast<TTBCustomItem *>(GetComponent(fcRemotePathComboBox))->Enabled = HasTerminal;
   }
