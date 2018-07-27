@@ -104,6 +104,13 @@ bool __fastcall TSynchronizeChecklistDialog::Execute(TSynchronizeChecklist * Che
 
     CustomWinConfiguration->SynchronizeChecklist = FormConfiguration;
   }
+
+  if (FException.get() != NULL)
+  {
+    RethrowException(FException.get());
+  }
+
+  return Result;
 }
 //---------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::UpdateControls()
@@ -1107,6 +1114,13 @@ void __fastcall TSynchronizeChecklistDialog::OkButtonClick(TObject * /*Sender*/)
 
   TAutoFlag Flag(FSynchronizing);
   UpdateControls();
-  FOnSynchronize(FToken, ProcessedItem);
+  try
+  {
+    FOnSynchronize(FToken, ProcessedItem);
+  }
+  catch (Exception & E)
+  {
+    FException.reset(CloneException(&E));
+  }
 }
 //---------------------------------------------------------------------------

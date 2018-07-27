@@ -120,6 +120,7 @@ protected:
   typedef std::map<const void *, TListItem *> TTokens;
   TTokens FTokens;
   bool FSynchronizing;
+  std::unique_ptr<Exception> FException;
 
   void __fastcall UpdateControls();
   virtual void __fastcall CreateParams(TCreateParams & Params);
