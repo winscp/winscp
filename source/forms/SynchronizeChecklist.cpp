@@ -27,14 +27,14 @@
 //---------------------------------------------------------------------
 const int ImageColumnIndex = 4;
 //---------------------------------------------------------------------
-void __fastcall DoSynchronizeChecklistDialog(TSynchronizeChecklist * Checklist,
+bool __fastcall DoSynchronizeChecklistDialog(TSynchronizeChecklist * Checklist,
   TSynchronizeMode Mode, int Params,
   const UnicodeString LocalDirectory, const UnicodeString RemoteDirectory,
   TCustomCommandMenuEvent OnCustomCommandMenu, TFullSynchronizeEvent OnSynchronize, void * Token)
 {
   std::unique_ptr<TSynchronizeChecklistDialog> Dialog(
     new TSynchronizeChecklistDialog(Application, Mode, Params, LocalDirectory, RemoteDirectory, OnCustomCommandMenu, OnSynchronize, Token));
-  Dialog->Execute(Checklist);
+  return Dialog->Execute(Checklist);
 }
 //---------------------------------------------------------------------
 __fastcall TSynchronizeChecklistDialog::TSynchronizeChecklistDialog(
@@ -80,7 +80,7 @@ __fastcall TSynchronizeChecklistDialog::~TSynchronizeChecklistDialog()
   ListView->WindowProc = FOrigListViewWindowProc;
 }
 //---------------------------------------------------------------------
-void __fastcall TSynchronizeChecklistDialog::Execute(TSynchronizeChecklist * Checklist)
+bool __fastcall TSynchronizeChecklistDialog::Execute(TSynchronizeChecklist * Checklist)
 {
   FChecklist = Checklist;
 

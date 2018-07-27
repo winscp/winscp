@@ -94,7 +94,7 @@ public:
     TFullSynchronizeEvent OnSynchronize, void * Token);
   virtual __fastcall ~TSynchronizeChecklistDialog();
 
-  void __fastcall Execute(TSynchronizeChecklist * Checklist);
+  bool __fastcall Execute(TSynchronizeChecklist * Checklist);
 
 protected:
   bool FFormRestored;

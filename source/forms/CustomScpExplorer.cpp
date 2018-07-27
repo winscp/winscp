@@ -5448,8 +5448,10 @@ bool __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
         SynchronizeParams.StartTime = &StartTime;
         if (FLAGSET(Params, TTerminal::spPreviewChanges))
         {
-          DoSynchronizeChecklistDialog(
-            Checklist, Mode, Params, LocalDirectory, RemoteDirectory, CustomCommandMenu, DoFullSynchronize, &SynchronizeParams);
+          Result =
+            DoSynchronizeChecklistDialog(
+              Checklist, Mode, Params, LocalDirectory, RemoteDirectory, CustomCommandMenu, DoFullSynchronize,
+              &SynchronizeParams);
         }
         else
         {
