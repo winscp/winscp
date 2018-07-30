@@ -378,6 +378,7 @@ void __fastcall ReadOnlyControl(TControl * Control, bool ReadOnly)
   }
 }
 //---------------------------------------------------------------------------
+// Some of MainFormLike code can now be obsolete, thanks to Application->OnGetMainFormHandle.
 static TForm * MainLikeForm = NULL;
 //---------------------------------------------------------------------------
 TForm * __fastcall GetMainForm()

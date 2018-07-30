@@ -821,6 +821,7 @@ void __fastcall TCustomScpExplorerForm::RefreshQueueItems()
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::SetTaskbarListProgressState(TBPFLAG Flags)
 {
+  // Could now use Application->MainFormHandle, now that we implement Application->OnGetMainFormHandle
   FTaskbarList->SetProgressState(GetMainForm()->Handle, Flags);
 }
 //---------------------------------------------------------------------------

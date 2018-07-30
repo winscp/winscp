@@ -1378,6 +1378,7 @@ static void __fastcall DoApplicationMinimizeRestore(bool Minimize)
     if (Minimize)
     {
       PreviousWindowState = MainLikeForm->WindowState;
+      // This works correctly with child windows thanks to Application->OnGetMainFormHandle
       MainLikeForm->WindowState = wsMinimized;
     }
     else
@@ -1554,6 +1555,18 @@ HANDLE TCallstackThread::DoCreateEvent()
 //---------------------------------------------------------------------------
 std::unique_ptr<TCallstackThread> CallstackThread;
 //---------------------------------------------------------------------------
+static void __fastcall AppGetMainFormHandle(void * /*Data*/, HWND & Handle)
+{
+  TForm * MainForm = GetMainForm();
+  // This, among other, causes minimizing of the top-level non-MainForm minimize other child windows.
+  // Like clicking "Minimize" on Progress window over Synchronization progress window over Synchronization checklist window.
+  // Would also have a lot of other effects (hopefully possitive) and may render lot of existing MainFormLike code obsolete.
+  if ((MainForm != NULL) && IsMainFormLike(MainForm) && MainForm->HandleAllocated())
+  {
+    Handle = MainForm->Handle;
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall WinInitialize()
 {
   if (JclHookExceptions())
@@ -1567,6 +1580,7 @@ void __fastcall WinInitialize()
   SetErrorMode(SEM_FAILCRITICALERRORS);
   OnApiPath = ApiPath;
   MainThread = GetCurrentThreadId();
+  Application->OnGetMainFormHandle = MakeMethod<TGetHandleEvent>(NULL, AppGetMainFormHandle);
 
 #pragma warn -8111
 #pragma warn .8111
