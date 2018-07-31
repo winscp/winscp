@@ -30,17 +30,21 @@ const int ImageColumnIndex = 4;
 bool __fastcall DoSynchronizeChecklistDialog(TSynchronizeChecklist * Checklist,
   TSynchronizeMode Mode, int Params,
   const UnicodeString LocalDirectory, const UnicodeString RemoteDirectory,
-  TCustomCommandMenuEvent OnCustomCommandMenu, TFullSynchronizeEvent OnSynchronize, void * Token)
+  TCustomCommandMenuEvent OnCustomCommandMenu, TFullSynchronizeEvent OnSynchronize,
+  TSynchronizeChecklistCalculateSize OnSynchronizeChecklistCalculateSize, void * Token)
 {
   std::unique_ptr<TSynchronizeChecklistDialog> Dialog(
-    new TSynchronizeChecklistDialog(Application, Mode, Params, LocalDirectory, RemoteDirectory, OnCustomCommandMenu, OnSynchronize, Token));
+    new TSynchronizeChecklistDialog(
+      Application, Mode, Params, LocalDirectory, RemoteDirectory, OnCustomCommandMenu, OnSynchronize,
+      OnSynchronizeChecklistCalculateSize, Token));
   return Dialog->Execute(Checklist);
 }
 //---------------------------------------------------------------------
 __fastcall TSynchronizeChecklistDialog::TSynchronizeChecklistDialog(
   TComponent * AOwner, TSynchronizeMode Mode, int Params,
-  const UnicodeString LocalDirectory, const UnicodeString RemoteDirectory,
-  TCustomCommandMenuEvent OnCustomCommandMenu, TFullSynchronizeEvent OnSynchronize, void * Token)
+  const UnicodeString & LocalDirectory, const UnicodeString & RemoteDirectory,
+  TCustomCommandMenuEvent OnCustomCommandMenu, TFullSynchronizeEvent OnSynchronize,
+  TSynchronizeChecklistCalculateSize OnSynchronizeChecklistCalculateSize, void * Token)
   : TForm(AOwner)
 {
   FFormRestored = false;
@@ -49,6 +53,7 @@ __fastcall TSynchronizeChecklistDialog::TSynchronizeChecklistDialog(
   FLocalDirectory = ExcludeTrailingBackslash(LocalDirectory);
   FRemoteDirectory = UnixExcludeTrailingBackslash(RemoteDirectory);
   FOnCustomCommandMenu = OnCustomCommandMenu;
+  FOnSynchronizeChecklistCalculateSize = OnSynchronizeChecklistCalculateSize;
   DebugAssert(OnSynchronize != NULL);
   FOnSynchronize = OnSynchronize;
   FToken = Token;
@@ -123,10 +128,12 @@ void __fastcall TSynchronizeChecklistDialog::UpdateControls()
   bool AllUnchecked = true;
   bool AnyBoth = false;
   bool AnyNonBoth = false;
+  bool AnyDirectory = false;
   TListItem * Item = ListView->Selected;
   while (Item != NULL)
   {
-    TSynchronizeChecklist::TAction Action = GetChecklistItemAction(GetChecklistItem(Item));
+    const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(Item);
+    TSynchronizeChecklist::TAction Action = GetChecklistItemAction(ChecklistItem);
     if ((Action == TSynchronizeChecklist::saUploadUpdate) ||
         (Action == TSynchronizeChecklist::saDownloadUpdate))
     {
@@ -145,6 +152,10 @@ void __fastcall TSynchronizeChecklistDialog::UpdateControls()
     {
       AllChecked = false;
     }
+    if (ChecklistItem->IsDirectory)
+    {
+      AnyDirectory = true;
+    }
     Item = ListView->GetNextItem(Item, sdAll, TItemStates() << isSelected);
   }
 
@@ -157,6 +168,7 @@ void __fastcall TSynchronizeChecklistDialog::UpdateControls()
   UncheckAllAction->Enabled = (FChecked[0] > 0) && !FSynchronizing;
   CustomCommandsAction->Enabled = AnyBoth && !AnyNonBoth && DebugAlwaysTrue(!FSynchronizing);
   ReverseAction->Enabled = (ListView->SelCount > 0) && DebugAlwaysTrue(!FSynchronizing);
+  CalculateSizeAction->Enabled = (ListView->SelCount > 0) && AnyDirectory && DebugAlwaysTrue(!FSynchronizing);
 
   SelectAllAction->Enabled = (ListView->SelCount < ListView->Items->Count) && !FSynchronizing;
 }
@@ -249,7 +261,7 @@ void __fastcall TSynchronizeChecklistDialog::LoadItem(TListItem * Item)
     }
     else
     {
-      if (ChecklistItem->IsDirectory)
+      if (!ChecklistItem->HasSize())
       {
         AddSubItem(Item, Index, L"");
       }
@@ -293,7 +305,7 @@ void __fastcall TSynchronizeChecklistDialog::LoadItem(TListItem * Item)
     }
     else
     {
-      if (ChecklistItem->IsDirectory)
+      if (!ChecklistItem->HasSize())
       {
         AddSubItem(Item, Index, L"");
       }
@@ -1121,6 +1133,51 @@ void __fastcall TSynchronizeChecklistDialog::OkButtonClick(TObject * /*Sender*/)
   catch (Exception & E)
   {
     FException.reset(CloneException(&E));
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeChecklistDialog::CalculateSizeActionExecute(TObject * /*Sender*/)
+{
+  std::map<const TSynchronizeChecklist::TItem *, TListItem *> ChecklistToListViewMap;
+  TSynchronizeChecklistItemList Items;
+  TListItem * Item = ListView->Selected;
+  while (Item != NULL)
+  {
+    const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(Item);
+    ChecklistToListViewMap.insert(std::make_pair(ChecklistItem, Item));
+    Items.push_back(ChecklistItem);
+    if (Item->Checked)
+    {
+      __int64 ItemSize = GetItemSize(ChecklistItem);
+      int ActionIndex = int(GetChecklistItemAction(ChecklistItem));
+      FCheckedSize[ActionIndex] -= ItemSize;
+      FCheckedSize[0] -= ItemSize;
+    }
+    Item = ListView->GetNextItem(Item, sdAll, TItemStates() << isSelected);
+  }
+
+  try
+  {
+    FOnSynchronizeChecklistCalculateSize(FChecklist, Items, FToken);
+  }
+  __finally
+  {
+    TSynchronizeChecklistItemList::const_iterator Iter = Items.begin();
+    while (Iter != Items.end())
+    {
+      const TSynchronizeChecklist::TItem * ChecklistItem = *Iter;
+      TListItem * Item = ChecklistToListViewMap[ChecklistItem];
+      LoadItem(Item);
+      if (Item->Checked)
+      {
+        __int64 ItemSize = GetItemSize(ChecklistItem);
+        int ActionIndex = int(GetChecklistItemAction(ChecklistItem));
+        FCheckedSize[ActionIndex] += ItemSize;
+        FCheckedSize[0] += ItemSize;
+      }
+      Iter++;
+    }
+    UpdateControls();
   }
 }
 //---------------------------------------------------------------------------

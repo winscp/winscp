@@ -5374,6 +5374,102 @@ void __fastcall TCustomScpExplorerForm::DoFullSynchronize(void * Token, TProcess
   FullSynchronize(Params, OnProcessedItem);
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::DoSynchronizeChecklistCalculateSize(
+  TSynchronizeChecklist * Checklist, const TSynchronizeChecklistItemList & Items, void * Token)
+{
+  // terminal can be already closed (e.g. dropped connection)
+  if (Terminal != NULL)
+  {
+    TSynchronizeParams & Params = *static_cast<TSynchronizeParams *>(Token);
+    std::unique_ptr<TStrings> RemoteFileList(new TStringList());
+    std::unique_ptr<TStrings> LocalFileList(new TStringList());
+
+    for (size_t Index = 0; Index < Items.size(); Index++)
+    {
+      const TSynchronizeChecklist::TItem * ChecklistItem = Items[Index];
+      if (ChecklistItem->IsDirectory)
+      {
+        if (ChecklistItem->IsRemoteOnly())
+        {
+          RemoteFileList->AddObject(ChecklistItem->RemoteFile->FullFileName, ChecklistItem->RemoteFile);
+        }
+        else if (ChecklistItem->IsLocalOnly())
+        {
+          LocalFileList->Add(IncludeTrailingBackslash(ChecklistItem->Local.Directory) + ChecklistItem->Local.FileName);
+        }
+        else
+        {
+          // "update" actions are not relevant for directories
+          DebugFail();
+        }
+      }
+    }
+
+    TCalculatedSizes RemoteCalculatedSizes;
+    TCalculatedSizes LocalCalculatedSizes;
+
+    try
+    {
+      bool Result = true;
+      if (LocalFileList->Count > 0)
+      {
+        __int64 LocalSize = 0;
+        Result = Terminal->CalculateLocalFilesSize(LocalFileList.get(), LocalSize, Params.CopyParam, true, NULL, &LocalCalculatedSizes);
+      }
+      if (Result && (RemoteFileList->Count > 0))
+      {
+        __int64 RemoteSize = 0;
+        TCalculateSizeStats RemoteStats;
+        RemoteStats.CalculatedSizes = &RemoteCalculatedSizes;
+        Terminal->CalculateFilesSize(RemoteFileList.get(), RemoteSize, 0, Params.CopyParam, true, RemoteStats);
+      }
+    }
+    __finally
+    {
+      size_t LocalIndex = 0;
+      size_t RemoteIndex = 0;
+
+      for (size_t Index = 0; Index < Items.size(); Index++)
+      {
+        const TSynchronizeChecklist::TItem * ChecklistItem = Items[Index];
+        if (ChecklistItem->IsDirectory)
+        {
+          __int64 Size = -1;
+          if (ChecklistItem->IsRemoteOnly())
+          {
+            if (RemoteIndex < RemoteCalculatedSizes.size())
+            {
+              Size = RemoteCalculatedSizes[RemoteIndex];
+            }
+            RemoteIndex++;
+          }
+          else if (ChecklistItem->IsLocalOnly())
+          {
+            if (LocalIndex < LocalCalculatedSizes.size())
+            {
+              Size = LocalCalculatedSizes[LocalIndex];
+            }
+            LocalIndex++;
+          }
+          else
+          {
+            // "update" actions are not relevant for directories
+            DebugFail();
+          }
+
+          if (Size >= 0)
+          {
+            Checklist->UpdateDirectorySize(ChecklistItem, Size);
+          }
+        }
+      }
+
+      DebugAssert(RemoteIndex >= RemoteCalculatedSizes.size());
+      DebugAssert(LocalIndex >= LocalCalculatedSizes.size());
+    }
+  }
+}
+//---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
   UnicodeString & LocalDirectory, UnicodeString & RemoteDirectory,
   TSynchronizeMode & Mode, bool & SaveMode, bool UseDefaults)
@@ -5452,7 +5548,7 @@ bool __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
           Result =
             DoSynchronizeChecklistDialog(
               Checklist, Mode, Params, LocalDirectory, RemoteDirectory, CustomCommandMenu, DoFullSynchronize,
-              &SynchronizeParams);
+              DoSynchronizeChecklistCalculateSize, &SynchronizeParams);
         }
         else
         {

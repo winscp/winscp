@@ -352,10 +352,14 @@ class TSynchronizeChecklist;
 typedef void __fastcall (__closure *TCustomCommandMenuEvent)
   (TAction * Action, TStrings * LocalFileList, TStrings * RemoteFileList);
 typedef void __fastcall (__closure *TFullSynchronizeEvent)(void * Token, TProcessedItem OnProcessedItem);
+typedef std::vector<const TSynchronizeChecklist::TItem *> TSynchronizeChecklistItemList;
+typedef void __fastcall (__closure *TSynchronizeChecklistCalculateSize)
+  (TSynchronizeChecklist * Checklist, const TSynchronizeChecklistItemList & Items, void * Token);
 bool __fastcall DoSynchronizeChecklistDialog(TSynchronizeChecklist * Checklist,
   TSynchronizeMode Mode, int Params,
   const UnicodeString LocalDirectory, const UnicodeString RemoteDirectory,
-  TCustomCommandMenuEvent OnCustomCommandMenu, TFullSynchronizeEvent OnSynchronize, void * Token);
+  TCustomCommandMenuEvent OnCustomCommandMenu, TFullSynchronizeEvent OnSynchronize,
+  TSynchronizeChecklistCalculateSize OnSynchronizeChecklistCalculateSize, void * Token);
 
 // forms\Editor.cpp
 typedef void __fastcall (__closure *TFileClosedEvent)

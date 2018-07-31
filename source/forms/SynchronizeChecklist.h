@@ -52,6 +52,9 @@ __published:
   TPngImageList *ActionImages120;
   TPngImageList *ActionImages144;
   TPngImageList *ActionImages192;
+  TAction *CalculateSizeAction;
+  TMenuItem *Calculate1;
+  TButton *CalculateSizeButton;
   void __fastcall HelpButtonClick(TObject * Sender);
   void __fastcall FormShow(TObject * Sender);
   void __fastcall StatusBarDrawPanel(TStatusBar *StatusBar,
@@ -85,13 +88,14 @@ __published:
   void __fastcall ReverseActionExecute(TObject *Sender);
   void __fastcall ListViewClick(TObject *Sender);
   void __fastcall OkButtonClick(TObject *Sender);
-
+  void __fastcall CalculateSizeActionExecute(TObject *Sender);
 
 public:
-  __fastcall TSynchronizeChecklistDialog(TComponent * AOwner,
-    TSynchronizeMode Mode, int Params, const UnicodeString LocalDirectory,
-    const UnicodeString RemoteDirectory, TCustomCommandMenuEvent OnCustomCommandMenu,
-    TFullSynchronizeEvent OnSynchronize, void * Token);
+  __fastcall TSynchronizeChecklistDialog(
+    TComponent * AOwner, TSynchronizeMode Mode, int Params,
+    const UnicodeString & LocalDirectory, const UnicodeString & RemoteDirectory,
+    TCustomCommandMenuEvent OnCustomCommandMenu, TFullSynchronizeEvent OnSynchronize,
+    TSynchronizeChecklistCalculateSize OnSynchronizeChecklistCalculateSize, void * Token);
   virtual __fastcall ~TSynchronizeChecklistDialog();
 
   bool __fastcall Execute(TSynchronizeChecklist * Checklist);
@@ -113,6 +117,7 @@ protected:
   bool FChangingItemMass;
   UnicodeString FGeneralHint;
   TCustomCommandMenuEvent FOnCustomCommandMenu;
+  TSynchronizeChecklistCalculateSize FOnSynchronizeChecklistCalculateSize;
   typedef std::map<const TSynchronizeChecklist::TItem *, TSynchronizeChecklist::TAction> TActions;
   TActions FActions;
   TFullSynchronizeEvent FOnSynchronize;

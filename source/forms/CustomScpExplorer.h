@@ -606,6 +606,8 @@ protected:
   void __fastcall CopyPopup(TControl * DestControl, TControl * SourceControl);
   void __fastcall CreateRemoteDirectory(const UnicodeString & Path, TRemoteProperties & Properties);
   void __fastcall DoFullSynchronize(void * Token, TProcessedItem OnProcessedItem);
+  void __fastcall DoSynchronizeChecklistCalculateSize(
+    TSynchronizeChecklist * Checklist, const TSynchronizeChecklistItemList & Items, void * Token);
   void __fastcall FullSynchronize(TSynchronizeParams & Params, TProcessedItem OnProcessedItem);
   void __fastcall CreateOpenDirMenuList(TTBCustomItem * Menu, TOperationSide Side, TBookmarkList * BookmarkList);
   void __fastcall CreateOpenDirMenu(TTBCustomItem * Menu, TOperationSide Side);

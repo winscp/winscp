@@ -1443,7 +1443,7 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     end
     object CustomCommandsButton2: TButton
       Left = 8
-      Top = 292
+      Top = 322
       Width = 108
       Height = 25
       Action = CustomCommandsAction
@@ -1459,6 +1459,15 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       Action = ReverseAction
       Anchors = [akLeft, akTop, akRight]
       TabOrder = 7
+    end
+    object CalculateSizeButton: TButton
+      Left = 8
+      Top = 291
+      Width = 108
+      Height = 25
+      Action = CalculateSizeAction
+      Anchors = [akLeft, akTop, akRight]
+      TabOrder = 9
     end
   end
   object ListView: TIEListView
@@ -2323,6 +2332,9 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     object ReverseItem: TMenuItem
       Action = ReverseAction
     end
+    object Calculate1: TMenuItem
+      Action = CalculateSizeAction
+    end
     object TMenuItem
       Action = CustomCommandsAction
       object TMenuItem
@@ -2373,6 +2385,10 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     object ReverseAction: TAction
       Caption = '&Reverse'
       OnExecute = ReverseActionExecute
+    end
+    object CalculateSizeAction: TAction
+      Caption = 'C&alculate'
+      OnExecute = CalculateSizeActionExecute
     end
   end
   object ActionImages120: TPngImageList

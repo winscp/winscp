@@ -31,6 +31,7 @@ class TCallbackGuard;
 class TParallelOperation;
 class TCollectedFileList;
 struct TLocalFileHandle;
+typedef std::vector<__int64> TCalculatedSizes;
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure *TQueryUserEvent)
   (TObject * Sender, const UnicodeString Query, TStrings * MoreMessages, unsigned int Answers,
@@ -316,8 +317,6 @@ protected:
   bool __fastcall DoCalculateDirectorySize(const UnicodeString & FileName, TCalculateSizeParams * Params);
   void __fastcall CalculateLocalFileSize(
     const UnicodeString & FileName, const TSearchRecSmart & Rec, /*__int64*/ void * Size);
-  bool __fastcall CalculateLocalFilesSize(TStrings * FileList, __int64 & Size,
-    const TCopyParamType * CopyParam, bool AllowDirs, TStrings * Files);
   TBatchOverwrite __fastcall EffectiveBatchOverwrite(
     const UnicodeString & SourceFullFileName, const TCopyParamType * CopyParam, int Params,
     TFileOperationProgressType * OperationProgress, bool Special);
@@ -546,6 +545,8 @@ public:
   bool __fastcall CalculateFilesSize(TStrings * FileList, __int64 & Size,
     int Params, const TCopyParamType * CopyParam, bool AllowDirs,
     TCalculateSizeStats & Stats);
+  bool __fastcall CalculateLocalFilesSize(TStrings * FileList, __int64 & Size,
+    const TCopyParamType * CopyParam, bool AllowDirs, TStrings * Files, TCalculatedSizes * CalculatedSizes);
   void __fastcall CalculateFilesChecksum(const UnicodeString & Alg, TStrings * FileList,
     TStrings * Checksums, TCalculatedChecksumEvent OnCalculatedChecksum);
   void __fastcall ClearCaches();
@@ -697,6 +698,7 @@ struct TCalculateSizeStats
   int Directories;
   int SymLinks;
   TStrings * FoundFiles;
+  TCalculatedSizes * CalculatedSizes;
 };
 //---------------------------------------------------------------------------
 struct TCalculateSizeParams
@@ -758,6 +760,7 @@ public:
   class TItem
   {
   friend class TTerminal;
+  friend class TSynchronizeChecklist;
 
   public:
     struct TFileInfo
@@ -778,11 +781,15 @@ public:
     TRemoteFile * RemoteFile;
 
     const UnicodeString& GetFileName() const;
+    bool IsRemoteOnly() const { return (Action == saDownloadNew) || (Action == saDeleteRemote); }
+    bool IsLocalOnly() const { return (Action == saUploadNew) || (Action == saDeleteLocal); }
+    bool HasSize() const { return !IsDirectory || FDirectoryHasSize; }
 
     ~TItem();
 
   private:
     FILETIME FLocalLastWriteTime;
+    bool FDirectoryHasSize;
 
     TItem();
   };
@@ -790,6 +797,7 @@ public:
   ~TSynchronizeChecklist();
 
   void __fastcall Update(const TItem * Item, bool Check, TAction Action);
+  void __fastcall UpdateDirectorySize(const TItem * Item, __int64 Size);
 
   static TAction __fastcall Reverse(TAction Action);
 

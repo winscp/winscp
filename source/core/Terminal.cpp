@@ -140,7 +140,7 @@ TOverwriteFileParams::TOverwriteFileParams()
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 TSynchronizeChecklist::TItem::TItem() :
-  Action(saNone), IsDirectory(false), RemoteFile(NULL), Checked(true), ImageIndex(-1)
+  Action(saNone), IsDirectory(false), RemoteFile(NULL), Checked(true), ImageIndex(-1), FDirectoryHasSize(false)
 {
   Local.ModificationFmt = mfFull;
   Local.Modification = 0;
@@ -235,6 +235,31 @@ void __fastcall TSynchronizeChecklist::Update(const TItem * Item, bool Check, TA
   DebugAssert(FList->IndexOf(MutableItem) >= 0);
   MutableItem->Checked = Check;
   MutableItem->Action = Action;
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeChecklist::UpdateDirectorySize(const TItem * Item, __int64 Size)
+{
+  // See comment in Update
+  TItem * MutableItem = const_cast<TItem *>(Item);
+  DebugAssert(FList->IndexOf(MutableItem) >= 0);
+  if (DebugAlwaysTrue(Item->IsDirectory))
+  {
+    MutableItem->FDirectoryHasSize = true;
+
+    if (Item->IsRemoteOnly())
+    {
+      MutableItem->Remote.Size = Size;
+    }
+    else if (Item->IsLocalOnly())
+    {
+      MutableItem->Local.Size = Size;
+    }
+    else
+    {
+      // "update" actions are not relevant for directories
+      DebugFail();
+    }
+  }
 }
 //---------------------------------------------------------------------------
 TSynchronizeChecklist::TAction __fastcall TSynchronizeChecklist::Reverse(TSynchronizeChecklist::TAction Action)
@@ -4293,6 +4318,7 @@ bool __fastcall TTerminal::LoadFilesProperties(TStrings * FileList)
 void __fastcall TTerminal::DoCalculateFileSize(UnicodeString FileName,
   const TRemoteFile * File, void * Param)
 {
+  // This is called for top-level entries only
   TCalculateSizeParams * AParams = static_cast<TCalculateSizeParams*>(Param);
 
   if (AParams->Stats->FoundFiles != NULL)
@@ -4307,7 +4333,14 @@ void __fastcall TTerminal::DoCalculateFileSize(UnicodeString FileName,
     }
   }
 
+  __int64 PrevSize = AParams->Size;
   CalculateFileSize(FileName, File, Param);
+
+  if (AParams->Stats->CalculatedSizes != NULL)
+  {
+    __int64 Size = AParams->Size - PrevSize;
+    AParams->Stats->CalculatedSizes->push_back(Size);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::CalculateFileSize(UnicodeString FileName,
@@ -5332,7 +5365,8 @@ void __fastcall TTerminal::CalculateLocalFileSize(
 }
 //---------------------------------------------------------------------------
 bool __fastcall TTerminal::CalculateLocalFilesSize(TStrings * FileList,
-  __int64 & Size, const TCopyParamType * CopyParam, bool AllowDirs, TStrings * Files)
+  __int64 & Size, const TCopyParamType * CopyParam, bool AllowDirs, TStrings * Files,
+  TCalculatedSizes * CalculatedSizes)
 {
   bool Result = false;
   TFileOperationProgressType OperationProgress(&DoProgress, &DoFinished);
@@ -5374,7 +5408,15 @@ bool __fastcall TTerminal::CalculateLocalFilesSize(TStrings * FileList,
             }
           }
 
+          __int64 PrevSize = Params.Size;
+
           CalculateLocalFileSize(FileName, Rec, &Params);
+
+          if (CalculatedSizes != NULL)
+          {
+            __int64 Size = Params.Size - PrevSize;
+            CalculatedSizes->push_back(Size);
+          }
 
           OperationFinish(&OperationProgress, FileList->Objects[Index], FileName, true, OnceDoneOperation);
         }
@@ -6643,7 +6685,7 @@ bool __fastcall TTerminal::CopyToRemote(TStrings * FilesToCopy,
       Files->OwnsObjects = true;
     }
     bool CalculatedSize =
-      CalculateLocalFilesSize(FilesToCopy, Size, CopyParam, CopyParam->CalculateSize, Files.get());
+      CalculateLocalFilesSize(FilesToCopy, Size, CopyParam, CopyParam->CalculateSize, Files.get(), NULL);
 
     FLastProgressLogged = GetTickCount();
     TFileOperationProgressType OperationProgress(&DoProgress, &DoFinished);
