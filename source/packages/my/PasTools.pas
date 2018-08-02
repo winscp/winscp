@@ -73,6 +73,7 @@ function ControlHasRecreationPersistenceData(Control: TControl): Boolean;
 function IsAppIconic: Boolean;
 procedure SetAppIconic(Value: Boolean);
 procedure SetAppMainForm(Value: TForm);
+procedure SetAppTerminated(Value: Boolean);
 
 procedure ForceColorChange(Control: TWinControl);
 
@@ -600,6 +601,7 @@ type
     function IsAppIconic: Boolean;
     procedure SetAppIconic(Value: Boolean);
     procedure SetMainForm(Value: TForm);
+    procedure SetTerminated(Value: Boolean);
   end;
 
 function TApplicationHelper.IsAppIconic: Boolean;
@@ -617,6 +619,11 @@ begin
   Self.FMainForm := Value;
 end;
 
+procedure TApplicationHelper.SetTerminated(Value: Boolean);
+begin
+  Self.FTerminate := Value;
+end;
+
 function IsAppIconic: Boolean;
 begin
   Result := Application.IsAppIconic;
@@ -630,6 +637,11 @@ end;
 procedure SetAppMainForm(Value: TForm);
 begin
   Application.SetMainForm(Value);
+end;
+
+procedure SetAppTerminated(Value: Boolean);
+begin
+  Application.SetTerminated(Value);
 end;
 
 function ApiPath(Path: string): string;

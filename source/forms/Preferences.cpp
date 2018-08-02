@@ -48,6 +48,7 @@ bool __fastcall DoPreferencesDialog(TPreferencesMode APreferencesMode,
     Result = PreferencesDialog->Execute(DialogData);
     if (Result)
     {
+      CheckConfigurationForceSave();
       Configuration->SaveExplicit();
     }
   }

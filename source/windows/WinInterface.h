@@ -505,6 +505,8 @@ TShortCut __fastcall NormalizeCustomShortCut(TShortCut ShortCut);
 UnicodeString DumpCallstackEventName(int ProcessId);
 UnicodeString DumpCallstackFileName(int ProcessId);
 
+void CheckConfigurationForceSave();
+
 #ifdef _DEBUG
 void __fastcall ForceTracing();
 #endif

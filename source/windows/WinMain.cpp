@@ -1044,10 +1044,10 @@ int __fastcall Execute()
       do
       {
         Retry = false;
-        TObjectList * DataList = new TObjectList();
+        std::unique_ptr<TObjectList> DataList(new TObjectList());
         try
         {
-          GetLoginData(AutoStartSession, Params, DataList, DownloadFile, NeedSession, NULL, pufAllowStoredSiteWithProtocol);
+          GetLoginData(AutoStartSession, Params, DataList.get(), DownloadFile, NeedSession, NULL, pufAllowStoredSiteWithProtocol);
           // GetLoginData now Aborts when session is needed and none is selected
           if (DebugAlwaysTrue(!NeedSession || (DataList->Count > 0)))
           {
@@ -1071,7 +1071,7 @@ int __fastcall Execute()
               bool CanStart;
               if (DataList->Count > 0)
               {
-                TTerminal * Terminal = TerminalManager->NewTerminals(DataList);
+                TTerminal * Terminal = TerminalManager->NewTerminals(DataList.get());
                 if (!DownloadFile.IsEmpty())
                 {
                   Terminal->AutoReadDirectory = false;
@@ -1139,6 +1139,8 @@ int __fastcall Execute()
                   }
 
                   Application->Run();
+                  // to allow dialog boxes show later (like from CheckConfigurationForceSave)
+                  SetAppTerminated(False);
                 }
                 __finally
                 {
@@ -1153,13 +1155,17 @@ int __fastcall Execute()
             }
           }
         }
-        __finally
+        // Catch EAbort from Synchronize() and similar functions, so that CheckConfigurationForceSave is processed
+        catch (EAbort & E)
         {
-          delete DataList;
+          Retry = false; // unlikely to be true, but just in case
         }
       }
       while (Retry);
     }
+
+    // In GUI mode only
+    CheckConfigurationForceSave();
   }
   __finally
   {

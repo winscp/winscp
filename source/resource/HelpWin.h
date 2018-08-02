@@ -61,5 +61,6 @@
 #define HELP_CHANGE_PASSWORD         "task_change_password"
 #define HELP_FILTER                  "ui_filter"
 #define HELP_LOGIN_AUTHORIZED_KEYS   "guide_public_key"
+#define HELP_READONLY_INI_FILE       "config#ini_readonly"
 
 #endif // TextsWin

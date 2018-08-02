@@ -1495,6 +1495,24 @@ UnicodeString DumpCallstackFileName(int ProcessId)
   return Result;
 }
 //---------------------------------------------------------------------------
+void CheckConfigurationForceSave()
+{
+  if (UseAlternativeFunction() && Configuration->Persistent &&
+      (Configuration->Storage == stIniFile) && Sysutils::FileExists(ApiPath(Configuration->IniFileStorageName)) &&
+      !Configuration->ForceSave)
+  {
+    int Attr = GetFileAttributes(ApiPath(Configuration->IniFileStorageName).c_str());
+    if (FLAGSET(Attr, FILE_ATTRIBUTE_READONLY))
+    {
+      UnicodeString Message = FMTLOAD(READONLY_INI_FILE_OVERWRITE, (Configuration->IniFileStorageName));
+      if (MessageDialog(Message, qtConfirmation, qaOK | qaCancel, HELP_READONLY_INI_FILE) == qaOK)
+      {
+        Configuration->ForceSave = true;
+      }
+    }
+  }
+}
+//---------------------------------------------------------------------------
 class TCallstackThread : public TSignalThread
 {
 public:

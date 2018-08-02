@@ -43,6 +43,7 @@ __fastcall TConfiguration::TConfiguration()
   FUpdating = 0;
   FStorage = stDetect;
   FDontSave = false;
+  FForceSave = false;
   FApplicationInfo = NULL;
   FUsage = new TUsage(this);
   FDefaultCollectUsage = false;
@@ -276,6 +277,7 @@ void __fastcall TConfiguration::DoSave(bool All, bool Explicit)
   {
     AStorage->AccessMode = smReadWrite;
     AStorage->Explicit = Explicit;
+    AStorage->ForceSave = FForceSave;
     if (AStorage->OpenSubKey(ConfigurationSubKey, true))
     {
       // if saving to TOptionsStorage, make sure we save everything so that
@@ -1785,7 +1787,7 @@ void __fastcall TConfiguration::SetShowFtpWelcomeMessage(bool value)
 //---------------------------------------------------------------------------
 bool __fastcall TConfiguration::GetPersistent()
 {
-  return (Storage != stNul);
+  return (Storage != stNul) && !FDontSave;
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

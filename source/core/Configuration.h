@@ -23,6 +23,7 @@ class TConfiguration : public TObject
 {
 private:
   bool FDontSave;
+  bool FForceSave;
   bool FChanged;
   int FUpdating;
   TNotifyEvent FOnChange;
@@ -311,6 +312,7 @@ public:
   __property UnicodeString IniFileStorageNameForReading  = { read=GetIniFileStorageNameForReading };
   __property TStrings * OptionsStorage = { read = GetOptionsStorage, write = SetOptionsStorage };
   __property bool Persistent = { read = GetPersistent };
+  __property bool ForceSave = { read = FForceSave, write = FForceSave };
   __property bool Scripting = { read = FScripting, write = FScripting };
 
   __property UnicodeString DefaultKeyFile = { read = GetDefaultKeyFile };

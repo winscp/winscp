@@ -109,6 +109,7 @@ __fastcall THierarchicalStorage::THierarchicalStorage(const UnicodeString AStora
   FKeyHistory = new TStringList();
   AccessMode = smRead;
   Explicit = false;
+  ForceSave = false;
   // While this was implemented in 5.0 already, for some reason
   // it was disabled (by mistake?). So although enabled for 5.6.1 only,
   // data written in Unicode/UTF8 can be read by all versions back to 5.0.
@@ -1227,6 +1228,11 @@ void __fastcall TIniFileStorage::Flush()
         else
         {
           Attr = FILE_ATTRIBUTE_NORMAL;
+        }
+
+        if (FLAGSET(Attr, FILE_ATTRIBUTE_READONLY) && ForceSave)
+        {
+          SetFileAttributes(ApiPath(Storage).c_str(), Attr & ~FILE_ATTRIBUTE_READONLY);
         }
 
         HANDLE Handle = CreateFile(ApiPath(Storage).c_str(), GENERIC_READ | GENERIC_WRITE,
