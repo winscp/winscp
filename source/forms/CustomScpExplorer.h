@@ -563,7 +563,7 @@ protected:
   int __fastcall AddFixedSessionImage(int GlyphsSourceIndex);
   TObjectList * __fastcall DoCollectWorkspace();
   void __fastcall DoSaveWorkspace(const UnicodeString & Name,
-    TObjectList * DataList, bool SavePasswords);
+    TObjectList * DataList, bool SavePasswords, bool Explicit);
   UnicodeString __fastcall WorkspaceName();
   virtual bool __fastcall EligibleForImageDisplayMode(TTBCustomItem * Item);
   virtual bool __fastcall UpdateToolbarDisplayMode();

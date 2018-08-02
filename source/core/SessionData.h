@@ -446,6 +446,7 @@ private:
   template<class AlgoT>
   void __fastcall SetAlgoList(AlgoT * List, const AlgoT * DefaultList, const UnicodeString * Names,
     int Count, AlgoT WarnAlgo, UnicodeString value);
+  static void __fastcall Remove(THierarchicalStorage * Storage, const UnicodeString & Name);
 
   __property UnicodeString InternalStorageKey = { read = GetInternalStorageKey };
 
@@ -707,6 +708,7 @@ public:
 private:
   TSessionData * FDefaultSettings;
   bool FReadOnly;
+  std::unique_ptr<TStrings> FPendingRemovals;
   void __fastcall SetDefaultSettings(TSessionData * value);
   void __fastcall DoSave(THierarchicalStorage * Storage, bool All,
     bool RecryptPasswordOnly, TStrings * RecryptPasswordErrors);

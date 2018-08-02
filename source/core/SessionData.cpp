@@ -1608,6 +1608,11 @@ void __fastcall TSessionData::SaveRecryptedPasswords(THierarchicalStorage * Stor
   }
 }
 //---------------------------------------------------------------------
+void __fastcall TSessionData::Remove(THierarchicalStorage * Storage, const UnicodeString & Name)
+{
+  Storage->RecursiveDeleteSubKey(Name);
+}
+//---------------------------------------------------------------------
 void __fastcall TSessionData::Remove()
 {
   bool SessionList = true;
@@ -1617,7 +1622,7 @@ void __fastcall TSessionData::Remove()
     Storage->Explicit = true;
     if (Storage->OpenSubKey(Configuration->StoredSessionsSubKey, false))
     {
-      Storage->RecursiveDeleteSubKey(InternalStorageKey);
+      Remove(Storage, InternalStorageKey);
     }
   }
   __finally
@@ -4002,6 +4007,7 @@ __fastcall TStoredSessionList::TStoredSessionList(bool aReadOnly):
 {
   DebugAssert(Configuration);
   FDefaultSettings = new TSessionData(DefaultName);
+  FPendingRemovals.reset(new TStringList());
 }
 //---------------------------------------------------------------------
 __fastcall TStoredSessionList::~TStoredSessionList()
@@ -4138,6 +4144,12 @@ void __fastcall TStoredSessionList::DoSave(THierarchicalStorage * Storage,
   TSessionData * FactoryDefaults = new TSessionData(L"");
   try
   {
+    while (FPendingRemovals->Count > 0)
+    {
+      TSessionData::Remove(Storage, FPendingRemovals->Strings[0]);
+      FPendingRemovals->Delete(0);
+    }
+
     DoSave(Storage, FDefaultSettings, All, RecryptPasswordOnly, FactoryDefaults);
     for (int Index = 0; Index < CountIncludingHidden; Index++)
     {
@@ -4861,7 +4873,7 @@ void __fastcall TStoredSessionList::NewWorkspace(
     TSessionData * Data = Sessions[Index];
     if (Data->IsInFolderOrWorkspace(Name))
     {
-      Data->Remove();
+      FPendingRemovals->Add(Data->Name);
       Remove(Data);
       Index--;
     }

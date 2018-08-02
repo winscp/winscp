@@ -5650,7 +5650,7 @@ TObjectList * __fastcall TCustomScpExplorerForm::DoCollectWorkspace()
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::DoSaveWorkspace(
-  const UnicodeString & Name, TObjectList * DataList, bool SavePasswords)
+  const UnicodeString & Name, TObjectList * DataList, bool SavePasswords, bool Explicit)
 {
   WinConfiguration->LastWorkspace = Name;
 
@@ -5668,8 +5668,8 @@ void __fastcall TCustomScpExplorerForm::DoSaveWorkspace(
   }
 
   StoredSessions->NewWorkspace(Name, DataList);
-  // modified only, explicit
-  StoredSessions->Save(false, true);
+  // modified only
+  StoredSessions->Save(false, Explicit);
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TCustomScpExplorerForm::WorkspaceName()
@@ -5741,7 +5741,7 @@ bool __fastcall TCustomScpExplorerForm::SaveWorkspace(bool EnableAutoSave)
 
   if (Result)
   {
-    DoSaveWorkspace(Name, DataList.get(), SavePasswords);
+    DoSaveWorkspace(Name, DataList.get(), SavePasswords, true);
 
     if (CreateShortcut)
     {
@@ -9373,7 +9373,7 @@ void __fastcall TCustomScpExplorerForm::FormClose(TObject * /*Sender*/, TCloseAc
     DoSaveWorkspace(
       Name, DataList.get(),
       !Configuration->DisablePasswordStoring &&
-      WinConfiguration->AutoSaveWorkspacePasswords);
+      WinConfiguration->AutoSaveWorkspacePasswords, false);
     WinConfiguration->LastStoredSession = Name;
   }
 
