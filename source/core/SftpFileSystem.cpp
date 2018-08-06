@@ -5213,7 +5213,8 @@ void __fastcall TSFTPFileSystem::Sink(
   bool ResumeAllowed =
     FLAGCLEAR(Params, cpTemporary) &&
     !OperationProgress->AsciiTransfer &&
-    CopyParam->AllowResume(OperationProgress->TransferSize);
+    CopyParam->AllowResume(OperationProgress->TransferSize) &&
+    !FTerminal->IsEncryptingFiles();
 
   HANDLE LocalHandle = NULL;
   TStream * FileStream = NULL;
