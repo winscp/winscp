@@ -460,8 +460,8 @@ protected:
   void __fastcall RemoteFileControlDDTargetDrop();
   bool __fastcall RemoteFileControlFileOperation(TObject * Sender,
     TFileOperation Operation, bool NoConfirmation, void * Param);
-  void __fastcall DDDownload(TStrings * FilesToCopy,
-    const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params);
+  void __fastcall DDDownload(
+    TStrings * FilesToCopy, const UnicodeString & TargetDir, TCopyParamType * CopyParam, int Params);
   bool __fastcall EnsureCommandSessionFallback(TFSCapability Capability);
   bool __fastcall CommandSessionFallback();
   void __fastcall FileTerminalRemoved(const UnicodeString FileName,

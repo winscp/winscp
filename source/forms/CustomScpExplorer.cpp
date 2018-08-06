@@ -7283,8 +7283,8 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDTargetDrop()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::DDDownload(TStrings * FilesToCopy,
-  const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params)
+void __fastcall TCustomScpExplorerForm::DDDownload(
+  TStrings * FilesToCopy, const UnicodeString & TargetDir, TCopyParamType * CopyParam, int Params)
 {
   void * BatchStorage;
   BatchStart(BatchStorage);

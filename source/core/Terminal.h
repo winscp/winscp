@@ -503,10 +503,12 @@ public:
   void __fastcall ReadFile(const UnicodeString FileName, TRemoteFile *& File);
   bool __fastcall FileExists(const UnicodeString FileName, TRemoteFile ** File = NULL);
   void __fastcall ReadSymlink(TRemoteFile * SymlinkFile, TRemoteFile *& File);
-  bool __fastcall CopyToLocal(TStrings * FilesToCopy,
-    const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params, TParallelOperation * ParallelOperation);
-  bool __fastcall CopyToRemote(TStrings * FilesToCopy,
-    const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params, TParallelOperation * ParallelOperation);
+  bool __fastcall CopyToLocal(
+    TStrings * FilesToCopy, const UnicodeString & TargetDir, TCopyParamType * CopyParam, int Params,
+    TParallelOperation * ParallelOperation);
+  bool __fastcall CopyToRemote(
+    TStrings * FilesToCopy, const UnicodeString & TargetDir, TCopyParamType * CopyParam, int Params,
+    TParallelOperation * ParallelOperation);
   int __fastcall CopyToParallel(TParallelOperation * ParallelOperation, TFileOperationProgressType * OperationProgress);
   void __fastcall LogParallelTransfer(TParallelOperation * ParallelOperation);
   void __fastcall CreateDirectory(const UnicodeString & DirName, const TRemoteProperties * Properties);

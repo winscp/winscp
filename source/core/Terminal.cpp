@@ -6559,15 +6559,17 @@ int __fastcall TTerminal::CopyToParallel(TParallelOperation * ParallelOperation,
     try
     {
       FOperationProgress = OperationProgress;
+      // Need own copy, now that CopyToRemote/CopyToLocal modify the instance
+      TCopyParamType CopyParam = *ParallelOperation->CopyParam;
       if (ParallelOperation->Side == osLocal)
       {
         FFileSystem->CopyToRemote(
-          FilesToCopy.get(), TargetDir, ParallelOperation->CopyParam, Params, OperationProgress, OnceDoneOperation);
+          FilesToCopy.get(), TargetDir, &CopyParam, Params, OperationProgress, OnceDoneOperation);
       }
       else if (DebugAlwaysTrue(ParallelOperation->Side == osRemote))
       {
         FFileSystem->CopyToLocal(
-          FilesToCopy.get(), TargetDir, ParallelOperation->CopyParam, Params, OperationProgress, OnceDoneOperation);
+          FilesToCopy.get(), TargetDir, &CopyParam, Params, OperationProgress, OnceDoneOperation);
       }
     }
     __finally
@@ -6664,8 +6666,9 @@ void __fastcall TTerminal::LogTotalTransferDone(TFileOperationProgressType * Ope
   LogEvent(L"Copying finished: " + OperationProgress->GetLogStr(true));
 }
 //---------------------------------------------------------------------------
-bool __fastcall TTerminal::CopyToRemote(TStrings * FilesToCopy,
-  const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params, TParallelOperation * ParallelOperation)
+bool __fastcall TTerminal::CopyToRemote(
+  TStrings * FilesToCopy, const UnicodeString & TargetDir, TCopyParamType * CopyParam, int Params,
+  TParallelOperation * ParallelOperation)
 {
   DebugAssert(FFileSystem);
   DebugAssert(FilesToCopy);
@@ -6753,6 +6756,7 @@ bool __fastcall TTerminal::CopyToRemote(TStrings * FilesToCopy,
         Configuration->Usage->Inc(L"UploadTime", CounterTime);
         Configuration->Usage->SetMax(L"MaxUploadTime", CounterTime);
       }
+      CopyParam->CPSLimit = OperationProgress.CPSLimit;
       OperationProgress.Stop();
       FOperationProgress = NULL;
     }
@@ -7085,8 +7089,8 @@ void __fastcall TTerminal::Source(
   UpdateSource(Handle, CopyParam, Params);
 }
 //---------------------------------------------------------------------------
-bool __fastcall TTerminal::CopyToLocal(TStrings * FilesToCopy,
-  const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params,
+bool __fastcall TTerminal::CopyToLocal(
+  TStrings * FilesToCopy, const UnicodeString & TargetDir, TCopyParamType * CopyParam, int Params,
   TParallelOperation * ParallelOperation)
 {
   DebugAssert(FFileSystem);
@@ -7199,6 +7203,7 @@ bool __fastcall TTerminal::CopyToLocal(TStrings * FilesToCopy,
         Configuration->Usage->Inc(L"DownloadTime", CounterTime);
         Configuration->Usage->SetMax(L"MaxDownloadTime", CounterTime);
       }
+      CopyParam->CPSLimit = OperationProgress.CPSLimit;
       FOperationProgress = NULL;
       OperationProgress.Stop();
     }
