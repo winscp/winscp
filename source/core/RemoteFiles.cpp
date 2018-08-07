@@ -2689,3 +2689,156 @@ void __fastcall TRemoteProperties::Save(THierarchicalStorage * Storage) const
 
   // TODO
 }
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+TSynchronizeChecklist::TItem::TItem() :
+  Action(saNone), IsDirectory(false), RemoteFile(NULL), Checked(true), ImageIndex(-1), FDirectoryHasSize(false)
+{
+  Local.ModificationFmt = mfFull;
+  Local.Modification = 0;
+  Local.Size = 0;
+  Remote.ModificationFmt = mfFull;
+  Remote.Modification = 0;
+  Remote.Size = 0;
+}
+//---------------------------------------------------------------------------
+TSynchronizeChecklist::TItem::~TItem()
+{
+  delete RemoteFile;
+}
+//---------------------------------------------------------------------------
+const UnicodeString& TSynchronizeChecklist::TItem::GetFileName() const
+{
+  if (!Remote.FileName.IsEmpty())
+  {
+    return Remote.FileName;
+  }
+  else
+  {
+    DebugAssert(!Local.FileName.IsEmpty());
+    return Local.FileName;
+  }
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+TSynchronizeChecklist::TSynchronizeChecklist() :
+  FList(new TList())
+{
+}
+//---------------------------------------------------------------------------
+TSynchronizeChecklist::~TSynchronizeChecklist()
+{
+  for (int Index = 0; Index < FList->Count; Index++)
+  {
+    delete static_cast<TItem *>(FList->Items[Index]);
+  }
+  delete FList;
+}
+//---------------------------------------------------------------------------
+void TSynchronizeChecklist::Add(TItem * Item)
+{
+  FList->Add(Item);
+}
+//---------------------------------------------------------------------------
+int __fastcall TSynchronizeChecklist::Compare(void * AItem1, void * AItem2)
+{
+  TItem * Item1 = static_cast<TItem *>(AItem1);
+  TItem * Item2 = static_cast<TItem *>(AItem2);
+
+  int Result;
+  if (!Item1->Local.Directory.IsEmpty())
+  {
+    Result = AnsiCompareText(Item1->Local.Directory, Item2->Local.Directory);
+  }
+  else
+  {
+    DebugAssert(!Item1->Remote.Directory.IsEmpty());
+    Result = AnsiCompareText(Item1->Remote.Directory, Item2->Remote.Directory);
+  }
+
+  if (Result == 0)
+  {
+    Result = AnsiCompareText(Item1->GetFileName(), Item2->GetFileName());
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+void TSynchronizeChecklist::Sort()
+{
+  FList->Sort(Compare);
+}
+//---------------------------------------------------------------------------
+int TSynchronizeChecklist::GetCount() const
+{
+  return FList->Count;
+}
+//---------------------------------------------------------------------------
+const TSynchronizeChecklist::TItem * TSynchronizeChecklist::GetItem(int Index) const
+{
+  return static_cast<TItem *>(FList->Items[Index]);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeChecklist::Update(const TItem * Item, bool Check, TAction Action)
+{
+  // TSynchronizeChecklist owns non-const items so it can manipulate them freely,
+  // const_cast here is just an optimization
+  TItem * MutableItem = const_cast<TItem *>(Item);
+  DebugAssert(FList->IndexOf(MutableItem) >= 0);
+  MutableItem->Checked = Check;
+  MutableItem->Action = Action;
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeChecklist::UpdateDirectorySize(const TItem * Item, __int64 Size)
+{
+  // See comment in Update
+  TItem * MutableItem = const_cast<TItem *>(Item);
+  DebugAssert(FList->IndexOf(MutableItem) >= 0);
+  if (DebugAlwaysTrue(Item->IsDirectory))
+  {
+    MutableItem->FDirectoryHasSize = true;
+
+    if (Item->IsRemoteOnly())
+    {
+      MutableItem->Remote.Size = Size;
+    }
+    else if (Item->IsLocalOnly())
+    {
+      MutableItem->Local.Size = Size;
+    }
+    else
+    {
+      // "update" actions are not relevant for directories
+      DebugFail();
+    }
+  }
+}
+//---------------------------------------------------------------------------
+TSynchronizeChecklist::TAction __fastcall TSynchronizeChecklist::Reverse(TSynchronizeChecklist::TAction Action)
+{
+  switch (Action)
+  {
+    case saUploadNew:
+      return saDeleteLocal;
+
+    case saDownloadNew:
+      return saDeleteRemote;
+
+    case saUploadUpdate:
+      return saDownloadUpdate;
+
+    case saDownloadUpdate:
+      return saUploadUpdate;
+
+    case saDeleteRemote:
+      return saDownloadNew;
+
+    case saDeleteLocal:
+      return saUploadNew;
+
+    default:
+    case saNone:
+      DebugFail();
+      return saNone;
+  }
+}
