@@ -556,8 +556,8 @@ public:
     const UnicodeString RemoteDirectory, TSynchronizeMode Mode,
     const TCopyParamType * CopyParam, int Params,
     TSynchronizeDirectory OnSynchronizeDirectory, TSynchronizeOptions * Options);
-  void __fastcall SynchronizeApply(TSynchronizeChecklist * Checklist,
-    const UnicodeString LocalDirectory, const UnicodeString RemoteDirectory,
+  void __fastcall SynchronizeApply(
+    TSynchronizeChecklist * Checklist,
     const TCopyParamType * CopyParam, int Params,
     TSynchronizeDirectory OnSynchronizeDirectory, TProcessedItem OnProcessedItem);
   void __fastcall FilesFind(UnicodeString Directory, const TFileMasks & FileMask,

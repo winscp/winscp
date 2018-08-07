@@ -6028,8 +6028,8 @@ void __fastcall TTerminal::DoSynchronizeCollectFile(const UnicodeString FileName
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::SynchronizeApply(TSynchronizeChecklist * Checklist,
-  const UnicodeString LocalDirectory, const UnicodeString RemoteDirectory,
+void __fastcall TTerminal::SynchronizeApply(
+  TSynchronizeChecklist * Checklist,
   const TCopyParamType * CopyParam, int Params,
   TSynchronizeDirectory OnSynchronizeDirectory, TProcessedItem OnProcessedItem)
 {
@@ -6048,11 +6048,6 @@ void __fastcall TTerminal::SynchronizeApply(TSynchronizeChecklist * Checklist,
     SyncCopyParam.PreserveTime = true;
   }
 
-  TStringList * DownloadList = new TStringList();
-  TStringList * DeleteRemoteList = new TStringList();
-  TStringList * UploadList = new TStringList();
-  TStringList * DeleteLocalList = new TStringList();
-
   DebugAssert(FOnProcessedItem == NULL);
   FOnProcessedItem = OnProcessedItem;
 
@@ -6065,19 +6060,19 @@ void __fastcall TTerminal::SynchronizeApply(TSynchronizeChecklist * Checklist,
     {
       const TSynchronizeChecklist::TItem * ChecklistItem;
 
-      DownloadList->Clear();
-      DeleteRemoteList->Clear();
-      UploadList->Clear();
-      DeleteLocalList->Clear();
+      std::unique_ptr<TStringList> DownloadList(new TStringList());
+      std::unique_ptr<TStringList> DeleteRemoteList(new TStringList());
+      std::unique_ptr<TStringList> UploadList(new TStringList());
+      std::unique_ptr<TStringList> DeleteLocalList(new TStringList());
 
       ChecklistItem = Checklist->Item[IIndex];
 
       UnicodeString CurrentLocalDirectory = ChecklistItem->Local.Directory;
       UnicodeString CurrentRemoteDirectory = ChecklistItem->Remote.Directory;
 
-      LogEvent(FORMAT(L"Synchronizing local directory '%s' with remote directory '%s', "
-        "params = 0x%x (%s)", (CurrentLocalDirectory, CurrentRemoteDirectory,
-        int(Params), SynchronizeParamsStr(Params))));
+      LogEvent(
+        FORMAT(L"Synchronizing local directory '%s' with remote directory '%s', params = 0x%x (%s)",
+        (CurrentLocalDirectory, CurrentRemoteDirectory, int(Params), SynchronizeParamsStr(Params))));
 
       int Count = 0;
 
@@ -6162,38 +6157,36 @@ void __fastcall TTerminal::SynchronizeApply(TSynchronizeChecklist * Checklist,
         {
           if (DownloadList->Count > 0)
           {
-            ProcessFiles(DownloadList, foSetProperties,
-              SynchronizeLocalTimestamp, NULL, osLocal);
+            ProcessFiles(DownloadList.get(), foSetProperties, SynchronizeLocalTimestamp, NULL, osLocal);
           }
 
           if (UploadList->Count > 0)
           {
-            ProcessFiles(UploadList, foSetProperties,
-              SynchronizeRemoteTimestamp);
+            ProcessFiles(UploadList.get(), foSetProperties, SynchronizeRemoteTimestamp);
           }
         }
         else
         {
           if ((DownloadList->Count > 0) &&
-              !CopyToLocal(DownloadList, Data.LocalDirectory, &SyncCopyParam, CopyParams, NULL))
+              !CopyToLocal(DownloadList.get(), Data.LocalDirectory, &SyncCopyParam, CopyParams, NULL))
           {
             Abort();
           }
 
           if ((DeleteRemoteList->Count > 0) &&
-              !DeleteFiles(DeleteRemoteList))
+              !DeleteFiles(DeleteRemoteList.get()))
           {
             Abort();
           }
 
           if ((UploadList->Count > 0) &&
-              !CopyToRemote(UploadList, Data.RemoteDirectory, &SyncCopyParam, CopyParams, NULL))
+              !CopyToRemote(UploadList.get(), Data.RemoteDirectory, &SyncCopyParam, CopyParams, NULL))
           {
             Abort();
           }
 
           if ((DeleteLocalList->Count > 0) &&
-              !DeleteLocalFiles(DeleteLocalList))
+              !DeleteLocalFiles(DeleteLocalList.get()))
           {
             Abort();
           }
@@ -6204,10 +6197,6 @@ void __fastcall TTerminal::SynchronizeApply(TSynchronizeChecklist * Checklist,
   __finally
   {
     FOnProcessedItem = NULL;
-    delete DownloadList;
-    delete DeleteRemoteList;
-    delete UploadList;
-    delete DeleteLocalList;
 
     EndTransaction();
   }

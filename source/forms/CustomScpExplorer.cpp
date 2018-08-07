@@ -5239,8 +5239,7 @@ void __fastcall TCustomScpExplorerForm::Synchronize(const UnicodeString LocalDir
     }
 
     // No need to call if !AnyOperation
-    Terminal->SynchronizeApply(AChecklist, LocalDirectory, RemoteDirectory,
-      &CopyParam, Params | TTerminal::spNoConfirmation, TerminalSynchronizeDirectory, NULL);
+    Terminal->SynchronizeApply(AChecklist, &CopyParam, Params | TTerminal::spNoConfirmation, TerminalSynchronizeDirectory, NULL);
   }
   __finally
   {
@@ -5355,8 +5354,8 @@ void __fastcall TCustomScpExplorerForm::FullSynchronize(TSynchronizeParams & Par
     FSynchronizeProgressForm->Start();
 
     Terminal->SynchronizeApply(
-      Params.Checklist, Params.LocalDirectory, Params.RemoteDirectory,
-      Params.CopyParam, Params.Params | TTerminal::spNoConfirmation, TerminalSynchronizeDirectory, OnProcessedItem);
+      Params.Checklist, Params.CopyParam, Params.Params | TTerminal::spNoConfirmation,
+      TerminalSynchronizeDirectory, OnProcessedItem);
   }
   __finally
   {

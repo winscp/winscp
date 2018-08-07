@@ -1973,8 +1973,7 @@ void __fastcall TScript::SynchronizeProc(TScriptProcParams * Parameters)
         else
         {
           PrintLine(LoadStr(SCRIPT_SYNCHRONIZE_SYNCHRONIZING));
-          FTerminal->SynchronizeApply(Checklist, LocalDirectory, RemoteDirectory,
-            &CopyParam, SynchronizeParams, OnTerminalSynchronizeDirectory, NULL);
+          FTerminal->SynchronizeApply(Checklist, &CopyParam, SynchronizeParams, OnTerminalSynchronizeDirectory, NULL);
         }
       }
       else
@@ -2008,8 +2007,7 @@ void __fastcall TScript::Synchronize(const UnicodeString LocalDirectory,
     {
       if (AChecklist->Count > 0)
       {
-        FTerminal->SynchronizeApply(AChecklist, LocalDirectory, RemoteDirectory,
-          &CopyParam, SynchronizeParams, OnTerminalSynchronizeDirectory, NULL);
+        FTerminal->SynchronizeApply(AChecklist, &CopyParam, SynchronizeParams, OnTerminalSynchronizeDirectory, NULL);
       }
     }
     __finally
