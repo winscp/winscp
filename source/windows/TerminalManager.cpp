@@ -779,7 +779,7 @@ void __fastcall TTerminalManager::ApplicationShowHint(UnicodeString & HintStr,
 //---------------------------------------------------------------------------
 bool __fastcall TTerminalManager::HandleMouseWheel(WPARAM WParam, LPARAM LParam)
 {
-  // WORKAROUND This is no longer necessary on Windows 10
+  // WORKAROUND This is no longer necessary on Windows 10 (except for WM_WANTS_MOUSEWHEEL_INACTIVE part)
   bool Result = false;
   if (Application->Active)
   {
@@ -791,12 +791,26 @@ bool __fastcall TTerminalManager::HandleMouseWheel(WPARAM WParam, LPARAM LParam)
       // Only case we expect the parent form to be NULL is on the Find/Replace dialog,
       // which is owned by VCL's internal TRedirectorWindow.
       DebugAssert((Form != NULL) || (Control->ClassName() == L"TRedirectorWindow"));
-      if ((Form != NULL) && Form->Active)
+      if (Form != NULL)
       {
         // Send it only to windows we tested it with.
         // Though we should sooner or later remove this test and pass it to all our windows.
-        if (Form->Perform(WM_WANTS_MOUSEWHEEL, 0, 0) == 1)
+        if (Form->Active && (Form->Perform(WM_WANTS_MOUSEWHEEL, 0, 0) == 1))
         {
+          SendMessage(Control->Handle, WM_MOUSEWHEEL, WParam, LParam);
+          Result = true;
+        }
+        else if (!Form->Active && (Form->Perform(WM_WANTS_MOUSEWHEEL_INACTIVE, 0, 0) == 1))
+        {
+          TWinControl * Control2;
+          // FindVCLWindow stops on window level, when the window is not active? or when there's a modal window over it?
+          // (but in any case, when we have operation running on top of Synchronization checklist).
+          // WORKAROUND: The while loop does what AllLevels parameter of ControlAtPos should do, but it's broken.
+          // See http://qc.embarcadero.com/wc/qcmain.aspx?d=82143
+          while ((Control2 = dynamic_cast<TWinControl *>(Control->ControlAtPos(Control->ScreenToClient(Point), false, true))) != NULL)
+          {
+            Control = Control2;
+          }
           SendMessage(Control->Handle, WM_MOUSEWHEEL, WParam, LParam);
           Result = true;
         }

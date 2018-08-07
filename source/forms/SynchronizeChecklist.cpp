@@ -1079,6 +1079,10 @@ void __fastcall TSynchronizeChecklistDialog::Dispatch(void * Message)
   {
     CMDpiChanged(*M);
   }
+  else if (M->Msg == WM_WANTS_MOUSEWHEEL_INACTIVE)
+  {
+    M->Result = FSynchronizing ? 1 : 0;
+  }
   else
   {
     TForm::Dispatch(Message);
