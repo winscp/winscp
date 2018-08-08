@@ -59,6 +59,7 @@ private:
   bool FOperationProgressOnTop;
   UnicodeString FSessionColors;
   bool FCopyShortCutHintShown;
+  bool FHttpForWebDAV;
   TNotifyEvent FOnMasterPasswordRecrypt;
 
   void __fastcall SetInterface(TInterface value);
@@ -105,6 +106,7 @@ public:
   __property UnicodeString SessionColors  = { read=FSessionColors, write=FSessionColors };
   __property bool CopyShortCutHintShown  = { read=FCopyShortCutHintShown, write=FCopyShortCutHintShown };
   __property bool UseMasterPassword = { read = GetUseMasterPassword };
+  __property bool HttpForWebDAV = { read = FHttpForWebDAV, write = FHttpForWebDAV };
   __property TNotifyEvent OnMasterPasswordRecrypt = { read = FOnMasterPasswordRecrypt, write = FOnMasterPasswordRecrypt };
   __property UnicodeString DefaultFixedWidthFontName = { read = GetDefaultFixedWidthFontName };
   __property int DefaultFixedWidthFontSize = { read = GetDefaultFixedWidthFontSize };

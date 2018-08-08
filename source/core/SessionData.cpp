@@ -2899,7 +2899,7 @@ bool __fastcall TSessionData::IsSecure()
   return Result;
 }
 //---------------------------------------------------------------------
-UnicodeString __fastcall TSessionData::GetProtocolUrl()
+UnicodeString __fastcall TSessionData::GetProtocolUrl(bool HttpForWebDAV)
 {
   UnicodeString Url;
   switch (FSProtocol)
@@ -2932,13 +2932,27 @@ UnicodeString __fastcall TSessionData::GetProtocolUrl()
       break;
 
     case fsWebDAV:
-      if (Ftps == ftpsImplicit)
+      if (HttpForWebDAV)
       {
-        Url = WebDAVSProtocol;
+        if (Ftps == ftpsImplicit)
+        {
+          Url = HttpsProtocol;
+        }
+        else
+        {
+          Url = HttpProtocol;
+        }
       }
       else
       {
-        Url = WebDAVProtocol;
+        if (Ftps == ftpsImplicit)
+        {
+          Url = WebDAVSProtocol;
+        }
+        else
+        {
+          Url = WebDAVProtocol;
+        }
       }
       break;
 
@@ -3001,7 +3015,7 @@ UnicodeString __fastcall TSessionData::GenerateSessionUrl(unsigned int Flags)
     Url += WinSCPProtocolPrefix;
   }
 
-  Url += GetProtocolUrl();
+  Url += GetProtocolUrl(FLAGSET(Flags, sufHttpForWebDAV));
 
   if (FLAGSET(Flags, sufUserName) && !UserNameExpanded.IsEmpty())
   {

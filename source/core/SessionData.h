@@ -47,6 +47,7 @@ enum TSessionUrlFlags
   sufPassword = 0x04,
   sufHostKey = 0x08,
   sufRawSettings = 0x10,
+  sufHttpForWebDAV = 0x20,
   sufSession = sufUserName | sufPassword | sufHostKey,
   sufComplete = sufSession | sufRawSettings,
   sufOpen = sufUserName | sufPassword
@@ -280,7 +281,7 @@ private:
   UnicodeString __fastcall GetSessionName();
   bool __fastcall HasSessionName();
   UnicodeString __fastcall GetDefaultSessionName();
-  UnicodeString __fastcall GetProtocolUrl();
+  UnicodeString __fastcall GetProtocolUrl(bool HttpForWebDAV);
   void __fastcall SetFSProtocol(TFSProtocol value);
   UnicodeString __fastcall GetFSProtocolStr();
   void __fastcall SetLocalDirectory(UnicodeString value);
@@ -486,7 +487,7 @@ public:
   bool __fastcall IsSameSite(const TSessionData * Default);
   bool __fastcall IsInFolderOrWorkspace(UnicodeString Name);
   UnicodeString __fastcall GenerateSessionUrl(unsigned int Flags);
-  bool __fastcall TSessionData::HasRawSettingsForUrl();
+  bool __fastcall HasRawSettingsForUrl();
 
   UnicodeString __fastcall GenerateOpenCommandArgs(bool Rtf);
   void __fastcall GenerateAssemblyCode(TAssemblyLanguage Language, UnicodeString & Head, UnicodeString & Tail, int & Indent);

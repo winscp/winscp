@@ -121,6 +121,7 @@ void __fastcall TCustomWinConfiguration::Default()
   FOperationProgressOnTop = true;
   FSessionColors = L"";
   FCopyShortCutHintShown = false;
+  FHttpForWebDAV = false;
 
   DefaultHistory();
 }
@@ -149,6 +150,7 @@ void __fastcall TCustomWinConfiguration::Saved()
     KEY(Bool,     ConfirmExitOnCompletion); \
     KEY(String,   SessionColors); \
     KEY(Bool,     CopyShortCutHintShown); \
+    KEY(Bool,     HttpForWebDAV); \
   ) \
   BLOCK(L"Interface\\SynchronizeChecklist", CANCREATE, \
     KEY(String,   SynchronizeChecklist.WindowParams); \

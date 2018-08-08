@@ -192,7 +192,8 @@ UnicodeString __fastcall TGenerateUrlDialog::GenerateUrl(UnicodeString Path)
       FLAGMASK(UserNameCheck->Enabled && UserNameCheck->Checked, sufUserName) |
       FLAGMASK(PasswordCheck->Enabled && PasswordCheck->Checked, sufPassword) |
       FLAGMASK(HostKeyCheck->Enabled && HostKeyCheck->Checked, sufHostKey) |
-      FLAGMASK(RawSettingsCheck->Enabled && RawSettingsCheck->Checked, sufRawSettings));
+      FLAGMASK(RawSettingsCheck->Enabled && RawSettingsCheck->Checked, sufRawSettings) |
+      FLAGMASK(CustomWinConfiguration->HttpForWebDAV, sufHttpForWebDAV));
 
   if ((RemoteDirectoryCheck->Enabled && RemoteDirectoryCheck->Checked) ||
       IsFileUrl())
