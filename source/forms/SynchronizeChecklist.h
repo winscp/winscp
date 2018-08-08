@@ -151,6 +151,8 @@ protected:
   void __fastcall CMDpiChanged(TMessage & Message);
   bool __fastcall GetWindowParams(UnicodeString & WindowParams);
   void __fastcall ProcessedItem(const void * Token);
+  void __fastcall CountItemSize(const TSynchronizeChecklist::TItem * ChecklistItem, int Factor);
+  void __fastcall CountItem(const TSynchronizeChecklist::TItem * ChecklistItem, int Factor);
   static int __fastcall CompareNumber(__int64 Value1, __int64 Value2);
 };
 //----------------------------------------------------------------------------

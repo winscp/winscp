@@ -320,6 +320,23 @@ void __fastcall TSynchronizeChecklistDialog::LoadItem(TListItem * Item)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TSynchronizeChecklistDialog::CountItemSize(const TSynchronizeChecklist::TItem * ChecklistItem, int Factor)
+{
+  int ActionIndex = int(GetChecklistItemAction(ChecklistItem));
+  __int64 ItemSize = GetItemSize(ChecklistItem);
+  FCheckedSize[ActionIndex] += Factor * ItemSize;
+  FCheckedSize[0] += Factor * ItemSize;
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeChecklistDialog::CountItem(const TSynchronizeChecklist::TItem * ChecklistItem, int Factor)
+{
+  int ActionIndex = int(GetChecklistItemAction(ChecklistItem));
+  FChecked[ActionIndex] += Factor;
+  FChecked[0] += Factor;
+
+  CountItemSize(ChecklistItem, Factor);
+}
+//---------------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::LoadList()
 {
   memset(&FTotals, 0, sizeof(FTotals));
@@ -349,16 +366,12 @@ void __fastcall TSynchronizeChecklistDialog::LoadList()
       {
         FChangingItemIgnore = false;
       }
+
       int ActionIndex = int(GetChecklistItemAction(ChecklistItem));
       FTotals[ActionIndex]++;
       if (ChecklistItem->Checked)
       {
-        FChecked[ActionIndex]++;
-        FChecked[0]++;
-
-        __int64 ItemSize = GetItemSize(ChecklistItem);
-        FCheckedSize[ActionIndex] += ItemSize;
-        FCheckedSize[0] += ItemSize;
+        CountItem(ChecklistItem, 1);
       }
     }
   }
@@ -641,19 +654,7 @@ void __fastcall TSynchronizeChecklistDialog::ListViewChange(
       if ((FChangingItemChecked != Item->Checked) && (Item->Data != NULL))
       {
         const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(Item);
-        int ActionIndex = int(GetChecklistItemAction(ChecklistItem));
-        int Diff = Item->Checked ? 1 : -1;
-
-        FChecked[ActionIndex] += Diff;
-        FChecked[0] += Diff;
-
-        __int64 ItemSize = GetItemSize(ChecklistItem);
-        if (!Item->Checked)
-        {
-          ItemSize = -ItemSize;
-        }
-        FCheckedSize[ActionIndex] += ItemSize;
-        FCheckedSize[0] += ItemSize;
+        CountItem(ChecklistItem, Item->Checked ? 1 : -1);
 
         if (!FChangingItemMass)
         {
@@ -1013,11 +1014,7 @@ void __fastcall TSynchronizeChecklistDialog::ReverseActionExecute(TObject * /*Se
       FTotals[ActionIndex]--;
       if (Item->Checked)
       {
-        FChecked[ActionIndex]--;
-
-        __int64 ItemSize = GetItemSize(ChecklistItem);
-        FCheckedSize[ActionIndex] -= ItemSize;
-        FCheckedSize[0] -= ItemSize;
+        CountItem(ChecklistItem, -1);
       }
 
       Action = NewAction;
@@ -1026,12 +1023,8 @@ void __fastcall TSynchronizeChecklistDialog::ReverseActionExecute(TObject * /*Se
       FTotals[ActionIndex]++;
       if (Item->Checked)
       {
-        FChecked[ActionIndex]++;
-
         // item size may differ with action (0 for delete, but non-0 for new file transfer)
-        __int64 ItemSize = GetItemSize(ChecklistItem);
-        FCheckedSize[ActionIndex] += ItemSize;
-        FCheckedSize[0] += ItemSize;
+        CountItem(ChecklistItem, 1);
       }
 
       LoadItem(Item);
@@ -1152,10 +1145,7 @@ void __fastcall TSynchronizeChecklistDialog::CalculateSizeActionExecute(TObject 
     Items.push_back(ChecklistItem);
     if (Item->Checked)
     {
-      __int64 ItemSize = GetItemSize(ChecklistItem);
-      int ActionIndex = int(GetChecklistItemAction(ChecklistItem));
-      FCheckedSize[ActionIndex] -= ItemSize;
-      FCheckedSize[0] -= ItemSize;
+      CountItemSize(ChecklistItem, -1);
     }
     Item = ListView->GetNextItem(Item, sdAll, TItemStates() << isSelected);
   }
@@ -1174,10 +1164,7 @@ void __fastcall TSynchronizeChecklistDialog::CalculateSizeActionExecute(TObject 
       LoadItem(Item);
       if (Item->Checked)
       {
-        __int64 ItemSize = GetItemSize(ChecklistItem);
-        int ActionIndex = int(GetChecklistItemAction(ChecklistItem));
-        FCheckedSize[ActionIndex] += ItemSize;
-        FCheckedSize[0] += ItemSize;
+        CountItemSize(ChecklistItem, 1);
       }
       Iter++;
     }
