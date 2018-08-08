@@ -5931,8 +5931,6 @@ void __fastcall TTerminal::SynchronizeApply(
     int IIndex = 0;
     while (IIndex < Checklist->Count)
     {
-      const TSynchronizeChecklist::TItem * ChecklistItem;
-
       std::unique_ptr<TStringList> DownloadList(new TStringList());
       std::unique_ptr<TStringList> DeleteRemoteList(new TStringList());
       std::unique_ptr<TStringList> UploadList(new TStringList());
@@ -5940,7 +5938,7 @@ void __fastcall TTerminal::SynchronizeApply(
       __int64 DownloadSize = 0;
       __int64 UploadSize = 0;
 
-      ChecklistItem = Checklist->Item[IIndex];
+      const TSynchronizeChecklist::TItem * ChecklistItem = Checklist->Item[IIndex];
 
       UnicodeString CurrentLocalDirectory = ChecklistItem->Local.Directory;
       UnicodeString CurrentRemoteDirectory = ChecklistItem->Remote.Directory;
