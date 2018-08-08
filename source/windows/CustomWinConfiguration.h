@@ -56,7 +56,6 @@ private:
   TInterface FDefaultInterface;
   bool FCanApplyInterfaceImmediately;
   bool FConfirmExitOnCompletion;
-  bool FOperationProgressOnTop;
   UnicodeString FSessionColors;
   bool FCopyShortCutHintShown;
   bool FHttpForWebDAV;
@@ -102,7 +101,6 @@ public:
   __property TConsoleWinConfiguration ConsoleWin = { read = FConsoleWin, write = SetConsoleWin };
   __property TLoginDialogConfiguration LoginDialog = { read = FLoginDialog, write = SetLoginDialog };
   __property bool ConfirmExitOnCompletion  = { read=FConfirmExitOnCompletion, write=SetConfirmExitOnCompletion };
-  __property bool OperationProgressOnTop  = { read=FOperationProgressOnTop, write=FOperationProgressOnTop };
   __property UnicodeString SessionColors  = { read=FSessionColors, write=FSessionColors };
   __property bool CopyShortCutHintShown  = { read=FCopyShortCutHintShown, write=FCopyShortCutHintShown };
   __property bool UseMasterPassword = { read = GetUseMasterPassword };

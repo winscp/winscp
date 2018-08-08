@@ -118,7 +118,6 @@ void __fastcall TCustomWinConfiguration::Default()
   FLoginDialog.WindowSize = FormatDefaultWindowSize(640, 430);
   FLoginDialog.SiteSearch = ssSiteName;
   FConfirmExitOnCompletion = true;
-  FOperationProgressOnTop = true;
   FSessionColors = L"";
   FCopyShortCutHintShown = false;
   FHttpForWebDAV = false;

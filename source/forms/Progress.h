@@ -33,7 +33,7 @@ __published:
   TPathLabel *FileLabel;
   TLabel *TargetLabel;
   TPathLabel *TargetPathLabel;
-  TProgressBar *TopProgress;
+  TProgressBar *OperationProgress;
   TPanel *TransferPanel;
   TLabel *Label3;
   TLabel *TimeElapsedLabel;
@@ -43,7 +43,7 @@ __published:
   TLabel *BytesTransferredLabel;
   TLabel *Label12;
   TLabel *CPSLabel;
-  TProgressBar *BottomProgress;
+  TProgressBar *FileProgress;
   TTimer *UpdateTimer;
   TLabel *TimeLeftLabelLabel;
   TLabel *TimeLeftLabel;
@@ -101,8 +101,6 @@ private:
   bool FDeleteToRecycleBin;
   bool FReadOnly;
   unsigned long FCPSLimit;
-  TProgressBar * FOperationProgress;
-  TProgressBar * FFileProgress;
   TDateTime FStarted;
   int FSinceLastUpdate;
   bool FModalBeginHooked;

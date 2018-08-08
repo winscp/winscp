@@ -79,17 +79,6 @@ __fastcall TProgressForm::TProgressForm(TComponent * AOwner, bool AllowMoveToQue
   FPendingSkip = false;
   UseSystemSettings(this);
 
-  if (CustomWinConfiguration->OperationProgressOnTop)
-  {
-    FOperationProgress = TopProgress;
-    FFileProgress = BottomProgress;
-  }
-  else
-  {
-    FOperationProgress = BottomProgress;
-    FFileProgress = TopProgress;
-  }
-
   FOnceDoneItems.Add(odoIdle, IdleOnceDoneItem);
   FOnceDoneItems.Add(odoDisconnect, DisconnectOnceDoneItem);
   FOnceDoneItems.Add(odoSuspend, SuspendOnceDoneItem);
@@ -210,7 +199,7 @@ void __fastcall TProgressForm::UpdateControls()
 
     CancelItem->Caption = CancelCaption;
 
-    TopProgress->Style = IsIndeterminateOperation(FData.Operation) ? pbstMarquee : pbstNormal;
+    OperationProgress->Style = IsIndeterminateOperation(FData.Operation) ? pbstMarquee : pbstNormal;
 
     FFrameAnimation.Init(AnimationPaintBox, Animation);
     FFrameAnimation.Start();
@@ -272,8 +261,8 @@ void __fastcall TProgressForm::UpdateControls()
     FPendingSkip = false;
   }
   int OverallProgress = FData.OverallProgress();
-  FOperationProgress->Position = OverallProgress;
-  FOperationProgress->Hint = IsIndeterminateOperation(FData.Operation) ? UnicodeString() : FORMAT(L"%d%%", (OverallProgress));
+  OperationProgress->Position = OverallProgress;
+  OperationProgress->Hint = IsIndeterminateOperation(FData.Operation) ? UnicodeString() : FORMAT(L"%d%%", (OverallProgress));
   Caption = FormatFormCaption(this, ProgressStr(&FData));
 
   if (TransferOperation)
@@ -296,8 +285,8 @@ void __fastcall TProgressForm::UpdateControls()
     TimeElapsedLabel->Caption = FormatDateTimeSpan(Configuration->TimeFormat, FData.TimeElapsed());
     BytesTransferredLabel->Caption = FormatBytes(FData.TotalTransferred);
     CPSLabel->Caption = FORMAT(L"%s/s", (FormatBytes(FData.CPS())));
-    FFileProgress->Position = FData.TransferProgress();
-    FFileProgress->Hint = FORMAT(L"%d%%", (FFileProgress->Position));
+    FileProgress->Position = FData.TransferProgress();
+    FileProgress->Hint = FORMAT(L"%d%%", (FileProgress->Position));
   }
 }
 //---------------------------------------------------------------------
