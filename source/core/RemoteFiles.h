@@ -475,6 +475,8 @@ public:
     bool IsRemoteOnly() const { return (Action == saDownloadNew) || (Action == saDeleteRemote); }
     bool IsLocalOnly() const { return (Action == saUploadNew) || (Action == saDeleteLocal); }
     bool HasSize() const { return !IsDirectory || FDirectoryHasSize; }
+    __int64 __fastcall GetSize() const;
+    __int64 __fastcall GetSize(TAction AAction) const;
 
     ~TItem();
 
@@ -485,12 +487,15 @@ public:
     TItem();
   };
 
+  typedef std::vector<const TSynchronizeChecklist::TItem *> TItemList;
+
   ~TSynchronizeChecklist();
 
   void __fastcall Update(const TItem * Item, bool Check, TAction Action);
   void __fastcall UpdateDirectorySize(const TItem * Item, __int64 Size);
 
   static TAction __fastcall Reverse(TAction Action);
+  static bool __fastcall IsItemSizeIrrelevant(TAction Action);
 
   __property int Count = { read = GetCount };
   __property const TItem * Item[int Index] = { read = GetItem };

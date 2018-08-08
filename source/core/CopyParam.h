@@ -66,6 +66,7 @@ private:
   bool FEncryptNewFiles;
   bool FExcludeHiddenFiles;
   bool FExcludeEmptyDirectories;
+  __int64 FSize;
   static const wchar_t TokenPrefix = L'%';
   static const wchar_t NoReplacement = wchar_t(false);
   static const wchar_t TokenReplacement = wchar_t(true);
@@ -142,6 +143,7 @@ public:
   __property bool EncryptNewFiles = { read = FEncryptNewFiles, write = FEncryptNewFiles };
   __property bool ExcludeHiddenFiles = { read = FExcludeHiddenFiles, write = FExcludeHiddenFiles };
   __property bool ExcludeEmptyDirectories = { read = FExcludeEmptyDirectories, write = FExcludeEmptyDirectories };
+  __property __int64 Size = { read = FSize, write = FSize };
 };
 //---------------------------------------------------------------------------
 unsigned long __fastcall GetSpeedLimit(const UnicodeString & Text);

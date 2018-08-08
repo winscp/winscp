@@ -126,6 +126,7 @@ protected:
   TTokens FTokens;
   bool FSynchronizing;
   std::unique_ptr<Exception> FException;
+  std::map<const TSynchronizeChecklist::TItem *, TListItem *> FChecklistToListViewMap;
 
   void __fastcall UpdateControls();
   virtual void __fastcall CreateParams(TCreateParams & Params);
@@ -137,8 +138,6 @@ protected:
   void __fastcall Check(bool Check);
   TListItem * __fastcall SelectAll(bool Select, int Action = 0,
     bool OnlyTheAction = true);
-  bool __fastcall IsItemSizeIrrelevant(TSynchronizeChecklist::TAction Action);
-  __int64 __fastcall GetItemSize(const TSynchronizeChecklist::TItem * Item);
   void __fastcall UpdateStatusBarSize();
   int __fastcall PanelCount();
   inline const TSynchronizeChecklist::TItem * GetChecklistItem(TListItem * Item);
@@ -151,6 +150,7 @@ protected:
   void __fastcall CMDpiChanged(TMessage & Message);
   bool __fastcall GetWindowParams(UnicodeString & WindowParams);
   void __fastcall ProcessedItem(const void * Token);
+  void __fastcall UpdatedSynchronizationChecklistItems(const TSynchronizeChecklist::TItemList & Items);
   void __fastcall CountItemSize(const TSynchronizeChecklist::TItem * ChecklistItem, int Factor);
   void __fastcall CountItem(const TSynchronizeChecklist::TItem * ChecklistItem, int Factor);
   static int __fastcall CompareNumber(__int64 Value1, __int64 Value2);

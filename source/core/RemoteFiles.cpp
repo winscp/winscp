@@ -2720,6 +2720,36 @@ const UnicodeString& TSynchronizeChecklist::TItem::GetFileName() const
   }
 }
 //---------------------------------------------------------------------------
+__int64 __fastcall TSynchronizeChecklist::TItem::GetSize() const
+{
+  return GetSize(Action);
+}
+//---------------------------------------------------------------------------
+__int64 __fastcall TSynchronizeChecklist::TItem::GetSize(TAction AAction) const
+{
+  if (IsItemSizeIrrelevant(AAction))
+  {
+    return 0;
+  }
+  else
+  {
+    switch (AAction)
+    {
+      case saUploadNew:
+      case saUploadUpdate:
+        return Local.Size;
+
+      case saDownloadNew:
+      case saDownloadUpdate:
+        return Remote.Size;
+
+      default:
+        DebugFail();
+        return 0;
+    }
+  }
+}
+//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 TSynchronizeChecklist::TSynchronizeChecklist() :
   FList(new TList())
@@ -2840,5 +2870,19 @@ TSynchronizeChecklist::TAction __fastcall TSynchronizeChecklist::Reverse(TSynchr
     case saNone:
       DebugFail();
       return saNone;
+  }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TSynchronizeChecklist::IsItemSizeIrrelevant(TAction Action)
+{
+  switch (Action)
+  {
+    case saNone:
+    case saDeleteRemote:
+    case saDeleteLocal:
+      return true;
+
+    default:
+      return false;
   }
 }

@@ -5878,7 +5878,8 @@ void __fastcall TTerminal::DoSynchronizeCollectFile(const UnicodeString FileName
 void __fastcall TTerminal::SynchronizeApply(
   TSynchronizeChecklist * Checklist,
   const TCopyParamType * CopyParam, int Params,
-  TSynchronizeDirectory OnSynchronizeDirectory, TProcessedItem OnProcessedItem)
+  TSynchronizeDirectory OnSynchronizeDirectory, TProcessedItem OnProcessedItem,
+  TUpdatedSynchronizationChecklistItems OnUpdatedSynchronizationChecklistItems)
 {
   TSynchronizeData Data;
 
@@ -5893,6 +5894,31 @@ void __fastcall TTerminal::SynchronizeApply(
   if (FLAGCLEAR(Params, spNotByTime))
   {
     SyncCopyParam.PreserveTime = true;
+  }
+
+  if (SyncCopyParam.CalculateSize)
+  {
+    // If we fail to collect the sizes, do not try again during an actual transfer
+    SyncCopyParam.CalculateSize = false;
+
+    TSynchronizeChecklist::TItemList Items;
+    for (int Index = 0; Index < Checklist->Count; Index++)
+    {
+      const TSynchronizeChecklist::TItem * ChecklistItem = Checklist->Item[Index];
+      // TSynchronizeChecklistDialog relies on us not to update a size of an item that had size already
+      // See TSynchronizeChecklistDialog::UpdatedSynchronizationChecklistItems
+      if (ChecklistItem->Checked && !TSynchronizeChecklist::IsItemSizeIrrelevant(ChecklistItem->Action) &&
+          !ChecklistItem->HasSize() && DebugAlwaysTrue(ChecklistItem->IsDirectory))
+      {
+        Items.push_back(ChecklistItem);
+      }
+    }
+
+    SynchronizeChecklistCalculateSize(Checklist, Items, &SyncCopyParam);
+    if (OnUpdatedSynchronizationChecklistItems != NULL)
+    {
+      OnUpdatedSynchronizationChecklistItems(Items);
+    }
   }
 
   DebugAssert(FOnProcessedItem == NULL);
@@ -5911,6 +5937,8 @@ void __fastcall TTerminal::SynchronizeApply(
       std::unique_ptr<TStringList> DeleteRemoteList(new TStringList());
       std::unique_ptr<TStringList> UploadList(new TStringList());
       std::unique_ptr<TStringList> DeleteLocalList(new TStringList());
+      __int64 DownloadSize = 0;
+      __int64 UploadSize = 0;
 
       ChecklistItem = Checklist->Item[IIndex];
 
@@ -5963,6 +5991,14 @@ void __fastcall TTerminal::SynchronizeApply(
                 DownloadList->AddObject(
                   UnixIncludeTrailingBackslash(ChecklistItem->Remote.Directory) + ChecklistItem->Remote.FileName,
                   ChecklistItem->RemoteFile);
+                if ((DownloadSize >= 0) && ChecklistItem->HasSize())
+                {
+                  DownloadSize += ChecklistItem->GetSize();
+                }
+                else
+                {
+                  DownloadSize = -1;
+                }
                 break;
 
               case TSynchronizeChecklist::saDeleteRemote:
@@ -5976,6 +6012,14 @@ void __fastcall TTerminal::SynchronizeApply(
                 UploadList->AddObject(
                   IncludeTrailingBackslash(ChecklistItem->Local.Directory) + ChecklistItem->Local.FileName,
                   ChecklistItemToken);
+                if ((UploadSize >= 0) && ChecklistItem->HasSize())
+                {
+                  UploadSize += ChecklistItem->GetSize();
+                }
+                else
+                {
+                  UploadSize = -1;
+                }
                 break;
 
               case TSynchronizeChecklist::saDeleteLocal:
@@ -6014,10 +6058,14 @@ void __fastcall TTerminal::SynchronizeApply(
         }
         else
         {
-          if ((DownloadList->Count > 0) &&
-              !CopyToLocal(DownloadList.get(), Data.LocalDirectory, &SyncCopyParam, CopyParams, NULL))
+          if (DownloadList->Count > 0)
           {
-            Abort();
+            TCopyParamType DownloadCopyParam = SyncCopyParam;
+            DownloadCopyParam.Size = DownloadSize;
+            if (!CopyToLocal(DownloadList.get(), Data.LocalDirectory, &DownloadCopyParam, CopyParams, NULL))
+            {
+              Abort();
+            }
           }
 
           if ((DeleteRemoteList->Count > 0) &&
@@ -6026,10 +6074,14 @@ void __fastcall TTerminal::SynchronizeApply(
             Abort();
           }
 
-          if ((UploadList->Count > 0) &&
-              !CopyToRemote(UploadList.get(), Data.RemoteDirectory, &SyncCopyParam, CopyParams, NULL))
+          if (UploadList->Count > 0)
           {
-            Abort();
+            TCopyParamType UploadCopyParam = SyncCopyParam;
+            UploadCopyParam.Size = UploadSize;
+            if (!CopyToRemote(UploadList.get(), Data.RemoteDirectory, &UploadCopyParam, CopyParams, NULL))
+            {
+              Abort();
+            }
           }
 
           if ((DeleteLocalList->Count > 0) &&
@@ -6046,6 +6098,98 @@ void __fastcall TTerminal::SynchronizeApply(
     FOnProcessedItem = NULL;
 
     EndTransaction();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminal::SynchronizeChecklistCalculateSize(
+  TSynchronizeChecklist * Checklist, const TSynchronizeChecklist::TItemList & Items,
+  const TCopyParamType * CopyParam)
+{
+  std::unique_ptr<TStrings> RemoteFileList(new TStringList());
+  std::unique_ptr<TStrings> LocalFileList(new TStringList());
+
+  for (size_t Index = 0; Index < Items.size(); Index++)
+  {
+    const TSynchronizeChecklist::TItem * ChecklistItem = Items[Index];
+    if (ChecklistItem->IsDirectory)
+    {
+      if (ChecklistItem->IsRemoteOnly())
+      {
+        RemoteFileList->AddObject(ChecklistItem->RemoteFile->FullFileName, ChecklistItem->RemoteFile);
+      }
+      else if (ChecklistItem->IsLocalOnly())
+      {
+        LocalFileList->Add(IncludeTrailingBackslash(ChecklistItem->Local.Directory) + ChecklistItem->Local.FileName);
+      }
+      else
+      {
+        // "update" actions are not relevant for directories
+        DebugFail();
+      }
+    }
+  }
+
+  TCalculatedSizes RemoteCalculatedSizes;
+  TCalculatedSizes LocalCalculatedSizes;
+
+  try
+  {
+    bool Result = true;
+    if (LocalFileList->Count > 0)
+    {
+      __int64 LocalSize = 0;
+      Result = CalculateLocalFilesSize(LocalFileList.get(), LocalSize, CopyParam, true, NULL, &LocalCalculatedSizes);
+    }
+    if (Result && (RemoteFileList->Count > 0))
+    {
+      __int64 RemoteSize = 0;
+      TCalculateSizeStats RemoteStats;
+      RemoteStats.CalculatedSizes = &RemoteCalculatedSizes;
+      CalculateFilesSize(RemoteFileList.get(), RemoteSize, 0, CopyParam, true, RemoteStats);
+    }
+  }
+  __finally
+  {
+    size_t LocalIndex = 0;
+    size_t RemoteIndex = 0;
+
+    for (size_t Index = 0; Index < Items.size(); Index++)
+    {
+      const TSynchronizeChecklist::TItem * ChecklistItem = Items[Index];
+      if (ChecklistItem->IsDirectory)
+      {
+        __int64 Size = -1;
+        if (ChecklistItem->IsRemoteOnly())
+        {
+          if (RemoteIndex < RemoteCalculatedSizes.size())
+          {
+            Size = RemoteCalculatedSizes[RemoteIndex];
+          }
+          RemoteIndex++;
+        }
+        else if (ChecklistItem->IsLocalOnly())
+        {
+          if (LocalIndex < LocalCalculatedSizes.size())
+          {
+            Size = LocalCalculatedSizes[LocalIndex];
+          }
+          LocalIndex++;
+        }
+        else
+        {
+          // "update" actions are not relevant for directories
+          DebugFail();
+        }
+
+        if (Size >= 0)
+        {
+          Checklist->UpdateDirectorySize(ChecklistItem, Size);
+        }
+      }
+    }
+
+    DebugAssert(RemoteIndex >= RemoteCalculatedSizes.size());
+    DebugAssert(LocalIndex >= LocalCalculatedSizes.size());
   }
 }
 //---------------------------------------------------------------------------
@@ -6523,8 +6667,17 @@ bool __fastcall TTerminal::CopyToRemote(
       Files.reset(new TStringList());
       Files->OwnsObjects = true;
     }
-    bool CalculatedSize =
-      CalculateLocalFilesSize(FilesToCopy, Size, CopyParam, CopyParam->CalculateSize, Files.get(), NULL);
+    bool CalculatedSize;
+    if ((CopyParam->Size >= 0) &&
+        DebugAlwaysTrue(Files.get() == NULL)) // Size is set for sync only and we never use parallel transfer for sync
+    {
+      Size = CopyParam->Size;
+      CalculatedSize = true;
+    }
+    else
+    {
+      CalculatedSize = CalculateLocalFilesSize(FilesToCopy, Size, CopyParam, CopyParam->CalculateSize, Files.get(), NULL);
+    }
 
     FLastProgressLogged = GetTickCount();
     TFileOperationProgressType OperationProgress(&DoProgress, &DoFinished);
@@ -6955,19 +7108,28 @@ bool __fastcall TTerminal::CopyToLocal(
       Files->OwnsObjects = true;
     }
 
-    ExceptionOnFail = true;
-    try
+    if ((CopyParam->Size >= 0) &&
+        DebugAlwaysTrue(Files.get() == NULL)) // Size is set for sync only and we never use parallel transfer for sync
     {
-      TCalculateSizeStats Stats;
-      Stats.FoundFiles = Files.get();
-      if (CalculateFilesSize(FilesToCopy, TotalSize, csIgnoreErrors, CopyParam, CopyParam->CalculateSize, Stats))
-      {
-        TotalSizeKnown = true;
-      }
+      TotalSize = CopyParam->Size;
+      TotalSizeKnown = true;
     }
-    __finally
+    else
     {
-      ExceptionOnFail = false;
+      ExceptionOnFail = true;
+      try
+      {
+        TCalculateSizeStats Stats;
+        Stats.FoundFiles = Files.get();
+        if (CalculateFilesSize(FilesToCopy, TotalSize, csIgnoreErrors, CopyParam, CopyParam->CalculateSize, Stats))
+        {
+          TotalSizeKnown = true;
+        }
+      }
+      __finally
+      {
+        ExceptionOnFail = false;
+      }
     }
 
     OperationProgress.Start((Params & cpDelete ? foMove : foCopy), osRemote,

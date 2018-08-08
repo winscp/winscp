@@ -322,8 +322,9 @@ void __fastcall TSynchronizeChecklistDialog::LoadItem(TListItem * Item)
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::CountItemSize(const TSynchronizeChecklist::TItem * ChecklistItem, int Factor)
 {
-  int ActionIndex = int(GetChecklistItemAction(ChecklistItem));
-  __int64 ItemSize = GetItemSize(ChecklistItem);
+  TSynchronizeChecklist::TAction Action = GetChecklistItemAction(ChecklistItem);
+  int ActionIndex = int(Action);
+  __int64 ItemSize = ChecklistItem->GetSize(Action);
   FCheckedSize[ActionIndex] += Factor * ItemSize;
   FCheckedSize[0] += Factor * ItemSize;
 }
@@ -358,6 +359,7 @@ void __fastcall TSynchronizeChecklistDialog::LoadList()
         TListItem * Item = ListView->Items->Add();
         TSynchronizeChecklist::TAction Action = ChecklistItem->Action;
         FActions.insert(std::make_pair(ChecklistItem, Action));
+        FChecklistToListViewMap.insert(std::make_pair(ChecklistItem, Item));
         Item->Data = const_cast<TSynchronizeChecklist::TItem *>(ChecklistItem);
         Item->Checked = ChecklistItem->Checked;
         LoadItem(Item);
@@ -382,46 +384,6 @@ void __fastcall TSynchronizeChecklistDialog::LoadList()
 
   ListView->AlphaSort();
   UpdateControls();
-}
-//---------------------------------------------------------------------------
-bool __fastcall TSynchronizeChecklistDialog::IsItemSizeIrrelevant(TSynchronizeChecklist::TAction Action)
-{
-  switch (Action)
-  {
-    case TSynchronizeChecklist::saNone:
-    case TSynchronizeChecklist::saDeleteRemote:
-    case TSynchronizeChecklist::saDeleteLocal:
-      return true;
-
-    default:
-      return false;
-  }
-}
-//---------------------------------------------------------------------------
-__int64 __fastcall TSynchronizeChecklistDialog::GetItemSize(const TSynchronizeChecklist::TItem * Item)
-{
-  TSynchronizeChecklist::TAction Action = GetChecklistItemAction(Item);
-  if (IsItemSizeIrrelevant(Action))
-  {
-    return 0;
-  }
-  else
-  {
-    switch (Action)
-    {
-      case TSynchronizeChecklist::saUploadNew:
-      case TSynchronizeChecklist::saUploadUpdate:
-        return Item->Local.Size;
-
-      case TSynchronizeChecklist::saDownloadNew:
-      case TSynchronizeChecklist::saDownloadUpdate:
-        return Item->Remote.Size;
-
-      default:
-        DebugFail();
-        return 0;
-    }
-  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::FormShow(TObject * /*Sender*/)
@@ -581,7 +543,7 @@ void __fastcall TSynchronizeChecklistDialog::StatusBarDrawPanel(
       (FormatNumber(FChecked[ActionIndex]),
        FormatNumber(FTotals[ActionIndex])));
     if ((FChecked[ActionIndex] > 0) &&
-        ((ActionIndex == 0) || !IsItemSizeIrrelevant(Action)))
+        ((ActionIndex == 0) || !TSynchronizeChecklist::IsItemSizeIrrelevant(Action)))
     {
       PanelText += FORMAT(L" (%s)", (FormatBytes(FCheckedSize[ActionIndex])));
     }
@@ -1105,6 +1067,26 @@ void __fastcall TSynchronizeChecklistDialog::ProcessedItem(const void * Token)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TSynchronizeChecklistDialog::UpdatedSynchronizationChecklistItems(
+  const TSynchronizeChecklist::TItemList & Items)
+{
+  TSynchronizeChecklist::TItemList::const_iterator Iter = Items.begin();
+  while (Iter != Items.end())
+  {
+    const TSynchronizeChecklist::TItem * ChecklistItem = *Iter;
+    TListItem * Item = FChecklistToListViewMap[ChecklistItem];
+    LoadItem(Item);
+    // When called from FOnSynchronize, we rely on a caller never to update size of an item that had size already,
+    // otherwise we get it counted twice here.
+    if (Item->Checked)
+    {
+      CountItemSize(ChecklistItem, 1);
+    }
+    Iter++;
+  }
+  UpdateControls();
+}
+//---------------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::OkButtonClick(TObject * /*Sender*/)
 {
   ListView->SelectAll(smNone);
@@ -1125,7 +1107,7 @@ void __fastcall TSynchronizeChecklistDialog::OkButtonClick(TObject * /*Sender*/)
   UpdateControls();
   try
   {
-    FOnSynchronize(FToken, ProcessedItem);
+    FOnSynchronize(FToken, ProcessedItem, UpdatedSynchronizationChecklistItems);
   }
   catch (Exception & E)
   {
@@ -1135,13 +1117,11 @@ void __fastcall TSynchronizeChecklistDialog::OkButtonClick(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::CalculateSizeActionExecute(TObject * /*Sender*/)
 {
-  std::map<const TSynchronizeChecklist::TItem *, TListItem *> ChecklistToListViewMap;
-  TSynchronizeChecklistItemList Items;
+  TSynchronizeChecklist::TItemList Items;
   TListItem * Item = ListView->Selected;
   while (Item != NULL)
   {
     const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(Item);
-    ChecklistToListViewMap.insert(std::make_pair(ChecklistItem, Item));
     Items.push_back(ChecklistItem);
     if (Item->Checked)
     {
@@ -1156,19 +1136,7 @@ void __fastcall TSynchronizeChecklistDialog::CalculateSizeActionExecute(TObject 
   }
   __finally
   {
-    TSynchronizeChecklistItemList::const_iterator Iter = Items.begin();
-    while (Iter != Items.end())
-    {
-      const TSynchronizeChecklist::TItem * ChecklistItem = *Iter;
-      TListItem * Item = ChecklistToListViewMap[ChecklistItem];
-      LoadItem(Item);
-      if (Item->Checked)
-      {
-        CountItemSize(ChecklistItem, 1);
-      }
-      Iter++;
-    }
-    UpdateControls();
+    UpdatedSynchronizationChecklistItems(Items);
   }
 }
 //---------------------------------------------------------------------------

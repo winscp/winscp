@@ -8,12 +8,11 @@
 #include "Interface.h"
 #include "FileOperationProgress.h"
 #include "FileMasks.h"
+#include "RemoteFiles.h"
 #include "Exceptions.h"
 //---------------------------------------------------------------------------
 class TCopyParamType;
 class TFileOperationProgressType;
-class TRemoteDirectory;
-class TRemoteFile;
 class TCustomFileSystem;
 class TTunnelThread;
 class TSecureShell;
@@ -56,6 +55,8 @@ typedef int __fastcall (__closure *TFileOperationEvent)
 typedef void __fastcall (__closure *TSynchronizeDirectory)
   (const UnicodeString LocalDirectory, const UnicodeString RemoteDirectory,
    bool & Continue, bool Collect);
+typedef void __fastcall (__closure *TUpdatedSynchronizationChecklistItems)(
+  const TSynchronizeChecklist::TItemList & Items);
 typedef void __fastcall (__closure *TProcessedItem)(const void * Token);
 typedef void __fastcall (__closure *TDeleteLocalFileEvent)(
   const UnicodeString FileName, bool Alternative);
@@ -559,7 +560,11 @@ public:
   void __fastcall SynchronizeApply(
     TSynchronizeChecklist * Checklist,
     const TCopyParamType * CopyParam, int Params,
-    TSynchronizeDirectory OnSynchronizeDirectory, TProcessedItem OnProcessedItem);
+    TSynchronizeDirectory OnSynchronizeDirectory, TProcessedItem OnProcessedItem,
+    TUpdatedSynchronizationChecklistItems OnUpdatedSynchronizationChecklistItems);
+  void __fastcall SynchronizeChecklistCalculateSize(
+    TSynchronizeChecklist * Checklist, const TSynchronizeChecklist::TItemList & Items,
+    const TCopyParamType * CopyParam);
   void __fastcall FilesFind(UnicodeString Directory, const TFileMasks & FileMask,
     TFileFoundEvent OnFileFound, TFindingFileEvent OnFindingFile);
   void __fastcall SpaceAvailable(const UnicodeString Path, TSpaceAvailable & ASpaceAvailable);
