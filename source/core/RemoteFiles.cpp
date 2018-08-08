@@ -2804,6 +2804,19 @@ int TSynchronizeChecklist::GetCount() const
   return FList->Count;
 }
 //---------------------------------------------------------------------------
+int TSynchronizeChecklist::GetCheckedCount() const
+{
+  int Result = 0;
+  for (int Index = 0; (Index < Count); Index++)
+  {
+    if (Item[Index]->Checked)
+    {
+      Result++;
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 const TSynchronizeChecklist::TItem * TSynchronizeChecklist::GetItem(int Index) const
 {
   return static_cast<TItem *>(FList->Items[Index]);

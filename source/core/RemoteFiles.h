@@ -498,6 +498,7 @@ public:
   static bool __fastcall IsItemSizeIrrelevant(TAction Action);
 
   __property int Count = { read = GetCount };
+  __property int CheckedCount = { read = GetCheckedCount };
   __property const TItem * Item[int Index] = { read = GetItem };
 
 protected:
@@ -507,6 +508,7 @@ protected:
   void Add(TItem * Item);
 
   int GetCount() const;
+  int GetCheckedCount() const;
   const TItem * GetItem(int Index) const;
 
 private:
