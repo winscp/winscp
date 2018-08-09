@@ -383,6 +383,8 @@ protected:
     TOperationSide Side, bool Temp, const UnicodeString & FileName, bool Success,
     TOnceDoneOperation & OnceDoneOperation);
   virtual void __fastcall DoOpenDirectoryDialog(TOpenDirectoryMode Mode, TOperationSide Side);
+  void __fastcall CreateProgressForm(const TSynchronizeChecklist * SynchronizeChecklist);
+  void __fastcall DestroyProgressForm();
   virtual void __fastcall FileOperationProgress(TFileOperationProgressType & ProgressData);
   void __fastcall OperationComplete(const TDateTime & StartTime);
   void __fastcall ExecutedFileChanged(const UnicodeString FileName,
@@ -462,7 +464,7 @@ protected:
   bool __fastcall RemoteFileControlFileOperation(TObject * Sender,
     TFileOperation Operation, bool NoConfirmation, void * Param);
   void __fastcall DDDownload(
-    TStrings * FilesToCopy, const UnicodeString & TargetDir, TCopyParamType * CopyParam, int Params);
+    TStrings * FilesToCopy, const UnicodeString & TargetDir, const TCopyParamType * CopyParam, int Params);
   bool __fastcall EnsureCommandSessionFallback(TFSCapability Capability);
   bool __fastcall CommandSessionFallback();
   void __fastcall FileTerminalRemoved(const UnicodeString FileName,
@@ -607,11 +609,12 @@ protected:
   void __fastcall CopyPopup(TControl * DestControl, TControl * SourceControl);
   void __fastcall CreateRemoteDirectory(const UnicodeString & Path, TRemoteProperties & Properties);
   void __fastcall DoFullSynchronize(
-    void * Token, TProcessedItem OnProcessedItem, TUpdatedSynchronizationChecklistItems OnUpdatedSynchronizationChecklistItems);
+    void * Token, TProcessedSynchronizationChecklistItem OnProcessedItem,
+    TUpdatedSynchronizationChecklistItems OnUpdatedSynchronizationChecklistItems);
   void __fastcall DoSynchronizeChecklistCalculateSize(
     TSynchronizeChecklist * Checklist, const TSynchronizeChecklist::TItemList & Items, void * Token);
   void __fastcall FullSynchronize(
-    TSynchronizeParams & Params, TProcessedItem OnProcessedItem,
+    TSynchronizeParams & Params, TProcessedSynchronizationChecklistItem OnProcessedItem,
     TUpdatedSynchronizationChecklistItems OnUpdatedSynchronizationChecklistItems);
   void __fastcall CreateOpenDirMenuList(TTBCustomItem * Menu, TOperationSide Side, TBookmarkList * BookmarkList);
   void __fastcall CreateOpenDirMenu(TTBCustomItem * Menu, TOperationSide Side);
@@ -692,6 +695,7 @@ public:
   void __fastcall OperationFinished(TFileOperation Operation, TOperationSide Side,
     bool Temp, const UnicodeString & FileName, bool Success, TOnceDoneOperation & OnceDoneOperation);
   void __fastcall OperationProgress(TFileOperationProgressType & ProgressData);
+  UnicodeString __fastcall GetProgressTitle(const TFileOperationProgressType & ProgressData);
   void __fastcall ShowExtendedException(TTerminal * Terminal, Exception * E);
   void __fastcall InactiveTerminalException(TTerminal * Terminal, Exception * E);
   void __fastcall TerminalReady();

@@ -92,13 +92,15 @@ private:
   bool FDataGot;
   bool FDataReceived;
   TFileOperation FLastOperation;
+  TOperationSide FLastSide;
   bool FLastTotalSizeSet;
   bool FMinimizedByMe;
   int FUpdateCounter;
   bool FAsciiTransferChanged;
   bool FResumeStatusChanged;
   void * FShowAsModalStorage;
-  bool FDeleteToRecycleBin;
+  bool FDeleteLocalToRecycleBin;
+  bool FDeleteRemoteToRecycleBin;
   bool FReadOnly;
   unsigned long FCPSLimit;
   TDateTime FStarted;
@@ -108,6 +110,8 @@ private:
   TFrameAnimation FFrameAnimation;
   typedef BiDiMap<TOnceDoneOperation, TTBCustomItem *> TOnceDoneItems;
   TOnceDoneItems FOnceDoneItems;
+  bool FAllowSkip;
+  const TSynchronizeChecklist * FSynchronizeChecklist;
 
   void __fastcall SetOnceDoneOperation(TOnceDoneOperation value);
   TTBCustomItem * __fastcall CurrentOnceDoneItem();
@@ -132,9 +136,11 @@ protected:
   static bool __fastcall IsIndeterminateOperation(TFileOperation Operation);
 
 public:
-  static UnicodeString __fastcall ProgressStr(TFileOperationProgressType * ProgressData);
+  static UnicodeString __fastcall ProgressStr(
+    const TSynchronizeChecklist * SynchronizeChecklist, const TFileOperationProgressType * ProgressData);
 
-  virtual __fastcall TProgressForm(TComponent * AOwner, bool AllowMoveToQueue, bool AllowSkip);
+  virtual __fastcall TProgressForm(
+    TComponent * AOwner, bool AllowMoveToQueue, bool AllowSkip, const TSynchronizeChecklist * SynchronizeChecklist);
   virtual __fastcall ~TProgressForm();
   void __fastcall SetProgressData(TFileOperationProgressType & AData);
   void __fastcall ClearCancel();
@@ -142,8 +148,10 @@ public:
   __property bool MoveToQueue = { read = FMoveToQueue };
   __property TOnceDoneOperation OnceDoneOperation = { read=GetOnceDoneOperation, write=SetOnceDoneOperation };
   __property bool AllowMinimize = { read=GetAllowMinimize, write=SetAllowMinimize };
-  __property bool DeleteToRecycleBin = { read=FDeleteToRecycleBin, write=FDeleteToRecycleBin };
+  __property bool DeleteLocalToRecycleBin = { read=FDeleteLocalToRecycleBin, write=FDeleteLocalToRecycleBin };
+  __property bool DeleteRemoteToRecycleBin = { read=FDeleteRemoteToRecycleBin, write=FDeleteRemoteToRecycleBin };
   __property bool ReadOnly = { read=FReadOnly, write=SetReadOnly };
+  __property const TSynchronizeChecklist * SynchronizeChecklist = { read = FSynchronizeChecklist };
 };
 //----------------------------------------------------------------------------
 #endif

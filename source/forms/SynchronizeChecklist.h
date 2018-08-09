@@ -122,8 +122,6 @@ protected:
   TActions FActions;
   TFullSynchronizeEvent FOnSynchronize;
   void * FToken;
-  typedef std::map<const void *, TListItem *> TTokens;
-  TTokens FTokens;
   bool FSynchronizing;
   std::unique_ptr<Exception> FException;
   std::map<const TSynchronizeChecklist::TItem *, TListItem *> FChecklistToListViewMap;
@@ -149,7 +147,7 @@ protected:
   void __fastcall UpdateImages();
   void __fastcall CMDpiChanged(TMessage & Message);
   bool __fastcall GetWindowParams(UnicodeString & WindowParams);
-  void __fastcall ProcessedItem(const void * Token);
+  void __fastcall ProcessedItem(const TSynchronizeChecklist::TItem * ChecklistItem);
   void __fastcall UpdatedSynchronizationChecklistItems(const TSynchronizeChecklist::TItemList & Items);
   void __fastcall CountItemSize(const TSynchronizeChecklist::TItem * ChecklistItem, int Factor);
   void __fastcall CountItem(const TSynchronizeChecklist::TItem * ChecklistItem, int Factor);

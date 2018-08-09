@@ -57,7 +57,7 @@ typedef void __fastcall (__closure *TSynchronizeDirectory)
    bool & Continue, bool Collect);
 typedef void __fastcall (__closure *TUpdatedSynchronizationChecklistItems)(
   const TSynchronizeChecklist::TItemList & Items);
-typedef void __fastcall (__closure *TProcessedItem)(const void * Token);
+typedef void __fastcall (__closure *TProcessedSynchronizationChecklistItem)(const TSynchronizeChecklist::TItem * Item);
 typedef void __fastcall (__closure *TDeleteLocalFileEvent)(
   const UnicodeString FileName, bool Alternative);
 typedef int __fastcall (__closure *TDirectoryModifiedEvent)
@@ -225,7 +225,6 @@ private:
   TEncryptedFileNames FEncryptedFileNames;
   std::set<UnicodeString> FFoldersScannedForEncryptedFiles;
   RawByteString FEncryptKey;
-  TProcessedItem FOnProcessedItem;
 
   void __fastcall CommandError(Exception * E, const UnicodeString Msg);
   unsigned int __fastcall CommandError(Exception * E, const UnicodeString Msg,
@@ -505,10 +504,10 @@ public:
   bool __fastcall FileExists(const UnicodeString FileName, TRemoteFile ** File = NULL);
   void __fastcall ReadSymlink(TRemoteFile * SymlinkFile, TRemoteFile *& File);
   bool __fastcall CopyToLocal(
-    TStrings * FilesToCopy, const UnicodeString & TargetDir, TCopyParamType * CopyParam, int Params,
+    TStrings * FilesToCopy, const UnicodeString & TargetDir, const TCopyParamType * CopyParam, int Params,
     TParallelOperation * ParallelOperation);
   bool __fastcall CopyToRemote(
-    TStrings * FilesToCopy, const UnicodeString & TargetDir, TCopyParamType * CopyParam, int Params,
+    TStrings * FilesToCopy, const UnicodeString & TargetDir, const TCopyParamType * CopyParam, int Params,
     TParallelOperation * ParallelOperation);
   int __fastcall CopyToParallel(TParallelOperation * ParallelOperation, TFileOperationProgressType * OperationProgress);
   void __fastcall LogParallelTransfer(TParallelOperation * ParallelOperation);
@@ -560,7 +559,7 @@ public:
   void __fastcall SynchronizeApply(
     TSynchronizeChecklist * Checklist,
     const TCopyParamType * CopyParam, int Params,
-    TSynchronizeDirectory OnSynchronizeDirectory, TProcessedItem OnProcessedItem,
+    TSynchronizeDirectory OnSynchronizeDirectory, TProcessedSynchronizationChecklistItem OnProcessedItem,
     TUpdatedSynchronizationChecklistItems OnUpdatedSynchronizationChecklistItems);
   void __fastcall SynchronizeChecklistCalculateSize(
     TSynchronizeChecklist * Checklist, const TSynchronizeChecklist::TItemList & Items,

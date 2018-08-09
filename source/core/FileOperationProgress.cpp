@@ -204,7 +204,7 @@ void __fastcall TFileOperationProgressType::Resume()
   DoProgress();
 }
 //---------------------------------------------------------------------------
-int __fastcall TFileOperationProgressType::OperationProgress()
+int __fastcall TFileOperationProgressType::OperationProgress() const
 {
   int Result;
   if (FCount > 0)
@@ -232,7 +232,7 @@ int __fastcall TFileOperationProgressType::TransferProgress()
   return Result;
 }
 //---------------------------------------------------------------------------
-int __fastcall TFileOperationProgressType::TotalTransferProgress()
+int __fastcall TFileOperationProgressType::TotalTransferProgress() const
 {
   TGuard Guard(FSection);
   DebugAssert(TotalSizeSet);
@@ -240,7 +240,7 @@ int __fastcall TFileOperationProgressType::TotalTransferProgress()
   return Result < 100 ? Result : 100;
 }
 //---------------------------------------------------------------------------
-int __fastcall TFileOperationProgressType::OverallProgress()
+int __fastcall TFileOperationProgressType::OverallProgress() const
 {
   if (TotalSizeSet)
   {

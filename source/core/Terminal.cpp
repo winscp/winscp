@@ -932,7 +932,6 @@ __fastcall TTerminal::TTerminal(TSessionData * SessionData,
   FOnCustomCommand = NULL;
   FOnClose = NULL;
   FOnFindingFile = NULL;
-  FOnProcessedItem = NULL;
 
   FUseBusyCursor = True;
   FLockDirectory = L"";
@@ -3653,15 +3652,10 @@ void __fastcall TTerminal::AnnounceFileListOperation()
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::OperationFinish(
-  TFileOperationProgressType * Progress, const void * Item, const UnicodeString & FileName,
+  TFileOperationProgressType * Progress, const void * /*Item*/, const UnicodeString & FileName,
   bool Success, TOnceDoneOperation & OnceDoneOperation)
 {
   Progress->Finish(FileName, Success, OnceDoneOperation);
-
-  if ((Item != NULL) && (FOnProcessedItem != NULL) && (Progress->Operation != foCalculateSize))
-  {
-    FOnProcessedItem(Item);
-  }
 }
 //---------------------------------------------------------------------------
 bool __fastcall TTerminal::ProcessFiles(TStrings * FileList,
@@ -5878,7 +5872,7 @@ void __fastcall TTerminal::DoSynchronizeCollectFile(const UnicodeString FileName
 void __fastcall TTerminal::SynchronizeApply(
   TSynchronizeChecklist * Checklist,
   const TCopyParamType * CopyParam, int Params,
-  TSynchronizeDirectory OnSynchronizeDirectory, TProcessedItem OnProcessedItem,
+  TSynchronizeDirectory OnSynchronizeDirectory, TProcessedSynchronizationChecklistItem OnProcessedItem,
   TUpdatedSynchronizationChecklistItems OnUpdatedSynchronizationChecklistItems)
 {
   TSynchronizeData Data;
@@ -5921,180 +5915,106 @@ void __fastcall TTerminal::SynchronizeApply(
     }
   }
 
-  DebugAssert(FOnProcessedItem == NULL);
-  FOnProcessedItem = OnProcessedItem;
-
   BeginTransaction();
 
   try
   {
-    int IIndex = 0;
-    while (IIndex < Checklist->Count)
+    int Index = 0;
+    while (Index < Checklist->Count)
     {
-      std::unique_ptr<TStringList> DownloadList(new TStringList());
-      std::unique_ptr<TStringList> DeleteRemoteList(new TStringList());
-      std::unique_ptr<TStringList> UploadList(new TStringList());
-      std::unique_ptr<TStringList> DeleteLocalList(new TStringList());
-      __int64 DownloadSize = 0;
-      __int64 UploadSize = 0;
-
-      const TSynchronizeChecklist::TItem * ChecklistItem = Checklist->Item[IIndex];
-
-      UnicodeString CurrentLocalDirectory = ChecklistItem->Local.Directory;
-      UnicodeString CurrentRemoteDirectory = ChecklistItem->Remote.Directory;
-
-      LogEvent(
-        FORMAT(L"Synchronizing local directory '%s' with remote directory '%s', params = 0x%x (%s)",
-        (CurrentLocalDirectory, CurrentRemoteDirectory, int(Params), SynchronizeParamsStr(Params))));
-
-      int Count = 0;
-
-      while ((IIndex < Checklist->Count) &&
-             (Checklist->Item[IIndex]->Local.Directory == CurrentLocalDirectory) &&
-             (Checklist->Item[IIndex]->Remote.Directory == CurrentRemoteDirectory))
+      const TSynchronizeChecklist::TItem * ChecklistItem = Checklist->Item[Index];
+      if (ChecklistItem->Checked)
       {
-        ChecklistItem = Checklist->Item[IIndex];
-        TObject * ChecklistItemToken = const_cast<TObject *>(reinterpret_cast<const TObject *>(ChecklistItem));
-        if (ChecklistItem->Checked)
+        if (!SamePaths(Data.LocalDirectory, ChecklistItem->Local.Directory) ||
+            !UnixSamePath(Data.RemoteDirectory, ChecklistItem->Remote.Directory))
         {
-          Count++;
+          Data.LocalDirectory = IncludeTrailingBackslash(ChecklistItem->Local.Directory);
+          Data.RemoteDirectory = UnixIncludeTrailingBackslash(ChecklistItem->Remote.Directory);
 
-          if (FLAGSET(Params, spTimestamp))
-          {
-            switch (ChecklistItem->Action)
-            {
-              case TSynchronizeChecklist::saDownloadUpdate:
-                DownloadList->AddObject(
-                  UnixIncludeTrailingBackslash(ChecklistItem->Remote.Directory) + ChecklistItem->Remote.FileName,
-                  ChecklistItemToken);
-                break;
+          LogEvent(
+            FORMAT(L"Synchronizing local directory '%s' with remote directory '%s', params = 0x%x (%s)",
+            (Data.LocalDirectory, Data.RemoteDirectory, int(Params), SynchronizeParamsStr(Params))));
 
-              case TSynchronizeChecklist::saUploadUpdate:
-                UploadList->AddObject(
-                  IncludeTrailingBackslash(ChecklistItem->Local.Directory) + ChecklistItem->Local.FileName,
-                  ChecklistItemToken);
-                break;
-
-              default:
-                DebugFail();
-                break;
-            }
-          }
-          else
-          {
-            switch (ChecklistItem->Action)
-            {
-              case TSynchronizeChecklist::saDownloadNew:
-              case TSynchronizeChecklist::saDownloadUpdate:
-                DownloadList->AddObject(
-                  UnixIncludeTrailingBackslash(ChecklistItem->Remote.Directory) + ChecklistItem->Remote.FileName,
-                  ChecklistItem->RemoteFile);
-                if ((DownloadSize >= 0) && ChecklistItem->HasSize())
-                {
-                  DownloadSize += ChecklistItem->GetSize();
-                }
-                else
-                {
-                  DownloadSize = -1;
-                }
-                break;
-
-              case TSynchronizeChecklist::saDeleteRemote:
-                DeleteRemoteList->AddObject(
-                  UnixIncludeTrailingBackslash(ChecklistItem->Remote.Directory) + ChecklistItem->Remote.FileName,
-                  ChecklistItem->RemoteFile);
-                break;
-
-              case TSynchronizeChecklist::saUploadNew:
-              case TSynchronizeChecklist::saUploadUpdate:
-                UploadList->AddObject(
-                  IncludeTrailingBackslash(ChecklistItem->Local.Directory) + ChecklistItem->Local.FileName,
-                  ChecklistItemToken);
-                if ((UploadSize >= 0) && ChecklistItem->HasSize())
-                {
-                  UploadSize += ChecklistItem->GetSize();
-                }
-                else
-                {
-                  UploadSize = -1;
-                }
-                break;
-
-              case TSynchronizeChecklist::saDeleteLocal:
-                DeleteLocalList->AddObject(
-                  IncludeTrailingBackslash(ChecklistItem->Local.Directory) + ChecklistItem->Local.FileName,
-                  ChecklistItemToken);
-                break;
-
-              default:
-                DebugFail();
-                break;
-            }
-          }
+          DoSynchronizeProgress(Data, false);
         }
-        IIndex++;
-      }
 
-      // prevent showing/updating of progress dialog if there's nothing to do
-      if (Count > 0)
-      {
-        Data.LocalDirectory = IncludeTrailingBackslash(CurrentLocalDirectory);
-        Data.RemoteDirectory = UnixIncludeTrailingBackslash(CurrentRemoteDirectory);
-        DoSynchronizeProgress(Data, false);
+        std::unique_ptr<TStringList> FileList(new TStringList());
+
+        UnicodeString LocalPath = IncludeTrailingBackslash(ChecklistItem->Local.Directory) + ChecklistItem->Local.FileName;
+        UnicodeString RemotePath = UnixIncludeTrailingBackslash(ChecklistItem->Remote.Directory) + ChecklistItem->Remote.FileName;
+        bool Result = true;
 
         if (FLAGSET(Params, spTimestamp))
         {
-          if (DownloadList->Count > 0)
+          switch (ChecklistItem->Action)
           {
-            ProcessFiles(DownloadList.get(), foSetProperties, SynchronizeLocalTimestamp, NULL, osLocal);
-          }
+            case TSynchronizeChecklist::saDownloadUpdate:
+              FileList->Add(RemotePath);
+              ProcessFiles(FileList.get(), foSetProperties, SynchronizeLocalTimestamp, NULL, osLocal);
+              break;
 
-          if (UploadList->Count > 0)
-          {
-            ProcessFiles(UploadList.get(), foSetProperties, SynchronizeRemoteTimestamp);
+            case TSynchronizeChecklist::saUploadUpdate:
+              FileList->Add(LocalPath);
+              ProcessFiles(FileList.get(), foSetProperties, SynchronizeRemoteTimestamp);
+              break;
+
+            default:
+              DebugFail();
+              Result = false;
+              break;
           }
         }
         else
         {
-          if (DownloadList->Count > 0)
+          TCopyParamType ItemCopyParam = SyncCopyParam;
+          ItemCopyParam.Size = ChecklistItem->HasSize() ? ChecklistItem->GetSize() : -1;
+          switch (ChecklistItem->Action)
           {
-            TCopyParamType DownloadCopyParam = SyncCopyParam;
-            DownloadCopyParam.Size = DownloadSize;
-            if (!CopyToLocal(DownloadList.get(), Data.LocalDirectory, &DownloadCopyParam, CopyParams, NULL))
-            {
-              Abort();
-            }
-          }
+            case TSynchronizeChecklist::saDownloadNew:
+            case TSynchronizeChecklist::saDownloadUpdate:
+              FileList->AddObject(RemotePath, ChecklistItem->RemoteFile);
+              Result = CopyToLocal(FileList.get(), Data.LocalDirectory, &ItemCopyParam, CopyParams, NULL);
+              break;
 
-          if ((DeleteRemoteList->Count > 0) &&
-              !DeleteFiles(DeleteRemoteList.get()))
-          {
-            Abort();
-          }
+            case TSynchronizeChecklist::saDeleteRemote:
+              FileList->AddObject(RemotePath, ChecklistItem->RemoteFile);
+              Result = DeleteFiles(FileList.get());
+              break;
 
-          if (UploadList->Count > 0)
-          {
-            TCopyParamType UploadCopyParam = SyncCopyParam;
-            UploadCopyParam.Size = UploadSize;
-            if (!CopyToRemote(UploadList.get(), Data.RemoteDirectory, &UploadCopyParam, CopyParams, NULL))
-            {
-              Abort();
-            }
-          }
+            case TSynchronizeChecklist::saUploadNew:
+            case TSynchronizeChecklist::saUploadUpdate:
+              FileList->Add(LocalPath);
+              Result = CopyToRemote(FileList.get(), Data.RemoteDirectory, &ItemCopyParam, CopyParams, NULL);
+              break;
 
-          if ((DeleteLocalList->Count > 0) &&
-              !DeleteLocalFiles(DeleteLocalList.get()))
-          {
-            Abort();
+            case TSynchronizeChecklist::saDeleteLocal:
+              FileList->Add(LocalPath);
+              Result = DeleteLocalFiles(FileList.get());
+              break;
+
+            default:
+              DebugFail();
+              Result = false;
+              break;
           }
         }
+
+        if (!Result)
+        {
+          Abort();
+        }
+
+        if (OnProcessedItem != NULL)
+        {
+          OnProcessedItem(ChecklistItem);
+        }
       }
+
+      Index++;
     }
   }
   __finally
   {
-    FOnProcessedItem = NULL;
-
     EndTransaction();
   }
 }
@@ -6537,17 +6457,15 @@ int __fastcall TTerminal::CopyToParallel(TParallelOperation * ParallelOperation,
     try
     {
       FOperationProgress = OperationProgress;
-      // Need own copy, now that CopyToRemote/CopyToLocal modify the instance
-      TCopyParamType CopyParam = *ParallelOperation->CopyParam;
       if (ParallelOperation->Side == osLocal)
       {
         FFileSystem->CopyToRemote(
-          FilesToCopy.get(), TargetDir, &CopyParam, Params, OperationProgress, OnceDoneOperation);
+          FilesToCopy.get(), TargetDir, ParallelOperation->CopyParam, Params, OperationProgress, OnceDoneOperation);
       }
       else if (DebugAlwaysTrue(ParallelOperation->Side == osRemote))
       {
         FFileSystem->CopyToLocal(
-          FilesToCopy.get(), TargetDir, &CopyParam, Params, OperationProgress, OnceDoneOperation);
+          FilesToCopy.get(), TargetDir, ParallelOperation->CopyParam, Params, OperationProgress, OnceDoneOperation);
       }
     }
     __finally
@@ -6645,7 +6563,7 @@ void __fastcall TTerminal::LogTotalTransferDone(TFileOperationProgressType * Ope
 }
 //---------------------------------------------------------------------------
 bool __fastcall TTerminal::CopyToRemote(
-  TStrings * FilesToCopy, const UnicodeString & TargetDir, TCopyParamType * CopyParam, int Params,
+  TStrings * FilesToCopy, const UnicodeString & TargetDir, const TCopyParamType * CopyParam, int Params,
   TParallelOperation * ParallelOperation)
 {
   DebugAssert(FFileSystem);
@@ -6743,7 +6661,6 @@ bool __fastcall TTerminal::CopyToRemote(
         Configuration->Usage->Inc(L"UploadTime", CounterTime);
         Configuration->Usage->SetMax(L"MaxUploadTime", CounterTime);
       }
-      CopyParam->CPSLimit = OperationProgress.CPSLimit;
       OperationProgress.Stop();
       FOperationProgress = NULL;
     }
@@ -7077,7 +6994,7 @@ void __fastcall TTerminal::Source(
 }
 //---------------------------------------------------------------------------
 bool __fastcall TTerminal::CopyToLocal(
-  TStrings * FilesToCopy, const UnicodeString & TargetDir, TCopyParamType * CopyParam, int Params,
+  TStrings * FilesToCopy, const UnicodeString & TargetDir, const TCopyParamType * CopyParam, int Params,
   TParallelOperation * ParallelOperation)
 {
   DebugAssert(FFileSystem);
@@ -7199,7 +7116,6 @@ bool __fastcall TTerminal::CopyToLocal(
         Configuration->Usage->Inc(L"DownloadTime", CounterTime);
         Configuration->Usage->SetMax(L"MaxDownloadTime", CounterTime);
       }
-      CopyParam->CPSLimit = OperationProgress.CPSLimit;
       FOperationProgress = NULL;
       OperationProgress.Stop();
     }

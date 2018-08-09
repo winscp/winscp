@@ -1193,7 +1193,7 @@ void __fastcall TTerminalManager::OperationProgress(
 {
   if (ProgressData.InProgress)
   {
-    FProgressTitle = TProgressForm::ProgressStr(&ProgressData);
+    FProgressTitle = ScpExplorer->GetProgressTitle(ProgressData);
   }
   else
   {

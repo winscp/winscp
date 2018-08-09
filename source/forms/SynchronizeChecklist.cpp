@@ -1055,16 +1055,12 @@ void __fastcall TSynchronizeChecklistDialog::CMDpiChanged(TMessage & Message)
   UpdateImages();
 }
 //---------------------------------------------------------------------------
-void __fastcall TSynchronizeChecklistDialog::ProcessedItem(const void * Token)
+void __fastcall TSynchronizeChecklistDialog::ProcessedItem(const TSynchronizeChecklist::TItem * ChecklistItem)
 {
-  TTokens::const_iterator I = FTokens.find(Token);
-  if (DebugAlwaysTrue(I != FTokens.end()))
-  {
-    TListItem * Item = I->second;
-    DebugAssert(Item->Checked);
-    Item->Checked = false;
-    Item->MakeVisible(false);
-  }
+  TListItem * Item = FChecklistToListViewMap[ChecklistItem];
+  DebugAssert(Item->Checked);
+  Item->Checked = false;
+  Item->MakeVisible(false);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::UpdatedSynchronizationChecklistItems(
@@ -1090,17 +1086,11 @@ void __fastcall TSynchronizeChecklistDialog::UpdatedSynchronizationChecklistItem
 void __fastcall TSynchronizeChecklistDialog::OkButtonClick(TObject * /*Sender*/)
 {
   ListView->SelectAll(smNone);
-  FTokens.clear();
   for (int Index = 0; Index < ListView->Items->Count; Index++)
   {
     TListItem * Item = ListView->Items->Item[Index];
     const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(Item);
     FChecklist->Update(ChecklistItem, Item->Checked, GetChecklistItemAction(ChecklistItem));
-    FTokens.insert(std::make_pair(ChecklistItem, Item));
-    if (ChecklistItem->RemoteFile != NULL)
-    {
-      FTokens.insert(std::make_pair(ChecklistItem->RemoteFile, Item));
-    }
   }
 
   TAutoFlag Flag(FSynchronizing);

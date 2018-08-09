@@ -352,7 +352,8 @@ class TSynchronizeChecklist;
 typedef void __fastcall (__closure *TCustomCommandMenuEvent)
   (TAction * Action, TStrings * LocalFileList, TStrings * RemoteFileList);
 typedef void __fastcall (__closure *TFullSynchronizeEvent)(
-  void * Token, TProcessedItem OnProcessedItem, TUpdatedSynchronizationChecklistItems OnUpdatedSynchronizationChecklistItems);
+  void * Token, TProcessedSynchronizationChecklistItem OnProcessedItem,
+  TUpdatedSynchronizationChecklistItems OnUpdatedSynchronizationChecklistItems);
 typedef void __fastcall (__closure *TSynchronizeChecklistCalculateSize)
   (TSynchronizeChecklist * Checklist, const TSynchronizeChecklist::TItemList & Items, void * Token);
 bool __fastcall DoSynchronizeChecklistDialog(TSynchronizeChecklist * Checklist,

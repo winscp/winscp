@@ -78,7 +78,7 @@ private:
 protected:
   void __fastcall ClearTransfer();
   inline void __fastcall DoProgress();
-  int __fastcall OperationProgress();
+  int __fastcall OperationProgress() const;
   void __fastcall AddTransferredToTotals(__int64 ASize);
   void __fastcall AddSkipped(__int64 ASize);
   void __fastcall AddTotalSize(__int64 ASize);
@@ -174,8 +174,8 @@ public:
   TDateTime __fastcall TimeExpected();
   TDateTime __fastcall TotalTimeLeft();
   int __fastcall TransferProgress();
-  int __fastcall OverallProgress();
-  int __fastcall TotalTransferProgress();
+  int __fastcall OverallProgress() const;
+  int __fastcall TotalTransferProgress() const;
   void __fastcall SetSpeedCounters();
   void __fastcall SetTransferringFile(bool ATransferringFile);
   TCancelStatus __fastcall GetCancel();
