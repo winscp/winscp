@@ -5143,6 +5143,7 @@ void __fastcall TCustomScpExplorerForm::DoSynchronize(
   const TSynchronizeParamType & Params, TSynchronizeChecklist ** Checklist,
   TSynchronizeOptions * Options, bool Full)
 {
+  // Keep-up-to-date mode
   if (Terminal->Status == ssOpened)
   {
     try
@@ -5232,6 +5233,7 @@ void __fastcall TCustomScpExplorerForm::Synchronize(const UnicodeString LocalDir
   const TCopyParamType & CopyParam, int Params, TSynchronizeChecklist ** Checklist,
   TSynchronizeOptions * Options)
 {
+  // Keep-up-to-date mode
   DebugAssert(!FAutoOperation);
   void * BatchStorage;
   BatchStart(BatchStorage);
