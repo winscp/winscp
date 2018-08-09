@@ -1012,7 +1012,9 @@ void __fastcall TEditorForm::FileUploadComplete()
 //---------------------------------------------------------------------------
 void __fastcall TEditorForm::UpdateControls()
 {
-  EditorMemo->ReadOnly = (OnFileChanged == NULL);
+  // To disable saving, e.g. in encryption mode (no queue support) - both OnFileChanged and OnSaveAll are NULL.
+  // But internal editors have (OnFileChanged == NULL), but OnSaveAll set, so we use OnSaveAll for dicision
+  EditorMemo->ReadOnly = (OnSaveAll == NULL);
 
   TPoint ACaretPos = EditorMemo->CaretPos;
 
