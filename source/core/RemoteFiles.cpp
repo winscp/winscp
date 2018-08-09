@@ -2899,3 +2899,27 @@ bool __fastcall TSynchronizeChecklist::IsItemSizeIrrelevant(TAction Action)
       return false;
   }
 }
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+TSynchronizeProgress::TSynchronizeProgress(const TSynchronizeChecklist * Checklist)
+{
+  for (int Index = 0; Index < Checklist->Count; Index++)
+  {
+    const TSynchronizeChecklist::TItem * ChecklistItem = Checklist->Item[Index];
+    if (ChecklistItem->Checked)
+    {
+      FItems.insert(std::make_pair(ChecklistItem, TItemData()));
+    }
+  }
+  FItemsProcessed = 0;
+}
+//---------------------------------------------------------------------------
+void TSynchronizeProgress::ItemProcessed(const TSynchronizeChecklist::TItem * /*ChecklistItem*/)
+{
+  FItemsProcessed++;
+}
+//---------------------------------------------------------------------------
+int TSynchronizeProgress::Progress() const
+{
+  return (FItemsProcessed * 100) / FItems.size();
+}

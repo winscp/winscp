@@ -57,7 +57,8 @@ typedef void __fastcall (__closure *TSynchronizeDirectory)
    bool & Continue, bool Collect);
 typedef void __fastcall (__closure *TUpdatedSynchronizationChecklistItems)(
   const TSynchronizeChecklist::TItemList & Items);
-typedef void __fastcall (__closure *TProcessedSynchronizationChecklistItem)(const TSynchronizeChecklist::TItem * Item);
+typedef void __fastcall (__closure *TProcessedSynchronizationChecklistItem)(
+  void * Token, const TSynchronizeChecklist::TItem * Item);
 typedef void __fastcall (__closure *TDeleteLocalFileEvent)(
   const UnicodeString FileName, bool Alternative);
 typedef int __fastcall (__closure *TDirectoryModifiedEvent)
@@ -560,7 +561,7 @@ public:
     TSynchronizeChecklist * Checklist,
     const TCopyParamType * CopyParam, int Params,
     TSynchronizeDirectory OnSynchronizeDirectory, TProcessedSynchronizationChecklistItem OnProcessedItem,
-    TUpdatedSynchronizationChecklistItems OnUpdatedSynchronizationChecklistItems);
+    TUpdatedSynchronizationChecklistItems OnUpdatedSynchronizationChecklistItems, void * Token);
   void __fastcall SynchronizeChecklistCalculateSize(
     TSynchronizeChecklist * Checklist, const TSynchronizeChecklist::TItemList & Items,
     const TCopyParamType * CopyParam);

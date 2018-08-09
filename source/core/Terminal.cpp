@@ -5873,7 +5873,7 @@ void __fastcall TTerminal::SynchronizeApply(
   TSynchronizeChecklist * Checklist,
   const TCopyParamType * CopyParam, int Params,
   TSynchronizeDirectory OnSynchronizeDirectory, TProcessedSynchronizationChecklistItem OnProcessedItem,
-  TUpdatedSynchronizationChecklistItems OnUpdatedSynchronizationChecklistItems)
+  TUpdatedSynchronizationChecklistItems OnUpdatedSynchronizationChecklistItems, void * Token)
 {
   TSynchronizeData Data;
 
@@ -6006,7 +6006,7 @@ void __fastcall TTerminal::SynchronizeApply(
 
         if (OnProcessedItem != NULL)
         {
-          OnProcessedItem(ChecklistItem);
+          OnProcessedItem(Token, ChecklistItem);
         }
       }
 

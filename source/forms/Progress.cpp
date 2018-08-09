@@ -35,7 +35,7 @@ bool __fastcall TProgressForm::IsIndeterminateOperation(TFileOperation Operation
 }
 //---------------------------------------------------------------------
 UnicodeString __fastcall TProgressForm::ProgressStr(
-  const TSynchronizeChecklist * SynchronizeChecklist, const TFileOperationProgressType * ProgressData)
+  const TSynchronizeProgress * SynchronizeProgress, const TFileOperationProgressType * ProgressData)
 {
   static const int Captions[] = { 0, 0, PROGRESS_DELETE,
     PROGRESS_SETPROPERTIES, 0, PROGRESS_CUSTOM_COMAND, PROGRESS_CALCULATE_SIZE,
@@ -53,19 +53,19 @@ UnicodeString __fastcall TProgressForm::ProgressStr(
     DebugAssert(Id != 0);
   }
   UnicodeString Result = LoadStr(Id);
-  if (!IsIndeterminateOperation(ProgressData->Operation))
+  if (SynchronizeProgress != NULL)
+  {
+    Result = FORMAT(L"%d%% %s - %s", (SynchronizeProgress->Progress(), LoadStr(SYNCHRONIZE_PROGRESS_SYNCHRONIZE2), Result));
+  }
+  else if (!IsIndeterminateOperation(ProgressData->Operation))
   {
     Result = FORMAT(L"%d%% %s", (ProgressData->OverallProgress(), Result));
-  }
-  if (SynchronizeChecklist != NULL)
-  {
-    Result = FORMAT(L"%s - %s", (LoadStr(SYNCHRONIZE_PROGRESS_SYNCHRONIZE2), Result));
   }
   return Result;
 }
 //---------------------------------------------------------------------
 __fastcall TProgressForm::TProgressForm(
-  TComponent * AOwner, bool AllowMoveToQueue, bool AllowSkip, const TSynchronizeChecklist * SynchronizeChecklist)
+  TComponent * AOwner, bool AllowMoveToQueue, bool AllowSkip, TSynchronizeProgress * SynchronizeProgress)
     : FData(), TForm(AOwner)
 {
   FLastOperation = foNone;
@@ -85,7 +85,7 @@ __fastcall TProgressForm::TProgressForm(
   FModalBeginHooked = false;
   FModalLevel = -1;
   FPendingSkip = false;
-  FSynchronizeChecklist = SynchronizeChecklist;
+  FSynchronizeProgress = SynchronizeProgress;
   FAllowSkip = AllowSkip;
   UseSystemSettings(this);
 
@@ -212,7 +212,7 @@ void __fastcall TProgressForm::UpdateControls()
 
     OperationProgress->Style = IsIndeterminateOperation(FData.Operation) ? pbstMarquee : pbstNormal;
 
-    if (FSynchronizeChecklist != NULL)
+    if (SynchronizeProgress != NULL)
     {
       Animation = L"SynchronizeDirectories";
     }
@@ -277,10 +277,26 @@ void __fastcall TProgressForm::UpdateControls()
     FileLabel->Caption = FileCaption;
     FPendingSkip = false;
   }
-  int OverallProgress = FData.OverallProgress();
-  OperationProgress->Position = OverallProgress;
-  OperationProgress->Hint = IsIndeterminateOperation(FData.Operation) ? UnicodeString() : FORMAT(L"%d%%", (OverallProgress));
-  Caption = FormatFormCaption(this, ProgressStr(FSynchronizeChecklist, &FData));
+
+  int OverallProgress;
+  if (SynchronizeProgress != NULL)
+  {
+    OverallProgress = SynchronizeProgress->Progress();
+  }
+  else
+  {
+    if (IsIndeterminateOperation(FData.Operation))
+    {
+      OverallProgress = -1;
+    }
+    else
+    {
+      OverallProgress = FData.OverallProgress();
+    }
+  }
+  OperationProgress->Position = std::max(0, OverallProgress);
+  OperationProgress->Hint = (OverallProgress < 0) ? UnicodeString() : FORMAT(L"%d%%", (OverallProgress));
+  Caption = FormatFormCaption(this, ProgressStr(SynchronizeProgress, &FData));
 
   if (TransferOperation)
   {

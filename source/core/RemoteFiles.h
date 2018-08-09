@@ -517,6 +517,25 @@ private:
   static int __fastcall Compare(void * Item1, void * Item2);
 };
 //---------------------------------------------------------------------------
+class TSynchronizeProgress
+{
+public:
+  TSynchronizeProgress(const TSynchronizeChecklist * Checklist);
+
+  void ItemProcessed(const TSynchronizeChecklist::TItem * ChecklistItem);
+  int Progress() const;
+
+private:
+  TSynchronizeChecklist * FChecklist;
+  int FItemsProcessed;
+
+  struct TItemData
+  {
+  };
+
+  std::map<const TSynchronizeChecklist::TItem *, TItemData> FItems;
+};
+//---------------------------------------------------------------------------
 bool __fastcall IsUnixStyleWindowsPath(const UnicodeString & Path);
 bool __fastcall UnixIsAbsolutePath(const UnicodeString & Path);
 UnicodeString __fastcall UnixIncludeTrailingBackslash(const UnicodeString Path);

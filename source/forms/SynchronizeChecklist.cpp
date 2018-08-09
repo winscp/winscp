@@ -1055,7 +1055,7 @@ void __fastcall TSynchronizeChecklistDialog::CMDpiChanged(TMessage & Message)
   UpdateImages();
 }
 //---------------------------------------------------------------------------
-void __fastcall TSynchronizeChecklistDialog::ProcessedItem(const TSynchronizeChecklist::TItem * ChecklistItem)
+void __fastcall TSynchronizeChecklistDialog::ProcessedItem(void * /*Token*/, const TSynchronizeChecklist::TItem * ChecklistItem)
 {
   TListItem * Item = FChecklistToListViewMap[ChecklistItem];
   DebugAssert(Item->Checked);

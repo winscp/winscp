@@ -111,7 +111,7 @@ private:
   typedef BiDiMap<TOnceDoneOperation, TTBCustomItem *> TOnceDoneItems;
   TOnceDoneItems FOnceDoneItems;
   bool FAllowSkip;
-  const TSynchronizeChecklist * FSynchronizeChecklist;
+  TSynchronizeProgress * FSynchronizeProgress;
 
   void __fastcall SetOnceDoneOperation(TOnceDoneOperation value);
   TTBCustomItem * __fastcall CurrentOnceDoneItem();
@@ -137,10 +137,10 @@ protected:
 
 public:
   static UnicodeString __fastcall ProgressStr(
-    const TSynchronizeChecklist * SynchronizeChecklist, const TFileOperationProgressType * ProgressData);
+    const TSynchronizeProgress * SynchronizeProgress, const TFileOperationProgressType * ProgressData);
 
   virtual __fastcall TProgressForm(
-    TComponent * AOwner, bool AllowMoveToQueue, bool AllowSkip, const TSynchronizeChecklist * SynchronizeChecklist);
+    TComponent * AOwner, bool AllowMoveToQueue, bool AllowSkip, TSynchronizeProgress * SynchronizeProgress);
   virtual __fastcall ~TProgressForm();
   void __fastcall SetProgressData(TFileOperationProgressType & AData);
   void __fastcall ClearCancel();
@@ -151,7 +151,7 @@ public:
   __property bool DeleteLocalToRecycleBin = { read=FDeleteLocalToRecycleBin, write=FDeleteLocalToRecycleBin };
   __property bool DeleteRemoteToRecycleBin = { read=FDeleteRemoteToRecycleBin, write=FDeleteRemoteToRecycleBin };
   __property bool ReadOnly = { read=FReadOnly, write=SetReadOnly };
-  __property const TSynchronizeChecklist * SynchronizeChecklist = { read = FSynchronizeChecklist };
+  __property TSynchronizeProgress * SynchronizeProgress = { read = FSynchronizeProgress };
 };
 //----------------------------------------------------------------------------
 #endif

@@ -147,7 +147,7 @@ protected:
   void __fastcall UpdateImages();
   void __fastcall CMDpiChanged(TMessage & Message);
   bool __fastcall GetWindowParams(UnicodeString & WindowParams);
-  void __fastcall ProcessedItem(const TSynchronizeChecklist::TItem * ChecklistItem);
+  void __fastcall ProcessedItem(void * Token, const TSynchronizeChecklist::TItem * ChecklistItem);
   void __fastcall UpdatedSynchronizationChecklistItems(const TSynchronizeChecklist::TItemList & Items);
   void __fastcall CountItemSize(const TSynchronizeChecklist::TItem * ChecklistItem, int Factor);
   void __fastcall CountItem(const TSynchronizeChecklist::TItem * ChecklistItem, int Factor);

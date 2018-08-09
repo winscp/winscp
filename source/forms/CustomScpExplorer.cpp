@@ -829,8 +829,18 @@ void __fastcall TCustomScpExplorerForm::SetTaskbarListProgressValue(TFileOperati
 {
   if (ProgressData->Operation != foCalculateSize)
   {
+    int OverallProgress;
+    if (DebugAlwaysTrue(FProgressForm != NULL) && (FProgressForm->SynchronizeProgress != NULL))
+    {
+      OverallProgress = FProgressForm->SynchronizeProgress->Progress();
+    }
+    else
+    {
+      OverallProgress = ProgressData->OverallProgress();
+    }
+
     // implies TBPF_NORMAL
-    FTaskbarList->SetProgressValue(GetMainForm()->Handle, ProgressData->OverallProgress(), 100);
+    FTaskbarList->SetProgressValue(GetMainForm()->Handle, OverallProgress, 100);
   }
   else
   {
@@ -1346,11 +1356,11 @@ UnicodeString __fastcall TCustomScpExplorerForm::GetToolbarsButtonsStr()
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::CreateProgressForm(const TSynchronizeChecklist * SynchronizeChecklist)
+void __fastcall TCustomScpExplorerForm::CreateProgressForm(TSynchronizeProgress * SynchronizeProgress)
 {
   DebugAssert(FProgressForm == NULL);
   FProgressForm =
-    new TProgressForm(Application, (FTransferResumeList != NULL), Terminal->IsCapable[fsSkipTransfer], SynchronizeChecklist);
+    new TProgressForm(Application, (FTransferResumeList != NULL), Terminal->IsCapable[fsSkipTransfer], SynchronizeProgress);
 
   FProgressForm->DeleteLocalToRecycleBin =
     (WinConfiguration->DeleteToRecycleBin != FAlternativeDelete);
@@ -1405,7 +1415,7 @@ void __fastcall TCustomScpExplorerForm::FileOperationProgress(
     }
   }
   // operation is finished (or terminated), so we hide progress form
-  else if (!ProgressData.InProgress && (FProgressForm != NULL) && (FProgressForm->SynchronizeChecklist == NULL))
+  else if (!ProgressData.InProgress && (FProgressForm != NULL) && (FProgressForm->SynchronizeProgress == NULL))
   {
     DestroyProgressForm();
 
@@ -1508,13 +1518,13 @@ UnicodeString __fastcall TCustomScpExplorerForm::GetProgressTitle(const TFileOpe
   UnicodeString Result;
   if (ProgressData.InProgress)
   {
-    const TSynchronizeChecklist * SynchronizeChecklist = NULL;
+    TSynchronizeProgress * SynchronizeProgress = NULL;
     if (FProgressForm != NULL)
     {
-      SynchronizeChecklist = FProgressForm->SynchronizeChecklist;
+      SynchronizeProgress = FProgressForm->SynchronizeProgress;
     }
 
-    Result = TProgressForm::ProgressStr(SynchronizeChecklist, &ProgressData);
+    Result = TProgressForm::ProgressStr(SynchronizeProgress, &ProgressData);
   }
   return Result;
 }
@@ -5260,11 +5270,14 @@ void __fastcall TCustomScpExplorerForm::Synchronize(const UnicodeString LocalDir
     AnyOperation = (AChecklist->CheckedCount > 0);
     if (AnyOperation)
     {
-      CreateProgressForm(AChecklist);
+      TSynchronizeProgress SynchronizeProgress(AChecklist);
+      CreateProgressForm(&SynchronizeProgress);
 
       try
       {
-        Terminal->SynchronizeApply(AChecklist, &CopyParam, Params | TTerminal::spNoConfirmation, TerminalSynchronizeDirectory, NULL, NULL);
+        Terminal->SynchronizeApply(
+          AChecklist, &CopyParam, Params | TTerminal::spNoConfirmation, TerminalSynchronizeDirectory,
+          SynchronizeProcessedItem, NULL, NULL);
       }
       __finally
       {
@@ -5371,6 +5384,7 @@ struct TSynchronizeParams
   int Params;
   TCopyParamType * CopyParam;
   TDateTime * StartTime;
+  TProcessedSynchronizationChecklistItem OnProcessedItem;
 };
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::FullSynchronize(
@@ -5384,18 +5398,40 @@ void __fastcall TCustomScpExplorerForm::FullSynchronize(
 
   try
   {
-    CreateProgressForm(Params.Checklist);
+    Params.OnProcessedItem = OnProcessedItem;
+
+    TSynchronizeProgress SynchronizeProgress(Params.Checklist);
+    CreateProgressForm(&SynchronizeProgress);
 
     Terminal->SynchronizeApply(
       Params.Checklist, Params.CopyParam, Params.Params | TTerminal::spNoConfirmation,
-      TerminalSynchronizeDirectory, OnProcessedItem, OnUpdatedSynchronizationChecklistItems);
+      TerminalSynchronizeDirectory, SynchronizeProcessedItem, OnUpdatedSynchronizationChecklistItems, &Params);
   }
   __finally
   {
+    Params.OnProcessedItem = NULL;
     FAutoOperation = false;
     DestroyProgressForm();
     BatchEnd(BatchStorage);
     ReloadLocalDirectory();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::SynchronizeProcessedItem(void * Token, const TSynchronizeChecklist::TItem * ChecklistItem)
+{
+  if (DebugAlwaysTrue(FProgressForm != NULL) && DebugAlwaysTrue(FProgressForm->SynchronizeProgress != NULL))
+  {
+    FProgressForm->SynchronizeProgress->ItemProcessed(ChecklistItem);
+  }
+
+  // Not set in keep-up-to-date mode - Synchronize() method
+  if (Token != NULL)
+  {
+    TSynchronizeParams & Params = *static_cast<TSynchronizeParams *>(Token);
+    if (Params.OnProcessedItem != NULL)
+    {
+      Params.OnProcessedItem(NULL, ChecklistItem);
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -5490,6 +5526,7 @@ bool __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
       SynchronizeParams.Params = Params;
       SynchronizeParams.Checklist = Checklist;
       SynchronizeParams.StartTime = &StartTime;
+      SynchronizeParams.OnProcessedItem = NULL;
       if (FLAGSET(Params, TTerminal::spPreviewChanges))
       {
         if (Checklist->Count > 0)

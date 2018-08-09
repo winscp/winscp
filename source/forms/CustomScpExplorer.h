@@ -383,7 +383,7 @@ protected:
     TOperationSide Side, bool Temp, const UnicodeString & FileName, bool Success,
     TOnceDoneOperation & OnceDoneOperation);
   virtual void __fastcall DoOpenDirectoryDialog(TOpenDirectoryMode Mode, TOperationSide Side);
-  void __fastcall CreateProgressForm(const TSynchronizeChecklist * SynchronizeChecklist);
+  void __fastcall CreateProgressForm(TSynchronizeProgress * SynchronizeProgress);
   void __fastcall DestroyProgressForm();
   virtual void __fastcall FileOperationProgress(TFileOperationProgressType & ProgressData);
   void __fastcall OperationComplete(const TDateTime & StartTime);
@@ -616,6 +616,7 @@ protected:
   void __fastcall FullSynchronize(
     TSynchronizeParams & Params, TProcessedSynchronizationChecklistItem OnProcessedItem,
     TUpdatedSynchronizationChecklistItems OnUpdatedSynchronizationChecklistItems);
+  void __fastcall SynchronizeProcessedItem(void * Token, const TSynchronizeChecklist::TItem * ChecklistItem);
   void __fastcall CreateOpenDirMenuList(TTBCustomItem * Menu, TOperationSide Side, TBookmarkList * BookmarkList);
   void __fastcall CreateOpenDirMenu(TTBCustomItem * Menu, TOperationSide Side);
 
