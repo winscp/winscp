@@ -77,7 +77,7 @@ HEADER=$(INCL_D)\e_os.h \
     $(INCL_D)\rpc_des.h $(INCL_D)\spr.h $(INCL_D)\des_ver.h \
     $(INCL_D)\rc2_locl.h $(INCL_D)\rc4_locl.h $(INCL_D)\idea_lcl.h \
     $(INCL_D)\bf_pi.h $(INCL_D)\bf_locl.h $(INCL_D)\cast_s.h \
-    $(INCL_D)\cast_lcl.h $(INCL_D)\aes_locl.h $(INCL_D)\bn_lcl.h \
+    $(INCL_D)\cast_lcl.h $(INCL_D)\aes_locl.h $(INCL_D)\bn_int.h $(INCL_D)\bn_lcl.h \
     $(INCL_D)\bn_prime.h \
     $(INCL_D)\bio_lcl.h $(INCL_D)\obj_dat.h \
     $(INCL_D)\pcy_int.h $(INCL_D)\conf_def.h $(INCL_D)\ui_locl.h \
@@ -425,6 +425,9 @@ $(INCL_D)\cast_lcl.h: $(SRC_D)\crypto\cast\cast_lcl.h
 
 $(INCL_D)\aes_locl.h: $(SRC_D)\crypto\aes\aes_locl.h
     $(CP) "$(SRC_D)\crypto\aes\aes_locl.h" "$(INCL_D)\aes_locl.h"
+
+$(INCL_D)\bn_int.h: $(SRC_D)\crypto\bn_int.h
+    $(CP) "$(SRC_D)\crypto\bn_int.h" "$(INCL_D)\bn_int.h"
 
 $(INCL_D)\bn_lcl.h: $(SRC_D)\crypto\bn\bn_lcl.h
     $(CP) "$(SRC_D)\crypto\bn\bn_lcl.h" "$(INCL_D)\bn_lcl.h"
