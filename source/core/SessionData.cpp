@@ -3279,10 +3279,11 @@ void __fastcall TSessionData::GenerateAssemblyCode(
     AddAssemblyProperty(Head, Language, L"HostName", HostName);
     SessionData->HostName = FactoryDefaults->HostName;
   }
-  if (SessionData->PortNumber != FactoryDefaults->PortNumber)
+  int ADefaultPort = DefaultPort(FSProtocol, Ftps);
+  if (SessionData->PortNumber != ADefaultPort)
   {
     AddAssemblyProperty(Head, Language, L"PortNumber", PortNumber);
-    SessionData->PortNumber = FactoryDefaults->PortNumber;
+    SessionData->PortNumber = ADefaultPort;
   }
   if (SessionData->UserName != FactoryDefaults->UserName)
   {
