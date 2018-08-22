@@ -1553,7 +1553,9 @@ void __fastcall TSiteAdvancedDialog::PrivateKeyToolsButtonClick(TObject * /*Send
 void __fastcall TSiteAdvancedDialog::PrivateKeyGenerateItemClick(TObject * /*Sender*/)
 {
   unsigned int Filters = FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_LAST_WRITE;
-  FPrivateKeyMonitors.reset(StartCreationDirectoryMonitorsOnEachDrive(Filters, PrivateKeyCreatedOrModified));
+  TObjectList * PrivateKeyMonitors =
+    StartCreationDirectoryMonitorsOnEachDrive(Filters, PrivateKeyCreatedOrModified);
+  FPrivateKeyMonitors.reset(PrivateKeyMonitors);
   ExecuteTool(PuttygenTool);
 }
 //---------------------------------------------------------------------------
