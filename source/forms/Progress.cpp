@@ -29,11 +29,6 @@
 #pragma resource "*.dfm"
 #endif
 //---------------------------------------------------------------------
-bool __fastcall TProgressForm::IsIndeterminateOperation(TFileOperation Operation)
-{
-  return (Operation == foCalculateSize);
-}
-//---------------------------------------------------------------------
 UnicodeString __fastcall TProgressForm::ProgressStr(
   const TSynchronizeProgress * SynchronizeProgress, const TFileOperationProgressType * ProgressData)
 {
@@ -55,11 +50,20 @@ UnicodeString __fastcall TProgressForm::ProgressStr(
   UnicodeString Result = LoadStr(Id);
   if (SynchronizeProgress != NULL)
   {
-    Result = FORMAT(L"%d%% %s - %s", (SynchronizeProgress->Progress(), LoadStr(SYNCHRONIZE_PROGRESS_SYNCHRONIZE2), Result));
+    Result = FORMAT(L"%s - %s", (LoadStr(SYNCHRONIZE_PROGRESS_SYNCHRONIZE2), Result));
   }
-  else if (!IsIndeterminateOperation(ProgressData->Operation))
+  if (!TFileOperationProgressType::IsIndeterminateOperation(ProgressData->Operation))
   {
-    Result = FORMAT(L"%d%% %s", (ProgressData->OverallProgress(), Result));
+    int OverallProgress;
+    if (SynchronizeProgress != NULL)
+    {
+      OverallProgress = SynchronizeProgress->Progress(ProgressData);
+    }
+    else
+    {
+      OverallProgress = ProgressData->OverallProgress();
+    }
+    Result = FORMAT(L"%d%% %s", (OverallProgress, Result));
   }
   return Result;
 }
@@ -116,6 +120,11 @@ __fastcall TProgressForm::~TProgressForm()
   }
 
   ReleaseAsModal(this, FShowAsModalStorage);
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall TProgressForm::ProgressStr()
+{
+  return FProgressStr;
 }
 //---------------------------------------------------------------------
 void __fastcall TProgressForm::UpdateControls()
@@ -210,7 +219,7 @@ void __fastcall TProgressForm::UpdateControls()
 
     CancelItem->Caption = CancelCaption;
 
-    OperationProgress->Style = IsIndeterminateOperation(FData.Operation) ? pbstMarquee : pbstNormal;
+    OperationProgress->Style = TFileOperationProgressType::IsIndeterminateOperation(FData.Operation) ? pbstMarquee : pbstNormal;
 
     if (SynchronizeProgress != NULL)
     {
@@ -279,15 +288,17 @@ void __fastcall TProgressForm::UpdateControls()
   }
 
   int OverallProgress;
-  if (SynchronizeProgress != NULL)
+  // as a side effect this prevents calling TSynchronizeProgress::Progress when we do not know total size yet
+  // (what would cache wrong values forever)
+  if (TFileOperationProgressType::IsIndeterminateOperation(FData.Operation))
   {
-    OverallProgress = SynchronizeProgress->Progress();
+    OverallProgress = -1;
   }
   else
   {
-    if (IsIndeterminateOperation(FData.Operation))
+    if (SynchronizeProgress != NULL)
     {
-      OverallProgress = -1;
+      OverallProgress = SynchronizeProgress->Progress(&FData);
     }
     else
     {
@@ -296,7 +307,8 @@ void __fastcall TProgressForm::UpdateControls()
   }
   OperationProgress->Position = std::max(0, OverallProgress);
   OperationProgress->Hint = (OverallProgress < 0) ? UnicodeString() : FORMAT(L"%d%%", (OverallProgress));
-  Caption = FormatFormCaption(this, ProgressStr(SynchronizeProgress, &FData));
+  FProgressStr = ProgressStr(SynchronizeProgress, &FData);
+  Caption = FormatFormCaption(this, FProgressStr);
 
   if (TransferOperation)
   {
@@ -312,8 +324,16 @@ void __fastcall TProgressForm::UpdateControls()
     StartTimeLabel->Caption = FData.StartTime.TimeString();
     if (FData.TotalSizeSet)
     {
-      TimeLeftLabel->Caption = FormatDateTimeSpan(Configuration->TimeFormat,
-        FData.TotalTimeLeft());
+      TDateTime TimeLeft;
+      if (SynchronizeProgress != NULL)
+      {
+        TimeLeft = SynchronizeProgress->TimeLeft(&FData);
+      }
+      else
+      {
+        TimeLeft = FData.TotalTimeLeft();
+      }
+      TimeLeftLabel->Caption = FormatDateTimeSpan(Configuration->TimeFormat, TimeLeft);
     }
     TimeElapsedLabel->Caption = FormatDateTimeSpan(Configuration->TimeFormat, FData.TimeElapsed());
     BytesTransferredLabel->Caption = FormatBytes(FData.TotalTransferred);

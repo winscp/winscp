@@ -22,9 +22,29 @@ typedef void __fastcall (__closure *TFileOperationFinished)
 //---------------------------------------------------------------------------
 class TFileOperationProgressType
 {
+public:
+  class TPersistence
+  {
+  friend class TFileOperationProgressType;
+  public:
+    TPersistence();
+
+  private:
+    void Clear(bool Batch, bool Speed);
+
+    TDateTime StartTime;
+    TBatchOverwrite BatchOverwrite;
+    bool SkipToAll;
+    unsigned long CPSLimit;
+    bool CounterSet;
+    std::vector<unsigned long> Ticks;
+    std::vector<__int64> TotalTransferredThen;
+    TOperationSide Side;
+    __int64 TotalTransferred;
+  };
+
 private:
   TFileOperation FOperation;
-  TOperationSide FSide;
   UnicodeString FFileName;
   UnicodeString FFullFileName;
   UnicodeString FDirectory;
@@ -41,15 +61,12 @@ private:
   bool FFileInProgress;
   TCancelStatus FCancel;
   int FCount;
-  TDateTime FStartTime;
-  __int64 FTotalTransferred;
+  __int64 FTotalTransferBase;
   __int64 FTotalSkipped;
   __int64 FTotalSize;
-  TBatchOverwrite FBatchOverwrite;
-  bool FSkipToAll;
-  unsigned long FCPSLimit;
   bool FTotalSizeSet;
   bool FSuspended;
+  bool FRestored;
   TFileOperationProgressType * FParent;
 
   // when it was last time suspended (to calculate suspend time in Resume())
@@ -63,9 +80,7 @@ private:
   bool FReset;
   unsigned int FLastSecond;
   unsigned long FRemainingCPS;
-  bool FCounterSet;
-  std::vector<unsigned long> FTicks;
-  std::vector<__int64> FTotalTransferredThen;
+  TPersistence FPersistence;
   TCriticalSection * FSection;
   TCriticalSection * FUserSelectionsSection;
 
@@ -74,6 +89,8 @@ private:
   unsigned long __fastcall GetCPSLimit();
   TBatchOverwrite __fastcall GetBatchOverwrite();
   bool __fastcall GetSkipToAll();
+  TDateTime __fastcall GetStartTime() const { return FPersistence.StartTime; };
+  TOperationSide __fastcall GetSide() const { return FPersistence.Side; };
 
 protected:
   void __fastcall ClearTransfer();
@@ -86,12 +103,13 @@ protected:
   unsigned int __fastcall GetCPS();
   void __fastcall Init();
   static bool __fastcall PassCancelToParent(TCancelStatus ACancel);
+  void __fastcall DoClear(bool Batch, bool Speed);
 
 public:
   // common data
   __property TFileOperation Operation = { read = FOperation };
   // on what side if operation being processed (local/remote), source of copy
-  __property TOperationSide Side = { read = FSide };
+  __property TOperationSide Side = { read = GetSide };
   __property int Count =  { read = FCount };
   __property UnicodeString FileName =  { read = FFileName };
   __property UnicodeString FullFileName = { read = FFullFileName };
@@ -112,7 +130,7 @@ public:
   __property bool FileInProgress = { read = FFileInProgress };
   __property TCancelStatus Cancel = { read = GetCancel };
   // when operation started
-  __property TDateTime StartTime = { read = FStartTime };
+  __property TDateTime StartTime = { read = GetStartTime };
   // bytes transferred
   __property __int64 TotalTransferred = { read = GetTotalTransferred };
   __property __int64 TotalSize = { read = GetTotalSize };
@@ -186,6 +204,10 @@ public:
   void __fastcall SetBatchOverwrite(TBatchOverwrite ABatchOverwrite);
   void __fastcall SetSkipToAll();
   UnicodeString __fastcall GetLogStr(bool Done);
+  void __fastcall Store(TPersistence & Persistence);
+  void __fastcall Restore(TPersistence & Persistence);
+
+  static bool IsIndeterminateOperation(TFileOperation Operation);
 };
 //---------------------------------------------------------------------------
 class TSuspendFileOperationProgress

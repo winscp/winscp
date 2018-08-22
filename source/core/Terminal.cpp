@@ -932,6 +932,7 @@ __fastcall TTerminal::TTerminal(TSessionData * SessionData,
   FOnCustomCommand = NULL;
   FOnClose = NULL;
   FOnFindingFile = NULL;
+  FOperationProgressPersistence = NULL;
 
   FUseBusyCursor = True;
   FLockDirectory = L"";
@@ -3658,6 +3659,36 @@ void __fastcall TTerminal::OperationFinish(
   Progress->Finish(FileName, Success, OnceDoneOperation);
 }
 //---------------------------------------------------------------------------
+void __fastcall TTerminal::OperationStart(
+  TFileOperationProgressType & Progress, TFileOperation Operation, TOperationSide Side, int Count)
+{
+  OperationStart(Progress, Operation, Side, Count, false, UnicodeString(), 0);
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminal::OperationStart(
+  TFileOperationProgressType & Progress, TFileOperation Operation, TOperationSide Side, int Count,
+  bool Temp, const UnicodeString & Directory, unsigned long CPSLimit)
+{
+  if (FOperationProgressPersistence != NULL)
+  {
+    Progress.Restore(*FOperationProgressPersistence);
+  }
+  Progress.Start(Operation, Side, Count, Temp, Directory, CPSLimit);
+  DebugAssert(FOperationProgress == NULL);
+  FOperationProgress = &Progress;
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminal::OperationStop(TFileOperationProgressType & Progress)
+{
+  DebugAssert(FOperationProgress == &Progress);
+  if (FOperationProgressPersistence != NULL)
+  {
+    Progress.Store(*FOperationProgressPersistence);
+  }
+  FOperationProgress = NULL;
+  Progress.Stop();
+}
+//---------------------------------------------------------------------------
 bool __fastcall TTerminal::ProcessFiles(TStrings * FileList,
   TFileOperation Operation, TProcessFileEvent ProcessFile, void * Param,
   TOperationSide Side, bool Ex)
@@ -3670,9 +3701,8 @@ bool __fastcall TTerminal::ProcessFiles(TStrings * FileList,
   try
   {
     TFileOperationProgressType Progress(&DoProgress, &DoFinished);
-    Progress.Start(Operation, Side, FileList->Count);
+    OperationStart(Progress, Operation, Side, FileList->Count);
 
-    FOperationProgress = &Progress;
     try
     {
       if (Side == osRemote)
@@ -3738,8 +3768,7 @@ bool __fastcall TTerminal::ProcessFiles(TStrings * FileList,
     }
     __finally
     {
-      FOperationProgress = NULL;
-      Progress.Stop();
+      OperationStop(Progress);
     }
   }
   catch (...)
@@ -5212,7 +5241,7 @@ bool __fastcall TTerminal::CalculateLocalFilesSize(TStrings * FileList,
   bool Result = false;
   TFileOperationProgressType OperationProgress(&DoProgress, &DoFinished);
   TOnceDoneOperation OnceDoneOperation = odoIdle;
-  OperationProgress.Start(foCalculateSize, osLocal, FileList->Count);
+  OperationStart(OperationProgress, foCalculateSize, osLocal, FileList->Count);
   try
   {
     TCalculateSizeParams Params;
@@ -5222,8 +5251,6 @@ bool __fastcall TTerminal::CalculateLocalFilesSize(TStrings * FileList,
     Params.Files = NULL;
     Params.Result = true;
 
-    DebugAssert(!FOperationProgress);
-    FOperationProgress = &OperationProgress;
     UnicodeString LastDirPath;
     for (int Index = 0; Params.Result && (Index < FileList->Count); Index++)
     {
@@ -5269,8 +5296,7 @@ bool __fastcall TTerminal::CalculateLocalFilesSize(TStrings * FileList,
   }
   __finally
   {
-    FOperationProgress = NULL;
-    OperationProgress.Stop();
+    OperationStop(OperationProgress);
   }
 
   if (OnceDoneOperation != odoIdle)
@@ -5916,6 +5942,9 @@ void __fastcall TTerminal::SynchronizeApply(
   }
 
   BeginTransaction();
+  TValueRestorer<TFileOperationProgressType::TPersistence *> OperationProgressPersistenceRestorer(FOperationProgressPersistence);
+  TFileOperationProgressType::TPersistence OperationProgressPersistence;
+  FOperationProgressPersistence = &OperationProgressPersistence;
 
   try
   {
@@ -6597,10 +6626,10 @@ bool __fastcall TTerminal::CopyToRemote(
 
     FLastProgressLogged = GetTickCount();
     TFileOperationProgressType OperationProgress(&DoProgress, &DoFinished);
-    OperationProgress.Start((Params & cpDelete ? foMove : foCopy), osLocal,
+    OperationStart(
+      OperationProgress, (Params & cpDelete ? foMove : foCopy), osLocal,
       FilesToCopy->Count, Params & cpTemporary, TargetDir, CopyParam->CPSLimit);
 
-    FOperationProgress = &OperationProgress;
     bool CollectingUsage = false;
     try
     {
@@ -6661,8 +6690,7 @@ bool __fastcall TTerminal::CopyToRemote(
         Configuration->Usage->Inc(L"UploadTime", CounterTime);
         Configuration->Usage->SetMax(L"MaxUploadTime", CounterTime);
       }
-      OperationProgress.Stop();
-      FOperationProgress = NULL;
+      OperationStop(OperationProgress);
     }
   }
   catch (Exception &E)
@@ -7047,10 +7075,9 @@ bool __fastcall TTerminal::CopyToLocal(
       }
     }
 
-    OperationProgress.Start((Params & cpDelete ? foMove : foCopy), osRemote,
+    OperationStart(OperationProgress, (Params & cpDelete ? foMove : foCopy), osRemote,
       FilesToCopy->Count, Params & cpTemporary, TargetDir, CopyParam->CPSLimit);
 
-    FOperationProgress = &OperationProgress;
     bool CollectingUsage = false;
     try
     {
@@ -7116,8 +7143,7 @@ bool __fastcall TTerminal::CopyToLocal(
         Configuration->Usage->Inc(L"DownloadTime", CounterTime);
         Configuration->Usage->SetMax(L"MaxDownloadTime", CounterTime);
       }
-      FOperationProgress = NULL;
-      OperationProgress.Stop();
+      OperationStop(OperationProgress);
     }
   }
   __finally

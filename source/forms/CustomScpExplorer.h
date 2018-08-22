@@ -696,7 +696,7 @@ public:
   void __fastcall OperationFinished(TFileOperation Operation, TOperationSide Side,
     bool Temp, const UnicodeString & FileName, bool Success, TOnceDoneOperation & OnceDoneOperation);
   void __fastcall OperationProgress(TFileOperationProgressType & ProgressData);
-  UnicodeString __fastcall GetProgressTitle(const TFileOperationProgressType & ProgressData);
+  UnicodeString __fastcall GetProgressTitle();
   void __fastcall ShowExtendedException(TTerminal * Terminal, Exception * E);
   void __fastcall InactiveTerminalException(TTerminal * Terminal, Exception * E);
   void __fastcall TerminalReady();

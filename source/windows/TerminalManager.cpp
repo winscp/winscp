@@ -680,13 +680,14 @@ void __fastcall TTerminalManager::UpdateAppTitle()
     UnicodeString NewTitle = FormatMainFormCaption(GetActiveTerminalTitle(false));
 
     UnicodeString QueueProgressTitle;
+    UnicodeString ProgressTitle = !FProgressTitle.IsEmpty() ? FProgressTitle : ScpExplorer->GetProgressTitle();
     if (!FForegroundProgressTitle.IsEmpty())
     {
       NewTitle = FForegroundProgressTitle + L" - " + NewTitle;
     }
-    else if (!FProgressTitle.IsEmpty() && !ForegroundTask())
+    else if (!ProgressTitle.IsEmpty() && !ForegroundTask())
     {
-      NewTitle = FProgressTitle + L" - " + NewTitle;
+      NewTitle = ProgressTitle + L" - " + NewTitle;
     }
     else if (ShouldDisplayQueueStatusOnAppTitle() &&
              !(QueueProgressTitle = ScpExplorer->GetQueueProgressTitle()).IsEmpty())
@@ -1191,15 +1192,6 @@ void __fastcall TTerminalManager::OperationFinished(::TFileOperation Operation,
 void __fastcall TTerminalManager::OperationProgress(
   TFileOperationProgressType & ProgressData)
 {
-  if (ProgressData.InProgress)
-  {
-    FProgressTitle = ScpExplorer->GetProgressTitle(ProgressData);
-  }
-  else
-  {
-    FProgressTitle = L"";
-  }
-
   UpdateAppTitle();
   DebugAssert(ScpExplorer);
   ScpExplorer->OperationProgress(ProgressData);

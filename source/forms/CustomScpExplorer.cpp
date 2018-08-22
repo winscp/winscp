@@ -832,7 +832,7 @@ void __fastcall TCustomScpExplorerForm::SetTaskbarListProgressValue(TFileOperati
     int OverallProgress;
     if (DebugAlwaysTrue(FProgressForm != NULL) && (FProgressForm->SynchronizeProgress != NULL))
     {
-      OverallProgress = FProgressForm->SynchronizeProgress->Progress();
+      OverallProgress = FProgressForm->SynchronizeProgress->Progress(ProgressData);
     }
     else
     {
@@ -1513,18 +1513,12 @@ void __fastcall TCustomScpExplorerForm::OperationProgress(
   FileOperationProgress(ProgressData);
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TCustomScpExplorerForm::GetProgressTitle(const TFileOperationProgressType & ProgressData)
+UnicodeString __fastcall TCustomScpExplorerForm::GetProgressTitle()
 {
   UnicodeString Result;
-  if (ProgressData.InProgress)
+  if (FProgressForm != NULL)
   {
-    TSynchronizeProgress * SynchronizeProgress = NULL;
-    if (FProgressForm != NULL)
-    {
-      SynchronizeProgress = FProgressForm->SynchronizeProgress;
-    }
-
-    Result = TProgressForm::ProgressStr(SynchronizeProgress, &ProgressData);
+    Result = FProgressForm->ProgressStr();
   }
   return Result;
 }

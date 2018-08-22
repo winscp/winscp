@@ -517,23 +517,25 @@ private:
   static int __fastcall Compare(void * Item1, void * Item2);
 };
 //---------------------------------------------------------------------------
+class TFileOperationProgressType;
+//---------------------------------------------------------------------------
 class TSynchronizeProgress
 {
 public:
   TSynchronizeProgress(const TSynchronizeChecklist * Checklist);
 
   void ItemProcessed(const TSynchronizeChecklist::TItem * ChecklistItem);
-  int Progress() const;
+  int Progress(const TFileOperationProgressType * CurrentItemOperationProgress) const;
+  TDateTime TimeLeft(const TFileOperationProgressType * CurrentItemOperationProgress) const;
 
 private:
-  TSynchronizeChecklist * FChecklist;
-  int FItemsProcessed;
+  const TSynchronizeChecklist * FChecklist;
+  mutable __int64 FTotalSize;
+  mutable int FCurrentItem;
+  __int64 FProcessedSize;
 
-  struct TItemData
-  {
-  };
-
-  std::map<const TSynchronizeChecklist::TItem *, TItemData> FItems;
+  __int64 ItemSize(const TSynchronizeChecklist::TItem * ChecklistItem) const;
+  __int64 GetProcessed(const TFileOperationProgressType * CurrentItemOperationProgress) const;
 };
 //---------------------------------------------------------------------------
 bool __fastcall IsUnixStyleWindowsPath(const UnicodeString & Path);

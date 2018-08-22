@@ -112,6 +112,7 @@ private:
   TOnceDoneItems FOnceDoneItems;
   bool FAllowSkip;
   TSynchronizeProgress * FSynchronizeProgress;
+  UnicodeString FProgressStr;
 
   void __fastcall SetOnceDoneOperation(TOnceDoneOperation value);
   TTBCustomItem * __fastcall CurrentOnceDoneItem();
@@ -133,8 +134,6 @@ protected:
   virtual void __fastcall Dispatch(void * Message);
   void __fastcall SetCancelLower(TCancelStatus ACancel);
 
-  static bool __fastcall IsIndeterminateOperation(TFileOperation Operation);
-
 public:
   static UnicodeString __fastcall ProgressStr(
     const TSynchronizeProgress * SynchronizeProgress, const TFileOperationProgressType * ProgressData);
@@ -144,6 +143,7 @@ public:
   virtual __fastcall ~TProgressForm();
   void __fastcall SetProgressData(TFileOperationProgressType & AData);
   void __fastcall ClearCancel();
+  UnicodeString __fastcall ProgressStr();
   __property TCancelStatus Cancel = { read = FCancel };
   __property bool MoveToQueue = { read = FMoveToQueue };
   __property TOnceDoneOperation OnceDoneOperation = { read=GetOnceDoneOperation, write=SetOnceDoneOperation };

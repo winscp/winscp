@@ -3947,9 +3947,7 @@ bool __fastcall TSFTPFileSystem::LoadFilesProperties(TStrings * FileList)
   if (FSupport->Loaded || (FSecureShell->SshImplementation == sshiBitvise))
   {
     TFileOperationProgressType Progress(&FTerminal->DoProgress, &FTerminal->DoFinished);
-    Progress.Start(foGetProperties, osRemote, FileList->Count);
-
-    FTerminal->FOperationProgress = &Progress;
+    FTerminal->OperationStart(Progress, foGetProperties, osRemote, FileList->Count);
 
     static int LoadFilesPropertiesQueueLen = 5;
     TSFTPLoadFilesPropertiesQueue Queue(this);
@@ -3985,8 +3983,7 @@ bool __fastcall TSFTPFileSystem::LoadFilesProperties(TStrings * FileList)
     __finally
     {
       Queue.DisposeSafe();
-      FTerminal->FOperationProgress = NULL;
-      Progress.Stop();
+      FTerminal->OperationStop(Progress);
     }
     // queue is discarded here
   }
@@ -4134,7 +4131,6 @@ void __fastcall TSFTPFileSystem::CalculateFilesChecksum(const UnicodeString & Al
   TCalculatedChecksumEvent OnCalculatedChecksum)
 {
   TFileOperationProgressType Progress(&FTerminal->DoProgress, &FTerminal->DoFinished);
-  Progress.Start(foCalculateChecksum, osRemote, FileList->Count);
 
   UnicodeString NormalizedAlg = FindIdent(Alg, FChecksumAlgs.get());
   UnicodeString SftpAlg;
@@ -4149,8 +4145,7 @@ void __fastcall TSFTPFileSystem::CalculateFilesChecksum(const UnicodeString & Al
     SftpAlg = NormalizedAlg;
   }
 
-  FTerminal->FOperationProgress = &Progress;
-
+  FTerminal->OperationStart(Progress, foCalculateChecksum, osRemote, FileList->Count);
   try
   {
     DoCalculateFilesChecksum(NormalizedAlg, SftpAlg, FileList, Checksums, OnCalculatedChecksum,
@@ -4158,8 +4153,7 @@ void __fastcall TSFTPFileSystem::CalculateFilesChecksum(const UnicodeString & Al
   }
   __finally
   {
-    FTerminal->FOperationProgress = NULL;
-    Progress.Stop();
+    FTerminal->OperationStop(Progress);
   }
 }
 //---------------------------------------------------------------------------

@@ -1252,9 +1252,7 @@ void __fastcall TFTPFileSystem::CalculateFilesChecksum(const UnicodeString & Alg
   TCalculatedChecksumEvent OnCalculatedChecksum)
 {
   TFileOperationProgressType Progress(&FTerminal->DoProgress, &FTerminal->DoFinished);
-  Progress.Start(foCalculateChecksum, osRemote, FileList->Count);
-
-  FTerminal->FOperationProgress = &Progress;
+  FTerminal->OperationStart(Progress, foCalculateChecksum, osRemote, FileList->Count);
 
   try
   {
@@ -1282,8 +1280,7 @@ void __fastcall TFTPFileSystem::CalculateFilesChecksum(const UnicodeString & Alg
   }
   __finally
   {
-    FTerminal->FOperationProgress = NULL;
-    Progress.Stop();
+    FTerminal->OperationStop(Progress);
   }
 }
 //---------------------------------------------------------------------------

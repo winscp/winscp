@@ -226,6 +226,7 @@ private:
   TEncryptedFileNames FEncryptedFileNames;
   std::set<UnicodeString> FFoldersScannedForEncryptedFiles;
   RawByteString FEncryptKey;
+  TFileOperationProgressType::TPersistence * FOperationProgressPersistence;
 
   void __fastcall CommandError(Exception * E, const UnicodeString Msg);
   unsigned int __fastcall CommandError(Exception * E, const UnicodeString Msg,
@@ -382,7 +383,12 @@ protected:
   void __fastcall OperationFinish(
     TFileOperationProgressType * Progress, const void * Item, const UnicodeString & FileName,
     bool Success, TOnceDoneOperation & OnceDoneOperation);
-
+  void __fastcall OperationStart(
+    TFileOperationProgressType & Progress, TFileOperation Operation, TOperationSide Side, int Count);
+  void __fastcall OperationStart(
+    TFileOperationProgressType & Progress, TFileOperation Operation, TOperationSide Side, int Count,
+    bool Temp, const UnicodeString & Directory, unsigned long CPSLimit);
+  void __fastcall OperationStop(TFileOperationProgressType & Progress);
   virtual void __fastcall Information(const UnicodeString & Str, bool Status);
   virtual unsigned int __fastcall QueryUser(const UnicodeString Query,
     TStrings * MoreMessages, unsigned int Answers, const TQueryParams * Params,

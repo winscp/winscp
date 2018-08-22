@@ -2903,23 +2903,108 @@ bool __fastcall TSynchronizeChecklist::IsItemSizeIrrelevant(TAction Action)
 //---------------------------------------------------------------------------
 TSynchronizeProgress::TSynchronizeProgress(const TSynchronizeChecklist * Checklist)
 {
-  for (int Index = 0; Index < Checklist->Count; Index++)
+  FTotalSize = -1;
+  FProcessedSize = 0;
+  FChecklist = Checklist;
+}
+//---------------------------------------------------------------------------
+__int64 TSynchronizeProgress::ItemSize(const TSynchronizeChecklist::TItem * ChecklistItem) const
+{
+  __int64 Result;
+  switch (ChecklistItem->Action)
   {
-    const TSynchronizeChecklist::TItem * ChecklistItem = Checklist->Item[Index];
-    if (ChecklistItem->Checked)
+    case TSynchronizeChecklist::saDeleteRemote:
+    case TSynchronizeChecklist::saDeleteLocal:
+      Result = ChecklistItem->IsDirectory ? 1024*1024 : 100*1024;
+      break;
+
+    default:
+      if (ChecklistItem->HasSize())
+      {
+        Result = ChecklistItem->GetSize();
+      }
+      else
+      {
+        DebugAssert(ChecklistItem->IsDirectory);
+        Result = 1024*1024;
+      }
+      break;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void TSynchronizeProgress::ItemProcessed(const TSynchronizeChecklist::TItem * ChecklistItem)
+{
+  DebugAssert(FChecklist->Item[FCurrentItem] == ChecklistItem);
+  FProcessedSize += ItemSize(ChecklistItem);
+
+  do
+  {
+    FCurrentItem++;
+  }
+  while ((FCurrentItem < FChecklist->Count) && !FChecklist->Item[FCurrentItem]->Checked);
+
+  if (FCurrentItem >= FChecklist->Count)
+  {
+    FCurrentItem = -1;
+  }
+}
+//---------------------------------------------------------------------------
+__int64 TSynchronizeProgress::GetProcessed(const TFileOperationProgressType * CurrentItemOperationProgress) const
+{
+  DebugAssert(!TFileOperationProgressType::IsIndeterminateOperation(CurrentItemOperationProgress->Operation));
+
+  // Need to calculate the total size on the first call only,
+  // as at the time the contrusctor it called, we usually do not have sizes of folders caculated yet.
+  if (FTotalSize < 0)
+  {
+    FTotalSize = 0;
+    FCurrentItem = -1;
+
+    for (int Index = 0; Index < FChecklist->Count; Index++)
     {
-      FItems.insert(std::make_pair(ChecklistItem, TItemData()));
+      const TSynchronizeChecklist::TItem * ChecklistItem = FChecklist->Item[Index];
+      if (ChecklistItem->Checked)
+      {
+        FTotalSize += ItemSize(ChecklistItem);
+        if (FCurrentItem < 0)
+        {
+          FCurrentItem = Index;
+        }
+      }
     }
   }
-  FItemsProcessed = 0;
+
+  DebugAssert(FCurrentItem >= 0);
+  __int64 CurrentItemSize = ItemSize(FChecklist->Item[FCurrentItem]);
+  // For (single-item-)delete operation, this should return 0
+  int CurrentItemProgress = CurrentItemOperationProgress->OverallProgress();
+  __int64 CurrentItemProcessedSize = (CurrentItemSize * CurrentItemProgress) / 100;
+  return (FProcessedSize + CurrentItemProcessedSize);
 }
 //---------------------------------------------------------------------------
-void TSynchronizeProgress::ItemProcessed(const TSynchronizeChecklist::TItem * /*ChecklistItem*/)
+int TSynchronizeProgress::Progress(const TFileOperationProgressType * CurrentItemOperationProgress) const
 {
-  FItemsProcessed++;
+  __int64 Processed = GetProcessed(CurrentItemOperationProgress);
+  int Result;
+  if (FTotalSize > 0)
+  {
+    Result = (Processed * 100) / FTotalSize;
+  }
+  else
+  {
+    Result = 0;
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
-int TSynchronizeProgress::Progress() const
+TDateTime TSynchronizeProgress::TimeLeft(const TFileOperationProgressType * CurrentItemOperationProgress) const
 {
-  return (FItemsProcessed * 100) / FItems.size();
+  TDateTime Result;
+  __int64 Processed = GetProcessed(CurrentItemOperationProgress);
+  if (Processed > 0)
+  {
+    Result = TDateTime(double(Now() - CurrentItemOperationProgress->StartTime) / Processed * (FTotalSize - Processed));
+  }
+  return Result;
 }
