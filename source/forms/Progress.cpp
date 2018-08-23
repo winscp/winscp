@@ -324,16 +324,25 @@ void __fastcall TProgressForm::UpdateControls()
     StartTimeLabel->Caption = FData.StartTime.TimeString();
     if (FData.TotalSizeSet)
     {
-      TDateTime TimeLeft;
-      if (SynchronizeProgress != NULL)
+      UnicodeString TimeLeftCaption;
+      if (SecondsBetween(FData.StartTime, Now()) >= 3)
       {
-        TimeLeft = SynchronizeProgress->TimeLeft(&FData);
+        TDateTime TimeLeft;
+        if (SynchronizeProgress != NULL)
+        {
+          TimeLeft = SynchronizeProgress->TimeLeft(&FData);
+        }
+        else
+        {
+          TimeLeft = FData.TotalTimeLeft();
+        }
+        TimeLeftCaption = FormatDateTimeSpan(Configuration->TimeFormat, TimeLeft);
       }
       else
       {
-        TimeLeft = FData.TotalTimeLeft();
+        TimeLeftCaption = LoadStr(PROGRESS_TIME_LEFT_CALCULATING);
       }
-      TimeLeftLabel->Caption = FormatDateTimeSpan(Configuration->TimeFormat, TimeLeft);
+      TimeLeftLabel->Caption = TimeLeftCaption;
     }
     TimeElapsedLabel->Caption = FormatDateTimeSpan(Configuration->TimeFormat, FData.TimeElapsed());
     BytesTransferredLabel->Caption = FormatBytes(FData.TotalTransferred);

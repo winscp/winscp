@@ -614,6 +614,7 @@ BEGIN
         LOGIN_PUBLIC_KEY_FILTER, "PuTTY Private Key Files (*.ppk)|*.ppk|All Private Key Files (*.ppk;*.pem;*.key;id_*)|*.ppk;*.pem;*.key;id_*|All Files (*.*)|*.*"
         SYNCHRONIZE_CHECKLIST_CAPTION, "Synchronization checklist"
         EDITOR_READONLY, "Read-only"
+        PROGRESS_TIME_LEFT_CALCULATING, "Calculating"
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
         WINSCP_COPYRIGHT, "Copyright © 2000-2018 Martin Prikryl"
