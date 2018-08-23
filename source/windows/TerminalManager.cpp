@@ -675,7 +675,7 @@ bool __fastcall TTerminalManager::ShouldDisplayQueueStatusOnAppTitle()
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::UpdateAppTitle()
 {
-  if (ScpExplorer)
+  if (ScpExplorer) // We should better check for GetMainForm() here
   {
     UnicodeString NewTitle = FormatMainFormCaption(GetActiveTerminalTitle(false));
 
@@ -699,7 +699,7 @@ void __fastcall TTerminalManager::UpdateAppTitle()
       AddToList(NewTitle, ScpExplorer->PathForCaption(), L" - ");
     }
 
-    ScpExplorer->Caption = NewTitle;
+    GetMainForm()->Caption = NewTitle;
     ScpExplorer->ApplicationTitleChanged();
   }
 }

@@ -4595,7 +4595,7 @@ void __fastcall TCustomScpExplorerForm::ApplicationRestore(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::UpdateTrayIcon()
 {
-  FTrayIcon->Hint = Caption;
+  FTrayIcon->Hint = GetMainForm()->Caption;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::ApplicationTitleChanged()
