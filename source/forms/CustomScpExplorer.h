@@ -704,7 +704,7 @@ public:
   void __fastcall QueueEmptyNoteClicked(TObject * Sender);
   bool __fastcall DoSynchronizeDirectories(UnicodeString & LocalDirectory,
     UnicodeString & RemoteDirectory, bool UseDefaults);
-  bool __fastcall DoFullSynchronizeDirectories(UnicodeString & LocalDirectory,
+  int __fastcall DoFullSynchronizeDirectories(UnicodeString & LocalDirectory,
     UnicodeString & RemoteDirectory, TSynchronizeMode & Mode, bool & SaveMode,
     bool UseDefaults);
   void __fastcall StandaloneEdit(const UnicodeString & FileName);

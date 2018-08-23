@@ -223,15 +223,23 @@ void __fastcall FullSynchronize(TTerminal * Terminal, TCustomScpExplorerForm * S
   bool SaveMode = true;
   // bit ugly
   TSynchronizeMode Mode = (TSynchronizeMode)GUIConfiguration->SynchronizeMode;
-  if (ScpExplorer->DoFullSynchronizeDirectories(LocalDirectory,
-        RemoteDirectory, Mode, SaveMode, UseDefaults))
+  int Result =
+    ScpExplorer->DoFullSynchronizeDirectories(LocalDirectory, RemoteDirectory, Mode, SaveMode, UseDefaults);
+  if (Result >= 0)
   {
     if (SaveMode)
     {
       GUIConfiguration->SynchronizeMode = Mode;
     }
 
-    Terminal->CloseOnCompletion();
+    if (Result > 0)
+    {
+      Terminal->CloseOnCompletion();
+    }
+    else
+    {
+      Abort();
+    }
   }
   else
   {

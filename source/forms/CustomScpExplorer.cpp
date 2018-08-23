@@ -5455,11 +5455,11 @@ void __fastcall TCustomScpExplorerForm::SynchronizeNoDifferences()
   MessageDialog(Message, qtInformation, qaOK, HELP_SYNCHRONIZE_NO_DIFFERENCES);
 }
 //---------------------------------------------------------------------------
-bool __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
+int __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
   UnicodeString & LocalDirectory, UnicodeString & RemoteDirectory,
   TSynchronizeMode & Mode, bool & SaveMode, bool UseDefaults)
 {
-  bool Result;
+  int Result;
   int Params = GUIConfiguration->SynchronizeParams;
 
   bool SaveSettings = false;
@@ -5468,10 +5468,11 @@ bool __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
     FLAGMASK(SynchronizeAllowSelectedOnly(), fsoAllowSelectedOnly);
   TCopyParamType CopyParam = GUIConfiguration->CurrentCopyParam;
   TUsableCopyParamAttrs CopyParamAttrs = Terminal->UsableCopyParamAttrs(0);
-  Result = UseDefaults ||
+  bool Continue =
+    UseDefaults ||
     DoFullSynchronizeDialog(Mode, Params, LocalDirectory, RemoteDirectory,
       &CopyParam, SaveSettings, SaveMode, Options, CopyParamAttrs);
-  if (Result)
+  if (Continue)
   {
     Configuration->Usage->Inc(L"Synchronizations");
     UpdateCopyParamCounters(CopyParam);
@@ -5525,10 +5526,16 @@ bool __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
       {
         if (Checklist->Count > 0)
         {
-          Result =
-            DoSynchronizeChecklistDialog(
-              Checklist, Mode, Params, LocalDirectory, RemoteDirectory, CustomCommandMenu, DoFullSynchronize,
-              DoSynchronizeChecklistCalculateSize, &SynchronizeParams);
+          if (DoSynchronizeChecklistDialog(
+                Checklist, Mode, Params, LocalDirectory, RemoteDirectory, CustomCommandMenu, DoFullSynchronize,
+                DoSynchronizeChecklistCalculateSize, &SynchronizeParams))
+          {
+            Result = Checklist->Count;
+          }
+          else
+          {
+            Result = -1;
+          }
         }
         else
         {
@@ -5537,6 +5544,7 @@ bool __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
       }
       else
       {
+        Result = Checklist->CheckedCount;
         if (Checklist->CheckedCount > 0)
         {
           FullSynchronize(SynchronizeParams, NULL, NULL);
@@ -5553,6 +5561,10 @@ bool __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
     }
 
     OperationComplete(StartTime);
+  }
+  else
+  {
+    Result = -1;
   }
 
   return Result;
