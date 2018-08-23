@@ -44,6 +44,7 @@ const int mpAllowContinueOnError = 0x02;
 #define RAW_CONFIG_SWITCH L"RawConfig"
 #define FINGERPRINTSCAN_SWITCH L"FingerprintScan"
 #define DUMPCALLSTACK_SWITCH L"DumpCallstack"
+#define INFO_SWITCH L"Info"
 
 #define DUMPCALLSTACK_EVENT L"WinSCPCallstack%d"
 
@@ -411,7 +412,7 @@ extern const UnicodeString YesButtonName;
 extern const UnicodeString OKButtonName;
 
 // windows\Console.cpp
-enum TConsoleMode { cmNone, cmScripting, cmHelp, cmBatchSettings, cmKeyGen, cmFingerprintScan, cmDumpCallstack };
+enum TConsoleMode { cmNone, cmScripting, cmHelp, cmBatchSettings, cmKeyGen, cmFingerprintScan, cmDumpCallstack, cmInfo };
 int __fastcall Console(TConsoleMode Mode);
 
 // forms\EditorPreferences.cpp

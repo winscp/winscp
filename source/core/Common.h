@@ -245,6 +245,7 @@ int __fastcall TimeToMSec(TDateTime T);
 int __fastcall TimeToSeconds(TDateTime T);
 int __fastcall TimeToMinutes(TDateTime T);
 UnicodeString __fastcall FormatDateTimeSpan(const UnicodeString TimeFormat, TDateTime DateTime);
+TStrings * TlsCipherList();
 //---------------------------------------------------------------------------
 template<class MethodT>
 MethodT __fastcall MakeMethod(void * Data, void * Code)

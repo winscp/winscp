@@ -292,6 +292,7 @@ BEGIN
         OPEN_DOWNLOADED_FILE, "Open &Downloaded File"
         ENCRYPT_KEY_GENERATED, "**Encryption key was generated.**\n\nYou should safely backup the generated encryption key. If you lose it, you won't be able to read your files."
         LOCATION_PROFILE_HINT, "Open location profile \"%s\".|Local directory:\n  %s|Remote directory:\n  %s"
+        USAGE_INFO, "Prints list of supported ciphers and algorithms."
 
         WIN_FORMS_STRINGS, "WIN_FORMS_STRINGS"
         COPY_FILE, "%s file '%s' to %s:"

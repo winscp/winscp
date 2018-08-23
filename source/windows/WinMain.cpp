@@ -787,6 +787,10 @@ int __fastcall Execute()
   {
     Mode = cmDumpCallstack;
   }
+  else if (Params->FindSwitch(INFO_SWITCH))
+  {
+    Mode = cmInfo;
+  }
   // We have to check for /console only after the other options,
   // as the /console is always used when we are run by winscp.com
   // (ambiguous use to pass console version)

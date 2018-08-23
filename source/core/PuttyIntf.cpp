@@ -932,4 +932,68 @@ bool IsOpenSSH(const UnicodeString & SshImplementation)
     (SshImplementation.Pos(L"Sun_SSH") == 1);
 }
 //---------------------------------------------------------------------------
+TStrings * SshCipherList()
+{
+  std::unique_ptr<TStrings> Result(new TStringList());
+  // Same order as DefaultCipherList
+  const ssh2_ciphers * Ciphers[] = { &ssh2_aes, &ssh2_ccp, &ssh2_blowfish, &ssh2_3des, &ssh2_arcfour, &ssh2_des };
+  for (unsigned int Index = 0; Index < LENOF(Ciphers); Index++)
+  {
+    for (int Index2 = 0; Index2 < Ciphers[Index]->nciphers; Index2++)
+    {
+      UnicodeString Name = UnicodeString(Ciphers[Index]->list[Index2]->name);
+      Result->Add(Name);
+    }
+  }
+  return Result.release();
+}
+//---------------------------------------------------------------------------
+TStrings * SshKexList()
+{
+  std::unique_ptr<TStrings> Result(new TStringList());
+  // Same order as DefaultKexList
+  const ssh_kexes * Kexes[] = { &ssh_ecdh_kex, &ssh_diffiehellman_gex, &ssh_diffiehellman_group14, &ssh_rsa_kex, &ssh_diffiehellman_group1 };
+  for (unsigned int Index = 0; Index < LENOF(Kexes); Index++)
+  {
+    for (int Index2 = 0; Index2 < Kexes[Index]->nkexes; Index2++)
+    {
+      UnicodeString Name = UnicodeString(Kexes[Index]->list[Index2]->name);
+      Result->Add(Name);
+    }
+  }
+  return Result.release();
+}
+//---------------------------------------------------------------------------
+TStrings * SshHostKeyList()
+{
+  std::unique_ptr<TStrings> Result(new TStringList());
+  const int MaxCount = 10;
+  const ssh_signkey * SignKeys[MaxCount];
+  int Count = LENOF(SignKeys);
+  get_hostkey_algs(&Count, SignKeys);
+
+  for (int Index = 0; Index < Count; Index++)
+  {
+    const ssh_signkey * SignKey = SignKeys[Index];
+    UnicodeString Name = UnicodeString(SignKey->name);
+    Result->Add(Name);
+  }
+  return Result.release();
+}
+//---------------------------------------------------------------------------
+TStrings * SshMacList()
+{
+  std::unique_ptr<TStrings> Result(new TStringList());
+  const struct ssh_mac ** Macs = NULL;
+  int Count = 0;
+  get_macs(&Count, &Macs);
+
+  for (int Index = 0; Index < Count; Index++)
+  {
+    UnicodeString Name = UnicodeString(Macs[Index]->name);
+    Result->Add(Name);
+  }
+  return Result.release();
+}
+//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

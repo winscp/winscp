@@ -17,6 +17,7 @@
 #include <openssl/pkcs12.h>
 #include <openssl/pem.h>
 #include <openssl/err.h>
+#include <openssl/ssl.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -3866,4 +3867,28 @@ UnicodeString NormalizeString(const UnicodeString & S)
     Result = UnicodeString();
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+TStrings * TlsCipherList()
+{
+  // OpenSSL initialization happens in NeonInitialize
+  std::unique_ptr<TStrings> Result(new TStringList());
+  const SSL_METHOD * Method = TLSv1_client_method();
+  SSL_CTX * Ctx = SSL_CTX_new(Method);
+  SSL * Ssl = SSL_new(Ctx);
+
+  int Index = 0;
+  const char * CipherName;
+  do
+  {
+    CipherName = SSL_get_cipher_list(Ssl, Index);
+    Index++;
+    if (CipherName != NULL)
+    {
+      Result->Add(UnicodeString(CipherName));
+    }
+  }
+  while (CipherName != NULL);
+
+  return Result.release();
 }

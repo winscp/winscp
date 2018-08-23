@@ -40,4 +40,9 @@ UnicodeString __fastcall GetKeyTypeHuman(const UnicodeString & KeyType);
 //---------------------------------------------------------------------------
 bool IsOpenSSH(const UnicodeString & SshImplementation);
 //---------------------------------------------------------------------------
+TStrings * SshCipherList();
+TStrings * SshKexList();
+TStrings * SshHostKeyList();
+TStrings * SshMacList();
+//---------------------------------------------------------------------------
 #endif

@@ -2215,6 +2215,7 @@ void __fastcall Usage(TConsole * Console)
   {
     PrintUsageSyntax(Console, L"/update");
   }
+  PrintUsageSyntax(Console, TProgramParams::FormatSwitch(LowerCase(INFO_SWITCH)));
   PrintUsageSyntax(Console, L"/help");
 
   ConsolePrintLine(Console, L"");
@@ -2262,6 +2263,7 @@ void __fastcall Usage(TConsole * Console)
   {
     RegisterSwitch(SwitchesUsage, L"/update", USAGE_UPDATE);
   }
+  RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(INFO_SWITCH), USAGE_INFO);
   RegisterSwitch(SwitchesUsage, L"/help", USAGE_HELP);
 
   int MaxSwitchLen = 0;
@@ -2628,6 +2630,37 @@ int __fastcall DumpCallstack(TConsole * Console, TProgramParams * Params)
   return Result;
 }
 //---------------------------------------------------------------------------
+void static PrintList(TConsole * Console, const UnicodeString & Caption, TStrings * List)
+{
+  std::unique_ptr<TStrings> Owner(List);
+  ConsolePrintLine(Console, Caption);
+  for (int Index = 0; Index < List->Count; Index++)
+  {
+    ConsolePrintLine(Console, List->Strings[Index]);
+  }
+  ConsolePrintLine(Console, UnicodeString());
+}
+//---------------------------------------------------------------------------
+int Info(TConsole * Console)
+{
+  int Result = RESULT_SUCCESS;
+  try
+  {
+    PrintList(Console, L"SSH encryption ciphers:", SshCipherList());
+    PrintList(Console, L"SSH key exchange algoritms:", SshKexList());
+    PrintList(Console, L"SSH host key algoritms:", SshHostKeyList());
+    PrintList(Console, L"SSH MAC algoritms:", SshMacList());
+    PrintList(Console, L"TLS/SSL cipher suites:", TlsCipherList());
+  }
+  catch (Exception & E)
+  {
+    Result = HandleException(Console, E);
+  }
+
+  Console->WaitBeforeExit();
+  return Result;
+}
+//---------------------------------------------------------------------------
 int __fastcall Console(TConsoleMode Mode)
 {
   DebugAssert(Mode != cmNone);
@@ -2691,6 +2724,10 @@ int __fastcall Console(TConsoleMode Mode)
     else if (Mode == cmDumpCallstack)
     {
       Result = DumpCallstack(Console, Params);
+    }
+    else if (Mode == cmInfo)
+    {
+      Result = Info(Console);
     }
     else
     {
