@@ -24,14 +24,25 @@ namespace WinSCP
             string location = assembly.Location;
             // cannot use Uri.UnescapeDataString, because it treats some characters valid in
             // local path (like #) specially
-            const string protocol = "file:///";
+            const string protocol = "file://";
             if (codeBase.StartsWith(protocol, StringComparison.OrdinalIgnoreCase))
             {
-                path =
-                    codeBase.Substring(protocol.Length).Replace('/', '\\');
+                path = codeBase.Substring(protocol.Length).Replace('/', '\\');
+                if (!string.IsNullOrEmpty(path))
+                {
+                    if (path[0] == '\\')
+                    {
+                        path = path.Substring(1, path.Length - 1);
+                    }
+                    else
+                    {
+                        // UNC path
+                        path = @"\\" + path;
+                    }
+                }
             }
 
-            if ((path == null) || !File.Exists(path))
+            if (string.IsNullOrEmpty(path) || !File.Exists(path))
             {
                 if (File.Exists(location))
                 {
