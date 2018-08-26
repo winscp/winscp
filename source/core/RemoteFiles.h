@@ -531,7 +531,6 @@ public:
 private:
   const TSynchronizeChecklist * FChecklist;
   mutable __int64 FTotalSize;
-  mutable int FCurrentItem;
   __int64 FProcessedSize;
 
   __int64 ItemSize(const TSynchronizeChecklist::TItem * ChecklistItem) const;

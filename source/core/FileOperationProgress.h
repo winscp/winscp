@@ -85,6 +85,7 @@ private:
   TCriticalSection * FUserSelectionsSection;
 
   __int64 __fastcall GetTotalTransferred();
+  __int64 __fastcall GetOperationTransferred() const;
   __int64 __fastcall GetTotalSize();
   unsigned long __fastcall GetCPSLimit();
   TBatchOverwrite __fastcall GetBatchOverwrite();
@@ -133,6 +134,7 @@ public:
   __property TDateTime StartTime = { read = GetStartTime };
   // bytes transferred
   __property __int64 TotalTransferred = { read = GetTotalTransferred };
+  __property __int64 OperationTransferred = { read = GetOperationTransferred };
   __property __int64 TotalSize = { read = GetTotalSize };
   __property int FilesFinishedSuccessfully = { read = FFilesFinishedSuccessfully };
 

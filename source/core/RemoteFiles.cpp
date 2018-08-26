@@ -2935,19 +2935,7 @@ __int64 TSynchronizeProgress::ItemSize(const TSynchronizeChecklist::TItem * Chec
 //---------------------------------------------------------------------------
 void TSynchronizeProgress::ItemProcessed(const TSynchronizeChecklist::TItem * ChecklistItem)
 {
-  DebugAssert(FChecklist->Item[FCurrentItem] == ChecklistItem);
   FProcessedSize += ItemSize(ChecklistItem);
-
-  do
-  {
-    FCurrentItem++;
-  }
-  while ((FCurrentItem < FChecklist->Count) && !FChecklist->Item[FCurrentItem]->Checked);
-
-  if (FCurrentItem >= FChecklist->Count)
-  {
-    FCurrentItem = -1;
-  }
 }
 //---------------------------------------------------------------------------
 __int64 TSynchronizeProgress::GetProcessed(const TFileOperationProgressType * CurrentItemOperationProgress) const
@@ -2959,7 +2947,6 @@ __int64 TSynchronizeProgress::GetProcessed(const TFileOperationProgressType * Cu
   if (FTotalSize < 0)
   {
     FTotalSize = 0;
-    FCurrentItem = -1;
 
     for (int Index = 0; Index < FChecklist->Count; Index++)
     {
@@ -2967,19 +2954,12 @@ __int64 TSynchronizeProgress::GetProcessed(const TFileOperationProgressType * Cu
       if (ChecklistItem->Checked)
       {
         FTotalSize += ItemSize(ChecklistItem);
-        if (FCurrentItem < 0)
-        {
-          FCurrentItem = Index;
-        }
       }
     }
   }
 
-  DebugAssert(FCurrentItem >= 0);
-  __int64 CurrentItemSize = ItemSize(FChecklist->Item[FCurrentItem]);
   // For (single-item-)delete operation, this should return 0
-  int CurrentItemProgress = CurrentItemOperationProgress->OverallProgress();
-  __int64 CurrentItemProcessedSize = (CurrentItemSize * CurrentItemProgress) / 100;
+  __int64 CurrentItemProcessedSize = CurrentItemOperationProgress->OperationTransferred;
   return (FProcessedSize + CurrentItemProcessedSize);
 }
 //---------------------------------------------------------------------------

@@ -866,6 +866,12 @@ __int64 __fastcall TFileOperationProgressType::GetTotalTransferred()
   return FPersistence.TotalTransferred;
 }
 //---------------------------------------------------------------------------
+__int64 __fastcall TFileOperationProgressType::GetOperationTransferred() const
+{
+  TGuard Guard(FSection);
+  return FPersistence.TotalTransferred - FTotalTransferBase + FTotalSkipped;
+}
+//---------------------------------------------------------------------------
 __int64 __fastcall TFileOperationProgressType::GetTotalSize()
 {
   TGuard Guard(FSection);
