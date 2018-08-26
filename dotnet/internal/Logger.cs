@@ -20,8 +20,19 @@ namespace WinSCP
         {
             Assembly assembly = Assembly.GetExecutingAssembly();
             string path = null;
+
+            // https://blogs.msdn.microsoft.com/suzcook/2003/06/26/assembly-codebase-vs-assembly-location/
+            // The CodeBase is a URL to the place where the file was found,
+            // while the Location is the path from where it was actually loaded.
+            // For example, if the assembly was downloaded from the internet, its CodeBase may start with "http://",
+            // but its Location may start with "C:\".
+            // If the file was shadow copied, the Location would be the path to the copy of the file in the shadow-copy dir.
+
+            // It's also good to know that the CodeBase is not guaranteed to be set for assemblies in the GAC.
+            // Location will always be set for assemblies loaded from disk, however.
             string codeBase = assembly.CodeBase;
             string location = assembly.Location;
+
             // cannot use Uri.UnescapeDataString, because it treats some characters valid in
             // local path (like #) specially
             const string protocol = "file://";
