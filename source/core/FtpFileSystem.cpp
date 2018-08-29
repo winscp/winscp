@@ -2114,7 +2114,7 @@ void __fastcall TFTPFileSystem::AutoDetectTimeDifference(TRemoteFileList * FileL
           FTimeDifference = static_cast<__int64>(SecsPerDay * (UtcModification - File->Modification));
 
           UnicodeString FileLog =
-            FORMAT(L"%s (Listing: %s, UTF: %s)", (File->FullFileName, StandardTimestamp(File->Modification), StandardTimestamp(UtcModification)));
+            FORMAT(L"%s (Listing: %s, UTC: %s)", (File->FullFileName, StandardTimestamp(File->Modification), StandardTimestamp(UtcModification)));
           UnicodeString LogMessage;
           if (FTimeDifference == 0)
           {
