@@ -151,7 +151,7 @@ namespace WinSCP
 
         public Session()
         {
-            Logger = new Logger();
+            Logger = new Logger(LogWriterFactory.CurrentFactory);
 
             using (Logger.CreateCallstackAndLock())
             {

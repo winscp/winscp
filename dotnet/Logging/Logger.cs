@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
+using WinSCP.Internal;
 
 namespace WinSCP
 {
@@ -14,7 +15,13 @@ namespace WinSCP
     {
         public string LogPath { get { return _logPath; } set { SetLogPath(value); } }
         public int LogLevel { get { return _logLevel; } set { SetLogLevel(value); } }
-        public bool Logging { get { return (_writter != null) && _writter.BaseStream.CanWrite; } }
+        public bool Logging { get { return (_writter != null) && _writter.Enabled(); } }
+
+        /// <inheritdoc />
+        public Logger(ILogWriterFactory logWriterFactory)
+        {
+            _logWriterFactory = logWriterFactory;
+        }
 
         public string GetAssemblyFilePath()
         {
@@ -257,6 +264,7 @@ namespace WinSCP
             return new CallstackAndLock(this, _lock);
         }
 
+        //todo move this also to ILogWriter
         public Exception WriteException(Exception e)
         {
             lock (_logLock)
@@ -286,25 +294,22 @@ namespace WinSCP
         {
             int indent = GetIndent();
 
-            string s =
-                string.Format(CultureInfo.InvariantCulture, "[{0:yyyy-MM-dd HH:mm:ss.fffZ}] [{1:x4}] {2}{3}",
-                DateTime.Now, Thread.CurrentThread.ManagedThreadId,
-                (indent > 0 ? new string(' ', indent * 2) : string.Empty), message);
-            _writter.WriteLine(s);
+            _writter.WriteLine(indent, message);
+
         }
 
         private void SetLogPath(string value)
         {
             lock (_logLock)
             {
+                //todo move checks logPath
                 if (_logPath != value)
                 {
                     Dispose();
                     _logPath = value;
                     if (!string.IsNullOrEmpty(_logPath))
                     {
-                        _writter = File.CreateText(_logPath);
-                        _writter.AutoFlush = true;
+                        _writter = _logWriterFactory.Create(_logPath);
                         WriteEnvironmentInfo();
                         if (_logLevel >= 1)
                         {
@@ -348,12 +353,13 @@ namespace WinSCP
             _logLevel = value;
         }
 
-        private StreamWriter _writter;
+        private ILogWriter _writter;
         private string _logPath;
         private readonly Dictionary<int, int> _indents = new Dictionary<int, int>();
         private readonly object _logLock = new object();
         private readonly Lock _lock = new Lock();
         private List<PerformanceCounter> _performanceCounters = new List<PerformanceCounter>();
         private int _logLevel;
+        private ILogWriterFactory _logWriterFactory;
     }
 }
