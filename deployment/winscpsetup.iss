@@ -1308,6 +1308,7 @@ var
   S: string;
 #ifdef Sponsor
   SponsorQueryUrl: string;
+  PreferredSponsor: string;
 #endif
 begin
   if CurPageID = wpLicense then
@@ -1430,6 +1431,11 @@ begin
           '{#WebReport}?' +
           Format('mode=sponsorrequest&ver=%s&lang=%s&prevver=%s&scale=%d&images=%s', [
             '{#VersionOnly}', ActiveLanguage, PrevVersion, GetScalingFactor, '{#SponsorImages}']);
+        PreferredSponsor := ExpandConstant('{param:Sponsor}');
+        if PreferredSponsor <> '' then
+        begin
+          SponsorQueryUrl := SponsorQueryUrl + Format('&sponsor=%s', [PreferredSponsor]);
+        end;
 
         Log('Sending sponsor query request: ' + SponsorQueryUrl);
 
