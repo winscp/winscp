@@ -883,6 +883,7 @@ inherited ScpExplorerForm: TScpExplorerForm
       TabOrder = 1
       OnResize = ToolBarResize
       OnGetBaseSize = ToolbarGetBaseSize
+      OnEndModal = AddressToolbarEndModal
       object TBXLabelItem1: TTBXLabelItem
         Caption = 'Address'
         Margin = 2

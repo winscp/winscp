@@ -324,9 +324,11 @@ __published:
   void __fastcall QueueSubmenuItemPopup(TTBCustomItem *Sender,
           bool FromLink);
   void __fastcall RemoteStatusBarPanelClick(TTBXCustomStatusBar *Sender, TTBXStatusPanel *Panel);
+  void __fastcall AddressToolbarEndModal(TObject *Sender);
 
 private:
   UnicodeString FStatusBarFileText;
+  UnicodeString FFailedAddress;
 
   void __fastcall RemotePanelSplitterDblClick(TObject * Sender);
 

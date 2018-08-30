@@ -290,6 +290,20 @@ void __fastcall TScpExplorerForm::UnixPathComboBoxBeginEdit(
   TTBEditItem * /*Sender*/, TTBEditItemViewer * /*Viewer*/, TEdit * EditControl)
 {
   InstallPathWordBreakProc(EditControl);
+  if (!FFailedAddress.IsEmpty())
+  {
+    EditControl->Text = FFailedAddress;
+    EditControl->SelectAll();
+  }
+  FFailedAddress = UnicodeString();
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpExplorerForm::AddressToolbarEndModal(TObject * /*Sender*/)
+{
+  if (!FFailedAddress.IsEmpty())
+  {
+    GoToAddress();
+  }
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TScpExplorerForm::RemotePathComboBoxText()
@@ -320,8 +334,15 @@ void __fastcall TScpExplorerForm::UnixPathComboBoxAcceptText(
 {
   if (RemoteDirView->Path != NewText)
   {
-    RemoteDirView->Path = NewText;
-    NewText = RemotePathComboBoxText();
+    if (!TryOpenDirectory(osRemote, NewText))
+    {
+      FFailedAddress = NewText;
+      Abort();
+    }
+    else
+    {
+      NewText = RemotePathComboBoxText();
+    }
   }
 }
 //---------------------------------------------------------------------------

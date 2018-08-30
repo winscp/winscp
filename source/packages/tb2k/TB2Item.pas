@@ -505,7 +505,7 @@ type
     { /MP }
     procedure EndModalWithSystemMenu(AWnd: HWND; AKey: Cardinal);
     procedure EndUpdate;
-    procedure EnterToolbarLoop(Options: TTBEnterToolbarLoopOptions);
+    procedure EnterToolbarLoop(Options: TTBEnterToolbarLoopOptions); virtual;
     procedure ExecuteSelected(AGivePriority: Boolean);
     function Find(Item: TTBCustomItem): TTBItemViewer;
     function FirstSelectable: TTBItemViewer;

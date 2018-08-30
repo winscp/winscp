@@ -5941,14 +5941,24 @@ void __fastcall TCustomScpExplorerForm::DoOpenDirectoryDialog(
     try
     {
       UnicodeString Name = DirView(Side)->PathName;
-      if (::DoOpenDirectoryDialog(Mode, Side, Name, VisitedDirectories, Terminal,
-            // do not allow switching to location profiles,
-            // if we are not connected
-            HasDirView[osLocal] && (Terminal != NULL)))
+      bool Repeat;
+      do
       {
-        TWindowLock Lock(this);
-        DirView(Side)->Path = Name;
+        Repeat = false;
+        if (::DoOpenDirectoryDialog(Mode, Side, Name, VisitedDirectories, Terminal,
+              // do not allow switching to location profiles,
+              // if we are not connected
+              HasDirView[osLocal] && (Terminal != NULL)))
+        {
+          TWindowLock Lock(this);
+          if (!TryOpenDirectory(Side, Name))
+          {
+            Repeat = true;
+            Mode = odBrowse;
+          }
+        }
       }
+      while (Repeat);
     }
     __finally
     {
@@ -9806,5 +9816,42 @@ void __fastcall TCustomScpExplorerForm::CreateOpenDirMenu(TTBCustomItem * Menu, 
   std::unique_ptr<TTBCustomItem> Item(new TTBXItem(Owner));
   Item->Action = (Side == osLocal) ? NonVisualDataModule->LocalAddBookmarkAction : NonVisualDataModule->RemoteAddBookmarkAction;
   Menu->Add(Item.release());
+}
+//---------------------------------------------------------------------------
+bool __fastcall TCustomScpExplorerForm::TryOpenDirectory(TOperationSide Side, const UnicodeString & Path)
+{
+  bool Result = true;
+  try
+  {
+    if (Side == osRemote)
+    {
+      Terminal->ExceptionOnFail = true;
+    }
+
+    try
+    {
+      DirView(Side)->Path = Path;
+    }
+    __finally
+    {
+      if (Side == osRemote)
+      {
+        Terminal->ExceptionOnFail = false;
+      }
+    }
+  }
+  catch (Exception & E)
+  {
+    if ((Side != osRemote) || Terminal->Active)
+    {
+      ShowExtendedExceptionEx(Terminal, &E);
+      Result = false;
+    }
+    else
+    {
+      throw;
+    }
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------

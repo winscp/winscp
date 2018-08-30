@@ -55,6 +55,7 @@ type
     constructor Create(AOwner: TComponent); override;
     function GetFont: TFont; override;
     procedure InvalidatePositions; override;
+    procedure EnterToolbarLoop(Options: TTBEnterToolbarLoopOptions); override;
   end;
 
   TTBChevronPriorityForNewItems = (tbcpHighest, tbcpLowest);
@@ -83,6 +84,7 @@ type
     FUpdateActions: Boolean;
     { MP }
     FOnGetBaseSize: TToolbarGetBaseSizeEvent;
+    FOnEndModal: TNotifyEvent;
 
     procedure CancelHover;
     function CalcChevronOffset(const ADock: TTBDock;
@@ -191,6 +193,7 @@ type
     property View: TTBToolbarView read FView;
     { MP }
     property OnGetBaseSize: TToolbarGetBaseSizeEvent read FOnGetBaseSize write FOnGetBaseSize;
+    property OnEndModal: TNotifyEvent read FOnEndModal write FOnEndModal;
   published
     property Hint stored False;  { Hint is set dynamically; don't save it }
   end;
@@ -264,6 +267,7 @@ type
     property OnVisibleChanged;
     { MP }
     property OnGetBaseSize;
+    property OnEndModal;
   end;
 
 { TTBChevronItem & TTBChevronItemViewer }
@@ -520,6 +524,12 @@ begin
   Result := FToolbar.FMDISystemMenuItem;
 end;
 
+procedure TTBToolbarView.EnterToolbarLoop(Options: TTBEnterToolbarLoopOptions);
+begin
+  inherited;
+  if Assigned(FToolbar.OnEndModal) then
+    FToolbar.OnEndModal(FToolbar);
+end;
 
 { TTBCustomToolbar }
 
@@ -549,6 +559,7 @@ begin
   SetBounds(Left, Top, 23, 22);{}
   { MP }
   FOnGetBaseSize := nil;
+  FOnEndModal := nil;
 end;
 
 destructor TTBCustomToolbar.Destroy;

@@ -619,6 +619,7 @@ protected:
   void __fastcall SynchronizeProcessedItem(void * Token, const TSynchronizeChecklist::TItem * ChecklistItem);
   void __fastcall CreateOpenDirMenuList(TTBCustomItem * Menu, TOperationSide Side, TBookmarkList * BookmarkList);
   void __fastcall CreateOpenDirMenu(TTBCustomItem * Menu, TOperationSide Side);
+  bool __fastcall TryOpenDirectory(TOperationSide Side, const UnicodeString & Path);
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();

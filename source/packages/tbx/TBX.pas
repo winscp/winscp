@@ -409,6 +409,7 @@ type
     property OnVisibleChanged;
     { MP }
     property OnGetBaseSize;
+    property OnEndModal;
   end;
 
   { TTBXChevronItem }
