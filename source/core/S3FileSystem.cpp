@@ -965,6 +965,10 @@ void __fastcall TS3FileSystem::DeleteFile(const UnicodeString AFileName,
 void __fastcall TS3FileSystem::RenameFile(const UnicodeString FileName, const TRemoteFile * File,
   const UnicodeString NewName)
 {
+  if (DebugAlwaysTrue(File != NULL) && File->IsDirectory)
+  {
+    throw Exception(LoadStr(NOTSUPPORTED));
+  }
   CopyFile(FileName, File, NewName);
   TRmSessionAction DummyAction(FTerminal->ActionLog, FileName);
   DeleteFile(FileName, File, dfForceDelete, DummyAction);
