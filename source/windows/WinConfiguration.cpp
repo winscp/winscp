@@ -972,7 +972,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEYEX(String, FExtensionsDeleted, L"ExtensionsDeleted"); \
     KEYEX(String, FExtensionsOrder, L"ExtensionsOrder"); \
     KEYEX(String, FExtensionsShortCuts, L"ExtensionsShortCuts"); \
-    KEY(Bool,  TimeoutShellOperations); \
+    KEY(Bool,     TimeoutShellOperations); \
   ); \
   BLOCK(L"Interface\\Editor", CANCREATE, \
     KEYEX(String,   Editor.Font.FontName, L"FontName2"); \
