@@ -425,7 +425,6 @@ protected:
   void __fastcall GetSynchronizeOptions(int Params, TSynchronizeOptions & Options);
   void __fastcall SynchronizeInNewWindow(const TSynchronizeParamType & Params, const TCopyParamType * CopyParams);
   bool __fastcall SynchronizeAllowSelectedOnly();
-  void __fastcall SynchronizeNoDifferences();
   virtual void __fastcall BatchStart(void *& Storage);
   virtual void __fastcall BatchEnd(void * Storage);
   bool __fastcall ExecuteFileOperation(TFileOperation Operation, TOperationSide Side,

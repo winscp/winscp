@@ -5449,12 +5449,6 @@ void __fastcall TCustomScpExplorerForm::DoSynchronizeChecklistCalculateSize(
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::SynchronizeNoDifferences()
-{
-  UnicodeString Message = MainInstructions(LoadStr(COMPARE_NO_DIFFERENCES));
-  MessageDialog(Message, qtInformation, qaOK, HELP_SYNCHRONIZE_NO_DIFFERENCES);
-}
-//---------------------------------------------------------------------------
 int __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
   UnicodeString & LocalDirectory, UnicodeString & RemoteDirectory,
   TSynchronizeMode & Mode, bool & SaveMode, bool UseDefaults)
@@ -5522,37 +5516,27 @@ int __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
       SynchronizeParams.Checklist = Checklist;
       SynchronizeParams.StartTime = &StartTime;
       SynchronizeParams.OnProcessedItem = NULL;
-      if (FLAGSET(Params, TTerminal::spPreviewChanges))
+      Result = Checklist->Count;
+      if (Checklist->Count > 0)
       {
-        if (Checklist->Count > 0)
+        if (FLAGSET(Params, TTerminal::spPreviewChanges))
         {
-          if (DoSynchronizeChecklistDialog(
+          if (!DoSynchronizeChecklistDialog(
                 Checklist, Mode, Params, LocalDirectory, RemoteDirectory, CustomCommandMenu, DoFullSynchronize,
                 DoSynchronizeChecklistCalculateSize, &SynchronizeParams))
-          {
-            Result = Checklist->Count;
-          }
-          else
           {
             Result = -1;
           }
         }
         else
         {
-          SynchronizeNoDifferences();
+          FullSynchronize(SynchronizeParams, NULL, NULL);
         }
       }
       else
       {
-        Result = Checklist->CheckedCount;
-        if (Checklist->CheckedCount > 0)
-        {
-          FullSynchronize(SynchronizeParams, NULL, NULL);
-        }
-        else
-        {
-          SynchronizeNoDifferences();
-        }
+        UnicodeString Message = MainInstructions(LoadStr(COMPARE_NO_DIFFERENCES));
+        MessageDialog(Message, qtInformation, qaOK, HELP_SYNCHRONIZE_NO_DIFFERENCES);
       }
     }
     __finally
