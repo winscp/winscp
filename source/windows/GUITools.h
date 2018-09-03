@@ -51,6 +51,8 @@ void __fastcall AddBrowserLinkHandler(TWebBrowserEx * WebBrowser,
   const UnicodeString & Url, TNotifyEvent Handler);
 void __fastcall NavigateBrowserToUrl(TWebBrowserEx * WebBrowser, const UnicodeString & Url);
 TComponent * __fastcall FindComponentRecursively(TComponent * Root, const UnicodeString & Name);
+void __fastcall GetInstrutionsTheme(
+  TColor & MainInstructionColor, HFONT & MainInstructionFont, HFONT & InstructionFont);
 //---------------------------------------------------------------------------
 class TLocalCustomCommand : public TFileCustomCommand
 {

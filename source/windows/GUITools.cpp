@@ -23,6 +23,7 @@
 #include <VCLCommon.h>
 #include <WinApi.h>
 #include <Vcl.ScreenTips.hpp>
+#include <vssym32.h>
 
 #include "Animations96.h"
 #include "Animations120.h"
@@ -1008,6 +1009,41 @@ TComponent * __fastcall FindComponentRecursively(TComponent * Root, const Unicod
     }
   }
   return NULL;
+}
+//---------------------------------------------------------------------------
+void __fastcall GetInstrutionsTheme(
+  TColor & MainInstructionColor, HFONT & MainInstructionFont, HFONT & InstructionFont)
+{
+  MainInstructionColor = Graphics::clNone;
+  MainInstructionFont = 0;
+  InstructionFont = 0;
+  HTHEME Theme = OpenThemeData(0, L"TEXTSTYLE");
+  if (Theme != NULL)
+  {
+    LOGFONT AFont;
+    COLORREF AColor;
+
+    memset(&AFont, 0, sizeof(AFont));
+    // Using Canvas->Handle in the 2nd argument we can get scaled font,
+    // but at this point the form is sometime not scaled yet (difference is particularly for standalone messages like
+    // /UninstallCleanup), so the results are inconsistent.
+    if (GetThemeFont(Theme, NULL, TEXT_MAININSTRUCTION, 0, TMT_FONT, &AFont) == S_OK)
+    {
+      MainInstructionFont = CreateFontIndirect(&AFont);
+    }
+    if (GetThemeColor(Theme, TEXT_MAININSTRUCTION, 0, TMT_TEXTCOLOR, &AColor) == S_OK)
+    {
+      MainInstructionColor = (TColor)AColor;
+    }
+
+    memset(&AFont, 0, sizeof(AFont));
+    if (GetThemeFont(Theme, NULL, TEXT_INSTRUCTION, 0, TMT_FONT, &AFont) == S_OK)
+    {
+      InstructionFont = CreateFontIndirect(&AFont);
+    }
+
+    CloseThemeData(Theme);
+  }
 }
 //---------------------------------------------------------------------------
 TLocalCustomCommand::TLocalCustomCommand()

@@ -32,6 +32,7 @@ __published:
   TLabel *RegistrationSubjectLabel;
   TPanel *ThirdPartyPanel;
   TPaintBox *IconPaintBox;
+  TPanel *Panel;
   void __fastcall LicenseButtonClick(TObject *Sender);
   void __fastcall HelpButtonClick(TObject *Sender);
   void __fastcall RegistrationProductIdLabelClick(TObject *Sender);
@@ -52,6 +53,7 @@ private:
   void __fastcall AccessViolationTest();
   void __fastcall LookupAddress();
   void __fastcall DoLoadThirdParty();
+  void __fastcall ShiftControls(int From, int Diff);
 
 protected:
   virtual void __fastcall Dispatch(void * Message);

@@ -72,17 +72,35 @@ __fastcall TAboutDialog::TAboutDialog(TComponent * AOwner,
   UseSystemSettings(this);
   LinkLabel(HomepageLabel, LoadStr(HOMEPAGE_URL));
   LinkLabel(ForumUrlLabel, LoadStr(FORUM_URL));
-  ApplicationLabel->ParentFont = true;
-  ApplicationLabel->Font->Style = ApplicationLabel->Font->Style << fsBold;
+
   ApplicationLabel->Caption = AppName;
+  TColor MainInstructionColor;
+  HFONT MainInstructionFont;
+  HFONT InstructionFont;
+  GetInstrutionsTheme(MainInstructionColor, MainInstructionFont, InstructionFont);
+  if (MainInstructionFont != 0)
+  {
+    int PrevHeight = ApplicationLabel->Height;
+    ApplicationLabel->Font->Handle = MainInstructionFont;
+    if (MainInstructionColor != Graphics::clNone)
+    {
+      ApplicationLabel->Font->Color = MainInstructionColor;
+    }
+    ShiftControls(ApplicationLabel->Top + 1, (ApplicationLabel->Height - PrevHeight));
+  }
+  else
+  {
+    ApplicationLabel->ParentFont = true;
+    ApplicationLabel->Font->Style = ApplicationLabel->Font->Style << fsBold;
+  }
+
   WinSCPCopyrightLabel->Caption = LoadStr(WINSCP_COPYRIGHT);
 
   if (Registration == NULL)
   {
     RegistrationLabel->Visible = false;
     RegistrationBox->Visible = false;
-    ClientHeight = ClientHeight -
-      (ThirdPartyPanel->Top - RegistrationBox->Top);
+    ShiftControls(RegistrationLabel->Top, (RegistrationBox->Top - ThirdPartyPanel->Top));
   }
   else
   {
@@ -129,7 +147,7 @@ __fastcall TAboutDialog::TAboutDialog(TComponent * AOwner,
     CreateLabelPanel(ThirdPartyPanel, LoadStr(MESSAGE_DISPLAY_ERROR));
   }
 
-  int IconSize = DialogImageSize(this);
+  int IconSize = ScaleByPixelsPerInch(48, this);
   FIconHandle = (HICON)LoadImage(MainInstance, L"MAINICON", IMAGE_ICON, IconSize, IconSize, 0);
   IconPaintBox->Width = IconSize;
   IconPaintBox->Height = IconSize;
@@ -138,6 +156,18 @@ __fastcall TAboutDialog::TAboutDialog(TComponent * AOwner,
 __fastcall TAboutDialog::~TAboutDialog()
 {
   DestroyIcon(FIconHandle);
+}
+//---------------------------------------------------------------------------
+void __fastcall TAboutDialog::ShiftControls(int From, int Diff)
+{
+  for (int Index = 0; Index < Panel->ControlCount; Index++)
+  {
+    if (Panel->Controls[Index]->Top > From)
+    {
+      Panel->Controls[Index]->Top = Panel->Controls[Index]->Top + Diff;
+    }
+  }
+  ClientHeight = ClientHeight + Diff;
 }
 //---------------------------------------------------------------------------
 void __fastcall TAboutDialog::LoadData()
@@ -156,7 +186,7 @@ void __fastcall TAboutDialog::LoadThirdParty()
 {
   FThirdPartyWebBrowser = CreateBrowserViewer(ThirdPartyPanel, L"");
 
-  reinterpret_cast<TLabel *>(FThirdPartyWebBrowser)->Color = clBtnFace;
+  reinterpret_cast<TLabel *>(FThirdPartyWebBrowser)->Color = ThirdPartyPanel->Color;
 
   NavigateBrowserToUrl(FThirdPartyWebBrowser, L"about:blank");
   DoLoadThirdParty();
@@ -186,7 +216,7 @@ void __fastcall TAboutDialog::DoLoadThirdParty()
     L"{\n"
     L"  font-family: '" + DefaultFont->Name + L"';\n"
     L"  margin: 0.5em;\n"
-    L"  background-color: " + ColorToWebColorStr(Color) + L";\n"
+    L"  background-color: " + ColorToWebColorStr(ThirdPartyPanel->Color) + L";\n"
     L"}\n"
     L"\n"
     L"body\n"
