@@ -149,7 +149,6 @@ void __fastcall TUnixDirView::ReloadDirectory()
 {
 #ifndef DESIGN_ONLY
   FLastPath = L"";
-  DoAnimation(true);
   Terminal->ReloadDirectory();
 #endif
 }
@@ -805,7 +804,6 @@ void __fastcall TUnixDirView::ChangeDirectory(UnicodeString Path)
   UnicodeString LastFile = L"";
   if (ItemFocused) LastFile = ItemFileName(ItemFocused);
   ClearItems();
-  DoAnimation(true);
 #ifndef DESIGN_ONLY
   try
   {

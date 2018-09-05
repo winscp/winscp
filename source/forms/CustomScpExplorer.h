@@ -654,6 +654,7 @@ public:
   void __fastcall CloseSession();
   void __fastcall OpenDirectory(TOperationSide Side);
   virtual void __fastcall HomeDirectory(TOperationSide Side);
+  void __fastcall ReloadDirectory(TOperationSide Side);
   void __fastcall OpenStoredSession(TSessionData * Data);
   void __fastcall OpenFolderOrWorkspace(const UnicodeString & Name);
   void __fastcall Idle();

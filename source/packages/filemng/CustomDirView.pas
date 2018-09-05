@@ -139,7 +139,6 @@ type
     FStartPos: TPoint;
     FDDOwnerIsSource: Boolean;
     FAbortLoading: Boolean;
-    FAnimation: TAnimate;
     FBackCount: Integer;
     FDontRecordPath: Boolean;
     FDragOnDriveIsMove: Boolean;
@@ -148,7 +147,6 @@ type
     FHistoryPaths: TStrings;
     FImageList16: TImageList;
     FImageList32: TImageList;
-    FLoadAnimation: Boolean;
     FMaxHistoryCount: Integer;
     FPathLabel: TCustomPathLabel;
     FOnUpdateStatusBar: TDirViewUpdateStatusBarEvent;
@@ -254,7 +252,6 @@ type
       State: TCustomDrawState; Stage: TCustomDrawStage): Boolean; override;
     procedure CustomSortItems(SortProc: Pointer);
     procedure Delete(Item: TListItem); override;
-    procedure DoAnimation(Start: Boolean);
     procedure DoHistoryChange; dynamic;
     function DragCompleteFileList: Boolean; virtual;
     procedure Edit(const HItem: TLVItem); override;
@@ -391,7 +388,6 @@ type
     property AbortLoading: Boolean read FAbortLoading write FAbortLoading stored False;
     property BackCount: Integer read FBackCount;
     {Enable or disable populating the item list:}
-    property LoadAnimation: Boolean read FLoadAnimation write FLoadAnimation default True;
     property LoadEnabled: Boolean read FLoadEnabled write SetLoadEnabled default True;
     {Displayed data is not valid => reload required}
     property Dirty: Boolean read FDirty;
@@ -776,36 +772,6 @@ begin
 end;
 
 
-  { TLoadAnimationStartThread }
-
-{constructor TLoadAnimationStartThread.Create(AInterval: Integer; AAnimation: TAnimate);
-begin
-  inherited Create(True);
-  FInterval := AInterval;
-  FAnimation := AAnimation;
-  Resume;
-end;
-
-procedure TLoadAnimationStartThread.Execute;
-var
-  XInterval: Integer;
-begin
-  XInterval := FInterval;
-  while (not Terminated) and (XInterval > 0) do
-  begin
-    Sleep(10);
-    Dec(XInterval, 10);
-  end;
-  if (not Terminated) and Assigned(FAnimation) then
-    Synchronize(StartAnimation);
-end;
-
-procedure TLoadAnimationStartThread.StartAnimation;
-begin
-  FAnimation.Visible := True;
-  FAnimation.Active := True;
-end; }
-
   { TCustomizableDragDropFilesEx }
 
 function TCustomizableDragDropFilesEx.Execute(DataObject: TDataObject): TDragResult;
@@ -838,8 +804,6 @@ begin
   FHasParentDir := False;
   FDragOnDriveIsMove := False;
   FCaseSensitive := False;
-  FLoadAnimation := True;
-  FAnimation := nil;
 
   FIsRecycleBin := False;
   FLoading := False;
@@ -1209,8 +1173,6 @@ begin
   // to force drag&drop re-registration when recreating handle
   // (occurs when changing ViewStyle)
   FDragDropFilesEx.DragDropControl := nil;
-  // Destroy the animation, as we keep getting reports that the animation fails to recreate
-  DoAnimation(False);
   inherited;
 end;
 
@@ -1279,7 +1241,6 @@ begin
 
   FreeAndNil(FDragDropFilesEx);
   FreeImageLists;
-  FreeAndNil(FAnimation);
 
   inherited;
 end;
@@ -1901,12 +1862,7 @@ begin
         SortType := stNone;
         Items.BeginUpdate;
         try
-          try
-            DoAnimation(True);
-            LoadFiles;
-          finally
-            DoAnimation(False);
-          end;
+          LoadFiles;
         finally
           Items.EndUpdate;
         end;
@@ -2776,32 +2732,6 @@ begin
   end;
   Result := nil;
 end;
-
-procedure TCustomDirView.DoAnimation(Start: Boolean);
-begin
-  if Start and LoadAnimation then
-  begin
-    if not Assigned(FAnimation) then
-    begin
-      FAnimation := TAnimate.Create(Self);
-      try
-        FAnimation.Top  := (Height - FAnimation.Height) div 2;
-        FAnimation.Left := (Width - FAnimation.Width) div 2;
-        FAnimation.Parent := Self;
-        FAnimation.CommonAVI := aviFindFolder;
-        FAnimation.Transparent := True;
-        FAnimation.Active := True;
-      except
-        FreeAndNil(FAnimation);
-      end;
-    end;
-  end
-    else
-  if not Start then
-  begin
-    FreeAndNil(FAnimation);
-  end;
-end; { DoAnimation }
 
 function TCustomDirView.GetForwardCount: Integer;
 begin

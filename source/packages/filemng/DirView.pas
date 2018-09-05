@@ -316,7 +316,6 @@ type
     property PathLabel;
     property OnUpdateStatusBar;
 
-    property LoadAnimation;
     property DimmHiddenFiles;
     property ShowHiddenFiles;
     property WantUseDragImages;

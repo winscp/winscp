@@ -112,7 +112,6 @@ __published:
 
   __property OnUpdateStatusBar;
   __property PathLabel;
-  __property LoadAnimation;
 
   __property AddParentDir;
   __property DimmHiddenFiles;
