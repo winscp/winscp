@@ -385,7 +385,7 @@ void __fastcall ConfigureInterface()
 void __fastcall ForceTracing()
 {
   Tracing::ForceTraceOn();
-  SetTraceFile((HANDLE)Tracing::GetTraceFile());
+  SetTraceFileCallback(GetTraceFileCallback());
 }
 #endif
 //---------------------------------------------------------------------------
