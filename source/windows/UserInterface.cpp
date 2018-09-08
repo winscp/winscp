@@ -381,14 +381,6 @@ void __fastcall ConfigureInterface()
   UserDocumentDirectory = GetPersonalFolder();
 }
 //---------------------------------------------------------------------------
-#ifdef _DEBUG
-void __fastcall ForceTracing()
-{
-  Tracing::ForceTraceOn();
-  SetTraceFileCallback(GetTraceFileCallback());
-}
-#endif
-//---------------------------------------------------------------------------
 void __fastcall DoAboutDialog(TConfiguration *Configuration)
 {
   DoAboutDialog(Configuration, true, NULL);
