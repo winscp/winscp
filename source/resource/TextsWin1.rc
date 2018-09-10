@@ -615,6 +615,7 @@ BEGIN
         SYNCHRONIZE_CHECKLIST_CAPTION, "Synchronization checklist"
         EDITOR_READONLY, "Read-only"
         PROGRESS_TIME_LEFT_CALCULATING, "Calculating"
+        COPY_PARAM_SAVE_PRESET, "Save as &Preset..."
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
         WINSCP_COPYRIGHT, "Copyright © 2000-2018 Martin Prikryl"

@@ -100,8 +100,7 @@ bool __fastcall TCopyParamPresetDialog::Execute(TCopyParamList * CopyParamList,
   else
   {
     DescriptionEdit->Text = L"";
-    TCopyParamType Default;
-    CopyParamsFrame->Params = Default;
+    CopyParamsFrame->Params = DefaultCopyParams;
     if (FMode == cpmAddCurrent)
     {
       SetRuleData(*FCurrentRuleData);

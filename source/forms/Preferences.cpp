@@ -1778,7 +1778,21 @@ void __fastcall TPreferencesDialog::AddEditCopyParam(TCopyParamPresetMode Mode)
       (FDialogData != NULL ? FDialogData->CopyParamRuleData : NULL);
     // negative (when default is selected) means add to the end
     Index--;
-    Result = DoCopyParamPresetDialog(FCopyParamList, Index, Mode, CopyParamRuleData, FCopyParams);
+
+    TCopyParamType DefaultCopyParams;
+    // For cpmAdd use defaults.
+    if (Mode == cpmDuplicate)
+    {
+      // Only used, when duplicating default settings (Index < 0)
+      DefaultCopyParams = FCopyParams;
+    }
+    else if (Mode == cpmEdit)
+    {
+      // For cpmEdit, DefaultCopyParams is never used.
+      DebugAssert(Index >= 0);
+    }
+
+    Result = DoCopyParamPresetDialog(FCopyParamList, Index, Mode, CopyParamRuleData, DefaultCopyParams);
     if (Result)
     {
       UpdateCopyParamListView();

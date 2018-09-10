@@ -612,6 +612,7 @@
 #define SYNCHRONIZE_CHECKLIST_CAPTION 6010
 #define EDITOR_READONLY         6011
 #define PROGRESS_TIME_LEFT_CALCULATING 6012
+#define COPY_PARAM_SAVE_PRESET  6013
 
 // 2xxx is reserved for TextsFileZilla.h
 

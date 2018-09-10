@@ -3055,10 +3055,10 @@ void __fastcall TLoginDialog::CopyParamRuleActionExecute(TObject * /*Sender*/)
     Mode = cpmEdit;
   }
 
-  TCopyParamType DummyDefaultCopyParams;
+  TCopyParamType DefaultCopyParams;
 
   if (DoCopyParamPresetDialog(
-        CopyParamList.get(), CopyParamIndex, Mode, CurrentRuleData, DummyDefaultCopyParams))
+        CopyParamList.get(), CopyParamIndex, Mode, CurrentRuleData, DefaultCopyParams))
   {
     GUIConfiguration->CopyParamList = CopyParamList.get();
   }

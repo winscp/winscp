@@ -797,6 +797,7 @@ const int cpiConfigure = -2;
 const int cpiCustom = -3;
 const int cpiSaveSettings = -4;
 const int cpiGenerateCode = -5;
+const int cpiSavePreset = -6;
 //---------------------------------------------------------------------------
 void __fastcall CopyParamListPopup(TRect Rect, TPopupMenu * Menu,
   const TCopyParamType & Param, UnicodeString Preset, TNotifyEvent OnClick,
@@ -824,6 +825,12 @@ void __fastcall CopyParamListPopup(TRect Rect, TPopupMenu * Menu,
     Item->OnClick = OnClick;
     Menu->Items->Add(Item);
   }
+
+  Item = new TMenuItem(Menu);
+  Item->Caption = LoadStr(COPY_PARAM_SAVE_PRESET);
+  Item->Tag = cpiSavePreset;
+  Item->OnClick = OnClick;
+  Menu->Items->Add(Item);
 
   Item = new TMenuItem(Menu);
   Item->Caption = LoadStr(COPY_PARAM_PRESET_HEADER);
@@ -903,7 +910,7 @@ int __fastcall CopyParamListPopupClick(TObject * Sender,
 {
   TComponent * Item = dynamic_cast<TComponent *>(Sender);
   DebugAssert(Item != NULL);
-  DebugAssert((Item->Tag >= cpiGenerateCode) && (Item->Tag < GUIConfiguration->CopyParamList->Count));
+  DebugAssert((Item->Tag >= cpiSavePreset) && (Item->Tag < GUIConfiguration->CopyParamList->Count));
 
   int Result;
   if (Item->Tag == cpiConfigure)
@@ -926,6 +933,22 @@ int __fastcall CopyParamListPopupClick(TObject * Sender,
     if (DebugAlwaysTrue(SaveSettings != NULL))
     {
       *SaveSettings = !*SaveSettings;
+    }
+    Result = 0;
+  }
+  else if (Item->Tag == cpiSavePreset)
+  {
+    std::unique_ptr<TCopyParamList> CopyParamList(new TCopyParamList());
+    *CopyParamList = *GUIConfiguration->CopyParamList;
+    int Index = -1;
+    if (DoCopyParamPresetDialog(CopyParamList.get(), Index, cpmAdd, NULL, Param))
+    {
+      GUIConfiguration->CopyParamList = CopyParamList.get();
+      // If saved unmodified, then make this the selected preset
+      if (*CopyParamList->CopyParams[Index] == Param)
+      {
+        Preset = CopyParamList->Names[Index];
+      }
     }
     Result = 0;
   }
