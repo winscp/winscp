@@ -596,7 +596,7 @@ protected:
     void * Arg);
   void __fastcall AnyInternalEditorModified(TObject * Sender, bool & Modified);
   virtual void __fastcall StartingDisconnected();
-  void __fastcall DoTerminalListChanged(bool Force);
+  void __fastcall DoTerminalListChanged();
   void __fastcall NeedSession(bool ReloadSessions);
   bool __fastcall DraggingAllFilesFromDirView(TOperationSide Side, TStrings * FileList);
   bool __fastcall SelectedAllFilesInDirView(TCustomDirView * DView);

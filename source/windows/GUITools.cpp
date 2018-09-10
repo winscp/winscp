@@ -496,56 +496,123 @@ bool __fastcall DeleteDirectory(const UnicodeString DirName)
   return retval;
 }
 //---------------------------------------------------------------------------
-void __fastcall AddSessionColorImage(
+class TSessionColors : public TComponent
+{
+public:
+  __fastcall TSessionColors(TComponent * Owner) : TComponent(Owner)
+  {
+    Name = QualifiedClassName();
+  }
+
+  static TSessionColors * __fastcall Retrieve(TComponent * Component)
+  {
+    TSessionColors * SessionColors = dynamic_cast<TSessionColors *>(Component->FindComponent(QualifiedClassName()));
+    if (SessionColors == NULL)
+    {
+      SessionColors = new TSessionColors(Component);
+    }
+    return SessionColors;
+  }
+
+  typedef std::map<TColor, int> TColorMap;
+  TColorMap ColorMap;
+};
+//---------------------------------------------------------------------------
+int __fastcall GetSessionColorImage(
   TCustomImageList * ImageList, TColor Color, int MaskIndex)
 {
 
-  // This overly complex drawing is here to support color button on SiteAdvanced
-  // dialog. There we use plain TImageList, instead of TPngImageList,
-  // TButton does not work with transparent images
-  // (not even TBitmap with Transparent = true)
-  std::unique_ptr<TBitmap> MaskBitmap(new TBitmap());
-  ImageList->GetBitmap(MaskIndex, MaskBitmap.get());
+  TSessionColors * SessionColors = TSessionColors::Retrieve(ImageList);
 
-  std::unique_ptr<TPngImage> MaskImage(new TPngImage());
-  MaskImage->Assign(MaskBitmap.get());
-
-  std::unique_ptr<TPngImage> ColorImage(new TPngImage(COLOR_RGB, 16, ImageList->Width, ImageList->Height));
-
-  TColor MaskTransparentColor = MaskImage->Pixels[0][0];
-  TColor TransparentColor = MaskTransparentColor;
-  // Expecting that the color to be replaced is in the centre of the image (HACK)
-  TColor MaskColor = MaskImage->Pixels[ImageList->Width / 2][ImageList->Height / 2];
-
-  for (int Y = 0; Y < ImageList->Height; Y++)
+  int Result;
+  TSessionColors::TColorMap::const_iterator I = SessionColors->ColorMap.find(Color);
+  if (I != SessionColors->ColorMap.end())
   {
-    for (int X = 0; X < ImageList->Width; X++)
+    Result = I->second;
+  }
+  else
+  {
+    // This overly complex drawing is here to support color button on SiteAdvanced
+    // dialog. There we use plain TImageList, instead of TPngImageList,
+    // TButton does not work with transparent images
+    // (not even TBitmap with Transparent = true)
+    std::unique_ptr<TBitmap> MaskBitmap(new TBitmap());
+    ImageList->GetBitmap(MaskIndex, MaskBitmap.get());
+
+    std::unique_ptr<TPngImage> MaskImage(new TPngImage());
+    MaskImage->Assign(MaskBitmap.get());
+
+    std::unique_ptr<TPngImage> ColorImage(new TPngImage(COLOR_RGB, 16, ImageList->Width, ImageList->Height));
+
+    TColor MaskTransparentColor = MaskImage->Pixels[0][0];
+    TColor TransparentColor = MaskTransparentColor;
+    // Expecting that the color to be replaced is in the centre of the image (HACK)
+    TColor MaskColor = MaskImage->Pixels[ImageList->Width / 2][ImageList->Height / 2];
+
+    for (int Y = 0; Y < ImageList->Height; Y++)
     {
-      TColor SourceColor = MaskImage->Pixels[X][Y];
-      TColor DestColor;
-      // this branch is pointless as long as MaskTransparentColor and
-      // TransparentColor are the same
-      if (SourceColor == MaskTransparentColor)
+      for (int X = 0; X < ImageList->Width; X++)
       {
-        DestColor = TransparentColor;
+        TColor SourceColor = MaskImage->Pixels[X][Y];
+        TColor DestColor;
+        // this branch is pointless as long as MaskTransparentColor and
+        // TransparentColor are the same
+        if (SourceColor == MaskTransparentColor)
+        {
+          DestColor = TransparentColor;
+        }
+        else if (SourceColor == MaskColor)
+        {
+          DestColor = Color;
+        }
+        else
+        {
+          DestColor = SourceColor;
+        }
+        ColorImage->Pixels[X][Y] = DestColor;
       }
-      else if (SourceColor == MaskColor)
-      {
-        DestColor = Color;
-      }
-      else
-      {
-        DestColor = SourceColor;
-      }
-      ColorImage->Pixels[X][Y] = DestColor;
+    }
+
+    std::unique_ptr<TBitmap> Bitmap(new TBitmap());
+    Bitmap->SetSize(ImageList->Width, ImageList->Height);
+    ColorImage->AssignTo(Bitmap.get());
+
+    Result = ImageList->AddMasked(Bitmap.get(), TransparentColor);
+
+    SessionColors->ColorMap.insert(std::make_pair(Color, Result));
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall RegenerateSessionColorsImageList(TCustomImageList * ImageList, int MaskIndex)
+{
+  TSessionColors * SessionColors = TSessionColors::Retrieve(ImageList);
+
+  std::vector<TColor> Colors;
+  int FixedImages = ImageList->Count;
+  Colors.resize(FixedImages + SessionColors->ColorMap.size());
+  TSessionColors::TColorMap::const_iterator I = SessionColors->ColorMap.begin();
+  while (I != SessionColors->ColorMap.end())
+  {
+    DebugAssert(Colors[I->second] == TColor());
+    Colors[I->second] = I->first;
+    I++;
+  }
+
+  TSessionColors::TColorMap ColorMap = SessionColors->ColorMap;
+  SessionColors->ColorMap.clear();
+
+  for (size_t Index = 0; Index < Colors.size(); Index++)
+  {
+    bool IsFixedImageIndex = (Index < FixedImages);
+    DebugAssert((Colors[Index] == TColor()) == IsFixedImageIndex);
+    if (!IsFixedImageIndex)
+    {
+      GetSessionColorImage(ImageList, Colors[Index], MaskIndex);
     }
   }
 
-  std::unique_ptr<TBitmap> Bitmap(new TBitmap());
-  Bitmap->SetSize(ImageList->Width, ImageList->Height);
-  ColorImage->AssignTo(Bitmap.get());
-
-  ImageList->AddMasked(Bitmap.get(), TransparentColor);
+  DebugAssert(SessionColors->ColorMap == ColorMap);
 }
 //---------------------------------------------------------------------------
 void __fastcall SetSubmenu(TTBXCustomItem * Item)

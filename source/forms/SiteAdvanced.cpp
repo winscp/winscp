@@ -107,7 +107,7 @@ void __fastcall TSiteAdvancedDialog::InitControls()
   UpdateNavigationTree();
 
   SelectScaledImageList(ColorImageList);
-  SetSessionColor((TColor)0);
+  FColor = TColor();
 
   MenuButton(PrivateKeyToolsButton);
 }
@@ -404,7 +404,7 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     GetEncryptKeyEdit()->Text = FSessionData->EncryptKey;
 
     // color
-    SetSessionColor((TColor)FSessionData->Color);
+    FColor = (TColor)FSessionData->Color;
   }
 
   UpdateControls();
@@ -1017,7 +1017,7 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
     else
     {
       ColorButton->Images = ColorImageList;
-      ColorButton->ImageIndex = 1;
+      ColorButton->ImageIndex = GetSessionColorImage(ColorImageList, FColor, 0);
       ColorButton->ImageAlignment = iaRight;
     }
   }
@@ -1424,23 +1424,8 @@ void __fastcall TSiteAdvancedDialog::ColorButtonClick(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TSiteAdvancedDialog::SessionColorChange(TColor Color)
 {
-  SetSessionColor(Color);
-  UpdateControls();
-}
-//---------------------------------------------------------------------------
-void __fastcall TSiteAdvancedDialog::SetSessionColor(TColor Color)
-{
   FColor = Color;
-
-  while (ColorImageList->Count > 1)
-  {
-    ColorImageList->Delete(1);
-  }
-
-  if (Color != 0)
-  {
-    AddSessionColorImage(ColorImageList, Color, 0);
-  }
+  UpdateControls();
 }
 //---------------------------------------------------------------------------
 TTlsVersion __fastcall TSiteAdvancedDialog::IndexToTlsVersion(int Index)

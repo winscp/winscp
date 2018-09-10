@@ -347,7 +347,6 @@ private:
   int __fastcall GetFtpProxyLogonType();
   void __fastcall UpdateNavigationTree();
   TSshProt __fastcall GetSshProt();
-  void __fastcall SetSessionColor(TColor Color);
   void __fastcall SessionColorChange(TColor Color);
   TTlsVersion __fastcall IndexToTlsVersion(int Index);
   int __fastcall TlsVersionToIndex(TTlsVersion TlsVersion);

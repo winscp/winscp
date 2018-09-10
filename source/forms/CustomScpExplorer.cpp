@@ -584,7 +584,7 @@ void __fastcall TCustomScpExplorerForm::TerminalChanged()
     InitStatusBar();
   }
 
-  DoTerminalListChanged(false);
+  DoTerminalListChanged();
 
   if (ManagedTerminal != NULL)
   {
@@ -6235,60 +6235,56 @@ void __fastcall TCustomScpExplorerForm::NeedSession(bool ReloadSessions)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::DoTerminalListChanged(bool Force)
+void __fastcall TCustomScpExplorerForm::DoTerminalListChanged()
 {
   TStrings * TerminalList = TTerminalManager::Instance()->TerminalList;
   int ActiveTerminalIndex = TTerminalManager::Instance()->ActiveTerminalIndex;
 
   Configuration->Usage->SetMax(L"MaxOpenedSessions", TerminalList->Count);
 
-  bool ListChanged = Force || (TerminalList->Count + 1 != SessionsPageControl->PageCount);
-  if (!ListChanged)
+  SendMessage(SessionsPageControl->Handle, WM_SETREDRAW, 0, 0);
+  try
   {
-    int Index = 0;
-    while (!ListChanged && (Index < TerminalList->Count))
+    while ((SessionsPageControl->PageCount > TerminalList->Count + 1) ||
+           // Clear the design time unthemed tab
+           ((SessionsPageControl->PageCount > 0) &&
+            (dynamic_cast<TThemeTabSheet *>(SessionsPageControl->Pages[SessionsPageControl->PageCount - 1]) == NULL)))
     {
-      ListChanged =
-        (GetSessionTabTerminal(SessionsPageControl->Pages[Index]) != TerminalList->Objects[Index]) ||
-        (SessionsPageControl->Pages[Index]->Caption != TerminalList->Strings[Index]);
-      Index++;
+      delete SessionsPageControl->Pages[SessionsPageControl->PageCount - 1];
     }
-  }
 
-  if (ListChanged)
-  {
-    SendMessage(SessionsPageControl->Handle, WM_SETREDRAW, 0, 0);
-    try
+    for (int Index = 0; Index <= TerminalList->Count; Index++)
     {
-      FSessionColors->Clear();
-
-      AddFixedSessionImages();
-
-      while (SessionsPageControl->PageCount > 0)
+      TTabSheet * TabSheet;
+      if (Index >= SessionsPageControl->PageCount)
       {
-        delete SessionsPageControl->Pages[0];
+        TabSheet = new TThemeTabSheet(SessionsPageControl);
+        TabSheet->PageControl = SessionsPageControl;
+      }
+      else
+      {
+        TabSheet = SessionsPageControl->Pages[Index];
       }
 
-      for (int Index = 0; Index < TerminalList->Count; Index++)
+      if (Index < TerminalList->Count)
       {
-        TThemeTabSheet * TabSheet = new TThemeTabSheet(SessionsPageControl);
-        TabSheet->Caption = TerminalList->Strings[Index];
         TTerminal * Terminal = dynamic_cast<TTerminal *>(TerminalList->Objects[Index]);
         TabSheet->Tag = reinterpret_cast<int>(Terminal);
-        TabSheet->PageControl = SessionsPageControl;
 
         UpdateSessionTab(TabSheet);
       }
-
-      TTabSheet * TabSheet = new TTabSheet(SessionsPageControl);
-      TabSheet->PageControl = SessionsPageControl;
-      TabSheet->ImageIndex = FNewSessionTabImageIndex;
-      UpdateNewSessionTab();
+      else
+      {
+        TabSheet->ImageIndex = FNewSessionTabImageIndex;
+        TabSheet->Tag = 0; // not really needed
+        // We know that we are at the last page, sotherwise we could not call this (it assumes that new session tab is the last one)
+        UpdateNewSessionTab();
+      }
     }
-    __finally
-    {
-      SendMessage(SessionsPageControl->Handle, WM_SETREDRAW, 1, 0);
-    }
+  }
+  __finally
+  {
+    SendMessage(SessionsPageControl->Handle, WM_SETREDRAW, 1, 0);
   }
 
   SessionsPageControl->ActivePageIndex = ActiveTerminalIndex;
@@ -6296,7 +6292,7 @@ void __fastcall TCustomScpExplorerForm::DoTerminalListChanged(bool Force)
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::TerminalListChanged(TObject * /*Sender*/)
 {
-  DoTerminalListChanged(false);
+  DoTerminalListChanged();
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::UpdateNewSessionTab()
@@ -6324,11 +6320,11 @@ void __fastcall TCustomScpExplorerForm::UpdateSessionTab(TTabSheet * TabSheet)
       dynamic_cast<TManagedTerminal *>(GetSessionTabTerminal(TabSheet));
     if (DebugAlwaysTrue(ManagedTerminal != NULL))
     {
-      TColor Color =
-        (ManagedTerminal == FTerminal) ? FSessionColor : ManagedTerminal->StateData->Color;
-
+      TColor Color = (ManagedTerminal == FTerminal) ? FSessionColor : ManagedTerminal->StateData->Color;
       TabSheet->ImageIndex = AddSessionColor(Color);
-      TabSheet->Caption = TTerminalManager::Instance()->GetTerminalTitle(ManagedTerminal, true);
+
+      UnicodeString TabCaption = TTerminalManager::Instance()->GetTerminalTitle(ManagedTerminal, true);
+      TabSheet->Caption = TabCaption;
 
       TThemeTabSheet * ThemeTabSheet = dynamic_cast<TThemeTabSheet *>(TabSheet);
       if (DebugAlwaysTrue(ThemeTabSheet != NULL))
@@ -6356,7 +6352,7 @@ bool __fastcall TCustomScpExplorerForm::SessionTabSwitched()
     }
     __finally
     {
-      DoTerminalListChanged(false);
+      DoTerminalListChanged();
     }
 
     FSessionsPageControlNewSessionTime = Now();
@@ -6599,7 +6595,7 @@ void __fastcall TCustomScpExplorerForm::UpdatePixelsPerInchMainWindowCounter()
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::StartingDisconnected()
 {
-  DoTerminalListChanged(true);
+  DoTerminalListChanged();
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::PopupTrayBalloon(TTerminal * Terminal,
@@ -8592,8 +8588,9 @@ void __fastcall TCustomScpExplorerForm::UpdateImages()
 void __fastcall TCustomScpExplorerForm::CMDpiChanged(TMessage & Message)
 {
   TForm::Dispatch(&Message);
-  // regenerate session images
-  DoTerminalListChanged(true);
+  FSessionColors->Clear();
+  AddFixedSessionImages();
+  RegenerateSessionColorsImageList(FSessionColors, FSessionColorMaskImageIndex);
   UpdateImages();
 }
 //---------------------------------------------------------------------------
@@ -9414,8 +9411,7 @@ int __fastcall TCustomScpExplorerForm::AddSessionColor(TColor Color)
 {
   if (Color != 0)
   {
-    AddSessionColorImage(FSessionColors, Color, FSessionColorMaskImageIndex);
-    return FSessionColors->Count - 1;
+    return GetSessionColorImage(FSessionColors, Color, FSessionColorMaskImageIndex);
   }
   else
   {

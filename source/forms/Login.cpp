@@ -358,8 +358,7 @@ int __fastcall TLoginDialog::GetSessionImageIndex(TSessionData * Data)
   int Result;
   if (Data->Color != 0)
   {
-    AddSessionColorImage(SessionTree->Images, static_cast<TColor>(Data->Color), SiteColorMaskImageIndex);
-    Result = SessionTree->Images->Count - 1;
+    Result = GetSessionColorImage(SessionTree->Images, static_cast<TColor>(Data->Color), SiteColorMaskImageIndex);
   }
   else
   {
