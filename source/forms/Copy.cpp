@@ -335,10 +335,6 @@ void __fastcall TCopyDialog::UpdateControls()
   bool RemoteTransfer = FLAGSET(FOutputOptions, cooRemoteTransfer);
   EnableControl(QueueCheck2,
     ((FOptions & (coDisableQueue | coTemp)) == 0) && !RemoteTransfer);
-
-  TransferSettingsButton->Style =
-    FLAGCLEAR(FOptions, coDoNotUsePresets) ?
-      TCustomButton::bsSplitButton : TCustomButton::bsPushButton;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyDialog::FormShow(TObject * /*Sender*/)
@@ -468,7 +464,7 @@ void __fastcall TCopyDialog::ControlChange(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TCopyDialog::TransferSettingsButtonClick(TObject * /*Sender*/)
 {
-  if (FLAGCLEAR(FOptions, coDoNotUsePresets) && !SupportsSplitButton())
+  if (!SupportsSplitButton())
   {
     CopyParamListPopup(CalculatePopupRect(TransferSettingsButton), 0);
   }
@@ -535,11 +531,8 @@ void __fastcall TCopyDialog::CopyParamGroupClick(TObject * /*Sender*/)
 void __fastcall TCopyDialog::CopyParamGroupContextPopup(TObject * /*Sender*/,
   TPoint & MousePos, bool & Handled)
 {
-  if (FLAGCLEAR(FOptions, coDoNotUsePresets))
-  {
-    CopyParamListPopup(CalculatePopupRect(CopyParamGroup, MousePos), cplCustomizeDefault);
-    Handled = true;
-  }
+  CopyParamListPopup(CalculatePopupRect(CopyParamGroup, MousePos), cplCustomizeDefault);
+  Handled = true;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyDialog::CopyParamListPopup(TRect R, int AdditionalOptions)
@@ -548,7 +541,7 @@ void __fastcall TCopyDialog::CopyParamListPopup(TRect R, int AdditionalOptions)
 
   ::CopyParamListPopup(R, FPresetsMenu,
     FCopyParams, FPreset, CopyParamClick,
-    cplCustomize | AdditionalOptions |
+    AdditionalOptions |
       FLAGMASK(
           FLAGCLEAR(FOptions, coDisableSaveSettings) && !RemoteTransfer,
         cplSaveSettings) |

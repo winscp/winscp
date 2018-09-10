@@ -199,7 +199,7 @@ const coDisableQueue        = 0x002;
 const coDisableDirectory    = 0x008; // not used anymore
 const coDoNotShowAgain      = 0x020;
 const coDisableSaveSettings = 0x040; // not used anymore
-const coDoNotUsePresets     = 0x080;
+const coDoNotUsePresets     = 0x080; // not used anymore
 const coAllowRemoteTransfer = 0x100;
 const coNoQueue             = 0x200;
 const coShortCutHint        = 0x800;
@@ -446,7 +446,6 @@ void __fastcall DoGenerateTransferCodeDialog(
 
 void __fastcall CopyParamListButton(TButton * Button);
 const int cplNone =             0x00;
-const int cplCustomize =        0x01;
 const int cplCustomizeDefault = 0x02;
 const int cplSaveSettings =     0x04;
 const int cplGenerateCode =     0x08;

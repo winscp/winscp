@@ -121,6 +121,7 @@ object CopyDialog: TCopyDialog
     Width = 161
     Height = 25
     Caption = 'Transfer settin&gs...'
+    Style = bsSplitButton
     TabOrder = 5
     OnClick = TransferSettingsButtonClick
     OnDropDownClick = TransferSettingsButtonDropDownClick

@@ -807,16 +807,13 @@ void __fastcall CopyParamListPopup(TRect Rect, TPopupMenu * Menu,
   TMenuItem * CustomizeItem = NULL;
   TMenuItem * Item;
 
-  if (FLAGSET(Options, cplCustomize))
-  {
-    Item = new TMenuItem(Menu);
-    Item->Caption = LoadStr(COPY_PARAM_CUSTOM);
-    Item->Tag = cpiCustom;
-    Item->Default = FLAGSET(Options, cplCustomizeDefault);
-    Item->OnClick = OnClick;
-    Menu->Items->Add(Item);
-    CustomizeItem = Item;
-  }
+  Item = new TMenuItem(Menu);
+  Item->Caption = LoadStr(COPY_PARAM_CUSTOM);
+  Item->Tag = cpiCustom;
+  Item->Default = FLAGSET(Options, cplCustomizeDefault);
+  Item->OnClick = OnClick;
+  Menu->Items->Add(Item);
+  CustomizeItem = Item;
 
   if (FLAGSET(Options, cplSaveSettings))
   {

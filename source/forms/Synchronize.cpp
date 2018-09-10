@@ -271,7 +271,7 @@ void __fastcall TSynchronizeDialog::CopyParamListPopup(TRect R, int AdditionalOp
   // display checkbox next to user-selected preset
   ::CopyParamListPopup(
     R, FPresetsMenu, FCopyParams, FPreset, CopyParamClick,
-    cplCustomize | AdditionalOptions, ActualCopyParamAttrs());
+    AdditionalOptions, ActualCopyParamAttrs());
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeDialog::TransferSettingsButtonClick(
