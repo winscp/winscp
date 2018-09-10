@@ -21,7 +21,7 @@ bool __fastcall DoCopyParamPresetDialog(TCopyParamList * CopyParamList,
   const TCopyParamType & DefaultCopyParams)
 {
   bool Result;
-  TCopyParamPresetDialog * Dialog = new TCopyParamPresetDialog(GetFormOwner() , Mode, CurrentRuleData);
+  TCopyParamPresetDialog * Dialog = new TCopyParamPresetDialog(GetFormOwner(), Mode, CurrentRuleData);
   try
   {
     Result = Dialog->Execute(CopyParamList, Index, DefaultCopyParams);
