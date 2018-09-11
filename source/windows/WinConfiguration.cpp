@@ -574,6 +574,7 @@ void __fastcall TWinConfiguration::Default()
   FLockedInterface = false;
 
   HonorDrivePolicy = true;
+  TimeoutShellOperations = true;
 
   FEditor.Font.FontName = DefaultFixedWidthFontName;
   FEditor.Font.FontSize = DefaultFixedWidthFontSize;
