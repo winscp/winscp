@@ -589,7 +589,7 @@ void __fastcall RegenerateSessionColorsImageList(TCustomImageList * ImageList, i
   TSessionColors * SessionColors = TSessionColors::Retrieve(ImageList);
 
   std::vector<TColor> Colors;
-  int FixedImages = ImageList->Count;
+  size_t FixedImages = static_cast<size_t>(ImageList->Count);
   Colors.resize(FixedImages + SessionColors->ColorMap.size());
   TSessionColors::TColorMap::const_iterator I = SessionColors->ColorMap.begin();
   while (I != SessionColors->ColorMap.end())

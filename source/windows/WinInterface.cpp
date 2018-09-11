@@ -805,7 +805,6 @@ void __fastcall CopyParamListPopup(TRect Rect, TPopupMenu * Menu,
 {
   Menu->Items->Clear();
 
-  TMenuItem * CustomizeItem = NULL;
   TMenuItem * Item;
 
   Item = new TMenuItem(Menu);
@@ -814,7 +813,7 @@ void __fastcall CopyParamListPopup(TRect Rect, TPopupMenu * Menu,
   Item->Default = FLAGSET(Options, cplCustomizeDefault);
   Item->OnClick = OnClick;
   Menu->Items->Add(Item);
-  CustomizeItem = Item;
+  TMenuItem * CustomizeItem = Item;
 
   if (FLAGSET(Options, cplSaveSettings))
   {
@@ -872,10 +871,7 @@ void __fastcall CopyParamListPopup(TRect Rect, TPopupMenu * Menu,
     }
   }
 
-  if (CustomizeItem != NULL)
-  {
-    CustomizeItem->Checked = !AnyChecked;
-  }
+  CustomizeItem->Checked = !AnyChecked;
 
   Item = new TMenuItem(Menu);
   Item->Caption = L"-";
