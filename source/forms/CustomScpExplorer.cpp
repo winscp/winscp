@@ -4672,16 +4672,21 @@ void __fastcall TCustomScpExplorerForm::DuplicateSession()
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall TCustomScpExplorerForm::CanCloseQueue()
+bool __fastcall TCustomScpExplorerForm::CanCloseQueue(TTerminalQueue * Queue)
 {
-  DebugAssert(FQueue != NULL);
-  bool Result = FQueue->IsEmpty;
+  DebugAssert(Queue != NULL);
+  bool Result = Queue->IsEmpty;
   if (!Result)
   {
     SetFocus();
     Result = (MessageDialog(LoadStr(PENDING_QUEUE_ITEMS2), qtWarning, qaOK | qaCancel, HELP_NONE) == qaOK);
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TCustomScpExplorerForm::CanCloseQueue()
+{
+  return CanCloseQueue(FQueue);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::CloseSession()
@@ -6256,7 +6261,7 @@ void __fastcall TCustomScpExplorerForm::DoTerminalListChanged()
 
     for (int Index = 0; Index <= TerminalList->Count; Index++)
     {
-      TTabSheet * TabSheet;
+      TThemeTabSheet * TabSheet;
       if (Index >= SessionsPageControl->PageCount)
       {
         TabSheet = new TThemeTabSheet(SessionsPageControl);
@@ -6264,10 +6269,11 @@ void __fastcall TCustomScpExplorerForm::DoTerminalListChanged()
       }
       else
       {
-        TabSheet = SessionsPageControl->Pages[Index];
+        TabSheet = DebugNotNull(dynamic_cast<TThemeTabSheet *>(SessionsPageControl->Pages[Index]));
       }
 
-      if (Index < TerminalList->Count)
+      bool IsSessionTab = (Index < TerminalList->Count);
+      if (IsSessionTab)
       {
         TTerminal * Terminal = dynamic_cast<TTerminal *>(TerminalList->Objects[Index]);
         TabSheet->Tag = reinterpret_cast<int>(Terminal);
@@ -6281,6 +6287,8 @@ void __fastcall TCustomScpExplorerForm::DoTerminalListChanged()
         // We know that we are at the last page, sotherwise we could not call this (it assumes that new session tab is the last one)
         UpdateNewSessionTab();
       }
+
+      TabSheet->ShowCloseButton = IsSessionTab;
     }
   }
   __finally
@@ -6325,7 +6333,7 @@ void __fastcall TCustomScpExplorerForm::UpdateSessionTab(TTabSheet * TabSheet)
       TabSheet->ImageIndex = AddSessionColor(Color);
 
       UnicodeString TabCaption = TTerminalManager::Instance()->GetTerminalTitle(ManagedTerminal, true);
-      TabSheet->Caption = TabCaption;
+      TabSheet->Caption = SessionsPageControl->FormatCaptionWithCloseButton(TabCaption);
 
       TThemeTabSheet * ThemeTabSheet = dynamic_cast<TThemeTabSheet *>(TabSheet);
       if (DebugAlwaysTrue(ThemeTabSheet != NULL))
@@ -9841,5 +9849,31 @@ void __fastcall TCustomScpExplorerForm::ReloadDirectory(TOperationSide Side)
   // Make sure there some feedback even when loading tine local folders
   TInstantOperationVisualizer Visualizer;
   DirView(Side)->ReloadDirectory();
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::SessionsPageControlCloseButtonClick(TPageControl * /*Sender*/, int Index)
+{
+  if (Index == SessionsPageControl->TabIndex)
+  {
+    CloseSession();
+  }
+  else
+  {
+    TTabSheet * TabSheet = SessionsPageControl->Pages[Index];
+    TTerminal * Terminal = GetSessionTabTerminal(TabSheet);
+    TTerminalManager * Manager = TTerminalManager::Instance();
+    if (!Terminal->Active)
+    {
+      Manager->FreeTerminal(Terminal);
+    }
+    else
+    {
+      TTerminalQueue * Queue = Manager->FindQueueForTerminal(Terminal);
+      if (CanCloseQueue(Queue))
+      {
+        Manager->FreeTerminal(Terminal);
+      }
+    }
+  }
 }
 //---------------------------------------------------------------------------

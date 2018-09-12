@@ -189,6 +189,7 @@ __published:
   void __fastcall DirViewBusy(TObject *Sender, int Busy, bool & Allow);
   void __fastcall SessionsPageControlContextPopup(TObject *Sender, TPoint &MousePos, bool &Handled);
   void __fastcall DockContextPopup(TObject *Sender, TPoint &MousePos, bool &Handled);
+  void __fastcall SessionsPageControlCloseButtonClick(TPageControl *Sender, int Index);
 
 private:
   TTerminal * FTerminal;
@@ -450,6 +451,7 @@ protected:
   void __fastcall QueueViewDeleteItem(int Index);
   void __fastcall UserActionTimer(TObject * Sender);
   void __fastcall UpdateQueueView();
+  bool __fastcall CanCloseQueue(TTerminalQueue * Queue);
   bool __fastcall CanCloseQueue();
   virtual bool __fastcall IsFileControl(TObject * Control, TOperationSide Side);
   virtual void __fastcall ReloadLocalDirectory(const UnicodeString Directory = L"");

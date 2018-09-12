@@ -313,6 +313,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
     OnDragDrop = SessionsPageControlDragDrop
     OnDragOver = SessionsPageControlDragOver
     OnMouseDown = SessionsPageControlMouseDown
+    OnCloseButtonClick = SessionsPageControlCloseButtonClick
     object TabSheet1: TTabSheet
       Caption = 'TabSheet1'
     end

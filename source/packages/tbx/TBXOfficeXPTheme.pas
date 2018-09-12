@@ -86,6 +86,8 @@ type
     procedure PaintStatusBar(Control: TWinControl; Canvas: TCanvas; R: TRect; Part: Integer); override;
   end;
 
+function GetSelectedBodyColor: TColor;
+
 implementation
 
 uses
@@ -1227,7 +1229,7 @@ begin
     BtnItemColors[bisDisabled, ipText]         := DisabledText;
     SetContrast(BtnItemColors[bisDisabled, ipText], ToolbarColor, 80);
     BtnItemColors[bisDisabled, ipFrame]        := clNone;
-    BtnItemColors[bisSelected, ipBody]         := Blend(clHighlight, Blend(clBtnFace, clWindow, 50), 10);
+    BtnItemColors[bisSelected, ipBody]         := GetSelectedBodyColor;
     SetContrast(BtnItemColors[bisSelected, ipBody], ToolbarColor, 5);
     BtnItemColors[bisSelected, ipText]         := BtnItemColors[bisNormal, ipText];
     BtnItemColors[bisSelected, ipFrame]        := clHighlight;
@@ -1407,6 +1409,11 @@ end;
 procedure TTBXOfficeXPTheme.TBXSysCommand(var Message: TMessage);
 begin
   if Message.WParam = TSC_VIEWCHANGE then SetupColorCache;
+end;
+
+function GetSelectedBodyColor: TColor;
+begin
+  Result := Blend(clHighlight, Blend(clBtnFace, clWindow, 50), 10);
 end;
 
 end.
