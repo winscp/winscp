@@ -830,7 +830,8 @@ void __fastcall TCustomScpExplorerForm::SetTaskbarListProgressValue(TFileOperati
   if (ProgressData->Operation != foCalculateSize)
   {
     int OverallProgress;
-    if (DebugAlwaysTrue(FProgressForm != NULL) && (FProgressForm->SynchronizeProgress != NULL))
+    // FProgressForm is null when this is called from SetQueueProgress
+    if ((FProgressForm != NULL) && (FProgressForm->SynchronizeProgress != NULL))
     {
       OverallProgress = FProgressForm->SynchronizeProgress->Progress(ProgressData);
     }
