@@ -285,11 +285,11 @@ inherited ScpExplorerForm: TScpExplorerForm
         object TBXItem113: TTBXItem
           Action = NonVisualDataModule.NewSessionAction
         end
-        object TBXItem90: TTBXItem
-          Action = NonVisualDataModule.DuplicateSessionAction
-        end
         object TBXItem115: TTBXItem
           Action = NonVisualDataModule.CloseSessionAction
+        end
+        object TBXItem90: TTBXItem
+          Action = NonVisualDataModule.DuplicateSessionAction
         end
         object TBXItem114: TTBXItem
           Action = NonVisualDataModule.SaveCurrentSessionAction2
@@ -307,6 +307,12 @@ inherited ScpExplorerForm: TScpExplorerForm
         end
         object TBXItem14: TTBXItem
           Action = NonVisualDataModule.PrivateKeyUploadAction
+        end
+        object TBXSeparatorItem23: TTBXSeparatorItem
+        end
+        object ColorMenuItem: TTBXColorItem
+          Action = NonVisualDataModule.ColorMenuAction
+          Color = clNone
         end
         object TBXSeparatorItem29: TTBXSeparatorItem
         end
@@ -543,12 +549,6 @@ inherited ScpExplorerForm: TScpExplorerForm
         end
         object TBXItem138: TTBXItem
           Action = NonVisualDataModule.RemoteFilterAction
-        end
-        object TBXSeparatorItem23: TTBXSeparatorItem
-        end
-        object ColorMenuItem: TTBXColorItem
-          Action = NonVisualDataModule.ColorMenuAction
-          Color = clNone
         end
         object TBXSeparatorItem5: TTBXSeparatorItem
         end

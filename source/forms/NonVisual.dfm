@@ -3003,6 +3003,12 @@ object NonVisualDataModule: TNonVisualDataModule
     object TBXItem52: TTBXItem
       Action = SessionGenerateUrlAction2
     end
+    object TBXSeparatorItem52: TTBXSeparatorItem
+    end
+    object ColorMenuItem: TTBXColorItem
+      Action = ColorMenuAction
+      Color = clNone
+    end
     object TBXSeparatorItem34: TTBXSeparatorItem
     end
     object TBXItem123: TTBXItem
@@ -3011,12 +3017,6 @@ object NonVisualDataModule: TNonVisualDataModule
     object TBXSubmenuItem23: TTBXSubmenuItem
       Action = SavedSessionsAction2
       Options = [tboDropdownArrow]
-    end
-    object TBXSeparatorItem52: TTBXSeparatorItem
-    end
-    object ColorMenuItem: TTBXColorItem
-      Action = ColorMenuAction
-      Color = clNone
     end
     object TBXSeparatorItem35: TTBXSeparatorItem
     end

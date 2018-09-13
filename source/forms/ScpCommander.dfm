@@ -409,11 +409,11 @@ inherited ScpCommanderForm: TScpCommanderForm
         object TBXItem113: TTBXItem
           Action = NonVisualDataModule.NewSessionAction
         end
-        object TBXItem218: TTBXItem
-          Action = NonVisualDataModule.DuplicateSessionAction
-        end
         object TBXItem115: TTBXItem
           Action = NonVisualDataModule.CloseSessionAction
+        end
+        object TBXItem218: TTBXItem
+          Action = NonVisualDataModule.DuplicateSessionAction
         end
         object TBXItem114: TTBXItem
           Action = NonVisualDataModule.SaveCurrentSessionAction2
@@ -431,6 +431,12 @@ inherited ScpCommanderForm: TScpCommanderForm
         end
         object TBXItem76: TTBXItem
           Action = NonVisualDataModule.PrivateKeyUploadAction
+        end
+        object TBXSeparatorItem23: TTBXSeparatorItem
+        end
+        object ColorMenuItem: TTBXColorItem
+          Action = NonVisualDataModule.ColorMenuAction
+          Color = clNone
         end
         object TBXSeparatorItem29: TTBXSeparatorItem
         end
@@ -602,12 +608,6 @@ inherited ScpCommanderForm: TScpCommanderForm
           object TBXItem81: TTBXItem
             Action = NonVisualDataModule.QueuePreferencesAction
           end
-        end
-        object TBXSeparatorItem23: TTBXSeparatorItem
-        end
-        object ColorMenuItem: TTBXColorItem
-          Action = NonVisualDataModule.ColorMenuAction
-          Color = clNone
         end
         object TBXSeparatorItem49: TTBXSeparatorItem
         end
