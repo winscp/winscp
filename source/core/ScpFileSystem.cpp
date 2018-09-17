@@ -1710,7 +1710,7 @@ void __fastcall TSCPFileSystem::SCPSource(const UnicodeString FileName,
 
   OperationProgress->SetFile(FileName, false);
 
-  if (!FTerminal->AllowLocalFileTransfer(FileName, CopyParam, OperationProgress))
+  if (!FTerminal->AllowLocalFileTransfer(FileName, NULL, CopyParam, OperationProgress))
   {
     throw ESkipFile();
   }

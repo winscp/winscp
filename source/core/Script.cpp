@@ -716,9 +716,10 @@ TStrings * __fastcall TScript::CreateFileList(TScriptProcParams * Parameters, in
 TStrings * __fastcall TScript::CreateLocalFileList(TScriptProcParams * Parameters,
   int Start, int End, TFileListType ListType)
 {
-  TStrings * Result = new TStringList();
+  TStringList * Result = new TStringList();
   try
   {
+    Result->OwnsObjects = true;
     UnicodeString LatestFileName;
     TDateTime LatestModification; // initialized to 0
 
@@ -748,7 +749,9 @@ TStrings * __fastcall TScript::CreateLocalFileList(TScriptProcParams * Parameter
             if (SearchRec.IsRealFile())
             {
               UnicodeString FileName = Directory + SearchRec.Name;
-              Result->Add(FileName);
+              TLocalFile * LocalFile = new TLocalFile;
+              CopySearchRec(SearchRec, LocalFile->SearchRec);
+              Result->AddObject(FileName, LocalFile);
               if (SearchRec.TimeStamp > LatestModification)
               {
                 LatestFileName = FileName;

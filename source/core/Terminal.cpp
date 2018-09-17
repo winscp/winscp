@@ -5128,37 +5128,42 @@ bool __fastcall TTerminal::DoAllowRemoteFileTransfer(
        !IsEmptyRemoteDirectory(File, CopyParam, DisallowTemporaryTransferFiles));
 }
 //---------------------------------------------------------------------------
-bool __fastcall TTerminal::AllowLocalFileTransfer(UnicodeString FileName,
+bool __fastcall TTerminal::AllowLocalFileTransfer(
+  const UnicodeString & FileName, const TSearchRecSmart * SearchRec,
   const TCopyParamType * CopyParam, TFileOperationProgressType * OperationProgress)
 {
   bool Result = true;
-  // optimization (though in most uses of the method, the caller actually knows TSearchRec already, so it could pass it here)
+  // optimization (though in most uses of the method, the caller actually knows TSearchRec already, so it passes it here
   if (Log->Logging || !CopyParam->AllowAnyTransfer())
   {
-    TSearchRecSmart SearchRec;
-    FILE_OPERATION_LOOP_BEGIN
+    TSearchRecSmart ASearchRec;
+    if (SearchRec == NULL)
     {
-      if (!FileSearchRec(FileName, SearchRec))
+      FILE_OPERATION_LOOP_BEGIN
       {
-        RaiseLastOSError();
+        if (!FileSearchRec(FileName, ASearchRec))
+        {
+          RaiseLastOSError();
+        }
       }
+      FILE_OPERATION_LOOP_END(FMTLOAD(FILE_NOT_EXISTS, (FileName)));
+      SearchRec = &ASearchRec;
     }
-    FILE_OPERATION_LOOP_END(FMTLOAD(FILE_NOT_EXISTS, (FileName)));
 
-    if (!DoAllowLocalFileTransfer(FileName, SearchRec, CopyParam, false))
+    if (!DoAllowLocalFileTransfer(FileName, *SearchRec, CopyParam, false))
     {
       LogEvent(FORMAT(L"File \"%s\" excluded from transfer", (FileName)));
       Result = false;
     }
-    else if (CopyParam->SkipTransfer(FileName, SearchRec.IsDirectory()))
+    else if (CopyParam->SkipTransfer(FileName, SearchRec->IsDirectory()))
     {
-      OperationProgress->AddSkippedFileSize(SearchRec.Size);
+      OperationProgress->AddSkippedFileSize(SearchRec->Size);
       Result = false;
     }
 
     if (Result)
     {
-      LogFileDetails(FileName, SearchRec.GetLastWriteTime(), SearchRec.Size);
+      LogFileDetails(FileName, SearchRec->GetLastWriteTime(), SearchRec->Size);
     }
   }
   return Result;
@@ -6722,6 +6727,12 @@ void __fastcall TTerminal::DoCopyToRemote(
   {
     bool Success = false;
     UnicodeString FileName = FilesToCopy->Strings[Index];
+    TSearchRecSmart * SearchRec = NULL;
+    if (FilesToCopy->Objects[Index] != NULL)
+    {
+      TLocalFile * LocalFile = dynamic_cast<TLocalFile *>(FilesToCopy->Objects[Index]);
+      SearchRec = &LocalFile->SearchRec;
+    }
 
     try
     {
@@ -6737,7 +6748,7 @@ void __fastcall TTerminal::DoCopyToRemote(
             DirectoryModified(FullTargetDir + FileNameOnly, true);
           }
         }
-        SourceRobust(FileName, FullTargetDir, CopyParam, Params, OperationProgress, Flags | tfFirstLevel);
+        SourceRobust(FileName, SearchRec, FullTargetDir, CopyParam, Params, OperationProgress, Flags | tfFirstLevel);
         Success = true;
       }
       catch (ESkipFile & E)
@@ -6758,7 +6769,8 @@ void __fastcall TTerminal::DoCopyToRemote(
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::SourceRobust(
-  const UnicodeString & FileName, const UnicodeString & TargetDir, const TCopyParamType * CopyParam, int Params,
+  const UnicodeString & FileName, const TSearchRecSmart * SearchRec,
+  const UnicodeString & TargetDir, const TCopyParamType * CopyParam, int Params,
   TFileOperationProgressType * OperationProgress, unsigned int Flags)
 {
   TUploadSessionAction Action(ActionLog);
@@ -6770,7 +6782,7 @@ void __fastcall TTerminal::SourceRobust(
     bool ChildError = false;
     try
     {
-      Source(FileName, TargetDir, CopyParam, Params, OperationProgress, Flags, Action, ChildError);
+      Source(FileName, SearchRec, TargetDir, CopyParam, Params, OperationProgress, Flags, Action, ChildError);
     }
     catch (Exception & E)
     {
@@ -6847,7 +6859,7 @@ void __fastcall TTerminal::DirectorySource(
       {
         if (SearchRec.IsRealFile())
         {
-          SourceRobust(FileName, DestFullName, CopyParam, Params, OperationProgress, (Flags & ~(tfFirstLevel | tfAutoResume)));
+          SourceRobust(FileName, &SearchRec, DestFullName, CopyParam, Params, OperationProgress, (Flags & ~(tfFirstLevel | tfAutoResume)));
           // FTP: if any file got uploaded (i.e. there were any file in the directory and at least one was not skipped),
           // do not try to create the directory, as it should be already created by FZAPI during upload
           PostCreateDir = false;
@@ -6968,14 +6980,15 @@ void __fastcall TTerminal::UpdateSource(const TLocalFileHandle & Handle, const T
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::Source(
-  const UnicodeString & FileName, const UnicodeString & TargetDir, const TCopyParamType * CopyParam, int Params,
+  const UnicodeString & FileName, const TSearchRecSmart * SearchRec,
+  const UnicodeString & TargetDir, const TCopyParamType * CopyParam, int Params,
   TFileOperationProgressType * OperationProgress, unsigned int Flags, TUploadSessionAction & Action, bool & ChildError)
 {
   Action.FileName(ExpandUNCFileName(FileName));
 
   OperationProgress->SetFile(FileName, false);
 
-  if (!AllowLocalFileTransfer(FileName, CopyParam, OperationProgress))
+  if (!AllowLocalFileTransfer(FileName, SearchRec, CopyParam, OperationProgress))
   {
     throw ESkipFile();
   }

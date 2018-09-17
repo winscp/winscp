@@ -192,6 +192,7 @@ private:
 typedef void __fastcall (__closure* TProcessLocalFileEvent)
   (const UnicodeString & FileName, const TSearchRecSmart & Rec, void * Param);
 bool __fastcall FileSearchRec(const UnicodeString FileName, TSearchRec & Rec);
+void CopySearchRec(const TSearchRec & Source, TSearchRec & Dest);
 struct TSearchRecChecked : public TSearchRecSmart
 {
   UnicodeString Path;

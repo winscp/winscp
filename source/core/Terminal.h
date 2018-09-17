@@ -309,7 +309,8 @@ protected:
     __int64 * ATime, __int64 * Size, bool TryWriteReadOnly = true);
   void __fastcall OpenLocalFile(
     const UnicodeString & FileName, unsigned int Access, TLocalFileHandle & Handle, bool TryWriteReadOnly = true);
-  bool __fastcall AllowLocalFileTransfer(UnicodeString FileName,
+  bool __fastcall AllowLocalFileTransfer(
+    const UnicodeString & FileName, const TSearchRecSmart * SearchRec,
     const TCopyParamType * CopyParam, TFileOperationProgressType * OperationProgress);
   bool __fastcall HandleException(Exception * E);
   void __fastcall CalculateFileSize(UnicodeString FileName,
@@ -447,10 +448,12 @@ protected:
     TStrings * FilesToCopy, const UnicodeString & TargetDir, const TCopyParamType * CopyParam, int Params,
     TFileOperationProgressType * OperationProgress, unsigned int Flags, TOnceDoneOperation & OnceDoneOperation);
   void __fastcall SourceRobust(
-    const UnicodeString & FileName, const UnicodeString & TargetDir, const TCopyParamType * CopyParam, int Params,
+    const UnicodeString & FileName, const TSearchRecSmart * SearchRec,
+    const UnicodeString & TargetDir, const TCopyParamType * CopyParam, int Params,
     TFileOperationProgressType * OperationProgress, unsigned int Flags);
   void __fastcall Source(
-    const UnicodeString & FileName, const UnicodeString & TargetDir, const TCopyParamType * CopyParam, int Params,
+    const UnicodeString & FileName, const TSearchRecSmart * SearchRec,
+    const UnicodeString & TargetDir, const TCopyParamType * CopyParam, int Params,
     TFileOperationProgressType * OperationProgress, unsigned int Flags, TUploadSessionAction & Action, bool & ChildError);
   void __fastcall DirectorySource(
     const UnicodeString & DirectoryName, const UnicodeString & TargetDir, const UnicodeString & DestDirectoryName,
@@ -884,6 +887,12 @@ struct TLocalFileHandle
   __int64 MTime;
   __int64 ATime;
   __int64 Size;
+};
+//---------------------------------------------------------------------------
+class TLocalFile : public TObject
+{
+public:
+  TSearchRecSmart SearchRec;
 };
 //---------------------------------------------------------------------------
 #endif
