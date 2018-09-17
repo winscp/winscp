@@ -17,6 +17,7 @@
 #include <Math.hpp>
 #include <WinConfiguration.h>
 #include <GUITools.h>
+#include <TerminalManager.h>
 //---------------------------------------------------------------------
 #pragma link "IEListView"
 #pragma link "NortonLikeListView"
@@ -118,9 +119,16 @@ bool __fastcall TSynchronizeChecklistDialog::Execute(TSynchronizeChecklist * Che
   return Result;
 }
 //---------------------------------------------------------------------
+void __fastcall TSynchronizeChecklistDialog::UpdateCaption()
+{
+  TTerminalManager * Manager = TTerminalManager::Instance();
+  UnicodeString Title = Manager->GetAppProgressTitle() + LoadStr(FSynchronizing ? SYNCHRONIZE_PROGRESS_SYNCHRONIZE2 : SYNCHRONIZE_CHECKLIST_CAPTION);
+  Caption = FormatFormCaption(this, Title);
+}
+//---------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::UpdateControls()
 {
-  Caption = FormatFormCaption(this, LoadStr(FSynchronizing ? SYNCHRONIZE_PROGRESS_SYNCHRONIZE2 : SYNCHRONIZE_CHECKLIST_CAPTION));
+  UpdateCaption();
 
   StatusBar->Invalidate();
 
@@ -1020,27 +1028,33 @@ void __fastcall TSynchronizeChecklistDialog::ListViewClick(TObject * /*Sender*/)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSynchronizeChecklistDialog::Dispatch(void * Message)
+void __fastcall TSynchronizeChecklistDialog::Dispatch(void * AMessage)
 {
-  TMessage * M = reinterpret_cast<TMessage*>(Message);
-  if (M->Msg == WM_SYSCOMMAND)
+  TMessage & Message = *reinterpret_cast<TMessage *>(AMessage);
+  if (Message.Msg == WM_SYSCOMMAND)
   {
-    if (!HandleMinimizeSysCommand(*M))
+    if (!HandleMinimizeSysCommand(Message))
     {
-      TForm::Dispatch(Message);
+      TForm::Dispatch(AMessage);
     }
   }
-  else if (M->Msg == CM_DPICHANGED)
+  else if (Message.Msg == CM_DPICHANGED)
   {
-    CMDpiChanged(*M);
+    CMDpiChanged(Message);
   }
-  else if (M->Msg == WM_WANTS_MOUSEWHEEL_INACTIVE)
+  else if (Message.Msg == WM_WANTS_MOUSEWHEEL_INACTIVE)
   {
-    M->Result = FSynchronizing ? 1 : 0;
+    Message.Result = FSynchronizing ? 1 : 0;
+  }
+  else if (Message.Msg == WM_MANAGES_CAPTION)
+  {
+    // calling UpdateControls would cause status bar flicker
+    UpdateCaption();
+    Message.Result = 1;
   }
   else
   {
-    TForm::Dispatch(Message);
+    TForm::Dispatch(AMessage);
   }
 }
 //---------------------------------------------------------------------------

@@ -57,6 +57,7 @@ public:
   UnicodeString __fastcall GetTerminalShortPath(TTerminal * Terminal);
   UnicodeString __fastcall GetTerminalTitle(TTerminal * Terminal, bool Unique);
   UnicodeString __fastcall GetActiveTerminalTitle(bool Unique);
+  UnicodeString __fastcall GetAppProgressTitle();
   void __fastcall HandleException(Exception * E);
   void __fastcall SaveWorkspace(TList * DataList);
   void __fastcall QueueStatusUpdated();

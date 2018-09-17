@@ -673,33 +673,54 @@ bool __fastcall TTerminalManager::ShouldDisplayQueueStatusOnAppTitle()
   return Result;
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall TTerminalManager::GetAppProgressTitle()
+{
+  UnicodeString Result;
+  UnicodeString QueueProgressTitle;
+  UnicodeString ProgressTitle = !FProgressTitle.IsEmpty() ? FProgressTitle : ScpExplorer->GetProgressTitle();
+  if (!FForegroundProgressTitle.IsEmpty())
+  {
+    Result = FForegroundProgressTitle;
+  }
+  else if (!ProgressTitle.IsEmpty() && !ForegroundTask())
+  {
+    Result = ProgressTitle;
+  }
+  else if (ShouldDisplayQueueStatusOnAppTitle() &&
+           !(QueueProgressTitle = ScpExplorer->GetQueueProgressTitle()).IsEmpty())
+  {
+    Result = QueueProgressTitle;
+  }
+
+  if (!Result.IsEmpty())
+  {
+    Result += L" - ";
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminalManager::UpdateAppTitle()
 {
   if (ScpExplorer) // We should better check for GetMainForm() here
   {
-    UnicodeString NewTitle = FormatMainFormCaption(GetActiveTerminalTitle(false));
+    TForm * MainForm = GetMainForm();
+    if (MainForm->Perform(WM_MANAGES_CAPTION, 0, 0) == 0)
+    {
+      UnicodeString NewTitle = FormatMainFormCaption(GetActiveTerminalTitle(false));
 
-    UnicodeString QueueProgressTitle;
-    UnicodeString ProgressTitle = !FProgressTitle.IsEmpty() ? FProgressTitle : ScpExplorer->GetProgressTitle();
-    if (!FForegroundProgressTitle.IsEmpty())
-    {
-      NewTitle = FForegroundProgressTitle + L" - " + NewTitle;
-    }
-    else if (!ProgressTitle.IsEmpty() && !ForegroundTask())
-    {
-      NewTitle = ProgressTitle + L" - " + NewTitle;
-    }
-    else if (ShouldDisplayQueueStatusOnAppTitle() &&
-             !(QueueProgressTitle = ScpExplorer->GetQueueProgressTitle()).IsEmpty())
-    {
-      NewTitle = QueueProgressTitle + L" - " + NewTitle;
-    }
-    else if (ActiveTerminal && (ScpExplorer != NULL))
-    {
-      AddToList(NewTitle, ScpExplorer->PathForCaption(), L" - ");
+      UnicodeString ProgressTitle = GetAppProgressTitle();
+      if (!ProgressTitle.IsEmpty())
+      {
+        NewTitle = ProgressTitle + NewTitle;
+      }
+      else if (ActiveTerminal && (ScpExplorer != NULL))
+      {
+        AddToList(NewTitle, ScpExplorer->PathForCaption(), L" - ");
+      }
+
+      MainForm->Caption = NewTitle;
     }
 
-    GetMainForm()->Caption = NewTitle;
     ScpExplorer->ApplicationTitleChanged();
   }
 }

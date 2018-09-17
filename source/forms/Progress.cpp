@@ -654,6 +654,10 @@ void __fastcall TProgressForm::Dispatch(void * AMessage)
   {
     CMDialogKey(reinterpret_cast<TCMDialogKey &>(Message));
   }
+  else if (Message.Msg == WM_MANAGES_CAPTION)
+  {
+    Message.Result = 1;
+  }
   else
   {
     TForm::Dispatch(AMessage);

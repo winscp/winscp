@@ -127,6 +127,7 @@ protected:
   std::map<const TSynchronizeChecklist::TItem *, TListItem *> FChecklistToListViewMap;
 
   void __fastcall UpdateControls();
+  void __fastcall UpdateCaption();
   virtual void __fastcall CreateParams(TCreateParams & Params);
   void __fastcall LoadItem(TListItem * Item);
   void __fastcall LoadList();
