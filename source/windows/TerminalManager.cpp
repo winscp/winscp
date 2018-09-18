@@ -701,26 +701,30 @@ UnicodeString __fastcall TTerminalManager::GetAppProgressTitle()
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::UpdateAppTitle()
 {
-  if (ScpExplorer) // We should better check for GetMainForm() here
+  if (ScpExplorer)
   {
     TForm * MainForm = GetMainForm();
-    if (MainForm->Perform(WM_MANAGES_CAPTION, 0, 0) == 0)
+    if (MainForm != ScpExplorer)
     {
-      UnicodeString NewTitle = FormatMainFormCaption(GetActiveTerminalTitle(false));
-
-      UnicodeString ProgressTitle = GetAppProgressTitle();
-      if (!ProgressTitle.IsEmpty())
-      {
-        NewTitle = ProgressTitle + NewTitle;
-      }
-      else if (ActiveTerminal && (ScpExplorer != NULL))
-      {
-        AddToList(NewTitle, ScpExplorer->PathForCaption(), L" - ");
-      }
-
-      MainForm->Caption = NewTitle;
+      // triggers caption update for some forms
+      MainForm->Perform(WM_MANAGES_CAPTION, 0, 0);
     }
 
+    UnicodeString NewTitle = FormatMainFormCaption(GetActiveTerminalTitle(false));
+
+    UnicodeString ProgressTitle = GetAppProgressTitle();
+    if (!ProgressTitle.IsEmpty())
+    {
+      NewTitle = ProgressTitle + NewTitle;
+    }
+    else if (ActiveTerminal && (ScpExplorer != NULL))
+    {
+      AddToList(NewTitle, ScpExplorer->PathForCaption(), L" - ");
+    }
+
+    // Not updating MainForm here, as for all other possible main forms, this code is actually not what we want.
+    // And they all update their title on their own (some using GetAppProgressTitle()).
+    ScpExplorer->Caption = NewTitle;
     ScpExplorer->ApplicationTitleChanged();
   }
 }
