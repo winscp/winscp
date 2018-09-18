@@ -2848,14 +2848,18 @@ bool __fastcall TFTPFileSystem::NoFinalLastCode()
 //---------------------------------------------------------------------------
 bool __fastcall TFTPFileSystem::KeepWaitingForReply(unsigned int & ReplyToAwait, bool WantLastCode)
 {
-  // to keep waiting,
+  // To keep waiting,
   // non-command reply must be unset,
   // the reply we wait for must be unset or
-  // last code must be unset (if we wait for it)
+  // last code must be unset (if we wait for it).
+
+  // Though make sure that disconnect makes it through always. As for example when connection is closed already,
+  // when sending commands, we may get REPLY_DISCONNECTED as a command response and no other response after,
+  // what would cause a hang.
   return
      (FReply == 0) &&
      ((ReplyToAwait == 0) ||
-      (WantLastCode && NoFinalLastCode()));
+      (WantLastCode && NoFinalLastCode() && FLAGCLEAR(ReplyToAwait, TFileZillaIntf::REPLY_DISCONNECTED)));
 }
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::DoWaitForReply(unsigned int & ReplyToAwait, bool WantLastCode)
