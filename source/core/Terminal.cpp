@@ -6488,6 +6488,8 @@ int __fastcall TTerminal::CopyToParallel(TParallelOperation * ParallelOperation,
     }
 
     int Prev = OperationProgress->FilesFinishedSuccessfully;
+    DebugAssert((FOperationProgress == OperationProgress) || (FOperationProgress == NULL));
+    TFileOperationProgressType * PrevOperationProgress = FOperationProgress;
     try
     {
       FOperationProgress = OperationProgress;
@@ -6506,7 +6508,9 @@ int __fastcall TTerminal::CopyToParallel(TParallelOperation * ParallelOperation,
     {
       bool Success = (Prev < OperationProgress->FilesFinishedSuccessfully);
       ParallelOperation->Done(FileName, Dir, Success);
-      FOperationProgress = NULL;
+      // Not to fail an assertion in OperationStop when called from CopyToRemote or CopyToLocal,
+      // when FOperationProgress is already OperationProgress.
+      FOperationProgress = PrevOperationProgress;
     }
   }
 
