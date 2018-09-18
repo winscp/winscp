@@ -291,6 +291,9 @@ inherited ScpExplorerForm: TScpExplorerForm
         object TBXItem90: TTBXItem
           Action = NonVisualDataModule.DuplicateSessionAction
         end
+        object TBXItem61: TTBXItem
+          Action = NonVisualDataModule.RenameSessionAction
+        end
         object TBXItem114: TTBXItem
           Action = NonVisualDataModule.SaveCurrentSessionAction2
         end

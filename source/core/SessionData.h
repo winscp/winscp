@@ -220,6 +220,7 @@ private:
   UnicodeString FS3DefaultRegion;
   bool FIsWorkspace;
   UnicodeString FLink;
+  UnicodeString FNameOverride;
   UnicodeString FHostKey;
   bool FFingerprintScan;
   bool FOverrideCachedHostKey;
@@ -279,7 +280,6 @@ private:
   void __fastcall SetTimeDifferenceAuto(bool value);
   void __fastcall SetPingType(TPingType value);
   UnicodeString __fastcall GetSessionName();
-  bool __fastcall HasSessionName();
   UnicodeString __fastcall GetDefaultSessionName();
   UnicodeString __fastcall GetProtocolUrl(bool HttpForWebDAV);
   void __fastcall SetFSProtocol(TFSProtocol value);
@@ -393,6 +393,7 @@ private:
   void __fastcall SetLogicalHostName(UnicodeString value);
   void __fastcall SetIsWorkspace(bool value);
   void __fastcall SetLink(UnicodeString value);
+  void __fastcall SetNameOverride(UnicodeString value);
   void __fastcall SetHostKey(UnicodeString value);
   void __fastcall SetNote(UnicodeString value);
   void __fastcall SetWinTitle(UnicodeString value);
@@ -488,6 +489,7 @@ public:
   bool __fastcall IsInFolderOrWorkspace(UnicodeString Name);
   UnicodeString __fastcall GenerateSessionUrl(unsigned int Flags);
   bool __fastcall HasRawSettingsForUrl();
+  bool __fastcall HasSessionName();
 
   UnicodeString __fastcall GenerateOpenCommandArgs(bool Rtf);
   void __fastcall GenerateAssemblyCode(TAssemblyLanguage Language, UnicodeString & Head, UnicodeString & Tail, int & Indent);
@@ -642,6 +644,7 @@ public:
   __property UnicodeString S3DefaultRegion = { read = FS3DefaultRegion, write = SetS3DefaultRegion };
   __property bool IsWorkspace = { read = FIsWorkspace, write = SetIsWorkspace };
   __property UnicodeString Link = { read = FLink, write = SetLink };
+  __property UnicodeString NameOverride = { read = FNameOverride, write = SetNameOverride };
   __property UnicodeString HostKey = { read = FHostKey, write = SetHostKey };
   __property bool FingerprintScan = { read = FFingerprintScan, write = FFingerprintScan };
   __property bool OverrideCachedHostKey = { read = FOverrideCachedHostKey };
@@ -694,7 +697,7 @@ public:
   TStrings * __fastcall GetFolderOrWorkspaceList(const UnicodeString & Name);
   TStrings * __fastcall GetWorkspaces();
   bool __fastcall HasAnyWorkspace();
-  TSessionData * __fastcall SaveWorkspaceData(TSessionData * Data);
+  TSessionData * __fastcall SaveWorkspaceData(TSessionData * Data, int Index);
   virtual __fastcall ~TStoredSessionList();
   __property TSessionData * Sessions[int Index]  = { read=AtSession };
   __property TSessionData * DefaultSettings  = { read=FDefaultSettings, write=SetDefaultSettings };

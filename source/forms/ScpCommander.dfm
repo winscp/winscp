@@ -415,6 +415,9 @@ inherited ScpCommanderForm: TScpCommanderForm
         object TBXItem218: TTBXItem
           Action = NonVisualDataModule.DuplicateSessionAction
         end
+        object TBXItem127: TTBXItem
+          Action = NonVisualDataModule.RenameSessionAction
+        end
         object TBXItem114: TTBXItem
           Action = NonVisualDataModule.SaveCurrentSessionAction2
         end

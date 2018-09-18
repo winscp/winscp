@@ -653,6 +653,7 @@ public:
 
   void __fastcall NewSession(bool FromSite, const UnicodeString & SessionUrl = L"");
   void __fastcall DuplicateSession();
+  void __fastcall RenameSession();
   void __fastcall CloseSession();
   void __fastcall OpenDirectory(TOperationSide Side);
   virtual void __fastcall HomeDirectory(TOperationSide Side);

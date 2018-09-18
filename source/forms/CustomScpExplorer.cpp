@@ -4672,6 +4672,23 @@ void __fastcall TCustomScpExplorerForm::DuplicateSession()
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::RenameSession()
+{
+  UnicodeString Name = Terminal->SessionData->Name;
+  if (InputDialog(LoadStr(RENAME_SESSION_TITLE), LoadStr(RENAME_SESSION_PROMPT), Name, HELP_SESSION_RENAME))
+  {
+    // Checks for a slash only, so it's not that big deal that we do the check after submitting the dialog only.
+    TSessionData::ValidateName(Name);
+
+    // This is inconsistent with how color (for example) is handled.
+    Terminal->SessionData->Name = Name;
+
+    UpdateControls();
+    // Add/Remove distinguishing paths from sessions of the same name.
+    DoTerminalListChanged();
+  }
+}
+//---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::CanCloseQueue(TTerminalQueue * Queue)
 {
   DebugAssert(Queue != NULL);
@@ -5610,9 +5627,9 @@ TSessionData * __fastcall TCustomScpExplorerForm::CloneCurrentSessionData()
   SessionData->Assign(Terminal->SessionData);
   UpdateSessionData(SessionData.get());
   TTerminalManager::Instance()->UpdateSessionCredentials(SessionData.get());
-  if (Terminal->SessionData->IsWorkspace)
+  if (!Terminal->SessionData->HasSessionName())
   {
-    // Have to reset the "Workspace/XXX" name which would become user-visible
+    // Particularly for "Workspace/XXXX" name, we need to reset it, as it would become user-visible
     // once IsWorkspace is cleared
     SessionData->Name = UnicodeString();
     SessionData->IsWorkspace = false;
@@ -5785,6 +5802,9 @@ void __fastcall TCustomScpExplorerForm::UpdateSessionData(TSessionData * Data)
   // Keep in sync with TSessionData::CopyStateData
 
   DebugAssert(Data != NULL);
+
+  // This is inconsistent with how color (for example) is handled.
+  Data->Name = Terminal->SessionData->Name;
 
   // cannot use RemoteDirView->Path, because it is empty if connection
   // was already closed

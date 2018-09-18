@@ -1599,9 +1599,8 @@ void __fastcall TTerminalManager::SaveWorkspace(TList * DataList)
   for (int Index = 0; Index < Count; Index++)
   {
     TManagedTerminal * ManagedTerminal = dynamic_cast<TManagedTerminal *>(Terminals[Index]);
-    TSessionData * Data = StoredSessions->SaveWorkspaceData(ManagedTerminal->StateData);
+    TSessionData * Data = StoredSessions->SaveWorkspaceData(ManagedTerminal->StateData, Index);
     DataList->Add(Data);
-    Data->Name = IntToHex(Index, 4);
   }
 }
 //---------------------------------------------------------------------------

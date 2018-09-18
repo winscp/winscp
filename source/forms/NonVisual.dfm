@@ -2238,6 +2238,13 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'ui_toolbars'
       Hint = 'Show/hide toolbar buttons'
     end
+    object RenameSessionAction: TAction
+      Tag = 15
+      Category = 'Session'
+      Caption = '&Rename Session'
+      HelpKeyword = 'task_connections'
+      Hint = 'Rename session|Changes name of the current session'
+    end
   end
   object ExplorerBarPopup: TTBXPopupMenu
     Images = GlyphsModule.ExplorerImages
@@ -2991,6 +2998,9 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object TBXItem219: TTBXItem
       Action = DuplicateSessionAction
+    end
+    object TBXItem78: TTBXItem
+      Action = RenameSessionAction
     end
     object TBXItem125: TTBXItem
       Action = SaveCurrentSessionAction2

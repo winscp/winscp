@@ -616,6 +616,8 @@ BEGIN
         EDITOR_READONLY, "Read-only"
         PROGRESS_TIME_LEFT_CALCULATING, "Calculating"
         COPY_PARAM_SAVE_PRESET, "Save as &Preset..."
+        RENAME_SESSION_TITLE, "Rename session"
+        RENAME_SESSION_PROMPT, "&New session name:"
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
         WINSCP_COPYRIGHT, "Copyright © 2000-2018 Martin Prikryl"

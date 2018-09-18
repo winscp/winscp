@@ -271,6 +271,7 @@ void __fastcall TSessionData::Default()
 
   IsWorkspace = false;
   Link = L"";
+  NameOverride = L"";
 
   Selected = false;
   FModified = false;
@@ -431,7 +432,8 @@ void __fastcall TSessionData::NonPersistant()
   PROPERTY(CustomParam2);
 #define META_PROPERTIES \
   PROPERTY(IsWorkspace); \
-  PROPERTY(Link);
+  PROPERTY(Link); \
+  PROPERTY(NameOverride);
 //---------------------------------------------------------------------
 void __fastcall TSessionData::Assign(TPersistent * Source)
 {
@@ -788,6 +790,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
 
   IsWorkspace = Storage->ReadBool(L"IsWorkspace", IsWorkspace);
   Link = Storage->ReadString(L"Link", Link);
+  NameOverride = Storage->ReadString(L"NameOverride", NameOverride);
 
   CustomParam1 = Storage->ReadString(L"CustomParam1", CustomParam1);
   CustomParam2 = Storage->ReadString(L"CustomParam2", CustomParam2);
@@ -1119,6 +1122,7 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
 
     WRITE_DATA(Bool, IsWorkspace);
     WRITE_DATA(String, Link);
+    WRITE_DATA(String, NameOverride);
 
     WRITE_DATA(String, CustomParam1);
     WRITE_DATA(String, CustomParam2);
@@ -2860,7 +2864,19 @@ UnicodeString __fastcall TSessionData::GetNameWithoutHiddenPrefix()
 //---------------------------------------------------------------------
 bool __fastcall TSessionData::HasSessionName()
 {
-  return (!GetNameWithoutHiddenPrefix().IsEmpty() && (Name != DefaultName) && !IsWorkspace);
+  UnicodeString ALocalName = ExtractLocalName(Name);
+  bool AIsWorkspaceSessionWithoutName = IsWorkspace && (ALocalName.Length() == 4); // See SaveWorkspaceData()
+  if (AIsWorkspaceSessionWithoutName)
+  {
+    int Index = 1;
+    while (AIsWorkspaceSessionWithoutName && (Index <= ALocalName.Length()))
+    {
+      AIsWorkspaceSessionWithoutName = IsHex(ALocalName[Index]);
+      Index++;
+    }
+  }
+
+  return (!GetNameWithoutHiddenPrefix().IsEmpty() && (Name != DefaultName) && !AIsWorkspaceSessionWithoutName);
 }
 //---------------------------------------------------------------------
 UnicodeString __fastcall TSessionData::GetSessionName()
@@ -3912,6 +3928,11 @@ void __fastcall TSessionData::SetLink(UnicodeString value)
   SET_SESSION_PROPERTY(Link);
 }
 //---------------------------------------------------------------------
+void __fastcall TSessionData::SetNameOverride(UnicodeString value)
+{
+  SET_SESSION_PROPERTY(NameOverride);
+}
+//---------------------------------------------------------------------
 void __fastcall TSessionData::SetHostKey(UnicodeString value)
 {
   SET_SESSION_PROPERTY(HostKey);
@@ -4842,6 +4863,11 @@ void __fastcall TStoredSessionList::GetFolderOrWorkspace(const UnicodeString & N
         Data2->CopyStateData(RawData);
       }
 
+      if (!RawData->NameOverride.IsEmpty())
+      {
+        Data2->Name = RawData->NameOverride;
+      }
+
       List->Add(Data2);
     }
   }
@@ -4859,7 +4885,16 @@ TStrings * __fastcall TStoredSessionList::GetFolderOrWorkspaceList(
 
     if (Data != NULL)
     {
-      Result->Add(Data->SessionName);
+      UnicodeString Name;
+      if (!Data->NameOverride.IsEmpty())
+      {
+        Name = Data->NameOverride;
+      }
+      else
+      {
+        Name = Data->SessionName;
+      }
+      Result->Add(Name);
     }
   }
 
@@ -4960,7 +4995,7 @@ TSessionData * __fastcall TStoredSessionList::ResolveWorkspaceData(TSessionData 
   return Data;
 }
 //---------------------------------------------------------------------
-TSessionData * __fastcall TStoredSessionList::SaveWorkspaceData(TSessionData * Data)
+TSessionData * __fastcall TStoredSessionList::SaveWorkspaceData(TSessionData * Data, int Index)
 {
   std::unique_ptr<TSessionData> Result(new TSessionData(L""));
 
@@ -4973,9 +5008,11 @@ TSessionData * __fastcall TStoredSessionList::SaveWorkspaceData(TSessionData * D
   else
   {
     Result->Assign(Data);
+    Result->NameOverride = Data->Name;
   }
 
   Result->IsWorkspace = true;
+  Result->Name = IntToHex(Index, 4); // See HasSessionName()
 
   return Result.release();
 }

@@ -616,6 +616,8 @@ __published:    // IDE-managed Components
   TTBXSubmenuItem *TBXSubmenuItem6;
   TTBXSubmenuItem *TBXSubmenuItem9;
   TAction *PrivateKeyUploadAction;
+  TAction *RenameSessionAction;
+  TTBXItem *TBXItem78;
   void __fastcall ExplorerActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall SessionIdleTimerTimer(TObject *Sender);

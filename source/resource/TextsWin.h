@@ -613,6 +613,8 @@
 #define EDITOR_READONLY         6011
 #define PROGRESS_TIME_LEFT_CALCULATING 6012
 #define COPY_PARAM_SAVE_PRESET  6013
+#define RENAME_SESSION_TITLE    6014
+#define RENAME_SESSION_PROMPT   6015
 
 // 2xxx is reserved for TextsFileZilla.h
 
