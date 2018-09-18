@@ -719,7 +719,11 @@ void __fastcall TTerminalManager::UpdateAppTitle()
     }
     else if (ActiveTerminal && (ScpExplorer != NULL))
     {
-      AddToList(NewTitle, ScpExplorer->PathForCaption(), L" - ");
+      UnicodeString Path = ScpExplorer->PathForCaption();
+      if (!Path.IsEmpty())
+      {
+        NewTitle = Path + L" - " + NewTitle;
+      }
     }
 
     // Not updating MainForm here, as for all other possible main forms, this code is actually not what we want.
