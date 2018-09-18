@@ -950,6 +950,16 @@ TDateTime __fastcall TUnixDirView::ItemFileTime(TListItem * Item,
 #endif
 }
 //---------------------------------------------------------------------------
+TObject * __fastcall TUnixDirView::ItemData(TListItem * Item)
+{
+#ifndef DESIGN_ONLY
+  return ITEMFILE;
+#else
+  DebugUsedParam(Item);
+  return NULL;
+#endif
+}
+//---------------------------------------------------------------------------
 void __fastcall TUnixDirView::SetShowInaccesibleDirectories(bool value)
 {
   if (FShowInaccesibleDirectories != value)

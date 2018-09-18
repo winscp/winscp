@@ -262,6 +262,7 @@ type
     function GetIsRoot: Boolean; virtual; abstract;
     function ItemCanDrag(Item: TListItem): Boolean; virtual;
     function ItemColor(Item: TListItem): TColor; virtual;
+    function ItemData(Item: TListItem): TObject; virtual;
     function ItemImageIndex(Item: TListItem; Cache: Boolean): Integer; virtual; abstract;
     // ItemIsDirectory and ItemFullFileName is in public block
     function ItemIsRecycleBin(Item: TListItem): Boolean; virtual;
@@ -2134,6 +2135,11 @@ begin
   end;
 end;
 
+function TCustomDirView.ItemData(Item: TListItem): TObject;
+begin
+  Result := nil;
+end;
+
 function TCustomDirView.CustomCreateFileList(Focused, OnlyFocused: Boolean;
   FullPath: Boolean; FileList: TStrings; ItemObject: Boolean): TStrings;
 
@@ -2143,7 +2149,7 @@ function TCustomDirView.CustomCreateFileList(Focused, OnlyFocused: Boolean;
   begin
     Assert(Assigned(Item));
     if ItemObject then AObject := Item
-      else AObject := Item.Data;
+      else AObject := ItemData(Item);
 
     if FullPath then Result.AddObject(ItemFullFileName(Item), AObject)
       else Result.AddObject(ItemFileName(Item), AObject);

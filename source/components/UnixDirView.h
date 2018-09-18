@@ -60,6 +60,7 @@ protected:
   virtual TColor __fastcall ItemColor(TListItem * Item);
   virtual UnicodeString __fastcall ItemFileName(TListItem * Item);
   virtual int __fastcall ItemImageIndex(TListItem * Item, bool Cache);
+  virtual TObject * __fastcall ItemData(TListItem * Item);
   virtual bool __fastcall ItemIsFile(TListItem * Item);
   virtual bool __fastcall ItemMatchesFilter(TListItem * Item, const TFileFilter &Filter);
   virtual Word __fastcall ItemOverlayIndexes(TListItem * Item);
