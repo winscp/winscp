@@ -262,6 +262,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     BOOLPROP(ConfirmExitOnCompletion);
     BOOLPROP(ConfirmCommandSession);
     BOOLPROP(ContinueOnError);
+    BOOLPROP(SynchronizeSummary);
     BOOLPROP(DDAllowMoveInit);
     BOOLPROP(BeepOnFinish);
     BOOLPROP(TemporaryDirectoryAppendSession);
@@ -645,6 +646,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     BOOLPROP(ConfirmExitOnCompletion);
     BOOLPROP(ConfirmCommandSession);
     BOOLPROP(ContinueOnError);
+    BOOLPROP(SynchronizeSummary);
     BOOLPROP(DDAllowMoveInit);
     BOOLPROP(BeepOnFinish);
     BOOLPROP(TemporaryDirectoryAppendSession);

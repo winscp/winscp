@@ -5294,7 +5294,7 @@ void __fastcall TCustomScpExplorerForm::Synchronize(const UnicodeString LocalDir
       {
         Terminal->SynchronizeApply(
           AChecklist, &CopyParam, Params | TTerminal::spNoConfirmation, TerminalSynchronizeDirectory,
-          SynchronizeProcessedItem, NULL, NULL);
+          SynchronizeProcessedItem, NULL, NULL, NULL);
       }
       __finally
       {
@@ -5413,6 +5413,9 @@ void __fastcall TCustomScpExplorerForm::FullSynchronize(
   BatchStart(BatchStorage);
   FAutoOperation = true;
 
+  TFileOperationStatistics Statistics;
+  TDateTime Start = Now();
+
   try
   {
     Params.OnProcessedItem = OnProcessedItem;
@@ -5422,7 +5425,8 @@ void __fastcall TCustomScpExplorerForm::FullSynchronize(
 
     Terminal->SynchronizeApply(
       Params.Checklist, Params.CopyParam, Params.Params | TTerminal::spNoConfirmation,
-      TerminalSynchronizeDirectory, SynchronizeProcessedItem, OnUpdatedSynchronizationChecklistItems, &Params);
+      TerminalSynchronizeDirectory, SynchronizeProcessedItem, OnUpdatedSynchronizationChecklistItems, &Params,
+      &Statistics);
   }
   __finally
   {
@@ -5431,6 +5435,42 @@ void __fastcall TCustomScpExplorerForm::FullSynchronize(
     DestroyProgressForm();
     BatchEnd(BatchStorage);
     ReloadLocalDirectory();
+  }
+
+  if (WinConfiguration->SynchronizeSummary)
+  {
+    UnicodeString Message = MainInstructions(LoadStr(SYNCHRONIZE_COMPLETE)) + L"\n";
+
+    // The statistics should be 0 anyway in this case
+    if (FLAGCLEAR(Params.Params, TTerminal::spTimestamp))
+    {
+      Message += L"\n";
+      if (Statistics.FilesUploaded > 0)
+      {
+        Message += FORMAT(LoadStrPart(SYNCHRONIZE_SUMMARY, 1), (FormatNumber(Statistics.FilesUploaded), FormatBytes(Statistics.TotalUploaded))) + L"\n";
+      }
+      if (Statistics.FilesDownloaded > 0)
+      {
+        Message += FORMAT(LoadStrPart(SYNCHRONIZE_SUMMARY, 2), (FormatNumber(Statistics.FilesDownloaded), FormatBytes(Statistics.TotalDownloaded))) + L"\n";
+      }
+      if (Statistics.FilesDeletedLocal > 0)
+      {
+        Message += FORMAT(LoadStrPart(SYNCHRONIZE_SUMMARY, 3), (FormatNumber(Statistics.FilesDeletedLocal))) + L"\n";
+      }
+      if (Statistics.FilesDeletedRemote > 0)
+      {
+        Message += FORMAT(LoadStrPart(SYNCHRONIZE_SUMMARY, 4), (FormatNumber(Statistics.FilesDeletedRemote))) + L"\n";
+      }
+    }
+
+    TDateTime Elapsed = (Now() - Start);
+    Message += L"\n" + FORMAT(LoadStrPart(SYNCHRONIZE_SUMMARY, 5), (FormatDateTimeSpan(Configuration->TimeFormat, Elapsed)));
+    TMessageParams Params(mpNeverAskAgainCheck);
+    unsigned int Result = MessageDialog(Message, qtInformation, qaOK, HELP_NONE, &Params);
+    if (Result == qaNeverAskAgain)
+    {
+      WinConfiguration->SynchronizeSummary = false;
+    }
   }
 }
 //---------------------------------------------------------------------------

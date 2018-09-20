@@ -56,6 +56,7 @@ private:
   TInterface FDefaultInterface;
   bool FCanApplyInterfaceImmediately;
   bool FConfirmExitOnCompletion;
+  bool FSynchronizeSummary;
   UnicodeString FSessionColors;
   bool FCopyShortCutHintShown;
   bool FHttpForWebDAV;
@@ -69,6 +70,7 @@ private:
   void __fastcall SetConsoleWin(TConsoleWinConfiguration value);
   void __fastcall SetLoginDialog(TLoginDialogConfiguration value);
   void __fastcall SetConfirmExitOnCompletion(bool value);
+  void __fastcall SetSynchronizeSummary(bool value);
   UnicodeString __fastcall GetDefaultFixedWidthFontName();
   int __fastcall GetDefaultFixedWidthFontSize();
 
@@ -101,6 +103,7 @@ public:
   __property TConsoleWinConfiguration ConsoleWin = { read = FConsoleWin, write = SetConsoleWin };
   __property TLoginDialogConfiguration LoginDialog = { read = FLoginDialog, write = SetLoginDialog };
   __property bool ConfirmExitOnCompletion  = { read=FConfirmExitOnCompletion, write=SetConfirmExitOnCompletion };
+  __property bool SynchronizeSummary  = { read = FSynchronizeSummary, write = SetSynchronizeSummary };
   __property UnicodeString SessionColors  = { read=FSessionColors, write=FSessionColors };
   __property bool CopyShortCutHintShown  = { read=FCopyShortCutHintShown, write=FCopyShortCutHintShown };
   __property bool UseMasterPassword = { read = GetUseMasterPassword };

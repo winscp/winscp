@@ -20,6 +20,19 @@ typedef void __fastcall (__closure *TFileOperationFinished)
   (TFileOperation Operation, TOperationSide Side, bool Temp,
     const UnicodeString & FileName, bool Success, TOnceDoneOperation & OnceDoneOperation);
 //---------------------------------------------------------------------------
+class TFileOperationStatistics
+{
+public:
+  TFileOperationStatistics();
+
+  int FilesUploaded;
+  int FilesDownloaded;
+  int FilesDeletedLocal;
+  int FilesDeletedRemote;
+  __int64 TotalUploaded;
+  __int64 TotalDownloaded;
+};
+//---------------------------------------------------------------------------
 class TFileOperationProgressType
 {
 public:
@@ -28,6 +41,7 @@ public:
   friend class TFileOperationProgressType;
   public:
     TPersistence();
+    __property TFileOperationStatistics * Statistics = { read = FStatistics, write = FStatistics };
 
   private:
     void Clear(bool Batch, bool Speed);
@@ -41,6 +55,7 @@ public:
     std::vector<__int64> TotalTransferredThen;
     TOperationSide Side;
     __int64 TotalTransferred;
+    TFileOperationStatistics * FStatistics;
   };
 
 private:
@@ -161,6 +176,7 @@ public:
   unsigned int __fastcall CPS();
   void __fastcall Finish(UnicodeString FileName, bool Success,
     TOnceDoneOperation & OnceDoneOperation);
+  void __fastcall Succeeded(int Count = 1);
   void __fastcall Progress();
   unsigned long __fastcall LocalBlockSize();
   bool __fastcall IsLocallyDone();

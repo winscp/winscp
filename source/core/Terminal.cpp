@@ -3949,6 +3949,10 @@ void __fastcall TTerminal::DoDeleteFile(const UnicodeString FileName,
       DebugAssert(FFileSystem);
       // 'File' parameter: SFTPFileSystem needs to know if file is file or directory
       FFileSystem->DeleteFile(FileName, File, Params, Action);
+      if ((OperationProgress != NULL) && (OperationProgress->Operation == foDelete))
+      {
+        OperationProgress->Succeeded();
+      }
     }
     catch(Exception & E)
     {
@@ -3973,13 +3977,18 @@ void __fastcall TTerminal::DeleteLocalFile(UnicodeString FileName,
   const TRemoteFile * /*File*/, void * Params)
 {
   StartOperationWithFile(FileName, foDelete);
+  int Deleted;
   if (OnDeleteLocalFile == NULL)
   {
-    RecursiveDeleteFileChecked(FileName, false);
+    Deleted = RecursiveDeleteFileChecked(FileName, false);
   }
   else
   {
-    OnDeleteLocalFile(FileName, FLAGSET(*((int*)Params), dfAlternative));
+    OnDeleteLocalFile(FileName, FLAGSET(*((int*)Params), dfAlternative), Deleted);
+  }
+  if (DebugAlwaysTrue((OperationProgress != NULL) && (OperationProgress->Operation == foDelete)))
+  {
+    OperationProgress->Succeeded(Deleted);
   }
 }
 //---------------------------------------------------------------------------
@@ -5913,7 +5922,8 @@ void __fastcall TTerminal::SynchronizeApply(
   TSynchronizeChecklist * Checklist,
   const TCopyParamType * CopyParam, int Params,
   TSynchronizeDirectory OnSynchronizeDirectory, TProcessedSynchronizationChecklistItem OnProcessedItem,
-  TUpdatedSynchronizationChecklistItems OnUpdatedSynchronizationChecklistItems, void * Token)
+  TUpdatedSynchronizationChecklistItems OnUpdatedSynchronizationChecklistItems, void * Token,
+  TFileOperationStatistics * Statistics)
 {
   TSynchronizeData Data;
 
@@ -5959,6 +5969,7 @@ void __fastcall TTerminal::SynchronizeApply(
   TValueRestorer<TFileOperationProgressType::TPersistence *> OperationProgressPersistenceRestorer(FOperationProgressPersistence);
   TValueRestorer<TOnceDoneOperation> OperationProgressOnceDoneOperationRestorer(FOperationProgressOnceDoneOperation);
   TFileOperationProgressType::TPersistence OperationProgressPersistence;
+  OperationProgressPersistence.Statistics = Statistics;
   FOperationProgressPersistence = &OperationProgressPersistence;
 
   try
@@ -6064,6 +6075,8 @@ void __fastcall TTerminal::SynchronizeApply(
 
   if (FOperationProgressOnceDoneOperation != odoIdle)
   {
+    // Otherwise CloseOnCompletion would have no effect
+    OperationProgressPersistenceRestorer.Release();
     CloseOnCompletion(FOperationProgressOnceDoneOperation);
   }
 
@@ -7047,6 +7060,7 @@ void __fastcall TTerminal::Source(
       Handle, TargetDir, DestFileName, CopyParam, Params, OperationProgress, Flags, Action, ChildError);
 
     LogFileDone(OperationProgress, AbsolutePath(TargetDir + DestFileName, true));
+    OperationProgress->Succeeded();
   }
 
   Handle.Release();
@@ -7420,6 +7434,7 @@ void __fastcall TTerminal::Sink(
       FileName, File, TargetDir, DestFileName, Attrs, CopyParam, Params, OperationProgress, Flags, Action);
 
     LogFileDone(OperationProgress, ExpandUNCFileName(DestFullName));
+    OperationProgress->Succeeded();
   }
 }
 //---------------------------------------------------------------------------

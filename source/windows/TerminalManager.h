@@ -148,7 +148,7 @@ private:
     bool Temp, const UnicodeString & FileName, bool Success,
     TOnceDoneOperation & OnceDoneOperation);
   void __fastcall OperationProgress(TFileOperationProgressType & ProgressData);
-  void __fastcall DeleteLocalFile(const UnicodeString FileName, bool Alternative);
+  void __fastcall DeleteLocalFile(const UnicodeString FileName, bool Alternative, int & Deleted);
   void __fastcall QueueEvent(TTerminalQueue * Queue, TQueueEvent Event);
   TAuthenticateForm * __fastcall MakeAuthenticateForm(TTerminal * Terminal);
   void __fastcall MasterPasswordPrompt();

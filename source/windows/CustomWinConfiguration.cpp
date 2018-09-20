@@ -118,6 +118,7 @@ void __fastcall TCustomWinConfiguration::Default()
   FLoginDialog.WindowSize = FormatDefaultWindowSize(640, 430);
   FLoginDialog.SiteSearch = ssSiteName;
   FConfirmExitOnCompletion = true;
+  FSynchronizeSummary = true;
   FSessionColors = L"";
   FCopyShortCutHintShown = false;
   FHttpForWebDAV = false;
@@ -147,6 +148,7 @@ void __fastcall TCustomWinConfiguration::Saved()
   BLOCK(L"Interface", CANCREATE, \
     KEY(Integer,  Interface); \
     KEY(Bool,     ConfirmExitOnCompletion); \
+    KEY(Bool,     SynchronizeSummary); \
     KEY(String,   SessionColors); \
     KEY(Bool,     CopyShortCutHintShown); \
     KEY(Bool,     HttpForWebDAV); \
@@ -495,6 +497,11 @@ void __fastcall TCustomWinConfiguration::SetLoginDialog(TLoginDialogConfiguratio
 void __fastcall TCustomWinConfiguration::SetConfirmExitOnCompletion(bool value)
 {
   SET_CONFIG_PROPERTY(ConfirmExitOnCompletion);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomWinConfiguration::SetSynchronizeSummary(bool value)
+{
+  SET_CONFIG_PROPERTY(SynchronizeSummary);
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TCustomWinConfiguration::GetDefaultFixedWidthFontName()

@@ -927,9 +927,9 @@ void __fastcall TTerminalManager::UpdateTaskbarList()
   ScpExplorer->UpdateTaskbarList(FTaskbarList);
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminalManager::DeleteLocalFile(const UnicodeString FileName, bool Alternative)
+void __fastcall TTerminalManager::DeleteLocalFile(const UnicodeString FileName, bool Alternative, int & Deleted)
 {
-  RecursiveDeleteFileChecked(FileName, (WinConfiguration->DeleteToRecycleBin != Alternative));
+  Deleted = RecursiveDeleteFileChecked(FileName, (WinConfiguration->DeleteToRecycleBin != Alternative));
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::TerminalQueryUser(TObject * Sender,

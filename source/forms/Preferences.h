@@ -321,6 +321,7 @@ __published:
   TPathLabel *AutomaticIniFileStorageLabel;
   TCheckBox *NaturalOrderNumericalSortingCheck;
   TLabel *DragExtStatusLabel;
+  TCheckBox *SynchronizeSummaryCheck;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);

@@ -8,8 +8,15 @@
 //---------------------------------------------------------------------------
 #define TRANSFER_BUF_SIZE 32768
 //---------------------------------------------------------------------------
+TFileOperationStatistics::TFileOperationStatistics()
+{
+  memset(this, 0, sizeof(*this));
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 TFileOperationProgressType::TPersistence::TPersistence()
 {
+  FStatistics = NULL;
   Clear(true, true);
 }
 //---------------------------------------------------------------------------
@@ -315,6 +322,38 @@ void __fastcall TFileOperationProgressType::Finish(UnicodeString FileName,
     FFilesFinishedSuccessfully++;
   }
   DoProgress();
+}
+//---------------------------------------------------------------------------
+void __fastcall TFileOperationProgressType::Succeeded(int Count)
+{
+  if (FPersistence.Statistics != NULL)
+  {
+    if ((Operation == foCopy) || (Operation == foMove))
+    {
+      __int64 Transferred = FTransferredSize - FSkippedSize;
+      if (Side == osLocal)
+      {
+        FPersistence.Statistics->FilesUploaded += Count;
+        FPersistence.Statistics->TotalUploaded += Transferred;
+      }
+      else
+      {
+        FPersistence.Statistics->FilesDownloaded += Count;
+        FPersistence.Statistics->TotalDownloaded += Transferred;
+      }
+    }
+    else if (Operation == foDelete)
+    {
+      if (Side == osLocal)
+      {
+        FPersistence.Statistics->FilesDeletedLocal += Count;
+      }
+      else
+      {
+        FPersistence.Statistics->FilesDeletedRemote += Count;
+      }
+    }
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TFileOperationProgressType::SetFile(UnicodeString AFileName, bool AFileInProgress)

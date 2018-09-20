@@ -2323,9 +2323,11 @@ int __fastcall TimeToMinutes(TDateTime T)
   return TimeToSeconds(T) / SecsPerMin;
 }
 //---------------------------------------------------------------------------
-static bool __fastcall DoRecursiveDeleteFile(const UnicodeString FileName, bool ToRecycleBin, UnicodeString & ErrorPath)
+static bool __fastcall DoRecursiveDeleteFile(
+  const UnicodeString FileName, bool ToRecycleBin, UnicodeString & ErrorPath, int & Deleted)
 {
   bool Result;
+  Deleted = 0;
 
   UnicodeString AErrorPath = FileName;
 
@@ -2338,6 +2340,10 @@ static bool __fastcall DoRecursiveDeleteFile(const UnicodeString FileName, bool 
       if (!SearchRec.IsDirectory())
       {
         Result = DeleteFile(ApiPath(FileName));
+        if (Result)
+        {
+          Deleted++;
+        }
       }
       else
       {
@@ -2354,7 +2360,7 @@ static bool __fastcall DoRecursiveDeleteFile(const UnicodeString FileName, bool 
               {
                 if (SearchRec.IsRealFile())
                 {
-                  Result = DoRecursiveDeleteFile(FileName2, DebugAlwaysFalse(ToRecycleBin), AErrorPath);
+                  Result = DoRecursiveDeleteFile(FileName2, DebugAlwaysFalse(ToRecycleBin), AErrorPath, Deleted);
                 }
               }
               else
@@ -2363,6 +2369,10 @@ static bool __fastcall DoRecursiveDeleteFile(const UnicodeString FileName, bool 
                 if (!Result)
                 {
                   AErrorPath = FileName2;
+                }
+                else
+                {
+                  Deleted++;
                 }
               }
             }
@@ -2376,6 +2386,10 @@ static bool __fastcall DoRecursiveDeleteFile(const UnicodeString FileName, bool 
           if (Result)
           {
             Result = RemoveDir(ApiPath(FileName));
+            if (Result)
+            {
+              Deleted++;
+            }
           }
         }
       }
@@ -2415,6 +2429,11 @@ static bool __fastcall DoRecursiveDeleteFile(const UnicodeString FileName, bool 
       }
       SetLastError(ErrorCode);
     }
+
+    if (Result)
+    {
+      Deleted = 1;
+    }
   }
 
   if (!Result)
@@ -2428,17 +2447,20 @@ static bool __fastcall DoRecursiveDeleteFile(const UnicodeString FileName, bool 
 bool __fastcall RecursiveDeleteFile(const UnicodeString & FileName, bool ToRecycleBin)
 {
   UnicodeString ErrorPath; // unused
-  bool Result = DoRecursiveDeleteFile(FileName, ToRecycleBin, ErrorPath);
+  int Deleted;
+  bool Result = DoRecursiveDeleteFile(FileName, ToRecycleBin, ErrorPath, Deleted);
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall RecursiveDeleteFileChecked(const UnicodeString & FileName, bool ToRecycleBin)
+int __fastcall RecursiveDeleteFileChecked(const UnicodeString & FileName, bool ToRecycleBin)
 {
   UnicodeString ErrorPath;
-  if (!DoRecursiveDeleteFile(FileName, ToRecycleBin, ErrorPath))
+  int Deleted;
+  if (!DoRecursiveDeleteFile(FileName, ToRecycleBin, ErrorPath, Deleted))
   {
     throw EOSExtException(FMTLOAD(DELETE_LOCAL_FILE_ERROR, (ErrorPath)));
   }
+  return Deleted;
 }
 //---------------------------------------------------------------------------
 void __fastcall DeleteFileChecked(const UnicodeString & FileName)
