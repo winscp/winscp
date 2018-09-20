@@ -933,6 +933,7 @@ __fastcall TTerminal::TTerminal(TSessionData * SessionData,
   FOnClose = NULL;
   FOnFindingFile = NULL;
   FOperationProgressPersistence = NULL;
+  FOperationProgressOnceDoneOperation = odoIdle;
 
   FUseBusyCursor = True;
   FLockDirectory = L"";
@@ -2710,12 +2711,20 @@ void __fastcall TTerminal::CloseOnCompletion(
   TOnceDoneOperation Operation, const UnicodeString & Message,
   const UnicodeString & TargetLocalPath, const UnicodeString & DestLocalFileName)
 {
-  Configuration->Usage->Inc(L"ClosesOnCompletion");
-  LogEvent(L"Closing session after completed operation (as requested by user)");
-  Close();
-  throw ESshTerminate(NULL,
-    Message.IsEmpty() ? UnicodeString(LoadStr(CLOSED_ON_COMPLETION)) : Message,
-    Operation, TargetLocalPath, DestLocalFileName);
+  if (FOperationProgressPersistence != NULL)
+  {
+    DebugAssert(Message.IsEmpty());
+    FOperationProgressOnceDoneOperation = Operation;
+  }
+  else
+  {
+    Configuration->Usage->Inc(L"ClosesOnCompletion");
+    LogEvent(L"Closing session after completed operation (as requested by user)");
+    Close();
+    throw ESshTerminate(NULL,
+      Message.IsEmpty() ? UnicodeString(LoadStr(CLOSED_ON_COMPLETION)) : Message,
+      Operation, TargetLocalPath, DestLocalFileName);
+  }
 }
 //---------------------------------------------------------------------------
 TBatchOverwrite __fastcall TTerminal::EffectiveBatchOverwrite(
@@ -5948,6 +5957,7 @@ void __fastcall TTerminal::SynchronizeApply(
 
   BeginTransaction();
   TValueRestorer<TFileOperationProgressType::TPersistence *> OperationProgressPersistenceRestorer(FOperationProgressPersistence);
+  TValueRestorer<TOnceDoneOperation> OperationProgressOnceDoneOperationRestorer(FOperationProgressOnceDoneOperation);
   TFileOperationProgressType::TPersistence OperationProgressPersistence;
   FOperationProgressPersistence = &OperationProgressPersistence;
 
@@ -6051,6 +6061,12 @@ void __fastcall TTerminal::SynchronizeApply(
   {
     EndTransaction();
   }
+
+  if (FOperationProgressOnceDoneOperation != odoIdle)
+  {
+    CloseOnCompletion(FOperationProgressOnceDoneOperation);
+  }
+
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::SynchronizeChecklistCalculateSize(

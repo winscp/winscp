@@ -227,6 +227,7 @@ private:
   std::set<UnicodeString> FFoldersScannedForEncryptedFiles;
   RawByteString FEncryptKey;
   TFileOperationProgressType::TPersistence * FOperationProgressPersistence;
+  TOnceDoneOperation FOperationProgressOnceDoneOperation;
 
   void __fastcall CommandError(Exception * E, const UnicodeString Msg);
   unsigned int __fastcall CommandError(Exception * E, const UnicodeString Msg,
