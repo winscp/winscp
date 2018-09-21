@@ -6001,15 +6001,17 @@ void __fastcall TTerminal::SynchronizeApply(
 
         if (FLAGSET(Params, spTimestamp))
         {
+          // used by SynchronizeLocalTimestamp and SynchronizeRemoteTimestamp
+          TObject * ChecklistItemToken = const_cast<TObject *>(reinterpret_cast<const TObject *>(ChecklistItem));
           switch (ChecklistItem->Action)
           {
             case TSynchronizeChecklist::saDownloadUpdate:
-              FileList->Add(RemotePath);
+              FileList->AddObject(RemotePath, ChecklistItemToken);
               ProcessFiles(FileList.get(), foSetProperties, SynchronizeLocalTimestamp, NULL, osLocal);
               break;
 
             case TSynchronizeChecklist::saUploadUpdate:
-              FileList->Add(LocalPath);
+              FileList->AddObject(LocalPath, ChecklistItemToken);
               ProcessFiles(FileList.get(), foSetProperties, SynchronizeRemoteTimestamp);
               break;
 
