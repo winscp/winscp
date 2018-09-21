@@ -1468,7 +1468,14 @@ int __fastcall FileGetAttrFix(const UnicodeString FileName)
   {
     FollowLink = false;
   }
-  return FileGetAttr(FileName, FollowLink);
+  int Result = FileGetAttr(FileName, FollowLink);
+  if (Result < 0)
+  {
+    // When referring to files in some special symlinked locations
+    // (like a deduplicated drive or a commvault archive), the first call to GetFileAttributes fails.
+    Result = FileGetAttr(FileName, FollowLink);
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 TDateTime __fastcall EncodeDateVerbose(Word Year, Word Month, Word Day)
