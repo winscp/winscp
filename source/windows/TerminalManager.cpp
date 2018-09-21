@@ -305,6 +305,11 @@ void __fastcall TTerminalManager::DoConnectTerminal(TTerminal * Terminal, bool R
       ManagedTerminal->ReopenStart = 0;
     }
   }
+
+  if (DebugAlwaysTrue(Terminal->Active) && !Reopen && GUIConfiguration->QueueBootstrap)
+  {
+    FindQueueForTerminal(Terminal)->AddItem(new TBootstrapQueueItem());
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::CloseAutheticateForm()
