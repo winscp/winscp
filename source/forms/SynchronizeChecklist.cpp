@@ -1121,9 +1121,14 @@ void __fastcall TSynchronizeChecklistDialog::OkButtonClick(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::CalculateSizeActionExecute(TObject * /*Sender*/)
 {
+  TItemStates States;
+  if (!IsKeyPressed(VK_CONTROL))
+  {
+    States << isSelected;
+  }
   TSynchronizeChecklist::TItemList Items;
-  TListItem * Item = ListView->Selected;
-  while (Item != NULL)
+  TListItem * Item = NULL;
+  while ((Item = ListView->GetNextItem(Item, sdAll, States)) != NULL)
   {
     const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(Item);
     Items.push_back(ChecklistItem);
@@ -1131,7 +1136,6 @@ void __fastcall TSynchronizeChecklistDialog::CalculateSizeActionExecute(TObject 
     {
       CountItemSize(ChecklistItem, -1);
     }
-    Item = ListView->GetNextItem(Item, sdAll, TItemStates() << isSelected);
   }
 
   try
@@ -1142,5 +1146,11 @@ void __fastcall TSynchronizeChecklistDialog::CalculateSizeActionExecute(TObject 
   {
     UpdatedSynchronizationChecklistItems(Items);
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeChecklistDialog::CalculateSizeAllActionExecute(TObject * Sender)
+{
+  DebugAssert(IsKeyPressed(VK_CONTROL));
+  CalculateSizeActionExecute(Sender);
 }
 //---------------------------------------------------------------------------

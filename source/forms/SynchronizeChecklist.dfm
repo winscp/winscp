@@ -2390,6 +2390,10 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       Caption = 'C&alculate'
       OnExecute = CalculateSizeActionExecute
     end
+    object CalculateSizeAllAction: TAction
+      ShortCut = 49217
+      OnExecute = CalculateSizeAllActionExecute
+    end
   end
   object ActionImages120: TPngImageList
     Height = 20

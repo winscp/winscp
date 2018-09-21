@@ -847,6 +847,19 @@ begin
       Result := inherited GetNextItem(StartItem, Direction, States);
     end
       else
+    if States = [] then
+    begin
+      if Assigned(StartItem) then
+        Start := StartItem.Index
+      else
+        Start := -1;
+      Inc(Start);
+      if Start < Items.Count then
+        Result := Items[Start]
+      else
+        Result := nil;
+    end
+      else
     begin
       Assert(False);
       Result := nil;

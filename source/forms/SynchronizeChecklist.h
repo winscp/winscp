@@ -55,6 +55,7 @@ __published:
   TAction *CalculateSizeAction;
   TMenuItem *Calculate1;
   TButton *CalculateSizeButton;
+  TAction *CalculateSizeAllAction;
   void __fastcall HelpButtonClick(TObject * Sender);
   void __fastcall FormShow(TObject * Sender);
   void __fastcall StatusBarDrawPanel(TStatusBar *StatusBar,
@@ -89,6 +90,7 @@ __published:
   void __fastcall ListViewClick(TObject *Sender);
   void __fastcall OkButtonClick(TObject *Sender);
   void __fastcall CalculateSizeActionExecute(TObject *Sender);
+  void __fastcall CalculateSizeAllActionExecute(TObject *Sender);
 
 public:
   __fastcall TSynchronizeChecklistDialog(
