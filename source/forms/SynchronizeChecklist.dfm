@@ -1478,10 +1478,12 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     Align = alClient
     Checkboxes = True
     Constraints.MinWidth = 240
+    DoubleBuffered = True
     FullDrag = True
     HideSelection = False
     ReadOnly = True
     RowSelect = True
+    ParentDoubleBuffered = False
     PopupMenu = ListViewPopupMenu
     TabOrder = 0
     ViewStyle = vsReport
