@@ -697,10 +697,6 @@ UnicodeString __fastcall TTerminalManager::GetAppProgressTitle()
     Result = QueueProgressTitle;
   }
 
-  if (!Result.IsEmpty())
-  {
-    Result += L" - ";
-  }
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -720,7 +716,7 @@ void __fastcall TTerminalManager::UpdateAppTitle()
     UnicodeString ProgressTitle = GetAppProgressTitle();
     if (!ProgressTitle.IsEmpty())
     {
-      NewTitle = ProgressTitle + NewTitle;
+      NewTitle = ProgressTitle + L" - " + NewTitle;
     }
     else if (ActiveTerminal && (ScpExplorer != NULL))
     {

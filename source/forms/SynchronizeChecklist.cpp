@@ -122,7 +122,12 @@ bool __fastcall TSynchronizeChecklistDialog::Execute(TSynchronizeChecklist * Che
 void __fastcall TSynchronizeChecklistDialog::UpdateCaption()
 {
   TTerminalManager * Manager = TTerminalManager::Instance();
-  UnicodeString Title = Manager->GetAppProgressTitle() + LoadStr(FSynchronizing ? SYNCHRONIZE_PROGRESS_SYNCHRONIZE2 : SYNCHRONIZE_CHECKLIST_CAPTION);
+  UnicodeString Title = Manager->GetAppProgressTitle();
+  UnicodeString StatusTitle = LoadStr(FSynchronizing ? SYNCHRONIZE_PROGRESS_SYNCHRONIZE2 : SYNCHRONIZE_CHECKLIST_CAPTION);
+  if (Title.Pos(StatusTitle) <= 0)
+  {
+    AddToList(Title, StatusTitle, L" - ");
+  }
   Caption = FormatFormCaption(this, Title);
 }
 //---------------------------------------------------------------------
