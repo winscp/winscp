@@ -5400,6 +5400,7 @@ struct TSynchronizeParams
   TSynchronizeChecklist * Checklist;
   int Params;
   TCopyParamType * CopyParam;
+  TDateTime CollectElapsed;
   TDateTime * StartTime;
   TProcessedSynchronizationChecklistItem OnProcessedItem;
 };
@@ -5464,7 +5465,10 @@ void __fastcall TCustomScpExplorerForm::FullSynchronize(
     }
 
     TDateTime Elapsed = (Now() - Start);
-    Message += L"\n" + FORMAT(LoadStrPart(SYNCHRONIZE_SUMMARY, 5), (FormatDateTimeSpan(Configuration->TimeFormat, Elapsed)));
+    Message +=
+      L"\n" +
+      FORMAT(LoadStrPart(SYNCHRONIZE_SUMMARY, 5), (FormatDateTimeSpan(Configuration->TimeFormat, Params.CollectElapsed))) + L"\n" +
+      FORMAT(LoadStrPart(SYNCHRONIZE_SUMMARY, 6), (FormatDateTimeSpan(Configuration->TimeFormat, Elapsed)));
     TMessageParams Params(mpNeverAskAgainCheck);
     unsigned int Result = MessageDialog(Message, qtInformation, qaOK, HELP_NONE, &Params);
     if (Result == qaNeverAskAgain)
@@ -5577,6 +5581,7 @@ int __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
       SynchronizeParams.CopyParam = &CopyParam;
       SynchronizeParams.Params = Params;
       SynchronizeParams.Checklist = Checklist;
+      SynchronizeParams.CollectElapsed = (Now() - StartTime);
       SynchronizeParams.StartTime = &StartTime;
       SynchronizeParams.OnProcessedItem = NULL;
       Result = Checklist->Count;
