@@ -159,6 +159,7 @@ public:
   __property bool ReopenQueried = { read = FReopenQueried, write = FReopenQueried };
 
   virtual ExtException * __fastcall Clone();
+  virtual void __fastcall Rethrow();
 
 private:
   bool FReopenQueried;

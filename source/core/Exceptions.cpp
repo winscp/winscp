@@ -442,6 +442,11 @@ ExtException * __fastcall EFatal::Clone()
   return new EFatal(this, L"");
 }
 //---------------------------------------------------------------------------
+void __fastcall EFatal::Rethrow()
+{
+  throw EFatal(this, L"");
+}
+//---------------------------------------------------------------------------
 ExtException * __fastcall ESshTerminate::Clone()
 {
   return new ESshTerminate(this, L"", Operation, TargetLocalPath, DestLocalFileName);
