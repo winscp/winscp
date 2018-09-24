@@ -3877,6 +3877,11 @@ void __fastcall TTerminal::RecycleFile(UnicodeString FileName,
     Params.FileMask = FORMAT(L"*-%s.*", (FormatDateTime(L"yyyymmdd-hhnnss", Now())));
 
     MoveFile(FileName, File, &Params);
+
+    if ((OperationProgress != NULL) && (OperationProgress->Operation == foDelete))
+    {
+      OperationProgress->Succeeded();
+    }
   }
 }
 //---------------------------------------------------------------------------
