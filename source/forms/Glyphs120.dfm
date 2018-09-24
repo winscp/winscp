@@ -11363,7 +11363,7 @@ object Glyphs120Module: TGlyphs120Module
       end
       item
         Background = clWindow
-        Name = 'Bulb On n p'
+        Name = 'Bulb On'
         PngImage.Data = {
           89504E470D0A1A0A0000000D494844520000001400000014080200000002EB8A
           5A000000097048597300000EC300000EC301C76FA8640000024B4944415478DA
