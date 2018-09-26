@@ -248,7 +248,6 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     BOOLPROP(DefaultDirIsHome);
     BOOLPROP(PreservePanelState);
     BOOLPROP(DeleteToRecycleBin);
-    BOOLPROP(DDTransferConfirmation);
     BOOLPROP(DDWarnLackOfTempSpace);
     BOOLPROP(ShowHiddenFiles);
     BOOLPROP(RenameWholeName);
