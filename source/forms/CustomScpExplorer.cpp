@@ -3891,24 +3891,37 @@ bool __fastcall TCustomScpExplorerForm::RemoteTransferDialog(TTerminal *& Sessio
   TStrings * FileList, UnicodeString & Target, UnicodeString & FileMask, bool & DirectCopy,
   bool NoConfirmation, bool Move)
 {
-  if (RemoteDriveView->DropTarget != NULL)
-  {
-    Target = RemoteDriveView->NodePathName(RemoteDriveView->DropTarget);
-  }
-  else if (RemoteDirView->DropTarget != NULL)
-  {
-    DebugAssert(RemoteDirView->ItemIsDirectory(RemoteDirView->DropTarget));
-    Target = RemoteDirView->ItemFullFileName(RemoteDirView->DropTarget);
-  }
-  else
-  {
-    Target = RemoteDirView->Path;
-  }
+  DebugAssert(Terminal != NULL);
+  // update Terminal->StateData->RemoteDirectory
+  UpdateTerminal(Terminal);
 
   if (Session == NULL)
   {
     Session = TTerminalManager::Instance()->ActiveTerminal;
   }
+
+  if (Session == TTerminalManager::Instance()->ActiveTerminal)
+  {
+    if (RemoteDriveView->DropTarget != NULL)
+    {
+      Target = RemoteDriveView->NodePathName(RemoteDriveView->DropTarget);
+    }
+    else if (RemoteDirView->DropTarget != NULL)
+    {
+      DebugAssert(RemoteDirView->ItemIsDirectory(RemoteDirView->DropTarget));
+      Target = RemoteDirView->ItemFullFileName(RemoteDirView->DropTarget);
+    }
+    else
+    {
+      Target = RemoteDirView->Path;
+    }
+  }
+  else
+  {
+    TManagedTerminal * ManagedTerminal = DebugNotNull(dynamic_cast<TManagedTerminal *>(Session));
+    Target = ManagedTerminal->StateData->RemoteDirectory;
+  }
+
   Target = UnixIncludeTrailingBackslash(Target);
   if (FileList->Count == 1)
   {
@@ -3930,9 +3943,6 @@ bool __fastcall TCustomScpExplorerForm::RemoteTransferDialog(TTerminal *& Sessio
     }
     else
     {
-      DebugAssert(Terminal != NULL);
-      // update Terminal->StateData->RemoteDirectory
-      UpdateTerminal(Terminal);
       TStrings * Sessions = TTerminalManager::Instance()->TerminalList;
       TStrings * Directories = new TStringList;
       try
