@@ -2364,7 +2364,7 @@ TStrings * __fastcall TWinConfiguration::FindTemporaryFolders()
     TSearchRecOwned SRec;
     UnicodeString Mask = TemporaryDir(true);
     UnicodeString Directory = ExtractFilePath(Mask);
-    if (FindFirstUnchecked(Mask, faDirectory, SRec) == 0)
+    if (FindFirstUnchecked(Mask, faDirectory | faHidden, SRec) == 0)
     {
       do
       {
