@@ -279,9 +279,9 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
       // allow grayed state only initially,
       // once the off state is confirmed, never allow returning
       // to the undefined state
-      DDTransferConfirmationCheck->AllowGrayed = true;
+      DDTransferConfirmationCheck2->AllowGrayed = true;
     }
-    CheckBoxAutoSwitchLoad(DDTransferConfirmationCheck, WinConfiguration->DDTransferConfirmation);
+    CheckBoxAutoSwitchLoad(DDTransferConfirmationCheck2, WinConfiguration->DDTransferConfirmation);
 
     BeepOnFinishAfterEdit->AsInteger =
       int(static_cast<double>(GUIConfiguration->BeepOnFinishAfter) * SecsPerDay);
@@ -659,7 +659,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     WinConfiguration->ConfirmClosingSession = ConfirmClosingSessionCheck2->Checked;
 
     WinConfiguration->DDTransferConfirmation =
-      CheckBoxAutoSwitchSave(DDTransferConfirmationCheck);
+      CheckBoxAutoSwitchSave(DDTransferConfirmationCheck2);
 
     GUIConfiguration->BeepOnFinishAfter =
       static_cast<double>(BeepOnFinishAfterEdit->Value / SecsPerDay);

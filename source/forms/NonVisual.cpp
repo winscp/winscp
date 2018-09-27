@@ -176,6 +176,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(CurrentDeleteAction, EnabledSelectedOperation)
   UPD(CurrentDeleteAlternativeAction, EnabledSelectedOperation)
   UPD(CurrentPropertiesAction, EnabledSelectedOperation)
+  UPD(CurrentCopyAction, EnabledSelectedOperation)
   UPD(RemoteMoveToAction, EnabledSelectedOperation &&
     (DirView(osRemote) == DirView(osCurrent)) &&
     ScpExplorer->Terminal->IsCapable[fcRemoteMove])
@@ -516,6 +517,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(CurrentDeleteAction, ScpExplorer->ExecuteFileOperationCommand(foDelete, osCurrent, false))
     EXE(CurrentDeleteAlternativeAction, ScpExplorer->ExecuteFileOperationCommand(foDelete, osCurrent, false, false, (void*)true))
     EXE(CurrentPropertiesAction, ScpExplorer->ExecuteFileOperationCommand(foSetProperties, osCurrent, false))
+    EXE(CurrentCopyAction, ScpExplorer->CopyFilesToClipboard(osCurrent))
     EXE(FileListToCommandLineAction, ScpExplorer->PanelExport(osCurrent, peFileList, pedCommandLine))
     EXE(FileListToClipboardAction, ScpExplorer->PanelExport(osCurrent, peFileList, pedClipboard))
     EXE(FullFileListToClipboardAction, ScpExplorer->PanelExport(osCurrent, peFullFileList, pedClipboard))
@@ -813,7 +815,7 @@ void __fastcall TNonVisualDataModule::ExplorerShortcuts()
   CurrentEditInternalAction->ShortCut = 0;
   CurrentEditInternalFocusedAction->ShortCut = 0;
   // Focused operation
-  RemoteCopyAction->ShortCut = ShortCut(L'C', CTRL);
+  RemoteCopyAction->ShortCut = ShortCut(L'T', CTRL);
   RemoteMoveAction->ShortCut = ShortCut(L'M', CTRL);
   CurrentDeleteFocusedAction->ShortCut = ShortCut(VK_DELETE, NONE);
   CurrentPropertiesFocusedAction->ShortCut = ShortCut(VK_RETURN, ALT);
@@ -891,6 +893,8 @@ void __fastcall TNonVisualDataModule::CommanderShortcuts()
     ExplorerKeyboardShortcuts ? ShortCut(VK_F3, NONE) : ShortCut(VK_F7, ALT);
   // legacy shortcut (can be removed when necessary)
   NewFileAction->SecondaryShortCuts->Add(ShortCutToText(ShortCut(VK_F4, CTRLSHIFT)));
+  // Backward compatibility, can be abandoned, once there's a better use for Ctrl+T
+  ConsoleAction->SecondaryShortCuts->Add(ShortCutToText(ShortCut(L'T', CTRL)));
 
   CloseApplicationAction->ShortCut = ShortCut(VK_F10, NONE);
 

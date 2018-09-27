@@ -123,13 +123,13 @@ object PreferencesDialog: TPreferencesDialog
             TabOrder = 6
             OnClick = ControlChange
           end
-          object DDTransferConfirmationCheck: TCheckBox
+          object DDTransferConfirmationCheck2: TCheckBox
             Left = 16
             Top = 198
             Width = 357
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'D&rag && drop operations'
+            Caption = 'D&rag && drop operations and paste to other applications'
             TabOrder = 8
             OnClick = ControlChange
           end

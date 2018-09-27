@@ -38,7 +38,7 @@ __published:
   TCheckBox *ConfirmOverwritingCheck;
   TCheckBox *ConfirmDeletingCheck;
   TCheckBox *ConfirmClosingSessionCheck2;
-  TCheckBox *DDTransferConfirmationCheck;
+  TCheckBox *DDTransferConfirmationCheck2;
   TCheckBox *ContinueOnErrorCheck;
   TTabSheet *LogSheet;
   TTabSheet *GeneralSheet;

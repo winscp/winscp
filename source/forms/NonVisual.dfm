@@ -1297,7 +1297,7 @@ object NonVisualDataModule: TNonVisualDataModule
         'Open terminal|Open terminal window that allow executing arbitrar' +
         'y command (with exception of commands that require user input)'
       ImageIndex = 55
-      ShortCut = 16468
+      ShortCut = 24660
     end
     object PuttyAction: TAction
       Tag = 15
@@ -2244,6 +2244,14 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = '&Rename Session'
       HelpKeyword = 'task_connections'
       Hint = 'Rename session|Changes name of the current session'
+    end
+    object CurrentCopyAction: TAction
+      Tag = 15
+      Category = 'Selected Operation'
+      Caption = '&Copy'
+      Hint = 'Copy|Copy the selected files to clipboard'
+      ImageIndex = 111
+      ShortCut = 16451
     end
   end
   object ExplorerBarPopup: TTBXPopupMenu

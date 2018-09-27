@@ -207,6 +207,11 @@ private:
   HANDLE FDDExtMutex;
   UnicodeString FDragFakeDirectory;
   TObjectList * FDragFakeMonitors;
+  UnicodeString FClipboardFakeDirectory;
+  std::unique_ptr<TObjectList> FClipboardFakeMonitors;
+  std::unique_ptr<TDragDropFilesEx> FClipboardDragDropFilesEx;
+  TTerminal * FClipboardTerminal;
+  std::unique_ptr<TStrings> FClipboardFileList;
   TStrings * FDelayedDeletionList;
   TTimer * FDelayedDeletionTimer;
   TStrings * FDDFileList;
@@ -298,7 +303,6 @@ private:
   TDragDropFilesEx * __fastcall CreateDragDropFilesEx();
   void __fastcall KeyProcessed(Word & Key, TShiftState Shift);
   void __fastcall CheckCustomCommandShortCut(TCustomCommandList * List, Word & Key, Classes::TShiftState Shift, TShortCut KeyShortCut);
-  bool __fastcall CanPasteToDirViewFromClipBoard();
   void __fastcall CMShowingChanged(TMessage & Message);
   void __fastcall WMClose(TMessage & Message);
   void __fastcall CMDpiChanged(TMessage & Message);
@@ -433,7 +437,10 @@ protected:
   virtual bool __fastcall DDGetTarget(UnicodeString & Directory,
     bool & ForceQueue, UnicodeString & CounterName);
   virtual void __fastcall DDFakeFileInitDrag(TFileList * FileList, bool & Created);
+  UnicodeString __fastcall CreateFakeTransferDirectory();
   void __fastcall DDFakeCreated(TObject * Sender, const UnicodeString FileName);
+  void __fastcall ClipboardFakeCreated(TObject * Sender, const UnicodeString FileName);
+  void __fastcall ClipboardDataObjectRelease(TObject * Sender);
   virtual void __fastcall SideEnter(TOperationSide Side);
   virtual TOperationSide __fastcall GetSide(TOperationSide Side);
   TStrings * __fastcall PanelExport(TOperationSide Side, TPanelExport Export);
@@ -621,6 +628,11 @@ protected:
   void __fastcall CreateOpenDirMenuList(TTBCustomItem * Menu, TOperationSide Side, TBookmarkList * BookmarkList);
   void __fastcall CreateOpenDirMenu(TTBCustomItem * Menu, TOperationSide Side);
   bool __fastcall TryOpenDirectory(TOperationSide Side, const UnicodeString & Path);
+  void __fastcall ClipboardStop();
+  void __fastcall ClipboardClear();
+  void __fastcall ClipboardDownload(const UnicodeString & TargetDirectory, bool NoConfirmation, bool DragDrop);
+  bool __fastcall DoesClipboardContainOurFiles();
+  bool __fastcall CanPasteToDirViewFromClipBoard();
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();
@@ -713,7 +725,8 @@ public:
     bool UseDefaults);
   void __fastcall StandaloneEdit(const UnicodeString & FileName);
   bool __fastcall CanPasteFromClipBoard();
-  void __fastcall PasteFromClipBoard();
+  virtual void __fastcall PasteFromClipBoard();
+  virtual void __fastcall CopyFilesToClipboard(TOperationSide Side);
   void __fastcall ToggleQueueVisibility();
   virtual UnicodeString __fastcall PathForCaption();
   void __fastcall FileListFromClipboard();

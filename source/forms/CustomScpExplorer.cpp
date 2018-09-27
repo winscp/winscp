@@ -1091,6 +1091,7 @@ bool __fastcall TCustomScpExplorerForm::CopyParamDialog(
       FLAGMASK(DragDrop && (WinConfiguration->DDTransferConfirmation == asAuto),
         cooDoNotShowAgain);
     std::unique_ptr<TSessionData> SessionData(SessionDataForCode());
+    FlashOnBackground(); // Particularly when called from ClipboardFakeCreated
     Result = DoCopyDialog(Direction == tdToRemote, Type == ttMove,
       FileList, TargetDirectory, &CopyParam, Options, CopyParamAttrs, SessionData.get(), &OutputOptions);
 
@@ -6269,6 +6270,11 @@ void __fastcall TCustomScpExplorerForm::TerminalRemoved(TObject * Sender)
     FFileFindTerminal = NULL;
     HideFileFindDialog();
   }
+
+  if (FClipboardTerminal == Sender)
+  {
+    ClipboardClear(); // implies ClipboardStop
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::FileTerminalRemoved(const UnicodeString FileName,
@@ -6946,17 +6952,22 @@ void __fastcall TCustomScpExplorerForm::DDFakeCreated(TObject * /*Sender*/, cons
   }
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall TCustomScpExplorerForm::CreateFakeTransferDirectory()
+{
+  UnicodeString Result = ExcludeTrailingBackslash(WinConfiguration->TemporaryDir());
+  if (!ForceDirectories(ApiPath(Result)))
+  {
+    throw Exception(FMTLOAD(CREATE_TEMP_DIR_ERROR, (Result)));
+  }
+  FileSetAttr(ApiPath(Result), faHidden);
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::DDFakeFileInitDrag(TFileList * FileList,
   bool & Created)
 {
   FFakeFileDropTarget = UnicodeString();
-  FDragFakeDirectory =
-    ExcludeTrailingBackslash(WinConfiguration->TemporaryDir());
-  if (!ForceDirectories(ApiPath(FDragFakeDirectory)))
-  {
-    throw Exception(FMTLOAD(CREATE_TEMP_DIR_ERROR, (FDragFakeDirectory)));
-  }
-  FileSetAttr(ApiPath(FDragFakeDirectory), faHidden);
+  FDragFakeDirectory = CreateFakeTransferDirectory();
   FileList->AddItem(NULL, FDragFakeDirectory);
 
   Created = true;
@@ -7983,7 +7994,18 @@ bool __fastcall TCustomScpExplorerForm::CanPasteFromClipBoard()
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::PasteFromClipBoard()
 {
-  if (CanPasteToDirViewFromClipBoard())
+  if (DoesClipboardContainOurFiles())
+  {
+    if (DebugAlwaysTrue(CanPasteToDirViewFromClipBoard()))
+    {
+      TTerminalManager * Manager = TTerminalManager::Instance();
+      TTerminal * TergetTerminal = Manager->ActiveTerminal;
+      Manager->ActiveTerminal = FClipboardTerminal;
+
+      ExecuteFileOperation(foRemoteCopy, osRemote, FClipboardFileList.get(), false, TergetTerminal);
+    }
+  }
+  else if (CanPasteToDirViewFromClipBoard())
   {
     DirView(osCurrent)->PasteFromClipBoard();
   }
@@ -9948,6 +9970,98 @@ void __fastcall TCustomScpExplorerForm::SessionsPageControlCloseButtonClick(TPag
       {
         Manager->FreeTerminal(Terminal);
       }
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::CopyFilesToClipboard(TOperationSide Side)
+{
+  if (DebugAlwaysTrue(GetSide(Side) == osRemote))
+  {
+    TInstantOperationVisualizer Visualizer;
+    // To trigger ClipboardDataObjectRelease (in case the clipboard already contains our data)
+    // before we create a new data object
+    ClipboardClear();
+
+    DebugAssert(FClipboardFakeDirectory.IsEmpty());
+    DebugAssert(FClipboardFakeMonitors.get() == NULL);
+
+    FClipboardFakeDirectory = CreateFakeTransferDirectory();
+    FClipboardFakeMonitors.reset(StartCreationDirectoryMonitorsOnEachDrive(FILE_NOTIFY_CHANGE_DIR_NAME, ClipboardFakeCreated));
+
+    if (FClipboardDragDropFilesEx.get() == NULL)
+    {
+      FClipboardDragDropFilesEx.reset(new TDragDropFilesEx(this));
+      FClipboardDragDropFilesEx->OnDataObjectRelease = ClipboardDataObjectRelease;
+    }
+    FClipboardDragDropFilesEx->FileList->Clear();
+    FClipboardDragDropFilesEx->FileList->AddItem(NULL, FClipboardFakeDirectory);
+    FClipboardDragDropFilesEx->CopyToClipboard();
+
+    FClipboardTerminal = FTerminal;
+
+    // Need full paths, as cwd can be different once files are pasted
+    FClipboardFileList.reset(TRemoteFileList::CloneStrings(RemoteDirView->CreateFileList(false, true)));
+    for (int Index = 0; Index < FClipboardFileList->Count; Index++)
+    {
+      FClipboardFileList->Strings[Index] = UnixExcludeTrailingBackslash(FClipboardFileList->Strings[Index]);
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::ClipboardClear()
+{
+  if (OpenClipboard(0))
+  {
+    EmptyClipboard(); // Calls ClipboardDataObjectRelease, if clipboard contains our data
+    CloseClipboard();
+  }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TCustomScpExplorerForm::DoesClipboardContainOurFiles()
+{
+  return !FClipboardFakeDirectory.IsEmpty();
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::ClipboardStop()
+{
+  RemoveDir(ApiPath(FClipboardFakeDirectory));
+  FClipboardFakeDirectory = UnicodeString();
+  FClipboardTerminal = NULL;
+  // Also called in Idle()
+  FClipboardFakeMonitors.reset(NULL);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::ClipboardDataObjectRelease(TObject * /*Sender*/)
+{
+  if (DebugAlwaysTrue(!FClipboardFakeDirectory.IsEmpty()))
+  {
+    ClipboardStop();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::ClipboardDownload(const UnicodeString & TargetDirectory, bool NoConfirmation, bool DragDrop)
+{
+  TTerminalManager * Manager = TTerminalManager::Instance();
+  Manager->ActiveTerminal = FClipboardTerminal;
+
+  TTransferOperationParam Params;
+  Params.TargetDirectory = TargetDirectory;
+  Params.DragDrop = DragDrop;
+  ExecuteFileOperation(foCopy, osRemote, FClipboardFileList.get(), NoConfirmation, &Params);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::ClipboardFakeCreated(TObject * /*Sender*/, const UnicodeString FileName)
+{
+  if (DebugAlwaysTrue(!FClipboardFakeDirectory.IsEmpty()) &&
+      SameText(ExtractFileName(FileName), ExtractFileName(FClipboardFakeDirectory)))
+  {
+    RemoveDir(ApiPath(FileName));
+
+    if (!NonVisualDataModule->Busy)
+    {
+      bool NoConfirmation = (WinConfiguration->DDTransferConfirmation == asOff);
+      ClipboardDownload(ExtractFilePath(FileName), NoConfirmation, true);
     }
   }
 }

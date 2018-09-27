@@ -106,12 +106,14 @@ type
      HDropStream:TMemoryStream;
      FilenameMapList:TStringList;
      FilenamesAreMapped:boolean;
+     FOnRelease: TNotifyEvent;
   public
      constructor Create(AFileList:TFileList; RenderPIDL, RenderFilename: boolean);
      destructor Destroy; override;
      function RenderData(FormatEtc:TFormatEtc;
         var StgMedium: TStgMedium):HResult; override;
      function IsValid(Formatpidl, FormatHDrop:boolean):boolean;
+     property OnRelease: TNotifyEvent read FOnRelease write FOnRelease;
   end;
 
   TDropTargetFilesEx = class(TDropTarget)
@@ -146,8 +148,10 @@ type
      FOnSpecifyDropTarget:TOnSpecifyDropTarget;
      FShellExtension:TShellExtension;
      FCMList:TList;
+     FOnDataObjectRelease: TNotifyEvent;
   protected
      function CreateDataObject:TDataObject; override;
+     procedure DataObjectRelease(Sender: TObject);
      procedure DoMenuPopup(Sender: TObject; AMenu: HMenu; DataObj: IDataObject;
         AMinCustCmd:integer; grfKeyState: Longint; pt: TPoint); override;
      function DoMenuExecCmd(Sender: TObject; AMenu: HMenu; DataObj:IDataObject;
@@ -170,6 +174,7 @@ type
      property OnSpecifyDropTarget:TOnSpecifyDropTarget read FOnSpecifyDropTarget
        write FOnSpecifyDropTarget;
      property OnDropHandlerSucceeded;
+     property OnDataObjectRelease: TNotifyEvent read FOnDataObjectRelease write FOnDataObjectRelease;
   end;
 
 procedure Register;
@@ -562,6 +567,7 @@ end;
 
 destructor TDataObjectFilesEx.Destroy;
 begin
+     if Assigned(OnRelease) then OnRelease(Self);
      pidlStream.Free;
      HDropStream.Free;
      FilenameMapList.Free;
@@ -846,6 +852,11 @@ begin
      inherited destroy;
 end;
 
+procedure TDragDropFilesEx.DataObjectRelease(Sender: TObject);
+begin
+  if Assigned(OnDataObjectRelease) then OnDataObjectRelease(Self);
+end;
+
 function TDragDropFilesEx.CreateDataObject:TDataObject;
 var DataObject:TDataObjectFilesEx;
     RFName,RPidl:boolean;
@@ -866,6 +877,7 @@ begin
      if FFileList.Count>0 then
      begin
           DataObject:=TDataObjectFilesEx.Create(FFileList, RPidl, RFname);
+          DataObject.OnRelease := DataObjectRelease;
           if DataObject.IsValid((nvPIDL in FNeedValid),
              (nvFilename in FNeedValid))=false then DataObject._Release
           else Result:=DataObject;

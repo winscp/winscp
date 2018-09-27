@@ -425,6 +425,8 @@ __published:
   TTBXItem *TBXItem250;
   TTBXItem *TBXItem76;
   TTBXItem *TBXItem127;
+  TTBXSeparatorItem *TBXSeparatorItem62;
+  TTBXItem *TBXItem163;
   void __fastcall SplitterMoved(TObject *Sender);
   void __fastcall SplitterCanResize(TObject *Sender, int &NewSize,
     bool &Accept);
@@ -605,6 +607,8 @@ public:
   virtual void __fastcall HistoryGo(TOperationSide Side, int Index);
   virtual void __fastcall DisplaySystemContextMenu();
   virtual void __fastcall GoToAddress();
+  virtual void __fastcall CopyFilesToClipboard(TOperationSide Side);
+  virtual void __fastcall PasteFromClipBoard();
 
   __property double LeftPanelWidth = { read = GetLeftPanelWidth, write = SetLeftPanelWidth };
 };

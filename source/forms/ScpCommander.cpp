@@ -2227,3 +2227,31 @@ void __fastcall TScpCommanderForm::RemoteOpenDirButtonPopup(TTBCustomItem * /*Se
   CreateOpenDirMenu(RemoteOpenDirButton, osRemote);
 }
 //---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::CopyFilesToClipboard(TOperationSide Side)
+{
+  if (GetSide(Side) == osLocal)
+  {
+    TInstantOperationVisualizer Visualizer;
+    LocalDirView->CopyToClipBoard();
+  }
+  else
+  {
+    TCustomScpExplorerForm::CopyFilesToClipboard(Side);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::PasteFromClipBoard()
+{
+  if (DoesClipboardContainOurFiles() && (GetSide(osCurrent) == osLocal))
+  {
+    if (DebugAlwaysTrue(CanPasteToDirViewFromClipBoard()))
+    {
+      ClipboardDownload(LocalDirView->Path, !WinConfiguration->ConfirmTransferring, false);
+    }
+  }
+  else
+  {
+    TCustomScpExplorerForm::PasteFromClipBoard();
+  }
+}
+//---------------------------------------------------------------------------
