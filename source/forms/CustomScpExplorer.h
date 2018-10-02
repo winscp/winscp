@@ -710,6 +710,7 @@ public:
   bool __fastcall CanChangePassword();
   void __fastcall ChangePassword();
   bool __fastcall IsComponentPossible(Byte Component);
+  void __fastcall ReplaceTerminal(TTerminal * value);
 
   __property bool ComponentVisible[Byte Component] = { read = GetComponentVisible, write = SetComponentVisible };
   __property bool EnableFocusedOperation[TOperationSide Side] = { read = GetEnableFocusedOperation, index = 0 };
