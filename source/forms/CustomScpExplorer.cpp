@@ -525,22 +525,27 @@ void __fastcall TCustomScpExplorerForm::SetTerminal(TTerminal * value)
   if (FTerminal != value)
   {
     TerminalChanging();
-    FTerminal = value;
-    bool PrevAllowTransferPresetAutoSelect = FAllowTransferPresetAutoSelect;
-    FAllowTransferPresetAutoSelect = false;
-    try
-    {
-      TerminalChanged();
-    }
-    __finally
-    {
-      FAllowTransferPresetAutoSelect = PrevAllowTransferPresetAutoSelect;
-    }
+    ReplaceTerminal(value);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::ReplaceTerminal(TTerminal * value)
+{
+  FTerminal = value;
+  bool PrevAllowTransferPresetAutoSelect = FAllowTransferPresetAutoSelect;
+  FAllowTransferPresetAutoSelect = false;
+  try
+  {
+    TerminalChanged();
+  }
+  __finally
+  {
+    FAllowTransferPresetAutoSelect = PrevAllowTransferPresetAutoSelect;
+  }
 
-    if (Terminal != NULL)
-    {
-      TransferPresetAutoSelect();
-    }
+  if (Terminal != NULL)
+  {
+    TransferPresetAutoSelect();
   }
 }
 //---------------------------------------------------------------------------

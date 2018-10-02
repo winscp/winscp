@@ -279,6 +279,8 @@ void __fastcall TTerminalManager::DoConnectTerminal(TTerminal * Terminal, bool R
           Items[ActiveTerminalIndex] = Terminal;
           OwnsObjects = true;
           FActiveTerminal = Terminal;
+          // Not to call TerminalChanging() => UpdateTerminal() on a terminal that might be already released
+          FScpExplorer->ReplaceTerminal(Terminal);
         }
 
         // When abandoning cancelled terminal, DoInformation(Phase = 0) does not make it to TerminalInformation handler.
