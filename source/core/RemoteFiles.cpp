@@ -2832,6 +2832,14 @@ void __fastcall TSynchronizeChecklist::Update(const TItem * Item, bool Check, TA
   MutableItem->Action = Action;
 }
 //---------------------------------------------------------------------------
+void TSynchronizeChecklist::Delete(const TItem * Item)
+{
+  // See comment in Update()
+  TItem * MutableItem = const_cast<TItem *>(Item);
+  FList->Extract(MutableItem);
+  delete Item;
+}
+//---------------------------------------------------------------------------
 void __fastcall TSynchronizeChecklist::UpdateDirectorySize(const TItem * Item, __int64 Size)
 {
   // See comment in Update

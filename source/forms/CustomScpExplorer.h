@@ -62,6 +62,7 @@ enum TCustomCommandListType { ccltAll, ccltBoth, ccltNonFile, ccltFile };
 //---------------------------------------------------------------------------
 class TCustomScpExplorerForm : public TForm
 {
+friend class TAutoBatch;
 __published:
   TPanel *RemotePanel;
   TTBXStatusBar *RemoteStatusBar;
@@ -621,6 +622,8 @@ protected:
     TUpdatedSynchronizationChecklistItems OnUpdatedSynchronizationChecklistItems);
   void __fastcall DoSynchronizeChecklistCalculateSize(
     TSynchronizeChecklist * Checklist, const TSynchronizeChecklist::TItemList & Items, void * Token);
+  void __fastcall DoSynchronizeMove(
+    TOperationSide Side, const UnicodeString & FileName, const UnicodeString & NewFileName, TRemoteFile * RemoteFile);
   void __fastcall FullSynchronize(
     TSynchronizeParams & Params, TProcessedSynchronizationChecklistItem OnProcessedItem,
     TUpdatedSynchronizationChecklistItems OnUpdatedSynchronizationChecklistItems);

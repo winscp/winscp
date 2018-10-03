@@ -56,6 +56,9 @@ __published:
   TMenuItem *Calculate1;
   TButton *CalculateSizeButton;
   TAction *CalculateSizeAllAction;
+  TAction *MoveAction;
+  TButton *MoveButton;
+  TMenuItem *MoveItem;
   void __fastcall HelpButtonClick(TObject * Sender);
   void __fastcall FormShow(TObject * Sender);
   void __fastcall StatusBarDrawPanel(TStatusBar *StatusBar,
@@ -91,13 +94,15 @@ __published:
   void __fastcall OkButtonClick(TObject *Sender);
   void __fastcall CalculateSizeActionExecute(TObject *Sender);
   void __fastcall CalculateSizeAllActionExecute(TObject *Sender);
+  void __fastcall MoveActionExecute(TObject *Sender);
 
 public:
   __fastcall TSynchronizeChecklistDialog(
     TComponent * AOwner, TSynchronizeMode Mode, int Params,
     const UnicodeString & LocalDirectory, const UnicodeString & RemoteDirectory,
     TCustomCommandMenuEvent OnCustomCommandMenu, TFullSynchronizeEvent OnSynchronize,
-    TSynchronizeChecklistCalculateSize OnSynchronizeChecklistCalculateSize, void * Token);
+    TSynchronizeChecklistCalculateSize OnSynchronizeChecklistCalculateSize, TSynchronizeMoveEvent OnSynchronizeMove,
+    void * Token);
   virtual __fastcall ~TSynchronizeChecklistDialog();
 
   bool __fastcall Execute(TSynchronizeChecklist * Checklist);
@@ -120,6 +125,7 @@ protected:
   UnicodeString FGeneralHint;
   TCustomCommandMenuEvent FOnCustomCommandMenu;
   TSynchronizeChecklistCalculateSize FOnSynchronizeChecklistCalculateSize;
+  TSynchronizeMoveEvent FOnSynchronizeMove;
   typedef std::map<const TSynchronizeChecklist::TItem *, TSynchronizeChecklist::TAction> TActions;
   TActions FActions;
   TFullSynchronizeEvent FOnSynchronize;
@@ -154,6 +160,10 @@ protected:
   void __fastcall UpdatedSynchronizationChecklistItems(const TSynchronizeChecklist::TItemList & Items);
   void __fastcall CountItemSize(const TSynchronizeChecklist::TItem * ChecklistItem, int Factor);
   void __fastcall CountItem(const TSynchronizeChecklist::TItem * ChecklistItem, int Factor);
+  void __fastcall CountItemTotal(const TSynchronizeChecklist::TItem * ChecklistItem, int Factor);
+  typedef std::pair<const TSynchronizeChecklist::TItem *, const TSynchronizeChecklist::TItem *> TSynchronizeMoveItems;
+  TSynchronizeMoveItems __fastcall GetMoveItems();
+  void __fastcall DeleteItem(TListItem * Item);
   static int __fastcall CompareNumber(__int64 Value1, __int64 Value2);
 };
 //----------------------------------------------------------------------------

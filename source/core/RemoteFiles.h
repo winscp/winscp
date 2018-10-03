@@ -493,6 +493,7 @@ public:
 
   void __fastcall Update(const TItem * Item, bool Check, TAction Action);
   void __fastcall UpdateDirectorySize(const TItem * Item, __int64 Size);
+  void Delete(const TItem * Item);
 
   static TAction __fastcall Reverse(TAction Action);
   static bool __fastcall IsItemSizeIrrelevant(TAction Action);

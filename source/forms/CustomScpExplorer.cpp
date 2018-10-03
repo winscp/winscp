@@ -125,6 +125,25 @@ private:
   TCustomScpExplorerForm * FForm;
 };
 //---------------------------------------------------------------------------
+class TAutoBatch
+{
+public:
+  TAutoBatch(TCustomScpExplorerForm * Form) :
+    FForm(Form)
+  {
+    FForm->BatchStart(FBatchStorage);
+  }
+
+  ~TAutoBatch()
+  {
+    FForm->BatchEnd(FBatchStorage);
+  }
+
+private:
+  TCustomScpExplorerForm * FForm;
+  void * FBatchStorage;
+};
+//---------------------------------------------------------------------------
 struct TTransferOperationParam
 {
   TTransferOperationParam();
@@ -5532,6 +5551,48 @@ void __fastcall TCustomScpExplorerForm::DoSynchronizeChecklistCalculateSize(
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::DoSynchronizeMove(
+  TOperationSide Side, const UnicodeString & FileName, const UnicodeString & NewFileName, TRemoteFile * RemoteFile)
+{
+  TAutoBatch AutoBatch(this);
+  TAutoFlag AutoOperationFlag(FAutoOperation);
+
+  if (Side == osRemote)
+  {
+    std::unique_ptr<TStrings> FileList(new TStringList());
+    FileList->AddObject(FileName, RemoteFile);
+    UnicodeString Target = UnixExtractFileDir(NewFileName);
+    UnicodeString FileMask = DelimitFileNameMask(UnixExtractFileName(NewFileName));
+
+    RemoteDirView->SaveSelection();
+    RemoteDirView->SaveSelectedNames();
+    try
+    {
+      Terminal->MoveFiles(FileList.get(), Target, FileMask);
+    }
+    catch(...)
+    {
+      RemoteDirView->DiscardSavedSelection();
+      throw;
+    }
+    RemoteDirView->RestoreSelection();
+  }
+  else if (DebugAlwaysTrue(Side == osLocal))
+  {
+    if (!MoveFile(FileName.c_str(), NewFileName.c_str()))
+    {
+      throw EOSExtException(FMTLOAD(RENAME_FILE_ERROR, (FileName, NewFileName)));
+    }
+    UnicodeString Directory = ExtractFileDir(FileName);
+    ReloadLocalDirectory(Directory);
+    UnicodeString NewDirectory = ExtractFileDir(NewFileName);
+    if (!SamePaths(Directory, NewDirectory))
+    {
+      ReloadLocalDirectory(NewDirectory);
+    }
+  }
+}
+//---------------------------------------------------------------------------
 int __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
   UnicodeString & LocalDirectory, UnicodeString & RemoteDirectory,
   TSynchronizeMode & Mode, bool & SaveMode, bool UseDefaults)
@@ -5607,7 +5668,7 @@ int __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
         {
           if (!DoSynchronizeChecklistDialog(
                 Checklist, Mode, Params, LocalDirectory, RemoteDirectory, CustomCommandMenu, DoFullSynchronize,
-                DoSynchronizeChecklistCalculateSize, &SynchronizeParams))
+                DoSynchronizeChecklistCalculateSize, DoSynchronizeMove, &SynchronizeParams))
           {
             Result = -1;
           }
