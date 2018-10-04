@@ -761,7 +761,6 @@ public:
   bool __fastcall CanPrivateKeyUpload();
   void __fastcall PrivateKeyUpload();
   bool __fastcall IsComponentPossible(Byte Component);
-  void __fastcall ReplaceTerminal(TTerminal * value);
 
   __property bool ComponentVisible[Byte Component] = { read = GetComponentVisible, write = SetComponentVisible };
   __property bool EnableFocusedOperation[TOperationSide Side] = { read = GetEnableFocusedOperation, index = 0 };
