@@ -38,6 +38,7 @@ type
     FUseSystemContextMenu: Boolean;
     FDimmHiddenDirs: Boolean;
     FShowHiddenDirs: Boolean;
+    FNaturalOrderNumericalSorting: Boolean;
     FContinue: Boolean;
     FImageList: TImageList;
     FScrollOnDragOver: TTreeViewScrollOnDragOver;
@@ -66,6 +67,7 @@ type
     procedure SetTargetPopUpMenu(Value: Boolean);
     procedure SetDimmHiddenDirs(Value: Boolean);
     procedure SetShowHiddenDirs(Value: Boolean);
+    procedure SetNaturalOrderNumericalSorting(Value: Boolean);
 
     function GetDirectory: string; virtual;
     procedure SetDirectory(Value: string); virtual;
@@ -80,6 +82,7 @@ type
     function CustomDrawItem(Node: TTreeNode; State: TCustomDrawState;
       Stage: TCustomDrawStage; var PaintImages: Boolean): Boolean; override;
     procedure NeedImageLists(Recreate: Boolean);
+    procedure DoCompare(Sender: TObject; Node1, Node2: TTreeNode; Data: Integer; var Compare: Integer);
 
     procedure CNNotify(var Msg: TWMNotify); message CN_NOTIFY;
     procedure CMColorChanged(var Msg: TMessage); message CM_COLORCHANGED;
@@ -174,6 +177,7 @@ type
       write SetDimmHiddenDirs default False;
     property ShowHiddenDirs: Boolean read FShowHiddenDirs
       write SetShowHiddenDirs default False;
+    property NaturalOrderNumericalSorting: Boolean read FNaturalOrderNumericalSorting write SetNaturalOrderNumericalSorting;
 
     property DDLinkOnExeDrag: Boolean read FDDLinkOnExeDrag write FDDLinkOnExeDrag default True;
 
@@ -245,6 +249,8 @@ begin
   FCanChange := True;
   FUseSystemContextMenu := True;
   FContinue := True;
+  FNaturalOrderNumericalSorting := True;
+  OnCompare := DoCompare;
 
   FDragDropFilesEx := TCustomizableDragDropFilesEx.Create(Self);
   with FDragDropFilesEx do
@@ -1099,26 +1105,14 @@ begin
   end;
 end; {CenterNode}
 
-function TCustomDriveView.SortChildren(ParentNode: TTreeNode; Recurse: Boolean): Boolean;
-var
-  Node: TTreeNode;
+procedure TCustomDriveView.DoCompare(Sender: TObject; Node1, Node2: TTreeNode; Data: Integer; var Compare: Integer);
 begin
-  Result := False;
-  if Assigned(ParentNode) and
-     TreeView_SortChildren(Self.Handle, ParentNode.ItemID, LongBool(0)) then
-  begin
-    Result := True;
-    if Recurse then
-    begin
-      Node := ParentNode.GetFirstChild;
-      while Assigned(Node) do
-      begin
-        if Node.HasChildren then
-          SortChildren(Node, Recurse);
-        Node := ParentNode.GetNextChild(Node);
-      end;
-    end;
-  end;
+  Compare := CompareLogicalTextPas(Node1.Text, Node2.Text, NaturalOrderNumericalSorting);
+end;
+
+function TCustomDriveView.SortChildren(ParentNode: TTreeNode; Recurse: Boolean): Boolean;
+begin
+  Result := Assigned(ParentNode) and ParentNode.AlphaSort(Recurse);
 end; {SortChildren}
 
 function TCustomDriveView.IterateSubTree(var StartNode : TTreeNode;
@@ -1219,6 +1213,15 @@ begin
     RebuildTree;
   end;
 end; {SetDimmHiddenDirs}
+
+procedure TCustomDriveView.SetNaturalOrderNumericalSorting(Value: Boolean);
+begin
+  if NaturalOrderNumericalSorting <> Value then
+  begin
+    FNaturalOrderNumericalSorting := Value;
+    AlphaSort;
+  end;
+end;
 
 function TCustomDriveView.GetTargetPopupMenu: Boolean;
 begin

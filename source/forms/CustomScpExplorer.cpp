@@ -1000,6 +1000,7 @@ void __fastcall TCustomScpExplorerForm::ConfigurationChanged()
   RemoteDriveView->DimmHiddenDirs = WinConfiguration->DimmHiddenFiles;
   RemoteDriveView->ShowHiddenDirs = WinConfiguration->ShowHiddenFiles;
   RemoteDriveView->ShowInaccesibleDirectories = WinConfiguration->ShowInaccesibleDirectories;
+  RemoteDriveView->NaturalOrderNumericalSorting = WinConfiguration->NaturalOrderNumericalSorting;
 
   UpdateSessionsPageControlHeight();
 

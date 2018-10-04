@@ -511,6 +511,8 @@ function GetNextMask(var Mask: string): string;
 
 procedure DefaultFileFilter(var Filter: TFileFilter);
 
+function CompareLogicalTextPas(const S1, S2: string; NaturalOrderNumericalSorting: Boolean): Integer;
+
 function OverlayImageList(Size: Integer): TImageList;
 
 var
@@ -618,6 +620,16 @@ begin
     SetLength(Masks, 0);
     Directories := False;
   end;
+end;
+
+function StrCmpLogicalW(const sz1, sz2: UnicodeString): Integer; stdcall; external 'shlwapi.dll';
+
+function CompareLogicalTextPas(const S1, S2: string; NaturalOrderNumericalSorting: Boolean): Integer;
+begin
+  if NaturalOrderNumericalSorting then
+    Result := StrCmpLogicalW(PChar(S1), PChar(S2))
+  else
+    Result := lstrcmpi(PChar(S1), PChar(S2));
 end;
 
 { Shortcut-handling }
