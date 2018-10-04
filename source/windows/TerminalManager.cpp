@@ -273,8 +273,10 @@ void __fastcall TTerminalManager::DoConnectTerminal(TTerminal * Terminal, bool R
         Items[ActiveTerminalIndex] = Terminal;
         OwnsObjects = true;
         FActiveTerminal = Terminal;
-          // Not to call TerminalChanging() => UpdateTerminal() on a terminal that might be already released
-          FScpExplorer->ReplaceTerminal(Terminal);
+          TerminalReady();
+        // Now we do not have any reference to an abandoned terminal, so we can safely allow the thread
+        // to complete its task and destroy the terminal afterwards.
+        TerminalThread->Terminate();
 
         // When abandoning cancelled terminal, DoInformation(Phase = 0) does not make it to TerminalInformation handler.
         if (DebugAlwaysTrue(FAuthenticating > 0))
