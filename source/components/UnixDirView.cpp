@@ -729,7 +729,6 @@ int __stdcall CompareFile(TListItem * Item1, TListItem * Item2, TUnixDirView * D
 void __fastcall TUnixDirView::SortItems()
 {
 #ifndef DESIGN_ONLY
-  DebugAssert(Terminal);
   if (HandleAllocated())
   {
     CustomSortItems(CompareFile);
