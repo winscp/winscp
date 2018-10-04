@@ -993,8 +993,6 @@ void __fastcall TSynchronizeChecklistDialog::ReverseActionExecute(TObject * /*Se
 
     if (DebugAlwaysTrue(Action != NewAction))
     {
-      int ActionIndex = int(Action);
-
       CountItemTotal(ChecklistItem, -1);
       if (Item->Checked)
       {
@@ -1002,7 +1000,6 @@ void __fastcall TSynchronizeChecklistDialog::ReverseActionExecute(TObject * /*Se
       }
 
       Action = NewAction;
-      ActionIndex = int(Action);
 
       CountItemTotal(ChecklistItem, 1);
       if (Item->Checked)
