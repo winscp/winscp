@@ -3167,7 +3167,7 @@ begin
 end;
 
 // WM_SETFOCUS works even when focus is moved to another window/app,
-// while .Enter works only when focus is moved to order control of the same window.
+// while .Enter works only when focus is moved to other control of the same window.
 procedure TCustomDirView.WMSetFocus(var Message: TWMSetFocus);
 begin
   inherited;
