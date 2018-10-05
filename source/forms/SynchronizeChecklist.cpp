@@ -1174,7 +1174,7 @@ TSynchronizeChecklistDialog::TSynchronizeMoveItems __fastcall TSynchronizeCheckl
   else
   {
     TListItem * Item1 = ListView->Selected;
-    const TSynchronizeChecklist::TItem * ChecklistItem1 = GetChecklistItem(DebugNotNull(ListView->Selected));
+    const TSynchronizeChecklist::TItem * ChecklistItem1 = GetChecklistItem(DebugNotNull(Item1));
     TListItem * Item2 = ListView->GetNextItem(ListView->Selected, sdAll, TItemStates() << isSelected);
     const TSynchronizeChecklist::TItem * ChecklistItem2 = GetChecklistItem(DebugNotNull(Item2));
 
