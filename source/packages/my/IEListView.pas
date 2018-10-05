@@ -569,6 +569,7 @@ begin
     FDragImageList := TDragImageList.Create(Self);
   if not Assigned(GlobalDragImageList) then
     GlobalDragImageList := DragImageList;
+  SetColumnImages;
 end; {CreateWnd}
 
 destructor TCustomIEListView.Destroy;
