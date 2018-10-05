@@ -464,11 +464,11 @@ void __fastcall TScpCommanderForm::StartingDisconnected()
   LocalDefaultDirectory();
 }
 //---------------------------------------------------------------------------
-void __fastcall TScpCommanderForm::TerminalChanged()
+void __fastcall TScpCommanderForm::TerminalChanged(bool Replaced)
 {
   NonVisualDataModule->SynchronizeBrowsingAction->Checked = false;
 
-  TCustomScpExplorerForm::TerminalChanged();
+  TCustomScpExplorerForm::TerminalChanged(Replaced);
 
   if (Terminal)
   {

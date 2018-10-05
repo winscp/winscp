@@ -530,23 +530,33 @@ void __fastcall TCustomScpExplorerForm::SetTerminal(TTerminal * value)
   if (FTerminal != value)
   {
     TerminalChanging();
-    FTerminal = value;
-    bool PrevAllowTransferPresetAutoSelect = FAllowTransferPresetAutoSelect;
-    FAllowTransferPresetAutoSelect = false;
-    try
-    {
-      TerminalChanged();
-    }
-    __finally
-    {
-      FAllowTransferPresetAutoSelect = PrevAllowTransferPresetAutoSelect;
-    }
-
-    if (Terminal != NULL)
-    {
-      TransferPresetAutoSelect();
-    }
+    DoSetTerminal(value, false);
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::DoSetTerminal(TTerminal * value, bool Replace)
+{
+  FTerminal = value;
+  bool PrevAllowTransferPresetAutoSelect = FAllowTransferPresetAutoSelect;
+  FAllowTransferPresetAutoSelect = false;
+  try
+  {
+    TerminalChanged(Replace);
+  }
+  __finally
+  {
+    FAllowTransferPresetAutoSelect = PrevAllowTransferPresetAutoSelect;
+  }
+
+  if (Terminal != NULL)
+  {
+    TransferPresetAutoSelect();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::ReplaceTerminal(TTerminal * value)
+{
+  DoSetTerminal(value, true);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::TerminalChanging()
@@ -557,9 +567,16 @@ void __fastcall TCustomScpExplorerForm::TerminalChanging()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::TerminalChanged()
+void __fastcall TCustomScpExplorerForm::TerminalChanged(bool Replaced)
 {
-  RemoteDirView->Terminal = Terminal;
+  if (Replaced)
+  {
+    RemoteDirView->ReplaceTerminal(Terminal);
+  }
+  else
+  {
+    RemoteDirView->Terminal = Terminal;
+  }
   NonVisualDataModule->ResetQueueOnceEmptyOperation();
 
   TManagedTerminal * ManagedTerminal = NULL;
