@@ -484,18 +484,27 @@ void __fastcall TUnixDirView::SetDriveView(TCustomUnixDriveView * Value)
 }
 //---------------------------------------------------------------------------
 #ifndef DESIGN_ONLY
-void __fastcall TUnixDirView::SetTerminal(TTerminal *value)
+void __fastcall TUnixDirView::DoSetTerminal(TTerminal * value, bool Replace)
 {
   if (FTerminal != value)
   {
     if (FTerminal)
     {
-      DebugAssert(FTerminal->OnReadDirectory == DoReadDirectory);
-      FTerminal->OnReadDirectory = NULL;
-      DebugAssert(FTerminal->OnStartReadDirectory == DoStartReadDirectory);
-      FTerminal->OnStartReadDirectory = NULL;
-      DebugAssert(FTerminal->OnChangeDirectory == DoChangeDirectory);
-      FTerminal->OnChangeDirectory = NULL;
+      DebugAssert((FTerminal->OnReadDirectory == DoReadDirectory) || Replace);
+      if (FTerminal->OnReadDirectory == DoReadDirectory)
+      {
+        FTerminal->OnReadDirectory = NULL;
+      }
+      DebugAssert((FTerminal->OnStartReadDirectory == DoStartReadDirectory) || Replace);
+      if (FTerminal->OnStartReadDirectory == DoStartReadDirectory)
+      {
+        FTerminal->OnStartReadDirectory = NULL;
+      }
+      DebugAssert((FTerminal->OnChangeDirectory == DoChangeDirectory) || Replace);
+      if (FTerminal->OnChangeDirectory == DoChangeDirectory)
+      {
+        FTerminal->OnChangeDirectory = NULL;
+      }
       if (!value || !value->Files->Loaded)
       {
         ClearItems();
@@ -522,6 +531,16 @@ void __fastcall TUnixDirView::SetTerminal(TTerminal *value)
     }
     UpdatePathLabel();
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TUnixDirView::SetTerminal(TTerminal * value)
+{
+  DoSetTerminal(value, false);
+}
+//---------------------------------------------------------------------------
+void __fastcall TUnixDirView::ReplaceTerminal(TTerminal * value)
+{
+  DoSetTerminal(value, true);
 }
 #endif
 //---------------------------------------------------------------------------

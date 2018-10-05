@@ -37,6 +37,7 @@ private:
   TNotifyEvent FOnRead;
   void __fastcall SetDDAllowMove(bool value);
   void __fastcall SetTerminal(TTerminal *value);
+  void __fastcall DoSetTerminal(TTerminal *value, bool Replace);
   void __fastcall SetShowInaccesibleDirectories(bool value);
 protected:
   virtual void __fastcall DDDragDetect(int grfKeyState, const TPoint &DetectStart,
@@ -98,6 +99,7 @@ public:
   virtual bool __fastcall PasteFromClipBoard(UnicodeString TargetPath = L"");
   void __fastcall UpdateFiles();
   void __fastcall DisplayContextMenu(const TPoint &Where);
+  void __fastcall ReplaceTerminal(TTerminal * value);
 
   __property bool Active = { read = GetActive };
   __property TTerminal *Terminal = { read = FTerminal, write = SetTerminal };

@@ -533,7 +533,7 @@ protected:
   virtual void __fastcall RestoreFormParams();
   virtual void __fastcall RestoreParams();
   virtual void __fastcall FixControlsPlacement();
-  virtual void __fastcall TerminalChanged();
+  virtual void __fastcall TerminalChanged(bool Replaced);
   virtual void __fastcall ConfigurationChanged();
   virtual bool __fastcall GetHasDirView(TOperationSide Side);
   virtual void __fastcall UpdateControls();
