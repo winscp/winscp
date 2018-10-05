@@ -9083,6 +9083,10 @@ void __fastcall TCustomScpExplorerForm::SessionsDDDragOver(int /*KeyState*/,
     {
       Effect = DROPEFFECT_None;
     }
+    else if ((TargetTerminal != Terminal) && (Effect == DROPEFFECT_Move))
+    {
+      Effect = DROPEFFECT_Copy;
+    }
   }
 }
 //---------------------------------------------------------------------------
