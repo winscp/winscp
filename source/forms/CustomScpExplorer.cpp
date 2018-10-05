@@ -196,7 +196,6 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   FProgressForm = NULL;
   FRefreshLocalDirectory = false;
   FRefreshRemoteDirectory = false;
-  FDDMoveSlipped = false;
   FDDExtMapFile = NULL;
   // CreateMutexW keeps failing with ERROR_NOACCESS
   FDDExtMutex = CreateMutexA(NULL, false, AnsiString(DRAG_EXT_MUTEX).c_str());
@@ -999,7 +998,6 @@ void __fastcall TCustomScpExplorerForm::UpdateSessionsPageControlHeight()
 void __fastcall TCustomScpExplorerForm::ConfigurationChanged()
 {
   DebugAssert(Configuration && RemoteDirView);
-  RemoteDirView->DDAllowMove = WinConfiguration->DDAllowMoveInit;
   RemoteDirView->DimmHiddenFiles = WinConfiguration->DimmHiddenFiles;
   RemoteDirView->ShowHiddenFiles = WinConfiguration->ShowHiddenFiles;
   RemoteDirView->FormatSizeBytes = WinConfiguration->FormatSizeBytes;
@@ -1013,7 +1011,6 @@ void __fastcall TCustomScpExplorerForm::ConfigurationChanged()
     RemoteDirView->Invalidate();
   }
 
-  RemoteDriveView->DDAllowMove = WinConfiguration->DDAllowMoveInit;
   RemoteDriveView->DimmHiddenDirs = WinConfiguration->DimmHiddenFiles;
   RemoteDriveView->ShowHiddenDirs = WinConfiguration->ShowHiddenFiles;
   RemoteDriveView->ShowInaccesibleDirectories = WinConfiguration->ShowInaccesibleDirectories;
@@ -1090,22 +1087,6 @@ bool __fastcall TCustomScpExplorerForm::CopyParamDialog(
 {
   bool Result = true;
   DebugAssert(Terminal && Terminal->Active);
-  // Temp means d&d here so far, may change in future!
-  if (Temp && (Direction == tdToLocal) && (Type == ttMove) &&
-      !WinConfiguration->DDAllowMove)
-  {
-    TMessageParams Params(mpNeverAskAgainCheck);
-    unsigned int Answer = MessageDialog(LoadStr(DND_DOWNLOAD_MOVE_WARNING), qtWarning,
-      qaOK | qaCancel, HELP_DND_DOWNLOAD_MOVE_WARNING, &Params);
-    if (Answer == qaNeverAskAgain)
-    {
-      WinConfiguration->DDAllowMove = true;
-    }
-    else if (Answer == qaCancel)
-    {
-      Result = false;
-    }
-  }
 
   // these parameters are known in advance
   int Params =
@@ -7073,7 +7054,6 @@ void __fastcall TCustomScpExplorerForm::DDFakeFileInitDrag(TFileList * FileList,
     UnmapViewOfFile(CommStruct);
   }
 
-  FDDMoveSlipped = false;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::RemoteFileControlFileOperation(
@@ -7162,11 +7142,6 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDEnd(TObject * Sender)
             break;
         }
 
-        if (FDDMoveSlipped)
-        {
-          Operation = foMove;
-        }
-
         TTransferOperationParam Param;
         UnicodeString CounterName;
         bool ForceQueue;
@@ -7226,22 +7201,8 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDEnd(TObject * Sender)
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::RemoteFileControlDDGiveFeedback(
-  TObject * Sender, int dwEffect, HRESULT & /*Result*/)
+  TObject * /*Sender*/, int dwEffect, HRESULT & /*Result*/)
 {
-  HCURSOR SlippedCopyCursor;
-
-  FDDMoveSlipped =
-    (FDragMoveCursor != NULL) &&
-    (!WinConfiguration->DDAllowMoveInit) && (dwEffect == DROPEFFECT_Copy) &&
-    ((IsFileControl(FDDTargetControl, osRemote) && (GetKeyState(VK_CONTROL) >= 0) &&
-      FTerminal->IsCapable[fcRemoteMove]) ||
-     (IsFileControl(FDDTargetControl, osLocal) && (GetKeyState(VK_SHIFT) < 0)));
-
-  SlippedCopyCursor = FDDMoveSlipped ? FDragMoveCursor : Dragdrop::DefaultCursor;
-
-  DragDropFiles(Sender)->CHCopy = SlippedCopyCursor;
-  DragDropFiles(Sender)->CHScrollCopy = SlippedCopyCursor;
-
   // Remember drop effect so we know (when user drops files), if we copy or move
   FLastDropEffect = dwEffect;
 }
@@ -7379,11 +7340,7 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDTargetDrop()
     }
     else
     {
-      // when move from remote side is disabled, we allow copying inside the remote
-      // panel, but we interpret is as moving (we also slip in the move cursor)
-      if ((FLastDropEffect == DROPEFFECT_MOVE) ||
-          (!WinConfiguration->DDAllowMoveInit && (FLastDropEffect == DROPEFFECT_COPY) &&
-           FDDMoveSlipped))
+      if (FLastDropEffect == DROPEFFECT_MOVE)
       {
         Operation = foRemoteMove;
       }
@@ -7482,7 +7439,7 @@ class TFakeDataObjectFilesEx : public TDataObjectFilesEx
 {
 public:
         __fastcall TFakeDataObjectFilesEx(TFileList * AFileList, bool RenderPIDL,
-    bool RenderFilename) : TDataObjectFilesEx(AFileList, RenderPIDL, RenderFilename)
+    bool RenderFilename) : TDataObjectFilesEx(AFileList, RenderPIDL, RenderFilename, true)
   {
   }
 
@@ -7901,12 +7858,6 @@ void __fastcall TCustomScpExplorerForm::RemoteFileContolDDChooseEffect(
         if (!MoveCapable && !CopyCapable)
         {
           dwEffect = DROPEFFECT_None;
-        }
-        // when moving is disabled, we need to keep effect to "copy",
-        // which will be later interpretted as move (with slipped-in cursor)
-        else if (!WinConfiguration->DDAllowMoveInit && FLAGCLEAR(grfKeyState, MK_CONTROL))
-        {
-          // no-op, keep copy
         }
         else
         {

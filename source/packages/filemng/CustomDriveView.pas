@@ -51,7 +51,6 @@ type
     FOnDDChooseEffect: TDDOnChooseEffect;
     FOnDDGiveFeedback: TDDOnGiveFeedback;
     FOnDDDragDetect: TDDOnDragDetect;
-    FOnDDMenuPopup: TOnMenuPopup;
     FOnDDProcessDropped: TOnProcessDropped;
     FOnDDError: TDDErrorEvent;
     FOnDDExecuted: TDDExecutedEvent;
@@ -114,9 +113,6 @@ type
     procedure DDDropHandlerSucceeded(Sender: TObject; KeyState: Longint;
       Point: TPoint; Effect: Longint);
     procedure DDGiveFeedback(Effect: Longint; var Result: HResult);
-    procedure DDMenuPopup(Sender: TObject; AMenu: HMenu; DataObj: IDataObject;
-      AMinCustCmd: Integer; grfKeyState: Longint; Point: TPoint);
-    procedure DDMenuDone(Sender: TObject; AMenu: HMenu);
     procedure DDProcessDropped(Sender: TObject; KeyState: Longint;
       Point: TPoint; Effect: Longint);
     procedure DDError(Error: TDDError); virtual;
@@ -212,7 +208,6 @@ type
       read FOnDDEnd write FOnDDEnd;
     property OnDDCreateDataObject: TDDOnCreateDataObject
       read FOnDDCreateDataObject write FOnDDCreateDataObject;
-    property OnDDMenuPopup: TOnMenuPopup read FOnDDMenuPopup write FOnDDMenuPopup;
 
     property OnBusy: TDirViewBusy read FOnBusy write FOnBusy;
 
@@ -271,8 +266,6 @@ begin
     OnDrop := DDDrop;
     OnQueryContinueDrag := DDQueryContinueDrag;
     OnSpecifyDropTarget := DDSpecifyDropTarget;
-    OnMenuPopup := DDMenuPopup;
-    OnMenuDestroy := DDMenuDone;
     OnDropHandlerSucceeded := DDDropHandlerSucceeded;
     OnGiveFeedback := DDGiveFeedback;
     OnProcessDropped := DDProcessDropped;
@@ -592,19 +585,6 @@ begin
     end;
   end;
 end; {DDQueryContinueDrag}
-
-procedure TCustomDriveView.DDMenuPopup(Sender: TObject; AMenu: HMenu;
-  DataObj: IDataObject; AMinCustCmd: Integer; grfKeyState: Longint; Point: TPoint);
-begin
-  if Assigned(OnDDMenuPopup) then
-  begin
-    OnDDMenuPopup(Self, AMenu, DataObj, AMinCustCmd, grfKeyState, Point);
-  end;
-end;
-
-procedure TCustomDriveView.DDMenuDone(Sender: TObject; AMenu: HMenu);
-begin
-end;
 
 procedure TCustomDriveView.DDDropHandlerSucceeded(Sender: TObject;
   KeyState: Integer; Point: TPoint; Effect: Integer);

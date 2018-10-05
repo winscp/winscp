@@ -107,8 +107,9 @@ type
      FilenameMapList:TStringList;
      FilenamesAreMapped:boolean;
      FOnRelease: TNotifyEvent;
+     FPreferCopy: Boolean;
   public
-     constructor Create(AFileList:TFileList; RenderPIDL, RenderFilename: boolean);
+     constructor Create(AFileList:TFileList; RenderPIDL, RenderFilename, PreferCopy: boolean);
      destructor Destroy; override;
      function RenderData(FormatEtc:TFormatEtc;
         var StgMedium: TStgMedium):HResult; override;
@@ -149,6 +150,7 @@ type
      FShellExtension:TShellExtension;
      FCMList:TList;
      FOnDataObjectRelease: TNotifyEvent;
+     FPreferCopy: Boolean;
   protected
      function CreateDataObject:TDataObject; override;
      procedure DataObjectRelease(Sender: TObject);
@@ -166,6 +168,7 @@ type
         var dwEffect: longint): boolean;
      property FileList: TFileList read FFileList write FFileList;
      property FileNamesAreMapped: boolean read FFileNamesAreMapped;
+     property PreferCopy: Boolean read FPreferCopy write FPreferCopy;
   published
      property NeedValid: TFileExMustDnDSet read FNeedValid write FNeedValid;
      property CompleteFileList: boolean read FCompleteFileList
@@ -451,7 +454,7 @@ end;
 
 // TDataObjectFilesEx -------------------------------------------------------------
 
-constructor TDataObjectFilesEx.Create(AFileList: TFileList; RenderPIDL, RenderFilename: Boolean);
+constructor TDataObjectFilesEx.Create(AFileList: TFileList; RenderPIDL, RenderFilename, PreferCopy: Boolean);
 var
   i: DWORD;
   FE: TFormatEtc;
@@ -563,6 +566,19 @@ begin
                 SetData(FE,SM,false);
           end;
      end;
+     FPreferCopy := PreferCopy;
+     if PreferCopy then
+     begin
+          with FE do
+          begin
+               cfFormat := CF_PREFERREDDROPEFFECT;
+               ptd := nil;
+               dwAspect := DVASPECT_CONTENT;
+               lindex := -1;
+               tymed := TYMED_HGLOBAL;
+          end;
+          SetData(FE, SM, False);
+     end;
 end;
 
 destructor TDataObjectFilesEx.Destroy;
@@ -665,6 +681,25 @@ begin
                unkForRelease := nil;
           end;
           result:=S_OK;
+     end;
+     if (FormatEtc.cfFormat = CF_PREFERREDDROPEFFECT) and FPreferCopy then
+     begin
+          h := GlobalAlloc(GHND or GMEM_SHARE, SizeOf(DWORD));
+          if h = 0 then
+          begin
+               Result := E_OUTOFMEMORY;
+               Exit;
+          end;
+          p := GlobalLock(h);
+          PDWORD(p)^ := DROPEFFECT_COPY;
+          GlobalUnlock(h);
+          with StgMedium do
+          begin
+               tymed := TYMED_HGLOBAL;
+               hGlobal := h;
+               unkForRelease := nil;
+          end;
+          Result := S_OK;
      end;
 end;
 
@@ -842,6 +877,7 @@ begin
      FFileNamesAreMapped:=false;
      FCMList:=TList.Create;
      FShellExtension:=TShellExtension.Create;
+     FPreferCopy := False;
 end;
 
 destructor TDragDropFilesEx.Destroy;
@@ -876,7 +912,7 @@ begin
      end;
      if FFileList.Count>0 then
      begin
-          DataObject:=TDataObjectFilesEx.Create(FFileList, RPidl, RFname);
+          DataObject:=TDataObjectFilesEx.Create(FFileList, RPidl, RFname, FPreferCopy);
           DataObject.OnRelease := DataObjectRelease;
           if DataObject.IsValid((nvPIDL in FNeedValid),
              (nvFilename in FNeedValid))=false then DataObject._Release

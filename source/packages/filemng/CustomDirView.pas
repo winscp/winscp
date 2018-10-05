@@ -128,7 +128,6 @@ type
     FOnDDEnd: TNotifyEvent;
     FOnDDCreateDataObject: TDDOnCreateDataObject;
     FOnDDTargetHasDropHandler: TDDOnTargetHasDropHandler;
-    FOnDDMenuPopup: TOnMenuPopup;
     FOnExecFile: TDirViewExecFileEvent;
     FForceRename: Boolean;
     FLastDDResult: TDragResult;
@@ -458,7 +457,6 @@ type
     property OnDDFileOperationExecuted: TDDFileOperationExecutedEvent
       read FOnDDFileOperationExecuted write FOnDDFileOperationExecuted;
     {Set AllowExec to false, if actual file should not be executed:}
-    property OnDDMenuPopup: TOnMenuPopup read FOnDDMenuPopup write FOnDDMenuPopup;
     property OnExecFile: TDirViewExecFileEvent
       read FOnExecFile write FOnExecFile;
     property OnHistoryChange: TDirViewNotifyEvent read FOnHistoryChange write FOnHistoryChange;
@@ -2300,10 +2298,6 @@ end;
 procedure TCustomDirView.DDMenuPopup(Sender: TObject; AMenu: HMenu;
   DataObj: IDataObject; AMinCustCmd: Integer; grfKeyState: Longint; pt: TPoint);
 begin
-  if Assigned(OnDDMenuPopup) then
-  begin
-    OnDDMenuPopup(Self, AMenu, DataObj, AMinCustCmd, grfKeyState, pt);
-  end;
 end;
 
 procedure TCustomDirView.DDMenuDone(Sender: TObject; AMenu: HMenu);

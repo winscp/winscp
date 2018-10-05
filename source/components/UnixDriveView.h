@@ -24,7 +24,6 @@ public:
 
   __property TUnixDirView * DirView = { read = FDirView, write = SetDirView };
   __property UnicodeString RootName = { read = FRootName, write = FRootName, stored = IsRootNameStored };
-  __property bool DDAllowMove = { read = FDDAllowMove, write = FDDAllowMove, default = False };
   __property TDDDragFileName OnDDDragFileName = { read = FOnDDDragFileName, write = FOnDDDragFileName};
   __property bool ShowInaccesibleDirectories = { read=FShowInaccesibleDirectories, write=SetShowInaccesibleDirectories, default=true  };
 
@@ -91,7 +90,6 @@ private:
   bool FDirectoryLoaded;
   bool FIgnoreChange;
   TTreeNode * FPrevSelected;
-  bool FDDAllowMove;
   TDDDragFileName FOnDDDragFileName;
   bool FShowInaccesibleDirectories;
   TRemoteFile * FDummyDragFile;
@@ -126,7 +124,6 @@ __published:
   __property OnDDExecuted;
   __property OnDDFileOperation;
   __property OnDDFileOperationExecuted;
-  __property OnDDMenuPopup;
   __property OnDDCreateDragFileList;
   __property OnDDCreateDataObject;
 

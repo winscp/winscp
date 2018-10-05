@@ -1437,10 +1437,8 @@ inherited ScpCommanderForm: TScpCommanderForm
       OnLoaded = DirViewLoaded
       OnDDDragEnter = LocalFileControlDDDragEnter
       OnDDDragLeave = FileControlDDDragLeave
-      OnDDDragOver = LocalFileControlDDDragOver
       OnDDTargetHasDropHandler = LocalDirViewDDTargetHasDropHandler
       OnDDFileOperation = LocalFileControlDDFileOperation
-      OnDDMenuPopup = LocalFileControlDDMenuPopup
       OnExecFile = LocalDirViewExecFile
       OnMatchMask = DirViewMatchMask
       OnGetOverlay = DirViewGetOverlay
@@ -1641,9 +1639,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       OnBusy = DirViewBusy
       OnDDDragEnter = LocalFileControlDDDragEnter
       OnDDDragLeave = FileControlDDDragLeave
-      OnDDDragOver = LocalFileControlDDDragOver
       OnDDFileOperation = LocalFileControlDDFileOperation
-      OnDDMenuPopup = LocalFileControlDDMenuPopup
       Align = alTop
       Constraints.MinHeight = 30
       DoubleBuffered = True

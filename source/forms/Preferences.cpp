@@ -262,7 +262,6 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     BOOLPROP(ConfirmCommandSession);
     BOOLPROP(ContinueOnError);
     BOOLPROP(SynchronizeSummary);
-    BOOLPROP(DDAllowMoveInit);
     BOOLPROP(BeepOnFinish);
     BOOLPROP(TemporaryDirectoryAppendSession);
     BOOLPROP(TemporaryDirectoryAppendPath);
@@ -289,7 +288,6 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
 
     DDFakeFileEnabledButton->Checked = WinConfiguration->DDFakeFile;
     DDFakeFileDisabledButton->Checked = !DDFakeFileEnabledButton->Checked;
-    DDWarnOnMoveCheck->Checked = !WinConfiguration->DDAllowMove;
 
     if (WinConfiguration->DDTemporaryDirectory.IsEmpty())
     {
@@ -646,7 +644,6 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     BOOLPROP(ConfirmCommandSession);
     BOOLPROP(ContinueOnError);
     BOOLPROP(SynchronizeSummary);
-    BOOLPROP(DDAllowMoveInit);
     BOOLPROP(BeepOnFinish);
     BOOLPROP(TemporaryDirectoryAppendSession);
     BOOLPROP(TemporaryDirectoryAppendPath);
@@ -665,7 +662,6 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
       static_cast<double>(BeepOnFinishAfterEdit->Value / SecsPerDay);
     BOOLPROP(BalloonNotifications);
 
-    WinConfiguration->DDAllowMove = !DDWarnOnMoveCheck->Checked;
     WinConfiguration->DDFakeFile = DDFakeFileEnabledButton->Checked;
 
     if (DDSystemTemporaryDirectoryButton->Checked)
@@ -1239,7 +1235,6 @@ void __fastcall TPreferencesDialog::UpdateControls()
     EnableControl(DDFakeFileDisabledPanel, DDFakeFileDisabledButton->Checked);
     EnableControl(DDTemporaryDirectoryEdit, DDCustomTemporaryDirectoryButton->Enabled &&
       DDCustomTemporaryDirectoryButton->Checked);
-    EnableControl(DDWarnOnMoveCheck, DDFakeFileDisabledButton->Checked && DDAllowMoveInitCheck->Checked);
     EnableControl(ConfirmTemporaryDirectoryCleanupCheck,
       TemporaryDirectoryCleanupCheck->Checked);
     // allow only when some of the known storages is selected,

@@ -1,8 +1,6 @@
 #ifndef TextsWinH
 #define TextsWinH
 
-#define DND_DOWNLOAD_MOVE_WARNING 1050
-
 #define WIN_ERROR_STRINGS       1100
 #define WARN_FATAL_ERROR        1102
 #define CREATE_SHORTCUT_ERROR   1107

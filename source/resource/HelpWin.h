@@ -19,8 +19,7 @@
 #define HELP_SYNCHRONIZE_SAVE_MODE   "ui_synchronize"
 #define HELP_PROGRESS_CANCEL         "ui_progress#controlling"
 #define HELP_KEEPUPTODATE_SYNCHRONIZE "task_keep_up_to_date"
-#define HELP_DND_DOWNLOAD_MOVE_WARNING "ui_pref_dragdrop#temporary"
-#define HELP_DD_WARN_LACK_OF_TEMP_SPACE HELP_DND_DOWNLOAD_MOVE_WARNING
+#define HELP_DD_WARN_LACK_OF_TEMP_SPACE "ui_pref_dragdrop#temporary"
 #define HELP_EDITOR_EARLY_CLOSED     "task_edit#mdi"
 #define HELP_APP_EARLY_CLOSED        HELP_EDITOR_EARLY_CLOSED
 #define HELP_OPEN_FILE_NO_PROCESS    HELP_EDITOR_EARLY_CLOSED

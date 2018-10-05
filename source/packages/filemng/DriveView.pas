@@ -335,7 +335,6 @@ type
     property OnDDExecuted;
     property OnDDFileOperation;
     property OnDDFileOperationExecuted;
-    property OnDDMenuPopup;
 
     property Align;
     property Anchors;

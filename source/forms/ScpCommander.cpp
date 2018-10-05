@@ -1437,20 +1437,6 @@ void __fastcall TScpCommanderForm::LocalDirViewDDTargetHasDropHandler(
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TScpCommanderForm::LocalFileControlDDDragOver(TObject * /*Sender*/,
-  int grfKeyState, TPoint & /*Point*/, int & dwEffect)
-{
-  if (IsFileControl(DropSourceControl, osRemote))
-  {
-    if (((grfKeyState & (MK_CONTROL | MK_SHIFT)) == 0) ||
-        (((grfKeyState & (MK_CONTROL | MK_SHIFT)) == MK_SHIFT) &&
-          !WinConfiguration->DDAllowMoveInit))
-    {
-      dwEffect = DROPEFFECT_Copy;
-    }
-  }
-}
-//---------------------------------------------------------------------------
 bool __fastcall TScpCommanderForm::DDGetTarget(
   UnicodeString & Directory, bool & ForceQueue, UnicodeString & CounterName)
 {
@@ -1497,10 +1483,6 @@ void __fastcall TScpCommanderForm::LocalFileControlDDFileOperation(
         DebugAssert(dwEffect == DROPEFFECT_Copy || dwEffect == DROPEFFECT_Move);
         TGUICopyParamType CopyParams = GUIConfiguration->CurrentCopyParam;
         TTransferType TransferType = dwEffect == DROPEFFECT_Copy ? ttCopy : ttMove;
-        if (FDDMoveSlipped)
-        {
-          TransferType = ttMove;
-        }
         int Options =
           FLAGMASK(DraggingAllFilesFromDirView(osRemote, FInternalDDDownloadList), coAllFiles);
         if (CopyParamDialog(tdToLocal, TransferType,
@@ -1710,39 +1692,6 @@ void __fastcall TScpCommanderForm::Resize()
 
   LeftPanelWidth = FLastLeftPanelWidth;
   UpdateControls();
-}
-//---------------------------------------------------------------------------
-void __fastcall TScpCommanderForm::LocalFileControlDDMenuPopup(TObject * /*Sender*/,
-  HMENU AMenu, IDataObject * /*DataObj*/, int /*AMinCustCmd*/, int /*grfKeyState*/,
-  TPoint & /*pt*/)
-{
-  if (IsFileControl(DropSourceControl, osRemote) &&
-      !WinConfiguration->DDAllowMoveInit)
-  {
-    // index of copy item
-    int Index = GetMenuDefaultItem(AMenu, TRUE, 0);
-    DebugAssert(Index >= 0);
-
-    UnicodeString Caption = Dragdrop_MIMoveStr;
-
-    MENUITEMINFO MI;
-    memset(&MI, 0, sizeof(MI));
-    MI.cbSize = sizeof(MI);
-    MI.fMask = MIIM_TYPE | MIIM_ID | MIIM_STATE;
-    MI.fType = MFT_STRING;
-    MI.wID = 1 /*DragDrop::CmdMove*/;
-    MI.dwTypeData = Caption.c_str();
-    MI.cch = Caption.Length();
-    MI.fState = MFS_ENABLED;
-    InsertMenuItem(AMenu, Index, TRUE, &MI);
-
-    if (FDDMoveSlipped)
-    {
-      SetMenuDefaultItem(AMenu, Index, TRUE);
-    }
-
-    FDDMoveSlipped = false;
-  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::PathLabelDblClick(TObject * Sender)

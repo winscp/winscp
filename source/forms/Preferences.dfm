@@ -1313,16 +1313,16 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 8
           Width = 389
-          Height = 277
+          Height = 230
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Drag && Drop downloads'
           TabOrder = 0
           DesignSize = (
             389
-            277)
+            230)
           object DDFakeFileEnabledLabel: TLabel
             Left = 35
-            Top = 68
+            Top = 44
             Width = 345
             Height = 53
             Anchors = [akLeft, akTop, akRight]
@@ -1337,7 +1337,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object DDFakeFileDisabledLabel: TLabel
             Left = 35
-            Top = 165
+            Top = 141
             Width = 346
             Height = 54
             Anchors = [akLeft, akTop, akRight]
@@ -1351,7 +1351,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object DragExtStatusLabel: TLabel
             Left = 35
-            Top = 120
+            Top = 96
             Width = 345
             Height = 26
             Anchors = [akLeft, akTop, akRight]
@@ -1362,17 +1362,17 @@ object PreferencesDialog: TPreferencesDialog
           end
           object DDFakeFileEnabledButton: TRadioButton
             Left = 16
-            Top = 48
+            Top = 24
             Width = 364
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Determine drop target by dragging a &fake file'
-            TabOrder = 1
+            TabOrder = 0
             OnClick = ControlChange
           end
           object DDFakeFileDisabledButton: TRadioButton
             Left = 16
-            Top = 145
+            Top = 121
             Width = 356
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -1382,14 +1382,14 @@ object PreferencesDialog: TPreferencesDialog
           end
           object DDFakeFileDisabledPanel: TPanel
             Left = 34
-            Top = 216
+            Top = 192
             Width = 315
-            Height = 51
+            Height = 28
             BevelOuter = bvNone
-            TabOrder = 3
+            TabOrder = 1
             DesignSize = (
               315
-              51)
+              28)
             object DDWarnLackOfTempSpaceCheck: TCheckBox
               Left = 0
               Top = 5
@@ -1400,26 +1400,6 @@ object PreferencesDialog: TPreferencesDialog
               TabOrder = 0
               OnClick = ControlChange
             end
-            object DDWarnOnMoveCheck: TCheckBox
-              Left = 0
-              Top = 28
-              Width = 315
-              Height = 17
-              Anchors = [akLeft, akTop, akRight]
-              Caption = 'Warn when mo&ving via temporary directory'
-              TabOrder = 1
-              OnClick = ControlChange
-            end
-          end
-          object DDAllowMoveInitCheck: TCheckBox
-            Left = 16
-            Top = 24
-            Width = 364
-            Height = 17
-            Anchors = [akLeft, akTop, akRight]
-            Caption = 'Allow &moving from remote directory to other applications'
-            TabOrder = 0
-            OnClick = ControlChange
           end
         end
       end

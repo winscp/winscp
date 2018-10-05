@@ -48,11 +48,11 @@ __fastcall TUnixDirView::TUnixDirView(TComponent* Owner)
   FTerminal = NULL;
 #endif
   FCaseSensitive = true;
-  DDAllowMove = false;
   FShowInaccesibleDirectories = true;
   FFullLoad = false;
   FDriveView = NULL;
   FInvalidNameChars = L"/";
+  DragDropFilesEx->PreferCopy = true;
 }
 //---------------------------------------------------------------------------
 __fastcall TUnixDirView::~TUnixDirView()
@@ -799,22 +799,9 @@ void __fastcall TUnixDirView::DDChooseEffect(int grfKeyState, int &dwEffect)
   TCustomDirView::DDChooseEffect(grfKeyState, dwEffect);
 }
 //---------------------------------------------------------------------------
-void __fastcall TUnixDirView::SetDDAllowMove(bool value)
-{
-  if (DDAllowMove != value)
-  {
-    DebugAssert(DragDropFilesEx);
-    FDDAllowMove = value;
-    DragDropFilesEx->SourceEffects = DragSourceEffects;
-  }
-}
-//---------------------------------------------------------------------------
 TDropEffectSet __fastcall TUnixDirView::GetDragSourceEffects()
 {
-  TDropEffectSet Result;
-  Result << deCopy;
-  if (DDAllowMove) Result << deMove;
-  return Result;
+  return TDropEffectSet() << deCopy << deMove;
 }
 //---------------------------------------------------------------------------
 void __fastcall TUnixDirView::ChangeDirectory(UnicodeString Path)

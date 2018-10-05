@@ -437,8 +437,6 @@ __published:
   void __fastcall LocalFileControlDDDragEnter(TObject *Sender,
     IDataObject *DataObj, int grfKeyState, TPoint &Point,
     int &dwEffect, bool &Accept);
-  void __fastcall LocalFileControlDDDragOver(TObject *Sender, int grfKeyState,
-    TPoint &Point, int &dwEffect);
   void __fastcall LocalFileControlDDFileOperation(TObject *Sender,
     int dwEffect, UnicodeString SourcePath, UnicodeString TargetPath,
     bool &DoOperation);
@@ -446,8 +444,6 @@ __published:
     int dwEffect, UnicodeString SourcePath, UnicodeString TargetPath);
   void __fastcall LocalDirViewDDTargetHasDropHandler(TObject *Sender,
     TListItem *Item, int &Effect, bool &DropHandler);
-  void __fastcall LocalFileControlDDMenuPopup(TObject *Sender, HMENU AMenu,
-    IDataObject *DataObj, int AMinCustCmd, int grfKeyState, TPoint &pt);
   void __fastcall PathLabelDblClick(TObject *Sender);
   void __fastcall LocalDirViewEnter(TObject *Sender);
   void __fastcall LocalPathLabelGetStatus(TCustomPathLabel *Sender,

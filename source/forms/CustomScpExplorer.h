@@ -320,7 +320,6 @@ protected:
   TProgressForm * FProgressForm;
   TSynchronizeProgressForm * FSynchronizeProgressForm;
   HANDLE FDDExtMapFile;
-  bool FDDMoveSlipped;
   TTimer * FUserActionTimer;
   TQueueItemProxy * FPendingQueueActionItem;
   TTBXPopupMenu * FHistoryMenu[2][2];

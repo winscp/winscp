@@ -89,7 +89,6 @@ __published:
   TRadioButton *DDFakeFileDisabledButton;
   TPanel *DDFakeFileDisabledPanel;
   TCheckBox *DDWarnLackOfTempSpaceCheck;
-  TCheckBox *DDWarnOnMoveCheck;
   TCheckBox *ConfirmExitOnCompletionCheck;
   TTabSheet *QueueSheet;
   TGroupBox *QueueGroup;
@@ -101,7 +100,6 @@ __published:
   TRadioButton *QueueViewHideButton;
   TCheckBox *QueueAutoPopupCheck;
   TCheckBox *QueueCheck;
-  TCheckBox *DDAllowMoveInitCheck;
   TCheckBox *ConfirmResumeCheck;
   TTabSheet *StorageSheet;
   TGroupBox *StorageGroup;
