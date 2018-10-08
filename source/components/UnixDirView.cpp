@@ -483,6 +483,7 @@ void __fastcall TUnixDirView::SetDriveView(TCustomUnixDriveView * Value)
 #ifndef DESIGN_ONLY
 void __fastcall TUnixDirView::DoSetTerminal(TTerminal * value, bool Replace)
 {
+  DebugUsedParam(Replace);
   if (FTerminal != value)
   {
     if (FTerminal)
