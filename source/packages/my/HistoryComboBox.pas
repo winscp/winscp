@@ -88,7 +88,14 @@ procedure THistoryComboBox.KeyDown(var Key: Word; Shift: TShiftState);
 begin
   if ((Key = VK_DOWN) or (Key = VK_UP)) and
      (not (ssAlt in Shift)) and (soDropDown in SaveOn) then
-      if Items.IndexOf(Text) < 0 then SaveToHistory;
+  begin
+    if Items.IndexOf(Text) < 0 then SaveToHistory;
+  end;
+  if DroppedDown and (Key = VK_DELETE) and (ssCtrl in Shift) then
+  begin
+    Items.Clear;
+    Key := 0;
+  end;
   inherited;
 end;
 
