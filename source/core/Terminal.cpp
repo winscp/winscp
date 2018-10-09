@@ -953,6 +953,7 @@ __fastcall TTerminal::TTerminal(TSessionData * SessionData,
   FTunnelOpening = false;
   FCallbackGuard = NULL;
   FNesting = 0;
+  FRememberedPasswordKind = TPromptKind(-1);
 }
 //---------------------------------------------------------------------------
 __fastcall TTerminal::~TTerminal()
@@ -4775,6 +4776,16 @@ void __fastcall TTerminal::FillSessionDataForCode(TSessionData * Data)
   else if (!SessionInfo.CertificateFingerprint.IsEmpty())
   {
     Data->HostKey = SessionInfo.CertificateFingerprint;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminal::UpdateSessionCredentials(TSessionData * Data)
+{
+  Data->UserName = UserName;
+  Data->Password = Password;
+  if (!FRememberedPassword.IsEmpty() && (FRememberedPasswordKind == pkPassphrase))
+  {
+    Data->Passphrase = GetRememberedPassword();
   }
 }
 //---------------------------------------------------------------------------

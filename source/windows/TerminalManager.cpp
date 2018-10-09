@@ -1381,12 +1381,6 @@ bool __fastcall TTerminalManager::CanOpenInPutty()
   return (ActiveTerminal != NULL) && !GUIConfiguration->PuttyPath.Trim().IsEmpty();
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminalManager::UpdateSessionCredentials(TSessionData * Data)
-{
-  Data->UserName = ActiveTerminal->UserName;
-  Data->Password = ActiveTerminal->Password;
-}
-//---------------------------------------------------------------------------
 void __fastcall TTerminalManager::OpenInPutty()
 {
   Configuration->Usage->Inc(L"OpenInPutty");
@@ -1405,7 +1399,7 @@ void __fastcall TTerminalManager::OpenInPutty()
       Data = new TSessionData(L"");
       DebugAssert(ActiveTerminal != NULL);
       Data->Assign(ActiveTerminal->SessionData);
-      UpdateSessionCredentials(Data);
+      ActiveTerminal->UpdateSessionCredentials(Data);
     }
 
     // putty does not support resolving environment variables in session settings
