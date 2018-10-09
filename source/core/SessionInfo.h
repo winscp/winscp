@@ -28,6 +28,7 @@ struct TSessionInfo
 
   UnicodeString CertificateFingerprint;
   UnicodeString Certificate;
+  bool CertificateVerifiedManually;
 };
 //---------------------------------------------------------------------------
 enum TFSCapability { fcUserGroupListing, fcModeChanging, fcGroupChanging,

@@ -83,6 +83,7 @@ void __fastcall TS3FileSystem::Open()
   TSessionData * Data = FTerminal->SessionData;
 
   FSessionInfo.LoginTime = Now();
+  FSessionInfo.CertificateVerifiedManually = false;
 
   FLibS3Protocol = (Data->Ftps != ftpsNone) ? S3ProtocolHTTPS : S3ProtocolHTTP;
 
@@ -215,7 +216,11 @@ bool TS3FileSystem::VerifyCertificate(TNeonCertificateData Data)
     Result =
       FTerminal->VerifyCertificate(HttpsCertificateStorageKey, SiteKey, Data.Fingerprint, Data.Subject, Data.Failures);
 
-    if (!Result)
+    if (Result)
+    {
+      FSessionInfo.CertificateVerifiedManually = true;
+    }
+    else
     {
       UnicodeString Message;
       Result = NeonWindowsValidateCertificateWithMessage(Data, Message);
@@ -226,7 +231,11 @@ bool TS3FileSystem::VerifyCertificate(TNeonCertificateData Data)
 
     if (!Result)
     {
-      Result = FTerminal->ConfirmCertificate(FSessionInfo, Data.Failures, HttpsCertificateStorageKey, true);
+      if (FTerminal->ConfirmCertificate(FSessionInfo, Data.Failures, HttpsCertificateStorageKey, true))
+      {
+        Result = true;
+        FSessionInfo.CertificateVerifiedManually = true;
+      }
     }
 
     if (Result)

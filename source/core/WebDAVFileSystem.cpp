@@ -190,6 +190,7 @@ void __fastcall TWebDAVFileSystem::Open()
   TSessionData * Data = FTerminal->SessionData;
 
   FSessionInfo.LoginTime = Now();
+  FSessionInfo.CertificateVerifiedManually = false;
 
   UnicodeString HostName = Data->HostNameExpanded;
   size_t Port = Data->PortNumber;
@@ -1736,7 +1737,11 @@ bool TWebDAVFileSystem::VerifyCertificate(TNeonCertificateData Data, bool Aux)
     Result =
       FTerminal->VerifyCertificate(HttpsCertificateStorageKey, SiteKey, Data.Fingerprint, Data.Subject, Data.Failures);
 
-    if (!Result)
+    if (Result)
+    {
+      FSessionInfo.CertificateVerifiedManually = true;
+    }
+    else
     {
       UnicodeString Message;
       Result = NeonWindowsValidateCertificateWithMessage(Data, Message);
@@ -1747,7 +1752,11 @@ bool TWebDAVFileSystem::VerifyCertificate(TNeonCertificateData Data, bool Aux)
 
     if (!Result)
     {
-      Result = FTerminal->ConfirmCertificate(FSessionInfo, Data.Failures, HttpsCertificateStorageKey, !Aux);
+      if (FTerminal->ConfirmCertificate(FSessionInfo, Data.Failures, HttpsCertificateStorageKey, !Aux))
+      {
+        Result = true;
+        FSessionInfo.CertificateVerifiedManually = true;
+      }
     }
 
     if (Result && !Aux)

@@ -661,6 +661,7 @@ __fastcall TCwdSessionAction::TCwdSessionAction(TActionLog * Log, const UnicodeS
 TSessionInfo::TSessionInfo()
 {
   LoginTime = Now();
+  CertificateVerifiedManually = false;
 }
 //---------------------------------------------------------------------------
 TFileSystemInfo::TFileSystemInfo()

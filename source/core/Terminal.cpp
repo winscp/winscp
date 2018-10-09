@@ -4773,7 +4773,7 @@ void __fastcall TTerminal::FillSessionDataForCode(TSessionData * Data)
   {
     Data->HostKey = SessionInfo.HostKeyFingerprintSHA256;
   }
-  else if (!SessionInfo.CertificateFingerprint.IsEmpty())
+  else if (SessionInfo.CertificateVerifiedManually && DebugAlwaysTrue(!SessionInfo.CertificateFingerprint.IsEmpty()))
   {
     Data->HostKey = SessionInfo.CertificateFingerprint;
   }

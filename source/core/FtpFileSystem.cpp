@@ -367,6 +367,7 @@ void __fastcall TFTPFileSystem::Open()
   FTransferActiveImmediately = (Data->FtpTransferActiveImmediately == asOn);
 
   FSessionInfo.LoginTime = Now();
+  FSessionInfo.CertificateVerifiedManually = false;
 
   UnicodeString HostName = Data->HostNameExpanded;
   UnicodeString UserName = Data->UserNameExpanded;
@@ -3948,6 +3949,7 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestVerifyCertificate(
         {
           // certificate is trusted, but for not purposes of info dialog
           VerificationResult = true;
+          FSessionInfo.CertificateVerifiedManually = true;
         }
       }
 
@@ -4007,10 +4009,13 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestVerifyCertificate(
 
       if (RequestResult == 0)
       {
-        bool Confirmed = FTerminal->ConfirmCertificate(FSessionInfo, Data.VerificationResult, CertificateStorageKey, true);
-        // FZ's VerifyCertDlg.cpp returns 2 for "cached", what we do nto distinguish here,
-        // however FZAPI takes all non-zero values equally.
-        RequestResult = Confirmed ? 1 : 0;
+        if (FTerminal->ConfirmCertificate(FSessionInfo, Data.VerificationResult, CertificateStorageKey, true))
+        {
+          // FZ's VerifyCertDlg.cpp returns 2 for "cached", what we do nto distinguish here,
+          // however FZAPI takes all non-zero values equally.
+          RequestResult = 1;
+          FSessionInfo.CertificateVerifiedManually = true;
+        }
       }
     }
 
