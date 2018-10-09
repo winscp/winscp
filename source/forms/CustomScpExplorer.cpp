@@ -5374,7 +5374,7 @@ TSessionData * __fastcall TCustomScpExplorerForm::CloneCurrentSessionData()
   std::unique_ptr<TSessionData> SessionData(new TSessionData(L""));
   SessionData->Assign(Terminal->SessionData);
   UpdateSessionData(SessionData.get());
-  TTerminalManager::Instance()->UpdateSessionCredentials(SessionData.get());
+  Terminal->UpdateSessionCredentials(SessionData.get());
   if (Terminal->SessionData->IsWorkspace)
   {
     // Have to reset the "Workspace/XXX" name which would become user-visible

@@ -60,7 +60,6 @@ public:
   void __fastcall QueueStatusUpdated();
   TTerminal * __fastcall FindActiveTerminalForSite(TSessionData * Data);
   TTerminalQueue * __fastcall FindQueueForTerminal(TTerminal * Terminal);
-  void __fastcall UpdateSessionCredentials(TSessionData * Data);
   void __fastcall DoConnectTerminal(TTerminal * Terminal, bool Reopen);
 
   __property TCustomScpExplorerForm * ScpExplorer = { read = FScpExplorer, write = SetScpExplorer };
