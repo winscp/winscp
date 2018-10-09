@@ -1048,8 +1048,8 @@ UnicodeString __fastcall TTerminal::DecryptPassword(const RawByteString & Passwo
 void __fastcall TTerminal::RecryptPasswords()
 {
   FSessionData->RecryptPasswords();
-  FRememberedPassword = EncryptPassword(DecryptPassword(FRememberedPassword));
-  FRememberedTunnelPassword = EncryptPassword(DecryptPassword(FRememberedTunnelPassword));
+  FRememberedPassword = EncryptPassword(GetRememberedPassword());
+  FRememberedTunnelPassword = EncryptPassword(GetRememberedTunnelPassword());
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TTerminal::ExpandFileName(UnicodeString Path,
