@@ -2624,7 +2624,7 @@ bool __fastcall TCustomScpExplorerForm::ExecuteCopyMoveFileOperation(
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::ExecuteDeleteFileOperation(
-  TOperationSide Side, TStrings * FileList, bool NoConfirmation, void * Param)
+  TOperationSide Side, TStrings * FileList, void * Param)
 {
   DebugAssert(FileList->Count);
   // We deliberately do not toggle alternative flag (Param), but use OR,
@@ -2712,7 +2712,7 @@ bool __fastcall TCustomScpExplorerForm::ExecuteFileOperation(TFileOperation Oper
   }
   else if (Operation == foDelete)
   {
-    Result = ExecuteDeleteFileOperation(Side, FileList, NoConfirmation, Param);
+    Result = ExecuteDeleteFileOperation(Side, FileList, Param);
   }
   else if (Operation == foSetProperties)
   {
