@@ -1621,11 +1621,11 @@ bool __fastcall TTerminal::DoPromptUser(TSessionData * /*Data*/, TPromptKind Kin
       UnicodeString APassword;
       if (FTunnelOpening)
       {
-        APassword = GetPasswordSource()->RememberedTunnelPassword;
+        APassword = GetPasswordSource()->GetRememberedTunnelPassword();
       }
       else
       {
-        APassword = GetPasswordSource()->RememberedPassword;
+        APassword = GetPasswordSource()->GetRememberedPassword();
       }
       Results->Strings[0] = APassword;
       if (!Results->Strings[0].IsEmpty())
@@ -6461,7 +6461,7 @@ UnicodeString __fastcall TTerminal::GetPassword()
   }
   else
   {
-    Result = RememberedPassword;
+    Result = GetRememberedPassword();
   }
   return Result;
 }
