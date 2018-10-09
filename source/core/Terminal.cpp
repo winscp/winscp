@@ -1429,6 +1429,7 @@ void __fastcall TTerminal::Open()
         // Particularly to prevent reusing a wrong client certificate passphrase
         // in the next login attempt
         FRememberedPassword = UnicodeString();
+        FRememberedPasswordKind = TPromptKind(-1);
         FRememberedTunnelPassword = UnicodeString();
         throw;
       }
@@ -1788,6 +1789,7 @@ bool __fastcall TTerminal::DoPromptUser(TSessionData * /*Data*/, TPromptKind Kin
       else
       {
         GetPasswordSource()->FRememberedPassword = EncryptedPassword;
+        GetPasswordSource()->FRememberedPasswordKind = Kind;
       }
     }
   }
@@ -6318,7 +6320,7 @@ UnicodeString __fastcall TTerminal::GetPassword()
   {
     Result = SessionData->Password;
   }
-  else
+  else if (FRememberedPasswordKind != pkPassphrase)
   {
     Result = RememberedPassword;
   }
