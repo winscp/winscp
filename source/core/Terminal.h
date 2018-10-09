@@ -194,6 +194,7 @@ private:
   TSessionStatus FStatus;
   int FOpening;
   RawByteString FRememberedPassword;
+  TPromptKind FRememberedPasswordKind;
   RawByteString FRememberedTunnelPassword;
   TTunnelThread * FTunnelThread;
   TSecureShell * FTunnel;
