@@ -2473,6 +2473,228 @@ void __fastcall TCustomScpExplorerForm::UpdateCopyParamCounters(
   }
 }
 //---------------------------------------------------------------------------
+bool __fastcall TCustomScpExplorerForm::ExecuteCopyMoveFileOperation(
+  TFileOperation Operation, TOperationSide Side, TStrings * FileList, bool NoConfirmation, void * Param)
+{
+  TTransferDirection Direction = (Side == osLocal ? tdToRemote : tdToLocal);
+  TTransferType Type = (Operation == foCopy ? ttCopy : ttMove);
+  UnicodeString TargetDirectory;
+  bool Temp = false;
+  bool DragDrop = false;
+  int Options = 0;
+  TAutoSwitch UseQueue = asAuto;
+  if (Param != NULL)
+  {
+    TTransferOperationParam& TParam =
+      *static_cast<TTransferOperationParam*>(Param);
+    TargetDirectory = TParam.TargetDirectory;
+    Temp = TParam.Temp;
+    DragDrop = TParam.DragDrop;
+    Options = TParam.Options;
+    UseQueue = TParam.Queue;
+  }
+  TGUICopyParamType CopyParam = GUIConfiguration->CurrentCopyParam;
+  switch (UseQueue)
+  {
+    case asOn:
+      CopyParam.Queue = true;
+      break;
+
+    case asOff:
+      CopyParam.Queue = false;
+      break;
+
+    case asAuto:
+    default:
+      // keep default
+      break;
+  }
+  bool Result =
+    CopyParamDialog(Direction, Type, Temp, FileList, TargetDirectory, CopyParam, !NoConfirmation, DragDrop, Options);
+  if (Result)
+  {
+    DebugAssert(Terminal);
+    bool SelectionRestored = false;
+    TCustomDirView * DView = NULL;
+    if (HasDirView[Side])
+    {
+      DView = DirView(Side);
+      DView->SaveSelection();
+      DView->SaveSelectedNames();
+    }
+
+    UpdateCopyParamCounters(CopyParam);
+
+    std::unique_ptr<TStringList> TransferResumeList(new TStringList());
+    DebugAssert(FTransferResumeList == NULL);
+    FTransferResumeList = Terminal->IsCapable[fcMoveToQueue] ? TransferResumeList.get() : NULL;
+    FMoveToQueue = false;
+
+    int Params = FLAGMASK(Operation == foMove, cpDelete);
+
+    try
+    {
+      TStrings * PermanentFileList;
+      std::unique_ptr<TStrings> PermanentFileListOwner;
+
+      try
+      {
+        if (Side == osLocal)
+        {
+          PermanentFileList = FileList;
+
+          Params |= FLAGMASK(Temp, cpTemporary);
+          Terminal->CopyToRemote(FileList, TargetDirectory, &CopyParam, Params, NULL);
+          if (Operation == foMove)
+          {
+            ReloadLocalDirectory();
+            if (DView != NULL)
+            {
+              DView->RestoreSelection();
+            }
+            SelectionRestored = true;
+          }
+        }
+        else
+        {
+          // Clone the file list as it may refer to current directory files,
+          // which get destroyed, when the source directory is reloaded after foMove operation.
+          // We should actually clone the file list for whole ExecuteFileOperation to protect against reloads.
+          // But for a hotfix, we are not going to do such a big change.
+          PermanentFileListOwner.reset(TRemoteFileList::CloneStrings(FileList));
+          PermanentFileList = PermanentFileListOwner.get();
+
+          try
+          {
+            Terminal->CopyToLocal(FileList, TargetDirectory, &CopyParam, Params, NULL);
+          }
+          __finally
+          {
+            if (Operation == foMove)
+            {
+              if (DView != NULL)
+              {
+                DView->RestoreSelection();
+              }
+              SelectionRestored = true;
+            }
+            ReloadLocalDirectory(TargetDirectory);
+          }
+        }
+      }
+      catch (EAbort &)
+      {
+        if (FMoveToQueue)
+        {
+          Params |= (CopyParam.QueueNoConfirmation ? cpNoConfirmation : 0);
+
+          DebugAssert(CopyParam.TransferSkipList == NULL);
+          DebugAssert(CopyParam.TransferResumeFile.IsEmpty());
+          if (TransferResumeList->Count > 0)
+          {
+            CopyParam.TransferResumeFile = TransferResumeList->Strings[TransferResumeList->Count - 1];
+            TransferResumeList->Delete(TransferResumeList->Count - 1);
+          }
+
+          CopyParam.TransferSkipList = TransferResumeList.release();
+
+          // not really needed, just to keep it consistent with TransferResumeList
+          FTransferResumeList = NULL;
+          FMoveToQueue = false;
+
+          Configuration->Usage->Inc("MovesToBackground");
+
+          AddQueueItem(Queue, Direction, PermanentFileList, TargetDirectory, CopyParam, Params);
+          ClearTransferSourceSelection(Direction);
+        }
+
+        throw;
+      }
+    }
+    __finally
+    {
+      if (!SelectionRestored && (DView != NULL))
+      {
+        DView->DiscardSavedSelection();
+      }
+      FTransferResumeList = NULL;
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TCustomScpExplorerForm::ExecuteDeleteFileOperation(
+  TOperationSide Side, TStrings * FileList, bool NoConfirmation, void * Param)
+{
+  DebugAssert(FileList->Count);
+  // We deliberately do not toggle alternative flag (Param), but use OR,
+  // because the Param is set only when command is invoked using Shift-Del/F8 keyboard
+  // shortcut of CurrentDeleteAlternativeAction
+  bool Alternative =
+    bool(Param) || UseAlternativeFunction();
+  bool Recycle;
+  if (Side == osLocal)
+  {
+    Recycle = (WinConfiguration->DeleteToRecycleBin != Alternative);
+  }
+  else
+  {
+    Recycle =
+      (Terminal->SessionData->DeleteToRecycleBin != Alternative) &&
+      !Terminal->SessionData->RecycleBinPath.IsEmpty() &&
+      !Terminal->IsRecycledFile(FileList->Strings[0]);
+  }
+
+  bool Result = !(Recycle ? WinConfiguration->ConfirmRecycling : WinConfiguration->ConfirmDeleting);
+  if (!Result)
+  {
+    UnicodeString Query;
+    if (FileList->Count == 1)
+    {
+      if (Side == osLocal)
+      {
+        Query = ExtractFileName(FileList->Strings[0]);
+      }
+      else
+      {
+        Query = UnixExtractFileName(FileList->Strings[0]);
+      }
+      Query = FMTLOAD((Recycle ? CONFIRM_RECYCLE_FILE : CONFIRM_DELETE_FILE), (Query));
+    }
+    else
+    {
+      Query = FMTLOAD((Recycle ? CONFIRM_RECYCLE_FILES : CONFIRM_DELETE_FILES), (FileList->Count));
+    }
+
+    TMessageParams Params(mpNeverAskAgainCheck);
+    Params.ImageName = L"Delete file";
+    unsigned int Answer =
+      MessageDialog(MainInstructions(Query), qtConfirmation, qaOK | qaCancel, HELP_DELETE_FILE, &Params);
+    if (Answer == qaNeverAskAgain)
+    {
+      Result = true;
+      if (Recycle)
+      {
+        WinConfiguration->ConfirmRecycling = false;
+      }
+      else
+      {
+        WinConfiguration->ConfirmDeleting = false;
+      }
+    }
+    else
+    {
+      Result = (Answer == qaOK);
+    }
+  }
+
+  if (Result)
+  {
+    DeleteFiles(Side, FileList, FLAGMASK(Alternative, dfAlternative));
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::ExecuteFileOperation(TFileOperation Operation,
   TOperationSide Side, TStrings * FileList, bool NoConfirmation, void * Param)
 {
@@ -2480,154 +2702,7 @@ bool __fastcall TCustomScpExplorerForm::ExecuteFileOperation(TFileOperation Oper
   bool Result;
   if ((Operation == foCopy) || (Operation == foMove))
   {
-    TTransferDirection Direction = (Side == osLocal ? tdToRemote : tdToLocal);
-    TTransferType Type = (Operation == foCopy ? ttCopy : ttMove);
-    UnicodeString TargetDirectory;
-    bool Temp = false;
-    bool DragDrop = false;
-    int Options = 0;
-    TAutoSwitch UseQueue = asAuto;
-    if (Param != NULL)
-    {
-      TTransferOperationParam& TParam =
-        *static_cast<TTransferOperationParam*>(Param);
-      TargetDirectory = TParam.TargetDirectory;
-      Temp = TParam.Temp;
-      DragDrop = TParam.DragDrop;
-      Options = TParam.Options;
-      UseQueue = TParam.Queue;
-    }
-    TGUICopyParamType CopyParam = GUIConfiguration->CurrentCopyParam;
-    switch (UseQueue)
-    {
-      case asOn:
-        CopyParam.Queue = true;
-        break;
-
-      case asOff:
-        CopyParam.Queue = false;
-        break;
-
-      case asAuto:
-      default:
-        // keep default
-        break;
-    }
-    Result =
-      CopyParamDialog(Direction, Type, Temp, FileList, TargetDirectory,
-        CopyParam, !NoConfirmation, DragDrop, Options);
-    if (Result)
-    {
-      DebugAssert(Terminal);
-      bool SelectionRestored = false;
-      TCustomDirView * DView = NULL;
-      if (HasDirView[Side])
-      {
-        DView = DirView(Side);
-        DView->SaveSelection();
-        DView->SaveSelectedNames();
-      }
-
-      UpdateCopyParamCounters(CopyParam);
-
-      std::unique_ptr<TStringList> TransferResumeList(new TStringList());
-      DebugAssert(FTransferResumeList == NULL);
-      FTransferResumeList =
-        Terminal->IsCapable[fcMoveToQueue] ? TransferResumeList.get() : NULL;
-      FMoveToQueue = false;
-
-      int Params = FLAGMASK(Operation == foMove, cpDelete);
-
-      try
-      {
-        TStrings * PermanentFileList;
-        std::unique_ptr<TStrings> PermanentFileListOwner;
-
-        try
-        {
-          if (Side == osLocal)
-          {
-            PermanentFileList = FileList;
-
-            Params |= FLAGMASK(Temp, cpTemporary);
-            Terminal->CopyToRemote(FileList, TargetDirectory, &CopyParam, Params, NULL);
-            if (Operation == foMove)
-            {
-              ReloadLocalDirectory();
-              if (DView != NULL)
-              {
-                DView->RestoreSelection();
-              }
-              SelectionRestored = true;
-            }
-          }
-          else
-          {
-            // Clone the file list as it may refer to current directory files,
-            // which get destroyed, when the source directory is reloaded after foMove operation.
-            // We should actually clone the file list for whole ExecuteFileOperation to protect against reloads.
-            // But for a hotfix, we are not going to do such a big change.
-            PermanentFileListOwner.reset(TRemoteFileList::CloneStrings(FileList));
-            PermanentFileList = PermanentFileListOwner.get();
-
-            try
-            {
-              Terminal->CopyToLocal(
-                FileList, TargetDirectory, &CopyParam, Params, NULL);
-            }
-            __finally
-            {
-              if (Operation == foMove)
-              {
-                if (DView != NULL)
-                {
-                  DView->RestoreSelection();
-                }
-                SelectionRestored = true;
-              }
-              ReloadLocalDirectory(TargetDirectory);
-            }
-          }
-        }
-        catch (EAbort &)
-        {
-          if (FMoveToQueue)
-          {
-            Params |=
-              (CopyParam.QueueNoConfirmation ? cpNoConfirmation : 0);
-
-            DebugAssert(CopyParam.TransferSkipList == NULL);
-            DebugAssert(CopyParam.TransferResumeFile.IsEmpty());
-            if (TransferResumeList->Count > 0)
-            {
-              CopyParam.TransferResumeFile = TransferResumeList->Strings[TransferResumeList->Count - 1];
-              TransferResumeList->Delete(TransferResumeList->Count - 1);
-            }
-
-            CopyParam.TransferSkipList = TransferResumeList.release();
-
-            // not really needed, just to keep it consistent with TransferResumeList
-            FTransferResumeList = NULL;
-            FMoveToQueue = false;
-
-            Configuration->Usage->Inc("MovesToBackground");
-
-            AddQueueItem(Queue, Direction, PermanentFileList, TargetDirectory, CopyParam, Params);
-            ClearTransferSourceSelection(Direction);
-          }
-
-          throw;
-        }
-      }
-      __finally
-      {
-        if (!SelectionRestored && (DView != NULL))
-        {
-          DView->DiscardSavedSelection();
-        }
-        FTransferResumeList = NULL;
-      }
-    }
+    Result = ExecuteCopyMoveFileOperation(Operation, Side, FileList, NoConfirmation, Param);
   }
   else if (Operation == foRename)
   {
@@ -2637,74 +2712,7 @@ bool __fastcall TCustomScpExplorerForm::ExecuteFileOperation(TFileOperation Oper
   }
   else if (Operation == foDelete)
   {
-    DebugAssert(FileList->Count);
-    // We deliberately do not toggle alternative flag (Param), but use OR,
-    // because the Param is set only when command is invoked using Shift-Del/F8 keyboard
-    // shortcut of CurrentDeleteAlternativeAction
-    bool Alternative =
-      bool(Param) || UseAlternativeFunction();
-    bool Recycle;
-    if (Side == osLocal)
-    {
-      Recycle = (WinConfiguration->DeleteToRecycleBin != Alternative);
-    }
-    else
-    {
-      Recycle = (Terminal->SessionData->DeleteToRecycleBin != Alternative) &&
-        !Terminal->SessionData->RecycleBinPath.IsEmpty() &&
-        !Terminal->IsRecycledFile(FileList->Strings[0]);
-    }
-
-    Result =
-      !(Recycle ? WinConfiguration->ConfirmRecycling : WinConfiguration->ConfirmDeleting);
-    if (!Result)
-    {
-      UnicodeString Query;
-      if (FileList->Count == 1)
-      {
-        if (Side == osLocal)
-        {
-          Query = ExtractFileName(FileList->Strings[0]);
-        }
-        else
-        {
-          Query = UnixExtractFileName(FileList->Strings[0]);
-        }
-        Query = FMTLOAD(
-          (Recycle ? CONFIRM_RECYCLE_FILE : CONFIRM_DELETE_FILE), (Query));
-      }
-      else
-      {
-        Query = FMTLOAD(
-          (Recycle ? CONFIRM_RECYCLE_FILES : CONFIRM_DELETE_FILES), (FileList->Count));
-      }
-
-      TMessageParams Params(mpNeverAskAgainCheck);
-      Params.ImageName = L"Delete file";
-      unsigned int Answer = MessageDialog(MainInstructions(Query), qtConfirmation,
-        qaOK | qaCancel, HELP_DELETE_FILE, &Params);
-      if (Answer == qaNeverAskAgain)
-      {
-        Result = true;
-        if (Recycle)
-        {
-          WinConfiguration->ConfirmRecycling = false;
-        }
-        else
-        {
-          WinConfiguration->ConfirmDeleting = false;
-        }
-      }
-      else
-      {
-        Result = (Answer == qaOK);
-      }
-    }
-
-    if (Result)
-    {
-      DeleteFiles(Side, FileList, FLAGMASK(Alternative, dfAlternative));
-    }
+    Result = ExecuteDeleteFileOperation(Side, FileList, NoConfirmation, Param);
   }
   else if (Operation == foSetProperties)
   {

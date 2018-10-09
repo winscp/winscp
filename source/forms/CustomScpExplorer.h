@@ -435,6 +435,9 @@ protected:
   virtual void __fastcall BatchEnd(void * Storage);
   bool __fastcall ExecuteFileOperation(TFileOperation Operation, TOperationSide Side,
     TStrings * FileList, bool NoConfirmation, void * Param);
+  bool __fastcall ExecuteCopyMoveFileOperation(
+    TFileOperation Operation, TOperationSide Side, TStrings * FileList, bool NoConfirmation, void * Param);
+  bool __fastcall ExecuteDeleteFileOperation(TOperationSide Side, TStrings * FileList, bool NoConfirmation, void * Param);
   virtual bool __fastcall DDGetTarget(UnicodeString & Directory,
     bool & ForceQueue, UnicodeString & CounterName);
   virtual void __fastcall DDFakeFileInitDrag(TFileList * FileList, bool & Created);
