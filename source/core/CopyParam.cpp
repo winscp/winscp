@@ -127,15 +127,7 @@ void __fastcall TCopyParamType::DoGetInfoStr(
   NoCodeProperties = false;
   SomeAttrIncluded = false;
   #define ADD(STR, EXCEPT) \
-    if (FLAGCLEAR(Options, EXCEPT)) \
-    { \
-      AddToList(Result, (STR), Separator); \
-      SomeAttrIncluded = true; \
-    } \
-    else \
-    { \
-      SomeAttrExcluded = true; \
-    }
+    FLAGCLEAR(Options, EXCEPT) ? (AddToList(Result, (STR), Separator), SomeAttrIncluded = true, true) : (SomeAttrExcluded = true, false)
 
   bool AsciiFileMaskDiffers = (TransferMode == tmAutomatic) && !(AsciiFileMask == Defaults.AsciiFileMask);
   bool TransferModeDiffers = ((TransferMode != Defaults.TransferMode) || AsciiFileMaskDiffers);
@@ -189,32 +181,35 @@ void __fastcall TCopyParamType::DoGetInfoStr(
     if (TransferModeDiffers)
     {
       SomeAttrExcluded = true;
-      NoScriptArgs = true;
-      NoCodeProperties = true;
     }
   }
 
   if (FileNameCase != Defaults.FileNameCase)
   {
-    ADD(FORMAT(LoadStrPart(COPY_INFO_FILENAME, 1),
-      (LoadStrPart(COPY_INFO_FILENAME, FileNameCase + 2))),
-      cpaIncludeMaskOnly);
-
-    NoScriptArgs = true;
-    NoCodeProperties = true;
+    if (ADD(FORMAT(LoadStrPart(COPY_INFO_FILENAME, 1),
+         (LoadStrPart(COPY_INFO_FILENAME, FileNameCase + 2))),
+         cpaIncludeMaskOnly))
+    {
+      NoScriptArgs = true;
+      NoCodeProperties = true;
+    }
   }
 
   if ((InvalidCharsReplacement == NoReplacement) !=
         (Defaults.InvalidCharsReplacement == NoReplacement))
   {
     DebugAssert(InvalidCharsReplacement == NoReplacement);
+    int Except = cpaIncludeMaskOnly;
     if (InvalidCharsReplacement == NoReplacement)
     {
-      ADD(LoadStr(COPY_INFO_DONT_REPLACE_INV_CHARS), cpaIncludeMaskOnly);
+      ADD(LoadStr(COPY_INFO_DONT_REPLACE_INV_CHARS), Except);
     }
 
-    NoScriptArgs = true;
-    NoCodeProperties = true;
+    if (FLAGCLEAR(Options, Except))
+    {
+      NoScriptArgs = true;
+      NoCodeProperties = true;
+    }
   }
 
   if ((PreserveRights != Defaults.PreserveRights) ||
@@ -317,9 +312,7 @@ void __fastcall TCopyParamType::DoGetInfoStr(
   {
     if (DebugAlwaysTrue(IgnorePermErrors))
     {
-      const int Except = cpaIncludeMaskOnly | cpaNoIgnorePermErrors;
-      ADD(LoadStr(COPY_INFO_IGNORE_PERM_ERRORS), Except);
-      if (FLAGCLEAR(Options, Except))
+      if (ADD(LoadStr(COPY_INFO_IGNORE_PERM_ERRORS), cpaIncludeMaskOnly | cpaNoIgnorePermErrors))
       {
         NoScriptArgs = true;
         NoCodeProperties = true;
@@ -331,9 +324,7 @@ void __fastcall TCopyParamType::DoGetInfoStr(
   {
     if (DebugAlwaysTrue(PreserveReadOnly))
     {
-      const int Except = cpaIncludeMaskOnly | cpaNoPreserveReadOnly;
-      ADD(LoadStr(COPY_INFO_PRESERVE_READONLY), Except);
-      if (FLAGCLEAR(Options, Except))
+      if (ADD(LoadStr(COPY_INFO_PRESERVE_READONLY), cpaIncludeMaskOnly | cpaNoPreserveReadOnly))
       {
         NoScriptArgs = true;
         NoCodeProperties = true;
@@ -354,9 +345,7 @@ void __fastcall TCopyParamType::DoGetInfoStr(
   {
     if (DebugAlwaysTrue(ClearArchive))
     {
-      const int Except = cpaIncludeMaskOnly | cpaNoClearArchive;
-      ADD(LoadStr(COPY_INFO_CLEAR_ARCHIVE), Except);
-      if (FLAGCLEAR(Options, Except))
+      if (ADD(LoadStr(COPY_INFO_CLEAR_ARCHIVE), cpaIncludeMaskOnly | cpaNoClearArchive))
       {
         NoScriptArgs = true;
         NoCodeProperties = true;
@@ -370,9 +359,7 @@ void __fastcall TCopyParamType::DoGetInfoStr(
     {
       if (DebugAlwaysTrue(RemoveBOM))
       {
-        const int Except = cpaIncludeMaskOnly | cpaNoRemoveBOM | cpaNoTransferMode;
-        ADD(LoadStr(COPY_INFO_REMOVE_BOM), Except);
-        if (FLAGCLEAR(Options, Except))
+        if (ADD(LoadStr(COPY_INFO_REMOVE_BOM), cpaIncludeMaskOnly | cpaNoRemoveBOM | cpaNoTransferMode))
         {
           NoScriptArgs = true;
           NoCodeProperties = true;
@@ -384,9 +371,7 @@ void __fastcall TCopyParamType::DoGetInfoStr(
     {
       if (DebugAlwaysTrue(RemoveCtrlZ))
       {
-        const int Except = cpaIncludeMaskOnly | cpaNoRemoveCtrlZ | cpaNoTransferMode;
-        ADD(LoadStr(COPY_INFO_REMOVE_CTRLZ), Except);
-        if (FLAGCLEAR(Options, Except))
+        if (ADD(LoadStr(COPY_INFO_REMOVE_CTRLZ), cpaIncludeMaskOnly | cpaNoRemoveCtrlZ | cpaNoTransferMode))
         {
           NoScriptArgs = true;
           NoCodeProperties = true;
@@ -397,11 +382,11 @@ void __fastcall TCopyParamType::DoGetInfoStr(
 
   if (!(IncludeFileMask == Defaults.IncludeFileMask))
   {
-    ADD(FORMAT(LoadStr(COPY_INFO_FILE_MASK), (IncludeFileMask.Masks)),
-      cpaNoIncludeMask);
-
-    ScriptArgs += RtfSwitch(FILEMASK_SWITCH, Link, IncludeFileMask.Masks);
-    AssemblyCode += AssemblyProperty(Language, TransferOptionsClassName, L"FileMask", IncludeFileMask.Masks, false);
+    if (ADD(FORMAT(LoadStr(COPY_INFO_FILE_MASK), (IncludeFileMask.Masks)), cpaNoIncludeMask))
+    {
+      ScriptArgs += RtfSwitch(FILEMASK_SWITCH, Link, IncludeFileMask.Masks);
+      AssemblyCode += AssemblyProperty(Language, TransferOptionsClassName, L"FileMask", IncludeFileMask.Masks, false);
+    }
   }
 
   DebugAssert(FTransferSkipList.get() == NULL);
@@ -410,19 +395,18 @@ void __fastcall TCopyParamType::DoGetInfoStr(
   if (CPSLimit > 0)
   {
     int LimitKB = int(CPSLimit / 1024);
-    ADD(FMTLOAD(COPY_INFO_CPS_LIMIT2, (LimitKB)), cpaIncludeMaskOnly);
-
-    ScriptArgs += RtfSwitch(SPEED_SWITCH, Link, LimitKB);
-    AssemblyCode += AssemblyProperty(Language, TransferOptionsClassName, L"SpeedLimit", LimitKB, false);
+    if (ADD(FMTLOAD(COPY_INFO_CPS_LIMIT2, (LimitKB)), cpaIncludeMaskOnly))
+    {
+      ScriptArgs += RtfSwitch(SPEED_SWITCH, Link, LimitKB);
+      AssemblyCode += AssemblyProperty(Language, TransferOptionsClassName, L"SpeedLimit", LimitKB, false);
+    }
   }
 
   if (NewerOnly != Defaults.NewerOnly)
   {
     if (DebugAlwaysTrue(NewerOnly))
     {
-      const int Except = cpaIncludeMaskOnly | cpaNoNewerOnly;
-      ADD(StripHotkey(LoadStr(COPY_PARAM_NEWER_ONLY)), Except);
-      if (FLAGCLEAR(Options, Except))
+      if (ADD(StripHotkey(LoadStr(COPY_PARAM_NEWER_ONLY)), cpaIncludeMaskOnly | cpaNoNewerOnly))
       {
         ScriptArgs += RtfSwitch(NEWERONLY_SWICH, Link);
         NoCodeProperties = true;
@@ -434,9 +418,7 @@ void __fastcall TCopyParamType::DoGetInfoStr(
   {
     if (!DebugAlwaysFalse(EncryptNewFiles))
     {
-      const int Except = cpaIncludeMaskOnly | cpaNoEncryptNewFiles;
-      ADD(StripHotkey(LoadStr(COPY_INFO_DONT_ENCRYPT_NEW_FILES)), Except);
-      if (FLAGCLEAR(Options, Except))
+      if (ADD(StripHotkey(LoadStr(COPY_INFO_DONT_ENCRYPT_NEW_FILES)), cpaIncludeMaskOnly | cpaNoEncryptNewFiles))
       {
         NoScriptArgs = true;
         NoCodeProperties = true;
@@ -448,9 +430,7 @@ void __fastcall TCopyParamType::DoGetInfoStr(
   {
     if (DebugAlwaysTrue(ExcludeHiddenFiles))
     {
-      const int Except = cpaNoIncludeMask;
-      ADD(StripHotkey(LoadStr(COPY_INFO_EXCLUDE_HIDDEN_FILES)), Except);
-      if (FLAGCLEAR(Options, Except))
+      if (ADD(StripHotkey(LoadStr(COPY_INFO_EXCLUDE_HIDDEN_FILES)), cpaNoIncludeMask))
       {
         NoScriptArgs = true;
         NoCodeProperties = true;
@@ -462,9 +442,7 @@ void __fastcall TCopyParamType::DoGetInfoStr(
   {
     if (DebugAlwaysTrue(ExcludeEmptyDirectories))
     {
-      const int Except = 0;
-      ADD(StripHotkey(LoadStr(COPY_INFO_EXCLUDE_EMPTY_DIRS)), Except);
-      if (FLAGCLEAR(Options, Except))
+      if (ADD(StripHotkey(LoadStr(COPY_INFO_EXCLUDE_EMPTY_DIRS)), 0))
       {
         NoScriptArgs = true;
         NoCodeProperties = true;
