@@ -35,8 +35,6 @@ typedef void __fastcall (__closure *TScriptProgressEvent)(TScript * Script, TScr
 class TScriptProcParams : public TOptions
 {
 public:
-  friend class TManagementScript;
-
   __fastcall TScriptProcParams(const UnicodeString & FullCommand, const UnicodeString & ParamsStr);
 
   __property UnicodeString ParamsStr = { read = FParamsStr };
