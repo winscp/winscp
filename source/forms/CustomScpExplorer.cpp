@@ -603,7 +603,10 @@ void __fastcall TCustomScpExplorerForm::TerminalChanged(bool Replaced)
       }
     }
 
-    InitStatusBar();
+    if (!Replaced)
+    {
+      InitStatusBar();
+    }
   }
 
   DoTerminalListChanged(false);
@@ -4262,10 +4265,10 @@ void __fastcall TCustomScpExplorerForm::KeyDown(Word & Key, Classes::TShiftState
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::InitStatusBar()
 {
+  DebugAssert(Terminal != NULL);
   const TSessionInfo & SessionInfo = Terminal->GetSessionInfo();
   const TFileSystemInfo & FileSystemInfo = Terminal->GetFileSystemInfo();
   TTBXStatusBar * SessionStatusBar = (TTBXStatusBar *)GetComponent(fcStatusBar);
-  DebugAssert(Terminal);
 
   int Offset = SessionStatusBar->Panels->Count - SessionPanelCount;
 
