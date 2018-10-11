@@ -3394,18 +3394,7 @@ void __fastcall TSessionData::GenerateAssemblyCode(
     SessionData->Timeout = FactoryDefaults->Timeout;
   }
 
-  switch (Language)
-  {
-    case alCSharp:
-    case alPowerShell:
-      Head += AssemblyNewClassInstanceEnd(Language, false);
-      break;
-
-    case alVBNET:
-      // noop
-      // Ending With only after AddRawSettings
-      break;
-  }
+  Head += AssemblyNewClassInstanceEnd(Language, false);
 
   std::unique_ptr<TStrings> RawSettings(SessionData->SaveToOptions(FactoryDefaults.get()));
 
@@ -3422,22 +3411,11 @@ void __fastcall TSessionData::GenerateAssemblyCode(
       UnicodeString AddRawSettingsMethod =
         RtfLibraryMethod(SessionOptionsClassName, L"AddRawSettings", false) +
         FORMAT(L"(%s, %s)", (AssemblyString(Language, Name), AssemblyString(Language, Value)));
-      switch (Language)
-      {
-        case alCSharp:
-          Head += RtfText(SessionOptionsVariableName + L".") + AddRawSettingsMethod + RtfText(L";") + RtfPara;
-          break;
-
-        case alVBNET:
-          Head += RtfText(L"    .") + AddRawSettingsMethod + RtfPara;
-          break;
-
-        case alPowerShell:
-          Head += RtfText(SessionOptionsVariableName + L".") + AddRawSettingsMethod + RtfPara;
-          break;
-      }
+      Head += RtfText(SessionOptionsVariableName + L".") + AddRawSettingsMethod + AssemblyStatementSeparator(Language) + RtfPara;
     }
   }
+
+  Head += RtfPara;
 
   UnicodeString Indentation = L"    ";
   UnicodeString SessionVariableName = AssemblyVariableName(Language, SessionClassName);
@@ -3454,7 +3432,6 @@ void __fastcall TSessionData::GenerateAssemblyCode(
   {
     case alCSharp:
       Head +=
-        RtfPara +
         RtfKeyword(L"using") + RtfText(" (") + NewSessionInstance + RtfText(L"())") + RtfPara +
         RtfText(L"{") + RtfPara +
         OpenCall;
@@ -3465,8 +3442,6 @@ void __fastcall TSessionData::GenerateAssemblyCode(
 
     case alVBNET:
       Head +=
-        AssemblyNewClassInstanceEnd(Language, false) +
-        RtfPara +
         RtfKeyword(L"Using") + RtfText(L" ") + NewSessionInstance + RtfPara +
         OpenCall;
 
@@ -3476,7 +3451,6 @@ void __fastcall TSessionData::GenerateAssemblyCode(
 
     case alPowerShell:
       Head +=
-        RtfPara +
         NewSessionInstance + RtfPara +
         RtfPara +
         RtfKeyword(L"try") + RtfPara +

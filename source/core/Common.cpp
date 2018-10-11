@@ -3792,6 +3792,7 @@ UnicodeString __fastcall AssemblyNewClassInstanceStart(
       // Historically we use Dim .. With instead of object initilizer.
       // But for inline use, we have to use object initialize.
       // We should consistently always use object initilizers.
+      // Unfortunatelly VB.NET object initializer (contrary to C#) does not allow trailing comma.
       if (!Inline)
       {
         Result += RtfKeyword(L"Dim") + RtfText(L" ");
