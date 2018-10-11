@@ -1489,8 +1489,8 @@ namespace WinSCP
                 SessionOptionsToSwitches(sessionOptions, scanFingerprint, out string arguments, out string logArguments);
 
                 const string switchName = "-rawsettings";
-                Tools.AddRawParameters(ref arguments, sessionOptions.RawSettings, switchName);
-                Tools.AddRawParameters(ref logArguments, sessionOptions.RawSettings, switchName);
+                Tools.AddRawParameters(ref arguments, sessionOptions.RawSettings, switchName, false);
+                Tools.AddRawParameters(ref logArguments, sessionOptions.RawSettings, switchName, false);
 
                 if (!string.IsNullOrEmpty(arguments))
                 {

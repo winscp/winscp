@@ -3402,17 +3402,9 @@ void __fastcall TSessionData::GenerateAssemblyCode(
 
   if (RawSettings->Count > 0)
   {
-    Head += RtfPara;
-
-    for (int Index = 0; Index < RawSettings->Count; Index++)
-    {
-      UnicodeString Name = RawSettings->Names[Index];
-      UnicodeString Value = RawSettings->ValueFromIndex[Index];
-      UnicodeString AddRawSettingsMethod =
-        RtfLibraryMethod(SessionOptionsClassName, L"AddRawSettings", false) +
-        FORMAT(L"(%s, %s)", (AssemblyString(Language, Name), AssemblyString(Language, Value)));
-      Head += RtfText(SessionOptionsVariableName + L".") + AddRawSettingsMethod + AssemblyStatementSeparator(Language) + RtfPara;
-    }
+    Head +=
+      RtfPara +
+      AssemblyAddRawSettings(Language, RawSettings.get(), SessionOptionsClassName, L"AddRawSettings");
   }
 
   Head += RtfPara;

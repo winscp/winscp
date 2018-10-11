@@ -66,12 +66,10 @@ UnicodeString __fastcall TCopyParamType::GetInfoStr(
   UnicodeString Result;
   bool SomeAttrIncluded;
   UnicodeString ScriptArgs;
-  bool NoScriptArgs;
   UnicodeString AssemblyCode;
-  bool NoCodeProperties;
   DoGetInfoStr(
     Separator, Attrs, Result, SomeAttrIncluded,
-    UnicodeString(), ScriptArgs, NoScriptArgs, TAssemblyLanguage(0), AssemblyCode, NoCodeProperties);
+    UnicodeString(), ScriptArgs, TAssemblyLanguage(0), AssemblyCode);
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -80,51 +78,45 @@ bool __fastcall TCopyParamType::AnyUsableCopyParam(int Attrs) const
   UnicodeString Result;
   bool SomeAttrIncluded;
   UnicodeString ScriptArgs;
-  bool NoScriptArgs;
   UnicodeString AssemblyCode;
-  bool NoCodeProperties;
   DoGetInfoStr(
     L";", Attrs, Result, SomeAttrIncluded,
-    UnicodeString(), ScriptArgs, NoScriptArgs, TAssemblyLanguage(0), AssemblyCode, NoCodeProperties);
+    UnicodeString(), ScriptArgs, TAssemblyLanguage(0), AssemblyCode);
   return SomeAttrIncluded;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TCopyParamType::GenerateTransferCommandArgs(int Attrs, const UnicodeString & Link, bool & NoScriptArgs) const
+UnicodeString __fastcall TCopyParamType::GenerateTransferCommandArgs(int Attrs, const UnicodeString & Link) const
 {
   UnicodeString Result;
   bool SomeAttrIncluded;
   UnicodeString ScriptArgs;
   UnicodeString AssemblyCode;
-  bool NoCodeProperties;
   DoGetInfoStr(
     L";", Attrs, Result, SomeAttrIncluded,
-    Link, ScriptArgs, NoScriptArgs, TAssemblyLanguage(0), AssemblyCode, NoCodeProperties);
+    Link, ScriptArgs, TAssemblyLanguage(0), AssemblyCode);
   return ScriptArgs;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TCopyParamType::GenerateAssemblyCode(
-  TAssemblyLanguage Language, int Attrs, bool & NoCodeProperties) const
+UnicodeString __fastcall TCopyParamType::GenerateAssemblyCode(TAssemblyLanguage Language, int Attrs) const
 {
   UnicodeString Result;
   bool SomeAttrIncluded;
   UnicodeString ScriptArgs;
-  bool NoScriptArgs;
   UnicodeString AssemblyCode;
-  DoGetInfoStr(L";", Attrs, Result, SomeAttrIncluded, UnicodeString(), ScriptArgs, NoScriptArgs, Language, AssemblyCode, NoCodeProperties);
+  DoGetInfoStr(L";", Attrs, Result, SomeAttrIncluded, UnicodeString(), ScriptArgs, Language, AssemblyCode);
   return AssemblyCode;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamType::DoGetInfoStr(
   UnicodeString Separator, int Options,
   UnicodeString & Result, bool & SomeAttrIncluded,
-  const UnicodeString & Link, UnicodeString & ScriptArgs, bool & NoScriptArgs, TAssemblyLanguage Language, UnicodeString & AssemblyCode,
-  bool & NoCodeProperties) const
+  const UnicodeString & Link, UnicodeString & ScriptArgs, TAssemblyLanguage Language, UnicodeString & AssemblyCode) const
 {
   TCopyParamType Defaults;
+  TCopyParamType ScriptNonDefaults;
+  TCopyParamType CodeNonDefaults;
 
   bool SomeAttrExcluded = false;
-  NoScriptArgs = false;
-  NoCodeProperties = false;
   SomeAttrIncluded = false;
   #define ADD(STR, EXCEPT) \
     FLAGCLEAR(Options, EXCEPT) ? (AddToList(Result, (STR), Separator), SomeAttrIncluded = true, true) : (SomeAttrExcluded = true, false)
@@ -171,8 +163,8 @@ void __fastcall TCopyParamType::DoGetInfoStr(
         Language, TransferOptionsClassName, L"TransferMode", L"TransferMode", TransferModeMembers[TransferMode], false);
       if (AsciiFileMaskDiffers)
       {
-        NoScriptArgs = true;
-        NoCodeProperties = true;
+        ScriptNonDefaults.AsciiFileMask = AsciiFileMask;
+        CodeNonDefaults.AsciiFileMask = AsciiFileMask;
       }
     }
   }
@@ -190,15 +182,13 @@ void __fastcall TCopyParamType::DoGetInfoStr(
          (LoadStrPart(COPY_INFO_FILENAME, FileNameCase + 2))),
          cpaIncludeMaskOnly))
     {
-      NoScriptArgs = true;
-      NoCodeProperties = true;
+      ScriptNonDefaults.FileNameCase = FileNameCase;
+      CodeNonDefaults.FileNameCase = FileNameCase;
     }
   }
 
-  if ((InvalidCharsReplacement == NoReplacement) !=
-        (Defaults.InvalidCharsReplacement == NoReplacement))
+  if (InvalidCharsReplacement != Defaults.InvalidCharsReplacement)
   {
-    DebugAssert(InvalidCharsReplacement == NoReplacement);
     int Except = cpaIncludeMaskOnly;
     if (InvalidCharsReplacement == NoReplacement)
     {
@@ -207,8 +197,8 @@ void __fastcall TCopyParamType::DoGetInfoStr(
 
     if (FLAGCLEAR(Options, Except))
     {
-      NoScriptArgs = true;
-      NoCodeProperties = true;
+      ScriptNonDefaults.InvalidCharsReplacement = InvalidCharsReplacement;
+      CodeNonDefaults.InvalidCharsReplacement = InvalidCharsReplacement;
     }
   }
 
@@ -244,8 +234,8 @@ void __fastcall TCopyParamType::DoGetInfoStr(
 
     if ((AddXToDirectories != Defaults.AddXToDirectories) && FLAGCLEAR(Options, Except))
     {
-      NoScriptArgs = true;
-      NoCodeProperties = true;
+      ScriptNonDefaults.AddXToDirectories = AddXToDirectories;
+      CodeNonDefaults.AddXToDirectories = AddXToDirectories;
     }
   }
 
@@ -291,7 +281,7 @@ void __fastcall TCopyParamType::DoGetInfoStr(
         if (PreserveTimeDirs && FLAGCLEAR(Options, ExceptDirs))
         {
           ScriptArgs += RtfSwitchValue(PRESERVETIME_SWITCH, Link, PRESERVETIMEDIRS_SWITCH_VALUE);
-          NoCodeProperties = true;
+          CodeNonDefaults.PreserveTimeDirs = PreserveTimeDirs;
         }
         else
         {
@@ -314,8 +304,8 @@ void __fastcall TCopyParamType::DoGetInfoStr(
     {
       if (ADD(LoadStr(COPY_INFO_IGNORE_PERM_ERRORS), cpaIncludeMaskOnly | cpaNoIgnorePermErrors))
       {
-        NoScriptArgs = true;
-        NoCodeProperties = true;
+        ScriptNonDefaults.IgnorePermErrors = IgnorePermErrors;
+        CodeNonDefaults.IgnorePermErrors = IgnorePermErrors;
       }
     }
   }
@@ -326,8 +316,8 @@ void __fastcall TCopyParamType::DoGetInfoStr(
     {
       if (ADD(LoadStr(COPY_INFO_PRESERVE_READONLY), cpaIncludeMaskOnly | cpaNoPreserveReadOnly))
       {
-        NoScriptArgs = true;
-        NoCodeProperties = true;
+        ScriptNonDefaults.PreserveReadOnly = PreserveReadOnly;
+        CodeNonDefaults.PreserveReadOnly = PreserveReadOnly;
       }
     }
   }
@@ -347,8 +337,8 @@ void __fastcall TCopyParamType::DoGetInfoStr(
     {
       if (ADD(LoadStr(COPY_INFO_CLEAR_ARCHIVE), cpaIncludeMaskOnly | cpaNoClearArchive))
       {
-        NoScriptArgs = true;
-        NoCodeProperties = true;
+        ScriptNonDefaults.ClearArchive = ClearArchive;
+        CodeNonDefaults.ClearArchive = ClearArchive;
       }
     }
   }
@@ -361,8 +351,8 @@ void __fastcall TCopyParamType::DoGetInfoStr(
       {
         if (ADD(LoadStr(COPY_INFO_REMOVE_BOM), cpaIncludeMaskOnly | cpaNoRemoveBOM | cpaNoTransferMode))
         {
-          NoScriptArgs = true;
-          NoCodeProperties = true;
+          ScriptNonDefaults.RemoveBOM = RemoveBOM;
+          CodeNonDefaults.RemoveBOM = RemoveBOM;
         }
       }
     }
@@ -373,8 +363,8 @@ void __fastcall TCopyParamType::DoGetInfoStr(
       {
         if (ADD(LoadStr(COPY_INFO_REMOVE_CTRLZ), cpaIncludeMaskOnly | cpaNoRemoveCtrlZ | cpaNoTransferMode))
         {
-          NoScriptArgs = true;
-          NoCodeProperties = true;
+          ScriptNonDefaults.RemoveCtrlZ = RemoveCtrlZ;
+          CodeNonDefaults.RemoveCtrlZ = RemoveCtrlZ;
         }
       }
     }
@@ -409,7 +399,7 @@ void __fastcall TCopyParamType::DoGetInfoStr(
       if (ADD(StripHotkey(LoadStr(COPY_PARAM_NEWER_ONLY)), cpaIncludeMaskOnly | cpaNoNewerOnly))
       {
         ScriptArgs += RtfSwitch(NEWERONLY_SWICH, Link);
-        NoCodeProperties = true;
+        CodeNonDefaults.NewerOnly = NewerOnly;
       }
     }
   }
@@ -420,8 +410,8 @@ void __fastcall TCopyParamType::DoGetInfoStr(
     {
       if (ADD(StripHotkey(LoadStr(COPY_INFO_DONT_ENCRYPT_NEW_FILES)), cpaIncludeMaskOnly | cpaNoEncryptNewFiles))
       {
-        NoScriptArgs = true;
-        NoCodeProperties = true;
+        ScriptNonDefaults.EncryptNewFiles = EncryptNewFiles;
+        CodeNonDefaults.EncryptNewFiles = EncryptNewFiles;
       }
     }
   }
@@ -432,8 +422,8 @@ void __fastcall TCopyParamType::DoGetInfoStr(
     {
       if (ADD(StripHotkey(LoadStr(COPY_INFO_EXCLUDE_HIDDEN_FILES)), cpaNoIncludeMask))
       {
-        NoScriptArgs = true;
-        NoCodeProperties = true;
+        ScriptNonDefaults.ExcludeHiddenFiles = ExcludeHiddenFiles;
+        CodeNonDefaults.ExcludeHiddenFiles = ExcludeHiddenFiles;
       }
     }
   }
@@ -444,8 +434,8 @@ void __fastcall TCopyParamType::DoGetInfoStr(
     {
       if (ADD(StripHotkey(LoadStr(COPY_INFO_EXCLUDE_EMPTY_DIRS)), 0))
       {
-        NoScriptArgs = true;
-        NoCodeProperties = true;
+        ScriptNonDefaults.ExcludeEmptyDirectories = ExcludeEmptyDirectories;
+        CodeNonDefaults.ExcludeEmptyDirectories = ExcludeEmptyDirectories;
       }
     }
   }
@@ -490,6 +480,53 @@ void __fastcall TCopyParamType::DoGetInfoStr(
     ResumeSupportCode += AssemblyNewClassInstanceEnd(Language, Inline);
 
     AssemblyCode += AssemblyPropertyRaw(Language, TransferOptionsClassName, L"ResumeSupport", ResumeSupportCode, false);
+  }
+
+  std::unique_ptr<TStringList> RawOptions;
+  std::unique_ptr<TOptionsStorage> OptionsStorage;
+
+  RawOptions.reset(new TStringList());
+  OptionsStorage.reset(new TOptionsStorage(RawOptions.get(), true));
+  ScriptNonDefaults.Save(OptionsStorage.get(), &Defaults);
+
+  if (RawOptions->Count > 0)
+  {
+    ScriptArgs +=
+      RtfSwitch(RAWTRANSFERSETTINGS_SWICH, Link) +
+      FORMAT(L"[%d]", (RawOptions->Count)) +
+      StringsToParams(RawOptions.get());
+  }
+
+  RawOptions.reset(new TStringList());
+  OptionsStorage.reset(new TOptionsStorage(RawOptions.get(), true));
+  CodeNonDefaults.Save(OptionsStorage.get(), &Defaults);
+
+  if (!AssemblyCode.IsEmpty())
+  {
+    AssemblyCode =
+      AssemblyNewClassInstanceStart(Language, TransferOptionsClassName, false) +
+      AssemblyCode +
+      AssemblyNewClassInstanceEnd(Language, false);
+  }
+
+  if (RawOptions->Count > 0)
+  {
+    if (AssemblyCode.IsEmpty())
+    {
+      AssemblyCode = AssemblyVariableDeclaration(Language) + AssemblyNewClassInstance(Language, TransferOptionsClassName, false);
+      if (Language == alCSharp)
+      {
+        AssemblyCode += RtfText(L"()");
+      }
+      AssemblyCode += AssemblyStatementSeparator(Language) + RtfPara;
+    }
+    else
+    {
+      AssemblyCode += RtfPara;
+    }
+
+    AssemblyCode +=
+      AssemblyAddRawSettings(Language, RawOptions.get(), TransferOptionsClassName, L"AddRawSettings");
   }
 
   if (SomeAttrExcluded)

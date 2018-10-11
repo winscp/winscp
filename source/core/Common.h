@@ -303,11 +303,15 @@ UnicodeString __fastcall RtfLibraryMethod(const UnicodeString & ClassName, const
 UnicodeString __fastcall RtfLibraryClass(const UnicodeString & ClassName);
 UnicodeString __fastcall AssemblyVariableName(TAssemblyLanguage Language, const UnicodeString & ClassName);
 UnicodeString __fastcall AssemblyStatementSeparator(TAssemblyLanguage Language);
+UnicodeString __fastcall AssemblyVariableDeclaration(TAssemblyLanguage Language);
 UnicodeString __fastcall AssemblyNewClassInstance(
   TAssemblyLanguage Language, const UnicodeString & ClassName, bool Inline);
 UnicodeString __fastcall AssemblyNewClassInstanceStart(
   TAssemblyLanguage Language, const UnicodeString & ClassName, bool Inline);
 UnicodeString __fastcall AssemblyNewClassInstanceEnd(TAssemblyLanguage Language, bool Inline);
+UnicodeString __fastcall AssemblyAddRawSettings(
+  TAssemblyLanguage Language, TStrings * RawSettings, const UnicodeString & ClassName,
+  const UnicodeString & MethodName);
 //---------------------------------------------------------------------------
 #include "Global.h"
 //---------------------------------------------------------------------------

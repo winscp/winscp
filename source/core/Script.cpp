@@ -16,7 +16,7 @@
 //---------------------------------------------------------------------------
 const wchar_t * ToggleNames[] = { L"off", L"on" };
 //---------------------------------------------------------------------------
-__fastcall TScriptProcParams::TScriptProcParams(UnicodeString ParamsStr)
+__fastcall TScriptProcParams::TScriptProcParams(const UnicodeString & FullCommand, const UnicodeString & ParamsStr)
 {
   int P = FSwitchMarks.Pos(L"/");
   DebugAssert(P > 0);
@@ -25,9 +25,11 @@ __fastcall TScriptProcParams::TScriptProcParams(UnicodeString ParamsStr)
     FSwitchMarks.Delete(P, 1);
   }
 
+  FFullCommand = FullCommand;
   FParamsStr = ParamsStr;
   UnicodeString Param;
-  while (CutToken(ParamsStr, Param))
+  UnicodeString AParamsStr = ParamsStr;
+  while (CutToken(AParamsStr, Param))
   {
     Add(Param);
   }
@@ -266,42 +268,35 @@ UnicodeString __fastcall TScriptCommands::ResolveCommand(const UnicodeString & C
 // decreased on exit by exception, leading to memory leak
 void __fastcall TScriptCommands::Execute(const UnicodeString & Command, const UnicodeString & Params)
 {
-  TScriptProcParams * Parameters = new TScriptProcParams(Params);
-  try
+  UnicodeString Matches;
+  int Index = FindCommand(this, Command, &Matches);
+
+  if (Index == -2)
   {
-    UnicodeString Matches;
-    int Index = FindCommand(this, Command, &Matches);
-
-    if (Index == -2)
-    {
-      throw Exception(FMTLOAD(SCRIPT_COMMAND_AMBIGUOUS, (Command, Matches)));
-    }
-    else if (Index < 0)
-    {
-      throw Exception(FMTLOAD(SCRIPT_COMMAND_UNKNOWN, (Command)));
-    }
-
-    TScriptCommand * ScriptCommand = reinterpret_cast<TScriptCommand *>(Objects[Index]);
-    UnicodeString FullCommand = Strings[Index];
-
-    if (Parameters->ParamCount < ScriptCommand->MinParams)
-    {
-      throw Exception(FMTLOAD(SCRIPT_MISSING_PARAMS, (FullCommand)));
-    }
-    else if ((ScriptCommand->MaxParams >= 0) && (Parameters->ParamCount > ScriptCommand->MaxParams))
-    {
-      throw Exception(FMTLOAD(SCRIPT_TOO_MANY_PARAMS, (FullCommand)));
-    }
-    else
-    {
-      CheckParams(Parameters, ScriptCommand->Switches);
-
-      ScriptCommand->Proc(Parameters);
-    }
+    throw Exception(FMTLOAD(SCRIPT_COMMAND_AMBIGUOUS, (Command, Matches)));
   }
-  __finally
+  else if (Index < 0)
   {
-    delete Parameters;
+    throw Exception(FMTLOAD(SCRIPT_COMMAND_UNKNOWN, (Command)));
+  }
+
+  TScriptCommand * ScriptCommand = reinterpret_cast<TScriptCommand *>(Objects[Index]);
+  UnicodeString FullCommand = Strings[Index];
+
+  std::unique_ptr<TScriptProcParams> Parameters(new TScriptProcParams(FullCommand, Params));
+  if (Parameters->ParamCount < ScriptCommand->MinParams)
+  {
+    throw Exception(FMTLOAD(SCRIPT_MISSING_PARAMS, (FullCommand)));
+  }
+  else if ((ScriptCommand->MaxParams >= 0) && (Parameters->ParamCount > ScriptCommand->MaxParams))
+  {
+    throw Exception(FMTLOAD(SCRIPT_TOO_MANY_PARAMS, (FullCommand)));
+  }
+  else
+  {
+    CheckParams(Parameters.get(), ScriptCommand->Switches);
+
+    ScriptCommand->Proc(Parameters.get());
   }
 }
 //---------------------------------------------------------------------------
@@ -370,21 +365,29 @@ void __fastcall TScript::Init()
   FCommands->Register(L"ln", SCRIPT_LN_DESC, SCRIPT_LN_HELP, &LnProc, 2, 2, false);
   FCommands->Register(L"symlink", 0, SCRIPT_LN_HELP, &LnProc, 2, 2, false);
   FCommands->Register(L"mkdir", SCRIPT_MKDIR_DESC, SCRIPT_MKDIR_HELP, &MkDirProc, 1, 1, false);
-  FCommands->Register(L"get", SCRIPT_GET_DESC, SCRIPT_GET_HELP8, &GetProc, 1, -1, true);
-  FCommands->Register(L"recv", 0, SCRIPT_GET_HELP8, &GetProc, 1, -1, true);
-  FCommands->Register(L"mget", 0, SCRIPT_GET_HELP8, &GetProc, 1, -1, true);
-  FCommands->Register(L"put", SCRIPT_PUT_DESC, SCRIPT_PUT_HELP8, &PutProc, 1, -1, true);
-  FCommands->Register(L"send", 0, SCRIPT_PUT_HELP8, &PutProc, 1, -1, true);
-  FCommands->Register(L"mput", 0, SCRIPT_PUT_HELP8, &PutProc, 1, -1, true);
+  FCommands->Register(L"get", SCRIPT_GET_DESC, SCRIPT_GET_HELP8, &GetProc, 0, -1, true);
+  FCommands->Register(L"recv", 0, SCRIPT_GET_HELP8, &GetProc, 0, -1, true);
+  FCommands->Register(L"mget", 0, SCRIPT_GET_HELP8, &GetProc, 0, -1, true);
+  FCommands->Register(L"put", SCRIPT_PUT_DESC, SCRIPT_PUT_HELP8, &PutProc, 0, -1, true);
+  FCommands->Register(L"send", 0, SCRIPT_PUT_HELP8, &PutProc, 0, -1, true);
+  FCommands->Register(L"mput", 0, SCRIPT_PUT_HELP8, &PutProc, 0, -1, true);
   FCommands->Register(L"option", SCRIPT_OPTION_DESC, SCRIPT_OPTION_HELP7, &OptionProc, -1, 2, false);
   FCommands->Register(L"ascii", 0, SCRIPT_OPTION_HELP7, &AsciiProc, 0, 0, false);
   FCommands->Register(L"binary", 0, SCRIPT_OPTION_HELP7, &BinaryProc, 0, 0, false);
-  FCommands->Register(L"synchronize", SCRIPT_SYNCHRONIZE_DESC, SCRIPT_SYNCHRONIZE_HELP7, &SynchronizeProc, 1, 3, true);
+  FCommands->Register(L"synchronize", SCRIPT_SYNCHRONIZE_DESC, SCRIPT_SYNCHRONIZE_HELP7, &SynchronizeProc, 0, 3, true);
   FCommands->Register(L"keepuptodate", SCRIPT_KEEPUPTODATE_DESC, SCRIPT_KEEPUPTODATE_HELP5, &KeepUpToDateProc, 0, 2, true);
   // the echo command does not have switches actually, but it must handle dashes in its arguments
   FCommands->Register(L"echo", SCRIPT_ECHO_DESC, SCRIPT_ECHO_HELP, &EchoProc, -1, -1, true);
   FCommands->Register(L"stat", SCRIPT_STAT_DESC, SCRIPT_STAT_HELP, &StatProc, 1, 1, false);
   FCommands->Register(L"checksum", SCRIPT_CHECKSUM_DESC, SCRIPT_CHECKSUM_HELP, &ChecksumProc, 2, 2, false);
+}
+//---------------------------------------------------------------------------
+void __fastcall TScript::RequireParams(TScriptProcParams * Parameters, int MinParams)
+{
+  if (Parameters->ParamCount < MinParams)
+  {
+    throw Exception(FMTLOAD(SCRIPT_MISSING_PARAMS, (Parameters->FullCommand)));
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TScript::CheckDefaultCopyParam()
@@ -506,7 +509,7 @@ void __fastcall TScript::Command(UnicodeString Cmd)
           UnicodeString DummyLogCmd;
           if (DebugAlwaysTrue(CutToken(LogCmd, DummyLogCmd)))
           {
-            std::unique_ptr<TScriptProcParams> Parameters(new TScriptProcParams(LogCmd));
+            std::unique_ptr<TScriptProcParams> Parameters(new TScriptProcParams(FCommands->ResolveCommand(Cmd), LogCmd));
             Parameters->LogOptions(LogOption);
           }
         }
@@ -1067,6 +1070,13 @@ void __fastcall TScript::CopyParamParams(TCopyParamType & CopyParam, TScriptProc
   {
     CopyParam.NewerOnly = true;
   }
+
+  std::unique_ptr<TStrings> RawSettings(new TStringList());
+  if (Parameters->FindSwitch(RAWTRANSFERSETTINGS_SWICH, RawSettings.get()))
+  {
+    std::unique_ptr<TOptionsStorage> OptionsStorage(new TOptionsStorage(RawSettings.get(), false));
+    CopyParam.Load(OptionsStorage.get());
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TScript::ResetTransfer()
@@ -1426,13 +1436,18 @@ void __fastcall TScript::GetProc(TScriptProcParams * Parameters)
   ResetTransfer();
 
   bool Latest = Parameters->FindSwitch(L"latest");
+  CheckDefaultCopyParam();
+  TCopyParamType CopyParam = FCopyParam;
+  CopyParamParams(CopyParam, Parameters);
+  int Params = 0;
+  TransferParamParams(Params, Parameters);
+
+  RequireParams(Parameters, 1);
   int LastFileParam = (Parameters->ParamCount == 1 ? 1 : Parameters->ParamCount - 1);
   TStrings * FileList = CreateFileList(Parameters, 1, LastFileParam,
     (TFileListType)(fltQueryServer | fltMask | FLAGMASK(Latest, fltLatest)));
   try
   {
-    CheckDefaultCopyParam();
-    TCopyParamType CopyParam = FCopyParam;
 
     UnicodeString TargetDirectory;
     if (Parameters->ParamCount == 1)
@@ -1453,9 +1468,6 @@ void __fastcall TScript::GetProc(TScriptProcParams * Parameters)
       CheckMultiFilesToOne(FileList, Target, false);
     }
 
-    int Params = 0;
-    TransferParamParams(Params, Parameters);
-    CopyParamParams(CopyParam, Parameters);
     CheckParams(Parameters);
 
     FTerminal->CopyToLocal(FileList, TargetDirectory, &CopyParam, Params, NULL);
@@ -1472,15 +1484,19 @@ void __fastcall TScript::PutProc(TScriptProcParams * Parameters)
   ResetTransfer();
 
   bool Latest = Parameters->FindSwitch(L"latest");
+  CheckDefaultCopyParam();
+  TCopyParamType CopyParam = FCopyParam;
+  CopyParamParams(CopyParam, Parameters);
+  int Params = 0;
+  TransferParamParams(Params, Parameters);
+
+  RequireParams(Parameters, 1);
   int LastFileParam = (Parameters->ParamCount == 1 ? 1 : Parameters->ParamCount - 1);
   TStrings * FileList =
     CreateLocalFileList(
       Parameters, 1, LastFileParam, (TFileListType)(fltMask | FLAGMASK(Latest, fltLatest)));
   try
   {
-    CheckDefaultCopyParam();
-    TCopyParamType CopyParam = FCopyParam;
-
     UnicodeString TargetDirectory;
     if (Parameters->ParamCount == 1)
     {
@@ -1500,9 +1516,6 @@ void __fastcall TScript::PutProc(TScriptProcParams * Parameters)
       CheckMultiFilesToOne(FileList, Target, true);
     }
 
-    int Params = 0;
-    TransferParamParams(Params, Parameters);
-    CopyParamParams(CopyParam, Parameters);
     CheckParams(Parameters);
 
     FTerminal->CopyToRemote(FileList, TargetDirectory, &CopyParam, Params, NULL);
@@ -1882,6 +1895,11 @@ void __fastcall TScript::SynchronizeProc(TScriptProcParams * Parameters)
 
   static const wchar_t * ModeNames[] = { L"remote", L"local", L"both" };
 
+  CheckDefaultCopyParam();
+  TCopyParamType CopyParam = FCopyParam;
+  CopyParamParams(CopyParam, Parameters);
+
+  RequireParams(Parameters, 1);
   UnicodeString ModeName = Parameters->Param[1];
   DebugAssert(FSynchronizeMode < 0);
   FSynchronizeMode = TScriptCommands::FindCommand(ModeNames, LENOF(ModeNames), ModeName);
@@ -1897,10 +1915,6 @@ void __fastcall TScript::SynchronizeProc(TScriptProcParams * Parameters)
     UnicodeString RemoteDirectory;
 
     SynchronizeDirectories(Parameters, LocalDirectory, RemoteDirectory, 2);
-
-    CheckDefaultCopyParam();
-    TCopyParamType CopyParam = FCopyParam;
-    CopyParamParams(CopyParam, Parameters);
 
     CheckDefaultSynchronizeParams();
     int SynchronizeParams = FSynchronizeParams | TTerminal::spNoConfirmation;
@@ -2051,6 +2065,10 @@ void __fastcall TScript::KeepUpToDateProc(TScriptProcParams * Parameters)
   CheckSession();
   ResetTransfer();
 
+  CheckDefaultCopyParam();
+  TCopyParamType CopyParam = FCopyParam;
+  CopyParamParams(CopyParam, Parameters);
+
   UnicodeString LocalDirectory;
   UnicodeString RemoteDirectory;
 
@@ -2065,10 +2083,6 @@ void __fastcall TScript::KeepUpToDateProc(TScriptProcParams * Parameters)
   {
     SynchronizeParams |= TTerminal::spDelete;
   }
-
-  CheckDefaultCopyParam();
-  TCopyParamType CopyParam = FCopyParam;
-  CopyParamParams(CopyParam, Parameters);
 
   CheckParams(Parameters);
 

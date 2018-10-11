@@ -329,13 +329,7 @@ UnicodeString __fastcall TGenerateUrlDialog::GenerateScript(UnicodeString & Scri
     {
       TransferCommandArgs += RtfSwitch(DELETE_SWITCH, TransferCommandLink);
     }
-    bool NoArgs;
-    TransferCommandArgs += FCopyParam.GenerateTransferCommandArgs(FCopyParamAttrs, TransferCommandLink, NoArgs);
-
-    if (NoArgs)
-    {
-      ScriptDescription += LoadStr(GENERATE_URL_COPY_PARAM_SCRIPT_REMAINING) + L"\n";
-    }
+    TransferCommandArgs += FCopyParam.GenerateTransferCommandArgs(FCopyParamAttrs, TransferCommandLink);
 
     AddSampleDescription(ScriptDescription);
 
@@ -527,23 +521,14 @@ UnicodeString __fastcall TGenerateUrlDialog::GenerateAssemblyCode(UnicodeString 
   UnicodeString Code;
   if (FTransfer)
   {
-    bool NoCodeProperties;
-    UnicodeString CopyParamProperties =
-      FCopyParam.GenerateAssemblyCode(Language, FCopyParamAttrs, NoCodeProperties);
-
-    if (NoCodeProperties)
-    {
-      AssemblyDescription += LoadStr(GENERATE_URL_COPY_PARAM_CODE_REMAINING) + L"\n";
-    }
+    UnicodeString CopyParamProperties = FCopyParam.GenerateAssemblyCode(Language, FCopyParamAttrs);
 
     bool HasTransferOptions = !CopyParamProperties.IsEmpty();
     if (HasTransferOptions)
     {
       Code +=
         AssemblyCommentLine(Language, LoadStr(GENERATE_URL_COPY_PARAM)) +
-        AssemblyNewClassInstanceStart(Language, TransferOptionsClassName, false) +
         CopyParamProperties +
-        AssemblyNewClassInstanceEnd(Language, false) +
         RtfPara;
     }
 

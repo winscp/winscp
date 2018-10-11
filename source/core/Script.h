@@ -37,12 +37,14 @@ class TScriptProcParams : public TOptions
 public:
   friend class TManagementScript;
 
-  __fastcall TScriptProcParams(UnicodeString ParamsStr);
+  __fastcall TScriptProcParams(const UnicodeString & FullCommand, const UnicodeString & ParamsStr);
 
   __property UnicodeString ParamsStr = { read = FParamsStr };
+  __property UnicodeString FullCommand = { read = FFullCommand };
 
 private:
   UnicodeString FParamsStr;
+  UnicodeString FFullCommand;
 };
 //---------------------------------------------------------------------------
 class TScript
@@ -61,6 +63,8 @@ public:
   void __fastcall Synchronize(const UnicodeString LocalDirectory,
     const UnicodeString RemoteDirectory, const TCopyParamType & CopyParam,
     int SynchronizeParams, TSynchronizeChecklist ** Checklist);
+
+  static void __fastcall RequireParams(TScriptProcParams * Parameters, int MinParams);
 
   __property TScriptPrintEvent OnPrint = { read = FOnPrint, write = FOnPrint };
   __property TExtendedExceptionEvent OnShowExtendedException = { read = FOnShowExtendedException, write = FOnShowExtendedException };

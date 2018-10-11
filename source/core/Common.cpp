@@ -3773,19 +3773,34 @@ UnicodeString __fastcall AssemblyNewClassInstance(TAssemblyLanguage Language, co
   return Result;
 }
 //---------------------------------------------------------------------
-UnicodeString __fastcall AssemblyNewClassInstanceStart(
-  TAssemblyLanguage Language, const UnicodeString & ClassName, bool Inline)
+UnicodeString __fastcall AssemblyVariableDeclaration(TAssemblyLanguage Language)
 {
-  UnicodeString NewClassInstance = AssemblyNewClassInstance(Language, ClassName, Inline);
-  UnicodeString SpaceOrPara = (Inline ? UnicodeString(L" ") : RtfPara);
-
   UnicodeString Result;
   switch (Language)
   {
+    case alVBNET:
+      Result = RtfKeyword(L"Dim") + RtfText(L" ");
+      break;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall AssemblyNewClassInstanceStart(
+  TAssemblyLanguage Language, const UnicodeString & ClassName, bool Inline)
+{
+  UnicodeString SpaceOrPara = (Inline ? UnicodeString(L" ") : RtfPara);
+
+  UnicodeString Result;
+  if (!Inline)
+  {
+    Result += AssemblyVariableDeclaration(Language);
+  }
+  Result += AssemblyNewClassInstance(Language, ClassName, Inline);
+
+  switch (Language)
+  {
     case alCSharp:
-      Result =
-        NewClassInstance + SpaceOrPara +
-        RtfText(L"{") + SpaceOrPara;
+      Result += SpaceOrPara + RtfText(L"{") + SpaceOrPara;
       break;
 
     case alVBNET:
@@ -3793,11 +3808,7 @@ UnicodeString __fastcall AssemblyNewClassInstanceStart(
       // But for inline use, we have to use object initialize.
       // We should consistently always use object initilizers.
       // Unfortunatelly VB.NET object initializer (contrary to C#) does not allow trailing comma.
-      if (!Inline)
-      {
-        Result += RtfKeyword(L"Dim") + RtfText(L" ");
-      }
-      Result += NewClassInstance + SpaceOrPara + RtfKeyword(L"With");
+      Result += SpaceOrPara + RtfKeyword(L"With");
       if (Inline)
       {
         Result += RtfText(L" { ");
@@ -3809,7 +3820,7 @@ UnicodeString __fastcall AssemblyNewClassInstanceStart(
       break;
 
     case alPowerShell:
-      Result = NewClassInstance + RtfText(" -Property @{") + SpaceOrPara;
+      Result += RtfText(" -Property @{") + SpaceOrPara;
       break;
   }
   return Result;
@@ -3854,6 +3865,24 @@ UnicodeString __fastcall AssemblyNewClassInstanceEnd(TAssemblyLanguage Language,
         Result = RtfText(L"}") + RtfPara;
       }
       break;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall AssemblyAddRawSettings(
+  TAssemblyLanguage Language, TStrings * RawSettings, const UnicodeString & ClassName,
+  const UnicodeString & MethodName)
+{
+  UnicodeString Result;
+  for (int Index = 0; Index < RawSettings->Count; Index++)
+  {
+    UnicodeString Name = RawSettings->Names[Index];
+    UnicodeString Value = RawSettings->ValueFromIndex[Index];
+    UnicodeString AddRawSettingsMethod =
+      RtfLibraryMethod(ClassName, MethodName, false) +
+      FORMAT(L"(%s, %s)", (AssemblyString(Language, Name), AssemblyString(Language, Value)));
+    UnicodeString VariableName = AssemblyVariableName(Language, ClassName);
+    Result += RtfText(VariableName + L".") + AddRawSettingsMethod + AssemblyStatementSeparator(Language) + RtfPara;
   }
   return Result;
 }

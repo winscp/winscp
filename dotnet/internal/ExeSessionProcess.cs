@@ -101,7 +101,7 @@ namespace WinSCP
                     xmlLogSwitch + "/nointeractiveinput " + assemblyVersionSwitch +
                     configSwitch + logSwitch + logLevelSwitch + _session.AdditionalExecutableArguments;
 
-                Tools.AddRawParameters(ref arguments, _session.RawConfiguration, "/rawconfig");
+                Tools.AddRawParameters(ref arguments, _session.RawConfiguration, "/rawconfig", false);
 
                 if (!string.IsNullOrEmpty(additionalArguments))
                 {

@@ -76,9 +76,8 @@ private:
   void __fastcall SetReplaceInvalidChars(bool value);
   UnicodeString __fastcall RestoreChars(UnicodeString FileName) const;
   void __fastcall DoGetInfoStr(UnicodeString Separator, int Attrs,
-    UnicodeString & Result, bool & SomeAttrIncluded,
-    const UnicodeString & Link, UnicodeString & ScriptArgs, bool & NoScriptArgs,
-    TAssemblyLanguage Language, UnicodeString & AssemblyCode, bool & NoCodeProperties) const;
+    UnicodeString & Result, bool & SomeAttrIncluded, const UnicodeString & Link, UnicodeString & ScriptArgs,
+    TAssemblyLanguage Language, UnicodeString & AssemblyCode) const;
   TStrings * __fastcall GetTransferSkipList() const;
   void __fastcall SetTransferSkipList(TStrings * value);
 
@@ -108,9 +107,8 @@ public:
   void __fastcall Save(THierarchicalStorage * Storage, const TCopyParamType * Defaults = NULL) const;
   UnicodeString __fastcall GetInfoStr(UnicodeString Separator, int Attrs) const;
   bool __fastcall AnyUsableCopyParam(int Attrs) const;
-  UnicodeString __fastcall GenerateTransferCommandArgs(
-    int Attrs, const UnicodeString & Link, bool & NoScriptArgs) const;
-  UnicodeString __fastcall GenerateAssemblyCode(TAssemblyLanguage Language, int Attrs, bool & NoCodeProperties) const;
+  UnicodeString __fastcall GenerateTransferCommandArgs(int Attrs, const UnicodeString & Link) const;
+  UnicodeString __fastcall GenerateAssemblyCode(TAssemblyLanguage Language, int Attrs) const;
 
   bool __fastcall operator==(const TCopyParamType & rhp) const;
 
