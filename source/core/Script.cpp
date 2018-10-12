@@ -2300,12 +2300,11 @@ void __fastcall TManagementScript::TerminalOperationProgress(
 
       if (DoPrint)
       {
-        static int WidthFileName = 25;
         UnicodeString FileName;
         if (FLimitedOutput)
         {
-          FileName = MinimizeName(ProgressFileName, WidthFileName,
-            ProgressData.Side == osRemote);
+          bool Unix = (ProgressData.Side == osRemote);
+          FileName = MinimizeName(ProgressFileName, Configuration->ScriptProgressFileNameLimit, Unix);
         }
         else
         {
@@ -2322,7 +2321,7 @@ void __fastcall TManagementScript::TerminalOperationProgress(
         }
 
         UnicodeString ProgressMessage = FORMAT(L"%-*s | %14s | %6.1f KB/s | %-6.6s | %3d%%",
-          (WidthFileName, FileName,
+          (Configuration->ScriptProgressFileNameLimit, FileName,
            TransferredSizeStr,
            static_cast<float>(ProgressData.CPS()) / 1024,
            ProgressData.AsciiTransfer ? L"ascii" : L"binary",

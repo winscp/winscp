@@ -75,6 +75,7 @@ private:
   bool FScripting;
   UnicodeString FMimeTypes;
   int FDontReloadMoreThanSessions;
+  int FScriptProgressFileNameLimit;
 
   bool FDisablePasswordStoring;
   bool FForceBanners;
@@ -303,6 +304,7 @@ public:
   __property int ParallelDurationThreshold = { read = FParallelDurationThreshold, write = SetParallelDurationThreshold };
   __property UnicodeString MimeTypes = { read = FMimeTypes, write = SetMimeTypes };
   __property int DontReloadMoreThanSessions = { read = FDontReloadMoreThanSessions, write = FDontReloadMoreThanSessions };
+  __property int ScriptProgressFileNameLimit = { read = FScriptProgressFileNameLimit, write = FScriptProgressFileNameLimit };
 
   __property UnicodeString TimeFormat = { read = GetTimeFormat };
   __property TStorage Storage  = { read=GetStorage };
