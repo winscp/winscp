@@ -289,7 +289,8 @@ void __fastcall TAboutDialog::DoLoadThirdParty()
 
   AddPara(ThirdParty,
     FMTLOAD(NEON_BASED_ON2, (NeonVersion())) + Br +
-    LoadStr(NEON_COPYRIGHT));
+    LoadStr(NEON_COPYRIGHT) + Br +
+    CreateLink(LoadStr(NEON_URL)));
 
   AddPara(ThirdParty,
     FMTLOAD(S3_BASED_ON, (S3LibVersion())) + Br +
