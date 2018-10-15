@@ -913,6 +913,7 @@ void __fastcall TWebDAVFileSystem::ParsePropResultSet(TRemoteFile * File,
   UnicodeString HumanRights;
 
   // Proprietary property of mod_dav
+  // http://www.webdav.org/mod_dav/#imp
   const char * Executable = GetProp(Results, PROP_EXECUTABLE, MODDAV_PROP_NAMESPACE);
   if (Executable != NULL)
   {
