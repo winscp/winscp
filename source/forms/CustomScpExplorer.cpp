@@ -9399,12 +9399,7 @@ void __fastcall TCustomScpExplorerForm::SessionsPageControlMouseDown(
       TTerminal * Terminal = GetSessionTabTerminal(SessionsPageControl->Pages[Index]);
       if (Terminal != NULL)
       {
-        SessionsPageControl->ActivePageIndex = Index;
-        // Switch to session tab (has to be session tab, due to previous check)
-        if (DebugAlwaysTrue(SessionTabSwitched()))
-        {
-          CloseSession();
-        }
+        CloseSessionTab(Index);
       }
     }
   }
@@ -9977,7 +9972,7 @@ void __fastcall TCustomScpExplorerForm::ReloadDirectory(TOperationSide Side)
   DirView(Side)->ReloadDirectory();
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::SessionsPageControlCloseButtonClick(TPageControl * /*Sender*/, int Index)
+void __fastcall TCustomScpExplorerForm::CloseSessionTab(int Index)
 {
   if (Index == SessionsPageControl->TabIndex)
   {
@@ -10001,6 +9996,11 @@ void __fastcall TCustomScpExplorerForm::SessionsPageControlCloseButtonClick(TPag
       }
     }
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::SessionsPageControlCloseButtonClick(TPageControl * /*Sender*/, int Index)
+{
+  CloseSessionTab(Index);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::CopyFilesToClipboard(TOperationSide Side)

@@ -639,6 +639,7 @@ protected:
   void __fastcall ClipboardDownload(const UnicodeString & TargetDirectory, bool NoConfirmation, bool DragDrop);
   bool __fastcall DoesClipboardContainOurFiles();
   bool __fastcall CanPasteToDirViewFromClipBoard();
+  void __fastcall CloseSessionTab(int Index);
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();
