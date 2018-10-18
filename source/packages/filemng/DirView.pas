@@ -1660,22 +1660,31 @@ begin
 end; {Reload2}
 
 procedure TDirView.PerformItemDragDropOperation(Item: TListItem; Effect: Integer);
+var
+  TargetPath: string;
+  RenameOnCollision: Boolean;
 begin
+  TargetPath := '';
+  RenameOnCollision := False;
+
   if Assigned(Item) then
   begin
     if Assigned(Item.Data) then
     begin
       if ItemIsParentDirectory(Item) then
-        PerformDragDropFileOperation(ExcludeTrailingPathDelimiter(ExtractFilePath(Path)),
-          Effect, False)
+        TargetPath := ExcludeTrailingPathDelimiter(ExtractFilePath(Path))
       else
-        PerformDragDropFileOperation(IncludeTrailingPathDelimiter(PathName) +
-          ItemFileName(Item), Effect, False);
+        TargetPath := IncludeTrailingPathDelimiter(PathName) + ItemFileName(Item);
     end;
   end
     else
-  PerformDragDropFileOperation(PathName, Effect,
-    DDOwnerIsSource and (Effect = DropEffect_Copy));
+  begin
+    TargetPath := PathName;
+    RenameOnCollision := DDOwnerIsSource and (Effect = DropEffect_Copy);
+  end;
+
+  if TargetPath <> '' then
+    PerformDragDropFileOperation(TargetPath, Effect, RenameOnCollision);
 end;
 
 procedure TDirView.ReLoad(CacheIcons: Boolean);
