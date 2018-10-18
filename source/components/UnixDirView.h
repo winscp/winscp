@@ -64,7 +64,7 @@ protected:
   virtual bool __fastcall ItemMatchesFilter(TListItem * Item, const TFileFilter &Filter);
   virtual Word __fastcall ItemOverlayIndexes(TListItem * Item);
   virtual void __fastcall LoadFiles();
-  virtual void __fastcall PerformItemDragDropOperation(TListItem * Item, int Effect);
+  virtual void __fastcall PerformItemDragDropOperation(TListItem * Item, int Effect, bool Paste);
   virtual void __fastcall SetAddParentDir(bool Value);
   virtual void __fastcall SetItemImageIndex(TListItem * Item, int Index);
   virtual void __fastcall SetPath(UnicodeString Value);

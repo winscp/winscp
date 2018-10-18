@@ -7747,7 +7747,7 @@ bool __fastcall TCustomScpExplorerForm::DraggingAllFilesFromDirView(TOperationSi
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::RemoteFileControlDragDropFileOperation(
-  TObject * Sender, int Effect, UnicodeString TargetPath, bool ForceQueue)
+  TObject * Sender, int Effect, UnicodeString TargetPath, bool ForceQueue, bool DragDrop)
 {
   TFileOperation Operation;
 
@@ -7781,15 +7781,15 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDragDropFileOperation(
       Param.TargetDirectory = TargetPath;
       // upload, no temp dirs
       Param.Temp = false;
-      Param.DragDrop = true;
+      Param.DragDrop = DragDrop;
       Param.Options =
         FLAGMASK(DraggingAllFilesFromDirView(osLocal, FileList), coAllFiles);
       if (ForceQueue)
       {
         Param.Queue = asOn;
       }
-      if (ExecuteFileOperation(Operation, osLocal, FileList,
-            (WinConfiguration->DDTransferConfirmation == asOff), &Param))
+      bool NoConfirmation = DragDrop ? (WinConfiguration->DDTransferConfirmation == asOff) : false;
+      if (ExecuteFileOperation(Operation, osLocal, FileList, NoConfirmation, &Param))
       {
         if (IsFileControl(DropSourceControl, osLocal))
         {
@@ -7811,9 +7811,9 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDragDropFileOperation(
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::RemoteFileControlDDFileOperation(
   TObject * Sender, int Effect, UnicodeString /*SourcePath*/,
-  UnicodeString TargetPath, bool & /*DoOperation*/)
+  UnicodeString TargetPath, bool Paste, bool & /*DoOperation*/)
 {
-  RemoteFileControlDragDropFileOperation(Sender, Effect, TargetPath, false);
+  RemoteFileControlDragDropFileOperation(Sender, Effect, TargetPath, false, !Paste);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::RemoteFileContolDDChooseEffect(
@@ -9462,7 +9462,9 @@ void __fastcall TCustomScpExplorerForm::SessionsDDProcessDropped(
       TTerminalManager::Instance()->ActiveTerminal = TargetTerminal;
       RemoteFileControlDragDropFileOperation(SessionsPageControl, Effect,
         // Why don't we use Terminal->CurrentDirectory directly?
-        TTerminalManager::Instance()->ActiveTerminal->CurrentDirectory, false);
+        TTerminalManager::Instance()->ActiveTerminal->CurrentDirectory,
+        // do not force queue, drag drop
+        false, true);
     }
   }
 }
@@ -9475,8 +9477,8 @@ void __fastcall TCustomScpExplorerForm::QueueDDProcessDropped(
   {
     RemoteFileControlDragDropFileOperation(QueueView3, Effect,
       Terminal->CurrentDirectory,
-      // force queue
-      true);
+      // force queue, drag drop
+      true, true);
   }
 }
 //---------------------------------------------------------------------------

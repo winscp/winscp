@@ -555,8 +555,8 @@ void __fastcall TCustomUnixDriveView::PerformDragDropFileOperation(
       TargetDirectory = NodeData(Node)->Directory;
 
       bool DoFileOperation = true;
-      OnDDFileOperation(this, Effect, SourceDirectory, TargetDirectory,
-        DoFileOperation);
+      OnDDFileOperation(
+        this, Effect, SourceDirectory, TargetDirectory, false, DoFileOperation);
     }
   }
 }

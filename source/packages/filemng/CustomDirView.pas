@@ -61,7 +61,8 @@ type
 
   TDDErrorEvent = procedure(Sender: TObject; ErrorNo: TDDError) of object;
   TDDExecutedEvent = procedure(Sender: TObject; dwEffect: Longint) of object;
-  TDDFileOperationEvent = procedure(Sender: TObject; dwEffect: LongInt; SourcePath, TargetPath: string;
+  TDDFileOperationEvent =
+    procedure(Sender: TObject; dwEffect: LongInt; SourcePath, TargetPath: string; Paste: Boolean;
     var DoOperation: Boolean) of object;
   TDDFileOperationExecutedEvent = procedure(Sender: TObject; dwEffect: LongInt; SourcePath, TargetPath: string) of object;
 
@@ -269,7 +270,7 @@ type
     procedure KeyPress(var Key: Char); override;
     procedure KeyUp(var Key: Word; Shift: TShiftState); override;
     procedure LoadFiles; virtual; abstract;
-    procedure PerformItemDragDropOperation(Item: TListItem; Effect: Integer); virtual; abstract;
+    procedure PerformItemDragDropOperation(Item: TListItem; Effect: Integer; Paste: Boolean); virtual; abstract;
     procedure ProcessChangedFiles(DirView: TCustomDirView;
       FileList: TStrings; FullPath: Boolean; ExistingOnly: Boolean;
       Criterias: TCompareCriterias);
@@ -2333,7 +2334,7 @@ begin
         FOnDDProcessDropped(Self, grfKeyState, Point, dwEffect);
       if dwEffect <> DropEffect_None then
       begin
-        PerformItemDragDropOperation(DropTarget, dwEffect);
+        PerformItemDragDropOperation(DropTarget, dwEffect, False);
         if Assigned(FOnDDExecuted) then
           FOnDDExecuted(Self, dwEffect);
       end;

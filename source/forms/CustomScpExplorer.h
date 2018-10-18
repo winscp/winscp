@@ -135,9 +135,9 @@ __published:
   void __fastcall QueueView3Enter(TObject *Sender);
   void __fastcall QueueView3SelectItem(TObject *Sender, TListItem *Item,
     bool Selected);
-  void __fastcall RemoteFileControlDDFileOperation(TObject * Sender,
-    int Effect, UnicodeString SourcePath, UnicodeString TargetPath,
-    bool & DoOperation);
+  void __fastcall RemoteFileControlDDFileOperation(
+    TObject * Sender, int Effect, UnicodeString SourcePath, UnicodeString TargetPath,
+    bool Paste, bool & DoOperation);
   void __fastcall RemoteFileContolDDChooseEffect(TObject * Sender,
     int grfKeyState, int & dwEffect);
   void __fastcall RemoteFileControlDDDragFileName(TObject * Sender,
@@ -289,7 +289,7 @@ private:
   void __fastcall SessionsDDDragOver(int KeyState, const TPoint & Point, int & Effect);
   void __fastcall SessionsDDProcessDropped(TObject * Sender, int KeyState, const TPoint & Point, int Effect);
   void __fastcall RemoteFileControlDragDropFileOperation(
-    TObject * Sender, int Effect, UnicodeString TargetPath, bool ForceQueue);
+    TObject * Sender, int Effect, UnicodeString TargetPath, bool ForceQueue, bool Paste);
   void __fastcall SessionsDDDragEnter(_di_IDataObject DataObj, int KeyState,
     const TPoint & Point, int & Effect, bool & Accept);
   void __fastcall SessionsDDDragLeave();

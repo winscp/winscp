@@ -409,7 +409,7 @@ bool __fastcall TUnixDirView::PasteFromClipBoard(UnicodeString TargetPath)
       TargetPath = PathName;
     }
 
-    PerformItemDragDropOperation(NULL, DROPEFFECT_COPY);
+    PerformItemDragDropOperation(NULL, DROPEFFECT_COPY, true);
     if (OnDDExecuted != NULL)
     {
       OnDDExecuted(this, DROPEFFECT_COPY);
@@ -419,8 +419,8 @@ bool __fastcall TUnixDirView::PasteFromClipBoard(UnicodeString TargetPath)
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TUnixDirView::PerformItemDragDropOperation(TListItem * Item,
-  int Effect)
+void __fastcall TUnixDirView::PerformItemDragDropOperation(
+  TListItem * Item, int Effect, bool Paste)
 {
 #ifndef DESIGN_ONLY
   if (OnDDFileOperation)
@@ -444,13 +444,14 @@ void __fastcall TUnixDirView::PerformItemDragDropOperation(TListItem * Item,
       }
 
       bool DoFileOperation = true;
-      OnDDFileOperation(this, Effect, SourceDirectory, TargetDirectory,
-        DoFileOperation);
+      OnDDFileOperation(
+        this, Effect, SourceDirectory, TargetDirectory, Paste, DoFileOperation);
     }
   }
 #else
   DebugUsedParam(Item);
   DebugUsedParam(Effect);
+  DebugUsedParam(Paste);
 #endif
 }
 //---------------------------------------------------------------------------

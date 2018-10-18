@@ -437,9 +437,9 @@ __published:
   void __fastcall LocalFileControlDDDragEnter(TObject *Sender,
     IDataObject *DataObj, int grfKeyState, TPoint &Point,
     int &dwEffect, bool &Accept);
-  void __fastcall LocalFileControlDDFileOperation(TObject *Sender,
-    int dwEffect, UnicodeString SourcePath, UnicodeString TargetPath,
-    bool &DoOperation);
+  void __fastcall LocalFileControlDDFileOperation(
+    TObject *Sender, int dwEffect, UnicodeString SourcePath, UnicodeString TargetPath,
+    bool Paste, bool &DoOperation);
   void __fastcall RemoteFileControlDDFileOperationExecuted(TObject *Sender,
     int dwEffect, UnicodeString SourcePath, UnicodeString TargetPath);
   void __fastcall LocalDirViewDDTargetHasDropHandler(TObject *Sender,

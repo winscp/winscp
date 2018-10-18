@@ -1465,7 +1465,7 @@ void __fastcall TScpCommanderForm::DDFakeFileInitDrag(TFileList * FileList,
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::LocalFileControlDDFileOperation(
   TObject * /*Sender*/, int dwEffect, UnicodeString SourcePath,
-  UnicodeString TargetPath, bool & DoOperation)
+  UnicodeString TargetPath, bool Paste, bool & DoOperation)
 {
   if (IsFileControl(DropSourceControl, osRemote))
   {
@@ -1485,9 +1485,9 @@ void __fastcall TScpCommanderForm::LocalFileControlDDFileOperation(
         TTransferType TransferType = dwEffect == DROPEFFECT_Copy ? ttCopy : ttMove;
         int Options =
           FLAGMASK(DraggingAllFilesFromDirView(osRemote, FInternalDDDownloadList), coAllFiles);
+        bool NoConfirmation = Paste ? false : (WinConfiguration->DDTransferConfirmation == asOff);
         if (CopyParamDialog(tdToLocal, TransferType,
-              false, FInternalDDDownloadList, TargetDirectory, CopyParams,
-              (WinConfiguration->DDTransferConfirmation != asOff), true, Options))
+              false, FInternalDDDownloadList, TargetDirectory, CopyParams, NoConfirmation, true, Options))
         {
           int Params =
             (TransferType == ttMove ? cpDelete : 0);
