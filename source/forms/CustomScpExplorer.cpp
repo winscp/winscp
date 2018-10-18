@@ -2478,27 +2478,14 @@ void __fastcall TCustomScpExplorerForm::UpdateCopyParamCounters(
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::ExecuteCopyMoveFileOperation(
-  TFileOperation Operation, TOperationSide Side, TStrings * FileList, bool NoConfirmation, void * Param)
+  TFileOperation Operation, TOperationSide Side, TStrings * FileList, bool NoConfirmation, void * AParam)
 {
   TTransferDirection Direction = (Side == osLocal ? tdToRemote : tdToLocal);
   TTransferType Type = (Operation == foCopy ? ttCopy : ttMove);
-  UnicodeString TargetDirectory;
-  bool Temp = false;
-  bool DragDrop = false;
-  int Options = 0;
-  TAutoSwitch UseQueue = asAuto;
-  if (Param != NULL)
-  {
-    TTransferOperationParam& TParam =
-      *static_cast<TTransferOperationParam*>(Param);
-    TargetDirectory = TParam.TargetDirectory;
-    Temp = TParam.Temp;
-    DragDrop = TParam.DragDrop;
-    Options = TParam.Options;
-    UseQueue = TParam.Queue;
-  }
+  TTransferOperationParam DefaultParam;
+  TTransferOperationParam & Param = (AParam != NULL) ? *static_cast<TTransferOperationParam *>(AParam) : DefaultParam;
   TGUICopyParamType CopyParam = GUIConfiguration->CurrentCopyParam;
-  switch (UseQueue)
+  switch (Param.Queue)
   {
     case asOn:
       CopyParam.Queue = true;
@@ -2514,7 +2501,7 @@ bool __fastcall TCustomScpExplorerForm::ExecuteCopyMoveFileOperation(
       break;
   }
   bool Result =
-    CopyParamDialog(Direction, Type, Temp, FileList, TargetDirectory, CopyParam, !NoConfirmation, DragDrop, Options);
+    CopyParamDialog(Direction, Type, Param.Temp, FileList, Param.TargetDirectory, CopyParam, !NoConfirmation, Param.DragDrop, Param.Options);
   if (Result)
   {
     DebugAssert(Terminal);
@@ -2547,8 +2534,8 @@ bool __fastcall TCustomScpExplorerForm::ExecuteCopyMoveFileOperation(
         {
           PermanentFileList = FileList;
 
-          Params |= FLAGMASK(Temp, cpTemporary);
-          Terminal->CopyToRemote(FileList, TargetDirectory, &CopyParam, Params, NULL);
+          Params |= FLAGMASK(Param.Temp, cpTemporary);
+          Terminal->CopyToRemote(FileList, Param.TargetDirectory, &CopyParam, Params, NULL);
           if (Operation == foMove)
           {
             ReloadLocalDirectory();
@@ -2570,7 +2557,7 @@ bool __fastcall TCustomScpExplorerForm::ExecuteCopyMoveFileOperation(
 
           try
           {
-            Terminal->CopyToLocal(FileList, TargetDirectory, &CopyParam, Params, NULL);
+            Terminal->CopyToLocal(FileList, Param.TargetDirectory, &CopyParam, Params, NULL);
           }
           __finally
           {
@@ -2582,7 +2569,7 @@ bool __fastcall TCustomScpExplorerForm::ExecuteCopyMoveFileOperation(
               }
               SelectionRestored = true;
             }
-            ReloadLocalDirectory(TargetDirectory);
+            ReloadLocalDirectory(Param.TargetDirectory);
           }
         }
       }
@@ -2608,7 +2595,7 @@ bool __fastcall TCustomScpExplorerForm::ExecuteCopyMoveFileOperation(
 
           Configuration->Usage->Inc("MovesToBackground");
 
-          AddQueueItem(Queue, Direction, PermanentFileList, TargetDirectory, CopyParam, Params);
+          AddQueueItem(Queue, Direction, PermanentFileList, Param.TargetDirectory, CopyParam, Params);
           ClearTransferSourceSelection(Direction);
         }
 
