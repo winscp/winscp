@@ -1137,7 +1137,7 @@ bool __fastcall TCustomScpExplorerForm::CopyParamDialog(
       }
       else
       {
-        // User exclicitly unchecked "do not show again",
+        // User explicitly unchecked "do not show again",
         // so show him the dialog the next time
         if (DragDrop && (WinConfiguration->DDTransferConfirmation == asAuto))
         {
