@@ -95,7 +95,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object ConfirmOverwritingCheck: TCheckBox
             Left = 16
-            Top = 44
+            Top = 67
             Width = 357
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -105,7 +105,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object ConfirmDeletingCheck: TCheckBox
             Left = 16
-            Top = 106
+            Top = 129
             Width = 357
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -115,7 +115,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object ConfirmClosingSessionCheck2: TCheckBox
             Left = 16
-            Top = 152
+            Top = 175
             Width = 357
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -124,9 +124,9 @@ object PreferencesDialog: TPreferencesDialog
             OnClick = ControlChange
           end
           object DDTransferConfirmationCheck2: TCheckBox
-            Left = 16
-            Top = 198
-            Width = 357
+            Left = 32
+            Top = 44
+            Width = 341
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'D&rag && drop operations and paste to other applications'
@@ -145,7 +145,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object ConfirmExitOnCompletionCheck: TCheckBox
             Left = 16
-            Top = 175
+            Top = 198
             Width = 357
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -155,7 +155,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object ConfirmResumeCheck: TCheckBox
             Left = 16
-            Top = 67
+            Top = 90
             Width = 357
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -175,7 +175,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object ConfirmRecyclingCheck: TCheckBox
             Left = 16
-            Top = 129
+            Top = 152
             Width = 357
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -195,7 +195,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object BackgroundConfirmationsLink: TStaticText
             Left = 32
-            Top = 88
+            Top = 111
             Width = 345
             Height = 17
             Alignment = taRightJustify

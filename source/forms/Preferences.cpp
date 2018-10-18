@@ -1110,6 +1110,7 @@ void __fastcall TPreferencesDialog::UpdateControls()
 {
   if (FNoUpdate == 0)
   {
+    EnableControl(DDTransferConfirmationCheck2, ConfirmTransferringCheck->Checked);
     EnableControl(BeepOnFinishAfterEdit, BeepOnFinishCheck->Checked);
     EnableControl(BeepOnFinishAfterText, BeepOnFinishCheck->Checked);
 
