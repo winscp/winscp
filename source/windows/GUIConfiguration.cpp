@@ -86,9 +86,10 @@ void __fastcall TGUICopyParamType::Load(THierarchicalStorage * Storage)
   QueueParallel = Storage->ReadBool(L"QueueParallel", QueueParallel);
 }
 //---------------------------------------------------------------------------
-void __fastcall TGUICopyParamType::Save(THierarchicalStorage * Storage)
+void __fastcall TGUICopyParamType::Save(THierarchicalStorage * Storage, const TCopyParamType * Defaults) const
 {
-  TCopyParamType::Save(Storage);
+  DebugAssert(Defaults == NULL);
+  TCopyParamType::Save(Storage, Defaults);
 
   Storage->WriteBool(L"Queue", Queue);
   Storage->WriteBool(L"QueueNoConfirmation", QueueNoConfirmation);

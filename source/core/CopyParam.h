@@ -103,8 +103,8 @@ public:
     bool Directory, const TFileMasks::TParams & Params, bool Hidden) const;
   bool __fastcall SkipTransfer(UnicodeString FileName, bool Directory) const;
 
-  void __fastcall Load(THierarchicalStorage * Storage);
-  void __fastcall Save(THierarchicalStorage * Storage, const TCopyParamType * Defaults = NULL) const;
+  virtual void __fastcall Load(THierarchicalStorage * Storage);
+  virtual void __fastcall Save(THierarchicalStorage * Storage, const TCopyParamType * Defaults = NULL) const;
   UnicodeString __fastcall GetInfoStr(UnicodeString Separator, int Attrs) const;
   bool __fastcall AnyUsableCopyParam(int Attrs) const;
   UnicodeString __fastcall GenerateTransferCommandArgs(int Attrs, const UnicodeString & Link) const;

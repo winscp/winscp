@@ -28,8 +28,8 @@ public:
   __fastcall TGUICopyParamType(const TCopyParamType & Source);
   __fastcall TGUICopyParamType(const TGUICopyParamType & Source);
 
-  void __fastcall Load(THierarchicalStorage * Storage);
-  void __fastcall Save(THierarchicalStorage * Storage);
+  virtual void __fastcall Load(THierarchicalStorage * Storage);
+  virtual void __fastcall Save(THierarchicalStorage * Storage, const TCopyParamType * Defaults = NULL) const;
 
   virtual void __fastcall Default();
   virtual void __fastcall Assign(const TCopyParamType * Source);
