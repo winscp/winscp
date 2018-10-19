@@ -2132,7 +2132,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Width = 101
             Height = 25
             Caption = '&Tools'
-            TabOrder = 2
+            TabOrder = 3
             OnClick = PrivateKeyToolsButtonClick
           end
           object PrivateKeyViewButton: TButton
@@ -2141,7 +2141,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Width = 133
             Height = 25
             Caption = '&Display Public Key'
-            TabOrder = 3
+            TabOrder = 2
             OnClick = PrivateKeyViewButtonClick
           end
         end
