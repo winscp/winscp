@@ -425,6 +425,8 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
       end
       object EncryptionSheet: TTabSheet
         Tag = 2
+        HelpType = htKeyword
+        HelpKeyword = 'ui_login_encryption'
         Caption = 'Encryption'
         TabVisible = False
         DesignSize = (
