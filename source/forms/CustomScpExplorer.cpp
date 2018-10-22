@@ -1432,6 +1432,8 @@ void __fastcall TCustomScpExplorerForm::FileOperationProgress(
     // we suppose "/upload" or URL download mode
     if (!Visible && (ProgressData.Operation != foCalculateSize) &&
         (ProgressData.Operation != foCalculateChecksum) &&
+        // Hack to prevent renames from DoSynchronizeMove (synchronize checklist) closing the connection
+        (ProgressData.Operation != foRemoteMove) &&
         (FSynchronizeProgressForm == NULL) &&
         !FStandaloneEditing)
     {
