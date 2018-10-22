@@ -1270,7 +1270,7 @@ int openssh_pem_write(const Filename *filename, struct ssh2_userkey *key,
  */
 
 typedef enum {
-    ON_E_NONE, ON_E_AES256CBC
+    ON_E_NONE, ON_E_AES256CBC, ON_E_AES256CTR
 } openssh_new_cipher;
 typedef enum {
     ON_K_NONE, ON_K_BCRYPT
@@ -1409,6 +1409,8 @@ static struct openssh_new_key *load_openssh_new_key(const Filename *filename,
         ret->cipher = ON_E_NONE;
     } else if (match_ssh_id(stringlen, string, "aes256-cbc")) {
         ret->cipher = ON_E_AES256CBC;
+    } else if (match_ssh_id(stringlen, string, "aes256-ctr")) {
+        ret->cipher = ON_E_AES256CTR;
     } else {
         errmsg = "unrecognised cipher name\n";
         goto error;
@@ -1568,6 +1570,7 @@ struct ssh2_userkey *openssh_new_read(const Filename *filename,
             keysize = 0;
             break;
           case ON_E_AES256CBC:
+          case ON_E_AES256CTR:
             keysize = 48;              /* 32 byte key + 16 byte IV */
             break;
           default:
@@ -1592,6 +1595,7 @@ struct ssh2_userkey *openssh_new_read(const Filename *filename,
           case ON_E_NONE:
             break;
           case ON_E_AES256CBC:
+          case ON_E_AES256CTR:
             if (key->privatelen % 16 != 0) {
                 errmsg = "private key container length is not a"
                     " multiple of AES block size\n";
@@ -1601,8 +1605,14 @@ struct ssh2_userkey *openssh_new_read(const Filename *filename,
                 void *ctx = aes_make_context();
                 aes256_key(ctx, keybuf);
                 aes_iv(ctx, keybuf + 32);
-                aes_ssh2_decrypt_blk(ctx, key->privatestr,
-                                     key->privatelen);
+                if (key->cipher == ON_E_AES256CBC) {
+                    aes_ssh2_decrypt_blk(ctx, key->privatestr,
+                                         key->privatelen);
+                }
+                else {
+                    aes_ssh2_sdctr(ctx, key->privatestr,
+                                   key->privatelen);
+                }
                 aes_free_context(ctx);
             }
             break;
