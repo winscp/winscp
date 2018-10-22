@@ -26,6 +26,7 @@ const int cpaNoRemoveBOM        = 0x400;
 const int cpaNoPreserveTimeDirs = 0x800;
 const int cpaNoResumeSupport    = 0x1000;
 const int cpaNoEncryptNewFiles  = 0x2000;
+const int cpaNoCalculateSize    = 0x4000;
 //---------------------------------------------------------------------------
 struct TUsableCopyParamAttrs
 {

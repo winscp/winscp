@@ -6664,22 +6664,25 @@ bool __fastcall TTerminal::CopyToRemote(
   {
     __int64 Size;
     std::unique_ptr<TStringList> Files;
-    if (CanParallel(CopyParam, Params, ParallelOperation) &&
-        !CopyParam->ClearArchive)
+    bool ACanParallel =
+      CanParallel(CopyParam, Params, ParallelOperation) &&
+      !CopyParam->ClearArchive;
+    if (ACanParallel)
     {
       Files.reset(new TStringList());
       Files->OwnsObjects = true;
     }
     bool CalculatedSize;
     if ((CopyParam->Size >= 0) &&
-        DebugAlwaysTrue(Files.get() == NULL)) // Size is set for sync only and we never use parallel transfer for sync
+        DebugAlwaysTrue(!ACanParallel)) // Size is set for sync only and we never use parallel transfer for sync
     {
       Size = CopyParam->Size;
       CalculatedSize = true;
     }
     else
     {
-      CalculatedSize = CalculateLocalFilesSize(FilesToCopy, Size, CopyParam, CopyParam->CalculateSize, Files.get(), NULL);
+      bool CalculateSize = ACanParallel || CopyParam->CalculateSize;
+      CalculatedSize = CalculateLocalFilesSize(FilesToCopy, Size, CopyParam, CalculateSize, Files.get(), NULL);
     }
 
     FLastProgressLogged = GetTickCount();
@@ -6709,7 +6712,7 @@ bool __fastcall TTerminal::CopyToRemote(
       BeginTransaction();
       try
       {
-        bool Parallel = CalculatedSize && (Files.get() != NULL);
+        bool Parallel = ACanParallel && CalculatedSize;
         LogTotalTransferDetails(TargetDir, CopyParam, &OperationProgress, Parallel, Files.get());
 
         if (Parallel)
@@ -7112,14 +7115,15 @@ bool __fastcall TTerminal::CopyToLocal(
     TFileOperationProgressType OperationProgress(&DoProgress, &DoFinished);
 
     std::unique_ptr<TStringList> Files;
-    if (CanParallel(CopyParam, Params, ParallelOperation))
+    bool ACanParallel = CanParallel(CopyParam, Params, ParallelOperation);
+    if (ACanParallel)
     {
       Files.reset(new TStringList());
       Files->OwnsObjects = true;
     }
 
     if ((CopyParam->Size >= 0) &&
-        DebugAlwaysTrue(Files.get() == NULL)) // Size is set for sync only and we never use parallel transfer for sync
+        DebugAlwaysTrue(!ACanParallel)) // Size is set for sync only and we never use parallel transfer for sync
     {
       TotalSize = CopyParam->Size;
       TotalSizeKnown = true;
@@ -7131,7 +7135,8 @@ bool __fastcall TTerminal::CopyToLocal(
       {
         TCalculateSizeStats Stats;
         Stats.FoundFiles = Files.get();
-        if (CalculateFilesSize(FilesToCopy, TotalSize, csIgnoreErrors, CopyParam, CopyParam->CalculateSize, Stats))
+        bool CalculateSize = ACanParallel || CopyParam->CalculateSize;
+        if (CalculateFilesSize(FilesToCopy, TotalSize, csIgnoreErrors, CopyParam, CalculateSize, Stats))
         {
           TotalSizeKnown = true;
         }
@@ -7166,7 +7171,7 @@ bool __fastcall TTerminal::CopyToLocal(
       {
         try
         {
-          bool Parallel = TotalSizeKnown && (Files.get() != NULL);
+          bool Parallel = ACanParallel && TotalSizeKnown;
           LogTotalTransferDetails(TargetDir, CopyParam, &OperationProgress, Parallel, Files.get());
 
           if (Parallel)

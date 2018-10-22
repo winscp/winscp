@@ -210,6 +210,8 @@ void __fastcall TCopyParamsFrame::UpdateControls()
     FLAGCLEAR(CopyParamAttrs, cpaNoPreserveTimeDirs) &&
     FLAGCLEAR(CopyParamAttrs, cpaIncludeMaskOnly) && Enabled &&
     PreserveTimeCheck->Checked);
+  EnableControl(CommonCalculateSizeCheck,
+    FLAGCLEAR(CopyParamAttrs, cpaNoCalculateSize) && FLAGCLEAR(CopyParamAttrs, cpaIncludeMaskOnly) && Enabled);
   EnableControl(ChangeCaseGroup, FLAGCLEAR(CopyParamAttrs, cpaIncludeMaskOnly) && Enabled);
   EnableControl(IgnorePermErrorsCheck,
     ((PreserveRightsCheck->Enabled && PreserveRightsCheck->Checked) ||

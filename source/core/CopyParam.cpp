@@ -326,7 +326,7 @@ void __fastcall TCopyParamType::DoGetInfoStr(
   {
     if (DebugAlwaysTrue(!CalculateSize))
     {
-      ADD(LoadStr(COPY_INFO_DONT_CALCULATE_SIZE), cpaIncludeMaskOnly);
+      ADD(LoadStr(COPY_INFO_DONT_CALCULATE_SIZE), cpaIncludeMaskOnly | cpaNoCalculateSize);
       // Always false in scripting, in assembly controlled by use of FileTransferProgress
     }
   }
