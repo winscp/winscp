@@ -442,7 +442,7 @@ void TS3FileSystem::ParsePath(UnicodeString Path, UnicodeString & BucketName, Un
 //---------------------------------------------------------------------------
 struct TLibS3BucketContext : S3BucketContext
 {
-  // These keep data that that we point the native S3BucketContext fields to
+  // These keep data that we point the native S3BucketContext fields to
   UTF8String HostNameBuf;
   UTF8String BucketNameBuf;
   UTF8String AuthRegionBuf;
