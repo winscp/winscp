@@ -834,7 +834,6 @@ void TS3FileSystem::ReadDirectoryInternal(
 
     TLibS3ListServiceCallbackData Data;
     RequestInit(Data);
-    Data.FileSystem = this;
     Data.FileList = FileList;
     Data.FileName = FileName;
 
