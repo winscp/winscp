@@ -1732,7 +1732,7 @@ bool TWebDAVFileSystem::VerifyCertificate(TNeonCertificateData Data, bool Aux)
   }
   else
   {
-    FTerminal->LogEvent(CertificateVerificationMessage(Data));
+    FTerminal->LogEvent(0, CertificateVerificationMessage(Data));
 
     UnicodeString SiteKey = TSessionData::FormatSiteKey(FHostName, FPortNumber);
     Result =
@@ -1746,7 +1746,7 @@ bool TWebDAVFileSystem::VerifyCertificate(TNeonCertificateData Data, bool Aux)
     {
       UnicodeString Message;
       Result = NeonWindowsValidateCertificateWithMessage(Data, Message);
-      FTerminal->LogEvent(Message);
+      FTerminal->LogEvent(0, Message);
     }
 
     FSessionInfo.Certificate = CertificateSummary(Data, FHostName);
@@ -1775,7 +1775,7 @@ void __fastcall TWebDAVFileSystem::CollectTLSSessionInfo()
   // Have to cache the value as the connection (the neon HTTP session, not "our" session)
   // can be closed at the time we need it in CollectUsage().
   UnicodeString Message = NeonTlsSessionInfo(FNeonSession, FSessionInfo, FTlsVersionStr);
-  FTerminal->LogEvent(Message);
+  FTerminal->LogEvent(0, Message);
 }
 //------------------------------------------------------------------------------
 // A neon-session callback to validate the SSL certificate when the CA

@@ -2576,18 +2576,12 @@ int __fastcall TSFTPFileSystem::ReceivePacket(TSFTPPacket * Packet,
               IsReserved = true;
               if (ReservedPacket)
               {
-                if (FTerminal->Configuration->ActualLogProtocol >= 0)
-                {
-                  FTerminal->LogEvent(L"Storing reserved response");
-                }
+                FTerminal->LogEvent(0, L"Storing reserved response");
                 *ReservedPacket = *Packet;
               }
               else
               {
-                if (FTerminal->Configuration->ActualLogProtocol >= 0)
-                {
-                  FTerminal->LogEvent(L"Discarding reserved response");
-                }
+                FTerminal->LogEvent(0, L"Discarding reserved response");
                 RemoveReservation(Index);
                 if ((Reservation >= 0) && (Reservation > Index))
                 {
@@ -2722,10 +2716,7 @@ UnicodeString __fastcall TSFTPFileSystem::RealPath(const UnicodeString Path)
 {
   try
   {
-    if (FTerminal->Configuration->ActualLogProtocol >= 0)
-    {
-      FTerminal->LogEvent(FORMAT(L"Getting real path for '%s'", (Path)));
-    }
+    FTerminal->LogEvent(0, FORMAT(L"Getting real path for '%s'", (Path)));
 
     TSFTPPacket Packet(SSH_FXP_REALPATH);
     AddPathString(Packet, Path);
@@ -2772,10 +2763,7 @@ UnicodeString __fastcall TSFTPFileSystem::RealPath(const UnicodeString Path)
     RealDir = FTerminal->DecryptFileName(RealDir);
     // ignore rest of SSH_FXP_NAME packet
 
-    if (FTerminal->Configuration->ActualLogProtocol >= 0)
-    {
-      FTerminal->LogEvent(FORMAT(L"Real path is '%s'", (RealDir)));
-    }
+    FTerminal->LogEvent(0, FORMAT(L"Real path is '%s'", (RealDir)));
 
     return RealDir;
   }
@@ -3159,11 +3147,7 @@ void __fastcall TSFTPFileSystem::DoStartup()
       }
       else
       {
-        if (FTerminal->Configuration->ActualLogProtocol >= 0)
-        {
-          FTerminal->LogEvent(FORMAT(L"Unknown server extension %s=%s",
-            (ExtensionName, ExtensionDisplayData)));
-        }
+        FTerminal->LogEvent(0, FORMAT(L"Unknown server extension %s=%s", (ExtensionName, ExtensionDisplayData)));
       }
       FExtensions->Values[ExtensionName] = ExtensionDisplayData;
     }
@@ -4623,10 +4607,7 @@ void __fastcall TSFTPFileSystem::Source(
   OpenParams.FileParams = &FileParams;
   OpenParams.Confirmed = false;
 
-  if (FTerminal->Configuration->ActualLogProtocol >= 0)
-  {
-    FTerminal->LogEvent(L"Opening remote file.");
-  }
+  FTerminal->LogEvent(0, L"Opening remote file.");
   FTerminal->FileOperationLoop(SFTPOpenRemote, OperationProgress, folAllowSkip,
     FMTLOAD(SFTP_CREATE_FILE_ERROR, (OpenParams.RemoteFileName)),
     &OpenParams);

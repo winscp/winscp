@@ -3072,6 +3072,14 @@ void __fastcall inline TTerminal::LogEvent(const UnicodeString & Str)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall inline TTerminal::LogEvent(int Level, const UnicodeString & Str)
+{
+  if (Log->Logging && (Configuration->ActualLogProtocol >= Level))
+  {
+    Log->Add(llMessage, Str);
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminal::RollbackAction(TSessionAction & Action,
   TFileOperationProgressType * OperationProgress, Exception * E)
 {
@@ -5577,19 +5585,13 @@ void __fastcall TTerminal::DoSynchronizeCollectDirectory(const UnicodeString Loc
           FileData->New = true;
           FileData->Modified = false;
           Data.LocalFileList->AddObject(FileName, reinterpret_cast<TObject*>(FileData));
-          if (Configuration->ActualLogProtocol >= 0)
-          {
-            LogEvent(FORMAT(L"Local file %s included to synchronization",
-              (FormatFileDetailsForLog(FullLocalFileName, SearchRec.GetLastWriteTime(), SearchRec.Size))));
-          }
+          LogEvent(0, FORMAT(L"Local file %s included to synchronization",
+            (FormatFileDetailsForLog(FullLocalFileName, SearchRec.GetLastWriteTime(), SearchRec.Size))));
         }
         else
         {
-          if (Configuration->ActualLogProtocol >= 0)
-          {
-            LogEvent(FORMAT(L"Local file %s excluded from synchronization",
-              (FormatFileDetailsForLog(FullLocalFileName, SearchRec.GetLastWriteTime(), SearchRec.Size))));
-          }
+          LogEvent(0, FORMAT(L"Local file %s excluded from synchronization",
+            (FormatFileDetailsForLog(FullLocalFileName, SearchRec.GetLastWriteTime(), SearchRec.Size))));
         }
 
       }
@@ -5928,11 +5930,8 @@ void __fastcall TTerminal::DoSynchronizeCollectFile(const UnicodeString FileName
   }
   else
   {
-    if (Configuration->ActualLogProtocol >= 0)
-    {
-      LogEvent(FORMAT(L"Remote file %s excluded from synchronization",
-        (FormatFileDetailsForLog(FullRemoteFileName, File->Modification, File->Size))));
-    }
+    LogEvent(0, FORMAT(L"Remote file %s excluded from synchronization",
+      (FormatFileDetailsForLog(FullRemoteFileName, File->Modification, File->Size))));
   }
 }
 //---------------------------------------------------------------------------
@@ -6637,10 +6636,7 @@ void __fastcall TTerminal::LogTotalTransferDetails(
       S += FORMAT(L" - total size: %s", (FormatSize(OperationProgress->TotalSize)));
     }
     LogEvent(S);
-    if (Configuration->ActualLogProtocol >= 0)
-    {
-      LogEvent(CopyParam->LogStr);
-    }
+    LogEvent(0, CopyParam->LogStr);
   }
 }
 //---------------------------------------------------------------------------
@@ -6994,11 +6990,8 @@ void __fastcall TTerminal::SelectTransferMode(
 {
   bool AsciiTransfer = IsCapable[fcTextMode] && CopyParam->UseAsciiTransfer(BaseFileName, Side, MaskParams);
   OperationProgress->SetAsciiTransfer(AsciiTransfer);
-  if (Configuration->ActualLogProtocol >= 0)
-  {
-    UnicodeString ModeName = (OperationProgress->AsciiTransfer ? L"Ascii" : L"Binary");
-    LogEvent(FORMAT(L"%s transfer mode selected.", (ModeName)));
-  }
+  UnicodeString ModeName = (OperationProgress->AsciiTransfer ? L"Ascii" : L"Binary");
+  LogEvent(0, FORMAT(L"%s transfer mode selected.", (ModeName)));
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::SelectSourceTransferMode(const TLocalFileHandle & Handle, const TCopyParamType * CopyParam)

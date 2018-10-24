@@ -605,6 +605,7 @@ public:
 
   const TSessionInfo & __fastcall GetSessionInfo();
   const TFileSystemInfo & __fastcall GetFileSystemInfo(bool Retrieve = false);
+  void __fastcall inline LogEvent(int Level, const UnicodeString & Str);
   void __fastcall inline LogEvent(const UnicodeString & Str);
   void __fastcall GetSupportedChecksumAlgs(TStrings * Algs);
   UnicodeString __fastcall ChangeFileName(const TCopyParamType * CopyParam,

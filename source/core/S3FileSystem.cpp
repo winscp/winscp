@@ -211,7 +211,7 @@ bool TS3FileSystem::VerifyCertificate(TNeonCertificateData Data)
   }
   else
   {
-    FTerminal->LogEvent(CertificateVerificationMessage(Data));
+    FTerminal->LogEvent(0, CertificateVerificationMessage(Data));
 
     UnicodeString SiteKey = TSessionData::FormatSiteKey(FTerminal->SessionData->HostNameExpanded, FTerminal->SessionData->PortNumber);
     Result =
@@ -225,7 +225,7 @@ bool TS3FileSystem::VerifyCertificate(TNeonCertificateData Data)
     {
       UnicodeString Message;
       Result = NeonWindowsValidateCertificateWithMessage(Data, Message);
-      FTerminal->LogEvent(Message);
+      FTerminal->LogEvent(0, Message);
     }
 
     FSessionInfo.Certificate = CertificateSummary(Data, FTerminal->SessionData->HostNameExpanded);
@@ -254,7 +254,7 @@ void TS3FileSystem::CollectTLSSessionInfo()
   // Have to cache the value as the connection (the neon HTTP session, not "our" session)
   // can be closed at the time we need it in CollectUsage().
   UnicodeString Message = NeonTlsSessionInfo(FNeonSession, FSessionInfo, FTlsVersionStr);
-  FTerminal->LogEvent(Message);
+  FTerminal->LogEvent(0, Message);
 }
 //---------------------------------------------------------------------------
 S3Status TS3FileSystem::LibS3ResponsePropertiesCallback(const S3ResponseProperties * /*Properties*/, void * /*CallbackData*/)
@@ -329,7 +329,7 @@ void TS3FileSystem::LibS3ResponseCompleteCallback(S3Status Status, const S3Error
     }
   }
 
-  if (!FileSystem->FResponse.IsEmpty())
+  if (!FileSystem->FResponse.IsEmpty() && (FileSystem->FTerminal->Configuration->ActualLogProtocol >= 0))
   {
     FileSystem->FTerminal->Log->Add(llOutput, FileSystem->FResponse);
   }

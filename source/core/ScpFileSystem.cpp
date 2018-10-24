@@ -2101,10 +2101,7 @@ void __fastcall TSCPFileSystem::CopyToLocal(TStrings * FilesToCopy,
 
   FTerminal->LogEvent(FORMAT(L"Copying %d files/directories to local directory "
     "\"%s\"", (FilesToCopy->Count, TargetDir)));
-  if (FTerminal->Configuration->ActualLogProtocol >= 0)
-  {
-    FTerminal->LogEvent(CopyParam->LogStr);
-  }
+  FTerminal->LogEvent(0, CopyParam->LogStr);
 
   try
   {
@@ -2523,11 +2520,9 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
               // Will we use ASCII of BINARY file transfer?
               OperationProgress->SetAsciiTransfer(
                 CopyParam->UseAsciiTransfer(BaseFileName, osRemote, MaskParams));
-              if (FTerminal->Configuration->ActualLogProtocol >= 0)
-              {
-                FTerminal->LogEvent(UnicodeString((OperationProgress->AsciiTransfer ? L"Ascii" : L"Binary")) +
+              FTerminal->LogEvent(
+                0, UnicodeString((OperationProgress->AsciiTransfer ? L"Ascii" : L"Binary")) +
                   L" transfer mode selected.");
-              }
 
               try
               {
