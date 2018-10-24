@@ -206,7 +206,6 @@ void __fastcall TSessionData::Default()
   PostLoginCommands = L"";
 
   // SCP
-  ReturnVar = L"";
   LookupUserGroups = asAuto;
   EOLType = eolLF;
   TrimVMSVersions = false;
