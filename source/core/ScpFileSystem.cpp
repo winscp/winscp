@@ -25,10 +25,12 @@ const int coWaitForLastLine = 4;
 const int coOnlyReturnCode = 8;
 const int coIgnoreWarnings = 16;
 const int coReadProgress = 32;
+const int coIgnoreStdErr = 64;
 
 const int ecRaiseExcept = 1;
 const int ecIgnoreWarnings = 2;
 const int ecReadProgress = 4;
+const int ecIgnoreStdErr = 8;
 const int ecDefault = ecRaiseExcept;
 //---------------------------------------------------------------------------
 DERIVE_EXT_EXCEPTION(EScpFileSkipped, ESkipFile);
@@ -641,7 +643,7 @@ void __fastcall TSCPFileSystem::ReadCommandOutput(int Params, const UnicodeStrin
       }
       else
       {
-        bool IsStdErrOnlyError = FLAGCLEAR(Params, coIgnoreWarnings);
+        bool IsStdErrOnlyError = (FLAGCLEAR(Params, coIgnoreWarnings) && FLAGCLEAR(Params, coIgnoreStdErr));
         bool WrongOutput = !Message.IsEmpty() && ((FOutput->Count == 0) || IsStdErrOnlyError);
         if (WrongOutput || WrongReturnCode)
         {
@@ -673,7 +675,8 @@ void __fastcall TSCPFileSystem::ExecCommand(const UnicodeString & Cmd, int Param
     coWaitForLastLine |
     FLAGMASK(FLAGSET(Params, ecRaiseExcept), coRaiseExcept) |
     FLAGMASK(FLAGSET(Params, ecIgnoreWarnings), coIgnoreWarnings) |
-    FLAGMASK(FLAGSET(Params, ecReadProgress), coReadProgress);
+    FLAGMASK(FLAGSET(Params, ecReadProgress), coReadProgress) |
+    FLAGMASK(FLAGSET(Params, ecIgnoreStdErr), coIgnoreStdErr);
 
   ReadCommandOutput(COParams, &CmdString);
 }
@@ -1356,8 +1359,11 @@ void __fastcall TSCPFileSystem::AnyCommand(const UnicodeString Command,
 
   try
   {
-    ExecCommand(fsAnyCommand, ARRAYOFCONST((Command)),
-      ecDefault | ecIgnoreWarnings);
+    int Params =
+      ecDefault |
+      (FTerminal->SessionData->ExitCode1IsError ? ecIgnoreStdErr : ecIgnoreWarnings);
+
+    ExecCommand(fsAnyCommand, ARRAYOFCONST((Command)), Params);
   }
   __finally
   {

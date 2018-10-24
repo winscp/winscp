@@ -211,6 +211,7 @@ void __fastcall TSessionData::Default()
   TrimVMSVersions = false;
   Shell = L""; //default shell
   ReturnVar = L"";
+  ExitCode1IsError = false;
   ClearAliases = true;
   UnsetNationalVars = true;
   ListingCommand = L"ls -la";
@@ -340,6 +341,7 @@ void __fastcall TSessionData::NonPersistant()
   PROPERTY(Special); \
   PROPERTY(Selected); \
   PROPERTY(ReturnVar); \
+  PROPERTY(ExitCode1IsError); \
   PROPERTY(LookupUserGroups); \
   PROPERTY(EOLType); \
   PROPERTY(TrimVMSVersions); \
@@ -653,6 +655,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   PostLoginCommands = Storage->ReadString(L"PostLoginCommands", PostLoginCommands);
 
   ReturnVar = Storage->ReadString(L"ReturnVar", ReturnVar);
+  ExitCode1IsError = Storage->ReadBool(L"ExitCode1IsError", ExitCode1IsError);
   LookupUserGroups = TAutoSwitch(Storage->ReadInteger(L"LookupUserGroups2", LookupUserGroups));
   EOLType = (TEOLType)Storage->ReadInteger(L"EOLType", EOLType);
   TrimVMSVersions = Storage->ReadBool(L"TrimVMSVersions", TrimVMSVersions);
@@ -1021,6 +1024,7 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
     WRITE_DATA(String, PostLoginCommands);
 
     WRITE_DATA(String, ReturnVar);
+    WRITE_DATA(Bool, ExitCode1IsError);
     WRITE_DATA_EX(Integer, L"LookupUserGroups2", LookupUserGroups, );
     WRITE_DATA(Integer, EOLType);
     WRITE_DATA(Bool, TrimVMSVersions);
@@ -2726,6 +2730,11 @@ UnicodeString __fastcall TSessionData::GetPassphrase() const
 void __fastcall TSessionData::SetReturnVar(UnicodeString value)
 {
   SET_SESSION_PROPERTY(ReturnVar);
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetExitCode1IsError(bool value)
+{
+  SET_SESSION_PROPERTY(ExitCode1IsError);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSessionData::SetLookupUserGroups(TAutoSwitch value)

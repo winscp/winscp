@@ -1203,10 +1203,11 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
       ADF(L"Clear aliases: %s, Unset nat.vars: %s, Resolve symlinks: %s; Follow directory symlinks: %s",
         (BooleanToEngStr(Data->ClearAliases), BooleanToEngStr(Data->UnsetNationalVars),
          BooleanToEngStr(Data->ResolveSymlinks), BooleanToEngStr(Data->FollowDirectorySymlinks)));
-      ADF(L"LS: %s, Ign LS warn: %s, Scp1 Comp: %s",
+      ADF(L"LS: %s, Ign LS warn: %s, Scp1 Comp: %s; Exit code 1 is error: %s",
         (Data->ListingCommand,
          BooleanToEngStr(Data->IgnoreLsWarnings),
-         BooleanToEngStr(Data->Scp1Compatibility)));
+         BooleanToEngStr(Data->Scp1Compatibility),
+         BooleanToEngStr(Data->ExitCode1IsError)));
     }
     if ((Data->FSProtocol == fsSFTP) || (Data->FSProtocol == fsSFTPonly))
     {

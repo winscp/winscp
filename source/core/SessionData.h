@@ -149,6 +149,7 @@ private:
   bool FSelected;
   TAutoSwitch FLookupUserGroups;
   UnicodeString FReturnVar;
+  bool FExitCode1IsError;
   bool FScp1Compatibility;
   UnicodeString FShell;
   UnicodeString FSftpServer;
@@ -304,6 +305,7 @@ private:
   void __fastcall SetTrimVMSVersions(bool value);
   void __fastcall SetLookupUserGroups(TAutoSwitch value);
   void __fastcall SetReturnVar(UnicodeString value);
+  void __fastcall SetExitCode1IsError(bool value);
   void __fastcall SetScp1Compatibility(bool value);
   void __fastcall SetShell(UnicodeString value);
   void __fastcall SetSftpServer(UnicodeString value);
@@ -565,6 +567,7 @@ public:
   __property bool TrimVMSVersions = { read = FTrimVMSVersions, write = SetTrimVMSVersions };
   __property TAutoSwitch LookupUserGroups = { read = FLookupUserGroups, write = SetLookupUserGroups };
   __property UnicodeString ReturnVar = { read = FReturnVar, write = SetReturnVar };
+  __property bool ExitCode1IsError = { read = FExitCode1IsError, write = SetExitCode1IsError };
   __property bool Scp1Compatibility = { read = FScp1Compatibility, write = SetScp1Compatibility };
   __property UnicodeString Shell = { read = FShell, write = SetShell };
   __property UnicodeString SftpServer = { read = FSftpServer, write = SetSftpServer };
