@@ -308,6 +308,13 @@ object PropertiesDialog: TPropertiesDialog
         DesignSize = (
           326
           41)
+        object ChecksumUnknownLabel: TLabel
+          Left = 10
+          Top = 18
+          Width = 117
+          Height = 13
+          Caption = 'ChecksumUnknownLabel'
+        end
         object ChecksumEdit: TEdit
           Left = 10
           Top = 18

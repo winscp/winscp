@@ -71,6 +71,8 @@ __fastcall TPropertiesDialog::TPropertiesDialog(TComponent* AOwner,
   FUserList = UserList;
   FChecksumAlgs = ChecksumAlgs;
 
+  ReadOnlyControl(ChecksumEdit);
+  ChecksumUnknownLabel->Caption = LoadStr(PROPERTIES_CHECKSUM_UNKNOWN);
   LoadInfo();
 
   UseSystemSettings(this);
@@ -553,9 +555,8 @@ void __fastcall TPropertiesDialog::UpdateControls()
   EnableControl(ChecksumSheet, ChecksumSupported());
   EnableControl(ChecksumButton, ChecksumSheet->Enabled &&
     !ChecksumAlgEdit->Text.IsEmpty());
-  // hide checksum edit at least if it is disabled to get rid of ugly
-  // visage on XP
-  ChecksumEdit->Visible = ChecksumEdit->Enabled;
+  ChecksumEdit->Visible = !ChecksumEdit->Text.IsEmpty();
+  ChecksumUnknownLabel->Visible = !ChecksumEdit->Visible;
 
   DefaultButton(ChecksumButton, ChecksumAlgEdit->Focused());
   DefaultButton(OkButton, !ChecksumAlgEdit->Focused());
@@ -603,7 +604,7 @@ void __fastcall TPropertiesDialog::HelpButtonClick(TObject * /*Sender*/)
 void __fastcall TPropertiesDialog::ResetChecksum()
 {
   ChecksumView->Items->Clear();
-  ChecksumEdit->Text = LoadStr(PROPERTIES_CHECKSUM_UNKNOWN);
+  ChecksumEdit->Text = UnicodeString();
   AutoSizeListColumnsWidth(ChecksumView);
 }
 //---------------------------------------------------------------------------
@@ -661,6 +662,7 @@ void __fastcall TPropertiesDialog::CalculatedChecksum(
     ChecksumEdit->Text = Hash;
   }
   FAlgUsed = Alg;
+  UpdateControls();
 }
 //---------------------------------------------------------------------------
 void __fastcall TPropertiesDialog::NeedChecksum()

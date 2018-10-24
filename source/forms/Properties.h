@@ -57,6 +57,7 @@ __published:
   TEdit *ChecksumEdit;
   TPopupMenu *ListViewMenu;
   TMenuItem *Copy;
+  TLabel *ChecksumUnknownLabel;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
   void __fastcall CalculateSizeButtonClick(TObject *Sender);
