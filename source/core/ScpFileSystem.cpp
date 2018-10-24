@@ -581,7 +581,7 @@ void __fastcall TSCPFileSystem::ReadCommandOutput(int Params, const UnicodeStrin
 {
   try
   {
-    if (Params & coWaitForLastLine)
+    if (FLAGSET(Params, coWaitForLastLine))
     {
       UnicodeString Line;
       bool IsLast;
@@ -609,37 +609,45 @@ void __fastcall TSCPFileSystem::ReadCommandOutput(int Params, const UnicodeStrin
       }
       while (!IsLast);
     }
-    if (Params & coRaiseExcept)
+
+    if (FLAGSET(Params, coRaiseExcept))
     {
       UnicodeString Message = FSecureShell->GetStdError();
-      if ((Params & coExpectNoOutput) && FOutput->Count)
+      if (FLAGSET(Params, coExpectNoOutput) && (FOutput->Count > 0))
       {
-        if (!Message.IsEmpty()) Message += L"\n";
-        Message += FOutput->Text;
+        AddToList(Message, FOutput->Text, L"\n");
       }
+
       while (!Message.IsEmpty() && (Message.LastDelimiter(L"\n\r") == Message.Length()))
       {
         Message.SetLength(Message.Length() - 1);
       }
 
       bool WrongReturnCode =
-        (ReturnCode > 1) || (ReturnCode == 1 && !(Params & coIgnoreWarnings));
+        (ReturnCode > 1) ||
+        ((ReturnCode == 1) && FLAGCLEAR(Params, coIgnoreWarnings));
 
       if (FOnCaptureOutput != NULL)
       {
         FOnCaptureOutput(IntToStr(ReturnCode), cotExitCode);
       }
 
-      if (Params & coOnlyReturnCode && WrongReturnCode)
+      if (FLAGSET(Params, coOnlyReturnCode))
       {
-        FTerminal->TerminalError(FMTLOAD(COMMAND_FAILED_CODEONLY, (ReturnCode)));
+        if (WrongReturnCode)
+        {
+          FTerminal->TerminalError(FMTLOAD(COMMAND_FAILED_CODEONLY, (ReturnCode)));
+        }
       }
-      else if (!(Params & coOnlyReturnCode) &&
-          ((!Message.IsEmpty() && ((FOutput->Count == 0) || !(Params & coIgnoreWarnings))) ||
-           WrongReturnCode))
+      else
       {
-        DebugAssert(Cmd != NULL);
-        FTerminal->TerminalError(FMTLOAD(COMMAND_FAILED, (*Cmd, ReturnCode, Message)));
+        bool IsStdErrOnlyError = FLAGCLEAR(Params, coIgnoreWarnings);
+        bool WrongOutput = !Message.IsEmpty() && ((FOutput->Count == 0) || IsStdErrOnlyError);
+        if (WrongOutput || WrongReturnCode)
+        {
+          DebugAssert(Cmd != NULL);
+          FTerminal->TerminalError(FMTLOAD(COMMAND_FAILED, (*Cmd, ReturnCode, Message)));
+        }
       }
     }
   }
@@ -661,10 +669,12 @@ void __fastcall TSCPFileSystem::ExecCommand(const UnicodeString & Cmd, int Param
 
   SendCommand(Cmd);
 
-  int COParams = coWaitForLastLine;
-  if (Params & ecRaiseExcept) COParams |= coRaiseExcept;
-  if (Params & ecIgnoreWarnings) COParams |= coIgnoreWarnings;
-  if (Params & ecReadProgress) COParams |= coReadProgress;
+  int COParams =
+    coWaitForLastLine |
+    FLAGMASK(FLAGSET(Params, ecRaiseExcept), coRaiseExcept) |
+    FLAGMASK(FLAGSET(Params, ecIgnoreWarnings), coIgnoreWarnings) |
+    FLAGMASK(FLAGSET(Params, ecReadProgress), coReadProgress);
+
   ReadCommandOutput(COParams, &CmdString);
 }
 //---------------------------------------------------------------------------
