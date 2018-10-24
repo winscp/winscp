@@ -222,7 +222,7 @@ void __fastcall TSessionData::Default()
   SCPLsFullTime = asAuto;
   NotUtf = asAuto;
 
-  S3DefaultRegion = S3LibDefaultRegion();
+  S3DefaultRegion = L"";
 
   // SFTP
   SftpServer = L"";

@@ -75,6 +75,7 @@ void __fastcall TS3FileSystem::Open()
   FTlsVersionStr = L"";
   FNeonSession = NULL;
   FCurrentDirectory = L"";
+  FAuthRegion = DefaultStr(FTerminal->SessionData->S3DefaultRegion, S3LibDefaultRegion());
 
   RequireNeon(FTerminal);
 
@@ -473,7 +474,7 @@ TLibS3BucketContext TS3FileSystem::GetBucketContext(const UnicodeString & Bucket
     }
     else
     {
-      Region = FTerminal->SessionData->S3DefaultRegion;
+      Region = FAuthRegion;
       if (First)
       {
         FTerminal->LogEvent(FORMAT(L"Unknown bucket \"%s\", will detect its region (and service endpoint)", (BucketName)));
@@ -523,7 +524,8 @@ TLibS3BucketContext TS3FileSystem::GetBucketContext(const UnicodeString & Bucket
         Result.authRegion = Result.AuthRegionBuf.c_str();
       }
       // happens with newly created buckets (and happens before the region redirect)
-      else if ((Data.Status == S3StatusErrorTemporaryRedirect) && !Data.EndpointDetail.IsEmpty())
+      else if (((Data.Status == S3StatusErrorTemporaryRedirect) || (Data.Status == S3StatusErrorPermanentRedirect)) &&
+               !Data.EndpointDetail.IsEmpty())
       {
         UnicodeString Endpoint = Data.EndpointDetail;
         if (SameText(Endpoint.SubString(1, BucketName.Length() + 1), BucketName + L"."))
@@ -822,6 +824,17 @@ void TS3FileSystem::DoListBucket(
     LibS3Delimiter.c_str(), MaxKeys, FRequestContext, FTimeout, &ListBucketHandler, &Data);
 }
 //---------------------------------------------------------------------------
+void TS3FileSystem::HandleNonBucketStatus(TLibS3CallbackData & Data, bool & Retry)
+{
+  if ((Data.Status == S3StatusErrorAuthorizationHeaderMalformed) &&
+      (FAuthRegion != Data.RegionDetail))
+  {
+    FTerminal->LogEvent(FORMAT("Will use authentication region \"%s\" from now on.", (Data.RegionDetail)));
+    FAuthRegion = Data.RegionDetail;
+    Retry = true;
+  }
+}
+//---------------------------------------------------------------------------
 void TS3FileSystem::ReadDirectoryInternal(
   const UnicodeString & APath, TRemoteFileList * FileList, int MaxKeys, const UnicodeString & FileName)
 {
@@ -830,16 +843,26 @@ void TS3FileSystem::ReadDirectoryInternal(
   {
     DebugAssert(FileList != NULL);
 
-    S3ListServiceHandler ListServiceHandler = { CreateResponseHandler(), &LibS3ListServiceCallback };
-
     TLibS3ListServiceCallbackData Data;
-    RequestInit(Data);
     Data.FileList = FileList;
     Data.FileName = FileName;
 
-    S3_list_service(
-      FLibS3Protocol, FAccessKeyId.c_str(), FSecretAccessKey.c_str(), 0, FHostName.c_str(),
-      NULL, MaxKeys, FRequestContext, FTimeout, &ListServiceHandler, &Data);
+    bool Retry;
+    do
+    {
+      RequestInit(Data);
+
+      S3ListServiceHandler ListServiceHandler = { CreateResponseHandler(), &LibS3ListServiceCallback };
+
+      Retry = false;
+
+      S3_list_service(
+        FLibS3Protocol, FAccessKeyId.c_str(), FSecretAccessKey.c_str(), 0, FHostName.c_str(),
+        StrToS3(FAuthRegion), MaxKeys, FRequestContext, FTimeout, &ListServiceHandler, &Data);
+
+      HandleNonBucketStatus(Data, Retry);
+    }
+    while (Retry);
 
     CheckLibS3Error(Data);
   }
@@ -1030,9 +1053,6 @@ void __fastcall TS3FileSystem::CreateDirectory(const UnicodeString & ADirName, b
   UnicodeString BucketName, Key;
   ParsePath(DirName, BucketName, Key);
 
-  TLibS3CallbackData Data;
-  RequestInit(Data);
-
   if (Key.IsEmpty())
   {
     S3ResponseHandler ResponseHandler = CreateResponseHandler();
@@ -1041,18 +1061,37 @@ void __fastcall TS3FileSystem::CreateDirectory(const UnicodeString & ADirName, b
 
     UTF8String RegionBuf;
     char * Region = NULL;
-    if (FTerminal->SessionData->S3DefaultRegion != S3LibDefaultRegion())
+    if (!FTerminal->SessionData->S3DefaultRegion.IsEmpty() &&
+        (FTerminal->SessionData->S3DefaultRegion != S3LibDefaultRegion()))
     {
       RegionBuf = UTF8String(FTerminal->SessionData->S3DefaultRegion);
       Region = RegionBuf.c_str();
     }
 
-    S3_create_bucket(
-      FLibS3Protocol, FAccessKeyId.c_str(), FSecretAccessKey.c_str(), NULL, FHostName.c_str(), StrToS3(BucketName),
-      StrToS3(S3LibDefaultRegion()), S3CannedAclPrivate, Region, FRequestContext, FTimeout, &ResponseHandler, &Data);
+    TLibS3CallbackData Data;
+
+    bool Retry;
+    do
+    {
+      RequestInit(Data);
+
+      Retry = false;
+
+      S3_create_bucket(
+        FLibS3Protocol, FAccessKeyId.c_str(), FSecretAccessKey.c_str(), NULL, FHostName.c_str(), StrToS3(BucketName),
+        StrToS3(FAuthRegion), S3CannedAclPrivate, Region, FRequestContext, FTimeout, &ResponseHandler, &Data);
+
+      HandleNonBucketStatus(Data, Retry);
+    }
+    while (Retry);
+
+    CheckLibS3Error(Data);
   }
   else
   {
+    TLibS3CallbackData Data;
+    RequestInit(Data);
+
     Key = GetFolderKey(Key);
 
     TLibS3BucketContext BucketContext = GetBucketContext(BucketName);
@@ -1060,9 +1099,9 @@ void __fastcall TS3FileSystem::CreateDirectory(const UnicodeString & ADirName, b
     S3PutObjectHandler PutObjectHandler = { CreateResponseHandler(), NULL };
 
     S3_put_object(&BucketContext, StrToS3(Key), 0, NULL, FRequestContext, FTimeout, &PutObjectHandler, &Data);
-  }
 
-  CheckLibS3Error(Data);
+    CheckLibS3Error(Data);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TS3FileSystem::CreateLink(const UnicodeString FileName,

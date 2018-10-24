@@ -126,6 +126,7 @@ protected:
   typedef std::map<UnicodeString, UnicodeString> TRegions;
   TRegions FRegions;
   TRegions FHostNames;
+  UnicodeString FAuthRegion;
 
   virtual UnicodeString __fastcall GetCurrentDirectory();
 
@@ -144,6 +145,7 @@ protected:
     const UnicodeString & Prefix, TRemoteFileList * FileList, int MaxKeys, const TLibS3BucketContext & BucketContext,
     TLibS3ListBucketCallbackData & Data);
   UnicodeString GetFolderKey(const UnicodeString & Key);
+  void HandleNonBucketStatus(TLibS3CallbackData & Data, bool & Retry);
   void DoReadFile(const UnicodeString & FileName, TRemoteFile *& File);
   void ConfirmOverwrite(
     const UnicodeString & SourceFullFileName, UnicodeString & TargetFileName,
