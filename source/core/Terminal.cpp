@@ -3072,7 +3072,7 @@ void __fastcall inline TTerminal::LogEvent(const UnicodeString & Str)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall inline TTerminal::LogEvent(int Level, const UnicodeString & Str)
+void __fastcall TTerminal::LogEvent(int Level, const UnicodeString & Str)
 {
   if (Log->Logging && (Configuration->ActualLogProtocol >= Level))
   {
