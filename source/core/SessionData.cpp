@@ -3309,8 +3309,8 @@ void __fastcall TSessionData::GenerateAssemblyCode(
   if (SessionData->PortNumber != ADefaultPort)
   {
     AddAssemblyProperty(Head, Language, L"PortNumber", PortNumber);
-    SessionData->PortNumber = ADefaultPort;
   }
+  SessionData->PortNumber = FactoryDefaults->PortNumber;
   if (SessionData->UserName != FactoryDefaults->UserName)
   {
     AddAssemblyProperty(Head, Language, L"UserName", UserName);
