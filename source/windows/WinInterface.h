@@ -415,7 +415,10 @@ extern const UnicodeString YesButtonName;
 extern const UnicodeString OKButtonName;
 
 // windows\Console.cpp
-enum TConsoleMode { cmNone, cmScripting, cmHelp, cmBatchSettings, cmKeyGen, cmFingerprintScan, cmDumpCallstack, cmInfo };
+enum TConsoleMode
+{
+  cmNone, cmScripting, cmHelp, cmBatchSettings, cmKeyGen, cmFingerprintScan, cmDumpCallstack, cmInfo,
+};
 int __fastcall Console(TConsoleMode Mode);
 
 // forms\EditorPreferences.cpp
