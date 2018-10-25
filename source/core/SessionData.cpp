@@ -3446,7 +3446,7 @@ void __fastcall TSessionData::GenerateAssemblyCode(
         OpenCall;
 
       Tail =
-        RtfKeyword(L"End Using");
+        RtfKeyword(L"End Using") + RtfPara;
       break;
 
     case alPowerShell:
