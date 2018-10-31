@@ -964,7 +964,7 @@ void __fastcall TCustomScpExplorerForm::UpdateTransferList()
     TransferDropDown->Hint = FORMAT(L"%s|%s:\n%s",
       (FTransferDropDownHint, StripHotkey(Name),
        GUIConfiguration->CurrentCopyParam.GetInfoStr(L"; ",
-         FLAGMASK(Terminal != NULL, Terminal->UsableCopyParamAttrs(0).General))));
+         FLAGMASK(((Terminal != NULL) && Terminal->Active), Terminal->UsableCopyParamAttrs(0).General))));
     // update the label, otherwise when it is updated only on the first draw
     // of the list, it is drawn "bold" for some reason
     FTransferListHoverIndex = TransferList->ItemIndex;
@@ -6563,7 +6563,7 @@ void __fastcall TCustomScpExplorerForm::UpdateTransferLabel()
       UnicodeString InfoStr =
         GUIConfiguration->CopyParamPreset[Name].
           GetInfoStr(L"; ",
-            FLAGMASK(Terminal != NULL, Terminal->UsableCopyParamAttrs(0).General));
+            FLAGMASK(((Terminal != NULL) && Terminal->Active), Terminal->UsableCopyParamAttrs(0).General));
       int MaxWidth = TransferList->MinWidth - (2 * TransferLabel->Margin) - ScaleByTextHeight(this, 10);
       if (Canvas->TextExtent(InfoStr).cx > MaxWidth)
       {
@@ -8248,7 +8248,7 @@ void __fastcall TCustomScpExplorerForm::UpdateControls()
   // See also EnableControl
   if (Showing)
   {
-    bool HasTerminal = (Terminal != NULL);
+    bool HasTerminal = (Terminal != NULL) && Terminal->Active;
     if (HasTerminal)
     {
       // Update path when it changes
