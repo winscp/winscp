@@ -9815,91 +9815,95 @@ void __fastcall TCustomScpExplorerForm::RemoteBookmarkClick(TObject * Sender)
 void __fastcall TCustomScpExplorerForm::CreateOpenDirMenuList(
   TTBCustomItem * Menu, TOperationSide Side, TBookmarkList * BookmarkList)
 {
-  TNotifyEvent OnBookmarkClick = (Side == osLocal) ? &LocalBookmarkClick : &RemoteBookmarkClick;
-
-  if (!WinConfiguration->UseLocationProfiles)
+  if (BookmarkList != NULL)
   {
-    std::unique_ptr<TStringList> Directories(new TStringList());
-    Directories->CaseSensitive = (Side == osRemote);
-    for (int Index = 0; Index < BookmarkList->Count; Index++)
+    TNotifyEvent OnBookmarkClick = (Side == osLocal) ? &LocalBookmarkClick : &RemoteBookmarkClick;
+
+    if (!WinConfiguration->UseLocationProfiles)
     {
-      TBookmark * Bookmark = BookmarkList->Bookmarks[Index];
-      UnicodeString Directory = Bookmark->GetSideDirectory(Side);
-      if (!Directory.IsEmpty() && (Directories->IndexOf(Directory) < 0))
+      std::unique_ptr<TStringList> Directories(new TStringList());
+      Directories->CaseSensitive = (Side == osRemote);
+      for (int Index = 0; Index < BookmarkList->Count; Index++)
       {
+        TBookmark * Bookmark = BookmarkList->Bookmarks[Index];
+        UnicodeString Directory = Bookmark->GetSideDirectory(Side);
+        if (!Directory.IsEmpty() && (Directories->IndexOf(Directory) < 0))
+        {
+          std::unique_ptr<TTBCustomItem> Item(new TTBXItem(Owner));
+          Item->Caption = EscapeHotkey(Directory);
+          Item->ShortCut = Bookmark->ShortCut;
+          Item->OnClick = OnBookmarkClick;
+          Item->Tag = reinterpret_cast<int>(Bookmark);
+          Directories->Add(Directory);
+          Menu->Add(Item.release());
+        }
+      }
+    }
+    else
+    {
+      std::unique_ptr<TStrings> Folders(CreateSortedStringList());
+      for (int Index = 0; Index < BookmarkList->Count; Index++)
+      {
+        TBookmark * Bookmark = BookmarkList->Bookmarks[Index];
+        if (!Bookmark->Node.IsEmpty())
+        {
+          Folders->Add(Bookmark->Node);
+        }
+      }
+
+      for (int Index = 0; Index < Folders->Count; Index++)
+      {
+        std::unique_ptr<TTBCustomItem> Item(new TTBXSubmenuItem(Owner));
+        Item->Caption = Folders->Strings[Index];
+        Item->ImageIndex = NonVisualDataModule->RemoteChangePathAction->ImageIndex;
+        Folders->Objects[Index] = Item.get();
+        Menu->Add(Item.release());
+      }
+
+      for (int Index = 0; Index < BookmarkList->Count; Index++)
+      {
+        TBookmark * Bookmark = BookmarkList->Bookmarks[Index];
+        TTBCustomItem * Parent;
+        if (!Bookmark->Node.IsEmpty())
+        {
+          DebugAssert(Folders->IndexOf(Bookmark->Node) >= 0);
+          Parent = dynamic_cast<TTBCustomItem *>(Folders->Objects[Folders->IndexOf(Bookmark->Node)]);
+        }
+        else
+        {
+          Parent = Menu;
+        }
         std::unique_ptr<TTBCustomItem> Item(new TTBXItem(Owner));
-        Item->Caption = EscapeHotkey(Directory);
+        Item->Caption = Bookmark->Name;
         Item->ShortCut = Bookmark->ShortCut;
         Item->OnClick = OnBookmarkClick;
         Item->Tag = reinterpret_cast<int>(Bookmark);
-        Directories->Add(Directory);
-        Menu->Add(Item.release());
-      }
-    }
-  }
-  else
-  {
-    std::unique_ptr<TStrings> Folders(CreateSortedStringList());
-    for (int Index = 0; Index < BookmarkList->Count; Index++)
-    {
-      TBookmark * Bookmark = BookmarkList->Bookmarks[Index];
-      if (!Bookmark->Node.IsEmpty())
-      {
-        Folders->Add(Bookmark->Node);
-      }
-    }
 
-    for (int Index = 0; Index < Folders->Count; Index++)
-    {
-      std::unique_ptr<TTBCustomItem> Item(new TTBXSubmenuItem(Owner));
-      Item->Caption = Folders->Strings[Index];
-      Item->ImageIndex = NonVisualDataModule->RemoteChangePathAction->ImageIndex;
-      Folders->Objects[Index] = Item.get();
-      Menu->Add(Item.release());
-    }
-
-    for (int Index = 0; Index < BookmarkList->Count; Index++)
-    {
-      TBookmark * Bookmark = BookmarkList->Bookmarks[Index];
-      TTBCustomItem * Parent;
-      if (!Bookmark->Node.IsEmpty())
-      {
-        DebugAssert(Folders->IndexOf(Bookmark->Node) >= 0);
-        Parent = dynamic_cast<TTBCustomItem *>(Folders->Objects[Folders->IndexOf(Bookmark->Node)]);
-      }
-      else
-      {
-        Parent = Menu;
-      }
-      std::unique_ptr<TTBCustomItem> Item(new TTBXItem(Owner));
-      Item->Caption = Bookmark->Name;
-      Item->ShortCut = Bookmark->ShortCut;
-      Item->OnClick = OnBookmarkClick;
-      Item->Tag = reinterpret_cast<int>(Bookmark);
-
-      if (((Bookmark->Name == Bookmark->Local) || (Bookmark->Name == Bookmark->Remote)) &&
-          (Bookmark->Local.IsEmpty() || Bookmark->Remote.IsEmpty()))
-      {
-        // No hint for location profiles that are actually mere "bookmarks"
-      }
-      else
-      {
-        UnicodeString Hint = FORMAT(LoadStrPart(LOCATION_PROFILE_HINT, 1), (Bookmark->Name));
-        UnicodeString LongHint;
-        if (!Bookmark->Local.IsEmpty())
+        if (((Bookmark->Name == Bookmark->Local) || (Bookmark->Name == Bookmark->Remote)) &&
+            (Bookmark->Local.IsEmpty() || Bookmark->Remote.IsEmpty()))
         {
-          AddToList(LongHint, FORMAT(LoadStrPart(LOCATION_PROFILE_HINT, 2), (Bookmark->Local)), L"\n");
+          // No hint for location profiles that are actually mere "bookmarks"
         }
-        if (!Bookmark->Remote.IsEmpty())
+        else
         {
-          AddToList(LongHint, FORMAT(LoadStrPart(LOCATION_PROFILE_HINT, 3), (Bookmark->Remote)), L"\n");
+          UnicodeString Hint = FORMAT(LoadStrPart(LOCATION_PROFILE_HINT, 1), (Bookmark->Name));
+          UnicodeString LongHint;
+          if (!Bookmark->Local.IsEmpty())
+          {
+            AddToList(LongHint, FORMAT(LoadStrPart(LOCATION_PROFILE_HINT, 2), (Bookmark->Local)), L"\n");
+          }
+          if (!Bookmark->Remote.IsEmpty())
+          {
+            AddToList(LongHint, FORMAT(LoadStrPart(LOCATION_PROFILE_HINT, 3), (Bookmark->Remote)), L"\n");
+          }
+          AddToList(Hint, LongHint, L"|");
+          Item->Hint = Hint;
         }
-        AddToList(Hint, LongHint, L"|");
-        Item->Hint = Hint;
-      }
 
-      Parent->Add(Item.release());
+        Parent->Add(Item.release());
+      }
     }
+    AddMenuSeparator(Menu);
   }
 }
 //---------------------------------------------------------------------------
@@ -9907,13 +9911,11 @@ void __fastcall TCustomScpExplorerForm::CreateOpenDirMenu(TTBCustomItem * Menu, 
 {
   Menu->Clear();
 
+
+
   CreateOpenDirMenuList(Menu, Side, WinConfiguration->Bookmarks[Terminal->SessionData->SessionKey]);
 
-  AddMenuSeparator(Menu);
-
   CreateOpenDirMenuList(Menu, Side, WinConfiguration->SharedBookmarks);
-
-  AddMenuSeparator(Menu);
 
   std::unique_ptr<TTBCustomItem> Item(new TTBXItem(Owner));
   Item->Action = (Side == osLocal) ? NonVisualDataModule->LocalAddBookmarkAction : NonVisualDataModule->RemoteAddBookmarkAction;
