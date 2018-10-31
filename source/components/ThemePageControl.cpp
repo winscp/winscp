@@ -152,7 +152,7 @@ void __fastcall TThemePageControl::PaintWindow(HDC DC)
 bool __fastcall TThemePageControl::HasTabCloseButton(int Index)
 {
   TThemeTabSheet * ThemeTabSheet = dynamic_cast<TThemeTabSheet *>(Pages[Index]);
-  return (ThemeTabSheet != NULL) ? ThemeTabSheet->ShowCloseButton : false;
+  return (UseThemes() && (ThemeTabSheet != NULL)) ? ThemeTabSheet->ShowCloseButton : false;
 }
 //----------------------------------------------------------------------------------------------------------
 void __fastcall TThemePageControl::DrawThemesXpTab(HDC DC, int Tab)
@@ -486,12 +486,15 @@ void __fastcall TThemePageControl::Change()
 //----------------------------------------------------------------------------------------------------------
 UnicodeString __fastcall TThemePageControl::FormatCaptionWithCloseButton(const UnicodeString & Caption)
 {
-  int OrigWidth = Canvas->TextWidth(Caption);
   UnicodeString Result = Caption;
-  int CloseButtonWidth = CloseButtonSize();
-  while (Canvas->TextWidth(Result) < OrigWidth + CloseButtonWidth)
+  if (UseThemes())
   {
-    Result += L" ";
+    int OrigWidth = Canvas->TextWidth(Caption);
+    int CloseButtonWidth = CloseButtonSize();
+    while (Canvas->TextWidth(Result) < OrigWidth + CloseButtonWidth)
+    {
+      Result += L" ";
+    }
   }
   return Result;
 }
