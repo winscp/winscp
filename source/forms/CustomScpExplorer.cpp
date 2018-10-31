@@ -9911,13 +9911,19 @@ void __fastcall TCustomScpExplorerForm::CreateOpenDirMenu(TTBCustomItem * Menu, 
 {
   Menu->Clear();
 
+  std::unique_ptr<TTBCustomItem> Item;
 
+  Item.reset(new TTBXItem(Owner));
+  Item->Action = (Side == osLocal) ? NonVisualDataModule->LocalOpenDirAction : NonVisualDataModule->RemoteOpenDirAction;
+  Item->Options = Item->Options << tboDefault;
+  Menu->Add(Item.release());
+  AddMenuSeparator(Menu);
 
   CreateOpenDirMenuList(Menu, Side, WinConfiguration->Bookmarks[Terminal->SessionData->SessionKey]);
 
   CreateOpenDirMenuList(Menu, Side, WinConfiguration->SharedBookmarks);
 
-  std::unique_ptr<TTBCustomItem> Item(new TTBXItem(Owner));
+  Item.reset(new TTBXItem(Owner));
   Item->Action = (Side == osLocal) ? NonVisualDataModule->LocalAddBookmarkAction : NonVisualDataModule->RemoteAddBookmarkAction;
   Menu->Add(Item.release());
 }
