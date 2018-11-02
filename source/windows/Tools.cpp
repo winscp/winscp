@@ -366,11 +366,19 @@ static void __fastcall ExecuteProcessAndReadOutput(const
         CloseHandle(PipeWrite);
       }
 
-      char Buffer[4096];
-      DWORD BytesRead;
-      while (ReadFile(PipeRead, Buffer, sizeof(Buffer), &BytesRead, NULL))
+      DWORD BytesAvail;
+      while (PeekNamedPipe(PipeRead, NULL, 0, NULL, &BytesAvail, NULL))
       {
-        Output += UnicodeString(UTF8String(Buffer, BytesRead));
+        if (BytesAvail > 0)
+        {
+          char Buffer[4096];
+          DWORD BytesToRead = std::min(BytesAvail, static_cast<unsigned long>(sizeof(Buffer)));
+          DWORD BytesRead;
+          if (ReadFile(PipeRead, Buffer, BytesToRead, &BytesRead, NULL))
+          {
+            Output += UnicodeString(UTF8String(Buffer, BytesRead));
+          }
+        }
         // Same as in ExecuteShellCheckedAndWait
         Sleep(200);
         Application->ProcessMessages();
