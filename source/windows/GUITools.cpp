@@ -405,7 +405,7 @@ void __fastcall ExecuteShellCheckedAndWait(const UnicodeString Command,
         do
         {
           // Same as in ExecuteProcessAndReadOutput
-          WaitResult = WaitForSingleObject(ProcessHandle, 200);
+          WaitResult = WaitForSingleObject(ProcessHandle, 50);
           if (WaitResult == WAIT_FAILED)
           {
             throw Exception(LoadStr(DOCUMENT_WAIT_ERROR));

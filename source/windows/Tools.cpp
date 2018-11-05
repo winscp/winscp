@@ -383,7 +383,7 @@ static void __fastcall ExecuteProcessAndReadOutput(const
           }
         }
         // Same as in ExecuteShellCheckedAndWait
-        Sleep(200);
+        Sleep(50);
         Application->ProcessMessages();
       }
 
