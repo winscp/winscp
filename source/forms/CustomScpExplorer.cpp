@@ -1980,7 +1980,20 @@ void __fastcall TCustomScpExplorerForm::LocalCustomCommandPure(
 
       if (!NonBlocking)
       {
-        Progress.Start(foCustomCommand, osRemote, FileListCommand ? 1 : FileList->Count);
+        int Count;
+        if (FileListCommand)
+        {
+          Count = 1;
+        }
+        else if (LocalFileCommand)
+        {
+          Count = std::max(LocalFileList->Count, RemoteFileList->Count);
+        }
+        else
+        {
+          Count = RemoteFileList->Count;
+        }
+        Progress.Start(foCustomCommand, osRemote, Count);
         DebugAssert(FProgressForm != NULL);
         FProgressForm->ReadOnly = true;
       }
@@ -2022,9 +2035,14 @@ void __fastcall TCustomScpExplorerForm::LocalCustomCommandPure(
             for (int Index = 0; Index < RemoteFileList->Count; Index++)
             {
               UnicodeString FileName = RemoteFileList->Strings[Index];
+              UnicodeString FileNameForProgress = RemoteFiles ? FileName : ExtractFileName(FileName);
+              Progress.SetFile(FileNameForProgress);
               TLocalCustomCommand CustomCommand(Data,
                 Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(), FileName, LocalFile, L"");
               ExecuteProcessCheckedAndWait(CustomCommand.Complete(Command, true), HelpKeyword, POutput);
+              TOnceDoneOperation OnceDoneOperation;
+              // Do not unselect anything, as it won't work with two panels anyway
+              Progress.Finish(UnicodeString(), true, OnceDoneOperation);
             }
           }
           else if (RemoteFileList->Count == 1)
@@ -2033,10 +2051,16 @@ void __fastcall TCustomScpExplorerForm::LocalCustomCommandPure(
 
             for (int Index = 0; Index < LocalFileList->Count; Index++)
             {
+              UnicodeString LocalFileName = LocalFileList->Strings[Index];
+              UnicodeString LocalFileNameOnly = ExtractFileName(LocalFileName);
+              Progress.SetFile(LocalFileNameOnly);
               TLocalCustomCommand CustomCommand(
                 Data, Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(),
-                FileName, LocalFileList->Strings[Index], L"");
+                FileName, LocalFileName, L"");
               ExecuteProcessCheckedAndWait(CustomCommand.Complete(Command, true), HelpKeyword, POutput);
+              TOnceDoneOperation OnceDoneOperation;
+              // Do not unselect anything, as it won't work with two panels anyway
+              Progress.Finish(UnicodeString(), true, OnceDoneOperation);
             }
           }
           else
@@ -2049,10 +2073,16 @@ void __fastcall TCustomScpExplorerForm::LocalCustomCommandPure(
             for (int Index = 0; Index < LocalFileList->Count; Index++)
             {
               UnicodeString FileName = RemoteFileList->Strings[Index];
+              UnicodeString LocalFileName = LocalFileList->Strings[Index];
+              UnicodeString LocalFileNameOnly = ExtractFileName(LocalFileName);
+              Progress.SetFile(LocalFileNameOnly); // sic
               TLocalCustomCommand CustomCommand(
                 Data, Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(),
-                FileName, LocalFileList->Strings[Index], L"");
+                FileName, LocalFileName, L"");
               ExecuteProcessCheckedAndWait(CustomCommand.Complete(Command, true), HelpKeyword, POutput);
+              TOnceDoneOperation OnceDoneOperation;
+              // Do not unselect anything, as it won't work with two panels anyway
+              Progress.Finish(UnicodeString(), true, OnceDoneOperation);
             }
           }
         }
@@ -2060,10 +2090,15 @@ void __fastcall TCustomScpExplorerForm::LocalCustomCommandPure(
         {
           for (int Index = 0; Index < RemoteFileList->Count; Index++)
           {
+            UnicodeString FileName = RemoteFileList->Strings[Index];
+            UnicodeString FileNameForProgress = RemoteFiles ? FileName : ExtractFileName(FileName);
+            Progress.SetFile(FileNameForProgress);
             TLocalCustomCommand CustomCommand(Data,
               Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(),
-              RemoteFileList->Strings[Index], L"", L"");
+              FileName, L"", L"");
             ExecuteProcessCheckedAndWait(CustomCommand.Complete(Command, true), HelpKeyword, POutput);
+            TOnceDoneOperation OnceDoneOperation;
+            Progress.Finish(FileNameForProgress, true, OnceDoneOperation);
           }
         }
       }
@@ -2184,7 +2219,7 @@ void __fastcall TCustomScpExplorerForm::LocalCustomCommandWithLocalFiles(
   {
     TFileOperationProgressType Progress(&OperationProgress, &OperationFinished);
 
-    Progress.Start(foCustomCommand, osRemote, FileListCommand ? 1 : LocalFileList->Count);
+    Progress.Start(foCustomCommand, osLocal, LocalFileList->Count);
     DebugAssert(FProgressForm != NULL);
     FProgressForm->ReadOnly = true;
 
@@ -2193,10 +2228,13 @@ void __fastcall TCustomScpExplorerForm::LocalCustomCommandWithLocalFiles(
       for (int Index = 0; Index < LocalFileList->Count; Index++)
       {
         UnicodeString FileName = LocalFileList->Strings[Index];
+        Progress.SetFile(FileName);
         TLocalCustomCommand CustomCommand(
           Data, Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(),
           FileName, L"", L"");
         ExecuteProcessCheckedAndWait(CustomCommand.Complete(Command, true), HelpKeyword, POutput);
+        TOnceDoneOperation OnceDoneOperation;
+        Progress.Finish(FileName, true, OnceDoneOperation);
       }
     }
     __finally
