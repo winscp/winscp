@@ -17,6 +17,7 @@ void __fastcall ExecuteShellChecked(const UnicodeString Command);
 bool __fastcall ExecuteShell(const UnicodeString Path, const UnicodeString Params,
   HANDLE & Handle);
 void __fastcall ExecuteShellCheckedAndWait(const UnicodeString Command, TProcessMessagesEvent ProcessMessages);
+extern bool DontCopyCommandToClipboard;
 bool __fastcall CopyCommandToClipboard(const UnicodeString & Command);
 void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
   TSessionData * SessionData);

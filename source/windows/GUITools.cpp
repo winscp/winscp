@@ -257,9 +257,11 @@ bool __fastcall FindTool(const UnicodeString & Name, UnicodeString & Path)
   return Result;
 }
 //---------------------------------------------------------------------------
+bool DontCopyCommandToClipboard = false;
+//---------------------------------------------------------------------------
 bool __fastcall CopyCommandToClipboard(const UnicodeString & Command)
 {
-  bool Result = UseAlternativeFunction() && IsKeyPressed(VK_CONTROL);
+  bool Result = !DontCopyCommandToClipboard && UseAlternativeFunction() && IsKeyPressed(VK_CONTROL);
   if (Result)
   {
     TInstantOperationVisualizer Visualizer;

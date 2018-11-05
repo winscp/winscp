@@ -4192,6 +4192,7 @@ void __fastcall TCustomScpExplorerForm::CheckCustomCommandShortCut(
     KeyProcessed(Key, Shift);
     if (CustomCommandState(*Command, false, ccltAll) > 0)
     {
+      TAutoFlag DontCopyCommandToClipboardFlag(DontCopyCommandToClipboard);
       ExecuteFileOperationCommand(foCustomCommand, osRemote,
         false, false, const_cast<TCustomCommandType *>(Command));
     }
