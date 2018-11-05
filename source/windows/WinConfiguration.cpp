@@ -731,8 +731,6 @@ void __fastcall TWinConfiguration::DefaultLocalized()
     FCustomCommandList->Add(LoadStr(CUSTOM_COMMAND_GREP),
       FORMAT(L"grep \"!?%s?!\" !&", (LoadStr(CUSTOM_COMMAND_GREP_PATTERN))),
       ccShowResults);
-    FCustomCommandList->Add(LoadStr(CUSTOM_COMMAND_FC),
-      L"cmd /c fc \"!\" \"\!^!\" | more && pause", ccLocal);
     FCustomCommandList->Add(LoadStr(CUSTOM_COMMAND_PRINT), L"notepad.exe /p \"!\"", ccLocal);
     FCustomCommandList->Reset();
     FCustomCommandsDefaults = true;
