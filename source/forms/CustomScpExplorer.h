@@ -373,7 +373,7 @@ protected:
   void __fastcall LocalCustomCommandPure(
     TStrings * FileList, const TCustomCommandType & ACommand, const UnicodeString & Command, TStrings * ALocalFileList,
     const TCustomCommandData & Data, bool LocalFileCommand, bool FileListCommand, UnicodeString * POutput);
-  void __fastcall LocalCustomCommandWithRemoteFiles(
+  void __fastcall LocalCustomCommandWithLocalFiles(
     const TCustomCommandType & ACommand, const UnicodeString & Command, const TCustomCommandData & Data,
     bool FileListCommand, UnicodeString * POutput);
   void __fastcall LocalCustomCommand(TStrings * FileList,

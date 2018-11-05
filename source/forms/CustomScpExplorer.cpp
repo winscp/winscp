@@ -2137,7 +2137,7 @@ void __fastcall TCustomScpExplorerForm::LocalCustomCommandPure(
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::LocalCustomCommandWithRemoteFiles(
+void __fastcall TCustomScpExplorerForm::LocalCustomCommandWithLocalFiles(
   const TCustomCommandType & ACommand, const UnicodeString & Command, const TCustomCommandData & Data,
   bool FileListCommand, UnicodeString * POutput)
 {
@@ -2240,7 +2240,7 @@ void __fastcall TCustomScpExplorerForm::LocalCustomCommand(TStrings * FileList,
   // local files
   else
   {
-    LocalCustomCommandWithRemoteFiles(ACommand, Command, Data, FileListCommand, POutput.get());
+    LocalCustomCommandWithLocalFiles(ACommand, Command, Data, FileListCommand, POutput.get());
   }
 
   if (POutput.get() != NULL)
