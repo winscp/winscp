@@ -20,6 +20,7 @@ bool __fastcall ExecuteShell(const UnicodeString Path, const UnicodeString Param
   HANDLE & Handle);
 void __fastcall ExecuteShellCheckedAndWait(const UnicodeString Command, TProcessMessagesEvent ProcessMessages);
 TObjectList * StartCreationDirectoryMonitorsOnEachDrive(unsigned int Filter, TFileChangedEvent OnChanged);
+extern bool DontCopyCommandToClipboard;
 bool __fastcall CopyCommandToClipboard(const UnicodeString & Command);
 void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
   TSessionData * SessionData);
