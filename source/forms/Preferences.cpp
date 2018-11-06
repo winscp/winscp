@@ -1215,7 +1215,13 @@ void __fastcall TPreferencesDialog::UpdateControls()
     }
     SetLabelHintPopup(CopyParamLabel, InfoStr);
 
-    if (!WinConfiguration->DDExtInstalled)
+    if (WinConfiguration->IsDDExtBroken())
+    {
+      DragExtStatusLabel->Caption = LoadStr(PREFERENCES_DRAGEXT_BROKEN);
+      DragExtStatusLabel->Enabled = false;
+      DragExtStatusLabel->Font->Color = clWindowText;
+    }
+    else if (!WinConfiguration->DDExtInstalled)
     {
       DragExtStatusLabel->Caption = LoadStr(PREFERENCES_DRAGEXT_NOT_INSTALLED);
       DragExtStatusLabel->Enabled = false;

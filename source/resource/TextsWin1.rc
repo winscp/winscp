@@ -617,6 +617,7 @@ BEGIN
         RENAME_SESSION_PROMPT, "&New session name:"
         SYNCHRONIZE_COMPLETE, "Synchronization was completed."
         SYNCHRONIZE_SUMMARY, "Files uploaded: %s (%s)|Files downloaded: %s (%s)|Local files deleted: %s|Remote files deleted: %s|Comparison time: %s|Synchronization time: %s"
+        PREFERENCES_DRAGEXT_BROKEN, "Shell extension cannot work on this system."
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
         WINSCP_COPYRIGHT, "Copyright © 2000-2018 Martin Prikryl"

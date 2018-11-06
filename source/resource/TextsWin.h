@@ -612,6 +612,7 @@
 #define RENAME_SESSION_PROMPT   6015
 #define SYNCHRONIZE_COMPLETE    6016
 #define SYNCHRONIZE_SUMMARY     6017
+#define PREFERENCES_DRAGEXT_BROKEN 6018
 
 // 2xxx is reserved for TextsFileZilla.h
 

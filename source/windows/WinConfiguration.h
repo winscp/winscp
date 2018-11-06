@@ -614,6 +614,7 @@ public:
   UnicodeString __fastcall UniqueExtensionName(const UnicodeString & ExtensionName, int Counter);
   UnicodeString __fastcall GetProvisionaryExtensionId(const UnicodeString & FileName);
   bool __fastcall IsDDExtRunning();
+  bool __fastcall IsDDExtBroken();
 
   static void __fastcall RestoreFont(const TFontConfiguration & Configuration, TFont * Font);
   static void __fastcall StoreFont(TFont * Font, TFontConfiguration & Configuration);
