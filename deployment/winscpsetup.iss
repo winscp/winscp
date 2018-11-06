@@ -300,7 +300,7 @@ Source: "{#PuttySourceDir}\puttygen.exe"; DestDir: "{app}\PuTTY"; \
 Source: "{#ExtensionsDir}\*.*"; DestDir: "{app}\Extensions"
 #endif
 #ifdef Sponsor
-Source: "{#Sponsor}\*.*"; Flags: dontcopy
+Source: "{#Sponsor}\*.*"; Flags: dontcopy skipifsourcedoesntexist
 
   #define SponsorImages
   #if FindHandle = FindFirst(Sponsor + "\*.*", 0)
