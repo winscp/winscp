@@ -5442,12 +5442,12 @@ void __fastcall TCustomScpExplorerForm::SynchronizeInNewWindow(
 
   std::unique_ptr<TStringList> Options(new TStringList());
   std::unique_ptr<TOptionsStorage> OptionsStorage(new TOptionsStorage(Options.get(), true));
-  GUIConfiguration->SaveCopyParam(OptionsStorage.get(), CopyParams, &Defaults);
+  CopyParams->Save(OptionsStorage.get(), &Defaults);
 
   if (Options->Count > 0)
   {
     AdditionalParams +=
-      FORMAT(L" %s%s", (TProgramParams::FormatSwitch(RAW_CONFIG_SWITCH), StringsToParams(Options.get())));
+      FORMAT(L" %s%s", (TProgramParams::FormatSwitch(RAWTRANSFERSETTINGS_SWITCH), StringsToParams(Options.get())));
   }
 
   ExecuteNewInstance(SessionName, AdditionalParams);

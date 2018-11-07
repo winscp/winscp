@@ -665,16 +665,6 @@ bool __fastcall TGUIConfiguration::DoSaveCopyParam(THierarchicalStorage * Storag
   return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TGUIConfiguration::SaveCopyParam(THierarchicalStorage * Storage, const TCopyParamType * CopyParam, const TCopyParamType * Defaults)
-{
-  bool Result = DoSaveCopyParam(Storage, CopyParam, Defaults);
-  if (Result)
-  {
-    Storage->CloseSubKey();
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
 void __fastcall TGUIConfiguration::SaveData(THierarchicalStorage * Storage, bool All)
 {
   TConfiguration::SaveData(Storage, All);
@@ -733,6 +723,11 @@ bool __fastcall TGUIConfiguration::LoadCopyParam(THierarchicalStorage * Storage,
     }
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TGUIConfiguration::LoadDefaultCopyParam(THierarchicalStorage * Storage)
+{
+  FDefaultCopyParam.Load(Storage);
 }
 //---------------------------------------------------------------------------
 void __fastcall TGUIConfiguration::LoadData(THierarchicalStorage * Storage)

@@ -288,6 +288,7 @@
 #define ENCRYPT_KEY_GENERATED   1579
 #define LOCATION_PROFILE_HINT   1580
 #define USAGE_INFO              1581
+#define USAGE_RAWTRANSFERSETTINGS 1582
 
 #define WIN_FORMS_STRINGS       1600
 #define COPY_FILE               1605

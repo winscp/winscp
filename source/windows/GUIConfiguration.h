@@ -240,8 +240,8 @@ public:
   virtual __fastcall ~TGUIConfiguration();
   virtual void __fastcall Default();
   virtual void __fastcall UpdateStaticUsage();
-  bool __fastcall SaveCopyParam(THierarchicalStorage * Storage, const TCopyParamType * CopyParam, const TCopyParamType * Defaults);
   bool __fastcall LoadCopyParam(THierarchicalStorage * Storage, TCopyParamType * CopyParam);
+  void __fastcall LoadDefaultCopyParam(THierarchicalStorage * Storage);
 
   HANDLE __fastcall ChangeToDefaultResourceModule();
   HANDLE __fastcall ChangeResourceModule(HANDLE Instance);

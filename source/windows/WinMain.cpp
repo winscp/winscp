@@ -760,6 +760,13 @@ int __fastcall Execute()
     }
   }
 
+  std::unique_ptr<TStrings> RawSettings(new TStringList());
+  if (Params->FindSwitch(RAWTRANSFERSETTINGS_SWITCH, RawSettings.get()))
+  {
+    std::unique_ptr<TOptionsStorage> OptionsStorage(new TOptionsStorage(RawSettings.get(), false));
+    GUIConfiguration->LoadDefaultCopyParam(OptionsStorage.get());
+  }
+
   TConsoleMode Mode = cmNone;
   if (Params->FindSwitch(L"help") || Params->FindSwitch(L"h") || Params->FindSwitch(L"?"))
   {
