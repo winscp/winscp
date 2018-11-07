@@ -62,5 +62,6 @@
 #define HELP_LOGIN_AUTHORIZED_KEYS   "guide_public_key"
 #define HELP_READONLY_INI_FILE       "config#ini_readonly"
 #define HELP_SESSION_RENAME          "task_connection"
+#define HELP_DD_TARGET_UNKNOWN       "dragdrop_download"
 
 #endif // TextsWin

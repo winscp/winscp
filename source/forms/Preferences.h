@@ -320,6 +320,8 @@ __published:
   TCheckBox *NaturalOrderNumericalSortingCheck;
   TLabel *DragExtStatusLabel;
   TCheckBox *SynchronizeSummaryCheck;
+  TMemo *DDDrivesMemo;
+  TLabel *DDDrivesLabel;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);

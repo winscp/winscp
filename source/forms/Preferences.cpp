@@ -288,6 +288,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
 
     DDFakeFileEnabledButton->Checked = WinConfiguration->DDFakeFile;
     DDFakeFileDisabledButton->Checked = !DDFakeFileEnabledButton->Checked;
+    DDDrivesMemo->Lines->CommaText = WinConfiguration->DDDrives;
 
     if (WinConfiguration->DDTemporaryDirectory.IsEmpty())
     {
@@ -663,6 +664,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     BOOLPROP(BalloonNotifications);
 
     WinConfiguration->DDFakeFile = DDFakeFileEnabledButton->Checked;
+    WinConfiguration->DDDrives = DDDrivesMemo->Lines->CommaText;
 
     if (DDSystemTemporaryDirectoryButton->Checked)
     {
@@ -1230,15 +1232,17 @@ void __fastcall TPreferencesDialog::UpdateControls()
     else if (!WinConfiguration->IsDDExtRunning())
     {
       DragExtStatusLabel->Caption = LoadStr(PREFERENCES_DRAGEXT_NOT_RUNNING);
-      DragExtStatusLabel->Enabled = true;
+      DragExtStatusLabel->Enabled = DDFakeFileEnabledButton->Checked;
       DragExtStatusLabel->Font->Color = clGrayText;
     }
     else
     {
       DragExtStatusLabel->Caption = LoadStr(PREFERENCES_DRAGEXT_RUNNING);
-      DragExtStatusLabel->Enabled = true;
+      DragExtStatusLabel->Enabled = DDFakeFileEnabledButton->Checked;
       DragExtStatusLabel->Font->Color = clWindowText;
     }
+    EnableControl(DDDrivesMemo, DDFakeFileEnabledButton->Checked);
+    EnableControl(DDDrivesLabel, DDDrivesMemo->Enabled);
     EnableControl(DDFakeFileDisabledPanel, DDFakeFileDisabledButton->Checked);
     EnableControl(DDTemporaryDirectoryEdit, DDCustomTemporaryDirectoryButton->Enabled &&
       DDCustomTemporaryDirectoryButton->Checked);

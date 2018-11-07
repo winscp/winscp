@@ -353,6 +353,7 @@ private:
   bool FUseLocationProfiles;
   bool FUseSharedBookmarks;
   UnicodeString FDDTemporaryDirectory;
+  UnicodeString FDDDrives;
   bool FDDWarnLackOfTempSpace;
   bool FDDFakeFile;
   int FDDExtInstalled;
@@ -461,6 +462,7 @@ private:
   void __fastcall SetUseLocationProfiles(bool value);
   void __fastcall SetUseSharedBookmarks(bool value);
   void __fastcall SetDDTemporaryDirectory(UnicodeString value);
+  void __fastcall SetDDDrives(UnicodeString value);
   void __fastcall SetDDWarnLackOfTempSpace(bool value);
   void __fastcall SetDDFakeFile(bool value);
   void __fastcall SetDDExtTimeout(int value);
@@ -646,6 +648,7 @@ public:
   __property bool UseLocationProfiles = { read = FUseLocationProfiles, write = SetUseLocationProfiles};
   __property bool UseSharedBookmarks = { read = FUseSharedBookmarks, write = SetUseSharedBookmarks};
   __property UnicodeString DDTemporaryDirectory  = { read=FDDTemporaryDirectory, write=SetDDTemporaryDirectory };
+  __property UnicodeString DDDrives  = { read=FDDDrives, write=SetDDDrives };
   __property bool DDWarnLackOfTempSpace  = { read=FDDWarnLackOfTempSpace, write=SetDDWarnLackOfTempSpace };
   __property bool DDFakeFile = { read=FDDFakeFile, write=SetDDFakeFile };
   __property bool DDExtInstalled = { read=GetDDExtInstalled };

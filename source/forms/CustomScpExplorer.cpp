@@ -7189,7 +7189,14 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDEnd(TObject * Sender)
             // as it is checked as soon as drag&drop starts from
             // RemoteFileControlDDCreateDragFileList
             Configuration->Usage->Inc(L"DownloadsDragDropExternalExtTargetUnknown");
-            throw ExtException(NULL, LoadStr(DRAGEXT_TARGET_UNKNOWN2), HELP_DRAGEXT_TARGET_UNKNOWN);
+            if (!WinConfiguration->DDExtInstalled || WinConfiguration->IsDDExtBroken())
+            {
+              throw ExtException(NULL, LoadStr(DD_TARGET_UNKNOWN), HELP_DD_TARGET_UNKNOWN);
+            }
+            else
+            {
+              throw ExtException(NULL, LoadStr(DRAGEXT_TARGET_UNKNOWN2), HELP_DRAGEXT_TARGET_UNKNOWN);
+            }
           }
         }
         else

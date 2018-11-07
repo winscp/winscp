@@ -1313,13 +1313,13 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 8
           Width = 389
-          Height = 230
+          Height = 310
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Drag && Drop downloads'
           TabOrder = 0
           DesignSize = (
             389
-            230)
+            310)
           object DDFakeFileEnabledLabel: TLabel
             Left = 35
             Top = 44
@@ -1337,7 +1337,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object DDFakeFileDisabledLabel: TLabel
             Left = 35
-            Top = 141
+            Top = 221
             Width = 346
             Height = 54
             Anchors = [akLeft, akTop, akRight]
@@ -1352,13 +1352,20 @@ object PreferencesDialog: TPreferencesDialog
           object DragExtStatusLabel: TLabel
             Left = 35
             Top = 96
-            Width = 345
-            Height = 26
+            Width = 95
+            Height = 13
             Anchors = [akLeft, akTop, akRight]
-            AutoSize = False
             Caption = 'DragExtStatusLabel'
-            WordWrap = True
             OnClick = DDLabelClick
+          end
+          object DDDrivesLabel: TLabel
+            Left = 35
+            Top = 116
+            Width = 246
+            Height = 13
+            AutoSize = False
+            Caption = 'Allow dropping files to these &network drives:'
+            FocusControl = DDDrivesMemo
           end
           object DDFakeFileEnabledButton: TRadioButton
             Left = 16
@@ -1372,7 +1379,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object DDFakeFileDisabledButton: TRadioButton
             Left = 16
-            Top = 121
+            Top = 202
             Width = 356
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -1382,7 +1389,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object DDFakeFileDisabledPanel: TPanel
             Left = 34
-            Top = 192
+            Top = 272
             Width = 315
             Height = 28
             BevelOuter = bvNone
@@ -1400,6 +1407,16 @@ object PreferencesDialog: TPreferencesDialog
               TabOrder = 0
               OnClick = ControlChange
             end
+          end
+          object DDDrivesMemo: TMemo
+            Left = 34
+            Top = 132
+            Width = 337
+            Height = 61
+            Lines.Strings = (
+              'DDDrivesMemo')
+            ScrollBars = ssVertical
+            TabOrder = 3
           end
         end
       end

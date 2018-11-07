@@ -491,6 +491,7 @@ void __fastcall TWinConfiguration::Default()
 
   FDDTransferConfirmation = asAuto;
   FDDTemporaryDirectory = L"";
+  FDDDrives = L"";
   FDDWarnLackOfTempSpace = true;
   FDDWarnLackOfTempSpaceRatio = 1.1;
   FDDFakeFile = true;
@@ -895,6 +896,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Bool,     CopyOnDoubleClickConfirmation); \
     KEYEX(Integer, DDTransferConfirmation, L"DDTransferConfirmation2"); \
     KEY(String,   DDTemporaryDirectory); \
+    KEY(String,   DDDrives); \
     KEY(Bool,     DDWarnLackOfTempSpace); \
     KEY(Float,    DDWarnLackOfTempSpaceRatio); \
     KEY(Bool,     DeleteToRecycleBin); \
@@ -1829,6 +1831,11 @@ void __fastcall TWinConfiguration::SetDDTransferConfirmation(TAutoSwitch value)
 void __fastcall TWinConfiguration::SetDDTemporaryDirectory(UnicodeString value)
 {
   SET_CONFIG_PROPERTY(DDTemporaryDirectory);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetDDDrives(UnicodeString value)
+{
+  SET_CONFIG_PROPERTY(DDDrives);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetDDFakeFile(bool value)

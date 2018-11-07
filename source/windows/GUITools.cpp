@@ -6,7 +6,7 @@
 #include <Common.h>
 
 #include "GUITools.h"
-#include "GUIConfiguration.h"
+#include "WinConfiguration.h"
 #include <TextsCore.h>
 #include <CoreMain.h>
 #include <SessionData.h>
@@ -284,29 +284,60 @@ void __fastcall ExecuteTool(const UnicodeString & Name)
 //---------------------------------------------------------------------------
 TObjectList * StartCreationDirectoryMonitorsOnEachDrive(unsigned int Filter, TFileChangedEvent OnChanged)
 {
-  std::unique_ptr<TObjectList> Result(new TObjectList());
+  std::unique_ptr<TStrings> Drives(new TStringList());
+
+  std::unique_ptr<TStrings> DDDrives(new TStringList());
+  DDDrives->CommaText = WinConfiguration->DDDrives;
+  UnicodeString ExcludedDrives;
+  for (int Index = 0; Index < DDDrives->Count; Index++)
+  {
+    UnicodeString S = Trim(DDDrives->Strings[Index]);
+    if (!S.IsEmpty() && (S[1] == L'-'))
+    {
+      S = Trim(S.SubString(2, S.Length() - 1));
+      if (!S.IsEmpty())
+      {
+        ExcludedDrives += S[1];
+      }
+    }
+    else
+    {
+      Drives->Add(S);
+    }
+  }
+
   for (char Drive = FirstDrive; Drive <= LastDrive; Drive++)
   {
-    std::unique_ptr<TDirectoryMonitor> Monitor(new TDirectoryMonitor(Application));
-    TDriveInfoRec * DriveInfoRec = DriveInfo->Get(Drive);
-    if (DriveInfoRec->Valid &&
-        (DriveInfoRec->DriveType != DRIVE_CDROM) &&
-        ((DriveInfoRec->DriveType != DRIVE_REMOVABLE) || (Drive >= FirstFixedDrive)))
+    if (ExcludedDrives.Pos(Drive) == 0)
     {
-      try
+      TDriveInfoRec * DriveInfoRec = DriveInfo->Get(Drive);
+      if (DriveInfoRec->Valid &&
+          (DriveInfoRec->DriveType != DRIVE_CDROM) &&
+          ((DriveInfoRec->DriveType != DRIVE_REMOVABLE) || (Drive >= FirstFixedDrive)))
       {
-        Monitor->Path = DriveInfo->GetDriveRoot(Drive);
-        Monitor->WatchSubtree = true;
-        Monitor->WatchFilters = Filter;
-        Monitor->OnCreated = OnChanged;
-        Monitor->OnModified = OnChanged;
-        Monitor->Active = true;
-        Result->Add(Monitor.release());
+        Drives->Add(Drive);
       }
-      catch (Exception & E)
-      {
-        // Ignore errors watching not-ready drives
-      }
+    }
+  }
+
+  std::unique_ptr<TObjectList> Result(new TObjectList());
+  for (int Index = 0; Index < Drives->Count; Index++)
+  {
+    UnicodeString Drive = Drives->Strings[Index];
+    std::unique_ptr<TDirectoryMonitor> Monitor(new TDirectoryMonitor(Application));
+    try
+    {
+      Monitor->Path = DriveInfo->GetDriveRoot(Drive);
+      Monitor->WatchSubtree = true;
+      Monitor->WatchFilters = Filter;
+      Monitor->OnCreated = OnChanged;
+      Monitor->OnModified = OnChanged;
+      Monitor->Active = true;
+      Result->Add(Monitor.release());
+    }
+    catch (Exception & E)
+    {
+      // Ignore errors watching not-ready drives
     }
   }
   return Result.release();
