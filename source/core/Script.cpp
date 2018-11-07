@@ -1072,7 +1072,7 @@ void __fastcall TScript::CopyParamParams(TCopyParamType & CopyParam, TScriptProc
   }
 
   std::unique_ptr<TStrings> RawSettings(new TStringList());
-  if (Parameters->FindSwitch(RAWTRANSFERSETTINGS_SWICH, RawSettings.get()))
+  if (Parameters->FindSwitch(RAWTRANSFERSETTINGS_SWITCH, RawSettings.get()))
   {
     std::unique_ptr<TOptionsStorage> OptionsStorage(new TOptionsStorage(RawSettings.get(), false));
     CopyParam.Load(OptionsStorage.get());

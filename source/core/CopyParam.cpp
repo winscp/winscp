@@ -492,7 +492,7 @@ void __fastcall TCopyParamType::DoGetInfoStr(
   if (RawOptions->Count > 0)
   {
     ScriptArgs +=
-      RtfSwitch(RAWTRANSFERSETTINGS_SWICH, Link) +
+      RtfSwitch(RAWTRANSFERSETTINGS_SWITCH, Link) +
       FORMAT(L"[%d]", (RawOptions->Count)) +
       StringsToParams(RawOptions.get());
   }
