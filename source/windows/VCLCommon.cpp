@@ -281,30 +281,22 @@ void __fastcall EnableControl(TControl * Control, bool Enable)
   }
 };
 //---------------------------------------------------------------------------
+void __fastcall DoReadOnlyControl(TControl * Control, bool ReadOnly, bool Color);
+//---------------------------------------------------------------------------
 void __fastcall ReadOnlyAndEnabledControl(TControl * Control, bool ReadOnly, bool Enabled)
 {
-  if (dynamic_cast<TCustomEdit *>(Control) != NULL)
+  // Change color only in only one of EnableControl and DoReadOnlyControl to prevent flicker
+  if (ReadOnly)
   {
     DebugAssert(dynamic_cast<TWinControl *>(Control)->ControlCount == 0);
-    DebugAssert(dynamic_cast<TMemo *>(Control) == NULL);
-
-    if (ReadOnly)
-    {
-      Control->Enabled = Enabled;
-      ReadOnlyControl(Control, true);
-    }
-    else
-    {
-      // ReadOnlyControl(..., false) would set color to clWindow,
-      // but we want to reflect the Enabled state and avoid flicker.
-      ((TEdit*)Control)->ReadOnly = false;
-
-      EnableControl(Control, Enabled);
-    }
+    // As EnableControl, but with no color change
+    Control->Enabled = Enabled;
+    DoReadOnlyControl(Control, ReadOnly, true);
   }
   else
   {
-    DebugFail();
+    DoReadOnlyControl(Control, ReadOnly, false);
+    EnableControl(Control, Enabled);
   }
 }
 //---------------------------------------------------------------------------
@@ -317,7 +309,7 @@ static void __fastcall ReadOnlyEditContextPopup(void * /*Data*/, TObject * Sende
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall ReadOnlyControl(TControl * Control, bool ReadOnly)
+void __fastcall DoReadOnlyControl(TControl * Control, bool ReadOnly, bool Color)
 {
   if (dynamic_cast<TCustomEdit *>(Control) != NULL)
   {
@@ -326,7 +318,10 @@ void __fastcall ReadOnlyControl(TControl * Control, bool ReadOnly)
     TMemo * Memo = dynamic_cast<TMemo *>(Control);
     if (ReadOnly)
     {
-      SetParentColor(Control);
+      if (Color)
+      {
+        SetParentColor(Control);
+      }
       if (Memo != NULL)
       {
         // Is true by default and makes the control swallow not only
@@ -357,7 +352,10 @@ void __fastcall ReadOnlyControl(TControl * Control, bool ReadOnly)
     }
     else
     {
-      Edit->Color = clWindow;
+      if (Color)
+      {
+        Edit->Color = clWindow;
+      }
       // not supported atm, we need to persist previous value of WantReturns
       DebugAssert(Memo == NULL);
 
@@ -376,6 +374,11 @@ void __fastcall ReadOnlyControl(TControl * Control, bool ReadOnly)
   {
     DebugFail();
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall ReadOnlyControl(TControl * Control, bool ReadOnly)
+{
+  DoReadOnlyControl(Control, ReadOnly, true);
 }
 //---------------------------------------------------------------------------
 static TForm * MainLikeForm = NULL;
