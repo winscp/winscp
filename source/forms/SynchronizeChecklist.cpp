@@ -426,6 +426,7 @@ void __fastcall TSynchronizeChecklistDialog::FormShow(TObject * /*Sender*/)
     {
       BoundsRect = Application->MainForm->BoundsRect;
     }
+    FlashOnBackground();
   }
 
   ListView->ColProperties->ParamsStr = CustomWinConfiguration->SynchronizeChecklist.ListParams;
