@@ -2164,134 +2164,137 @@ begin
   Verb := EmptyStr;
   StopWatchThread;
   try
-    if Assigned(OnContextPopup) then
-    begin
-      Handled := False;
-      OnContextPopup(Self, ScreenToClient(Where), Handled);
-      if Handled then Abort;
-    end;
-    if (MarkedCount > 1) and
-       ((not Assigned(ItemFocused)) or ItemFocused.Selected) then
-    begin
-      if FIsRecycleBin then
+    try
+      if Assigned(OnContextPopup) then
       begin
-        Count := 0;
-        GetMem(PIDLArray, SizeOf(PItemIDList) * SelCount);
-        try
-          FillChar(PIDLArray^, Sizeof(PItemIDList) * SelCount, #0);
-          for Index := Selected.Index to Items.Count - 1 do
-            if Items[Index].Selected then
-            begin
-              PIDL_GetRelative(PFileRec(Items[Index].Data)^.PIDL, PIDLPath, PIDLRel);
-              FreePIDL(PIDLPath);
-              PIDLArray^[Count] := PIDLRel;
-              Inc(Count);
-            end;
-
-          try
-            ShellDisplayContextMenu(ParentForm.Handle, Where, iRecycleFolder, Count,
-              PidlArray^[0], False, Verb, False);
-          finally
-            for Index := 0 to Count - 1 do
-              FreePIDL(PIDLArray[Index]);
-          end;
-        finally
-          FreeMem(PIDLArray, Count);
-        end;
-      end
-        else
-      begin
-        FileList := TStringList.Create;
-        CreateFileList(False, True, FileList);
-        for Index := 0 to FileList.Count - 1 do
-          FileList[Index] := ExtractFileName(FileList[Index]);
-        ShellDisplayContextMenu(ParentForm.Handle, Where, PathName,
-          FileList, Verb, False);
-        FileList.Destroy;
+        Handled := False;
+        OnContextPopup(Self, ScreenToClient(Where), Handled);
+        if Handled then Abort;
       end;
-
-      {------------ Cut -----------}
-      if Verb = shcCut then
+      if (MarkedCount > 1) and
+         ((not Assigned(ItemFocused)) or ItemFocused.Selected) then
       begin
-        LastClipBoardOperation := cboCut;
-        {Clear items previous marked as cut:}
-        Item := GetNextItem(nil, sdAll, [isCut]);
-        while Assigned(Item) do
+        if FIsRecycleBin then
         begin
-          Item.Cut := False;
-          Item := GetNextItem(Item, sdAll, [isCut]);
-        end;
-        {Set property cut to TRUE for all selected items:}
-        Item := GetNextItem(nil, sdAll, [isSelected]);
-        while Assigned(Item) do
+          Count := 0;
+          GetMem(PIDLArray, SizeOf(PItemIDList) * SelCount);
+          try
+            FillChar(PIDLArray^, Sizeof(PItemIDList) * SelCount, #0);
+            for Index := Selected.Index to Items.Count - 1 do
+              if Items[Index].Selected then
+              begin
+                PIDL_GetRelative(PFileRec(Items[Index].Data)^.PIDL, PIDLPath, PIDLRel);
+                FreePIDL(PIDLPath);
+                PIDLArray^[Count] := PIDLRel;
+                Inc(Count);
+              end;
+
+            try
+              ShellDisplayContextMenu(ParentForm.Handle, Where, iRecycleFolder, Count,
+                PidlArray^[0], False, Verb, False);
+            finally
+              for Index := 0 to Count - 1 do
+                FreePIDL(PIDLArray[Index]);
+            end;
+          finally
+            FreeMem(PIDLArray, Count);
+          end;
+        end
+          else
         begin
-          Item.Cut := True;
-          Item := GetNextItem(Item, sdAll, [isSelected]);
+          FileList := TStringList.Create;
+          CreateFileList(False, True, FileList);
+          for Index := 0 to FileList.Count - 1 do
+            FileList[Index] := ExtractFileName(FileList[Index]);
+          ShellDisplayContextMenu(ParentForm.Handle, Where, PathName,
+            FileList, Verb, False);
+          FileList.Destroy;
         end;
+
+        {------------ Cut -----------}
+        if Verb = shcCut then
+        begin
+          LastClipBoardOperation := cboCut;
+          {Clear items previous marked as cut:}
+          Item := GetNextItem(nil, sdAll, [isCut]);
+          while Assigned(Item) do
+          begin
+            Item.Cut := False;
+            Item := GetNextItem(Item, sdAll, [isCut]);
+          end;
+          {Set property cut to TRUE for all selected items:}
+          Item := GetNextItem(nil, sdAll, [isSelected]);
+          while Assigned(Item) do
+          begin
+            Item.Cut := True;
+            Item := GetNextItem(Item, sdAll, [isSelected]);
+          end;
+        end
+          else
+        {----------- Copy -----------}
+        if Verb = shcCopy then LastClipBoardOperation := cboCopy
+          else
+        {----------- Paste ----------}
+        if Verb = shcPaste then
+            PasteFromClipBoard(ItemFullFileName(Selected))
+          else
+        if not FIsRecycleBin then Reload2;
       end
         else
-      {----------- Copy -----------}
-      if Verb = shcCopy then LastClipBoardOperation := cboCopy
-        else
-      {----------- Paste ----------}
-      if Verb = shcPaste then
-          PasteFromClipBoard(ItemFullFileName(Selected))
-        else
-      if not FIsRecycleBin then Reload2;
-    end
-      else
-    if Assigned(ItemFocused) and Assigned(ItemFocused.Data) then
-    begin
-      Verb := EmptyStr;
-      WithEdit := not FisRecycleBin and CanEdit(ItemFocused);
-      LoadEnabled := True;
-
-      if FIsRecycleBin then
+      if Assigned(ItemFocused) and Assigned(ItemFocused.Data) then
       begin
-        PIDL_GetRelative(PFileRec(ItemFocused.Data)^.PIDL, PIDLPath, PIDLRel);
-        ShellDisplayContextMenu(ParentForm.Handle, Where,
-          iRecycleFolder, 1, PIDLRel, False, Verb, False);
-        FreePIDL(PIDLRel);
-        FreePIDL(PIDLPath);
-      end
-        else
-      begin
-        ShellDisplayContextMenu(ParentForm.Handle, Where,
-          ItemFullFileName(ItemFocused), WithEdit, Verb,
-          not PFileRec(ItemFocused.Data)^.isDirectory);
+        Verb := EmptyStr;
+        WithEdit := not FisRecycleBin and CanEdit(ItemFocused);
         LoadEnabled := True;
-      end; {not FisRecycleBin}
 
-      {---------- Rename ----------}
-      if Verb = shcRename then ItemFocused.EditCaption
-        else
-      {------------ Cut -----------}
-      if Verb = shcCut then
-      begin
-        LastClipBoardOperation := cboCut;
-
-        Item := GetNextItem(nil, sdAll, [isCut]);
-        while Assigned(Item) do
+        if FIsRecycleBin then
         begin
-          Item.Cut := False;
-          Item := GetNextItem(ITem, sdAll, [isCut]);
-        end;
-        ItemFocused.Cut := True;
-      end
-        else
-      {----------- Copy -----------}
-      if Verb = shcCopy then LastClipBoardOperation := cboCopy
-        else
-      {----------- Paste ----------}
-      if Verb = shcPaste then
-      begin
-        if PFileRec(ItemFocused.Data)^.IsDirectory then
-        PasteFromClipBoard(ItemFullFileName(ItemFocused));
-      end
-        else
-      if not FIsRecycleBin then Reload2;
+          PIDL_GetRelative(PFileRec(ItemFocused.Data)^.PIDL, PIDLPath, PIDLRel);
+          ShellDisplayContextMenu(ParentForm.Handle, Where,
+            iRecycleFolder, 1, PIDLRel, False, Verb, False);
+          FreePIDL(PIDLRel);
+          FreePIDL(PIDLPath);
+        end
+          else
+        begin
+          ShellDisplayContextMenu(ParentForm.Handle, Where,
+            ItemFullFileName(ItemFocused), WithEdit, Verb,
+            not PFileRec(ItemFocused.Data)^.isDirectory);
+          LoadEnabled := True;
+        end; {not FisRecycleBin}
+
+        {---------- Rename ----------}
+        if Verb = shcRename then ItemFocused.EditCaption
+          else
+        {------------ Cut -----------}
+        if Verb = shcCut then
+        begin
+          LastClipBoardOperation := cboCut;
+
+          Item := GetNextItem(nil, sdAll, [isCut]);
+          while Assigned(Item) do
+          begin
+            Item.Cut := False;
+            Item := GetNextItem(ITem, sdAll, [isCut]);
+          end;
+          ItemFocused.Cut := True;
+        end
+          else
+        {----------- Copy -----------}
+        if Verb = shcCopy then LastClipBoardOperation := cboCopy
+          else
+        {----------- Paste ----------}
+        if Verb = shcPaste then
+        begin
+          if PFileRec(ItemFocused.Data)^.IsDirectory then
+          PasteFromClipBoard(ItemFullFileName(ItemFocused));
+        end
+          else
+        if not FIsRecycleBin then Reload2;
+      end;
+    finally
+      ChDir(DefDir);
     end;
-    ChDir(DefDir);
 
     if IsRecycleBin and (Verb <> shcCut) and (Verb <> shcProperties) and (SelCount > 0) then
     begin
