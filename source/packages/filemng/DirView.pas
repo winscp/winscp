@@ -2267,7 +2267,7 @@ end; {CreateDirectory}
 
 procedure TDirView.DisplayContextMenu(Where: TPoint);
 var
-  FileList : TStringList;
+  FileList: TStringList;
   Index: Integer;
   Item: TListItem;
   DefDir: string;
