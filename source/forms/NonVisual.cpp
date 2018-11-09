@@ -1638,7 +1638,7 @@ void __fastcall TNonVisualDataModule::CustomCommandsLastUpdate(TAction * Action)
     {
       TitleCommand = TitleCommand.SubString(1, MaxTitleCommandLen - 3) + Ellipsis;
     }
-    Action->Caption = FMTLOAD(CUSTOM_COMMAND_LAST, (TitleCommand));
+    Action->Caption = FMTLOAD(CUSTOM_COMMAND_LAST, (EscapeHotkey(TitleCommand)));
     Action->Hint = FMTLOAD(CUSTOM_COMMAND_HINT, (Command.Command));
     Action->Enabled = (State > 0);
   }
