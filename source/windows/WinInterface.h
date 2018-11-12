@@ -26,6 +26,7 @@ const int mpAllowContinueOnError = 0x02;
 
 #define UPLOAD_IF_ANY_SWITCH L"UploadIfAny"
 #define UPLOAD_SWITCH L"Upload"
+#define SYNCHRONIZE_SWITCH L"Synchronize"
 #define KEEP_UP_TO_DATE_SWITCH L"KeepUpToDate"
 #define JUMPLIST_SWITCH L"JumpList"
 #define DESKTOP_SWITCH L"Desktop"
@@ -343,10 +344,14 @@ enum TSynchronizeMode { smRemote, smLocal, smBoth };
 const fsoDisableTimestamp = 0x01;
 const fsoDoNotUsePresets =  0x02;
 const fsoAllowSelectedOnly = 0x04;
+typedef void __fastcall (__closure *TFullSynchronizeInNewWindow)
+  (TSynchronizeMode Mode, int Params, const UnicodeString & LocalDirectory, const UnicodeString & RemoteDirectory,
+   const TCopyParamType * CopyParams);
 bool __fastcall DoFullSynchronizeDialog(TSynchronizeMode & Mode, int & Params,
   UnicodeString & LocalDirectory, UnicodeString & RemoteDirectory,
   TCopyParamType * CopyParams, bool & SaveSettings, bool & SaveMode,
-  int Options, const TUsableCopyParamAttrs & CopyParamAttrs);
+  int Options, const TUsableCopyParamAttrs & CopyParamAttrs,
+  TFullSynchronizeInNewWindow OnFullSynchronizeInNewWindow);
 
 // forms\SynchronizeChecklist.cpp
 class TSynchronizeChecklist;

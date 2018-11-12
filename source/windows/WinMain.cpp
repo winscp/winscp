@@ -223,8 +223,17 @@ void __fastcall FullSynchronize(TTerminal * Terminal, TCustomScpExplorerForm * S
   bool SaveMode = true;
   // bit ugly
   TSynchronizeMode Mode = (TSynchronizeMode)GUIConfiguration->SynchronizeMode;
+  int Params = GUIConfiguration->SynchronizeParams;
+
+  // Undocumented syntax for "Start in New Window"
+  if (CommandParams->Count >= 4)
+  {
+    Mode = (TSynchronizeMode)StrToIntDef(CommandParams->Strings[2], Mode);
+    Params = StrToIntDef(CommandParams->Strings[3], Params);
+  }
+
   int Result =
-    ScpExplorer->DoFullSynchronizeDirectories(LocalDirectory, RemoteDirectory, Mode, SaveMode, UseDefaults);
+    ScpExplorer->DoFullSynchronizeDirectories(LocalDirectory, RemoteDirectory, Mode, Params, SaveMode, UseDefaults);
   if ((Result >= 0) && SaveMode)
   {
     GUIConfiguration->SynchronizeMode = Mode;
@@ -974,7 +983,7 @@ int __fastcall Execute()
             ParamCommand = pcUpload;
           }
         }
-        else if (Params->FindSwitch(L"Synchronize", CommandParams, 2))
+        else if (Params->FindSwitch(SYNCHRONIZE_SWITCH, CommandParams, 4))
         {
           ParamCommand = pcFullSynchronize;
         }

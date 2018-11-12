@@ -240,7 +240,8 @@ void __fastcall TScpExplorerForm::FullSynchronizeDirectories()
   UnicodeString RemoteDirectory = RemoteDirView->PathName;
   bool SaveMode = true;
   TSynchronizeMode Mode = (TSynchronizeMode)GUIConfiguration->SynchronizeMode;
-  if (DoFullSynchronizeDirectories(LocalDirectory, RemoteDirectory, Mode, SaveMode, false) >= 0)
+  int Params = GUIConfiguration->SynchronizeParams;
+  if (DoFullSynchronizeDirectories(LocalDirectory, RemoteDirectory, Mode, Params, SaveMode, false) >= 0)
   {
     WinConfiguration->ScpExplorer.LastLocalTargetDirectory = LocalDirectory;
     if (SaveMode)

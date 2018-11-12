@@ -5420,17 +5420,8 @@ void __fastcall TCustomScpExplorerForm::GetSynchronizeOptions(
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::SynchronizeInNewWindow(
-  const TSynchronizeParamType & Params, const TCopyParamType * CopyParams)
+UnicodeString __fastcall TCustomScpExplorerForm::SerializeCopyParamForCommandLine(const TCopyParamType * CopyParams)
 {
-  UnicodeString SessionName = CreateHiddenDuplicateSession();
-
-  UnicodeString AdditionalParams =
-    FORMAT(L"%s \"%s\" \"%s\" %d %d %s", (
-      TProgramParams::FormatSwitch(KEEP_UP_TO_DATE_SWITCH),
-      Params.LocalDirectory, Params.RemoteDirectory, Params.Params, Params.Options,
-      TProgramParams::FormatSwitch(DEFAULTS_SWITCH)));
-
   TCopyParamType Defaults;
   std::unique_ptr<THierarchicalStorage> ConfigStorage(Configuration->CreateConfigStorage());
   ConfigStorage->AccessMode = smRead;
@@ -5444,11 +5435,26 @@ void __fastcall TCustomScpExplorerForm::SynchronizeInNewWindow(
   std::unique_ptr<TOptionsStorage> OptionsStorage(new TOptionsStorage(Options.get(), true));
   CopyParams->Save(OptionsStorage.get(), &Defaults);
 
+  UnicodeString Result;
   if (Options->Count > 0)
   {
-    AdditionalParams +=
+    Result =
       FORMAT(L" %s%s", (TProgramParams::FormatSwitch(RAWTRANSFERSETTINGS_SWITCH), StringsToParams(Options.get())));
   }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::SynchronizeInNewWindow(
+  const TSynchronizeParamType & Params, const TCopyParamType * CopyParams)
+{
+  UnicodeString SessionName = CreateHiddenDuplicateSession();
+
+  UnicodeString AdditionalParams =
+    FORMAT(L"%s \"%s\" \"%s\" %d %d %s%s", (
+      TProgramParams::FormatSwitch(KEEP_UP_TO_DATE_SWITCH),
+      Params.LocalDirectory, Params.RemoteDirectory, Params.Params, Params.Options,
+      TProgramParams::FormatSwitch(DEFAULTS_SWITCH),
+      SerializeCopyParamForCommandLine(CopyParams)));
 
   ExecuteNewInstance(SessionName, AdditionalParams);
 }
@@ -5619,12 +5625,27 @@ void __fastcall TCustomScpExplorerForm::DoSynchronizeMove(
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::FullSynchronizeInNewWindow(
+  TSynchronizeMode Mode, int Params, const UnicodeString & LocalDirectory, const UnicodeString & RemoteDirectory,
+   const TCopyParamType * CopyParams)
+{
+  UnicodeString SessionName = CreateHiddenDuplicateSession();
+
+  UnicodeString AdditionalParams =
+    FORMAT(L"%s \"%s\" \"%s\" %d %d %s%s", (
+      TProgramParams::FormatSwitch(SYNCHRONIZE_SWITCH),
+      LocalDirectory, RemoteDirectory, Mode, Params,
+      TProgramParams::FormatSwitch(DEFAULTS_SWITCH),
+      SerializeCopyParamForCommandLine(CopyParams)));
+
+  ExecuteNewInstance(SessionName, AdditionalParams);
+}
+//---------------------------------------------------------------------------
 int __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
   UnicodeString & LocalDirectory, UnicodeString & RemoteDirectory,
-  TSynchronizeMode & Mode, bool & SaveMode, bool UseDefaults)
+  TSynchronizeMode & Mode, int Params, bool & SaveMode, bool UseDefaults)
 {
   int Result;
-  int Params = GUIConfiguration->SynchronizeParams;
 
   bool SaveSettings = false;
   int Options =
@@ -5635,7 +5656,7 @@ int __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
   bool Continue =
     UseDefaults ||
     DoFullSynchronizeDialog(Mode, Params, LocalDirectory, RemoteDirectory,
-      &CopyParam, SaveSettings, SaveMode, Options, CopyParamAttrs);
+      &CopyParam, SaveSettings, SaveMode, Options, CopyParamAttrs, FullSynchronizeInNewWindow);
   if (Continue)
   {
     Configuration->Usage->Inc(L"Synchronizations");

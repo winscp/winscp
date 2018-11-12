@@ -429,7 +429,11 @@ protected:
     TSynchronizeOptions * Options);
   void __fastcall SynchronizeSessionLog(const UnicodeString & Message);
   void __fastcall GetSynchronizeOptions(int Params, TSynchronizeOptions & Options);
+  UnicodeString __fastcall SerializeCopyParamForCommandLine(const TCopyParamType * CopyParams);
   void __fastcall SynchronizeInNewWindow(const TSynchronizeParamType & Params, const TCopyParamType * CopyParams);
+  void __fastcall FullSynchronizeInNewWindow(
+    TSynchronizeMode Mode, int Params, const UnicodeString & LocalDirectory, const UnicodeString & RemoteDirectory,
+     const TCopyParamType * CopyParams);
   bool __fastcall SynchronizeAllowSelectedOnly();
   virtual void __fastcall BatchStart(void *& Storage);
   virtual void __fastcall BatchEnd(void * Storage);
@@ -728,7 +732,7 @@ public:
   bool __fastcall DoSynchronizeDirectories(UnicodeString & LocalDirectory,
     UnicodeString & RemoteDirectory, bool UseDefaults);
   int __fastcall DoFullSynchronizeDirectories(UnicodeString & LocalDirectory,
-    UnicodeString & RemoteDirectory, TSynchronizeMode & Mode, bool & SaveMode,
+    UnicodeString & RemoteDirectory, TSynchronizeMode & Mode, int Params, bool & SaveMode,
     bool UseDefaults);
   void __fastcall StandaloneEdit(const UnicodeString & FileName);
   bool __fastcall CanPasteFromClipBoard();
