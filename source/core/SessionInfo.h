@@ -82,7 +82,7 @@ enum TLogLineType { llOutput, llInput, llStdError, llMessage, llException };
 enum TLogAction
 {
   laUpload, laDownload, laTouch, laChmod, laMkdir, laRm, laMv, laCp, laCall, laLs,
-  laStat, laChecksum, laCwd
+  laStat, laChecksum, laCwd, laDifference
 };
 //---------------------------------------------------------------------------
 enum TCaptureOutputType { cotOutput, cotError, cotExitCode };
@@ -226,6 +226,12 @@ class TCwdSessionAction : public TSessionAction
 {
 public:
   __fastcall TCwdSessionAction(TActionLog * Log, const UnicodeString & Path);
+};
+//---------------------------------------------------------------------------
+class TDifferenceSessionAction : public TSessionAction
+{
+public:
+  __fastcall TDifferenceSessionAction(TActionLog * Log, const TSynchronizeChecklist::TItem * Item);
 };
 //---------------------------------------------------------------------------
 class TSessionLog

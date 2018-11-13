@@ -14,6 +14,7 @@
 #include "TextsCore.h"
 #include "CoreMain.h"
 #include "Script.h"
+#include <System.IOUtils.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -309,6 +310,59 @@ public:
     FFile = File->Duplicate(true);
   }
 
+  void __fastcall SynchronizeChecklistItem(const TSynchronizeChecklist::TItem * Item)
+  {
+    UnicodeString Action;
+    bool RecordLocal = false;
+    bool RecordRemote = false;
+    switch (Item->Action)
+    {
+      case TSynchronizeChecklist::saUploadNew:
+        Action = L"uploadnew";
+        RecordLocal = true;
+        break;
+      case TSynchronizeChecklist::saDownloadNew:
+        Action = L"downloadnew";
+        RecordRemote = true;
+        break;
+      case TSynchronizeChecklist::saUploadUpdate:
+        Action = L"uploadupdate";
+        RecordLocal = true;
+        RecordRemote = true;
+        break;
+      case TSynchronizeChecklist::saDownloadUpdate:
+        Action = L"downloadupdate";
+        RecordLocal = true;
+        RecordRemote = true;
+        break;
+      case TSynchronizeChecklist::saDeleteRemote:
+        Action = L"deleteremote";
+        RecordRemote = true;
+        break;
+      case TSynchronizeChecklist::saDeleteLocal:
+        Action = L"deletelocal";
+        RecordLocal = true;
+        break;
+      default:
+        DebugFail();
+        break;
+    }
+
+    Parameter(L"action", Action);
+
+    if (RecordLocal)
+    {
+      UnicodeString FileName = TPath::Combine(Item->Local.Directory, Item->Local.FileName);
+      SynchronizeChecklistItemFileInfo(FileName, Item->IsDirectory, Item->Local);
+    }
+    if (RecordRemote)
+    {
+      UnicodeString FileName = UnixCombinePaths(Item->Remote.Directory, Item->Remote.FileName);
+      SynchronizeChecklistItemFileInfo(FileName, Item->IsDirectory, Item->Remote);
+    }
+  }
+
+
 protected:
   enum TState { Opened, Committed, RolledBack, Cancelled };
 
@@ -336,6 +390,7 @@ protected:
       case laStat: return L"stat";
       case laChecksum: return L"checksum";
       case laCwd: return L"cwd";
+      case laDifference: return L"difference";
       default: DebugFail(); return L"";
     }
   }
@@ -372,6 +427,21 @@ protected:
       FLog->AddIndented(Indent + FORMAT(L"  <group value=\"%s\" />", (XmlAttributeEscape(File->Group.DisplayText))));
     }
     FLog->AddIndented(Indent + L"</file>");
+  }
+
+  void __fastcall SynchronizeChecklistItemFileInfo(
+    const UnicodeString & AFileName, bool IsDirectory, const TSynchronizeChecklist::TItem::TFileInfo FileInfo)
+  {
+    Parameter(L"type", XmlAttributeEscape(IsDirectory ? L'D' : L'-'));
+    FileName(XmlAttributeEscape(AFileName));
+    if (!IsDirectory)
+    {
+      Parameter(L"size", XmlAttributeEscape(IntToStr(FileInfo.Size)));
+    }
+    if (FileInfo.ModificationFmt != mfNone)
+    {
+      Modification(FileInfo.Modification);
+    }
   }
 
 private:
@@ -654,6 +724,16 @@ __fastcall TCwdSessionAction::TCwdSessionAction(TActionLog * Log, const UnicodeS
   if (FRecord != NULL)
   {
     FRecord->Cwd(Path);
+  }
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+__fastcall TDifferenceSessionAction::TDifferenceSessionAction(TActionLog * Log, const TSynchronizeChecklist::TItem * Item) :
+  TSessionAction(Log, laDifference)
+{
+  if (FRecord != NULL)
+  {
+    FRecord->SynchronizeChecklistItem(Item);
   }
 }
 //---------------------------------------------------------------------------

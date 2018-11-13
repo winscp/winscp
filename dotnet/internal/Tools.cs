@@ -56,5 +56,15 @@ namespace WinSCP
                 }
             }
         }
+
+        public static int LengthTo32Bit(long length)
+        {
+            if (length < int.MinValue || length > int.MaxValue)
+            {
+                throw new OverflowException(string.Format(CultureInfo.CurrentCulture, "Size {0} cannot be represented using 32-bit value", length));
+            }
+
+            return (int)length;
+        }
     }
 }

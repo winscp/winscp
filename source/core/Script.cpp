@@ -1842,6 +1842,8 @@ void __fastcall TScript::SynchronizePreview(
     const TSynchronizeChecklist::TItem * Item = Checklist->Item[Index];
     if (Item->Checked)
     {
+      TDifferenceSessionAction Action(FTerminal->ActionLog, Item);
+
       UnicodeString Message;
       UnicodeString LocalRecord = SynchronizeFileRecord(LocalDirectory, Item, true);
       UnicodeString RemoteRecord = SynchronizeFileRecord(RemoteDirectory, Item, false);
