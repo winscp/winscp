@@ -633,7 +633,7 @@ namespace WinSCP
 
                         if (fileInfo.IsDirectory && allDirectories)
                         {
-                            foreach (RemoteFileInfo fileInfo2 in DoEnumerateRemoteFiles(RemotePath.CombinePaths(path, fileInfo.Name), regex, options, false))
+                            foreach (RemoteFileInfo fileInfo2 in DoEnumerateRemoteFiles(RemotePath.Combine(path, fileInfo.Name), regex, options, false))
                             {
                                 yield return fileInfo2;
                             }
@@ -1330,7 +1330,7 @@ namespace WinSCP
         [Obsolete("Use RemotePath.CombinePaths")]
         public string CombinePaths(string path1, string path2)
         {
-            return RemotePath.CombinePaths(path1, path2);
+            return RemotePath.Combine(path1, path2);
         }
 
         public void AddRawConfiguration(string setting, string value)
