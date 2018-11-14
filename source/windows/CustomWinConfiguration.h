@@ -58,6 +58,7 @@ private:
   bool FConfirmExitOnCompletion;
   bool FSynchronizeSummary;
   UnicodeString FSessionColors;
+  UnicodeString FFontColors;
   bool FCopyShortCutHintShown;
   bool FHttpForWebDAV;
   TNotifyEvent FOnMasterPasswordRecrypt;
@@ -105,6 +106,7 @@ public:
   __property bool ConfirmExitOnCompletion  = { read=FConfirmExitOnCompletion, write=SetConfirmExitOnCompletion };
   __property bool SynchronizeSummary  = { read = FSynchronizeSummary, write = SetSynchronizeSummary };
   __property UnicodeString SessionColors  = { read=FSessionColors, write=FSessionColors };
+  __property UnicodeString FontColors  = { read=FFontColors, write=FFontColors };
   __property bool CopyShortCutHintShown  = { read=FCopyShortCutHintShown, write=FCopyShortCutHintShown };
   __property bool UseMasterPassword = { read = GetUseMasterPassword };
   __property bool HttpForWebDAV = { read = FHttpForWebDAV, write = FHttpForWebDAV };

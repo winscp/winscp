@@ -120,6 +120,7 @@ void __fastcall TCustomWinConfiguration::Default()
   FConfirmExitOnCompletion = true;
   FSynchronizeSummary = true;
   FSessionColors = L"";
+  FFontColors = L"";
   FCopyShortCutHintShown = false;
   FHttpForWebDAV = false;
 
@@ -150,6 +151,7 @@ void __fastcall TCustomWinConfiguration::Saved()
     KEY(Bool,     ConfirmExitOnCompletion); \
     KEY(Bool,     SynchronizeSummary); \
     KEY(String,   SessionColors); \
+    KEY(String,   FontColors); \
     KEY(Bool,     CopyShortCutHintShown); \
     KEY(Bool,     HttpForWebDAV); \
   ) \
