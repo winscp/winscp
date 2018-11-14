@@ -324,6 +324,7 @@ type
     procedure Load(DoFocusSomething: Boolean); virtual;
     procedure NeedImageLists(Recreate: Boolean);
     procedure FreeImageLists;
+    procedure DoCustomDrawItem(Item: TListItem; Stage: TCustomDrawStage);
     property ImageList16: TImageList read FImageList16;
     property ImageList32: TImageList read FImageList32;
   public
@@ -1203,33 +1204,32 @@ begin
 end;
 
 
-function TCustomDirView.CustomDrawItem(Item: TListItem; State: TCustomDrawState;
-  Stage: TCustomDrawStage): Boolean;
+procedure TCustomDirView.DoCustomDrawItem(Item: TListItem; Stage: TCustomDrawStage);
 var
-  FItemColor: TColor;
+  Color: TColor;
 begin
   if (Item <> nil) and (Stage = cdPrePaint) then
   begin
-    FItemColor := ItemColor(Item);
-    if (FItemColor <> clDefaultItemColor) and
-       (Canvas.Font.Color <> FItemColor) then
-         Canvas.Font.Color := FItemColor;
+    Color := ItemColor(Item);
+    if (Color <> clDefaultItemColor) and
+       (Canvas.Font.Color <> Color) then
+    begin
+      Canvas.Font.Color := Color;
+    end;
   end;
+end;
+
+function TCustomDirView.CustomDrawItem(Item: TListItem; State: TCustomDrawState;
+  Stage: TCustomDrawStage): Boolean;
+begin
+  DoCustomDrawItem(Item, Stage);
   Result := inherited CustomDrawItem(Item, State, Stage);
 end;
 
 function TCustomDirView.CustomDrawSubItem(Item: TListItem; SubItem: Integer;
   State: TCustomDrawState; Stage: TCustomDrawStage): Boolean;
-var
-  FItemColor: TColor;
 begin
-  if Stage = cdPrePaint then
-  begin
-    FItemColor := ItemColor(Item);
-    if (FItemColor <> clDefaultItemColor) and
-       (Canvas.Font.Color <> FItemColor) then
-         Canvas.Font.Color := FItemColor;
-  end;
+  DoCustomDrawItem(Item, Stage);
   Result := inherited CustomDrawSubItem(Item, SubItem, State, Stage);
 end;
 
