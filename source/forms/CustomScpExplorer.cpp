@@ -7597,12 +7597,10 @@ void __fastcall TCustomScpExplorerForm::PanelExportStore(TOperationSide /*Side*/
 void __fastcall TCustomScpExplorerForm::Filter(TOperationSide Side)
 {
   TCustomDirView * DirView = this->DirView(Side);
-  TFileFilter Filter;
-  DefaultFileFilter(Filter);
-  Filter.Masks = DirView->Mask;
-  if (DoFilterMaskDialog(DirView, &Filter))
+  UnicodeString Mask;
+  if (DoFilterMaskDialog(DirView, Mask))
   {
-    DirView->Mask = TFileMasks::NormalizeMask(Filter.Masks);
+    DirView->Mask = TFileMasks::NormalizeMask(Mask);
     Configuration->Usage->Inc(L"Filters");
   }
 }
@@ -8126,7 +8124,7 @@ void __fastcall TCustomScpExplorerForm::SelectByMask(TOperationSide Side, bool S
 
   TFileFilter Filter;
   DefaultFileFilter(Filter);
-  if (DoSelectMaskDialog(ADirView, Select, &Filter, Configuration))
+  if (DoSelectMaskDialog(ADirView, Select, Filter))
   {
     Configuration->Usage->Inc(L"MaskSelections");
     ADirView->SelectFiles(Filter, Select);

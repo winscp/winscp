@@ -306,12 +306,8 @@ bool __fastcall DoRemoteCopyDialog(TStrings * Sessions, TStrings * Directories,
   UnicodeString & Target, UnicodeString & FileMask, bool & DirectCopy, void * CurrentSession);
 
 // forms\SelectMask.cpp
-#ifdef CustomdirviewHPP
-bool __fastcall DoSelectMaskDialog(TCustomDirView * Parent, bool Select,
-    TFileFilter * Filter, TConfiguration * Configuration);
-bool __fastcall DoFilterMaskDialog(TCustomDirView * Parent,
-  TFileFilter * Filter);
-#endif
+bool __fastcall DoSelectMaskDialog(TControl * Parent, bool Select, TFileFilter & Filter);
+bool __fastcall DoFilterMaskDialog(TControl * Parent, UnicodeString & Mask);
 
 // forms\EditMask.cpp
 bool __fastcall DoEditMaskDialog(TFileMasks & Mask);
