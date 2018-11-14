@@ -256,7 +256,8 @@ type
     function DragCompleteFileList: Boolean; virtual;
     procedure Edit(const HItem: TLVItem); override;
     procedure EndSelectionUpdate; override;
-    procedure Execute(Item: TListItem); virtual;
+    function DoExecFile(Item: TListItem; ForceEnter: Boolean): Boolean; virtual;
+    procedure Execute(Item: TListItem; ForceEnter: Boolean); virtual;
     procedure ExecuteFile(Item: TListItem); virtual; abstract;
     procedure FocusSomething; override;
     function GetIsRoot: Boolean; virtual; abstract;
@@ -318,7 +319,7 @@ type
     function IsBusy: Boolean;
     procedure BusyOperation(Operation: TBusyOperation);
     procedure DoDisplayPropertiesMenu;
-    procedure DoExecute(Item: TListItem);
+    procedure DoExecute(Item: TListItem; ForceEnter: Boolean);
     procedure DoExecuteParentDirectory;
     procedure Load(DoFocusSomething: Boolean); virtual;
     procedure NeedImageLists(Recreate: Boolean);
@@ -1384,9 +1385,9 @@ begin
     DisplayPropertiesMenu;
 end;
 
-procedure TCustomDirView.DoExecute(Item: TListItem);
+procedure TCustomDirView.DoExecute(Item: TListItem; ForceEnter: Boolean);
 begin
-  BusyOperation(procedure begin Execute(Item); end);
+  BusyOperation(procedure begin Execute(Item, ForceEnter); end);
 end;
 
 procedure TCustomDirView.DoExecuteParentDirectory;
@@ -1409,7 +1410,7 @@ begin
          Key := 0;
          if (AKey = VK_RETURN) and (Shift = [ssAlt]) then DoDisplayPropertiesMenu
            else
-         if (AKey <> VK_RETURN) or (Shift = []) then DoExecute(ItemFocused);
+         if (AKey <> VK_RETURN) or (Shift = []) then DoExecute(ItemFocused, (AKey <> VK_RETURN));
       end;
     end
       else
@@ -1643,7 +1644,7 @@ begin
      (GetItemAt(Message.XPos, Message.YPos) = ItemFocused) then
   begin
     if GetKeyState(VK_MENU) < 0 then DoDisplayPropertiesMenu
-      else DoExecute(ItemFocused);
+      else DoExecute(ItemFocused, False);
   end;
 end;
 
@@ -2434,27 +2435,26 @@ end; { EndUpdatingSelection }
 procedure TCustomDirView.ExecuteCurrentFile;
 begin
   Assert(Assigned(ItemFocused));
-  Execute(ItemFocused);
+  Execute(ItemFocused, False);
 end;
 
-procedure TCustomDirView.Execute(Item: TListItem);
-var
-  AllowExec: Boolean;
+function TCustomDirView.DoExecFile(Item: TListItem; ForceEnter: Boolean): Boolean;
+begin
+  Result := True;
+  if Assigned(FOnExecFile) then FOnExecFile(Self, Item, Result);
+end;
+
+procedure TCustomDirView.Execute(Item: TListItem; ForceEnter: Boolean);
 begin
   Assert(Assigned(Item));
   if Assigned(Item) and Assigned(Item.Data) and (not Loading) then
   begin
     if IsRecycleBin and (not ItemIsParentDirectory(Item)) then DisplayPropertiesMenu
       else
+    if DoExecFile(Item, ForceEnter) then
     begin
-      AllowExec := True;
-      if Assigned(FOnExecFile) then FOnExecFile(Self, Item, AllowExec);
-
-      if AllowExec then
-      begin
-        if ItemIsParentDirectory(Item) then ExecuteParentDirectory
-          else ExecuteFile(Item);
-      end;
+      if ItemIsParentDirectory(Item) then ExecuteParentDirectory
+        else ExecuteFile(Item);
     end;
   end;
 end;

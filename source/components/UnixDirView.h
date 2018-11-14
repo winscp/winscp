@@ -47,6 +47,7 @@ protected:
   void __fastcall DoReadDirectory(TObject * Sender, bool ReloadOnly);
   void __fastcall DoReadDirectoryImpl(TObject * Sender, bool ReloadOnly);
   void __fastcall DoStartReadDirectory(TObject * Sender);
+  virtual bool __fastcall DoExecFile(TListItem * Item, bool ForceEnter);
   virtual void __fastcall ExecuteFile(TListItem * Item);
   virtual bool __fastcall GetDirOK();
   virtual void __fastcall GetDisplayInfo(TListItem * ListItem, tagLVITEMW &DispInfo);

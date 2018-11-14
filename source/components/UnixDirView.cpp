@@ -83,6 +83,25 @@ void __fastcall TUnixDirView::DisplayPropertiesMenu()
   if (OnDisplayProperties) OnDisplayProperties(this);
 }
 //---------------------------------------------------------------------------
+bool __fastcall TUnixDirView::DoExecFile(TListItem * Item, bool ForceEnter)
+{
+  bool Result;
+#ifndef DESIGN_ONLY
+  ASSERT_VALID_ITEM;
+  if (ForceEnter)
+  {
+    PathChanging(true);
+    ChangeDirectory(ITEMFILE->FileName);
+    Result = false;
+  }
+  else
+#endif
+  {
+    Result = TCustomDirView::DoExecFile(Item, ForceEnter);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall TUnixDirView::ExecuteFile(TListItem * Item)
 {
 #ifndef DESIGN_ONLY
