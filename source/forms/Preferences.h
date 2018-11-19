@@ -417,6 +417,7 @@ __published:
   void __fastcall CustomIniFileStorageEditExit(TObject *Sender);
   void __fastcall CustomIniFileStorageEditAfterDialog(TObject *Sender, UnicodeString &Name, bool &Action);
   void __fastcall CustomIniFileStorageButtonClick(TObject *Sender);
+  void __fastcall CopyParamListViewDragOver(TObject *Sender, TObject *Source, int X, int Y, TDragState State, bool &Accept);
 
 private:
   TPreferencesMode FPreferencesMode;

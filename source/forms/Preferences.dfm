@@ -2299,7 +2299,7 @@ object PreferencesDialog: TPreferencesDialog
             OnDblClick = CopyParamListViewDblClick
             OnEndDrag = ListViewEndDrag
             OnDragDrop = CopyParamListViewDragDrop
-            OnDragOver = ListViewDragOver
+            OnDragOver = CopyParamListViewDragOver
             OnKeyDown = CopyParamListViewKeyDown
             OnSelectItem = ListViewSelectItem
             OnStartDrag = ListViewStartDrag

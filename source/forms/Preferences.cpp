@@ -1723,18 +1723,11 @@ const TCopyParamType * TPreferencesDialog::GetCopyParam(int Index)
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::CopyParamMove(int Source, int Dest)
 {
-  if (Source >= 1 && Source < (1 + FCopyParamList->Count) &&
-      Dest >= 0 && Dest < (1 + FCopyParamList->Count))
-  {
-    if (Dest == 0)
-    {
-      Dest = 1;
-    }
-    FCopyParamList->Move(Source - 1, Dest - 1);
-    CopyParamListView->ItemIndex = Dest;
-    UpdateCopyParamListView();
-    UpdateControls();
-  }
+  DebugAssert((Source > 0) && (Dest > 0));
+  FCopyParamList->Move(Source - 1, Dest - 1);
+  CopyParamListView->ItemIndex = Dest;
+  UpdateCopyParamListView();
+  UpdateControls();
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::CopyParamListViewDragDrop(
@@ -1742,9 +1735,26 @@ void __fastcall TPreferencesDialog::CopyParamListViewDragDrop(
 {
   if (Source == CopyParamListView)
   {
-    if (AllowListViewDrag(Sender, X, Y))
+    if ((FListViewDragSource > 0) &&
+        AllowListViewDrag(Sender, X, Y) &&
+        (FListViewDragDest > 0))
     {
       CopyParamMove(FListViewDragSource, FListViewDragDest);
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::CopyParamListViewDragOver(
+  TObject * Sender, TObject * Source, int X, int Y, TDragState State, bool & Accept)
+{
+  ListViewDragOver(Sender, Source, X, Y, State, Accept);
+
+  if (Source == Sender)
+  {
+    int Dest = PointToListViewIndex(Sender, X, Y);
+    if ((FListViewDragSource == 0) || (Dest == 0))
+    {
+      Accept = false;
     }
   }
 }
@@ -1849,14 +1859,10 @@ void __fastcall TPreferencesDialog::CopyParamListViewKeyDown(
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::EditorMove(int Source, int Dest)
 {
-  if (Source >= 0 && Source < FEditorList->Count &&
-      Dest >= 0 && Dest < FEditorList->Count)
-  {
-    FEditorList->Move(Source, Dest);
-    EditorListView3->ItemIndex = Dest;
-    UpdateEditorListView();
-    UpdateControls();
-  }
+  FEditorList->Move(Source, Dest);
+  EditorListView3->ItemIndex = Dest;
+  UpdateEditorListView();
+  UpdateControls();
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::EditorListView3DragDrop(TObject * Sender,
