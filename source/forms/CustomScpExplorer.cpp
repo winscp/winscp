@@ -7597,7 +7597,7 @@ void __fastcall TCustomScpExplorerForm::PanelExportStore(TOperationSide /*Side*/
 void __fastcall TCustomScpExplorerForm::Filter(TOperationSide Side)
 {
   TCustomDirView * DirView = this->DirView(Side);
-  UnicodeString Mask;
+  UnicodeString Mask = DirView->Mask;
   if (DoFilterMaskDialog(DirView, Mask))
   {
     DirView->Mask = TFileMasks::NormalizeMask(Mask);
