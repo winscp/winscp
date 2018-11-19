@@ -1614,9 +1614,6 @@ void __fastcall TPreferencesDialog::CustomCommandMove(int Source, int Dest)
   int SourceIndex = GetCommandIndex(Source);
   int DestIndex = GetCommandIndex(Dest);
   List->Move(SourceIndex, DestIndex);
-  // workaround for bug in VCL
-  CustomCommandsView->ItemIndex = -1;
-  CustomCommandsView->ItemFocused = CustomCommandsView->Selected;
   CustomCommandsView->ItemIndex = Dest;
   UpdateCustomCommandsView();
   UpdateControls();
@@ -1734,9 +1731,6 @@ void __fastcall TPreferencesDialog::CopyParamMove(int Source, int Dest)
       Dest = 1;
     }
     FCopyParamList->Move(Source - 1, Dest - 1);
-    // workaround for bug in VCL
-    CopyParamListView->ItemIndex = -1;
-    CopyParamListView->ItemFocused = CopyParamListView->Selected;
     CopyParamListView->ItemIndex = Dest;
     UpdateCopyParamListView();
     UpdateControls();
@@ -1859,9 +1853,6 @@ void __fastcall TPreferencesDialog::EditorMove(int Source, int Dest)
       Dest >= 0 && Dest < FEditorList->Count)
   {
     FEditorList->Move(Source, Dest);
-    // workaround for bug in VCL
-    EditorListView3->ItemIndex = -1;
-    EditorListView3->ItemFocused = EditorListView3->Selected;
     EditorListView3->ItemIndex = Dest;
     UpdateEditorListView();
     UpdateControls();
