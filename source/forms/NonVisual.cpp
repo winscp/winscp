@@ -332,6 +332,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
     AutoReadDirectoryAfterOpAction->Checked = Configuration->AutoReadDirectoryAfterOp, )
   UPD(PreferencesAction, true)
   UPD(PresetsPreferencesAction, true)
+  UPD(FileColorsPreferences, true)
   UPDEX(LockToolbarsAction, true,
     LockToolbarsAction->Checked = WinConfiguration->LockToolbars, )
   UPDEX(SelectiveToolbarTextAction, true,
@@ -649,6 +650,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(AutoReadDirectoryAfterOpAction, ScpExplorer->ToggleAutoReadDirectoryAfterOp())
     EXE(PreferencesAction, PreferencesDialog(::pmDefault) )
     EXE(PresetsPreferencesAction, PreferencesDialog(pmPresets) )
+    EXE(FileColorsPreferences, PreferencesDialog(pmFileColors) )
     EXE(LockToolbarsAction, WinConfiguration->LockToolbars = !WinConfiguration->LockToolbars)
     EXE(SelectiveToolbarTextAction, WinConfiguration->SelectiveToolbarText = !WinConfiguration->SelectiveToolbarText)
     EXECOMP(CustomCommandsBand)

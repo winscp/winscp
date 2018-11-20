@@ -348,8 +348,8 @@ __published:
   TTBXItem *TBXItem223;
   TTBXItem *TBXItem224;
   TTBXItem *TBXItem210;
-  TTBXItem *TBXItem228;
-  TTBXItem *TBXItem229;
+  TTBXSubmenuItem *TBXItem228;
+  TTBXSubmenuItem *TBXItem229;
   TTBXSeparatorItem *TBXSeparatorItem53;
   TTBXItem *TBXItem230;
   TTBXSubmenuItem *TBXSubmenuItem231;
@@ -427,6 +427,12 @@ __published:
   TTBXItem *TBXItem127;
   TTBXSeparatorItem *TBXSeparatorItem62;
   TTBXItem *TBXItem163;
+  TTBXItem *TBXItem169;
+  TTBXSeparatorItem *TBXSeparatorItem63;
+  TTBXItem *TBXItem237;
+  TTBXItem *TBXItem245;
+  TTBXSeparatorItem *TBXSeparatorItem64;
+  TTBXItem *TBXItem251;
   void __fastcall SplitterMoved(TObject *Sender);
   void __fastcall SplitterCanResize(TObject *Sender, int &NewSize,
     bool &Accept);
@@ -580,6 +586,7 @@ protected:
   virtual UnicodeString __fastcall DefaultDownloadTargetDirectory();
   virtual void __fastcall StartingDisconnected();
   virtual void __fastcall UpdateImages();
+  virtual void __fastcall FileColorsChanged();
 
 public:
   __fastcall TScpCommanderForm(TComponent* Owner);

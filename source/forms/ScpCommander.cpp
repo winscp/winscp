@@ -2206,3 +2206,9 @@ void __fastcall TScpCommanderForm::PasteFromClipBoard()
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::FileColorsChanged()
+{
+  TCustomScpExplorerForm::FileColorsChanged();
+  DoFileColorsChanged(LocalDirView);
+}
+//---------------------------------------------------------------------------

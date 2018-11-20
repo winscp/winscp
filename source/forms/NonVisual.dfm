@@ -2253,6 +2253,13 @@ object NonVisualDataModule: TNonVisualDataModule
       ImageIndex = 111
       ShortCut = 16451
     end
+    object FileColorsPreferences: TAction
+      Tag = 15
+      Category = 'View'
+      Caption = 'File &Colors...'
+      HelpKeyword = 'ui_pref_file_colors'
+      Hint = 'Configure file color rules'
+    end
   end
   object ExplorerBarPopup: TTBXPopupMenu
     Images = GlyphsModule.ExplorerImages

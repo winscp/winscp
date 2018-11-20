@@ -742,12 +742,12 @@ static void __fastcall SessionColorSetGetColorInfo(
   GetStandardSessionColorInfo(Col, Row, Color, Name);
 }
 //---------------------------------------------------------------------------
-static TColor __fastcall RestoreColor(UnicodeString CStr)
+TColor __fastcall RestoreColor(const UnicodeString & CStr)
 {
   return TColor(StrToInt(UnicodeString(L"$") + CStr));
 }
 //---------------------------------------------------------------------------
-static UnicodeString __fastcall StoreColor(TColor Color)
+UnicodeString __fastcall StoreColor(TColor Color)
 {
   return IntToHex(Color, 6);
 }

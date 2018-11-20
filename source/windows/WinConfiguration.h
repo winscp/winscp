@@ -250,6 +250,20 @@ struct TEditorData
   static bool __fastcall DecideExternalEditorText(UnicodeString ExternalEditor);
 };
 //---------------------------------------------------------------------------
+struct TFileColorData
+{
+  TFileColorData();
+
+  TFileMasks FileMask;
+  TColor Color;
+
+  void Load(const UnicodeString & S);
+  UnicodeString Save() const;
+  typedef std::vector<TFileColorData> TList;
+  static void LoadList(const UnicodeString & S, TList & List);
+  static UnicodeString SaveList(const TList & List);
+};
+//---------------------------------------------------------------------------
 #undef C
 //---------------------------------------------------------------------------
 class TEditorPreferences
@@ -431,6 +445,7 @@ private:
   bool FShowTips;
   UnicodeString FTipsSeen;
   TDateTime FTipsShown;
+  UnicodeString FFileColors;
   int FRunsSinceLastTip;
   bool FLockedInterface;
   int FDontDecryptPasswords;
@@ -527,6 +542,7 @@ private:
   void __fastcall SetShowTips(bool value);
   void __fastcall SetTipsSeen(UnicodeString value);
   void __fastcall SetTipsShown(TDateTime value);
+  void __fastcall SetFileColors(UnicodeString value);
   void __fastcall SetRunsSinceLastTip(int value);
   bool __fastcall GetHonorDrivePolicy();
   void __fastcall SetHonorDrivePolicy(bool value);
@@ -708,6 +724,7 @@ public:
   __property bool ShowTips = { read = FShowTips, write = SetShowTips };
   __property UnicodeString TipsSeen = { read = FTipsSeen, write = SetTipsSeen };
   __property TDateTime TipsShown = { read = FTipsShown, write = SetTipsShown };
+  __property UnicodeString FileColors = { read = FFileColors, write = SetFileColors };
   __property int RunsSinceLastTip = { read = FRunsSinceLastTip, write = SetRunsSinceLastTip };
   __property bool HonorDrivePolicy = { read = GetHonorDrivePolicy, write = SetHonorDrivePolicy };
   __property TMasterPasswordPromptEvent OnMasterPasswordPrompt = { read = FOnMasterPasswordPrompt, write = FOnMasterPasswordPrompt };

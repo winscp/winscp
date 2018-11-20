@@ -124,6 +124,7 @@ __published:
   __property OnExecFile;
   __property OnMatchMask;
   __property OnGetOverlay;
+  __property OnGetItemColor;
   __property OnDDDragEnter;
   __property OnDDDragLeave;
   __property OnDDDragOver;

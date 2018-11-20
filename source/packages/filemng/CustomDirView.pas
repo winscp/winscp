@@ -69,6 +69,7 @@ type
   TDirViewExecFileEvent = procedure(Sender: TObject; Item: TListItem; var AllowExec: Boolean) of object;
   TMatchMaskEvent = procedure(Sender: TObject; FileName: string; Directory: Boolean; Size: Int64; Modification: TDateTime; Masks: string; var Matches: Boolean; AllowImplicitMatches: Boolean) of object;
   TDirViewGetOverlayEvent = procedure(Sender: TObject; Item: TListItem; var Indexes: Word) of object;
+  TDirViewGetItemColorEvent = procedure(Sender: TObject; FileName: string; Directory: Boolean; Size: Int64; Modification: TDateTime; var Color: TColor) of object;
   TDirViewUpdateStatusBarEvent = procedure(Sender: TObject; const FileInfo: TStatusFileInfo) of object;
   TDirViewBusy = procedure(Sender: TObject; Busy: Integer; var State: Boolean) of object;
   TBusyOperation = reference to procedure;
@@ -161,6 +162,7 @@ type
     FPendingFocusSomething: Boolean;
     FOnMatchMask: TMatchMaskEvent;
     FOnGetOverlay: TDirViewGetOverlayEvent;
+    FOnGetItemColor: TDirViewGetItemColorEvent;
     FMask: string;
     FNaturalOrderNumericalSorting: Boolean;
     FScrollOnDragOver: TListViewScrollOnDragOver;
@@ -262,6 +264,7 @@ type
     procedure FocusSomething; override;
     function GetIsRoot: Boolean; virtual; abstract;
     function ItemCanDrag(Item: TListItem): Boolean; virtual;
+    function DoItemColor(Item: TListItem): TColor;
     function ItemColor(Item: TListItem): TColor; virtual;
     function ItemData(Item: TListItem): TObject; virtual;
     function ItemImageIndex(Item: TListItem; Cache: Boolean): Integer; virtual; abstract;
@@ -467,6 +470,7 @@ type
     property OnPathChange: TDirViewNotifyEvent read FOnPathChange write FOnPathChange;
     property OnMatchMask: TMatchMaskEvent read FOnMatchMask write FOnMatchMask;
     property OnGetOverlay: TDirViewGetOverlayEvent read FOnGetOverlay write FOnGetOverlay;
+    property OnGetItemColor: TDirViewGetItemColorEvent read FOnGetItemColor write FOnGetItemColor;
     property PathLabel: TCustomPathLabel read FPathLabel write SetPathLabel;
     property ShowHiddenFiles: Boolean read FShowHiddenFiles write SetShowHiddenFiles default True;
     property OnUpdateStatusBar: TDirViewUpdateStatusBarEvent read FOnUpdateStatusBar write FOnUpdateStatusBar;
@@ -861,6 +865,7 @@ begin
 
   FOnMatchMask := nil;
   FOnGetOverlay := nil;
+  FOnGetItemColor := nil;
 
   FDragDropFilesEx := TCustomizableDragDropFilesEx.Create(Self);
   with FDragDropFilesEx do
@@ -1204,13 +1209,26 @@ begin
 end;
 
 
+function TCustomDirView.DoItemColor(Item: TListItem): TColor;
+var
+  Precision: TDateTimePrecision;
+begin
+  Result := clDefaultItemColor;
+  if Assigned(OnGetItemColor) then
+  begin
+    OnGetItemColor(Self, ItemFileName(Item), ItemIsDirectory(Item), ItemFileSize(Item), ItemFileTime(Item, Precision), Result);
+  end;
+end;
+
 procedure TCustomDirView.DoCustomDrawItem(Item: TListItem; Stage: TCustomDrawStage);
 var
   Color: TColor;
 begin
   if (Item <> nil) and (Stage = cdPrePaint) then
   begin
-    Color := ItemColor(Item);
+    Color := DoItemColor(Item);
+    if Color = clDefaultItemColor then Color := ItemColor(Item);
+
     if (Color <> clDefaultItemColor) and
        (Canvas.Font.Color <> Color) then
     begin

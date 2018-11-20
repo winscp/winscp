@@ -346,6 +346,7 @@ type
     property OnExecFile;
     property OnMatchMask;
     property OnGetOverlay;
+    property OnGetItemColor;
 
     property CompressedColor: TColor
       read FCompressedColor write SetCompressedColor default clBlue;

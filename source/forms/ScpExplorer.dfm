@@ -912,8 +912,17 @@ inherited ScpExplorerForm: TScpExplorerForm
       object TBXItem22: TTBXItem
         Action = NonVisualDataModule.RemoteOpenDirAction
       end
-      object TBXItem229: TTBXItem
+      object TBXItem229: TTBXSubmenuItem
         Action = NonVisualDataModule.RemoteFilterAction
+        DropdownCombo = True
+        object TBXItem127: TTBXItem
+          Action = NonVisualDataModule.RemoteFilterAction
+        end
+        object TBXSeparatorItem43: TTBXSeparatorItem
+        end
+        object TBXItem161: TTBXItem
+          Action = NonVisualDataModule.FileColorsPreferences
+        end
       end
     end
     object UpdatesToolbar: TTBXToolbar

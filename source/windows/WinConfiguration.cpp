@@ -31,6 +31,50 @@ static UnicodeString NotepadName(L"notepad.exe");
 static UnicodeString ToolbarsLayoutKey(L"ToolbarsLayout2");
 static UnicodeString ToolbarsLayoutOldKey(L"ToolbarsLayout");
 //---------------------------------------------------------------------------
+static const wchar_t FileColorDataSeparator = L':';
+TFileColorData::TFileColorData() :
+  Color(TColor())
+{
+}
+//---------------------------------------------------------------------------
+void TFileColorData::Load(const UnicodeString & S)
+{
+  UnicodeString Buf(S);
+  Color = RestoreColor(CutToChar(Buf, FileColorDataSeparator, true));
+  FileMask = Buf;
+}
+//---------------------------------------------------------------------------
+UnicodeString TFileColorData::Save() const
+{
+  UnicodeString Result = StoreColor(Color) + FileColorDataSeparator + FileMask.Masks;
+  return Result;
+}
+//---------------------------------------------------------------------------
+void TFileColorData::LoadList(const UnicodeString & S, TList & List)
+{
+  std::unique_ptr<TStringList> Strings(new TStringList());
+  Strings->CommaText = S;
+
+  List.clear();
+  for (int Index = 0; Index < Strings->Count; Index++)
+  {
+    TFileColorData FileColorData;
+    FileColorData.Load(Strings->Strings[Index]);
+    List.push_back(FileColorData);
+  }
+}
+//---------------------------------------------------------------------------
+UnicodeString TFileColorData::SaveList(const TList & List)
+{
+  std::unique_ptr<TStringList> Strings(new TStringList());
+  for (TFileColorData::TList::const_iterator Iter = List.begin(); Iter != List.end(); Iter++)
+  {
+    Strings->Add((*Iter).Save());
+  }
+  return Strings->CommaText;
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 __fastcall TEditorData::TEditorData() :
   FileMask(AnyMask),
   Editor(edInternal),
@@ -568,6 +612,7 @@ void __fastcall TWinConfiguration::Default()
   FShowTips = true;
   FTipsSeen = L"";
   FTipsShown = Now();
+  FFileColors = L"";
   FRunsSinceLastTip = 0;
   FExtensionsDeleted = L"";
   FLockedInterface = false;
@@ -963,6 +1008,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Bool,     ShowTips); \
     KEY(String,   TipsSeen); \
     KEY(DateTime, TipsShown); \
+    KEY(String,   FileColors); \
     KEY(Integer,  RunsSinceLastTip); \
     KEY(Bool,     HonorDrivePolicy); \
     KEY(Integer,  LastMachineInstallations); \
@@ -2207,6 +2253,11 @@ void __fastcall TWinConfiguration::SetTipsShown(TDateTime value)
   SET_CONFIG_PROPERTY(TipsShown);
 }
 //---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetFileColors(UnicodeString value)
+{
+  SET_CONFIG_PROPERTY(FileColors);
+}
+//---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetRunsSinceLastTip(int value)
 {
   SET_CONFIG_PROPERTY(RunsSinceLastTip);
@@ -2676,6 +2727,7 @@ void __fastcall TWinConfiguration::UpdateStaticUsage()
   Usage->Set(L"MinimizeToTray", MinimizeToTray);
   UnicodeString ToolbarsButtons = (Interface == ifExplorer) ? ScpExplorer.ToolbarsButtons : ScpCommander.ToolbarsButtons;
   Usage->Set(L"AnyHiddenToolbarButtons", !ToolbarsButtons.IsEmpty());
+  Usage->Set(L"FileColors", !FileColors.IsEmpty());
   Usage->Set(L"ShowingTips", ShowTips);
   TipsUpdateStaticUsage();
 

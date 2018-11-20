@@ -91,6 +91,7 @@ __fastcall TPreferencesDialog::TPreferencesDialog(
   FixListColumnWidth(CopyParamListView, -1);
   FEditorScrollOnDragOver = new TListViewScrollOnDragOver(EditorListView3, true);
   FixListColumnWidth(EditorListView3, -1);
+  FFileColorScrollOnDragOver = new TListViewScrollOnDragOver(FileColorsView, true);
 
   FOrigCustomCommandsViewWindowProc = CustomCommandsView->WindowProc;
   CustomCommandsView->WindowProc = CustomCommandsViewWindowProc;
@@ -133,6 +134,7 @@ __fastcall TPreferencesDialog::TPreferencesDialog(
 //---------------------------------------------------------------------------
 __fastcall TPreferencesDialog::~TPreferencesDialog()
 {
+  SAFE_DESTROY(FFileColorScrollOnDragOver);
   SAFE_DESTROY(FEditorScrollOnDragOver);
   SAFE_DESTROY(FCopyParamScrollOnDragOver);
   SAFE_DESTROY(FCustomCommandsScrollOnDragOver);
@@ -510,6 +512,10 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
       FPanelFont->Assign(Screen->IconFont);
     }
 
+    // file colors
+    TFileColorData::LoadList(WinConfiguration->FileColors, FFileColors);
+    UpdateFileColorsView();
+
     // updates
     TUpdatesConfiguration Updates = WinConfiguration->Updates;
     if (int(Updates.Period) <= 0)
@@ -858,6 +864,9 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     }
     WinConfiguration->PanelFont = PanelFontConfiguration;
 
+    // file colors
+    WinConfiguration->FileColors = TFileColorData::SaveList(FFileColors);
+
     // updates
     WinConfiguration->Updates = SaveUpdates();
 
@@ -1034,6 +1043,7 @@ void __fastcall TPreferencesDialog::FormShow(TObject * /*Sender*/)
     case pmEditors: PageControl->ActivePage = EditorSheet; break;
     case pmCommander: PageControl->ActivePage = CommanderSheet; break;
     case pmEditorInternal: PageControl->ActivePage = EditorInternalSheet; break;
+    case pmFileColors: PageControl->ActivePage = FileColorsSheet; break;
     default: PageControl->ActivePage = PreferencesSheet; break;
   }
   PageControlChange(NULL);
@@ -1256,6 +1266,7 @@ void __fastcall TPreferencesDialog::UpdateControls()
     AutomaticIniFileStorageLabel->UpdateStatus();
     EnableControl(CustomIniFileStorageEdit, CustomIniFileStorageButton->Checked);
 
+    // editors
     EditorFontLabel->WordWrap = EditorWordWrapCheck->Checked;
     bool EditorSelected = (EditorListView3->Selected != NULL);
     EnableControl(EditEditorButton, EditorSelected);
@@ -1264,6 +1275,13 @@ void __fastcall TPreferencesDialog::UpdateControls()
       (EditorListView3->ItemIndex > 0));
     EnableControl(DownEditorButton, EditorSelected &&
       (EditorListView3->ItemIndex < EditorListView3->Items->Count - 1));
+
+    // file colors
+    bool FileColorSelected = (FileColorsView->Selected != NULL);
+    EnableControl(EditFileColorButton, FileColorSelected);
+    EnableControl(RemoveFileColorButton, FileColorSelected);
+    EnableControl(UpFileColorButton, FileColorSelected && (FileColorsView->ItemIndex > 0));
+    EnableControl(DownFileColorButton, FileColorSelected && (FileColorsView->ItemIndex < FileColorsView->Items->Count - 1));
 
     // updates
     EnableControl(UpdatesAuthenticationEmailEdit, FAutomaticUpdatesPossible);
@@ -1366,7 +1384,7 @@ void __fastcall TPreferencesDialog::EditorFontColorButtonClick(TObject * /*Sende
   // WORKAROUND: Compiler keeps crashing randomly (but frequently) with
   // "internal error" when passing menu directly to unique_ptr.
   // Splitting it to two statements seems to help.
-  // The same hack exists in TSiteAdvancedDialog::ColorButtonClick and TOpenLocalPathHandler::Open
+  // The same hack exists in TSiteAdvancedDialog::ColorButtonClick, TOpenLocalPathHandler::Open and TSelectMaskDialog::ColorButtonClick
   TPopupMenu * Menu = CreateColorPopupMenu(FEditorFont->Color, EditorFontColorChange);
   // Popup menu has to survive the popup as TBX calls click handler asynchronously (post).
   FColorPopupMenu.reset(Menu);
@@ -1638,6 +1656,10 @@ TListViewScrollOnDragOver * __fastcall TPreferencesDialog::ScrollOnDragOver(TObj
   else if (ListView == EditorListView3)
   {
     return FEditorScrollOnDragOver;
+  }
+  else if (ListView == FileColorsView)
+  {
+    return FFileColorScrollOnDragOver;
   }
   else
   {
@@ -2960,5 +2982,119 @@ void __fastcall TPreferencesDialog::CustomIniFileStorageButtonClick(TObject * /*
     // Focus to force validation
     CustomIniFileStorageEdit->SetFocus();
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::UpdateFileColorsView()
+{
+  FileColorsView->Items->Count = FFileColors.size();
+  AutoSizeListColumnsWidth(FileColorsView);
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::FileColorsViewData(TObject *, TListItem * Item)
+{
+  Item->Caption = FFileColors[Item->Index].FileMask.Masks;
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::FileColorsViewCustomDrawItem(
+  TCustomListView * Sender, TListItem * Item, TCustomDrawState, bool & DebugUsedArg(DefaultDraw))
+{
+  Sender->Canvas->Font->Color = FFileColors[Item->Index].Color;
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::AddEditFileColor(bool Edit)
+{
+  TFileColorData FileColorData;
+  int Index = FileColorsView->ItemIndex;
+  if (Edit)
+  {
+    FileColorData = FFileColors[Index];
+  }
+  else
+  {
+    FileColorData.FileMask = AnyMask;
+  }
+
+  if (DoFileColorDialog(FileColorData))
+  {
+    if (Edit)
+    {
+      FFileColors[Index] = FileColorData;
+    }
+    else
+    {
+      if (Index < 0)
+      {
+        FFileColors.push_back(FileColorData);
+      }
+      else
+      {
+        FFileColors.insert(&FFileColors[Index], FileColorData);
+      }
+    }
+
+    UpdateFileColorsView();
+    FileColorsView->ItemIndex = Index;
+    UpdateControls();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::AddEditFileColorButtonClick(TObject * Sender)
+{
+  bool Edit = (Sender == EditFileColorButton);
+  AddEditFileColor(Edit);
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::FileColorMove(int Source, int Dest)
+{
+  FFileColors.insert(FFileColors.begin() + Dest + ((Dest > Source) ? 1 : 0), FFileColors[Source]);
+  FFileColors.erase(FFileColors.begin() + Source + ((Dest < Source) ? 1 : 0));
+  FileColorsView->ItemIndex = Dest;
+  UpdateFileColorsView();
+  UpdateControls();
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::FileColorsViewDragDrop(TObject * Sender, TObject * Source, int X, int Y)
+{
+  if (Source == FileColorsView)
+  {
+    if (AllowListViewDrag(Sender, X, Y))
+    {
+      FileColorMove(FListViewDragSource, FListViewDragDest);
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::FileColorsViewKeyDown(TObject *, WORD & Key, TShiftState)
+{
+  if (RemoveFileColorButton->Enabled && (Key == VK_DELETE))
+  {
+    RemoveFileColorButtonClick(NULL);
+  }
+
+  if (DebugAlwaysTrue(AddFileColorButton->Enabled) && (Key == VK_INSERT))
+  {
+    AddEditFileColor(false);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::RemoveFileColorButtonClick(TObject *)
+{
+  FFileColors.erase(FFileColors.begin() + FileColorsView->ItemIndex);
+  UpdateFileColorsView();
+  UpdateControls();
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::FileColorsViewDblClick(TObject *)
+{
+  if (EditFileColorButton->Enabled)
+  {
+    AddEditFileColor(true);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::UpDownFileColorButtonClick(TObject * Sender)
+{
+  int DestIndex = FileColorsView->ItemIndex + (Sender == UpFileColorButton ? -1 : 1);
+  FileColorMove(FileColorsView->ItemIndex, DestIndex);
 }
 //---------------------------------------------------------------------------

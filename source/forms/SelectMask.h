@@ -25,19 +25,32 @@ __published:
   TStaticText * HintText;
   TButton * ClearButton;
   TButton * MaskButton;
+  TButton *ColorButton;
+  TLabel *ColorFileNamesLabel;
+  TLabel *ColorSizesLabel;
+  TLabel *ColorPaddingLabel;
   void __fastcall FormCloseQuery(TObject * Sender, bool & CanClose);
   void __fastcall MaskEditExit(TObject * Sender);
   void __fastcall HelpButtonClick(TObject * Sender);
   void __fastcall ClearButtonClick(TObject * Sender);
   void __fastcall FormShow(TObject * Sender);
   void __fastcall MaskButtonClick(TObject * Sender);
+  void __fastcall ColorButtonClick(TObject *Sender);
+  void __fastcall MaskEditChange(TObject *Sender);
 private:
   TControl * FParent;
+  std::unique_ptr<TPopupMenu> FColorPopupMenu;
+  TColor FColor;
+
+  void __fastcall ColorChange(TColor Color);
+  void __fastcall UpdateControls();
+
 public:
-  enum TMode { smSelect, smDeselect, smFilter };
+  enum TMode { smSelect, smDeselect, smFilter, smFileColor };
   __fastcall TSelectMaskDialog(TComponent* Owner);
   void __fastcall Init(TMode Mode, TControl * Parent);
-  bool __fastcall Execute(TFileFilter & FileFilter);
+  bool __fastcall Execute(TFileFilter & FileFilter, TColor & Color);
+  bool __fastcall Execute(UnicodeString & Mask, TColor & Color);
 };
 //---------------------------------------------------------------------------
 #endif

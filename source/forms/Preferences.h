@@ -322,6 +322,14 @@ __published:
   TCheckBox *SynchronizeSummaryCheck;
   TMemo *DDDrivesMemo;
   TLabel *DDDrivesLabel;
+  TTabSheet *FileColorsSheet;
+  TGroupBox *FileColorsGroup;
+  TListView *FileColorsView;
+  TButton *AddFileColorButton;
+  TButton *RemoveFileColorButton;
+  TButton *UpFileColorButton;
+  TButton *DownFileColorButton;
+  TButton *EditFileColorButton;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);
@@ -417,6 +425,14 @@ __published:
   void __fastcall CustomIniFileStorageEditExit(TObject *Sender);
   void __fastcall CustomIniFileStorageEditAfterDialog(TObject *Sender, UnicodeString &Name, bool &Action);
   void __fastcall CustomIniFileStorageButtonClick(TObject *Sender);
+  void __fastcall FileColorsViewData(TObject *Sender, TListItem *Item);
+  void __fastcall AddEditFileColorButtonClick(TObject *Sender);
+  void __fastcall FileColorsViewCustomDrawItem(TCustomListView *Sender, TListItem *Item, TCustomDrawState State, bool &DefaultDraw);
+  void __fastcall FileColorsViewDragDrop(TObject *Sender, TObject *Source, int X, int Y);
+  void __fastcall FileColorsViewKeyDown(TObject *Sender, WORD &Key, TShiftState Shift);
+  void __fastcall RemoveFileColorButtonClick(TObject *Sender);
+  void __fastcall FileColorsViewDblClick(TObject *Sender);
+  void __fastcall UpDownFileColorButtonClick(TObject *Sender);
   void __fastcall CopyParamListViewDragOver(TObject *Sender, TObject *Source, int X, int Y, TDragState State, bool &Accept);
 
 private:
@@ -438,6 +454,7 @@ private:
   TListViewScrollOnDragOver * FCustomCommandsScrollOnDragOver;
   TListViewScrollOnDragOver * FCopyParamScrollOnDragOver;
   TListViewScrollOnDragOver * FEditorScrollOnDragOver;
+  TListViewScrollOnDragOver * FFileColorScrollOnDragOver;
   int FNoUpdate;
   bool FLanguagesLoaded;
   std::unique_ptr<TPopupMenu> FColorPopupMenu;
@@ -448,6 +465,7 @@ private:
   std::unique_ptr<TStrings> FAddedExtensions;
   std::unique_ptr<TStringList> FCustomCommandOptions;
   UnicodeString FCustomIniFileStorageName;
+  TFileColorData::TList FFileColors;
   void __fastcall CMDialogKey(TWMKeyDown & Message);
   void __fastcall WMHelp(TWMHelp & Message);
   void __fastcall CMDpiChanged(TMessage & Message);
@@ -496,6 +514,9 @@ protected:
   void __fastcall CustomIniFileStorageChanged();
   UnicodeString __fastcall GetCustomIniFileStorageName();
   TShortCuts __fastcall GetShortCuts();
+  void __fastcall FileColorMove(int Source, int Dest);
+  void __fastcall UpdateFileColorsView();
+  void __fastcall AddEditFileColor(bool Edit);
 };
 //----------------------------------------------------------------------------
 #endif

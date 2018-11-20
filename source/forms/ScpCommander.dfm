@@ -1208,8 +1208,18 @@ inherited ScpCommanderForm: TScpCommanderForm
           DropdownCombo = True
           OnPopup = RemoteOpenDirButtonPopup
         end
-        object TBXItem229: TTBXItem
+        object TBXItem229: TTBXSubmenuItem
           Action = NonVisualDataModule.RemoteFilterAction
+          DropdownCombo = True
+          object TBXItem169: TTBXItem
+            Action = NonVisualDataModule.RemoteFilterAction
+            Options = [tboDefault]
+          end
+          object TBXSeparatorItem63: TTBXSeparatorItem
+          end
+          object TBXItem237: TTBXItem
+            Action = NonVisualDataModule.FileColorsPreferences
+          end
         end
       end
       object RemoteFileToolbar: TTBXToolbar
@@ -1538,8 +1548,17 @@ inherited ScpCommanderForm: TScpCommanderForm
           DropdownCombo = True
           OnPopup = LocalOpenDirButtonPopup
         end
-        object TBXItem228: TTBXItem
+        object TBXItem228: TTBXSubmenuItem
           Action = NonVisualDataModule.LocalFilterAction
+          DropdownCombo = True
+          object TBXItem245: TTBXItem
+            Action = NonVisualDataModule.LocalFilterAction
+          end
+          object TBXSeparatorItem64: TTBXSeparatorItem
+          end
+          object TBXItem251: TTBXItem
+            Action = NonVisualDataModule.FileColorsPreferences
+          end
         end
       end
       object LocalFileToolbar: TTBXToolbar

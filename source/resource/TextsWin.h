@@ -615,6 +615,7 @@
 #define SYNCHRONIZE_COMPLETE    6016
 #define SYNCHRONIZE_SUMMARY     6017
 #define PREFERENCES_DRAGEXT_BROKEN 6018
+#define FILE_COLOR_CAPTION      6019
 
 // 2xxx is reserved for TextsFileZilla.h
 

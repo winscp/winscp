@@ -191,6 +191,8 @@ __published:
   void __fastcall SessionsPageControlContextPopup(TObject *Sender, TPoint &MousePos, bool &Handled);
   void __fastcall DockContextPopup(TObject *Sender, TPoint &MousePos, bool &Handled);
   void __fastcall SessionsPageControlCloseButtonClick(TPageControl *Sender, int Index);
+  void __fastcall DirViewGetItemColor(
+    TObject * Sender, UnicodeString FileName, bool Directory, __int64 Size, TDateTime Modification, TColor & Color);
 
 private:
   TTerminal * FTerminal;
@@ -263,6 +265,7 @@ private:
   TFeedSynchronizeError FOnFeedSynchronizeError;
   bool FNeedSession;
   TTerminal * FFileFindTerminal;
+  UnicodeString FFileColorsCurrent;
 
   bool __fastcall GetEnableFocusedOperation(TOperationSide Side, int FilesOnly);
   bool __fastcall GetEnableSelectedOperation(TOperationSide Side, int FilesOnly);
@@ -341,6 +344,7 @@ protected:
   bool FRemoteDirViewWasFocused;
   int FDoNotIdleCurrentTerminal;
   UnicodeString FFakeFileDropTarget;
+  TFileColorData::TList FFileColors;
 
   virtual bool __fastcall CopyParamDialog(TTransferDirection Direction,
     TTransferType Type, bool Temp, TStrings * FileList,
@@ -644,6 +648,8 @@ protected:
   bool __fastcall DoesClipboardContainOurFiles();
   bool __fastcall CanPasteToDirViewFromClipBoard();
   void __fastcall CloseSessionTab(int Index);
+  void __fastcall DoFileColorsChanged(TCustomDirView * DirView);
+  virtual void __fastcall FileColorsChanged();
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();

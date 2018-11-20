@@ -1412,10 +1412,7 @@ void __fastcall TSiteAdvancedDialog::ProxyLocalCommandBrowseButtonClick(
 //---------------------------------------------------------------------------
 void __fastcall TSiteAdvancedDialog::ColorButtonClick(TObject * /*Sender*/)
 {
-  // WORKAROUND: Compiler keeps crashing randomly (but frequently) with
-  // "internal error" when passing menu directly to unique_ptr.
-  // Splitting it to two statements seems to help.
-  // The same hack exists in TPreferencesDialog::EditorFontColorButtonClick
+  // Reason for separate Menu variable is given in TPreferencesDialog::EditorFontColorButtonClick
   TPopupMenu * Menu = CreateSessionColorPopupMenu(FColor, SessionColorChange);
   // Popup menu has to survive the popup as TBX calls click handler asynchronously (post).
   FColorPopupMenu.reset(Menu);

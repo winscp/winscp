@@ -1059,6 +1059,24 @@ void __fastcall TCustomScpExplorerForm::ConfigurationChanged()
   // otherwise, its enough to have in in the context menu
   QueueDeleteAllDoneQueueToolbarItem->Visible =
     WinConfiguration->QueueKeepDoneItems && (WinConfiguration->QueueKeepDoneItemsFor < 0);
+
+  if (FFileColorsCurrent != WinConfiguration->FileColors)
+  {
+    TFileColorData::LoadList(WinConfiguration->FileColors, FFileColors);
+    FFileColorsCurrent = WinConfiguration->FileColors;
+    FileColorsChanged();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::DoFileColorsChanged(TCustomDirView * DirView)
+{
+  DirView->OnGetItemColor = FFileColors.empty() ? TDirViewGetItemColorEvent(NULL) : TDirViewGetItemColorEvent(&DirViewGetItemColor);
+  DirView->Invalidate();
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::FileColorsChanged()
+{
+  DoFileColorsChanged(RemoteDirView);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::FileConfigurationChanged(
@@ -10156,6 +10174,26 @@ void __fastcall TCustomScpExplorerForm::ClipboardFakeCreated(TObject * /*Sender*
     {
       bool NoConfirmation = (WinConfiguration->DDTransferConfirmation == asOff);
       ClipboardDownload(ExtractFilePath(FileName), NoConfirmation, true);
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::DirViewGetItemColor(
+  TObject * Sender, UnicodeString FileName, bool Directory, __int64 Size, TDateTime Modification, TColor & Color)
+{
+  TFileMasks::TParams MaskParams;
+  MaskParams.Size = Size;
+  MaskParams.Modification = Modification;
+
+  TCustomDirView * DirView = DebugNotNull(dynamic_cast<TCustomDirView *>(Sender));
+  for (TFileColorData::TList::const_iterator Iter = FFileColors.begin(); Iter != FFileColors.end(); Iter++)
+  {
+    bool ImplicitMatch;
+    if (Iter->FileMask.Matches(FileName, Directory, DirView->PathName, &MaskParams, false, ImplicitMatch) &&
+        !ImplicitMatch)
+    {
+      Color = Iter->Color;
+      break;
     }
   }
 }

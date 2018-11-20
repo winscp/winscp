@@ -243,7 +243,7 @@ bool __fastcall LocationProfilesDialog(TOpenDirectoryMode Mode,
 // forms\Preferences.cpp
 enum TPreferencesMode { pmDefault, pmEditor, pmCustomCommands,
     pmQueue, pmLogging, pmUpdates, pmPresets, pmEditors, pmCommander,
-    pmEditorInternal };
+    pmEditorInternal, pmFileColors };
 class TCopyParamRuleData;
 struct TPreferencesDialogData
 {
@@ -308,6 +308,7 @@ bool __fastcall DoRemoteCopyDialog(TStrings * Sessions, TStrings * Directories,
 // forms\SelectMask.cpp
 bool __fastcall DoSelectMaskDialog(TControl * Parent, bool Select, TFileFilter & Filter);
 bool __fastcall DoFilterMaskDialog(TControl * Parent, UnicodeString & Mask);
+bool __fastcall DoFileColorDialog(TFileColorData & FileColorData);
 
 // forms\EditMask.cpp
 bool __fastcall DoEditMaskDialog(TFileMasks & Mask);
@@ -481,6 +482,8 @@ void __fastcall CreateEditorBackgroundColorMenu(TComponent * AOwner, TColor Colo
   TColorChangeEvent OnColorChange);
 TPopupMenu * __fastcall CreateColorPopupMenu(TColor Color,
   TColorChangeEvent OnColorChange);
+TColor __fastcall RestoreColor(const UnicodeString & CStr);
+UnicodeString __fastcall StoreColor(TColor Color);
 
 void __fastcall FixButtonImage(TButton * Button);
 void __fastcall CenterButtonImage(TButton * Button);
