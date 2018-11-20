@@ -2337,6 +2337,15 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     object UncheckItem: TMenuItem
       Action = UncheckAction
     end
+    object N3: TMenuItem
+      Caption = '-'
+    end
+    object CheckAllFilesinThisDirectory1: TMenuItem
+      Action = CheckDirectoryAction
+    end
+    object UncheckAllActionsinThisDirectory1: TMenuItem
+      Action = UncheckDirectoryAction
+    end
     object N1: TMenuItem
       Caption = '-'
     end
@@ -2412,6 +2421,14 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       Caption = '&Move'
       ShortCut = 117
       OnExecute = MoveActionExecute
+    end
+    object CheckDirectoryAction: TAction
+      Caption = 'Check All Actions in &This Directory'
+      OnExecute = CheckDirectoryActionExecute
+    end
+    object UncheckDirectoryAction: TAction
+      Caption = 'Uncheck All Actions in This &Directory'
+      OnExecute = UncheckDirectoryActionExecute
     end
   end
   object ActionImages120: TPngImageList

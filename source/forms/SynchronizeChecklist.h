@@ -59,6 +59,11 @@ __published:
   TAction *MoveAction;
   TButton *MoveButton;
   TMenuItem *MoveItem;
+  TAction *CheckDirectoryAction;
+  TAction *UncheckDirectoryAction;
+  TMenuItem *N3;
+  TMenuItem *CheckAllFilesinThisDirectory1;
+  TMenuItem *UncheckAllActionsinThisDirectory1;
   void __fastcall HelpButtonClick(TObject * Sender);
   void __fastcall FormShow(TObject * Sender);
   void __fastcall StatusBarDrawPanel(TStatusBar *StatusBar,
@@ -95,6 +100,8 @@ __published:
   void __fastcall CalculateSizeActionExecute(TObject *Sender);
   void __fastcall CalculateSizeAllActionExecute(TObject *Sender);
   void __fastcall MoveActionExecute(TObject *Sender);
+  void __fastcall CheckDirectoryActionExecute(TObject *Sender);
+  void __fastcall UncheckDirectoryActionExecute(TObject *Sender);
 
 public:
   __fastcall TSynchronizeChecklistDialog(
@@ -164,6 +171,7 @@ protected:
   typedef std::pair<const TSynchronizeChecklist::TItem *, const TSynchronizeChecklist::TItem *> TSynchronizeMoveItems;
   TSynchronizeMoveItems __fastcall GetMoveItems();
   void __fastcall DeleteItem(TListItem * Item);
+  void __fastcall CheckDirectory(bool Check);
   static int __fastcall CompareNumber(__int64 Value1, __int64 Value2);
 };
 //----------------------------------------------------------------------------

@@ -19,6 +19,7 @@
 #include <GUITools.h>
 #include <TerminalManager.h>
 #include <System.IOUtils.hpp>
+#include <System.StrUtils.hpp>
 //---------------------------------------------------------------------
 #pragma link "IEListView"
 #pragma link "NortonLikeListView"
@@ -182,6 +183,8 @@ void __fastcall TSynchronizeChecklistDialog::UpdateControls()
   UncheckAction->Enabled = !AllUnchecked && !FSynchronizing;
   CheckAllAction->Enabled = (FChecked[0] < FTotals[0]) && !FSynchronizing;
   UncheckAllAction->Enabled = (FChecked[0] > 0) && !FSynchronizing;
+  CheckDirectoryAction->Enabled = CheckAllAction->Enabled; // sic
+  UncheckDirectoryAction->Enabled = UncheckAllAction->Enabled; // sic
   CustomCommandsAction->Enabled = AnyBoth && !AnyNonBoth && DebugAlwaysTrue(!FSynchronizing);
   ReverseAction->Enabled = (ListView->SelCount > 0) && DebugAlwaysTrue(!FSynchronizing);
   MoveAction->Enabled = (GetMoveItems() != TSynchronizeMoveItems());
@@ -1264,5 +1267,45 @@ void __fastcall TSynchronizeChecklistDialog::MoveActionExecute(TObject *)
 
   DeleteItem(Item1);
   DeleteItem(Item2);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeChecklistDialog::CheckDirectory(bool Check)
+{
+  std::unique_ptr<TStringList> Directories(new TStringList());
+  TListItem * Item = ListView->Selected;
+  while (Item != NULL)
+  {
+    const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(Item);
+    // It does not matter if we use local or remote directory
+    Directories->Add(IncludeTrailingBackslash(ChecklistItem->Local.Directory));
+    Item = ListView->GetNextItem(Item, sdAll, TItemStates() << isSelected);
+  }
+
+  TAutoFlag ChangingItemMassSwitch(FChangingItemMass);
+  for (int Index = 0; Index < ListView->Items->Count; Index++)
+  {
+    TListItem * Item = ListView->Items->Item[Index];
+    const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(Item);
+    UnicodeString Directory = IncludeTrailingBackslash(ChecklistItem->Local.Directory);
+    for (int Index2 = 0; Index2 < Directories->Count; Index2++)
+    {
+      if (StartsText(Directories->Strings[Index2], Directory))
+      {
+        Item->Checked = Check;
+      }
+    }
+  }
+  ChangingItemMassSwitch.Release();
+  UpdateControls();
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeChecklistDialog::CheckDirectoryActionExecute(TObject *)
+{
+  CheckDirectory(true);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeChecklistDialog::UncheckDirectoryActionExecute(TObject *)
+{
+  CheckDirectory(false);
 }
 //---------------------------------------------------------------------------
