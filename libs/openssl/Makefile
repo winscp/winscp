@@ -155,6 +155,7 @@ CRYPTOOBJ=$(OBJ_D)\cryptlib.obj \
     $(OBJ_D)\cversion.obj $(OBJ_D)\ex_data.obj \
     $(OBJ_D)\cpt_err.obj $(OBJ_D)\ebcdic.obj $(OBJ_D)\uid.obj \
     $(OBJ_D)\o_time.obj $(OBJ_D)\o_str.obj $(OBJ_D)\o_dir.obj \
+    $(OBJ_D)\getenv.obj \
     $(OBJ_D)\md4_dgst.obj \
     $(OBJ_D)\md4_one.obj $(OBJ_D)\md5_dgst.obj $(MD5_ASM_OBJ) \
     $(OBJ_D)\md5_one.obj $(OBJ_D)\cbc128.obj $(OBJ_D)\cfb128.obj \
@@ -875,6 +876,9 @@ $(OBJ_D)\o_str.obj: $(SRC_D)\crypto\o_str.c
 
 $(OBJ_D)\o_dir.obj: $(SRC_D)\crypto\o_dir.c
     $(CC) -o$(OBJ_D)\o_dir.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\o_dir.c
+
+$(OBJ_D)\getenv.obj: $(SRC_D)\crypto\getenv.c
+    $(CC) -o$(OBJ_D)\getenv.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\getenv.c
 
 $(OBJ_D)\md4_dgst.obj: $(SRC_D)\crypto\md4\md4_dgst.c
     $(CC) -o$(OBJ_D)\md4_dgst.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\md4\md4_dgst.c
