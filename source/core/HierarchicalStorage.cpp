@@ -160,34 +160,25 @@ UnicodeString __fastcall THierarchicalStorage::MungeKeyName(UnicodeString Key)
 //---------------------------------------------------------------------------
 bool __fastcall THierarchicalStorage::OpenSubKey(UnicodeString Key, bool CanCreate, bool Path)
 {
-  bool Result;
   UnicodeString MungedKey;
   if (Path)
   {
     DebugAssert(Key.IsEmpty() || (Key[Key.Length()] != L'\\'));
-    Result = true;
-    while (!Key.IsEmpty() && Result)
+    while (!Key.IsEmpty())
     {
       if (!MungedKey.IsEmpty())
       {
         MungedKey += L'\\';
       }
       MungedKey += MungeKeyName(CutToChar(Key, L'\\', false));
-      Result = DoOpenSubKey(MungedKey, CanCreate);
-    }
-
-    // hack to restore last opened key for registry storage
-    if (!Result)
-    {
-      FKeyHistory->Add(IncludeTrailingBackslash(CurrentSubKey+MungedKey));
-      CloseSubKey();
     }
   }
   else
   {
     MungedKey = MungeKeyName(Key);
-    Result = DoOpenSubKey(MungedKey, CanCreate);
   }
+
+  bool Result = DoOpenSubKey(MungedKey, CanCreate);
 
   if (Result)
   {
@@ -520,9 +511,21 @@ void __fastcall TRegistryStorage::SetAccessMode(TStorageAccessMode value)
 //---------------------------------------------------------------------------
 bool __fastcall TRegistryStorage::DoOpenSubKey(const UnicodeString SubKey, bool CanCreate)
 {
-  if (FKeyHistory->Count > 0) FRegistry->CloseKey();
+  UnicodeString PrevPath;
+  bool WasOpened = (FRegistry->CurrentKey != NULL);
+  if (WasOpened)
+  {
+    PrevPath = FRegistry->CurrentPath;
+    DebugAssert(SamePaths(PrevPath, Storage + GetCurrentSubKeyMunged()));
+    FRegistry->CloseKey();
+  }
   UnicodeString K = ExcludeTrailingBackslash(Storage + CurrentSubKey + SubKey);
-  return FRegistry->OpenKey(K, CanCreate);
+  bool Result = FRegistry->OpenKey(K, CanCreate);
+  if (!Result && WasOpened)
+  {
+    FRegistry->OpenKey(PrevPath, false);
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TRegistryStorage::CloseSubKey()
