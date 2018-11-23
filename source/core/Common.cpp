@@ -1864,6 +1864,17 @@ bool __fastcall TryRelativeStrToDateTime(UnicodeString S, TDateTime & DateTime, 
   return Result;
 }
 //---------------------------------------------------------------------------
+bool TryStrToDateTimeStandard(const UnicodeString & S, TDateTime & Value)
+{
+  TFormatSettings FormatSettings = TFormatSettings::Create(GetDefaultLCID());
+  FormatSettings.DateSeparator = L'-';
+  FormatSettings.TimeSeparator = L':';
+  FormatSettings.ShortDateFormat = "yyyy/mm/dd";
+  FormatSettings.ShortTimeFormat = "hh:nn:ss";
+
+  return TryStrToDateTime(S, Value, FormatSettings);
+}
+//---------------------------------------------------------------------------
 const wchar_t KiloSize = L'K';
 const wchar_t MegaSize = L'M';
 const wchar_t GigaSize = L'G';

@@ -139,6 +139,7 @@ bool __fastcall IsUWP();
 TLibModule * __fastcall FindModule(void * Instance);
 __int64 __fastcall Round(double Number);
 bool __fastcall TryRelativeStrToDateTime(UnicodeString S, TDateTime & DateTime, bool Add);
+bool TryStrToDateTimeStandard(const UnicodeString & S, TDateTime & Value);
 bool __fastcall TryStrToSize(UnicodeString SizeStr, __int64 & Size);
 UnicodeString __fastcall SizeToStr(__int64 Size);
 LCID __fastcall GetDefaultLCID();

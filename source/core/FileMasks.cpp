@@ -573,15 +573,9 @@ void __fastcall TFileMasks::CreateMask(
         Boundary = TMask::Open;
       }
 
-      TFormatSettings FormatSettings = TFormatSettings::Create(GetDefaultLCID());
-      FormatSettings.DateSeparator = L'-';
-      FormatSettings.TimeSeparator = L':';
-      FormatSettings.ShortDateFormat = "yyyy/mm/dd";
-      FormatSettings.ShortTimeFormat = "hh:nn:ss";
-
       TDateTime Modification;
       __int64 DummySize;
-      if ((!TryStrToInt64(PartStr, DummySize) && TryStrToDateTime(PartStr, Modification, FormatSettings)) ||
+      if ((!TryStrToInt64(PartStr, DummySize) && TryStrToDateTimeStandard(PartStr, Modification)) ||
           TryRelativeStrToDateTime(PartStr, Modification, false))
       {
         TMask::TMaskBoundary & ModificationMask =
