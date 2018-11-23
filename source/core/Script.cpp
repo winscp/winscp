@@ -830,14 +830,8 @@ UnicodeString __fastcall TScript::ListingSysErrorMessage()
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TScript::NoMatch(const UnicodeString & Mask, const UnicodeString & Error)
+void __fastcall TScript::NoMatch(const UnicodeString & Message)
 {
-  UnicodeString Message = FMTLOAD(SCRIPT_MATCH_NO_MATCH, (Mask));
-  if (!Error.IsEmpty())
-  {
-    Message += FORMAT(L" (%s)", (Error));
-  }
-
   if (FFailOnNoMatch)
   {
     throw Exception(Message);
@@ -846,6 +840,17 @@ void __fastcall TScript::NoMatch(const UnicodeString & Mask, const UnicodeString
   {
     PrintLine(Message);
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TScript::NoMatch(const UnicodeString & Mask, const UnicodeString & Error)
+{
+  UnicodeString Message = FMTLOAD(SCRIPT_MATCH_NO_MATCH, (Mask));
+  if (!Error.IsEmpty())
+  {
+    Message += FORMAT(L" (%s)", (Error));
+  }
+
+  NoMatch(Message);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScript::FreeFiles(TStrings * FileList)
@@ -1998,7 +2003,7 @@ void __fastcall TScript::SynchronizeProc(TScriptProcParams * Parameters)
       }
       else
       {
-        PrintLine(LoadStr(SCRIPT_SYNCHRONIZE_NODIFFERENCE));
+        NoMatch(LoadStr(SCRIPT_SYNCHRONIZE_NODIFFERENCE));
       }
     }
     __finally

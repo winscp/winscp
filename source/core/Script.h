@@ -169,6 +169,7 @@ protected:
     bool Local);
   UnicodeString __fastcall ListingSysErrorMessage();
   void __fastcall NoMatch(const UnicodeString & Mask, const UnicodeString & Error);
+  void __fastcall NoMatch(const UnicodeString & Message);
 
 private:
   void __fastcall Init();
