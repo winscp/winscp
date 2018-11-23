@@ -4,6 +4,7 @@
 //---------------------------------------------------------------------------
 #include <Interface.h>
 #include <WinConfiguration.h>
+#include <WinInterface.h>
 //---------------------------------------------------------------------------
 void __fastcall SetupInitialize();
 void __fastcall AddSearchPath(const UnicodeString Path);
@@ -34,5 +35,6 @@ void __fastcall TipsUpdateStaticUsage();
 int __fastcall GetNetVersion();
 UnicodeString __fastcall GetNetVersionStr();
 UnicodeString __fastcall GetPowerShellVersionStr();
+int ComRegistration(TConsole * Console);
 //---------------------------------------------------------------------------
 #endif

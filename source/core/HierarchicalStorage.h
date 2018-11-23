@@ -95,7 +95,7 @@ protected:
 class TRegistryStorage : public THierarchicalStorage
 {
 public:
-  __fastcall TRegistryStorage(const UnicodeString AStorage, HKEY ARootKey);
+  __fastcall TRegistryStorage(const UnicodeString AStorage, HKEY ARootKey, REGSAM WowMode = 0);
   __fastcall TRegistryStorage(const UnicodeString AStorage);
   virtual __fastcall ~TRegistryStorage();
 
@@ -139,6 +139,7 @@ protected:
 private:
   TRegistry * FRegistry;
   int FFailed;
+  REGSAM FWowMode;
 
   void __fastcall Init();
 };

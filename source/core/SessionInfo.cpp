@@ -1124,9 +1124,7 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
   if (Data == NULL)
   {
     AddSeparator();
-    UnicodeString OS = WindowsVersionLong();
-    AddToList(OS, WindowsProductName(), L" - ");
-    ADF(L"WinSCP %s (OS %s)", (FConfiguration->VersionStr, OS));
+    ADSTR(GetEnvironmentInfo());
     THierarchicalStorage * Storage = FConfiguration->CreateConfigStorage();
     try
     {

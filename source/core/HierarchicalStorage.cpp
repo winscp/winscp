@@ -420,12 +420,14 @@ bool __fastcall THierarchicalStorage::GetTemporary()
 __fastcall TRegistryStorage::TRegistryStorage(const UnicodeString AStorage):
   THierarchicalStorage(IncludeTrailingBackslash(AStorage))
 {
+  FWowMode = 0;
   Init();
 };
 //---------------------------------------------------------------------------
-__fastcall TRegistryStorage::TRegistryStorage(const UnicodeString AStorage, HKEY ARootKey):
+__fastcall TRegistryStorage::TRegistryStorage(const UnicodeString AStorage, HKEY ARootKey, REGSAM WowMode):
   THierarchicalStorage(IncludeTrailingBackslash(AStorage))
 {
+  FWowMode = WowMode;
   Init();
   FRegistry->RootKey = ARootKey;
 }
@@ -434,7 +436,7 @@ void __fastcall TRegistryStorage::Init()
 {
   FFailed = 0;
   FRegistry = new TRegistry();
-  FRegistry->Access = KEY_READ;
+  FRegistry->Access = KEY_READ | FWowMode;
 }
 //---------------------------------------------------------------------------
 __fastcall TRegistryStorage::~TRegistryStorage()
@@ -498,12 +500,12 @@ void __fastcall TRegistryStorage::SetAccessMode(TStorageAccessMode value)
   {
     switch (AccessMode) {
       case smRead:
-        FRegistry->Access = KEY_READ;
+        FRegistry->Access = KEY_READ | FWowMode;
         break;
 
       case smReadWrite:
       default:
-        FRegistry->Access = KEY_READ | KEY_WRITE;
+        FRegistry->Access = KEY_READ | KEY_WRITE | FWowMode;
         break;
     }
   }

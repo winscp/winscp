@@ -10,6 +10,7 @@
 #include <PuttyTools.h>
 #include <Queue.h>
 #include <HierarchicalStorage.h>
+#include <Tools.h>
 
 #include <Consts.hpp>
 #include <StrUtils.hpp>
@@ -23,7 +24,7 @@
 #include "SynchronizeController.h"
 #include "GUITools.h"
 #include "VCLCommon.h"
-enum { RESULT_SUCCESS = 0, RESULT_ANY_ERROR = 1 };
+#include "Setup.h"
 //---------------------------------------------------------------------------
 #define WM_INTERUPT_IDLE (WM_WINSCP_USER + 3)
 #define BATCH_INPUT_TIMEOUT 10000
@@ -38,28 +39,6 @@ void TrimNewLine(UnicodeString & Str)
     Str.SetLength(Str.Length() - 1);
   }
 }
-//---------------------------------------------------------------------------
-class TConsole
-{
-public:
-  virtual __fastcall ~TConsole() {};
-  virtual void __fastcall Print(UnicodeString Str, bool FromBeginning = false, bool Error = false) = 0;
-  void __fastcall PrintLine(const UnicodeString & Str = UnicodeString(), bool Error = false);
-  virtual bool __fastcall Input(UnicodeString & Str, bool Echo, unsigned int Timer) = 0;
-  virtual int __fastcall Choice(
-    UnicodeString Options, int Cancel, int Break, int Continue, int Timeouted, bool Timeouting, unsigned int Timer,
-    UnicodeString Message) = 0;
-  virtual bool __fastcall PendingAbort() = 0;
-  virtual void __fastcall SetTitle(UnicodeString Title) = 0;
-  virtual bool __fastcall LimitedOutput() = 0;
-  virtual bool __fastcall LiveOutput() = 0;
-  virtual bool __fastcall NoInteractiveInput() = 0;
-  virtual void __fastcall WaitBeforeExit() = 0;
-  virtual bool __fastcall CommandLineOnly() = 0;
-  virtual bool __fastcall WantsProgress() = 0;
-  virtual void __fastcall Progress(TScriptProgress & Progress) = 0;
-  virtual UnicodeString __fastcall FinalLogMessage() = 0;
-};
 //---------------------------------------------------------------------------
 void __fastcall TConsole::PrintLine(const UnicodeString & Str, bool Error)
 {
@@ -2360,7 +2339,7 @@ void __fastcall BatchSettings(TConsole * Console, TProgramParams * Params)
   }
 }
 //---------------------------------------------------------------------------
-static int __fastcall HandleException(TConsole * Console, Exception & E)
+int __fastcall HandleException(TConsole * Console, Exception & E)
 {
   UnicodeString Message;
   if (ExceptionFullMessage(&E, Message))
@@ -2629,7 +2608,6 @@ int __fastcall DumpCallstack(TConsole * Console, TProgramParams * Params)
 //---------------------------------------------------------------------------
 void static PrintList(TConsole * Console, const UnicodeString & Caption, TStrings * List)
 {
-  std::unique_ptr<TStrings> Owner(List);
   Console->PrintLine(Caption);
   for (int Index = 0; Index < List->Count; Index++)
   {
@@ -2638,16 +2616,22 @@ void static PrintList(TConsole * Console, const UnicodeString & Caption, TString
   Console->PrintLine();
 }
 //---------------------------------------------------------------------------
+void static PrintListAndFree(TConsole * Console, const UnicodeString & Caption, TStrings * List)
+{
+  std::unique_ptr<TStrings> Owner(List);
+  PrintList(Console, Caption, List);
+}
+//---------------------------------------------------------------------------
 int Info(TConsole * Console)
 {
   int Result = RESULT_SUCCESS;
   try
   {
-    PrintList(Console, L"SSH encryption ciphers:", SshCipherList());
-    PrintList(Console, L"SSH key exchange algoritms:", SshKexList());
-    PrintList(Console, L"SSH host key algoritms:", SshHostKeyList());
-    PrintList(Console, L"SSH MAC algoritms:", SshMacList());
-    PrintList(Console, L"TLS/SSL cipher suites:", TlsCipherList());
+    PrintListAndFree(Console, L"SSH encryption ciphers:", SshCipherList());
+    PrintListAndFree(Console, L"SSH key exchange algoritms:", SshKexList());
+    PrintListAndFree(Console, L"SSH host key algoritms:", SshHostKeyList());
+    PrintListAndFree(Console, L"SSH MAC algoritms:", SshMacList());
+    PrintListAndFree(Console, L"TLS/SSL cipher suites:", TlsCipherList());
   }
   catch (Exception & E)
   {
@@ -2725,6 +2709,13 @@ int __fastcall Console(TConsoleMode Mode)
     else if (Mode == cmInfo)
     {
       Result = Info(Console);
+    }
+    else if (Mode == cmComRegistration)
+    {
+      if (CheckSafe(Params))
+      {
+        Result = ComRegistration(Console);
+      }
     }
     else
     {

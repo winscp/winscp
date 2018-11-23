@@ -1432,6 +1432,14 @@ bool __fastcall IsRealFile(const UnicodeString & FileName)
   return (FileName != THISDIRECTORY) && (FileName != PARENTDIRECTORY);
 }
 //---------------------------------------------------------------------------
+UnicodeString GetEnvironmentInfo()
+{
+  UnicodeString OS = WindowsVersionLong();
+  AddToList(OS, WindowsProductName(), L" - ");
+  UnicodeString Result = FORMAT(L"WinSCP %s (OS %s)", (Configuration->VersionStr, OS));
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall ProcessLocalDirectory(UnicodeString DirName,
   TProcessLocalFileEvent CallBackFunc, void * Param,
   int FindAttrs)

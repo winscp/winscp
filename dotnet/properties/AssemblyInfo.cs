@@ -18,6 +18,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
+// Duplicated in ConsoleRunner.cpp
 [assembly: Guid("a0b93468-d98a-4845-a234-8076229ad93f")]
 
 [assembly: AssemblyVersion(WinSCP.AssemblyConstants.Version)]
