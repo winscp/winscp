@@ -2728,6 +2728,7 @@ void __fastcall TWinConfiguration::UpdateStaticUsage()
   UnicodeString ToolbarsButtons = (Interface == ifExplorer) ? ScpExplorer.ToolbarsButtons : ScpCommander.ToolbarsButtons;
   Usage->Set(L"AnyHiddenToolbarButtons", !ToolbarsButtons.IsEmpty());
   Usage->Set(L"FileColors", !FileColors.IsEmpty());
+  Usage->Set(L"DragDropDrives", !DDDrives.IsEmpty());
   Usage->Set(L"ShowingTips", ShowTips);
   TipsUpdateStaticUsage();
 
