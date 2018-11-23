@@ -44,6 +44,7 @@ class TConsole
 public:
   virtual __fastcall ~TConsole() {};
   virtual void __fastcall Print(UnicodeString Str, bool FromBeginning = false, bool Error = false) = 0;
+  void __fastcall PrintLine(const UnicodeString & Str = UnicodeString(), bool Error = false);
   virtual bool __fastcall Input(UnicodeString & Str, bool Echo, unsigned int Timer) = 0;
   virtual int __fastcall Choice(
     UnicodeString Options, int Cancel, int Break, int Continue, int Timeouted, bool Timeouting, unsigned int Timer,
@@ -58,6 +59,11 @@ public:
   virtual bool __fastcall WantsProgress() = 0;
   virtual void __fastcall Progress(TScriptProgress & Progress) = 0;
   virtual UnicodeString __fastcall FinalLogMessage() = 0;
+};
+//---------------------------------------------------------------------------
+void __fastcall TConsole::PrintLine(const UnicodeString & Str, bool Error)
+{
+  Print(Str + L"\n", false, Error);
 };
 //---------------------------------------------------------------------------
 class TOwnConsole : public TConsole
@@ -1078,7 +1084,6 @@ protected:
   void __fastcall Input(const UnicodeString Prompt, UnicodeString & Str,
     bool Echo, bool Interactive);
   inline void __fastcall Print(const UnicodeString & Str, bool FromBeginning = false, bool Error = false);
-  inline void __fastcall PrintLine(const UnicodeString & Str, bool Error = false);
   void __fastcall UpdateTitle();
   inline bool __fastcall NotifyAbort();
   inline bool __fastcall Aborted(bool AllowCompleteAbort = true);
@@ -1203,11 +1208,6 @@ void __fastcall TConsoleRunner::Print(const UnicodeString & Str, bool FromBeginn
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TConsoleRunner::PrintLine(const UnicodeString & Str, bool Error)
-{
-  Print(Str + L"\n", false, Error);
-}
-//---------------------------------------------------------------------------
 void __fastcall TConsoleRunner::PrintMessage(const UnicodeString & Str, bool Error)
 {
   UnicodeString Line = RemoveEmptyLines(Str);
@@ -1219,7 +1219,7 @@ void __fastcall TConsoleRunner::PrintMessage(const UnicodeString & Str, bool Err
   }
   else
   {
-    PrintLine(Line, Error);
+    FConsole->PrintLine(Line, Error);
   }
 }
 //---------------------------------------------------------------------------
@@ -1680,7 +1680,7 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
       int P = AnswerCaption.Pos(L"&");
       DebugAssert(P >= 0);
       AnswerCaption.Delete(P, 1);
-      PrintLine(AnswerCaption);
+      FConsole->PrintLine(AnswerCaption);
       FirstOutput = true;
 
       if (OnSubmits[AnswerIndex - 1] != NULL)
@@ -1694,7 +1694,7 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
     }
     else
     {
-      PrintLine(L"");
+      FConsole->PrintLine();
     }
   }
   while (Answer == 0);
@@ -1911,7 +1911,7 @@ void __fastcall TConsoleRunner::MasterPasswordPrompt()
     Retry = !WinConfiguration->ValidateMasterPassword(Password);
     if (Retry)
     {
-      PrintLine(LoadStr(MASTER_PASSWORD_INCORRECT));
+      FConsole->PrintLine(LoadStr(MASTER_PASSWORD_INCORRECT));
     }
     else
     {
@@ -2143,11 +2143,6 @@ void __fastcall TConsoleRunner::ConfigurationChange(TObject * /*Sender*/)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall ConsolePrintLine(TConsole * Console, const UnicodeString & Str)
-{
-  Console->Print(Str + L"\n");
-}
-//---------------------------------------------------------------------------
 static UnicodeString __fastcall GetExeBaseName()
 {
   return ExtractFileBaseName(Application->ExeName);
@@ -2155,7 +2150,7 @@ static UnicodeString __fastcall GetExeBaseName()
 //---------------------------------------------------------------------------
 static void __fastcall PrintUsageSyntax(TConsole * Console, const UnicodeString & Str)
 {
-  ConsolePrintLine(Console, GetExeBaseName() + L" " + Str);
+  Console->PrintLine(GetExeBaseName() + L" " + Str);
 }
 //---------------------------------------------------------------------------
 typedef std::vector<std::pair<UnicodeString, UnicodeString> > TSwitchesUsage;
@@ -2176,12 +2171,12 @@ static void __fastcall RegisterSwitch(
 //---------------------------------------------------------------------------
 void __fastcall Usage(TConsole * Console)
 {
-  ConsolePrintLine(Console, FORMAT(L"WinSCP, %s", (Configuration->VersionStr)));
+  Console->PrintLine(FORMAT(L"WinSCP, %s", (Configuration->VersionStr)));
   UnicodeString Copyright =
     ReplaceText(LoadStr(WINSCP_COPYRIGHT), L"©", L"(c)");
-  ConsolePrintLine(Console, Copyright);
-  ConsolePrintLine(Console, L"");
-  ConsolePrintLine(Console, LoadStr(USAGE_SYNTAX_LABEL));
+  Console->PrintLine(Copyright);
+  Console->PrintLine();
+  Console->PrintLine(LoadStr(USAGE_SYNTAX_LABEL));
 
   if (!Console->CommandLineOnly())
   {
@@ -2219,7 +2214,7 @@ void __fastcall Usage(TConsole * Console)
   PrintUsageSyntax(Console, TProgramParams::FormatSwitch(LowerCase(INFO_SWITCH)));
   PrintUsageSyntax(Console, L"/help");
 
-  ConsolePrintLine(Console, L"");
+  Console->PrintLine();
 
   TSwitchesUsage SwitchesUsage;
   if (!Console->CommandLineOnly())
@@ -2305,7 +2300,7 @@ void __fastcall Usage(TConsole * Console)
             DescLineLine;
         }
         FirstLine = false;
-        ConsolePrintLine(Console, DescLineLine);
+        Console->PrintLine(DescLineLine);
       }
     }
     ++Index;
@@ -2321,11 +2316,11 @@ void __fastcall BatchSettings(TConsole * Console, TProgramParams * Params)
   {
     if (Arguments->Count < 1)
     {
-      ConsolePrintLine(Console, LoadStr(BATCH_SET_NO_MASK));
+      Console->PrintLine(LoadStr(BATCH_SET_NO_MASK));
     }
     else if (Arguments->Count < 2)
     {
-      ConsolePrintLine(Console, LoadStr(BATCH_SET_NO_SETTINGS));
+      Console->PrintLine(LoadStr(BATCH_SET_NO_SETTINGS));
     }
     else
     {
@@ -2353,12 +2348,12 @@ void __fastcall BatchSettings(TConsole * Console, TProgramParams * Params)
             Changes++;
           }
           UnicodeString StateStr = LoadStr(Changed ? BATCH_SET_CHANGED : BATCH_SET_NOT_CHANGED);
-          ConsolePrintLine(Console, FORMAT(L"%s - %s", (Data->Name, StateStr)));
+          Console->PrintLine(FORMAT(L"%s - %s", (Data->Name, StateStr)));
         }
       }
 
       StoredSessions->Save(false, true); // explicit
-      ConsolePrintLine(Console, FMTLOAD(BATCH_SET_SUMMARY, (Matches, Changes)));
+      Console->PrintLine(FMTLOAD(BATCH_SET_SUMMARY, (Matches, Changes)));
     }
 
     Console->WaitBeforeExit();
@@ -2519,7 +2514,7 @@ int __fastcall KeyGen(TConsole * Console, TProgramParams * Params)
 
       SaveKey(ktSSH2, OutputFileName, NewPassphrase, PrivateKey);
 
-      ConsolePrintLine(Console, FMTLOAD(KEYGEN_SAVED, (OutputFileName)));
+      Console->PrintLine(FMTLOAD(KEYGEN_SAVED, (OutputFileName)));
     }
     __finally
     {
@@ -2570,11 +2565,11 @@ int __fastcall FingerprintScan(TConsole * Console, TProgramParams * Params)
     Terminal->FingerprintScan(SHA256, MD5);
     if (!SHA256.IsEmpty())
     {
-      ConsolePrintLine(Console, FORMAT(L"SHA-256: %s", (SHA256)));
+      Console->PrintLine(FORMAT(L"SHA-256: %s", (SHA256)));
     }
     if (!MD5.IsEmpty())
     {
-      ConsolePrintLine(Console, FORMAT(L"MD5:     %s", (MD5)));
+      Console->PrintLine(FORMAT(L"MD5:     %s", (MD5)));
     }
   }
   catch (Exception & E)
@@ -2608,7 +2603,7 @@ int __fastcall DumpCallstack(TConsole * Console, TProgramParams * Params)
     SetEvent(Event);
     CloseHandle(Event);
 
-    ConsolePrintLine(Console, FORMAT(L"Requested callstack dump for process %d...", (ProcessId)));
+    Console->PrintLine(FORMAT(L"Requested callstack dump for process %d...", (ProcessId)));
 
     int Timeout = 30;
     while (!FileExists(FileName))
@@ -2621,7 +2616,7 @@ int __fastcall DumpCallstack(TConsole * Console, TProgramParams * Params)
       }
     }
 
-    ConsolePrintLine(Console, FORMAT(L"Callstack dumped to file \"%s\".", (FileName)));
+    Console->PrintLine(FORMAT(L"Callstack dumped to file \"%s\".", (FileName)));
   }
   catch (Exception & E)
   {
@@ -2635,12 +2630,12 @@ int __fastcall DumpCallstack(TConsole * Console, TProgramParams * Params)
 void static PrintList(TConsole * Console, const UnicodeString & Caption, TStrings * List)
 {
   std::unique_ptr<TStrings> Owner(List);
-  ConsolePrintLine(Console, Caption);
+  Console->PrintLine(Caption);
   for (int Index = 0; Index < List->Count; Index++)
   {
-    ConsolePrintLine(Console, List->Strings[Index]);
+    Console->PrintLine(List->Strings[Index]);
   }
-  ConsolePrintLine(Console, UnicodeString());
+  Console->PrintLine();
 }
 //---------------------------------------------------------------------------
 int Info(TConsole * Console)
