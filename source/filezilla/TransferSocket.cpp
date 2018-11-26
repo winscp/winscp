@@ -1141,6 +1141,9 @@ void CTransferSocket::CloseOnShutDownOrError(int Mode)
 {
   if (ShutDown())
   {
+    // It would probably be correct to remove this call, and wait for OnClose (FD_CLOSE),
+    // where CloseAndEnsureSendClose is called too.
+    // See https://docs.microsoft.com/en-us/windows/desktop/winsock/graceful-shutdown-linger-options-and-socket-closure-2
     CloseAndEnsureSendClose(Mode);
   }
   else
