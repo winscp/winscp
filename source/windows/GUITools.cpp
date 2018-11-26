@@ -82,7 +82,19 @@ void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
   {
 
     AParams = ExpandEnvironmentVariables(AParams);
-    UnicodeString Password = GUIConfiguration->PuttyPassword ? SessionData->Password : UnicodeString();
+    UnicodeString Password;
+    if (GUIConfiguration->PuttyPassword)
+    {
+      // Passphrase has precendence, as it's more likely entered by user during authentication, hence more likely really needed.
+      if (!SessionData->Passphrase.IsEmpty())
+      {
+        Password = SessionData->Passphrase;
+      }
+      else if (!SessionData->Password.IsEmpty())
+      {
+        Password = SessionData->Password;
+      }
+    }
     TCustomCommandData Data(SessionData, SessionData->UserName, Password);
     TRemoteCustomCommand RemoteCustomCommand(Data, SessionData->RemoteDirectory);
     TWinInteractiveCustomCommand InteractiveCustomCommand(
