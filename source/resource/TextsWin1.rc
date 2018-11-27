@@ -561,7 +561,6 @@ BEGIN
         CONVERTKEY_SAVE_TITLE, "Save converted private key"
         CONVERTKEY_SAVE_FILTER, "PuTTY Private Key Files (*.ppk)|*.ppk|All files (*.*)|*.*"
         CONVERTKEY_SAVED, "Private key was converted and saved to '%s'."
-        UPDATES_DONATE_LINK, "Please, donate to enable automatic updates"
         GENERATE_URL_FILE_TITLE, "Generate file URL"
         GENERATE_URL_SESSION_TITLE, "Generate session URL/code"
         GENERATE_URL_URL, "URL"
@@ -621,6 +620,7 @@ BEGIN
         SYNCHRONIZE_SUMMARY, "Files uploaded: %s (%s)|Files downloaded: %s (%s)|Local files deleted: %s|Remote files deleted: %s|Comparison time: %s|Synchronization time: %s"
         PREFERENCES_DRAGEXT_BROKEN, "Shell extension cannot work on this system."
         FILE_COLOR_CAPTION, "File color"
+        UPDATES_DONATE_HTML, "To enable automatic updates, please <a href=\"%DONATE_URL%\">donate to WinSCP development</a> or %GET_IMG% WinSCP from <a href=\"%STORE_URL%\">Microsoft Store</a>."
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
         WINSCP_COPYRIGHT, "Copyright © 2000-2018 Martin Prikryl"
@@ -636,5 +636,8 @@ BEGIN
         DOCUMENTATION_SEARCH_URL3, "https://winscp.net/eng/docs/search.php?ver=%s&lang=%s&q=%s"
         ERROR_REPORT_URL2, "https://winscp.net/forum/posting.php?mode=newtopic&ver=%s&lang=%s&report=%s"
         UPGRADE_URL, "https://winscp.net/eng/upgrade.php"
+        STORE_URL, "https://www.microsoft.com/store/apps/9p0pq8b65n8x?cid=%s"
+        ABOUT_STORE_URL, "https://winscp.net/eng/docs/microsoft_store"
+        STORE_GET_IMG_URL, "https://winscp.net/updatenews.php?store_get_img=1"
 
 END

@@ -3,6 +3,7 @@
 #pragma hdrstop
 
 #include <shlobj.h>
+#include <mshtmhst.h>
 #include <Common.h>
 
 #include "GUITools.h"
@@ -962,6 +963,128 @@ void __fastcall HideComponentsPanel(TForm * Form)
   }
 }
 //---------------------------------------------------------------------------
+class TCustomDocHandler : public TComponent, public ::IDocHostUIHandler
+{
+public:
+  __fastcall TCustomDocHandler(TComponent * Owner) : TComponent(Owner)
+  {
+  }
+
+protected:
+  #pragma warn -hid
+  virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID ClassId, void ** Intf)
+  {
+    HRESULT Result = S_OK;
+    if (ClassId == IID_IUnknown)
+    {
+      *Intf = (IUnknown *)this;
+    }
+    else if (ClassId == ::IID_IDocHostUIHandler)
+    {
+      *Intf = (::IDocHostUIHandler *)this;
+    }
+    else
+    {
+      Result = E_NOINTERFACE;
+    }
+    return Result;
+  }
+  #pragma warn .hid
+
+  virtual ULONG STDMETHODCALLTYPE AddRef()
+  {
+    return -1;
+  }
+
+  virtual ULONG STDMETHODCALLTYPE Release()
+  {
+    return -1;
+  }
+
+  virtual HRESULT STDMETHODCALLTYPE ShowContextMenu(
+    DWORD dwID, POINT * ppt, IUnknown * pcmdtReserved, IDispatch * pdispReserved)
+  {
+    // No context menu
+    // (implementing IDocHostUIHandler reenabled context menu disabled by TBrowserViewer::DoContextPopup)
+    return S_OK;
+  }
+
+  virtual HRESULT STDMETHODCALLTYPE GetHostInfo(::_DOCHOSTUIINFO * Info)
+  {
+    // Setting ControlBorder is ignored with IDocHostUIHandler.
+    // DOCHOSTUIFLAG_DPI_AWARE does not seem to have any effect
+    Info->dwFlags |= DOCHOSTUIFLAG_SCROLL_NO | DOCHOSTUIFLAG_NO3DBORDER | DOCHOSTUIFLAG_DPI_AWARE;
+    return S_OK;
+  }
+
+  virtual HRESULT STDMETHODCALLTYPE ShowUI(
+    DWORD dwID, IOleInPlaceActiveObject * pActiveObject, IOleCommandTarget * pCommandTarget, IOleInPlaceFrame * pFrame,
+    IOleInPlaceUIWindow * pDoc)
+  {
+    return E_NOTIMPL;
+  }
+
+  virtual HRESULT STDMETHODCALLTYPE HideUI()
+  {
+    return E_NOTIMPL;
+  }
+
+  virtual HRESULT STDMETHODCALLTYPE UpdateUI()
+  {
+    return E_NOTIMPL;
+  }
+
+  virtual HRESULT STDMETHODCALLTYPE EnableModeless(BOOL fEnable)
+  {
+    return E_NOTIMPL;
+  }
+
+  virtual HRESULT STDMETHODCALLTYPE OnDocWindowActivate(BOOL fActivate)
+  {
+    return E_NOTIMPL;
+  }
+
+  virtual HRESULT STDMETHODCALLTYPE OnFrameWindowActivate(BOOL fActivate)
+  {
+    return E_NOTIMPL;
+  }
+
+  virtual HRESULT STDMETHODCALLTYPE ResizeBorder(LPCRECT prcBorder, IOleInPlaceUIWindow * pUIWindow, BOOL fRameWindow)
+  {
+    return E_NOTIMPL;
+  }
+
+  virtual HRESULT STDMETHODCALLTYPE TranslateAccelerator(LPMSG lpMsg, const GUID * pguidCmdGroup, DWORD nCmdID)
+  {
+    return E_NOTIMPL;
+  }
+
+  virtual HRESULT STDMETHODCALLTYPE GetOptionKeyPath(LPOLESTR * pchKey, DWORD dw)
+  {
+    return E_NOTIMPL;
+  }
+
+  virtual HRESULT STDMETHODCALLTYPE GetDropTarget(IDropTarget * pDropTarget, IDropTarget ** ppDropTarget)
+  {
+    return E_NOTIMPL;
+  }
+
+  virtual HRESULT STDMETHODCALLTYPE GetExternal(IDispatch ** ppDispatch)
+  {
+    return E_NOTIMPL;
+  }
+
+  virtual HRESULT STDMETHODCALLTYPE TranslateUrl(DWORD dwTranslate, OLECHAR * pchURLIn, OLECHAR ** ppchURLOut)
+  {
+    return E_NOTIMPL;
+  }
+
+  virtual HRESULT STDMETHODCALLTYPE FilterDataObject(IDataObject * pDO, IDataObject ** ppDORet)
+  {
+    return E_NOTIMPL;
+  }
+};
+//---------------------------------------------------------------------------
 class TBrowserViewer : public TWebBrowserEx
 {
 public:
@@ -1004,7 +1127,8 @@ void __fastcall TBrowserViewer::AddLinkHandler(
 //---------------------------------------------------------------------------
 void __fastcall TBrowserViewer::DoContextPopup(const TPoint & MousePos, bool & Handled)
 {
-  // suppress built-in context menu
+  // Suppress built-in context menu.
+  // Is ignored with IDocHostUIHandler. Needs to be overriden by ShowContextMenu.
   Handled = true;
   TWebBrowserEx::DoContextPopup(MousePos, Handled);
 }
@@ -1070,6 +1194,7 @@ TWebBrowserEx * __fastcall CreateBrowserViewer(TPanel * Parent, const UnicodeStr
   static_cast<TWinControl *>(Result)->Name = L"BrowserViewer";
   static_cast<TWinControl *>(Result)->Parent = Parent;
   Result->Align = alClient;
+  // Is ignored with IDocHostUIHandler. Needs to be overriden by DOCHOSTUIFLAG_NO3DBORDER in GetHostInfo.
   Result->ControlBorder = cbNone;
 
   Result->LoadingPanel = CreateLabelPanel(Parent, LoadingLabel);
@@ -1101,6 +1226,95 @@ void __fastcall NavigateBrowserToUrl(TWebBrowserEx * WebBrowser, const UnicodeSt
   if (DebugAlwaysTrue(BrowserViewer != NULL))
   {
     BrowserViewer->NavigateToUrl(Url);
+  }
+}
+//---------------------------------------------------------------------------
+void ReadyBrowserForStreaming(TWebBrowserEx * WebBrowser)
+{
+  // This creates TWebBrowserEx::Document, which we need to stream in an in-memory document
+  NavigateBrowserToUrl(WebBrowser, L"about:blank");
+  // Needs to be followed by WaitBrowserToIdle
+}
+//---------------------------------------------------------------------------
+void WaitBrowserToIdle(TWebBrowserEx * WebBrowser)
+{
+  while (WebBrowser->ReadyState < ::READYSTATE_INTERACTIVE)
+  {
+    Application->ProcessMessages();
+  }
+}
+//---------------------------------------------------------------------------
+void HideBrowserScrollbars(TWebBrowserEx * WebBrowser)
+{
+  ICustomDoc * CustomDoc = NULL;
+  if (DebugAlwaysTrue(WebBrowser->Document != NULL) &&
+      SUCCEEDED(WebBrowser->Document->QueryInterface(&CustomDoc)) &&
+      DebugAlwaysTrue(CustomDoc != NULL))
+  {
+    TCustomDocHandler * Handler = new TCustomDocHandler(WebBrowser);
+    CustomDoc->SetUIHandler(Handler);
+  }
+}
+//---------------------------------------------------------------------------
+UnicodeString GenerateAppHtmlPage(TFont * Font, TPanel * Parent, const UnicodeString & Body, bool Seamless)
+{
+  UnicodeString Result =
+    L"<!DOCTYPE html>\n"
+    L"<meta charset=\"utf-8\">\n"
+    L"<html>\n"
+    L"<head>\n"
+    L"<style>\n"
+    L"\n"
+    L"body\n"
+    L"{\n"
+    L"    font-family: '" + Font->Name + L"';\n"
+    L"    margin: " + UnicodeString(Seamless ? L"0" : L"0.5em") + L";\n"
+    L"    background-color: " + ColorToWebColorStr(Parent->Color) + L";\n" +
+    UnicodeString(Seamless ? L"    overflow: hidden;\n" : L"") +
+    L"}\n"
+    L"\n"
+    L"body\n"
+    L"{\n"
+    L"    font-size: " + IntToStr(Font->Size) + L"pt;\n"
+    L"}\n"
+    L"\n"
+    L"p\n"
+    L"{\n"
+    L"    margin-top: 0;\n"
+    L"    margin-bottom: 1em;\n"
+    L"}\n"
+    L"\n"
+    L"a, a:visited, a:hover, a:visited, a:current\n"
+    L"{\n"
+    L"    color: " + ColorToWebColorStr(LinkColor) + L";\n"
+    L"}\n"
+    L"</style>\n"
+    L"</head>\n"
+    L"<body>\n" +
+    Body +
+    L"</body>\n"
+    L"</html>\n";
+  return Result;
+}
+//---------------------------------------------------------------------------
+void LoadBrowserDocument(TWebBrowserEx * WebBrowser, const UnicodeString & Document)
+{
+  std::unique_ptr<TMemoryStream> DocumentStream(new TMemoryStream());
+  UTF8String DocumentUTF8 = UTF8String(Document);
+  DocumentStream->Write(DocumentUTF8.c_str(), DocumentUTF8.Length());
+  DocumentStream->Seek(0, 0);
+
+  // For stream-loaded document, when set only after loading from OnDocumentComplete,
+  // browser stops working
+  SetBrowserDesignModeOff(WebBrowser);
+
+  TStreamAdapter * DocumentStreamAdapter = new TStreamAdapter(DocumentStream.get(), soReference);
+  IPersistStreamInit * PersistStreamInit = NULL;
+  if (DebugAlwaysTrue(WebBrowser->Document != NULL) &&
+      SUCCEEDED(WebBrowser->Document->QueryInterface(IID_IPersistStreamInit, (void **)&PersistStreamInit)) &&
+      DebugAlwaysTrue(PersistStreamInit != NULL))
+  {
+    PersistStreamInit->Load(static_cast<_di_IStream>(*DocumentStreamAdapter));
   }
 }
 //---------------------------------------------------------------------------

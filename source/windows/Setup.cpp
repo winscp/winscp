@@ -1527,22 +1527,37 @@ static void __fastcall InsertDonateLink(void * /*Data*/, TObject * Sender)
     Panel->Name = DonatePanelName;
     Panel->Caption = UnicodeString(); // override default use of Name
 
-    TStaticText * StaticText = new TStaticText(Panel);
-    StaticText->Top = 0;
-    StaticText->Left = 0;
-    StaticText->AutoSize = true;
-    StaticText->Caption = LoadStr(UPDATES_DONATE_LINK);
-    StaticText->Parent = Panel;
-    StaticText->OnClick = MakeMethod<TNotifyEvent>(NULL, UpdatesDonateClick);
-    StaticText->TabStop = true;
+    TWebBrowserEx * DonateBrowser = CreateBrowserViewer(Panel, UnicodeString());
+    ReadyBrowserForStreaming(DonateBrowser);
+    WaitBrowserToIdle(DonateBrowser);
 
-    LinkLabel(StaticText);
+    DonateBrowser->Height = ScaleByTextHeight(Dialog, 36);
 
-    Panel->Height = StaticText->Height;
+    DonateBrowser->Top = 0;
+    DonateBrowser->Left = 0;
+
+    Panel->Height = DonateBrowser->Height;
 
     // Currently this is noop (will fail assertion), if MoreMessagesUrl is not set
     // (what should not happen)
     InsertPanelToMessageDialog(Dialog, Panel);
+
+    UnicodeString DocumentBody = LoadStr(UPDATES_DONATE_HTML);
+    DocumentBody = ReplaceStr(DocumentBody, L"%DONATE_URL%", GetEnableAutomaticUpdatesUrl());
+    UnicodeString AboutStoreUrl = LoadStr(ABOUT_STORE_URL);
+    DocumentBody = ReplaceStr(DocumentBody, L"%STORE_URL%", AboutStoreUrl);
+    UnicodeString StoreButtonUrl = ProgramUrl(LoadStr(STORE_GET_IMG_URL));
+    UnicodeString StoreButton =
+      FORMAT(L"<img src=\"%s\" style=\"height: 1.8em; vertical-align: -0.4em; padding-top: 0.2em; border: 0;\">", (StoreButtonUrl));
+    UnicodeString StoreUrl = FMTLOAD(STORE_URL, (L"update"));
+    UnicodeString StoreLink = FORMAT(L"<a href=\"%s\">%s</a>", (StoreUrl, StoreButton));
+    DocumentBody = ReplaceStr(DocumentBody, L"%GET_IMG% ", FORMAT(L"%s&nbsp;", (StoreLink)));
+
+    DocumentBody = FORMAT(L"<p>%s</p>", (DocumentBody));
+
+    UnicodeString Document = GenerateAppHtmlPage(Dialog->Font, Panel, DocumentBody, true);
+    LoadBrowserDocument(DonateBrowser, Document);
+    HideBrowserScrollbars(DonateBrowser);
   }
 }
 //---------------------------------------------------------------------------

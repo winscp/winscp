@@ -52,6 +52,11 @@ void __fastcall SetBrowserDesignModeOff(TWebBrowserEx * WebBrowser);
 void __fastcall AddBrowserLinkHandler(TWebBrowserEx * WebBrowser,
   const UnicodeString & Url, TNotifyEvent Handler);
 void __fastcall NavigateBrowserToUrl(TWebBrowserEx * WebBrowser, const UnicodeString & Url);
+void ReadyBrowserForStreaming(TWebBrowserEx * WebBrowser);
+void WaitBrowserToIdle(TWebBrowserEx * WebBrowser);
+void HideBrowserScrollbars(TWebBrowserEx * WebBrowser);
+UnicodeString GenerateAppHtmlPage(TFont * Font, TPanel * Parent, const UnicodeString & Body, bool Seamless);
+void LoadBrowserDocument(TWebBrowserEx * WebBrowser, const UnicodeString & Document);
 TComponent * __fastcall FindComponentRecursively(TComponent * Root, const UnicodeString & Name);
 void __fastcall GetInstrutionsTheme(
   TColor & MainInstructionColor, HFONT & MainInstructionFont, HFONT & InstructionFont);
