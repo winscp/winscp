@@ -31,6 +31,7 @@
 #include <WebBrowserEx.hpp>
 #include <DateUtils.hpp>
 #include <OperationWithTimeout.hpp>
+#include <Soap.HTTPUtil.hpp>
 //---------------------------------------------------------------------------
 #define KEY _T("SYSTEM\\CurrentControlSet\\Control\\") \
             _T("Session Manager\\Environment")
@@ -1547,6 +1548,7 @@ static void __fastcall InsertDonateLink(void * /*Data*/, TObject * Sender)
     UnicodeString AboutStoreUrl = LoadStr(ABOUT_STORE_URL);
     DocumentBody = ReplaceStr(DocumentBody, L"%STORE_URL%", AboutStoreUrl);
     UnicodeString StoreButtonUrl = ProgramUrl(LoadStr(STORE_GET_IMG_URL));
+    StoreButtonUrl = HTMLEscape(StoreButtonUrl);
     UnicodeString StoreButton =
       FORMAT(L"<img src=\"%s\" style=\"height: 1.8em; vertical-align: -0.4em; padding-top: 0.2em; border: 0;\">", (StoreButtonUrl));
     UnicodeString StoreUrl = FMTLOAD(STORE_URL, (L"update"));
