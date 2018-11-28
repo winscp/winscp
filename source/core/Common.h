@@ -176,6 +176,7 @@ void __fastcall LoadScriptFromFile(UnicodeString FileName, TStrings * Lines);
 UnicodeString __fastcall StripEllipsis(const UnicodeString & S);
 UnicodeString __fastcall GetFileMimeType(const UnicodeString & FileName);
 bool __fastcall IsRealFile(const UnicodeString & FileName);
+UnicodeString GetOSInfo();
 UnicodeString GetEnvironmentInfo();
 //---------------------------------------------------------------------------
 struct TSearchRecSmart : public TSearchRec

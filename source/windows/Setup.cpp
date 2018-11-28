@@ -2560,6 +2560,9 @@ bool DoUnregisterChoice(TConsole * Console)
   return (Console->Choice(L"U", -1, -1, -1, 0, 0, 0, UnicodeString()) == 1);
 }
 //---------------------------------------------------------------------------
+typedef HRESULT WINAPI (* RegDeleteTreeProc)(HKEY Key, LPCWSTR SubKey);
+static RegDeleteTreeProc ARegDeleteTree = NULL;
+//---------------------------------------------------------------------------
 void DoDeleteKey(TConsole * Console, TRegistry * Registry, const UnicodeString & Key, int Platform, bool & AnyDeleted, bool & AllDeleted)
 {
   UnicodeString ParentKey = ExtractFileDir(Key);
@@ -2567,7 +2570,14 @@ void DoDeleteKey(TConsole * Console, TRegistry * Registry, const UnicodeString &
   bool Result = Registry->OpenKey(ParentKey, false);
   if (Result)
   {
-    Result = (RegDeleteTreeW(Registry->CurrentKey, ChildKey.c_str()) == 0);
+    if (DebugAlwaysFalse(ARegDeleteTree == NULL))
+    {
+      Result = false;
+    }
+    else
+    {
+      Result = (ARegDeleteTree(Registry->CurrentKey, ChildKey.c_str()) == 0);
+    }
     Registry->CloseKey();
   }
 
@@ -2590,6 +2600,20 @@ int ComRegistration(TConsole * Console)
   int Result = RESULT_SUCCESS;
   try
   {
+    if (ARegDeleteTree == NULL)
+    {
+      HINSTANCE AdvapiLibrary = LoadLibrary(L"advapi32.dll");
+      if (DebugAlwaysTrue(AdvapiLibrary != NULL))
+      {
+        ARegDeleteTree = reinterpret_cast<RegDeleteTreeProc>(GetProcAddress(AdvapiLibrary, "RegDeleteTreeW"));
+      }
+    }
+
+    if (ARegDeleteTree == NULL)
+    {
+      throw Exception(FORMAT(L"Not supported on %s", (GetOSInfo())));
+    }
+
     Console->PrintLine(GetEnvironmentInfo());
     Console->PrintLine();
 

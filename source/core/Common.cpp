@@ -1432,11 +1432,16 @@ bool __fastcall IsRealFile(const UnicodeString & FileName)
   return (FileName != THISDIRECTORY) && (FileName != PARENTDIRECTORY);
 }
 //---------------------------------------------------------------------------
+UnicodeString GetOSInfo()
+{
+  UnicodeString Result = WindowsVersionLong();
+  AddToList(Result, WindowsProductName(), L" - ");
+  return Result;
+}
+//---------------------------------------------------------------------------
 UnicodeString GetEnvironmentInfo()
 {
-  UnicodeString OS = WindowsVersionLong();
-  AddToList(OS, WindowsProductName(), L" - ");
-  UnicodeString Result = FORMAT(L"WinSCP %s (OS %s)", (Configuration->VersionStr, OS));
+  UnicodeString Result = FORMAT(L"WinSCP %s (OS %s)", (Configuration->VersionStr, GetOSInfo()));
   return Result;
 }
 //---------------------------------------------------------------------------
