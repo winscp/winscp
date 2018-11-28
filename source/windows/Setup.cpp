@@ -1663,7 +1663,9 @@ bool __fastcall CheckForUpdates(bool CachedResults)
 
     if (New)
     {
-      if (Updates.Results.DownloadUrl.IsEmpty() && IsInstalled())
+      // Internet Explorer on Windows XP cannot talk to CDN77, where we host Store Get button.
+      // As a simple solution, we just do not display the donation panel on Windows XP.
+      if (Updates.Results.DownloadUrl.IsEmpty() && IsInstalled() && IsWinVista())
       {
         DebugAssert(Dialog->OnShow == NULL);
         // InsertDonateLink need to be called only after MessageBrowser is created
