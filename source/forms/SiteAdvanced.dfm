@@ -1380,6 +1380,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Width = 168
             Height = 13
             Caption = 'Do &DNS name lookup at proxy end:'
+            FocusControl = ProxyDNSCombo
           end
           object ProxyLocalCommandLabel: TLabel
             Left = 12
