@@ -432,6 +432,7 @@ private:
   TDateTime FTipsShown;
   int FRunsSinceLastTip;
   bool FLockedInterface;
+  bool FTimeoutShellIconRetrieval;
   int FDontDecryptPasswords;
   int FMasterPasswordSession;
   bool FMasterPasswordSessionAsked;
@@ -537,6 +538,7 @@ private:
   void __fastcall SetLockedInterface(bool value);
   bool __fastcall GetTimeoutShellOperations();
   void __fastcall SetTimeoutShellOperations(bool value);
+  void __fastcall SetTimeoutShellIconRetrieval(bool value);
   int __fastcall GetLocaleCompletenessTreshold();
 
   bool __fastcall GetDDExtInstalled();
@@ -717,6 +719,7 @@ public:
   __property TStrings * CustomCommandOptions = { read = GetCustomCommandOptions, write = SetCustomCommandOptions };
   __property bool LockedInterface = { read = FLockedInterface, write = SetLockedInterface };
   __property bool TimeoutShellOperations = { read = GetTimeoutShellOperations, write = SetTimeoutShellOperations };
+  __property bool TimeoutShellIconRetrieval = { read = FTimeoutShellIconRetrieval, write = SetTimeoutShellIconRetrieval };
   __property LCID DefaultLocale = { read = FDefaultLocale };
   __property int LocaleCompletenessTreshold = { read = GetLocaleCompletenessTreshold };
 };

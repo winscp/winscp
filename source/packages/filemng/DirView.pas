@@ -41,7 +41,7 @@ uses
   Windows, ShlObj, ComCtrls, CompThread, CustomDirView, ListExt,
   ExtCtrls, Graphics, FileOperator, DiscMon, Classes, DirViewColProperties,
   DragDrop, Messages, ListViewColProperties, CommCtrl, DragDropFilesEx,
-  FileCtrl, SysUtils, BaseUtils, Controls, CustomDriveView;
+  FileCtrl, SysUtils, BaseUtils, Controls, CustomDriveView, Winapi.ShellAPI;
 
 {$I ResStrings.pas }
 
@@ -168,6 +168,7 @@ type
     PIDLRecycle: PItemIDList;
 
     FLastPath: array[TDriveLetter] of string;
+    FTimeoutShellIconRetrieval: Boolean;
 
     {Drag&Drop:}
     function GetDirColProperties: TDirViewColProperties;
@@ -238,6 +239,8 @@ type
     procedure WMDestroy(var Msg: TWMDestroy); message WM_DESTROY;
     procedure CMRecreateWnd(var Message: TMessage); message CM_RECREATEWND;
     procedure Load(DoFocusSomething: Boolean); override;
+    function GetFileInfo(pszPath: LPCWSTR; dwFileAttributes: DWORD; var psfi: TSHFileInfoW; cbFileInfo, uFlags: UINT): DWORD_PTR;
+
     function HiddenCount: Integer; override;
     function FilteredCount: Integer; override;
 
@@ -313,6 +316,7 @@ type
     procedure ReloadDirectory; override;
     procedure ExecuteDrive(Drive: TDriveLetter);
     property HomeDirectory: string read GetHomeDirectory write FHomeDirectory;
+    property TimeoutShellIconRetrieval: Boolean read FTimeoutShellIconRetrieval write FTimeoutShellIconRetrieval;
 
   published
     property DirColProperties: TDirViewColProperties read GetDirColProperties write SetDirColProperties;
@@ -408,7 +412,7 @@ implementation
 uses
   DriveView, OperationWithTimeout,
   PIDL, Forms, Dialogs,
-  ShellAPI, ComObj,
+  ComObj,
   ActiveX, ImgList,
   ShellDialogs, IEDriveInfo,
   FileChanges, Math, PasTools, StrUtils, Types, UITypes;
@@ -1598,6 +1602,19 @@ begin
   end;
 end; {GetAttrString}
 
+function TDirView.GetFileInfo(
+  pszPath: LPCWSTR; dwFileAttributes: DWORD; var psfi: TSHFileInfoW; cbFileInfo, uFlags: UINT): DWORD_PTR;
+begin
+  if TimeoutShellIconRetrieval then
+  begin
+     Result := SHGetFileInfoWithTimeout(pszPath, dwFileAttributes, psfi, cbFileInfo, uFlags,MSecsPerSec div 4);
+  end
+    else
+  begin
+    Result := SHGetFileInfo(pszPath, dwFileAttributes, psfi, cbFileInfo, uFlags);
+  end;
+end;
+
 procedure TDirView.GetDisplayData(Item: TListItem; FetchIcon: Boolean);
 var
   FileInfo: TShFileInfo;
@@ -1716,10 +1733,9 @@ begin
             begin
               // Files with PIDL are typically .exe files.
               // It may take long to retrieve an icon from exe file.
-              if SHGetFileInfoWithTimeout(
+              if GetFileInfo(
                    PChar(PIDL), FILE_ATTRIBUTE_NORMAL, FileInfo, SizeOf(FileInfo),
-                   SHGFI_TYPENAME or SHGFI_USEFILEATTRIBUTES or SHGFI_SYSICONINDEX or SHGFI_PIDL,
-                   MSecsPerSec div 4) = 0 then
+                   SHGFI_TYPENAME or SHGFI_USEFILEATTRIBUTES or SHGFI_SYSICONINDEX or SHGFI_PIDL) = 0 then
               begin
                 FileInfo.szTypeName[0] := #0;
                 FileInfo.iIcon := DefaultExeIcon;
@@ -1727,9 +1743,8 @@ begin
             end
               else
             begin
-              SHGetFileInfoWithTimeout(PChar(FileIconForName), FILE_ATTRIBUTE_NORMAL, FileInfo, SizeOf(FileInfo),
-                SHGFI_TYPENAME or SHGFI_USEFILEATTRIBUTES or SHGFI_SYSICONINDEX,
-                MSecsPerSec div 4);
+              GetFileInfo(PChar(FileIconForName), FILE_ATTRIBUTE_NORMAL, FileInfo, SizeOf(FileInfo),
+                SHGFI_TYPENAME or SHGFI_USEFILEATTRIBUTES or SHGFI_SYSICONINDEX);
             end;
 
             TypeName := FileInfo.szTypeName;
