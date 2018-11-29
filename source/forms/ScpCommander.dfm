@@ -1453,6 +1453,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       OnMatchMask = DirViewMatchMask
       OnGetOverlay = DirViewGetOverlay
       ConfirmDelete = False
+      UseIconUpdateThread = True
       WatchForChanges = True
       OnFileIconForName = LocalDirViewFileIconForName
       OnContextPopup = LocalDirViewContextPopup

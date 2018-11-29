@@ -1884,6 +1884,7 @@ begin
             begin
               // Files with PIDL are typically .exe files.
               // It may take long to retrieve an icon from exe file.
+              // We typically do not get here, now that we have UseIconUpdateThread enabled.
               if GetFileInfo(
                    PChar(PIDL), FILE_ATTRIBUTE_NORMAL, FileInfo, SizeOf(FileInfo),
                    SHGFI_TYPENAME or SHGFI_USEFILEATTRIBUTES or SHGFI_SYSICONINDEX or SHGFI_PIDL) = 0 then
