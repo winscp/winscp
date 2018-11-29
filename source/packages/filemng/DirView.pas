@@ -597,6 +597,25 @@ begin
   end;
 end;
 
+function GetShellDisplayName(
+  const ShellFolder: IShellFolder; IDList: PItemIDList; Flags: DWORD; var Name: string): Boolean;
+var
+  Str: TStrRet;
+begin
+  Result := True;
+  Name := '';
+  if ShellFolder.GetDisplayNameOf(IDList, Flags, Str) = NOERROR then
+  begin
+    case Str.uType of
+      STRRET_WSTR: Name := WideCharToString(Str.pOleStr);
+      STRRET_OFFSET: Name := PChar(UINT(IDList) + Str.uOffset);
+      STRRET_CSTR: Name := string(Str.cStr);
+      else Result := False;
+    end;
+  end
+    else Result := False;
+end; {GetShellDisplayName}
+
 { TIconUpdateThread }
 
 constructor TIconUpdateThread.Create(Owner: TDirView);

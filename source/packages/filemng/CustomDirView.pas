@@ -500,16 +500,6 @@ function CreateFileShortCut(SourceFile, Target, DisplayName: string;
   UpdateIfExists: Boolean = False): Boolean;
 function ResolveFileShortCut(SourceFile: string; ShowDialog: Boolean = False): string;
 
-{Gets the shell's display icon for registered file extensions:}
-function GetIconIndex(const AFile: string; Attrs: DWORD; Flags: UINT): Integer;
-
-{Gets the shell's inforecord for registered fileextensions:}
-function GetshFileInfo(const AFile: string; Attrs: DWORD; Flags: UINT): TSHFileInfo;
-
-{Returns the displayname as used by the shell:}
-function GetShellDisplayName(const ShellFolder: IShellFolder; IDList: PItemIDList;
-  Flags: DWORD; var Name: string): Boolean;
-
 function IsExecutable(FileName: string): Boolean;
 
 function GetNextMask(var Mask: string): string;
@@ -546,6 +536,28 @@ var
   WinDir: string;
   TempDir: string;
   GlobalsInitialized: Boolean = False;
+
+function GetIconIndex(const AFile: string; Attrs: DWORD; Flags: UINT): Integer;
+var
+  FileInfo: TSHFileInfo;
+begin
+  try
+    SHGetFileInfo(PChar(AFile), Attrs, FileInfo, SizeOf(TSHFileInfo),
+      Flags or SHGFI_SYSICONINDEX or SHGFI_USEFILEATTRIBUTES);
+    Result := FileInfo.iIcon;
+  except
+    Result := -1;
+  end;
+end; {GetIconIndex}
+
+function GetshFileInfo(const AFile: string; Attrs: DWORD; Flags: UINT): TSHFileInfo;
+begin
+  try
+    SHGetFileInfoWithTimeout(PChar(AFile), Attrs, Result, SizeOf(TSHFileInfo), Flags, 1000);
+  except
+    FillChar(Result, SizeOf(Result), 0);
+  end;
+end; {GetshFileInfo}
 
 procedure InitGlobals;
 begin
@@ -708,47 +720,6 @@ begin
     if Succeeded(HRes) then Result := True;
   end;
 end; {CreateShortCut}
-
-function GetIconIndex(const AFile: string; Attrs: DWORD; Flags: UINT): Integer;
-var
-  FileInfo: TSHFileInfo;
-begin
-  try
-    SHGetFileInfo(PChar(AFile), Attrs, FileInfo, SizeOf(TSHFileInfo),
-      Flags or SHGFI_SYSICONINDEX or SHGFI_USEFILEATTRIBUTES);
-    Result := FileInfo.iIcon;
-  except
-    Result := -1;
-  end;
-end; {GetIconIndex}
-
-function GetshFileInfo(const AFile: string; Attrs: DWORD; Flags: UINT): TSHFileInfo;
-begin
-  try
-    SHGetFileInfoWithTimeout(PChar(AFile), Attrs, Result, SizeOf(TSHFileInfo), Flags, 1000);
-  except
-    FillChar(Result, SizeOf(Result), 0);
-  end;
-end; {GetshFileInfo}
-
-function GetShellDisplayName(const ShellFolder: IShellFolder; IDList: PItemIDList;
-  Flags: DWORD; var Name: string): Boolean;
-var
-  Str: TStrRet;
-begin
-  Result := True;
-  Name := '';
-  if ShellFolder.GetDisplayNameOf(IDList, Flags, Str) = NOERROR then
-  begin
-    case Str.uType of
-      STRRET_WSTR: Name := WideCharToString(Str.pOleStr);
-      STRRET_OFFSET: Name := PChar(UINT(IDList) + Str.uOffset);
-      STRRET_CSTR: Name := string(Str.cStr);
-      else Result := False;
-    end;
-  end
-    else Result := False;
-end; {GetShellDisplayName}
 
 function OverlayImageList(Size: Integer): TImageList;
 
