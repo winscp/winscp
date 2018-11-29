@@ -619,6 +619,7 @@ void __fastcall TWinConfiguration::Default()
 
   HonorDrivePolicy = true;
   TimeoutShellOperations = true;
+  TimeoutShellIconRetrieval = false;
 
   FEditor.Font.FontName = DefaultFixedWidthFontName;
   FEditor.Font.FontSize = DefaultFixedWidthFontSize;
@@ -1016,6 +1017,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEYEX(String, FExtensionsOrder, L"ExtensionsOrder"); \
     KEYEX(String, FExtensionsShortCuts, L"ExtensionsShortCuts"); \
     KEY(Bool,     TimeoutShellOperations); \
+    KEY(Bool,     TimeoutShellIconRetrieval); \
   ); \
   BLOCK(L"Interface\\Editor", CANCREATE, \
     KEYEX(String,   Editor.Font.FontName, L"FontName2"); \
@@ -2603,6 +2605,11 @@ bool __fastcall TWinConfiguration::GetTimeoutShellOperations()
 void __fastcall TWinConfiguration::SetTimeoutShellOperations(bool value)
 {
   ::TimeoutShellOperations = value;
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetTimeoutShellIconRetrieval(bool value)
+{
+  SET_CONFIG_PROPERTY(TimeoutShellIconRetrieval);
 }
 //---------------------------------------------------------------------------
 TStringList * __fastcall TWinConfiguration::LoadJumpList(

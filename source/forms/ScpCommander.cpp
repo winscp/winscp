@@ -575,6 +575,8 @@ void __fastcall TScpCommanderForm::ConfigurationChanged()
   LocalDirView->NaturalOrderNumericalSorting = WinConfiguration->NaturalOrderNumericalSorting;
   LocalDriveView->NaturalOrderNumericalSorting = WinConfiguration->NaturalOrderNumericalSorting;
 
+  LocalDirView->TimeoutShellIconRetrieval = WinConfiguration->TimeoutShellIconRetrieval;
+
   if (LocalDirView->RowSelect != WinConfiguration->FullRowSelect)
   {
     LocalDirView->RowSelect = WinConfiguration->FullRowSelect;
