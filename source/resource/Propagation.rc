@@ -53,5 +53,9 @@ BEGIN
   NEW_5_12_SHA256_HOSTKEY, "Support for SHA-256 host key fingerprint algorithm"
   NEW_5_12_AUTOMATION, "Numerous improvements to .NET assembly, including support for PackageReference package management in NuGet package"
 
-  NEW_5_14_TBD, "TBD"
+  NEW_5_14_ENCRYPTION, "Files can be optionally encrypted when storing them on SFTP server"
+  NEW_5_14_UNC, "Local UNC paths can be browsed"
+  NEW_5_14_CLIPBOARD, "Files can be copied to the clipboard"
+  NEW_5_14_SYNCHRONIZATION, "Many improvements to directory synchronization"
+  NEW_5_14_FILES_COLOR, "Many improvements to directory synchronization"
 END
