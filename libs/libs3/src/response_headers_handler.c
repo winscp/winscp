@@ -117,7 +117,8 @@ void response_headers_handler_add(ResponseHeadersHandler *handler,
         string_multibuffer_add(handler->responsePropertyStrings, c, 
                                valuelen, fit);
     }
-    else if (!strncasecmp(header, "ETag", namelen)) {
+    else if ((!strncasecmp(header, "ETag", namelen)) 
+         || (!strncasecmp(header, "Etag", namelen))) { // some servers reply with Etag header
         responseProperties->eTag = 
             string_multibuffer_current(handler->responsePropertyStrings);
         string_multibuffer_add(handler->responsePropertyStrings, c, 
