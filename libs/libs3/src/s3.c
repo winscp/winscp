@@ -495,6 +495,7 @@ static void growbuffer_read(growbuffer **gb, int amt, int *amtReturn,
             buf->next->prev = buf->prev;
         }
         free(buf);
+        buf = NULL;
     }
 }
 
@@ -2288,6 +2289,9 @@ static void put_object(int argc, char **argv, int optindex,
             else if (!strcmp(val, "public-read-write")) {
                 cannedAcl = S3CannedAclPublicReadWrite;
             }
+            else if (!strcmp(val, "bucket-owner-full-control")) {
+                cannedAcl = S3CannedAclBucketOwnerFullControl;
+            }
             else if (!strcmp(val, "authenticated-read")) {
                 cannedAcl = S3CannedAclAuthenticatedRead;
             }
@@ -2442,6 +2446,7 @@ static void put_object(int argc, char **argv, int optindex,
                         MULTIPART_CHUNK_SIZE);
 
         MultipartPartData partData;
+        memset(&partData, 0, sizeof(MultipartPartData));
         int partContentLength = 0;
 
         S3MultipartInitialHandler handler = {
@@ -2492,10 +2497,11 @@ static void put_object(int argc, char **argv, int optindex,
 upload:
         todoContentLength -= MULTIPART_CHUNK_SIZE * manager.next_etags_pos;
         for (seq = manager.next_etags_pos + 1; seq <= totalSeq; seq++) {
-            memset(&partData, 0, sizeof(MultipartPartData));
             partData.manager = &manager;
             partData.seq = seq;
-            partData.put_object_data = data;
+            if (partData.put_object_data.gb==NULL) {
+              partData.put_object_data = data;
+            }
             partContentLength = ((contentLength > MULTIPART_CHUNK_SIZE) ?
                                  MULTIPART_CHUNK_SIZE : contentLength);
             printf("%s Part Seq %d, length=%d\n", srcSize ? "Copying" : "Sending", seq, partContentLength);

@@ -100,6 +100,14 @@ static S3Status initialMultipartXmlCallback(const char *elementPath,
     return S3StatusOK;
 }
 
+static S3Status InitialMultipartPropertiesCallback(const S3ResponseProperties *properties, 
+                                                   void *callbackData) 
+{
+  InitialMultipartData *mdata = (InitialMultipartData *)callbackData;
+  return mdata->handler->responseHandler.propertiesCallback(properties, mdata->userdata);
+}
+
+
 void S3_initiate_multipart(S3BucketContext *bucketContext, const char *key,
                           S3PutProperties *putProperties,
                           S3MultipartInitialHandler *handler,
@@ -135,7 +143,7 @@ void S3_initiate_multipart(S3BucketContext *bucketContext, const char *key,
         0,                                            // startByte
         0,                                            // byteCount
         putProperties,                                // putProperties
-        handler->responseHandler.propertiesCallback,  // propertiesCallback
+        InitialMultipartPropertiesCallback,           // propertiesCallback
         0,                                            // toS3Callback
         0,                                            // toS3CallbackTotalSize
         InitialMultipartCallback,                     // fromS3Callback

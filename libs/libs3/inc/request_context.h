@@ -35,14 +35,26 @@
 
 #include "libs3.h"
 
+
+typedef enum
+{
+    S3CurlModeMultiPerform                                  ,
+    S3CurlModeMultiSocket                                   ,
+} S3CurlMode;
+
+
 struct S3RequestContext
 {
     CURLM *curlm;
+    S3CurlMode curl_mode;
     
     int verifyPeerSet;
     long verifyPeer;
 
     struct Request *requests;
+
+    S3SetupCurlCallback setupCurlCallback;
+    void *setupCurlCallbackData;
 };
 
 

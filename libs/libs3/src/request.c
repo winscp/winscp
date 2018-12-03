@@ -132,7 +132,7 @@ typedef struct RequestComputedValues
     char rangeHeader[128];
 
     // Authorization header
-    char authorizationHeader[1024];
+    char authorizationHeader[4096];
 
     // Request date stamp
     char requestDateISO8601[64];
@@ -292,8 +292,9 @@ static S3Status append_amz_header(RequestComputedValues *values,
     values->amzHeaders[values->amzHeadersCount++] = &(values->amzHeadersRaw[rawPos]);
 
     const char *headerStr = headerName;
+    
+    char headerNameWithPrefix[S3_MAX_METADATA_SIZE - sizeof(": v")];
     if (addPrefix) {
-        char headerNameWithPrefix[S3_MAX_METADATA_SIZE - sizeof(": v")];
         snprintf(headerNameWithPrefix, sizeof(headerNameWithPrefix),
                  S3_METADATA_HEADER_NAME_PREFIX "%s", headerName);
         headerStr = headerNameWithPrefix;
@@ -366,6 +367,9 @@ static S3Status compose_amz_headers(const RequestParams *params,
             break;
         case S3CannedAclPublicReadWrite:
             cannedAclString = "public-read-write";
+            break;
+        case S3CannedAclBucketOwnerFullControl:
+            cannedAclString = "bucket-owner-full-control";
             break;
         default: // S3CannedAclAuthenticatedRead
             cannedAclString = "authenticated-read";
@@ -787,13 +791,13 @@ static void canonicalize_signature_headers(RequestComputedValues *values)
 // Canonicalizes the resource into params->canonicalizedResource
 static void canonicalize_resource(const S3BucketContext *context,
                                   const char *urlEncodedKey,
-                                  char *buffer)
+                                  char *buffer, unsigned int buffer_max)
 {
     int len = 0;
 
     *buffer = 0;
 
-#define append(str) len += sprintf(&(buffer[len]), "%s", str)
+#define append(str) len += snprintf(&(buffer[len]), buffer_max - len, "%s", str)
 
     if (context->uriStyle == S3UriStylePath) {
         if (context->bucketName && context->bucketName[0]) {
@@ -811,8 +815,8 @@ static void canonicalize_resource(const S3BucketContext *context,
 #undef append
 }
 
-
-static void sort_query_string(const char *queryString, char *result)
+static void sort_query_string(const char *queryString, char *result,
+                              unsigned int result_size)
 {
 #ifdef SIGNATURE_DEBUG
     printf("\n--\nsort_and_urlencode\nqueryString: %s\n", queryString);
@@ -827,10 +831,10 @@ static void sort_query_string(const char *queryString, char *result)
 
     const char* params[numParams];
 
-    char tokenized[strlen(queryString) + 1];
-    strncpy(tokenized, queryString, strlen(queryString) + 1);
-
-    char *tok = tokenized;
+    // Where did strdup go?!??
+    int queryStringLen = strlen(queryString);
+    char *tok = (char *) malloc(queryStringLen + 1);
+    strcpy(tok, queryString);
     const char *token = NULL;
     char *save = NULL;
     unsigned int i = 0;
@@ -848,30 +852,39 @@ static void sort_query_string(const char *queryString, char *result)
     }
 #endif
 
+    // All params are urlEncoded
+#define append(str) len += snprintf(&(result[len]), result_size - len, "%s", str)
     unsigned int pi = 0;
+    unsigned int len = 0;
     for (; pi < numParams; pi++) {
-        // All params are urlEncoded
-        strncat(result, params[pi], strlen(params[pi]));
-        strncat(result, "&", 1);
+        append(params[pi]);
+        append("&");
     }
-    result[strlen(result) - 1] = '\0';
+    // Take off the extra '&'
+    if (len > 0) {
+        result[len - 1] = 0;
+    }
+#undef append
+
+    free(tok);
 }
 
 
 // Canonicalize the query string part of the request into a buffer
 static void canonicalize_query_string(const char *queryParams,
-                                      const char *subResource, char *buffer)
+                                      const char *subResource,
+                                      char *buffer, unsigned int buffer_size)
 {
     int len = 0;
 
     *buffer = 0;
 
-#define append(str) len += sprintf(&(buffer[len]), "%s", str)
+#define append(str) len += snprintf(&(buffer[len]), buffer_size - len, "%s", str)
 
     if (queryParams && queryParams[0]) {
         char sorted[strlen(queryParams) * 2];
         sorted[0] = '\0';
-        sort_query_string(queryParams, sorted);
+        sort_query_string(queryParams, sorted, sizeof(sorted));
         append(sorted);
     }
 
@@ -987,12 +1000,13 @@ static S3Status compose_auth_header(const RequestParams *params,
     if (params->bucketContext.authRegion) {
         awsRegion = params->bucketContext.authRegion;
     }
-    char scope[SIGNATURE_SCOPE_SIZE + 1];
+    char scope[sizeof(values->requestDateISO8601) + sizeof(awsRegion) +
+               sizeof("//s3/aws4_request") + 1];
     snprintf(scope, sizeof(scope), "%.8s/%s/s3/aws4_request",
              values->requestDateISO8601, awsRegion);
 
-    char stringToSign[17 + 17 + SIGNATURE_SCOPE_SIZE + 1
-        + strlen(canonicalRequestHashHex)];
+    char stringToSign[17 + 17 + sizeof(values->requestDateISO8601) +
+                      sizeof(scope) + sizeof(canonicalRequestHashHex) + 1];
     snprintf(stringToSign, sizeof(stringToSign), "AWS4-HMAC-SHA256\n%s\n%s\n%s",
              values->requestDateISO8601, scope, canonicalRequestHashHex);
 
@@ -1056,12 +1070,11 @@ static S3Status compose_auth_header(const RequestParams *params,
              "%s/%.8s/%s/s3/aws4_request", params->bucketContext.accessKeyId,
              values->requestDateISO8601, awsRegion);
 
-    snprintf(
-            values->authorizationHeader,
-            sizeof(values->authorizationHeader),
-            "Authorization: AWS4-HMAC-SHA256 Credential=%s,SignedHeaders=%s,Signature=%s",
-            values->authCredential, values->signedHeaders,
-            values->requestSignatureHex);
+    snprintf(values->authorizationHeader,
+             sizeof(values->authorizationHeader),
+             "Authorization: AWS4-HMAC-SHA256 Credential=%s,SignedHeaders=%s,Signature=%s",
+             values->authCredential, values->signedHeaders,
+             values->requestSignatureHex);
 
 #ifdef SIGNATURE_DEBUG
     printf("--\nAuthorization Header:\n%s\n", values->authorizationHeader);
@@ -1307,6 +1320,7 @@ static void request_deinitialize(Request *request)
 
 static S3Status request_get(const RequestParams *params,
                             const RequestComputedValues *values,
+                            const S3RequestContext *context,
                             Request **reqReturn)
 {
     Request *request = 0;
@@ -1361,6 +1375,15 @@ static S3Status request_get(const RequestParams *params,
 
     // Set all of the curl handle options
     if ((status = setup_curl(request, params, values)) != S3StatusOK) {
+        curl_easy_cleanup(request->curl);
+        free(request);
+        return status;
+    }
+
+    if (context && context->setupCurlCallback &&
+        (status = context->setupCurlCallback(
+                context->curlm, request->curl,
+                context->setupCurlCallbackData)) != S3StatusOK) {
         curl_easy_cleanup(request->curl);
         free(request);
         return status;
@@ -1445,8 +1468,8 @@ S3Status request_api_initialize(const char *userAgentInfo, int flags,
         userAgentInfo = "Unknown";
     }
 
-    char platform[96];
     struct utsname utsn;
+    char platform[sizeof(utsn.sysname) + 1 + sizeof(utsn.machine) + 1];
     if (uname(&utsn)) {
         snprintf(platform, sizeof(platform), "Unknown");
     }
@@ -1515,9 +1538,11 @@ static S3Status setup_request(const RequestParams *params,
 
     // Compute the canonicalized resource
     canonicalize_resource(&params->bucketContext, computed->urlEncodedKey,
-                          computed->canonicalURI);
+                          computed->canonicalURI,
+                          sizeof(computed->canonicalURI));
     canonicalize_query_string(params->queryParams, params->subResource,
-                              computed->canonicalQueryString);
+                              computed->canonicalQueryString,
+                              sizeof(computed->canonicalQueryString));
 
     // Compose Authorization header
     if ((status = compose_auth_header(params, computed)) != S3StatusOK) {
@@ -1554,7 +1579,7 @@ void request_perform(const RequestParams *params, S3RequestContext *context)
     }
 
     // Get an initialized Request structure now
-    if ((status = request_get(params, &computed, &request)) != S3StatusOK) {
+    if ((status = request_get(params, &computed, context, &request)) != S3StatusOK) {
         return_status(status);
     }
     if (context && context->verifyPeerSet) {
@@ -1706,7 +1731,9 @@ S3Status request_curl_code_to_status(CURLcode code)
 #else
     case CURLE_SSL_PEER_CERTIFICATE:
 #endif
+#if LIBCURL_VERSION_NUM < 0x073e00
     case CURLE_SSL_CACERT:
+#endif
         return S3StatusServerFailedVerification;
     default:
         return S3StatusInternalError;
@@ -1741,12 +1768,16 @@ S3Status S3_generate_authenticated_query_string
     }
 
     // Finally, compose the URI, with params
-    char queryParams[sizeof("X-Amz-Algorithm=AWS4-HMAC-SHA256")
-        + sizeof("&X-Amz-Credential=") + MAX_CREDENTIAL_SIZE
-        + sizeof("&X-Amz-Date=") + 16 + sizeof("&X-Amz-Expires=") + 6
-        + sizeof("&X-Amz-SignedHeaders=") + 128 + sizeof("&X-Amz-Signature=")
-        + sizeof(computed.requestSignatureHex) + 1];
-
+    char queryParams[sizeof("X-Amz-Algorithm=AWS4-HMAC-SHA256") +
+                     sizeof("&X-Amz-Credential=") +
+                     sizeof(computed.authCredential) +
+                     sizeof("&X-Amz-Date=") +
+                     sizeof(computed.requestDateISO8601) +
+                     sizeof("&X-Amz-Expires=") + 64 +
+                     sizeof("&X-Amz-SignedHeaders=") +
+                     sizeof(computed.signedHeaders) +
+                     sizeof("&X-Amz-Signature=") +
+                     sizeof(computed.requestSignatureHex) + 1];
     snprintf(queryParams, sizeof(queryParams),
              "X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=%s"
              "&X-Amz-Date=%s&X-Amz-Expires=%d"
