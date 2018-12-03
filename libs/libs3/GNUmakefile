@@ -25,7 +25,7 @@
 #
 # You should also have received a copy of the GNU General Public License
 # version 2 along with libs3, in a file named COPYING-GPLv2.  If not, see
-# <http://www.gnu.org/licenses/>.
+# <https://www.gnu.org/licenses/>.
 
 # I tried to use the autoconf/automake/autolocal/etc (i.e. autohell) tools
 # but I just couldn't stomach them.  Since this is a Makefile for POSIX
