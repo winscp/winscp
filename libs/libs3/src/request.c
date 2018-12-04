@@ -833,7 +833,8 @@ static void sort_query_string(const char *queryString, char *result,
 
     // Where did strdup go?!??
     int queryStringLen = strlen(queryString);
-    char *tok = (char *) malloc(queryStringLen + 1);
+    char *buf = (char *) malloc(queryStringLen + 1);
+    char *tok = buf;
     strcpy(tok, queryString);
     const char *token = NULL;
     char *save = NULL;
@@ -866,7 +867,7 @@ static void sort_query_string(const char *queryString, char *result,
     }
 #undef append
 
-    free(tok);
+    free(buf);
 }
 
 
