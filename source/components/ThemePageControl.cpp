@@ -14,14 +14,7 @@
 // Based on
 // https://www.codeproject.com/Articles/6355/XP-Themes-Tab-Control-in-any-orientation
 //---------------------------------------------------------------------------
-//#define USE_DEFAULT_XP_TOPTAB     // XP top tab is drawn only for test purpose. To use default, uncoment this line
-//---------------------------------------------------------------------------
-// constant string definitions here (or you can put it into resource string table)
 #define IDS_UTIL_TAB            L"TAB"
-#define IDS_UTIL_UXTHEME        L"UxTheme.dll"
-#define IDS_UTIL_THEMEACT       "IsThemeActive"
-#define IDS_UTIL_THEMEOPN       "OpenThemeData"
-#define IDS_UTIL_THEMEBCKG      "DrawThemeBackground"
 //---------------------------------------------------------------------------
 static inline void ValidCtrCheck(TThemePageControl *)
 {
