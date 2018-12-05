@@ -545,6 +545,7 @@ protected:
     TCalculatedChecksumEvent OnCalculatedChecksum, bool & Close);
   void __fastcall UpdateCustomCommandsToolbar();
   virtual void __fastcall UpdateActions();
+  void __fastcall UpdateSessionColor(TColor value);
   void __fastcall SetSessionColor(TColor value);
   void __fastcall NoteTimer(TObject * Sender);
   void __fastcall AddNote(UnicodeString Note, bool UpdateNow = true);

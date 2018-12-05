@@ -583,6 +583,13 @@ void __fastcall TCustomScpExplorerForm::TerminalChanging()
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::TerminalChanged(bool Replaced)
 {
+  TManagedTerminal * ManagedTerminal = dynamic_cast<TManagedTerminal *>(Terminal);
+  if (ManagedTerminal != NULL)
+  {
+    UpdateSessionColor((TColor)ManagedTerminal->StateData->Color);
+  }
+  DoTerminalListChanged();
+
   if (Replaced)
   {
     RemoteDirView->ReplaceTerminal(Terminal);
@@ -593,8 +600,6 @@ void __fastcall TCustomScpExplorerForm::TerminalChanged(bool Replaced)
   }
   NonVisualDataModule->ResetQueueOnceEmptyOperation();
 
-  TManagedTerminal * ManagedTerminal = NULL;
-
   if (Terminal != NULL)
   {
     if (Terminal->Active)
@@ -602,8 +607,7 @@ void __fastcall TCustomScpExplorerForm::TerminalChanged(bool Replaced)
       Terminal->RefreshDirectory();
     }
 
-    ManagedTerminal = dynamic_cast<TManagedTerminal *>(Terminal);
-    DebugAssert(ManagedTerminal != NULL);
+    DebugAssert(ManagedTerminal == Terminal);
 
     if (WinConfiguration->PreservePanelState)
     {
@@ -621,15 +625,6 @@ void __fastcall TCustomScpExplorerForm::TerminalChanged(bool Replaced)
     {
       InitStatusBar();
     }
-  }
-
-  DoTerminalListChanged();
-
-  if (ManagedTerminal != NULL)
-  {
-    // this has to be set only after the tab is switched from DoTerminalListChanged,
-    // otherwise we are changing color of wrong tab
-    SessionColor = (TColor)ManagedTerminal->StateData->Color;
   }
 
   UpdateTransferList();
@@ -8939,28 +8934,33 @@ void __fastcall TCustomScpExplorerForm::FileGenerateUrl()
   GenerateUrl(Paths.get());
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::UpdateSessionColor(TColor value)
+{
+  FSessionColor = value;
+
+  TColor C = (value != 0 ? value : Vcl::Graphics::clNone);
+
+  TTBXColorItem * ColorItem = dynamic_cast<TTBXColorItem *>(
+    static_cast<TObject *>(GetComponent(fcColorMenu)));
+  DebugAssert(ColorItem != NULL);
+  ColorItem->Color = C;
+
+  NonVisualDataModule->ColorMenuItem->Color = C;
+
+  UpdateControls();
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::SetSessionColor(TColor value)
 {
   if (value != FSessionColor)
   {
-    FSessionColor = value;
-
-    TColor C = (value != 0 ? value : Vcl::Graphics::clNone);
-
-    TTBXColorItem * ColorItem = dynamic_cast<TTBXColorItem *>(
-      static_cast<TObject *>(GetComponent(fcColorMenu)));
-    DebugAssert(ColorItem != NULL);
-    ColorItem->Color = C;
-
-    NonVisualDataModule->ColorMenuItem->Color = C;
+    UpdateSessionColor(value);
 
     // Is null when called from LastTerminalClosed
     if (Terminal != NULL)
     {
       SessionsPageControl->ActivePage->ImageIndex = AddSessionColor(value);
     }
-
-    UpdateControls();
   }
 }
 //---------------------------------------------------------------------------
