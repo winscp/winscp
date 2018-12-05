@@ -743,7 +743,7 @@ void __fastcall TCustomScpExplorerForm::UpdateQueueView()
 {
   ComponentVisible[fcQueueView] =
     (WinConfiguration->QueueView.Show == qvShow) ||
-     ((WinConfiguration->QueueView.Show == qvHideWhenEmpty) &&
+    ((WinConfiguration->QueueView.Show == qvHideWhenEmpty) &&
      (FQueueStatus != NULL) && (FQueueStatus->Count > 0));
 }
 //---------------------------------------------------------------------------
