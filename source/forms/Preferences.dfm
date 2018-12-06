@@ -503,19 +503,19 @@ object PreferencesDialog: TPreferencesDialog
           398)
         object InterfaceChangeLabel: TLabel
           Left = 8
-          Top = 222
+          Top = 280
           Width = 177
           Height = 13
           Caption = 'Changes will apply on the next start.'
         end
         object InterfaceGroup: TGroupBox
           Left = 8
-          Top = 8
+          Top = 66
           Width = 389
           Height = 208
           Anchors = [akLeft, akTop, akRight, akBottom]
           Caption = 'User Interface'
-          TabOrder = 0
+          TabOrder = 1
           DesignSize = (
             389
             208)
@@ -582,6 +582,39 @@ object PreferencesDialog: TPreferencesDialog
             Caption = '&Explorer'
             TabOrder = 1
             OnClick = ControlChange
+          end
+        end
+        object ThemeGroup: TGroupBox
+          Left = 8
+          Top = 8
+          Width = 389
+          Height = 52
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'Theme'
+          TabOrder = 0
+          DesignSize = (
+            389
+            52)
+          object Label7: TLabel
+            Left = 16
+            Top = 23
+            Width = 82
+            Height = 13
+            Caption = 'Interface &theme:'
+            FocusControl = ThemeCombo
+          end
+          object ThemeCombo: TComboBox
+            Left = 132
+            Top = 18
+            Width = 141
+            Height = 21
+            Style = csDropDownList
+            Anchors = [akLeft, akTop, akRight]
+            TabOrder = 0
+            Items.Strings = (
+              'Automatic'
+              'Light'
+              'Dark')
           end
         end
       end

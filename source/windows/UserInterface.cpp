@@ -376,6 +376,14 @@ void __fastcall ConfigureInterface()
     AdjustLocaleFlag(LoadStr(BIDI_MODE), WinConfiguration->BidiModeOverride, false, bdRightToLeft, bdLeftToRight);
   Application->BiDiMode = static_cast<TBiDiMode>(BidiModeFlag);
   SetTBXSysParam(TSP_XPVISUALSTYLE, XPVS_AUTOMATIC);
+  if (WinConfiguration != NULL)
+  {
+    UnicodeString Theme = WinConfiguration->UseDarkTheme() ? L"DarkOfficeXP" : L"OfficeXP";
+    if (!SameText(TBXCurrentTheme(), Theme))
+    {
+      TBXSetTheme(Theme);
+    }
+  }
   // Has any effect on Wine only
   // (otherwise initial UserDocumentDirectory is equivalent to GetPersonalFolder())
   UserDocumentDirectory = GetPersonalFolder();

@@ -183,6 +183,7 @@ type
     procedure LVMSetExtendedListViewStyle(var Message: TMessage); message LVM_SETEXTENDEDLISTVIEWSTYLE;
     procedure CMRecreateWnd(var Message: TMessage); message CM_RECREATEWND;
     procedure CMDPIChanged(var Message: TMessage); message CM_DPICHANGED;
+    procedure CMEnabledChanged(var Message: TMessage); message CM_ENABLEDCHANGED;
 
     procedure DumbCustomDrawItem(Sender: TCustomListView; Item: TListItem;
       State: TCustomDrawState; var DefaultDraw: Boolean);
@@ -1115,6 +1116,27 @@ begin
   NeedImageLists(True);
 end;
 
+const
+  RequiredStyles = LVS_EX_DOUBLEBUFFER or LVS_EX_TRANSPARENTBKGND;
+
+procedure TCustomDirView.CMEnabledChanged(var Message: TMessage);
+var
+  ListViewStyle: DWORD;
+begin
+  inherited;
+  // We need this so that we can control background color of disabled file panel for dark theme.
+  // See comment in LVMSetExtendedListViewStyle for an explanation.
+  ListViewStyle := ListView_GetExtendedListViewStyle(Handle);
+  if Enabled then
+  begin
+    ListView_SetExtendedListViewStyle(Handle, (ListViewStyle or RequiredStyles));
+  end
+    else
+  begin
+    ListView_SetExtendedListViewStyle(Handle, (ListViewStyle and (not RequiredStyles)));
+  end;
+end;
+
 procedure TCustomDirView.FreeImageLists;
 begin
   FreeAndNil(FImageList16);
@@ -1143,11 +1165,10 @@ procedure TCustomDirView.LVMSetExtendedListViewStyle(var Message: TMessage);
 // keyboard (Page-up/Down). This gets fixed by LVS_EX_TRANSPARENTBKGND,
 // but that works on Vista and newer only. See WMKeyDown
 // for workaround on earlier systems.
-const
-  RequiredStyles = LVS_EX_DOUBLEBUFFER or LVS_EX_TRANSPARENTBKGND;
 begin
   // This prevents TCustomListView.ResetExStyles resetting our styles
-  if (Message.WParam = 0) and
+  if Enabled and
+     (Message.WParam = 0) and
      ((Message.LParam and RequiredStyles) <> RequiredStyles) then
   begin
     ListView_SetExtendedListViewStyle(Handle, Message.LParam or RequiredStyles);

@@ -479,6 +479,7 @@ bool __fastcall TEditorList::IsDefaultList() const
 //---------------------------------------------------------------------------
 __fastcall TWinConfiguration::TWinConfiguration(): TCustomWinConfiguration()
 {
+  ResetSysDarkTheme();
   FInvalidDefaultTranslationMessage = L"";
   FDDExtInstalled = -1;
   FBookmarks = new TBookmarks();
@@ -566,6 +567,7 @@ void __fastcall TWinConfiguration::Default()
   FTemporaryDirectoryCleanup = true;
   FConfirmTemporaryDirectoryCleanup = true;
   FPreservePanelState = true;
+  FDarkTheme = asAuto;
   FLastStoredSession = L"";
   // deliberately not being saved, so that when saving ad-hoc workspace,
   // we do not offer to overwrite the last saved workspace, what may be undesirable
@@ -970,6 +972,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Bool,     TemporaryDirectoryCleanup); \
     KEY(Bool,     ConfirmTemporaryDirectoryCleanup); \
     KEY(Bool,     PreservePanelState); \
+    KEY(Integer,  DarkTheme); \
     KEY(String,   LastStoredSession); \
     KEY(Bool,     AutoSaveWorkspace); \
     KEY(Bool,     AutoSaveWorkspacePasswords); \
@@ -2073,6 +2076,57 @@ void __fastcall TWinConfiguration::SetPreservePanelState(bool value)
   SET_CONFIG_PROPERTY(PreservePanelState);
 }
 //---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetDarkTheme(TAutoSwitch value)
+{
+  SET_CONFIG_PROPERTY_EX(DarkTheme, ConfigureInterface());
+}
+//---------------------------------------------------------------------------
+static int __fastcall SysDarkTheme(HKEY RootKey)
+{
+  std::unique_ptr<TRegistry> Registry(new TRegistry());
+  Registry->RootKey = RootKey;
+  UnicodeString ThemesPersonalizeKey = L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
+  UnicodeString AppsUseLightThemeValue = L"AppsUseLightTheme";
+  int Result = -1;
+  if (Registry->OpenKeyReadOnly(ThemesPersonalizeKey) &&
+      Registry->ValueExists(AppsUseLightThemeValue))
+  {
+    Result = Registry->ReadBool(AppsUseLightThemeValue) ? 0 : 1;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::ResetSysDarkTheme()
+{
+  FSysDarkTheme = -1;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TWinConfiguration::UseDarkTheme()
+{
+  if (FSysDarkTheme < 0)
+  {
+    FSysDarkTheme = SysDarkTheme(HKEY_CURRENT_USER);
+    if (FSysDarkTheme < 0)
+    {
+      FSysDarkTheme = SysDarkTheme(HKEY_LOCAL_MACHINE);
+      if (FSysDarkTheme < 0)
+      {
+        FSysDarkTheme = 0;
+      }
+    }
+  }
+
+  switch (WinConfiguration->DarkTheme)
+  {
+    case asOn:
+      return true;
+    case asOff:
+      return false;
+    default:
+      return (FSysDarkTheme > 0);
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetLastStoredSession(UnicodeString value)
 {
   SET_CONFIG_PROPERTY(LastStoredSession);
@@ -2723,6 +2777,7 @@ void __fastcall TWinConfiguration::UpdateStaticUsage()
   Usage->Set(L"Beta", IsBeta);
 
   Usage->Set(L"Interface", Interface);
+  Usage->Set(L"ThemeDark", UseDarkTheme());
   Usage->Set(L"CustomCommandsCount", (FCustomCommandsDefaults ? 0 : FCustomCommandList->Count));
   Usage->Set(L"UsingLocationProfiles", UseLocationProfiles);
   Usage->Set(L"UsingMasterPassword", UseMasterPassword);

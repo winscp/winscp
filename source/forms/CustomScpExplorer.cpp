@@ -996,6 +996,8 @@ void __fastcall TCustomScpExplorerForm::UpdateSessionsPageControlHeight()
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::ConfigurationChanged()
 {
+  Color = WinConfiguration->UseDarkTheme() ? TColor(RGB(43, 43, 43)) : clBtnFace;
+
   DebugAssert(Configuration && RemoteDirView);
   RemoteDirView->DimmHiddenFiles = WinConfiguration->DimmHiddenFiles;
   RemoteDirView->ShowHiddenFiles = WinConfiguration->ShowHiddenFiles;
@@ -8318,6 +8320,31 @@ UnicodeString __fastcall TCustomScpExplorerForm::PathForCaption()
   return Result;
 }
 //---------------------------------------------------------------------------
+TColor __fastcall TCustomScpExplorerForm::DefaultPanelColor()
+{
+  TColor Result = (WinConfiguration->UseDarkTheme() ? static_cast<TColor>(RGB(0x20, 0x20, 0x20)) : clWindow);
+  return Result;
+}
+//---------------------------------------------------------------------------
+TColor __fastcall TCustomScpExplorerForm::PanelColor()
+{
+  TColor Result = (FSessionColor != 0 ? FSessionColor : DefaultPanelColor());
+  return Result;
+}
+//---------------------------------------------------------------------------
+TColor __fastcall TCustomScpExplorerForm::PanelFontColor(TColor BackgroundColor)
+{
+  TColor Result = (IsDarkColor(BackgroundColor) ? clWhite : clWindowText);
+  SetContrast(Result, BackgroundColor, 180);
+  return Result;
+}
+//---------------------------------------------------------------------------
+TColor __fastcall TCustomScpExplorerForm::DisabledPanelColor()
+{
+  TColor Result = (WinConfiguration->UseDarkTheme() ? static_cast<TColor>(RGB(0x40, 0x40, 0x40)) : clBtnFace);
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::UpdateControls()
 {
   TTerminalManager::Instance()->UpdateAppTitle();
@@ -8343,9 +8370,7 @@ void __fastcall TCustomScpExplorerForm::UpdateControls()
           ActiveControl = RemoteDirView;
         }
       }
-      RemoteDriveView->Enabled = true;
-      RemoteDirView->Color = (FSessionColor != 0 ? FSessionColor : clWindow);
-      RemoteDriveView->Color = RemoteDirView->Color;
+      RemoteDirView->Color = PanelColor();
     }
     else
     {
@@ -8356,12 +8381,30 @@ void __fastcall TCustomScpExplorerForm::UpdateControls()
         // but the false is overriden in the constructor later.
         // An even later in TScpCommanderForm::DoShow()
         FRemoteDirViewWasFocused = (ActiveControl == RemoteDirView);
-        EnableControl(RemoteDirView, false);
+        RemoteDirView->Enabled = false;
+        RemoteDirView->Color = DisabledPanelColor();
       }
-      EnableControl(RemoteDriveView, false);
     }
-    EnableControl(QueueView3, HasTerminal && Terminal->IsCapable[fsBackgroundTransfers]);
+
+    RemoteDirView->Font->Color = PanelFontColor(RemoteDirView->Color);
+
+    RemoteDriveView->Enabled = RemoteDirView->Enabled;
+    RemoteDriveView->Color = RemoteDirView->Color;
+    RemoteDriveView->Font->Color = RemoteDirView->Font->Color;
+
+    QueueView3->Enabled = HasTerminal && Terminal->IsCapable[fsBackgroundTransfers];
+    QueueView3->Color = QueueView3->Enabled ? DefaultPanelColor() : DisabledPanelColor();
     QueueLabelUpdateStatus();
+
+    bool UseDarkTheme = WinConfiguration->UseDarkTheme();
+    AllowDarkModeForWindow(RemoteDirView, UseDarkTheme);
+    AllowDarkModeForWindow(RemoteDriveView, UseDarkTheme);
+    AllowDarkModeForWindow(SessionsPageControl, UseDarkTheme);
+    if (QueueView3->HandleAllocated())
+    {
+      AllowDarkModeForWindow(QueueView3, UseDarkTheme);
+    }
+
     reinterpret_cast<TTBCustomItem *>(GetComponent(fcRemotePathComboBox))->Enabled = HasTerminal;
   }
 }
@@ -8689,6 +8732,14 @@ void __fastcall TCustomScpExplorerForm::QueueSplitterDblClick(TObject * /*Sender
   PostComponentHide(fcQueueView);
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::WMWinIniChange(TMessage & Message)
+{
+  WinConfiguration->ResetSysDarkTheme();
+  ConfigurationChanged();
+  ConfigureInterface();
+  TForm::Dispatch(&Message);
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::Dispatch(void * Message)
 {
   TMessage * M = static_cast<TMessage*>(Message);
@@ -8771,6 +8822,10 @@ void __fastcall TCustomScpExplorerForm::Dispatch(void * Message)
 
     case CM_DPICHANGED:
       CMDpiChanged(*M);
+      break;
+
+    case WM_WININICHANGE:
+      WMWinIniChange(*M);
       break;
 
     default:

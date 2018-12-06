@@ -1030,6 +1030,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     Height = 298
     Constraints.MinHeight = 220
     Constraints.MinWidth = 185
+    ParentColor = True
     TabOrder = 1
     object RemotePathLabel: TPathLabel [0]
       Left = 0
@@ -1118,7 +1119,6 @@ inherited ScpCommanderForm: TScpCommanderForm
       Top = 0
       Width = 458
       Height = 79
-      Color = clBtnFace
       FixAlign = True
       OnContextPopup = DockContextPopup
       object RemoteHistoryToolbar: TTBXToolbar
@@ -1313,7 +1313,6 @@ inherited ScpCommanderForm: TScpCommanderForm
       Top = 270
       Width = 458
       Height = 9
-      Color = clBtnFace
       FixAlign = True
       Position = dpBottom
     end
@@ -1322,6 +1321,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     Top = 532
     Width = 898
     Height = 116
+    ParentColor = True
     TabOrder = 2
     inherited QueueLabel: TPathLabel
       Width = 898
@@ -1346,10 +1346,10 @@ inherited ScpCommanderForm: TScpCommanderForm
     Height = 298
     Align = alLeft
     BevelOuter = bvNone
-    Color = clWindow
     Constraints.MinHeight = 220
     Constraints.MinWidth = 185
     ParentBackground = False
+    ParentColor = True
     TabOrder = 0
     object LocalPathLabel: TPathLabel
       Left = 0
@@ -1378,9 +1378,7 @@ inherited ScpCommanderForm: TScpCommanderForm
         'ctory trees equal.'
       Align = alTop
       AutoSnap = False
-      Color = clBtnFace
       MinSize = 70
-      ParentColor = False
       ResizeStyle = rsUpdate
     end
     object LocalStatusBar: TTBXStatusBar
@@ -1467,7 +1465,6 @@ inherited ScpCommanderForm: TScpCommanderForm
       Top = 0
       Width = 435
       Height = 79
-      Color = clBtnFace
       FixAlign = True
       OnContextPopup = DockContextPopup
       object LocalHistoryToolbar: TTBXToolbar
@@ -1676,7 +1673,6 @@ inherited ScpCommanderForm: TScpCommanderForm
       Top = 270
       Width = 435
       Height = 9
-      Color = clBtnFace
       FixAlign = True
       Position = dpBottom
     end

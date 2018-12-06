@@ -3464,6 +3464,7 @@ end;
 initialization
   FixPlaySoundDelay;
   RegisterTBXTheme('OfficeXP', TTBXOfficeXPTheme);
+  RegisterTBXTheme('DarkOfficeXP', TTBXDarkOfficeXPTheme);
   TBXNexus := TTBXNexus.Create('OfficeXP');
   TBXMenuAnimation := TTBXMenuAnimation.Create;
 

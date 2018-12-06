@@ -651,6 +651,11 @@ protected:
   void __fastcall CloseSessionTab(int Index);
   void __fastcall DoFileColorsChanged(TCustomDirView * DirView);
   virtual void __fastcall FileColorsChanged();
+  TColor __fastcall DefaultPanelColor();
+  TColor __fastcall PanelColor();
+  TColor __fastcall PanelFontColor(TColor BackgroundColor);
+  TColor __fastcall DisabledPanelColor();
+  void __fastcall WMWinIniChange(TMessage & Message);
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();

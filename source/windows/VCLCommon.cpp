@@ -2564,6 +2564,11 @@ void TDesktopFontManager::UpdateControl(TControl * Control)
     DesktopFont->PixelsPerInch = PublicControl->Font->PixelsPerInch;
   }
 
+  // Neither CreateFontIndirect nor RestoreFont set  color, so we should should have the default set by TFont constructor here.
+  DebugAssert(DesktopFont->Color == clWindowText);
+  // Preserve color (particularly whice color of file panel font in dark mode)
+  DesktopFont->Color = PublicControl->Font->Color;
+
   PublicControl->Font->Assign(DesktopFont.get());
 }
 //---------------------------------------------------------------------------
@@ -2715,4 +2720,27 @@ TPanel * __fastcall CreateBlankPanel(TComponent * Owner)
   Panel->BevelInner = bvNone; // default
   Panel->BevelKind = bkNone;
   return Panel;
+}
+//---------------------------------------------------------------------------
+typedef bool (WINAPI * AllowDarkModeForWindowProc)(HWND Handle, bool Allow);
+AllowDarkModeForWindowProc AAllowDarkModeForWindow;
+bool AllowDarkModeForWindowLoaded = false;
+void AllowDarkModeForWindow(TWinControl * Control, bool Allow)
+{
+  if (!AllowDarkModeForWindowLoaded)
+  {
+    HMODULE UxThemeLib = GetModuleHandle(L"UxTheme");
+    if (DebugAlwaysTrue(UxThemeLib != NULL))
+    {
+      AAllowDarkModeForWindow =
+        reinterpret_cast<AllowDarkModeForWindowProc>(GetProcAddress(UxThemeLib, MAKEINTRESOURCEA(133)));
+    }
+    AllowDarkModeForWindowLoaded = true;
+  }
+
+  if ((AAllowDarkModeForWindow != NULL) &&
+      DebugAlwaysTrue(Control->HandleAllocated()))
+  {
+    AAllowDarkModeForWindow(Control->Handle, Allow);
+  }
 }

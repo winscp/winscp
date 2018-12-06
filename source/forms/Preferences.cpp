@@ -569,6 +569,8 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     BOOLPROP(CopyParamAutoSelectNotice);
 
     // interface
+    ComboAutoSwitchLoad(ThemeCombo, WinConfiguration->DarkTheme);
+
     switch (CustomWinConfiguration->Interface)
     {
       case ifCommander:
@@ -877,6 +879,8 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     BOOLPROP(CopyParamAutoSelectNotice);
 
     // interface
+    WinConfiguration->DarkTheme = ComboAutoSwitchSave(ThemeCombo);
+
     if (GetInterface() != CustomWinConfiguration->Interface)
     {
       Configuration->Usage->Inc(L"InterfaceChanges");

@@ -806,8 +806,18 @@ void __fastcall TScpCommanderForm::UpdateControls()
     // command line combo width needs to be updated as caption width has probably changed
     ToolBarResize(CommandLineToolbar);
   }
-  LocalDirView->Color = (SessionColor != 0 ? SessionColor : clWindow);
+  if (LocalDirView->HandleAllocated())
+  {
+    AllowDarkModeForWindow(LocalDirView, WinConfiguration->UseDarkTheme());
+  }
+  if (LocalDriveView->HandleAllocated())
+  {
+    AllowDarkModeForWindow(LocalDriveView, WinConfiguration->UseDarkTheme());
+  }
+  LocalDirView->Color = PanelColor();
   LocalDriveView->Color = LocalDirView->Color;
+  LocalDirView->Font->Color = PanelFontColor(LocalDirView->Color);
+  LocalDriveView->Font->Color = LocalDirView->Font->Color;
 
   bool LocalSide = (FCurrentSide == osLocal);
   TAction * CurrentCopyAction = LocalSide ? NonVisualDataModule->LocalCopyAction : NonVisualDataModule->RemoteCopyAction;

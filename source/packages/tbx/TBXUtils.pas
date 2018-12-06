@@ -544,6 +544,9 @@ begin
       S := Src^;
       if S <> Dst^ then
       begin
+        // The algorithm does not work well against a black background
+        if ColorIntensity(Dst^) < 80 then
+          Dst^ := $00909090;
         CBRB := Dst^ and $00FF00FF;
         CBG  := Dst^ and $0000FF00;
         C := ((S and $00FF0000) shr 16 * 29 + (S and $0000FF00) shr 8 * 150 +

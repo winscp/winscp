@@ -330,6 +330,9 @@ __published:
   TButton *UpFileColorButton;
   TButton *DownFileColorButton;
   TButton *EditFileColorButton;
+  TGroupBox *ThemeGroup;
+  TLabel *Label7;
+  TComboBox *ThemeCombo;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);
