@@ -2953,7 +2953,7 @@ void __fastcall TCustomScpExplorerForm::EditNew(TOperationSide Side)
   TCustomDirView * DView = DirView(Side);
   TListItem * FocusedItem = DView->ItemFocused;
   UnicodeString Name;
-  if ((FocusedItem != NULL) && !DView->ItemIsParentDirectory(FocusedItem))
+  if ((FocusedItem != NULL) && !DView->ItemIsDirectory(FocusedItem))
   {
     Name = DView->ItemFileName(FocusedItem);
   }
@@ -2981,7 +2981,8 @@ void __fastcall TCustomScpExplorerForm::EditNew(TOperationSide Side)
         Name = AbsolutePath(FTerminal->CurrentDirectory, Name);
 
         TRemoteFile * File = NULL;
-        if (FTerminal->FileExists(Name, &File))
+        if (FTerminal->FileExists(Name, &File) &&
+            !File->IsDirectory)
         {
           try
           {
