@@ -472,7 +472,10 @@ void __fastcall TCustomScpExplorerForm::CreateHiddenWindow()
 //---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::CanConsole()
 {
-  return (Terminal != NULL) && (Terminal->IsCapable[fcAnyCommand] || Terminal->IsCapable[fcSecondaryShell]);
+  return
+    (Terminal != NULL) &&
+    Terminal->Active &&
+    (Terminal->IsCapable[fcAnyCommand] || Terminal->IsCapable[fcSecondaryShell]);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::CanCommandLineFromAnotherInstance()
