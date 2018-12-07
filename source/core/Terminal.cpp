@@ -1919,14 +1919,20 @@ void __fastcall TTerminal::SaveCapabilities(TFileSystemInfo & FileSystemInfo)
 //---------------------------------------------------------------------------
 bool __fastcall TTerminal::GetIsCapable(TFSCapability Capability) const
 {
-  DebugAssert(FFileSystem);
-  switch (Capability)
+  if (DebugAlwaysTrue(FFileSystem != NULL))
   {
-    case fsBackgroundTransfers:
-      return !IsEncryptingFiles();
+    switch (Capability)
+    {
+      case fsBackgroundTransfers:
+        return !IsEncryptingFiles();
 
-    default:
-      return FFileSystem->IsCapable(Capability);
+      default:
+        return FFileSystem->IsCapable(Capability);
+    }
+  }
+  else
+  {
+    return false;
   }
 }
 //---------------------------------------------------------------------------
