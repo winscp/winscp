@@ -843,8 +843,8 @@ namespace WinSCP
                 {
                     if (!TryFindExecutableInPath(GetAssemblyPath(), out executablePath) &&
 #if !NETSTANDARD
-                        !TryFindExecutableInPath(GetInstallationPath(RegistryHive.CurrentUser, Registry.CurrentUser), out executablePath) &&
-                        !TryFindExecutableInPath(GetInstallationPath(RegistryHive.LocalMachine, Registry.LocalMachine), out executablePath) &&
+                        !TryFindExecutableInPath(GetInstallationPath(RegistryHive.CurrentUser), out executablePath) &&
+                        !TryFindExecutableInPath(GetInstallationPath(RegistryHive.LocalMachine), out executablePath) &&
 #endif
                         !TryFindExecutableInPath(GetDefaultInstallationPath(), out executablePath))
                     {
@@ -875,39 +875,11 @@ namespace WinSCP
         }
 
 #if !NETSTANDARD
-        private static string GetInstallationPath(RegistryHive hive, RegistryKey rootKey)
+        private static string GetInstallationPath(RegistryHive hive)
         {
-            OperatingSystem OS = Environment.OSVersion;
-            string result;
-            // Windows XP does not have the RegGetValue. We do not care about 64-bit XP.
-            if ((OS.Version.Major < 5) || ((OS.Version.Major == 5) && (OS.Version.Minor <= 1)))
-            {
-                RegistryKey key = rootKey.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Uninstall\winscp3_is1");
-                result = (key != null) ? (string)key.GetValue("Inno Setup: App Path") : null;
-            }
-            else
-            {
-                // In .NET 4 we can use RegistryKey.OpenBaseKey(hive, RegistryView.Registry32);
-                const string uninstallKey = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\winscp3_is1";
-                const string appPathValue = @"Inno Setup: App Path";
-
-                result = null;
-
-                IntPtr data = IntPtr.Zero;
-                uint len = 0;
-                RegistryFlags flags = RegistryFlags.RegSz | RegistryFlags.SubKeyWow6432Key;
-                UIntPtr key = (UIntPtr)((uint)hive);
-
-                if (UnsafeNativeMethods.RegGetValue(key, uninstallKey, appPathValue, flags, out RegistryType type, data, ref len) == 0)
-                {
-                    data = Marshal.AllocHGlobal((int)len);
-                    if (UnsafeNativeMethods.RegGetValue(key, uninstallKey, appPathValue, flags, out type, data, ref len) == 0)
-                    {
-                        result = Marshal.PtrToStringUni(data);
-                    }
-                }
-            }
-
+            RegistryKey baseKey = RegistryKey.OpenBaseKey(hive, RegistryView.Registry32);
+            RegistryKey key = baseKey.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Uninstall\winscp3_is1");
+            string result = (key != null) ? (string)key.GetValue("Inno Setup: App Path") : null;
             return result;
         }
 #endif
