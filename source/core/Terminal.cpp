@@ -3158,7 +3158,7 @@ void __fastcall TTerminal::ReadCurrentDirectory()
   DebugAssert(FFileSystem);
   try
   {
-    // reset flag is case we are called externally (like from console dialog)
+    // reset flag in case we are called externally (like from console dialog)
     FReadCurrentDirectoryPending = false;
 
     LogEvent(L"Getting current directory name.");
@@ -3175,7 +3175,7 @@ void __fastcall TTerminal::ReadCurrentDirectory()
         FDirectoryChangesCache->AddDirectoryChange(OldDirectory,
           FLastDirectoryChange, CurrentDirectory);
       }
-      // not to broke the cache, if the next directory change would not
+      // not to breake the cache, if the next directory change would not
       // be initialized by ChangeDirectory(), which sets it
       // (HomeDirectory() particularly)
       FLastDirectoryChange = L"";
