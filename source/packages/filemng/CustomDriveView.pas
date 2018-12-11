@@ -39,6 +39,7 @@ type
     FDimmHiddenDirs: Boolean;
     FShowHiddenDirs: Boolean;
     FNaturalOrderNumericalSorting: Boolean;
+    FDarkMode: Boolean;
     FContinue: Boolean;
     FImageList: TImageList;
     FScrollOnDragOver: TTreeViewScrollOnDragOver;
@@ -67,6 +68,7 @@ type
     procedure SetDimmHiddenDirs(Value: Boolean);
     procedure SetShowHiddenDirs(Value: Boolean);
     procedure SetNaturalOrderNumericalSorting(Value: Boolean);
+    procedure SetDarkMode(Value: Boolean);
 
     function GetDirectory: string; virtual;
     procedure SetDirectory(Value: string); virtual;
@@ -174,6 +176,7 @@ type
     property ShowHiddenDirs: Boolean read FShowHiddenDirs
       write SetShowHiddenDirs default False;
     property NaturalOrderNumericalSorting: Boolean read FNaturalOrderNumericalSorting write SetNaturalOrderNumericalSorting;
+    property DarkMode: Boolean read FDarkMode write SetDarkMode;
 
     property DDLinkOnExeDrag: Boolean read FDDLinkOnExeDrag write FDDLinkOnExeDrag default True;
 
@@ -245,6 +248,7 @@ begin
   FUseSystemContextMenu := True;
   FContinue := True;
   FNaturalOrderNumericalSorting := True;
+  FDarkMode := False;
   OnCompare := DoCompare;
 
   FDragDropFilesEx := TCustomizableDragDropFilesEx.Create(Self);
@@ -341,6 +345,8 @@ end;
 procedure TCustomDriveView.CreateWnd;
 begin
   inherited;
+
+  if DarkMode then AllowDarkModeForWindow(Self, DarkMode);
 
   NeedImageLists(False);
 
@@ -1200,6 +1206,15 @@ begin
   begin
     FNaturalOrderNumericalSorting := Value;
     AlphaSort;
+  end;
+end;
+
+procedure TCustomDriveView.SetDarkMode(Value: Boolean);
+begin
+  if DarkMode <> Value then
+  begin
+    FDarkMode := Value;
+    RecreateWnd;
   end;
 end;
 

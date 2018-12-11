@@ -999,7 +999,7 @@ void __fastcall TCustomScpExplorerForm::UpdateSessionsPageControlHeight()
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::ConfigurationChanged()
 {
-  Color = WinConfiguration->UseDarkTheme() ? TColor(RGB(43, 43, 43)) : clBtnFace;
+  Color = GetBtnFaceColor();
 
   DebugAssert(Configuration && RemoteDirView);
   RemoteDirView->DimmHiddenFiles = WinConfiguration->DimmHiddenFiles;
@@ -8324,22 +8324,9 @@ UnicodeString __fastcall TCustomScpExplorerForm::PathForCaption()
   return Result;
 }
 //---------------------------------------------------------------------------
-TColor __fastcall TCustomScpExplorerForm::DefaultPanelColor()
-{
-  TColor Result = (WinConfiguration->UseDarkTheme() ? static_cast<TColor>(RGB(0x20, 0x20, 0x20)) : clWindow);
-  return Result;
-}
-//---------------------------------------------------------------------------
 TColor __fastcall TCustomScpExplorerForm::PanelColor()
 {
-  TColor Result = (FSessionColor != 0 ? FSessionColor : DefaultPanelColor());
-  return Result;
-}
-//---------------------------------------------------------------------------
-TColor __fastcall TCustomScpExplorerForm::PanelFontColor(TColor BackgroundColor)
-{
-  TColor Result = (IsDarkColor(BackgroundColor) ? clWhite : clWindowText);
-  SetContrast(Result, BackgroundColor, 180);
+  TColor Result = GetWindowColor(FSessionColor);
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -8390,24 +8377,18 @@ void __fastcall TCustomScpExplorerForm::UpdateControls()
       }
     }
 
-    RemoteDirView->Font->Color = PanelFontColor(RemoteDirView->Color);
+    RemoteDirView->Font->Color = GetWindowTextColor(RemoteDirView->Color);
 
     RemoteDriveView->Enabled = RemoteDirView->Enabled;
     RemoteDriveView->Color = RemoteDirView->Color;
     RemoteDriveView->Font->Color = RemoteDirView->Font->Color;
 
     QueueView3->Enabled = HasTerminal && Terminal->IsCapable[fsBackgroundTransfers];
-    QueueView3->Color = QueueView3->Enabled ? DefaultPanelColor() : DisabledPanelColor();
+    QueueView3->Color = QueueView3->Enabled ? GetWindowColor() : DisabledPanelColor();
     QueueLabelUpdateStatus();
 
-    bool UseDarkTheme = WinConfiguration->UseDarkTheme();
-    AllowDarkModeForWindow(RemoteDirView, UseDarkTheme);
-    AllowDarkModeForWindow(RemoteDriveView, UseDarkTheme);
-    AllowDarkModeForWindow(SessionsPageControl, UseDarkTheme);
-    if (QueueView3->HandleAllocated())
-    {
-      AllowDarkModeForWindow(QueueView3, UseDarkTheme);
-    }
+    RemoteDirView->DarkMode = WinConfiguration->UseDarkTheme();
+    RemoteDriveView->DarkMode = RemoteDirView->DarkMode;
 
     reinterpret_cast<TTBCustomItem *>(GetComponent(fcRemotePathComboBox))->Enabled = HasTerminal;
   }

@@ -106,14 +106,28 @@ bool __fastcall SameFont(TFont * Font1, TFont * Font2)
     (Font1->Charset == Font2->Charset) && (Font1->Style == Font2->Style);
 }
 //---------------------------------------------------------------------------
-TColor __fastcall GetWindowTextColor(TColor Color)
+TColor __fastcall GetWindowTextColor(TColor BackgroundColor, TColor Color)
 {
-  return (Color == TColor(0)) ? clWindowText : Color;
+  if (Color == TColor(0))
+  {
+    Color = (IsDarkColor(BackgroundColor) ? clWhite : clWindowText);
+    SetContrast(Color, BackgroundColor, 180);
+  }
+  return Color;
 }
 //---------------------------------------------------------------------------
 TColor __fastcall GetWindowColor(TColor Color)
 {
-  return (Color == TColor(0)) ? clWindow : Color;
+  if (Color == TColor(0))
+  {
+    Color = (WinConfiguration->UseDarkTheme() ? static_cast<TColor>(RGB(0x20, 0x20, 0x20)) : clWindow);
+  }
+  return Color;
+}
+//---------------------------------------------------------------------------
+TColor __fastcall GetBtnFaceColor()
+{
+  return WinConfiguration->UseDarkTheme() ? TColor(RGB(43, 43, 43)) : clBtnFace;
 }
 //---------------------------------------------------------------------------
 TColor __fastcall GetNonZeroColor(TColor Color)

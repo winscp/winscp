@@ -165,6 +165,7 @@ type
     FOnGetItemColor: TDirViewGetItemColorEvent;
     FMask: string;
     FNaturalOrderNumericalSorting: Boolean;
+    FDarkMode: Boolean;
     FScrollOnDragOver: TListViewScrollOnDragOver;
     FStatusFileInfo: TStatusFileInfo;
     FDoubleBufferedScrollingWorkaround: Boolean;
@@ -309,6 +310,7 @@ type
     function EnableDragOnClick: Boolean; override;
     procedure SetMask(Value: string); virtual;
     procedure SetNaturalOrderNumericalSorting(Value: Boolean);
+    procedure SetDarkMode(Value: Boolean);
     procedure ScrollOnDragOverBeforeUpdate(ObjectToValidate: TObject);
     procedure ScrollOnDragOverAfterUpdate;
     procedure DoHistoryGo(Index: Integer);
@@ -417,6 +419,7 @@ type
     {filemask, multiple filters are possible: '*.pas;*.dfm'}
     property Mask: string read FMask write SetMask;
     property NaturalOrderNumericalSorting: Boolean read FNaturalOrderNumericalSorting write SetNaturalOrderNumericalSorting;
+    property DarkMode: Boolean read FDarkMode write SetDarkMode;
 
     property OnContextPopup;
     property OnStartLoading: TNotifyEvent read FOnStartLoading write FOnStartLoading;
@@ -822,6 +825,7 @@ begin
   FExeDrag := False;
   FMask := '';
   FNaturalOrderNumericalSorting := True;
+  FDarkMode := False;
   FDoubleBufferedScrollingWorkaround := not IsVistaHard();
 
   FOnHistoryChange := nil;
@@ -1153,6 +1157,8 @@ begin
   if Assigned(PopupMenu) then
     PopupMenu.Autopopup := False;
   FDragDropFilesEx.DragDropControl := Self;
+
+  if DarkMode then AllowDarkModeForWindow(Self, DarkMode);
 
   NeedImageLists(False);
 end;
@@ -3168,6 +3174,15 @@ begin
   begin
     FNaturalOrderNumericalSorting := Value;
     SortItems;
+  end;
+end;
+
+procedure TCustomDirView.SetDarkMode(Value: Boolean);
+begin
+  if DarkMode <> Value then
+  begin
+    FDarkMode := Value;
+    RecreateWnd;
   end;
 end;
 

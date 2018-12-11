@@ -201,7 +201,7 @@ void __fastcall TEditorRichEdit::ApplyFont()
   std::unique_ptr<TFont> NewFont(new TFont());
   TWinConfiguration::RestoreFont(FFontConfiguration, NewFont.get());
   NewFont->Size = ScaleByPixelsPerInchFromSystem(NewFont->Size, this);
-  NewFont->Color = GetWindowTextColor(FFontColor);
+  NewFont->Color = GetWindowTextColor(Color, FFontColor);
   // setting DefAttributes may take quite time, even if the font attributes
   // do not change, so avoid that if not necessary
   if (!FInitialized ||
@@ -986,6 +986,7 @@ void __fastcall TEditorForm::FormCloseQuery(TObject * /*Sender*/,
 //---------------------------------------------------------------------------
 void __fastcall TEditorForm::ApplyConfiguration()
 {
+  Color = GetBtnFaceColor();
   bool PrevModified = IsFileModified();
   DebugAssert(Configuration);
   EditorMemo->SetFormat(WinConfiguration->Editor.Font,
@@ -1622,6 +1623,7 @@ void __fastcall TEditorForm::UpdateBackgroundColor()
   if (EditorMemo->Color != Color)
   {
     EditorMemo->Color = Color;
+    EditorMemo->ApplyFont();
     // does not seem to have any effect (nor is needed), but just in case
     ForceColorChange(EditorMemo);
   }

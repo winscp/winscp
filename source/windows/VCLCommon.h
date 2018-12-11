@@ -80,7 +80,6 @@ void __fastcall HookFormActivation(TCustomForm * Form);
 void __fastcall UnhookFormActivation(TCustomForm * Form);
 void __fastcall ShowFormNoActivate(TForm * Form);
 TPanel * __fastcall CreateBlankPanel(TComponent * Owner);
-void AllowDarkModeForWindow(TWinControl * Control, bool Allow);
 typedef void __fastcall (*TRescaleEvent)(TComponent * Sender, TObject * Token);
 void __fastcall SetRescaleFunction(
   TComponent * Component, TRescaleEvent OnRescale, TObject * Token = NULL, bool OwnsToken = false);

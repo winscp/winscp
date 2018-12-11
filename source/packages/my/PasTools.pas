@@ -79,6 +79,8 @@ procedure ForceColorChange(Control: TWinControl);
 
 function IsUncPath(Path: string): Boolean;
 
+procedure AllowDarkModeForWindow(Control: TWinControl; Allow: Boolean);
+
 type
   TApiPathEvent = function(Path: string): string;
 
@@ -972,6 +974,36 @@ end;
 function IsUncPath(Path: string): Boolean;
 begin
   Result := (Copy(Path, 1, 2) = '\\') or (Copy(Path, 1, 2) = '//');
+end;
+
+var
+  AllowDarkModeForWindowLoaded: Boolean = False;
+  AAllowDarkModeForWindow: function(hWnd: HWND; Allow: BOOL): BOOL; stdcall;
+
+procedure AllowDarkModeForWindow(Control: TWinControl; Allow: Boolean);
+var
+  OSVersionInfo: TOSVersionInfoEx;
+  UxThemeLib: HMODULE;
+begin
+  if not AllowDarkModeForWindowLoaded then
+  begin
+    OSVersionInfo.dwOSVersionInfoSize := SizeOf(OSVersionInfo);
+    if GetVersionEx(OSVersionInfo) and (OSVersionInfo.dwBuildNumber >= 17763) then
+    begin
+      UxThemeLib := GetModuleHandle('UxTheme');
+      if UxThemeLib <> 0 then
+      begin
+        AAllowDarkModeForWindow := GetProcAddress(UxThemeLib, MakeIntResource(133));
+      end;
+    end;
+    AllowDarkModeForWindowLoaded := True;
+  end;
+
+  Assert(Control.HandleAllocated);
+  if Assigned(AAllowDarkModeForWindow) and Control.HandleAllocated then
+  begin
+    AAllowDarkModeForWindow(Control.Handle, Allow);
+  end;
 end;
 
 var

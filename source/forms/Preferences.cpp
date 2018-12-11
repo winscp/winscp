@@ -1178,16 +1178,16 @@ void __fastcall TPreferencesDialog::UpdateControls()
     EditorFontLabelText += TabSample(L"ABCD") + L"\n";
     EditorFontLabelText += TabSample(L"1234");
     EditorFontLabel->Caption = EditorFontLabelText;
+    EditorFontLabel->Color = GetWindowColor(FEditorBackgroundColor);
     std::unique_ptr<TFont> EditorFont(new TFont());
     EditorFont->Assign(FEditorFont.get());
-    EditorFont->Color = GetWindowTextColor(FEditorFont->Color);
+    EditorFont->Color = GetWindowTextColor(EditorFontLabel->Color, FEditorFont->Color);
     EditorFont->Size = ScaleByPixelsPerInchFromSystem(FEditorFont->Size, this);
     if (!SameFont(EditorFontLabel->Font, EditorFont.get()) ||
         (EditorFontLabel->Font->Color != EditorFont->Color))
     {
       EditorFontLabel->Font = EditorFont.get();
     }
-    EditorFontLabel->Color = GetWindowColor(FEditorBackgroundColor);
 
     TCustomCommandList * CommandList = GetCommandList(CustomCommandsView->ItemIndex);
     int CommandIndex = GetCommandIndex(CustomCommandsView->ItemIndex);

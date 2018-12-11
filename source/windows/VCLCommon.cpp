@@ -2721,33 +2721,3 @@ TPanel * __fastcall CreateBlankPanel(TComponent * Owner)
   Panel->BevelKind = bkNone;
   return Panel;
 }
-//---------------------------------------------------------------------------
-typedef bool (WINAPI * AllowDarkModeForWindowProc)(HWND Handle, bool Allow);
-AllowDarkModeForWindowProc AAllowDarkModeForWindow = NULL;
-bool AllowDarkModeForWindowLoaded = false;
-bool AllowDarkModeCalledWithTrue = false;
-void AllowDarkModeForWindow(TWinControl * Control, bool Allow)
-{
-  if (Allow)
-  {
-    // Do not try to call AllowDarkModeForWindow with false, unless we ever called it with true, so that,
-    // if function changes it ID, we can prevent its call by turning off dark mode.
-    AllowDarkModeCalledWithTrue = true;
-  }
-  if (AllowDarkModeCalledWithTrue && (GetWindowsBuild() >= 17763) && !AllowDarkModeForWindowLoaded)
-  {
-    HMODULE UxThemeLib = GetModuleHandle(L"UxTheme");
-    if (DebugAlwaysTrue(UxThemeLib != NULL))
-    {
-      AAllowDarkModeForWindow =
-        reinterpret_cast<AllowDarkModeForWindowProc>(GetProcAddress(UxThemeLib, MAKEINTRESOURCEA(133)));
-    }
-    AllowDarkModeForWindowLoaded = true;
-  }
-
-  if ((AAllowDarkModeForWindow != NULL) &&
-      DebugAlwaysTrue(Control->HandleAllocated()))
-  {
-    AAllowDarkModeForWindow(Control->Handle, Allow);
-  }
-}
