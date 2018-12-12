@@ -1758,7 +1758,7 @@ function TDirView.GetFileInfo(
 begin
   if TimeoutShellIconRetrieval then
   begin
-     Result := SHGetFileInfoWithTimeout(pszPath, dwFileAttributes, psfi, cbFileInfo, uFlags,MSecsPerSec div 4);
+     Result := SHGetFileInfoWithTimeout(pszPath, dwFileAttributes, psfi, cbFileInfo, uFlags, MSecsPerSec div 4);
   end
     else
   begin
