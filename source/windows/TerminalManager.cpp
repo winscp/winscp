@@ -273,7 +273,11 @@ void __fastcall TTerminalManager::DoConnectTerminal(TTerminal * Terminal, bool R
         Items[ActiveTerminalIndex] = Terminal;
         OwnsObjects = true;
         FActiveTerminal = Terminal;
-        FScpExplorer->ReplaceTerminal(Terminal);
+        // Can be NULL, when opening the first session from command-line
+        if (FScpExplorer != NULL)
+        {
+          FScpExplorer->ReplaceTerminal(Terminal);
+        }
         // Now we do not have any reference to an abandoned terminal, so we can safely allow the thread
         // to complete its task and destroy the terminal afterwards.
         TerminalThread->Terminate();
