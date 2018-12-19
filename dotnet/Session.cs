@@ -661,7 +661,7 @@ namespace WinSCP
             }
         }
 
-        private static Regex MaskToRegex(string mask)
+        internal static Regex MaskToRegex(string mask)
         {
             if (string.IsNullOrEmpty(mask) ||
                 // *.* has to match even filename without dot
