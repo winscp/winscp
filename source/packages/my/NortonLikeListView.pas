@@ -572,8 +572,12 @@ begin
   begin
     if (GetKeyState(VK_CONTROL) >= 0) then
     begin
-      if Assigned(ItemFocused) then
-        ItemFocused.Selected := not ItemFocused.Selected;
+      // If not handled in TCustomScpExplorerForm::DirViewKeyPress
+      if not DoKeyPress(Message) then
+      begin
+        if Assigned(ItemFocused) then
+          ItemFocused.Selected := not ItemFocused.Selected;
+      end;
     end
       else inherited;
   end

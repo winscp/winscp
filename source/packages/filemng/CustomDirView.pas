@@ -72,6 +72,7 @@ type
   TDirViewGetItemColorEvent = procedure(Sender: TObject; FileName: string; Directory: Boolean; Size: Int64; Modification: TDateTime; var Color: TColor) of object;
   TDirViewUpdateStatusBarEvent = procedure(Sender: TObject; const FileInfo: TStatusFileInfo) of object;
   TDirViewBusy = procedure(Sender: TObject; Busy: Integer; var State: Boolean) of object;
+  TDirViewChangeFocusEvent = procedure(Sender: TObject; Item: TListItem) of object;
   TBusyOperation = reference to procedure;
 
 type
@@ -170,6 +171,7 @@ type
     FStatusFileInfo: TStatusFileInfo;
     FDoubleBufferedScrollingWorkaround: Boolean;
     FOnBusy: TDirViewBusy;
+    FOnChangeFocus: TDirViewChangeFocusEvent;
 
     procedure CNNotify(var Message: TWMNotify); message CN_NOTIFY;
     procedure WMKeyDown(var Message: TWMKeyDown); message WM_KEYDOWN;
@@ -305,7 +307,6 @@ type
     function TargetHasDropHandler(Item: TListItem; Effect: Integer): Boolean; virtual;
     procedure UpdatePathLabel; dynamic;
     procedure UpdatePathLabelCaption; dynamic;
-    procedure UpdateStatusBar; dynamic;
     function FileNameMatchesMasks(FileName: string; Directory: Boolean; Size: Int64; Modification: TDateTime; Masks: string; AllowImplicitMatches: Boolean): Boolean;
     function EnableDragOnClick: Boolean; override;
     procedure SetMask(Value: string); virtual;
@@ -330,6 +331,7 @@ type
     procedure Load(DoFocusSomething: Boolean); virtual;
     procedure NeedImageLists(Recreate: Boolean);
     procedure FreeImageLists;
+    procedure DoUpdateStatusBar(Force: Boolean = False);
     procedure DoCustomDrawItem(Item: TListItem; Stage: TCustomDrawStage);
     property ImageList16: TImageList read FImageList16;
     property ImageList32: TImageList read FImageList32;
@@ -361,6 +363,7 @@ type
       ExistingOnly: Boolean; Criterias: TCompareCriterias): TStrings;
     procedure CompareFiles(DirView: TCustomDirView; ExistingOnly: Boolean;
       Criterias: TCompareCriterias); virtual;
+    function GetColumnText(ListItem: TListItem; Index: Integer): string;
     procedure SaveSelection;
     procedure RestoreSelection;
     procedure DiscardSavedSelection;
@@ -374,6 +377,7 @@ type
     procedure ClearState;
     procedure DisplayContextMenu(Where: TPoint); virtual; abstract;
     procedure DisplayContextMenuInSitu;
+    procedure UpdateStatusBar;
 
     property AddParentDir: Boolean read FAddParentDir write SetAddParentDir default False;
     property DimmHiddenFiles: Boolean read FDimmHiddenFiles write SetDimmHiddenFiles default True;
@@ -479,6 +483,8 @@ type
     property ShowHiddenFiles: Boolean read FShowHiddenFiles write SetShowHiddenFiles default True;
     property OnUpdateStatusBar: TDirViewUpdateStatusBarEvent read FOnUpdateStatusBar write FOnUpdateStatusBar;
     property OnBusy: TDirViewBusy read FOnBusy write FOnBusy;
+    property OnChangeFocus: TDirViewChangeFocusEvent read FOnChangeFocus write FOnChangeFocus;
+
     {Watch current directory for filename changes (create, rename, delete files)}
     property WatchForChanges: Boolean read FWatchForChanges write SetWatchForChanges default False;
   end;
@@ -886,7 +892,7 @@ begin
   finally
     FFilesSelSize := 0;
     FFilesSize := 0;
-    UpdateStatusBar;
+    DoUpdateStatusBar;
   end;
 end;
 
@@ -942,14 +948,21 @@ begin
       with PNMListView(Message.NMHdr)^ do
         if (uChanged = LVIF_STATE) and Valid and (not FClearingItems) then
         begin
-          if ((uOldState and (LVIS_SELECTED or LVIS_FOCUSED)) <>
-              (uNewState and (LVIS_SELECTED or LVIS_FOCUSED))) then
-                UpdateStatusBarPending := True;
-          if ((uOldState and LVIS_SELECTED) <> (uNewState and LVIS_SELECTED)) then
+          if ((uOldState and (LVIS_SELECTED or LVIS_FOCUSED)) <> (uNewState and (LVIS_SELECTED or LVIS_FOCUSED))) then
           begin
-            FileSize := ItemFileSize(Items[iItem]);
-            if (uOldState and LVIS_SELECTED) <> 0 then Dec(FFilesSelSize, FileSize)
-              else Inc(FFilesSelSize, FileSize);
+            Item := Items[iItem];
+            UpdateStatusBarPending := True;
+            if (uOldState and LVIS_SELECTED) <> (uNewState and LVIS_SELECTED) then
+            begin
+              FileSize := ItemFileSize(Item);
+              if (uOldState and LVIS_SELECTED) <> 0 then Dec(FFilesSelSize, FileSize)
+                else Inc(FFilesSelSize, FileSize);
+            end;
+            if (uOldState and LVIS_FOCUSED) <> (uNewState and LVIS_FOCUSED) then
+            begin
+              if Assigned(OnChangeFocus) then
+                OnChangeFocus(Self, Item);
+            end;
           end;
         end;
     LVN_ENDLABELEDIT:
@@ -1016,7 +1029,7 @@ begin
       except
       end;
 
-  if UpdateStatusBarPending then UpdateStatusBar;
+  if UpdateStatusBarPending then DoUpdateStatusBar;
 end;
 
 function TCustomDirView.FileNameMatchesMasks(FileName: string;
@@ -1433,8 +1446,13 @@ begin
     if ((Key = VK_BACK) or ((Key = VK_PRIOR) and (ssCtrl in Shift))) and
        (not IsRoot) then
     begin
-      Key := 0;
-      DoExecuteParentDirectory;
+      inherited;
+      // If not handled in TCustomScpExplorerForm::DirViewKeyDown
+      if Key <> 0 then
+      begin
+        Key := 0;
+        DoExecuteParentDirectory;
+      end;
     end
       else
     if ((Key = VK_UP) and (ssAlt in Shift)) and
@@ -1572,7 +1590,7 @@ begin
   end;
 end; { UpdatePathLabel }
 
-procedure TCustomDirView.UpdateStatusBar;
+procedure TCustomDirView.DoUpdateStatusBar(Force: Boolean);
 var
   StatusFileInfo: TStatusFileInfo;
 begin
@@ -1588,13 +1606,18 @@ begin
       FilteredCount := Self.FilteredCount;
     end;
 
-    if not CompareMem(@StatusFileInfo, @FStatusFileInfo, SizeOf(StatusFileInfo)) then
+    if Force or (not CompareMem(@StatusFileInfo, @FStatusFileInfo, SizeOf(StatusFileInfo))) then
     begin
       FStatusFileInfo := StatusFileInfo;
       OnUpdateStatusBar(Self, FStatusFileInfo);
     end;
   end;
 end; { UpdateStatusBar }
+
+procedure TCustomDirView.UpdateStatusBar;
+begin
+  DoUpdateStatusBar(True);
+end;
 
 procedure TCustomDirView.WMContextMenu(var Message: TWMContextMenu);
 var
@@ -1945,7 +1968,7 @@ begin
         end;
 
         UpdatePathLabel;
-        UpdateStatusBar;
+        DoUpdateStatusBar;
       end;
     end;
   end;
@@ -2445,7 +2468,7 @@ procedure TCustomDirView.EndSelectionUpdate;
 begin
   inherited;
   if FUpdatingSelection = 0 then
-    UpdateStatusBar;
+    DoUpdateStatusBar;
 end; { EndUpdatingSelection }
 
 procedure TCustomDirView.ExecuteCurrentFile;
@@ -2993,6 +3016,20 @@ procedure TCustomDirView.CompareFiles(DirView: TCustomDirView;
   ExistingOnly: Boolean; Criterias: TCompareCriterias);
 begin
   ProcessChangedFiles(DirView, nil, True, ExistingOnly, Criterias);
+end;
+
+function TCustomDirView.GetColumnText(ListItem: TListItem; Index: Integer): string;
+var
+  DispInfo: TLVItem;
+begin
+  FillChar(DispInfo, SizeOf(DispInfo), 0);
+  DispInfo.Mask := LVIF_TEXT;
+  DispInfo.iSubItem := Index;
+  DispInfo.cchTextMax := 260;
+  SetLength(Result, DispInfo.cchTextMax);
+  DispInfo.pszText := PChar(Result);
+  GetDisplayInfo(ListItem, DispInfo);
+  SetLength(Result, StrLen(PChar(Result)));
 end;
 
 procedure TCustomDirView.FocusSomething;

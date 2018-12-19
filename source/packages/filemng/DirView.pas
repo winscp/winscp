@@ -384,6 +384,7 @@ type
     property OnHistoryGo;
     property OnPathChange;
     property OnBusy;
+    property OnChangeFocus;
 
     property ColumnClick;
     property MultiSelect;
@@ -1668,7 +1669,7 @@ begin
             if FocusedIsVisible and Assigned(ItemFocused) then
               ItemFocused.MakeVisible(False);
 
-            UpdateStatusBar;
+            DoUpdateStatusBar;
 
             Screen.Cursor := SaveCursor;
           end;
@@ -2198,7 +2199,7 @@ begin
       if Updating then
         Items.EndUpdate;
       if Updated then
-        UpdateStatusBar;
+        DoUpdateStatusBar;
       FileList.Free;
     end;
   end;

@@ -116,7 +116,7 @@ void __fastcall TCustomWinConfiguration::Default()
   FFindFile.ListParams = L"3;1|125,1;181,1;80,1;122,1;@" + SaveDefaultPixelsPerInch() + L"|0;1;2;3";
   FConsoleWin.WindowSize = FormatDefaultWindowSize(570, 430);
   FLoginDialog.WindowSize = FormatDefaultWindowSize(640, 430);
-  FLoginDialog.SiteSearch = ssSiteName;
+  FLoginDialog.SiteSearch = isName;
   FConfirmExitOnCompletion = true;
   FSynchronizeSummary = true;
   FSessionColors = L"";

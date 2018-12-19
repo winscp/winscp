@@ -226,6 +226,8 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   FOnFeedSynchronizeError = NULL;
   FNeedSession = false;
   FDoNotIdleCurrentTerminal = 0;
+  FIncrementalSearching = 0;
+  FIncrementalSearchHaveNext = false;
 
   FEditorManager = new TEditorManager();
   FEditorManager->OnFileChange = ExecutedFileChanged;
@@ -8189,7 +8191,11 @@ UnicodeString __fastcall TCustomScpExplorerForm::FileStatusBarText(
 {
   UnicodeString Result;
 
-  if ((Side == osRemote) && (Terminal == NULL))
+  if (!FIncrementalSearch.IsEmpty() && (Side == GetSide(osCurrent)))
+  {
+    Result = FormatIncrementalSearchStatus(FIncrementalSearch, FIncrementalSearchHaveNext);
+  }
+  else if ((Side == osRemote) && (Terminal == NULL))
   {
    // noop
   }
@@ -8702,6 +8708,7 @@ void __fastcall TCustomScpExplorerForm::BeforeAction()
   {
     RemoteDirView->ItemFocused->CancelEdit();
   }
+  ResetIncrementalSearch();
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::PostComponentHide(Byte Component)
@@ -8811,6 +8818,10 @@ void __fastcall TCustomScpExplorerForm::Dispatch(void * Message)
 
     case WM_WININICHANGE:
       WMWinIniChange(*M);
+      break;
+
+    case CM_DIALOGKEY:
+      CMDialogKey(*reinterpret_cast<TWMKeyDown *>(M));
       break;
 
     default:
@@ -9318,6 +9329,7 @@ void __fastcall TCustomScpExplorerForm::RemotePathComboBoxCancel(TObject * Sende
 void __fastcall TCustomScpExplorerForm::DirViewEditing(
   TObject * Sender, TListItem * Item, bool & /*AllowEdit*/)
 {
+  ResetIncrementalSearch();
   TCustomDirView * DirView = dynamic_cast<TCustomDirView *>(Sender);
   DebugAssert(DirView != NULL);
   if (!WinConfiguration->RenameWholeName && !DirView->ItemIsDirectory(Item))
@@ -10235,6 +10247,220 @@ void __fastcall TCustomScpExplorerForm::DirViewGetItemColor(
       Color = Iter->Color;
       break;
     }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::DirViewKeyDown(TObject * Sender, WORD & Key, TShiftState)
+{
+  TCustomDirView * DirView = dynamic_cast<TCustomDirView *>(Sender);
+  if (!DirView->IsEditing())
+  {
+    // Handled here, instead of RemoteDirViewKeyPress (as on Login dialog),
+    // as VK_BACK is handled by TCustomDirView.KeyDown and we can swallow it here,
+    // while searching
+    if (Key == VK_BACK)
+    {
+      if (!FIncrementalSearch.IsEmpty())
+      {
+        if (FIncrementalSearch.Length() == 1)
+        {
+          ResetIncrementalSearch();
+        }
+        else
+        {
+          UnicodeString NewText = FIncrementalSearch.SubString(1, FIncrementalSearch.Length() - 1);
+          IncrementalSearch(NewText, false, false);
+        }
+        Key = 0;
+      }
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::DirViewKeyPress(TObject * Sender, wchar_t & Key)
+{
+  TCustomDirView * DirView = dynamic_cast<TCustomDirView *>(Sender);
+  if (!DirView->IsEditing())
+  {
+    // Filter control sequences.
+    // When not searching yet, prefer use of the space for toggling file selection
+    // (so we cannot incrementally search for a string starting with a space).
+    if ((Key > VK_SPACE) ||
+        ((Key == VK_SPACE) && (GetKeyState(VK_CONTROL) >= 0) && !FIncrementalSearch.IsEmpty()))
+    {
+      IncrementalSearch(FIncrementalSearch + Key, false, false);
+      Key = 0;
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::ResetIncrementalSearch()
+{
+  if (!FIncrementalSearch.IsEmpty())
+  {
+    FIncrementalSearch = L"";
+    DirView(osCurrent)->UpdateStatusBar();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::IncrementalSearch(const UnicodeString & Text, bool SkipCurrent, bool Reverse)
+{
+  TListItem * Item = SearchFile(Text, SkipCurrent, Reverse);
+
+  if (Item == NULL)
+  {
+    MessageBeep(MB_ICONHAND);
+  }
+  else
+  {
+    TCustomDirView * ADirView = DirView(osCurrent);
+    {
+      TAutoNestingCounter Guard(FIncrementalSearching);
+      ADirView->ItemFocused = Item;
+    }
+    FIncrementalSearch = Text;
+    Item->MakeVisible(false);
+
+    TListItem * NextItem = SearchFile(Text, true, Reverse);
+    FIncrementalSearchHaveNext = (NextItem != NULL) && (NextItem != Item);
+
+    ADirView->UpdateStatusBar();
+  }
+}
+//---------------------------------------------------------------------------
+TListItem * __fastcall TCustomScpExplorerForm::GetNextFile(TListItem * Item, bool Reverse)
+{
+  int Index = Item->Index;
+  if (!Reverse)
+  {
+    Index++;
+    if (Index >= Item->Owner->Count)
+    {
+      Index = 0;
+    }
+  }
+  else
+  {
+    Index--;
+    if (Index < 0)
+    {
+      Index = Item->Owner->Count - 1;
+    }
+  }
+  return Item->Owner->Item[Index];
+}
+//---------------------------------------------------------------------------
+TListItem * __fastcall TCustomScpExplorerForm::SearchFile(const UnicodeString & Text, bool SkipCurrent, bool Reverse)
+{
+  TCustomDirView * ADirView = DirView(osCurrent);
+  if (ADirView->Items->Count == 0)
+  {
+    return NULL;
+  }
+  else
+  {
+    TListItem * CurrentItem = (ADirView->ItemFocused != NULL) ? ADirView->ItemFocused : ADirView->Items->Item[0];
+    TListItem * Item = CurrentItem;
+    if (SkipCurrent)
+    {
+      Item = DebugNotNull(GetNextFile(Item, Reverse));
+    }
+
+    while (true)
+    {
+      bool Matches = false;
+
+      switch (WinConfiguration->PanelSearch)
+      {
+        case isNameStartOnly:
+          Matches = ContainsTextSemiCaseSensitive(Item->Caption.SubString(1, Text.Length()), Text);
+          break;
+        case isName:
+          Matches = ContainsTextSemiCaseSensitive(Item->Caption, Text);
+          break;
+        case isAll:
+          int ColCount = (ADirView->ViewStyle == vsReport) ? ADirView->ColProperties->Count : 1;
+          int Index = 0;
+          while ((Index < ColCount) && !Matches)
+          {
+            bool Visible = (ADirView->ViewStyle == vsReport) ? ADirView->ColProperties->Visible[Index] : true;
+            if (Visible)
+            {
+              Matches = ContainsTextSemiCaseSensitive(ADirView->GetColumnText(Item, Index), Text);
+            }
+            Index++;
+          }
+          break;
+      }
+
+      if (Matches)
+      {
+        return Item;
+      }
+
+      Item = GetNextFile(Item, Reverse);
+
+      if (Item == CurrentItem)
+      {
+        return NULL;
+      }
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::DirViewExit(TObject *)
+{
+  ResetIncrementalSearch();
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::CMDialogKey(TWMKeyDown & Message)
+{
+  if (Message.CharCode == VK_TAB)
+  {
+    if (!FIncrementalSearch.IsEmpty())
+    {
+      TShiftState Shift = KeyDataToShiftState(Message.KeyData);
+      bool Reverse = Shift.Contains(ssShift);
+      IncrementalSearch(FIncrementalSearch, true, Reverse);
+      Message.Result = 1;
+      return;
+    }
+  }
+  else if (Message.CharCode == VK_ESCAPE)
+  {
+    if (!FIncrementalSearch.IsEmpty())
+    {
+      ResetIncrementalSearch();
+      Message.Result = 1;
+      return;
+    }
+  }
+  TForm::Dispatch(&Message);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::Deactivate()
+{
+  TForm::Deactivate();
+  // E.g. when switching to an internal editor window
+  ResetIncrementalSearch();
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::ApplicationEventsDeactivate(TObject *)
+{
+  // When switching to another application
+  ResetIncrementalSearch();
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::ApplicationEventsModalBegin(TObject *)
+{
+  ResetIncrementalSearch();
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::DirViewChangeFocus(TObject *, TListItem *)
+{
+  if (FIncrementalSearching <= 0)
+  {
+    ResetIncrementalSearch();
   }
 }
 //---------------------------------------------------------------------------

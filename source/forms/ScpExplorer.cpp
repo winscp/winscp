@@ -358,6 +358,7 @@ void __fastcall TScpExplorerForm::RemoteDirViewPathChange(
   TCustomDirView * /*Sender*/)
 {
   UpdateRemotePathComboBox(false);
+  ResetIncrementalSearch();
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpExplorerForm::ToolbarItemResize(TTBXCustomDropDownItem * Item, int Width)

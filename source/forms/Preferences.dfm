@@ -632,19 +632,28 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 8
           Width = 389
-          Height = 195
+          Height = 222
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Common'
           TabOrder = 0
           DesignSize = (
             389
-            195)
+            222)
           object Label1: TLabel
             Left = 16
             Top = 167
             Width = 84
             Height = 13
             Caption = 'Show file si&zes in:'
+            FocusControl = FormatSizeBytesCombo
+            OnClick = ControlChange
+          end
+          object Label2: TLabel
+            Left = 16
+            Top = 194
+            Width = 96
+            Height = 13
+            Caption = '&Incremental search:'
             FocusControl = FormatSizeBytesCombo
             OnClick = ControlChange
           end
@@ -723,10 +732,25 @@ object PreferencesDialog: TPreferencesDialog
             TabOrder = 5
             OnClick = ControlChange
           end
+          object PanelSearchCombo: TComboBox
+            Left = 216
+            Top = 191
+            Width = 156
+            Height = 21
+            Style = csDropDownList
+            Anchors = [akTop, akRight]
+            MaxLength = 1
+            TabOrder = 7
+            OnChange = ControlChange
+            Items.Strings = (
+              'Beginning of name only'
+              'Any part of name'
+              'All columns')
+          end
         end
         object DoubleClickGroup: TGroupBox
           Left = 8
-          Top = 209
+          Top = 236
           Width = 389
           Height = 74
           Anchors = [akLeft, akTop, akRight]
@@ -771,7 +795,7 @@ object PreferencesDialog: TPreferencesDialog
         end
         object PanelFontGroup: TGroupBox
           Left = 8
-          Top = 289
+          Top = 316
           Width = 389
           Height = 82
           Anchors = [akLeft, akRight, akBottom]

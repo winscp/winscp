@@ -500,6 +500,21 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
         DebugFail();
     }
 
+    switch (WinConfiguration->PanelSearch)
+    {
+      case isNameStartOnly:
+        PanelSearchCombo->ItemIndex = 0;
+        break;
+      case isName:
+        PanelSearchCombo->ItemIndex = 1;
+        break;
+      case isAll:
+        PanelSearchCombo->ItemIndex = 2;
+        break;
+      default:
+        DebugFail();
+    }
+
     bool CustomPanelFont = !WinConfiguration->PanelFont.FontName.IsEmpty();
     PanelFontCheck->Checked = CustomPanelFont;
     if (CustomPanelFont)
@@ -854,6 +869,21 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
         break;
       case 2:
         WinConfiguration->FormatSizeBytes = fbShort;
+        break;
+      default:
+        DebugFail();
+    }
+
+    switch (PanelSearchCombo->ItemIndex)
+    {
+      case 0:
+        WinConfiguration->PanelSearch = isNameStartOnly;
+        break;
+      case 1:
+        WinConfiguration->PanelSearch = isName;
+        break;
+      case 2:
+        WinConfiguration->PanelSearch = isAll;
         break;
       default:
         DebugFail();

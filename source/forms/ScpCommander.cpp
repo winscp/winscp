@@ -1830,6 +1830,7 @@ void __fastcall TScpCommanderForm::BeforeAction()
 void __fastcall TScpCommanderForm::RemoteDirViewPathChange(TCustomDirView * /*Sender*/)
 {
   UpdateRemotePathComboBox(false);
+  ResetIncrementalSearch();
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::UpdateImages()
@@ -1912,6 +1913,7 @@ void __fastcall TScpCommanderForm::LocalPathComboUpdate()
 void __fastcall TScpCommanderForm::LocalDirViewPathChange(TCustomDirView * /*Sender*/)
 {
   LocalPathComboUpdate();
+  ResetIncrementalSearch();
   if (IsUncPath(LocalDirView->Path))
   {
     Configuration->Usage->Inc(L"BrowsedUncPath");

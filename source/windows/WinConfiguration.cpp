@@ -546,6 +546,7 @@ void __fastcall TWinConfiguration::Default()
   FSelectMask = AnyMask;
   FShowHiddenFiles = false;
   FFormatSizeBytes = fbKilobytes;
+  FPanelSearch = isNameStartOnly;
   FShowInaccesibleDirectories = true;
   FConfirmTransferring = true;
   FConfirmDeleting = true;
@@ -954,6 +955,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(String,   SelectMask); \
     KEY(Bool,     ShowHiddenFiles); \
     KEY(Integer,  FormatSizeBytes); \
+    KEY(Integer,  PanelSearch); \
     KEY(Bool,     ShowInaccesibleDirectories); \
     KEY(Bool,     ConfirmTransferring); \
     KEY(Bool,     ConfirmDeleting); \
@@ -1974,6 +1976,11 @@ void __fastcall TWinConfiguration::SetShowHiddenFiles(bool value)
 void __fastcall TWinConfiguration::SetFormatSizeBytes(TFormatBytesStyle value)
 {
   SET_CONFIG_PROPERTY(FormatSizeBytes);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetPanelSearch(TIncrementalSearch value)
+{
+  SET_CONFIG_PROPERTY(PanelSearch);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetShowInaccesibleDirectories(bool value)

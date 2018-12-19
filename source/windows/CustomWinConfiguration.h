@@ -32,11 +32,11 @@ struct TConsoleWinConfiguration
     { return C(WindowSize) 0; };
 };
 //---------------------------------------------------------------------------
-enum TSiteSearch { ssSiteNameStartOnly, ssSiteName, ssSite };
+enum TIncrementalSearch { isNameStartOnly, isName, isAll };
 //---------------------------------------------------------------------------
 struct TLoginDialogConfiguration : public TConsoleWinConfiguration
 {
-  TSiteSearch SiteSearch;
+  TIncrementalSearch SiteSearch;
   bool __fastcall operator !=(TLoginDialogConfiguration & rhc)
     { return (TConsoleWinConfiguration::operator !=(rhc)) || C(SiteSearch) 0; };
 };

@@ -864,6 +864,20 @@ int __fastcall CompareLogicalText(
   }
 }
 //---------------------------------------------------------------------------
+bool ContainsTextSemiCaseSensitive(const UnicodeString & Text, const UnicodeString & SubText)
+{
+  bool Result;
+  if (AnsiLowerCase(SubText) == SubText)
+  {
+    Result = ContainsText(Text, SubText);
+  }
+  else
+  {
+    Result = ContainsStr(Text, SubText);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 bool __fastcall IsReservedName(UnicodeString FileName)
 {
   int P = FileName.Pos(L".");

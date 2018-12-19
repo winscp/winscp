@@ -306,7 +306,7 @@ private:
   bool FLoading;
   bool FSortEnablePending;
   std::unique_ptr<TImageList> FButtonImageList;
-  TSiteSearch FSiteSearch;
+  TIncrementalSearch FSiteSearch;
   TForm * FLinkedForm;
   TPoint FPrevPos;
   int FSiteButtonsPadding;

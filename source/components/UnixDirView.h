@@ -106,6 +106,7 @@ __published:
   __property TDDDragFileName OnDDDragFileName = { read = FOnDDDragFileName,
     write = FOnDDDragFileName};
   __property OnBusy;
+  __property OnChangeFocus;
   __property bool ShowInaccesibleDirectories  =
     { read=FShowInaccesibleDirectories, write=SetShowInaccesibleDirectories,
       default=true  };

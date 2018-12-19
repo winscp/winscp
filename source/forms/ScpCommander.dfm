@@ -1437,6 +1437,9 @@ inherited ScpCommanderForm: TScpCommanderForm
       OnColumnRightClick = DirViewColumnRightClick
       OnEditing = DirViewEditing
       OnEnter = LocalDirViewEnter
+      OnExit = DirViewExit
+      OnKeyDown = DirViewKeyDown
+      OnKeyPress = DirViewKeyPress
       DirColProperties.ExtVisible = False
       PathLabel = LocalPathLabel
       OnUpdateStatusBar = LocalDirViewUpdateStatusBar
@@ -1459,6 +1462,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       OnHistoryGo = DirViewHistoryGo
       OnPathChange = LocalDirViewPathChange
       OnBusy = DirViewBusy
+      OnChangeFocus = DirViewChangeFocus
     end
     object LocalTopDock: TTBXDock
       Left = 0

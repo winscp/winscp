@@ -71,7 +71,7 @@ __fastcall TLoginDialog::TLoginDialog(TComponent* AOwner)
   FForceNewSite = false;
   FLoading = false;
   FSortEnablePending = false;
-  FSiteSearch = ssSiteName;
+  FSiteSearch = isName;
   FLinkedForm = NULL;
   FPrevPos = TPoint(std::numeric_limits<LONG>::min(), std::numeric_limits<LONG>::min());
 
@@ -654,9 +654,7 @@ void __fastcall TLoginDialog::UpdateControls()
 
     if (!FSitesIncrementalSearch.IsEmpty())
     {
-      SitesIncrementalSearchLabel->Caption =
-        L" " + FMTLOAD(LOGIN_SITES_INC_SEARCH, (FSitesIncrementalSearch)) +
-        (FSitesIncrementalSearchHaveNext ? L" " + LoadStr(LOGIN_SITES_NEXT_SEARCH) : UnicodeString());
+      SitesIncrementalSearchLabel->Caption = FormatIncrementalSearchStatus(FSitesIncrementalSearch, FSitesIncrementalSearchHaveNext);
     }
 
     EnableControl(ManageButton, !FEditing);
@@ -1208,15 +1206,15 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction * BasicAction,
   }
   else if (Action == SearchSiteNameStartOnlyAction)
   {
-    Action->Checked = (FSiteSearch == ssSiteNameStartOnly);
+    Action->Checked = (FSiteSearch == isNameStartOnly);
   }
   else if (Action == SearchSiteNameAction)
   {
-    Action->Checked = (FSiteSearch == ssSiteName);
+    Action->Checked = (FSiteSearch == isName);
   }
   else if (Action == SearchSiteAction)
   {
-    Action->Checked = (FSiteSearch == ssSite);
+    Action->Checked = (FSiteSearch == isAll);
   }
   else if (Action == CheckForUpdatesAction)
   {
@@ -2638,21 +2636,6 @@ TTreeNode * __fastcall TLoginDialog::GetNextNode(TTreeNode * Node, bool Reverse)
   return Node;
 }
 //---------------------------------------------------------------------------
-static bool __fastcall ContainsTextSemiCaseSensitive(
-  const UnicodeString & Text, const UnicodeString & SubText)
-{
-  bool Result;
-  if (AnsiLowerCase(SubText) == SubText)
-  {
-    Result = ContainsText(Text, SubText);
-  }
-  else
-  {
-    Result = ContainsStr(Text, SubText);
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
 TTreeNode * __fastcall TLoginDialog::SearchSite(const UnicodeString & Text,
   bool AllowExpanding, bool SkipCurrent, bool Reverse)
 {
@@ -2691,13 +2674,13 @@ TTreeNode * __fastcall TLoginDialog::SearchSite(const UnicodeString & Text,
 
         switch (FSiteSearch)
         {
-          case ssSiteNameStartOnly:
+          case isNameStartOnly:
             Matches = ContainsTextSemiCaseSensitive(Node->Text.SubString(1, Text.Length()), Text);
             break;
-          case ssSiteName:
+          case isName:
             Matches = ContainsTextSemiCaseSensitive(Node->Text, Text);
             break;
-          case ssSite:
+          case isAll:
             Matches = ContainsTextSemiCaseSensitive(Node->Text, Text);
             if (!Matches && IsSiteNode(Node))
             {
@@ -3065,17 +3048,17 @@ void __fastcall TLoginDialog::CopyParamRuleActionExecute(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::SearchSiteNameStartOnlyActionExecute(TObject * /*Sender*/)
 {
-  FSiteSearch = ssSiteNameStartOnly;
+  FSiteSearch = isNameStartOnly;
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::SearchSiteNameActionExecute(TObject * /*Sender*/)
 {
-  FSiteSearch = ssSiteName;
+  FSiteSearch = isName;
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::SearchSiteActionExecute(TObject * /*Sender*/)
 {
-  FSiteSearch = ssSite;
+  FSiteSearch = isAll;
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::ChangeScale(int M, int D)

@@ -193,6 +193,12 @@ __published:
   void __fastcall SessionsPageControlCloseButtonClick(TPageControl *Sender, int Index);
   void __fastcall DirViewGetItemColor(
     TObject * Sender, UnicodeString FileName, bool Directory, __int64 Size, TDateTime Modification, TColor & Color);
+  void __fastcall DirViewExit(TObject *Sender);
+  void __fastcall DirViewKeyDown(TObject *Sender, WORD &Key, TShiftState Shift);
+  void __fastcall DirViewKeyPress(TObject *Sender, System::WideChar &Key);
+  void __fastcall ApplicationEventsDeactivate(TObject *Sender);
+  void __fastcall ApplicationEventsModalBegin(TObject *Sender);
+  void __fastcall DirViewChangeFocus(TObject *Sender, TListItem *Item);
 
 private:
   TTerminal * FTerminal;
@@ -345,6 +351,9 @@ protected:
   int FDoNotIdleCurrentTerminal;
   UnicodeString FFakeFileDropTarget;
   TFileColorData::TList FFileColors;
+  UnicodeString FIncrementalSearch;
+  int FIncrementalSearching;
+  bool FIncrementalSearchHaveNext;
 
   virtual bool __fastcall CopyParamDialog(TTransferDirection Direction,
     TTransferType Type, bool Temp, TStrings * FileList,
@@ -654,6 +663,12 @@ protected:
   TColor __fastcall PanelColor();
   TColor __fastcall DisabledPanelColor();
   void __fastcall WMWinIniChange(TMessage & Message);
+  void __fastcall ResetIncrementalSearch();
+  void __fastcall IncrementalSearch(const UnicodeString & Text, bool SkipCurrent, bool Reverse);
+  TListItem * __fastcall GetNextFile(TListItem * Item, bool Reverse);
+  TListItem * __fastcall SearchFile(const UnicodeString & Text, bool SkipCurrent, bool Reverse);
+  void __fastcall CMDialogKey(TWMKeyDown & Message);
+  DYNAMIC void __fastcall Deactivate();
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();

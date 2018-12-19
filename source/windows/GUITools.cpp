@@ -9,6 +9,7 @@
 #include "GUITools.h"
 #include "WinConfiguration.h"
 #include <TextsCore.h>
+#include <TextsWin.h>
 #include <CoreMain.h>
 #include <SessionData.h>
 #include <WinInterface.h>
@@ -961,6 +962,14 @@ void __fastcall HideComponentsPanel(TForm * Form)
       Control->Height += Offset;
     }
   }
+}
+//---------------------------------------------------------------------------
+UnicodeString FormatIncrementalSearchStatus(const UnicodeString & Text, bool HaveNext)
+{
+  UnicodeString Result =
+    L" " + FMTLOAD(INC_SEARCH, (Text)) +
+    (HaveNext ? L" " + LoadStr(INC_NEXT_SEARCH) : UnicodeString());
+  return Result;
 }
 //---------------------------------------------------------------------------
 class TCustomDocHandler : public TComponent, public ::IDocHostUIHandler

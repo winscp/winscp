@@ -333,6 +333,8 @@ __published:
   TGroupBox *ThemeGroup;
   TLabel *Label7;
   TComboBox *ThemeCombo;
+  TComboBox *PanelSearchCombo;
+  TLabel *Label2;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);

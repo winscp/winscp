@@ -80,11 +80,15 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       OnColumnRightClick = DirViewColumnRightClick
       OnEditing = DirViewEditing
       OnEnter = RemoteDirViewEnter
+      OnExit = DirViewExit
+      OnKeyDown = DirViewKeyDown
+      OnKeyPress = DirViewKeyPress
       NortonLike = nlOff
       UnixColProperties.ExtWidth = 20
       UnixColProperties.TypeVisible = False
       OnDDDragFileName = RemoteFileControlDDDragFileName
       OnBusy = DirViewBusy
+      OnChangeFocus = DirViewChangeFocus
       OnSelectItem = DirViewSelectItem
       OnLoaded = DirViewLoaded
       OnExecFile = DirViewExecFile
@@ -317,7 +321,9 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
     end
   end
   object ApplicationEvents: TApplicationEvents
+    OnDeactivate = ApplicationEventsDeactivate
     OnMinimize = ApplicationMinimize
+    OnModalBegin = ApplicationEventsModalBegin
     OnRestore = ApplicationRestore
     Left = 88
     Top = 200

@@ -360,6 +360,7 @@ private:
   UnicodeString FSelectMask;
   bool FShowHiddenFiles;
   TFormatBytesStyle FFormatSizeBytes;
+  TIncrementalSearch FPanelSearch;
   bool FShowInaccesibleDirectories;
   bool FConfirmTransferring;
   bool FConfirmDeleting;
@@ -473,6 +474,7 @@ private:
   void __fastcall SetSelectDirectories(bool value);
   void __fastcall SetShowHiddenFiles(bool value);
   void __fastcall SetFormatSizeBytes(TFormatBytesStyle value);
+  void __fastcall SetPanelSearch(TIncrementalSearch value);
   void __fastcall SetShowInaccesibleDirectories(bool value);
   void __fastcall SetConfirmTransferring(bool value);
   void __fastcall SetConfirmDeleting(bool value);
@@ -650,6 +652,7 @@ public:
   __property UnicodeString SelectMask = { read = FSelectMask, write = FSelectMask };
   __property bool ShowHiddenFiles = { read = FShowHiddenFiles, write = SetShowHiddenFiles };
   __property TFormatBytesStyle FormatSizeBytes = { read = FFormatSizeBytes, write = SetFormatSizeBytes };
+  __property TIncrementalSearch PanelSearch = { read = FPanelSearch, write = SetPanelSearch };
   __property bool ShowInaccesibleDirectories = { read = FShowInaccesibleDirectories, write = SetShowInaccesibleDirectories };
   __property TEditorConfiguration Editor = { read = FEditor, write = SetEditor };
   __property TQueueViewConfiguration QueueView = { read = FQueueView, write = SetQueueView };
