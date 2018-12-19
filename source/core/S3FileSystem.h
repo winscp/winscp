@@ -140,7 +140,7 @@ protected:
   void ReadDirectoryInternal(const UnicodeString & Path, TRemoteFileList * FileList, int MaxKeys, const UnicodeString & FileName);
   void ParsePath(UnicodeString Path, UnicodeString & BucketName, UnicodeString & Key);
   TRemoteToken MakeRemoteToken(const char * OwnerId, const char * OwnerDisplayName);
-  TLibS3BucketContext GetBucketContext(const UnicodeString & BucketName);
+  TLibS3BucketContext GetBucketContext(const UnicodeString & BucketName, const UnicodeString & Prefix);
   void DoListBucket(
     const UnicodeString & Prefix, TRemoteFileList * FileList, int MaxKeys, const TLibS3BucketContext & BucketContext,
     TLibS3ListBucketCallbackData & Data);

@@ -126,17 +126,10 @@ void __fastcall TS3FileSystem::Open()
   FActive = false;
   try
   {
-    UnicodeString Path;
-    if (IsUnixRootPath(Data->RemoteDirectory))
+    UnicodeString Path = Data->RemoteDirectory;
+    if (IsUnixRootPath(Path))
     {
       Path = ROOTDIRECTORY;
-    }
-    else
-    {
-      UnicodeString BucketName;
-      UnicodeString UnusedKey;
-      ParsePath(Data->RemoteDirectory, BucketName, UnusedKey);
-      Path = LibS3Delimiter + BucketName;
     }
     TryOpenDirectory(Path);
   }
@@ -457,7 +450,7 @@ struct TLibS3ListBucketCallbackData : TLibS3CallbackData
   bool IsTruncated;
 };
 //---------------------------------------------------------------------------
-TLibS3BucketContext TS3FileSystem::GetBucketContext(const UnicodeString & BucketName)
+TLibS3BucketContext TS3FileSystem::GetBucketContext(const UnicodeString & BucketName, const UnicodeString & Prefix)
 {
   TLibS3BucketContext Result;
 
@@ -510,7 +503,8 @@ TLibS3BucketContext TS3FileSystem::GetBucketContext(const UnicodeString & Bucket
     {
       std::unique_ptr<TRemoteFileList> FileList(new TRemoteFileList());
       TLibS3ListBucketCallbackData Data;
-      DoListBucket(UnicodeString(), FileList.get(), 1, Result, Data);
+      // Using prefix for which we need the bucket, as the account may have access to that prefix only (using "Condition" in policy)
+      DoListBucket(Prefix, FileList.get(), 1, Result, Data);
 
       Retry = false;
       UnicodeString EndpointDetail = Data.EndpointDetail;
@@ -875,7 +869,7 @@ void TS3FileSystem::ReadDirectoryInternal(
       Prefix = GetFolderKey(Prefix);
     }
     Prefix += FileName;
-    TLibS3BucketContext BucketContext = GetBucketContext(BucketName);
+    TLibS3BucketContext BucketContext = GetBucketContext(BucketName, Prefix);
 
     TLibS3ListBucketCallbackData Data;
     bool Continue;
@@ -967,7 +961,12 @@ void __fastcall TS3FileSystem::DeleteFile(const UnicodeString AFileName,
   UnicodeString BucketName, Key;
   ParsePath(FileName, BucketName, Key);
 
-  TLibS3BucketContext BucketContext = GetBucketContext(BucketName);
+  if (!Key.IsEmpty() && Dir)
+  {
+    Key = GetFolderKey(Key);
+  }
+
+  TLibS3BucketContext BucketContext = GetBucketContext(BucketName, Key);
 
   S3ResponseHandler ResponseHandler = CreateResponseHandler();
 
@@ -983,10 +982,6 @@ void __fastcall TS3FileSystem::DeleteFile(const UnicodeString AFileName,
   }
   else
   {
-    if (Dir)
-    {
-      Key = GetFolderKey(Key);
-    }
     S3_delete_object(&BucketContext, StrToS3(Key), FRequestContext, FTimeout, &ResponseHandler, &Data);
   }
 
@@ -1029,7 +1024,7 @@ void __fastcall TS3FileSystem::CopyFile(const UnicodeString AFileName, const TRe
     throw Exception(LoadStr(MISSING_TARGET_BUCKET));
   }
 
-  TLibS3BucketContext BucketContext = GetBucketContext(DestBucketName);
+  TLibS3BucketContext BucketContext = GetBucketContext(DestBucketName, DestKey);
   BucketContext.BucketNameBuf = SourceBucketName;
   BucketContext.bucketName = BucketContext.BucketNameBuf.c_str();
 
@@ -1094,7 +1089,7 @@ void __fastcall TS3FileSystem::CreateDirectory(const UnicodeString & ADirName, b
 
     Key = GetFolderKey(Key);
 
-    TLibS3BucketContext BucketContext = GetBucketContext(BucketName);
+    TLibS3BucketContext BucketContext = GetBucketContext(BucketName, Key);
 
     S3PutObjectHandler PutObjectHandler = { CreateResponseHandler(), NULL };
 
@@ -1369,7 +1364,7 @@ void __fastcall TS3FileSystem::Source(
     throw Exception(LoadStr(MISSING_TARGET_BUCKET));
   }
 
-  TLibS3BucketContext BucketContext = GetBucketContext(BucketName);
+  TLibS3BucketContext BucketContext = GetBucketContext(BucketName, Key);
 
   UTF8String ContentType = UTF8String(FTerminal->Configuration->GetFileMimeType(Handle.FileName));
   S3PutProperties PutProperties =
@@ -1618,7 +1613,7 @@ void __fastcall TS3FileSystem::Sink(
   UnicodeString BucketName, Key;
   ParsePath(FileName, BucketName, Key);
 
-  TLibS3BucketContext BucketContext = GetBucketContext(BucketName);
+  TLibS3BucketContext BucketContext = GetBucketContext(BucketName, Key);
 
   UnicodeString ExpandedDestFullName = ExpandUNCFileName(DestFullName);
   Action.Destination(ExpandedDestFullName);
