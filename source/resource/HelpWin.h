@@ -63,6 +63,6 @@
 #define HELP_READONLY_INI_FILE       "config#ini_readonly"
 #define HELP_SESSION_RENAME          "task_connection"
 #define HELP_DD_TARGET_UNKNOWN       "ui_pref_dragdrop#fake_file"
-#define HELP_FILE_COLORS             "ui_pref_file_colors"
+#define HELP_FILE_COLORS             "ui_file_color"
 
 #endif // TextsWin
