@@ -10317,6 +10317,15 @@ void __fastcall TCustomScpExplorerForm::IncrementalSearch(const UnicodeString & 
     {
       TAutoNestingCounter Guard(FIncrementalSearching);
       ADirView->FocusItem(Item);
+      if (ADirView->NortonLike == nlOff)
+      {
+        if ((ADirView->Selected != Item) ||
+            (ADirView->SelCount > 1))
+        {
+          ADirView->ClearSelection();
+          ADirView->Selected = Item;
+        }
+      }
     }
     FIncrementalSearch = Text;
     Item->MakeVisible(false);
