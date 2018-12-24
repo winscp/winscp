@@ -6,7 +6,7 @@
     <title>WinSCP .NET assembly</title>
     <authors>Martin Prikryl</authors>
     <owners>Martin Prikryl</owners>
-    <licenseUrl>https://www.mozilla.org/MPL/2.0/</licenseUrl>
+    <license type="expression">MPL-2.0</license>
     <projectUrl>https://winscp.net/eng/docs/library</projectUrl>
     <iconUrl>https://winscp.net/pad/winscp.png</iconUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
