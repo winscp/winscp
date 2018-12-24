@@ -1856,11 +1856,12 @@ begin
         // Scroll to the GetPosition would scroll one line lower.
         Scroll(0, P.Y - Items[0].GetPosition.Y);
       end;
-      FocusItem(ItemToFocus);
+      // Strangely after this mouse selection works correctly, so we do not have to call FocusItem.
+      ItemFocused := ItemToFocus;
     end;
 
     // could not scroll when focus is not visible because
-    // of previous hack-implementation of FocusItem()
+    // of previous call to hack-implementation of FocusItem()
     // - no longer true, this can be re-enabled after some testing
     {$IF False}
     // previously focus item was not visible, scroll to the same position

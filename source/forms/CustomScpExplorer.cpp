@@ -10316,7 +10316,7 @@ void __fastcall TCustomScpExplorerForm::IncrementalSearch(const UnicodeString & 
     TCustomDirView * ADirView = DirView(osCurrent);
     {
       TAutoNestingCounter Guard(FIncrementalSearching);
-      ADirView->ItemFocused = Item;
+      ADirView->FocusItem(Item);
     }
     FIncrementalSearch = Text;
     Item->MakeVisible(false);
