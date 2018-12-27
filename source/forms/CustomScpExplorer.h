@@ -199,6 +199,7 @@ __published:
   void __fastcall ApplicationEventsDeactivate(TObject *Sender);
   void __fastcall ApplicationEventsModalBegin(TObject *Sender);
   void __fastcall DirViewChangeFocus(TObject *Sender, TListItem *Item);
+  void __fastcall RemoteStatusBarMouseDown(TObject *Sender, TMouseButton Button, TShiftState Shift, int X, int Y);
 
 private:
   TTerminal * FTerminal;

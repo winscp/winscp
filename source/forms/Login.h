@@ -281,6 +281,7 @@ __published:
   void __fastcall SearchSiteNameStartOnlyActionExecute(TObject *Sender);
   void __fastcall SearchSiteNameActionExecute(TObject *Sender);
   void __fastcall SearchSiteActionExecute(TObject *Sender);
+  void __fastcall ButtonPanelMouseDown(TObject *Sender, TMouseButton Button, TShiftState Shift, int X, int Y);
 
 private:
   int NoUpdate;

@@ -10473,3 +10473,8 @@ void __fastcall TCustomScpExplorerForm::DirViewChangeFocus(TObject *, TListItem 
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::RemoteStatusBarMouseDown(TObject *, TMouseButton, TShiftState, int, int)
+{
+  CountClicksForWindowPrint(this);
+}
+//---------------------------------------------------------------------------

@@ -63,6 +63,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       ShowHint = True
       UseSystemFont = False
       OnClick = RemoteStatusBarClick
+      OnMouseDown = RemoteStatusBarMouseDown
     end
     object RemoteDirView: TUnixDirView
       Left = 172

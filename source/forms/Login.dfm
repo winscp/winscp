@@ -365,6 +365,7 @@ object LoginDialog: TLoginDialog
       Align = alBottom
       BevelOuter = bvNone
       TabOrder = 2
+      OnMouseDown = ButtonPanelMouseDown
       DesignSize = (
         361
         41)

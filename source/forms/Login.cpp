@@ -3069,3 +3069,8 @@ void __fastcall TLoginDialog::ChangeScale(int M, int D)
   FNoteGroupOffset = MulDiv(FNoteGroupOffset, M, D);
 }
 //---------------------------------------------------------------------------
+void __fastcall TLoginDialog::ButtonPanelMouseDown(TObject *, TMouseButton, TShiftState, int, int)
+{
+  CountClicksForWindowPrint(this);
+}
+//---------------------------------------------------------------------------

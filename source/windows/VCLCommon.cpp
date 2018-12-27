@@ -846,6 +846,79 @@ static void __fastcall FormShowingChanged(TForm * Form, TWndMethod WndProc, TMes
   }
 }
 //---------------------------------------------------------------------------
+static TCustomForm * WindowPrintForm = NULL;
+static DWORD WindowPrintPrevClick = 0;
+static unsigned int WindowPrintClickCount = 0;
+//---------------------------------------------------------------------------
+void __fastcall CountClicksForWindowPrint(TForm * Form)
+{
+  if (WinConfiguration->AllowWindowPrint)
+  {
+    DWORD Tick = GetTickCount();
+    if (WindowPrintForm != Form)
+    {
+      WindowPrintForm = Form;
+      WindowPrintClickCount = 0;
+    }
+    if (WindowPrintPrevClick < Tick - 500)
+    {
+      WindowPrintClickCount = 0;
+    }
+    WindowPrintClickCount++;
+    WindowPrintPrevClick = Tick;
+    if (WindowPrintClickCount == 3)
+    {
+      WindowPrintClickCount = 0;
+
+      TInstantOperationVisualizer Visualizer;
+
+      // get the device context of the screen
+      HDC ScreenDC = CreateDC(L"DISPLAY", NULL, NULL, NULL);
+      // and a device context to put it in
+      HDC MemoryDC = CreateCompatibleDC(ScreenDC);
+
+      try
+      {
+        bool Sizable = (Form->BorderStyle == bsSizeable);
+        int Frame = GetSystemMetrics(Sizable ? SM_CXSIZEFRAME : SM_CXFIXEDFRAME) - 1;
+        int Width = Form->Width - 2*Frame;
+        int Height = Form->Height - Frame;
+
+        // maybe worth checking these are positive values
+        HBITMAP Bitmap = CreateCompatibleBitmap(ScreenDC, Width, Height);
+        try
+        {
+          // get a new bitmap
+          HBITMAP OldBitmap = static_cast<HBITMAP>(SelectObject(MemoryDC, Bitmap));
+
+          BitBlt(MemoryDC, 0, 0, Width, Height, ScreenDC, Form->Left + Frame, Form->Top, SRCCOPY);
+          Bitmap = static_cast<HBITMAP>(SelectObject(MemoryDC, OldBitmap));
+
+          OpenClipboard(NULL);
+          try
+          {
+            EmptyClipboard();
+            SetClipboardData(CF_BITMAP, Bitmap);
+          }
+          __finally
+          {
+            CloseClipboard();
+          }
+        }
+        __finally
+        {
+          DeleteObject(Bitmap);
+        }
+      }
+      __finally
+      {
+        DeleteDC(MemoryDC);
+        DeleteDC(ScreenDC);
+      }
+    }
+  }
+}
+//---------------------------------------------------------------------------
 inline void __fastcall DoFormWindowProc(TCustomForm * Form, TWndMethod WndProc,
   TMessage & Message)
 {
@@ -885,6 +958,11 @@ inline void __fastcall DoFormWindowProc(TCustomForm * Form, TWndMethod WndProc,
   else if (Message.Msg == WM_DPICHANGED)
   {
     ChangeFormPixelsPerInch(AForm, LOWORD(Message.WParam));
+    WndProc(Message);
+  }
+  else if ((Message.Msg == WM_LBUTTONDOWN) || (Message.Msg == WM_LBUTTONDBLCLK))
+  {
+    CountClicksForWindowPrint(AForm);
     WndProc(Message);
   }
   else
