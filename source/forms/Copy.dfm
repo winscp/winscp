@@ -146,6 +146,7 @@ object CopyDialog: TCopyDialog
       Anchors = [akLeft, akTop, akRight, akBottom]
       AutoSize = False
       Caption = 'CopyParamLabel'
+      ShowAccelChar = False
       WordWrap = True
       OnClick = CopyParamGroupClick
     end
@@ -169,6 +170,7 @@ object CopyDialog: TCopyDialog
         'In Commander interface a keyboard shortcut F5 is used to transfe' +
         'r files. Should you want to use it to refresh a file panel, clic' +
         'k here to go to preferences.'
+      ShowAccelChar = False
       WordWrap = True
       OnClick = ShortCutHintLabelClick
     end

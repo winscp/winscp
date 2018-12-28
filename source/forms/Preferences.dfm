@@ -224,6 +224,7 @@ object PreferencesDialog: TPreferencesDialog
             Height = 13
             Anchors = [akTop, akRight]
             Caption = 's'
+            ShowAccelChar = False
           end
           object BeepOnFinishCheck: TCheckBox
             Left = 16
@@ -288,6 +289,7 @@ object PreferencesDialog: TPreferencesDialog
             Height = 13
             Caption = 'files'
             FocusControl = LogMaxSizeCountEdit
+            ShowAccelChar = False
           end
           object LogFileNameLabel: TLabel
             Left = 40
@@ -507,6 +509,7 @@ object PreferencesDialog: TPreferencesDialog
           Width = 177
           Height = 13
           Caption = 'Changes will apply on the next start.'
+          ShowAccelChar = False
         end
         object InterfaceGroup: TGroupBox
           Left = 8
@@ -814,6 +817,7 @@ object PreferencesDialog: TPreferencesDialog
             Caption = 'PanelFontLabel'
             Color = clWindow
             ParentColor = False
+            ShowAccelChar = False
             Transparent = False
             WordWrap = True
             OnDblClick = PanelFontLabelDblClick
@@ -856,6 +860,7 @@ object PreferencesDialog: TPreferencesDialog
           Anchors = [akLeft, akTop, akRight]
           AutoSize = False
           Caption = 'Preferences on this page applies to Commander interface only.'
+          ShowAccelChar = False
           WordWrap = True
         end
         object PanelsGroup: TGroupBox
@@ -1006,6 +1011,7 @@ object PreferencesDialog: TPreferencesDialog
           Anchors = [akLeft, akTop, akRight]
           AutoSize = False
           Caption = 'Preferences on this page applies to Explorer interface only.'
+          ShowAccelChar = False
           WordWrap = True
         end
         object GroupBox2: TGroupBox
@@ -1413,6 +1419,7 @@ object PreferencesDialog: TPreferencesDialog
             Height = 13
             Anchors = [akLeft, akTop, akRight]
             Caption = 'DragExtStatusLabel'
+            ShowAccelChar = False
             OnClick = DDLabelClick
           end
           object DDDrivesLabel: TLabel
@@ -1736,6 +1743,7 @@ object PreferencesDialog: TPreferencesDialog
             Anchors = [akLeft, akTop, akRight]
             AutoSize = False
             Caption = 'Specify where to temporarily store edited and downloaded files.'
+            ShowAccelChar = False
             WordWrap = True
           end
           object DDSystemTemporaryDirectoryButton: TRadioButton
@@ -2323,6 +2331,7 @@ object PreferencesDialog: TPreferencesDialog
             Anchors = [akLeft, akRight, akBottom]
             AutoSize = False
             Caption = 'CopyParamLabel'
+            ShowAccelChar = False
             WordWrap = True
             OnClick = CopyParamLabelClick
           end
@@ -2857,6 +2866,7 @@ object PreferencesDialog: TPreferencesDialog
             Width = 5
             Height = 13
             Caption = 's'
+            ShowAccelChar = False
           end
           object ShowInaccesibleDirectoriesCheck: TCheckBox
             Left = 16
@@ -2982,6 +2992,7 @@ object PreferencesDialog: TPreferencesDialog
             Height = 13
             Anchors = [akLeft, akBottom]
             Caption = 'Changes will apply on the next start.'
+            ShowAccelChar = False
           end
           object LanguagesView: TListView
             Left = 16
@@ -3109,6 +3120,7 @@ object PreferencesDialog: TPreferencesDialog
             Caption = 'EditorFontLabel'
             Color = clWhite
             ParentColor = False
+            ShowAccelChar = False
             Transparent = False
             OnDblClick = EditorFontLabelDblClick
           end

@@ -121,6 +121,7 @@ object GenerateUrlDialog: TGenerateUrlDialog
         Height = 42
         AutoSize = False
         Caption = 'ScriptDescriptionLabel'
+        ShowAccelChar = False
         WordWrap = True
       end
       object ScriptFormatCombo: TComboBox
@@ -156,6 +157,7 @@ object GenerateUrlDialog: TGenerateUrlDialog
         Height = 42
         AutoSize = False
         Caption = 'AssemblyDescriptionLabel'
+        ShowAccelChar = False
         WordWrap = True
       end
       object AssemblyLanguageCombo: TComboBox

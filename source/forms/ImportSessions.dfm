@@ -123,6 +123,7 @@ object ImportSessionsDialog: TImportSessionsDialog
       Align = alClient
       Alignment = taCenter
       Caption = 'ErrorLabel'
+      ShowAccelChar = False
       Layout = tlCenter
       WordWrap = True
     end

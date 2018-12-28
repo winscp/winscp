@@ -47,6 +47,7 @@ object SelectMaskDialog: TSelectMaskDialog
       Caption = 'about.html'#13#10'index.html'#13#10'photo.jpg'
       Color = clWindow
       ParentColor = False
+      ShowAccelChar = False
       Transparent = False
       WordWrap = True
     end
@@ -61,6 +62,7 @@ object SelectMaskDialog: TSelectMaskDialog
       Caption = 'ColorSizesLabel'
       Color = clWindow
       ParentColor = False
+      ShowAccelChar = False
       Transparent = False
       WordWrap = True
     end
@@ -74,6 +76,7 @@ object SelectMaskDialog: TSelectMaskDialog
       AutoSize = False
       Color = clWindow
       ParentColor = False
+      ShowAccelChar = False
       Transparent = False
       WordWrap = True
     end

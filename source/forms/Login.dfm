@@ -55,6 +55,7 @@ object LoginDialog: TLoginDialog
           Width = 31
           Height = 13
           Caption = 'Name:'
+          ShowAccelChar = False
         end
         object ContentsNameEdit: TEdit
           Left = 66

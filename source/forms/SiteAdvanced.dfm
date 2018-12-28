@@ -257,6 +257,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Width = 241
             Height = 13
             Caption = 'Local directory is not used with Explorer interface.'
+            ShowAccelChar = False
           end
           object LocalDirectoryEdit: TDirectoryEdit
             Left = 12

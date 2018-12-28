@@ -271,6 +271,7 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
       Anchors = [akLeft, akTop, akRight, akBottom]
       AutoSize = False
       Caption = 'CopyParamLabel'
+      ShowAccelChar = False
       WordWrap = True
       OnClick = CopyParamGroupClick
     end

@@ -69,6 +69,7 @@ object AboutDialog: TAboutDialog
       Width = 52
       Height = 13
       Caption = 'Application'
+      ShowAccelChar = False
     end
     object VersionLabel: TLabel
       Left = 62
@@ -76,6 +77,7 @@ object AboutDialog: TAboutDialog
       Width = 127
       Height = 13
       Caption = 'Version 2.0.0 (Build 12) XX'
+      ShowAccelChar = False
     end
     object WinSCPCopyrightLabel: TLabel
       Left = 62
@@ -83,6 +85,7 @@ object AboutDialog: TAboutDialog
       Width = 180
       Height = 13
       Caption = 'Copyright '#169' 2000-2003 Martin Prikryl'
+      ShowAccelChar = False
     end
     object ProductSpecificMessageLabel: TLabel
       Left = 62
@@ -90,6 +93,7 @@ object AboutDialog: TAboutDialog
       Width = 277
       Height = 13
       Caption = 'To send comments and report bugs use support forum at:'
+      ShowAccelChar = False
     end
     object Label3: TLabel
       Left = 62
@@ -97,6 +101,7 @@ object AboutDialog: TAboutDialog
       Width = 91
       Height = 13
       Caption = 'Portions copyright:'
+      ShowAccelChar = False
     end
     object RegistrationLabel: TLabel
       Left = 62
@@ -104,6 +109,7 @@ object AboutDialog: TAboutDialog
       Width = 127
       Height = 13
       Caption = 'This product is licensed to:'
+      ShowAccelChar = False
     end
     object IconPaintBox: TPaintBox
       Left = 8
@@ -163,6 +169,7 @@ object AboutDialog: TAboutDialog
         Anchors = [akLeft, akTop, akRight]
         AutoSize = False
         Caption = 'Someone'#13#10'Somewhere, some city'
+        ShowAccelChar = False
         WordWrap = True
       end
       object RegistrationLicensesLabel: TLabel
@@ -171,6 +178,7 @@ object AboutDialog: TAboutDialog
         Width = 106
         Height = 13
         Caption = 'Number of Licenses: X'
+        ShowAccelChar = False
       end
       object RegistrationProductIdLabel: TStaticText
         Left = 8
@@ -178,6 +186,7 @@ object AboutDialog: TAboutDialog
         Width = 148
         Height = 17
         Caption = 'Product ID: xxxx-xxxx-xxxxx'
+        ShowAccelChar = False
         TabOrder = 0
         OnClick = RegistrationProductIdLabelClick
       end
