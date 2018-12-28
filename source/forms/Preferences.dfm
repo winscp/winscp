@@ -298,6 +298,7 @@ object PreferencesDialog: TPreferencesDialog
             Height = 13
             Anchors = [akLeft, akTop, akRight]
             Caption = '&Log path:'
+            FocusControl = LogFileNameEdit3
             OnClick = ControlChange
           end
           object LogFileNameEdit3: TFilenameEdit

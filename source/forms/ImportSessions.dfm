@@ -25,6 +25,7 @@ object ImportSessionsDialog: TImportSessionsDialog
     Height = 13
     Anchors = [akLeft, akTop, akRight]
     Caption = '&Import from:'
+    FocusControl = SourceComboBox
   end
   object OKButton: TButton
     Left = 135

@@ -25,6 +25,7 @@ object CreateDirectoryDialog: TCreateDirectoryDialog
     Width = 85
     Height = 13
     Caption = 'New &folder name:'
+    FocusControl = DirectoryEdit
   end
   object DirectoryEdit: TEdit
     Left = 8
