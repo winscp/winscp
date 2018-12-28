@@ -52,6 +52,4 @@ private:
   TDirectRemoteCopy FAllowDirectCopy;
 };
 //---------------------------------------------------------------------------
-extern PACKAGE TRemoteTransferDialog * RemoteTransferDialog;
-//---------------------------------------------------------------------------
 #endif
