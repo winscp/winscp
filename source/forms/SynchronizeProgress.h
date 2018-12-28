@@ -71,6 +71,8 @@ private:
   void __fastcall GlobalMinimize(TObject * Sender);
   void __fastcall CancelOperation();
   void __fastcall CMDialogKey(TCMDialogKey & Message);
+
+  INTERFACE_HOOK;
 };
 //---------------------------------------------------------------------------
 #endif

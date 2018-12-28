@@ -11,6 +11,7 @@
 #include <Vcl.StdCtrls.hpp>
 //----------------------------------------------------------------------------
 #include <Bookmarks.h>
+#include <GUITools.h>
 #include "RightsExt.h"
 #include "Rights.h"
 //----------------------------------------------------------------------------
@@ -42,6 +43,8 @@ public:
 
 protected:
   void __fastcall UpdateControls();
+
+  INTERFACE_HOOK;
 
 private:
   int FAllowedChanges;

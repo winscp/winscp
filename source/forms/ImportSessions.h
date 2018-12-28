@@ -6,9 +6,10 @@
 #include <Vcl.ComCtrls.hpp>
 #include <Vcl.Controls.hpp>
 #include <Vcl.StdCtrls.hpp>
+#include <Vcl.ExtCtrls.hpp>
 //---------------------------------------------------------------------
 #include <SessionData.h>
-#include <Vcl.ExtCtrls.hpp>
+#include <GUITools.h>
 //---------------------------------------------------------------------
 class TImportSessionsDialog : public TForm
 {
@@ -47,6 +48,8 @@ private:
   virtual void __fastcall CreateHandle();
   virtual void __fastcall DestroyHandle();
   virtual void __fastcall Dispatch(void * Message);
+
+  INTERFACE_HOOK;
 
 public:
   virtual __fastcall TImportSessionsDialog(TComponent * AOwner);

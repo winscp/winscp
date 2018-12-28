@@ -135,6 +135,8 @@ private:
   void __fastcall FileDownloadFinished(const UnicodeString & FileName, bool Success);
   TListItem * __fastcall FileOperationFinished(const UnicodeString & FileName);
   void __fastcall FileListOperation(TFileListOperationEvent Operation, TFileOperationFinishedEvent OnFileOperationFinished);
+
+  INTERFACE_HOOK;
 };
 //---------------------------------------------------------------------------
 #endif

@@ -6,14 +6,15 @@
 #include <Vcl.Controls.hpp>
 #include <Vcl.StdCtrls.hpp>
 #include <Vcl.Forms.hpp>
-
-#include "SessionData.h"
 #include <Vcl.ComCtrls.hpp>
 #include <Vcl.Menus.hpp>
 #include <System.Actions.hpp>
 #include <Vcl.ActnList.hpp>
 #include <Vcl.StdActns.hpp>
+//---------------------------------------------------------------------------
+#include "SessionData.h"
 #include <WinInterface.h>
+#include <GUITools.h>
 //---------------------------------------------------------------------------
 class TGenerateUrlDialog : public TForm
 {
@@ -74,6 +75,8 @@ protected:
   UnicodeString __fastcall GenerateScript(UnicodeString & ScriptDescription);
   UnicodeString __fastcall GenerateAssemblyCode(UnicodeString & AssemblyDescription);
   void __fastcall AddSampleDescription(UnicodeString & Description);
+
+  INTERFACE_HOOK;
 
 public:
   __fastcall TGenerateUrlDialog(

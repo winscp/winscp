@@ -15,12 +15,12 @@
 #include <Vcl.Mask.hpp>
 #include <Vcl.Menus.hpp>
 #include <Vcl.StdCtrls.hpp>
+#include "PngImageList.hpp"
 //----------------------------------------------------------------------------
 #include <Configuration.h>
 #include <SessionData.h>
 #include <PasTools.hpp>
-
-#include "PngImageList.hpp"
+#include <GUITools.h>
 //----------------------------------------------------------------------------
 class TSiteAdvancedDialog : public TForm
 {
@@ -353,6 +353,8 @@ private:
   bool __fastcall IsNeon(TFSProtocol FSProtocol);
   void __fastcall PrivateKeyCreatedOrModified(TObject * Sender, const UnicodeString FileName);
   TCustomEdit * __fastcall GetEncryptKeyEdit(bool AShow = true);
+
+  INTERFACE_HOOK;
 };
 //----------------------------------------------------------------------------
 #endif

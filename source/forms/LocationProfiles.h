@@ -8,18 +8,20 @@
 #include <Vcl.Controls.hpp>
 #include <Vcl.ImgList.hpp>
 #include <Vcl.StdCtrls.hpp>
+#include "IEComboBox.hpp"
+#include <ComCtrls.hpp>
+#include <ImgList.hpp>
+#include "PngImageList.hpp"
+#include <Vcl.ExtCtrls.hpp>
+#include <Vcl.Imaging.pngimage.hpp>
+#include <Vcl.ExtCtrls.hpp>
 
 #include <FileOperationProgress.h>
 #include <Terminal.h>
 #include <WinInterface.h>
 #include <Bookmarks.h>
-#include "IEComboBox.hpp"
-#include <ComCtrls.hpp>
-#include <ImgList.hpp>
 #include <PasTools.hpp>
-#include "PngImageList.hpp"
-#include <Vcl.ExtCtrls.hpp>
-#include <Vcl.Imaging.pngimage.hpp>
+#include <GUITools.h>
 //----------------------------------------------------------------------------
 class TLocationProfilesDialog : public TForm
 {
@@ -161,6 +163,8 @@ private:
     TBookmarkList * Source);
   bool __fastcall ProfileMatch(TTreeNode * Node);
   UnicodeString __fastcall BookmarkText(TBookmark * Bookmark);
+
+  INTERFACE_HOOK;
 };
 //----------------------------------------------------------------------------
 #endif

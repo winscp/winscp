@@ -179,6 +179,30 @@ private:
   HINSTANCE FLibrary;
 };
 //---------------------------------------------------------------------------
+// Based on:
+// https://stackoverflow.com/q/6912424/850848
+// https://stackoverflow.com/q/4685863/850848
+class TUIStateAwareLabel : public TLabel
+{
+protected:
+  DYNAMIC void __fastcall DoDrawText(TRect & Rect, int Flags);
+};
+#define INTERFACE_HOOK \
+  protected: \
+    virtual void __fastcall ReadState(TReader * Reader) \
+    { \
+      Reader->OnFindComponentClass = FindComponentClass; \
+      TForm::ReadState(Reader); \
+    } \
+  \
+    void __fastcall FindComponentClass(TReader * Reader, const UnicodeString ClassName, TComponentClass & ComponentClass) \
+    { \
+      if (ComponentClass == __classid(TLabel)) \
+      { \
+        ComponentClass = __classid(TUIStateAwareLabel); \
+      } \
+    }
+//---------------------------------------------------------------------------
 extern const UnicodeString PageantTool;
 extern const UnicodeString PuttygenTool;
 //---------------------------------------------------------------------------

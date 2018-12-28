@@ -2068,3 +2068,31 @@ void __fastcall TNewRichEdit::DestroyWnd()
     FreeLibrary(FLibrary);
   }
 }
+//---------------------------------------------------------------------------
+static int HideAccelFlag(TControl * Control)
+{
+  //ask the top level window about its UI state
+  while (Control->Parent != NULL)
+  {
+    Control = Control->Parent;
+  }
+  int Result;
+  if (FLAGSET(Control->Perform(WM_QUERYUISTATE, 0, 0), UISF_HIDEACCEL))
+  {
+    Result = DT_HIDEPREFIX;
+  }
+  else
+  {
+    Result = 0;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TUIStateAwareLabel::DoDrawText(TRect & Rect, int Flags)
+{
+  if (ShowAccelChar)
+  {
+    Flags = Flags | HideAccelFlag(this);
+  }
+  TLabel::DoDrawText(Rect, Flags);
+}

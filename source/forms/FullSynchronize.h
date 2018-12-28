@@ -7,12 +7,13 @@
 #include <StdCtrls.hpp>
 #include <Forms.hpp>
 #include <HistoryComboBox.hpp>
-
-#include <WinInterface.h>
-#include <CopyParam.h>
 #include <Vcl.ExtCtrls.hpp>
 #include <Vcl.Imaging.pngimage.hpp>
 #include <Vcl.Menus.hpp>
+//---------------------------------------------------------------------------
+#include <WinInterface.h>
+#include <CopyParam.h>
+#include <GUITools.h>
 //---------------------------------------------------------------------------
 class TFullSynchronizeDialog : public TForm
 {
@@ -114,6 +115,8 @@ public:
 
 protected:
   void __fastcall UpdateControls();
+
+  INTERFACE_HOOK;
 };
 //---------------------------------------------------------------------------
 #endif

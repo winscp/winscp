@@ -134,6 +134,8 @@ protected:
   virtual void __fastcall Dispatch(void * Message);
   void __fastcall SetCancelLower(TCancelStatus ACancel);
 
+  INTERFACE_HOOK;
+
 public:
   static UnicodeString __fastcall ProgressStr(
     const TSynchronizeProgress * SynchronizeProgress, const TFileOperationProgressType * ProgressData);

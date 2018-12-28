@@ -22,6 +22,7 @@
 #include <SessionData.h>
 #include <PasTools.hpp>
 #include <System.Actions.hpp>
+#include <GUITools.h>
 //----------------------------------------------------------------------------
 class TLoginDialog : public TForm
 {
@@ -411,6 +412,8 @@ protected:
   void __fastcall Login();
   DYNAMIC void __fastcall ChangeScale(int M, int D);
   __property TSessionData * SelectedSession  = { read=GetSelectedSession };
+
+  INTERFACE_HOOK;
 
 public:
   virtual __fastcall TLoginDialog(TComponent* AOwner);

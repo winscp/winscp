@@ -16,11 +16,12 @@
 #include <Dialogs.hpp>
 #include <PasTools.hpp>
 #include "HistoryComboBox.hpp"
-#include <WinInterface.h>
+#include "PathLabel.hpp"
 #include <Vcl.Imaging.pngimage.hpp>
 #include <Vcl.Menus.hpp>
+#include <WinInterface.h>
 #include <WinConfiguration.h>
-#include "PathLabel.hpp"
+#include <GUITools.h>
 //----------------------------------------------------------------------------
 class TCustomCommandList;
 class TEditorList;
@@ -522,6 +523,8 @@ protected:
   void __fastcall FileColorMove(int Source, int Dest);
   void __fastcall UpdateFileColorsView();
   void __fastcall AddEditFileColor(bool Edit);
+
+  INTERFACE_HOOK;
 };
 //----------------------------------------------------------------------------
 #endif

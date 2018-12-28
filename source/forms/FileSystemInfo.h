@@ -11,6 +11,8 @@
 #include <Vcl.ActnList.hpp>
 #include <Vcl.StdActns.hpp>
 //----------------------------------------------------------------------------
+#include <GUITools.h>
+//----------------------------------------------------------------------------
 typedef void __fastcall (__closure *TFeedFileSystemData)
   (TControl * Control, int Label, UnicodeString Value);
 //----------------------------------------------------------------------------
@@ -95,6 +97,8 @@ private:
   void __fastcall NeedSpaceAvailable();
   bool __fastcall SpaceAvailableSupported();
   void __fastcall FeedControls();
+
+  INTERFACE_HOOK;
 };
 //----------------------------------------------------------------------------
 #endif

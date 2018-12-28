@@ -8,9 +8,10 @@
 #include <Forms.hpp>
 #include <HistoryComboBox.hpp>
 #include <CustomDirView.hpp>
-
-#include <WinInterface.h>
 #include <Buttons.hpp>
+//---------------------------------------------------------------------------
+#include <WinInterface.h>
+#include <GUITools.h>
 //---------------------------------------------------------------------------
 class TSelectMaskDialog : public TForm
 {
@@ -44,6 +45,8 @@ private:
 
   void __fastcall ColorChange(TColor Color);
   void __fastcall UpdateControls();
+
+  INTERFACE_HOOK;
 
 public:
   enum TMode { smSelect, smDeselect, smFilter, smFileColor };

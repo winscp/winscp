@@ -13,10 +13,9 @@
 #include <Vcl.Graphics.hpp>
 #include <Vcl.Menus.hpp>
 #include <Vcl.StdCtrls.hpp>
-//----------------------------------------------------------------------------
-#include "Rights.h"
-#include "RightsExt.h"
 #include <Menus.hpp>
+//----------------------------------------------------------------------------
+#include <GUITools.h>
 //----------------------------------------------------------------------------
 struct TCalculateSizeStats;
 //----------------------------------------------------------------------------
@@ -120,6 +119,8 @@ protected:
   void __fastcall LoadStats(__int64 FilesSize, const TCalculateSizeStats & Stats);
   virtual void __fastcall Dispatch(void * Message);
   void __fastcall UpdateFileImage();
+
+  INTERFACE_HOOK;
 
 public:
   virtual __fastcall TPropertiesDialog(TComponent * AOwner,

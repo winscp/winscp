@@ -7,13 +7,14 @@
 #include <StdCtrls.hpp>
 #include <Forms.hpp>
 #include <HistoryComboBox.hpp>
-
-#include <WinInterface.h>
 #include "GrayedCheckBox.hpp"
 #include <ComCtrls.hpp>
 #include <ExtCtrls.hpp>
 #include <Vcl.Imaging.pngimage.hpp>
 #include <Vcl.Menus.hpp>
+//---------------------------------------------------------------------------
+#include <WinInterface.h>
+#include <GUITools.h>
 //---------------------------------------------------------------------------
 struct TLogItemData;
 //---------------------------------------------------------------------------
@@ -132,6 +133,8 @@ protected:
   void __fastcall SaveHistory();
   void __fastcall UpdateControls();
   bool __fastcall AllowStartInNewWindow();
+
+  INTERFACE_HOOK;
 
 public:
   __fastcall TSynchronizeDialog(TComponent * Owner);
