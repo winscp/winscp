@@ -73,7 +73,7 @@ protected:
   UnicodeString __fastcall GenerateUrl();
   UnicodeString __fastcall GenerateScript(UnicodeString & ScriptDescription);
   UnicodeString __fastcall GenerateAssemblyCode(UnicodeString & AssemblyDescription);
- void __fastcall AddSampleDescription(UnicodeString & Description);
+  void __fastcall AddSampleDescription(UnicodeString & Description);
 
 public:
   __fastcall TGenerateUrlDialog(
