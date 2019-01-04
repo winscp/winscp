@@ -187,20 +187,17 @@ class TUIStateAwareLabel : public TLabel
 protected:
   DYNAMIC void __fastcall DoDrawText(TRect & Rect, int Flags);
 };
+// FindComponentClass takes parameter by referece and as such it cannot be implemented in
+// an inline method without a compiler warning, which we cannot suppress in a macro.
+// And having the implementation in a real code (not macro) also allows us to debug the code.
+void __fastcall FindComponentClass(
+  void * Data, TReader * Reader, const UnicodeString ClassName, TComponentClass & ComponentClass);
 #define INTERFACE_HOOK \
   protected: \
     virtual void __fastcall ReadState(TReader * Reader) \
     { \
-      Reader->OnFindComponentClass = FindComponentClass; \
+      Reader->OnFindComponentClass = MakeMethod<TFindComponentClassEvent>(NULL, FindComponentClass); \
       TForm::ReadState(Reader); \
-    } \
-  \
-    void __fastcall FindComponentClass(TReader * Reader, const UnicodeString ClassName, TComponentClass & ComponentClass) \
-    { \
-      if (ComponentClass == __classid(TLabel)) \
-      { \
-        ComponentClass = __classid(TUIStateAwareLabel); \
-      } \
     }
 //---------------------------------------------------------------------------
 extern const UnicodeString PageantTool;

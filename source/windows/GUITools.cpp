@@ -2096,3 +2096,12 @@ void __fastcall TUIStateAwareLabel::DoDrawText(TRect & Rect, int Flags)
   }
   TLabel::DoDrawText(Rect, Flags);
 }
+//---------------------------------------------------------------------------
+void __fastcall FindComponentClass(
+  void *, TReader *, const UnicodeString DebugUsedArg(ClassName), TComponentClass & ComponentClass)
+{
+  if (ComponentClass == __classid(TLabel))
+  {
+    ComponentClass = __classid(TUIStateAwareLabel);
+  }
+}
