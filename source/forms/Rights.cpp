@@ -276,7 +276,7 @@ bool __fastcall TRightsFrame::HasFocus()
 void __fastcall TRightsFrame::RightsActionsExecute(TBasicAction * Action,
   bool & Handled)
 {
-  // prevent shortcuts to be avaluated when frame does not have a focus
+  // prevent shortcuts to be evaluated when frame does not have a focus
   if (HasFocus())
   {
     bool Changed = true;
