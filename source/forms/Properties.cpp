@@ -231,6 +231,13 @@ void __fastcall TPropertiesDialog::LoadInfo()
     FilesSize += File->Size;
   }
 
+  if (!FMultiple)
+  {
+    // Show only file name, if we have only single file/directory.
+    // For directory, this changes, once "Calculate" button is pressed
+    Stats = TCalculateSizeStats();
+  }
+
   LoadRemoteTokens(GroupComboBox, FGroupList);
   LoadRemoteTokens(OwnerComboBox, FUserList);
 
