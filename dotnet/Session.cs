@@ -963,6 +963,7 @@ namespace WinSCP
                         }
                         else if (groupReader.IsNonEmptyElement(TransferEventArgs.MkDirTag))
                         {
+                            AddSynchronizationTransfer(result, transfer);
                             transfer = null;
                             mkdir = true;
                             // For now, silently ignoring results (even errors)
