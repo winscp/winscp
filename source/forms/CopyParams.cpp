@@ -23,7 +23,7 @@
 __fastcall TCopyParamsFrame::TCopyParamsFrame(TComponent* Owner)
         : TFrame(Owner)
 {
-  FRightsFrame = new TRightsExtFrame(this);
+  FRightsFrame = new TRightsFrame(this);
   FRightsFrame->TabStop = false;
   FRightsFrame->Parent = this;
   FRightsFrame->TabOrder = 1000;

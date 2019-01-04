@@ -45,7 +45,7 @@ __published:
   TBevel *RecursiveBevel;
   TCheckBox *RecursiveCheck;
   TButton *CalculateSizeButton;
-  TRightsExtFrame *RightsFrame;
+  TRightsFrame *RightsFrame;
   TButton *HelpButton;
   TTabSheet *ChecksumSheet;
   TListView *ChecksumView;

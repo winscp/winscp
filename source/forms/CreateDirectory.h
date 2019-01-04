@@ -25,7 +25,7 @@ __published:
   TButton *HelpButton;
   TPanel *MorePanel;
   TGroupBox *AttributesGroup;
-  TRightsExtFrame *RightsFrame;
+  TRightsFrame *RightsFrame;
   TCheckBox *SetRightsCheck;
   TCheckBox *SaveSettingsCheck;
   void __fastcall ControlChange(TObject *Sender);

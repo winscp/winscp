@@ -65,7 +65,7 @@ private:
   UnicodeString FOrigMasks;
   TCopyParamType * FParams;
   int FCopyParamAttrs;
-  TRightsExtFrame * FRightsFrame;
+  TRightsFrame * FRightsFrame;
   bool FRemoveCtrlZ;
   void __fastcall SetParams(TCopyParamType value);
   TCopyParamType __fastcall GetParams();

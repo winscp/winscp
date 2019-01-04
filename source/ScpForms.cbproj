@@ -277,14 +277,6 @@
 			<BuildOrder>101</BuildOrder>
 		</CppCompile>
 		<FormResources Include="forms\Rights.dfm"/>
-		<CppCompile Include="forms\RightsExt.cpp">
-			<BuildOrder>17</BuildOrder>
-			<Form>RightsExtFrame</Form>
-			<DesignClass>TFrame</DesignClass>
-			<DependentOn>forms\RightsExt.h</DependentOn>
-			<BuildOrder>104</BuildOrder>
-		</CppCompile>
-		<FormResources Include="forms\RightsExt.dfm"/>
 		<CppCompile Include="forms\SelectMask.cpp">
 			<BuildOrder>14</BuildOrder>
 			<Form>SelectMaskDialog</Form>

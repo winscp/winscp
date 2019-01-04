@@ -185,7 +185,7 @@ object PropertiesDialog: TPropertiesDialog
         Anchors = [akLeft, akTop, akRight]
         Shape = bsTopLine
       end
-      inline RightsFrame: TRightsExtFrame
+      inline RightsFrame: TRightsFrame
         Left = 84
         Top = 200
         Width = 244
