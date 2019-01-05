@@ -7847,6 +7847,12 @@ TTerminal::TEncryptedFileNames::const_iterator __fastcall TTerminal::GetEncrypte
       {
         throw;
       }
+
+      if (FEncryptedFileNames.find(Path) == FEncryptedFileNames.end())
+      {
+        FEncryptedFileNames.insert(std::make_pair(Path, Path));
+        LogEvent(2, FORMAT(L"Name of file '%s' assumed not to be encrypted", (Path)));
+      }
     }
 
     FFoldersScannedForEncryptedFiles.insert(FileDir);
