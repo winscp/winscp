@@ -7,14 +7,15 @@
 #include <StdCtrls.hpp>
 #include <Forms.hpp>
 #include <Buttons.hpp>
-
-#include <RemoteFiles.h>
 #include <ActnList.hpp>
 #include <ImgList.hpp>
 #include <Menus.hpp>
 #include "GrayedCheckBox.hpp"
 #include "PngImageList.hpp"
 #include <System.Actions.hpp>
+//---------------------------------------------------------------------------
+#include <RemoteFiles.h>
+#include <GUITools.h>
 //---------------------------------------------------------------------------
 class TRightsFrame : public TFrame
 {
@@ -133,6 +134,8 @@ protected:
   bool __fastcall DirectoriesXEffective();
   void __fastcall UpdateOctalEdit();
   void __fastcall UpdateByOctal();
+
+  INTERFACE_HOOK_CUSTOM(TFrame);
 
   __property TRights::TState States[TRights::TRight Right] = { read = GetStates, write = SetStates };
 };

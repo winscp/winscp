@@ -192,13 +192,14 @@ protected:
 // And having the implementation in a real code (not macro) also allows us to debug the code.
 void __fastcall FindComponentClass(
   void * Data, TReader * Reader, const UnicodeString ClassName, TComponentClass & ComponentClass);
-#define INTERFACE_HOOK \
+#define INTERFACE_HOOK_CUSTOM(PARENT) \
   protected: \
     virtual void __fastcall ReadState(TReader * Reader) \
     { \
       Reader->OnFindComponentClass = MakeMethod<TFindComponentClassEvent>(NULL, FindComponentClass); \
-      TForm::ReadState(Reader); \
+      PARENT::ReadState(Reader); \
     }
+#define INTERFACE_HOOK INTERFACE_HOOK_CUSTOM(TForm)
 //---------------------------------------------------------------------------
 extern const UnicodeString PageantTool;
 extern const UnicodeString PuttygenTool;

@@ -2,9 +2,10 @@
 #include <vcl.h>
 #pragma hdrstop
 
+#include <Common.h>
+
 #include "NonVisual.h"
 
-#include <Common.h>
 #include <CoreMain.h>
 #include <TextsWin.h>
 #include <Tools.h>

@@ -2,9 +2,9 @@
 #include <vcl.h>
 #pragma hdrstop
 
-#include "Rights.h"
-
 #include <Common.h>
+
+#include "Rights.h"
 
 #include <VCLCommon.h>
 #include <Tools.h>
