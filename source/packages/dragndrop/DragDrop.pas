@@ -1900,8 +1900,7 @@ begin
               DROPEFFECT_LINK: Result := drLink;
               else
                 begin
-                  { dropped on no-drop location or }
-                  { cancelled by ddext after drop with move-effect }
+                  { dropped on no-drop location }
                   Result := drInvalid;
                 end;
             end;
