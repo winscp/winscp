@@ -7883,10 +7883,7 @@ UnicodeString __fastcall TTerminal::EncryptFileName(const UnicodeString & Path, 
         TEncryption Encryption(FEncryptKey);
         FileName = Encryption.EncryptFileName(FileName);
         FEncryptedFileNames.insert(std::make_pair(Path, FileName));
-        if (Configuration->ActualLogProtocol >= 2)
-        {
-          LogEvent(FORMAT(L"Name of file '%s' encrypted as '%s'", (Path, FileName)));
-        }
+        LogEvent(2, FORMAT(L"Name of file '%s' encrypted as '%s'", (Path, FileName)));
       }
     }
 
@@ -7919,10 +7916,9 @@ UnicodeString __fastcall TTerminal::DecryptFileName(const UnicodeString & Path)
     bool NotCached = (Iter == FEncryptedFileNames.end());
     if (Encrypted || NotCached)
     {
-      if ((Configuration->ActualLogProtocol >= 2) && Encrypted &&
-          (NotCached || (Iter->second != FileNameEncrypted)))
+      if (Encrypted && (NotCached || (Iter->second != FileNameEncrypted)))
       {
-        LogEvent(FORMAT(L"Name of file '%s' decrypted from '%s'", (Result, FileNameEncrypted)));
+        LogEvent(2, FORMAT(L"Name of file '%s' decrypted from '%s'", (Result, FileNameEncrypted)));
       }
       // This may overwrite another variant of encryption
       FEncryptedFileNames[Result] = FileNameEncrypted;
