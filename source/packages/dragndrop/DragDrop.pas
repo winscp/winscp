@@ -1725,21 +1725,23 @@ begin
      finally
         // nothing to do
      end;
-     if FRegistered or (FTargetEffects=0) or (FDragDropControl=nil) then exit;
-     try
-        // CoLockObjectExternal crashes debugging intermittently in C++ Builder 2010
-        {$IFNDEF IDE}
-        // Ensure that drag-and-drop interface stays in memory
-        CoLockObjectExternal(FDropTarget, True, False);
-        {$ENDIF}
-        if RegisterDragDrop(FDragDropControl.Handle, IDropTarget(FDropTarget))=S_OK then
-        begin
-             Result:=True;
-             FRegistered:=True;
+     if (not FRegistered) and (FTargetEffects <> 0) and (FDragDropControl <> nil) then
+     begin
+        try
+           // CoLockObjectExternal crashes debugging intermittently in C++ Builder 2010
+           {$IFNDEF IDE}
+           // Ensure that drag-and-drop interface stays in memory
+           CoLockObjectExternal(FDropTarget, True, False);
+           {$ENDIF}
+           if RegisterDragDrop(FDragDropControl.Handle, IDropTarget(FDropTarget))=S_OK then
+           begin
+                Result:=True;
+                FRegistered:=True;
+           end;
+        except
+           Result:=false;
+           FRegistered:=false;
         end;
-     except
-        Result:=false;
-        FRegistered:=false;
      end;
 end;
 
