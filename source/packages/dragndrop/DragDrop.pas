@@ -1948,61 +1948,6 @@ begin
         UnRegisterTarget;
 end;
 
-procedure SetMenuItemsStrings;
-begin
-{MP}{     case SysLocale.PriLangID of
-          LANG_GERMAN:
-             begin
-                  MICopyStr:='Hierher &kopieren';
-                  MIMoveStr:='Hierher &verschieben';
-                  MILinkStr:='Verknüpfung(en) hier &erstellen';
-                  MIAbortStr:='&Abbrechen';
-             end;
-          LANG_FRENCH:
-             begin // French
-                  MICopyStr:='&Copier ici';
-                  MIMoveStr:='&Transférer ici';
-                  MILinkStr:='&Créer un ou des raccourci(s) ici';
-                  MIAbortStr:='&Arrêt';
-             end;
-          LANG_ITALIAN:
-             begin // Italian
-                  MICopyStr:='&Copiare qui';
-                  MIMoveStr:='&Muoversi qui';
-                  MILinkStr:='&Scorciatoia(e) crea qui';
-                  MIAbortStr:='&Terminazione';
-             end;
-          LANG_POLISH:
-             begin // Polish
-                  MICopyStr:='&Kopiuj tutaj';
-                  MIMoveStr:='&Przenieœ tutaj';
-                  MILinkStr:='Utwórz &skrót(y) tutaj';
-                  MIAbortStr:='&Anuluj';
-             end;
-          LANG_PORTUGUESE:
-             begin // Portuguese
-                  MICopyStr:='&Copíe aqui';
-                  MIMoveStr:='&Mova aqui';
-                  MILinkStr:='&Atalho(s) cría aqui';
-                  MIAbortStr:='&Aborto';
-             end;
-          LANG_SPANISH:
-             begin // Spanish
-                  MICopyStr:='&Copie aquí';
-                  MIMoveStr:='&Muévase aquí';
-                  MILinkStr:='&Atajo(s) crea aquí ';
-                  MIAbortStr:='&Aborto';
-             end;
-          else
-             begin // English
-                  MICopyStr:=SCopyStr;'&Copy Here';
-                  MIMoveStr:=SMoveStr;'&Move Here';
-                  MILinkStr:=SLinkStr;'&Shortcut(s) Create Here';
-                  MIAbortStr:=SAbortStr;'&Abort';
-             end;
-     end;}{/MP}
-end;
-
 function TDragDrop.CopyToClipboard:Boolean;
 var DataObject:IDataObject;
 begin
@@ -2050,7 +1995,6 @@ initialization
   OleInitialize(nil);
   MouseHookHandle := 0;
   GInternalSource := nil;
-  SetMenuItemsStrings;
   // to avoid mix ups
   DDM_ProcessDropped := RegisterWindowMessage('DDM_ProcessDropped');
 
