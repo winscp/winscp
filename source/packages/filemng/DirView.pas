@@ -571,8 +571,8 @@ begin
     else
   begin
     case Effect of
-      DropEffect_Copy: FileOperator.Operation := foCopy;
-      DropEffect_Move: FileOperator.Operation := foMove;
+      DROPEFFECT_COPY: FileOperator.Operation := foCopy;
+      DROPEFFECT_MOVE: FileOperator.Operation := foMove;
     end;
   end;
 
@@ -1705,7 +1705,7 @@ begin
     else
   begin
     TargetPath := PathName;
-    RenameOnCollision := DDOwnerIsSource and (Effect = DropEffect_Copy);
+    RenameOnCollision := DDOwnerIsSource and (Effect = DROPEFFECT_COPY);
   end;
 
   if TargetPath <> '' then
@@ -3147,26 +3147,26 @@ procedure TDirView.DDChooseEffect(grfKeyState: Integer;
   var dwEffect: Integer);
 begin
   if DragDropFilesEx.OwnerIsSource and
-     (dwEffect = DropEffect_Copy) and (not Assigned(DropTarget)) then
+     (dwEffect = DROPEFFECT_COPY) and (not Assigned(DropTarget)) then
   begin
-    dwEffect := DropEffect_None
+    dwEffect := DROPEFFECT_NONE
   end
     else
   if (grfKeyState and (MK_CONTROL or MK_SHIFT) = 0) then
   begin
     if ExeDrag and DriveInfo.IsFixedDrive(DriveInfo.GetDriveKey(Path)) and DriveInfo.IsFixedDrive(FDragDrive) then
     begin
-      dwEffect := DropEffect_Link
+      dwEffect := DROPEFFECT_LINK
     end
       else
     begin
       if DragOnDriveIsMove and
          (not DDOwnerIsSource or Assigned(DropTarget)) and
-         ((SameText(FDragDrive, DriveInfo.GetDriveKey(Path)) and (dwEffect = DropEffect_Copy) and
-         (DragDropFilesEx.AvailableDropEffects and DropEffect_Move <> 0))
+         ((SameText(FDragDrive, DriveInfo.GetDriveKey(Path)) and (dwEffect = DROPEFFECT_COPY) and
+         (DragDropFilesEx.AvailableDropEffects and DROPEFFECT_MOVE <> 0))
            or IsRecycleBin) then
       begin
-        dwEffect := DropEffect_Move;
+        dwEffect := DROPEFFECT_MOVE;
       end;
     end;
   end;
@@ -3207,7 +3207,7 @@ begin
           Screen.Cursor := crHourGlass;
           WatchForChanges := False;
 
-          if Effect in [DropEffect_Copy, DropEffect_Move] then
+          if Effect in [DROPEFFECT_COPY, DROPEFFECT_MOVE] then
           begin
             StopWatchThread;
 
@@ -3229,7 +3229,7 @@ begin
             end;
           end
             else
-          if Effect = DropEffect_Link then
+          if Effect = DROPEFFECT_LINK then
           (* Create Link requested: *)
           begin
             StopWatchThread;
@@ -3246,7 +3246,7 @@ begin
           if Assigned(DropSourceControl) and
              (DropSourceControl is TDirView) and
              (DropSourceControl <> Self) and
-             (Effect = DropEffect_Move) then
+             (Effect = DROPEFFECT_MOVE) then
           begin
             TDirView(DropSourceControl).ValidateSelectedFiles;
           end;
@@ -3260,7 +3260,7 @@ begin
               except
               end;
 
-              if (Effect = DropEffect_Move) or IsRecycleBin then
+              if (Effect = DROPEFFECT_MOVE) or IsRecycleBin then
               try
                 Node := FindNodeToPath(SourcePath);
                 if Assigned(Node) and Assigned(Node.Parent) then
@@ -3411,19 +3411,19 @@ begin
     case LastClipBoardOperation of
       cboNone:
         begin
-          PerformDragDropFileOperation(TargetPath, DropEffect_Copy, False, True);
-          if Assigned(OnDDExecuted) then OnDDExecuted(Self, DropEffect_Copy);
+          PerformDragDropFileOperation(TargetPath, DROPEFFECT_COPY, False, True);
+          if Assigned(OnDDExecuted) then OnDDExecuted(Self, DROPEFFECT_COPY);
         end;
       cboCopy:
         begin
-          PerformDragDropFileOperation(TargetPath, DropEffect_Copy,
+          PerformDragDropFileOperation(TargetPath, DROPEFFECT_COPY,
             ExcludeTrailingPathDelimiter(ExtractFilePath(TFDDListItem(DragDropFilesEx.FileList[0]^).Name)) = Path, True);
-          if Assigned(OnDDExecuted) then OnDDExecuted(Self, DropEffect_Copy);
+          if Assigned(OnDDExecuted) then OnDDExecuted(Self, DROPEFFECT_COPY);
         end;
       cboCut:
         begin
-          PerformDragDropFileOperation(TargetPath, DropEffect_Move, False, True);
-          if Assigned(OnDDExecuted) then OnDDExecuted(Self, DropEffect_Move);
+          PerformDragDropFileOperation(TargetPath, DROPEFFECT_MOVE, False, True);
+          if Assigned(OnDDExecuted) then OnDDExecuted(Self, DROPEFFECT_MOVE);
           EmptyClipBoard;
         end;
     end;

@@ -2460,20 +2460,20 @@ end;
 
 procedure TDriveView.DDChooseEffect(KeyState: Integer; var Effect: Integer);
 begin
-  if DropTarget = nil then Effect := DropEffect_None
+  if DropTarget = nil then Effect := DROPEFFECT_NONE
     else
   if (KeyState and (MK_CONTROL or MK_SHIFT) = 0) then
   begin
     if FExeDrag and DriveInfo.IsFixedDrive(GetDriveToNode(DropTarget)) and DriveInfo.IsFixedDrive(FDragDrive) then
     begin
-      Effect := DropEffect_Link;
+      Effect := DROPEFFECT_LINK;
     end
       else
-    if (Effect = DropEffect_Copy) and
+    if (Effect = DROPEFFECT_COPY) and
        (SameText(FDragDrive, GetDriveToNode(DropTarget)) and
-         (FDragDropFilesEx.AvailableDropEffects and DropEffect_Move <> 0)) then
+         (FDragDropFilesEx.AvailableDropEffects and DROPEFFECT_MOVE <> 0)) then
     begin
-      Effect := DropEffect_Move;
+      Effect := DROPEFFECT_MOVE;
     end;
   end;
 
@@ -2538,7 +2538,7 @@ begin
   SourcePath := EmptyStr;
 
   try
-    if (Effect = DropEffect_Copy) or (Effect = DropEffect_Move) then
+    if (Effect = DROPEFFECT_COPY) or (Effect = DROPEFFECT_MOVE) then
     begin
       StopAllWatchThreads;
       if Assigned(FDirView) then
@@ -2563,7 +2563,7 @@ begin
       SourceParentPath := ExtractFilePath(ExcludeTrailingBackslash(SourcePath));
     end
       else
-    if Effect = DropEffect_Link then
+    if Effect = DROPEFFECT_LINK then
     { Create Link requested: }
     begin
       for Index := 0 to FDragDropFilesEx.FileList.Count - 1 do
@@ -2575,11 +2575,11 @@ begin
       end;
     end;
 
-    if Effect = DropEffect_Move then
+    if Effect = DROPEFFECT_MOVE then
       Items.BeginUpdate;
 
     {Update source directory, if move-operation was performed:}
-    if ((Effect = DropEffect_Move) or IsRecycleBin) then
+    if ((Effect = DROPEFFECT_MOVE) or IsRecycleBin) then
     begin
       ValidateDirectory(FindNodeToPath(SourceParentPath));
     end;
@@ -2591,19 +2591,19 @@ begin
     else
       ValidateDirectory(GetDriveStatus(DriveInfo.GetDriveKey(TargetPath)).RootNode);
 
-    if Effect = DropEffect_Move then
+    if Effect = DROPEFFECT_MOVE then
       Items.EndUpdate;
 
     {Update linked component TDirView:}
     if Assigned(FDirView) and (not FDirView.WatchThreadActive) then
     begin
       case Effect of
-        DropEffect_Copy,
-        DropEffect_Link:
+        DROPEFFECT_COPY,
+        DROPEFFECT_LINK:
           if (IncludeTrailingBackslash(TargetPath) = IncludeTrailingBackslash(DirView.Path)) then
             FDirView.Reload2;
 
-        DropEffect_Move:
+        DROPEFFECT_MOVE:
           if (IncludeTrailingBackslash(TargetPath) = IncludeTrailingBackslash(DirView.Path)) or
              (IncludeTrailingBackslash(SourceParentPath) = IncludeTrailingBackslash(DirView.Path)) then
           begin
@@ -2613,7 +2613,7 @@ begin
     end;
 
     {Update the DropSource control, if files are moved and it is a TDirView:}
-    if (Effect = DropEffect_Move) and (DropSourceControl is TDirView) then
+    if (Effect = DROPEFFECT_MOVE) and (DropSourceControl is TDirView) then
     begin
       TDirView(DropSourceControl).ValidateSelectedFiles;
     end;
@@ -2746,15 +2746,15 @@ begin
       cboCopy,
       cboNone:
         begin
-          PerformDragDropFileOperation(Selected, DropEffect_Copy);
+          PerformDragDropFileOperation(Selected, DROPEFFECT_COPY);
           if Assigned(FOnDDExecuted) then
-            FOnDDExecuted(Self, DropEffect_Copy);
+            FOnDDExecuted(Self, DROPEFFECT_COPY);
         end;
       cboCut:
         begin
-          PerformDragDropFileOperation(Selected, DropEffect_Move);
+          PerformDragDropFileOperation(Selected, DROPEFFECT_MOVE);
           if Assigned(FOnDDExecuted) then
-            FOnDDExecuted(Self, DropEffect_Move);
+            FOnDDExecuted(Self, DROPEFFECT_MOVE);
           EmptyClipBoard;
         end;
     end;

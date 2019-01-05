@@ -814,7 +814,7 @@ void __fastcall TUnixDirView::DDChooseEffect(int grfKeyState, int &dwEffect)
 {
   if ((grfKeyState & (MK_CONTROL | MK_SHIFT)) == 0)
   {
-    dwEffect = DROPEFFECT_Copy;
+    dwEffect = DROPEFFECT_COPY;
   }
 
   TCustomDirView::DDChooseEffect(grfKeyState, dwEffect);

@@ -231,7 +231,7 @@ resourcestring
 implementation
 
 uses
-  SysUtils, ShellApi, ImgList,
+  SysUtils, ShellApi, ImgList, ActiveX,
   IEListView, BaseUtils;
 
 constructor TCustomDriveView.Create(AOwner: TComponent);
@@ -422,7 +422,7 @@ begin
     FDragDrive := DriveInfo.GetDriveKey(TFDDListItem(FDragDropFilesEx.FileList[0]^).Name);
     FExeDrag := FDDLinkOnExeDrag and
       (deLink in DragDropFilesEx.TargetEffects) and
-      ((DragDropFilesEx.AvailableDropEffects and DropEffect_Link) <> 0);
+      ((DragDropFilesEx.AvailableDropEffects and DROPEFFECT_LINK) <> 0);
 
     if FExeDrag then
     begin
@@ -466,7 +466,7 @@ var
   UpdateImage: Boolean;
   LastDragNode: TTreeNode;
 begin
-  if Effect <> DropEffect_None then
+  if Effect <> DROPEFFECT_NONE then
   begin
     Node := GetNodeAt(Point.X, Point.Y);
 
@@ -508,9 +508,9 @@ begin
 
       {Drop-operation allowed at this location?}
       if Assigned(FDragNode) and
-         (Effect <> DropEffect_Link) and
+         (Effect <> DROPEFFECT_LINK) and
          ((Node = FDragNode) or Node.HasAsParent(FDragNode) or (FDragNode.Parent = Node)) then
-         Effect := DropEffect_None;
+         Effect := DROPEFFECT_NONE;
 
       FScrollOnDragOver.DragOver(Point);
     end {Assigned(Node)}
@@ -525,12 +525,12 @@ begin
   if Assigned(FOnDDDragOver) then
     FOnDDDragOver(Self, KeyState, Point, Effect);
 
-  if not Assigned(DropTarget) then Effect := DropEffect_None
+  if not Assigned(DropTarget) then Effect := DROPEFFECT_NONE
     else
   if NodeIsRecycleBin(DropTarget) then
   begin
-    if FDragDropFilesEx.FileNamesAreMapped then Effect := DropEffect_None
-      else Effect := DropEffect_Move;
+    if FDragDropFilesEx.FileNamesAreMapped then Effect := DROPEFFECT_NONE
+      else Effect := DROPEFFECT_MOVE;
   end;
 end; {DDDragOver}
 
@@ -540,7 +540,7 @@ begin
   if GlobalDragImageList.Dragging then
     GlobalDragImageList.HideDragImage;
 
-  if Effect = DropEffect_None then
+  if Effect = DROPEFFECT_NONE then
     DropTarget := nil;
 
   if Assigned(FOnDDDrop) then
@@ -620,7 +620,7 @@ begin
       begin
         if Assigned(FOnDDProcessDropped) then
           FOnDDProcessDropped(Self, KeyState, Point, Effect);
-        if Effect <> DropEffect_None then
+        if Effect <> DROPEFFECT_NONE then
         begin
           PerformDragDropFileOperation(DropTarget, Effect);
           if Assigned(FOnDDExecuted) then

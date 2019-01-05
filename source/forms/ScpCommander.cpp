@@ -1487,9 +1487,9 @@ void __fastcall TScpCommanderForm::LocalFileControlDDFileOperation(
       else
       {
         DebugAssert(FInternalDDDownloadList->Count > 0);
-        DebugAssert(dwEffect == DROPEFFECT_Copy || dwEffect == DROPEFFECT_Move);
+        DebugAssert(dwEffect == DROPEFFECT_COPY || dwEffect == DROPEFFECT_MOVE);
         TGUICopyParamType CopyParams = GUIConfiguration->CurrentCopyParam;
-        TTransferType TransferType = dwEffect == DROPEFFECT_Copy ? ttCopy : ttMove;
+        TTransferType TransferType = dwEffect == DROPEFFECT_COPY ? ttCopy : ttMove;
         int Options =
           FLAGMASK(DraggingAllFilesFromDirView(osRemote, FInternalDDDownloadList), coAllFiles);
         bool NoConfirmation = Paste ? false : (WinConfiguration->DDTransferConfirmation == asOff);
@@ -1513,7 +1513,7 @@ void __fastcall TScpCommanderForm::RemoteFileControlDDFileOperationExecuted(
   TObject * /*Sender*/, int dwEffect, UnicodeString /*SourcePath*/,
   UnicodeString /*TargetPath*/)
 {
-  if ((dwEffect == DROPEFFECT_Move) &&
+  if ((dwEffect == DROPEFFECT_MOVE) &&
       IsFileControl(DropSourceControl, osLocal))
   {
     ReloadLocalDirectory();

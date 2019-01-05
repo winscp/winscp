@@ -564,18 +564,18 @@ void __fastcall TCustomUnixDriveView::PerformDragDropFileOperation(
 void __fastcall TCustomUnixDriveView::DDChooseEffect(int KeyState, int & Effect)
 {
   // if any drop effect is allowed at all (e.g. no drop to self and drop to parent)
-  if (Effect != DROPEFFECT_None)
+  if (Effect != DROPEFFECT_NONE)
   {
     if (DropTarget != NULL)
     {
       if ((KeyState & (MK_CONTROL | MK_SHIFT)) == 0)
       {
-        Effect = DROPEFFECT_Copy;
+        Effect = DROPEFFECT_COPY;
       }
     }
     else
     {
-      Effect = DROPEFFECT_None;
+      Effect = DROPEFFECT_NONE;
     }
   }
 

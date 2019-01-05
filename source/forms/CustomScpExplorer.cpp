@@ -7908,18 +7908,18 @@ void __fastcall TCustomScpExplorerForm::RemoteFileContolDDChooseEffect(
   TObject * Sender, int grfKeyState, int & dwEffect)
 {
   // if any drop effect is allowed at all (e.g. no drop to self and drop to parent)
-  if ((dwEffect != DROPEFFECT_None) &&
+  if ((dwEffect != DROPEFFECT_NONE) &&
       IsFileControl(DropSourceControl, osRemote))
   {
     // do not allow drop on remote panel (on free space, still allow drop on directories)
     if ((Sender == RemoteDirView) && (DropSourceControl == RemoteDirView) &&
         (RemoteDirView->DropTarget == NULL))
     {
-      dwEffect = DROPEFFECT_None;
+      dwEffect = DROPEFFECT_NONE;
     }
     else
     {
-      if (dwEffect == DROPEFFECT_Copy)
+      if (dwEffect == DROPEFFECT_COPY)
       {
         bool MoveCapable = FTerminal->IsCapable[fcRemoteMove];
         // currently we support copying always (at least via temporary directory);
@@ -7928,7 +7928,7 @@ void __fastcall TCustomScpExplorerForm::RemoteFileContolDDChooseEffect(
         // if we do not support neither of operations, there's no discussion
         if (!MoveCapable && !CopyCapable)
         {
-          dwEffect = DROPEFFECT_None;
+          dwEffect = DROPEFFECT_NONE;
         }
         else
         {
@@ -7936,12 +7936,12 @@ void __fastcall TCustomScpExplorerForm::RemoteFileContolDDChooseEffect(
           // unless we do not support it, but support copy
           if (FLAGCLEAR(grfKeyState, MK_CONTROL))
           {
-            dwEffect = MoveCapable ? DROPEFFECT_Move : DROPEFFECT_Copy;
+            dwEffect = MoveCapable ? DROPEFFECT_MOVE : DROPEFFECT_COPY;
           }
           else
           {
             // with ctrl-down, we want copy unless it is not supported
-            dwEffect = CopyCapable ? DROPEFFECT_Copy : DROPEFFECT_None;
+            dwEffect = CopyCapable ? DROPEFFECT_COPY : DROPEFFECT_MOVE;
           }
         }
       }
@@ -9568,7 +9568,7 @@ void __fastcall TCustomScpExplorerForm::SessionsDDDragOver(int /*KeyState*/,
   int Index = SessionsPageControl->IndexOfTabAt(Point.X, Point.Y);
   if (Index < 0)
   {
-    Effect = DROPEFFECT_None;
+    Effect = DROPEFFECT_NONE;
   }
   else
   {
@@ -9576,11 +9576,11 @@ void __fastcall TCustomScpExplorerForm::SessionsDDDragOver(int /*KeyState*/,
     // do not allow dropping on the "+" tab
     if (TargetTerminal == NULL)
     {
-      Effect = DROPEFFECT_None;
+      Effect = DROPEFFECT_NONE;
     }
-    else if ((TargetTerminal != Terminal) && (Effect == DROPEFFECT_Move))
+    else if ((TargetTerminal != Terminal) && (Effect == DROPEFFECT_MOVE))
     {
-      Effect = DROPEFFECT_Copy;
+      Effect = DROPEFFECT_COPY;
     }
   }
 }

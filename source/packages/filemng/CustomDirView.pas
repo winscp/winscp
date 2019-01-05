@@ -2067,7 +2067,7 @@ begin
     FDragDrive := DriveInfo.GetDriveKey(TFDDListItem(DragDropFilesEx.FileList[0]^).Name);
     FExeDrag := FDDLinkOnExeDrag and
       (deLink in DragDropFilesEx.TargetEffects) and
-      ((DragDropFilesEx.AvailableDropEffects and DropEffect_Link) <> 0);
+      ((DragDropFilesEx.AvailableDropEffects and DROPEFFECT_LINK) <> 0);
 
     if FExeDrag then
     begin
@@ -2163,26 +2163,26 @@ begin
       begin
         if DropItem = ItemFocused then
         begin
-          dwEffect := DropEffect_None;
+          dwEffect := DROPEFFECT_NONE;
         end;
       end
         else
       if DropItem.Selected then
       begin
-        dwEffect := DropEffect_None;
+        dwEffect := DROPEFFECT_NONE;
       end;
     end;
 
-    if DragDropFilesEx.OwnerIsSource and (dwEffect = DropEffect_Move) and
+    if DragDropFilesEx.OwnerIsSource and (dwEffect = DROPEFFECT_MOVE) and
       (not Assigned(DropTarget)) then
     begin
-      dwEffect := DropEffect_None;
+      dwEffect := DROPEFFECT_NONE;
     end
       else
     if Assigned(DropTarget) and ItemIsRecycleBin(DropTarget) and
-       (dwEffect <> DropEffect_None) then
+       (dwEffect <> DROPEFFECT_NONE) then
     begin
-      dwEffect := DropEffect_Move;
+      dwEffect := DROPEFFECT_MOVE;
     end;
   end;
 end;
@@ -2251,7 +2251,7 @@ begin
   if GlobalDragImageList.Dragging then
     GlobalDragImageList.HideDragImage;
 
-  if dwEffect = DropEffect_None then
+  if dwEffect = DROPEFFECT_NONE then
     DropTarget := nil;
 
   if Assigned(OnDDDrop) then
@@ -2373,7 +2373,7 @@ begin
     try
       if Assigned(FOnDDProcessDropped) then
         FOnDDProcessDropped(Self, grfKeyState, Point, dwEffect);
-      if dwEffect <> DropEffect_None then
+      if dwEffect <> DROPEFFECT_NONE then
       begin
         PerformItemDragDropOperation(DropTarget, dwEffect, False);
         if Assigned(FOnDDExecuted) then

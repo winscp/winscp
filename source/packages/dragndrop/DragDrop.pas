@@ -55,24 +55,7 @@ uses
 
 {MP}(*$HPPEMIT '#include <oleidl.h>'*)
 
-// Available drop effects by the system:
-// (redefined, so need not to type "ActiveX" in the uses clause of your units )
-
 const
-  DROPEFFECT_None = ActiveX.DROPEFFECT_None;
-  DROPEFFECT_Copy = ActiveX.DROPEFFECT_Copy;
-  DROPEFFECT_Move = ActiveX.DROPEFFECT_Move;
-  DROPEFFECT_Link = ActiveX.DROPEFFECT_Link;
-  DROPEFFECT_Scroll = ActiveX.DROPEFFECT_Scroll;
-
-  TYMED_HGLOBAL = ActiveX.TYMED_HGLOBAL;
-  TYMED_FILE = ActiveX.TYMED_FILE;
-  TYMED_ISTREAM = ActiveX.TYMED_ISTREAM;
-  TYMED_ISTORAGE = ActiveX.TYMED_ISTORAGE;
-  TYMED_GDI = ActiveX.TYMED_GDI;
-  TYMED_MFPICT = ActiveX.TYMED_MFPICT;
-  TYMED_ENHMF = ActiveX.TYMED_ENHMF;
-  TYMED_NULL = ActiveX.TYMED_NULL;
   DefaultCursor = 0;
 
 type
@@ -664,7 +647,7 @@ begin
   if FIndex + celt <= FFormatEtcList.Count then
   begin
     Inc(FIndex, celt);
-    Result := S_Ok;
+    Result := S_OK;
   end
     else Result := S_False;
 end;
@@ -890,22 +873,22 @@ var
   HC: HCursor;
 begin
   if Assigned(FOwner.FOnGiveFeedback) then FOwner.FOnGiveFeedback(dwEffect,Result);
-  if dwEffect and DROPEFFECT_Scroll <> 0 then
+  if dwEffect and DROPEFFECT_SCROLL <> 0 then
   begin
-    if dwEffect and DROPEFFECT_Link <> 0 then HC := FOwner.FCHScrollLink
+    if dwEffect and DROPEFFECT_LINK <> 0 then HC := FOwner.FCHScrollLink
       else
-    if dwEffect and DROPEFFECT_Move <> 0 then HC := FOwner.FCHScrollMove
+    if dwEffect and DROPEFFECT_MOVE <> 0 then HC := FOwner.FCHScrollMove
       else
-    if dwEffect and DROPEFFECT_Copy <> 0 then HC := FOwner.FCHScrollCopy
+    if dwEffect and DROPEFFECT_COPY <> 0 then HC := FOwner.FCHScrollCopy
       else HC := DefaultCursor;
   end
     else
   begin
-    if dwEffect and DROPEFFECT_Link <> 0 then HC := FOwner.FCHLink
+    if dwEffect and DROPEFFECT_LINK <> 0 then HC := FOwner.FCHLink
       else
-    if dwEffect and DROPEFFECT_Move <> 0 then HC := FOwner.FCHMove
+    if dwEffect and DROPEFFECT_MOVE <> 0 then HC := FOwner.FCHMove
       else
-    if dwEffect and DROPEFFECT_Copy <> 0 then HC := FOwner.FCHCopy
+    if dwEffect and DROPEFFECT_COPY <> 0 then HC := FOwner.FCHCopy
       else HC := DefaultCursor;
   end;
 
@@ -915,7 +898,7 @@ begin
   end
     else
   begin
-    Result := S_Ok;
+    Result := S_OK;
     Windows.SetCursor(HC);
   end;
 end;
@@ -924,1062 +907,1106 @@ end;
 
 constructor TDropTarget.Create(AOwner: TDragDrop);
 begin
-     inherited Create;
-     FOwner:=AOwner;
-     _AddRef;
-     HorzStartTimer:=TTimer.Create(FOwner);
-     HorzStartTimer.Enabled:=False;
-     HorzStartTimer.OnTimer:=OnStartTimer;
-     HorzScrollTimer:=TTimer.Create(FOwner);
-     HorzScrollTimer.Enabled:=False;
-     HorzScrollTimer.OnTimer:=OnScrollTimer;
-     VertStartTimer:=TTimer.Create(FOwner);
-     VertStartTimer.Enabled:=False;
-     VertStartTimer.OnTimer:=OnStartTimer;
-     VertScrollTimer:=TTimer.Create(FOwner);
-     VertScrollTimer.Enabled:=False;
-     VertScrollTimer.OnTimer:=OnScrollTimer;
-     FVScrollCode:=0;
-     FHScrollCode:=0;
+  inherited Create;
+  FOwner := AOwner;
+  _AddRef;
+  HorzStartTimer := TTimer.Create(FOwner);
+  HorzStartTimer.Enabled := False;
+  HorzStartTimer.OnTimer := OnStartTimer;
+  HorzScrollTimer := TTimer.Create(FOwner);
+  HorzScrollTimer.Enabled := False;
+  HorzScrollTimer.OnTimer := OnScrollTimer;
+  VertStartTimer := TTimer.Create(FOwner);
+  VertStartTimer.Enabled := False;
+  VertStartTimer.OnTimer := OnStartTimer;
+  VertScrollTimer := TTimer.Create(FOwner);
+  VertScrollTimer.Enabled := False;
+  VertScrollTimer.OnTimer := OnScrollTimer;
+  FVScrollCode := 0;
+  FHScrollCode := 0;
 end;
 
 destructor TDropTarget.Destroy;
 begin
-     HorzStartTimer.Free;
-     HorzScrollTimer.Free;
-     VertStartTimer.Free;
-     VertScrollTimer.Free;
-     inherited Destroy;
+  HorzStartTimer.Free;
+  HorzScrollTimer.Free;
+  VertStartTimer.Free;
+  VertScrollTimer.Free;
+  inherited Destroy;
 end;
 
-procedure TDropTarget.InitScroll(VerticalScroll:Boolean; ScrollCode:Integer);
+procedure TDropTarget.InitScroll(VerticalScroll: Boolean; ScrollCode: Integer);
 begin
-     TermScroll(VerticalScroll);
-     if VerticalScroll then
-     begin
-          VertStartTimer.Interval:=FOwner.FScrollDetectOptions.FStartDelay;
-          VertStartTimer.Enabled:=True;
-          FVScrollCode:=ScrollCode;
-     end
-     else
-     begin
-          HorzStartTimer.Interval:=FOwner.FScrollDetectOptions.FStartDelay;
-          HorzStartTimer.Enabled:=True;
-          FHScrollCode:=ScrollCode;
-     end;
+  TermScroll(VerticalScroll);
+  if VerticalScroll then
+  begin
+    VertStartTimer.Interval := FOwner.FScrollDetectOptions.FStartDelay;
+    VertStartTimer.Enabled := True;
+    FVScrollCode := ScrollCode;
+  end
+    else
+  begin
+    HorzStartTimer.Interval := FOwner.FScrollDetectOptions.FStartDelay;
+    HorzStartTimer.Enabled := True;
+    FHScrollCode := ScrollCode;
+  end;
 end;
 
-procedure TDropTarget.TermScroll(VerticalScroll:Boolean);
+procedure TDropTarget.TermScroll(VerticalScroll: Boolean);
 begin
-     if VerticalScroll then
-     begin
-          VertStartTimer.Enabled:=False;
-          if VertScrollTimer.Enabled then
-             sendmessage(FOwner.DragDropControl.handle,WM_VScroll,SB_ENDSCROLL,0);
-          VertScrollTimer.Enabled:=False;
-          FVScrollCode:=0;
-     end
-     else
-     begin
-          HorzStartTimer.Enabled:=False;
-          if HorzScrollTimer.Enabled then
-             sendmessage(FOwner.DragDropControl.handle,WM_HScroll,SB_ENDSCROLL,0);
-          HorzScrollTimer.Enabled:=False;
-          FHScrollCode:=0;
-     end;
+  if VerticalScroll then
+  begin
+    VertStartTimer.Enabled := False;
+    if VertScrollTimer.Enabled then
+      SendMessage(FOwner.DragDropControl.Handle, WM_VSCROLL, SB_ENDSCROLL, 0);
+    VertScrollTimer.Enabled := False;
+    FVScrollCode := 0;
+  end
+    else
+  begin
+    HorzStartTimer.Enabled := False;
+    if HorzScrollTimer.Enabled then
+      SendMessage(FOwner.DragDropControl.Handle, WM_HSCROLL, SB_ENDSCROLL, 0);
+    HorzScrollTimer.Enabled := False;
+    FHScrollCode := 0;
+  end;
 end;
 
-procedure TDropTarget.DetermineScrollDir(VertScrolling:Boolean;
-   var ScrollCode:Integer);
-var p1m,p1r,p2m,p2r:Integer;
-    ptmc:TPoint;
-    SCROLLINFO:TSCROLLINFO;
+procedure TDropTarget.DetermineScrollDir(VertScrolling: Boolean; var ScrollCode: Integer);
+var
+  p1m, p1r, p2m, p2r: Integer;
+  ptmc: TPoint;
+  ScrollInfo: TScrollInfo;
 begin
-     GetCursorPos(ptmc);
-     ptmc:=FOwner.DragDropControl.ScreenToClient(ptmc);
-     if VertScrolling then
-     begin
-          // Checking vertical scroll areas ...
-          // If the vertical scroll areas intersect, we don't allow scrolling
-          p1m:=FOwner.FScrollDetectOptions.AreaTop.Margin;
-          p1r:=p1m+FOwner.ScrollDetectOptions.AreaTop.Range;
-          p2m:=FOwner.DragDropControl.ClientHeight-1-
-             FOwner.ScrollDetectOptions.AreaBottom.Margin;
-          p2r:=p2m-FOwner.ScrollDetectOptions.AreaBottom.Range;
-          if (p1r<p2r) then
+  GetCursorPos(ptmc);
+  ptmc := FOwner.DragDropControl.ScreenToClient(ptmc);
+  if VertScrolling then
+  begin
+    // Checking vertical scroll areas ...
+    // If the vertical scroll areas intersect, we don't allow scrolling
+    p1m := FOwner.FScrollDetectOptions.AreaTop.Margin;
+    p1r := p1m + FOwner.ScrollDetectOptions.AreaTop.Range;
+    p2m := FOwner.DragDropControl.ClientHeight - 1 - FOwner.ScrollDetectOptions.AreaBottom.Margin;
+    p2r := p2m - FOwner.ScrollDetectOptions.AreaBottom.Range;
+    if p1r < p2r then
+    begin
+      if (p1m <= ptmc.y) and (p1r >= ptmc.y) then ScrollCode := 1
+        else
+      if (p2m >= ptmc.y) and (p2r <= ptmc.y) then ScrollCode := 2
+        else ScrollCode := 0;
+
+      if ScrollCode > 0 then
+      begin
+        ScrollInfo.cbSize := Sizeof(ScrollInfo);
+        ScrollInfo.FMask := SIF_PAGE or SIF_POS or SIF_RANGE;
+        if GetScrollInfo(FOwner.DragDropControl.Handle, SB_VERT, ScrollInfo) then
+        begin
+          if ScrollInfo.nPage > 0 then Dec(ScrollInfo.nPage);
+
+          if ((ScrollCode=1) and (ScrollInfo.nPos <= ScrollInfo.nMin)) or
+             ((ScrollCode=2) and (ScrollInfo.nPos >= ScrollInfo.nMax - Integer(ScrollInfo.nPage))) then
           begin
-               if (p1m<=ptmc.y) and (p1r>=ptmc.y) then ScrollCode:=1
-               else if (p2m>=ptmc.y) and (p2r<=ptmc.y) then ScrollCode:=2
-                    else ScrollCode:=0;
-               if ScrollCode>0 then
-               begin
-                    ScrollInfo.cbSize := Sizeof(ScrollInfo);
-                    ScrollInfo.FMask:=SIF_PAGE or SIF_POS or SIF_RANGE;
-                    if GetScrollInfo(FOwner.DragDropControl.Handle,SB_VERT,
-                       ScrollInfo) then
-                    begin
-                         if ScrollInfo.nPage>0 then dec(ScrollInfo.nPage);
-                         if ((ScrollCode=1) and (ScrollInfo.nPos<=ScrollInfo.nMin)) or
-                            ((ScrollCode=2) and
-                             (ScrollInfo.nPos>=ScrollInfo.nMax-Integer(ScrollInfo.nPage))) then
-                            ScrollCode:=0;
-                    end
-                    else ScrollCode:=0;
-               end;
-          end
-          else ScrollCode:=0;
-     end
-     else
-     begin
-          // Checking horizontal scroll areas ...
-          // If the horizontal scroll areas intersect, we don't allow scrolling
-          p1m:=FOwner.FScrollDetectOptions.AreaLeft.Margin;
-          p1r:=p1m+FOwner.ScrollDetectOptions.AreaLeft.Range;
-          p2m:=FOwner.DragDropControl.ClientWidth-1-
-             FOwner.ScrollDetectOptions.AreaRight.Margin;
-          p2r:=p2m-FOwner.ScrollDetectOptions.AreaRight.Range;
-          if (p1r<p2r) then
+            ScrollCode := 0;
+          end;
+        end
+          else ScrollCode := 0;
+      end;
+    end
+      else ScrollCode := 0;
+  end
+    else
+  begin
+    // Checking horizontal scroll areas ...
+    // If the horizontal scroll areas intersect, we don't allow scrolling
+    p1m := FOwner.FScrollDetectOptions.AreaLeft.Margin;
+    p1r := p1m + FOwner.ScrollDetectOptions.AreaLeft.Range;
+    p2m := FOwner.DragDropControl.ClientWidth - 1 - FOwner.ScrollDetectOptions.AreaRight.Margin;
+    p2r := p2m - FOwner.ScrollDetectOptions.AreaRight.Range;
+    if p1r < p2r then
+    begin
+      if (p1m <= ptmc.x) and (p1r >= ptmc.x) then ScrollCode := 1
+        else
+      if (p2m >= ptmc.x) and (p2r <= ptmc.x) then ScrollCode := 2
+        else ScrollCode := 0;
+
+      if ScrollCode>0 then
+      begin
+        ScrollInfo.cbSize := Sizeof(ScrollInfo);
+        ScrollInfo.FMask := SIF_PAGE or SIF_POS or SIF_RANGE;
+        if GetScrollInfo(FOwner.DragDropControl.Handle, SB_HORZ, ScrollInfo) then
+        begin
+          if ScrollInfo.nPage > 0 then Dec(ScrollInfo.nPage);
+
+          if ((ScrollCode=1) and (ScrollInfo.nPos <= ScrollInfo.nMin)) or
+             ((ScrollCode=2) and (ScrollInfo.nPos >= ScrollInfo.nMax - Integer(ScrollInfo.nPage))) then
           begin
-               if (p1m<=ptmc.x) and (p1r>=ptmc.x) then ScrollCode:=1
-               else if (p2m>=ptmc.x) and (p2r<=ptmc.x) then ScrollCode:=2
-                    else ScrollCode:=0;
-               if ScrollCode>0 then
-               begin
-                    ScrollInfo.cbSize := Sizeof(ScrollInfo);
-                    ScrollInfo.FMask:=SIF_PAGE or SIF_POS or SIF_RANGE;
-                    if GetScrollInfo(FOwner.DragDropControl.Handle,SB_Horz,
-                       ScrollInfo) then
-                    begin
-                         if ScrollInfo.nPage>0 then dec(ScrollInfo.nPage);
-                         if ((ScrollCode=1) and (ScrollInfo.nPos<=ScrollInfo.nMin)) or
-                            ((ScrollCode=2) and
-                             (ScrollInfo.nPos>=ScrollInfo.nMax-Integer(ScrollInfo.nPage))) then
-                            ScrollCode:=0;
-                    end
-                    else ScrollCode:=0;
-               end;
-          end
-          else ScrollCode:=0;
-     end;
+             ScrollCode := 0;
+          end;
+        end
+          else ScrollCode := 0;
+      end;
+    end
+      else ScrollCode := 0;
+  end;
 end;
 
 procedure TDropTarget.OnStartTimer(Sender: TObject);
+var
+  StartTimer: TTimer;
+  ScrollTimer: TTimer;
 begin
-     if Sender=HorzStartTimer then
-     begin
-          HorzStartTimer.Enabled:=False;
-          HorzScrollTimer.Interval:=FOwner.FScrollDetectOptions.FScrollDelay;
-          OnScrollTimer(HorzScrollTimer);
-          HorzScrollTimer.Enabled:=True;
-     end
-     else
-     begin
-          VertStartTimer.Enabled:=False;
-          VertScrollTimer.Interval:=FOwner.FScrollDetectOptions.FScrollDelay;
-          OnScrollTimer(VertScrollTimer);
-          VertScrollTimer.Enabled:=True;
-     end;
+  if Sender = HorzStartTimer then
+  begin
+    StartTimer := HorzStartTimer;
+    ScrollTimer := HorzScrollTimer;
+  end
+    else
+  begin
+    StartTimer := VertStartTimer;
+    ScrollTimer := VertScrollTimer;
+  end;
+
+  StartTimer.Enabled := False;
+  ScrollTimer.Interval := FOwner.FScrollDetectOptions.FScrollDelay;
+  OnScrollTimer(ScrollTimer);
+  ScrollTimer.Enabled := True;
 end;
 
 procedure TDropTarget.OnScrollTimer(Sender: TObject);
-var ScrollPage:Boolean;
-    pt:TPoint;
-    Interval:TScrollInterval;
-    ScrollCode,SCWParam:Integer;
+var
+  ScrollPage: Boolean;
+  pt: TPoint;
+  Interval: TScrollInterval;
+  ScrollCode, SCWParam: Integer;
 begin
-     Interval:=FOwner.FScrollDetectOptions.FScrollDelay;
-     if Sender=VertScrollTimer then
-     begin
-          if FOwner.FScrollDetectOptions.FVertScrolling then
+  Interval:=FOwner.FScrollDetectOptions.FScrollDelay;
+  if Sender = VertScrollTimer then
+  begin
+    if FOwner.FScrollDetectOptions.FVertScrolling then
+    begin
+      DetermineScrollDir(True, ScrollCode);
+      if ScrollCode > 0 then
+      begin
+        if ((not VertStartTimer.Enabled) and (not VertScrollTimer.Enabled)) or
+           (FVScrollCode <> ScrollCode) then
+        begin
+          InitScroll(True, ScrollCode);
+        end
+          else
+        begin
+          ScrollPage := FOwner.FScrollDetectOptions.FVertPageScroll;
+          if Assigned(FOwner.FOnBeforeScrolling) then
           begin
-               DetermineScrollDir(True,ScrollCode);
-               if ScrollCode>0 then
-               begin
-                    if ((VertStartTimer.Enabled=False) and (VertScrollTimer.Enabled=False)) or
-                       (FVScrollCode<>ScrollCode) then InitScroll(True,ScrollCode)
-                    else
-                    begin
-                         ScrollPage:=FOwner.FScrollDetectOptions.FVertPageScroll;
-                         if assigned(FOwner.FOnBeforeScrolling) then
-                         begin
-                              GetCursorPos(pt);
-                              pt:=FOwner.DragDropControl.ScreenToClient(pt);
-                              if FVScrollCode=1 then FOwner.FOnBeforeScrolling(FOwner, pt,
-                                 Interval, sdUp, ScrollPage)
-                              else FOwner.FOnBeforeScrolling(FOwner, pt, Interval, sdDown,
-                                   ScrollPage);
-                         end;
-                         if ScrollPage then
-                         begin
-                              if FVScrollCode=1 then SCWParam:=SB_PAGEUP
-                              else SCWParam:=SB_PAGEDOWN;
-                         end
-                         else
-                         begin
-                              if FVScrollCode=1 then SCWParam:=SB_LINEUP
-                              else SCWParam:=SB_LINEDOWN;
-                         end;
-                         sendmessage(FOwner.DragDropControl.handle,WM_VScroll,SCWParam,0);
-                         if assigned(FOwner.FOnAfterScrolling) then
-                            FOwner.FOnAfterScrolling(FOwner);
-                         VertScrollTimer.Interval:=Interval;
-                    end;
-               end
-               else if FVScrollCode<>0 then TermScroll(True);
-          end
-          else if FVScrollCode<>0 then TermScroll(True);
-     end
-     else
-     begin
-          if FOwner.FScrollDetectOptions.FHorzScrolling then
+            GetCursorPos(pt);
+            pt := FOwner.DragDropControl.ScreenToClient(pt);
+            if FVScrollCode = 1 then FOwner.FOnBeforeScrolling(FOwner, pt, Interval, sdUp, ScrollPage)
+              else FOwner.FOnBeforeScrolling(FOwner, pt, Interval, sdDown, ScrollPage);
+          end;
+          if ScrollPage then
           begin
-               DetermineScrollDir(False,ScrollCode);
-               if ScrollCode>0 then
-               begin
-                    if ((HorzStartTimer.Enabled=False) and (HorzScrollTimer.Enabled=False)) or
-                       (FHScrollCode<>ScrollCode) then InitScroll(False,ScrollCode)
-                    else
-                    begin
-                         ScrollPage:=FOwner.FScrollDetectOptions.FHorzPageScroll;
-                         if assigned(FOwner.FOnBeforeScrolling) then
-                         begin
-                              GetCursorPos(pt);
-                              pt:=FOwner.DragDropControl.ScreenToClient(pt);
-                              if FHScrollCode=1 then FOwner.FOnBeforeScrolling(FOwner, pt,
-                                 Interval, sdLeft, ScrollPage)
-                              else FOwner.FOnBeforeScrolling(FOwner, pt, Interval, sdRight,
-                                   ScrollPage);
-                         end;
-                         if ScrollPage then
-                         begin
-                              if FHScrollCode=1 then SCWParam:=SB_PAGELEFT
-                              else SCWParam:=SB_PAGERIGHT;
-                         end
-                         else
-                         begin
-                              if FHScrollCode=1 then SCWParam:=SB_LINELEFT
-                              else SCWParam:=SB_LINERIGHT;
-                         end;
-                         sendmessage(FOwner.DragDropControl.handle,WM_HScroll,SCWParam,0);
-                         HorzScrollTimer.Interval:=Interval;
-                    end;
-               end
-               else if FHScrollCode<>0 then TermScroll(False);
+            if FVScrollCode = 1 then SCWParam := SB_PAGEUP
+              else SCWParam := SB_PAGEDOWN;
           end
-          else if FHScrollCode<>0 then TermScroll(False);
-     end;
+            else
+          begin
+            if FVScrollCode = 1 then SCWParam := SB_LINEUP
+              else SCWParam := SB_LINEDOWN;
+          end;
+          SendMessage(FOwner.DragDropControl.Handle, WM_VSCROLL, SCWParam, 0);
+          if Assigned(FOwner.FOnAfterScrolling) then
+            FOwner.FOnAfterScrolling(FOwner);
+          VertScrollTimer.Interval := Interval;
+        end;
+      end
+        else
+      if FVScrollCode <> 0 then TermScroll(True);
+    end
+      else
+    if FVScrollCode <> 0 then TermScroll(True);
+  end
+    else
+  begin
+    if FOwner.FScrollDetectOptions.FHorzScrolling then
+    begin
+      DetermineScrollDir(False, ScrollCode);
+      if ScrollCode>0 then
+      begin
+        if ((not HorzStartTimer.Enabled) and (not HorzScrollTimer.Enabled)) or
+           (FHScrollCode <> ScrollCode) then
+        begin
+          InitScroll(False, ScrollCode);
+        end
+          else
+        begin
+          ScrollPage := FOwner.FScrollDetectOptions.FHorzPageScroll;
+          if Assigned(FOwner.FOnBeforeScrolling) then
+          begin
+            GetCursorPos(pt);
+            pt := FOwner.DragDropControl.ScreenToClient(pt);
+            if FHScrollCode = 1 then FOwner.FOnBeforeScrolling(FOwner, pt, Interval, sdLeft, ScrollPage)
+              else FOwner.FOnBeforeScrolling(FOwner, pt, Interval, sdRight, ScrollPage);
+          end;
+          if ScrollPage then
+          begin
+            if FHScrollCode = 1 then SCWParam := SB_PAGELEFT
+              else SCWParam := SB_PAGERIGHT;
+          end
+            else
+          begin
+            if FHScrollCode = 1 then SCWParam := SB_LINELEFT
+              else SCWParam := SB_LINERIGHT;
+          end;
+          SendMessage(FOwner.DragDropControl.Handle, WM_HSCROLL, SCWParam, 0);
+          HorzScrollTimer.Interval := Interval;
+        end;
+      end
+        else
+      if FHScrollCode <> 0 then TermScroll(False);
+    end
+      else
+    if FHScrollCode <> 0 then TermScroll(False);
+  end;
 end;
 
 procedure TDropTarget.SuggestDropEffect(grfKeyState: LongInt; var dwEffect: LongInt);
 begin
-     if (FOwner.FAcceptOwnDnD=False) and
-        (FOwner.FOwnerIsSource) then dwEffect:=DropEffect_None
-     else if (grfKeyState and MK_CONTROL=0) and (grfKeyState and MK_SHIFT<>0) and
-             (FOwner.FTargetEffects and DropEffect_Move<>0) then
-             dwEffect:=DropEffect_Move
-          else if (grfKeyState and MK_CONTROL<>0) and
-                  (grfKeyState and MK_SHIFT<>0) and
-                  (FOwner.FTargetEffects and DropEffect_Link<>0) then
-                  dwEffect:=DropEffect_Link
-               else if (deCopy in FOwner.FTargetEffectsSet) and
-                       (dwEffect and DropEffect_Copy<>0) then
-                       dwEffect:=DropEffect_Copy
-                    else if (deMove in FOwner.FTargetEffectsSet) and
-                            (dwEffect and DropEffect_Move<>0) then
-                            dwEffect:=DropEffect_Move
-                         else if (deLink in FOwner.FTargetEffectsSet) and
-                                 (dwEffect and DropEffect_Link<>0) then
-                                 dwEffect:=DropEffect_Link
-                              else dwEffect:=DropEffect_None;
-     if FOwner.FTargetScrolling<>0 then dwEffect:=dwEffect or Integer(DropEffect_Scroll);
+  if (not FOwner.FAcceptOwnDnD) and FOwner.FOwnerIsSource then dwEffect := DROPEFFECT_NONE
+    else
+  if (grfKeyState and MK_CONTROL = 0) and (grfKeyState and MK_SHIFT <> 0) and
+     (FOwner.FTargetEffects and DROPEFFECT_MOVE <> 0) then dwEffect := DROPEFFECT_MOVE
+    else
+  if (grfKeyState and MK_CONTROL <> 0) and (grfKeyState and MK_SHIFT <> 0) and
+     (FOwner.FTargetEffects and DROPEFFECT_LINK <> 0) then dwEffect := DROPEFFECT_LINK
+    else
+  if (deCopy in FOwner.FTargetEffectsSet) and (dwEffect and DROPEFFECT_COPY <> 0) then dwEffect := DROPEFFECT_COPY
+    else
+  if (deMove in FOwner.FTargetEffectsSet) and (dwEffect and DROPEFFECT_MOVE<>0) then dwEffect := DROPEFFECT_MOVE
+    else
+  if (deLink in FOwner.FTargetEffectsSet) and (dwEffect and DROPEFFECT_LINK <> 0) then dwEffect := DROPEFFECT_LINK
+    else dwEffect := DROPEFFECT_NONE;
+
+  if FOwner.FTargetScrolling <> 0 then dwEffect := dwEffect or Integer(DROPEFFECT_SCROLL);
 end;
 
 procedure TDropTarget.AcceptDataObject(DataObj: IDataObject; var Accept:Boolean);
 begin
-     Accept:=True;
+  Accept := True;
 end;
 
-function TDropTarget.DragEnter(const dataObj: IDataObject; grfKeyState: LongInt;
-      pt: TPoint; var dwEffect: LongInt): HResult;
+function TDropTarget.DragEnter(
+  const dataObj: IDataObject; grfKeyState: LongInt; pt: TPoint; var dwEffect: LongInt): HResult;
 // Is called if the d&d-mouse cursor moves ON (one call only) the TargeTWinControl. Here,
 // you influence if a drop can be accepted and the drop's effect if accepted.
 begin
-     TDragDrop(FOwner).FInternalSource:=GInternalSource;
-     FOwner.FAvailableDropEffects:=dwEffect;
-     FOwner.FContextMenu:=grfKeyState and mk_rbutton<>0;
-     if (FOwner.RenderDataOn=rdoEnter) or (FOwner.RenderDataOn=rdoEnterAndDropSync) or
-        (FOwner.RenderDataOn=rdoEnterAndDropAsync) then
-        RenderDropped(DataObj, grfKeyState, pt, dwEffect);
-     SuggestDropEffect(grfKeyState,dwEffect);
-     AcceptDataObject(DataObj, FAccept);
-     if Assigned(FOwner.OnDragEnter) then
-        FOwner.OnDragEnter(DataObj, grfKeyState,
-           FOwner.FDragDropControl.ScreenToClient(pt), dwEffect, FAccept);
-     if ((FOwner.FAcceptOwnDnD=False) and (FOwner.FOwnerIsSource)) or
-        (FAccept=False) then dwEffect:=DropEffect_None;
-     Result:= NOERROR;
+  TDragDrop(FOwner).FInternalSource := GInternalSource;
+  FOwner.FAvailableDropEffects := dwEffect;
+  FOwner.FContextMenu := grfKeyState and MK_RBUTTON <> 0;
+  if (FOwner.RenderDataOn = rdoEnter) or (FOwner.RenderDataOn = rdoEnterAndDropSync) or
+     (FOwner.RenderDataOn = rdoEnterAndDropAsync) then
+  begin
+    RenderDropped(DataObj, grfKeyState, pt, dwEffect);
+  end;
+  SuggestDropEffect(grfKeyState, dwEffect);
+  AcceptDataObject(DataObj, FAccept);
+  if Assigned(FOwner.OnDragEnter) then
+    FOwner.OnDragEnter(DataObj, grfKeyState, FOwner.FDragDropControl.ScreenToClient(pt), dwEffect, FAccept);
+  if ((not FOwner.FAcceptOwnDnD) and FOwner.FOwnerIsSource) or
+     (not FAccept) then
+  begin
+    dwEffect := DROPEFFECT_NONE;
+  end;
+  Result := NOERROR;
 end;
 
-function TDropTarget.DragOver(grfKeyState: LongInt; pt: TPoint;
-         var dwEffect: LongInt): HResult;
+function TDropTarget.DragOver(grfKeyState: LongInt; pt: TPoint; var dwEffect: LongInt): HResult;
 // Is called if the mouse cursor moves OVER (called on every mouse move) the
 // TargeTWinControl. Even here may you influence if a drop can be accepted and the
 // drop's effect if accepted. Because this function is very often called YOUR
 // function should be very efficient programmed.
-var ScrollCode:Integer;
+var
+  ScrollCode: Integer;
 begin
-     if FOwner.FScrollDetectOptions.FVertScrolling then
-     begin
-          DetermineScrollDir(True,ScrollCode);
-          if ScrollCode>0 then
-          begin
-               if ((VertStartTimer.Enabled=False) and (VertScrollTimer.Enabled=False)) or
-                  (FVScrollCode<>ScrollCode) then InitScroll(True,ScrollCode);
-          end
-          else if FVScrollCode<>0 then TermScroll(True);
-     end
-     else if FVScrollCode<>0 then TermScroll(True);
-     if FOwner.FScrollDetectOptions.FHorzScrolling then
-     begin
-          DetermineScrollDir(False,ScrollCode);
-          if ScrollCode>0 then
-          begin
-               if ((HorzStartTimer.Enabled=False) and (HorzScrollTimer.Enabled=False)) or
-                  (FHScrollCode<>ScrollCode) then InitScroll(False,ScrollCode);
-          end
-          else if FHScrollCode<>0 then TermScroll(False);
-     end
-     else if FHScrollCode<>0 then TermScroll(False);
-     if FAccept=False then dwEffect:=DropEffect_None;
-     SuggestDropEffect(grfKeyState,dwEffect);
-     if Assigned(FOwner.OnDragOver) then
-        FOwner.OnDragOver(grfKeyState, FOwner.FDragDropControl.ScreenToClient(pt),
-           dwEffect);
-     if ((FOwner.FAcceptOwnDnD=False) and (FOwner.FOwnerIsSource)) or
-        (FAccept=False) then dwEffect:=DropEffect_None;
-     Result:=NOERROR;
+  if FOwner.FScrollDetectOptions.FVertScrolling then
+  begin
+    DetermineScrollDir(True, ScrollCode);
+    if ScrollCode > 0 then
+    begin
+      if ((not VertStartTimer.Enabled) and (not VertScrollTimer.Enabled)) or
+         (FVScrollCode <> ScrollCode) then
+      begin
+        InitScroll(True, ScrollCode);
+      end;
+    end
+      else
+    if FVScrollCode <> 0 then TermScroll(True);
+  end
+    else
+  if FVScrollCode <> 0 then TermScroll(True);
+
+  if FOwner.FScrollDetectOptions.FHorzScrolling then
+  begin
+    DetermineScrollDir(False, ScrollCode);
+    if ScrollCode > 0 then
+    begin
+      if ((not HorzStartTimer.Enabled) and (not HorzScrollTimer.Enabled)) or
+         (FHScrollCode <> ScrollCode) then
+      begin
+        InitScroll(False, ScrollCode);
+      end;
+    end
+      else
+    if FHScrollCode <> 0 then TermScroll(False);
+  end
+    else
+  if FHScrollCode <> 0 then TermScroll(False);
+
+  if not FAccept then dwEffect := DROPEFFECT_NONE;
+  SuggestDropEffect(grfKeyState, dwEffect);
+  if Assigned(FOwner.OnDragOver) then
+  begin
+    FOwner.OnDragOver(grfKeyState, FOwner.FDragDropControl.ScreenToClient(pt), dwEffect);
+  end;
+  if ((not FOwner.FAcceptOwnDnD) and FOwner.FOwnerIsSource) or
+     (not FAccept) then
+  begin
+    dwEffect := DROPEFFECT_NONE;
+  end;
+  Result := NOERROR;
 end;
 
 function TDropTarget.DragLeave: HResult;
 // Removes target feedback and releases the data object.
 begin
-     TDragDrop(FOwner).FInternalSource:=nil;
-     if Assigned(FOwner.OnDragLeave) then FOwner.OnDragLeave;
-     FOwner.FAvailableDropEffects:=0;
-     Result:=NOERROR;
-     TermScroll(True);
-     TermScroll(False);
+  TDragDrop(FOwner).FInternalSource := nil;
+  if Assigned(FOwner.OnDragLeave) then FOwner.OnDragLeave;
+  FOwner.FAvailableDropEffects := 0;
+  Result := NOERROR;
+  TermScroll(True);
+  TermScroll(False);
 end;
 
-function TDropTarget.Drop(const DataObj: IDataObject; grfKeyState: LongInt; pt: TPoint;
-      var dwEffect: LongInt): HResult;
+function TDropTarget.Drop(const DataObj: IDataObject; grfKeyState: LongInt; pt: TPoint; var dwEffect: LongInt): HResult;
 // Instructs drop target to handle the datas which are dropped on it.
-var Menu:HMenu;
-     Cmd:Cardinal;
-     mcursor:TCursor;
-     KeyState:Integer;
+var
+  Menu: HMenu;
+  Cmd: Cardinal;
+  mcursor: TCursor;
+  KeyState: Integer;
 
-     function BuildMenuItemInfo(ACaption:string; ShowDefault:Boolean;
-        ACommand:UInt; ASeparator:Boolean):TMenuItemInfo;
-     begin
-          with Result do
-          begin
-               // cbSize:=SizeOf(MenuItemInfo);
-               cbSize:=44; //Required for Windows95
-               fMask:=MIIM_ID or MIIM_STATE or MIIM_TYPE;
-               if ASeparator then fType:=MFT_SEPARATOR
-               else fType:=MFT_STRING;
-               if ShowDefault then fState:=MFS_ENABLED or MFS_Default
-               else fState:=MFS_ENABLED;
-               wID:=ACommand;
-               hSubMenu:=0;
-               hbmpChecked:=0;
-               hbmpUnchecked:=0;
-               dwTypeData:=PChar(ACaption);
-          end;
-     end;
+  function BuildMenuItemInfo(ACaption: string; ShowDefault: Boolean; ACommand: UInt; ASeparator: Boolean): TMenuItemInfo;
+  begin
+    with Result do
+    begin
+      // cbSize := SizeOf(MenuItemInfo);
+      cbSize := 44; // Required for Windows 95
+      fMask := MIIM_ID or MIIM_STATE or MIIM_TYPE;
+      if ASeparator then fType := MFT_SEPARATOR
+        else fType:=MFT_STRING;
+      if ShowDefault then fState := MFS_ENABLED or MFS_Default
+        else fState := MFS_ENABLED;
+      wID := ACommand;
+      hSubMenu := 0;
+      hbmpChecked := 0;
+      hbmpUnchecked := 0;
+      dwTypeData := PChar(ACaption);
+    end;
+  end;
 
 begin
-     Result:=E_Fail;
-     if FOwner.FContextMenu then KeyState:=grfKeyState or MK_RButton
-     else KeyState:=grfKeyState or MK_LButton;
-     if FAccept then SuggestDropEffect(KeyState,dwEffect)
-     else dwEffect:=DropEffect_None;
-     if assigned(FOwner.OnDragOver) then
-        FOwner.OnDragOver(KeyState, FOwner.FDragDropControl.ScreenToClient(pt),
-           dwEffect);
-     if ((FOwner.FAcceptOwnDnD=False) and (FOwner.FOwnerIsSource)) or
-        (FAccept=False) then dwEffect:=DropEffect_None;
-     TermScroll(True);
-     TermScroll(False);
-     if (FOwner.DropHandler(DataObj, KeyState, pt, dwEffect)=False) then
-     begin
-          // Show popup menu?
-          if FOwner.FContextMenu and FOwner.FShowPopupMenu and (dwEffect<>DropEffect_None) then
-          begin
-               Menu:=CreatePopupMenu;
-               if (deMove in FOwner.FTargetEffectsSet) and
-                  (FOwner.FAvailableDropEffects and DropEffect_Move<>0) then
-                  InsertMenuItem(Menu, DWORD(-1), True,
-                     BuildMenuItemInfo(MIMoveStr, dwEffect and DropEffect_Move<>0,
-                     CmdMove, False));
-               if (deCopy in FOwner.FTargetEffectsSet) and
-                  (FOwner.FAvailableDropEffects and DropEffect_Copy<>0) then
-                  InsertMenuItem(Menu, DWORD(-1), True,
-                     BuildMenuItemInfo(MICopyStr, dwEffect and DropEffect_Copy<>0,
-                     CmdCopy, False));
-               if (deLink in FOwner.FTargetEffectsSet) and
-                  (FOwner.FAvailableDropEffects and DropEffect_Link<>0) then
-                  InsertMenuItem(Menu, DWORD(-1), True,
-                     BuildMenuItemInfo(MILinkStr, dwEffect and DropEffect_Link<>0,
-                     CmdLink, False));
-               InsertMenuItem(Menu, DWORD(-1), True,
-                  BuildMenuItemInfo('-', False, CmdSeparator, True));
-               InsertMenuItem(Menu, DWORD(-1), True,
-                  BuildMenuItemInfo(MIAbortStr, False, CmdAbort, False));
-               // Add custom-menuitems ...
-               FOwner.DoMenuPopup(self, Menu, DataObj, MinCustCmd, KeyState, pt);
-               try
-                 dwEffect:=DROPEFFECT_None;
-                 Cmd:=Cardinal(TrackPopupMenuEx(Menu, TPM_LEFTALIGN or TPM_RIGHTBUTTON or TPM_RETURNCMD,
-                    pt.x, pt.y, FOwner.DragDropControl.Handle, nil));
-                 case Cmd of
-                      CmdMove: dwEffect:=DROPEFFECT_Move;
-                      CmdCopy: dwEffect:=DROPEFFECT_Copy;
-                      CmdLink: dwEffect:=DROPEFFECT_Link;
-                      CmdSeparator, CmdAbort:
-                         dwEffect:=DROPEFFECT_None;
-                      else // custom-menuitem was selected ...
-                      begin
-                           dwEffect:=DROPEFFECT_None;
-                           if FOwner.DoMenuExecCmd(self, Menu, DataObj, Cmd, dwEffect) and
-                              assigned(FOwner.FOnMenuSucceeded) then
-                              FOwner.FOnMenuSucceeded(self, KeyState,
-                              FOwner.FDragDropControl.ScreenToClient(pt), dwEffect);
-                      end;
-                 end;
-               finally
-                 FOwner.DoMenuDestroy(Self, Menu);
-                 DestroyMenu(Menu);
-               end;
-          end;
-          if assigned(FOwner.OnDrop) then
-             FOwner.OnDrop(DataObj, KeyState,
-                FOwner.FDragDropControl.ScreenToClient(pt), dwEffect);
-          if dwEffect<>DROPEFFECT_None then
-          begin
-               if FOwner.FBTF Then
-                  SetForegroundWindow((FOwner.Owner As TWinControl).Handle);
-               TDragDrop(FOwner).FdwEffect:=dwEffect;
-               TDragDrop(FOwner).FgrfKeyState:=KeyState;
-               TDragDrop(FOwner).Fpt:=pt;
-               if (FOwner.RenderDataOn=rdoDropAsync) or
-                  (FOwner.RenderDataOn=rdoEnterAndDropAsync) then
-               begin
-                    TDragDrop(FOwner).FDataObj:=DataObj;
-                    DataObj._AddRef;
-               end
-               else if (FOwner.RenderDataOn=rdoDropSync) or
-                       (FOwner.RenderDataOn=rdoEnterAndDropSync) then
-                    begin
-                         // Set hourglass-cursor
-                         mcursor:=Screen.Cursor;
-                         Screen.Cursor:=crHourGlass;
-                         try
-                            RenderDropped(DataObj, KeyState, pt, dwEffect);
-                         finally
-                            // Set old cursor
-                            Screen.Cursor:=mcursor;
-                         end;
-                    end;
-               PostMessage(FOwner.DragDropControl.Handle,DDM_ProcessDropped,0,0);
-               Result:=NOERROR;
-          end
-          else TDragDrop(FOwner).FInternalSource:=nil;
-     end
-     else
-     begin
-          TDragDrop(FOwner).FInternalSource:=nil;
-          if assigned(FOwner.FOnDropHandlerSucceeded) then
-             FOwner.FOnDropHandlerSucceeded(self, KeyState,
-             FOwner.FDragDropControl.ScreenToClient(pt), dwEffect);
-     end;
+  Result := E_Fail;
+  if FOwner.FContextMenu then KeyState := grfKeyState or MK_RBUTTON
+    else KeyState := grfKeyState or MK_LButton;
+  if FAccept then SuggestDropEffect(KeyState, dwEffect)
+    else dwEffect := DROPEFFECT_NONE;
+  if Assigned(FOwner.OnDragOver) then
+  begin
+    FOwner.OnDragOver(KeyState, FOwner.FDragDropControl.ScreenToClient(pt), dwEffect);
+  end;
+  if ((not FOwner.FAcceptOwnDnD) and FOwner.FOwnerIsSource) or (not FAccept) then dwEffect := DROPEFFECT_NONE;
+  TermScroll(True);
+  TermScroll(False);
+  if not FOwner.DropHandler(DataObj, KeyState, pt, dwEffect) then
+  begin
+    // Show popup menu?
+    if FOwner.FContextMenu and FOwner.FShowPopupMenu and (dwEffect <> DROPEFFECT_NONE) then
+    begin
+      Menu := CreatePopupMenu;
+      if (deMove in FOwner.FTargetEffectsSet) and (FOwner.FAvailableDropEffects and DROPEFFECT_MOVE <> 0) then
+      begin
+        InsertMenuItem(
+          Menu, DWORD(-1), True, BuildMenuItemInfo(MIMoveStr, dwEffect and DROPEFFECT_MOVE<>0, CmdMove, False));
+      end;
+      if (deCopy in FOwner.FTargetEffectsSet) and (FOwner.FAvailableDropEffects and DROPEFFECT_COPY <> 0) then
+      begin
+        InsertMenuItem(
+          Menu, DWORD(-1), True, BuildMenuItemInfo(MICopyStr, dwEffect and DROPEFFECT_COPY <> 0, CmdCopy, False));
+      end;
+      if (deLink in FOwner.FTargetEffectsSet) and (FOwner.FAvailableDropEffects and DROPEFFECT_LINK <> 0) then
+      begin
+        InsertMenuItem(
+          Menu, DWORD(-1), True, BuildMenuItemInfo(MILinkStr, dwEffect and DROPEFFECT_LINK <> 0, CmdLink, False));
+      end;
+      InsertMenuItem(Menu, DWORD(-1), True, BuildMenuItemInfo('-', False, CmdSeparator, True));
+      InsertMenuItem(Menu, DWORD(-1), True, BuildMenuItemInfo(MIAbortStr, False, CmdAbort, False));
+      // Add custom-menuitems ...
+      FOwner.DoMenuPopup(Self, Menu, DataObj, MinCustCmd, KeyState, pt);
+      try
+        dwEffect := DROPEFFECT_NONE;
+        Cmd := Cardinal(TrackPopupMenuEx(Menu, TPM_LEFTALIGN or TPM_RIGHTBUTTON or TPM_RETURNCMD, pt.x, pt.y, FOwner.DragDropControl.Handle, nil));
+        case Cmd of
+          CmdMove: dwEffect := DROPEFFECT_MOVE;
+          CmdCopy: dwEffect := DROPEFFECT_COPY;
+          CmdLink: dwEffect := DROPEFFECT_LINK;
+          CmdSeparator, CmdAbort: dwEffect := DROPEFFECT_NONE;
+          else // custom-menuitem was selected ...
+            begin
+              dwEffect := DROPEFFECT_NONE;
+              if FOwner.DoMenuExecCmd(Self, Menu, DataObj, Cmd, dwEffect) and
+                 Assigned(FOwner.FOnMenuSucceeded) then
+              begin
+                FOwner.FOnMenuSucceeded(Self, KeyState, FOwner.FDragDropControl.ScreenToClient(pt), dwEffect);
+              end;
+            end;
+        end;
+      finally
+        FOwner.DoMenuDestroy(Self, Menu);
+        DestroyMenu(Menu);
+      end;
+    end;
+    if Assigned(FOwner.OnDrop) then
+    begin
+      FOwner.OnDrop(DataObj, KeyState, FOwner.FDragDropControl.ScreenToClient(pt), dwEffect);
+    end;
+    if dwEffect <> DROPEFFECT_NONE then
+    begin
+      if FOwner.FBTF then SetForegroundWindow((FOwner.Owner as TWinControl).Handle);
+      TDragDrop(FOwner).FdwEffect := dwEffect;
+      TDragDrop(FOwner).FgrfKeyState := KeyState;
+      TDragDrop(FOwner).Fpt := pt;
+      if (FOwner.RenderDataOn = rdoDropAsync) or
+         (FOwner.RenderDataOn = rdoEnterAndDropAsync) then
+      begin
+        TDragDrop(FOwner).FDataObj := DataObj;
+        DataObj._AddRef;
+      end
+        else
+      if (FOwner.RenderDataOn = rdoDropSync) or (FOwner.RenderDataOn = rdoEnterAndDropSync) then
+      begin
+        // Set hourglass-cursor
+        mcursor := Screen.Cursor;
+        Screen.Cursor := crHourGlass;
+        try
+          RenderDropped(DataObj, KeyState, pt, dwEffect);
+        finally
+          // Set old cursor
+          Screen.Cursor := mcursor;
+        end;
+      end;
+      PostMessage(FOwner.DragDropControl.Handle, DDM_ProcessDropped, 0, 0);
+      Result := NOERROR;
+    end
+      else TDragDrop(FOwner).FInternalSource := nil;
+  end
+    else
+  begin
+    TDragDrop(FOwner).FInternalSource := nil;
+    if Assigned(FOwner.FOnDropHandlerSucceeded) then
+    begin
+      FOwner.FOnDropHandlerSucceeded(Self, KeyState, FOwner.FDragDropControl.ScreenToClient(pt), dwEffect);
+    end;
+  end;
 end;
 
-procedure TDropTarget.RenderDropped(DataObj: IDataObject; grfKeyState: LongInt;
-  pt: TPoint; var dwEffect: LongInt);
+procedure TDropTarget.RenderDropped(DataObj: IDataObject; grfKeyState: LongInt; pt: TPoint; var dwEffect: LongInt);
 begin
-     // override, if you need ...
+  // override, if you need ...
 end;
 
 // TScrollDetectArea methods ---------------------------------------------------
 
 constructor TScrollDetectArea.Create(Control: TPersistent);
 begin
-     inherited Create;
-     FControl:=Control;
+  inherited Create;
+  FControl := Control;
 end;
 
 procedure TScrollDetectArea.AssignTo(Dest: TPersistent);
 begin
-     if Dest is TScrollDetectArea then
-        with TScrollDetectArea(Dest) do
-        begin
-             FMargin:=Self.FMargin;
-             FRange:=Self.FRange;
-             Change;
-        end
-        else inherited AssignTo(Dest);
+  if Dest is TScrollDetectArea then
+  begin
+    with TScrollDetectArea(Dest) do
+    begin
+      FMargin := Self.FMargin;
+      FRange := Self.FRange;
+      Change;
+    end;
+  end
+    else
+  inherited AssignTo(Dest);
 end;
 
-procedure TScrollDetectArea.SetValue(Index: Integer;
-  Value: Word);
+procedure TScrollDetectArea.SetValue(Index: Integer; Value: Word);
 begin
-     case Index of
-          0: if Value<>FMargin then
-             begin
-                  FMargin:=Value;
-                  Change;
-             end;
-          1: if Value<>FRange then
-             begin
-                  FRange:=Value;
-                  Change;
-             end;
-     end;
+  case Index of
+    0: if Value <> FMargin then
+       begin
+         FMargin := Value;
+         Change;
+       end;
+    1: if Value <> FRange then
+       begin
+         FRange:=Value;
+         Change;
+       end;
+  end;
 end;
 
 procedure TScrollDetectArea.Change;
 begin
-     if Assigned(FOnChange) then FOnChange(Self);
+  if Assigned(FOnChange) then FOnChange(Self);
 end;
 
 // TScrollDetectOptions methods -------------------------------------------------
 
 constructor TScrollDetectOptions.Create(Control: TDragDrop);
 begin
-     inherited Create;
-     FControl:=Control;
-     FScrollDelay:=100;
-     FStartDelay:=750;
-     FLeft:=TScrollDetectArea.Create(self);
-     FLeft.Margin:=0;
-     FLeft.Range:=10;
-     FLeft.OnChange:=FOnChange;
-     FTop:=TScrollDetectArea.Create(self);
-     FTop.Margin:=0;
-     FTop.Range:=10;
-     FTop.OnChange:=FOnChange;
-     FRight:=TScrollDetectArea.Create(self);
-     FRight.Margin:=0;
-     FRight.Range:=10;
-     FRight.OnChange:=FOnChange;
-     FBottom:=TScrollDetectArea.Create(self);
-     FBottom.Margin:=0;
-     FBottom.Range:=10;
-     FBottom.OnChange:=FOnChange;
-     FHorzScrolling:=False;
-     FVertScrolling:=False;
-     FHorzPageScroll:=False;
-     FVertPageScroll:=False;
+  inherited Create;
+  FControl := Control;
+  FScrollDelay := 100;
+  FStartDelay := 750;
+  FLeft := TScrollDetectArea.Create(self);
+  FLeft.Margin := 0;
+  FLeft.Range := 10;
+  FLeft.OnChange := FOnChange;
+  FTop := TScrollDetectArea.Create(self);
+  FTop.Margin := 0;
+  FTop.Range := 10;
+  FTop.OnChange := FOnChange;
+  FRight := TScrollDetectArea.Create(self);
+  FRight.Margin := 0;
+  FRight.Range := 10;
+  FRight.OnChange := FOnChange;
+  FBottom := TScrollDetectArea.Create(self);
+  FBottom.Margin := 0;
+  FBottom.Range := 10;
+  FBottom.OnChange := FOnChange;
+  FHorzScrolling := False;
+  FVertScrolling := False;
+  FHorzPageScroll := False;
+  FVertPageScroll := False;
 end;
 
 destructor TScrollDetectOptions.Destroy;
 begin
-     FLeft.Free;
-     FTop.Free;
-     FRight.Free;
-     FBottom.Free;
-     inherited Destroy;
+  FLeft.Free;
+  FTop.Free;
+  FRight.Free;
+  FBottom.Free;
+  inherited;
 end;
 
 procedure TScrollDetectOptions.AssignTo(Dest: TPersistent);
 begin
-     if Dest is TScrollDetectOptions then
-        with TScrollDetectOptions(Dest) do
-        begin
-             FScrollDelay:=Self.FScrollDelay;
-             FStartDelay:=Self.FStartDelay;
-             FLeft.AssignTo(Self.FLeft);
-             FTop.AssignTo(Self.FTop);
-             FRight.AssignTo(Self.FRight);
-             FBottom.AssignTo(Self.FBottom);
-             Change;
-        end
-        else inherited AssignTo(Dest);
+  if Dest is TScrollDetectOptions then
+  begin
+    with TScrollDetectOptions(Dest) do
+    begin
+      FScrollDelay := Self.FScrollDelay;
+      FStartDelay := Self.FStartDelay;
+      FLeft.AssignTo(Self.FLeft);
+      FTop.AssignTo(Self.FTop);
+      FRight.AssignTo(Self.FRight);
+      FBottom.AssignTo(Self.FBottom);
+      Change;
+    end;
+  end
+    else
+  inherited AssignTo(Dest);
 end;
 
-procedure TScrollDetectOptions.SetValue(index:Integer; Value: TScrollInterval);
+procedure TScrollDetectOptions.SetValue(index: Integer; Value: TScrollInterval);
 begin
-     if (Index=0) and (Value<>FScrollDelay) then
-     begin
-          FScrollDelay:=Value;
-          Change;
-     end;
-     if (Index=1) and (Value<>FStartDelay) then
-     begin
-          FStartDelay:=Value;
-          Change;
-     end;
+  if (Index = 0) and (Value <> FScrollDelay) then
+  begin
+    FScrollDelay := Value;
+    Change;
+  end;
+  if (Index = 1) and (Value <> FStartDelay) then
+  begin
+    FStartDelay := Value;
+    Change;
+  end;
 end;
 
 procedure TScrollDetectOptions.Change;
 begin
-     if Assigned(FOnChange) then FOnChange(Self);
+  if Assigned(FOnChange) then FOnChange(Self);
 end;
 
 // TDragDrop control ------------------------------------------------------
 
 constructor TDragDrop.Create(AOwner: TComponent);
 begin
-     inherited Create(AOwner);
-     FDropTarget:=TDropTarget.Create(Self);
-     FRegistered:=False;
-     FDragDropControl:=nil;
-     FBTF:=False;
-     FAcceptOwnDnD:=False;
-     FShowPopupMenu:=True;
-     FDragDetectDelta:=10;
-     FDragDetectStatus:=ddsNone;
-     FRenderDataOn:=rdoDropSync;
-     FCHCopy:=DefaultCursor;
-     FCHMove:=DefaultCursor;
-     FCHLink:=DefaultCursor;
-     FCHScrollCopy:=DefaultCursor;
-     FCHScrollMove:=DefaultCursor;
-     FCHScrollLink:=DefaultCursor;
-     FMessageHooked:=False;
-     FAvailableDropEffects:=0;
-     FTargetScrolling:=0;
-     FSrcCompatibilityCheck:=[CheckLindex, CheckdwAspect];
-     FScrollDetectOptions:=TScrollDetectOptions.Create(Self);
-     FInternalSource:=nil;
+  inherited Create(AOwner);
+  FDropTarget := TDropTarget.Create(Self);
+  FRegistered := False;
+  FDragDropControl := nil;
+  FBTF := False;
+  FAcceptOwnDnD := False;
+  FShowPopupMenu := True;
+  FDragDetectDelta := 10;
+  FDragDetectStatus := ddsNone;
+  FRenderDataOn := rdoDropSync;
+  FCHCopy := DefaultCursor;
+  FCHMove := DefaultCursor;
+  FCHLink := DefaultCursor;
+  FCHScrollCopy := DefaultCursor;
+  FCHScrollMove := DefaultCursor;
+  FCHScrollLink := DefaultCursor;
+  FMessageHooked := False;
+  FAvailableDropEffects := 0;
+  FTargetScrolling := 0;
+  FSrcCompatibilityCheck := [CheckLindex, CheckdwAspect];
+  FScrollDetectOptions := TScrollDetectOptions.Create(Self);
+  FInternalSource := nil;
 end;
 
 destructor TDragDrop.Destroy;
 begin
-     UnregisterTarget;
-     UnhookMessageHandler(True);
-     FDropTarget._Release;
-     FDropTarget:=nil;
-     FDragDropControl:=nil;
-     FScrollDetectOptions.Free;
-     inherited Destroy;
+  UnregisterTarget;
+  UnhookMessageHandler(True);
+  FDropTarget._Release;
+  FDropTarget := nil;
+  FDragDropControl := nil;
+  FScrollDetectOptions.Free;
+  inherited;
 end;
 
 procedure TDragDrop.WndMethod(var Msg: TMessage); // message-hook to receive DDM_ProcessDropped
-var mcursor:TCursor;
+var
+  mcursor: TCursor;
 begin
-     with Msg do
-     begin
-          Result:=CallWindowProc(OldWndProc, DragDropControl.Handle, Msg, wParam, LParam);
-          if (Msg=DDM_ProcessDropped) then
+  with Msg do
+  begin
+    Result := CallWindowProc(OldWndProc, DragDropControl.Handle, Msg, wParam, LParam);
+    if Msg = DDM_ProcessDropped then
+    begin
+      if (RenderDataOn = rdoDropAsync) or (RenderDataOn = rdoEnterAndDropAsync) then
+      begin
+        // Set hourglass-cursor
+        mcursor := Screen.Cursor;
+        Screen.Cursor := crHourGlass;
+        try
+          FDropTarget.RenderDropped(FDataObj, FgrfKeyState, Fpt, FdwEffect);
+          FDataObj._Release;
+        finally
+          // Set old cursor
+          Screen.Cursor := mcursor;
+        end;
+      end;
+      if Assigned(FOnProcessDropped) then
+      begin
+        FOnProcessDropped(Self, FgrfKeyState, FDragDropControl.ScreenToClient(Fpt), FdwEffect);
+      end;
+      FAvailableDropEffects := 0;
+      FInternalSource := nil;
+    end;
+    case Msg of
+      WM_DESTROY:
+        begin
+          if FRegistered then
           begin
-               if (RenderDataOn=rdoDropAsync) or (RenderDataOn=rdoEnterAndDropAsync) then
-               begin
-                    // Set hourglass-cursor
-                    mcursor:=Screen.Cursor;
-                    Screen.Cursor:=crHourGlass;
-                    try
-                      FDropTarget.RenderDropped(FDataObj, FgrfKeyState, Fpt, FdwEffect);
-                      FDataObj._Release;
-                   finally
-                      // Set old cursor
-                      Screen.Cursor:=mcursor;
-                   end;
-               end;
-               if assigned(FOnProcessDropped) then
-                  FOnProcessDropped(self, FgrfKeyState,
-                     FDragDropControl.ScreenToClient(Fpt), FdwEffect);
-               FAvailableDropEffects:=0;
-               FInternalSource:=nil;
+            CoLockObjectExternal(FDropTarget, False, False);
+            if (not FDragDropControl.HandleAllocated) or
+               (FDragDropControl.HandleAllocated and
+               (RevokeDragDrop(FDragDropControl.Handle) = S_OK)) then
+            begin
+              FRegistered:=False;
+            end;
           end;
-          case Msg of
-            WM_Destroy:
+          FMessageHooked := False;
+        end;
+      WM_LBUTTONDOWN, WM_RBUTTONDOWN:
+        begin
+          if FAutoDetectDnD and (FDragDetectStatus = ddsNone) and
+             (FSourceEffects <> 0) then
+          begin
+            if Msg = WM_LBUTTONDOWN then FDragDetectStatus := ddsLeft
+              else FDragDetectStatus := ddsRight;
+            GetCursorPos(FDragDetectStart);
+            if Assigned(FOnDragDetect) then
+            begin
+               FOnDragDetect(wparam,
+                 FDragDropControl.ScreenToClient(FDragDetectStart),
+                 FDragDropControl.ScreenToClient(FDragDetectStart),
+                 FDragDetectStatus);
+            end;
+            if MouseHookHandle <> 0 then
+            begin // MouseHookProc is used by another component ...
+              UnHookWindowsHookEx(MouseHookHandle);
+              MouseHookHandle := 0;
+              if Assigned(MouseHookDragDrop) then
               begin
-                   if FRegistered then
-                   begin
-                        CoLockObjectExternal(FDropTarget, False, False);
-                        if (FDragDropControl.HandleAllocated=False) or
-                           (FDragDropControl.HandleAllocated and
-                           (RevokeDragDrop(FDragDropControl.Handle)=S_OK)) then
-                           FRegistered:=False;
-                   end;
-                   FMessageHooked:=False;
+                MouseHookDragDrop.FDragDetectStatus := ddsNone;
+                if Assigned(MouseHookDragDrop.FOnDragDetect) then
+                begin
+                  MouseHookDragDrop.FOnDragDetect(
+                    wparam,
+                    MouseHookDragDrop.FDragDropControl.ScreenToClient(MouseHookDragDrop.FDragDetectStart),
+                    MouseHookDragDrop.FDragDropControl.ScreenToClient(FDragDetectStart),
+                    MouseHookDragDrop.FDragDetectStatus);
+                end;
               end;
-            WM_LBUTTONDOWN, WM_RBUTTONDOWN:
-              begin
-                   if FAutoDetectDnD and (FDragDetectStatus=ddsNone) and
-                      (FSourceEffects<>0) then
-                   begin
-                        if Msg=WM_LBUTTONDOWN then FDragDetectStatus:=ddsLeft
-                        else FDragDetectStatus:=ddsRight;
-                        GetCursorPos(FDragDetectStart);
-                        if assigned(FOnDragDetect) then
-                           FOnDragDetect(wparam,
-                             FDragDropControl.ScreenToClient(FDragDetectStart),
-                             FDragDropControl.ScreenToClient(FDragDetectStart),
-                             FDragDetectStatus);
-                        if (MouseHookHandle<>0) then
-                        begin // MouseHookProc is used by another component ...
-                             UnHookWindowsHookEx(MouseHookHandle);
-                             MouseHookHandle:=0;
-                             if assigned(MouseHookDragDrop) then
-                             begin
-                                  MouseHookDragDrop.FDragDetectStatus:=ddsNone;
-                                  if assigned(MouseHookDragDrop.FOnDragDetect) then
-                                     MouseHookDragDrop.FOnDragDetect(wparam,
-                                       MouseHookDragDrop.FDragDropControl.ScreenToClient(
-                                          MouseHookDragDrop.FDragDetectStart),
-                                       MouseHookDragDrop.FDragDropControl.ScreenToClient(
-                                          FDragDetectStart),
-                                       MouseHookDragDrop.FDragDetectStatus);
-                             end;
-                       end;
-                        MouseHookDragDrop:=self;
-                        MouseHookHandle:=SetWindowsHookEx(WH_MOUSE,MouseHookProc,LongWord(HInstance),0);
-                   end;
-              end;
-            WM_HSCROLL:
-              if LOWORD(wParam)<>SB_ENDSCROLL then FTargetScrolling:=FTargetScrolling or 1
-              else FTargetScrolling:=FTargetScrolling and not 1;
-            WM_VSCROLL:
-              begin
-                if LOWORD(wParam)<>SB_ENDSCROLL then FTargetScrolling:=FTargetScrolling or 2
-                else FTargetScrolling:=FTargetScrolling and not 2;
-              end;
-            WM_MOUSEMOVE:
-              if (MouseHookHandle<>0) and (wParam and (MK_LBUTTON or MK_RBUTTON)=0) then
-              begin
-                   UnHookWindowsHookEx(MouseHookHandle);
-                   MouseHookHandle:=0;
-                   if assigned(MouseHookDragDrop) then
-                   begin
-                        MouseHookDragDrop.FDragDetectStatus:=ddsNone;
-                        if assigned(MouseHookDragDrop.FOnDragDetect) then
-                           MouseHookDragDrop.FOnDragDetect(wparam,
-                             MouseHookDragDrop.FDragDropControl.ScreenToClient(
-                                MouseHookDragDrop.FDragDetectStart),
-                             MouseHookDragDrop.FDragDropControl.ScreenToClient(
-                                FDragDetectStart),
-                             MouseHookDragDrop.FDragDetectStatus);
-                   end;
-                   MouseHookDragDrop:=nil;
-              end;
+            end;
+            MouseHookDragDrop := Self;
+            MouseHookHandle := SetWindowsHookEx(WH_MOUSE, MouseHookProc, LongWord(HInstance), 0);
           end;
-     end;
+        end;
+      WM_HSCROLL:
+        if LOWORD(wParam) <> SB_ENDSCROLL then FTargetScrolling := FTargetScrolling or 1
+          else FTargetScrolling := FTargetScrolling and not 1;
+      WM_VSCROLL:
+        begin
+          if LOWORD(wParam) <> SB_ENDSCROLL then FTargetScrolling := FTargetScrolling or 2
+            else FTargetScrolling := FTargetScrolling and not 2;
+        end;
+      WM_MOUSEMOVE:
+        if (MouseHookHandle <> 0) and (wParam and (MK_LBUTTON or MK_RBUTTON) = 0) then
+        begin
+          UnHookWindowsHookEx(MouseHookHandle);
+          MouseHookHandle := 0;
+          if Assigned(MouseHookDragDrop) then
+          begin
+            MouseHookDragDrop.FDragDetectStatus := ddsNone;
+            if Assigned(MouseHookDragDrop.FOnDragDetect) then
+            begin
+              MouseHookDragDrop.FOnDragDetect(wparam,
+                MouseHookDragDrop.FDragDropControl.ScreenToClient(MouseHookDragDrop.FDragDetectStart),
+                MouseHookDragDrop.FDragDropControl.ScreenToClient(FDragDetectStart),
+                MouseHookDragDrop.FDragDetectStatus);
+            end;
+          end;
+          MouseHookDragDrop := nil;
+        end;
+    end;
+  end;
 end;
 
 procedure TDragDrop.StartDnDDetection(Button: TMouseButton);
-var grfKeyState: LongInt;
+var
+  grfKeyState: LongInt;
 begin
-     if Button=mbLeft then FDragDetectStatus:=ddsLeft
-     else if Button=mbRight then FDragDetectStatus:=ddsRight
-          else
-          begin
-               FDragDetectStatus:=ddsNone;
-               exit;
-          end;
-     GetCursorPos(FDragDetectStart);
-     if HiWord(DWord(GetKeyState(VK_SHIFT)))<>0 then grfKeyState:=MK_SHIFT
-     else grfKeyState:=0;
-     if HiWord(DWord(GetKeyState(VK_CONTROL)))<>0 then
-        grfKeyState:=grfKeyState or MK_CONTROL;
-     if (MouseHookHandle<>0) then
-     begin // MouseHookProc is used by another component ...
-           UnHookWindowsHookEx(MouseHookHandle);
-           MouseHookHandle:=0;
-           if assigned(MouseHookDragDrop) then
-           begin
-                MouseHookDragDrop.FDragDetectStatus:=ddsNone;
-                if assigned(MouseHookDragDrop.FOnDragDetect) then
-                   MouseHookDragDrop.FOnDragDetect(grfKeyState,
-                     MouseHookDragDrop.FDragDropControl.ScreenToClient(
-                       MouseHookDragDrop.FDragDetectStart),
-                     MouseHookDragDrop.FDragDropControl.ScreenToClient(FDragDetectStart),
-                     MouseHookDragDrop.FDragDetectStatus);
-           end;
-     end;
-     MouseHookDragDrop:=self;
-     MouseHookHandle:=SetWindowsHookEx(WH_MOUSE,MouseHookProc,LongWord(HInstance),0);
-     if assigned(FOnDragDetect) then
-        FOnDragDetect(grfKeyState,
-           FDragDropControl.ScreenToClient(FDragDetectStart),
-           FDragDropControl.ScreenToClient(FDragDetectStart),
-           FDragDetectStatus);
+  if Button = mbLeft then FDragDetectStatus := ddsLeft
+    else
+  if Button = mbRight then FDragDetectStatus := ddsRight
+    else
+  begin
+    FDragDetectStatus := ddsNone;
+  end;
+  if FDragDetectStatus <> ddsNone then
+  begin
+    GetCursorPos(FDragDetectStart);
+    if HiWord(DWord(GetKeyState(VK_SHIFT))) <> 0 then grfKeyState := MK_SHIFT
+      else grfKeyState := 0;
+    if HiWord(DWord(GetKeyState(VK_CONTROL))) <> 0 then
+       grfKeyState := grfKeyState or MK_CONTROL;
+    if MouseHookHandle <> 0 then
+    begin // MouseHookProc is used by another component ...
+      UnHookWindowsHookEx(MouseHookHandle);
+      MouseHookHandle := 0;
+      if Assigned(MouseHookDragDrop) then
+      begin
+        MouseHookDragDrop.FDragDetectStatus := ddsNone;
+        if Assigned(MouseHookDragDrop.FOnDragDetect) then
+        begin
+          MouseHookDragDrop.FOnDragDetect(grfKeyState,
+            MouseHookDragDrop.FDragDropControl.ScreenToClient(MouseHookDragDrop.FDragDetectStart),
+            MouseHookDragDrop.FDragDropControl.ScreenToClient(FDragDetectStart),
+            MouseHookDragDrop.FDragDetectStatus);
+        end;
+      end;
+    end;
+    MouseHookDragDrop := Self;
+    MouseHookHandle := SetWindowsHookEx(WH_MOUSE, MouseHookProc, LongWord(HInstance), 0);
+    if Assigned(FOnDragDetect) then
+    begin
+      FOnDragDetect(grfKeyState,
+         FDragDropControl.ScreenToClient(FDragDetectStart),
+         FDragDropControl.ScreenToClient(FDragDetectStart),
+         FDragDetectStatus);
+    end;
+  end;
 end;
 
 procedure TDragDrop.Loaded;
 // Methode which is called if all components are created - now, we can register
 // the target control for drag-and-drop operations
 begin
-     inherited Loaded;
-     if (FDragDropControl<>nil) and (csDesigning in ComponentState=False) then RegisterTarget;
+  inherited Loaded;
+  if (FDragDropControl <> nil) and not (csDesigning in ComponentState) then RegisterTarget;
 end;
 
 procedure TDragDrop.Notification(AComponent: TComponent; Operation: TOperation);
 begin
-     inherited Notification(AComponent,Operation);
-     if (AComponent=FDragDropControl) and (Operation=opRemove) then
-     begin
-          UnregisterTarget;
-          UnhookMessageHandler(True);
-          FDragDropControl:=nil;
-     end;
+  inherited Notification(AComponent, Operation);
+  if (AComponent = FDragDropControl) and (Operation = opRemove) then
+  begin
+    UnregisterTarget;
+    UnhookMessageHandler(True);
+    FDragDropControl := nil;
+  end;
 end;
 
 function TDragDrop.RegisterTarget: Boolean;
 // Methode for registering the DragDropControl for drag-and-drop oprations
 begin
-     Result:=False;
-     try
-        HookMessageHandler;
-     finally
-        // nothing to do
-     end;
-     if (not FRegistered) and (FTargetEffects <> 0) and (FDragDropControl <> nil) then
-     begin
-        try
-           // CoLockObjectExternal crashes debugging intermittently in C++ Builder 2010
-           {$IFNDEF IDE}
-           // Ensure that drag-and-drop interface stays in memory
-           CoLockObjectExternal(FDropTarget, True, False);
-           {$ENDIF}
-           if RegisterDragDrop(FDragDropControl.Handle, IDropTarget(FDropTarget))=S_OK then
-           begin
-                Result:=True;
-                FRegistered:=True;
-           end;
-        except
-           Result:=False;
-           FRegistered:=False;
-        end;
-     end;
+  Result := False;
+  try
+    HookMessageHandler;
+  finally
+    // nothing to do
+  end;
+  if (not FRegistered) and (FTargetEffects <> 0) and (FDragDropControl <> nil) then
+  begin
+    try
+      // CoLockObjectExternal crashes debugging intermittently in C++ Builder 2010
+      {$IFNDEF IDE}
+      // Ensure that drag-and-drop interface stays in memory
+      CoLockObjectExternal(FDropTarget, True, False);
+      {$ENDIF}
+      if RegisterDragDrop(FDragDropControl.Handle, IDropTarget(FDropTarget)) = S_OK then
+      begin
+        Result := True;
+        FRegistered := True;
+      end;
+    except
+      Result:=False;
+      FRegistered:=False;
+    end;
+  end;
 end;
 
 function TDragDrop.UnRegisterTarget: Boolean;
 begin
-     Result:=False;
-     if (FRegistered=False) or (FDragDropControl=nil) then exit;
-     try
-        UnHookMessageHandler(False);
-        CoLockObjectExternal(FDropTarget, False, False);
-        if (FDragDropControl.HandleAllocated=False) or
-           (FDragDropControl.HandleAllocated and
-           (RevokeDragDrop(FDragDropControl.Handle)=S_OK)) then
-        begin
-             FRegistered:=False;
-             Result:=True;
-        end;
-     except
-     end;
+  Result := False;
+  if FRegistered and (FDragDropControl <> nil) then
+  begin
+    try
+      UnHookMessageHandler(False);
+      CoLockObjectExternal(FDropTarget, False, False);
+      if (not FDragDropControl.HandleAllocated) or
+         (FDragDropControl.HandleAllocated and (RevokeDragDrop(FDragDropControl.Handle) = S_OK)) then
+      begin
+        FRegistered := False;
+        Result := True;
+      end;
+    except
+    end;
+  end;
 end;
 
 procedure TDragDrop.HookMessageHandler;
 begin
-     if (FDragDropControl=nil) or (FDragDropControl.Handle=0) then exit;
-     if (FMessageHooked=False) and ((FSourceEffects<>0) or (FTargetEffects<>0)) then
-     begin
-          WndProcPtr:=MakeObjectInstance(WndMethod);
-          OldWndProc:=Pointer(SetWindowLong(FDragDropControl.Handle, GWL_WNDPROC,
-             LongInt(WndProcPtr)));
-          FMessageHooked:=True;
-     end;
+  if (FDragDropControl <> nil) and (FDragDropControl.Handle <> 0) and
+     (not FMessageHooked) and ((FSourceEffects <> 0) or (FTargetEffects <> 0)) then
+  begin
+    WndProcPtr := MakeObjectInstance(WndMethod);
+    OldWndProc := Pointer(SetWindowLong(FDragDropControl.Handle, GWL_WNDPROC, LongInt(WndProcPtr)));
+    FMessageHooked := True;
+  end;
 end;
 
-procedure TDragDrop.UnhookMessageHandler(ForceUnhook:Boolean);
+procedure TDragDrop.UnhookMessageHandler(ForceUnhook: Boolean);
 begin
-     if FMessageHooked and (ForceUnhook or ((FSourceEffects=0) and (FTargetEffects=0))) then
-     begin
-          begin
-               SetWindowLong(FDragDropControl.Handle, GWL_WNDPROC, LongInt(OldWndProc));
-               FreeObjectInstance(WndProcPtr);
-               WndProcPtr:=nil;
-               OldWndProc:=nil;
-          end;
-          FMessageHooked:=False;
-     end;
+  if FMessageHooked and (ForceUnhook or ((FSourceEffects=0) and (FTargetEffects=0))) then
+  begin
+    SetWindowLong(FDragDropControl.Handle, GWL_WNDPROC, LongInt(OldWndProc));
+    FreeObjectInstance(WndProcPtr);
+    WndProcPtr := nil;
+    OldWndProc := nil;
+    FMessageHooked := False;
+  end;
 end;
 
-procedure TDragDrop.DoMenuPopup(Sender: TObject; AMenu: HMenu; DataObj: IDataObject; AMinCustCmd:Integer;
-   grfKeyState: LongInt; pt: TPoint);
+procedure TDragDrop.DoMenuPopup(
+  Sender: TObject; AMenu: HMenu; DataObj: IDataObject; AMinCustCmd:Integer; grfKeyState: LongInt; pt: TPoint);
 begin
-     if assigned(FOnMenuPopup) then
-        FOnMenuPopup(Sender, AMenu, DataObj, AMinCustCmd, grfKeyState,
-           FDragDropControl.ScreenToClient(pt));
+  if Assigned(FOnMenuPopup) then
+  begin
+    FOnMenuPopup(Sender, AMenu, DataObj, AMinCustCmd, grfKeyState, FDragDropControl.ScreenToClient(pt));
+  end;
 end;
 
-function TDragDrop.DoMenuExecCmd(Sender: TObject; AMenu: HMenu; DataObj:IDataObject;
-  Command:Integer; var dwEffect: LongInt):Boolean;
+function TDragDrop.DoMenuExecCmd(
+  Sender: TObject; AMenu: HMenu; DataObj: IDataObject; Command: Integer; var dwEffect: LongInt): Boolean;
 begin
-     Result:=False;
-     if assigned(FOnMenuExecCmd) then
-        FOnMenuExecCmd(Sender, AMenu, DataObj, Command, dwEffect, Result);
+  Result := False;
+  if Assigned(FOnMenuExecCmd) then
+  begin
+    FOnMenuExecCmd(Sender, AMenu, DataObj, Command, dwEffect, Result);
+  end;
 end;
 
 procedure TDragDrop.DoMenuDestroy(Sender:TObject; AMenu: HMenu);
 begin
-     if assigned(FOnMenuDestroy) then FOnMenuDestroy(Sender, AMenu);
+  if Assigned(FOnMenuDestroy) then FOnMenuDestroy(Sender, AMenu);
 end;
 
 procedure TDragDrop.SetDragDropControl(WinControl: TWinControl);
 begin
-     if WinControl<>FDragDropControl then
-     begin
-          if FRegistered and (csDesigning in ComponentState=False) then
-          begin
-               UnhookMessageHandler(True);
-               UnregisterTarget;
-          end;
-          FDragDropControl:=WinControl;
-          if (csDesigning in ComponentState=False) then RegisterTarget;
-     end;
+  if WinControl <> FDragDropControl then
+  begin
+    if FRegistered and not (csDesigning in ComponentState) then
+    begin
+      UnhookMessageHandler(True);
+      UnregisterTarget;
+    end;
+    FDragDropControl := WinControl;
+    if not (csDesigning in ComponentState) then RegisterTarget;
+  end;
 end;
 
-function TDragDrop.ExecuteOperation(DataObject:TDataObject): TDragResult;
-var dwEffect: LongInt;
-    DropSource: TDropSource;
-    pt: tpoint;
-    grfKeyState:LongInt;
+function TDragDrop.ExecuteOperation(DataObject: TDataObject): TDragResult;
+var
+  dwEffect: LongInt;
+  DropSource: TDropSource;
+  pt: TPoint;
+  grfKeyState: LongInt;
 begin
-     Result:=drInvalid;
-     if (DataObject=nil) or (GInternalSource<>nil) then exit;
-     GInternalSource:=self;
-     if (FSourceEffects<>0) then
-     begin
-          if MouseHookHandle<>0 then
+  Result := drInvalid;
+  if (DataObject = nil) or (GInternalSource <> nil) then exit;
+  GInternalSource := Self;
+  if FSourceEffects <> 0 then
+  begin
+    if MouseHookHandle <> 0 then
+    begin
+      UnHookWindowsHookEx(MouseHookHandle);
+      MouseHookHandle := 0;
+    end;
+    FDragDetectStatus := ddsDrag;
+    DataObject.FCheckLindex := CheckLindex in FSrcCompatibilityCheck;
+    DataObject.FCheckdwAspect := CheckdwAspect in FSrcCompatibilityCheck;
+    try
+      FOwnerIsSource := True;
+      try
+        DropSource := TDropSource.Create(self);
+        try
+          if (DataObject <> nil) and (DragDropControl <> nil) and
+             (DoDragDrop(IDataObject(DataObject), DropSource, FSourceEffects, dwEffect) = DRAGDROP_S_DROP) then
           begin
-               UnHookWindowsHookEx(MouseHookHandle);
-               MouseHookHandle:=0;
-          end;
-          FDragDetectStatus:=ddsDrag;
-          DataObject.FCheckLindex:=CheckLindex in FSrcCompatibilityCheck;
-          DataObject.FCheckdwAspect:=CheckdwAspect in FSrcCompatibilityCheck;
-          try
-             FOwnerIsSource:=True;
-             try
-                DropSource:=TDropSource.Create(self);
-                try
-                   if (DataObject<>nil) and (DragDropControl<>nil) and
-                      (DoDragDrop(IDataObject(DataObject), DropSource,
-                       FSourceEffects, dwEffect)=DRAGDROP_S_DROP) then
-                   begin
-                       case dwEffect and ((DropEffect_Copy or
-                         DropEffect_Move or DropEffect_Link)) of
-                            DropEffect_Copy: Result:=drCopy;
-                            DropEffect_Move: Result:=drMove;
-                            DropEffect_Link: Result:=drLink;
-                            else
-                            begin
-                                 {MP dropped on no-drop location or }
-                                 {cancelled by ddext after drop with move-effect}
-                                 Result:=drInvalid;
-                            end;
-                       end;
-                   end
-                   else
-                   begin
-                     {MP cancelled by user }
-                     Result:=drCancelled;
-                   end;
-                finally
-                   DropSource._Release;
+            case dwEffect and ((DROPEFFECT_COPY or DROPEFFECT_MOVE or DROPEFFECT_LINK)) of
+              DROPEFFECT_COPY: Result := drCopy;
+              DROPEFFECT_MOVE: Result := drMove;
+              DROPEFFECT_LINK: Result := drLink;
+              else
+                begin
+                  { dropped on no-drop location or }
+                  { cancelled by ddext after drop with move-effect }
+                  Result := drInvalid;
                 end;
-             except
-                Result:=drInvalid;
-                raise;
-             end;
-          finally
-             FOwnerIsSource:=False;
-             DataObject._Release;
-          end;
-          FDragDetectStatus:=ddsNone;
-          if assigned(FOnDragDetect) then
+            end;
+          end
+            else
           begin
-               GetCursorPos(pt);
-               if HiWord(DWord(GetKeyState(VK_SHIFT)))<>0 then grfKeyState:=MK_SHIFT
-               else grfKeyState:=0;
-               if HiWord(DWord(GetKeyState(VK_CONTROL)))<>0 then
-                  grfKeyState:=grfKeyState or MK_CONTROL;
-               FOnDragDetect(grfKeyState,
-                  FDragDropControl.ScreenToClient(FDragDetectStart),
-                  FDragDropControl.ScreenToClient(pt), FDragDetectStatus);
+            { cancelled by user }
+            Result := drCancelled;
           end;
-     end
-     else
-     begin
-          FDragDetectStatus:=ddsNone;
-          Result:=drCancelled;
-     end;
-     GInternalSource:=nil;
+        finally
+          DropSource._Release;
+        end;
+      except
+        Result := drInvalid;
+        raise;
+      end;
+    finally
+      FOwnerIsSource := False;
+      DataObject._Release;
+    end;
+    FDragDetectStatus := ddsNone;
+    if Assigned(FOnDragDetect) then
+    begin
+      GetCursorPos(pt);
+      if HiWord(DWord(GetKeyState(VK_SHIFT))) <> 0 then grfKeyState := MK_SHIFT
+        else grfKeyState := 0;
+      if HiWord(DWord(GetKeyState(VK_CONTROL))) <> 0 then grfKeyState := grfKeyState or MK_CONTROL;
+      FOnDragDetect(grfKeyState,
+        FDragDropControl.ScreenToClient(FDragDetectStart),
+        FDragDropControl.ScreenToClient(pt), FDragDetectStatus);
+    end;
+  end
+    else
+  begin
+    FDragDetectStatus := ddsNone;
+    Result := drCancelled;
+  end;
+  GInternalSource := nil;
 end;
 
 function TDragDrop.Execute: TDragResult;
 begin
-     Result:=ExecuteOperation(CreateDataObject);
+  Result := ExecuteOperation(CreateDataObject);
 end;
 
-procedure TDragDrop.SetSourceEffects(Values:TDropEffectSet);
+procedure TDragDrop.SetSourceEffects(Values: TDropEffectSet);
 begin
-     FSourceEffectsSet:=Values;
-     FSourceEffects:=0;
-     if deCopy in Values then inc(FSourceEffects,DROPEFFECT_COPY);
-     if deMove in Values then inc(FSourceEffects,DROPEFFECT_MOVE);
-     if deLink in Values then inc(FSourceEffects,DROPEFFECT_LINK);
-     if (csDesigning in ComponentState=False) and (csLoading in ComponentState=False) then
-     begin
-          if (csDesigning in ComponentState=False) and (FMessageHooked=False) and
-             (FSourceEffects<>0) then HookMessageHandler;
-          if (csDesigning in ComponentState=False) and (FMessageHooked=True) and
-             (FSourceEffects=0) then UnhookMessageHandler(False);
-     end;
+  FSourceEffectsSet := Values;
+  FSourceEffects := 0;
+  if deCopy in Values then Inc(FSourceEffects, DROPEFFECT_COPY);
+  if deMove in Values then Inc(FSourceEffects, DROPEFFECT_MOVE);
+  if deLink in Values then Inc(FSourceEffects, DROPEFFECT_LINK);
+  if (not (csDesigning in ComponentState)) and (not (csLoading in ComponentState)) then
+  begin
+    if (not FMessageHooked) and (FSourceEffects <> 0) then HookMessageHandler;
+    if FMessageHooked and (FSourceEffects = 0) then UnhookMessageHandler(False);
+  end;
 end;
 
 procedure TDragDrop.SetTargetEffects(Values:TDropEffectSet);
 begin
-     FTargetEffectsSet:=Values;
-     FTargetEffects:=0;
-     if deCopy in Values then inc(FTargetEffects,DROPEFFECT_COPY);
-     if deMove in Values then inc(FTargetEffects,DROPEFFECT_MOVE);
-     if deLink in Values then inc(FTargetEffects,DROPEFFECT_LINK);
-     if (csDesigning in ComponentState=False) and (FRegistered=False) and
-        (FTargetEffects<>0) then RegisterTarget;
-     if (FRegistered=True) and (FTargetEffects=0) then
-        UnRegisterTarget;
+  FTargetEffectsSet := Values;
+  FTargetEffects := 0;
+  if deCopy in Values then Inc(FTargetEffects, DROPEFFECT_COPY);
+  if deMove in Values then Inc(FTargetEffects, DROPEFFECT_MOVE);
+  if deLink in Values then Inc(FTargetEffects, DROPEFFECT_LINK);
+  if (not (csDesigning in ComponentState)) and (not FRegistered) and (FTargetEffects <> 0) then RegisterTarget;
+  if FRegistered and (FTargetEffects = 0) then UnRegisterTarget;
 end;
 
-function TDragDrop.CopyToClipboard:Boolean;
-var DataObject:IDataObject;
+function TDragDrop.CopyToClipboard: Boolean;
+var
+  DataObject:IDataObject;
 begin
-     Result:=False;
-     DataObject:=CreateDataObject;
-     if DataObject=nil then exit;
-     try
-        Result:=OLESetClipBoard(DataObject)=S_Ok;
-     finally
-        DataObject._Release;
-     end;
+  Result := False;
+  DataObject := CreateDataObject;
+  if DataObject <> nil then
+  begin
+    try
+      Result := (OLESetClipBoard(DataObject) = S_OK);
+    finally
+      DataObject._Release;
+    end;
+  end;
 end;
 
-function TDragDrop.GetFromClipboard:Boolean;
-var DataObject:IDataObject;
-    pt:TPoint;
-    dwEffect:LongInt;
+function TDragDrop.GetFromClipboard: Boolean;
+var
+  DataObject: IDataObject;
+  pt: TPoint;
+  dwEffect: LongInt;
 begin
-     Result:=OLEGetClipBoard(DataObject)=S_Ok;
-     if Result then
-     begin
-          pt.x:=-1;
-          pt.y:=-1;
-          dwEffect:=DropEffect_Copy;
-          FDropTarget.RenderDropped(DataObject, 0, pt, dwEffect);
-     end;
+  Result := (OLEGetClipBoard(DataObject) = S_OK);
+  if Result then
+  begin
+    pt.x := -1;
+    pt.y := -1;
+    dwEffect := DROPEFFECT_COPY;
+    FDropTarget.RenderDropped(DataObject, 0, pt, dwEffect);
+  end;
 end;
 
-function TDragDrop.DropHandler(const dataObj: IDataObject; grfKeyState: LongInt;
-       pt: TPoint; var dwEffect: LongInt): Boolean;
+function TDragDrop.DropHandler(const dataObj: IDataObject; grfKeyState: LongInt; pt: TPoint; var dwEffect: LongInt): Boolean;
 begin
-     Result:=False;
+  Result := False;
 end;
 
 // Register method -------------------------------------------------------------
