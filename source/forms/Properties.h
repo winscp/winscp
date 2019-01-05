@@ -4,7 +4,6 @@
 //----------------------------------------------------------------------------
 #include "PathLabel.hpp"
 #include "Rights.h"
-#include "RightsExt.h"
 #include <System.Classes.hpp>
 #include <Vcl.ComCtrls.hpp>
 #include <Vcl.Controls.hpp>

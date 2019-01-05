@@ -16,7 +16,6 @@
 //---------------------------------------------------------------------
 #pragma link "PathLabel"
 #pragma link "Rights"
-#pragma link "RightsExt"
 #ifndef NO_RESOURCES
 #pragma resource "*.dfm"
 #endif

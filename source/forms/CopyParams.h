@@ -11,7 +11,7 @@
 
 #include <WinInterface.h>
 
-#include "RightsExt.h"
+#include "Rights.h"
 #include "ComboEdit.hpp"
 #include <Mask.hpp>
 //---------------------------------------------------------------------------

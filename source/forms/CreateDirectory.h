@@ -3,7 +3,6 @@
 #define CreateDirectoryH
 //----------------------------------------------------------------------------
 #include "Rights.h"
-#include "RightsExt.h"
 #include <System.Classes.hpp>
 #include <Vcl.Controls.hpp>
 #include <Vcl.ExtCtrls.hpp>
@@ -12,8 +11,6 @@
 //----------------------------------------------------------------------------
 #include <Bookmarks.h>
 #include <GUITools.h>
-#include "RightsExt.h"
-#include "Rights.h"
 //----------------------------------------------------------------------------
 class TCreateDirectoryDialog : public TForm
 {
