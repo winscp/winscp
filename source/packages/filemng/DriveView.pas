@@ -666,8 +666,8 @@ begin
   if Assigned(PopupMenu) then
     PopupMenu.Autopopup := False;
 
-  OLECheck(shGetDesktopFolder(FDesktop));
-  OLECheck(shGetSpecialFolderLocation(Self.Handle, CSIDL_DRIVES, PIDLWorkPlace));
+  OLECheck(SHGetDesktopFolder(FDesktop));
+  OLECheck(SHGetSpecialFolderLocation(Self.Handle, CSIDL_DRIVES, PIDLWorkPlace));
   FDesktop.BindToObject(PIDLWorkPlace, nil, IID_IShellFolder, Pointer(FWorkPlace));
   FreePIDL(PIDLWorkPlace);
 

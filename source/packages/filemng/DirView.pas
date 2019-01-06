@@ -1105,7 +1105,7 @@ begin
   begin
     PIDLRecycleLocal := nil;
     try
-      OLECheck(shGetSpecialFolderLocation(Self.Handle,
+      OLECheck(SHGetSpecialFolderLocation(Self.Handle,
         CSIDL_BITBUCKET, PIDLRecycleLocal));
       PIDLRecycle := PIDL_Concatenate(nil, PIDLRecycleLocal);
 
@@ -1190,7 +1190,7 @@ var
 begin
   Result := nil;
   if not Assigned(FDesktopFolder) then
-    ShGetDesktopFolder(FDesktopFolder);
+    SHGetDesktopFolder(FDesktopFolder);
 
   if Assigned(FDesktopFolder) then
   begin
@@ -1354,7 +1354,7 @@ begin
         (Uppercase(Copy(FPath, 2, 10)) = ':\RECYCLER');
 
       if not Assigned(FDesktopFolder) then
-        shGetDesktopFolder(FDesktopFolder);
+        SHGetDesktopFolder(FDesktopFolder);
 
       if IsRecycleBin then LoadFromRecycleBin(Path)
         else
