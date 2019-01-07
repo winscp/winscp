@@ -600,7 +600,7 @@ BEGIN
         EDIT_SELECT_ALL, "Select &All"
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
-        WINSCP_COPYRIGHT, "Copyright © 2000-2018 Martin Prikryl"
+        WINSCP_COPYRIGHT, "Copyright © 2000-2019 Martin Prikryl"
         HOMEPAGE_URL, "https://winscp.net/"
         HISTORY_URL, "https://winscp.net/eng/docs/history"
         FORUM_URL, "https://winscp.net/forum/"
