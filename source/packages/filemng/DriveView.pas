@@ -137,7 +137,6 @@ type
     FChangeTimerSuspended: Integer;
 
     FDesktop: IShellFolder;
-    FWorkPlace: IShellFolder;
 
     {Additional events:}
     FOnDisplayContextMenu: TNotifyEvent;
@@ -225,8 +224,6 @@ type
     property StateImages;
     property Items stored False;
     property Selected Write SetSelected stored False;
-
-    property WorkPlace: IShellFolder read FWorkPlace;
 
     property DragImageList: TDragImageList read FDragImageList;
 
@@ -658,7 +655,6 @@ end;
 
 procedure TDriveView.CreateWnd;
 var
-  PIDLWorkPlace: PItemIDList;
   DriveStatus: TDriveStatus;
 begin
   inherited;
@@ -667,9 +663,6 @@ begin
     PopupMenu.Autopopup := False;
 
   OLECheck(SHGetDesktopFolder(FDesktop));
-  OLECheck(SHGetSpecialFolderLocation(Self.Handle, CSIDL_DRIVES, PIDLWorkPlace));
-  FDesktop.BindToObject(PIDLWorkPlace, nil, IID_IShellFolder, Pointer(FWorkPlace));
-  FreePIDL(PIDLWorkPlace);
 
   FDragDropFilesEx.SourceEffects := [deCopy, deMove, deLink];
   FDragDropFilesEx.TargetEffects := [deCopy, deMove, deLink];
@@ -1340,7 +1333,7 @@ begin
               if DriveInfo.IsFixedDrive(Drive) and (DriveType <> DRIVE_REMOVABLE) and
                  ((DriveType <> DRIVE_REMOTE) or GetNetWorkConnected(Drive)) then
               begin
-                GetNodeShellAttr(FWorkPlace, NodeData, NodeData.DirName);
+                GetNodeShellAttr(FDesktop, NodeData, NodeData.DirName);
               end;
 
               if Assigned(NextDriveNode) then
@@ -1443,13 +1436,7 @@ begin
   { if tree view is not visible anyway }
   if not Assigned(TNodeData(ParentNode.Data).ShellFolder) then
   begin
-    GetNodeShellAttr(FWorkPlace, TNodeData(ParentNode.Data), NodePathName(ParentNode), Visible);
-    { Particularly with UNC paths, "workplace" does not work, but "desktop" does. Maybe we should use "desktop" }
-    { for evetything, as we do that already in TDriveInfo.ReadDriveStatus. }
-    if not Assigned(NodeData.PIDL) then
-    begin
-      GetNodeShellAttr(FDesktop, TNodeData(ParentNode.Data), NodePathName(ParentNode), Visible);
-    end;
+    GetNodeShellAttr(FDesktop, TNodeData(ParentNode.Data), NodePathName(ParentNode), Visible);
   end;
 
   GetNodeShellAttr(TNodeData(ParentNode.Data).ShellFolder, NodeData, SRec.Name, Visible);
