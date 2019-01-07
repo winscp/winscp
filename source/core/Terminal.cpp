@@ -7850,7 +7850,7 @@ TTerminal::TEncryptedFileNames::const_iterator __fastcall TTerminal::GetEncrypte
 
       if (FEncryptedFileNames.find(Path) == FEncryptedFileNames.end())
       {
-        FEncryptedFileNames.insert(std::make_pair(Path, Path));
+        FEncryptedFileNames.insert(std::make_pair(Path, UnixExtractFileName(Path)));
         LogEvent(2, FORMAT(L"Name of file '%s' assumed not to be encrypted", (Path)));
       }
     }
