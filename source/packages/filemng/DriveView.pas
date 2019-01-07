@@ -137,7 +137,6 @@ type
     FChangeTimerSuspended: Integer;
 
     FDesktop: IShellFolder;
-    FWorkPlace: IShellFolder;
 
     {Additional events:}
     FOnDisplayContextMenu: TNotifyEvent;
@@ -224,8 +223,6 @@ type
     property StateImages;
     property Items stored False;
     property Selected Write SetSelected stored False;
-
-    property WorkPlace: IShellFolder read FWorkPlace;
 
     property DragImageList: TDragImageList read FDragImageList;
 
@@ -658,7 +655,6 @@ end;
 
 procedure TDriveView.CreateWnd;
 var
-  PIDLWorkPlace: PItemIDList;
   Drive: TDrive;
 begin
   inherited;
@@ -667,9 +663,6 @@ begin
     PopupMenu.Autopopup := False;
 
   OLECheck(shGetDesktopFolder(FDesktop));
-  OLECheck(shGetSpecialFolderLocation(Self.Handle, CSIDL_DRIVES, PIDLWorkPlace));
-  FDesktop.BindToObject(PIDLWorkPlace, nil, IID_IShellFolder, Pointer(FWorkPlace));
-  FreePIDL(PIDLWorkPlace);
 
   FDragDropFilesEx.SourceEffects := [deCopy, deMove, deLink];
   FDragDropFilesEx.TargetEffects := [deCopy, deMove, deLink];
@@ -1298,7 +1291,7 @@ begin
             if (Drive >= FirstFixedDrive) and (DriveType <> DRIVE_REMOVABLE) and
                ((DriveType <> DRIVE_REMOTE) or GetNetWorkConnected(Drive)) then
             begin
-              GetNodeShellAttr(FWorkPlace, NodeData, NodeData.DirName);
+              GetNodeShellAttr(FDesktop, NodeData, NodeData.DirName);
             end;
 
             if Assigned(DriveStatus[NextDrive].RootNode) then
@@ -1393,7 +1386,7 @@ begin
   { to avoid unnecessary scan of subfolders (which may take some time) }
   { if tree view is not visible anyway }
   if not Assigned(TNodeData(ParentNode.Data).ShellFolder) then
-    GetNodeShellAttr(FWorkPlace, TNodeData(ParentNode.Data), NodePathName(ParentNode), Visible);
+    GetNodeShellAttr(FDesktop, TNodeData(ParentNode.Data), NodePathName(ParentNode), Visible);
 
   GetNodeShellAttr(TNodeData(ParentNode.Data).ShellFolder, NodeData, SRec.Name, Visible);
 
