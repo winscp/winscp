@@ -1701,7 +1701,8 @@ bool __fastcall TWinConfiguration::IsDDExtRunning()
 //---------------------------------------------------------------------------
 bool __fastcall TWinConfiguration::IsDDExtBroken()
 {
-  return (GetWindowsBuild() >= 17134);
+  int Build = GetWindowsBuild();
+  return (Build >= 17134) && (Build < 17763);
 }
 //---------------------------------------------------------------------------
 RawByteString __fastcall TWinConfiguration::StronglyRecryptPassword(RawByteString Password, UnicodeString Key)
