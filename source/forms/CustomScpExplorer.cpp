@@ -158,7 +158,8 @@ public:
 //---------------------------------------------------------------------------
 bool UseDirectoryMonitorDragDrop()
 {
-  return IsUWP() || (GetWindowsBuild() >= 17134);
+  int Build = GetWindowsBuild();
+  return IsUWP() || ((Build >= 17134) && (Build < 17763));
 }
 //---------------------------------------------------------------------------
 __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
@@ -6649,7 +6650,8 @@ void __fastcall TCustomScpExplorerForm::DDExtInitDrag(TFileList * FileList,
 
   Created = true;
 
-  if ((IsUWP() && !WinConfiguration->IsDDExtRunning()) || (GetWindowsBuild() >= 17134))
+  int Build = GetWindowsBuild();
+  if ((IsUWP() && !WinConfiguration->IsDDExtRunning()) || ((Build >= 17134) && (Build < 17763)))
   {
     FDragFakeMonitors = new TObjectList();
     for (char Drive = FirstDrive; Drive <= LastDrive; Drive++)
