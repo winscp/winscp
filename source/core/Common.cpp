@@ -1437,7 +1437,7 @@ bool __fastcall FileSearchRec(const UnicodeString FileName, TSearchRec & Rec)
 //---------------------------------------------------------------------------
 void CopySearchRec(const TSearchRec & Source, TSearchRec & Dest)
 {
-  // Strangely isses a compiler warning (W8111 due to TSearchRec::Time), when used in Script.cpp, but not here.
+  // Strangely issues a compiler warning (W8111 due to TSearchRec::Time), when used in Script.cpp, but not here.
   Dest = Source;
 }
 //---------------------------------------------------------------------------
