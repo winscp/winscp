@@ -7941,7 +7941,7 @@ void __fastcall TCustomScpExplorerForm::RemoteFileContolDDChooseEffect(
           else
           {
             // with ctrl-down, we want copy unless it is not supported
-            dwEffect = CopyCapable ? DROPEFFECT_COPY : DROPEFFECT_MOVE;
+            dwEffect = CopyCapable ? DROPEFFECT_COPY : DROPEFFECT_NONE;
           }
         }
       }
