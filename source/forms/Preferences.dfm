@@ -1391,10 +1391,10 @@ object PreferencesDialog: TPreferencesDialog
             Anchors = [akLeft, akTop, akRight]
             AutoSize = False
             Caption = 
-              'Allow direct downloads to regular local folders (e.g. Window Exp' +
-              'lorer). Does not allow downloads to other destinations (ZIP arch' +
-              'ives,  FTP, etc.). Uses drag&&drop shell extension, when availab' +
-              'le.'
+              'Allows direct downloads to regular local folders (e.g. Window Ex' +
+              'plorer). Does not allow downloads to other destinations (ZIP arc' +
+              'hives,  FTP, etc.). Uses drag&&drop shell extension, when availa' +
+              'ble.'
             WordWrap = True
             OnClick = DDLabelClick
           end
