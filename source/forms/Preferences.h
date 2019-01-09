@@ -258,7 +258,7 @@ __published:
   TPanel *LogFilePanel;
   TRadioButton *LogFileAppendButton;
   TRadioButton *LogFileOverwriteButton;
-  TComboBox *LogProtocolCombo;
+  TComboBox *LogProtocolCombo2;
   TStaticText *LogFileNameHintText;
   TCheckBox *EnableLoggingCheck;
   TGroupBox *ActionsLoggingGroup;

@@ -346,7 +346,7 @@ object PreferencesDialog: TPreferencesDialog
               OnClick = ControlChange
             end
           end
-          object LogProtocolCombo: TComboBox
+          object LogProtocolCombo2: TComboBox
             Left = 256
             Top = 21
             Width = 119

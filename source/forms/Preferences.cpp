@@ -613,7 +613,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
 
     // logging
     EnableLoggingCheck->Checked = Configuration->Logging;
-    LogProtocolCombo->ItemIndex = Configuration->LogProtocol + BelowNormalLogLevels;
+    LogProtocolCombo2->ItemIndex = Configuration->LogProtocol + BelowNormalLogLevels;
     LogFileNameEdit3->Text =
       !Configuration->LogFileName.IsEmpty() ? Configuration->LogFileName : Configuration->DefaultLogFileName;
     if (Configuration->LogFileAppend)
@@ -927,7 +927,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
 
     // logging
     Configuration->Logging = EnableLoggingCheck->Checked && !LogFileNameEdit3->Text.IsEmpty();
-    Configuration->LogProtocol = LogProtocolCombo->ItemIndex - BelowNormalLogLevels;
+    Configuration->LogProtocol = LogProtocolCombo2->ItemIndex - BelowNormalLogLevels;
     Configuration->LogFileName = LogFileNameEdit3->Text;
     Configuration->LogFileAppend = LogFileAppendButton->Checked;
     __int64 LogMaxSize;
@@ -1376,8 +1376,8 @@ void __fastcall TPreferencesDialog::UpdateControls()
       (static_cast<TLocaleInfo *>(LanguagesView->ItemFocused->Data)->Locale != GUIConfiguration->AppliedLocale);
 
     // logging
-    EnableControl(LogProtocolCombo, EnableLoggingCheck->Checked);
-    EnableControl(LogFileNameEdit3, LogProtocolCombo->Enabled);
+    EnableControl(LogProtocolCombo2, EnableLoggingCheck->Checked);
+    EnableControl(LogFileNameEdit3, LogProtocolCombo2->Enabled);
     EnableControl(LogFileNameHintText, LogFileNameEdit3->Enabled);
     EnableControl(LogFileAppendButton, LogFileNameEdit3->Enabled);
     EnableControl(LogFileOverwriteButton, LogFileNameEdit3->Enabled);
@@ -1387,7 +1387,7 @@ void __fastcall TPreferencesDialog::UpdateControls()
     EnableControl(LogMaxSizeCountEdit, LogMaxSizeCountCheck->Enabled && LogMaxSizeCountCheck->Checked);
     EnableControl(LogMaxSizeCountFilesLabel, LogMaxSizeCountEdit->Enabled);
 
-    EnableControl(LogSensitiveCheck, LogProtocolCombo->Enabled);
+    EnableControl(LogSensitiveCheck, LogProtocolCombo2->Enabled);
 
     EnableControl(ActionsLogFileNameEdit, EnableActionsLoggingCheck->Checked);
     EnableControl(ActionsLogFileNameHintText, ActionsLogFileNameEdit->Enabled);
