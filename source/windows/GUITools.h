@@ -187,7 +187,7 @@ class TUIStateAwareLabel : public TLabel
 protected:
   DYNAMIC void __fastcall DoDrawText(TRect & Rect, int Flags);
 };
-// FindComponentClass takes parameter by referece and as such it cannot be implemented in
+// FindComponentClass takes parameter by reference and as such it cannot be implemented in
 // an inline method without a compiler warning, which we cannot suppress in a macro.
 // And having the implementation in a real code (not macro) also allows us to debug the code.
 void __fastcall FindComponentClass(
