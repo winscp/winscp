@@ -1218,7 +1218,7 @@ inherited ScpCommanderForm: TScpCommanderForm
           object TBXSeparatorItem63: TTBXSeparatorItem
           end
           object TBXItem237: TTBXItem
-            Action = NonVisualDataModule.FileColorsPreferences
+            Action = NonVisualDataModule.FileColorsPreferencesAction
           end
         end
       end
@@ -1559,7 +1559,7 @@ inherited ScpCommanderForm: TScpCommanderForm
           object TBXSeparatorItem64: TTBXSeparatorItem
           end
           object TBXItem251: TTBXItem
-            Action = NonVisualDataModule.FileColorsPreferences
+            Action = NonVisualDataModule.FileColorsPreferencesAction
           end
         end
       end

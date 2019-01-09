@@ -619,7 +619,7 @@ __published:    // IDE-managed Components
   TAction *RenameSessionAction;
   TTBXItem *TBXItem78;
   TAction *CurrentCopyAction;
-  TAction *FileColorsPreferences;
+  TAction *FileColorsPreferencesAction;
   void __fastcall ExplorerActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall SessionIdleTimerTimer(TObject *Sender);

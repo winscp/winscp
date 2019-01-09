@@ -2253,7 +2253,7 @@ object NonVisualDataModule: TNonVisualDataModule
       ImageIndex = 111
       ShortCut = 16451
     end
-    object FileColorsPreferences: TAction
+    object FileColorsPreferencesAction: TAction
       Tag = 15
       Category = 'View'
       Caption = 'File &Colors...'

@@ -921,7 +921,7 @@ inherited ScpExplorerForm: TScpExplorerForm
         object TBXSeparatorItem43: TTBXSeparatorItem
         end
         object TBXItem161: TTBXItem
-          Action = NonVisualDataModule.FileColorsPreferences
+          Action = NonVisualDataModule.FileColorsPreferencesAction
         end
       end
     end
