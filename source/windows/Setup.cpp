@@ -693,6 +693,7 @@ void __fastcall LaunchAdvancedAssociationUI()
         NULL, CLSCTX_INPROC, __uuidof(IOpenControlPanel), (void**)&OpenControlPanel);
     if (SUCCEEDED(Result))
     {
+      // This does not work anymore since April 2018 Update, it now has the same effect as mere "pageDefaultProgram".
       UnicodeString Page = FORMAT(L"pageDefaultProgram\\pageAdvancedSettings?pszAppName=%s", (AppNameString()));
       OpenControlPanel->Open(L"Microsoft.DefaultPrograms", Page.c_str(), NULL);
       OpenControlPanel->Release();
