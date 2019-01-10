@@ -863,7 +863,7 @@ int __fastcall Execute()
       // workaround is that we create mutex in uninstaller, if it runs silent, and
       // ignore the UninstallCleanup, when the mutex exists.
       if ((OpenMutex(SYNCHRONIZE, false, L"WinSCPSilentUninstall") == NULL) &&
-          (MessageDialog(MainInstructions(LoadStr(UNINSTALL_CLEANUP)), qtConfirmation,
+          (MessageDialog(LoadStr(UNINSTALL_CLEANUP), qtConfirmation,
             qaYes | qaNo, HELP_UNINSTALL_CLEANUP) == qaYes))
       {
         DoCleanupDialog(StoredSessions, Configuration);
