@@ -290,7 +290,7 @@ BEGIN
         PASSWORD_CHANGED, "Password has been changed."
         OPEN_TARGET_FOLDER, "Open &Target Folder"
         OPEN_DOWNLOADED_FILE, "Open &Downloaded File"
-        ENCRYPT_KEY_GENERATED, "**Encryption key was generated.**\n\nYou should safely backup the generated encryption key. If you lose it, you won't be able to read your files."
+        ENCRYPT_KEY_GENERATED, "**Encryption key was generated.**\n\nYou should safely backup the generated encryption key. If you lose it, you won't be able to read your encrypted files."
         LOCATION_PROFILE_HINT, "Open location profile \"%s\".|Local directory:\n  %s|Remote directory:\n  %s"
         USAGE_INFO, "Prints list of supported ciphers and algorithms."
         USAGE_RAWTRANSFERSETTINGS, "Configures any transfer settings using a raw format as in an INI file."
