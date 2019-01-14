@@ -1094,6 +1094,7 @@ void __fastcall TCustomCommandOptionsDialog::AddOptionComboBox(
     {
       ParamValue = Item;
     }
+    Item = WinConfiguration->ExtensionStringTranslation(FCommand->Id, Item);
     Items->Add(Item);
     if (Value == ParamValue)
     {
