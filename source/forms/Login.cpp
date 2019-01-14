@@ -1807,6 +1807,7 @@ void __fastcall TLoginDialog::RenameSessionActionExecute(TObject * /*Sender*/)
   {
     // would be more appropriate in SessionTreeEditing, but it does not work there
     ResetSitesIncrementalSearch();
+    SessionTree->SetFocus();
     SessionTree->Selected->EditText();
   }
 }
