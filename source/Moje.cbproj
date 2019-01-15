@@ -46,6 +46,7 @@
 		<DCC_EXPLICIT_STRING_CAST_LOSS>true</DCC_EXPLICIT_STRING_CAST_LOSS>
 		<DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;$(DCC_Namespace)</DCC_Namespace>
 		<DCC_UNSAFE_TYPE>true</DCC_UNSAFE_TYPE>
+		<Defines>$(Defines)</Defines>
 		<FinalOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</FinalOutputDir>
 		<ILINK_Description>Martin's components</ILINK_Description>
 		<ILINK_GenerateImportLibrary>true</ILINK_GenerateImportLibrary>
@@ -95,7 +96,10 @@
 			<BuildOrder>3</BuildOrder>
 		</DelphiCompile>
 		<DelphiCompile Include="packages\my\CompThread.pas">
-			<BuildOrder>4</BuildOrder>
+			<BuildOrder>22</BuildOrder>
+		</DelphiCompile>
+		<DelphiCompile Include="packages\my\DirectoryMonitor.pas">
+			<BuildOrder>23</BuildOrder>
 		</DelphiCompile>
 		<ResFiles Include="packages\my\DiscMon.dcr">
 			<BuildOrder>6</BuildOrder>
@@ -123,6 +127,9 @@
 		</ResFiles>
 		<DelphiCompile Include="packages\my\NortonLikeListView.pas">
 			<BuildOrder>13</BuildOrder>
+		</DelphiCompile>
+		<DelphiCompile Include="packages\my\OperationWithTimeout.pas">
+			<BuildOrder>22</BuildOrder>
 		</DelphiCompile>
 		<DelphiCompile Include="packages\my\PasswordEdit.pas">
 			<BuildOrder>15</BuildOrder>

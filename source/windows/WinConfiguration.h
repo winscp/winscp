@@ -355,6 +355,7 @@ private:
   UnicodeString FDDTemporaryDirectory;
   bool FDDWarnLackOfTempSpace;
   bool FDDExtEnabled;
+  bool FDDFakeFile;
   int FDDExtInstalled;
   int FDDExtTimeout;
   bool FConfirmClosingSession;
@@ -407,6 +408,7 @@ private:
   bool FRefreshRemotePanel;
   TDateTime FRefreshRemotePanelInterval;
   TFontConfiguration FPanelFont;
+  bool FNaturalOrderNumericalSorting;
   bool FFullRowSelect;
   bool FOfferedEditorAutoConfig;
   bool FUseMasterPassword;
@@ -430,6 +432,7 @@ private:
   TDateTime FTipsShown;
   int FRunsSinceLastTip;
   bool FLockedInterface;
+  bool FTimeoutShellIconRetrieval;
   int FDontDecryptPasswords;
   int FMasterPasswordSession;
   bool FMasterPasswordSessionAsked;
@@ -463,6 +466,7 @@ private:
   void __fastcall SetDDTemporaryDirectory(UnicodeString value);
   void __fastcall SetDDWarnLackOfTempSpace(bool value);
   void __fastcall SetDDExtEnabled(bool value);
+  bool __fastcall GetDDExtEnabled();
   void __fastcall SetDDExtTimeout(int value);
   void __fastcall SetConfirmClosingSession(bool value);
   void __fastcall SetDDWarnLackOfTempSpaceRatio(double value);
@@ -506,6 +510,7 @@ private:
   void __fastcall SetRefreshRemotePanel(bool value);
   void __fastcall SetRefreshRemotePanelInterval(TDateTime value);
   void __fastcall SetPanelFont(const TFontConfiguration & value);
+  void __fastcall SetNaturalOrderNumericalSorting(bool value);
   void __fastcall SetFullRowSelect(bool value);
   void __fastcall SetOfferedEditorAutoConfig(bool value);
   void __fastcall SetLastMonitor(int value);
@@ -531,6 +536,9 @@ private:
   TStrings * __fastcall GetCustomCommandOptions();
   void __fastcall SetCustomCommandOptions(TStrings * value);
   void __fastcall SetLockedInterface(bool value);
+  bool __fastcall GetTimeoutShellOperations();
+  void __fastcall SetTimeoutShellOperations(bool value);
+  void __fastcall SetTimeoutShellIconRetrieval(bool value);
   int __fastcall GetLocaleCompletenessTreshold();
 
   bool __fastcall GetDDExtInstalled();
@@ -575,6 +583,8 @@ protected:
   void __fastcall ReleaseExtensionTranslations();
   void __fastcall LoadExtensionTranslations();
 
+  __property bool DDFakeFile = { read=FDDFakeFile, write=FDDFakeFile };
+
 public:
   __fastcall TWinConfiguration();
   virtual __fastcall ~TWinConfiguration();
@@ -610,6 +620,7 @@ public:
   UnicodeString __fastcall ExtensionStringTranslation(const UnicodeString & ExtensionId, const UnicodeString & S);
   UnicodeString __fastcall UniqueExtensionName(const UnicodeString & ExtensionName, int Counter);
   UnicodeString __fastcall GetProvisionaryExtensionId(const UnicodeString & FileName);
+  bool __fastcall IsDDExtRunning();
 
   static void __fastcall RestoreFont(const TFontConfiguration & Configuration, TFont * Font);
   static void __fastcall StoreFont(TFont * Font, TFontConfiguration & Configuration);
@@ -644,7 +655,7 @@ public:
   __property bool UseSharedBookmarks = { read = FUseSharedBookmarks, write = SetUseSharedBookmarks};
   __property UnicodeString DDTemporaryDirectory  = { read=FDDTemporaryDirectory, write=SetDDTemporaryDirectory };
   __property bool DDWarnLackOfTempSpace  = { read=FDDWarnLackOfTempSpace, write=SetDDWarnLackOfTempSpace };
-  __property bool DDExtEnabled = { read=FDDExtEnabled, write=SetDDExtEnabled };
+  __property bool DDExtEnabled = { read=GetDDExtEnabled, write=SetDDExtEnabled };
   __property bool DDExtInstalled = { read=GetDDExtInstalled };
   __property int DDExtTimeout = { read=FDDExtTimeout, write=SetDDExtTimeout };
   __property bool ConfirmClosingSession  = { read=FConfirmClosingSession, write=SetConfirmClosingSession };
@@ -682,6 +693,7 @@ public:
   __property bool RefreshRemotePanel = { read = FRefreshRemotePanel, write = SetRefreshRemotePanel };
   __property TDateTime RefreshRemotePanelInterval = { read = FRefreshRemotePanelInterval, write = SetRefreshRemotePanelInterval };
   __property TFontConfiguration PanelFont = { read = FPanelFont, write = SetPanelFont };
+  __property bool NaturalOrderNumericalSorting = { read = FNaturalOrderNumericalSorting, write = SetNaturalOrderNumericalSorting };
   __property bool FullRowSelect = { read = FFullRowSelect, write = SetFullRowSelect };
   __property bool OfferedEditorAutoConfig = { read = FOfferedEditorAutoConfig, write = SetOfferedEditorAutoConfig };
   __property int LastMonitor = { read = GetLastMonitor, write = SetLastMonitor };
@@ -706,6 +718,8 @@ public:
   __property TMasterPasswordPromptEvent OnMasterPasswordPrompt = { read = FOnMasterPasswordPrompt, write = FOnMasterPasswordPrompt };
   __property TStrings * CustomCommandOptions = { read = GetCustomCommandOptions, write = SetCustomCommandOptions };
   __property bool LockedInterface = { read = FLockedInterface, write = SetLockedInterface };
+  __property bool TimeoutShellOperations = { read = GetTimeoutShellOperations, write = SetTimeoutShellOperations };
+  __property bool TimeoutShellIconRetrieval = { read = FTimeoutShellIconRetrieval, write = SetTimeoutShellIconRetrieval };
   __property LCID DefaultLocale = { read = FDefaultLocale };
   __property int LocaleCompletenessTreshold = { read = GetLocaleCompletenessTreshold };
 };

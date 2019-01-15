@@ -134,6 +134,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       ReadOnly = True
       TabOrder = 2
       OnEnter = RemoteDriveViewEnter
+      OnBusy = DirViewBusy
     end
   end
   object QueuePanel: TPanel

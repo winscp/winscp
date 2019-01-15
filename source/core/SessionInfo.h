@@ -23,7 +23,8 @@ struct TSessionInfo
 
   UnicodeString SshVersionString;
   UnicodeString SshImplementation;
-  UnicodeString HostKeyFingerprint;
+  UnicodeString HostKeyFingerprintSHA256;
+  UnicodeString HostKeyFingerprintMD5;
 
   UnicodeString CertificateFingerprint;
   UnicodeString Certificate;
@@ -76,11 +77,10 @@ public:
   virtual void __fastcall ProcessGUI() = 0;
 };
 //---------------------------------------------------------------------------
-// Duplicated in LogMemo.h for design-time-only purposes
 enum TLogLineType { llOutput, llInput, llStdError, llMessage, llException };
 enum TLogAction
 {
-  laUpload, laDownload, laTouch, laChmod, laMkdir, laRm, laMv, laCall, laLs,
+  laUpload, laDownload, laTouch, laChmod, laMkdir, laRm, laMv, laCp, laCall, laLs,
   laStat, laChecksum, laCwd
 };
 //---------------------------------------------------------------------------
@@ -177,6 +177,13 @@ class TMvSessionAction : public TFileLocationSessionAction
 {
 public:
   __fastcall TMvSessionAction(TActionLog * Log, const UnicodeString & FileName,
+    const UnicodeString & Destination);
+};
+//---------------------------------------------------------------------------
+class TCpSessionAction : public TFileLocationSessionAction
+{
+public:
+  __fastcall TCpSessionAction(TActionLog * Log, const UnicodeString & FileName,
     const UnicodeString & Destination);
 };
 //---------------------------------------------------------------------------

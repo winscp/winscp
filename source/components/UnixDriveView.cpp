@@ -79,7 +79,10 @@ void __fastcall TCustomUnixDriveView::SetTerminal(TTerminal * value)
     FTerminal = value;
     Items->Clear();
     #ifndef DESIGN_ONLY
-    if (FTerminal != NULL)
+    // If terminal is not active initially, we will never load fixed paths, when it become active.
+    // But actually terminal is not active here, only when we are replacing an abandoned terminal
+    // with a dummy one (which will never become active)
+    if ((FTerminal != NULL) && FTerminal->Active)
     {
       TStrings * FixedPaths = FTerminal->FixedPaths;
       if (FixedPaths != NULL)
@@ -480,6 +483,7 @@ void __fastcall TCustomUnixDriveView::Change(TTreeNode * Node)
         }
 
         FDirectoryLoaded = false;
+        StartBusy();
         try
         {
           Terminal->ChangeDirectory(NodePathName(Node));
@@ -487,6 +491,7 @@ void __fastcall TCustomUnixDriveView::Change(TTreeNode * Node)
         }
         __finally
         {
+          EndBusy();
           if (!FDirectoryLoaded)
           {
             DebugAssert(!FIgnoreChange);

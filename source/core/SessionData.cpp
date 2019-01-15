@@ -12,6 +12,7 @@
 #include "PuttyIntf.h"
 #include "RemoteFiles.h"
 #include "SFTPFileSystem.h"
+#include "S3FileSystem.h"
 #include <Soap.EncdDecd.hpp>
 #include <StrUtils.hpp>
 #include <XMLDoc.hpp>
@@ -25,15 +26,18 @@ const wchar_t * ProxyMethodNames = L"None;SOCKS4;SOCKS5;HTTP;Telnet;Cmd";
 const wchar_t * DefaultName = L"Default Settings";
 const UnicodeString CipherNames[CIPHER_COUNT] = {L"WARN", L"3des", L"blowfish", L"aes", L"des", L"arcfour", L"chacha20"};
 const UnicodeString KexNames[KEX_COUNT] = {L"WARN", L"dh-group1-sha1", L"dh-group14-sha1", L"dh-gex-sha1", L"rsa", L"ecdh"};
+const UnicodeString HostKeyNames[HOSTKEY_COUNT] = {L"WARN", L"rsa", L"dsa", L"ecdsa", L"ed25519"};
 const UnicodeString GssLibNames[GSSLIB_COUNT] = {L"gssapi32", L"sspi", L"custom"};
 const wchar_t SshProtList[][10] = {L"1", L"1>2", L"2>1", L"2"};
 const TCipher DefaultCipherList[CIPHER_COUNT] =
   { cipAES, cipChaCha20, cipBlowfish, cip3DES, cipWarn, cipArcfour, cipDES };
 const TKex DefaultKexList[KEX_COUNT] =
   { kexECDH, kexDHGEx, kexDHGroup14, kexRSA, kexWarn, kexDHGroup1 };
+const THostKey DefaultHostKeyList[HOSTKEY_COUNT] =
+  { hkED25519, hkECDSA, hkRSA, hkDSA, hkWarn };
 const TGssLib DefaultGssLibList[GSSLIB_COUNT] =
   { gssGssApi32, gssSspi, gssCustom };
-const wchar_t FSProtocolNames[FSPROTOCOL_COUNT][16] = { L"SCP", L"SFTP (SCP)", L"SFTP", L"", L"", L"FTP", L"WebDAV" };
+const wchar_t FSProtocolNames[FSPROTOCOL_COUNT][16] = { L"SCP", L"SFTP (SCP)", L"SFTP", L"", L"", L"FTP", L"WebDAV", L"S3" };
 const int SshPortNumber = 22;
 const int FtpPortNumber = 21;
 const int FtpsImplicitPortNumber = 990;
@@ -53,6 +57,7 @@ const UnicodeString FtpsProtocol(L"ftps");
 const UnicodeString FtpesProtocol(L"ftpes");
 const UnicodeString WebDAVProtocol(L"dav");
 const UnicodeString WebDAVSProtocol(L"davs");
+const UnicodeString S3Protocol(L"s3");
 const UnicodeString SshProtocol(L"ssh");
 const UnicodeString WinSCPProtocolPrefix(L"winscp-");
 const wchar_t UrlParamSeparator = L';';
@@ -60,6 +65,8 @@ const wchar_t UrlParamValueSeparator = L'=';
 const UnicodeString UrlHostKeyParamName(L"fingerprint");
 const UnicodeString UrlSaveParamName(L"save");
 const UnicodeString PassphraseOption(L"passphrase");
+const UnicodeString RawSettingsOption(L"rawsettings");
+const UnicodeString S3HostName(S3LibDefaultHostName());
 //---------------------------------------------------------------------
 TDateTime __fastcall SecToDateTime(int Sec)
 {
@@ -132,6 +139,10 @@ void __fastcall TSessionData::Default()
   {
     Kex[Index] = DefaultKexList[Index];
   }
+  for (int Index = 0; Index < HOSTKEY_COUNT; Index++)
+  {
+    HostKeys[Index] = DefaultHostKeyList[Index];
+  }
   for (int Index = 0; Index < GSSLIB_COUNT; Index++)
   {
     GssLib[Index] = DefaultGssLibList[Index];
@@ -148,6 +159,7 @@ void __fastcall TSessionData::Default()
   FOverrideCachedHostKey = true;
   Note = L"";
   WinTitle = L"";
+  InternalEditorEncoding = -1;
 
   ProxyMethod = ::pmNone;
   ProxyHost = L"proxy";
@@ -204,6 +216,8 @@ void __fastcall TSessionData::Default()
   TimeDifferenceAuto = true;
   SCPLsFullTime = asAuto;
   NotUtf = asAuto;
+
+  S3DefaultRegion = S3LibDefaultRegion();
 
   // SFTP
   SftpServer = L"";
@@ -299,6 +313,7 @@ void __fastcall TSessionData::NonPersistant()
   PROPERTY(SshNoUserAuth); \
   PROPERTY(CipherList); \
   PROPERTY(KexList); \
+  PROPERTY(HostKeyList); \
   PROPERTY(GssLibList); \
   PROPERTY(GssLibCustom); \
   PROPERTY(AddressFamily); \
@@ -306,6 +321,7 @@ void __fastcall TSessionData::NonPersistant()
   PROPERTY(RekeyTime); \
   PROPERTY(HostKey); \
   PROPERTY(FingerprintScan); \
+  PROPERTY(InternalEditorEncoding); \
   \
   PROPERTY(UpdateDirectories); \
   PROPERTY(CacheDirectories); \
@@ -344,6 +360,8 @@ void __fastcall TSessionData::NonPersistant()
   PROPERTY(RecycleBinPath); \
   PROPERTY(NotUtf); \
   PROPERTY(PostLoginCommands); \
+  \
+  PROPERTY(S3DefaultRegion); \
   \
   PROPERTY(ProxyMethod); \
   PROPERTY(ProxyHost); \
@@ -491,13 +509,25 @@ bool __fastcall TSessionData::IsSame(const TSessionData * Default, bool Advanced
   return IsSame(Default, AdvancedOnly, NULL);
 }
 //---------------------------------------------------------------------
+static TFSProtocol NormalizeFSProtocol(TFSProtocol FSProtocol)
+{
+  if ((FSProtocol == fsSCPonly) || (FSProtocol == fsSFTPonly))
+  {
+    FSProtocol = fsSFTP;
+  }
+  return FSProtocol;
+}
+//---------------------------------------------------------------------
 bool __fastcall TSessionData::IsSameSite(const TSessionData * Other)
 {
   return
-      (FSProtocol == Other->FSProtocol) &&
-      (HostName == Other->HostName) &&
-      (PortNumber == Other->PortNumber) &&
-      (UserName == Other->UserName);
+    // Particularly when handling /refresh,
+    // fsSFTPonly sites when compared against sftp:// URLs (fsSFTP) have to match.
+    // But similarly also falled back SCP sites.
+    (NormalizeFSProtocol(FSProtocol) == NormalizeFSProtocol(Other->FSProtocol)) &&
+    (HostName == Other->HostName) &&
+    (PortNumber == Other->PortNumber) &&
+    (UserName == Other->UserName);
 }
 //---------------------------------------------------------------------
 bool __fastcall TSessionData::IsInFolderOrWorkspace(UnicodeString AFolder)
@@ -527,7 +557,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
       FPassword = Storage->ReadStringAsBinaryData(L"Password", FPassword);
     }
   }
-  HostKey = Storage->ReadString(L"HostKey", HostKey);
+  HostKey = Storage->ReadString(L"SshHostKey", HostKey); // probably never used
   Note = Storage->ReadString(L"Note", Note);
   // Putty uses PingIntervalSecs
   int PingIntervalSecs = Storage->ReadInteger(L"PingIntervalSecs", -1);
@@ -575,6 +605,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   SshNoUserAuth = Storage->ReadBool(L"SshNoUserAuth", SshNoUserAuth);
   CipherList = Storage->ReadString(L"Cipher", CipherList);
   KexList = Storage->ReadString(L"KEX", KexList);
+  HostKeyList = Storage->ReadString(L"HostKey", HostKeyList);
   GssLibList = Storage->ReadString(L"GSSLibs", GssLibList);
   GssLibCustom = Storage->ReadString(L"GSSCustom", GssLibCustom);
   PublicKeyFile = Storage->ReadString(L"PublicKeyFile", PublicKeyFile);
@@ -617,6 +648,9 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   EOLType = (TEOLType)Storage->ReadInteger(L"EOLType", EOLType);
   TrimVMSVersions = Storage->ReadBool(L"TrimVMSVersions", TrimVMSVersions);
   NotUtf = TAutoSwitch(Storage->ReadInteger(L"Utf", Storage->ReadInteger(L"SFTPUtfBug", NotUtf)));
+  InternalEditorEncoding = Storage->ReadInteger(L"InternalEditorEncoding", InternalEditorEncoding);
+
+  S3DefaultRegion = Storage->ReadString(L"S3DefaultRegion", S3DefaultRegion);
 
   // PuTTY defaults to TcpNoDelay, but the psftp/pscp ignores this preference, and always set this to off (what is our default too)
   if (!PuttyImport)
@@ -778,6 +812,17 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   CIPHER_TEST(L"aes,blowfish,chacha20,3des,WARN,des", L"aes,blowfish,chacha20,3des,WARN,des,arcfour");
   #undef CIPHER_DEFAULT
   #undef CIPHER_TEST
+
+  #define HOSTKEY_TEST(VALUE, EXPECTED) HostKeyList = VALUE; DebugAssert(HostKeyList == EXPECTED);
+  #define HOSTKEY_DEFAULT L"ed25519,ecdsa,rsa,dsa,WARN"
+  // Empty source should result in default list
+  HOSTKEY_TEST(L"", HOSTKEY_DEFAULT);
+  // Missing priority algo
+  HOSTKEY_TEST(L"ecdsa,rsa,dsa,WARN", HOSTKEY_DEFAULT);
+  // Missing non-priority algo
+  HOSTKEY_TEST(L"ed25519,ecdsa,dsa,WARN", L"ed25519,ecdsa,dsa,rsa,WARN");
+  #undef HOSTKEY_DEFAULT
+  #undef HOSTKEY_TEST
 #endif
 }
 //---------------------------------------------------------------------
@@ -886,6 +931,7 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
   WRITE_DATA(Bool, SshNoUserAuth);
   WRITE_DATA_EX(String, L"Cipher", CipherList, );
   WRITE_DATA_EX(String, L"KEX", KexList, );
+  WRITE_DATA_EX(String, L"HostKey", HostKeyList, );
   WRITE_DATA_EX(String, L"GSSLibs", GssLibList, );
   WRITE_DATA_EX(String, L"GSSCustom", GssLibCustom, );
   WRITE_DATA(Integer, AddressFamily);
@@ -954,6 +1000,8 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
     WRITE_DATA(Bool, TrimVMSVersions);
     Storage->DeleteValue(L"SFTPUtfBug");
     WRITE_DATA_EX(Integer, L"Utf", NotUtf, );
+    WRITE_DATA(Integer, InternalEditorEncoding);
+    WRITE_DATA(String, S3DefaultRegion);
     WRITE_DATA(Integer, SendBuf);
     WRITE_DATA(Bool, SshSimple);
   }
@@ -1587,6 +1635,59 @@ bool __fastcall TSessionData::IsSensitiveOption(const UnicodeString & Option)
     SameText(Option, NEWPASSWORD_SWITCH);
 }
 //---------------------------------------------------------------------
+bool __fastcall TSessionData::IsOptionWithParameters(const UnicodeString & Option)
+{
+  return SameText(Option, RawSettingsOption);
+}
+//---------------------------------------------------------------------
+bool __fastcall TSessionData::MaskPasswordInOptionParameter(const UnicodeString & Option, UnicodeString & Param)
+{
+  bool Result = false;
+  if (SameText(Option, RawSettingsOption))
+  {
+    int P = Param.Pos(L"=");
+    if (P > 0)
+    {
+      // TStrings.IndexOfName does not trim
+      UnicodeString Key = Param.SubString(1, P - 1);
+
+      if (SameText(Key, L"ProxyPassword") ||
+          SameText(Key, L"ProxyPasswordEnc") ||
+          SameText(Key, L"TunnelPassword") ||
+          SameText(Key, L"TunnelPasswordPlain"))
+      {
+        Param = Key + L"=" + PasswordMask;
+        Result = true;
+      }
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::MaskPasswords()
+{
+  if (!Password.IsEmpty())
+  {
+    Password = PasswordMask;
+  }
+  if (!NewPassword.IsEmpty())
+  {
+    NewPassword = PasswordMask;
+  }
+  if (!ProxyPassword.IsEmpty())
+  {
+    ProxyPassword = PasswordMask;
+  }
+  if (!TunnelPassword.IsEmpty())
+  {
+    TunnelPassword = PasswordMask;
+  }
+  if (!Passphrase.IsEmpty())
+  {
+    Passphrase = PasswordMask;
+  }
+}
+//---------------------------------------------------------------------
 bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
   TStoredSessionList * StoredSessions, bool & DefaultsOnly, UnicodeString * FileName,
   bool * AProtocolDefined, UnicodeString * MaskedUrl)
@@ -1648,6 +1749,14 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
            IsProtocolUrl(Url, HttpsProtocol, ProtocolLen))
   {
     AFSProtocol = fsWebDAV;
+    AFtps = ftpsImplicit;
+    APortNumber = HTTPSPortNumber;
+    MoveStr(Url, MaskedUrl, ProtocolLen);
+    ProtocolDefined = true;
+  }
+  else if (IsProtocolUrl(Url, S3Protocol, ProtocolLen))
+  {
+    AFSProtocol = fsS3;
     AFtps = ftpsImplicit;
     APortNumber = HTTPSPortNumber;
     MoveStr(Url, MaskedUrl, ProtocolLen);
@@ -1814,7 +1923,7 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
         UnicodeString ConnectionParamName = CutToChar(ConnectionParam, UrlParamValueSeparator, false);
         if (SameText(ConnectionParamName, UrlHostKeyParamName))
         {
-          HostKey = ConnectionParam;
+          HostKey = DecodeUrlChars(ConnectionParam);
           FOverrideCachedHostKey = false;
         }
       }
@@ -1955,7 +2064,7 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
         PortNumber = FtpPortNumber;
       }
     }
-    if (Options->FindSwitch(L"rawsettings"))
+    if (Options->FindSwitch(RawSettingsOption))
     {
       TStrings * RawSettings = NULL;
       TOptionsStorage * OptionsStorage = NULL;
@@ -1963,7 +2072,7 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
       {
         RawSettings = new TStringList();
 
-        if (Options->FindSwitch(L"rawsettings", RawSettings))
+        if (Options->FindSwitch(RawSettingsOption, RawSettings))
         {
           OptionsStorage = new TOptionsStorage(RawSettings, false);
           ApplyRawSettings(OptionsStorage);
@@ -2446,6 +2555,33 @@ UnicodeString __fastcall TSessionData::GetKexList() const
   return Result;
 }
 //---------------------------------------------------------------------
+void __fastcall TSessionData::SetHostKeys(int Index, THostKey value)
+{
+  DebugAssert(Index >= 0 && Index < HOSTKEY_COUNT);
+  SET_SESSION_PROPERTY(HostKeys[Index]);
+}
+//---------------------------------------------------------------------
+THostKey __fastcall TSessionData::GetHostKeys(int Index) const
+{
+  DebugAssert(Index >= 0 && Index < HOSTKEY_COUNT);
+  return FHostKeys[Index];
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetHostKeyList(UnicodeString value)
+{
+  SetAlgoList(FHostKeys, DefaultHostKeyList, HostKeyNames, HOSTKEY_COUNT, hkWarn, value);
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall TSessionData::GetHostKeyList() const
+{
+  UnicodeString Result;
+  for (int Index = 0; Index < HOSTKEY_COUNT; Index++)
+  {
+    Result += UnicodeString(Index ? L"," : L"") + HostKeyNames[HostKeys[Index]];
+  }
+  return Result;
+}
+//---------------------------------------------------------------------
 void __fastcall TSessionData::SetGssLib(int Index, TGssLib value)
 {
   DebugAssert(Index >= 0 && Index < GSSLIB_COUNT);
@@ -2675,6 +2811,7 @@ bool __fastcall TSessionData::IsSecure()
 
     case fsFTP:
     case fsWebDAV:
+    case fsS3:
       Result = (Ftps != ftpsNone);
       break;
 
@@ -2727,6 +2864,10 @@ UnicodeString __fastcall TSessionData::GetProtocolUrl()
         Url = WebDAVProtocol;
       }
       break;
+
+    case fsS3:
+      Url = S3Protocol;
+      break;
   }
 
   Url += ProtocolSeparator;
@@ -2775,9 +2916,13 @@ UnicodeString __fastcall TSessionData::GenerateSessionUrl(unsigned int Flags)
 
     if (FLAGSET(Flags, sufHostKey) && !HostKey.IsEmpty())
     {
+      // Many SHA-256 fingeprints end with an equal sign and we do not really need it to be encoded, so avoid that.
+      // Also colons in TLS/SSL fingerprint do not really need encoding.
+      UnicodeString S = EncodeUrlString(NormalizeFingerprint(HostKey), L"=:");
+
       Url +=
         UnicodeString(UrlParamSeparator) + UrlHostKeyParamName +
-        UnicodeString(UrlParamValueSeparator) + NormalizeFingerprint(HostKey);
+        UnicodeString(UrlParamValueSeparator) + S;
     }
 
     Url += L"@";
@@ -2899,7 +3044,7 @@ UnicodeString __fastcall TSessionData::GenerateOpenCommandArgs(bool Rtf)
 
   if (RawSettings->Count > 0)
   {
-    AddSwitch(Result, L"rawsettings", Rtf);
+    AddSwitch(Result, RawSettingsOption, Rtf);
 
     for (int Index = 0; Index < RawSettings->Count; Index++)
     {
@@ -2999,6 +3144,10 @@ void __fastcall TSessionData::GenerateAssemblyCode(
     case fsWebDAV:
       ProtocolMember = "Webdav";
       break;
+
+    case fsS3:
+      ProtocolMember = "S3";
+      break;
   }
 
   // Before we reset the FSProtocol
@@ -3067,6 +3216,10 @@ void __fastcall TSessionData::GenerateAssemblyCode(
 
       case fsWebDAV:
         AddAssemblyProperty(Head, Language, L"WebdavSecure", (SessionData->Ftps != ftpsNone));
+        break;
+
+      case fsS3:
+        // implicit
         break;
 
       default:
@@ -3622,6 +3775,16 @@ void __fastcall TSessionData::SetNotUtf(TAutoSwitch value)
   SET_SESSION_PROPERTY(NotUtf);
 }
 //---------------------------------------------------------------------
+void __fastcall TSessionData::SetInternalEditorEncoding(int value)
+{
+  SET_SESSION_PROPERTY(InternalEditorEncoding);
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetS3DefaultRegion(UnicodeString value)
+{
+  SET_SESSION_PROPERTY(S3DefaultRegion);
+}
+//---------------------------------------------------------------------
 void __fastcall TSessionData::SetIsWorkspace(bool value)
 {
   SET_SESSION_PROPERTY(IsWorkspace);
@@ -4038,104 +4201,64 @@ void __fastcall TStoredSessionList::ImportFromKnownHosts(TStrings * Lines)
           UnicodeString HostNameStr = Line.SubString(1, P - 1);
           Line = Line.SubString(P + 1, Line.Length() - P);
 
-          UTF8String UtfLine = UTF8String(Line);
-          char * AlgorithmName = NULL;
-          int PubBlobLen = 0;
-          char * CommentPtr = NULL;
-          const char * ErrorStr = NULL;
-          unsigned char * PubBlob = openssh_loadpub_line(UtfLine.c_str(), &AlgorithmName, &PubBlobLen, &CommentPtr, &ErrorStr);
-          if (PubBlob == NULL)
+          P = Pos(L',', HostNameStr);
+          if (P > 0)
           {
-            throw Exception(UnicodeString(ErrorStr));
+            HostNameStr.SetLength(P - 1);
           }
-          else
+          P = Pos(L':', HostNameStr);
+          int PortNumber = -1;
+          if (P > 0)
           {
-            try
+            UnicodeString PortNumberStr = HostNameStr.SubString(P + 1, HostNameStr.Length() - P);
+            PortNumber = StrToInt(PortNumberStr);
+            HostNameStr.SetLength(P - 1);
+          }
+          if ((HostNameStr.Length() >= 2) &&
+              (HostNameStr[1] == L'[') && (HostNameStr[HostNameStr.Length()] == L']'))
+          {
+            HostNameStr = HostNameStr.SubString(2, HostNameStr.Length() - 2);
+          }
+
+          UnicodeString NameStr = HostNameStr;
+          if (PortNumber >= 0)
+          {
+            NameStr = FORMAT(L"%s:%d", (NameStr, PortNumber));
+          }
+
+          std::unique_ptr<TSessionData> SessionDataOwner;
+          TSessionData * SessionData = dynamic_cast<TSessionData *>(FindByName(NameStr));
+          if (SessionData == NULL)
+          {
+            SessionData = new TSessionData(L"");
+            SessionDataOwner.reset(SessionData);
+            SessionData->CopyData(DefaultSettings);
+            SessionData->Name = NameStr;
+            SessionData->HostName = HostNameStr;
+            if (PortNumber >= 0)
             {
-              P = Pos(L',', HostNameStr);
-              if (P > 0)
-              {
-                HostNameStr.SetLength(P - 1);
-              }
-              P = Pos(L':', HostNameStr);
-              int PortNumber = -1;
-              if (P > 0)
-              {
-                UnicodeString PortNumberStr = HostNameStr.SubString(P + 1, HostNameStr.Length() - P);
-                PortNumber = StrToInt(PortNumberStr);
-                HostNameStr.SetLength(P - 1);
-              }
-              if ((HostNameStr.Length() >= 2) &&
-                  (HostNameStr[1] == L'[') && (HostNameStr[HostNameStr.Length()] == L']'))
-              {
-                HostNameStr = HostNameStr.SubString(2, HostNameStr.Length() - 2);
-              }
-
-              UnicodeString NameStr = HostNameStr;
-              if (PortNumber >= 0)
-              {
-                NameStr = FORMAT(L"%s:%d", (NameStr, PortNumber));
-              }
-
-              std::unique_ptr<TSessionData> SessionDataOwner;
-              TSessionData * SessionData = dynamic_cast<TSessionData *>(FindByName(NameStr));
-              if (SessionData == NULL)
-              {
-                SessionData = new TSessionData(L"");
-                SessionDataOwner.reset(SessionData);
-                SessionData->CopyData(DefaultSettings);
-                SessionData->Name = NameStr;
-                SessionData->HostName = HostNameStr;
-                if (PortNumber >= 0)
-                {
-                  SessionData->PortNumber = PortNumber;
-                }
-              }
-
-              const struct ssh_signkey * Algorithm = find_pubkey_alg(AlgorithmName);
-              if (Algorithm == NULL)
-              {
-                throw Exception(FORMAT(L"Unknown public key algorithm \"%s\".", (AlgorithmName)));
-              }
-
-              void * Key = Algorithm->newkey(Algorithm, reinterpret_cast<const char*>(PubBlob), PubBlobLen);
-              try
-              {
-                if (Key == NULL)
-                {
-                  throw Exception("Invalid public key.");
-                }
-                char * Fingerprint = Algorithm->fmtkey(Key);
-                UnicodeString KeyKey =
-                  FORMAT(L"%s@%d:%s", (Algorithm->keytype, SessionData->PortNumber, HostNameStr));
-                UnicodeString HostKey =
-                  FORMAT(L"%s:%s=%s", (Algorithm->name, KeyKey, Fingerprint));
-                sfree(Fingerprint);
-                UnicodeString HostKeyList = SessionData->HostKey;
-                AddToList(HostKeyList, HostKey, L";");
-                SessionData->HostKey = HostKeyList;
-                // If there's at least one unknown key type for this host, select it
-                if (KeyList->IndexOf(KeyKey) < 0)
-                {
-                  SessionData->Selected = true;
-                }
-              }
-              __finally
-              {
-                Algorithm->freekey(Key);
-              }
-
-              if (SessionDataOwner.get() != NULL)
-              {
-                Add(SessionDataOwner.release());
-              }
+              SessionData->PortNumber = PortNumber;
             }
-            __finally
-            {
-              sfree(PubBlob);
-              sfree(AlgorithmName);
-              sfree(CommentPtr);
-            }
+          }
+
+          const struct ssh_signkey * Algorithm;
+          UnicodeString Key = ParseOpenSshPubLine(Line, Algorithm);
+          UnicodeString KeyKey =
+            FORMAT(L"%s@%d:%s", (Algorithm->keytype, SessionData->PortNumber, HostNameStr));
+          UnicodeString HostKey =
+            FORMAT(L"%s:%s=%s", (Algorithm->name, KeyKey, Key));
+          UnicodeString HostKeyList = SessionData->HostKey;
+          AddToList(HostKeyList, HostKey, L";");
+          SessionData->HostKey = HostKeyList;
+          // If there's at least one unknown key type for this host, select it
+          if (KeyList->IndexOf(KeyKey) < 0)
+          {
+            SessionData->Selected = true;
+          }
+
+          if (SessionDataOwner.get() != NULL)
+          {
+            Add(SessionDataOwner.release());
           }
         }
       }
@@ -4248,6 +4371,7 @@ void __fastcall TStoredSessionList::UpdateStaticUsage()
   int FTPS = 0;
   int WebDAV = 0;
   int WebDAVS = 0;
+  int S3 = 0;
   int Password = 0;
   int Advanced = 0;
   int Color = 0;
@@ -4298,6 +4422,10 @@ void __fastcall TStoredSessionList::UpdateStaticUsage()
             WebDAVS++;
           }
           break;
+
+        case fsS3:
+          S3++;
+          break;
       }
 
       if (Data->HasAnySessionPassword())
@@ -4340,6 +4468,7 @@ void __fastcall TStoredSessionList::UpdateStaticUsage()
   Configuration->Usage->Set(L"StoredSessionsCountFTPS", FTPS);
   Configuration->Usage->Set(L"StoredSessionsCountWebDAV", WebDAV);
   Configuration->Usage->Set(L"StoredSessionsCountWebDAVS", WebDAVS);
+  Configuration->Usage->Set(L"StoredSessionsCountS3", S3);
   Configuration->Usage->Set(L"StoredSessionsCountPassword", Password);
   Configuration->Usage->Set(L"StoredSessionsCountColor", Color);
   Configuration->Usage->Set(L"StoredSessionsCountNote", Note);
@@ -4834,6 +4963,7 @@ int __fastcall DefaultPort(TFSProtocol FSProtocol, TFtps Ftps)
       break;
 
     case fsWebDAV:
+    case fsS3:
       if (Ftps == ftpsNone)
       {
         Result = HTTPPortNumber;

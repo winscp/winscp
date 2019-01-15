@@ -31,8 +31,7 @@ namespace WinSCP
             {
                 while (reader.Read(0))
                 {
-                    string value;
-                    if (reader.GetEmptyElementValue("filename", out value))
+                    if (reader.GetEmptyElementValue("filename", out string value))
                     {
                         args.FileName = value;
                     }

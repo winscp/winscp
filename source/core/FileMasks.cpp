@@ -1123,7 +1123,7 @@ __fastcall TCustomCommandData::TCustomCommandData()
 __fastcall TCustomCommandData::TCustomCommandData(TTerminal * Terminal)
 {
   Init(Terminal->SessionData, Terminal->UserName, Terminal->Password,
-    Terminal->GetSessionInfo().HostKeyFingerprint);
+    Terminal->GetSessionInfo().HostKeyFingerprintSHA256);
 }
 //---------------------------------------------------------------------------
 __fastcall TCustomCommandData::TCustomCommandData(

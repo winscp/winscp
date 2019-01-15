@@ -1483,6 +1483,7 @@ bool CFtpListResult::parseMlsdDateTime(const CString value, t_directory::t_diren
   bool result = FALSE;
   int Year, Month, Day, Hours, Minutes, Seconds;
   Year=Month=Day=Hours=Minutes=Seconds=0;
+  // Time can include a fraction after a dot, this will ignore the fraction part.
   if (swscanf((LPCWSTR)value, L"%4d%2d%2d%2d%2d%2d", &Year, &Month, &Day, &Hours, &Minutes, &Seconds) == 6)
   {
     date.hasdate = TRUE;

@@ -51,6 +51,7 @@ void __fastcall CopyToClipboard(UnicodeString Text);
 int __fastcall StartThread(void * SecurityAttributes, unsigned StackSize,
   TThreadFunc ThreadFunc, void * Parameter, unsigned CreationFlags,
   TThreadID & ThreadId);
+bool __fastcall TextFromClipboard(UnicodeString & Text, bool Trim);
 
 // Order of the values also define order of the buttons/answers on the prompts
 // MessageDlg relies on these to be <= 0x0000FFFF
@@ -80,17 +81,25 @@ const int qpAllowContinueOnError = 0x04;
 const int qpIgnoreAbort =          0x08;
 const int qpWaitInBatch =          0x10;
 
+typedef void __fastcall (__closure *TButtonSubmitEvent)(TObject * Sender, unsigned int & Answer);
+
 struct TQueryButtonAlias
 {
   TQueryButtonAlias();
 
   unsigned int Button;
   UnicodeString Alias;
-  TNotifyEvent OnClick;
+  TButtonSubmitEvent OnSubmit;
   int GroupWith;
   TShiftState GrouppedShiftState;
   bool ElevationRequired;
   bool MenuButton;
+  UnicodeString ActionAlias;
+
+  static TQueryButtonAlias CreateYesToAllGrouppedWithYes();
+  static TQueryButtonAlias CreateNoToAllGrouppedWithNo();
+  static TQueryButtonAlias CreateAllAsYesToNewerGrouppedWithYes();
+  static TQueryButtonAlias CreateIgnoreAsRenameGrouppedWithNo();
 };
 
 typedef void __fastcall (__closure *TQueryParamsTimerEvent)(unsigned int & Result);
@@ -167,7 +176,7 @@ struct TClipboardHandler
 {
   UnicodeString Text;
 
-  void __fastcall Copy(TObject * /*Sender*/)
+  void __fastcall Copy(TObject * /*Sender*/, unsigned int & /*Answer*/)
   {
     TInstantOperationVisualizer Visualizer;
     CopyToClipboard(Text);

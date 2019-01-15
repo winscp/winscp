@@ -93,7 +93,7 @@ __fastcall TPreferencesDialog::TPreferencesDialog(
   CustomCommandsView->WindowProc = CustomCommandsViewWindowProc;
 
   ComboAutoSwitchInitialize(UpdatesBetaVersionsCombo);
-  EnableControl(UpdatesBetaVersionsCombo, !WinConfiguration->IsBeta);
+  EnableControl(UpdatesBetaVersionsCombo, !WinConfiguration->IsBeta && !IsUWP());
   EnableControl(UpdatesBetaVersionsLabel, UpdatesBetaVersionsCombo->Enabled);
 
   HintLabel(LogFileNameHintText, LoadStr(LOG_FILE_HINT3));
@@ -267,6 +267,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     BOOLPROP(TemporaryDirectoryCleanup);
     BOOLPROP(ConfirmTemporaryDirectoryCleanup);
     BOOLPROP(FullRowSelect);
+    BOOLPROP(NaturalOrderNumericalSorting);
 
     ConfirmClosingSessionCheck2->Checked = WinConfiguration->ConfirmClosingSession;
 
@@ -649,6 +650,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     BOOLPROP(TemporaryDirectoryCleanup);
     BOOLPROP(ConfirmTemporaryDirectoryCleanup);
     BOOLPROP(FullRowSelect);
+    BOOLPROP(NaturalOrderNumericalSorting);
 
     WinConfiguration->ConfirmClosingSession = ConfirmClosingSessionCheck2->Checked;
 
@@ -1212,8 +1214,8 @@ void __fastcall TPreferencesDialog::UpdateControls()
     }
     SetLabelHintPopup(CopyParamLabel, InfoStr);
 
-    EnableControl(DDExtEnabledButton, WinConfiguration->DDExtInstalled);
-    EnableControl(DDExtEnabledLabel, WinConfiguration->DDExtInstalled);
+    EnableControl(DDExtEnabledButton, IsUWP() || WinConfiguration->DDExtInstalled);
+    EnableControl(DDExtEnabledLabel, DDExtEnabledButton->Enabled);
     EnableControl(DDExtDisabledPanel, DDExtDisabledButton->Checked);
     EnableControl(DDTemporaryDirectoryEdit, DDCustomTemporaryDirectoryButton->Enabled &&
       DDCustomTemporaryDirectoryButton->Checked);
@@ -1241,6 +1243,7 @@ void __fastcall TPreferencesDialog::UpdateControls()
     // updates
     EnableControl(UpdatesAuthenticationEmailEdit, FAutomaticUpdatesPossible);
     EnableControl(UpdatesAuthenticationEmailLabel, UpdatesAuthenticationEmailEdit->Enabled);
+    EnableControl(UpdatesShowOnStartup, !IsUWP());
     EnableControl(UsageViewButton, CollectUsageCheck->Checked);
     EnableControl(UpdatesProxyHostEdit, UpdatesProxyCheck->Checked);
     EnableControl(UpdatesProxyHostLabel, UpdatesProxyHostEdit->Enabled);
@@ -1268,7 +1271,7 @@ void __fastcall TPreferencesDialog::UpdateControls()
     EnableControl(TelnetForFtpInPuttyCheck,
       AnyPuttyPath && !IsSiteCommand);
     EnableControl(PuttyRegistryStorageKeyEdit,
-      AnyPuttyPath && !IsSiteCommand);
+      AnyPuttyPath && !IsSiteCommand && !IsUWP());
     EnableControl(PuttyRegistryStorageKeyLabel, PuttyRegistryStorageKeyEdit->Enabled);
 
     EnableControl(SetMasterPasswordButton, WinConfiguration->UseMasterPassword);
@@ -1284,8 +1287,9 @@ void __fastcall TPreferencesDialog::UpdateControls()
       AutoWorkspaceCombo->Enabled);
 
     // integration
+    EnableControl(ShellIconsGroup, !IsUWP());
     // There's no quick launch in Windows 7
-    EnableControl(QuickLaunchIconButton, !IsWin7());
+    EnableControl(QuickLaunchIconButton, ShellIconsGroup->Enabled && !IsWin7());
     MakeDefaultHandlerItem->Visible = IsWinVista();
 
     // languages
@@ -2516,7 +2520,7 @@ void __fastcall TPreferencesDialog::AddExtension()
         if (WinSCPURL)
         {
           Url = ProgramUrl(Url);
-          // The EncodeUrlString should not be necessary, but as we get the value from regitry, let's be safe
+          // The EncodeUrlString should not be necessary, but as we get the value from registry, let's be safe
           Url = AppendUrlParams(Url, FORMAT(L"netframework=%s", (EncodeUrlString(GetNetVersionStr()))));
           Url = AppendUrlParams(Url, FORMAT(L"powershell=%s", (EncodeUrlString(GetPowerShellVersionStr()))));
           Url = AppendUrlParams(Url, FORMAT(L"windows=%s", (EncodeUrlString(WindowsVersion()))));

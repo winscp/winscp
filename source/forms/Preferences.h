@@ -319,6 +319,7 @@ __published:
   TRadioButton *CustomIniFileStorageButton;
   TFilenameEdit *CustomIniFileStorageEdit;
   TPathLabel *AutomaticIniFileStorageLabel;
+  TCheckBox *NaturalOrderNumericalSortingCheck;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);

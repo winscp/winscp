@@ -23,4 +23,9 @@ rem ==== PuTTYVS ====
 echo Cleaning up PuTTYVS ...
 rmdir /s /q puttyvs\Release
 
+rem ==== libs3 ====
+
+echo Cleaning up libs3 ...
+rmdir /s /q libs3\tmp
+
 echo All done

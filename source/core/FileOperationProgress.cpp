@@ -628,19 +628,26 @@ void __fastcall TFileOperationProgressType::AddTransferredToTotals(__int64 ASize
   TGuard Guard(FSection);
 
   FTotalTransferred += ASize;
-  unsigned long Ticks = GetTickCount();
-  if (FTicks.empty() ||
-      (FTicks.back() > Ticks) || // ticks wrap after 49.7 days
-      ((Ticks - FTicks.back()) >= MSecsPerSec))
+  if (ASize >= 0)
   {
-    FTicks.push_back(Ticks);
-    FTotalTransferredThen.push_back(FTotalTransferred);
-  }
+    unsigned long Ticks = GetTickCount();
+    if (FTicks.empty() ||
+        (FTicks.back() > Ticks) || // ticks wrap after 49.7 days
+        ((Ticks - FTicks.back()) >= MSecsPerSec))
+    {
+      FTicks.push_back(Ticks);
+      FTotalTransferredThen.push_back(FTotalTransferred);
+    }
 
-  if (FTicks.size() > 10)
+    if (FTicks.size() > 10)
+    {
+      FTicks.erase(FTicks.begin());
+      FTotalTransferredThen.erase(FTotalTransferredThen.begin());
+    }
+  }
+  else
   {
-    FTicks.erase(FTicks.begin());
-    FTotalTransferredThen.erase(FTotalTransferredThen.begin());
+    FTicks.clear();
   }
 
   if (FParent != NULL)

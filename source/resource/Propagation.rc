@@ -1,21 +1,23 @@
 STRINGTABLE
 BEGIN
-  DESCRIPTION_45_LETTERS, "Free SFTP, WebDAV and FTP client for Windows"
-  DESCRIPTION_80_LETTERS, "WinSCP is a popular free SFTP, SCP, WebDAV and FTP client for Windows."
+  DESCRIPTION_45_LETTERS, "Free SFTP, SCP, S3 and FTP client for Windows"
+  DESCRIPTION_80_LETTERS, "WinSCP is a free SFTP, SCP, Amazon S3, WebDAV, and FTP client for Windows."
   // Keep in sync with REGISTERED_APP_DESC
-  DESCRIPTION_250_LETTERS, "WinSCP, a popular free SFTP and FTP client for Windows, copies files between a local and remote computer. It supports also FTPS, SCP and WebDAV. It offers easy to use GUI for all common file operations and a powerful automation with .NET assembly."
-  DESCRIPTION_450_LETTERS, "WinSCP is a popular free SFTP and FTP client for Windows, a powerful tool that will improve your productivity. WinSCP can copy files between a local and remote computer using FTP, FTPS, SCP, SFTP or WebDAV. WinSCP offers an easy to use GUI for all common operations with files and directories. Power users can automate WinSCP using .NET assembly. WinSCP documentation is at https://winscp.net/. WinSCP is available in English and many other languages."
+  DESCRIPTION_250_LETTERS, "WinSCP is a popular free SFTP and FTP client for Windows, a powerful file manager that will improve your productivity. It supports also Amazon S3, FTPS, SCP and WebDAV protocols. Power users can automate WinSCP using .NET assembly."
+  DESCRIPTION_450_LETTERS, "WinSCP is a popular free SFTP and FTP client for Windows, a powerful file manager that will improve your productivity. It offers an easy to use GUI to copy files between a local and remote computer using multiple protocols: Amazon S3, FTP, FTPS, SCP, SFTP or WebDAV. Power users can automate WinSCP using .NET assembly. WinSCP is available in English and many other languages."
   // "English" shall be replaced by translation language
-  DESCRIPTION_2000_LETTERS, "WinSCP is a popular free SFTP and FTP client for Windows. Moreover, WinSCP is a powerful multi-functional tool that will improve your productivity. WinSCP can copy files between a local and remote computer using multiple protocols: FTP, FTPS, SCP, SFTP or WebDAV. On the one hand, WinSCP offers an easy to use graphical user interface; you can choose between Windows Explorer look and tabbed twin-panel interface like Norton commander. On the other hand, advanced users can automate WinSCP functionality using .NET assembly or simple batch file scripting. You will use WinSCP for all common operations with files. You can start editing a file directly from WinSCP, either using WinSCP internal text editor or using integration with your favorite external text editor. WinSCP operations are not limited to individual files; WinSCP offers several ways to synchronize your remote and local directories. After connecting to a site you can choose to store site information for repeated access, WinSCP can even share site settings with another popular open source tool PuTTY. WinSCP integrates also with Pageant (PuTTY authentication agent) for full support of public key authentication with SSH. Admins love WinSCP support for portable operation using a configuration file instead of registry entries, suitable for operation from removable media. A comprehensive WinSCP documentation is freely accessible at https://winscp.net/. This site hosts also a very active user forum for support and feature requests. WinSCP is available in English and many other languages. WinSCP is an open source software distributed free of charge under the terms of the GNU General Public License (GPL)."
+  DESCRIPTION_2000_LETTERS, "WinSCP is a popular free SFTP and FTP client for Windows. Moreover, WinSCP is a powerful multi-functional tool that will improve your productivity. WinSCP can copy files between a local and remote computer using multiple protocols: FTP, FTPS, SCP, SFTP, WebDAV or S3. On the one hand, WinSCP offers an easy to use graphical user interface; you can choose between Windows Explorer look and tabbed twin-panel interface like Norton commander. On the other hand, advanced users can automate WinSCP functionality using .NET assembly or simple batch file scripting. You will use WinSCP for all common operations with files. You can start editing a file directly from WinSCP, either using WinSCP internal text editor or using integration with your favorite external text editor. WinSCP operations are not limited to individual files; WinSCP offers several ways to synchronize your remote and local directories. After connecting to a site you can choose to store site information for repeated access, WinSCP can even share site settings with another popular open source tool PuTTY. WinSCP integrates also with Pageant (PuTTY authentication agent) for full support of public key authentication with SSH. Admins love WinSCP support for portable operation using a configuration file instead of registry entries, suitable for operation from removable media. A comprehensive WinSCP documentation is freely accessible at https://winscp.net/. This site hosts also a very active user forum for support and feature requests. WinSCP is available in English and many other languages. WinSCP is an open source software distributed free of charge under the terms of the GNU General Public License (GPL)."
 
-  FUNCTIONS_PROTOCOLS, "Support for SFTP and SCP protocols over SSH, FTP and WebDAV protocol"
+  // FUNCTIONS_PROTOCOLS, FUNCTIONS_INTEGRATION, FUNCTIONS_AUTOMATION and FUNCTIONS_INTERFACES
+  // were reworded after being translated
+  FUNCTIONS_PROTOCOLS, "Support for Amazon S3, FTP, FTPS, SCP, SFTP or WebDAV"
   FUNCTIONS_FILE_OPERATION, "All common operations with files"
-  FUNCTIONS_INTEGRATION, "Integration with Windows (drag&drop, URL, shortcut icons, jump list)"
+  FUNCTIONS_INTEGRATION, "Integration with Windows, PuTTY and other applications"
   FUNCTIONS_TRANSLATIONS, "Translated into many languages"
-  FUNCTIONS_AUTOMATION, "Batch file scripting, command-line interface, .NET assembly"
+  FUNCTIONS_AUTOMATION, "Scripting and task automation with batch file scripting, command-line interface and .NET assembly"
   FUNCTIONS_SYNCHRONIZATION, "Directory synchronization in several semi or fully automatic ways"
   FUNCTIONS_EDITOR, "Integrated text editor and support for external text editors"
-  FUNCTIONS_INTERFACES, "Choice of Windows Explorer-like or Norton Commander-like interfaces"
+  FUNCTIONS_INTERFACES, "Graphical user interface with choice of Windows Explorer-like or Norton Commander-like interfaces"
   FUNCTIONS_PORTABLE, "Optionally supports portable operation using a configuration file instead of registry entries, suitable for operation from removable media"
 
   KEYWORD_SFTP_CLIENT, "sftp client"
@@ -23,6 +25,7 @@ BEGIN
   KEYWORD_FTP, "ftp"
   KEYWORD_WEBDAV_CLIENT, "webdav client"
   KEYWORD_SCP_CLIENT, "scp client"
+  KEYWORD_S3_CLIENT, "s3 client"
   KEYWORD_SECURE_TRANSFER, "secure file transfer"
   KEYWORD_FREEWARE, "freeware"
 
@@ -35,4 +38,8 @@ BEGIN
   NEW_5_10_FIND, "Find dialog does not block main window and found files can be downloaded and deleted on the Find dialog"
   NEW_5_10_ONEDRIVE, "Support for Microsoft OneDrive"
   NEW_5_10_AUTOMATION, "Numerous improvements to custom commands/extensions and .NET assembly"
+
+  NEW_5_12_S3, "Support for Amazon S3 protocol"
+  NEW_5_12_SHA256_HOSTKEY, "Support for SHA-256 host key fingerprint algorithm"
+  NEW_5_12_AUTOMATION, "Numerous improvements to .NET assembly, including support for PackageReference package management in NuGet package"
 END

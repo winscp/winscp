@@ -56,6 +56,7 @@ namespace WinSCP
     public delegate void FileTransferredEventHandler(object sender, TransferEventArgs e);
     public delegate void FileTransferProgressEventHandler(object sender, FileTransferProgressEventArgs e);
     public delegate void FailedEventHandler(object sender, FailedEventArgs e);
+    public delegate void QueryReceivedEventHandler(object sender, QueryReceivedEventArgs e);
 
     [Guid("56FFC5CE-3867-4EF0-A3B5-CFFBEB99EA35")]
     [ClassInterface(Constants.ClassInterface)]
@@ -79,6 +80,7 @@ namespace WinSCP
         public int DebugLogLevel { get { CheckNotDisposed(); return Logger.LogLevel; } set { CheckNotDisposed(); Logger.LogLevel = value; } }
         public string SessionLogPath { get { return _sessionLogPath; } set { CheckNotOpened(); _sessionLogPath = value; } }
         public string XmlLogPath { get { return _xmlLogPath; } set { CheckNotOpened(); _xmlLogPath = value; } }
+        public bool XmlLogPreserve { get; set; }
         #if DEBUG
         public bool GuardProcessWithJob { get { return GuardProcessWithJobInternal; } set { GuardProcessWithJobInternal = value; } }
         public bool TestHandlesClosed { get { return TestHandlesClosedInternal; } set { TestHandlesClosedInternal = value; } }
@@ -115,6 +117,38 @@ namespace WinSCP
             }
         }
 
+        public event QueryReceivedEventHandler QueryReceived { add { AddQueryReceived(value); } remove { RemoveQueryReceived(value); } }
+
+        private void AddQueryReceived(QueryReceivedEventHandler value)
+        {
+            using (Logger.CreateCallstackAndLock())
+            {
+                bool send = (_queryReceived == null);
+                _queryReceived += value;
+                if (Opened && send)
+                {
+                    SendOptionBatchCommand();
+                    WaitForGroup();
+                }
+            }
+        }
+
+        private void RemoveQueryReceived(QueryReceivedEventHandler value)
+        {
+            using (Logger.CreateCallstackAndLock())
+            {
+                if (_queryReceived != null)
+                {
+                    _queryReceived -= value;
+                    if (Opened && (_queryReceived == null))
+                    {
+                        SendOptionBatchCommand();
+                        WaitForGroup();
+                    }
+                }
+            }
+        }
+
         public Session()
         {
             Logger = new Logger();
@@ -127,6 +161,7 @@ namespace WinSCP
                 _operationResults = new List<OperationResultBase>();
                 _events = new List<Action>();
                 _eventsEvent = new AutoResetEvent(false);
+                _choiceEvent = new ManualResetEvent(false);
                 _disposed = false;
                 _defaultConfiguration = true;
                 _logUnique = 0;
@@ -154,6 +189,12 @@ namespace WinSCP
                 {
                     _eventsEvent.Close();
                     _eventsEvent = null;
+                }
+
+                if (_choiceEvent != null)
+                {
+                    _choiceEvent.Close();
+                    _choiceEvent = null;
                 }
 
                 GC.SuppressFinalize(this);
@@ -187,6 +228,11 @@ namespace WinSCP
                     throw Logger.WriteException(new InvalidOperationException("Session is already opened"));
                 }
 
+                if (sessionOptions == null)
+                {
+                    throw Logger.WriteException(new ArgumentNullException("sessionOptions"));
+                }
+
                 try
                 {
                     SetupTempPath();
@@ -201,7 +247,7 @@ namespace WinSCP
                     GotOutput();
 
                     // setup batch mode
-                    WriteCommand("option batch on");
+                    SendOptionBatchCommand();
                     WriteCommand("option confirm off");
 
                     object reconnectTimeValue;
@@ -217,9 +263,7 @@ namespace WinSCP
                         string.Format(CultureInfo.InvariantCulture, "option reconnecttime {0}", reconnectTimeValue);
                     WriteCommand(reconnectTimeCommand);
 
-                    string command;
-                    string log;
-                    SessionOptionsToUrlAndSwitches(sessionOptions, false, out command, out log);
+                    SessionOptionsToUrlAndSwitches(sessionOptions, false, out string command, out string log);
                     const string openCommand = "open ";
                     command = openCommand + command;
                     log = openCommand + log;
@@ -283,10 +327,7 @@ namespace WinSCP
                     _reader = new SessionElementLogReader(_logReader);
 
                     // Skip "open" command <group>
-                    using (ElementLogReader groupReader = _reader.WaitForGroupAndCreateLogReader())
-                    {
-                        ReadElement(groupReader, LogReadFlags.ThrowFailures);
-                    }
+                    WaitForGroup();
 
                     WriteCommand("pwd");
 
@@ -295,8 +336,7 @@ namespace WinSCP
                     {
                         while (cwdReader.Read(0))
                         {
-                            string value;
-                            if (cwdReader.GetEmptyElementValue("cwd", out value))
+                            if (cwdReader.GetEmptyElementValue("cwd", out string value))
                             {
                                 _homePath = value;
                             }
@@ -305,6 +345,7 @@ namespace WinSCP
                         groupReader.ReadToEnd(LogReadFlags.ThrowFailures);
                     }
 
+                    _sessionTimeout = sessionOptions.Timeout;
                 }
                 catch (Exception e)
                 {
@@ -312,6 +353,20 @@ namespace WinSCP
                     Cleanup();
                     throw;
                 }
+            }
+        }
+
+        private void SendOptionBatchCommand()
+        {
+            string command = string.Format(CultureInfo.InvariantCulture, "option batch {0}", (_queryReceived != null ? "off" : "on"));
+            WriteCommand(command);
+        }
+
+        private void WaitForGroup()
+        {
+            using (ElementLogReader groupReader = _reader.WaitForGroupAndCreateLogReader())
+            {
+                ReadElement(groupReader, LogReadFlags.ThrowFailures);
             }
         }
 
@@ -327,16 +382,22 @@ namespace WinSCP
 
         private static string ListToString(StringCollection list)
         {
-            string[] error = new string[list.Count];
-            list.CopyTo(error, 0);
-            string s = string.Join(Environment.NewLine, error);
+            string[] stringArray = new string[list.Count];
+            list.CopyTo(stringArray, 0);
+            string s = string.Join(Environment.NewLine, stringArray);
             return s;
         }
 
-        public string ScanFingerprint(SessionOptions sessionOptions)
+        public string ScanFingerprint(SessionOptions sessionOptions, string algorithm)
         {
             using (Logger.CreateCallstackAndLock())
             {
+                string normalizeAlgorithm = NormalizeIdent(algorithm);
+                if (string.IsNullOrEmpty(normalizeAlgorithm))
+                {
+                    throw Logger.WriteException(new ArgumentException("Algorithm cannot be empty", "algorithm"));
+                }
+
                 string result;
 
                 CheckNotDisposed();
@@ -350,9 +411,7 @@ namespace WinSCP
                 {
                     ResetOutput();
 
-                    string command;
-                    string log; // unused
-                    SessionOptionsToUrlAndSwitches(sessionOptions, true, out command, out log);
+                    SessionOptionsToUrlAndSwitches(sessionOptions, true, out string command, out string log);
 
                     string additionalArguments = "/fingerprintscan " + command;
 
@@ -371,14 +430,32 @@ namespace WinSCP
                         CheckForTimeout();
                     }
 
-                    string output = string.Join(Environment.NewLine, new List<string>(Output).ToArray());
                     if (_process.ExitCode == 0)
                     {
-                        result = output;
+                        result = null;
+                        foreach (string s in Output)
+                        {
+                            int p = s.IndexOf(":", StringComparison.Ordinal);
+                            if (p < 0)
+                            {
+                                throw Logger.WriteException(new SessionLocalException(this, string.Format(CultureInfo.CurrentCulture, "Unexpected fingerprint scan result line '{0}'", s)));
+                            }
+                            string a = NormalizeIdent(s.Substring(0, p).Trim());
+                            if (normalizeAlgorithm.Equals(a, StringComparison.OrdinalIgnoreCase))
+                            {
+                                result = s.Substring(p + 1).Trim();
+                                break;
+                            }
+                        }
+
+                        if (result == null)
+                        {
+                            throw Logger.WriteException(new SessionLocalException(this, string.Format(CultureInfo.CurrentCulture, "Fingerprint for algorithm {0} not supported", algorithm)));
+                        }
                     }
                     else
                     {
-                        throw Logger.WriteException(new SessionRemoteException(this, output));
+                        throw Logger.WriteException(new SessionRemoteException(this, ListToString(Output)));
                     }
                 }
                 catch (Exception e)
@@ -393,6 +470,11 @@ namespace WinSCP
 
                 return result;
             }
+        }
+
+        private static string NormalizeIdent(string algorithm)
+        {
+            return algorithm.Replace("-", string.Empty);
         }
 
         public void Close()
@@ -437,8 +519,7 @@ namespace WinSCP
                                 {
                                     while (fileReader.Read(0))
                                     {
-                                        string value;
-                                        if (fileReader.GetEmptyElementValue("filename", out value))
+                                        if (fileReader.GetEmptyElementValue("filename", out string value))
                                         {
                                             fileInfo.Name = value;
                                             fileInfo.FullName = destination + value;
@@ -548,7 +629,7 @@ namespace WinSCP
 
                         if (fileInfo.IsDirectory && allDirectories)
                         {
-                            foreach (RemoteFileInfo fileInfo2 in DoEnumerateRemoteFiles(CombinePaths(path, fileInfo.Name), regex, options, false))
+                            foreach (RemoteFileInfo fileInfo2 in DoEnumerateRemoteFiles(RemotePath.CombinePaths(path, fileInfo.Name), regex, options, false))
                             {
                                 yield return fileInfo2;
                             }
@@ -844,6 +925,7 @@ namespace WinSCP
                 using (CreateProgressHandler())
                 {
                     TransferEventArgs transfer = null;
+                    bool mkdir = false;
 
                     while (groupReader.Read(0))
                     {
@@ -861,26 +943,41 @@ namespace WinSCP
                         {
                             AddSynchronizationTransfer(result, transfer);
                             transfer = TransferEventArgs.Read(newSide.Value, groupReader);
+                            mkdir = false;
                         }
                         else if (groupReader.IsNonEmptyElement(RemovalEventArgs.Tag))
                         {
                             result.AddRemoval(RemovalEventArgs.Read(groupReader));
                         }
+                        else if (groupReader.IsNonEmptyElement(TransferEventArgs.MkDirTag))
+                        {
+                            AddSynchronizationTransfer(result, transfer);
+                            transfer = null;
+                            mkdir = true;
+                            // For now, silently ignoring results (even errors)
+                            // of mkdir operation, including future chmod/touch
+                        }
                         else if (groupReader.IsNonEmptyElement(ChmodEventArgs.Tag))
                         {
-                            if (transfer == null)
+                            if (!mkdir)
                             {
-                                throw Logger.WriteException(new InvalidOperationException("Tag chmod before tag download"));
+                                if (transfer == null)
+                                {
+                                    throw Logger.WriteException(new InvalidOperationException("Tag chmod before tag download"));
+                                }
+                                transfer.Chmod = ChmodEventArgs.Read(groupReader);
                             }
-                            transfer.Chmod = ChmodEventArgs.Read(groupReader);
                         }
                         else if (groupReader.IsNonEmptyElement(TouchEventArgs.Tag))
                         {
-                            if (transfer == null)
+                            if (!mkdir)
                             {
-                                throw Logger.WriteException(new InvalidOperationException("Tag touch before tag download"));
+                                if (transfer == null)
+                                {
+                                    throw Logger.WriteException(new InvalidOperationException("Tag touch before tag download"));
+                                }
+                                transfer.Touch = TouchEventArgs.Read(groupReader);
                             }
-                            transfer.Touch = TouchEventArgs.Read(groupReader);
                         }
                     }
 
@@ -908,8 +1005,7 @@ namespace WinSCP
                 {
                     while (callReader.Read(0))
                     {
-                        string value;
-                        if (callReader.GetEmptyElementValue("output", out value))
+                        if (callReader.GetEmptyElementValue("output", out string value))
                         {
                             result.Output = value;
                         }
@@ -977,8 +1073,7 @@ namespace WinSCP
                 {
                     while (checksumReader.Read(0))
                     {
-                        string value;
-                        if (checksumReader.GetEmptyElementValue("checksum", out value))
+                        if (checksumReader.GetEmptyElementValue("checksum", out string value))
                         {
                             hex = value;
                         }
@@ -1048,153 +1143,57 @@ namespace WinSCP
             }
         }
 
-        // This is not static method only to make it visible to COM
+        public void DuplicateFile(string sourcePath, string targetPath)
+        {
+            using (Logger.CreateCallstackAndLock())
+            {
+                CheckOpened();
+
+                string sourceArgument = Tools.ArgumentEscape(RemotePath.EscapeFileMask(sourcePath));
+                string targetArgument = Tools.ArgumentEscape(targetPath);
+                string command = string.Format(CultureInfo.InvariantCulture, "cp \"{0}\" \"{1}\"", sourceArgument, targetArgument);
+                WriteCommand(command);
+
+                using (ElementLogReader groupReader = _reader.WaitForGroupAndCreateLogReader())
+                {
+                    if (!groupReader.TryWaitForNonEmptyElement("cp", LogReadFlags.ThrowFailures))
+                    {
+                        throw Logger.WriteException(new SessionRemoteException(this, string.Format(CultureInfo.CurrentCulture, "{0} not found.", sourcePath)));
+                    }
+                    else
+                    {
+                        using (ElementLogReader cpReader = groupReader.CreateLogReader())
+                        {
+                            ReadElement(cpReader, 0);
+                            groupReader.ReadToEnd(LogReadFlags.ThrowFailures);
+                        }
+                    }
+                }
+            }
+        }
+
+        [Obsolete("Use RemotePath.EscapeFileMask")]
         public string EscapeFileMask(string fileMask)
         {
-            if (fileMask == null)
-            {
-                throw Logger.WriteException(new ArgumentNullException("fileMask"));
-            }
-            int lastSlash = fileMask.LastIndexOf('/');
-            string path = lastSlash > 0 ? fileMask.Substring(0, lastSlash + 1) : string.Empty;
-            string mask = lastSlash > 0 ? fileMask.Substring(lastSlash + 1) : fileMask;
-            // Keep in sync with EscapeFileMask in GenerateUrl.cpp
-            mask = mask.Replace("[", "[[]").Replace("*", "[*]").Replace("?", "[?]");
-            return path + mask;
+            return RemotePath.EscapeFileMask(fileMask);
         }
 
+        [Obsolete("Use RemotePath.TranslateRemotePathToLocal")]
         public string TranslateRemotePathToLocal(string remotePath, string remoteRoot, string localRoot)
         {
-            if (remotePath == null)
-            {
-                throw Logger.WriteException(new ArgumentNullException("remotePath"));
-            }
-
-            if (remoteRoot == null)
-            {
-                throw Logger.WriteException(new ArgumentNullException("remoteRoot"));
-            }
-
-            if (localRoot == null)
-            {
-                throw Logger.WriteException(new ArgumentNullException("localRoot"));
-            }
-
-            if ((localRoot.Length > 0) && !localRoot.EndsWith("\\", StringComparison.Ordinal))
-            {
-                localRoot += "\\";
-            }
-
-            // not adding to empty root paths, because the path may not even start with slash
-            if ((remoteRoot.Length > 0) && !remoteRoot.EndsWith("/", StringComparison.Ordinal))
-            {
-                remoteRoot += "/";
-            }
-
-            string localPath;
-            // special case
-            if (remotePath == remoteRoot)
-            {
-                localPath = localRoot;
-            }
-            else
-            {
-                if (!remotePath.StartsWith(remoteRoot, StringComparison.Ordinal))
-                {
-                    throw Logger.WriteException(new InvalidOperationException(string.Format(CultureInfo.CurrentCulture, "{0} does not start with {1}", remotePath, remoteRoot)));
-                }
-
-                string subPath = remotePath.Substring(remoteRoot.Length);
-                // can happen only when remoteRoot is empty
-                if (subPath.StartsWith("/", StringComparison.Ordinal))
-                {
-                    subPath = subPath.Substring(1);
-                }
-                subPath = subPath.Replace('/', '\\');
-                localPath = localRoot + subPath;
-            }
-            return localPath;
+            return RemotePath.TranslateRemotePathToLocal(remotePath, remoteRoot, localRoot);
         }
 
+        [Obsolete("Use RemotePath.TranslateLocalPathToRemote")]
         public string TranslateLocalPathToRemote(string localPath, string localRoot, string remoteRoot)
         {
-            if (localPath == null)
-            {
-                throw Logger.WriteException(new ArgumentNullException("localPath"));
-            }
-
-            if (localRoot == null)
-            {
-                throw Logger.WriteException(new ArgumentNullException("localRoot"));
-            }
-
-            if (remoteRoot == null)
-            {
-                throw Logger.WriteException(new ArgumentNullException("remoteRoot"));
-            }
-
-            if ((localRoot.Length > 0) && !localRoot.EndsWith("\\", StringComparison.Ordinal))
-            {
-                localRoot += "\\";
-            }
-
-            // not adding to empty root paths, because the path may not even start with slash
-            if ((remoteRoot.Length > 0) && !remoteRoot.EndsWith("/", StringComparison.Ordinal))
-            {
-                remoteRoot += "/";
-            }
-
-            string remotePath;
-            // special case
-            if (localPath == localRoot)
-            {
-                remotePath = remoteRoot;
-            }
-            else
-            {
-                if (!localPath.StartsWith(localRoot, StringComparison.Ordinal))
-                {
-                    throw Logger.WriteException(new InvalidOperationException(string.Format(CultureInfo.CurrentCulture, "{0} does not start with {1}", localPath, localRoot)));
-                }
-
-                string subPath = localPath.Substring(localRoot.Length);
-                // can happen only when localRoot is empty
-                if (subPath.StartsWith("\\", StringComparison.Ordinal))
-                {
-                    subPath = subPath.Substring(1);
-                }
-                subPath = subPath.Replace('\\', '/');
-                remotePath = remoteRoot + subPath;
-            }
-            return remotePath;
+            return RemotePath.TranslateLocalPathToRemote(localPath, localRoot, remoteRoot);
         }
 
+        [Obsolete("Use RemotePath.CombinePaths")]
         public string CombinePaths(string path1, string path2)
         {
-            if (path1 == null)
-            {
-                throw Logger.WriteException(new ArgumentNullException("path1"));
-            }
-
-            if (path2 == null)
-            {
-                throw Logger.WriteException(new ArgumentNullException("path2"));
-            }
-
-            string result;
-
-            if (path2.StartsWith("/", StringComparison.Ordinal))
-            {
-                result = path2;
-            }
-            else
-            {
-                result =
-                    path1 +
-                    ((path1.Length == 0) || (path2.Length == 0) || path1.EndsWith("/", StringComparison.Ordinal) ? string.Empty : "/") +
-                    path2;
-            }
-            return result;
+            return RemotePath.CombinePaths(path1, path2);
         }
 
         public void AddRawConfiguration(string setting, string value)
@@ -1228,8 +1227,7 @@ namespace WinSCP
         {
             using (Logger.CreateCallstack())
             {
-                string value;
-                if (fileReader.GetEmptyElementValue("type", out value))
+                if (fileReader.GetEmptyElementValue("type", out string value))
                 {
                     fileInfo.FileType = value[0];
                 }
@@ -1332,7 +1330,7 @@ namespace WinSCP
                 }
 
                 // Cleanup log file
-                if ((XmlLogPath != null) && File.Exists(XmlLogPath))
+                if ((XmlLogPath != null) && File.Exists(XmlLogPath) && !XmlLogPreserve)
                 {
                     Logger.WriteLine("Deleting XML log file [{0}]", XmlLogPath);
                     try
@@ -1414,6 +1412,10 @@ namespace WinSCP
                         }
                         break;
 
+                    case Protocol.S3:
+                        head = "s3://";
+                        break;
+
                     default:
                         throw Logger.WriteException(new ArgumentException(string.Format(CultureInfo.CurrentCulture, "{0} is not supported", sessionOptions.Protocol)));
                 }
@@ -1479,9 +1481,7 @@ namespace WinSCP
                 url += tail;
                 logUrl += tail;
 
-                string arguments;
-                string logArguments;
-                SessionOptionsToSwitches(sessionOptions, scanFingerprint, out arguments, out logArguments);
+                SessionOptionsToSwitches(sessionOptions, scanFingerprint, out string arguments, out string logArguments);
 
                 const string switchName = "-rawsettings";
                 Tools.AddRawParameters(ref arguments, sessionOptions.RawSettings, "-rawsettings");
@@ -1541,7 +1541,7 @@ namespace WinSCP
                 {
                     if (!sessionOptions.IsTls)
                     {
-                        throw Logger.WriteException(new ArgumentException("SessionOptions.TlsClientCertificatePath is set, but neither SessionOptions.FtpSecure nor SessionOptions.WebdavSecure is enabled."));
+                        throw Logger.WriteException(new ArgumentException("SessionOptions.TlsClientCertificatePath is set, but neither SessionOptions.FtpSecure nor SessionOptions.WebdavSecure is enabled nor is the protocol S3."));
                     }
                     switches.Add(FormatSwitch("clientcert", sessionOptions.TlsClientCertificatePath));
                 }
@@ -1574,7 +1574,7 @@ namespace WinSCP
                 {
                     if (!sessionOptions.IsTls)
                     {
-                        throw Logger.WriteException(new ArgumentException("SessionOptions.TlsHostCertificateFingerprint or SessionOptions.GiveUpSecurityAndAcceptAnyTlsHostCertificate is set, but neither SessionOptions.FtpSecure nor SessionOptions.WebdavSecure is enabled."));
+                        throw Logger.WriteException(new ArgumentException("SessionOptions.TlsHostCertificateFingerprint or SessionOptions.GiveUpSecurityAndAcceptAnyTlsHostCertificate is set, but neither SessionOptions.FtpSecure nor SessionOptions.WebdavSecure is enabled nor is the protocol S3."));
                     }
                     string tlsHostCertificateFingerprint = sessionOptions.TlsHostCertificateFingerprint;
                     if (sessionOptions.GiveUpSecurityAndAcceptAnyTlsHostCertificate)
@@ -1594,7 +1594,7 @@ namespace WinSCP
 
                 List<string> logSwitches = new List<string>(switches);
 
-                if (!string.IsNullOrEmpty(sessionOptions.PrivateKeyPassphrase) && !scanFingerprint)
+                if ((sessionOptions.SecurePrivateKeyPassphrase != null) && !scanFingerprint)
                 {
                     if (string.IsNullOrEmpty(sessionOptions.SshPrivateKeyPath) && string.IsNullOrEmpty(sessionOptions.TlsClientCertificatePath))
                     {
@@ -1637,8 +1637,7 @@ namespace WinSCP
                 {
                     while (statReader.Read(0))
                     {
-                        string value;
-                        if (statReader.GetEmptyElementValue("filename", out value))
+                        if (statReader.GetEmptyElementValue("filename", out string value))
                         {
                             string name = value;
                             int p = name.LastIndexOf('/');
@@ -1743,8 +1742,16 @@ namespace WinSCP
 
         internal void CheckForTimeout(string additional = null)
         {
-            if (DateTime.Now - _lastOutput > Timeout)
+            TimeSpan timeout = Timeout;
+            if (timeout < _sessionTimeout)
             {
+                timeout = _sessionTimeout + TimeSpan.FromSeconds(1);
+            }
+
+            if (DateTime.Now - _lastOutput > timeout)
+            {
+                Logger.WriteLine("Timeout waiting for WinSCP to respond - asking for callstack");
+                _process.RequestCallstack();
                 string message = "Timeout waiting for WinSCP to respond";
                 if (additional != null)
                 {
@@ -1763,10 +1770,7 @@ namespace WinSCP
         {
             Logger.WriteLine("FileTransferredEvent: [{0}]", args.FileName);
 
-            if (FileTransferred != null)
-            {
-                FileTransferred(this, args);
-            }
+            FileTransferred?.Invoke(this, args);
         }
 
         internal void RaiseFailed(SessionRemoteException e)
@@ -1817,10 +1821,7 @@ namespace WinSCP
         {
             Logger.WriteLine("Output: [{0}]", data);
 
-            if (OutputDataReceived != null)
-            {
-                OutputDataReceived(this, new OutputDataReceivedEventArgs(data, error));
-            }
+            OutputDataReceived?.Invoke(this, new OutputDataReceivedEventArgs(data, error));
         }
 
         internal void DispatchEvents(int interval)
@@ -1888,6 +1889,22 @@ namespace WinSCP
 
                 _progressHandling--;
             }
+        }
+
+        internal void ProcessChoice(QueryReceivedEventArgs args)
+        {
+            if (_queryReceived != null) // optimization
+            {
+                _choiceEvent.Reset();
+                ScheduleEvent(() => Choice(args));
+                _choiceEvent.WaitOne();
+            }
+        }
+
+        private void Choice(QueryReceivedEventArgs args)
+        {
+            _queryReceived?.Invoke(this, args);
+            _choiceEvent.Set();
         }
 
         internal void ProcessProgress(FileTransferProgressEventArgs args)
@@ -2055,6 +2072,30 @@ namespace WinSCP
             }
         }
 
+        private void LogInvokeMember(string name, BindingFlags invokeAttr, Binder binder, object target, object[] args, ParameterModifier[] modifiers, CultureInfo culture, string[] namedParameters)
+        {
+            Logger.WriteLine("Name [{0}]", name);
+            Logger.WriteLine("BindingFlags [{0}]", invokeAttr);
+            Logger.WriteLine("Binder [{0}]", binder);
+            Logger.WriteLine("Target [{0}]", target);
+            if (args != null)
+            {
+                Logger.WriteLine("Args [{0}] [{1}]", args.Length, modifiers != null ? modifiers.Length.ToString(CultureInfo.InvariantCulture) : "null");
+                for (int i = 0; i < args.Length; ++i)
+                {
+                    Logger.WriteLine("Arg [{0}] [{1}] [{1}] [{2}]", i, args[i], (args[i] != null ? args[i].GetType().ToString() : "null"), (modifiers != null ? modifiers[i].ToString() : "null"));
+                }
+            }
+            Logger.WriteLine("Culture [{0}]", culture);
+            if (namedParameters != null)
+            {
+                foreach (string namedParameter in namedParameters)
+                {
+                    Logger.WriteLine("NamedParameter [{0}]", namedParameter);
+                }
+            }
+        }
+
         object IReflect.InvokeMember(string name, BindingFlags invokeAttr, Binder binder, object target, object[] args, ParameterModifier[] modifiers, CultureInfo culture, string[] namedParameters)
         {
             using (Logger.CreateCallstack())
@@ -2063,28 +2104,11 @@ namespace WinSCP
 
                 try
                 {
-                    if (Logger.Logging)
+                    bool wasLogging = Logger.Logging;
+                    if (wasLogging)
                     {
-                        Logger.WriteLine("Name [{0}]", name);
-                        Logger.WriteLine("BindingFlags [{0}]", invokeAttr);
-                        Logger.WriteLine("Binder [{0}]", binder);
-                        Logger.WriteLine("Target [{0}]", target);
-                        if (args != null)
-                        {
-                            Logger.WriteLine("Args [{0}] [{1}]", args.Length, modifiers != null ? modifiers.Length.ToString(CultureInfo.InvariantCulture) : "null");
-                            for (int i = 0; i < args.Length; ++i)
-                            {
-                                Logger.WriteLine("Arg [{0}] [{1}] [{1}] [{2}]", i, args[i], (args[i] != null ? args[i].GetType().ToString() : "null"), (modifiers != null ? modifiers[i].ToString() : "null"));
-                            }
-                        }
-                        Logger.WriteLine("Culture [{0}]", culture);
-                        if (namedParameters != null)
-                        {
-                            foreach (string namedParameter in namedParameters)
-                            {
-                                Logger.WriteLine("NamedParameter [{0}]", namedParameter);
-                            }
-                        }
+                        // factored out to reduce this method complexity
+                        LogInvokeMember(name, invokeAttr, binder, target, args, modifiers, culture, namedParameters);
                     }
 
                     if (target == null)
@@ -2185,6 +2209,11 @@ namespace WinSCP
                         result = type.InvokeMember(name, invokeAttr, binder, target, args, modifiers, culture, namedParameters);
                     }
 
+                    if (!wasLogging && Logger.Logging)
+                    {
+                        Logger.WriteLine("Invoking member {0} enabled debug logging", name);
+                        // Might call LogInvokeMember here, but it's not really useful.
+                    }
                     Logger.WriteLine("Result [{0}] [{1}]", result, (result != null ? result.GetType().ToString() : "null"));
                 }
                 catch (Exception e)
@@ -2218,6 +2247,7 @@ namespace WinSCP
         private delegate void Action();
         private readonly IList<Action> _events;
         private AutoResetEvent _eventsEvent;
+        private ManualResetEvent _choiceEvent;
         private bool _disposed;
         private string _executablePath;
         private string _additionalExecutableArguments;
@@ -2237,5 +2267,7 @@ namespace WinSCP
         private SecureString _executableProcessPassword;
         private StringCollection _error;
         private bool _ignoreFailed;
+        private TimeSpan _sessionTimeout;
+        private QueryReceivedEventHandler _queryReceived;
     }
 }

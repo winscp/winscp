@@ -370,17 +370,36 @@ bool __fastcall TAuthenticateForm::PromptUser(TPromptKind Kind, UnicodeString Na
   return Result;
 }
 //---------------------------------------------------------------------------
+void __fastcall TAuthenticateForm::UpdateBannerFont()
+{
+  if (BannerMonospacedFontAction->Checked)
+  {
+    BannerMemo->Font->Name = CustomWinConfiguration->DefaultFixedWidthFontName;
+    BannerMemo->Font->Size = CustomWinConfiguration->DefaultFixedWidthFontSize;
+  }
+  else
+  {
+    BannerMemo->ParentFont = true;
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TAuthenticateForm::Banner(const UnicodeString & Banner,
-  bool & NeverShowAgain, int Options)
+  bool & NeverShowAgain, int Options, unsigned int & Params)
 {
   BannerMemo->Lines->Text = Banner;
   NeverShowAgainCheck->Visible = FLAGCLEAR(Options, boDisableNeverShowAgain);
   NeverShowAgainCheck->Checked = NeverShowAgain;
+  BannerMonospacedFontAction->Checked = FLAGSET(Params, bpMonospacedFont);
+  UpdateBannerFont();
+
   bool Result = Execute(LoadStr(AUTHENTICATION_BANNER), BannerPanel, BannerCloseButton,
     BannerCloseButton, BannerCloseButton, false, true, false);
   if (Result)
   {
     NeverShowAgain = NeverShowAgainCheck->Checked;
+    Params =
+      (Params & ~bpMonospacedFont) |
+      FLAGMASK(BannerMonospacedFontAction->Checked, bpMonospacedFont);
   }
 }
 //---------------------------------------------------------------------------
@@ -611,3 +630,15 @@ void __fastcall TAuthenticateForm::ChangeScale(int M, int D)
     MakeLogItemVisible(LogView->Items->Count - 1);
   }
 }
+//---------------------------------------------------------------------------
+void __fastcall TAuthenticateForm::BannerMemoContextPopup(TObject * Sender, TPoint & MousePos, bool & Handled)
+{
+  MenuPopup(Sender, MousePos, Handled);
+}
+//---------------------------------------------------------------------------
+void __fastcall TAuthenticateForm::BannerMonospacedFontActionExecute(TObject * /*Sender*/)
+{
+  BannerMonospacedFontAction->Checked = !BannerMonospacedFontAction->Checked;
+  UpdateBannerFont();
+}
+//---------------------------------------------------------------------------

@@ -310,6 +310,8 @@ private:
   TForm * FLinkedForm;
   TPoint FPrevPos;
   int FSiteButtonsPadding;
+  UnicodeString FUserNameLabel;
+  UnicodeString FPasswordLabel;
 
   void __fastcall LoadSession(TSessionData * SessionData);
   void __fastcall LoadContents();

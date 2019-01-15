@@ -1,0 +1,26 @@
+Package: libs3-dev
+Version: LIBS3_VERSION
+Architecture: DEBIAN_ARCHITECTURE
+Section: libdevel
+Priority: extra
+Depends: libs3 (>= LIBS3_VERSION)
+Maintainer: Bryan Ischo <bryan@ischo.com>
+Homepage: https://github.com/bji/libs3
+Description: C Development Library for Amazon S3 Access
+ This library provides an API for using Amazon's S3 service (see
+ https://s3.amazonaws.com/).  Its design goals are:
+ .
+  - To provide a simple and straightforward API for accessing all of S3's
+    functionality
+  - To not require the developer using libs3 to need to know anything about:
+      - HTTP
+      - XML
+      - SSL
+    In other words, this API is meant to stand on its own, without requiring
+    any implicit knowledge of how S3 services are accessed using HTTP
+    protocols.
+  - To be usable from multithreaded code
+  - To be usable by code which wants to process multiple S3 requests
+    simultaneously from a single thread
+  - To be usable in the simple, straightforward way using sequentialized
+    blocking requests

@@ -21,6 +21,7 @@
 #include <Glyphs.h>
 #include <PasTools.hpp>
 #include <VCLCommon.h>
+#include <WinApi.h>
 #include <Vcl.ScreenTips.hpp>
 
 #include "Animations96.h"
@@ -81,7 +82,19 @@ void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
   {
 
     AParams = ExpandEnvironmentVariables(AParams);
-    UnicodeString Password = GUIConfiguration->PuttyPassword ? SessionData->Password : UnicodeString();
+    UnicodeString Password;
+    if (GUIConfiguration->PuttyPassword)
+    {
+      // Passphrase has precendence, as it's more likely entered by user during authentication, hence more likely really needed.
+      if (!SessionData->Passphrase.IsEmpty())
+      {
+        Password = SessionData->Passphrase;
+      }
+      else if (!SessionData->Password.IsEmpty())
+      {
+        Password = SessionData->Password;
+      }
+    }
     TCustomCommandData Data(SessionData, SessionData->UserName, Password);
     TRemoteCustomCommand RemoteCustomCommand(Data, SessionData->RemoteDirectory);
     TWinInteractiveCustomCommand InteractiveCustomCommand(
@@ -93,75 +106,129 @@ void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
 
     if (!RemoteCustomCommand.IsSiteCommand(AParams))
     {
-      UnicodeString SessionName;
-      TRegistryStorage * Storage = NULL;
-      TSessionData * ExportData = NULL;
-      TRegistryStorage * SourceStorage = NULL;
-      try
+      if (IsUWP())
       {
-        Storage = new TRegistryStorage(Configuration->PuttySessionsKey);
-        Storage->AccessMode = smReadWrite;
-        // make it compatible with putty
-        Storage->MungeStringValues = false;
-        Storage->ForceAnsi = true;
-        if (Storage->OpenRootKey(true))
+        bool Telnet = (SessionData->FSProtocol == fsFTP) && GUIConfiguration->TelnetForFtpInPutty;
+        if (Telnet)
         {
-          if (Storage->KeyExists(SessionData->StorageKey))
+          AddToList(PuttyParams, L"-telnet", L" ");
+          // PuTTY  does not allow -pw for telnet
+          Password = L"";
+        }
+        AddToList(PuttyParams, EscapePuttyCommandParam(SessionData->HostName), L" ");
+        if (!SessionData->UserName.IsEmpty())
+        {
+          AddToList(PuttyParams, FORMAT(L"-l %s", (EscapePuttyCommandParam(SessionData->UserName))), L" ");
+        }
+        if ((SessionData->FSProtocol != fsFTP) && (SessionData->PortNumber != SshPortNumber))
+        {
+          AddToList(PuttyParams, FORMAT(L"-P %d", (SessionData->PortNumber)), L" ");
+        }
+
+        if (!Telnet)
+        {
+          if (!SessionData->PublicKeyFile.IsEmpty())
           {
-            SessionName = SessionData->SessionName;
+            AddToList(PuttyParams, FORMAT(L"-i \"%s\"", (SessionData->PublicKeyFile)), L" ");
           }
-          else
+          AddToList(PuttyParams, (SessionData->TryAgent ? L"-agent" : L"-noagent"), L" ");
+          if (SessionData->TryAgent)
           {
-            SourceStorage = new TRegistryStorage(Configuration->PuttySessionsKey);
-            SourceStorage->MungeStringValues = false;
-            SourceStorage->ForceAnsi = true;
-            if (SourceStorage->OpenSubKey(StoredSessions->DefaultSettings->Name, false) &&
-                Storage->OpenSubKey(GUIConfiguration->PuttySession, true))
-            {
-              Storage->Copy(SourceStorage);
-              Storage->CloseSubKey();
-            }
-
-            ExportData = new TSessionData(L"");
-            ExportData->Assign(SessionData);
-            ExportData->Modified = true;
-            ExportData->Name = GUIConfiguration->PuttySession;
-            ExportData->WinTitle = SessionData->SessionName;
-            ExportData->Password = L"";
-
-            if (SessionData->FSProtocol == fsFTP)
-            {
-              if (GUIConfiguration->TelnetForFtpInPutty)
-              {
-                ExportData->PuttyProtocol = PuttyTelnetProtocol;
-                ExportData->PortNumber = TelnetPortNumber;
-                // PuTTY  does not allow -pw for telnet
-                Password = L"";
-              }
-              else
-              {
-                ExportData->PuttyProtocol = PuttySshProtocol;
-                ExportData->PortNumber = SshPortNumber;
-              }
-            }
-
-            ExportData->Save(Storage, true);
-            SessionName = GUIConfiguration->PuttySession;
+            AddToList(PuttyParams, (SessionData->AgentFwd ? L"-A" : L"-a"), L" ");
+          }
+          if (SessionData->Compression)
+          {
+            AddToList(PuttyParams, L"-C", L" ");
+          }
+          AddToList(PuttyParams,
+            ((SessionData->SshProt == ssh1only || SessionData->SshProt == ssh1deprecated) ? L"-1" : L"-2"), L" ");
+          if (!SessionData->LogicalHostName.IsEmpty())
+          {
+            AddToList(PuttyParams, FORMAT(L"-loghost \"%s\"", (SessionData->LogicalHostName)), L" ");
           }
         }
-      }
-      __finally
-      {
-        delete Storage;
-        delete ExportData;
-        delete SourceStorage;
-      }
 
-      UnicodeString LoadSwitch = L"-load";
-      int P = Params.LowerCase().Pos(LoadSwitch + L" ");
-      if ((P == 0) || ((P > 1) && (Params[P - 1] != L' ')))
+        if (SessionData->AddressFamily == afIPv4)
+        {
+          AddToList(PuttyParams, L"-4", L" ");
+        }
+        else if (SessionData->AddressFamily == afIPv6)
+        {
+          AddToList(PuttyParams, L"-6", L" ");
+        }
+      }
+      else
       {
-        AddToList(PuttyParams, FORMAT(L"%s %s", (LoadSwitch, EscapePuttyCommandParam(SessionName))), L" ");
+        UnicodeString SessionName;
+        TRegistryStorage * Storage = NULL;
+        TSessionData * ExportData = NULL;
+        TRegistryStorage * SourceStorage = NULL;
+        try
+        {
+          Storage = new TRegistryStorage(Configuration->PuttySessionsKey);
+          Storage->AccessMode = smReadWrite;
+          // make it compatible with putty
+          Storage->MungeStringValues = false;
+          Storage->ForceAnsi = true;
+          if (Storage->OpenRootKey(true))
+          {
+            if (Storage->KeyExists(SessionData->StorageKey))
+            {
+              SessionName = SessionData->SessionName;
+            }
+            else
+            {
+              SourceStorage = new TRegistryStorage(Configuration->PuttySessionsKey);
+              SourceStorage->MungeStringValues = false;
+              SourceStorage->ForceAnsi = true;
+              if (SourceStorage->OpenSubKey(StoredSessions->DefaultSettings->Name, false) &&
+                  Storage->OpenSubKey(GUIConfiguration->PuttySession, true))
+              {
+                Storage->Copy(SourceStorage);
+                Storage->CloseSubKey();
+              }
+
+              ExportData = new TSessionData(L"");
+              ExportData->Assign(SessionData);
+              ExportData->Modified = true;
+              ExportData->Name = GUIConfiguration->PuttySession;
+              ExportData->WinTitle = SessionData->SessionName;
+              ExportData->Password = L"";
+
+              if (SessionData->FSProtocol == fsFTP)
+              {
+                if (GUIConfiguration->TelnetForFtpInPutty)
+                {
+                  ExportData->PuttyProtocol = PuttyTelnetProtocol;
+                  ExportData->PortNumber = TelnetPortNumber;
+                  // PuTTY  does not allow -pw for telnet
+                  Password = L"";
+                }
+                else
+                {
+                  ExportData->PuttyProtocol = PuttySshProtocol;
+                  ExportData->PortNumber = SshPortNumber;
+                }
+              }
+
+              ExportData->Save(Storage, true);
+              SessionName = GUIConfiguration->PuttySession;
+            }
+          }
+        }
+        __finally
+        {
+          delete Storage;
+          delete ExportData;
+          delete SourceStorage;
+        }
+
+        UnicodeString LoadSwitch = L"-load";
+        int P = Params.LowerCase().Pos(LoadSwitch + L" ");
+        if ((P == 0) || ((P > 1) && (Params[P - 1] != L' ')))
+        {
+          AddToList(PuttyParams, FORMAT(L"%s %s", (LoadSwitch, EscapePuttyCommandParam(SessionName))), L" ");
+        }
       }
     }
 
@@ -202,9 +269,11 @@ bool __fastcall FindTool(const UnicodeString & Name, UnicodeString & Path)
   return Result;
 }
 //---------------------------------------------------------------------------
+bool DontCopyCommandToClipboard = false;
+//---------------------------------------------------------------------------
 bool __fastcall CopyCommandToClipboard(const UnicodeString & Command)
 {
-  bool Result = UseAlternativeFunction() && IsKeyPressed(VK_CONTROL);
+  bool Result = !DontCopyCommandToClipboard && UseAlternativeFunction() && IsKeyPressed(VK_CONTROL);
   if (Result)
   {
     TInstantOperationVisualizer Visualizer;
@@ -1530,5 +1599,53 @@ void __fastcall TScreenTipHintWindow::Paint()
     Rect.Left += FMargin * 3 / 2;
     Rect.Top += ShortRect.Height() + (FMargin / 3 * 5);
     DrawText(Canvas->Handle, FLongHint.c_str(), -1, &Rect, Flags);
+  }
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+__fastcall TNewRichEdit::TNewRichEdit(TComponent * AOwner) :
+  TRichEdit(AOwner),
+  FLibrary(0)
+{
+}
+//---------------------------------------------------------------------------
+void __fastcall TNewRichEdit::CreateParams(TCreateParams & Params)
+{
+  UnicodeString RichEditModuleName(L"MSFTEDIT.DLL");
+  long int OldError;
+
+  OldError = SetErrorMode(SEM_NOOPENFILEERRORBOX);
+  FLibrary = LoadLibrary(RichEditModuleName.c_str());
+  SetErrorMode(OldError);
+
+  // No fallback, MSFTEDIT.DLL is available since Windows XP
+  // https://blogs.msdn.microsoft.com/murrays/2006/10/13/richedit-versions/
+  if (FLibrary == 0)
+  {
+    throw Exception(FORMAT(L"Cannot load %s", (RichEditModuleName)));
+  }
+
+  TCustomMemo::CreateParams(Params);
+  // MSDN says that we should use MSFTEDIT_CLASS to load Rich Edit 4.1:
+  // https://docs.microsoft.com/en-us/windows/desktop/controls/about-rich-edit-controls
+  // But MSFTEDIT_CLASS is defined as "RICHEDIT50W",
+  // so not sure what version we are loading.
+  // Seem to work on Windows XP SP3.
+  CreateSubClass(Params, MSFTEDIT_CLASS);
+}
+//---------------------------------------------------------------------------
+void __fastcall TNewRichEdit::CreateWnd()
+{
+  TRichEdit::CreateWnd();
+  SendMessage(Handle, EM_SETEDITSTYLEEX, 0, SES_EX_HANDLEFRIENDLYURL);
+}
+//---------------------------------------------------------------------------
+void __fastcall TNewRichEdit::DestroyWnd()
+{
+  TRichEdit::DestroyWnd();
+
+  if (FLibrary != 0)
+  {
+    FreeLibrary(FLibrary);
   }
 }

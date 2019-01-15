@@ -467,6 +467,7 @@ static void __fastcall RegisterAsNonBrowserUrlHandler(const UnicodeString & Pref
   RegisterAsUrlHandler(Prefix + ScpProtocol.UpperCase());
   RegisterAsUrlHandler(Prefix + WebDAVProtocol.UpperCase());
   RegisterAsUrlHandler(Prefix + WebDAVSProtocol.UpperCase());
+  RegisterAsUrlHandler(Prefix + S3Protocol.UpperCase());
 }
 //---------------------------------------------------------------------------
 static void __fastcall UnregisterAsUrlHandlers(const UnicodeString & Prefix, bool UnregisterProtocol)
@@ -475,6 +476,7 @@ static void __fastcall UnregisterAsUrlHandlers(const UnicodeString & Prefix, boo
   UnregisterAsUrlHandler(Prefix + ScpProtocol, UnregisterProtocol);
   UnregisterAsUrlHandler(Prefix + WebDAVProtocol, UnregisterProtocol);
   UnregisterAsUrlHandler(Prefix + WebDAVSProtocol, UnregisterProtocol);
+  UnregisterAsUrlHandler(Prefix + S3Protocol, UnregisterProtocol);
 }
 //---------------------------------------------------------------------------
 static const UnicodeString GenericUrlHandler(L"WinSCP.Url");
@@ -487,7 +489,7 @@ static void __fastcall RegisterProtocolForDefaultPrograms(HKEY RootKey, const Un
   // application is registered for the protocol (i.e. RegisterProtocol would be enough)
   RegisterAsUrlHandler(RootKey, Protocol);
 
-  // see https://msdn.microsoft.com/en-us/library/windows/desktop/cc144154.aspx#registration
+  // see https://docs.microsoft.com/en-us/windows/desktop/shell/default-programs#registering-an-application-for-use-with-default-programs
   std::unique_ptr<TRegistry> Registry(CreateRegistry(RootKey));
 
   // create capabilities record
@@ -580,6 +582,7 @@ static void __fastcall RegisterProtocolsForDefaultPrograms(HKEY RootKey)
   RegisterProtocolForDefaultPrograms(RootKey, SshProtocol);
   RegisterProtocolForDefaultPrograms(RootKey, WebDAVProtocol);
   RegisterProtocolForDefaultPrograms(RootKey, WebDAVSProtocol);
+  RegisterProtocolForDefaultPrograms(RootKey, S3Protocol);
   // deliberately not including http,
   // it's unlikely that anyone would like to change http handler
   // to non-browser application
@@ -594,6 +597,7 @@ static void __fastcall UnregisterProtocolsForDefaultPrograms(HKEY RootKey, bool 
   UnregisterProtocolForDefaultPrograms(RootKey, ScpProtocol, ForceHandlerUnregistration);
   UnregisterProtocolForDefaultPrograms(RootKey, WebDAVProtocol, ForceHandlerUnregistration);
   UnregisterProtocolForDefaultPrograms(RootKey, WebDAVSProtocol, ForceHandlerUnregistration);
+  UnregisterProtocolForDefaultPrograms(RootKey, S3Protocol, ForceHandlerUnregistration);
 
   // we should not really need the "force" flag here, but why not
   UnregisterAsUrlHandler(RootKey, GenericUrlHandler, true, true);
@@ -672,7 +676,7 @@ void __fastcall LaunchAdvancedAssociationUI()
 
   RegisterForDefaultPrograms();
   NotifyChangedAssociations();
-  // sleep recommended by https://msdn.microsoft.com/en-us/library/windows/desktop/cc144154.aspx#browser
+  // sleep recommended by https://docs.microsoft.com/en-us/windows/desktop/shell/default-programs#becoming-the-default-browser
   Sleep(1000);
 
   if (IsWin10())
@@ -789,9 +793,10 @@ UnicodeString __fastcall CampaignUrl(UnicodeString URL)
 {
   int CurrentCompoundVer = Configuration->CompoundVersion;
   UnicodeString Version = VersionStrFromCompoundVersion(CurrentCompoundVer);
+  UnicodeString Medium = IsUWP() ? L"uwp" : L"app";
   // Beware that these parameters may get truncated if URL is too long,
   // such as with ERROR_REPORT_URL2
-  UnicodeString Params = FORMAT(L"utm_source=winscp&utm_medium=app&utm_campaign=%s", (Version));
+  UnicodeString Params = FORMAT(L"utm_source=winscp&utm_medium=%s&utm_campaign=%s", (Medium, Version));
 
   return AppendUrlParams(URL, Params);
 }
@@ -1188,7 +1193,7 @@ void __fastcall EnableAutomaticUpdates()
   OpenBrowser(GetEnableAutomaticUpdatesUrl());
 }
 //---------------------------------------------------------------------------
-static void __fastcall OpenHistory(void * /*Data*/, TObject * /*Sender*/)
+static void __fastcall OpenHistory(void * /*Data*/, TObject * /*Sender*/, unsigned int & /*Answer*/)
 {
   Configuration->Usage->Inc(L"UpdateHistoryOpens");
   OpenBrowser(LoadStr(HISTORY_URL));
@@ -1458,7 +1463,7 @@ static void __fastcall DownloadClose(void * /*Data*/, TObject * Sender, TCloseAc
   }
 }
 //---------------------------------------------------------------------------
-static void __fastcall DownloadUpdate(void * /*Data*/, TObject * Sender)
+static void __fastcall DownloadUpdate(void * /*Data*/, TObject * Sender, unsigned int & /*Answer*/)
 {
   Configuration->Usage->Inc(L"UpdateDownloadStarts");
   TButton * Button = DebugNotNull(dynamic_cast<TButton *>(Sender));
@@ -1512,25 +1517,32 @@ static void __fastcall UpdatesDonateClick(void * /*Data*/, TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 static void __fastcall InsertDonateLink(void * /*Data*/, TObject * Sender)
 {
+  const UnicodeString DonatePanelName = L"DonatePanel";
   TForm * Dialog = DebugNotNull(dynamic_cast<TForm *>(Sender));
-  TPanel * Panel = CreateBlankPanel(Dialog);
+  // OnShow can happen multiple times, for example when showing dialog on start up (being main window)
+  if (FindComponentRecursively(Dialog, DonatePanelName) == NULL)
+  {
+    TPanel * Panel = CreateBlankPanel(Dialog);
+    Panel->Name = DonatePanelName;
+    Panel->Caption = UnicodeString(); // override default use of Name
 
-  TStaticText * StaticText = new TStaticText(Panel);
-  StaticText->Top = 0;
-  StaticText->Left = 0;
-  StaticText->AutoSize = true;
-  StaticText->Caption = LoadStr(UPDATES_DONATE_LINK);
-  StaticText->Parent = Panel;
-  StaticText->OnClick = MakeMethod<TNotifyEvent>(NULL, UpdatesDonateClick);
-  StaticText->TabStop = true;
+    TStaticText * StaticText = new TStaticText(Panel);
+    StaticText->Top = 0;
+    StaticText->Left = 0;
+    StaticText->AutoSize = true;
+    StaticText->Caption = LoadStr(UPDATES_DONATE_LINK);
+    StaticText->Parent = Panel;
+    StaticText->OnClick = MakeMethod<TNotifyEvent>(NULL, UpdatesDonateClick);
+    StaticText->TabStop = true;
 
-  LinkLabel(StaticText);
+    LinkLabel(StaticText);
 
-  Panel->Height = StaticText->Height;
+    Panel->Height = StaticText->Height;
 
-  // Currently this is noop (will fail assertion), if MoreMessagesUrl is not set
-  // (what should not happen)
-  InsertPanelToMessageDialog(Dialog, Panel);
+    // Currently this is noop (will fail assertion), if MoreMessagesUrl is not set
+    // (what should not happen)
+    InsertPanelToMessageDialog(Dialog, Panel);
+  }
 }
 //---------------------------------------------------------------------------
 bool __fastcall CheckForUpdates(bool CachedResults)
@@ -1603,7 +1615,7 @@ bool __fastcall CheckForUpdates(bool CachedResults)
     }
     Aliases[1].Button = qaAll;
     Aliases[1].Alias = LoadStr(WHATS_NEW_BUTTON);
-    Aliases[1].OnClick = MakeMethod<TNotifyEvent>(NULL, OpenHistory);
+    Aliases[1].OnSubmit = MakeMethod<TButtonSubmitEvent>(NULL, OpenHistory);
     Aliases[2].Button = qaCancel;
     Aliases[2].Alias = Vcl_Consts_SMsgDlgClose;
     // Used only when New == true, see AliasesCount below
@@ -1611,7 +1623,7 @@ bool __fastcall CheckForUpdates(bool CachedResults)
     Aliases[3].Alias = LoadStr(UPGRADE_BUTTON);
     if (!Updates.Results.DownloadUrl.IsEmpty())
     {
-      Aliases[3].OnClick = MakeMethod<TNotifyEvent>(NULL, DownloadUpdate);
+      Aliases[3].OnSubmit = MakeMethod<TButtonSubmitEvent>(NULL, DownloadUpdate);
       Aliases[3].ElevationRequired = true;
     }
 
@@ -2013,7 +2025,7 @@ static void __fastcall TipSeen(const UnicodeString & Tip)
   WinConfiguration->Save();
 }
 //---------------------------------------------------------------------------
-static void __fastcall PrevNextTipClick(void * Data, TObject * Sender)
+static void __fastcall PrevNextTipClick(void * Data, TObject * Sender, unsigned int & /*Answer*/)
 {
   TCustomForm * Form = GetParentForm(dynamic_cast<TControl *>(Sender));
   TTipsData * TipsData = TTipsData::Retrieve(Form);
@@ -2051,10 +2063,10 @@ static void __fastcall ShowTip(bool AutoShow)
   TQueryButtonAlias Aliases[3];
   Aliases[0].Button = qaYes;
   Aliases[0].Alias = LoadStr(PREV_BUTTON);
-  Aliases[0].OnClick = MakeMethod<TNotifyEvent>(reinterpret_cast<void *>(-1), PrevNextTipClick);
+  Aliases[0].OnSubmit = MakeMethod<TButtonSubmitEvent>(reinterpret_cast<void *>(-1), PrevNextTipClick);
   Aliases[1].Button = qaNo;
   Aliases[1].Alias = LoadStr(NEXT_BUTTON);
-  Aliases[1].OnClick = MakeMethod<TNotifyEvent>(reinterpret_cast<void *>(+1), PrevNextTipClick);
+  Aliases[1].OnSubmit = MakeMethod<TButtonSubmitEvent>(reinterpret_cast<void *>(+1), PrevNextTipClick);
   Aliases[2].Button = qaCancel;
   Aliases[2].Alias = LoadStr(CLOSE_BUTTON);
 

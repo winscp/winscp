@@ -69,9 +69,7 @@ private:
   UnicodeString FHelpKeyword;
 };
 //---------------------------------------------------------------------------
-#define DERIVE_EXT_EXCEPTION(NAME, BASE) \
-  class NAME : public BASE \
-  { \
+#define EXT_EXCEPTION_METHODS(NAME, BASE) \
   public: \
     inline __fastcall NAME(Exception* E, UnicodeString Msg, UnicodeString HelpKeyword = L"") : \
       BASE(E, Msg, HelpKeyword) \
@@ -112,14 +110,30 @@ private:
     { \
       return new NAME(this, L""); \
     } \
+    virtual void __fastcall Rethrow() \
+    { \
+      throw NAME(this, L""); \
+    }
+
+#define DERIVE_EXT_EXCEPTION(NAME, BASE) \
+  class NAME : public BASE \
+  { \
+    EXT_EXCEPTION_METHODS(NAME, BASE) \
   };
 //---------------------------------------------------------------------------
 DERIVE_EXT_EXCEPTION(ESsh, ExtException);
 DERIVE_EXT_EXCEPTION(ETerminal, ExtException);
 DERIVE_EXT_EXCEPTION(ECommand, ExtException);
 DERIVE_EXT_EXCEPTION(EScp, ExtException); // SCP protocol fatal error (non-fatal in application context)
-DERIVE_EXT_EXCEPTION(EScpSkipFile, ExtException);
-DERIVE_EXT_EXCEPTION(EScpFileSkipped, EScpSkipFile);
+class ESkipFile : public ExtException
+{
+public:
+  inline __fastcall ESkipFile() :
+    ExtException(NULL, UnicodeString())
+  {
+  }
+  EXT_EXCEPTION_METHODS(ESkipFile, ExtException)
+};
 //---------------------------------------------------------------------------
 class EOSExtException : public ExtException
 {

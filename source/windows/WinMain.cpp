@@ -27,10 +27,11 @@ void __fastcall GetLoginData(UnicodeString SessionName, TOptions * Options,
 {
   bool DefaultsOnly = false;
 
-  if (StoredSessions->IsFolder(SessionName) ||
-      StoredSessions->IsWorkspace(SessionName))
+  UnicodeString FolderOrWorkspaceName = DecodeUrlChars(SessionName);
+  if (StoredSessions->IsFolder(FolderOrWorkspaceName) ||
+      StoredSessions->IsWorkspace(FolderOrWorkspaceName))
   {
-    StoredSessions->GetFolderOrWorkspace(SessionName, DataList);
+    StoredSessions->GetFolderOrWorkspace(FolderOrWorkspaceName, DataList);
   }
   else
   {
@@ -59,6 +60,7 @@ void __fastcall GetLoginData(UnicodeString SessionName, TOptions * Options,
         // though it's hardly of any use here.
         SessionData->ExpandEnvironmentVariables();
         OpenSessionInPutty(GUIConfiguration->PuttyPath, SessionData);
+        DataList->Clear();
         Abort();
       }
     }
@@ -382,6 +384,7 @@ void __fastcall UpdateStaticUsage()
   GetWindowsProductType(Type);
   Configuration->Usage->Set(L"WindowsProductType", (static_cast<int>(Type)));
   Configuration->Usage->Set(L"Windows64", IsWin64());
+  Configuration->Usage->Set(L"UWP", IsUWP());
   Configuration->Usage->Set(L"DefaultLocale",
     // See TGUIConfiguration::GetAppliedLocaleHex()
     IntToHex(static_cast<int>(GetDefaultLCID()), 4));
@@ -628,6 +631,7 @@ bool __fastcall ShowUpdatesIfAvailable()
   int CurrentCompoundVer = Configuration->CompoundVersion;
   bool NoPopup = true;
   bool Result =
+    !IsUWP() &&
     Updates.ShowOnStartup &&
     Updates.HaveValidResultsForVersion(CurrentCompoundVer) &&
     !Updates.Results.Disabled &&
@@ -811,7 +815,7 @@ int __fastcall Execute()
     HintWindowClass = __classid(TScreenTipHintWindow);
 
     UnicodeString IniFileName = Params->SwitchValue(INI_SWITCH);
-    if (!IniFileName.IsEmpty())
+    if (!IniFileName.IsEmpty() && (IniFileName != INI_NUL))
     {
       UnicodeString IniFileNameExpanded = ExpandEnvironmentVariables(IniFileName);
       if (!FileExists(ApiPath(IniFileNameExpanded)))

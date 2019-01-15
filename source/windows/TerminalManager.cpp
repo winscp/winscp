@@ -233,6 +233,7 @@ void __fastcall TTerminalManager::DoConnectTerminal(TTerminal * Terminal, bool R
   try
   {
     TTerminalThread * TerminalThread = new TTerminalThread(Terminal);
+    TerminalThread->AllowAbandon = (Terminal == FActiveTerminal);
     try
     {
       if (ManagedTerminal != NULL)
@@ -262,12 +263,38 @@ void __fastcall TTerminalManager::DoConnectTerminal(TTerminal * Terminal, bool R
     }
     __finally
     {
-      if (ManagedTerminal != NULL)
+      TerminalThread->OnIdle = NULL;
+      if (!TerminalThread->Release() && (DebugAlwaysTrue(Terminal == FActiveTerminal)))
       {
-        ManagedTerminal->TerminalThread = NULL;
-      }
+        // terminal was abandoned, must create a new one to replace it
+        Terminal = CreateTerminal(new TSessionData(L""));
+        SetupTerminal(Terminal);
+        OwnsObjects = false;
+        Items[ActiveTerminalIndex] = Terminal;
+        OwnsObjects = true;
+        FActiveTerminal = Terminal;
+        // Can be NULL, when opening the first session from command-line
+        if (FScpExplorer != NULL)
+        {
+          FScpExplorer->ReplaceTerminal(Terminal);
+        }
+        // Now we do not have any reference to an abandoned terminal, so we can safely allow the thread
+        // to complete its task and destroy the terminal afterwards.
+        TerminalThread->Terminate();
 
-      delete TerminalThread;
+        // When abandoning cancelled terminal, DoInformation(Phase = 0) does not make it to TerminalInformation handler.
+        if (DebugAlwaysTrue(FAuthenticating > 0))
+        {
+          AuthenticatingDone();
+        }
+      }
+      else
+      {
+        if (ManagedTerminal != NULL)
+        {
+          ManagedTerminal->TerminalThread = NULL;
+        }
+      }
     }
   }
   __finally
@@ -283,6 +310,8 @@ void __fastcall TTerminalManager::DoConnectTerminal(TTerminal * Terminal, bool R
 bool __fastcall TTerminalManager::ConnectTerminal(TTerminal * Terminal)
 {
   bool Result = true;
+  // were it an active terminal, it would allow abandoning, what this API cannot deal with
+  DebugAssert(Terminal != FActiveTerminal);
   try
   {
     DoConnectTerminal(Terminal, false);
@@ -324,7 +353,7 @@ bool __fastcall TTerminalManager::ConnectActiveTerminalImpl(bool Reopen)
 
       Result = true;
     }
-    catch(Exception & E)
+    catch (Exception & E)
     {
       DebugAssert(FTerminalPendingAction == tpNull);
       FTerminalPendingAction = ::tpNone;
@@ -987,7 +1016,7 @@ void __fastcall TTerminalManager::TerminalPromptUser(
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::TerminalDisplayBanner(
   TTerminal * Terminal, UnicodeString SessionName,
-  const UnicodeString & Banner, bool & NeverShowAgain, int Options)
+  const UnicodeString & Banner, bool & NeverShowAgain, int Options, unsigned int & Params)
 {
   DebugAssert(FAuthenticateForm != NULL);
   TAuthenticateForm * AuthenticateForm = FAuthenticateForm;
@@ -998,7 +1027,7 @@ void __fastcall TTerminalManager::TerminalDisplayBanner(
 
   try
   {
-    AuthenticateForm->Banner(Banner, NeverShowAgain, Options);
+    AuthenticateForm->Banner(Banner, NeverShowAgain, Options, Params);
   }
   __finally
   {
@@ -1095,6 +1124,17 @@ void __fastcall TTerminalManager::TerminalCustomCommand(
   Handled = CopyCommandToClipboard(Command);
 }
 //---------------------------------------------------------------------------
+void __fastcall TTerminalManager::AuthenticatingDone()
+{
+  FAuthenticating--;
+  if (FAuthenticating == 0)
+  {
+    BusyEnd(FBusyToken);
+    FBusyToken = NULL;
+  }
+  SAFE_DESTROY(FAuthenticateForm);
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminalManager::TerminalInformation(
   TTerminal * Terminal, const UnicodeString & Str, bool /*Status*/, int Phase)
 {
@@ -1110,13 +1150,7 @@ void __fastcall TTerminalManager::TerminalInformation(
   else if (Phase == 0)
   {
     DebugAssert(FAuthenticating > 0);
-    FAuthenticating--;
-    if (FAuthenticating == 0)
-    {
-      BusyEnd(FBusyToken);
-      FBusyToken = NULL;
-    }
-    SAFE_DESTROY(FAuthenticateForm);
+    AuthenticatingDone();
   }
   else
   {
@@ -1301,12 +1335,6 @@ bool __fastcall TTerminalManager::CanOpenInPutty()
   return (ActiveTerminal != NULL) && !GUIConfiguration->PuttyPath.Trim().IsEmpty();
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminalManager::UpdateSessionCredentials(TSessionData * Data)
-{
-  Data->UserName = ActiveTerminal->UserName;
-  Data->Password = ActiveTerminal->Password;
-}
-//---------------------------------------------------------------------------
 void __fastcall TTerminalManager::OpenInPutty()
 {
   Configuration->Usage->Inc(L"OpenInPutty");
@@ -1325,7 +1353,7 @@ void __fastcall TTerminalManager::OpenInPutty()
       Data = new TSessionData(L"");
       DebugAssert(ActiveTerminal != NULL);
       Data->Assign(ActiveTerminal->SessionData);
-      UpdateSessionCredentials(Data);
+      ActiveTerminal->UpdateSessionCredentials(Data);
     }
 
     // putty does not support resolving environment variables in session settings
@@ -1362,7 +1390,7 @@ void __fastcall TTerminalManager::NewSession(bool /*FromSite*/, const UnicodeStr
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminalManager::Idle()
+void __fastcall TTerminalManager::Idle(bool SkipCurrentTerminal)
 {
 
   if (FPendingConfigurationChange > 0) // optimization
@@ -1389,27 +1417,30 @@ void __fastcall TTerminalManager::Idle()
     TTerminal * Terminal = Terminals[Index];
     try
     {
-      TManagedTerminal * ManagedTerminal = dynamic_cast<TManagedTerminal *>(Terminal);
-      DebugAssert(ManagedTerminal != NULL);
-      // make sure Idle is called on the thread that runs the terminal
-      if (ManagedTerminal->TerminalThread != NULL)
+      if (!SkipCurrentTerminal || (Terminal != ActiveTerminal))
       {
-        ManagedTerminal->TerminalThread->Idle();
-      }
-      else
-      {
+        TManagedTerminal * ManagedTerminal = dynamic_cast<TManagedTerminal *>(Terminal);
+        DebugAssert(ManagedTerminal != NULL);
+        // make sure Idle is called on the thread that runs the terminal
+        if (ManagedTerminal->TerminalThread != NULL)
+        {
+          ManagedTerminal->TerminalThread->Idle();
+        }
+        else
+        {
+          if (Terminal->Active)
+          {
+            Terminal->Idle();
+          }
+        }
+
         if (Terminal->Active)
         {
-          Terminal->Idle();
-        }
-      }
-
-      if (Terminal->Active)
-      {
-        DebugAssert(Index < FQueues->Count);
-        if (Index < FQueues->Count)
-        {
-          reinterpret_cast<TTerminalQueue *>(FQueues->Items[Index])->Idle();
+          DebugAssert(Index < FQueues->Count);
+          if (Index < FQueues->Count)
+          {
+            reinterpret_cast<TTerminalQueue *>(FQueues->Items[Index])->Idle();
+          }
         }
       }
     }

@@ -4,6 +4,7 @@
 //---------------------------------------------------------------------------
 #define DRAG_EXT_MAPPING L"WinSCPDragExtMapping"
 #define DRAG_EXT_MUTEX L"WinSCPDragExtMutex"
+#define DRAG_EXT_RUNNING_MUTEX L"WinSCPDragExtLogMutex"
 #define DRAG_EXT_DUMMY_DIR_PREFIX L"scp"
 #define DRAG_EXT_DUMMY_DIR_PREFIX_LEN 3
 //---------------------------------------------------------------------------

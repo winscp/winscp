@@ -6,8 +6,8 @@
 #define WebRoot "https://winscp.net/"
 #define WebForum WebRoot+"forum/"
 #define WebDocumentation WebRoot+"eng/docs/"
-#define WebReport "http://winscp.net/install.php"
-#define Year 2018
+#define WebReport "https://winscp.net/install.php"
+#define Year 2019
 #define EnglishLang "English"
 #define SetupTypeData "SetupType"
 #define InnoSetupReg "Software\Microsoft\Windows\CurrentVersion\Uninstall\" + AppId + "_is1"
@@ -299,6 +299,17 @@ Source: "{#PuttySourceDir}\puttygen.exe"; DestDir: "{app}\PuTTY"; \
 #ifdef ExtensionsDir
 Source: "{#ExtensionsDir}\*.*"; DestDir: "{app}\Extensions"
 #endif
+#ifdef Sponsor
+Source: "{#Sponsor}\*.*"; Flags: dontcopy skipifsourcedoesntexist
+
+  #define SponsorImages
+  #if FindHandle = FindFirst(Sponsor + "\*.*", 0)
+    #define FResult 1
+    #for {0; FResult; FResult = FindNext(FindHandle)} SponsorImages = SponsorImages + FindGetFileName(FindHandle) + ","
+    #expr FindClose(FindHandle)
+    #expr SponsorImages = Copy(SponsorImages, 1, Len(SponsorImages) - 1)
+  #endif
+#endif
 
 [Registry]
 Root: HKCU; Subkey: "{#ParentRegistryKey}"; Flags: uninsdeletekeyifempty
@@ -398,6 +409,12 @@ var
   Donated: Boolean;
   InterfacePage: TWizardPage;
   SetupTypePage: TWizardPage;
+#ifdef Sponsor
+  SponsorReq: Variant;
+  SponsorPage: TWizardPage;
+  Sponsor: string;
+  SponsorStatus: string;
+#endif
 
 procedure ShowMessage(Text: string);
 begin
@@ -554,6 +571,17 @@ begin
   Result := WizardForm.YesRadio.Visible;
 end;
 
+#ifdef Sponsor
+var
+  SponsoringClicked: Boolean;
+
+procedure SponsoringLinkLabelClick(Sender: TObject);
+begin
+  SponsoringClicked := True;
+  OpenBrowser('{#WebReport}?mode=sponsoring' + Format('&sponsor=%s&', [Sponsor]) + ExpandConstant('{#WebArguments}'));
+end;
+#endif
+
 procedure OpenHelp;
 var
   HelpKeyword: string;
@@ -584,6 +612,14 @@ begin
 
     InterfacePage.ID:
       HelpKeyword := 'ui_installer_interface';
+
+#ifdef Sponsor
+    SponsorPage.ID:
+      begin
+        SponsoringLinkLabelClick(nil);
+        Exit;
+      end;
+#endif
   end;
 
   OpenBrowser('{#WebDocumentation}' + HelpKeyword + '?' + ExpandConstant('{#WebArguments}'));
@@ -675,22 +711,27 @@ end;
 const
   fsSurface = 0;
 
-procedure LoadEmbededBitmap(Image: TBitmapImage; Name: string; BackgroundColor: TColor);
+procedure LoadBitmap(Image: TBitmapImage; FileName: string; BackgroundColor: TColor);
 var
-  FileName: string;
   Bitmap: TAlphaBitmap;
 begin
-  ExtractTemporaryFile(Name);
   Bitmap := TAlphaBitmap.Create();
   Bitmap.AlphaFormat := afDefined;
-  FileName := ExpandConstant('{tmp}\' + Name);
   Bitmap.LoadFromFile(FileName);
-  // we won't need this anymore
-  DeleteFile(FileName);
-
   Image.Bitmap := Bitmap;
   Bitmap.Free;
   Image.BackColor := BackgroundColor;
+end;
+
+procedure LoadEmbededBitmap(Image: TBitmapImage; Name: string; BackgroundColor: TColor);
+var
+  FileName: string;
+begin
+  ExtractTemporaryFile(Name);
+  FileName := ExpandConstant('{tmp}\' + Name);
+  LoadBitmap(Image, FileName, BackgroundColor);
+  // we won't need this anymore
+  DeleteFile(FileName);
 end;
 
 function GetScalingFactor: Integer;
@@ -728,6 +769,11 @@ end;
 function GetBottom(Control: TControl): Integer;
 begin
   Result := Control.Top + Control.Height;
+end;
+
+function GetRight(Control: TControl): Integer;
+begin
+  Result := Control.Left + Control.Width;
 end;
 
 function CmdLineParamExists(const Value: string): Boolean;
@@ -929,9 +975,7 @@ begin
   // add help button
   HelpButton := TButton.Create(WizardForm);
   HelpButton.Parent := WizardForm;
-  HelpButton.Left :=
-    WizardForm.ClientWidth -
-    (WizardForm.CancelButton.Left + WizardForm.CancelButton.Width);
+  HelpButton.Left := WizardForm.ClientWidth - GetRight(WizardForm.CancelButton);
   HelpButton.Top := WizardForm.CancelButton.Top;
   HelpButton.Width := WizardForm.CancelButton.Width;
   HelpButton.Height := WizardForm.CancelButton.Height;
@@ -1102,7 +1146,7 @@ begin
       CustomMessage('NortonCommanderInterface1') + NewLine +
       CustomMessage('NortonCommanderInterface2') + NewLine +
       CustomMessage('NortonCommanderInterface3');
-  Caption.Left := CommanderRadioButton.Left + CommanderRadioButton.Width;
+  Caption.Left := GetRight(CommanderRadioButton);
   Caption.Width := InterfacePage.SurfaceWidth - Caption.Left;
   Caption.Top := CommanderRadioButton.Top;
   Caption.Parent := InterfacePage.Surface;
@@ -1134,7 +1178,7 @@ begin
       CustomMessage('ExplorerInterface1') + NewLine +
       CustomMessage('ExplorerInterface2') + NewLine +
       CustomMessage('ExplorerInterface3');
-  Caption.Left := ExplorerRadioButton.Left + ExplorerRadioButton.Width;
+  Caption.Left := GetRight(ExplorerRadioButton);
   Caption.Width := InterfacePage.SurfaceWidth - Caption.Left;
   Caption.Top := ExplorerRadioButton.Top;
   Caption.Parent := InterfacePage.Surface;
@@ -1262,6 +1306,10 @@ var
   LineHeight: Integer;
   LaunchCheckboxTop: Integer;
   S: string;
+#ifdef Sponsor
+  SponsorQueryUrl: string;
+  PreferredSponsor: string;
+#endif
 begin
   if CurPageID = wpLicense then
   begin
@@ -1364,6 +1412,40 @@ begin
   begin
     Log('License accepted');
     LicenseAccepted := True;
+
+#ifdef Sponsor
+    if VarIsEmpty(SponsorReq) then
+    begin
+      // Need Vista for SHCONTCH_* constants
+      if WizardSilent or CmdLineParamExists('/NoSponsor') or (not IsWinVista) then
+      begin
+        Log('Skipping sponsor query request');
+        SponsorStatus := 'N';
+      end
+        else
+      begin
+        SponsorPage :=
+          CreateCustomPage(wpInstalling, 'Release sponsor', 'Please read a message from the sponsor of this release.');
+
+        SponsorQueryUrl :=
+          '{#WebReport}?' +
+          Format('mode=sponsorrequest&ver=%s&lang=%s&prevver=%s&scale=%d&images=%s', [
+            '{#VersionOnly}', ActiveLanguage, PrevVersion, GetScalingFactor, '{#SponsorImages}']);
+        PreferredSponsor := ExpandConstant('{param:Sponsor}');
+        if PreferredSponsor <> '' then
+        begin
+          SponsorQueryUrl := SponsorQueryUrl + Format('&sponsor=%s', [PreferredSponsor]);
+        end;
+
+        Log('Sending sponsor query request: ' + SponsorQueryUrl);
+
+        SponsorReq := CreateOleObject('WinHttp.WinHttpRequest.5.1');
+
+        SponsorReq.Open('GET', SponsorQueryUrl, True);
+        SponsorReq.Send('');
+      end;
+    end;
+#endif
   end;
 end;
 
@@ -1385,10 +1467,14 @@ begin
     Log('Preparing installation report');
 
     ReportData := Format(
-      'installed=%d&silent=%d&ver=%s&lang=%s&prevver=%s&', [
+      'mode=report&installed=%d&silent=%d&ver=%s&lang=%s&prevver=%s&', [
        Integer(InstallationDone), Integer(WizardSilent),
        '{#VersionOnly}', ActiveLanguage,
        PrevVersion]);
+#ifdef Sponsor
+    ReportData := ReportData +
+      Format('sponsorstatus=%s&sponsor=%s&sponsoringclicked=%d&', [SponsorStatus, Sponsor, Integer(SponsoringClicked)]);
+#endif
 
     try
       ReportUrl := '{#WebReport}?' + ReportData;
@@ -1558,15 +1644,294 @@ begin
   end;
 end;
 
+#ifdef Sponsor
+function CryptStringToBinary(
+  sz: string; cch: LongWord; flags: LongWord; binary: string; var size: LongWord;
+  skip: LongWord; flagsused: LongWord): Integer;
+  external 'CryptStringToBinaryW@crypt32.dll stdcall';
+
+const
+  CRYPT_STRING_HEX = $04;
+  SHCONTCH_NOPROGRESSBOX = 4;
+  SHCONTCH_RESPONDYESTOALL = 16;
+
+var
+  ShowSponsor: Integer;
+
+procedure SponsorImageClick(Sender: TObject);
+begin
+  SponsorStatus := 'C';
+  OpenBrowser('{#WebReport}?mode=sponsor' + Format('&sponsor=%s&', [Sponsor]) + ExpandConstant('{#WebArguments}'));
+end;
+
+function CheckSponsorReq: Boolean;
+var
+  R, Succeeded: Integer;
+  Lines: TStrings;
+  I, P: Integer;
+  L, Key, Value: string;
+  Stream: TStream;
+  Buffer: string;
+  Size: LongWord;
+  ZipPath, TargetPath, ImagePath: string;
+  Shell, ZipFile, TargetFolder: Variant;
+  SponsorLinkLabel, SponsoringLinkLabel: TLabel;
+  SponsorImage: TBitmapImage;
+  ImageSize, GrayHeight: Integer;
+begin
+  if ShowSponsor = 0 then
+  begin
+    SponsorImage := nil;
+
+    Log('Checking for response to sponsor request');
+    try
+      Succeeded := 0;
+      // Not testing return value, as it always returns -1 for some reason
+      R := SponsorReq.WaitForResponse(1, Succeeded);
+      if R = 0 then
+      begin
+        Log('Timed out waiting for a response to sponsor request');
+        SponsorStatus := 'T';
+        ShowSponsor := -1;
+      end
+        else
+      if SponsorReq.Status <> 200 then
+      begin
+        Log('Sponsor request failed with HTTP error: ' + IntToStr(SponsorReq.Status) + ' ' + SponsorReq.StatusText);
+        SponsorStatus := 'H';
+        ShowSponsor := -1;
+      end
+        else
+      begin
+        Log('Sponsor request succeeded');
+
+        SponsorLinkLabel := TLabel.Create(SponsorPage);
+        SponsorLinkLabel.Parent := SponsorPage.Surface;
+        SponsorLinkLabel.Caption := 'Visit release sponsor';
+        SponsorLinkLabel.Top := SponsorPage.Surface.Height - SponsorLinkLabel.Height - ScaleY(2);
+        SponsorLinkLabel.OnClick := @SponsorImageClick;
+        LinkLabel(SponsorLinkLabel);
+
+        SponsoringLinkLabel := TLabel.Create(SponsorPage);
+        SponsoringLinkLabel.Parent := SponsorPage.Surface;
+        SponsoringLinkLabel.Caption := 'Become next release sponsor';
+        SponsoringLinkLabel.Top := SponsorLinkLabel.Top;
+        SponsoringLinkLabel.OnClick := @SponsoringLinkLabelClick;
+        LinkLabel(SponsoringLinkLabel);
+
+        Lines := TStringList.Create;
+        try
+          Lines.Text := SponsorReq.ResponseText;
+          for I := 0 to Lines.Count - 1 do
+          begin
+            L := Lines[I];
+            P := Pos('=', L);
+            if P = 0 then
+            begin
+              Log('Malformed sponsor response directive: ' + L);
+              SponsorStatus := 'P';
+              ShowSponsor := -1;
+              break;
+            end
+              else
+            begin
+              Key := Trim(Copy(L, 1, P - 1));
+              Value := Trim(Copy(L, P + 1, Length(L) - P));
+
+              if CompareText(Key, 'result') = 0 then
+              begin
+                if Value <> '-' then
+                begin
+                  Log('No sponsor returned');
+                  SponsorStatus := Copy(Value, 1, 1);
+                  ShowSponsor := -1;
+                  break;
+                end
+                  else
+                begin
+                  Log('Sponsor returned');
+                end;
+              end
+                else
+              if (CompareText(Key, 'image') = 0) or
+                 (CompareText(Key, 'localimage') = 0) then
+              begin
+                if CompareText(Key, 'localimage') = 0 then
+                begin
+                  Log(Format('Extracting embedded sponsor image (%s)', [Value]));
+                  ExtractTemporaryFile(Value);
+                  ImagePath := ExpandConstant('{tmp}\' + Value);
+                end
+                  else
+                begin
+                  Log(Format('Extracting returned sponsor image (%d bytes)', [Length(Value)]));
+
+                  ZipPath := ExpandConstant('{tmp}\sponsor.zip');
+                  Stream := TFileStream.Create(ZipPath, fmCreate);
+                  try
+                    SetLength(Buffer, (Length(Value) div 4) + 1);
+                    Size := Length(Value) div 2;
+                    if (CryptStringToBinary(Value, Length(Value), CRYPT_STRING_HEX, Buffer, Size, 0, 0) = 0) or
+                       (Size <> Length(Value) div 2) then
+                    begin
+                      Log('Error decoding binary string');
+                      SponsorStatus := 'P';
+                      ShowSponsor := -1;
+                      break;
+                    end;
+
+                    Stream.WriteBuffer(Buffer, Size);
+                  finally
+                    Stream.Free;
+                  end;
+
+                  Shell := CreateOleObject('Shell.Application');
+                  ZipFile := Shell.NameSpace(ZipPath);
+                  if VarIsClear(ZipFile) then
+                  begin
+                    RaiseException(Format('ZIP file "%s" does not exist or cannot be opened', [ZipPath]));
+                  end
+                    else
+                  begin
+                    TargetPath := ExpandConstant('{tmp}');
+                    TargetFolder := Shell.NameSpace(TargetPath);
+                    if VarIsClear(TargetFolder) then
+                    begin
+                      RaiseException(Format('Target path "%s" does not exist', [TargetPath]));
+                    end
+                      else
+                    begin
+                      TargetFolder.CopyHere(ZipFile.Items, SHCONTCH_NOPROGRESSBOX or SHCONTCH_RESPONDYESTOALL);
+
+                      ImagePath := ExpandConstant('{tmp}\sponsor.bmp');
+                    end;
+                  end;
+                end;
+
+                SponsorImage := TBitmapImage.Create(SponsorPage);
+                SponsorImage.Parent := SponsorPage.Surface;
+                SponsorImage.AutoSize := True;
+                SponsorImage.Hint := SponsorLinkLabel.Caption;
+                SponsorImage.ShowHint := True;
+                try
+                  LoadBitmap(SponsorImage, ImagePath, SponsorPage.Surface.Color);
+                except
+                  Log('Error loading sponsor image: ' + GetExceptionMessage);
+                  SponsorStatus := 'I';
+                  ShowSponsor := -1;
+                end;
+
+                if ShowSponsor = 0 then
+                begin
+                  GrayHeight :=
+                    // Overal height of area between header and footer (InnerNotebook is smaller and not vertically centered)
+                    (WizardForm.Bevel.Top - (WizardForm.OuterNotebook.Top + GetBottom(WizardForm.Bevel1)))
+                    // Bottom padding of InnerNotebook
+                    - (WizardForm.Bevel.Top - GetBottom(WizardForm.InnerNotebook))
+                    // height occupied by link label on the bottom of InnerNotebook
+                    - SponsorLinkLabel.Height;
+
+                  SponsorImage.Top := ((GrayHeight - SponsorImage.Height) div 2) - (WizardForm.InnerNotebook.Top - GetBottom(WizardForm.Bevel1));
+                  if SponsorImage.Top < 0 then SponsorImage.Top := 0;
+                  SponsorImage.Left := (SponsorPage.Surface.Width - SponsorImage.Width) div 2;
+                  SponsorLinkLabel.Left := SponsorImage.Left;
+                  if SponsorLinkLabel.Left < 0 then SponsorLinkLabel.Left := 0;
+                  SponsoringLinkLabel.Left := GetRight(SponsorImage) - SponsoringLinkLabel.Width;
+                  if GetRight(SponsoringLinkLabel) > SponsorPage.Surface.Width then
+                    SponsoringLinkLabel.Left := SponsorPage.Surface.Width - SponsoringLinkLabel.Width;
+                  SponsorImage.Cursor := crHand;
+                  SponsorImage.OnClick := @SponsorImageClick;
+                  FileSize(ImagePath, ImageSize);
+                  Log(Format('Sponsor image loaded (%d bytes, %dx%d)', [Integer(ImageSize), SponsorPage.Surface.Width, SponsorImage.Height]));
+                end;
+              end
+                else
+              if CompareText(Key, 'sponsor') = 0 then
+              begin
+                Sponsor := Value;
+              end
+                else
+              if CompareText(Key, 'description') = 0 then
+              begin
+                SponsorPage.Description := Value;
+                Log('Sponsor page description: ' + Value);
+              end
+                else
+              if CompareText(Key, 'caption') = 0 then
+              begin
+                SponsorPage.Caption := Value;
+                Log('Sponsor page caption: ' + Value);
+              end
+                else
+              if CompareText(Key, 'sponsor_caption') = 0 then
+              begin
+                SponsorLinkLabel.Caption := Value;
+                Log('Sponsor link caption: ' + Value);
+              end
+                else
+              if CompareText(Key, 'sponsoring_caption') = 0 then
+              begin
+                if Value = '' then
+                begin
+                  SponsoringLinkLabel.Visible := False;
+                  Log('Hiding sponsoring link');
+                end
+                  else
+                begin
+                  SponsoringLinkLabel.Caption := Value;
+                  Log('Sponsoring link caption: ' + Value);
+                end;
+              end
+                else
+              begin
+                Log('Unknown sponsor directive: ' + Key);
+              end;
+            end;
+          end;
+        finally
+          Lines.Free;
+        end;
+
+        if ShowSponsor = 0 then
+        begin
+          if SponsorImage = nil then
+          begin
+            Log('Incomplete sponsor data');
+            SponsorStatus := 'P';
+            ShowSponsor := -1;
+          end
+            else
+          begin
+            SponsorStatus := 'S';
+            ShowSponsor := 1;
+          end;
+        end;
+      end;
+    except
+      Log('Error processing response to sponsor request: ' + GetExceptionMessage);
+      SponsorStatus := 'E';
+      ShowSponsor := -1;
+    end;
+  end;
+
+  Result := (ShowSponsor > 0);
+end;
+#endif
+
 function ShouldSkipPage(PageID: Integer): Boolean;
 begin
   Result :=
     { Hide most pages during typical installation }
-    IsTypicalInstallation and
-    ((PageID = wpSelectDir) or (PageID = wpSelectComponents) or
-     (PageID = wpSelectTasks) or
-     { Hide Interface page for upgrades only, show for fresh installs }
-     ((PageID = InterfacePage.ID) and Upgrade));
+    (IsTypicalInstallation and
+     ((PageID = wpSelectDir) or (PageID = wpSelectComponents) or
+      (PageID = wpSelectTasks) or
+      { Hide Interface page for upgrades only, show for fresh installs }
+      ((PageID = InterfacePage.ID) and Upgrade)))
+#ifdef Sponsor
+    or
+    ((SponsorPage <> nil) and (PageID = SponsorPage.ID) and (not CheckSponsorReq))
+#endif
+    ;
 end;
 
 function UpdateReadyMemo(Space, NewLine, MemoUserInfoInfo, MemoDirInfo,

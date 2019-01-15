@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -71,6 +71,7 @@
     <Compile Include="Internal\UnsafeNativeMethods.cs" />
     <Compile Include="OutputDataReceivedEventArgs.cs" />
     <Compile Include="FileTransferProgressEventArgs.cs" />
+    <Compile Include="QueryReceivedEventArgs.cs" />
     <Compile Include="RemoteDirectoryInfo.cs" />
     <Compile Include="FailedEventArgs.cs" />
     <Compile Include="FileOperationEventArgs.cs" />
@@ -83,6 +84,7 @@
     <Compile Include="InteropCollections\SessionRemoteExceptionCollection.cs" />
     <Compile Include="InteropCollections\StringCollection.cs" />
     <Compile Include="InteropCollections\TransferEventArgsCollection.cs" />
+    <Compile Include="RemotePath.cs" />
     <Compile Include="RemovalEventArgs.cs" />
     <Compile Include="RemovalOperationResult.cs" />
     <Compile Include="SessionEvents.cs" />

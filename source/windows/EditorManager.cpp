@@ -440,7 +440,7 @@ bool __fastcall TEditorManager::CloseFile(int Index, bool IgnoreErrors, bool Del
     FFiles.erase(FFiles.begin() + Index);
     Result = true;
 
-    if (Delete)
+    if (Delete && !LocalRootDirectory.IsEmpty())
     {
       if (!RecursiveDeleteFile(ExcludeTrailingBackslash(LocalRootDirectory), false) &&
           !IgnoreErrors)

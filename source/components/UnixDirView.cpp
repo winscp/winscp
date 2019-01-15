@@ -481,18 +481,28 @@ void __fastcall TUnixDirView::SetDriveView(TCustomUnixDriveView * Value)
 }
 //---------------------------------------------------------------------------
 #ifndef DESIGN_ONLY
-void __fastcall TUnixDirView::SetTerminal(TTerminal *value)
+void __fastcall TUnixDirView::DoSetTerminal(TTerminal * value, bool Replace)
 {
+  DebugUsedParam(Replace);
   if (FTerminal != value)
   {
     if (FTerminal)
     {
-      DebugAssert(FTerminal->OnReadDirectory == DoReadDirectory);
-      FTerminal->OnReadDirectory = NULL;
-      DebugAssert(FTerminal->OnStartReadDirectory == DoStartReadDirectory);
-      FTerminal->OnStartReadDirectory = NULL;
-      DebugAssert(FTerminal->OnChangeDirectory == DoChangeDirectory);
-      FTerminal->OnChangeDirectory = NULL;
+      DebugAssert((FTerminal->OnReadDirectory == DoReadDirectory) || Replace);
+      if (FTerminal->OnReadDirectory == DoReadDirectory)
+      {
+        FTerminal->OnReadDirectory = NULL;
+      }
+      DebugAssert((FTerminal->OnStartReadDirectory == DoStartReadDirectory) || Replace);
+      if (FTerminal->OnStartReadDirectory == DoStartReadDirectory)
+      {
+        FTerminal->OnStartReadDirectory = NULL;
+      }
+      DebugAssert((FTerminal->OnChangeDirectory == DoChangeDirectory) || Replace);
+      if (FTerminal->OnChangeDirectory == DoChangeDirectory)
+      {
+        FTerminal->OnChangeDirectory = NULL;
+      }
       if (!value || !value->Files->Loaded)
       {
         ClearItems();
@@ -519,6 +529,16 @@ void __fastcall TUnixDirView::SetTerminal(TTerminal *value)
     }
     UpdatePathLabel();
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TUnixDirView::SetTerminal(TTerminal * value)
+{
+  DoSetTerminal(value, false);
+}
+//---------------------------------------------------------------------------
+void __fastcall TUnixDirView::ReplaceTerminal(TTerminal * value)
+{
+  DoSetTerminal(value, true);
 }
 #endif
 //---------------------------------------------------------------------------
@@ -681,7 +701,7 @@ int __stdcall CompareFile(TListItem * Item1, TListItem * Item2, TUnixDirView * D
         // Duplicated in uvType branch
         if (!File1->IsDirectory)
         {
-          Result = CompareLogicalText(File1->Extension, File2->Extension);
+          Result = CompareLogicalText(File1->Extension, File2->Extension, DirView->NaturalOrderNumericalSorting);
         }
         else
         {
@@ -690,15 +710,15 @@ int __stdcall CompareFile(TListItem * Item1, TListItem * Item2, TUnixDirView * D
         break;
 
       case uvLinkTarget:
-        Result = CompareLogicalText(File1->LinkTo, File2->LinkTo);
+        Result = CompareLogicalText(File1->LinkTo, File2->LinkTo, DirView->NaturalOrderNumericalSorting);
         break;
 
       case uvType:
-        Result = CompareLogicalText(File1->TypeName, File2->TypeName);
+        Result = CompareLogicalText(File1->TypeName, File2->TypeName, DirView->NaturalOrderNumericalSorting);
         // fallback to uvExt
         if ((Result == 0) && !File1->IsDirectory)
         {
-          Result = CompareLogicalText(File1->Extension, File2->Extension);
+          Result = CompareLogicalText(File1->Extension, File2->Extension, DirView->NaturalOrderNumericalSorting);
         }
         break;
 
@@ -708,7 +728,7 @@ int __stdcall CompareFile(TListItem * Item1, TListItem * Item2, TUnixDirView * D
 
     if (Result == 0)
     {
-      Result = CompareLogicalText(File1->FileName, File2->FileName);
+      Result = CompareLogicalText(File1->FileName, File2->FileName, DirView->NaturalOrderNumericalSorting);
     }
 
     if (!DirView->UnixColProperties->SortAscending)

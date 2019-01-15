@@ -365,6 +365,7 @@ void __fastcall TScript::Init()
   FCommands->Register(L"rmdir", SCRIPT_RMDIR_DESC, SCRIPT_RMDIR_HELP, &RmDirProc, 1, -1, false);
   FCommands->Register(L"mv", SCRIPT_MV_DESC, SCRIPT_MV_HELP2, &MvProc, 2, -1, false);
   FCommands->Register(L"rename", 0, SCRIPT_MV_HELP2, &MvProc, 2, -1, false);
+  FCommands->Register(L"cp", SCRIPT_CP_DESC, SCRIPT_CP_HELP, &CpProc, 2, -1, false);
   FCommands->Register(L"chmod", SCRIPT_CHMOD_DESC, SCRIPT_CHMOD_HELP2, &ChModProc, 2, -1, false);
   FCommands->Register(L"ln", SCRIPT_LN_DESC, SCRIPT_LN_HELP, &LnProc, 2, 2, false);
   FCommands->Register(L"symlink", 0, SCRIPT_LN_HELP, &LnProc, 2, 2, false);
@@ -1331,12 +1332,17 @@ void __fastcall TScript::RmDirProc(TScriptProcParams * Parameters)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TScript::MvProc(TScriptProcParams * Parameters)
+void __fastcall TScript::DoMvOrCp(TScriptProcParams * Parameters, TFSCapability Capability, bool Cp)
 {
   CheckSession();
 
-  TStrings * FileList = CreateFileList(Parameters, 1, Parameters->ParamCount - 1,
-    fltMask);
+  if (!FTerminal->IsCapable[Capability])
+  {
+    NotSupported();
+  }
+
+  TStrings * FileList =
+    CreateFileList(Parameters, 1, Parameters->ParamCount - 1, TFileListType(fltMask | fltQueryServer));
   try
   {
     DebugAssert(Parameters->ParamCount >= 1);
@@ -1346,12 +1352,29 @@ void __fastcall TScript::MvProc(TScriptProcParams * Parameters)
 
     Target = UnixIncludeTrailingBackslash(TargetDirectory) + FileMask;
     CheckMultiFilesToOne(FileList, Target, true);
-    FTerminal->MoveFiles(FileList, TargetDirectory, FileMask);
+    if (Cp)
+    {
+      FTerminal->CopyFiles(FileList, TargetDirectory, FileMask);
+    }
+    else
+    {
+      FTerminal->MoveFiles(FileList, TargetDirectory, FileMask);
+    }
   }
   __finally
   {
     FreeFileList(FileList);
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TScript::MvProc(TScriptProcParams * Parameters)
+{
+  DoMvOrCp(Parameters, fcRemoteMove, false);
+}
+//---------------------------------------------------------------------------
+void __fastcall TScript::CpProc(TScriptProcParams * Parameters)
+{
+  DoMvOrCp(Parameters, fcRemoteCopy, true);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScript::ChModProc(TScriptProcParams * Parameters)
@@ -1381,6 +1404,10 @@ void __fastcall TScript::ChModProc(TScriptProcParams * Parameters)
 void __fastcall TScript::LnProc(TScriptProcParams * Parameters)
 {
   CheckSession();
+  if (!FTerminal->IsCapable[fcSymbolicLink])
+  {
+    NotSupported();
+  }
 
   DebugAssert(Parameters->ParamCount == 2);
 
@@ -2070,7 +2097,7 @@ __fastcall TManagementScript::TManagementScript(TStoredSessionList * StoredSessi
 
   FCommands->Register(L"exit", SCRIPT_EXIT_DESC, SCRIPT_EXIT_HELP, &ExitProc, 0, 0, false);
   FCommands->Register(L"bye", 0, SCRIPT_EXIT_HELP, &ExitProc, 0, 0, false);
-  FCommands->Register(L"open", SCRIPT_OPEN_DESC, SCRIPT_OPEN_HELP9, &OpenProc, 0, -1, true);
+  FCommands->Register(L"open", SCRIPT_OPEN_DESC, SCRIPT_OPEN_HELP10, &OpenProc, 0, -1, true);
   FCommands->Register(L"close", SCRIPT_CLOSE_DESC, SCRIPT_CLOSE_HELP, &CloseProc, 0, 1, false);
   FCommands->Register(L"session", SCRIPT_SESSION_DESC, SCRIPT_SESSION_HELP, &SessionProc, 0, 1, false);
   FCommands->Register(L"lpwd", SCRIPT_LPWD_DESC, SCRIPT_LPWD_HELP, &LPwdProc, 0, 0, false);
@@ -2440,6 +2467,7 @@ void __fastcall TManagementScript::MaskPasswordInCommandLine(UnicodeString & Com
   UnicodeString RawParam;
   UnicodeString Separator;
   UnicodeString Separator2;
+  UnicodeString OptionWithParameters;
   bool AnyMaskedParam = false;
 
   TOptions Options;
@@ -2463,17 +2491,31 @@ void __fastcall TManagementScript::MaskPasswordInCommandLine(UnicodeString & Com
       wchar_t SwitchMark;
       if (Options.WasSwitchAdded(Switch, SwitchMark))
       {
+        OptionWithParameters = L"";
         if (TSessionData::IsSensitiveOption(Switch))
         {
           // We should use something like TProgramParams::FormatSwitch here
-          RawParam = FORMAT(L"%s%s=***", (SwitchMark, Switch));
+          RawParam = FORMAT(L"%s%s=%s", (SwitchMark, Switch, PasswordMask));
           AnyMaskedParam = true;
+        }
+        else if (TSessionData::IsOptionWithParameters(Switch))
+        {
+          OptionWithParameters = Switch;
         }
 
         SubCommands = SameText(Switch, COMMAND_SWITCH);
       }
       else
       {
+        if (!OptionWithParameters.IsEmpty())
+        {
+          if (TSessionData::MaskPasswordInOptionParameter(OptionWithParameters, Param))
+          {
+            RawParam = Param;
+            AnyMaskedParam = true;
+          }
+        }
+
         if (Recurse && SubCommands)
         {
           UnicodeString Cmd2 = Param;
@@ -2593,10 +2635,7 @@ void __fastcall TManagementScript::Connect(const UnicodeString Session,
       {
         std::unique_ptr<TSessionData> DataWithFingerprint(Data->Clone());
         DataWithFingerprint->LookupLastFingerprint();
-        if (!DataWithFingerprint->Password.IsEmpty())
-        {
-          DataWithFingerprint->Password = PasswordMask;
-        }
+        DataWithFingerprint->MaskPasswords();
 
         PrintLine(LoadStr(SCRIPT_SITE_WARNING));
         PrintLine(L"open " + DataWithFingerprint->GenerateOpenCommandArgs(false));

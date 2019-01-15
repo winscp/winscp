@@ -15,5 +15,7 @@ namespace WinSCP
         void OutputDataReceived(object sender, OutputDataReceivedEventArgs e);
         [DispId(4)]
         void FileTransferProgress(object sender, FileTransferProgressEventArgs e);
+        [DispId(5)]
+        void QueryReceived(object sender, QueryReceivedEventArgs e);
     }
 }

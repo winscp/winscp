@@ -53,14 +53,13 @@ public:
   bool __fastcall CanOpenInPutty();
   void __fastcall OpenInPutty();
   void __fastcall NewSession(bool FromSite, const UnicodeString & SessionUrl, bool ReloadSessions = true, TForm * LinkedForm = NULL);
-  void __fastcall Idle();
+  void __fastcall Idle(bool SkipCurrentTerminal);
   UnicodeString __fastcall TerminalTitle(TTerminal * Terminal);
   void __fastcall HandleException(Exception * E);
   void __fastcall SaveWorkspace(TList * DataList);
   void __fastcall QueueStatusUpdated();
   TTerminal * __fastcall FindActiveTerminalForSite(TSessionData * Data);
   TTerminalQueue * __fastcall FindQueueForTerminal(TTerminal * Terminal);
-  void __fastcall UpdateSessionCredentials(TSessionData * Data);
   void __fastcall DoConnectTerminal(TTerminal * Terminal, bool Reopen);
 
   __property TCustomScpExplorerForm * ScpExplorer = { read = FScpExplorer, write = SetScpExplorer };
@@ -125,7 +124,7 @@ private:
     TStrings * Results, bool & Result, void * Arg);
   void __fastcall TerminalDisplayBanner(TTerminal * Terminal,
     UnicodeString SessionName, const UnicodeString & Banner, bool & NeverShowAgain,
-    int Options);
+    int Options, unsigned int & Params);
   void __fastcall TerminalShowExtendedException(TTerminal * Terminal,
     Exception * E, void * Arg);
   void __fastcall TerminalReadDirectoryProgress(TObject * Sender, int Progress,
@@ -166,6 +165,7 @@ private:
   void __fastcall DoConfigurationChange();
   bool __fastcall ShouldDisplayQueueStatusOnAppTitle();
   void __fastcall SetupTerminal(TTerminal * Terminal);
+  void __fastcall AuthenticatingDone();
 };
 //---------------------------------------------------------------------------
 #endif

@@ -526,7 +526,7 @@ protected:
   virtual void __fastcall RestoreFormParams();
   virtual void __fastcall RestoreParams();
   virtual void __fastcall FixControlsPlacement();
-  virtual void __fastcall TerminalChanged();
+  virtual void __fastcall TerminalChanged(bool Replaced);
   virtual void __fastcall ConfigurationChanged();
   virtual bool __fastcall GetHasDirView(TOperationSide Side);
   virtual void __fastcall UpdateControls();
@@ -536,7 +536,7 @@ protected:
     TOperationSide Side);
   bool __fastcall InternalDDDownload(UnicodeString & TargetDirectory);
   virtual bool __fastcall DDGetTarget(
-    UnicodeString & Directory, bool & ForceQueue, bool & Internal);
+    UnicodeString & Directory, bool & ForceQueue, UnicodeString & CounterName);
   virtual void __fastcall DDExtInitDrag(TFileList * FileList, bool & Created);
   virtual void __fastcall SideEnter(TOperationSide Side);
   void __fastcall SaveCommandLine();
@@ -562,6 +562,8 @@ protected:
     UnicodeString & NewPath, bool Create);
   void __fastcall SynchronizeBrowsingLocal(UnicodeString PrevPath, UnicodeString & NewPath, bool Create);
   void __fastcall SynchronizeBrowsingRemote(UnicodeString PrevPath, UnicodeString & NewPath, bool Create);
+  void __fastcall CreateLocalDirectory(const UnicodeString & Path);
+  void __fastcall CreateRemoteDirectory(const UnicodeString & Path);
   void __fastcall LocalPathComboUpdateDrives();
   void __fastcall LocalPathComboUpdate();
   virtual void __fastcall ToolbarItemResize(TTBXCustomDropDownItem * Item, int Width);

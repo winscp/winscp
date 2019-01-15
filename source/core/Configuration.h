@@ -72,6 +72,7 @@ private:
   bool FTryFtpWhenSshFails;
   int FParallelDurationThreshold;
   bool FScripting;
+  UnicodeString FMimeTypes;
 
   bool FDisablePasswordStoring;
   bool FForceBanners;
@@ -136,6 +137,7 @@ private:
   void __fastcall SetExternalIpAddress(UnicodeString value);
   void __fastcall SetTryFtpWhenSshFails(bool value);
   void __fastcall SetParallelDurationThreshold(int value);
+  void __fastcall SetMimeTypes(UnicodeString value);
   bool __fastcall GetCollectUsage();
   void __fastcall SetCollectUsage(bool value);
   bool __fastcall GetIsUnofficial();
@@ -156,6 +158,8 @@ protected:
   virtual void __fastcall Saved();
   void __fastcall CleanupRegistry(UnicodeString CleanupSubKey);
   UnicodeString __fastcall BannerHash(const UnicodeString & Banner);
+  void __fastcall SetBannerData(const UnicodeString & SessionKey, const UnicodeString & BannerHash, unsigned int Params);
+  void __fastcall GetBannerData(const UnicodeString & SessionKey, UnicodeString & BannerHash, unsigned int & Params);
   static UnicodeString __fastcall PropertyToKey(const UnicodeString & Property);
   virtual void __fastcall DoSave(bool All, bool Explicit);
   UnicodeString __fastcall FormatFingerprintKey(const UnicodeString & SiteKey, const UnicodeString & FingerprintType);
@@ -217,8 +221,9 @@ public:
     TRemoteDirectoryChangesCache * DirectoryChangesCache);
   void __fastcall SaveDirectoryChangesCache(const UnicodeString SessionKey,
     TRemoteDirectoryChangesCache * DirectoryChangesCache);
-  bool __fastcall ShowBanner(const UnicodeString SessionKey, const UnicodeString & Banner);
-  void __fastcall NeverShowBanner(const UnicodeString SessionKey, const UnicodeString & Banner);
+  bool __fastcall ShowBanner(const UnicodeString & SessionKey, const UnicodeString & Banner, unsigned int & Params);
+  void __fastcall NeverShowBanner(const UnicodeString & SessionKey, const UnicodeString & Banner);
+  void __fastcall SetBannerParams(const UnicodeString & SessionKey, unsigned int Params);
   void __fastcall RememberLastFingerprint(const UnicodeString & SiteKey, const UnicodeString & FingerprintType, const UnicodeString & Fingerprint);
   UnicodeString __fastcall LastFingerprint(const UnicodeString & SiteKey, const UnicodeString & FingerprintType);
   THierarchicalStorage * CreateConfigStorage();
@@ -234,6 +239,7 @@ public:
   virtual RawByteString __fastcall StronglyRecryptPassword(RawByteString Password, UnicodeString Key);
   UnicodeString __fastcall GetFileDescription(const UnicodeString & FileName);
   UnicodeString __fastcall GetFileVersion(const UnicodeString & FileName);
+  UnicodeString __fastcall GetFileMimeType(const UnicodeString & FileName);
 
   TStoredSessionList * __fastcall SelectFilezillaSessionsForImport(
     TStoredSessionList * Sessions, UnicodeString & Error);
@@ -293,6 +299,7 @@ public:
   __property UnicodeString ExternalIpAddress = { read = FExternalIpAddress, write = SetExternalIpAddress };
   __property bool TryFtpWhenSshFails = { read = FTryFtpWhenSshFails, write = SetTryFtpWhenSshFails };
   __property int ParallelDurationThreshold = { read = FParallelDurationThreshold, write = SetParallelDurationThreshold };
+  __property UnicodeString MimeTypes = { read = FMimeTypes, write = SetMimeTypes };
 
   __property UnicodeString TimeFormat = { read = GetTimeFormat };
   __property TStorage Storage  = { read=GetStorage };
@@ -336,5 +343,7 @@ extern const UnicodeString Crc32ChecksumAlg;
 //---------------------------------------------------------------------------
 extern const UnicodeString SshFingerprintType;
 extern const UnicodeString TlsFingerprintType;
+//---------------------------------------------------------------------------
+extern const UnicodeString HttpsCertificateStorageKey;
 //---------------------------------------------------------------------------
 #endif

@@ -30,6 +30,7 @@ const char Bom[3] = "\xEF\xBB\xBF";
 const wchar_t TokenPrefix = L'%';
 const wchar_t NoReplacement = wchar_t(false);
 const wchar_t TokenReplacement = wchar_t(true);
+// Note similar list in MakeValidFileName
 const UnicodeString LocalInvalidChars(TraceInitStr(L"/\\:*?\"<>|"));
 const UnicodeString PasswordMask(TraceInitStr(L"***"));
 const UnicodeString Ellipsis(TraceInitStr(L"..."));
@@ -109,8 +110,10 @@ UnicodeString AnsiToString(const char * S, size_t Len)
   return UnicodeString(AnsiString(S, Len));
 }
 //---------------------------------------------------------------------------
+// Note similar function ValidLocalFileName
 UnicodeString MakeValidFileName(UnicodeString FileName)
 {
+  // Note similar list in LocalInvalidChars
   UnicodeString IllegalChars = L":;,=+<>|\"[] \\/?*";
   for (int Index = 0; Index < IllegalChars.Length(); Index++)
   {
@@ -569,6 +572,7 @@ static wchar_t * __fastcall ReplaceChar(
   return InvalidChar;
 }
 //---------------------------------------------------------------------------
+//  Note similar function MakeValidFileName
 UnicodeString __fastcall ValidLocalFileName(UnicodeString FileName)
 {
   return ValidLocalFileName(FileName, L'_', L"", LocalInvalidChars);
@@ -812,9 +816,17 @@ bool __fastcall SamePaths(const UnicodeString & Path1, const UnicodeString & Pat
   return AnsiSameText(IncludeTrailingBackslash(Path1), IncludeTrailingBackslash(Path2));
 }
 //---------------------------------------------------------------------------
-int __fastcall CompareLogicalText(const UnicodeString & S1, const UnicodeString & S2)
+int __fastcall CompareLogicalText(
+  const UnicodeString & S1, const UnicodeString & S2, bool NaturalOrderNumericalSorting)
 {
-  return StrCmpLogicalW(S1.c_str(), S2.c_str());
+  if (NaturalOrderNumericalSorting)
+  {
+    return StrCmpLogicalW(S1.c_str(), S2.c_str());
+  }
+  else
+  {
+    return lstrcmpi(S1.c_str(), S2.c_str());
+  }
 }
 //---------------------------------------------------------------------------
 bool __fastcall IsReservedName(UnicodeString FileName)
@@ -1098,6 +1110,13 @@ UnicodeString __fastcall MakeUnicodeLargePath(UnicodeString Path)
 //---------------------------------------------------------------------------
 UnicodeString __fastcall ApiPath(UnicodeString Path)
 {
+  UnicodeString Drive = ExtractFileDrive(Path);
+  // This may match even a path like "C:" or "\\server\\share", but we do not really care
+  if (Drive.IsEmpty() || (Path.SubString(Drive.Length() + 1, 1) != L"\\"))
+  {
+    Path = ExpandFileName(Path);
+  }
+
   if (Path.Length() >= MAX_PATH)
   {
     if (Configuration != NULL)
@@ -2470,7 +2489,7 @@ UnicodeString __fastcall DecodeUrlChars(UnicodeString S)
   return S;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall DoEncodeUrl(UnicodeString S, bool EncodeSlash)
+UnicodeString __fastcall DoEncodeUrl(UnicodeString S, const UnicodeString & DoNotEncode)
 {
   int Index = 1;
   while (Index <= S.Length())
@@ -2478,8 +2497,8 @@ UnicodeString __fastcall DoEncodeUrl(UnicodeString S, bool EncodeSlash)
     wchar_t C = S[Index];
     if (IsLetter(C) ||
         IsDigit(C) ||
-        (C == L'_') || (C == L'-') || (C == L'.') ||
-        ((C == L'/') && !EncodeSlash))
+        (C == L'_') || (C == L'-') || (C == L'.') || (C == L'*') ||
+        (DoNotEncode.Pos(C) > 0))
     {
       Index++;
     }
@@ -2499,14 +2518,14 @@ UnicodeString __fastcall DoEncodeUrl(UnicodeString S, bool EncodeSlash)
   return S;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall EncodeUrlString(UnicodeString S)
+UnicodeString __fastcall EncodeUrlString(UnicodeString S, const UnicodeString & DoNotEncode)
 {
-  return DoEncodeUrl(S, true);
+  return DoEncodeUrl(S, DoNotEncode);
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall EncodeUrlPath(UnicodeString S)
 {
-  return DoEncodeUrl(S, false);
+  return DoEncodeUrl(S, L"/");
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall AppendUrlParams(UnicodeString AURL, UnicodeString Params)
@@ -2690,6 +2709,25 @@ bool __fastcall IsWine()
     (GetProcAddress(NtDll, "wine_get_version") != NULL);
 }
 //---------------------------------------------------------------------------
+int GIsUWP = -1;
+//---------------------------------------------------------------------------
+bool __fastcall IsUWP()
+{
+  if (GIsUWP < 0)
+  {
+    HINSTANCE Kernel32 = GetModuleHandle(kernel32);
+    typedef LONG WINAPI (* GetPackageFamilyNameProc)(HANDLE hProcess, UINT32 *packageFamilyNameLength, PWSTR packageFamilyName);
+    GetPackageFamilyNameProc GetPackageFamilyName =
+      (GetPackageFamilyNameProc)GetProcAddress(Kernel32, "GetPackageFamilyName");
+    UINT32 Len = 0;
+    bool Result =
+      (GetPackageFamilyName != NULL) &&
+      (GetPackageFamilyName(GetCurrentProcess(), &Len, NULL) == ERROR_INSUFFICIENT_BUFFER);
+    GIsUWP = (Result ? 1 : 0);
+  }
+  return (GIsUWP > 0);
+}
+//---------------------------------------------------------------------------
 LCID __fastcall GetDefaultLCID()
 {
   return GetUserDefaultLCID();
@@ -2748,17 +2786,26 @@ UnicodeString __fastcall WindowsProductName()
   return Result;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall WindowsVersion()
+static OSVERSIONINFO __fastcall GetWindowsVersion()
 {
-  UnicodeString Result;
-  OSVERSIONINFO OSVersionInfo;
-  OSVersionInfo.dwOSVersionInfoSize = sizeof(OSVersionInfo);
+  OSVERSIONINFO Result;
+  memset(&Result, 0, sizeof(Result));
+  Result.dwOSVersionInfoSize = sizeof(Result);
   // Cannot use the VCL Win32MajorVersion+Win32MinorVersion+Win32BuildNumber as
   // on Windows 10 due to some hacking in InitPlatformId, the Win32BuildNumber is lost
-  if (GetVersionEx(&OSVersionInfo) != 0)
-  {
-    Result = FORMAT(L"%d.%d.%d", (int(OSVersionInfo.dwMajorVersion), int(OSVersionInfo.dwMinorVersion), int(OSVersionInfo.dwBuildNumber)));
-  }
+  GetVersionEx(&Result);
+  return Result;
+}
+//---------------------------------------------------------------------------
+int __fastcall GetWindowsBuild()
+{
+  return GetWindowsVersion().dwBuildNumber;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall WindowsVersion()
+{
+  OSVERSIONINFO OSVersionInfo = GetWindowsVersion();
+  UnicodeString Result = FORMAT(L"%d.%d.%d", (int(OSVersionInfo.dwMajorVersion), int(OSVersionInfo.dwMinorVersion), int(OSVersionInfo.dwBuildNumber)));
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -3387,7 +3434,7 @@ UnicodeString __fastcall AssemblyString(TAssemblyLanguage Language, UnicodeStrin
       break;
 
     case alPowerShell:
-      S = FORMAT(L"\"%s\"", (ReplaceStr(S, L"\"", L"`\"")));
+      S = FORMAT(L"\"%s\"", (ReplaceStr(ReplaceStr(ReplaceStr(S, L"`", L"``"), L"$", L"`$"), L"\"", L"`\"")));
       break;
 
     default:
@@ -3675,6 +3722,18 @@ UnicodeString __fastcall StripEllipsis(const UnicodeString & S)
   {
     Result.SetLength(Result.Length() - Ellipsis.Length());
     Result = Result.TrimRight();
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall GetFileMimeType(const UnicodeString & FileName)
+{
+  wchar_t * MimeOut = NULL;
+  UnicodeString Result;
+  if (FindMimeFromData(NULL, FileName.c_str(), NULL, 0, NULL, FMFD_URLASFILENAME, &MimeOut, 0) == S_OK)
+  {
+    Result = MimeOut;
+    CoTaskMemFree(MimeOut);
   }
   return Result;
 }

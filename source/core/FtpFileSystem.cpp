@@ -2,7 +2,6 @@
 #include <vcl.h>
 #pragma hdrstop
 
-#ifndef NO_FILEZILLA
 //---------------------------------------------------------------------------
 #include <list>
 #define MPEXT
@@ -187,9 +186,7 @@ struct TFileTransferData
   TDateTime Modification;
 };
 //---------------------------------------------------------------------------
-const int tfFirstLevel = 0x01;
-const int tfAutoResume = 0x02;
-const wchar_t CertificateStorageKey[] = L"FtpsCertificates";
+const UnicodeString CertificateStorageKey(L"FtpsCertificates");
 const UnicodeString SiteCommand(L"SITE");
 const UnicodeString SymlinkSiteCommand(L"SYMLINK");
 const UnicodeString CopySiteCommand(L"COPY");
@@ -197,16 +194,6 @@ const UnicodeString HashCommand(L"HASH"); // Cerberos + FileZilla servers
 const UnicodeString AvblCommand(L"AVBL");
 const UnicodeString XQuotaCommand(L"XQUOTA");
 const UnicodeString DirectoryHasBytesPrefix(L"226-Directory has");
-//---------------------------------------------------------------------------
-struct TSinkFileParams
-{
-  UnicodeString TargetDir;
-  const TCopyParamType * CopyParam;
-  int Params;
-  TFileOperationProgressType * OperationProgress;
-  bool Skipped;
-  unsigned int Flags;
-};
 //---------------------------------------------------------------------------
 class TFileListHelper
 {
@@ -1339,20 +1326,10 @@ bool __fastcall TFTPFileSystem::ConfirmOverwrite(
     Aliases[0].Alias = LoadStr(RESUME_BUTTON);
     Aliases[0].GroupWith = qaNo;
     Aliases[0].GrouppedShiftState = TShiftState() << ssAlt;
-    Aliases[1].Button = qaAll;
-    Aliases[1].Alias = LoadStr(YES_TO_NEWER_BUTTON);
-    Aliases[1].GroupWith = qaYes;
-    Aliases[1].GrouppedShiftState = TShiftState() << ssCtrl;
-    Aliases[2].Button = qaIgnore;
-    Aliases[2].Alias = LoadStr(RENAME_BUTTON);
-    Aliases[2].GroupWith = qaNo;
-    Aliases[2].GrouppedShiftState = TShiftState() << ssCtrl;
-    Aliases[3].Button = qaYesToAll;
-    Aliases[3].GroupWith = qaYes;
-    Aliases[3].GrouppedShiftState = TShiftState() << ssShift;
-    Aliases[4].Button = qaNoToAll;
-    Aliases[4].GroupWith = qaNo;
-    Aliases[4].GrouppedShiftState = TShiftState() << ssShift;
+    Aliases[1] = TQueryButtonAlias::CreateAllAsYesToNewerGrouppedWithYes();
+    Aliases[2] = TQueryButtonAlias::CreateIgnoreAsRenameGrouppedWithNo();
+    Aliases[3] = TQueryButtonAlias::CreateYesToAllGrouppedWithYes();
+    Aliases[4] = TQueryButtonAlias::CreateNoToAllGrouppedWithNo();
     TQueryParams QueryParams(qpNeverAskAgainCheck);
     QueryParams.Aliases = Aliases;
     QueryParams.AliasesCount = LENOF(Aliases);
@@ -1361,7 +1338,7 @@ bool __fastcall TFTPFileSystem::ConfirmOverwrite(
       TSuspendFileOperationProgress Suspend(OperationProgress);
       Answer = FTerminal->ConfirmFileOverwrite(
         SourceFullFileName, TargetFileName, FileParams, Answers, &QueryParams,
-        OperationProgress->Side == osLocal ? osRemote : osLocal,
+        ReverseOperationSide(OperationProgress->Side),
         CopyParam, Params, OperationProgress);
     }
   }
@@ -1521,7 +1498,7 @@ void __fastcall TFTPFileSystem::FileTransfer(const UnicodeString & FileName,
   switch (FFileTransferAbort)
   {
     case ftaSkip:
-      THROW_SKIP_FILE_NULL;
+      throw ESkipFile();
 
     case ftaCancel:
       Abort();
@@ -1543,379 +1520,75 @@ void __fastcall TFTPFileSystem::CopyToLocal(TStrings * FilesToCopy,
   TOnceDoneOperation & OnceDoneOperation)
 {
   Params &= ~cpAppend;
-  UnicodeString FullTargetDir = IncludeTrailingBackslash(TargetDir);
 
-  int Index = 0;
-  while (Index < FilesToCopy->Count && !OperationProgress->Cancel)
-  {
-    UnicodeString FileName = FilesToCopy->Strings[Index];
-    const TRemoteFile * File = dynamic_cast<const TRemoteFile *>(FilesToCopy->Objects[Index]);
-    bool Success = false;
-
-    try
-    {
-      try
-      {
-        SinkRobust(AbsolutePath(FileName, false), File, FullTargetDir, CopyParam, Params,
-          OperationProgress, tfFirstLevel);
-        Success = true;
-        FLastDataSent = Now();
-      }
-      catch(EScpSkipFile & E)
-      {
-        TSuspendFileOperationProgress Suspend(OperationProgress);
-        if (!FTerminal->HandleException(&E))
-        {
-          throw;
-        }
-      }
-    }
-    __finally
-    {
-      OperationProgress->Finish(FileName, Success, OnceDoneOperation);
-    }
-    Index++;
-  }
+  FTerminal->DoCopyToLocal(
+    FilesToCopy, TargetDir, CopyParam, Params, OperationProgress, tfUseFileTransferAny, OnceDoneOperation);
 }
 //---------------------------------------------------------------------------
-void __fastcall TFTPFileSystem::SinkRobust(const UnicodeString FileName,
-  const TRemoteFile * File, const UnicodeString TargetDir,
-  const TCopyParamType * CopyParam, int Params,
-  TFileOperationProgressType * OperationProgress, unsigned int Flags)
+void __fastcall TFTPFileSystem::Sink(
+  const UnicodeString & FileName, const TRemoteFile * File,
+  const UnicodeString & TargetDir, UnicodeString & DestFileName, int Attrs,
+  const TCopyParamType * CopyParam, int Params, TFileOperationProgressType * OperationProgress,
+  unsigned int Flags, TDownloadSessionAction & Action)
 {
-  // the same in TSFTPFileSystem
+  AutoDetectTimeDifference(UnixExtractFileDir(FileName), CopyParam, Params);
 
-  TDownloadSessionAction Action(FTerminal->ActionLog);
-  TRobustOperationLoop RobustLoop(FTerminal, OperationProgress, &FFileTransferAny);
+  ResetFileTransfer();
 
-  do
-  {
-    try
-    {
-      Sink(FileName, File, TargetDir, CopyParam, Params, OperationProgress,
-        Flags, Action);
-    }
-    catch(Exception & E)
-    {
-      if (!RobustLoop.TryReopen(E))
-      {
-        FTerminal->RollbackAction(Action, OperationProgress, &E);
-        throw;
-      }
-    }
+  TFileTransferData UserData;
 
-    if (RobustLoop.ShouldRetry())
-    {
-      OperationProgress->RollbackTransfer();
-      Action.Restart();
-      DebugAssert(File != NULL);
-      if (!File->IsDirectory)
-      {
-        // prevent overwrite confirmations
-        Params |= cpNoConfirmation;
-        Flags |= tfAutoResume;
-      }
-    }
-  }
-  while (RobustLoop.Retry());
-}
-//---------------------------------------------------------------------------
-void __fastcall TFTPFileSystem::Sink(const UnicodeString FileName,
-  const TRemoteFile * File, const UnicodeString TargetDir,
-  const TCopyParamType * CopyParam, int Params,
-  TFileOperationProgressType * OperationProgress, unsigned int Flags,
-  TDownloadSessionAction & Action)
-{
-  UnicodeString OnlyFileName = UnixExtractFileName(FileName);
-
-  Action.FileName(FileName);
-
-  TFileMasks::TParams MaskParams;
-  DebugAssert(File);
-  MaskParams.Size = File->Size;
-  MaskParams.Modification = File->Modification;
-
-  UnicodeString BaseFileName = FTerminal->GetBaseFileName(FileName);
-  if (!CopyParam->AllowTransfer(BaseFileName, osRemote, File->IsDirectory, MaskParams))
-  {
-    FTerminal->LogEvent(FORMAT(L"File \"%s\" excluded from transfer", (FileName)));
-    THROW_SKIP_FILE_NULL;
-  }
-
-  if (CopyParam->SkipTransfer(FileName, File->IsDirectory))
-  {
-    OperationProgress->AddSkippedFileSize(File->Size);
-    THROW_SKIP_FILE_NULL;
-  }
-
-  FTerminal->LogFileDetails(FileName, File->Modification, File->Size);
-
-  OperationProgress->SetFile(FileName);
-
-  UnicodeString DestFileName =
-    FTerminal->ChangeFileName(
-      CopyParam, OnlyFileName, osRemote, FLAGSET(Flags, tfFirstLevel));
   UnicodeString DestFullName = TargetDir + DestFileName;
+  UnicodeString FilePath = UnixExtractFilePath(FileName);
+  unsigned int TransferType = (OperationProgress->AsciiTransfer ? 1 : 2);
 
-  if (File->IsDirectory)
   {
-    Action.Cancel();
-    if (FTerminal->CanRecurseToDirectory(File))
-    {
-      FILE_OPERATION_LOOP_BEGIN
-      {
-        int Attrs = FileGetAttrFix(ApiPath(DestFullName));
-        if (FLAGCLEAR(Attrs, faDirectory))
-        {
-          EXCEPTION;
-        }
-      }
-      FILE_OPERATION_LOOP_END(FMTLOAD(NOT_DIRECTORY_ERROR, (DestFullName)));
+    // ignore file list
+    TFileListHelper Helper(this, NULL, true);
 
-      FILE_OPERATION_LOOP_BEGIN
-      {
-        THROWOSIFFALSE(ForceDirectories(ApiPath(DestFullName)));
-      }
-      FILE_OPERATION_LOOP_END(FMTLOAD(CREATE_DIR_ERROR, (DestFullName)));
-
-      if (FLAGCLEAR(Params, cpNoRecurse))
-      {
-        TSinkFileParams SinkFileParams;
-        SinkFileParams.TargetDir = IncludeTrailingBackslash(DestFullName);
-        SinkFileParams.CopyParam = CopyParam;
-        SinkFileParams.Params = Params;
-        SinkFileParams.OperationProgress = OperationProgress;
-        SinkFileParams.Skipped = false;
-        SinkFileParams.Flags = Flags & ~(tfFirstLevel | tfAutoResume);
-
-        FTerminal->ProcessDirectory(FileName, SinkFile, &SinkFileParams);
-
-        // Do not delete directory if some of its files were skip.
-        // Throw "skip file" for the directory to avoid attempt to deletion
-        // of any parent directory
-        if (FLAGSET(Params, cpDelete) && SinkFileParams.Skipped)
-        {
-          THROW_SKIP_FILE_NULL;
-        }
-      }
-    }
-    else
-    {
-      FTerminal->LogEvent(FORMAT(L"Skipping symlink to directory \"%s\".", (FileName)));
-    }
-  }
-  else
-  {
-    AutoDetectTimeDifference(UnixExtractFileDir(FileName), CopyParam, Params);
-
-    FTerminal->LogEvent(FORMAT(L"Copying \"%s\" to local directory started.", (FileName)));
-
-    // Will we use ASCII of BINARY file transfer?
-    OperationProgress->SetAsciiTransfer(
-      CopyParam->UseAsciiTransfer(BaseFileName, osRemote, MaskParams));
-    FTerminal->LogEvent(UnicodeString((OperationProgress->AsciiTransfer ? L"Ascii" : L"Binary")) +
-      L" transfer mode selected.");
-
-    // Suppose same data size to transfer as to write
-    OperationProgress->SetTransferSize(File->Size);
-    OperationProgress->SetLocalSize(OperationProgress->TransferSize);
-
-    int Attrs;
-    FILE_OPERATION_LOOP_BEGIN
-    {
-      Attrs = FileGetAttrFix(ApiPath(DestFullName));
-      if ((Attrs >= 0) && FLAGSET(Attrs, faDirectory))
-      {
-        EXCEPTION;
-      }
-    }
-    FILE_OPERATION_LOOP_END(FMTLOAD(NOT_FILE_ERROR, (DestFullName)));
-
-    ResetFileTransfer();
-
-    TFileTransferData UserData;
-
-    UnicodeString FilePath = UnixExtractFilePath(FileName);
-    unsigned int TransferType = (OperationProgress->AsciiTransfer ? 1 : 2);
-
-    {
-      // ignore file list
-      TFileListHelper Helper(this, NULL, true);
-
-      SetCPSLimit(OperationProgress);
-      FFileTransferPreserveTime = CopyParam->PreserveTime;
-      // not used for downloads anyway
-      FFileTransferRemoveBOM = CopyParam->RemoveBOM;
-      FFileTransferNoList = CanTransferSkipList(Params, Flags, CopyParam);
-      UserData.FileName = DestFileName;
-      UserData.Params = Params;
-      UserData.AutoResume = FLAGSET(Flags, tfAutoResume);
-      UserData.CopyParam = CopyParam;
-      UserData.Modification = File->Modification;
-      FileTransfer(FileName, DestFullName, OnlyFileName,
-        FilePath, true, File->Size, TransferType, UserData, OperationProgress);
-    }
-
-    // in case dest filename is changed from overwrite dialog
-    if (DestFileName != UserData.FileName)
-    {
-      DestFullName = TargetDir + UserData.FileName;
-      Attrs = FileGetAttrFix(ApiPath(DestFullName));
-    }
-
-    UnicodeString ExpandedDestFullName = ExpandUNCFileName(DestFullName);
-    Action.Destination(ExpandedDestFullName);
-
-    if (Attrs == -1)
-    {
-      Attrs = faArchive;
-    }
-    int NewAttrs = CopyParam->LocalFileAttrs(*File->Rights);
-    if ((NewAttrs & Attrs) != NewAttrs)
-    {
-      FILE_OPERATION_LOOP_BEGIN
-      {
-        THROWOSIFFALSE(FileSetAttr(ApiPath(DestFullName), Attrs | NewAttrs) == 0);
-      }
-      FILE_OPERATION_LOOP_END(FMTLOAD(CANT_SET_ATTRS, (DestFullName)));
-    }
-
-    FTerminal->LogFileDone(OperationProgress, ExpandedDestFullName);
+    SetCPSLimit(OperationProgress);
+    FFileTransferPreserveTime = CopyParam->PreserveTime;
+    // not used for downloads anyway
+    FFileTransferRemoveBOM = CopyParam->RemoveBOM;
+    FFileTransferNoList = CanTransferSkipList(Params, Flags, CopyParam);
+    UserData.FileName = DestFileName;
+    UserData.Params = Params;
+    UserData.AutoResume = FLAGSET(Flags, tfAutoResume);
+    UserData.CopyParam = CopyParam;
+    UserData.Modification = File->Modification;
+    UnicodeString OnlyFileName = UnixExtractFileName(FileName);
+    FileTransfer(FileName, DestFullName, OnlyFileName,
+      FilePath, true, File->Size, TransferType, UserData, OperationProgress);
   }
 
-  if (FLAGSET(Params, cpDelete))
+  // in case dest filename is changed from overwrite dialog
+  if (DestFileName != UserData.FileName)
   {
-    DebugAssert(FLAGCLEAR(Params, cpNoRecurse));
-    // If file is directory, do not delete it recursively, because it should be
-    // empty already. If not, it should not be deleted (some files were
-    // skipped or some new files were copied to it, while we were downloading)
-    int Params = dfNoRecursive;
-    FTerminal->DeleteFile(FileName, File, &Params);
+    DestFullName = TargetDir + UserData.FileName;
+    Attrs = FileGetAttrFix(ApiPath(DestFullName));
   }
+
+  UnicodeString ExpandedDestFullName = ExpandUNCFileName(DestFullName);
+  Action.Destination(ExpandedDestFullName);
+
+  FTerminal->UpdateTargetAttrs(DestFullName, File, CopyParam, Attrs);
+
+  FLastDataSent = Now();
 }
 //---------------------------------------------------------------------------
-void __fastcall TFTPFileSystem::SinkFile(UnicodeString FileName,
-  const TRemoteFile * File, void * Param)
+void __fastcall TFTPFileSystem::TransferOnDirectory(
+  const UnicodeString & Directory, const TCopyParamType * CopyParam, int Params)
 {
-  TSinkFileParams * Params = (TSinkFileParams *)Param;
-  DebugAssert(Params->OperationProgress);
-  try
-  {
-    SinkRobust(FileName, File, Params->TargetDir, Params->CopyParam,
-      Params->Params, Params->OperationProgress, Params->Flags);
-  }
-  catch(EScpSkipFile & E)
-  {
-    TFileOperationProgressType * OperationProgress = Params->OperationProgress;
-
-    Params->Skipped = true;
-
-    {
-      TSuspendFileOperationProgress Suspend(OperationProgress);
-      if (!FTerminal->HandleException(&E))
-      {
-        throw;
-      }
-    }
-
-    if (OperationProgress->Cancel)
-    {
-      Abort();
-    }
-  }
+  AutoDetectTimeDifference(Directory, CopyParam, Params);
 }
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::CopyToRemote(TStrings * FilesToCopy,
-  const UnicodeString ATargetDir, const TCopyParamType * CopyParam,
+  const UnicodeString TargetDir, const TCopyParamType * CopyParam,
   int Params, TFileOperationProgressType * OperationProgress,
   TOnceDoneOperation & OnceDoneOperation)
 {
-  DebugAssert((FilesToCopy != NULL) && (OperationProgress != NULL));
-
-  AutoDetectTimeDifference(ATargetDir, CopyParam, Params);
-
   Params &= ~cpAppend;
-  UnicodeString FileName, FileNameOnly;
-  UnicodeString TargetDir = AbsolutePath(ATargetDir, false);
-  UnicodeString FullTargetDir = UnixIncludeTrailingBackslash(TargetDir);
-  int Index = 0;
-  while ((Index < FilesToCopy->Count) && !OperationProgress->Cancel)
-  {
-    bool Success = false;
-    FileName = FilesToCopy->Strings[Index];
-    FileNameOnly = ExtractFileName(FileName);
 
-    try
-    {
-      try
-      {
-        if (FTerminal->SessionData->CacheDirectories)
-        {
-          FTerminal->DirectoryModified(TargetDir, false);
-
-          if (DirectoryExists(ApiPath(FileName)))
-          {
-            FTerminal->DirectoryModified(FullTargetDir + FileNameOnly, true);
-          }
-        }
-        SourceRobust(FileName, FullTargetDir, CopyParam, Params, OperationProgress,
-          tfFirstLevel);
-        Success = true;
-        FLastDataSent = Now();
-      }
-      catch(EScpSkipFile & E)
-      {
-        TSuspendFileOperationProgress Suspend(OperationProgress);
-        if (!FTerminal->HandleException(&E))
-        {
-          throw;
-        }
-      }
-    }
-    __finally
-    {
-      OperationProgress->Finish(FileName, Success, OnceDoneOperation);
-    }
-    Index++;
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall TFTPFileSystem::SourceRobust(const UnicodeString FileName,
-  const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params,
-  TFileOperationProgressType * OperationProgress, unsigned int Flags)
-{
-  // the same in TSFTPFileSystem
-
-  TUploadSessionAction Action(FTerminal->ActionLog);
-  TRobustOperationLoop RobustLoop(FTerminal, OperationProgress, &FFileTransferAny);
-
-  do
-  {
-    try
-    {
-      Source(FileName, TargetDir, CopyParam, Params, OperationProgress,
-        Flags, Action);
-    }
-    catch(Exception & E)
-    {
-      if (!RobustLoop.TryReopen(E))
-      {
-        FTerminal->RollbackAction(Action, OperationProgress, &E);
-        throw;
-      }
-    }
-
-    if (RobustLoop.ShouldRetry())
-    {
-      OperationProgress->RollbackTransfer();
-      Action.Restart();
-      // prevent overwrite confirmations
-      // (should not be set for directories!)
-      Params |= cpNoConfirmation;
-      Flags |= tfAutoResume;
-    }
-  }
-  while (RobustLoop.Retry());
+  FTerminal->DoCopyToRemote(FilesToCopy, TargetDir, CopyParam, Params, OperationProgress, tfUseFileTransferAny, OnceDoneOperation);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TFTPFileSystem::CanTransferSkipList(int Params, unsigned int Flags, const TCopyParamType * CopyParam)
@@ -1930,280 +1603,68 @@ bool __fastcall TFTPFileSystem::CanTransferSkipList(int Params, unsigned int Fla
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TFTPFileSystem::Source(const UnicodeString FileName,
-  const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params,
+void __fastcall TFTPFileSystem::Source(
+  TLocalFileHandle & Handle, const UnicodeString & TargetDir, UnicodeString & DestFileName,
+  const TCopyParamType * CopyParam, int Params,
   TFileOperationProgressType * OperationProgress, unsigned int Flags,
-  TUploadSessionAction & Action)
+  TUploadSessionAction & Action, bool & /*ChildError*/)
 {
-  Action.FileName(ExpandUNCFileName(FileName));
+  Handle.Close();
 
-  OperationProgress->SetFile(FileName, false);
+  ResetFileTransfer();
 
-  if (!FTerminal->AllowLocalFileTransfer(FileName, CopyParam, OperationProgress))
+  TFileTransferData UserData;
+
+  unsigned int TransferType = (OperationProgress->AsciiTransfer ? 1 : 2);
+
   {
-    THROW_SKIP_FILE_NULL;
+    // ignore file list
+    TFileListHelper Helper(this, NULL, true);
+
+    SetCPSLimit(OperationProgress);
+    // not used for uploads anyway
+    FFileTransferPreserveTime = CopyParam->PreserveTime;
+    FFileTransferRemoveBOM = CopyParam->RemoveBOM;
+    FFileTransferNoList = CanTransferSkipList(Params, Flags, CopyParam);
+    // not used for uploads, but we get new name (if any) back in this field
+    UserData.FileName = DestFileName;
+    UserData.Params = Params;
+    UserData.AutoResume = FLAGSET(Flags, tfAutoResume);
+    UserData.CopyParam = CopyParam;
+    UserData.Modification = Handle.Modification;
+    FileTransfer(Handle.FileName, Handle.FileName, DestFileName,
+      TargetDir, false, Handle.Size, TransferType, UserData, OperationProgress);
   }
 
-  __int64 Size;
-  int Attrs;
+  UnicodeString DestFullName = TargetDir + UserData.FileName;
+  // only now, we know the final destination
+  Action.Destination(DestFullName);
 
-  FTerminal->OpenLocalFile(FileName, GENERIC_READ, &Attrs,
-    NULL, NULL, NULL, NULL, &Size);
-
-  OperationProgress->SetFileInProgress();
-
-  bool Dir = FLAGSET(Attrs, faDirectory);
-  if (Dir)
+  // We are not able to tell if setting timestamp succeeded,
+  // so we log it always (if supported).
+  // Support for MDTM does not necessarily mean that the server supports
+  // non-standard hack of setting timestamp using
+  // MFMT-like (two argument) call to MDTM.
+  // IIS definitelly does.
+  if (FFileTransferPreserveTime &&
+      ((FServerCapabilities->GetCapability(mfmt_command) == yes) ||
+       ((FServerCapabilities->GetCapability(mdtm_command) == yes))))
   {
-    Action.Cancel();
-    DirectorySource(IncludeTrailingBackslash(FileName), TargetDir,
-      Attrs, CopyParam, Params, OperationProgress, Flags);
-  }
-  else
-  {
-    UnicodeString DestFileName =
-      FTerminal->ChangeFileName(
-        CopyParam, ExtractFileName(FileName), osLocal,
-        FLAGSET(Flags, tfFirstLevel));
+    TTouchSessionAction TouchAction(FTerminal->ActionLog, DestFullName, Handle.Modification);
 
-    FTerminal->LogEvent(FORMAT(L"Copying \"%s\" to remote directory started.", (FileName)));
-
-    OperationProgress->SetLocalSize(Size);
-
-    // Suppose same data size to transfer as to read
-    // (not true with ASCII transfer)
-    OperationProgress->SetTransferSize(OperationProgress->LocalSize);
-
-    TDateTime Modification;
-    // Inspired by SysUtils::FileAge
-    WIN32_FIND_DATA FindData;
-    HANDLE Handle = FindFirstFile(FileName.c_str(), &FindData);
-    if (Handle != INVALID_HANDLE_VALUE)
+    if (!FFileZillaIntf->UsingMlsd())
     {
-      Modification =
-        UnixToDateTime(
-          ConvertTimestampToUnixSafe(FindData.ftLastWriteTime, dstmUnix),
-          dstmUnix);
-      FindClose(Handle);
-    }
-
-    // Will we use ASCII of BINARY file transfer?
-    TFileMasks::TParams MaskParams;
-    MaskParams.Size = Size;
-    MaskParams.Modification = Modification;
-    UnicodeString BaseFileName = FTerminal->GetBaseFileName(FileName);
-    OperationProgress->SetAsciiTransfer(
-      CopyParam->UseAsciiTransfer(BaseFileName, osLocal, MaskParams));
-    FTerminal->LogEvent(
-      UnicodeString(OperationProgress->AsciiTransfer ? L"Ascii" : L"Binary") +
-        L" transfer mode selected.");
-
-    ResetFileTransfer();
-
-    TFileTransferData UserData;
-
-    unsigned int TransferType = (OperationProgress->AsciiTransfer ? 1 : 2);
-
-    {
-      // ignore file list
-      TFileListHelper Helper(this, NULL, true);
-
-      SetCPSLimit(OperationProgress);
-      // not used for uploads anyway
-      FFileTransferPreserveTime = CopyParam->PreserveTime;
-      FFileTransferRemoveBOM = CopyParam->RemoveBOM;
-      FFileTransferNoList = CanTransferSkipList(Params, Flags, CopyParam);
-      // not used for uploads, but we get new name (if any) back in this field
-      UserData.FileName = DestFileName;
-      UserData.Params = Params;
-      UserData.AutoResume = FLAGSET(Flags, tfAutoResume);
-      UserData.CopyParam = CopyParam;
-      UserData.Modification = Modification;
-      FileTransfer(FileName, FileName, DestFileName,
-        TargetDir, false, Size, TransferType, UserData, OperationProgress);
-    }
-
-    UnicodeString DestFullName = TargetDir + UserData.FileName;
-    // only now, we know the final destination
-    Action.Destination(DestFullName);
-
-    // We are not able to tell if setting timestamp succeeded,
-    // so we log it always (if supported).
-    // Support for MDTM does not necessarily mean that the server supports
-    // non-standard hack of setting timestamp using
-    // MFMT-like (two argument) call to MDTM.
-    // IIS definitelly does.
-    if (FFileTransferPreserveTime &&
-        ((FServerCapabilities->GetCapability(mfmt_command) == yes) ||
-         ((FServerCapabilities->GetCapability(mdtm_command) == yes))))
-    {
-      TTouchSessionAction TouchAction(FTerminal->ActionLog, DestFullName, Modification);
-
-      if (!FFileZillaIntf->UsingMlsd())
+      FUploadedTimes[DestFullName] = Handle.Modification;
+      if ((FTerminal->Configuration->ActualLogProtocol >= 2))
       {
-        FUploadedTimes[DestFullName] = Modification;
-        if ((FTerminal->Configuration->ActualLogProtocol >= 2))
-        {
-          FTerminal->LogEvent(
-            FORMAT(L"Remembering modification time of \"%s\" as [%s]",
-                   (DestFullName, StandardTimestamp(FUploadedTimes[DestFullName]))));
-        }
-      }
-    }
-
-    FTerminal->LogFileDone(OperationProgress, DestFullName);
-  }
-
-  /* TODO : Delete also read-only files. */
-  if (FLAGSET(Params, cpDelete))
-  {
-    if (!Dir)
-    {
-      FILE_OPERATION_LOOP_BEGIN
-      {
-        THROWOSIFFALSE(Sysutils::DeleteFile(ApiPath(FileName)));
-      }
-      FILE_OPERATION_LOOP_END(FMTLOAD(DELETE_LOCAL_FILE_ERROR, (FileName)));
-    }
-  }
-  else if (CopyParam->ClearArchive && FLAGSET(Attrs, faArchive))
-  {
-    FILE_OPERATION_LOOP_BEGIN
-    {
-      THROWOSIFFALSE(FileSetAttr(ApiPath(FileName), Attrs & ~faArchive) == 0);
-    }
-    FILE_OPERATION_LOOP_END(FMTLOAD(CANT_SET_ATTRS, (FileName)));
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall TFTPFileSystem::DirectorySource(const UnicodeString DirectoryName,
-  const UnicodeString TargetDir, int Attrs, const TCopyParamType * CopyParam,
-  int Params, TFileOperationProgressType * OperationProgress, unsigned int Flags)
-{
-  UnicodeString DestDirectoryName =
-    FTerminal->ChangeFileName(
-      CopyParam,
-      ExtractFileName(ExcludeTrailingBackslash(DirectoryName)),
-      osLocal, FLAGSET(Flags, tfFirstLevel));
-  UnicodeString DestFullName = UnixIncludeTrailingBackslash(TargetDir + DestDirectoryName);
-
-  AutoDetectTimeDifference(TargetDir, CopyParam, Params);
-
-  OperationProgress->SetFile(DirectoryName);
-
-  bool CreateDir = true;
-  if (FLAGCLEAR(Params, cpNoRecurse))
-  {
-    int FindAttrs = faReadOnly | faHidden | faSysFile | faDirectory | faArchive;
-    TSearchRecChecked SearchRec;
-    bool FindOK;
-
-    FILE_OPERATION_LOOP_BEGIN
-    {
-      FindOK =
-        (FindFirstChecked(DirectoryName + L"*.*", FindAttrs, SearchRec) == 0);
-    }
-    FILE_OPERATION_LOOP_END(FMTLOAD(LIST_DIR_ERROR, (DirectoryName)));
-
-    try
-    {
-      while (FindOK && !OperationProgress->Cancel)
-      {
-        UnicodeString FileName = DirectoryName + SearchRec.Name;
-        try
-        {
-          if ((SearchRec.Name != L".") && (SearchRec.Name != L".."))
-          {
-            SourceRobust(FileName, DestFullName, CopyParam, Params, OperationProgress,
-              Flags & ~(tfFirstLevel | tfAutoResume));
-            // if any file got uploaded (i.e. there were any file in the
-            // directory and at least one was not skipped),
-            // do not try to create the directory,
-            // as it should be already created by FZAPI during upload
-            CreateDir = false;
-          }
-        }
-        catch (EScpSkipFile &E)
-        {
-          // If ESkipFile occurs, just log it and continue with next file
-          TSuspendFileOperationProgress Suspend(OperationProgress);
-          // here a message to user was displayed, which was not appropriate
-          // when user refused to overwrite the file in subdirectory.
-          // hopefully it won't be missing in other situations.
-          if (!FTerminal->HandleException(&E))
-          {
-            throw;
-          }
-        }
-
-        FILE_OPERATION_LOOP_BEGIN
-        {
-          FindOK = (FindNextChecked(SearchRec) == 0);
-        }
-        FILE_OPERATION_LOOP_END(FMTLOAD(LIST_DIR_ERROR, (DirectoryName)));
-      }
-    }
-    __finally
-    {
-      FindClose(SearchRec);
-    }
-  }
-
-  if (CreateDir)
-  {
-    TRemoteProperties Properties;
-    if (CopyParam->PreserveRights)
-    {
-      Properties.Valid = TValidProperties() << vpRights;
-      Properties.Rights = CopyParam->RemoteFileRights(Attrs);
-    }
-
-    try
-    {
-      FTerminal->ExceptionOnFail = true;
-      try
-      {
-        FTerminal->CreateDirectory(DestFullName, &Properties);
-      }
-      __finally
-      {
-        FTerminal->ExceptionOnFail = false;
-      }
-    }
-    catch(...)
-    {
-      TRemoteFile * File = NULL;
-      // ignore non-fatal error when the directory already exists
-      bool Rethrow =
-        !FTerminal->Active ||
-        !FTerminal->FileExists(DestFullName, &File) ||
-        !File->IsDirectory;
-      delete File;
-      if (Rethrow)
-      {
-        throw;
+        FTerminal->LogEvent(
+          FORMAT(L"Remembering modification time of \"%s\" as [%s]",
+                 (DestFullName, StandardTimestamp(FUploadedTimes[DestFullName]))));
       }
     }
   }
 
-  /* TODO : Delete also read-only directories. */
-  /* TODO : Show error message on failure. */
-  if (!OperationProgress->Cancel)
-  {
-    if (FLAGSET(Params, cpDelete))
-    {
-      DebugAssert(FLAGCLEAR(Params, cpNoRecurse));
-      RemoveDir(ApiPath(DirectoryName));
-    }
-    else if (CopyParam->ClearArchive && FLAGSET(Attrs, faArchive))
-    {
-      FILE_OPERATION_LOOP_BEGIN
-      {
-        THROWOSIFFALSE(FileSetAttr(ApiPath(DirectoryName), Attrs & ~faArchive) == 0);
-      }
-      FILE_OPERATION_LOOP_END(FMTLOAD(CANT_SET_ATTRS, (DirectoryName)));
-    }
-  }
+  FLastDataSent = Now();
 }
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::CreateDirectory(const UnicodeString ADirName)
@@ -2241,20 +1702,7 @@ void __fastcall TFTPFileSystem::DeleteFile(const UnicodeString AFileName,
   UnicodeString FileNameOnly = UnixExtractFileName(FileName);
   UnicodeString FilePath = UnixExtractFilePath(FileName);
 
-  bool Dir = (File != NULL) && File->IsDirectory && FTerminal->CanRecurseToDirectory(File);
-
-  if (Dir && FLAGCLEAR(Params, dfNoRecursive))
-  {
-    try
-    {
-      FTerminal->ProcessDirectory(FileName, FTerminal->DeleteFile, &Params);
-    }
-    catch(...)
-    {
-      Action.Cancel();
-      throw;
-    }
-  }
+  bool Dir = FTerminal->DeleteContentsIfDirectory(FileName, File, Params, Action);
 
   {
     // ignore file list
@@ -2642,6 +2090,13 @@ void __fastcall TFTPFileSystem::AutoDetectTimeDifference(TRemoteFileList * FileL
             FORMAT(L"Not using file %s to detect timezone difference as it has the timestamp in the future [%s]",
               (File->FullFileName, StandardTimestamp(UtcModification))));
         }
+        // "SecureLink FTP Proxy" succeeds CWD for a file, so we never get a timestamp here
+        else if (UtcModification == TDateTime())
+        {
+          FTerminal->LogEvent(
+            FORMAT(L"Not using file %s to detect timezone difference as its timestamp was not resolved",
+              (File->FullFileName)));
+        }
         else
         {
           FDetectTimeDifference = false;
@@ -2655,7 +2110,7 @@ void __fastcall TFTPFileSystem::AutoDetectTimeDifference(TRemoteFileList * FileL
           FTimeDifference = static_cast<__int64>(SecsPerDay * (UtcModification - File->Modification));
 
           UnicodeString FileLog =
-            FORMAT(L"%s (Listing: %s, UTF: %s)", (File->FullFileName, StandardTimestamp(File->Modification), StandardTimestamp(UtcModification)));
+            FORMAT(L"%s (Listing: %s, UTC: %s)", (File->FullFileName, StandardTimestamp(File->Modification), StandardTimestamp(UtcModification)));
           UnicodeString LogMessage;
           if (FTimeDifference == 0)
           {
@@ -2819,27 +2274,38 @@ bool __fastcall TFTPFileSystem::SupportsReadingFile()
 void __fastcall TFTPFileSystem::ReadFile(const UnicodeString FileName,
   TRemoteFile *& File)
 {
-  UnicodeString Path = UnixExtractFilePath(FileName);
-  UnicodeString NameOnly = UnixExtractFileName(FileName);
-  TRemoteFile *AFile = NULL;
-  bool Own;
+  File = NULL;
   if (SupportsReadingFile())
   {
-    DoReadFile(FileName, AFile);
-    Own = true;
+    DoReadFile(FileName, File);
   }
   else
   {
     if (IsUnixRootPath(FileName))
     {
       FTerminal->LogEvent(FORMAT(L"%s is a root path", (FileName)));
-      AFile = new TRemoteDirectoryFile();
-      AFile->FullFileName = FileName;
-      AFile->FileName = L"";
-      Own = true;
+      File = new TRemoteDirectoryFile();
+      File->FullFileName = FileName;
+      File->FileName = L"";
     }
     else
     {
+      UnicodeString Path = UnixExtractFilePath(FileName);
+      UnicodeString NameOnly;
+      int P;
+      bool MVSPath =
+        FMVS && Path.IsEmpty() &&
+        (FileName.SubString(1, 1) == L"'") && (FileName.SubString(FileName.Length(), 1) == L"'") &&
+        ((P = FileName.Pos(L".")) > 0);
+      if (!MVSPath)
+      {
+        NameOnly = UnixExtractFileName(FileName);
+      }
+      else
+      {
+        NameOnly = FileName.SubString(P + 1, FileName.Length() - P - 1);
+      }
+      TRemoteFile * AFile = NULL;
       // FZAPI does not have efficient way to read properties of one file.
       // In case we need properties of set of files from the same directory,
       // cache the file list for future
@@ -2874,18 +2340,22 @@ void __fastcall TFTPFileSystem::ReadFile(const UnicodeString FileName,
         AFile = FFileListCache->FindFile(NameOnly);
       }
 
-      Own = false;
+      if (AFile != NULL)
+      {
+        File = AFile->Duplicate();
+        if (MVSPath)
+        {
+          File->FileName = FileName;
+          File->FullFileName = FileName;
+        }
+      }
     }
   }
 
-  if (AFile == NULL)
+  if (File == NULL)
   {
-    File = NULL;
     throw Exception(FMTLOAD(FILE_NOT_EXISTS, (FileName)));
   }
-
-  DebugAssert(AFile != NULL);
-  File = Own ? AFile : AFile->Duplicate();
 }
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::ReadSymlink(TRemoteFile * SymlinkFile,
@@ -2911,7 +2381,7 @@ void __fastcall TFTPFileSystem::ReadSymlink(TRemoteFile * SymlinkFile,
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TFTPFileSystem::RenameFile(const UnicodeString AFileName,
+void __fastcall TFTPFileSystem::RenameFile(const UnicodeString AFileName, const TRemoteFile * /*File*/,
   const UnicodeString ANewName)
 {
   UnicodeString FileName = AbsolutePath(AFileName, false);
@@ -2933,7 +2403,7 @@ void __fastcall TFTPFileSystem::RenameFile(const UnicodeString AFileName,
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TFTPFileSystem::CopyFile(const UnicodeString FileName,
+void __fastcall TFTPFileSystem::CopyFile(const UnicodeString FileName, const TRemoteFile * /*File*/,
   const UnicodeString NewName)
 {
   DebugAssert(SupportsSiteCommand(CopySiteCommand));
@@ -4457,11 +3927,9 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestVerifyCertificate(
         TryWindowsSystemCertificateStore = false;
       }
 
-      UnicodeString SiteKey = FTerminal->SessionData->SiteKey;
-
       if (!VerificationResult)
       {
-        if (FTerminal->VerifyCertificate(CertificateStorageKey, SiteKey,
+        if (FTerminal->VerifyCertificate(CertificateStorageKey, FTerminal->SessionData->SiteKey,
               FSessionInfo.CertificateFingerprint, CertificateSubject, Data.VerificationResult))
         {
           // certificate is trusted, but for not purposes of info dialog
@@ -4525,59 +3993,10 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestVerifyCertificate(
 
       if (RequestResult == 0)
       {
-        TClipboardHandler ClipboardHandler;
-        ClipboardHandler.Text = FSessionInfo.CertificateFingerprint;
-
-        TQueryButtonAlias Aliases[1];
-        Aliases[0].Button = qaRetry;
-        Aliases[0].Alias = LoadStr(COPY_KEY_BUTTON);
-        Aliases[0].OnClick = &ClipboardHandler.Copy;
-
-        TQueryParams Params(qpWaitInBatch);
-        Params.HelpKeyword = HELP_VERIFY_CERTIFICATE;
-        Params.NoBatchAnswers = qaYes | qaRetry;
-        Params.Aliases = Aliases;
-        Params.AliasesCount = LENOF(Aliases);
-        unsigned int Answer = FTerminal->QueryUser(
-          FMTLOAD(VERIFY_CERT_PROMPT3, (FSessionInfo.Certificate)),
-          NULL, qaYes | qaNo | qaCancel | qaRetry, &Params, qtWarning);
-
-        switch (Answer)
-        {
-          case qaYes:
-            // 2 = always, as used by FZ's VerifyCertDlg.cpp,
-            // however FZAPI takes all non-zero values equally
-            RequestResult = 2;
-            break;
-
-          case qaNo:
-            RequestResult = 1;
-            break;
-
-          case qaCancel:
-            FTerminal->Configuration->Usage->Inc(L"HostNotVerified");
-            RequestResult = 0;
-            break;
-
-          default:
-            DebugFail();
-            RequestResult = 0;
-            break;
-        }
-
-        if (RequestResult == 2)
-        {
-          FTerminal->CacheCertificate(
-            CertificateStorageKey, SiteKey,
-            FSessionInfo.CertificateFingerprint, Data.VerificationResult);
-        }
-      }
-
-      // Cache only if the certificate was accepted manually
-      if (!VerificationResult && (RequestResult != 0))
-      {
-        FTerminal->Configuration->RememberLastFingerprint(
-          FTerminal->SessionData->SiteKey, TlsFingerprintType, FSessionInfo.CertificateFingerprint);
+        bool Confirmed = FTerminal->ConfirmCertificate(FSessionInfo, Data.VerificationResult, CertificateStorageKey, true);
+        // FZ's VerifyCertDlg.cpp returns 2 for "cached", what we do nto distinguish here,
+        // however FZAPI takes all non-zero values equally.
+        RequestResult = Confirmed ? 1 : 0;
       }
     }
 
@@ -4684,10 +4103,6 @@ bool __fastcall TFTPFileSystem::HandleListData(const wchar_t * Path,
   else
   {
     DebugAssert(FFileList != NULL);
-    // This can actually fail in real life,
-    // when connected to server with case insensitive paths.
-    // Is empty when called from DoReadFile
-    DebugAssert(FFileList->Directory.IsEmpty() || UnixSamePath(AbsolutePath(FFileList->Directory, false), Path));
     DebugUsedParam(Path);
 
     for (unsigned int Index = 0; Index < Count; Index++)
@@ -4939,8 +4354,7 @@ bool __fastcall TFTPFileSystem::Unquote(UnicodeString & Str)
 void __fastcall TFTPFileSystem::PreserveDownloadFileTime(HANDLE Handle, void * UserData)
 {
   TFileTransferData * Data = static_cast<TFileTransferData *>(UserData);
-  FILETIME WrTime = DateTimeToFileTime(Data->Modification, dstmUnix);
-  SetFileTime(Handle, NULL, NULL, &WrTime);
+  FTerminal->UpdateTargetTime(Handle, Data->Modification, dstmUnix);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TFTPFileSystem::GetFileModificationTimeInUtc(const wchar_t * FileName, struct tm & Time)
@@ -5046,9 +4460,13 @@ void __fastcall TFTPFileSystem::UpdateFromMain(TCustomFileSystem * /*MainFileSys
   // noop
 }
 //---------------------------------------------------------------------------
+void __fastcall TFTPFileSystem::ClearCaches()
+{
+  // noop
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall GetOpenSSLVersionText()
 {
   return OPENSSL_VERSION_TEXT;
 }
 //---------------------------------------------------------------------------
-#endif NO_FILEZILLA

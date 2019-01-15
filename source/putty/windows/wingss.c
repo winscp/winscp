@@ -72,7 +72,7 @@ const char *gsslogmsg = NULL;
 
 static void ssh_sspi_bind_fns(struct ssh_gss_library *lib);
 
-struct ssh_gss_liblist *ssh_gss_setup(Conf *conf)
+struct ssh_gss_liblist *ssh_gss_setup(Conf *conf, void *frontend) // MPEXT
 {
     HMODULE module;
     HKEY regkey;
@@ -208,6 +208,12 @@ struct ssh_gss_liblist *ssh_gss_setup(Conf *conf)
                                LOAD_LIBRARY_SEARCH_SYSTEM32 |
                                LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR |
                                LOAD_LIBRARY_SEARCH_USER_DIRS);
+        // MPEXT
+        if (!module && frontend) {
+            char *buf = dupprintf("Cannot load GSSAPI from user-specified library '%s': %s", path, win_strerror(GetLastError()));
+            logevent(frontend, buf);
+            sfree(buf);
+        }
     }
     if (module) {
 	struct ssh_gss_library *lib =

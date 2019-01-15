@@ -113,7 +113,7 @@ resourceString
 implementation
 
 uses
-  Math, PIDL;
+  Math, PIDL, OperationWithTimeout;
 
 constructor TDriveInfo.Create;
 begin
@@ -327,13 +327,14 @@ begin
     begin
       if (not Assigned(PIDL)) and (Drive >= FirstFixedDrive) then
       begin
+        ShAttr := 0;
         if DriveType = DRIVE_REMOTE then
         begin
-          ParseDisplayNameWithTimeout(FDesktop, Drive + ':\', PIDL);
+          ShellFolderParseDisplayNameWithTimeout(
+            FDesktop, Application.Handle, nil, PChar(Drive + ':\'), Eaten, PIDL, ShAttr, 2 * MSecsPerSec);
         end
           else
         begin
-          ShAttr := 0;
           FDesktop.ParseDisplayName(Application.Handle, nil, PChar(Drive + ':\'), Eaten, PIDL, ShAttr);
         end;
       end;
@@ -395,7 +396,7 @@ begin
           else
         begin
           DriveID := GetNetWorkName(Drive);
-          PrettyName := Drive + ': ' + ExtractFileName(DriveID);
+          PrettyName := Format('%s: %s (%s)', [Drive, ExtractFileName(DriveID), ExtractFileDir(DriveID)]);
         end;
       end;
 

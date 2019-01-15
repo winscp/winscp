@@ -202,6 +202,7 @@ private:
   TStringList * FErrorList;
   HANDLE FDDExtMutex;
   UnicodeString FDragExtFakeDirectory;
+  TObjectList * FDragFakeMonitors;
   TStrings * FDelayedDeletionList;
   TTimer * FDelayedDeletionTimer;
   TStrings * FDDFileList;
@@ -256,6 +257,7 @@ private:
   bool __fastcall GetEnableFocusedOperation(TOperationSide Side, int FilesOnly);
   bool __fastcall GetEnableSelectedOperation(TOperationSide Side, int FilesOnly);
   void __fastcall SetTerminal(TTerminal * value);
+  void __fastcall DoSetTerminal(TTerminal * value, bool Replace);
   void __fastcall SetQueue(TTerminalQueue * value);
   void __fastcall TransferListChange(TObject * Sender);
   void __fastcall TransferListDrawItem(TTBXCustomList * Sender, TCanvas * ACanvas,
@@ -326,6 +328,8 @@ protected:
   TDragDropFilesEx * FQueueDragDropFilesEx;
   TPoint FLastContextPopupScreenPoint;
   bool FRemoteDirViewWasFocused;
+  bool FDoNotIdleCurrentTerminal;
+  UnicodeString FFakeFileDropTarget;
 
   virtual bool __fastcall CopyParamDialog(TTransferDirection Direction,
     TTransferType Type, bool Temp, TStrings * FileList,
@@ -365,7 +369,7 @@ protected:
     const TCustomCommandType & ACommand, TStrings * ALocalFileList,
     const TCustomCommandData & Data, const UnicodeString & CommandCommand);
   virtual void __fastcall TerminalChanging();
-  virtual void __fastcall TerminalChanged();
+  virtual void __fastcall TerminalChanged(bool Replaced);
   virtual void __fastcall QueueChanged();
   void __fastcall InitStatusBar();
   void __fastcall UpdateStatusBar();
@@ -418,8 +422,9 @@ protected:
   bool __fastcall ExecuteFileOperation(TFileOperation Operation, TOperationSide Side,
     TStrings * FileList, bool NoConfirmation, void * Param);
   virtual bool __fastcall DDGetTarget(UnicodeString & Directory,
-    bool & ForceQueue, bool & Internal);
+    bool & ForceQueue, UnicodeString & CounterName);
   virtual void __fastcall DDExtInitDrag(TFileList * FileList, bool & Created);
+  void __fastcall DDFakeCreated(TObject * Sender, const UnicodeString FileName);
   virtual void __fastcall SideEnter(TOperationSide Side);
   virtual TOperationSide __fastcall GetSide(TOperationSide Side);
   TStrings * __fastcall PanelExport(TOperationSide Side, TPanelExport Export);
@@ -705,6 +710,8 @@ public:
   bool __fastcall CanConsole();
   bool __fastcall CanChangePassword();
   void __fastcall ChangePassword();
+  bool __fastcall IsComponentPossible(Byte Component);
+  void __fastcall ReplaceTerminal(TTerminal * value);
 
   __property bool ComponentVisible[Byte Component] = { read = GetComponentVisible, write = SetComponentVisible };
   __property bool EnableFocusedOperation[TOperationSide Side] = { read = GetEnableFocusedOperation, index = 0 };

@@ -24,14 +24,25 @@ namespace WinSCP
             string location = assembly.Location;
             // cannot use Uri.UnescapeDataString, because it treats some characters valid in
             // local path (like #) specially
-            const string protocol = "file:///";
+            const string protocol = "file://";
             if (codeBase.StartsWith(protocol, StringComparison.OrdinalIgnoreCase))
             {
-                path =
-                    codeBase.Substring(protocol.Length).Replace('/', '\\');
+                path = codeBase.Substring(protocol.Length).Replace('/', '\\');
+                if (!string.IsNullOrEmpty(path))
+                {
+                    if (path[0] == '\\')
+                    {
+                        path = path.Substring(1, path.Length - 1);
+                    }
+                    else
+                    {
+                        // UNC path
+                        path = @"\\" + path;
+                    }
+                }
             }
 
-            if ((path == null) || !File.Exists(path))
+            if (string.IsNullOrEmpty(path) || !File.Exists(path))
             {
                 if (File.Exists(location))
                 {
@@ -134,8 +145,7 @@ namespace WinSCP
             lock (_logLock)
             {
                 int threadId = GetThread();
-                int indent;
-                if (!_indents.TryGetValue(threadId, out indent))
+                if (!_indents.TryGetValue(threadId, out int indent))
                 {
                     indent = 0;
                 }
@@ -265,8 +275,7 @@ namespace WinSCP
 
         private int GetIndent()
         {
-            int indent;
-            if (!_indents.TryGetValue(GetThread(), out indent))
+            if (!_indents.TryGetValue(GetThread(), out int indent))
             {
                 indent = 0;
             }

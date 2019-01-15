@@ -290,13 +290,15 @@ UnicodeString __fastcall StoreForm(TCustomForm * Form)
   DebugAssert(Form);
   TRect Bounds = Form->BoundsRect;
   OffsetRect(Bounds, -Form->Monitor->Left, -Form->Monitor->Top);
-  return FORMAT(L"%d;%d;%d;%d;%d;%s", (SaveDimension(Bounds.Left), SaveDimension(Bounds.Top),
-    SaveDimension(Bounds.Right), SaveDimension(Bounds.Bottom),
-    // we do not want WinSCP to start minimized next time (we cannot handle that anyway).
-    // note that WindowState is wsNormal when window in minimized for some reason.
-    // actually it is wsMinimized only when minimized by MSVDM
-    (int)(Form->WindowState == wsMinimized ? wsNormal : Form->WindowState),
-    SavePixelsPerInch(Form)));
+  UnicodeString Result =
+    FORMAT(L"%d;%d;%d;%d;%d;%s", (SaveDimension(Bounds.Left), SaveDimension(Bounds.Top),
+      SaveDimension(Bounds.Right), SaveDimension(Bounds.Bottom),
+      // we do not want WinSCP to start minimized next time (we cannot handle that anyway).
+      // note that WindowState is wsNormal when window in minimized for some reason.
+      // actually it is wsMinimized only when minimized by MSVDM
+      (int)(Form->WindowState == wsMinimized ? wsNormal : Form->WindowState),
+      SavePixelsPerInch(Form)));
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall RestoreFormSize(UnicodeString Data, TForm * Form)
@@ -364,11 +366,19 @@ static void __fastcall ExecuteProcessAndReadOutput(const
         CloseHandle(PipeWrite);
       }
 
-      char Buffer[4096];
-      DWORD BytesRead;
-      while (ReadFile(PipeRead, Buffer, sizeof(Buffer), &BytesRead, NULL))
+      DWORD BytesAvail;
+      while (PeekNamedPipe(PipeRead, NULL, 0, NULL, &BytesAvail, NULL))
       {
-        Output += UnicodeString(UTF8String(Buffer, BytesRead));
+        if (BytesAvail > 0)
+        {
+          char Buffer[4096];
+          DWORD BytesToRead = std::min(BytesAvail, static_cast<unsigned long>(sizeof(Buffer)));
+          DWORD BytesRead;
+          if (ReadFile(PipeRead, Buffer, BytesToRead, &BytesRead, NULL))
+          {
+            Output += UnicodeString(UTF8String(Buffer, BytesRead));
+          }
+        }
         // Same as in ExecuteShellCheckedAndWait
         Sleep(200);
         Application->ProcessMessages();
@@ -746,7 +756,18 @@ bool __fastcall TextFromClipboard(UnicodeString & Text, bool Trim)
   bool Result = (Handle != NULL);
   if (Result)
   {
-    Text = AText;
+    // For all current uses (URL pasting, key/fingerprint pasting, known_hosts pasting, "more messages" copying,
+    // permissions pasting), 64KB is large enough.
+    const size_t Limit = 64*1024;
+    size_t Size = GlobalSize(Handle);
+    if (Size > Limit)
+    {
+      Text = UnicodeString(AText, Limit);
+    }
+    else
+    {
+      Text = AText;
+    }
     if (Trim)
     {
       Text = Text.Trim();
@@ -1088,7 +1109,7 @@ void __fastcall SuspendWindows()
 {
   AcquireShutDownPrivileges();
 
-  // https://msdn.microsoft.com/en-us/library/windows/desktop/aa373201.aspx
+  // https://docs.microsoft.com/en-us/windows/desktop/api/powrprof/nf-powrprof-setsuspendstate
   Win32Check(SetSuspendState(false, false, false));
 }
 //---------------------------------------------------------------------------

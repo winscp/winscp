@@ -17,6 +17,7 @@ void __fastcall ExecuteShellChecked(const UnicodeString Command);
 bool __fastcall ExecuteShell(const UnicodeString Path, const UnicodeString Params,
   HANDLE & Handle);
 void __fastcall ExecuteShellCheckedAndWait(const UnicodeString Command, TProcessMessagesEvent ProcessMessages);
+extern bool DontCopyCommandToClipboard;
 bool __fastcall CopyCommandToClipboard(const UnicodeString & Command);
 void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
   TSessionData * SessionData);
@@ -147,6 +148,22 @@ private:
   int __fastcall GetMargin(TControl * HintControl, const UnicodeString & Hint);
   TFont * __fastcall GetFont(TControl * HintControl, const UnicodeString & Hint);
   TControl * __fastcall GetHintControl(void * Data);
+};
+//---------------------------------------------------------------------------
+// Newer version rich edit that supports "Friendly name hyperlinks" and
+// allows wider range of Unicode characters: https://stackoverflow.com/q/47433656/850848
+class TNewRichEdit : public TRichEdit
+{
+public:
+  virtual __fastcall TNewRichEdit(TComponent * AOwner);
+
+protected:
+  virtual void __fastcall CreateParams(TCreateParams & Params);
+  virtual void __fastcall CreateWnd();
+  virtual void __fastcall DestroyWnd();
+
+private:
+  HINSTANCE FLibrary;
 };
 //---------------------------------------------------------------------------
 extern const UnicodeString PageantTool;

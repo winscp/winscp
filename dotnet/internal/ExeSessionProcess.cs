@@ -199,8 +199,10 @@ namespace WinSCP
 
                 _logger.WriteLine("Started process {0}", _process.Id);
 
-                _thread = new Thread(ProcessEvents);
-                _thread.IsBackground = true;
+                _thread = new Thread(ProcessEvents)
+                {
+                    IsBackground = true
+                };
                 _thread.Start();
             }
         }
@@ -328,19 +330,47 @@ namespace WinSCP
         {
             using (_logger.CreateCallstack())
             {
-                if (e.Timeouting)
+                _logger.WriteLine(
+                    "Options: [{0}], Timer: [{1}], Timeouting: [{2}], Timeouted: [{3}], Break: [{4}]",
+                    e.Options, e.Timer, e.Timeouting, e.Timeouted, e.Break);
+
+                QueryReceivedEventArgs args = new QueryReceivedEventArgs
                 {
-                    Thread.Sleep((int)e.Timer);
-                    e.Result = e.Timeouted;
+                    Message = e.Message
+                };
+
+                _session.ProcessChoice(args);
+
+                if (args.SelectedAction == QueryReceivedEventArgs.Action.None)
+                {
+                    if (e.Timeouting)
+                    {
+                        Thread.Sleep((int)e.Timer);
+                        e.Result = e.Timeouted;
+                    }
+                    else
+                    {
+                        e.Result = e.Break;
+                    }
                 }
-                else
+                else if (args.SelectedAction == QueryReceivedEventArgs.Action.Continue)
+                {
+                    if (e.Timeouting)
+                    {
+                        Thread.Sleep((int)e.Timer);
+                        e.Result = e.Timeouted;
+                    }
+                    else
+                    {
+                        e.Result = e.Continue;
+                    }
+                }
+                else if (args.SelectedAction == QueryReceivedEventArgs.Action.Abort)
                 {
                     e.Result = e.Break;
                 }
 
-                _logger.WriteLine(
-                    "Options: [{0}], Timer: [{1}], Timeouting: [{2}], Timeouted: [{3}], Break: [{4}], Result: [{5}]",
-                    e.Options, e.Timer, e.Timeouting, e.Timeouted, e.Break, e.Result);
+                _logger.WriteLine("Options Result: [{0}]", e.Result);
             }
         }
 
@@ -383,10 +413,7 @@ namespace WinSCP
                 _lastFromBeginning = message;
                 _logger.WriteLine("Buffered from-beginning message [{0}]", _lastFromBeginning);
 
-                if (OutputDataReceived != null)
-                {
-                    OutputDataReceived(this, null);
-                }
+                OutputDataReceived?.Invoke(this, null);
             }
             else
             {
@@ -417,10 +444,7 @@ namespace WinSCP
 
             for (int i = 0; i < lines.Length - 1; ++i)
             {
-                if (OutputDataReceived != null)
-                {
-                    OutputDataReceived(this, new OutputDataReceivedEventArgs(lines[i], error));
-                }
+                OutputDataReceived?.Invoke(this, new OutputDataReceivedEventArgs(lines[i], error));
             }
         }
 
@@ -596,12 +620,11 @@ namespace WinSCP
 
         private bool TryCreateEvent(string name, out EventWaitHandle ev)
         {
-            bool createdNew;
             _logger.WriteLine("Creating event {0}", name);
 
             EventWaitHandleSecurity security = CreateSecurity(EventWaitHandleRights.FullControl);
 
-            ev = new EventWaitHandle(false, EventResetMode.AutoReset, name, out createdNew, security);
+            ev = new EventWaitHandle(false, EventResetMode.AutoReset, name, out bool createdNew, security);
             _logger.WriteLine(
                 "Created event {0} with handle {1} with security {2}, new {3}",
                 name, ev.SafeWaitHandle.DangerousGetHandle(),
@@ -638,8 +661,7 @@ namespace WinSCP
 
         private EventWaitHandle CreateEvent(string name)
         {
-            EventWaitHandle ev;
-            if (!TryCreateEvent(name, out ev))
+            if (!TryCreateEvent(name, out EventWaitHandle ev))
             {
                 throw _logger.WriteException(new SessionLocalException(_session, string.Format(CultureInfo.InvariantCulture, "Event {0} already exists", name)));
             }
@@ -651,8 +673,7 @@ namespace WinSCP
             if (_session.TestHandlesClosedInternal)
             {
                 _logger.WriteLine("Testing that event {0} is closed", name);
-                EventWaitHandle ev;
-                if (TryCreateEvent(name, out ev))
+                if (TryCreateEvent(name, out EventWaitHandle ev))
                 {
                     ev.Close();
                 }
@@ -856,12 +877,11 @@ namespace WinSCP
                 result = null;
 
                 IntPtr data = IntPtr.Zero;
-                RegistryType type;
                 uint len = 0;
                 RegistryFlags flags = RegistryFlags.RegSz | RegistryFlags.SubKeyWow6432Key;
                 UIntPtr key = (UIntPtr)((uint)hive);
 
-                if (UnsafeNativeMethods.RegGetValue(key, uninstallKey, appPathValue, flags, out type, data, ref len) == 0)
+                if (UnsafeNativeMethods.RegGetValue(key, uninstallKey, appPathValue, flags, out RegistryType type, data, ref len) == 0)
                 {
                     data = Marshal.AllocHGlobal((int)len);
                     if (UnsafeNativeMethods.RegGetValue(key, uninstallKey, appPathValue, flags, out type, data, ref len) == 0)
@@ -947,6 +967,56 @@ namespace WinSCP
         {
             string executablePath = GetExecutablePath();
             _logger.WriteLine("{0} - exists [{1}]", executablePath, File.Exists(executablePath));
+        }
+
+        public void RequestCallstack()
+        {
+            using (_logger.CreateCallstack())
+            {
+                lock (_lock)
+                {
+                    if (_process == null)
+                    {
+                        _logger.WriteLine("Process is closed already");
+                    }
+                    else
+                    {
+                        try
+                        {
+                            string eventName = string.Format(CultureInfo.InvariantCulture, "WinSCPCallstack{0}", _process.Id);
+                            using (EventWaitHandle ev = EventWaitHandle.OpenExisting(eventName))
+                            {
+                                _logger.WriteLine("Setting event {0}", eventName);
+                                ev.Set();
+                                string callstackFileName = string.Format(CultureInfo.InvariantCulture, "{0}.txt", eventName);
+                                string callstackPath = Path.Combine(Path.GetTempPath(), callstackFileName);
+                                int timeout = 2000;
+                                while (!File.Exists(callstackPath))
+                                {
+                                    if (timeout < 0)
+                                    {
+                                        string message = string.Format(CultureInfo.CurrentCulture, "Timeout waiting for callstack file {0} to be created ", callstackPath);
+                                        throw new TimeoutException(message);
+                                    }
+
+                                    int step = 50;
+                                    timeout -= 50;
+                                    Thread.Sleep(step);
+                                }
+                                _logger.WriteLine("Callstack file {0} has been created", callstackPath);
+                                // allow writting to be finished
+                                Thread.Sleep(100);
+                                _logger.WriteLine(File.ReadAllText(callstackPath));
+                                File.Delete(callstackPath);
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            _logger.WriteException(e);
+                        }
+                    }
+                }
+            }
         }
 
         public void Cancel()

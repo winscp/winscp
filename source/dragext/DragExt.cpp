@@ -208,7 +208,7 @@ DllMain(HINSTANCE HInstance, DWORD Reason, LPVOID /*Reserved*/)
 
     if (GRefThisDll == 0)
     {
-      GLogMutex = CreateMutex(NULL, false, L"WinSCPDragExtLogMutex");
+      GLogMutex = CreateMutex(NULL, false, DRAG_EXT_RUNNING_MUTEX);
 
       for (int Root = 0; Root <= 1; Root++)
       {
@@ -729,7 +729,12 @@ STDMETHODIMP_(UINT) CShellExt::CopyCallback(HWND /*Hwnd*/, UINT Func, UINT /*Fla
       FLastTicks = Ticks;
       const wchar_t* BackPtr = wcsrchr(SrcFile, L'\\');
 
-      if ((BackPtr != NULL) &&
+      // WORKAROUND: Windows 10 1803 sends empty DestFile
+      if (wcslen(DestFile) == 0)
+      {
+        Debug(L"empty dest file");
+      }
+      else if ((BackPtr != NULL) &&
           (wcsncmp(BackPtr + 1, DRAG_EXT_DUMMY_DIR_PREFIX,
             DRAG_EXT_DUMMY_DIR_PREFIX_LEN) == 0))
       {

@@ -12,6 +12,7 @@
 #include "Interface.h"
 #include "CoreMain.h"
 #include "Security.h"
+#include "FileMasks.h"
 #include <shlobj.h>
 #include <System.IOUtils.hpp>
 #include <System.StrUtils.hpp>
@@ -33,6 +34,8 @@ const UnicodeString Crc32ChecksumAlg(L"crc32");
 //---------------------------------------------------------------------------
 const UnicodeString SshFingerprintType(L"ssh");
 const UnicodeString TlsFingerprintType(L"tls");
+//---------------------------------------------------------------------------
+const UnicodeString HttpsCertificateStorageKey(L"HttpsCertificates");
 //---------------------------------------------------------------------------
 __fastcall TConfiguration::TConfiguration()
 {
@@ -101,6 +104,7 @@ void __fastcall TConfiguration::Default()
   FExternalIpAddress = L"";
   FTryFtpWhenSshFails = true;
   FParallelDurationThreshold = 10;
+  FMimeTypes = UnicodeString();
   CollectUsage = FDefaultCollectUsage;
 
   FLogging = false;
@@ -221,6 +225,7 @@ UnicodeString __fastcall TConfiguration::PropertyToKey(const UnicodeString & Pro
     KEY(String,   ExternalIpAddress); \
     KEY(Bool,     TryFtpWhenSshFails); \
     KEY(Integer,  ParallelDurationThreshold); \
+    KEY(String,   MimeTypes); \
     KEY(Bool,     CollectUsage); \
   ); \
   BLOCK(L"Logging", CANCREATE, \
@@ -584,46 +589,59 @@ UnicodeString __fastcall TConfiguration::BannerHash(const UnicodeString & Banner
   return BytesToHex(Result);
 }
 //---------------------------------------------------------------------------
-bool __fastcall TConfiguration::ShowBanner(const UnicodeString SessionKey,
-  const UnicodeString & Banner)
+void __fastcall TConfiguration::GetBannerData(
+  const UnicodeString & SessionKey, UnicodeString & BannerHash, unsigned int & Params)
 {
-  bool Result;
-  THierarchicalStorage * Storage = CreateConfigStorage();
-  try
-  {
-    Storage->AccessMode = smRead;
-    Result =
-      !Storage->OpenSubKey(ConfigurationSubKey, false) ||
-      !Storage->OpenSubKey(L"Banners", false) ||
-      !Storage->ValueExists(SessionKey) ||
-      (Storage->ReadString(SessionKey, L"") != BannerHash(Banner));
-  }
-  __finally
-  {
-    delete Storage;
-  }
+  BannerHash = UnicodeString();
+  Params = 0;
 
+  std::unique_ptr<THierarchicalStorage> Storage(CreateConfigStorage());
+  Storage->AccessMode = smRead;
+  if (Storage->OpenSubKey(ConfigurationSubKey, false) &&
+      Storage->OpenSubKey(L"Banners", false))
+  {
+    UnicodeString S = Storage->ReadString(SessionKey, L"");
+    BannerHash = CutToChar(S, L',', true);
+    Params = StrToIntDef(L"$" + CutToChar(S, L',', true), 0);
+  }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TConfiguration::ShowBanner(
+  const UnicodeString & SessionKey, const UnicodeString & Banner, unsigned int & Params)
+{
+  UnicodeString StoredBannerHash;
+  GetBannerData(SessionKey, StoredBannerHash, Params);
+  bool Result = (StoredBannerHash != BannerHash(Banner));
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TConfiguration::NeverShowBanner(const UnicodeString SessionKey,
-  const UnicodeString & Banner)
+void __fastcall TConfiguration::SetBannerData(
+  const UnicodeString & SessionKey, const UnicodeString & BannerHash, unsigned int Params)
 {
-  THierarchicalStorage * Storage = CreateConfigStorage();
-  try
-  {
-    Storage->AccessMode = smReadWrite;
+  std::unique_ptr<THierarchicalStorage> Storage(CreateConfigStorage());
+  Storage->AccessMode = smReadWrite;
 
-    if (Storage->OpenSubKey(ConfigurationSubKey, true) &&
-        Storage->OpenSubKey(L"Banners", true))
-    {
-      Storage->WriteString(SessionKey, BannerHash(Banner));
-    }
-  }
-  __finally
+  if (Storage->OpenSubKey(ConfigurationSubKey, true) &&
+      Storage->OpenSubKey(L"Banners", true))
   {
-    delete Storage;
+    Storage->WriteString(SessionKey, BannerHash + L"," + UIntToStr(Params));
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TConfiguration::NeverShowBanner(const UnicodeString & SessionKey, const UnicodeString & Banner)
+{
+  UnicodeString DummyBannerHash;
+  unsigned int Params;
+  GetBannerData(SessionKey, DummyBannerHash, Params);
+  SetBannerData(SessionKey, BannerHash(Banner), Params);
+}
+//---------------------------------------------------------------------------
+void __fastcall TConfiguration::SetBannerParams(const UnicodeString & SessionKey, unsigned int Params)
+{
+  UnicodeString BannerHash;
+  unsigned int DummyParams;
+  GetBannerData(SessionKey, BannerHash, DummyParams);
+  SetBannerData(SessionKey, BannerHash, Params);
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TConfiguration::FormatFingerprintKey(const UnicodeString & SiteKey, const UnicodeString & FingerprintType)
@@ -1040,6 +1058,36 @@ UnicodeString __fastcall TConfiguration::GetFileInfoString(const UnicodeString K
   return GetFileFileInfoString(Key, L"");
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall TConfiguration::GetFileMimeType(const UnicodeString & FileName)
+{
+  UnicodeString Result;
+  bool Found = false;
+
+  if (!MimeTypes.IsEmpty())
+  {
+    UnicodeString FileNameOnly = ExtractFileName(FileName);
+    UnicodeString AMimeTypes = MimeTypes;
+    while (!Found && !AMimeTypes.IsEmpty())
+    {
+      UnicodeString Token = CutToChar(AMimeTypes, L',', true);
+      UnicodeString MaskStr = CutToChar(Token, L'=', true);
+      TFileMasks Mask(MaskStr);
+      if (Mask.Matches(FileNameOnly))
+      {
+        Result = Token.Trim();
+        Found = true;
+      }
+    }
+  }
+
+  if (!Found) // allow an override to "no" Content-Type
+  {
+    Result = ::GetFileMimeType(FileName);
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall TConfiguration::GetRegistryStorageKey()
 {
   return GetRegistryKey();
@@ -1408,6 +1456,11 @@ UnicodeString __fastcall TConfiguration::GetRandomSeedFileName()
 void __fastcall TConfiguration::SetExternalIpAddress(UnicodeString value)
 {
   SET_CONFIG_PROPERTY(ExternalIpAddress);
+}
+//---------------------------------------------------------------------
+void __fastcall TConfiguration::SetMimeTypes(UnicodeString value)
+{
+  SET_CONFIG_PROPERTY(MimeTypes);
 }
 //---------------------------------------------------------------------
 void __fastcall TConfiguration::SetTryFtpWhenSshFails(bool value)

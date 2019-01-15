@@ -11,6 +11,7 @@
 #include "TextsWin.h"
 #include "GUITools.h"
 #include <BaseUtils.hpp>
+#include <StrUtils.hpp>
 //---------------------------------------------------------------------
 #pragma link "HistoryComboBox"
 #ifndef NO_RESOURCES
@@ -44,7 +45,9 @@ __fastcall TFileSystemInfoDialog::TFileSystemInfoDialog(TComponent * AOwner,
 
   CertificateGroup->Top = HostKeyGroup->Top;
 
-  ReadOnlyControl(HostKeyFingerprintEdit);
+  ReadOnlyControl(HostKeyAlgorithmEdit);
+  ReadOnlyControl(HostKeyFingerprintSHA256Edit);
+  ReadOnlyControl(HostKeyFingerprintMD5Edit);
   ReadOnlyControl(CertificateFingerprintEdit);
   ReadOnlyControl(InfoMemo);
 }
@@ -110,7 +113,8 @@ void __fastcall TFileSystemInfoDialog::Feed(TFeedFileSystemData AddItem)
   }
   AddItem(ServerView, FSINFO_COMPRESSION, Str);
 
-  AddItem(HostKeyFingerprintEdit, 0, FSessionInfo.HostKeyFingerprint);
+  AddItem(HostKeyFingerprintSHA256Edit, 0, FSessionInfo.HostKeyFingerprintSHA256);
+  AddItem(HostKeyFingerprintMD5Edit, 0, FSessionInfo.HostKeyFingerprintMD5);
   AddItem(CertificateFingerprintEdit, 0, FSessionInfo.CertificateFingerprint);
 
   AddItem(ProtocolView, FSINFO_MODE_CHANGING, CapabilityStr(fcModeChanging));
@@ -153,11 +157,14 @@ void __fastcall TFileSystemInfoDialog::ControlsAddItem(TControl * Control,
     FLastListItem = 0;
   }
 
-  if (Control == HostKeyFingerprintEdit)
+  if ((Control == HostKeyFingerprintSHA256Edit) || (Control == HostKeyFingerprintMD5Edit))
   {
     EnableControl(HostKeyGroup, !Value.IsEmpty());
     HostKeyGroup->Visible = !Value.IsEmpty();
-    HostKeyFingerprintEdit->Text = Value;
+    UnicodeString Alg1 = CutToChar(Value, L' ', true);
+    UnicodeString Alg2 = CutToChar(Value, L' ', true);
+    HostKeyAlgorithmEdit->Text = FORMAT(L"%s %s", (Alg1, Alg2));
+    DebugNotNull(dynamic_cast<TEdit *>(Control))->Text = Value;
   }
   else if (Control == CertificateFingerprintEdit)
   {
@@ -228,24 +235,43 @@ void __fastcall TFileSystemInfoDialog::ClipboardAddItem(TControl * Control,
 {
   if (Control->Enabled && !Value.IsEmpty())
   {
-    if (FLastFeededControl != Control)
+    TGroupBox * Group = dynamic_cast<TGroupBox *>(Control->Parent);
+    TControl * ControlGroup = (Group != NULL) ? Group : Control;
+    if (FLastFeededControl != ControlGroup)
     {
       if (FLastFeededControl != NULL)
       {
         FClipboard += UnicodeString::StringOfChar(L'-', 60) + L"\r\n";
       }
-      FLastFeededControl = Control;
+
+      if (Group != NULL)
+      {
+        FClipboard += FORMAT(L"%s\r\n", (Group->Caption));
+      }
+
+      FLastFeededControl = ControlGroup;
     }
 
     if (dynamic_cast<TListView *>(Control) == NULL)
     {
-      TGroupBox * Group = dynamic_cast<TGroupBox *>(Control->Parent);
-      DebugAssert(Group != NULL);
-      if ((Value.Length() >= 2) && (Value.SubString(Value.Length() - 1, 2) == L"\r\n"))
+      for (int Index = 0; Index < Control->Parent->ControlCount; Index++)
+      {
+        TLabel * Label = dynamic_cast<TLabel *>(Control->Parent->Controls[Index]);
+        if ((Label != NULL) && (Label->FocusControl == Control))
+        {
+          UnicodeString S = StripHotkey(Label->Caption);
+          if (EndsStr(L":", S))
+          {
+            S.SetLength(S.Length() - 1);
+          }
+          FClipboard += FORMAT(L"%s = ", (S));
+        }
+      }
+      if (EndsStr(L"\r\n", Value))
       {
         Value.SetLength(Value.Length() - 2);
       }
-      FClipboard += FORMAT(L"%s\r\n%s\r\n", (Group->Caption, Value));
+      FClipboard += FORMAT(L"%s\r\n", (Value));
     }
     else
     {
@@ -381,5 +407,30 @@ void __fastcall TFileSystemInfoDialog::SpaceAvailableViewCustomDrawItem(
   {
     Sender->Canvas->Font->Color = clGrayText;
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TFileSystemInfoDialog::EditCopyActionExecute(TObject * /*Sender*/)
+{
+  TEdit * Edit = HostKeyFingerprintSHA256Edit->Focused() ? HostKeyFingerprintSHA256Edit : HostKeyFingerprintMD5Edit;
+  if ((Edit->SelLength == 0) || (Edit->SelLength == Edit->Text.Length()))
+  {
+    CopyToClipboard(FORMAT(L"%s %s", (HostKeyAlgorithmEdit->Text, Edit->Text)));
+  }
+  else
+  {
+    Edit->CopyToClipboard();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TFileSystemInfoDialog::HostKeyFingerprintSHA256EditContextPopup(
+  TObject * Sender, TPoint & MousePos, bool & Handled)
+{
+  MenuPopup(Sender, MousePos, Handled);
+}
+//---------------------------------------------------------------------------
+void __fastcall TFileSystemInfoDialog::EditCopyActionUpdate(TObject * /*Sender*/)
+{
+  // When noting is selected, we copy whole key, including algorithm, see EditCopyActionExecute
+  EditCopyAction->Enabled = true;
 }
 //---------------------------------------------------------------------------

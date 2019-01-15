@@ -57,19 +57,58 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
         324)
       object HostKeyGroup: TGroupBox
         Left = 6
-        Top = 202
+        Top = 201
         Width = 351
-        Height = 41
+        Height = 87
         Anchors = [akLeft, akRight, akBottom]
-        Caption = 'Server host key fingerprint'
+        Caption = 'Server host key fingerprints'
         TabOrder = 1
         DesignSize = (
           351
-          41)
-        object HostKeyFingerprintEdit: TEdit
-          Left = 10
+          87)
+        object Label2: TLabel
+          Left = 7
           Top = 18
-          Width = 334
+          Width = 49
+          Height = 13
+          Caption = 'Algorithm:'
+          FocusControl = HostKeyAlgorithmEdit
+        end
+        object Label3: TLabel
+          Left = 7
+          Top = 41
+          Width = 46
+          Height = 13
+          Caption = 'SHA-256:'
+          FocusControl = HostKeyFingerprintSHA256Edit
+        end
+        object Label4: TLabel
+          Left = 7
+          Top = 64
+          Width = 25
+          Height = 13
+          Caption = 'MD5:'
+          FocusControl = HostKeyFingerprintMD5Edit
+        end
+        object HostKeyFingerprintSHA256Edit: TEdit
+          Left = 62
+          Top = 41
+          Width = 282
+          Height = 17
+          TabStop = False
+          Anchors = [akLeft, akTop, akRight]
+          BorderStyle = bsNone
+          Color = clBtnFace
+          PopupMenu = FingerprintPopupMenu
+          ReadOnly = True
+          TabOrder = 1
+          Text = 'HostKeyFingerprintSHA256Edit'
+          OnContextPopup = HostKeyFingerprintSHA256EditContextPopup
+        end
+        object HostKeyAlgorithmEdit: TEdit
+          Left = 62
+          Top = 18
+          Width = 282
           Height = 17
           TabStop = False
           Anchors = [akLeft, akTop, akRight]
@@ -77,7 +116,22 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
           Color = clBtnFace
           ReadOnly = True
           TabOrder = 0
-          Text = 'HostKeyFingerprintEdit'
+          Text = 'HostKeyAlgorithmEdit'
+        end
+        object HostKeyFingerprintMD5Edit: TEdit
+          Left = 62
+          Top = 64
+          Width = 282
+          Height = 17
+          TabStop = False
+          Anchors = [akLeft, akTop, akRight]
+          BorderStyle = bsNone
+          Color = clBtnFace
+          PopupMenu = FingerprintPopupMenu
+          ReadOnly = True
+          TabOrder = 2
+          Text = 'HostKeyFingerprintMD5Edit'
+          OnContextPopup = HostKeyFingerprintSHA256EditContextPopup
         end
       end
       object ServerView: TListView
@@ -108,7 +162,7 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
       end
       object CertificateGroup: TGroupBox
         Left = 6
-        Top = 246
+        Top = 294
         Width = 351
         Height = 72
         Anchors = [akLeft, akRight, akBottom]
@@ -284,6 +338,32 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
     object Copy: TMenuItem
       Caption = '&Copy'
       OnClick = CopyClick
+    end
+  end
+  object FingerprintPopupMenu: TPopupMenu
+    Left = 240
+    Top = 354
+    object Copy1: TMenuItem
+      Action = EditCopyAction
+    end
+    object TMenuItem
+      Action = EditSelectAllAction
+    end
+  end
+  object FingerprintActionList: TActionList
+    Left = 328
+    Top = 354
+    object EditCopyAction: TEditCopy
+      Category = 'Edit'
+      Caption = '&Copy'
+      ShortCut = 16451
+      OnExecute = EditCopyActionExecute
+      OnUpdate = EditCopyActionUpdate
+    end
+    object EditSelectAllAction: TEditSelectAll
+      Category = 'Edit'
+      Caption = 'Select &All'
+      ShortCut = 16449
     end
   end
 end

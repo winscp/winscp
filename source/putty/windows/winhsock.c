@@ -92,7 +92,9 @@ static int handle_stderr(struct handle *h, void *data, int len)
     Handle_Socket ps = (Handle_Socket) handle_get_privdata(h);
 
     if (len > 0)
+    {
         log_proxy_stderr(ps->plug, &ps->stderrdata, data, len);
+    }
 
     return 0;
 }
@@ -140,6 +142,16 @@ static void sk_handle_close(Socket s)
     CloseHandle(ps->send_H);
     if (ps->recv_H != ps->send_H)
         CloseHandle(ps->recv_H);
+#ifdef MPEXT
+    if (ps->stderr_h)
+    {
+        handle_free(ps->stderr_h);
+    }
+    if (ps->stderr_H)
+    {
+        CloseHandle(ps->stderr_H);
+    }
+#endif
     bufchain_clear(&ps->inputdata);
     bufchain_clear(&ps->stderrdata);
 

@@ -56,7 +56,7 @@
  * [including the GNU Public Licence.]
  */
 /* ====================================================================
- * Copyright (c) 1998-2007 The OpenSSL Project.  All rights reserved.
+ * Copyright (c) 1998-2018 The OpenSSL Project.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -500,7 +500,11 @@ static int tls1_get_curvelist(SSL *s, int sess,
             } else
 # endif
             {
-                if (!s->server || s->cert->ecdh_tmp_auto) {
+                if (!s->server
+# ifndef OPENSSL_NO_ECDH
+                        || s->cert->ecdh_tmp_auto
+# endif
+                    ) {
                     *pcurves = eccurves_auto;
                     pcurveslen = sizeof(eccurves_auto);
                 } else {
@@ -2284,8 +2288,12 @@ static int ssl_scan_clienthello_tlsext(SSL *s, unsigned char **p,
 # ifndef OPENSSL_NO_EC
         else if (type == TLSEXT_TYPE_ec_point_formats) {
             unsigned char *sdata = data;
-            int ecpointformatlist_length = *(sdata++);
+            int ecpointformatlist_length;
 
+            if (size == 0)
+                goto err;
+
+            ecpointformatlist_length = *(sdata++);
             if (ecpointformatlist_length != size - 1 ||
                 ecpointformatlist_length < 1)
                 goto err;
@@ -2404,8 +2412,7 @@ static int ssl_scan_clienthello_tlsext(SSL *s, unsigned char **p,
                 goto err;
             if (!tls1_save_sigalgs(s, data, dsize))
                 goto err;
-        } else if (type == TLSEXT_TYPE_status_request) {
-
+        } else if (type == TLSEXT_TYPE_status_request && !s->hit) {
             if (size < 5)
                 goto err;
 
@@ -2711,8 +2718,14 @@ static int ssl_scan_serverhello_tlsext(SSL *s, unsigned char **p,
 # ifndef OPENSSL_NO_EC
         else if (type == TLSEXT_TYPE_ec_point_formats) {
             unsigned char *sdata = data;
-            int ecpointformatlist_length = *(sdata++);
+            int ecpointformatlist_length;
 
+            if (size == 0) {
+                *al = TLS1_AD_DECODE_ERROR;
+                return 0;
+            }
+
+            ecpointformatlist_length = *(sdata++);
             if (ecpointformatlist_length != size - 1) {
                 *al = TLS1_AD_DECODE_ERROR;
                 return 0;
@@ -3156,7 +3169,7 @@ int tls1_set_server_sigalgs(SSL *s)
         if (!s->cert->shared_sigalgs) {
             SSLerr(SSL_F_TLS1_SET_SERVER_SIGALGS,
                    SSL_R_NO_SHARED_SIGATURE_ALGORITHMS);
-            al = SSL_AD_ILLEGAL_PARAMETER;
+            al = SSL_AD_HANDSHAKE_FAILURE;
             goto err;
         }
     } else
@@ -3505,6 +3518,10 @@ static int tls_decrypt_ticket(SSL *s, const unsigned char *etick,
     EVP_CIPHER_CTX ctx;
     SSL_CTX *tctx = s->initial_ctx;
 
+    /* Need at least keyname + iv */
+    if (eticklen < 16 + EVP_MAX_IV_LENGTH)
+        return 2;
+
     /* Initialize session ticket encryption and HMAC contexts */
     HMAC_CTX_init(&hctx);
     EVP_CIPHER_CTX_init(&ctx);
@@ -3513,9 +3530,12 @@ static int tls_decrypt_ticket(SSL *s, const unsigned char *etick,
         int rv = tctx->tlsext_ticket_key_cb(s, nctick, nctick + 16,
                                             &ctx, &hctx, 0);
         if (rv < 0)
-            return -1;
-        if (rv == 0)
+            goto err;
+        if (rv == 0) {
+            HMAC_CTX_cleanup(&hctx);
+            EVP_CIPHER_CTX_cleanup(&ctx);
             return 2;
+        }
         if (rv == 2)
             renew_ticket = 1;
     } else {

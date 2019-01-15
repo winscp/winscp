@@ -1,0 +1,112 @@
+* Implement functions for generating form stuff for posting to s3
+
+* Write s3 man page
+
+=== Object Versioning ===
+
+- Enabling versioning is just a PUT request to a specific object name with a canned XML content (3 hours)
+
+- Suspending versioning is another similar PUT request (1 hour)
+
+- Get versioning state is a simple request, requires some simple XML parsing to represent the result (2 hours)
+
+- Support reporting the version ID in PUT, POST, or COPY request results (1 hour)
+
+- List all object versions uses a GET request for a specific sub-resource (2 hours)
+
+- Include support for "truncated" object versions list (1 hour)
+
+- Support versionId in GET and HEAD requests (2 hours)
+
+
+=== Reduced Redundancy Storage ===
+
+- Support adding a "storage class" header to define storage class in PUT request (2 hours)
+
+- Documentation note that S3StatusErrorMethodNotAllowed is returned when there has been a loss of a reduced redundancy object (1 hour)
+
+- Consider adding an API for changing the storage class of an object (even though this is already covered by doing a PUT with the appropriate user-controlled parameters) (1 hour)
+
+
+=== Bucket Policies ===
+
+- Support parsing/deparsing of bucket policies (JSON parsing!) into structured representation - 26 hours
+
+- Set/delete/query bucket policies - 12 hours
+
+
+=== Notifications ===
+
+- Structurally represent and provide an API for setting/deleting/querying: 16 hours
+
+
+=== IAM ===
+
+This is Amazon's "user" management API; not part of S3 although IAM users can be referenced in S3 Bucket Policies.  Not intending to support IAM account management since the creation and management of users is not S3 functionality.
+
+
+=== Response Header API Support ===
+
+- Allows HTTP response headers to be specified on a per-object basis
+
+- Full support: 5 hours
+
+
+=== Support for Hosting static websites in Amazon S3 ===
+
+- Structured representation of website routing rules: 8 hours
+
+- Support the "website" bucket resource and structured interactions with it: 16 hours
+
+
+=== Multipart Upload Copy ===
+
+- 10 hours
+
+
+=== Temporary Security Credentials ===
+
+- ???
+
+
+=== Server-Side Encryption ===
+
+- Just have to set an additional header in some of the requests
+
+- 4 hours
+
+
+=== Multi-Object Delete ===
+
+- POST /?delete -- 4 hours
+
+
+=== MFA Authentication ===
+
+(part of Bucket Policy)
+
+
+=== Cost Allocation Tagging ===
+
+- Looks like just a simple free-form string value that can be associated with buckets
+
+- May need to implement special logging for querying by cost allocation tag
+
+- Need to find the REST API documentation for this
+
+- Likely to take ~8 hours to support
+
+
+=== Cross-Origin Resource Sharing ===
+
+- Support /?cors resource: 16 hours
+
+
+=== Support for Archiving Data to Amazon Glacier ===
+
+- Already included in Object Lifecycle Management
+
+
+=== Root domain support for website hosting ===
+
+- Already included in static website support stuff

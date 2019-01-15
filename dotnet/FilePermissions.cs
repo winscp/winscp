@@ -158,9 +158,11 @@ namespace WinSCP
 
         internal static FilePermissions CreateReadOnlyFromText(string text)
         {
-            FilePermissions result = new FilePermissions();
-            result.Numeric = TextToNumeric(text);
-            result._readOnly = true;
+            FilePermissions result = new FilePermissions
+            {
+                Numeric = TextToNumeric(text),
+                _readOnly = true
+            };
             return result;
         }
 

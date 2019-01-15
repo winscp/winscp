@@ -340,7 +340,7 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     {
       FtpProxyMethodCombo->ItemIndex = LastSupportedFtpProxyMethod() + FSessionData->FtpProxyLogonType;
     }
-    WebDavProxyMethodCombo->ItemIndex = GetSupportedWebDavProxyMethod(FSessionData->ProxyMethod);
+    NeonProxyMethodCombo->ItemIndex = GetSupportedNeonProxyMethod(FSessionData->ProxyMethod);
     ProxyHostEdit->Text = FSessionData->ProxyHost;
     ProxyPortEdit->AsInteger = FSessionData->ProxyPort;
     ProxyUsernameEdit->Text = FSessionData->ProxyUsername;
@@ -754,7 +754,9 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
     bool ScpProtocol = (FSessionData->FSProtocol == fsSCPonly);
     bool FtpProtocol = (FSessionData->FSProtocol == fsFTP);
     bool WebDavProtocol = (FSessionData->FSProtocol == fsWebDAV);
-    bool Ssl = (FtpProtocol || WebDavProtocol) && (FSessionData->Ftps != ftpsNone);
+    bool S3Protocol = (FSessionData->FSProtocol == fsS3);
+    bool Neon = IsNeon(FSessionData->FSProtocol);
+    bool Ssl = (FtpProtocol || WebDavProtocol || S3Protocol) && (FSessionData->Ftps != ftpsNone);
 
     // connection sheet
     EnableControl(FtpPasvModeCheck, FtpProtocol);
@@ -837,7 +839,7 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
     // this is probaqbly overkill, now we do not allow changing protocol on
     // the same window as changing proxy
     TComboBox * ProxyMethodCombo =
-      (SshProtocol ? SshProxyMethodCombo : (FtpProtocol ? FtpProxyMethodCombo : WebDavProxyMethodCombo));
+      (SshProtocol ? SshProxyMethodCombo : (FtpProtocol ? FtpProxyMethodCombo : NeonProxyMethodCombo));
     TProxyMethod ProxyMethod = GetProxyMethod();
     ProxyMethodCombo->Visible = true;
     ProxyMethodLabel->FocusControl = ProxyMethodCombo;
@@ -851,10 +853,10 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
       FtpProxyMethodCombo->Visible = false;
       FtpProxyMethodCombo->ItemIndex = GetSupportedFtpProxyMethod(ProxyMethod);
     }
-    if (!WebDavProtocol)
+    if (!Neon)
     {
-      WebDavProxyMethodCombo->Visible = false;
-      WebDavProxyMethodCombo->ItemIndex = GetSupportedWebDavProxyMethod(ProxyMethod);
+      NeonProxyMethodCombo->Visible = false;
+      NeonProxyMethodCombo->ItemIndex = GetSupportedNeonProxyMethod(ProxyMethod);
     }
 
     int FtpProxyLogonType = GetFtpProxyLogonType();
@@ -879,7 +881,7 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
     EnableControl(ProxyPortLabel, ProxyPortEdit->Enabled);
     EnableControl(ProxyUsernameEdit,
       // FZAPI does not support username for SOCKS4
-      ((ProxyMethod == pmSocks4) && (SshProtocol || WebDavProtocol)) ||
+      ((ProxyMethod == pmSocks4) && (SshProtocol || Neon)) ||
       (ProxyMethod == pmSocks5) ||
       (ProxyMethod == pmHTTP) ||
       (((ProxyMethod == pmTelnet) ||
@@ -942,6 +944,7 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
     EnableControl(TimeDifferenceHoursLabel, TimeDifferenceEdit->Enabled);
     EnableControl(TimeDifferenceMinutesEdit, TimeDifferenceEdit->Enabled);
     EnableControl(TimeDifferenceMinutesLabel, TimeDifferenceEdit->Enabled);
+    EnableControl(TrimVMSVersionsCheck, !S3Protocol);
 
     // environment/recycle bin sheet
     EnableControl(OverwrittenToRecycleBinCheck, SftpProtocol && RecycleBinSheet->Enabled);
@@ -983,7 +986,7 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
 
     // connection/ssl/tls
     SslSheet->Enabled = Ssl;
-    // TLS/SSL session reuse is not configurable for WebDAV yet
+    // TLS/SSL session reuse is not configurable for WebDAV/S3 yet
     SslSessionReuseCheck->Enabled = SslSheet->Enabled && FtpProtocol;
 
     UpdateNavigationTree();
@@ -1303,7 +1306,7 @@ int __fastcall TSiteAdvancedDialog::GetSupportedFtpProxyMethod(int Method)
   }
 }
 //---------------------------------------------------------------------------
-int __fastcall TSiteAdvancedDialog::GetSupportedWebDavProxyMethod(int Method)
+int __fastcall TSiteAdvancedDialog::GetSupportedNeonProxyMethod(int Method)
 {
   if ((Method >= 0) && (Method <= pmHTTP))
   {
@@ -1313,6 +1316,11 @@ int __fastcall TSiteAdvancedDialog::GetSupportedWebDavProxyMethod(int Method)
   {
     return ::pmNone;
   }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TSiteAdvancedDialog::IsNeon(TFSProtocol FSProtocol)
+{
+  return (FSProtocol == fsWebDAV) || (FSProtocol == fsS3);
 }
 //---------------------------------------------------------------------------
 TProxyMethod __fastcall TSiteAdvancedDialog::GetProxyMethod()
@@ -1334,9 +1342,9 @@ TProxyMethod __fastcall TSiteAdvancedDialog::GetProxyMethod()
       Result = ::pmNone;
     }
   }
-  else if (FSProtocol == fsWebDAV)
+  else if (IsNeon(FSProtocol))
   {
-    Result = (TProxyMethod)WebDavProxyMethodCombo->ItemIndex;
+    Result = (TProxyMethod)NeonProxyMethodCombo->ItemIndex;
   }
   else
   {
@@ -1481,7 +1489,7 @@ void __fastcall TSiteAdvancedDialog::ProxyAutodetectButtonClick(TObject * /*Send
 
     SshProxyMethodCombo->ItemIndex = pmHTTP;
     FtpProxyMethodCombo->ItemIndex = pmHTTP;
-    WebDavProxyMethodCombo->ItemIndex = pmHTTP;
+    NeonProxyMethodCombo->ItemIndex = pmHTTP;
 
     UpdateControls();
   }

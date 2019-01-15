@@ -20,6 +20,7 @@
 #include <Math.hpp>
 #include <StrUtils.hpp>
 #include <Generics.Defaults.hpp>
+#include <OperationWithTimeout.hpp>
 #include "FileInfo.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
@@ -493,6 +494,7 @@ void __fastcall TWinConfiguration::Default()
   FDDWarnLackOfTempSpace = true;
   FDDWarnLackOfTempSpaceRatio = 1.1;
   FDDExtEnabled = DDExtInstalled;
+  FDDFakeFile = true;
   FDDExtTimeout = MSecsPerSec;
   FDeleteToRecycleBin = true;
   FSelectDirectories = false;
@@ -543,6 +545,7 @@ void __fastcall TWinConfiguration::Default()
   FPanelFont.FontSize = 0;
   FPanelFont.FontStyle = 0;
   FPanelFont.FontCharset = DEFAULT_CHARSET;
+  FNaturalOrderNumericalSorting = true;
   FFullRowSelect = false;
   FOfferedEditorAutoConfig = false;
   FVersionHistory = L"";
@@ -570,6 +573,7 @@ void __fastcall TWinConfiguration::Default()
   FLockedInterface = false;
 
   HonorDrivePolicy = true;
+  TimeoutShellIconRetrieval = false;
 
   FEditor.Font.FontName = DefaultFixedWidthFontName;
   FEditor.Font.FontSize = DefaultFixedWidthFontSize;
@@ -914,6 +918,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Bool,     UseSharedBookmarks); \
     KEY(Integer,  LocaleSafe); \
     KEY(Bool,     DDExtEnabled); \
+    KEY(Bool,     DDFakeFile); \
     KEY(Integer,  DDExtTimeout); \
     KEY(Bool,     DefaultDirIsHome); \
     KEY(Bool,     TemporaryDirectoryAppendSession); \
@@ -941,6 +946,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEYEX(Integer,PanelFont.FontSize, L"PanelFontSize"); \
     KEYEX(Integer,PanelFont.FontStyle, L"PanelFontStyle"); \
     KEYEX(Integer,PanelFont.FontCharset, L"PanelFontCharset"); \
+    KEY(Bool,     NaturalOrderNumericalSorting); \
     KEY(Bool,     FullRowSelect); \
     KEY(Bool,     OfferedEditorAutoConfig); \
     KEY(Integer,  LastMonitor); \
@@ -965,6 +971,8 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Integer,  LastMachineInstallations); \
     KEYEX(String, FExtensionsDeleted, L"ExtensionsDeleted"); \
     KEYEX(String, FExtensionsOrder, L"ExtensionsOrder"); \
+    KEY(Bool,  TimeoutShellOperations); \
+    KEY(Bool,     TimeoutShellIconRetrieval); \
   ); \
   BLOCK(L"Interface\\Editor", CANCREATE, \
     KEYEX(String,   Editor.Font.FontName, L"FontName2"); \
@@ -1136,8 +1144,9 @@ void __fastcall TWinConfiguration::LoadFrom(THierarchicalStorage * Storage)
 
     TCustomWinConfiguration::LoadFrom(Storage);
 
-    // This needs to be done even if there's no Configuration key in the storage,
+    // Following needs to be done even if there's no Configuration key in the storage,
     // so it cannot be in LoadData
+
     int EditorCount = FEditorList->Count;
     if (EditorCount == 0)
     {
@@ -1179,6 +1188,11 @@ void __fastcall TWinConfiguration::LoadFrom(THierarchicalStorage * Storage)
         FEditorList->Add(AlternativeEditor);
       }
     }
+
+    // Additionally, this needs to be after Locale is loaded
+    LoadExtensionTranslations();
+    // and this after the ExtensionsDeleted and ExtensionsOrder are loaded
+    LoadExtensionList();
   }
   __finally
   {
@@ -1404,11 +1418,6 @@ void __fastcall TWinConfiguration::LoadData(THierarchicalStorage * Storage)
   #pragma warn +eas
   #undef KEYEX
 
-  // Load after Locale
-  LoadExtensionTranslations();
-  // Load after the ExtensionsDeleted and ExtensionsOrder
-  LoadExtensionList();
-
   // to reflect changes to PanelFont
   UpdateIconFont();
 
@@ -1600,6 +1609,23 @@ bool __fastcall TWinConfiguration::GetDDExtInstalled()
     }
   }
   return (FDDExtInstalled > 0);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TWinConfiguration::IsDDExtRunning()
+{
+  bool Result;
+  if (!DDExtInstalled)
+  {
+    Result = false;
+  }
+  else
+  {
+    HANDLE H = OpenMutex(SYNCHRONIZE, False, DRAG_EXT_RUNNING_MUTEX);
+    Result = (H != NULL);
+    CloseHandle(H);
+  }
+
+  return Result;
 }
 //---------------------------------------------------------------------------
 RawByteString __fastcall TWinConfiguration::StronglyRecryptPassword(RawByteString Password, UnicodeString Key)
@@ -1796,9 +1822,28 @@ void __fastcall TWinConfiguration::SetDDTemporaryDirectory(UnicodeString value)
   SET_CONFIG_PROPERTY(DDTemporaryDirectory);
 }
 //---------------------------------------------------------------------------
+bool __fastcall TWinConfiguration::GetDDExtEnabled()
+{
+  if (IsUWP())
+  {
+    return FDDFakeFile;
+  }
+  else
+  {
+    return FDDExtEnabled;
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetDDExtEnabled(bool value)
 {
-  SET_CONFIG_PROPERTY(DDExtEnabled);
+  if (IsUWP())
+  {
+    SET_CONFIG_PROPERTY(DDFakeFile);
+  }
+  else
+  {
+    SET_CONFIG_PROPERTY(DDExtEnabled);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetDDExtTimeout(int value)
@@ -2078,6 +2123,11 @@ void __fastcall TWinConfiguration::UpdateIconFont()
 void __fastcall TWinConfiguration::SetPanelFont(const TFontConfiguration & value)
 {
   SET_CONFIG_PROPERTY_EX(PanelFont, UpdateIconFont());
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetNaturalOrderNumericalSorting(bool value)
+{
+  SET_CONFIG_PROPERTY(NaturalOrderNumericalSorting);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetFullRowSelect(bool value)
@@ -2487,6 +2537,21 @@ void __fastcall TWinConfiguration::SetLockedInterface(bool value)
   SET_CONFIG_PROPERTY(LockedInterface);
 }
 //---------------------------------------------------------------------------
+bool __fastcall TWinConfiguration::GetTimeoutShellOperations()
+{
+  return ::TimeoutShellOperations;
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetTimeoutShellOperations(bool value)
+{
+  ::TimeoutShellOperations = value;
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetTimeoutShellIconRetrieval(bool value)
+{
+  SET_CONFIG_PROPERTY(TimeoutShellIconRetrieval);
+}
+//---------------------------------------------------------------------------
 TStringList * __fastcall TWinConfiguration::LoadJumpList(
   THierarchicalStorage * Storage, UnicodeString Name)
 {
@@ -2766,7 +2831,9 @@ void __fastcall TCustomCommandType::LoadExtension(TStrings * Lines, const Unicod
 
   UnicodeString ExtensionBaseName = ExtractExtensionBaseName(PathForBaseName);
 
-  for (int Index = 0; Index < Lines->Count; Index++)
+  UnicodeString ExtensionLine;
+  bool Break = false;
+  for (int Index = 0; !Break && (Index < Lines->Count); Index++)
   {
     UnicodeString Line = Lines->Strings[Index].Trim();
     if (!Line.IsEmpty())
@@ -2796,169 +2863,185 @@ void __fastcall TCustomCommandType::LoadExtension(TStrings * Lines, const Unicod
 
       if (!IsComment)
       {
-        break;
+        Break = true;
+        // ignore this and later lines, but finish processing the previous line with ^, if any
+        Line = L"";
       }
       else
       {
         Line = Line.Trim();
-        int P;
-        if (!Line.IsEmpty() && (Line[1] == ExtensionMark) && ((P = Pos(L" ", Line)) >= 2))
-        {
-          UnicodeString Key = Line.SubString(2, P - 2).LowerCase();
-          UnicodeString Directive = UnicodeString(ExtensionMark) + Key;
-          UnicodeString Value = Line.SubString(P + 1, Line.Length() - P).Trim();
-          bool KnownKey = true;
-          if (Key == ExtensionNameDirective)
-          {
-            Name = WinConfiguration->ExtensionStringTranslation(Id, Value);
-          }
-          else if (Key == ExtensionCommandDirective)
-          {
-            Command = Value;
-          }
-          else if (Key == L"require")
-          {
-            UnicodeString DependencyVersion = Value;
-            UnicodeString Dependency = CutToChar(Value, L' ', true).LowerCase();
-            Value = Value.Trim();
-            bool Failed;
-            if (Dependency == L"winscp")
-            {
-              int Version = StrToCompoundVersion(Value);
-              Failed = (Version > WinConfiguration->CompoundVersion);
-            }
-            else if (Dependency == L".net")
-            {
-              Failed = (CompareVersion(Value, GetNetVersionStr()) > 0);
-            }
-            else if (Dependency == L"powershell")
-            {
-              Failed = (CompareVersion(Value, GetPowerShellVersionStr()) > 0);
-            }
-            else if (Dependency == L"windows")
-            {
-              Failed = (CompareVersion(Value, WindowsVersion()) > 0);
-            }
-            else
-            {
-              Failed = true;
-            }
+      }
+    }
 
-            if (Failed)
-            {
-              throw Exception(MainInstructions(FMTLOAD(EXTENSION_DEPENDENCY_ERROR, (DependencyVersion))));
-            }
-          }
-          else if (Key == L"side")
+    bool Continuation = (Line.Length() > 0) && (Line[Line.Length()] == L'^');
+    if (Continuation)
+    {
+      Line = Line.SubString(1, Line.Length() - 1).Trim();
+    }
+
+    AddToList(ExtensionLine, Line, L" ");
+
+    if (!Continuation)
+    {
+      int P;
+      if (!ExtensionLine.IsEmpty() && (ExtensionLine[1] == ExtensionMark) && ((P = Pos(L" ", ExtensionLine)) >= 2))
+      {
+        UnicodeString Key = ExtensionLine.SubString(2, P - 2).LowerCase();
+        UnicodeString Directive = UnicodeString(ExtensionMark) + Key;
+        UnicodeString Value = ExtensionLine.SubString(P + 1, ExtensionLine.Length() - P).Trim();
+        bool KnownKey = true;
+        if (Key == ExtensionNameDirective)
+        {
+          Name = WinConfiguration->ExtensionStringTranslation(Id, Value);
+        }
+        else if (Key == ExtensionCommandDirective)
+        {
+          Command = Value;
+        }
+        else if (Key == L"require")
+        {
+          UnicodeString DependencyVersion = Value;
+          UnicodeString Dependency = CutToChar(Value, L' ', true).LowerCase();
+          Value = Value.Trim();
+          bool Failed;
+          if (Dependency == L"winscp")
           {
-            if (SameText(Value, L"Local"))
-            {
-              Params |= ccLocal;
-            }
-            else if (SameText(Value, L"Remote"))
-            {
-              Params &= ~ccLocal;
-            }
-            else
-            {
-              throw Exception(MainInstructions(FMTLOAD(EXTENSION_DIRECTIVE_ERROR, (Value, Directive))));
-            }
+            int Version = StrToCompoundVersion(Value);
+            Failed = (Version > WinConfiguration->CompoundVersion);
           }
-          else if (Key == L"flag")
+          else if (Dependency == L".net")
           {
-            if (SameText(Value, L"ApplyToDirectories"))
-            {
-              Params |= ccApplyToDirectories;
-            }
-            else if (SameText(Value, L"Recursive"))
-            {
-              Params |= ccRecursive;
-            }
-            else if (SameText(Value, L"ShowResults"))
-            {
-              Params |= ccShowResults;
-            }
-            else if (SameText(Value, L"CopyResults"))
-            {
-              Params |= ccCopyResults;
-            }
-            else if (SameText(Value, L"RemoteFiles"))
-            {
-              Params |= ccRemoteFiles;
-            }
-            else if (SameText(Value, L"ShowResultsInMsgBox"))
-            {
-              Params |= ccShowResultsInMsgBox;
-            }
-            else
-            {
-              throw Exception(MainInstructions(FMTLOAD(EXTENSION_DIRECTIVE_ERROR, (Value, Directive))));
-            }
+            Failed = (CompareVersion(Value, GetNetVersionStr()) > 0);
           }
-          else if (Key == L"shortcut")
+          else if (Dependency == L"powershell")
           {
-            TShortCut AShortCut = TextToShortCut(Value);
-            if (IsCustomShortCut(AShortCut))
-            {
-              ShortCut = AShortCut;
-            }
-            else
-            {
-              throw Exception(MainInstructions(FMTLOAD(EXTENSION_DIRECTIVE_ERROR, (Value, Directive))));
-            }
+            Failed = (CompareVersion(Value, GetPowerShellVersionStr()) > 0);
           }
-          else if (Key == L"option")
+          else if (Dependency == L"windows")
           {
-            TOption Option;
-            if (!ParseOption(Value, Option, ExtensionBaseName) ||
-                (Option.IsControl && (OptionIds.find(Option.Id.LowerCase()) != OptionIds.end())))
-            {
-              throw Exception(MainInstructions(FMTLOAD(EXTENSION_DIRECTIVE_ERROR, (Value, Directive))));
-            }
-            else
-            {
-              FOptions.push_back(Option);
-              if (!Option.IsControl)
-              {
-                OptionIds.insert(Option.Id.LowerCase());
-              }
-            }
-          }
-          else if (Key == L"description")
-          {
-            Description = WinConfiguration->ExtensionStringTranslation(Id, Value);
-          }
-          else if (Key == L"author")
-          {
-            // noop
-          }
-          else if (Key == L"version")
-          {
-            // noop
-          }
-          else if (Key == L"homepage")
-          {
-            HomePage = Value;
-          }
-          else if (Key == L"optionspage")
-          {
-            OptionsPage = Value;
-          }
-          else if (Key == L"source")
-          {
-            // noop
+            Failed = (CompareVersion(Value, WindowsVersion()) > 0);
           }
           else
           {
-            KnownKey = false;
+            Failed = true;
           }
 
-          if (KnownKey)
+          if (Failed)
           {
-            AnythingFound = true;
+            throw Exception(MainInstructions(FMTLOAD(EXTENSION_DEPENDENCY_ERROR, (DependencyVersion))));
           }
         }
+        else if (Key == L"side")
+        {
+          if (SameText(Value, L"Local"))
+          {
+            Params |= ccLocal;
+          }
+          else if (SameText(Value, L"Remote"))
+          {
+            Params &= ~ccLocal;
+          }
+          else
+          {
+            throw Exception(MainInstructions(FMTLOAD(EXTENSION_DIRECTIVE_ERROR, (Value, Directive))));
+          }
+        }
+        else if (Key == L"flag")
+        {
+          if (SameText(Value, L"ApplyToDirectories"))
+          {
+            Params |= ccApplyToDirectories;
+          }
+          else if (SameText(Value, L"Recursive"))
+          {
+            Params |= ccRecursive;
+          }
+          else if (SameText(Value, L"ShowResults"))
+          {
+            Params |= ccShowResults;
+          }
+          else if (SameText(Value, L"CopyResults"))
+          {
+            Params |= ccCopyResults;
+          }
+          else if (SameText(Value, L"RemoteFiles"))
+          {
+            Params |= ccRemoteFiles;
+          }
+          else if (SameText(Value, L"ShowResultsInMsgBox"))
+          {
+            Params |= ccShowResultsInMsgBox;
+          }
+          else
+          {
+            throw Exception(MainInstructions(FMTLOAD(EXTENSION_DIRECTIVE_ERROR, (Value, Directive))));
+          }
+        }
+        else if (Key == L"shortcut")
+        {
+          TShortCut AShortCut = TextToShortCut(Value);
+          if (IsCustomShortCut(AShortCut))
+          {
+            ShortCut = AShortCut;
+          }
+          else
+          {
+            throw Exception(MainInstructions(FMTLOAD(EXTENSION_DIRECTIVE_ERROR, (Value, Directive))));
+          }
+        }
+        else if (Key == L"option")
+        {
+          TOption Option;
+          if (!ParseOption(Value, Option, ExtensionBaseName) ||
+              (Option.IsControl && (OptionIds.find(Option.Id.LowerCase()) != OptionIds.end())))
+          {
+            throw Exception(MainInstructions(FMTLOAD(EXTENSION_DIRECTIVE_ERROR, (Value, Directive))));
+          }
+          else
+          {
+            FOptions.push_back(Option);
+            if (!Option.IsControl)
+            {
+              OptionIds.insert(Option.Id.LowerCase());
+            }
+          }
+        }
+        else if (Key == L"description")
+        {
+          Description = WinConfiguration->ExtensionStringTranslation(Id, Value);
+        }
+        else if (Key == L"author")
+        {
+          // noop
+        }
+        else if (Key == L"version")
+        {
+          // noop
+        }
+        else if (Key == L"homepage")
+        {
+          HomePage = Value;
+        }
+        else if (Key == L"optionspage")
+        {
+          OptionsPage = Value;
+        }
+        else if (Key == L"source")
+        {
+          // noop
+        }
+        else
+        {
+          KnownKey = false;
+        }
+
+        if (KnownKey)
+        {
+          AnythingFound = true;
+        }
       }
+
+      ExtensionLine = L"";
     }
   }
 

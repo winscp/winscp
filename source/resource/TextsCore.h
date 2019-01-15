@@ -1,13 +1,13 @@
 #ifndef TextsCoreH
 #define TextsCoreH
 
-#define UNKNOWN_KEY3    1
-#define DIFFERENT_KEY4  2
+#define UNKNOWN_KEY4    1
+#define DIFFERENT_KEY5  2
 #define OLD_KEY         3
 
 #define SCRIPT_HELP_HELP        4
 #define SCRIPT_EXIT_HELP        5
-#define SCRIPT_OPEN_HELP9       6
+#define SCRIPT_OPEN_HELP10      6
 #define SCRIPT_CLOSE_HELP       7
 #define SCRIPT_SESSION_HELP     8
 #define SCRIPT_PWD_HELP         9
@@ -31,6 +31,7 @@
 #define SCRIPT_ECHO_HELP        27
 #define SCRIPT_STAT_HELP        28
 #define SCRIPT_CHECKSUM_HELP    29
+#define SCRIPT_CP_HELP          30
 
 #define CORE_ERROR_STRINGS      100
 #define KEY_NOT_VERIFIED        101
@@ -183,7 +184,6 @@
 #define FTP_ACCESS_DENIED       256
 #define FTP_CREDENTIAL_PROMPT   257
 #define FTP_RESPONSE_ERROR      258
-#define FTP_UNSUPPORTED         259
 #define SCRIPT_UNKNOWN_SWITCH   260
 #define TRANSFER_ERROR          261
 #define EXECUTE_APP_ERROR       262
@@ -238,8 +238,7 @@
 #define SFTP_STATUS_NO_MATCHING_BYTE_RANGE_LOCK 713
 #define KEY_TYPE_UNOPENABLE     714
 #define UNKNOWN_CHECKSUM        715
-#define CIPHER_NOT_VERIFIED     716
-#define KEX_NOT_VERIFIED        717
+#define ALG_NOT_VERIFIED        716
 #define SFTP_STATUS_4           718
 #define CERTIFICATE_OPEN_ERROR  719
 #define CERTIFICATE_READ_ERROR  720
@@ -250,7 +249,7 @@
 #define UNLOCK_FILE_ERROR       725
 #define NOT_LOCKED              726
 #define KEY_SAVE_ERROR          727
-#define NEON_INIT_FAILED        728
+#define NEON_INIT_FAILED2       728
 #define SCRIPT_AMBIGUOUS_SLASH_IN_PATH 729
 #define CERT_IP_CANNOT_VERIFY   730
 #define HOSTKEY_NOT_CONFIGURED  731
@@ -264,16 +263,21 @@
 #define SIZE_INVALID            739
 #define KNOWN_HOSTS_NOT_FOUND   740
 #define KNOWN_HOSTS_NO_SITES    741
+#define HOSTKEY_NOT_MATCH_CLIPBOARD 742
+#define S3_ERROR_RESOURCE       743
+#define S3_ERROR_FURTHER_DETAILS 744
+#define S3_ERROR_EXTRA_DETAILS  745
+#define S3_STATUS_ACCESS_DENIED 746
 
 #define CORE_CONFIRMATION_STRINGS 300
 #define CONFIRM_PROLONG_TIMEOUT3 301
 #define PROMPT_KEY_PASSPHRASE   303
 #define FILE_OVERWRITE          304
 #define DIRECTORY_OVERWRITE     305
-#define CIPHER_BELOW_TRESHOLD   306
-#define CIPHER_TYPE_BOTH        307
-#define CIPHER_TYPE_CS          308
-#define CIPHER_TYPE_SC          309
+#define ALG_BELOW_TRESHOLD      306
+#define CIPHER_TYPE_BOTH2       307
+#define CIPHER_TYPE_CS2         308
+#define CIPHER_TYPE_SC2         309
 #define RESUME_TRANSFER2        310
 #define PARTIAL_BIGGER_THAN_SOURCE 311
 #define APPEND_OR_RESUME2       312
@@ -282,7 +286,6 @@
 #define LOCAL_FILE_OVERWRITE2   315
 #define REMOTE_FILE_OVERWRITE2  316
 #define TIMEOUT_STILL_WAITING3  321
-#define KEX_BELOW_TRESHOLD      322
 #define RECONNECT_BUTTON        323
 #define RENAME_BUTTON           324
 #define TUNNEL_SESSION_NAME     327
@@ -312,6 +315,14 @@
 #define CERTIFICATE_PASSPHRASE_TITLE 351
 #define KEY_TYPE_CONVERT3       352
 #define MULTI_FILES_TO_ONE      353
+#define KEY_EXCHANGE_ALG        354
+#define KEYKEY_TYPE             355
+#define S3_ACCESS_KEY_ID_TITLE  356
+#define S3_ACCESS_KEY_ID_PROMPT 357
+#define S3_SECRET_ACCESS_KEY_TITLE 358
+#define S3_SECRET_ACCESS_KEY_PROMPT 359
+#define DUPLICATE_FOLDER_NOT_SUPPORTED 360
+#define MISSING_TARGET_BUCKET   361
 
 #define CORE_INFORMATION_STRINGS 400
 #define YES_STR                 401
@@ -459,6 +470,12 @@
 #define TEXT_FILE_ENCODING      555
 #define AND_STR                 556
 #define AUTH_CHANGING_PASSWORD  557
+#define PASTE_KEY_BUTTON        558
+#define SCRIPT_CP_DESC          559
+#define TIME_UNKNOWN            560
+#define KEY_DETAILS             561
+#define COPY_KEY_ACTION         562
+#define COPY_CERTIFICATE_ACTION 563
 
 #define CORE_VARIABLE_STRINGS   600
 #define PUTTY_BASED_ON          601
@@ -470,7 +487,7 @@
 #define OPENSSL_BASED_ON        609
 #define OPENSSL_COPYRIGHT2      610
 #define OPENSSL_URL             612
-#define NEON_BASED_ON           613
+#define NEON_BASED_ON2          613
 #define NEON_COPYRIGHT          614
 #define NEON_URL                615
 #define EXPAT_BASED_ON          616
@@ -478,6 +495,10 @@
 #define PUTTY_LICENSE_URL       625
 #define MAIN_MSG_TAG            631
 #define INTERACTIVE_MSG_TAG     632
+#define S3_BASED_ON             633
+#define S3_COPYRIGHT            634
+#define S3_URL                  635
+#define S3_LICENSE_URL          636
 
 // 7xxx used by errors as secondary sequence
 

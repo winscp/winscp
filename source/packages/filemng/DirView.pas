@@ -41,7 +41,7 @@ uses
   Windows, ShlObj, ComCtrls, CompThread, CustomDirView, ListExt,
   ExtCtrls, Graphics, FileOperator, DiscMon, Classes, DirViewColProperties,
   DragDrop, Messages, ListViewColProperties, CommCtrl, DragDropFilesEx,
-  FileCtrl, SysUtils, BaseUtils, Controls, CustomDriveView;
+  FileCtrl, SysUtils, BaseUtils, Controls, CustomDriveView, Winapi.ShellAPI;
 
 {$I ResStrings.pas }
 
@@ -168,6 +168,7 @@ type
     PIDLRecycle: PItemIDList;
 
     FLastPath: array[TDriveLetter] of string;
+    FTimeoutShellIconRetrieval: Boolean;
 
     {Drag&Drop:}
     function GetDirColProperties: TDirViewColProperties;
@@ -238,6 +239,8 @@ type
     procedure WMDestroy(var Msg: TWMDestroy); message WM_DESTROY;
     procedure CMRecreateWnd(var Message: TMessage); message CM_RECREATEWND;
     procedure Load(DoFocusSomething: Boolean); override;
+    function GetFileInfo(pszPath: LPCWSTR; dwFileAttributes: DWORD; var psfi: TSHFileInfoW; cbFileInfo, uFlags: UINT): DWORD_PTR;
+
     function HiddenCount: Integer; override;
     function FilteredCount: Integer; override;
 
@@ -288,7 +291,6 @@ type
     {Create a new subdirectory:}
     procedure CreateDirectory(DirName: string); override;
     {Delete all selected files:}
-    function DeleteSelectedFiles(AllowUndo: Boolean): Boolean; dynamic;
 
     {Check, if file or files still exists:}
     procedure ValidateFile(Item: TListItem); overload;
@@ -314,6 +316,7 @@ type
     procedure ReloadDirectory; override;
     procedure ExecuteDrive(Drive: TDriveLetter);
     property HomeDirectory: string read GetHomeDirectory write FHomeDirectory;
+    property TimeoutShellIconRetrieval: Boolean read FTimeoutShellIconRetrieval write FTimeoutShellIconRetrieval;
 
   published
     property DirColProperties: TDirViewColProperties read GetDirColProperties write SetDirColProperties;
@@ -407,9 +410,9 @@ var
 implementation
 
 uses
-  DriveView,
+  DriveView, OperationWithTimeout,
   PIDL, Forms, Dialogs,
-  ShellAPI, ComObj,
+  ComObj,
   ActiveX, ImgList,
   ShellDialogs, IEDriveInfo,
   FileChanges, Math, PasTools, StrUtils, Types, UITypes;
@@ -1192,7 +1195,7 @@ begin
       else FDriveType := DRIVE_UNKNOWN;
 
     FDirOK := (Length(FPath) > 0) and
-      DriveInfo[FPath[1]].DriveReady and DirExists(FPath);
+      DriveInfo[FPath[1]].DriveReady and DirectoryExists(FPath);
 
     if DirOK then
     begin
@@ -1312,7 +1315,7 @@ begin
     if IsRecycleBin then Reload(True)
       else
     begin
-      if not DirExists(Path) then
+      if not DirectoryExists(Path) then
       begin
         ClearItems;
         FDirOK := False;
@@ -1599,34 +1602,17 @@ begin
   end;
 end; {GetAttrString}
 
-type
-  TSHGetFileInfoThread = class(TCompThread)
-  private
-    FPIDL: PItemIDList;
-    FFileAttributes: DWORD;
-    FFlags: UINT;
-    FFileInfo: TSHFileInfo;
-
-  protected
-    procedure Execute; override;
-
-  public
-    constructor Create(PIDL: PItemIDList; FileAttributes: DWORD; Flags: UINT);
-
-    property FileInfo: TSHFileInfo read FFileInfo;
+function TDirView.GetFileInfo(
+  pszPath: LPCWSTR; dwFileAttributes: DWORD; var psfi: TSHFileInfoW; cbFileInfo, uFlags: UINT): DWORD_PTR;
+begin
+  if TimeoutShellIconRetrieval then
+  begin
+     Result := SHGetFileInfoWithTimeout(pszPath, dwFileAttributes, psfi, cbFileInfo, uFlags,MSecsPerSec div 4);
+  end
+    else
+  begin
+    Result := SHGetFileInfo(pszPath, dwFileAttributes, psfi, cbFileInfo, uFlags);
   end;
-
-constructor TSHGetFileInfoThread.Create(PIDL: PItemIDList; FileAttributes: DWORD; Flags: UINT);
-begin
-  inherited Create(True);
-  FPIDL := PIDL;
-  FFileAttributes := FileAttributes;
-  FFlags := Flags;
-end;
-
-procedure TSHGetFileInfoThread.Execute;
-begin
-  SHGetFileInfo(PChar(FPIDL), FFileAttributes, FFileInfo, SizeOf(FFileInfo), FFlags);
 end;
 
 procedure TDirView.GetDisplayData(Item: TListItem; FetchIcon: Boolean);
@@ -1640,7 +1626,6 @@ var
   Eaten: ULONG;
   shAttr: ULONG;
   FileIconForName, FullName: string;
-  Thread: TSHGetFileInfoThread;
 begin
   Assert(Assigned(Item) and Assigned(Item.Data));
   with PFileRec(Item.Data)^ do
@@ -1748,27 +1733,17 @@ begin
             begin
               // Files with PIDL are typically .exe files.
               // It may take long to retrieve an icon from exe file.
-              Thread :=
-                TSHGetFileInfoThread.Create(
-                  PIDL, FILE_ATTRIBUTE_NORMAL, SHGFI_TYPENAME or SHGFI_USEFILEATTRIBUTES or SHGFI_SYSICONINDEX or SHGFI_PIDL);
-              Thread.Resume;
-              if Thread.WaitFor(MSecsPerSec div 4) then
+              if GetFileInfo(
+                   PChar(PIDL), FILE_ATTRIBUTE_NORMAL, FileInfo, SizeOf(FileInfo),
+                   SHGFI_TYPENAME or SHGFI_USEFILEATTRIBUTES or SHGFI_SYSICONINDEX or SHGFI_PIDL) = 0 then
               begin
-                FileInfo := Thread.FileInfo;
-                Thread.Free;
-              end
-                else
-              begin
-                // There's a chance for memory leak, if thread is terminated
-                // between WaitFor() and this line
-                Thread.FreeOnTerminate := True;
                 FileInfo.szTypeName[0] := #0;
                 FileInfo.iIcon := DefaultExeIcon;
               end;
             end
               else
             begin
-              SHGetFileInfo(PChar(FileIconForName), FILE_ATTRIBUTE_NORMAL, FileInfo, SizeOf(FileInfo),
+              GetFileInfo(PChar(FileIconForName), FILE_ATTRIBUTE_NORMAL, FileInfo, SizeOf(FileInfo),
                 SHGFI_TYPENAME or SHGFI_USEFILEATTRIBUTES or SHGFI_SYSICONINDEX);
             end;
 
@@ -1863,101 +1838,14 @@ begin
   Result := ExtractFileExt(PFileRec(Item.Data)^.FileName);
 end; {ItemFileExt}
 
-function TDirView.DeleteSelectedFiles(AllowUndo: Boolean): Boolean;
-const
-  MaxSel = 10;
-var
-  ItemIndex: Integer;
-  Item, NextItem: TListItem;
-  FileOperator: TFileOperator;
-  UpdateEnabled: Boolean;
-  WatchDir: Boolean;
-  Updating: Boolean;
-  DirDeleted: Boolean;
-begin
-  AllowUndo := AllowUndo and (not IsRecycleBin);
-  DirDeleted := False;
-  if Assigned(FDriveView) then
-    TDriveView(FDriveView).StopWatchThread;
-  WatchDir := WatchForChanges;
-  WatchForChanges := False;
-  UpdateEnabled := (SelCount < MaxSel);
-  if not UpdateEnabled then Items.BeginUpdate;
-
-  FileOperator := TFileOperator.Create(Self);
-  try
-    ItemIndex := Selected.Index;
-    FileOperator.Operation := foDelete;
-    FileOperator.Flags := [foNoConfirmMkDir];
-    FileOperator.ProgressTitle := coFileOperatorTitle;
-    CreateFileList(False, True, FileOperator.OperandFrom);
-
-    if not ConfirmDelete then
-      FileOperator.Flags := FileOperator.Flags + [foNoConfirmation];
-
-    if AllowUndo then
-      FileOperator.Flags := FileOperator.Flags + [foAllowUndo];
-
-    StopIconUpdateThread;
-    Result := FileOperator.Execute;
-    Result := Result and (not FileOperator.OperationAborted);
-    Sleep(0);
-
-    Updating := False;
-    Item := GetNextItem(nil, sdAll, [isSelected]);
-    while Assigned(Item) do
-    begin
-      NextItem := GetNextItem(Item, sdAll, [isSelected]);
-      case PFileRec(Item.Data)^.IsDirectory of
-        True:
-          if not DirExists(ItemFullFileName(Item)) then
-          begin
-            DirDeleted := True;
-            Item.Delete;
-          end;
-        False:
-          if not CheckFileExists(ItemFullFileName(Item)) then
-          begin
-            if (SelCount > 3) and (not Updating) then
-            begin
-              Items.BeginUpdate;
-              Updating := True;
-            end;
-            Item.Delete;
-          end;
-      end;
-      Item := NextItem;
-    end;
-    if Updating then
-      Items.EndUpdate;
-
-  finally
-    if not UpdateEnabled then
-      Items.EndUpdate;
-    FileOperator.Free;
-  end;
-
-  if Assigned(DriveView) then
-    with DriveView do
-    begin
-      if DirDeleted and Assigned(Selected) then
-        ValidateDirectory(Selected);
-      TDriveView(FDriveView).StartWatchThread;
-    end;
-
-  if UseIconUpdateThread then StartIconUpdateThread;
-
-  WatchForChanges := WatchDir;
-
-  if (not Assigned(Selected)) and (Items.Count > 0) then
-    Selected := Items[Min(ItemIndex, Pred(Items.Count))];
-end; {DeleteSelectedFiles}
-
 function StrCmpLogicalW(const sz1, sz2: UnicodeString): Integer; stdcall; external 'shlwapi.dll';
 
-function CompareLogicalText(const S1, S2: string): Integer;
+function CompareLogicalText(const S1, S2: string; NaturalOrderNumericalSorting: Boolean): Integer;
 begin
-  Result := StrCmpLogicalW(PChar(S1), PChar(S2));
+  if NaturalOrderNumericalSorting then
+    Result := StrCmpLogicalW(PChar(S1), PChar(S2))
+  else
+    Result := lstrcmpi(PChar(S1), PChar(S2));
 end;
 
 function CompareFileType(I1, I2: TListItem; P1, P2: PFileRec): Integer;
@@ -1976,7 +1864,7 @@ begin
     Key1 := P1.TypeName + ' ' + P1.FileExt + ' ' + P1.DisplayName;
     Key2 := P2.TypeName + ' ' + P2.FileExt + ' ' + P2.DisplayName;
   end;
-  Result := CompareLogicalText(Key1, Key2);
+  Result := CompareLogicalText(Key1, Key2, TDirView(I1.ListView).NaturalOrderNumericalSorting);
 end;
 
 function CompareFileTime(P1, P2: PFileRec): Integer;
@@ -2062,7 +1950,8 @@ begin
           if not P1.isDirectory then
           begin
             Result := CompareLogicalText(
-              P1.FileExt + ' ' + P1.DisplayName, P2.FileExt + ' ' + P2.DisplayName);
+              P1.FileExt + ' ' + P1.DisplayName, P2.FileExt + ' ' + P2.DisplayName,
+              AOwner.NaturalOrderNumericalSorting);
           end
             else ; //fallback
 
@@ -2072,7 +1961,7 @@ begin
 
       if Result = fEqual then
       begin
-        Result := CompareLogicalText(P1.DisplayName, P2.DisplayName)
+        Result := CompareLogicalText(P1.DisplayName, P2.DisplayName, AOwner.NaturalOrderNumericalSorting)
       end;
     end;
   end;
@@ -2234,7 +2123,7 @@ begin
 
   StopIconUpdateThread;
   try
-    {create the phyical directory:}
+    {create the physical directory:}
     Win32Check(Windows.CreateDirectory(PChar(ApiPath(DirName)), nil));
 
     if IncludeTrailingBackslash(ExtractFilePath(ExpandFileName(DirName))) =
@@ -2290,134 +2179,137 @@ begin
   Verb := EmptyStr;
   StopWatchThread;
   try
-    if Assigned(OnContextPopup) then
-    begin
-      Handled := False;
-      OnContextPopup(Self, ScreenToClient(Where), Handled);
-      if Handled then Abort;
-    end;
-    if (MarkedCount > 1) and
-       ((not Assigned(ItemFocused)) or ItemFocused.Selected) then
-    begin
-      if FIsRecycleBin then
+    try
+      if Assigned(OnContextPopup) then
       begin
-        Count := 0;
-        GetMem(PIDLArray, SizeOf(PItemIDList) * SelCount);
-        try
-          FillChar(PIDLArray^, Sizeof(PItemIDList) * SelCount, #0);
-          for Index := Selected.Index to Items.Count - 1 do
-            if Items[Index].Selected then
-            begin
-              PIDL_GetRelative(PFileRec(Items[Index].Data)^.PIDL, PIDLPath, PIDLRel);
-              FreePIDL(PIDLPath);
-              PIDLArray^[Count] := PIDLRel;
-              Inc(Count);
-            end;
-
-          try
-            ShellDisplayContextMenu(ParentForm.Handle, Where, iRecycleFolder, Count,
-              PidlArray^[0], False, Verb, False);
-          finally
-            for Index := 0 to Count - 1 do
-              FreePIDL(PIDLArray[Index]);
-          end;
-        finally
-          FreeMem(PIDLArray, Count);
-        end;
-      end
-        else
-      begin
-        FileList := TStringList.Create;
-        CreateFileList(False, True, FileList);
-        for Index := 0 to FileList.Count - 1 do
-          FileList[Index] := ExtractFileName(FileList[Index]);
-        ShellDisplayContextMenu(ParentForm.Handle, Where, PathName,
-          FileList, Verb, False);
-        FileList.Destroy;
+        Handled := False;
+        OnContextPopup(Self, ScreenToClient(Where), Handled);
+        if Handled then Abort;
       end;
-
-      {------------ Cut -----------}
-      if Verb = shcCut then
+      if (MarkedCount > 1) and
+         ((not Assigned(ItemFocused)) or ItemFocused.Selected) then
       begin
-        LastClipBoardOperation := cboCut;
-        {Clear items previous marked as cut:}
-        Item := GetNextItem(nil, sdAll, [isCut]);
-        while Assigned(Item) do
+        if FIsRecycleBin then
         begin
-          Item.Cut := False;
-          Item := GetNextItem(Item, sdAll, [isCut]);
-        end;
-        {Set property cut to TRUE for all selected items:}
-        Item := GetNextItem(nil, sdAll, [isSelected]);
-        while Assigned(Item) do
+          Count := 0;
+          GetMem(PIDLArray, SizeOf(PItemIDList) * SelCount);
+          try
+            FillChar(PIDLArray^, Sizeof(PItemIDList) * SelCount, #0);
+            for Index := Selected.Index to Items.Count - 1 do
+              if Items[Index].Selected then
+              begin
+                PIDL_GetRelative(PFileRec(Items[Index].Data)^.PIDL, PIDLPath, PIDLRel);
+                FreePIDL(PIDLPath);
+                PIDLArray^[Count] := PIDLRel;
+                Inc(Count);
+              end;
+
+            try
+              ShellDisplayContextMenu(ParentForm.Handle, Where, iRecycleFolder, Count,
+                PidlArray^[0], False, Verb, False);
+            finally
+              for Index := 0 to Count - 1 do
+                FreePIDL(PIDLArray[Index]);
+            end;
+          finally
+            FreeMem(PIDLArray, Count);
+          end;
+        end
+          else
         begin
-          Item.Cut := True;
-          Item := GetNextItem(Item, sdAll, [isSelected]);
+          FileList := TStringList.Create;
+          CreateFileList(False, True, FileList);
+          for Index := 0 to FileList.Count - 1 do
+            FileList[Index] := ExtractFileName(FileList[Index]);
+          ShellDisplayContextMenu(ParentForm.Handle, Where, PathName,
+            FileList, Verb, False);
+          FileList.Destroy;
         end;
+
+        {------------ Cut -----------}
+        if Verb = shcCut then
+        begin
+          LastClipBoardOperation := cboCut;
+          {Clear items previous marked as cut:}
+          Item := GetNextItem(nil, sdAll, [isCut]);
+          while Assigned(Item) do
+          begin
+            Item.Cut := False;
+            Item := GetNextItem(Item, sdAll, [isCut]);
+          end;
+          {Set property cut to TRUE for all selected items:}
+          Item := GetNextItem(nil, sdAll, [isSelected]);
+          while Assigned(Item) do
+          begin
+            Item.Cut := True;
+            Item := GetNextItem(Item, sdAll, [isSelected]);
+          end;
+        end
+          else
+        {----------- Copy -----------}
+        if Verb = shcCopy then LastClipBoardOperation := cboCopy
+          else
+        {----------- Paste ----------}
+        if Verb = shcPaste then
+            PasteFromClipBoard(ItemFullFileName(Selected))
+          else
+        if not FIsRecycleBin then Reload2;
       end
         else
-      {----------- Copy -----------}
-      if Verb = shcCopy then LastClipBoardOperation := cboCopy
-        else
-      {----------- Paste ----------}
-      if Verb = shcPaste then
-          PasteFromClipBoard(ItemFullFileName(Selected))
-        else
-      if not FIsRecycleBin then Reload2;
-    end
-      else
-    if Assigned(ItemFocused) and Assigned(ItemFocused.Data) then
-    begin
-      Verb := EmptyStr;
-      WithEdit := not FisRecycleBin and CanEdit(ItemFocused);
-      LoadEnabled := True;
-
-      if FIsRecycleBin then
+      if Assigned(ItemFocused) and Assigned(ItemFocused.Data) then
       begin
-        PIDL_GetRelative(PFileRec(ItemFocused.Data)^.PIDL, PIDLPath, PIDLRel);
-        ShellDisplayContextMenu(ParentForm.Handle, Where,
-          iRecycleFolder, 1, PIDLRel, False, Verb, False);
-        FreePIDL(PIDLRel);
-        FreePIDL(PIDLPath);
-      end
-        else
-      begin
-        ShellDisplayContextMenu(ParentForm.Handle, Where,
-          ItemFullFileName(ItemFocused), WithEdit, Verb,
-          not PFileRec(ItemFocused.Data)^.isDirectory);
+        Verb := EmptyStr;
+        WithEdit := not FisRecycleBin and CanEdit(ItemFocused);
         LoadEnabled := True;
-      end; {not FisRecycleBin}
 
-      {---------- Rename ----------}
-      if Verb = shcRename then ItemFocused.EditCaption
-        else
-      {------------ Cut -----------}
-      if Verb = shcCut then
-      begin
-        LastClipBoardOperation := cboCut;
-
-        Item := GetNextItem(nil, sdAll, [isCut]);
-        while Assigned(Item) do
+        if FIsRecycleBin then
         begin
-          Item.Cut := False;
-          Item := GetNextItem(ITem, sdAll, [isCut]);
-        end;
-        ItemFocused.Cut := True;
-      end
-        else
-      {----------- Copy -----------}
-      if Verb = shcCopy then LastClipBoardOperation := cboCopy
-        else
-      {----------- Paste ----------}
-      if Verb = shcPaste then
-      begin
-        if PFileRec(ItemFocused.Data)^.IsDirectory then
-        PasteFromClipBoard(ItemFullFileName(ItemFocused));
-      end
-        else
-      if not FIsRecycleBin then Reload2;
+          PIDL_GetRelative(PFileRec(ItemFocused.Data)^.PIDL, PIDLPath, PIDLRel);
+          ShellDisplayContextMenu(ParentForm.Handle, Where,
+            iRecycleFolder, 1, PIDLRel, False, Verb, False);
+          FreePIDL(PIDLRel);
+          FreePIDL(PIDLPath);
+        end
+          else
+        begin
+          ShellDisplayContextMenu(ParentForm.Handle, Where,
+            ItemFullFileName(ItemFocused), WithEdit, Verb,
+            not PFileRec(ItemFocused.Data)^.isDirectory);
+          LoadEnabled := True;
+        end; {not FisRecycleBin}
+
+        {---------- Rename ----------}
+        if Verb = shcRename then ItemFocused.EditCaption
+          else
+        {------------ Cut -----------}
+        if Verb = shcCut then
+        begin
+          LastClipBoardOperation := cboCut;
+
+          Item := GetNextItem(nil, sdAll, [isCut]);
+          while Assigned(Item) do
+          begin
+            Item.Cut := False;
+            Item := GetNextItem(ITem, sdAll, [isCut]);
+          end;
+          ItemFocused.Cut := True;
+        end
+          else
+        {----------- Copy -----------}
+        if Verb = shcCopy then LastClipBoardOperation := cboCopy
+          else
+        {----------- Paste ----------}
+        if Verb = shcPaste then
+        begin
+          if PFileRec(ItemFocused.Data)^.IsDirectory then
+          PasteFromClipBoard(ItemFullFileName(ItemFocused));
+        end
+          else
+        if not FIsRecycleBin then Reload2;
+      end;
+    finally
+      ChDir(DefDir);
     end;
-    ChDir(DefDir);
 
     if IsRecycleBin and (Verb <> shcCut) and (Verb <> shcProperties) and (SelCount > 0) then
     begin
@@ -2749,7 +2641,7 @@ begin
     if PFileRec(Item.Data)^.IsDirectory then
     begin
       FileName := ItemFullFileName(Item);
-      if not DirExists(FileName) then
+      if not DirectoryExists(FileName) then
       begin
         Reload2;
         if Assigned(FDriveView) and Assigned(FDriveView.Selected) then
@@ -2761,7 +2653,7 @@ begin
       else
     FileName := ResolveFileShortCut(ItemFullFileName(Item), True);
 
-    if DirExists(FileName) then
+    if DirectoryExists(FileName) then
     begin
       Path := FileName;
       Exit;
@@ -2859,7 +2751,7 @@ var
   IsDirectory: Boolean;
 begin
   Item := GetItemFromHItem(HItem);
-  IsDirectory := DirExists(ItemFullFileName(Item));
+  IsDirectory := DirectoryExists(ItemFullFileName(Item));
   NewCaption := HItem.pszText;
 
   StopWatchThread;
@@ -3143,7 +3035,7 @@ var
 begin
   if DragDropFilesEx.FileList.Count > 0 then
   begin
-    if not DirExists(TargetPath) then
+    if not DirectoryExists(TargetPath) then
     begin
       Reload(True);
       DDError(DDPathNotFoundError);
@@ -3187,7 +3079,7 @@ begin
 
               if SourcePath = '' then
               begin
-                if DirExists(TFDDListItem(DragDropFilesEx.FileList[Index]^).Name) then
+                if DirectoryExists(TFDDListItem(DragDropFilesEx.FileList[Index]^).Name) then
                 begin
                   SourcePath := TFDDListItem(DragDropFilesEx.FileList[Index]^).Name;
                   SourceIsDirectory := True;
