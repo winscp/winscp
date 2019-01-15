@@ -1145,7 +1145,7 @@ void aes_ssh2_decrypt_blk(void *handle, unsigned char *blk, int len)
     aes_decrypt_cbc(blk, len, ctx);
 }
 
-static void aes_ssh2_sdctr(void *handle, unsigned char *blk, int len)
+void aes_ssh2_sdctr(void *handle, unsigned char *blk, int len)
 {
     AESContext *ctx = (AESContext *)handle;
     aes_sdctr(blk, len, ctx);
