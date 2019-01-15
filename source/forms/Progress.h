@@ -33,7 +33,7 @@ __published:
   TPathLabel *FileLabel;
   TLabel *TargetLabel;
   TPathLabel *TargetPathLabel;
-  TProgressBar *TopProgress;
+  TProgressBar *OperationProgress;
   TPanel *TransferPanel;
   TLabel *Label3;
   TLabel *TimeElapsedLabel;
@@ -43,7 +43,7 @@ __published:
   TLabel *BytesTransferredLabel;
   TLabel *Label12;
   TLabel *CPSLabel;
-  TProgressBar *BottomProgress;
+  TProgressBar *FileProgress;
   TTimer *UpdateTimer;
   TLabel *TimeLeftLabelLabel;
   TLabel *TimeLeftLabel;
@@ -92,17 +92,17 @@ private:
   bool FDataGot;
   bool FDataReceived;
   TFileOperation FLastOperation;
+  TOperationSide FLastSide;
   bool FLastTotalSizeSet;
   bool FMinimizedByMe;
   int FUpdateCounter;
   bool FAsciiTransferChanged;
   bool FResumeStatusChanged;
   void * FShowAsModalStorage;
-  bool FDeleteToRecycleBin;
+  bool FDeleteLocalToRecycleBin;
+  bool FDeleteRemoteToRecycleBin;
   bool FReadOnly;
   unsigned long FCPSLimit;
-  TProgressBar * FOperationProgress;
-  TProgressBar * FFileProgress;
   TDateTime FStarted;
   int FSinceLastUpdate;
   bool FModalBeginHooked;
@@ -110,6 +110,9 @@ private:
   TFrameAnimation FFrameAnimation;
   typedef BiDiMap<TOnceDoneOperation, TTBCustomItem *> TOnceDoneItems;
   TOnceDoneItems FOnceDoneItems;
+  bool FAllowSkip;
+  TSynchronizeProgress * FSynchronizeProgress;
+  UnicodeString FProgressStr;
 
   void __fastcall SetOnceDoneOperation(TOnceDoneOperation value);
   TTBCustomItem * __fastcall CurrentOnceDoneItem();
@@ -131,21 +134,26 @@ protected:
   virtual void __fastcall Dispatch(void * Message);
   void __fastcall SetCancelLower(TCancelStatus ACancel);
 
-  static bool __fastcall IsIndeterminateOperation(TFileOperation Operation);
+  INTERFACE_HOOK;
 
 public:
-  static UnicodeString __fastcall ProgressStr(TFileOperationProgressType * ProgressData);
+  static UnicodeString __fastcall ProgressStr(
+    const TSynchronizeProgress * SynchronizeProgress, const TFileOperationProgressType * ProgressData);
 
-  virtual __fastcall TProgressForm(TComponent * AOwner, bool AllowMoveToQueue, bool AllowSkip);
+  virtual __fastcall TProgressForm(
+    TComponent * AOwner, bool AllowMoveToQueue, bool AllowSkip, TSynchronizeProgress * SynchronizeProgress);
   virtual __fastcall ~TProgressForm();
   void __fastcall SetProgressData(TFileOperationProgressType & AData);
   void __fastcall ClearCancel();
+  UnicodeString __fastcall ProgressStr();
   __property TCancelStatus Cancel = { read = FCancel };
   __property bool MoveToQueue = { read = FMoveToQueue };
   __property TOnceDoneOperation OnceDoneOperation = { read=GetOnceDoneOperation, write=SetOnceDoneOperation };
   __property bool AllowMinimize = { read=GetAllowMinimize, write=SetAllowMinimize };
-  __property bool DeleteToRecycleBin = { read=FDeleteToRecycleBin, write=FDeleteToRecycleBin };
+  __property bool DeleteLocalToRecycleBin = { read=FDeleteLocalToRecycleBin, write=FDeleteLocalToRecycleBin };
+  __property bool DeleteRemoteToRecycleBin = { read=FDeleteRemoteToRecycleBin, write=FDeleteRemoteToRecycleBin };
   __property bool ReadOnly = { read=FReadOnly, write=SetReadOnly };
+  __property TSynchronizeProgress * SynchronizeProgress = { read = FSynchronizeProgress };
 };
 //----------------------------------------------------------------------------
 #endif

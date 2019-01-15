@@ -1172,7 +1172,7 @@ void aes_ssh2_decrypt_blk(void *handle, unsigned char *blk, int len)
     aes_decrypt_cbc(blk, len, ctx);
 }
 
-static void aes_ssh2_sdctr(void *handle, unsigned char *blk, int len)
+void aes_ssh2_sdctr(void *handle, unsigned char *blk, int len)
 {
     AESContext *ctx = (AESContext *)handle;
     aes_sdctr(blk, len, ctx);
@@ -1294,6 +1294,11 @@ void call_aes_encrypt(void * ctx, unsigned int * block)
 void call_aes_decrypt(void * ctx, unsigned int * block)
 {
   aes_decrypt((AESContext *)ctx, block);
+}
+
+void call_aes_sdctr(unsigned char *blk, int len, void *ctx)
+{
+  aes_sdctr(blk, len, (AESContext *)ctx);
 }
 
 #endif

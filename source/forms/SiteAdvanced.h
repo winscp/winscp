@@ -15,12 +15,12 @@
 #include <Vcl.Mask.hpp>
 #include <Vcl.Menus.hpp>
 #include <Vcl.StdCtrls.hpp>
+#include "PngImageList.hpp"
 //----------------------------------------------------------------------------
 #include <Configuration.h>
 #include <SessionData.h>
 #include <PasTools.hpp>
-
-#include "PngImageList.hpp"
+#include <GUITools.h>
 //----------------------------------------------------------------------------
 class TSiteAdvancedDialog : public TForm
 {
@@ -257,6 +257,19 @@ __published:
   TImageList *ColorImageList120;
   TImageList *ColorImageList144;
   TImageList *ColorImageList192;
+  TButton *PrivateKeyToolsButton;
+  TPopupMenu *PrivateKeyMenu;
+  TMenuItem *PrivateKeyGenerateItem;
+  TMenuItem *PrivateKeyUploadItem;
+  TButton *PrivateKeyViewButton;
+  TTabSheet *EncryptionSheet;
+  TCheckBox *EncryptFilesCheck;
+  TGroupBox *EncryptFilesGroup;
+  TLabel *Label13;
+  TPasswordEdit *EncryptKeyPasswordEdit;
+  TCheckBox *ShowEncryptionKeyCheck;
+  TButton *GenerateKeyButton;
+  TEdit *EncryptKeyVisibleEdit;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall PageControlChange(TObject *Sender);
@@ -289,6 +302,13 @@ __published:
   void __fastcall NoteMemoKeyDown(TObject *Sender, WORD &Key, TShiftState Shift);
   void __fastcall TlsCertificateFileEditAfterDialog(TObject *Sender, UnicodeString &Name,
           bool &Action);
+  void __fastcall PrivateKeyUploadItemClick(TObject *Sender);
+  void __fastcall PrivateKeyGenerateItemClick(TObject *Sender);
+  void __fastcall PrivateKeyToolsButtonClick(TObject *Sender);
+  void __fastcall PrivateKeyViewButtonClick(TObject *Sender);
+  void __fastcall ShowEncryptionKeyCheckClick(TObject *Sender);
+  void __fastcall GenerateKeyButtonClick(TObject *Sender);
+  void __fastcall EncryptKeyEditExit(TObject *Sender);
 
 
 public:
@@ -312,6 +332,7 @@ private:
   TSessionData * FSessionData;
   TColor FColor;
   std::unique_ptr<TPopupMenu> FColorPopupMenu;
+  std::unique_ptr<TObjectList> FPrivateKeyMonitors;
 
   void __fastcall LoadSession();
   void __fastcall UpdateControls();
@@ -326,11 +347,14 @@ private:
   int __fastcall GetFtpProxyLogonType();
   void __fastcall UpdateNavigationTree();
   TSshProt __fastcall GetSshProt();
-  void __fastcall SetSessionColor(TColor Color);
   void __fastcall SessionColorChange(TColor Color);
   TTlsVersion __fastcall IndexToTlsVersion(int Index);
   int __fastcall TlsVersionToIndex(TTlsVersion TlsVersion);
   bool __fastcall IsNeon(TFSProtocol FSProtocol);
+  void __fastcall PrivateKeyCreatedOrModified(TObject * Sender, const UnicodeString FileName);
+  TCustomEdit * __fastcall GetEncryptKeyEdit(bool AShow = true);
+
+  INTERFACE_HOOK;
 };
 //----------------------------------------------------------------------------
 #endif

@@ -17,6 +17,8 @@ void ChangeKeyComment(TPrivateKey * PrivateKey, const UnicodeString & Comment);
 void SaveKey(TKeyType KeyType, const UnicodeString & FileName,
   const UnicodeString & Passphrase, TPrivateKey * PrivateKey);
 void FreeKey(TPrivateKey * PrivateKey);
+UnicodeString GetPublicKeyLine(const UnicodeString & FileName, UnicodeString & Comment);
+extern const UnicodeString PuttyKeyExt;
 //---------------------------------------------------------------------------
 bool __fastcall HasGSSAPI(UnicodeString CustomPath);
 //---------------------------------------------------------------------------
@@ -35,5 +37,12 @@ void __fastcall DllHijackingProtection();
 UnicodeString __fastcall ParseOpenSshPubLine(const UnicodeString & Line, const struct ssh_signkey *& Algorithm);
 //---------------------------------------------------------------------------
 UnicodeString __fastcall GetKeyTypeHuman(const UnicodeString & KeyType);
+//---------------------------------------------------------------------------
+bool IsOpenSSH(const UnicodeString & SshImplementation);
+//---------------------------------------------------------------------------
+TStrings * SshCipherList();
+TStrings * SshKexList();
+TStrings * SshHostKeyList();
+TStrings * SshMacList();
 //---------------------------------------------------------------------------
 #endif

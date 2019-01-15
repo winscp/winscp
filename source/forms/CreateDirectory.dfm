@@ -25,6 +25,7 @@ object CreateDirectoryDialog: TCreateDirectoryDialog
     Width = 85
     Height = 13
     Caption = 'New &folder name:'
+    FocusControl = DirectoryEdit
   end
   object DirectoryEdit: TEdit
     Left = 8
@@ -56,7 +57,7 @@ object CreateDirectoryDialog: TCreateDirectoryDialog
       Anchors = [akLeft, akTop, akRight, akBottom]
       Caption = 'Attributes'
       TabOrder = 0
-      inline RightsFrame: TRightsExtFrame
+      inline RightsFrame: TRightsFrame
         Left = 7
         Top = 36
         Width = 239

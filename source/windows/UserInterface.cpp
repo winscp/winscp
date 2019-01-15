@@ -52,7 +52,7 @@ TConfiguration * __fastcall CreateConfiguration()
   if (CheckSafe(Params))
   {
     std::unique_ptr<TStrings> RawConfig(new TStringList());
-    if (Params->FindSwitch(L"rawconfig", RawConfig.get()))
+    if (Params->FindSwitch(RAW_CONFIG_SWITCH, RawConfig.get()))
     {
       WinConfiguration->OptionsStorage = RawConfig.get();
     }
@@ -376,18 +376,18 @@ void __fastcall ConfigureInterface()
     AdjustLocaleFlag(LoadStr(BIDI_MODE), WinConfiguration->BidiModeOverride, false, bdRightToLeft, bdLeftToRight);
   Application->BiDiMode = static_cast<TBiDiMode>(BidiModeFlag);
   SetTBXSysParam(TSP_XPVISUALSTYLE, XPVS_AUTOMATIC);
+  if (WinConfiguration != NULL)
+  {
+    UnicodeString Theme = WinConfiguration->UseDarkTheme() ? L"DarkOfficeXP" : L"OfficeXP";
+    if (!SameText(TBXCurrentTheme(), Theme))
+    {
+      TBXSetTheme(Theme);
+    }
+  }
   // Has any effect on Wine only
   // (otherwise initial UserDocumentDirectory is equivalent to GetPersonalFolder())
   UserDocumentDirectory = GetPersonalFolder();
 }
-//---------------------------------------------------------------------------
-#ifdef _DEBUG
-void __fastcall ForceTracing()
-{
-  Tracing::ForceTraceOn();
-  SetTraceFile((HANDLE)Tracing::GetTraceFile());
-}
-#endif
 //---------------------------------------------------------------------------
 void __fastcall DoAboutDialog(TConfiguration *Configuration)
 {
@@ -415,20 +415,21 @@ int __fastcall GetToolbarLayoutPixelsPerInch(TStrings * Storage, TControl * Cont
   return Result;
 }
 //---------------------------------------------------------------------
+UnicodeString __fastcall GetToolbarKey(const UnicodeString & ToolbarName)
+{
+  UnicodeString Result = ToolbarName;
+  Result = RemoveSuffix(Result, L"Toolbar");
+  return Result;
+}
+//---------------------------------------------------------------------
 static inline void __fastcall GetToolbarKey(const UnicodeString & ToolbarName,
   const UnicodeString & Value, UnicodeString & ToolbarKey)
 {
-  int ToolbarNameLen;
-  if ((ToolbarName.Length() > 7) &&
-      (ToolbarName.SubString(ToolbarName.Length() - 7 + 1, 7) == L"Toolbar"))
+  ToolbarKey = GetToolbarKey(ToolbarName);
+  if (!Value.IsEmpty())
   {
-    ToolbarNameLen = ToolbarName.Length() - 7;
+    ToolbarKey += L"_" + Value;
   }
-  else
-  {
-    ToolbarNameLen = ToolbarName.Length();
-  }
-  ToolbarKey = ToolbarName.SubString(1, ToolbarNameLen) + L"_" + Value;
 }
 //---------------------------------------------------------------------------
 static int __fastcall ToolbarReadInt(const UnicodeString ToolbarName,
@@ -499,6 +500,7 @@ static UnicodeString __fastcall ToolbarReadString(const UnicodeString ToolbarNam
 static void __fastcall ToolbarWriteInt(const UnicodeString ToolbarName,
   const UnicodeString Value, const int Data, const void * ExtraData)
 {
+  DebugFail();
   if (Value != L"Rev")
   {
     TStrings * Storage = static_cast<TStrings *>(const_cast<void*>(ExtraData));
@@ -512,6 +514,7 @@ static void __fastcall ToolbarWriteInt(const UnicodeString ToolbarName,
 static void __fastcall ToolbarWriteString(const UnicodeString ToolbarName,
   const UnicodeString Value, const UnicodeString Data, const void * ExtraData)
 {
+  DebugAssert(Value.IsEmpty());
   TStrings * Storage = static_cast<TStrings *>(const_cast<void*>(ExtraData));
   UnicodeString ToolbarKey;
   GetToolbarKey(ToolbarName, Value, ToolbarKey);
@@ -747,12 +750,12 @@ static void __fastcall SessionColorSetGetColorInfo(
   GetStandardSessionColorInfo(Col, Row, Color, Name);
 }
 //---------------------------------------------------------------------------
-static TColor __fastcall RestoreColor(UnicodeString CStr)
+TColor __fastcall RestoreColor(const UnicodeString & CStr)
 {
   return TColor(StrToInt(UnicodeString(L"$") + CStr));
 }
 //---------------------------------------------------------------------------
-static UnicodeString __fastcall StoreColor(TColor Color)
+UnicodeString __fastcall StoreColor(TColor Color)
 {
   return IntToHex(Color, 6);
 }
@@ -762,22 +765,30 @@ static UnicodeString __fastcall ExtractColorStr(UnicodeString & Colors)
   return CutToChar(Colors, ColorSeparator, true);
 }
 //---------------------------------------------------------------------------
-static bool __fastcall IsStandardColor(TColor Color)
+static bool __fastcall IsStandardColor(bool SessionColors, TColor Color)
 {
-  for (int Row = 0; Row < StandardColorRows; Row++)
+  if (SessionColors)
   {
-    for (int Col = 0; Col < ColorCols; Col++)
+    for (int Row = 0; Row < StandardColorRows; Row++)
     {
-      TColor StandardColor;
-      UnicodeString Name; // unused
-      GetStandardSessionColorInfo(Col, Row, StandardColor, Name);
-      if (StandardColor == Color)
+      for (int Col = 0; Col < ColorCols; Col++)
       {
-        return true;
+        TColor StandardColor;
+        UnicodeString Name; // unused
+        GetStandardSessionColorInfo(Col, Row, StandardColor, Name);
+        if (StandardColor == Color)
+        {
+          return true;
+        }
       }
     }
+    return false;
   }
-  return false;
+  else
+  {
+    std::unique_ptr<TTBXColorPalette> DefaultColorPalette(new TTBXColorPalette(NULL));
+    return (DefaultColorPalette->FindCell(Color).X >= 0);
+  }
 }
 //---------------------------------------------------------------------------
 class TColorChangeData : public TComponent
@@ -816,6 +827,23 @@ TColorChangeData * __fastcall TColorChangeData::Retrieve(TObject * Object)
   return DebugNotNull(dynamic_cast<TColorChangeData *>(ColorChangeDataComponent));
 }
 //---------------------------------------------------------------------------
+static void SaveCustomColors(bool SessionColors, const UnicodeString & Colors)
+{
+  if (SessionColors)
+  {
+    CustomWinConfiguration->SessionColors = Colors;
+  }
+  else
+  {
+    CustomWinConfiguration->FontColors = Colors;
+  }
+}
+//---------------------------------------------------------------------------
+static UnicodeString LoadCustomColors(bool SessionColors)
+{
+  return SessionColors ? CustomWinConfiguration->SessionColors : CustomWinConfiguration->FontColors;
+}
+//---------------------------------------------------------------------------
 void __fastcall TColorChangeData::ColorChange(TColor Color)
 {
   // Color palette returns clNone when no color is selected,
@@ -826,21 +854,20 @@ void __fastcall TColorChangeData::ColorChange(TColor Color)
     Color = TColor(0);
   }
 
-  if (SessionColors &&
-      (Color != TColor(0)) &&
-      !IsStandardColor(Color))
+  if ((Color != TColor(0)) &&
+      !IsStandardColor(SessionColors, Color))
   {
-    UnicodeString SessionColors = StoreColor(Color);
-    UnicodeString Temp = CustomWinConfiguration->SessionColors;
+    UnicodeString Colors = StoreColor(Color);
+    UnicodeString Temp = LoadCustomColors(SessionColors);
     while (!Temp.IsEmpty())
     {
       UnicodeString CStr = ExtractColorStr(Temp);
       if (RestoreColor(CStr) != Color)
       {
-        SessionColors += UnicodeString(ColorSeparator) + CStr;
+        Colors += UnicodeString(ColorSeparator) + CStr;
       }
     }
-    CustomWinConfiguration->SessionColors = SessionColors;
+    SaveCustomColors(SessionColors, Colors);
   }
 
   FOnColorChange(Color);
@@ -870,52 +897,60 @@ static void __fastcall ColorPickClick(void * /*Data*/, TObject * Sender)
   Dialog->Options = Dialog->Options << cdFullOpen << cdAnyColor;
   Dialog->Color = (ColorChangeData->Color != 0 ? ColorChangeData->Color : clSkyBlue);
 
-  if (ColorChangeData->SessionColors)
+  UnicodeString Temp = LoadCustomColors(ColorChangeData->SessionColors);
+  int StandardColorIndex = 0;
+  for (int Index = 0; Index < MaxCustomColors; Index++)
   {
-    UnicodeString Temp = CustomWinConfiguration->SessionColors;
-    int StandardColorIndex = 0;
-    int CustomColors = Min(MaxCustomColors, StandardColorCount);
-    for (int Index = 0; Index < CustomColors; Index++)
+    TColor CustomColor;
+    if (!Temp.IsEmpty())
     {
-      TColor CustomColor;
-      if (!Temp.IsEmpty())
+      CustomColor = RestoreColor(ExtractColorStr(Temp));
+    }
+    else
+    {
+      if (ColorChangeData->SessionColors)
       {
-        CustomColor = RestoreColor(ExtractColorStr(Temp));
+        if (StandardColorIndex < StandardColorCount)
+        {
+          UnicodeString Name; // not used
+          GetStandardSessionColorInfo(
+            StandardColorIndex % ColorCols, StandardColorIndex / ColorCols,
+            CustomColor, Name);
+          StandardColorIndex++;
+        }
+        else
+        {
+          break;
+        }
       }
       else
       {
-        UnicodeString Name; // not used
-        DebugAssert(StandardColorIndex < StandardColorCount);
-        GetStandardSessionColorInfo(
-          StandardColorIndex % ColorCols, StandardColorIndex / ColorCols,
-          CustomColor, Name);
-        StandardColorIndex++;
+        // no standard font colors
+        break;
       }
-      Dialog->CustomColors->Values[CustomColorName(Index)] = StoreColor(CustomColor);
     }
+    Dialog->CustomColors->Values[CustomColorName(Index)] = StoreColor(CustomColor);
   }
 
   if (Dialog->Execute())
   {
-    if (ColorChangeData->SessionColors)
+    // so that we do not have to try to preserve the excess colors
+    DebugAssert(UserColorCount <= MaxCustomColors);
+    UnicodeString Colors;
+    for (int Index = 0; Index < MaxCustomColors; Index++)
     {
-      // so that we do not have to try to preserve the excess colors
-      DebugAssert(UserColorCount <= MaxCustomColors);
-      UnicodeString SessionColors;
-      for (int Index = 0; Index < MaxCustomColors; Index++)
+      UnicodeString CStr = Dialog->CustomColors->Values[CustomColorName(Index)];
+      if (!CStr.IsEmpty())
       {
-        UnicodeString CStr = Dialog->CustomColors->Values[CustomColorName(Index)];
-        if (!CStr.IsEmpty())
+        TColor CustomColor = RestoreColor(CStr);
+        if ((CustomColor != static_cast<TColor>(-1)) &&
+            !IsStandardColor(ColorChangeData->SessionColors, CustomColor))
         {
-          TColor CustomColor = RestoreColor(CStr);
-          if (!IsStandardColor(CustomColor))
-          {
-            AddToList(SessionColors, StoreColor(CustomColor), ColorSeparator);
-          }
+          AddToList(Colors, StoreColor(CustomColor), ColorSeparator);
         }
       }
-      CustomWinConfiguration->SessionColors = SessionColors;
     }
+    SaveCustomColors(ColorChangeData->SessionColors, Colors);
 
     // call color change only after copying custom colors back,
     // so that it can add selected color to the user list
@@ -931,11 +966,12 @@ TPopupMenu * __fastcall CreateSessionColorPopupMenu(TColor Color,
   return PopupMenu.release();
 }
 //---------------------------------------------------------------------------
-static void __fastcall UserSessionColorSetGetColorInfo(
+static void __fastcall UserCustomColorSetGetColorInfo(
   void * /*Data*/, TTBXCustomColorSet * Sender, int Col, int Row, TColor & Color, UnicodeString & /*Name*/)
 {
   int Index = (Row * Sender->ColCount) + Col;
-  UnicodeString Temp = CustomWinConfiguration->SessionColors;
+  bool SessionColors = static_cast<bool>(Sender->Tag);
+  UnicodeString Temp = LoadCustomColors(SessionColors);
   while ((Index > 0) && !Temp.IsEmpty())
   {
     ExtractColorStr(Temp);
@@ -968,6 +1004,7 @@ void __fastcall CreateColorPalette(TTBCustomItem * Owner, TColor Color, int Rows
     ColorSet->ColCount = ColorCols;
     ColorSet->RowCount = Rows;
     ColorSet->OnGetColorInfo = OnGetColorInfo;
+    ColorSet->Tag = static_cast<int>(SessionColors);
   }
 
   // clNone = no selection, see also ColorChange
@@ -1003,27 +1040,27 @@ static void __fastcall CreateColorMenu(TComponent * AOwner, TColor Color,
 
     Owner->Add(new TTBXSeparatorItem(Owner));
 
+    int CustomColorCount = 0;
+    UnicodeString Temp = LoadCustomColors(SessionColors);
+    while (!Temp.IsEmpty())
+    {
+      CustomColorCount++;
+      ExtractColorStr(Temp);
+    }
+
+    if (CustomColorCount > 0)
+    {
+      CustomColorCount = Min(CustomColorCount, UserColorCount);
+      int RowCount = ((CustomColorCount + ColorCols - 1) / ColorCols);
+      DebugAssert(RowCount <= UserColorRows);
+
+      CreateColorPalette(Owner, Color, RowCount,
+        MakeMethod<TCSGetColorInfo>(NULL, UserCustomColorSetGetColorInfo),
+        OnColorChange, SessionColors);
+    }
+
     if (SessionColors)
     {
-      int SessionColorCount = 0;
-      UnicodeString Temp = CustomWinConfiguration->SessionColors;
-      while (!Temp.IsEmpty())
-      {
-        SessionColorCount++;
-        ExtractColorStr(Temp);
-      }
-
-      if (SessionColorCount > 0)
-      {
-        SessionColorCount = Min(SessionColorCount, UserColorCount);
-        int RowCount = ((SessionColorCount + ColorCols - 1) / ColorCols);
-        DebugAssert(RowCount <= UserColorRows);
-
-        CreateColorPalette(Owner, Color, RowCount,
-          MakeMethod<TCSGetColorInfo>(NULL, UserSessionColorSetGetColorInfo),
-          OnColorChange, SessionColors);
-      }
-
       CreateColorPalette(Owner, Color, StandardColorRows,
         MakeMethod<TCSGetColorInfo>(NULL, SessionColorSetGetColorInfo),
         OnColorChange, SessionColors);

@@ -23,7 +23,7 @@
 __fastcall TCopyParamsFrame::TCopyParamsFrame(TComponent* Owner)
         : TFrame(Owner)
 {
-  FRightsFrame = new TRightsExtFrame(this);
+  FRightsFrame = new TRightsFrame(this);
   FRightsFrame->TabStop = false;
   FRightsFrame->Parent = this;
   FRightsFrame->TabOrder = 1000;
@@ -99,6 +99,9 @@ void __fastcall TCopyParamsFrame::SetParams(TCopyParamType value)
   SpeedCombo->Text = SetSpeedLimit(value.CPSLimit);
 
   NewerOnlyCheck->Checked = value.NewerOnly;
+  EncryptNewFilesCheck->Checked = value.EncryptNewFiles;
+  ExcludeHiddenFilesCheck->Checked = value.ExcludeHiddenFiles;
+  ExcludeEmptyDirectoriesCheck->Checked = value.ExcludeEmptyDirectories;
 
   *FParams = value;
 
@@ -153,6 +156,9 @@ TCopyParamType __fastcall TCopyParamsFrame::GetParams()
   Result.CPSLimit = GetSpeedLimit(SpeedCombo->Text);
 
   Result.NewerOnly = NewerOnlyCheck->Checked;
+  Result.EncryptNewFiles = EncryptNewFilesCheck->Checked;
+  Result.ExcludeHiddenFiles = ExcludeHiddenFilesCheck->Checked;
+  Result.ExcludeEmptyDirectories = ExcludeEmptyDirectoriesCheck->Checked;
 
   return Result;
 }
@@ -204,6 +210,8 @@ void __fastcall TCopyParamsFrame::UpdateControls()
     FLAGCLEAR(CopyParamAttrs, cpaNoPreserveTimeDirs) &&
     FLAGCLEAR(CopyParamAttrs, cpaIncludeMaskOnly) && Enabled &&
     PreserveTimeCheck->Checked);
+  EnableControl(CommonCalculateSizeCheck,
+    FLAGCLEAR(CopyParamAttrs, cpaNoCalculateSize) && FLAGCLEAR(CopyParamAttrs, cpaIncludeMaskOnly) && Enabled);
   EnableControl(ChangeCaseGroup, FLAGCLEAR(CopyParamAttrs, cpaIncludeMaskOnly) && Enabled);
   EnableControl(IgnorePermErrorsCheck,
     ((PreserveRightsCheck->Enabled && PreserveRightsCheck->Checked) ||
@@ -212,6 +220,10 @@ void __fastcall TCopyParamsFrame::UpdateControls()
     FLAGCLEAR(CopyParamAttrs, cpaIncludeMaskOnly));
   EnableControl(NewerOnlyCheck, FLAGCLEAR(CopyParamAttrs, cpaIncludeMaskOnly) &&
     FLAGCLEAR(CopyParamAttrs, cpaNoNewerOnly) && Enabled);
+  EnableControl(EncryptNewFilesCheck, FLAGCLEAR(CopyParamAttrs, cpaIncludeMaskOnly) &&
+    FLAGCLEAR(CopyParamAttrs, cpaNoEncryptNewFiles) && Enabled);
+  EnableControl(ExcludeHiddenFilesCheck, IncludeFileMaskCombo->Enabled);
+  EnableControl(ExcludeEmptyDirectoriesCheck, FLAGCLEAR(CopyParamAttrs, cpaIncludeMaskOnly));
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamsFrame::ControlChange(TObject * /*Sender*/)

@@ -2,9 +2,10 @@
 #include <vcl.h>
 #pragma hdrstop
 
+#include <Common.h>
+
 #include "NonVisual.h"
 
-#include <Common.h>
 #include <CoreMain.h>
 #include <TextsWin.h>
 #include <Tools.h>
@@ -81,12 +82,41 @@ TNonVisualDataModule *NonVisualDataModule;
 #define EXESHCOL(SIDE, PREFIX, COL) \
   EXE(ShowHide ## SIDE ## COL ## ColumnAction, \
     COLPROPS(SIDE)->Visible[PREFIX ## COL] = !COLPROPS(SIDE)->Visible[PREFIX ## COL])
+
+#define BAND_COMPONENTS \
+  EMIT_BAND_COMPONENT(ExplorerMenuBand) \
+  EMIT_BAND_COMPONENT(ExplorerAddressBand) \
+  EMIT_BAND_COMPONENT(ExplorerToolbarBand) \
+  EMIT_BAND_COMPONENT(ExplorerSelectionBand) \
+  EMIT_BAND_COMPONENT(ExplorerSessionBand) \
+  EMIT_BAND_COMPONENT(ExplorerPreferencesBand) \
+  EMIT_BAND_COMPONENT(ExplorerSortBand) \
+  EMIT_BAND_COMPONENT(ExplorerUpdatesBand) \
+  EMIT_BAND_COMPONENT(ExplorerTransferBand) \
+  EMIT_BAND_COMPONENT(ExplorerCustomCommandsBand) \
+  EMIT_BAND_COMPONENT(CommanderMenuBand) \
+  EMIT_BAND_COMPONENT(CommanderSessionBand) \
+  EMIT_BAND_COMPONENT(CommanderPreferencesBand) \
+  EMIT_BAND_COMPONENT(CommanderSortBand) \
+  EMIT_BAND_COMPONENT(CommanderCommandsBand) \
+  EMIT_BAND_COMPONENT(CommanderUpdatesBand) \
+  EMIT_BAND_COMPONENT(CommanderTransferBand) \
+  EMIT_BAND_COMPONENT(CommanderCustomCommandsBand) \
+  EMIT_BAND_COMPONENT(CommanderLocalHistoryBand) \
+  EMIT_BAND_COMPONENT(CommanderLocalNavigationBand) \
+  EMIT_BAND_COMPONENT(CommanderLocalFileBand) \
+  EMIT_BAND_COMPONENT(CommanderLocalSelectionBand) \
+  EMIT_BAND_COMPONENT(CommanderRemoteHistoryBand) \
+  EMIT_BAND_COMPONENT(CommanderRemoteNavigationBand) \
+  EMIT_BAND_COMPONENT(CommanderRemoteFileBand) \
+  EMIT_BAND_COMPONENT(CommanderRemoteSelectionBand)
 //---------------------------------------------------------------------------
 __fastcall TNonVisualDataModule::TNonVisualDataModule(TComponent* Owner)
         : TDataModule(Owner)
 {
   FListColumn = NULL;
   FSessionIdleTimerExecuting = false;
+  FCustomizedToolbar = NULL;
   FBusy = 0;
 
   QueueSpeedComboBoxItem(QueuePopupSpeedComboBoxItem);
@@ -147,6 +177,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(CurrentDeleteAction, EnabledSelectedOperation)
   UPD(CurrentDeleteAlternativeAction, EnabledSelectedOperation)
   UPD(CurrentPropertiesAction, EnabledSelectedOperation)
+  UPD(CurrentCopyAction, EnabledSelectedOperation)
   UPD(RemoteMoveToAction, EnabledSelectedOperation &&
     (DirView(osRemote) == DirView(osCurrent)) &&
     ScpExplorer->Terminal->IsCapable[fcRemoteMove])
@@ -166,7 +197,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
     ScpExplorer->Terminal->IsCapable[fcLocking])
   // local selected operation
   UPD(LocalCopyAction, HasTerminal && EnabledLocalSelectedOperation)
-  UPD(LocalCopyQueueAction, HasTerminal && EnabledLocalSelectedOperation)
+  UPD(LocalCopyQueueAction, HasTerminal && EnabledLocalSelectedOperation && ScpExplorer->Terminal->IsCapable[fsBackgroundTransfers])
   UPD(LocalCopyNonQueueAction, HasTerminal && EnabledLocalSelectedOperation)
   UPD(LocalRenameAction, EnabledLocalSelectedOperation)
   UPD(LocalEditAction, EnabledLocalSelectedFileOperation && !WinConfiguration->DisableOpenEdit)
@@ -178,12 +209,12 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(LocalNewFileAction, !WinConfiguration->DisableOpenEdit)
   // local focused operation
   UPD(LocalCopyFocusedAction, HasTerminal && EnabledLocalFocusedOperation)
-  UPD(LocalCopyFocusedQueueAction, HasTerminal && EnabledLocalFocusedOperation)
+  UPD(LocalCopyFocusedQueueAction, HasTerminal && EnabledLocalFocusedOperation && ScpExplorer->Terminal->IsCapable[fsBackgroundTransfers])
   UPD(LocalCopyFocusedNonQueueAction, HasTerminal && EnabledLocalFocusedOperation)
   UPD(LocalMoveFocusedAction, HasTerminal && EnabledLocalFocusedOperation)
   // remote selected operation
   UPD(RemoteCopyAction, EnabledRemoteSelectedOperation)
-  UPD(RemoteCopyQueueAction, EnabledRemoteSelectedOperation)
+  UPD(RemoteCopyQueueAction, EnabledRemoteSelectedOperation && ScpExplorer->Terminal->IsCapable[fsBackgroundTransfers])
   UPD(RemoteCopyNonQueueAction, EnabledRemoteSelectedOperation)
   UPD(RemoteRenameAction, EnabledRemoteSelectedOperation &&
     ScpExplorer->Terminal->IsCapable[fcRename])
@@ -196,7 +227,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(RemoteAddEditLinkAction2, ScpExplorer->CanAddEditLink(osRemote))
   // remote focused operation
   UPD(RemoteCopyFocusedAction, EnabledRemoteFocusedOperation)
-  UPD(RemoteCopyFocusedQueueAction, EnabledRemoteFocusedOperation)
+  UPD(RemoteCopyFocusedQueueAction, EnabledRemoteFocusedOperation && ScpExplorer->Terminal->IsCapable[fsBackgroundTransfers])
   UPD(RemoteCopyFocusedNonQueueAction, EnabledRemoteFocusedOperation)
   UPD(RemoteMoveFocusedAction, EnabledRemoteFocusedOperation)
   UPD(RemoteMoveToFocusedAction, EnabledFocusedOperation &&
@@ -284,32 +315,9 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPDCOMP(CommandLinePanel)
   UPDCOMP(RemoteTree)
   UPDCOMP(LocalTree)
-  UPDCOMP(ExplorerMenuBand)
-  UPDCOMP(ExplorerAddressBand)
-  UPDCOMP(ExplorerToolbarBand)
-  UPDCOMP(ExplorerSelectionBand)
-  UPDCOMP(ExplorerSessionBand)
-  UPDCOMP(ExplorerPreferencesBand)
-  UPDCOMP(ExplorerSortBand)
-  UPDCOMP(ExplorerUpdatesBand)
-  UPDCOMP(ExplorerTransferBand)
-  UPDCOMP(ExplorerCustomCommandsBand)
-  UPDCOMP(CommanderMenuBand)
-  UPDCOMP(CommanderSessionBand)
-  UPDCOMP(CommanderPreferencesBand)
-  UPDCOMP(CommanderSortBand)
-  UPDCOMP(CommanderCommandsBand)
-  UPDCOMP(CommanderUpdatesBand)
-  UPDCOMP(CommanderTransferBand)
-  UPDCOMP(CommanderCustomCommandsBand)
-  UPDCOMP(CommanderLocalHistoryBand)
-  UPDCOMP(CommanderLocalNavigationBand)
-  UPDCOMP(CommanderLocalFileBand)
-  UPDCOMP(CommanderLocalSelectionBand)
-  UPDCOMP(CommanderRemoteHistoryBand)
-  UPDCOMP(CommanderRemoteNavigationBand)
-  UPDCOMP(CommanderRemoteFileBand)
-  UPDCOMP(CommanderRemoteSelectionBand)
+  #define EMIT_BAND_COMPONENT(COMP) UPDCOMP(COMP)
+  BAND_COMPONENTS
+  #undef EMIT_BAND_COMPONENT
 
   UPD(GoToCommandLineAction, true)
   UPD(GoToTreeAction, true)
@@ -325,6 +333,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
     AutoReadDirectoryAfterOpAction->Checked = Configuration->AutoReadDirectoryAfterOp, )
   UPD(PreferencesAction, true)
   UPD(PresetsPreferencesAction, true)
+  UPD(FileColorsPreferencesAction, true)
   UPDEX(LockToolbarsAction, true,
     LockToolbarsAction->Checked = WinConfiguration->LockToolbars, )
   UPDEX(SelectiveToolbarTextAction, true,
@@ -332,6 +341,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPDCOMP(CustomCommandsBand)
   UPD(ColorMenuAction, HasTerminal)
   UPD(GoToAddressAction, true)
+  UPD(CustomizeToolbarAction, IsToolbarCustomizable())
 
   // SORT
   UPDSORTA(Local)
@@ -389,6 +399,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(NewSessionAction, true)
   UPD(SiteManagerAction, true)
   UPD(DuplicateSessionAction, HasTerminal)
+  UPD(RenameSessionAction, HasTerminal)
   UPD(CloseSessionAction, HasTerminal)
   UPD(SavedSessionsAction2, true)
   UPD(WorkspacesAction, StoredSessions->HasAnyWorkspace())
@@ -410,6 +421,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(NewFileAction, DirViewEnabled(osCurrent) && !WinConfiguration->DisableOpenEdit)
   UPD(EditorListCustomizeAction, true)
   UPD(ChangePasswordAction, ScpExplorer->CanChangePassword())
+  UPD(PrivateKeyUploadAction, ScpExplorer->CanPrivateKeyUpload())
 
   // CUSTOM COMMANDS
   UPD(CustomCommandsFileAction, true)
@@ -507,6 +519,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(CurrentDeleteAction, ScpExplorer->ExecuteFileOperationCommand(foDelete, osCurrent, false))
     EXE(CurrentDeleteAlternativeAction, ScpExplorer->ExecuteFileOperationCommand(foDelete, osCurrent, false, false, (void*)true))
     EXE(CurrentPropertiesAction, ScpExplorer->ExecuteFileOperationCommand(foSetProperties, osCurrent, false))
+    EXE(CurrentCopyAction, ScpExplorer->CopyFilesToClipboard(osCurrent))
     EXE(FileListToCommandLineAction, ScpExplorer->PanelExport(osCurrent, peFileList, pedCommandLine))
     EXE(FileListToClipboardAction, ScpExplorer->PanelExport(osCurrent, peFileList, pedClipboard))
     EXE(FullFileListToClipboardAction, ScpExplorer->PanelExport(osCurrent, peFullFileList, pedClipboard))
@@ -593,7 +606,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
       EXE(SIDE ## ParentDirAction, DirView(os ## SIDE)->ExecuteParentDirectory()) \
       EXE(SIDE ## RootDirAction, DirView(os ## SIDE)->ExecuteRootDirectory()) \
       EXE(SIDE ## HomeDirAction, ScpExplorer->HomeDirectory(os ## SIDE)) \
-      EXE(SIDE ## RefreshAction, DirView(os ## SIDE)->ReloadDirectory()) \
+      EXE(SIDE ## RefreshAction, ScpExplorer->ReloadDirectory(os ## SIDE)) \
       EXE(SIDE ## OpenDirAction, ScpExplorer->OpenDirectory(os ## SIDE)) \
       EXE(SIDE ## ChangePathAction, ScpExplorer->ChangePath(os ## SIDE)) \
       EXE(SIDE ## AddBookmarkAction, ScpExplorer->AddBookmark(os ## SIDE)) \
@@ -622,32 +635,9 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXECOMP(ToolBar2)
     EXECOMP(LocalStatusBar)
     EXECOMP(RemoteStatusBar)
-    EXECOMP(ExplorerMenuBand)
-    EXECOMP(ExplorerAddressBand)
-    EXECOMP(ExplorerToolbarBand)
-    EXECOMP(ExplorerSelectionBand)
-    EXECOMP(ExplorerSessionBand)
-    EXECOMP(ExplorerPreferencesBand)
-    EXECOMP(ExplorerSortBand)
-    EXECOMP(ExplorerUpdatesBand)
-    EXECOMP(ExplorerTransferBand)
-    EXECOMP(ExplorerCustomCommandsBand)
-    EXECOMP(CommanderMenuBand)
-    EXECOMP(CommanderSessionBand)
-    EXECOMP(CommanderPreferencesBand)
-    EXECOMP(CommanderSortBand)
-    EXECOMP(CommanderCommandsBand)
-    EXECOMP(CommanderUpdatesBand)
-    EXECOMP(CommanderTransferBand)
-    EXECOMP(CommanderCustomCommandsBand)
-    EXECOMP(CommanderLocalHistoryBand)
-    EXECOMP(CommanderLocalNavigationBand)
-    EXECOMP(CommanderLocalFileBand)
-    EXECOMP(CommanderLocalSelectionBand)
-    EXECOMP(CommanderRemoteHistoryBand)
-    EXECOMP(CommanderRemoteNavigationBand)
-    EXECOMP(CommanderRemoteFileBand)
-    EXECOMP(CommanderRemoteSelectionBand)
+    #define EMIT_BAND_COMPONENT(COMP) EXECOMP(COMP)
+    BAND_COMPONENTS
+    #undef EMIT_BAND_COMPONENT
     EXECOMP(CommandLinePanel)
     EXECOMP(RemoteTree)
     EXECOMP(LocalTree)
@@ -661,11 +651,13 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(AutoReadDirectoryAfterOpAction, ScpExplorer->ToggleAutoReadDirectoryAfterOp())
     EXE(PreferencesAction, PreferencesDialog(::pmDefault) )
     EXE(PresetsPreferencesAction, PreferencesDialog(pmPresets) )
+    EXE(FileColorsPreferencesAction, PreferencesDialog(pmFileColors) )
     EXE(LockToolbarsAction, WinConfiguration->LockToolbars = !WinConfiguration->LockToolbars)
     EXE(SelectiveToolbarTextAction, WinConfiguration->SelectiveToolbarText = !WinConfiguration->SelectiveToolbarText)
     EXECOMP(CustomCommandsBand)
     EXE(ColorMenuAction, CreateSessionColorMenu(ColorMenuAction))
     EXE(GoToAddressAction, ScpExplorer->GoToAddress())
+    EXE(CustomizeToolbarAction, CreateToolbarButtonsList())
 
     #define COLVIEWPROPS ((TCustomDirViewColProperties*)(((TCustomDirView*)(((TListColumns*)(ListColumn->Collection))->Owner()))->ColProperties))
     // SORT
@@ -724,6 +716,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(NewSessionAction, ScpExplorer->NewSession(false))
     EXE(SiteManagerAction, ScpExplorer->NewSession(true))
     EXE(DuplicateSessionAction, ScpExplorer->DuplicateSession())
+    EXE(RenameSessionAction, ScpExplorer->RenameSession())
     EXE(CloseSessionAction, ScpExplorer->CloseSession())
     EXE(SavedSessionsAction2, CreateSessionListMenu(SavedSessionsAction2))
     EXE(WorkspacesAction, CreateWorkspacesMenu(WorkspacesAction))
@@ -745,6 +738,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(NewFileAction, ScpExplorer->EditNew(osCurrent))
     EXE(EditorListCustomizeAction, PreferencesDialog(pmEditor))
     EXE(ChangePasswordAction, ScpExplorer->ChangePassword())
+    EXE(PrivateKeyUploadAction, ScpExplorer->PrivateKeyUpload())
 
     // CUSTOM COMMANDS
     EXE(CustomCommandsFileAction, CreateCustomCommandsMenu(CustomCommandsFileAction, ccltFile))
@@ -824,7 +818,7 @@ void __fastcall TNonVisualDataModule::ExplorerShortcuts()
   CurrentEditInternalAction->ShortCut = 0;
   CurrentEditInternalFocusedAction->ShortCut = 0;
   // Focused operation
-  RemoteCopyAction->ShortCut = ShortCut(L'C', CTRL);
+  RemoteCopyAction->ShortCut = ShortCut(L'T', CTRL);
   RemoteMoveAction->ShortCut = ShortCut(L'M', CTRL);
   CurrentDeleteFocusedAction->ShortCut = ShortCut(VK_DELETE, NONE);
   CurrentPropertiesFocusedAction->ShortCut = ShortCut(VK_RETURN, ALT);
@@ -902,6 +896,8 @@ void __fastcall TNonVisualDataModule::CommanderShortcuts()
     ExplorerKeyboardShortcuts ? ShortCut(VK_F3, NONE) : ShortCut(VK_F7, ALT);
   // legacy shortcut (can be removed when necessary)
   NewFileAction->SecondaryShortCuts->Add(ShortCutToText(ShortCut(VK_F4, CTRLSHIFT)));
+  // Backward compatibility, can be abandoned, once there's a better use for Ctrl+T
+  ConsoleAction->SecondaryShortCuts->Add(ShortCutToText(ShortCut(L'T', CTRL)));
 
   CloseApplicationAction->ShortCut = ShortCut(VK_F10, NONE);
 
@@ -1258,7 +1254,7 @@ void __fastcall TNonVisualDataModule::SessionColorChange(TColor Color)
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::CreateSessionListMenu(TAction * Action)
 {
-  StoredSessions->Load();
+  StoredSessions->Reload();
   CreateSessionListMenuLevel(
     dynamic_cast<TTBCustomItem *>(Action->ActionComponent), 0, 0);
 }
@@ -1383,7 +1379,7 @@ void __fastcall TNonVisualDataModule::SessionItemClick(TObject * Sender)
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::CreateWorkspacesMenu(TAction * Action)
 {
-  StoredSessions->Load();
+  StoredSessions->Reload();
   if (!StoredSessions->HasAnyWorkspace())
   {
     Abort();
@@ -1645,7 +1641,7 @@ void __fastcall TNonVisualDataModule::CustomCommandsLastUpdate(TAction * Action)
     {
       TitleCommand = TitleCommand.SubString(1, MaxTitleCommandLen - 3) + Ellipsis;
     }
-    Action->Caption = FMTLOAD(CUSTOM_COMMAND_LAST, (TitleCommand));
+    Action->Caption = FMTLOAD(CUSTOM_COMMAND_LAST, (EscapeHotkey(TitleCommand)));
     Action->Hint = FMTLOAD(CUSTOM_COMMAND_HINT, (Command.Command));
     Action->Enabled = (State > 0);
   }
@@ -1822,3 +1818,82 @@ void __fastcall TNonVisualDataModule::QueuePopupSpeedComboBoxItemAdjustImageInde
   ImageIndex = Sender->ImageIndex;
 }
 //---------------------------------------------------------------------------
+void __fastcall TNonVisualDataModule::ToolbarButtonItemClick(TObject * Sender)
+{
+  TTBCustomItem * Item = DebugNotNull(dynamic_cast<TTBCustomItem *>(Sender));
+  TTBCustomItem * ButtonItem = reinterpret_cast<TTBCustomItem *>(Item->Tag);
+  ButtonItem->Visible = !ButtonItem->Visible;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TNonVisualDataModule::IsCustomizableToolbarItem(TTBCustomItem * Item)
+{
+  return
+    (dynamic_cast<TTBXItem *>(Item) != NULL) ||
+    (dynamic_cast<TTBXSubmenuItem *>(Item) != NULL);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TNonVisualDataModule::IsToolbarCustomizable()
+{
+  bool Result = false;
+  if (FCustomizedToolbar != NULL)
+  {
+    for (int Index = 0; Index < FCustomizedToolbar->Items->Count; Index++)
+    {
+      if (IsCustomizableToolbarItem(FCustomizedToolbar->Items->Items[Index]))
+      {
+        Result = true;
+        break;
+      }
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TNonVisualDataModule::CreateToolbarButtonsList()
+{
+  if (FCustomizedToolbar != NULL)
+  {
+    TTBCustomItem * CustomizeItem = DebugNotNull(dynamic_cast<TTBCustomItem *>(CustomizeToolbarAction->ActionComponent));
+    CustomizeItem->Clear();
+
+    for (int Index = 0; Index < FCustomizedToolbar->Items->Count; Index++)
+    {
+      TTBCustomItem * ButtonItem = FCustomizedToolbar->Items->Items[Index];
+
+      TTBCustomItem * Item = NULL;
+      if (dynamic_cast<TTBSeparatorItem *>(ButtonItem) != NULL)
+      {
+        Item = new TTBSeparatorItem(CustomizeItem);
+      }
+      else if (IsCustomizableToolbarItem(ButtonItem))
+      {
+        Item = new TTBXItem(CustomizeItem);
+        Item->Caption = StripEllipsis(ButtonItem->Caption);
+        Item->ImageIndex = ButtonItem->ImageIndex;
+        Item->Tag = reinterpret_cast<int>(ButtonItem);
+        Item->OnClick = ToolbarButtonItemClick;
+        Item->Checked = ButtonItem->Visible;
+      }
+
+      if (Item != NULL)
+      {
+        CustomizeItem->Insert(CustomizeItem->Count, Item);
+      }
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TNonVisualDataModule::ControlContextPopup(TObject * Sender, const TPoint & MousePos)
+{
+  TTBDock * Dock = dynamic_cast<TTBDock *>(Sender);
+  if (Dock != NULL)
+  {
+    // While we can identify toolbar for which context menu is popping up in OnExecute,
+    // we cannot in OnUpdate, so we have to remeber it here.
+    FCustomizedToolbar = dynamic_cast<TTBCustomToolbar *>(Dock->ControlAtPos(MousePos, true, true, false));
+  }
+  else
+  {
+    FCustomizedToolbar = NULL;
+  }
+}

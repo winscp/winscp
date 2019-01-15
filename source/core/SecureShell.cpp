@@ -455,10 +455,7 @@ void __fastcall TSecureShell::Open()
   FOpened = true;
 
   UnicodeString SshImplementation = GetSessionInfo().SshImplementation;
-  if (// e.g. "OpenSSH_5.3"
-      (SshImplementation.Pos(L"OpenSSH") == 1) ||
-      // Sun SSH is based on OpenSSH (suffers the same bugs)
-      (SshImplementation.Pos(L"Sun_SSH") == 1))
+  if (IsOpenSSH(SshImplementation))
   {
     FSshImplementation = sshiOpenSSH;
   }
@@ -847,7 +844,7 @@ bool __fastcall TSecureShell::PromptUser(bool /*ToServer*/,
       LogEvent(L"Using stored password.");
       FUI->Information(LoadStr(AUTH_PASSWORD), false);
       Result = true;
-      Results->Strings[0] = FSessionData->Password;
+      Results->Strings[0] = NormalizeString(FSessionData->Password);
       FStoredPasswordTriedForKI = true;
     }
     else if (Instructions.IsEmpty() && !InstructionsRequired && (Prompts->Count == 0))
@@ -863,7 +860,7 @@ bool __fastcall TSecureShell::PromptUser(bool /*ToServer*/,
       LogEvent(L"Using stored password.");
       FUI->Information(LoadStr(AUTH_PASSWORD), false);
       Result = true;
-      Results->Strings[0] = FSessionData->Password;
+      Results->Strings[0] = NormalizeString(FSessionData->Password);
       FStoredPasswordTried = true;
     }
   }
@@ -888,9 +885,9 @@ bool __fastcall TSecureShell::PromptUser(bool /*ToServer*/,
         LogEvent(L"Using stored password and new password.");
         Result = true;
         DebugAssert(Results->Count == 3);
-        Results->Strings[0] = FSessionData->Password;
-        Results->Strings[1] = FSessionData->NewPassword;
-        Results->Strings[2] = FSessionData->NewPassword;
+        Results->Strings[0] = NormalizeString(FSessionData->Password);
+        Results->Strings[1] = NormalizeString(FSessionData->NewPassword);
+        Results->Strings[2] = NormalizeString(FSessionData->NewPassword);
         FStoredPasswordTried = true;
       }
     }
@@ -1180,7 +1177,10 @@ UnicodeString __fastcall TSecureShell::ConvertInput(const RawByteString & Input)
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::SendSpecial(int Code)
 {
-  LogEvent(FORMAT(L"Sending special code: %d", (Code)));
+  if (Configuration->ActualLogProtocol >= 0)
+  {
+    LogEvent(FORMAT(L"Sending special code: %d", (Code)));
+  }
   CheckConnection();
   FBackend->special(FBackendHandle, (Telnet_Special)Code);
   CheckConnection();

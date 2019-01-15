@@ -23,7 +23,6 @@ class PACKAGE TUnixDirView : public TCustomUnixDirView
 {
 friend class TCustomUnixDriveView;
 private:
-  bool FDDAllowMove;
   bool FDirLoadedAfterChangeDir;
   TNotifyEvent FOnDisplayProperties;
   bool FFullLoad;
@@ -35,7 +34,6 @@ private:
   bool __fastcall GetActive();
   TCustomUnixDriveView * FDriveView;
   TNotifyEvent FOnRead;
-  void __fastcall SetDDAllowMove(bool value);
   void __fastcall SetTerminal(TTerminal *value);
   void __fastcall DoSetTerminal(TTerminal *value, bool Replace);
   void __fastcall SetShowInaccesibleDirectories(bool value);
@@ -49,6 +47,7 @@ protected:
   void __fastcall DoReadDirectory(TObject * Sender, bool ReloadOnly);
   void __fastcall DoReadDirectoryImpl(TObject * Sender, bool ReloadOnly);
   void __fastcall DoStartReadDirectory(TObject * Sender);
+  virtual bool __fastcall DoExecFile(TListItem * Item, bool ForceEnter);
   virtual void __fastcall ExecuteFile(TListItem * Item);
   virtual bool __fastcall GetDirOK();
   virtual void __fastcall GetDisplayInfo(TListItem * ListItem, tagLVITEMW &DispInfo);
@@ -61,11 +60,12 @@ protected:
   virtual TColor __fastcall ItemColor(TListItem * Item);
   virtual UnicodeString __fastcall ItemFileName(TListItem * Item);
   virtual int __fastcall ItemImageIndex(TListItem * Item, bool Cache);
+  virtual TObject * __fastcall ItemData(TListItem * Item);
   virtual bool __fastcall ItemIsFile(TListItem * Item);
   virtual bool __fastcall ItemMatchesFilter(TListItem * Item, const TFileFilter &Filter);
   virtual Word __fastcall ItemOverlayIndexes(TListItem * Item);
   virtual void __fastcall LoadFiles();
-  virtual void __fastcall PerformItemDragDropOperation(TListItem * Item, int Effect);
+  virtual void __fastcall PerformItemDragDropOperation(TListItem * Item, int Effect, bool Paste);
   virtual void __fastcall SetAddParentDir(bool Value);
   virtual void __fastcall SetItemImageIndex(TListItem * Item, int Index);
   virtual void __fastcall SetPath(UnicodeString Value);
@@ -103,18 +103,16 @@ public:
   __property bool Active = { read = GetActive };
   __property TTerminal *Terminal = { read = FTerminal, write = SetTerminal };
 __published:
-  __property bool DDAllowMove = { read = FDDAllowMove,
-    write = SetDDAllowMove, default = False };
   __property TDDDragFileName OnDDDragFileName = { read = FOnDDDragFileName,
     write = FOnDDDragFileName};
   __property OnBusy;
+  __property OnChangeFocus;
   __property bool ShowInaccesibleDirectories  =
     { read=FShowInaccesibleDirectories, write=SetShowInaccesibleDirectories,
       default=true  };
 
   __property OnUpdateStatusBar;
   __property PathLabel;
-  __property LoadAnimation;
 
   __property AddParentDir;
   __property DimmHiddenFiles;
@@ -127,6 +125,7 @@ __published:
   __property OnExecFile;
   __property OnMatchMask;
   __property OnGetOverlay;
+  __property OnGetItemColor;
   __property OnDDDragEnter;
   __property OnDDDragLeave;
   __property OnDDDragOver;
@@ -144,7 +143,6 @@ __published:
   __property OnDDFileOperation;
   __property OnDDFileOperationExecuted;
   __property OnDDCreateDataObject;
-  __property OnDDMenuPopup;
 
   __property OnContextPopup;
   __property OnHistoryChange;

@@ -29,12 +29,8 @@
 #pragma resource "*.dfm"
 #endif
 //---------------------------------------------------------------------
-bool __fastcall TProgressForm::IsIndeterminateOperation(TFileOperation Operation)
-{
-  return (Operation == foCalculateSize);
-}
-//---------------------------------------------------------------------
-UnicodeString __fastcall TProgressForm::ProgressStr(TFileOperationProgressType * ProgressData)
+UnicodeString __fastcall TProgressForm::ProgressStr(
+  const TSynchronizeProgress * SynchronizeProgress, const TFileOperationProgressType * ProgressData)
 {
   static const int Captions[] = { 0, 0, PROGRESS_DELETE,
     PROGRESS_SETPROPERTIES, 0, PROGRESS_CUSTOM_COMAND, PROGRESS_CALCULATE_SIZE,
@@ -52,17 +48,32 @@ UnicodeString __fastcall TProgressForm::ProgressStr(TFileOperationProgressType *
     DebugAssert(Id != 0);
   }
   UnicodeString Result = LoadStr(Id);
-  if (!IsIndeterminateOperation(ProgressData->Operation))
+  if (SynchronizeProgress != NULL)
   {
-    Result = FORMAT(L"%d%% %s", (ProgressData->OverallProgress(), Result));
+    Result = FORMAT(L"%s - %s", (LoadStr(SYNCHRONIZE_PROGRESS_SYNCHRONIZE2), Result));
+  }
+  if (!TFileOperationProgressType::IsIndeterminateOperation(ProgressData->Operation))
+  {
+    int OverallProgress;
+    if (SynchronizeProgress != NULL)
+    {
+      OverallProgress = SynchronizeProgress->Progress(ProgressData);
+    }
+    else
+    {
+      OverallProgress = ProgressData->OverallProgress();
+    }
+    Result = FORMAT(L"%d%% %s", (OverallProgress, Result));
   }
   return Result;
 }
 //---------------------------------------------------------------------
-__fastcall TProgressForm::TProgressForm(TComponent * AOwner, bool AllowMoveToQueue, bool AllowSkip)
+__fastcall TProgressForm::TProgressForm(
+  TComponent * AOwner, bool AllowMoveToQueue, bool AllowSkip, TSynchronizeProgress * SynchronizeProgress)
     : FData(), TForm(AOwner)
 {
   FLastOperation = foNone;
+  FLastSide = (TOperationSide)-1;
   FLastTotalSizeSet = false;
   FDataGot = false;
   FDataReceived = false;
@@ -70,25 +81,17 @@ __fastcall TProgressForm::TProgressForm(TComponent * AOwner, bool AllowMoveToQue
   FMoveToQueue = false;
   FMinimizedByMe = false;
   FUpdateCounter = 0;
-  FDeleteToRecycleBin = false;
+  FDeleteLocalToRecycleBin = false;
+  FDeleteRemoteToRecycleBin = false;
   FReadOnly = false;
   FShowAsModalStorage = NULL;
   FStarted = Now();
   FModalBeginHooked = false;
   FModalLevel = -1;
   FPendingSkip = false;
+  FSynchronizeProgress = SynchronizeProgress;
+  FAllowSkip = AllowSkip;
   UseSystemSettings(this);
-
-  if (CustomWinConfiguration->OperationProgressOnTop)
-  {
-    FOperationProgress = TopProgress;
-    FFileProgress = BottomProgress;
-  }
-  else
-  {
-    FOperationProgress = BottomProgress;
-    FFileProgress = TopProgress;
-  }
 
   FOnceDoneItems.Add(odoIdle, IdleOnceDoneItem);
   FOnceDoneItems.Add(odoDisconnect, DisconnectOnceDoneItem);
@@ -100,7 +103,6 @@ __fastcall TProgressForm::TProgressForm(TComponent * AOwner, bool AllowMoveToQue
 
   SetGlobalMinimizeHandler(this, GlobalMinimize);
   MoveToQueueItem->Visible = AllowMoveToQueue;
-  SkipItem->Visible = AllowSkip;
 }
 //---------------------------------------------------------------------------
 __fastcall TProgressForm::~TProgressForm()
@@ -120,6 +122,11 @@ __fastcall TProgressForm::~TProgressForm()
   ReleaseAsModal(this, FShowAsModalStorage);
 }
 //---------------------------------------------------------------------
+UnicodeString __fastcall TProgressForm::ProgressStr()
+{
+  return FProgressStr;
+}
+//---------------------------------------------------------------------
 void __fastcall TProgressForm::UpdateControls()
 {
   DebugAssert((FData.Operation >= foCopy) && (FData.Operation <= foUnlock) &&
@@ -129,6 +136,7 @@ void __fastcall TProgressForm::UpdateControls()
     ((FData.Operation == foCopy) || (FData.Operation == foMove));
 
   CancelItem->Enabled = !FReadOnly && (FCancel < csCancel);
+  SkipItem->Visible = TransferOperation && FAllowSkip;
   SkipItem->Enabled = !FReadOnly && (FCancel < csCancelFile) && !FPendingSkip;
   MoveToQueueItem->Enabled = !FMoveToQueue && (FCancel == csContinue) && !FPendingSkip;
   CycleOnceDoneItem->Visible =
@@ -139,7 +147,8 @@ void __fastcall TProgressForm::UpdateControls()
   CycleOnceDoneItem->ImageIndex = CurrentOnceDoneItem()->ImageIndex;
   SpeedComboBoxItem->Visible = TransferOperation;
 
-  if (FData.Operation != FLastOperation)
+  if ((FData.Operation != FLastOperation) ||
+      (FData.Side != FLastSide))
   {
     UnicodeString Animation;
     UnicodeString CancelCaption = Vcl_Consts_SMsgDlgCancel;
@@ -183,7 +192,7 @@ void __fastcall TProgressForm::UpdateControls()
         break;
 
       case foDelete:
-        Animation = DeleteToRecycleBin ? L"Recycle" : L"Delete";
+        Animation = ((FData.Side == osRemote) ? DeleteRemoteToRecycleBin : DeleteLocalToRecycleBin) ? L"Recycle" : L"Delete";
         break;
 
       case foCalculateSize:
@@ -210,7 +219,12 @@ void __fastcall TProgressForm::UpdateControls()
 
     CancelItem->Caption = CancelCaption;
 
-    TopProgress->Style = IsIndeterminateOperation(FData.Operation) ? pbstMarquee : pbstNormal;
+    OperationProgress->Style = TFileOperationProgressType::IsIndeterminateOperation(FData.Operation) ? pbstMarquee : pbstNormal;
+
+    if (SynchronizeProgress != NULL)
+    {
+      Animation = L"SynchronizeDirectories";
+    }
 
     FFrameAnimation.Init(AnimationPaintBox, Animation);
     FFrameAnimation.Start();
@@ -234,6 +248,7 @@ void __fastcall TProgressForm::UpdateControls()
     MoveToQueueItem->ImageIndex = MoveToQueueImageIndex;
 
     FLastOperation = FData.Operation;
+    FLastSide = FData.Side;
     FLastTotalSizeSet = !FData.TotalSizeSet;
   }
 
@@ -271,10 +286,29 @@ void __fastcall TProgressForm::UpdateControls()
     FileLabel->Caption = FileCaption;
     FPendingSkip = false;
   }
-  int OverallProgress = FData.OverallProgress();
-  FOperationProgress->Position = OverallProgress;
-  FOperationProgress->Hint = IsIndeterminateOperation(FData.Operation) ? UnicodeString() : FORMAT(L"%d%%", (OverallProgress));
-  Caption = FormatFormCaption(this, ProgressStr(&FData));
+
+  int OverallProgress;
+  // as a side effect this prevents calling TSynchronizeProgress::Progress when we do not know total size yet
+  // (what would cache wrong values forever)
+  if (TFileOperationProgressType::IsIndeterminateOperation(FData.Operation))
+  {
+    OverallProgress = -1;
+  }
+  else
+  {
+    if (SynchronizeProgress != NULL)
+    {
+      OverallProgress = SynchronizeProgress->Progress(&FData);
+    }
+    else
+    {
+      OverallProgress = FData.OverallProgress();
+    }
+  }
+  OperationProgress->Position = std::max(0, OverallProgress);
+  OperationProgress->Hint = (OverallProgress < 0) ? UnicodeString() : FORMAT(L"%d%%", (OverallProgress));
+  FProgressStr = ProgressStr(SynchronizeProgress, &FData);
+  Caption = FormatFormCaption(this, FProgressStr);
 
   if (TransferOperation)
   {
@@ -290,14 +324,31 @@ void __fastcall TProgressForm::UpdateControls()
     StartTimeLabel->Caption = FData.StartTime.TimeString();
     if (FData.TotalSizeSet)
     {
-      TimeLeftLabel->Caption = FormatDateTimeSpan(Configuration->TimeFormat,
-        FData.TotalTimeLeft());
+      UnicodeString TimeLeftCaption;
+      if (SecondsBetween(FData.StartTime, Now()) >= 3)
+      {
+        TDateTime TimeLeft;
+        if (SynchronizeProgress != NULL)
+        {
+          TimeLeft = SynchronizeProgress->TimeLeft(&FData);
+        }
+        else
+        {
+          TimeLeft = FData.TotalTimeLeft();
+        }
+        TimeLeftCaption = FormatDateTimeSpan(Configuration->TimeFormat, TimeLeft);
+      }
+      else
+      {
+        TimeLeftCaption = LoadStr(PROGRESS_TIME_LEFT_CALCULATING);
+      }
+      TimeLeftLabel->Caption = TimeLeftCaption;
     }
     TimeElapsedLabel->Caption = FormatDateTimeSpan(Configuration->TimeFormat, FData.TimeElapsed());
     BytesTransferredLabel->Caption = FormatBytes(FData.TotalTransferred);
     CPSLabel->Caption = FORMAT(L"%s/s", (FormatBytes(FData.CPS())));
-    FFileProgress->Position = FData.TransferProgress();
-    FFileProgress->Hint = FORMAT(L"%d%%", (FFileProgress->Position));
+    FileProgress->Position = FData.TransferProgress();
+    FileProgress->Hint = FORMAT(L"%d%%", (FileProgress->Position));
   }
 }
 //---------------------------------------------------------------------
@@ -602,6 +653,10 @@ void __fastcall TProgressForm::Dispatch(void * AMessage)
   else if (Message.Msg == CM_DIALOGKEY)
   {
     CMDialogKey(reinterpret_cast<TCMDialogKey &>(Message));
+  }
+  else if (Message.Msg == WM_MANAGES_CAPTION)
+  {
+    Message.Result = 1;
   }
   else
   {

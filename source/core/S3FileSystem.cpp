@@ -75,6 +75,7 @@ void __fastcall TS3FileSystem::Open()
   FTlsVersionStr = L"";
   FNeonSession = NULL;
   FCurrentDirectory = L"";
+  FAuthRegion = DefaultStr(FTerminal->SessionData->S3DefaultRegion, S3LibDefaultRegion());
 
   RequireNeon(FTerminal);
 
@@ -83,6 +84,7 @@ void __fastcall TS3FileSystem::Open()
   TSessionData * Data = FTerminal->SessionData;
 
   FSessionInfo.LoginTime = Now();
+  FSessionInfo.CertificateVerifiedManually = false;
 
   FLibS3Protocol = (Data->Ftps != ftpsNone) ? S3ProtocolHTTPS : S3ProtocolHTTP;
 
@@ -98,7 +100,7 @@ void __fastcall TS3FileSystem::Open()
   }
   FAccessKeyId = UTF8String(AccessKeyId);
 
-  UnicodeString SecretAccessKey = UTF8String(Data->Password);
+  UnicodeString SecretAccessKey = UTF8String(NormalizeString(Data->Password));
   if (SecretAccessKey.IsEmpty())
   {
     if (!FTerminal->PromptUser(Data, pkPassword, LoadStr(S3_SECRET_ACCESS_KEY_TITLE), L"",
@@ -124,17 +126,10 @@ void __fastcall TS3FileSystem::Open()
   FActive = false;
   try
   {
-    UnicodeString Path;
-    if (IsUnixRootPath(Data->RemoteDirectory))
+    UnicodeString Path = Data->RemoteDirectory;
+    if (IsUnixRootPath(Path))
     {
       Path = ROOTDIRECTORY;
-    }
-    else
-    {
-      UnicodeString BucketName;
-      UnicodeString UnusedKey;
-      ParsePath(Data->RemoteDirectory, BucketName, UnusedKey);
-      Path = LibS3Delimiter + BucketName;
     }
     TryOpenDirectory(Path);
   }
@@ -209,24 +204,32 @@ bool TS3FileSystem::VerifyCertificate(TNeonCertificateData Data)
   }
   else
   {
-    FTerminal->LogEvent(CertificateVerificationMessage(Data));
+    FTerminal->LogEvent(0, CertificateVerificationMessage(Data));
 
     UnicodeString SiteKey = TSessionData::FormatSiteKey(FTerminal->SessionData->HostNameExpanded, FTerminal->SessionData->PortNumber);
     Result =
       FTerminal->VerifyCertificate(HttpsCertificateStorageKey, SiteKey, Data.Fingerprint, Data.Subject, Data.Failures);
 
-    if (!Result)
+    if (Result)
+    {
+      FSessionInfo.CertificateVerifiedManually = true;
+    }
+    else
     {
       UnicodeString Message;
       Result = NeonWindowsValidateCertificateWithMessage(Data, Message);
-      FTerminal->LogEvent(Message);
+      FTerminal->LogEvent(0, Message);
     }
 
     FSessionInfo.Certificate = CertificateSummary(Data, FTerminal->SessionData->HostNameExpanded);
 
     if (!Result)
     {
-      Result = FTerminal->ConfirmCertificate(FSessionInfo, Data.Failures, HttpsCertificateStorageKey, true);
+      if (FTerminal->ConfirmCertificate(FSessionInfo, Data.Failures, HttpsCertificateStorageKey, true))
+      {
+        Result = true;
+        FSessionInfo.CertificateVerifiedManually = true;
+      }
     }
 
     if (Result)
@@ -244,7 +247,7 @@ void TS3FileSystem::CollectTLSSessionInfo()
   // Have to cache the value as the connection (the neon HTTP session, not "our" session)
   // can be closed at the time we need it in CollectUsage().
   UnicodeString Message = NeonTlsSessionInfo(FNeonSession, FSessionInfo, FTlsVersionStr);
-  FTerminal->LogEvent(Message);
+  FTerminal->LogEvent(0, Message);
 }
 //---------------------------------------------------------------------------
 S3Status TS3FileSystem::LibS3ResponsePropertiesCallback(const S3ResponseProperties * /*Properties*/, void * /*CallbackData*/)
@@ -319,7 +322,7 @@ void TS3FileSystem::LibS3ResponseCompleteCallback(S3Status Status, const S3Error
     }
   }
 
-  if (!FileSystem->FResponse.IsEmpty())
+  if (!FileSystem->FResponse.IsEmpty() && (FileSystem->FTerminal->Configuration->ActualLogProtocol >= 0))
   {
     FileSystem->FTerminal->Log->Add(llOutput, FileSystem->FResponse);
   }
@@ -433,7 +436,7 @@ void TS3FileSystem::ParsePath(UnicodeString Path, UnicodeString & BucketName, Un
 //---------------------------------------------------------------------------
 struct TLibS3BucketContext : S3BucketContext
 {
-  // These keep data that that we point the native S3BucketContext fields to
+  // These keep data that we point the native S3BucketContext fields to
   UTF8String HostNameBuf;
   UTF8String BucketNameBuf;
   UTF8String AuthRegionBuf;
@@ -447,7 +450,7 @@ struct TLibS3ListBucketCallbackData : TLibS3CallbackData
   bool IsTruncated;
 };
 //---------------------------------------------------------------------------
-TLibS3BucketContext TS3FileSystem::GetBucketContext(const UnicodeString & BucketName)
+TLibS3BucketContext TS3FileSystem::GetBucketContext(const UnicodeString & BucketName, const UnicodeString & Prefix)
 {
   TLibS3BucketContext Result;
 
@@ -464,7 +467,7 @@ TLibS3BucketContext TS3FileSystem::GetBucketContext(const UnicodeString & Bucket
     }
     else
     {
-      Region = FTerminal->SessionData->S3DefaultRegion;
+      Region = FAuthRegion;
       if (First)
       {
         FTerminal->LogEvent(FORMAT(L"Unknown bucket \"%s\", will detect its region (and service endpoint)", (BucketName)));
@@ -500,7 +503,8 @@ TLibS3BucketContext TS3FileSystem::GetBucketContext(const UnicodeString & Bucket
     {
       std::unique_ptr<TRemoteFileList> FileList(new TRemoteFileList());
       TLibS3ListBucketCallbackData Data;
-      DoListBucket(UnicodeString(), FileList.get(), 1, Result, Data);
+      // Using prefix for which we need the bucket, as the account may have access to that prefix only (using "Condition" in policy)
+      DoListBucket(Prefix, FileList.get(), 1, Result, Data);
 
       Retry = false;
       UnicodeString EndpointDetail = Data.EndpointDetail;
@@ -514,7 +518,8 @@ TLibS3BucketContext TS3FileSystem::GetBucketContext(const UnicodeString & Bucket
         Result.authRegion = Result.AuthRegionBuf.c_str();
       }
       // happens with newly created buckets (and happens before the region redirect)
-      else if ((Data.Status == S3StatusErrorTemporaryRedirect) && !Data.EndpointDetail.IsEmpty())
+      else if (((Data.Status == S3StatusErrorTemporaryRedirect) || (Data.Status == S3StatusErrorPermanentRedirect)) &&
+               !Data.EndpointDetail.IsEmpty())
       {
         UnicodeString Endpoint = Data.EndpointDetail;
         if (SameText(Endpoint.SubString(1, BucketName.Length() + 1), BucketName + L"."))
@@ -813,6 +818,17 @@ void TS3FileSystem::DoListBucket(
     LibS3Delimiter.c_str(), MaxKeys, FRequestContext, FTimeout, &ListBucketHandler, &Data);
 }
 //---------------------------------------------------------------------------
+void TS3FileSystem::HandleNonBucketStatus(TLibS3CallbackData & Data, bool & Retry)
+{
+  if ((Data.Status == S3StatusErrorAuthorizationHeaderMalformed) &&
+      (FAuthRegion != Data.RegionDetail))
+  {
+    FTerminal->LogEvent(FORMAT("Will use authentication region \"%s\" from now on.", (Data.RegionDetail)));
+    FAuthRegion = Data.RegionDetail;
+    Retry = true;
+  }
+}
+//---------------------------------------------------------------------------
 void TS3FileSystem::ReadDirectoryInternal(
   const UnicodeString & APath, TRemoteFileList * FileList, int MaxKeys, const UnicodeString & FileName)
 {
@@ -821,17 +837,26 @@ void TS3FileSystem::ReadDirectoryInternal(
   {
     DebugAssert(FileList != NULL);
 
-    S3ListServiceHandler ListServiceHandler = { CreateResponseHandler(), &LibS3ListServiceCallback };
-
     TLibS3ListServiceCallbackData Data;
-    RequestInit(Data);
-    Data.FileSystem = this;
     Data.FileList = FileList;
     Data.FileName = FileName;
 
-    S3_list_service(
-      FLibS3Protocol, FAccessKeyId.c_str(), FSecretAccessKey.c_str(), 0, FHostName.c_str(),
-      NULL, MaxKeys, FRequestContext, FTimeout, &ListServiceHandler, &Data);
+    bool Retry;
+    do
+    {
+      RequestInit(Data);
+
+      S3ListServiceHandler ListServiceHandler = { CreateResponseHandler(), &LibS3ListServiceCallback };
+
+      Retry = false;
+
+      S3_list_service(
+        FLibS3Protocol, FAccessKeyId.c_str(), FSecretAccessKey.c_str(), 0, FHostName.c_str(),
+        StrToS3(FAuthRegion), MaxKeys, FRequestContext, FTimeout, &ListServiceHandler, &Data);
+
+      HandleNonBucketStatus(Data, Retry);
+    }
+    while (Retry);
 
     CheckLibS3Error(Data);
   }
@@ -844,7 +869,7 @@ void TS3FileSystem::ReadDirectoryInternal(
       Prefix = GetFolderKey(Prefix);
     }
     Prefix += FileName;
-    TLibS3BucketContext BucketContext = GetBucketContext(BucketName);
+    TLibS3BucketContext BucketContext = GetBucketContext(BucketName, Prefix);
 
     TLibS3ListBucketCallbackData Data;
     bool Continue;
@@ -936,7 +961,12 @@ void __fastcall TS3FileSystem::DeleteFile(const UnicodeString AFileName,
   UnicodeString BucketName, Key;
   ParsePath(FileName, BucketName, Key);
 
-  TLibS3BucketContext BucketContext = GetBucketContext(BucketName);
+  if (!Key.IsEmpty() && Dir)
+  {
+    Key = GetFolderKey(Key);
+  }
+
+  TLibS3BucketContext BucketContext = GetBucketContext(BucketName, Key);
 
   S3ResponseHandler ResponseHandler = CreateResponseHandler();
 
@@ -952,10 +982,6 @@ void __fastcall TS3FileSystem::DeleteFile(const UnicodeString AFileName,
   }
   else
   {
-    if (Dir)
-    {
-      Key = GetFolderKey(Key);
-    }
     S3_delete_object(&BucketContext, StrToS3(Key), FRequestContext, FTimeout, &ResponseHandler, &Data);
   }
 
@@ -998,7 +1024,7 @@ void __fastcall TS3FileSystem::CopyFile(const UnicodeString AFileName, const TRe
     throw Exception(LoadStr(MISSING_TARGET_BUCKET));
   }
 
-  TLibS3BucketContext BucketContext = GetBucketContext(DestBucketName);
+  TLibS3BucketContext BucketContext = GetBucketContext(DestBucketName, DestKey);
   BucketContext.BucketNameBuf = SourceBucketName;
   BucketContext.bucketName = BucketContext.BucketNameBuf.c_str();
 
@@ -1014,16 +1040,13 @@ void __fastcall TS3FileSystem::CopyFile(const UnicodeString AFileName, const TRe
   CheckLibS3Error(Data);
 }
 //---------------------------------------------------------------------------
-void __fastcall TS3FileSystem::CreateDirectory(const UnicodeString ADirName)
+void __fastcall TS3FileSystem::CreateDirectory(const UnicodeString & ADirName, bool /*Encrypt*/)
 {
   TOperationVisualizer Visualizer(FTerminal->UseBusyCursor);
   UnicodeString DirName = UnixExcludeTrailingBackslash(AbsolutePath(ADirName, false));
 
   UnicodeString BucketName, Key;
   ParsePath(DirName, BucketName, Key);
-
-  TLibS3CallbackData Data;
-  RequestInit(Data);
 
   if (Key.IsEmpty())
   {
@@ -1033,28 +1056,47 @@ void __fastcall TS3FileSystem::CreateDirectory(const UnicodeString ADirName)
 
     UTF8String RegionBuf;
     char * Region = NULL;
-    if (FTerminal->SessionData->S3DefaultRegion != S3LibDefaultRegion())
+    if (!FTerminal->SessionData->S3DefaultRegion.IsEmpty() &&
+        (FTerminal->SessionData->S3DefaultRegion != S3LibDefaultRegion()))
     {
       RegionBuf = UTF8String(FTerminal->SessionData->S3DefaultRegion);
       Region = RegionBuf.c_str();
     }
 
-    S3_create_bucket(
-      FLibS3Protocol, FAccessKeyId.c_str(), FSecretAccessKey.c_str(), NULL, FHostName.c_str(), StrToS3(BucketName),
-      StrToS3(S3LibDefaultRegion()), S3CannedAclPrivate, Region, FRequestContext, FTimeout, &ResponseHandler, &Data);
+    TLibS3CallbackData Data;
+
+    bool Retry;
+    do
+    {
+      RequestInit(Data);
+
+      Retry = false;
+
+      S3_create_bucket(
+        FLibS3Protocol, FAccessKeyId.c_str(), FSecretAccessKey.c_str(), NULL, FHostName.c_str(), StrToS3(BucketName),
+        StrToS3(FAuthRegion), S3CannedAclPrivate, Region, FRequestContext, FTimeout, &ResponseHandler, &Data);
+
+      HandleNonBucketStatus(Data, Retry);
+    }
+    while (Retry);
+
+    CheckLibS3Error(Data);
   }
   else
   {
+    TLibS3CallbackData Data;
+    RequestInit(Data);
+
     Key = GetFolderKey(Key);
 
-    TLibS3BucketContext BucketContext = GetBucketContext(BucketName);
+    TLibS3BucketContext BucketContext = GetBucketContext(BucketName, Key);
 
     S3PutObjectHandler PutObjectHandler = { CreateResponseHandler(), NULL };
 
     S3_put_object(&BucketContext, StrToS3(Key), 0, NULL, FRequestContext, FTimeout, &PutObjectHandler, &Data);
-  }
 
-  CheckLibS3Error(Data);
+    CheckLibS3Error(Data);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TS3FileSystem::CreateLink(const UnicodeString FileName,
@@ -1322,7 +1364,7 @@ void __fastcall TS3FileSystem::Source(
     throw Exception(LoadStr(MISSING_TARGET_BUCKET));
   }
 
-  TLibS3BucketContext BucketContext = GetBucketContext(BucketName);
+  TLibS3BucketContext BucketContext = GetBucketContext(BucketName, Key);
 
   UTF8String ContentType = UTF8String(FTerminal->Configuration->GetFileMimeType(Handle.FileName));
   S3PutProperties PutProperties =
@@ -1571,7 +1613,7 @@ void __fastcall TS3FileSystem::Sink(
   UnicodeString BucketName, Key;
   ParsePath(FileName, BucketName, Key);
 
-  TLibS3BucketContext BucketContext = GetBucketContext(BucketName);
+  TLibS3BucketContext BucketContext = GetBucketContext(BucketName, Key);
 
   UnicodeString ExpandedDestFullName = ExpandUNCFileName(DestFullName);
   Action.Destination(ExpandedDestFullName);

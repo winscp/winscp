@@ -10,6 +10,7 @@
 #include <Configuration.h>
 #include <SessionData.h>
 #include <WinInterface.h>
+#include <GUITools.h>
 //---------------------------------------------------------------------
 enum TWinSCPData {wdConfiguration = 1, wdStoredSessions, wdHostKeys,
   wdConfigurationIniFile, wdRandomSeedFile, wdTemporaryFolders };
@@ -38,6 +39,9 @@ private:
   void __fastcall InitControls();
   void __fastcall UpdateControls();
   bool __fastcall GetCleanupData(TWinSCPData Data);
+
+  INTERFACE_HOOK;
+
 public:
   virtual __fastcall TCleanupDialog(TComponent* AOwner);
   __property TStoredSessionList *SessionList  = { read=FSessionList, write=FSessionList };

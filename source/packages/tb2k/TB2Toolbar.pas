@@ -55,6 +55,7 @@ type
     constructor Create(AOwner: TComponent); override;
     function GetFont: TFont; override;
     procedure InvalidatePositions; override;
+    procedure EnterToolbarLoop(Options: TTBEnterToolbarLoopOptions); override;
   end;
 
   TTBChevronPriorityForNewItems = (tbcpHighest, tbcpLowest);
@@ -83,6 +84,7 @@ type
     FUpdateActions: Boolean;
     { MP }
     FOnGetBaseSize: TToolbarGetBaseSizeEvent;
+    FOnEndModal: TNotifyEvent;
 
     procedure CancelHover;
     function CalcChevronOffset(const ADock: TTBDock;
@@ -171,8 +173,8 @@ type
     procedure InitiateAction; override;
     function IsShortCut(var Message: TWMKey): Boolean;
     function KeyboardOpen(Key: Char; RequirePrimaryAccel: Boolean): Boolean;
-    procedure ReadPositionData(const Data: TTBReadPositionData); override;
-    procedure WritePositionData(const Data: TTBWritePositionData); override;
+    procedure ReadPositionData(var S: string); override;
+    function WritePositionData: string; override;
     procedure GetChildren(Proc: TGetChildProc; Root: TComponent); override;
 
     property ChevronHint: String read GetChevronHint write SetChevronHint stored IsChevronHintStored;
@@ -191,6 +193,7 @@ type
     property View: TTBToolbarView read FView;
     { MP }
     property OnGetBaseSize: TToolbarGetBaseSizeEvent read FOnGetBaseSize write FOnGetBaseSize;
+    property OnEndModal: TNotifyEvent read FOnEndModal write FOnEndModal;
   published
     property Hint stored False;  { Hint is set dynamically; don't save it }
   end;
@@ -264,6 +267,7 @@ type
     property OnVisibleChanged;
     { MP }
     property OnGetBaseSize;
+    property OnEndModal;
   end;
 
 { TTBChevronItem & TTBChevronItemViewer }
@@ -292,7 +296,7 @@ const
 implementation
 
 uses
-  TB2Consts, TB2Common, TB2Hook;
+  TB2Consts, TB2Common, TB2Hook, PasTools;
 
 const
   { Constants for TTBCustomToolbar-specific registry values. Do not localize! }
@@ -520,6 +524,12 @@ begin
   Result := FToolbar.FMDISystemMenuItem;
 end;
 
+procedure TTBToolbarView.EnterToolbarLoop(Options: TTBEnterToolbarLoopOptions);
+begin
+  inherited;
+  if Assigned(FToolbar.OnEndModal) then
+    FToolbar.OnEndModal(FToolbar);
+end;
 
 { TTBCustomToolbar }
 
@@ -549,6 +559,7 @@ begin
   SetBounds(Left, Top, 23, 22);{}
   { MP }
   FOnGetBaseSize := nil;
+  FOnEndModal := nil;
 end;
 
 destructor TTBCustomToolbar.Destroy;
@@ -1181,18 +1192,18 @@ end;
 
 {}{DOCKING STUFF}
 
-procedure TTBCustomToolbar.ReadPositionData(const Data: TTBReadPositionData);
+procedure TTBCustomToolbar.ReadPositionData(var S: string);
 begin
   inherited;
-  with Data do
-    FloatingWidth := ReadIntProc(Name, rvFloatRightX, 0, ExtraData);
+  if Floating then
+    FloatingWidth := StrToIntDef(CutToChar(S, ':', true), 0);
 end;
 
-procedure TTBCustomToolbar.WritePositionData(const Data: TTBWritePositionData);
+function TTBCustomToolbar.WritePositionData: string;
 begin
-  inherited;
-  with Data do
-    WriteIntProc(Name, rvFloatRightX, FFloatingWidth, ExtraData);
+  Result := inherited;
+  if Floating then
+    Result := Result + ':' + IntToStr(FFloatingWidth);
 end;
 
 procedure TTBCustomToolbar.GetMinBarSize(var MinimumSize: TPoint);

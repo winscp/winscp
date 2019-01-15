@@ -364,9 +364,13 @@ void __fastcall TQueueController::FillQueueViewItem(TListItem * Item,
       ProgressStr = L"";
     }
 
-    // cannot use ProgressData->Temp as it is set only after the transfer actually starts
-    Values[0] = Info->Source.IsEmpty() ? LoadStr(PROGRESS_TEMP_DIR) : Info->Source;
-    Values[1] = Info->Destination.IsEmpty() ? LoadStr(PROGRESS_TEMP_DIR) : Info->Destination;
+    // If both are empty, it's bootstrap item => do not show anything
+    if (!Info->Source.IsEmpty() || !Info->Destination.IsEmpty())
+    {
+      // cannot use ProgressData->Temp as it is set only after the transfer actually starts
+      Values[0] = Info->Source.IsEmpty() ? LoadStr(PROGRESS_TEMP_DIR) : Info->Source;
+      Values[1] = Info->Destination.IsEmpty() ? LoadStr(PROGRESS_TEMP_DIR) : Info->Destination;
+    }
 
     __int64 TotalTransferred = QueueItem->TotalTransferred;
     if (TotalTransferred >= 0)

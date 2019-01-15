@@ -24,7 +24,13 @@ namespace WinSCP
             return path + mask;
         }
 
+        [Obsolete("Use RemotePath.Combine method")]
         public static string CombinePaths(string path1, string path2)
+        {
+            return Combine(path1, path2);
+        }
+
+        public static string Combine(string path1, string path2)
         {
             if (path1 == null)
             {

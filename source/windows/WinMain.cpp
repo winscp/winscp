@@ -23,7 +23,7 @@
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
 void __fastcall GetLoginData(UnicodeString SessionName, TOptions * Options,
-  TObjectList * DataList, UnicodeString & DownloadFile, bool NeedSession, TForm * LinkedForm)
+  TObjectList * DataList, UnicodeString & DownloadFile, bool NeedSession, TForm * LinkedForm, int Flags)
 {
   bool DefaultsOnly = false;
 
@@ -36,8 +36,7 @@ void __fastcall GetLoginData(UnicodeString SessionName, TOptions * Options,
   else
   {
     TSessionData * SessionData =
-      StoredSessions->ParseUrl(SessionName, Options, DefaultsOnly,
-        &DownloadFile);
+      StoredSessions->ParseUrl(SessionName, Options, DefaultsOnly, &DownloadFile, NULL, NULL, Flags);
     DataList->Add(SessionData);
 
     if (DataList->Count == 1)
@@ -224,20 +223,23 @@ void __fastcall FullSynchronize(TTerminal * Terminal, TCustomScpExplorerForm * S
   bool SaveMode = true;
   // bit ugly
   TSynchronizeMode Mode = (TSynchronizeMode)GUIConfiguration->SynchronizeMode;
-  if (ScpExplorer->DoFullSynchronizeDirectories(LocalDirectory,
-        RemoteDirectory, Mode, SaveMode, UseDefaults))
-  {
-    if (SaveMode)
-    {
-      GUIConfiguration->SynchronizeMode = Mode;
-    }
+  int Params = GUIConfiguration->SynchronizeParams;
 
-    Terminal->CloseOnCompletion();
-  }
-  else
+  // Undocumented syntax for "Start in New Window"
+  if (CommandParams->Count >= 4)
   {
-    Abort();
+    Mode = (TSynchronizeMode)StrToIntDef(CommandParams->Strings[2], Mode);
+    Params = StrToIntDef(CommandParams->Strings[3], Params);
   }
+
+  int Result =
+    ScpExplorer->DoFullSynchronizeDirectories(LocalDirectory, RemoteDirectory, Mode, Params, SaveMode, UseDefaults);
+  if ((Result >= 0) && SaveMode)
+  {
+    GUIConfiguration->SynchronizeMode = Mode;
+  }
+
+  Abort();
 }
 //---------------------------------------------------------------------------
 void __fastcall Synchronize(TTerminal * Terminal, TCustomScpExplorerForm * ScpExplorer,
@@ -247,6 +249,15 @@ void __fastcall Synchronize(TTerminal * Terminal, TCustomScpExplorerForm * ScpEx
   UnicodeString RemoteDirectory;
 
   SynchronizeDirectories(Terminal, CommandParams, LocalDirectory, RemoteDirectory);
+
+  // Undocumented syntax for "Start in New Window"
+  if (CommandParams->Count >= 4)
+  {
+    GUIConfiguration->SynchronizeParams = StrToIntDef(CommandParams->Strings[2], -1);
+    GUIConfiguration->SynchronizeOptions = StrToIntDef(CommandParams->Strings[3], -1);
+
+    Configuration->DontSave();
+  }
 
   ScpExplorer->DoSynchronizeDirectories(LocalDirectory, RemoteDirectory, UseDefaults);
   Abort();
@@ -728,7 +739,7 @@ int __fastcall Execute()
       Configuration->TemporaryLogSensitive(LogSensitive);
     }
     int LogProtocol;
-    if (!SwitchValue.IsEmpty() && TryStrToInt(SwitchValue, LogProtocol) && (LogProtocol >= 0))
+    if (!SwitchValue.IsEmpty() && TryStrToInt(SwitchValue, LogProtocol) && (LogProtocol >= -1))
     {
       Configuration->TemporaryLogProtocol(LogProtocol);
     }
@@ -758,6 +769,13 @@ int __fastcall Execute()
     }
   }
 
+  std::unique_ptr<TStrings> RawSettings(new TStringList());
+  if (Params->FindSwitch(RAWTRANSFERSETTINGS_SWITCH, RawSettings.get()))
+  {
+    std::unique_ptr<TOptionsStorage> OptionsStorage(new TOptionsStorage(RawSettings.get(), false));
+    GUIConfiguration->LoadDefaultCopyParam(OptionsStorage.get());
+  }
+
   TConsoleMode Mode = cmNone;
   if (Params->FindSwitch(L"help") || Params->FindSwitch(L"h") || Params->FindSwitch(L"?"))
   {
@@ -774,6 +792,18 @@ int __fastcall Execute()
   else if (Params->FindSwitch(FINGERPRINTSCAN_SWITCH))
   {
     Mode = cmFingerprintScan;
+  }
+  else if (Params->FindSwitch(DUMPCALLSTACK_SWITCH))
+  {
+    Mode = cmDumpCallstack;
+  }
+  else if (Params->FindSwitch(INFO_SWITCH))
+  {
+    Mode = cmInfo;
+  }
+  else if (Params->FindSwitch(COMREGISTRATION_SWITCH))
+  {
+    Mode = cmComRegistration;
   }
   // We have to check for /console only after the other options,
   // as the /console is always used when we are run by winscp.com
@@ -833,7 +863,7 @@ int __fastcall Execute()
       // workaround is that we create mutex in uninstaller, if it runs silent, and
       // ignore the UninstallCleanup, when the mutex exists.
       if ((OpenMutex(SYNCHRONIZE, false, L"WinSCPSilentUninstall") == NULL) &&
-          (MessageDialog(MainInstructions(LoadStr(UNINSTALL_CLEANUP)), qtConfirmation,
+          (MessageDialog(LoadStr(UNINSTALL_CLEANUP), qtConfirmation,
             qaYes | qaNo, HELP_UNINSTALL_CLEANUP) == qaYes))
       {
         DoCleanupDialog(StoredSessions, Configuration);
@@ -937,7 +967,7 @@ int __fastcall Execute()
 
       if (!Params->Empty)
       {
-        if (Params->FindSwitch(L"Defaults") && CheckSafe(Params))
+        if (Params->FindSwitch(DEFAULTS_SWITCH) && CheckSafe(Params))
         {
           UseDefaults = true;
         }
@@ -957,11 +987,11 @@ int __fastcall Execute()
             ParamCommand = pcUpload;
           }
         }
-        else if (Params->FindSwitch(L"Synchronize", CommandParams, 2))
+        else if (Params->FindSwitch(SYNCHRONIZE_SWITCH, CommandParams, 4))
         {
           ParamCommand = pcFullSynchronize;
         }
-        else if (Params->FindSwitch(L"KeepUpToDate", CommandParams, 2))
+        else if (Params->FindSwitch(KEEP_UP_TO_DATE_SWITCH, CommandParams, 4))
         {
           ParamCommand = pcSynchronize;
         }
@@ -1032,10 +1062,10 @@ int __fastcall Execute()
       do
       {
         Retry = false;
-        TObjectList * DataList = new TObjectList();
+        std::unique_ptr<TObjectList> DataList(new TObjectList());
         try
         {
-          GetLoginData(AutoStartSession, Params, DataList, DownloadFile, NeedSession, NULL);
+          GetLoginData(AutoStartSession, Params, DataList.get(), DownloadFile, NeedSession, NULL, pufAllowStoredSiteWithProtocol);
           // GetLoginData now Aborts when session is needed and none is selected
           if (DebugAlwaysTrue(!NeedSession || (DataList->Count > 0)))
           {
@@ -1059,7 +1089,7 @@ int __fastcall Execute()
               bool CanStart;
               if (DataList->Count > 0)
               {
-                TTerminal * Terminal = TerminalManager->NewTerminals(DataList);
+                TTerminal * Terminal = TerminalManager->NewTerminals(DataList.get());
                 if (!DownloadFile.IsEmpty())
                 {
                   Terminal->AutoReadDirectory = false;
@@ -1127,6 +1157,8 @@ int __fastcall Execute()
                   }
 
                   Application->Run();
+                  // to allow dialog boxes show later (like from CheckConfigurationForceSave)
+                  SetAppTerminated(False);
                 }
                 __finally
                 {
@@ -1141,13 +1173,17 @@ int __fastcall Execute()
             }
           }
         }
-        __finally
+        // Catch EAbort from Synchronize() and similar functions, so that CheckConfigurationForceSave is processed
+        catch (EAbort & E)
         {
-          delete DataList;
+          Retry = false; // unlikely to be true, but just in case
         }
       }
       while (Retry);
     }
+
+    // In GUI mode only
+    CheckConfigurationForceSave();
   }
   __finally
   {

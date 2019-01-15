@@ -191,7 +191,9 @@ UnicodeString __fastcall TGenerateUrlDialog::GenerateUrl(UnicodeString Path)
       FLAGMASK(WinSCPSpecificCheck->Checked, sufSpecific) |
       FLAGMASK(UserNameCheck->Enabled && UserNameCheck->Checked, sufUserName) |
       FLAGMASK(PasswordCheck->Enabled && PasswordCheck->Checked, sufPassword) |
-      FLAGMASK(HostKeyCheck->Enabled && HostKeyCheck->Checked, sufHostKey));
+      FLAGMASK(HostKeyCheck->Enabled && HostKeyCheck->Checked, sufHostKey) |
+      FLAGMASK(RawSettingsCheck->Enabled && RawSettingsCheck->Checked, sufRawSettings) |
+      FLAGMASK(CustomWinConfiguration->HttpForWebDAV, sufHttpForWebDAV));
 
   if ((RemoteDirectoryCheck->Enabled && RemoteDirectoryCheck->Checked) ||
       IsFileUrl())
@@ -239,7 +241,7 @@ UnicodeString __fastcall RtfCommandlineSwitch(const UnicodeString & Switch, cons
 //---------------------------------------------------------------------------
 static UnicodeString __fastcall QuoteStringParam(UnicodeString S)
 {
-  return AddQuotes(RtfEscapeParam(S));
+  return AddQuotes(RtfEscapeParam(S, false));
 }
 //---------------------------------------------------------------------------
 // Keep in sync with .NET Session.EscapeFileMask
@@ -327,13 +329,7 @@ UnicodeString __fastcall TGenerateUrlDialog::GenerateScript(UnicodeString & Scri
     {
       TransferCommandArgs += RtfSwitch(DELETE_SWITCH, TransferCommandLink);
     }
-    bool NoArgs;
-    TransferCommandArgs += FCopyParam.GenerateTransferCommandArgs(FCopyParamAttrs, TransferCommandLink, NoArgs);
-
-    if (NoArgs)
-    {
-      ScriptDescription += LoadStr(GENERATE_URL_COPY_PARAM_SCRIPT_REMAINING) + L"\n";
-    }
+    TransferCommandArgs += FCopyParam.GenerateTransferCommandArgs(FCopyParamAttrs, TransferCommandLink);
 
     AddSampleDescription(ScriptDescription);
 
@@ -365,6 +361,8 @@ UnicodeString __fastcall TGenerateUrlDialog::GenerateScript(UnicodeString & Scri
   Commands.push_back(UnicodeString());
   Commands.push_back(RtfScriptCommand(L"exit"));
 
+  UnicodeString ComExeName = ChangeFileExt(ExeName, L".com");
+
   if (ScriptFormatCombo->ItemIndex == sfScriptFile)
   {
     for (TCommands::const_iterator I = Commands.begin(); I != Commands.end(); I++)
@@ -394,8 +392,6 @@ UnicodeString __fastcall TGenerateUrlDialog::GenerateScript(UnicodeString & Scri
   }
   else if (ScriptFormatCombo->ItemIndex == sfBatchFile)
   {
-    UnicodeString ComExeName = ChangeFileExt(ExeName, L".com");
-
     Result =
       RtfScriptPlaceholder(L"@echo off") + RtfPara +
       RtfPara +
@@ -419,7 +415,7 @@ UnicodeString __fastcall TGenerateUrlDialog::GenerateScript(UnicodeString & Scri
         }
         else
         {
-          Result += RtfEscapeParam(ReplaceStr(Command, L"%", L"%%"));
+          Result += RtfEscapeParam(ReplaceStr(Command, L"%", L"%%"), false);
         }
         Result += L"\"";
       }
@@ -457,11 +453,54 @@ UnicodeString __fastcall TGenerateUrlDialog::GenerateScript(UnicodeString & Scri
         }
         else
         {
-          Result += RtfEscapeParam(Command);
+          Result += RtfEscapeParam(Command, false);
         }
         Result += L"\"";
       }
     }
+  }
+  else if (ScriptFormatCombo->ItemIndex == sfPowerShell)
+  {
+    Result =
+      RtfText(L"& \"" + ComExeName + "\" `") + RtfPara +
+      RtfText(L"  ") + LogParameter + L" " + IniParameter + RtfText(L" `") + RtfPara +
+      RtfText(L"  ") + CommandParameter;
+
+    for (TCommands::const_iterator I = Commands.begin(); I != Commands.end(); I++)
+    {
+      UnicodeString Command = *I;
+      if (!Command.IsEmpty())
+      {
+        Result += RtfText(L" `") + RtfPara + RtfText(L"    \"");
+        if (Command[1] == L'#')
+        {
+          Command.Delete(1, 1);
+          Result += RtfScriptPlaceholder(Command.TrimLeft());
+        }
+        else
+        {
+          Command = ReplaceStr(Command, L"`", L"``");
+          Command = ReplaceStr(Command, L"$", L"`$");
+          Result += RtfEscapeParam(Command, true);
+        }
+        Result += L"\"";
+      }
+    }
+
+    Result +=
+      RtfPara +
+      RtfPara +
+      RtfText(L"$winscpResult = $LastExitCode") + RtfPara +
+      RtfKeyword(L"if") + RtfText(L" ($winscpResult -eq 0)") + RtfPara +
+      RtfText(L"{") + RtfPara +
+      RtfText(L"  ") + RtfKeyword(L"Write-Host") + L" " + RtfString(L"\"Success\"") + RtfPara +
+      RtfText(L"}") + RtfPara +
+      RtfText(L"else") + RtfPara +
+      RtfText(L"{") + RtfPara +
+      RtfText(L"  ") + RtfKeyword(L"Write-Host") + L" " + RtfString(L"\"Error\"") + RtfPara +
+      RtfText(L"}") + RtfPara +
+      RtfPara +
+      RtfKeyword(L"exit") + RtfText(L" $winscpResult") + RtfPara;
   }
 
   return Result;
@@ -482,23 +521,14 @@ UnicodeString __fastcall TGenerateUrlDialog::GenerateAssemblyCode(UnicodeString 
   UnicodeString Code;
   if (FTransfer)
   {
-    bool NoCodeProperties;
-    UnicodeString CopyParamProperties =
-      FCopyParam.GenerateAssemblyCode(Language, FCopyParamAttrs, NoCodeProperties);
-
-    if (NoCodeProperties)
-    {
-      AssemblyDescription += LoadStr(GENERATE_URL_COPY_PARAM_CODE_REMAINING) + L"\n";
-    }
+    UnicodeString CopyParamProperties = FCopyParam.GenerateAssemblyCode(Language, FCopyParamAttrs);
 
     bool HasTransferOptions = !CopyParamProperties.IsEmpty();
     if (HasTransferOptions)
     {
       Code +=
         AssemblyCommentLine(Language, LoadStr(GENERATE_URL_COPY_PARAM)) +
-        AssemblyNewClassInstanceStart(Language, TransferOptionsClassName, false) +
         CopyParamProperties +
-        AssemblyNewClassInstanceEnd(Language, false) +
         RtfPara;
     }
 
@@ -673,6 +703,7 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
     EnableControl(HostKeyCheck, UserNameIncluded && !FData->HostKey.IsEmpty());
     EnableControl(RemoteDirectoryCheck, !FData->RemoteDirectory.IsEmpty() && !IsFileUrl());
     EnableControl(SaveExtensionCheck, !IsFileUrl());
+    EnableControl(RawSettingsCheck, UserNameIncluded && FData->HasRawSettingsForUrl());
 
     UnicodeString Result;
 
@@ -711,6 +742,11 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
         FixedWidth = false;
 
         ScriptDescription = FMTLOAD(GENERATE_URL_COMMANDLINE_DESC, (FORMAT("\"%s\"", (Application->ExeName)))) + L"\n";
+      }
+      else if (ScriptFormatCombo->ItemIndex == sfPowerShell)
+      {
+        WordWrap = false;
+        FixedWidth = true;
       }
 
       if (HostKeyUnknown)
@@ -760,7 +796,7 @@ void __fastcall TGenerateUrlDialog::UpdateControls()
       L"{\\rtf1\n"
        "{\\colortbl ;" +
        // The same RGB as on wiki
-       RtfColorEntry(0x010101) + // near-black fake color to be used with no-style link to ovreride the default blue underline
+       RtfColorEntry(0x010101) + // near-black fake color to be used with no-style link to override the default blue underline
        RtfColorEntry(0x008000) + // code comment (green)
        RtfColorEntry(0x008080) + // class (teal)
        RtfColorEntry(0x800000) + // string (maroon)

@@ -19,5 +19,10 @@ set BDS_BUILD_PROPERTIES=RELEASE_TYPE=%RELEASE_TYPE%;CONFIG=%BUILD_CONFIG%;INTER
 
 if "%WITH_DOTNET%"=="0" goto SKIP_DOTNET
 cd ..\dotnet
-"%MSBUILD%" WinSCPnet.csproj /t:Build /p:Configuration=%BUILD_CONFIG%;Platform=AnyCPU;INTERM_PATH=.;FINAL_PATH=.
+set DOTNET_BUILD_PROPERTIES=INTERM_PATH=.;FINAL_PATH=.
+dotnet restore WinSCPnet.csproj -p:%DOTNET_BUILD_PROPERTIES%
+mkdir obj
+move win32\Debug\WinSCPnet.csproj.nuget.g.targets obj\
+rmdir /s /q win32
+dotnet build WinSCPnet.csproj -c %BUILD_CONFIG% -p:%DOTNET_BUILD_PROPERTIES%
 :SKIP_DOTNET

@@ -72,7 +72,7 @@ public:
     const UnicodeString & TargetDir, UnicodeString & DestFileName, int Attrs,
     const TCopyParamType * CopyParam, int Params, TFileOperationProgressType * OperationProgress,
     unsigned int Flags, TDownloadSessionAction & Action) = 0;
-  virtual void __fastcall CreateDirectory(const UnicodeString DirName) = 0;
+  virtual void __fastcall CreateDirectory(const UnicodeString & DirName, bool Encrypt) = 0;
   virtual void __fastcall CreateLink(const UnicodeString FileName, const UnicodeString PointTo, bool Symbolic) = 0;
   virtual void __fastcall DeleteFile(const UnicodeString FileName,
     const TRemoteFile * File, int Params,
@@ -81,6 +81,7 @@ public:
     const TRemoteFile * File, UnicodeString Command, int Params, TCaptureOutputEvent OutputEvent) = 0;
   virtual void __fastcall DoStartup() = 0;
   virtual void __fastcall HomeDirectory() = 0;
+  virtual UnicodeString __fastcall GetHomeDirectory();
   virtual bool __fastcall IsCapable(int Capability) const = 0;
   virtual void __fastcall LookupUsersGroups() = 0;
   virtual void __fastcall ReadCurrentDirectory() = 0;

@@ -259,18 +259,11 @@ void __fastcall TFileSystemInfoDialog::ClipboardAddItem(TControl * Control,
         TLabel * Label = dynamic_cast<TLabel *>(Control->Parent->Controls[Index]);
         if ((Label != NULL) && (Label->FocusControl == Control))
         {
-          UnicodeString S = StripHotkey(Label->Caption);
-          if (EndsStr(L":", S))
-          {
-            S.SetLength(S.Length() - 1);
-          }
+          UnicodeString S = RemoveSuffix(StripHotkey(Label->Caption), L":");
           FClipboard += FORMAT(L"%s = ", (S));
         }
       }
-      if (EndsStr(L"\r\n", Value))
-      {
-        Value.SetLength(Value.Length() - 2);
-      }
+      Value = RemoveSuffix(Value, L"\r\n");
       FClipboard += FORMAT(L"%s\r\n", (Value));
     }
     else

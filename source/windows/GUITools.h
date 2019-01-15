@@ -4,6 +4,7 @@
 //---------------------------------------------------------------------------
 #include <FileMasks.H>
 #include <Tbx.hpp>
+#include <DirectoryMonitor.hpp>
 //---------------------------------------------------------------------------
 class TSessionData;
 //---------------------------------------------------------------------------
@@ -11,12 +12,14 @@ typedef void __fastcall (__closure* TProcessMessagesEvent)();
 //---------------------------------------------------------------------------
 bool __fastcall FindFile(UnicodeString & Path);
 bool __fastcall FindTool(const UnicodeString & Name, UnicodeString & Path);
+void __fastcall ExecuteTool(const UnicodeString & Name);
 void __fastcall ExecuteShellChecked(const UnicodeString Path, const UnicodeString Params,
   bool ChangeWorkingDirectory = false);
 void __fastcall ExecuteShellChecked(const UnicodeString Command);
 bool __fastcall ExecuteShell(const UnicodeString Path, const UnicodeString Params,
   HANDLE & Handle);
 void __fastcall ExecuteShellCheckedAndWait(const UnicodeString Command, TProcessMessagesEvent ProcessMessages);
+TObjectList * StartCreationDirectoryMonitorsOnEachDrive(unsigned int Filter, TFileChangedEvent OnChanged);
 extern bool DontCopyCommandToClipboard;
 bool __fastcall CopyCommandToClipboard(const UnicodeString & Command);
 void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
@@ -25,7 +28,8 @@ bool __fastcall SpecialFolderLocation(int PathID, UnicodeString & Path);
 UnicodeString __fastcall UniqTempDir(const UnicodeString BaseDir,
   const UnicodeString Identity, bool Mask = false);
 bool __fastcall DeleteDirectory(const UnicodeString DirName);
-void __fastcall AddSessionColorImage(TCustomImageList * ImageList, TColor Color, int MaskIndex);
+int __fastcall GetSessionColorImage(TCustomImageList * ImageList, TColor Color, int MaskIndex);
+void __fastcall RegenerateSessionColorsImageList(TCustomImageList * ImageList, int MaskIndex);
 void __fastcall SetSubmenu(TTBXCustomItem * Item);
 typedef int __fastcall (*TCalculateWidth)(UnicodeString Text, void * Arg);
 void __fastcall ApplyTabs(
@@ -38,6 +42,7 @@ void __fastcall LoadDialogImage(TImage * Image, const UnicodeString & ImageName)
 int __fastcall DialogImageSize(TForm * Form);
 int __fastcall NormalizePixelsPerInch(int PixelsPerInch);
 void __fastcall HideComponentsPanel(TForm * Form);
+UnicodeString FormatIncrementalSearchStatus(const UnicodeString & Text, bool HaveNext);
 namespace Webbrowserex
 {
   class TWebBrowserEx;
@@ -48,7 +53,14 @@ void __fastcall SetBrowserDesignModeOff(TWebBrowserEx * WebBrowser);
 void __fastcall AddBrowserLinkHandler(TWebBrowserEx * WebBrowser,
   const UnicodeString & Url, TNotifyEvent Handler);
 void __fastcall NavigateBrowserToUrl(TWebBrowserEx * WebBrowser, const UnicodeString & Url);
+void ReadyBrowserForStreaming(TWebBrowserEx * WebBrowser);
+void WaitBrowserToIdle(TWebBrowserEx * WebBrowser);
+void HideBrowserScrollbars(TWebBrowserEx * WebBrowser);
+UnicodeString GenerateAppHtmlPage(TFont * Font, TPanel * Parent, const UnicodeString & Body, bool Seamless);
+void LoadBrowserDocument(TWebBrowserEx * WebBrowser, const UnicodeString & Document);
 TComponent * __fastcall FindComponentRecursively(TComponent * Root, const UnicodeString & Name);
+void __fastcall GetInstrutionsTheme(
+  TColor & MainInstructionColor, HFONT & MainInstructionFont, HFONT & InstructionFont);
 //---------------------------------------------------------------------------
 class TLocalCustomCommand : public TFileCustomCommand
 {
@@ -142,12 +154,13 @@ private:
 
   UnicodeString __fastcall GetLongHintIfAny(const UnicodeString & AHint);
   static int __fastcall GetTextFlags(TControl * Control);
-  bool __fastcall IsHintPopup(TControl * HintControl, const UnicodeString & Hint);
   bool __fastcall IsPathLabel(TControl * HintControl);
   bool __fastcall UseBoldShortHint(TControl * HintControl);
   int __fastcall GetMargin(TControl * HintControl, const UnicodeString & Hint);
   TFont * __fastcall GetFont(TControl * HintControl, const UnicodeString & Hint);
   TControl * __fastcall GetHintControl(void * Data);
+  void __fastcall SplitHint(
+    TControl * HintControl, const UnicodeString & Hint, UnicodeString & ShortHint, UnicodeString & LongHint);
 };
 //---------------------------------------------------------------------------
 // Newer version rich edit that supports "Friendly name hyperlinks" and
@@ -165,6 +178,28 @@ protected:
 private:
   HINSTANCE FLibrary;
 };
+//---------------------------------------------------------------------------
+// Based on:
+// https://stackoverflow.com/q/6912424/850848
+// https://stackoverflow.com/q/4685863/850848
+class TUIStateAwareLabel : public TLabel
+{
+protected:
+  DYNAMIC void __fastcall DoDrawText(TRect & Rect, int Flags);
+};
+// FindComponentClass takes parameter by reference and as such it cannot be implemented in
+// an inline method without a compiler warning, which we cannot suppress in a macro.
+// And having the implementation in a real code (not macro) also allows us to debug the code.
+void __fastcall FindComponentClass(
+  void * Data, TReader * Reader, const UnicodeString ClassName, TComponentClass & ComponentClass);
+#define INTERFACE_HOOK_CUSTOM(PARENT) \
+  protected: \
+    virtual void __fastcall ReadState(TReader * Reader) \
+    { \
+      Reader->OnFindComponentClass = MakeMethod<TFindComponentClassEvent>(NULL, FindComponentClass); \
+      PARENT::ReadState(Reader); \
+    }
+#define INTERFACE_HOOK INTERFACE_HOOK_CUSTOM(TForm)
 //---------------------------------------------------------------------------
 extern const UnicodeString PageantTool;
 extern const UnicodeString PuttygenTool;

@@ -839,8 +839,8 @@ begin
     Fnt := Item.EditorFontSettings.CreateTransformedFont(TTBViewAccess(View).GetFont.Handle, C);
     OldFnt := SelectObject(DC, Fnt);
     SetBkMode(DC, TRANSPARENT);
-    SetBkColor(DC, GetSysColor(FillColors[Item.Enabled]));
-    SetTextColor(DC, GetSysColor(TextColors[Item.Enabled]));
+    SetBkColor(DC, CurrentTheme.GetSysColor(FillColors[Item.Enabled]));
+    SetTextColor(DC, CurrentTheme.GetSysColor(TextColors[Item.Enabled]));
     // WinSCP: Align edit text with toolbar labels
     InflateRect(R, 0, -1);
     DrawText(DC, PChar(S), Length(S), R, DT_SINGLELINE or DT_NOPREFIX or Alignments[Item.Alignment]);

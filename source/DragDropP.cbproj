@@ -112,7 +112,7 @@
 		<DelphiCompile Include="packages\dragndrop\PIDL.pas">
 			<BuildOrder>7</BuildOrder>
 		</DelphiCompile>
-		<PackageImport Include="Moje.bpi">
+		<PackageImport Include="My.bpi">
 			<BuildOrder>24</BuildOrder>
 		</PackageImport>
 		<PackageImport Include="rtl.bpi">

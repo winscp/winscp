@@ -7,14 +7,15 @@
 #include <StdCtrls.hpp>
 #include <Forms.hpp>
 #include <Buttons.hpp>
-
-#include <RemoteFiles.h>
 #include <ActnList.hpp>
 #include <ImgList.hpp>
 #include <Menus.hpp>
 #include "GrayedCheckBox.hpp"
 #include "PngImageList.hpp"
 #include <System.Actions.hpp>
+//---------------------------------------------------------------------------
+#include <RemoteFiles.h>
+#include <GUITools.h>
 //---------------------------------------------------------------------------
 class TRightsFrame : public TFrame
 {
@@ -56,6 +57,12 @@ __published:
   TPngImageList *RightsImages120;
   TPngImageList *RightsImages144;
   TPngImageList *RightsImages192;
+  TLabel *OctalLabel;
+  TEdit *OctalEdit;
+  TGrayedCheckBox *SetUidCheck;
+  TGrayedCheckBox *SetGIDCheck;
+  TGrayedCheckBox *StickyBitCheck;
+  TButton *CloseButton;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall RightsButtonsClick(TObject *Sender);
   void __fastcall RightsActionsExecute(TBasicAction *Action,
@@ -64,6 +71,9 @@ __published:
   void __fastcall RightsPopupPopup(TObject *Sender);
   void __fastcall FrameContextPopup(TObject *Sender, TPoint &MousePos,
           bool &Handled);
+  void __fastcall OctalEditChange(TObject * Sender);
+  void __fastcall OctalEditExit(TObject * Sender);
+  void __fastcall CloseButtonClick(TObject * Sender);
 private:
   bool FAllowAddXToDirectories;
   TNotifyEvent FOnChange;
@@ -107,9 +117,9 @@ public:
 
 protected:
   void __fastcall DoChange();
-  virtual void __fastcall UpdateControls();
+  void __fastcall UpdateControls();
   virtual void __fastcall SetEnabled(bool Value);
-  virtual void __fastcall ForceUpdate();
+  void __fastcall ForceUpdate();
   virtual void __fastcall CreateParams(TCreateParams & Params);
   virtual void __fastcall CreateWnd();
   virtual void __fastcall Dispatch(void * Message);
@@ -118,10 +128,14 @@ protected:
   void __fastcall WMContextMenu(TWMContextMenu & Message);
   bool __fastcall IsAncestor(TControl * Control, TControl * Ancestor);
   DYNAMIC void __fastcall DoExit();
-  virtual void __fastcall SetPopup(bool value);
+  void __fastcall SetPopup(bool value);
   void __fastcall DoCloseUp();
   bool __fastcall HasFocus();
   bool __fastcall DirectoriesXEffective();
+  void __fastcall UpdateOctalEdit();
+  void __fastcall UpdateByOctal();
+
+  INTERFACE_HOOK_CUSTOM(TFrame);
 
   __property TRights::TState States[TRights::TRight Right] = { read = GetStates, write = SetStates };
 };

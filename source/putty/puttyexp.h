@@ -23,6 +23,7 @@ const unsigned int * ssh2_remwindow(void * handle);
 void md5checksum(const char * buffer, int len, unsigned char output[16]);
 typedef const struct ssh_signkey * cp_ssh_signkey;
 void get_hostkey_algs(int * count, cp_ssh_signkey * SignKeys);
+void get_macs(int * count, const struct ssh_mac *** amacs);
 
 // from wingss.c
 
@@ -68,6 +69,8 @@ void call_aes_free_context(void * handle);
 void call_aes_setup(void * ctx, int blocklen, unsigned char * key, int keylen);
 void call_aes_encrypt(void * ctx, unsigned int * block);
 void call_aes_decrypt(void * ctx, unsigned int * block);
+void call_aes_sdctr(unsigned char *blk, int len, void *ctx);
+void aes_iv(void *handle, unsigned char *iv);
 
 // from sshsha.c
 

@@ -18,6 +18,9 @@
 #define SWAP(TYPE, FIRST, SECOND) \
   { TYPE __Backup = FIRST; FIRST = SECOND; SECOND = __Backup; }
 //---------------------------------------------------------------------------
+#define PARENTDIRECTORY L".."
+#define THISDIRECTORY L"."
+//---------------------------------------------------------------------------
 extern const wchar_t EngShortMonthNames[12][4];
 extern const char Bom[3];
 extern const wchar_t TokenPrefix;
@@ -26,6 +29,7 @@ extern const wchar_t TokenReplacement;
 extern const UnicodeString LocalInvalidChars;
 extern const UnicodeString PasswordMask;
 extern const UnicodeString Ellipsis;
+extern const UnicodeString EmptyString;
 //---------------------------------------------------------------------------
 extern const UnicodeString HttpProtocol;
 extern const UnicodeString HttpsProtocol;
@@ -39,6 +43,7 @@ void PackStr(AnsiString & Str);
 void __fastcall Shred(UnicodeString & Str);
 void __fastcall Shred(UTF8String & Str);
 void __fastcall Shred(AnsiString & Str);
+void __fastcall Shred(RawByteString & Str);
 UnicodeString AnsiToString(const RawByteString & S);
 UnicodeString AnsiToString(const char * S, size_t Len);
 UnicodeString MakeValidFileName(UnicodeString FileName);
@@ -50,6 +55,7 @@ UnicodeString CutToChar(UnicodeString &Str, wchar_t Ch, bool Trim);
 UnicodeString CopyToChars(const UnicodeString & Str, int & From, UnicodeString Chs, bool Trim,
   wchar_t * Delimiter = NULL, bool DoubleDelimiterEscapes = false);
 UnicodeString CopyToChar(const UnicodeString & Str, wchar_t Ch, bool Trim);
+UnicodeString RemoveSuffix(const UnicodeString & Str, const UnicodeString & Suffix);
 UnicodeString DelimitStr(UnicodeString Str, UnicodeString Chars);
 UnicodeString ShellDelimitStr(UnicodeString Str, wchar_t Quote);
 UnicodeString ExceptionLogString(Exception *E);
@@ -61,6 +67,7 @@ UnicodeString RemoveMainInstructionsTag(UnicodeString S);
 UnicodeString UnformatMessage(UnicodeString S);
 UnicodeString RemoveInteractiveMsgTag(UnicodeString S);
 UnicodeString RemoveEmptyLines(const UnicodeString & S);
+UnicodeString NormalizeString(const UnicodeString & S);
 bool IsNumber(const UnicodeString Str);
 UnicodeString __fastcall SystemTemporaryDirectory();
 UnicodeString __fastcall GetShellFolderPath(int CSIdl);
@@ -83,11 +90,13 @@ UnicodeString __fastcall ExpandFileNameCommand(const UnicodeString Command,
 void __fastcall ReformatFileNameCommand(UnicodeString & Command);
 UnicodeString __fastcall EscapeParam(const UnicodeString & Param);
 UnicodeString __fastcall EscapePuttyCommandParam(UnicodeString Param);
+UnicodeString __fastcall StringsToParams(TStrings * Strings);
 UnicodeString __fastcall ExpandEnvironmentVariables(const UnicodeString & Str);
 bool __fastcall SamePaths(const UnicodeString & Path1, const UnicodeString & Path2);
 bool __fastcall IsPathToSameFile(const UnicodeString & Path1, const UnicodeString & Path2);
 int __fastcall CompareLogicalText(
   const UnicodeString & S1, const UnicodeString & S2, bool NaturalOrderNumericalSorting);
+bool ContainsTextSemiCaseSensitive(const UnicodeString & Text, const UnicodeString & SubText);
 bool __fastcall IsReservedName(UnicodeString FileName);
 UnicodeString __fastcall ApiPath(UnicodeString Path);
 UnicodeString __fastcall DisplayableStr(const RawByteString & Str);
@@ -108,7 +117,7 @@ UnicodeString __fastcall EncodeUrlPath(UnicodeString S);
 UnicodeString __fastcall AppendUrlParams(UnicodeString URL, UnicodeString Params);
 UnicodeString __fastcall ExtractFileNameFromUrl(const UnicodeString & Url);
 bool __fastcall RecursiveDeleteFile(const UnicodeString & FileName, bool ToRecycleBin);
-void __fastcall RecursiveDeleteFileChecked(const UnicodeString & FileName, bool ToRecycleBin);
+int __fastcall RecursiveDeleteFileChecked(const UnicodeString & FileName, bool ToRecycleBin);
 void __fastcall DeleteFileChecked(const UnicodeString & FileName);
 unsigned int __fastcall CancelAnswer(unsigned int Answers);
 unsigned int __fastcall AbortAnswer(unsigned int Answers);
@@ -131,6 +140,7 @@ bool __fastcall IsUWP();
 TLibModule * __fastcall FindModule(void * Instance);
 __int64 __fastcall Round(double Number);
 bool __fastcall TryRelativeStrToDateTime(UnicodeString S, TDateTime & DateTime, bool Add);
+bool TryStrToDateTimeStandard(const UnicodeString & S, TDateTime & Value);
 bool __fastcall TryStrToSize(UnicodeString SizeStr, __int64 & Size);
 UnicodeString __fastcall SizeToStr(__int64 Size);
 LCID __fastcall GetDefaultLCID();
@@ -166,13 +176,36 @@ UnicodeString __fastcall ChangeUrlProtocol(const UnicodeString & S, const Unicod
 void __fastcall LoadScriptFromFile(UnicodeString FileName, TStrings * Lines);
 UnicodeString __fastcall StripEllipsis(const UnicodeString & S);
 UnicodeString __fastcall GetFileMimeType(const UnicodeString & FileName);
+bool __fastcall IsRealFile(const UnicodeString & FileName);
+UnicodeString GetOSInfo();
+UnicodeString GetEnvironmentInfo();
+//---------------------------------------------------------------------------
+struct TSearchRecSmart : public TSearchRec
+{
+public:
+  TSearchRecSmart();
+  TDateTime GetLastWriteTime() const;
+  bool IsRealFile() const;
+  bool IsDirectory() const;
+  bool IsHidden() const;
+private:
+  mutable FILETIME FLastWriteTimeSource;
+  mutable TDateTime FLastWriteTime;
+};
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure* TProcessLocalFileEvent)
-  (const UnicodeString FileName, const TSearchRec Rec, void * Param);
+  (const UnicodeString & FileName, const TSearchRecSmart & Rec, void * Param);
 bool __fastcall FileSearchRec(const UnicodeString FileName, TSearchRec & Rec);
-struct TSearchRecChecked : public TSearchRec
+void CopySearchRec(const TSearchRec & Source, TSearchRec & Dest);
+struct TSearchRecChecked : public TSearchRecSmart
 {
   UnicodeString Path;
+  bool Opened;
+};
+struct TSearchRecOwned : public TSearchRecChecked
+{
+  ~TSearchRecOwned();
+  void Close();
 };
 int __fastcall FindCheck(int Result, const UnicodeString & Path);
 int __fastcall FindFirstUnchecked(const UnicodeString & Path, int Attr, TSearchRecChecked & F);
@@ -217,6 +250,7 @@ int __fastcall TimeToMSec(TDateTime T);
 int __fastcall TimeToSeconds(TDateTime T);
 int __fastcall TimeToMinutes(TDateTime T);
 UnicodeString __fastcall FormatDateTimeSpan(const UnicodeString TimeFormat, TDateTime DateTime);
+TStrings * TlsCipherList();
 //---------------------------------------------------------------------------
 template<class MethodT>
 MethodT __fastcall MakeMethod(void * Data, void * Code)
@@ -250,7 +284,7 @@ UnicodeString __fastcall RtfSwitch(
   const UnicodeString & Name, const UnicodeString & Link, const UnicodeString & Value, bool Rtf = true);
 UnicodeString __fastcall RtfSwitch(
   const UnicodeString & Name, const UnicodeString & Link, int Value, bool Rtf = true);
-UnicodeString __fastcall RtfEscapeParam(UnicodeString Param);
+UnicodeString __fastcall RtfEscapeParam(UnicodeString Param, bool PowerShellEscape);
 UnicodeString __fastcall RtfRemoveHyperlinks(UnicodeString Text);
 UnicodeString __fastcall ScriptCommandLink(const UnicodeString & Command);
 UnicodeString __fastcall AssemblyBoolean(TAssemblyLanguage Language, bool Value);
@@ -273,11 +307,15 @@ UnicodeString __fastcall RtfLibraryMethod(const UnicodeString & ClassName, const
 UnicodeString __fastcall RtfLibraryClass(const UnicodeString & ClassName);
 UnicodeString __fastcall AssemblyVariableName(TAssemblyLanguage Language, const UnicodeString & ClassName);
 UnicodeString __fastcall AssemblyStatementSeparator(TAssemblyLanguage Language);
+UnicodeString __fastcall AssemblyVariableDeclaration(TAssemblyLanguage Language);
 UnicodeString __fastcall AssemblyNewClassInstance(
   TAssemblyLanguage Language, const UnicodeString & ClassName, bool Inline);
 UnicodeString __fastcall AssemblyNewClassInstanceStart(
   TAssemblyLanguage Language, const UnicodeString & ClassName, bool Inline);
 UnicodeString __fastcall AssemblyNewClassInstanceEnd(TAssemblyLanguage Language, bool Inline);
+UnicodeString __fastcall AssemblyAddRawSettings(
+  TAssemblyLanguage Language, TStrings * RawSettings, const UnicodeString & ClassName,
+  const UnicodeString & MethodName);
 //---------------------------------------------------------------------------
 #include "Global.h"
 //---------------------------------------------------------------------------

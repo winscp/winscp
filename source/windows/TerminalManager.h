@@ -54,19 +54,21 @@ public:
   void __fastcall OpenInPutty();
   void __fastcall NewSession(bool FromSite, const UnicodeString & SessionUrl, bool ReloadSessions = true, TForm * LinkedForm = NULL);
   void __fastcall Idle(bool SkipCurrentTerminal);
-  UnicodeString __fastcall TerminalTitle(TTerminal * Terminal);
+  UnicodeString __fastcall GetTerminalShortPath(TTerminal * Terminal);
+  UnicodeString __fastcall GetTerminalTitle(TTerminal * Terminal, bool Unique);
+  UnicodeString __fastcall GetActiveTerminalTitle(bool Unique);
+  UnicodeString __fastcall GetAppProgressTitle();
   void __fastcall HandleException(Exception * E);
   void __fastcall SaveWorkspace(TList * DataList);
   void __fastcall QueueStatusUpdated();
   TTerminal * __fastcall FindActiveTerminalForSite(TSessionData * Data);
   TTerminalQueue * __fastcall FindQueueForTerminal(TTerminal * Terminal);
-  void __fastcall DoConnectTerminal(TTerminal * Terminal, bool Reopen);
+  bool __fastcall UploadPublicKey(TTerminal * Terminal, TSessionData * Data, UnicodeString & FileName);
 
   __property TCustomScpExplorerForm * ScpExplorer = { read = FScpExplorer, write = SetScpExplorer };
   __property TTerminal * ActiveTerminal = { read = FActiveTerminal, write = SetActiveTerminal };
   __property TTerminalQueue * ActiveQueue = { read = GetActiveQueue };
   __property int ActiveTerminalIndex = { read = GetActiveTerminalIndex, write = SetActiveTerminalIndex };
-  __property UnicodeString ActiveTerminalTitle = { read = GetActiveTerminalTitle };
   __property TStrings * TerminalList = { read = GetTerminalList };
   __property TNotifyEvent OnLastTerminalClosed = { read = FOnLastTerminalClosed, write = FOnLastTerminalClosed };
   __property TNotifyEvent OnTerminalListChanged = { read = FOnTerminalListChanged, write = FOnTerminalListChanged };
@@ -74,6 +76,7 @@ public:
 
 protected:
   virtual TTerminal * __fastcall CreateTerminal(TSessionData * Data);
+  void __fastcall DoConnectTerminal(TTerminal * Terminal, bool Reopen, bool AdHoc);
 
 private:
   static TTerminalManager * FInstance;
@@ -102,6 +105,7 @@ private:
   void * FBusyToken;
   bool FAuthenticationCancelled;
   std::unique_ptr<TApplicationEvents> FApplicationsEvents;
+  bool FKeepAuthenticateForm;
 
   bool __fastcall ConnectActiveTerminalImpl(bool Reopen);
   bool __fastcall ConnectActiveTerminal();
@@ -136,7 +140,6 @@ private:
   void __fastcall TerminalReady();
   TStrings * __fastcall GetTerminalList();
   int __fastcall GetActiveTerminalIndex();
-  UnicodeString __fastcall GetActiveTerminalTitle();
   TTerminalQueue * __fastcall GetActiveQueue();
   void __fastcall SaveTerminal(TTerminal * Terminal);
   void __fastcall SetActiveTerminalIndex(int value);
@@ -144,7 +147,7 @@ private:
     bool Temp, const UnicodeString & FileName, bool Success,
     TOnceDoneOperation & OnceDoneOperation);
   void __fastcall OperationProgress(TFileOperationProgressType & ProgressData);
-  void __fastcall DeleteLocalFile(const UnicodeString FileName, bool Alternative);
+  void __fastcall DeleteLocalFile(const UnicodeString FileName, bool Alternative, int & Deleted);
   void __fastcall QueueEvent(TTerminalQueue * Queue, TQueueEvent Event);
   TAuthenticateForm * __fastcall MakeAuthenticateForm(TTerminal * Terminal);
   void __fastcall MasterPasswordPrompt();
@@ -165,7 +168,10 @@ private:
   void __fastcall DoConfigurationChange();
   bool __fastcall ShouldDisplayQueueStatusOnAppTitle();
   void __fastcall SetupTerminal(TTerminal * Terminal);
+  void __fastcall CloseAutheticateForm();
   void __fastcall AuthenticatingDone();
+  TRemoteFile * __fastcall CheckRights(
+    TTerminal * Terminal, const UnicodeString & EntryType, const UnicodeString & FileName, bool & WrongRights);
 };
 //---------------------------------------------------------------------------
 #endif

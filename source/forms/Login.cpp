@@ -71,7 +71,7 @@ __fastcall TLoginDialog::TLoginDialog(TComponent* AOwner)
   FForceNewSite = false;
   FLoading = false;
   FSortEnablePending = false;
-  FSiteSearch = ssSiteName;
+  FSiteSearch = isName;
   FLinkedForm = NULL;
   FPrevPos = TPoint(std::numeric_limits<LONG>::min(), std::numeric_limits<LONG>::min());
 
@@ -358,8 +358,7 @@ int __fastcall TLoginDialog::GetSessionImageIndex(TSessionData * Data)
   int Result;
   if (Data->Color != 0)
   {
-    AddSessionColorImage(SessionTree->Images, static_cast<TColor>(Data->Color), SiteColorMaskImageIndex);
-    Result = SessionTree->Images->Count - 1;
+    Result = GetSessionColorImage(SessionTree->Images, static_cast<TColor>(Data->Color), SiteColorMaskImageIndex);
   }
   else
   {
@@ -502,7 +501,7 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * SessionData)
     bool Editable = IsEditable();
     if (Editable)
     {
-      PasswordEdit->Text = SessionData->Password;
+      PasswordEdit->Text = NormalizeString(SessionData->Password);
     }
     else
     {
@@ -655,9 +654,7 @@ void __fastcall TLoginDialog::UpdateControls()
 
     if (!FSitesIncrementalSearch.IsEmpty())
     {
-      SitesIncrementalSearchLabel->Caption =
-        L" " + FMTLOAD(LOGIN_SITES_INC_SEARCH, (FSitesIncrementalSearch)) +
-        (FSitesIncrementalSearchHaveNext ? L" " + LoadStr(LOGIN_SITES_NEXT_SEARCH) : UnicodeString());
+      SitesIncrementalSearchLabel->Caption = FormatIncrementalSearchStatus(FSitesIncrementalSearch, FSitesIncrementalSearchHaveNext);
     }
 
     EnableControl(ManageButton, !FEditing);
@@ -1209,15 +1206,15 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction * BasicAction,
   }
   else if (Action == SearchSiteNameStartOnlyAction)
   {
-    Action->Checked = (FSiteSearch == ssSiteNameStartOnly);
+    Action->Checked = (FSiteSearch == isNameStartOnly);
   }
   else if (Action == SearchSiteNameAction)
   {
-    Action->Checked = (FSiteSearch == ssSiteName);
+    Action->Checked = (FSiteSearch == isName);
   }
   else if (Action == SearchSiteAction)
   {
-    Action->Checked = (FSiteSearch == ssSite);
+    Action->Checked = (FSiteSearch == isAll);
   }
   else if (Action == CheckForUpdatesAction)
   {
@@ -1810,6 +1807,7 @@ void __fastcall TLoginDialog::RenameSessionActionExecute(TObject * /*Sender*/)
   {
     // would be more appropriate in SessionTreeEditing, but it does not work there
     ResetSitesIncrementalSearch();
+    SessionTree->SetFocus();
     SessionTree->Selected->EditText();
   }
 }
@@ -2429,17 +2427,6 @@ void __fastcall TLoginDialog::SessionTreeExpanding(TObject * /*Sender*/,
   AllowExpansion = IsFolderNode(Node);
 }
 //---------------------------------------------------------------------------
-void __fastcall TLoginDialog::ExecuteTool(const UnicodeString & Name)
-{
-  UnicodeString Path;
-  if (!FindTool(Name, Path))
-  {
-    throw Exception(FMTLOAD(EXECUTE_APP_ERROR, (Name)));
-  }
-
-  ExecuteShellChecked(Path, L"");
-}
-//---------------------------------------------------------------------------
 void __fastcall TLoginDialog::RunPageantActionExecute(TObject * /*Sender*/)
 {
   ExecuteTool(PageantTool);
@@ -2650,21 +2637,6 @@ TTreeNode * __fastcall TLoginDialog::GetNextNode(TTreeNode * Node, bool Reverse)
   return Node;
 }
 //---------------------------------------------------------------------------
-static bool __fastcall ContainsTextSemiCaseSensitive(
-  const UnicodeString & Text, const UnicodeString & SubText)
-{
-  bool Result;
-  if (AnsiLowerCase(SubText) == SubText)
-  {
-    Result = ContainsText(Text, SubText);
-  }
-  else
-  {
-    Result = ContainsStr(Text, SubText);
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
 TTreeNode * __fastcall TLoginDialog::SearchSite(const UnicodeString & Text,
   bool AllowExpanding, bool SkipCurrent, bool Reverse)
 {
@@ -2703,13 +2675,13 @@ TTreeNode * __fastcall TLoginDialog::SearchSite(const UnicodeString & Text,
 
         switch (FSiteSearch)
         {
-          case ssSiteNameStartOnly:
+          case isNameStartOnly:
             Matches = ContainsTextSemiCaseSensitive(Node->Text.SubString(1, Text.Length()), Text);
             break;
-          case ssSiteName:
+          case isName:
             Matches = ContainsTextSemiCaseSensitive(Node->Text, Text);
             break;
-          case ssSite:
+          case isAll:
             Matches = ContainsTextSemiCaseSensitive(Node->Text, Text);
             if (!Matches && IsSiteNode(Node))
             {
@@ -2980,7 +2952,7 @@ void __fastcall TLoginDialog::ParseUrl(const UnicodeString & Url)
   // parsed as pointing to a stored site.
   // It also prevents resetting to defaults (do we want this?)
   bool DefaultsOnly; // unused
-  SessionData->ParseUrl(Url, NULL, NULL, DefaultsOnly, NULL, NULL, NULL);
+  SessionData->ParseUrl(Url, NULL, NULL, DefaultsOnly, NULL, NULL, NULL, 0);
 
   LoadSession(SessionData.get());
 }
@@ -3066,10 +3038,10 @@ void __fastcall TLoginDialog::CopyParamRuleActionExecute(TObject * /*Sender*/)
     Mode = cpmEdit;
   }
 
-  TCopyParamType DummyDefaultCopyParams;
+  TCopyParamType DefaultCopyParams;
 
   if (DoCopyParamPresetDialog(
-        CopyParamList.get(), CopyParamIndex, Mode, CurrentRuleData, DummyDefaultCopyParams))
+        CopyParamList.get(), CopyParamIndex, Mode, CurrentRuleData, DefaultCopyParams))
   {
     GUIConfiguration->CopyParamList = CopyParamList.get();
   }
@@ -3077,17 +3049,17 @@ void __fastcall TLoginDialog::CopyParamRuleActionExecute(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::SearchSiteNameStartOnlyActionExecute(TObject * /*Sender*/)
 {
-  FSiteSearch = ssSiteNameStartOnly;
+  FSiteSearch = isNameStartOnly;
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::SearchSiteNameActionExecute(TObject * /*Sender*/)
 {
-  FSiteSearch = ssSiteName;
+  FSiteSearch = isName;
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::SearchSiteActionExecute(TObject * /*Sender*/)
 {
-  FSiteSearch = ssSite;
+  FSiteSearch = isAll;
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::ChangeScale(int M, int D)
@@ -3096,5 +3068,10 @@ void __fastcall TLoginDialog::ChangeScale(int M, int D)
   FSiteButtonsPadding = MulDiv(FSiteButtonsPadding, M, D);
   FBasicGroupBaseHeight = MulDiv(FBasicGroupBaseHeight, M, D);
   FNoteGroupOffset = MulDiv(FNoteGroupOffset, M, D);
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::ButtonPanelMouseDown(TObject *, TMouseButton, TShiftState, int, int)
+{
+  CountClicksForWindowPrint(this);
 }
 //---------------------------------------------------------------------------

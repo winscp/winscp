@@ -54,6 +54,7 @@ var
   CF_FILENAMEMAP: UINT;
   CF_FILENAMEMAPW: UINT;
   CF_SHELLIDLIST: UINT;
+  CF_PREFERREDDROPEFFECT: UINT;
 
 implementation
 
@@ -302,6 +303,7 @@ initialization
   CF_FILENAMEMAP := RegisterClipboardFormat('FileNameMap');
   CF_FILENAMEMAPW := RegisterClipboardFormat('FileNameMapW');
   CF_SHELLIDLIST := RegisterClipboardFormat('Shell IDList Array');
+  CF_PREFERREDDROPEFFECT := RegisterClipboardFormat('Preferred DropEffect');
 
 finalization
   // ShellMalloc._Release; -> automaticly done by D4

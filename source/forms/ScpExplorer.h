@@ -313,6 +313,13 @@ __published:
   TTBXItem *TBXItem247;
   TTBXItem *TBXItem244;
   TTBXItem *TBXItem246;
+  TTBXItem *TBXItem14;
+  TTBXItem *TBXItem61;
+  TTBXSeparatorItem *TBXSeparatorItem42;
+  TTBXItem *TBXItem62;
+  TTBXItem *TBXItem127;
+  TTBXSeparatorItem *TBXSeparatorItem43;
+  TTBXItem *TBXItem161;
   void __fastcall RemoteDirViewUpdateStatusBar(TObject *Sender,
           const TStatusFileInfo &FileInfo);
   void __fastcall UnixPathComboBoxBeginEdit(TTBEditItem *Sender,
@@ -323,9 +330,11 @@ __published:
   void __fastcall QueueSubmenuItemPopup(TTBCustomItem *Sender,
           bool FromLink);
   void __fastcall RemoteStatusBarPanelClick(TTBXCustomStatusBar *Sender, TTBXStatusPanel *Panel);
+  void __fastcall AddressToolbarEndModal(TObject *Sender);
 
 private:
   UnicodeString FStatusBarFileText;
+  UnicodeString FFailedAddress;
 
   void __fastcall RemotePanelSplitterDblClick(TObject * Sender);
 

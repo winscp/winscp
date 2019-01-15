@@ -55,6 +55,9 @@ __published:
   TButton *DownloadButton;
   TAction *DownloadAction;
   TMenuItem *Download1;
+  TAction *EditAction;
+  TButton *EditButton;
+  TMenuItem *Edit1;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall StartStopButtonClick(TObject *Sender);
   void __fastcall StopButtonClick(TObject *Sender);
@@ -75,6 +78,7 @@ __published:
   void __fastcall FocusActionExecute(TObject *Sender);
   void __fastcall SelectAllActionExecute(TObject *Sender);
   void __fastcall DownloadActionExecute(TObject *Sender);
+  void __fastcall EditActionExecute(TObject *Sender);
 
 public:
   __fastcall TFileFindDialog(TComponent * Owner);
@@ -82,7 +86,8 @@ public:
 
   void __fastcall Init(
     TTerminal * Terminal, UnicodeString Directory, TFindEvent OnFind, TFocusFileEvent OnFocusFile,
-    TFileListOperationEvent OnDeleteFiles, TFileListOperationEvent OnDownloadFiles);
+    TFileListOperationEvent OnDeleteFiles, TFileListOperationEvent OnDownloadFiles,
+    TFileListOperationEvent OnEditFiles);
 
 protected:
   void __fastcall Clear();
@@ -109,6 +114,7 @@ private:
   TFocusFileEvent FOnFocusFile;
   TFileListOperationEvent FOnDeleteFiles;
   TFileListOperationEvent FOnDownloadFiles;
+  TFileListOperationEvent FOnEditFiles;
   TFrameAnimation FFrameAnimation;
   UnicodeString FFocusPath;
   typedef std::map<UnicodeString, TListItem *> TFileItemMap;
@@ -129,6 +135,8 @@ private:
   void __fastcall FileDownloadFinished(const UnicodeString & FileName, bool Success);
   TListItem * __fastcall FileOperationFinished(const UnicodeString & FileName);
   void __fastcall FileListOperation(TFileListOperationEvent Operation, TFileOperationFinishedEvent OnFileOperationFinished);
+
+  INTERFACE_HOOK;
 };
 //---------------------------------------------------------------------------
 #endif

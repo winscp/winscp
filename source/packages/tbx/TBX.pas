@@ -409,6 +409,7 @@ type
     property OnVisibleChanged;
     { MP }
     property OnGetBaseSize;
+    property OnEndModal;
   end;
 
   { TTBXChevronItem }
@@ -3463,6 +3464,7 @@ end;
 initialization
   FixPlaySoundDelay;
   RegisterTBXTheme('OfficeXP', TTBXOfficeXPTheme);
+  RegisterTBXTheme('DarkOfficeXP', TTBXDarkOfficeXPTheme);
   TBXNexus := TTBXNexus.Create('OfficeXP');
   TBXMenuAnimation := TTBXMenuAnimation.Create;
 

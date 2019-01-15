@@ -345,7 +345,7 @@ static int check_identity(const ne_uri *server, X509 *cert, char **identity)
         ne_buffer_destroy(cname);
     }
 
-    NE_DEBUG(NE_DBG_SSL, "Identity match for '%s': %s\n", hostname, 
+    NE_DEBUG(match ? NE_DBG_SSL : NE_DBG_WINSCP_HTTP_DETAIL, "Identity match for '%s': %s\n", hostname, 
              match ? "good" : "bad");
     return match ? 0 : 1;
 }
@@ -382,7 +382,7 @@ static int verify_callback(int ok, X509_STORE_CTX *ctx)
     /* If there's no error, nothing to do here. */
     if (ok) return ok;
 
-    NE_DEBUG(NE_DBG_SSL, "ssl: Verify callback @ %d => %d\n", depth, err);
+    NE_DEBUG(NE_DBG_WINSCP_HTTP_DETAIL, "ssl: Verify callback @ %d => %d\n", depth, err);
 
     /* Map the error code onto any of the exported cert validation
      * errors, if possible. */
@@ -414,7 +414,7 @@ static int verify_callback(int ok, X509_STORE_CTX *ctx)
 
     sess->ssl_context->failures |= failures;
 
-    NE_DEBUG(NE_DBG_SSL, "ssl: Verify failures |= %d => %d\n", failures,
+    NE_DEBUG(NE_DBG_WINSCP_HTTP_DETAIL, "ssl: Verify failures |= %d => %d\n", failures,
              sess->ssl_context->failures);
     
     return 1;
@@ -426,7 +426,7 @@ static ne_ssl_certificate *make_chain(STACK_OF(X509) *chain)
     int n, count = sk_X509_num(chain);
     ne_ssl_certificate *top = NULL, *current = NULL;
     
-    NE_DEBUG(NE_DBG_SSL, "Chain depth: %d\n", count);
+    NE_DEBUG(NE_DBG_WINSCP_HTTP_DETAIL, "Chain depth: %d\n", count);
 
     for (n = 0; n < count; n++) {
         ne_ssl_certificate *cert = ne_malloc(sizeof *cert);

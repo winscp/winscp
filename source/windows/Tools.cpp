@@ -106,14 +106,28 @@ bool __fastcall SameFont(TFont * Font1, TFont * Font2)
     (Font1->Charset == Font2->Charset) && (Font1->Style == Font2->Style);
 }
 //---------------------------------------------------------------------------
-TColor __fastcall GetWindowTextColor(TColor Color)
+TColor __fastcall GetWindowTextColor(TColor BackgroundColor, TColor Color)
 {
-  return (Color == TColor(0)) ? clWindowText : Color;
+  if (Color == TColor(0))
+  {
+    Color = (IsDarkColor(BackgroundColor) ? clWhite : clWindowText);
+    SetContrast(Color, BackgroundColor, 180);
+  }
+  return Color;
 }
 //---------------------------------------------------------------------------
 TColor __fastcall GetWindowColor(TColor Color)
 {
-  return (Color == TColor(0)) ? clWindow : Color;
+  if (Color == TColor(0))
+  {
+    Color = (WinConfiguration->UseDarkTheme() ? static_cast<TColor>(RGB(0x20, 0x20, 0x20)) : clWindow);
+  }
+  return Color;
+}
+//---------------------------------------------------------------------------
+TColor __fastcall GetBtnFaceColor()
+{
+  return WinConfiguration->UseDarkTheme() ? TColor(RGB(43, 43, 43)) : clBtnFace;
 }
 //---------------------------------------------------------------------------
 TColor __fastcall GetNonZeroColor(TColor Color)
@@ -255,7 +269,10 @@ void __fastcall RestoreForm(UnicodeString Data, TForm * Form, bool PositionOnly)
               Monitor->Top + ((Monitor->Height - Bounds.Height()) / 2),
               Bounds.Width(), Bounds.Height());
           }
-          Form->Position = poDesigned;
+          if (!Form->HandleAllocated())
+          {
+            Form->Position = poDesigned;
+          }
         }
       }
       else
@@ -380,7 +397,7 @@ static void __fastcall ExecuteProcessAndReadOutput(const
           }
         }
         // Same as in ExecuteShellCheckedAndWait
-        Sleep(200);
+        Sleep(50);
         Application->ProcessMessages();
       }
 
@@ -449,12 +466,16 @@ bool __fastcall OpenInNewWindow()
   return UseAlternativeFunction();
 }
 //---------------------------------------------------------------------------
-void __fastcall ExecuteNewInstance(const UnicodeString & Param)
+void __fastcall ExecuteNewInstance(const UnicodeString & Param, const UnicodeString & AdditionalParams)
 {
   UnicodeString Arg = Param;
   if (!Arg.IsEmpty())
   {
     Arg = FORMAT(L"\"%s\" %s", (Arg, TProgramParams::FormatSwitch(NEWINSTANCE_SWICH)));
+    if (!AdditionalParams.IsEmpty())
+    {
+      Arg += L" " + AdditionalParams;
+    }
   }
 
   ExecuteShellChecked(Application->ExeName, Arg);
@@ -1148,9 +1169,9 @@ static void __fastcall ConvertKey(UnicodeString & FileName, TKeyType Type)
 
   try
   {
-    FileName = ChangeFileExt(FileName, ".ppk");
+    FileName = ChangeFileExt(FileName, FORMAT(L".%s", (PuttyKeyExt)));
 
-    if (!SaveDialog(LoadStr(CONVERTKEY_SAVE_TITLE), LoadStr(CONVERTKEY_SAVE_FILTER), L"ppk", FileName))
+    if (!SaveDialog(LoadStr(CONVERTKEY_SAVE_TITLE), LoadStr(CONVERTKEY_SAVE_FILTER), PuttyKeyExt, FileName))
     {
       Abort();
     }
@@ -1166,7 +1187,7 @@ static void __fastcall ConvertKey(UnicodeString & FileName, TKeyType Type)
 }
 //---------------------------------------------------------------------------
 static void __fastcall DoVerifyKey(
-  UnicodeString & FileName, TSshProt SshProt, bool Convert)
+  UnicodeString & FileName, TSshProt SshProt, bool Convert, bool CanIgnore)
 {
   if (!FileName.Trim().IsEmpty())
   {
@@ -1246,8 +1267,8 @@ static void __fastcall DoVerifyKey(
     if (!Message.IsEmpty())
     {
       Configuration->Usage->Inc(L"PrivateKeySelectErrors");
-      if (MoreMessageDialog(Message, MoreMessages.get(), qtWarning, qaIgnore | qaAbort,
-           HelpKeyword) == qaAbort)
+      unsigned int Answers = (CanIgnore ? (qaIgnore | qaAbort) : qaOK);
+      if (MoreMessageDialog(Message, MoreMessages.get(), qtWarning, Answers, HelpKeyword) != qaIgnore)
       {
         Abort();
       }
@@ -1255,14 +1276,14 @@ static void __fastcall DoVerifyKey(
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall VerifyAndConvertKey(UnicodeString & FileName, TSshProt SshProt)
+void __fastcall VerifyAndConvertKey(UnicodeString & FileName, TSshProt SshProt, bool CanIgnore)
 {
-  DoVerifyKey(FileName, SshProt, true);
+  DoVerifyKey(FileName, SshProt, true, CanIgnore);
 }
 //---------------------------------------------------------------------------
 void __fastcall VerifyKey(UnicodeString FileName, TSshProt SshProt)
 {
-  DoVerifyKey(FileName, SshProt, false);
+  DoVerifyKey(FileName, SshProt, false, true);
 }
 //---------------------------------------------------------------------------
 void __fastcall VerifyCertificate(const UnicodeString & FileName)

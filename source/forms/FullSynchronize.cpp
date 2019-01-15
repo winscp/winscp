@@ -16,6 +16,7 @@
 #include <GUITools.h>
 #include <Terminal.h>
 #include <CustomWinConfiguration.h>
+#include <Tools.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "HistoryComboBox"
@@ -26,21 +27,20 @@
 bool __fastcall DoFullSynchronizeDialog(TSynchronizeMode & Mode, int & Params,
   UnicodeString & LocalDirectory, UnicodeString & RemoteDirectory,
   TCopyParamType * CopyParams, bool & SaveSettings, bool & SaveMode, int Options,
-  const TUsableCopyParamAttrs & CopyParamAttrs)
+  const TUsableCopyParamAttrs & CopyParamAttrs, TFullSynchronizeInNewWindow OnFullSynchronizeInNewWindow)
 {
   bool Result;
   TFullSynchronizeDialog * Dialog = SafeFormCreate<TFullSynchronizeDialog>();
   try
   {
+    Dialog->Init(Options, CopyParamAttrs, OnFullSynchronizeInNewWindow);
     Dialog->Mode = Mode;
-    Dialog->Options = Options;
     Dialog->Params = Params;
     Dialog->LocalDirectory = LocalDirectory;
     Dialog->RemoteDirectory = RemoteDirectory;
     Dialog->CopyParams = *CopyParams;
     Dialog->SaveSettings = SaveSettings;
     Dialog->SaveMode = SaveMode;
-    Dialog->CopyParamAttrs = CopyParamAttrs;
     Result = Dialog->Execute();
     if (Result)
     {
@@ -67,6 +67,7 @@ __fastcall TFullSynchronizeDialog::TFullSynchronizeDialog(TComponent* Owner)
   FParams = 0;
   FSaveMode = false;
   FOptions = 0;
+  FOnFullSynchronizeInNewWindow = NULL;
   FPresetsMenu = new TPopupMenu(this);
   FSynchronizeBySizeCaption = SynchronizeBySizeCheck->Caption;
   HotTrackLabel(CopyParamLabel);
@@ -79,9 +80,24 @@ __fastcall TFullSynchronizeDialog::~TFullSynchronizeDialog()
   delete FPresetsMenu;
 }
 //---------------------------------------------------------------------------
+void __fastcall TFullSynchronizeDialog::Init(
+  int Options, const TUsableCopyParamAttrs & CopyParamAttrs, TFullSynchronizeInNewWindow OnFullSynchronizeInNewWindow)
+{
+  FOptions = Options;
+  if (FLAGSET(Options, fsoDisableTimestamp) &&
+      SynchronizeTimestampsButton->Checked)
+  {
+    SynchronizeFilesButton->Checked = true;
+  }
+  FCopyParamAttrs = CopyParamAttrs;
+  FOnFullSynchronizeInNewWindow = OnFullSynchronizeInNewWindow;
+  DebugAssert(FOnFullSynchronizeInNewWindow != NULL);
+  UpdateControls();
+}
+//---------------------------------------------------------------------------
 void __fastcall TFullSynchronizeDialog::UpdateControls()
 {
-  EnableControl(SynchronizeTimestampsButton, FLAGCLEAR(Options, fsoDisableTimestamp));
+  EnableControl(SynchronizeTimestampsButton, FLAGCLEAR(FOptions, fsoDisableTimestamp));
   if (SynchronizeTimestampsButton->Checked)
   {
     SynchronizeExistingOnlyCheck->Checked = true;
@@ -116,8 +132,10 @@ void __fastcall TFullSynchronizeDialog::UpdateControls()
     LoadStr(SYNCHRONIZE_SAME_SIZE) : UnicodeString(FSynchronizeBySizeCaption);
 
   TransferSettingsButton->Style =
-    FLAGCLEAR(Options, fsoDoNotUsePresets) ?
+    FLAGCLEAR(FOptions, fsoDoNotUsePresets) ?
       TCustomButton::bsSplitButton : TCustomButton::bsPushButton;
+
+  OkButton->Style = AllowStartInNewWindow() ? TCustomButton::bsSplitButton : TCustomButton::bsPushButton;
 }
 //---------------------------------------------------------------------------
 int __fastcall TFullSynchronizeDialog::ActualCopyParamAttrs()
@@ -132,18 +150,18 @@ int __fastcall TFullSynchronizeDialog::ActualCopyParamAttrs()
     switch (Mode)
     {
       case smRemote:
-        Result = CopyParamAttrs.Upload;
+        Result = FCopyParamAttrs.Upload;
         break;
 
       case smLocal:
-        Result = CopyParamAttrs.Download;
+        Result = FCopyParamAttrs.Download;
         break;
 
       default:
         DebugFail();
         //fallthru
       case smBoth:
-        Result = CopyParamAttrs.General;
+        Result = FCopyParamAttrs.General;
         break;
     }
   }
@@ -167,12 +185,17 @@ bool __fastcall TFullSynchronizeDialog::Execute()
   bool Result = (ShowModal() == DefaultResult(this));
   if (Result)
   {
-    LocalDirectoryEdit->SaveToHistory();
-    CustomWinConfiguration->History[L"LocalDirectory"] = LocalDirectoryEdit->Items;
-    RemoteDirectoryEdit->SaveToHistory();
-    CustomWinConfiguration->History[L"RemoteDirectory"] = RemoteDirectoryEdit->Items;
+    Submitted();
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TFullSynchronizeDialog::Submitted()
+{
+  LocalDirectoryEdit->SaveToHistory();
+  CustomWinConfiguration->History[L"LocalDirectory"] = LocalDirectoryEdit->Items;
+  RemoteDirectoryEdit->SaveToHistory();
+  CustomWinConfiguration->History[L"RemoteDirectory"] = RemoteDirectoryEdit->Items;
 }
 //---------------------------------------------------------------------------
 void __fastcall TFullSynchronizeDialog::SetRemoteDirectory(const UnicodeString value)
@@ -243,7 +266,7 @@ void __fastcall TFullSynchronizeDialog::SetParams(int value)
   SynchronizeExistingOnlyCheck->Checked = FLAGSET(value, TTerminal::spExistingOnly);
   SynchronizePreviewChangesCheck->Checked = FLAGSET(value, TTerminal::spPreviewChanges);
   SynchronizeSelectedOnlyCheck->Checked = FLAGSET(value, TTerminal::spSelectedOnly);
-  if (FLAGSET(value, TTerminal::spTimestamp) && FLAGCLEAR(Options, fsoDisableTimestamp))
+  if (FLAGSET(value, TTerminal::spTimestamp) && FLAGCLEAR(FOptions, fsoDisableTimestamp))
   {
     SynchronizeTimestampsButton->Checked = true;
   }
@@ -267,7 +290,7 @@ int __fastcall TFullSynchronizeDialog::GetParams()
     FLAGMASK(SynchronizeExistingOnlyCheck->Checked, TTerminal::spExistingOnly) |
     FLAGMASK(SynchronizePreviewChangesCheck->Checked, TTerminal::spPreviewChanges) |
     FLAGMASK(SynchronizeSelectedOnlyCheck->Checked, TTerminal::spSelectedOnly) |
-    FLAGMASK(SynchronizeTimestampsButton->Checked && FLAGCLEAR(Options, fsoDisableTimestamp),
+    FLAGMASK(SynchronizeTimestampsButton->Checked && FLAGCLEAR(FOptions, fsoDisableTimestamp),
       TTerminal::spTimestamp) |
     FLAGMASK(MirrorFilesButton->Checked, TTerminal::spMirror) |
     FLAGMASK(!SynchronizeByTimeCheck->Checked, TTerminal::spNotByTime) |
@@ -294,20 +317,6 @@ bool __fastcall TFullSynchronizeDialog::GetSaveSettings()
   return SaveSettingsCheck->Checked;
 }
 //---------------------------------------------------------------------------
-void __fastcall TFullSynchronizeDialog::SetOptions(int value)
-{
-  if (Options != value)
-  {
-    FOptions = value;
-    if (FLAGSET(Options, fsoDisableTimestamp) &&
-        SynchronizeTimestampsButton->Checked)
-    {
-      SynchronizeFilesButton->Checked = true;
-    }
-    UpdateControls();
-  }
-}
-//---------------------------------------------------------------------------
 void __fastcall TFullSynchronizeDialog::CopyParamListPopup(TRect R, int AdditionalOptions)
 {
   // We pass in FCopyParams, although it may not be the exact copy param
@@ -315,7 +324,7 @@ void __fastcall TFullSynchronizeDialog::CopyParamListPopup(TRect R, int Addition
   // display checkbox next to user-selected preset
   ::CopyParamListPopup(
     R, FPresetsMenu, FCopyParams, FPreset, CopyParamClick,
-    cplCustomize | AdditionalOptions,
+    AdditionalOptions,
     ActualCopyParamAttrs());
 }
 //---------------------------------------------------------------------------
@@ -424,5 +433,42 @@ void __fastcall TFullSynchronizeDialog::HelpButtonClick(TObject * /*Sender*/)
 void __fastcall TFullSynchronizeDialog::TransferSettingsButtonDropDownClick(TObject * /*Sender*/)
 {
   CopyParamListPopup(CalculatePopupRect(TransferSettingsButton), cplCustomizeDefault);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TFullSynchronizeDialog::AllowStartInNewWindow()
+{
+  return !IsMainFormLike(this);
+}
+//---------------------------------------------------------------------------
+void __fastcall TFullSynchronizeDialog::Start1Click(TObject *)
+{
+  OkButton->Click();
+}
+//---------------------------------------------------------------------------
+void __fastcall TFullSynchronizeDialog::OkButtonDropDownClick(TObject *)
+{
+  MenuPopup(OkMenu, OkButton);
+}
+//---------------------------------------------------------------------------
+void __fastcall TFullSynchronizeDialog::OkButtonClick(TObject *)
+{
+  if (AllowStartInNewWindow() && OpenInNewWindow())
+  {
+    StartInNewWindow();
+    ModalResult = mrCancel;
+    Abort();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TFullSynchronizeDialog::StartInNewWindow()
+{
+  Submitted();
+  FOnFullSynchronizeInNewWindow(Mode, Params, LocalDirectory, RemoteDirectory, &CopyParams);
+  Close();
+}
+//---------------------------------------------------------------------------
+void __fastcall TFullSynchronizeDialog::StartInNewWindow1Click(TObject *)
+{
+  StartInNewWindow();
 }
 //---------------------------------------------------------------------------

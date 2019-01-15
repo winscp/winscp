@@ -35,7 +35,7 @@ object GenerateUrlDialog: TGenerateUrlDialog
         Tag = 1
         Left = 11
         Top = 8
-        Width = 216
+        Width = 144
         Height = 17
         Caption = '&User name'
         TabOrder = 0
@@ -43,29 +43,29 @@ object GenerateUrlDialog: TGenerateUrlDialog
       end
       object HostKeyCheck: TCheckBox
         Tag = 4
-        Left = 11
-        Top = 31
-        Width = 216
+        Left = 161
+        Top = 8
+        Width = 144
         Height = 17
         Caption = 'SSH &host Key'
-        TabOrder = 1
+        TabOrder = 3
         OnClick = ControlChange
       end
       object WinSCPSpecificCheck: TCheckBox
         Tag = 16
-        Left = 11
-        Top = 54
-        Width = 216
+        Left = 161
+        Top = 31
+        Width = 144
         Height = 17
         Caption = '&WinSCP-specific'
-        TabOrder = 2
+        TabOrder = 4
         OnClick = ControlChange
       end
       object SaveExtensionCheck: TCheckBox
         Tag = 32
-        Left = 235
+        Left = 161
         Top = 54
-        Width = 216
+        Width = 144
         Height = 17
         Caption = '&Save extension'
         TabOrder = 5
@@ -73,23 +73,33 @@ object GenerateUrlDialog: TGenerateUrlDialog
       end
       object RemoteDirectoryCheck: TCheckBox
         Tag = 8
-        Left = 235
-        Top = 31
-        Width = 216
+        Left = 11
+        Top = 54
+        Width = 144
         Height = 17
         Caption = 'Initial &directory'
-        TabOrder = 4
+        TabOrder = 2
         OnClick = ControlChange
       end
       object PasswordCheck: TCheckBox
         Tag = 2
-        Left = 235
-        Top = 8
-        Width = 216
+        Left = 11
+        Top = 31
+        Width = 144
         Height = 17
         HelpType = htKeyword
         Caption = '&Password'
-        TabOrder = 3
+        TabOrder = 1
+        OnClick = ControlChange
+      end
+      object RawSettingsCheck: TCheckBox
+        Tag = 64
+        Left = 311
+        Top = 8
+        Width = 144
+        Height = 17
+        Caption = '&Advanced settings'
+        TabOrder = 6
         OnClick = ControlChange
       end
     end
@@ -111,12 +121,13 @@ object GenerateUrlDialog: TGenerateUrlDialog
         Height = 42
         AutoSize = False
         Caption = 'ScriptDescriptionLabel'
+        ShowAccelChar = False
         WordWrap = True
       end
       object ScriptFormatCombo: TComboBox
         Left = 112
         Top = 5
-        Width = 103
+        Width = 121
         Height = 21
         Style = csDropDownList
         TabOrder = 0
@@ -124,7 +135,8 @@ object GenerateUrlDialog: TGenerateUrlDialog
         Items.Strings = (
           'Script file'
           'Batch file'
-          'Command-line')
+          'Command-line'
+          'PowerShell script')
       end
     end
     object AssemblySheet: TTabSheet
@@ -145,12 +157,13 @@ object GenerateUrlDialog: TGenerateUrlDialog
         Height = 42
         AutoSize = False
         Caption = 'AssemblyDescriptionLabel'
+        ShowAccelChar = False
         WordWrap = True
       end
       object AssemblyLanguageCombo: TComboBox
         Left = 112
         Top = 5
-        Width = 103
+        Width = 121
         Height = 21
         Style = csDropDownList
         TabOrder = 0

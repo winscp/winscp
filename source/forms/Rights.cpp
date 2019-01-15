@@ -2,9 +2,9 @@
 #include <vcl.h>
 #pragma hdrstop
 
-#include "Rights.h"
-
 #include <Common.h>
+
+#include "Rights.h"
 
 #include <VCLCommon.h>
 #include <Tools.h>
@@ -182,6 +182,10 @@ bool __fastcall TRightsFrame::DirectoriesXEffective()
 //---------------------------------------------------------------------------
 void __fastcall TRightsFrame::UpdateControls()
 {
+  if (!OctalEdit->Focused())
+  {
+    UpdateOctalEdit();
+  }
   Color = (FPopup ? clWindow : clBtnFace);
   DirectoriesXCheck->Visible = AllowAddXToDirectories;
   EnableControl(DirectoriesXCheck,
@@ -263,6 +267,7 @@ void __fastcall TRightsFrame::SetEnabled(bool Value)
 //---------------------------------------------------------------------------
 void __fastcall TRightsFrame::ForceUpdate()
 {
+  UpdateOctalEdit();
 }
 //---------------------------------------------------------------------------
 bool __fastcall TRightsFrame::HasFocus()
@@ -276,7 +281,7 @@ bool __fastcall TRightsFrame::HasFocus()
 void __fastcall TRightsFrame::RightsActionsExecute(TBasicAction * Action,
   bool & Handled)
 {
-  // prevent shortcuts to be avaluated when frame does not have a focus
+  // prevent shortcuts to be evaluated when frame does not have a focus
   if (HasFocus())
   {
     bool Changed = true;
@@ -327,7 +332,7 @@ void __fastcall TRightsFrame::RightsActionsExecute(TBasicAction * Action,
       // trigger on change event, even if no change actually occurred to
       // allow parent form to visualize feedback of an action
       DoChange();
-      // Update octal edit in RightsExt even if it has focus
+      // Update octal edit in Rights frame even if it has focus
       ForceUpdate();
       Changed = false;
     }
@@ -418,6 +423,10 @@ void __fastcall TRightsFrame::SetPopup(bool value)
   {
     FPopup = value;
     Visible = !FPopup;
+
+    CloseButton->Visible = value;
+    CloseButton->Cancel = value;
+    CloseButton->Default = value;
   }
 }
 //---------------------------------------------------------------------------
@@ -627,5 +636,76 @@ void __fastcall TRightsFrame::FrameContextPopup(TObject * Sender,
 {
   SelectScaledImageList(RightsImages);
   MenuPopup(Sender, MousePos, Handled);
+}
+//---------------------------------------------------------------------------
+void __fastcall TRightsFrame::UpdateByOctal()
+{
+  if (!OctalEdit->Text.IsEmpty())
+  {
+    TRights R = Rights;
+    R.Octal = OctalEdit->Text;
+    Rights = R;
+  }
+  UpdateControls();
+  OctalEdit->Modified = false;
+}
+//---------------------------------------------------------------------------
+void __fastcall TRightsFrame::UpdateOctalEdit()
+{
+  TRights R = Rights;
+  OctalEdit->Text = R.IsUndef ? UnicodeString() : R.Octal;
+  OctalEdit->Modified = false;
+  OctalEdit->SelectAll();
+}
+//---------------------------------------------------------------------------
+void __fastcall TRightsFrame::OctalEditChange(TObject *)
+{
+  if (OctalEdit->Modified && OctalEdit->Text.Length() >= 3)
+  {
+    try
+    {
+      UpdateByOctal();
+    }
+    catch(...)
+    {
+      OctalEdit->Modified = true;
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TRightsFrame::OctalEditExit(TObject *)
+{
+  if (!Visible)
+  {
+    // should happen only if popup is closed by esc key
+    DebugAssert(Popup);
+
+    // cancel changes
+    ForceUpdate();
+  }
+  else if (OctalEdit->Modified)
+  {
+    // Now the text in OctalEdit is almost necessarily invalid, otherwise
+    // OctalEditChange would have already cleared Modified flag
+    try
+    {
+      UpdateByOctal();
+    }
+    catch(...)
+    {
+      OctalEdit->SelectAll();
+      OctalEdit->SetFocus();
+      throw;
+    }
+  }
+  else
+  {
+    UpdateControls();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TRightsFrame::CloseButtonClick(TObject *)
+{
+  CloseUp();
 }
 //---------------------------------------------------------------------------

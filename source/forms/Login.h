@@ -22,6 +22,7 @@
 #include <SessionData.h>
 #include <PasTools.hpp>
 #include <System.Actions.hpp>
+#include <GUITools.h>
 //----------------------------------------------------------------------------
 class TLoginDialog : public TForm
 {
@@ -281,6 +282,7 @@ __published:
   void __fastcall SearchSiteNameStartOnlyActionExecute(TObject *Sender);
   void __fastcall SearchSiteNameActionExecute(TObject *Sender);
   void __fastcall SearchSiteActionExecute(TObject *Sender);
+  void __fastcall ButtonPanelMouseDown(TObject *Sender, TMouseButton Button, TShiftState Shift, int X, int Y);
 
 private:
   int NoUpdate;
@@ -306,7 +308,7 @@ private:
   bool FLoading;
   bool FSortEnablePending;
   std::unique_ptr<TImageList> FButtonImageList;
-  TSiteSearch FSiteSearch;
+  TIncrementalSearch FSiteSearch;
   TForm * FLinkedForm;
   TPoint FPrevPos;
   int FSiteButtonsPadding;
@@ -358,7 +360,6 @@ private:
   TTreeNode * __fastcall GetNewSiteNode();
   void __fastcall SetNewSiteNodeLabel();
   inline TSessionData * __fastcall GetNodeSession(TTreeNode * Node);
-  void __fastcall ExecuteTool(const UnicodeString & Name);
   void __fastcall ReloadSessions(const UnicodeString & SelectSite);
   void __fastcall ResetSitesIncrementalSearch();
   bool __fastcall SitesIncrementalSearch(const UnicodeString & Text,
@@ -411,6 +412,8 @@ protected:
   void __fastcall Login();
   DYNAMIC void __fastcall ChangeScale(int M, int D);
   __property TSessionData * SelectedSession  = { read=GetSelectedSession };
+
+  INTERFACE_HOOK;
 
 public:
   virtual __fastcall TLoginDialog(TComponent* AOwner);

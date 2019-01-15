@@ -17,7 +17,7 @@ void __fastcall ExecuteProcessCheckedAndWait(
 bool __fastcall IsKeyPressed(int VirtualKey);
 bool __fastcall UseAlternativeFunction();
 bool __fastcall OpenInNewWindow();
-void __fastcall ExecuteNewInstance(const UnicodeString & Param);
+void __fastcall ExecuteNewInstance(const UnicodeString & Param, const UnicodeString & AdditionalParams = UnicodeString());
 IShellLink * __fastcall CreateDesktopShortCut(const UnicodeString &Name,
   const UnicodeString &File, const UnicodeString & Params, const UnicodeString & Description,
   int SpecialFolder = -1, int IconIndex = 0, bool Return = false);
@@ -34,8 +34,9 @@ UnicodeString __fastcall StoreFormSize(TForm * Form);
 TFontStyles __fastcall IntToFontStyles(int value);
 int __fastcall FontStylesToInt(const TFontStyles value);
 bool __fastcall SameFont(TFont * Font1, TFont * Font2);
-TColor __fastcall GetWindowTextColor(TColor Color);
-TColor __fastcall GetWindowColor(TColor Color);
+TColor __fastcall GetWindowTextColor(TColor BackgroundColor, TColor Color = static_cast<TColor>(0));
+TColor __fastcall GetWindowColor(TColor Color = static_cast<TColor>(0));
+TColor __fastcall GetBtnFaceColor();
 TColor __fastcall GetNonZeroColor(TColor Color);
 void __fastcall ValidateMaskEdit(TComboBox * Edit);
 void __fastcall ValidateMaskEdit(TEdit * Edit);
@@ -68,7 +69,7 @@ void __fastcall CopyToClipboard(TStrings * Strings);
 void __fastcall ShutDownWindows();
 void __fastcall SuspendWindows();
 void __fastcall EditSelectBaseName(HWND Edit);
-void __fastcall VerifyAndConvertKey(UnicodeString & FileName, TSshProt SshProt);
+void __fastcall VerifyAndConvertKey(UnicodeString & FileName, TSshProt SshProt, bool CanIgnore);
 void __fastcall VerifyKey(UnicodeString FileName, TSshProt SshProt);
 void __fastcall VerifyCertificate(const UnicodeString & FileName);
 TStrings * __fastcall GetUnwrappedMemoLines(TMemo * Memo);

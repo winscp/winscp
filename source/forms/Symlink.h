@@ -6,7 +6,9 @@
 #include <Controls.hpp>
 #include <StdCtrls.hpp>
 #include <Forms.hpp>
+//---------------------------------------------------------------------------
 #include "CopyParam.h"
+#include "GUITools.h"
 //---------------------------------------------------------------------------
 class TSymlinkDialog : public TForm
 {
@@ -47,6 +49,8 @@ public:
   __property bool SymbolicLink = { read = GetSymbolicLink, write = SetSymbolicLink };
 protected:
   void __fastcall UpdateControls();
+
+  INTERFACE_HOOK;
 };
 //---------------------------------------------------------------------------
 #endif

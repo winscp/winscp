@@ -3,7 +3,6 @@
 #define CreateDirectoryH
 //----------------------------------------------------------------------------
 #include "Rights.h"
-#include "RightsExt.h"
 #include <System.Classes.hpp>
 #include <Vcl.Controls.hpp>
 #include <Vcl.ExtCtrls.hpp>
@@ -11,8 +10,7 @@
 #include <Vcl.StdCtrls.hpp>
 //----------------------------------------------------------------------------
 #include <Bookmarks.h>
-#include "RightsExt.h"
-#include "Rights.h"
+#include <GUITools.h>
 //----------------------------------------------------------------------------
 class TCreateDirectoryDialog : public TForm
 {
@@ -24,7 +22,7 @@ __published:
   TButton *HelpButton;
   TPanel *MorePanel;
   TGroupBox *AttributesGroup;
-  TRightsExtFrame *RightsFrame;
+  TRightsFrame *RightsFrame;
   TCheckBox *SetRightsCheck;
   TCheckBox *SaveSettingsCheck;
   void __fastcall ControlChange(TObject *Sender);
@@ -42,6 +40,8 @@ public:
 
 protected:
   void __fastcall UpdateControls();
+
+  INTERFACE_HOOK;
 
 private:
   int FAllowedChanges;

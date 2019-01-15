@@ -228,7 +228,7 @@ Name: "{commondesktop}\WinSCP"; Filename: "{app}\WinSCP.exe"; \
 Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\WinSCP"; \
   Filename: "{app}\WinSCP.exe"; Tasks: quicklaunchicon
 ; This is created when sendtohook task is selected
-Name: "{sendto}\{cm:SendToHookNew}"; Filename: "{app}\WinSCP.exe"; \
+Name: "{usersendto}\{cm:SendToHookNew}"; Filename: "{app}\WinSCP.exe"; \
   Parameters: "/upload"; Tasks: sendtohook
 
 [InstallDelete]
@@ -963,7 +963,7 @@ begin
   WizardForm.LicenseNotAcceptedRadio.Visible := False;
   WizardForm.LicenseMemo.Height :=
     GetBottom(WizardForm.LicenseNotAcceptedRadio) -
-    WizardForm.LicenseMemo.Top - 5;
+    WizardForm.LicenseMemo.Top - ScaleY(5);
 
   // hide installation types combo
   WizardForm.TypesCombo.Visible := False;

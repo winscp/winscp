@@ -6,7 +6,7 @@ object SelectMaskDialog: TSelectMaskDialog
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'SelectX'
-  ClientHeight = 142
+  ClientHeight = 186
   ClientWidth = 417
   Color = clBtnFace
   ParentFont = True
@@ -16,19 +16,19 @@ object SelectMaskDialog: TSelectMaskDialog
   OnShow = FormShow
   DesignSize = (
     417
-    142)
+    186)
   PixelsPerInch = 96
   TextHeight = 13
   object MaskGroup: TGroupBox
     Left = 8
     Top = 6
     Width = 401
-    Height = 94
+    Height = 138
     Anchors = [akLeft, akTop, akRight, akBottom]
     TabOrder = 0
     DesignSize = (
       401
-      94)
+      138)
     object Label3: TLabel
       Left = 16
       Top = 19
@@ -36,6 +36,49 @@ object SelectMaskDialog: TSelectMaskDialog
       Height = 13
       Caption = 'File &mask:'
       FocusControl = MaskEdit
+    end
+    object ColorFileNamesLabel: TLabel
+      Left = 16
+      Top = 86
+      Width = 150
+      Height = 37
+      Anchors = [akLeft, akTop, akBottom]
+      AutoSize = False
+      Caption = 'about.html'#13#10'index.html'#13#10'photo.jpg'
+      Color = clWindow
+      ParentColor = False
+      ShowAccelChar = False
+      Transparent = False
+      WordWrap = True
+    end
+    object ColorSizesLabel: TLabel
+      Left = 166
+      Top = 86
+      Width = 75
+      Height = 37
+      Alignment = taRightJustify
+      Anchors = [akLeft, akTop, akBottom]
+      AutoSize = False
+      Caption = 'ColorSizesLabel'
+      Color = clWindow
+      ParentColor = False
+      ShowAccelChar = False
+      Transparent = False
+      WordWrap = True
+    end
+    object ColorPaddingLabel: TLabel
+      Left = 241
+      Top = 86
+      Width = 58
+      Height = 37
+      Alignment = taRightJustify
+      Anchors = [akLeft, akTop, akRight, akBottom]
+      AutoSize = False
+      Color = clWindow
+      ParentColor = False
+      ShowAccelChar = False
+      Transparent = False
+      WordWrap = True
     end
     object ApplyToDirectoriesCheck: TCheckBox
       Left = 16
@@ -55,6 +98,7 @@ object SelectMaskDialog: TSelectMaskDialog
       MaxLength = 1000
       TabOrder = 0
       Text = '*.*'
+      OnChange = MaskEditChange
       OnExit = MaskEditExit
     end
     object HintText: TStaticText
@@ -79,10 +123,20 @@ object SelectMaskDialog: TSelectMaskDialog
       TabOrder = 2
       OnClick = MaskButtonClick
     end
+    object ColorButton: TButton
+      Left = 305
+      Top = 86
+      Width = 80
+      Height = 25
+      Anchors = [akTop, akRight]
+      Caption = '&Color'
+      TabOrder = 4
+      OnClick = ColorButtonClick
+    end
   end
   object OKBtn: TButton
     Left = 165
-    Top = 109
+    Top = 153
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -93,7 +147,7 @@ object SelectMaskDialog: TSelectMaskDialog
   end
   object CancelBtn: TButton
     Left = 250
-    Top = 109
+    Top = 153
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -104,7 +158,7 @@ object SelectMaskDialog: TSelectMaskDialog
   end
   object HelpButton: TButton
     Left = 333
-    Top = 109
+    Top = 153
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -114,7 +168,7 @@ object SelectMaskDialog: TSelectMaskDialog
   end
   object ClearButton: TButton
     Left = 84
-    Top = 109
+    Top = 153
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]

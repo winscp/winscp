@@ -7,8 +7,10 @@
 #include <Common.h>
 #include <TextsWin.h>
 #include <TextsCore.h>
+#include <HelpCore.h>
 #include <HelpWin.h>
 #include <VCLCommon.h>
+#include <Cryptography.h>
 
 #include "WinInterface.h"
 #include "SiteAdvanced.h"
@@ -16,6 +18,8 @@
 #include "Tools.h"
 #include "WinConfiguration.h"
 #include "PuttyTools.h"
+#include "TerminalManager.h"
+#include "Authenticate.h"
 //---------------------------------------------------------------------
 #pragma link "ComboEdit"
 #pragma link "PasswordEdit"
@@ -103,7 +107,9 @@ void __fastcall TSiteAdvancedDialog::InitControls()
   UpdateNavigationTree();
 
   SelectScaledImageList(ColorImageList);
-  SetSessionColor((TColor)0);
+  FColor = TColor();
+
+  MenuButton(PrivateKeyToolsButton);
 }
 //---------------------------------------------------------------------
 void __fastcall TSiteAdvancedDialog::LoadSession()
@@ -393,8 +399,12 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     // Note page
     NoteMemo->Lines->Text = FSessionData->Note;
 
+    // Encryption page
+    EncryptFilesCheck->Checked = !FSessionData->EncryptKey.IsEmpty();
+    GetEncryptKeyEdit()->Text = FSessionData->EncryptKey;
+
     // color
-    SetSessionColor((TColor)FSessionData->Color);
+    FColor = (TColor)FSessionData->Color;
   }
 
   UpdateControls();
@@ -634,6 +644,9 @@ void __fastcall TSiteAdvancedDialog::SaveSession()
   // Note page
   FSessionData->Note = NoteMemo->Lines->Text;
 
+  // Encryption page
+  FSessionData->EncryptKey = EncryptFilesCheck->Checked ? GetEncryptKeyEdit()->Text : UnicodeString();
+
   // color
   FSessionData->Color = FColor;
 }
@@ -749,8 +762,7 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
     TAutoNestingCounter NoUpdateCounter(NoUpdate);
 
     bool SshProtocol = FSessionData->UsesSsh;
-    bool SftpProtocol =
-      (FSessionData->FSProtocol == fsSFTPonly) || (FSessionData->FSProtocol == fsSFTP);
+    bool SftpProtocol = (NormalizeFSProtocol(FSessionData->FSProtocol) == fsSFTP);
     bool ScpProtocol = (FSessionData->FSProtocol == fsSCPonly);
     bool FtpProtocol = (FSessionData->FSProtocol == fsFTP);
     bool WebDavProtocol = (FSessionData->FSProtocol == fsWebDAV);
@@ -791,6 +803,8 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
       ((AuthTISCheck->Enabled && AuthTISCheck->Checked) ||
        (AuthKICheck->Enabled && AuthKICheck->Checked)));
     EnableControl(AuthenticationParamsGroup, AuthenticationGroup->Enabled);
+    EnableControl(AgentFwdCheck, AuthenticationParamsGroup->Enabled && FSessionData->TryAgent);
+    EnableControl(PrivateKeyViewButton, PrivateKeyEdit3->Enabled && !PrivateKeyEdit3->Text.IsEmpty());
     EnableControl(AuthGSSAPICheck3,
       AuthenticationGroup->Enabled && (GetSshProt() == ssh2only));
     EnableControl(GSSAPIFwdTGTCheck,
@@ -989,6 +1003,10 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
     // TLS/SSL session reuse is not configurable for WebDAV/S3 yet
     SslSessionReuseCheck->Enabled = SslSheet->Enabled && FtpProtocol;
 
+    // encryption sheet
+    EncryptionSheet->Enabled = SftpProtocol;
+    EnableControl(EncryptFilesGroup, EncryptFilesCheck->Checked);
+
     UpdateNavigationTree();
 
     // color
@@ -999,7 +1017,7 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
     else
     {
       ColorButton->Images = ColorImageList;
-      ColorButton->ImageIndex = 1;
+      ColorButton->ImageIndex = GetSessionColorImage(ColorImageList, FColor, 0);
       ColorButton->ImageAlignment = iaRight;
     }
   }
@@ -1069,6 +1087,7 @@ void __fastcall TSiteAdvancedDialog::ChangePage(TTabSheet * Tab)
 {
   PageControl->ActivePage = Tab;
   PageControlChange(PageControl);
+  FPrivateKeyMonitors.reset(NULL);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSiteAdvancedDialog::PageControlChange(TObject *Sender)
@@ -1251,7 +1270,7 @@ void __fastcall TSiteAdvancedDialog::PrivateKeyEdit3AfterDialog(TObject * Sender
   TFilenameEdit * Edit = dynamic_cast<TFilenameEdit *>(Sender);
   if (Name != Edit->Text)
   {
-    VerifyAndConvertKey(Name, GetSshProt());
+    VerifyAndConvertKey(Name, GetSshProt(), true);
   }
 }
 //---------------------------------------------------------------------------
@@ -1265,6 +1284,8 @@ void __fastcall TSiteAdvancedDialog::FormCloseQuery(TObject * /*Sender*/,
     // for tunnel SSH version is not configurable
     VerifyKey(StripPathQuotes(TunnelPrivateKeyEdit3->Text), ssh2only);
     VerifyCertificate(StripPathQuotes(TlsCertificateFileEdit->Text));
+    // Particularly for EncryptKey*Edit's
+    ExitActiveControl(this);
   }
 }
 //---------------------------------------------------------------------------
@@ -1391,10 +1412,7 @@ void __fastcall TSiteAdvancedDialog::ProxyLocalCommandBrowseButtonClick(
 //---------------------------------------------------------------------------
 void __fastcall TSiteAdvancedDialog::ColorButtonClick(TObject * /*Sender*/)
 {
-  // WORKAROUND: Compiler keeps crashing randomly (but frequently) with
-  // "internal error" when passing menu directly to unique_ptr.
-  // Splitting it to two statements seems to help.
-  // The same hack exists in TPreferencesDialog::EditorFontColorButtonClick
+  // Reason for separate Menu variable is given in TPreferencesDialog::EditorFontColorButtonClick
   TPopupMenu * Menu = CreateSessionColorPopupMenu(FColor, SessionColorChange);
   // Popup menu has to survive the popup as TBX calls click handler asynchronously (post).
   FColorPopupMenu.reset(Menu);
@@ -1403,23 +1421,8 @@ void __fastcall TSiteAdvancedDialog::ColorButtonClick(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TSiteAdvancedDialog::SessionColorChange(TColor Color)
 {
-  SetSessionColor(Color);
-  UpdateControls();
-}
-//---------------------------------------------------------------------------
-void __fastcall TSiteAdvancedDialog::SetSessionColor(TColor Color)
-{
   FColor = Color;
-
-  while (ColorImageList->Count > 1)
-  {
-    ColorImageList->Delete(1);
-  }
-
-  if (Color != 0)
-  {
-    AddSessionColorImage(ColorImageList, Color, 0);
-  }
+  UpdateControls();
 }
 //---------------------------------------------------------------------------
 TTlsVersion __fastcall TSiteAdvancedDialog::IndexToTlsVersion(int Index)
@@ -1510,6 +1513,118 @@ void __fastcall TSiteAdvancedDialog::TlsCertificateFileEditAfterDialog(TObject *
   if (Name != Edit->Text)
   {
     VerifyCertificate(Name);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSiteAdvancedDialog::PrivateKeyCreatedOrModified(TObject * /*Sender*/, const UnicodeString FileName)
+{
+  if (SameText(ExtractFileExt(FileName), FORMAT(L".%s", (PuttyKeyExt))))
+  {
+    PrivateKeyEdit3->Text = FileName;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSiteAdvancedDialog::PrivateKeyToolsButtonClick(TObject * /*Sender*/)
+{
+  UnicodeString Dummy;
+  PrivateKeyGenerateItem->Enabled = FindTool(PuttygenTool, Dummy);
+  PrivateKeyUploadItem->Enabled = (GetSshProt() == ssh2only) && (NormalizeFSProtocol(FSessionData->FSProtocol) == fsSFTP);
+  MenuPopup(PrivateKeyMenu, PrivateKeyToolsButton);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSiteAdvancedDialog::PrivateKeyGenerateItemClick(TObject * /*Sender*/)
+{
+  unsigned int Filters = FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_LAST_WRITE;
+  TObjectList * PrivateKeyMonitors =
+    StartCreationDirectoryMonitorsOnEachDrive(Filters, PrivateKeyCreatedOrModified);
+  FPrivateKeyMonitors.reset(PrivateKeyMonitors);
+  ExecuteTool(PuttygenTool);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSiteAdvancedDialog::PrivateKeyUploadItemClick(TObject * /*Sender*/)
+{
+  SaveSession();
+  FSessionData->FSProtocol = fsSFTPonly; // no SCP fallback, as SCP does not implement GetHomeDirectory
+  FSessionData->RemoteDirectory = UnicodeString();
+
+  UnicodeString FileName = PrivateKeyEdit3->Text;
+  if (TTerminalManager::Instance()->UploadPublicKey(NULL, FSessionData, FileName))
+  {
+    PrivateKeyEdit3->Text = FileName;
+    PrivateKeyEdit3->SetFocus();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSiteAdvancedDialog::PrivateKeyViewButtonClick(TObject * /*Sender*/)
+{
+  UnicodeString FileName = PrivateKeyEdit3->Text;
+  VerifyAndConvertKey(FileName, GetSshProt(), false);
+  PrivateKeyEdit3->Text = FileName;
+  UnicodeString CommentDummy;
+  UnicodeString Line = GetPublicKeyLine(FileName, CommentDummy);
+  std::unique_ptr<TStrings> Messages(TextToStringList(Line));
+
+  TClipboardHandler ClipboardHandler;
+  ClipboardHandler.Text = Line;
+
+  TMessageParams Params;
+  TQueryButtonAlias Aliases[1];
+  Aliases[0].Button = qaRetry;
+  Aliases[0].Alias = LoadStr(COPY_KEY_BUTTON);
+  Aliases[0].OnSubmit = &ClipboardHandler.Copy;
+  Params.Aliases = Aliases;
+  Params.AliasesCount = LENOF(Aliases);
+
+  UnicodeString Message = LoadStr(LOGIN_AUTHORIZED_KEYS);
+  int Answers = qaOK | qaRetry;
+  MoreMessageDialog(Message, Messages.get(), qtInformation, Answers, HELP_LOGIN_AUTHORIZED_KEYS, &Params);
+}
+//---------------------------------------------------------------------------
+TCustomEdit * __fastcall TSiteAdvancedDialog::GetEncryptKeyEdit(bool AShow)
+{
+  bool Show = (ShowEncryptionKeyCheck->Checked == AShow);
+  return (Show ? static_cast<TCustomEdit *>(EncryptKeyVisibleEdit) : static_cast<TCustomEdit *>(EncryptKeyPasswordEdit));
+}
+//---------------------------------------------------------------------------
+void __fastcall TSiteAdvancedDialog::ShowEncryptionKeyCheckClick(TObject * /*Sender*/)
+{
+  TCustomEdit * ShowEdit = GetEncryptKeyEdit();
+  TCustomEdit * HideEdit = GetEncryptKeyEdit(false);
+  if (DebugAlwaysTrue(ShowEdit->Visible != HideEdit->Visible) &&
+      DebugAlwaysTrue(!ShowEdit->Visible))
+  {
+    UnicodeString Key = HideEdit->Text;
+    ShowEdit->Visible = true;
+    ShowEdit->Text = Key;
+    HideEdit->Visible = false;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSiteAdvancedDialog::GenerateKeyButtonClick(TObject * /*Sender*/)
+{
+  UnicodeString Key = BytesToHex(GenerateEncryptKey());
+  GetEncryptKeyEdit()->Text = Key;
+
+  TClipboardHandler ClipboardHandler;
+  ClipboardHandler.Text = Key;
+
+  TMessageParams Params;
+  TQueryButtonAlias Aliases[1];
+  Aliases[0].Button = qaRetry;
+  Aliases[0].Alias = LoadStr(COPY_KEY_BUTTON);
+  Aliases[0].OnSubmit = &ClipboardHandler.Copy;
+  Params.Aliases = Aliases;
+  Params.AliasesCount = LENOF(Aliases);
+
+  MessageDialog(LoadStr(ENCRYPT_KEY_GENERATED), qtInformation, qaOK | qaRetry, HELP_FILE_ENCRYPTION, &Params);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSiteAdvancedDialog::EncryptKeyEditExit(TObject * /*Sender*/)
+{
+  UnicodeString HexKey = GetEncryptKeyEdit()->Text;
+  if (!HexKey.IsEmpty())
+  {
+    ValidateEncryptKey(HexToBytes(HexKey));
   }
 }
 //---------------------------------------------------------------------------

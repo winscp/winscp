@@ -424,8 +424,9 @@ const static struct ssh_signkey_with_user_pref_id hostkey_algs[] = {
     { &ssh_ecdsa_nistp256, HK_ECDSA },
     { &ssh_ecdsa_nistp384, HK_ECDSA },
     { &ssh_ecdsa_nistp521, HK_ECDSA },
-    { &ssh_dss, HK_DSA },
+    /* Changed order to match WinSCP default preference list for SshHostKeyList() */
     { &ssh_rsa, HK_RSA },
+    { &ssh_dss, HK_DSA },
 };
 
 const static struct ssh_mac *const macs[] = {
@@ -12214,4 +12215,9 @@ void get_hostkey_algs(int * count, cp_ssh_signkey * SignKeys)
   }
 }
 
+void get_macs(int * count, const struct ssh_mac *** amacs)
+{
+  *amacs = macs;
+  *count = lenof(macs);
+}
 #endif

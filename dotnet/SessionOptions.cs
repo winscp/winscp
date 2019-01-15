@@ -201,17 +201,23 @@ namespace WinSCP
                 string parameters = userInfo;
                 userInfo = CutToChar(ref parameters, ';');
 
+                bool hasPassword = (userInfo.IndexOf(':') >= 0);
                 UserName = EmptyToNull(UriUnescape(CutToChar(ref userInfo, ':')));
-                Password = EmptyToNull(UriUnescape(userInfo));
+                Password = hasPassword ? UriUnescape(userInfo) : null;
 
                 while (!string.IsNullOrEmpty(parameters))
                 {
                     string parameter = CutToChar(ref parameters, ';');
                     string parameterName = CutToChar(ref parameter, '=');
                     parameter = UriUnescape(parameter);
+                    const string RawSettingsPrefix = "x-";
                     if (parameterName.Equals("fingerprint", StringComparison.OrdinalIgnoreCase))
                     {
                         SshHostKeyFingerprint = parameter;
+                    }
+                    else if (parameterName.StartsWith(RawSettingsPrefix, StringComparison.OrdinalIgnoreCase))
+                    {
+                        AddRawSettings(UriUnescape(parameterName.Substring(RawSettingsPrefix.Length)), parameter);
                     }
                     else
                     {

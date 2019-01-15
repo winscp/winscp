@@ -7,13 +7,14 @@
 #include <StdCtrls.hpp>
 #include <Forms.hpp>
 #include <HistoryComboBox.hpp>
-
-#include <WinInterface.h>
 #include "GrayedCheckBox.hpp"
 #include <ComCtrls.hpp>
 #include <ExtCtrls.hpp>
 #include <Vcl.Imaging.pngimage.hpp>
 #include <Vcl.Menus.hpp>
+//---------------------------------------------------------------------------
+#include <WinInterface.h>
+#include <GUITools.h>
 //---------------------------------------------------------------------------
 struct TLogItemData;
 //---------------------------------------------------------------------------
@@ -48,6 +49,9 @@ __published:
   TPopupMenu *MinimizeMenu;
   TMenuItem *Minimize1;
   TMenuItem *MinimizetoTray1;
+  TPopupMenu *StartMenu;
+  TMenuItem *Start1;
+  TMenuItem *StartInNewWindow1;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall LocalDirectoryBrowseButtonClick(TObject *Sender);
   void __fastcall TransferSettingsButtonClick(TObject *Sender);
@@ -72,6 +76,8 @@ __published:
   void __fastcall Minimize1Click(TObject *Sender);
   void __fastcall MinimizetoTray1Click(TObject *Sender);
   void __fastcall MinimizeButtonDropDownClick(TObject *Sender);
+  void __fastcall StartInNewWindow1Click(TObject *Sender);
+  void __fastcall StartButtonDropDownClick(TObject *Sender);
 
 private:
   TSynchronizeParamType FParams;
@@ -90,6 +96,7 @@ private:
   UnicodeString FPreset;
   TSynchronizeOptions * FSynchronizeOptions;
   TFeedSynchronizeError * FOnFeedSynchronizeError;
+  TSynchronizeInNewWindow FOnSynchronizeInNewWindow;
   static const MaxLogItems;
 
   void __fastcall SetParams(const TSynchronizeParamType& value);
@@ -121,13 +128,21 @@ protected:
     const UnicodeString & HelpKeyword);
   TLogItemData * __fastcall GetLogItemData(TListItem * Item);
   void __fastcall Minimize(TObject * Sender);
+  void __fastcall Start();
+  void __fastcall StartInNewWindow();
+  void __fastcall SaveHistory();
+  void __fastcall UpdateControls();
+  bool __fastcall AllowStartInNewWindow();
+
+  INTERFACE_HOOK;
 
 public:
   __fastcall TSynchronizeDialog(TComponent * Owner);
   void __fastcall Init(TSynchronizeStartStopEvent OnStartStop,
     TGetSynchronizeOptionsEvent OnGetOptions,
     TSynchronizeSessionLog OnSynchronizeSessionLog,
-    TFeedSynchronizeError & OnFeedSynchronizeError, bool StartImmediately);
+    TFeedSynchronizeError & OnFeedSynchronizeError, TSynchronizeInNewWindow OnSynchronizeInNewWindow,
+    bool StartImmediately);
   virtual __fastcall ~TSynchronizeDialog();
 
   bool __fastcall Execute();
@@ -137,9 +152,6 @@ public:
   __property int Options = { read = FOptions, write = SetOptions };
   __property int CopyParamAttrs = { read = FCopyParamAttrs, write = FCopyParamAttrs };
   __property TCopyParamType CopyParams = { read = GetCopyParams, write = SetCopyParams };
-
-protected:
-  void __fastcall UpdateControls();
 };
 //---------------------------------------------------------------------------
 #endif

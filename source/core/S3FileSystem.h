@@ -72,7 +72,7 @@ public:
     const UnicodeString & TargetDir, UnicodeString & DestFileName, int Attrs,
     const TCopyParamType * CopyParam, int Params, TFileOperationProgressType * OperationProgress,
     unsigned int Flags, TDownloadSessionAction & Action);
-  virtual void __fastcall CreateDirectory(const UnicodeString DirName);
+  virtual void __fastcall CreateDirectory(const UnicodeString & DirName, bool Encrypt);
   virtual void __fastcall CreateLink(const UnicodeString FileName, const UnicodeString PointTo, bool Symbolic);
   virtual void __fastcall DeleteFile(const UnicodeString FileName,
     const TRemoteFile * File, int Params,
@@ -126,6 +126,7 @@ protected:
   typedef std::map<UnicodeString, UnicodeString> TRegions;
   TRegions FRegions;
   TRegions FHostNames;
+  UnicodeString FAuthRegion;
 
   virtual UnicodeString __fastcall GetCurrentDirectory();
 
@@ -139,11 +140,12 @@ protected:
   void ReadDirectoryInternal(const UnicodeString & Path, TRemoteFileList * FileList, int MaxKeys, const UnicodeString & FileName);
   void ParsePath(UnicodeString Path, UnicodeString & BucketName, UnicodeString & Key);
   TRemoteToken MakeRemoteToken(const char * OwnerId, const char * OwnerDisplayName);
-  TLibS3BucketContext GetBucketContext(const UnicodeString & BucketName);
+  TLibS3BucketContext GetBucketContext(const UnicodeString & BucketName, const UnicodeString & Prefix);
   void DoListBucket(
     const UnicodeString & Prefix, TRemoteFileList * FileList, int MaxKeys, const TLibS3BucketContext & BucketContext,
     TLibS3ListBucketCallbackData & Data);
   UnicodeString GetFolderKey(const UnicodeString & Key);
+  void HandleNonBucketStatus(TLibS3CallbackData & Data, bool & Retry);
   void DoReadFile(const UnicodeString & FileName, TRemoteFile *& File);
   void ConfirmOverwrite(
     const UnicodeString & SourceFullFileName, UnicodeString & TargetFileName,

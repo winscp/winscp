@@ -48,11 +48,11 @@ __fastcall TUnixDirView::TUnixDirView(TComponent* Owner)
   FTerminal = NULL;
 #endif
   FCaseSensitive = true;
-  DDAllowMove = false;
   FShowInaccesibleDirectories = true;
   FFullLoad = false;
   FDriveView = NULL;
   FInvalidNameChars = L"/";
+  DragDropFilesEx->PreferCopy = true;
 }
 //---------------------------------------------------------------------------
 __fastcall TUnixDirView::~TUnixDirView()
@@ -83,12 +83,31 @@ void __fastcall TUnixDirView::DisplayPropertiesMenu()
   if (OnDisplayProperties) OnDisplayProperties(this);
 }
 //---------------------------------------------------------------------------
+bool __fastcall TUnixDirView::DoExecFile(TListItem * Item, bool ForceEnter)
+{
+  bool Result;
+#ifndef DESIGN_ONLY
+  ASSERT_VALID_ITEM;
+  if (ForceEnter)
+  {
+    PathChanging(true);
+    ChangeDirectory(ITEMFILE->FileName);
+    Result = false;
+  }
+  else
+#endif
+  {
+    Result = TCustomDirView::DoExecFile(Item, ForceEnter);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall TUnixDirView::ExecuteFile(TListItem * Item)
 {
 #ifndef DESIGN_ONLY
   ASSERT_VALID_ITEM;
   if (ITEMFILE->IsDirectory ||
-      !Terminal->ResolvingSymlinks)
+      (!Terminal->ResolvingSymlinks && !Terminal->IsEncryptingFiles()))
   {
     PathChanging(true);
     ChangeDirectory(ITEMFILE->FileName);
@@ -149,7 +168,6 @@ void __fastcall TUnixDirView::ReloadDirectory()
 {
 #ifndef DESIGN_ONLY
   FLastPath = L"";
-  DoAnimation(true);
   Terminal->ReloadDirectory();
 #endif
 }
@@ -277,6 +295,10 @@ Word __fastcall TUnixDirView::ItemOverlayIndexes(TListItem * Item)
   {
     Result |= ITEMFILE->BrokenLink ? oiBrokenLink : oiLink;
   }
+  if (ITEMFILE->IsEncrypted)
+  {
+    Result |= oiEncrypted;
+  }
   return Result;
 #else
   DebugUsedParam(Item);
@@ -310,7 +332,7 @@ void __fastcall TUnixDirView::LoadFiles()
         FHiddenCount++;
       }
       else if (!Mask.IsEmpty() &&
-               !File->IsParentDirectory && !File->IsThisDirectory &&
+               IsRealFile(File->FileName) &&
                !FileNameMatchesMasks(File->FileName, File->IsDirectory, File->Size, File->Modification, Mask, true))
       {
         FFilteredCount++;
@@ -406,7 +428,7 @@ bool __fastcall TUnixDirView::PasteFromClipBoard(UnicodeString TargetPath)
       TargetPath = PathName;
     }
 
-    PerformItemDragDropOperation(NULL, DROPEFFECT_COPY);
+    PerformItemDragDropOperation(NULL, DROPEFFECT_COPY, true);
     if (OnDDExecuted != NULL)
     {
       OnDDExecuted(this, DROPEFFECT_COPY);
@@ -416,8 +438,8 @@ bool __fastcall TUnixDirView::PasteFromClipBoard(UnicodeString TargetPath)
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TUnixDirView::PerformItemDragDropOperation(TListItem * Item,
-  int Effect)
+void __fastcall TUnixDirView::PerformItemDragDropOperation(
+  TListItem * Item, int Effect, bool Paste)
 {
 #ifndef DESIGN_ONLY
   if (OnDDFileOperation)
@@ -441,13 +463,14 @@ void __fastcall TUnixDirView::PerformItemDragDropOperation(TListItem * Item,
       }
 
       bool DoFileOperation = true;
-      OnDDFileOperation(this, Effect, SourceDirectory, TargetDirectory,
-        DoFileOperation);
+      OnDDFileOperation(
+        this, Effect, SourceDirectory, TargetDirectory, Paste, DoFileOperation);
     }
   }
 #else
   DebugUsedParam(Item);
   DebugUsedParam(Effect);
+  DebugUsedParam(Paste);
 #endif
 }
 //---------------------------------------------------------------------------
@@ -746,7 +769,6 @@ int __stdcall CompareFile(TListItem * Item1, TListItem * Item2, TUnixDirView * D
 void __fastcall TUnixDirView::SortItems()
 {
 #ifndef DESIGN_ONLY
-  DebugAssert(Terminal);
   if (HandleAllocated())
   {
     CustomSortItems(CompareFile);
@@ -792,28 +814,15 @@ void __fastcall TUnixDirView::DDChooseEffect(int grfKeyState, int &dwEffect)
 {
   if ((grfKeyState & (MK_CONTROL | MK_SHIFT)) == 0)
   {
-    dwEffect = DROPEFFECT_Copy;
+    dwEffect = DROPEFFECT_COPY;
   }
 
   TCustomDirView::DDChooseEffect(grfKeyState, dwEffect);
 }
 //---------------------------------------------------------------------------
-void __fastcall TUnixDirView::SetDDAllowMove(bool value)
-{
-  if (DDAllowMove != value)
-  {
-    DebugAssert(DragDropFilesEx);
-    FDDAllowMove = value;
-    DragDropFilesEx->SourceEffects = DragSourceEffects;
-  }
-}
-//---------------------------------------------------------------------------
 TDropEffectSet __fastcall TUnixDirView::GetDragSourceEffects()
 {
-  TDropEffectSet Result;
-  Result << deCopy;
-  if (DDAllowMove) Result << deMove;
-  return Result;
+  return TDropEffectSet() << deCopy << deMove;
 }
 //---------------------------------------------------------------------------
 void __fastcall TUnixDirView::ChangeDirectory(UnicodeString Path)
@@ -821,7 +830,6 @@ void __fastcall TUnixDirView::ChangeDirectory(UnicodeString Path)
   UnicodeString LastFile = L"";
   if (ItemFocused) LastFile = ItemFileName(ItemFocused);
   ClearItems();
-  DoAnimation(true);
 #ifndef DESIGN_ONLY
   try
   {
@@ -965,6 +973,16 @@ TDateTime __fastcall TUnixDirView::ItemFileTime(TListItem * Item,
   DebugUsedParam(Item);
   Precision = tpSecond;
   return Now();
+#endif
+}
+//---------------------------------------------------------------------------
+TObject * __fastcall TUnixDirView::ItemData(TListItem * Item)
+{
+#ifndef DESIGN_ONLY
+  return ITEMFILE;
+#else
+  DebugUsedParam(Item);
+  return NULL;
 #endif
 }
 //---------------------------------------------------------------------------

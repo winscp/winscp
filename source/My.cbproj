@@ -2,7 +2,7 @@
 	<PropertyGroup>
 		<ProjectGuid>{BA755114-5DC2-43F1-88A1-D52A7E4100A8}</ProjectGuid>
 		<ProjectVersion>15.4</ProjectVersion>
-		<MainSource>Moje.cpp</MainSource>
+		<MainSource>My.cpp</MainSource>
 		<Config Condition="'$(Config)'==''">Release</Config>
 		<FrameworkType>None</FrameworkType>
 		<Base>True</Base>
@@ -57,7 +57,7 @@
 		<Multithreaded>true</Multithreaded>
 		<OutputExt>bpl</OutputExt>
 		<ProjectType>CppPackage</ProjectType>
-		<SanitizedProjectName>Moje</SanitizedProjectName>
+		<SanitizedProjectName>My</SanitizedProjectName>
 		<TLIB_PageSize>64</TLIB_PageSize>
 		<VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
 		<VerInfo_Locale>1033</VerInfo_Locale>
@@ -89,7 +89,7 @@
 		<TASM_Debugging>None</TASM_Debugging>
 	</PropertyGroup>
 	<ItemGroup>
-		<CppCompile Include="Moje.cpp">
+		<CppCompile Include="My.cpp">
 			<BuildOrder>0</BuildOrder>
 		</CppCompile>
 		<DelphiCompile Include="packages\my\ComboEdit.pas">
@@ -174,7 +174,7 @@
 		<BorlandProject>
 			<CPlusPlusBuilder.Personality>
 				<Source>
-					<Source Name="MainSource">Moje.cpp</Source>
+					<Source Name="MainSource">My.cpp</Source>
 				</Source>
 				<ProjectProperties>
 					<ProjectProperties Name="AutoShowDeps">False</ProjectProperties>

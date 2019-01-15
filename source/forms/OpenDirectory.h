@@ -121,9 +121,11 @@ private:
     TButton * UpBookmarkButton, TButton * DownBookmarkButton,
     TListBox * BookmarksList, bool ListBoxUpdate);
   void __fastcall BookmarkSelected(TObject * Sender);
-  inline UnicodeString __fastcall BookmarkDirectory(TBookmark * Bookmark);
+  UnicodeString __fastcall BookmarkDirectory(TBookmark * Bookmark);
   UnicodeString __fastcall BookmarkText(TBookmark * Bookmark);
   inline TBookmark * __fastcall GetBookmark(TListBox * BookmarksList, int Index);
+
+  INTERFACE_HOOK;
 };
 //----------------------------------------------------------------------------
 #endif

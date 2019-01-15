@@ -314,6 +314,11 @@ UnicodeString __fastcall TCopyDialog::GetDirectory()
   return Result;
 }
 //---------------------------------------------------------------------------
+int __fastcall TCopyDialog::ActualCopyParamAttrs()
+{
+  return FCopyParamAttrs | FLAGMASK(QueueCheck2->Checked && WinConfiguration->DefaultCopyParam.QueueParallel, cpaNoCalculateSize);
+}
+//---------------------------------------------------------------------------
 void __fastcall TCopyDialog::UpdateControls()
 {
   if (!FToRemote && FLAGSET(FOptions, coAllowRemoteTransfer))
@@ -329,16 +334,12 @@ void __fastcall TCopyDialog::UpdateControls()
     }
   }
 
-  UnicodeString InfoStr = FCopyParams.GetInfoStr(L"; ", FCopyParamAttrs);
+  UnicodeString InfoStr = FCopyParams.GetInfoStr(L"; ", ActualCopyParamAttrs());
   SetLabelHintPopup(CopyParamLabel, InfoStr);
 
   bool RemoteTransfer = FLAGSET(FOutputOptions, cooRemoteTransfer);
   EnableControl(QueueCheck2,
     ((FOptions & (coDisableQueue | coTemp)) == 0) && !RemoteTransfer);
-
-  TransferSettingsButton->Style =
-    FLAGCLEAR(FOptions, coDoNotUsePresets) ?
-      TCustomButton::bsSplitButton : TCustomButton::bsPushButton;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyDialog::FormShow(TObject * /*Sender*/)
@@ -468,7 +469,7 @@ void __fastcall TCopyDialog::ControlChange(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TCopyDialog::TransferSettingsButtonClick(TObject * /*Sender*/)
 {
-  if (FLAGCLEAR(FOptions, coDoNotUsePresets) && !SupportsSplitButton())
+  if (!SupportsSplitButton())
   {
     CopyParamListPopup(CalculatePopupRect(TransferSettingsButton), 0);
   }
@@ -481,7 +482,7 @@ void __fastcall TCopyDialog::TransferSettingsButtonClick(TObject * /*Sender*/)
 void __fastcall TCopyDialog::GenerateCode()
 {
   TFilesSelected FilesSelected = FLAGSET(FOptions, coAllFiles) ? fsAll : fsList;
-  DoGenerateTransferCodeDialog(FToRemote, FMove, FCopyParamAttrs, FSessionData, FilesSelected, FFileList, Directory, Params);
+  DoGenerateTransferCodeDialog(FToRemote, FMove, ActualCopyParamAttrs(), FSessionData, FilesSelected, FFileList, Directory, Params);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyDialog::CopyParamClick(TObject * Sender)
@@ -490,7 +491,7 @@ void __fastcall TCopyDialog::CopyParamClick(TObject * Sender)
   // so that they are preserved when assigning back later
   TGUICopyParamType Param = Params;
   bool PrevSaveSettings = FSaveSettings;
-  int Result = CopyParamListPopupClick(Sender, Param, FPreset, FCopyParamAttrs, &FSaveSettings);
+  int Result = CopyParamListPopupClick(Sender, Param, FPreset, ActualCopyParamAttrs(), &FSaveSettings);
   if (Result < 0)
   {
     if (DebugAlwaysTrue(Result == -cplGenerateCode))
@@ -525,7 +526,7 @@ void __fastcall TCopyDialog::CopyParamGroupClick(TObject * /*Sender*/)
 {
   if (CopyParamGroup->Enabled)
   {
-    if (DoCopyParamCustomDialog(FCopyParams, FCopyParamAttrs))
+    if (DoCopyParamCustomDialog(FCopyParams, ActualCopyParamAttrs()))
     {
       UpdateControls();
     }
@@ -535,11 +536,8 @@ void __fastcall TCopyDialog::CopyParamGroupClick(TObject * /*Sender*/)
 void __fastcall TCopyDialog::CopyParamGroupContextPopup(TObject * /*Sender*/,
   TPoint & MousePos, bool & Handled)
 {
-  if (FLAGCLEAR(FOptions, coDoNotUsePresets))
-  {
-    CopyParamListPopup(CalculatePopupRect(CopyParamGroup, MousePos), cplCustomizeDefault);
-    Handled = true;
-  }
+  CopyParamListPopup(CalculatePopupRect(CopyParamGroup, MousePos), cplCustomizeDefault);
+  Handled = true;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyDialog::CopyParamListPopup(TRect R, int AdditionalOptions)
@@ -548,12 +546,12 @@ void __fastcall TCopyDialog::CopyParamListPopup(TRect R, int AdditionalOptions)
 
   ::CopyParamListPopup(R, FPresetsMenu,
     FCopyParams, FPreset, CopyParamClick,
-    cplCustomize | AdditionalOptions |
+    AdditionalOptions |
       FLAGMASK(
           FLAGCLEAR(FOptions, coDisableSaveSettings) && !RemoteTransfer,
         cplSaveSettings) |
       FLAGMASK(FLAGCLEAR(FOutputOptions, cooRemoteTransfer) && FLAGCLEAR(FOptions, coTemp), cplGenerateCode),
-    FCopyParamAttrs,
+    ActualCopyParamAttrs(),
     FSaveSettings);
 }
 //---------------------------------------------------------------------------

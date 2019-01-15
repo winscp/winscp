@@ -15,6 +15,11 @@ namespace WinSCP
             _position = 0;
         }
 
+        public void SetTimeouted()
+        {
+            _timeouted = true;
+        }
+
         public override void Dispose()
         {
             using (Session.Logger.CreateCallstack())
@@ -46,32 +51,40 @@ namespace WinSCP
             using (Session.Logger.CreateCallstack())
             {
                 bool result;
-                bool retry;
-
-                do
+                if (_timeouted)
                 {
-                    result = DoRead();
+                    Session.Logger.WriteLine("Not reading, session has timed out");
+                    result = false;
+                }
+                else
+                {
+                    bool retry;
 
-                    retry = false;
-
-                    if (result &&
-                        IsNonEmptyElement("failure"))
+                    do
                     {
-                        SessionRemoteException e = SessionRemoteException.ReadFailure(this);
+                        result = DoRead();
 
-                        Session.RaiseFailed(e);
+                        retry = false;
 
-                        if ((flags & LogReadFlags.ThrowFailures) == 0)
+                        if (result &&
+                            IsNonEmptyElement("failure"))
                         {
-                            retry = true;
-                        }
-                        else
-                        {
-                            throw Session.Logger.WriteException(e);
+                            SessionRemoteException e = SessionRemoteException.ReadFailure(this);
+
+                            Session.RaiseFailed(e);
+
+                            if ((flags & LogReadFlags.ThrowFailures) == 0)
+                            {
+                                retry = true;
+                            }
+                            else
+                            {
+                                throw Session.Logger.WriteException(e);
+                            }
                         }
                     }
+                    while (retry);
                 }
-                while (retry);
 
                 return result;
             }
@@ -246,5 +259,6 @@ namespace WinSCP
         private PatientFileStream _stream;
         private bool _closed;
         private string _logged;
+        private bool _timeouted;
     }
 }

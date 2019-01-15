@@ -1297,7 +1297,7 @@ object NonVisualDataModule: TNonVisualDataModule
         'Open terminal|Open terminal window that allow executing arbitrar' +
         'y command (with exception of commands that require user input)'
       ImageIndex = 55
-      ShortCut = 16468
+      ShortCut = 24660
     end
     object PuttyAction: TAction
       Tag = 15
@@ -2208,6 +2208,13 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'task_change_password'
       Hint = 'Change account password'
     end
+    object PrivateKeyUploadAction: TAction
+      Tag = 15
+      Category = 'Session'
+      Caption = '&Install Public Key into Server...'
+      HelpKeyword = 'guide_public_key'
+      Hint = 'Install public key for authentication into the server'
+    end
     object RemoteNewFileAction: TAction
       Tag = 15
       Category = 'Remote Selected Operation'
@@ -2223,6 +2230,35 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'task_edit'
       Hint = 'Create file|Create new file and open it in editor'
       ImageIndex = 77
+    end
+    object CustomizeToolbarAction: TAction
+      Tag = 15
+      Category = 'View'
+      Caption = '&Customize Toolbar'
+      HelpKeyword = 'ui_toolbars'
+      Hint = 'Show/hide toolbar buttons'
+    end
+    object RenameSessionAction: TAction
+      Tag = 15
+      Category = 'Session'
+      Caption = '&Rename Session'
+      HelpKeyword = 'task_connections'
+      Hint = 'Rename session|Changes name of the current session'
+    end
+    object CurrentCopyAction: TAction
+      Tag = 15
+      Category = 'Selected Operation'
+      Caption = '&Copy'
+      Hint = 'Copy|Copy the selected files to clipboard'
+      ImageIndex = 111
+      ShortCut = 16451
+    end
+    object FileColorsPreferencesAction: TAction
+      Tag = 15
+      Category = 'View'
+      Caption = 'File &Colors...'
+      HelpKeyword = 'ui_pref_file_colors'
+      Hint = 'Configure file color rules'
     end
   end
   object ExplorerBarPopup: TTBXPopupMenu
@@ -2262,6 +2298,9 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object TBXItem48: TTBXItem
       Action = SelectiveToolbarTextAction
+    end
+    object TBXSubmenuItem4: TTBXSubmenuItem
+      Action = CustomizeToolbarAction
     end
     object N5: TTBXSeparatorItem
     end
@@ -2342,6 +2381,9 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object TBXItem46: TTBXItem
       Action = SelectiveToolbarTextAction
+    end
+    object TBXItem77: TTBXSubmenuItem
+      Action = CustomizeToolbarAction
     end
     object N26: TTBXSeparatorItem
     end
@@ -2481,6 +2523,9 @@ object NonVisualDataModule: TNonVisualDataModule
     object TBXItem49: TTBXItem
       Action = SelectiveToolbarTextAction
     end
+    object TBXSubmenuItem9: TTBXSubmenuItem
+      Action = CustomizeToolbarAction
+    end
     object N28: TTBXSeparatorItem
     end
     object Tree5: TTBXItem
@@ -2531,6 +2576,9 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object TBXItem47: TTBXItem
       Action = SelectiveToolbarTextAction
+    end
+    object TBXSubmenuItem6: TTBXSubmenuItem
+      Action = CustomizeToolbarAction
     end
     object N29: TTBXSeparatorItem
     end
@@ -2966,6 +3014,9 @@ object NonVisualDataModule: TNonVisualDataModule
     object TBXItem219: TTBXItem
       Action = DuplicateSessionAction
     end
+    object TBXItem78: TTBXItem
+      Action = RenameSessionAction
+    end
     object TBXItem125: TTBXItem
       Action = SaveCurrentSessionAction2
     end
@@ -2977,6 +3028,12 @@ object NonVisualDataModule: TNonVisualDataModule
     object TBXItem52: TTBXItem
       Action = SessionGenerateUrlAction2
     end
+    object TBXSeparatorItem52: TTBXSeparatorItem
+    end
+    object ColorMenuItem: TTBXColorItem
+      Action = ColorMenuAction
+      Color = clNone
+    end
     object TBXSeparatorItem34: TTBXSeparatorItem
     end
     object TBXItem123: TTBXItem
@@ -2985,12 +3042,6 @@ object NonVisualDataModule: TNonVisualDataModule
     object TBXSubmenuItem23: TTBXSubmenuItem
       Action = SavedSessionsAction2
       Options = [tboDropdownArrow]
-    end
-    object TBXSeparatorItem52: TTBXSeparatorItem
-    end
-    object ColorMenuItem: TTBXColorItem
-      Action = ColorMenuAction
-      Color = clNone
     end
     object TBXSeparatorItem35: TTBXSeparatorItem
     end

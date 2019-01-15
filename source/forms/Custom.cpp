@@ -245,10 +245,8 @@ void __fastcall TCustomDialog::AddEdit(TCustomEdit * Edit, TLabel * Label, bool 
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomDialog::AddComboBox(TCustomCombo * Combo, TLabel * Label, TStrings * Items, bool OneLine)
+void __fastcall TCustomDialog::SetUpComboBox(TCustomCombo * Combo, TStrings * Items, bool OneLine)
 {
-  AddEditLikeControl(Combo, Label, OneLine);
-
   if (Items != NULL)
   {
     Combo->Items = Items;
@@ -274,6 +272,20 @@ void __fastcall TCustomDialog::AddComboBox(TCustomCombo * Combo, TLabel * Label,
   {
     PublicCombo->OnChange = Change;
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomDialog::AddComboBox(TCustomCombo * Combo, TLabel * Label, TStrings * Items, bool OneLine)
+{
+  AddEditLikeControl(Combo, Label, OneLine);
+
+  SetUpComboBox(Combo, Items, OneLine);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomDialog::AddShortCutComboBox(TComboBox * Combo, TLabel * Label, const TShortCuts & ShortCuts)
+{
+  AddEditLikeControl(Combo, Label, true);
+  InitializeShortCutCombo(Combo, ShortCuts);
+  SetUpComboBox(Combo, NULL, true);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomDialog::ScaleButtonControl(TButtonControl * Control)
@@ -746,8 +758,7 @@ __fastcall TShortCutDialog::TShortCutDialog(const TShortCuts & ShortCuts, Unicod
   Caption = LoadStr(SHORTCUT_CAPTION);
 
   ShortCutCombo = new TComboBox(this);
-  AddComboBox(ShortCutCombo, CreateLabel(LoadStr(SHORTCUT_LABEL)));
-  InitializeShortCutCombo(ShortCutCombo, ShortCuts);
+  AddShortCutComboBox(ShortCutCombo, CreateLabel(LoadStr(SHORTCUT_LABEL)), ShortCuts);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TShortCutDialog::Execute(TShortCut & ShortCut)
@@ -864,9 +875,9 @@ class TCustomCommandOptionsDialog : public TCustomDialog
 public:
   __fastcall TCustomCommandOptionsDialog(
     const TCustomCommandType * Command, TStrings * CustomCommandOptions, unsigned int Flags,
-    TCustomCommand * CustomCommandForOptions, const UnicodeString & Site);
+    TCustomCommand * CustomCommandForOptions, const UnicodeString & Site, const TShortCuts * ShortCuts);
 
-  bool __fastcall Execute();
+  bool __fastcall Execute(TShortCut * ShortCut);
 
 protected:
   virtual void __fastcall DoHelp();
@@ -879,6 +890,7 @@ private:
   std::vector<std::vector<UnicodeString> > FValues;
   unsigned int FFlags;
   UnicodeString FSite;
+  TComboBox * FShortCutCombo;
 
   UnicodeString __fastcall HistoryKey(const TCustomCommandType::TOption & Option);
   THistoryComboBox * __fastcall CreateHistoryComboBox(const TCustomCommandType::TOption & Option, const UnicodeString & Value);
@@ -896,7 +908,7 @@ private:
 __fastcall TCustomCommandOptionsDialog::TCustomCommandOptionsDialog(
     const TCustomCommandType * Command, TStrings * CustomCommandOptions,
     unsigned int Flags, TCustomCommand * CustomCommandForOptions,
-    const UnicodeString & Site) :
+    const UnicodeString & Site, const TShortCuts * ShortCuts) :
   TCustomDialog(HELP_EXTENSION_OPTIONS)
 {
   FCommand = Command;
@@ -906,6 +918,7 @@ __fastcall TCustomCommandOptionsDialog::TCustomCommandOptionsDialog(
   Caption = FMTLOAD(EXTENSION_OPTIONS_CAPTION, (StripEllipsis(StripHotkey(FCommand->Name))));
   Width = ScaleByTextHeight(this, 400);
 
+  bool HasGroups = false;
   int ControlIndex = 0;
   for (int OptionIndex = 0; OptionIndex < FCommand->OptionsCount; OptionIndex++)
   {
@@ -971,6 +984,7 @@ __fastcall TCustomCommandOptionsDialog::TCustomCommandOptionsDialog(
       else if (Option.Kind == TCustomCommandType::okGroup)
       {
         StartGroup(Option.Caption);
+        HasGroups = true;
       }
       else if (Option.Kind == TCustomCommandType::okSeparator)
       {
@@ -1043,6 +1057,20 @@ __fastcall TCustomCommandOptionsDialog::TCustomCommandOptionsDialog(
       DebugAssert(static_cast<int>(FControls.size()) == ControlIndex);
     }
   }
+
+  if (ShortCuts != NULL)
+  {
+    if (HasGroups)
+    {
+      StartGroup(LoadStr(EXTENSION_GENERAL_GROUP));
+    }
+    else if (ControlIndex > 0)
+    {
+      AddSeparator();
+    }
+    FShortCutCombo = new TComboBox(this);
+    AddShortCutComboBox(FShortCutCombo, CreateLabel(LoadStr(EXTENSION_SHORTCUT)), *ShortCuts);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomCommandOptionsDialog::AddOptionComboBox(
@@ -1066,6 +1094,7 @@ void __fastcall TCustomCommandOptionsDialog::AddOptionComboBox(
     {
       ParamValue = Item;
     }
+    Item = WinConfiguration->ExtensionStringTranslation(FCommand->Id, Item);
     Items->Add(Item);
     if (Value == ParamValue)
     {
@@ -1176,8 +1205,13 @@ UnicodeString __fastcall TCustomCommandOptionsDialog::HistoryKey(const TCustomCo
   return L"CustomCommandOption_" + Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TCustomCommandOptionsDialog::Execute()
+bool __fastcall TCustomCommandOptionsDialog::Execute(TShortCut * ShortCut)
 {
+  if (ShortCut != NULL)
+  {
+    SetShortCutCombo(FShortCutCombo, *ShortCut);
+  }
+
   bool Result = TCustomDialog::Execute();
 
   if (Result)
@@ -1244,6 +1278,11 @@ bool __fastcall TCustomCommandOptionsDialog::Execute()
 
         ControlIndex++;
       }
+    }
+
+    if (ShortCut != NULL)
+    {
+      *ShortCut = GetShortCutCombo(FShortCutCombo);
     }
   }
 
@@ -1319,13 +1358,13 @@ void __fastcall TCustomCommandOptionsDialog::DoShow()
 }
 //---------------------------------------------------------------------------
 bool __fastcall DoCustomCommandOptionsDialog(
-  const TCustomCommandType * Command, TStrings * CustomCommandOptions,
+  const TCustomCommandType * Command, TStrings * CustomCommandOptions, TShortCut * ShortCut,
   unsigned int Flags, TCustomCommand * CustomCommandForOptions,
-  const UnicodeString & Site)
+  const UnicodeString & Site, const TShortCuts * ShortCuts)
 {
   std::unique_ptr<TCustomCommandOptionsDialog> Dialog(
-    new TCustomCommandOptionsDialog(Command, CustomCommandOptions, Flags, CustomCommandForOptions, Site));
-  return Dialog->Execute();
+    new TCustomCommandOptionsDialog(Command, CustomCommandOptions, Flags, CustomCommandForOptions, Site, ShortCuts));
+  return Dialog->Execute(ShortCut);
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

@@ -8,8 +8,6 @@
 enum TModificationFmt { mfNone, mfMDHM, mfMDY, mfFull };
 //---------------------------------------------------------------------------
 #define SYMLINKSTR L" -> "
-#define PARENTDIRECTORY L".."
-#define THISDIRECTORY L"."
 #define ROOTDIRECTORY L"/"
 #define FILETYPE_DEFAULT L'-'
 #define FILETYPE_SYMLINK L'L'
@@ -105,6 +103,7 @@ private:
   UnicodeString FFullFileName;
   int FIsHidden;
   UnicodeString FTypeName;
+  bool FIsEncrypted;
   int __fastcall GetAttr();
   bool __fastcall GetBrokenLink();
   bool __fastcall GetIsDirectory() const;
@@ -123,7 +122,7 @@ private:
   bool __fastcall GetHaveFullFileName() const;
   int __fastcall GetIconIndex() const;
   UnicodeString __fastcall GetTypeName();
-  bool __fastcall GetIsHidden();
+  bool __fastcall GetIsHidden() const;
   void __fastcall SetIsHidden(bool value);
   bool __fastcall GetIsParentDirectory() const;
   bool __fastcall GetIsThisDirectory() const;
@@ -144,6 +143,7 @@ public:
   void __fastcall ShiftTimeInSeconds(__int64 Seconds);
   bool __fastcall IsTimeShiftingApplicable();
   void __fastcall Complete();
+  void __fastcall SetEncrypted();
 
   static bool __fastcall IsTimeShiftingApplicable(TModificationFmt ModificationFmt);
   static void __fastcall ShiftTimeInSeconds(TDateTime & DateTime, TModificationFmt ModificationFmt, __int64 Seconds);
@@ -181,6 +181,7 @@ public:
   __property bool IsThisDirectory = { read = GetIsThisDirectory };
   __property bool IsInaccesibleDirectory  = { read=GetIsInaccesibleDirectory };
   __property UnicodeString Extension  = { read=GetExtension };
+  __property bool IsEncrypted  = { read = FIsEncrypted };
 };
 //---------------------------------------------------------------------------
 class TRemoteDirectoryFile : public TRemoteFile
@@ -410,8 +411,8 @@ private:
   void __fastcall SetRightUndef(TRight Right, TState value);
 };
 //---------------------------------------------------------------------------
-enum TValidProperty { vpRights, vpGroup, vpOwner, vpModification, vpLastAccess };
-typedef Set<TValidProperty, vpRights, vpLastAccess> TValidProperties;
+enum TValidProperty { vpRights, vpGroup, vpOwner, vpModification, vpLastAccess, vpEncrypt };
+typedef Set<TValidProperty, vpRights, vpEncrypt> TValidProperties;
 class TRemoteProperties
 {
 public:
@@ -423,6 +424,7 @@ public:
   TRemoteToken Owner;
   __int64 Modification; // unix time
   __int64 LastAccess; // unix time
+  bool Encrypt;
 
   __fastcall TRemoteProperties();
   __fastcall TRemoteProperties(const TRemoteProperties & rhp);
@@ -435,6 +437,105 @@ public:
   static TRemoteProperties __fastcall CommonProperties(TStrings * FileList);
   static TRemoteProperties __fastcall ChangedProperties(
     const TRemoteProperties & OriginalProperties, TRemoteProperties NewProperties);
+};
+//---------------------------------------------------------------------------
+class TSynchronizeChecklist
+{
+friend class TTerminal;
+
+public:
+  enum TAction {
+    saNone, saUploadNew, saDownloadNew, saUploadUpdate, saDownloadUpdate, saDeleteRemote, saDeleteLocal };
+  static const int ActionCount = saDeleteLocal;
+
+  class TItem
+  {
+  friend class TTerminal;
+  friend class TSynchronizeChecklist;
+
+  public:
+    struct TFileInfo
+    {
+      UnicodeString FileName;
+      UnicodeString Directory;
+      TDateTime Modification;
+      TModificationFmt ModificationFmt;
+      __int64 Size;
+    };
+
+    TAction Action;
+    bool IsDirectory;
+    TFileInfo Local;
+    TFileInfo Remote;
+    int ImageIndex;
+    bool Checked;
+    TRemoteFile * RemoteFile;
+
+    const UnicodeString& GetFileName() const;
+    bool IsRemoteOnly() const { return (Action == saDownloadNew) || (Action == saDeleteRemote); }
+    bool IsLocalOnly() const { return (Action == saUploadNew) || (Action == saDeleteLocal); }
+    bool HasSize() const { return !IsDirectory || FDirectoryHasSize; }
+    __int64 __fastcall GetSize() const;
+    __int64 __fastcall GetSize(TAction AAction) const;
+
+    ~TItem();
+
+  private:
+    FILETIME FLocalLastWriteTime;
+    bool FDirectoryHasSize;
+
+    TItem();
+  };
+
+  typedef std::vector<const TSynchronizeChecklist::TItem *> TItemList;
+
+  ~TSynchronizeChecklist();
+
+  void __fastcall Update(const TItem * Item, bool Check, TAction Action);
+  void __fastcall UpdateDirectorySize(const TItem * Item, __int64 Size);
+  void Delete(const TItem * Item);
+
+  static TAction __fastcall Reverse(TAction Action);
+  static bool __fastcall IsItemSizeIrrelevant(TAction Action);
+
+  __property int Count = { read = GetCount };
+  __property int CheckedCount = { read = GetCheckedCount };
+  __property const TItem * Item[int Index] = { read = GetItem };
+
+protected:
+  TSynchronizeChecklist();
+
+  void Sort();
+  void Add(TItem * Item);
+
+  int GetCount() const;
+  int GetCheckedCount() const;
+  const TItem * GetItem(int Index) const;
+
+private:
+  TList * FList;
+
+  static int __fastcall Compare(void * Item1, void * Item2);
+};
+//---------------------------------------------------------------------------
+class TFileOperationProgressType;
+//---------------------------------------------------------------------------
+class TSynchronizeProgress
+{
+public:
+  TSynchronizeProgress(const TSynchronizeChecklist * Checklist);
+
+  void ItemProcessed(const TSynchronizeChecklist::TItem * ChecklistItem);
+  int Progress(const TFileOperationProgressType * CurrentItemOperationProgress) const;
+  TDateTime TimeLeft(const TFileOperationProgressType * CurrentItemOperationProgress) const;
+
+private:
+  const TSynchronizeChecklist * FChecklist;
+  mutable __int64 FTotalSize;
+  __int64 FProcessedSize;
+
+  __int64 ItemSize(const TSynchronizeChecklist::TItem * ChecklistItem) const;
+  __int64 GetProcessed(const TFileOperationProgressType * CurrentItemOperationProgress) const;
 };
 //---------------------------------------------------------------------------
 bool __fastcall IsUnixStyleWindowsPath(const UnicodeString & Path);

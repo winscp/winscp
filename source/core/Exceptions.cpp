@@ -442,6 +442,11 @@ ExtException * __fastcall EFatal::Clone()
   return new EFatal(this, L"");
 }
 //---------------------------------------------------------------------------
+void __fastcall EFatal::Rethrow()
+{
+  throw EFatal(this, L"");
+}
+//---------------------------------------------------------------------------
 ExtException * __fastcall ESshTerminate::Clone()
 {
   return new ESshTerminate(this, L"", Operation, TargetLocalPath, DestLocalFileName);
@@ -496,9 +501,9 @@ Exception * __fastcall CloneException(Exception * E)
 void __fastcall RethrowException(Exception * E)
 {
   // this list has to be in sync with ExceptionMessage
-  if (dynamic_cast<EFatal *>(E) != NULL)
+  if (dynamic_cast<ExtException *>(E) != NULL)
   {
-    throw EFatal(E, L"");
+    dynamic_cast<ExtException *>(E)->Rethrow();
   }
   else if (dynamic_cast<ECallbackGuardAbort *>(E) != NULL)
   {
@@ -511,10 +516,6 @@ void __fastcall RethrowException(Exception * E)
   else if (WellKnownException(E, NULL, NULL, NULL, true))
   {
     // noop, should never get here
-  }
-  else if (dynamic_cast<ExtException *>(E) != NULL)
-  {
-    dynamic_cast<ExtException *>(E)->Rethrow();
   }
   else
   {

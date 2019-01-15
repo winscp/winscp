@@ -611,7 +611,7 @@ int ne__ssl_match_hostname(const char *cn, size_t cnlen, const char *hostname)
 {
     const char *dot;
 
-    NE_DEBUG(NE_DBG_SSL, "ssl: Match common name '%s' against '%s'\n",
+    NE_DEBUG(NE_DBG_WINSCP_HTTP_DETAIL, "ssl: Match common name '%s' against '%s'\n",
              cn, hostname);
 
     if (strncmp(cn, "*.", 2) == 0 && cnlen > 2

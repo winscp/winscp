@@ -631,11 +631,11 @@ void handle_got_event(HANDLE event)
 	 * an event notification here for a handle which is already
 	 * deceased. In that situation we simply do nothing.
 	 */
-    #ifdef MPEXT
-    return 0;
-    #else
+	#ifdef MPEXT
+	return 0;
+	#else
 	return;
-    #endif
+	#endif
     }
 
     if (h->u.g.moribund) {
@@ -654,11 +654,11 @@ void handle_got_event(HANDLE event)
 	    h->u.g.busy = TRUE;
 	    SetEvent(h->u.g.ev_from_main);
 	}
-    #ifdef MPEXT
-    return 0;
-    #else
+	#ifdef MPEXT
+	return 0;
+	#else
 	return;
-    #endif
+	#endif
     }
 
     switch (h->type) {

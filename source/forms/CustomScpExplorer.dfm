@@ -50,9 +50,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       Height = 240
       Cursor = crSizeWE
       AutoSnap = False
-      Color = clBtnFace
       MinSize = 70
-      ParentColor = False
       ResizeStyle = rsUpdate
     end
     object RemoteStatusBar: TTBXStatusBar
@@ -65,6 +63,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       ShowHint = True
       UseSystemFont = False
       OnClick = RemoteStatusBarClick
+      OnMouseDown = RemoteStatusBarMouseDown
     end
     object RemoteDirView: TUnixDirView
       Left = 172
@@ -82,11 +81,15 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       OnColumnRightClick = DirViewColumnRightClick
       OnEditing = DirViewEditing
       OnEnter = RemoteDirViewEnter
+      OnExit = DirViewExit
+      OnKeyDown = DirViewKeyDown
+      OnKeyPress = DirViewKeyPress
       NortonLike = nlOff
       UnixColProperties.ExtWidth = 20
       UnixColProperties.TypeVisible = False
       OnDDDragFileName = RemoteFileControlDDDragFileName
       OnBusy = DirViewBusy
+      OnChangeFocus = DirViewChangeFocus
       OnSelectItem = DirViewSelectItem
       OnLoaded = DirViewLoaded
       OnExecFile = DirViewExecFile
@@ -313,12 +316,15 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
     OnDragDrop = SessionsPageControlDragDrop
     OnDragOver = SessionsPageControlDragOver
     OnMouseDown = SessionsPageControlMouseDown
+    OnCloseButtonClick = SessionsPageControlCloseButtonClick
     object TabSheet1: TTabSheet
       Caption = 'TabSheet1'
     end
   end
   object ApplicationEvents: TApplicationEvents
+    OnDeactivate = ApplicationEventsDeactivate
     OnMinimize = ApplicationMinimize
+    OnModalBegin = ApplicationEventsModalBegin
     OnRestore = ApplicationRestore
     Left = 88
     Top = 200

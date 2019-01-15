@@ -46,8 +46,15 @@ enum TSessionUrlFlags
   sufUserName = 0x02,
   sufPassword = 0x04,
   sufHostKey = 0x08,
-  sufComplete = sufUserName | sufPassword | sufHostKey,
+  sufRawSettings = 0x10,
+  sufHttpForWebDAV = 0x20,
+  sufSession = sufUserName | sufPassword | sufHostKey,
+  sufComplete = sufSession | sufRawSettings,
   sufOpen = sufUserName | sufPassword
+};
+enum TParseUrlFlags
+{
+  pufAllowStoredSiteWithProtocol = 0x01,
 };
 //---------------------------------------------------------------------------
 extern const UnicodeString CipherNames[CIPHER_COUNT];
@@ -142,6 +149,7 @@ private:
   bool FSelected;
   TAutoSwitch FLookupUserGroups;
   UnicodeString FReturnVar;
+  bool FExitCode1IsError;
   bool FScp1Compatibility;
   UnicodeString FShell;
   UnicodeString FSftpServer;
@@ -213,11 +221,13 @@ private:
   UnicodeString FS3DefaultRegion;
   bool FIsWorkspace;
   UnicodeString FLink;
+  UnicodeString FNameOverride;
   UnicodeString FHostKey;
   bool FFingerprintScan;
   bool FOverrideCachedHostKey;
   UnicodeString FNote;
   UnicodeString FWinTitle;
+  RawByteString FEncryptKey;
 
   UnicodeString FOrigHostName;
   int FOrigPortNumber;
@@ -271,9 +281,8 @@ private:
   void __fastcall SetTimeDifferenceAuto(bool value);
   void __fastcall SetPingType(TPingType value);
   UnicodeString __fastcall GetSessionName();
-  bool __fastcall HasSessionName();
   UnicodeString __fastcall GetDefaultSessionName();
-  UnicodeString __fastcall GetProtocolUrl();
+  UnicodeString __fastcall GetProtocolUrl(bool HttpForWebDAV);
   void __fastcall SetFSProtocol(TFSProtocol value);
   UnicodeString __fastcall GetFSProtocolStr();
   void __fastcall SetLocalDirectory(UnicodeString value);
@@ -296,6 +305,7 @@ private:
   void __fastcall SetTrimVMSVersions(bool value);
   void __fastcall SetLookupUserGroups(TAutoSwitch value);
   void __fastcall SetReturnVar(UnicodeString value);
+  void __fastcall SetExitCode1IsError(bool value);
   void __fastcall SetScp1Compatibility(bool value);
   void __fastcall SetShell(UnicodeString value);
   void __fastcall SetSftpServer(UnicodeString value);
@@ -385,9 +395,13 @@ private:
   void __fastcall SetLogicalHostName(UnicodeString value);
   void __fastcall SetIsWorkspace(bool value);
   void __fastcall SetLink(UnicodeString value);
+  void __fastcall SetNameOverride(UnicodeString value);
   void __fastcall SetHostKey(UnicodeString value);
   void __fastcall SetNote(UnicodeString value);
   void __fastcall SetWinTitle(UnicodeString value);
+  UnicodeString __fastcall GetEncryptKey() const;
+  void __fastcall SetEncryptKey(UnicodeString value);
+
   TDateTime __fastcall GetTimeoutDT();
   void __fastcall SavePasswords(THierarchicalStorage * Storage, bool PuttyExport, bool DoNotEncryptPasswords);
   UnicodeString __fastcall GetLocalName();
@@ -431,9 +445,12 @@ private:
     UnicodeString & Result, TAssemblyLanguage Language,
     const UnicodeString & Name, bool Value);
   TStrings * __fastcall SaveToOptions(const TSessionData * Default);
+  void __fastcall ApplyRawSettings(TStrings * RawSettings);
+  TStrings * __fastcall GetRawSettingsForUrl();
   template<class AlgoT>
   void __fastcall SetAlgoList(AlgoT * List, const AlgoT * DefaultList, const UnicodeString * Names,
     int Count, AlgoT WarnAlgo, UnicodeString value);
+  static void __fastcall Remove(THierarchicalStorage * Storage, const UnicodeString & Name);
 
   __property UnicodeString InternalStorageKey = { read = GetInternalStorageKey };
 
@@ -463,7 +480,7 @@ public:
   void __fastcall CopyDirectoriesStateData(TSessionData * SourceData);
   bool __fastcall ParseUrl(UnicodeString Url, TOptions * Options,
     TStoredSessionList * StoredSessions, bool & DefaultsOnly,
-    UnicodeString * FileName, bool * AProtocolDefined, UnicodeString * MaskedUrl);
+    UnicodeString * FileName, bool * AProtocolDefined, UnicodeString * MaskedUrl, int Flags);
   bool __fastcall ParseOptions(TOptions * Options);
   void __fastcall ConfigureTunnel(int PortNumber);
   void __fastcall RollbackTunnel();
@@ -473,6 +490,9 @@ public:
   bool __fastcall IsSameSite(const TSessionData * Default);
   bool __fastcall IsInFolderOrWorkspace(UnicodeString Name);
   UnicodeString __fastcall GenerateSessionUrl(unsigned int Flags);
+  bool __fastcall HasRawSettingsForUrl();
+  bool __fastcall HasSessionName();
+
   UnicodeString __fastcall GenerateOpenCommandArgs(bool Rtf);
   void __fastcall GenerateAssemblyCode(TAssemblyLanguage Language, UnicodeString & Head, UnicodeString & Tail, int & Indent);
   void __fastcall LookupLastFingerprint();
@@ -547,6 +567,7 @@ public:
   __property bool TrimVMSVersions = { read = FTrimVMSVersions, write = SetTrimVMSVersions };
   __property TAutoSwitch LookupUserGroups = { read = FLookupUserGroups, write = SetLookupUserGroups };
   __property UnicodeString ReturnVar = { read = FReturnVar, write = SetReturnVar };
+  __property bool ExitCode1IsError = { read = FExitCode1IsError, write = SetExitCode1IsError };
   __property bool Scp1Compatibility = { read = FScp1Compatibility, write = SetScp1Compatibility };
   __property UnicodeString Shell = { read = FShell, write = SetShell };
   __property UnicodeString SftpServer = { read = FSftpServer, write = SetSftpServer };
@@ -626,11 +647,14 @@ public:
   __property UnicodeString S3DefaultRegion = { read = FS3DefaultRegion, write = SetS3DefaultRegion };
   __property bool IsWorkspace = { read = FIsWorkspace, write = SetIsWorkspace };
   __property UnicodeString Link = { read = FLink, write = SetLink };
+  __property UnicodeString NameOverride = { read = FNameOverride, write = SetNameOverride };
   __property UnicodeString HostKey = { read = FHostKey, write = SetHostKey };
   __property bool FingerprintScan = { read = FFingerprintScan, write = FFingerprintScan };
   __property bool OverrideCachedHostKey = { read = FOverrideCachedHostKey };
   __property UnicodeString Note = { read = FNote, write = SetNote };
   __property UnicodeString WinTitle = { read = FWinTitle, write = SetWinTitle };
+  __property UnicodeString EncryptKey = { read = GetEncryptKey, write = SetEncryptKey };
+
   __property UnicodeString StorageKey = { read = GetStorageKey };
   __property UnicodeString SiteKey = { read = GetSiteKey };
   __property UnicodeString OrigHostName = { read = FOrigHostName };
@@ -645,7 +669,7 @@ class TStoredSessionList : public TNamedObjectList
 {
 public:
   __fastcall TStoredSessionList(bool aReadOnly = false);
-  void __fastcall Load();
+  void __fastcall Reload();
   void __fastcall Save(bool All, bool Explicit);
   void __fastcall Saved();
   void __fastcall ImportFromFilezilla(const UnicodeString FileName, const UnicodeString ConfigurationFileName);
@@ -669,26 +693,29 @@ public:
   bool __fastcall IsFolder(const UnicodeString & Name);
   bool __fastcall IsWorkspace(const UnicodeString & Name);
   TSessionData * __fastcall ParseUrl(UnicodeString Url, TOptions * Options, bool & DefaultsOnly,
-    UnicodeString * FileName = NULL, bool * ProtocolDefined = NULL, UnicodeString * MaskedUrl = NULL);
+    UnicodeString * FileName = NULL, bool * ProtocolDefined = NULL, UnicodeString * MaskedUrl = NULL, int Flags = 0);
   bool __fastcall IsUrl(UnicodeString Url);
   bool __fastcall CanLogin(TSessionData * Data);
   void __fastcall GetFolderOrWorkspace(const UnicodeString & Name, TList * List);
   TStrings * __fastcall GetFolderOrWorkspaceList(const UnicodeString & Name);
   TStrings * __fastcall GetWorkspaces();
   bool __fastcall HasAnyWorkspace();
-  TSessionData * __fastcall SaveWorkspaceData(TSessionData * Data);
+  TSessionData * __fastcall SaveWorkspaceData(TSessionData * Data, int Index);
   virtual __fastcall ~TStoredSessionList();
   __property TSessionData * Sessions[int Index]  = { read=AtSession };
   __property TSessionData * DefaultSettings  = { read=FDefaultSettings, write=SetDefaultSettings };
 
   static void __fastcall ImportHostKeys(
-    const UnicodeString SourceKey, TStoredSessionList * Sessions,
-    bool OnlySelected);
+    THierarchicalStorage * SourceStorage, THierarchicalStorage * TargetStorage, TStoredSessionList * Sessions, bool OnlySelected);
+  static void __fastcall ImportHostKeys(
+    const UnicodeString & SourceKey, TStoredSessionList * Sessions, bool OnlySelected);
   static void __fastcall ImportSelectedKnownHosts(TStoredSessionList * Sessions);
+  static bool __fastcall OpenHostKeysSubKey(THierarchicalStorage * Storage, bool CanCreate);
 
 private:
   TSessionData * FDefaultSettings;
   bool FReadOnly;
+  std::unique_ptr<TStrings> FPendingRemovals;
   void __fastcall SetDefaultSettings(TSessionData * value);
   void __fastcall DoSave(THierarchicalStorage * Storage, bool All,
     bool RecryptPasswordOnly, TStrings * RecryptPasswordErrors);
@@ -703,7 +730,6 @@ private:
     TSessionData * Data, const UnicodeString & Name);
   void __fastcall ImportLevelFromFilezilla(_di_IXMLNode Node, const UnicodeString & Path, _di_IXMLNode SettingsNode);
   static THierarchicalStorage * __fastcall CreateHostKeysStorageForWritting();
-  static bool __fastcall OpenHostKeysSubKey(THierarchicalStorage * Storage, bool CanCreate);
 };
 //---------------------------------------------------------------------------
 UnicodeString GetExpandedLogFileName(UnicodeString LogFileName, TDateTime Started, TSessionData * SessionData);
@@ -711,5 +737,6 @@ bool __fastcall IsSshProtocol(TFSProtocol FSProtocol);
 int __fastcall DefaultPort(TFSProtocol FSProtocol, TFtps Ftps);
 bool __fastcall IsIPv6Literal(const UnicodeString & HostName);
 UnicodeString __fastcall EscapeIPv6Literal(const UnicodeString & IP);
+TFSProtocol NormalizeFSProtocol(TFSProtocol FSProtocol);
 //---------------------------------------------------------------------------
 #endif
