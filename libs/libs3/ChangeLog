@@ -1,0 +1,16 @@
+Thu Sep 18 10:03:02 NZST 2008   bryan@ischo.com
+	* This file is no longer maintained, sorry
+
+Sat Aug  9 13:44:21 NZST 2008   bryan@ischo.com
+	* Fixed bug wherein keys with non-URI-safe characters did not work
+	  correctly because they were not being URI-encoded in the request UR
+	* Split RPM and DEB packages into normal and devel packages
+
+Fri Aug  8 22:40:19 NZST 2008	bryan@ischo.com
+	* Branched 0.4
+	* Created RPM and Debian packaging
+
+Tue Aug  5 08:52:33 NZST 2008	bryan@ischo.com
+	* Bumped version number to 0.3
+	* Moved Makefile to GNUmakefile, added shared library build
+	* Added a bunch of GNU standard files (README, INSTALL, ChangeLog, etc)
