@@ -657,7 +657,7 @@ object PreferencesDialog: TPreferencesDialog
             Width = 96
             Height = 13
             Caption = '&Incremental search:'
-            FocusControl = FormatSizeBytesCombo
+            FocusControl = PanelSearchCombo
             OnClick = ControlChange
           end
           object ShowHiddenFilesCheck: TCheckBox
