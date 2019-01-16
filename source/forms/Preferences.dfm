@@ -1530,7 +1530,6 @@ object PreferencesDialog: TPreferencesDialog
             Alignment = taRightJustify
             MaxValue = 9.000000000000000000
             MinValue = 1.000000000000000000
-            Value = 1.000000000000000000
             Anchors = [akTop, akRight]
             MaxLength = 1
             TabOrder = 0
@@ -2207,7 +2206,6 @@ object PreferencesDialog: TPreferencesDialog
             Alignment = taRightJustify
             MaxValue = 65535.000000000000000000
             MinValue = 1.000000000000000000
-            Value = 1.000000000000000000
             Anchors = [akTop, akRight]
             TabOrder = 4
           end
@@ -3081,7 +3079,6 @@ object PreferencesDialog: TPreferencesDialog
             Alignment = taRightJustify
             MaxValue = 99.000000000000000000
             MinValue = 1.000000000000000000
-            Value = 1.000000000000000000
             Anchors = [akLeft, akTop, akRight]
             MaxLength = 2
             TabOrder = 1
