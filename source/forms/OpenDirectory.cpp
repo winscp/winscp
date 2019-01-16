@@ -14,7 +14,7 @@
 #include "OpenDirectory.h"
 #include "WinConfiguration.h"
 //---------------------------------------------------------------------
-#pragma link "IEComboBox"
+#pragma link "HistoryComboBox"
 #ifndef NO_RESOURCES
 #pragma resource "*.dfm"
 #endif

@@ -139,14 +139,6 @@
 			<BuildOrder>20</BuildOrder>
 			<BuildOrder>19</BuildOrder>
 		</DelphiCompile>
-		<ResFiles Include="packages\filemng\IEComboBox.dcr">
-			<BuildOrder>-1</BuildOrder>
-			<BuildOrder>29</BuildOrder>
-		</ResFiles>
-		<DelphiCompile Include="packages\filemng\IEComboBox.pas">
-			<BuildOrder>26</BuildOrder>
-			<BuildOrder>24</BuildOrder>
-		</DelphiCompile>
 		<DelphiCompile Include="packages\filemng\IEDriveInfo.pas">
 			<BuildOrder>38</BuildOrder>
 			<BuildOrder>22</BuildOrder>

@@ -90,7 +90,7 @@ begin
   begin
     if Items.IndexOf(Text) < 0 then SaveToHistory;
   end;
-  if DroppedDown and (Key = VK_DELETE) and (ssCtrl in Shift) then
+  if DroppedDown and (Key = VK_DELETE) and (ssCtrl in Shift) and (SaveOn <> []) then
   begin
     Items.Clear;
     Key := 0;
@@ -118,7 +118,6 @@ begin
   inherited;
   if soDropDown in SaveOn then SaveToHistory;
 
-  // taken from TIECustomComboBox:
   ItemWidth := GetMaxItemWidth + ScaleByPixelsPerInch(8, Self);
   if Items.Count > DropDownCount then
     Inc(ItemWidth, GetSystemMetricsForControl(Self, SM_CXVSCROLL));
@@ -151,8 +150,6 @@ begin
     ItemIndex := 0;
   end;
 end;
-
-// taken from TIECustomComboBox:
 
 function THistoryComboBox.GetMaxItemWidth: Integer;
 var
