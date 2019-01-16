@@ -25,6 +25,7 @@
 #include <VCLCommon.h>
 #include <WinApi.h>
 #include <Vcl.ScreenTips.hpp>
+#include <HistoryComboBox.hpp>
 #include <vssym32.h>
 
 #include "Animations96.h"
@@ -2103,5 +2104,9 @@ void __fastcall FindComponentClass(
   if (ComponentClass == __classid(TLabel))
   {
     ComponentClass = __classid(TUIStateAwareLabel);
+  }
+  else if (ComponentClass == __classid(TComboBox))
+  {
+    ComponentClass = __classid(TUIStateAwareComboBox);
   }
 }

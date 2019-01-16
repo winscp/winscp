@@ -7,6 +7,12 @@ uses
   StdCtrls;
 
 type
+  TUIStateAwareComboBox = class(TComboBox)
+  protected
+    procedure ComboWndProc(var Message: TMessage; ComboWnd: HWnd; ComboProc: TWindowProcPtr); override;
+  end;
+
+type
   THistorySaveOn = set of (soExit, soDropDown);
 
 const
@@ -19,7 +25,7 @@ type
   THistoryComboBoxGetData = procedure(Sender: THistoryComboBox; var Data: Pointer) of object;
   THistoryComboBoxSetData = procedure(Sender: THistoryComboBox; Data: Pointer) of object;
 
-  THistoryComboBox = class(TComboBox)
+  THistoryComboBox = class(TUIStateAwareComboBox)
   private
     { Private declarations }
     FSaveOn: THistorySaveOn;
@@ -71,6 +77,19 @@ begin
   while Strings.Count > MaxHistorySize do
     Strings.Delete(Strings.Count-1);
 end;
+
+  { TUIStateAwareComboBox }
+
+procedure TUIStateAwareComboBox.ComboWndProc(var Message: TMessage; ComboWnd: HWnd; ComboProc: TWindowProcPtr);
+begin
+  inherited;
+
+  if Message.Msg = WM_SYSKEYDOWN then
+  begin
+    UpdateUIState(TWMKey(Message).CharCode);
+  end;
+end;
+
 
   { THistoryComboBox }
 
