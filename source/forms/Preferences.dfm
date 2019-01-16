@@ -827,7 +827,7 @@ object PreferencesDialog: TPreferencesDialog
             Top = 44
             Width = 129
             Height = 25
-            Caption = 'Select fo&nt...'
+            Caption = 'Select fon&t...'
             TabOrder = 1
             OnClick = PanelFontButtonClick
           end
@@ -836,7 +836,7 @@ object PreferencesDialog: TPreferencesDialog
             Top = 21
             Width = 129
             Height = 17
-            Caption = 'Use custom &font'
+            Caption = '&Use custom font'
             TabOrder = 0
             OnClick = ControlChange
           end
