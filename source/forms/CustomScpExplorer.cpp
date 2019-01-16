@@ -8391,6 +8391,7 @@ void __fastcall TCustomScpExplorerForm::UpdateControls()
 
     QueueView3->Enabled = HasTerminal && Terminal->IsCapable[fsBackgroundTransfers];
     QueueView3->Color = QueueView3->Enabled ? GetWindowColor() : DisabledPanelColor();
+    QueueView3->Font->Color =  GetWindowTextColor(QueueView3->Color);
     QueueLabelUpdateStatus();
 
     RemoteDirView->DarkMode = WinConfiguration->UseDarkTheme();
