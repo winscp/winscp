@@ -28,7 +28,6 @@ type
     FOnSetData: THistoryComboBoxSetData;
 
     procedure SetMaxHistorySize(AMaxHistorySize: Integer);
-    function StoreSaveOn: Boolean;
     function GetMaxItemWidth: Integer;
   protected
     { Protected declarations }
@@ -42,7 +41,7 @@ type
     procedure SaveToHistory; virtual;
   published
     { Published declarations }
-    property SaveOn: THistorySaveOn read FSaveOn write FSaveOn stored StoreSaveOn;
+    property SaveOn: THistorySaveOn read FSaveOn write FSaveOn default DefaultHistorySaveOn;
     property MaxHistorySize: Integer read FMaxHistorySize write SetMaxHistorySize default DefaultMaxHistorySize;
     property OnGetData: THistoryComboBoxGetData read FOnGetData write FOnGetData;
     property OnSetData: THistoryComboBoxSetData read FOnSetData write FOnSetData;
@@ -151,11 +150,6 @@ begin
     HistoryComboBox.SaveToHistory(Items, Text, Data, MaxHistorySize);
     ItemIndex := 0;
   end;
-end;
-
-function THistoryComboBox.StoreSaveOn: Boolean;
-begin
-  Result := (SaveOn <> DefaultHistorySaveOn);
 end;
 
 // taken from TIECustomComboBox:
