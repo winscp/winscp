@@ -1674,7 +1674,6 @@ bool __fastcall TTerminalManager::UploadPublicKey(
     bool ExceptionOnFail;
     UnicodeString TemporaryDir;
 
-    bool WrongRights = false;
     const UnicodeString SshFolder = L".ssh";
     const UnicodeString AuthorizedKeysFile = L"authorized_keys";
     UnicodeString AuthorizedKeysFilePath = FORMAT(L"%s/%s", (SshFolder, AuthorizedKeysFile));
@@ -1706,6 +1705,9 @@ bool __fastcall TTerminalManager::UploadPublicKey(
         throw;
       }
     }
+
+    bool Installed = false;
+    bool WrongRights = false;
 
     AutoReadDirectory = Terminal->AutoReadDirectory;
     ExceptionOnFail = Terminal->ExceptionOnFail;
@@ -1812,6 +1814,8 @@ bool __fastcall TTerminalManager::UploadPublicKey(
           Terminal->LogEvent(FORMAT(L"Uploading updated \"%s\" file...", (AuthorizedKeysFile)));
           Terminal->CopyToRemote(Files.get(), SshFolderAbsolutePath, &CopyParam, cpNoConfirmation, NULL);
         }
+
+        Installed = true;
       }
     }
     __finally
@@ -1825,23 +1829,26 @@ bool __fastcall TTerminalManager::UploadPublicKey(
       CloseAutheticateForm(); // When uploading from Login dialog
     }
 
-    Terminal->LogEvent(L"Public key installation done.");
-    if (AdHocTerminal)
+    if (Installed)
     {
-      TerminalOwner.reset(NULL);
-    }
-    else
-    {
-      Terminal->Log->AddSeparator();
-    }
+      Terminal->LogEvent(L"Public key installation done.");
+      if (AdHocTerminal)
+      {
+        TerminalOwner.reset(NULL);
+      }
+      else
+      {
+        Terminal->Log->AddSeparator();
+      }
 
-    UnicodeString Message = FMTLOAD(LOGIN_PUBLIC_KEY_UPLOADED, (Comment));
-    if (WrongRights)
-    {
-      Message += L"\n\n" + FMTLOAD(LOGIN_PUBLIC_KEY_PERMISSIONS, (AuthorizedKeysFilePath));
-    }
+      UnicodeString Message = FMTLOAD(LOGIN_PUBLIC_KEY_UPLOADED, (Comment));
+      if (WrongRights)
+      {
+        Message += L"\n\n" + FMTLOAD(LOGIN_PUBLIC_KEY_PERMISSIONS, (AuthorizedKeysFilePath));
+      }
 
-    MessageDialog(Message, qtInformation, qaOK, HELP_LOGIN_AUTHORIZED_KEYS);
+      MessageDialog(Message, qtInformation, qaOK, HELP_LOGIN_AUTHORIZED_KEYS);
+    }
   }
 
   return Result;

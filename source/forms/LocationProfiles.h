@@ -2,13 +2,12 @@
 #ifndef LocationProfilesH
 #define LocationProfilesH
 //----------------------------------------------------------------------------
-#include "IEComboBox.hpp"
+#include "HistoryComboBox.hpp"
 #include <System.Classes.hpp>
 #include <Vcl.ComCtrls.hpp>
 #include <Vcl.Controls.hpp>
 #include <Vcl.ImgList.hpp>
 #include <Vcl.StdCtrls.hpp>
-#include "IEComboBox.hpp"
 #include <ComCtrls.hpp>
 #include <ImgList.hpp>
 #include "PngImageList.hpp"
@@ -35,12 +34,12 @@ __published:
   TButton *DownSessionBookmarkButton;
   TButton *UpSessionBookmarkButton;
   TLabel *LocalDirectoryLabel;
-  TIEComboBox *RemoteDirectoryEdit;
+  THistoryComboBox *RemoteDirectoryEdit;
   TButton *RenameSessionBookmarkButton;
   TLabel *RemoteDirectoryLabel;
   TButton *SessionBookmarkMoveToButton;
   TPngImageList *BookmarkImageList;
-  TIEComboBox *LocalDirectoryEdit;
+  THistoryComboBox *LocalDirectoryEdit;
   TButton *LocalDirectoryBrowseButton;
   TButton *SwitchButton;
   TButton *HelpButton;

@@ -21,7 +21,6 @@
 #pragma link "IEListView"
 #pragma link "NortonLikeListView"
 #pragma link "UnixDirView"
-#pragma link "IEComboBox"
 #pragma link "CustomDriveView"
 #pragma link "UnixDriveView"
 #pragma link "TB2Dock"

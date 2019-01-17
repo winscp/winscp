@@ -7,6 +7,12 @@ uses
   StdCtrls;
 
 type
+  TUIStateAwareComboBox = class(TComboBox)
+  protected
+    procedure ComboWndProc(var Message: TMessage; ComboWnd: HWnd; ComboProc: TWindowProcPtr); override;
+  end;
+
+type
   THistorySaveOn = set of (soExit, soDropDown);
 
 const
@@ -19,7 +25,7 @@ type
   THistoryComboBoxGetData = procedure(Sender: THistoryComboBox; var Data: Pointer) of object;
   THistoryComboBoxSetData = procedure(Sender: THistoryComboBox; Data: Pointer) of object;
 
-  THistoryComboBox = class(TComboBox)
+  THistoryComboBox = class(TUIStateAwareComboBox)
   private
     { Private declarations }
     FSaveOn: THistorySaveOn;
@@ -28,7 +34,6 @@ type
     FOnSetData: THistoryComboBoxSetData;
 
     procedure SetMaxHistorySize(AMaxHistorySize: Integer);
-    function StoreSaveOn: Boolean;
     function GetMaxItemWidth: Integer;
   protected
     { Protected declarations }
@@ -42,7 +47,7 @@ type
     procedure SaveToHistory; virtual;
   published
     { Published declarations }
-    property SaveOn: THistorySaveOn read FSaveOn write FSaveOn stored StoreSaveOn;
+    property SaveOn: THistorySaveOn read FSaveOn write FSaveOn default DefaultHistorySaveOn;
     property MaxHistorySize: Integer read FMaxHistorySize write SetMaxHistorySize default DefaultMaxHistorySize;
     property OnGetData: THistoryComboBoxGetData read FOnGetData write FOnGetData;
     property OnSetData: THistoryComboBoxSetData read FOnSetData write FOnSetData;
@@ -73,6 +78,19 @@ begin
     Strings.Delete(Strings.Count-1);
 end;
 
+  { TUIStateAwareComboBox }
+
+procedure TUIStateAwareComboBox.ComboWndProc(var Message: TMessage; ComboWnd: HWnd; ComboProc: TWindowProcPtr);
+begin
+  inherited;
+
+  if Message.Msg = WM_SYSKEYDOWN then
+  begin
+    UpdateUIState(TWMKey(Message).CharCode);
+  end;
+end;
+
+
   { THistoryComboBox }
 
 constructor THistoryComboBox.Create(AOwner: TComponent);
@@ -91,7 +109,7 @@ begin
   begin
     if Items.IndexOf(Text) < 0 then SaveToHistory;
   end;
-  if DroppedDown and (Key = VK_DELETE) and (ssCtrl in Shift) then
+  if DroppedDown and (Key = VK_DELETE) and (ssCtrl in Shift) and (SaveOn <> []) then
   begin
     Items.Clear;
     Key := 0;
@@ -119,7 +137,6 @@ begin
   inherited;
   if soDropDown in SaveOn then SaveToHistory;
 
-  // taken from TIECustomComboBox:
   ItemWidth := GetMaxItemWidth + ScaleByPixelsPerInch(8, Self);
   if Items.Count > DropDownCount then
     Inc(ItemWidth, GetSystemMetricsForControl(Self, SM_CXVSCROLL));
@@ -152,13 +169,6 @@ begin
     ItemIndex := 0;
   end;
 end;
-
-function THistoryComboBox.StoreSaveOn: Boolean;
-begin
-  Result := (SaveOn <> DefaultHistorySaveOn);
-end;
-
-// taken from TIECustomComboBox:
 
 function THistoryComboBox.GetMaxItemWidth: Integer;
 var

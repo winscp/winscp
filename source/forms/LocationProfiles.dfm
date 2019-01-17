@@ -306,7 +306,7 @@ object LocationProfilesDialog: TLocationProfilesDialog
       end
     end
   end
-  object LocalDirectoryEdit: TIEComboBox
+  object LocalDirectoryEdit: THistoryComboBox
     Left = 46
     Top = 25
     Width = 419
@@ -316,8 +316,9 @@ object LocationProfilesDialog: TLocationProfilesDialog
     TabOrder = 0
     Text = 'LocalDirectoryEdit'
     OnChange = DirectoryEditChange
+    SaveOn = []
   end
-  object RemoteDirectoryEdit: TIEComboBox
+  object RemoteDirectoryEdit: THistoryComboBox
     Left = 46
     Top = 73
     Width = 501
@@ -328,6 +329,7 @@ object LocationProfilesDialog: TLocationProfilesDialog
     TabOrder = 2
     Text = 'RemoteDirectoryEdit'
     OnChange = DirectoryEditChange
+    SaveOn = []
   end
   object LocalDirectoryBrowseButton: TButton
     Left = 470

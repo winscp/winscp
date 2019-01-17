@@ -629,7 +629,7 @@ end;
 
 function TUpDownEdit.IsValueStored: Boolean;
 begin
-  Result := (GetValue <> 0.0);
+  Result := (GetValue <> MinValue);
 end;
 
 procedure TUpDownEdit.SetDecimal(NewValue: Byte);

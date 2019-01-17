@@ -51,8 +51,9 @@ type
     function GetBtnColor(const ItemInfo: TTBXItemInfo; ItemPart: TItemPart): TColor;
     function GetStandardColor(Color: TColor): TColor;
     procedure Init;
+    constructor CreateEx(const AName: string; Dark: Boolean); overload;
   public
-    constructor Create(const AName: string); override;
+    constructor Create(const AName: string); overload; override;
     destructor Destroy; override;
 
     { Metrics access}
@@ -1392,8 +1393,13 @@ end;
 
 constructor TTBXOfficeXPTheme.Create(const AName: string);
 begin
+  CreateEx(AName, False);
+end;
+
+constructor TTBXOfficeXPTheme.CreateEx(const AName: string; Dark: Boolean);
+begin
   inherited;
-  FDark := False;
+  FDark := Dark;
   Init;
 end;
 
@@ -1494,9 +1500,7 @@ end;
 
 constructor TTBXDarkOfficeXPTheme.Create(const AName: string);
 begin
-  inherited;
-  FDark := True;
-  Init;
+  inherited CreateEx(AName, True);
 end;
 
 end.

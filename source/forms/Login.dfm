@@ -215,7 +215,6 @@ object LoginDialog: TLoginDialog
           Alignment = taRightJustify
           MaxValue = 65535.000000000000000000
           MinValue = 1.000000000000000000
-          Value = 1.000000000000000000
           Anchors = [akTop, akRight]
           TabOrder = 6
           OnChange = PortNumberEditChange

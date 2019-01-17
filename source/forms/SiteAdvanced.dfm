@@ -971,7 +971,6 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Alignment = taRightJustify
             MaxValue = 3600.000000000000000000
             MinValue = 1.000000000000000000
-            Value = 1.000000000000000000
             MaxLength = 4
             TabOrder = 3
             OnChange = DataChange
@@ -1045,7 +1044,6 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Increment = 5.000000000000000000
             MaxValue = 6000.000000000000000000
             MinValue = 5.000000000000000000
-            Value = 5.000000000000000000
             Anchors = [akTop, akRight]
             MaxLength = 4
             TabOrder = 0
@@ -1079,7 +1077,6 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Alignment = taRightJustify
             MaxValue = 3600.000000000000000000
             MinValue = 1.000000000000000000
-            Value = 1.000000000000000000
             Anchors = [akTop, akRight]
             MaxLength = 4
             TabOrder = 3
@@ -1271,7 +1268,6 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Alignment = taRightJustify
             MaxValue = 65535.000000000000000000
             MinValue = 1.000000000000000000
-            Value = 1.000000000000000000
             Anchors = [akTop, akRight]
             TabOrder = 4
             OnChange = DataChange
@@ -1564,7 +1560,6 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Alignment = taRightJustify
             MaxValue = 65535.000000000000000000
             MinValue = 1.000000000000000000
-            Value = 1.000000000000000000
             Anchors = [akTop, akRight]
             TabOrder = 1
             OnChange = DataChange

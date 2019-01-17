@@ -32,7 +32,7 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
     Height = 32
     AutoSize = True
   end
-  object LocalDirectoryEdit: TIEComboBox
+  object LocalDirectoryEdit: THistoryComboBox
     Left = 46
     Top = 25
     Width = 270
@@ -41,8 +41,9 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
     TabOrder = 1
     Text = 'LocalDirectoryEdit'
     OnChange = DirectoryEditChange
+    SaveOn = []
   end
-  object RemoteDirectoryEdit: TIEComboBox
+  object RemoteDirectoryEdit: THistoryComboBox
     Left = 46
     Top = 25
     Width = 351
@@ -53,6 +54,7 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
     TabOrder = 0
     Text = 'RemoteDirectoryEdit'
     OnChange = DirectoryEditChange
+    SaveOn = []
   end
   object OKBtn: TButton
     Left = 159

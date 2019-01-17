@@ -1,9 +1,16 @@
 STRINGTABLE
 BEGIN
+  // GitHub organization description
+  // Site slogan
   DESCRIPTION_45_LETTERS2, "Free SFTP, SCP, S3 and FTP client for Windows"
+  // <meta name="description">
   DESCRIPTION_80_LETTERS2, "WinSCP is a free SFTP, SCP, Amazon S3, WebDAV, and FTP client for Windows."
-  // Used for REGISTERED_APP_DESC3
+  // REGISTERED_APP_DESC3
+  // GitHub repository description
+  // Facebook <meta property="og:description">
   DESCRIPTION_250_LETTERS2, "WinSCP is a popular free SFTP and FTP client for Windows, a powerful file manager that will improve your productivity. It supports also Amazon S3, FTPS, SCP and WebDAV protocols. Power users can automate WinSCP using .NET assembly."
+  // readme.md
+  // Microsoft Store "Description"
   DESCRIPTION_450_LETTERS2, "WinSCP is a popular free SFTP and FTP client for Windows, a powerful file manager that will improve your productivity. It offers an easy to use GUI to copy files between a local and remote computer using multiple protocols: Amazon S3, FTP, FTPS, SCP, SFTP or WebDAV. Power users can automate WinSCP using .NET assembly. WinSCP is available in English and many other languages."
   // "English" shall be replaced by translation language
   DESCRIPTION_2000_LETTERS, "WinSCP is a popular free SFTP and FTP client for Windows. Moreover, WinSCP is a powerful multi-functional tool that will improve your productivity. WinSCP can copy files between a local and remote computer using multiple protocols: FTP, FTPS, SCP, SFTP, WebDAV or S3. On the one hand, WinSCP offers an easy to use graphical user interface; you can choose between Windows Explorer look and tabbed twin-panel interface like Norton commander. On the other hand, advanced users can automate WinSCP functionality using .NET assembly or simple batch file scripting. You will use WinSCP for all common operations with files. You can start editing a file directly from WinSCP, either using WinSCP internal text editor or using integration with your favorite external text editor. WinSCP operations are not limited to individual files; WinSCP offers several ways to synchronize your remote and local directories. After connecting to a site you can choose to store site information for repeated access, WinSCP can even share site settings with another popular open source tool PuTTY. WinSCP integrates also with Pageant (PuTTY authentication agent) for full support of public key authentication with SSH. Admins love WinSCP support for portable operation using a configuration file instead of registry entries, suitable for operation from removable media. A comprehensive WinSCP documentation is freely accessible at https://winscp.net/. This site hosts also a very active user forum for support and feature requests. WinSCP is available in English and many other languages. WinSCP is an open source software distributed free of charge under the terms of the GNU General Public License (GPL)."

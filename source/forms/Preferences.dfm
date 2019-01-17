@@ -657,7 +657,7 @@ object PreferencesDialog: TPreferencesDialog
             Width = 96
             Height = 13
             Caption = '&Incremental search:'
-            FocusControl = FormatSizeBytesCombo
+            FocusControl = PanelSearchCombo
             OnClick = ControlChange
           end
           object ShowHiddenFilesCheck: TCheckBox
@@ -827,7 +827,7 @@ object PreferencesDialog: TPreferencesDialog
             Top = 44
             Width = 129
             Height = 25
-            Caption = 'Select fo&nt...'
+            Caption = 'Select fon&t...'
             TabOrder = 1
             OnClick = PanelFontButtonClick
           end
@@ -836,7 +836,7 @@ object PreferencesDialog: TPreferencesDialog
             Top = 21
             Width = 129
             Height = 17
-            Caption = 'Use custom &font'
+            Caption = '&Use custom font'
             TabOrder = 0
             OnClick = ControlChange
           end
@@ -1530,7 +1530,6 @@ object PreferencesDialog: TPreferencesDialog
             Alignment = taRightJustify
             MaxValue = 9.000000000000000000
             MinValue = 1.000000000000000000
-            Value = 1.000000000000000000
             Anchors = [akTop, akRight]
             MaxLength = 1
             TabOrder = 0
@@ -2207,7 +2206,6 @@ object PreferencesDialog: TPreferencesDialog
             Alignment = taRightJustify
             MaxValue = 65535.000000000000000000
             MinValue = 1.000000000000000000
-            Value = 1.000000000000000000
             Anchors = [akTop, akRight]
             TabOrder = 4
           end
@@ -3081,7 +3079,6 @@ object PreferencesDialog: TPreferencesDialog
             Alignment = taRightJustify
             MaxValue = 99.000000000000000000
             MinValue = 1.000000000000000000
-            Value = 1.000000000000000000
             Anchors = [akLeft, akTop, akRight]
             MaxLength = 2
             TabOrder = 1
