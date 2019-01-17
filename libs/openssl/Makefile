@@ -114,23 +114,6 @@ EXHEADER=$(INCO_D)\e_os2.h \
     $(INCO_D)\ec.h $(INCO_D)\ecdh.h $(INCO_D)\ecdsa.h \
     $(INCO_D)\cms.h
 
-E_OBJ=$(OBJ_D)\verify.obj \
-    $(OBJ_D)\asn1pars.obj $(OBJ_D)\req.obj $(OBJ_D)\dgst.obj \
-    $(OBJ_D)\dh.obj $(OBJ_D)\dhparam.obj $(OBJ_D)\enc.obj \
-    $(OBJ_D)\passwd.obj $(OBJ_D)\gendh.obj $(OBJ_D)\errstr.obj \
-    $(OBJ_D)\ca.obj $(OBJ_D)\pkcs7.obj $(OBJ_D)\crl2p7.obj \
-    $(OBJ_D)\crl.obj $(OBJ_D)\rsa.obj $(OBJ_D)\rsautl.obj \
-    $(OBJ_D)\dsa.obj $(OBJ_D)\dsaparam.obj $(OBJ_D)\ec.obj \
-    $(OBJ_D)\ecparam.obj $(OBJ_D)\x509.obj $(OBJ_D)\genrsa.obj \
-    $(OBJ_D)\gendsa.obj $(OBJ_D)\s_server.obj $(OBJ_D)\s_client.obj \
-    $(OBJ_D)\speed.obj $(OBJ_D)\s_time.obj \
-    $(OBJ_D)\s_cb.obj $(OBJ_D)\s_socket.obj \
-    $(OBJ_D)\version.obj $(OBJ_D)\sess_id.obj $(OBJ_D)\ciphers.obj \
-    $(OBJ_D)\nseq.obj $(OBJ_D)\pkcs12.obj $(OBJ_D)\pkcs8.obj \
-    $(OBJ_D)\spkac.obj $(OBJ_D)\smime.obj $(OBJ_D)\rand.obj \
-    $(OBJ_D)\ocsp.obj $(OBJ_D)\prime.obj $(OBJ_D)\cms.obj \
-    $(OBJ_D)\openssl.obj
-
 SSLOBJ=$(OBJ_D)\s2_meth.obj \
     $(OBJ_D)\s2_srvr.obj $(OBJ_D)\s2_clnt.obj $(OBJ_D)\s2_lib.obj \
     $(OBJ_D)\s2_enc.obj $(OBJ_D)\s2_pkt.obj $(OBJ_D)\s3_meth.obj \
