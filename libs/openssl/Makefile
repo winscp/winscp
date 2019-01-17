@@ -821,9 +821,6 @@ crypto\md5\asm\m5_win32.obj: crypto\md5\asm\m5_win32.asm
 crypto\sha\asm\s1_win32.obj: crypto\sha\asm\s1_win32.asm
     $(ASM) -ocrypto\sha\asm\s1_win32.obj $(SRC_D)\crypto\sha\asm\s1_win32.asm
 
-crypto\ripemd\asm\rm_win32.obj: crypto\ripemd\asm\rm_win32.asm
-    $(ASM) -ocrypto\ripemd\asm\rm_win32.obj $(SRC_D)\crypto\ripemd\asm\rm_win32.asm
-
 $(OBJ_D)\cryptlib.obj: $(SRC_D)\crypto\cryptlib.c
     $(CC) -o$(OBJ_D)\cryptlib.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\cryptlib.c
 
@@ -980,9 +977,6 @@ $(OBJ_D)\qud_cksm.obj: $(SRC_D)\crypto\des\qud_cksm.c
 $(OBJ_D)\rand_key.obj: $(SRC_D)\crypto\des\rand_key.c
     $(CC) -o$(OBJ_D)\rand_key.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\des\rand_key.c
 
-$(OBJ_D)\fcrypt_b.obj: $(SRC_D)\crypto\des\fcrypt_b.c
-    $(CC) -o$(OBJ_D)\fcrypt_b.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\des\fcrypt_b.c
-
 $(OBJ_D)\fcrypt.obj: $(SRC_D)\crypto\des\fcrypt.c
     $(CC) -o$(OBJ_D)\fcrypt.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\des\fcrypt.c
 
@@ -1043,9 +1037,6 @@ $(OBJ_D)\bf_skey.obj: $(SRC_D)\crypto\bf\bf_skey.c
 $(OBJ_D)\bf_ecb.obj: $(SRC_D)\crypto\bf\bf_ecb.c
     $(CC) -o$(OBJ_D)\bf_ecb.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\bf\bf_ecb.c
 
-$(OBJ_D)\bf_enc.obj: $(SRC_D)\crypto\bf\bf_enc.c
-    $(CC) -o$(OBJ_D)\bf_enc.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\bf\bf_enc.c
-
 $(OBJ_D)\bf_cfb64.obj: $(SRC_D)\crypto\bf\bf_cfb64.c
     $(CC) -o$(OBJ_D)\bf_cfb64.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\bf\bf_cfb64.c
 
@@ -1057,9 +1048,6 @@ $(OBJ_D)\c_skey.obj: $(SRC_D)\crypto\cast\c_skey.c
 
 $(OBJ_D)\c_ecb.obj: $(SRC_D)\crypto\cast\c_ecb.c
     $(CC) -o$(OBJ_D)\c_ecb.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\cast\c_ecb.c
-
-$(OBJ_D)\c_enc.obj: $(SRC_D)\crypto\cast\c_enc.c
-    $(CC) -o$(OBJ_D)\c_enc.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\cast\c_enc.c
 
 $(OBJ_D)\c_cfb64.obj: $(SRC_D)\crypto\cast\c_cfb64.c
     $(CC) -o$(OBJ_D)\c_cfb64.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\cast\c_cfb64.c
@@ -1286,9 +1274,6 @@ $(OBJ_D)\dso_openssl.obj: $(SRC_D)\crypto\dso\dso_openssl.c
 $(OBJ_D)\dso_win32.obj: $(SRC_D)\crypto\dso\dso_win32.c
     $(CC) -o$(OBJ_D)\dso_win32.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\dso\dso_win32.c
 
-$(OBJ_D)\dso_vms.obj: $(SRC_D)\crypto\dso\dso_vms.c
-    $(CC) -o$(OBJ_D)\dso_vms.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\dso\dso_vms.c
-
 $(OBJ_D)\dh_asn1.obj: $(SRC_D)\crypto\dh\dh_asn1.c
     $(CC) -o$(OBJ_D)\dh_asn1.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\dh\dh_asn1.c
 
@@ -1411,15 +1396,6 @@ $(OBJ_D)\rand_egd.obj: $(SRC_D)\crypto\rand\rand_egd.c
 
 $(OBJ_D)\rand_win.obj: $(SRC_D)\crypto\rand\rand_win.c
     $(CC) -o$(OBJ_D)\rand_win.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\rand\rand_win.c
-
-$(OBJ_D)\rand_unix.obj: $(SRC_D)\crypto\rand\rand_unix.c
-    $(CC) -o$(OBJ_D)\rand_unix.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\rand\rand_unix.c
-
-$(OBJ_D)\rand_os2.obj: $(SRC_D)\crypto\rand\rand_os2.c
-    $(CC) -o$(OBJ_D)\rand_os2.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\rand\rand_os2.c
-
-$(OBJ_D)\rand_nw.obj: $(SRC_D)\crypto\rand\rand_nw.c
-    $(CC) -o$(OBJ_D)\rand_nw.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\rand\rand_nw.c
 
 $(OBJ_D)\err.obj: $(SRC_D)\crypto\err\err.c
     $(CC) -o$(OBJ_D)\err.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\err\err.c
