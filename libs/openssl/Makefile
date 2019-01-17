@@ -15,7 +15,7 @@
 
 # Set your compiler options
 CC=bcc32
-CFLAG=-DWIN32_LEAN_AND_MEAN -q -w-ccc -w-rch -w-pia -w-aus -w-par -w-inl -w-eff -w-sus -w-dup -w-spa -w-csu -w-rvl  -c -tWC -tWM -DOPENSSL_SYSNAME_WIN32 -DL_ENDIAN -DDSO_WIN32 -D_stricmp=stricmp -D_strnicmp=strnicmp -O2 -ff -fp -DBN_ASM -DMD5_ASM -DSHA1_ASM -DOPENSSL_NO_CAMELLIA -DOPENSSL_NO_SEED -DOPENSSL_NO_RC5 -DOPENSSL_NO_MDC2 -DOPENSSL_NO_CAPIENG -DOPENSSL_NO_KRB5 -DOPENSSL_NO_ENGINE -DOPENSSL_NO_DYNAMIC_ENGINE -DOPENSSL_DISABLE_OLD_DES_SUPPORT -DNO_CHMOD -DOPENSSL_NO_DGRAM -DDOPENSSL_NO_EC_NISTP_64_GCC_128 -DOPENSSL_NO_WHIRLPOOL -DPBE_UNICODE -DWINSCP
+CFLAG=-DWIN32_LEAN_AND_MEAN -q -w-ccc -w-rch -w-pia -w-aus -w-par -w-inl -w-eff -w-sus -w-dup -w-spa -w-csu -w-rvl  -c -tWC -tWM -DOPENSSL_SYSNAME_WIN32 -DL_ENDIAN -DDSO_WIN32 -D_stricmp=stricmp -D_strnicmp=strnicmp -O2 -ff -fp -DBN_ASM -DMD5_ASM -DSHA1_ASM -DOPENSSL_NO_CAMELLIA -DOPENSSL_NO_SEED -DOPENSSL_NO_RC5 -DOPENSSL_NO_MDC2 -DOPENSSL_NO_CAPIENG -DOPENSSL_NO_KRB5 -DOPENSSL_NO_ENGINE -DOPENSSL_NO_DYNAMIC_ENGINE -DOPENSSL_DISABLE_OLD_DES_SUPPORT -DNO_CHMOD -DOPENSSL_NO_DGRAM -DDOPENSSL_NO_EC_NISTP_64_GCC_128 -DOPENSSL_NO_WHIRLPOOL -DPBE_UNICODE -DWINSCP -DMK1MF_BUILD -DMK1MF_PLATFORM_BC_NT
 LIB_CFLAG=
 
 # The OpenSSL directory
@@ -837,7 +837,7 @@ $(OBJ_D)\mem_dbg.obj: $(SRC_D)\crypto\mem_dbg.c
     $(CC) -o$(OBJ_D)\mem_dbg.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\mem_dbg.c
 
 $(OBJ_D)\cversion.obj: $(SRC_D)\crypto\cversion.c
-    $(CC) -o$(OBJ_D)\cversion.obj  $(LIB_CFLAGS) -DMK1MF_BUILD -DMK1MF_PLATFORM_BC_NT -c $(SRC_D)\crypto\cversion.c
+    $(CC) -o$(OBJ_D)\cversion.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\cversion.c
 
 $(OBJ_D)\ex_data.obj: $(SRC_D)\crypto\ex_data.c
     $(CC) -o$(OBJ_D)\ex_data.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\ex_data.c
