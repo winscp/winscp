@@ -65,4 +65,6 @@ BEGIN
   NEW_5_14_CLIPBOARD, "Files can be copied to the clipboard"
   NEW_5_14_SYNCHRONIZATION, "Many improvements to directory synchronization"
   NEW_5_14_FILES_COLOR, "An optional files coloring in file panels based on a file mask"
+
+  NEW_5_16_TBD, "TBD"
 END
