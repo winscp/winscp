@@ -9420,7 +9420,15 @@ void __fastcall TCustomScpExplorerForm::DoFocusRemotePath(TTerminal * ATerminal,
     TTerminalManager::Instance()->ActiveTerminal = ATerminal;
     SetFocus();
     RemoteDirView->Path = UnixExtractFilePath(Path);
-    TListItem * Item = RemoteDirView->FindFileItem(UnixExtractFileName(Path));
+    UnicodeString FileName = UnixExtractFileName(Path);
+    TListItem * Item = RemoteDirView->FindFileItem(FileName);
+    // If not found, it can because we have loaded directory from cache and the file is new, try again after reload.
+    // (tbd: we should not even try this, if we have not loaded the directory from the cache)
+    if (Item == NULL)
+    {
+      ReloadDirectory(osRemote);
+      Item = RemoteDirView->FindFileItem(FileName);
+    }
     if (Item != NULL)
     {
       RemoteDirView->ItemFocused = Item;
