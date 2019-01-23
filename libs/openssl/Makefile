@@ -21,14 +21,6 @@ LIB_CFLAG=
 # The OpenSSL directory
 SRC_D=.
 
-DES_ENC_OBJ=crypto\des\asm\d_win32.obj crypto\des\asm\y_win32.obj
-BF_ENC_OBJ=crypto\bf\asm\b_win32.obj
-CAST_ENC_OBJ=crypto\cast\asm\c_win32.obj
-RC4_ENC_OBJ=$(OBJ_D)\rc4_enc.obj
-#RC4_ENC_OBJ=crypto\rc4\asm\r4_win32.obj
-MD5_ASM_OBJ=crypto\md5\asm\m5_win32.obj
-SHA1_ASM_OBJ=crypto\sha\asm\s1_win32.obj
-
 # The output directory for everything intersting
 OUT_D=..\lib
 # The output directory for all the temporary muck
@@ -190,7 +182,7 @@ CRYPTOOBJ= \
     $(OBJ_D)\ede_cbcm_enc.obj \
     $(OBJ_D)\rc2_ecb.obj $(OBJ_D)\rc2_skey.obj $(OBJ_D)\rc2_cbc.obj $(OBJ_D)\rc2cfb64.obj \
     $(OBJ_D)\rc2ofb64.obj \
-    $(OBJ_D)\rc4_skey.obj $(OBJ_D)\rc4_utl.obj \
+    $(OBJ_D)\rc4_skey.obj $(OBJ_D)\rc4_utl.obj $(OBJ_D)\rc4_enc.obj \
     $(OBJ_D)\i_cbc.obj $(OBJ_D)\i_cfb64.obj $(OBJ_D)\i_ofb64.obj $(OBJ_D)\i_ecb.obj \
     $(OBJ_D)\i_skey.obj \
     $(OBJ_D)\bf_skey.obj $(OBJ_D)\bf_ecb.obj $(OBJ_D)\bf_cfb64.obj $(OBJ_D)\bf_ofb64.obj \
@@ -317,14 +309,11 @@ CRYPTOOBJ= \
     $(OBJ_D)\cms_sd.obj $(OBJ_D)\cms_err.obj $(OBJ_D)\cms_lib.obj $(OBJ_D)\cms_env.obj \
     $(OBJ_D)\cms_asn1.obj $(OBJ_D)\cms_kari.obj $(OBJ_D)\cms_dd.obj $(OBJ_D)\cms_enc.obj \
     $(OBJ_D)\cms_io.obj $(OBJ_D)\cms_pwri.obj $(OBJ_D)\cms_att.obj \
-    $(MD5_ASM_OBJ) \
-    $(SHA1_ASM_OBJ) \
-    $(RMD160_ASM_OBJ)  \
-    $(DES_ENC_OBJ) \
-    $(RC4_ENC_OBJ) \
-    $(BF_ENC_OBJ) \
-    $(CAST_ENC_OBJ)
-
+    $(OBJ_D)\d_win32.obj $(OBJ_D)\y_win32.obj \
+    $(OBJ_D)\b_win32.obj \
+    $(OBJ_D)\c_win32.obj \
+    $(OBJ_D)\m5_win32.obj \
+    $(OBJ_D)\s1_win32.obj
 ###################################################################
 all: banner $(TMP_D) $(INCO_D) headers lib
 
@@ -995,6 +984,9 @@ $(OBJ_D)\rc4_skey.obj: $(SRC_D)\crypto\rc4\rc4_skey.c
 
 $(OBJ_D)\rc4_utl.obj: $(SRC_D)\crypto\rc4\rc4_utl.c
     $(CC) -o$(OBJ_D)\rc4_utl.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\rc4\rc4_utl.c
+
+$(OBJ_D)\rc4_enc.obj: $(SRC_D)\crypto\rc4\rc4_enc.c
+    $(CC) -o$(OBJ_D)\rc4_enc.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\rc4\rc4_enc.c
 
 $(OBJ_D)\i_cbc.obj: $(SRC_D)\crypto\idea\i_cbc.c
     $(CC) -o$(OBJ_D)\i_cbc.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\idea\i_cbc.c
@@ -2310,29 +2302,23 @@ $(OBJ_D)\cms_pwri.obj: $(SRC_D)\crypto\cms\cms_pwri.c
 $(OBJ_D)\cms_att.obj: $(SRC_D)\crypto\cms\cms_att.c
     $(CC) -o$(OBJ_D)\cms_att.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\cms\cms_att.c
 
-crypto\des\asm\d_win32.obj: crypto\des\asm\d_win32.asm
-    $(ASM) -ocrypto\des\asm\d_win32.obj $(SRC_D)\crypto\des\asm\d_win32.asm
+$(OBJ_D)\d_win32.obj: $(SRC_D)\crypto\des\asm\d_win32.asm
+    $(ASM) -o$(OBJ_D)\d_win32.obj $(SRC_D)\crypto\des\asm\d_win32.asm
 
-crypto\des\asm\y_win32.obj: crypto\des\asm\y_win32.asm
-    $(ASM) -ocrypto\des\asm\y_win32.obj $(SRC_D)\crypto\des\asm\y_win32.asm
+$(OBJ_D)\y_win32.obj: $(SRC_D)\crypto\des\asm\y_win32.asm
+    $(ASM) -o$(OBJ_D)\y_win32.obj $(SRC_D)\crypto\des\asm\y_win32.asm
 
-crypto\bf\asm\b_win32.obj: crypto\bf\asm\b_win32.asm
-    $(ASM) -ocrypto\bf\asm\b_win32.obj $(SRC_D)\crypto\bf\asm\b_win32.asm
+$(OBJ_D)\b_win32.obj: $(SRC_D)\crypto\bf\asm\b_win32.asm
+    $(ASM) -o$(OBJ_D)\b_win32.obj $(SRC_D)\crypto\bf\asm\b_win32.asm
 
-crypto\cast\asm\c_win32.obj: crypto\cast\asm\c_win32.asm
-    $(ASM) -ocrypto\cast\asm\c_win32.obj $(SRC_D)\crypto\cast\asm\c_win32.asm
+$(OBJ_D)\c_win32.obj: $(SRC_D)\crypto\cast\asm\c_win32.asm
+    $(ASM) -o$(OBJ_D)\c_win32.obj $(SRC_D)\crypto\cast\asm\c_win32.asm
 
-$(OBJ_D)\rc4_enc.obj: $(SRC_D)\crypto\rc4\rc4_enc.c
-    $(CC) -o$(OBJ_D)\rc4_enc.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\rc4\rc4_enc.c
+$(OBJ_D)\m5_win32.obj: $(SRC_D)\crypto\md5\asm\m5_win32.asm
+    $(ASM) -o$(OBJ_D)\m5_win32.obj $(SRC_D)\crypto\md5\asm\m5_win32.asm
 
-crypto\rc4\asm\r4_win32.obj: crypto\rc4\asm\r4_win32.asm
-    $(ASM) -ocrypto\rc4\asm\r4_win32.obj $(SRC_D)\crypto\rc4\asm\r4_win32.asm
-
-crypto\md5\asm\m5_win32.obj: crypto\md5\asm\m5_win32.asm
-    $(ASM) -ocrypto\md5\asm\m5_win32.obj $(SRC_D)\crypto\md5\asm\m5_win32.asm
-
-crypto\sha\asm\s1_win32.obj: crypto\sha\asm\s1_win32.asm
-    $(ASM) -ocrypto\sha\asm\s1_win32.obj $(SRC_D)\crypto\sha\asm\s1_win32.asm
+$(OBJ_D)\s1_win32.obj: $(SRC_D)\crypto\sha\asm\s1_win32.asm
+    $(ASM) -o$(OBJ_D)\s1_win32.obj $(SRC_D)\crypto\sha\asm\s1_win32.asm
 
 $(O_SSL): $(SSLOBJ)
     -if exist $(O_SSL) $(RM) $(O_SSL)
