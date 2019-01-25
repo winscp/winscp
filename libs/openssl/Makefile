@@ -209,11 +209,11 @@ CRYPTOOBJ= \
     $(OBJ_D)\cms_asn1.obj $(OBJ_D)\cms_kari.obj $(OBJ_D)\cms_dd.obj $(OBJ_D)\cms_enc.obj \
     $(OBJ_D)\cms_io.obj $(OBJ_D)\cms_pwri.obj $(OBJ_D)\cms_att.obj \
     $(OBJ_D)\ct_oct.obj $(OBJ_D)\ct_prn.obj \
-    $(OBJ_D)\des-586.obj $(OBJ_D)\crypt586.obj \
-    $(OBJ_D)\bf-586.obj \
-    $(OBJ_D)\cast-586.obj \
-    $(OBJ_D)\md5-586.obj \
-    $(OBJ_D)\sha1-586.obj
+    $(OBJ_D)\des_586.obj $(OBJ_D)\crypt586.obj \
+    $(OBJ_D)\bf_586.obj \
+    $(OBJ_D)\cast_586.obj \
+    $(OBJ_D)\md5_586.obj \
+    $(OBJ_D)\sha1_586.obj
 ###################################################################
 all: banner $(TMP_D) lib
 
@@ -1698,23 +1698,23 @@ $(OBJ_D)\ct_oct.obj: $(SRC_D)\crypto\ct\ct_oct.c
 $(OBJ_D)\ct_prn.obj: $(SRC_D)\crypto\ct\ct_prn.c
     $(CC) -o$(OBJ_D)\ct_prn.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\ct\ct_prn.c
 
-$(OBJ_D)\des-586.obj: $(SRC_D)\crypto\des\asm\des-586.asm
-    $(ASM) -o$(OBJ_D)\des-586.obj $(SRC_D)\crypto\des\asm\des-586.asm
+$(OBJ_D)\des_586.obj: $(SRC_D)\crypto\des\asm\des_586.asm
+    $(ASM) -o$(OBJ_D)\des_586.obj $(SRC_D)\crypto\des\asm\des_586.asm
 
 $(OBJ_D)\crypt586.obj: $(SRC_D)\crypto\des\asm\crypt586.asm
     $(ASM) -o$(OBJ_D)\crypt586.obj $(SRC_D)\crypto\des\asm\crypt586.asm
 
-$(OBJ_D)\bf-586.obj: $(SRC_D)\crypto\bf\asm\bf-586.asm
-    $(ASM) -o$(OBJ_D)\bf-586.obj $(SRC_D)\crypto\bf\asm\bf-586.asm
+$(OBJ_D)\bf_586.obj: $(SRC_D)\crypto\bf\asm\bf_586.asm
+    $(ASM) -o$(OBJ_D)\bf_586.obj $(SRC_D)\crypto\bf\asm\bf_586.asm
 
-$(OBJ_D)\cast-586.obj: $(SRC_D)\crypto\cast\asm\cast-586.asm
-    $(ASM) -o$(OBJ_D)\cast-586.obj $(SRC_D)\crypto\cast\asm\cast-586.asm
+$(OBJ_D)\cast_586.obj: $(SRC_D)\crypto\cast\asm\cast_586.asm
+    $(ASM) -o$(OBJ_D)\cast_586.obj $(SRC_D)\crypto\cast\asm\cast_586.asm
 
-$(OBJ_D)\md5-586.obj: $(SRC_D)\crypto\md5\asm\md5-586.asm
-    $(ASM) -o$(OBJ_D)\md5-586.obj $(SRC_D)\crypto\md5\asm\md5-586.asm
+$(OBJ_D)\md5_586.obj: $(SRC_D)\crypto\md5\asm\md5_586.asm
+    $(ASM) -o$(OBJ_D)\md5_586.obj $(SRC_D)\crypto\md5\asm\md5_586.asm
 
-$(OBJ_D)\sha1-586.obj: $(SRC_D)\crypto\sha\asm\sha1-586.asm
-    $(ASM) -o$(OBJ_D)\sha1-586.obj $(SRC_D)\crypto\sha\asm\sha1-586.asm
+$(OBJ_D)\sha1_586.obj: $(SRC_D)\crypto\sha\asm\sha1_586.asm
+    $(ASM) -o$(OBJ_D)\sha1_586.obj $(SRC_D)\crypto\sha\asm\sha1_586.asm
 
 $(O_SSL): $(SSLOBJ)
     -if exist $(O_SSL) $(RM) $(O_SSL)
