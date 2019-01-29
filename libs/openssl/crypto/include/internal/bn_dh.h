@@ -7,6 +7,8 @@
  * https://www.openssl.org/source/license.html
  */
 
+#include "..\..\bn\bn_lcl.h"
+
 #define declare_dh_bn(x) \
     extern const BIGNUM _bignum_dh##x##_p;              \
     extern const BIGNUM _bignum_dh##x##_g;              \

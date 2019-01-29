@@ -17,6 +17,7 @@
 # include <openssl/srp.h>
 # include <openssl/evp.h>
 # include "internal/bn_srp.h"
+# include "../crypto/bn/bn_lcl.h"
 
 /* calculate = SHA1(PAD(x) || PAD(y)) */
 

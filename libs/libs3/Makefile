@@ -17,7 +17,7 @@ MKLIB=tlib /P64 /C
 
 # OBJ_D  - temp object file directory
 OBJ_D=$(TMP_D)
-INCL=inc;inc/mingw;../openssl;../expat/lib;../neon/src
+INCL=inc;inc/mingw;../openssl/include;../expat/lib;../neon/src
 
 O_LIBS3=$(OUT_D)\libs3.lib
 

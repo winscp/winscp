@@ -98,6 +98,8 @@
 #define in_addr_t                       unsigned int
 #endif
 
+#define HAVE_CRYPTO_SET_IDPTR_CALLBACK
+
 typedef int socklen_t;
 
 #include <io.h>

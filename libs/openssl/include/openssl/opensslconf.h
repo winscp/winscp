@@ -5,9 +5,11 @@
 extern "C" {
 #endif
 /* OpenSSL was configured with the following options: */
-#ifndef OPENSSL_SYSNAME_WIN32
-# define OPENSSL_SYSNAME_WIN32
-#endif
+#define OPENSSL_SYS_WINDOWS
+#define NON_EMPTY_TRANSLATION_UNIT
+#define OPENSSL_RAND_SEED_OS
+#define OPENSSL_NO_TS
+
 #ifndef OPENSSL_DOING_MAKEDEPEND
 
 
@@ -114,12 +116,8 @@ extern "C" {
 /* Generate 80386 code? */
 #undef I386_ONLY
 
-#if !(defined(VMS) || defined(__VMS)) /* VMS uses logical names instead */
-#if defined(HEADER_CRYPTLIB_H) && !defined(OPENSSLDIR)
-#define ENGINESDIR "/usr/local/ssl/lib/engines"
-#define OPENSSLDIR "/usr/local/ssl"
-#endif
-#endif
+#define ENGINESDIR "%ProgramFiles(86)%\\OpenSSL\\lib\\engines"
+#define OPENSSLDIR "%CommonProgramFiles(86)%\\SSL"
 
 #undef OPENSSL_UNISTD
 #define OPENSSL_UNISTD <unistd.h>
@@ -312,6 +310,9 @@ extern "C" {
 #else
 # define DEPRECATEDIN_0_9_8(f)
 #endif
+
+#define _setmode setmode
+#define _strdup strdup
 
 #ifdef  __cplusplus
 }

@@ -707,8 +707,8 @@ int CAsyncSslSocketLayer::InitSSLConnection(bool clientMode,
     STACK_OF(SSL_CIPHER) * ciphers = SSL_get_ciphers(m_ssl);
     for (int i = 0; i < sk_SSL_CIPHER_num(ciphers); i++)
     {
-      SSL_CIPHER * cipher = sk_SSL_CIPHER_value(ciphers, i);
-      LogSocketMessageRaw(FZ_LOG_INFO, A2CT(cipher->name));
+      const SSL_CIPHER * cipher = sk_SSL_CIPHER_value(ciphers, i);
+      LogSocketMessageRaw(FZ_LOG_INFO, A2CT(SSL_CIPHER_get_name(cipher)));
     }
   }
 #endif
@@ -736,13 +736,12 @@ int CAsyncSslSocketLayer::InitSSLConnection(bool clientMode,
   #define MASK_TLS_VERSION(VERSION, FLAG) ((minTlsVersion > VERSION) || (maxTlsVersion < VERSION) ? FLAG : 0)
   long options =
     SSL_OP_ALL |
-    MASK_TLS_VERSION(SSL_VERSION_SSL2, SSL_OP_NO_SSLv2) |
     MASK_TLS_VERSION(SSL_VERSION_SSL3, SSL_OP_NO_SSLv3) |
     MASK_TLS_VERSION(SSL_VERSION_TLS10, SSL_OP_NO_TLSv1) |
     MASK_TLS_VERSION(SSL_VERSION_TLS11, SSL_OP_NO_TLSv1_1) |
     MASK_TLS_VERSION(SSL_VERSION_TLS12, SSL_OP_NO_TLSv1_2);
-  // SSL_ctrl() with SSL_CTRL_OPTIONS adds flags (not sets)
-  SSL_ctrl(m_ssl, SSL_CTRL_OPTIONS, options, NULL);
+  // adds flags (not sets)
+  SSL_set_options(m_ssl, options);
 
   //Init SSL connection
   void *ssl_sessionid = NULL;
@@ -1304,7 +1303,7 @@ BOOL CAsyncSslSocketLayer::GetPeerCertificateData(t_SslCertData &SslCertData, LP
 #endif
         }
         delete [] unicode;
-        CRYPTO_free(out);
+        OPENSSL_free(out);
       }
 
       switch(OBJ_obj2nid(pObject))
@@ -1413,7 +1412,7 @@ BOOL CAsyncSslSocketLayer::GetPeerCertificateData(t_SslCertData &SslCertData, LP
 #endif
         }
         delete [] unicode;
-        CRYPTO_free(out);
+        OPENSSL_free(out);
       }
 
       switch(OBJ_obj2nid(pObject))
@@ -1617,14 +1616,12 @@ void CAsyncSslSocketLayer::PrintSessionInfo()
       if (0)
         ;
 #ifndef NO_RSA
-      else if (pkey->type == EVP_PKEY_RSA && pkey->pkey.rsa != NULL
-        && pkey->pkey.rsa->n != NULL)
-        sprintf(enc,  "%d bit RSA", BN_num_bits(pkey->pkey.rsa->n));
+      else if (EVP_PKEY_id(pkey) == EVP_PKEY_RSA)
+        sprintf(enc,  "%d bit RSA", EVP_PKEY_bits(pkey));
 #endif
 #ifndef NO_DSA
-      else if (pkey->type == EVP_PKEY_DSA && pkey->pkey.dsa != NULL
-          && pkey->pkey.dsa->p != NULL)
-        sprintf(enc,  "%d bit DSA", BN_num_bits(pkey->pkey.dsa->p));
+      else if (EVP_PKEY_id(pkey) == EVP_PKEY_DSA)
+        sprintf(enc,  "%d bit DSA", EVP_PKEY_bits(pkey));
 #endif
       EVP_PKEY_free(pkey);
     }
@@ -1761,7 +1758,7 @@ int CAsyncSslSocketLayer::ProvideClientCert(
   {
     Level = FZ_LOG_PROGRESS;
     *Certificate = X509_dup(Layer->FCertificate);
-    CRYPTO_add(&Layer->FPrivateKey->references, 1, CRYPTO_LOCK_EVP_PKEY);
+    EVP_PKEY_up_ref(Layer->FPrivateKey);
     *PrivateKey = Layer->FPrivateKey;
     Result = 1;
   }

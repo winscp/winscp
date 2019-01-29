@@ -51,6 +51,8 @@
 #include "ne_private.h"
 #include "ne_privssl.h"
 
+#include <windows.h>
+
 /* OpenSSL 0.9.6 compatibility */
 #if OPENSSL_VERSION_NUMBER < 0x0090700fL
 #define PKCS12_unpack_authsafes M_PKCS12_unpack_authsafes
@@ -1339,15 +1341,13 @@ char * ne_ssl_get_cipher(ne_session *sess)
         EVP_PKEY * pkey = X509_get_pubkey(cert);
         if (pkey != NULL)
         {
-            if ((pkey->type == EVP_PKEY_RSA) && (pkey->pkey.rsa != NULL) &&
-                (pkey->pkey.rsa->n != NULL))
+            if (EVP_PKEY_id(pkey) == EVP_PKEY_RSA)
             {
-                ne_snprintf(enc, sizeof(enc), "%d bit RSA", BN_num_bits(pkey->pkey.rsa->n));
+                ne_snprintf(enc, sizeof(enc), "%d bit RSA", EVP_PKEY_bits(pkey));
             }
-            else if ((pkey->type == EVP_PKEY_DSA) && (pkey->pkey.dsa != NULL) &&
-                     (pkey->pkey.dsa->p != NULL))
+            else if (EVP_PKEY_id(pkey) == EVP_PKEY_DSA)
             {
-                ne_snprintf(enc, sizeof(enc), "%d bit DSA", BN_num_bits(pkey->pkey.dsa->p));
+                ne_snprintf(enc, sizeof(enc), "%d bit DSA", EVP_PKEY_bits(pkey));
             }
             EVP_PKEY_free(pkey);
         }
