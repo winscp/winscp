@@ -76,7 +76,7 @@
 #define UPDATE_UNAUTHORIZED     1193
 #define UPDATE_EXPIRED          1194
 #define UPDATE_TOO_MANY         1195
-#define UPDATE_MISSING_ADDRESS  1196
+#define UPDATE_MISSING_ADDRESS2 1196
 #define UPDATE_TOO_LOW          1197
 #define TIPS_NONE               1198
 #define KEYGEN_PUBLIC           1199

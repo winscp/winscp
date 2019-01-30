@@ -1123,7 +1123,7 @@ UnicodeString __fastcall FormatUpdatesMessage(UnicodeString Message)
   Message = ReplaceStr(Message, "%UPDATE_UNAUTHORIZED%", LoadStr(UPDATE_UNAUTHORIZED));
   Message = ReplaceStr(Message, "%UPDATE_EXPIRED%", LoadStr(UPDATE_EXPIRED));
   Message = ReplaceStr(Message, "%UPDATE_TOO_MANY%", LoadStr(UPDATE_TOO_MANY));
-  Message = ReplaceStr(Message, "%UPDATE_MISSING_ADDRESS%", LoadStr(UPDATE_MISSING_ADDRESS));
+  Message = ReplaceStr(Message, "%UPDATE_MISSING_ADDRESS%", LoadStr(UPDATE_MISSING_ADDRESS2));
   Message = ReplaceStr(Message, "%UPDATE_TOO_LOW%", LoadStr(UPDATE_TOO_LOW));
   Message = ReplaceStr(Message, L"|", L"\n");
   return Message;

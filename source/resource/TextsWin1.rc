@@ -84,7 +84,7 @@ BEGIN
         UPDATE_UNAUTHORIZED, "Your email address is not authorized to automatic updates."
         UPDATE_EXPIRED, "Your email address authorization to automatic updates has expired."
         UPDATE_TOO_MANY, "Your email address was blocked to automatic updates due to an excessive use."
-        UPDATE_MISSING_ADDRESS, "To enable automatic updates for your e-mail address, please fill in a donation form (including your postal address).\n\nYou will find a link to the form in a receipt, you have received after your donation."
+        UPDATE_MISSING_ADDRESS2, "To enable automatic updates for your e-mail address, please fill in a donation form (including your postal address).\n\nYou will find a link to the form in a receipt, you have received after your donation."
         UPDATE_TOO_LOW, "Your donation is below the limit required to enable automatic updates."
         TIPS_NONE, "No tips."
         KEYGEN_PUBLIC, "Converting public keys is not supported."
