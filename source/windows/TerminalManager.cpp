@@ -845,7 +845,7 @@ bool __fastcall TTerminalManager::HandleMouseWheel(WPARAM WParam, LPARAM LParam)
           // FindVCLWindow stops on window level, when the window is not active? or when there's a modal window over it?
           // (but in any case, when we have operation running on top of Synchronization checklist).
           // WORKAROUND: The while loop does what AllLevels parameter of ControlAtPos should do, but it's broken.
-          // See http://qc.embarcadero.com/wc/qcmain.aspx?d=82143
+          // Based on (now removed) Embarcadero QC 82143.
           while ((Control2 = dynamic_cast<TWinControl *>(Control->ControlAtPos(Control->ScreenToClient(Point), false, true))) != NULL)
           {
             Control = Control2;
