@@ -2519,9 +2519,8 @@ void __fastcall TPreferencesDialog::UpdatesAuthenticationEmailEditExit(TObject *
           AuthenticationError = MainInstructions(AuthenticationError);
         }
 
-        UnicodeString HelpUrl = GetEnableAutomaticUpdatesUrl();
         unsigned int Result =
-          MoreMessageDialog(AuthenticationError, NULL, qtError, qaIgnore | qaAbort, HelpUrl);
+          MoreMessageDialog(AuthenticationError, NULL, qtError, qaIgnore | qaAbort, HELP_AUTOMATIC_UPDATE);
         if (Result == qaAbort)
         {
           Abort();

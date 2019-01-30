@@ -64,5 +64,6 @@
 #define HELP_SESSION_RENAME          "task_connections#renaming"
 #define HELP_DD_TARGET_UNKNOWN       "ui_pref_dragdrop#fake_file"
 #define HELP_FILE_COLORS             "ui_file_color"
+#define HELP_AUTOMATIC_UPDATE        "updates#automatic_upgrade"
 
 #endif // TextsWin
