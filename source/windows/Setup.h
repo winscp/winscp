@@ -15,7 +15,6 @@ void __fastcall GetUpdatesMessage(UnicodeString & Message, bool & New, TQueryTyp
 bool __fastcall CheckForUpdates(bool CachedResults);
 bool __fastcall QueryUpdates(TUpdatesConfiguration & Updates);
 UnicodeString __fastcall FormatUpdatesMessage(UnicodeString Message);
-UnicodeString __fastcall GetEnableAutomaticUpdatesUrl();
 void __fastcall EnableAutomaticUpdates();
 void __fastcall RegisterForDefaultProtocols();
 void __fastcall UnregisterForProtocols();
