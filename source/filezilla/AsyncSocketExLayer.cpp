@@ -720,7 +720,7 @@ BOOL CAsyncSocketExLayer::Create(UINT nSocketPort, int nSocketType,
 
 BOOL CAsyncSocketExLayer::CreateNext(UINT nSocketPort, int nSocketType, long lEvent, LPCTSTR lpszSocketAddress, int nFamily /*=AF_INET*/)
 {
-  DebugAssert(GetLayerState()==notsock);
+  DebugAssert((GetLayerState() == notsock) || (GetLayerState() == unconnected));
   BOOL res = FALSE;
 
   m_nFamily = nFamily;
