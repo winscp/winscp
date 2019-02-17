@@ -859,7 +859,7 @@ object PreferencesDialog: TPreferencesDialog
           Height = 29
           Anchors = [akLeft, akTop, akRight]
           AutoSize = False
-          Caption = 'Preferences on this page applies to Commander interface only.'
+          Caption = 'Preferences on this page apply to Commander interface only.'
           ShowAccelChar = False
           WordWrap = True
         end
@@ -1010,7 +1010,7 @@ object PreferencesDialog: TPreferencesDialog
           Height = 29
           Anchors = [akLeft, akTop, akRight]
           AutoSize = False
-          Caption = 'Preferences on this page applies to Explorer interface only.'
+          Caption = 'Preferences on this page apply to Explorer interface only.'
           ShowAccelChar = False
           WordWrap = True
         end
