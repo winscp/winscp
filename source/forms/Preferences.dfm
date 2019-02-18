@@ -859,7 +859,7 @@ object PreferencesDialog: TPreferencesDialog
           Height = 29
           Anchors = [akLeft, akTop, akRight]
           AutoSize = False
-          Caption = 'Preferences on this page applies to Commander interface only.'
+          Caption = 'Preferences on this page apply to Commander interface only.'
           ShowAccelChar = False
           WordWrap = True
         end
@@ -1010,7 +1010,7 @@ object PreferencesDialog: TPreferencesDialog
           Height = 29
           Anchors = [akLeft, akTop, akRight]
           AutoSize = False
-          Caption = 'Preferences on this page applies to Explorer interface only.'
+          Caption = 'Preferences on this page apply to Explorer interface only.'
           ShowAccelChar = False
           WordWrap = True
         end
@@ -1391,10 +1391,10 @@ object PreferencesDialog: TPreferencesDialog
             Anchors = [akLeft, akTop, akRight]
             AutoSize = False
             Caption = 
-              'Allows direct downloads to regular local folders (e.g. Window Ex' +
-              'plorer). Does not allow downloads to other destinations (ZIP arc' +
-              'hives,  FTP, etc.). Uses drag&&drop shell extension, when availa' +
-              'ble.'
+              'Allows direct downloads to regular local folders (e.g. Windows E' +
+              'xplorer). Does not allow downloads to other destinations (ZIP ar' +
+              'chives,  FTP, etc.). Uses drag&&drop shell extension, when avail' +
+              'able.'
             WordWrap = True
             OnClick = DDLabelClick
           end
