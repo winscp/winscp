@@ -10063,7 +10063,10 @@ void __fastcall TCustomScpExplorerForm::CreateOpenDirMenu(TTBCustomItem * Menu, 
   Menu->Add(Item.release());
   AddMenuSeparator(Menu);
 
-  CreateOpenDirMenuList(Menu, Side, WinConfiguration->Bookmarks[Terminal->SessionData->SessionKey]);
+  if (Terminal != NULL)
+  {
+    CreateOpenDirMenuList(Menu, Side, WinConfiguration->Bookmarks[Terminal->SessionData->SessionKey]);
+  }
 
   CreateOpenDirMenuList(Menu, Side, WinConfiguration->SharedBookmarks);
 
