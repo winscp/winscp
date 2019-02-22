@@ -1166,7 +1166,8 @@ UnicodeString __fastcall ApiPath(UnicodeString Path)
     Path = ExpandFileName(Path);
   }
 
-  if (Path.Length() >= MAX_PATH)
+  // Max path for directories is 12 characters shorter than max path for files
+  if (Path.Length() >= MAX_PATH - 12)
   {
     if (Configuration != NULL)
     {
