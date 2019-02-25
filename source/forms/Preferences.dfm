@@ -545,8 +545,8 @@ object PreferencesDialog: TPreferencesDialog
             Anchors = [akLeft, akTop, akRight]
             AutoSize = False
             Caption = 
-              '- only remote directory'#13#10'- keyboard shortcuts like in Windows Ex' +
-              'plorer'#13#10'- drag && drop'
+              '- only remote directory'#13#10'- keyboard shortcuts like in Windows Fi' +
+              'le Explorer'#13#10'- drag && drop'
             WordWrap = True
             OnClick = ExplorerClick
           end
@@ -1391,10 +1391,10 @@ object PreferencesDialog: TPreferencesDialog
             Anchors = [akLeft, akTop, akRight]
             AutoSize = False
             Caption = 
-              'Allows direct downloads to regular local folders (e.g. Windows E' +
-              'xplorer). Does not allow downloads to other destinations (ZIP ar' +
-              'chives,  FTP, etc.). Uses drag&&drop shell extension, when avail' +
-              'able.'
+              'Allows direct downloads to regular local folders (e.g. Windows F' +
+              'ile Explorer). Does not allow downloads to other destinations (Z' +
+              'IP archives,  FTP, etc.). Uses drag&&drop shell extension, when ' +
+              'available.'
             WordWrap = True
             OnClick = DDLabelClick
           end

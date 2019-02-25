@@ -1314,7 +1314,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'Local Directory'
       Caption = '&Explore Directory'
-      Hint = 'Opens Windows Explorer with current local directory'
+      Hint = 'Opens Windows File Explorer with current local directory'
       ImageIndex = 56
       ShortCut = 49221
     end
