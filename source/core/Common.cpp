@@ -3977,7 +3977,7 @@ TStrings * TlsCipherList()
 {
   // OpenSSL initialization happens in NeonInitialize
   std::unique_ptr<TStrings> Result(new TStringList());
-  const SSL_METHOD * Method = TLSv1_client_method();
+  const SSL_METHOD * Method = DTLS_client_method();
   SSL_CTX * Ctx = SSL_CTX_new(Method);
   SSL * Ssl = SSL_new(Ctx);
 

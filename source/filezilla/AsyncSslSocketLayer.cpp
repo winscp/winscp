@@ -74,8 +74,7 @@ int CAsyncSslSocketLayer::InitSSL()
 
   if (!m_nSslRefCount)
   {
-    SSL_load_error_strings();
-    if (!SSL_library_init())
+    if (!OPENSSL_init_ssl(OPENSSL_INIT_LOAD_SSL_STRINGS | OPENSSL_INIT_LOAD_CRYPTO_STRINGS, NULL))
     {
       return SSL_FAILURE_INITSSL;
     }
@@ -1486,7 +1485,7 @@ BOOL CAsyncSslSocketLayer::GetPeerCertificateData(t_SslCertData &SslCertData, LP
   //Set date fields
 
   //Valid from
-  ASN1_TIME *pTime=X509_get_notBefore(pX509);
+  ASN1_TIME *pTime=X509_getm_notBefore(pX509);
   if (!pTime)
   {
     X509_free(pX509);
@@ -1502,7 +1501,7 @@ BOOL CAsyncSslSocketLayer::GetPeerCertificateData(t_SslCertData &SslCertData, LP
   }
 
   //Valid until
-  pTime = X509_get_notAfter(pX509);
+  pTime = X509_getm_notAfter(pX509);
   if (!pTime)
   {
     X509_free(pX509);

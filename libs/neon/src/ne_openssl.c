@@ -228,10 +228,10 @@ void ne_ssl_cert_validity_time(const ne_ssl_certificate *cert,
                                time_t *from, time_t *until)
 {
     if (from) {
-        *from = asn1time_to_timet(X509_get_notBefore(cert->subject));
+        *from = asn1time_to_timet(X509_getm_notBefore(cert->subject));
     }
     if (until) {
-        *until = asn1time_to_timet(X509_get_notAfter(cert->subject));
+        *until = asn1time_to_timet(X509_getm_notAfter(cert->subject));
     }
 }
 
@@ -1194,6 +1194,7 @@ static unsigned long thread_id_neon(void)
 }
 #endif
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
 /* Another great API design win for OpenSSL: no return value!  So if
  * the lock/unlock fails, all that can be done is to abort. */
 static void thread_lock_neon(int mode, int n, const char *file, int line)
@@ -1217,9 +1218,11 @@ static void thread_lock_neon(int mode, int n, const char *file, int line)
         }
     }
 }
+#endif
 
 #endif
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
 /* ID_CALLBACK_IS_{NEON,OTHER} evaluate as true if the currently
  * registered OpenSSL ID callback is the neon function (_NEON), or has
  * been overwritten by some other app (_OTHER). */
@@ -1229,6 +1232,7 @@ static void thread_lock_neon(int mode, int n, const char *file, int line)
 #else
 #define ID_CALLBACK_IS_OTHER (CRYPTO_get_id_callback() != NULL)
 #define ID_CALLBACK_IS_NEON (CRYPTO_get_id_callback() == thread_id_neon)
+#endif
 #endif
 
 int ne__ssl_init(void)
@@ -1286,6 +1290,7 @@ void ne__ssl_exit(void)
     /* Cannot call ERR_free_strings() etc here in case any other code
      * in the process using OpenSSL. */
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
 #ifdef NE_HAVE_TS_SSL
     /* Only unregister the callbacks if some *other* library has not
      * come along in the mean-time and trampled over the callbacks
@@ -1309,6 +1314,7 @@ void ne__ssl_exit(void)
 
         free(locks);
     }
+#endif
 #endif
 }
 

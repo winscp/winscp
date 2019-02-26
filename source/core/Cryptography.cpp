@@ -363,14 +363,14 @@ static int fcrypt_end(unsigned char mac[], fcrypt_ctx cx[1])
 static void AES256Salt(RawByteString & Salt)
 {
   Salt.SetLength(SALT_LENGTH(PASSWORD_MANAGER_AES_MODE));
-  RAND_pseudo_bytes(reinterpret_cast<unsigned char *>(Salt.c_str()), Salt.Length());
+  RAND_bytes(reinterpret_cast<unsigned char *>(Salt.c_str()), Salt.Length());
 }
 //---------------------------------------------------------------------------
 RawByteString GenerateEncryptKey()
 {
   RawByteString Result;
   Result.SetLength(KEY_LENGTH(PASSWORD_MANAGER_AES_MODE));
-  RAND_pseudo_bytes(reinterpret_cast<unsigned char *>(Result.c_str()), Result.Length());
+  RAND_bytes(reinterpret_cast<unsigned char *>(Result.c_str()), Result.Length());
   return Result;
 }
 //---------------------------------------------------------------------------

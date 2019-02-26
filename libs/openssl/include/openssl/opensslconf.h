@@ -273,7 +273,7 @@ extern "C" {
 #endif
 
 #ifndef OPENSSL_MIN_API
-# define OPENSSL_MIN_API 0
+# define OPENSSL_MIN_API 0x10200000L
 #endif
 
 #if !defined(OPENSSL_API_COMPAT) || OPENSSL_API_COMPAT < OPENSSL_MIN_API
