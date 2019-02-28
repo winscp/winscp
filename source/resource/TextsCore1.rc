@@ -204,7 +204,7 @@ BEGIN
   CONFIGURED_KEY_NOT_MATCH, "Host key does not match configured key \"%s\"!"
   SFTP_STATUS_OWNER_INVALID, "The name specified can not be assigned as an owner of a file."
   SFTP_STATUS_GROUP_INVALID, "The name specified can not be assigned as the primary group of a file."
-  SFTP_STATUS_NO_MATCHING_BYTE_RANGE_LOCK, "The requested operation could not be completed because the specifed byte range lock has not been granted."
+  SFTP_STATUS_NO_MATCHING_BYTE_RANGE_LOCK, "The requested operation could not be completed because the specified byte range lock has not been granted."
   KEY_TYPE_UNOPENABLE, "Private key file '%s' does not exist or cannot be opened."
   UNKNOWN_CHECKSUM, "Checksum algorithm '%s' is not supported."
   ALG_NOT_VERIFIED, "The %s %s was not verified!"

@@ -964,6 +964,10 @@ int __fastcall Execute()
       }
 
       WinConfiguration->CheckDefaultTranslation();
+      // Loading shell image lists here (rather than only on demand when file controls are being created)
+      // reduces risk of an occasional crash.
+      // It seems that the point is to load the lists before any call to SHGetFileInfoWithTimeout.
+      InitFileControls();
 
       if (!Params->Empty)
       {
