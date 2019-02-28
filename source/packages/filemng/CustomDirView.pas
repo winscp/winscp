@@ -520,6 +520,8 @@ function CompareLogicalTextPas(const S1, S2: string; NaturalOrderNumericalSortin
 
 function OverlayImageList(Size: Integer): TImageList;
 
+procedure InitFileControls;
+
 var
   StdDirIcon: Integer;
   StdDirSelIcon: Integer;
@@ -569,11 +571,14 @@ begin
   end;
 end; {GetshFileInfo}
 
-procedure InitGlobals;
+procedure InitFileControls;
 begin
   if not GlobalsInitialized then
   begin
     GlobalsInitialized := True;
+
+    // See the comment in the call from Execute()
+    NeedShellImageLists;
 
     // Calling GetshFileInfo in Windows Session 0 sometime cause crash
     // (not immediately, but very shortly afterwards [few ms]).
@@ -786,7 +791,7 @@ end;
 
 constructor TCustomDirView.Create(AOwner: TComponent);
 begin
-  InitGlobals;
+  InitFileControls;
 
   inherited;
 

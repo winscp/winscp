@@ -66,6 +66,7 @@ function GetSystemMetricsForControl(Control: TControl; nIndex: Integer): Integer
 type
   TImageListSize = (ilsSmall, ilsLarge);
 
+procedure NeedShellImageLists;
 function ShellImageListForControl(Control: TControl; Size: TImageListSize): TImageList;
 
 function ControlHasRecreationPersistenceData(Control: TControl): Boolean;
@@ -486,6 +487,7 @@ var
   Height, Width: Integer;
   ShellImageList: TImageList;
   SHGetImageList: TSHGetImageList;
+  HR: HRESULT;
 begin
   Lib := LoadLibrary('shell32');
   SHGetImageList := GetProcAddress(Lib, 'SHGetImageList');
@@ -493,7 +495,8 @@ begin
   for ImageList := 0 to SHIL_LAST do
   begin
     // VCL have declaration for SHGetImageList in ShellAPI, but it does not link
-    if (SHGetImageList(ImageList, IID_IImageList, Pointer(Handle)) = S_OK) and
+    HR := SHGetImageList(ImageList, IID_IImageList, Pointer(Handle));
+    if (HR = S_OK) and
        ImageList_GetIconSize(Handle, Width, Height) then
     begin
 
@@ -511,6 +514,14 @@ begin
   end;
 end;
 
+procedure NeedShellImageLists;
+begin
+  if ShellImageLists = nil then
+  begin
+    InitializeShellImageLists;
+  end;
+end;
+
 function ShellImageListForControl(Control: TControl; Size: TImageListSize): TImageList;
 var
   ImageListPair: TPair<Integer, TImageList>;
@@ -518,10 +529,7 @@ var
   Diff, BestDiff: Integer;
 begin
   // Delay load image lists, not to waste resources in console/scripting mode
-  if ShellImageLists = nil then
-  begin
-    InitializeShellImageLists;
-  end;
+  NeedShellImageLists;
 
   case Size of
     ilsSmall: Width := 16;
