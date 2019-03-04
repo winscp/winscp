@@ -101,7 +101,7 @@ VersionInfoDescription=Setup for WinSCP {#Version} (SFTP, FTP, WebDAV and SCP cl
 VersionInfoVersion={#Major}.{#Minor}.{#Rev}.{#Build}
 VersionInfoTextVersion={#Version}
 VersionInfoCopyright=(c) 2000-{#Year} Martin Prikryl
-DefaultDirName={pf}\WinSCP
+DefaultDirName={commonpf}\WinSCP
 LicenseFile=license.setup.txt
 UninstallDisplayIcon={app}\WinSCP.exe
 OutputDir={#OutputDir}
@@ -119,7 +119,7 @@ PrivilegesRequired=none
 ShowLanguageDialog=auto
 UsePreviousLanguage=yes
 DisableProgramGroupPage=yes
-MinVersion=0,5.1
+MinVersion=6.0
 SetupIconFile=winscpsetup.ico
 DisableDirPage=no
 ; We do not want the Explorer restarts as that is not pleasant to the user
@@ -214,7 +214,7 @@ Name: quicklaunchicon; Description: {cm:QuickLaunchIconTask}; \
 Name: sendtohook; Description: {cm:SendToHookTask}
 Name: urlhandler; Description: {cm:RegisterAsUrlHandlers}
 Name: searchpath; Description: {cm:AddSearchPath}; \
-  Flags: unchecked; Check: IsAdminLoggedOn
+  Flags: unchecked; Check: IsAdmin
 
 [Icons]
 Name: "{commonprograms}\WinSCP"; Filename: "{app}\WinSCP.exe"; Components: main; \
@@ -713,9 +713,9 @@ const
 
 procedure LoadBitmap(Image: TBitmapImage; FileName: string; BackgroundColor: TColor);
 var
-  Bitmap: TAlphaBitmap;
+  Bitmap: TBitmap;
 begin
-  Bitmap := TAlphaBitmap.Create();
+  Bitmap := TBitmap.Create();
   Bitmap.AlphaFormat := afDefined;
   Bitmap.LoadFromFile(FileName);
   Image.Bitmap := Bitmap;
@@ -831,7 +831,7 @@ end;
 
 function IsElevated: Boolean;
 begin
-  Result := IsAdminLoggedOn or IsPowerUserLoggedOn;
+  Result := IsAdmin;
 end;
 
 function HaveWriteAccessToApp: Boolean;
