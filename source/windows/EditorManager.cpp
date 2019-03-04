@@ -339,6 +339,7 @@ void __fastcall TEditorManager::FileReload(TObject * Token)
   DebugAssert(Index >= 0);
   TFileData * FileData = &FFiles[Index];
   DebugAssert(!FileData->External);
+  TAutoFlag ReloadingFlag(FileData->Reloading);
 
   OnFileReload(FileData->FileName, FileData->Data);
   FileAge(FileData->FileName, FileData->Timestamp);
@@ -364,6 +365,7 @@ void __fastcall TEditorManager::AddFile(TFileData & FileData, TEditedFileData * 
   FileData.UploadCompleteEvent = INVALID_HANDLE_VALUE;
   FileData.Opened = Now();
   FileData.Reupload = false;
+  FileData.Reloading = false;
   FileData.Saves = 0;
   FileData.Data = Data.get();
 
@@ -455,8 +457,17 @@ bool __fastcall TEditorManager::CloseFile(int Index, bool IgnoreErrors, bool Del
 bool __fastcall TEditorManager::HasFileChanged(int Index, TDateTime & NewTimestamp)
 {
   TFileData * FileData = &FFiles[Index];
-  FileAge(FileData->FileName, NewTimestamp);
-  return (FileData->Timestamp != NewTimestamp);
+  bool Result;
+  if (FileData->Reloading)
+  {
+    Result = false;
+  }
+  else
+  {
+    FileAge(FileData->FileName, NewTimestamp);
+    Result = (FileData->Timestamp != NewTimestamp);
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TEditorManager::CheckFileChange(int Index, bool Force)
