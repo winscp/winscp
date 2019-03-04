@@ -80,6 +80,7 @@ private:
     HANDLE UploadCompleteEvent;
     TDateTime Opened;
     bool Reupload;
+    bool Reloading;
     unsigned int Saves;
   };
 
