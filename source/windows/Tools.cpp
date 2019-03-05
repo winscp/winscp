@@ -702,7 +702,10 @@ void __fastcall OpenBrowser(UnicodeString URL)
     DebugAssert(!IsHttpUrl(URL));
     URL = CampaignUrl(URL);
   }
-  ShellExecute(Application->Handle, L"open", URL.c_str(), NULL, NULL, SW_SHOWNORMAL);
+  if (!CopyCommandToClipboard(URL))
+  {
+    ShellExecute(Application->Handle, L"open", URL.c_str(), NULL, NULL, SW_SHOWNORMAL);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall OpenFolderInExplorer(const UnicodeString & Path)
