@@ -85,8 +85,6 @@
 
 #define ExplorerFileBase "Explorer"
 #define CommanderFileBase "Commander"
-#define WizardImageFileBase "Tall"
-#define WizardSmallImageFileBase "Square"
 #define SelectDirFileBase "Opened bookmark folder-stored session folder"
 
 [Setup]
@@ -111,8 +109,8 @@ AppVerName=WinSCP {#Version}
 OutputBaseFilename=WinSCP-{#FTag}-Setup
 SolidCompression=yes
 #ifdef ImagesDir
-WizardImageFile={#ImagesDir}\{#WizardImageFileBase} 100.bmp
-WizardSmallImageFile={#ImagesDir}\{#WizardSmallImageFileBase} 100.bmp
+WizardImageFile={#ImagesDir}\Tall *.bmp
+WizardSmallImageFile={#ImagesDir}\Square *.bmp
 #endif
 ShowTasksTreeLines=yes
 PrivilegesRequired=none
@@ -259,12 +257,6 @@ Type: files; Name: "{app}\WinSCP.cgl"
 ; that can take long with solid compression enabled
 Source: "{#ImagesDir}\{#ExplorerFileBase} *.bmp"; Flags: dontcopy
 Source: "{#ImagesDir}\{#CommanderFileBase} *.bmp"; Flags: dontcopy
-; We do not need 100% images here, they are embedded already automatically
-; by WizardImageFile and WizardSmallImageFile
-Source: "{#ImagesDir}\{#WizardImageFileBase} *.bmp"; Excludes: "* 100.bmp"; \
-  Flags: dontcopy
-Source: "{#ImagesDir}\{#WizardSmallImageFileBase} *.bmp"; Excludes: "* 100.bmp"; \
-  Flags: dontcopy
 Source: "{#ImagesDir}\{#SelectDirFileBase} *.bmp"; Flags: dontcopy
 #ifdef Donations
 Source: "{#ImagesDir}\{#PayPalCardImage}"; Flags: dontcopy
@@ -744,17 +736,12 @@ begin
     else Result := 100;
 end;
 
-procedure LoadEmbededScaledBitmap(Image: TBitmapImage; NameBase: string; SizeBase: Integer; BackgroundColor: TColor);
+procedure LoadEmbededScaledIcon(Image: TBitmapImage; NameBase: string; SizeBase: Integer; BackgroundColor: TColor);
 var
   Name: String;
 begin
   Name := Format('%s %d.bmp', [NameBase, SizeBase * GetScalingFactor div 100]);
   LoadEmbededBitmap(Image, Name, BackgroundColor);
-end;
-
-procedure LoadEmbededScaledIcon(Image: TBitmapImage; NameBase: string; SizeBase: Integer; BackgroundColor: TColor);
-begin
-  LoadEmbededScaledBitmap(Image, NameBase, SizeBase, BackgroundColor);
   Image.AutoSize := True;
 end;
 
@@ -1256,15 +1243,6 @@ begin
   WizardForm.YesRadio.OnClick := @UpdatePostInstallRunCheckboxes;
   WizardForm.NoRadio.OnClick := @UpdatePostInstallRunCheckboxes;
   UpdatePostInstallRunCheckboxes(nil);
-
-  // 100% images are automatically loaded by
-  // WizardImageFile and WizardSmallImageFile
-  if GetScalingFactor > 100 then
-  begin
-    LoadEmbededScaledBitmap(WizardForm.WizardBitmapImage, '{#WizardImageFileBase}', 100, 0);
-    LoadEmbededScaledBitmap(WizardForm.WizardBitmapImage2, '{#WizardImageFileBase}', 100, 0);
-    LoadEmbededScaledBitmap(WizardForm.WizardSmallBitmapImage, '{#WizardSmallImageFileBase}', 100, 0);
-  end;
 
 #ifdef ImagesDir
   // Text does not scale as quick as with DPI,
