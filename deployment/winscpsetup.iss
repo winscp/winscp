@@ -896,6 +896,12 @@ begin
   end;
 end;
 
+function Bullet(S: string): string;
+begin
+  if Copy(S, 1, 1) = '-' then S := #$2022'  ' + Trim(Copy(S, 2, Length(S) - 1));
+  Result := S;
+end;
+
 procedure InitializeWizard;
 var
   DefaultLang: Boolean;
@@ -1041,14 +1047,14 @@ begin
   if not Upgrade then
   begin
     Caption.Caption :=
-      CustomMessage('TypicalType1') + NewLine +
-      CustomMessage('TypicalType2') + NewLine +
-      CustomMessage('TypicalType3');
+      Bullet(CustomMessage('TypicalType1')) + NewLine +
+      Bullet(CustomMessage('TypicalType2')) + NewLine +
+      Bullet(CustomMessage('TypicalType3'));
   end
     else
   begin
     Caption.Caption :=
-      CustomMessage('TypicalUpgradeType1');
+      Bullet(CustomMessage('TypicalUpgradeType1'));
   end;
   Caption.Left := ScaleX(4) + ScaleX(20);
   Caption.Width := SetupTypePage.SurfaceWidth - Caption.Left;
@@ -1075,13 +1081,13 @@ begin
   if not Upgrade then
   begin
     Caption.Caption :=
-      CustomMessage('CustomType1');
+      Bullet(CustomMessage('CustomType1'));
   end
     else
   begin
     Caption.Caption :=
-      CustomMessage('CustomUpgradeType1') + NewLine +
-      CustomMessage('CustomUpgradeType2');
+      Bullet(CustomMessage('CustomUpgradeType1')) + NewLine +
+      Bullet(CustomMessage('CustomUpgradeType2'));
   end;
   Caption.Left := ScaleX(4) + ScaleX(20);
   Caption.Width := SetupTypePage.SurfaceWidth - Caption.Left;
@@ -1132,9 +1138,9 @@ begin
   Caption := TLabel.Create(InterfacePage);
   Caption.WordWrap := True;
   Caption.Caption :=
-      CustomMessage('NortonCommanderInterface1') + NewLine +
-      CustomMessage('NortonCommanderInterface2') + NewLine +
-      CustomMessage('NortonCommanderInterface3');
+      Bullet(CustomMessage('NortonCommanderInterface1')) + NewLine +
+      Bullet(CustomMessage('NortonCommanderInterface2')) + NewLine +
+      Bullet(CustomMessage('NortonCommanderInterface3'));
   Caption.Anchors := [akLeft, akTop, akRight];
   Caption.Left := GetRight(CommanderRadioButton);
   Caption.Width := InterfacePage.SurfaceWidth - Caption.Left;
@@ -1165,9 +1171,9 @@ begin
   Caption := TLabel.Create(InterfacePage);
   Caption.WordWrap := True;
   Caption.Caption :=
-      CustomMessage('ExplorerInterface1') + NewLine +
-      CustomMessage('ExplorerInterface2') + NewLine +
-      CustomMessage('ExplorerInterface3');
+      Bullet(CustomMessage('ExplorerInterface1')) + NewLine +
+      Bullet(CustomMessage('ExplorerInterface2')) + NewLine +
+      Bullet(CustomMessage('ExplorerInterface3'));
   Caption.Anchors := [akLeft, akTop, akRight];
   Caption.Left := GetRight(ExplorerRadioButton);
   Caption.Width := InterfacePage.SurfaceWidth - Caption.Left;
