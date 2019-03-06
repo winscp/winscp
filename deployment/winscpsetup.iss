@@ -120,6 +120,7 @@ DisableProgramGroupPage=yes
 MinVersion=6.0
 SetupIconFile=winscpsetup.ico
 DisableDirPage=no
+WizardStyle=modern
 ; We do not want the Explorer restarts as that is not pleasant to the user
 CloseApplications=no
 #ifdef Sign
@@ -962,6 +963,7 @@ begin
   // add help button
   HelpButton := TButton.Create(WizardForm);
   HelpButton.Parent := WizardForm;
+  HelpButton.Anchors := [akLeft, akBottom];
   HelpButton.Left := WizardForm.ClientWidth - GetRight(WizardForm.CancelButton);
   HelpButton.Top := WizardForm.CancelButton.Top;
   HelpButton.Width := WizardForm.CancelButton.Width;
@@ -1133,6 +1135,7 @@ begin
       CustomMessage('NortonCommanderInterface1') + NewLine +
       CustomMessage('NortonCommanderInterface2') + NewLine +
       CustomMessage('NortonCommanderInterface3');
+  Caption.Anchors := [akLeft, akTop, akRight];
   Caption.Left := GetRight(CommanderRadioButton);
   Caption.Width := InterfacePage.SurfaceWidth - Caption.Left;
   Caption.Top := CommanderRadioButton.Top;
@@ -1165,6 +1168,7 @@ begin
       CustomMessage('ExplorerInterface1') + NewLine +
       CustomMessage('ExplorerInterface2') + NewLine +
       CustomMessage('ExplorerInterface3');
+  Caption.Anchors := [akLeft, akTop, akRight];
   Caption.Left := GetRight(ExplorerRadioButton);
   Caption.Width := InterfacePage.SurfaceWidth - Caption.Left;
   Caption.Top := ExplorerRadioButton.Top;
