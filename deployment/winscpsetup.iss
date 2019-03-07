@@ -302,13 +302,13 @@ Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface"; ValueType: dword; 
   ValueName: "Interface"; ValueData: 0; Check: UserSettings(1)
 Root: HKLM; SubKey: "{#RegistryKey}"; ValueType: dword; \
   ValueName: "DefaultInterfaceInterface"; ValueData: 0; \
-  Check: UserSettings(1); Flags: noerror
+  Check: UserSettings(1) and IsAdminInstallMode; Flags: noerror
 ; Explorer-like interface
 Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface"; ValueType: dword; \
   ValueName: "Interface"; ValueData: 1; Check: not UserSettings(1)
 Root: HKLM; SubKey: "{#RegistryKey}"; ValueType: dword; \
   ValueName: "DefaultInterfaceInterface"; ValueData: 1; \
-  Check: not UserSettings(1); Flags: noerror
+  Check: (not UserSettings(1)) and IsAdminInstallMode; Flags: noerror
 ; If installer enabled ddext, let it reset the settings on uninstall,
 ; so the default is used on the next run
 Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface"; ValueType: dword; \
@@ -320,10 +320,10 @@ Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface\Updates"; \
   Tasks: enableupdates; Check: not UpdatesEnabled
 Root: HKLM; SubKey: "{#RegistryKey}"; \
   ValueType: dword; ValueName: "DefaultUpdatesPeriod"; ValueData: 7; \
-  Tasks: enableupdates; Flags: noerror
+  Tasks: enableupdates; Flags: noerror; Check: IsAdminInstallMode
 Root: HKLM; SubKey: "{#RegistryKey}"; \
   ValueType: dword; ValueName: "DefaultCollectUsage"; ValueData: 1; \
-  Tasks: enableupdates\enablecollectusage; Flags: noerror
+  Tasks: enableupdates\enablecollectusage; Flags: noerror; Check: IsAdminInstallMode
 
 #sub EmitLang
 
