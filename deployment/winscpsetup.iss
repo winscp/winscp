@@ -124,6 +124,7 @@ DisableDirPage=no
 WizardStyle=modern
 ; We do not want the Explorer restarts as that is not pleasant to the user
 CloseApplications=no
+UsedUserAreasWarning=no
 #ifdef Sign
 SignTool=sign $f "WinSCP Installer" https://winscp.net/eng/docs/installation
 #endif
