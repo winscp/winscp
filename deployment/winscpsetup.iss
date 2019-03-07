@@ -76,7 +76,11 @@
 #expr ParseVersion(MainFileSource, Major, Minor, Rev, Build)
 #define VersionOnly Str(Major)+"."+Str(Minor)+(Rev > 0 ? "."+Str(Rev) : "")
 #define Version VersionOnly+(Status != "" ? " "+Status : "")
-#define FTag VersionOnly+(Status != "" ? "."+Status : "")
+
+#ifndef BaseFilename
+  #define FTag VersionOnly+(Status != "" ? "."+Status : "")
+  #define BaseFilename "WinSCP-" + FTag + "-Setup"
+#endif
 
 #define WebArguments "ver=" +VersionOnly + "&lang={language}&utm_source=winscp&utm_medium=setup&utm_campaign=" + VersionOnly
 #define WebGettingStarted WebRoot + "eng/installed.php?" + WebArguments + "&prevver="
@@ -99,6 +103,7 @@ VersionInfoDescription=Setup for WinSCP {#Version} (SFTP, FTP, WebDAV and SCP cl
 VersionInfoVersion={#Major}.{#Minor}.{#Rev}.{#Build}
 VersionInfoTextVersion={#Version}
 VersionInfoCopyright=(c) 2000-{#Year} Martin Prikryl
+VersionInfoOriginalFileName={#BaseFilename}.exe
 DefaultDirName={autopf}\WinSCP
 LicenseFile=license.setup.txt
 UninstallDisplayIcon={app}\WinSCP.exe
@@ -106,7 +111,7 @@ OutputDir={#OutputDir}
 DisableStartupPrompt=yes
 AppVersion={#Version}
 AppVerName=WinSCP {#Version}
-OutputBaseFilename=WinSCP-{#FTag}-Setup
+OutputBaseFilename={#BaseFilename}
 SolidCompression=yes
 #ifdef ImagesDir
 WizardImageFile={#ImagesDir}\Tall *.bmp
