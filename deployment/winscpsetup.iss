@@ -904,7 +904,6 @@ end;
 
 procedure InitializeWizard;
 var
-  DefaultLang: Boolean;
   UserInterface: Cardinal;
   UpdatesPeriod: Cardinal;
   Caption: TLabel;
@@ -924,8 +923,6 @@ begin
   InstallationDone := False;
   LicenseAccepted := False;
   InitInterface := -1;
-
-  DefaultLang := (ActiveLanguage = '{#DefaultLang}');
 
   Upgrade :=
     RegQueryStringValue(HKLM, '{#InnoSetupReg}', '{#InnoSetupAppPathReg}', S) or
