@@ -9,8 +9,6 @@ PageantComponent=Pageant (SSH authentication agent)
 TranslationsComponent=Translations
 
 DesktopIconTask=Create a &desktop icon
-DesktopIconUserTask=For the current user only
-DesktopIconCommonTask=For all users
 SendToHookTask=Add &upload shortcut to Explorer's 'Send to' context menu
 RegisterAsUrlHandlers=Register to handle URL &addresses
 AddSearchPath=Add installation directory to &search path (%PATH%)

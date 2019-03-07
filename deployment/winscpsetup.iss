@@ -99,7 +99,7 @@ VersionInfoDescription=Setup for WinSCP {#Version} (SFTP, FTP, WebDAV and SCP cl
 VersionInfoVersion={#Major}.{#Minor}.{#Rev}.{#Build}
 VersionInfoTextVersion={#Version}
 VersionInfoCopyright=(c) 2000-{#Year} Martin Prikryl
-DefaultDirName={commonpf}\WinSCP
+DefaultDirName={autopf}\WinSCP
 LicenseFile=license.setup.txt
 UninstallDisplayIcon={app}\WinSCP.exe
 OutputDir={#OutputDir}
@@ -113,7 +113,8 @@ WizardImageFile={#ImagesDir}\Tall *.bmp
 WizardSmallImageFile={#ImagesDir}\Square *.bmp
 #endif
 ShowTasksTreeLines=yes
-PrivilegesRequired=none
+PrivilegesRequired=admin
+PrivilegesRequiredOverridesAllowed=commandline dialog
 ShowLanguageDialog=auto
 UsePreviousLanguage=yes
 DisableProgramGroupPage=yes
@@ -203,23 +204,17 @@ Name: enableupdates; Description: {cm:EnableUpdates}
 Name: enableupdates\enablecollectusage; Description: {cm:EnableCollectUsage}
 ; Windows integration
 Name: desktopicon; Description: {cm:DesktopIconTask}
-Name: desktopicon\user; Description: {cm:DesktopIconUserTask}; \
-  Flags: exclusive unchecked
-Name: desktopicon\common; Description: {cm:DesktopIconCommonTask}; \
-  Flags: exclusive
 Name: sendtohook; Description: {cm:SendToHookTask}
 Name: urlhandler; Description: {cm:RegisterAsUrlHandlers}
 Name: searchpath; Description: {cm:AddSearchPath}; \
-  Flags: unchecked; Check: IsAdmin
+  Flags: unchecked; Check: IsAdminInstallMode
 
 [Icons]
-Name: "{commonprograms}\WinSCP"; Filename: "{app}\WinSCP.exe"; Components: main; \
+Name: "{autoprograms}\WinSCP"; Filename: "{app}\WinSCP.exe"; Components: main; \
   Comment: "{cm:ProgramComment2}"
 ; This is created when desktopicon task is selected
-Name: "{userdesktop}\WinSCP"; Filename: "{app}\WinSCP.exe"; \
-  Tasks: desktopicon\user; Comment: "{cm:ProgramComment2}"
-Name: "{commondesktop}\WinSCP"; Filename: "{app}\WinSCP.exe"; \
-  Tasks: desktopicon\common; Comment: "{cm:ProgramComment2}"
+Name: "{autodesktop}\WinSCP"; Filename: "{app}\WinSCP.exe"; \
+  Tasks: desktopicon; Comment: "{cm:ProgramComment2}"
 ; This is created when sendtohook task is selected
 Name: "{usersendto}\{cm:SendToHookNew}"; Filename: "{app}\WinSCP.exe"; \
   Parameters: "/upload"; Tasks: sendtohook
@@ -408,10 +403,12 @@ begin
   MsgBox(Text, mbInformation, MB_OK);
 end;
 
+#ifdef Sponsor
 function IsWinVista: Boolean;
 begin
   Result := (GetWindowsVersion >= $06000000);
 end;
+#endif
 
 procedure CutVersionPart(var VersionString: string; var VersionPart: Word);
 var
@@ -811,85 +808,6 @@ begin
   Result := True;
 end;
 
-function IsElevated: Boolean;
-begin
-  Result := IsAdmin;
-end;
-
-function HaveWriteAccessToApp: Boolean;
-var
-  FileName: string;
-begin
-  FileName := AddBackslash(WizardDirValue) + 'writetest.tmp';
-  Result := SaveStringToFile(FileName, 'test', False);
-  if Result then
-  begin
-    Log(Format('Have write access to the last installation path [%s]', [WizardDirValue]));
-    DeleteFile(FileName);
-  end
-    else
-  begin
-    Log(Format('Does not have write access to the last installation path [%s]', [WizardDirValue]));
-  end;
-end;
-
-procedure ExitProcess(uExitCode: UINT);
-  external 'ExitProcess@kernel32.dll stdcall';
-function ShellExecute(hwnd: HWND; lpOperation: string; lpFile: string;
-  lpParameters: string; lpDirectory: string; nShowCmd: Integer): THandle;
-  external 'ShellExecuteW@shell32.dll stdcall';
-
-function Elevate: Boolean;
-var
-  I: Integer;
-  RetVal: Integer;
-  Params: string;
-  S: string;
-begin
-  Result := not CmdLineParamExists('/Elevated');
-  if not Result then
-  begin
-    Log('Elevation already attempted and silently failed, continuing unelevated');
-  end
-    else
-  begin
-    // Collect current instance parameters
-    for I := 1 to ParamCount do
-    begin
-      S := ParamStr(I);
-      // Unique log file name for the elevated instance
-      if CompareText(Copy(S, 1, 5), '/LOG=') = 0 then
-      begin
-        S := S + '-elevated';
-      end;
-      // Do not pass our /SL5 switch
-      if CompareText(Copy(S, 1, 5), '/SL5=') <> 0 then
-      begin
-        Params := Params + AddQuotes(S) + ' ';
-      end;
-    end;
-
-    // ... and add selected language
-    Params := Params + '/LANG=' + ActiveLanguage + ' /Elevated';
-
-    Log(Format('Elevating setup with parameters [%s]', [Params]));
-    RetVal := ShellExecute(0, 'runas', ExpandConstant('{srcexe}'), Params, '', SW_SHOW);
-    Log(Format('Running elevated setup returned [%d]', [RetVal]));
-    Result := (RetVal > 32);
-    // if elevated executing of this setup succeeded, then...
-    if Result then
-    begin
-      Log('Elevation succeeded');
-      // exit this non-elevated setup instance
-      ExitProcess(0);
-    end
-      else
-    begin
-      Log(Format('Elevation failed [%s]', [SysErrorMessage(RetVal)]));
-    end;
-  end;
-end;
-
 function Bullet(S: string): string;
 begin
   if Copy(S, 1, 1) = '-' then S := #$2022'  ' + Trim(Copy(S, 2, Length(S) - 1));
@@ -966,38 +884,6 @@ begin
   HelpButton.Caption := CustomMessage('HelpButton');
   HelpButton.OnClick := @HelpButtonClick;
 
-  // elevate
-
-  if not IsWinVista then
-  begin
-    Log(Format('This version of Windows [%x] does not support elevation', [GetWindowsVersion]));
-  end
-    else
-  if IsElevated then
-  begin
-    Log('Running elevated');
-  end
-    else
-  begin
-    Log('Running non-elevated');
-    if Upgrade then
-    begin
-      if not HaveWriteAccessToApp then
-      begin
-        Elevate;
-      end;
-    end
-      else
-    begin
-      if not Elevate then
-      begin
-        WizardForm.DirEdit.Text := ExpandConstant('{localappdata}\WinSCP');
-        Log(Format('Falling back to local application user folder [%s]', [WizardForm.DirEdit.Text]));
-      end;
-    end;
-  end;
-
-  // Only after elevating, not to show the message twice
   Completeness := LanguageCompleteness(ActiveLanguage);
   if (Completeness < 100) and (not WizardSilent) then
   begin
@@ -1574,7 +1460,7 @@ begin
         UsageData := UsageData + 'InstallationsRestart+,';
       if Donated then
         UsageData := UsageData + 'InstallationsDonate+,';
-      if not IsElevated then
+      if not IsAdminInstallMode then
         UsageData := UsageData + 'InstallationsNonElevated+,';
 
       // have to do this before running WinSCP GUI instance below,
