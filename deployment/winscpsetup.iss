@@ -1200,6 +1200,7 @@ begin
   Caption := TLabel.Create(DonationPanel);
   Caption.WordWrap := True;
   Caption.Caption := CustomMessage('PleaseDonate');
+  Caption.Anchors := [akLeft, akTop, akRight];
   Caption.Left := 0;
   Caption.Top := 0;
   Caption.Width := DonationPanel.Width;
