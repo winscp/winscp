@@ -838,6 +838,9 @@ begin
   InitInterface := -1;
 
   Upgrade :=
+    // We may want to use HKA to work correctly with side-by-side installations.
+    // But as Updade is really used for changing REGISTRY configuration options only,
+    // which are shared between all-users and current-user installations, it does not really matter.
     RegQueryStringValue(HKLM, '{#InnoSetupReg}', '{#InnoSetupAppPathReg}', S) or
     RegQueryStringValue(HKCU, '{#InnoSetupReg}', '{#InnoSetupAppPathReg}', S);
 
