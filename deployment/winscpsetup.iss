@@ -1377,6 +1377,7 @@ begin
 
       // Hide "about donations" if it does not fit nicely
       // (happens on "long" languages, as German)
+      // Should not happen anymore with "modern" style of IS6.
       if (DonationPanel.Top + GetBottom(AboutDonationCaption)) >
          (WizardForm.FinishedPage.Height - ScaleY(8)) then
       begin
