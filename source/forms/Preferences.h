@@ -68,7 +68,6 @@ __published:
   TTabSheet *IntegrationSheet;
   TGroupBox *ShellIconsGroup;
   TButton *DesktopIconButton;
-  TButton *QuickLaunchIconButton;
   TButton *SendToHookButton;
   TTabSheet *CustomCommandsSheet;
   TGroupBox *CustomCommandsGroup;

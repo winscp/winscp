@@ -207,9 +207,6 @@ Name: desktopicon\user; Description: {cm:DesktopIconUserTask}; \
   Flags: exclusive unchecked
 Name: desktopicon\common; Description: {cm:DesktopIconCommonTask}; \
   Flags: exclusive
-; No Quick Launch on Win7
-Name: quicklaunchicon; Description: {cm:QuickLaunchIconTask}; \
-  Flags: unchecked; OnlyBelowVersion: 6.1.7600
 Name: sendtohook; Description: {cm:SendToHookTask}
 Name: urlhandler; Description: {cm:RegisterAsUrlHandlers}
 Name: searchpath; Description: {cm:AddSearchPath}; \
@@ -223,9 +220,6 @@ Name: "{userdesktop}\WinSCP"; Filename: "{app}\WinSCP.exe"; \
   Tasks: desktopicon\user; Comment: "{cm:ProgramComment2}"
 Name: "{commondesktop}\WinSCP"; Filename: "{app}\WinSCP.exe"; \
   Tasks: desktopicon\common; Comment: "{cm:ProgramComment2}"
-; This is created when quicklaunchicon task is selected
-Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\WinSCP"; \
-  Filename: "{app}\WinSCP.exe"; Tasks: quicklaunchicon
 ; This is created when sendtohook task is selected
 Name: "{usersendto}\{cm:SendToHookNew}"; Filename: "{app}\WinSCP.exe"; \
   Parameters: "/upload"; Tasks: sendtohook
@@ -945,8 +939,6 @@ begin
 
   WizardForm.KeyPreview := True;
   WizardForm.OnKeyDown := @FormKeyDown;
-  // to accomodate one more task
-  WizardForm.TasksList.Height := WizardForm.TasksList.Height + ScaleY(8);
 
   // allow installation without requiring user to accept license
   WizardForm.LicenseAcceptedRadio.Checked := True;

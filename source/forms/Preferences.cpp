@@ -1365,8 +1365,6 @@ void __fastcall TPreferencesDialog::UpdateControls()
 
     // integration
     EnableControl(ShellIconsGroup, !IsUWP());
-    // There's no quick launch in Windows 7
-    EnableControl(QuickLaunchIconButton, ShellIconsGroup->Enabled && !IsWin7());
     MakeDefaultHandlerItem->Visible = IsWinVista();
 
     // languages
@@ -1486,28 +1484,24 @@ void __fastcall TPreferencesDialog::IconButtonClick(TObject *Sender)
         break;
     }
   }
-  else
+  else if (Sender == SendToHookButton)
   {
     if (MessageDialog(MainInstructions(LoadStr(CONFIRM_CREATE_ICON)),
           qtConfirmation, qaYes | qaNo, HELP_CREATE_ICON) == qaYes)
     {
-      if (Sender == SendToHookButton)
-      {
-        IconName = FMTLOAD(SENDTO_HOOK_NAME2, (AppName));
-        SpecialFolder = CSIDL_SENDTO;
-        Params = TProgramParams::FormatSwitch(UPLOAD_SWITCH);
-      }
-      else if (Sender == QuickLaunchIconButton)
-      {
-        IconName = L"Microsoft\\Internet Explorer\\Quick Launch\\" +
-          AppName;
-        SpecialFolder = CSIDL_APPDATA;
-      }
+      IconName = FMTLOAD(SENDTO_HOOK_NAME2, (AppName));
+      SpecialFolder = CSIDL_SENDTO;
+      Params = TProgramParams::FormatSwitch(UPLOAD_SWITCH);
     }
     else
     {
       Abort();
     }
+  }
+  else
+  {
+    DebugFail();
+    Abort();
   }
 
   TInstantOperationVisualizer Visualizer;
