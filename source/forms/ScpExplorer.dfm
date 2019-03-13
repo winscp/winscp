@@ -1088,13 +1088,15 @@ inherited ScpExplorerForm: TScpExplorerForm
       OnPanelClick = RemoteStatusBarPanelClick
       OnPanelDblClick = StatusBarPanelDblClick
     end
-    inherited RemoteDirView: TUnixDirView
+    inherited RemoteDirPanel: TPanel
       Width = 442
       Height = 71
-      OnUpdateStatusBar = RemoteDirViewUpdateStatusBar
-      OnPathChange = RemoteDirViewPathChange
+      inherited RemoteDirView: TUnixDirView
+        OnUpdateStatusBar = RemoteDirViewUpdateStatusBar
+        OnPathChange = RemoteDirViewPathChange
+      end
     end
-    inherited RemoteDriveView: TUnixDriveView
+    inherited RemoteDrivePanel: TPanel
       Height = 71
       Constraints.MinWidth = 40
     end

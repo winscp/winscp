@@ -101,8 +101,8 @@ void __fastcall TScpExplorerForm::RestoreParams()
   }
   SessionsPageControl->Visible = WinConfiguration->ScpExplorer.SessionsTabs;
   RemoteStatusBar->Visible = WinConfiguration->ScpExplorer.StatusBar;
-  RemoteDriveView->Visible = WinConfiguration->ScpExplorer.DriveView;
-  RemoteDriveView->Width =
+  RemoteDrivePanel->Visible = WinConfiguration->ScpExplorer.DriveView;
+  RemoteDrivePanel->Width =
     LoadDimension(
       WinConfiguration->ScpExplorer.DriveViewWidth, WinConfiguration->ScpExplorer.DriveViewWidthPixelsPerInch, this);
 }
@@ -122,8 +122,8 @@ void __fastcall TScpExplorerForm::StoreParams()
     WinConfiguration->ScpExplorer.WindowParams = StoreForm(this);
     WinConfiguration->ScpExplorer.DirViewParams = RemoteDirView->UnixColProperties->ParamsStr;
     WinConfiguration->ScpExplorer.ViewStyle = RemoteDirView->ViewStyle;
-    WinConfiguration->ScpExplorer.DriveView = RemoteDriveView->Visible;
-    WinConfiguration->ScpExplorer.DriveViewWidth = RemoteDriveView->Width;
+    WinConfiguration->ScpExplorer.DriveView = RemoteDrivePanel->Visible;
+    WinConfiguration->ScpExplorer.DriveViewWidth = RemoteDrivePanel->Width;
     WinConfiguration->ScpExplorer.DriveViewWidthPixelsPerInch = GetControlPixelsPerInch(this);
     TCustomScpExplorerForm::StoreParams();
   }
@@ -255,11 +255,11 @@ void __fastcall TScpExplorerForm::FixControlsPlacement()
   TCustomScpExplorerForm::FixControlsPlacement();
 
   TControl * ControlsOrder[] =
-    { RemoteDirView, QueueSplitter, QueuePanel, BottomDock, RemoteStatusBar };
+    { RemoteDirPanel, QueueSplitter, QueuePanel, BottomDock, RemoteStatusBar };
   SetVerticalControlsOrder(ControlsOrder, LENOF(ControlsOrder));
 
   TControl * RemoteControlsOrder[] =
-    { RemoteDriveView, RemotePanelSplitter, RemoteDirView };
+    { RemoteDrivePanel, RemotePanelSplitter, RemoteDirPanel };
   SetHorizontalControlsOrder(RemoteControlsOrder, LENOF(RemoteControlsOrder));
 }
 //---------------------------------------------------------------------------

@@ -1092,27 +1092,35 @@ inherited ScpCommanderForm: TScpCommanderForm
         end>
       OnPanelClick = RemoteStatusBarPanelClick
     end
-    inherited RemoteDirView: TUnixDirView
+    inherited RemoteDirPanel: TPanel
       Left = 0
       Top = 146
       Width = 458
       Height = 124
       Constraints.MinHeight = 70
-      NortonLike = nlOn
-      OnUpdateStatusBar = RemoteDirViewUpdateStatusBar
-      PathLabel = RemotePathLabel
-      AddParentDir = True
-      OnDDFileOperationExecuted = RemoteFileControlDDFileOperationExecuted
-      OnHistoryGo = DirViewHistoryGo
-      OnPathChange = RemoteDirViewPathChange
+      inherited RemoteDirView: TUnixDirView
+        Width = 458
+        Height = 124
+        NortonLike = nlOn
+        OnUpdateStatusBar = RemoteDirViewUpdateStatusBar
+        PathLabel = RemotePathLabel
+        AddParentDir = True
+        OnDDFileOperationExecuted = RemoteFileControlDDFileOperationExecuted
+        OnHistoryGo = DirViewHistoryGo
+        OnPathChange = RemoteDirViewPathChange
+      end
     end
-    inherited RemoteDriveView: TUnixDriveView
+    inherited RemoteDrivePanel: TPanel
       Top = 98
       Width = 458
       Height = 45
       Align = alTop
       Constraints.MinHeight = 30
-      TabStop = False
+      inherited RemoteDriveView: TUnixDriveView
+        Width = 458
+        Height = 45
+        TabStop = False
+      end
     end
     object RemoteTopDock: TTBXDock
       Left = 0

@@ -67,6 +67,7 @@ __published:
   TPanel *RemotePanel;
   TTBXStatusBar *RemoteStatusBar;
   TUnixDirView *RemoteDirView;
+  TPanel *RemoteDirPanel;
   TTBXDock *TopDock;
   TListView *QueueView3;
   TPanel *QueuePanel;
@@ -86,6 +87,7 @@ __published:
   TTBXSeparatorItem *TBXSeparatorItem202;
   TTBXItem *TBXItem208;
   TUnixDriveView *RemoteDriveView;
+  TPanel *RemoteDrivePanel;
   TSplitter *RemotePanelSplitter;
   TTBXItem *TBXItem194;
   TTBXItem *TBXItem195;

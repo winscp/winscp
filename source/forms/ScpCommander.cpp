@@ -153,19 +153,19 @@ void __fastcall TScpCommanderForm::RestoreFormParams()
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::RestorePanelParams(
-  TCustomDirView * DirView, TCustomDriveView * DriveView, TTBXStatusBar * StatusBar,
+  TCustomDirView * DirView, TControl * DriveControl, TTBXStatusBar * StatusBar,
   const TScpCommanderPanelConfiguration & PanelConfiguration)
 {
   DirView->ColProperties->ParamsStr = PanelConfiguration.DirViewParams;
   StatusBar->Visible = PanelConfiguration.StatusBar;
-  DriveView->Visible = PanelConfiguration.DriveView;
-  if (DriveView->Align == alTop)
+  DriveControl->Visible = PanelConfiguration.DriveView;
+  if (DriveControl->Align == alTop)
   {
-    DriveView->Height = LoadDimension(PanelConfiguration.DriveViewHeight, PanelConfiguration.DriveViewHeightPixelsPerInch, this);
+    DriveControl->Height = LoadDimension(PanelConfiguration.DriveViewHeight, PanelConfiguration.DriveViewHeightPixelsPerInch, this);
   }
   else
   {
-    DriveView->Width = LoadDimension(PanelConfiguration.DriveViewWidth, PanelConfiguration.DriveViewWidthPixelsPerInch, this);
+    DriveControl->Width = LoadDimension(PanelConfiguration.DriveViewWidth, PanelConfiguration.DriveViewWidthPixelsPerInch, this);
   }
 }
 //---------------------------------------------------------------------------
@@ -184,7 +184,7 @@ void __fastcall TScpCommanderForm::RestoreParams()
   StatusBar->Visible = WinConfiguration->ScpCommander.StatusBar;
 
   RestorePanelParams(LocalDirView, LocalDriveView, LocalStatusBar, WinConfiguration->ScpCommander.LocalPanel);
-  RestorePanelParams(RemoteDirView, RemoteDriveView, RemoteStatusBar, WinConfiguration->ScpCommander.RemotePanel);
+  RestorePanelParams(RemoteDirView, RemoteDrivePanel, RemoteStatusBar, WinConfiguration->ScpCommander.RemotePanel);
   FPanelsRestored = true;
 
   // just to make sure
@@ -193,20 +193,20 @@ void __fastcall TScpCommanderForm::RestoreParams()
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::StorePanelParams(
-  TCustomDirView * DirView, TCustomDriveView * DriveView, TTBXStatusBar * StatusBar,
+  TCustomDirView * DirView, TControl * DriveControl, TTBXStatusBar * StatusBar,
   TScpCommanderPanelConfiguration & PanelConfiguration)
 {
   PanelConfiguration.DirViewParams = DirView->ColProperties->ParamsStr;
   PanelConfiguration.StatusBar = StatusBar->Visible;
-  PanelConfiguration.DriveView = DriveView->Visible;
-  if (DriveView->Align == alTop)
+  PanelConfiguration.DriveView = DriveControl->Visible;
+  if (DriveControl->Align == alTop)
   {
-    PanelConfiguration.DriveViewHeight = DriveView->Height;
+    PanelConfiguration.DriveViewHeight = DriveControl->Height;
     PanelConfiguration.DriveViewHeightPixelsPerInch = GetControlPixelsPerInch(this);
   }
   else
   {
-    PanelConfiguration.DriveViewWidth = DriveView->Width;
+    PanelConfiguration.DriveViewWidth = DriveControl->Width;
     PanelConfiguration.DriveViewWidthPixelsPerInch = GetControlPixelsPerInch(this);
   }
 }
@@ -230,7 +230,7 @@ void __fastcall TScpCommanderForm::StoreParams()
     CommanderConfiguration.CurrentPanel = FCurrentSide;
 
     StorePanelParams(LocalDirView, LocalDriveView, LocalStatusBar, CommanderConfiguration.LocalPanel);
-    StorePanelParams(RemoteDirView, RemoteDriveView, RemoteStatusBar, CommanderConfiguration.RemotePanel);
+    StorePanelParams(RemoteDirView, RemoteDrivePanel, RemoteStatusBar, CommanderConfiguration.RemotePanel);
 
 
     CommanderConfiguration.WindowParams = StoreForm(this);
@@ -632,7 +632,7 @@ void __fastcall TScpCommanderForm::ConfigurationChanged()
       NonVisualDataModule->RemoteChangePathAction->ShortCut);
   }
 
-  if ((RemoteDriveView->Align == alLeft) != WinConfiguration->ScpCommander.TreeOnLeft)
+  if ((RemoteDrivePanel->Align == alLeft) != WinConfiguration->ScpCommander.TreeOnLeft)
   {
     TScpCommanderPanelConfiguration LocalPanel = WinConfiguration->ScpCommander.LocalPanel;
     TScpCommanderPanelConfiguration RemotePanel = WinConfiguration->ScpCommander.RemotePanel;
@@ -646,12 +646,12 @@ void __fastcall TScpCommanderForm::ConfigurationChanged()
       {
         // want to be on left, so it is on top, saving height
         LocalPanel.DriveViewHeight = LocalDriveView->Height;
-        RemotePanel.DriveViewHeight = RemoteDriveView->Height;
+        RemotePanel.DriveViewHeight = RemoteDrivePanel->Height;
       }
       else
       {
         LocalPanel.DriveViewWidth = LocalDriveView->Width;
-        RemotePanel.DriveViewWidth = RemoteDriveView->Width;
+        RemotePanel.DriveViewWidth = RemoteDrivePanel->Width;
       }
     }
 
@@ -662,7 +662,7 @@ void __fastcall TScpCommanderForm::ConfigurationChanged()
     LocalDriveView->Align = NonClientAlign;
     LocalPanelSplitter->Align = NonClientAlign;
     LocalPanelSplitter->Cursor = SplitterCursor;
-    RemoteDriveView->Align = NonClientAlign;
+    RemoteDrivePanel->Align = NonClientAlign;
     RemotePanelSplitter->Align = NonClientAlign;
     RemotePanelSplitter->Cursor = SplitterCursor;
     FixControlsPlacement();
@@ -670,12 +670,12 @@ void __fastcall TScpCommanderForm::ConfigurationChanged()
     if (TreeOnLeft)
     {
       LocalDriveView->Width = LocalPanel.DriveViewWidth;
-      RemoteDriveView->Width = RemotePanel.DriveViewWidth;
+      RemoteDrivePanel->Width = RemotePanel.DriveViewWidth;
     }
     else
     {
       LocalDriveView->Height = LocalPanel.DriveViewHeight;
-      RemoteDriveView->Height = RemotePanel.DriveViewHeight;
+      RemoteDrivePanel->Height = RemotePanel.DriveViewHeight;
     }
 
     // in case it trigges config-changed event (does not),
@@ -756,16 +756,16 @@ void __fastcall TScpCommanderForm::PanelSplitterDblClick(TObject * Sender)
 {
   TSplitter * Splitter = dynamic_cast<TSplitter *>(Sender);
   DebugAssert(Splitter != NULL);
-  TCustomDriveView * DriveView;
-  TCustomDriveView * OtherDriveView;
+  TControl * DriveView;
+  TControl * OtherDriveView;
   if (Splitter == LocalPanelSplitter)
   {
     DriveView = LocalDriveView;
-    OtherDriveView = RemoteDriveView;
+    OtherDriveView = RemoteDrivePanel;
   }
   else
   {
-    DriveView = RemoteDriveView;
+    DriveView = RemoteDrivePanel;
     OtherDriveView = LocalDriveView;
   }
 
@@ -918,8 +918,8 @@ void __fastcall TScpCommanderForm::FixControlsPlacement()
   SetHorizontalControlsOrder(LocalControlsOrder, LENOF(LocalControlsOrder));
 
   TControl * RemoteControlsOrder[] =
-    { RemoteTopDock, RemotePathLabel, RemoteDriveView, RemotePanelSplitter,
-      RemoteDirView, RemoteBottomDock, RemoteStatusBar };
+    { RemoteTopDock, RemotePathLabel, RemoteDrivePanel, RemotePanelSplitter,
+      RemoteDirPanel, RemoteBottomDock, RemoteStatusBar };
   SetVerticalControlsOrder(RemoteControlsOrder, LENOF(RemoteControlsOrder));
   SetHorizontalControlsOrder(RemoteControlsOrder, LENOF(RemoteControlsOrder));
 

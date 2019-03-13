@@ -3882,7 +3882,7 @@ void __fastcall TCustomScpExplorerForm::RemoteDirViewEnter(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::RemoteDriveViewEnter(TObject * /*Sender*/)
 {
-  MakeNextInTabOrder(RemoteDirView, RemoteDriveView);
+  MakeNextInTabOrder(RemoteDirPanel, RemoteDrivePanel);
   SideEnter(osRemote);
 }
 //---------------------------------------------------------------------------
@@ -5059,7 +5059,7 @@ void __fastcall TCustomScpExplorerForm::FixControlsPlacement()
     RemoteDirView->ItemFocused->MakeVisible(false);
   }
   QueueSplitter->Visible = QueuePanel->Visible;
-  RemotePanelSplitter->Visible = RemoteDriveView->Visible;
+  RemotePanelSplitter->Visible = RemoteDrivePanel->Visible;
 }
 //---------------------------------------------------------------------------
 TControl * __fastcall TCustomScpExplorerForm::GetComponent(Byte Component)
@@ -5069,7 +5069,7 @@ TControl * __fastcall TCustomScpExplorerForm::GetComponent(Byte Component)
     case fcRemotePopup: return reinterpret_cast<TControl *>(NonVisualDataModule->RemoteFilePopup);
     case fcQueueView: return QueuePanel;
     case fcQueueToolbar: return QueueDock;
-    case fcRemoteTree: return RemoteDriveView;
+    case fcRemoteTree: return RemoteDrivePanel;
     case fcSessionsTabs: return SessionsPageControl;
     default: return NULL;
   }
