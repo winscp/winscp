@@ -56,24 +56,6 @@
 #pragma resource "*.dfm"
 #endif
 //---------------------------------------------------------------------------
-#define SAVE_SELECTION(DIRVIEW) \
-  UnicodeString FocusFile = L""; \
-  UnicodeString LastFocusedFile = L""; \
-  if (DIRVIEW->ItemFocused) LastFocusedFile = DIRVIEW->ItemFocused->Caption; \
-  { TListItem * ClosestUnselected = DIRVIEW->ClosestUnselected(DIRVIEW->ItemFocused); \
-  if (ClosestUnselected) FocusFile = ClosestUnselected->Caption; }
-#define RESTORE_SELECTION(DIRVIEW) \
-  if (!LastFocusedFile.IsEmpty() && \
-      (!DIRVIEW->ItemFocused || (DIRVIEW->ItemFocused->Caption != LastFocusedFile))) \
-  { \
-    TListItem *ItemToSelect = DIRVIEW->FindFileItem(FocusFile); \
-    if (ItemToSelect) \
-    { \
-      DIRVIEW->ItemFocused = ItemToSelect; \
-      DIRVIEW->ItemFocused->MakeVisible(False); \
-    } \
-  }
-//---------------------------------------------------------------------------
 #define WM_COMPONENT_HIDE (WM_WINSCP_USER + 4)
 static const int SessionPanelCount = 4;
 //---------------------------------------------------------------------------
