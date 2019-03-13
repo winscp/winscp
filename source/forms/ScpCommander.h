@@ -533,6 +533,12 @@ protected:
   virtual bool __fastcall DirViewEnabled(TOperationSide Side);
   TControl * __fastcall GetComponent(Byte Component);
   virtual void __fastcall RestoreFormParams();
+  void __fastcall RestorePanelParams(
+    TCustomDirView * DirView, TCustomDriveView * DriveView, TTBXStatusBar * StatusBar,
+    const TScpCommanderPanelConfiguration & PanelConfiguration);
+  void __fastcall StorePanelParams(
+    TCustomDirView * DirView, TCustomDriveView * DriveView, TTBXStatusBar * StatusBar,
+    TScpCommanderPanelConfiguration & PanelConfiguration);
   virtual void __fastcall RestoreParams();
   virtual void __fastcall FixControlsPlacement();
   virtual void __fastcall TerminalChanged(bool Replaced);

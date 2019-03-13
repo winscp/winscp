@@ -152,6 +152,23 @@ void __fastcall TScpCommanderForm::RestoreFormParams()
   RestoreForm(WinConfiguration->ScpCommander.WindowParams, this);
 }
 //---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::RestorePanelParams(
+  TCustomDirView * DirView, TCustomDriveView * DriveView, TTBXStatusBar * StatusBar,
+  const TScpCommanderPanelConfiguration & PanelConfiguration)
+{
+  DirView->ColProperties->ParamsStr = PanelConfiguration.DirViewParams;
+  StatusBar->Visible = PanelConfiguration.StatusBar;
+  DriveView->Visible = PanelConfiguration.DriveView;
+  if (DriveView->Align == alTop)
+  {
+    DriveView->Height = LoadDimension(PanelConfiguration.DriveViewHeight, PanelConfiguration.DriveViewHeightPixelsPerInch, this);
+  }
+  else
+  {
+    DriveView->Width = LoadDimension(PanelConfiguration.DriveViewWidth, PanelConfiguration.DriveViewWidthPixelsPerInch, this);
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::RestoreParams()
 {
   DebugAssert(Configuration);
@@ -166,22 +183,32 @@ void __fastcall TScpCommanderForm::RestoreParams()
   SessionsPageControl->Visible = WinConfiguration->ScpCommander.SessionsTabs;
   StatusBar->Visible = WinConfiguration->ScpCommander.StatusBar;
 
-  #define RESTORE_PANEL_PARAMS(PANEL) \
-    PANEL ## DirView->ColProperties->ParamsStr = WinConfiguration->ScpCommander.PANEL ## Panel.DirViewParams; \
-    PANEL ## StatusBar->Visible = WinConfiguration->ScpCommander.PANEL ## Panel.StatusBar; \
-    PANEL ## DriveView->Visible = WinConfiguration->ScpCommander.PANEL ## Panel.DriveView; \
-    if (PANEL ## DriveView->Align == alTop) \
-      PANEL ## DriveView->Height = LoadDimension(WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewHeight, WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewHeightPixelsPerInch, this); \
-    else \
-      PANEL ## DriveView->Width = LoadDimension(WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewWidth, WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewWidthPixelsPerInch, this)
-  RESTORE_PANEL_PARAMS(Local);
-  RESTORE_PANEL_PARAMS(Remote);
-  #undef RESTORE_PANEL_PARAMS
+  RestorePanelParams(LocalDirView, LocalDriveView, LocalStatusBar, WinConfiguration->ScpCommander.LocalPanel);
+  RestorePanelParams(RemoteDirView, RemoteDriveView, RemoteStatusBar, WinConfiguration->ScpCommander.RemotePanel);
   FPanelsRestored = true;
 
   // just to make sure
   LocalDirView->DirColProperties->ExtVisible = false;
   RemoteDirView->UnixColProperties->ExtVisible = false;
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::StorePanelParams(
+  TCustomDirView * DirView, TCustomDriveView * DriveView, TTBXStatusBar * StatusBar,
+  TScpCommanderPanelConfiguration & PanelConfiguration)
+{
+  PanelConfiguration.DirViewParams = DirView->ColProperties->ParamsStr;
+  PanelConfiguration.StatusBar = StatusBar->Visible;
+  PanelConfiguration.DriveView = DriveView->Visible;
+  if (DriveView->Align == alTop)
+  {
+    PanelConfiguration.DriveViewHeight = DriveView->Height;
+    PanelConfiguration.DriveViewHeightPixelsPerInch = GetControlPixelsPerInch(this);
+  }
+  else
+  {
+    PanelConfiguration.DriveViewWidth = DriveView->Width;
+    PanelConfiguration.DriveViewWidthPixelsPerInch = GetControlPixelsPerInch(this);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::StoreParams()
@@ -191,39 +218,24 @@ void __fastcall TScpCommanderForm::StoreParams()
   WinConfiguration->BeginUpdate();
   try
   {
-    WinConfiguration->ScpCommander.ToolbarsLayout = GetToolbarsLayoutStr();
-    WinConfiguration->ScpCommander.ToolbarsButtons = GetToolbarsButtonsStr();
-    WinConfiguration->ScpCommander.LocalPanelWidth = LeftPanelWidth;
-    WinConfiguration->ScpCommander.SessionsTabs = SessionsPageControl->Visible;
-    WinConfiguration->ScpCommander.StatusBar = StatusBar->Visible;
-
-
     SaveCommandLine();
 
-    WinConfiguration->ScpCommander.CurrentPanel = FCurrentSide;
+    TScpCommanderConfiguration CommanderConfiguration = WinConfiguration->ScpCommander;
+    CommanderConfiguration.ToolbarsLayout = GetToolbarsLayoutStr();
+    CommanderConfiguration.ToolbarsButtons = GetToolbarsButtonsStr();
+    CommanderConfiguration.LocalPanelWidth = LeftPanelWidth;
+    CommanderConfiguration.SessionsTabs = SessionsPageControl->Visible;
+    CommanderConfiguration.StatusBar = StatusBar->Visible;
+
+    CommanderConfiguration.CurrentPanel = FCurrentSide;
+
+    StorePanelParams(LocalDirView, LocalDriveView, LocalStatusBar, CommanderConfiguration.LocalPanel);
+    StorePanelParams(RemoteDirView, RemoteDriveView, RemoteStatusBar, CommanderConfiguration.RemotePanel);
 
 
-    #define STORE_PANEL_PARAMS(PANEL) \
-      WinConfiguration->ScpCommander.PANEL ## Panel.DirViewParams = PANEL ## DirView->ColProperties->ParamsStr; \
-      WinConfiguration->ScpCommander.PANEL ## Panel.StatusBar = PANEL ## StatusBar->Visible; \
-      WinConfiguration->ScpCommander.PANEL ## Panel.DriveView = PANEL ## DriveView->Visible; \
-      if (PANEL ## DriveView->Align == alTop) \
-      { \
-        WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewHeight = PANEL ## DriveView->Height; \
-        WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewHeightPixelsPerInch = GetControlPixelsPerInch(this); \
-      } \
-      else \
-      { \
-        WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewWidth = PANEL ## DriveView->Width; \
-        WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewWidthPixelsPerInch = GetControlPixelsPerInch(this); \
-      }
-    STORE_PANEL_PARAMS(Local);
-    STORE_PANEL_PARAMS(Remote);
-    #undef RESTORE_PANEL_PARAMS
+    CommanderConfiguration.WindowParams = StoreForm(this);
 
-
-
-    WinConfiguration->ScpCommander.WindowParams = StoreForm(this);
+    WinConfiguration->ScpCommander = CommanderConfiguration;
 
     TCustomScpExplorerForm::StoreParams();
   }
