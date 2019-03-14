@@ -2210,11 +2210,17 @@ void __fastcall TCustomScpExplorerForm::LocalCustomCommandWithLocalFiles(
     }
   }
 
+  UnicodeString RemotePath;
+  if (Terminal != NULL)
+  {
+    RemotePath = Terminal->CurrentDirectory;
+  }
+
   if (FileListCommand)
   {
     UnicodeString FileList = MakeFileList(LocalFileList.get());
     TLocalCustomCommand CustomCommand(
-      Data, Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(),
+      Data, RemotePath, DefaultDownloadTargetDirectory(),
       L"", L"", FileList);
     ExecuteProcessChecked(CustomCommand.Complete(Command, true), HelpKeyword, POutput);
   }
@@ -2233,7 +2239,7 @@ void __fastcall TCustomScpExplorerForm::LocalCustomCommandWithLocalFiles(
         UnicodeString FileName = LocalFileList->Strings[Index];
         Progress.SetFile(FileName);
         TLocalCustomCommand CustomCommand(
-          Data, Terminal->CurrentDirectory, DefaultDownloadTargetDirectory(),
+          Data, RemotePath, DefaultDownloadTargetDirectory(),
           FileName, L"", L"");
         ExecuteProcessCheckedAndWait(CustomCommand.Complete(Command, true), HelpKeyword, POutput);
         TOnceDoneOperation OnceDoneOperation;
@@ -2251,7 +2257,8 @@ void __fastcall TCustomScpExplorerForm::LocalCustomCommand(TStrings * FileList,
   const TCustomCommandType & ACommand, TStrings * ALocalFileList,
   const TCustomCommandData & Data, const UnicodeString & CommandCommand)
 {
-  TLocalCustomCommand LocalCustomCommand(Data, Terminal->CurrentDirectory, DefaultDownloadTargetDirectory());
+  UnicodeString RemotePath = (Terminal != NULL) ? Terminal->CurrentDirectory : UnicodeString();
+  TLocalCustomCommand LocalCustomCommand(Data, RemotePath, DefaultDownloadTargetDirectory());
   TWinInteractiveCustomCommand InteractiveCustomCommand(
     &LocalCustomCommand, ACommand.Name, ACommand.HomePage);
 
@@ -2322,8 +2329,15 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
   const TCustomCommandType & ACommand, TStrings * ALocalFileList)
 {
 
-  TCustomCommandData Data(Terminal);
-  UnicodeString Site = Terminal->SessionData->SessionKey;
+  TCustomCommandData Data;
+  UnicodeString Site;
+  UnicodeString RemotePath;
+  if (Terminal != NULL)
+  {
+    Data = TCustomCommandData(Terminal);
+    Site = Terminal->SessionData->SessionKey;
+    RemotePath = Terminal->CurrentDirectory;
+  }
   UnicodeString HelpKeyword = ACommand.HomePage;
 
   std::unique_ptr<TStrings> CustomCommandOptions(CloneStrings(WinConfiguration->CustomCommandOptions));
@@ -2332,11 +2346,11 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
     std::unique_ptr<TCustomCommand> CustomCommandForOptions;
     if (FLAGCLEAR(ACommand.Params, ccLocal))
     {
-      CustomCommandForOptions.reset(new TRemoteCustomCommand(Data, Terminal->CurrentDirectory));
+      CustomCommandForOptions.reset(new TRemoteCustomCommand(Data, RemotePath));
     }
     else
     {
-      CustomCommandForOptions.reset(new TLocalCustomCommand(Data, Terminal->CurrentDirectory, DefaultDownloadTargetDirectory()));
+      CustomCommandForOptions.reset(new TLocalCustomCommand(Data, RemotePath, DefaultDownloadTargetDirectory()));
     }
 
     if (!DoCustomCommandOptionsDialog(

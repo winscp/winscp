@@ -1112,6 +1112,7 @@ bool __fastcall TInteractiveCustomCommand::PatternReplacement(int Index, const U
 //---------------------------------------------------------------------------
 __fastcall TCustomCommandData::TCustomCommandData()
 {
+  Init(NULL, UnicodeString(), UnicodeString(), UnicodeString());
 }
 //---------------------------------------------------------------------------
 __fastcall TCustomCommandData::TCustomCommandData(TTerminal * Terminal)
@@ -1131,7 +1132,10 @@ void __fastcall TCustomCommandData::Init(
   const UnicodeString & APassword, const UnicodeString & AHostKey)
 {
   FSessionData.reset(new TSessionData(L""));
-  FSessionData->Assign(ASessionData);
+  if (ASessionData != NULL)
+  {
+    FSessionData->Assign(ASessionData);
+  }
   FSessionData->UserName = AUserName;
   FSessionData->Password = APassword;
   FSessionData->HostKey = AHostKey;
