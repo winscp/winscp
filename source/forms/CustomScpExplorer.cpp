@@ -6318,9 +6318,9 @@ void __fastcall TCustomScpExplorerForm::AddEditLink(TOperationSide Side, bool Ad
 bool __fastcall TCustomScpExplorerForm::CanAddEditLink(TOperationSide Side)
 {
   return
-    (Terminal != NULL) &&
     ((GetSide(Side) != osRemote) ||
-     (Terminal->ResolvingSymlinks &&
+     ((Terminal != NULL) &&
+      Terminal->ResolvingSymlinks &&
       Terminal->IsCapable[fcSymbolicLink]));
 }
 //---------------------------------------------------------------------------
