@@ -1385,12 +1385,13 @@ UnicodeString __fastcall TCustomScpExplorerForm::GetToolbarsButtonsStr()
 void __fastcall TCustomScpExplorerForm::CreateProgressForm(TSynchronizeProgress * SynchronizeProgress)
 {
   DebugAssert(FProgressForm == NULL);
-  FProgressForm =
-    new TProgressForm(Application, (FTransferResumeList != NULL), Terminal->IsCapable[fsSkipTransfer], SynchronizeProgress);
+  bool AllowSkip = (Terminal != NULL) ? Terminal->IsCapable[fsSkipTransfer] : false;
+  FProgressForm = new TProgressForm(Application, (FTransferResumeList != NULL), AllowSkip, SynchronizeProgress);
 
   FProgressForm->DeleteLocalToRecycleBin =
     (WinConfiguration->DeleteToRecycleBin != FAlternativeDelete);
   FProgressForm->DeleteRemoteToRecycleBin =
+    (Terminal != NULL) &&
     (Terminal->SessionData->DeleteToRecycleBin != FAlternativeDelete) &&
     !Terminal->SessionData->RecycleBinPath.IsEmpty();
 
