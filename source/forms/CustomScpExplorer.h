@@ -59,6 +59,7 @@ enum TCopyOperationCommandFlag {
   cocNone = 0x00, cocShortCutHint = 0x01, cocQueue = 0x02, cocNonQueue = 0x04
 };
 enum TCustomCommandListType { ccltAll, ccltBoth, ccltNonFile, ccltFile };
+const TOperationSide osOther = osRemote;
 //---------------------------------------------------------------------------
 class TCustomScpExplorerForm : public TForm
 {
@@ -374,6 +375,10 @@ protected:
   virtual TControl * __fastcall GetComponent(Byte Component);
   bool __fastcall GetComponentVisible(Byte Component);
   virtual Boolean __fastcall GetHasDirView(TOperationSide Side);
+  virtual TCustomDriveView * __fastcall DriveView(TOperationSide Side);
+  virtual bool IsLocalBrowserMode();
+  virtual TCustomDirView * GetCurrentLocalBrowser();
+  virtual bool IsSideLocalBrowser(TOperationSide Side);
   DYNAMIC void __fastcall KeyDown(Word & Key, Classes::TShiftState Shift);
   virtual void __fastcall RestoreFormParams();
   virtual void __fastcall RestoreParams();

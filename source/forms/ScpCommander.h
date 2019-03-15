@@ -530,6 +530,7 @@ protected:
     UnicodeString & TargetDirectory, TGUICopyParamType & CopyParam, bool Confirm,
     bool DragDrop, int Options);
   virtual TCustomDirView * __fastcall DirView(TOperationSide Side);
+  virtual TCustomDriveView * __fastcall DriveView(TOperationSide Side);
   virtual bool __fastcall DirViewEnabled(TOperationSide Side);
   TControl * __fastcall GetComponent(Byte Component);
   virtual void __fastcall RestoreFormParams();
@@ -544,6 +545,8 @@ protected:
   virtual void __fastcall TerminalChanged(bool Replaced);
   virtual void __fastcall ConfigurationChanged();
   virtual bool __fastcall GetHasDirView(TOperationSide Side);
+  virtual bool IsSideLocalBrowser(TOperationSide Side);
+  virtual TCustomDirView * GetCurrentLocalBrowser();
   virtual void __fastcall UpdateControls();
   virtual void __fastcall FileOperationProgress(
     TFileOperationProgressType & ProgressData);
