@@ -1829,16 +1829,6 @@ void __fastcall TScpCommanderForm::GetTransferPresetAutoSelectData(
   Data.LocalDirectory = LocalDirView->PathName;
 }
 //---------------------------------------------------------------------------
-void __fastcall TScpCommanderForm::BeforeAction()
-{
-  TCustomScpExplorerForm::BeforeAction();
-
-  if (LocalDirView->ItemFocused != NULL)
-  {
-    LocalDirView->ItemFocused->CancelEdit();
-  }
-}
-//---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::RemoteDirViewPathChange(TCustomDirView * /*Sender*/)
 {
   UpdateRemotePathComboBox(false);

@@ -611,7 +611,6 @@ public:
   virtual void __fastcall GoToTree();
   virtual void __fastcall OpenConsole(UnicodeString Command = L"");
   virtual UnicodeString __fastcall PathForCaption();
-  virtual void __fastcall BeforeAction();
   virtual void __fastcall HomeDirectory(TOperationSide Side);
   virtual void __fastcall HistoryGo(TOperationSide Side, int Index);
   virtual void __fastcall DisplaySystemContextMenu();

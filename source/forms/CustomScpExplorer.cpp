@@ -8702,10 +8702,6 @@ bool __fastcall TCustomScpExplorerForm::GetLastCustomCommand(bool OnFocused,
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::BeforeAction()
 {
-  if (RemoteDirView->ItemFocused != NULL)
-  {
-    RemoteDirView->ItemFocused->CancelEdit();
-  }
   ResetIncrementalSearch();
 }
 //---------------------------------------------------------------------------
