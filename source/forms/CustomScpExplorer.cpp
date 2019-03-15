@@ -10107,7 +10107,7 @@ bool __fastcall TCustomScpExplorerForm::TryOpenDirectory(TOperationSide Side, co
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::ReloadDirectory(TOperationSide Side)
 {
-  // Make sure there some feedback even when loading tine local folders
+  // Make sure there some feedback even when loading tiny local folders
   TInstantOperationVisualizer Visualizer;
   DirView(Side)->ReloadDirectory();
 }
