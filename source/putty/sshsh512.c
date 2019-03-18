@@ -6,6 +6,7 @@
  * Modifications made for SHA-384 also
  */
 
+#include <assert.h>
 #include "ssh.h"
 
 #define BLKSIZE 128
@@ -185,12 +186,16 @@ static void SHA512_Block(SHA512_State *s, uint64 *block) {
  * at the end, and pass those blocks to the core SHA512 algorithm.
  */
 
+static void SHA512_BinarySink_write(BinarySink *bs,
+                                    const void *p, size_t len);
+
 void SHA512_Init(SHA512_State *s) {
     int i;
     SHA512_Core_Init(s);
     s->blkused = 0;
     for (i = 0; i < 4; i++)
 	s->len[i] = 0;
+    BinarySink_INIT(s, SHA512_BinarySink_write);
 }
 
 void SHA384_Init(SHA512_State *s) {
@@ -199,13 +204,19 @@ void SHA384_Init(SHA512_State *s) {
     s->blkused = 0;
     for (i = 0; i < 4; i++)
         s->len[i] = 0;
+    BinarySink_INIT(s, SHA512_BinarySink_write);
 }
 
-void SHA512_Bytes(SHA512_State *s, const void *p, int len) {
+static void SHA512_BinarySink_write(BinarySink *bs,
+                                    const void *p, size_t len)
+{
+    SHA512_State *s = BinarySink_DOWNCAST(bs, SHA512_State);
     unsigned char *q = (unsigned char *)p;
     uint64 wordblock[16];
     uint32 lenw = len;
     int i;
+
+    assert(lenw == len);
 
     /*
      * Update the length field.
@@ -269,16 +280,10 @@ void SHA512_Final(SHA512_State *s, unsigned char *digest) {
 
     memset(c, 0, pad);
     c[0] = 0x80;
-    SHA512_Bytes(s, &c, pad);
+    put_data(s, &c, pad);
 
-    for (i = 0; i < 4; i++) {
-	c[i*4+0] = (len[3-i] >> 24) & 0xFF;
-	c[i*4+1] = (len[3-i] >> 16) & 0xFF;
-	c[i*4+2] = (len[3-i] >>  8) & 0xFF;
-	c[i*4+3] = (len[3-i] >>  0) & 0xFF;
-    }
-
-    SHA512_Bytes(s, &c, 16);
+    for (i = 0; i < 4; i++)
+        put_uint32(s, len[3-i]);
 
     for (i = 0; i < 8; i++) {
 	uint32 h, l;
@@ -304,7 +309,7 @@ void SHA512_Simple(const void *p, int len, unsigned char *output) {
     SHA512_State s;
 
     SHA512_Init(&s);
-    SHA512_Bytes(&s, p, len);
+    put_data(&s, p, len);
     SHA512_Final(&s, output);
     smemclr(&s, sizeof(s));
 }
@@ -313,7 +318,7 @@ void SHA384_Simple(const void *p, int len, unsigned char *output) {
     SHA512_State s;
 
     SHA384_Init(&s);
-    SHA512_Bytes(&s, p, len);
+    put_data(&s, p, len);
     SHA384_Final(&s, output);
     smemclr(&s, sizeof(s));
 }
@@ -338,6 +343,7 @@ static void *sha512_copy(const void *vold)
 
     s = snew(SHA512_State);
     *s = *old;
+    BinarySink_COPIED(s);
     return s;
 }
 
@@ -349,11 +355,10 @@ static void sha512_free(void *handle)
     sfree(s);
 }
 
-static void sha512_bytes(void *handle, const void *p, int len)
+static BinarySink *sha512_sink(void *handle)
 {
     SHA512_State *s = handle;
-
-    SHA512_Bytes(s, p, len);
+    return BinarySink_UPCAST(s);
 }
 
 static void sha512_final(void *handle, unsigned char *output)
@@ -365,7 +370,7 @@ static void sha512_final(void *handle, unsigned char *output)
 }
 
 const struct ssh_hash ssh_sha512 = {
-    sha512_init, sha512_copy, sha512_bytes, sha512_final, sha512_free,
+    sha512_init, sha512_copy, sha512_sink, sha512_final, sha512_free,
     64, "SHA-512"
 };
 
@@ -388,7 +393,7 @@ static void sha384_final(void *handle, unsigned char *output)
 }
 
 const struct ssh_hash ssh_sha384 = {
-    sha384_init, sha512_copy, sha512_bytes, sha384_final, sha512_free,
+    sha384_init, sha512_copy, sha512_sink, sha384_final, sha512_free,
     48, "SHA-384"
 };
 
@@ -450,8 +455,7 @@ int main(void) {
 	    int n;
 	    SHA512_Init(&s);
 	    for (n = 0; n < 1000000 / 40; n++)
-		SHA512_Bytes(&s, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-			     40);
+		put_data(&s, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 40);
 	    SHA512_Final(&s, digest);
 	}
 	for (j = 0; j < 64; j++) {

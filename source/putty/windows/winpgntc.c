@@ -31,7 +31,7 @@ void agent_cancel_query(agent_pending_query *q)
 }
 
 agent_pending_query *agent_query(
-    void *in, int inlen, void **out, int *outlen,
+    strbuf *query, void **out, int *outlen,
     void (*callback)(void *, void *, int), void *callback_ctx)
 {
     HWND hwnd;
@@ -46,6 +46,9 @@ agent_pending_query *agent_query(
 
     *out = NULL;
     *outlen = 0;
+
+    if (query->len > AGENT_MAX_MSGLEN)
+        return NULL;                   /* query too large */
 
     hwnd = FindWindow("Pageant", "Pageant");
     if (!hwnd)
@@ -93,7 +96,8 @@ agent_pending_query *agent_query(
 	return NULL;		       /* *out == NULL, so failure */
     }
     p = MapViewOfFile(filemap, FILE_MAP_WRITE, 0, 0, 0);
-    memcpy(p, in, inlen);
+    strbuf_finalise_agent_query(query);
+    memcpy(p, query->s, query->len);
     cds.dwData = AGENT_COPYDATA_ID;
     cds.cbData = 1 + strlen(mapname);
     cds.lpData = mapname;

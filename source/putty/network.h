@@ -13,26 +13,16 @@
 #ifndef PUTTY_NETWORK_H
 #define PUTTY_NETWORK_H
 
-#ifndef DONE_TYPEDEFS
-#define DONE_TYPEDEFS
-typedef struct conf_tag Conf;
-typedef struct backend_tag Backend;
-typedef struct terminal_tag Terminal;
-#endif
+#include "defs.h"
 
-typedef struct SockAddr_tag *SockAddr;
-/* pay attention to levels of indirection */
-typedef struct socket_function_table **Socket;
-typedef struct plug_function_table **Plug;
-
-struct socket_function_table {
+struct Socket_vtable {
     Plug(*plug) (Socket s, Plug p);
     /* use a different plug (return the old one) */
     /* if p is NULL, it doesn't change the plug */
     /* but it does return the one it's using */
     void (*close) (Socket s);
-    int (*write) (Socket s, const char *data, int len);
-    int (*write_oob) (Socket s, const char *data, int len);
+    int (*write) (Socket s, const void *data, int len);
+    int (*write_oob) (Socket s, const void *data, int len);
     void (*write_eof) (Socket s);
     void (*flush) (Socket s);
     void (*set_frozen) (Socket s, int is_frozen);
@@ -44,7 +34,7 @@ struct socket_function_table {
 typedef union { void *p; int i; } accept_ctx_t;
 typedef Socket (*accept_fn_t)(accept_ctx_t ctx, Plug plug);
 
-struct plug_function_table {
+struct Plug_vtable {
     void (*log)(Plug p, int type, SockAddr addr, int port,
 		const char *error_msg, int error_code);
     /*
@@ -217,6 +207,11 @@ char *get_hostname(void);
  */
 Socket new_error_socket(const char *errmsg, Plug plug);
 
+/*
+ * Trivial plug that does absolutely nothing. Found in nullplug.c.
+ */
+extern Plug nullplug;
+
 /* ----------------------------------------------------------------------
  * Functions defined outside the network code, which have to be
  * declared in this header file rather than the main putty.h because
@@ -229,10 +224,6 @@ Socket new_error_socket(const char *errmsg, Plug plug);
 void backend_socket_log(void *frontend, int type, SockAddr addr, int port,
                         const char *error_msg, int error_code, Conf *conf,
                         int session_started);
-#ifndef BUFCHAIN_TYPEDEF
-typedef struct bufchain_tag bufchain;  /* rest of declaration in misc.c */
-#define BUFCHAIN_TYPEDEF
-#endif
 void log_proxy_stderr(Plug plug, bufchain *buf, const void *vdata, int len);
 
 #endif

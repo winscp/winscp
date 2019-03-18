@@ -360,6 +360,16 @@ int toint(unsigned u)
         return INT_MIN; /* fallback; should never occur on binary machines */
 }
 
+int string_length_for_printf(size_t s)
+{
+    /* Truncate absurdly long strings (should one show up) to fit
+     * within a positive 'int', which is what the "%.*s" format will
+     * expect. */
+    if (s > INT_MAX)
+        return INT_MAX;
+    return s;
+}
+
 /*
  * Do an sprintf(), but into a custom-allocated buffer.
  * 
@@ -466,45 +476,88 @@ char *dupprintf(const char *fmt, ...)
     return ret;
 }
 
-struct strbuf {
-    char *s;
-    int len, size;
+struct strbuf_impl {
+    int size;
+    struct strbuf visible;
 };
+
+#define STRBUF_SET_PTR(buf, ptr)                                \
+    ((buf)->visible.s = (ptr),                                  \
+     (buf)->visible.u = (unsigned char *)(buf)->visible.s)
+
+void *strbuf_append(strbuf *buf_o, size_t len)
+{
+    struct strbuf_impl *buf = FROMFIELD(buf_o, struct strbuf_impl, visible);
+    char *toret;
+    if (buf->size < buf->visible.len + len + 1) {
+        buf->size = (buf->visible.len + len + 1) * 5 / 4 + 512;
+        STRBUF_SET_PTR(buf, sresize(buf->visible.s, buf->size, char));
+    }
+    toret = buf->visible.s + buf->visible.len;
+    buf->visible.len += len;
+    buf->visible.s[buf->visible.len] = '\0';
+    return toret;
+}
+
+static void strbuf_BinarySink_write(
+    BinarySink *bs, const void *data, size_t len)
+{
+    strbuf *buf_o = BinarySink_DOWNCAST(bs, strbuf);
+    memcpy(strbuf_append(buf_o, len), data, len);
+}
+
 strbuf *strbuf_new(void)
 {
-    strbuf *buf = snew(strbuf);
-    buf->len = 0;
+    struct strbuf_impl *buf = snew(struct strbuf_impl);
+    BinarySink_INIT(&buf->visible, strbuf_BinarySink_write);
+    buf->visible.len = 0;
     buf->size = 512;
-    buf->s = snewn(buf->size, char);
-    *buf->s = '\0';
-    return buf;
+    STRBUF_SET_PTR(buf, snewn(buf->size, char));
+    *buf->visible.s = '\0';
+    return &buf->visible;
 }
-void strbuf_free(strbuf *buf)
+void strbuf_free(strbuf *buf_o)
 {
-    sfree(buf->s);
+    struct strbuf_impl *buf = FROMFIELD(buf_o, struct strbuf_impl, visible);
+    if (buf->visible.s) {
+        smemclr(buf->visible.s, buf->size);
+        sfree(buf->visible.s);
+    }
     sfree(buf);
 }
-char *strbuf_str(strbuf *buf)
+char *strbuf_to_str(strbuf *buf_o)
 {
-    return buf->s;
-}
-char *strbuf_to_str(strbuf *buf)
-{
-    char *ret = buf->s;
+    struct strbuf_impl *buf = FROMFIELD(buf_o, struct strbuf_impl, visible);
+    char *ret = buf->visible.s;
     sfree(buf);
     return ret;
 }
-void strbuf_catfv(strbuf *buf, const char *fmt, va_list ap)
+void strbuf_catfv(strbuf *buf_o, const char *fmt, va_list ap)
 {
-    buf->s = dupvprintf_inner(buf->s, buf->len, &buf->size, fmt, ap);
-    buf->len += strlen(buf->s + buf->len);
+    struct strbuf_impl *buf = FROMFIELD(buf_o, struct strbuf_impl, visible);
+    STRBUF_SET_PTR(buf, dupvprintf_inner(buf->visible.s, buf->visible.len,
+                                         &buf->size, fmt, ap));
+    buf->visible.len += strlen(buf->visible.s + buf->visible.len);
 }
-void strbuf_catf(strbuf *buf, const char *fmt, ...)
+void strbuf_catf(strbuf *buf_o, const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
-    strbuf_catfv(buf, fmt, ap);
+    strbuf_catfv(buf_o, fmt, ap);
     va_end(ap);
+}
+
+strbuf *strbuf_new_for_agent_query(void)
+{
+    strbuf *buf = strbuf_new();
+    put_uint32(buf, 0);                /* reserve space for length field */
+    return buf;
+}
+void strbuf_finalise_agent_query(strbuf *buf_o)
+{
+    struct strbuf_impl *buf = FROMFIELD(buf_o, struct strbuf_impl, visible);
+    assert(buf->visible.len >= 5);
+    PUT_32BIT_MSB_FIRST(buf->visible.u, buf->visible.len - 4);
 }
 
 /*
@@ -748,6 +801,22 @@ void bufchain_fetch(bufchain *ch, void *data, int len)
 	tmp = tmp->next;
 	len -= remlen;
 	data_c += remlen;
+    }
+}
+
+void bufchain_fetch_consume(bufchain *ch, void *data, int len)
+{
+    bufchain_fetch(ch, data, len);
+    bufchain_consume(ch, len);
+}
+
+int bufchain_try_fetch_consume(bufchain *ch, void *data, int len)
+{
+    if (ch->buffersize >= len) {
+        bufchain_fetch_consume(ch, data, len);
+        return TRUE;
+    } else {
+        return FALSE;
     }
 }
 
@@ -1112,37 +1181,26 @@ int smemeq(const void *av, const void *bv, size_t len)
     return (0x100 - val) >> 8;
 }
 
-int match_ssh_id(int stringlen, const void *string, const char *id)
+ptrlen make_ptrlen(const void *ptr, size_t len)
 {
-    int idlen = strlen(id);
-    return (idlen == stringlen && !memcmp(string, id, idlen));
+    ptrlen pl;
+    pl.ptr = ptr;
+    pl.len = len;
+    return pl;
 }
 
-void *get_ssh_string(int *datalen, const void **data, int *stringlen)
+int ptrlen_eq_string(ptrlen pl, const char *str)
 {
-    void *ret;
-    unsigned int len;
-
-    if (*datalen < 4)
-        return NULL;
-    len = GET_32BIT_MSB_FIRST((const unsigned char *)*data);
-    if (*datalen - 4 < len)
-        return NULL;
-    ret = (void *)((const char *)*data + 4);
-    *datalen -= len + 4;
-    *data = (const char *)*data + len + 4;
-    *stringlen = len;
-    return ret;
+    size_t len = strlen(str);
+    return (pl.len == len && !memcmp(pl.ptr, str, len));
 }
 
-int get_ssh_uint32(int *datalen, const void **data, unsigned *ret)
+char *mkstr(ptrlen pl)
 {
-    if (*datalen < 4)
-        return FALSE;
-    *ret = GET_32BIT_MSB_FIRST((const unsigned char *)*data);
-    *datalen -= 4;
-    *data = (const char *)*data + 4;
-    return TRUE;
+    char *p = snewn(pl.len + 1, char);
+    memcpy(p, pl.ptr, pl.len);
+    p[pl.len] = '\0';
+    return p;
 }
 
 int strstartswith(const char *s, const char *t)
@@ -1183,6 +1241,8 @@ char *buildinfo(const char *newline)
     strbuf_catf(buf, "Visual Studio", newline);
 #if _MSC_VER == 1900
     strbuf_catf(buf, " 2015 / MSVC++ 14.0");
+#elif _MSC_VER == 1912
+    strbuf_catf(buf, " 2017 / MSVC++ 14.12");
 #elif _MSC_VER == 1800
     strbuf_catf(buf, " 2013 / MSVC++ 12.0");
 #elif _MSC_VER == 1700

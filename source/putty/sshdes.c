@@ -774,8 +774,9 @@ static void des3_free_context(void *handle)   /* used for both 3DES and DES */
     sfree(handle);
 }
 
-static void des3_key(void *handle, unsigned char *key)
+static void des3_key(void *handle, const void *vkey)
 {
+    const unsigned char *key = (const unsigned char *)vkey;
     DESContext *keys = (DESContext *) handle;
     des_key_setup(GET_32BIT_MSB_FIRST(key),
 		  GET_32BIT_MSB_FIRST(key + 4), &keys[0]);
@@ -785,71 +786,75 @@ static void des3_key(void *handle, unsigned char *key)
 		  GET_32BIT_MSB_FIRST(key + 20), &keys[2]);
 }
 
-static void des3_iv(void *handle, unsigned char *key)
+static void des3_iv(void *handle, const void *viv)
 {
+    const unsigned char *iv = (const unsigned char *)viv;
     DESContext *keys = (DESContext *) handle;
-    keys[0].iv0 = GET_32BIT_MSB_FIRST(key);
-    keys[0].iv1 = GET_32BIT_MSB_FIRST(key + 4);
+    keys[0].iv0 = GET_32BIT_MSB_FIRST(iv);
+    keys[0].iv1 = GET_32BIT_MSB_FIRST(iv + 4);
 }
 
-static void des_key(void *handle, unsigned char *key)
+static void des_key(void *handle, const void *vkey)
 {
+    const unsigned char *key = (const unsigned char *)vkey;
     DESContext *keys = (DESContext *) handle;
     des_key_setup(GET_32BIT_MSB_FIRST(key),
 		  GET_32BIT_MSB_FIRST(key + 4), &keys[0]);
 }
 
-static void des3_sesskey(void *handle, unsigned char *key)
+static void des3_sesskey(void *handle, const void *key)
 {
     DESContext *keys = (DESContext *) handle;
     des3_key(keys, key);
     des3_key(keys+3, key);
 }
 
-static void des3_encrypt_blk(void *handle, unsigned char *blk, int len)
+static void des3_encrypt_blk(void *handle, void *blk, int len)
 {
     DESContext *keys = (DESContext *) handle;
     des_3cbc_encrypt(blk, len, keys);
 }
 
-static void des3_decrypt_blk(void *handle, unsigned char *blk, int len)
+static void des3_decrypt_blk(void *handle, void *blk, int len)
 {
     DESContext *keys = (DESContext *) handle;
     des_3cbc_decrypt(blk, len, keys+3);
 }
 
-static void des3_ssh2_encrypt_blk(void *handle, unsigned char *blk, int len)
+static void des3_ssh2_encrypt_blk(void *handle, void *blk, int len)
 {
     DESContext *keys = (DESContext *) handle;
     des_cbc3_encrypt(blk, len, keys);
 }
 
-static void des3_ssh2_decrypt_blk(void *handle, unsigned char *blk, int len)
+static void des3_ssh2_decrypt_blk(void *handle, void *blk, int len)
 {
     DESContext *keys = (DESContext *) handle;
     des_cbc3_decrypt(blk, len, keys);
 }
 
-static void des3_ssh2_sdctr(void *handle, unsigned char *blk, int len)
+static void des3_ssh2_sdctr(void *handle, void *blk, int len)
 {
     DESContext *keys = (DESContext *) handle;
     des_sdctr3(blk, len, keys);
 }
 
-static void des_ssh2_encrypt_blk(void *handle, unsigned char *blk, int len)
+static void des_ssh2_encrypt_blk(void *handle, void *blk, int len)
 {
     DESContext *keys = (DESContext *) handle;
     des_cbc_encrypt(blk, len, keys);
 }
 
-static void des_ssh2_decrypt_blk(void *handle, unsigned char *blk, int len)
+static void des_ssh2_decrypt_blk(void *handle, void *blk, int len)
 {
     DESContext *keys = (DESContext *) handle;
     des_cbc_decrypt(blk, len, keys);
 }
 
-void des3_decrypt_pubkey(unsigned char *key, unsigned char *blk, int len)
+void des3_decrypt_pubkey(const void *vkey, void *vblk, int len)
 {
+    const unsigned char *key = (const unsigned char *)vkey;
+    unsigned char *blk = (unsigned char *)vblk;
     DESContext ourkeys[3];
     des_key_setup(GET_32BIT_MSB_FIRST(key),
 		  GET_32BIT_MSB_FIRST(key + 4), &ourkeys[0]);
@@ -861,8 +866,10 @@ void des3_decrypt_pubkey(unsigned char *key, unsigned char *blk, int len)
     smemclr(ourkeys, sizeof(ourkeys));
 }
 
-void des3_encrypt_pubkey(unsigned char *key, unsigned char *blk, int len)
+void des3_encrypt_pubkey(const void *vkey, void *vblk, int len)
 {
+    const unsigned char *key = (const unsigned char *)vkey;
+    unsigned char *blk = (unsigned char *)vblk;
     DESContext ourkeys[3];
     des_key_setup(GET_32BIT_MSB_FIRST(key),
 		  GET_32BIT_MSB_FIRST(key + 4), &ourkeys[0]);
@@ -874,9 +881,12 @@ void des3_encrypt_pubkey(unsigned char *key, unsigned char *blk, int len)
     smemclr(ourkeys, sizeof(ourkeys));
 }
 
-void des3_decrypt_pubkey_ossh(unsigned char *key, unsigned char *iv,
-			      unsigned char *blk, int len)
+void des3_decrypt_pubkey_ossh(const void *vkey, const void *viv,
+			      void *vblk, int len)
 {
+    const unsigned char *key = (const unsigned char *)vkey;
+    const unsigned char *iv = (const unsigned char *)viv;
+    unsigned char *blk = (unsigned char *)vblk;
     DESContext ourkeys[3];
     des_key_setup(GET_32BIT_MSB_FIRST(key),
 		  GET_32BIT_MSB_FIRST(key + 4), &ourkeys[0]);
@@ -890,9 +900,12 @@ void des3_decrypt_pubkey_ossh(unsigned char *key, unsigned char *iv,
     smemclr(ourkeys, sizeof(ourkeys));
 }
 
-void des3_encrypt_pubkey_ossh(unsigned char *key, unsigned char *iv,
-			      unsigned char *blk, int len)
+void des3_encrypt_pubkey_ossh(const void *vkey, const void *viv,
+			      void *vblk, int len)
 {
+    const unsigned char *key = (const unsigned char *)vkey;
+    const unsigned char *iv = (const unsigned char *)viv;
+    unsigned char *blk = (unsigned char *)vblk;
     DESContext ourkeys[3];
     des_key_setup(GET_32BIT_MSB_FIRST(key),
 		  GET_32BIT_MSB_FIRST(key + 4), &ourkeys[0]);
@@ -906,8 +919,9 @@ void des3_encrypt_pubkey_ossh(unsigned char *key, unsigned char *iv,
     smemclr(ourkeys, sizeof(ourkeys));
 }
 
-static void des_keysetup_xdmauth(const unsigned char *keydata, DESContext *dc)
+static void des_keysetup_xdmauth(const void *vkeydata, DESContext *dc)
 {
+    const unsigned char *keydata = (const unsigned char *)vkeydata;
     unsigned char key[8];
     int i, nbits, j;
     unsigned int bits;
@@ -929,16 +943,14 @@ static void des_keysetup_xdmauth(const unsigned char *keydata, DESContext *dc)
     des_key_setup(GET_32BIT_MSB_FIRST(key), GET_32BIT_MSB_FIRST(key + 4), dc);
 }
 
-void des_encrypt_xdmauth(const unsigned char *keydata,
-                         unsigned char *blk, int len)
+void des_encrypt_xdmauth(const void *keydata, void *blk, int len)
 {
     DESContext dc;
     des_keysetup_xdmauth(keydata, &dc);
     des_cbc_encrypt(blk, len, &dc);
 }
 
-void des_decrypt_xdmauth(const unsigned char *keydata,
-                         unsigned char *blk, int len)
+void des_decrypt_xdmauth(const void *keydata, void *blk, int len)
 {
     DESContext dc;
     des_keysetup_xdmauth(keydata, &dc);
@@ -1011,20 +1023,20 @@ const struct ssh_cipher ssh_3des = {
     8, "triple-DES inner-CBC"
 };
 
-static void des_sesskey(void *handle, unsigned char *key)
+static void des_sesskey(void *handle, const void *key)
 {
     DESContext *keys = (DESContext *) handle;
     des_key(keys, key);
     des_key(keys+1, key);
 }
 
-static void des_encrypt_blk(void *handle, unsigned char *blk, int len)
+static void des_encrypt_blk(void *handle, void *blk, int len)
 {
     DESContext *keys = (DESContext *) handle;
     des_cbc_encrypt(blk, len, keys);
 }
 
-static void des_decrypt_blk(void *handle, unsigned char *blk, int len)
+static void des_decrypt_blk(void *handle, void *blk, int len)
 {
     DESContext *keys = (DESContext *) handle;
     des_cbc_decrypt(blk, len, keys+1);

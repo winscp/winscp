@@ -43,7 +43,7 @@ static const gss_OID_desc oids[] = {
     {6, (void *)"\x2b\x06\x01\x05\x06\x02"},
     /* corresponding to an object-identifier value of
      * {iso(1) org(3) dod(6) internet(1) security(5)
-     * nametypes(6) gss-host-based-services(2)).  The constant
+     * nametypes(6) gss-host-based-services(2))}.  The constant
      * GSS_C_NT_HOSTBASED_SERVICE_X should be initialized to point
      * to that gss_OID_desc.  This is a deprecated OID value, and
      * implementations wishing to support hostbased-service names

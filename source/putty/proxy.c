@@ -23,7 +23,7 @@
  * Call this when proxy negotiation is complete, so that this
  * socket can begin working normally.
  */
-void proxy_activate (Proxy_Socket p)
+void proxy_activate (ProxySocket *p)
 {
     void *data;
     int len;
@@ -73,14 +73,14 @@ void proxy_activate (Proxy_Socket p)
      * unfreezing the actual underlying socket.
      */
     if (!p->freeze)
-	sk_set_frozen((Socket)p, 0);
+	sk_set_frozen(&p->sockvt, 0);
 }
 
 /* basic proxy socket functions */
 
 static Plug sk_proxy_plug (Socket s, Plug p)
 {
-    Proxy_Socket ps = (Proxy_Socket) s;
+    ProxySocket *ps = FROMFIELD(s, ProxySocket, sockvt);
     Plug ret = ps->plug;
     if (p)
 	ps->plug = p;
@@ -89,16 +89,16 @@ static Plug sk_proxy_plug (Socket s, Plug p)
 
 static void sk_proxy_close (Socket s)
 {
-    Proxy_Socket ps = (Proxy_Socket) s;
+    ProxySocket *ps = FROMFIELD(s, ProxySocket, sockvt);
 
     sk_close(ps->sub_socket);
     sk_addr_free(ps->remote_addr);
     sfree(ps);
 }
 
-static int sk_proxy_write (Socket s, const char *data, int len)
+static int sk_proxy_write (Socket s, const void *data, int len)
 {
-    Proxy_Socket ps = (Proxy_Socket) s;
+    ProxySocket *ps = FROMFIELD(s, ProxySocket, sockvt);
 
     if (ps->state != PROXY_STATE_ACTIVE) {
 	bufchain_add(&ps->pending_output_data, data, len);
@@ -107,9 +107,9 @@ static int sk_proxy_write (Socket s, const char *data, int len)
     return sk_write(ps->sub_socket, data, len);
 }
 
-static int sk_proxy_write_oob (Socket s, const char *data, int len)
+static int sk_proxy_write_oob (Socket s, const void *data, int len)
 {
-    Proxy_Socket ps = (Proxy_Socket) s;
+    ProxySocket *ps = FROMFIELD(s, ProxySocket, sockvt);
 
     if (ps->state != PROXY_STATE_ACTIVE) {
 	bufchain_clear(&ps->pending_output_data);
@@ -122,7 +122,7 @@ static int sk_proxy_write_oob (Socket s, const char *data, int len)
 
 static void sk_proxy_write_eof (Socket s)
 {
-    Proxy_Socket ps = (Proxy_Socket) s;
+    ProxySocket *ps = FROMFIELD(s, ProxySocket, sockvt);
 
     if (ps->state != PROXY_STATE_ACTIVE) {
         ps->pending_eof = 1;
@@ -133,7 +133,7 @@ static void sk_proxy_write_eof (Socket s)
 
 static void sk_proxy_flush (Socket s)
 {
-    Proxy_Socket ps = (Proxy_Socket) s;
+    ProxySocket *ps = FROMFIELD(s, ProxySocket, sockvt);
 
     if (ps->state != PROXY_STATE_ACTIVE) {
 	ps->pending_flush = 1;
@@ -144,7 +144,7 @@ static void sk_proxy_flush (Socket s)
 
 static void sk_proxy_set_frozen (Socket s, int is_frozen)
 {
-    Proxy_Socket ps = (Proxy_Socket) s;
+    ProxySocket *ps = FROMFIELD(s, ProxySocket, sockvt);
 
     if (ps->state != PROXY_STATE_ACTIVE) {
 	ps->freeze = is_frozen;
@@ -183,7 +183,7 @@ static void sk_proxy_set_frozen (Socket s, int is_frozen)
 
 static const char * sk_proxy_socket_error (Socket s)
 {
-    Proxy_Socket ps = (Proxy_Socket) s;
+    ProxySocket *ps = FROMFIELD(s, ProxySocket, sockvt);
     if (ps->error != NULL || ps->sub_socket == NULL) {
 	return ps->error;
     }
@@ -195,8 +195,7 @@ static const char * sk_proxy_socket_error (Socket s)
 static void plug_proxy_log(Plug plug, int type, SockAddr addr, int port,
 			   const char *error_msg, int error_code)
 {
-    Proxy_Plug pp = (Proxy_Plug) plug;
-    Proxy_Socket ps = pp->proxy_socket;
+    ProxySocket *ps = FROMFIELD(plug, ProxySocket, plugvt);
 
     plug_log(ps->plug, type, addr, port, error_msg, error_code);
 }
@@ -204,8 +203,7 @@ static void plug_proxy_log(Plug plug, int type, SockAddr addr, int port,
 static void plug_proxy_closing (Plug p, const char *error_msg,
 				int error_code, int calling_back)
 {
-    Proxy_Plug pp = (Proxy_Plug) p;
-    Proxy_Socket ps = pp->proxy_socket;
+    ProxySocket *ps = FROMFIELD(p, ProxySocket, plugvt);
 
     if (ps->state != PROXY_STATE_ACTIVE) {
 	ps->closing_error_msg = error_msg;
@@ -219,8 +217,7 @@ static void plug_proxy_closing (Plug p, const char *error_msg,
 
 static void plug_proxy_receive (Plug p, int urgent, char *data, int len)
 {
-    Proxy_Plug pp = (Proxy_Plug) p;
-    Proxy_Socket ps = pp->proxy_socket;
+    ProxySocket *ps = FROMFIELD(p, ProxySocket, plugvt);
 
     if (ps->state != PROXY_STATE_ACTIVE) {
 	/* we will lose the urgentness of this data, but since most,
@@ -239,8 +236,7 @@ static void plug_proxy_receive (Plug p, int urgent, char *data, int len)
 
 static void plug_proxy_sent (Plug p, int bufsize)
 {
-    Proxy_Plug pp = (Proxy_Plug) p;
-    Proxy_Socket ps = pp->proxy_socket;
+    ProxySocket *ps = FROMFIELD(p, ProxySocket, plugvt);
 
     if (ps->state != PROXY_STATE_ACTIVE) {
 	ps->sent_bufsize = bufsize;
@@ -253,8 +249,7 @@ static void plug_proxy_sent (Plug p, int bufsize)
 static int plug_proxy_accepting(Plug p,
                                 accept_fn_t constructor, accept_ctx_t ctx)
 {
-    Proxy_Plug pp = (Proxy_Plug) p;
-    Proxy_Socket ps = pp->proxy_socket;
+    ProxySocket *ps = FROMFIELD(p, ProxySocket, plugvt);
 
     if (ps->state != PROXY_STATE_ACTIVE) {
 	ps->accepting_constructor = constructor;
@@ -401,36 +396,35 @@ SockAddr name_lookup(const char *host, int port, char **canonicalname,
     }
 }
 
+static const struct Socket_vtable ProxySocket_sockvt = {
+    sk_proxy_plug,
+    sk_proxy_close,
+    sk_proxy_write,
+    sk_proxy_write_oob,
+    sk_proxy_write_eof,
+    sk_proxy_flush,
+    sk_proxy_set_frozen,
+    sk_proxy_socket_error,
+    NULL, /* peer_info */
+};
+
+static const struct Plug_vtable ProxySocket_plugvt = {
+    plug_proxy_log,
+    plug_proxy_closing,
+    plug_proxy_receive,
+    plug_proxy_sent,
+    plug_proxy_accepting
+};
+
 Socket new_connection(SockAddr addr, const char *hostname,
 		      int port, int privport,
 		      int oobinline, int nodelay, int keepalive,
 		      Plug plug, Conf *conf)
 {
-    static const struct socket_function_table socket_fn_table = {
-	sk_proxy_plug,
-	sk_proxy_close,
-	sk_proxy_write,
-	sk_proxy_write_oob,
-	sk_proxy_write_eof,
-	sk_proxy_flush,
-	sk_proxy_set_frozen,
-	sk_proxy_socket_error,
-        NULL, /* peer_info */
-    };
-
-    static const struct plug_function_table plug_fn_table = {
-	plug_proxy_log,
-	plug_proxy_closing,
-	plug_proxy_receive,
-	plug_proxy_sent,
-	plug_proxy_accepting
-    };
-
     if (conf_get_int(conf, CONF_proxy_type) != PROXY_NONE &&
 	proxy_for_destination(addr, hostname, port, conf))
     {
-	Proxy_Socket ret;
-	Proxy_Plug pplug;
+	ProxySocket *ret;
 	SockAddr proxy_addr;
 	char *proxy_canonical_name;
         const char *proxy_type;
@@ -443,8 +437,9 @@ Socket new_connection(SockAddr addr, const char *hostname,
 	    NULL)
 	    return sret;
 
-	ret = snew(struct Socket_proxy_tag);
-	ret->fn = &socket_fn_table;
+	ret = snew(ProxySocket);
+	ret->sockvt = &ProxySocket_sockvt;
+	ret->plugvt = &ProxySocket_plugvt;
 	ret->conf = conf_copy(conf);
 	ret->plug = plug;
 	ret->remote_addr = addr;       /* will need to be freed on close */
@@ -478,7 +473,7 @@ Socket new_connection(SockAddr addr, const char *hostname,
             proxy_type = "Telnet";
 	} else {
 	    ret->error = "Proxy error: Unknown proxy method";
-	    return (Socket) ret;
+	    return &ret->sockvt;
 	}
 
         {
@@ -490,12 +485,6 @@ Socket new_connection(SockAddr addr, const char *hostname,
             plug_log(plug, 2, NULL, 0, logmsg, 0);
             sfree(logmsg);
         }
-
-	/* create the proxy plug to map calls from the actual
-	 * socket into our proxy socket layer */
-	pplug = snew(struct Plug_proxy_tag);
-	pplug->fn = &plug_fn_table;
-	pplug->proxy_socket = ret;
 
         {
             char *logmsg = dns_log_msg(conf_get_str(conf, CONF_proxy_host),
@@ -511,9 +500,8 @@ Socket new_connection(SockAddr addr, const char *hostname,
 				   conf_get_int(conf, CONF_addressfamily));
 	if (sk_addr_error(proxy_addr) != NULL) {
 	    ret->error = "Proxy error: Unable to resolve proxy host name";
-            sfree(pplug);
             sk_addr_free(proxy_addr);
-	    return (Socket)ret;
+	    return &ret->sockvt;
 	}
 	sfree(proxy_canonical_name);
 
@@ -533,15 +521,15 @@ Socket new_connection(SockAddr addr, const char *hostname,
 	ret->sub_socket = sk_new(proxy_addr,
 				 conf_get_int(conf, CONF_proxy_port),
 				 privport, oobinline,
-				 nodelay, keepalive, (Plug) pplug);
+				 nodelay, keepalive, &ret->plugvt);
 	if (sk_socket_error(ret->sub_socket) != NULL)
-	    return (Socket) ret;
+	    return &ret->sockvt;
 
 	/* start the proxy negotiation process... */
 	sk_set_frozen(ret->sub_socket, 0);
 	ret->negotiate(ret, PROXY_CHANGE_NEW);
 
-	return (Socket) ret;
+	return &ret->sockvt;
     }
 
     /* no proxy, so just return the direct socket */
@@ -596,7 +584,7 @@ static int get_line_end (char * data, int len)
     return -1;
 }
 
-int proxy_http_negotiate (Proxy_Socket p, int change)
+int proxy_http_negotiate (ProxySocket *p, int change)
 {
     if (p->state == PROXY_STATE_NEW) {
 	/* we are just beginning the proxy negotiate process,
@@ -781,7 +769,7 @@ int proxy_http_negotiate (Proxy_Socket p, int change)
  */
 
 /* SOCKS version 4 */
-int proxy_socks4_negotiate (Proxy_Socket p, int change)
+int proxy_socks4_negotiate (ProxySocket *p, int change)
 {
     if (p->state == PROXY_CHANGE_NEW) {
 
@@ -795,47 +783,38 @@ int proxy_socks4_negotiate (Proxy_Socket p, int change)
 	 *  user ID (variable length, null terminated string)
 	 */
 
-	int length, type, namelen;
-	char *command, addr[4], hostname[512];
-	char *username;
+        strbuf *command = strbuf_new();
+        char hostname[512];
+        int write_hostname = FALSE;
 
-	type = sk_addrtype(p->remote_addr);
-	if (type == ADDRTYPE_IPV6) {
+        put_byte(command, 4);          /* SOCKS version 4 */
+        put_byte(command, 1);          /* CONNECT command */
+        put_uint16(command, p->remote_port);
+
+	switch (sk_addrtype(p->remote_addr)) {
+          case ADDRTYPE_IPV4:
+            {
+                char addr[4];
+                sk_addrcopy(p->remote_addr, addr);
+                put_data(command, addr, 4);
+                break;
+            }
+          case ADDRTYPE_NAME:
+            sk_getaddr(p->remote_addr, hostname, lenof(hostname));
+            put_uint32(command, 1);
+            write_hostname = TRUE;
+            break;
+          case ADDRTYPE_IPV6:
             p->error = "Proxy error: SOCKS version 4 does not support IPv6";
-	    return 1;
-	} else if (type == ADDRTYPE_IPV4) {
-	    namelen = 0;
-	    sk_addrcopy(p->remote_addr, addr);
-	} else {		       /* type == ADDRTYPE_NAME */
-	    assert(type == ADDRTYPE_NAME);
-	    sk_getaddr(p->remote_addr, hostname, lenof(hostname));
-	    namelen = strlen(hostname) + 1;   /* include the NUL */
-	    addr[0] = addr[1] = addr[2] = 0;
-	    addr[3] = 1;
+            strbuf_free(command);
+            return 1;
 	}
 
-	username = conf_get_str(p->conf, CONF_proxy_username);
-	length = strlen(username) + namelen + 9;
-	command = snewn(length, char);
-	strcpy(command + 8, username);
-
-	command[0] = 4; /* version 4 */
-	command[1] = 1; /* CONNECT command */
-
-	/* port */
-	command[2] = (char) (p->remote_port >> 8) & 0xff;
-	command[3] = (char) p->remote_port & 0xff;
-
-	/* address */
-	memcpy(command + 4, addr, 4);
-
-	/* hostname */
-	memcpy(command + 8 + strlen(username) + 1,
-	       hostname, namelen);
-
-	sk_write(p->sub_socket, command, length);
-	sfree(username);
-	sfree(command);
+        put_asciz(command, conf_get_str(p->conf, CONF_proxy_username));
+        if (write_hostname)
+            put_asciz(command, hostname);
+	sk_write(p->sub_socket, command->s, command->len);
+	strbuf_free(command);
 
 	p->state = 1;
 	return 0;
@@ -941,7 +920,7 @@ int proxy_socks4_negotiate (Proxy_Socket p, int change)
 }
 
 /* SOCKS version 5 */
-int proxy_socks5_negotiate (Proxy_Socket p, int change)
+int proxy_socks5_negotiate (ProxySocket *p, int change)
 {
     if (p->state == PROXY_CHANGE_NEW) {
 
@@ -956,26 +935,30 @@ int proxy_socks5_negotiate (Proxy_Socket p, int change)
 	 *     0x03 = CHAP
 	 */
 
-	char command[5];
+	strbuf *command;
 	char *username, *password;
-	int len;
+        int method_count_offset, methods_start;
 
-	command[0] = 5; /* version 5 */
+        command = strbuf_new();
+	put_byte(command, 5);          /* SOCKS version 5 */
 	username = conf_get_str(p->conf, CONF_proxy_username);
 	password = conf_get_str(p->conf, CONF_proxy_password);
+
+        method_count_offset = command->len;
+        put_byte(command, 0);
+        methods_start = command->len;
+
+        put_byte(command, 0x00);       /* no authentication */
+
 	if (username[0] || password[0]) {
-	    command[2] = 0x00;	       /* no authentication */
-	    len = 3;
-	    proxy_socks5_offerencryptedauth (command, &len);
-	    command[len++] = 0x02;	       /* username/password */
-	    command[1] = len - 2;	/* Number of methods supported */
-	} else {
-	    command[1] = 1;	       /* one methods supported: */
-	    command[2] = 0x00;	       /* no authentication */
-	    len = 3;
+	    proxy_socks5_offerencryptedauth(BinarySink_UPCAST(command));
+            put_byte(command, 0x02);    /* username/password */
 	}
 
-	sk_write(p->sub_socket, command, len);
+        command->u[method_count_offset] = command->len - methods_start;
+
+	sk_write(p->sub_socket, command->s, command->len);
+        strbuf_free(command);
 
 	p->state = 1;
 	return 0;
@@ -1113,36 +1096,40 @@ int proxy_socks5_negotiate (Proxy_Socket p, int change)
 	     *  dest. port (2 bytes) [network order]
 	     */
 
-	    char command[512];
-	    int len;
-	    int type;
+	    strbuf *command = strbuf_new();
+	    put_byte(command, 5);      /* SOCKS version 5 */
+	    put_byte(command, 1);      /* CONNECT command */
+	    put_byte(command, 0x00);   /* reserved byte */
 
-	    type = sk_addrtype(p->remote_addr);
-	    if (type == ADDRTYPE_IPV4) {
-		len = 10;	       /* 4 hdr + 4 addr + 2 trailer */
-		command[3] = 1; /* IPv4 */
-		sk_addrcopy(p->remote_addr, command+4);
-	    } else if (type == ADDRTYPE_IPV6) {
-		len = 22;	       /* 4 hdr + 16 addr + 2 trailer */
-		command[3] = 4; /* IPv6 */
-		sk_addrcopy(p->remote_addr, command+4);
-	    } else {
-		assert(type == ADDRTYPE_NAME);
-		command[3] = 3;
-		sk_getaddr(p->remote_addr, command+5, 256);
-		command[4] = strlen(command+5);
-		len = 7 + command[4];  /* 4 hdr, 1 len, N addr, 2 trailer */
+	    switch (sk_addrtype(p->remote_addr)) {
+              case ADDRTYPE_IPV4:
+		put_byte(command, 1);  /* IPv4 */
+		sk_addrcopy(p->remote_addr, strbuf_append(command, 4));
+                break;
+              case ADDRTYPE_IPV6:
+		put_byte(command, 4);  /* IPv6 */
+		sk_addrcopy(p->remote_addr, strbuf_append(command, 16));
+                break;
+              case ADDRTYPE_NAME:
+                {
+                    char hostname[512];
+                    put_byte(command, 3);  /* domain name */
+                    sk_getaddr(p->remote_addr, hostname, lenof(hostname));
+                    if (!put_pstring(command, hostname)) {
+                        p->error = "Proxy error: SOCKS 5 cannot "
+                            "support host names longer than 255 chars";
+                        strbuf_free(command);
+                        return 1;
+                    }
+                }
+                break;
 	    }
 
-	    command[0] = 5; /* version 5 */
-	    command[1] = 1; /* CONNECT command */
-	    command[2] = 0x00;
+            put_uint16(command, p->remote_port);
 
-	    /* port */
-	    command[len-2] = (char) (p->remote_port >> 8) & 0xff;
-	    command[len-1] = (char) p->remote_port & 0xff;
+	    sk_write(p->sub_socket, command->s, command->len);
 
-	    sk_write(p->sub_socket, command, len);
+            strbuf_free(command);
 
 	    p->state = 3;
 	    return 1;
@@ -1241,23 +1228,25 @@ int proxy_socks5_negotiate (Proxy_Socket p, int change)
 	}
 
 	if (p->state == 5) {
-	    char *username = conf_get_str(p->conf, CONF_proxy_username);
-	    char *password = conf_get_str(p->conf, CONF_proxy_password);
+            const char *username = conf_get_str(p->conf, CONF_proxy_username);
+            const char *password = conf_get_str(p->conf, CONF_proxy_password);
 	    if (username[0] || password[0]) {
-		char userpwbuf[255 + 255 + 3];
-		int ulen, plen;
-		ulen = strlen(username);
-		if (ulen > 255) ulen = 255;
-		if (ulen < 1) ulen = 1;
-		plen = strlen(password);
-		if (plen > 255) plen = 255;
-		if (plen < 1) plen = 1;
-		userpwbuf[0] = 1;      /* version number of subnegotiation */
-		userpwbuf[1] = ulen;
-		memcpy(userpwbuf+2, username, ulen);
-		userpwbuf[ulen+2] = plen;
-		memcpy(userpwbuf+ulen+3, password, plen);
-		sk_write(p->sub_socket, userpwbuf, ulen + plen + 3);
+                strbuf *auth = strbuf_new();
+		put_byte(auth, 1); /* version number of subnegotiation */
+                if (!put_pstring(auth, username)) {
+                    p->error = "Proxy error: SOCKS 5 authentication cannot "
+                        "support usernames longer than 255 chars";
+                    strbuf_free(auth);
+                    return 1;
+                }
+                if (!put_pstring(auth, password)) {
+                    p->error = "Proxy error: SOCKS 5 authentication cannot "
+                        "support passwords longer than 255 chars";
+                    strbuf_free(auth);
+                    return 1;
+                }
+		sk_write(p->sub_socket, auth->s, auth->len);
+                strbuf_free(auth);
 		p->state = 7;
 	    } else 
 		plug_closing(p->plug, "Proxy error: Server chose "
@@ -1507,7 +1496,7 @@ char *format_telnet_command(SockAddr addr, int port, Conf *conf)
 #undef ENSURE
 }
 
-int proxy_telnet_negotiate (Proxy_Socket p, int change)
+int proxy_telnet_negotiate (ProxySocket *p, int change)
 {
     if (p->state == PROXY_CHANGE_NEW) {
 	char *formatted_cmd;

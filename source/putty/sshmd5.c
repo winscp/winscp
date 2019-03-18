@@ -1,3 +1,4 @@
+#include <assert.h>
 #include "ssh.h"
 
 /*
@@ -115,19 +116,25 @@ static void MD5_Block(MD5_Core_State * s, uint32 * block)
 
 #define BLKSIZE 64
 
+static void MD5_BinarySink_write(BinarySink *bs, const void *data, size_t len);
+
 void MD5Init(struct MD5Context *s)
 {
     MD5_Core_Init(&s->core);
     s->blkused = 0;
     s->lenhi = s->lenlo = 0;
+    BinarySink_INIT(s, MD5_BinarySink_write);
 }
 
-void MD5Update(struct MD5Context *s, unsigned char const *p, unsigned len)
+static void MD5_BinarySink_write(BinarySink *bs, const void *data, size_t len)
 {
-    unsigned char *q = (unsigned char *) p;
+    struct MD5Context *s = BinarySink_DOWNCAST(bs, struct MD5Context);
+    const unsigned char *q = (const unsigned char *)data;
     uint32 wordblock[16];
     uint32 lenw = len;
     int i;
+
+    assert(lenw == len);
 
     /*
      * Update the length field.
@@ -182,7 +189,7 @@ void MD5Final(unsigned char output[16], struct MD5Context *s)
 
     memset(c, 0, pad);
     c[0] = 0x80;
-    MD5Update(s, c, pad);
+    put_data(s, c, pad);
 
     c[7] = (lenhi >> 24) & 0xFF;
     c[6] = (lenhi >> 16) & 0xFF;
@@ -193,7 +200,7 @@ void MD5Final(unsigned char output[16], struct MD5Context *s)
     c[1] = (lenlo >> 8) & 0xFF;
     c[0] = (lenlo >> 0) & 0xFF;
 
-    MD5Update(s, c, 8);
+    put_data(s, c, 8);
 
     for (i = 0; i < 4; i++) {
 	output[4 * i + 3] = (s->core.h[i] >> 24) & 0xFF;
@@ -208,7 +215,7 @@ void MD5Simple(void const *p, unsigned len, unsigned char output[16])
     struct MD5Context s;
 
     MD5Init(&s);
-    MD5Update(&s, (unsigned char const *)p, len);
+    put_data(&s, (unsigned char const *)p, len);
     MD5Final(output, &s);
     smemclr(&s, sizeof(s));
 }
@@ -243,18 +250,18 @@ void hmacmd5_key(void *handle, void const *keyv, int len)
     for (i = 0; i < len && i < 64; i++)
 	foo[i] ^= key[i];
     MD5Init(&keys[0]);
-    MD5Update(&keys[0], foo, 64);
+    put_data(&keys[0], foo, 64);
 
     memset(foo, 0x5C, 64);
     for (i = 0; i < len && i < 64; i++)
 	foo[i] ^= key[i];
     MD5Init(&keys[1]);
-    MD5Update(&keys[1], foo, 64);
+    put_data(&keys[1], foo, 64);
 
     smemclr(foo, 64);		       /* burn the evidence */
 }
 
-static void hmacmd5_key_16(void *handle, unsigned char *key)
+static void hmacmd5_key_16(void *handle, const void *key)
 {
     hmacmd5_key(handle, key, 16);
 }
@@ -264,12 +271,13 @@ static void hmacmd5_start(void *handle)
     struct MD5Context *keys = (struct MD5Context *)handle;
 
     keys[2] = keys[0];		      /* structure copy */
+    BinarySink_COPIED(&keys[2]);
 }
 
-static void hmacmd5_bytes(void *handle, unsigned char const *blk, int len)
+static BinarySink *hmacmd5_sink(void *handle)
 {
     struct MD5Context *keys = (struct MD5Context *)handle;
-    MD5Update(&keys[2], blk, len);
+    return BinarySink_UPCAST(&keys[2]);
 }
 
 static void hmacmd5_genresult(void *handle, unsigned char *hmac)
@@ -279,9 +287,11 @@ static void hmacmd5_genresult(void *handle, unsigned char *hmac)
     unsigned char intermediate[16];
 
     s = keys[2];		       /* structure copy */
+    BinarySink_COPIED(&s);
     MD5Final(intermediate, &s);
     s = keys[1];		       /* structure copy */
-    MD5Update(&s, intermediate, 16);
+    BinarySink_COPIED(&s);
+    put_data(&s, intermediate, 16);
     MD5Final(hmac, &s);
 }
 
@@ -297,9 +307,10 @@ static void hmacmd5_do_hmac_internal(void *handle,
 				     unsigned char const *blk2, int len2,
 				     unsigned char *hmac)
 {
+    BinarySink *bs = hmacmd5_sink(handle);
     hmacmd5_start(handle);
-    hmacmd5_bytes(handle, blk, len);
-    if (blk2) hmacmd5_bytes(handle, blk2, len2);
+    put_data(bs, blk, len);
+    if (blk2) put_data(bs, blk2, len2);
     hmacmd5_genresult(handle, hmac);
 }
 
@@ -318,15 +329,17 @@ static void hmacmd5_do_hmac_ssh(void *handle, unsigned char const *blk, int len,
     hmacmd5_do_hmac_internal(handle, seqbuf, 4, blk, len, hmac);
 }
 
-static void hmacmd5_generate(void *handle, unsigned char *blk, int len,
+static void hmacmd5_generate(void *handle, void *vblk, int len,
 			     unsigned long seq)
 {
+    unsigned char *blk = (unsigned char *)vblk;
     hmacmd5_do_hmac_ssh(handle, blk, len, seq, blk + len);
 }
 
-static int hmacmd5_verify(void *handle, unsigned char *blk, int len,
+static int hmacmd5_verify(void *handle, const void *vblk, int len,
 			  unsigned long seq)
 {
+    const unsigned char *blk = (const unsigned char *)vblk;
     unsigned char correct[16];
     hmacmd5_do_hmac_ssh(handle, blk, len, seq, correct);
     return smemeq(correct, blk + len, 16);
@@ -335,7 +348,7 @@ static int hmacmd5_verify(void *handle, unsigned char *blk, int len,
 const struct ssh_mac ssh_hmac_md5 = {
     hmacmd5_make_context, hmacmd5_free_context, hmacmd5_key_16,
     hmacmd5_generate, hmacmd5_verify,
-    hmacmd5_start, hmacmd5_bytes, hmacmd5_genresult, hmacmd5_verresult,
+    hmacmd5_start, hmacmd5_sink, hmacmd5_genresult, hmacmd5_verresult,
     "hmac-md5", "hmac-md5-etm@openssh.com",
     16, 16,
     "HMAC-MD5"

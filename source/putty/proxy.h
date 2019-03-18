@@ -13,12 +13,9 @@
 #define PROXY_ERROR_GENERAL 8000
 #define PROXY_ERROR_UNEXPECTED 8001
 
-typedef struct Socket_proxy_tag * Proxy_Socket;
+typedef struct ProxySocket ProxySocket;
 
-struct Socket_proxy_tag {
-    const struct socket_function_table *fn;
-    /* the above variable absolutely *must* be the first in this structure */
-
+struct ProxySocket {
     const char *error;
 
     Socket sub_socket;
@@ -58,7 +55,7 @@ struct Socket_proxy_tag {
      * and further the proxy negotiation process.
      */
 
-    int (*negotiate) (Proxy_Socket /* this */, int /* change type */);
+    int (*negotiate) (ProxySocket * /* this */, int /* change type */);
 
     /* current arguments of plug handlers
      * (for use by proxy's negotiate function)
@@ -89,24 +86,17 @@ struct Socket_proxy_tag {
     int chap_num_attributes_processed;
     int chap_current_attribute;
     int chap_current_datalen;
+
+    const Socket_vtable *sockvt;
+    const Plug_vtable *plugvt;
 };
 
-typedef struct Plug_proxy_tag * Proxy_Plug;
+extern void proxy_activate (ProxySocket *);
 
-struct Plug_proxy_tag {
-    const struct plug_function_table *fn;
-    /* the above variable absolutely *must* be the first in this structure */
-
-    Proxy_Socket proxy_socket;
-
-};
-
-extern void proxy_activate (Proxy_Socket);
-
-extern int proxy_http_negotiate (Proxy_Socket, int);
-extern int proxy_telnet_negotiate (Proxy_Socket, int);
-extern int proxy_socks4_negotiate (Proxy_Socket, int);
-extern int proxy_socks5_negotiate (Proxy_Socket, int);
+extern int proxy_http_negotiate (ProxySocket *, int);
+extern int proxy_telnet_negotiate (ProxySocket *, int);
+extern int proxy_socks4_negotiate (ProxySocket *, int);
+extern int proxy_socks5_negotiate (ProxySocket *, int);
 
 /*
  * This may be reused by local-command proxies on individual
@@ -118,8 +108,8 @@ char *format_telnet_command(SockAddr addr, int port, Conf *conf);
  * These are implemented in cproxy.c or nocproxy.c, depending on
  * whether encrypted proxy authentication is available.
  */
-extern void proxy_socks5_offerencryptedauth(char *command, int *len);
-extern int proxy_socks5_handlechap (Proxy_Socket p);
-extern int proxy_socks5_selectchap(Proxy_Socket p);
+extern void proxy_socks5_offerencryptedauth(BinarySink *);
+extern int proxy_socks5_handlechap (ProxySocket *);
+extern int proxy_socks5_selectchap(ProxySocket *);
 
 #endif

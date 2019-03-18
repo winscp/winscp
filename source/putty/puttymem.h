@@ -49,4 +49,19 @@ void safefree(void *);
     ((type *)snrealloc(sizeof((type *)0 == (ptr)) ? (ptr) : (ptr),      \
                        (n), sizeof(type)))
 
+/*
+ * For cases where you want to allocate a struct plus a subsidiary
+ * data buffer in one step, this macro lets you add a constant to the
+ * amount malloced.
+ *
+ * Since the return value is already cast to the struct type, a
+ * pointer to that many bytes of extra data can be conveniently
+ * obtained by simply adding 1 to the returned pointer!
+ * snew_plus_get_aux is a handy macro that does that and casts the
+ * result to void *, so you can assign it straight to wherever you
+ * wanted it.
+ */
+#define snew_plus(type, extra) ((type *)snmalloc(1, sizeof(type) + (extra)))
+#define snew_plus_get_aux(ptr) ((void *)((ptr) + 1))
+
 #endif
