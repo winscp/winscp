@@ -211,6 +211,9 @@ int detect_attack(void *handle, unsigned char *buf, uint32 len,
  * SSH2 RSA key exchange functions
  */
 struct ssh_hash;
+struct ssh_rsa_kex_extra {
+    int minklen;
+};
 void *ssh_rsakex_newkey(char *data, int len);
 void ssh_rsakex_freekey(void *key);
 int ssh_rsakex_klen(void *key);
