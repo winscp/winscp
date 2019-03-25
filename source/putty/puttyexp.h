@@ -72,10 +72,6 @@ void call_aes_decrypt(void * ctx, unsigned int * block);
 void call_aes_sdctr(unsigned char *blk, int len, void *ctx);
 void aes_iv(void *handle, unsigned char *iv);
 
-// from sshsha.c
-
-void call_sha1_key_internal(void * handle, unsigned char * key, int len);
-
 // from winmisc.c
 
 void win_misc_cleanup();

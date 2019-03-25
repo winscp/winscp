@@ -456,14 +456,3 @@ const struct ssh_mac ssh_hmac_sha1_96_buggy = {
     12, 16,
     "bug-compatible HMAC-SHA1-96"
 };
-
-#ifdef MPEXT
-
-#include "puttyexp.h"
-
-void call_sha1_key_internal(void * handle, unsigned char * key, int len)
-{
-  sha1_key_internal(handle, key, len);
-}
-
-#endif
