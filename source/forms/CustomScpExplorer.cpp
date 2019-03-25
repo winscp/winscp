@@ -1593,7 +1593,7 @@ void __fastcall TCustomScpExplorerForm::DoOperationFinished(
 
     if ((Operation == foCopy) || (Operation == foMove))
     {
-      DebugAssert(!IsSideLocalBrowser(Side)); // TODO
+      DebugAssert(!IsLocalBrowserMode()); // TODO
       if (Side == osLocal)
       {
         Configuration->Usage->Inc(L"UploadedFiles");
@@ -2868,7 +2868,7 @@ void __fastcall TCustomScpExplorerForm::ExecuteFileOperationCommand(
   {
     if ((Operation == foCopy) || (Operation == foMove))
     {
-      DebugAssert(!IsSideLocalBrowser(Side));
+      DebugAssert(!IsLocalBrowserMode());
       if (GetSide(Side) == osLocal)
       {
         Configuration->Usage->Inc(L"UploadsCommand");
