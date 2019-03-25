@@ -140,23 +140,19 @@
 #include "ssh.h"
 
 struct ssh_sharing_state {
-    const struct plug_function_table *fn;
-    /* the above variable absolutely *must* be the first in this structure */
-
     char *sockname;                  /* the socket name, kept for cleanup */
     Socket listensock;               /* the master listening Socket */
     tree234 *connections;            /* holds ssh_sharing_connstates */
     unsigned nextid;                 /* preferred id for next connstate */
     Ssh ssh;                         /* instance of the ssh backend */
     char *server_verstring;          /* server version string after "SSH-" */
+
+    const Plug_vtable *plugvt;
 };
 
 struct share_globreq;
 
 struct ssh_sharing_connstate {
-    const struct plug_function_table *fn;
-    /* the above variable absolutely *must* be the first in this structure */
-
     unsigned id;    /* used to identify this downstream in log messages */
 
     Socket sock;                     /* the Socket for this connection */
@@ -203,6 +199,8 @@ struct ssh_sharing_connstate {
 
     /* Global requests we've sent on to the server, pending replies. */
     struct share_globreq *globreq_head, *globreq_tail;
+
+    const Plug_vtable *plugvt;
 };
 
 struct share_halfchannel {
@@ -709,6 +707,8 @@ static void send_packet_to_downstream(struct ssh_sharing_connstate *cs,
                                       int type, const void *pkt, int pktlen,
                                       struct share_channel *chan)
 {
+    strbuf *packet;
+
     if (!cs->sock) /* throw away all packets destined for a dead downstream */
         return;
 
@@ -728,37 +728,41 @@ static void send_packet_to_downstream(struct ssh_sharing_connstate *cs,
          * If that happens, we just chop up the packet into pieces and
          * send them as separate CHANNEL_DATA packets.
          */
-        const char *upkt = (const char *)pkt;
-        char header[13]; /* 4 length + 1 type + 4 channel id + 4 string len */
+        BinarySource src[1];
+        unsigned channel;
+        ptrlen data;
 
-        int len = toint(GET_32BIT(upkt + 4));
-        upkt += 8;                /* skip channel id + length field */
-
-        if (len < 0 || len > pktlen - 8)
-            len = pktlen - 8;
+        BinarySource_BARE_INIT(src, pkt, pktlen);
+        channel = get_uint32(src);
+        data = get_string(src);
 
         do {
-            int this_len = (len > chan->downstream_maxpkt ?
-                            chan->downstream_maxpkt : len);
-            PUT_32BIT(header, this_len + 9);
-            header[4] = type;
-            PUT_32BIT(header + 5, chan->downstream_id);
-            PUT_32BIT(header + 9, this_len);
-            sk_write(cs->sock, header, 13);
-            sk_write(cs->sock, upkt, this_len);
-            len -= this_len;
-            upkt += this_len;
-        } while (len > 0);
+            int this_len = (data.len > chan->downstream_maxpkt ?
+                            chan->downstream_maxpkt : data.len);
+
+            packet = strbuf_new();
+            put_uint32(packet, 0);     /* placeholder for length field */
+            put_byte(packet, type);
+            put_uint32(packet, channel);
+            put_uint32(packet, this_len);
+            put_data(packet, data.ptr, this_len);
+            data.ptr = (const char *)data.ptr + this_len;
+            data.len -= this_len;
+            PUT_32BIT(packet->s, packet->len-4);
+            sk_write(cs->sock, packet->s, packet->len);
+            strbuf_free(packet);
+        } while (data.len > 0);
     } else {
         /*
          * Just do the obvious thing.
          */
-        char header[9];
-
-        PUT_32BIT(header, pktlen + 1);
-        header[4] = type;
-        sk_write(cs->sock, header, 5);
-        sk_write(cs->sock, pkt, pktlen);
+        packet = strbuf_new();
+        put_uint32(packet, 0);     /* placeholder for length field */
+        put_byte(packet, type);
+        put_data(packet, pkt, pktlen);
+        PUT_32BIT(packet->s, packet->len-4);
+        sk_write(cs->sock, packet->s, packet->len);
+        strbuf_free(packet);
     }
 }
 
@@ -778,19 +782,18 @@ static void share_try_cleanup(struct ssh_sharing_connstate *cs)
             index234(cs->halfchannels, 0)) != NULL) {
         static const char reason[] = "PuTTY downstream no longer available";
         static const char lang[] = "en";
-        unsigned char packet[256];
-        int pos = 0;
+        strbuf *packet;
 
-        PUT_32BIT(packet + pos, hc->server_id); pos += 4;
-        PUT_32BIT(packet + pos, SSH2_OPEN_CONNECT_FAILED); pos += 4;
-        PUT_32BIT(packet + pos, strlen(reason)); pos += 4;
-        memcpy(packet + pos, reason, strlen(reason)); pos += strlen(reason);
-        PUT_32BIT(packet + pos, strlen(lang)); pos += 4;
-        memcpy(packet + pos, lang, strlen(lang)); pos += strlen(lang);
-        ssh_send_packet_from_downstream(cs->parent->ssh, cs->id,
-                                        SSH2_MSG_CHANNEL_OPEN_FAILURE,
-                                        packet, pos, "cleanup after"
-                                        " downstream went away");
+        packet = strbuf_new();
+        put_uint32(packet, hc->server_id);
+        put_uint32(packet, SSH2_OPEN_CONNECT_FAILED);
+        put_stringz(packet, reason);
+        put_stringz(packet, lang);
+        ssh_send_packet_from_downstream(
+            cs->parent->ssh, cs->id, SSH2_MSG_CHANNEL_OPEN_FAILURE,
+            packet->s, packet->len,
+            "cleanup after downstream went away");
+        strbuf_free(packet);
 
         share_remove_halfchannel(cs, hc);
     }
@@ -810,15 +813,17 @@ static void share_try_cleanup(struct ssh_sharing_connstate *cs)
      */
     for (i = 0; (chan = (struct share_channel *)
                  index234(cs->channels_by_us, i)) != NULL; i++) {
-        unsigned char packet[256];
-        int pos = 0;
+        strbuf *packet;
 
         if (chan->state != SENT_CLOSE && chan->state != UNACKNOWLEDGED) {
-            PUT_32BIT(packet + pos, chan->server_id); pos += 4;
-            ssh_send_packet_from_downstream(cs->parent->ssh, cs->id,
-                                            SSH2_MSG_CHANNEL_CLOSE,
-                                            packet, pos, "cleanup after"
-                                            " downstream went away");
+            packet = strbuf_new();
+            put_uint32(packet, chan->server_id);
+            ssh_send_packet_from_downstream(
+                cs->parent->ssh, cs->id, SSH2_MSG_CHANNEL_CLOSE,
+                packet->s, packet->len,
+                "cleanup after downstream went away");
+            strbuf_free(packet);
+
             if (chan->state != RCVD_CLOSE) {
                 chan->state = SENT_CLOSE;
             } else {
@@ -841,28 +846,19 @@ static void share_try_cleanup(struct ssh_sharing_connstate *cs)
     for (i = 0; (fwd = (struct share_forwarding *)
                  index234(cs->forwardings, i)) != NULL; i++) {
         if (fwd->active) {
-            static const char request[] = "cancel-tcpip-forward";
-            char *packet = snewn(256 + strlen(fwd->host), char);
-            int pos = 0;
+            strbuf *packet = strbuf_new();
+            put_stringz(packet, "cancel-tcpip-forward");
+            put_bool(packet, FALSE);       /* !want_reply */
+            put_stringz(packet, fwd->host);
+            put_uint32(packet, fwd->port);
+            ssh_send_packet_from_downstream(
+                cs->parent->ssh, cs->id, SSH2_MSG_GLOBAL_REQUEST,
+                packet->s, packet->len,
+                "cleanup after downstream went away");
+            strbuf_free(packet);
 
-            PUT_32BIT(packet + pos, strlen(request)); pos += 4;
-            memcpy(packet + pos, request, strlen(request));
-            pos += strlen(request);
-
-            packet[pos++] = 0;         /* !want_reply */
-
-            PUT_32BIT(packet + pos, strlen(fwd->host)); pos += 4;
-            memcpy(packet + pos, fwd->host, strlen(fwd->host));
-            pos += strlen(fwd->host);
-
-            PUT_32BIT(packet + pos, fwd->port); pos += 4;
-
-            ssh_send_packet_from_downstream(cs->parent->ssh, cs->id,
-                                            SSH2_MSG_GLOBAL_REQUEST,
-                                            packet, pos, "cleanup after"
-                                            " downstream went away");
-            sfree(packet);
-
+            ssh_remove_sharing_rportfwd(cs->parent->ssh,
+                                        fwd->host, fwd->port, cs);
             share_remove_forwarding(cs, fwd);
             i--;    /* don't accidentally skip one as a result */
         }
@@ -892,21 +888,13 @@ static void share_begin_cleanup(struct ssh_sharing_connstate *cs)
 static void share_disconnect(struct ssh_sharing_connstate *cs,
                              const char *message)
 {
-    static const char lang[] = "en";
-    int msglen = strlen(message);
-    char *packet = snewn(msglen + 256, char);
-    int pos = 0;
-
-    PUT_32BIT(packet + pos, SSH2_DISCONNECT_PROTOCOL_ERROR); pos += 4;
-
-    PUT_32BIT(packet + pos, msglen); pos += 4;
-    memcpy(packet + pos, message, msglen);
-    pos += msglen;
-
-    PUT_32BIT(packet + pos, strlen(lang)); pos += 4;
-    memcpy(packet + pos, lang, strlen(lang)); pos += strlen(lang);
-
-    send_packet_to_downstream(cs, SSH2_MSG_DISCONNECT, packet, pos, NULL);
+    strbuf *packet = strbuf_new();
+    put_uint32(packet, SSH2_DISCONNECT_PROTOCOL_ERROR);
+    put_stringz(packet, message);
+    put_stringz(packet, "en");         /* language */
+    send_packet_to_downstream(cs, SSH2_MSG_DISCONNECT,
+                              packet->s, packet->len, NULL);
+    strbuf_free(packet);
 
     share_begin_cleanup(cs);
 }
@@ -914,7 +902,8 @@ static void share_disconnect(struct ssh_sharing_connstate *cs,
 static void share_closing(Plug plug, const char *error_msg, int error_code,
 			  int calling_back)
 {
-    struct ssh_sharing_connstate *cs = (struct ssh_sharing_connstate *)plug;
+    struct ssh_sharing_connstate *cs = FROMFIELD(
+        plug, struct ssh_sharing_connstate, plugvt);
 
     if (error_msg) {
 #ifdef BROKEN_PIPE_ERROR_CODE
@@ -937,65 +926,23 @@ static void share_closing(Plug plug, const char *error_msg, int error_code,
     share_begin_cleanup(cs);
 }
 
-static int getstring_inner(const void *vdata, int datalen,
-                           char **out, int *outlen)
-{
-    const unsigned char *data = (const unsigned char *)vdata;
-    int len;
-
-    if (datalen < 4)
-        return FALSE;
-
-    len = toint(GET_32BIT(data));
-    if (len < 0 || len > datalen - 4)
-        return FALSE;
-
-    if (outlen)
-        *outlen = len + 4;         /* total size including length field */
-    if (out)
-        *out = dupprintf("%.*s", len, (char *)data + 4);
-    return TRUE;
-}
-
-static char *getstring(const void *data, int datalen)
-{
-    char *ret;
-    if (getstring_inner(data, datalen, &ret, NULL))
-        return ret;
-    else
-        return NULL;
-}
-
-static int getstring_size(const void *data, int datalen)
-{
-    int ret;
-    if (getstring_inner(data, datalen, NULL, &ret))
-        return ret;
-    else
-        return -1;
-}
-
 /*
- * Append a message to the end of an xchannel's queue, with the length
- * and type code filled in and the data block allocated but
- * uninitialised.
+ * Append a message to the end of an xchannel's queue.
  */
-struct share_xchannel_message *share_xchannel_add_message
-(struct share_xchannel *xc, int type, int len)
+static void share_xchannel_add_message(
+    struct share_xchannel *xc, int type, const void *data, int len)
 {
-    unsigned char *block;
     struct share_xchannel_message *msg;
 
     /*
-     * Be a little tricksy here by allocating a single memory block
-     * containing both the 'struct share_xchannel_message' and the
-     * actual data. Simplifies freeing it later.
+     * Allocate the 'struct share_xchannel_message' and the actual
+     * data in one unit.
      */
-    block = smalloc(sizeof(struct share_xchannel_message) + len);
-    msg = (struct share_xchannel_message *)block;
-    msg->data = block + sizeof(struct share_xchannel_message);
+    msg = snew_plus(struct share_xchannel_message, len);
+    msg->data = snew_plus_get_aux(msg);
     msg->datalen = len;
     msg->type = type;
+    memcpy(msg->data, data, len);
 
     /*
      * Queue it in the xchannel.
@@ -1006,8 +953,6 @@ struct share_xchannel_message *share_xchannel_add_message
         xc->msghead = msg;
     msg->next = NULL;
     xc->msgtail = msg;
-
-    return msg;
 }
 
 void share_dead_xchannel_respond(struct ssh_sharing_connstate *cs,
@@ -1027,14 +972,18 @@ void share_dead_xchannel_respond(struct ssh_sharing_connstate *cs,
              * A CHANNEL_REQUEST is responded to by sending
              * CHANNEL_FAILURE, if it has want_reply set.
              */
-            int wantreplypos = getstring_size(msg->data, msg->datalen);
-            if (wantreplypos > 0 && wantreplypos < msg->datalen &&
-                msg->data[wantreplypos] != 0) {
-                unsigned char id[4];
-                PUT_32BIT(id, xc->server_id);
+            BinarySource src[1];
+            BinarySource_BARE_INIT(src, msg->data, msg->datalen);
+            get_uint32(src);           /* skip channel id */
+            get_string(src);           /* skip request type */
+            if (get_bool(src)) {
+                strbuf *packet = strbuf_new();
+                put_uint32(packet, xc->server_id);
                 ssh_send_packet_from_downstream
-                    (cs->parent->ssh, cs->id, SSH2_MSG_CHANNEL_FAILURE, id, 4,
+                    (cs->parent->ssh, cs->id, SSH2_MSG_CHANNEL_FAILURE,
+                     packet->s, packet->len,
                      "downstream refused X channel open");
+                strbuf_free(packet);
             }
         } else if (msg->type == SSH2_MSG_CHANNEL_CLOSE) {
             /*
@@ -1057,7 +1006,7 @@ void share_xchannel_confirmation(struct ssh_sharing_connstate *cs,
                                  struct share_channel *chan,
                                  unsigned downstream_window)
 {
-    unsigned char window_adjust[8];
+    strbuf *packet;
 
     /*
      * Send all the queued messages downstream.
@@ -1079,12 +1028,14 @@ void share_xchannel_confirmation(struct ssh_sharing_connstate *cs,
      * size downstream thinks it's presented with the one we've
      * actually presented.
      */
-    PUT_32BIT(window_adjust, xc->server_id);
-    PUT_32BIT(window_adjust + 4, downstream_window - xc->window);
-    ssh_send_packet_from_downstream(cs->parent->ssh, cs->id,
-                                    SSH2_MSG_CHANNEL_WINDOW_ADJUST,
-                                    window_adjust, 8, "window adjustment after"
-                                    " downstream accepted X channel");
+    packet = strbuf_new();
+    put_uint32(packet, xc->server_id);
+    put_uint32(packet, downstream_window - xc->window);
+    ssh_send_packet_from_downstream(
+        cs->parent->ssh, cs->id, SSH2_MSG_CHANNEL_WINDOW_ADJUST,
+        packet->s, packet->len,
+        "window adjustment after downstream accepted X channel");
+    strbuf_free(packet);
 }
 
 void share_xchannel_failure(struct ssh_sharing_connstate *cs,
@@ -1094,11 +1045,13 @@ void share_xchannel_failure(struct ssh_sharing_connstate *cs,
      * If downstream refuses to open our X channel at all for some
      * reason, we must respond by sending an emergency CLOSE upstream.
      */
-    unsigned char id[4];
-    PUT_32BIT(id, xc->server_id);
-    ssh_send_packet_from_downstream
-        (cs->parent->ssh, cs->id, SSH2_MSG_CHANNEL_CLOSE, id, 4,
-         "downstream refused X channel open");
+    strbuf *packet = strbuf_new();
+    put_uint32(packet, xc->server_id);
+    ssh_send_packet_from_downstream(
+        cs->parent->ssh, cs->id, SSH2_MSG_CHANNEL_CLOSE,
+        packet->s, packet->len,
+        "downstream refused X channel open");
+    strbuf_free(packet);
 
     /*
      * Now mark the xchannel as dead, and respond to anything sent on
@@ -1119,11 +1072,9 @@ void share_setup_x11_channel(void *csv, void *chanv,
     struct ssh_sharing_connstate *cs = (struct ssh_sharing_connstate *)csv;
     struct share_channel *chan = (struct share_channel *)chanv;
     struct share_xchannel *xc;
-    struct share_xchannel_message *msg;
     void *greeting;
     int greeting_len;
-    unsigned char *pkt;
-    int pktlen;
+    strbuf *packet;
 
     /*
      * Create an xchannel containing data we've already received from
@@ -1136,32 +1087,32 @@ void share_setup_x11_channel(void *csv, void *chanv,
                                  chan->x11_auth_proto,
                                  chan->x11_auth_data, chan->x11_auth_datalen,
                                  peer_addr, peer_port, &greeting_len);
-    msg = share_xchannel_add_message(xc, SSH2_MSG_CHANNEL_DATA,
-                                     8 + greeting_len + initial_len);
-    /* leave the channel id field unfilled - we don't know the
-     * downstream id yet, of course */
-    PUT_32BIT(msg->data + 4, greeting_len + initial_len);
-    memcpy(msg->data + 8, greeting, greeting_len);
-    memcpy(msg->data + 8 + greeting_len, initial_data, initial_len);
+    packet = strbuf_new();
+    put_uint32(packet, 0); /* leave the channel id field unfilled - we
+                            * don't know the downstream id yet */
+    put_uint32(packet, greeting_len + initial_len);
+    put_data(packet, greeting, greeting_len);
+    put_data(packet, initial_data, initial_len);
     sfree(greeting);
+    share_xchannel_add_message(xc, SSH2_MSG_CHANNEL_DATA,
+                               packet->s, packet->len);
+    strbuf_free(packet);
 
     xc->window = client_adjusted_window + greeting_len;
 
     /*
      * Send on a CHANNEL_OPEN to downstream.
      */
-    pktlen = 27 + strlen(peer_addr);
-    pkt = snewn(pktlen, unsigned char);
-    PUT_32BIT(pkt, 3);                 /* strlen("x11") */
-    memcpy(pkt+4, "x11", 3);
-    PUT_32BIT(pkt+7, server_id);
-    PUT_32BIT(pkt+11, server_currwin);
-    PUT_32BIT(pkt+15, server_maxpkt);
-    PUT_32BIT(pkt+19, strlen(peer_addr));
-    memcpy(pkt+23, peer_addr, strlen(peer_addr));
-    PUT_32BIT(pkt+23+strlen(peer_addr), peer_port);
-    send_packet_to_downstream(cs, SSH2_MSG_CHANNEL_OPEN, pkt, pktlen, NULL);
-    sfree(pkt);
+    packet = strbuf_new();
+    put_stringz(packet, "x11");
+    put_uint32(packet, server_id);
+    put_uint32(packet, server_currwin);
+    put_uint32(packet, server_maxpkt);
+    put_stringz(packet, peer_addr);
+    put_uint32(packet, peer_port);
+    send_packet_to_downstream(cs, SSH2_MSG_CHANNEL_OPEN,
+                              packet->s, packet->len, NULL);
+    strbuf_free(packet);
 
     /*
      * If this was a once-only X forwarding, clean it up now.
@@ -1178,19 +1129,24 @@ void share_setup_x11_channel(void *csv, void *chanv,
 }
 
 void share_got_pkt_from_server(void *csv, int type,
-                               unsigned char *pkt, int pktlen)
+                               const void *vpkt, int pktlen)
 {
+    const unsigned char *pkt = (const unsigned char *)vpkt;
     struct ssh_sharing_connstate *cs = (struct ssh_sharing_connstate *)csv;
     struct share_globreq *globreq;
-    int id_pos;
+    size_t id_pos;
     unsigned upstream_id, server_id;
     struct share_channel *chan;
     struct share_xchannel *xc;
+    BinarySource src[1];
+
+    BinarySource_BARE_INIT(src, pkt, pktlen);
 
     switch (type) {
       case SSH2_MSG_REQUEST_SUCCESS:
       case SSH2_MSG_REQUEST_FAILURE:
         globreq = cs->globreq_head;
+        assert(globreq);         /* should match the queue in ssh.c */
         if (globreq->type == GLOBREQ_TCPIP_FORWARD) {
             if (type == SSH2_MSG_REQUEST_FAILURE) {
                 share_remove_forwarding(cs, globreq->fwd);
@@ -1219,9 +1175,9 @@ void share_got_pkt_from_server(void *csv, int type,
         break;
 
       case SSH2_MSG_CHANNEL_OPEN:
-        id_pos = getstring_size(pkt, pktlen);
-        assert(id_pos >= 0);
-        server_id = GET_32BIT(pkt + id_pos);
+        get_string(src);
+        server_id = get_uint32(src);
+        assert(!get_err(src));
         share_add_halfchannel(cs, server_id);
 
         send_packet_to_downstream(cs, type, pkt, pktlen, NULL);
@@ -1242,14 +1198,17 @@ void share_got_pkt_from_server(void *csv, int type,
          * first uint32 field in the packet. Substitute the downstream
          * channel id for our one and pass the packet downstream.
          */
-        assert(pktlen >= 4);
-        upstream_id = GET_32BIT(pkt);
+        id_pos = src->pos;
+        upstream_id = get_uint32(src);
         if ((chan = share_find_channel_by_upstream(cs, upstream_id)) != NULL) {
             /*
              * The normal case: this id refers to an open channel.
              */
-            PUT_32BIT(pkt, chan->downstream_id);
-            send_packet_to_downstream(cs, type, pkt, pktlen, chan);
+            unsigned char *rewritten = snewn(pktlen, unsigned char);
+            memcpy(rewritten, pkt, pktlen);
+            PUT_32BIT(rewritten + id_pos, chan->downstream_id);
+            send_packet_to_downstream(cs, type, rewritten, pktlen, chan);
+            sfree(rewritten);
 
             /*
              * Update the channel state, for messages that need it.
@@ -1289,10 +1248,7 @@ void share_got_pkt_from_server(void *csv, int type,
              * The unusual case: this id refers to an xchannel. Add it
              * to the xchannel's queue.
              */
-            struct share_xchannel_message *msg;
-
-            msg = share_xchannel_add_message(xc, type, pktlen);
-            memcpy(msg->data, pkt, pktlen);
+            share_xchannel_add_message(xc, type, pkt, pktlen);
 
             /* If the xchannel is dead, then also respond to it (which
              * may involve deleting the channel). */
@@ -1311,15 +1267,22 @@ static void share_got_pkt_from_downstream(struct ssh_sharing_connstate *cs,
                                           int type,
                                           unsigned char *pkt, int pktlen)
 {
-    char *request_name;
+    ptrlen request_name;
     struct share_forwarding *fwd;
-    int id_pos;
+    size_t id_pos;
+    unsigned maxpkt;
     unsigned old_id, new_id, server_id;
     struct share_globreq *globreq;
     struct share_channel *chan;
     struct share_halfchannel *hc;
     struct share_xchannel *xc;
+    strbuf *packet;
     char *err = NULL;
+    BinarySource src[1];
+    size_t wantreplypos;
+    int orig_wantreply;
+
+    BinarySource_BARE_INIT(src, pkt, pktlen);
 
     switch (type) {
       case SSH2_MSG_DISCONNECT:
@@ -1340,39 +1303,26 @@ static void share_got_pkt_from_downstream(struct ssh_sharing_connstate *cs,
          * will probably require that too, and so we don't forward on
          * any request we don't understand.
          */
-        request_name = getstring(pkt, pktlen);
-        if (request_name == NULL) {
-            err = dupprintf("Truncated GLOBAL_REQUEST packet");
-            goto confused;
-        }
+        request_name = get_string(src);
+        wantreplypos = src->pos;
+        orig_wantreply = get_bool(src);
 
-        if (!strcmp(request_name, "tcpip-forward")) {
-            int wantreplypos, orig_wantreply, port, ret;
+        if (ptrlen_eq_string(request_name, "tcpip-forward")) {
+            ptrlen hostpl;
             char *host;
-
-            sfree(request_name);
+            int port, ret;
 
             /*
              * Pick the packet apart to find the want_reply field and
              * the host/port we're going to ask to listen on.
              */
-            wantreplypos = getstring_size(pkt, pktlen);
-            if (wantreplypos < 0 || wantreplypos >= pktlen) {
+            hostpl = get_string(src);
+            port = toint(get_uint32(src));
+            if (get_err(src)) {
                 err = dupprintf("Truncated GLOBAL_REQUEST packet");
                 goto confused;
             }
-            orig_wantreply = pkt[wantreplypos];
-            port = getstring_size(pkt + (wantreplypos + 1),
-                                  pktlen - (wantreplypos + 1));
-            port += (wantreplypos + 1);
-            if (port < 0 || port > pktlen - 4) {
-                err = dupprintf("Truncated GLOBAL_REQUEST packet");
-                goto confused;
-            }
-            host = getstring(pkt + (wantreplypos + 1),
-                             pktlen - (wantreplypos + 1));
-            assert(host != NULL);
-            port = GET_32BIT(pkt + port);
+            host = mkstr(hostpl);
 
             /*
              * See if we can allocate space in ssh.c's tree of remote
@@ -1396,11 +1346,10 @@ static void share_got_pkt_from_downstream(struct ssh_sharing_connstate *cs,
                  * that we know whether this forwarding needs to be
                  * cleaned up if downstream goes away.
                  */
-                int old_wantreply = pkt[wantreplypos];
                 pkt[wantreplypos] = 1;
                 ssh_send_packet_from_downstream
                     (cs->parent->ssh, cs->id, type, pkt, pktlen,
-                     old_wantreply ? NULL : "upstream added want_reply flag");
+                     orig_wantreply ? NULL : "upstream added want_reply flag");
                 fwd = share_add_forwarding(cs, host, port);
                 ssh_sharing_queue_global_request(cs->parent->ssh, cs);
 
@@ -1418,34 +1367,23 @@ static void share_got_pkt_from_downstream(struct ssh_sharing_connstate *cs,
             }
 
             sfree(host);
-        } else if (!strcmp(request_name, "cancel-tcpip-forward")) {
-            int wantreplypos, orig_wantreply, port;
+        } else if (ptrlen_eq_string(request_name, "cancel-tcpip-forward")) {
+            ptrlen hostpl;
             char *host;
+            int port;
             struct share_forwarding *fwd;
-
-            sfree(request_name);
 
             /*
              * Pick the packet apart to find the want_reply field and
              * the host/port we're going to ask to listen on.
              */
-            wantreplypos = getstring_size(pkt, pktlen);
-            if (wantreplypos < 0 || wantreplypos >= pktlen) {
+            hostpl = get_string(src);
+            port = toint(get_uint32(src));
+            if (get_err(src)) {
                 err = dupprintf("Truncated GLOBAL_REQUEST packet");
                 goto confused;
             }
-            orig_wantreply = pkt[wantreplypos];
-            port = getstring_size(pkt + (wantreplypos + 1),
-                                  pktlen - (wantreplypos + 1));
-            port += (wantreplypos + 1);
-            if (port < 0 || port > pktlen - 4) {
-                err = dupprintf("Truncated GLOBAL_REQUEST packet");
-                goto confused;
-            }
-            host = getstring(pkt + (wantreplypos + 1),
-                             pktlen - (wantreplypos + 1));
-            assert(host != NULL);
-            port = GET_32BIT(pkt + port);
+            host = mkstr(hostpl);
 
             /*
              * Look up the existing forwarding with these details.
@@ -1458,17 +1396,36 @@ static void share_got_pkt_from_downstream(struct ssh_sharing_connstate *cs,
                 }
             } else {
                 /*
+                 * Tell ssh.c to stop sending us channel-opens for
+                 * this forwarding.
+                 */
+                ssh_remove_sharing_rportfwd(cs->parent->ssh, host, port, cs);
+
+                /*
                  * Pass the cancel request on to the SSH server, but
                  * set want_reply even if it wasn't originally set, so
                  * that _we_ know whether the forwarding has been
                  * deleted even if downstream doesn't want to know.
                  */
-                int old_wantreply = pkt[wantreplypos];
                 pkt[wantreplypos] = 1;
                 ssh_send_packet_from_downstream
                     (cs->parent->ssh, cs->id, type, pkt, pktlen,
-                     old_wantreply ? NULL : "upstream added want_reply flag");
+                     orig_wantreply ? NULL : "upstream added want_reply flag");
                 ssh_sharing_queue_global_request(cs->parent->ssh, cs);
+
+                /*
+                 * And queue a globreq so that when the reply comes
+                 * back we know to cancel it.
+                 */
+                globreq = snew(struct share_globreq);
+                globreq->next = NULL;
+                if (cs->globreq_tail)
+                    cs->globreq_tail->next = globreq;
+                else
+                    cs->globreq_head = globreq;
+                globreq->fwd = fwd;
+                globreq->want_reply = orig_wantreply;
+                globreq->type = GLOBREQ_CANCEL_TCPIP_FORWARD;
             }
 
             sfree(host);
@@ -1477,16 +1434,7 @@ static void share_got_pkt_from_downstream(struct ssh_sharing_connstate *cs,
              * Request we don't understand. Manufacture a failure
              * message if an answer was required.
              */
-            int wantreplypos;
-
-            sfree(request_name);
-
-            wantreplypos = getstring_size(pkt, pktlen);
-            if (wantreplypos < 0 || wantreplypos >= pktlen) {
-                err = dupprintf("Truncated GLOBAL_REQUEST packet");
-                goto confused;
-            }
-            if (pkt[wantreplypos])
+            if (orig_wantreply)
                 send_packet_to_downstream(cs, SSH2_MSG_REQUEST_FAILURE,
                                           "", 0, NULL);
         }
@@ -1494,16 +1442,17 @@ static void share_got_pkt_from_downstream(struct ssh_sharing_connstate *cs,
 
       case SSH2_MSG_CHANNEL_OPEN:
         /* Sender channel id comes after the channel type string */
-        id_pos = getstring_size(pkt, pktlen);
-        if (id_pos < 0 || id_pos > pktlen - 12) {
+        get_string(src);
+        id_pos = src->pos;
+        old_id = get_uint32(src);
+        new_id = ssh_alloc_sharing_channel(cs->parent->ssh, cs);
+        get_uint32(src);               /* skip initial window size */
+        maxpkt = get_uint32(src);
+        if (get_err(src)) {
             err = dupprintf("Truncated CHANNEL_OPEN packet");
             goto confused;
         }
-
-        old_id = GET_32BIT(pkt + id_pos);
-        new_id = ssh_alloc_sharing_channel(cs->parent->ssh, cs);
-        share_add_channel(cs, old_id, new_id, 0, UNACKNOWLEDGED,
-                          GET_32BIT(pkt + id_pos + 8));
+        share_add_channel(cs, old_id, new_id, 0, UNACKNOWLEDGED, maxpkt);
         PUT_32BIT(pkt + id_pos, new_id);
         ssh_send_packet_from_downstream(cs->parent->ssh, cs->id,
                                         type, pkt, pktlen, NULL);
@@ -1515,10 +1464,16 @@ static void share_got_pkt_from_downstream(struct ssh_sharing_connstate *cs,
             goto confused;
         }
 
-        id_pos = 4;  /* sender channel id is 2nd uint32 field in packet */
-        old_id = GET_32BIT(pkt + id_pos);
+        server_id = get_uint32(src);
+        id_pos = src->pos;
+        old_id = get_uint32(src);
+        get_uint32(src);               /* skip initial window size */
+        maxpkt = get_uint32(src);
+        if (get_err(src)) {
+            err = dupprintf("Truncated CHANNEL_OPEN_CONFIRMATION packet");
+            goto confused;
+        }
 
-        server_id = GET_32BIT(pkt);
         /* This server id may refer to either a halfchannel or an xchannel. */
         hc = NULL, xc = NULL;          /* placate optimiser */
         if ((hc = share_find_halfchannel(cs, server_id)) != NULL) {
@@ -1533,8 +1488,7 @@ static void share_got_pkt_from_downstream(struct ssh_sharing_connstate *cs,
             
         PUT_32BIT(pkt + id_pos, new_id);
 
-        chan = share_add_channel(cs, old_id, new_id, server_id, OPEN,
-                                 GET_32BIT(pkt + 12));
+        chan = share_add_channel(cs, old_id, new_id, server_id, OPEN, maxpkt);
 
         if (hc) {
             ssh_send_packet_from_downstream(cs->parent->ssh, cs->id,
@@ -1553,12 +1507,12 @@ static void share_got_pkt_from_downstream(struct ssh_sharing_connstate *cs,
         break;
 
       case SSH2_MSG_CHANNEL_OPEN_FAILURE:
-        if (pktlen < 4) {
+        server_id = get_uint32(src);
+        if (get_err(src)) {
             err = dupprintf("Truncated CHANNEL_OPEN_FAILURE packet");
             goto confused;
         }
 
-        server_id = GET_32BIT(pkt);
         /* This server id may refer to either a halfchannel or an xchannel. */
         if ((hc = share_find_halfchannel(cs, server_id)) != NULL) {
             ssh_send_packet_from_downstream(cs->parent->ssh, cs->id,
@@ -1584,8 +1538,11 @@ static void share_got_pkt_from_downstream(struct ssh_sharing_connstate *cs,
       case SSH2_MSG_CHANNEL_FAILURE:
       case SSH2_MSG_IGNORE:
       case SSH2_MSG_DEBUG:
-        if (type == SSH2_MSG_CHANNEL_REQUEST &&
-            (request_name = getstring(pkt + 4, pktlen - 4)) != NULL) {
+        server_id = get_uint32(src);
+
+        if (type == SSH2_MSG_CHANNEL_REQUEST) {
+            request_name = get_string(src);
+
             /*
              * Agent forwarding requests from downstream are treated
              * specially. Because OpenSSHD doesn't let us enable agent
@@ -1611,18 +1568,17 @@ static void share_got_pkt_from_downstream(struct ssh_sharing_connstate *cs,
              * subsequent CHANNEL_OPENs still can't be associated with
              * a parent session channel.)
              */
-            if (!strcmp(request_name, "auth-agent-req@openssh.com") &&
+            if (ptrlen_eq_string(request_name, "auth-agent-req@openssh.com") &&
                 !ssh_agent_forwarding_permitted(cs->parent->ssh)) {
-                unsigned server_id = GET_32BIT(pkt);
-                unsigned char recipient_id[4];
-
-                sfree(request_name);
 
                 chan = share_find_channel_by_server(cs, server_id);
                 if (chan) {
-                    PUT_32BIT(recipient_id, chan->downstream_id);
-                    send_packet_to_downstream(cs, SSH2_MSG_CHANNEL_FAILURE,
-                                              recipient_id, 4, NULL);
+                    packet = strbuf_new();
+                    put_uint32(packet, chan->downstream_id);
+                    send_packet_to_downstream(
+                        cs, SSH2_MSG_CHANNEL_FAILURE,
+                        packet->s, packet->len, NULL);
+                    strbuf_free(packet);
                 } else {
                     char *buf = dupprintf("Agent forwarding request for "
                                           "unrecognised channel %u", server_id);
@@ -1642,14 +1598,10 @@ static void share_got_pkt_from_downstream(struct ssh_sharing_connstate *cs,
              * whether it's one to handle locally or one to pass on to
              * a downstream, and if the latter, which one.
              */
-            if (!strcmp(request_name, "x11-req")) {
-                unsigned server_id = GET_32BIT(pkt);
+            if (ptrlen_eq_string(request_name, "x11-req")) {
                 int want_reply, single_connection, screen;
-                char *auth_proto_str, *auth_data;
-                int auth_proto, protolen, datalen;
-                int pos;
-
-                sfree(request_name);
+                ptrlen auth_data;
+                int auth_proto;
 
                 chan = share_find_channel_by_server(cs, server_id);
                 if (!chan) {
@@ -1664,42 +1616,32 @@ static void share_got_pkt_from_downstream(struct ssh_sharing_connstate *cs,
                  * Pick apart the whole message to find the downstream
                  * auth details.
                  */
-                /* we have already seen: 4 bytes channel id, 4+7 request name */
-                if (pktlen < 17) {
-                    err = dupprintf("Truncated CHANNEL_REQUEST(\"x11\") packet");
+                want_reply = get_bool(src);
+                single_connection = get_bool(src);
+                auth_proto = x11_identify_auth_proto(get_string(src));
+                auth_data = get_string(src);
+                screen = toint(get_uint32(src));
+                if (get_err(src)) {
+                    err = dupprintf("Truncated CHANNEL_REQUEST(\"x11-req\")"
+                                    " packet");
                     goto confused;
                 }
-                want_reply = pkt[15] != 0;
-                single_connection = pkt[16] != 0;
-                auth_proto_str = getstring(pkt+17, pktlen-17);
-                auth_proto = x11_identify_auth_proto(auth_proto_str);
-                sfree(auth_proto_str);
-                pos = 17 + getstring_size(pkt+17, pktlen-17);
-                auth_data = getstring(pkt+pos, pktlen-pos);
-                pos += getstring_size(pkt+pos, pktlen-pos);
-
-                if (pktlen < pos+4) {
-                    err = dupprintf("Truncated CHANNEL_REQUEST(\"x11\") packet");
-                    sfree(auth_data);
-                    goto confused;
-                }
-                screen = GET_32BIT(pkt+pos);
 
                 if (auth_proto < 0) {
                     /* Reject due to not understanding downstream's
                      * requested authorisation method. */
-                    unsigned char recipient_id[4];
-                    PUT_32BIT(recipient_id, chan->downstream_id);
-                    send_packet_to_downstream(cs, SSH2_MSG_CHANNEL_FAILURE,
-                                              recipient_id, 4, NULL);
-                    sfree(auth_data);
+                    packet = strbuf_new();
+                    put_uint32(packet, chan->downstream_id);
+                    send_packet_to_downstream(
+                        cs, SSH2_MSG_CHANNEL_FAILURE,
+                        packet->s, packet->len, NULL);
+                    strbuf_free(packet);
                     break;
                 }
 
                 chan->x11_auth_proto = auth_proto;
                 chan->x11_auth_data = x11_dehexify(auth_data,
                                                    &chan->x11_auth_datalen);
-                sfree(auth_data);
                 chan->x11_auth_upstream =
                     ssh_sharing_add_x11_display(cs->parent->ssh, auth_proto,
                                                 cs, chan);
@@ -1710,36 +1652,26 @@ static void share_got_pkt_from_downstream(struct ssh_sharing_connstate *cs,
                  * containing our own auth data, and send that to the
                  * server.
                  */
-                protolen = strlen(chan->x11_auth_upstream->protoname);
-                datalen = strlen(chan->x11_auth_upstream->datastring);
-                pktlen = 29+protolen+datalen;
-                pkt = snewn(pktlen, unsigned char);
-                PUT_32BIT(pkt, server_id);
-                PUT_32BIT(pkt+4, 7);   /* strlen("x11-req") */
-                memcpy(pkt+8, "x11-req", 7);
-                pkt[15] = want_reply;
-                pkt[16] = single_connection;
-                PUT_32BIT(pkt+17, protolen);
-                memcpy(pkt+21, chan->x11_auth_upstream->protoname, protolen);
-                PUT_32BIT(pkt+21+protolen, datalen);
-                memcpy(pkt+25+protolen, chan->x11_auth_upstream->datastring,
-                       datalen);
-                PUT_32BIT(pkt+25+protolen+datalen, screen);
-                ssh_send_packet_from_downstream(cs->parent->ssh, cs->id,
-                                                SSH2_MSG_CHANNEL_REQUEST,
-                                                pkt, pktlen, NULL);
-                sfree(pkt);
+                packet = strbuf_new();
+                put_uint32(packet, server_id);
+                put_stringz(packet, "x11-req");
+                put_bool(packet, want_reply);
+                put_bool(packet, single_connection);
+                put_stringz(packet, chan->x11_auth_upstream->protoname);
+                put_stringz(packet, chan->x11_auth_upstream->datastring);
+                put_uint32(packet, screen);
+                ssh_send_packet_from_downstream(
+                    cs->parent->ssh, cs->id, SSH2_MSG_CHANNEL_REQUEST,
+                    packet->s, packet->len, NULL);
+                strbuf_free(packet);
 
                 break;
             }
-
-            sfree(request_name);
         }
 
         ssh_send_packet_from_downstream(cs->parent->ssh, cs->id,
                                         type, pkt, pktlen, NULL);
         if (type == SSH2_MSG_CHANNEL_CLOSE && pktlen >= 4) {
-            server_id = GET_32BIT(pkt);
             chan = share_find_channel_by_server(cs, server_id);
             if (chan) {
                 if (chan->state == RCVD_CLOSE) {
@@ -1786,7 +1718,8 @@ static void share_got_pkt_from_downstream(struct ssh_sharing_connstate *cs,
 
 static void share_receive(Plug plug, int urgent, char *data, int len)
 {
-    struct ssh_sharing_connstate *cs = (struct ssh_sharing_connstate *)plug;
+    struct ssh_sharing_connstate *cs = FROMFIELD(
+        plug, struct ssh_sharing_connstate, plugvt);
     static const char expected_verstring_prefix[] =
         "SSHCONNECTION@putty.projects.tartarus.org-2.0-";
     unsigned char c;
@@ -1862,7 +1795,8 @@ static void share_receive(Plug plug, int urgent, char *data, int len)
 
 static void share_sent(Plug plug, int bufsize)
 {
-    /* struct ssh_sharing_connstate *cs = (struct ssh_sharing_connstate *)plug; */
+    /* struct ssh_sharing_connstate *cs = FROMFIELD(
+        plug, struct ssh_sharing_connstate, plugvt); */
 
     /*
      * We do nothing here, because we expect that there won't be a
@@ -1877,7 +1811,8 @@ static void share_sent(Plug plug, int bufsize)
 static void share_listen_closing(Plug plug, const char *error_msg,
 				 int error_code, int calling_back)
 {
-    struct ssh_sharing_state *sharestate = (struct ssh_sharing_state *)plug;
+    struct ssh_sharing_state *sharestate = FROMFIELD(
+        plug, struct ssh_sharing_state, plugvt);
     if (error_msg)
         ssh_sharing_logf(sharestate->ssh, 0,
                          "listening socket: %s", error_msg);
@@ -1931,17 +1866,19 @@ void share_activate(void *state, const char *server_verstring)
     }
 }
 
+static const Plug_vtable ssh_sharing_conn_plugvt = {
+    NULL, /* no log function, because that's for outgoing connections */
+    share_closing,
+    share_receive,
+    share_sent,
+    NULL /* no accepting function, because we've already done it */
+};
+
 static int share_listen_accepting(Plug plug,
                                   accept_fn_t constructor, accept_ctx_t ctx)
 {
-    static const struct plug_function_table connection_fn_table = {
-	NULL, /* no log function, because that's for outgoing connections */
-	share_closing,
-        share_receive,
-        share_sent,
-	NULL /* no accepting function, because we've already done it */
-    };
-    struct ssh_sharing_state *sharestate = (struct ssh_sharing_state *)plug;
+    struct ssh_sharing_state *sharestate = FROMFIELD(
+        plug, struct ssh_sharing_state, plugvt);
     struct ssh_sharing_connstate *cs;
     const char *err;
     char *peerinfo;
@@ -1950,7 +1887,7 @@ static int share_listen_accepting(Plug plug,
      * A new downstream has connected to us.
      */
     cs = snew(struct ssh_sharing_connstate);
-    cs->fn = &connection_fn_table;
+    cs->plugvt = &ssh_sharing_conn_plugvt;
     cs->parent = sharestate;
 
     if ((cs->id = share_find_unused_id(sharestate, sharestate->nextid)) == 0 &&
@@ -1962,7 +1899,7 @@ static int share_listen_accepting(Plug plug,
     if (sharestate->nextid == 0)
         sharestate->nextid++; /* only happens in VERY long-running upstreams */
 
-    cs->sock = constructor(ctx, (Plug) cs);
+    cs->sock = constructor(ctx, &cs->plugvt);
     if ((err = sk_socket_error(cs->sock)) != NULL) {
         sfree(cs);
 	return err != NULL;
@@ -2043,37 +1980,17 @@ char *ssh_share_sockname(const char *host, int port, Conf *conf)
     return sockname;
 }
 
-static void nullplug_socket_log(Plug plug, int type, SockAddr addr, int port,
-                                const char *error_msg, int error_code) {}
-static void nullplug_closing(Plug plug, const char *error_msg, int error_code,
-			     int calling_back) {}
-static void nullplug_receive(Plug plug, int urgent, char *data, int len) {}
-static void nullplug_sent(Plug plug, int bufsize) {}
-
 int ssh_share_test_for_upstream(const char *host, int port, Conf *conf)
 {
-    static const struct plug_function_table fn_table = {
-	nullplug_socket_log,
-	nullplug_closing,
-	nullplug_receive,
-	nullplug_sent,
-	NULL
-    };
-    struct nullplug {
-        const struct plug_function_table *fn;
-    } np;
-
     char *sockname, *logtext, *ds_err, *us_err;
     int result;
     Socket sock;
-
-    np.fn = &fn_table;
 
     sockname = ssh_share_sockname(host, port, conf);
 
     sock = NULL;
     logtext = ds_err = us_err = NULL;
-    result = platform_ssh_share(sockname, conf, (Plug)&np, (Plug)NULL, &sock,
+    result = platform_ssh_share(sockname, conf, nullplug, (Plug)NULL, &sock,
                                 &logtext, &ds_err, &us_err, FALSE, TRUE);
 
     sfree(logtext);
@@ -2091,6 +2008,14 @@ int ssh_share_test_for_upstream(const char *host, int port, Conf *conf)
     }
 }
 
+static const Plug_vtable ssh_sharing_listen_plugvt = {
+    NULL, /* no log function, because that's for outgoing connections */
+    share_listen_closing,
+    NULL, /* no receive function on a listening socket */
+    NULL, /* no sent function on a listening socket */
+    share_listen_accepting
+};
+
 /*
  * Init function for connection sharing. We either open a listening
  * socket and become an upstream, or connect to an existing one and
@@ -2102,16 +2027,9 @@ int ssh_share_test_for_upstream(const char *host, int port, Conf *conf)
  * upstream) we return NULL.
  */
 Socket ssh_connection_sharing_init(const char *host, int port,
-                                   Conf *conf, Ssh ssh, void **state)
+                                   Conf *conf, Ssh ssh, Plug sshplug,
+                                   void **state)
 {
-    static const struct plug_function_table listen_fn_table = {
-	NULL, /* no log function, because that's for outgoing connections */
-	share_listen_closing,
-        NULL, /* no receive function on a listening socket */
-        NULL, /* no sent function on a listening socket */
-	share_listen_accepting
-    };
-
     int result, can_upstream, can_downstream;
     char *logtext, *ds_err, *us_err;
     char *sockname;
@@ -2134,7 +2052,7 @@ Socket ssh_connection_sharing_init(const char *host, int port,
      * to be an upstream.
      */
     sharestate = snew(struct ssh_sharing_state);
-    sharestate->fn = &listen_fn_table;
+    sharestate->plugvt = &ssh_sharing_listen_plugvt;
     sharestate->listensock = NULL;
 
     /*
@@ -2146,9 +2064,9 @@ Socket ssh_connection_sharing_init(const char *host, int port,
      */
     sock = NULL;
     logtext = ds_err = us_err = NULL;
-    result = platform_ssh_share(sockname, conf, (Plug)ssh,
-                                (Plug)sharestate, &sock, &logtext, &ds_err,
-                                &us_err, can_upstream, can_downstream);
+    result = platform_ssh_share(
+        sockname, conf, sshplug, &sharestate->plugvt, &sock, &logtext,
+        &ds_err, &us_err, can_upstream, can_downstream);
     ssh_connshare_log(ssh, result, logtext, ds_err, us_err);
     sfree(logtext);
     sfree(ds_err);

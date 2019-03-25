@@ -1,28 +1,29 @@
 #ifndef PUTTY_PUTTYEXP_H
 #define PUTTY_PUTTYEXP_H
 
+#include "defs.h"
+
 // from ssh.c
 
 void ssh_close(void * handle);
 int is_ssh(void * handle);
 void call_ssh_timer(void * handle);
 int get_ssh_version(void * handle);
-void * get_ssh_frontend(void * handle);
+void * get_ssh_frontend(Plug plug);
 int get_ssh1_compressing(void * handle);
 const struct ssh_cipher * get_cipher(void * handle);
 const struct ssh2_cipher * get_cscipher(void * handle);
 const struct ssh2_cipher * get_sccipher(void * handle);
 const struct ssh_compress * get_cscomp(void * handle);
 const struct ssh_compress * get_sccomp(void * handle);
-int get_ssh_state(void * handle);
 int get_ssh_state_closed(void * handle);
 int get_ssh_state_session(void * handle);
 int get_ssh_exitcode(void * handle);
 const unsigned int * ssh2_remmaxpkt(void * handle);
 const unsigned int * ssh2_remwindow(void * handle);
 void md5checksum(const char * buffer, int len, unsigned char output[16]);
-typedef const struct ssh_signkey * cp_ssh_signkey;
-void get_hostkey_algs(int * count, cp_ssh_signkey * SignKeys);
+typedef const struct ssh_keyalg * cp_ssh_keyalg;
+void get_hostkey_algs(int * count, cp_ssh_keyalg * SignKeys);
 void get_macs(int * count, const struct ssh_mac *** amacs);
 
 // from wingss.c
@@ -66,11 +67,10 @@ extern const struct ssh_compress ssh_zlib;
 
 void * call_aes_make_context();
 void call_aes_free_context(void * handle);
-void call_aes_setup(void * ctx, int blocklen, unsigned char * key, int keylen);
+void call_aes_setup(void * ctx, unsigned char * key, int keylen);
 void call_aes_encrypt(void * ctx, unsigned int * block);
 void call_aes_decrypt(void * ctx, unsigned int * block);
 void call_aes_sdctr(unsigned char *blk, int len, void *ctx);
-void aes_iv(void *handle, unsigned char *iv);
 
 // from winmisc.c
 

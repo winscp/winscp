@@ -4369,12 +4369,12 @@ void __fastcall TStoredSessionList::ImportFromKnownHosts(TStrings * Lines)
             }
           }
 
-          const struct ssh_signkey * Algorithm;
+          const struct ssh_keyalg * Algorithm;
           UnicodeString Key = ParseOpenSshPubLine(Line, Algorithm);
           UnicodeString KeyKey =
-            FORMAT(L"%s@%d:%s", (Algorithm->keytype, SessionData->PortNumber, HostNameStr));
+            FORMAT(L"%s@%d:%s", (Algorithm->cache_id, SessionData->PortNumber, HostNameStr));
           UnicodeString HostKey =
-            FORMAT(L"%s:%s=%s", (Algorithm->name, KeyKey, Key));
+            FORMAT(L"%s:%s=%s", (Algorithm->ssh_id, KeyKey, Key));
           UnicodeString HostKeyList = SessionData->HostKey;
           AddToList(HostKeyList, HostKey, L";");
           SessionData->HostKey = HostKeyList;

@@ -13,6 +13,8 @@ typedef enum Ssh_gss_stat {
     SSH_GSS_S_CONTINUE_NEEDED,
     SSH_GSS_NO_MEM,
     SSH_GSS_BAD_HOST_NAME,
+    SSH_GSS_BAD_MIC,
+    SSH_GSS_NO_CREDS,
     SSH_GSS_FAILURE
 } Ssh_gss_stat;
 
@@ -25,6 +27,10 @@ typedef enum Ssh_gss_stat {
 
 typedef gss_buffer_desc Ssh_gss_buf;
 typedef gss_name_t Ssh_gss_name;
+
+#define GSS_NO_EXPIRATION ((time_t)-1)
+
+#define GSS_DEF_REKEY_MINS 2	/* Default minutes between GSS cache checks */
 
 /* Functions, provided by either wingss.c or sshgssc.c */
 
@@ -79,7 +85,8 @@ typedef Ssh_gss_stat (*t_ssh_gss_release_name)(struct ssh_gss_library *lib,
 typedef Ssh_gss_stat (*t_ssh_gss_init_sec_context)
     (struct ssh_gss_library *lib,
      Ssh_gss_ctx *ctx, Ssh_gss_name name, int delegate,
-     Ssh_gss_buf *in, Ssh_gss_buf *out);
+     Ssh_gss_buf *in, Ssh_gss_buf *out, time_t *expiry,
+     unsigned long *lifetime);
 
 /*
  * Frees the contents of an Ssh_gss_buf filled in by
@@ -96,7 +103,8 @@ typedef Ssh_gss_stat (*t_ssh_gss_free_tok)(struct ssh_gss_library *lib,
  * place. Needs to be freed by ssh_gss_release_cred().
  */
 typedef Ssh_gss_stat (*t_ssh_gss_acquire_cred)(struct ssh_gss_library *lib,
-					       Ssh_gss_ctx *);
+                                               Ssh_gss_ctx *,
+                                               time_t *expiry);
 
 /*
  * Frees the contents of an Ssh_gss_ctx filled in by
@@ -111,7 +119,15 @@ typedef Ssh_gss_stat (*t_ssh_gss_release_cred)(struct ssh_gss_library *lib,
  */
 typedef Ssh_gss_stat (*t_ssh_gss_get_mic)(struct ssh_gss_library *lib,
 					  Ssh_gss_ctx ctx, Ssh_gss_buf *in,
-                 Ssh_gss_buf *out);
+                                          Ssh_gss_buf *out);
+
+/*
+ * Validates an input MIC for some input data.
+ */
+typedef Ssh_gss_stat (*t_ssh_gss_verify_mic)(struct ssh_gss_library *lib,
+                                             Ssh_gss_ctx ctx,
+                                             Ssh_gss_buf *in_data,
+                                             Ssh_gss_buf *in_mic);
 
 /*
  * Frees the contents of an Ssh_gss_buf filled in by
@@ -161,6 +177,7 @@ struct ssh_gss_library {
     t_ssh_gss_acquire_cred acquire_cred;
     t_ssh_gss_release_cred release_cred;
     t_ssh_gss_get_mic get_mic;
+    t_ssh_gss_verify_mic verify_mic;
     t_ssh_gss_free_mic free_mic;
     t_ssh_gss_display_status display_status;
 

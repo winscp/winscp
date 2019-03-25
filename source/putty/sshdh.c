@@ -77,12 +77,18 @@ static const struct dh_extra extra_group14 = {
     P14, G, lenof(P14), lenof(G),
 };
 
+static const struct ssh_kex ssh_diffiehellman_group14_sha256 = {
+    "diffie-hellman-group14-sha256", "group14",
+    KEXTYPE_DH, &ssh_sha256, &extra_group14,
+};
+
 static const struct ssh_kex ssh_diffiehellman_group14_sha1 = {
     "diffie-hellman-group14-sha1", "group14",
     KEXTYPE_DH, &ssh_sha1, &extra_group14,
 };
 
 static const struct ssh_kex *const group14_list[] = {
+    &ssh_diffiehellman_group14_sha256,
     &ssh_diffiehellman_group14_sha1
 };
 
@@ -113,6 +119,46 @@ static const struct ssh_kex *const gex_list[] = {
 const struct ssh_kexes ssh_diffiehellman_gex = {
     sizeof(gex_list) / sizeof(*gex_list),
     gex_list
+};
+
+/*
+ * Suffix on GSSAPI SSH protocol identifiers that indicates Kerberos 5
+ * as the mechanism.
+ *
+ * This suffix is the base64-encoded MD5 hash of the byte sequence
+ * 06 09 2A 86 48 86 F7 12 01 02 02, which in turn is the ASN.1 DER
+ * encoding of the object ID 1.2.840.113554.1.2.2 which designates
+ * Kerberos v5.
+ *
+ * (The same encoded OID, minus the two-byte DER header, is defined in
+ * pgssapi.c as GSS_MECH_KRB5.)
+ */
+#define GSS_KRB5_OID_HASH "toWM5Slw5Ew8Mqkay+al2g=="
+
+static const struct ssh_kex ssh_gssk5_diffiehellman_gex_sha1 = {
+    "gss-gex-sha1-" GSS_KRB5_OID_HASH, NULL,
+    KEXTYPE_GSS, &ssh_sha1, &extra_gex,
+};
+
+static const struct ssh_kex ssh_gssk5_diffiehellman_group14_sha1 = {
+    "gss-group14-sha1-" GSS_KRB5_OID_HASH, "group14",
+    KEXTYPE_GSS, &ssh_sha1, &extra_group14,
+};
+
+static const struct ssh_kex ssh_gssk5_diffiehellman_group1_sha1 = {
+    "gss-group1-sha1-" GSS_KRB5_OID_HASH, "group1",
+    KEXTYPE_GSS, &ssh_sha1, &extra_group1,
+};
+
+static const struct ssh_kex *const gssk5_sha1_kex_list[] = {
+    &ssh_gssk5_diffiehellman_gex_sha1,
+    &ssh_gssk5_diffiehellman_group14_sha1,
+    &ssh_gssk5_diffiehellman_group1_sha1
+};
+
+const struct ssh_kexes ssh_gssk5_sha1_kex = {
+    sizeof(gssk5_sha1_kex_list) / sizeof(*gssk5_sha1_kex_list),
+    gssk5_sha1_kex_list
 };
 
 /*
@@ -201,7 +247,7 @@ Bignum dh_create_e(void *handle, int nbits)
     int nbytes;
     unsigned char *buf;
 
-    nbytes = ssh1_bignum_length(ctx->qmask);
+    nbytes = (bignum_bitcount(ctx->qmask) + 7) / 8;
     buf = snewn(nbytes, unsigned char);
 
     do {
@@ -212,10 +258,9 @@ Bignum dh_create_e(void *handle, int nbits)
 	if (ctx->x)
 	    freebn(ctx->x);
 	if (nbits == 0 || nbits > bignum_bitcount(ctx->qmask)) {
-	    ssh1_write_bignum(buf, ctx->qmask);
-	    for (i = 2; i < nbytes; i++)
-		buf[i] &= random_byte();
-	    ssh1_read_bignum(buf, nbytes, &ctx->x);   /* can't fail */
+	    for (i = 0; i < nbytes; i++)
+		buf[i] = bignum_byte(ctx->qmask, i) & random_byte();
+	    ctx->x = bignum_from_bytes(buf, nbytes);
 	} else {
 	    int b, nb;
 	    ctx->x = bn_power_2(nbits);

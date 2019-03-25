@@ -82,8 +82,8 @@ extern "C" char * do_select(Plug plug, SOCKET skt, int startup)
   {
     // If it is not SSH/PFwd plug, then it must be Proxy plug.
     // Get SSH/PFwd plug which it wraps.
-    Proxy_Socket ProxySocket = ((Proxy_Plug)plug)->proxy_socket;
-    plug = ProxySocket->plug;
+    ProxySocket * AProxySocket = get_proxy_plug_socket(plug);
+    plug = AProxySocket->plug;
   }
 
   bool pfwd = is_pfwd(plug);
@@ -108,7 +108,7 @@ extern "C" char * do_select(Plug plug, SOCKET skt, int startup)
   return NULL;
 }
 //---------------------------------------------------------------------------
-int from_backend(void * frontend, int is_stderr, const char * data, int datalen)
+int from_backend(void * frontend, int is_stderr, const void * data, int datalen)
 {
   DebugAssert(frontend);
   if (is_stderr >= 0)
@@ -119,12 +119,12 @@ int from_backend(void * frontend, int is_stderr, const char * data, int datalen)
   else
   {
     DebugAssert(is_stderr == -1);
-    ((TSecureShell *)frontend)->CWrite(data, datalen);
+    ((TSecureShell *)frontend)->CWrite(reinterpret_cast<const char *>(data), datalen);
   }
   return 0;
 }
 //---------------------------------------------------------------------------
-int from_backend_untrusted(void * /*frontend*/, const char * /*data*/, int /*len*/)
+int from_backend_untrusted(void * /*frontend*/, const void * /*data*/, int /*len*/)
 {
   // currently used with authentication banner only,
   // for which we have own interface display_banner
@@ -136,7 +136,7 @@ int from_backend_eof(void * /*frontend*/)
   return FALSE;
 }
 //---------------------------------------------------------------------------
-int get_userpass_input(prompts_t * p, const unsigned char * /*in*/, int /*inlen*/)
+int get_userpass_input(prompts_t * p, bufchain * DebugUsedArg(input))
 {
   DebugAssert(p != NULL);
   TSecureShell * SecureShell = reinterpret_cast<TSecureShell *>(p->frontend);
@@ -682,8 +682,7 @@ void SaveKey(TKeyType KeyType, const UnicodeString & FileName,
 void FreeKey(TPrivateKey * PrivateKey)
 {
   struct ssh2_userkey * Ssh2Key = reinterpret_cast<struct ssh2_userkey *>(PrivateKey);
-  Ssh2Key->alg->freekey(Ssh2Key->data);
-  sfree(Ssh2Key->comment);
+  ssh_key_free(Ssh2Key->key);
   sfree(Ssh2Key);
 }
 //---------------------------------------------------------------------------
@@ -698,9 +697,8 @@ RawByteString LoadPublicKey(const UnicodeString & FileName, UnicodeString & Algo
     int PublicKeyLen = 0;
     char * CommentStr = NULL;
     const char * ErrorStr = NULL;
-    unsigned char * PublicKeyPtr =
-      ssh2_userkey_loadpub(KeyFile, &AlgorithmStr, &PublicKeyLen, &CommentStr, &ErrorStr);
-    if (PublicKeyPtr == NULL)
+    strbuf * PublicKeyBuf = strbuf_new();
+    if (!ssh2_userkey_loadpub(KeyFile, &AlgorithmStr, BinarySink_UPCAST(PublicKeyBuf), &CommentStr, &ErrorStr))
     {
       UnicodeString Error = UnicodeString(AnsiString(ErrorStr));
       throw Exception(Error);
@@ -709,8 +707,8 @@ RawByteString LoadPublicKey(const UnicodeString & FileName, UnicodeString & Algo
     sfree(AlgorithmStr);
     Comment = UnicodeString(AnsiString(CommentStr));
     sfree(CommentStr);
-    Result = RawByteString(reinterpret_cast<char *>(PublicKeyPtr), PublicKeyLen);
-    free(PublicKeyPtr);
+    Result = RawByteString(reinterpret_cast<char *>(PublicKeyBuf->s), PublicKeyBuf->len);
+    strbuf_free(PublicKeyBuf);
   }
   __finally
   {
@@ -749,7 +747,7 @@ bool __fastcall HasGSSAPI(UnicodeString CustomPath)
         Ssh_gss_ctx ctx;
         memset(&ctx, 0, sizeof(ctx));
         has =
-          ((library->acquire_cred(library, &ctx) == SSH_GSS_OK) &&
+          ((library->acquire_cred(library, &ctx, NULL) == SSH_GSS_OK) &&
            (library->release_cred(library, &ctx) == SSH_GSS_OK)) ? 1 : 0;
       }
     }
@@ -771,7 +769,7 @@ static void __fastcall DoNormalizeFingerprint(UnicodeString & Fingerprint, Unico
 {
   const wchar_t NormalizedSeparator = L'-';
   const int MaxCount = 10;
-  const ssh_signkey * SignKeys[MaxCount];
+  const ssh_keyalg * SignKeys[MaxCount];
   int Count = LENOF(SignKeys);
   // We may use find_pubkey_alg, but it gets complicated with normalized fingerprint
   // as the names have different number of dashes
@@ -779,8 +777,8 @@ static void __fastcall DoNormalizeFingerprint(UnicodeString & Fingerprint, Unico
 
   for (int Index = 0; Index < Count; Index++)
   {
-    const ssh_signkey * SignKey = SignKeys[Index];
-    UnicodeString Name = UnicodeString(SignKey->name);
+    const ssh_keyalg * SignKey = SignKeys[Index];
+    UnicodeString Name = UnicodeString(SignKey->ssh_id);
     if (StartsStr(Name + L" ", Fingerprint))
     {
       int LenStart = Name.Length() + 1;
@@ -794,13 +792,13 @@ static void __fastcall DoNormalizeFingerprint(UnicodeString & Fingerprint, Unico
         Fingerprint.Delete(LenStart + 1, Space - LenStart);
         // noop for SHA256 fingerprints
         Fingerprint = ReplaceChar(Fingerprint, L':', NormalizedSeparator);
-        KeyType = UnicodeString(SignKey->keytype);
+        KeyType = UnicodeString(SignKey->cache_id);
         return;
       }
     }
     else if (StartsStr(Name + NormalizedSeparator, Fingerprint))
     {
-      KeyType = UnicodeString(SignKey->keytype);
+      KeyType = UnicodeString(SignKey->cache_id);
       return;
     }
   }
@@ -845,16 +843,15 @@ void __fastcall DllHijackingProtection()
   dll_hijacking_protection();
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall ParseOpenSshPubLine(const UnicodeString & Line, const struct ssh_signkey *& Algorithm)
+UnicodeString __fastcall ParseOpenSshPubLine(const UnicodeString & Line, const struct ssh_keyalg *& Algorithm)
 {
   UTF8String UtfLine = UTF8String(Line);
   char * AlgorithmName = NULL;
-  int PubBlobLen = 0;
   char * CommentPtr = NULL;
   const char * ErrorStr = NULL;
-  unsigned char * PubBlob = openssh_loadpub_line(UtfLine.c_str(), &AlgorithmName, &PubBlobLen, &CommentPtr, &ErrorStr);
+  strbuf * PubBlobBuf = strbuf_new();
   UnicodeString Result;
-  if (PubBlob == NULL)
+  if (!openssh_loadpub_line(UtfLine.c_str(), &AlgorithmName, BinarySink_UPCAST(PubBlobBuf), &CommentPtr, &ErrorStr))
   {
     throw Exception(UnicodeString(ErrorStr));
   }
@@ -868,19 +865,20 @@ UnicodeString __fastcall ParseOpenSshPubLine(const UnicodeString & Line, const s
         throw Exception(FORMAT(L"Unknown public key algorithm \"%s\".", (AlgorithmName)));
       }
 
-      void * Key = Algorithm->newkey(Algorithm, reinterpret_cast<const char*>(PubBlob), PubBlobLen);
+      ptrlen PtrLen = { PubBlobBuf->s, PubBlobBuf->len };
+      ssh_key * Key = Algorithm->new_pub(Algorithm, PtrLen);
       if (Key == NULL)
       {
         throw Exception(L"Invalid public key.");
       }
-      char * FmtKey = Algorithm->fmtkey(Key);
+      char * FmtKey = Algorithm->cache_str(Key);
       Result = UnicodeString(FmtKey);
       sfree(FmtKey);
       Algorithm->freekey(Key);
     }
     __finally
     {
-      sfree(PubBlob);
+      strbuf_free(PubBlobBuf);
       sfree(AlgorithmName);
       sfree(CommentPtr);
     }
@@ -891,27 +889,27 @@ UnicodeString __fastcall ParseOpenSshPubLine(const UnicodeString & Line, const s
 UnicodeString __fastcall GetKeyTypeHuman(const UnicodeString & KeyType)
 {
   UnicodeString Result;
-  if (KeyType == ssh_dss.keytype)
+  if (KeyType == ssh_dss.cache_id)
   {
     Result = L"DSA";
   }
-  else if (KeyType == ssh_rsa.keytype)
+  else if (KeyType == ssh_rsa.cache_id)
   {
     Result = L"RSA";
   }
-  else if (KeyType == ssh_ecdsa_ed25519.keytype)
+  else if (KeyType == ssh_ecdsa_ed25519.cache_id)
   {
     Result = L"Ed25519";
   }
-  else if (KeyType == ssh_ecdsa_nistp256.keytype)
+  else if (KeyType == ssh_ecdsa_nistp256.cache_id)
   {
     Result = L"ECDSA/nistp256";
   }
-  else if (KeyType == ssh_ecdsa_nistp384.keytype)
+  else if (KeyType == ssh_ecdsa_nistp384.cache_id)
   {
     Result = L"ECDSA/nistp384";
   }
-  else if (KeyType == ssh_ecdsa_nistp521.keytype)
+  else if (KeyType == ssh_ecdsa_nistp521.cache_id)
   {
     Result = L"ECDSA/nistp521";
   }
@@ -968,14 +966,14 @@ TStrings * SshHostKeyList()
 {
   std::unique_ptr<TStrings> Result(new TStringList());
   const int MaxCount = 10;
-  const ssh_signkey * SignKeys[MaxCount];
+  const ssh_keyalg * SignKeys[MaxCount];
   int Count = LENOF(SignKeys);
   get_hostkey_algs(&Count, SignKeys);
 
   for (int Index = 0; Index < Count; Index++)
   {
-    const ssh_signkey * SignKey = SignKeys[Index];
-    UnicodeString Name = UnicodeString(SignKey->name);
+    const ssh_keyalg * SignKey = SignKeys[Index];
+    UnicodeString Name = UnicodeString(SignKey->ssh_id);
     Result->Add(Name);
   }
   return Result.release();

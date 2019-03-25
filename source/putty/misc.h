@@ -5,21 +5,13 @@
 #ifndef PUTTY_MISC_H
 #define PUTTY_MISC_H
 
+#include "defs.h"
 #include "puttymem.h"
+#include "marshal.h"
 
 #include <stdio.h>		       /* for FILE * */
 #include <stdarg.h>		       /* for va_list */
 #include <time.h>                      /* for struct tm */
-
-#ifndef FALSE
-#define FALSE 0
-#endif
-#ifndef TRUE
-#define TRUE 1
-#endif
-
-typedef struct Filename Filename;
-typedef struct FontSpec FontSpec;
 
 unsigned long parse_blocksize(const char *bs);
 char ctrlparse(char *s, char **next);
@@ -38,13 +30,23 @@ char *dupprintf(const char *fmt, ...)
     ;
 char *dupvprintf(const char *fmt, va_list ap);
 void burnstr(char *string);
-typedef struct strbuf strbuf;
+
+struct strbuf {
+    char *s;
+    unsigned char *u;
+    int len;
+    BinarySink_IMPLEMENTATION;
+    /* (also there's a surrounding implementation struct in misc.c) */
+};
 strbuf *strbuf_new(void);
 void strbuf_free(strbuf *buf);
-char *strbuf_str(strbuf *buf);         /* does not free buf */
+void *strbuf_append(strbuf *buf, size_t len);
 char *strbuf_to_str(strbuf *buf); /* does free buf, but you must free result */
 void strbuf_catf(strbuf *buf, const char *fmt, ...);
 void strbuf_catfv(strbuf *buf, const char *fmt, va_list ap);
+
+strbuf *strbuf_new_for_agent_query(void);
+void strbuf_finalise_agent_query(strbuf *buf);
 
 /* String-to-Unicode converters that auto-allocate the destination and
  * work around the rather deficient interface of mb_to_wc.
@@ -70,10 +72,6 @@ struct bufchain_tag {
     struct bufchain_granule *head, *tail;
     int buffersize;		       /* current amount of buffered data */
 };
-#ifndef BUFCHAIN_TYPEDEF
-typedef struct bufchain_tag bufchain;  /* rest of declaration in misc.c */
-#define BUFCHAIN_TYPEDEF
-#endif
 
 void bufchain_init(bufchain *ch);
 void bufchain_clear(bufchain *ch);
@@ -82,10 +80,20 @@ void bufchain_add(bufchain *ch, const void *data, int len);
 void bufchain_prefix(bufchain *ch, void **data, int *len);
 void bufchain_consume(bufchain *ch, int len);
 void bufchain_fetch(bufchain *ch, void *data, int len);
+void bufchain_fetch_consume(bufchain *ch, void *data, int len);
+int bufchain_try_fetch_consume(bufchain *ch, void *data, int len);
 
 int validate_manual_hostkey(char *key);
 
 struct tm ltime(void);
+
+ptrlen make_ptrlen(const void *ptr, size_t len);
+int ptrlen_eq_string(ptrlen pl, const char *str);
+char *mkstr(ptrlen pl);
+int string_length_for_printf(size_t);
+/* Derive two printf arguments from a ptrlen, suitable for "%.*s" */
+#define PTRLEN_PRINTF(pl) \
+    string_length_for_printf((pl).len), (const char *)(pl).ptr
 
 /* Wipe sensitive data out of memory that's about to be freed. Simpler
  * than memset because we don't need the fill char parameter; also
@@ -100,23 +108,6 @@ void smemclr(void *b, size_t len);
  * Returns 0 for mismatch or 1 for equality (unlike memcmp), hinted at
  * by the 'eq' in the name. */
 int smemeq(const void *av, const void *bv, size_t len);
-
-/* Extracts an SSH-marshalled string from the start of *data. If
- * successful (*datalen is not too small), advances data/datalen past
- * the string and returns a pointer to the string itself and its
- * length in *stringlen. Otherwise does nothing and returns NULL.
- *
- * Like strchr, this function can discard const from its parameter.
- * Treat it as if it was a family of two functions, one returning a
- * non-const string given a non-const pointer, and one taking and
- * returning const. */
-void *get_ssh_string(int *datalen, const void **data, int *stringlen);
-/* Extracts an SSH uint32, similarly. Returns TRUE on success, and
- * leaves the extracted value in *ret. */
-int get_ssh_uint32(int *datalen, const void **data, unsigned *ret);
-/* Given a not-necessarily-zero-terminated string in (length,data)
- * form, check if it equals an ordinary C zero-terminated string. */
-int match_ssh_id(int stringlen, const void *string, const char *id);
 
 char *buildinfo(const char *newline);
 

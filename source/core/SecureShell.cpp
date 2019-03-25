@@ -1829,9 +1829,10 @@ bool __fastcall TSecureShell::EnumNetworkEvents(SOCKET Socket, WSANETWORKEVENTS 
     }
   }
 
-  return
+  bool Result =
     FLAGSET(Events.lNetworkEvents, FD_READ) ||
     FLAGSET(Events.lNetworkEvents, FD_CLOSE);
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::HandleNetworkEvents(SOCKET Socket, WSANETWORKEVENTS & Events)
@@ -1898,19 +1899,31 @@ bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventR
       Handles = sresize(Handles, HandleCount + 1, HANDLE);
       Handles[HandleCount] = FSocketEvent;
       unsigned int Timeout = MSec;
-      if (toplevel_callback_pending())
-      {
-        Timeout = 0;
-      }
 
       unsigned int WaitResult;
       do
       {
         unsigned int TimeoutStep = std::min(GUIUpdateInterval, Timeout);
+        if (toplevel_callback_pending())
+        {
+          TimeoutStep = 0;
+        }
         Timeout -= TimeoutStep;
         WaitResult = WaitForMultipleObjects(HandleCount + 1, Handles, FALSE, TimeoutStep);
         FUI->ProcessGUI();
-      } while ((WaitResult == WAIT_TIMEOUT) && (Timeout > 0));
+        // run_toplevel_callbacks can cause processing of pending raw data, so:
+        // 1) Check for changes in our pending buffer - wait criteria in Receive()
+        int PrevDataLen = (-static_cast<int>(OutLen) + static_cast<int>(PendLen));
+        // 2) Changes in session state - wait criteria in Init()
+        bool PrevSessionState = get_ssh_state_session(FBackendHandle);
+        if (run_toplevel_callbacks() &&
+            (((-static_cast<int>(OutLen) + static_cast<int>(PendLen)) > PrevDataLen) ||
+             (PrevSessionState != get_ssh_state_session(FBackendHandle))))
+        {
+          // Note that we still may process new network event now
+          Result = true;
+        }
+      } while ((WaitResult == WAIT_TIMEOUT) && (Timeout > 0) && !Result);
 
       if (WaitResult < WAIT_OBJECT_0 + HandleCount)
       {
@@ -1974,7 +1987,6 @@ bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventR
       sfree(Handles);
     }
 
-    run_toplevel_callbacks();
 
     unsigned int TicksAfter = GetTickCount();
     // ticks wraps once in 49.7 days
@@ -2193,7 +2205,7 @@ void __fastcall TPasteKeyHandler::Paste(TObject * /*Sender*/, unsigned int & Ans
     }
     else
     {
-      const struct ssh_signkey * Algorithm;
+      const struct ssh_keyalg * Algorithm;
       try
       {
         UnicodeString Key = ParseOpenSshPubLine(ClipboardText, Algorithm);

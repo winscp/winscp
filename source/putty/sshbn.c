@@ -17,6 +17,7 @@
 typedef BignumInt *Bignum;
 
 #include "ssh.h"
+#include "marshal.h"
 
 BignumInt bnZero[1] = { 0 };
 BignumInt bnOne[2] = { 1, 1 };
@@ -1403,8 +1404,9 @@ void decbn(Bignum bn)
     bn[i]--;
 }
 
-Bignum bignum_from_bytes(const unsigned char *data, int nbytes)
+Bignum bignum_from_bytes(const void *vdata, int nbytes)
 {
+    const unsigned char *data = (const unsigned char *)vdata;
     Bignum result;
     int w, i;
 
@@ -1425,8 +1427,9 @@ Bignum bignum_from_bytes(const unsigned char *data, int nbytes)
     return result;
 }
 
-Bignum bignum_from_bytes_le(const unsigned char *data, int nbytes)
+Bignum bignum_from_bytes_le(const void *vdata, int nbytes)
 {
+    const unsigned char *data = (const unsigned char *)vdata;
     Bignum result;
     int w, i;
 
@@ -1506,36 +1509,7 @@ Bignum bignum_random_in_range(const Bignum lower, const Bignum upper)
 }
 
 /*
- * Read an SSH-1-format bignum from a data buffer. Return the number
- * of bytes consumed, or -1 if there wasn't enough data.
- */
-int ssh1_read_bignum(const unsigned char *data, int len, Bignum * result)
-{
-    const unsigned char *p = data;
-    int i;
-    int w, b;
-
-    if (len < 2)
-	return -1;
-
-    w = 0;
-    for (i = 0; i < 2; i++)
-	w = (w << 8) + *p++;
-    b = (w + 7) / 8;		       /* bits -> bytes */
-
-    if (len < b+2)
-	return -1;
-
-    if (!result)		       /* just return length */
-	return b + 2;
-
-    *result = bignum_from_bytes(p, b);
-
-    return p + b - data;
-}
-
-/*
- * Return the bit count of a bignum, for SSH-1 encoding.
+ * Return the bit count of a bignum.
  */
 int bignum_bitcount(Bignum bn)
 {
@@ -1543,22 +1517,6 @@ int bignum_bitcount(Bignum bn)
     while (bitcount >= 0
 	   && (bn[bitcount / BIGNUM_INT_BITS + 1] >> (bitcount % BIGNUM_INT_BITS)) == 0) bitcount--;
     return bitcount + 1;
-}
-
-/*
- * Return the byte length of a bignum when SSH-1 encoded.
- */
-int ssh1_bignum_length(Bignum bn)
-{
-    return 2 + (bignum_bitcount(bn) + 7) / 8;
-}
-
-/*
- * Return the byte length of a bignum when SSH-2 encoded.
- */
-int ssh2_bignum_length(Bignum bn)
-{
-    return 4 + (bignum_bitcount(bn) + 8) / 8;
 }
 
 /*
@@ -1601,22 +1559,59 @@ void bignum_set_bit(Bignum bn, int bitnum, int value)
     }
 }
 
-/*
- * Write a SSH-1-format bignum into a buffer. It is assumed the
- * buffer is big enough. Returns the number of bytes used.
- */
-int ssh1_write_bignum(void *data, Bignum bn)
+void BinarySink_put_mp_ssh1(BinarySink *bs, Bignum bn)
 {
-    unsigned char *p = data;
-    int len = ssh1_bignum_length(bn);
+    int bits = bignum_bitcount(bn);
+    int bytes = (bits + 7) / 8;
     int i;
-    int bitc = bignum_bitcount(bn);
 
-    *p++ = (bitc >> 8) & 0xFF;
-    *p++ = (bitc) & 0xFF;
-    for (i = len - 2; i--;)
-	*p++ = bignum_byte(bn, i);
-    return len;
+    put_uint16(bs, bits);
+    for (i = bytes; i--;)
+        put_byte(bs, bignum_byte(bn, i));
+}
+
+void BinarySink_put_mp_ssh2(BinarySink *bs, Bignum bn)
+{
+    int bytes = (bignum_bitcount(bn) + 8) / 8;
+    int i;
+
+    put_uint32(bs, bytes);
+    for (i = bytes; i--;)
+        put_byte(bs, bignum_byte(bn, i));
+}
+
+Bignum BinarySource_get_mp_ssh1(BinarySource *src)
+{
+    unsigned bitc = get_uint16(src);
+    ptrlen bytes = get_data(src, (bitc + 7) / 8);
+    if (get_err(src)) {
+        return bignum_from_long(0);
+    } else {
+        Bignum toret = bignum_from_bytes(bytes.ptr, bytes.len);
+        if (bignum_bitcount(toret) != bitc) {
+            src->err = BSE_INVALID;
+            freebn(toret);
+            toret = bignum_from_long(0);
+        }
+        return toret;
+    }
+}
+
+Bignum BinarySource_get_mp_ssh2(BinarySource *src)
+{
+    ptrlen bytes = get_string(src);
+    if (get_err(src)) {
+        return bignum_from_long(0);
+    } else {
+        const unsigned char *p = bytes.ptr;
+        if ((bytes.len > 0 &&
+             ((p[0] & 0x80) ||
+              (p[0] == 0 && (bytes.len <= 1 || !(p[1] & 0x80)))))) {
+            src->err = BSE_INVALID;
+            return bignum_from_long(0);
+        }
+        return bignum_from_bytes(bytes.ptr, bytes.len);
+    }
 }
 
 /*

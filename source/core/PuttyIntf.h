@@ -20,6 +20,8 @@ extern "C"
 // Defined in misc.h - Conflicts with std::min/max
 #undef min
 #undef max
+// Defined in marshal.h - Conflicts with xml.xmldom.hpp
+#undef get_data
 }
 //---------------------------------------------------------------------------
 #endif

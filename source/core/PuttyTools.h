@@ -34,7 +34,7 @@ UnicodeString __fastcall Sha256(const char * Data, size_t Size);
 //---------------------------------------------------------------------------
 void __fastcall DllHijackingProtection();
 //---------------------------------------------------------------------------
-UnicodeString __fastcall ParseOpenSshPubLine(const UnicodeString & Line, const struct ssh_signkey *& Algorithm);
+UnicodeString __fastcall ParseOpenSshPubLine(const UnicodeString & Line, const struct ssh_keyalg *& Algorithm);
 //---------------------------------------------------------------------------
 UnicodeString __fastcall GetKeyTypeHuman(const UnicodeString & KeyType);
 //---------------------------------------------------------------------------

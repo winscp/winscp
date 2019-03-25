@@ -10,37 +10,34 @@
 #include "putty.h"
 #include "network.h"
 
-typedef struct Socket_error_tag *Error_Socket;
-
-struct Socket_error_tag {
-    const struct socket_function_table *fn;
-    /* the above variable absolutely *must* be the first in this structure */
-
+typedef struct {
     char *error;
     Plug plug;
-};
+
+    const Socket_vtable *sockvt;
+} ErrorSocket;
 
 static Plug sk_error_plug(Socket s, Plug p)
 {
-    Error_Socket ps = (Error_Socket) s;
-    Plug ret = ps->plug;
+    ErrorSocket *es = FROMFIELD(s, ErrorSocket, sockvt);
+    Plug ret = es->plug;
     if (p)
-	ps->plug = p;
+	es->plug = p;
     return ret;
 }
 
 static void sk_error_close(Socket s)
 {
-    Error_Socket ps = (Error_Socket) s;
+    ErrorSocket *es = FROMFIELD(s, ErrorSocket, sockvt);
 
-    sfree(ps->error);
-    sfree(ps);
+    sfree(es->error);
+    sfree(es);
 }
 
 static const char *sk_error_socket_error(Socket s)
 {
-    Error_Socket ps = (Error_Socket) s;
-    return ps->error;
+    ErrorSocket *es = FROMFIELD(s, ErrorSocket, sockvt);
+    return es->error;
 }
 
 static char *sk_error_peer_info(Socket s)
@@ -48,26 +45,23 @@ static char *sk_error_peer_info(Socket s)
     return NULL;
 }
 
+static const Socket_vtable ErrorSocket_sockvt = {
+    sk_error_plug,
+    sk_error_close,
+    NULL /* write */,
+    NULL /* write_oob */,
+    NULL /* write_eof */,
+    NULL /* flush */,
+    NULL /* set_frozen */,
+    sk_error_socket_error,
+    sk_error_peer_info,
+};
+
 Socket new_error_socket(const char *errmsg, Plug plug)
 {
-    static const struct socket_function_table socket_fn_table = {
-	sk_error_plug,
-	sk_error_close,
-	NULL /* write */,
-	NULL /* write_oob */,
-	NULL /* write_eof */,
-	NULL /* flush */,
-	NULL /* set_frozen */,
-	sk_error_socket_error,
-	sk_error_peer_info,
-    };
-
-    Error_Socket ret;
-
-    ret = snew(struct Socket_error_tag);
-    ret->fn = &socket_fn_table;
-    ret->plug = plug;
-    ret->error = dupstr(errmsg);
-
-    return (Socket) ret;
+    ErrorSocket *es = snew(ErrorSocket);
+    es->sockvt = &ErrorSocket_sockvt;
+    es->plug = plug;
+    es->error = dupstr(errmsg);
+    return &es->sockvt;
 }

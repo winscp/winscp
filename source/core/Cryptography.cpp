@@ -55,7 +55,7 @@
 
 #define sha1_ctx                  SHA_State
 #define sha1_begin(ctx)           putty_SHA_Init(ctx)
-#define sha1_hash(buf, len, ctx)  SHA_Bytes(ctx, buf, len)
+#define sha1_hash(buf, len, ctx)  put_data(ctx, buf, len)
 #define sha1_end(dig, ctx)        putty_SHA_Final(ctx, dig)
 
 #define IN_BLOCK_LENGTH     64
@@ -156,7 +156,7 @@ static void hmac_sha1_end(unsigned char mac[], unsigned long mac_len, hmac_ctx c
 
 void aes_set_encrypt_key(const unsigned char in_key[], unsigned int klen, void * cx)
 {
-  call_aes_setup(cx, BLOCK_SIZE, const_cast<unsigned char *>(in_key), klen);
+  call_aes_setup(cx, const_cast<unsigned char *>(in_key), klen);
 }
 
 void aes_encrypt_block(const unsigned char in_blk[], unsigned char out_blk[], void * cx)
@@ -672,7 +672,7 @@ TEncryption::~TEncryption()
 //---------------------------------------------------------------------------
 void TEncryption::SetSalt()
 {
-  aes_iv(FContext, reinterpret_cast<unsigned char *>(FSalt.c_str()));
+  aes_iv(FContext, reinterpret_cast<const void *>(FSalt.c_str()));
 }
 //---------------------------------------------------------------------------
 void TEncryption::NeedSalt()

@@ -14,7 +14,7 @@ struct callback {
     void *ctx;
 };
 
-struct callback *cbhead = NULL, *cbtail = NULL;
+struct callback *cbcurr = NULL, *cbhead = NULL, *cbtail = NULL;
 
 toplevel_callback_notify_fn_t notify_frontend = NULL;
 void *frontend = NULL;
@@ -28,6 +28,47 @@ void request_callback_notifications(toplevel_callback_notify_fn_t fn,
     MPEXT_PUTTY_SECTION_LEAVE;
 }
 
+static void run_idempotent_callback(void *ctx)
+{
+    struct IdempotentCallback *ic = (struct IdempotentCallback *)ctx;
+    ic->queued = FALSE;
+    ic->fn(ic->ctx);
+}
+
+void queue_idempotent_callback(struct IdempotentCallback *ic)
+{
+    if (ic->queued)
+        return;
+    ic->queued = TRUE;
+    queue_toplevel_callback(run_idempotent_callback, ic);
+}
+
+void delete_callbacks_for_context(void *ctx)
+{
+    struct callback *newhead, *newtail;
+
+    newhead = newtail = NULL;
+    while (cbhead) {
+        struct callback *cb = cbhead;
+        cbhead = cbhead->next;
+        if (cb->ctx == ctx ||
+            (cb->fn == run_idempotent_callback &&
+             ((struct IdempotentCallback *)cb->ctx)->ctx == ctx)) {
+            sfree(cb);
+        } else {
+            if (!newhead)
+                newhead = cb;
+            else
+                newtail->next = cb;
+
+            newtail = cb;
+        }
+    }
+
+    cbhead = newhead;
+    cbtail = newtail;
+}
+
 void queue_toplevel_callback(toplevel_callback_fn_t fn, void *ctx)
 {
     struct callback *cb;
@@ -37,10 +78,18 @@ void queue_toplevel_callback(toplevel_callback_fn_t fn, void *ctx)
     cb->fn = fn;
     cb->ctx = ctx;
 
-    /* If the front end has requested notification of pending
+    /*
+     * If the front end has requested notification of pending
      * callbacks, and we didn't already have one queued, let it know
-     * we do have one now. */
-    if (notify_frontend && !cbhead)
+     * we do have one now.
+     *
+     * If cbcurr is non-NULL, i.e. we are actually in the middle of
+     * executing a callback right now, then we count that as the queue
+     * already having been non-empty. That saves the front end getting
+     * a constant stream of needless re-notifications if the last
+     * callback keeps re-scheduling itself.
+     */
+    if (notify_frontend && !cbhead && !cbcurr)
         notify_frontend(frontend);
 
     if (cbtail)
@@ -52,47 +101,38 @@ void queue_toplevel_callback(toplevel_callback_fn_t fn, void *ctx)
     MPEXT_PUTTY_SECTION_LEAVE;
 }
 
-void run_toplevel_callbacks(void)
+int run_toplevel_callbacks(void)
 {
+    int done_something = FALSE;
     MPEXT_PUTTY_SECTION_ENTER;
+
     if (cbhead) {
-        struct callback *cb = cbhead;
-        #ifdef MPEXT
-        toplevel_callback_fn_t fn = cb->fn;
-        void * ctx = cb->ctx;
-        cbhead = cb->next;
-        if (!cbhead)
-            cbtail = NULL;
-        cbhead = cb->next;
-        sfree(cb);
-        MPEXT_PUTTY_SECTION_LEAVE;
-        fn(ctx);
-        #else
         /*
-         * Careful ordering here. We call the function _before_
-         * advancing cbhead (though, of course, we must free cb
-         * _after_ advancing it). This means that if the very last
-         * callback schedules another callback, cbhead does not become
-         * NULL at any point, and so the frontend notification
-         * function won't be needlessly pestered.
+         * Transfer the head callback into cbcurr to indicate that
+         * it's being executed. Then operations which transform the
+         * queue, like delete_callbacks_for_context, can proceed as if
+         * it's not there.
          */
-        cb->fn(cb->ctx);
-        cbhead = cb->next;
-        sfree(cb);
+        cbcurr = cbhead;
+        cbhead = cbhead->next;
         if (!cbhead)
             cbtail = NULL;
-        #endif
+
+        /*
+         * Now run the callback, and then clear it out of cbcurr.
+         */
+        cbcurr->fn(cbcurr->ctx);
+        sfree(cbcurr);
+        cbcurr = NULL;
+
+        done_something = TRUE;
     }
-    #ifdef MPEXT
-    else
-    {
-      MPEXT_PUTTY_SECTION_LEAVE;
-    }
-    #endif
+    MPEXT_PUTTY_SECTION_LEAVE;
+    return done_something;
 }
 
 int toplevel_callback_pending(void)
 {
     // MP does not have to be guarded
-    return cbhead != NULL;
+    return cbcurr != NULL || cbhead != NULL;
 }

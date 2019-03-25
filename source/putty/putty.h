@@ -16,27 +16,31 @@
 #endif
 #endif
 
-#ifndef DONE_TYPEDEFS
-#define DONE_TYPEDEFS
-typedef struct conf_tag Conf;
-typedef struct backend_tag Backend;
-typedef struct terminal_tag Terminal;
-#endif
-
+#include "defs.h"
 #include "puttyps.h"
 #include "network.h"
 #include "misc.h"
+#include "marshal.h"
 
 /*
- * Fingerprints of the PGP master keys that can be used to establish a trust
- * path between an executable and other files.
+ * We express various time intervals in unsigned long minutes, but may need to
+ * clip some values so that the resulting number of ticks does not overflow an
+ * integer value.
  */
-#define PGP_MASTER_KEY_FP \
+#define MAX_TICK_MINS	(INT_MAX / (60 * TICKSPERSEC))
+
+/*
+ * Fingerprints of the current and previous PGP master keys, to
+ * establish a trust path between an executable and other files.
+ */
+#define PGP_MASTER_KEY_YEAR "2018"
+#define PGP_MASTER_KEY_DETAILS "RSA, 4096-bit"
+#define PGP_MASTER_KEY_FP                                       \
+    "24E1 B1C5 75EA 3C9F F752  A922 76BC 7FE4 EBFD 2D9E"
+#define PGP_PREV_MASTER_KEY_YEAR "2015"
+#define PGP_PREV_MASTER_KEY_DETAILS "RSA, 4096-bit"
+#define PGP_PREV_MASTER_KEY_FP                                  \
     "440D E3B5 B7A1 CA85 B3CC  1718 AB58 5DC6 0467 6F7C"
-#define PGP_RSA_MASTER_KEY_FP \
-    "8F 15 97 DA 25 30 AB 0D  88 D1 92 54 11 CF 0C 4C"
-#define PGP_DSA_MASTER_KEY_FP \
-    "313C 3E76 4B74 C2C5 F2AE  83A8 4F5E 6DF5 6A93 B34E"
 
 /* Three attribute types:
  * The ATTRs (normal attributes) are stored with the characters in
@@ -104,15 +108,16 @@ typedef struct terminal_tag Terminal;
  */
 #define UCSWIDE	     0xDFFF
 
-#define ATTR_NARROW  0x800000U
-#define ATTR_WIDE    0x400000U
-#define ATTR_BOLD    0x040000U
-#define ATTR_UNDER   0x080000U
-#define ATTR_REVERSE 0x100000U
-#define ATTR_BLINK   0x200000U
-#define ATTR_FGMASK  0x0001FFU
-#define ATTR_BGMASK  0x03FE00U
-#define ATTR_COLOURS 0x03FFFFU
+#define ATTR_NARROW  0x0800000U
+#define ATTR_WIDE    0x0400000U
+#define ATTR_BOLD    0x0040000U
+#define ATTR_UNDER   0x0080000U
+#define ATTR_REVERSE 0x0100000U
+#define ATTR_BLINK   0x0200000U
+#define ATTR_FGMASK  0x00001FFU
+#define ATTR_BGMASK  0x003FE00U
+#define ATTR_COLOURS 0x003FFFFU
+#define ATTR_DIM     0x1000000U
 #define ATTR_FGSHIFT 0
 #define ATTR_BGSHIFT 9
 
@@ -530,8 +535,6 @@ GLOBAL int loaded_session;
  */
 GLOBAL char *cmdline_session_name;
 
-struct RSAKey;			       /* be a little careful of scope */
-
 /*
  * Mechanism for getting text strings such as usernames and passwords
  * from the front-end.
@@ -593,11 +596,64 @@ void prompt_ensure_result_size(prompt_t *pr, int len);
 void free_prompts(prompts_t *p);
 
 /*
+ * Data type definitions for true-colour terminal display.
+ * 'optionalrgb' describes a single RGB colour, which overrides the
+ * other colour settings if 'enabled' is nonzero, and is ignored
+ * otherwise. 'truecolour' contains a pair of those for foreground and
+ * background.
+ */
+typedef struct optionalrgb {
+    unsigned char enabled;
+    unsigned char r, g, b;
+} optionalrgb;
+extern const optionalrgb optionalrgb_none;
+typedef struct truecolour {
+    optionalrgb fg, bg;
+} truecolour;
+#define optionalrgb_equal(r1,r2) (                              \
+        (r1).enabled==(r2).enabled &&                           \
+        (r1).r==(r2).r && (r1).g==(r2).g && (r1).b==(r2).b)
+#define truecolour_equal(c1,c2) (               \
+        optionalrgb_equal((c1).fg, (c2).fg) &&  \
+        optionalrgb_equal((c1).bg, (c2).bg))
+
+/*
+ * Enumeration of clipboards. We provide some standard ones cross-
+ * platform, and then permit each platform to extend this enumeration
+ * further by defining PLATFORM_CLIPBOARDS in its own header file.
+ *
+ * CLIP_NULL is a non-clipboard, writes to which are ignored and reads
+ * from which return no data.
+ *
+ * CLIP_LOCAL refers to a buffer within terminal.c, which
+ * unconditionally saves the last data selected in the terminal. In
+ * configurations where a system clipboard is not written
+ * automatically on selection but instead by an explicit UI action,
+ * this is where the code responding to that action can find the data
+ * to write to the clipboard in question.
+ */
+#define CROSS_PLATFORM_CLIPBOARDS(X)                    \
+    X(CLIP_NULL, "null clipboard")                      \
+    X(CLIP_LOCAL, "last text selected in terminal")     \
+    /* end of list */
+
+#define ALL_CLIPBOARDS(X)                       \
+    CROSS_PLATFORM_CLIPBOARDS(X)                \
+    PLATFORM_CLIPBOARDS(X)                      \
+    /* end of list */
+
+#define CLIP_ID(id,name) id,
+enum { ALL_CLIPBOARDS(CLIP_ID) N_CLIPBOARDS };
+#undef CLIP_ID
+
+/*
  * Exports from the front end.
  */
 void request_resize(void *frontend, int, int);
-void do_text(Context, int, int, wchar_t *, int, unsigned long, int);
-void do_cursor(Context, int, int, wchar_t *, int, unsigned long, int);
+void do_text(Context, int, int, wchar_t *, int, unsigned long, int,
+             truecolour);
+void do_cursor(Context, int, int, wchar_t *, int, unsigned long, int,
+               truecolour);
 int char_width(Context ctx, int uc);
 #ifdef OPTIMISE_SCROLL
 void do_scroll(Context, int, int, int);
@@ -609,23 +665,21 @@ Context get_ctx(void *frontend);
 void free_ctx(Context);
 void palette_set(void *frontend, int, int, int, int);
 void palette_reset(void *frontend);
-void write_aclip(void *frontend, char *, int, int);
-void write_clip(void *frontend, wchar_t *, int *, int, int);
-void get_clip(void *frontend, wchar_t **, int *);
+int palette_get(void *frontend, int n, int *r, int *g, int *b);
+void write_clip(void *frontend, int clipboard, wchar_t *, int *,
+                truecolour *, int, int);
 void optimised_move(void *frontend, int, int, int);
 void set_raw_mouse_mode(void *frontend, int);
 void connection_fatal(void *frontend, const char *, ...);
 void nonfatal(const char *, ...);
-void fatalbox(const char *, ...);
 void modalfatalbox(const char *, ...);
 #ifdef macintosh
-#pragma noreturn(fatalbox)
 #pragma noreturn(modalfatalbox)
 #endif
 void do_beep(void *frontend, int);
 void begin_session(void *frontend);
 void sys_cursor(void *frontend, int x, int y);
-void request_paste(void *frontend);
+void frontend_request_paste(void *frontend, int clipboard);
 void frontend_keypress(void *frontend);
 void frontend_echoedit_update(void *frontend, int echo, int edit);
 /* It's the backend's responsibility to invoke this at the start of a
@@ -633,8 +687,8 @@ void frontend_echoedit_update(void *frontend, int echo, int edit);
  * special commands changes. It does not need to invoke it at session
  * shutdown. */
 void update_specials_menu(void *frontend);
-int from_backend(void *frontend, int is_stderr, const char *data, int len);
-int from_backend_untrusted(void *frontend, const char *data, int len);
+int from_backend(void *frontend, int is_stderr, const void *data, int len);
+int from_backend_untrusted(void *frontend, const void *data, int len);
 /* Called when the back end wants to indicate that EOF has arrived on
  * the server-to-client stream. Returns FALSE to indicate that we
  * intend to keep the session open in the other direction, or TRUE to
@@ -647,9 +701,9 @@ char *get_ttymode(void *frontend, const char *mode);
 /*
  * >0 = `got all results, carry on'
  * 0  = `user cancelled' (FIXME distinguish "give up entirely" and "next auth"?)
- * <0 = `please call back later with more in/inlen'
+ * <0 = `please call back later with a fuller bufchain'
  */
-int get_userpass_input(prompts_t *p, const unsigned char *in, int inlen);
+int get_userpass_input(prompts_t *p, bufchain *input);
 #define OPTIMISE_IS_SCROLL 1
 
 void set_iconic(void *frontend, int iconic);
@@ -735,8 +789,10 @@ void cleanup_exit(int);
     X(INT, NONE, ssh_show_banner) /* show USERAUTH_BANNERs (SSH-2 only) */ \
     X(INT, NONE, try_tis_auth) \
     X(INT, NONE, try_ki_auth) \
-    X(INT, NONE, try_gssapi_auth) /* attempt gssapi auth */ \
+    X(INT, NONE, try_gssapi_auth) /* attempt gssapi auth via ssh userauth */ \
+    X(INT, NONE, try_gssapi_kex) /* attempt gssapi auth via ssh kex */ \
     X(INT, NONE, gssapifwd) /* forward tgt via gss */ \
+    X(INT, NONE, gssapirekey) /* KEXGSS refresh interval (mins) */ \
     X(INT, INT, ssh_gsslist) /* preference order for local GSS libs */ \
     X(FILENAME, NONE, ssh_gss_custom) \
     X(INT, NONE, ssh_subsys) /* run a subsystem rather than a command */ \
@@ -835,6 +891,7 @@ void cleanup_exit(int);
     /* Colour options */ \
     X(INT, NONE, ansi_colour) \
     X(INT, NONE, xterm_256_colour) \
+    X(INT, NONE, true_colour) \
     X(INT, NONE, system_colour) \
     X(INT, NONE, try_palette) \
     X(INT, NONE, bold_style) \
@@ -842,10 +899,19 @@ void cleanup_exit(int);
     /* Selection options */ \
     X(INT, NONE, mouse_is_xterm) \
     X(INT, NONE, rect_select) \
+    X(INT, NONE, paste_controls) \
     X(INT, NONE, rawcnp) \
+    X(INT, NONE, utf8linedraw) \
     X(INT, NONE, rtf_paste) \
     X(INT, NONE, mouse_override) \
     X(INT, INT, wordness) \
+    X(INT, NONE, mouseautocopy) \
+    X(INT, NONE, mousepaste) \
+    X(INT, NONE, ctrlshiftins) \
+    X(INT, NONE, ctrlshiftcv) \
+    X(STR, NONE, mousepaste_custom) \
+    X(STR, NONE, ctrlshiftins_custom) \
+    X(STR, NONE, ctrlshiftcv_custom) \
     /* translations */ \
     X(INT, NONE, vtmode) \
     X(STR, NONE, line_codepage) \
@@ -956,9 +1022,8 @@ void conf_del_str_str(Conf *conf, int key, const char *subkey);
 void conf_set_filename(Conf *conf, int key, const Filename *val);
 void conf_set_fontspec(Conf *conf, int key, const FontSpec *val);
 /* Serialisation functions for Duplicate Session */
-int conf_serialised_size(Conf *conf);
-void conf_serialise(Conf *conf, void *data);
-int conf_deserialise(Conf *conf, void *data, int maxsize);/*returns size used*/
+void conf_serialise(BinarySink *bs, Conf *conf);
+int conf_deserialise(Conf *conf, BinarySource *src);/*returns true on success*/
 
 /*
  * Functions to copy, free, serialise and deserialise FontSpecs.
@@ -971,8 +1036,8 @@ int conf_deserialise(Conf *conf, void *data, int maxsize);/*returns size used*/
  */
 FontSpec *fontspec_copy(const FontSpec *f);
 void fontspec_free(FontSpec *f);
-int fontspec_serialise(FontSpec *f, void *data);
-FontSpec *fontspec_deserialise(void *data, int maxsize, int *used);
+void fontspec_serialise(BinarySink *bs, FontSpec *f);
+FontSpec *fontspec_deserialise(BinarySource *src);
 
 /*
  * Exports from noise.c.
@@ -1034,26 +1099,27 @@ void term_mouse(Terminal *, Mouse_Button, Mouse_Button, Mouse_Action,
 		int,int,int,int,int);
 void term_key(Terminal *, Key_Sym, wchar_t *, size_t, unsigned int,
 	      unsigned int);
-void term_deselect(Terminal *);
+void term_lost_clipboard_ownership(Terminal *, int clipboard);
 void term_update(Terminal *);
 void term_invalidate(Terminal *);
 void term_blink(Terminal *, int set_cursor);
-void term_do_paste(Terminal *);
+void term_do_paste(Terminal *, const wchar_t *, int);
 void term_nopaste(Terminal *);
 int term_ldisc(Terminal *, int option);
-void term_copyall(Terminal *);
+void term_copyall(Terminal *, const int *, int);
 void term_reconfig(Terminal *, Conf *);
-void term_seen_key_event(Terminal *);
-int term_data(Terminal *, int is_stderr, const char *data, int len);
-int term_data_untrusted(Terminal *, const char *data, int len);
+void term_request_copy(Terminal *, const int *clipboards, int n_clipboards);
+void term_request_paste(Terminal *, int clipboard);
+void term_seen_key_event(Terminal *); 
+int term_data(Terminal *, int is_stderr, const void *data, int len);
+int term_data_untrusted(Terminal *, const void *data, int len);
 void term_provide_resize_fn(Terminal *term,
 			    void (*resize_fn)(void *, int, int),
 			    void *resize_ctx);
 void term_provide_logctx(Terminal *term, void *logctx);
 void term_set_focus(Terminal *term, int has_focus);
 char *term_get_ttymode(Terminal *term, const char *mode);
-int term_get_userpass_input(Terminal *term, prompts_t *p,
-			    const unsigned char *in, int inlen);
+int term_get_userpass_input(Terminal *term, prompts_t *p, bufchain *input);
 
 int format_arrow_key(char *buf, Terminal *term, int xkey, int ctrl);
 
@@ -1117,7 +1183,7 @@ extern Backend ssh_backend;
 void *ldisc_create(Conf *, Terminal *, Backend *, void *, void *);
 void ldisc_configure(void *, Conf *);
 void ldisc_free(void *);
-void ldisc_send(void *handle, const char *buf, int len, int interactive);
+void ldisc_send(void *handle, const void *buf, int len, int interactive);
 void ldisc_echoedit_update(void *handle);
 
 /*
@@ -1156,6 +1222,11 @@ void pinger_free(Pinger);
 #include "misc.h"
 int conf_launchable(Conf *conf);
 char const *conf_dest(Conf *conf);
+
+/*
+ * Exports from sessprep.c.
+ */
+void prepare_session(Conf *conf);
 
 /*
  * Exports from sercfg.c.
@@ -1197,14 +1268,6 @@ int mk_wcwidth_cjk(unsigned int ucs);
 int mk_wcswidth_cjk(const unsigned int *pwcs, size_t n);
 
 /*
- * Exports from mscrypto.c
- */
-#ifdef MSCRYPTOAPI
-int crypto_startup();
-void crypto_wrapup();
-#endif
-
-/*
  * Exports from pageantc.c.
  *
  * agent_query returns NULL for here's-a-response, and non-NULL for
@@ -1229,10 +1292,10 @@ void crypto_wrapup();
  */
 typedef struct agent_pending_query agent_pending_query;
 agent_pending_query *agent_query(
-    void *in, int inlen, void **out, int *outlen,
+    strbuf *in, void **out, int *outlen,
     void (*callback)(void *, void *, int), void *callback_ctx);
 void agent_cancel_query(agent_pending_query *);
-void agent_query_synchronous(void *in, int inlen, void **out, int *outlen);
+void agent_query_synchronous(strbuf *in, void **out, int *outlen);
 int agent_exists(void);
 
 /*
@@ -1302,8 +1365,7 @@ void display_banner(void *frontend, const char* banner, int size);
  * that aren't equivalents to things in windlg.c et al.
  */
 extern int console_batch_mode;
-int console_get_userpass_input(prompts_t *p, const unsigned char *in,
-                               int inlen);
+int console_get_userpass_input(prompts_t *p);
 void console_provide_logctx(void *logctx);
 int is_interactive(void);
 
@@ -1332,9 +1394,15 @@ void printer_finish_job(printer_job *);
 int cmdline_process_param(const char *, char *, int, Conf *);
 void cmdline_run_saved(Conf *);
 void cmdline_cleanup(void);
-int cmdline_get_passwd_input(prompts_t *p, const unsigned char *in, int inlen);
+int cmdline_get_passwd_input(prompts_t *p);
+int cmdline_host_ok(Conf *);
 #define TOOLTYPE_FILETRANSFER 1
 #define TOOLTYPE_NONNETWORK 2
+#define TOOLTYPE_HOST_ARG 4
+#define TOOLTYPE_HOST_ARG_CAN_BE_SESSION 8
+#define TOOLTYPE_HOST_ARG_PROTOCOL_PREFIX 16
+#define TOOLTYPE_HOST_ARG_FROM_LAUNCHABLE_LOAD 32
+#define TOOLTYPE_PORT_ARG 64
 extern int cmdline_tooltype;
 
 void cmdline_error(const char *, ...);
@@ -1381,6 +1449,16 @@ enum {
 extern const char *const x11_authnames[];  /* declared in x11fwd.c */
 
 /*
+ * An enum for the copy-paste UI action configuration.
+ */
+enum {
+    CLIPUI_NONE,     /* UI action has no copy/paste effect */
+    CLIPUI_IMPLICIT, /* use the default clipboard implicit in mouse actions  */
+    CLIPUI_EXPLICIT, /* use the default clipboard for explicit Copy/Paste */
+    CLIPUI_CUSTOM,   /* use a named clipboard (on systems that support it) */
+};
+
+/*
  * Miscellaneous exports from the platform-specific code.
  *
  * filename_serialise and filename_deserialise have the same semantics
@@ -1392,11 +1470,12 @@ int filename_equal(const Filename *f1, const Filename *f2);
 int filename_is_null(const Filename *fn);
 Filename *filename_copy(const Filename *fn);
 void filename_free(Filename *fn);
-int filename_serialise(const Filename *f, void *data);
-Filename *filename_deserialise(void *data, int maxsize, int *used);
+void filename_serialise(BinarySink *bs, const Filename *f);
+Filename *filename_deserialise(BinarySource *src);
 char *get_username(void);	       /* return value needs freeing */
 char *get_random_data(int bytes, const char *device); /* used in cmdgen.c */
 char filename_char_sanitise(char c);   /* rewrite special pathname chars */
+int open_for_write_would_lose_data(const Filename *fn);
 
 /*
  * Exports and imports from timing.c.
@@ -1515,11 +1594,33 @@ unsigned long timing_last_clock(void);
  * actually running it (e.g. so as to put a zero timeout on a select()
  * call) then it can call toplevel_callback_pending(), which will
  * return true if at least one callback is in the queue.
+ *
+ * run_toplevel_callbacks() returns TRUE if it ran any actual code.
+ * This can be used as a means of speculatively terminating a select
+ * loop, as in PSFTP, for example - if a callback has run then perhaps
+ * it might have done whatever the loop's caller was waiting for.
  */
 typedef void (*toplevel_callback_fn_t)(void *ctx);
 void queue_toplevel_callback(toplevel_callback_fn_t fn, void *ctx);
-void run_toplevel_callbacks(void);
+int run_toplevel_callbacks(void);
 int toplevel_callback_pending(void);
+void delete_callbacks_for_context(void *ctx);
+
+/*
+ * Another facility in callback.c deals with 'idempotent' callbacks,
+ * defined as those which never need to be scheduled again if they are
+ * already scheduled and have not yet run. (An example would be one
+ * which, when called, empties a queue of data completely: when data
+ * is added to the queue, you must ensure a run of the queue-consuming
+ * function has been scheduled, but if one is already pending, you
+ * don't need to schedule a second one.)
+ */
+struct IdempotentCallback {
+    toplevel_callback_fn_t fn;
+    void *ctx;
+    int queued;
+};
+void queue_idempotent_callback(struct IdempotentCallback *ic);
 
 typedef void (*toplevel_callback_notify_fn_t)(void *frontend);
 void request_callback_notifications(toplevel_callback_notify_fn_t notify,

@@ -123,6 +123,9 @@
 			<BuildOrder>27</BuildOrder>
 			<BuildOrder>11</BuildOrder>
 		</CppCompile>
+		<CppCompile Include="putty\marshal.c">
+			<BuildOrder>55</BuildOrder>
+		</CppCompile>
 		<CppCompile Include="putty\misc.c">
 			<BuildOrder>26</BuildOrder>
 			<BuildOrder>14</BuildOrder>
@@ -132,6 +135,9 @@
 		</CppCompile>
 		<CppCompile Include="putty\noshare.c">
 			<BuildOrder>41</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\nullplug.c">
+			<BuildOrder>56</BuildOrder>
 		</CppCompile>
 		<CppCompile Include="putty\pgssapi.c">
 			<BuildOrder>37</BuildOrder>
@@ -146,6 +152,21 @@
 		<CppCompile Include="putty\ssh.c">
 			<BuildOrder>23</BuildOrder>
 			<BuildOrder>19</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\ssh1bpp.c">
+			<BuildOrder>53</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\ssh1censor.c">
+			<BuildOrder>57</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\ssh2bpp.c">
+			<BuildOrder>54</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\ssh2bpp-bare.c">
+			<BuildOrder>59</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\ssh2censor.c">
+			<BuildOrder>58</BuildOrder>
 		</CppCompile>
 		<CppCompile Include="putty\sshaes.c">
 			<BuildOrder>26</BuildOrder>

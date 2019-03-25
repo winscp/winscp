@@ -11,8 +11,9 @@ typedef struct {
     unsigned char i, j, s[256];
 } ArcfourContext;
 
-static void arcfour_block(void *handle, unsigned char *blk, int len)
+static void arcfour_block(void *handle, void *vblk, int len)
 {
+    unsigned char *blk = (unsigned char *)vblk;
     ArcfourContext *ctx = (ArcfourContext *)handle;
     unsigned k;
     unsigned char tmp, i, j, *s;
@@ -79,21 +80,21 @@ static void arcfour_stir(ArcfourContext *ctx)
     sfree(junk);
 }
 
-static void arcfour128_key(void *handle, unsigned char *key)
+static void arcfour128_key(void *handle, const void *key)
 {
     ArcfourContext *ctx = (ArcfourContext *)handle;
     arcfour_setkey(ctx, key, 16);
     arcfour_stir(ctx);
 }
 
-static void arcfour256_key(void *handle, unsigned char *key)
+static void arcfour256_key(void *handle, const void *key)
 {
     ArcfourContext *ctx = (ArcfourContext *)handle;
     arcfour_setkey(ctx, key, 32);
     arcfour_stir(ctx);
 }
 
-static void arcfour_iv(void *handle, unsigned char *key)
+static void arcfour_iv(void *handle, const void *iv)
 {
 
 }

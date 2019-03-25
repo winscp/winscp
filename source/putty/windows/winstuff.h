@@ -23,13 +23,21 @@
 #include <stdint.h>
 #endif
 
+#include "defs.h"
+
 #include "tree234.h"
 
 #ifndef MPEXT
 #include "winhelp.h"
 #endif
 
+#if defined _M_IX86 || defined _M_AMD64
+#define BUILDINFO_PLATFORM "x86 Windows"
+#elif defined _M_ARM || defined _M_ARM64
+#define BUILDINFO_PLATFORM "Arm Windows"
+#else
 #define BUILDINFO_PLATFORM "Windows"
+#endif
 
 struct Filename {
     char *path;
@@ -61,6 +69,10 @@ struct FontSpec *fontspec_new(const char *name,
 
 #define PLATFORM_IS_UTF16 /* enable UTF-16 processing when exchanging
 			   * wchar_t strings with environment */
+
+#define PLATFORM_CLIPBOARDS(X)                      \
+    X(CLIP_SYSTEM, "system clipboard")              \
+    /* end of list */
 
 /*
  * Where we can, we use GetWindowLongPtr and friends because they're
@@ -139,8 +151,6 @@ struct FontSpec *fontspec_new(const char *name,
  *
  * (DECL_WINDOWS_FUNCTION works with both these variants.)
  */
-#define TYPECHECK(to_check, to_return)          \
-    (sizeof(to_check) ? to_return : to_return)
 #define DECL_WINDOWS_FUNCTION(linkage, rettype, name, params)   \
     typedef rettype (WINAPI *t_##name) params;                  \
     linkage t_##name p_##name
@@ -171,13 +181,6 @@ struct FontSpec *fontspec_new(const char *name,
 #endif
 #endif
 
-#ifndef DONE_TYPEDEFS
-#define DONE_TYPEDEFS
-typedef struct conf_tag Conf;
-typedef struct backend_tag Backend;
-typedef struct terminal_tag Terminal;
-#endif
-
 #define PUTTY_REG_POS "Software\\SimonTatham\\PuTTY"
 #define PUTTY_REG_PARENT "Software\\SimonTatham"
 #define PUTTY_REG_PARENT_CHILD "PuTTY"
@@ -204,9 +207,6 @@ typedef struct terminal_tag Terminal;
 #define USES_VTLINE_HACK
 
 typedef HDC Context;
-
-typedef unsigned int uint32; /* int is 32-bits on Win32 and Win64. */
-#define PUTTY_UINT32_DEFINED
 
 #ifndef NO_GSSAPI
 /*
@@ -252,6 +252,13 @@ void quit_help(HWND hwnd);
  */
 GLOBAL Terminal *term;
 GLOBAL void *logctx;
+
+/*
+ * Windows-specific clipboard helper function shared with windlg.c,
+ * which takes the data string in the system code page instead of
+ * Unicode.
+ */
+void write_aclip(void *frontend, int clipboard, char *, int, int);
 
 #define WM_NETEVENT  (WM_APP + 5)
 
@@ -525,9 +532,9 @@ void show_help(HWND hwnd);
 /*
  * Exports from winmisc.c.
  */
-extern OSVERSIONINFO osVersion;
+GLOBAL DWORD osMajorVersion, osMinorVersion, osPlatformId;
+void init_winver(void);
 void dll_hijacking_protection(void);
-BOOL init_winver(void);
 HMODULE load_system32_dll(const char *libname);
 const char *win_strerror(int error);
 void restrict_process_acl(void);
@@ -616,6 +623,11 @@ void clear_jumplist(void);
 BOOL set_explicit_app_user_model_id();
 
 /*
+ * Exports from winnoise.c.
+ */
+int win_read_random(void *buf, unsigned wanted); /* returns TRUE on success */
+
+/*
  * Extra functions in winstore.c over and above the interface in
  * storage.h.
  *
@@ -637,5 +649,16 @@ int remove_from_jumplist_registry(const char *item);
  * sequence of NUL-terminated strings in memory, terminated with an
  * empty one. */
 char *get_jumplist_registry_entries(void);
+
+/*
+ * Windows clipboard-UI wording.
+ */
+#define CLIPNAME_IMPLICIT "Last selected text"
+#define CLIPNAME_EXPLICIT "System clipboard"
+#define CLIPNAME_EXPLICIT_OBJECT "system clipboard"
+/* These defaults are the ones PuTTY has historically had */
+#define CLIPUI_DEFAULT_AUTOCOPY TRUE
+#define CLIPUI_DEFAULT_MOUSE CLIPUI_EXPLICIT
+#define CLIPUI_DEFAULT_INS CLIPUI_EXPLICIT
 
 #endif

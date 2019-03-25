@@ -64,7 +64,8 @@ void log_proxy_stderr(Plug plug, bufchain *buf, const void *vdata, int len)
     const char *data = (const char *)vdata;
     int pos = 0;
     int msglen;
-    char *nlpos, *msg, *fullmsg;
+    const char *nlpos;
+    char *msg, *fullmsg;
 
     /*
      * This helper function allows us to collect the data written to a

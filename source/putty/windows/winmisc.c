@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <limits.h>
 #include "putty.h"
 #ifndef SECURITY_WIN32
 #define SECURITY_WIN32
@@ -13,7 +14,7 @@
 #include <assert.h>
 #endif
 
-OSVERSIONINFO osVersion;
+DWORD osMajorVersion, osMinorVersion, osPlatformId;
 
 char *platform_get_x_display(void) {
     /* We may as well check for DISPLAY in case it's useful. */
@@ -53,25 +54,13 @@ void filename_free(Filename *fn)
     sfree(fn);
 }
 
-int filename_serialise(const Filename *f, void *vdata)
+void filename_serialise(BinarySink *bs, const Filename *f)
 {
-    char *data = (char *)vdata;
-    int len = strlen(f->path) + 1;     /* include trailing NUL */
-    if (data) {
-        strcpy(data, f->path);
-    }
-    return len;
+    put_asciz(bs, f->path);
 }
-Filename *filename_deserialise(void *vdata, int maxsize, int *used)
+Filename *filename_deserialise(BinarySource *src)
 {
-    char *data = (char *)vdata;
-    char *end;
-    end = memchr(data, '\0', maxsize);
-    if (!end)
-        return NULL;
-    end++;
-    *used = end - data;
-    return filename_from_str(data);
+    return filename_from_str(get_asciz(src));
 }
 
 char filename_char_sanitise(char c)
@@ -143,6 +132,7 @@ char *get_username(void)
 	       sspicli.dll WITHOUT proper path sanitizing, so better
 	       load it properly before */
 	    HMODULE sspicli = load_system32_dll("sspicli.dll");
+            (void)sspicli; /* squash compiler warning about unused variable */
 	    GET_WINDOWS_FUNCTION(secur32, GetUserNameExA);
 	    tried_usernameex = TRUE;
 	}
@@ -234,11 +224,41 @@ void dll_hijacking_protection(void)
     }
 }
 
-BOOL init_winver(void)
+void init_winver(void)
 {
+    OSVERSIONINFO osVersion;
+    static HMODULE kernel32_module;
+    DECL_WINDOWS_FUNCTION(static, BOOL, GetVersionExA, (LPOSVERSIONINFO));
+
+    if (!kernel32_module) {
+        kernel32_module = load_system32_dll("kernel32.dll");
+        /* Deliberately don't type-check this function, because that
+         * would involve using its declaration in a header file which
+         * triggers a deprecation warning. I know it's deprecated (see
+         * below) and don't need telling. */
+        GET_WINDOWS_FUNCTION_NO_TYPECHECK(kernel32_module, GetVersionExA);
+    }
+
     ZeroMemory(&osVersion, sizeof(osVersion));
     osVersion.dwOSVersionInfoSize = sizeof (OSVERSIONINFO);
-    return GetVersionEx ( (OSVERSIONINFO *) &osVersion);
+    if (p_GetVersionExA && p_GetVersionExA(&osVersion)) {
+        osMajorVersion = osVersion.dwMajorVersion;
+        osMinorVersion = osVersion.dwMinorVersion;
+        osPlatformId = osVersion.dwPlatformId;
+    } else {
+        /*
+         * GetVersionEx is deprecated, so allow for it perhaps going
+         * away in future API versions. If it's not there, simply
+         * assume that's because Windows is too _new_, so fill in the
+         * variables we care about to a value that will always compare
+         * higher than any given test threshold.
+         *
+         * Normally we should be checking against the presence of a
+         * specific function if possible in any case.
+         */
+        osMajorVersion = osMinorVersion = UINT_MAX; /* a very high number */
+        osPlatformId = VER_PLATFORM_WIN32_NT; /* not Win32s or Win95-like */
+    }
 }
 
 #ifdef MPEXT
@@ -606,31 +626,51 @@ void fontspec_free(FontSpec *f)
     sfree(f->name);
     sfree(f);
 }
-int fontspec_serialise(FontSpec *f, void *vdata)
+void fontspec_serialise(BinarySink *bs, FontSpec *f)
 {
-    char *data = (char *)vdata;
-    int len = strlen(f->name) + 1;     /* include trailing NUL */
-    if (data) {
-        strcpy(data, f->name);
-        PUT_32BIT_MSB_FIRST(data + len, f->isbold);
-        PUT_32BIT_MSB_FIRST(data + len + 4, f->height);
-        PUT_32BIT_MSB_FIRST(data + len + 8, f->charset);
-    }
-    return len + 12;                   /* also include three 4-byte ints */
+    put_asciz(bs, f->name);
+    put_uint32(bs, f->isbold);
+    put_uint32(bs, f->height);
+    put_uint32(bs, f->charset);
 }
-FontSpec *fontspec_deserialise(void *vdata, int maxsize, int *used)
+FontSpec *fontspec_deserialise(BinarySource *src)
 {
-    char *data = (char *)vdata;
-    char *end;
-    if (maxsize < 13)
-        return NULL;
-    end = memchr(data, '\0', maxsize-12);
-    if (!end)
-        return NULL;
-    end++;
-    *used = end - data + 12;
-    return fontspec_new(data,
-                        GET_32BIT_MSB_FIRST(end),
-                        GET_32BIT_MSB_FIRST(end + 4),
-                        GET_32BIT_MSB_FIRST(end + 8));
+    const char *name = get_asciz(src);
+    unsigned isbold = get_uint32(src);
+    unsigned height = get_uint32(src);
+    unsigned charset = get_uint32(src);
+    return fontspec_new(name, isbold, height, charset);
+}
+
+int open_for_write_would_lose_data(const Filename *fn)
+{
+    WIN32_FILE_ATTRIBUTE_DATA attrs;
+    if (!GetFileAttributesEx(fn->path, GetFileExInfoStandard, &attrs)) {
+        /*
+         * Generally, if we don't identify a specific reason why we
+         * should return true from this function, we return false, and
+         * let the subsequent attempt to open the file for real give a
+         * more useful error message.
+         */
+        return FALSE;
+    }
+    if (attrs.dwFileAttributes & (FILE_ATTRIBUTE_DEVICE |
+                                  FILE_ATTRIBUTE_DIRECTORY)) {
+        /*
+         * File is something other than an ordinary disk file, so
+         * opening it for writing will not cause truncation. (It may
+         * not _succeed_ either, but that's not our problem here!)
+         */
+        return FALSE;
+    }
+    if (attrs.nFileSizeHigh == 0 && attrs.nFileSizeLow == 0) {
+        /*
+         * File is zero-length (or may be a named pipe, which
+         * dwFileAttributes can't tell apart from a regular file), so
+         * opening it for writing won't truncate any data away because
+         * there's nothing to truncate anyway.
+         */
+        return FALSE;
+    }
+    return TRUE;
 }
