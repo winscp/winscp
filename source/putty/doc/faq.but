@@ -1002,6 +1002,26 @@ appropriate kind of binaries in \cw{SYSTEM32}. Thus, operations in
 the PuTTY suite that involve it accessing its own executables, such as
 \i{\q{New Session}} and \q{Duplicate Session}, will not work.
 
+\S{faq-iutf8}{Question} After I upgraded PuTTY to 0.68, I can no longer
+connect to my embedded device or appliance.
+
+If your SSH server has started unexpectedly closing SSH connections
+after you enter your password, and it worked before 0.68, you may have
+a buggy server that objects to certain SSH protocol extensions.
+
+The SSH protocol recently gained a new \q{terminal mode}, \cw{IUTF8},
+which PuTTY sends by default; see \k{config-ttymodes}. This is the
+first new terminal mode since the SSH-2 protocol was defined. While
+servers are supposed to ignore modes they don't know about, some buggy
+servers will unceremoniously close the connection if they see anything
+they don't recognise. SSH servers in embedded devices, network
+appliances, and the like seem to disproportionately have this bug.
+
+If you think you have such a server, from 0.69 onwards you can disable
+sending of the \cw{IUTF8} mode: on the SSH / TTY panel, select
+\cw{IUTF8} on the list, select \q{Nothing}, and press \q{Set}. (It's
+not possible to disable sending this mode in 0.68.)
+
 \H{faq-secure} Security questions
 
 \S{faq-publicpc}{Question} Is it safe for me to download PuTTY and

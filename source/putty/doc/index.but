@@ -73,7 +73,7 @@ from SSH and Telnet
 \IM{three-button mouse} mouse, three-button
 
 \IM{left mouse button}{left button} left mouse button
-\IM{middle mouse button}{middle button} middle mouse button
+\IM{middle mouse button}{middle button}{middle-clicking} middle mouse button
 \IM{right mouse button}{right button} right mouse button
 
 \IM{selecting words}{word-by-word selection} selecting whole words
@@ -91,6 +91,18 @@ from SSH and Telnet
 
 \IM{right mouse button, with Ctrl} right mouse button, with Ctrl
 \IM{right mouse button, with Ctrl} Ctrl, with right mouse button
+
+\IM{selections} selections, multiple
+\IM{selections} clipboards, multiple
+
+\IM{PRIMARY} \c{PRIMARY} selection
+\IM{PRIMARY} selection, \c{PRIMARY}
+
+\IM{CLIPBOARD selection} \c{CLIPBOARD} selection
+\IM{CLIPBOARD selection} selection, \c{CLIPBOARD}
+
+\IM{SECONDARY} \c{SECONDARY} selection
+\IM{SECONDARY} selection, \c{SECONDARY}
 
 \IM{system menu} system menu
 \IM{system menu} menu, system
@@ -341,6 +353,11 @@ saved sessions from
 \IM{remote-controlled printing} remote-controlled printing
 \IM{remote-controlled printing} printing, remote-controlled
 \IM{remote-controlled printing} passthrough printing
+
+\IM{Control-H} Control-H
+\IM{Control-H} Ctrl-H
+\IM{Control-?} Control-?
+\IM{Control-?} Ctrl-?
 
 \IM{Home and End keys} Home key
 \IM{Home and End keys} End key
@@ -856,6 +873,9 @@ saved sessions from
 \IM{GSSAPI credential delegation} GSSAPI credential delegation
 \IM{GSSAPI credential delegation} credential delegation, GSSAPI
 \IM{GSSAPI credential delegation} delegation, of GSSAPI credentials
+
+\IM{cascading credentials} cascading credentials
+\IM{cascading credentials} credentials, cascading
 
 \IM{SYSTEM32} \cw{SYSTEM32} directory, on Windows
 

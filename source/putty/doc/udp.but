@@ -138,9 +138,9 @@ construct. Use these wherever possible.
 
 \H{udp-multi-compiler} Independence of specific compiler
 
-Windows PuTTY can currently be compiled with any of four Windows
-compilers: MS Visual C, Borland's freely downloadable C compiler,
-the Cygwin / \cw{mingw32} GNU tools, and \cw{lcc-win32}.
+Windows PuTTY can currently be compiled with any of three Windows
+compilers: MS Visual C, the Cygwin / \cw{mingw32} GNU tools, and
+\cw{clang} (in MS compatibility mode).
 
 This is a really useful property of PuTTY, because it means people
 who want to contribute to the coding don't depend on having a

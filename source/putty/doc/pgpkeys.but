@@ -53,31 +53,25 @@ The current issue of those keys are available for download from the
 PuTTY website, and are also available on PGP keyservers using the key
 IDs listed below.
 
-\dt \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/keys/master-2015.asc}{\s{Master Key}}
+\dt \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/keys/master-2018.asc}{\s{Master Key} (2018)}
 
-\dd RSA, 4096-bit. Key ID: \cw{4096R/04676F7C} (long version:
-\cw{4096R/AB585DC604676F7C}). Fingerprint:
-\cw{440D\_E3B5\_B7A1\_CA85\_B3CC\_\_1718\_AB58\_5DC6\_0467\_6F7C}
+\dd RSA, 4096-bit. Key ID: \cw{76BC7FE4EBFD2D9E}. Fingerprint:
+\cw{24E1\_B1C5\_75EA\_3C9F\_F752\_\_A922\_76BC\_7FE4\_EBFD\_2D9E}
 
-\dt \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/keys/release-2015.asc}{\s{Release Key}}
+\dt \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/keys/release-2018.asc}{\s{Release Key} (2018)}
 
-\dd RSA, 2048-bit. Key ID: \cw{2048R/B43434E4} (long version:
-\cw{2048R/9DFE2648B43434E4}). Fingerprint:
-\cw{0054\_DDAA\_8ADA\_15D2\_768A\_\_6DE7\_9DFE\_2648\_B434\_34E4}
+\dd RSA, 3072-bit. Key ID: \cw{6289A25F4AE8DA82}. Fingerprint:
+\cw{E273\_94AC\_A3F9\_D904\_9522\_\_E054\_6289\_A25F\_4AE8\_DA82}
 
-\dt \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/keys/contact-2016.asc}{\s{Secure Contact Key}}
+\dt \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/keys/snapshot-2018.asc}{\s{Snapshot Key} (2018)}
 
-\dd RSA, 2048-bit. Main key ID: \cw{2048R/8A0AF00B} (long version:
-\cw{2048R/C4FCAAD08A0AF00B}). Encryption subkey ID:
-\cw{2048R/50C2CF5C} (long version: \cw{2048R/9EB39CC150C2CF5C}).
-Fingerprint:
-\cw{8A26\_250E\_763F\_E359\_75F3\_\_118F\_C4FC\_AAD0\_8A0A\_F00B}
+\dd RSA, 3072-bit. Key ID: \cw{38BA7229B7588FD1}. Fingerprint:
+\cw{C92B\_52E9\_9AB6\_1DDA\_33DB\_\_2B7A\_38BA\_7229\_B758\_8FD1}
 
-\dt \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/keys/snapshot-2015.asc}{\s{Snapshot Key}}
+\dt \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/keys/contact-2018.asc}{\s{Secure Contact Key} (2018)}
 
-\dd RSA, 2048-bit. Key ID: \cw{2048R/D15F7E8A} (long version:
-\cw{2048R/EEF20295D15F7E8A}). Fingerprint:
-\cw{0A3B\_0048\_FE49\_9B67\_A234\_\_FEB6\_EEF2\_0295\_D15F\_7E8A}
+\dd RSA, 3072-bit. Key ID: \cw{657D487977F95C98}. Fingerprint:
+\cw{A680\_0082\_2998\_6E46\_22CA\_\_0E43\_657D\_4879\_77F9\_5C98}
 
 \H{pgpkeys-security} Security details
 
@@ -156,28 +150,53 @@ once.
 
 \H{pgpkeys-rollover} Key rollover
 
-Our current keys were generated in September 2015, except for the
-Secure Contact Key which was generated in February 2016 (we didn't
-think of it until later).
+Our current keys were generated in August 2018.
 
-Prior to that, we had a much older set of keys generated in 2000. For
-each of the key types above (other than the Secure Contact Key), we
-provided both an RSA key \e{and} a DSA key (because at the time we
-generated them, RSA was not in practice available to everyone, due to
-export restrictions).
+Each new Master Key is signed with the old one, to show that it really
+is owned by the same people and not substituted by an attacker.
 
-The new Master Key is signed with both of the old ones, to show that
-it really is owned by the same people and not substituted by an
-attacker. Also, we have retrospectively signed the old Release Keys
-with the new Master Key, in case you're trying to verify the
-signatures on a release prior to the rollover and can find a chain of
-trust to those keys from any of the people who have signed our new
-Master Key.
+Each new Master Key also signs the previous Release Keys, in case
+you're trying to verify the signatures on a release prior to the
+rollover and can find a chain of trust to those keys from any of the
+people who have signed our new Master Key.
 
-Future releases will be signed with the up-to-date keys shown above.
-Releases prior to the rollover are signed with the old Release Keys.
+Each release is signed with the Release Key that was current at the
+time of release. We don't go back and re-sign old releases with newly
+generated keys.
 
-For completeness, those old keys are given here:
+The details of all previous keys are given here.
+
+\s{Key generated in 2016} (when we first introduced the Secure Contact Key)
+
+\dt \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/keys/contact-2016.asc}{\s{Secure Contact Key} (2016)}
+
+\dd RSA, 2048-bit. Main key ID: \cw{2048R/8A0AF00B} (long version:
+\cw{2048R/C4FCAAD08A0AF00B}). Encryption subkey ID:
+\cw{2048R/50C2CF5C} (long version: \cw{2048R/9EB39CC150C2CF5C}).
+Fingerprint:
+\cw{8A26\_250E\_763F\_E359\_75F3\_\_118F\_C4FC\_AAD0\_8A0A\_F00B}
+
+\s{Keys generated in the 2015 rollover}
+
+\dt \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/keys/master-2015.asc}{\s{Master Key} (2015)}
+
+\dd RSA, 4096-bit. Key ID: \cw{4096R/04676F7C} (long version:
+\cw{4096R/AB585DC604676F7C}). Fingerprint:
+\cw{440D\_E3B5\_B7A1\_CA85\_B3CC\_\_1718\_AB58\_5DC6\_0467\_6F7C}
+
+\dt \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/keys/release-2015.asc}{\s{Release Key} (2015)}
+
+\dd RSA, 2048-bit. Key ID: \cw{2048R/B43434E4} (long version:
+\cw{2048R/9DFE2648B43434E4}). Fingerprint:
+\cw{0054\_DDAA\_8ADA\_15D2\_768A\_\_6DE7\_9DFE\_2648\_B434\_34E4}
+
+\dt \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/keys/snapshot-2015.asc}{\s{Snapshot Key} (2015)}
+
+\dd RSA, 2048-bit. Key ID: \cw{2048R/D15F7E8A} (long version:
+\cw{2048R/EEF20295D15F7E8A}). Fingerprint:
+\cw{0A3B\_0048\_FE49\_9B67\_A234\_\_FEB6\_EEF2\_0295\_D15F\_7E8A}
+
+\s{Original keys generated in 2000} (two sets, RSA and DSA)
 
 \dt \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/keys/master-rsa.asc}{\s{Master Key} (original RSA)}
 

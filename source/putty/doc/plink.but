@@ -75,6 +75,8 @@ use Plink:
 \c   -i key    private key file for user authentication
 \c   -noagent  disable use of Pageant
 \c   -agent    enable use of Pageant
+\c   -noshare  disable use of connection sharing
+\c   -share    enable use of connection sharing
 \c   -hostkey aa:bb:cc:...
 \c             manually specify a host key (may be repeated)
 \c   -m file   read remote command(s) from file
@@ -234,6 +236,28 @@ time, the batch job will fail rather than hang.
 If you specify the \c{-s} option, Plink passes the specified command
 as the name of an SSH \q{\i{subsystem}} rather than an ordinary command
 line.
+
+(This option is only meaningful with the SSH-2 protocol.)
+
+\S2{plink-option-share} \I{-share-plink}\c{-share}:
+Test and try to share an existing connection.
+
+This option tris to detect if an existing connection can be shared
+(See \k{config-ssh-sharing} for more information about SSH connection
+sharing.) and reuses that connection.
+
+A Plink invocation of the form:
+
+\c plink -share <session>
+\e              iiiiiiiii
+
+will test whether there is currently a viable \q{upstream} for the
+session in question, which can be specified using any syntax you'd
+normally use with Plink to make an actual connection (a host/port
+number, a bare saved session name, \c{-load}, etc). If no \q{upstream}
+viable session is found and \c{-share} is specified, this connection
+will be become the \q{upstream} connection for subsequent connection
+sharing tries.
 
 (This option is only meaningful with the SSH-2 protocol.)
 

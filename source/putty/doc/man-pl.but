@@ -182,6 +182,15 @@ which of the agent's keys to use. }
 \dd Allow use of an authentication agent. (This option is only necessary
 to override a setting in a saved session.)
 
+\dt \cw{\-noshare}
+
+\dd Don't test and try to share an existing connection, always make
+a new connection.
+
+\dt \cw{\-share}
+
+\dd Test and try to share an existing connection.
+
 \dt \cw{\-hostkey} \e{key}
 
 \dd Specify an acceptable host public key. This option may be specified

@@ -1381,31 +1381,47 @@ Note that this option only applies to line-drawing characters which
 characters that were received as Unicode code points will paste as
 Unicode always.
 
+\S{config-utf8linedraw} Combining VT100 line-drawing with UTF-8
+
+\cfg{winhelp-topic}{translation.utf8linedraw}
+
+If PuTTY is configured to treat data from the server as encoded in
+UTF-8, then by default it disables the older VT100-style system of
+control sequences that cause the lower-case letters to be temporarily
+replaced by line drawing characters.
+
+The rationale is that in UTF-8 mode you don't need those control
+sequences anyway, because all the line-drawing characters they access
+are available as Unicode characters already, so there's no need for
+applications to put the terminal into a special state to get at them.
+
+Also, it removes a risk of the terminal \e{accidentally} getting into
+that state: if you accidentally write uncontrolled binary data to a
+non-UTF-8 terminal, it can be surprisingly common to find that your
+next shell prompt appears as a sequence of line-drawing characters and
+then you have to remember or look up how to get out of that mode. So
+by default, UTF-8 mode simply doesn't \e{have} a confusing mode like
+that to get into, accidentally or on purpose.
+
+However, not all applications will see it that way. Even UTF-8
+terminal users will still sometimes have to run software that tries to
+print line-drawing characters in the old-fashioned way. So the
+configuration option \q{Enable VT100 line drawing even in UTF-8 mode}
+puts PuTTY into a hybrid mode in which it understands the VT100-style
+control sequences that change the meaning of the ASCII lower case
+letters, \e{and} understands UTF-8.
+
 \H{config-selection} The Selection panel
 
 The Selection panel allows you to control the way \i{copy and paste}
 work in the PuTTY window.
-
-\S{config-rtfpaste} Pasting in \i{Rich Text Format}
-
-\cfg{winhelp-topic}{selection.rtf}
-
-If you enable \q{Paste to clipboard in RTF as well as plain text},
-PuTTY will write formatting information to the clipboard as well as
-the actual text you copy. The effect of this is
-that if you paste into (say) a word processor, the text will appear
-in the word processor in the same \i{font}, \i{colour}, and style 
-(e.g. bold, underline) PuTTY was using to display it.
-
-This option can easily be inconvenient, so by default it is
-disabled.
 
 \S{config-mouse} Changing the actions of the mouse buttons
 
 \cfg{winhelp-topic}{selection.buttons}
 
 PuTTY's copy and paste mechanism is by default modelled on the Unix
-\c{xterm} application. The X Window System uses a three-button mouse,
+\i\c{xterm} application. The X Window System uses a three-button mouse,
 and the convention is that the \i{left button} \I{selecting text}selects,
 the \i{right button} extends an existing selection, and the
 \i{middle button} pastes.
@@ -1469,13 +1485,112 @@ select a rectangular block. Using the \q{Default selection mode}
 control, you can set \i{rectangular selection} as the default, and then
 you have to hold down Alt to get the \e{normal} behaviour.
 
-\S{config-charclasses} Configuring \i{word-by-word selection}
+\S{config-clipboards} Assigning copy and paste actions to clipboards
 
-\cfg{winhelp-topic}{selection.charclasses}
+Here you can configure which clipboard(s) are written or read by
+PuTTY's various copy and paste actions.
 
-PuTTY will select a word at a time in the terminal window if you
-\i{double-click} to begin the drag. This panel allows you to control
-precisely what is considered to be a word.
+The X Window System (which underlies most Unix graphical interfaces)
+provides multiple clipboards (or \q{\i{selections}}), and many
+applications support more than one of them by a different user
+interface mechanism.
+
+The two most commonly used selections are called \cq{\i{PRIMARY}} and
+\cq{\I{CLIPBOARD selection}CLIPBOARD}; in applications supporting both,
+the usual behaviour is that \cw{PRIMARY} is used by mouse-only actions
+(selecting text automatically copies it to \cw{PRIMARY}, and
+\i{middle-clicking} pastes from \cw{PRIMARY}), whereas \cw{CLIPBOARD}
+is used by explicit Copy and Paste menu items or keypresses such as
+\i{Ctrl-C} and \i{Ctrl-V}.
+
+On other platforms such as Windows, where there is a single system
+clipboard, PuTTY provides a second clipboard-like facility by permitting
+you to paste the text you last selected in \e{this window}, whether or
+not it is currently also in the system clipboard. This is not enabled
+by default.
+
+\S2{config-selection-autocopy} \q{Auto-copy selected text}
+
+\cfg{winhelp-topic}{selection.autocopy}
+
+The checkbox \q{Auto-copy selected text to system clipboard} controls
+whether or not selecting text in the PuTTY terminal window
+automatically has the side effect of copying it to the system
+clipboard, without requiring a separate user interface action.
+
+On X, the wording of this option is changed slightly so that
+\cq{CLIPBOARD} is mentioned in place of the \q{system clipboard}. Text
+selected in the terminal window will \e{always} be automatically
+placed in the \cw{PRIMARY} selection, but if you tick this box, it
+will \e{also} be placed in \cq{CLIPBOARD} at the same time.
+
+\S2{config-selection-clipactions} Choosing a clipboard for UI actions
+
+\cfg{winhelp-topic}{selection.clipactions}
+
+PuTTY has three user-interface actions which can be configured to
+paste into the terminal (not counting menu items). You can click
+whichever mouse button (if any) is configured to paste (see
+\k{config-mouse}); you can press \i{Shift-Ins}; or you can press
+\i{Ctrl-Shift-V}, although that action is not enabled by default.
+
+You can configure which of the available clipboards each of these
+actions pastes from (including turning the paste action off
+completely). On platforms with a single system clipboard, the
+available options are to paste from that clipboard or to paste from
+PuTTY's internal memory of the \i{last selected text} within that
+window. On X, the standard options are \cw{CLIPBOARD} or \cw{PRIMARY}.
+
+(\cw{PRIMARY} is conceptually similar in that it \e{also} refers to
+the last selected text \dash just across all applications instead of
+just this window.)
+
+The two keyboard options each come with a corresponding key to copy
+\e{to} the same clipboard. Whatever you configure Shift-Ins to paste
+from, \i{Ctrl-Ins} will copy to the same location; similarly,
+\i{Ctrl-Shift-C} will copy to whatever Ctrl-Shift-V pastes from.
+
+On X, you can also enter a selection name of your choice. For example,
+there is a rarely-used standard selection called \cq{\i{SECONDARY}}, which
+Emacs (for example) can work with if you hold down the Meta key while
+dragging to select or clicking to paste; if you configure a PuTTY
+keyboard action to access this clipboard, then you can interoperate
+with other applications' use of it. Another thing you could do would
+be to invent a clipboard name yourself, to create a special clipboard
+shared \e{only} between instances of PuTTY, or between just instances
+configured in that particular way.
+
+\S{config-paste-ctrl-char} \q{Permit control characters in pasted text}
+
+\cfg{winhelp-topic}{selection.pastectrl}
+
+It is possible for the clipboard to contain not just text (with
+newlines and tabs) but also control characters such as ESC which could
+have surprising effects if pasted into a terminal session, depending
+on what program is running on the server side. Copying text from a
+mischievous web page could put such characters onto the clipboard.
+
+By default, PuTTY filters out the more unusual control characters,
+only letting through the more obvious text-formatting characters
+(newlines, tab, backspace, and DEL).
+
+Setting this option stops this filtering; on paste, any character on
+the clipboard is sent to the session uncensored. This might be useful
+if you are deliberately using control character pasting as a simple
+form of scripting, for instance.
+
+\H{config-selection-copy} The Copy panel
+
+The Copy configuration panel controls behaviour specifically related to
+copying from the terminal window to the clipboard.
+
+\S{config-charclasses} Character classes
+
+\cfg{winhelp-topic}{copy.charclasses}
+
+PuTTY will \I{word-by-word selection}select a word at a time in the
+terminal window if you \i{double-click} to begin the drag. This section
+allows you to control precisely what is considered to be a word.
 
 Each character is given a \e{class}, which is a small number
 (typically 0, 1 or 2). PuTTY considers a single word to be any
@@ -1510,6 +1625,20 @@ sent by the server. This configuration option controls the
 terminal (see \k{reset-terminal}). However, if you modify this
 option in mid-session using \q{Change Settings}, it will take effect
 immediately.
+
+\S{config-rtfcopy} Copying in \i{Rich Text Format}
+
+\cfg{winhelp-topic}{copy.rtf}
+
+If you enable \q{Copy to clipboard in RTF as well as plain text},
+PuTTY will write formatting information to the clipboard as well as
+the actual text you copy. The effect of this is
+that if you paste into (say) a word processor, the text will appear
+in the word processor in the same \i{font}, \i{colour}, and style 
+(e.g. bold, underline) PuTTY was using to display it.
+
+This option can easily be inconvenient, so by default it is
+disabled.
 
 \H{config-colours} The Colours panel
 
@@ -1548,6 +1677,15 @@ terminal. You can check this using a command such as \c{infocmp}:
 If you do not see \cq{colors#256} in the output, you may need to
 change your terminal setting. On modern Linux machines, you could
 try \cq{xterm-256color}.
+
+\S{config-truecolour} \q{Allow terminal to use 24-bit colour}
+
+\cfg{winhelp-topic}{colours.truecolour}
+
+This option is enabled by default. If it is disabled, PuTTY will
+ignore any control sequences sent by the server which use the control
+sequences supported by modern terminals to specify arbitrary 24-bit
+RGB colour value.
 
 \S{config-boldcolour} \q{Indicate bolded text by changing...}
 
@@ -1821,9 +1959,10 @@ PuTTY will prompt for a username at the time you make a connection.
 In some environments, such as the networks of large organisations
 implementing \i{single sign-on}, a more sensible default may be to use
 the name of the user logged in to the local operating system (if any);
-this is particularly likely to be useful with \i{GSSAPI} authentication
-(see \k{config-ssh-auth-gssapi}). This control allows you to change
-the default behaviour.
+this is particularly likely to be useful with \i{GSSAPI} key exchange
+and user authentication (see \k{config-ssh-auth-gssapi} and
+\k{config-ssh-gssapi-kex}). This control allows you to change the default
+behaviour.
 
 The current system username is displayed in the dialog as a
 convenience. It is not saved in the configuration; if a saved session
@@ -2440,9 +2579,46 @@ well-known groups, if possible.
 effort on the part of the client, and somewhat less on the part of
 the server, than Diffie-Hellman key exchange.
 
+\b \q{GSSAPI key exchange}: see \k{config-ssh-gssapi-kex}.
+
 If the first algorithm PuTTY finds is below the \q{warn below here}
 line, you will see a warning box when you make the connection, similar
 to that for cipher selection (see \k{config-ssh-encryption}).
+
+\S2{config-ssh-gssapi-kex} GSSAPI-based key exchange
+
+PuTTY supports a set of key exchange methods that also incorporates
+GSSAPI-based authentication. They are enabled with the
+\q{Attempt GSSAPI key exchange} checkbox (which also appears on the
+\q{GSSAPI} panel).
+
+PuTTY can only perform the GSSAPI-authenticated key exchange methods
+when using Kerberos V5, and not other GSSAPI mechanisms. If the user
+running PuTTY has current Kerberos V5 credentials, then PuTTY will
+select the GSSAPI key exchange methods in preference to any of the
+ordinary SSH key exchange methods configured in the preference list.
+
+The advantage of doing GSSAPI authentication as part of the SSH key
+exchange is apparent when you are using credential delegation (see
+\k{config-ssh-auth-gssapi-delegation}). The SSH key exchange can be
+repeated later in the session, and this allows your Kerberos V5
+credentials (which are typically short-lived) to be automatically
+re-delegated to the server when they are refreshed on the client.
+(This feature is commonly referred to as \q{\i{cascading credentials}}.)
+
+If your server doesn't support GSSAPI key exchange, it may still
+support GSSAPI in the SSH user authentication phase. This will still
+let you log in using your Kerberos credentials, but will only allow
+you to delegate the credentials that are active at the beginning of
+the session; they can't be refreshed automatically later, in a
+long-running session.
+
+Another effect of GSSAPI key exchange is that it replaces the usual
+SSH mechanism of permanent host keys described in \k{gs-hostkey}.
+So if you use this method, then you won't be asked any interactive
+questions about whether to accept the server's host key. Instead, the
+Kerberos exchange will verify the identity of the host you connect to,
+at the same time as verifying your identity to it.
 
 \S{config-ssh-kex-rekey} \ii{Repeat key exchange}
 
@@ -2485,6 +2661,14 @@ purposes, rekeys have much the same properties as keepalives.
 (Except that rekeys have cryptographic value in themselves, so you
 should bear that in mind when deciding whether to turn them off.)
 Note, however, the the SSH \e{server} can still initiate rekeys.
+
+\b \q{Minutes between GSSAPI checks}, if you're using GSSAPI key
+exchange, specifies how often the GSSAPI credential cache is checked
+to see whether new tickets are available for delegation, or current
+ones are near expiration. If forwarding of GSSAPI credentials is
+enabled, PuTTY will try to rekey as necessary to keep the delegated
+credentials from expiring. Frequent checks are recommended; rekeying
+only happens when needed.
 
 \b \q{Max data before rekey} specifies the amount of data (in bytes)
 that is permitted to flow in either direction before a rekey is
@@ -2839,15 +3023,28 @@ machine, which in principle can authenticate in many different ways
 but in practice is usually used with the \i{Kerberos} \i{single sign-on}
 protocol to implement \i{passwordless login}.
 
-GSSAPI is only available in the SSH-2 protocol.
+GSSAPI authentication is only available in the SSH-2 protocol.
 
-The topmost control on the GSSAPI subpanel is the checkbox labelled
-\q{Attempt GSSAPI authentication}. If this is disabled, GSSAPI will
-not be attempted at all and the rest of this panel is unused. If it
-is enabled, GSSAPI authentication will be attempted, and (typically)
-if your client machine has valid Kerberos credentials loaded, then
-PuTTY should be able to authenticate automatically to servers that
-support Kerberos logins.
+PuTTY supports two forms of GSSAPI-based authentication. In one of
+them, the SSH key exchange happens in the normal way, and GSSAPI is
+only involved in authenticating the user. The checkbox labelled
+\q{Attempt GSSAPI authentication} controls this form.
+
+In the other method, GSSAPI-based authentication is combined with the
+SSH key exchange phase. If this succeeds, then the SSH authentication
+step has nothing left to do. See \k{config-ssh-gssapi-kex} for more
+information about this method. The checkbox labelled \q{Attempt GSSAPI
+key exchange} controls this form. (The same checkbox appears on the
+\q{Kex} panel.)
+
+If one or both of these controls is enabled, then GSSAPI
+authentication will be attempted in one form or the other, and
+(typically) if your client machine has valid Kerberos credentials
+loaded, then PuTTY should be able to authenticate automatically to
+servers that support Kerberos logins.
+
+If both of those checkboxes are disabled, PuTTY will not try any form
+of GSSAPI at all, and the rest of this panel will be unused.
 
 \S{config-ssh-auth-gssapi-delegation} \q{Allow GSSAPI credential
 delegation}
@@ -2875,6 +3072,10 @@ administrator of one server is likely to already have access to the
 other services too; so this would typically be less of a risk than
 SSH agent forwarding.
 
+If your connection is not using GSSAPI key exchange, it is possible
+for the delegation to expire during your session. See
+\k{config-ssh-gssapi-kex} for more information.
+
 \S{config-ssh-auth-gssapi-libraries} Preference order for GSSAPI
 libraries
 
@@ -2885,11 +3086,11 @@ method to be accessed through the same interface. Therefore, more
 than one authentication library may exist on your system which can
 be accessed using GSSAPI.
 
-PuTTY contains native support for a few well-known such libraries,
-and will look for all of them on your system and use whichever it
-finds. If more than one exists on your system and you need to use a
-specific one, you can adjust the order in which it will search using
-this preference list control.
+PuTTY contains native support for a few well-known such libraries
+(including Windows' \i{SSPI}), and will look for all of them on your system
+and use whichever it finds. If more than one exists on your system and
+you need to use a specific one, you can adjust the order in which it
+will search using this preference list control.
 
 One of the options in the preference list is to use a user-specified
 GSSAPI library. If the library you want to use is not mentioned by

@@ -21,27 +21,31 @@ the \I{Windows clipboard}Windows \i{clipboard}, so that you can
 paste (for example) URLs into a web browser, or paste from a word
 processor or spreadsheet into your terminal session.
 
-PuTTY's copy and paste works entirely with the \i{mouse}. In order
-to copy text to the clipboard, you just click the \i{left mouse
-button} in the \i{terminal window}, and drag to \I{selecting text}select
-text. When you let go of the button, the text is \e{automatically}
-copied to the clipboard. You do not need to press Ctrl-C or
-Ctrl-Ins; in fact, if you do press Ctrl-C, PuTTY will send a Ctrl-C
-character down your session to the server where it will probably
-cause a process to be interrupted.
+By default, PuTTY's copy and paste works entirely with the \i{mouse}.
+(This will be familiar to people who have used \i\c{xterm} on Unix.)
+In order to copy text to the clipboard, you just click the \i{left
+mouse button} in the \i{terminal window}, and drag to
+\I{selecting text}select text. When you let go of the button, the text
+is \e{automatically} copied to the clipboard. You do not need to press
+\i{Ctrl-C} or \i{Ctrl-Ins}; in fact, if you do press Ctrl-C, PuTTY will
+send a Ctrl-C character down your session to the server where it will
+probably cause a process to be interrupted.
 
-Pasting is done using the right button (or the middle mouse button,
-if you have a \i{three-button mouse} and have set it up; see
+Pasting into PuTTY is done using the right button (or the middle mouse
+button, if you have a \i{three-button mouse} and have set it up; see
 \k{config-mouse}). (Pressing \i{Shift-Ins}, or selecting \q{Paste}
 from the \I{right mouse button, with Ctrl}Ctrl+right-click
 \i{context menu}, have the same effect.) When
 you click the \i{right mouse button}, PuTTY will read whatever is in
-the Windows clipboard and paste it into your session, \e{exactly} as
-if it had been typed at the keyboard. (Therefore, be careful of
-pasting formatted text into an editor that does automatic indenting;
-you may find that the spaces pasted from the clipboard plus the
-spaces added by the editor add up to too many spaces and ruin the
-formatting. There is nothing PuTTY can do about this.)
+the Windows clipboard and paste it into your session. By default, this
+behaves \e{exactly} as if the clipboard contents had been typed at the
+keyboard; therefore, be careful of pasting formatted text into an
+editor that does automatic \i{indenting}, as you may find that the spaces
+pasted from the clipboard plus the spaces added by the editor add up
+to too many spaces and ruin the formatting. (Some remote applications
+can ask PuTTY to identify text that is being pasted, to avoid this
+sort of problem; but if your application does not, there is nothing
+PuTTY can do to avoid this.)
 
 If you \i{double-click} the left mouse button, PuTTY will
 \I{selecting words}select a whole word. If you double-click, hold
@@ -69,12 +73,24 @@ middle mouse button to paste, then the right mouse button does this
 instead.) Click the button on the screen, and you can pick up the
 nearest end of the selection and drag it to somewhere else.
 
+If you are running PuTTY itself on Unix (not just using it to connect
+to a Unix system from Windows), by default you will likely have to use
+similar mouse actions in other applications to paste the text you
+copied from PuTTY, and to copy text for pasting into PuTTY; actions
+like \i{Ctrl-C} and Ctrl-V will likely not behave as you expect.
+\K{config-clipboards} explains why this is, and how you can change the
+behaviour. (On Windows there is only a single selection shared with other
+applications, so this confusion does not arise.)
+
 It's possible for the server to ask to \I{mouse reporting}handle mouse
 clicks in the PuTTY window itself.  If this happens, the \i{mouse pointer}
 will turn into an arrow, and using the mouse to copy and paste will only
 work if you hold down Shift.  See \k{config-features-mouse} and
 \k{config-mouseshift} for details of this feature and how to configure
 it.
+
+You can customise much of this behaviour, for instance to enable copy
+and paste from the keyboard; see \k{config-selection}.
 
 \S{using-scrollback} \I{scrollback}Scrolling the screen back
 
@@ -86,8 +102,10 @@ window to look back up the session \i{history} and find it again.
 
 As well as using the scrollbar, you can also page the scrollback up
 and down by pressing \i{Shift-PgUp} and \i{Shift-PgDn}. You can
-scroll a line at a time using \i{Ctrl-PgUp} and \i{Ctrl-PgDn}. These
-are still available if you configure the scrollbar to be invisible.
+scroll a line at a time using \i{Ctrl-PgUp} and \i{Ctrl-PgDn}, or
+to the top/bottom of the scrollback with \i{Ctrl-Shift-PgUp} and
+\i{Ctrl-Shift-PgDn}. These are still available if you configure the
+scrollbar to be invisible.
 
 By default the last 2000 lines scrolled off the top are
 preserved for you to look at. You can increase (or decrease) this
@@ -1042,3 +1060,15 @@ any processes started with Duplicate Session, New Session etc.
 (However, if you're invoking PuTTY tools explicitly, for instance as a
 proxy command, you'll need to arrange to pass them the
 \c{-restrict-acl} option yourself, if that's what you want.)
+
+If Pageant is started with the \c{-restrict-acl} option, and you use
+it to launch a PuTTY session from its System Tray submenu, then
+Pageant will \e{not} default to starting the PuTTY subprocess with a
+restricted ACL. This is because PuTTY is more likely to suffer reduced
+functionality as a result of restricted ACLs (e.g. screen reader
+software will have a greater need to interact with it), whereas
+Pageant stores the more critical information (hence benefits more from
+the extra protection), so it's reasonable to want to run Pageant but
+not PuTTY with the ACL restrictions. You can force Pageant to start
+subsidiary PuTTY processes with a restricted ACL if you also pass the
+\c{-restrict-putty-acl} option.
