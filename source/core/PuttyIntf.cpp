@@ -694,7 +694,6 @@ RawByteString LoadPublicKey(const UnicodeString & FileName, UnicodeString & Algo
   try
   {
     char * AlgorithmStr = NULL;
-    int PublicKeyLen = 0;
     char * CommentStr = NULL;
     const char * ErrorStr = NULL;
     strbuf * PublicKeyBuf = strbuf_new();
