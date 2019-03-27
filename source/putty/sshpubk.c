@@ -984,7 +984,7 @@ int openssh_loadpub(FILE *fp, char **algorithm,
 #ifndef MPEXT
     line = chomp(fgetline(fp));
 #else
-    line = aline;
+    line = dupstr(aline);
 #endif
 
     base64 = strchr(line, ' ');
@@ -1036,17 +1036,13 @@ int openssh_loadpub(FILE *fp, char **algorithm,
         *commentptr = comment;
     else
         sfree(comment);
-#ifndef MPEXT
     sfree(line);
-#endif
     put_data(bs, pubblob, pubbloblen);
     sfree(pubblob);
     return TRUE;
 
   error:
-#ifndef MPEXT
     sfree(line);
-#endif
     sfree(comment);
     sfree(pubblob);
     if (errorstr)
