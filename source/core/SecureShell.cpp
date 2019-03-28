@@ -53,6 +53,8 @@ __fastcall TSecureShell::TSecureShell(TSessionUI* UI,
   FSimple = false;
   FCollectPrivateKeyUsage = false;
   FWaitingForData = 0;
+  FCallbackSet.reset(new callback_set());
+  memset(FCallbackSet.get(), 0, sizeof(callback_set));
 }
 //---------------------------------------------------------------------------
 __fastcall TSecureShell::~TSecureShell()
@@ -600,6 +602,11 @@ void __fastcall TSecureShell::Init()
       throw;
     }
   }
+}
+//---------------------------------------------------------------------------
+struct callback_set * TSecureShell::GetCallbackSet()
+{
+  return FCallbackSet.get();
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TSecureShell::ConvertFromPutty(const char * Str, int Length)
@@ -1904,7 +1911,7 @@ bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventR
       do
       {
         unsigned int TimeoutStep = std::min(GUIUpdateInterval, Timeout);
-        if (toplevel_callback_pending())
+        if (toplevel_callback_pending(GetCallbackSet()))
         {
           TimeoutStep = 0;
         }
@@ -1916,7 +1923,7 @@ bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventR
         int PrevDataLen = (-static_cast<int>(OutLen) + static_cast<int>(PendLen));
         // 2) Changes in session state - wait criteria in Init()
         bool PrevSessionState = get_ssh_state_session(FBackendHandle);
-        if (run_toplevel_callbacks() &&
+        if (run_toplevel_callbacks(GetCallbackSet()) &&
             (((-static_cast<int>(OutLen) + static_cast<int>(PendLen)) > PrevDataLen) ||
              (PrevSessionState != get_ssh_state_session(FBackendHandle))))
         {

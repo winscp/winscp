@@ -74,10 +74,8 @@ void __fastcall DontSaveRandomSeed()
   SaveRandomSeed = false;
 }
 //---------------------------------------------------------------------------
-extern "C" char * do_select(Plug plug, SOCKET skt, int startup)
+TSecureShell * GetSecureShell(Plug plug, bool & pfwd)
 {
-  void * frontend;
-
   if (!is_ssh(plug) && !is_pfwd(plug))
   {
     // If it is not SSH/PFwd plug, then it must be Proxy plug.
@@ -86,16 +84,29 @@ extern "C" char * do_select(Plug plug, SOCKET skt, int startup)
     plug = AProxySocket->plug;
   }
 
-  bool pfwd = is_pfwd(plug);
+  pfwd = is_pfwd(plug);
   if (pfwd)
   {
     plug = (Plug)get_pfwd_backend(plug);
   }
 
-  frontend = get_ssh_frontend(plug);
+  void * frontend = get_ssh_frontend(plug);
   DebugAssert(frontend);
 
-  TSecureShell * SecureShell = reinterpret_cast<TSecureShell*>(frontend);
+  return reinterpret_cast<TSecureShell*>(frontend);
+}
+//---------------------------------------------------------------------------
+struct callback_set * get_callback_set(Plug plug)
+{
+  bool pfwd;
+  TSecureShell * SecureShell = GetSecureShell(plug, pfwd);
+  return SecureShell->GetCallbackSet();
+}
+//---------------------------------------------------------------------------
+extern "C" char * do_select(Plug plug, SOCKET skt, int startup)
+{
+  bool pfwd;
+  TSecureShell * SecureShell = GetSecureShell(plug, pfwd);
   if (!pfwd)
   {
     SecureShell->UpdateSocket(skt, startup);

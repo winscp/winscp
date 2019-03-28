@@ -1629,7 +1629,7 @@ void try_send(NetSocket *s)
 		 * moment.
 		 */
 		s->pending_error = err;
-                queue_toplevel_callback(socket_error_callback, s);
+                queue_toplevel_callback(get_callback_set(s->plug), socket_error_callback, s);
 		return;
 	    }
 	} else {

@@ -27,6 +27,10 @@
 #define GSS_CTXT_MAYFAIL (1<<3)	/* Context may expire during handshake */
 #endif
 
+#ifdef MPEXT
+#define queue_idempotent_callback(IC) queue_idempotent_callback(get_callback_set(&ssh->plugvt), IC)
+#endif
+
 static const char *const ssh2_disconnect_reasons[] = {
     NULL,
     "host not allowed to connect",

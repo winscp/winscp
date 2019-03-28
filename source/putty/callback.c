@@ -14,19 +14,31 @@ struct callback {
     void *ctx;
 };
 
+#ifdef MPEXT
+// PuTTY has one thread only, so run_toplevel_callbacks does not cater for multi threaded uses.
+// It would call callbacks registered any on thread from the thread that happens to call it.
+// We need to create separate callback queue for every SSH session.
+#define CALLBACK_SET_VAR callback_set_v
+#define CALLBACK_SET_VAR_PARAM CALLBACK_SET_VAR,
+#define cbcurr CALLBACK_SET_VAR->cbcurr
+#define cbhead CALLBACK_SET_VAR->cbhead
+#define cbtail CALLBACK_SET_VAR->cbtail
+#else
+#define CALLBACK_SET_VAR_PARAM
 struct callback *cbcurr = NULL, *cbhead = NULL, *cbtail = NULL;
+#endif
 
+#ifndef MPEXT
 toplevel_callback_notify_fn_t notify_frontend = NULL;
 void *frontend = NULL;
 
 void request_callback_notifications(toplevel_callback_notify_fn_t fn,
                                     void *fr)
 {
-    MPEXT_PUTTY_SECTION_ENTER;
     notify_frontend = fn;
     frontend = fr;
-    MPEXT_PUTTY_SECTION_LEAVE;
 }
+#endif
 
 static void run_idempotent_callback(void *ctx)
 {
@@ -35,14 +47,15 @@ static void run_idempotent_callback(void *ctx)
     ic->fn(ic->ctx);
 }
 
-void queue_idempotent_callback(struct IdempotentCallback *ic)
+void queue_idempotent_callback(CALLBACK_SET struct IdempotentCallback *ic)
 {
     if (ic->queued)
         return;
     ic->queued = TRUE;
-    queue_toplevel_callback(run_idempotent_callback, ic);
+    queue_toplevel_callback(CALLBACK_SET_VAR_PARAM run_idempotent_callback, ic);
 }
 
+#ifndef MPEXT
 void delete_callbacks_for_context(void *ctx)
 {
     struct callback *newhead, *newtail;
@@ -68,16 +81,17 @@ void delete_callbacks_for_context(void *ctx)
     cbhead = newhead;
     cbtail = newtail;
 }
+#endif
 
-void queue_toplevel_callback(toplevel_callback_fn_t fn, void *ctx)
+void queue_toplevel_callback(CALLBACK_SET toplevel_callback_fn_t fn, void *ctx)
 {
     struct callback *cb;
 
-    MPEXT_PUTTY_SECTION_ENTER;
     cb = snew(struct callback);
     cb->fn = fn;
     cb->ctx = ctx;
 
+#ifndef MPEXT
     /*
      * If the front end has requested notification of pending
      * callbacks, and we didn't already have one queued, let it know
@@ -91,6 +105,7 @@ void queue_toplevel_callback(toplevel_callback_fn_t fn, void *ctx)
      */
     if (notify_frontend && !cbhead && !cbcurr)
         notify_frontend(frontend);
+#endif
 
     if (cbtail)
         cbtail->next = cb;
@@ -98,13 +113,11 @@ void queue_toplevel_callback(toplevel_callback_fn_t fn, void *ctx)
         cbhead = cb;
     cbtail = cb;
     cb->next = NULL;
-    MPEXT_PUTTY_SECTION_LEAVE;
 }
 
-int run_toplevel_callbacks(void)
+int run_toplevel_callbacks(CALLBACK_SET_ONLY)
 {
     int done_something = FALSE;
-    MPEXT_PUTTY_SECTION_ENTER;
 
     if (cbhead) {
         /*
@@ -127,11 +140,10 @@ int run_toplevel_callbacks(void)
 
         done_something = TRUE;
     }
-    MPEXT_PUTTY_SECTION_LEAVE;
     return done_something;
 }
 
-int toplevel_callback_pending(void)
+int toplevel_callback_pending(CALLBACK_SET_ONLY)
 {
     // MP does not have to be guarded
     return cbcurr != NULL || cbhead != NULL;

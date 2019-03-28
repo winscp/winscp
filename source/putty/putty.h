@@ -1601,10 +1601,24 @@ unsigned long timing_last_clock(void);
  * it might have done whatever the loop's caller was waiting for.
  */
 typedef void (*toplevel_callback_fn_t)(void *ctx);
-void queue_toplevel_callback(toplevel_callback_fn_t fn, void *ctx);
-int run_toplevel_callbacks(void);
-int toplevel_callback_pending(void);
+#ifdef MPEXT
+typedef struct callback callback;
+struct callback_set {
+    struct callback *cbcurr, *cbhead, *cbtail;
+};
+#define CALLBACK_SET_ONLY struct callback_set * callback_set_v
+#define CALLBACK_SET CALLBACK_SET_ONLY,
+#else
+#define CALLBACK_SET_ONLY void
+#define CALLBACK_SET
+#endif
+void queue_toplevel_callback(CALLBACK_SET toplevel_callback_fn_t fn, void *ctx);
+int run_toplevel_callbacks(CALLBACK_SET_ONLY);
+int toplevel_callback_pending(CALLBACK_SET_ONLY);
+struct callback_set * get_callback_set(Plug plug);
+#ifndef MPEXT
 void delete_callbacks_for_context(void *ctx);
+#endif
 
 /*
  * Another facility in callback.c deals with 'idempotent' callbacks,
@@ -1620,11 +1634,13 @@ struct IdempotentCallback {
     void *ctx;
     int queued;
 };
-void queue_idempotent_callback(struct IdempotentCallback *ic);
+void queue_idempotent_callback(CALLBACK_SET struct IdempotentCallback *ic);
 
+#ifndef MPEXT
 typedef void (*toplevel_callback_notify_fn_t)(void *frontend);
 void request_callback_notifications(toplevel_callback_notify_fn_t notify,
                                     void *frontend);
+#endif
 
 /*
  * Define no-op macros for the jump list functions, on platforms that

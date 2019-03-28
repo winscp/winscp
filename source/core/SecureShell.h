@@ -17,6 +17,7 @@ typedef struct _WSANETWORKEVENTS WSANETWORKEVENTS;
 typedef UINT_PTR SOCKET;
 typedef std::set<SOCKET> TSockets;
 struct TPuttyTranslation;
+struct callback_set;
 enum TSshImplementation { sshiUnknown, sshiOpenSSH, sshiProFTPD, sshiBitvise, sshiTitan, sshiOpenVMS, sshiCerberus };
 //---------------------------------------------------------------------------
 class TSecureShell
@@ -69,6 +70,7 @@ private:
   bool FUtfStrings;
   DWORD FLastSendBufferUpdate;
   int FSendBuf;
+  std::auto_ptr<callback_set> FCallbackSet;
 
   static TCipher __fastcall FuncToSsh1Cipher(const void * Cipher);
   static TCipher __fastcall FuncToSsh2Cipher(const void * Cipher);
@@ -165,6 +167,7 @@ public:
   void __fastcall OldKeyfileWarning();
   void __fastcall PuttyLogEvent(const char * Str);
   UnicodeString __fastcall ConvertFromPutty(const char * Str, int Length);
+  struct callback_set * GetCallbackSet();
 
   __property bool Active = { read = FActive, write = SetActive };
   __property bool Ready = { read = GetReady };
