@@ -374,7 +374,7 @@ void __fastcall TScript::Init()
   FCommands->Register(L"option", SCRIPT_OPTION_DESC, SCRIPT_OPTION_HELP7, &OptionProc, -1, 2, false);
   FCommands->Register(L"ascii", 0, SCRIPT_OPTION_HELP7, &AsciiProc, 0, 0, false);
   FCommands->Register(L"binary", 0, SCRIPT_OPTION_HELP7, &BinaryProc, 0, 0, false);
-  FCommands->Register(L"synchronize", SCRIPT_SYNCHRONIZE_DESC, SCRIPT_SYNCHRONIZE_HELP7, &SynchronizeProc, 0, 3, true);
+  FCommands->Register(L"synchronize", SCRIPT_SYNCHRONIZE_DESC, SCRIPT_SYNCHRONIZE_HELP7, &SynchronizeProc, 0, -1, true);
   FCommands->Register(L"keepuptodate", SCRIPT_KEEPUPTODATE_DESC, SCRIPT_KEEPUPTODATE_HELP5, &KeepUpToDateProc, 0, 2, true);
   // the echo command does not have switches actually, but it must handle dashes in its arguments
   FCommands->Register(L"echo", SCRIPT_ECHO_DESC, SCRIPT_ECHO_HELP, &EchoProc, -1, -1, true);
@@ -1907,6 +1907,10 @@ void __fastcall TScript::SynchronizeProc(TScriptProcParams * Parameters)
   CopyParamParams(CopyParam, Parameters);
 
   RequireParams(Parameters, 1);
+  if (Parameters->ParamCount > 3)
+  {
+    throw Exception(FMTLOAD(SCRIPT_TOO_MANY_PARAMS, (L"synchronize")));
+  }
   UnicodeString ModeName = Parameters->Param[1];
   DebugAssert(FSynchronizeMode < 0);
   FSynchronizeMode = TScriptCommands::FindCommand(ModeNames, LENOF(ModeNames), ModeName);
