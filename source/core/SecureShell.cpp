@@ -1910,6 +1910,7 @@ bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventR
       unsigned int WaitResult;
       do
       {
+        CheckConnection();
         unsigned int TimeoutStep = std::min(GUIUpdateInterval, Timeout);
         if (toplevel_callback_pending(GetCallbackSet()))
         {
