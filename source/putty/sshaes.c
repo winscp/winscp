@@ -27,9 +27,10 @@
  * same answers at the same speed.
  */
 
-#ifndef WINSCP_VS
 #include <assert.h>
+#ifndef WINSCP_VS
 #include <stdlib.h>
+#endif
 
 #include "ssh.h"
 
@@ -63,9 +64,9 @@ struct AESContext {
     int isNI;
 };
 
-static void aes_encrypt_cbc_sw(unsigned char*, int, AESContext*);
-static void aes_decrypt_cbc_sw(unsigned char*, int, AESContext*);
-static void aes_sdctr_sw(unsigned char*, int, AESContext*);
+/*MPEXT static*/ void aes_encrypt_cbc_sw(unsigned char*, int, AESContext*);
+/*MPEXT static*/ void aes_decrypt_cbc_sw(unsigned char*, int, AESContext*);
+/*MPEXT static*/ void aes_sdctr_sw(unsigned char*, int, AESContext*);
 
 INLINE static int supports_aes_ni(void); // MPEXT
 static void aes_setup_ni(AESContext * ctx,
@@ -688,6 +689,7 @@ static const word32 D3[256] = {
     0xcb84617b, 0x32b670d5, 0x6c5c7448, 0xb85742d0,
 };
 
+#ifndef WINSCP_VS
 /*
  * Set up an AESContext. `keylen' is measured in
  * bytes; it can be either 16 (128-bit), 24 (192-bit), or 32
@@ -784,6 +786,7 @@ static void aes_setup(AESContext * ctx, const unsigned char *key, int keylen)
 	}
     }
 }
+#endif
 
 /*
  * Software encrypt/decrypt macros
@@ -824,10 +827,11 @@ static void aes_setup(AESContext * ctx, const unsigned char *key, int keylen)
 #define DECLASTROUND { DECLASTWORD(0); DECLASTWORD(1); DECLASTWORD(2); DECLASTWORD(3); \
         MOVEWORD(0); MOVEWORD(1); MOVEWORD(2); MOVEWORD(3); ADD_ROUND_KEY; }
 
+#ifdef WINSCP_VS
 /*
  * Software AES encrypt/decrypt core
  */
-static void aes_encrypt_cbc_sw(unsigned char *blk, int len, AESContext * ctx)
+/*MPEXT static*/ void aes_encrypt_cbc_sw(unsigned char *blk, int len, AESContext * ctx)
 {
     word32 block[4];
     unsigned char* finish = blk + len;
@@ -873,7 +877,7 @@ static void aes_encrypt_cbc_sw(unsigned char *blk, int len, AESContext * ctx)
     memcpy(ctx->iv, block, sizeof(block));
 }
 
-static void aes_sdctr_sw(unsigned char *blk, int len, AESContext *ctx)
+/*MPEXT static*/ void aes_sdctr_sw(unsigned char *blk, int len, AESContext *ctx)
 {
     word32 iv[4];
     unsigned char* finish = blk + len;
@@ -923,7 +927,7 @@ static void aes_sdctr_sw(unsigned char *blk, int len, AESContext *ctx)
     memcpy(ctx->iv, iv, sizeof(iv));
 }
 
-static void aes_decrypt_cbc_sw(unsigned char *blk, int len, AESContext * ctx)
+/*MPEXT static*/ void aes_decrypt_cbc_sw(unsigned char *blk, int len, AESContext * ctx)
 {
     word32 iv[4];
     unsigned char* finish = blk + len;
@@ -970,6 +974,8 @@ static void aes_decrypt_cbc_sw(unsigned char *blk, int len, AESContext * ctx)
 
     memcpy(ctx->iv, iv, sizeof(iv));
 }
+
+#else
 
 void *aes_make_context(void)
 {
