@@ -21,6 +21,12 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
+#define SET_SESSION_PROPERTY_FROM(PROPERTY, FROM) \
+  if (F##PROPERTY != FROM) { F##PROPERTY = FROM; Modify(); }
+//---------------------------------------------------------------------------
+#define SET_SESSION_PROPERTY(PROPERTY) \
+  SET_SESSION_PROPERTY_FROM(PROPERTY, value)
+//---------------------------------------------------------------------------
 const wchar_t * PingTypeNames = L"Off;Null;Dummy";
 const wchar_t * ProxyMethodNames = L"None;SOCKS4;SOCKS5;HTTP;Telnet;Cmd";
 const wchar_t * DefaultName = L"Default Settings";
@@ -565,7 +571,8 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
     }
     else
     {
-      FPassword = Storage->ReadStringAsBinaryData(L"Password", FPassword);
+      RawByteString APassword = Storage->ReadStringAsBinaryData(L"Password", FPassword);
+      SET_SESSION_PROPERTY_FROM(Password, APassword);
     }
   }
   HostKey = Storage->ReadString(L"SshHostKey", HostKey); // probably never used
@@ -684,7 +691,8 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   else
   {
     // load encrypted password
-    FProxyPassword = Storage->ReadStringAsBinaryData(L"ProxyPasswordEnc", FProxyPassword);
+    RawByteString AProxyPassword = Storage->ReadStringAsBinaryData(L"ProxyPasswordEnc", FProxyPassword);
+    SET_SESSION_PROPERTY_FROM(ProxyPassword, AProxyPassword);
   }
   if (ProxyMethod == pmCmd)
   {
@@ -753,7 +761,8 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
     }
     else
     {
-      FTunnelPassword = Storage->ReadStringAsBinaryData(L"TunnelPassword", FTunnelPassword);
+      RawByteString ATunnelPassword = Storage->ReadStringAsBinaryData(L"TunnelPassword", FTunnelPassword);
+      SET_SESSION_PROPERTY_FROM(TunnelPassword, ATunnelPassword);
     }
   }
   TunnelPublicKeyFile = Storage->ReadString(L"TunnelPublicKeyFile", TunnelPublicKeyFile);
@@ -787,7 +796,8 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   }
   else
   {
-    FEncryptKey = Storage->ReadStringAsBinaryData(L"EncryptKey", FEncryptKey);
+    RawByteString AEncryptKey = Storage->ReadStringAsBinaryData(L"EncryptKey", FEncryptKey);
+    SET_SESSION_PROPERTY_FROM(EncryptKey, AEncryptKey);
   }
 
   IsWorkspace = Storage->ReadBool(L"IsWorkspace", IsWorkspace);

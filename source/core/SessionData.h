@@ -10,9 +10,6 @@
 #include "Configuration.h"
 #include <Xml.XMLIntf.hpp>
 //---------------------------------------------------------------------------
-#define SET_SESSION_PROPERTY(Property) \
-  if (F##Property != value) { F##Property = value; Modify(); }
-//---------------------------------------------------------------------------
 enum TCipher { cipWarn, cip3DES, cipBlowfish, cipAES, cipDES, cipArcfour, cipChaCha20 };
 #define CIPHER_COUNT (cipChaCha20+1)
 // explicit values to skip obsoleted fsExternalSSH, fsExternalSFTP
