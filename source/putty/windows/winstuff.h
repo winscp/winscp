@@ -240,14 +240,14 @@ void quit_help(HWND hwnd);
  * windlg.c. Likewise the saved-sessions list.
  */
 GLOBAL Terminal *term;
-GLOBAL void *logctx;
+GLOBAL LogContext *logctx;
 
 /*
  * Windows-specific clipboard helper function shared with windlg.c,
  * which takes the data string in the system code page instead of
  * Unicode.
  */
-void write_aclip(void *frontend, int clipboard, char *, int, int);
+void write_aclip(Frontend *frontend, int clipboard, char *, int, int);
 
 #define WM_NETEVENT  (WM_APP + 5)
 
@@ -437,9 +437,9 @@ void fwdsetter(struct ctlpos *cp, int listid, char *stext, int sid,
 	       char *btext, int bid,
 	       char *r1text, int r1id, char *r2text, int r2id);
 
-void dlg_auto_set_fixed_pitch_flag(void *dlg);
-int dlg_get_fixed_pitch_flag(void *dlg);
-void dlg_set_fixed_pitch_flag(void *dlg, int flag);
+void dlg_auto_set_fixed_pitch_flag(dlgparam *dlg);
+int dlg_get_fixed_pitch_flag(dlgparam *dlg);
+void dlg_set_fixed_pitch_flag(dlgparam *dlg, int flag);
 
 #define MAX_SHORTCUTS_PER_CTRL 16
 
@@ -596,7 +596,7 @@ void agent_schedule_callback(void (*callback)(void *, void *, int),
 /*
  * Exports from winser.c.
  */
-extern Backend serial_backend;
+extern const struct Backend_vtable serial_backend;
 
 /*
  * Exports from winjump.c.

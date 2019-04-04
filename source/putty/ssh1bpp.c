@@ -20,7 +20,7 @@ struct ssh1_bpp_state {
     const struct ssh_cipher *cipher;
     void *cipher_ctx;
 
-    void *crcda_ctx;
+    struct crcda_ctx *crcda_ctx;
 
     void *compctx, *decompctx;
 

@@ -95,7 +95,8 @@ Socket new_connection(SockAddr addr, const char *hostname,
 Socket new_listener(const char *srcaddr, int port, Plug plug,
                     int local_host_only, Conf *conf, int addressfamily);
 SockAddr name_lookup(const char *host, int port, char **canonicalname,
-		     Conf *conf, int addressfamily, void *frontend_for_logging,
+                     Conf *conf, int addressfamily,
+                     Frontend *frontend_for_logging,
                      const char *lookup_reason_for_logging);
 int proxy_for_destination (SockAddr addr, const char *hostname, int port,
                            Conf *conf);
@@ -221,7 +222,7 @@ extern Plug nullplug;
 /*
  * Exports from be_misc.c.
  */
-void backend_socket_log(void *frontend, int type, SockAddr addr, int port,
+void backend_socket_log(Frontend *frontend, int type, SockAddr addr, int port,
                         const char *error_msg, int error_code, Conf *conf,
                         int session_started);
 void log_proxy_stderr(Plug plug, bufchain *buf, const void *vdata, int len);

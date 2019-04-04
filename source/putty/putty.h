@@ -441,43 +441,67 @@ enum {
     ADDRTYPE_UNSPEC, ADDRTYPE_IPV4, ADDRTYPE_IPV6, ADDRTYPE_NAME
 };
 
-struct backend_tag {
-    const char *(*init) (void *frontend_handle, void **backend_handle,
+struct Backend {
+    const Backend_vtable *vt;
+};
+struct Backend_vtable {
+    const char *(*init) (Frontend *frontend, Backend **backend_out,
 			 Conf *conf, const char *host, int port,
                          char **realhost, int nodelay, int keepalive);
-    void (*free) (void *handle);
-    /* back->reconfig() passes in a replacement configuration. */
-    void (*reconfig) (void *handle, Conf *conf);
-    /* back->send() returns the current amount of buffered data. */
-    int (*send) (void *handle, const char *buf, int len);
-    /* back->sendbuffer() does the same thing but without attempting a send */
-    int (*sendbuffer) (void *handle);
-    void (*size) (void *handle, int width, int height);
-    void (*special) (void *handle, Telnet_Special code);
-    const struct telnet_special *(*get_specials) (void *handle);
-    int (*connected) (void *handle);
-    int (*exitcode) (void *handle);
-    /* If back->sendok() returns FALSE, data sent to it from the frontend
-     * may be lost. */
-    int (*sendok) (void *handle);
-    int (*ldisc) (void *handle, int);
-    void (*provide_ldisc) (void *handle, void *ldisc);
-    void (*provide_logctx) (void *handle, void *logctx);
-    /*
-     * back->unthrottle() tells the back end that the front end
-     * buffer is clearing.
-     */
-    void (*unthrottle) (void *handle, int);
-    int (*cfg_info) (void *handle);
+
+    void (*free) (Backend *be);
+    /* Pass in a replacement configuration. */
+    void (*reconfig) (Backend *be, Conf *conf);
+    /* send() returns the current amount of buffered data. */
+    int (*send) (Backend *be, const char *buf, int len);
+    /* sendbuffer() does the same thing but without attempting a send */
+    int (*sendbuffer) (Backend *be);
+    void (*size) (Backend *be, int width, int height);
+    void (*special) (Backend *be, Telnet_Special code);
+    const struct telnet_special *(*get_specials) (Backend *be);
+    int (*connected) (Backend *be);
+    int (*exitcode) (Backend *be);
+    /* If back->sendok() returns FALSE, the backend doesn't currently
+     * want input data, so the frontend should avoid acquiring any if
+     * possible (passing back-pressure on to its sender). */
+    int (*sendok) (Backend *be);
+    int (*ldisc_option_state) (Backend *be, int);
+    void (*provide_ldisc) (Backend *be, Ldisc *ldisc);
+    void (*provide_logctx) (Backend *be, LogContext *logctx);
+    /* Tells the back end that the front end  buffer is clearing. */
+    void (*unthrottle) (Backend *be, int bufsize);
+    int (*cfg_info) (Backend *be);
+
     /* Only implemented in the SSH protocol: check whether a
      * connection-sharing upstream exists for a given configuration. */
     int (*test_for_upstream)(const char *host, int port, Conf *conf);
+
     const char *name;
     int protocol;
     int default_port;
 };
 
-extern Backend *backends[];
+#define backend_init(vt, fe, out, conf, host, port, rhost, nd, ka) \
+    ((vt)->init(fe, out, conf, host, port, rhost, nd, ka))
+#define backend_free(be) ((be)->vt->free(be))
+#define backend_reconfig(be, conf) ((be)->vt->reconfig(be, conf))
+#define backend_send(be, buf, len) ((be)->vt->send(be, buf, len))
+#define backend_sendbuffer(be) ((be)->vt->sendbuffer(be))
+#define backend_size(be, w, h) ((be)->vt->size(be, w, h))
+#define backend_special(be, code) ((be)->vt->special(be, code))
+#define backend_get_specials(be) ((be)->vt->get_specials(be))
+#define backend_connected(be) ((be)->vt->connected(be))
+#define backend_exitcode(be) ((be)->vt->exitcode(be))
+#define backend_sendok(be) ((be)->vt->sendok(be))
+#define backend_ldisc_option_state(be, opt) \
+    ((be)->vt->ldisc_option_state(be, opt))
+#define backend_provide_ldisc(be, ldisc) ((be)->vt->provide_ldisc(be, ldisc))
+#define backend_provide_logctx(be, logctx) \
+    ((be)->vt->provide_logctx(be, logctx))
+#define backend_unthrottle(be, bufsize) ((be)->vt->unthrottle(be, bufsize))
+#define backend_cfg_info(be) ((be)->vt->cfg_info(be))
+
+extern const struct Backend_vtable *const backends[];
 
 /*
  * Suggested default protocol provided by the backend link module.
@@ -584,11 +608,11 @@ typedef struct {
     size_t n_prompts;   /* May be zero (in which case display the foregoing,
                          * if any, and return success) */
     prompt_t **prompts;
-    void *frontend;
+    Frontend *frontend;
     void *data;		/* slot for housekeeping data, managed by
 			 * get_userpass_input(); initially NULL */
 } prompts_t;
-prompts_t *new_prompts(void *frontend);
+prompts_t *new_prompts(Frontend *frontend);
 void add_prompt(prompts_t *p, char *promptstr, int echo);
 void prompt_set_result(prompt_t *pr, const char *newstr);
 void prompt_ensure_result_size(prompt_t *pr, int len);
@@ -649,7 +673,7 @@ enum { ALL_CLIPBOARDS(CLIP_ID) N_CLIPBOARDS };
 /*
  * Exports from the front end.
  */
-void request_resize(void *frontend, int, int);
+void request_resize(Frontend *frontend, int, int);
 void do_text(Context, int, int, wchar_t *, int, unsigned long, int,
              truecolour);
 void do_cursor(Context, int, int, wchar_t *, int, unsigned long, int,
@@ -658,46 +682,46 @@ int char_width(Context ctx, int uc);
 #ifdef OPTIMISE_SCROLL
 void do_scroll(Context, int, int, int);
 #endif
-void set_title(void *frontend, char *);
-void set_icon(void *frontend, char *);
-void set_sbar(void *frontend, int, int, int);
-Context get_ctx(void *frontend);
+void set_title(Frontend *frontend, char *);
+void set_icon(Frontend *frontend, char *);
+void set_sbar(Frontend *frontend, int, int, int);
+Context get_ctx(Frontend *frontend);
 void free_ctx(Context);
-void palette_set(void *frontend, int, int, int, int);
-void palette_reset(void *frontend);
-int palette_get(void *frontend, int n, int *r, int *g, int *b);
-void write_clip(void *frontend, int clipboard, wchar_t *, int *,
+void palette_set(Frontend *frontend, int, int, int, int);
+void palette_reset(Frontend *frontend);
+int palette_get(Frontend *frontend, int n, int *r, int *g, int *b);
+void write_clip(Frontend *frontend, int clipboard, wchar_t *, int *,
                 truecolour *, int, int);
-void optimised_move(void *frontend, int, int, int);
-void set_raw_mouse_mode(void *frontend, int);
-void connection_fatal(void *frontend, const char *, ...);
+void optimised_move(Frontend *frontend, int, int, int);
+void set_raw_mouse_mode(Frontend *frontend, int);
+void connection_fatal(Frontend *frontend, const char *, ...);
 void nonfatal(const char *, ...);
 void modalfatalbox(const char *, ...);
 #ifdef macintosh
 #pragma noreturn(modalfatalbox)
 #endif
-void do_beep(void *frontend, int);
-void begin_session(void *frontend);
-void sys_cursor(void *frontend, int x, int y);
-void frontend_request_paste(void *frontend, int clipboard);
-void frontend_keypress(void *frontend);
-void frontend_echoedit_update(void *frontend, int echo, int edit);
+void do_beep(Frontend *frontend, int);
+void begin_session(Frontend *frontend);
+void sys_cursor(Frontend *frontend, int x, int y);
+void frontend_request_paste(Frontend *frontend, int clipboard);
+void frontend_keypress(Frontend *frontend);
+void frontend_echoedit_update(Frontend *frontend, int echo, int edit);
 /* It's the backend's responsibility to invoke this at the start of a
  * connection, if necessary; it can also invoke it later if the set of
  * special commands changes. It does not need to invoke it at session
  * shutdown. */
-void update_specials_menu(void *frontend);
-int from_backend(void *frontend, int is_stderr, const void *data, int len);
-int from_backend_untrusted(void *frontend, const void *data, int len);
+void update_specials_menu(Frontend *frontend);
+int from_backend(Frontend *frontend, int is_stderr, const void *data, int len);
+int from_backend_untrusted(Frontend *frontend, const void *data, int len);
 /* Called when the back end wants to indicate that EOF has arrived on
  * the server-to-client stream. Returns FALSE to indicate that we
  * intend to keep the session open in the other direction, or TRUE to
  * indicate that if they're closing so are we. */
-int from_backend_eof(void *frontend);
-void notify_remote_exit(void *frontend);
+int from_backend_eof(Frontend *frontend);
+void notify_remote_exit(Frontend *frontend);
 /* Get a sensible value for a tty mode. NULL return = don't set.
  * Otherwise, returned value should be freed by caller. */
-char *get_ttymode(void *frontend, const char *mode);
+char *get_ttymode(Frontend *frontend, const char *mode);
 /*
  * >0 = `got all results, carry on'
  * 0  = `user cancelled' (FIXME distinguish "give up entirely" and "next auth"?)
@@ -706,15 +730,15 @@ char *get_ttymode(void *frontend, const char *mode);
 int get_userpass_input(prompts_t *p, bufchain *input);
 #define OPTIMISE_IS_SCROLL 1
 
-void set_iconic(void *frontend, int iconic);
-void move_window(void *frontend, int x, int y);
-void set_zorder(void *frontend, int top);
-void refresh_window(void *frontend);
-void set_zoomed(void *frontend, int zoomed);
-int is_iconic(void *frontend);
-void get_window_pos(void *frontend, int *x, int *y);
-void get_window_pixels(void *frontend, int *x, int *y);
-char *get_window_title(void *frontend, int icon);
+void set_iconic(Frontend *frontend, int iconic);
+void move_window(Frontend *frontend, int x, int y);
+void set_zorder(Frontend *frontend, int top);
+void refresh_window(Frontend *frontend);
+void set_zoomed(Frontend *frontend, int zoomed);
+int is_iconic(Frontend *frontend);
+void get_window_pos(Frontend *frontend, int *x, int *y);
+void get_window_pixels(Frontend *frontend, int *x, int *y);
+char *get_window_title(Frontend *frontend, int icon);
 /* Hint from backend to frontend about time-consuming operations.
  * Initial state is assumed to be BUSY_NOT. */
 enum {
@@ -724,8 +748,8 @@ enum {
 		       stuff is suspended */
     BUSY_CPU	    /* Locally busy (e.g. crypto); user interaction suspended */
 };
-void set_busy_status(void *frontend, int status);
-int frontend_is_utf8(void *frontend);
+void set_busy_status(Frontend *frontend, int status);
+int frontend_is_utf8(Frontend *frontend);
 
 void cleanup_exit(int);
 
@@ -1046,8 +1070,8 @@ void random_destroy_seed(void);
 /*
  * Exports from settings.c.
  */
-Backend *backend_from_name(const char *name);
-Backend *backend_from_proto(int proto);
+const struct Backend_vtable *backend_vt_from_name(const char *name);
+const struct Backend_vtable *backend_vt_from_proto(int proto);
 char *get_remote_username(Conf *conf); /* dynamically allocated */
 char *save_settings(const char *section, Conf *conf);
 void save_open_settings(void *sesskey, Conf *conf);
@@ -1081,7 +1105,7 @@ FontSpec *platform_default_fontspec(const char *name);
  * Exports from terminal.c.
  */
 
-Terminal *term_init(Conf *, struct unicode_data *, void *);
+Terminal *term_init(Conf *, struct unicode_data *, Frontend *);
 void term_free(Terminal *);
 void term_size(Terminal *, int, int, int);
 void term_paint(Terminal *, Context, int, int, int, int, int);
@@ -1107,10 +1131,8 @@ void term_request_paste(Terminal *, int clipboard);
 void term_seen_key_event(Terminal *); 
 int term_data(Terminal *, int is_stderr, const void *data, int len);
 int term_data_untrusted(Terminal *, const void *data, int len);
-void term_provide_resize_fn(Terminal *term,
-			    void (*resize_fn)(void *, int, int),
-			    void *resize_ctx);
-void term_provide_logctx(Terminal *term, void *logctx);
+void term_provide_backend(Terminal *term, Backend *backend);
+void term_provide_logctx(Terminal *term, LogContext *logctx);
 void term_set_focus(Terminal *term, int has_focus);
 char *term_get_ttymode(Terminal *term, const char *mode);
 int term_get_userpass_input(Terminal *term, prompts_t *p, bufchain *input);
@@ -1120,14 +1142,14 @@ int format_arrow_key(char *buf, Terminal *term, int xkey, int ctrl);
 /*
  * Exports from logging.c.
  */
-void *log_init(void *frontend, Conf *conf);
-void log_free(void *logctx);
-void log_reconfig(void *logctx, Conf *conf);
-void logfopen(void *logctx);
-void logfclose(void *logctx);
-void logtraffic(void *logctx, unsigned char c, int logmode);
-void logflush(void *logctx);
-void log_eventlog(void *logctx, const char *string);
+LogContext *log_init(Frontend *frontend, Conf *conf);
+void log_free(LogContext *logctx);
+void log_reconfig(LogContext *logctx, Conf *conf);
+void logfopen(LogContext *logctx);
+void logfclose(LogContext *logctx);
+void logtraffic(LogContext *logctx, unsigned char c, int logmode);
+void logflush(LogContext *logctx);
+void log_eventlog(LogContext *logctx, const char *string);
 enum { PKT_INCOMING, PKT_OUTGOING };
 enum { PKTLOG_EMIT, PKTLOG_BLANK, PKTLOG_OMIT };
 struct logblank_t {
@@ -1135,7 +1157,7 @@ struct logblank_t {
     int len;
     int type;
 };
-void log_packet(void *logctx, int direction, int type,
+void log_packet(LogContext *logctx, int direction, int type,
 		const char *texttype, const void *data, int len,
 		int n_blanks, const struct logblank_t *blanks,
 		const unsigned long *sequence,
@@ -1145,47 +1167,47 @@ void log_packet(void *logctx, int direction, int type,
  * Exports from testback.c
  */
 
-extern Backend null_backend;
-extern Backend loop_backend;
+extern const struct Backend_vtable null_backend;
+extern const struct Backend_vtable loop_backend;
 
 /*
  * Exports from raw.c.
  */
 
-extern Backend raw_backend;
+extern const struct Backend_vtable raw_backend;
 
 /*
  * Exports from rlogin.c.
  */
 
-extern Backend rlogin_backend;
+extern const struct Backend_vtable rlogin_backend;
 
 /*
  * Exports from telnet.c.
  */
 
-extern Backend telnet_backend;
+extern const struct Backend_vtable telnet_backend;
 
 /*
  * Exports from ssh.c.
  */
-extern Backend ssh_backend;
+extern const struct Backend_vtable ssh_backend;
 
 /*
  * Exports from ldisc.c.
  */
-void *ldisc_create(Conf *, Terminal *, Backend *, void *, void *);
-void ldisc_configure(void *, Conf *);
-void ldisc_free(void *);
-void ldisc_send(void *handle, const void *buf, int len, int interactive);
-void ldisc_echoedit_update(void *handle);
+Ldisc *ldisc_create(Conf *, Terminal *, Backend *, Frontend *);
+void ldisc_configure(Ldisc *, Conf *);
+void ldisc_free(Ldisc *);
+void ldisc_send(Ldisc *, const void *buf, int len, int interactive);
+void ldisc_echoedit_update(Ldisc *);
 
 /*
  * Exports from ldiscucs.c.
  */
-void lpage_send(void *, int codepage, const char *buf, int len,
+void lpage_send(Ldisc *, int codepage, const char *buf, int len,
                 int interactive);
-void luni_send(void *, const wchar_t * widebuf, int len, int interactive);
+void luni_send(Ldisc *, const wchar_t * widebuf, int len, int interactive);
 
 /*
  * Exports from sshrand.c.
@@ -1205,7 +1227,7 @@ void random_unref(void);
  * Exports from pinger.c.
  */
 typedef struct pinger_tag *Pinger;
-Pinger pinger_new(Conf *conf, Backend *back, void *backhandle);
+Pinger pinger_new(Conf *conf, Backend *backend);
 void pinger_reconfig(Pinger, Conf *oldconf, Conf *newconf);
 void pinger_free(Pinger);
 
@@ -1302,7 +1324,7 @@ int wc_unescape(char *output, const char *wildcard);
 /*
  * Exports from frontend (windlg.c etc)
  */
-void logevent(void *frontend, const char *);
+void logevent(Frontend *frontend, const char *);
 void pgp_fingerprints(void);
 /*
  * verify_ssh_host_key() can return one of three values:
@@ -1316,7 +1338,7 @@ void pgp_fingerprints(void);
  *    back via the provided function with a result that's either 0
  *    or +1'.
  */
-int verify_ssh_host_key(void *frontend, char *host, int port,
+int verify_ssh_host_key(Frontend *frontend, char *host, int port,
                         const char *keytype, char *keystr, char *fingerprint,
                         void (*callback)(void *ctx, int result), void *ctx);
 /*
@@ -1332,9 +1354,9 @@ int have_ssh_host_key(const char *host, int port, const char *keytype);
  * warning threshold because that's all we have cached, but at least
  * one acceptable algorithm is available that we don't have cached.)
  */
-int askalg(void *frontend, const char *algtype, const char *algname,
+int askalg(Frontend *frontend, const char *algtype, const char *algname,
 	   void (*callback)(void *ctx, int result), void *ctx);
-int askhk(void *frontend, const char *algname, const char *betteralgs,
+int askhk(Frontend *frontend, const char *algname, const char *betteralgs,
           void (*callback)(void *ctx, int result), void *ctx);
 /*
  * askappend can return four values:
@@ -1344,7 +1366,7 @@ int askhk(void *frontend, const char *algname, const char *betteralgs,
  *  - 0 means cancel logging for this session
  *  - -1 means please wait.
  */
-int askappend(void *frontend, Filename *filename,
+int askappend(Frontend *frontend, Filename *filename,
 	      void (*callback)(void *ctx, int result), void *ctx);
 
 /*
@@ -1353,7 +1375,7 @@ int askappend(void *frontend, Filename *filename,
  */
 extern int console_batch_mode;
 int console_get_userpass_input(prompts_t *p);
-void console_provide_logctx(void *logctx);
+void console_provide_logctx(LogContext *logctx);
 int is_interactive(void);
 
 /*
@@ -1399,16 +1421,16 @@ void cmdline_error(const char *, ...);
  */
 struct controlbox;
 union control;
-void conf_radiobutton_handler(union control *ctrl, void *dlg,
+void conf_radiobutton_handler(union control *ctrl, dlgparam *dlg,
 			      void *data, int event);
 #define CHECKBOX_INVERT (1<<30)
-void conf_checkbox_handler(union control *ctrl, void *dlg,
+void conf_checkbox_handler(union control *ctrl, dlgparam *dlg,
 			   void *data, int event);
-void conf_editbox_handler(union control *ctrl, void *dlg,
+void conf_editbox_handler(union control *ctrl, dlgparam *dlg,
 			  void *data, int event);
-void conf_filesel_handler(union control *ctrl, void *dlg,
+void conf_filesel_handler(union control *ctrl, dlgparam *dlg,
 			  void *data, int event);
-void conf_fontsel_handler(union control *ctrl, void *dlg,
+void conf_fontsel_handler(union control *ctrl, dlgparam *dlg,
 			  void *data, int event);
 void setup_config_box(struct controlbox *b, int midsession,
 		      int protocol, int protcfginfo);
@@ -1609,9 +1631,9 @@ struct IdempotentCallback {
 };
 void queue_idempotent_callback(struct IdempotentCallback *ic);
 
-typedef void (*toplevel_callback_notify_fn_t)(void *frontend);
+typedef void (*toplevel_callback_notify_fn_t)(void *ctx);
 void request_callback_notifications(toplevel_callback_notify_fn_t notify,
-                                    void *frontend);
+                                    void *ctx);
 
 /*
  * Define no-op macros for the jump list functions, on platforms that
