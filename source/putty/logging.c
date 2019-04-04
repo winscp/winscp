@@ -12,12 +12,12 @@
 #include "putty.h"
 
 /* log session to file stuff ... */
-struct LogContext {
+struct LogContext_tag {
     FILE *lgfp;
     enum { L_CLOSED, L_OPENING, L_OPEN, L_ERROR } state;
     bufchain queue;
     Filename *currlogfilename;
-    void *frontend;
+    Frontend *frontend;
     Conf *conf;
     int logtype;		       /* cached out of conf */
 };
@@ -31,7 +31,7 @@ static Filename *xlatlognam(Filename *s, char *hostname, int port,
  * isn't open, buffering data if it's in the process of being
  * opened asynchronously, etc.
  */
-static void logwrite(struct LogContext *ctx, void *data, int len)
+static void logwrite(LogContext *ctx, void *data, int len)
 {
     /*
      * In state L_CLOSED, we call logfopen, which will set the state
@@ -59,7 +59,7 @@ static void logwrite(struct LogContext *ctx, void *data, int len)
  * Convenience wrapper on logwrite() which printf-formats the
  * string.
  */
-static void logprintf(struct LogContext *ctx, const char *fmt, ...)
+static void logprintf(LogContext *ctx, const char *fmt, ...)
 {
     va_list ap;
     char *data;
@@ -75,16 +75,16 @@ static void logprintf(struct LogContext *ctx, const char *fmt, ...)
 /*
  * Flush any open log file.
  */
-void logflush(void *handle) {
-    struct LogContext *ctx = (struct LogContext *)handle;
+void logflush(LogContext *ctx)
+{
     if (ctx->logtype > 0)
 	if (ctx->state == L_OPEN)
 	    fflush(ctx->lgfp);
 }
 
-static void logfopen_callback(void *handle, int mode)
+static void logfopen_callback(void *vctx, int mode)
 {
-    struct LogContext *ctx = (struct LogContext *)handle;
+    LogContext *ctx = (LogContext *)vctx;
     char buf[256], *event;
     struct tm tm;
     const char *fmode;
@@ -160,9 +160,8 @@ static void logfopen_callback(void *handle, int mode)
  * file and asking the user whether they want to append, overwrite
  * or cancel logging.
  */
-void logfopen(void *handle)
+void logfopen(LogContext *ctx)
 {
-    struct LogContext *ctx = (struct LogContext *)handle;
     struct tm tm;
     int mode;
 
@@ -199,9 +198,8 @@ void logfopen(void *handle)
 	logfopen_callback(ctx, mode);  /* open the file */
 }
 
-void logfclose(void *handle)
+void logfclose(LogContext *ctx)
 {
-    struct LogContext *ctx = (struct LogContext *)handle;
     if (ctx->lgfp) {
 	fclose(ctx->lgfp);
 	ctx->lgfp = NULL;
@@ -212,9 +210,8 @@ void logfclose(void *handle)
 /*
  * Log session traffic.
  */
-void logtraffic(void *handle, unsigned char c, int logmode)
+void logtraffic(LogContext *ctx, unsigned char c, int logmode)
 {
-    struct LogContext *ctx = (struct LogContext *)handle;
     if (ctx->logtype > 0) {
 	if (ctx->logtype == logmode)
 	    logwrite(ctx, &c, 1);
@@ -230,9 +227,8 @@ void logtraffic(void *handle, unsigned char c, int logmode)
  * platforms. Platforms which don't have a meaningful stderr can
  * just avoid defining FLAG_STDERR.
  */
-void log_eventlog(void *handle, const char *event)
+void log_eventlog(LogContext *ctx, const char *event)
 {
-    struct LogContext *ctx = (struct LogContext *)handle;
     if ((flags & FLAG_STDERR) && (flags & FLAG_VERBOSE)) {
 	fprintf(stderr, "%s\n", event);
 	fflush(stderr);
@@ -252,13 +248,12 @@ void log_eventlog(void *handle, const char *event)
  * If n_blanks != 0, blank or omit some parts.
  * Set of blanking areas must be in increasing order.
  */
-void log_packet(void *handle, int direction, int type,
+void log_packet(LogContext *ctx, int direction, int type,
 		const char *texttype, const void *data, int len,
 		int n_blanks, const struct logblank_t *blanks,
 		const unsigned long *seq,
                 unsigned downstream_id, const char *additional_log_text)
 {
-    struct LogContext *ctx = (struct LogContext *)handle;
     char dumpdata[80], smalldata[5];
     int p = 0, b = 0, omitted = 0;
     int output_pos = 0; /* NZ if pending output in dumpdata */
@@ -372,9 +367,9 @@ void log_packet(void *handle, int direction, int type,
     logflush(ctx);
 }
 
-void *log_init(void *frontend, Conf *conf)
+LogContext *log_init(Frontend *frontend, Conf *conf)
 {
-    struct LogContext *ctx = snew(struct LogContext);
+    LogContext *ctx = snew(LogContext);
     ctx->lgfp = NULL;
     ctx->state = L_CLOSED;
     ctx->frontend = frontend;
@@ -385,10 +380,8 @@ void *log_init(void *frontend, Conf *conf)
     return ctx;
 }
 
-void log_free(void *handle)
+void log_free(LogContext *ctx)
 {
-    struct LogContext *ctx = (struct LogContext *)handle;
-
     logfclose(ctx);
     bufchain_clear(&ctx->queue);
     if (ctx->currlogfilename)
@@ -397,9 +390,8 @@ void log_free(void *handle)
     sfree(ctx);
 }
 
-void log_reconfig(void *handle, Conf *conf)
+void log_reconfig(LogContext *ctx, Conf *conf)
 {
-    struct LogContext *ctx = (struct LogContext *)handle;
     int reset_logging;
 
     if (!filename_equal(conf_get_filename(ctx->conf, CONF_logfilename),

@@ -61,7 +61,7 @@ struct crcda_ctx {
     uint32 n;
 };
 
-void *crcda_make_context(void)
+struct crcda_ctx *crcda_make_context(void)
 {
     struct crcda_ctx *ret = snew(struct crcda_ctx);
     ret->h = NULL;
@@ -69,9 +69,8 @@ void *crcda_make_context(void)
     return ret;
 }
 
-void crcda_free_context(void *handle)
+void crcda_free_context(struct crcda_ctx *ctx)
 {
-    struct crcda_ctx *ctx = (struct crcda_ctx *)handle;
     if (ctx) {
 	sfree(ctx->h);
 	ctx->h = NULL;
@@ -108,9 +107,8 @@ static int check_crc(uchar *S, uchar *buf, uint32 len, uchar *IV)
 }
 
 /* Detect a crc32 compensation attack on a packet */
-int detect_attack(void *handle, uchar *buf, uint32 len, uchar *IV)
+int detect_attack(struct crcda_ctx *ctx, uchar *buf, uint32 len, uchar *IV)
 {
-    struct crcda_ctx *ctx = (struct crcda_ctx *)handle;
     register uint32 i, j;
     uint32 l;
     register uchar *c;

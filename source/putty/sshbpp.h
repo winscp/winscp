@@ -19,7 +19,7 @@ struct BinaryPacketProtocol {
     bufchain *in_raw, *out_raw;
     PacketQueue *in_pq;
     PacketLogSettings *pls;
-    void *logctx;
+    LogContext *logctx;
 
     int seen_disconnect;
     char *error;

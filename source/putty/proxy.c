@@ -368,7 +368,7 @@ static char *dns_log_msg(const char *host, int addressfamily,
 }
 
 SockAddr name_lookup(const char *host, int port, char **canonicalname,
-		     Conf *conf, int addressfamily, void *frontend,
+                     Conf *conf, int addressfamily, Frontend *frontend,
                      const char *reason)
 {
     char *logmsg;

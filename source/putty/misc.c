@@ -216,7 +216,7 @@ char *host_strduptrim(const char *s)
     return dupstr(s);
 }
 
-prompts_t *new_prompts(void *frontend)
+prompts_t *new_prompts(Frontend *frontend)
 {
     prompts_t *p = snew(prompts_t);
     p->prompts = NULL;

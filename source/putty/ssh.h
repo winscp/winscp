@@ -11,19 +11,19 @@
 
 #ifndef WINSCP_VS
 struct ssh_channel;
-typedef struct ssh_tag *Ssh;
 
 extern int sshfwd_write(struct ssh_channel *c, const void *, int);
 extern void sshfwd_write_eof(struct ssh_channel *c);
 extern void sshfwd_unclean_close(struct ssh_channel *c, const char *err);
 extern void sshfwd_unthrottle(struct ssh_channel *c, int bufsize);
 Conf *sshfwd_get_conf(struct ssh_channel *c);
+void sshfwd_window_override_removed(struct ssh_channel *c);
 void sshfwd_x11_sharing_handover(struct ssh_channel *c,
-                                 void *share_cs, void *share_chan,
+                                 ssh_sharing_connstate *share_cs,
+                                 share_channel *share_chan,
                                  const char *peer_addr, int peer_port,
                                  int endian, int protomajor, int protominor,
                                  const void *initial_data, int initial_len);
-void sshfwd_x11_is_local(struct ssh_channel *c);
 
 /*
  * Buffer management constants. There are several of these for
@@ -154,26 +154,28 @@ void ssh_free_pktout(PktOut *pkt);
 
 extern Socket ssh_connection_sharing_init(
     const char *host, int port, Conf *conf, Ssh ssh, Plug sshplug,
-    void **state);
+    ssh_sharing_state **state);
 int ssh_share_test_for_upstream(const char *host, int port, Conf *conf);
-void share_got_pkt_from_server(void *ctx, int type,
+void share_got_pkt_from_server(ssh_sharing_connstate *ctx, int type,
                                const void *pkt, int pktlen);
-void share_activate(void *state, const char *server_verstring);
-void sharestate_free(void *state);
-int share_ndownstreams(void *state);
+void share_activate(ssh_sharing_state *sharestate,
+                    const char *server_verstring);
+void sharestate_free(ssh_sharing_state *state);
+int share_ndownstreams(ssh_sharing_state *state);
 
 void ssh_connshare_log(Ssh ssh, int event, const char *logtext,
                        const char *ds_err, const char *us_err);
-unsigned ssh_alloc_sharing_channel(Ssh ssh, void *sharing_ctx);
+unsigned ssh_alloc_sharing_channel(Ssh ssh, ssh_sharing_connstate *connstate);
 void ssh_delete_sharing_channel(Ssh ssh, unsigned localid);
 int ssh_alloc_sharing_rportfwd(Ssh ssh, const char *shost, int sport,
-                               void *share_ctx);
+                               ssh_sharing_connstate *connstate);
 void ssh_remove_sharing_rportfwd(Ssh ssh, const char *shost, int sport,
-                                 void *share_ctx);
-void ssh_sharing_queue_global_request(Ssh ssh, void *share_ctx);
-struct X11FakeAuth *ssh_sharing_add_x11_display(Ssh ssh, int authtype,
-                                                void *share_cs,
-                                                void *share_chan);
+                                 ssh_sharing_connstate *connstate);
+void ssh_sharing_queue_global_request(
+    Ssh ssh, ssh_sharing_connstate *connstate);
+struct X11FakeAuth *ssh_sharing_add_x11_display(
+    Ssh ssh, int authtype, ssh_sharing_connstate *share_cs,
+    share_channel *share_chan);
 void ssh_sharing_remove_x11_display(Ssh ssh, struct X11FakeAuth *auth);
 void ssh_send_packet_from_downstream(Ssh ssh, unsigned id, int type,
                                      const void *pkt, int pktlen,
@@ -183,7 +185,7 @@ void ssh_sharing_downstream_connected(Ssh ssh, unsigned id,
 void ssh_sharing_downstream_disconnected(Ssh ssh, unsigned id);
 void ssh_sharing_logf(Ssh ssh, unsigned id, const char *logfmt, ...);
 int ssh_agent_forwarding_permitted(Ssh ssh);
-void share_setup_x11_channel(void *csv, void *chanv,
+void share_setup_x11_channel(ssh_sharing_connstate *cs, share_channel *chan,
                              unsigned upstream_id, unsigned server_id,
                              unsigned server_currwin, unsigned server_maxpkt,
                              unsigned client_adjusted_window,
@@ -191,12 +193,7 @@ void share_setup_x11_channel(void *csv, void *chanv,
                              int protomajor, int protominor,
                              const void *initial_data, int initial_len);
 
-/*
- * Useful thing.
- */
-#ifndef lenof
-#define lenof(x) ( (sizeof((x))) / (sizeof(*(x))))
-#endif
+Frontend *ssh_get_frontend(Ssh ssh);
 
 #define SSH_CIPHER_IDEA		1
 #define SSH_CIPHER_DES		2
@@ -332,9 +329,10 @@ unsigned long crc32_compute(const void *s, size_t len);
 unsigned long crc32_update(unsigned long crc_input, const void *s, size_t len);
 
 /* SSH CRC compensation attack detector */
-void *crcda_make_context(void);
-void crcda_free_context(void *handle);
-int detect_attack(void *handle, unsigned char *buf, uint32 len,
+struct crcda_ctx;
+struct crcda_ctx *crcda_make_context(void);
+void crcda_free_context(struct crcda_ctx *ctx);
+int detect_attack(struct crcda_ctx *ctx, unsigned char *buf, uint32 len,
 		  unsigned char *IV);
 
 /*
@@ -653,7 +651,7 @@ extern
  * that fails. This variable is the means by which scp.c can reach
  * into the SSH code and find out which one it got.
  */
-extern int ssh_fallback_cmd(void *handle);
+extern int ssh_fallback_cmd(Backend *backend);
 
 void SHATransform(word32 * digest, word32 * data);
 
@@ -684,28 +682,21 @@ int random_byte(void);
 void random_add_noise(void *noise, int length);
 void random_add_heavynoise(void *noise, int length);
 
-void logevent(void *, const char *);
+void logevent(Frontend *, const char *);
 
 struct PortForwarding;
 
 /* Allocate and register a new channel for port forwarding */
-void *new_sock_channel(void *handle, struct PortForwarding *pf);
-void ssh_send_port_open(void *channel, const char *hostname, int port,
-                        const char *org);
+struct ssh_channel *ssh_send_port_open(Ssh ssh, const char *hostname, int port,
+                                       const char *org, Channel *chan);
 
 /* Exports from portfwd.c */
-extern char *pfd_connect(struct PortForwarding **pf, char *hostname, int port,
-                         void *c, Conf *conf, int addressfamily);
-extern void pfd_close(struct PortForwarding *);
-extern int pfd_send(struct PortForwarding *, const void *data, int len);
-extern void pfd_send_eof(struct PortForwarding *);
-extern void pfd_confirm(struct PortForwarding *);
-extern void pfd_unthrottle(struct PortForwarding *);
-extern void pfd_override_throttle(struct PortForwarding *, int enable);
+extern char *pfd_connect(Channel **chan_ret, char *hostname, int port,
+                         struct ssh_channel *c, Conf *conf, int addressfamily);
 struct PortListener;
 /* desthost == NULL indicates dynamic (SOCKS) port forwarding */
 extern char *pfl_listen(char *desthost, int destport, char *srcaddr,
-                        int port, void *backhandle, Conf *conf,
+                        int port, Ssh ssh, Conf *conf,
                         struct PortListener **pl, int address_family);
 extern void pfl_terminate(struct PortListener *);
 
@@ -756,7 +747,8 @@ struct X11FakeAuth {
      * What to do with an X connection matching this auth data.
      */
     struct X11Display *disp;
-    void *share_cs, *share_chan;
+    ssh_sharing_connstate *share_cs;
+    share_channel *share_chan;
 };
 void *x11_make_greeting(int endian, int protomajor, int protominor,
                         int auth_proto, const void *auth_data, int auth_len,
@@ -774,13 +766,9 @@ extern struct X11Display *x11_setup_display(const char *display, Conf *);
 void x11_free_display(struct X11Display *disp);
 struct X11FakeAuth *x11_invent_fake_auth(tree234 *t, int authtype);
 void x11_free_fake_auth(struct X11FakeAuth *auth);
-struct X11Connection;                  /* opaque outside x11fwd.c */
-struct X11Connection *x11_init(tree234 *authtree, void *, const char *, int);
-extern void x11_close(struct X11Connection *);
-extern int x11_send(struct X11Connection *, const void *, int);
-extern void x11_send_eof(struct X11Connection *s);
-extern void x11_unthrottle(struct X11Connection *s);
-extern void x11_override_throttle(struct X11Connection *s, int enable);
+Channel *x11_new_channel(tree234 *authtree, struct ssh_channel *c,
+                         const char *peeraddr, int peerport,
+                         int connection_sharing_possible);
 char *x11_display(const char *display);
 /* Platform-dependent X11 functions */
 extern void platform_get_x11_auth(struct X11Display *display, Conf *);
@@ -809,6 +797,8 @@ void x11_get_auth_from_authfile(struct X11Display *display,
 				const char *authfilename);
 int x11_identify_auth_proto(ptrlen protoname);
 void *x11_dehexify(ptrlen hex, int *outlen);
+
+Channel *agentf_new(struct ssh_channel *c);
 
 Bignum copybn(Bignum b);
 Bignum bn_power_2(int n);

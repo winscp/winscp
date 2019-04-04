@@ -8,6 +8,7 @@
 
 #include "putty.h"
 #include "ssh.h"
+#include "sshchan.h"
 
 /*
  * Enumeration of values that live in the 'socks_state' field of
@@ -21,12 +22,12 @@ typedef enum {
     SOCKS_5_CONNECT      /* expect a SOCKS 5 connection message */
 } SocksState;
 
-struct PortForwarding {
+typedef struct PortForwarding {
     struct ssh_channel *c;        /* channel structure held by ssh.c */
-    void *backhandle;		       /* instance of SSH backend itself */
-    /* Note that backhandle need not be filled in if c is non-NULL */
+    Ssh ssh;                      /* instance of SSH backend itself */
+    /* Note that ssh need not be filled in if c is non-NULL */
     Socket s;
-    int throttled, throttle_override;
+    int input_wanted;
     int ready;
     SocksState socks_state;
     /*
@@ -44,10 +45,11 @@ struct PortForwarding {
     size_t socksbuf_consumed;
 
     const Plug_vtable *plugvt;
-};
+    Channel chan;
+} PortForwarding;
 
 struct PortListener {
-    void *backhandle;		       /* instance of SSH backend itself */
+    Ssh ssh;                      /* instance of SSH backend itself */
     Socket s;
     int is_dynamic;
     /*
@@ -105,6 +107,8 @@ static void pfl_log(Plug plug, int type, SockAddr addr, int port,
     /* we have to dump these since we have no interface to logging.c */
 }
 
+static void pfd_close(struct PortForwarding *pf);
+
 static void pfd_closing(Plug plug, const char *error_msg, int error_code,
 			int calling_back)
 {
@@ -142,10 +146,12 @@ static void pfl_closing(Plug plug, const char *error_msg, int error_code,
     pfl_terminate(pl);
 }
 
-static void wrap_send_port_open(void *channel, const char *hostname, int port,
-                                Socket s)
+static struct ssh_channel *wrap_send_port_open(
+    Ssh ssh, const char *hostname, int port, Socket s, Channel *chan)
 {
     char *peerinfo, *description;
+    struct ssh_channel *toret;
+
     peerinfo = sk_peer_info(s);
     if (peerinfo) {
         description = dupprintf("forwarding from %s", peerinfo);
@@ -153,8 +159,11 @@ static void wrap_send_port_open(void *channel, const char *hostname, int port,
     } else {
         description = dupstr("forwarding");
     }
-    ssh_send_port_open(channel, hostname, port, description);
+
+    toret = ssh_send_port_open(ssh, hostname, port, description, chan);
+
     sfree(description);
+    return toret;
 }
 
 static char *ipv4_to_string(unsigned ipv4)
@@ -396,21 +405,11 @@ static void pfd_receive(Plug plug, int urgent, char *data, int len)
 	 */
 	sk_set_frozen(pf->s, 1);
 
-	pf->c = new_sock_channel(pf->backhandle, pf);
-	if (pf->c == NULL) {
-	    pfd_close(pf);
-	    return;
-	} else {
-	    /* asks to forward to the specified host/port for this */
-	    wrap_send_port_open(pf->c, pf->hostname, pf->port, pf->s);
-	}
+        pf->c = wrap_send_port_open(pf->ssh, pf->hostname, pf->port, pf->s,
+                                    &pf->chan);
     }
-    if (pf->ready) {
-	if (sshfwd_write(pf->c, data, len) > 0) {
-	    pf->throttled = 1;
-	    sk_set_frozen(pf->s, 1);
-	}
-    }
+    if (pf->ready)
+        sshfwd_write(pf->c, data, len);
 }
 
 static void pfd_sent(Plug plug, int bufsize)
@@ -429,6 +428,25 @@ static const Plug_vtable PortForwarding_plugvt = {
     NULL
 };
 
+static void pfd_chan_free(Channel *chan);
+static void pfd_open_confirmation(Channel *chan);
+static void pfd_open_failure(Channel *chan, const char *errtext);
+static int pfd_send(Channel *chan, int is_stderr, const void *data, int len);
+static void pfd_send_eof(Channel *chan);
+static void pfd_set_input_wanted(Channel *chan, int wanted);
+static char *pfd_log_close_msg(Channel *chan);
+
+static const struct ChannelVtable PortForwarding_channelvt = {
+    pfd_chan_free,
+    pfd_open_confirmation,
+    pfd_open_failure,
+    pfd_send,
+    pfd_send_eof,
+    pfd_set_input_wanted,
+    pfd_log_close_msg,
+    chan_no_eager_close,
+};
+
 /*
  * Called when receiving a PORT OPEN from the server to make a
  * connection to a destination host.
@@ -436,8 +454,8 @@ static const Plug_vtable PortForwarding_plugvt = {
  * On success, returns NULL and fills in *pf_ret. On error, returns a
  * dynamically allocated error message string.
  */
-char *pfd_connect(struct PortForwarding **pf_ret, char *hostname,int port,
-                  void *c, Conf *conf, int addressfamily)
+char *pfd_connect(Channel **chan_ret, char *hostname,int port,
+                  struct ssh_channel *c, Conf *conf, int addressfamily)
 {
     SockAddr addr;
     const char *err;
@@ -459,12 +477,15 @@ char *pfd_connect(struct PortForwarding **pf_ret, char *hostname,int port,
     /*
      * Open socket.
      */
-    pf = *pf_ret = new_portfwd_state();
+    pf = new_portfwd_state();
+    *chan_ret = &pf->chan;
     pf->plugvt = &PortForwarding_plugvt;
-    pf->throttled = pf->throttle_override = 0;
+    pf->chan.initial_fixed_window_size = 0;
+    pf->chan.vt = &PortForwarding_channelvt;
+    pf->input_wanted = TRUE;
     pf->ready = 1;
     pf->c = c;
-    pf->backhandle = NULL;	       /* we shouldn't need this */
+    pf->ssh = NULL;            /* we shouldn't need this */
     pf->socks_state = SOCKS_NONE;
 
     pf->s = new_connection(addr, dummy_realhost, port,
@@ -474,7 +495,7 @@ char *pfd_connect(struct PortForwarding **pf_ret, char *hostname,int port,
         char *err_ret = dupstr(err);
         sk_close(pf->s);
 	free_portfwd_state(pf);
-        *pf_ret = NULL;
+        *chan_ret = NULL;
 	return err_ret;
     }
 
@@ -495,9 +516,12 @@ static int pfl_accepting(Plug p, accept_fn_t constructor, accept_ctx_t ctx)
     pl = FROMFIELD(p, struct PortListener, plugvt);
     pf = new_portfwd_state();
     pf->plugvt = &PortForwarding_plugvt;
+    pf->chan.initial_fixed_window_size = 0;
+    pf->chan.vt = &PortForwarding_channelvt;
+    pf->input_wanted = TRUE;
 
     pf->c = NULL;
-    pf->backhandle = pl->backhandle;
+    pf->ssh = pl->ssh;
 
     pf->s = s = constructor(ctx, &pf->plugvt);
     if ((err = sk_socket_error(s)) != NULL) {
@@ -505,7 +529,7 @@ static int pfl_accepting(Plug p, accept_fn_t constructor, accept_ctx_t ctx)
 	return err != NULL;
     }
 
-    pf->throttled = pf->throttle_override = 0;
+    pf->input_wanted = TRUE;
     pf->ready = 0;
 
     if (pl->is_dynamic) {
@@ -518,15 +542,8 @@ static int pfl_accepting(Plug p, accept_fn_t constructor, accept_ctx_t ctx)
 	pf->socks_state = SOCKS_NONE;
 	pf->hostname = dupstr(pl->hostname);
 	pf->port = pl->port;	
-	pf->c = new_sock_channel(pl->backhandle, pf);
-
-	if (pf->c == NULL) {
-	    free_portfwd_state(pf);
-	    return 1;
-	} else {
-	    /* asks to forward to the specified host/port for this */
-	    wrap_send_port_open(pf->c, pf->hostname, pf->port, s);
-	}
+        pf->c = wrap_send_port_open(pl->ssh, pf->hostname, pf->port,
+                                    s, &pf->chan);
     }
 
     return 0;
@@ -547,7 +564,7 @@ static const Plug_vtable PortListener_plugvt = {
  * dynamically allocated error message string.
  */
 char *pfl_listen(char *desthost, int destport, char *srcaddr,
-                 int port, void *backhandle, Conf *conf,
+                 int port, Ssh ssh, Conf *conf,
                  struct PortListener **pl_ret, int address_family)
 {
     const char *err;
@@ -564,7 +581,7 @@ char *pfl_listen(char *desthost, int destport, char *srcaddr,
 	pl->is_dynamic = FALSE;
     } else
 	pl->is_dynamic = TRUE;
-    pl->backhandle = backhandle;
+    pl->ssh = ssh;
 
     pl->s = new_listener(srcaddr, port, &pl->plugvt,
                          !conf_get_int(conf, CONF_lport_acceptall),
@@ -580,7 +597,12 @@ char *pfl_listen(char *desthost, int destport, char *srcaddr,
     return NULL;
 }
 
-void pfd_close(struct PortForwarding *pf)
+static char *pfd_log_close_msg(Channel *chan)
+{
+    return dupstr("Forwarded port closed");
+}
+
+static void pfd_close(struct PortForwarding *pf)
 {
     if (!pf)
 	return;
@@ -601,43 +623,42 @@ void pfl_terminate(struct PortListener *pl)
     free_portlistener_state(pl);
 }
 
-void pfd_unthrottle(struct PortForwarding *pf)
+static void pfd_set_input_wanted(Channel *chan, int wanted)
 {
-    if (!pf)
-	return;
-
-    pf->throttled = 0;
-    sk_set_frozen(pf->s, pf->throttled || pf->throttle_override);
+    assert(chan->vt == &PortForwarding_channelvt);
+    PortForwarding *pf = FROMFIELD(chan, PortForwarding, chan);
+    pf->input_wanted = wanted;
+    sk_set_frozen(pf->s, !pf->input_wanted);
 }
 
-void pfd_override_throttle(struct PortForwarding *pf, int enable)
+static void pfd_chan_free(Channel *chan)
 {
-    if (!pf)
-	return;
-
-    pf->throttle_override = enable;
-    sk_set_frozen(pf->s, pf->throttled || pf->throttle_override);
+    assert(chan->vt == &PortForwarding_channelvt);
+    PortForwarding *pf = FROMFIELD(chan, PortForwarding, chan);
+    pfd_close(pf);
 }
 
 /*
  * Called to send data down the raw connection.
  */
-int pfd_send(struct PortForwarding *pf, const void *data, int len)
+static int pfd_send(Channel *chan, int is_stderr, const void *data, int len)
 {
-    if (pf == NULL)
-	return 0;
+    assert(chan->vt == &PortForwarding_channelvt);
+    PortForwarding *pf = FROMFIELD(chan, PortForwarding, chan);
     return sk_write(pf->s, data, len);
 }
 
-void pfd_send_eof(struct PortForwarding *pf)
+static void pfd_send_eof(Channel *chan)
 {
+    assert(chan->vt == &PortForwarding_channelvt);
+    PortForwarding *pf = FROMFIELD(chan, PortForwarding, chan);
     sk_write_eof(pf->s);
 }
 
-void pfd_confirm(struct PortForwarding *pf)
+static void pfd_open_confirmation(Channel *chan)
 {
-    if (pf == NULL)
-	return;
+    assert(chan->vt == &PortForwarding_channelvt);
+    PortForwarding *pf = FROMFIELD(chan, PortForwarding, chan);
 
     pf->ready = 1;
     sk_set_frozen(pf->s, 0);
@@ -648,6 +669,18 @@ void pfd_confirm(struct PortForwarding *pf)
         strbuf_free(pf->socksbuf);
         pf->socksbuf = NULL;
     }
+}
+
+static void pfd_open_failure(Channel *chan, const char *errtext)
+{
+    assert(chan->vt == &PortForwarding_channelvt);
+    PortForwarding *pf = FROMFIELD(chan, PortForwarding, chan);
+
+    char *msg = dupprintf(
+        "Forwarded connection refused by server%s%s",
+        errtext ? ": " : "", errtext ? errtext : "");
+    logevent(ssh_get_frontend(pf->ssh), msg);
+    sfree(msg);
 }
 
 #ifdef MPEXT

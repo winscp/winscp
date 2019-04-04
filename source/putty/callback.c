@@ -30,13 +30,13 @@ struct callback *cbcurr = NULL, *cbhead = NULL, *cbtail = NULL;
 
 #ifndef MPEXT
 toplevel_callback_notify_fn_t notify_frontend = NULL;
-void *frontend = NULL;
+void *notify_ctx = NULL;
 
 void request_callback_notifications(toplevel_callback_notify_fn_t fn,
-                                    void *fr)
+                                    void *ctx)
 {
     notify_frontend = fn;
-    frontend = fr;
+    notify_ctx = ctx;
 }
 #endif
 
@@ -104,7 +104,7 @@ void queue_toplevel_callback(CALLBACK_SET toplevel_callback_fn_t fn, void *ctx)
      * callback keeps re-scheduling itself.
      */
     if (notify_frontend && !cbhead && !cbcurr)
-        notify_frontend(frontend);
+        notify_frontend(notify_ctx);
 #endif
 
     if (cbtail)

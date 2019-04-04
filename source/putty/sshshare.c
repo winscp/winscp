@@ -507,9 +507,8 @@ static void share_connstate_free(struct ssh_sharing_connstate *cs)
     sfree(cs);
 }
 
-void sharestate_free(void *v)
+void sharestate_free(ssh_sharing_state *sharestate)
 {
-    struct ssh_sharing_state *sharestate = (struct ssh_sharing_state *)v;
     struct ssh_sharing_connstate *cs;
 
     platform_ssh_share_cleanup(sharestate->sockname);
@@ -1061,7 +1060,7 @@ void share_xchannel_failure(struct ssh_sharing_connstate *cs,
     share_dead_xchannel_respond(cs, xc);
 }
 
-void share_setup_x11_channel(void *csv, void *chanv,
+void share_setup_x11_channel(ssh_sharing_connstate *cs, share_channel *chan,
                              unsigned upstream_id, unsigned server_id,
                              unsigned server_currwin, unsigned server_maxpkt,
                              unsigned client_adjusted_window,
@@ -1069,8 +1068,6 @@ void share_setup_x11_channel(void *csv, void *chanv,
                              int protomajor, int protominor,
                              const void *initial_data, int initial_len)
 {
-    struct ssh_sharing_connstate *cs = (struct ssh_sharing_connstate *)csv;
-    struct share_channel *chan = (struct share_channel *)chanv;
     struct share_xchannel *xc;
     void *greeting;
     int greeting_len;
@@ -1128,11 +1125,10 @@ void share_setup_x11_channel(void *csv, void *chanv,
     }
 }
 
-void share_got_pkt_from_server(void *csv, int type,
+void share_got_pkt_from_server(ssh_sharing_connstate *cs, int type,
                                const void *vpkt, int pktlen)
 {
     const unsigned char *pkt = (const unsigned char *)vpkt;
-    struct ssh_sharing_connstate *cs = (struct ssh_sharing_connstate *)csv;
     struct share_globreq *globreq;
     size_t id_pos;
     unsigned upstream_id, server_id;
@@ -1718,8 +1714,8 @@ static void share_got_pkt_from_downstream(struct ssh_sharing_connstate *cs,
 
 static void share_receive(Plug plug, int urgent, char *data, int len)
 {
-    struct ssh_sharing_connstate *cs = FROMFIELD(
-        plug, struct ssh_sharing_connstate, plugvt);
+    ssh_sharing_connstate *cs = FROMFIELD(
+        plug, ssh_sharing_connstate, plugvt);
     static const char expected_verstring_prefix[] =
         "SSHCONNECTION@putty.projects.tartarus.org-2.0-";
     unsigned char c;
@@ -1795,8 +1791,8 @@ static void share_receive(Plug plug, int urgent, char *data, int len)
 
 static void share_sent(Plug plug, int bufsize)
 {
-    /* struct ssh_sharing_connstate *cs = FROMFIELD(
-        plug, struct ssh_sharing_connstate, plugvt); */
+    /* ssh_sharing_connstate *cs = FROMFIELD(
+        plug, ssh_sharing_connstate, plugvt); */
 
     /*
      * We do nothing here, because we expect that there won't be a
@@ -1811,8 +1807,7 @@ static void share_sent(Plug plug, int bufsize)
 static void share_listen_closing(Plug plug, const char *error_msg,
 				 int error_code, int calling_back)
 {
-    struct ssh_sharing_state *sharestate = FROMFIELD(
-        plug, struct ssh_sharing_state, plugvt);
+    ssh_sharing_state *sharestate = FROMFIELD(plug, ssh_sharing_state, plugvt);
     if (error_msg)
         ssh_sharing_logf(sharestate->ssh, 0,
                          "listening socket: %s", error_msg);
@@ -1820,7 +1815,7 @@ static void share_listen_closing(Plug plug, const char *error_msg,
     sharestate->listensock = NULL;
 }
 
-static void share_send_verstring(struct ssh_sharing_connstate *cs)
+static void share_send_verstring(ssh_sharing_connstate *cs)
 {
     char *fullstring = dupcat("SSHCONNECTION@putty.projects.tartarus.org-2.0-",
                               cs->parent->server_verstring, "\015\012", NULL);
@@ -1830,19 +1825,18 @@ static void share_send_verstring(struct ssh_sharing_connstate *cs)
     cs->sent_verstring = TRUE;
 }
 
-int share_ndownstreams(void *state)
+int share_ndownstreams(ssh_sharing_state *sharestate)
 {
-    struct ssh_sharing_state *sharestate = (struct ssh_sharing_state *)state;
     return count234(sharestate->connections);
 }
 
-void share_activate(void *state, const char *server_verstring)
+void share_activate(ssh_sharing_state *sharestate,
+                    const char *server_verstring)
 {
     /*
      * Indication from ssh.c that we are now ready to begin serving
      * any downstreams that have already connected to us.
      */
-    struct ssh_sharing_state *sharestate = (struct ssh_sharing_state *)state;
     struct ssh_sharing_connstate *cs;
     int i;
 
@@ -2028,7 +2022,7 @@ static const Plug_vtable ssh_sharing_listen_plugvt = {
  */
 Socket ssh_connection_sharing_init(const char *host, int port,
                                    Conf *conf, Ssh ssh, Plug sshplug,
-                                   void **state)
+                                   ssh_sharing_state **state)
 {
     int result, can_upstream, can_downstream;
     char *logtext, *ds_err, *us_err;

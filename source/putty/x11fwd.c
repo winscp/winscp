@@ -9,6 +9,7 @@
 
 #include "putty.h"
 #include "ssh.h"
+#include "sshchan.h"
 #include "tree234.h"
 
 #define GET_16BIT(endian, cp) \
@@ -26,7 +27,7 @@ struct XDMSeen {
     unsigned char clientid[6];
 };
 
-struct X11Connection {
+typedef struct X11Connection {
     unsigned char firstpkt[12];	       /* first X data packet */
     tree234 *authtree;
     struct X11Display *disp;
@@ -34,7 +35,7 @@ struct X11Connection {
     unsigned char *auth_data;
     int data_read, auth_plen, auth_psize, auth_dlen, auth_dsize;
     int verified;
-    int throttled, throttle_override;
+    int input_wanted;
     int no_data_sent_to_x_client;
     char *peer_addr;
     int peer_port;
@@ -42,7 +43,8 @@ struct X11Connection {
     Socket s;
 
     const Plug_vtable *plugvt;
-};
+    Channel chan;
+} X11Connection;
 
 static int xdmseen_cmp(void *a, void *b)
 {
@@ -126,7 +128,8 @@ struct X11FakeAuth *x11_invent_fake_auth(tree234 *authtree, int authtype)
 		auth->data[i]);
 
     auth->disp = NULL;
-    auth->share_cs = auth->share_chan = NULL;
+    auth->share_cs = NULL;
+    auth->share_chan = NULL;
 
     return auth;
 }
@@ -670,11 +673,8 @@ static void x11_receive(Plug plug, int urgent, char *data, int len)
     struct X11Connection *xconn = FROMFIELD(
         plug, struct X11Connection, plugvt);
 
-    if (sshfwd_write(xconn->c, data, len) > 0) {
-	xconn->throttled = 1;
-        xconn->no_data_sent_to_x_client = FALSE;
-	sk_set_frozen(xconn->s, 1);
-    }
+    xconn->no_data_sent_to_x_client = FALSE;
+    sshfwd_write(xconn->c, data, len);
 }
 
 static void x11_sent(Plug plug, int bufsize)
@@ -711,12 +711,30 @@ static const Plug_vtable X11Connection_plugvt = {
     NULL
 };
 
+static void x11_chan_free(Channel *chan);
+static int x11_send(Channel *chan, int is_stderr, const void *vdata, int len);
+static void x11_send_eof(Channel *chan);
+static void x11_set_input_wanted(Channel *chan, int wanted);
+static char *x11_log_close_msg(Channel *chan);
+
+static const struct ChannelVtable X11Connection_channelvt = {
+    x11_chan_free,
+    chan_remotely_opened_confirmation,
+    chan_remotely_opened_failure,
+    x11_send,
+    x11_send_eof,
+    x11_set_input_wanted,
+    x11_log_close_msg,
+    chan_no_eager_close,
+};
+
 /*
  * Called to set up the X11Connection structure, though this does not
  * yet connect to an actual server.
  */
-struct X11Connection *x11_init(tree234 *authtree, void *c,
-                               const char *peeraddr, int peerport)
+Channel *x11_new_channel(tree234 *authtree, struct ssh_channel *c,
+                         const char *peeraddr, int peerport,
+                         int connection_sharing_possible)
 {
     struct X11Connection *xconn;
 
@@ -725,11 +743,14 @@ struct X11Connection *x11_init(tree234 *authtree, void *c,
      */
     xconn = snew(struct X11Connection);
     xconn->plugvt = &X11Connection_plugvt;
+    xconn->chan.vt = &X11Connection_channelvt;
+    xconn->chan.initial_fixed_window_size =
+        (connection_sharing_possible ? 128 : 0);
     xconn->auth_protocol = NULL;
     xconn->authtree = authtree;
     xconn->verified = 0;
     xconn->data_read = 0;
-    xconn->throttled = xconn->throttle_override = 0;
+    xconn->input_wanted = TRUE;
     xconn->no_data_sent_to_x_client = TRUE;
     xconn->c = c;
 
@@ -750,13 +771,13 @@ struct X11Connection *x11_init(tree234 *authtree, void *c,
     xconn->peer_addr = peeraddr ? dupstr(peeraddr) : NULL;
     xconn->peer_port = peerport;
 
-    return xconn;
+    return &xconn->chan;
 }
 
-void x11_close(struct X11Connection *xconn)
+static void x11_chan_free(Channel *chan)
 {
-    if (!xconn)
-	return;
+    assert(chan->vt == &X11Connection_channelvt);
+    X11Connection *xconn = FROMFIELD(chan, X11Connection, chan);
 
     if (xconn->auth_protocol) {
 	sfree(xconn->auth_protocol);
@@ -770,24 +791,14 @@ void x11_close(struct X11Connection *xconn)
     sfree(xconn);
 }
 
-void x11_unthrottle(struct X11Connection *xconn)
+static void x11_set_input_wanted(Channel *chan, int wanted)
 {
-    if (!xconn)
-	return;
+    assert(chan->vt == &X11Connection_channelvt);
+    X11Connection *xconn = FROMFIELD(chan, X11Connection, chan);
 
-    xconn->throttled = 0;
+    xconn->input_wanted = wanted;
     if (xconn->s)
-        sk_set_frozen(xconn->s, xconn->throttled || xconn->throttle_override);
-}
-
-void x11_override_throttle(struct X11Connection *xconn, int enable)
-{
-    if (!xconn)
-	return;
-
-    xconn->throttle_override = enable;
-    if (xconn->s)
-        sk_set_frozen(xconn->s, xconn->throttled || xconn->throttle_override);
+        sk_set_frozen(xconn->s, !xconn->input_wanted);
 }
 
 static void x11_send_init_error(struct X11Connection *xconn,
@@ -835,12 +846,11 @@ static int x11_parse_ip(const char *addr_string, unsigned long *ip)
 /*
  * Called to send data down the raw connection.
  */
-int x11_send(struct X11Connection *xconn, const void *vdata, int len)
+static int x11_send(Channel *chan, int is_stderr, const void *vdata, int len)
 {
+    assert(chan->vt == &X11Connection_channelvt);
+    X11Connection *xconn = FROMFIELD(chan, X11Connection, chan);
     const char *data = (const char *)vdata;
-
-    if (!xconn)
-	return 0;
 
     /*
      * Read the first packet.
@@ -918,7 +928,8 @@ int x11_send(struct X11Connection *xconn, const void *vdata, int len)
         /*
          * If this auth points to a connection-sharing downstream
          * rather than an X display we know how to connect to
-         * directly, pass it off to the sharing module now.
+         * directly, pass it off to the sharing module now. (This will
+         * have the side effect of freeing xconn.)
          */
         if (auth_matched->share_cs) {
             sshfwd_x11_sharing_handover(xconn->c, auth_matched->share_cs,
@@ -933,7 +944,8 @@ int x11_send(struct X11Connection *xconn, const void *vdata, int len)
          * Now we know we're going to accept the connection, and what
          * X display to connect to. Actually connect to it.
          */
-        sshfwd_x11_is_local(xconn->c);
+        xconn->chan.initial_fixed_window_size = 0;
+        sshfwd_window_override_removed(xconn->c);
         xconn->disp = auth_matched->disp;
         xconn->s = new_connection(sk_addr_dup(xconn->disp->addr),
                                   xconn->disp->realhost, xconn->disp->port, 
@@ -992,8 +1004,11 @@ int x11_send(struct X11Connection *xconn, const void *vdata, int len)
     return sk_write(xconn->s, data, len);
 }
 
-void x11_send_eof(struct X11Connection *xconn)
+static void x11_send_eof(Channel *chan)
 {
+    assert(chan->vt == &X11Connection_channelvt);
+    X11Connection *xconn = FROMFIELD(chan, X11Connection, chan);
+
     if (xconn->s) {
         sk_write_eof(xconn->s);
     } else {
@@ -1006,6 +1021,11 @@ void x11_send_eof(struct X11Connection *xconn)
         if (xconn->c)
             sshfwd_write_eof(xconn->c);
     }
+}
+
+static char *x11_log_close_msg(Channel *chan)
+{
+    return dupstr("Forwarded X11 connection terminated");
 }
 
 /*
