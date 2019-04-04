@@ -293,13 +293,14 @@ void __fastcall TSessionData::NonPersistant()
   PreserveDirectoryChanges = false;
 }
 //---------------------------------------------------------------------
+#define PROPERTY(P) PROPERTY_HANDLER(P, )
 #define BASE_PROPERTIES \
   PROPERTY(HostName); \
   PROPERTY(PortNumber); \
   PROPERTY(UserName); \
-  PROPERTY(Password); \
+  PROPERTY_HANDLER(Password, F); \
   PROPERTY(PublicKeyFile); \
-  PROPERTY(Passphrase); \
+  PROPERTY_HANDLER(Passphrase, F); \
   PROPERTY(FSProtocol); \
   PROPERTY(Ftps); \
   PROPERTY(LocalDirectory); \
@@ -309,7 +310,7 @@ void __fastcall TSessionData::NonPersistant()
   PROPERTY(Note);
 //---------------------------------------------------------------------
 #define ADVANCED_PROPERTIES \
-  PROPERTY(NewPassword); \
+  PROPERTY_HANDLER(NewPassword, F); \
   PROPERTY(ChangePassword); \
   PROPERTY(PingInterval); \
   PROPERTY(PingType); \
@@ -380,7 +381,7 @@ void __fastcall TSessionData::NonPersistant()
   PROPERTY(ProxyHost); \
   PROPERTY(ProxyPort); \
   PROPERTY(ProxyUsername); \
-  PROPERTY(ProxyPassword); \
+  PROPERTY_HANDLER(ProxyPassword, F); \
   PROPERTY(ProxyTelnetCommand); \
   PROPERTY(ProxyLocalCommand); \
   PROPERTY(ProxyDNS); \
@@ -407,7 +408,7 @@ void __fastcall TSessionData::NonPersistant()
   PROPERTY(TunnelHostName); \
   PROPERTY(TunnelPortNumber); \
   PROPERTY(TunnelUserName); \
-  PROPERTY(TunnelPassword); \
+  PROPERTY_HANDLER(TunnelPassword, F); \
   PROPERTY(TunnelPublicKeyFile); \
   PROPERTY(TunnelLocalPortNumber); \
   PROPERTY(TunnelPortFwd); \
@@ -433,7 +434,7 @@ void __fastcall TSessionData::NonPersistant()
   \
   PROPERTY(WinTitle); \
   \
-  PROPERTY(EncryptKey); \
+  PROPERTY_HANDLER(EncryptKey, F); \
   \
   PROPERTY(CustomParam1); \
   PROPERTY(CustomParam2);
@@ -458,12 +459,12 @@ void __fastcall TSessionData::Assign(TPersistent * Source)
 //---------------------------------------------------------------------
 void __fastcall TSessionData::CopyData(TSessionData * SourceData)
 {
-  #define PROPERTY(P) P = SourceData->P
+  #define PROPERTY_HANDLER(P, F) F##P = SourceData->F##P
   PROPERTY(Name);
   BASE_PROPERTIES;
   ADVANCED_PROPERTIES;
   META_PROPERTIES;
-  #undef PROPERTY
+  #undef PROPERTY_HANDLER
   FOverrideCachedHostKey = SourceData->FOverrideCachedHostKey;
   FModified = SourceData->Modified;
   FSaveOnly = SourceData->FSaveOnly;
@@ -501,8 +502,8 @@ void __fastcall TSessionData::CopyNonCoreData(TSessionData * SourceData)
 bool __fastcall TSessionData::IsSame(const TSessionData * Default, bool AdvancedOnly, TStrings * DifferentProperties)
 {
   bool Result = true;
-  #define PROPERTY(P) \
-    if (P != Default->P) \
+  #define PROPERTY_HANDLER(P, F) \
+    if (F##P != Default->F##P) \
     { \
       if (DifferentProperties != NULL) \
       { \
@@ -517,7 +518,7 @@ bool __fastcall TSessionData::IsSame(const TSessionData * Default, bool Advanced
     META_PROPERTIES;
   }
   ADVANCED_PROPERTIES;
-  #undef PROPERTY
+  #undef PROPERTY_HANDLER
   return Result;
 }
 //---------------------------------------------------------------------
