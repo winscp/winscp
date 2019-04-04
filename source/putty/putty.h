@@ -1720,4 +1720,10 @@ void putty_finalize();
 #define MPEXT_BOM "\xEF\xBB\xBF"
 #endif
 
+#ifdef MPEXT
+// Recent PuTTY code uses C99 standard that allows code before initialization.
+// Mostly that code are assertions. This assert implementation allows being used before code.
+#define pinitassert(P) const int __assert_dummy = 1/(P)
+#endif
+
 #endif

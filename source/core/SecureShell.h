@@ -8,6 +8,7 @@
 #include "SessionInfo.h"
 //---------------------------------------------------------------------------
 #ifndef PuttyIntfH
+struct Backend_vtable;
 struct Backend;
 struct Conf;
 #endif
@@ -34,8 +35,8 @@ private:
   TSessionInfo FSessionInfo;
   bool FSessionInfoValid;
   TDateTime FLastDataSent;
-  Backend * FBackend;
-  void * FBackendHandle;
+  const Backend_vtable * FBackend;
+  Backend * FBackendHandle;
   const unsigned int * FMaxPacketSize;
   TNotifyEvent FOnReceive;
   bool FFrozen;

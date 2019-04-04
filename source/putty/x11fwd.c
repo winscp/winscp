@@ -776,7 +776,7 @@ Channel *x11_new_channel(tree234 *authtree, struct ssh_channel *c,
 
 static void x11_chan_free(Channel *chan)
 {
-    assert(chan->vt == &X11Connection_channelvt);
+    pinitassert(chan->vt == &X11Connection_channelvt);
     X11Connection *xconn = FROMFIELD(chan, X11Connection, chan);
 
     if (xconn->auth_protocol) {
@@ -793,7 +793,7 @@ static void x11_chan_free(Channel *chan)
 
 static void x11_set_input_wanted(Channel *chan, int wanted)
 {
-    assert(chan->vt == &X11Connection_channelvt);
+    pinitassert(chan->vt == &X11Connection_channelvt);
     X11Connection *xconn = FROMFIELD(chan, X11Connection, chan);
 
     xconn->input_wanted = wanted;
@@ -848,7 +848,7 @@ static int x11_parse_ip(const char *addr_string, unsigned long *ip)
  */
 static int x11_send(Channel *chan, int is_stderr, const void *vdata, int len)
 {
-    assert(chan->vt == &X11Connection_channelvt);
+    pinitassert(chan->vt == &X11Connection_channelvt);
     X11Connection *xconn = FROMFIELD(chan, X11Connection, chan);
     const char *data = (const char *)vdata;
 
@@ -1006,7 +1006,7 @@ static int x11_send(Channel *chan, int is_stderr, const void *vdata, int len)
 
 static void x11_send_eof(Channel *chan)
 {
-    assert(chan->vt == &X11Connection_channelvt);
+    pinitassert(chan->vt == &X11Connection_channelvt);
     X11Connection *xconn = FROMFIELD(chan, X11Connection, chan);
 
     if (xconn->s) {

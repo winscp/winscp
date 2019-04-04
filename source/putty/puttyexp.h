@@ -5,21 +5,20 @@
 
 // from ssh.c
 
-int is_ssh(void * handle);
-void call_ssh_timer(void * handle);
-int get_ssh_version(void * handle);
+int is_ssh(Plug plug);
+void call_ssh_timer(Backend * be);
+int get_ssh_version(Backend * be);
 void * get_ssh_frontend(Plug plug);
-int get_ssh1_compressing(void * handle);
-const struct ssh_cipher * get_cipher(void * handle);
-const struct ssh2_cipher * get_cscipher(void * handle);
-const struct ssh2_cipher * get_sccipher(void * handle);
-const struct ssh_compress * get_cscomp(void * handle);
-const struct ssh_compress * get_sccomp(void * handle);
-int get_ssh_state_closed(void * handle);
-int get_ssh_state_session(void * handle);
-int get_ssh_exitcode(void * handle);
-const unsigned int * ssh2_remmaxpkt(void * handle);
-const unsigned int * ssh2_remwindow(void * handle);
+int get_ssh1_compressing(Backend * be);
+const struct ssh_cipher * get_cipher(Backend * be);
+const struct ssh2_cipher * get_cscipher(Backend * be);
+const struct ssh2_cipher * get_sccipher(Backend * be);
+const struct ssh_compress * get_cscomp(Backend * be);
+const struct ssh_compress * get_sccomp(Backend * be);
+int get_ssh_state_closed(Backend * be);
+int get_ssh_state_session(Backend * be);
+const unsigned int * ssh2_remmaxpkt(Backend * be);
+const unsigned int * ssh2_remwindow(Backend * be);
 void md5checksum(const char * buffer, int len, unsigned char output[16]);
 typedef const struct ssh_keyalg * cp_ssh_keyalg;
 void get_hostkey_algs(int * count, cp_ssh_keyalg * SignKeys);
@@ -33,8 +32,8 @@ void get_macs(int * count, const struct ssh_mac *** amacs);
 
 // from portfwd.c
 
-int is_pfwd(void * handle);
-void * get_pfwd_backend(void * handle);
+int is_pfwd(Plug plug);
+Ssh get_pfwd_ssh(Plug plug);
 
 // for winstore.c
 

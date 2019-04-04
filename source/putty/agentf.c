@@ -173,7 +173,7 @@ Channel *agentf_new(struct ssh_channel *c)
 
 static void agentf_free(Channel *chan)
 {
-    assert(chan->vt == &agentf_channelvt);
+    pinitassert(chan->vt == &agentf_channelvt);
     agentf *af = FROMFIELD(chan, agentf, chan);
 
     if (af->pending)
@@ -185,7 +185,7 @@ static void agentf_free(Channel *chan)
 static int agentf_send(Channel *chan, int is_stderr,
                        const void *data, int length)
 {
-    assert(chan->vt == &agentf_channelvt);
+    pinitassert(chan->vt == &agentf_channelvt);
     agentf *af = FROMFIELD(chan, agentf, chan);
     bufchain_add(&af->inbuffer, data, length);
     agentf_try_forward(af);
@@ -203,7 +203,7 @@ static int agentf_send(Channel *chan, int is_stderr,
 
 static void agentf_send_eof(Channel *chan)
 {
-    assert(chan->vt == &agentf_channelvt);
+    pinitassert(chan->vt == &agentf_channelvt);
     agentf *af = FROMFIELD(chan, agentf, chan);
 
     af->rcvd_eof = TRUE;
@@ -221,7 +221,7 @@ static char *agentf_log_close_msg(Channel *chan)
 
 static void agentf_set_input_wanted(Channel *chan, int wanted)
 {
-    assert(chan->vt == &agentf_channelvt);
+    pinitassert(chan->vt == &agentf_channelvt);
     agentf *af = FROMFIELD(chan, agentf, chan);
 
     af->input_wanted = wanted;

@@ -625,7 +625,7 @@ void pfl_terminate(struct PortListener *pl)
 
 static void pfd_set_input_wanted(Channel *chan, int wanted)
 {
-    assert(chan->vt == &PortForwarding_channelvt);
+    pinitassert(chan->vt == &PortForwarding_channelvt);
     PortForwarding *pf = FROMFIELD(chan, PortForwarding, chan);
     pf->input_wanted = wanted;
     sk_set_frozen(pf->s, !pf->input_wanted);
@@ -633,7 +633,7 @@ static void pfd_set_input_wanted(Channel *chan, int wanted)
 
 static void pfd_chan_free(Channel *chan)
 {
-    assert(chan->vt == &PortForwarding_channelvt);
+    pinitassert(chan->vt == &PortForwarding_channelvt);
     PortForwarding *pf = FROMFIELD(chan, PortForwarding, chan);
     pfd_close(pf);
 }
@@ -643,21 +643,21 @@ static void pfd_chan_free(Channel *chan)
  */
 static int pfd_send(Channel *chan, int is_stderr, const void *data, int len)
 {
-    assert(chan->vt == &PortForwarding_channelvt);
+    pinitassert(chan->vt == &PortForwarding_channelvt);
     PortForwarding *pf = FROMFIELD(chan, PortForwarding, chan);
     return sk_write(pf->s, data, len);
 }
 
 static void pfd_send_eof(Channel *chan)
 {
-    assert(chan->vt == &PortForwarding_channelvt);
+    pinitassert(chan->vt == &PortForwarding_channelvt);
     PortForwarding *pf = FROMFIELD(chan, PortForwarding, chan);
     sk_write_eof(pf->s);
 }
 
 static void pfd_open_confirmation(Channel *chan)
 {
-    assert(chan->vt == &PortForwarding_channelvt);
+    pinitassert(chan->vt == &PortForwarding_channelvt);
     PortForwarding *pf = FROMFIELD(chan, PortForwarding, chan);
 
     pf->ready = 1;
@@ -673,7 +673,7 @@ static void pfd_open_confirmation(Channel *chan)
 
 static void pfd_open_failure(Channel *chan, const char *errtext)
 {
-    assert(chan->vt == &PortForwarding_channelvt);
+    pinitassert(chan->vt == &PortForwarding_channelvt);
     PortForwarding *pf = FROMFIELD(chan, PortForwarding, chan);
 
     char *msg = dupprintf(
@@ -687,27 +687,27 @@ static void pfd_open_failure(Channel *chan, const char *errtext)
 
 #include "puttyexp.h"
 
-int is_pfwd(void * handle)
+int is_pfwd(Plug plug)
 {
-  Plug fn = (Plug)handle;
   return
-    ((*fn)->closing == pfd_closing) ||
-    ((*fn)->closing == pfl_closing);
+    ((*plug)->closing == pfd_closing) ||
+    ((*plug)->closing == pfl_closing);
 }
 
-void * get_pfwd_backend(void * handle)
+Ssh get_pfwd_ssh(Plug plug)
 {
-  void * backend = NULL;
-  Plug fn = (Plug)handle;
-  if ((*fn)->closing == pfl_closing)
+  Ssh ssh = NULL;
+  if ((*plug)->closing == pfl_closing)
   {
-    backend = ((struct PortListener *)handle)->backhandle;
+    struct PortListener *pl = FROMFIELD(plug, struct PortListener, plugvt);
+    ssh = pl->ssh;
   }
-  else if ((*fn)->closing == pfd_closing)
+  else if ((*plug)->closing == pfd_closing)
   {
-    backend = ((struct PortForwarding *)handle)->backhandle;
+    struct PortForwarding *pf = FROMFIELD(plug, struct PortForwarding, plugvt);
+    ssh = pf->ssh;
   }
-  return backend;
+  return ssh;
 }
 
 #endif

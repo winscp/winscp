@@ -410,7 +410,7 @@ void __fastcall TSecureShell::Open()
     FSendBuf = FSessionData->SendBuf;
     try
     {
-      InitError = FBackend->init(this, &FBackendHandle, conf,
+      InitError = FBackend->init(reinterpret_cast<Frontend *>(this), &FBackendHandle, conf,
         AnsiString(FSessionData->HostNameExpanded).c_str(), FSessionData->PortNumber, &RealHost,
         (FSessionData->TcpNoDelay ? 1 : 0),
         conf_get_int(conf, CONF_tcp_keepalives));
@@ -1677,7 +1677,7 @@ void inline __fastcall TSecureShell::CheckConnection(int Message)
 
     Str = MainInstructions(Str);
 
-    int ExitCode = get_ssh_exitcode(FBackendHandle);
+    int ExitCode = FBackend->exitcode(FBackendHandle);
     if (ExitCode >= 0)
     {
       Str += L" " + FMTLOAD(SSH_EXITCODE, (ExitCode));

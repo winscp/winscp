@@ -9779,7 +9779,7 @@ static mainchan *mainchan_new(Ssh ssh)
 
 static void mainchan_free(Channel *chan)
 {
-    assert(chan->vt == &mainchan_channelvt);
+    pinitassert(chan->vt == &mainchan_channelvt);
     mainchan *mc = FROMFIELD(chan, mainchan, chan);
     mc->ssh->mainchan = NULL;
     sfree(mc);
@@ -9800,14 +9800,14 @@ static void mainchan_open_failure(Channel *chan, const char *errtext)
 static int mainchan_send(Channel *chan, int is_stderr,
                          const void *data, int length)
 {
-    assert(chan->vt == &mainchan_channelvt);
+    pinitassert(chan->vt == &mainchan_channelvt);
     mainchan *mc = FROMFIELD(chan, mainchan, chan);
     return from_backend(mc->ssh->frontend, is_stderr, data, length);
 }
 
 static void mainchan_send_eof(Channel *chan)
 {
-    assert(chan->vt == &mainchan_channelvt);
+    pinitassert(chan->vt == &mainchan_channelvt);
     mainchan *mc = FROMFIELD(chan, mainchan, chan);
 
     if (!mc->ssh->sent_console_eof &&
@@ -9826,7 +9826,7 @@ static void mainchan_send_eof(Channel *chan)
 
 static void mainchan_set_input_wanted(Channel *chan, int wanted)
 {
-    assert(chan->vt == &mainchan_channelvt);
+    pinitassert(chan->vt == &mainchan_channelvt);
     mainchan *mc = FROMFIELD(chan, mainchan, chan);
 
     /*
@@ -11473,23 +11473,24 @@ const struct Backend_vtable ssh_backend = {
 
 #include "puttyexp.h"
 
-int is_ssh(void * handle)
+int is_ssh(Plug plug)
 {
-  Plug fn = (Plug)handle;
-  return (*fn)->closing == ssh_closing;
+  return (*plug)->closing == ssh_closing;
 }
 
-void call_ssh_timer(void * handle)
+void call_ssh_timer(Backend * be)
 {
-  if (((Ssh)handle)->version == 2)
+  Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
+  if (ssh->version == 2)
   {
-    ssh2_timer(handle, GETTICKCOUNT());
+    ssh2_timer(ssh, GETTICKCOUNT());
   }
 }
 
-int get_ssh_version(void * handle)
+int get_ssh_version(Backend * be)
 {
-  return ((Ssh)handle)->version;
+  Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
+  return ssh->version;
 }
 
 void * get_ssh_frontend(Plug plug)
@@ -11497,59 +11498,64 @@ void * get_ssh_frontend(Plug plug)
   return FROMFIELD(plug, struct ssh_tag, plugvt)->frontend;
 }
 
-int get_ssh1_compressing(void * handle)
+int get_ssh1_compressing(Backend * be)
 {
-  return ssh1_bpp_get_compressing(((Ssh)handle)->bpp);
+  Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
+  return ssh1_bpp_get_compressing(ssh->bpp);
 }
 
-const struct ssh_cipher * get_cipher(void * handle)
+const struct ssh_cipher * get_cipher(Backend * be)
 {
-  return ssh1_bpp_get_cipher(((Ssh)handle)->bpp);
+  Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
+  return ssh1_bpp_get_cipher(ssh->bpp);
 }
 
-const struct ssh2_cipher * get_cscipher(void * handle)
+const struct ssh2_cipher * get_cscipher(Backend * be)
 {
-  return ssh2_bpp_get_cscipher(((Ssh)handle)->bpp);
+  Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
+  return ssh2_bpp_get_cscipher(ssh->bpp);
 }
 
-const struct ssh2_cipher * get_sccipher(void * handle)
+const struct ssh2_cipher * get_sccipher(Backend * be)
 {
-  return ssh2_bpp_get_sccipher(((Ssh)handle)->bpp);
+  Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
+  return ssh2_bpp_get_sccipher(ssh->bpp);
 }
 
-const struct ssh_compress * get_cscomp(void * handle)
+const struct ssh_compress * get_cscomp(Backend * be)
 {
-  return ssh2_bpp_get_cscomp(((Ssh)handle)->bpp);
+  Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
+  return ssh2_bpp_get_cscomp(ssh->bpp);
 }
 
-const struct ssh_compress * get_sccomp(void * handle)
+const struct ssh_compress * get_sccomp(Backend * be)
 {
-  return ssh2_bpp_get_sccomp(((Ssh)handle)->bpp);
+  Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
+  return ssh2_bpp_get_sccomp(ssh->bpp);
 }
 
-int get_ssh_state_closed(void * handle)
+int get_ssh_state_closed(Backend * be)
 {
-  return ((Ssh)handle)->state == SSH_STATE_CLOSED;
+  Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
+  return ssh->state == SSH_STATE_CLOSED;
 }
 
-int get_ssh_state_session(void * handle)
+int get_ssh_state_session(Backend * be)
 {
-  return ((Ssh)handle)->state == SSH_STATE_SESSION;
+  Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
+  return ssh->state == SSH_STATE_SESSION;
 }
 
-int get_ssh_exitcode(void * handle)
+const unsigned int * ssh2_remmaxpkt(Backend * be)
 {
-  return ssh_return_exitcode(handle);
+  Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
+  return &ssh->mainchan->v.v2.remmaxpkt;
 }
 
-const unsigned int * ssh2_remmaxpkt(void * handle)
+const unsigned int * ssh2_remwindow(Backend * be)
 {
-  return &((Ssh)handle)->mainchan->v.v2.remmaxpkt;
-}
-
-const unsigned int * ssh2_remwindow(void * handle)
-{
-  return &((Ssh)handle)->mainchan->v.v2.remwindow;
+  Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
+  return &ssh->mainchan->v.v2.remwindow;
 }
 
 void md5checksum(const char * buffer, int len, unsigned char output[16])

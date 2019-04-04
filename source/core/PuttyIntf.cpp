@@ -85,13 +85,17 @@ TSecureShell * GetSecureShell(Plug plug, bool & pfwd)
   }
 
   pfwd = is_pfwd(plug);
+  void * frontend;
   if (pfwd)
   {
-    plug = (Plug)get_pfwd_backend(plug);
+    Ssh ssh = get_pfwd_ssh(plug);
+    frontend = ssh_get_frontend(ssh);
   }
-
-  void * frontend = get_ssh_frontend(plug);
-  DebugAssert(frontend);
+  else
+  {
+    frontend = get_ssh_frontend(plug);
+  }
+  DebugAssert(frontend != NULL);
 
   return reinterpret_cast<TSecureShell*>(frontend);
 }
@@ -119,7 +123,7 @@ extern "C" char * do_select(Plug plug, SOCKET skt, int startup)
   return NULL;
 }
 //---------------------------------------------------------------------------
-int from_backend(void * frontend, int is_stderr, const void * data, int datalen)
+int from_backend(Frontend * frontend, int is_stderr, const void * data, int datalen)
 {
   DebugAssert(frontend);
   if (is_stderr >= 0)
@@ -135,14 +139,14 @@ int from_backend(void * frontend, int is_stderr, const void * data, int datalen)
   return 0;
 }
 //---------------------------------------------------------------------------
-int from_backend_untrusted(void * /*frontend*/, const void * /*data*/, int /*len*/)
+int from_backend_untrusted(Frontend * /*frontend*/, const void * /*data*/, int /*len*/)
 {
   // currently used with authentication banner only,
   // for which we have own interface display_banner
   return 0;
 }
 //---------------------------------------------------------------------------
-int from_backend_eof(void * /*frontend*/)
+int from_backend_eof(Frontend * /*frontend*/)
 {
   return FALSE;
 }
@@ -216,14 +220,14 @@ int get_userpass_input(prompts_t * p, bufchain * DebugUsedArg(input))
   return Result;
 }
 //---------------------------------------------------------------------------
-char * get_ttymode(void * /*frontend*/, const char * /*mode*/)
+char * get_ttymode(Frontend * /*frontend*/, const char * /*mode*/)
 {
   // should never happen when Config.nopty == TRUE
   DebugFail();
   return NULL;
 }
 //---------------------------------------------------------------------------
-void logevent(void * frontend, const char * string)
+void logevent(Frontend * frontend, const char * string)
 {
   // Frontend maybe NULL here
   if (frontend != NULL)
@@ -232,7 +236,7 @@ void logevent(void * frontend, const char * string)
   }
 }
 //---------------------------------------------------------------------------
-void connection_fatal(void * frontend, const char * fmt, ...)
+void connection_fatal(Frontend * frontend, const char * fmt, ...)
 {
   va_list Param;
   char Buf[200];
@@ -245,12 +249,12 @@ void connection_fatal(void * frontend, const char * fmt, ...)
   ((TSecureShell *)frontend)->PuttyFatalError(Buf);
 }
 //---------------------------------------------------------------------------
-int verify_ssh_host_key(void * frontend, char * host, int port, const char * keytype,
+int verify_ssh_host_key(Frontend * frontend, char * host, int port, const char * keytype,
   char * keystr, char * fingerprint, void (*/*callback*/)(void * ctx, int result),
   void * /*ctx*/)
 {
   DebugAssert(frontend != NULL);
-  static_cast<TSecureShell *>(frontend)->VerifyHostKey(host, port, keytype, keystr, fingerprint);
+  reinterpret_cast<TSecureShell *>(frontend)->VerifyHostKey(host, port, keytype, keystr, fingerprint);
 
   // We should return 0 when key was not confirmed, we throw exception instead.
   return 1;
@@ -263,7 +267,7 @@ int have_ssh_host_key(void * frontend, const char * hostname, int port,
   return static_cast<TSecureShell *>(frontend)->HaveHostKey(hostname, port, keytype) ? 1 : 0;
 }
 //---------------------------------------------------------------------------
-int askalg(void * frontend, const char * algtype, const char * algname,
+int askalg(Frontend * frontend, const char * algtype, const char * algname,
   void (*/*callback*/)(void * ctx, int result), void * /*ctx*/)
 {
   DebugAssert(frontend != NULL);
@@ -273,7 +277,7 @@ int askalg(void * frontend, const char * algtype, const char * algname,
   return 1;
 }
 //---------------------------------------------------------------------------
-int askhk(void * /*frontend*/, const char * /*algname*/, const char * /*betteralgs*/,
+int askhk(Frontend * /*frontend*/, const char * /*algname*/, const char * /*betteralgs*/,
   void (*/*callback*/)(void *ctx, int result), void * /*ctx*/)
 {
   return 1;
@@ -332,7 +336,7 @@ void cleanup_exit(int /*code*/)
   throw ESshFatal(NULL, "");
 }
 //---------------------------------------------------------------------------
-int askappend(void * /*frontend*/, Filename * /*filename*/,
+int askappend(Frontend * /*frontend*/, Filename * /*filename*/,
   void (*/*callback*/)(void * ctx, int result), void * /*ctx*/)
 {
   // this is called from logging.c of putty, which is never used with WinSCP
@@ -340,7 +344,7 @@ int askappend(void * /*frontend*/, Filename * /*filename*/,
   return 0;
 }
 //---------------------------------------------------------------------------
-void ldisc_echoedit_update(void * /*handle*/)
+void ldisc_echoedit_update(Ldisc * /*handle*/)
 {
   DebugFail();
 }
@@ -351,12 +355,12 @@ void agent_schedule_callback(void (* /*callback*/)(void *, void *, int),
   DebugFail();
 }
 //---------------------------------------------------------------------------
-void notify_remote_exit(void * /*frontend*/)
+void notify_remote_exit(Frontend * /*frontend*/)
 {
   // nothing
 }
 //---------------------------------------------------------------------------
-void update_specials_menu(void * /*frontend*/)
+void update_specials_menu(Frontend * /*frontend*/)
 {
   // nothing
 }
@@ -371,7 +375,7 @@ void expire_timer_context(void * /*ctx*/)
   // nothing
 }
 //---------------------------------------------------------------------------
-Pinger pinger_new(Conf * /*conf*/, Backend * /*back*/, void * /*backhandle*/)
+Pinger pinger_new(Conf * /*conf*/, Backend * /*back*/)
 {
   return NULL;
 }
@@ -386,7 +390,7 @@ void pinger_free(Pinger /*pinger*/)
   // nothing
 }
 //---------------------------------------------------------------------------
-void set_busy_status(void * /*frontend*/, int /*status*/)
+void set_busy_status(Frontend * /*frontend*/, int /*status*/)
 {
   // nothing
 }

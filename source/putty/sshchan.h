@@ -40,7 +40,7 @@ struct Channel {
 #define chan_send_eof(ch) ((ch)->vt->send_eof(ch))
 #define chan_set_input_wanted(ch, wanted) \
     ((ch)->vt->set_input_wanted(ch, wanted))
-#define chan_log_close_msg(ch) ((ch)->vt->send_eof(ch))
+#define chan_log_close_msg(ch) ((ch)->vt->log_close_msg(ch))
 #define chan_want_close(ch, leof, reof) ((ch)->vt->want_close(ch, leof, reof))
 
 /*

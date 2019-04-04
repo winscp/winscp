@@ -94,6 +94,9 @@
 		<TASM_Debugging>None</TASM_Debugging>
 	</PropertyGroup>
 	<ItemGroup>
+		<CppCompile Include="putty\agentf.c">
+			<BuildOrder>60</BuildOrder>
+		</CppCompile>
 		<CppCompile Include="putty\be_misc.c">
 			<BuildOrder>47</BuildOrder>
 		</CppCompile>
