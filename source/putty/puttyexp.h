@@ -5,7 +5,6 @@
 
 // from ssh.c
 
-void ssh_close(void * handle);
 int is_ssh(void * handle);
 void call_ssh_timer(void * handle);
 int get_ssh_version(void * handle);

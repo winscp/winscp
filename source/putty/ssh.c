@@ -11473,11 +11473,6 @@ const struct Backend_vtable ssh_backend = {
 
 #include "puttyexp.h"
 
-void ssh_close(void * handle)
-{
-  ssh_do_close((Ssh)handle, FALSE);
-}
-
 int is_ssh(void * handle)
 {
   Plug fn = (Plug)handle;
