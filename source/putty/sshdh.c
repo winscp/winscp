@@ -187,7 +187,7 @@ int dh_is_gex(const struct ssh_kex *kex)
 /*
  * Initialise DH for a standard group.
  */
-void *dh_setup_group(const struct ssh_kex *kex)
+struct dh_ctx *dh_setup_group(const struct ssh_kex *kex)
 {
     const struct dh_extra *extra = (const struct dh_extra *)kex->extra;
     struct dh_ctx *ctx = snew(struct dh_ctx);
@@ -200,7 +200,7 @@ void *dh_setup_group(const struct ssh_kex *kex)
 /*
  * Initialise DH for a server-supplied group.
  */
-void *dh_setup_gex(Bignum pval, Bignum gval)
+struct dh_ctx *dh_setup_gex(Bignum pval, Bignum gval)
 {
     struct dh_ctx *ctx = snew(struct dh_ctx);
     ctx->p = copybn(pval);
@@ -212,9 +212,8 @@ void *dh_setup_gex(Bignum pval, Bignum gval)
 /*
  * Clean up and free a context.
  */
-void dh_cleanup(void *handle)
+void dh_cleanup(struct dh_ctx *ctx)
 {
-    struct dh_ctx *ctx = (struct dh_ctx *)handle;
     freebn(ctx->x);
     freebn(ctx->e);
     freebn(ctx->p);
@@ -239,9 +238,8 @@ void dh_cleanup(void *handle)
  * Advances in Cryptology: Proceedings of Eurocrypt '96
  * Springer-Verlag, May 1996.
  */
-Bignum dh_create_e(void *handle, int nbits)
+Bignum dh_create_e(struct dh_ctx *ctx, int nbits)
 {
-    struct dh_ctx *ctx = (struct dh_ctx *)handle;
     int i;
 
     int nbytes;
@@ -295,9 +293,8 @@ Bignum dh_create_e(void *handle, int nbits)
  * they lead to obviously weak keys that even a passive eavesdropper
  * can figure out.)
  */
-const char *dh_validate_f(void *handle, Bignum f)
+const char *dh_validate_f(struct dh_ctx *ctx, Bignum f)
 {
-    struct dh_ctx *ctx = (struct dh_ctx *)handle;
     if (bignum_cmp(f, One) <= 0) {
         return "f value received is too small";
     } else {
@@ -313,9 +310,8 @@ const char *dh_validate_f(void *handle, Bignum f)
 /*
  * DH stage 2: given a number f, compute K = f^x mod p.
  */
-Bignum dh_find_K(void *handle, Bignum f)
+Bignum dh_find_K(struct dh_ctx *ctx, Bignum f)
 {
-    struct dh_ctx *ctx = (struct dh_ctx *)handle;
     Bignum ret;
     ret = modpow(f, ctx->x, ctx->p);
     return ret;

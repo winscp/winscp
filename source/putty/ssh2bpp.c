@@ -14,8 +14,6 @@ struct ssh2_bpp_direction {
     ssh2_cipher *cipher;
     ssh2_mac *mac;
     int etm_mode;
-    const struct ssh_compress *comp;
-    void *comp_ctx;
 };
 
 struct ssh2_bpp_state {
@@ -28,6 +26,11 @@ struct ssh2_bpp_state {
     PktIn *pktin;
 
     struct ssh2_bpp_direction in, out;
+    /* comp and decomp logically belong in the per-direction
+     * substructure, except that they have different types */
+    ssh_decompressor *in_decomp;
+    ssh_compressor *out_comp;
+
     int pending_newkeys;
 
     BinaryPacketProtocol bpp;
@@ -61,14 +64,14 @@ static void ssh2_bpp_free(BinaryPacketProtocol *bpp)
         ssh2_cipher_free(s->out.cipher);
     if (s->out.mac)
         ssh2_mac_free(s->out.mac);
-    if (s->out.comp_ctx)
-        s->out.comp->compress_cleanup(s->out.comp_ctx);
+    if (s->out_comp)
+        ssh_compressor_free(s->out_comp);
     if (s->in.cipher)
         ssh2_cipher_free(s->in.cipher);
     if (s->in.mac)
         ssh2_mac_free(s->in.mac);
-    if (s->in.comp_ctx)
-        s->in.comp->decompress_cleanup(s->in.comp_ctx);
+    if (s->in_decomp)
+        ssh_decompressor_free(s->in_decomp);
     if (s->pktin)
         ssh_unref_packet(s->pktin);
     sfree(s);
@@ -78,7 +81,7 @@ void ssh2_bpp_new_outgoing_crypto(
     BinaryPacketProtocol *bpp,
     const struct ssh2_cipheralg *cipher, const void *ckey, const void *iv,
     const struct ssh2_macalg *mac, int etm_mode, const void *mac_key,
-    const struct ssh_compress *compression)
+    const struct ssh_compression_alg *compression)
 {
     struct ssh2_bpp_state *s;
     assert(bpp->vt == &ssh2_bpp_vtable);
@@ -88,8 +91,8 @@ void ssh2_bpp_new_outgoing_crypto(
         ssh2_cipher_free(s->out.cipher);
     if (s->out.mac)
         ssh2_mac_free(s->out.mac);
-    if (s->out.comp_ctx)
-        s->out.comp->compress_cleanup(s->out.comp_ctx);
+    if (s->out_comp)
+        ssh_compressor_free(s->out_comp);
 
     if (cipher) {
         s->out.cipher = ssh2_cipher_new(cipher);
@@ -106,18 +109,17 @@ void ssh2_bpp_new_outgoing_crypto(
         s->out.mac = NULL;
     }
 
-    s->out.comp = compression;
-    /* out_comp is always non-NULL, because no compression is
-     * indicated by ssh_comp_none. So compress_init always exists, but
-     * it may return a null out_comp_ctx. */
-    s->out.comp_ctx = compression->compress_init();
+    /* 'compression' is always non-NULL, because no compression is
+     * indicated by ssh_comp_none. But this setup call may return a
+     * null out_comp. */
+    s->out_comp = ssh_compressor_new(compression);
 }
 
 void ssh2_bpp_new_incoming_crypto(
     BinaryPacketProtocol *bpp,
     const struct ssh2_cipheralg *cipher, const void *ckey, const void *iv,
     const struct ssh2_macalg *mac, int etm_mode, const void *mac_key,
-    const struct ssh_compress *compression)
+    const struct ssh_compression_alg *compression)
 {
     struct ssh2_bpp_state *s;
     assert(bpp->vt == &ssh2_bpp_vtable);
@@ -127,8 +129,8 @@ void ssh2_bpp_new_incoming_crypto(
         ssh2_cipher_free(s->in.cipher);
     if (s->in.mac)
         ssh2_mac_free(s->in.mac);
-    if (s->in.comp_ctx)
-        s->in.comp->decompress_cleanup(s->in.comp_ctx);
+    if (s->in_decomp)
+        ssh_decompressor_free(s->in_decomp);
 
     if (cipher) {
         s->in.cipher = ssh2_cipher_new(cipher);
@@ -145,11 +147,10 @@ void ssh2_bpp_new_incoming_crypto(
         s->in.mac = NULL;
     }
 
-    s->in.comp = compression;
-    /* in_comp is always non-NULL, because no compression is
-     * indicated by ssh_comp_none. So compress_init always exists, but
-     * it may return a null in_comp_ctx. */
-    s->in.comp_ctx = compression->decompress_init();
+    /* 'compression' is always non-NULL, because no compression is
+     * indicated by ssh_comp_none. But this setup call may return a
+     * null in_decomp. */
+    s->in_decomp = ssh_decompressor_new(compression);
 
     /* Clear the pending_newkeys flag, so that handle_input below will
      * start consuming the input data again. */
@@ -419,8 +420,8 @@ static void ssh2_bpp_handle_input(BinaryPacketProtocol *bpp)
         {
             unsigned char *newpayload;
             int newlen;
-            if (s->in.comp && s->in.comp->decompress(
-                    s->in.comp_ctx, s->data + 5, s->length - 5,
+            if (s->in_decomp && ssh_decompressor_decompress(
+                    s->in_decomp, s->data + 5, s->length - 5,
                     &newpayload, &newlen)) {
                 if (s->maxlen < newlen + 5) {
                     PktIn *old_pktin = s->pktin;
@@ -526,7 +527,7 @@ static void ssh2_bpp_format_packet_inner(struct ssh2_bpp_state *s, PktOut *pkt)
     cipherblk = s->out.cipher ? ssh2_cipher_alg(s->out.cipher)->blksize : 8;
     cipherblk = cipherblk < 8 ? 8 : cipherblk;  /* or 8 if blksize < 8 */
 
-    if (s->out.comp && s->out.comp_ctx) {
+    if (s->out_comp) {
         unsigned char *newpayload;
         int minlen, newlen;
 
@@ -544,8 +545,8 @@ static void ssh2_bpp_format_packet_inner(struct ssh2_bpp_state *s, PktOut *pkt)
             minlen -= 8;              /* length field + min padding */
         }
 
-        s->out.comp->compress(s->out.comp_ctx, pkt->data + 5, pkt->length - 5,
-                              &newpayload, &newlen, minlen);
+        ssh_compressor_compress(s->out_comp, pkt->data + 5, pkt->length - 5,
+                                &newpayload, &newlen, minlen);
         pkt->length = 5;
         put_data(pkt, newpayload, newlen);
         sfree(newpayload);
@@ -608,7 +609,7 @@ static void ssh2_bpp_format_packet(BinaryPacketProtocol *bpp, PktOut *pkt)
 {
     struct ssh2_bpp_state *s = FROMFIELD(bpp, struct ssh2_bpp_state, bpp);
 
-    if (pkt->minlen > 0 && !(s->out.comp && s->out.comp_ctx)) {
+    if (pkt->minlen > 0 && !s->out_comp) {
         /*
          * If we've been told to pad the packet out to a given minimum
          * length, but we're not compressing (and hence can't get the

@@ -340,31 +340,39 @@ const static struct ssh2_macalg *const buggymacs[] = {
     &ssh_hmac_sha1_buggy, &ssh_hmac_sha1_96_buggy, &ssh_hmac_md5
 };
 
-static void *ssh_comp_none_init(void)
+static ssh_compressor *ssh_comp_none_init(void)
 {
     return NULL;
 }
-static void ssh_comp_none_cleanup(void *handle)
+static void ssh_comp_none_cleanup(ssh_compressor *handle)
 {
 }
-static void ssh_comp_none_block(void *handle, unsigned char *block, int len,
+static ssh_decompressor *ssh_decomp_none_init(void)
+{
+    return NULL;
+}
+static void ssh_decomp_none_cleanup(ssh_decompressor *handle)
+{
+}
+static void ssh_comp_none_block(ssh_compressor *handle,
+                                unsigned char *block, int len,
                                 unsigned char **outblock, int *outlen,
                                 int minlen)
 {
 }
-static int ssh_decomp_none_block(void *handle, unsigned char *block, int len,
+static int ssh_decomp_none_block(ssh_decompressor *handle,
+                                 unsigned char *block, int len,
                                  unsigned char **outblock, int *outlen)
 {
     return 0;
 }
-const static struct ssh_compress ssh_comp_none = {
+const static struct ssh_compression_alg ssh_comp_none = {
     "none", NULL,
     ssh_comp_none_init, ssh_comp_none_cleanup, ssh_comp_none_block,
-    ssh_comp_none_init, ssh_comp_none_cleanup, ssh_decomp_none_block,
+    ssh_decomp_none_init, ssh_decomp_none_cleanup, ssh_decomp_none_block,
     NULL
 };
-extern const struct ssh_compress ssh_zlib;
-const static struct ssh_compress *const compressions[] = {
+const static struct ssh_compression_alg *const compressions[] = {
     &ssh_zlib, &ssh_comp_none
 };
 
@@ -468,6 +476,28 @@ struct ssh_channel {
     ssh_sharing_connstate *sharectx; /* sharing context, if this is a
                                       * downstream channel */
     Channel *chan;      /* handle the client side of this channel, if not */
+    SshChannel sc;      /* entry point for chan to talk back to */
+};
+
+static int sshchannel_write(SshChannel *c, const void *buf, int len);
+static void sshchannel_write_eof(SshChannel *c);
+static void sshchannel_unclean_close(SshChannel *c, const char *err);
+static void sshchannel_unthrottle(SshChannel *c, int bufsize);
+static Conf *sshchannel_get_conf(SshChannel *c);
+static void sshchannel_window_override_removed(SshChannel *c);
+static void sshchannel_x11_sharing_handover(
+    SshChannel *c, ssh_sharing_connstate *share_cs, share_channel *share_chan,
+    const char *peer_addr, int peer_port, int endian,
+    int protomajor, int protominor, const void *initial_data, int initial_len);
+
+const struct SshChannelVtable sshchannel_vtable = {
+    sshchannel_write,
+    sshchannel_write_eof,
+    sshchannel_unclean_close,
+    sshchannel_unthrottle,
+    sshchannel_get_conf,
+    sshchannel_window_override_removed,
+    sshchannel_x11_sharing_handover,
 };
 
 /*
@@ -502,41 +532,21 @@ struct ssh_portfwd; /* forward declaration */
 struct ssh_rportfwd {
     unsigned sport, dport;
     char *shost, *dhost;
-    char *sportdesc;
+    int addressfamily;
+    char *log_description; /* name of remote listening port, for logging */
     ssh_sharing_connstate *share_ctx;
-    struct ssh_portfwd *pfrec;
+    PortFwdRecord *pfr;
 };
 
 static void free_rportfwd(struct ssh_rportfwd *pf)
 {
     if (pf) {
-        sfree(pf->sportdesc);
+        sfree(pf->log_description);
         sfree(pf->shost);
         sfree(pf->dhost);
         sfree(pf);
     }
 }
-
-/*
- * Separately to the rportfwd tree (which is for looking up port
- * open requests from the server), a tree of _these_ structures is
- * used to keep track of all the currently open port forwardings,
- * so that we can reconfigure in mid-session if the user requests
- * it.
- */
-struct ssh_portfwd {
-    enum { DESTROY, KEEP, CREATE } status;
-    int type;
-    unsigned sport, dport;
-    char *saddr, *daddr;
-    char *sserv, *dserv;
-    struct ssh_rportfwd *remote;
-    int addressfamily;
-    struct PortListener *local;
-};
-#define free_portfwd(pf) ( \
-    ((pf) ? (sfree((pf)->saddr), sfree((pf)->daddr), \
-	     sfree((pf)->sserv), sfree((pf)->dserv)) : (void)0 ), sfree(pf) )
 
 static void ssh1_protocol_setup(Ssh ssh);
 static void ssh2_protocol_setup(Ssh ssh);
@@ -696,7 +706,7 @@ struct ssh_tag {
     int v2_session_id_len;
     int v2_cbc_ignore_workaround;
     int v2_out_cipherblksize;
-    void *kex_ctx;
+    struct dh_ctx *dh_ctx;
 
     int bare_connection;
     int attempting_connshare;
@@ -721,7 +731,10 @@ struct ssh_tag {
     int clean_exit;
     int disconnect_message_seen;
 
-    tree234 *rportfwds, *portfwds;
+    tree234 *rportfwds;
+    PortFwdManager *portfwdmgr;
+
+    ConnectionLayer cl;
 
     enum {
 	SSH_STATE_PREPACKET,
@@ -1035,51 +1048,6 @@ static int ssh_rportcmp_ssh2(void *av, void *bv)
 	return +1;
     if (a->sport < b->sport)
 	return -1;
-    return 0;
-}
-
-/*
- * Special form of strcmp which can cope with NULL inputs. NULL is
- * defined to sort before even the empty string.
- */
-static int nullstrcmp(const char *a, const char *b)
-{
-    if (a == NULL && b == NULL)
-	return 0;
-    if (a == NULL)
-	return -1;
-    if (b == NULL)
-	return +1;
-    return strcmp(a, b);
-}
-
-static int ssh_portcmp(void *av, void *bv)
-{
-    struct ssh_portfwd *a = (struct ssh_portfwd *) av;
-    struct ssh_portfwd *b = (struct ssh_portfwd *) bv;
-    int i;
-    if (a->type > b->type)
-	return +1;
-    if (a->type < b->type)
-	return -1;
-    if (a->addressfamily > b->addressfamily)
-	return +1;
-    if (a->addressfamily < b->addressfamily)
-	return -1;
-    if ( (i = nullstrcmp(a->saddr, b->saddr)) != 0)
-	return i < 0 ? -1 : +1;
-    if (a->sport > b->sport)
-	return +1;
-    if (a->sport < b->sport)
-	return -1;
-    if (a->type != 'D') {
-	if ( (i = nullstrcmp(a->daddr, b->daddr)) != 0)
-	    return i < 0 ? -1 : +1;
-	if (a->dport > b->dport)
-	    return +1;
-	if (a->dport < b->dport)
-	    return -1;
-    }
     return 0;
 }
 
@@ -2209,18 +2177,7 @@ static int ssh_do_close(Ssh ssh, int notify_exit)
      * Go through port-forwardings, and close any associated
      * listening sockets.
      */
-    if (ssh->portfwds) {
-	struct ssh_portfwd *pf;
-	while (NULL != (pf = index234(ssh->portfwds, 0))) {
-	    /* Dispose of any listening socket. */
-	    if (pf->local)
-		pfl_terminate(pf->local);
-	    del234(ssh->portfwds, pf); /* moving next one to index 0 */
-	    free_portfwd(pf);
-	}
-	freetree234(ssh->portfwds);
-	ssh->portfwds = NULL;
-    }
+    portfwdmgr_close_all(ssh->portfwdmgr);
 
     /*
      * Also stop attempting to connection-share.
@@ -2251,39 +2208,6 @@ static void ssh_socket_log(Plug plug, int type, SockAddr addr, int port,
         backend_socket_log(ssh->frontend, type, addr, port,
                            error_msg, error_code, ssh->conf,
                            ssh->session_started);
-}
-
-void ssh_connshare_log(Ssh ssh, int event, const char *logtext,
-                       const char *ds_err, const char *us_err)
-{
-    if (event == SHARE_NONE) {
-        /* In this case, 'logtext' is an error message indicating a
-         * reason why connection sharing couldn't be set up _at all_.
-         * Failing that, ds_err and us_err indicate why we couldn't be
-         * a downstream and an upstream respectively. */
-        if (logtext) {
-            logeventf(ssh, "Could not set up connection sharing: %s", logtext);
-        } else {
-            if (ds_err)
-                logeventf(ssh, "Could not set up connection sharing"
-                          " as downstream: %s", ds_err);
-            if (us_err)
-                logeventf(ssh, "Could not set up connection sharing"
-                          " as upstream: %s", us_err);
-        }
-    } else if (event == SHARE_DOWNSTREAM) {
-        /* In this case, 'logtext' is a local endpoint address */
-        logeventf(ssh, "Using existing shared connection at %s", logtext);
-        /* Also we should mention this in the console window to avoid
-         * confusing users as to why this window doesn't behave the
-         * usual way. */
-        if ((flags & FLAG_VERBOSE) || (flags & FLAG_INTERACTIVE)) {
-            c_write_str(ssh,"Reusing a shared connection to this server.\r\n");
-        }
-    } else if (event == SHARE_UPSTREAM) {
-        /* In this case, 'logtext' is a local endpoint address too */
-        logeventf(ssh, "Sharing this connection at %s", logtext);
-    }
 }
 
 static void ssh_closing(Plug plug, const char *error_msg, int error_code,
@@ -2422,7 +2346,7 @@ static const char *connect_to_host(Ssh ssh, const char *host, int port,
     ssh->connshare = NULL;
     ssh->attempting_connshare = TRUE;  /* affects socket logging behaviour */
     ssh->s = ssh_connection_sharing_init(
-        ssh->savedhost, ssh->savedport, ssh->conf, ssh, &ssh->plugvt,
+        ssh->savedhost, ssh->savedport, ssh->conf, &ssh->cl, &ssh->plugvt,
         &ssh->connshare);
     ssh->attempting_connshare = FALSE;
     if (ssh->s != NULL) {
@@ -2433,6 +2357,14 @@ static const char *connect_to_host(Ssh ssh, const char *host, int port,
         ssh->current_incoming_data_fn = do_ssh_connection_init;
         ssh->fullhostname = NULL;
         *realhost = dupstr(host);      /* best we can do */
+
+        if ((flags & FLAG_VERBOSE) || (flags & FLAG_INTERACTIVE)) {
+            /* In an interactive session, or in verbose mode, announce
+             * in the console window that we're a sharing downstream,
+             * to avoid confusing users as to why this session doesn't
+             * behave in quite the usual way. */
+            c_write_str(ssh,"Reusing a shared connection to this server.\r\n");
+        }
     } else {
         /*
          * We're not a downstream, so open a normal socket.
@@ -3671,14 +3603,16 @@ static void ssh_channel_try_eof(struct ssh_channel *c)
     }
 }
 
-Conf *sshfwd_get_conf(struct ssh_channel *c)
+static Conf *sshchannel_get_conf(SshChannel *sc)
 {
+    struct ssh_channel *c = FROMFIELD(sc, struct ssh_channel, sc);
     Ssh ssh = c->ssh;
     return ssh->conf;
 }
 
-void sshfwd_write_eof(struct ssh_channel *c)
+static void sshchannel_write_eof(SshChannel *sc)
 {
+    struct ssh_channel *c = FROMFIELD(sc, struct ssh_channel, sc);
     Ssh ssh = c->ssh;
 
     if (ssh->state == SSH_STATE_CLOSED)
@@ -3691,8 +3625,9 @@ void sshfwd_write_eof(struct ssh_channel *c)
     ssh_channel_try_eof(c);
 }
 
-void sshfwd_unclean_close(struct ssh_channel *c, const char *err)
+static void sshchannel_unclean_close(SshChannel *sc, const char *err)
 {
+    struct ssh_channel *c = FROMFIELD(sc, struct ssh_channel, sc);
     Ssh ssh = c->ssh;
     char *reason;
 
@@ -3707,8 +3642,9 @@ void sshfwd_unclean_close(struct ssh_channel *c, const char *err)
     ssh2_channel_check_close(c);
 }
 
-int sshfwd_write(struct ssh_channel *c, const void *buf, int len)
+static int sshchannel_write(SshChannel *sc, const void *buf, int len)
 {
+    struct ssh_channel *c = FROMFIELD(sc, struct ssh_channel, sc);
     Ssh ssh = c->ssh;
 
     if (ssh->state == SSH_STATE_CLOSED)
@@ -3717,8 +3653,9 @@ int sshfwd_write(struct ssh_channel *c, const void *buf, int len)
     return ssh_send_channel_data(c, buf, len);
 }
 
-void sshfwd_unthrottle(struct ssh_channel *c, int bufsize)
+static void sshchannel_unthrottle(SshChannel *sc, int bufsize)
 {
+    struct ssh_channel *c = FROMFIELD(sc, struct ssh_channel, sc);
     Ssh ssh = c->ssh;
 
     if (ssh->state == SSH_STATE_CLOSED)
@@ -3795,58 +3732,157 @@ static void ssh_queue_handler(Ssh ssh, int msg1, int msg2,
 
 static void ssh_rportfwd_succfail(Ssh ssh, PktIn *pktin, void *ctx)
 {
-    struct ssh_rportfwd *rpf, *pf = (struct ssh_rportfwd *)ctx;
+    struct ssh_rportfwd *rpf = (struct ssh_rportfwd *)ctx;
 
     if (pktin->type == (ssh->version == 1 ? SSH1_SMSG_SUCCESS :
 			SSH2_MSG_REQUEST_SUCCESS)) {
 	logeventf(ssh, "Remote port forwarding from %s enabled",
-		  pf->sportdesc);
+                  rpf->log_description);
     } else {
 	logeventf(ssh, "Remote port forwarding from %s refused",
-		  pf->sportdesc);
+                  rpf->log_description);
 
-	rpf = del234(ssh->rportfwds, pf);
-	assert(rpf == pf);
-	pf->pfrec->remote = NULL;
-	free_rportfwd(pf);
+        struct ssh_rportfwd *realpf = del234(ssh->rportfwds, rpf);
+        assert(realpf == rpf);
+        portfwdmgr_close(ssh->portfwdmgr, rpf->pfr);
+        free_rportfwd(rpf);
     }
 }
 
-int ssh_alloc_sharing_rportfwd(Ssh ssh, const char *shost, int sport,
-                               ssh_sharing_connstate *share_ctx)
+/* Many of these vtable methods have the same names as wrapper macros
+ * in ssh.h, so parenthesise the names to inhibit macro expansion */
+
+static struct ssh_rportfwd *(ssh_rportfwd_alloc)(
+    ConnectionLayer *cl,
+    const char *shost, int sport, const char *dhost, int dport,
+    int addressfamily, const char *log_description, PortFwdRecord *pfr,
+    ssh_sharing_connstate *share_ctx);
+static void (ssh_rportfwd_remove)(
+    ConnectionLayer *cl, struct ssh_rportfwd *rpf);
+static SshChannel *(ssh_lportfwd_open)(
+    ConnectionLayer *cl, const char *hostname, int port,
+    const char *org, Channel *chan);
+static struct X11FakeAuth *(ssh_add_sharing_x11_display)(
+    ConnectionLayer *cl, int authtype, ssh_sharing_connstate *share_cs,
+    share_channel *share_chan);
+static void (ssh_remove_sharing_x11_display)(ConnectionLayer *cl,
+                                             struct X11FakeAuth *auth);
+static void (ssh_send_packet_from_downstream)(
+    ConnectionLayer *cl, unsigned id, int type,
+    const void *pkt, int pktlen, const char *additional_log_text);
+static unsigned (ssh_alloc_sharing_channel)(
+    ConnectionLayer *cl, ssh_sharing_connstate *connstate);
+static void (ssh_delete_sharing_channel)(
+    ConnectionLayer *cl, unsigned localid);
+static void (ssh_sharing_queue_global_request)(
+    ConnectionLayer *cl, ssh_sharing_connstate *share_ctx);
+static int (ssh_agent_forwarding_permitted)(ConnectionLayer *cl);
+
+const struct ConnectionLayerVtable ssh_connlayer_vtable = {
+    ssh_rportfwd_alloc,
+    ssh_rportfwd_remove,
+    ssh_lportfwd_open,
+    ssh_add_sharing_x11_display,
+    ssh_remove_sharing_x11_display,
+    ssh_send_packet_from_downstream,
+    ssh_alloc_sharing_channel,
+    ssh_delete_sharing_channel,
+    ssh_sharing_queue_global_request,
+    ssh_agent_forwarding_permitted,
+};
+
+static struct ssh_rportfwd *(ssh_rportfwd_alloc)(
+    ConnectionLayer *cl,
+    const char *shost, int sport, const char *dhost, int dport,
+    int addressfamily, const char *log_description, PortFwdRecord *pfr,
+    ssh_sharing_connstate *share_ctx)
 {
-    struct ssh_rportfwd *pf = snew(struct ssh_rportfwd);
-    pf->dhost = NULL;
-    pf->dport = 0;
-    pf->share_ctx = share_ctx;
-    pf->shost = dupstr(shost);
-    pf->sport = sport;
-    pf->sportdesc = NULL;
+    Ssh ssh = FROMFIELD(cl, struct ssh_tag, cl);
+
+    /*
+     * Ensure the remote port forwardings tree exists.
+     */
     if (!ssh->rportfwds) {
-        assert(ssh->version == 2);
-        ssh->rportfwds = newtree234(ssh_rportcmp_ssh2);
+        if (ssh->version == 1)
+            ssh->rportfwds = newtree234(ssh_rportcmp_ssh1);
+        else
+            ssh->rportfwds = newtree234(ssh_rportcmp_ssh2);
     }
-    if (add234(ssh->rportfwds, pf) != pf) {
-        sfree(pf->shost);
-        sfree(pf);
-        return FALSE;
+
+    struct ssh_rportfwd *rpf = snew(struct ssh_rportfwd);
+
+    rpf->shost = dupstr(shost);
+    rpf->sport = sport;
+    rpf->dhost = dupstr(dhost);
+    rpf->dport = dport;
+    rpf->addressfamily = addressfamily;
+    rpf->log_description = dupstr(log_description);
+    rpf->pfr = pfr;
+    rpf->share_ctx = share_ctx;
+
+    if (add234(ssh->rportfwds, rpf) != rpf) {
+        free_rportfwd(rpf);
+        return NULL;
     }
-    return TRUE;
+
+    if (!rpf->share_ctx) {
+        PktOut *pktout;
+
+        if (ssh->version == 1) {
+            pktout = ssh_bpp_new_pktout(
+                ssh->bpp, SSH1_CMSG_PORT_FORWARD_REQUEST);
+            put_uint32(pktout, rpf->sport);
+            put_stringz(pktout, rpf->dhost);
+            put_uint32(pktout, rpf->dport);
+            ssh_pkt_write(ssh, pktout);
+            ssh_queue_handler(ssh, SSH1_SMSG_SUCCESS,
+                              SSH1_SMSG_FAILURE,
+                              ssh_rportfwd_succfail, rpf);
+        } else {
+            pktout = ssh_bpp_new_pktout(ssh->bpp, SSH2_MSG_GLOBAL_REQUEST);
+            put_stringz(pktout, "tcpip-forward");
+            put_bool(pktout, 1);       /* want reply */
+            put_stringz(pktout, rpf->shost);
+            put_uint32(pktout, rpf->sport);
+            ssh2_pkt_send(ssh, pktout);
+
+            ssh_queue_handler(ssh, SSH2_MSG_REQUEST_SUCCESS,
+                              SSH2_MSG_REQUEST_FAILURE,
+                              ssh_rportfwd_succfail, rpf);
+        }
+    }
+
+    return rpf;
 }
 
-void ssh_remove_sharing_rportfwd(Ssh ssh, const char *shost, int sport,
-                                 ssh_sharing_connstate *share_ctx)
+static void (ssh_rportfwd_remove)(
+    ConnectionLayer *cl, struct ssh_rportfwd *rpf)
 {
-    struct ssh_rportfwd pf, *realpf;
+    Ssh ssh = FROMFIELD(cl, struct ssh_tag, cl);
+    if (ssh->version == 1) {
+        /*
+         * We cannot cancel listening ports on the server side in
+         * SSH-1! There's no message to support it.
+         */
+    } else if (rpf->share_ctx) {
+        /*
+         * We don't manufacture a cancel-tcpip-forward message for
+         * remote port forwardings being removed on behalf of a
+         * downstream; we just pass through the one the downstream
+         * sent to us.
+         */
+    } else {
+        PktOut *pktout = ssh_bpp_new_pktout(ssh->bpp, SSH2_MSG_GLOBAL_REQUEST);
+        put_stringz(pktout, "cancel-tcpip-forward");
+        put_bool(pktout, 0);           /* _don't_ want reply */
+        put_stringz(pktout, rpf->shost);
+        put_uint32(pktout, rpf->sport);
+        ssh2_pkt_send(ssh, pktout);
+    }
 
-    assert(ssh->rportfwds);
-    pf.shost = dupstr(shost);
-    pf.sport = sport;
-    realpf = del234(ssh->rportfwds, &pf);
-    assert(realpf);
-    assert(realpf->share_ctx == share_ctx);
-    sfree(realpf->shost);
-    sfree(realpf);
+    struct ssh_rportfwd *realpf = del234(ssh->rportfwds, rpf);
+    assert(realpf == rpf);
+    free_rportfwd(rpf);
 }
 
 static void ssh_sharing_global_request_response(Ssh ssh, PktIn *pktin,
@@ -3857,339 +3893,12 @@ static void ssh_sharing_global_request_response(Ssh ssh, PktIn *pktin,
                               BinarySource_UPCAST(pktin)->len);
 }
 
-void ssh_sharing_queue_global_request(Ssh ssh,
-                                      ssh_sharing_connstate *share_ctx)
+static void (ssh_sharing_queue_global_request)(
+    ConnectionLayer *cl, ssh_sharing_connstate *share_ctx)
 {
+    Ssh ssh = FROMFIELD(cl, struct ssh_tag, cl);
     ssh_queue_handler(ssh, SSH2_MSG_REQUEST_SUCCESS, SSH2_MSG_REQUEST_FAILURE,
                       ssh_sharing_global_request_response, share_ctx);
-}
-
-static void ssh_setup_portfwd(Ssh ssh, Conf *conf)
-{
-    struct ssh_portfwd *epf;
-    int i;
-    char *key, *val;
-
-    if (!ssh->portfwds) {
-	ssh->portfwds = newtree234(ssh_portcmp);
-    } else {
-	/*
-	 * Go through the existing port forwardings and tag them
-	 * with status==DESTROY. Any that we want to keep will be
-	 * re-enabled (status==KEEP) as we go through the
-	 * configuration and find out which bits are the same as
-	 * they were before.
-	 */
-	struct ssh_portfwd *epf;
-	int i;
-	for (i = 0; (epf = index234(ssh->portfwds, i)) != NULL; i++)
-	    epf->status = DESTROY;
-    }
-
-    for (val = conf_get_str_strs(conf, CONF_portfwd, NULL, &key);
-	 val != NULL;
-	 val = conf_get_str_strs(conf, CONF_portfwd, key, &key)) {
-	char *kp, *kp2, *vp, *vp2;
-	char address_family, type;
-	int sport,dport,sserv,dserv;
-	char *sports, *dports, *saddr, *host;
-
-	kp = key;
-
-	address_family = 'A';
-	type = 'L';
-	if (*kp == 'A' || *kp == '4' || *kp == '6')
-	    address_family = *kp++;
-	if (*kp == 'L' || *kp == 'R')
-	    type = *kp++;
-
-	if ((kp2 = host_strchr(kp, ':')) != NULL) {
-	    /*
-	     * There's a colon in the middle of the source port
-	     * string, which means that the part before it is
-	     * actually a source address.
-	     */
-	    char *saddr_tmp = dupprintf("%.*s", (int)(kp2 - kp), kp);
-            saddr = host_strduptrim(saddr_tmp);
-            sfree(saddr_tmp);
-	    sports = kp2+1;
-	} else {
-	    saddr = NULL;
-	    sports = kp;
-	}
-	sport = atoi(sports);
-	sserv = 0;
-	if (sport == 0) {
-	    sserv = 1;
-	    sport = net_service_lookup(sports);
-	    if (!sport) {
-		logeventf(ssh, "Service lookup failed for source"
-			  " port \"%s\"", sports);
-	    }
-	}
-
-	if (type == 'L' && !strcmp(val, "D")) {
-            /* dynamic forwarding */
-	    host = NULL;
-	    dports = NULL;
-	    dport = -1;
-	    dserv = 0;
-            type = 'D';
-        } else {
-            /* ordinary forwarding */
-	    vp = val;
-	    vp2 = vp + host_strcspn(vp, ":");
-	    host = dupprintf("%.*s", (int)(vp2 - vp), vp);
-	    if (*vp2)
-		vp2++;
-	    dports = vp2;
-	    dport = atoi(dports);
-	    dserv = 0;
-	    if (dport == 0) {
-		dserv = 1;
-		dport = net_service_lookup(dports);
-		if (!dport) {
-		    logeventf(ssh, "Service lookup failed for destination"
-			      " port \"%s\"", dports);
-		}
-	    }
-	}
-
-	if (sport && dport) {
-	    /* Set up a description of the source port. */
-	    struct ssh_portfwd *pfrec, *epfrec;
-
-	    pfrec = snew(struct ssh_portfwd);
-	    pfrec->type = type;
-	    pfrec->saddr = saddr;
-	    pfrec->sserv = sserv ? dupstr(sports) : NULL;
-	    pfrec->sport = sport;
-	    pfrec->daddr = host;
-	    pfrec->dserv = dserv ? dupstr(dports) : NULL;
-	    pfrec->dport = dport;
-	    pfrec->local = NULL;
-	    pfrec->remote = NULL;
-	    pfrec->addressfamily = (address_family == '4' ? ADDRTYPE_IPV4 :
-				    address_family == '6' ? ADDRTYPE_IPV6 :
-				    ADDRTYPE_UNSPEC);
-
-	    epfrec = add234(ssh->portfwds, pfrec);
-	    if (epfrec != pfrec) {
-		if (epfrec->status == DESTROY) {
-		    /*
-		     * We already have a port forwarding up and running
-		     * with precisely these parameters. Hence, no need
-		     * to do anything; simply re-tag the existing one
-		     * as KEEP.
-		     */
-		    epfrec->status = KEEP;
-		}
-		/*
-		 * Anything else indicates that there was a duplicate
-		 * in our input, which we'll silently ignore.
-		 */
-		free_portfwd(pfrec);
-	    } else {
-		pfrec->status = CREATE;
-	    }
-	} else {
-	    sfree(saddr);
-	    sfree(host);
-	}
-    }
-
-    /*
-     * Now go through and destroy any port forwardings which were
-     * not re-enabled.
-     */
-    for (i = 0; (epf = index234(ssh->portfwds, i)) != NULL; i++)
-	if (epf->status == DESTROY) {
-	    char *message;
-
-	    message = dupprintf("%s port forwarding from %s%s%d",
-				epf->type == 'L' ? "local" :
-				epf->type == 'R' ? "remote" : "dynamic",
-				epf->saddr ? epf->saddr : "",
-				epf->saddr ? ":" : "",
-				epf->sport);
-
-	    if (epf->type != 'D') {
-		char *msg2 = dupprintf("%s to %s:%d", message,
-				       epf->daddr, epf->dport);
-		sfree(message);
-		message = msg2;
-	    }
-
-	    logeventf(ssh, "Cancelling %s", message);
-	    sfree(message);
-
-	    /* epf->remote or epf->local may be NULL if setting up a
-	     * forwarding failed. */
-	    if (epf->remote) {
-		struct ssh_rportfwd *rpf = epf->remote;
-		PktOut *pktout;
-
-		/*
-		 * Cancel the port forwarding at the server
-		 * end.
-		 */
-		if (ssh->version == 1) {
-		    /*
-		     * We cannot cancel listening ports on the
-		     * server side in SSH-1! There's no message
-		     * to support it. Instead, we simply remove
-		     * the rportfwd record from the local end
-		     * so that any connections the server tries
-		     * to make on it are rejected.
-		     */
-		} else {
-		    pktout = ssh_bpp_new_pktout(
-                        ssh->bpp, SSH2_MSG_GLOBAL_REQUEST);
-		    put_stringz(pktout, "cancel-tcpip-forward");
-		    put_bool(pktout, 0);/* _don't_ want reply */
-		    if (epf->saddr) {
-			put_stringz(pktout, epf->saddr);
-		    } else if (conf_get_int(conf, CONF_rport_acceptall)) {
-			/* XXX: rport_acceptall may not represent
-			 * what was used to open the original connection,
-			 * since it's reconfigurable. */
-			put_stringz(pktout, "");
-		    } else {
-			put_stringz(pktout, "localhost");
-		    }
-		    put_uint32(pktout, epf->sport);
-		    ssh2_pkt_send(ssh, pktout);
-		}
-
-		del234(ssh->rportfwds, rpf);
-		free_rportfwd(rpf);
-	    } else if (epf->local) {
-		pfl_terminate(epf->local);
-	    }
-
-	    delpos234(ssh->portfwds, i);
-	    free_portfwd(epf);
-	    i--;		       /* so we don't skip one in the list */
-	}
-
-    /*
-     * And finally, set up any new port forwardings (status==CREATE).
-     */
-    for (i = 0; (epf = index234(ssh->portfwds, i)) != NULL; i++)
-	if (epf->status == CREATE) {
-	    char *sportdesc, *dportdesc;
-	    sportdesc = dupprintf("%s%s%s%s%d%s",
-				  epf->saddr ? epf->saddr : "",
-				  epf->saddr ? ":" : "",
-				  epf->sserv ? epf->sserv : "",
-				  epf->sserv ? "(" : "",
-				  epf->sport,
-				  epf->sserv ? ")" : "");
-	    if (epf->type == 'D') {
-		dportdesc = NULL;
-	    } else {
-		dportdesc = dupprintf("%s:%s%s%d%s",
-				      epf->daddr,
-				      epf->dserv ? epf->dserv : "",
-				      epf->dserv ? "(" : "",
-				      epf->dport,
-				      epf->dserv ? ")" : "");
-	    }
-
-	    if (epf->type == 'L') {
-                char *err = pfl_listen(epf->daddr, epf->dport,
-                                       epf->saddr, epf->sport,
-                                       ssh, conf, &epf->local,
-                                       epf->addressfamily);
-
-		logeventf(ssh, "Local %sport %s forwarding to %s%s%s",
-			  epf->addressfamily == ADDRTYPE_IPV4 ? "IPv4 " :
-			  epf->addressfamily == ADDRTYPE_IPV6 ? "IPv6 " : "",
-			  sportdesc, dportdesc,
-			  err ? " failed: " : "", err ? err : "");
-                if (err)
-                    sfree(err);
-	    } else if (epf->type == 'D') {
-		char *err = pfl_listen(NULL, -1, epf->saddr, epf->sport,
-                                       ssh, conf, &epf->local,
-                                       epf->addressfamily);
-
-		logeventf(ssh, "Local %sport %s SOCKS dynamic forwarding%s%s",
-			  epf->addressfamily == ADDRTYPE_IPV4 ? "IPv4 " :
-			  epf->addressfamily == ADDRTYPE_IPV6 ? "IPv6 " : "",
-			  sportdesc,
-			  err ? " failed: " : "", err ? err : "");
-
-                if (err)
-                    sfree(err);
-	    } else {
-		struct ssh_rportfwd *pf;
-
-		/*
-		 * Ensure the remote port forwardings tree exists.
-		 */
-		if (!ssh->rportfwds) {
-		    if (ssh->version == 1)
-			ssh->rportfwds = newtree234(ssh_rportcmp_ssh1);
-		    else
-			ssh->rportfwds = newtree234(ssh_rportcmp_ssh2);
-		}
-
-		pf = snew(struct ssh_rportfwd);
-                pf->share_ctx = NULL;
-                pf->dhost = dupstr(epf->daddr);
-		pf->dport = epf->dport;
-                if (epf->saddr) {
-                    pf->shost = dupstr(epf->saddr);
-                } else if (conf_get_int(conf, CONF_rport_acceptall)) {
-                    pf->shost = dupstr("");
-                } else {
-                    pf->shost = dupstr("localhost");
-                }
-		pf->sport = epf->sport;
-		if (add234(ssh->rportfwds, pf) != pf) {
-		    logeventf(ssh, "Duplicate remote port forwarding to %s:%d",
-			      epf->daddr, epf->dport);
-		    sfree(pf);
-		} else {
-                    PktOut *pktout;
-
-		    logeventf(ssh, "Requesting remote port %s"
-			      " forward to %s", sportdesc, dportdesc);
-
-		    pf->sportdesc = sportdesc;
-		    sportdesc = NULL;
-		    epf->remote = pf;
-		    pf->pfrec = epf;
-
-		    if (ssh->version == 1) {
-                        pktout = ssh_bpp_new_pktout(
-                            ssh->bpp, SSH1_CMSG_PORT_FORWARD_REQUEST);
-                        put_uint32(pktout, epf->sport);
-                        put_stringz(pktout, epf->daddr);
-                        put_uint32(pktout, epf->dport);
-                        ssh_pkt_write(ssh, pktout);
-			ssh_queue_handler(ssh, SSH1_SMSG_SUCCESS,
-					  SSH1_SMSG_FAILURE,
-					  ssh_rportfwd_succfail, pf);
-		    } else {
-			pktout = ssh_bpp_new_pktout(
-                            ssh->bpp, SSH2_MSG_GLOBAL_REQUEST);
-			put_stringz(pktout, "tcpip-forward");
-			put_bool(pktout, 1);/* want reply */
-			put_stringz(pktout, pf->shost);
-			put_uint32(pktout, pf->sport);
-			ssh2_pkt_send(ssh, pktout);
-
-			ssh_queue_handler(ssh, SSH2_MSG_REQUEST_SUCCESS,
-					  SSH2_MSG_REQUEST_FAILURE,
-					  ssh_rportfwd_succfail, pf);
-		    }
-		}
-	    }
-	    sfree(sportdesc);
-	    sfree(dportdesc);
-	}
 }
 
 static void ssh1_smsg_stdout_stderr_data(Ssh ssh, PktIn *pktin)
@@ -4231,7 +3940,7 @@ static void ssh1_smsg_x11_open(Ssh ssh, PktIn *pktin)
 	c->ssh = ssh;
 
 	ssh_channel_init(c);
-        c->chan = x11_new_channel(ssh->x11authtree, c, NULL, -1, FALSE);
+        c->chan = x11_new_channel(ssh->x11authtree, &c->sc, NULL, -1, FALSE);
         c->remoteid = remoteid;
         c->halfopen = FALSE;
         pkt = ssh_bpp_new_pktout(ssh->bpp, SSH1_MSG_CHANNEL_OPEN_CONFIRMATION);
@@ -4261,7 +3970,7 @@ static void ssh1_smsg_agent_open(Ssh ssh, PktIn *pktin)
 	ssh_channel_init(c);
 	c->remoteid = remoteid;
 	c->halfopen = FALSE;
-        c->chan = agentf_new(c);
+        c->chan = agentf_new(&c->sc);
         pkt = ssh_bpp_new_pktout(ssh->bpp, SSH1_MSG_CHANNEL_OPEN_CONFIRMATION);
         put_uint32(pkt, c->remoteid);
         put_uint32(pkt, c->localid);
@@ -4300,8 +4009,8 @@ static void ssh1_msg_port_open(Ssh ssh, PktIn *pktin)
 
 	logeventf(ssh, "Received remote port open request for %s:%d",
 		  pf.dhost, port);
-        err = pfd_connect(&c->chan, pf.dhost, port,
-                          c, ssh->conf, pfp->pfrec->addressfamily);
+        err = portfwdmgr_connect(ssh->portfwdmgr, &c->chan, pf.dhost, port,
+                                 &c->sc, pfp->addressfamily);
 	if (err != NULL) {
 	    logeventf(ssh, "Port open failed: %s", err);
             sfree(err);
@@ -4459,8 +4168,9 @@ static void ssh1_send_ttymode(BinarySink *bs,
     }
 }
 
-int ssh_agent_forwarding_permitted(Ssh ssh)
+static int (ssh_agent_forwarding_permitted)(ConnectionLayer *cl)
 {
+    Ssh ssh = FROMFIELD(cl, struct ssh_tag, cl);
     return conf_get_int(ssh->conf, CONF_agentfwd) && agent_exists();
 }
 
@@ -4486,7 +4196,7 @@ static void do_ssh1_connection(void *vctx)
     ssh->packet_dispatch[SSH1_MSG_CHANNEL_DATA] = ssh1_msg_channel_data;
     ssh->packet_dispatch[SSH1_SMSG_EXIT_STATUS] = ssh1_smsg_exit_status;
 
-    if (ssh_agent_forwarding_permitted(ssh)) {
+    if (ssh_agent_forwarding_permitted(&ssh->cl)) {
 	logevent("Requesting agent forwarding");
         pkt = ssh_bpp_new_pktout(ssh->bpp, SSH1_CMSG_AGENT_REQUEST_FORWARDING);
         ssh_pkt_write(ssh, pkt);
@@ -4541,7 +4251,7 @@ static void do_ssh1_connection(void *vctx)
         }
     }
 
-    ssh_setup_portfwd(ssh, ssh->conf);
+    portfwdmgr_config(ssh->portfwdmgr, ssh->conf);
     ssh->packet_dispatch[SSH1_MSG_PORT_OPEN] = ssh1_msg_port_open;
 
     if (!conf_get_int(ssh->conf, CONF_nopty)) {
@@ -4867,7 +4577,7 @@ struct kexinit_algorithm {
             const struct ssh2_macalg *mac;
 	    int etm;
 	} mac;
-	const struct ssh_compress *comp;
+        const struct ssh_compression_alg *comp;
     } u;
 };
 
@@ -5039,7 +4749,7 @@ static void do_ssh2_transport(void *vctx)
             const struct ssh2_cipheralg *cipher;
             const struct ssh2_macalg *mac;
             int etm_mode;
-            const struct ssh_compress *comp;
+            const struct ssh_compression_alg *comp;
         } in, out;
 	ptrlen hostkeydata, sigdata;
         char *keystr, *fingerprint;
@@ -5056,7 +4766,7 @@ static void do_ssh2_transport(void *vctx)
 	int preferred_hk[HK_MAX];
 	int n_preferred_ciphers;
 	const struct ssh2_ciphers *preferred_ciphers[CIPHER_MAX];
-	const struct ssh_compress *preferred_comp;
+        const struct ssh_compression_alg *preferred_comp;
 	int userauth_succeeded;	    /* for delayed compression */
 	int pending_compression;
 	int got_session_id;
@@ -5431,7 +5141,7 @@ static void do_ssh2_transport(void *vctx)
 		alg->u.comp = s->preferred_comp;
 	    }
 	    for (i = 0; i < lenof(compressions); i++) {
-		const struct ssh_compress *c = compressions[i];
+                const struct ssh_compression_alg *c = compressions[i];
 		alg = ssh2_kexinit_addalg(s->kexlists[j], c->name);
 		alg->u.comp = c;
 		if (s->userauth_succeeded && c->delayed_name) {
@@ -5809,12 +5519,12 @@ static void do_ssh2_transport(void *vctx)
                 bombout(("unable to read mp-ints from incoming group packet"));
                 crStopV;
             }
-            ssh->kex_ctx = dh_setup_gex(s->p, s->g);
+            ssh->dh_ctx = dh_setup_gex(s->p, s->g);
             s->kex_init_value = SSH2_MSG_KEX_DH_GEX_INIT;
             s->kex_reply_value = SSH2_MSG_KEX_DH_GEX_REPLY;
         } else {
             ssh->pls.kctx = SSH2_PKTCTX_DHGROUP;
-            ssh->kex_ctx = dh_setup_group(ssh->kex);
+            ssh->dh_ctx = dh_setup_group(ssh->kex);
             s->kex_init_value = SSH2_MSG_KEXDH_INIT;
             s->kex_reply_value = SSH2_MSG_KEXDH_REPLY;
             logeventf(ssh, "Using Diffie-Hellman with standard group \"%s\"",
@@ -5827,7 +5537,7 @@ static void do_ssh2_transport(void *vctx)
          * Now generate and send e for Diffie-Hellman.
          */
         set_busy_status(ssh->frontend, BUSY_CPU); /* this can take a while */
-        s->e = dh_create_e(ssh->kex_ctx, s->nbits * 2);
+        s->e = dh_create_e(ssh->dh_ctx, s->nbits * 2);
         s->pktout = ssh_bpp_new_pktout(ssh->bpp, s->kex_init_value);
         put_mp_ssh2(s->pktout, s->e);
         ssh_pkt_write(ssh, s->pktout);
@@ -5849,13 +5559,13 @@ static void do_ssh2_transport(void *vctx)
         }
 
         {
-            const char *err = dh_validate_f(ssh->kex_ctx, s->f);
+            const char *err = dh_validate_f(ssh->dh_ctx, s->f);
             if (err) {
                 bombout(("key exchange reply failed validation: %s", err));
                 crStopV;
             }
         }
-        s->K = dh_find_K(ssh->kex_ctx, s->f);
+        s->K = dh_find_K(ssh->dh_ctx, s->f);
 
         /* We assume everything from now on will be quick, and it might
          * involve user interaction. */
@@ -5874,7 +5584,7 @@ static void do_ssh2_transport(void *vctx)
         put_mp_ssh2(ssh->exhash, s->e);
         put_mp_ssh2(ssh->exhash, s->f);
 
-        dh_cleanup(ssh->kex_ctx);
+        dh_cleanup(ssh->dh_ctx);
         freebn(s->f);
         if (dh_is_gex(ssh->kex)) {
             freebn(s->g);
@@ -5994,9 +5704,9 @@ static void do_ssh2_transport(void *vctx)
                 bombout(("unable to read mp-ints from incoming group packet"));
                 crStopV;
             }
-            ssh->kex_ctx = dh_setup_gex(s->p, s->g);
+            ssh->dh_ctx = dh_setup_gex(s->p, s->g);
         } else {
-            ssh->kex_ctx = dh_setup_group(ssh->kex);
+            ssh->dh_ctx = dh_setup_group(ssh->kex);
             logeventf(ssh, "Using GSSAPI (with Kerberos V5) Diffie-Hellman with standard group \"%s\"",
                       ssh->kex->groupname);
         }
@@ -6005,7 +5715,7 @@ static void do_ssh2_transport(void *vctx)
                   ssh->kex->hash->text_name);
         /* Now generate e for Diffie-Hellman. */
         set_busy_status(ssh->frontend, BUSY_CPU); /* this can take a while */
-        s->e = dh_create_e(ssh->kex_ctx, s->nbits * 2);
+        s->e = dh_create_e(ssh->dh_ctx, s->nbits * 2);
 
         if (ssh->gsslib->gsslogmsg)
             logevent(ssh->gsslib->gsslogmsg);
@@ -6159,7 +5869,7 @@ static void do_ssh2_transport(void *vctx)
                  s->gss_stat == SSH_GSS_S_CONTINUE_NEEDED ||
                  !s->complete_rcvd);
 
-        s->K = dh_find_K(ssh->kex_ctx, s->f);
+        s->K = dh_find_K(ssh->dh_ctx, s->f);
 
         /* We assume everything from now on will be quick, and it might
          * involve user interaction. */
@@ -6184,7 +5894,7 @@ static void do_ssh2_transport(void *vctx)
          * used as the MIC input.
          */
 
-        dh_cleanup(ssh->kex_ctx);
+        dh_cleanup(ssh->dh_ctx);
         freebn(s->f);
         if (dh_is_gex(ssh->kex)) {
             freebn(s->g);
@@ -6335,7 +6045,7 @@ static void do_ssh2_transport(void *vctx)
     }
 #endif
 
-    ssh->kex_ctx = NULL;
+    ssh->dh_ctx = NULL;
 
 #if 0
     debug(("Exchange hash is:\n"));
@@ -6945,6 +6655,7 @@ static void ssh_channel_init(struct ssh_channel *c)
 	c->v.v2.throttle_state = UNTHROTTLED;
 	bufchain_init(&c->v.v2.outbuffer);
     }
+    c->sc.vt = &sshchannel_vtable;
     add234(ssh->channels, c);
 }
 
@@ -7282,37 +6993,6 @@ static void ssh_check_termination(Ssh ssh)
     }
 }
 
-void ssh_sharing_downstream_connected(Ssh ssh, unsigned id,
-                                      const char *peerinfo)
-{
-    if (peerinfo)
-        logeventf(ssh, "Connection sharing downstream #%u connected from %s",
-                  id, peerinfo);
-    else
-        logeventf(ssh, "Connection sharing downstream #%u connected", id);
-}
-
-void ssh_sharing_downstream_disconnected(Ssh ssh, unsigned id)
-{
-    logeventf(ssh, "Connection sharing downstream #%u disconnected", id);
-    ssh_check_termination(ssh);
-}
-
-void ssh_sharing_logf(Ssh ssh, unsigned id, const char *logfmt, ...)
-{
-    va_list ap;
-    char *buf;
-
-    va_start(ap, logfmt);
-    buf = dupvprintf(logfmt, ap);
-    va_end(ap);
-    if (id)
-        logeventf(ssh, "Connection sharing downstream #%u: %s", id, buf);
-    else
-        logeventf(ssh, "Connection sharing: %s", buf);
-    sfree(buf);
-}
-
 /*
  * Close any local socket and free any local resources associated with
  * a channel.  This converts the channel into a zombie.
@@ -7468,7 +7148,7 @@ static void ssh2_msg_channel_close(Ssh ssh, PktIn *pktin)
         /*
          * Send outgoing EOF.
          */
-        sshfwd_write_eof(c);
+        sshfwd_write_eof(&c->sc);
 
         /*
          * Make sure we don't read any more from whatever our local
@@ -7753,10 +7433,11 @@ static void ssh2_msg_global_request(Ssh ssh, PktIn *pktin)
     }
 }
 
-struct X11FakeAuth *ssh_sharing_add_x11_display(
-    Ssh ssh, int authtype, ssh_sharing_connstate *share_cs,
+static struct X11FakeAuth *(ssh_add_sharing_x11_display)(
+    ConnectionLayer *cl, int authtype, ssh_sharing_connstate *share_cs,
     share_channel *share_chan)
 {
+    Ssh ssh = FROMFIELD(cl, struct ssh_tag, cl);
     struct X11FakeAuth *auth;
 
     /*
@@ -7771,8 +7452,10 @@ struct X11FakeAuth *ssh_sharing_add_x11_display(
     return auth;
 }
 
-void ssh_sharing_remove_x11_display(Ssh ssh, struct X11FakeAuth *auth)
+static void (ssh_remove_sharing_x11_display)(
+    ConnectionLayer *cl, struct X11FakeAuth *auth)
 {
+    Ssh ssh = FROMFIELD(cl, struct ssh_tag, cl);
     del234(ssh->x11authtree, auth);
     x11_free_fake_auth(auth);
 }
@@ -7804,7 +7487,8 @@ static void ssh2_msg_channel_open(Ssh ssh, PktIn *pktin)
 	if (!ssh->X11_fwd_enabled && !ssh->connshare)
 	    error = "X11 forwarding is not enabled";
 	else {
-            c->chan = x11_new_channel(ssh->x11authtree, c, addrstr, peerport,
+            c->chan = x11_new_channel(ssh->x11authtree, &c->sc,
+                                      addrstr, peerport,
                                       ssh->connshare != NULL);
             logevent("Opened X11 forward channel");
 	}
@@ -7843,8 +7527,9 @@ static void ssh2_msg_channel_open(Ssh ssh, PktIn *pktin)
                 return;
             }
 
-            err = pfd_connect(&c->chan, realpf->dhost, realpf->dport,
-                              c, ssh->conf, realpf->pfrec->addressfamily);
+            err = portfwdmgr_connect(
+                ssh->portfwdmgr, &c->chan, realpf->dhost, realpf->dport,
+                &c->sc, realpf->addressfamily);
 	    logeventf(ssh, "Attempting to forward remote port to "
 		      "%s:%d", realpf->dhost, realpf->dport);
 	    if (err != NULL) {
@@ -7859,7 +7544,7 @@ static void ssh2_msg_channel_open(Ssh ssh, PktIn *pktin)
 	if (!ssh->agentfwd_enabled)
 	    error = "Agent forwarding is not enabled";
         else
-            c->chan = agentf_new(c);
+            c->chan = agentf_new(&c->sc);
     } else {
 	error = "Unsupported channel type requested";
     }
@@ -7893,13 +7578,13 @@ static void ssh2_msg_channel_open(Ssh ssh, PktIn *pktin)
     }
 }
 
-void sshfwd_x11_sharing_handover(struct ssh_channel *c,
-                                 ssh_sharing_connstate *share_cs,
-                                 share_channel *share_chan,
-                                 const char *peer_addr, int peer_port,
-                                 int endian, int protomajor, int protominor,
-                                 const void *initial_data, int initial_len)
+static void sshchannel_x11_sharing_handover(
+    SshChannel *sc, ssh_sharing_connstate *share_cs, share_channel *share_chan,
+    const char *peer_addr, int peer_port, int endian,
+    int protomajor, int protominor, const void *initial_data, int initial_len)
 {
+    struct ssh_channel *c = FROMFIELD(sc, struct ssh_channel, sc);
+
     /*
      * This function is called when we've just discovered that an X
      * forwarding channel on which we'd been handling the initial auth
@@ -7919,8 +7604,10 @@ void sshfwd_x11_sharing_handover(struct ssh_channel *c,
     c->chan = NULL;
 }
 
-void sshfwd_window_override_removed(struct ssh_channel *c)
+static void sshchannel_window_override_removed(SshChannel *sc)
 {
+    struct ssh_channel *c = FROMFIELD(sc, struct ssh_channel, sc);
+
     /*
      * This function is called when a client-side Channel has just
      * stopped requiring an initial fixed-size window.
@@ -9737,7 +9424,7 @@ static void ssh2_connection_setup(Ssh ssh)
 
 typedef struct mainchan {
     Ssh ssh;
-    struct ssh_channel *c;
+    SshChannel *sc;
 
     Channel chan;
 } mainchan;
@@ -9765,7 +9452,7 @@ static mainchan *mainchan_new(Ssh ssh)
 {
     mainchan *mc = snew(mainchan);
     mc->ssh = ssh;
-    mc->c = NULL;
+    mc->sc = NULL;
     mc->chan.vt = &mainchan_channelvt;
     mc->chan.initial_fixed_window_size = 0;
     return mc;
@@ -9813,7 +9500,7 @@ static void mainchan_send_eof(Channel *chan)
          * decided to do that because we've allocated a remote pty and
          * hence EOF isn't a particularly meaningful concept.
          */
-        sshfwd_write_eof(mc->c);
+        sshfwd_write_eof(mc->sc);
     }
     mc->ssh->sent_console_eof = TRUE;
 }
@@ -9872,13 +9559,15 @@ static void do_ssh2_connection(void *vctx)
 	     * Just start a direct-tcpip channel and use it as the main
 	     * channel.
 	     */
-            ssh->mainchan = mc->c = ssh_send_port_open
-                (ssh, conf_get_str(ssh->conf, CONF_ssh_nc_host),
+            mc->sc = ssh_lportfwd_open
+                (&ssh->cl, conf_get_str(ssh->conf, CONF_ssh_nc_host),
                  conf_get_int(ssh->conf, CONF_ssh_nc_port),
                  "main channel", &mc->chan);
+            ssh->mainchan = FROMFIELD(mc->sc, struct ssh_channel, sc);
 	    ssh->ncmode = TRUE;
 	} else {
-            ssh->mainchan = mc->c = snew(struct ssh_channel);
+            ssh->mainchan = snew(struct ssh_channel);
+            mc->sc = &ssh->mainchan->sc;
             ssh->mainchan->ssh = ssh;
             ssh_channel_init(ssh->mainchan);
             ssh->mainchan->chan = &mc->chan;
@@ -9968,7 +9657,7 @@ static void do_ssh2_connection(void *vctx)
     /*
      * Enable port forwardings.
      */
-    ssh_setup_portfwd(ssh, ssh->conf);
+    portfwdmgr_config(ssh->portfwdmgr, ssh->conf);
 
     if (ssh->mainchan && !ssh->ncmode) {
 	/*
@@ -9996,7 +9685,7 @@ static void do_ssh2_connection(void *vctx)
         }
 
 	/* Potentially enable agent forwarding. */
-	if (ssh_agent_forwarding_permitted(ssh))
+        if (ssh_agent_forwarding_permitted(&ssh->cl))
 	    ssh2_setup_agent(ssh->mainchan, NULL, NULL);
 
 	/* Now allocate a pty for the session. */
@@ -10649,7 +10338,7 @@ static const char *ssh_init(Frontend *frontend, Backend **backend_handle,
     ssh->version = 0;		       /* when not ready yet */
     ssh->s = NULL;
     ssh->kex = NULL;
-    ssh->kex_ctx = NULL;
+    ssh->dh_ctx = NULL;
     ssh->hostkey_alg = NULL;
     ssh->hostkey_str = NULL;
     ssh->exitcode = -1;
@@ -10755,9 +10444,12 @@ static const char *ssh_init(Frontend *frontend, Backend **backend_handle,
     ssh->term_width = conf_get_int(ssh->conf, CONF_width);
     ssh->term_height = conf_get_int(ssh->conf, CONF_height);
 
+    ssh->cl.vt = &ssh_connlayer_vtable;
+    ssh->cl.frontend = ssh->frontend;
+
     ssh->channels = NULL;
     ssh->rportfwds = NULL;
-    ssh->portfwds = NULL;
+    ssh->portfwdmgr = portfwdmgr_new(&ssh->cl);
 
     ssh->send_ok = 0;
     ssh->editing = 0;
@@ -10806,8 +10498,8 @@ static void ssh_free(Backend *be)
     struct X11FakeAuth *auth;
     int need_random_unref;
 
-    if (ssh->kex_ctx)
-	dh_cleanup(ssh->kex_ctx);
+    if (ssh->dh_ctx)
+        dh_cleanup(ssh->dh_ctx);
     sfree(ssh->savedhost);
 
     while (ssh->queuelen-- > 0)
@@ -10852,6 +10544,7 @@ static void ssh_free(Backend *be)
 	freetree234(ssh->rportfwds);
 	ssh->rportfwds = NULL;
     }
+    portfwdmgr_free(ssh->portfwdmgr);
     if (ssh->x11disp)
 	x11_free_display(ssh->x11disp);
     while ((auth = delpos234(ssh->x11authtree, 0)) != NULL)
@@ -10918,8 +10611,7 @@ static void ssh_reconfig(Backend *be, Conf *conf)
     int i, rekey_time;
 
     pinger_reconfig(ssh->pinger, ssh->conf, conf);
-    if (ssh->portfwds)
-	ssh_setup_portfwd(ssh, conf);
+    portfwdmgr_config(ssh->portfwdmgr, conf);
 
     rekey_time = conf_get_int(conf, CONF_ssh_rekey_time);
     if (ssh2_timer_update(ssh, rekey_mins(rekey_time, 60)))
@@ -11187,7 +10879,7 @@ static void ssh_special(Backend *be, Telnet_Special code)
             pktout = ssh_bpp_new_pktout(ssh->bpp, SSH1_CMSG_EOF);
             ssh_pkt_write(ssh, pktout);
 	} else if (ssh->mainchan) {
-            sshfwd_write_eof(ssh->mainchan);
+            sshfwd_write_eof(&ssh->mainchan->sc);
             ssh->send_ok = 0;          /* now stop trying to read from stdin */
 	}
 	logevent("Sent EOF message");
@@ -11265,8 +10957,10 @@ static void ssh_special(Backend *be, Telnet_Special code)
     }
 }
 
-unsigned ssh_alloc_sharing_channel(Ssh ssh, ssh_sharing_connstate *connstate)
+static unsigned (ssh_alloc_sharing_channel)(
+    ConnectionLayer *cl, ssh_sharing_connstate *connstate)
 {
+    Ssh ssh = FROMFIELD(cl, struct ssh_tag, cl);
     struct ssh_channel *c;
     c = snew(struct ssh_channel);
 
@@ -11277,8 +10971,9 @@ unsigned ssh_alloc_sharing_channel(Ssh ssh, ssh_sharing_connstate *connstate)
     return c->localid;
 }
 
-void ssh_delete_sharing_channel(Ssh ssh, unsigned localid)
+static void (ssh_delete_sharing_channel)(ConnectionLayer *cl, unsigned localid)
 {
+    Ssh ssh = FROMFIELD(cl, struct ssh_tag, cl);
     struct ssh_channel *c;
 
     c = find234(ssh->channels, &localid, ssh_channelfind);
@@ -11286,10 +10981,11 @@ void ssh_delete_sharing_channel(Ssh ssh, unsigned localid)
         ssh_channel_destroy(c);
 }
 
-void ssh_send_packet_from_downstream(Ssh ssh, unsigned id, int type,
-                                     const void *data, int datalen,
-                                     const char *additional_log_text)
+static void (ssh_send_packet_from_downstream)(
+        ConnectionLayer *cl, unsigned id, int type,
+        const void *data, int datalen, const char *additional_log_text)
 {
+    Ssh ssh = FROMFIELD(cl, struct ssh_tag, cl);
     PktOut *pkt;
 
     pkt = ssh_bpp_new_pktout(ssh->bpp, type);
@@ -11324,9 +11020,11 @@ static void ssh_unthrottle(Backend *be, int bufsize)
     queue_idempotent_callback(&ssh->incoming_data_consumer);
 }
 
-struct ssh_channel *ssh_send_port_open(Ssh ssh, const char *hostname, int port,
-                                       const char *org, Channel *chan)
+static SshChannel *(ssh_lportfwd_open)(
+    ConnectionLayer *cl, const char *hostname, int port,
+    const char *org, Channel *chan)
 {
+    Ssh ssh = FROMFIELD(cl, struct ssh_tag, cl);
     struct ssh_channel *c = snew(struct ssh_channel);
     PktOut *pktout;
 
@@ -11367,7 +11065,7 @@ struct ssh_channel *ssh_send_port_open(Ssh ssh, const char *hostname, int port,
 	ssh2_pkt_send(ssh, pktout);
     }
 
-    return c;
+    return &c->sc;
 }
 
 static int ssh_connected(Backend *be)

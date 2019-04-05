@@ -28,12 +28,14 @@
  * 
  * Any returned error message must be freed after use.
  */
-void *open_settings_w(const char *sessionname, char **errmsg);
-void write_setting_s(void *handle, const char *key, const char *value);
-void write_setting_i(void *handle, const char *key, int value);
-void write_setting_filename(void *handle, const char *key, Filename *value);
-void write_setting_fontspec(void *handle, const char *key, FontSpec *font);
-void close_settings_w(void *handle);
+settings_w *open_settings_w(const char *sessionname, char **errmsg);
+void write_setting_s(settings_w *handle, const char *key, const char *value);
+void write_setting_i(settings_w *handle, const char *key, int value);
+void write_setting_filename(settings_w *handle,
+                            const char *key, Filename *value);
+void write_setting_fontspec(settings_w *handle,
+                            const char *key, FontSpec *font);
+void close_settings_w(settings_w *handle);
 
 /*
  * Read a saved session. The caller is expected to call
@@ -51,12 +53,12 @@ void close_settings_w(void *handle);
  * should invent a sensible default. If an integer setting is not
  * present, read_setting_i() returns its provided default.
  */
-void *open_settings_r(const char *sessionname);
-char *read_setting_s(void *handle, const char *key);
-int read_setting_i(void *handle, const char *key, int defvalue);
-Filename *read_setting_filename(void *handle, const char *key);
-FontSpec *read_setting_fontspec(void *handle, const char *key);
-void close_settings_r(void *handle);
+settings_r *open_settings_r(const char *sessionname);
+char *read_setting_s(settings_r *handle, const char *key);
+int read_setting_i(settings_r *handle, const char *key, int defvalue);
+Filename *read_setting_filename(settings_r *handle, const char *key);
+FontSpec *read_setting_fontspec(settings_r *handle, const char *key);
+void close_settings_r(settings_r *handle);
 
 /*
  * Delete a whole saved session.
@@ -66,9 +68,9 @@ void del_settings(const char *sessionname);
 /*
  * Enumerate all saved sessions.
  */
-void *enum_settings_start(void);
-char *enum_settings_next(void *handle, char *buffer, int buflen);
-void enum_settings_finish(void *handle);
+settings_e *enum_settings_start(void);
+char *enum_settings_next(settings_e *handle, char *buffer, int buflen);
+void enum_settings_finish(settings_e *handle);
 
 /* ----------------------------------------------------------------------
  * Functions to access PuTTY's host key database.

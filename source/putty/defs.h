@@ -54,12 +54,21 @@ typedef struct Frontend Frontend;
 typedef struct ssh_tag *Ssh;
 
 typedef struct Channel Channel;
+typedef struct SshChannel SshChannel;
 
 typedef struct ssh_sharing_state ssh_sharing_state;
 typedef struct ssh_sharing_connstate ssh_sharing_connstate;
 typedef struct share_channel share_channel;
 
+typedef struct PortFwdManager PortFwdManager;
+typedef struct PortFwdRecord PortFwdRecord;
+typedef struct ConnectionLayer ConnectionLayer;
+
 typedef struct dlgparam dlgparam;
+
+typedef struct settings_w settings_w;
+typedef struct settings_r settings_r;
+typedef struct settings_e settings_e;
 
 /* Note indirection: for historical reasons (it used to be closer to
  * the OS socket type), the type that most code uses for a socket is

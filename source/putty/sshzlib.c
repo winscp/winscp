@@ -66,6 +66,10 @@
 #define TRUE 1
 #endif
 
+typedef struct { const struct dummy *vt; } ssh_compressor;
+typedef struct { const struct dummy *vt; } ssh_decompressor;
+static const struct dummy { int i; } ssh_zlib;
+
 #else
 #include "ssh.h"
 #endif
@@ -600,37 +604,45 @@ static void zlib_match(struct LZ77Context *ectx, int distance, int len)
     }
 }
 
-void *zlib_compress_init(void)
+struct ssh_zlib_compressor {
+    struct LZ77Context ectx;
+    ssh_compressor sc;
+};
+
+ssh_compressor *zlib_compress_init(void)
 {
     struct Outbuf *out;
-    struct LZ77Context *ectx = snew(struct LZ77Context);
+    struct ssh_zlib_compressor *comp = snew(struct ssh_zlib_compressor);
 
-    lz77_init(ectx);
-    ectx->literal = zlib_literal;
-    ectx->match = zlib_match;
+    lz77_init(&comp->ectx);
+    comp->sc.vt = &ssh_zlib;
+    comp->ectx.literal = zlib_literal;
+    comp->ectx.match = zlib_match;
 
     out = snew(struct Outbuf);
     out->outbits = out->noutbits = 0;
     out->firstblock = 1;
-    ectx->userdata = out;
+    comp->ectx.userdata = out;
 
-    return ectx;
+    return &comp->sc;
 }
 
-void zlib_compress_cleanup(void *handle)
+void zlib_compress_cleanup(ssh_compressor *sc)
 {
-    struct LZ77Context *ectx = (struct LZ77Context *)handle;
-    sfree(ectx->userdata);
-    sfree(ectx->ictx);
-    sfree(ectx);
+    struct ssh_zlib_compressor *comp =
+        FROMFIELD(sc, struct ssh_zlib_compressor, sc);
+    sfree(comp->ectx.userdata);
+    sfree(comp->ectx.ictx);
+    sfree(comp);
 }
 
-void zlib_compress_block(void *handle, unsigned char *block, int len,
+void zlib_compress_block(ssh_compressor *sc, unsigned char *block, int len,
                          unsigned char **outblock, int *outlen,
                          int minlen)
 {
-    struct LZ77Context *ectx = (struct LZ77Context *)handle;
-    struct Outbuf *out = (struct Outbuf *) ectx->userdata;
+    struct ssh_zlib_compressor *comp =
+        FROMFIELD(sc, struct ssh_zlib_compressor, sc);
+    struct Outbuf *out = (struct Outbuf *) comp->ectx.userdata;
     int in_block;
 
     out->outbuf = NULL;
@@ -662,7 +674,7 @@ void zlib_compress_block(void *handle, unsigned char *block, int len,
     /*
      * Do the compression.
      */
-    lz77_compress(ectx, block, len, TRUE);
+    lz77_compress(&comp->ectx, block, len, TRUE);
 
     /*
      * End the block (by transmitting code 256, which is
@@ -875,9 +887,11 @@ struct zlib_decompress_ctx {
     int winpos;
     unsigned char *outblk;
     int outlen, outsize;
+
+    ssh_decompressor dc;
 };
 
-void *zlib_decompress_init(void)
+ssh_decompressor *zlib_decompress_init(void)
 {
     struct zlib_decompress_ctx *dctx = snew(struct zlib_decompress_ctx);
     unsigned char lengths[288];
@@ -895,12 +909,14 @@ void *zlib_decompress_init(void)
     dctx->nbits = 0;
     dctx->winpos = 0;
 
-    return dctx;
+    dctx->dc.vt = &ssh_zlib;
+    return &dctx->dc;
 }
 
-void zlib_decompress_cleanup(void *handle)
+void zlib_decompress_cleanup(ssh_decompressor *dc)
 {
-    struct zlib_decompress_ctx *dctx = (struct zlib_decompress_ctx *)handle;
+    struct zlib_decompress_ctx *dctx =
+        FROMFIELD(dc, struct zlib_decompress_ctx, dc);
 
     if (dctx->currlentable && dctx->currlentable != dctx->staticlentable)
 	zlib_freetable(&dctx->currlentable);
@@ -958,10 +974,11 @@ static void zlib_emit_char(struct zlib_decompress_ctx *dctx, int c)
 
 #define EATBITS(n) ( dctx->nbits -= (n), dctx->bits >>= (n) )
 
-int zlib_decompress_block(void *handle, unsigned char *block, int len,
+int zlib_decompress_block(ssh_decompressor *dc, unsigned char *block, int len,
 			  unsigned char **outblock, int *outlen)
 {
-    struct zlib_decompress_ctx *dctx = (struct zlib_decompress_ctx *)handle;
+    struct zlib_decompress_ctx *dctx =
+        FROMFIELD(dc, struct zlib_decompress_ctx, dc);
     const coderecord *rec;
     int code, blktype, rep, dist, nlen, header;
     static const unsigned char lenlenmap[] = {
@@ -1217,7 +1234,7 @@ int main(int argc, char **argv)
 {
     unsigned char buf[16], *outbuf;
     int ret, outlen;
-    void *handle;
+    ssh_decompressor *handle;
     int noheader = FALSE, opts = TRUE;
     char *filename = NULL;
     FILE *fp;
@@ -1289,7 +1306,7 @@ int main(int argc, char **argv)
 
 #else
 
-const struct ssh_compress ssh_zlib = {
+const struct ssh_compression_alg ssh_zlib = {
     "zlib",
     "zlib@openssh.com", /* delayed version */
     zlib_compress_init,
