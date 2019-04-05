@@ -5,8 +5,8 @@
 
 typedef struct BlowfishContext BlowfishContext;
 
-void *blowfish_make_context(void);
-void blowfish_free_context(void *handle);
+BlowfishContext *blowfish_make_context(void);
+void blowfish_free_context(BlowfishContext *ctx);
 void blowfish_initkey(BlowfishContext *ctx);
 void blowfish_expandkey(BlowfishContext *ctx,
                         const void *key, short keybytes,

@@ -970,38 +970,35 @@ static void aes_decrypt_cbc_sw(unsigned char *blk, int len, AESContext * ctx)
     memcpy(ctx->iv, iv, sizeof(iv));
 }
 
-void *aes_make_context(void)
+AESContext *aes_make_context(void)
 {
     return snew(AESContext);
 }
 
-void aes_free_context(void *handle)
+void aes_free_context(AESContext *ctx)
 {
-    sfree(handle);
+    smemclr(ctx, sizeof(*ctx));
+    sfree(ctx);
 }
 
-void aes128_key(void *handle, const void *key)
+void aes128_key(AESContext *ctx, const void *key)
 {
-    AESContext *ctx = (AESContext *)handle;
     aes_setup(ctx, key, 16);
 }
 
-void aes192_key(void *handle, const void *key)
+void aes192_key(AESContext *ctx, const void *key)
 {
-    AESContext *ctx = (AESContext *)handle;
     aes_setup(ctx, key, 24);
 }
 
-void aes256_key(void *handle, const void *key)
+void aes256_key(AESContext *ctx, const void *key)
 {
-    AESContext *ctx = (AESContext *)handle;
     aes_setup(ctx, key, 32);
 }
 
-void aes_iv(void *handle, const void *viv)
+void aes_iv(AESContext *ctx, const void *viv)
 {
     const unsigned char *iv = (const unsigned char *)viv;
-    AESContext *ctx = (AESContext *)handle;
     if (ctx->isNI) {
         memcpy(ctx->iv, iv, sizeof(ctx->iv));
     }
@@ -1012,21 +1009,18 @@ void aes_iv(void *handle, const void *viv)
     }
 }
 
-void aes_ssh2_encrypt_blk(void *handle, void *blk, int len)
+void aes_ssh2_encrypt_blk(AESContext *ctx, void *blk, int len)
 {
-    AESContext *ctx = (AESContext *)handle;
     aes_encrypt_cbc(blk, len, ctx);
 }
 
-void aes_ssh2_decrypt_blk(void *handle, void *blk, int len)
+void aes_ssh2_decrypt_blk(AESContext *ctx, void *blk, int len)
 {
-    AESContext *ctx = (AESContext *)handle;
     aes_decrypt_cbc(blk, len, ctx);
 }
 
-void aes_ssh2_sdctr(void *handle, void *blk, int len)
+void aes_ssh2_sdctr(AESContext *ctx, void *blk, int len)
 {
-    AESContext *ctx = (AESContext *)handle;
     aes_sdctr(blk, len, ctx);
 }
 
@@ -1048,63 +1042,112 @@ void aes256_decrypt_pubkey(const void *key, void *blk, int len)
     smemclr(&ctx, sizeof(ctx));
 }
 
-static const struct ssh2_cipher ssh_aes128_ctr = {
-    aes_make_context, aes_free_context, aes_iv, aes128_key,
-    aes_ssh2_sdctr, aes_ssh2_sdctr, NULL, NULL,
+struct aes_ssh2_ctx {
+    AESContext context;
+    ssh2_cipher vt;
+};
+
+ssh2_cipher *aes_ssh2_new(const struct ssh2_cipheralg *alg)
+{
+    struct aes_ssh2_ctx *ctx = snew(struct aes_ssh2_ctx);
+    ctx->vt = alg;
+    return &ctx->vt;
+}
+
+static void aes_ssh2_free(ssh2_cipher *cipher)
+{
+    struct aes_ssh2_ctx *ctx = FROMFIELD(cipher, struct aes_ssh2_ctx, vt);
+    smemclr(ctx, sizeof(*ctx));
+    sfree(ctx);
+}
+
+static void aes_ssh2_setiv(ssh2_cipher *cipher, const void *iv)
+{
+    struct aes_ssh2_ctx *ctx = FROMFIELD(cipher, struct aes_ssh2_ctx, vt);
+    aes_iv(&ctx->context, iv);
+}
+
+static void aes_ssh2_setkey(ssh2_cipher *cipher, const void *key)
+{
+    struct aes_ssh2_ctx *ctx = FROMFIELD(cipher, struct aes_ssh2_ctx, vt);
+    aes_setup(&ctx->context, key, ctx->vt->padded_keybytes);
+}
+
+static void aes_ssh2_encrypt(ssh2_cipher *cipher, void *blk, int len)
+{
+    struct aes_ssh2_ctx *ctx = FROMFIELD(cipher, struct aes_ssh2_ctx, vt);
+    aes_encrypt_cbc(blk, len, &ctx->context);
+}
+
+static void aes_ssh2_decrypt(ssh2_cipher *cipher, void *blk, int len)
+{
+    struct aes_ssh2_ctx *ctx = FROMFIELD(cipher, struct aes_ssh2_ctx, vt);
+    aes_decrypt_cbc(blk, len, &ctx->context);
+}
+
+static void aes_ssh2_sdctr_method(ssh2_cipher *cipher, void *blk, int len)
+{
+    struct aes_ssh2_ctx *ctx = FROMFIELD(cipher, struct aes_ssh2_ctx, vt);
+    aes_sdctr(blk, len, &ctx->context);
+}
+
+static const struct ssh2_cipheralg ssh_aes128_ctr = {
+    aes_ssh2_new, aes_ssh2_free, aes_ssh2_setiv, aes_ssh2_setkey,
+    aes_ssh2_sdctr_method, aes_ssh2_sdctr_method, NULL, NULL,
     "aes128-ctr",
     16, 128, 16, 0, "AES-128 SDCTR",
     NULL
 };
 
-static const struct ssh2_cipher ssh_aes192_ctr = {
-    aes_make_context, aes_free_context, aes_iv, aes192_key,
-    aes_ssh2_sdctr, aes_ssh2_sdctr, NULL, NULL,
+static const struct ssh2_cipheralg ssh_aes192_ctr = {
+    aes_ssh2_new, aes_ssh2_free, aes_ssh2_setiv, aes_ssh2_setkey,
+    aes_ssh2_sdctr_method, aes_ssh2_sdctr_method, NULL, NULL,
     "aes192-ctr",
     16, 192, 24, 0, "AES-192 SDCTR",
     NULL
 };
 
-static const struct ssh2_cipher ssh_aes256_ctr = {
-    aes_make_context, aes_free_context, aes_iv, aes256_key,
-    aes_ssh2_sdctr, aes_ssh2_sdctr, NULL, NULL,
+static const struct ssh2_cipheralg ssh_aes256_ctr = {
+    aes_ssh2_new, aes_ssh2_free, aes_ssh2_setiv, aes_ssh2_setkey,
+    aes_ssh2_sdctr_method, aes_ssh2_sdctr_method, NULL, NULL,
     "aes256-ctr",
     16, 256, 32, 0, "AES-256 SDCTR",
     NULL
 };
 
-static const struct ssh2_cipher ssh_aes128 = {
-    aes_make_context, aes_free_context, aes_iv, aes128_key,
-    aes_ssh2_encrypt_blk, aes_ssh2_decrypt_blk, NULL, NULL,
+static const struct ssh2_cipheralg ssh_aes128 = {
+    aes_ssh2_new, aes_ssh2_free, aes_ssh2_setiv, aes_ssh2_setkey,
+    aes_ssh2_encrypt, aes_ssh2_decrypt, NULL, NULL,
     "aes128-cbc",
     16, 128, 16, SSH_CIPHER_IS_CBC, "AES-128 CBC",
     NULL
 };
 
-static const struct ssh2_cipher ssh_aes192 = {
-    aes_make_context, aes_free_context, aes_iv, aes192_key,
-    aes_ssh2_encrypt_blk, aes_ssh2_decrypt_blk, NULL, NULL,
+static const struct ssh2_cipheralg ssh_aes192 = {
+    aes_ssh2_new, aes_ssh2_free, aes_ssh2_setiv, aes_ssh2_setkey,
+    aes_ssh2_encrypt, aes_ssh2_decrypt, NULL, NULL,
     "aes192-cbc",
     16, 192, 24, SSH_CIPHER_IS_CBC, "AES-192 CBC",
     NULL
 };
 
-static const struct ssh2_cipher ssh_aes256 = {
-    aes_make_context, aes_free_context, aes_iv, aes256_key,
-    aes_ssh2_encrypt_blk, aes_ssh2_decrypt_blk, NULL, NULL,
+static const struct ssh2_cipheralg ssh_aes256 = {
+    aes_ssh2_new, aes_ssh2_free, aes_ssh2_setiv, aes_ssh2_setkey,
+    aes_ssh2_encrypt, aes_ssh2_decrypt, NULL, NULL,
     "aes256-cbc",
     16, 256, 32, SSH_CIPHER_IS_CBC, "AES-256 CBC",
     NULL
 };
 
-static const struct ssh2_cipher ssh_rijndael_lysator = {
-    aes_make_context, aes_free_context, aes_iv, aes256_key,
-    aes_ssh2_encrypt_blk, aes_ssh2_decrypt_blk, NULL, NULL,
+static const struct ssh2_cipheralg ssh_rijndael_lysator = {
+    aes_ssh2_new, aes_ssh2_free, aes_ssh2_setiv, aes_ssh2_setkey,
+    aes_ssh2_encrypt, aes_ssh2_decrypt, NULL, NULL,
     "rijndael-cbc@lysator.liu.se",
     16, 256, 32, SSH_CIPHER_IS_CBC, "AES-256 CBC",
     NULL
 };
 
-static const struct ssh2_cipher *const aes_list[] = {
+static const struct ssh2_cipheralg *const aes_list[] = {
     &ssh_aes256_ctr,
     &ssh_aes256,
     &ssh_rijndael_lysator,

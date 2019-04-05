@@ -327,74 +327,71 @@ void SHA384_Simple(const void *p, int len, unsigned char *output) {
  * Thin abstraction for things where hashes are pluggable.
  */
 
-static void *sha512_init(void)
-{
-    SHA512_State *s;
-
-    s = snew(SHA512_State);
-    SHA512_Init(s);
-    return s;
-}
-
-static void *sha512_copy(const void *vold)
-{
-    const SHA512_State *old = (const SHA512_State *)vold;
-    SHA512_State *s;
-
-    s = snew(SHA512_State);
-    *s = *old;
-    BinarySink_COPIED(s);
-    return s;
-}
-
-static void sha512_free(void *handle)
-{
-    SHA512_State *s = handle;
-
-    smemclr(s, sizeof(*s));
-    sfree(s);
-}
-
-static BinarySink *sha512_sink(void *handle)
-{
-    SHA512_State *s = handle;
-    return BinarySink_UPCAST(s);
-}
-
-static void sha512_final(void *handle, unsigned char *output)
-{
-    SHA512_State *s = handle;
-
-    SHA512_Final(s, output);
-    sha512_free(s);
-}
-
-const struct ssh_hash ssh_sha512 = {
-    sha512_init, sha512_copy, sha512_sink, sha512_final, sha512_free,
-    64, "SHA-512"
+struct sha512_hash {
+    SHA512_State state;
+    ssh_hash hash;
 };
 
-static void *sha384_init(void)
+static ssh_hash *sha512_new(const struct ssh_hashalg *alg)
 {
-    SHA512_State *s;
-
-    s = snew(SHA512_State);
-    SHA384_Init(s);
-    return s;
+    struct sha512_hash *h = snew(struct sha512_hash);
+    SHA512_Init(&h->state);
+    h->hash.vt = alg;
+    BinarySink_DELEGATE_INIT(&h->hash, &h->state);
+    return &h->hash;
 }
 
-static void sha384_final(void *handle, unsigned char *output)
+static ssh_hash *sha512_copy(ssh_hash *hashold)
 {
-    SHA512_State *s = handle;
+    struct sha512_hash *hold, *hnew;
+    ssh_hash *hashnew = sha512_new(hashold->vt);
 
-    SHA384_Final(s, output);
-    smemclr(s, sizeof(*s));
-    sfree(s);
+    hold = FROMFIELD(hashold, struct sha512_hash, hash);
+    hnew = FROMFIELD(hashnew, struct sha512_hash, hash);
+
+    hnew->state = hold->state;
+    BinarySink_COPIED(&hnew->state);
+
+    return hashnew;
 }
 
-const struct ssh_hash ssh_sha384 = {
-    sha384_init, sha512_copy, sha512_sink, sha384_final, sha512_free,
-    48, "SHA-384"
+static void sha512_free(ssh_hash *hash)
+{
+    struct sha512_hash *h = FROMFIELD(hash, struct sha512_hash, hash);
+
+    smemclr(h, sizeof(*h));
+    sfree(h);
+}
+
+static void sha512_final(ssh_hash *hash, unsigned char *output)
+{
+    struct sha512_hash *h = FROMFIELD(hash, struct sha512_hash, hash);
+    SHA512_Final(&h->state, output);
+    sha512_free(hash);
+}
+
+const struct ssh_hashalg ssh_sha512 = {
+    sha512_new, sha512_copy, sha512_final, sha512_free, 64, "SHA-512"
+};
+
+static ssh_hash *sha384_new(const struct ssh_hashalg *alg)
+{
+    struct sha512_hash *h = snew(struct sha512_hash);
+    SHA384_Init(&h->state);
+    h->hash.vt = alg;
+    BinarySink_DELEGATE_INIT(&h->hash, &h->state);
+    return &h->hash;
+}
+
+static void sha384_final(ssh_hash *hash, unsigned char *output)
+{
+    struct sha512_hash *h = FROMFIELD(hash, struct sha512_hash, hash);
+    SHA384_Final(&h->state, output);
+    sha512_free(hash);
+}
+
+const struct ssh_hashalg ssh_sha384 = {
+    sha384_new, sha512_copy, sha384_final, sha512_free, 48, "SHA-384"
 };
 
 #ifdef TEST

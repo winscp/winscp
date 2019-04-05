@@ -328,10 +328,10 @@ const static struct ssh_signkey_with_user_pref_id hostkey_algs[] = {
     { &ssh_rsa, HK_RSA },
 };
 
-const static struct ssh_mac *const macs[] = {
+const static struct ssh2_macalg *const macs[] = {
     &ssh_hmac_sha256, &ssh_hmac_sha1, &ssh_hmac_sha1_96, &ssh_hmac_md5
 };
-const static struct ssh_mac *const buggymacs[] = {
+const static struct ssh2_macalg *const buggymacs[] = {
     &ssh_hmac_sha1_buggy, &ssh_hmac_sha1_96_buggy, &ssh_hmac_md5
 };
 
@@ -668,8 +668,7 @@ enum RekeyClass {
 
 struct ssh_tag {
     char *v_c, *v_s;
-    void *exhash;
-    BinarySink *exhash_bs;
+    ssh_hash *exhash;
 
     Socket s;
 
@@ -2914,10 +2913,9 @@ static void do_ssh1_login(void *vctx)
     sfree(s->rsabuf);
 
     {
-        const struct ssh_cipher *cipher =
-            (s->cipher_type == SSH_CIPHER_BLOWFISH ? &ssh_blowfish_ssh1 :
-             s->cipher_type == SSH_CIPHER_DES ? &ssh_des :
-             &ssh_3des);
+        const struct ssh1_cipheralg *cipher =
+            (s->cipher_type == SSH_CIPHER_BLOWFISH ? &ssh1_blowfish :
+             s->cipher_type == SSH_CIPHER_DES ? &ssh1_des : &ssh1_3des);
         ssh1_bpp_new_cipher(ssh->bpp, cipher, ssh->session_key);
         logeventf(ssh, "Initialised %s encryption", cipher->text_name);
     }
@@ -4781,11 +4779,10 @@ static void add_to_commasep(strbuf *buf, const char *data)
 static void ssh2_mkkey(Ssh ssh, strbuf *out, Bignum K, unsigned char *H,
                        char chr, int keylen)
 {
-    const struct ssh_hash *h = ssh->kex->hash;
+    const struct ssh_hashalg *h = ssh->kex->hash;
     int keylen_padded;
     unsigned char *key;
-    void *s, *s2;
-    BinarySink *bs;
+    ssh_hash *s, *s2;
 
     if (keylen == 0)
         return;
@@ -4806,32 +4803,30 @@ static void ssh2_mkkey(Ssh ssh, strbuf *out, Bignum K, unsigned char *H,
     key = strbuf_append(out, keylen_padded);
 
     /* First hlen bytes. */
-    s = h->init();
-    bs = h->sink(s);
+    s = ssh_hash_new(h);
     if (!(ssh->remote_bugs & BUG_SSH2_DERIVEKEY))
-	put_mp_ssh2(bs, K);
-    put_data(bs, H, h->hlen);
-    put_byte(bs, chr);
-    put_data(bs, ssh->v2_session_id, ssh->v2_session_id_len);
-    h->final(s, key);
+        put_mp_ssh2(s, K);
+    put_data(s, H, h->hlen);
+    put_byte(s, chr);
+    put_data(s, ssh->v2_session_id, ssh->v2_session_id_len);
+    ssh_hash_final(s, key);
 
     /* Subsequent blocks of hlen bytes. */
     if (keylen_padded > h->hlen) {
         int offset;
 
-        s = h->init();
-        bs = h->sink(s);
+        s = ssh_hash_new(h);
         if (!(ssh->remote_bugs & BUG_SSH2_DERIVEKEY))
-            put_mp_ssh2(bs, K);
-        put_data(bs, H, h->hlen);
+            put_mp_ssh2(s, K);
+        put_data(s, H, h->hlen);
 
         for (offset = h->hlen; offset < keylen_padded; offset += h->hlen) {
-            put_data(bs, key + offset - h->hlen, h->hlen);
-            s2 = h->copy(s);
-            h->final(s2, key + offset);
+            put_data(s, key + offset - h->hlen, h->hlen);
+            s2 = ssh_hash_copy(s);
+            ssh_hash_final(s2, key + offset);
         }
 
-        h->free(s);
+        ssh_hash_free(s);
     }
 }
 
@@ -4851,11 +4846,11 @@ struct kexinit_algorithm {
             int warn;
         } hk;
 	struct {
-	    const struct ssh2_cipher *cipher;
+            const struct ssh2_cipheralg *cipher;
 	    int warn;
 	} cipher;
 	struct {
-	    const struct ssh_mac *mac;
+            const struct ssh2_macalg *mac;
 	    int etm;
 	} mac;
 	const struct ssh_compress *comp;
@@ -5024,11 +5019,11 @@ static void do_ssh2_transport(void *vctx)
 	void *our_kexinit;
 	int our_kexinitlen;
 	int kex_init_value, kex_reply_value;
-	const struct ssh_mac *const *maclist;
+        const struct ssh2_macalg *const *maclist;
 	int nmacs;
         struct {
-            const struct ssh2_cipher *cipher;
-            const struct ssh_mac *mac;
+            const struct ssh2_cipheralg *cipher;
+            const struct ssh2_macalg *mac;
             int etm_mode;
             const struct ssh_compress *comp;
         } in, out;
@@ -5601,14 +5596,13 @@ static void do_ssh2_transport(void *vctx)
 	get_string(pktin);  /* server->client language */
 	s->ignorepkt = get_bool(pktin) && !s->guessok;
 
-	ssh->exhash = ssh->kex->hash->init();
-        ssh->exhash_bs = ssh->kex->hash->sink(ssh->exhash);
-	put_stringz(ssh->exhash_bs, ssh->v_c);
-	put_stringz(ssh->exhash_bs, ssh->v_s);
-	put_string(ssh->exhash_bs, s->our_kexinit, s->our_kexinitlen);
+        ssh->exhash = ssh_hash_new(ssh->kex->hash);
+        put_stringz(ssh->exhash, ssh->v_c);
+        put_stringz(ssh->exhash, ssh->v_s);
+        put_string(ssh->exhash, s->our_kexinit, s->our_kexinitlen);
 	sfree(s->our_kexinit);
         /* Include the type byte in the hash of server's KEXINIT */
-        put_string(ssh->exhash_bs,
+        put_string(ssh->exhash,
                    (const char *)BinarySource_UPCAST(pktin)->data - 1,
                    BinarySource_UPCAST(pktin)->len + 1);
 
@@ -5845,18 +5839,18 @@ static void do_ssh2_transport(void *vctx)
          * involve user interaction. */
         set_busy_status(ssh->frontend, BUSY_NOT);
 
-        put_stringpl(ssh->exhash_bs, s->hostkeydata);
+        put_stringpl(ssh->exhash, s->hostkeydata);
         if (dh_is_gex(ssh->kex)) {
             if (!(ssh->remote_bugs & BUG_SSH2_OLDGEX))
-                put_uint32(ssh->exhash_bs, DH_MIN_SIZE);
-            put_uint32(ssh->exhash_bs, s->pbits);
+                put_uint32(ssh->exhash, DH_MIN_SIZE);
+            put_uint32(ssh->exhash, s->pbits);
             if (!(ssh->remote_bugs & BUG_SSH2_OLDGEX))
-                put_uint32(ssh->exhash_bs, DH_MAX_SIZE);
-            put_mp_ssh2(ssh->exhash_bs, s->p);
-            put_mp_ssh2(ssh->exhash_bs, s->g);
+                put_uint32(ssh->exhash, DH_MAX_SIZE);
+            put_mp_ssh2(ssh->exhash, s->p);
+            put_mp_ssh2(ssh->exhash, s->g);
         }
-        put_mp_ssh2(ssh->exhash_bs, s->e);
-        put_mp_ssh2(ssh->exhash_bs, s->f);
+        put_mp_ssh2(ssh->exhash, s->e);
+        put_mp_ssh2(ssh->exhash, s->f);
 
         dh_cleanup(ssh->kex_ctx);
         freebn(s->f);
@@ -5894,19 +5888,19 @@ static void do_ssh2_transport(void *vctx)
         }
 
         s->hostkeydata = get_string(pktin);
-        put_stringpl(ssh->exhash_bs, s->hostkeydata);
+        put_stringpl(ssh->exhash, s->hostkeydata);
         s->hkey = ssh_key_new_pub(ssh->hostkey_alg, s->hostkeydata);
 
         {
             strbuf *pubpoint = strbuf_new();
             ssh_ecdhkex_getpublic(s->eckey, BinarySink_UPCAST(pubpoint));
-            put_string(ssh->exhash_bs, pubpoint->u, pubpoint->len);
+            put_string(ssh->exhash, pubpoint->u, pubpoint->len);
             strbuf_free(pubpoint);
         }
 
         {
             ptrlen keydata = get_string(pktin);
-            put_stringpl(ssh->exhash_bs, keydata);
+            put_stringpl(ssh->exhash, keydata);
             s->K = ssh_ecdhkex_getkey(s->eckey, keydata.ptr, keydata.len);
             if (!get_err(pktin) && !s->K) {
                 ssh_ecdhkex_freekey(s->eckey);
@@ -6101,7 +6095,7 @@ static void do_ssh2_transport(void *vctx)
                 if (ssh->hostkey_alg) {
                     s->hkey = ssh_key_new_pub(ssh->hostkey_alg,
                                               s->hostkeydata);
-                    put_string(ssh->exhash_bs,
+                    put_string(ssh->exhash,
                                s->hostkeydata.ptr, s->hostkeydata.len);
                 }
                 /*
@@ -6150,18 +6144,18 @@ static void do_ssh2_transport(void *vctx)
         set_busy_status(ssh->frontend, BUSY_NOT);
 
         if (!s->hkey)
-            put_stringz(ssh->exhash_bs, "");
+            put_stringz(ssh->exhash, "");
         if (dh_is_gex(ssh->kex)) {
             /* min,  preferred, max */
-            put_uint32(ssh->exhash_bs, s->pbits);
-            put_uint32(ssh->exhash_bs, s->pbits);
-            put_uint32(ssh->exhash_bs, s->pbits * 2);
+            put_uint32(ssh->exhash, s->pbits);
+            put_uint32(ssh->exhash, s->pbits);
+            put_uint32(ssh->exhash, s->pbits * 2);
 
-            put_mp_ssh2(ssh->exhash_bs, s->p);
-            put_mp_ssh2(ssh->exhash_bs, s->g);
+            put_mp_ssh2(ssh->exhash, s->p);
+            put_mp_ssh2(ssh->exhash, s->g);
         }
-        put_mp_ssh2(ssh->exhash_bs, s->e);
-        put_mp_ssh2(ssh->exhash_bs, s->f);
+        put_mp_ssh2(ssh->exhash, s->e);
+        put_mp_ssh2(ssh->exhash, s->f);
 
         /*
          * MIC verification is done below, after we compute the hash
@@ -6193,7 +6187,7 @@ static void do_ssh2_transport(void *vctx)
         }
 
         s->hostkeydata = get_string(pktin);
-        put_stringpl(ssh->exhash_bs, s->hostkeydata);
+        put_stringpl(ssh->exhash, s->hostkeydata);
 	s->hkey = ssh_key_new_pub(ssh->hostkey_alg, s->hostkeydata);
 
         rsakeydata = get_string(pktin);
@@ -6204,7 +6198,7 @@ static void do_ssh2_transport(void *vctx)
             crStopV;
         }
 
-        put_stringpl(ssh->exhash_bs, rsakeydata);
+        put_stringpl(ssh->exhash, rsakeydata);
 
         /*
          * Next, set up a shared secret K, of precisely KLEN -
@@ -6250,7 +6244,7 @@ static void do_ssh2_transport(void *vctx)
             put_string(s->pktout, outstr, outstrlen);
             ssh_pkt_write(ssh, s->pktout);
 
-	    put_string(ssh->exhash_bs, outstr, outstrlen);
+            put_string(ssh->exhash, outstr, outstrlen);
 
             strbuf_free(buf);
             sfree(outstr);
@@ -6271,9 +6265,9 @@ static void do_ssh2_transport(void *vctx)
         }
     }
 
-    put_mp_ssh2(ssh->exhash_bs, s->K);
-    assert(ssh->kex->hash->hlen <= sizeof(s->exchange_hash));
-    ssh->kex->hash->final(ssh->exhash, s->exchange_hash);
+    put_mp_ssh2(ssh->exhash, s->K);
+    assert(ssh_hash_alg(ssh->exhash)->hlen <= sizeof(s->exchange_hash));
+    ssh_hash_final(ssh->exhash, s->exchange_hash);
 
 #ifndef NO_GSSAPI
     if (ssh->kex->main_type == KEXTYPE_GSS) {

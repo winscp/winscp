@@ -1688,7 +1688,7 @@ static int BinarySource_get_point(BinarySource *src, struct ec_point *point)
 
 struct ecsign_extra {
     struct ec_curve *(*curve)(void);
-    const struct ssh_hash *hash;
+    const struct ssh_hashalg *hash;
 
     /* These fields are used by the OpenSSH PEM format importer/exporter */
     const unsigned char *oid;
@@ -2227,7 +2227,7 @@ static int ecdsa_verify(ssh_key *key, ptrlen sig, ptrlen data)
         Bignum r, s;
         unsigned char digest[512 / 8];
         int digestLen;
-        void *hashctx;
+        ssh_hash *hashctx;
 
         BinarySource_BARE_INIT(src, sigstr.ptr, sigstr.len);
 
@@ -2241,9 +2241,9 @@ static int ecdsa_verify(ssh_key *key, ptrlen sig, ptrlen data)
 
         digestLen = extra->hash->hlen;
         assert(digestLen <= sizeof(digest));
-        hashctx = extra->hash->init();
-        put_data(extra->hash->sink(hashctx), data.ptr, data.len);
-        extra->hash->final(hashctx, digest);
+        hashctx = ssh_hash_new(extra->hash);
+        put_data(hashctx, data.ptr, data.len);
+        ssh_hash_final(hashctx, digest);
 
         /* Verify the signature */
         ret = _ecdsa_verify(&ec->publicKey, digest, digestLen, r, s);
@@ -2363,14 +2363,14 @@ static void ecdsa_sign(ssh_key *key, const void *data, int datalen,
             put_byte(bs, bignum_byte(s, i));
         freebn(s);
     } else {
-        void *hashctx;
+        ssh_hash *hashctx;
         strbuf *substr;
 
         digestLen = extra->hash->hlen;
         assert(digestLen <= sizeof(digest));
-        hashctx = extra->hash->init();
-        put_data(extra->hash->sink(hashctx), data, datalen);
-        extra->hash->final(hashctx, digest);
+        hashctx = ssh_hash_new(extra->hash);
+        put_data(hashctx, data, datalen);
+        ssh_hash_final(hashctx, digest);
 
         /* Do the signature */
         _ecdsa_sign(ec->privateKey, ec->publicKey.curve, digest, digestLen, &r, &s);

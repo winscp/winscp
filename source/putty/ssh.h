@@ -331,11 +331,12 @@ int detect_attack(struct crcda_ctx *ctx, unsigned char *buf, uint32 len,
 /*
  * SSH2 RSA key exchange functions
  */
-struct ssh_hash;
+struct ssh_hashalg;
 struct RSAKey *ssh_rsakex_newkey(const void *data, int len);
 void ssh_rsakex_freekey(struct RSAKey *key);
 int ssh_rsakex_klen(struct RSAKey *key);
-void ssh_rsakex_encrypt(const struct ssh_hash *h, unsigned char *in, int inlen,
+void ssh_rsakex_encrypt(const struct ssh_hashalg *h,
+                        unsigned char *in, int inlen,
                         unsigned char *out, int outlen, struct RSAKey *key);
 
 /*
@@ -355,6 +356,9 @@ Bignum ssh_ecdhkex_getkey(struct ec_key *key,
 Bignum *dss_gen_k(const char *id_string, Bignum modulus, Bignum private_key,
                   unsigned char *digest, int digest_len);
 
+struct ssh2_cipheralg;
+typedef const struct ssh2_cipheralg *ssh2_cipher;
+
 typedef struct {
     uint32 h[4];
 } MD5_Core_State;
@@ -371,11 +375,12 @@ void MD5Init(struct MD5Context *context);
 void MD5Final(unsigned char digest[16], struct MD5Context *context);
 void MD5Simple(void const *p, unsigned len, unsigned char output[16]);
 
-void *hmacmd5_make_context(void *);
-void hmacmd5_free_context(void *handle);
-void hmacmd5_key(void *handle, void const *key, int len);
-void hmacmd5_do_hmac(void *handle, unsigned char const *blk, int len,
-		     unsigned char *hmac);
+struct hmacmd5_context;
+struct hmacmd5_context *hmacmd5_make_context(void);
+void hmacmd5_free_context(struct hmacmd5_context *ctx);
+void hmacmd5_key(struct hmacmd5_context *ctx, void const *key, int len);
+void hmacmd5_do_hmac(struct hmacmd5_context *ctx,
+                     unsigned char const *blk, int len, unsigned char *hmac);
 
 int supports_sha_ni(void);
 
@@ -420,27 +425,39 @@ void SHA384_Init(SHA384_State * s);
 void SHA384_Final(SHA384_State * s, unsigned char *output);
 void SHA384_Simple(const void *p, int len, unsigned char *output);
 
-struct ssh_mac;
-struct ssh_cipher {
-    void *(*make_context)(void);
-    void (*free_context)(void *);
-    void (*sesskey) (void *, const void *key);	/* for SSH-1 */
-    void (*encrypt) (void *, void *blk, int len);
-    void (*decrypt) (void *, void *blk, int len);
+struct ssh2_macalg;
+
+struct ssh1_cipheralg;
+typedef const struct ssh1_cipheralg *ssh1_cipher;
+
+struct ssh1_cipheralg {
+    ssh1_cipher *(*new)(void);
+    void (*free)(ssh1_cipher *);
+    void (*sesskey)(ssh1_cipher *, const void *key);
+    void (*encrypt)(ssh1_cipher *, void *blk, int len);
+    void (*decrypt)(ssh1_cipher *, void *blk, int len);
     int blksize;
     const char *text_name;
 };
 
-struct ssh2_cipher {
-    void *(*make_context)(void);
-    void (*free_context)(void *);
-    void (*setiv) (void *, const void *iv);	/* for SSH-2 */
-    void (*setkey) (void *, const void *key);/* for SSH-2 */
-    void (*encrypt) (void *, void *blk, int len);
-    void (*decrypt) (void *, void *blk, int len);
+#define ssh1_cipher_new(alg) ((alg)->new())
+#define ssh1_cipher_free(ctx) ((*(ctx))->free(ctx))
+#define ssh1_cipher_sesskey(ctx, key) ((*(ctx))->sesskey(ctx, key))
+#define ssh1_cipher_encrypt(ctx, blk, len) ((*(ctx))->encrypt(ctx, blk, len))
+#define ssh1_cipher_decrypt(ctx, blk, len) ((*(ctx))->decrypt(ctx, blk, len))
+
+struct ssh2_cipheralg {
+    ssh2_cipher *(*new)(const struct ssh2_cipheralg *alg);
+    void (*free)(ssh2_cipher *);
+    void (*setiv)(ssh2_cipher *, const void *iv);
+    void (*setkey)(ssh2_cipher *, const void *key);
+    void (*encrypt)(ssh2_cipher *, void *blk, int len);
+    void (*decrypt)(ssh2_cipher *, void *blk, int len);
     /* Ignored unless SSH_CIPHER_SEPARATE_LENGTH flag set */
-    void (*encrypt_length) (void *, void *blk, int len, unsigned long seq);
-    void (*decrypt_length) (void *, void *blk, int len, unsigned long seq);
+    void (*encrypt_length)(ssh2_cipher *, void *blk, int len,
+                           unsigned long seq);
+    void (*decrypt_length)(ssh2_cipher *, void *blk, int len,
+                           unsigned long seq);
     const char *name;
     int blksize;
     /* real_keybits is the number of bits of entropy genuinely used by
@@ -461,46 +478,80 @@ struct ssh2_cipher {
 #define SSH_CIPHER_SEPARATE_LENGTH      2
     const char *text_name;
     /* If set, this takes priority over other MAC. */
-    const struct ssh_mac *required_mac;
+    const struct ssh2_macalg *required_mac;
 };
+
+#define ssh2_cipher_new(alg) ((alg)->new(alg))
+#define ssh2_cipher_free(ctx) ((*(ctx))->free(ctx))
+#define ssh2_cipher_setiv(ctx, iv) ((*(ctx))->setiv(ctx, iv))
+#define ssh2_cipher_setkey(ctx, key) ((*(ctx))->setkey(ctx, key))
+#define ssh2_cipher_encrypt(ctx, blk, len) ((*(ctx))->encrypt(ctx, blk, len))
+#define ssh2_cipher_decrypt(ctx, blk, len) ((*(ctx))->decrypt(ctx, blk, len))
+#define ssh2_cipher_encrypt_length(ctx, blk, len, seq) \
+    ((*(ctx))->encrypt_length(ctx, blk, len, seq))
+#define ssh2_cipher_decrypt_length(ctx, blk, len, seq) \
+    ((*(ctx))->decrypt_length(ctx, blk, len, seq))
+#define ssh2_cipher_alg(ctx) (*(ctx))
 
 struct ssh2_ciphers {
     int nciphers;
-    const struct ssh2_cipher *const *list;
+    const struct ssh2_cipheralg *const *list;
 };
 
-struct ssh_mac {
+struct ssh2_macalg;
+typedef struct ssh2_mac {
+    const struct ssh2_macalg *vt;
+    BinarySink_DELEGATE_IMPLEMENTATION;
+} ssh2_mac;
+
+struct ssh2_macalg {
     /* Passes in the cipher context */
-    void *(*make_context)(void *);
-    void (*free_context)(void *);
-    void (*setkey) (void *, const void *key);
-    /* whole-packet operations */
-    void (*generate) (void *, void *blk, int len, unsigned long seq);
-    int (*verify) (void *, const void *blk, int len, unsigned long seq);
-    /* partial-packet operations */
-    void (*start) (void *);
-    BinarySink *(*sink) (void *);
-    void (*genresult) (void *, unsigned char *);
-    int (*verresult) (void *, unsigned char const *);
+    ssh2_mac *(*new)(const struct ssh2_macalg *alg, ssh2_cipher *cipher);
+    void (*free)(ssh2_mac *);
+    void (*setkey)(ssh2_mac *, const void *key);
+    void (*start)(ssh2_mac *);
+    void (*genresult)(ssh2_mac *, unsigned char *);
     const char *name, *etm_name;
     int len, keylen;
     const char *text_name;
 };
 
-struct ssh_hash {
-    void *(*init)(void); /* also allocates context */
-    void *(*copy)(const void *);
-    BinarySink *(*sink) (void *);
-    void (*final)(void *, unsigned char *); /* also frees context */
-    void (*free)(void *);
+#define ssh2_mac_new(alg, cipher) ((alg)->new(alg, cipher))
+#define ssh2_mac_free(ctx) ((ctx)->vt->free(ctx))
+#define ssh2_mac_setkey(ctx, key) ((ctx)->vt->free(ctx, key))
+#define ssh2_mac_start(ctx) ((ctx)->vt->start(ctx))
+#define ssh2_mac_genresult(ctx, out) ((ctx)->vt->genresult(ctx, out))
+#define ssh2_mac_alg(ctx) ((ctx)->vt)
+
+/* Centralised 'methods' for ssh2_mac, defined in sshmac.c */
+int ssh2_mac_verresult(ssh2_mac *, const void *);
+void ssh2_mac_generate(ssh2_mac *, void *, int, unsigned long seq);
+int ssh2_mac_verify(ssh2_mac *, const void *, int, unsigned long seq);
+
+typedef struct ssh_hash {
+    const struct ssh_hashalg *vt;
+    BinarySink_DELEGATE_IMPLEMENTATION;
+} ssh_hash;
+
+struct ssh_hashalg {
+    ssh_hash *(*new)(const struct ssh_hashalg *alg);
+    ssh_hash *(*copy)(ssh_hash *);
+    void (*final)(ssh_hash *, unsigned char *); /* ALSO FREES THE ssh_hash! */
+    void (*free)(ssh_hash *);
     int hlen; /* output length in bytes */
     const char *text_name;
 };   
 
+#define ssh_hash_new(alg) ((alg)->new(alg))
+#define ssh_hash_copy(ctx) ((ctx)->vt->copy(ctx))
+#define ssh_hash_final(ctx, out) ((ctx)->vt->final(ctx, out))
+#define ssh_hash_free(ctx) ((ctx)->vt->free(ctx))
+#define ssh_hash_alg(ctx) ((ctx)->vt)
+
 struct ssh_kex {
     const char *name, *groupname;
     enum { KEXTYPE_DH, KEXTYPE_RSA, KEXTYPE_ECDH, KEXTYPE_GSS } main_type;
-    const struct ssh_hash *hash;
+    const struct ssh_hashalg *hash;
     const void *extra;                 /* private to the kex methods */
 };
 
@@ -576,19 +627,19 @@ struct ssh2_userkey {
 /* The maximum length of any hash algorithm used in kex. (bytes) */
 #define SSH2_KEX_MAX_HASH_LEN (64) /* SHA-512 */
 
-extern const struct ssh_cipher ssh_3des;
-extern const struct ssh_cipher ssh_des;
-extern const struct ssh_cipher ssh_blowfish_ssh1;
+extern const struct ssh1_cipheralg ssh1_3des;
+extern const struct ssh1_cipheralg ssh1_des;
+extern const struct ssh1_cipheralg ssh1_blowfish;
 extern const struct ssh2_ciphers ssh2_3des;
 extern const struct ssh2_ciphers ssh2_des;
 extern const struct ssh2_ciphers ssh2_aes;
 extern const struct ssh2_ciphers ssh2_blowfish;
 extern const struct ssh2_ciphers ssh2_arcfour;
 extern const struct ssh2_ciphers ssh2_ccp;
-extern const struct ssh_hash ssh_sha1;
-extern const struct ssh_hash ssh_sha256;
-extern const struct ssh_hash ssh_sha384;
-extern const struct ssh_hash ssh_sha512;
+extern const struct ssh_hashalg ssh_sha1;
+extern const struct ssh_hashalg ssh_sha256;
+extern const struct ssh_hashalg ssh_sha384;
+extern const struct ssh_hashalg ssh_sha512;
 extern const struct ssh_kexes ssh_diffiehellman_group1;
 extern const struct ssh_kexes ssh_diffiehellman_group14;
 extern const struct ssh_kexes ssh_diffiehellman_gex;
@@ -601,22 +652,23 @@ extern const ssh_keyalg ssh_ecdsa_ed25519;
 extern const ssh_keyalg ssh_ecdsa_nistp256;
 extern const ssh_keyalg ssh_ecdsa_nistp384;
 extern const ssh_keyalg ssh_ecdsa_nistp521;
-extern const struct ssh_mac ssh_hmac_md5;
-extern const struct ssh_mac ssh_hmac_sha1;
-extern const struct ssh_mac ssh_hmac_sha1_buggy;
-extern const struct ssh_mac ssh_hmac_sha1_96;
-extern const struct ssh_mac ssh_hmac_sha1_96_buggy;
-extern const struct ssh_mac ssh_hmac_sha256;
+extern const struct ssh2_macalg ssh_hmac_md5;
+extern const struct ssh2_macalg ssh_hmac_sha1;
+extern const struct ssh2_macalg ssh_hmac_sha1_buggy;
+extern const struct ssh2_macalg ssh_hmac_sha1_96;
+extern const struct ssh2_macalg ssh_hmac_sha1_96_buggy;
+extern const struct ssh2_macalg ssh_hmac_sha256;
 
-void *aes_make_context(void);
-void aes_free_context(void *handle);
-void aes128_key(void *handle, const void *key);
-void aes192_key(void *handle, const void *key);
-void aes256_key(void *handle, const void *key);
-void aes_iv(void *handle, const void *iv);
-void aes_ssh2_encrypt_blk(void *handle, void *blk, int len);
-void aes_ssh2_decrypt_blk(void *handle, void *blk, int len);
-void aes_ssh2_sdctr(void *handle, void *blk, int len);
+typedef struct AESContext AESContext;
+AESContext *aes_make_context(void);
+void aes_free_context(AESContext *ctx);
+void aes128_key(AESContext *ctx, const void *key);
+void aes192_key(AESContext *ctx, const void *key);
+void aes256_key(AESContext *ctx, const void *key);
+void aes_iv(AESContext *ctx, const void *iv);
+void aes_ssh2_encrypt_blk(AESContext *ctx, void *blk, int len);
+void aes_ssh2_decrypt_blk(AESContext *ctx, void *blk, int len);
+void aes_ssh2_sdctr(AESContext *ctx, void *blk, int len);
 
 /*
  * PuTTY version number formatted as an SSH version string. 

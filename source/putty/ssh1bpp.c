@@ -17,8 +17,7 @@ struct ssh1_bpp_state {
     int chunk;
     PktIn *pktin;
 
-    const struct ssh_cipher *cipher;
-    void *cipher_ctx;
+    ssh1_cipher *cipher;
 
     struct crcda_ctx *crcda_ctx;
 
@@ -51,7 +50,7 @@ static void ssh1_bpp_free(BinaryPacketProtocol *bpp)
 {
     struct ssh1_bpp_state *s = FROMFIELD(bpp, struct ssh1_bpp_state, bpp);
     if (s->cipher)
-        s->cipher->free_context(s->cipher_ctx);
+        ssh1_cipher_free(s->cipher);
     if (s->compctx)
         zlib_compress_cleanup(s->compctx);
     if (s->decompctx)
@@ -64,7 +63,7 @@ static void ssh1_bpp_free(BinaryPacketProtocol *bpp)
 }
 
 void ssh1_bpp_new_cipher(BinaryPacketProtocol *bpp,
-                         const struct ssh_cipher *cipher,
+                         const struct ssh1_cipheralg *cipher,
                          const void *session_key)
 {
     struct ssh1_bpp_state *s;
@@ -73,10 +72,9 @@ void ssh1_bpp_new_cipher(BinaryPacketProtocol *bpp,
 
     assert(!s->cipher);
 
-    s->cipher = cipher;
-    if (s->cipher) {
-        s->cipher_ctx = cipher->make_context();
-        cipher->sesskey(s->cipher_ctx, session_key);
+    if (cipher) {
+        s->cipher = ssh1_cipher_new(cipher);
+        ssh1_cipher_sesskey(s->cipher, session_key);
 
         assert(!s->crcda_ctx);
         s->crcda_ctx = crcda_make_context();
@@ -146,7 +144,7 @@ static void ssh1_bpp_handle_input(BinaryPacketProtocol *bpp)
         }
 
         if (s->cipher)
-            s->cipher->decrypt(s->cipher_ctx, s->data, s->biglen);
+            ssh1_cipher_decrypt(s->cipher, s->data, s->biglen);
 
         s->realcrc = crc32_compute(s->data, s->biglen - 4);
         s->gotcrc = GET_32BIT(s->data + s->biglen - 4);
@@ -273,7 +271,7 @@ static void ssh1_bpp_format_packet(BinaryPacketProtocol *bpp, PktOut *pkt)
     PUT_32BIT(pkt->data + pktoffs, len);
 
     if (s->cipher)
-        s->cipher->encrypt(s->cipher_ctx, pkt->data + pktoffs + 4, biglen);
+        ssh1_cipher_encrypt(s->cipher, pkt->data + pktoffs + 4, biglen);
 
     bufchain_add(s->bpp.out_raw, pkt->data + pktoffs,
                  biglen + 4); /* len(length+padding+type+data+CRC) */

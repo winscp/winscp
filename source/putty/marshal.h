@@ -26,6 +26,17 @@ struct BinarySink {
      (obj)->binarysink_->binarysink_ = (obj)->binarysink_)
 
 /*
+ * To define a larger structure type as a valid BinarySink in such a
+ * way that it will delegate the write method to some other object,
+ * put 'BinarySink_DELEGATE_IMPLEMENTATION' in its declaration, and
+ * when an instance is set up, use 'BinarySink_DELEGATE_INIT' to point
+ * at the object it wants to delegate to.
+ */
+#define BinarySink_DELEGATE_IMPLEMENTATION BinarySink *binarysink_
+#define BinarySink_DELEGATE_INIT(obj, othersink) \
+    ((obj)->binarysink_ = BinarySink_UPCAST(othersink))
+
+/*
  * The implementing type's write function will want to downcast its
  * 'BinarySink *' parameter back to the more specific type. Also,
  * sometimes you'll want to upcast a pointer to a particular

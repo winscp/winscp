@@ -783,7 +783,7 @@ int ssh_rsakex_klen(struct RSAKey *rsa)
     return bignum_bitcount(rsa->modulus);
 }
 
-static void oaep_mask(const struct ssh_hash *h, void *seed, int seedlen,
+static void oaep_mask(const struct ssh_hashalg *h, void *seed, int seedlen,
 		      void *vdata, int datalen)
 {
     unsigned char *data = (unsigned char *)vdata;
@@ -791,16 +791,14 @@ static void oaep_mask(const struct ssh_hash *h, void *seed, int seedlen,
 
     while (datalen > 0) {
         int i, max = (datalen > h->hlen ? h->hlen : datalen);
-        void *s;
-        BinarySink *bs;
+        ssh_hash *s;
         unsigned char hash[SSH2_KEX_MAX_HASH_LEN];
 
 	assert(h->hlen <= SSH2_KEX_MAX_HASH_LEN);
-        s = h->init();
-        bs = h->sink(s);
-        put_data(bs, seed, seedlen);
-        put_uint32(bs, count);
-        h->final(s, hash);
+        s = ssh_hash_new(h);
+        put_data(s, seed, seedlen);
+        put_uint32(s, count);
+        ssh_hash_final(s, hash);
         count++;
 
         for (i = 0; i < max; i++)
@@ -811,7 +809,8 @@ static void oaep_mask(const struct ssh_hash *h, void *seed, int seedlen,
     }
 }
 
-void ssh_rsakex_encrypt(const struct ssh_hash *h, unsigned char *in, int inlen,
+void ssh_rsakex_encrypt(const struct ssh_hashalg *h,
+                        unsigned char *in, int inlen,
                         unsigned char *out, int outlen, struct RSAKey *rsa)
 {
     Bignum b1, b2;
@@ -866,7 +865,10 @@ void ssh_rsakex_encrypt(const struct ssh_hash *h, unsigned char *in, int inlen,
         out[i + 1] = random_byte();
     /* At position 1+HLEN, the data block DB, consisting of: */
     /* The hash of the label (we only support an empty label here) */
-    h->final(h->init(), out + HLEN + 1);
+    {
+        ssh_hash *s = ssh_hash_new(h);
+        ssh_hash_final(s, out + HLEN + 1);
+    }
     /* A bunch of zero octets */
     memset(out + 2*HLEN + 1, 0, outlen - (2*HLEN + 1));
     /* A single 1 octet, followed by the input message data. */
