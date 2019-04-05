@@ -9,19 +9,6 @@
 
 struct ssh_channel;
 
-extern int sshfwd_write(struct ssh_channel *c, const void *, int);
-extern void sshfwd_write_eof(struct ssh_channel *c);
-extern void sshfwd_unclean_close(struct ssh_channel *c, const char *err);
-extern void sshfwd_unthrottle(struct ssh_channel *c, int bufsize);
-Conf *sshfwd_get_conf(struct ssh_channel *c);
-void sshfwd_window_override_removed(struct ssh_channel *c);
-void sshfwd_x11_sharing_handover(struct ssh_channel *c,
-                                 ssh_sharing_connstate *share_cs,
-                                 share_channel *share_chan,
-                                 const char *peer_addr, int peer_port,
-                                 int endian, int protomajor, int protominor,
-                                 const void *initial_data, int initial_len);
-
 /*
  * Buffer management constants. There are several of these for
  * various different purposes:
@@ -148,8 +135,8 @@ void ssh_unref_packet(PktIn *pkt);
 void ssh_free_pktout(PktOut *pkt);
 
 extern Socket ssh_connection_sharing_init(
-    const char *host, int port, Conf *conf, Ssh ssh, Plug sshplug,
-    ssh_sharing_state **state);
+    const char *host, int port, Conf *conf, ConnectionLayer *cl,
+    Plug sshplug, ssh_sharing_state **state);
 int ssh_share_test_for_upstream(const char *host, int port, Conf *conf);
 void share_got_pkt_from_server(ssh_sharing_connstate *ctx, int type,
                                const void *pkt, int pktlen);
@@ -160,26 +147,6 @@ int share_ndownstreams(ssh_sharing_state *state);
 
 void ssh_connshare_log(Ssh ssh, int event, const char *logtext,
                        const char *ds_err, const char *us_err);
-unsigned ssh_alloc_sharing_channel(Ssh ssh, ssh_sharing_connstate *connstate);
-void ssh_delete_sharing_channel(Ssh ssh, unsigned localid);
-int ssh_alloc_sharing_rportfwd(Ssh ssh, const char *shost, int sport,
-                               ssh_sharing_connstate *connstate);
-void ssh_remove_sharing_rportfwd(Ssh ssh, const char *shost, int sport,
-                                 ssh_sharing_connstate *connstate);
-void ssh_sharing_queue_global_request(
-    Ssh ssh, ssh_sharing_connstate *connstate);
-struct X11FakeAuth *ssh_sharing_add_x11_display(
-    Ssh ssh, int authtype, ssh_sharing_connstate *share_cs,
-    share_channel *share_chan);
-void ssh_sharing_remove_x11_display(Ssh ssh, struct X11FakeAuth *auth);
-void ssh_send_packet_from_downstream(Ssh ssh, unsigned id, int type,
-                                     const void *pkt, int pktlen,
-                                     const char *additional_log_text);
-void ssh_sharing_downstream_connected(Ssh ssh, unsigned id,
-                                      const char *peerinfo);
-void ssh_sharing_downstream_disconnected(Ssh ssh, unsigned id);
-void ssh_sharing_logf(Ssh ssh, unsigned id, const char *logfmt, ...);
-int ssh_agent_forwarding_permitted(Ssh ssh);
 void share_setup_x11_channel(ssh_sharing_connstate *cs, share_channel *chan,
                              unsigned upstream_id, unsigned server_id,
                              unsigned server_currwin, unsigned server_maxpkt,
@@ -187,6 +154,87 @@ void share_setup_x11_channel(ssh_sharing_connstate *cs, share_channel *chan,
                              const char *peer_addr, int peer_port, int endian,
                              int protomajor, int protominor,
                              const void *initial_data, int initial_len);
+
+struct ssh_rportfwd;
+
+struct ConnectionLayerVtable {
+    /* Allocate and free remote-to-local port forwardings, called by
+     * PortFwdManager or by connection sharing */
+    struct ssh_rportfwd *(*rportfwd_alloc)(
+        ConnectionLayer *cl,
+        const char *shost, int sport, const char *dhost, int dport,
+        int addressfamily, const char *log_description, PortFwdRecord *pfr,
+        ssh_sharing_connstate *share_ctx);
+    void (*rportfwd_remove)(ConnectionLayer *cl, struct ssh_rportfwd *rpf);
+
+    /* Open a local-to-remote port forwarding channel, called by
+     * PortFwdManager */
+    SshChannel *(*lportfwd_open)(
+        ConnectionLayer *cl, const char *hostname, int port,
+        const char *org, Channel *chan);
+
+    /* Add and remove X11 displays for connection sharing downstreams */
+    struct X11FakeAuth *(*add_sharing_x11_display)(
+        ConnectionLayer *cl, int authtype, ssh_sharing_connstate *share_cs,
+        share_channel *share_chan);
+    void (*remove_sharing_x11_display)(
+        ConnectionLayer *cl, struct X11FakeAuth *auth);
+
+    /* Pass through an outgoing SSH packet from a downstream */
+    void (*send_packet_from_downstream)(
+        ConnectionLayer *cl, unsigned id, int type,
+        const void *pkt, int pktlen, const char *additional_log_text);
+
+    /* Allocate/free an upstream channel number associated with a
+     * sharing downstream */
+    unsigned (*alloc_sharing_channel)(ConnectionLayer *cl,
+                                      ssh_sharing_connstate *connstate);
+    void (*delete_sharing_channel)(ConnectionLayer *cl, unsigned localid);
+
+    /* Indicate that a downstream has sent a global request with the
+     * want-reply flag, so that when a reply arrives it will be passed
+     * back to that downstrean */
+    void (*sharing_queue_global_request)(
+        ConnectionLayer *cl, ssh_sharing_connstate *connstate);
+
+    /* Query whether the connection layer is doing agent forwarding */
+    int (*agent_forwarding_permitted)(ConnectionLayer *cl);
+};
+
+struct ConnectionLayer {
+    Frontend *frontend;
+    const struct ConnectionLayerVtable *vt;
+};
+
+#define ssh_rportfwd_alloc(cl, sh, sp, dh, dp, af, ld, pfr, share) \
+    ((cl)->vt->rportfwd_alloc(cl, sh, sp, dh, dp, af, ld, pfr, share))
+#define ssh_rportfwd_remove(cl, rpf) ((cl)->vt->rportfwd_remove(cl, rpf))
+#define ssh_lportfwd_open(cl, h, p, org, chan) \
+    ((cl)->vt->lportfwd_open(cl, h, p, org, chan))
+#define ssh_add_sharing_x11_display(cl, auth, cs, ch)   \
+    ((cl)->vt->add_sharing_x11_display(cl, auth, cs, ch))
+#define ssh_remove_sharing_x11_display(cl, fa)   \
+    ((cl)->vt->remove_sharing_x11_display(cl, fa))
+#define ssh_send_packet_from_downstream(cl, id, type, pkt, len, log)    \
+    ((cl)->vt->send_packet_from_downstream(cl, id, type, pkt, len, log))
+#define ssh_alloc_sharing_channel(cl, cs) \
+    ((cl)->vt->alloc_sharing_channel(cl, cs))
+#define ssh_delete_sharing_channel(cl, ch) \
+    ((cl)->vt->delete_sharing_channel(cl, ch))
+#define ssh_sharing_queue_global_request(cl, cs) \
+    ((cl)->vt->sharing_queue_global_request(cl, cs))
+#define ssh_agent_forwarding_permitted(cl) \
+    ((cl)->vt->agent_forwarding_permitted(cl))
+
+/* Exports from portfwd.c */
+PortFwdManager *portfwdmgr_new(ConnectionLayer *cl);
+void portfwdmgr_free(PortFwdManager *mgr);
+void portfwdmgr_config(PortFwdManager *mgr, Conf *conf);
+void portfwdmgr_close(PortFwdManager *mgr, PortFwdRecord *pfr);
+void portfwdmgr_close_all(PortFwdManager *mgr);
+char *portfwdmgr_connect(PortFwdManager *mgr, Channel **chan_ret,
+                         char *hostname, int port, SshChannel *c,
+                         int addressfamily);
 
 Frontend *ssh_get_frontend(Ssh ssh);
 
@@ -380,7 +428,7 @@ struct hmacmd5_context *hmacmd5_make_context(void);
 void hmacmd5_free_context(struct hmacmd5_context *ctx);
 void hmacmd5_key(struct hmacmd5_context *ctx, void const *key, int len);
 void hmacmd5_do_hmac(struct hmacmd5_context *ctx,
-                     unsigned char const *blk, int len, unsigned char *hmac);
+                     const void *blk, int len, unsigned char *hmac);
 
 int supports_sha_ni(void);
 
@@ -396,7 +444,8 @@ void SHA_Init(SHA_State * s);
 void SHA_Final(SHA_State * s, unsigned char *output);
 void SHA_Simple(const void *p, int len, unsigned char *output);
 
-void hmac_sha1_simple(void *key, int keylen, void *data, int datalen,
+void hmac_sha1_simple(const void *key, int keylen,
+                      const void *data, int datalen,
 		      unsigned char *output);
 typedef struct SHA256_State {
     uint32 h[8];
@@ -602,22 +651,38 @@ struct ssh_keyalg {
 #define ssh_key_ssh_id(key) ((*(key))->ssh_id)
 #define ssh_key_cache_id(key) ((*(key))->cache_id)
 
-struct ssh_compress {
+typedef struct ssh_compressor {
+    const struct ssh_compression_alg *vt;
+} ssh_compressor;
+typedef struct ssh_decompressor {
+    const struct ssh_compression_alg *vt;
+} ssh_decompressor;
+
+struct ssh_compression_alg {
     const char *name;
     /* For zlib@openssh.com: if non-NULL, this name will be considered once
      * userauth has completed successfully. */
     const char *delayed_name;
-    void *(*compress_init) (void);
-    void (*compress_cleanup) (void *);
-    void (*compress) (void *, unsigned char *block, int len,
-                      unsigned char **outblock, int *outlen,
-                      int minlen);
-    void *(*decompress_init) (void);
-    void (*decompress_cleanup) (void *);
-    int (*decompress) (void *, unsigned char *block, int len,
-		       unsigned char **outblock, int *outlen);
+    ssh_compressor *(*compress_new)(void);
+    void (*compress_free)(ssh_compressor *);
+    void (*compress)(ssh_compressor *, unsigned char *block, int len,
+                     unsigned char **outblock, int *outlen,
+                     int minlen);
+    ssh_decompressor *(*decompress_new)(void);
+    void (*decompress_free)(ssh_decompressor *);
+    int (*decompress)(ssh_decompressor *, unsigned char *block, int len,
+                      unsigned char **outblock, int *outlen);
     const char *text_name;
 };
+
+#define ssh_compressor_new(alg) ((alg)->compress_new())
+#define ssh_compressor_free(comp) ((comp)->vt->compress_free(comp))
+#define ssh_compressor_compress(comp, in, inlen, out, outlen, minlen) \
+    ((comp)->vt->compress(comp, in, inlen, out, outlen, minlen))
+#define ssh_decompressor_new(alg) ((alg)->decompress_new())
+#define ssh_decompressor_free(comp) ((comp)->vt->decompress_free(comp))
+#define ssh_decompressor_decompress(comp, in, inlen, out, outlen) \
+    ((comp)->vt->decompress(comp, in, inlen, out, outlen))
 
 struct ssh2_userkey {
     ssh_key *key;                      /* the key itself */
@@ -658,6 +723,7 @@ extern const struct ssh2_macalg ssh_hmac_sha1_buggy;
 extern const struct ssh2_macalg ssh_hmac_sha1_96;
 extern const struct ssh2_macalg ssh_hmac_sha1_96_buggy;
 extern const struct ssh2_macalg ssh_hmac_sha256;
+extern const struct ssh_compression_alg ssh_zlib;
 
 typedef struct AESContext AESContext;
 AESContext *aes_make_context(void);
@@ -712,22 +778,6 @@ void random_add_noise(void *noise, int length);
 void random_add_heavynoise(void *noise, int length);
 
 void logevent(Frontend *, const char *);
-
-struct PortForwarding;
-
-/* Allocate and register a new channel for port forwarding */
-struct ssh_channel *ssh_send_port_open(Ssh ssh, const char *hostname, int port,
-                                       const char *org, Channel *chan);
-
-/* Exports from portfwd.c */
-extern char *pfd_connect(Channel **chan_ret, char *hostname, int port,
-                         struct ssh_channel *c, Conf *conf, int addressfamily);
-struct PortListener;
-/* desthost == NULL indicates dynamic (SOCKS) port forwarding */
-extern char *pfl_listen(char *desthost, int destport, char *srcaddr,
-                        int port, Ssh ssh, Conf *conf,
-                        struct PortListener **pl, int address_family);
-extern void pfl_terminate(struct PortListener *);
 
 /* Exports from x11fwd.c */
 enum {
@@ -795,7 +845,7 @@ extern struct X11Display *x11_setup_display(const char *display, Conf *);
 void x11_free_display(struct X11Display *disp);
 struct X11FakeAuth *x11_invent_fake_auth(tree234 *t, int authtype);
 void x11_free_fake_auth(struct X11FakeAuth *auth);
-Channel *x11_new_channel(tree234 *authtree, struct ssh_channel *c,
+Channel *x11_new_channel(tree234 *authtree, SshChannel *c,
                          const char *peeraddr, int peerport,
                          int connection_sharing_possible);
 char *x11_display(const char *display);
@@ -827,7 +877,7 @@ void x11_get_auth_from_authfile(struct X11Display *display,
 int x11_identify_auth_proto(ptrlen protoname);
 void *x11_dehexify(ptrlen hex, int *outlen);
 
-Channel *agentf_new(struct ssh_channel *c);
+Channel *agentf_new(SshChannel *c);
 
 Bignum copybn(Bignum b);
 Bignum bn_power_2(int n);
@@ -873,12 +923,13 @@ void diagbn(char *prefix, Bignum md);
 #endif
 
 int dh_is_gex(const struct ssh_kex *kex);
-void *dh_setup_group(const struct ssh_kex *kex);
-void *dh_setup_gex(Bignum pval, Bignum gval);
-void dh_cleanup(void *);
-Bignum dh_create_e(void *, int nbits);
-const char *dh_validate_f(void *handle, Bignum f);
-Bignum dh_find_K(void *, Bignum f);
+struct dh_ctx;
+struct dh_ctx *dh_setup_group(const struct ssh_kex *kex);
+struct dh_ctx *dh_setup_gex(Bignum pval, Bignum gval);
+void dh_cleanup(struct dh_ctx *);
+Bignum dh_create_e(struct dh_ctx *, int nbits);
+const char *dh_validate_f(struct dh_ctx *, Bignum f);
+Bignum dh_find_K(struct dh_ctx *, Bignum f);
 
 int rsa_ssh1_encrypted(const Filename *filename, char **comment);
 int rsa_ssh1_loadpub(const Filename *filename, BinarySink *bs,
@@ -1014,19 +1065,6 @@ int ec_edgenerate(struct ec_key *key, int bits, progfn_t pfn,
 Bignum primegen(int bits, int modulus, int residue, Bignum factor,
 		int phase, progfn_t pfn, void *pfnparam, unsigned firstbits);
 void invent_firstbits(unsigned *one, unsigned *two);
-
-
-/*
- * zlib compression.
- */
-void *zlib_compress_init(void);
-void zlib_compress_cleanup(void *);
-void *zlib_decompress_init(void);
-void zlib_decompress_cleanup(void *);
-void zlib_compress_block(void *, unsigned char *block, int len,
-                         unsigned char **outblock, int *outlen, int minlen);
-int zlib_decompress_block(void *, unsigned char *block, int len,
-			  unsigned char **outblock, int *outlen);
 
 /*
  * Connection-sharing API provided by platforms. This function must

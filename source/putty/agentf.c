@@ -12,7 +12,7 @@
 #include "sshchan.h"
 
 typedef struct agentf {
-    struct ssh_channel *c;
+    SshChannel *c;
     bufchain inbuffer;
     agent_pending_query *pending;
     int input_wanted;
@@ -158,7 +158,7 @@ static const struct ChannelVtable agentf_channelvt = {
     chan_no_eager_close,
 };
 
-Channel *agentf_new(struct ssh_channel *c)
+Channel *agentf_new(SshChannel *c)
 {
     agentf *af = snew(agentf);
     af->c = c;

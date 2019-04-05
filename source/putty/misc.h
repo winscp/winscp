@@ -87,6 +87,12 @@ int validate_manual_hostkey(char *key);
 
 struct tm ltime(void);
 
+/*
+ * Special form of strcmp which can cope with NULL inputs. NULL is
+ * defined to sort before even the empty string.
+ */
+int nullstrcmp(const char *a, const char *b);
+
 ptrlen make_ptrlen(const void *ptr, size_t len);
 int ptrlen_eq_string(ptrlen pl, const char *str);
 char *mkstr(ptrlen pl);

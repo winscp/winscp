@@ -312,7 +312,7 @@ static void hmacmd5_genresult(ssh2_mac *mac, unsigned char *hmac)
 }
 
 void hmacmd5_do_hmac(struct hmacmd5_context *ctx,
-                     unsigned char const *blk, int len, unsigned char *hmac)
+                     const void *blk, int len, unsigned char *hmac)
 {
     ssh2_mac_start(&ctx->mac);
     put_data(&ctx->mac, blk, len);

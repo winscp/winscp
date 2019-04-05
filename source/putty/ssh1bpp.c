@@ -21,7 +21,8 @@ struct ssh1_bpp_state {
 
     struct crcda_ctx *crcda_ctx;
 
-    void *compctx, *decompctx;
+    ssh_compressor *compctx;
+    ssh_decompressor *decompctx;
 
     BinaryPacketProtocol bpp;
 };
@@ -52,9 +53,9 @@ static void ssh1_bpp_free(BinaryPacketProtocol *bpp)
     if (s->cipher)
         ssh1_cipher_free(s->cipher);
     if (s->compctx)
-        zlib_compress_cleanup(s->compctx);
+        ssh_compressor_free(s->compctx);
     if (s->decompctx)
-        zlib_decompress_cleanup(s->decompctx);
+        ssh_decompressor_free(s->decompctx);
     if (s->crcda_ctx)
         crcda_free_context(s->crcda_ctx);
     if (s->pktin)
@@ -90,8 +91,8 @@ void ssh1_bpp_start_compression(BinaryPacketProtocol *bpp)
     assert(!s->compctx);
     assert(!s->decompctx);
 
-    s->compctx = zlib_compress_init();
-    s->decompctx = zlib_decompress_init();
+    s->compctx = ssh_compressor_new(&ssh_zlib);
+    s->decompctx = ssh_decompressor_new(&ssh_zlib);
 }
 
 static void ssh1_bpp_handle_input(BinaryPacketProtocol *bpp)
@@ -157,9 +158,9 @@ static void ssh1_bpp_handle_input(BinaryPacketProtocol *bpp)
         if (s->decompctx) {
             unsigned char *decompblk;
             int decomplen;
-            if (!zlib_decompress_block(s->decompctx,
-                                       s->data + s->pad, s->length + 1,
-                                       &decompblk, &decomplen)) {
+            if (!ssh_decompressor_decompress(
+                    s->decompctx, s->data + s->pad, s->length + 1,
+                    &decompblk, &decomplen)) {
                 s->bpp.error = dupprintf(
                     "Zlib decompression encountered invalid data");
                 crStopV;
@@ -248,8 +249,8 @@ static void ssh1_bpp_format_packet(BinaryPacketProtocol *bpp, PktOut *pkt)
     if (s->compctx) {
         unsigned char *compblk;
         int complen;
-        zlib_compress_block(s->compctx, pkt->data + 12, pkt->length - 12,
-                            &compblk, &complen, 0);
+        ssh_compressor_compress(s->compctx, pkt->data + 12, pkt->length - 12,
+                                &compblk, &complen, 0);
         /* Replace the uncompressed packet data with the compressed
          * version. */
         pkt->length = 12;

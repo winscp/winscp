@@ -74,7 +74,11 @@ static void unmungestr(const char *in, char *out, int outlen)
     return;
 }
 
-void *open_settings_w(const char *sessionname, char **errmsg)
+struct settings_w {
+    HKEY sesskey;
+};
+
+settings_w *open_settings_w(const char *sessionname, char **errmsg)
 {
     HKEY subkey1, sesskey;
     int ret;
@@ -104,29 +108,37 @@ void *open_settings_w(const char *sessionname, char **errmsg)
 	return NULL;
     }
     sfree(p);
-    return (void *) sesskey;
+
+    settings_w *toret = snew(settings_w);
+    toret->sesskey = sesskey;
+    return toret;
 }
 
-void write_setting_s(void *handle, const char *key, const char *value)
+void write_setting_s(settings_w *handle, const char *key, const char *value)
 {
     if (handle)
-	RegSetValueEx((HKEY) handle, key, 0, REG_SZ, (CONST BYTE *)value,
+        RegSetValueEx(handle->sesskey, key, 0, REG_SZ, (CONST BYTE *)value,
 		      1 + strlen(value));
 }
 
-void write_setting_i(void *handle, const char *key, int value)
+void write_setting_i(settings_w *handle, const char *key, int value)
 {
     if (handle)
-	RegSetValueEx((HKEY) handle, key, 0, REG_DWORD,
+        RegSetValueEx(handle->sesskey, key, 0, REG_DWORD,
 		      (CONST BYTE *) &value, sizeof(value));
 }
 
-void close_settings_w(void *handle)
+void close_settings_w(settings_w *handle)
 {
-    RegCloseKey((HKEY) handle);
+    RegCloseKey(handle->sesskey);
+    sfree(handle);
 }
 
-void *open_settings_r(const char *sessionname)
+struct settings_r {
+    HKEY sesskey;
+};
+
+settings_r *open_settings_r(const char *sessionname)
 {
     HKEY subkey1, sesskey;
     char *p;
@@ -148,10 +160,12 @@ void *open_settings_r(const char *sessionname)
 
     sfree(p);
 
-    return (void *) sesskey;
+    settings_r *toret = snew(settings_r);
+    toret->sesskey = sesskey;
+    return toret;
 }
 
-char *read_setting_s(void *handle, const char *key)
+char *read_setting_s(settings_r *handle, const char *key)
 {
     DWORD type, allocsize, size;
     char *ret;
@@ -160,14 +174,14 @@ char *read_setting_s(void *handle, const char *key)
 	return NULL;
 
     /* Find out the type and size of the data. */
-    if (RegQueryValueEx((HKEY) handle, key, 0,
+    if (RegQueryValueEx(handle->sesskey, key, 0,
 			&type, NULL, &size) != ERROR_SUCCESS ||
 	type != REG_SZ)
 	return NULL;
 
     allocsize = size+1;         /* allow for an extra NUL if needed */
     ret = snewn(allocsize, char);
-    if (RegQueryValueEx((HKEY) handle, key, 0,
+    if (RegQueryValueEx(handle->sesskey, key, 0,
 			&type, (BYTE *)ret, &size) != ERROR_SUCCESS ||
 	type != REG_SZ) {
         sfree(ret);
@@ -180,13 +194,13 @@ char *read_setting_s(void *handle, const char *key)
     return ret;
 }
 
-int read_setting_i(void *handle, const char *key, int defvalue)
+int read_setting_i(settings_r *handle, const char *key, int defvalue)
 {
     DWORD type, val, size;
     size = sizeof(val);
 
     if (!handle ||
-	RegQueryValueEx((HKEY) handle, key, 0, &type,
+        RegQueryValueEx(handle->sesskey, key, 0, &type,
 			(BYTE *) &val, &size) != ERROR_SUCCESS ||
 	size != sizeof(val) || type != REG_DWORD)
 	return defvalue;
@@ -194,7 +208,7 @@ int read_setting_i(void *handle, const char *key, int defvalue)
 	return val;
 }
 
-FontSpec *read_setting_fontspec(void *handle, const char *name)
+FontSpec *read_setting_fontspec(settings_r *handle, const char *name)
 {
     char *settingname;
     char *fontname;
@@ -234,7 +248,8 @@ FontSpec *read_setting_fontspec(void *handle, const char *name)
     return ret;
 }
 
-void write_setting_fontspec(void *handle, const char *name, FontSpec *font)
+void write_setting_fontspec(settings_w *handle,
+                            const char *name, FontSpec *font)
 {
     char *settingname;
 
@@ -250,7 +265,7 @@ void write_setting_fontspec(void *handle, const char *name, FontSpec *font)
     sfree(settingname);
 }
 
-Filename *read_setting_filename(void *handle, const char *name)
+Filename *read_setting_filename(settings_r *handle, const char *name)
 {
     char *tmp = read_setting_s(handle, name);
     if (tmp) {
@@ -261,14 +276,16 @@ Filename *read_setting_filename(void *handle, const char *name)
 	return NULL;
 }
 
-void write_setting_filename(void *handle, const char *name, Filename *result)
+void write_setting_filename(settings_w *handle,
+                            const char *name, Filename *result)
 {
     write_setting_s(handle, name, result->path);
 }
 
-void close_settings_r(void *handle)
+void close_settings_r(settings_r *handle)
 {
-    RegCloseKey((HKEY) handle);
+    RegCloseKey(handle->sesskey);
+    sfree(handle);
 }
 
 void del_settings(const char *sessionname)
@@ -289,20 +306,20 @@ void del_settings(const char *sessionname)
     remove_session_from_jumplist(sessionname);
 }
 
-struct enumsettings {
+struct settings_e {
     HKEY key;
     int i;
 };
 
-void *enum_settings_start(void)
+settings_e *enum_settings_start(void)
 {
-    struct enumsettings *ret;
+    settings_e *ret;
     HKEY key;
 
     if (RegOpenKey(HKEY_CURRENT_USER, puttystr, &key) != ERROR_SUCCESS)
 	return NULL;
 
-    ret = snew(struct enumsettings);
+    ret = snew(settings_e);
     if (ret) {
 	ret->key = key;
 	ret->i = 0;
@@ -311,9 +328,8 @@ void *enum_settings_start(void)
     return ret;
 }
 
-char *enum_settings_next(void *handle, char *buffer, int buflen)
+char *enum_settings_next(settings_e *e, char *buffer, int buflen)
 {
-    struct enumsettings *e = (struct enumsettings *) handle;
     char *otherbuf;
     otherbuf = snewn(3 * buflen, char);
     if (RegEnumKey(e->key, e->i++, otherbuf, 3 * buflen) == ERROR_SUCCESS) {
@@ -326,9 +342,8 @@ char *enum_settings_next(void *handle, char *buffer, int buflen)
     }
 }
 
-void enum_settings_finish(void *handle)
+void enum_settings_finish(settings_e *e)
 {
-    struct enumsettings *e = (struct enumsettings *) handle;
     RegCloseKey(e->key);
     sfree(e);
 }
@@ -656,7 +671,7 @@ static int transform_jumplist_registry
     (const char *add, const char *rem, char **out)
 {
     int ret;
-    HKEY pjumplist_key, psettings_tmp;
+    HKEY pjumplist_key;
     DWORD type;
     DWORD value_length;
     char *old_value, *new_value;
@@ -741,7 +756,7 @@ static int transform_jumplist_registry
         while (*piterator_old != '\0') {
             if (!rem || strcmp(piterator_old, rem) != 0) {
                 /* Check if this is a valid session, otherwise don't add. */
-                psettings_tmp = open_settings_r(piterator_old);
+                settings_r *psettings_tmp = open_settings_r(piterator_old);
                 if (psettings_tmp != NULL) {
                     close_settings_r(psettings_tmp);
                     strcpy(piterator_new, piterator_old);

@@ -1181,6 +1181,17 @@ int smemeq(const void *av, const void *bv, size_t len)
     return (0x100 - val) >> 8;
 }
 
+int nullstrcmp(const char *a, const char *b)
+{
+    if (a == NULL && b == NULL)
+        return 0;
+    if (a == NULL)
+        return -1;
+    if (b == NULL)
+        return +1;
+    return strcmp(a, b);
+}
+
 ptrlen make_ptrlen(const void *ptr, size_t len)
 {
     ptrlen pl;

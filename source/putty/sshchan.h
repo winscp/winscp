@@ -40,7 +40,7 @@ struct Channel {
 #define chan_send_eof(ch) ((ch)->vt->send_eof(ch))
 #define chan_set_input_wanted(ch, wanted) \
     ((ch)->vt->set_input_wanted(ch, wanted))
-#define chan_log_close_msg(ch) ((ch)->vt->send_eof(ch))
+#define chan_log_close_msg(ch) ((ch)->vt->log_close_msg(ch))
 #define chan_want_close(ch, leof, reof) ((ch)->vt->want_close(ch, leof, reof))
 
 /*
@@ -55,5 +55,39 @@ void chan_remotely_opened_failure(Channel *chan, const char *errtext);
 /* want_close for any channel that wants the default behaviour of not
  * closing until both directions have had an EOF */
 int chan_no_eager_close(Channel *, int, int);
+
+/* ----------------------------------------------------------------------
+ * This structure is owned by an SSH connection layer, and identifies
+ * the connection layer's end of the channel, for the Channel
+ * implementation to talk back to.
+ */
+
+struct SshChannelVtable {
+    int (*write)(SshChannel *c, const void *, int);
+    void (*write_eof)(SshChannel *c);
+    void (*unclean_close)(SshChannel *c, const char *err);
+    void (*unthrottle)(SshChannel *c, int bufsize);
+    Conf *(*get_conf)(SshChannel *c);
+    void (*window_override_removed)(SshChannel *c);
+    void (*x11_sharing_handover)(SshChannel *c,
+                                 ssh_sharing_connstate *share_cs,
+                                 share_channel *share_chan,
+                                 const char *peer_addr, int peer_port,
+                                 int endian, int protomajor, int protominor,
+                                 const void *initial_data, int initial_len);
+};
+
+struct SshChannel {
+    const struct SshChannelVtable *vt;
+};
+
+#define sshfwd_write(c, buf, len) ((c)->vt->write(c, buf, len))
+#define sshfwd_write_eof(c) ((c)->vt->write_eof(c))
+#define sshfwd_unclean_close(c, err) ((c)->vt->unclean_close(c, err))
+#define sshfwd_unthrottle(c, bufsize) ((c)->vt->unthrottle(c, bufsize))
+#define sshfwd_get_conf(c) ((c)->vt->get_conf(c))
+#define sshfwd_window_override_removed(c) ((c)->vt->window_override_removed(c))
+#define sshfwd_x11_sharing_handover(c, cs, ch, pa, pp, e, pmaj, pmin, d, l) \
+    ((c)->vt->x11_sharing_handover(c, cs, ch, pa, pp, e, pmaj, pmin, d, l))
 
 #endif /* PUTTY_SSHCHAN_H */

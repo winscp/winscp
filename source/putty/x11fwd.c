@@ -39,7 +39,7 @@ typedef struct X11Connection {
     int no_data_sent_to_x_client;
     char *peer_addr;
     int peer_port;
-    struct ssh_channel *c;        /* channel structure held by ssh.c */
+    SshChannel *c;               /* channel structure held by SSH backend */
     Socket s;
 
     const Plug_vtable *plugvt;
@@ -728,7 +728,7 @@ static const struct ChannelVtable X11Connection_channelvt = {
  * Called to set up the X11Connection structure, though this does not
  * yet connect to an actual server.
  */
-Channel *x11_new_channel(tree234 *authtree, struct ssh_channel *c,
+Channel *x11_new_channel(tree234 *authtree, SshChannel *c,
                          const char *peeraddr, int peerport,
                          int connection_sharing_possible)
 {

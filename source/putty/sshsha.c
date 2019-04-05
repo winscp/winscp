@@ -360,7 +360,8 @@ static void hmacsha1_genresult(ssh2_mac *mac, unsigned char *hmac)
     smemclr(intermediate, sizeof(intermediate));
 }
 
-void hmac_sha1_simple(void *key, int keylen, void *data, int datalen,
+void hmac_sha1_simple(const void *key, int keylen,
+                      const void *data, int datalen,
 		      unsigned char *output) {
     SHA_State states[2];
     unsigned char intermediate[20];
