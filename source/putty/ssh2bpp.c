@@ -676,12 +676,12 @@ static void ssh2_bpp_format_packet(BinaryPacketProtocol *bpp, PktOut *pkt)
 }
 
 #ifdef MPEXT
-const struct ssh2_cipher * ssh2_bpp_get_cscipher(BinaryPacketProtocol *bpp)
+const ssh2_cipher * ssh2_bpp_get_cscipher(BinaryPacketProtocol *bpp)
 {
     return FROMFIELD(bpp, struct ssh2_bpp_state, bpp)->out.cipher;
 }
 
-const struct ssh2_cipher * ssh2_bpp_get_sccipher(BinaryPacketProtocol *bpp)
+const ssh2_cipher * ssh2_bpp_get_sccipher(BinaryPacketProtocol *bpp)
 {
     return FROMFIELD(bpp, struct ssh2_bpp_state, bpp)->in.cipher;
 }

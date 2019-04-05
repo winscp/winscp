@@ -105,13 +105,13 @@ inline void __fastcall TSecureShell::UpdateSessionInfo()
 
     if (FSshVersion == 1)
     {
-      FSessionInfo.CSCipher = CipherNames[FuncToSsh1Cipher(get_cipher(FBackendHandle))];
-      FSessionInfo.SCCipher = CipherNames[FuncToSsh1Cipher(get_cipher(FBackendHandle))];
+      FSessionInfo.CSCipher = GetCipher1Name(get_cipher(FBackendHandle));
+      FSessionInfo.SCCipher = FSessionInfo.CSCipher;
     }
     else
     {
-      FSessionInfo.CSCipher = CipherNames[FuncToSsh2Cipher(get_cscipher(FBackendHandle))];
-      FSessionInfo.SCCipher = CipherNames[FuncToSsh2Cipher(get_sccipher(FBackendHandle))];
+      FSessionInfo.CSCipher = GetCipher2Name(get_cscipher(FBackendHandle));
+      FSessionInfo.SCCipher = GetCipher2Name(get_sccipher(FBackendHandle));
     }
 
     FSessionInfoValid = true;
@@ -2094,49 +2094,6 @@ UnicodeString __fastcall TSecureShell::FuncToCompression(
   {
     return (ssh_compress *)Compress == &ssh_zlib ? L"ZLib" : L"";
   }
-}
-//---------------------------------------------------------------------------
-TCipher __fastcall TSecureShell::FuncToSsh1Cipher(const void * Cipher)
-{
-  const ssh_cipher *CipherFuncs[] =
-    {&ssh_3des, &ssh_des, &ssh_blowfish_ssh1};
-  const TCipher TCiphers[] = {cip3DES, cipDES, cipBlowfish};
-  DebugAssert(LENOF(CipherFuncs) == LENOF(TCiphers));
-  TCipher Result = cipWarn;
-
-  for (unsigned int Index = 0; Index < LENOF(TCiphers); Index++)
-  {
-    if ((ssh_cipher *)Cipher == CipherFuncs[Index])
-    {
-      Result = TCiphers[Index];
-    }
-  }
-
-  DebugAssert(Result != cipWarn);
-  return Result;
-}
-//---------------------------------------------------------------------------
-TCipher __fastcall TSecureShell::FuncToSsh2Cipher(const void * Cipher)
-{
-  const ssh2_ciphers *CipherFuncs[] =
-    {&ssh2_3des, &ssh2_des, &ssh2_aes, &ssh2_blowfish, &ssh2_arcfour, &ssh2_ccp};
-  const TCipher TCiphers[] = {cip3DES, cipDES, cipAES, cipBlowfish, cipArcfour, cipChaCha20};
-  DebugAssert(LENOF(CipherFuncs) == LENOF(TCiphers));
-  TCipher Result = cipWarn;
-
-  for (unsigned int C = 0; C < LENOF(TCiphers); C++)
-  {
-    for (int F = 0; F < CipherFuncs[C]->nciphers; F++)
-    {
-      if ((ssh2_cipher *)Cipher == CipherFuncs[C]->list[F])
-      {
-        Result = TCiphers[C];
-      }
-    }
-  }
-
-  DebugAssert(Result != cipWarn);
-  return Result;
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TSecureShell::FormatKeyStr(UnicodeString KeyStr)

@@ -219,6 +219,9 @@
 		<CppCompile Include="putty\sshgssc.c">
 			<BuildOrder>38</BuildOrder>
 		</CppCompile>
+		<CppCompile Include="putty\sshmac.c">
+			<BuildOrder>61</BuildOrder>
+		</CppCompile>
 		<CppCompile Include="putty\sshmd5.c">
 			<BuildOrder>53</BuildOrder>
 			<BuildOrder>31</BuildOrder>

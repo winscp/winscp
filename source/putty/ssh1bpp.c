@@ -285,7 +285,7 @@ int ssh1_bpp_get_compressing(BinaryPacketProtocol *bpp)
     return FROMFIELD(bpp, struct ssh1_bpp_state, bpp)->compctx != NULL;
 }
 
-const struct ssh_cipher * ssh1_bpp_get_cipher(BinaryPacketProtocol *bpp)
+const ssh1_cipher * ssh1_bpp_get_cipher(BinaryPacketProtocol *bpp)
 {
     return FROMFIELD(bpp, struct ssh1_bpp_state, bpp)->cipher;
 }

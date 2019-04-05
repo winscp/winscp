@@ -73,8 +73,6 @@ private:
   int FSendBuf;
   std::auto_ptr<callback_set> FCallbackSet;
 
-  static TCipher __fastcall FuncToSsh1Cipher(const void * Cipher);
-  static TCipher __fastcall FuncToSsh2Cipher(const void * Cipher);
   UnicodeString __fastcall FuncToCompression(int SshVersion, const void * Compress) const;
   void __fastcall Init();
   void __fastcall SetActive(bool value);

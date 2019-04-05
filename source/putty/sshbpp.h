@@ -51,10 +51,10 @@ void ssh2_bpp_new_incoming_crypto(
 BinaryPacketProtocol *ssh2_bare_bpp_new(void);
 
 #ifdef MPEXT
-const struct ssh_cipher * ssh1_bpp_get_cipher(BinaryPacketProtocol *bpp);
+const ssh1_cipher * ssh1_bpp_get_cipher(BinaryPacketProtocol *bpp);
 int ssh1_bpp_get_compressing(BinaryPacketProtocol *bpp);
-const struct ssh2_cipher * ssh2_bpp_get_cscipher(BinaryPacketProtocol *bpp);
-const struct ssh2_cipher * ssh2_bpp_get_sccipher(BinaryPacketProtocol *bpp);
+const ssh2_cipher * ssh2_bpp_get_cscipher(BinaryPacketProtocol *bpp);
+const ssh2_cipher * ssh2_bpp_get_sccipher(BinaryPacketProtocol *bpp);
 const struct ssh_compress * ssh2_bpp_get_cscomp(BinaryPacketProtocol *bpp);
 const struct ssh_compress * ssh2_bpp_get_sccomp(BinaryPacketProtocol *bpp);
 #endif

@@ -11498,19 +11498,19 @@ int get_ssh1_compressing(Backend * be)
   return ssh1_bpp_get_compressing(ssh->bpp);
 }
 
-const struct ssh_cipher * get_cipher(Backend * be)
+const ssh1_cipher * get_cipher(Backend * be)
 {
   Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
   return ssh1_bpp_get_cipher(ssh->bpp);
 }
 
-const struct ssh2_cipher * get_cscipher(Backend * be)
+const ssh2_cipher * get_cscipher(Backend * be)
 {
   Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
   return ssh2_bpp_get_cscipher(ssh->bpp);
 }
 
-const struct ssh2_cipher * get_sccipher(Backend * be)
+const ssh2_cipher * get_sccipher(Backend * be)
 {
   Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
   return ssh2_bpp_get_sccipher(ssh->bpp);
@@ -11568,7 +11568,7 @@ void get_hostkey_algs(int * count, cp_ssh_keyalg * SignKeys)
   }
 }
 
-void get_macs(int * count, const struct ssh_mac *** amacs)
+void get_macs(int * count, const struct ssh2_macalg *** amacs)
 {
   *amacs = macs;
   *count = lenof(macs);

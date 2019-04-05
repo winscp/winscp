@@ -5,14 +5,19 @@
 
 // from ssh.c
 
+struct ssh1_cipheralg;
+typedef const struct ssh1_cipheralg *ssh1_cipher;
+struct ssh2_cipheralg;
+typedef const struct ssh2_cipheralg *ssh2_cipher;
+
 int is_ssh(Plug plug);
 void call_ssh_timer(Backend * be);
 int get_ssh_version(Backend * be);
 void * get_ssh_frontend(Plug plug);
 int get_ssh1_compressing(Backend * be);
-const struct ssh_cipher * get_cipher(Backend * be);
-const struct ssh2_cipher * get_cscipher(Backend * be);
-const struct ssh2_cipher * get_sccipher(Backend * be);
+const ssh1_cipher * get_cipher(Backend * be);
+const ssh2_cipher * get_cscipher(Backend * be);
+const ssh2_cipher * get_sccipher(Backend * be);
 const struct ssh_compress * get_cscomp(Backend * be);
 const struct ssh_compress * get_sccomp(Backend * be);
 int get_ssh_state_closed(Backend * be);
@@ -22,7 +27,7 @@ const unsigned int * ssh2_remwindow(Backend * be);
 void md5checksum(const char * buffer, int len, unsigned char output[16]);
 typedef const struct ssh_keyalg * cp_ssh_keyalg;
 void get_hostkey_algs(int * count, cp_ssh_keyalg * SignKeys);
-void get_macs(int * count, const struct ssh_mac *** amacs);
+void get_macs(int * count, const struct ssh2_macalg *** amacs);
 
 // from wingss.c
 
@@ -63,8 +68,6 @@ extern const struct ssh_compress ssh_zlib;
 
 // from sshaes.c
 
-void * call_aes_make_context();
-void call_aes_free_context(void * handle);
 void call_aes_setup(void * ctx, unsigned char * key, int keylen);
 void call_aes_encrypt(void * ctx, unsigned int * block);
 void call_aes_decrypt(void * ctx, unsigned int * block);

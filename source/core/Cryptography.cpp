@@ -189,7 +189,7 @@ void aes_encrypt_block(const unsigned char in_blk[], unsigned char out_blk[], vo
 typedef struct
 {   unsigned char   nonce[BLOCK_SIZE];          /* the CTR nonce          */
     unsigned char   encr_bfr[BLOCK_SIZE];       /* encrypt buffer         */
-    void *          encr_ctx;                   /* encryption context     */
+    AESContext *    encr_ctx;                   /* encryption context     */
     hmac_ctx        auth_ctx;                   /* authentication context */
     unsigned int    encr_pos;                   /* block position (enc)   */
     unsigned int    pwd_len;                    /* password length        */
@@ -325,7 +325,7 @@ static void fcrypt_init(
     memset(cx->nonce, 0, BLOCK_SIZE * sizeof(unsigned char));
 
     /* initialise for encryption using key 1            */
-    cx->encr_ctx = call_aes_make_context();
+    cx->encr_ctx = aes_make_context();
     aes_set_encrypt_key(kbuf, KEY_LENGTH(mode), cx->encr_ctx);
 
     /* initialise for authentication using key 2        */
@@ -354,7 +354,7 @@ static void fcrypt_decrypt(unsigned char data[], unsigned int data_len, fcrypt_c
 static int fcrypt_end(unsigned char mac[], fcrypt_ctx cx[1])
 {
     hmac_sha1_end(mac, MAC_LENGTH(cx->mode), &cx->auth_ctx);
-    call_aes_free_context(cx->encr_ctx);
+    aes_free_context(cx->encr_ctx);
     return MAC_LENGTH(cx->mode);    /* return MAC length in bytes   */
 }
 //---------------------------------------------------------------------------
@@ -648,7 +648,7 @@ TEncryption::TEncryption(const RawByteString & Key)
   if (!FKey.IsEmpty())
   {
     DebugAssert(FKey.Length() == KEY_LENGTH(PASSWORD_MANAGER_AES_MODE));
-    FContext = call_aes_make_context();
+    FContext = aes_make_context();
     aes_set_encrypt_key(reinterpret_cast<unsigned char *>(FKey.c_str()), FKey.Length(), FContext);
   }
   else
@@ -661,7 +661,7 @@ TEncryption::~TEncryption()
 {
   if (FContext != NULL)
   {
-    call_aes_free_context(FContext);
+    aes_free_context(FContext);
   }
   Shred(FKey);
   if ((FInputHeader.Length() > 0) && (FInputHeader.Length() < GetOverhead()))

@@ -996,7 +996,7 @@ TStrings * SshHostKeyList()
 TStrings * SshMacList()
 {
   std::unique_ptr<TStrings> Result(new TStringList());
-  const struct ssh_mac ** Macs = NULL;
+  const struct ssh2_macalg ** Macs = NULL;
   int Count = 0;
   get_macs(&Count, &Macs);
 
@@ -1006,6 +1006,16 @@ TStrings * SshMacList()
     Result->Add(Name);
   }
   return Result.release();
+}
+//---------------------------------------------------------------------------
+UnicodeString GetCipher1Name(const ssh1_cipher * Cipher)
+{
+  return UnicodeString(UTF8String((*Cipher)->text_name));
+}
+//---------------------------------------------------------------------------
+UnicodeString GetCipher2Name(const ssh2_cipher * Cipher)
+{
+  return UnicodeString(UTF8String((*Cipher)->text_name));
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

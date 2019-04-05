@@ -1773,16 +1773,6 @@ INLINE static int supports_aes_ni()
 
 #include "puttyexp.h"
 
-void * call_aes_make_context()
-{
-  return aes_make_context();
-}
-
-void call_aes_free_context(void * handle)
-{
-  aes_free_context(handle);
-}
-
 void call_aes_setup(void * ctx, unsigned char * key, int keylen)
 {
   aes_setup((AESContext *)ctx, key, keylen);
