@@ -124,9 +124,11 @@ settings_w *open_settings_w(const char *sessionname, char **errmsg)
     }
     sfree(p);
 
+    { // WINSCP
     settings_w *toret = snew(settings_w);
     toret->sesskey = sesskey;
     return toret;
+    } // WINSCP
 }
 
 void write_setting_s(settings_w *handle, const char *key, const char *value)
@@ -175,9 +177,11 @@ settings_r *open_settings_r(const char *sessionname)
 
     sfree(p);
 
+    { // WINSCP
     settings_r *toret = snew(settings_r);
     toret->sesskey = sesskey;
     return toret;
+    } // WINSCP
 }
 
 char *read_setting_s(settings_r *handle, const char *key)

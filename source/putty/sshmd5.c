@@ -319,7 +319,7 @@ void hmacmd5_do_hmac(struct hmacmd5_context *ctx,
 {
     ssh2_mac_start(&ctx->mac);
     put_data(&ctx->mac, blk, len);
-    return ssh2_mac_genresult(&ctx->mac, hmac);
+    /*WINSCP return*/ ssh2_mac_genresult(&ctx->mac, hmac);
 }
 
 const struct ssh2_macalg ssh_hmac_md5 = {

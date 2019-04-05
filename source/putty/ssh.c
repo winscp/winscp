@@ -3742,10 +3742,12 @@ static void ssh_rportfwd_succfail(Ssh ssh, PktIn *pktin, void *ctx)
 	logeventf(ssh, "Remote port forwarding from %s refused",
                   rpf->log_description);
 
+        { // WINSCP
         struct ssh_rportfwd *realpf = del234(ssh->rportfwds, rpf);
         assert(realpf == rpf);
         portfwdmgr_close(ssh->portfwdmgr, rpf->pfr);
         free_rportfwd(rpf);
+        } // WINSCP
     }
 }
 
@@ -3809,6 +3811,7 @@ static struct ssh_rportfwd *(ssh_rportfwd_alloc)(
             ssh->rportfwds = newtree234(ssh_rportcmp_ssh2);
     }
 
+    { // WINSCP
     struct ssh_rportfwd *rpf = snew(struct ssh_rportfwd);
 
     rpf->shost = dupstr(shost);
@@ -3853,6 +3856,7 @@ static struct ssh_rportfwd *(ssh_rportfwd_alloc)(
     }
 
     return rpf;
+    } // WINSCP
 }
 
 static void (ssh_rportfwd_remove)(
@@ -3880,9 +3884,11 @@ static void (ssh_rportfwd_remove)(
         ssh2_pkt_send(ssh, pktout);
     }
 
+    { // WINSCP
     struct ssh_rportfwd *realpf = del234(ssh->rportfwds, rpf);
     assert(realpf == rpf);
     free_rportfwd(rpf);
+    } // WINSCP
 }
 
 static void ssh_sharing_global_request_response(Ssh ssh, PktIn *pktin,
@@ -11190,12 +11196,6 @@ void * get_ssh_frontend(Plug plug)
   return FROMFIELD(plug, struct ssh_tag, plugvt)->frontend;
 }
 
-int get_ssh1_compressing(Backend * be)
-{
-  Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
-  return ssh1_bpp_get_compressing(ssh->bpp);
-}
-
 const ssh1_cipher * get_cipher(Backend * be)
 {
   Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
@@ -11214,13 +11214,13 @@ const ssh2_cipher * get_sccipher(Backend * be)
   return ssh2_bpp_get_sccipher(ssh->bpp);
 }
 
-const struct ssh_compress * get_cscomp(Backend * be)
+const struct ssh_compressor * get_cscomp(Backend * be)
 {
   Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
   return ssh2_bpp_get_cscomp(ssh->bpp);
 }
 
-const struct ssh_compress * get_sccomp(Backend * be)
+const struct ssh_decompressor * get_sccomp(Backend * be)
 {
   Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
   return ssh2_bpp_get_sccomp(ssh->bpp);

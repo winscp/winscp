@@ -98,20 +98,20 @@ inline void __fastcall TSecureShell::UpdateSessionInfo()
       FORMAT(L"%s-%d", (FSessionInfo.ProtocolBaseName, get_ssh_version(FBackendHandle)));
     FSessionInfo.SecurityProtocolName = FSessionInfo.ProtocolName;
 
-    FSessionInfo.CSCompression =
-      FuncToCompression(FSshVersion, get_cscomp(FBackendHandle));
-    FSessionInfo.SCCompression =
-      FuncToCompression(FSshVersion, get_sccomp(FBackendHandle));
-
     if (FSshVersion == 1)
     {
       FSessionInfo.CSCipher = GetCipher1Name(get_cipher(FBackendHandle));
       FSessionInfo.SCCipher = FSessionInfo.CSCipher;
+      // Retrieval of compression is not implemented for SSH-1
+      FSessionInfo.CSCompression = UnicodeString();
+      FSessionInfo.SCCompression = UnicodeString();
     }
     else
     {
       FSessionInfo.CSCipher = GetCipher2Name(get_cscipher(FBackendHandle));
       FSessionInfo.SCCipher = GetCipher2Name(get_sccipher(FBackendHandle));
+      FSessionInfo.CSCompression = GetCompressorName(get_cscomp(FBackendHandle));
+      FSessionInfo.SCCompression = GetDecompressorName(get_sccomp(FBackendHandle));
     }
 
     FSessionInfoValid = true;
@@ -2079,20 +2079,6 @@ unsigned long __fastcall TSecureShell::MaxPacketSize()
       FMaxPacketSize = ssh2_remmaxpkt(FBackendHandle);
     }
     return *FMaxPacketSize;
-  }
-}
-//---------------------------------------------------------------------------
-UnicodeString __fastcall TSecureShell::FuncToCompression(
-  int SshVersion, const void * Compress) const
-{
-  enum TCompressionType { ctNone, ctZLib };
-  if (SshVersion == 1)
-  {
-    return get_ssh1_compressing(FBackendHandle) ? L"ZLib" : L"";
-  }
-  else
-  {
-    return (ssh_compress *)Compress == &ssh_zlib ? L"ZLib" : L"";
   }
 }
 //---------------------------------------------------------------------------

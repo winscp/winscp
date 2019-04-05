@@ -849,6 +849,7 @@ void portfwdmgr_config(PortFwdManager *mgr, Conf *conf)
                                   address_family == '6' ? ADDRTYPE_IPV6 :
                                   ADDRTYPE_UNSPEC);
 
+            { // WINSCP
             PortFwdRecord *existing = add234(mgr->forwardings, pfr);
             if (existing != pfr) {
                 if (existing->status == DESTROY) {
@@ -868,6 +869,7 @@ void portfwdmgr_config(PortFwdManager *mgr, Conf *conf)
             } else {
                 pfr->status = CREATE;
             }
+            } // WINSCP
         } else {
             sfree(saddr);
             sfree(host);
@@ -1076,18 +1078,18 @@ int is_pfwd(Plug plug)
     ((*plug)->closing == pfl_closing);
 }
 
-Ssh get_pfwd_ssh(Plug plug)
+Frontend * get_pfwd_frontend(Plug plug)
 {
   Ssh ssh = NULL;
   if ((*plug)->closing == pfl_closing)
   {
     struct PortListener *pl = FROMFIELD(plug, struct PortListener, plugvt);
-    ssh = pl->ssh;
+    ssh = pl->cl->frontend;
   }
   else if ((*plug)->closing == pfd_closing)
   {
     struct PortForwarding *pf = FROMFIELD(plug, struct PortForwarding, plugvt);
-    ssh = pf->ssh;
+    ssh = pf->cl->frontend;
   }
   return ssh;
 }

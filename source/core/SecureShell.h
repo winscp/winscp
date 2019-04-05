@@ -73,7 +73,6 @@ private:
   int FSendBuf;
   std::auto_ptr<callback_set> FCallbackSet;
 
-  UnicodeString __fastcall FuncToCompression(int SshVersion, const void * Compress) const;
   void __fastcall Init();
   void __fastcall SetActive(bool value);
   void inline __fastcall CheckConnection(int Message = -1);

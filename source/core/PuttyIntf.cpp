@@ -88,8 +88,7 @@ TSecureShell * GetSecureShell(Plug plug, bool & pfwd)
   void * frontend;
   if (pfwd)
   {
-    Ssh ssh = get_pfwd_ssh(plug);
-    frontend = ssh_get_frontend(ssh);
+    frontend = get_pfwd_frontend(plug);
   }
   else
   {
@@ -1016,6 +1015,26 @@ UnicodeString GetCipher1Name(const ssh1_cipher * Cipher)
 UnicodeString GetCipher2Name(const ssh2_cipher * Cipher)
 {
   return UnicodeString(UTF8String((*Cipher)->text_name));
+}
+//---------------------------------------------------------------------------
+UnicodeString GetCompressorName(const ssh_compressor * Compressor)
+{
+  UnicodeString Result;
+  if (Compressor != NULL)
+  {
+    Result = UnicodeString(UTF8String(Compressor->vt->name));
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString GetDecompressorName(const ssh_decompressor * Decompressor)
+{
+  UnicodeString Result;
+  if (Decompressor != NULL)
+  {
+    Result = UnicodeString(UTF8String(Decompressor->vt->name));
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

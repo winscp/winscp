@@ -687,14 +687,14 @@ const ssh2_cipher * ssh2_bpp_get_sccipher(BinaryPacketProtocol *bpp)
     return FROMFIELD(bpp, struct ssh2_bpp_state, bpp)->in.cipher;
 }
 
-const struct ssh_compress * ssh2_bpp_get_cscomp(BinaryPacketProtocol *bpp)
+const struct ssh_compressor * ssh2_bpp_get_cscomp(BinaryPacketProtocol *bpp)
 {
-    return FROMFIELD(bpp, struct ssh2_bpp_state, bpp)->out.comp;
+    return FROMFIELD(bpp, struct ssh2_bpp_state, bpp)->out_comp;
 }
 
-const struct ssh_compress * ssh2_bpp_get_sccomp(BinaryPacketProtocol *bpp)
+const struct ssh_decompressor * ssh2_bpp_get_sccomp(BinaryPacketProtocol *bpp)
 {
-    return FROMFIELD(bpp, struct ssh2_bpp_state, bpp)->in.comp;
+    return FROMFIELD(bpp, struct ssh2_bpp_state, bpp)->in_decomp;
 }
 
 #endif

@@ -14,12 +14,11 @@ int is_ssh(Plug plug);
 void call_ssh_timer(Backend * be);
 int get_ssh_version(Backend * be);
 void * get_ssh_frontend(Plug plug);
-int get_ssh1_compressing(Backend * be);
 const ssh1_cipher * get_cipher(Backend * be);
 const ssh2_cipher * get_cscipher(Backend * be);
 const ssh2_cipher * get_sccipher(Backend * be);
-const struct ssh_compress * get_cscomp(Backend * be);
-const struct ssh_compress * get_sccomp(Backend * be);
+const struct ssh_compressor * get_cscomp(Backend * be);
+const struct ssh_decompressor * get_sccomp(Backend * be);
 int get_ssh_state_closed(Backend * be);
 int get_ssh_state_session(Backend * be);
 const unsigned int * ssh2_remmaxpkt(Backend * be);
@@ -38,7 +37,7 @@ void get_macs(int * count, const struct ssh2_macalg *** amacs);
 // from portfwd.c
 
 int is_pfwd(Plug plug);
-Ssh get_pfwd_ssh(Plug plug);
+Frontend * get_pfwd_frontend(Plug plug);
 
 // for winstore.c
 
@@ -61,10 +60,6 @@ void putty_unmungestr(const char *in, char *out, int outlen);
 // from winnet.c
 
 void select_result(WPARAM wParam, LPARAM lParam);
-
-// from sshzlib.c
-
-extern const struct ssh_compress ssh_zlib;
 
 // from sshaes.c
 
