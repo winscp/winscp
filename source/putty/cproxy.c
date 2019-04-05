@@ -19,10 +19,10 @@
 static void hmacmd5_chap(const unsigned char *challenge, int challen,
 			 const char *passwd, unsigned char *response)
 {
-    void *hmacmd5_ctx;
+    struct hmacmd5_context *hmacmd5_ctx;
     int pwlen;
 
-    hmacmd5_ctx = hmacmd5_make_context(NULL);
+    hmacmd5_ctx = hmacmd5_make_context();
 
     pwlen = strlen(passwd);
     if (pwlen>64) {

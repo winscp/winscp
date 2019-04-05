@@ -549,7 +549,7 @@ struct ssh2_userkey *openssh_pem_read(const Filename *filename,
             des3_decrypt_pubkey_ossh(keybuf, key->iv,
                                      key->keyblob->u, key->keyblob->len);
         else {
-            void *ctx;
+            AESContext *ctx;
             assert(key->encryption == OP_E_AES);
             ctx = aes_make_context();
             aes128_key(ctx, keybuf);
