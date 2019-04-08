@@ -78,6 +78,7 @@ struct bufchain_granule;
 struct bufchain_tag {
     struct bufchain_granule *head, *tail;
     int buffersize;		       /* current amount of buffered data */
+    IdempotentCallback *ic;
 };
 
 void bufchain_init(bufchain *ch);

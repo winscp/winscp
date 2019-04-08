@@ -79,7 +79,6 @@ static void ssh2_channel_check_close(struct ssh_channel *c);
 static void ssh_channel_close_local(struct ssh_channel *c, char const *reason);
 static void ssh_channel_destroy(struct ssh_channel *c);
 static void ssh_channel_unthrottle(struct ssh_channel *c, int bufsize);
-static void ssh2_msg_something_unimplemented(Ssh ssh, PktIn *pktin);
 static void ssh2_general_packet_processing(Ssh ssh, PktIn *pktin);
 static void ssh1_login_input(Ssh ssh);
 static void ssh2_userauth_input(Ssh ssh);
@@ -480,8 +479,7 @@ struct ssh_tag {
     int incoming_data_seen_eof;
     char *incoming_data_eof_message;
 
-    PktInQueue pq_full;
-    struct IdempotentCallback pq_full_consumer;
+    struct IdempotentCallback incoming_pkt_consumer;
 
     PktInQueue pq_ssh1_login;
     struct IdempotentCallback ssh1_login_icb;
@@ -735,22 +733,7 @@ static int s_write(Ssh ssh, const void *data, int len)
 
 static void ssh_pkt_write(Ssh ssh, PktOut *pkt)
 {
-    if (ssh->version == 2 && ssh->v2_cbc_ignore_workaround &&
-        bufchain_size(&ssh->outgoing_data) != 0) {
-        /*
-         * When using a CBC-mode cipher in SSH-2, it's necessary to
-         * ensure that an attacker can't provide data to be encrypted
-         * using an IV that they know. We ensure this by prefixing
-         * each packet that might contain user data with an
-         * SSH_MSG_IGNORE.
-         */
-	PktOut *ipkt = ssh_bpp_new_pktout(ssh->bpp, SSH2_MSG_IGNORE);
-	put_stringz(ipkt, "");
-        ssh_bpp_format_packet(ssh->bpp, ipkt);
-    }
-
-    ssh_bpp_format_packet(ssh->bpp, pkt);
-    queue_idempotent_callback(&ssh->outgoing_data_sender);
+    pq_push(&ssh->bpp->out_pq, pkt);
 }
 
 /*
@@ -891,8 +874,6 @@ static void ssh2_add_sigblob(Ssh ssh, PktOut *pkt,
 
 static void ssh_feed_to_bpp(Ssh ssh)
 {
-    PacketQueueNode *prev_tail = ssh->pq_full.pqb.end.prev;
-
     assert(ssh->bpp);
     ssh_bpp_handle_input(ssh->bpp);
 
@@ -914,9 +895,6 @@ static void ssh_feed_to_bpp(Ssh ssh)
         ssh->close_expected = TRUE;
         ssh->disconnect_message_seen = TRUE;
     }
-
-    if (ssh->pq_full.pqb.end.prev != prev_tail)
-        queue_idempotent_callback(&ssh->pq_full_consumer);
 }
 
 static void ssh_got_ssh_version(struct ssh_version_receiver *rcv,
@@ -986,12 +964,14 @@ static void ssh_got_ssh_version(struct ssh_version_receiver *rcv,
     }
 
     ssh->bpp->out_raw = &ssh->outgoing_data;
+    ssh->bpp->out_raw->ic = &ssh->outgoing_data_sender;
     ssh->bpp->in_raw = &ssh->incoming_data;
-    ssh->bpp->in_pq = &ssh->pq_full;
+    ssh->bpp->in_pq.pqb.ic = &ssh->incoming_pkt_consumer;
     ssh->bpp->pls = &ssh->pls;
     ssh->bpp->logctx = ssh->logctx;
+    ssh->bpp->remote_bugs = ssh->remote_bugs;
 
-    queue_idempotent_callback(&ssh->incoming_data_consumer);
+    queue_idempotent_callback(&ssh->bpp->ic_in_raw);
     queue_idempotent_callback(&ssh->user_input_consumer);
 
     update_specials_menu(ssh->frontend);
@@ -1044,16 +1024,15 @@ static void ssh_process_incoming_data(void *ctx)
     }
 }
 
-static void ssh_process_pq_full(void *ctx)
+static void ssh_process_incoming_pkts(void *ctx)
 {
     Ssh ssh = (Ssh)ctx;
     PktIn *pktin;
 
-    while ((pktin = pq_pop(&ssh->pq_full)) != NULL) {
+    while ((pktin = pq_pop(&ssh->bpp->in_pq)) != NULL) {
         if (ssh->general_packet_processing)
             ssh->general_packet_processing(ssh, pktin);
 	ssh->packet_dispatch[pktin->type](ssh, pktin);
-	ssh_unref_packet(pktin);
     }
 }
 
@@ -1265,8 +1244,11 @@ static const char *connect_to_host(Ssh ssh, const char *host, int port,
     ssh->connshare = NULL;
     ssh->attempting_connshare = TRUE;  /* affects socket logging behaviour */
     ssh->s = ssh_connection_sharing_init(
-        ssh->savedhost, ssh->savedport, ssh->conf, &ssh->cl, &ssh->plugvt,
-        &ssh->connshare);
+        ssh->savedhost, ssh->savedport, ssh->conf, ssh->frontend,
+        &ssh->plugvt, &ssh->connshare);
+    if (ssh->connshare)
+        ssh_connshare_provide_connlayer(ssh->connshare, &ssh->cl);
+
     ssh->attempting_connshare = FALSE;
     if (ssh->s != NULL) {
         /*
@@ -1461,76 +1443,12 @@ static void ssh_disconnect(Ssh ssh, const char *client_reason,
 	error = dupprintf("Disconnected: %s", client_reason);
     else
 	error = dupstr("Disconnected");
-    if (wire_reason) {
-	if (ssh->version == 1) {
-	    PktOut *pktout = ssh_bpp_new_pktout(ssh->bpp, SSH1_MSG_DISCONNECT);
-            put_stringz(pktout, wire_reason);
-            ssh_pkt_write(ssh, pktout);
-	} else if (ssh->version == 2) {
-	    PktOut *pktout = ssh_bpp_new_pktout(ssh->bpp, SSH2_MSG_DISCONNECT);
-	    put_uint32(pktout, code);
-	    put_stringz(pktout, wire_reason);
-	    put_stringz(pktout, "en");	/* language tag */
-	    ssh_pkt_write(ssh, pktout);
-	}
-    }
+    if (wire_reason)
+        ssh_bpp_queue_disconnect(ssh->bpp, wire_reason, code);
     ssh->close_expected = TRUE;
     ssh->clean_exit = clean_exit;
     ssh_closing(&ssh->plugvt, error, 0, 0);
     sfree(error);
-}
-
-int verify_ssh_manual_host_key(Ssh ssh, const char *fingerprint, ssh_key *key)
-{
-    if (!conf_get_str_nthstrkey(ssh->conf, CONF_ssh_manual_hostkeys, 0)) {
-        return -1;                     /* no manual keys configured */
-    }
-
-    if (fingerprint) {
-        /*
-         * The fingerprint string we've been given will have things
-         * like 'ssh-rsa 2048' at the front of it. Strip those off and
-         * narrow down to just the colon-separated hex block at the
-         * end of the string.
-         */
-        const char *p = strrchr(fingerprint, ' ');
-        fingerprint = p ? p+1 : fingerprint;
-        /* Quick sanity checks, including making sure it's in lowercase */
-        assert(strlen(fingerprint) == 16*3 - 1);
-        assert(fingerprint[2] == ':');
-        assert(fingerprint[strspn(fingerprint, "0123456789abcdef:")] == 0);
-
-        if (conf_get_str_str_opt(ssh->conf, CONF_ssh_manual_hostkeys,
-                                 fingerprint))
-            return 1;                  /* success */
-    }
-
-    if (key) {
-        /*
-         * Construct the base64-encoded public key blob and see if
-         * that's listed.
-         */
-        strbuf *binblob;
-        char *base64blob;
-        int atoms, i;
-        binblob = strbuf_new();
-        ssh_key_public_blob(key, BinarySink_UPCAST(binblob));
-        atoms = (binblob->len + 2) / 3;
-        base64blob = snewn(atoms * 4 + 1, char);
-        for (i = 0; i < atoms; i++)
-            base64_encode_atom(binblob->u + 3*i,
-                               binblob->len - 3*i, base64blob + 4*i);
-        base64blob[atoms * 4] = '\0';
-        strbuf_free(binblob);
-        if (conf_get_str_str_opt(ssh->conf, CONF_ssh_manual_hostkeys,
-                                 base64blob)) {
-            sfree(base64blob);
-            return 1;                  /* success */
-        }
-        sfree(base64blob);
-    }
-
-    return 0;
 }
 
 static void ssh1_coro_wrapper_initial(Ssh ssh, PktIn *pktin);
@@ -1666,7 +1584,7 @@ static void do_ssh1_login(void *vctx)
 	fingerprint = rsa_ssh1_fingerprint(&s->hostkey);
 
         /* First check against manually configured host keys. */
-        s->dlgret = verify_ssh_manual_host_key(ssh, fingerprint, NULL);
+        s->dlgret = verify_ssh_manual_host_key(ssh->conf, fingerprint, NULL);
         sfree(fingerprint);
         if (s->dlgret == 0) {          /* did not match */
             bombout(("Host key did not appear in manually configured list"));
@@ -1795,6 +1713,13 @@ static void do_ssh1_login(void *vctx)
     logevent("Trying to enable encryption...");
 
     sfree(s->rsabuf);
+
+    /*
+     * Force the BPP to synchronously marshal all packets up to and
+     * including the SESSION_KEY into wire format, before we turn on
+     * crypto.
+     */
+    ssh_bpp_handle_output(ssh->bpp);
 
     {
         const struct ssh1_cipheralg *cipher =
@@ -3220,7 +3145,6 @@ static void do_ssh1_connection(void *vctx)
         pkt = ssh_bpp_new_pktout(ssh->bpp, SSH1_CMSG_REQUEST_COMPRESSION);
         put_uint32(pkt, 6);            /* gzip compression level */
         ssh_pkt_write(ssh, pkt);
-        ssh1_bpp_requested_compression(ssh->bpp);
         crMaybeWaitUntilV((pktin = pq_pop(&ssh->pq_ssh1_connection)) != NULL);
 	if (pktin->type != SSH1_SMSG_SUCCESS
 	    && pktin->type != SSH1_SMSG_FAILURE) {
@@ -3229,6 +3153,14 @@ static void do_ssh1_connection(void *vctx)
 	} else if (pktin->type == SSH1_SMSG_FAILURE) {
 	    c_write_str(ssh, "Server refused to compress\r\n");
 	} else {
+            /*
+             * We don't have to actually do anything here: the SSH-1
+             * BPP will take care of automatically starting the
+             * compression, by recognising our outgoing request packet
+             * and the success response. (Horrible, but it's the
+             * easiest way to avoid race conditions if other packets
+             * cross in transit.)
+             */
             logevent("Started zlib (RFC1950) compression");
         }
     }
@@ -3337,14 +3269,12 @@ static void ssh1_connection_input(Ssh ssh)
 
 static void ssh1_coro_wrapper_initial(Ssh ssh, PktIn *pktin)
 {
-    pktin->refcount++;   /* avoid packet being freed when we return */
     pq_push(&ssh->pq_ssh1_login, pktin);
     queue_idempotent_callback(&ssh->ssh1_login_icb);
 }
 
 static void ssh1_coro_wrapper_session(Ssh ssh, PktIn *pktin)
 {
-    pktin->refcount++;   /* avoid packet being freed when we return */
     pq_push(&ssh->pq_ssh1_connection, pktin);
     queue_idempotent_callback(&ssh->ssh1_connection_icb);
 }
@@ -5070,7 +5000,8 @@ static void do_ssh2_transport(void *vctx)
         logevent("Host key fingerprint is:");
         logevent(s->fingerprint);
         /* First check against manually configured host keys. */
-        s->dlgret = verify_ssh_manual_host_key(ssh, s->fingerprint, s->hkey);
+        s->dlgret = verify_ssh_manual_host_key(ssh->conf,
+                                               s->fingerprint, s->hkey);
         if (s->dlgret == 0) {          /* did not match */
             bombout(("Host key did not appear in manually configured list"));
             crStopV;
@@ -5157,6 +5088,13 @@ static void do_ssh2_transport(void *vctx)
     /* Start counting down the outgoing-data limit for these cipher keys. */
     ssh->stats.out.running = TRUE;
     ssh->stats.out.remaining = ssh->max_data_size;
+
+    /*
+     * Force the BPP to synchronously marshal all packets up to and
+     * including that NEWKEYS into wire format, before we switch over
+     * to new crypto.
+     */
+    ssh_bpp_handle_output(ssh->bpp);
 
     /*
      * We've sent client NEWKEYS, so create and initialise
@@ -6690,7 +6628,6 @@ static void ssh2_setup_env(struct ssh_channel *c, PktIn *pktin,
  */
 static void ssh2_msg_userauth(Ssh ssh, PktIn *pktin)
 {
-    pktin->refcount++;   /* avoid packet being freed when we return */
     pq_push(&ssh->pq_ssh2_userauth, pktin);
     if (pktin->type == SSH2_MSG_USERAUTH_SUCCESS) {
         /*
@@ -6698,10 +6635,10 @@ static void ssh2_msg_userauth(Ssh ssh, PktIn *pktin)
          * protocol has officially started, which means we must
          * install the dispatch-table entries for all the
          * connection-layer messages. In particular, we must do this
-         * _before_ we return to the loop in ssh_process_pq_full
+         * _before_ we return to the loop in ssh_process_incoming_pkts
          * that's processing the currently queued packets through the
          * dispatch table, because if (say) an SSH_MSG_GLOBAL_REQUEST
-         * is already pending in pq_full, we can't afford to delay
+         * is already pending in in_pq, we can't afford to delay
          * installing its dispatch table entry until after that queue
          * run is done.
          */
@@ -8226,7 +8163,6 @@ static void ssh2_userauth_input(Ssh ssh)
  */
 static void ssh2_msg_connection(Ssh ssh, PktIn *pktin)
 {
-    pktin->refcount++;   /* avoid packet being freed when we return */
     pq_push(&ssh->pq_ssh2_connection, pktin);
     queue_idempotent_callback(&ssh->ssh2_connection_icb);
 }
@@ -8475,14 +8411,15 @@ static void do_ssh2_connection(void *vctx)
 
     /*
      * Put our current pending packet queue back to the front of
-     * pq_full, and then schedule a callback to re-process those
+     * the main pq, and then schedule a callback to re-process those
      * packets (if any). That way, anything already in our queue that
      * matches any of the table entries we've just modified will go to
      * the right handler function, and won't come here to confuse us.
      */
     if (pq_peek(&ssh->pq_ssh2_connection)) {
-        pq_concatenate(&ssh->pq_full, &ssh->pq_ssh2_connection, &ssh->pq_full);
-        queue_idempotent_callback(&ssh->pq_full_consumer);
+        pq_concatenate(&ssh->bpp->in_pq,
+                       &ssh->pq_ssh2_connection, &ssh->bpp->in_pq);
+        queue_idempotent_callback(ssh->bpp->in_pq.pqb.ic);
     }
 
     /*
@@ -8706,7 +8643,6 @@ static void ssh2_msg_debug(Ssh ssh, PktIn *pktin)
 
 static void ssh2_msg_transport(Ssh ssh, PktIn *pktin)
 {
-    pktin->refcount++;   /* avoid packet being freed when we return */
     pq_push(&ssh->pq_ssh2_transport, pktin);
     queue_idempotent_callback(&ssh->ssh2_transport_icb);
 }
@@ -8723,18 +8659,6 @@ static void ssh2_msg_unexpected(Ssh ssh, PktIn *pktin)
 					pktin->type));
     ssh_disconnect(ssh, NULL, buf, SSH2_DISCONNECT_PROTOCOL_ERROR, FALSE);
     sfree(buf);
-}
-
-static void ssh2_msg_something_unimplemented(Ssh ssh, PktIn *pktin)
-{
-    PktOut *pktout;
-    pktout = ssh_bpp_new_pktout(ssh->bpp, SSH2_MSG_UNIMPLEMENTED);
-    put_uint32(pktout, pktin->sequence);
-    /*
-     * UNIMPLEMENTED messages MUST appear in the same order as the
-     * messages they respond to. Hence, never queue them.
-     */
-    ssh_pkt_write(ssh, pktout);
 }
 
 /*
@@ -8775,20 +8699,17 @@ static void ssh2_protocol_setup(Ssh ssh)
 #endif
 
     /*
-     * Most messages cause SSH2_MSG_UNIMPLEMENTED.
+     * All message types we don't set explicitly will dispatch to
+     * ssh2_msg_unexpected.
      */
     for (i = 0; i < SSH_MAX_MSG; i++)
-	ssh->packet_dispatch[i] = ssh2_msg_something_unimplemented;
+	ssh->packet_dispatch[i] = ssh2_msg_unexpected;
 
     /*
      * Initially, we only accept transport messages (and a few generic
      * ones). do_ssh2_userauth and do_ssh2_connection will each add
-     * more when they start. Messages that are understood but not
-     * currently acceptable go to ssh2_msg_unexpected.
+     * more when they start.
      */
-    ssh->packet_dispatch[SSH2_MSG_UNIMPLEMENTED] = ssh2_msg_unexpected;
-    ssh->packet_dispatch[SSH2_MSG_SERVICE_REQUEST] = ssh2_msg_unexpected;
-    ssh->packet_dispatch[SSH2_MSG_SERVICE_ACCEPT] = ssh2_msg_unexpected;
     ssh->packet_dispatch[SSH2_MSG_KEXINIT] = ssh2_msg_transport;
     ssh->packet_dispatch[SSH2_MSG_NEWKEYS] = ssh2_msg_transport;
     ssh->packet_dispatch[SSH2_MSG_KEXDH_INIT] = ssh2_msg_transport;
@@ -8798,28 +8719,6 @@ static void ssh2_protocol_setup(Ssh ssh)
     ssh->packet_dispatch[SSH2_MSG_KEX_DH_GEX_INIT] = ssh2_msg_transport;
     ssh->packet_dispatch[SSH2_MSG_KEX_DH_GEX_REPLY] = ssh2_msg_transport;
     ssh->packet_dispatch[SSH2_MSG_KEXGSS_GROUP] = ssh2_msg_transport;
-    ssh->packet_dispatch[SSH2_MSG_USERAUTH_REQUEST] = ssh2_msg_unexpected;
-    ssh->packet_dispatch[SSH2_MSG_USERAUTH_FAILURE] = ssh2_msg_unexpected;
-    ssh->packet_dispatch[SSH2_MSG_USERAUTH_SUCCESS] = ssh2_msg_unexpected;
-    ssh->packet_dispatch[SSH2_MSG_USERAUTH_BANNER] = ssh2_msg_unexpected;
-    ssh->packet_dispatch[SSH2_MSG_USERAUTH_PK_OK] = ssh2_msg_unexpected;
-    /* ssh->packet_dispatch[SSH2_MSG_USERAUTH_PASSWD_CHANGEREQ] = ssh2_msg_unexpected; duplicate case value */
-    /* ssh->packet_dispatch[SSH2_MSG_USERAUTH_INFO_REQUEST] = ssh2_msg_unexpected; duplicate case value */
-    ssh->packet_dispatch[SSH2_MSG_USERAUTH_INFO_RESPONSE] = ssh2_msg_unexpected;
-    ssh->packet_dispatch[SSH2_MSG_GLOBAL_REQUEST] = ssh2_msg_unexpected;
-    ssh->packet_dispatch[SSH2_MSG_REQUEST_SUCCESS] = ssh2_msg_unexpected;
-    ssh->packet_dispatch[SSH2_MSG_REQUEST_FAILURE] = ssh2_msg_unexpected;
-    ssh->packet_dispatch[SSH2_MSG_CHANNEL_OPEN] = ssh2_msg_unexpected;
-    ssh->packet_dispatch[SSH2_MSG_CHANNEL_OPEN_CONFIRMATION] = ssh2_msg_unexpected;
-    ssh->packet_dispatch[SSH2_MSG_CHANNEL_OPEN_FAILURE] = ssh2_msg_unexpected;
-    ssh->packet_dispatch[SSH2_MSG_CHANNEL_WINDOW_ADJUST] = ssh2_msg_unexpected;
-    ssh->packet_dispatch[SSH2_MSG_CHANNEL_DATA] = ssh2_msg_unexpected;
-    ssh->packet_dispatch[SSH2_MSG_CHANNEL_EXTENDED_DATA] = ssh2_msg_unexpected;
-    ssh->packet_dispatch[SSH2_MSG_CHANNEL_EOF] = ssh2_msg_unexpected;
-    ssh->packet_dispatch[SSH2_MSG_CHANNEL_CLOSE] = ssh2_msg_unexpected;
-    ssh->packet_dispatch[SSH2_MSG_CHANNEL_REQUEST] = ssh2_msg_unexpected;
-    ssh->packet_dispatch[SSH2_MSG_CHANNEL_SUCCESS] = ssh2_msg_unexpected;
-    ssh->packet_dispatch[SSH2_MSG_CHANNEL_FAILURE] = ssh2_msg_unexpected;
 
     /*
      * These messages have a special handler from the start.
@@ -8836,38 +8735,15 @@ static void ssh2_bare_connection_protocol_setup(Ssh ssh)
     ssh->bpp = ssh2_bare_bpp_new();
 
     /*
-     * Most messages cause SSH2_MSG_UNIMPLEMENTED.
-     */
-    for (i = 0; i < SSH_MAX_MSG; i++)
-	ssh->packet_dispatch[i] = ssh2_msg_something_unimplemented;
-
-    /*
-     * Initially, we set all ssh-connection messages to 'unexpected';
-     * do_ssh2_connection will fill things in properly. We also handle
-     * a couple of messages from the transport protocol which aren't
-     * related to key exchange (UNIMPLEMENTED, IGNORE, DEBUG,
+     * Everything defaults to ssh2_msg_unexpected for the moment;
+     * do_ssh2_connection will fill things in properly. But we do
+     * handle a couple of messages from the transport protocol which
+     * aren't related to key exchange (UNIMPLEMENTED, IGNORE, DEBUG,
      * DISCONNECT).
      */
-    ssh->packet_dispatch[SSH2_MSG_GLOBAL_REQUEST] = ssh2_msg_unexpected;
-    ssh->packet_dispatch[SSH2_MSG_REQUEST_SUCCESS] = ssh2_msg_unexpected;
-    ssh->packet_dispatch[SSH2_MSG_REQUEST_FAILURE] = ssh2_msg_unexpected;
-    ssh->packet_dispatch[SSH2_MSG_CHANNEL_OPEN] = ssh2_msg_unexpected;
-    ssh->packet_dispatch[SSH2_MSG_CHANNEL_OPEN_CONFIRMATION] = ssh2_msg_unexpected;
-    ssh->packet_dispatch[SSH2_MSG_CHANNEL_OPEN_FAILURE] = ssh2_msg_unexpected;
-    ssh->packet_dispatch[SSH2_MSG_CHANNEL_WINDOW_ADJUST] = ssh2_msg_unexpected;
-    ssh->packet_dispatch[SSH2_MSG_CHANNEL_DATA] = ssh2_msg_unexpected;
-    ssh->packet_dispatch[SSH2_MSG_CHANNEL_EXTENDED_DATA] = ssh2_msg_unexpected;
-    ssh->packet_dispatch[SSH2_MSG_CHANNEL_EOF] = ssh2_msg_unexpected;
-    ssh->packet_dispatch[SSH2_MSG_CHANNEL_CLOSE] = ssh2_msg_unexpected;
-    ssh->packet_dispatch[SSH2_MSG_CHANNEL_REQUEST] = ssh2_msg_unexpected;
-    ssh->packet_dispatch[SSH2_MSG_CHANNEL_SUCCESS] = ssh2_msg_unexpected;
-    ssh->packet_dispatch[SSH2_MSG_CHANNEL_FAILURE] = ssh2_msg_unexpected;
+    for (i = 0; i < SSH_MAX_MSG; i++)
+	ssh->packet_dispatch[i] = ssh2_msg_unexpected;
 
-    ssh->packet_dispatch[SSH2_MSG_UNIMPLEMENTED] = ssh2_msg_unexpected;
-
-    /*
-     * These messages have a special handler from the start.
-     */
     ssh->packet_dispatch[SSH2_MSG_DISCONNECT] = ssh2_msg_disconnect;
     ssh->packet_dispatch[SSH2_MSG_IGNORE] = ssh_msg_ignore;
     ssh->packet_dispatch[SSH2_MSG_DEBUG] = ssh2_msg_debug;
@@ -9221,10 +9097,9 @@ static const char *ssh_init(Frontend *frontend, Backend **backend_handle,
     ssh->incoming_data_consumer.fn = ssh_process_incoming_data;
     ssh->incoming_data_consumer.ctx = ssh;
     ssh->incoming_data_consumer.queued = FALSE;
-    pq_in_init(&ssh->pq_full);
-    ssh->pq_full_consumer.fn = ssh_process_pq_full;
-    ssh->pq_full_consumer.ctx = ssh;
-    ssh->pq_full_consumer.queued = FALSE;
+    ssh->incoming_pkt_consumer.fn = ssh_process_incoming_pkts;
+    ssh->incoming_pkt_consumer.ctx = ssh;
+    ssh->incoming_pkt_consumer.queued = FALSE;
     pq_in_init(&ssh->pq_ssh1_login);
     ssh->ssh1_login_icb.fn = do_ssh1_login;
     ssh->ssh1_login_icb.ctx = ssh;
@@ -9407,7 +9282,6 @@ static void ssh_free(Backend *be)
     bufchain_clear(&ssh->incoming_data);
     bufchain_clear(&ssh->outgoing_data);
     sfree(ssh->incoming_data_eof_message);
-    pq_in_clear(&ssh->pq_full);
     pq_in_clear(&ssh->pq_ssh1_login);
     pq_in_clear(&ssh->pq_ssh1_connection);
     pq_in_clear(&ssh->pq_ssh2_transport);
