@@ -133,6 +133,41 @@ void *findrelpos234(tree234 * t, void *e, cmpfn234 cmp, int relation,
 		    int *index);
 
 /*
+ * A more general search type still. Use search234_start() to
+ * initialise one of these state structures; it will fill in
+ * state->element with an element of the tree, and state->index with
+ * the index of that element. If you don't like that element, call
+ * search234_step, with direction == -1 if you want an element earlier
+ * in the tree, or +1 if you want a later one.
+ *
+ * If either function returns state->element == NULL, then you've
+ * narrowed the search to a point between two adjacent elements, so
+ * there are no further elements left to return consistent with the
+ * constraints you've imposed. In this case, state->index tells you
+ * how many elements come before the point you narrowed down to. After
+ * this, you mustn't call search234_step again (unless the state
+ * structure is first reinitialised).
+ *
+ * The use of this search system is that you get both the candidate
+ * element _and_ its index at every stage, so you can use both of them
+ * to make your decision. Also, you can remember element pointers from
+ * earlier in the search.
+ *
+ * The fields beginning with underscores are private to the
+ * implementation, and only exposed so that clients can know how much
+ * space to allocate for the structure as a whole. Don't modify them.
+ * (Except that it's safe to copy the whole structure.)
+ */
+typedef struct search234_state {
+    void *element;
+    int index;
+    int _lo, _hi, _last, _base;
+    void *_node;
+} search234_state;
+void search234_start(search234_state *state, tree234 *t);
+void search234_step(search234_state *state, int direction);
+
+/*
  * Delete an element e in a 2-3-4 tree. Does not free the element,
  * merely removes all links to it from the tree nodes.
  * 

@@ -108,6 +108,18 @@ static int countnode234(node234 * n)
 }
 
 /*
+ * Internal function to return the number of elements in a node.
+ */
+static int elements234(node234 *n)
+{
+    int i;
+    for (i = 0; i < 3; i++)
+        if (!n->elems[i])
+            break;
+    return i;
+}
+
+/*
  * Count the elements in a tree.
  */
 int count234(tree234 * t)
@@ -514,99 +526,66 @@ void *index234(tree234 * t, int index)
 void *findrelpos234(tree234 * t, void *e, cmpfn234 cmp,
 		    int relation, int *index)
 {
-    node234 *n;
-    void *ret;
-    int c;
-    int idx, ecount, kcount, cmpret;
+    search234_state ss;
+    int reldir = (relation == REL234_LT || relation == REL234_LE ? -1 :
+                  relation == REL234_GT || relation == REL234_GE ? +1 : 0);
+    int equal_permitted = (relation != REL234_LT && relation != REL234_GT);
+    void *toret;
 
-    if (t->root == NULL)
-	return NULL;
+    /* Only LT / GT relations are permitted with a null query element. */
+    assert(!(equal_permitted && !e));
 
     if (cmp == NULL)
 	cmp = t->cmp;
 
-    n = t->root;
-    /*
-     * Attempt to find the element itself.
-     */
-    idx = 0;
-    ecount = -1;
-    /*
-     * Prepare a fake `cmp' result if e is NULL.
-     */
-    cmpret = 0;
-    if (e == NULL) {
-	assert(relation == REL234_LT || relation == REL234_GT);
-	if (relation == REL234_LT)
-	    cmpret = +1;	       /* e is a max: always greater */
-	else if (relation == REL234_GT)
-	    cmpret = -1;	       /* e is a min: always smaller */
-    }
-    while (1) {
-	for (kcount = 0; kcount < 4; kcount++) {
-	    if (kcount >= 3 || n->elems[kcount] == NULL ||
-		(c = cmpret ? cmpret : cmp(e, n->elems[kcount])) < 0) {
-		break;
-	    }
-	    if (n->kids[kcount])
-		idx += n->counts[kcount];
-	    if (c == 0) {
-		ecount = kcount;
-		break;
-	    }
-	    idx++;
-	}
-	if (ecount >= 0)
-	    break;
-	if (n->kids[kcount])
-	    n = n->kids[kcount];
-	else
-	    break;
+    search234_start(&ss, t);
+    while (ss.element) {
+        int cmpret;
+
+        if (e) {
+            cmpret = cmp(e, ss.element);
+        } else {
+            cmpret = -reldir;          /* invent a fixed compare result */
+        }
+
+        if (cmpret == 0) {
+            /*
+             * We've found an element that compares exactly equal to
+             * the query element.
+             */
+            if (equal_permitted) {
+                /* If our search relation permits equality, we've
+                 * finished already. */
+                if (index)
+                    *index = ss.index;
+                return ss.element;
+            } else {
+                /* Otherwise, pretend this element was slightly too
+                 * big/small, according to the direction of search. */
+                cmpret = reldir;
+            }
+        }
+
+        search234_step(&ss, cmpret);
     }
 
-    if (ecount >= 0) {
-	/*
-	 * We have found the element we're looking for. It's
-	 * n->elems[ecount], at tree index idx. If our search
-	 * relation is EQ, LE or GE we can now go home.
-	 */
-	if (relation != REL234_LT && relation != REL234_GT) {
-	    if (index)
-		*index = idx;
-	    return n->elems[ecount];
-	}
+    /*
+     * No element compares equal to the one we were after, but
+     * ss.index indicates the index that element would have if it were
+     * inserted.
+     *
+     * So if our search relation is EQ, we must simply return failure.
+     */
+    if (relation == REL234_EQ)
+        return NULL;
 
-	/*
-	 * Otherwise, we'll do an indexed lookup for the previous
-	 * or next element. (It would be perfectly possible to
-	 * implement these search types in a non-counted tree by
-	 * going back up from where we are, but far more fiddly.)
-	 */
-	if (relation == REL234_LT)
-	    idx--;
-	else
-	    idx++;
-    } else {
-	/*
-	 * We've found our way to the bottom of the tree and we
-	 * know where we would insert this node if we wanted to:
-	 * we'd put it in in place of the (empty) subtree
-	 * n->kids[kcount], and it would have index idx
-	 * 
-	 * But the actual element isn't there. So if our search
-	 * relation is EQ, we're doomed.
-	 */
-	if (relation == REL234_EQ)
-	    return NULL;
-
-	/*
-	 * Otherwise, we must do an index lookup for index idx-1
-	 * (if we're going left - LE or LT) or index idx (if we're
-	 * going right - GE or GT).
-	 */
-	if (relation == REL234_LT || relation == REL234_LE) {
-	    idx--;
-	}
+    /*
+     * Otherwise, we must do an index lookup for the previous index
+     * (if we're going left - LE or LT) or this index (if we're going
+     * right - GE or GT).
+     */
+    if (relation == REL234_LT || relation == REL234_LE) {
+        ss.index--;
     }
 
     /*
@@ -614,10 +593,10 @@ void *findrelpos234(tree234 * t, void *e, cmpfn234 cmp,
      * to do the rest. This will return NULL if the index is out of
      * bounds, which is exactly what we want.
      */
-    ret = index234(t, idx);
-    if (ret && index)
-	*index = idx;
-    return ret;
+    toret = index234(t, ss.index);
+    if (toret && index)
+        *index = ss.index;
+    return toret;
 }
 void *find234(tree234 * t, void *e, cmpfn234 cmp)
 {
@@ -630,6 +609,80 @@ void *findrel234(tree234 * t, void *e, cmpfn234 cmp, int relation)
 void *findpos234(tree234 * t, void *e, cmpfn234 cmp, int *index)
 {
     return findrelpos234(t, e, cmp, REL234_EQ, index);
+}
+
+void search234_start(search234_state *state, tree234 *t)
+{
+    state->_node = t->root;
+    state->_base = 0; /* index of first element in this node's subtree */
+    state->_last = -1; /* indicate that this node is not previously visted */
+    search234_step(state, 0);
+}
+void search234_step(search234_state *state, int direction)
+{
+    node234 *node = state->_node;
+    int i;
+
+    if (!node) {
+        state->element = NULL;
+        state->index = 0;
+        return;
+    }
+
+    if (state->_last != -1) {
+        /*
+         * We're already pointing at some element of a node, so we
+         * should restrict to the elements left or right of it,
+         * depending on the requested search direction.
+         */
+        assert(direction);
+        assert(node);
+
+        if (direction > 0) {
+            state->_lo = state->_last + 1;
+            direction = +1;
+        } else {
+            state->_hi = state->_last - 1;
+            direction = -1;
+        }
+
+        if (state->_lo > state->_hi) {
+            /*
+             * We've run out of elements in this node, i.e. we've
+             * narrowed to nothing but a child pointer. Descend to
+             * that child, and update _base to the leftmost index of
+             * its subtree.
+             */
+            for (i = 0; i < state->_lo; i++)
+                state->_base += 1 + node->counts[i];
+            state->_node = node = node->kids[state->_lo];
+            state->_last = -1;
+        }
+    }
+
+    if (state->_last == -1) {
+        /*
+         * We've just entered a new node - either because of the above
+         * code, or because we were called from search234_start - and
+         * anything in that node is a viable answer.
+         */
+        state->_lo = 0;
+        state->_hi = node ? elements234(node)-1 : 0;
+    }
+
+    /*
+     * Now we've got something we can return.
+     */
+    if (!node) {
+        state->element = NULL;
+        state->index = state->_base;
+    } else {
+        state->_last = (state->_lo + state->_hi) / 2;
+        state->element = node->elems[state->_last];
+        state->index = state->_base + state->_last;
+        for (i = 0; i <= state->_last; i++)
+            state->index += node->counts[i];
+    }
 }
 
 /*
@@ -1014,6 +1067,9 @@ void *del234(tree234 * t, void *e)
  */
 
 #include <stdarg.h>
+#include <string.h>
+
+int n_errors = 0;
 
 /*
  * Error reporting function.
@@ -1026,6 +1082,7 @@ void error(char *fmt, ...)
     vfprintf(stdout, fmt, ap);
     va_end(ap);
     printf("\n");
+    n_errors++;
 }
 
 /* The array representation of the data. */
@@ -1414,6 +1471,73 @@ int findtest(void)
     }
 }
 
+void searchtest_recurse(search234_state ss, int lo, int hi,
+                        char **expected, char *directionbuf,
+                        char *directionptr)
+{
+    *directionptr = '\0';
+
+    if (!ss.element) {
+        if (lo != hi) {
+            error("search234(%s) gave NULL for non-empty interval [%d,%d)",
+                  directionbuf, lo, hi);
+        } else if (ss.index != lo) {
+            error("search234(%s) gave index %d should be %d",
+                  directionbuf, ss.index, lo);
+        } else {
+            printf("%*ssearch234(%s) gave NULL,%d\n",
+                   (int)(directionptr-directionbuf) * 2, "", directionbuf,
+                   ss.index);
+        }
+    } else if (lo == hi) {
+        error("search234(%s) gave %s for empty interval [%d,%d)",
+              directionbuf, (char *)ss.element, lo, hi);
+    } else if (ss.element != expected[ss.index]) {
+        error("search234(%s) gave element %s should be %s",
+              directionbuf, (char *)ss.element, expected[ss.index]);
+    } else if (ss.index < lo || ss.index >= hi) {
+        error("search234(%s) gave index %d should be in [%d,%d)",
+              directionbuf, ss.index, lo, hi);
+        return;
+    } else {
+        search234_state next;
+
+        printf("%*ssearch234(%s) gave %s,%d\n",
+               (int)(directionptr-directionbuf) * 2, "", directionbuf,
+               (char *)ss.element, ss.index);
+
+        next = ss;
+        search234_step(&next, -1);
+        *directionptr = '-';
+        searchtest_recurse(next, lo, ss.index,
+                           expected, directionbuf, directionptr+1);
+
+        next = ss;
+        search234_step(&next, +1);
+        *directionptr = '+';
+        searchtest_recurse(next, ss.index+1, hi,
+                           expected, directionbuf, directionptr+1);
+    }
+}
+
+void searchtest(void)
+{
+    char *expected[NSTR], *p;
+    char directionbuf[NSTR * 10];
+    int n;
+    search234_state ss;
+
+    printf("beginning searchtest:");
+    for (n = 0; (p = index234(tree, n)) != NULL; n++) {
+        expected[n] = p;
+        printf(" %d=%s", n, p);
+    }
+    printf(" count=%d\n", n);
+
+    search234_start(&ss, tree);
+    searchtest_recurse(ss, 0, n, expected, directionbuf, directionbuf);
+}
+
 int main(void)
 {
     int in[NSTR];
@@ -1428,6 +1552,7 @@ int main(void)
     cmp = mycmp;
 
     verify();
+    searchtest();
     for (i = 0; i < 10000; i++) {
 	j = randomnumber(&seed);
 	j %= NSTR;
@@ -1442,6 +1567,7 @@ int main(void)
 	    in[j] = 1;
 	}
 	findtest();
+        searchtest();
     }
 
     while (arraylen > 0) {
@@ -1480,7 +1606,8 @@ int main(void)
 	delpostest(j);
     }
 
-    return 0;
+    printf("%d errors found\n", n_errors);
+    return (n_errors != 0);
 }
 
 #endif

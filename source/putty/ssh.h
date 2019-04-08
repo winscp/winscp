@@ -81,20 +81,46 @@ typedef struct PktOut {
     unsigned downstream_id;
     const char *additional_log_text;
 
+    PacketQueueNode qnode;  /* for linking this packet on to a queue */
     BinarySink_IMPLEMENTATION;
 } PktOut;
 
-typedef struct PacketQueue {
+typedef struct PacketQueueBase {
     PacketQueueNode end;
-} PacketQueue;
+} PacketQueueBase;
 
-void pq_init(struct PacketQueue *pq);
-void pq_push(struct PacketQueue *pq, PktIn *pkt);
-void pq_push_front(struct PacketQueue *pq, PktIn *pkt);
-PktIn *pq_peek(struct PacketQueue *pq);
-PktIn *pq_pop(struct PacketQueue *pq);
-void pq_clear(struct PacketQueue *pq);
-int pq_empty_on_to_front_of(struct PacketQueue *src, struct PacketQueue *dest);
+typedef struct PktInQueue {
+    PacketQueueBase pqb;
+    PktIn *(*get)(PacketQueueBase *, int pop);
+} PktInQueue;
+
+typedef struct PktOutQueue {
+    PacketQueueBase pqb;
+    PktOut *(*get)(PacketQueueBase *, int pop);
+} PktOutQueue;
+
+void pq_base_init(PacketQueueBase *pqb);
+void pq_base_push(PacketQueueBase *pqb, PacketQueueNode *node);
+void pq_base_push_front(PacketQueueBase *pqb, PacketQueueNode *node);
+int pq_base_empty_on_to_front_of(PacketQueueBase *src, PacketQueueBase *dest);
+
+void pq_in_init(PktInQueue *pq);
+void pq_out_init(PktOutQueue *pq);
+void pq_in_clear(PktInQueue *pq);
+void pq_out_clear(PktOutQueue *pq);
+
+#define pq_push(pq, pkt)                                \
+    TYPECHECK((pq)->get(&(pq)->pqb, FALSE) == pkt,      \
+              pq_base_push(&(pq)->pqb, &(pkt)->qnode))
+#define pq_push_front(pq, pkt)                                  \
+    TYPECHECK((pq)->get(&(pq)->pqb, FALSE) == pkt,              \
+              pq_base_push_front(&(pq)->pqb, &(pkt)->qnode))
+#define pq_peek(pq) ((pq)->get(&(pq)->pqb, FALSE))
+#define pq_pop(pq) ((pq)->get(&(pq)->pqb, TRUE))
+#define pq_empty_on_to_front_of(src, dst)                               \
+    TYPECHECK((src)->get(&(src)->pqb, FALSE) ==                         \
+              (dst)->get(&(dst)->pqb, FALSE),                           \
+              pq_base_empty_on_to_front_of(&(src)->pqb, &(dst)->pqb))
 
 /*
  * Packet type contexts, so that ssh2_pkt_type can correctly decode
@@ -777,8 +803,6 @@ int random_byte(void);
 void random_add_noise(void *noise, int length);
 void random_add_heavynoise(void *noise, int length);
 
-void logevent(Frontend *, const char *);
-
 /* Exports from x11fwd.c */
 enum {
     X11_TRANS_IPV4 = 0, X11_TRANS_IPV6 = 6, X11_TRANS_UNIX = 256
@@ -1268,3 +1292,29 @@ const char *ssh2_pkt_type(Pkt_KCtx pkt_kctx, Pkt_ACtx pkt_actx, int type);
  * format.
  */
 void old_keyfile_warning(void);
+
+/*
+ * Flags indicating implementation bugs that we know how to mitigate
+ * if we think the other end has them.
+ */
+#define SSH_IMPL_BUG_LIST(X)                    \
+    X(BUG_CHOKES_ON_SSH1_IGNORE)                \
+    X(BUG_SSH2_HMAC)                            \
+    X(BUG_NEEDS_SSH1_PLAIN_PASSWORD)            \
+    X(BUG_CHOKES_ON_RSA)                        \
+    X(BUG_SSH2_RSA_PADDING)                     \
+    X(BUG_SSH2_DERIVEKEY)                       \
+    X(BUG_SSH2_REKEY)                           \
+    X(BUG_SSH2_PK_SESSIONID)                    \
+    X(BUG_SSH2_MAXPKT)                          \
+    X(BUG_CHOKES_ON_SSH2_IGNORE)                \
+    X(BUG_CHOKES_ON_WINADJ)                     \
+    X(BUG_SENDS_LATE_REQUEST_REPLY)             \
+    X(BUG_SSH2_OLDGEX)                          \
+    /* end of list */
+#define TMP_DECLARE_LOG2_ENUM(thing) log2_##thing,
+enum { SSH_IMPL_BUG_LIST(TMP_DECLARE_LOG2_ENUM) };
+#undef TMP_DECLARE_LOG2_ENUM
+#define TMP_DECLARE_REAL_ENUM(thing) thing = 1 << log2_##thing,
+enum { SSH_IMPL_BUG_LIST(TMP_DECLARE_REAL_ENUM) };
+#undef TMP_DECLARE_REAL_ENUM

@@ -712,7 +712,6 @@ void frontend_echoedit_update(Frontend *frontend, int echo, int edit);
  * shutdown. */
 void update_specials_menu(Frontend *frontend);
 int from_backend(Frontend *frontend, int is_stderr, const void *data, int len);
-int from_backend_untrusted(Frontend *frontend, const void *data, int len);
 /* Called when the back end wants to indicate that EOF has arrived on
  * the server-to-client stream. Returns FALSE to indicate that we
  * intend to keep the session open in the other direction, or TRUE to
@@ -1130,7 +1129,6 @@ void term_request_copy(Terminal *, const int *clipboards, int n_clipboards);
 void term_request_paste(Terminal *, int clipboard);
 void term_seen_key_event(Terminal *); 
 int term_data(Terminal *, int is_stderr, const void *data, int len);
-int term_data_untrusted(Terminal *, const void *data, int len);
 void term_provide_backend(Terminal *term, Backend *backend);
 void term_provide_logctx(Terminal *term, LogContext *logctx);
 void term_set_focus(Terminal *term, int has_focus);
