@@ -56,6 +56,18 @@ void chan_remotely_opened_failure(Channel *chan, const char *errtext);
  * closing until both directions have had an EOF */
 int chan_no_eager_close(Channel *, int, int);
 
+/*
+ * Constructor for a trivial do-nothing implementation of
+ * ChannelVtable. Used for 'zombie' channels, i.e. channels whose
+ * proper local source of data has been shut down or otherwise stopped
+ * existing, but the SSH side is still there and needs some kind of a
+ * Channel implementation to talk to. In particular, the want_close
+ * method for this channel always returns 'yes, please close this
+ * channel asap', regardless of whether local and/or remote EOF have
+ * been sent - indeed, even if _neither_ has.
+ */
+Channel *zombiechan_new(void);
+
 /* ----------------------------------------------------------------------
  * This structure is owned by an SSH connection layer, and identifies
  * the connection layer's end of the channel, for the Channel

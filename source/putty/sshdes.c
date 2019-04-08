@@ -821,13 +821,13 @@ static void des3_ssh1_sesskey(ssh1_cipher *cipher, const void *key)
 
 static void des3_ssh1_encrypt_blk(ssh1_cipher *cipher, void *blk, int len)
 {
-    struct des_ssh1_ctx *ctx = FROMFIELD(cipher, struct des_ssh1_ctx, vt);
+    struct des3_ssh1_ctx *ctx = FROMFIELD(cipher, struct des3_ssh1_ctx, vt);
     des_3cbc_encrypt(blk, len, ctx->contexts);
 }
 
 static void des3_ssh1_decrypt_blk(ssh1_cipher *cipher, void *blk, int len)
 {
-    struct des_ssh1_ctx *ctx = FROMFIELD(cipher, struct des_ssh1_ctx, vt);
+    struct des3_ssh1_ctx *ctx = FROMFIELD(cipher, struct des3_ssh1_ctx, vt);
     des_3cbc_decrypt(blk, len, ctx->contexts+3);
 }
 

@@ -54,111 +54,6 @@ static const char *const ssh2_disconnect_reasons[] = {
 #define DH_MIN_SIZE 1024
 #define DH_MAX_SIZE 8192
 
-/*
- * Codes for terminal modes.
- * Most of these are the same in SSH-1 and SSH-2.
- * This list is derived from RFC 4254 and
- * SSH-1 RFC-1.2.31.
- */
-static const struct ssh_ttymode {
-    const char* const mode;
-    int opcode;
-    enum { TTY_OP_CHAR, TTY_OP_BOOL } type;
-} ssh_ttymodes[] = {
-    /* "V" prefix discarded for special characters relative to SSH specs */
-    { "INTR",	      1, TTY_OP_CHAR },
-    { "QUIT",	      2, TTY_OP_CHAR },
-    { "ERASE",	      3, TTY_OP_CHAR },
-    { "KILL",	      4, TTY_OP_CHAR },
-    { "EOF",	      5, TTY_OP_CHAR },
-    { "EOL",	      6, TTY_OP_CHAR },
-    { "EOL2",	      7, TTY_OP_CHAR },
-    { "START",	      8, TTY_OP_CHAR },
-    { "STOP",	      9, TTY_OP_CHAR },
-    { "SUSP",	     10, TTY_OP_CHAR },
-    { "DSUSP",	     11, TTY_OP_CHAR },
-    { "REPRINT",     12, TTY_OP_CHAR },
-    { "WERASE",	     13, TTY_OP_CHAR },
-    { "LNEXT",	     14, TTY_OP_CHAR },
-    { "FLUSH",	     15, TTY_OP_CHAR },
-    { "SWTCH",	     16, TTY_OP_CHAR },
-    { "STATUS",	     17, TTY_OP_CHAR },
-    { "DISCARD",     18, TTY_OP_CHAR },
-    { "IGNPAR",	     30, TTY_OP_BOOL },
-    { "PARMRK",	     31, TTY_OP_BOOL },
-    { "INPCK",	     32, TTY_OP_BOOL },
-    { "ISTRIP",	     33, TTY_OP_BOOL },
-    { "INLCR",	     34, TTY_OP_BOOL },
-    { "IGNCR",	     35, TTY_OP_BOOL },
-    { "ICRNL",	     36, TTY_OP_BOOL },
-    { "IUCLC",	     37, TTY_OP_BOOL },
-    { "IXON",	     38, TTY_OP_BOOL },
-    { "IXANY",	     39, TTY_OP_BOOL },
-    { "IXOFF",	     40, TTY_OP_BOOL },
-    { "IMAXBEL",     41, TTY_OP_BOOL },
-    { "IUTF8",       42, TTY_OP_BOOL },
-    { "ISIG",	     50, TTY_OP_BOOL },
-    { "ICANON",	     51, TTY_OP_BOOL },
-    { "XCASE",	     52, TTY_OP_BOOL },
-    { "ECHO",	     53, TTY_OP_BOOL },
-    { "ECHOE",	     54, TTY_OP_BOOL },
-    { "ECHOK",	     55, TTY_OP_BOOL },
-    { "ECHONL",	     56, TTY_OP_BOOL },
-    { "NOFLSH",	     57, TTY_OP_BOOL },
-    { "TOSTOP",	     58, TTY_OP_BOOL },
-    { "IEXTEN",	     59, TTY_OP_BOOL },
-    { "ECHOCTL",     60, TTY_OP_BOOL },
-    { "ECHOKE",	     61, TTY_OP_BOOL },
-    { "PENDIN",	     62, TTY_OP_BOOL }, /* XXX is this a real mode? */
-    { "OPOST",	     70, TTY_OP_BOOL },
-    { "OLCUC",	     71, TTY_OP_BOOL },
-    { "ONLCR",	     72, TTY_OP_BOOL },
-    { "OCRNL",	     73, TTY_OP_BOOL },
-    { "ONOCR",	     74, TTY_OP_BOOL },
-    { "ONLRET",	     75, TTY_OP_BOOL },
-    { "CS7",	     90, TTY_OP_BOOL },
-    { "CS8",	     91, TTY_OP_BOOL },
-    { "PARENB",	     92, TTY_OP_BOOL },
-    { "PARODD",	     93, TTY_OP_BOOL }
-};
-
-/* Miscellaneous other tty-related constants. */
-#define SSH_TTY_OP_END		  0
-/* The opcodes for ISPEED/OSPEED differ between SSH-1 and SSH-2. */
-#define SSH1_TTY_OP_ISPEED	192
-#define SSH1_TTY_OP_OSPEED	193
-#define SSH2_TTY_OP_ISPEED	128
-#define SSH2_TTY_OP_OSPEED	129
-
-/* Helper functions for parsing tty-related config. */
-static unsigned int ssh_tty_parse_specchar(char *s)
-{
-    unsigned int ret;
-    if (*s) {
-	char *next = NULL;
-	ret = ctrlparse(s, &next);
-	if (!next) ret = s[0];
-    } else {
-	ret = 255; /* special value meaning "don't set" */
-    }
-    return ret;
-}
-static unsigned int ssh_tty_parse_boolean(char *s)
-{
-    if (stricmp(s, "yes") == 0 ||
-	stricmp(s, "on") == 0 ||
-	stricmp(s, "true") == 0 ||
-	stricmp(s, "+") == 0)
-	return 1; /* true */
-    else if (stricmp(s, "no") == 0 ||
-	     stricmp(s, "off") == 0 ||
-	     stricmp(s, "false") == 0 ||
-	     stricmp(s, "-") == 0)
-	return 0; /* false */
-    else
-	return (atoi(s) != 0);
-}
-
 /* Safely convert rekey_time to unsigned long minutes */
 static unsigned long rekey_mins(int rekey_time, unsigned long def)
 {
@@ -166,116 +61,6 @@ static unsigned long rekey_mins(int rekey_time, unsigned long def)
         rekey_time = def;
     return (unsigned long)rekey_time;
 }
-
-#define translate(x) if (type == x) return #x
-#define translatek(x,ctx) if (type == x && (pkt_kctx == ctx)) return #x
-#define translatea(x,ctx) if (type == x && (pkt_actx == ctx)) return #x
-const char *ssh1_pkt_type(int type)
-{
-    translate(SSH1_MSG_DISCONNECT);
-    translate(SSH1_SMSG_PUBLIC_KEY);
-    translate(SSH1_CMSG_SESSION_KEY);
-    translate(SSH1_CMSG_USER);
-    translate(SSH1_CMSG_AUTH_RSA);
-    translate(SSH1_SMSG_AUTH_RSA_CHALLENGE);
-    translate(SSH1_CMSG_AUTH_RSA_RESPONSE);
-    translate(SSH1_CMSG_AUTH_PASSWORD);
-    translate(SSH1_CMSG_REQUEST_PTY);
-    translate(SSH1_CMSG_WINDOW_SIZE);
-    translate(SSH1_CMSG_EXEC_SHELL);
-    translate(SSH1_CMSG_EXEC_CMD);
-    translate(SSH1_SMSG_SUCCESS);
-    translate(SSH1_SMSG_FAILURE);
-    translate(SSH1_CMSG_STDIN_DATA);
-    translate(SSH1_SMSG_STDOUT_DATA);
-    translate(SSH1_SMSG_STDERR_DATA);
-    translate(SSH1_CMSG_EOF);
-    translate(SSH1_SMSG_EXIT_STATUS);
-    translate(SSH1_MSG_CHANNEL_OPEN_CONFIRMATION);
-    translate(SSH1_MSG_CHANNEL_OPEN_FAILURE);
-    translate(SSH1_MSG_CHANNEL_DATA);
-    translate(SSH1_MSG_CHANNEL_CLOSE);
-    translate(SSH1_MSG_CHANNEL_CLOSE_CONFIRMATION);
-    translate(SSH1_SMSG_X11_OPEN);
-    translate(SSH1_CMSG_PORT_FORWARD_REQUEST);
-    translate(SSH1_MSG_PORT_OPEN);
-    translate(SSH1_CMSG_AGENT_REQUEST_FORWARDING);
-    translate(SSH1_SMSG_AGENT_OPEN);
-    translate(SSH1_MSG_IGNORE);
-    translate(SSH1_CMSG_EXIT_CONFIRMATION);
-    translate(SSH1_CMSG_X11_REQUEST_FORWARDING);
-    translate(SSH1_CMSG_AUTH_RHOSTS_RSA);
-    translate(SSH1_MSG_DEBUG);
-    translate(SSH1_CMSG_REQUEST_COMPRESSION);
-    translate(SSH1_CMSG_AUTH_TIS);
-    translate(SSH1_SMSG_AUTH_TIS_CHALLENGE);
-    translate(SSH1_CMSG_AUTH_TIS_RESPONSE);
-    translate(SSH1_CMSG_AUTH_CCARD);
-    translate(SSH1_SMSG_AUTH_CCARD_CHALLENGE);
-    translate(SSH1_CMSG_AUTH_CCARD_RESPONSE);
-    return "unknown";
-}
-const char *ssh2_pkt_type(Pkt_KCtx pkt_kctx, Pkt_ACtx pkt_actx, int type)
-{
-    translatea(SSH2_MSG_USERAUTH_GSSAPI_RESPONSE,SSH2_PKTCTX_GSSAPI);
-    translatea(SSH2_MSG_USERAUTH_GSSAPI_TOKEN,SSH2_PKTCTX_GSSAPI);
-    translatea(SSH2_MSG_USERAUTH_GSSAPI_EXCHANGE_COMPLETE,SSH2_PKTCTX_GSSAPI);
-    translatea(SSH2_MSG_USERAUTH_GSSAPI_ERROR,SSH2_PKTCTX_GSSAPI);
-    translatea(SSH2_MSG_USERAUTH_GSSAPI_ERRTOK,SSH2_PKTCTX_GSSAPI);
-    translatea(SSH2_MSG_USERAUTH_GSSAPI_MIC, SSH2_PKTCTX_GSSAPI);
-    translate(SSH2_MSG_DISCONNECT);
-    translate(SSH2_MSG_IGNORE);
-    translate(SSH2_MSG_UNIMPLEMENTED);
-    translate(SSH2_MSG_DEBUG);
-    translate(SSH2_MSG_SERVICE_REQUEST);
-    translate(SSH2_MSG_SERVICE_ACCEPT);
-    translate(SSH2_MSG_KEXINIT);
-    translate(SSH2_MSG_NEWKEYS);
-    translatek(SSH2_MSG_KEXDH_INIT, SSH2_PKTCTX_DHGROUP);
-    translatek(SSH2_MSG_KEXDH_REPLY, SSH2_PKTCTX_DHGROUP);
-    translatek(SSH2_MSG_KEX_DH_GEX_REQUEST_OLD, SSH2_PKTCTX_DHGEX);
-    translatek(SSH2_MSG_KEX_DH_GEX_REQUEST, SSH2_PKTCTX_DHGEX);
-    translatek(SSH2_MSG_KEX_DH_GEX_GROUP, SSH2_PKTCTX_DHGEX);
-    translatek(SSH2_MSG_KEX_DH_GEX_INIT, SSH2_PKTCTX_DHGEX);
-    translatek(SSH2_MSG_KEX_DH_GEX_REPLY, SSH2_PKTCTX_DHGEX);
-    translatek(SSH2_MSG_KEXRSA_PUBKEY, SSH2_PKTCTX_RSAKEX);
-    translatek(SSH2_MSG_KEXRSA_SECRET, SSH2_PKTCTX_RSAKEX);
-    translatek(SSH2_MSG_KEXRSA_DONE, SSH2_PKTCTX_RSAKEX);
-    translatek(SSH2_MSG_KEX_ECDH_INIT, SSH2_PKTCTX_ECDHKEX);
-    translatek(SSH2_MSG_KEX_ECDH_REPLY, SSH2_PKTCTX_ECDHKEX);
-    translatek(SSH2_MSG_KEXGSS_INIT, SSH2_PKTCTX_GSSKEX);
-    translatek(SSH2_MSG_KEXGSS_CONTINUE, SSH2_PKTCTX_GSSKEX);
-    translatek(SSH2_MSG_KEXGSS_COMPLETE, SSH2_PKTCTX_GSSKEX);
-    translatek(SSH2_MSG_KEXGSS_HOSTKEY, SSH2_PKTCTX_GSSKEX);
-    translatek(SSH2_MSG_KEXGSS_ERROR, SSH2_PKTCTX_GSSKEX);
-    translatek(SSH2_MSG_KEXGSS_GROUPREQ, SSH2_PKTCTX_GSSKEX);
-    translatek(SSH2_MSG_KEXGSS_GROUP, SSH2_PKTCTX_GSSKEX);
-    translate(SSH2_MSG_USERAUTH_REQUEST);
-    translate(SSH2_MSG_USERAUTH_FAILURE);
-    translate(SSH2_MSG_USERAUTH_SUCCESS);
-    translate(SSH2_MSG_USERAUTH_BANNER);
-    translatea(SSH2_MSG_USERAUTH_PK_OK, SSH2_PKTCTX_PUBLICKEY);
-    translatea(SSH2_MSG_USERAUTH_PASSWD_CHANGEREQ, SSH2_PKTCTX_PASSWORD);
-    translatea(SSH2_MSG_USERAUTH_INFO_REQUEST, SSH2_PKTCTX_KBDINTER);
-    translatea(SSH2_MSG_USERAUTH_INFO_RESPONSE, SSH2_PKTCTX_KBDINTER);
-    translate(SSH2_MSG_GLOBAL_REQUEST);
-    translate(SSH2_MSG_REQUEST_SUCCESS);
-    translate(SSH2_MSG_REQUEST_FAILURE);
-    translate(SSH2_MSG_CHANNEL_OPEN);
-    translate(SSH2_MSG_CHANNEL_OPEN_CONFIRMATION);
-    translate(SSH2_MSG_CHANNEL_OPEN_FAILURE);
-    translate(SSH2_MSG_CHANNEL_WINDOW_ADJUST);
-    translate(SSH2_MSG_CHANNEL_DATA);
-    translate(SSH2_MSG_CHANNEL_EXTENDED_DATA);
-    translate(SSH2_MSG_CHANNEL_EOF);
-    translate(SSH2_MSG_CHANNEL_CLOSE);
-    translate(SSH2_MSG_CHANNEL_REQUEST);
-    translate(SSH2_MSG_CHANNEL_SUCCESS);
-    translate(SSH2_MSG_CHANNEL_FAILURE);
-    return "unknown";
-}
-#undef translate
-#undef translatec
 
 /* Enumeration values for fields in SSH-1 packets */
 enum {
@@ -533,7 +318,7 @@ static void ssh1_protocol_setup(Ssh ssh);
 static void ssh2_protocol_setup(Ssh ssh);
 static void ssh2_bare_connection_protocol_setup(Ssh ssh);
 static void ssh_size(Backend *be, int width, int height);
-static void ssh_special(Backend *be, Telnet_Special);
+static void ssh_special(Backend *be, SessionSpecialCode, int arg);
 static int ssh2_try_send(struct ssh_channel *c);
 static int ssh_send_channel_data(struct ssh_channel *c,
 				 const char *buf, int len);
@@ -779,8 +564,8 @@ struct ssh_tag {
      * Track incoming and outgoing data sizes and time, for
      * size-based rekeys.
      */
-    unsigned long incoming_data_size, outgoing_data_size;
     unsigned long max_data_size;
+    struct DataTransferStats stats;
     int kex_in_progress;
     unsigned long next_rekey, last_rekey;
     const char *deferred_rekey_reason;
@@ -812,7 +597,7 @@ struct ssh_tag {
     /*
      * The last list returned from get_specials.
      */
-    struct telnet_special *specials;
+    SessionSpecial *specials;
 
     /*
      * List of host key algorithms for which we _don't_ have a stored
@@ -875,41 +660,6 @@ static void bomb_out(Ssh ssh, char *text)
 
 #define bombout(msg) bomb_out(ssh, dupprintf msg)
 
-/* Helper function for common bits of parsing ttymodes. */
-static void parse_ttymodes(
-    BinarySink *bs, Ssh ssh,
-    void (*do_mode)(BinarySink *, const struct ssh_ttymode *, char *))
-{
-    int i;
-    const struct ssh_ttymode *mode;
-    char *val;
-
-    for (i = 0; i < lenof(ssh_ttymodes); i++) {
-        mode = ssh_ttymodes + i;
-	/* Every mode known to the current version of the code should be
-	 * mentioned; this was ensured when settings were loaded. */
-        val = conf_get_str_str(ssh->conf, CONF_ttymodes, mode->mode);
-
-	/*
-	 * val[0] can be
-	 *  - 'V', indicating that an explicit value follows it;
-	 *  - 'A', indicating that we should pass the value through from
-	 *    the local environment via get_ttymode; or
-	 *  - 'N', indicating that we should explicitly not send this
-	 *    mode.
-	 */
-	if (val[0] == 'A') {
-	    val = get_ttymode(ssh->frontend, mode->mode);
-	    if (val) {
-		do_mode(bs, mode, val);
-		sfree(val);
-	    }
-	} else if (val[0] == 'V') {
-            do_mode(bs, mode, val + 1);              /* skip the 'V' */
-	} /* else 'N', or something from the future we don't understand */
-    }
-}
-
 static int ssh_channelcmp(void *av, void *bv)
 {
     struct ssh_channel *a = (struct ssh_channel *) av;
@@ -959,56 +709,12 @@ static int ssh_rportcmp_ssh2(void *av, void *bv)
     return 0;
 }
 
-static unsigned alloc_channel_id(Ssh ssh)
-{
-    const unsigned CHANNEL_NUMBER_OFFSET = 256;
-    search234_state ss;
-
-    /*
-     * First-fit allocation of channel numbers: we always pick the
-     * lowest unused one.
-     *
-     * Every channel before that, and no channel after it, has an ID
-     * exactly equal to its tree index plus CHANNEL_NUMBER_OFFSET. So
-     * we can use the search234 system to identify the length of that
-     * initial sequence, in a single log-time pass down the channels
-     * tree.
-     */
-    search234_start(&ss, ssh->channels);
-    while (ss.element) {
-        struct ssh_channel *c = (struct ssh_channel *)ss.element;
-        if (c->localid == ss.index + CHANNEL_NUMBER_OFFSET)
-            search234_step(&ss, +1);
-        else
-            search234_step(&ss, -1);
-    }
-
-    /*
-     * Now ss.index gives exactly the number of channels in that
-     * initial sequence. So adding CHANNEL_NUMBER_OFFSET to it must
-     * give precisely the lowest unused channel number.
-     */
-    return ss.index + CHANNEL_NUMBER_OFFSET;
-}
-
-static void c_write_stderr(int trusted, const void *vbuf, int len)
-{
-    const char *buf = (const char *)vbuf;
-    int i;
-    for (i = 0; i < len; i++)
-	if (buf[i] != '\r' && (trusted || buf[i] == '\n' || (buf[i] & 0x60)))
-	    fputc(buf[i], stderr);
-}
-
 static void c_write(Ssh ssh, const void *buf, int len)
 {
-    if (flags & FLAG_STDERR)
-	c_write_stderr(1, buf, len);
-    else
 #ifdef MPEXT
 	from_backend(ssh->frontend, -1, buf, len);
 #else
-	from_backend(ssh->frontend, 1, buf, len);
+    from_backend(ssh->frontend, 1, buf, len);
 #endif
 }
 
@@ -1072,10 +778,9 @@ static void ssh_send_outgoing_data(void *ctx)
         backlog = s_write(ssh, data, len);
         bufchain_consume(&ssh->outgoing_data, len);
 
-	ssh->outgoing_data_size += len;
         if (ssh->version == 2 && !ssh->kex_in_progress &&
-	    !ssh->bare_connection && ssh->max_data_size != 0 &&
-	    ssh->outgoing_data_size > ssh->max_data_size) {
+            ssh->state != SSH_STATE_PREPACKET &&
+            !ssh->bare_connection && !ssh->stats.out.running) {
             ssh->rekey_reason = "too much data sent";
             ssh->rekey_class = RK_NORMAL;
             queue_idempotent_callback(&ssh->ssh2_transport_icb);
@@ -1221,6 +926,14 @@ static void ssh_got_ssh_version(struct ssh_version_receiver *rcv,
     BinaryPacketProtocol *old_bpp;
 
     /*
+     * This is as good a time as any to stop printing proxy-command
+     * diagnostics in the terminal window, on the assumption that the
+     * proxy command must by now have made a sensible connection and
+     * the real session output will start shortly.
+     */
+    ssh->session_started = TRUE;
+
+    /*
      * Queue an outgoing-data run: if the version string has been sent
      * late rather than early, it'll still be sitting on our output
      * raw data queue.
@@ -1293,13 +1006,6 @@ static void ssh_got_ssh_version(struct ssh_version_receiver *rcv,
     }
 }
 
-static void ssh_set_frozen(Ssh ssh, int frozen)
-{
-    if (ssh->s)
-	sk_set_frozen(ssh->s, frozen);
-    ssh->frozen = frozen;
-}
-
 static void ssh_process_incoming_data(void *ctx)
 {
     Ssh ssh = (Ssh)ctx;
@@ -1356,88 +1062,6 @@ static void ssh_process_user_input(void *ctx)
     Ssh ssh = (Ssh)ctx;
     if (ssh->current_user_input_fn)
         ssh->current_user_input_fn(ssh);
-}
-
-void chan_remotely_opened_confirmation(Channel *chan)
-{
-    assert(0 && "this channel type should never receive OPEN_CONFIRMATION");
-}
-
-void chan_remotely_opened_failure(Channel *chan, const char *errtext)
-{
-    assert(0 && "this channel type should never receive OPEN_FAILURE");
-}
-
-int chan_no_eager_close(Channel *chan, int sent_local_eof, int rcvd_remote_eof)
-{
-    return FALSE;     /* default: never proactively ask for a close */
-}
-
-/*
- * Trivial channel vtable for handling 'zombie channels' - those whose
- * local source of data has already been shut down or otherwise
- * stopped existing - so that we don't have to give them a null
- * 'Channel *' and special-case that all over the place.
- */
-
-static void zombiechan_free(Channel *chan);
-static int zombiechan_send(Channel *chan, int is_stderr, const void *, int);
-static void zombiechan_set_input_wanted(Channel *chan, int wanted);
-static void zombiechan_do_nothing(Channel *chan);
-static void zombiechan_open_failure(Channel *chan, const char *);
-static int zombiechan_want_close(Channel *chan, int sent_eof, int rcvd_eof);
-static char *zombiechan_log_close_msg(Channel *chan) { return NULL; }
-
-static const struct ChannelVtable zombiechan_channelvt = {
-    zombiechan_free,
-    zombiechan_do_nothing,             /* open_confirmation */
-    zombiechan_open_failure,
-    zombiechan_send,
-    zombiechan_do_nothing,             /* send_eof */
-    zombiechan_set_input_wanted,
-    zombiechan_log_close_msg,
-    zombiechan_want_close,
-};
-
-Channel *zombiechan_new(void)
-{
-    Channel *chan = snew(Channel);
-    chan->vt = &zombiechan_channelvt;
-    chan->initial_fixed_window_size = 0;
-    return chan;
-}
-
-static void zombiechan_free(Channel *chan)
-{
-    assert(chan->vt == &zombiechan_channelvt);
-    sfree(chan);
-}
-
-static void zombiechan_do_nothing(Channel *chan)
-{
-    assert(chan->vt == &zombiechan_channelvt);
-}
-
-static void zombiechan_open_failure(Channel *chan, const char *errtext)
-{
-    assert(chan->vt == &zombiechan_channelvt);
-}
-
-static int zombiechan_send(Channel *chan, int is_stderr,
-                           const void *data, int length)
-{
-    assert(chan->vt == &zombiechan_channelvt);
-    return 0;
-}
-
-static void zombiechan_set_input_wanted(Channel *chan, int enable)
-{
-    assert(chan->vt == &zombiechan_channelvt);
-}
-
-static int zombiechan_want_close(Channel *chan, int sent_eof, int rcvd_eof)
-{
-    return TRUE;
 }
 
 static int ssh_do_close(Ssh ssh, int notify_exit)
@@ -1734,13 +1358,23 @@ static const char *connect_to_host(Ssh ssh, const char *host, int port,
 static void ssh_throttle_conn(Ssh ssh, int adjust)
 {
     int old_count = ssh->conn_throttle_count;
+    int frozen;
+
     ssh->conn_throttle_count += adjust;
     assert(ssh->conn_throttle_count >= 0);
+
     if (ssh->conn_throttle_count && !old_count) {
-	ssh_set_frozen(ssh, 1);
+        frozen = TRUE;
     } else if (!ssh->conn_throttle_count && old_count) {
-	ssh_set_frozen(ssh, 0);
+        frozen = FALSE;
+    } else {
+        return;                /* don't change current frozen state */
     }
+
+    ssh->frozen = frozen;
+
+    if (ssh->s)
+        sk_set_frozen(ssh->s, frozen);
 }
 
 static void ssh_channel_check_throttle(struct ssh_channel *c)
@@ -2039,7 +1673,6 @@ static void do_ssh1_login(void *vctx)
             sfree(keystr);
             crStopV;
         } else if (s->dlgret < 0) { /* none configured; use standard handling */
-            ssh_set_frozen(ssh, 1);
             s->dlgret = verify_ssh_host_key(ssh->frontend,
                                             ssh->savedhost, ssh->savedport,
                                             "rsa", keystr, fingerprint,
@@ -2053,7 +1686,6 @@ static void do_ssh1_login(void *vctx)
                 crWaitUntilV(ssh->user_response >= 0);
                 s->dlgret = ssh->user_response;
             }
-            ssh_set_frozen(ssh, 0);
 
             if (s->dlgret == 0) {
                 ssh_disconnect(ssh, "User aborted at host key verification",
@@ -2125,7 +1757,6 @@ static void do_ssh1_login(void *vctx)
 
 	/* Warn about chosen cipher if necessary. */
 	if (warn) {
-            ssh_set_frozen(ssh, 1);
 	    s->dlgret = askalg(ssh->frontend, "cipher", cipher_string,
 			       ssh_dialog_callback, ssh);
 	    if (s->dlgret < 0) {
@@ -2133,7 +1764,6 @@ static void do_ssh1_login(void *vctx)
                 crWaitUntilV(ssh->user_response >= 0);
 		s->dlgret = ssh->user_response;
 	    }
-            ssh_set_frozen(ssh, 0);
 	    if (s->dlgret == 0) {
 		ssh_disconnect(ssh, "User aborted at cipher warning", NULL,
 			       0, TRUE);
@@ -2238,8 +1868,7 @@ static void do_ssh1_login(void *vctx)
     {
         char *userlog = dupprintf(MPEXT_BOM "Sent username \"%s\"", ssh->username);
         logevent(userlog);
-        if (flags & FLAG_INTERACTIVE &&
-            (!((flags & FLAG_STDERR) && (flags & FLAG_VERBOSE)))) {
+        if ((flags & FLAG_VERBOSE) || (flags & FLAG_INTERACTIVE)) {
             c_write_str(ssh, userlog);
             c_write_str(ssh, "\r\n");
         }
@@ -3466,22 +3095,6 @@ static void ssh1_smsg_exit_status(Ssh ssh, PktIn *pktin)
     ssh_disconnect(ssh, NULL, NULL, 0, TRUE);
 }
 
-/* Helper function to deal with sending tty modes for REQUEST_PTY */
-static void ssh1_send_ttymode(BinarySink *bs,
-                              const struct ssh_ttymode *mode, char *val)
-{
-    put_byte(bs, mode->opcode);
-
-    switch (mode->type) {
-      case TTY_OP_CHAR:
-        put_byte(bs, ssh_tty_parse_specchar(val));
-	break;
-      case TTY_OP_BOOL:
-        put_byte(bs, ssh_tty_parse_boolean(val));
-	break;
-    }
-}
-
 static int (ssh_agent_forwarding_permitted)(ConnectionLayer *cl)
 {
     Ssh ssh = FROMFIELD(cl, struct ssh_tag, cl);
@@ -3581,12 +3194,9 @@ static void do_ssh1_connection(void *vctx)
 	put_uint32(pkt, ssh->term_width);
 	put_uint32(pkt, 0); /* width in pixels */
 	put_uint32(pkt, 0); /* height in pixels */
-	parse_ttymodes(BinarySink_UPCAST(pkt), ssh, ssh1_send_ttymode);
-	put_byte(pkt, SSH1_TTY_OP_ISPEED);
-	put_uint32(pkt, ssh->ispeed);
-	put_byte(pkt, SSH1_TTY_OP_OSPEED);
-	put_uint32(pkt, ssh->ospeed);
-	put_byte(pkt, SSH_TTY_OP_END);
+        write_ttymodes_to_packet_from_conf(
+            BinarySink_UPCAST(pkt), ssh->frontend, ssh->conf,
+            1, ssh->ospeed, ssh->ispeed);
 	ssh_pkt_write(ssh, pkt);
 	ssh->state = SSH_STATE_INTERMED;
         crMaybeWaitUntilV((pktin = pq_pop(&ssh->pq_ssh1_connection)) != NULL);
@@ -3610,6 +3220,7 @@ static void do_ssh1_connection(void *vctx)
         pkt = ssh_bpp_new_pktout(ssh->bpp, SSH1_CMSG_REQUEST_COMPRESSION);
         put_uint32(pkt, 6);            /* gzip compression level */
         ssh_pkt_write(ssh, pkt);
+        ssh1_bpp_requested_compression(ssh->bpp);
         crMaybeWaitUntilV((pktin = pq_pop(&ssh->pq_ssh1_connection)) != NULL);
 	if (pktin->type != SSH1_SMSG_SUCCESS
 	    && pktin->type != SSH1_SMSG_FAILURE) {
@@ -3617,9 +3228,9 @@ static void do_ssh1_connection(void *vctx)
 	    crStopV;
 	} else if (pktin->type == SSH1_SMSG_FAILURE) {
 	    c_write_str(ssh, "Server refused to compress\r\n");
-	}
-	logevent("Started zlib (RFC1950) compression");
-        ssh1_bpp_start_compression(ssh->bpp);
+	} else {
+            logevent("Started zlib (RFC1950) compression");
+        }
     }
 
     /*
@@ -3652,7 +3263,7 @@ static void do_ssh1_connection(void *vctx)
     if (ssh->size_needed)
         backend_size(&ssh->backend, ssh->term_width, ssh->term_height);
     if (ssh->eof_needed)
-        backend_special(&ssh->backend, TS_EOF);
+        backend_special(&ssh->backend, SS_EOF, 0);
 
     if (ssh->ldisc)
 	ldisc_echoedit_update(ssh->ldisc);  /* cause ldisc to notice changes */
@@ -3757,59 +3368,6 @@ static void ssh1_protocol_setup(Ssh ssh)
     ssh->packet_dispatch[SSH1_MSG_IGNORE] = ssh_msg_ignore;
     ssh->packet_dispatch[SSH1_MSG_DEBUG] = ssh1_msg_debug;
 }
-
-/*
- * Utility routines for decoding comma-separated strings in KEXINIT.
- */
-static int first_in_commasep_string(char const *needle, char const *haystack,
-				    int haylen)
-{
-    int needlen;
-    if (!needle || !haystack)	       /* protect against null pointers */
-	return 0;
-    needlen = strlen(needle);
-
-    if (haylen >= needlen &&       /* haystack is long enough */
-	!memcmp(needle, haystack, needlen) &&	/* initial match */
-	(haylen == needlen || haystack[needlen] == ',')
-	/* either , or EOS follows */
-	)
-	return 1;
-    return 0;
-}
-
-static int in_commasep_string(char const *needle, char const *haystack,
-			      int haylen)
-{
-    char *p;
-
-    if (!needle || !haystack)	       /* protect against null pointers */
-	return 0;
-    /*
-     * Is it at the start of the string?
-     */
-    if (first_in_commasep_string(needle, haystack, haylen))
-	return 1;
-    /*
-     * If not, search for the next comma and resume after that.
-     * If no comma found, terminate.
-     */
-    p = memchr(haystack, ',', haylen);
-    if (!p) return 0;
-    /* + 1 to skip over comma */
-    return in_commasep_string(needle, p + 1, haylen - (p + 1 - haystack));
-}
-
-/*
- * Add a value to a strbuf containing a comma-separated list.
- */
-static void add_to_commasep(strbuf *buf, const char *data)
-{
-    if (buf->len > 0)
-	put_byte(buf, ',');
-    put_data(buf, data, strlen(data));
-}
-
 
 /*
  * SSH-2 key derivation (RFC 4253 section 7.2).
@@ -4653,7 +4211,6 @@ static void do_ssh2_transport(void *vctx)
                    BinarySource_UPCAST(pktin)->len + 1);
 
 	if (s->warn_kex) {
-	    ssh_set_frozen(ssh, 1);
 	    s->dlgret = askalg(ssh->frontend, "key-exchange algorithm",
 			       ssh->kex->name,
 			       ssh_dialog_callback, ssh);
@@ -4662,7 +4219,6 @@ static void do_ssh2_transport(void *vctx)
 		crWaitUntilV(ssh->user_response >= 0);
 		s->dlgret = ssh->user_response;
 	    }
-	    ssh_set_frozen(ssh, 0);
 	    if (s->dlgret == 0) {
 		ssh_disconnect(ssh, "User aborted at kex warning", NULL,
 			       0, TRUE);
@@ -4673,8 +4229,6 @@ static void do_ssh2_transport(void *vctx)
 	if (s->warn_hk) {
             int j, k;
             char *betteralgs;
-
-	    ssh_set_frozen(ssh, 1);
 
             /*
              * Change warning box wording depending on why we chose a
@@ -4723,7 +4277,6 @@ static void do_ssh2_transport(void *vctx)
                 crWaitUntilV(ssh->user_response >= 0);
 		s->dlgret = ssh->user_response;
 	    }
-	    ssh_set_frozen(ssh, 0);
 	    if (s->dlgret == 0) {
 		ssh_disconnect(ssh, "User aborted at host key warning", NULL,
 			       0, TRUE);
@@ -4732,7 +4285,6 @@ static void do_ssh2_transport(void *vctx)
 	}
 
 	if (s->warn_cscipher) {
-	    ssh_set_frozen(ssh, 1);
 	    s->dlgret = askalg(ssh->frontend,
 			       "client-to-server cipher",
 			       s->out.cipher->name,
@@ -4742,7 +4294,6 @@ static void do_ssh2_transport(void *vctx)
                 crWaitUntilV(ssh->user_response >= 0);
 		s->dlgret = ssh->user_response;
 	    }
-	    ssh_set_frozen(ssh, 0);
 	    if (s->dlgret == 0) {
 		ssh_disconnect(ssh, "User aborted at cipher warning", NULL,
 			       0, TRUE);
@@ -4751,7 +4302,6 @@ static void do_ssh2_transport(void *vctx)
 	}
 
 	if (s->warn_sccipher) {
-	    ssh_set_frozen(ssh, 1);
 	    s->dlgret = askalg(ssh->frontend,
 			       "server-to-client cipher",
 			       s->in.cipher->name,
@@ -4761,7 +4311,6 @@ static void do_ssh2_transport(void *vctx)
                 crWaitUntilV(ssh->user_response >= 0);
 		s->dlgret = ssh->user_response;
 	    }
-	    ssh_set_frozen(ssh, 0);
 	    if (s->dlgret == 0) {
 		ssh_disconnect(ssh, "User aborted at cipher warning", NULL,
 			       0, TRUE);
@@ -5526,7 +5075,6 @@ static void do_ssh2_transport(void *vctx)
             bombout(("Host key did not appear in manually configured list"));
             crStopV;
         } else if (s->dlgret < 0) { /* none configured; use standard handling */
-            ssh_set_frozen(ssh, 1);
             s->dlgret = verify_ssh_host_key(ssh->frontend,
                                             ssh->savedhost, ssh->savedport,
                                             ssh_key_cache_id(s->hkey),
@@ -5540,7 +5088,6 @@ static void do_ssh2_transport(void *vctx)
                 crWaitUntilV(ssh->user_response >= 0);
 		s->dlgret = ssh->user_response;
 	    }
-            ssh_set_frozen(ssh, 0);
             if (s->dlgret == 0) {
                 ssh_disconnect(ssh, "Aborted at host key verification", NULL,
                                0, TRUE);
@@ -5607,7 +5154,9 @@ static void do_ssh2_transport(void *vctx)
      */
     s->pktout = ssh_bpp_new_pktout(ssh->bpp, SSH2_MSG_NEWKEYS);
     ssh_pkt_write(ssh, s->pktout);
-    ssh->outgoing_data_size = 0;       /* start counting from here */
+    /* Start counting down the outgoing-data limit for these cipher keys. */
+    ssh->stats.out.running = TRUE;
+    ssh->stats.out.remaining = ssh->max_data_size;
 
     /*
      * We've sent client NEWKEYS, so create and initialise
@@ -5680,7 +5229,9 @@ static void do_ssh2_transport(void *vctx)
 	bombout(("expected new-keys packet from server"));
 	crStopV;
     }
-    ssh->incoming_data_size = 0;       /* start counting from here */
+    /* Start counting down the incoming-data limit for these cipher keys. */
+    ssh->stats.in.running = TRUE;
+    ssh->stats.in.remaining = ssh->max_data_size;
 
     /*
      * We've seen server NEWKEYS, so create and initialise
@@ -5839,8 +5390,9 @@ static void do_ssh2_transport(void *vctx)
                       ssh->rekey_reason);
             /* Reset the counters, so that at least this message doesn't
              * hit the event log _too_ often. */
-            ssh->outgoing_data_size = 0;
-            ssh->incoming_data_size = 0;
+            ssh->stats.in.running = ssh->stats.out.running = TRUE;
+            ssh->stats.in.remaining = ssh->stats.out.remaining =
+                ssh->max_data_size;
             (void) ssh2_timer_update(ssh, 0);
             goto wait_for_rekey;       /* this is still utterly horrid */
         } else {
@@ -5957,7 +5509,7 @@ static int ssh_is_simple(Ssh ssh)
 static void ssh_channel_init(struct ssh_channel *c)
 {
     Ssh ssh = c->ssh;
-    c->localid = alloc_channel_id(ssh);
+    c->localid = alloc_channel_id(ssh->channels, struct ssh_channel);
     c->closes = 0;
     c->pending_eof = FALSE;
     c->throttling_conn = FALSE;
@@ -6947,22 +6499,6 @@ static void ssh2_msg_userauth_banner(Ssh ssh, PktIn *pktin)
     }
 }
 
-/* Helper function to deal with sending tty modes for "pty-req" */
-static void ssh2_send_ttymode(BinarySink *bs,
-                              const struct ssh_ttymode *mode, char *val)
-{
-    put_byte(bs, mode->opcode);
-
-    switch (mode->type) {
-      case TTY_OP_CHAR:
-        put_uint32(bs, ssh_tty_parse_specchar(val));
-	break;
-      case TTY_OP_BOOL:
-        put_uint32(bs, ssh_tty_parse_boolean(val));
-	break;
-    }
-}
-
 static void ssh2_setup_x11(struct ssh_channel *c, PktIn *pktin,
                            void *ctx)
 {
@@ -7057,12 +6593,9 @@ static void ssh2_setup_pty(struct ssh_channel *c, PktIn *pktin,
     put_uint32(pktout, 0);	       /* pixel height */
     {
         strbuf *modebuf = strbuf_new();
-        parse_ttymodes(BinarySink_UPCAST(modebuf), ssh, ssh2_send_ttymode);
-        put_byte(modebuf, SSH2_TTY_OP_ISPEED);
-        put_uint32(modebuf, ssh->ispeed);
-        put_byte(modebuf, SSH2_TTY_OP_OSPEED);
-        put_uint32(modebuf, ssh->ospeed);
-        put_byte(modebuf, SSH_TTY_OP_END);
+        write_ttymodes_to_packet_from_conf(
+            BinarySink_UPCAST(modebuf), ssh->frontend, ssh->conf,
+            2, ssh->ospeed, ssh->ispeed);
         put_stringsb(pktout, modebuf);
     }
     ssh2_pkt_send(ssh, pktout);
@@ -8947,8 +8480,10 @@ static void do_ssh2_connection(void *vctx)
      * matches any of the table entries we've just modified will go to
      * the right handler function, and won't come here to confuse us.
      */
-    if (pq_empty_on_to_front_of(&ssh->pq_ssh2_connection, &ssh->pq_full))
+    if (pq_peek(&ssh->pq_ssh2_connection)) {
+        pq_concatenate(&ssh->pq_full, &ssh->pq_ssh2_connection, &ssh->pq_full);
         queue_idempotent_callback(&ssh->pq_full_consumer);
+    }
 
     /*
      * Now the connection protocol is properly up and running, with
@@ -9084,7 +8619,7 @@ static void do_ssh2_connection(void *vctx)
     if (ssh->size_needed)
         backend_size(&ssh->backend, ssh->term_width, ssh->term_height);
     if (ssh->eof_needed)
-        backend_special(&ssh->backend, TS_EOF);
+        backend_special(&ssh->backend, SS_EOF, 0);
 
     /*
      * Transfer data!
@@ -9209,7 +8744,7 @@ static void ssh2_protocol_setup(Ssh ssh)
 {
     int i;
 
-    ssh->bpp = ssh2_bpp_new();
+    ssh->bpp = ssh2_bpp_new(&ssh->stats);
 
 #ifndef NO_GSSAPI
     /* Load and pick the highest GSS library on the preference list. */
@@ -9620,10 +9155,8 @@ static void ssh2_timer(void *ctx, unsigned long now)
 
 static void ssh2_general_packet_processing(Ssh ssh, PktIn *pktin)
 {
-    ssh->incoming_data_size += pktin->encrypted_len;
-    if (!ssh->kex_in_progress &&
-        ssh->max_data_size != 0 &&
-        ssh->incoming_data_size > ssh->max_data_size) {
+    if (!ssh->kex_in_progress && ssh->max_data_size != 0 &&
+        ssh->state != SSH_STATE_PREPACKET && !ssh->stats.in.running) {
         ssh->rekey_reason = "too much data received";
         ssh->rekey_class = RK_NORMAL;
         queue_idempotent_callback(&ssh->ssh2_transport_icb);
@@ -9778,7 +9311,7 @@ static const char *ssh_init(Frontend *frontend, Backend **backend_handle,
 
     ssh->pinger = NULL;
 
-    ssh->incoming_data_size = ssh->outgoing_data_size = 0L;
+    memset(&ssh->stats, 0, sizeof(ssh->stats));
     ssh->max_data_size = parse_blocksize(conf_get_str(ssh->conf,
 						      CONF_ssh_rekey_data));
     ssh->kex_in_progress = FALSE;
@@ -9936,9 +9469,22 @@ static void ssh_reconfig(Backend *be, Conf *conf)
 						      CONF_ssh_rekey_data));
     if (old_max_data_size != ssh->max_data_size &&
 	ssh->max_data_size != 0) {
-	if (ssh->outgoing_data_size > ssh->max_data_size ||
-	    ssh->incoming_data_size > ssh->max_data_size)
-	    rekeying = "data limit lowered";
+        if (ssh->max_data_size < old_max_data_size) {
+            unsigned long diff = old_max_data_size - ssh->max_data_size;
+
+            /* Intentionally use bitwise OR instead of logical, so
+             * that we decrement both counters even if the first one
+             * runs out */
+            if ((DTS_CONSUME(&ssh->stats, out, diff) != 0) |
+                (DTS_CONSUME(&ssh->stats, in, diff) != 0))
+                rekeying = "data limit lowered";
+        } else {
+            unsigned long diff = ssh->max_data_size - old_max_data_size;
+            if (ssh->stats.out.running)
+                ssh->stats.out.remaining += diff;
+            if (ssh->stats.in.running)
+                ssh->stats.in.remaining += diff;
+        }
     }
 
     if (conf_get_int(ssh->conf, CONF_compression) !=
@@ -10068,40 +9614,40 @@ static void ssh_size(Backend *be, int width, int height)
  * Return a list of the special codes that make sense in this
  * protocol.
  */
-static const struct telnet_special *ssh_get_specials(Backend *be)
+static const SessionSpecial *ssh_get_specials(Backend *be)
 {
-    static const struct telnet_special ssh1_ignore_special[] = {
-	{"IGNORE message", TS_NOP}
+    static const SessionSpecial ssh1_ignore_special[] = {
+	{"IGNORE message", SS_NOP}
     };
-    static const struct telnet_special ssh2_ignore_special[] = {
-	{"IGNORE message", TS_NOP},
+    static const SessionSpecial ssh2_ignore_special[] = {
+	{"IGNORE message", SS_NOP},
     };
-    static const struct telnet_special ssh2_rekey_special[] = {
-	{"Repeat key exchange", TS_REKEY},
+    static const SessionSpecial ssh2_rekey_special[] = {
+	{"Repeat key exchange", SS_REKEY},
     };
-    static const struct telnet_special ssh2_session_specials[] = {
-	{NULL, TS_SEP},
-	{"Break", TS_BRK},
+    static const SessionSpecial ssh2_session_specials[] = {
+	{NULL, SS_SEP},
+	{"Break", SS_BRK},
 	/* These are the signal names defined by RFC 4254.
 	 * They include all the ISO C signals, but are a subset of the POSIX
 	 * required signals. */
-	{"SIGINT (Interrupt)", TS_SIGINT},
-	{"SIGTERM (Terminate)", TS_SIGTERM},
-	{"SIGKILL (Kill)", TS_SIGKILL},
-	{"SIGQUIT (Quit)", TS_SIGQUIT},
-	{"SIGHUP (Hangup)", TS_SIGHUP},
-	{"More signals", TS_SUBMENU},
-	  {"SIGABRT", TS_SIGABRT}, {"SIGALRM", TS_SIGALRM},
-	  {"SIGFPE",  TS_SIGFPE},  {"SIGILL",  TS_SIGILL},
-	  {"SIGPIPE", TS_SIGPIPE}, {"SIGSEGV", TS_SIGSEGV},
-	  {"SIGUSR1", TS_SIGUSR1}, {"SIGUSR2", TS_SIGUSR2},
-	{NULL, TS_EXITMENU}
+	{"SIGINT (Interrupt)", SS_SIGINT},
+	{"SIGTERM (Terminate)", SS_SIGTERM},
+	{"SIGKILL (Kill)", SS_SIGKILL},
+	{"SIGQUIT (Quit)", SS_SIGQUIT},
+	{"SIGHUP (Hangup)", SS_SIGHUP},
+	{"More signals", SS_SUBMENU},
+	  {"SIGABRT", SS_SIGABRT}, {"SIGALRM", SS_SIGALRM},
+	  {"SIGFPE",  SS_SIGFPE},  {"SIGILL",  SS_SIGILL},
+	  {"SIGPIPE", SS_SIGPIPE}, {"SIGSEGV", SS_SIGSEGV},
+	  {"SIGUSR1", SS_SIGUSR1}, {"SIGUSR2", SS_SIGUSR2},
+	{NULL, SS_EXITMENU}
     };
-    static const struct telnet_special specials_end[] = {
-	{NULL, TS_EXITMENU}
+    static const SessionSpecial specials_end[] = {
+	{NULL, SS_EXITMENU}
     };
 
-    struct telnet_special *specials = NULL;
+    SessionSpecial *specials = NULL;
     int nspecials = 0, specialsize = 0;
 
     Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
@@ -10113,9 +9659,9 @@ static const struct telnet_special *ssh_get_specials(Backend *be)
         int len = lenof(name);                                          \
         if (nspecials + len > specialsize) {                            \
             specialsize = (nspecials + len) * 5 / 4 + 32;               \
-            specials = sresize(specials, specialsize, struct telnet_special); \
+            specials = sresize(specials, specialsize, SessionSpecial); \
         }                                                               \
-	memcpy(specials+nspecials, name, len*sizeof(struct telnet_special)); \
+	memcpy(specials+nspecials, name, len*sizeof(SessionSpecial)); \
         nspecials += len;                                               \
     } while (0)
 
@@ -10134,22 +9680,23 @@ static const struct telnet_special *ssh_get_specials(Backend *be)
 	    ADD_SPECIALS(ssh2_session_specials);
 
         if (ssh->n_uncert_hostkeys) {
-            static const struct telnet_special uncert_start[] = {
-                {NULL, TS_SEP},
-                {"Cache new host key type", TS_SUBMENU},
+            static const SessionSpecial uncert_start[] = {
+                {NULL, SS_SEP},
+                {"Cache new host key type", SS_SUBMENU},
             };
-            static const struct telnet_special uncert_end[] = {
-                {NULL, TS_EXITMENU},
+            static const SessionSpecial uncert_end[] = {
+                {NULL, SS_EXITMENU},
             };
             int i;
 
             ADD_SPECIALS(uncert_start);
             for (i = 0; i < ssh->n_uncert_hostkeys; i++) {
-                struct telnet_special uncert[1];
+                SessionSpecial uncert[1];
                 const ssh_keyalg *alg =
                     hostkey_algs[ssh->uncert_hostkeys[i]].alg;
                 uncert[0].name = alg->ssh_id;
-                uncert[0].code = TS_LOCALSTART + ssh->uncert_hostkeys[i];
+                uncert[0].code = SS_XCERT;
+                uncert[0].arg = ssh->uncert_hostkeys[i];
                 ADD_SPECIALS(uncert);
             }
             ADD_SPECIALS(uncert_end);
@@ -10170,22 +9717,22 @@ static const struct telnet_special *ssh_get_specials(Backend *be)
 }
 
 /*
- * Send special codes. TS_EOF is useful for `plink', so you
+ * Send special codes. SS_EOF is useful for `plink', so you
  * can send an EOF and collect resulting output (e.g. `plink
  * hostname sort').
  */
-static void ssh_special(Backend *be, Telnet_Special code)
+static void ssh_special(Backend *be, SessionSpecialCode code, int arg)
 {
     Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
     PktOut *pktout;
 
-    if (code == TS_EOF) {
+    if (code == SS_EOF) {
 	if (ssh->state != SSH_STATE_SESSION) {
 	    /*
 	     * Buffer the EOF in case we are pre-SESSION, so we can
 	     * send it as soon as we reach SESSION.
 	     */
-	    if (code == TS_EOF)
+	    if (code == SS_EOF)
 		ssh->eof_needed = TRUE;
 	    return;
 	}
@@ -10197,7 +9744,7 @@ static void ssh_special(Backend *be, Telnet_Special code)
             ssh->send_ok = 0;          /* now stop trying to read from stdin */
 	}
 	logevent("Sent EOF message");
-    } else if (code == TS_PING || code == TS_NOP) {
+    } else if (code == SS_PING || code == SS_NOP) {
 	if (ssh->state == SSH_STATE_CLOSED
 	    || ssh->state == SSH_STATE_PREPACKET) return;
 	if (ssh->version == 1) {
@@ -10213,15 +9760,15 @@ static void ssh_special(Backend *be, Telnet_Special code)
 		ssh_pkt_write(ssh, pktout);
 	    }
 	}
-    } else if (code == TS_REKEY) {
+    } else if (code == SS_REKEY) {
 	if (!ssh->kex_in_progress && !ssh->bare_connection &&
             ssh->version == 2) {
             ssh->rekey_reason = "at user request";
             ssh->rekey_class = RK_NORMAL;
             queue_idempotent_callback(&ssh->ssh2_transport_icb);
 	}
-    } else if (code >= TS_LOCALSTART) {
-        ssh->hostkey_alg = hostkey_algs[code - TS_LOCALSTART].alg;
+    } else if (code == SS_XCERT) {
+        ssh->hostkey_alg = hostkey_algs[arg].alg;
         ssh->cross_certifying = TRUE;
 	if (!ssh->kex_in_progress && !ssh->bare_connection &&
             ssh->version == 2) {
@@ -10229,7 +9776,7 @@ static void ssh_special(Backend *be, Telnet_Special code)
             ssh->rekey_class = RK_NORMAL;
             queue_idempotent_callback(&ssh->ssh2_transport_icb);
 	}
-    } else if (code == TS_BRK) {
+    } else if (code == SS_BRK) {
 	if (ssh->state == SSH_STATE_CLOSED
 	    || ssh->state == SSH_STATE_PREPACKET) return;
 	if (ssh->version == 1) {
@@ -10242,19 +9789,19 @@ static void ssh_special(Backend *be, Telnet_Special code)
     } else {
 	/* Is is a POSIX signal? */
 	const char *signame = NULL;
-	if (code == TS_SIGABRT) signame = "ABRT";
-	if (code == TS_SIGALRM) signame = "ALRM";
-	if (code == TS_SIGFPE)  signame = "FPE";
-	if (code == TS_SIGHUP)  signame = "HUP";
-	if (code == TS_SIGILL)  signame = "ILL";
-	if (code == TS_SIGINT)  signame = "INT";
-	if (code == TS_SIGKILL) signame = "KILL";
-	if (code == TS_SIGPIPE) signame = "PIPE";
-	if (code == TS_SIGQUIT) signame = "QUIT";
-	if (code == TS_SIGSEGV) signame = "SEGV";
-	if (code == TS_SIGTERM) signame = "TERM";
-	if (code == TS_SIGUSR1) signame = "USR1";
-	if (code == TS_SIGUSR2) signame = "USR2";
+	if (code == SS_SIGABRT) signame = "ABRT";
+	if (code == SS_SIGALRM) signame = "ALRM";
+	if (code == SS_SIGFPE)  signame = "FPE";
+	if (code == SS_SIGHUP)  signame = "HUP";
+	if (code == SS_SIGILL)  signame = "ILL";
+	if (code == SS_SIGINT)  signame = "INT";
+	if (code == SS_SIGKILL) signame = "KILL";
+	if (code == SS_SIGPIPE) signame = "PIPE";
+	if (code == SS_SIGQUIT) signame = "QUIT";
+	if (code == SS_SIGSEGV) signame = "SEGV";
+	if (code == SS_SIGTERM) signame = "TERM";
+	if (code == SS_SIGUSR1) signame = "USR1";
+	if (code == SS_SIGUSR2) signame = "USR2";
 	/* The SSH-2 protocol does in principle support arbitrary named
 	 * signals, including signame@domain, but we don't support those. */
 	if (signame) {
