@@ -80,6 +80,7 @@ procedure ForceColorChange(Control: TWinControl);
 
 function IsUncPath(Path: string): Boolean;
 
+function SupportsDarkMode: Boolean;
 procedure AllowDarkModeForWindow(Control: TWinControl; Allow: Boolean);
 
 type
@@ -988,7 +989,7 @@ var
   AllowDarkModeForWindowLoaded: Boolean = False;
   AAllowDarkModeForWindow: function(hWnd: HWND; Allow: BOOL): BOOL; stdcall;
 
-procedure AllowDarkModeForWindow(Control: TWinControl; Allow: Boolean);
+function SupportsDarkMode: Boolean;
 var
   OSVersionInfo: TOSVersionInfoEx;
   UxThemeLib: HMODULE;
@@ -1007,8 +1008,13 @@ begin
     AllowDarkModeForWindowLoaded := True;
   end;
 
+  Result := Assigned(AAllowDarkModeForWindow);
+end;
+
+procedure AllowDarkModeForWindow(Control: TWinControl; Allow: Boolean);
+begin
   Assert(Control.HandleAllocated);
-  if Assigned(AAllowDarkModeForWindow) and Control.HandleAllocated then
+  if SupportsDarkMode and Control.HandleAllocated then
   begin
     AAllowDarkModeForWindow(Control.Handle, Allow);
   end;

@@ -148,8 +148,6 @@ type
 
     FChangeInterval: Cardinal;
 
-    FCompressedColor: TColor;
-
     {Drag&drop:}
     FLastPathCut: string;
 
@@ -176,7 +174,6 @@ type
     procedure SetWatchDirectory(Value: Boolean);
     procedure SetShowVolLabel(ShowIt: Boolean);
     procedure SetDirView(Value: TDirView);
-    procedure SetCompressedColor(Value: TColor);
     procedure SetDirectory(Value: string); override;
     procedure GetNodeShellAttr(ParentFolder: IShellFolder; NodeData: TNodeData;
       Path: string; ContentMask: Boolean = True);
@@ -307,8 +304,6 @@ type
     property DirView: TDirView read FDirView write SetDirView;
     {Show the volume labels of drives:}
     property ShowVolLabel: Boolean read FShowVolLabel write SetShowVolLabel default True;
-    {How to display the drives volume labels:}
-    property CompressedColor: TColor read FCompressedColor write SetCompressedColor default clBlue;
     {Additional events:}
     property OnDisplayContextMenu: TNotifyEvent read FOnDisplayContextMenu
       write FOnDisplayContextMenu;
@@ -489,7 +484,6 @@ begin
   FFileOperator.ProgressTitle := coFileOperatorTitle;
   FFileOperator.Flags := [foAllowUndo, foNoConfirmMkDir];
 
-  FCompressedColor := clBlue;
   FShowVolLabel := True;
   FChangeFlag := False;
   FLastDir := EmptyStr;
@@ -733,7 +727,10 @@ begin
     begin
       {Colored display of compressed directories:}
       if (Attr and FILE_ATTRIBUTE_COMPRESSED) <> 0 then
-          Result := FCompressedColor
+      begin
+        if SupportsDarkMode and DarkMode then Result := clSkyBlue
+          else Result := clBlue;
+      end
         else
       {Dimmed display, if hidden-atrribut set:}
       if FDimmHiddenDirs and ((Attr and FILE_ATTRIBUTE_HIDDEN) <> 0) then
@@ -2364,15 +2361,6 @@ begin
   FShowVolLabel := ShowIt;
   RefreshRootNodes(dvdsFloppy);
 end; {SetShowVolLabel}
-
-procedure TDriveView.SetCompressedColor(Value: TColor);
-begin
-  if Value <> FCompressedColor then
-  begin
-    FCompressedColor := Value;
-    Invalidate;
-  end;
-end; {SetCompressedColor}
 
 procedure TDriveView.DisplayContextMenu(Node: TTreeNode; Point: TPoint);
 var

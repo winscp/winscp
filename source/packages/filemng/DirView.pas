@@ -143,7 +143,6 @@ type
     FUseIconUpdateThread: Boolean;
     FIUThreadFinished: Boolean;
     FDriveType: Integer;
-    FCompressedColor: TColor;
     FParentFolder: IShellFolder;
     FDesktopFolder: IShellFolder;
     FDirOK: Boolean;
@@ -208,7 +207,6 @@ type
     procedure SetPath(Value: string); override;
     procedure PathChanged; override;
     procedure SetItemImageIndex(Item: TListItem; Index: Integer); override;
-    procedure SetCompressedColor(Value: TColor);
     procedure ChangeDetected(Sender: TObject; const Directory: string;
       var SubdirsChanged: Boolean);
     procedure ChangeInvalid(Sender: TObject; const Directory: string; const ErrorStr: string);
@@ -352,8 +350,6 @@ type
     property OnGetOverlay;
     property OnGetItemColor;
 
-    property CompressedColor: TColor
-      read FCompressedColor write SetCompressedColor default clBlue;
     {Confirm deleting files}
     property ConfirmDelete: Boolean
       read FConfirmDelete write FConfirmDelete default True;
@@ -805,7 +801,6 @@ begin
   FDriveType := DRIVE_UNKNOWN;
   FUseIconCache := False;
   FConfirmDelete := True;
-  FCompressedColor := clBlue;
   FParentFolder := nil;
   FDesktopFolder := nil;
   SelectNewFiles := False;
@@ -965,15 +960,6 @@ begin
     end;
   end;
 end; {SetLoadEnabled}
-
-procedure TDirView.SetCompressedColor(Value: TColor);
-begin
-  if Value <> CompressedColor then
-  begin
-    FCompressedColor := Value;
-    Invalidate;
-  end;
-end; {SetCompressedColor}
 
 function TDirView.GetPathName: string;
 begin
@@ -2547,7 +2533,10 @@ end;
 function TDirView.ItemColor(Item: TListItem): TColor;
 begin
   if PFileRec(Item.Data).Attr and FILE_ATTRIBUTE_COMPRESSED <> 0 then
-      Result := FCompressedColor
+  begin
+    if SupportsDarkMode and DarkMode then Result := clSkyBlue
+      else Result := clBlue;
+  end
     else
   if DimmHiddenFiles and not Item.Selected and
      (PFileRec(Item.Data).Attr and FILE_ATTRIBUTE_HIDDEN <> 0) then
