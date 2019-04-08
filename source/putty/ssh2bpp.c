@@ -24,6 +24,7 @@ struct ssh2_bpp_state {
     unsigned char *data;
     unsigned cipherblk;
     PktIn *pktin;
+    struct DataTransferStats *stats;
 
     struct ssh2_bpp_direction in, out;
     /* comp and decomp logically belong in the per-direction
@@ -41,18 +42,19 @@ static void ssh2_bpp_handle_input(BinaryPacketProtocol *bpp);
 static PktOut *ssh2_bpp_new_pktout(int type);
 static void ssh2_bpp_format_packet(BinaryPacketProtocol *bpp, PktOut *pkt);
 
-const struct BinaryPacketProtocolVtable ssh2_bpp_vtable = {
+static const struct BinaryPacketProtocolVtable ssh2_bpp_vtable = {
     ssh2_bpp_free,
     ssh2_bpp_handle_input,
     ssh2_bpp_new_pktout,
     ssh2_bpp_format_packet,
 };
 
-BinaryPacketProtocol *ssh2_bpp_new(void)
+BinaryPacketProtocol *ssh2_bpp_new(struct DataTransferStats *stats)
 {
     struct ssh2_bpp_state *s = snew(struct ssh2_bpp_state);
     memset(s, 0, sizeof(*s));
     s->bpp.vt = &ssh2_bpp_vtable;
+    s->stats = stats;
     return &s->bpp;
 }
 
@@ -407,7 +409,8 @@ static void ssh2_bpp_handle_input(BinaryPacketProtocol *bpp)
         s->payload = s->len - s->pad - 1;
 
         s->length = s->payload + 5;
-        s->pktin->encrypted_len = s->packetlen;
+
+        DTS_CONSUME(s->stats, in, s->packetlen);
 
         s->pktin->sequence = s->in.sequence++;
 
@@ -601,7 +604,8 @@ static void ssh2_bpp_format_packet_inner(struct ssh2_bpp_state *s, PktOut *pkt)
     }
 
     s->out.sequence++;       /* whether or not we MACed */
-    pkt->encrypted_len = origlen + padding;
+
+    DTS_CONSUME(s->stats, out, origlen + padding);
 
 }
 

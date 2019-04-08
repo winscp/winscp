@@ -44,7 +44,7 @@ static void ssh_verstring_handle_input(BinaryPacketProtocol *bpp);
 static PktOut *ssh_verstring_new_pktout(int type);
 static void ssh_verstring_format_packet(BinaryPacketProtocol *bpp, PktOut *);
 
-const struct BinaryPacketProtocolVtable ssh_verstring_vtable = {
+static const struct BinaryPacketProtocolVtable ssh_verstring_vtable = {
     ssh_verstring_free,
     ssh_verstring_handle_input,
     ssh_verstring_new_pktout,

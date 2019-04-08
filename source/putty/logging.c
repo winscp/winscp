@@ -219,20 +219,11 @@ void logtraffic(LogContext *ctx, unsigned char c, int logmode)
 }
 
 /*
- * Log an Event Log entry. Used in SSH packet logging mode; this is
- * also as convenient a place as any to put the output of Event Log
- * entries to stderr when a command-line tool is in verbose mode.
- * (In particular, this is a better place to put it than in the
- * front ends, because it only has to be done once for all
- * platforms. Platforms which don't have a meaningful stderr can
- * just avoid defining FLAG_STDERR.
+ * Log an Event Log entry. Used in SSH packet logging mode, to copy
+ * the Event Log entries into the same log file as the packet data.
  */
 void log_eventlog(LogContext *ctx, const char *event)
 {
-    if ((flags & FLAG_STDERR) && (flags & FLAG_VERBOSE)) {
-	fprintf(stderr, "%s\n", event);
-	fflush(stderr);
-    }
     /* If we don't have a context yet (eg winnet.c init) then skip entirely */
     if (!ctx)
 	return;

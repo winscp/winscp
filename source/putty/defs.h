@@ -70,6 +70,8 @@ typedef struct settings_w settings_w;
 typedef struct settings_r settings_r;
 typedef struct settings_e settings_e;
 
+typedef struct SessionSpecial SessionSpecial;
+
 /* Note indirection: for historical reasons (it used to be closer to
  * the OS socket type), the type that most code uses for a socket is
  * 'Socket', not 'Socket *'. So an implementation of Socket or Plug
@@ -89,6 +91,8 @@ typedef struct ptrlen {
 } ptrlen;
 
 typedef struct logblank_t logblank_t;
+
+typedef struct BinaryPacketProtocol BinaryPacketProtocol;
 
 /* Do a compile-time type-check of 'to_check' (without evaluating it),
  * as a side effect of returning the value 'to_return'. Note that

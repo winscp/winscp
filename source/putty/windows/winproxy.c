@@ -66,23 +66,15 @@ Socket platform_new_connection(SockAddr addr, const char *hostname,
 	return ret;
     }
 
-    if (flags & FLAG_STDERR) {
-        /* If we have a sensible stderr, the proxy command can send
-         * its own standard error there, so we won't interfere. */
-        us_from_cmd_err = cmd_err_to_us = NULL;
-    } else {
-        /* If we don't have a sensible stderr, we should catch the
-         * proxy command's standard error to put in our event log. */
-        if (!CreatePipe(&us_from_cmd_err, &cmd_err_to_us, &sa, 0)) {
-            Socket ret = new_error_socket
-                ("Unable to create pipes for proxy command", plug);
-            sfree(cmd);
-            CloseHandle(us_from_cmd);
-            CloseHandle(cmd_to_us);
-            CloseHandle(us_to_cmd);
-            CloseHandle(cmd_from_us);
-            return ret;
-        }
+    if (!CreatePipe(&us_from_cmd_err, &cmd_err_to_us, &sa, 0)) {
+        Socket ret = new_error_socket
+            ("Unable to create pipes for proxy command", plug);
+        sfree(cmd);
+        CloseHandle(us_from_cmd);
+        CloseHandle(cmd_to_us);
+        CloseHandle(us_to_cmd);
+        CloseHandle(cmd_from_us);
+        return ret;
     }
 
     SetHandleInformation(us_to_cmd, HANDLE_FLAG_INHERIT, 0);
