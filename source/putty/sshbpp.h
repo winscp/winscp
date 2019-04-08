@@ -17,7 +17,7 @@ struct BinaryPacketProtocolVtable {
 struct BinaryPacketProtocol {
     const struct BinaryPacketProtocolVtable *vt;
     bufchain *in_raw, *out_raw;
-    PacketQueue *in_pq;
+    PktInQueue *in_pq;
     PacketLogSettings *pls;
     LogContext *logctx;
 
@@ -49,6 +49,23 @@ void ssh2_bpp_new_incoming_crypto(
     const struct ssh_compression_alg *compression);
 
 BinaryPacketProtocol *ssh2_bare_bpp_new(void);
+
+/*
+ * The initial code to handle the SSH version exchange is also
+ * structured as an implementation of BinaryPacketProtocol, because
+ * that makes it easy to switch from that to the next BPP once it
+ * tells us which one we're using.
+ */
+struct ssh_version_receiver {
+    void (*got_ssh_version)(struct ssh_version_receiver *rcv,
+                            int major_version);
+};
+BinaryPacketProtocol *ssh_verstring_new(
+    Conf *conf, Frontend *frontend, int bare_connection_mode,
+    const char *protoversion, struct ssh_version_receiver *rcv);
+const char *ssh_verstring_get_remote(BinaryPacketProtocol *);
+const char *ssh_verstring_get_local(BinaryPacketProtocol *);
+int ssh_verstring_get_bugs(BinaryPacketProtocol *);
 
 #ifdef MPEXT
 const ssh1_cipher * ssh1_bpp_get_cipher(BinaryPacketProtocol *bpp);
