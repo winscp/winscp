@@ -2,6 +2,7 @@
 #define PUTTY_PUTTY_H
 
 #include <stddef.h>		       /* for wchar_t */
+#include <limits.h>                    /* for INT_MAX */
 
 /*
  * Global variables. Most modules declare these `extern', but

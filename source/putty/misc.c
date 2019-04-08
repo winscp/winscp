@@ -707,6 +707,7 @@ void bufchain_init(bufchain *ch)
 {
     ch->head = ch->tail = NULL;
     ch->buffersize = 0;
+    ch->ic = NULL;
 }
 
 void bufchain_clear(bufchain *ch)
@@ -758,6 +759,9 @@ void bufchain_add(bufchain *ch, const void *data, int len)
 	    ch->tail = newbuf;
 	}
     }
+
+    if (ch->ic)
+        queue_idempotent_callback(ch->ic);
 }
 
 void bufchain_consume(bufchain *ch, int len)

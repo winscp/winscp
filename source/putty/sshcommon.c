@@ -8,31 +8,67 @@
 
 #include "putty.h"
 #include "ssh.h"
+#include "sshbpp.h"
 #include "sshchan.h"
 
 /* ----------------------------------------------------------------------
  * Implementation of PacketQueue.
  */
 
+static void pq_ensure_unlinked(PacketQueueNode *node)
+{
+    if (node->on_free_queue) {
+        node->next->prev = node->prev;
+        node->prev->next = node->next;
+    } else {
+        assert(!node->next);
+        assert(!node->prev);
+    }
+}
+
 void pq_base_push(PacketQueueBase *pqb, PacketQueueNode *node)
 {
-    assert(!node->next);
-    assert(!node->prev);
+    pq_ensure_unlinked(node);
     node->next = &pqb->end;
     node->prev = pqb->end.prev;
     node->next->prev = node;
     node->prev->next = node;
+
+    if (pqb->ic)
+        queue_idempotent_callback(pqb->ic);
 }
 
 void pq_base_push_front(PacketQueueBase *pqb, PacketQueueNode *node)
 {
-    assert(!node->next);
-    assert(!node->prev);
+    pq_ensure_unlinked(node);
     node->prev = &pqb->end;
     node->next = pqb->end.next;
     node->next->prev = node;
     node->prev->next = node;
+
+    if (pqb->ic)
+        queue_idempotent_callback(pqb->ic);
 }
+
+static PacketQueueNode pktin_freeq_head = {
+    &pktin_freeq_head, &pktin_freeq_head, TRUE
+};
+
+static void pktin_free_queue_callback(void *vctx)
+{
+    while (pktin_freeq_head.next != &pktin_freeq_head) {
+        PacketQueueNode *node = pktin_freeq_head.next;
+        PktIn *pktin = FROMFIELD(node, PktIn, qnode);
+        pktin_freeq_head.next = node->next;
+        sfree(pktin);
+    }
+
+    pktin_freeq_head.prev = &pktin_freeq_head;
+}
+
+static IdempotentCallback ic_pktin_free = {
+    pktin_free_queue_callback, NULL, FALSE
+};
 
 static PktIn *pq_in_get(PacketQueueBase *pqb, int pop)
 {
@@ -43,7 +79,13 @@ static PktIn *pq_in_get(PacketQueueBase *pqb, int pop)
     if (pop) {
         node->next->prev = node->prev;
         node->prev->next = node->next;
-        node->prev = node->next = NULL;
+
+        node->prev = pktin_freeq_head.prev;
+        node->next = &pktin_freeq_head;
+        node->next->prev = node;
+        node->prev->next = node;
+        node->on_free_queue = TRUE;
+        queue_idempotent_callback(&ic_pktin_free);
     }
 
     return FROMFIELD(node, PktIn, qnode);
@@ -66,12 +108,14 @@ static PktOut *pq_out_get(PacketQueueBase *pqb, int pop)
 
 void pq_in_init(PktInQueue *pq)
 {
+    pq->pqb.ic = NULL;
     pq->pqb.end.next = pq->pqb.end.prev = &pq->pqb.end;
     pq->get = pq_in_get;
 }
 
 void pq_out_init(PktOutQueue *pq)
 {
+    pq->pqb.ic = NULL;
     pq->pqb.end.next = pq->pqb.end.prev = &pq->pqb.end;
     pq->get = pq_out_get;
 }
@@ -79,13 +123,18 @@ void pq_out_init(PktOutQueue *pq)
 void pq_in_clear(PktInQueue *pq)
 {
     PktIn *pkt;
-    while ((pkt = pq_pop(pq)) != NULL)
-        ssh_unref_packet(pkt);
+    pq->pqb.ic = NULL;
+    while ((pkt = pq_pop(pq)) != NULL) {
+        /* No need to actually free these packets: pq_pop on a
+         * PktInQueue will automatically move them to the free
+         * queue. */
+    }
 }
 
 void pq_out_clear(PktOutQueue *pq)
 {
     PktOut *pkt;
+    pq->pqb.ic = NULL;
     while ((pkt = pq_pop(pq)) != NULL)
         ssh_free_pktout(pkt);
 }
@@ -149,6 +198,9 @@ void pq_base_concatenate(PacketQueueBase *qdest,
         qdest->end.prev = tail2;
         head1->prev = &qdest->end;
         tail2->next = &qdest->end;
+
+        if (qdest->ic)
+            queue_idempotent_callback(qdest->ic);
     }
 }
 
@@ -169,6 +221,7 @@ PktOut *ssh_new_packet(void)
     pkt->downstream_id = 0;
     pkt->additional_log_text = NULL;
     pkt->qnode.next = pkt->qnode.prev = NULL;
+    pkt->qnode.on_free_queue = FALSE;
 
     return pkt;
 }
@@ -194,17 +247,12 @@ static void ssh_pkt_BinarySink_write(BinarySink *bs,
     ssh_pkt_adddata(pkt, data, len);
 }
 
-void ssh_unref_packet(PktIn *pkt)
-{
-    if (--pkt->refcount <= 0)
-        sfree(pkt);
-}
-
 void ssh_free_pktout(PktOut *pkt)
 {
     sfree(pkt->data);
     sfree(pkt);
 }
+
 /* ----------------------------------------------------------------------
  * Implement zombiechan_new() and its trivial vtable.
  */
@@ -560,112 +608,159 @@ void add_to_commasep(strbuf *buf, const char *data)
  * string names.
  */
 
-#define translate(x) if (type == x) return #x
-#define translatek(x,ctx) if (type == x && (pkt_kctx == ctx)) return #x
-#define translatea(x,ctx) if (type == x && (pkt_actx == ctx)) return #x
+#define TRANSLATE_UNIVERSAL(y, name, value)      \
+    if (type == value) return #name;
+#define TRANSLATE_KEX(y, name, value, ctx) \
+    if (type == value && pkt_kctx == ctx) return #name;
+#define TRANSLATE_AUTH(y, name, value, ctx) \
+    if (type == value && pkt_actx == ctx) return #name;
+
 const char *ssh1_pkt_type(int type)
 {
-    translate(SSH1_MSG_DISCONNECT);
-    translate(SSH1_SMSG_PUBLIC_KEY);
-    translate(SSH1_CMSG_SESSION_KEY);
-    translate(SSH1_CMSG_USER);
-    translate(SSH1_CMSG_AUTH_RSA);
-    translate(SSH1_SMSG_AUTH_RSA_CHALLENGE);
-    translate(SSH1_CMSG_AUTH_RSA_RESPONSE);
-    translate(SSH1_CMSG_AUTH_PASSWORD);
-    translate(SSH1_CMSG_REQUEST_PTY);
-    translate(SSH1_CMSG_WINDOW_SIZE);
-    translate(SSH1_CMSG_EXEC_SHELL);
-    translate(SSH1_CMSG_EXEC_CMD);
-    translate(SSH1_SMSG_SUCCESS);
-    translate(SSH1_SMSG_FAILURE);
-    translate(SSH1_CMSG_STDIN_DATA);
-    translate(SSH1_SMSG_STDOUT_DATA);
-    translate(SSH1_SMSG_STDERR_DATA);
-    translate(SSH1_CMSG_EOF);
-    translate(SSH1_SMSG_EXIT_STATUS);
-    translate(SSH1_MSG_CHANNEL_OPEN_CONFIRMATION);
-    translate(SSH1_MSG_CHANNEL_OPEN_FAILURE);
-    translate(SSH1_MSG_CHANNEL_DATA);
-    translate(SSH1_MSG_CHANNEL_CLOSE);
-    translate(SSH1_MSG_CHANNEL_CLOSE_CONFIRMATION);
-    translate(SSH1_SMSG_X11_OPEN);
-    translate(SSH1_CMSG_PORT_FORWARD_REQUEST);
-    translate(SSH1_MSG_PORT_OPEN);
-    translate(SSH1_CMSG_AGENT_REQUEST_FORWARDING);
-    translate(SSH1_SMSG_AGENT_OPEN);
-    translate(SSH1_MSG_IGNORE);
-    translate(SSH1_CMSG_EXIT_CONFIRMATION);
-    translate(SSH1_CMSG_X11_REQUEST_FORWARDING);
-    translate(SSH1_CMSG_AUTH_RHOSTS_RSA);
-    translate(SSH1_MSG_DEBUG);
-    translate(SSH1_CMSG_REQUEST_COMPRESSION);
-    translate(SSH1_CMSG_AUTH_TIS);
-    translate(SSH1_SMSG_AUTH_TIS_CHALLENGE);
-    translate(SSH1_CMSG_AUTH_TIS_RESPONSE);
-    translate(SSH1_CMSG_AUTH_CCARD);
-    translate(SSH1_SMSG_AUTH_CCARD_CHALLENGE);
-    translate(SSH1_CMSG_AUTH_CCARD_RESPONSE);
+    SSH1_MESSAGE_TYPES(TRANSLATE_UNIVERSAL, y);
     return "unknown";
 }
 const char *ssh2_pkt_type(Pkt_KCtx pkt_kctx, Pkt_ACtx pkt_actx, int type)
 {
-    translatea(SSH2_MSG_USERAUTH_GSSAPI_RESPONSE,SSH2_PKTCTX_GSSAPI);
-    translatea(SSH2_MSG_USERAUTH_GSSAPI_TOKEN,SSH2_PKTCTX_GSSAPI);
-    translatea(SSH2_MSG_USERAUTH_GSSAPI_EXCHANGE_COMPLETE,SSH2_PKTCTX_GSSAPI);
-    translatea(SSH2_MSG_USERAUTH_GSSAPI_ERROR,SSH2_PKTCTX_GSSAPI);
-    translatea(SSH2_MSG_USERAUTH_GSSAPI_ERRTOK,SSH2_PKTCTX_GSSAPI);
-    translatea(SSH2_MSG_USERAUTH_GSSAPI_MIC, SSH2_PKTCTX_GSSAPI);
-    translate(SSH2_MSG_DISCONNECT);
-    translate(SSH2_MSG_IGNORE);
-    translate(SSH2_MSG_UNIMPLEMENTED);
-    translate(SSH2_MSG_DEBUG);
-    translate(SSH2_MSG_SERVICE_REQUEST);
-    translate(SSH2_MSG_SERVICE_ACCEPT);
-    translate(SSH2_MSG_KEXINIT);
-    translate(SSH2_MSG_NEWKEYS);
-    translatek(SSH2_MSG_KEXDH_INIT, SSH2_PKTCTX_DHGROUP);
-    translatek(SSH2_MSG_KEXDH_REPLY, SSH2_PKTCTX_DHGROUP);
-    translatek(SSH2_MSG_KEX_DH_GEX_REQUEST_OLD, SSH2_PKTCTX_DHGEX);
-    translatek(SSH2_MSG_KEX_DH_GEX_REQUEST, SSH2_PKTCTX_DHGEX);
-    translatek(SSH2_MSG_KEX_DH_GEX_GROUP, SSH2_PKTCTX_DHGEX);
-    translatek(SSH2_MSG_KEX_DH_GEX_INIT, SSH2_PKTCTX_DHGEX);
-    translatek(SSH2_MSG_KEX_DH_GEX_REPLY, SSH2_PKTCTX_DHGEX);
-    translatek(SSH2_MSG_KEXRSA_PUBKEY, SSH2_PKTCTX_RSAKEX);
-    translatek(SSH2_MSG_KEXRSA_SECRET, SSH2_PKTCTX_RSAKEX);
-    translatek(SSH2_MSG_KEXRSA_DONE, SSH2_PKTCTX_RSAKEX);
-    translatek(SSH2_MSG_KEX_ECDH_INIT, SSH2_PKTCTX_ECDHKEX);
-    translatek(SSH2_MSG_KEX_ECDH_REPLY, SSH2_PKTCTX_ECDHKEX);
-    translatek(SSH2_MSG_KEXGSS_INIT, SSH2_PKTCTX_GSSKEX);
-    translatek(SSH2_MSG_KEXGSS_CONTINUE, SSH2_PKTCTX_GSSKEX);
-    translatek(SSH2_MSG_KEXGSS_COMPLETE, SSH2_PKTCTX_GSSKEX);
-    translatek(SSH2_MSG_KEXGSS_HOSTKEY, SSH2_PKTCTX_GSSKEX);
-    translatek(SSH2_MSG_KEXGSS_ERROR, SSH2_PKTCTX_GSSKEX);
-    translatek(SSH2_MSG_KEXGSS_GROUPREQ, SSH2_PKTCTX_GSSKEX);
-    translatek(SSH2_MSG_KEXGSS_GROUP, SSH2_PKTCTX_GSSKEX);
-    translate(SSH2_MSG_USERAUTH_REQUEST);
-    translate(SSH2_MSG_USERAUTH_FAILURE);
-    translate(SSH2_MSG_USERAUTH_SUCCESS);
-    translate(SSH2_MSG_USERAUTH_BANNER);
-    translatea(SSH2_MSG_USERAUTH_PK_OK, SSH2_PKTCTX_PUBLICKEY);
-    translatea(SSH2_MSG_USERAUTH_PASSWD_CHANGEREQ, SSH2_PKTCTX_PASSWORD);
-    translatea(SSH2_MSG_USERAUTH_INFO_REQUEST, SSH2_PKTCTX_KBDINTER);
-    translatea(SSH2_MSG_USERAUTH_INFO_RESPONSE, SSH2_PKTCTX_KBDINTER);
-    translate(SSH2_MSG_GLOBAL_REQUEST);
-    translate(SSH2_MSG_REQUEST_SUCCESS);
-    translate(SSH2_MSG_REQUEST_FAILURE);
-    translate(SSH2_MSG_CHANNEL_OPEN);
-    translate(SSH2_MSG_CHANNEL_OPEN_CONFIRMATION);
-    translate(SSH2_MSG_CHANNEL_OPEN_FAILURE);
-    translate(SSH2_MSG_CHANNEL_WINDOW_ADJUST);
-    translate(SSH2_MSG_CHANNEL_DATA);
-    translate(SSH2_MSG_CHANNEL_EXTENDED_DATA);
-    translate(SSH2_MSG_CHANNEL_EOF);
-    translate(SSH2_MSG_CHANNEL_CLOSE);
-    translate(SSH2_MSG_CHANNEL_REQUEST);
-    translate(SSH2_MSG_CHANNEL_SUCCESS);
-    translate(SSH2_MSG_CHANNEL_FAILURE);
+    SSH2_MESSAGE_TYPES(TRANSLATE_UNIVERSAL, TRANSLATE_KEX, TRANSLATE_AUTH, y);
     return "unknown";
 }
-#undef translate
-#undef translatec
+
+#undef TRANSLATE_UNIVERSAL
+#undef TRANSLATE_KEX
+#undef TRANSLATE_AUTH
+
+/* ----------------------------------------------------------------------
+ * Common helper functions for clients and implementations of
+ * BinaryPacketProtocol.
+ */
+
+static void ssh_bpp_input_raw_data_callback(void *context)
+{
+    BinaryPacketProtocol *bpp = (BinaryPacketProtocol *)context;
+    ssh_bpp_handle_input(bpp);
+}
+
+static void ssh_bpp_output_packet_callback(void *context)
+{
+    BinaryPacketProtocol *bpp = (BinaryPacketProtocol *)context;
+    ssh_bpp_handle_output(bpp);
+}
+
+void ssh_bpp_common_setup(BinaryPacketProtocol *bpp)
+{
+    pq_in_init(&bpp->in_pq);
+    pq_out_init(&bpp->out_pq);
+    bpp->ic_in_raw.fn = ssh_bpp_input_raw_data_callback;
+    bpp->ic_in_raw.ctx = bpp;
+    bpp->ic_out_pq.fn = ssh_bpp_output_packet_callback;
+    bpp->ic_out_pq.ctx = bpp;
+    bpp->out_pq.pqb.ic = &bpp->ic_out_pq;
+}
+
+void ssh_bpp_free(BinaryPacketProtocol *bpp)
+{
+    delete_callbacks_for_context(bpp);
+    bpp->vt->free(bpp);
+}
+
+void ssh2_bpp_queue_disconnect(BinaryPacketProtocol *bpp,
+                               const char *msg, int category)
+{
+    PktOut *pkt = ssh_bpp_new_pktout(bpp, SSH2_MSG_DISCONNECT);
+    put_uint32(pkt, category);
+    put_stringz(pkt, msg);
+    put_stringz(pkt, "en");            /* language tag */
+    pq_push(&bpp->out_pq, pkt);
+}
+
+#define BITMAP_UNIVERSAL(y, name, value)         \
+    | (value >= y && value < y+32 ? 1UL << (value-y) : 0)
+#define BITMAP_CONDITIONAL(y, name, value, ctx) \
+    BITMAP_UNIVERSAL(y, name, value)
+#define SSH2_BITMAP_WORD(y) \
+    (0 SSH2_MESSAGE_TYPES(BITMAP_UNIVERSAL, BITMAP_CONDITIONAL, \
+                          BITMAP_CONDITIONAL, (32*y)))
+
+int ssh2_bpp_check_unimplemented(BinaryPacketProtocol *bpp, PktIn *pktin)
+{
+    static const unsigned valid_bitmap[] = {
+        SSH2_BITMAP_WORD(0),
+        SSH2_BITMAP_WORD(1),
+        SSH2_BITMAP_WORD(2),
+        SSH2_BITMAP_WORD(3),
+        SSH2_BITMAP_WORD(4),
+        SSH2_BITMAP_WORD(5),
+        SSH2_BITMAP_WORD(6),
+        SSH2_BITMAP_WORD(7),
+    };
+
+    if (pktin->type < 0x100 &&
+        !((valid_bitmap[pktin->type >> 5] >> (pktin->type & 0x1F)) & 1)) {
+        PktOut *pkt = ssh_bpp_new_pktout(bpp, SSH2_MSG_UNIMPLEMENTED);
+        put_uint32(pkt, pktin->sequence);
+        pq_push(&bpp->out_pq, pkt);
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+#undef BITMAP_UNIVERSAL
+#undef BITMAP_CONDITIONAL
+#undef SSH1_BITMAP_WORD
+
+/* ----------------------------------------------------------------------
+ * Function to check a host key against any manually configured in Conf.
+ */
+
+int verify_ssh_manual_host_key(
+    Conf *conf, const char *fingerprint, ssh_key *key)
+{
+    if (!conf_get_str_nthstrkey(conf, CONF_ssh_manual_hostkeys, 0))
+        return -1;                     /* no manual keys configured */
+
+    if (fingerprint) {
+        /*
+         * The fingerprint string we've been given will have things
+         * like 'ssh-rsa 2048' at the front of it. Strip those off and
+         * narrow down to just the colon-separated hex block at the
+         * end of the string.
+         */
+        const char *p = strrchr(fingerprint, ' ');
+        fingerprint = p ? p+1 : fingerprint;
+        /* Quick sanity checks, including making sure it's in lowercase */
+        assert(strlen(fingerprint) == 16*3 - 1);
+        assert(fingerprint[2] == ':');
+        assert(fingerprint[strspn(fingerprint, "0123456789abcdef:")] == 0);
+
+        if (conf_get_str_str_opt(conf, CONF_ssh_manual_hostkeys, fingerprint))
+            return 1;                  /* success */
+    }
+
+    if (key) {
+        /*
+         * Construct the base64-encoded public key blob and see if
+         * that's listed.
+         */
+        strbuf *binblob;
+        char *base64blob;
+        int atoms, i;
+        binblob = strbuf_new();
+        ssh_key_public_blob(key, BinarySink_UPCAST(binblob));
+        atoms = (binblob->len + 2) / 3;
+        base64blob = snewn(atoms * 4 + 1, char);
+        for (i = 0; i < atoms; i++)
+            base64_encode_atom(binblob->u + 3*i,
+                               binblob->len - 3*i, base64blob + 4*i);
+        base64blob[atoms * 4] = '\0';
+        strbuf_free(binblob);
+        if (conf_get_str_str_opt(conf, CONF_ssh_manual_hostkeys, base64blob)) {
+            sfree(base64blob);
+            return 1;                  /* success */
+        }
+        sfree(base64blob);
+    }
+
+    return 0;
+}

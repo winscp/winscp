@@ -164,7 +164,7 @@ Channel *agentf_new(SshChannel *c)
     af->c = c;
     af->chan.vt = &agentf_channelvt;
     af->chan.initial_fixed_window_size = 0;
-    af->rcvd_eof = TRUE;
+    af->rcvd_eof = FALSE;
     bufchain_init(&af->inbuffer);
     af->pending = NULL;
     af->input_wanted = TRUE;

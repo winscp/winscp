@@ -2052,6 +2052,12 @@ static const Plug_vtable ssh_sharing_listen_plugvt = {
     share_listen_accepting
 };
 
+void ssh_connshare_provide_connlayer(ssh_sharing_state *sharestate,
+                                     ConnectionLayer *cl)
+{
+    sharestate->cl = cl;
+}
+
 /*
  * Init function for connection sharing. We either open a listening
  * socket and become an upstream, or connect to an existing one and
@@ -2063,7 +2069,7 @@ static const Plug_vtable ssh_sharing_listen_plugvt = {
  * upstream) we return NULL.
  */
 Socket ssh_connection_sharing_init(
-    const char *host, int port, Conf *conf, ConnectionLayer *cl,
+    const char *host, int port, Conf *conf, Frontend *frontend,
     Plug sshplug, ssh_sharing_state **state)
 {
     int result, can_upstream, can_downstream;
@@ -2090,6 +2096,7 @@ Socket ssh_connection_sharing_init(
     sharestate = snew(struct ssh_sharing_state);
     sharestate->plugvt = &ssh_sharing_listen_plugvt;
     sharestate->listensock = NULL;
+    sharestate->cl = NULL;
 
     /*
      * Now hand off to a per-platform routine that either connects to
@@ -2115,16 +2122,16 @@ Socket ssh_connection_sharing_init(
             /* For this result, if 'logtext' is not NULL then it is an
              * error message indicating a reason why connection sharing
              * couldn't be set up _at all_ */
-            logeventf(cl->frontend,
+            logeventf(frontend,
                       "Could not set up connection sharing: %s", logtext);
         } else {
             /* Failing that, ds_err and us_err indicate why we
              * couldn't be a downstream and an upstream respectively */
             if (ds_err)
-                logeventf(cl->frontend, "Could not set up connection sharing"
+                logeventf(frontend, "Could not set up connection sharing"
                           " as downstream: %s", ds_err);
             if (us_err)
-                logeventf(cl->frontend, "Could not set up connection sharing"
+                logeventf(frontend, "Could not set up connection sharing"
                           " as upstream: %s", us_err);
         }
 
@@ -2142,7 +2149,7 @@ Socket ssh_connection_sharing_init(
          */
 
         /* 'logtext' is a local endpoint address */
-        logeventf(cl->frontend,
+        logeventf(frontend,
                   "Using existing shared connection at %s", logtext);
 
         *state = NULL;
@@ -2159,12 +2166,11 @@ Socket ssh_connection_sharing_init(
          */
 
         /* 'logtext' is a local endpoint address */
-        logeventf(cl->frontend, "Sharing this connection at %s", logtext);
+        logeventf(frontend, "Sharing this connection at %s", logtext);
 
         *state = sharestate;
         sharestate->listensock = sock;
         sharestate->connections = newtree234(share_connstate_cmp);
-        sharestate->cl = cl;
         sharestate->server_verstring = NULL;
         sharestate->sockname = sockname;
         sharestate->nextid = 1;

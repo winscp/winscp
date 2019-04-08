@@ -38,6 +38,8 @@ typedef uint32_t uint32;
 typedef struct BinarySink BinarySink;
 typedef struct BinarySource BinarySource;
 
+typedef struct IdempotentCallback IdempotentCallback;
+
 typedef struct SockAddr_tag *SockAddr;
 
 typedef struct Socket_vtable Socket_vtable;
