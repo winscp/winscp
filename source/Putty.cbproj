@@ -193,6 +193,9 @@
 		<CppCompile Include="putty\sshccp.c">
 			<BuildOrder>49</BuildOrder>
 		</CppCompile>
+		<CppCompile Include="putty\sshcommon.c">
+			<BuildOrder>62</BuildOrder>
+		</CppCompile>
 		<CppCompile Include="putty\sshcrc.c">
 			<BuildOrder>38</BuildOrder>
 			<BuildOrder>36</BuildOrder>
@@ -252,6 +255,9 @@
 		</CppCompile>
 		<CppCompile Include="putty\sshshare.c">
 			<BuildOrder>42</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\sshverstring.c">
+			<BuildOrder>63</BuildOrder>
 		</CppCompile>
 		<CppCompile Include="putty\sshzlib.c">
 			<BuildOrder>74</BuildOrder>

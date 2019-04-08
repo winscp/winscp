@@ -138,13 +138,6 @@ int from_backend(Frontend * frontend, int is_stderr, const void * data, int data
   return 0;
 }
 //---------------------------------------------------------------------------
-int from_backend_untrusted(Frontend * /*frontend*/, const void * /*data*/, int /*len*/)
-{
-  // currently used with authentication banner only,
-  // for which we have own interface display_banner
-  return 0;
-}
-//---------------------------------------------------------------------------
 int from_backend_eof(Frontend * /*frontend*/)
 {
   return FALSE;

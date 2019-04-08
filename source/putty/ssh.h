@@ -67,7 +67,6 @@ typedef struct PktIn {
     BinarySource_IMPLEMENTATION;
 } PktIn;
 
-#endif
 typedef struct PktOut {
     long prefix;            /* bytes up to and including type field */
     long length;            /* total bytes, including prefix */
@@ -88,7 +87,6 @@ typedef struct PktOut {
     PacketQueueNode qnode;  /* for linking this packet on to a queue */
     BinarySink_IMPLEMENTATION;
 } PktOut;
-#ifndef WINSCP_VS
 
 typedef struct PacketQueueBase {
     PacketQueueNode end;

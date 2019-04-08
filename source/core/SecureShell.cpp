@@ -626,7 +626,7 @@ UnicodeString __fastcall TSecureShell::ConvertFromPutty(const char * Str, int Le
 void __fastcall TSecureShell::PuttyLogEvent(const char * AStr)
 {
   UnicodeString Str = ConvertFromPutty(AStr, strlen(AStr));
-  #define SERVER_VERSION_MSG L"Server version: "
+  #define SERVER_VERSION_MSG L"Remote version: "
   // Gross hack
   if (Str.Pos(SERVER_VERSION_MSG) == 1)
   {
