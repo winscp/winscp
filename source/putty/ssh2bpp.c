@@ -51,11 +51,13 @@ static const struct BinaryPacketProtocolVtable ssh2_bpp_vtable = {
     ssh2_bpp_queue_disconnect, /* in sshcommon.c */
 };
 
-BinaryPacketProtocol *ssh2_bpp_new(struct DataTransferStats *stats)
+BinaryPacketProtocol *ssh2_bpp_new(
+    Frontend *frontend, struct DataTransferStats *stats)
 {
     struct ssh2_bpp_state *s = snew(struct ssh2_bpp_state);
     memset(s, 0, sizeof(*s));
     s->bpp.vt = &ssh2_bpp_vtable;
+    s->bpp.frontend = frontend;
     s->stats = stats;
     ssh_bpp_common_setup(&s->bpp);
     return &s->bpp;

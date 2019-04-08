@@ -50,25 +50,30 @@ void pq_base_push_front(PacketQueueBase *pqb, PacketQueueNode *node)
         queue_idempotent_callback(pqb->ic);
 }
 
+#ifndef WINSCP
 static PacketQueueNode pktin_freeq_head = {
     &pktin_freeq_head, &pktin_freeq_head, TRUE
 };
+#endif
 
-static void pktin_free_queue_callback(void *vctx)
+/*WINSCP static*/ void pktin_free_queue_callback(void *vctx)
 {
-    while (pktin_freeq_head.next != &pktin_freeq_head) {
-        PacketQueueNode *node = pktin_freeq_head.next;
+    struct callback_set * set = (struct callback_set *)vctx;
+    while (set->pktin_freeq_head->next != set->pktin_freeq_head) {
+        PacketQueueNode *node = set->pktin_freeq_head->next;
         PktIn *pktin = FROMFIELD(node, PktIn, qnode);
-        pktin_freeq_head.next = node->next;
+        set->pktin_freeq_head->next = node->next;
         sfree(pktin);
     }
 
-    pktin_freeq_head.prev = &pktin_freeq_head;
+    set->pktin_freeq_head->prev = set->pktin_freeq_head;
 }
 
+#ifndef WINSCP
 static IdempotentCallback ic_pktin_free = {
     pktin_free_queue_callback, NULL, FALSE
 };
+#endif
 
 static PktIn *pq_in_get(PacketQueueBase *pqb, int pop)
 {
@@ -77,15 +82,34 @@ static PktIn *pq_in_get(PacketQueueBase *pqb, int pop)
         return NULL;
 
     if (pop) {
+        #ifdef WINSCP
+        struct callback_set * set = get_frontend_callback_set(pqb->frontend);
+        assert(set != NULL);
+        if (set->ic_pktin_free == NULL)
+        {
+            set->pktin_freeq_head = snew(PacketQueueNode);
+            set->pktin_freeq_head->next = set->pktin_freeq_head;
+            set->pktin_freeq_head->prev = set->pktin_freeq_head;
+            set->pktin_freeq_head->on_free_queue = TRUE;
+
+            set->ic_pktin_free = snew(IdempotentCallback);
+            set->ic_pktin_free->fn = pktin_free_queue_callback;
+            set->ic_pktin_free->ctx = set;
+            set->ic_pktin_free->queued = FALSE;
+            set->ic_pktin_free->set = set;
+        }
+        #endif
+
         node->next->prev = node->prev;
         node->prev->next = node->next;
 
-        node->prev = pktin_freeq_head.prev;
-        node->next = &pktin_freeq_head;
+        node->prev = set->pktin_freeq_head->prev; // WINSCP
+        node->next = set->pktin_freeq_head; // WINSCP
         node->next->prev = node;
         node->prev->next = node;
         node->on_free_queue = TRUE;
-        queue_idempotent_callback(&ic_pktin_free);
+
+        queue_idempotent_callback(set->ic_pktin_free); // WINSCP
     }
 
     return FROMFIELD(node, PktIn, qnode);
@@ -106,16 +130,18 @@ static PktOut *pq_out_get(PacketQueueBase *pqb, int pop)
     return FROMFIELD(node, PktOut, qnode);
 }
 
-void pq_in_init(PktInQueue *pq)
+void pq_in_init(PktInQueue *pq, Frontend * frontend) // WINSCP
 {
     pq->pqb.ic = NULL;
+    pq->pqb.frontend = frontend;
     pq->pqb.end.next = pq->pqb.end.prev = &pq->pqb.end;
     pq->get = pq_in_get;
 }
 
-void pq_out_init(PktOutQueue *pq)
+void pq_out_init(PktOutQueue *pq, Frontend * frontend) // WINSCP
 {
     pq->pqb.ic = NULL;
+    pq->pqb.frontend = frontend;
     pq->pqb.end.next = pq->pqb.end.prev = &pq->pqb.end;
     pq->get = pq_out_get;
 }
@@ -649,18 +675,21 @@ static void ssh_bpp_output_packet_callback(void *context)
 
 void ssh_bpp_common_setup(BinaryPacketProtocol *bpp)
 {
-    pq_in_init(&bpp->in_pq);
-    pq_out_init(&bpp->out_pq);
+    pq_in_init(&bpp->in_pq, bpp->frontend); // WINSCP
+    pq_out_init(&bpp->out_pq, bpp->frontend); // WINSCP
+
     bpp->ic_in_raw.fn = ssh_bpp_input_raw_data_callback;
+    bpp->ic_in_raw.set = get_frontend_callback_set(bpp->frontend);
     bpp->ic_in_raw.ctx = bpp;
     bpp->ic_out_pq.fn = ssh_bpp_output_packet_callback;
+    bpp->ic_out_pq.set = get_frontend_callback_set(bpp->frontend);
     bpp->ic_out_pq.ctx = bpp;
     bpp->out_pq.pqb.ic = &bpp->ic_out_pq;
 }
 
 void ssh_bpp_free(BinaryPacketProtocol *bpp)
 {
-    delete_callbacks_for_context(bpp);
+    delete_callbacks_for_context(get_frontend_callback_set(bpp->frontend), bpp);
     bpp->vt->free(bpp);
 }
 
@@ -684,6 +713,7 @@ void ssh2_bpp_queue_disconnect(BinaryPacketProtocol *bpp,
 
 int ssh2_bpp_check_unimplemented(BinaryPacketProtocol *bpp, PktIn *pktin)
 {
+    #pragma warn -osh
     static const unsigned valid_bitmap[] = {
         SSH2_BITMAP_WORD(0),
         SSH2_BITMAP_WORD(1),
@@ -694,6 +724,7 @@ int ssh2_bpp_check_unimplemented(BinaryPacketProtocol *bpp, PktIn *pktin)
         SSH2_BITMAP_WORD(6),
         SSH2_BITMAP_WORD(7),
     };
+    #pragma warn +osh
 
     if (pktin->type < 0x100 &&
         !((valid_bitmap[pktin->type >> 5] >> (pktin->type & 0x1F)) & 1)) {

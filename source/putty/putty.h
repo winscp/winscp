@@ -1407,7 +1407,7 @@ int askappend(Frontend *frontend, Filename *filename,
 	      void (*callback)(void *ctx, int result), void *ctx);
 
 #ifdef MPEXT
-void display_banner(void *frontend, const char* banner, int size);
+void display_banner(Frontend *frontend, const char* banner, int size);
 #endif
 /*
  * Exports from console frontends (wincons.c, uxcons.c)
@@ -1652,8 +1652,12 @@ unsigned long timing_last_clock(void);
 typedef void (*toplevel_callback_fn_t)(void *ctx);
 #ifdef MPEXT
 typedef struct callback callback;
+struct IdempotentCallback;
+typedef struct PacketQueueNode PacketQueueNode;
 struct callback_set {
     struct callback *cbcurr, *cbhead, *cbtail;
+    IdempotentCallback * ic_pktin_free;
+    PacketQueueNode * pktin_freeq_head;
 };
 #define CALLBACK_SET_ONLY struct callback_set * callback_set_v
 #define CALLBACK_SET CALLBACK_SET_ONLY,
@@ -1665,9 +1669,8 @@ void queue_toplevel_callback(CALLBACK_SET toplevel_callback_fn_t fn, void *ctx);
 int run_toplevel_callbacks(CALLBACK_SET_ONLY);
 int toplevel_callback_pending(CALLBACK_SET_ONLY);
 struct callback_set * get_callback_set(Plug plug);
-#ifndef MPEXT
-void delete_callbacks_for_context(void *ctx);
-#endif
+struct callback_set * get_frontend_callback_set(Frontend * frontend);
+void delete_callbacks_for_context(CALLBACK_SET void *ctx);
 
 /*
  * Another facility in callback.c deals with 'idempotent' callbacks,
@@ -1682,8 +1685,9 @@ struct IdempotentCallback {
     toplevel_callback_fn_t fn;
     void *ctx;
     int queued;
+    struct callback_set * set;
 };
-void queue_idempotent_callback(CALLBACK_SET struct IdempotentCallback *ic);
+void queue_idempotent_callback(struct IdempotentCallback *ic);
 
 #ifndef MPEXT
 typedef void (*toplevel_callback_notify_fn_t)(void *ctx);
@@ -1733,6 +1737,7 @@ void request_callback_notifications(toplevel_callback_notify_fn_t notify,
 extern CRITICAL_SECTION putty_section;
 void putty_initialize();
 void putty_finalize();
+void pktin_free_queue_callback(void *vctx);
 #define MPEXT_PUTTY_SECTION_ENTER EnterCriticalSection(&putty_section);
 #define MPEXT_PUTTY_SECTION_LEAVE LeaveCriticalSection(&putty_section);
 #else

@@ -4,6 +4,7 @@
  */
 
 #include <stddef.h>
+#include <assert.h> // WINSCP
 
 #include "putty.h"
 
@@ -19,12 +20,10 @@ struct callback {
 // It would call callbacks registered any on thread from the thread that happens to call it.
 // We need to create separate callback queue for every SSH session.
 #define CALLBACK_SET_VAR callback_set_v
-#define CALLBACK_SET_VAR_PARAM CALLBACK_SET_VAR,
 #define cbcurr CALLBACK_SET_VAR->cbcurr
 #define cbhead CALLBACK_SET_VAR->cbhead
 #define cbtail CALLBACK_SET_VAR->cbtail
 #else
-#define CALLBACK_SET_VAR_PARAM
 struct callback *cbcurr = NULL, *cbhead = NULL, *cbtail = NULL;
 #endif
 
@@ -47,16 +46,18 @@ static void run_idempotent_callback(void *ctx)
     ic->fn(ic->ctx);
 }
 
-void queue_idempotent_callback(CALLBACK_SET struct IdempotentCallback *ic)
+void queue_idempotent_callback(struct IdempotentCallback *ic)
 {
     if (ic->queued)
         return;
     ic->queued = TRUE;
-    queue_toplevel_callback(CALLBACK_SET_VAR_PARAM run_idempotent_callback, ic);
+#ifdef MPEXT
+    assert(ic->set != NULL);
+#endif
+    queue_toplevel_callback(ic->set, run_idempotent_callback, ic);
 }
 
-#ifndef MPEXT
-void delete_callbacks_for_context(void *ctx)
+void delete_callbacks_for_context(CALLBACK_SET void *ctx)
 {
     struct callback *newhead, *newtail;
 
@@ -81,7 +82,6 @@ void delete_callbacks_for_context(void *ctx)
     cbhead = newhead;
     cbtail = newtail;
 }
-#endif
 
 void queue_toplevel_callback(CALLBACK_SET toplevel_callback_fn_t fn, void *ctx)
 {

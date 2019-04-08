@@ -63,6 +63,10 @@ __fastcall TSecureShell::~TSecureShell()
   Active = false;
   ResetConnection();
   CloseHandle(FSocketEvent);
+  sfree(FCallbackSet->ic_pktin_free);
+  pktin_free_queue_callback(FCallbackSet.get());
+  DebugAssert(FCallbackSet->pktin_freeq_head->next == FCallbackSet->pktin_freeq_head);
+  sfree(FCallbackSet->pktin_freeq_head);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::ResetConnection()

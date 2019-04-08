@@ -106,6 +106,11 @@ struct callback_set * get_callback_set(Plug plug)
   return SecureShell->GetCallbackSet();
 }
 //---------------------------------------------------------------------------
+struct callback_set * get_frontend_callback_set(Frontend * frontend)
+{
+  return reinterpret_cast<TSecureShell *>(frontend)->GetCallbackSet();
+}
+//---------------------------------------------------------------------------
 extern "C" char * do_select(Plug plug, SOCKET skt, int startup)
 {
   bool pfwd;
@@ -280,7 +285,7 @@ void old_keyfile_warning(void)
   // no reference to TSecureShell instance available
 }
 //---------------------------------------------------------------------------
-void display_banner(void * frontend, const char * banner, int size)
+void display_banner(Frontend * frontend, const char * banner, int size)
 {
   DebugAssert(frontend);
   UnicodeString Banner(UTF8String(banner, size));

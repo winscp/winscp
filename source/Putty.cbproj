@@ -57,7 +57,7 @@
 		<BCC_wsus>false</BCC_wsus>
 		<DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
 		<DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;$(DCC_Namespace)</DCC_Namespace>
-		<Defines>SECURITY_WIN32;MPEXT;_WINDOWS;$(Defines)</Defines>
+		<Defines>SECURITY_WIN32;WINSCP;MPEXT;_WINDOWS;$(Defines)</Defines>
 		<FinalOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</FinalOutputDir>
 		<IncludePath>putty\;putty\windows\;$(BDS)\include;$(IncludePath)</IncludePath>
 		<IntermediateOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</IntermediateOutputDir>

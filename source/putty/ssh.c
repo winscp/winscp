@@ -28,10 +28,6 @@
 #define GSS_CTXT_MAYFAIL (1<<3)	/* Context may expire during handshake */
 #endif
 
-#ifdef MPEXT
-#define queue_idempotent_callback(IC) queue_idempotent_callback(get_callback_set(&ssh->plugvt), IC)
-#endif
-
 static const char *const ssh2_disconnect_reasons[] = {
     NULL,
     "host not allowed to connect",
@@ -3283,7 +3279,7 @@ static void ssh1_protocol_setup(Ssh ssh)
 {
     int i;
 
-    ssh->bpp = ssh1_bpp_new();
+    ssh->bpp = ssh1_bpp_new(ssh->frontend);
 
     /*
      * Most messages are handled by the main protocol routine.
@@ -8668,7 +8664,7 @@ static void ssh2_protocol_setup(Ssh ssh)
 {
     int i;
 
-    ssh->bpp = ssh2_bpp_new(&ssh->stats);
+    ssh->bpp = ssh2_bpp_new(ssh->frontend, &ssh->stats);
 
 #ifndef NO_GSSAPI
     /* Load and pick the highest GSS library on the preference list. */
@@ -8732,7 +8728,7 @@ static void ssh2_bare_connection_protocol_setup(Ssh ssh)
 {
     int i;
 
-    ssh->bpp = ssh2_bare_bpp_new();
+    ssh->bpp = ssh2_bare_bpp_new(ssh->frontend);
 
     /*
      * Everything defaults to ssh2_msg_unexpected for the moment;
@@ -9095,37 +9091,46 @@ static const char *ssh_init(Frontend *frontend, Backend **backend_handle,
     ssh->incoming_data_seen_eof = FALSE;
     ssh->incoming_data_eof_message = NULL;
     ssh->incoming_data_consumer.fn = ssh_process_incoming_data;
+    ssh->incoming_data_consumer.set = get_frontend_callback_set(frontend);
     ssh->incoming_data_consumer.ctx = ssh;
     ssh->incoming_data_consumer.queued = FALSE;
     ssh->incoming_pkt_consumer.fn = ssh_process_incoming_pkts;
+    ssh->incoming_pkt_consumer.set = get_frontend_callback_set(frontend);
     ssh->incoming_pkt_consumer.ctx = ssh;
     ssh->incoming_pkt_consumer.queued = FALSE;
-    pq_in_init(&ssh->pq_ssh1_login);
+    pq_in_init(&ssh->pq_ssh1_login, frontend);
     ssh->ssh1_login_icb.fn = do_ssh1_login;
+    ssh->ssh1_login_icb.set = get_frontend_callback_set(frontend);
     ssh->ssh1_login_icb.ctx = ssh;
     ssh->ssh1_login_icb.queued = FALSE;
-    pq_in_init(&ssh->pq_ssh1_connection);
+    pq_in_init(&ssh->pq_ssh1_connection, frontend);
     ssh->ssh1_connection_icb.fn = do_ssh1_connection;
+    ssh->ssh1_connection_icb.set = get_frontend_callback_set(frontend);
     ssh->ssh1_connection_icb.ctx = ssh;
     ssh->ssh1_connection_icb.queued = FALSE;
-    pq_in_init(&ssh->pq_ssh2_transport);
+    pq_in_init(&ssh->pq_ssh2_transport, frontend);
     ssh->ssh2_transport_icb.fn = do_ssh2_transport;
+    ssh->ssh2_transport_icb.set = get_frontend_callback_set(frontend);
     ssh->ssh2_transport_icb.ctx = ssh;
     ssh->ssh2_transport_icb.queued = FALSE;
-    pq_in_init(&ssh->pq_ssh2_userauth);
+    pq_in_init(&ssh->pq_ssh2_userauth, frontend);
     ssh->ssh2_userauth_icb.fn = do_ssh2_userauth;
+    ssh->ssh2_userauth_icb.set = get_frontend_callback_set(frontend);
     ssh->ssh2_userauth_icb.ctx = ssh;
     ssh->ssh2_userauth_icb.queued = FALSE;
-    pq_in_init(&ssh->pq_ssh2_connection);
+    pq_in_init(&ssh->pq_ssh2_connection, frontend);
     ssh->ssh2_connection_icb.fn = do_ssh2_connection;
+    ssh->ssh2_connection_icb.set = get_frontend_callback_set(frontend);
     ssh->ssh2_connection_icb.ctx = ssh;
     ssh->ssh2_connection_icb.queued = FALSE;
     bufchain_init(&ssh->user_input);
     ssh->user_input_consumer.fn = ssh_process_user_input;
+    ssh->user_input_consumer.set = get_frontend_callback_set(frontend);
     ssh->user_input_consumer.ctx = ssh;
     ssh->user_input_consumer.queued = FALSE;
     bufchain_init(&ssh->outgoing_data);
     ssh->outgoing_data_sender.fn = ssh_send_outgoing_data;
+    ssh->outgoing_data_sender.set = get_frontend_callback_set(frontend);
     ssh->outgoing_data_sender.ctx = ssh;
     ssh->outgoing_data_sender.queued = FALSE;
     ssh->current_user_input_fn = NULL;
@@ -9136,7 +9141,7 @@ static const char *ssh_init(Frontend *frontend, Backend **backend_handle,
     ssh->mainchan = NULL;
     ssh->throttled_all = 0;
     ssh->v1_stdout_throttling = 0;
-    pq_out_init(&ssh->outq);
+    pq_out_init(&ssh->outq, frontend);
     ssh->queueing = FALSE;
     ssh->qhead = ssh->qtail = NULL;
     ssh->deferred_rekey_reason = NULL;
