@@ -1189,14 +1189,14 @@ void __fastcall TSecureShell::SendSpecial(int Code)
     LogEvent(FORMAT(L"Sending special code: %d", (Code)));
   }
   CheckConnection();
-  FBackend->special(FBackendHandle, (Telnet_Special)Code);
+  FBackend->special(FBackendHandle, (SessionSpecialCode)Code, 0);
   CheckConnection();
   FLastDataSent = Now();
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::SendEOF()
 {
-  SendSpecial(TS_EOF);
+  SendSpecial(SS_EOF);
 }
 //---------------------------------------------------------------------------
 unsigned int __fastcall TSecureShell::TimeoutPrompt(TQueryParamsTimerEvent PoolEvent)
@@ -2052,7 +2052,7 @@ void __fastcall TSecureShell::KeepAlive()
   if (FActive && (FWaiting == 0))
   {
     LogEvent(L"Sending null packet to keep session alive.");
-    SendSpecial(TS_PING);
+    SendSpecial(SS_PING);
   }
   else
   {
