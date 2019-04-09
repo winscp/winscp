@@ -9,6 +9,7 @@
 #include "putty.h"
 #include "ssh.h"
 #include "sshbpp.h"
+#include "sshppl.h"
 #include "sshchan.h"
 
 /* ----------------------------------------------------------------------
@@ -631,6 +632,72 @@ const char *ssh2_pkt_type(Pkt_KCtx pkt_kctx, Pkt_ACtx pkt_actx, int type)
 #undef TRANSLATE_AUTH
 
 /* ----------------------------------------------------------------------
+ * Common helper function for clients and implementations of
+ * PacketProtocolLayer.
+ */
+
+void ssh_logevent_and_free(void *frontend, char *message)
+{
+    logevent(frontend, message);
+    sfree(message);
+}
+
+void ssh_ppl_replace(PacketProtocolLayer *old, PacketProtocolLayer *new)
+{
+    new->bpp = old->bpp;
+    ssh_ppl_setup_queues(new, old->in_pq, old->out_pq);
+    new->selfptr = old->selfptr;
+    new->user_input = old->user_input;
+    new->frontend = old->frontend;
+    new->ssh = old->ssh;
+
+    *new->selfptr = new;
+    ssh_ppl_free(old);
+
+    /* The new layer might need to be the first one that sends a
+     * packet, so trigger a call to its main coroutine immediately. If
+     * it doesn't need to go first, the worst that will do is return
+     * straight away. */
+    queue_idempotent_callback(&new->ic_process_queue);
+}
+
+void ssh_ppl_free(PacketProtocolLayer *ppl)
+{
+    delete_callbacks_for_context(ppl);
+    ppl->vt->free(ppl);
+}
+
+static void ssh_ppl_ic_process_queue_callback(void *context)
+{
+    PacketProtocolLayer *ppl = (PacketProtocolLayer *)context;
+    ssh_ppl_process_queue(ppl);
+}
+
+void ssh_ppl_setup_queues(PacketProtocolLayer *ppl,
+                          PktInQueue *inq, PktOutQueue *outq)
+{
+    ppl->in_pq = inq;
+    ppl->out_pq = outq;
+    ppl->in_pq->pqb.ic = &ppl->ic_process_queue;
+    ppl->ic_process_queue.fn = ssh_ppl_ic_process_queue_callback;
+    ppl->ic_process_queue.ctx = ppl;
+
+    /* If there's already something on the input queue, it will want
+     * handling immediately. */
+    if (pq_peek(ppl->in_pq))
+        queue_idempotent_callback(&ppl->ic_process_queue);
+}
+
+void ssh_ppl_user_output_string_and_free(PacketProtocolLayer *ppl, char *text)
+{
+    /* Messages sent via this function are from the SSH layer, not
+     * from the server-side process, so they always have the stderr
+     * flag set. */
+    from_backend(ppl->frontend, TRUE, text, strlen(text));
+    sfree(text);
+}
+
+/* ----------------------------------------------------------------------
  * Common helper functions for clients and implementations of
  * BinaryPacketProtocol.
  */
@@ -651,6 +718,7 @@ void ssh_bpp_common_setup(BinaryPacketProtocol *bpp)
 {
     pq_in_init(&bpp->in_pq);
     pq_out_init(&bpp->out_pq);
+    bpp->input_eof = FALSE;
     bpp->ic_in_raw.fn = ssh_bpp_input_raw_data_callback;
     bpp->ic_in_raw.ctx = bpp;
     bpp->ic_out_pq.fn = ssh_bpp_output_packet_callback;
@@ -763,4 +831,38 @@ int verify_ssh_manual_host_key(
     }
 
     return 0;
+}
+
+/* ----------------------------------------------------------------------
+ * Common get_specials function for the two SSH-1 layers.
+ */
+
+int ssh1_common_get_specials(
+    PacketProtocolLayer *ppl, add_special_fn_t add_special, void *ctx)
+{
+    /*
+     * Don't bother offering IGNORE if we've decided the remote
+     * won't cope with it, since we wouldn't bother sending it if
+     * asked anyway.
+     */
+    if (!(ppl->remote_bugs & BUG_CHOKES_ON_SSH1_IGNORE)) {
+        add_special(ctx, "IGNORE message", SS_NOP, 0);
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+/* ----------------------------------------------------------------------
+ * Other miscellaneous utility functions.
+ */
+
+void free_rportfwd(struct ssh_rportfwd *rpf)
+{
+    if (rpf) {
+        sfree(rpf->log_description);
+        sfree(rpf->shost);
+        sfree(rpf->dhost);
+        sfree(rpf);
+    }
 }

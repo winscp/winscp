@@ -204,7 +204,10 @@ static void ssh_verstring_send(struct ssh_verstring_state *s)
 #define BPP_WAITFOR(minlen) do                          \
     {                                                   \
         crMaybeWaitUntilV(                              \
+            s->bpp.input_eof ||                         \
             bufchain_size(s->bpp.in_raw) >= (minlen));  \
+        if (s->bpp.input_eof)                           \
+            goto eof;                                   \
     } while (0)
 
 void ssh_verstring_handle_input(BinaryPacketProtocol *bpp)
@@ -359,13 +362,14 @@ void ssh_verstring_handle_input(BinaryPacketProtocol *bpp)
          * Unable to agree on a major protocol version at all.
          */
         if (!ssh_version_includes_v2(s->our_protoversion)) {
-            s->bpp.error = dupstr(
-                "SSH protocol version 1 required by our configuration "
-                "but not provided by remote");
+            ssh_sw_abort(s->bpp.ssh,
+                         "SSH protocol version 1 required by our "
+                         "configuration but not provided by remote");
         } else {
-            s->bpp.error = dupstr(
-                "SSH protocol version 2 required by our configuration "
-                "but remote only provides (old, insecure) SSH-1");
+            ssh_sw_abort(s->bpp.ssh,
+                         "SSH protocol version 2 required by our "
+                         "configuration but remote only provides "
+                         "(old, insecure) SSH-1");
         }
         crStopV;
     }
@@ -387,6 +391,11 @@ void ssh_verstring_handle_input(BinaryPacketProtocol *bpp)
      * done.
      */
     s->receiver->got_ssh_version(s->receiver, s->major_protoversion);
+    return;
+
+  eof:
+    ssh_remote_error(s->bpp.ssh,
+                     "Server unexpectedly closed network connection");
 
     crFinishV;
 }

@@ -17,6 +17,7 @@ struct BinaryPacketProtocolVtable {
 struct BinaryPacketProtocol {
     const struct BinaryPacketProtocolVtable *vt;
     bufchain *in_raw, *out_raw;
+    int input_eof;   /* set this if in_raw will never be added to again */
     PktInQueue in_pq;
     PktOutQueue out_pq;
     PacketLogSettings *pls;
@@ -34,8 +35,11 @@ struct BinaryPacketProtocol {
 
     int remote_bugs;
 
-    int seen_disconnect;
-    char *error;
+    /* Set this if remote connection closure should not generate an
+     * error message (either because it's not to be treated as an
+     * error at all, or because some other error message has already
+     * been emitted). */
+    int expect_close;
 };
 
 #define ssh_bpp_handle_input(bpp) ((bpp)->vt->handle_input(bpp))

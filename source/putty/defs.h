@@ -95,6 +95,7 @@ typedef struct ptrlen {
 typedef struct logblank_t logblank_t;
 
 typedef struct BinaryPacketProtocol BinaryPacketProtocol;
+typedef struct PacketProtocolLayer PacketProtocolLayer;
 
 /* Do a compile-time type-check of 'to_check' (without evaluating it),
  * as a side effect of returning the value 'to_return'. Note that

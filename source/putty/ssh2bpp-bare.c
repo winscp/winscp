@@ -52,8 +52,11 @@ static void ssh2_bare_bpp_free(BinaryPacketProtocol *bpp)
 
 #define BPP_READ(ptr, len) do                                   \
     {                                                           \
-        crMaybeWaitUntilV(bufchain_try_fetch_consume(           \
+        crMaybeWaitUntilV(s->bpp.input_eof ||                   \
+                          bufchain_try_fetch_consume(           \
                               s->bpp.in_raw, ptr, len));        \
+        if (s->bpp.input_eof)                                   \
+            goto eof;                                           \
     } while (0)
 
 static void ssh2_bare_bpp_handle_input(BinaryPacketProtocol *bpp)
@@ -72,7 +75,7 @@ static void ssh2_bare_bpp_handle_input(BinaryPacketProtocol *bpp)
         }
 
         if (s->packetlen <= 0 || s->packetlen >= (long)OUR_V2_PACKETLIMIT) {
-            s->bpp.error = dupstr("Invalid packet length received");
+            ssh_sw_abort(s->bpp.ssh, "Invalid packet length received");
             crStopV;
         }
 
@@ -123,15 +126,17 @@ static void ssh2_bare_bpp_handle_input(BinaryPacketProtocol *bpp)
         }
 
         pq_push(&s->bpp.in_pq, s->pktin);
-
-        {
-            int type = s->pktin->type;
-            s->pktin = NULL;
-
-            if (type == SSH2_MSG_DISCONNECT)
-                s->bpp.seen_disconnect = TRUE;
-        }
+        s->pktin = NULL;
     }
+
+  eof:
+    if (!s->bpp.expect_close) {
+        ssh_remote_error(s->bpp.ssh,
+                         "Server unexpectedly closed network connection");
+    } else {
+        ssh_remote_eof(s->bpp.ssh, "Server closed network connection");
+    }
+
     crFinishV;
 }
 

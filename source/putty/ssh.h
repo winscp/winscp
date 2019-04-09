@@ -183,7 +183,18 @@ void share_setup_x11_channel(ssh_sharing_connstate *cs, share_channel *chan,
                              int protomajor, int protominor,
                              const void *initial_data, int initial_len);
 
-struct ssh_rportfwd;
+/* Structure definition centralised here because the SSH-1 and SSH-2
+ * connection layers both use it. But the client module (portfwd.c)
+ * should not try to look inside here. */
+struct ssh_rportfwd {
+    unsigned sport, dport;
+    char *shost, *dhost;
+    int addressfamily;
+    char *log_description; /* name of remote listening port, for logging */
+    ssh_sharing_connstate *share_ctx;
+    PortFwdRecord *pfr;
+};
+void free_rportfwd(struct ssh_rportfwd *rpf);
 
 struct ConnectionLayerVtable {
     /* Allocate and free remote-to-local port forwardings, called by
@@ -227,6 +238,25 @@ struct ConnectionLayerVtable {
 
     /* Query whether the connection layer is doing agent forwarding */
     int (*agent_forwarding_permitted)(ConnectionLayer *cl);
+
+    /* Set the size of the main terminal window (if any) */
+    void (*terminal_size)(ConnectionLayer *cl, int width, int height);
+
+    /* Indicate that the backlog on standard output has cleared */
+    void (*stdout_unthrottle)(ConnectionLayer *cl, int bufsize);
+
+    /* Query the size of the backlog on standard _input_ */
+    int (*stdin_backlog)(ConnectionLayer *cl);
+
+    /* Tell the connection layer that the SSH connection itself has
+     * backed up, so it should tell all currently open channels to
+     * cease reading from their local input sources if they can. (Or
+     * tell it that that state of affairs has gone away again.) */
+    void (*throttle_all_channels)(ConnectionLayer *cl, int throttled);
+
+    /* Ask the connection layer about its current preference for
+     * line-discipline options. */
+    int (*ldisc_option)(ConnectionLayer *cl, int option);
 };
 
 struct ConnectionLayer {
@@ -253,6 +283,13 @@ struct ConnectionLayer {
     ((cl)->vt->sharing_queue_global_request(cl, cs))
 #define ssh_agent_forwarding_permitted(cl) \
     ((cl)->vt->agent_forwarding_permitted(cl))
+#define ssh_terminal_size(cl, w, h) ((cl)->vt->terminal_size(cl, w, h))
+#define ssh_stdout_unthrottle(cl, bufsize) \
+    ((cl)->vt->stdout_unthrottle(cl, bufsize))
+#define ssh_stdin_backlog(cl) ((cl)->vt->stdin_backlog(cl))
+#define ssh_throttle_all_channels(cl, throttled) \
+    ((cl)->vt->throttle_all_channels(cl, throttled))
+#define ssh_ldisc_option(cl, option) ((cl)->vt->ldisc_option(cl, option))
 
 /* Exports from portfwd.c */
 PortFwdManager *portfwdmgr_new(ConnectionLayer *cl);
@@ -265,6 +302,19 @@ char *portfwdmgr_connect(PortFwdManager *mgr, Channel **chan_ret,
                          int addressfamily);
 
 Frontend *ssh_get_frontend(Ssh ssh);
+
+/* Communications back to ssh.c from connection layers */
+void ssh_throttle_conn(Ssh ssh, int adjust);
+void ssh_got_exitcode(Ssh ssh, int status);
+void ssh_ldisc_update(Ssh ssh);
+void ssh_got_fallback_cmd(Ssh ssh);
+
+/* Functions to abort the connection, for various reasons. */
+void ssh_remote_error(Ssh ssh, const char *fmt, ...);
+void ssh_remote_eof(Ssh ssh, const char *fmt, ...);
+void ssh_proto_error(Ssh ssh, const char *fmt, ...);
+void ssh_sw_abort(Ssh ssh, const char *fmt, ...);
+void ssh_user_close(Ssh ssh, const char *fmt, ...);
 
 #define SSH_CIPHER_IDEA		1
 #define SSH_CIPHER_DES		2
@@ -1240,10 +1290,6 @@ enum {
 };
 #undef DEF_ENUM_UNIVERSAL
 #undef DEF_ENUM_CONTEXTUAL
-
-/* Given that virtual packet types exist, this is how big the dispatch
- * table has to be */
-#define SSH_MAX_MSG                           0x101
 
 /*
  * SSH-1 agent messages.

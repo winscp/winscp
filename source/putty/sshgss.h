@@ -200,6 +200,18 @@ struct ssh_gss_library {
     void *handle;
 };
 
+/*
+ * State that has to be shared between all GSSAPI-using parts of the
+ * same SSH connection, in particular between GSS key exchange and the
+ * subsequent trivial userauth method that reuses its output.
+ */
+struct ssh_connection_shared_gss_state {
+    struct ssh_gss_liblist *libs;
+    struct ssh_gss_library *lib;
+    Ssh_gss_name srv_name;
+    Ssh_gss_ctx ctx;
+};
+
 #endif /* NO_GSSAPI */
 
 #endif /*PUTTY_SSHGSS_H*/

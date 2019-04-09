@@ -168,8 +168,11 @@ void ssh2_bpp_new_incoming_crypto(
 
 #define BPP_READ(ptr, len) do                                   \
     {                                                           \
-        crMaybeWaitUntilV(bufchain_try_fetch_consume(           \
+        crMaybeWaitUntilV(s->bpp.input_eof ||                   \
+                          bufchain_try_fetch_consume(           \
                               s->bpp.in_raw, ptr, len));        \
+        if (s->bpp.input_eof)                                   \
+            goto eof;                                           \
     } while (0)
 
 static void ssh2_bpp_handle_input(BinaryPacketProtocol *bpp)
@@ -246,8 +249,8 @@ static void ssh2_bpp_handle_input(BinaryPacketProtocol *bpp)
                      s->packetlen-4))
                     break;
                 if (s->packetlen >= (long)OUR_V2_PACKETLIMIT) {
-                    s->bpp.error = dupprintf(
-                        "No valid incoming packet found");
+                    ssh_sw_abort(s->bpp.ssh,
+                                 "No valid incoming packet found");
                     crStopV;
                 }
             }
@@ -293,8 +296,8 @@ static void ssh2_bpp_handle_input(BinaryPacketProtocol *bpp)
              */
             if (s->len < 0 || s->len > (long)OUR_V2_PACKETLIMIT ||
                 s->len % s->cipherblk != 0) {
-                s->bpp.error = dupprintf(
-                    "Incoming packet length field was garbled");
+                ssh_sw_abort(s->bpp.ssh,
+                             "Incoming packet length field was garbled");
                 crStopV;
             }
 
@@ -323,7 +326,7 @@ static void ssh2_bpp_handle_input(BinaryPacketProtocol *bpp)
              */
             if (s->in.mac && !ssh2_mac_verify(
                     s->in.mac, s->data, s->len + 4, s->in.sequence)) {
-                s->bpp.error = dupprintf("Incorrect MAC received on packet");
+                ssh_sw_abort(s->bpp.ssh, "Incorrect MAC received on packet");
                 crStopV;
             }
 
@@ -358,8 +361,8 @@ static void ssh2_bpp_handle_input(BinaryPacketProtocol *bpp)
              */
             if (s->len < 0 || s->len > (long)OUR_V2_PACKETLIMIT ||
                 (s->len + 4) % s->cipherblk != 0) {
-                s->bpp.error = dupprintf(
-                    "Incoming packet was garbled on decryption");
+                ssh_sw_abort(s->bpp.ssh,
+                             "Incoming packet was garbled on decryption");
                 crStopV;
             }
 
@@ -396,15 +399,15 @@ static void ssh2_bpp_handle_input(BinaryPacketProtocol *bpp)
              */
             if (s->in.mac && !ssh2_mac_verify(
                     s->in.mac, s->data, s->len + 4, s->in.sequence)) {
-                s->bpp.error = dupprintf("Incorrect MAC received on packet");
+                ssh_sw_abort(s->bpp.ssh, "Incorrect MAC received on packet");
                 crStopV;
             }
         }
         /* Get and sanity-check the amount of random padding. */
         s->pad = s->data[4];
         if (s->pad < 4 || s->len - s->pad < 1) {
-            s->bpp.error = dupprintf(
-                "Invalid padding length on received packet");
+            ssh_sw_abort(s->bpp.ssh,
+                         "Invalid padding length on received packet");
             crStopV;
         }
         /*
@@ -492,8 +495,6 @@ static void ssh2_bpp_handle_input(BinaryPacketProtocol *bpp)
             int type = s->pktin->type;
             s->pktin = NULL;
 
-            if (type == SSH2_MSG_DISCONNECT)
-                s->bpp.seen_disconnect = TRUE;
             if (type == SSH2_MSG_NEWKEYS) {
                 /*
                  * Mild layer violation: in this situation we must
@@ -506,6 +507,15 @@ static void ssh2_bpp_handle_input(BinaryPacketProtocol *bpp)
             }
         }
     }
+
+  eof:
+    if (!s->bpp.expect_close) {
+        ssh_remote_error(s->bpp.ssh,
+                         "Server unexpectedly closed network connection");
+    } else {
+        ssh_remote_eof(s->bpp.ssh, "Server closed network connection");
+    }
+
     crFinishV;
 }
 
