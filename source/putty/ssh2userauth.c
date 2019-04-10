@@ -26,6 +26,8 @@ struct ssh2_userauth_state {
     char *hostname, *fullhostname;
     char *default_username;
     int try_ki_auth, try_gssapi_auth, try_gssapi_kex_auth, gssapi_fwd;
+    char *loghost; // WINSCP
+    int change_password; // WINSCP
 
     ptrlen session_id;
     enum {
@@ -118,7 +120,8 @@ PacketProtocolLayer *ssh2_userauth_new(
     const char *default_username, int change_username,
     int try_ki_auth,
     int try_gssapi_auth, int try_gssapi_kex_auth,
-    int gssapi_fwd, struct ssh_connection_shared_gss_state *shgss)
+    int gssapi_fwd, struct ssh_connection_shared_gss_state *shgss,
+    const char * loghost, int change_password) // WINSCP
 {
     struct ssh2_userauth_state *s = snew(struct ssh2_userauth_state);
     memset(s, 0, sizeof(*s));
@@ -136,6 +139,8 @@ PacketProtocolLayer *ssh2_userauth_new(
     s->try_gssapi_kex_auth = try_gssapi_kex_auth;
     s->gssapi_fwd = gssapi_fwd;
     s->shgss = shgss;
+    s->loghost = dupstr(loghost); // WINSCP
+    s->change_password = change_password;
     bufchain_init(&s->banner);
 
     return &s->ppl;
@@ -165,6 +170,7 @@ static void ssh2_userauth_free(PacketProtocolLayer *ppl)
     sfree(s->default_username);
     sfree(s->hostname);
     sfree(s->fullhostname);
+    sfree(s->loghost);
     sfree(s);
 }
 
@@ -223,7 +229,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
      */
     if (!filename_is_null(s->keyfile)) {
         int keytype;
-        ppl_logevent(("Reading key file \"%.150s\"",
+        ppl_logevent((WINSCP_BOM "Reading key file \"%.150s\"",
                       filename_to_str(s->keyfile)));
         keytype = key_type(s->keyfile);
         if (keytype == SSH_KEYTYPE_SSH2 ||
@@ -242,7 +248,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                     ssh2_userkey_encrypted(s->keyfile, NULL);
             } else {
                 ppl_logevent(("Unable to load key (%s)", error));
-                ppl_printf(("Unable to load key file \"%s\" (%s)\r\n",
+                ppl_printf((WINSCP_BOM "Unable to load key file \"%s\" (%s)\r\n",
                             filename_to_str(s->keyfile), error));
                 strbuf_free(s->publickey_blob);
                 s->publickey_blob = NULL;
@@ -250,7 +256,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
         } else {
             ppl_logevent(("Unable to use this key file (%s)",
                           key_type_to_str(keytype)));
-            ppl_printf(("Unable to use key file \"%s\" (%s)\r\n",
+            ppl_printf((WINSCP_BOM "Unable to use key file \"%s\" (%s)\r\n",
                         filename_to_str(s->keyfile),
                         key_type_to_str(keytype)));
             s->publickey_blob = NULL;
@@ -395,7 +401,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
             free_prompts(s->cur_prompt);
         } else {
             if ((flags & FLAG_VERBOSE) || (flags & FLAG_INTERACTIVE))
-                ppl_printf(("Using username \"%s\".\r\n", s->username));
+                ppl_printf((WINSCP_BOM "Using username \"%s\".\r\n", s->username));
         }
         s->got_username = TRUE;
 
@@ -463,6 +469,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                         void *data;
                         int len;
                         bufchain_prefix(&s->banner, &data, &len);
+                        display_banner(s->ppl.frontend, &s->banner, len); // WINSCP
                         from_backend(s->ppl.frontend, TRUE, data, len);
                         bufchain_consume(&s->banner, len);
                     }
@@ -559,6 +566,9 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                     ppl_logevent(("Further authentication required"));
                 }
 
+#ifdef WINSCP
+                ppl_logevent(("Server offered these authentication methods: %*s", methods.len, methods.ptr));
+#endif
                 s->can_pubkey =
                     in_commasep_string("publickey", methods.ptr, methods.len);
                 s->can_passwd =
@@ -946,8 +956,15 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
 
                 /* Import server name if not cached from KEX */
                 if (s->shgss->srv_name == GSS_C_NO_NAME) {
+                    // WINSCP
+                    const char * fullhostname = s->fullhostname;
+                    if (s->loghost[0] != '\0')
+                    {
+                        fullhostname = s->loghost;
+                    }
+                    // /WINSCP
                     s->gss_stat = s->shgss->lib->import_name(
-                        s->shgss->lib, s->fullhostname, &s->shgss->srv_name);
+                        s->shgss->lib, fullhostname, &s->shgss->srv_name); // WINSCP
                     if (s->gss_stat != SSH_GSS_OK) {
                         if (s->gss_stat == SSH_GSS_BAD_HOST_NAME)
                             ppl_logevent(("GSSAPI import name failed -"
@@ -1220,6 +1237,16 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
 
                 s->ppl.bpp->pls->actx = SSH2_PKTCTX_PASSWORD;
 
+                // WINSCP
+                if (s->change_password != 0)
+                {
+                    s->password = dupstr("");
+                    s->type = AUTH_TYPE_PASSWORD;
+                }
+                else
+                {
+                // no indentation to ease merges
+                // /WINSCP
                 s->cur_prompt = new_prompts(s->ppl.frontend);
                 s->cur_prompt->to_server = TRUE;
                 s->cur_prompt->name = dupstr("SSH password");
@@ -1289,9 +1316,11 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                  * request.
                  */
                 crMaybeWaitUntilV((pktin = ssh2_userauth_pop(s)) != NULL);
+                } // WINSCP
                 changereq_first_time = TRUE;
 
-                while (pktin->type == SSH2_MSG_USERAUTH_PASSWD_CHANGEREQ) {
+                while ((pktin->type == SSH2_MSG_USERAUTH_PASSWD_CHANGEREQ) ||
+                       (s->change_password != 0)) { // WINSCP
 
                     /* 
                      * We're being asked for a new password
@@ -1302,6 +1331,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                     int got_new = FALSE; /* not live over crReturn */
                     ptrlen prompt;  /* not live over crReturn */
                     
+                    if (s->change_password == 0) // WINSCP
                     {
                         const char *msg;
                         if (changereq_first_time)
@@ -1311,6 +1341,8 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                         ppl_logevent(("%s", msg));
                         ppl_printf(("%s\r\n", msg));
                     }
+
+                    s->change_password = 0; // WINSCP
 
                     prompt = get_string(pktin);
 

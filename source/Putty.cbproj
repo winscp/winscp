@@ -162,6 +162,12 @@
 		<CppCompile Include="putty\ssh1censor.c">
 			<BuildOrder>57</BuildOrder>
 		</CppCompile>
+		<CppCompile Include="putty\ssh1connection.c">
+			<BuildOrder>64</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\ssh1login.c">
+			<BuildOrder>65</BuildOrder>
+		</CppCompile>
 		<CppCompile Include="putty\ssh2bpp.c">
 			<BuildOrder>54</BuildOrder>
 		</CppCompile>
@@ -170,6 +176,15 @@
 		</CppCompile>
 		<CppCompile Include="putty\ssh2censor.c">
 			<BuildOrder>58</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\ssh2connection.c">
+			<BuildOrder>66</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\ssh2transport.c">
+			<BuildOrder>67</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\ssh2userauth.c">
+			<BuildOrder>68</BuildOrder>
 		</CppCompile>
 		<CppCompile Include="putty\sshaes.c">
 			<BuildOrder>26</BuildOrder>

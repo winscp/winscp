@@ -11,7 +11,6 @@ struct ssh2_cipheralg;
 typedef const struct ssh2_cipheralg *ssh2_cipher;
 
 int is_ssh(Plug plug);
-void call_ssh_timer(Backend * be);
 int get_ssh_version(Backend * be);
 void * get_ssh_frontend(Plug plug);
 const ssh1_cipher * get_cipher(Backend * be);
@@ -19,10 +18,10 @@ const ssh2_cipher * get_cscipher(Backend * be);
 const ssh2_cipher * get_sccipher(Backend * be);
 const struct ssh_compressor * get_cscomp(Backend * be);
 const struct ssh_decompressor * get_sccomp(Backend * be);
-int get_ssh_state_closed(Backend * be);
-int get_ssh_state_session(Backend * be);
-const unsigned int * ssh2_remmaxpkt(Backend * be);
-const unsigned int * ssh2_remwindow(Backend * be);
+#define WINSCP_QUERY_REMMAXPKT 1
+#define WINSCP_QUERY_MAIN_CHANNEL 2
+#define WINSCP_QUERY_TIMER 3
+unsigned int winscp_query(Backend * be, int query);
 void md5checksum(const char * buffer, int len, unsigned char output[16]);
 typedef const struct ssh_keyalg * cp_ssh_keyalg;
 void get_hostkey_algs(int * count, cp_ssh_keyalg * SignKeys);

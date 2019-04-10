@@ -172,14 +172,14 @@ static void ssh_got_ssh_version(struct ssh_version_receiver *rcv,
             int is_simple =
                 (conf_get_int(ssh->conf, CONF_ssh_simple) && !ssh->connshare);
 
-            ssh->bpp = ssh2_bpp_new(&ssh->stats);
+            ssh->bpp = ssh2_bpp_new(ssh->frontend, &ssh->stats);
             ssh_connect_bpp(ssh);
 
 #ifndef NO_GSSAPI
             /* Load and pick the highest GSS library on the preference
              * list. */
             if (!ssh->gss_state.libs)
-                ssh->gss_state.libs = ssh_gss_setup(ssh->conf);
+                ssh->gss_state.libs = ssh_gss_setup(ssh->conf, ssh->frontend); // WINSCP
             ssh->gss_state.lib = NULL;
             if (ssh->gss_state.libs->nlibraries > 0) {
                 int i, j;
@@ -225,7 +225,9 @@ static void ssh_got_ssh_version(struct ssh_version_receiver *rcv,
                     conf_get_int(ssh->conf, CONF_try_gssapi_auth),
                     conf_get_int(ssh->conf, CONF_try_gssapi_kex),
                     conf_get_int(ssh->conf, CONF_gssapifwd),
-                    &ssh->gss_state);
+                    &ssh->gss_state,
+                    conf_get_str(ssh->conf, CONF_loghost),
+                    conf_get_int(ssh->conf, CONF_change_password)); // WINSCP
                 ssh_connect_ppl(ssh, userauth_layer);
                 transport_child_layer = userauth_layer;
 
@@ -247,7 +249,7 @@ static void ssh_got_ssh_version(struct ssh_version_receiver *rcv,
 
         } else {
 
-            ssh->bpp = ssh1_bpp_new();
+            ssh->bpp = ssh1_bpp_new(ssh->frontend);
             ssh_connect_bpp(ssh);
 
             connection_layer = ssh1_connection_new(ssh, ssh->conf, &ssh->cl);
@@ -260,7 +262,7 @@ static void ssh_got_ssh_version(struct ssh_version_receiver *rcv,
         }
 
     } else {
-        ssh->bpp = ssh2_bare_bpp_new();
+        ssh->bpp = ssh2_bare_bpp_new(ssh->frontend);
         ssh_connect_bpp(ssh);
 
         connection_layer = ssh2_connection_new(
@@ -800,6 +802,7 @@ static const char *ssh_init(Frontend *frontend, Backend **backend_handle,
     bufchain_init(&ssh->user_input);
     ssh->ic_out_raw.fn = ssh_bpp_output_raw_data_callback;
     ssh->ic_out_raw.ctx = ssh;
+    ssh->ic_out_raw.set = get_frontend_callback_set(frontend);
 
     ssh->backend.vt = &ssh_backend;
     *backend_handle = &ssh->backend;
@@ -1122,15 +1125,6 @@ int is_ssh(Plug plug)
   return (*plug)->closing == ssh_closing;
 }
 
-void call_ssh_timer(Backend * be)
-{
-  Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
-  if (ssh->version == 2)
-  {
-    ssh2_timer(ssh, GETTICKCOUNT());
-  }
-}
-
 int get_ssh_version(Backend * be)
 {
   Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
@@ -1172,49 +1166,21 @@ const struct ssh_decompressor * get_sccomp(Backend * be)
   return ssh2_bpp_get_sccomp(ssh->bpp);
 }
 
-int get_ssh_state_closed(Backend * be)
+unsigned int winscp_query(Backend * be, int query)
 {
   Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
-  return ssh->state == SSH_STATE_CLOSED;
-}
-
-int get_ssh_state_session(Backend * be)
-{
-  Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
-  return ssh->state == SSH_STATE_SESSION;
-}
-
-const unsigned int * ssh2_remmaxpkt(Backend * be)
-{
-  Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
-  return &ssh->mainchan->v.v2.remmaxpkt;
-}
-
-const unsigned int * ssh2_remwindow(Backend * be)
-{
-  Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
-  return &ssh->mainchan->v.v2.remwindow;
+  if ((ssh->base_layer != NULL) && (ssh->base_layer->vt->winscp_query != NULL))
+  {
+    return ssh_ppl_winscp_query(ssh->base_layer, query);
+  }
+  else
+  {
+    return 0;
+  }
 }
 
 void md5checksum(const char * buffer, int len, unsigned char output[16])
 {
   MD5Simple(buffer, len, output);
-}
-
-void get_hostkey_algs(int * count, cp_ssh_keyalg * SignKeys)
-{
-  int i;
-  assert(lenof(hostkey_algs) <= *count);
-  *count = lenof(hostkey_algs);
-  for (i = 0; i < *count; i++)
-  {
-    *(SignKeys + i) = hostkey_algs[i].alg;
-  }
-}
-
-void get_macs(int * count, const struct ssh2_macalg *** amacs)
-{
-  *amacs = macs;
-  *count = lenof(macs);
 }
 #endif

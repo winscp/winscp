@@ -37,7 +37,6 @@ private:
   TDateTime FLastDataSent;
   const Backend_vtable * FBackend;
   Backend * FBackendHandle;
-  const unsigned int * FMaxPacketSize;
   TNotifyEvent FOnReceive;
   bool FFrozen;
   bool FDataWhileFrozen;

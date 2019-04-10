@@ -53,7 +53,7 @@ struct ssh_gss_liblist {
     struct ssh_gss_library *libraries;
     int nlibraries;
 };
-struct ssh_gss_liblist *ssh_gss_setup(Conf *conf, void *frontend);
+struct ssh_gss_liblist *ssh_gss_setup(Conf *conf, Frontend *frontend);
 void ssh_gss_cleanup(struct ssh_gss_liblist *list);
 
 /*

@@ -1749,7 +1749,7 @@ void pktin_free_queue_callback(void *vctx);
 // To mark carefully selected messages from PuTTY code as UTF-8.
 // Only for messages that are certain not to ever get ansi-encoded component,
 // but known to get UTF-8 encoded component (currently private key path only)
-#define MPEXT_BOM "\xEF\xBB\xBF"
+#define WINSCP_BOM "\xEF\xBB\xBF"
 #endif
 
 #ifdef MPEXT

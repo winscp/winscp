@@ -24,6 +24,8 @@ struct PacketProtocolLayerVtable {
 
     /* Protocol-level name of this layer. */
     const char *name;
+
+    unsigned int (*winscp_query)(PacketProtocolLayer *ppl, int query);
 };
 
 struct PacketProtocolLayer {
@@ -68,6 +70,7 @@ struct PacketProtocolLayer {
 #define ssh_ppl_want_user_input(ppl) ((ppl)->vt->want_user_input(ppl))
 #define ssh_ppl_got_user_input(ppl) ((ppl)->vt->got_user_input(ppl))
 #define ssh_ppl_reconfigure(ppl, conf) ((ppl)->vt->reconfigure(ppl, conf))
+#define ssh_ppl_winscp_query(ppl, query) ((ppl)->vt->winscp_query(ppl, query))
 
 /* ssh_ppl_free is more than just a macro wrapper on the vtable; it
  * does centralised parts of the freeing too. */
@@ -106,7 +109,8 @@ PacketProtocolLayer *ssh2_userauth_new(
     const char *default_username, int change_username,
     int try_ki_auth,
     int try_gssapi_auth, int try_gssapi_kex_auth,
-    int gssapi_fwd, struct ssh_connection_shared_gss_state *shgss);
+    int gssapi_fwd, struct ssh_connection_shared_gss_state *shgss,
+    const char * loghost, int change_password); // WINSCP
 PacketProtocolLayer *ssh2_connection_new(
     Ssh ssh, ssh_sharing_state *connshare, int is_simple,
     Conf *conf, const char *peer_verstring, ConnectionLayer **cl_out);

@@ -91,6 +91,7 @@ static void ssh2_connection_special_cmd(PacketProtocolLayer *ppl,
 static int ssh2_connection_want_user_input(PacketProtocolLayer *ppl);
 static void ssh2_connection_got_user_input(PacketProtocolLayer *ppl);
 static void ssh2_connection_reconfigure(PacketProtocolLayer *ppl, Conf *conf);
+static unsigned int ssh2_connection_winscp_query(PacketProtocolLayer *ppl, int query);
 
 static const struct PacketProtocolLayerVtable ssh2_connection_vtable = {
     ssh2_connection_free,
@@ -101,6 +102,7 @@ static const struct PacketProtocolLayerVtable ssh2_connection_vtable = {
     ssh2_connection_got_user_input,
     ssh2_connection_reconfigure,
     "ssh-connection",
+    ssh2_connection_winscp_query,
 };
 
 static struct ssh_rportfwd *ssh2_rportfwd_alloc(
@@ -624,6 +626,7 @@ static int ssh2_connection_filter_queue(struct ssh2_connection_state *s)
             break;
 
           case SSH2_MSG_CHANNEL_DATA:
+          case SSH2_MSG_CHANNEL_EXTENDED_DATA:
           case SSH2_MSG_CHANNEL_WINDOW_ADJUST:
           case SSH2_MSG_CHANNEL_REQUEST:
           case SSH2_MSG_CHANNEL_EOF:
@@ -1288,7 +1291,7 @@ static void ssh2_connection_process_queue(PacketProtocolLayer *ppl)
 	    } else {
 		subsys = conf_get_int(s->conf, CONF_ssh_subsys2);
 		cmd = conf_get_str(s->conf, CONF_remote_cmd2);
-                if (!*cmd)
+                if (!*cmd && !conf_get_int(s->conf, CONF_force_remote_cmd2)) // WINSCP
                     break;
                 ppl_logevent(("Primary command failed; attempting fallback"));
 	    }
@@ -1550,7 +1553,7 @@ static void ssh2_channel_destroy(struct ssh2_channel *c)
      * toplevel callback, just in case anything on the current call
      * stack objects to this entire PPL being freed.
      */
-    queue_toplevel_callback(ssh2_check_termination_callback, s);
+    queue_toplevel_callback(s->cl.frontend, ssh2_check_termination_callback, s); // WINSCP
 }
 
 static void ssh2_check_termination(struct ssh2_connection_state *s)
@@ -2003,8 +2006,10 @@ static void ssh2_rportfwd_globreq_response(struct ssh2_connection_state *s,
 	ppl_logevent(("Remote port forwarding from %s refused",
                       rpf->log_description));
 
+	{ // WINSCP
 	struct ssh_rportfwd *realpf = del234(s->rportfwds, rpf);
 	assert(realpf == rpf);
+	} // WINSCP
         portfwdmgr_close(s->portfwdmgr, rpf->pfr);
 	free_rportfwd(rpf);
     }
@@ -2072,8 +2077,10 @@ static void ssh2_rportfwd_remove(ConnectionLayer *cl, struct ssh_rportfwd *rpf)
         pq_push(s->ppl.out_pq, pktout);
     }
 
+    { // WINSCP
     struct ssh_rportfwd *realpf = del234(s->rportfwds, rpf);
     assert(realpf == rpf);
+    } // WINSCP
     free_rportfwd(rpf);
 }
 
@@ -2197,7 +2204,7 @@ static mainchan *mainchan_new(struct ssh2_connection_state *s)
 
 static void mainchan_free(Channel *chan)
 {
-    assert(chan->vt == &mainchan_channelvt);
+    pinitassert(chan->vt == &mainchan_channelvt);
     mainchan *mc = FROMFIELD(chan, mainchan, chan);
     struct ssh2_connection_state *s = mc->connlayer;
     s->mainchan = NULL;
@@ -2216,7 +2223,7 @@ static void mainchan_open_confirmation(Channel *chan)
 
 static void mainchan_open_failure(Channel *chan, const char *errtext)
 {
-    assert(chan->vt == &mainchan_channelvt);
+    pinitassert(chan->vt == &mainchan_channelvt);
     mainchan *mc = FROMFIELD(chan, mainchan, chan);
     struct ssh2_connection_state *s = mc->connlayer;
 
@@ -2231,7 +2238,7 @@ static void mainchan_open_failure(Channel *chan, const char *errtext)
 static int mainchan_send(Channel *chan, int is_stderr,
                          const void *data, int length)
 {
-    assert(chan->vt == &mainchan_channelvt);
+    pinitassert(chan->vt == &mainchan_channelvt);
     mainchan *mc = FROMFIELD(chan, mainchan, chan);
     struct ssh2_connection_state *s = mc->connlayer;
     return from_backend(s->ppl.frontend, is_stderr, data, length);
@@ -2239,7 +2246,7 @@ static int mainchan_send(Channel *chan, int is_stderr,
 
 static void mainchan_send_eof(Channel *chan)
 {
-    assert(chan->vt == &mainchan_channelvt);
+    pinitassert(chan->vt == &mainchan_channelvt);
     mainchan *mc = FROMFIELD(chan, mainchan, chan);
     struct ssh2_connection_state *s = mc->connlayer;
     PacketProtocolLayer *ppl = &s->ppl; /* for ppl_logevent */
@@ -2262,7 +2269,7 @@ static void mainchan_send_eof(Channel *chan)
 
 static void mainchan_set_input_wanted(Channel *chan, int wanted)
 {
-    assert(chan->vt == &mainchan_channelvt);
+    pinitassert(chan->vt == &mainchan_channelvt);
     mainchan *mc = FROMFIELD(chan, mainchan, chan);
     struct ssh2_connection_state *s = mc->connlayer;
 
@@ -2498,4 +2505,26 @@ static void ssh2_connection_reconfigure(PacketProtocolLayer *ppl, Conf *conf)
 
     if (s->portfwdmgr_configured)
         portfwdmgr_config(s->portfwdmgr, s->conf);
+}
+
+#include <puttyexp.h>
+
+static unsigned int ssh2_connection_winscp_query(PacketProtocolLayer *ppl, int query)
+{
+    struct ssh2_connection_state *s =
+        FROMFIELD(ppl, struct ssh2_connection_state, ppl);
+
+    if (query == WINSCP_QUERY_REMMAXPKT)
+    {
+        return s->mainchan != NULL ? s->mainchan->remmaxpkt : 0;
+    }
+    else if (query == WINSCP_QUERY_MAIN_CHANNEL)
+    {
+        return s->mainchan_ready;
+    }
+    else
+    {
+        assert(0);
+        return 0;
+    }
 }

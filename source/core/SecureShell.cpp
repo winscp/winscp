@@ -89,7 +89,6 @@ void __fastcall TSecureShell::ResetConnection()
 void __fastcall TSecureShell::ResetSessionInfo()
 {
   FSessionInfoValid = false;
-  FMaxPacketSize = NULL;
 }
 //---------------------------------------------------------------------------
 inline void __fastcall TSecureShell::UpdateSessionInfo()
@@ -571,7 +570,7 @@ void __fastcall TSecureShell::Init()
       // (see comment in putty revision 8110)
       // It seems that we do not need to do it.
 
-      while (!get_ssh_state_session(FBackendHandle))
+      while (!winscp_query(FBackendHandle, WINSCP_QUERY_MAIN_CHANNEL))
       {
         if (Configuration->ActualLogProtocol >= 1)
         {
@@ -579,9 +578,6 @@ void __fastcall TSecureShell::Init()
         }
         WaitForData();
       }
-
-      // unless this is tunnel session, it must be safe to send now
-      DebugAssert(FBackend->sendok(FBackendHandle) || !FSessionData->TunnelPortFwd.IsEmpty());
     }
     catch(Exception & E)
     {
@@ -615,9 +611,9 @@ struct callback_set * TSecureShell::GetCallbackSet()
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TSecureShell::ConvertFromPutty(const char * Str, int Length)
 {
-  int BomLength = strlen(MPEXT_BOM);
+  int BomLength = strlen(WINSCP_BOM);
   if ((Length >= BomLength) &&
-      (strncmp(Str, MPEXT_BOM, BomLength) == 0))
+      (strncmp(Str, WINSCP_BOM, BomLength) == 0))
   {
     return UTF8ToString(Str + BomLength, Length - BomLength);
   }
@@ -1653,9 +1649,12 @@ void __fastcall TSecureShell::Close()
   LogEvent(L"Closing connection.");
   DebugAssert(FActive);
 
-  // this is particularly necessary when using local proxy command
-  // (e.g. plink), otherwise it hangs in sk_localproxy_close
-  SendEOF();
+  if (FBackend->exitcode(FBackendHandle) < 0)
+  {
+    // this is particularly necessary when using local proxy command
+    // (e.g. plink), otherwise it hangs in sk_localproxy_close
+    SendEOF();
+  }
 
   FreeBackend();
 
@@ -1664,7 +1663,7 @@ void __fastcall TSecureShell::Close()
 //---------------------------------------------------------------------------
 void inline __fastcall TSecureShell::CheckConnection(int Message)
 {
-  if (!FActive || get_ssh_state_closed(FBackendHandle))
+  if (!FActive || (FBackend->exitcode(FBackendHandle) >= 0))
   {
     UnicodeString Str;
     UnicodeString HelpKeyword;
@@ -1927,10 +1926,10 @@ bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventR
         // 1) Check for changes in our pending buffer - wait criteria in Receive()
         int PrevDataLen = (-static_cast<int>(OutLen) + static_cast<int>(PendLen));
         // 2) Changes in session state - wait criteria in Init()
-        bool PrevSessionState = get_ssh_state_session(FBackendHandle);
+        unsigned int HadMainChannel = winscp_query(FBackendHandle, WINSCP_QUERY_MAIN_CHANNEL);
         if (run_toplevel_callbacks(GetCallbackSet()) &&
             (((-static_cast<int>(OutLen) + static_cast<int>(PendLen)) > PrevDataLen) ||
-             (PrevSessionState != get_ssh_state_session(FBackendHandle))))
+             (HadMainChannel != winscp_query(FBackendHandle, WINSCP_QUERY_MAIN_CHANNEL))))
         {
           // Note that we still may process new network event now
           Result = true;
@@ -2041,7 +2040,7 @@ void __fastcall TSecureShell::Idle(unsigned int MSec)
 {
   noise_regular();
 
-  call_ssh_timer(FBackendHandle);
+  winscp_query(FBackendHandle, WINSCP_QUERY_TIMER);
 
   // if we are actively waiting for data in WaitForData,
   // do not read here, otherwise we swallow read event and never wake
@@ -2078,11 +2077,7 @@ unsigned long __fastcall TSecureShell::MaxPacketSize()
   }
   else
   {
-    if (FMaxPacketSize == NULL)
-    {
-      FMaxPacketSize = ssh2_remmaxpkt(FBackendHandle);
-    }
-    return *FMaxPacketSize;
+    return winscp_query(FBackendHandle, WINSCP_QUERY_REMMAXPKT);
   }
 }
 //---------------------------------------------------------------------------

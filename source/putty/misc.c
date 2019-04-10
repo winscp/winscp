@@ -446,7 +446,16 @@ static char *dupvprintf_inner(char *buf, int oldlen, int *oldsize,
 	 * (indeed, it has been observed to).
 	 * XXX the autoconf manual suggests that using memcpy() will give
 	 *     "maximum portability". */
+#if defined _DEBUG && defined IDE
+// CodeGuard hangs in v*printf functions. But while it's possible to disable CodeGuard in vsprintf, it's not possible for vsnprintf.
+// We never want to distribute this version of the code, hence the IDE condition.
+// Put this into WinSCP.cgi along with WinSCP.exe
+// [vsprintf]
+// Disable=yes
+	len = vsprintf(buf + oldlen, fmt, ap);
+#else
 	len = vsnprintf(buf + oldlen, size, fmt, ap);
+#endif
 #endif
 	if (len >= 0 && len < size) {
 	    /* This is the C99-specified criterion for snprintf to have

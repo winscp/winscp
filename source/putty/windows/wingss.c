@@ -98,7 +98,7 @@ const char *gsslogmsg = NULL;
 
 static void ssh_sspi_bind_fns(struct ssh_gss_library *lib);
 
-struct ssh_gss_liblist *ssh_gss_setup(Conf *conf, void *frontend) // MPEXT
+struct ssh_gss_liblist *ssh_gss_setup(Conf *conf, Frontend *frontend) // MPEXT
 {
     HMODULE module;
     HKEY regkey;

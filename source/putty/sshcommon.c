@@ -689,7 +689,7 @@ void ssh_ppl_replace(PacketProtocolLayer *old, PacketProtocolLayer *new)
 
 void ssh_ppl_free(PacketProtocolLayer *ppl)
 {
-    delete_callbacks_for_context(ppl);
+    delete_callbacks_for_context(get_frontend_callback_set(ppl->frontend), ppl); // WINSCP
     ppl->vt->free(ppl);
 }
 
@@ -707,6 +707,7 @@ void ssh_ppl_setup_queues(PacketProtocolLayer *ppl,
     ppl->in_pq->pqb.ic = &ppl->ic_process_queue;
     ppl->ic_process_queue.fn = ssh_ppl_ic_process_queue_callback;
     ppl->ic_process_queue.ctx = ppl;
+    ppl->ic_process_queue.set = get_frontend_callback_set(ppl->frontend);
 
     /* If there's already something on the input queue, it will want
      * handling immediately. */
@@ -719,7 +720,7 @@ void ssh_ppl_user_output_string_and_free(PacketProtocolLayer *ppl, char *text)
     /* Messages sent via this function are from the SSH layer, not
      * from the server-side process, so they always have the stderr
      * flag set. */
-    from_backend(ppl->frontend, TRUE, text, strlen(text));
+    from_backend(ppl->frontend, -1, text, strlen(text)); // WINSCP
     sfree(text);
 }
 

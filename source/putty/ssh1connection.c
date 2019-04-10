@@ -302,7 +302,7 @@ static void ssh1_connection_free(PacketProtocolLayer *ppl)
 
 void ssh1_connection_set_local_protoflags(PacketProtocolLayer *ppl, int flags)
 {
-    assert(ppl->vt == &ssh1_connection_vtable);
+    pinitassert(ppl->vt == &ssh1_connection_vtable);
     struct ssh1_connection_state *s =
         FROMFIELD(ppl, struct ssh1_connection_state, ppl);
     s->local_protoflags = flags;
@@ -900,7 +900,7 @@ static void ssh1_channel_destroy(struct ssh1_channel *c)
      * toplevel callback, just in case anything on the current call
      * stack objects to this entire PPL being freed.
      */
-    queue_toplevel_callback(ssh1_check_termination_callback, s);
+    queue_toplevel_callback(s->cl.frontend, ssh1_check_termination_callback, s); // WINSCP
 }
 
 static int ssh1_check_termination(struct ssh1_connection_state *s)
@@ -985,7 +985,7 @@ static int ssh1channel_write(SshChannel *sc, const void *buf, int len)
     struct ssh1_channel *c = FROMFIELD(sc, struct ssh1_channel, sc);
     struct ssh1_connection_state *s = c->connlayer;
 
-    assert(!(c->closes & CLOSES_SENT_CLOSE));
+    pinitassert(!(c->closes & CLOSES_SENT_CLOSE));
 
     PktOut *pktout = ssh_bpp_new_pktout(s->ppl.bpp, SSH1_MSG_CHANNEL_DATA);
     put_uint32(pktout, c->remoteid);
@@ -1043,10 +1043,12 @@ static void ssh1_rportfwd_response(struct ssh1_connection_state *s,
 	ppl_logevent(("Remote port forwarding from %s refused",
                       rpf->log_description));
 
+	{ // WINSCP
 	struct ssh_rportfwd *realpf = del234(s->rportfwds, rpf);
 	assert(realpf == rpf);
         portfwdmgr_close(s->portfwdmgr, rpf->pfr);
 	free_rportfwd(rpf);
+	} // WINSCP
     }
 }
 
@@ -1073,12 +1075,14 @@ static struct ssh_rportfwd *ssh1_rportfwd_alloc(
         return NULL;
     }
 
+    { // WINSCP
     PktOut *pktout = ssh_bpp_new_pktout(
         s->ppl.bpp, SSH1_CMSG_PORT_FORWARD_REQUEST);
     put_uint32(pktout, rpf->sport);
     put_stringz(pktout, rpf->dhost);
     put_uint32(pktout, rpf->dport);
     pq_push(s->ppl.out_pq, pktout);
+    } // WINSCP
 
     ssh1_queue_succfail_handler(s, ssh1_rportfwd_response, rpf);
 

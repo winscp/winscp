@@ -62,8 +62,9 @@ const static struct ssh_signkey_with_user_pref_id hostkey_algs[] = {
     { &ssh_ecdsa_nistp256, HK_ECDSA },
     { &ssh_ecdsa_nistp384, HK_ECDSA },
     { &ssh_ecdsa_nistp521, HK_ECDSA },
-    { &ssh_dss, HK_DSA },
+    /* Changed order to match WinSCP default preference list for SshHostKeyList() */
     { &ssh_rsa, HK_RSA },
+    { &ssh_dss, HK_DSA },
 };
 
 const static struct ssh2_macalg *const macs[] = {
@@ -270,6 +271,7 @@ static void ssh2_transport_dialog_callback(void *, int);
 static void ssh2_transport_set_max_data_size(struct ssh2_transport_state *s);
 static unsigned long sanitise_rekey_time(int rekey_time, unsigned long def);
 static void ssh2_transport_higher_layer_packet_callback(void *context);
+static unsigned int ssh2_transport_winscp_query(PacketProtocolLayer *ppl, int query);
 
 static const struct PacketProtocolLayerVtable ssh2_transport_vtable = {
     ssh2_transport_free,
@@ -280,6 +282,7 @@ static const struct PacketProtocolLayerVtable ssh2_transport_vtable = {
     ssh2_transport_got_user_input,
     ssh2_transport_reconfigure,
     NULL, /* no protocol name for this layer */
+    ssh2_transport_winscp_query,
 };
 
 #ifndef NO_GSSAPI
@@ -331,11 +334,12 @@ PacketProtocolLayer *ssh2_transport_new(
     s->server_greeting = dupstr(server_greeting);
     s->stats = stats;
 
-    pq_in_init(&s->pq_in_higher);
-    pq_out_init(&s->pq_out_higher);
+    pq_in_init(&s->pq_in_higher, higher_layer->frontend); // WINSCP
+    pq_out_init(&s->pq_out_higher, higher_layer->frontend); // WINSCP
     s->pq_out_higher.pqb.ic = &s->ic_pq_out_higher;
     s->ic_pq_out_higher.fn = ssh2_transport_higher_layer_packet_callback;
     s->ic_pq_out_higher.ctx = &s->ppl;
+    s->ic_pq_out_higher.set = get_frontend_callback_set(higher_layer->frontend);
 
     s->higher_layer = higher_layer;
     s->higher_layer->selfptr = &s->higher_layer;
@@ -393,7 +397,6 @@ static void ssh2_transport_free(PacketProtocolLayer *ppl)
         ssh_key_free(s->hkey);
         s->hkey = NULL;
     }
-    if (s->e) freebn(s->e);
     if (s->f) freebn(s->f);
     if (s->p) freebn(s->p);
     if (s->g) freebn(s->g);
@@ -462,8 +465,10 @@ static void ssh2_mkkey(
 
         for (offset = hlen; offset < keylen_padded; offset += hlen) {
             put_data(h, key + offset - hlen, hlen);
+            { // WINSCP
             ssh_hash *h2 = ssh_hash_copy(h);
             ssh_hash_final(h2, key + offset);
+            } // WINSCP
         }
 
         ssh_hash_free(h);
@@ -817,7 +822,9 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
                 for (j = 0; j < lenof(hostkey_algs); j++) {
                     if (hostkey_algs[j].id != s->preferred_hk[i])
                         continue;
-                    if (have_ssh_host_key(s->savedhost, s->savedport,
+                    if (have_ssh_host_key(
+                                          s->ppl.frontend, // WINSCP
+                                          s->savedhost, s->savedport,
                                           hostkey_algs[j].alg->cache_id)) {
                         alg = ssh2_kexinit_addalg(s->kexlists[KEXLIST_HOSTKEY],
                                                   hostkey_algs[j].alg->ssh_id);
@@ -1119,7 +1126,9 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
                     if (hostkey_algs[j].alg != s->hostkey_alg &&
                         in_commasep_string(hostkey_algs[j].alg->ssh_id,
                                            str.ptr, str.len) &&
-                        !have_ssh_host_key(s->savedhost, s->savedport,
+                        !have_ssh_host_key(
+                                           s->ppl.frontend, // WINSCP
+                                           s->savedhost, s->savedport,
                                            hostkey_algs[j].alg->cache_id)) {
                         s->uncert_hostkeys[s->n_uncert_hostkeys++] = j;
                     }
@@ -1377,7 +1386,6 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
         dh_cleanup(s->dh_ctx);
         s->dh_ctx = NULL;
         freebn(s->f); s->f = NULL;
-        freebn(s->e); s->e = NULL;
         if (dh_is_gex(s->kex_alg)) {
             freebn(s->g); s->g = NULL;
             freebn(s->p); s->p = NULL;
@@ -1699,7 +1707,6 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
         dh_cleanup(s->dh_ctx);
         s->dh_ctx = NULL;
         freebn(s->f); s->f = NULL;
-        freebn(s->e); s->e = NULL;
         if (dh_is_gex(s->kex_alg)) {
             freebn(s->g); s->g = NULL;
             freebn(s->p); s->p = NULL;
@@ -2412,7 +2419,9 @@ static void ssh2_transport_timer(void *ctx, unsigned long now)
     unsigned long mins;
     unsigned long ticks;
 
-    if (s->kex_in_progress || now != s->next_rekey)
+    // WINSCP: our WINSCP_QUERY_TIMER implementation of schedule_timer
+    //  does not guarantee the `now` to be exactly as scheduled
+    if (s->kex_in_progress || now < s->next_rekey)
         return;
 
     mins = sanitise_rekey_time(conf_get_int(s->conf, CONF_ssh_rekey_time), 60);
@@ -2964,4 +2973,49 @@ static void ssh2_transport_got_user_input(PacketProtocolLayer *ppl)
 
     /* Just delegate this to the higher layer */
     ssh_ppl_got_user_input(s->higher_layer);
+}
+
+#include "puttyexp.h"
+
+static unsigned int ssh2_transport_winscp_query(PacketProtocolLayer *ppl, int query)
+{
+    struct ssh2_transport_state *s =
+        FROMFIELD(ppl, struct ssh2_transport_state, ppl);
+    if (query == WINSCP_QUERY_TIMER)
+    {
+        ssh2_transport_timer(s, GETTICKCOUNT());
+        return 1;
+    }
+    else if (s->higher_layer->vt->winscp_query != NULL)
+    {
+        return ssh_ppl_winscp_query(s->higher_layer, query);
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+// WINSCP
+void get_hostkey_algs(int * count, cp_ssh_keyalg * SignKeys)
+{
+    int i;
+    assert(lenof(hostkey_algs) <= *count);
+    *count = lenof(hostkey_algs);
+    for (i = 0; i < *count; i++)
+    {
+        *(SignKeys + i) = hostkey_algs[i].alg;
+    }
+}
+
+// WINSCP
+void get_macs(int * count, const struct ssh2_macalg *** amacs)
+{
+    *amacs = macs;
+    *count = lenof(macs);
+}
+
+void call_ssh_timer(Backend * be)
+{
+    // TODO
 }

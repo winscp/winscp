@@ -467,7 +467,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
     put_stringz(pkt, s->username);
     pq_push(s->ppl.out_pq, pkt);
 
-    ppl_logevent(("Sent username \"%s\"", s->username));
+    ppl_logevent((WINSCP_BOM "Sent username \"%s\"", s->username));
     if ((flags & FLAG_VERBOSE) || (flags & FLAG_INTERACTIVE))
         ppl_printf(("Sent username \"%s\"\r\n", s->username));
 
@@ -487,7 +487,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
     s->keyfile = conf_get_filename(s->conf, CONF_keyfile);
     if (!filename_is_null(s->keyfile)) {
         int keytype;
-        ppl_logevent(("Reading key file \"%.150s\"",
+        ppl_logevent((WINSCP_BOM "Reading key file \"%.150s\"",
                       filename_to_str(s->keyfile)));
         keytype = key_type(s->keyfile);
         if (keytype == SSH_KEYTYPE_SSH1 ||
@@ -503,7 +503,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                 s->privatekey_encrypted = rsa_ssh1_encrypted(s->keyfile, NULL);
             } else {
                 ppl_logevent(("Unable to load key (%s)", error));
-                ppl_printf(("Unable to load key file \"%s\" (%s)\r\n",
+                ppl_printf((WINSCP_BOM "Unable to load key file \"%s\" (%s)\r\n",
                             filename_to_str(s->keyfile), error));
 
                 strbuf_free(s->publickey_blob);
@@ -512,7 +512,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
         } else {
             ppl_logevent(("Unable to use this key file (%s)",
                           key_type_to_str(keytype)));
-            ppl_printf(("Unable to use key file \"%s\" (%s)\r\n",
+            ppl_printf((WINSCP_BOM "Unable to use key file \"%s\" (%s)\r\n",
                         filename_to_str(s->keyfile),
                         key_type_to_str(keytype)));
         }
@@ -673,7 +673,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
              */
             int got_passphrase; /* need not be kept over crReturn */
             if (flags & FLAG_VERBOSE)
-                ppl_printf(("Trying public key authentication.\r\n"));
+                ppl_printf((WINSCP_BOM "Trying public key authentication.\r\n"));
             ppl_logevent(("Trying public key \"%s\"",
                           filename_to_str(s->keyfile)));
             s->tried_publickey = 1;
@@ -732,7 +732,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                     /* Correct passphrase. */
                     got_passphrase = TRUE;
                 } else if (retd == 0) {
-                    ppl_printf(("Couldn't load private key from %s (%s).\r\n",
+                    ppl_printf((WINSCP_BOM "Couldn't load private key from %s (%s).\r\n",
                                 filename_to_str(s->keyfile), error));
                     got_passphrase = FALSE;
                     break;             /* go and try something else */
