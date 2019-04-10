@@ -35,7 +35,6 @@ private:
   TSessionInfo FSessionInfo;
   bool FSessionInfoValid;
   TDateTime FLastDataSent;
-  const Backend_vtable * FBackend;
   Backend * FBackendHandle;
   TNotifyEvent FOnReceive;
   bool FFrozen;

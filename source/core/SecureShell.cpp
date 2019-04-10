@@ -388,7 +388,6 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::Open()
 {
-  FBackend = &ssh_backend;
   ResetConnection();
 
   FAuthenticating = false;
@@ -413,7 +412,7 @@ void __fastcall TSecureShell::Open()
     FSendBuf = FSessionData->SendBuf;
     try
     {
-      InitError = FBackend->init(reinterpret_cast<Frontend *>(this), &FBackendHandle, conf,
+      InitError = backend_init(&ssh_backend, reinterpret_cast<Frontend *>(this), &FBackendHandle, conf,
         AnsiString(FSessionData->HostNameExpanded).c_str(), FSessionData->PortNumber, &RealHost,
         (FSessionData->TcpNoDelay ? 1 : 0),
         conf_get_int(conf, CONF_tcp_keepalives));
@@ -566,7 +565,7 @@ void __fastcall TSecureShell::Init()
   {
     try
     {
-      // Recent pscp checks FBackend->exitcode(FBackendHandle) in the loop
+      // Recent pscp checks backend_exitcode(FBackendHandle) in the loop
       // (see comment in putty revision 8110)
       // It seems that we do not need to do it.
 
@@ -1189,7 +1188,7 @@ void __fastcall TSecureShell::SendSpecial(int Code)
     LogEvent(FORMAT(L"Sending special code: %d", (Code)));
   }
   CheckConnection();
-  FBackend->special(FBackendHandle, (SessionSpecialCode)Code, 0);
+  backend_special(FBackendHandle, (SessionSpecialCode)Code, 0);
   CheckConnection();
   FLastDataSent = Now();
 }
@@ -1239,7 +1238,7 @@ void __fastcall TSecureShell::SendBuffer(unsigned int & Result)
   {
     try
     {
-      if (FBackend->sendbuffer(FBackendHandle) <= MAX_BUFSIZE)
+      if (backend_sendbuffer(FBackendHandle) <= MAX_BUFSIZE)
       {
         Result = qaOK;
       }
@@ -1264,7 +1263,7 @@ void __fastcall TSecureShell::DispatchSendBuffer(int BufSize)
         (BufSize, BufSize - MAX_BUFSIZE)));
     }
     EventSelectLoop(100, false, NULL);
-    BufSize = FBackend->sendbuffer(FBackendHandle);
+    BufSize = backend_sendbuffer(FBackendHandle);
     if (Configuration->ActualLogProtocol >= 1)
     {
       LogEvent(FORMAT(L"There are %u bytes remaining in the send buffer", (BufSize)));
@@ -1300,7 +1299,7 @@ void __fastcall TSecureShell::DispatchSendBuffer(int BufSize)
 void __fastcall TSecureShell::Send(const unsigned char * Buf, Integer Len)
 {
   CheckConnection();
-  int BufSize = FBackend->send(FBackendHandle, const_cast<char *>(reinterpret_cast<const char *>(Buf)), Len);
+  int BufSize = backend_send(FBackendHandle, const_cast<char *>(reinterpret_cast<const char *>(Buf)), Len);
   if (Configuration->ActualLogProtocol >= 1)
   {
     LogEvent(FORMAT(L"Sent %u bytes", (static_cast<int>(Len))));
@@ -1627,7 +1626,7 @@ void __fastcall TSecureShell::FreeBackend()
 {
   if (FBackendHandle != NULL)
   {
-    FBackend->free(FBackendHandle);
+    backend_free(FBackendHandle);
     FBackendHandle = NULL;
   }
 }
@@ -1649,7 +1648,7 @@ void __fastcall TSecureShell::Close()
   LogEvent(L"Closing connection.");
   DebugAssert(FActive);
 
-  if (FBackend->exitcode(FBackendHandle) < 0)
+  if (backend_exitcode(FBackendHandle) < 0)
   {
     // this is particularly necessary when using local proxy command
     // (e.g. plink), otherwise it hangs in sk_localproxy_close
@@ -1663,7 +1662,7 @@ void __fastcall TSecureShell::Close()
 //---------------------------------------------------------------------------
 void inline __fastcall TSecureShell::CheckConnection(int Message)
 {
-  if (!FActive || (FBackend->exitcode(FBackendHandle) >= 0))
+  if (!FActive || (backend_exitcode(FBackendHandle) >= 0))
   {
     UnicodeString Str;
     UnicodeString HelpKeyword;
@@ -1680,7 +1679,7 @@ void inline __fastcall TSecureShell::CheckConnection(int Message)
 
     Str = MainInstructions(Str);
 
-    int ExitCode = FBackend->exitcode(FBackendHandle);
+    int ExitCode = backend_exitcode(FBackendHandle);
     if (ExitCode >= 0)
     {
       Str += L" " + FMTLOAD(SSH_EXITCODE, (ExitCode));
