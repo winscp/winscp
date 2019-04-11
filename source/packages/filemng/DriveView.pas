@@ -2439,16 +2439,19 @@ begin
     else
   if (KeyState and (MK_CONTROL or MK_SHIFT) = 0) then
   begin
-    if FExeDrag and DriveInfo.IsFixedDrive(GetDriveToNode(DropTarget)) and DriveInfo.IsFixedDrive(FDragDrive) then
+    if FDragDrive <> '' then
     begin
-      Effect := DROPEFFECT_LINK;
-    end
-      else
-    if (Effect = DROPEFFECT_COPY) and
-       (SameText(FDragDrive, GetDriveToNode(DropTarget)) and
-         (FDragDropFilesEx.AvailableDropEffects and DROPEFFECT_MOVE <> 0)) then
-    begin
-      Effect := DROPEFFECT_MOVE;
+      if FExeDrag and DriveInfo.IsFixedDrive(GetDriveToNode(DropTarget)) and DriveInfo.IsFixedDrive(FDragDrive) then
+      begin
+        Effect := DROPEFFECT_LINK;
+      end
+        else
+      if (Effect = DROPEFFECT_COPY) and
+         (SameText(FDragDrive, GetDriveToNode(DropTarget)) and
+           (FDragDropFilesEx.AvailableDropEffects and DROPEFFECT_MOVE <> 0)) then
+      begin
+        Effect := DROPEFFECT_MOVE;
+      end;
     end;
   end;
 

@@ -419,7 +419,12 @@ begin
   if (FDragDropFilesEx.FileList.Count > 0) and
      (Length(TFDDListItem(FDragDropFilesEx.FileList[0]^).Name) > 0) Then
   begin
-    FDragDrive := DriveInfo.GetDriveKey(TFDDListItem(FDragDropFilesEx.FileList[0]^).Name);
+    try
+      FDragDrive := DriveInfo.GetDriveKey(TFDDListItem(FDragDropFilesEx.FileList[0]^).Name);
+    except
+      // WinRAR gives us only filename on "enter", we get a full path only on "drop".
+      FDragDrive := '';
+    end;
     FExeDrag := FDDLinkOnExeDrag and
       (deLink in DragDropFilesEx.TargetEffects) and
       ((DragDropFilesEx.AvailableDropEffects and DROPEFFECT_LINK) <> 0);
