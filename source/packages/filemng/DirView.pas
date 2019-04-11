@@ -3143,19 +3143,22 @@ begin
     else
   if (grfKeyState and (MK_CONTROL or MK_SHIFT) = 0) then
   begin
-    if ExeDrag and DriveInfo.IsFixedDrive(DriveInfo.GetDriveKey(Path)) and DriveInfo.IsFixedDrive(FDragDrive) then
+    if FDragDrive <> '' then
     begin
-      dwEffect := DROPEFFECT_LINK
-    end
-      else
-    begin
-      if DragOnDriveIsMove and
-         (not DDOwnerIsSource or Assigned(DropTarget)) and
-         ((SameText(FDragDrive, DriveInfo.GetDriveKey(Path)) and (dwEffect = DROPEFFECT_COPY) and
-         (DragDropFilesEx.AvailableDropEffects and DROPEFFECT_MOVE <> 0))
-           or IsRecycleBin) then
+      if ExeDrag and DriveInfo.IsFixedDrive(DriveInfo.GetDriveKey(Path)) and DriveInfo.IsFixedDrive(FDragDrive) then
       begin
-        dwEffect := DROPEFFECT_MOVE;
+        dwEffect := DROPEFFECT_LINK;
+      end
+        else
+      begin
+        if DragOnDriveIsMove and
+           (not DDOwnerIsSource or Assigned(DropTarget)) and
+           ((SameText(FDragDrive, DriveInfo.GetDriveKey(Path)) and (dwEffect = DROPEFFECT_COPY) and
+           (DragDropFilesEx.AvailableDropEffects and DROPEFFECT_MOVE <> 0))
+             or IsRecycleBin) then
+        begin
+          dwEffect := DROPEFFECT_MOVE;
+        end;
       end;
     end;
   end;
