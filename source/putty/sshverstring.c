@@ -409,8 +409,10 @@ static PktOut *ssh_verstring_new_pktout(int type)
 
 static void ssh_verstring_handle_output(BinaryPacketProtocol *bpp)
 {
-    assert(0 && "Should never try to send packets during SSH version "
-           "string exchange");
+    if (pq_peek(&bpp->out_pq)) {
+        assert(0 && "Should never try to send packets during SSH version "
+               "string exchange");
+    }
 }
 
 /*

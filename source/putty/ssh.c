@@ -92,6 +92,12 @@ struct Ssh {
     ConnectionLayer *cl;
 
     /*
+     * A dummy ConnectionLayer that can be used for logging sharing
+     * downstreams that connect before the real one is ready.
+     */
+    ConnectionLayer cl_dummy;
+
+    /*
      * session_started is FALSE until we initialise the main protocol
      * layers. So it distinguishes between base_layer==NULL meaning
      * that the SSH protocol hasn't been set up _yet_, and
@@ -105,6 +111,7 @@ struct Ssh {
 
     int need_random_unref;
 };
+
 
 #define ssh_logevent(params) ( \
         logevent_and_free((ssh)->frontend, dupprintf params))
@@ -640,6 +647,8 @@ static const char *connect_to_host(Ssh *ssh, const char *host, int port,
     ssh->s = ssh_connection_sharing_init(
         ssh->savedhost, ssh->savedport, ssh->conf, ssh->frontend,
         &ssh->plug, &ssh->connshare);
+    if (ssh->connshare)
+        ssh_connshare_provide_connlayer(ssh->connshare, &ssh->cl_dummy);
     ssh->attempting_connshare = FALSE;
     if (ssh->s != NULL) {
         /*
@@ -805,6 +814,7 @@ static const char *ssh_init(Frontend *frontend, Backend **backend_handle,
     *backend_handle = &ssh->backend;
 
     ssh->frontend = frontend;
+    ssh->cl_dummy.frontend = frontend;
 
     random_ref(); /* do this now - may be needed by sharing setup code */
     ssh->need_random_unref = TRUE;

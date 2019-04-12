@@ -220,7 +220,7 @@ char *get_hostname(void);
  * Trivial socket implementation which just stores an error. Found in
  * errsock.c.
  */
-Socket *new_error_socket(const char *errmsg, Plug *plug);
+Socket *new_error_socket_fmt(Plug *plug, const char *fmt, ...);
 
 /*
  * Trivial plug that does absolutely nothing. Found in nullplug.c.
