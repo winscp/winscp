@@ -596,7 +596,7 @@ void agent_schedule_callback(void (*callback)(void *, void *, int),
 /*
  * Exports from winser.c.
  */
-extern const struct Backend_vtable serial_backend;
+extern const struct BackendVtable serial_backend;
 
 /*
  * Exports from winjump.c.

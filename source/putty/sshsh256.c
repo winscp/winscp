@@ -223,8 +223,8 @@ static ssh_hash *sha256_copy(ssh_hash *hashold)
     struct sha256_hash *hold, *hnew;
     ssh_hash *hashnew = sha256_new(hashold->vt);
 
-    hold = FROMFIELD(hashold, struct sha256_hash, hash);
-    hnew = FROMFIELD(hashnew, struct sha256_hash, hash);
+    hold = container_of(hashold, struct sha256_hash, hash);
+    hnew = container_of(hashnew, struct sha256_hash, hash);
 
     hnew->state = hold->state;
     BinarySink_COPIED(&hnew->state);
@@ -234,7 +234,7 @@ static ssh_hash *sha256_copy(ssh_hash *hashold)
 
 static void sha256_free(ssh_hash *hash)
 {
-    struct sha256_hash *h = FROMFIELD(hash, struct sha256_hash, hash);
+    struct sha256_hash *h = container_of(hash, struct sha256_hash, hash);
 
     smemclr(h, sizeof(*h));
     sfree(h);
@@ -242,7 +242,7 @@ static void sha256_free(ssh_hash *hash)
 
 static void sha256_final(ssh_hash *hash, unsigned char *output)
 {
-    struct sha256_hash *h = FROMFIELD(hash, struct sha256_hash, hash);
+    struct sha256_hash *h = container_of(hash, struct sha256_hash, hash);
     SHA256_Final(&h->state, output);
     sha256_free(hash);
 }
@@ -272,7 +272,7 @@ static ssh2_mac *hmacsha256_new(
 
 static void hmacsha256_free(ssh2_mac *mac)
 {
-    struct hmacsha256 *ctx = FROMFIELD(mac, struct hmacsha256, mac);
+    struct hmacsha256 *ctx = container_of(mac, struct hmacsha256, mac);
     smemclr(ctx, sizeof(*ctx));
     sfree(ctx);
 }
@@ -300,13 +300,13 @@ static void sha256_key_internal(struct hmacsha256 *ctx,
 
 static void hmacsha256_key(ssh2_mac *mac, const void *key)
 {
-    struct hmacsha256 *ctx = FROMFIELD(mac, struct hmacsha256, mac);
+    struct hmacsha256 *ctx = container_of(mac, struct hmacsha256, mac);
     sha256_key_internal(ctx, key, ctx->mac.vt->keylen);
 }
 
 static void hmacsha256_start(ssh2_mac *mac)
 {
-    struct hmacsha256 *ctx = FROMFIELD(mac, struct hmacsha256, mac);
+    struct hmacsha256 *ctx = container_of(mac, struct hmacsha256, mac);
 
     ctx->sha[2] = ctx->sha[0];         /* structure copy */
     BinarySink_COPIED(&ctx->sha[2]);
@@ -314,7 +314,7 @@ static void hmacsha256_start(ssh2_mac *mac)
 
 static void hmacsha256_genresult(ssh2_mac *mac, unsigned char *hmac)
 {
-    struct hmacsha256 *ctx = FROMFIELD(mac, struct hmacsha256, mac);
+    struct hmacsha256 *ctx = container_of(mac, struct hmacsha256, mac);
     SHA256_State s;
     unsigned char intermediate[32];
 

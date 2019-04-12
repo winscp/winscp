@@ -276,7 +276,7 @@ PacketProtocolLayer *ssh1_connection_new(
 static void ssh1_connection_free(PacketProtocolLayer *ppl)
 {
     struct ssh1_connection_state *s =
-        FROMFIELD(ppl, struct ssh1_connection_state, ppl);
+        container_of(ppl, struct ssh1_connection_state, ppl);
     struct X11FakeAuth *auth;
     struct ssh1_channel *c;
     struct ssh_rportfwd *rpf;
@@ -305,7 +305,7 @@ void ssh1_connection_set_local_protoflags(PacketProtocolLayer *ppl, int flags)
 {
     assert(ppl->vt == &ssh1_connection_vtable);
     struct ssh1_connection_state *s =
-        FROMFIELD(ppl, struct ssh1_connection_state, ppl);
+        container_of(ppl, struct ssh1_connection_state, ppl);
     s->local_protoflags = flags;
 }
 
@@ -619,7 +619,7 @@ static PktIn *ssh1_connection_pop(struct ssh1_connection_state *s)
 static void ssh1_connection_process_queue(PacketProtocolLayer *ppl)
 {
     struct ssh1_connection_state *s =
-        FROMFIELD(ppl, struct ssh1_connection_state, ppl);
+        container_of(ppl, struct ssh1_connection_state, ppl);
     PktIn *pktin;
     PktOut *pktout;
 
@@ -942,14 +942,14 @@ static void ssh1_channel_init(struct ssh1_channel *c)
 
 static Conf *ssh1channel_get_conf(SshChannel *sc)
 {
-    struct ssh1_channel *c = FROMFIELD(sc, struct ssh1_channel, sc);
+    struct ssh1_channel *c = container_of(sc, struct ssh1_channel, sc);
     struct ssh1_connection_state *s = c->connlayer;
     return s->conf;
 }
 
 static void ssh1channel_write_eof(SshChannel *sc)
 {
-    struct ssh1_channel *c = FROMFIELD(sc, struct ssh1_channel, sc);
+    struct ssh1_channel *c = container_of(sc, struct ssh1_channel, sc);
 
     if (c->closes & CLOSES_SENT_CLOSE)
         return;
@@ -960,7 +960,7 @@ static void ssh1channel_write_eof(SshChannel *sc)
 
 static void ssh1channel_unclean_close(SshChannel *sc, const char *err)
 {
-    struct ssh1_channel *c = FROMFIELD(sc, struct ssh1_channel, sc);
+    struct ssh1_channel *c = container_of(sc, struct ssh1_channel, sc);
     char *reason;
 
     reason = dupprintf("due to local error: %s", err);
@@ -973,7 +973,7 @@ static void ssh1channel_unclean_close(SshChannel *sc, const char *err)
 
 static void ssh1channel_unthrottle(SshChannel *sc, int bufsize)
 {
-    struct ssh1_channel *c = FROMFIELD(sc, struct ssh1_channel, sc);
+    struct ssh1_channel *c = container_of(sc, struct ssh1_channel, sc);
     struct ssh1_connection_state *s = c->connlayer;
 
     if (c->throttling_conn && bufsize <= SSH1_BUFFER_LIMIT) {
@@ -984,7 +984,7 @@ static void ssh1channel_unthrottle(SshChannel *sc, int bufsize)
 
 static int ssh1channel_write(SshChannel *sc, const void *buf, int len)
 {
-    struct ssh1_channel *c = FROMFIELD(sc, struct ssh1_channel, sc);
+    struct ssh1_channel *c = container_of(sc, struct ssh1_channel, sc);
     struct ssh1_connection_state *s = c->connlayer;
 
     assert(!(c->closes & CLOSES_SENT_CLOSE));
@@ -1009,7 +1009,7 @@ static SshChannel *ssh1_lportfwd_open(
     const char *org, Channel *chan)
 {
     struct ssh1_connection_state *s =
-        FROMFIELD(cl, struct ssh1_connection_state, cl);
+        container_of(cl, struct ssh1_connection_state, cl);
     PacketProtocolLayer *ppl = &s->ppl; /* for ppl_logevent */
     struct ssh1_channel *c = snew(struct ssh1_channel);
     PktOut *pktout;
@@ -1059,7 +1059,7 @@ static struct ssh_rportfwd *ssh1_rportfwd_alloc(
     ssh_sharing_connstate *share_ctx)
 {
     struct ssh1_connection_state *s =
-        FROMFIELD(cl, struct ssh1_connection_state, cl);
+        container_of(cl, struct ssh1_connection_state, cl);
     struct ssh_rportfwd *rpf = snew(struct ssh_rportfwd);
 
     rpf->shost = dupstr(shost);
@@ -1098,7 +1098,7 @@ static void ssh1_rportfwd_remove(ConnectionLayer *cl, struct ssh_rportfwd *rpf)
 static int ssh1_agent_forwarding_permitted(ConnectionLayer *cl)
 {
     struct ssh1_connection_state *s =
-        FROMFIELD(cl, struct ssh1_connection_state, cl);
+        container_of(cl, struct ssh1_connection_state, cl);
     return conf_get_int(s->conf, CONF_agentfwd) && agent_exists();
 }
 
@@ -1106,7 +1106,7 @@ static void ssh1_connection_special_cmd(PacketProtocolLayer *ppl,
                                         SessionSpecialCode code, int arg)
 {
     struct ssh1_connection_state *s =
-        FROMFIELD(ppl, struct ssh1_connection_state, ppl);
+        container_of(ppl, struct ssh1_connection_state, ppl);
     PktOut *pktout;
 
     if (code == SS_PING || code == SS_NOP) {
@@ -1134,7 +1134,7 @@ static void ssh1_connection_special_cmd(PacketProtocolLayer *ppl,
 static void ssh1_terminal_size(ConnectionLayer *cl, int width, int height)
 {
     struct ssh1_connection_state *s =
-        FROMFIELD(cl, struct ssh1_connection_state, cl);
+        container_of(cl, struct ssh1_connection_state, cl);
 
     s->term_width = width;
     s->term_height = height;
@@ -1152,7 +1152,7 @@ static void ssh1_terminal_size(ConnectionLayer *cl, int width, int height)
 static void ssh1_stdout_unthrottle(ConnectionLayer *cl, int bufsize)
 {
     struct ssh1_connection_state *s =
-        FROMFIELD(cl, struct ssh1_connection_state, cl);
+        container_of(cl, struct ssh1_connection_state, cl);
 
     if (s->stdout_throttling && bufsize < SSH1_BUFFER_LIMIT) {
         s->stdout_throttling = 0;
@@ -1168,7 +1168,7 @@ static int ssh1_stdin_backlog(ConnectionLayer *cl)
 static void ssh1_throttle_all_channels(ConnectionLayer *cl, int throttled)
 {
     struct ssh1_connection_state *s =
-        FROMFIELD(cl, struct ssh1_connection_state, cl);
+        container_of(cl, struct ssh1_connection_state, cl);
     struct ssh1_channel *c;
     int i;
 
@@ -1179,7 +1179,7 @@ static void ssh1_throttle_all_channels(ConnectionLayer *cl, int throttled)
 static int ssh1_ldisc_option(ConnectionLayer *cl, int option)
 {
     struct ssh1_connection_state *s =
-        FROMFIELD(cl, struct ssh1_connection_state, cl);
+        container_of(cl, struct ssh1_connection_state, cl);
 
     /* We always return the same value for LD_ECHO and LD_EDIT */
     return s->echoedit;
@@ -1188,14 +1188,14 @@ static int ssh1_ldisc_option(ConnectionLayer *cl, int option)
 static int ssh1_connection_want_user_input(PacketProtocolLayer *ppl)
 {
     struct ssh1_connection_state *s =
-        FROMFIELD(ppl, struct ssh1_connection_state, ppl);
+        container_of(ppl, struct ssh1_connection_state, ppl);
     return s->session_ready && !s->session_eof_sent;
 }
 
 static void ssh1_connection_got_user_input(PacketProtocolLayer *ppl)
 {
     struct ssh1_connection_state *s =
-        FROMFIELD(ppl, struct ssh1_connection_state, ppl);
+        container_of(ppl, struct ssh1_connection_state, ppl);
     if (s->session_ready && !s->session_eof_sent)
         queue_idempotent_callback(&s->ppl.ic_process_queue);
 }
@@ -1203,7 +1203,7 @@ static void ssh1_connection_got_user_input(PacketProtocolLayer *ppl)
 static void ssh1_connection_reconfigure(PacketProtocolLayer *ppl, Conf *conf)
 {
     struct ssh1_connection_state *s =
-        FROMFIELD(ppl, struct ssh1_connection_state, ppl);
+        container_of(ppl, struct ssh1_connection_state, ppl);
 
     conf_free(s->conf);
     s->conf = conf_copy(conf);

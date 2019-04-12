@@ -1700,7 +1700,7 @@ static void ecdsa_freekey(ssh_key *key)
     struct ec_key *ec;
 
     if (!key) return;
-    ec = FROMFIELD(key, struct ec_key, sshk);
+    ec = container_of(key, struct ec_key, sshk);
 
     if (ec->publicKey.x)
         freebn(ec->publicKey.x);
@@ -1760,7 +1760,7 @@ static ssh_key *ecdsa_new_pub(const ssh_keyalg *self, ptrlen data)
 
 static char *ecdsa_cache_str(ssh_key *key)
 {
-    struct ec_key *ec = FROMFIELD(key, struct ec_key, sshk);
+    struct ec_key *ec = container_of(key, struct ec_key, sshk);
     char *p;
     int len, i, pos, nibbles;
     static const char hex[] = "0123456789abcdef";
@@ -1799,7 +1799,7 @@ static char *ecdsa_cache_str(ssh_key *key)
 
 static void ecdsa_public_blob(ssh_key *key, BinarySink *bs)
 {
-    struct ec_key *ec = FROMFIELD(key, struct ec_key, sshk);
+    struct ec_key *ec = container_of(key, struct ec_key, sshk);
     int pointlen;
     int i;
 
@@ -1839,7 +1839,7 @@ static void ecdsa_public_blob(ssh_key *key, BinarySink *bs)
 
 static void ecdsa_private_blob(ssh_key *key, BinarySink *bs)
 {
-    struct ec_key *ec = FROMFIELD(key, struct ec_key, sshk);
+    struct ec_key *ec = container_of(key, struct ec_key, sshk);
     int keylen;
     int i;
 
@@ -1875,7 +1875,7 @@ static ssh_key *ecdsa_new_priv(const ssh_keyalg *self, ptrlen pub, ptrlen priv)
     if (!sshk)
         return NULL;
 
-    ec = FROMFIELD(sshk, struct ec_key, sshk);
+    ec = container_of(sshk, struct ec_key, sshk);
     BinarySource_BARE_INIT(src, priv.ptr, priv.len);
 
     if (ec->publicKey.curve->type != EC_WEIERSTRASS
@@ -1967,7 +1967,7 @@ static ssh_key *ed25519_new_priv_openssh(const ssh_keyalg *self,
 
 static void ed25519_openssh_blob(ssh_key *key, BinarySink *bs)
 {
-    struct ec_key *ec = FROMFIELD(key, struct ec_key, sshk);
+    struct ec_key *ec = container_of(key, struct ec_key, sshk);
     strbuf *pub;
 
     int pointlen;
@@ -2068,7 +2068,7 @@ static ssh_key *ecdsa_new_priv_openssh(const ssh_keyalg *self,
 
 static void ecdsa_openssh_blob(ssh_key *key, BinarySink *bs)
 {
-    struct ec_key *ec = FROMFIELD(key, struct ec_key, sshk);
+    struct ec_key *ec = container_of(key, struct ec_key, sshk);
 
     int pointlen;
     int i;
@@ -2099,7 +2099,7 @@ static int ecdsa_pubkey_bits(const ssh_keyalg *self, ptrlen blob)
     if (!sshk)
         return -1;
 
-    ec = FROMFIELD(sshk, struct ec_key, sshk);
+    ec = container_of(sshk, struct ec_key, sshk);
     ret = ec->publicKey.curve->fieldBits;
     ecdsa_freekey(&ec->sshk);
 
@@ -2108,7 +2108,7 @@ static int ecdsa_pubkey_bits(const ssh_keyalg *self, ptrlen blob)
 
 static int ecdsa_verify(ssh_key *key, ptrlen sig, ptrlen data)
 {
-    struct ec_key *ec = FROMFIELD(key, struct ec_key, sshk);
+    struct ec_key *ec = container_of(key, struct ec_key, sshk);
     const struct ecsign_extra *extra =
         (const struct ecsign_extra *)ec->sshk->extra;
     BinarySource src[1];
@@ -2258,7 +2258,7 @@ static int ecdsa_verify(ssh_key *key, ptrlen sig, ptrlen data)
 static void ecdsa_sign(ssh_key *key, const void *data, int datalen,
                        BinarySink *bs)
 {
-    struct ec_key *ec = FROMFIELD(key, struct ec_key, sshk);
+    struct ec_key *ec = container_of(key, struct ec_key, sshk);
     const struct ecsign_extra *extra =
         (const struct ecsign_extra *)ec->sshk->extra;
     unsigned char digest[512 / 8];

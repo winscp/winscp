@@ -589,7 +589,7 @@ static ssh1_cipher *blowfish_ssh1_new(void)
 static void blowfish_ssh1_free(ssh1_cipher *cipher)
 {
     struct blowfish_ssh1_ctx *ctx =
-        FROMFIELD(cipher, struct blowfish_ssh1_ctx, vt);
+        container_of(cipher, struct blowfish_ssh1_ctx, vt);
     smemclr(ctx, sizeof(*ctx));
     sfree(ctx);
 }
@@ -597,7 +597,7 @@ static void blowfish_ssh1_free(ssh1_cipher *cipher)
 static void blowfish_ssh1_sesskey(ssh1_cipher *cipher, const void *key)
 {
     struct blowfish_ssh1_ctx *ctx =
-        FROMFIELD(cipher, struct blowfish_ssh1_ctx, vt);
+        container_of(cipher, struct blowfish_ssh1_ctx, vt);
     blowfish_setkey(&ctx->contexts[0], key, SSH1_SESSION_KEY_LENGTH);
     ctx->contexts[0].iv0 = ctx->contexts[0].iv1 = 0;
     ctx->contexts[1] = ctx->contexts[0]; /* structure copy */
@@ -606,14 +606,14 @@ static void blowfish_ssh1_sesskey(ssh1_cipher *cipher, const void *key)
 static void blowfish_ssh1_encrypt_blk(ssh1_cipher *cipher, void *blk, int len)
 {
     struct blowfish_ssh1_ctx *ctx =
-        FROMFIELD(cipher, struct blowfish_ssh1_ctx, vt);
+        container_of(cipher, struct blowfish_ssh1_ctx, vt);
     blowfish_lsb_encrypt_cbc(blk, len, ctx->contexts);
 }
 
 static void blowfish_ssh1_decrypt_blk(ssh1_cipher *cipher, void *blk, int len)
 {
     struct blowfish_ssh1_ctx *ctx =
-        FROMFIELD(cipher, struct blowfish_ssh1_ctx, vt);
+        container_of(cipher, struct blowfish_ssh1_ctx, vt);
     blowfish_lsb_decrypt_cbc(blk, len, ctx->contexts+1);
 }
 
@@ -632,7 +632,7 @@ static ssh2_cipher *blowfish_ssh2_new(const struct ssh2_cipheralg *alg)
 static void blowfish_ssh2_free(ssh2_cipher *cipher)
 {
     struct blowfish_ssh2_ctx *ctx =
-        FROMFIELD(cipher, struct blowfish_ssh2_ctx, vt);
+        container_of(cipher, struct blowfish_ssh2_ctx, vt);
     smemclr(ctx, sizeof(*ctx));
     sfree(ctx);
 }
@@ -640,35 +640,35 @@ static void blowfish_ssh2_free(ssh2_cipher *cipher)
 static void blowfish_ssh2_setiv(ssh2_cipher *cipher, const void *iv)
 {
     struct blowfish_ssh2_ctx *ctx =
-        FROMFIELD(cipher, struct blowfish_ssh2_ctx, vt);
+        container_of(cipher, struct blowfish_ssh2_ctx, vt);
     blowfish_iv(&ctx->context, iv);
 }
 
 static void blowfish_ssh2_setkey(ssh2_cipher *cipher, const void *key)
 {
     struct blowfish_ssh2_ctx *ctx =
-        FROMFIELD(cipher, struct blowfish_ssh2_ctx, vt);
+        container_of(cipher, struct blowfish_ssh2_ctx, vt);
     blowfish_setkey(&ctx->context, key, ctx->vt->padded_keybytes);
 }
 
 static void blowfish_ssh2_encrypt_blk(ssh2_cipher *cipher, void *blk, int len)
 {
     struct blowfish_ssh2_ctx *ctx =
-        FROMFIELD(cipher, struct blowfish_ssh2_ctx, vt);
+        container_of(cipher, struct blowfish_ssh2_ctx, vt);
     blowfish_msb_encrypt_cbc(blk, len, &ctx->context);
 }
 
 static void blowfish_ssh2_decrypt_blk(ssh2_cipher *cipher, void *blk, int len)
 {
     struct blowfish_ssh2_ctx *ctx =
-        FROMFIELD(cipher, struct blowfish_ssh2_ctx, vt);
+        container_of(cipher, struct blowfish_ssh2_ctx, vt);
     blowfish_msb_decrypt_cbc(blk, len, &ctx->context);
 }
 
 static void blowfish_ssh2_sdctr(ssh2_cipher *cipher, void *blk, int len)
 {
     struct blowfish_ssh2_ctx *ctx =
-        FROMFIELD(cipher, struct blowfish_ssh2_ctx, vt);
+        container_of(cipher, struct blowfish_ssh2_ctx, vt);
     blowfish_msb_sdctr(blk, len, &ctx->context);
 }
 

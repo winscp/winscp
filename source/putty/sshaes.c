@@ -1054,38 +1054,38 @@ ssh2_cipher *aes_ssh2_new(const struct ssh2_cipheralg *alg)
 
 static void aes_ssh2_free(ssh2_cipher *cipher)
 {
-    struct aes_ssh2_ctx *ctx = FROMFIELD(cipher, struct aes_ssh2_ctx, vt);
+    struct aes_ssh2_ctx *ctx = container_of(cipher, struct aes_ssh2_ctx, vt);
     smemclr(ctx, sizeof(*ctx));
     sfree(ctx);
 }
 
 static void aes_ssh2_setiv(ssh2_cipher *cipher, const void *iv)
 {
-    struct aes_ssh2_ctx *ctx = FROMFIELD(cipher, struct aes_ssh2_ctx, vt);
+    struct aes_ssh2_ctx *ctx = container_of(cipher, struct aes_ssh2_ctx, vt);
     aes_iv(&ctx->context, iv);
 }
 
 static void aes_ssh2_setkey(ssh2_cipher *cipher, const void *key)
 {
-    struct aes_ssh2_ctx *ctx = FROMFIELD(cipher, struct aes_ssh2_ctx, vt);
+    struct aes_ssh2_ctx *ctx = container_of(cipher, struct aes_ssh2_ctx, vt);
     aes_setup(&ctx->context, key, ctx->vt->padded_keybytes);
 }
 
 static void aes_ssh2_encrypt(ssh2_cipher *cipher, void *blk, int len)
 {
-    struct aes_ssh2_ctx *ctx = FROMFIELD(cipher, struct aes_ssh2_ctx, vt);
+    struct aes_ssh2_ctx *ctx = container_of(cipher, struct aes_ssh2_ctx, vt);
     aes_encrypt_cbc(blk, len, &ctx->context);
 }
 
 static void aes_ssh2_decrypt(ssh2_cipher *cipher, void *blk, int len)
 {
-    struct aes_ssh2_ctx *ctx = FROMFIELD(cipher, struct aes_ssh2_ctx, vt);
+    struct aes_ssh2_ctx *ctx = container_of(cipher, struct aes_ssh2_ctx, vt);
     aes_decrypt_cbc(blk, len, &ctx->context);
 }
 
 static void aes_ssh2_sdctr_method(ssh2_cipher *cipher, void *blk, int len)
 {
-    struct aes_ssh2_ctx *ctx = FROMFIELD(cipher, struct aes_ssh2_ctx, vt);
+    struct aes_ssh2_ctx *ctx = container_of(cipher, struct aes_ssh2_ctx, vt);
     aes_sdctr(blk, len, &ctx->context);
 }
 

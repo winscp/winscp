@@ -346,8 +346,8 @@ static ssh_hash *sha512_copy(ssh_hash *hashold)
     struct sha512_hash *hold, *hnew;
     ssh_hash *hashnew = sha512_new(hashold->vt);
 
-    hold = FROMFIELD(hashold, struct sha512_hash, hash);
-    hnew = FROMFIELD(hashnew, struct sha512_hash, hash);
+    hold = container_of(hashold, struct sha512_hash, hash);
+    hnew = container_of(hashnew, struct sha512_hash, hash);
 
     hnew->state = hold->state;
     BinarySink_COPIED(&hnew->state);
@@ -357,7 +357,7 @@ static ssh_hash *sha512_copy(ssh_hash *hashold)
 
 static void sha512_free(ssh_hash *hash)
 {
-    struct sha512_hash *h = FROMFIELD(hash, struct sha512_hash, hash);
+    struct sha512_hash *h = container_of(hash, struct sha512_hash, hash);
 
     smemclr(h, sizeof(*h));
     sfree(h);
@@ -365,7 +365,7 @@ static void sha512_free(ssh_hash *hash)
 
 static void sha512_final(ssh_hash *hash, unsigned char *output)
 {
-    struct sha512_hash *h = FROMFIELD(hash, struct sha512_hash, hash);
+    struct sha512_hash *h = container_of(hash, struct sha512_hash, hash);
     SHA512_Final(&h->state, output);
     sha512_free(hash);
 }
@@ -385,7 +385,7 @@ static ssh_hash *sha384_new(const struct ssh_hashalg *alg)
 
 static void sha384_final(ssh_hash *hash, unsigned char *output)
 {
-    struct sha512_hash *h = FROMFIELD(hash, struct sha512_hash, hash);
+    struct sha512_hash *h = container_of(hash, struct sha512_hash, hash);
     SHA384_Final(&h->state, output);
     sha512_free(hash);
 }

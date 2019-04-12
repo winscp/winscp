@@ -630,7 +630,7 @@ ssh_compressor *zlib_compress_init(void)
 void zlib_compress_cleanup(ssh_compressor *sc)
 {
     struct ssh_zlib_compressor *comp =
-        FROMFIELD(sc, struct ssh_zlib_compressor, sc);
+        container_of(sc, struct ssh_zlib_compressor, sc);
     sfree(comp->ectx.userdata);
     sfree(comp->ectx.ictx);
     sfree(comp);
@@ -641,7 +641,7 @@ void zlib_compress_block(ssh_compressor *sc, unsigned char *block, int len,
                          int minlen)
 {
     struct ssh_zlib_compressor *comp =
-        FROMFIELD(sc, struct ssh_zlib_compressor, sc);
+        container_of(sc, struct ssh_zlib_compressor, sc);
     struct Outbuf *out = (struct Outbuf *) comp->ectx.userdata;
     int in_block;
 
@@ -916,7 +916,7 @@ ssh_decompressor *zlib_decompress_init(void)
 void zlib_decompress_cleanup(ssh_decompressor *dc)
 {
     struct zlib_decompress_ctx *dctx =
-        FROMFIELD(dc, struct zlib_decompress_ctx, dc);
+        container_of(dc, struct zlib_decompress_ctx, dc);
 
     if (dctx->currlentable && dctx->currlentable != dctx->staticlentable)
 	zlib_freetable(&dctx->currlentable);
@@ -978,7 +978,7 @@ int zlib_decompress_block(ssh_decompressor *dc, unsigned char *block, int len,
 			  unsigned char **outblock, int *outlen)
 {
     struct zlib_decompress_ctx *dctx =
-        FROMFIELD(dc, struct zlib_decompress_ctx, dc);
+        container_of(dc, struct zlib_decompress_ctx, dc);
     const coderecord *rec;
     int code, blktype, rep, dist, nlen, header;
     static const unsigned char lenlenmap[] = {

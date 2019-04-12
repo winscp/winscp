@@ -357,7 +357,7 @@ PacketProtocolLayer *ssh2_transport_new(
 static void ssh2_transport_free(PacketProtocolLayer *ppl)
 {
     struct ssh2_transport_state *s =
-        FROMFIELD(ppl, struct ssh2_transport_state, ppl);
+        container_of(ppl, struct ssh2_transport_state, ppl);
 
     /*
      * As our last act before being freed, move any outgoing packets
@@ -596,7 +596,7 @@ static PktIn *ssh2_transport_pop(struct ssh2_transport_state *s)
 static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
 {
     struct ssh2_transport_state *s =
-        FROMFIELD(ppl, struct ssh2_transport_state, ppl);
+        container_of(ppl, struct ssh2_transport_state, ppl);
     PktIn *pktin;
     PktOut *pktout;
 
@@ -2767,7 +2767,7 @@ ptrlen ssh2_transport_get_session_id(PacketProtocolLayer *ppl)
     struct ssh2_transport_state *s;
 
     assert(ppl->vt == &ssh2_transport_vtable);
-    s = FROMFIELD(ppl, struct ssh2_transport_state, ppl);
+    s = container_of(ppl, struct ssh2_transport_state, ppl);
 
     assert(s->got_session_id);
     return make_ptrlen(s->session_id, s->session_id_len);
@@ -2778,7 +2778,7 @@ void ssh2_transport_notify_auth_done(PacketProtocolLayer *ppl)
     struct ssh2_transport_state *s;
 
     assert(ppl->vt == &ssh2_transport_vtable);
-    s = FROMFIELD(ppl, struct ssh2_transport_state, ppl);
+    s = container_of(ppl, struct ssh2_transport_state, ppl);
 
     s->rekey_reason = NULL;            /* will be filled in later */
     s->rekey_class = RK_POST_USERAUTH;
@@ -2791,7 +2791,7 @@ static int ssh2_transport_get_specials(
     PacketProtocolLayer *ppl, add_special_fn_t add_special, void *ctx)
 {
     struct ssh2_transport_state *s =
-        FROMFIELD(ppl, struct ssh2_transport_state, ppl);
+        container_of(ppl, struct ssh2_transport_state, ppl);
     int need_separator = FALSE;
     int toret;
 
@@ -2836,7 +2836,7 @@ static void ssh2_transport_special_cmd(PacketProtocolLayer *ppl,
                                        SessionSpecialCode code, int arg)
 {
     struct ssh2_transport_state *s =
-        FROMFIELD(ppl, struct ssh2_transport_state, ppl);
+        container_of(ppl, struct ssh2_transport_state, ppl);
 
     if (code == SS_REKEY) {
 	if (!s->kex_in_progress) {
@@ -2884,7 +2884,7 @@ static void ssh2_transport_reconfigure(PacketProtocolLayer *ppl, Conf *conf)
     int i;
 
     assert(ppl->vt == &ssh2_transport_vtable);
-    s = FROMFIELD(ppl, struct ssh2_transport_state, ppl);
+    s = container_of(ppl, struct ssh2_transport_state, ppl);
 
     rekey_time = sanitise_rekey_time(
         conf_get_int(conf, CONF_ssh_rekey_time), 60);
@@ -2951,7 +2951,7 @@ static void ssh2_transport_reconfigure(PacketProtocolLayer *ppl, Conf *conf)
 static int ssh2_transport_want_user_input(PacketProtocolLayer *ppl)
 {
     struct ssh2_transport_state *s =
-        FROMFIELD(ppl, struct ssh2_transport_state, ppl);
+        container_of(ppl, struct ssh2_transport_state, ppl);
 
     /* Just delegate this to the higher layer */
     return ssh_ppl_want_user_input(s->higher_layer);
@@ -2960,7 +2960,7 @@ static int ssh2_transport_want_user_input(PacketProtocolLayer *ppl)
 static void ssh2_transport_got_user_input(PacketProtocolLayer *ppl)
 {
     struct ssh2_transport_state *s =
-        FROMFIELD(ppl, struct ssh2_transport_state, ppl);
+        container_of(ppl, struct ssh2_transport_state, ppl);
 
     /* Just delegate this to the higher layer */
     ssh_ppl_got_user_input(s->higher_layer);

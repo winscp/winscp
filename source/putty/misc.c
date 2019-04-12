@@ -493,7 +493,7 @@ struct strbuf_impl {
 
 void *strbuf_append(strbuf *buf_o, size_t len)
 {
-    struct strbuf_impl *buf = FROMFIELD(buf_o, struct strbuf_impl, visible);
+    struct strbuf_impl *buf = container_of(buf_o, struct strbuf_impl, visible);
     char *toret;
     if (buf->size < buf->visible.len + len + 1) {
         buf->size = (buf->visible.len + len + 1) * 5 / 4 + 512;
@@ -524,7 +524,7 @@ strbuf *strbuf_new(void)
 }
 void strbuf_free(strbuf *buf_o)
 {
-    struct strbuf_impl *buf = FROMFIELD(buf_o, struct strbuf_impl, visible);
+    struct strbuf_impl *buf = container_of(buf_o, struct strbuf_impl, visible);
     if (buf->visible.s) {
         smemclr(buf->visible.s, buf->size);
         sfree(buf->visible.s);
@@ -533,14 +533,14 @@ void strbuf_free(strbuf *buf_o)
 }
 char *strbuf_to_str(strbuf *buf_o)
 {
-    struct strbuf_impl *buf = FROMFIELD(buf_o, struct strbuf_impl, visible);
+    struct strbuf_impl *buf = container_of(buf_o, struct strbuf_impl, visible);
     char *ret = buf->visible.s;
     sfree(buf);
     return ret;
 }
 void strbuf_catfv(strbuf *buf_o, const char *fmt, va_list ap)
 {
-    struct strbuf_impl *buf = FROMFIELD(buf_o, struct strbuf_impl, visible);
+    struct strbuf_impl *buf = container_of(buf_o, struct strbuf_impl, visible);
     STRBUF_SET_PTR(buf, dupvprintf_inner(buf->visible.s, buf->visible.len,
                                          &buf->size, fmt, ap));
     buf->visible.len += strlen(buf->visible.s + buf->visible.len);
@@ -561,7 +561,7 @@ strbuf *strbuf_new_for_agent_query(void)
 }
 void strbuf_finalise_agent_query(strbuf *buf_o)
 {
-    struct strbuf_impl *buf = FROMFIELD(buf_o, struct strbuf_impl, visible);
+    struct strbuf_impl *buf = container_of(buf_o, struct strbuf_impl, visible);
     assert(buf->visible.len >= 5);
     PUT_32BIT_MSB_FIRST(buf->visible.u, buf->visible.len - 4);
 }

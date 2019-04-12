@@ -476,9 +476,9 @@ enum {
 };
 
 struct Backend {
-    const Backend_vtable *vt;
+    const BackendVtable *vt;
 };
-struct Backend_vtable {
+struct BackendVtable {
     const char *(*init) (Frontend *frontend, Backend **backend_out,
 			 Conf *conf, const char *host, int port,
                          char **realhost, int nodelay, int keepalive);
@@ -535,7 +535,7 @@ struct Backend_vtable {
 #define backend_unthrottle(be, bufsize) ((be)->vt->unthrottle(be, bufsize))
 #define backend_cfg_info(be) ((be)->vt->cfg_info(be))
 
-extern const struct Backend_vtable *const backends[];
+extern const struct BackendVtable *const backends[];
 
 /*
  * Suggested default protocol provided by the backend link module.
@@ -1099,8 +1099,8 @@ void random_destroy_seed(void);
 /*
  * Exports from settings.c.
  */
-const struct Backend_vtable *backend_vt_from_name(const char *name);
-const struct Backend_vtable *backend_vt_from_proto(int proto);
+const struct BackendVtable *backend_vt_from_name(const char *name);
+const struct BackendVtable *backend_vt_from_proto(int proto);
 char *get_remote_username(Conf *conf); /* dynamically allocated */
 char *save_settings(const char *section, Conf *conf);
 void save_open_settings(settings_w *sesskey, Conf *conf);
@@ -1195,31 +1195,31 @@ void log_packet(LogContext *logctx, int direction, int type,
  * Exports from testback.c
  */
 
-extern const struct Backend_vtable null_backend;
-extern const struct Backend_vtable loop_backend;
+extern const struct BackendVtable null_backend;
+extern const struct BackendVtable loop_backend;
 
 /*
  * Exports from raw.c.
  */
 
-extern const struct Backend_vtable raw_backend;
+extern const struct BackendVtable raw_backend;
 
 /*
  * Exports from rlogin.c.
  */
 
-extern const struct Backend_vtable rlogin_backend;
+extern const struct BackendVtable rlogin_backend;
 
 /*
  * Exports from telnet.c.
  */
 
-extern const struct Backend_vtable telnet_backend;
+extern const struct BackendVtable telnet_backend;
 
 /*
  * Exports from ssh.c.
  */
-extern const struct Backend_vtable ssh_backend;
+extern const struct BackendVtable ssh_backend;
 
 /*
  * Exports from ldisc.c.

@@ -71,7 +71,7 @@ static ssh2_cipher *arcfour_new(const struct ssh2_cipheralg *alg)
 
 static void arcfour_free(ssh2_cipher *cipher)
 {
-    ArcfourContext *ctx = FROMFIELD(cipher, ArcfourContext, vt);
+    ArcfourContext *ctx = container_of(cipher, ArcfourContext, vt);
     smemclr(ctx, sizeof(*ctx));
     sfree(ctx);
 }
@@ -92,14 +92,14 @@ static void arcfour_ssh2_setiv(ssh2_cipher *cipher, const void *key)
 
 static void arcfour_ssh2_setkey(ssh2_cipher *cipher, const void *key)
 {
-    ArcfourContext *ctx = FROMFIELD(cipher, ArcfourContext, vt);
+    ArcfourContext *ctx = container_of(cipher, ArcfourContext, vt);
     arcfour_setkey(ctx, key, ctx->vt->padded_keybytes);
     arcfour_stir(ctx);
 }
 
 static void arcfour_ssh2_block(ssh2_cipher *cipher, void *blk, int len)
 {
-    ArcfourContext *ctx = FROMFIELD(cipher, ArcfourContext, vt);
+    ArcfourContext *ctx = container_of(cipher, ArcfourContext, vt);
     arcfour_block(ctx, blk, len);
 }
 

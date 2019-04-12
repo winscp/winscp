@@ -42,11 +42,11 @@ typedef struct IdempotentCallback IdempotentCallback;
 
 typedef struct SockAddr SockAddr;
 
-typedef struct Socket_vtable Socket_vtable;
-typedef struct Plug_vtable Plug_vtable;
+typedef struct Socket Socket;
+typedef struct Plug Plug;
 
 typedef struct Backend Backend;
-typedef struct Backend_vtable Backend_vtable;
+typedef struct BackendVtable BackendVtable;
 
 typedef struct Ldisc_tag Ldisc;
 typedef struct LogContext_tag LogContext;
@@ -74,9 +74,6 @@ typedef struct settings_e settings_e;
 
 typedef struct SessionSpecial SessionSpecial;
 
-typedef const Socket_vtable *Socket;
-typedef const Plug_vtable *Plug;
-
 /*
  * A small structure wrapping up a (pointer, length) pair so that it
  * can be conveniently passed to or from a function.
@@ -100,7 +97,7 @@ typedef struct PacketProtocolLayer PacketProtocolLayer;
 
 /* Return a pointer to the object of structure type 'type' whose field
  * with name 'field' is pointed at by 'object'. */
-#define FROMFIELD(object, type, field)                                  \
+#define container_of(object, type, field)                               \
     TYPECHECK(object == &((type *)0)->field,                            \
               ((type *)(((char *)(object)) - offsetof(type, field))))
 

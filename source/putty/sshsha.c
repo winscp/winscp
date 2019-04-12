@@ -251,8 +251,8 @@ static ssh_hash *sha1_copy(ssh_hash *hashold)
     struct sha1_hash *hold, *hnew;
     ssh_hash *hashnew = sha1_new(hashold->vt);
 
-    hold = FROMFIELD(hashold, struct sha1_hash, hash);
-    hnew = FROMFIELD(hashnew, struct sha1_hash, hash);
+    hold = container_of(hashold, struct sha1_hash, hash);
+    hnew = container_of(hashnew, struct sha1_hash, hash);
 
     hnew->state = hold->state;
     BinarySink_COPIED(&hnew->state);
@@ -262,7 +262,7 @@ static ssh_hash *sha1_copy(ssh_hash *hashold)
 
 static void sha1_free(ssh_hash *hash)
 {
-    struct sha1_hash *h = FROMFIELD(hash, struct sha1_hash, hash);
+    struct sha1_hash *h = container_of(hash, struct sha1_hash, hash);
 
     smemclr(h, sizeof(*h));
     sfree(h);
@@ -270,7 +270,7 @@ static void sha1_free(ssh_hash *hash)
 
 static void sha1_final(ssh_hash *hash, unsigned char *output)
 {
-    struct sha1_hash *h = FROMFIELD(hash, struct sha1_hash, hash);
+    struct sha1_hash *h = container_of(hash, struct sha1_hash, hash);
     SHA_Final(&h->state, output);
     sha1_free(hash);
 }
@@ -300,7 +300,7 @@ static ssh2_mac *hmacsha1_new(
 
 static void hmacsha1_free(ssh2_mac *mac)
 {
-    struct hmacsha1 *ctx = FROMFIELD(mac, struct hmacsha1, mac);
+    struct hmacsha1 *ctx = container_of(mac, struct hmacsha1, mac);
     smemclr(ctx, sizeof(*ctx));
     sfree(ctx);
 }
@@ -328,7 +328,7 @@ static void sha1_key_internal(SHA_State *keys,
 
 static void hmacsha1_key(ssh2_mac *mac, const void *key)
 {
-    struct hmacsha1 *ctx = FROMFIELD(mac, struct hmacsha1, mac);
+    struct hmacsha1 *ctx = container_of(mac, struct hmacsha1, mac);
     /* Reading the key length out of the ssh2_macalg structure means
      * this same method can be used for the _buggy variants which use
      * a shorter key */
@@ -337,7 +337,7 @@ static void hmacsha1_key(ssh2_mac *mac, const void *key)
 
 static void hmacsha1_start(ssh2_mac *mac)
 {
-    struct hmacsha1 *ctx = FROMFIELD(mac, struct hmacsha1, mac);
+    struct hmacsha1 *ctx = container_of(mac, struct hmacsha1, mac);
 
     ctx->sha[2] = ctx->sha[0];         /* structure copy */
     BinarySink_COPIED(&ctx->sha[2]);
@@ -345,7 +345,7 @@ static void hmacsha1_start(ssh2_mac *mac)
 
 static void hmacsha1_genresult(ssh2_mac *mac, unsigned char *hmac)
 {
-    struct hmacsha1 *ctx = FROMFIELD(mac, struct hmacsha1, mac);
+    struct hmacsha1 *ctx = container_of(mac, struct hmacsha1, mac);
     SHA_State s;
     unsigned char intermediate[20];
 

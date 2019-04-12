@@ -11,7 +11,6 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#define DEFINE_PLUG_METHOD_MACROS
 #define NEED_DECLARATION_OF_SELECT     /* in order to initialise it */
 
 #include "putty.h"
@@ -76,7 +75,7 @@ struct NetSocket {
      */
     NetSocket *parent, *child;
 
-    const Socket_vtable *sockvt;
+    Socket sock;
 };
 
 struct SockAddr {
@@ -910,7 +909,7 @@ SockAddr *sk_addr_dup(SockAddr *addr)
 
 static Plug *sk_net_plug(Socket *sock, Plug *p)
 {
-    NetSocket *s = FROMFIELD(sock, NetSocket, sockvt);
+    NetSocket *s = container_of(sock, NetSocket, sock);
     Plug *ret = s->plug;
     if (p)
 	s->plug = p;
@@ -935,7 +934,7 @@ static char *sk_net_peer_info(Socket *s);
 
 extern char *do_select(SOCKET skt, int startup);
 
-static const Socket_vtable NetSocket_sockvt = {
+static const SocketVtable NetSocket_sockvt = {
     sk_net_plug,
     sk_net_close,
     sk_net_write,
@@ -957,7 +956,7 @@ static Socket *sk_net_accept(accept_ctx_t ctx, Plug *plug)
      * Create NetSocket structure.
      */
     ret = snew(NetSocket);
-    ret->sockvt = &NetSocket_sockvt;
+    ret->sock.vt = &NetSocket_sockvt;
     ret->error = NULL;
     ret->plug = plug;
     bufchain_init(&ret->output_data);
@@ -976,7 +975,7 @@ static Socket *sk_net_accept(accept_ctx_t ctx, Plug *plug)
     if (ret->s == INVALID_SOCKET) {
 	err = p_WSAGetLastError();
 	ret->error = winsock_error_string(err);
-	return &ret->sockvt;
+	return &ret->sock;
     }
 
     ret->oobinline = 0;
@@ -986,12 +985,12 @@ static Socket *sk_net_accept(accept_ctx_t ctx, Plug *plug)
     errstr = do_select(ret->s, 1);
     if (errstr) {
 	ret->error = errstr;
-	return &ret->sockvt;
+	return &ret->sock;
     }
 
     add234(sktree, ret);
 
-    return &ret->sockvt;
+    return &ret->sock;
 }
 
 static DWORD try_connect(NetSocket *sock)
@@ -1202,7 +1201,7 @@ Socket *sk_new(SockAddr *addr, int port, int privport, int oobinline,
      * Create NetSocket structure.
      */
     ret = snew(NetSocket);
-    ret->sockvt = &NetSocket_sockvt;
+    ret->sock.vt = &NetSocket_sockvt;
     ret->error = NULL;
     ret->plug = plug;
     bufchain_init(&ret->output_data);
@@ -1229,7 +1228,7 @@ Socket *sk_new(SockAddr *addr, int port, int privport, int oobinline,
         err = try_connect(ret);
     } while (err && sk_nextaddr(ret->addr, &ret->step));
 
-    return &ret->sockvt;
+    return &ret->sock;
 }
 
 Socket *sk_newlistener(const char *srcaddr, int port, Plug *plug,
@@ -1253,7 +1252,7 @@ Socket *sk_newlistener(const char *srcaddr, int port, Plug *plug,
      * Create NetSocket structure.
      */
     ret = snew(NetSocket);
-    ret->sockvt = &NetSocket_sockvt;
+    ret->sock.vt = &NetSocket_sockvt;
     ret->error = NULL;
     ret->plug = plug;
     bufchain_init(&ret->output_data);
@@ -1295,7 +1294,7 @@ Socket *sk_newlistener(const char *srcaddr, int port, Plug *plug,
     if (s == INVALID_SOCKET) {
 	err = p_WSAGetLastError();
 	ret->error = winsock_error_string(err);
-	return &ret->sockvt;
+	return &ret->sock;
     }
 
     SetHandleInformation((HANDLE)s, HANDLE_FLAG_INHERIT, 0);
@@ -1381,14 +1380,14 @@ Socket *sk_newlistener(const char *srcaddr, int port, Plug *plug,
     if (err) {
 	p_closesocket(s);
 	ret->error = winsock_error_string(err);
-	return &ret->sockvt;
+	return &ret->sock;
     }
 
 
     if (p_listen(s, SOMAXCONN) == SOCKET_ERROR) {
         p_closesocket(s);
 	ret->error = winsock_error_string(p_WSAGetLastError());
-	return &ret->sockvt;
+	return &ret->sock;
     }
 
     /* Set up a select mechanism. This could be an AsyncSelect on a
@@ -1397,7 +1396,7 @@ Socket *sk_newlistener(const char *srcaddr, int port, Plug *plug,
     if (errstr) {
 	p_closesocket(s);
 	ret->error = errstr;
-	return &ret->sockvt;
+	return &ret->sock;
     }
 
     add234(sktree, ret);
@@ -1412,7 +1411,7 @@ Socket *sk_newlistener(const char *srcaddr, int port, Plug *plug,
                                        local_host_only, ADDRTYPE_IPV6);
 
 	if (other) {
-            NetSocket *ns = FROMFIELD(other, NetSocket, sockvt);
+            NetSocket *ns = container_of(other, NetSocket, sock);
 	    if (!ns->error) {
 		ns->parent = ret;
 		ret->child = ns;
@@ -1423,16 +1422,16 @@ Socket *sk_newlistener(const char *srcaddr, int port, Plug *plug,
     }
 #endif
 
-    return &ret->sockvt;
+    return &ret->sock;
 }
 
 static void sk_net_close(Socket *sock)
 {
     extern char *do_select(SOCKET skt, int startup);
-    NetSocket *s = FROMFIELD(sock, NetSocket, sockvt);
+    NetSocket *s = container_of(sock, NetSocket, sock);
 
     if (s->child)
-	sk_net_close(&s->child->sockvt);
+	sk_net_close(&s->child->sock);
 
     del234(sktree, s);
     do_select(s->s, 0);
@@ -1540,7 +1539,7 @@ void try_send(NetSocket *s)
 
 static int sk_net_write(Socket *sock, const void *buf, int len)
 {
-    NetSocket *s = FROMFIELD(sock, NetSocket, sockvt);
+    NetSocket *s = container_of(sock, NetSocket, sock);
 
     assert(s->outgoingeof == EOF_NO);
 
@@ -1560,7 +1559,7 @@ static int sk_net_write(Socket *sock, const void *buf, int len)
 
 static int sk_net_write_oob(Socket *sock, const void *buf, int len)
 {
-    NetSocket *s = FROMFIELD(sock, NetSocket, sockvt);
+    NetSocket *s = container_of(sock, NetSocket, sock);
 
     assert(s->outgoingeof == EOF_NO);
 
@@ -1583,7 +1582,7 @@ static int sk_net_write_oob(Socket *sock, const void *buf, int len)
 
 static void sk_net_write_eof(Socket *sock)
 {
-    NetSocket *s = FROMFIELD(sock, NetSocket, sockvt);
+    NetSocket *s = container_of(sock, NetSocket, sock);
 
     assert(s->outgoingeof == EOF_NO);
 
@@ -1786,13 +1785,13 @@ const char *sk_addr_error(SockAddr *addr)
 }
 static const char *sk_net_socket_error(Socket *sock)
 {
-    NetSocket *s = FROMFIELD(sock, NetSocket, sockvt);
+    NetSocket *s = container_of(sock, NetSocket, sock);
     return s->error;
 }
 
 static char *sk_net_peer_info(Socket *sock)
 {
-    NetSocket *s = FROMFIELD(sock, NetSocket, sockvt);
+    NetSocket *s = container_of(sock, NetSocket, sock);
 #ifdef NO_IPV6
     struct sockaddr_in addr;
 #else
@@ -1824,7 +1823,7 @@ static char *sk_net_peer_info(Socket *sock)
 
 static void sk_net_set_frozen(Socket *sock, int is_frozen)
 {
-    NetSocket *s = FROMFIELD(sock, NetSocket, sockvt);
+    NetSocket *s = container_of(sock, NetSocket, sock);
     if (s->frozen == is_frozen)
 	return;
     s->frozen = is_frozen;

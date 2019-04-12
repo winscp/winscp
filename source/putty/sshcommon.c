@@ -59,7 +59,7 @@ static void pktin_free_queue_callback(void *vctx)
 {
     while (pktin_freeq_head.next != &pktin_freeq_head) {
         PacketQueueNode *node = pktin_freeq_head.next;
-        PktIn *pktin = FROMFIELD(node, PktIn, qnode);
+        PktIn *pktin = container_of(node, PktIn, qnode);
         pktin_freeq_head.next = node->next;
         sfree(pktin);
     }
@@ -89,7 +89,7 @@ static PktIn *pq_in_get(PacketQueueBase *pqb, int pop)
         queue_idempotent_callback(&ic_pktin_free);
     }
 
-    return FROMFIELD(node, PktIn, qnode);
+    return container_of(node, PktIn, qnode);
 }
 
 static PktOut *pq_out_get(PacketQueueBase *pqb, int pop)
@@ -104,7 +104,7 @@ static PktOut *pq_out_get(PacketQueueBase *pqb, int pop)
         node->prev = node->next = NULL;
     }
 
-    return FROMFIELD(node, PktOut, qnode);
+    return container_of(node, PktOut, qnode);
 }
 
 void pq_in_init(PktInQueue *pq)

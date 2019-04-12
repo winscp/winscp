@@ -916,7 +916,7 @@ int openssh_pem_write(const Filename *filename, struct ssh2_userkey *key,
                ssh_key_alg(key->key) == &ssh_ecdsa_nistp384 ||
                ssh_key_alg(key->key) == &ssh_ecdsa_nistp521) {
         const unsigned char *oid;
-        struct ec_key *ec = FROMFIELD(key->key, struct ec_key, sshk);
+        struct ec_key *ec = container_of(key->key, struct ec_key, sshk);
         int oidlen;
         int pointlen;
         strbuf *seq, *sub;

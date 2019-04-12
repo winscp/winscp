@@ -9,7 +9,6 @@
 #include <ctype.h>
 #include <string.h>
 
-#define DEFINE_PLUG_METHOD_MACROS
 #include "putty.h"
 #include "ssh.h" /* For MD5 support */
 #include "network.h"

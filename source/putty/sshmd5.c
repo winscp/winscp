@@ -256,7 +256,8 @@ void hmacmd5_free_context(struct hmacmd5_context *ctx)
 
 static void hmacmd5_ssh2_free(ssh2_mac *mac)
 {
-    struct hmacmd5_context *ctx = FROMFIELD(mac, struct hmacmd5_context, mac);
+    struct hmacmd5_context *ctx =
+        container_of(mac, struct hmacmd5_context, mac);
     hmacmd5_free_context(ctx);
 }
 
@@ -283,13 +284,15 @@ void hmacmd5_key(struct hmacmd5_context *ctx, void const *keyv, int len)
 
 static void hmacmd5_ssh2_setkey(ssh2_mac *mac, const void *key)
 {
-    struct hmacmd5_context *ctx = FROMFIELD(mac, struct hmacmd5_context, mac);
+    struct hmacmd5_context *ctx =
+        container_of(mac, struct hmacmd5_context, mac);
     hmacmd5_key(ctx, key, ctx->mac.vt->keylen);
 }
 
 static void hmacmd5_start(ssh2_mac *mac)
 {
-    struct hmacmd5_context *ctx = FROMFIELD(mac, struct hmacmd5_context, mac);
+    struct hmacmd5_context *ctx =
+        container_of(mac, struct hmacmd5_context, mac);
 
     ctx->md5[2] = ctx->md5[0]; /* structure copy */
     BinarySink_COPIED(&ctx->md5[2]);
@@ -297,7 +300,8 @@ static void hmacmd5_start(ssh2_mac *mac)
 
 static void hmacmd5_genresult(ssh2_mac *mac, unsigned char *hmac)
 {
-    struct hmacmd5_context *ctx = FROMFIELD(mac, struct hmacmd5_context, mac);
+    struct hmacmd5_context *ctx =
+        container_of(mac, struct hmacmd5_context, mac);
     struct MD5Context s;
     unsigned char intermediate[16];
 
