@@ -19,7 +19,7 @@ struct outstanding_succfail;
 struct ssh1_connection_state {
     int crState;
 
-    Ssh ssh;
+    Ssh *ssh;
 
     Conf *conf;
     int local_protoflags;
@@ -248,7 +248,7 @@ static void ssh1_channel_free(struct ssh1_channel *c)
 }
 
 PacketProtocolLayer *ssh1_connection_new(
-    Ssh ssh, Conf *conf, ConnectionLayer **cl_out)
+    Ssh *ssh, Conf *conf, ConnectionLayer **cl_out)
 {
     struct ssh1_connection_state *s = snew(struct ssh1_connection_state);
     memset(s, 0, sizeof(*s));

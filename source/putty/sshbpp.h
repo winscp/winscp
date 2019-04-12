@@ -22,7 +22,7 @@ struct BinaryPacketProtocol {
     PktOutQueue out_pq;
     PacketLogSettings *pls;
     LogContext *logctx;
-    Ssh ssh;
+    Ssh *ssh;
 
     /* ic_in_raw is filled in by the BPP (probably by calling
      * ssh_bpp_common_setup). The BPP's owner triggers it when data is

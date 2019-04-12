@@ -160,9 +160,9 @@ int ssh2_censor_packet(
 PktOut *ssh_new_packet(void);
 void ssh_free_pktout(PktOut *pkt);
 
-extern Socket ssh_connection_sharing_init(
+extern Socket *ssh_connection_sharing_init(
     const char *host, int port, Conf *conf, Frontend *frontend,
-    Plug sshplug, ssh_sharing_state **state);
+    Plug *sshplug, ssh_sharing_state **state);
 void ssh_connshare_provide_connlayer(ssh_sharing_state *sharestate,
                                      ConnectionLayer *cl);
 int ssh_share_test_for_upstream(const char *host, int port, Conf *conf);
@@ -173,7 +173,7 @@ void share_activate(ssh_sharing_state *sharestate,
 void sharestate_free(ssh_sharing_state *state);
 int share_ndownstreams(ssh_sharing_state *state);
 
-void ssh_connshare_log(Ssh ssh, int event, const char *logtext,
+void ssh_connshare_log(Ssh *ssh, int event, const char *logtext,
                        const char *ds_err, const char *us_err);
 void share_setup_x11_channel(ssh_sharing_connstate *cs, share_channel *chan,
                              unsigned upstream_id, unsigned server_id,
@@ -306,20 +306,20 @@ char *portfwdmgr_connect(PortFwdManager *mgr, Channel **chan_ret,
                          char *hostname, int port, SshChannel *c,
                          int addressfamily);
 
-Frontend *ssh_get_frontend(Ssh ssh);
+Frontend *ssh_get_frontend(Ssh *ssh);
 
 /* Communications back to ssh.c from connection layers */
-void ssh_throttle_conn(Ssh ssh, int adjust);
-void ssh_got_exitcode(Ssh ssh, int status);
-void ssh_ldisc_update(Ssh ssh);
-void ssh_got_fallback_cmd(Ssh ssh);
+void ssh_throttle_conn(Ssh *ssh, int adjust);
+void ssh_got_exitcode(Ssh *ssh, int status);
+void ssh_ldisc_update(Ssh *ssh);
+void ssh_got_fallback_cmd(Ssh *ssh);
 
 /* Functions to abort the connection, for various reasons. */
-void ssh_remote_error(Ssh ssh, const char *fmt, ...);
-void ssh_remote_eof(Ssh ssh, const char *fmt, ...);
-void ssh_proto_error(Ssh ssh, const char *fmt, ...);
-void ssh_sw_abort(Ssh ssh, const char *fmt, ...);
-void ssh_user_close(Ssh ssh, const char *fmt, ...);
+void ssh_remote_error(Ssh *ssh, const char *fmt, ...);
+void ssh_remote_eof(Ssh *ssh, const char *fmt, ...);
+void ssh_proto_error(Ssh *ssh, const char *fmt, ...);
+void ssh_sw_abort(Ssh *ssh, const char *fmt, ...);
+void ssh_user_close(Ssh *ssh, const char *fmt, ...);
 
 #define SSH_CIPHER_IDEA		1
 #define SSH_CIPHER_DES		2
@@ -875,7 +875,7 @@ struct X11Display {
 
     /* PuTTY networking SockAddr to connect to the display, and associated
      * gubbins */
-    SockAddr addr;
+    SockAddr *addr;
     int port;
     char *realhost;
 
@@ -935,7 +935,7 @@ extern void platform_get_x11_auth(struct X11Display *display, Conf *);
     /* examine a mostly-filled-in X11Display and fill in localauth* */
 extern const int platform_uses_x11_unix_by_default;
     /* choose default X transport in the absence of a specified one */
-SockAddr platform_get_x11_unix_address(const char *path, int displaynum);
+SockAddr *platform_get_x11_unix_address(const char *path, int displaynum);
     /* make up a SockAddr naming the address for displaynum */
 char *platform_get_x_display(void);
     /* allocated local X display string, if any */
@@ -1158,7 +1158,7 @@ void invent_firstbits(unsigned *one, unsigned *two);
  */
 enum { SHARE_NONE, SHARE_DOWNSTREAM, SHARE_UPSTREAM };
 int platform_ssh_share(const char *name, Conf *conf,
-                       Plug downplug, Plug upplug, Socket *sock,
+                       Plug *downplug, Plug *upplug, Socket **sock,
                        char **logtext, char **ds_err, char **us_err,
                        int can_upstream, int can_downstream);
 void platform_ssh_share_cleanup(const char *name);

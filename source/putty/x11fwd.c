@@ -40,7 +40,7 @@ typedef struct X11Connection {
     char *peer_addr;
     int peer_port;
     SshChannel *c;               /* channel structure held by SSH backend */
-    Socket s;
+    Socket *s;
 
     const Plug_vtable *plugvt;
     Channel chan;
@@ -288,12 +288,12 @@ struct X11Display *x11_setup_display(const char *display, Conf *conf)
      * display (as the standard X connection libraries do).
      */
     if (!disp->unixdomain && sk_address_is_local(disp->addr)) {
-	SockAddr ux = platform_get_x11_unix_address(NULL, disp->displaynum);
+	SockAddr *ux = platform_get_x11_unix_address(NULL, disp->displaynum);
 	const char *err = sk_addr_error(ux);
 	if (!err) {
 	    /* Create trial connection to see if there is a useful Unix-domain
 	     * socket */
-	    Socket s = sk_new(sk_addr_dup(ux), 0, 0, 0, 0, 0, nullplug);
+	    Socket *s = sk_new(sk_addr_dup(ux), 0, 0, 0, 0, 0, nullplug);
 	    err = sk_socket_error(s);
 	    sk_close(s);
 	}
@@ -622,7 +622,7 @@ void x11_get_auth_from_authfile(struct X11Display *disp,
     sfree(ourhostname);
 }
 
-static void x11_log(Plug p, int type, SockAddr addr, int port,
+static void x11_log(Plug *p, int type, SockAddr *addr, int port,
 		    const char *error_msg, int error_code)
 {
     /* We have no interface to the logging module here, so we drop these. */
@@ -631,7 +631,7 @@ static void x11_log(Plug p, int type, SockAddr addr, int port,
 static void x11_send_init_error(struct X11Connection *conn,
                                 const char *err_message);
 
-static void x11_closing(Plug plug, const char *error_msg, int error_code,
+static void x11_closing(Plug *plug, const char *error_msg, int error_code,
 			int calling_back)
 {
     struct X11Connection *xconn = FROMFIELD(
@@ -664,7 +664,7 @@ static void x11_closing(Plug plug, const char *error_msg, int error_code,
     }
 }
 
-static void x11_receive(Plug plug, int urgent, char *data, int len)
+static void x11_receive(Plug *plug, int urgent, char *data, int len)
 {
     struct X11Connection *xconn = FROMFIELD(
         plug, struct X11Connection, plugvt);
@@ -673,7 +673,7 @@ static void x11_receive(Plug plug, int urgent, char *data, int len)
     sshfwd_write(xconn->c, data, len);
 }
 
-static void x11_sent(Plug plug, int bufsize)
+static void x11_sent(Plug *plug, int bufsize)
 {
     struct X11Connection *xconn = FROMFIELD(
         plug, struct X11Connection, plugvt);

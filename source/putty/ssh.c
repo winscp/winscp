@@ -29,8 +29,8 @@
 #define GSS_CTXT_MAYFAIL (1<<3)	/* Context may expire during handshake */
 #endif
 
-struct ssh_tag {
-    Socket s;
+struct Ssh {
+    Socket *s;
     Frontend *frontend;
     Conf *conf;
 
@@ -101,7 +101,7 @@ struct ssh_tag {
      */
     int session_started;
 
-    Pinger pinger;
+    Pinger *pinger;
 
     int need_random_unref;
 };
@@ -109,16 +109,16 @@ struct ssh_tag {
 #define ssh_logevent(params) ( \
         logevent_and_free((ssh)->frontend, dupprintf params))
 
-static void ssh_shutdown(Ssh ssh);
-static void ssh_throttle_all(Ssh ssh, int enable, int bufsize);
+static void ssh_shutdown(Ssh *ssh);
+static void ssh_throttle_all(Ssh *ssh, int enable, int bufsize);
 static void ssh_bpp_output_raw_data_callback(void *vctx);
 
-Frontend *ssh_get_frontend(Ssh ssh)
+Frontend *ssh_get_frontend(Ssh *ssh)
 {
     return ssh->frontend;
 }
 
-static void ssh_connect_bpp(Ssh ssh)
+static void ssh_connect_bpp(Ssh *ssh)
 {
     ssh->bpp->ssh = ssh;
     ssh->bpp->in_raw = &ssh->in_raw;
@@ -129,7 +129,7 @@ static void ssh_connect_bpp(Ssh ssh)
     ssh->bpp->remote_bugs = ssh->remote_bugs;
 }
 
-static void ssh_connect_ppl(Ssh ssh, PacketProtocolLayer *ppl)
+static void ssh_connect_ppl(Ssh *ssh, PacketProtocolLayer *ppl)
 {
     ppl->bpp = ssh->bpp;
     ppl->user_input = &ssh->user_input;
@@ -141,7 +141,7 @@ static void ssh_connect_ppl(Ssh ssh, PacketProtocolLayer *ppl)
 static void ssh_got_ssh_version(struct ssh_version_receiver *rcv,
                                 int major_version)
 {
-    Ssh ssh = FROMFIELD(rcv, struct ssh_tag, version_receiver);
+    Ssh *ssh = FROMFIELD(rcv, Ssh, version_receiver);
     BinaryPacketProtocol *old_bpp;
     PacketProtocolLayer *connection_layer;
 
@@ -289,7 +289,7 @@ static void ssh_got_ssh_version(struct ssh_version_receiver *rcv,
 
 static void ssh_bpp_output_raw_data_callback(void *vctx)
 {
-    Ssh ssh = (Ssh)vctx;
+    Ssh *ssh = (Ssh *)vctx;
 
     if (!ssh->s)
         return;
@@ -319,7 +319,7 @@ static void ssh_bpp_output_raw_data_callback(void *vctx)
     }
 }
 
-static void ssh_shutdown_internal(Ssh ssh)
+static void ssh_shutdown_internal(Ssh *ssh)
 {
     expire_timer_context(ssh);
 
@@ -345,7 +345,7 @@ static void ssh_shutdown_internal(Ssh ssh)
     ssh->cl = NULL;
 }
 
-static void ssh_shutdown(Ssh ssh)
+static void ssh_shutdown(Ssh *ssh)
 {
     ssh_shutdown_internal(ssh);
 
@@ -364,7 +364,7 @@ static void ssh_shutdown(Ssh ssh)
     bufchain_clear(&ssh->user_input);
 }
 
-static void ssh_initiate_connection_close(Ssh ssh)
+static void ssh_initiate_connection_close(Ssh *ssh)
 {
     /* Wind up everything above the BPP. */
     ssh_shutdown_internal(ssh);
@@ -388,7 +388,7 @@ static void ssh_initiate_connection_close(Ssh ssh)
     msg = dupvprintf(fmt, ap);                  \
     va_end(ap);
 
-void ssh_remote_error(Ssh ssh, const char *fmt, ...)
+void ssh_remote_error(Ssh *ssh, const char *fmt, ...)
 {
     if (ssh->base_layer || !ssh->session_started) {
         GET_FORMATTED_MSG;
@@ -406,7 +406,7 @@ void ssh_remote_error(Ssh ssh, const char *fmt, ...)
     }
 }
 
-void ssh_remote_eof(Ssh ssh, const char *fmt, ...)
+void ssh_remote_eof(Ssh *ssh, const char *fmt, ...)
 {
     if (ssh->base_layer || !ssh->session_started) {
         GET_FORMATTED_MSG;
@@ -429,7 +429,7 @@ void ssh_remote_eof(Ssh ssh, const char *fmt, ...)
     }
 }
 
-void ssh_proto_error(Ssh ssh, const char *fmt, ...)
+void ssh_proto_error(Ssh *ssh, const char *fmt, ...)
 {
     if (ssh->base_layer || !ssh->session_started) {
         GET_FORMATTED_MSG;
@@ -446,7 +446,7 @@ void ssh_proto_error(Ssh ssh, const char *fmt, ...)
     }
 }
 
-void ssh_sw_abort(Ssh ssh, const char *fmt, ...)
+void ssh_sw_abort(Ssh *ssh, const char *fmt, ...)
 {
     if (ssh->base_layer || !ssh->session_started) {
         GET_FORMATTED_MSG;
@@ -463,7 +463,7 @@ void ssh_sw_abort(Ssh ssh, const char *fmt, ...)
     }
 }
 
-void ssh_user_close(Ssh ssh, const char *fmt, ...)
+void ssh_user_close(Ssh *ssh, const char *fmt, ...)
 {
     if (ssh->base_layer || !ssh->session_started) {
         GET_FORMATTED_MSG;
@@ -486,10 +486,10 @@ void ssh_user_close(Ssh ssh, const char *fmt, ...)
     }
 }
 
-static void ssh_socket_log(Plug plug, int type, SockAddr addr, int port,
+static void ssh_socket_log(Plug *plug, int type, SockAddr *addr, int port,
                            const char *error_msg, int error_code)
 {
-    Ssh ssh = FROMFIELD(plug, struct ssh_tag, plugvt);
+    Ssh *ssh = FROMFIELD(plug, Ssh, plugvt);
 
     /*
      * While we're attempting connection sharing, don't loudly log
@@ -506,10 +506,10 @@ static void ssh_socket_log(Plug plug, int type, SockAddr addr, int port,
                            ssh->session_started);
 }
 
-static void ssh_closing(Plug plug, const char *error_msg, int error_code,
+static void ssh_closing(Plug *plug, const char *error_msg, int error_code,
 			int calling_back)
 {
-    Ssh ssh = FROMFIELD(plug, struct ssh_tag, plugvt);
+    Ssh *ssh = FROMFIELD(plug, Ssh, plugvt);
     if (error_msg) {
         ssh_remote_error(ssh, "Network error: %s", error_msg);
     } else if (ssh->bpp) {
@@ -518,9 +518,9 @@ static void ssh_closing(Plug plug, const char *error_msg, int error_code,
     }
 }
 
-static void ssh_receive(Plug plug, int urgent, char *data, int len)
+static void ssh_receive(Plug *plug, int urgent, char *data, int len)
 {
-    Ssh ssh = FROMFIELD(plug, struct ssh_tag, plugvt);
+    Ssh *ssh = FROMFIELD(plug, Ssh, plugvt);
 
     /* Log raw data, if we're in that mode. */
     if (ssh->logctx)
@@ -532,9 +532,9 @@ static void ssh_receive(Plug plug, int urgent, char *data, int len)
         queue_idempotent_callback(&ssh->bpp->ic_in_raw);
 }
 
-static void ssh_sent(Plug plug, int bufsize)
+static void ssh_sent(Plug *plug, int bufsize)
 {
-    Ssh ssh = FROMFIELD(plug, struct ssh_tag, plugvt);
+    Ssh *ssh = FROMFIELD(plug, Ssh, plugvt);
     /*
      * If the send backlog on the SSH socket itself clears, we should
      * unthrottle the whole world if it was throttled. Also trigger an
@@ -613,10 +613,10 @@ static const Plug_vtable Ssh_plugvt = {
  * Also places the canonical host name into `realhost'. It must be
  * freed by the caller.
  */
-static const char *connect_to_host(Ssh ssh, const char *host, int port,
+static const char *connect_to_host(Ssh *ssh, const char *host, int port,
 				   char **realhost, int nodelay, int keepalive)
 {
-    SockAddr addr;
+    SockAddr *addr;
     const char *err;
     char *loghost;
     int addressfamily, sshprot;
@@ -725,7 +725,7 @@ static const char *connect_to_host(Ssh ssh, const char *host, int port,
 /*
  * Throttle or unthrottle the SSH connection.
  */
-void ssh_throttle_conn(Ssh ssh, int adjust)
+void ssh_throttle_conn(Ssh *ssh, int adjust)
 {
     int old_count = ssh->conn_throttle_count;
     int frozen;
@@ -758,7 +758,7 @@ void ssh_throttle_conn(Ssh ssh, int adjust)
  * Throttle or unthrottle _all_ local data streams (for when sends
  * on the SSH connection itself back up).
  */
-static void ssh_throttle_all(Ssh ssh, int enable, int bufsize)
+static void ssh_throttle_all(Ssh *ssh, int enable, int bufsize)
 {
     if (enable == ssh->throttled_all)
 	return;
@@ -768,7 +768,7 @@ static void ssh_throttle_all(Ssh ssh, int enable, int bufsize)
     ssh_throttle_all_channels(ssh->cl, enable);
 }
 
-static void ssh_cache_conf_values(Ssh ssh)
+static void ssh_cache_conf_values(Ssh *ssh)
 {
     ssh->pls.omit_passwords = conf_get_int(ssh->conf, CONF_logomitpass);
     ssh->pls.omit_data = conf_get_int(ssh->conf, CONF_logomitdata);
@@ -785,10 +785,10 @@ static const char *ssh_init(Frontend *frontend, Backend **backend_handle,
 			    int nodelay, int keepalive)
 {
     const char *p;
-    Ssh ssh;
+    Ssh *ssh;
 
-    ssh = snew(struct ssh_tag);
-    memset(ssh, 0, sizeof(struct ssh_tag));
+    ssh = snew(Ssh);
+    memset(ssh, 0, sizeof(Ssh));
 
     ssh->conf = conf_copy(conf);
     ssh_cache_conf_values(ssh);
@@ -825,7 +825,7 @@ static const char *ssh_init(Frontend *frontend, Backend **backend_handle,
 
 static void ssh_free(Backend *be)
 {
-    Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
+    Ssh *ssh = FROMFIELD(be, Ssh, backend);
     int need_random_unref;
 
     ssh_shutdown(ssh);
@@ -860,7 +860,7 @@ static void ssh_free(Backend *be)
  */
 static void ssh_reconfig(Backend *be, Conf *conf)
 {
-    Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
+    Ssh *ssh = FROMFIELD(be, Ssh, backend);
 
     if (ssh->pinger)
         pinger_reconfig(ssh->pinger, ssh->conf, conf);
@@ -877,7 +877,7 @@ static void ssh_reconfig(Backend *be, Conf *conf)
  */
 static int ssh_send(Backend *be, const char *buf, int len)
 {
-    Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
+    Ssh *ssh = FROMFIELD(be, Ssh, backend);
 
     if (ssh == NULL || ssh->s == NULL)
 	return 0;
@@ -894,7 +894,7 @@ static int ssh_send(Backend *be, const char *buf, int len)
  */
 static int ssh_sendbuffer(Backend *be)
 {
-    Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
+    Ssh *ssh = FROMFIELD(be, Ssh, backend);
     int backlog;
 
     if (!ssh || !ssh->s || !ssh->cl)
@@ -919,7 +919,7 @@ static int ssh_sendbuffer(Backend *be)
  */
 static void ssh_size(Backend *be, int width, int height)
 {
-    Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
+    Ssh *ssh = FROMFIELD(be, Ssh, backend);
 
     ssh->term_width = width;
     ssh->term_height = height;
@@ -956,7 +956,7 @@ static void ssh_add_special(void *vctx, const char *text,
  */
 static const SessionSpecial *ssh_get_specials(Backend *be)
 {
-    Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
+    Ssh *ssh = FROMFIELD(be, Ssh, backend);
 
     /*
      * Ask all our active protocol layers what specials they've got,
@@ -986,7 +986,7 @@ static const SessionSpecial *ssh_get_specials(Backend *be)
  */
 static void ssh_special(Backend *be, SessionSpecialCode code, int arg)
 {
-    Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
+    Ssh *ssh = FROMFIELD(be, Ssh, backend);
 
     if (ssh->base_layer)
         ssh_ppl_special_cmd(ssh->base_layer, code, arg);
@@ -998,24 +998,24 @@ static void ssh_special(Backend *be, SessionSpecialCode code, int arg)
  */
 static void ssh_unthrottle(Backend *be, int bufsize)
 {
-    Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
+    Ssh *ssh = FROMFIELD(be, Ssh, backend);
 
     ssh_stdout_unthrottle(ssh->cl, bufsize);
 }
 
 static int ssh_connected(Backend *be)
 {
-    Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
+    Ssh *ssh = FROMFIELD(be, Ssh, backend);
     return ssh->s != NULL;
 }
 
 static int ssh_sendok(Backend *be)
 {
-    Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
+    Ssh *ssh = FROMFIELD(be, Ssh, backend);
     return ssh->base_layer && ssh_ppl_want_user_input(ssh->base_layer);
 }
 
-void ssh_ldisc_update(Ssh ssh)
+void ssh_ldisc_update(Ssh *ssh)
 {
     /* Called when the connection layer wants to propagate an update
      * to the line discipline options */
@@ -1025,30 +1025,30 @@ void ssh_ldisc_update(Ssh ssh)
 
 static int ssh_ldisc(Backend *be, int option)
 {
-    Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
+    Ssh *ssh = FROMFIELD(be, Ssh, backend);
     return ssh->cl ? ssh_ldisc_option(ssh->cl, option) : FALSE;
 }
 
 static void ssh_provide_ldisc(Backend *be, Ldisc *ldisc)
 {
-    Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
+    Ssh *ssh = FROMFIELD(be, Ssh, backend);
     ssh->ldisc = ldisc;
 }
 
 static void ssh_provide_logctx(Backend *be, LogContext *logctx)
 {
-    Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
+    Ssh *ssh = FROMFIELD(be, Ssh, backend);
     ssh->logctx = logctx;
 }
 
-void ssh_got_exitcode(Ssh ssh, int exitcode)
+void ssh_got_exitcode(Ssh *ssh, int exitcode)
 {
     ssh->exitcode = exitcode;
 }
 
 static int ssh_return_exitcode(Backend *be)
 {
-    Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
+    Ssh *ssh = FROMFIELD(be, Ssh, backend);
     if (ssh->s && (!ssh->session_started || ssh->base_layer))
         return -1;
     else
@@ -1062,7 +1062,7 @@ static int ssh_return_exitcode(Backend *be)
  */
 static int ssh_cfg_info(Backend *be)
 {
-    Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
+    Ssh *ssh = FROMFIELD(be, Ssh, backend);
     if (ssh->version == 0)
 	return 0; /* don't know yet */
     else if (ssh->bare_connection)
@@ -1078,11 +1078,11 @@ static int ssh_cfg_info(Backend *be)
  */
 extern int ssh_fallback_cmd(Backend *be)
 {
-    Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
+    Ssh *ssh = FROMFIELD(be, Ssh, backend);
     return ssh->fallback_cmd;
 }
 
-void ssh_got_fallback_cmd(Ssh ssh)
+void ssh_got_fallback_cmd(Ssh *ssh)
 {
     ssh->fallback_cmd = TRUE;
 }

@@ -1254,10 +1254,10 @@ void random_unref(void);
 /*
  * Exports from pinger.c.
  */
-typedef struct pinger_tag *Pinger;
-Pinger pinger_new(Conf *conf, Backend *backend);
-void pinger_reconfig(Pinger, Conf *oldconf, Conf *newconf);
-void pinger_free(Pinger);
+typedef struct Pinger Pinger;
+Pinger *pinger_new(Conf *conf, Backend *backend);
+void pinger_reconfig(Pinger *, Conf *oldconf, Conf *newconf);
+void pinger_free(Pinger *);
 
 /*
  * Exports from misc.c.

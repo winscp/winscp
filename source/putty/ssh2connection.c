@@ -22,7 +22,7 @@ struct outstanding_global_request;
 struct ssh2_connection_state {
     int crState;
 
-    Ssh ssh;
+    Ssh *ssh;
 
     ssh_sharing_state *connshare;
     char *peer_verstring;
@@ -370,7 +370,7 @@ static void ssh2_channel_free(struct ssh2_channel *c)
 }
 
 PacketProtocolLayer *ssh2_connection_new(
-    Ssh ssh, ssh_sharing_state *connshare, int is_simple,
+    Ssh *ssh, ssh_sharing_state *connshare, int is_simple,
     Conf *conf, const char *peer_verstring, ConnectionLayer **cl_out)
 {
     struct ssh2_connection_state *s = snew(struct ssh2_connection_state);

@@ -78,16 +78,16 @@ void proxy_activate (ProxySocket *p)
 
 /* basic proxy socket functions */
 
-static Plug sk_proxy_plug (Socket s, Plug p)
+static Plug *sk_proxy_plug (Socket *s, Plug *p)
 {
     ProxySocket *ps = FROMFIELD(s, ProxySocket, sockvt);
-    Plug ret = ps->plug;
+    Plug *ret = ps->plug;
     if (p)
 	ps->plug = p;
     return ret;
 }
 
-static void sk_proxy_close (Socket s)
+static void sk_proxy_close (Socket *s)
 {
     ProxySocket *ps = FROMFIELD(s, ProxySocket, sockvt);
 
@@ -96,7 +96,7 @@ static void sk_proxy_close (Socket s)
     sfree(ps);
 }
 
-static int sk_proxy_write (Socket s, const void *data, int len)
+static int sk_proxy_write (Socket *s, const void *data, int len)
 {
     ProxySocket *ps = FROMFIELD(s, ProxySocket, sockvt);
 
@@ -107,7 +107,7 @@ static int sk_proxy_write (Socket s, const void *data, int len)
     return sk_write(ps->sub_socket, data, len);
 }
 
-static int sk_proxy_write_oob (Socket s, const void *data, int len)
+static int sk_proxy_write_oob (Socket *s, const void *data, int len)
 {
     ProxySocket *ps = FROMFIELD(s, ProxySocket, sockvt);
 
@@ -120,7 +120,7 @@ static int sk_proxy_write_oob (Socket s, const void *data, int len)
     return sk_write_oob(ps->sub_socket, data, len);
 }
 
-static void sk_proxy_write_eof (Socket s)
+static void sk_proxy_write_eof (Socket *s)
 {
     ProxySocket *ps = FROMFIELD(s, ProxySocket, sockvt);
 
@@ -131,7 +131,7 @@ static void sk_proxy_write_eof (Socket s)
     sk_write_eof(ps->sub_socket);
 }
 
-static void sk_proxy_flush (Socket s)
+static void sk_proxy_flush (Socket *s)
 {
     ProxySocket *ps = FROMFIELD(s, ProxySocket, sockvt);
 
@@ -142,7 +142,7 @@ static void sk_proxy_flush (Socket s)
     sk_flush(ps->sub_socket);
 }
 
-static void sk_proxy_set_frozen (Socket s, int is_frozen)
+static void sk_proxy_set_frozen (Socket *s, int is_frozen)
 {
     ProxySocket *ps = FROMFIELD(s, ProxySocket, sockvt);
 
@@ -181,7 +181,7 @@ static void sk_proxy_set_frozen (Socket s, int is_frozen)
     sk_set_frozen(ps->sub_socket, is_frozen);
 }
 
-static const char * sk_proxy_socket_error (Socket s)
+static const char * sk_proxy_socket_error (Socket *s)
 {
     ProxySocket *ps = FROMFIELD(s, ProxySocket, sockvt);
     if (ps->error != NULL || ps->sub_socket == NULL) {
@@ -192,7 +192,7 @@ static const char * sk_proxy_socket_error (Socket s)
 
 /* basic proxy plug functions */
 
-static void plug_proxy_log(Plug plug, int type, SockAddr addr, int port,
+static void plug_proxy_log(Plug *plug, int type, SockAddr *addr, int port,
 			   const char *error_msg, int error_code)
 {
     ProxySocket *ps = FROMFIELD(plug, ProxySocket, plugvt);
@@ -200,7 +200,7 @@ static void plug_proxy_log(Plug plug, int type, SockAddr addr, int port,
     plug_log(ps->plug, type, addr, port, error_msg, error_code);
 }
 
-static void plug_proxy_closing (Plug p, const char *error_msg,
+static void plug_proxy_closing (Plug *p, const char *error_msg,
 				int error_code, int calling_back)
 {
     ProxySocket *ps = FROMFIELD(p, ProxySocket, plugvt);
@@ -215,7 +215,7 @@ static void plug_proxy_closing (Plug p, const char *error_msg,
     }
 }
 
-static void plug_proxy_receive (Plug p, int urgent, char *data, int len)
+static void plug_proxy_receive (Plug *p, int urgent, char *data, int len)
 {
     ProxySocket *ps = FROMFIELD(p, ProxySocket, plugvt);
 
@@ -234,7 +234,7 @@ static void plug_proxy_receive (Plug p, int urgent, char *data, int len)
     }
 }
 
-static void plug_proxy_sent (Plug p, int bufsize)
+static void plug_proxy_sent (Plug *p, int bufsize)
 {
     ProxySocket *ps = FROMFIELD(p, ProxySocket, plugvt);
 
@@ -246,7 +246,7 @@ static void plug_proxy_sent (Plug p, int bufsize)
     plug_sent(ps->plug, bufsize);
 }
 
-static int plug_proxy_accepting(Plug p,
+static int plug_proxy_accepting(Plug *p,
                                 accept_fn_t constructor, accept_ctx_t ctx)
 {
     ProxySocket *ps = FROMFIELD(p, ProxySocket, plugvt);
@@ -263,7 +263,7 @@ static int plug_proxy_accepting(Plug p,
  * This function can accept a NULL pointer as `addr', in which case
  * it will only check the host name.
  */
-int proxy_for_destination (SockAddr addr, const char *hostname,
+int proxy_for_destination (SockAddr *addr, const char *hostname,
                            int port, Conf *conf)
 {
     int s = 0, e = 0;
@@ -367,7 +367,7 @@ static char *dns_log_msg(const char *host, int addressfamily,
                       ""), reason);
 }
 
-SockAddr name_lookup(const char *host, int port, char **canonicalname,
+SockAddr *name_lookup(const char *host, int port, char **canonicalname,
                      Conf *conf, int addressfamily, Frontend *frontend,
                      const char *reason)
 {
@@ -416,19 +416,19 @@ static const struct Plug_vtable ProxySocket_plugvt = {
     plug_proxy_accepting
 };
 
-Socket new_connection(SockAddr addr, const char *hostname,
-		      int port, int privport,
-		      int oobinline, int nodelay, int keepalive,
-		      Plug plug, Conf *conf)
+Socket *new_connection(SockAddr *addr, const char *hostname,
+                       int port, int privport,
+                       int oobinline, int nodelay, int keepalive,
+                       Plug *plug, Conf *conf)
 {
     if (conf_get_int(conf, CONF_proxy_type) != PROXY_NONE &&
 	proxy_for_destination(addr, hostname, port, conf))
     {
 	ProxySocket *ret;
-	SockAddr proxy_addr;
+	SockAddr *proxy_addr;
 	char *proxy_canonical_name;
         const char *proxy_type;
-	Socket sret;
+	Socket *sret;
 	int type;
 
 	if ((sret = platform_new_connection(addr, hostname, port, privport,
@@ -536,8 +536,8 @@ Socket new_connection(SockAddr addr, const char *hostname,
     return sk_new(addr, port, privport, oobinline, nodelay, keepalive, plug);
 }
 
-Socket new_listener(const char *srcaddr, int port, Plug plug,
-                    int local_host_only, Conf *conf, int addressfamily)
+Socket *new_listener(const char *srcaddr, int port, Plug *plug,
+                     int local_host_only, Conf *conf, int addressfamily)
 {
     /* TODO: SOCKS (and potentially others) support inbound
      * TODO: connections via the proxy. support them.
@@ -1278,7 +1278,7 @@ int proxy_socks5_negotiate (ProxySocket *p, int change)
  * standardised or at all well-defined.)
  */
 
-char *format_telnet_command(SockAddr addr, int port, Conf *conf)
+char *format_telnet_command(SockAddr *addr, int port, Conf *conf)
 {
     char *fmt = conf_get_str(conf, CONF_proxy_telnet_command);
     char *ret = NULL;

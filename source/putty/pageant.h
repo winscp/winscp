@@ -84,8 +84,8 @@ void keylist_update(void);
  * to.
  */
 struct pageant_listen_state;
-struct pageant_listen_state *pageant_listener_new(Plug *plug);
-void pageant_listener_got_socket(struct pageant_listen_state *pl, Socket sock);
+struct pageant_listen_state *pageant_listener_new(Plug **plug);
+void pageant_listener_got_socket(struct pageant_listen_state *pl, Socket *);
 void pageant_listener_set_logfn(struct pageant_listen_state *pl,
                                 void *logctx, pageant_logfn_t logfn);
 void pageant_listener_free(struct pageant_listen_state *pl);

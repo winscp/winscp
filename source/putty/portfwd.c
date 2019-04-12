@@ -38,7 +38,7 @@ typedef struct PortForwarding {
     SshChannel *c;         /* channel structure held by SSH connection layer */
     ConnectionLayer *cl;   /* the connection layer itself */
     /* Note that ssh need not be filled in if c is non-NULL */
-    Socket s;
+    Socket *s;
     int input_wanted;
     int ready;
     SocksState socks_state;
@@ -62,7 +62,7 @@ typedef struct PortForwarding {
 
 struct PortListener {
     ConnectionLayer *cl;
-    Socket s;
+    Socket *s;
     int is_dynamic;
     /*
      * `hostname' and `port' are the real hostname and port, for
@@ -107,13 +107,13 @@ static void free_portlistener_state(struct PortListener *pl)
     sfree(pl);
 }
 
-static void pfd_log(Plug plug, int type, SockAddr addr, int port,
+static void pfd_log(Plug *plug, int type, SockAddr *addr, int port,
 		    const char *error_msg, int error_code)
 {
     /* we have to dump these since we have no interface to logging.c */
 }
 
-static void pfl_log(Plug plug, int type, SockAddr addr, int port,
+static void pfl_log(Plug *plug, int type, SockAddr *addr, int port,
 		    const char *error_msg, int error_code)
 {
     /* we have to dump these since we have no interface to logging.c */
@@ -121,7 +121,7 @@ static void pfl_log(Plug plug, int type, SockAddr addr, int port,
 
 static void pfd_close(struct PortForwarding *pf);
 
-static void pfd_closing(Plug plug, const char *error_msg, int error_code,
+static void pfd_closing(Plug *plug, const char *error_msg, int error_code,
 			int calling_back)
 {
     struct PortForwarding *pf = FROMFIELD(plug, struct PortForwarding, plugvt);
@@ -153,7 +153,7 @@ static void pfd_closing(Plug plug, const char *error_msg, int error_code,
 
 static void pfl_terminate(struct PortListener *pl);
 
-static void pfl_closing(Plug plug, const char *error_msg, int error_code,
+static void pfl_closing(Plug *plug, const char *error_msg, int error_code,
 			int calling_back)
 {
     struct PortListener *pl = (struct PortListener *) plug;
@@ -162,7 +162,7 @@ static void pfl_closing(Plug plug, const char *error_msg, int error_code,
 
 static SshChannel *wrap_lportfwd_open(
     ConnectionLayer *cl, const char *hostname, int port,
-    Socket s, Channel *chan)
+    Socket *s, Channel *chan)
 {
     char *peerinfo, *description;
     SshChannel *toret;
@@ -203,7 +203,7 @@ static char *ipv6_to_string(ptrlen ipv6)
                      (unsigned)GET_16BIT_MSB_FIRST(addr + 14));
 }
 
-static void pfd_receive(Plug plug, int urgent, char *data, int len)
+static void pfd_receive(Plug *plug, int urgent, char *data, int len)
 {
     struct PortForwarding *pf = FROMFIELD(plug, struct PortForwarding, plugvt);
 
@@ -427,7 +427,7 @@ static void pfd_receive(Plug plug, int urgent, char *data, int len)
         sshfwd_write(pf->c, data, len);
 }
 
-static void pfd_sent(Plug plug, int bufsize)
+static void pfd_sent(Plug *plug, int bufsize)
 {
     struct PortForwarding *pf = FROMFIELD(plug, struct PortForwarding, plugvt);
 
@@ -466,11 +466,11 @@ static const struct ChannelVtable PortForwarding_channelvt = {
  called when someone connects to the local port
  */
 
-static int pfl_accepting(Plug p, accept_fn_t constructor, accept_ctx_t ctx)
+static int pfl_accepting(Plug *p, accept_fn_t constructor, accept_ctx_t ctx)
 {
     struct PortForwarding *pf;
     struct PortListener *pl;
-    Socket s;
+    Socket *s;
     const char *err;
 
     pl = FROMFIELD(p, struct PortListener, plugvt);
@@ -1020,7 +1020,7 @@ char *portfwdmgr_connect(PortFwdManager *mgr, Channel **chan_ret,
                          char *hostname, int port, SshChannel *c,
                          int addressfamily)
 {
-    SockAddr addr;
+    SockAddr *addr;
     const char *err;
     char *dummy_realhost = NULL;
     struct PortForwarding *pf;

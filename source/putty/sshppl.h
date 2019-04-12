@@ -54,7 +54,7 @@ struct PacketProtocolLayer {
 
     /* Logging and error-reporting facilities. */
     void *frontend;               /* for logevent, dialog boxes etc */
-    Ssh ssh;   /* for session termination + assorted connection-layer ops */
+    Ssh *ssh;   /* for session termination + assorted connection-layer ops */
 
     /* Known bugs in the remote implementation. */
     unsigned remote_bugs;
@@ -89,7 +89,7 @@ PacketProtocolLayer *ssh1_login_new(
     Conf *conf, const char *host, int port,
     PacketProtocolLayer *successor_layer);
 PacketProtocolLayer *ssh1_connection_new(
-    Ssh ssh, Conf *conf, ConnectionLayer **cl_out);
+    Ssh *ssh, Conf *conf, ConnectionLayer **cl_out);
 
 struct DataTransferStats;
 struct ssh_connection_shared_gss_state;
@@ -108,7 +108,7 @@ PacketProtocolLayer *ssh2_userauth_new(
     int try_gssapi_auth, int try_gssapi_kex_auth,
     int gssapi_fwd, struct ssh_connection_shared_gss_state *shgss);
 PacketProtocolLayer *ssh2_connection_new(
-    Ssh ssh, ssh_sharing_state *connshare, int is_simple,
+    Ssh *ssh, ssh_sharing_state *connshare, int is_simple,
     Conf *conf, const char *peer_verstring, ConnectionLayer **cl_out);
 
 /* Can't put this in the userauth constructor without having a

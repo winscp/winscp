@@ -13,13 +13,13 @@
 #include "network.h"
 #include "proxy.h"
 
-Socket make_handle_socket(HANDLE send_H, HANDLE recv_H, HANDLE stderr_H,
-                          Plug plug, int overlapped);
+Socket *make_handle_socket(HANDLE send_H, HANDLE recv_H, HANDLE stderr_H,
+                           Plug *plug, int overlapped);
 
-Socket platform_new_connection(SockAddr addr, const char *hostname,
-			       int port, int privport,
-			       int oobinline, int nodelay, int keepalive,
-			       Plug plug, Conf *conf)
+Socket *platform_new_connection(SockAddr *addr, const char *hostname,
+                                int port, int privport,
+                                int oobinline, int nodelay, int keepalive,
+                                Plug *plug, Conf *conf)
 {
     char *cmd;
     HANDLE us_to_cmd, cmd_from_us;
@@ -51,14 +51,14 @@ Socket platform_new_connection(SockAddr addr, const char *hostname,
     sa.lpSecurityDescriptor = NULL;    /* default */
     sa.bInheritHandle = TRUE;
     if (!CreatePipe(&us_from_cmd, &cmd_to_us, &sa, 0)) {
-	Socket ret =
+	Socket *ret =
             new_error_socket("Unable to create pipes for proxy command", plug);
         sfree(cmd);
 	return ret;
     }
 
     if (!CreatePipe(&cmd_from_us, &us_to_cmd, &sa, 0)) {
-	Socket ret =
+	Socket *ret =
             new_error_socket("Unable to create pipes for proxy command", plug);
         sfree(cmd);
 	CloseHandle(us_from_cmd);
@@ -67,7 +67,7 @@ Socket platform_new_connection(SockAddr addr, const char *hostname,
     }
 
     if (!CreatePipe(&us_from_cmd_err, &cmd_err_to_us, &sa, 0)) {
-        Socket ret = new_error_socket
+        Socket *ret = new_error_socket
             ("Unable to create pipes for proxy command", plug);
         sfree(cmd);
         CloseHandle(us_from_cmd);
