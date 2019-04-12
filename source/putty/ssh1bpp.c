@@ -55,7 +55,7 @@ BinaryPacketProtocol *ssh1_bpp_new(Frontend *frontend)
 
 static void ssh1_bpp_free(BinaryPacketProtocol *bpp)
 {
-    struct ssh1_bpp_state *s = FROMFIELD(bpp, struct ssh1_bpp_state, bpp);
+    struct ssh1_bpp_state *s = container_of(bpp, struct ssh1_bpp_state, bpp);
     if (s->cipher)
         ssh1_cipher_free(s->cipher);
     if (s->compctx)
@@ -74,7 +74,7 @@ void ssh1_bpp_new_cipher(BinaryPacketProtocol *bpp,
 {
     struct ssh1_bpp_state *s;
     assert(bpp->vt == &ssh1_bpp_vtable);
-    s = FROMFIELD(bpp, struct ssh1_bpp_state, bpp);
+    s = container_of(bpp, struct ssh1_bpp_state, bpp);
 
     assert(!s->cipher);
 
@@ -98,7 +98,7 @@ void ssh1_bpp_new_cipher(BinaryPacketProtocol *bpp,
 
 static void ssh1_bpp_handle_input(BinaryPacketProtocol *bpp)
 {
-    struct ssh1_bpp_state *s = FROMFIELD(bpp, struct ssh1_bpp_state, bpp);
+    struct ssh1_bpp_state *s = container_of(bpp, struct ssh1_bpp_state, bpp);
 
     crBegin(s->crState);
 
@@ -315,7 +315,7 @@ static void ssh1_bpp_format_packet(struct ssh1_bpp_state *s, PktOut *pkt)
 
 static void ssh1_bpp_handle_output(BinaryPacketProtocol *bpp)
 {
-    struct ssh1_bpp_state *s = FROMFIELD(bpp, struct ssh1_bpp_state, bpp);
+    struct ssh1_bpp_state *s = container_of(bpp, struct ssh1_bpp_state, bpp);
     PktOut *pkt;
 
     if (s->pending_compression_request) {

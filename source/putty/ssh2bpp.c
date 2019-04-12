@@ -65,7 +65,7 @@ BinaryPacketProtocol *ssh2_bpp_new(
 
 static void ssh2_bpp_free(BinaryPacketProtocol *bpp)
 {
-    struct ssh2_bpp_state *s = FROMFIELD(bpp, struct ssh2_bpp_state, bpp);
+    struct ssh2_bpp_state *s = container_of(bpp, struct ssh2_bpp_state, bpp);
     sfree(s->buf);
     if (s->out.cipher)
         ssh2_cipher_free(s->out.cipher);
@@ -91,7 +91,7 @@ void ssh2_bpp_new_outgoing_crypto(
 {
     struct ssh2_bpp_state *s;
     assert(bpp->vt == &ssh2_bpp_vtable);
-    s = FROMFIELD(bpp, struct ssh2_bpp_state, bpp);
+    s = container_of(bpp, struct ssh2_bpp_state, bpp);
 
     if (s->out.cipher)
         ssh2_cipher_free(s->out.cipher);
@@ -134,7 +134,7 @@ void ssh2_bpp_new_incoming_crypto(
 {
     struct ssh2_bpp_state *s;
     assert(bpp->vt == &ssh2_bpp_vtable);
-    s = FROMFIELD(bpp, struct ssh2_bpp_state, bpp);
+    s = container_of(bpp, struct ssh2_bpp_state, bpp);
 
     if (s->in.cipher)
         ssh2_cipher_free(s->in.cipher);
@@ -179,7 +179,7 @@ void ssh2_bpp_new_incoming_crypto(
 
 static void ssh2_bpp_handle_input(BinaryPacketProtocol *bpp)
 {
-    struct ssh2_bpp_state *s = FROMFIELD(bpp, struct ssh2_bpp_state, bpp);
+    struct ssh2_bpp_state *s = container_of(bpp, struct ssh2_bpp_state, bpp);
 
     crBegin(s->crState);
 
@@ -702,7 +702,7 @@ static void ssh2_bpp_format_packet(struct ssh2_bpp_state *s, PktOut *pkt)
 
 static void ssh2_bpp_handle_output(BinaryPacketProtocol *bpp)
 {
-    struct ssh2_bpp_state *s = FROMFIELD(bpp, struct ssh2_bpp_state, bpp);
+    struct ssh2_bpp_state *s = container_of(bpp, struct ssh2_bpp_state, bpp);
     PktOut *pkt;
 
     if (s->cbc_ignore_workaround) {

@@ -409,7 +409,7 @@ PacketProtocolLayer *ssh2_connection_new(
 static void ssh2_connection_free(PacketProtocolLayer *ppl)
 {
     struct ssh2_connection_state *s =
-        FROMFIELD(ppl, struct ssh2_connection_state, ppl);
+        container_of(ppl, struct ssh2_connection_state, ppl);
     struct X11FakeAuth *auth;
     struct ssh2_channel *c;
     struct ssh_rportfwd *rpf;
@@ -1155,7 +1155,7 @@ static PktIn *ssh2_connection_pop(struct ssh2_connection_state *s)
 static void ssh2_connection_process_queue(PacketProtocolLayer *ppl)
 {
     struct ssh2_connection_state *s =
-        FROMFIELD(ppl, struct ssh2_connection_state, ppl);
+        container_of(ppl, struct ssh2_connection_state, ppl);
     PktIn *pktin;
     PktOut *pktout;
 
@@ -1200,7 +1200,7 @@ static void ssh2_connection_process_queue(PacketProtocolLayer *ppl)
                 &s->cl, conf_get_str(s->conf, CONF_ssh_nc_host),
                 conf_get_int(s->conf, CONF_ssh_nc_port),
                 "main channel", &mc->chan);
-            s->mainchan = FROMFIELD(mc->sc, struct ssh2_channel, sc);
+            s->mainchan = container_of(mc->sc, struct ssh2_channel, sc);
             break;
 	}
 
@@ -1867,14 +1867,14 @@ static PktOut *ssh2_chanreq_init(struct ssh2_channel *c, const char *type,
 
 static Conf *ssh2channel_get_conf(SshChannel *sc)
 {
-    struct ssh2_channel *c = FROMFIELD(sc, struct ssh2_channel, sc);
+    struct ssh2_channel *c = container_of(sc, struct ssh2_channel, sc);
     struct ssh2_connection_state *s = c->connlayer;
     return s->conf;
 }
 
 static void ssh2channel_write_eof(SshChannel *sc)
 {
-    struct ssh2_channel *c = FROMFIELD(sc, struct ssh2_channel, sc);
+    struct ssh2_channel *c = container_of(sc, struct ssh2_channel, sc);
 
     if (c->closes & CLOSES_SENT_EOF)
         return;
@@ -1885,7 +1885,7 @@ static void ssh2channel_write_eof(SshChannel *sc)
 
 static void ssh2channel_unclean_close(SshChannel *sc, const char *err)
 {
-    struct ssh2_channel *c = FROMFIELD(sc, struct ssh2_channel, sc);
+    struct ssh2_channel *c = container_of(sc, struct ssh2_channel, sc);
     char *reason;
 
     reason = dupprintf("due to local error: %s", err);
@@ -1898,7 +1898,7 @@ static void ssh2channel_unclean_close(SshChannel *sc, const char *err)
 
 static void ssh2channel_unthrottle(SshChannel *sc, int bufsize)
 {
-    struct ssh2_channel *c = FROMFIELD(sc, struct ssh2_channel, sc);
+    struct ssh2_channel *c = container_of(sc, struct ssh2_channel, sc);
     struct ssh2_connection_state *s = c->connlayer;
     int buflimit;
 
@@ -1914,7 +1914,7 @@ static void ssh2channel_unthrottle(SshChannel *sc, int bufsize)
 
 static int ssh2channel_write(SshChannel *sc, const void *buf, int len)
 {
-    struct ssh2_channel *c = FROMFIELD(sc, struct ssh2_channel, sc);
+    struct ssh2_channel *c = container_of(sc, struct ssh2_channel, sc);
     assert(!(c->closes & CLOSES_SENT_EOF));
     bufchain_add(&c->outbuffer, buf, len);
     return ssh2_try_send(c);
@@ -1925,7 +1925,7 @@ static void ssh2channel_x11_sharing_handover(
     const char *peer_addr, int peer_port, int endian,
     int protomajor, int protominor, const void *initial_data, int initial_len)
 {
-    struct ssh2_channel *c = FROMFIELD(sc, struct ssh2_channel, sc);
+    struct ssh2_channel *c = container_of(sc, struct ssh2_channel, sc);
     /*
      * This function is called when we've just discovered that an X
      * forwarding channel on which we'd been handling the initial auth
@@ -1947,7 +1947,7 @@ static void ssh2channel_x11_sharing_handover(
 
 static void ssh2channel_window_override_removed(SshChannel *sc)
 {
-    struct ssh2_channel *c = FROMFIELD(sc, struct ssh2_channel, sc);
+    struct ssh2_channel *c = container_of(sc, struct ssh2_channel, sc);
     struct ssh2_connection_state *s = c->connlayer;
 
     /*
@@ -1963,7 +1963,7 @@ static SshChannel *ssh2_lportfwd_open(
     const char *org, Channel *chan)
 {
     struct ssh2_connection_state *s =
-        FROMFIELD(cl, struct ssh2_connection_state, cl);
+        container_of(cl, struct ssh2_connection_state, cl);
     PacketProtocolLayer *ppl = &s->ppl; /* for ppl_logevent */
     struct ssh2_channel *c = snew(struct ssh2_channel);
     PktOut *pktout;
@@ -2026,7 +2026,7 @@ static struct ssh_rportfwd *ssh2_rportfwd_alloc(
     ssh_sharing_connstate *share_ctx)
 {
     struct ssh2_connection_state *s =
-        FROMFIELD(cl, struct ssh2_connection_state, cl);
+        container_of(cl, struct ssh2_connection_state, cl);
     struct ssh_rportfwd *rpf = snew(struct ssh_rportfwd);
 
     rpf->shost = dupstr(shost);
@@ -2062,7 +2062,7 @@ static struct ssh_rportfwd *ssh2_rportfwd_alloc(
 static void ssh2_rportfwd_remove(ConnectionLayer *cl, struct ssh_rportfwd *rpf)
 {
     struct ssh2_connection_state *s =
-        FROMFIELD(cl, struct ssh2_connection_state, cl);
+        container_of(cl, struct ssh2_connection_state, cl);
 
     if (rpf->share_ctx) {
         /*
@@ -2101,14 +2101,14 @@ static void ssh2_sharing_queue_global_request(
     ConnectionLayer *cl, ssh_sharing_connstate *cs)
 {
     struct ssh2_connection_state *s =
-        FROMFIELD(cl, struct ssh2_connection_state, cl);
+        container_of(cl, struct ssh2_connection_state, cl);
     ssh2_queue_global_request_handler(s, ssh2_sharing_globreq_response, cs);
 }
 
 static void ssh2_sharing_no_more_downstreams(ConnectionLayer *cl)
 {
     struct ssh2_connection_state *s =
-        FROMFIELD(cl, struct ssh2_connection_state, cl);
+        container_of(cl, struct ssh2_connection_state, cl);
     queue_toplevel_callback(get_frontend_callback_set(cl->frontend), ssh2_check_termination_callback, s);
 }
 
@@ -2117,7 +2117,7 @@ static struct X11FakeAuth *ssh2_add_sharing_x11_display(
     share_channel *share_chan)
 {
     struct ssh2_connection_state *s =
-        FROMFIELD(cl, struct ssh2_connection_state, cl);
+        container_of(cl, struct ssh2_connection_state, cl);
     struct X11FakeAuth *auth;
 
     /*
@@ -2136,7 +2136,7 @@ static void ssh2_remove_sharing_x11_display(
     ConnectionLayer *cl, struct X11FakeAuth *auth)
 {
     struct ssh2_connection_state *s =
-        FROMFIELD(cl, struct ssh2_connection_state, cl);
+        container_of(cl, struct ssh2_connection_state, cl);
     del234(s->x11authtree, auth);
     x11_free_fake_auth(auth);
 }
@@ -2145,7 +2145,7 @@ static unsigned ssh2_alloc_sharing_channel(
     ConnectionLayer *cl, ssh_sharing_connstate *connstate)
 {
     struct ssh2_connection_state *s =
-        FROMFIELD(cl, struct ssh2_connection_state, cl);
+        container_of(cl, struct ssh2_connection_state, cl);
     struct ssh2_channel *c = snew(struct ssh2_channel);
 
     c->connlayer = s;
@@ -2158,7 +2158,7 @@ static unsigned ssh2_alloc_sharing_channel(
 static void ssh2_delete_sharing_channel(ConnectionLayer *cl, unsigned localid)
 {
     struct ssh2_connection_state *s =
-        FROMFIELD(cl, struct ssh2_connection_state, cl);
+        container_of(cl, struct ssh2_connection_state, cl);
     struct ssh2_channel *c = find234(s->channels, &localid, ssh2_channelfind);
     if (c)
         ssh2_channel_destroy(c);
@@ -2169,7 +2169,7 @@ static void ssh2_send_packet_from_downstream(
         const void *data, int datalen, const char *additional_log_text)
 {
     struct ssh2_connection_state *s =
-        FROMFIELD(cl, struct ssh2_connection_state, cl);
+        container_of(cl, struct ssh2_connection_state, cl);
     PktOut *pkt = ssh_bpp_new_pktout(s->ppl.bpp, type);
     pkt->downstream_id = id;
     pkt->additional_log_text = additional_log_text;
@@ -2180,7 +2180,7 @@ static void ssh2_send_packet_from_downstream(
 static int ssh2_agent_forwarding_permitted(ConnectionLayer *cl)
 {
     struct ssh2_connection_state *s =
-        FROMFIELD(cl, struct ssh2_connection_state, cl);
+        container_of(cl, struct ssh2_connection_state, cl);
     return conf_get_int(s->conf, CONF_agentfwd) && agent_exists();
 }
 
@@ -2216,7 +2216,7 @@ static mainchan *mainchan_new(struct ssh2_connection_state *s)
 static void mainchan_free(Channel *chan)
 {
     pinitassert(chan->vt == &mainchan_channelvt);
-    mainchan *mc = FROMFIELD(chan, mainchan, chan);
+    mainchan *mc = container_of(chan, mainchan, chan);
     struct ssh2_connection_state *s = mc->connlayer;
     s->mainchan = NULL;
     sfree(mc);
@@ -2224,7 +2224,7 @@ static void mainchan_free(Channel *chan)
 
 static void mainchan_open_confirmation(Channel *chan)
 {
-    mainchan *mc = FROMFIELD(chan, mainchan, chan);
+    mainchan *mc = container_of(chan, mainchan, chan);
     struct ssh2_connection_state *s = mc->connlayer;
     PacketProtocolLayer *ppl = &s->ppl; /* for ppl_logevent */
 
@@ -2235,7 +2235,7 @@ static void mainchan_open_confirmation(Channel *chan)
 static void mainchan_open_failure(Channel *chan, const char *errtext)
 {
     pinitassert(chan->vt == &mainchan_channelvt);
-    mainchan *mc = FROMFIELD(chan, mainchan, chan);
+    mainchan *mc = container_of(chan, mainchan, chan);
     struct ssh2_connection_state *s = mc->connlayer;
 
     /*
@@ -2250,7 +2250,7 @@ static int mainchan_send(Channel *chan, int is_stderr,
                          const void *data, int length)
 {
     pinitassert(chan->vt == &mainchan_channelvt);
-    mainchan *mc = FROMFIELD(chan, mainchan, chan);
+    mainchan *mc = container_of(chan, mainchan, chan);
     struct ssh2_connection_state *s = mc->connlayer;
     return from_backend(s->ppl.frontend, is_stderr, data, length);
 }
@@ -2258,7 +2258,7 @@ static int mainchan_send(Channel *chan, int is_stderr,
 static void mainchan_send_eof(Channel *chan)
 {
     pinitassert(chan->vt == &mainchan_channelvt);
-    mainchan *mc = FROMFIELD(chan, mainchan, chan);
+    mainchan *mc = container_of(chan, mainchan, chan);
     struct ssh2_connection_state *s = mc->connlayer;
     PacketProtocolLayer *ppl = &s->ppl; /* for ppl_logevent */
 
@@ -2281,7 +2281,7 @@ static void mainchan_send_eof(Channel *chan)
 static void mainchan_set_input_wanted(Channel *chan, int wanted)
 {
     pinitassert(chan->vt == &mainchan_channelvt);
-    mainchan *mc = FROMFIELD(chan, mainchan, chan);
+    mainchan *mc = container_of(chan, mainchan, chan);
     struct ssh2_connection_state *s = mc->connlayer;
 
     /*
@@ -2327,7 +2327,7 @@ static int ssh2_connection_get_specials(
     PacketProtocolLayer *ppl, add_special_fn_t add_special, void *ctx)
 {
     struct ssh2_connection_state *s =
-        FROMFIELD(ppl, struct ssh2_connection_state, ppl);
+        container_of(ppl, struct ssh2_connection_state, ppl);
     int toret = FALSE;
 
     if (s->mainchan) {
@@ -2387,7 +2387,7 @@ static void ssh2_connection_special_cmd(PacketProtocolLayer *ppl,
                                         SessionSpecialCode code, int arg)
 {
     struct ssh2_connection_state *s =
-        FROMFIELD(ppl, struct ssh2_connection_state, ppl);
+        container_of(ppl, struct ssh2_connection_state, ppl);
     PktOut *pktout;
     const char *signame;
 
@@ -2427,7 +2427,7 @@ static void ssh2_connection_special_cmd(PacketProtocolLayer *ppl,
 static void ssh2_terminal_size(ConnectionLayer *cl, int width, int height)
 {
     struct ssh2_connection_state *s =
-        FROMFIELD(cl, struct ssh2_connection_state, cl);
+        container_of(cl, struct ssh2_connection_state, cl);
 
     s->term_width = width;
     s->term_height = height;
@@ -2446,7 +2446,7 @@ static void ssh2_terminal_size(ConnectionLayer *cl, int width, int height)
 static void ssh2_stdout_unthrottle(ConnectionLayer *cl, int bufsize)
 {
     struct ssh2_connection_state *s =
-        FROMFIELD(cl, struct ssh2_connection_state, cl);
+        container_of(cl, struct ssh2_connection_state, cl);
 
     if (s->mainchan)
         ssh2channel_unthrottle(&s->mainchan->sc, bufsize);
@@ -2455,7 +2455,7 @@ static void ssh2_stdout_unthrottle(ConnectionLayer *cl, int bufsize)
 static int ssh2_stdin_backlog(ConnectionLayer *cl)
 {
     struct ssh2_connection_state *s =
-        FROMFIELD(cl, struct ssh2_connection_state, cl);
+        container_of(cl, struct ssh2_connection_state, cl);
 
     return s->mainchan ? bufchain_size(&s->mainchan->outbuffer) : 0;
 }
@@ -2463,7 +2463,7 @@ static int ssh2_stdin_backlog(ConnectionLayer *cl)
 static void ssh2_throttle_all_channels(ConnectionLayer *cl, int throttled)
 {
     struct ssh2_connection_state *s =
-        FROMFIELD(cl, struct ssh2_connection_state, cl);
+        container_of(cl, struct ssh2_connection_state, cl);
     struct ssh2_channel *c;
     int i;
 
@@ -2476,7 +2476,7 @@ static void ssh2_throttle_all_channels(ConnectionLayer *cl, int throttled)
 static int ssh2_ldisc_option(ConnectionLayer *cl, int option)
 {
     struct ssh2_connection_state *s =
-        FROMFIELD(cl, struct ssh2_connection_state, cl);
+        container_of(cl, struct ssh2_connection_state, cl);
 
     /* We always return the same value for LD_ECHO and LD_EDIT */
     return s->echoedit;
@@ -2485,14 +2485,14 @@ static int ssh2_ldisc_option(ConnectionLayer *cl, int option)
 static int ssh2_connection_want_user_input(PacketProtocolLayer *ppl)
 {
     struct ssh2_connection_state *s =
-        FROMFIELD(ppl, struct ssh2_connection_state, ppl);
+        container_of(ppl, struct ssh2_connection_state, ppl);
     return s->mainchan_ready && s->want_user_input;
 }
 
 static void ssh2_connection_got_user_input(PacketProtocolLayer *ppl)
 {
     struct ssh2_connection_state *s =
-        FROMFIELD(ppl, struct ssh2_connection_state, ppl);
+        container_of(ppl, struct ssh2_connection_state, ppl);
 
     while (s->mainchan && bufchain_size(s->ppl.user_input) > 0) {
         /*
@@ -2509,7 +2509,7 @@ static void ssh2_connection_got_user_input(PacketProtocolLayer *ppl)
 static void ssh2_connection_reconfigure(PacketProtocolLayer *ppl, Conf *conf)
 {
     struct ssh2_connection_state *s =
-        FROMFIELD(ppl, struct ssh2_connection_state, ppl);
+        container_of(ppl, struct ssh2_connection_state, ppl);
 
     conf_free(s->conf);
     s->conf = conf_copy(conf);

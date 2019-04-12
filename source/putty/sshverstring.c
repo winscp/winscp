@@ -108,7 +108,7 @@ BinaryPacketProtocol *ssh_verstring_new(
 void ssh_verstring_free(BinaryPacketProtocol *bpp)
 {
     struct ssh_verstring_state *s =
-        FROMFIELD(bpp, struct ssh_verstring_state, bpp);
+        container_of(bpp, struct ssh_verstring_state, bpp);
     conf_free(s->conf);
     sfree(s->vstring);
     sfree(s->protoversion);
@@ -214,7 +214,7 @@ static void ssh_verstring_send(struct ssh_verstring_state *s)
 void ssh_verstring_handle_input(BinaryPacketProtocol *bpp)
 {
     struct ssh_verstring_state *s =
-        FROMFIELD(bpp, struct ssh_verstring_state, bpp);
+        container_of(bpp, struct ssh_verstring_state, bpp);
 
     crBegin(s->crState);
 
@@ -605,21 +605,21 @@ static void ssh_detect_bugs(struct ssh_verstring_state *s)
 const char *ssh_verstring_get_remote(BinaryPacketProtocol *bpp)
 {
     struct ssh_verstring_state *s =
-        FROMFIELD(bpp, struct ssh_verstring_state, bpp);
+        container_of(bpp, struct ssh_verstring_state, bpp);
     return s->vstring;
 }
 
 const char *ssh_verstring_get_local(BinaryPacketProtocol *bpp)
 {
     struct ssh_verstring_state *s =
-        FROMFIELD(bpp, struct ssh_verstring_state, bpp);
+        container_of(bpp, struct ssh_verstring_state, bpp);
     return s->our_vstring;
 }
 
 int ssh_verstring_get_bugs(BinaryPacketProtocol *bpp)
 {
     struct ssh_verstring_state *s =
-        FROMFIELD(bpp, struct ssh_verstring_state, bpp);
+        container_of(bpp, struct ssh_verstring_state, bpp);
     return s->remote_bugs;
 }
 

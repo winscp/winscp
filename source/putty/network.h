@@ -15,7 +15,14 @@
 
 #include "defs.h"
 
-struct Socket_vtable {
+typedef struct SocketVtable SocketVtable;
+typedef struct PlugVtable PlugVtable;
+
+struct Socket {
+    const struct SocketVtable *vt;
+};
+
+struct SocketVtable {
     Plug *(*plug) (Socket *s, Plug *p);
     /* use a different plug (return the old one) */
     /* if p is NULL, it doesn't change the plug */
@@ -34,7 +41,11 @@ struct Socket_vtable {
 typedef union { void *p; int i; } accept_ctx_t;
 typedef Socket *(*accept_fn_t)(accept_ctx_t ctx, Plug *plug);
 
-struct Plug_vtable {
+struct Plug {
+    const struct PlugVtable *vt;
+};
+
+struct PlugVtable {
     void (*log)(Plug *p, int type, SockAddr *addr, int port,
 		const char *error_msg, int error_code);
     /*
@@ -148,20 +159,23 @@ Socket *sk_new(SockAddr *addr, int port, int privport, int oobinline,
 Socket *sk_newlistener(const char *srcaddr, int port, Plug *plug,
                        int local_host_only, int address_family);
 
-#define sk_plug(s,p) (((*s)->plug) (s, p))
-#define sk_close(s) (((*s)->close) (s))
-#define sk_write(s,buf,len) (((*s)->write) (s, buf, len))
-#define sk_write_oob(s,buf,len) (((*s)->write_oob) (s, buf, len))
-#define sk_write_eof(s) (((*s)->write_eof) (s))
-#define sk_flush(s) (((*s)->flush) (s))
+#define sk_plug(s,p) (((s)->vt->plug) (s, p))
+#define sk_close(s) (((s)->vt->close) (s))
+#define sk_write(s,buf,len) (((s)->vt->write) (s, buf, len))
+#define sk_write_oob(s,buf,len) (((s)->vt->write_oob) (s, buf, len))
+#define sk_write_eof(s) (((s)->vt->write_eof) (s))
+#define sk_flush(s) (((s)->vt->flush) (s))
 
-#ifdef DEFINE_PLUG_METHOD_MACROS
-#define plug_log(p,type,addr,port,msg,code) (((*p)->log) (p, type, addr, port, msg, code))
-#define plug_closing(p,msg,code,callback) (((*p)->closing) (p, msg, code, callback))
-#define plug_receive(p,urgent,buf,len) (((*p)->receive) (p, urgent, buf, len))
-#define plug_sent(p,bufsize) (((*p)->sent) (p, bufsize))
-#define plug_accepting(p, constructor, ctx) (((*p)->accepting)(p, constructor, ctx))
-#endif
+#define plug_log(p,type,addr,port,msg,code) \
+    (((p)->vt->log) (p, type, addr, port, msg, code))
+#define plug_closing(p,msg,code,callback) \
+    (((p)->vt->closing) (p, msg, code, callback))
+#define plug_receive(p,urgent,buf,len) \
+    (((p)->vt->receive) (p, urgent, buf, len))
+#define plug_sent(p,bufsize) \
+    (((p)->vt->sent) (p, bufsize))
+#define plug_accepting(p, constructor, ctx) \
+    (((p)->vt->accepting)(p, constructor, ctx))
 
 /*
  * Special error values are returned from sk_namelookup and sk_new
@@ -169,7 +183,7 @@ Socket *sk_newlistener(const char *srcaddr, int port, Plug *plug,
  * or return NULL if there's no problem.
  */
 const char *sk_addr_error(SockAddr *addr);
-#define sk_socket_error(s) (((*s)->socket_error) (s))
+#define sk_socket_error(s) (((s)->vt->socket_error) (s))
 
 /*
  * Set the `frozen' flag on a socket. A frozen socket is one in
@@ -188,14 +202,14 @@ const char *sk_addr_error(SockAddr *addr);
  *    associated local socket in order to avoid unbounded buffer
  *    growth.
  */
-#define sk_set_frozen(s, is_frozen) (((*s)->set_frozen) (s, is_frozen))
+#define sk_set_frozen(s, is_frozen) (((s)->vt->set_frozen) (s, is_frozen))
 
 /*
  * Return a (dynamically allocated) string giving some information
  * about the other end of the socket, suitable for putting in log
  * files. May be NULL if nothing is available at all.
  */
-#define sk_peer_info(s) (((*s)->peer_info) (s))
+#define sk_peer_info(s) (((s)->vt->peer_info) (s))
 
 /*
  * Simple wrapper on getservbyname(), needed by ssh.c. Returns the
@@ -221,7 +235,7 @@ Socket *new_error_socket(const char *errmsg, Plug *plug);
 /*
  * Trivial plug that does absolutely nothing. Found in nullplug.c.
  */
-extern Plug *nullplug;
+extern Plug *const nullplug;
 
 /* ----------------------------------------------------------------------
  * Functions defined outside the network code, which have to be

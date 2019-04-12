@@ -99,7 +99,8 @@ PacketProtocolLayer *ssh1_login_new(
 
 static void ssh1_login_free(PacketProtocolLayer *ppl)
 {
-    struct ssh1_login_state *s = FROMFIELD(ppl, struct ssh1_login_state, ppl);
+    struct ssh1_login_state *s =
+        container_of(ppl, struct ssh1_login_state, ppl);
 
     if (s->successor_layer)
         ssh_ppl_free(s->successor_layer);
@@ -166,7 +167,8 @@ static PktIn *ssh1_login_pop(struct ssh1_login_state *s)
 
 static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
 {
-    struct ssh1_login_state *s = FROMFIELD(ppl, struct ssh1_login_state, ppl);
+    struct ssh1_login_state *s =
+        container_of(ppl, struct ssh1_login_state, ppl);
     PktIn *pktin;
     PktOut *pkt;
     int i;
@@ -1172,7 +1174,7 @@ static void ssh1_login_special_cmd(PacketProtocolLayer *ppl,
                                    SessionSpecialCode code, int arg)
 {
     struct ssh1_login_state *s =
-        FROMFIELD(ppl, struct ssh1_login_state, ppl);
+        container_of(ppl, struct ssh1_login_state, ppl);
     PktOut *pktout;
 
     if (code == SS_PING || code == SS_NOP) {
@@ -1187,14 +1189,14 @@ static void ssh1_login_special_cmd(PacketProtocolLayer *ppl,
 static int ssh1_login_want_user_input(PacketProtocolLayer *ppl)
 {
     struct ssh1_login_state *s =
-        FROMFIELD(ppl, struct ssh1_login_state, ppl);
+        container_of(ppl, struct ssh1_login_state, ppl);
     return s->want_user_input;
 }
 
 static void ssh1_login_got_user_input(PacketProtocolLayer *ppl)
 {
     struct ssh1_login_state *s =
-        FROMFIELD(ppl, struct ssh1_login_state, ppl);
+        container_of(ppl, struct ssh1_login_state, ppl);
     if (s->want_user_input)
         queue_idempotent_callback(&s->ppl.ic_process_queue);
 }
@@ -1202,6 +1204,6 @@ static void ssh1_login_got_user_input(PacketProtocolLayer *ppl)
 static void ssh1_login_reconfigure(PacketProtocolLayer *ppl, Conf *conf)
 {
     struct ssh1_login_state *s =
-        FROMFIELD(ppl, struct ssh1_login_state, ppl);
+        container_of(ppl, struct ssh1_login_state, ppl);
     ssh_ppl_reconfigure(s->successor_layer, conf);
 }

@@ -37,7 +37,7 @@ struct Ssh {
     struct ssh_version_receiver version_receiver;
     int remote_bugs;
 
-    const Plug_vtable *plugvt;
+    Plug plug;
     Backend backend;
 
     Ldisc *ldisc;
@@ -141,7 +141,7 @@ static void ssh_connect_ppl(Ssh *ssh, PacketProtocolLayer *ppl)
 static void ssh_got_ssh_version(struct ssh_version_receiver *rcv,
                                 int major_version)
 {
-    Ssh *ssh = FROMFIELD(rcv, Ssh, version_receiver);
+    Ssh *ssh = container_of(rcv, Ssh, version_receiver);
     BinaryPacketProtocol *old_bpp;
     PacketProtocolLayer *connection_layer;
 
@@ -491,7 +491,7 @@ void ssh_user_close(Ssh *ssh, const char *fmt, ...)
 static void ssh_socket_log(Plug *plug, int type, SockAddr *addr, int port,
                            const char *error_msg, int error_code)
 {
-    Ssh *ssh = FROMFIELD(plug, Ssh, plugvt);
+    Ssh *ssh = container_of(plug, Ssh, plug);
 
     /*
      * While we're attempting connection sharing, don't loudly log
@@ -511,7 +511,7 @@ static void ssh_socket_log(Plug *plug, int type, SockAddr *addr, int port,
 static void ssh_closing(Plug *plug, const char *error_msg, int error_code,
 			int calling_back)
 {
-    Ssh *ssh = FROMFIELD(plug, Ssh, plugvt);
+    Ssh *ssh = container_of(plug, Ssh, plug);
     if (error_msg) {
         ssh_remote_error(ssh, "Network error: %s", error_msg);
     } else if (ssh->bpp) {
@@ -522,7 +522,7 @@ static void ssh_closing(Plug *plug, const char *error_msg, int error_code,
 
 static void ssh_receive(Plug *plug, int urgent, char *data, int len)
 {
-    Ssh *ssh = FROMFIELD(plug, Ssh, plugvt);
+    Ssh *ssh = container_of(plug, Ssh, plug);
 
     /* Log raw data, if we're in that mode. */
     if (ssh->logctx)
@@ -536,7 +536,7 @@ static void ssh_receive(Plug *plug, int urgent, char *data, int len)
 
 static void ssh_sent(Plug *plug, int bufsize)
 {
-    Ssh *ssh = FROMFIELD(plug, Ssh, plugvt);
+    Ssh *ssh = container_of(plug, Ssh, plug);
     /*
      * If the send backlog on the SSH socket itself clears, we should
      * unthrottle the whole world if it was throttled. Also trigger an
@@ -601,7 +601,7 @@ static int ssh_test_for_upstream(const char *host, int port, Conf *conf)
     return ret;
 }
 
-static const Plug_vtable Ssh_plugvt = {
+static const PlugVtable Ssh_plugvt = {
     ssh_socket_log,
     ssh_closing,
     ssh_receive,
@@ -626,7 +626,7 @@ static const char *connect_to_host(Ssh *ssh, const char *host, int port,
     ssh_hostport_setup(host, port, ssh->conf,
                        &ssh->savedhost, &ssh->savedport, &loghost);
 
-    ssh->plugvt = &Ssh_plugvt;
+    ssh->plug.vt = &Ssh_plugvt;
     
     #ifdef MPEXT
     // make sure the field is initialized, in case lookup below fails
@@ -646,7 +646,7 @@ static const char *connect_to_host(Ssh *ssh, const char *host, int port,
     ssh->attempting_connshare = TRUE;  /* affects socket logging behaviour */
     ssh->s = ssh_connection_sharing_init(
         ssh->savedhost, ssh->savedport, ssh->conf, ssh->frontend,
-        &ssh->plugvt, &ssh->connshare);
+        &ssh->plug, &ssh->connshare);
     ssh->attempting_connshare = FALSE;
     if (ssh->s != NULL) {
         /*
@@ -684,7 +684,7 @@ static const char *connect_to_host(Ssh *ssh, const char *host, int port,
 
         ssh->s = new_connection(addr, *realhost, port,
                                 0, 1, nodelay, keepalive,
-                                &ssh->plugvt, ssh->conf);
+                                &ssh->plug, ssh->conf);
         if ((err = sk_socket_error(ssh->s)) != NULL) {
             ssh->s = NULL;
             notify_remote_exit(ssh->frontend);
@@ -833,7 +833,7 @@ static const char *ssh_init(Frontend *frontend, Backend **backend_handle,
 
 static void ssh_free(Backend *be)
 {
-    Ssh *ssh = FROMFIELD(be, Ssh, backend);
+    Ssh *ssh = container_of(be, Ssh, backend);
     int need_random_unref;
 
     ssh_shutdown(ssh);
@@ -868,7 +868,7 @@ static void ssh_free(Backend *be)
  */
 static void ssh_reconfig(Backend *be, Conf *conf)
 {
-    Ssh *ssh = FROMFIELD(be, Ssh, backend);
+    Ssh *ssh = container_of(be, Ssh, backend);
 
     if (ssh->pinger)
         pinger_reconfig(ssh->pinger, ssh->conf, conf);
@@ -885,7 +885,7 @@ static void ssh_reconfig(Backend *be, Conf *conf)
  */
 static int ssh_send(Backend *be, const char *buf, int len)
 {
-    Ssh *ssh = FROMFIELD(be, Ssh, backend);
+    Ssh *ssh = container_of(be, Ssh, backend);
 
     if (ssh == NULL || ssh->s == NULL)
 	return 0;
@@ -902,7 +902,7 @@ static int ssh_send(Backend *be, const char *buf, int len)
  */
 static int ssh_sendbuffer(Backend *be)
 {
-    Ssh *ssh = FROMFIELD(be, Ssh, backend);
+    Ssh *ssh = container_of(be, Ssh, backend);
     int backlog;
 
     if (!ssh || !ssh->s || !ssh->cl)
@@ -927,7 +927,7 @@ static int ssh_sendbuffer(Backend *be)
  */
 static void ssh_size(Backend *be, int width, int height)
 {
-    Ssh *ssh = FROMFIELD(be, Ssh, backend);
+    Ssh *ssh = container_of(be, Ssh, backend);
 
     ssh->term_width = width;
     ssh->term_height = height;
@@ -964,7 +964,7 @@ static void ssh_add_special(void *vctx, const char *text,
  */
 static const SessionSpecial *ssh_get_specials(Backend *be)
 {
-    Ssh *ssh = FROMFIELD(be, Ssh, backend);
+    Ssh *ssh = container_of(be, Ssh, backend);
 
     /*
      * Ask all our active protocol layers what specials they've got,
@@ -994,7 +994,7 @@ static const SessionSpecial *ssh_get_specials(Backend *be)
  */
 static void ssh_special(Backend *be, SessionSpecialCode code, int arg)
 {
-    Ssh *ssh = FROMFIELD(be, Ssh, backend);
+    Ssh *ssh = container_of(be, Ssh, backend);
 
     if (ssh->base_layer)
         ssh_ppl_special_cmd(ssh->base_layer, code, arg);
@@ -1006,20 +1006,20 @@ static void ssh_special(Backend *be, SessionSpecialCode code, int arg)
  */
 static void ssh_unthrottle(Backend *be, int bufsize)
 {
-    Ssh *ssh = FROMFIELD(be, Ssh, backend);
+    Ssh *ssh = container_of(be, Ssh, backend);
 
     ssh_stdout_unthrottle(ssh->cl, bufsize);
 }
 
 static int ssh_connected(Backend *be)
 {
-    Ssh *ssh = FROMFIELD(be, Ssh, backend);
+    Ssh *ssh = container_of(be, Ssh, backend);
     return ssh->s != NULL;
 }
 
 static int ssh_sendok(Backend *be)
 {
-    Ssh *ssh = FROMFIELD(be, Ssh, backend);
+    Ssh *ssh = container_of(be, Ssh, backend);
     return ssh->base_layer && ssh_ppl_want_user_input(ssh->base_layer);
 }
 
@@ -1033,19 +1033,19 @@ void ssh_ldisc_update(Ssh *ssh)
 
 static int ssh_ldisc(Backend *be, int option)
 {
-    Ssh *ssh = FROMFIELD(be, Ssh, backend);
+    Ssh *ssh = container_of(be, Ssh, backend);
     return ssh->cl ? ssh_ldisc_option(ssh->cl, option) : FALSE;
 }
 
 static void ssh_provide_ldisc(Backend *be, Ldisc *ldisc)
 {
-    Ssh *ssh = FROMFIELD(be, Ssh, backend);
+    Ssh *ssh = container_of(be, Ssh, backend);
     ssh->ldisc = ldisc;
 }
 
 static void ssh_provide_logctx(Backend *be, LogContext *logctx)
 {
-    Ssh *ssh = FROMFIELD(be, Ssh, backend);
+    Ssh *ssh = container_of(be, Ssh, backend);
     ssh->logctx = logctx;
 }
 
@@ -1056,7 +1056,7 @@ void ssh_got_exitcode(Ssh *ssh, int exitcode)
 
 static int ssh_return_exitcode(Backend *be)
 {
-    Ssh *ssh = FROMFIELD(be, Ssh, backend);
+    Ssh *ssh = container_of(be, Ssh, backend);
     if (ssh->s && (!ssh->session_started || ssh->base_layer))
         return -1;
     else
@@ -1070,7 +1070,7 @@ static int ssh_return_exitcode(Backend *be)
  */
 static int ssh_cfg_info(Backend *be)
 {
-    Ssh *ssh = FROMFIELD(be, Ssh, backend);
+    Ssh *ssh = container_of(be, Ssh, backend);
     if (ssh->version == 0)
 	return 0; /* don't know yet */
     else if (ssh->bare_connection)
@@ -1086,7 +1086,7 @@ static int ssh_cfg_info(Backend *be)
  */
 extern int ssh_fallback_cmd(Backend *be)
 {
-    Ssh *ssh = FROMFIELD(be, Ssh, backend);
+    Ssh *ssh = container_of(be, Ssh, backend);
     return ssh->fallback_cmd;
 }
 
@@ -1095,7 +1095,7 @@ void ssh_got_fallback_cmd(Ssh *ssh)
     ssh->fallback_cmd = TRUE;
 }
 
-const struct Backend_vtable ssh_backend = {
+const struct BackendVtable ssh_backend = {
     ssh_init,
     ssh_free,
     ssh_reconfig,

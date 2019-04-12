@@ -61,8 +61,8 @@ static PacketQueueNode pktin_freeq_head = {
 {
     struct callback_set * set = (struct callback_set *)vctx;
     while (set->pktin_freeq_head->next != set->pktin_freeq_head) {
-        PacketQueueNode *node = set->pktin_freeq_head->next;
-        PktIn *pktin = FROMFIELD(node, PktIn, qnode);
+        PacketQueueNode *node = set->pktin_freeq_head.next;
+        PktIn *pktin = container_of(node, PktIn, qnode);
         set->pktin_freeq_head->next = node->next;
         sfree(pktin);
     }
@@ -113,7 +113,7 @@ static PktIn *pq_in_get(PacketQueueBase *pqb, int pop)
         queue_idempotent_callback(set->ic_pktin_free); // WINSCP
     }
 
-    return FROMFIELD(node, PktIn, qnode);
+    return container_of(node, PktIn, qnode);
 }
 
 static PktOut *pq_out_get(PacketQueueBase *pqb, int pop)
@@ -128,7 +128,7 @@ static PktOut *pq_out_get(PacketQueueBase *pqb, int pop)
         node->prev = node->next = NULL;
     }
 
-    return FROMFIELD(node, PktOut, qnode);
+    return container_of(node, PktOut, qnode);
 }
 
 void pq_in_init(PktInQueue *pq, Frontend * frontend) // WINSCP

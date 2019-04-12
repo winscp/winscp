@@ -87,8 +87,8 @@ struct ProxySocket {
     int chap_current_attribute;
     int chap_current_datalen;
 
-    const Socket_vtable *sockvt;
-    const Plug_vtable *plugvt;
+    Socket sock;
+    Plug plugimpl;
 };
 
 extern void proxy_activate (ProxySocket *);
