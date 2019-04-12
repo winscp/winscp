@@ -175,10 +175,13 @@ int x11_authcmp(void *av, void *bv)
     }
 }
 
-struct X11Display *x11_setup_display(const char *display, Conf *conf)
+struct X11Display *x11_setup_display(const char *display, Conf *conf,
+                                     char **error_msg)
 {
     struct X11Display *disp = snew(struct X11Display);
     char *localcopy;
+
+    *error_msg = NULL;
 
     if (!display || !*display) {
 	localcopy = platform_get_x_display();
@@ -217,9 +220,12 @@ struct X11Display *x11_setup_display(const char *display, Conf *conf)
 
 	colon = host_strrchr(localcopy, ':');
 	if (!colon) {
+            *error_msg = dupprintf("display name '%s' has no ':number'"
+                                   " suffix", localcopy);
+
 	    sfree(disp);
 	    sfree(localcopy);
-	    return NULL;	       /* FIXME: report a specific error? */
+	    return NULL;
 	}
 
 	*colon++ = '\0';
@@ -275,11 +281,14 @@ struct X11Display *x11_setup_display(const char *display, Conf *conf)
                                  NULL, NULL);
     
 	if ((err = sk_addr_error(disp->addr)) != NULL) {
+            *error_msg = dupprintf("unable to resolve host name '%s' in "
+                                   "display name", disp->hostname);
+
 	    sk_addr_free(disp->addr);
 	    sfree(disp->hostname);
 	    sfree(disp->unixsocketpath);
 	    sfree(disp);
-	    return NULL;	       /* FIXME: report an error */
+	    return NULL;
 	}
     }
 

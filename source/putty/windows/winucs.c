@@ -1160,7 +1160,7 @@ void get_unitab(int codepage, wchar_t * unitab, int ftype)
 }
 
 int wc_to_mb(int codepage, int flags, const wchar_t *wcstr, int wclen,
-	     char *mbstr, int mblen, const char *defchr, int *defused,
+	     char *mbstr, int mblen, const char *defchr,
 	     struct unicode_data *ucsdata)
 {
     char *p;
@@ -1183,7 +1183,6 @@ int wc_to_mb(int codepage, int flags, const wchar_t *wcstr, int wclen,
 		int j;
 		for (j = 0; defchr[j]; j++)
 		    *p++ = defchr[j];
-		if (defused) *defused = 1;
 	    }
 #if 1
 	    else
@@ -1192,9 +1191,11 @@ int wc_to_mb(int codepage, int flags, const wchar_t *wcstr, int wclen,
 	    assert(p - mbstr < mblen);
 	}
 	return p - mbstr;
-    } else
+    } else {
+        int defused;
 	return WideCharToMultiByte(codepage, flags, wcstr, wclen,
-				   mbstr, mblen, defchr, defused);
+				   mbstr, mblen, defchr, &defused);
+    }
 }
 
 #endif
