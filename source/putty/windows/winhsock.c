@@ -46,7 +46,7 @@ typedef struct HandleSocket {
 
     char *error;
 
-    Plug plug;
+    Plug *plug;
 
     const Socket_vtable *sockvt;
 } HandleSocket;
@@ -112,16 +112,16 @@ static void handle_sentdata(struct handle *h, int new_backlog)
     plug_sent(hs->plug, new_backlog);
 }
 
-static Plug sk_handle_plug(Socket s, Plug p)
+static Plug *sk_handle_plug(Socket *s, Plug *p)
 {
     HandleSocket *hs = FROMFIELD(s, HandleSocket, sockvt);
-    Plug ret = hs->plug;
+    Plug *ret = hs->plug;
     if (p)
 	hs->plug = p;
     return ret;
 }
 
-static void sk_handle_close(Socket s)
+static void sk_handle_close(Socket *s)
 {
     HandleSocket *hs = FROMFIELD(s, HandleSocket, sockvt);
 
@@ -156,14 +156,14 @@ static void sk_handle_close(Socket s)
     sfree(hs);
 }
 
-static int sk_handle_write(Socket s, const void *data, int len)
+static int sk_handle_write(Socket *s, const void *data, int len)
 {
     HandleSocket *hs = FROMFIELD(s, HandleSocket, sockvt);
 
     return handle_write(hs->send_h, data, len);
 }
 
-static int sk_handle_write_oob(Socket s, const void *data, int len)
+static int sk_handle_write_oob(Socket *s, const void *data, int len)
 {
     /*
      * oob data is treated as inband; nasty, but nothing really
@@ -172,14 +172,14 @@ static int sk_handle_write_oob(Socket s, const void *data, int len)
     return sk_handle_write(s, data, len);
 }
 
-static void sk_handle_write_eof(Socket s)
+static void sk_handle_write_eof(Socket *s)
 {
     HandleSocket *hs = FROMFIELD(s, HandleSocket, sockvt);
 
     handle_write_eof(hs->send_h);
 }
 
-static void sk_handle_flush(Socket s)
+static void sk_handle_flush(Socket *s)
 {
     /* HandleSocket *hs = FROMFIELD(s, HandleSocket, sockvt); */
     /* do nothing */
@@ -232,7 +232,7 @@ static void handle_socket_unfreeze(void *hsv)
     }
 }
 
-static void sk_handle_set_frozen(Socket s, int is_frozen)
+static void sk_handle_set_frozen(Socket *s, int is_frozen)
 {
     HandleSocket *hs = FROMFIELD(s, HandleSocket, sockvt);
 
@@ -287,13 +287,13 @@ static void sk_handle_set_frozen(Socket s, int is_frozen)
     }
 }
 
-static const char *sk_handle_socket_error(Socket s)
+static const char *sk_handle_socket_error(Socket *s)
 {
     HandleSocket *hs = FROMFIELD(s, HandleSocket, sockvt);
     return hs->error;
 }
 
-static char *sk_handle_peer_info(Socket s)
+static char *sk_handle_peer_info(Socket *s)
 {
     HandleSocket *hs = FROMFIELD(s, HandleSocket, sockvt);
     ULONG pid;
@@ -340,8 +340,8 @@ static const Socket_vtable HandleSocket_sockvt = {
     sk_handle_peer_info,
 };
 
-Socket make_handle_socket(HANDLE send_H, HANDLE recv_H, HANDLE stderr_H,
-                          Plug plug, int overlapped)
+Socket *make_handle_socket(HANDLE send_H, HANDLE recv_H, HANDLE stderr_H,
+                           Plug *plug, int overlapped)
 {
     HandleSocket *hs;
     int flags = (overlapped ? HANDLE_FLAG_OVERLAPPED : 0);

@@ -9,7 +9,7 @@
 #include "putty.h"
 #include "network.h"
 
-void backend_socket_log(Frontend *frontend, int type, SockAddr addr, int port,
+void backend_socket_log(Frontend *frontend, int type, SockAddr *addr, int port,
                         const char *error_msg, int error_code, Conf *conf,
                         int session_started)
 {
@@ -59,7 +59,7 @@ void backend_socket_log(Frontend *frontend, int type, SockAddr addr, int port,
     }
 }
 
-void log_proxy_stderr(Plug plug, bufchain *buf, const void *vdata, int len)
+void log_proxy_stderr(Plug *plug, bufchain *buf, const void *vdata, int len)
 {
     const char *data = (const char *)vdata;
     int pos = 0;

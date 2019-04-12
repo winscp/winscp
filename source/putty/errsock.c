@@ -12,21 +12,21 @@
 
 typedef struct {
     char *error;
-    Plug plug;
+    Plug *plug;
 
     const Socket_vtable *sockvt;
 } ErrorSocket;
 
-static Plug sk_error_plug(Socket s, Plug p)
+static Plug *sk_error_plug(Socket *s, Plug *p)
 {
     ErrorSocket *es = FROMFIELD(s, ErrorSocket, sockvt);
-    Plug ret = es->plug;
+    Plug *ret = es->plug;
     if (p)
 	es->plug = p;
     return ret;
 }
 
-static void sk_error_close(Socket s)
+static void sk_error_close(Socket *s)
 {
     ErrorSocket *es = FROMFIELD(s, ErrorSocket, sockvt);
 
@@ -34,13 +34,13 @@ static void sk_error_close(Socket s)
     sfree(es);
 }
 
-static const char *sk_error_socket_error(Socket s)
+static const char *sk_error_socket_error(Socket *s)
 {
     ErrorSocket *es = FROMFIELD(s, ErrorSocket, sockvt);
     return es->error;
 }
 
-static char *sk_error_peer_info(Socket s)
+static char *sk_error_peer_info(Socket *s)
 {
     return NULL;
 }
@@ -57,7 +57,7 @@ static const Socket_vtable ErrorSocket_sockvt = {
     sk_error_peer_info,
 };
 
-Socket new_error_socket(const char *errmsg, Plug plug)
+Socket *new_error_socket(const char *errmsg, Plug *plug)
 {
     ErrorSocket *es = snew(ErrorSocket);
     es->sockvt = &ErrorSocket_sockvt;

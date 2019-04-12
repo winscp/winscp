@@ -7,21 +7,21 @@
 
 #include "putty.h"
 
-static void nullplug_socket_log(Plug plug, int type, SockAddr addr, int port,
+static void nullplug_socket_log(Plug *plug, int type, SockAddr *addr, int port,
                                 const char *error_msg, int error_code)
 {
 }
 
-static void nullplug_closing(Plug plug, const char *error_msg, int error_code,
+static void nullplug_closing(Plug *plug, const char *error_msg, int error_code,
 			     int calling_back)
 {
 }
 
-static void nullplug_receive(Plug plug, int urgent, char *data, int len)
+static void nullplug_receive(Plug *plug, int urgent, char *data, int len)
 {
 }
 
-static void nullplug_sent(Plug plug, int bufsize)
+static void nullplug_sent(Plug *plug, int bufsize)
 {
 }
 
@@ -39,4 +39,4 @@ static const Plug_vtable *nullplug_plugvt_ptr = &nullplug_plugvt;
  * There's a singleton instance of nullplug, because it's not
  * interesting enough to worry about making more than one of them.
  */
-Plug nullplug = &nullplug_plugvt_ptr;
+Plug *nullplug = &nullplug_plugvt_ptr;

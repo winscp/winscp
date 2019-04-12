@@ -18,9 +18,9 @@ typedef struct ProxySocket ProxySocket;
 struct ProxySocket {
     const char *error;
 
-    Socket sub_socket;
-    Plug plug;
-    SockAddr remote_addr;
+    Socket *sub_socket;
+    Plug *plug;
+    SockAddr *remote_addr;
     int remote_port;
 
     bufchain pending_output_data;
@@ -102,7 +102,7 @@ extern int proxy_socks5_negotiate (ProxySocket *, int);
  * This may be reused by local-command proxies on individual
  * platforms.
  */
-char *format_telnet_command(SockAddr addr, int port, Conf *conf);
+char *format_telnet_command(SockAddr *addr, int port, Conf *conf);
 
 /*
  * These are implemented in cproxy.c or nocproxy.c, depending on

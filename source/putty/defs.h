@@ -40,7 +40,7 @@ typedef struct BinarySource BinarySource;
 
 typedef struct IdempotentCallback IdempotentCallback;
 
-typedef struct SockAddr_tag *SockAddr;
+typedef struct SockAddr SockAddr;
 
 typedef struct Socket_vtable Socket_vtable;
 typedef struct Plug_vtable Plug_vtable;
@@ -53,7 +53,7 @@ typedef struct LogContext_tag LogContext;
 
 typedef struct Frontend Frontend;
 
-typedef struct ssh_tag *Ssh;
+typedef struct Ssh Ssh;
 
 typedef struct Channel Channel;
 typedef struct SshChannel SshChannel;
@@ -74,14 +74,8 @@ typedef struct settings_e settings_e;
 
 typedef struct SessionSpecial SessionSpecial;
 
-/* Note indirection: for historical reasons (it used to be closer to
- * the OS socket type), the type that most code uses for a socket is
- * 'Socket', not 'Socket *'. So an implementation of Socket or Plug
- * has a 'const Socket *' field for the vtable pointer, and the
- * 'Socket' type returned to client code is a pointer to _that_ in
- * turn. */
-typedef const Socket_vtable **Socket;
-typedef const Plug_vtable **Plug;
+typedef const Socket_vtable *Socket;
+typedef const Plug_vtable *Plug;
 
 /*
  * A small structure wrapping up a (pointer, length) pair so that it
