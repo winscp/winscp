@@ -712,7 +712,8 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                     }
                     if (!s->userpass_ret) {
                         /* Failed to get a passphrase. Terminate. */
-                        ssh_sw_abort(s->ppl.ssh, "Unable to authenticate");
+                        ssh_user_close(s->ppl.ssh,
+                                       "User aborted at passphrase prompt");
                         return;
                     }
                     passphrase = dupstr(s->cur_prompt->prompts[0]->result);
@@ -968,7 +969,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
              * because one was supplied on the command line
              * which has already failed to work). Terminate.
              */
-            ssh_sw_abort(s->ppl.ssh, "Unable to authenticate");
+            ssh_user_close(s->ppl.ssh, "User aborted at password prompt");
             return;
         }
 

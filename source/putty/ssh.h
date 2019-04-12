@@ -236,6 +236,9 @@ struct ConnectionLayerVtable {
     void (*sharing_queue_global_request)(
         ConnectionLayer *cl, ssh_sharing_connstate *connstate);
 
+    /* Indicate that the last downstream has disconnected */
+    void (*sharing_no_more_downstreams)(ConnectionLayer *cl);
+
     /* Query whether the connection layer is doing agent forwarding */
     int (*agent_forwarding_permitted)(ConnectionLayer *cl);
 
@@ -281,6 +284,8 @@ struct ConnectionLayer {
     ((cl)->vt->delete_sharing_channel(cl, ch))
 #define ssh_sharing_queue_global_request(cl, cs) \
     ((cl)->vt->sharing_queue_global_request(cl, cs))
+#define ssh_sharing_no_more_downstreams(cl) \
+    ((cl)->vt->sharing_no_more_downstreams(cl))
 #define ssh_agent_forwarding_permitted(cl) \
     ((cl)->vt->agent_forwarding_permitted(cl))
 #define ssh_terminal_size(cl, w, h) ((cl)->vt->terminal_size(cl, w, h))
@@ -1247,8 +1252,8 @@ void platform_ssh_share_cleanup(const char *name);
     K(y, SSH2_MSG_KEXRSA_PUBKEY, 30, SSH2_PKTCTX_RSAKEX)                \
     K(y, SSH2_MSG_KEXRSA_SECRET, 31, SSH2_PKTCTX_RSAKEX)                \
     K(y, SSH2_MSG_KEXRSA_DONE, 32, SSH2_PKTCTX_RSAKEX)                  \
-    K(y, SSH2_MSG_KEX_ECDH_INIT, 30, SSH2_PKTCTX_DHGEX)                 \
-    K(y, SSH2_MSG_KEX_ECDH_REPLY, 31, SSH2_PKTCTX_DHGEX)                \
+    K(y, SSH2_MSG_KEX_ECDH_INIT, 30, SSH2_PKTCTX_ECDHKEX)               \
+    K(y, SSH2_MSG_KEX_ECDH_REPLY, 31, SSH2_PKTCTX_ECDHKEX)              \
     X(y, SSH2_MSG_USERAUTH_REQUEST, 50)                                 \
     X(y, SSH2_MSG_USERAUTH_FAILURE, 51)                                 \
     X(y, SSH2_MSG_USERAUTH_SUCCESS, 52)                                 \

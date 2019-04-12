@@ -119,6 +119,7 @@ static const struct ConnectionLayerVtable ssh1_connlayer_vtable = {
     NULL /* alloc_sharing_channel */,
     NULL /* delete_sharing_channel */,
     NULL /* sharing_queue_global_request */,
+    NULL /* sharing_no_more_downstreams */,
     ssh1_agent_forwarding_permitted,
     ssh1_terminal_size,
     ssh1_stdout_unthrottle,
@@ -751,6 +752,7 @@ static void ssh1_connection_process_queue(PacketProtocolLayer *ppl)
     }
 
     s->session_ready = TRUE;
+    ssh_ppl_got_user_input(&s->ppl); /* in case any input is already queued */
 
     /* If an EOF or a window-size change arrived before we were ready
      * to handle either one, handle them now. */

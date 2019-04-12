@@ -2392,7 +2392,7 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
                               s->rekey_reason));
             }
         }
-    } while (s->rekey_reason == RK_NONE);
+    } while (s->rekey_class == RK_NONE);
 
     /* Once we exit the above loop, we really are rekeying. */
     goto begin_key_exchange;

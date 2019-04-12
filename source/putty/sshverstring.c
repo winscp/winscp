@@ -396,6 +396,7 @@ void ssh_verstring_handle_input(BinaryPacketProtocol *bpp)
   eof:
     ssh_remote_error(s->bpp.ssh,
                      "Server unexpectedly closed network connection");
+    return;  /* avoid touching s now it's been freed */
 
     crFinishV;
 }

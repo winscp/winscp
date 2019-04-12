@@ -246,6 +246,15 @@ warned that the log file may not always be up to date as a result
 (although it will of course be flushed when it is closed, for instance
 at the end of a session).
 
+\S{config-logheader} \I{log file, header}\q{Include header}
+
+\cfg{winhelp-topic}{logging.header}
+
+This option allows you to choose whether to include a header line
+with the date and time when the log file is opened. It may be useful to
+disable this if the log file is being used as realtime input to other
+programs that don't expect the header line.
+
 \S{config-logssh} Options specific to \i{SSH packet log}ging
 
 These options only apply if SSH packet data is being logged.
