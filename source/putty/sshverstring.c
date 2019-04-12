@@ -58,7 +58,7 @@ static int ssh_version_includes_v1(const char *ver);
 static int ssh_version_includes_v2(const char *ver);
 
 BinaryPacketProtocol *ssh_verstring_new(
-    Conf *conf, Frontend *frontend, int bare_connection_mode,
+    Conf *conf, LogContext *logctx, int bare_connection_mode,
     const char *protoversion, struct ssh_version_receiver *rcv)
 {
     struct ssh_verstring_state *s = snew(struct ssh_verstring_state);
@@ -87,7 +87,7 @@ BinaryPacketProtocol *ssh_verstring_new(
     assert(s->prefix_wanted.len <= PREFIX_MAXLEN);
 
     s->conf = conf_copy(conf);
-    s->bpp.frontend = frontend;
+    s->bpp.logctx = logctx;
     s->our_protoversion = dupstr(protoversion);
     s->receiver = rcv;
 
@@ -145,11 +145,9 @@ static int ssh_version_includes_v2(const char *ver)
     return ssh_versioncmp(ver, "1.99") >= 0;
 }
 
-#define bpp_logevent(printf_args) \
-    logevent_and_free(s->bpp.frontend, dupprintf printf_args)
-
 static void ssh_verstring_send(struct ssh_verstring_state *s)
 {
+    BinaryPacketProtocol *bpp = &s->bpp; /* for bpp_logevent */
     char *p;
     int sv_pos;
 
@@ -421,6 +419,7 @@ static void ssh_verstring_handle_output(BinaryPacketProtocol *bpp)
  */
 static void ssh_detect_bugs(struct ssh_verstring_state *s)
 {
+    BinaryPacketProtocol *bpp = &s->bpp; /* for bpp_logevent */
     const char *imp = s->softwareversion;
 
     s->remote_bugs = 0;

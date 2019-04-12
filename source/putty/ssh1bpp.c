@@ -43,12 +43,12 @@ static const struct BinaryPacketProtocolVtable ssh1_bpp_vtable = {
     ssh1_bpp_queue_disconnect,
 };
 
-BinaryPacketProtocol *ssh1_bpp_new(Frontend *frontend)
+BinaryPacketProtocol *ssh1_bpp_new(LogContext *logctx)
 {
     struct ssh1_bpp_state *s = snew(struct ssh1_bpp_state);
     memset(s, 0, sizeof(*s));
     s->bpp.vt = &ssh1_bpp_vtable;
-    s->bpp.frontend = frontend;
+    s->bpp.logctx = logctx;
     ssh_bpp_common_setup(&s->bpp);
     return &s->bpp;
 }
@@ -67,9 +67,6 @@ static void ssh1_bpp_free(BinaryPacketProtocol *bpp)
     sfree(s->pktin);
     sfree(s);
 }
-
-#define bpp_logevent(printf_args) \
-    logevent_and_free(s->bpp.frontend, dupprintf printf_args)
 
 void ssh1_bpp_new_cipher(BinaryPacketProtocol *bpp,
                          const struct ssh1_cipheralg *cipher,

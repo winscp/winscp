@@ -53,7 +53,8 @@ struct PacketProtocolLayer {
     bufchain *user_input;
 
     /* Logging and error-reporting facilities. */
-    void *frontend;               /* for logevent, dialog boxes etc */
+    LogContext *logctx;
+    void *frontend;               /* for dialog boxes etc */
     Ssh *ssh;   /* for session termination + assorted connection-layer ops */
 
     /* Known bugs in the remote implementation. */
@@ -122,7 +123,7 @@ void ssh2_userauth_set_transport_layer(PacketProtocolLayer *userauth,
  * scope, and takes a double pair of parens because it passes a whole
  * argument list to dupprintf. */
 #define ppl_logevent(params) ( \
-        logevent_and_free((ppl)->frontend, dupprintf params))
+        logevent_and_free((ppl)->logctx, dupprintf params))
 
 /* Convenience macro for protocol layers to send formatted strings to
  * the terminal. Also expects 'ppl' to be in scope and takes double

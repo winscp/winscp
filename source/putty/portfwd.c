@@ -10,18 +10,6 @@
 #include "ssh.h"
 #include "sshchan.h"
 
-static void logeventf(Frontend *frontend, const char *fmt, ...)
-{
-    va_list ap;
-    char *buf;
-
-    va_start(ap, fmt);
-    buf = dupvprintf(fmt, ap);
-    va_end(ap);
-    logevent(frontend, buf);
-    sfree(buf);
-}
-
 /*
  * Enumeration of values that live in the 'socks_state' field of
  * struct PortForwarding.
@@ -641,7 +629,7 @@ static void pfd_open_failure(Channel *chan, const char *errtext)
     assert(chan->vt == &PortForwarding_channelvt);
     PortForwarding *pf = container_of(chan, PortForwarding, chan);
 
-    logeventf(pf->cl->frontend,
+    logeventf(pf->cl->logctx,
               "Forwarded connection refused by server%s%s",
               errtext ? ": " : "", errtext ? errtext : "");
 }
@@ -803,7 +791,7 @@ void portfwdmgr_config(PortFwdManager *mgr, Conf *conf)
             sserv = 1;
             sport = net_service_lookup(sports);
             if (!sport) {
-                logeventf(mgr->cl->frontend, "Service lookup failed for source"
+                logeventf(mgr->cl->logctx, "Service lookup failed for source"
                           " port \"%s\"", sports);
             }
         }
@@ -829,7 +817,7 @@ void portfwdmgr_config(PortFwdManager *mgr, Conf *conf)
                 dserv = 1;
                 dport = net_service_lookup(dports);
                 if (!dport) {
-                    logeventf(mgr->cl->frontend,
+                    logeventf(mgr->cl->logctx,
                               "Service lookup failed for destination"
                               " port \"%s\"", dports);
                 }
@@ -899,7 +887,7 @@ void portfwdmgr_config(PortFwdManager *mgr, Conf *conf)
                 message = msg2;
             }
 
-            logeventf(mgr->cl->frontend, "Cancelling %s", message);
+            logeventf(mgr->cl->logctx, "Cancelling %s", message);
             sfree(message);
 
             /* pfr->remote or pfr->local may be NULL if setting up a
@@ -959,7 +947,7 @@ void portfwdmgr_config(PortFwdManager *mgr, Conf *conf)
                                        mgr->cl, conf, &pfr->local,
                                        pfr->addressfamily);
 
-                logeventf(mgr->cl->frontend,
+                logeventf(mgr->cl->logctx,
                           "Local %sport %s forwarding to %s%s%s",
                           pfr->addressfamily == ADDRTYPE_IPV4 ? "IPv4 " :
                           pfr->addressfamily == ADDRTYPE_IPV6 ? "IPv6 " : "",
@@ -972,7 +960,7 @@ void portfwdmgr_config(PortFwdManager *mgr, Conf *conf)
                                        mgr->cl, conf, &pfr->local,
                                        pfr->addressfamily);
 
-                logeventf(mgr->cl->frontend,
+                logeventf(mgr->cl->logctx,
                           "Local %sport %s SOCKS dynamic forwarding%s%s",
                           pfr->addressfamily == ADDRTYPE_IPV4 ? "IPv4 " :
                           pfr->addressfamily == ADDRTYPE_IPV6 ? "IPv6 " : "",
@@ -997,12 +985,12 @@ void portfwdmgr_config(PortFwdManager *mgr, Conf *conf)
                     pfr->addressfamily, sportdesc, pfr, NULL);
 
                 if (!pfr->remote) {
-                    logeventf(mgr->cl->frontend,
+                    logeventf(mgr->cl->logctx,
                               "Duplicate remote port forwarding to %s:%d",
                               pfr->daddr, pfr->dport);
                     pfr_free(pfr);
                 } else {
-                    logeventf(mgr->cl->frontend, "Requesting remote port %s"
+                    logeventf(mgr->cl->logctx, "Requesting remote port %s"
                               " forward to %s", sportdesc, dportdesc);
                 }
             }

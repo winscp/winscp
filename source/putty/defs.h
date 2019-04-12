@@ -49,7 +49,9 @@ typedef struct Backend Backend;
 typedef struct BackendVtable BackendVtable;
 
 typedef struct Ldisc_tag Ldisc;
-typedef struct LogContext_tag LogContext;
+typedef struct LogContext LogContext;
+typedef struct LogPolicy LogPolicy;
+typedef struct LogPolicyVtable LogPolicyVtable;
 
 typedef struct Frontend Frontend;
 

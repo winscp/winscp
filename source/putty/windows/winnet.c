@@ -220,13 +220,6 @@ int sk_startup(int hi, int lo)
 	return FALSE;
     }
 
-#ifdef NET_SETUP_DIAGNOSTICS
-    {
-	char buf[80];
-	sprintf(buf, "Using WinSock %d.%d", hi, lo);
-	logevent(NULL, buf);
-    }
-#endif
     return TRUE;
 }
 
@@ -252,9 +245,6 @@ void sk_init(void)
 #ifndef NO_IPV6
     /* Check if we have getaddrinfo in Winsock */
     if (GetProcAddress(winsock_module, "getaddrinfo") != NULL) {
-#ifdef NET_SETUP_DIAGNOSTICS
-	logevent(NULL, "Native WinSock IPv6 support detected");
-#endif
 	GET_WINDOWS_FUNCTION(winsock_module, getaddrinfo);
 	GET_WINDOWS_FUNCTION(winsock_module, freeaddrinfo);
 	GET_WINDOWS_FUNCTION(winsock_module, getnameinfo);
@@ -266,25 +256,15 @@ void sk_init(void)
 	/* Fall back to wship6.dll for Windows 2000 */
 	wship6_module = load_system32_dll("wship6.dll");
 	if (wship6_module) {
-#ifdef NET_SETUP_DIAGNOSTICS
-	    logevent(NULL, "WSH IPv6 support detected");
-#endif
 	    GET_WINDOWS_FUNCTION(wship6_module, getaddrinfo);
 	    GET_WINDOWS_FUNCTION(wship6_module, freeaddrinfo);
 	    GET_WINDOWS_FUNCTION(wship6_module, getnameinfo);
             /* See comment above about type check */
             GET_WINDOWS_FUNCTION_NO_TYPECHECK(winsock_module, gai_strerror);
 	} else {
-#ifdef NET_SETUP_DIAGNOSTICS
-	    logevent(NULL, "No IPv6 support detected");
-#endif
 	}
     }
     GET_WINDOWS_FUNCTION(winsock2_module, WSAAddressToStringA);
-#else
-#ifdef NET_SETUP_DIAGNOSTICS
-    logevent(NULL, "PuTTY was built without IPv6 support");
-#endif
 #endif
 
     GET_WINDOWS_FUNCTION(winsock_module, WSAAsyncSelect);
@@ -559,9 +539,6 @@ SockAddr *sk_namelookup(const char *host, char **canonicalname,
 	 */
 	if (p_getaddrinfo) {
 	    struct addrinfo hints;
-#ifdef NET_SETUP_DIAGNOSTICS
-	    logevent(NULL, "Using getaddrinfo() for resolving");
-#endif
 	    memset(&hints, 0, sizeof(hints));
 	    hints.ai_family = hint_family;
 	    hints.ai_flags = AI_CANONNAME;
@@ -576,9 +553,6 @@ SockAddr *sk_namelookup(const char *host, char **canonicalname,
 	} else
 #endif
 	{
-#ifdef NET_SETUP_DIAGNOSTICS
-	    logevent(NULL, "Using gethostbyname() for resolving");
-#endif
 	    /*
 	     * Otherwise use the IPv4-only gethostbyname...
 	     * (NOTE: we don't use gethostbyname as a fallback!)
@@ -796,7 +770,7 @@ static int ipv4_is_local_addr(struct in_addr addr)
 		       &retbytes, NULL, NULL) == 0)
 	    n_local_interfaces = retbytes / sizeof(INTERFACE_INFO);
 	else
-	    logevent(NULL, "Unable to get list of local IP addresses");
+            n_local_interfaces = -1;
     }
     if (n_local_interfaces > 0) {
 	int i;

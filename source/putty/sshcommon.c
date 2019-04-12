@@ -638,12 +638,6 @@ const char *ssh2_pkt_type(Pkt_KCtx pkt_kctx, Pkt_ACtx pkt_actx, int type)
  * PacketProtocolLayer.
  */
 
-void ssh_logevent_and_free(void *frontend, char *message)
-{
-    logevent(frontend, message);
-    sfree(message);
-}
-
 void ssh_ppl_replace(PacketProtocolLayer *old, PacketProtocolLayer *new)
 {
     new->bpp = old->bpp;

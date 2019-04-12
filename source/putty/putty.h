@@ -480,7 +480,8 @@ struct Backend {
 };
 struct BackendVtable {
     const char *(*init) (Frontend *frontend, Backend **backend_out,
-			 Conf *conf, const char *host, int port,
+                         LogContext *logctx, Conf *conf,
+                         const char *host, int port,
                          char **realhost, int nodelay, int keepalive);
 
     void (*free) (Backend *be);
@@ -501,7 +502,6 @@ struct BackendVtable {
     int (*sendok) (Backend *be);
     int (*ldisc_option_state) (Backend *be, int);
     void (*provide_ldisc) (Backend *be, Ldisc *ldisc);
-    void (*provide_logctx) (Backend *be, LogContext *logctx);
     /* Tells the back end that the front end  buffer is clearing. */
     void (*unthrottle) (Backend *be, int bufsize);
     int (*cfg_info) (Backend *be);
@@ -515,8 +515,8 @@ struct BackendVtable {
     int default_port;
 };
 
-#define backend_init(vt, fe, out, conf, host, port, rhost, nd, ka) \
-    ((vt)->init(fe, out, conf, host, port, rhost, nd, ka))
+#define backend_init(vt, fe, out, logctx, conf, host, port, rhost, nd, ka) \
+    ((vt)->init(fe, out, logctx, conf, host, port, rhost, nd, ka))
 #define backend_free(be) ((be)->vt->free(be))
 #define backend_reconfig(be, conf) ((be)->vt->reconfig(be, conf))
 #define backend_send(be, buf, len) ((be)->vt->send(be, buf, len))
@@ -530,8 +530,6 @@ struct BackendVtable {
 #define backend_ldisc_option_state(be, opt) \
     ((be)->vt->ldisc_option_state(be, opt))
 #define backend_provide_ldisc(be, ldisc) ((be)->vt->provide_ldisc(be, ldisc))
-#define backend_provide_logctx(be, logctx) \
-    ((be)->vt->provide_logctx(be, logctx))
 #define backend_unthrottle(be, bufsize) ((be)->vt->unthrottle(be, bufsize))
 #define backend_cfg_info(be) ((be)->vt->cfg_info(be))
 
@@ -730,10 +728,8 @@ void modalfatalbox(const char *, ...);
 #pragma noreturn(modalfatalbox)
 #endif
 void do_beep(Frontend *frontend, int);
-void begin_session(Frontend *frontend);
 void sys_cursor(Frontend *frontend, int x, int y);
 void frontend_request_paste(Frontend *frontend, int clipboard);
-void frontend_keypress(Frontend *frontend);
 void frontend_echoedit_update(Frontend *frontend, int echo, int edit);
 /* It's the backend's responsibility to invoke this at the start of a
  * connection, if necessary; it can also invoke it later if the set of
@@ -1170,14 +1166,64 @@ int format_arrow_key(char *buf, Terminal *term, int xkey, int ctrl);
 /*
  * Exports from logging.c.
  */
-LogContext *log_init(Frontend *frontend, Conf *conf);
+struct LogPolicyVtable {
+    /*
+     * Pass Event Log entries on from LogContext to the front end,
+     * which might write them to standard error or save them for a GUI
+     * list box or other things.
+     */
+    void (*eventlog)(LogPolicy *lp, const char *event);
+
+    /*
+     * Ask what to do about the specified output log file already
+     * existing. Can return four values:
+     *
+     *  - 2 means overwrite the log file
+     *  - 1 means append to the log file
+     *  - 0 means cancel logging for this session
+     *  - -1 means please wait, and callback() will be called with one
+     *    of those options.
+     */
+    int (*askappend)(LogPolicy *lp, Filename *filename,
+                     void (*callback)(void *ctx, int result), void *ctx);
+
+    /*
+     * Emergency logging when the log file itself can't be opened,
+     * which typically means we want to shout about it more loudly
+     * than a mere Event Log entry.
+     *
+     * One reasonable option is to send it to the same place that
+     * stderr output from the main session goes (so, either a console
+     * tool's actual stderr, or a terminal window). In many cases this
+     * is unlikely to cause this error message to turn up
+     * embarrassingly in a log file of real server output, because the
+     * whole point is that we haven't managed to open any such log
+     * file :-)
+     */
+    void (*logging_error)(LogPolicy *lp, const char *event);
+};
+struct LogPolicy {
+    const LogPolicyVtable *vt;
+};
+#define lp_eventlog(lp, event) ((lp)->vt->eventlog(lp, event))
+#define lp_askappend(lp, fn, cb, ctx) ((lp)->vt->askappend(lp, fn, cb, ctx))
+#define lp_logging_error(lp, event) ((lp)->vt->logging_error(lp, event))
+
+LogContext *log_init(LogPolicy *lp, Conf *conf);
 void log_free(LogContext *logctx);
 void log_reconfig(LogContext *logctx, Conf *conf);
 void logfopen(LogContext *logctx);
 void logfclose(LogContext *logctx);
 void logtraffic(LogContext *logctx, unsigned char c, int logmode);
 void logflush(LogContext *logctx);
-void log_eventlog(LogContext *logctx, const char *string);
+void logevent(LogContext *logctx, const char *event);
+void logeventf(LogContext *logctx, const char *fmt, ...);
+/*
+ * Pass a dynamically allocated string to logevent and immediately
+ * free it. Intended for use by wrapper macros which pass the return
+ * value of dupprintf straight to this.
+ */
+void logevent_and_free(LogContext *logctx, char *event);
 enum { PKT_INCOMING, PKT_OUTGOING };
 enum { PKTLOG_EMIT, PKTLOG_BLANK, PKTLOG_OMIT };
 struct logblank_t {
@@ -1190,6 +1236,10 @@ void log_packet(LogContext *logctx, int direction, int type,
 		int n_blanks, const struct logblank_t *blanks,
 		const unsigned long *sequence,
                 unsigned downstream_id, const char *additional_log_text);
+
+/* This is defined by applications that have an obvious logging
+ * destination like standard error or the GUI. */
+extern LogPolicy default_logpolicy[1];
 
 /*
  * Exports from testback.c
@@ -1352,7 +1402,6 @@ int wc_unescape(char *output, const char *wildcard);
 /*
  * Exports from frontend (windlg.c etc)
  */
-void logevent(Frontend *frontend, const char *);
 void pgp_fingerprints(void);
 /*
  * verify_ssh_host_key() can return one of three values:
@@ -1386,16 +1435,6 @@ int askalg(Frontend *frontend, const char *algtype, const char *algname,
 	   void (*callback)(void *ctx, int result), void *ctx);
 int askhk(Frontend *frontend, const char *algname, const char *betteralgs,
           void (*callback)(void *ctx, int result), void *ctx);
-/*
- * askappend can return four values:
- * 
- *  - 2 means overwrite the log file
- *  - 1 means append to the log file
- *  - 0 means cancel logging for this session
- *  - -1 means please wait.
- */
-int askappend(Frontend *frontend, Filename *filename,
-	      void (*callback)(void *ctx, int result), void *ctx);
 
 /*
  * Exports from console frontends (wincons.c, uxcons.c)
@@ -1403,7 +1442,6 @@ int askappend(Frontend *frontend, Filename *filename,
  */
 extern int console_batch_mode;
 int console_get_userpass_input(prompts_t *p);
-void console_provide_logctx(LogContext *logctx);
 int is_interactive(void);
 
 /*

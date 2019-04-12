@@ -163,8 +163,8 @@ int ssh2_censor_packet(
 PktOut *ssh_new_packet(void);
 void ssh_free_pktout(PktOut *pkt);
 
-extern Socket *ssh_connection_sharing_init(
-    const char *host, int port, Conf *conf, Frontend *frontend,
+Socket *ssh_connection_sharing_init(
+    const char *host, int port, Conf *conf, LogContext *logctx,
     Plug *sshplug, ssh_sharing_state **state);
 void ssh_connshare_provide_connlayer(ssh_sharing_state *sharestate,
                                      ConnectionLayer *cl);
@@ -266,7 +266,7 @@ struct ConnectionLayerVtable {
 };
 
 struct ConnectionLayer {
-    Frontend *frontend;
+    LogContext *logctx;
     const struct ConnectionLayerVtable *vt;
 };
 
@@ -309,7 +309,7 @@ char *portfwdmgr_connect(PortFwdManager *mgr, Channel **chan_ret,
                          char *hostname, int port, SshChannel *c,
                          int addressfamily);
 
-Frontend *ssh_get_frontend(Ssh *ssh);
+LogContext *ssh_get_logctx(Ssh *ssh);
 
 /* Communications back to ssh.c from connection layers */
 void ssh_throttle_conn(Ssh *ssh, int adjust);

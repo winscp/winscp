@@ -114,15 +114,15 @@ struct Ssh {
 
 
 #define ssh_logevent(params) ( \
-        logevent_and_free((ssh)->frontend, dupprintf params))
+        logevent_and_free((ssh)->logctx, dupprintf params))
 
 static void ssh_shutdown(Ssh *ssh);
 static void ssh_throttle_all(Ssh *ssh, int enable, int bufsize);
 static void ssh_bpp_output_raw_data_callback(void *vctx);
 
-Frontend *ssh_get_frontend(Ssh *ssh)
+LogContext *ssh_get_logctx(Ssh *ssh)
 {
-    return ssh->frontend;
+    return ssh->logctx;
 }
 
 static void ssh_connect_bpp(Ssh *ssh)
@@ -179,7 +179,7 @@ static void ssh_got_ssh_version(struct ssh_version_receiver *rcv,
             int is_simple =
                 (conf_get_int(ssh->conf, CONF_ssh_simple) && !ssh->connshare);
 
-            ssh->bpp = ssh2_bpp_new(ssh->frontend, &ssh->stats);
+            ssh->bpp = ssh2_bpp_new(ssh->logctx, &ssh->stats);
             ssh_connect_bpp(ssh);
 
 #ifndef NO_GSSAPI
@@ -254,7 +254,7 @@ static void ssh_got_ssh_version(struct ssh_version_receiver *rcv,
 
         } else {
 
-            ssh->bpp = ssh1_bpp_new(ssh->frontend);
+            ssh->bpp = ssh1_bpp_new(ssh->logctx);
             ssh_connect_bpp(ssh);
 
             connection_layer = ssh1_connection_new(ssh, ssh->conf, &ssh->cl);
@@ -267,7 +267,7 @@ static void ssh_got_ssh_version(struct ssh_version_receiver *rcv,
         }
 
     } else {
-        ssh->bpp = ssh2_bare_bpp_new(ssh->frontend);
+        ssh->bpp = ssh2_bare_bpp_new(ssh->logctx);
         ssh_connect_bpp(ssh);
 
         connection_layer = ssh2_connection_new(
@@ -407,7 +407,7 @@ void ssh_remote_error(Ssh *ssh, const char *fmt, ...)
          * closed its end (or is about to). */
         ssh_shutdown(ssh);
 
-        logevent(ssh->frontend, msg);
+        logevent(ssh->logctx, msg);
         connection_fatal(ssh->frontend, "%s", msg);
         sfree(msg);
     }
@@ -426,7 +426,7 @@ void ssh_remote_eof(Ssh *ssh, const char *fmt, ...)
          * closed its end. */
         ssh_shutdown(ssh);
 
-        logevent(ssh->frontend, msg);
+        logevent(ssh->logctx, msg);
         sfree(msg);
         notify_remote_exit(ssh->frontend);
     } else {
@@ -447,7 +447,7 @@ void ssh_proto_error(Ssh *ssh, const char *fmt, ...)
                                  SSH2_DISCONNECT_PROTOCOL_ERROR);
         ssh_initiate_connection_close(ssh);
 
-        logevent(ssh->frontend, msg);
+        logevent(ssh->logctx, msg);
         connection_fatal(ssh->frontend, "%s", msg);
         sfree(msg);
     }
@@ -462,7 +462,7 @@ void ssh_sw_abort(Ssh *ssh, const char *fmt, ...)
 
         ssh_initiate_connection_close(ssh);
 
-        logevent(ssh->frontend, msg);
+        logevent(ssh->logctx, msg);
         connection_fatal(ssh->frontend, "%s", msg);
         sfree(msg);
 
@@ -486,7 +486,7 @@ void ssh_user_close(Ssh *ssh, const char *fmt, ...)
 
         ssh_initiate_connection_close(ssh);
 
-        logevent(ssh->frontend, msg);
+        logevent(ssh->logctx, msg);
         sfree(msg);
 
         notify_remote_exit(ssh->frontend);
@@ -508,7 +508,7 @@ static void ssh_socket_log(Plug *plug, int type, SockAddr *addr, int port,
      */
 
     if (!ssh->attempting_connshare)
-        backend_socket_log(ssh->frontend, type, addr, port,
+        backend_socket_log(ssh->frontend, ssh->logctx, type, addr, port,
                            error_msg, error_code, ssh->conf,
                            ssh->session_started);
 }
@@ -645,7 +645,7 @@ static const char *connect_to_host(Ssh *ssh, const char *host, int port,
     ssh->connshare = NULL;
     ssh->attempting_connshare = TRUE;  /* affects socket logging behaviour */
     ssh->s = ssh_connection_sharing_init(
-        ssh->savedhost, ssh->savedport, ssh->conf, ssh->frontend,
+        ssh->savedhost, ssh->savedport, ssh->conf, ssh->logctx,
         &ssh->plug, &ssh->connshare);
     if (ssh->connshare)
         ssh_connshare_provide_connlayer(ssh->connshare, &ssh->cl_dummy);
@@ -677,7 +677,7 @@ static const char *connect_to_host(Ssh *ssh, const char *host, int port,
          */
         addressfamily = conf_get_int(ssh->conf, CONF_addressfamily);
         addr = name_lookup(host, port, realhost, ssh->conf, addressfamily,
-                           ssh->frontend, "SSH connection");
+                           ssh->logctx, "SSH connection");
         if ((err = sk_addr_error(addr)) != NULL) {
             sk_addr_free(addr);
             return err;
@@ -715,7 +715,7 @@ static const char *connect_to_host(Ssh *ssh, const char *host, int port,
      */
     ssh->version_receiver.got_ssh_version = ssh_got_ssh_version;
     ssh->bpp = ssh_verstring_new(
-        ssh->conf, ssh->frontend, ssh->bare_connection,
+        ssh->conf, ssh->logctx, ssh->bare_connection,
         ssh->version == 1 ? "1.5" : "2.0", &ssh->version_receiver);
     ssh_connect_bpp(ssh);
     queue_idempotent_callback(&ssh->bpp->ic_in_raw);
@@ -789,7 +789,7 @@ static void ssh_cache_conf_values(Ssh *ssh)
  * Returns an error message, or NULL on success.
  */
 static const char *ssh_init(Frontend *frontend, Backend **backend_handle,
-			    Conf *conf,
+                            LogContext *logctx, Conf *conf,
                             const char *host, int port, char **realhost,
 			    int nodelay, int keepalive)
 {
@@ -814,7 +814,7 @@ static const char *ssh_init(Frontend *frontend, Backend **backend_handle,
     *backend_handle = &ssh->backend;
 
     ssh->frontend = frontend;
-    ssh->cl_dummy.frontend = frontend;
+    ssh->cl_dummy.logctx = ssh->logctx = logctx;
 
     random_ref(); /* do this now - may be needed by sharing setup code */
     ssh->need_random_unref = TRUE;
@@ -1045,12 +1045,6 @@ static void ssh_provide_ldisc(Backend *be, Ldisc *ldisc)
     ssh->ldisc = ldisc;
 }
 
-static void ssh_provide_logctx(Backend *be, LogContext *logctx)
-{
-    Ssh *ssh = container_of(be, Ssh, backend);
-    ssh->logctx = logctx;
-}
-
 void ssh_got_exitcode(Ssh *ssh, int exitcode)
 {
     ssh->exitcode = exitcode;
@@ -1111,7 +1105,6 @@ const struct BackendVtable ssh_backend = {
     ssh_sendok,
     ssh_ldisc,
     ssh_provide_ldisc,
-    ssh_provide_logctx,
     ssh_unthrottle,
     ssh_cfg_info,
     ssh_test_for_upstream,

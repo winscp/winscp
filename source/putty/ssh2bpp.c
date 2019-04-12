@@ -54,12 +54,12 @@ static const struct BinaryPacketProtocolVtable ssh2_bpp_vtable = {
 };
 
 BinaryPacketProtocol *ssh2_bpp_new(
-    Frontend *frontend, struct DataTransferStats *stats)
+    LogContext *logctx, struct DataTransferStats *stats)
 {
     struct ssh2_bpp_state *s = snew(struct ssh2_bpp_state);
     memset(s, 0, sizeof(*s));
     s->bpp.vt = &ssh2_bpp_vtable;
-    s->bpp.frontend = frontend;
+    s->bpp.logctx = logctx;
     s->stats = stats;
     ssh_bpp_common_setup(&s->bpp);
     return &s->bpp;
@@ -84,9 +84,6 @@ static void ssh2_bpp_free(BinaryPacketProtocol *bpp)
     sfree(s->pktin);
     sfree(s);
 }
-
-#define bpp_logevent(printf_args) \
-    logevent_and_free(s->bpp.frontend, dupprintf printf_args)
 
 void ssh2_bpp_new_outgoing_crypto(
     BinaryPacketProtocol *bpp,
