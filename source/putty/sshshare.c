@@ -905,12 +905,22 @@ static void share_try_cleanup(struct ssh_sharing_connstate *cs)
     if (count234(cs->halfchannels) == 0 &&
         count234(cs->channels_by_us) == 0 &&
         count234(cs->forwardings) == 0) {
+        struct ssh_sharing_state *sharestate = cs->parent;
+
         /*
          * Now we're _really_ done, so we can get rid of cs completely.
          */
-        del234(cs->parent->connections, cs);
+        del234(sharestate->connections, cs);
         log_downstream(cs, "disconnected");
         share_connstate_free(cs);
+
+        /*
+         * And if this was the last downstream, notify the connection
+         * layer, because it might now be time to wind up the whole
+         * SSH connection.
+         */
+        if (count234(sharestate->connections) == 0 && sharestate->cl)
+            ssh_sharing_no_more_downstreams(sharestate->cl);
     }
 }
 

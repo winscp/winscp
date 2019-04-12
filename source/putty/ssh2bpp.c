@@ -465,13 +465,14 @@ static void ssh2_bpp_handle_input(BinaryPacketProtocol *bpp)
              * SSH_MSG_UNIMPLEMENTED.
              */
             s->pktin->type = SSH_MSG_NO_TYPE_CODE;
+            s->data += 5;
             s->length = 0;
-            BinarySource_INIT(s->pktin, s->data + 5, 0);
         } else {
             s->pktin->type = s->data[5];
+            s->data += 6;
             s->length -= 6;
-            BinarySource_INIT(s->pktin, s->data + 6, s->length);
         }
+        BinarySource_INIT(s->pktin, s->data, s->length);
 
         if (s->bpp.logctx) {
             logblank_t blanks[MAX_BLANKS];
@@ -481,7 +482,7 @@ static void ssh2_bpp_handle_input(BinaryPacketProtocol *bpp)
             log_packet(s->bpp.logctx, PKT_INCOMING, s->pktin->type,
                        ssh2_pkt_type(s->bpp.pls->kctx, s->bpp.pls->actx,
                                      s->pktin->type),
-                       get_ptr(s->pktin), get_avail(s->pktin), nblanks, blanks,
+                       s->data, s->length, nblanks, blanks,
                        &s->pktin->sequence, 0, NULL);
         }
 
@@ -517,6 +518,7 @@ static void ssh2_bpp_handle_input(BinaryPacketProtocol *bpp)
     } else {
         ssh_remote_eof(s->bpp.ssh, "Server closed network connection");
     }
+    return;  /* avoid touching s now it's been freed */
 
     crFinishV;
 }
