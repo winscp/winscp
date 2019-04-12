@@ -626,6 +626,7 @@ static int ssh2_connection_filter_queue(struct ssh2_connection_state *s)
             break;
 
           case SSH2_MSG_CHANNEL_DATA:
+          case SSH2_MSG_CHANNEL_EXTENDED_DATA:
           case SSH2_MSG_CHANNEL_WINDOW_ADJUST:
           case SSH2_MSG_CHANNEL_REQUEST:
           case SSH2_MSG_CHANNEL_EOF:
