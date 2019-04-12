@@ -2109,7 +2109,7 @@ static void ssh2_sharing_no_more_downstreams(ConnectionLayer *cl)
 {
     struct ssh2_connection_state *s =
         FROMFIELD(cl, struct ssh2_connection_state, cl);
-    queue_toplevel_callback(ssh2_check_termination_callback, s);
+    queue_toplevel_callback(get_frontend_callback_set(cl->frontend), ssh2_check_termination_callback, s);
 }
 
 static struct X11FakeAuth *ssh2_add_sharing_x11_display(
