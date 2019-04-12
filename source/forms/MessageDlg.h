@@ -20,6 +20,7 @@ public:
 
   virtual int __fastcall ShowModal();
   void __fastcall InsertPanel(TPanel * Panel);
+  int __fastcall GetContentWidth();
   void __fastcall NavigateToUrl(const UnicodeString & Url);
 
 protected:

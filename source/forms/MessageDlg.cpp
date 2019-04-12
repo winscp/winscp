@@ -656,6 +656,18 @@ void __fastcall TMessageForm::InsertPanel(TPanel * Panel)
   }
 }
 //---------------------------------------------------------------------------
+int __fastcall TMessageForm::GetContentWidth()
+{
+  int Result = 0;
+  if (DebugAlwaysTrue(MessageBrowser != NULL))
+  {
+    // we currently use this for updates message box only
+    TControl * ContentsControl = static_cast<TControl *>(DebugNotNull(MessageBrowser))->Parent;
+    Result = ContentsControl->Width;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall TMessageForm::NavigateToUrl(const UnicodeString & Url)
 {
   if (DebugAlwaysTrue(MessageBrowser != NULL))
@@ -1243,4 +1255,10 @@ void __fastcall NavigateMessageDialogToUrl(TCustomForm * Form, const UnicodeStri
 {
   TMessageForm * MessageForm = DebugNotNull(dynamic_cast<TMessageForm *>(Form));
   MessageForm->NavigateToUrl(Url);
+}
+//---------------------------------------------------------------------------
+int __fastcall GetMessageDialogContentWidth(TCustomForm * Form)
+{
+  TMessageForm * MessageForm = DebugNotNull(dynamic_cast<TMessageForm *>(Form));
+  return MessageForm->GetContentWidth();
 }

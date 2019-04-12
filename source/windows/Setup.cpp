@@ -32,6 +32,7 @@
 #include <DateUtils.hpp>
 #include <OperationWithTimeout.hpp>
 #include <Soap.HTTPUtil.hpp>
+#include <Web.HTTPApp.hpp>
 //---------------------------------------------------------------------------
 #define KEY _T("SYSTEM\\CurrentControlSet\\Control\\") \
             _T("Session Manager\\Environment")
@@ -1520,25 +1521,6 @@ static void __fastcall InsertDonateLink(void * /*Data*/, TObject * Sender)
   // OnShow can happen multiple times, for example when showing dialog on start up (being main window)
   if (FindComponentRecursively(Dialog, DonatePanelName) == NULL)
   {
-    TPanel * Panel = CreateBlankPanel(Dialog);
-    Panel->Name = DonatePanelName;
-    Panel->Caption = UnicodeString(); // override default use of Name
-
-    TWebBrowserEx * DonateBrowser = CreateBrowserViewer(Panel, UnicodeString());
-    ReadyBrowserForStreaming(DonateBrowser);
-    WaitBrowserToIdle(DonateBrowser);
-
-    DonateBrowser->Height = ScaleByTextHeight(Dialog, 36);
-
-    DonateBrowser->Top = 0;
-    DonateBrowser->Left = 0;
-
-    Panel->Height = DonateBrowser->Height;
-
-    // Currently this is noop (will fail assertion), if MoreMessagesUrl is not set
-    // (what should not happen)
-    InsertPanelToMessageDialog(Dialog, Panel);
-
     UnicodeString DocumentBody = LoadStr(UPDATES_DONATE_HTML);
     DocumentBody = ReplaceStr(DocumentBody, L"%DONATE_URL%", AppendUrlParams(LoadStr(DONATE_URL), L"automaticupdates=1"));
     UnicodeString AboutStoreUrl = LoadStr(ABOUT_STORE_URL);
@@ -1549,9 +1531,46 @@ static void __fastcall InsertDonateLink(void * /*Data*/, TObject * Sender)
       FORMAT(L"<img src=\"%s\" style=\"height: 1.8em; vertical-align: -0.4em; padding-top: 0.2em; border: 0;\">", (StoreButtonUrl));
     UnicodeString StoreUrl = FMTLOAD(STORE_URL, (L"update"));
     UnicodeString StoreLink = FORMAT(L"<a href=\"%s\">%s</a>", (StoreUrl, StoreButton));
-    DocumentBody = ReplaceStr(DocumentBody, L"%GET_IMG% ", FORMAT(L"%s&nbsp;", (StoreLink)));
 
+    UnicodeString PlainBody = HTMLDecode(DocumentBody);
+    int P1, P2;
+    while (((P1 = PlainBody.Pos(L"<")) > 0) && ((P2 = PlainBody.Pos(L">")) > 0) && (P1 < P2))
+    {
+      PlainBody.Delete(P1, P2 - P1 + 1);
+    }
+    while ((P1 = PlainBody.Pos(L"  ")) > 0)
+    {
+      PlainBody.Delete(P1, 1);
+    }
+
+    DocumentBody = ReplaceStr(DocumentBody, L"%GET_IMG% ", FORMAT(L"%s&nbsp;", (StoreLink)));
     DocumentBody = FORMAT(L"<p>%s</p>", (DocumentBody));
+
+    TPanel * Panel = CreateBlankPanel(Dialog);
+    Panel->Name = DonatePanelName;
+    Panel->Caption = UnicodeString(); // override default use of Name
+
+    TWebBrowserEx * DonateBrowser = CreateBrowserViewer(Panel, UnicodeString());
+    ReadyBrowserForStreaming(DonateBrowser);
+    WaitBrowserToIdle(DonateBrowser);
+
+    int Height = 36;
+    int TextWidth = Dialog->Canvas->TextWidth(PlainBody);
+    int ContentLimit = (GetMessageDialogContentWidth(Dialog) * 5 / 3);
+    if (TextWidth > ContentLimit)
+    {
+      Height = Height * 3 / 2;
+    }
+    DonateBrowser->Height = ScaleByTextHeight(Dialog, Height);
+
+    DonateBrowser->Top = 0;
+    DonateBrowser->Left = 0;
+
+    Panel->Height = DonateBrowser->Height;
+
+    // Currently this is noop (will fail assertion), if MoreMessagesUrl is not set
+    // (what should not happen)
+    InsertPanelToMessageDialog(Dialog, Panel);
 
     UnicodeString Document = GenerateAppHtmlPage(Dialog->Font, Panel, DocumentBody, true);
     LoadBrowserDocument(DonateBrowser, Document);
