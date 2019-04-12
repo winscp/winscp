@@ -357,6 +357,6 @@ static void ssh1_bpp_queue_disconnect(BinaryPacketProtocol *bpp,
 #ifdef MPEXT
 const ssh1_cipher * ssh1_bpp_get_cipher(BinaryPacketProtocol *bpp)
 {
-    return FROMFIELD(bpp, struct ssh1_bpp_state, bpp)->cipher;
+    return container_of(bpp, struct ssh1_bpp_state, bpp)->cipher;
 }
 #endif

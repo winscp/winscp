@@ -1077,21 +1077,21 @@ char *portfwdmgr_connect(PortFwdManager *mgr, Channel **chan_ret,
 int is_pfwd(Plug * plug)
 {
   return
-    ((*plug)->closing == pfd_closing) ||
-    ((*plug)->closing == pfl_closing);
+    (plug->vt->closing == pfd_closing) ||
+    (plug->vt->closing == pfl_closing);
 }
 
 Frontend * get_pfwd_frontend(Plug * plug)
 {
   Ssh * ssh = NULL;
-  if ((*plug)->closing == pfl_closing)
+  if (plug->vt->closing == pfl_closing)
   {
-    struct PortListener *pl = FROMFIELD(plug, struct PortListener, plugvt);
+    struct PortListener *pl = container_of(plug, struct PortListener, plug);
     ssh = pl->cl->frontend;
   }
-  else if ((*plug)->closing == pfd_closing)
+  else if (plug->vt->closing == pfd_closing)
   {
-    struct PortForwarding *pf = FROMFIELD(plug, struct PortForwarding, plugvt);
+    struct PortForwarding *pf = container_of(plug, struct PortForwarding, plug);
     ssh = pf->cl->frontend;
   }
   return ssh;

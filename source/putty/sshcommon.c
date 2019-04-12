@@ -61,7 +61,7 @@ static PacketQueueNode pktin_freeq_head = {
 {
     struct callback_set * set = (struct callback_set *)vctx;
     while (set->pktin_freeq_head->next != set->pktin_freeq_head) {
-        PacketQueueNode *node = set->pktin_freeq_head.next;
+        PacketQueueNode *node = set->pktin_freeq_head->next;
         PktIn *pktin = container_of(node, PktIn, qnode);
         set->pktin_freeq_head->next = node->next;
         sfree(pktin);

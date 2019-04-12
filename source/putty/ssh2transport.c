@@ -2980,7 +2980,7 @@ static void ssh2_transport_got_user_input(PacketProtocolLayer *ppl)
 static unsigned int ssh2_transport_winscp_query(PacketProtocolLayer *ppl, int query)
 {
     struct ssh2_transport_state *s =
-        FROMFIELD(ppl, struct ssh2_transport_state, ppl);
+        container_of(ppl, struct ssh2_transport_state, ppl);
     if (query == WINSCP_QUERY_TIMER)
     {
         ssh2_transport_timer(s, GETTICKCOUNT());

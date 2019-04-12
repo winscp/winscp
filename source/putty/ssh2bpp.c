@@ -739,22 +739,22 @@ static void ssh2_bpp_handle_output(BinaryPacketProtocol *bpp)
 #ifdef MPEXT
 const ssh2_cipher * ssh2_bpp_get_cscipher(BinaryPacketProtocol *bpp)
 {
-    return FROMFIELD(bpp, struct ssh2_bpp_state, bpp)->out.cipher;
+    return container_of(bpp, struct ssh2_bpp_state, bpp)->out.cipher;
 }
 
 const ssh2_cipher * ssh2_bpp_get_sccipher(BinaryPacketProtocol *bpp)
 {
-    return FROMFIELD(bpp, struct ssh2_bpp_state, bpp)->in.cipher;
+    return container_of(bpp, struct ssh2_bpp_state, bpp)->in.cipher;
 }
 
 const struct ssh_compressor * ssh2_bpp_get_cscomp(BinaryPacketProtocol *bpp)
 {
-    return FROMFIELD(bpp, struct ssh2_bpp_state, bpp)->out_comp;
+    return container_of(bpp, struct ssh2_bpp_state, bpp)->out_comp;
 }
 
 const struct ssh_decompressor * ssh2_bpp_get_sccomp(BinaryPacketProtocol *bpp)
 {
-    return FROMFIELD(bpp, struct ssh2_bpp_state, bpp)->in_decomp;
+    return container_of(bpp, struct ssh2_bpp_state, bpp)->in_decomp;
 }
 
 #endif

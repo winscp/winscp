@@ -1124,53 +1124,53 @@ const struct BackendVtable ssh_backend = {
 
 int is_ssh(Plug * plug)
 {
-  return (*plug)->closing == ssh_closing;
+  return plug->vt->closing == ssh_closing;
 }
 
 int get_ssh_version(Backend * be)
 {
-  Ssh * ssh = FROMFIELD(be, Ssh, backend);
+  Ssh * ssh = container_of(be, Ssh, backend);
   return ssh->version;
 }
 
 void * get_ssh_frontend(Plug * plug)
 {
-  return FROMFIELD(plug, Ssh, plugvt)->frontend;
+  return container_of(plug, Ssh, plug)->frontend;
 }
 
 const ssh1_cipher * get_cipher(Backend * be)
 {
-  Ssh * ssh = FROMFIELD(be, Ssh, backend);
+  Ssh * ssh = container_of(be, Ssh, backend);
   return ssh1_bpp_get_cipher(ssh->bpp);
 }
 
 const ssh2_cipher * get_cscipher(Backend * be)
 {
-  Ssh * ssh = FROMFIELD(be, Ssh, backend);
+  Ssh * ssh = container_of(be, Ssh, backend);
   return ssh2_bpp_get_cscipher(ssh->bpp);
 }
 
 const ssh2_cipher * get_sccipher(Backend * be)
 {
-  Ssh * ssh = FROMFIELD(be, Ssh, backend);
+  Ssh * ssh = container_of(be, Ssh, backend);
   return ssh2_bpp_get_sccipher(ssh->bpp);
 }
 
 const struct ssh_compressor * get_cscomp(Backend * be)
 {
-  Ssh * ssh = FROMFIELD(be, Ssh, backend);
+  Ssh * ssh = container_of(be, Ssh, backend);
   return ssh2_bpp_get_cscomp(ssh->bpp);
 }
 
 const struct ssh_decompressor * get_sccomp(Backend * be)
 {
-  Ssh * ssh = FROMFIELD(be, Ssh, backend);
+  Ssh * ssh = container_of(be, Ssh, backend);
   return ssh2_bpp_get_sccomp(ssh->bpp);
 }
 
 unsigned int winscp_query(Backend * be, int query)
 {
-  Ssh * ssh = FROMFIELD(be, Ssh, backend);
+  Ssh * ssh = container_of(be, Ssh, backend);
   if ((ssh->base_layer != NULL) && (ssh->base_layer->vt->winscp_query != NULL))
   {
     return ssh_ppl_winscp_query(ssh->base_layer, query);

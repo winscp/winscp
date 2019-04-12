@@ -2523,7 +2523,7 @@ static void ssh2_connection_reconfigure(PacketProtocolLayer *ppl, Conf *conf)
 static unsigned int ssh2_connection_winscp_query(PacketProtocolLayer *ppl, int query)
 {
     struct ssh2_connection_state *s =
-        FROMFIELD(ppl, struct ssh2_connection_state, ppl);
+        container_of(ppl, struct ssh2_connection_state, ppl);
 
     if (query == WINSCP_QUERY_REMMAXPKT)
     {
