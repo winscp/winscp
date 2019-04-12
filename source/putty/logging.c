@@ -153,6 +153,7 @@ static void logfopen_callback(void *vctx, int mode)
 	logwrite(ctx, data, len);
 	bufchain_consume(&ctx->queue, len);
     }
+    logflush(ctx);
 }
 
 /*
