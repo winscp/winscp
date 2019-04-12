@@ -69,7 +69,7 @@ struct ssh_tag {
     int term_width, term_height;
 
     bufchain in_raw, out_raw, user_input;
-    int send_outgoing_eof;
+    int pending_close;
     IdempotentCallback ic_out_raw;
 
     PacketLogSettings pls;
@@ -315,8 +315,10 @@ static void ssh_bpp_output_raw_data_callback(void *vctx)
         }
     }
 
-    if (ssh->send_outgoing_eof)
-        sk_write_eof(ssh->s);
+    if (ssh->pending_close) {
+        sk_close(ssh->s);
+        ssh->s = NULL;
+    }
 }
 
 static void ssh_shutdown_internal(Ssh ssh)
@@ -370,9 +372,10 @@ static void ssh_initiate_connection_close(Ssh ssh)
     ssh_shutdown_internal(ssh);
 
     /* Force any remaining queued SSH packets through the BPP, and
-     * schedule sending of EOF on the network socket after them. */
+     * schedule closing the network socket after they go out. */
     ssh_bpp_handle_output(ssh->bpp);
-    ssh->send_outgoing_eof = TRUE;
+    ssh->pending_close = TRUE;
+    queue_idempotent_callback(&ssh->ic_out_raw);
 
     /* Now we expect the other end to close the connection too in
      * response, so arrange that we'll receive notification of that

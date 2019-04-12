@@ -2273,9 +2273,9 @@ static void mainchan_send_eof(Channel *chan)
          */
         sshfwd_write_eof(mc->sc);
         ppl_logevent(("Sent EOF message"));
+        s->mainchan_eof_sent = TRUE;
+        s->want_user_input = FALSE;      /* now stop reading from stdin */
     }
-    s->mainchan_eof_sent = TRUE;
-    s->want_user_input = FALSE;      /* now stop reading from stdin */
 }
 
 static void mainchan_set_input_wanted(Channel *chan, int wanted)
@@ -2486,7 +2486,7 @@ static int ssh2_connection_want_user_input(PacketProtocolLayer *ppl)
 {
     struct ssh2_connection_state *s =
         FROMFIELD(ppl, struct ssh2_connection_state, ppl);
-    return s->want_user_input;
+    return s->mainchan_ready && s->want_user_input;
 }
 
 static void ssh2_connection_got_user_input(PacketProtocolLayer *ppl)
