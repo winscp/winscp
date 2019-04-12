@@ -411,6 +411,7 @@ TForm * __fastcall CreateMoreMessageDialogEx(const UnicodeString Message, TStrin
   TQueryType Type, unsigned int Answers, UnicodeString HelpKeyword, const TMessageParams * Params);
 unsigned int __fastcall ExecuteMessageDialog(TForm * Dialog, unsigned int Answers, const TMessageParams * Params);
 void __fastcall InsertPanelToMessageDialog(TCustomForm * Form, TPanel * Panel);
+int __fastcall GetMessageDialogContentWidth(TCustomForm * Form);
 void __fastcall NavigateMessageDialogToUrl(TCustomForm * Form, const UnicodeString & Url);
 extern const UnicodeString MessagePanelName;
 extern const UnicodeString MainMessageLabelName;
