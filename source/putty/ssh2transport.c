@@ -49,7 +49,10 @@ struct kexinit_algorithm {
             const struct ssh2_macalg *mac;
             int etm;
         } mac;
-        const struct ssh_compression_alg *comp;
+        struct {
+            const struct ssh_compression_alg *comp;
+            int delayed;
+        } comp;
     } u;
 };
 
@@ -207,6 +210,7 @@ struct ssh2_transport_state {
         const struct ssh2_macalg *mac;
         int etm_mode;
         const struct ssh_compression_alg *comp;
+        int comp_delayed;
     } in, out;
     ptrlen hostkeydata, sigdata;
     char *keystr, *fingerprint;
@@ -224,8 +228,6 @@ struct ssh2_transport_state {
     int n_preferred_ciphers;
     const struct ssh2_ciphers *preferred_ciphers[CIPHER_MAX];
     const struct ssh_compression_alg *preferred_comp;
-    int userauth_succeeded;         /* for delayed compression */
-    int pending_compression;
     int got_session_id;
     int dlgret;
     int guessok;
@@ -619,8 +621,6 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
     s->in.comp = s->out.comp = NULL;
 
     s->got_session_id = FALSE;
-    s->userauth_succeeded = FALSE;
-    s->pending_compression = FALSE;
     s->need_gss_transient_hostkey = FALSE;
     s->warned_about_no_gss_transient_hostkey = FALSE;
 
@@ -942,22 +942,23 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
             assert(lenof(compressions) > 1);
             /* Prefer non-delayed versions */
             alg = ssh2_kexinit_addalg(s->kexlists[j], s->preferred_comp->name);
-            alg->u.comp = s->preferred_comp;
-            /* We don't even list delayed versions of algorithms until
-             * they're allowed to be used, to avoid a race. See the end of
-             * this function. */
-            if (s->userauth_succeeded && s->preferred_comp->delayed_name) {
+            alg->u.comp.comp = s->preferred_comp;
+            alg->u.comp.delayed = FALSE;
+            if (s->preferred_comp->delayed_name) {
                 alg = ssh2_kexinit_addalg(s->kexlists[j],
                                           s->preferred_comp->delayed_name);
-                alg->u.comp = s->preferred_comp;
+                alg->u.comp.comp = s->preferred_comp;
+                alg->u.comp.delayed = TRUE;
             }
             for (i = 0; i < lenof(compressions); i++) {
                 const struct ssh_compression_alg *c = compressions[i];
                 alg = ssh2_kexinit_addalg(s->kexlists[j], c->name);
-                alg->u.comp = c;
-                if (s->userauth_succeeded && c->delayed_name) {
+                alg->u.comp.comp = c;
+                alg->u.comp.delayed = FALSE;
+                if (c->delayed_name) {
                     alg = ssh2_kexinit_addalg(s->kexlists[j], c->delayed_name);
-                    alg->u.comp = c;
+                    alg->u.comp.comp = c;
+                    alg->u.comp.delayed = TRUE;
                 }
             }
         }
@@ -1013,6 +1014,7 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
         s->in.cipher = s->out.cipher = NULL;
         s->in.mac = s->out.mac = NULL;
         s->in.comp = s->out.comp = NULL;
+        s->in.comp_delayed = s->out.comp_delayed = FALSE;
         s->warn_kex = s->warn_hk = FALSE;
         s->warn_cscipher = s->warn_sccipher = FALSE;
 
@@ -1083,21 +1085,14 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
                         s->in.mac = alg->u.mac.mac;
                         s->in.etm_mode = alg->u.mac.etm;
                     } else if (i == KEXLIST_CSCOMP) {
-                        s->out.comp = alg->u.comp;
+                        s->out.comp = alg->u.comp.comp;
+                        s->out.comp_delayed = alg->u.comp.delayed;
                     } else if (i == KEXLIST_SCCOMP) {
-                        s->in.comp = alg->u.comp;
+                        s->in.comp = alg->u.comp.comp;
+                        s->in.comp_delayed = alg->u.comp.delayed;
                     }
                     goto matched;
                 }
-
-                /* Set a flag if there's a delayed compression option
-                 * available for a compression method that we just
-                 * failed to select the immediate version of. */
-                s->pending_compression = (
-                    (i == KEXLIST_CSCOMP || i == KEXLIST_SCCOMP) &&
-                    in_commasep_string(alg->u.comp->delayed_name,
-                                       str.ptr, str.len) &&
-                    !s->userauth_succeeded);
             }
             ssh_sw_abort(s->ppl.ssh, "Couldn't agree a %s (available: %.*s)",
                          kexlist_descr[i], PTRLEN_PRINTF(str));
@@ -1136,10 +1131,6 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
             }
         }
 
-        if (s->pending_compression) {
-            ppl_logevent(("Server supports delayed compression; "
-                          "will try this later"));
-        }
         get_string(pktin);  /* client->server language */
         get_string(pktin);  /* server->client language */
         s->ignorepkt = get_bool(pktin) && !s->guessok;
@@ -2153,7 +2144,7 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
             s->ppl.bpp,
             s->out.cipher, cipher_key->u, cipher_iv->u,
             s->out.mac, s->out.etm_mode, mac_key->u,
-            s->out.comp);
+            s->out.comp, s->out.comp_delayed);
 
         strbuf_free(cipher_key);
         strbuf_free(cipher_iv);
@@ -2208,7 +2199,7 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
             s->ppl.bpp,
             s->in.cipher, cipher_key->u, cipher_iv->u,
             s->in.mac, s->in.etm_mode, mac_key->u,
-            s->in.comp);
+            s->in.comp, s->in.comp_delayed);
 
         strbuf_free(cipher_key);
         strbuf_free(cipher_iv);
@@ -2295,41 +2286,17 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
 
         if (s->rekey_class == RK_POST_USERAUTH) {
             /*
-             * userauth has seen a USERAUTH_SUCCEEDED. For a couple of
-             * reasons, this may be the moment to do an immediate
-             * rekey with different parameters. But it may not; so
-             * here we turn that rekey class into either RK_NONE or
-             * RK_NORMAL.
+             * userauth has seen a USERAUTH_SUCCESS. This may be the
+             * moment to do an immediate rekey with different
+             * parameters. But it may not; so here we turn that rekey
+             * class into either RK_NONE or RK_NORMAL.
              *
-             * One is to turn on delayed compression. We do this by a
-             * rekey to work around a protocol design bug:
-             * draft-miller-secsh-compression-delayed-00 says that you
-             * negotiate delayed compression in the first key
-             * exchange, and both sides start compressing when the
-             * server has sent USERAUTH_SUCCESS. This has a race
-             * condition -- the server can't know when the client has
-             * seen it, and thus which incoming packets it should
-             * treat as compressed.
-             *
-             * Instead, we do the initial key exchange without
-             * offering the delayed methods, but note if the server
-             * offers them; when we get here, if a delayed method was
-             * available that was higher on our list than what we got,
-             * we initiate a rekey in which we _do_ list the delayed
-             * methods (and hopefully get it as a result). Subsequent
-             * rekeys will do the same.
-             *
-             * Another reason for a rekey at this point is if we've
-             * done a GSS key exchange and don't have anything in our
+             * Currently the only reason for this is if we've done a
+             * GSS key exchange and don't have anything in our
              * transient hostkey cache, in which case we should make
              * an attempt to populate the cache now.
              */
-            assert(!s->userauth_succeeded); /* should only happen once */
-            s->userauth_succeeded = TRUE;
-            if (s->pending_compression) {
-                s->rekey_reason = "enabling delayed compression";
-                s->rekey_class = RK_NORMAL;
-            } else if (s->need_gss_transient_hostkey) {
+            if (s->need_gss_transient_hostkey) {
                 s->rekey_reason = "populating transient host key cache";
                 s->rekey_class = RK_NORMAL;
             } else {
@@ -2917,7 +2884,7 @@ static void ssh2_transport_reconfigure(PacketProtocolLayer *ppl, Conf *conf)
     s->conf = conf_copy(conf);
 
     if (rekey_reason) {
-        if (!s->kex_in_progress) {
+        if (!s->kex_in_progress && !ssh2_bpp_rekey_inadvisable(s->ppl.bpp)) {
             s->rekey_reason = rekey_reason;
             s->rekey_class = RK_NORMAL;
             queue_idempotent_callback(&s->ppl.ic_process_queue);

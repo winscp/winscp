@@ -103,12 +103,23 @@ void ssh2_bpp_new_outgoing_crypto(
     BinaryPacketProtocol *bpp,
     const struct ssh2_cipheralg *cipher, const void *ckey, const void *iv,
     const struct ssh2_macalg *mac, int etm_mode, const void *mac_key,
-    const struct ssh_compression_alg *compression);
+    const struct ssh_compression_alg *compression, int delayed_compression);
 void ssh2_bpp_new_incoming_crypto(
     BinaryPacketProtocol *bpp,
     const struct ssh2_cipheralg *cipher, const void *ckey, const void *iv,
     const struct ssh2_macalg *mac, int etm_mode, const void *mac_key,
-    const struct ssh_compression_alg *compression);
+    const struct ssh_compression_alg *compression, int delayed_compression);
+
+/*
+ * A query method specific to the interface between ssh2transport and
+ * ssh2bpp. If true, it indicates that we're potentially in the
+ * race-condition-prone part of delayed compression setup and so
+ * asynchronous outgoing transport-layer packets are currently not
+ * being sent, which means in particular that it would be a bad idea
+ * to start a rekey because then we'd stop responding to anything
+ * _other_ than transport-layer packets and deadlock the protocol.
+ */
+int ssh2_bpp_rekey_inadvisable(BinaryPacketProtocol *bpp);
 
 BinaryPacketProtocol *ssh2_bare_bpp_new(Frontend *frontend);
 

@@ -91,6 +91,8 @@ void log_proxy_stderr(Plug *plug, bufchain *buf, const void *vdata, int len)
         msg = snewn(msglen+1, char);
         bufchain_fetch(buf, msg, msglen);
         bufchain_consume(buf, msglen);
+        while (msglen > 0 && (msg[msglen-1] == '\n' || msg[msglen-1] == '\r'))
+            msglen--;
         msg[msglen] = '\0';
         fullmsg = dupprintf("proxy: %s", msg);
         plug_log(plug, 2, NULL, 0, fullmsg, 0);
