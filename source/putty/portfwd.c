@@ -1071,16 +1071,16 @@ char *portfwdmgr_connect(PortFwdManager *mgr, Channel **chan_ret,
 
 #include "puttyexp.h"
 
-int is_pfwd(Plug plug)
+int is_pfwd(Plug * plug)
 {
   return
     ((*plug)->closing == pfd_closing) ||
     ((*plug)->closing == pfl_closing);
 }
 
-Frontend * get_pfwd_frontend(Plug plug)
+Frontend * get_pfwd_frontend(Plug * plug)
 {
-  Ssh ssh = NULL;
+  Ssh * ssh = NULL;
   if ((*plug)->closing == pfl_closing)
   {
     struct PortListener *pl = FROMFIELD(plug, struct PortListener, plugvt);

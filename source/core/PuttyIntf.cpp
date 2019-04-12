@@ -74,7 +74,7 @@ void __fastcall DontSaveRandomSeed()
   SaveRandomSeed = false;
 }
 //---------------------------------------------------------------------------
-TSecureShell * GetSecureShell(Plug plug, bool & pfwd)
+TSecureShell * GetSecureShell(Plug * plug, bool & pfwd)
 {
   if (!is_ssh(plug) && !is_pfwd(plug))
   {
@@ -99,7 +99,7 @@ TSecureShell * GetSecureShell(Plug plug, bool & pfwd)
   return reinterpret_cast<TSecureShell*>(frontend);
 }
 //---------------------------------------------------------------------------
-struct callback_set * get_callback_set(Plug plug)
+struct callback_set * get_callback_set(Plug * plug)
 {
   bool pfwd;
   TSecureShell * SecureShell = GetSecureShell(plug, pfwd);
@@ -111,7 +111,7 @@ struct callback_set * get_frontend_callback_set(Frontend * frontend)
   return reinterpret_cast<TSecureShell *>(frontend)->GetCallbackSet();
 }
 //---------------------------------------------------------------------------
-extern "C" char * do_select(Plug plug, SOCKET skt, int startup)
+extern "C" char * do_select(Plug * plug, SOCKET skt, int startup)
 {
   bool pfwd;
   TSecureShell * SecureShell = GetSecureShell(plug, pfwd);
@@ -372,17 +372,17 @@ void expire_timer_context(void * /*ctx*/)
   // nothing
 }
 //---------------------------------------------------------------------------
-Pinger pinger_new(Conf * /*conf*/, Backend * /*back*/)
+Pinger * pinger_new(Conf * /*conf*/, Backend * /*back*/)
 {
   return NULL;
 }
 //---------------------------------------------------------------------------
-void pinger_reconfig(Pinger /*pinger*/, Conf * /*oldconf*/, Conf * /*newconf*/)
+void pinger_reconfig(Pinger * /*pinger*/, Conf * /*oldconf*/, Conf * /*newconf*/)
 {
   // nothing
 }
 //---------------------------------------------------------------------------
-void pinger_free(Pinger /*pinger*/)
+void pinger_free(Pinger * /*pinger*/)
 {
   // nothing
 }

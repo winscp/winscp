@@ -10,9 +10,9 @@ typedef const struct ssh1_cipheralg *ssh1_cipher;
 struct ssh2_cipheralg;
 typedef const struct ssh2_cipheralg *ssh2_cipher;
 
-int is_ssh(Plug plug);
+int is_ssh(Plug * plug);
 int get_ssh_version(Backend * be);
-void * get_ssh_frontend(Plug plug);
+void * get_ssh_frontend(Plug * plug);
 const ssh1_cipher * get_cipher(Backend * be);
 const ssh2_cipher * get_cscipher(Backend * be);
 const ssh2_cipher * get_sccipher(Backend * be);
@@ -35,8 +35,8 @@ void get_macs(int * count, const struct ssh2_macalg *** amacs);
 
 // from portfwd.c
 
-int is_pfwd(Plug plug);
-Frontend * get_pfwd_frontend(Plug plug);
+int is_pfwd(Plug * plug);
+Frontend * get_pfwd_frontend(Plug * plug);
 
 // for winstore.c
 

@@ -1669,7 +1669,7 @@ struct callback_set {
 void queue_toplevel_callback(CALLBACK_SET toplevel_callback_fn_t fn, void *ctx);
 int run_toplevel_callbacks(CALLBACK_SET_ONLY);
 int toplevel_callback_pending(CALLBACK_SET_ONLY);
-struct callback_set * get_callback_set(Plug plug);
+struct callback_set * get_callback_set(Plug * plug);
 struct callback_set * get_frontend_callback_set(Frontend * frontend);
 void delete_callbacks_for_context(CALLBACK_SET void *ctx);
 

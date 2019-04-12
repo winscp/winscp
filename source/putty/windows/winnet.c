@@ -958,7 +958,7 @@ static const char *sk_net_socket_error(Socket *s);
 static char *sk_net_peer_info(Socket *s);
 
 #ifdef MPEXT
-extern char *do_select(Plug plug, SOCKET skt, int startup);
+extern char *do_select(Plug * plug, SOCKET skt, int startup);
 #else
 extern char *do_select(SOCKET skt, int startup);
 #endif
@@ -1539,7 +1539,7 @@ Socket *sk_newlistener(const char *srcaddr, int port, Plug *plug,
 static void sk_net_close(Socket *sock)
 {
 #ifdef MPEXT
-    extern char *do_select(Plug plug, SOCKET skt, int startup);
+    extern char *do_select(Plug * plug, SOCKET skt, int startup);
 #else
     extern char *do_select(SOCKET skt, int startup);
 #endif

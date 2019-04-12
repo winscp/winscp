@@ -1122,55 +1122,55 @@ const struct Backend_vtable ssh_backend = {
 
 #include "puttyexp.h"
 
-int is_ssh(Plug plug)
+int is_ssh(Plug * plug)
 {
   return (*plug)->closing == ssh_closing;
 }
 
 int get_ssh_version(Backend * be)
 {
-  Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
+  Ssh * ssh = FROMFIELD(be, Ssh, backend);
   return ssh->version;
 }
 
-void * get_ssh_frontend(Plug plug)
+void * get_ssh_frontend(Plug * plug)
 {
-  return FROMFIELD(plug, struct ssh_tag, plugvt)->frontend;
+  return FROMFIELD(plug, Ssh, plugvt)->frontend;
 }
 
 const ssh1_cipher * get_cipher(Backend * be)
 {
-  Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
+  Ssh * ssh = FROMFIELD(be, Ssh, backend);
   return ssh1_bpp_get_cipher(ssh->bpp);
 }
 
 const ssh2_cipher * get_cscipher(Backend * be)
 {
-  Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
+  Ssh * ssh = FROMFIELD(be, Ssh, backend);
   return ssh2_bpp_get_cscipher(ssh->bpp);
 }
 
 const ssh2_cipher * get_sccipher(Backend * be)
 {
-  Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
+  Ssh * ssh = FROMFIELD(be, Ssh, backend);
   return ssh2_bpp_get_sccipher(ssh->bpp);
 }
 
 const struct ssh_compressor * get_cscomp(Backend * be)
 {
-  Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
+  Ssh * ssh = FROMFIELD(be, Ssh, backend);
   return ssh2_bpp_get_cscomp(ssh->bpp);
 }
 
 const struct ssh_decompressor * get_sccomp(Backend * be)
 {
-  Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
+  Ssh * ssh = FROMFIELD(be, Ssh, backend);
   return ssh2_bpp_get_sccomp(ssh->bpp);
 }
 
 unsigned int winscp_query(Backend * be, int query)
 {
-  Ssh ssh = FROMFIELD(be, struct ssh_tag, backend);
+  Ssh * ssh = FROMFIELD(be, Ssh, backend);
   if ((ssh->base_layer != NULL) && (ssh->base_layer->vt->winscp_query != NULL))
   {
     return ssh_ppl_winscp_query(ssh->base_layer, query);

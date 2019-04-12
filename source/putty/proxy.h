@@ -113,7 +113,7 @@ extern int proxy_socks5_handlechap (ProxySocket *);
 extern int proxy_socks5_selectchap(ProxySocket *);
 
 #ifdef MPEXT
-ProxySocket * get_proxy_plug_socket(Plug p);
+ProxySocket * get_proxy_plug_socket(Plug * p);
 #endif
 
 #endif

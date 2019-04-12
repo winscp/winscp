@@ -13,7 +13,7 @@
 #include "network.h"
 
 #ifdef MPEXT
-extern char *do_select(Plug plug, SOCKET skt, int startup);
+extern char *do_select(Plug * plug, SOCKET skt, int startup);
 #define queue_toplevel_callback(FN, CTX) queue_toplevel_callback(get_callback_set(CTX->plug), FN, CTX)
 #endif
 

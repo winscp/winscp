@@ -1601,7 +1601,7 @@ int proxy_telnet_negotiate (ProxySocket *p, int change)
 }
 
 #ifdef MPEXT
-ProxySocket * get_proxy_plug_socket(Plug p)
+ProxySocket * get_proxy_plug_socket(Plug * p)
 {
     return FROMFIELD(p, ProxySocket, plugvt);
 }
