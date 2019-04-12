@@ -31,13 +31,6 @@ char *dupprintf(const char *fmt, ...)
 char *dupvprintf(const char *fmt, va_list ap);
 void burnstr(char *string);
 
-/*
- * Pass a dynamically allocated string to logevent and immediately
- * free it. Intended for use by wrapper macros which pass the return
- * value of dupprintf straight to this.
- */
-void logevent_and_free(Frontend *frontend, char *msg);
-
 struct strbuf {
     char *s;
     unsigned char *u;

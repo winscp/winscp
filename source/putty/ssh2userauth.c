@@ -40,7 +40,6 @@ struct ssh2_userauth_state {
         AUTH_TYPE_KEYBOARD_INTERACTIVE,
         AUTH_TYPE_KEYBOARD_INTERACTIVE_QUIET
     } type;
-    int done_service_req;
     int need_pw, can_pubkey, can_passwd, can_keyb_inter;
     int userpass_ret;
     int tried_pubkey_config, done_agent;
@@ -211,7 +210,6 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
 
     crBegin(s->crState);
 
-    s->done_service_req = FALSE;
 #ifndef NO_GSSAPI
     s->tried_gssapi = FALSE;
     s->tried_gssapi_keyex_auth = FALSE;
@@ -414,7 +412,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
 
         s->pktout = ssh_bpp_new_pktout(s->ppl.bpp, SSH2_MSG_USERAUTH_REQUEST);
         put_stringz(s->pktout, s->username);
-        put_stringz(s->pktout, "ssh-connection");/* service requested */
+        put_stringz(s->pktout, s->successor_layer->vt->name);
         put_stringz(s->pktout, "none");    /* method */
         pq_push(s->ppl.out_pq, s->pktout);
         s->type = AUTH_TYPE_NONE;
@@ -639,8 +637,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                 s->pktout = ssh_bpp_new_pktout(
                     s->ppl.bpp, SSH2_MSG_USERAUTH_REQUEST);
                 put_stringz(s->pktout, s->username);
-                put_stringz(s->pktout, "ssh-connection");
-                                                    /* service requested */
+                put_stringz(s->pktout, s->successor_layer->vt->name);
                 put_stringz(s->pktout, "publickey");
                                                     /* method */
                 put_bool(s->pktout, FALSE); /* no signature included */
@@ -671,8 +668,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                     s->pktout = ssh_bpp_new_pktout(
                         s->ppl.bpp, SSH2_MSG_USERAUTH_REQUEST);
                     put_stringz(s->pktout, s->username);
-                    put_stringz(s->pktout, "ssh-connection");
-                                                        /* service requested */
+                    put_stringz(s->pktout, s->successor_layer->vt->name);
                     put_stringz(s->pktout, "publickey");
                                                         /* method */
                     put_bool(s->pktout, TRUE);  /* signature included */
@@ -746,8 +742,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                 s->pktout = ssh_bpp_new_pktout(
                     s->ppl.bpp, SSH2_MSG_USERAUTH_REQUEST);
                 put_stringz(s->pktout, s->username);
-                put_stringz(s->pktout, "ssh-connection");
-                                                /* service requested */
+                put_stringz(s->pktout, s->successor_layer->vt->name);
                 put_stringz(s->pktout, "publickey");    /* method */
                 put_bool(s->pktout, FALSE);
                                                 /* no signature included */
@@ -855,8 +850,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                     s->pktout = ssh_bpp_new_pktout(
                         s->ppl.bpp, SSH2_MSG_USERAUTH_REQUEST);
                     put_stringz(s->pktout, s->username);
-                    put_stringz(s->pktout, "ssh-connection");
-                                                    /* service requested */
+                    put_stringz(s->pktout, s->successor_layer->vt->name);
                     put_stringz(s->pktout, "publickey"); /* method */
                     put_bool(s->pktout, TRUE); /* signature follows */
                     put_stringz(s->pktout, ssh_key_ssh_id(key->key));
@@ -913,7 +907,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                 s->pktout = ssh_bpp_new_pktout(
                     s->ppl.bpp, SSH2_MSG_USERAUTH_REQUEST);
                 put_stringz(s->pktout, s->username);
-                put_stringz(s->pktout, "ssh-connection");
+                put_stringz(s->pktout, s->successor_layer->vt->name);
                 put_stringz(s->pktout, "gssapi-with-mic");
                 ppl_logevent(("Attempting GSSAPI authentication"));
 
@@ -1076,8 +1070,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                 s->pktout = ssh_bpp_new_pktout(
                     s->ppl.bpp, SSH2_MSG_USERAUTH_REQUEST);
                 put_stringz(s->pktout, s->username);
-                put_stringz(s->pktout, "ssh-connection");
-                                                        /* service requested */
+                put_stringz(s->pktout, s->successor_layer->vt->name);
                 put_stringz(s->pktout, "keyboard-interactive");
                                                         /* method */
                 put_stringz(s->pktout, "");     /* lang */
@@ -1301,8 +1294,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                 s->pktout = ssh_bpp_new_pktout(
                     s->ppl.bpp, SSH2_MSG_USERAUTH_REQUEST);
                 put_stringz(s->pktout, s->username);
-                put_stringz(s->pktout, "ssh-connection");
-                                                        /* service requested */
+                put_stringz(s->pktout, s->successor_layer->vt->name);
                 put_stringz(s->pktout, "password");
                 put_bool(s->pktout, FALSE);
                 put_stringz(s->pktout, s->password);
@@ -1441,8 +1433,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                     s->pktout = ssh_bpp_new_pktout(
                         s->ppl.bpp, SSH2_MSG_USERAUTH_REQUEST);
                     put_stringz(s->pktout, s->username);
-                    put_stringz(s->pktout, "ssh-connection");
-                                                        /* service requested */
+                    put_stringz(s->pktout, s->successor_layer->vt->name);
                     put_stringz(s->pktout, "password");
                     put_bool(s->pktout, TRUE);
                     put_stringz(s->pktout, s->password);
@@ -1645,7 +1636,7 @@ static PktOut *ssh2_userauth_gss_packet(
     put_stringpl(sb, s->session_id);
     put_byte(sb, SSH2_MSG_USERAUTH_REQUEST);
     put_stringz(sb, s->username);
-    put_stringz(sb, "ssh-connection");
+    put_stringz(sb, s->successor_layer->vt->name);
     put_stringz(sb, authtype);
 
     /* Compute the mic */
@@ -1660,7 +1651,7 @@ static PktOut *ssh2_userauth_gss_packet(
     } else {
         p = ssh_bpp_new_pktout(s->ppl.bpp, SSH2_MSG_USERAUTH_REQUEST);
         put_stringz(p, s->username);
-        put_stringz(p, "ssh-connection");
+        put_stringz(p, s->successor_layer->vt->name);
         put_stringz(p, authtype);
     }
     put_string(p, mic.value, mic.length);

@@ -367,29 +367,23 @@ static char *dns_log_msg(const char *host, int addressfamily,
 }
 
 SockAddr *name_lookup(const char *host, int port, char **canonicalname,
-                     Conf *conf, int addressfamily, Frontend *frontend,
+                     Conf *conf, int addressfamily, LogContext *logctx,
                      const char *reason)
 {
-    char *logmsg;
     if (conf_get_int(conf, CONF_proxy_type) != PROXY_NONE &&
 	do_proxy_dns(conf) &&
 	proxy_for_destination(NULL, host, port, conf)) {
 
-        if (frontend) {
-            logmsg = dupprintf("Leaving host lookup to proxy of \"%s\""
-                               " (for %s)", host, reason);
-            logevent(frontend, logmsg);
-            sfree(logmsg);
-        }
+        if (logctx)
+            logeventf(logctx, "Leaving host lookup to proxy of \"%s\""
+                      " (for %s)", host, reason);
 
 	*canonicalname = dupstr(host);
 	return sk_nonamelookup(host);
     } else {
-        if (frontend) {
-            logmsg = dns_log_msg(host, addressfamily, reason);
-            logevent(frontend, logmsg);
-            sfree(logmsg);
-        }
+        if (logctx)
+            logevent_and_free(
+                logctx, dns_log_msg(host, addressfamily, reason));
 
         return sk_namelookup(host, canonicalname, addressfamily);
     }

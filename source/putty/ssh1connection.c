@@ -260,11 +260,11 @@ PacketProtocolLayer *ssh1_connection_new(
 
     s->x11authtree = newtree234(x11_authcmp);
 
-    /* Need to get the frontend for s->cl now, because we won't be
+    /* Need to get the log context for s->cl now, because we won't be
      * helpfully notified when a copy is written into s->ppl by our
      * owner. */
     s->cl.vt = &ssh1_connlayer_vtable;
-    s->cl.frontend = ssh_get_frontend(ssh);
+    s->cl.logctx = ssh_get_logctx(ssh);
 
     s->portfwdmgr = portfwdmgr_new(&s->cl);
     s->rportfwds = newtree234(ssh1_rportfwd_cmp);

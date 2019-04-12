@@ -337,12 +337,6 @@ void burnstr(char *string)             /* sfree(str), only clear it first */
     }
 }
 
-void logevent_and_free(Frontend *frontend, char *s)
-{
-    logevent(frontend, s);
-    sfree(s);
-}
-
 int toint(unsigned u)
 {
     /*

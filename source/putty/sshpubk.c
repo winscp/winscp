@@ -612,8 +612,10 @@ struct ssh2_userkey *ssh2_load_userkey(const Filename *filename,
     }
 
     /* Read the first header line which contains the key type. */
-    if (!read_header(fp, header))
+    if (!read_header(fp, header)) {
+	error = "no header line found in key file";
 	goto error;
+    }
     if (0 == strcmp(header, "PuTTY-User-Key-File-2")) {
 	old_fmt = 0;
     } else if (0 == strcmp(header, "PuTTY-User-Key-File-1")) {

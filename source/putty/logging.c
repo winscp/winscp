@@ -12,12 +12,12 @@
 #include "putty.h"
 
 /* log session to file stuff ... */
-struct LogContext_tag {
+struct LogContext {
     FILE *lgfp;
     enum { L_CLOSED, L_OPENING, L_OPEN, L_ERROR } state;
     bufchain queue;
     Filename *currlogfilename;
-    Frontend *frontend;
+    LogPolicy *lp;
     Conf *conf;
     int logtype;		       /* cached out of conf */
 };
@@ -48,9 +48,8 @@ static void logwrite(LogContext *ctx, void *data, int len)
 	if (fwrite(data, 1, len, ctx->lgfp) < (size_t)len) {
 	    logfclose(ctx);
 	    ctx->state = L_ERROR;
-	    /* Log state is L_ERROR so this won't cause a loop */
-	    logevent(ctx->frontend,
-		     "Disabled writing session log due to error while writing");
+            lp_eventlog(ctx->lp, "Disabled writing session log "
+                        "due to error while writing");
 	}
     }				       /* else L_ERROR, so ignore the write */
 }
@@ -121,23 +120,14 @@ static void logfopen_callback(void *vctx, int mode)
 		       ctx->logtype == LGTYP_SSHRAW ? "SSH raw data" :
 		       "unknown"),
 		      filename_to_str(ctx->currlogfilename));
-    logevent(ctx->frontend, event);
+    lp_eventlog(ctx->lp, event);
     if (shout) {
         /*
          * If we failed to open the log file due to filesystem error
          * (as opposed to user action such as clicking Cancel in the
-         * askappend box), we should log it more prominently. We do
-         * this by sending it to the same place that stderr output
-         * from the main session goes (so, either a console tool's
-         * actual stderr, or a terminal window).
-         *
-         * Of course this is one case in which that policy won't cause
-         * it to turn up embarrassingly in a log file of real server
-         * output, because the whole point is that we haven't managed
-         * to open any such log file :-)
+         * askappend box), we should log it more prominently.
          */
-        from_backend(ctx->frontend, 1, event, strlen(event));
-        from_backend(ctx->frontend, 1, "\r\n", 2);
+        lp_logging_error(ctx->lp, event);
     }
     sfree(event);
 
@@ -188,8 +178,8 @@ void logfopen(LogContext *ctx)
 	if (logxfovr != LGXF_ASK) {
 	    mode = ((logxfovr == LGXF_OVR) ? 2 : 1);
 	} else
-	    mode = askappend(ctx->frontend, ctx->currlogfilename,
-			     logfopen_callback, ctx);
+            mode = lp_askappend(ctx->lp, ctx->currlogfilename,
+                                logfopen_callback, ctx);
     } else
 	mode = 2;		       /* create == overwrite */
 
@@ -223,16 +213,32 @@ void logtraffic(LogContext *ctx, unsigned char c, int logmode)
  * Log an Event Log entry. Used in SSH packet logging mode, to copy
  * the Event Log entries into the same log file as the packet data.
  */
-void log_eventlog(LogContext *ctx, const char *event)
+void logevent(LogContext *ctx, const char *event)
 {
-    /* If we don't have a context yet (eg winnet.c init) then skip entirely */
     if (!ctx)
-	return;
-    if (ctx->logtype != LGTYP_PACKETS &&
-	ctx->logtype != LGTYP_SSHRAW)
-	return;
-    logprintf(ctx, "Event Log: %s\r\n", event);
-    logflush(ctx);
+        return;
+    if (ctx->logtype == LGTYP_PACKETS || ctx->logtype == LGTYP_SSHRAW) {
+        logprintf(ctx, "Event Log: %s\r\n", event);
+        logflush(ctx);
+    }
+    lp_eventlog(ctx->lp, event);
+}
+
+void logevent_and_free(LogContext *ctx, char *event)
+{
+    logevent(ctx, event);
+    sfree(event);
+}
+
+void logeventf(LogContext *ctx, const char *fmt, ...)
+{
+    va_list ap;
+    char *buf;
+
+    va_start(ap, fmt);
+    buf = dupvprintf(fmt, ap);
+    va_end(ap);
+    logevent_and_free(ctx, buf);
 }
 
 /*
@@ -359,12 +365,12 @@ void log_packet(LogContext *ctx, int direction, int type,
     logflush(ctx);
 }
 
-LogContext *log_init(Frontend *frontend, Conf *conf)
+LogContext *log_init(LogPolicy *lp, Conf *conf)
 {
     LogContext *ctx = snew(LogContext);
     ctx->lgfp = NULL;
     ctx->state = L_CLOSED;
-    ctx->frontend = frontend;
+    ctx->lp = lp;
     ctx->conf = conf_copy(conf);
     ctx->logtype = conf_get_int(ctx->conf, CONF_logtype);
     ctx->currlogfilename = NULL;

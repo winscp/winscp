@@ -23,7 +23,6 @@ struct BinaryPacketProtocol {
     PacketLogSettings *pls;
     LogContext *logctx;
     Ssh *ssh;
-    Frontend *frontend;
 
     /* ic_in_raw is filled in by the BPP (probably by calling
      * ssh_bpp_common_setup). The BPP's owner triggers it when data is
@@ -53,7 +52,7 @@ struct BinaryPacketProtocol {
  * does centralised parts of the freeing too. */
 void ssh_bpp_free(BinaryPacketProtocol *bpp);
 
-BinaryPacketProtocol *ssh1_bpp_new(Frontend *frontend);
+BinaryPacketProtocol *ssh1_bpp_new(LogContext *logctx);
 void ssh1_bpp_new_cipher(BinaryPacketProtocol *bpp,
                          const struct ssh1_cipheralg *cipher,
                          const void *session_key);
@@ -71,6 +70,13 @@ void ssh_bpp_common_setup(BinaryPacketProtocol *);
 void ssh2_bpp_queue_disconnect(BinaryPacketProtocol *bpp,
                                const char *msg, int category);
 int ssh2_bpp_check_unimplemented(BinaryPacketProtocol *bpp, PktIn *pktin);
+
+/* Convenience macro for BPPs to send formatted strings to the Event
+ * Log. Assumes a function parameter called 'bpp' is in scope, and
+ * takes a double pair of parens because it passes a whole argument
+ * list to dupprintf. */
+#define bpp_logevent(params) ( \
+        logevent_and_free((bpp)->logctx, dupprintf params))
 
 /*
  * Structure that tracks how much data is sent and received, for
@@ -98,7 +104,7 @@ struct DataTransferStats {
      ((stats)->direction.remaining -= (size), FALSE))
 
 BinaryPacketProtocol *ssh2_bpp_new(
-    Frontend *frontend, struct DataTransferStats *stats);
+    LogContext *logctx, struct DataTransferStats *stats);
 void ssh2_bpp_new_outgoing_crypto(
     BinaryPacketProtocol *bpp,
     const struct ssh2_cipheralg *cipher, const void *ckey, const void *iv,
@@ -121,7 +127,7 @@ void ssh2_bpp_new_incoming_crypto(
  */
 int ssh2_bpp_rekey_inadvisable(BinaryPacketProtocol *bpp);
 
-BinaryPacketProtocol *ssh2_bare_bpp_new(Frontend *frontend);
+BinaryPacketProtocol *ssh2_bare_bpp_new(LogContext *logctx);
 
 /*
  * The initial code to handle the SSH version exchange is also
@@ -134,7 +140,7 @@ struct ssh_version_receiver {
                             int major_version);
 };
 BinaryPacketProtocol *ssh_verstring_new(
-    Conf *conf, Frontend *frontend, int bare_connection_mode,
+    Conf *conf, LogContext *logctx, int bare_connection_mode,
     const char *protoversion, struct ssh_version_receiver *rcv);
 const char *ssh_verstring_get_remote(BinaryPacketProtocol *);
 const char *ssh_verstring_get_local(BinaryPacketProtocol *);
