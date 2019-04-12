@@ -295,14 +295,6 @@ static void SSHFatalError(const char * Format, va_list Param)
   throw ESshFatal(NULL, Buf);
 }
 //---------------------------------------------------------------------------
-void fatalbox(const char * fmt, ...)
-{
-  va_list Param;
-  va_start(Param, fmt);
-  SSHFatalError(fmt, Param);
-  va_end(Param);
-}
-//---------------------------------------------------------------------------
 void modalfatalbox(const char * fmt, ...)
 {
   va_list Param;
@@ -319,26 +311,7 @@ void nonfatal(const char * fmt, ...)
   va_end(Param);
 }
 //---------------------------------------------------------------------------
-void cleanup_exit(int /*code*/)
-{
-  throw ESshFatal(NULL, "");
-}
-//---------------------------------------------------------------------------
-int askappend(LogPolicy *, Filename * /*filename*/,
-  void (*/*callback*/)(void * ctx, int result), void * /*ctx*/)
-{
-  // this is called from logging.c of putty, which is never used with WinSCP
-  DebugFail();
-  return 0;
-}
-//---------------------------------------------------------------------------
 void ldisc_echoedit_update(Ldisc * /*handle*/)
-{
-  DebugFail();
-}
-//---------------------------------------------------------------------------
-void agent_schedule_callback(void (* /*callback*/)(void *, void *, int),
-  void * /*callback_ctx*/, void * /*data*/, int /*len*/)
 {
   DebugFail();
 }
