@@ -739,21 +739,22 @@ static void ssh_bpp_output_packet_callback(void *context)
 
 void ssh_bpp_common_setup(BinaryPacketProtocol *bpp)
 {
-    pq_in_init(&bpp->in_pq, bpp->frontend); // WINSCP
-    pq_out_init(&bpp->out_pq, bpp->frontend); // WINSCP
+    pq_in_init(&bpp->in_pq, log_get_frontend(bpp->logctx)); // WINSCP
+    pq_out_init(&bpp->out_pq, log_get_frontend(bpp->logctx)); // WINSCP
     bpp->input_eof = FALSE;
     bpp->ic_in_raw.fn = ssh_bpp_input_raw_data_callback;
-    bpp->ic_in_raw.set = get_frontend_callback_set(bpp->frontend);
+    bpp->ic_in_raw.set = get_frontend_callback_set(log_get_frontend(bpp->logctx));
     bpp->ic_in_raw.ctx = bpp;
     bpp->ic_out_pq.fn = ssh_bpp_output_packet_callback;
-    bpp->ic_out_pq.set = get_frontend_callback_set(bpp->frontend);
+    bpp->ic_out_pq.set = get_frontend_callback_set(log_get_frontend(bpp->logctx));
     bpp->ic_out_pq.ctx = bpp;
     bpp->out_pq.pqb.ic = &bpp->ic_out_pq;
 }
 
 void ssh_bpp_free(BinaryPacketProtocol *bpp)
 {
-    delete_callbacks_for_context(get_frontend_callback_set(bpp->frontend), bpp);
+    // WINSCP
+    delete_callbacks_for_context(get_frontend_callback_set(log_get_frontend(bpp->logctx)), bpp);
     bpp->vt->free(bpp);
 }
 

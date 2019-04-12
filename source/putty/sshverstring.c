@@ -88,7 +88,6 @@ BinaryPacketProtocol *ssh_verstring_new(
 
     s->conf = conf_copy(conf);
     s->bpp.logctx = logctx;
-    s->bpp.frontend = frontend;
     s->our_protoversion = dupstr(protoversion);
     s->receiver = rcv;
 

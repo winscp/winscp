@@ -20,6 +20,8 @@ typedef std::set<SOCKET> TSockets;
 struct TPuttyTranslation;
 struct callback_set;
 enum TSshImplementation { sshiUnknown, sshiOpenSSH, sshiProFTPD, sshiBitvise, sshiTitan, sshiOpenVMS, sshiCerberus };
+struct ScpLogPolicy;
+struct LogContext;
 //---------------------------------------------------------------------------
 class TSecureShell
 {
@@ -70,6 +72,8 @@ private:
   DWORD FLastSendBufferUpdate;
   int FSendBuf;
   std::auto_ptr<callback_set> FCallbackSet;
+  ScpLogPolicy * FLogPolicy;
+  LogContext * FLogCtx;
 
   void __fastcall Init();
   void __fastcall SetActive(bool value);

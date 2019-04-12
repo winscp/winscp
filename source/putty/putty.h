@@ -1215,7 +1215,7 @@ struct LogPolicy {
 #define lp_askappend(lp, fn, cb, ctx) ((lp)->vt->askappend(lp, fn, cb, ctx))
 #define lp_logging_error(lp, event) ((lp)->vt->logging_error(lp, event))
 
-LogContext *log_init(LogPolicy *lp, Conf *conf);
+LogContext *log_init(LogPolicy *lp, Conf *conf, Frontend* frontend); // WINSCP
 void log_free(LogContext *logctx);
 void log_reconfig(LogContext *logctx, Conf *conf);
 void logfopen(LogContext *logctx);
@@ -1710,6 +1710,7 @@ int toplevel_callback_pending(CALLBACK_SET_ONLY);
 struct callback_set * get_callback_set(Plug * plug);
 struct callback_set * get_frontend_callback_set(Frontend * frontend);
 void delete_callbacks_for_context(CALLBACK_SET void *ctx);
+Frontend *log_get_frontend(LogContext *ctx); // WINSCP
 
 /*
  * Another facility in callback.c deals with 'idempotent' callbacks,

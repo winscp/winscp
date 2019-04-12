@@ -30,6 +30,11 @@ struct TPuttyTranslation
   UnicodeString HelpKeyword;
 };
 //---------------------------------------------------------------------------
+struct ScpLogPolicy : public LogPolicy
+{
+  TSecureShell * SecureShell;
+};
+//---------------------------------------------------------------------------
 __fastcall TSecureShell::TSecureShell(TSessionUI* UI,
   TSessionData * SessionData, TSessionLog * Log, TConfiguration * Configuration)
 {
@@ -44,6 +49,8 @@ __fastcall TSecureShell::TSecureShell(TSessionUI* UI,
   OutPtr = NULL;
   Pending = NULL;
   FBackendHandle = NULL;
+  FLogPolicy = NULL;
+  FLogCtx = NULL;
   ResetConnection();
   FOnCaptureOutput = NULL;
   FOnReceive = NULL;
@@ -84,6 +91,13 @@ void __fastcall TSecureShell::ResetConnection()
   FStoredPasswordTried = false;
   FStoredPasswordTriedForKI = false;
   FStoredPassphraseTried = false;
+  delete FLogPolicy;
+  FLogPolicy = NULL;
+  if (FLogCtx != NULL)
+  {
+    log_free(FLogCtx);
+  }
+  FLogCtx = NULL;
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::ResetSessionInfo()
@@ -386,6 +400,18 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
   return conf;
 }
 //---------------------------------------------------------------------------
+static void eventlog(LogPolicy * ALogPolicy, const char * string)
+{
+  static_cast<ScpLogPolicy *>(ALogPolicy)->SecureShell->PuttyLogEvent(string);
+}
+//---------------------------------------------------------------------------
+static const LogPolicyVtable ScpLogPolicyVTable =
+  {
+    eventlog,
+    NULL, // Should never be called
+    NULL, // Should never be called
+  };
+//---------------------------------------------------------------------------
 void __fastcall TSecureShell::Open()
 {
   ResetConnection();
@@ -410,9 +436,14 @@ void __fastcall TSecureShell::Open()
     const char * InitError;
     Conf * conf = StoreToConfig(FSessionData, Simple);
     FSendBuf = FSessionData->SendBuf;
+    FLogPolicy = new ScpLogPolicy();
+    FLogPolicy->vt = &ScpLogPolicyVTable;
+    FLogPolicy->SecureShell = this;
     try
     {
-      InitError = backend_init(&ssh_backend, reinterpret_cast<Frontend *>(this), &FBackendHandle, conf,
+      Frontend * AFrontend = reinterpret_cast<Frontend *>(this);
+      FLogCtx = log_init(FLogPolicy, conf, AFrontend);
+      InitError = backend_init(&ssh_backend, AFrontend, &FBackendHandle, FLogCtx, conf,
         AnsiString(FSessionData->HostNameExpanded).c_str(), FSessionData->PortNumber, &RealHost,
         (FSessionData->TcpNoDelay ? 1 : 0),
         conf_get_int(conf, CONF_tcp_keepalives));

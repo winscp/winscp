@@ -1559,7 +1559,7 @@ static void ssh2_channel_destroy(struct ssh2_channel *c)
      * toplevel callback, just in case anything on the current call
      * stack objects to this entire PPL being freed.
      */
-    queue_toplevel_callback(s->cl.frontend, ssh2_check_termination_callback, s); // WINSCP
+    queue_toplevel_callback(log_get_frontend(s->cl.logctx), ssh2_check_termination_callback, s); // WINSCP
 }
 
 static void ssh2_check_termination(struct ssh2_connection_state *s)
@@ -2111,7 +2111,8 @@ static void ssh2_sharing_no_more_downstreams(ConnectionLayer *cl)
 {
     struct ssh2_connection_state *s =
         container_of(cl, struct ssh2_connection_state, cl);
-    queue_toplevel_callback(get_frontend_callback_set(cl->frontend), ssh2_check_termination_callback, s);
+    // WINSCP
+    queue_toplevel_callback(get_frontend_callback_set(log_get_frontend(cl->logctx)), ssh2_check_termination_callback, s);
 }
 
 static struct X11FakeAuth *ssh2_add_sharing_x11_display(

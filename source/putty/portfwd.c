@@ -1071,18 +1071,18 @@ int is_pfwd(Plug * plug)
 
 Frontend * get_pfwd_frontend(Plug * plug)
 {
-  Ssh * ssh = NULL;
+  Frontend * frontend = NULL;
   if (plug->vt->closing == pfl_closing)
   {
     struct PortListener *pl = container_of(plug, struct PortListener, plug);
-    ssh = pl->cl->frontend;
+    frontend = log_get_frontend(pl->cl->logctx);
   }
   else if (plug->vt->closing == pfd_closing)
   {
     struct PortForwarding *pf = container_of(plug, struct PortForwarding, plug);
-    ssh = pf->cl->frontend;
+    frontend = log_get_frontend(pf->cl->logctx);
   }
-  return ssh;
+  return frontend;
 }
 
 #endif

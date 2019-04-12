@@ -224,15 +224,6 @@ char * get_ttymode(Frontend * /*frontend*/, const char * /*mode*/)
   return NULL;
 }
 //---------------------------------------------------------------------------
-void logevent(Frontend * frontend, const char * string)
-{
-  // Frontend maybe NULL here
-  if (frontend != NULL)
-  {
-    ((TSecureShell *)frontend)->PuttyLogEvent(string);
-  }
-}
-//---------------------------------------------------------------------------
 void connection_fatal(Frontend * frontend, const char * fmt, ...)
 {
   va_list Param;
@@ -333,7 +324,7 @@ void cleanup_exit(int /*code*/)
   throw ESshFatal(NULL, "");
 }
 //---------------------------------------------------------------------------
-int askappend(Frontend * /*frontend*/, Filename * /*filename*/,
+int askappend(LogPolicy *, Filename * /*filename*/,
   void (*/*callback*/)(void * ctx, int result), void * /*ctx*/)
 {
   // this is called from logging.c of putty, which is never used with WinSCP
