@@ -2153,20 +2153,6 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
         strbuf_free(mac_key);
     }
 
-    if (s->out.cipher)
-        ppl_logevent(("Initialised %.200s client->server encryption",
-                      s->out.cipher->text_name));
-    if (s->out.mac)
-        ppl_logevent(("Initialised %.200s client->server"
-                      " MAC algorithm%s%s",
-                      s->out.mac->text_name,
-                      s->out.etm_mode ? " (in ETM mode)" : "",
-                      (s->out.cipher->required_mac ?
-                       " (required by cipher)" : "")));
-    if (s->out.comp->text_name)
-        ppl_logevent(("Initialised %s compression",
-                      s->out.comp->text_name));
-
     /*
      * Now our end of the key exchange is complete, we can send all
      * our queued higher-layer packets. Transfer the whole of the next
@@ -2221,19 +2207,6 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
         strbuf_free(cipher_iv);
         strbuf_free(mac_key);
     }
-
-    if (s->in.cipher)
-        ppl_logevent(("Initialised %.200s server->client encryption",
-                      s->in.cipher->text_name));
-    if (s->in.mac)
-        ppl_logevent(("Initialised %.200s server->client MAC algorithm%s%s",
-                      s->in.mac->text_name,
-                      s->in.etm_mode ? " (in ETM mode)" : "",
-                      (s->in.cipher->required_mac ?
-                       " (required by cipher)" : "")));
-    if (s->in.comp->text_name)
-        ppl_logevent(("Initialised %s decompression",
-                      s->in.comp->text_name));
 
     /*
      * Free shared secret.

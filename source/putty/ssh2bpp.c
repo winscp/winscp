@@ -51,11 +51,13 @@ static const struct BinaryPacketProtocolVtable ssh2_bpp_vtable = {
     ssh2_bpp_queue_disconnect, /* in sshcommon.c */
 };
 
-BinaryPacketProtocol *ssh2_bpp_new(struct DataTransferStats *stats)
+BinaryPacketProtocol *ssh2_bpp_new(
+    Frontend *frontend, struct DataTransferStats *stats)
 {
     struct ssh2_bpp_state *s = snew(struct ssh2_bpp_state);
     memset(s, 0, sizeof(*s));
     s->bpp.vt = &ssh2_bpp_vtable;
+    s->bpp.frontend = frontend;
     s->stats = stats;
     ssh_bpp_common_setup(&s->bpp);
     return &s->bpp;
@@ -80,6 +82,9 @@ static void ssh2_bpp_free(BinaryPacketProtocol *bpp)
     sfree(s->pktin);
     sfree(s);
 }
+
+#define bpp_logevent(printf_args) \
+    logevent_and_free(s->bpp.frontend, dupprintf printf_args)
 
 void ssh2_bpp_new_outgoing_crypto(
     BinaryPacketProtocol *bpp,
@@ -106,6 +111,9 @@ void ssh2_bpp_new_outgoing_crypto(
         s->cbc_ignore_workaround = (
             (ssh2_cipher_alg(s->out.cipher)->flags & SSH_CIPHER_IS_CBC) &&
             !(s->bpp.remote_bugs & BUG_CHOKES_ON_SSH2_IGNORE));
+
+        bpp_logevent(("Initialised %.200s client->server encryption",
+                      ssh2_cipher_alg(s->out.cipher)->text_name));
     } else {
         s->out.cipher = NULL;
         s->cbc_ignore_workaround = FALSE;
@@ -114,6 +122,14 @@ void ssh2_bpp_new_outgoing_crypto(
     if (mac) {
         s->out.mac = ssh2_mac_new(mac, s->out.cipher);
         mac->setkey(s->out.mac, mac_key);
+
+        bpp_logevent(("Initialised %.200s client->server"
+                      " MAC algorithm%s%s",
+                      ssh2_mac_alg(s->out.mac)->text_name,
+                      etm_mode ? " (in ETM mode)" : "",
+                      (s->out.cipher &&
+                       ssh2_cipher_alg(s->out.cipher)->required_mac ?
+                       " (required by cipher)" : "")));
     } else {
         s->out.mac = NULL;
     }
@@ -122,6 +138,9 @@ void ssh2_bpp_new_outgoing_crypto(
      * indicated by ssh_comp_none. But this setup call may return a
      * null out_comp. */
     s->out_comp = ssh_compressor_new(compression);
+    if (s->out_comp)
+        bpp_logevent(("Initialised %s compression",
+                      ssh_compressor_alg(s->out_comp)->text_name));
 }
 
 void ssh2_bpp_new_incoming_crypto(
@@ -145,6 +164,9 @@ void ssh2_bpp_new_incoming_crypto(
         s->in.cipher = ssh2_cipher_new(cipher);
         ssh2_cipher_setkey(s->in.cipher, ckey);
         ssh2_cipher_setiv(s->in.cipher, iv);
+
+        bpp_logevent(("Initialised %.200s server->client encryption",
+                      ssh2_cipher_alg(s->in.cipher)->text_name));
     } else {
         s->in.cipher = NULL;
     }
@@ -152,6 +174,13 @@ void ssh2_bpp_new_incoming_crypto(
     if (mac) {
         s->in.mac = ssh2_mac_new(mac, s->in.cipher);
         mac->setkey(s->in.mac, mac_key);
+
+        bpp_logevent(("Initialised %.200s server->client MAC algorithm%s%s",
+                      ssh2_mac_alg(s->in.mac)->text_name,
+                      etm_mode ? " (in ETM mode)" : "",
+                      (s->in.cipher &&
+                       ssh2_cipher_alg(s->in.cipher)->required_mac ?
+                       " (required by cipher)" : "")));
     } else {
         s->in.mac = NULL;
     }
@@ -160,6 +189,9 @@ void ssh2_bpp_new_incoming_crypto(
      * indicated by ssh_comp_none. But this setup call may return a
      * null in_decomp. */
     s->in_decomp = ssh_decompressor_new(compression);
+    if (s->in_decomp)
+        bpp_logevent(("Initialised %s decompression",
+                      ssh_decompressor_alg(s->in_decomp)->text_name));
 
     /* Clear the pending_newkeys flag, so that handle_input below will
      * start consuming the input data again. */

@@ -43,11 +43,12 @@ static const struct BinaryPacketProtocolVtable ssh1_bpp_vtable = {
     ssh1_bpp_queue_disconnect,
 };
 
-BinaryPacketProtocol *ssh1_bpp_new(void)
+BinaryPacketProtocol *ssh1_bpp_new(Frontend *frontend)
 {
     struct ssh1_bpp_state *s = snew(struct ssh1_bpp_state);
     memset(s, 0, sizeof(*s));
     s->bpp.vt = &ssh1_bpp_vtable;
+    s->bpp.frontend = frontend;
     ssh_bpp_common_setup(&s->bpp);
     return &s->bpp;
 }
@@ -67,6 +68,9 @@ static void ssh1_bpp_free(BinaryPacketProtocol *bpp)
     sfree(s);
 }
 
+#define bpp_logevent(printf_args) \
+    logevent_and_free(s->bpp.frontend, dupprintf printf_args)
+
 void ssh1_bpp_new_cipher(BinaryPacketProtocol *bpp,
                          const struct ssh1_cipheralg *cipher,
                          const void *session_key)
@@ -83,6 +87,8 @@ void ssh1_bpp_new_cipher(BinaryPacketProtocol *bpp,
 
         assert(!s->crcda_ctx);
         s->crcda_ctx = crcda_make_context();
+
+        bpp_logevent(("Initialised %s encryption", cipher->text_name));
     }
 }
 
@@ -223,6 +229,8 @@ static void ssh1_bpp_handle_input(BinaryPacketProtocol *bpp)
 
                         s->compctx = ssh_compressor_new(&ssh_zlib);
                         s->decompctx = ssh_decompressor_new(&ssh_zlib);
+
+                        bpp_logevent(("Started zlib (RFC1950) compression"));
                     }
 
                     /*

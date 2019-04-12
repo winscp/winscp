@@ -406,7 +406,6 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
             (s->cipher_type == SSH_CIPHER_BLOWFISH ? &ssh1_blowfish :
              s->cipher_type == SSH_CIPHER_DES ? &ssh1_des : &ssh1_3des);
         ssh1_bpp_new_cipher(s->ppl.bpp, cipher, s->session_key);
-        ppl_logevent(("Initialised %s encryption", cipher->text_name));
     }
 
     if (s->servkey.modulus) {
@@ -1114,7 +1113,6 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
              * easiest way to avoid race conditions if other packets
              * cross in transit.)
              */
-            ppl_logevent(("Started zlib (RFC1950) compression"));
 	} else if (pktin->type == SSH1_SMSG_FAILURE) {
             ppl_logevent(("Server refused to enable compression"));
 	    ppl_printf(("Server refused to compress\r\n"));

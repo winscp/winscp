@@ -172,7 +172,7 @@ static void ssh_got_ssh_version(struct ssh_version_receiver *rcv,
             int is_simple =
                 (conf_get_int(ssh->conf, CONF_ssh_simple) && !ssh->connshare);
 
-            ssh->bpp = ssh2_bpp_new(&ssh->stats);
+            ssh->bpp = ssh2_bpp_new(ssh->frontend, &ssh->stats);
             ssh_connect_bpp(ssh);
 
 #ifndef NO_GSSAPI
@@ -247,7 +247,7 @@ static void ssh_got_ssh_version(struct ssh_version_receiver *rcv,
 
         } else {
 
-            ssh->bpp = ssh1_bpp_new();
+            ssh->bpp = ssh1_bpp_new(ssh->frontend);
             ssh_connect_bpp(ssh);
 
             connection_layer = ssh1_connection_new(ssh, ssh->conf, &ssh->cl);
@@ -260,7 +260,7 @@ static void ssh_got_ssh_version(struct ssh_version_receiver *rcv,
         }
 
     } else {
-        ssh->bpp = ssh2_bare_bpp_new();
+        ssh->bpp = ssh2_bare_bpp_new(ssh->frontend);
         ssh_connect_bpp(ssh);
 
         connection_layer = ssh2_connection_new(

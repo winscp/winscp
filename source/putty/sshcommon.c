@@ -71,9 +71,10 @@ static IdempotentCallback ic_pktin_free = {
     pktin_free_queue_callback, NULL, FALSE
 };
 
-static PktIn *pq_in_get(PacketQueueBase *pqb, int pop)
+static PktIn *pq_in_after(PacketQueueBase *pqb,
+                          PacketQueueNode *prev, int pop)
 {
-    PacketQueueNode *node = pqb->end.next;
+    PacketQueueNode *node = prev->next;
     if (node == &pqb->end)
         return NULL;
 
@@ -92,9 +93,10 @@ static PktIn *pq_in_get(PacketQueueBase *pqb, int pop)
     return container_of(node, PktIn, qnode);
 }
 
-static PktOut *pq_out_get(PacketQueueBase *pqb, int pop)
+static PktOut *pq_out_after(PacketQueueBase *pqb,
+                            PacketQueueNode *prev, int pop)
 {
-    PacketQueueNode *node = pqb->end.next;
+    PacketQueueNode *node = prev->next;
     if (node == &pqb->end)
         return NULL;
 
@@ -111,14 +113,14 @@ void pq_in_init(PktInQueue *pq)
 {
     pq->pqb.ic = NULL;
     pq->pqb.end.next = pq->pqb.end.prev = &pq->pqb.end;
-    pq->get = pq_in_get;
+    pq->after = pq_in_after;
 }
 
 void pq_out_init(PktOutQueue *pq)
 {
     pq->pqb.ic = NULL;
     pq->pqb.end.next = pq->pqb.end.prev = &pq->pqb.end;
-    pq->get = pq_out_get;
+    pq->after = pq_out_after;
 }
 
 void pq_in_clear(PktInQueue *pq)

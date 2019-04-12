@@ -23,6 +23,7 @@ struct BinaryPacketProtocol {
     PacketLogSettings *pls;
     LogContext *logctx;
     Ssh *ssh;
+    Frontend *frontend;
 
     /* ic_in_raw is filled in by the BPP (probably by calling
      * ssh_bpp_common_setup). The BPP's owner triggers it when data is
@@ -52,7 +53,7 @@ struct BinaryPacketProtocol {
  * does centralised parts of the freeing too. */
 void ssh_bpp_free(BinaryPacketProtocol *bpp);
 
-BinaryPacketProtocol *ssh1_bpp_new(void);
+BinaryPacketProtocol *ssh1_bpp_new(Frontend *frontend);
 void ssh1_bpp_new_cipher(BinaryPacketProtocol *bpp,
                          const struct ssh1_cipheralg *cipher,
                          const void *session_key);
@@ -96,7 +97,8 @@ struct DataTransferStats {
      ((stats)->direction.running = FALSE, TRUE) :       \
      ((stats)->direction.remaining -= (size), FALSE))
 
-BinaryPacketProtocol *ssh2_bpp_new(struct DataTransferStats *stats);
+BinaryPacketProtocol *ssh2_bpp_new(
+    Frontend *frontend, struct DataTransferStats *stats);
 void ssh2_bpp_new_outgoing_crypto(
     BinaryPacketProtocol *bpp,
     const struct ssh2_cipheralg *cipher, const void *ckey, const void *iv,
@@ -108,7 +110,7 @@ void ssh2_bpp_new_incoming_crypto(
     const struct ssh2_macalg *mac, int etm_mode, const void *mac_key,
     const struct ssh_compression_alg *compression);
 
-BinaryPacketProtocol *ssh2_bare_bpp_new(void);
+BinaryPacketProtocol *ssh2_bare_bpp_new(Frontend *frontend);
 
 /*
  * The initial code to handle the SSH version exchange is also

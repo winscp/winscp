@@ -649,13 +649,15 @@ static void ssh1_connection_process_queue(PacketProtocolLayer *ppl)
     }
 
     if (conf_get_int(s->conf, CONF_x11_forward)) {
+        char *x11_setup_err;
+
         s->x11disp =
             x11_setup_display(conf_get_str(s->conf, CONF_x11_display),
-                              s->conf);
+                              s->conf, &x11_setup_err);
         if (!s->x11disp) {
-            /* FIXME: return an error message from x11_setup_display */
             ppl_logevent(("X11 forwarding not enabled: unable to"
-                          " initialise X display"));
+                          " initialise X display: %s", x11_setup_err));
+            sfree(x11_setup_err);
         } else {
             s->x11auth = x11_invent_fake_auth
                 (s->x11authtree, conf_get_int(s->conf, CONF_x11_auth));

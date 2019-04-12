@@ -90,12 +90,12 @@ typedef struct PacketQueueBase {
 
 typedef struct PktInQueue {
     PacketQueueBase pqb;
-    PktIn *(*get)(PacketQueueBase *, int pop);
+    PktIn *(*after)(PacketQueueBase *, PacketQueueNode *prev, int pop);
 } PktInQueue;
 
 typedef struct PktOutQueue {
     PacketQueueBase pqb;
-    PktOut *(*get)(PacketQueueBase *, int pop);
+    PktOut *(*after)(PacketQueueBase *, PacketQueueNode *prev, int pop);
 } PktOutQueue;
 
 void pq_base_push(PacketQueueBase *pqb, PacketQueueNode *node);
@@ -108,20 +108,23 @@ void pq_out_init(PktOutQueue *pq);
 void pq_in_clear(PktInQueue *pq);
 void pq_out_clear(PktOutQueue *pq);
 
-#define pq_push(pq, pkt)                                \
-    TYPECHECK((pq)->get(&(pq)->pqb, FALSE) == pkt,      \
+#define pq_push(pq, pkt)                                        \
+    TYPECHECK((pq)->after(&(pq)->pqb, NULL, FALSE) == pkt,      \
               pq_base_push(&(pq)->pqb, &(pkt)->qnode))
 #define pq_push_front(pq, pkt)                                  \
-    TYPECHECK((pq)->get(&(pq)->pqb, FALSE) == pkt,              \
+    TYPECHECK((pq)->after(&(pq)->pqb, NULL, FALSE) == pkt,      \
               pq_base_push_front(&(pq)->pqb, &(pkt)->qnode))
-#define pq_peek(pq) ((pq)->get(&(pq)->pqb, FALSE))
-#define pq_pop(pq) ((pq)->get(&(pq)->pqb, TRUE))
-#define pq_concatenate(dst, q1, q2)                                      \
-    TYPECHECK((q1)->get(&(q1)->pqb, FALSE) ==                           \
-              (dst)->get(&(dst)->pqb, FALSE) &&                         \
-              (q2)->get(&(q2)->pqb, FALSE) ==                           \
-              (dst)->get(&(dst)->pqb, FALSE),                           \
+#define pq_peek(pq) ((pq)->after(&(pq)->pqb, &(pq)->pqb.end, FALSE))
+#define pq_pop(pq) ((pq)->after(&(pq)->pqb, &(pq)->pqb.end, TRUE))
+#define pq_concatenate(dst, q1, q2)                                     \
+    TYPECHECK((q1)->after(&(q1)->pqb, NULL, FALSE) ==                   \
+              (dst)->after(&(dst)->pqb, NULL, FALSE) &&                 \
+              (q2)->after(&(q2)->pqb, NULL, FALSE) ==                   \
+              (dst)->after(&(dst)->pqb, NULL, FALSE),                   \
               pq_base_concatenate(&(dst)->pqb, &(q1)->pqb, &(q2)->pqb))
+
+#define pq_first(pq) pq_peek(pq)
+#define pq_next(pq, pkt) ((pq)->after(&(pq)->pqb, &(pkt)->qnode, FALSE))
 
 /*
  * Packet type contexts, so that ssh2_pkt_type can correctly decode
@@ -762,10 +765,12 @@ struct ssh_compression_alg {
 #define ssh_compressor_free(comp) ((comp)->vt->compress_free(comp))
 #define ssh_compressor_compress(comp, in, inlen, out, outlen, minlen) \
     ((comp)->vt->compress(comp, in, inlen, out, outlen, minlen))
+#define ssh_compressor_alg(comp) ((comp)->vt)
 #define ssh_decompressor_new(alg) ((alg)->decompress_new())
 #define ssh_decompressor_free(comp) ((comp)->vt->decompress_free(comp))
 #define ssh_decompressor_decompress(comp, in, inlen, out, outlen) \
     ((comp)->vt->decompress(comp, in, inlen, out, outlen))
+#define ssh_decompressor_alg(comp) ((comp)->vt)
 
 struct ssh2_userkey {
     ssh_key *key;                      /* the key itself */
@@ -921,8 +926,12 @@ int x11_authcmp(void *av, void *bv); /* for putting X11FakeAuth in a tree234 */
  * the supplied authtype parameter configures the preferred
  * authorisation protocol to use at the remote end. The local auth
  * details are looked up by calling platform_get_x11_auth.
+ *
+ * If the returned pointer is NULL, then *error_msg will contain a
+ * dynamically allocated error message string.
  */
-extern struct X11Display *x11_setup_display(const char *display, Conf *);
+extern struct X11Display *x11_setup_display(const char *display, Conf *,
+                                            char **error_msg);
 void x11_free_display(struct X11Display *disp);
 struct X11FakeAuth *x11_invent_fake_auth(tree234 *t, int authtype);
 void x11_free_fake_auth(struct X11FakeAuth *auth);
