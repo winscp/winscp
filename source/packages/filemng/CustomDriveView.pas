@@ -84,6 +84,7 @@ type
       Stage: TCustomDrawStage; var PaintImages: Boolean): Boolean; override;
     procedure NeedImageLists(Recreate: Boolean);
     procedure DoCompare(Sender: TObject; Node1, Node2: TTreeNode; Data: Integer; var Compare: Integer);
+    function DoCompareText(Text1, Text2: string): Integer;
 
     procedure CNNotify(var Msg: TWMNotify); message CN_NOTIFY;
     procedure CMColorChanged(var Msg: TMessage); message CM_COLORCHANGED;
@@ -1096,9 +1097,14 @@ begin
   end;
 end; {CenterNode}
 
+function TCustomDriveView.DoCompareText(Text1, Text2: string): Integer;
+begin
+  Result := CompareLogicalTextPas(Text1, Text2, NaturalOrderNumericalSorting);
+end;
+
 procedure TCustomDriveView.DoCompare(Sender: TObject; Node1, Node2: TTreeNode; Data: Integer; var Compare: Integer);
 begin
-  Compare := CompareLogicalTextPas(Node1.Text, Node2.Text, NaturalOrderNumericalSorting);
+  Compare := DoCompareText(Node1.Text, Node2.Text);
 end;
 
 function TCustomDriveView.SortChildren(ParentNode: TTreeNode; Recurse: Boolean): Boolean;
