@@ -579,8 +579,8 @@ static int ssh1_connection_filter_queue(struct ssh1_connection_state *s)
           case SSH1_SMSG_STDERR_DATA:
             data = get_string(pktin);
             if (!get_err(pktin)) {
-                int bufsize = from_backend(
-                    s->ppl.frontend, pktin->type == SSH1_SMSG_STDERR_DATA,
+                int bufsize = seat_output(
+                    s->ppl.seat, pktin->type == SSH1_SMSG_STDERR_DATA,
                     data.ptr, data.len);
                 if (!s->stdout_throttling && bufsize > SSH1_BUFFER_LIMIT) {
                     s->stdout_throttling = 1;
@@ -706,7 +706,7 @@ static void ssh1_connection_process_queue(PacketProtocolLayer *ppl)
 	put_uint32(pktout, 0); /* width in pixels */
 	put_uint32(pktout, 0); /* height in pixels */
         write_ttymodes_to_packet_from_conf(
-            BinarySink_UPCAST(pktout), s->ppl.frontend, s->conf,
+            BinarySink_UPCAST(pktout), s->ppl.seat, s->conf,
             1, s->ospeed, s->ispeed);
         pq_push(s->ppl.out_pq, pktout);
         crMaybeWaitUntilV((pktin = ssh1_connection_pop(s)) != NULL);

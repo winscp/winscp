@@ -279,8 +279,8 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                             "configured list");
             return;
         } else if (s->dlgret < 0) { /* none configured; use standard handling */
-            s->dlgret = verify_ssh_host_key(
-                s->ppl.frontend, s->savedhost, s->savedport,
+            s->dlgret = seat_verify_ssh_host_key(
+                s->ppl.seat, s->savedhost, s->savedport,
                 "rsa", keystr, fingerprint, ssh1_login_dialog_callback, s);
             sfree(keystr);
 #ifdef FUZZING
@@ -359,8 +359,9 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
 
         /* Warn about chosen cipher if necessary. */
         if (warn) {
-            s->dlgret = askalg(s->ppl.frontend, "cipher", cipher_string,
-                               ssh1_login_dialog_callback, s);
+            s->dlgret = seat_confirm_weak_crypto_primitive(
+                s->ppl.seat, "cipher", cipher_string,
+                ssh1_login_dialog_callback, s);
             crMaybeWaitUntilV(s->dlgret >= 0);
             if (s->dlgret == 0) {
                 ssh_user_close(s->ppl.ssh, "User aborted at cipher warning");
@@ -434,16 +435,17 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
     ppl_logevent(("Successfully started encryption"));
 
     if ((s->username = get_remote_username(s->conf)) == NULL) {
-        s->cur_prompt = new_prompts(s->ppl.frontend);
+        s->cur_prompt = new_prompts();
         s->cur_prompt->to_server = TRUE;
         s->cur_prompt->name = dupstr("SSH login name");
         add_prompt(s->cur_prompt, dupstr("login as: "), TRUE);
-        s->userpass_ret = get_userpass_input(s->cur_prompt, NULL);
+        s->userpass_ret = seat_get_userpass_input(
+            s->ppl.seat, s->cur_prompt, NULL);
         while (1) {
             while (s->userpass_ret < 0 &&
                    bufchain_size(s->ppl.user_input) > 0)
-                s->userpass_ret = get_userpass_input(
-                    s->cur_prompt, s->ppl.user_input);
+                s->userpass_ret = seat_get_userpass_input(
+                    s->ppl.seat, s->cur_prompt, s->ppl.user_input);
 
             if (s->userpass_ret >= 0)
                 break;
@@ -691,18 +693,19 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                         ppl_printf(("No passphrase required.\r\n"));
                     passphrase = NULL;
                 } else {
-                    s->cur_prompt = new_prompts(s->ppl.frontend);
+                    s->cur_prompt = new_prompts(s->ppl.seat);
                     s->cur_prompt->to_server = FALSE;
                     s->cur_prompt->name = dupstr("SSH key passphrase");
                     add_prompt(s->cur_prompt,
                                dupprintf("Passphrase for key \"%.100s\": ",
                                          s->publickey_comment), FALSE);
-                    s->userpass_ret = get_userpass_input(s->cur_prompt, NULL);
+                    s->userpass_ret = seat_get_userpass_input(
+                        s->ppl.seat, s->cur_prompt, NULL);
                     while (1) {
                         while (s->userpass_ret < 0 &&
                                bufchain_size(s->ppl.user_input) > 0)
-                            s->userpass_ret = get_userpass_input(
-                                s->cur_prompt, s->ppl.user_input);
+                            s->userpass_ret = seat_get_userpass_input(
+                                s->ppl.seat, s->cur_prompt, s->ppl.user_input);
 
                         if (s->userpass_ret >= 0)
                             break;
@@ -830,7 +833,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
         /*
          * Otherwise, try various forms of password-like authentication.
          */
-        s->cur_prompt = new_prompts(s->ppl.frontend);
+        s->cur_prompt = new_prompts(s->ppl.seat);
 
         if (conf_get_int(s->conf, CONF_try_tis_auth) &&
             (s->supported_auths_mask & (1 << SSH1_AUTH_TIS)) &&
@@ -950,12 +953,13 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
          * or CryptoCard exchange if we're doing TIS or CryptoCard
          * authentication.
          */
-        s->userpass_ret = get_userpass_input(s->cur_prompt, NULL);
+        s->userpass_ret = seat_get_userpass_input(
+            s->ppl.seat, s->cur_prompt, NULL);
         while (1) {
             while (s->userpass_ret < 0 &&
                    bufchain_size(s->ppl.user_input) > 0)
-                s->userpass_ret = get_userpass_input(
-                    s->cur_prompt, s->ppl.user_input);
+                s->userpass_ret = seat_get_userpass_input(
+                    s->ppl.seat, s->cur_prompt, s->ppl.user_input);
 
             if (s->userpass_ret >= 0)
                 break;
