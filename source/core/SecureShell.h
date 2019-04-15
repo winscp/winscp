@@ -22,6 +22,7 @@ struct callback_set;
 enum TSshImplementation { sshiUnknown, sshiOpenSSH, sshiProFTPD, sshiBitvise, sshiTitan, sshiOpenVMS, sshiCerberus };
 struct ScpLogPolicy;
 struct LogContext;
+struct ScpSeat;
 //---------------------------------------------------------------------------
 class TSecureShell
 {
@@ -73,6 +74,7 @@ private:
   int FSendBuf;
   std::auto_ptr<callback_set> FCallbackSet;
   ScpLogPolicy * FLogPolicy;
+  ScpSeat * FSeat;
   LogContext * FLogCtx;
 
   void __fastcall Init();

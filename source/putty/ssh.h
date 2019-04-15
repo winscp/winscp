@@ -89,7 +89,7 @@ typedef struct PktOut {
 typedef struct PacketQueueBase {
     PacketQueueNode end;
     struct IdempotentCallback *ic;
-    Frontend * frontend; // WINSCP
+    Seat * seat; // WINSCP
 } PacketQueueBase;
 
 typedef struct PktInQueue {
@@ -107,8 +107,8 @@ void pq_base_push_front(PacketQueueBase *pqb, PacketQueueNode *node);
 void pq_base_concatenate(PacketQueueBase *dest,
                          PacketQueueBase *q1, PacketQueueBase *q2);
 
-void pq_in_init(PktInQueue *pq, Frontend * frontend); // WINSCP
-void pq_out_init(PktOutQueue *pq, Frontend * frontend); // WINSCP
+void pq_in_init(PktInQueue *pq, Seat * seat); // WINSCP
+void pq_out_init(PktOutQueue *pq, Seat * seat); // WINSCP
 void pq_in_clear(PktInQueue *pq);
 void pq_out_clear(PktOutQueue *pq);
 

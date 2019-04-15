@@ -1069,20 +1069,20 @@ int is_pfwd(Plug * plug)
     (plug->vt->closing == pfl_closing);
 }
 
-Frontend * get_pfwd_frontend(Plug * plug)
+Seat * get_pfwd_seat(Plug * plug)
 {
-  Frontend * frontend = NULL;
+  LogContext * logctx;
   if (plug->vt->closing == pfl_closing)
   {
     struct PortListener *pl = container_of(plug, struct PortListener, plug);
-    frontend = log_get_frontend(pl->cl->logctx);
+    logctx = pl->cl->logctx;
   }
   else if (plug->vt->closing == pfd_closing)
   {
     struct PortForwarding *pf = container_of(plug, struct PortForwarding, plug);
-    frontend = log_get_frontend(pf->cl->logctx);
+    logctx = pf->cl->logctx;
   }
-  return frontend;
+  return get_log_seat(logctx);
 }
 
 #endif

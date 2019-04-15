@@ -32,4 +32,12 @@ UnicodeString GetCipher2Name(const ssh2_cipher * Cipher);
 UnicodeString GetCompressorName(const ssh_compressor * Compressor);
 UnicodeString GetDecompressorName(const ssh_decompressor * Decompressor);
 //---------------------------------------------------------------------------
+class TSecureShell;
+struct ScpSeat : public Seat
+{
+  TSecureShell * SecureShell;
+
+  ScpSeat(TSecureShell * SecureShell);
+};
+//---------------------------------------------------------------------------
 #endif

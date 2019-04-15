@@ -20,7 +20,6 @@ struct LogContext {
     LogPolicy *lp;
     Conf *conf;
     int logtype;		       /* cached out of conf */
-    Frontend *frontend; // WINSCP
 };
 
 static Filename *xlatlognam(Filename *s, char *hostname, int port,
@@ -366,7 +365,7 @@ void log_packet(LogContext *ctx, int direction, int type,
     logflush(ctx);
 }
 
-LogContext *log_init(LogPolicy *lp, Conf *conf, Frontend* frontend) // WINSCP
+LogContext *log_init(LogPolicy *lp, Conf *conf)
 {
     LogContext *ctx = snew(LogContext);
     ctx->lgfp = NULL;
@@ -375,15 +374,14 @@ LogContext *log_init(LogPolicy *lp, Conf *conf, Frontend* frontend) // WINSCP
     ctx->conf = conf_copy(conf);
     ctx->logtype = conf_get_int(ctx->conf, CONF_logtype);
     ctx->currlogfilename = NULL;
-    ctx->frontend = frontend;
     bufchain_init(&ctx->queue);
     return ctx;
 }
 
 // WINSCP
-Frontend *log_get_frontend(LogContext *ctx)
+LogPolicy *log_get_logpolicy(LogContext *ctx)
 {
-    return ctx->frontend;
+    return ctx->lp;
 }
 
 void log_free(LogContext *ctx)

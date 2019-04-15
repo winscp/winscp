@@ -638,7 +638,7 @@ typedef struct {
     void *data;		/* slot for housekeeping data, managed by
 			 * seat_get_userpass_input(); initially NULL */
 } prompts_t;
-prompts_t *new_prompts();
+prompts_t *new_prompts(void); // WINSCP (void)
 void add_prompt(prompts_t *p, char *promptstr, int echo);
 void prompt_set_result(prompt_t *pr, const char *newstr);
 void prompt_ensure_result_size(prompt_t *pr, int len);
@@ -1481,7 +1481,7 @@ struct LogPolicy {
 #define lp_askappend(lp, fn, cb, ctx) ((lp)->vt->askappend(lp, fn, cb, ctx))
 #define lp_logging_error(lp, event) ((lp)->vt->logging_error(lp, event))
 
-LogContext *log_init(LogPolicy *lp, Conf *conf, Frontend* frontend); // WINSCP
+LogContext *log_init(LogPolicy *lp, Conf *conf);
 void log_free(LogContext *logctx);
 void log_reconfig(LogContext *logctx, Conf *conf);
 void logfopen(LogContext *logctx);
@@ -1679,15 +1679,9 @@ void pgp_fingerprints(void);
  * have_ssh_host_key() just returns true if a key of that type is
  * already cached and false otherwise.
  */
-#ifdef MPEXT
-int have_ssh_host_key(void *frontend, const char *host, int port, const char *keytype);
-#else
-int have_ssh_host_key(const char *host, int port, const char *keytype);
-#endif
+int have_ssh_host_key(Seat *seat, const char *host, int port, const char *keytype); // WINSCP
 
-#ifdef MPEXT
-void display_banner(Frontend *frontend, const char* banner, int size);
-#endif
+void display_banner(Seat *seat, const char* banner, int size); // WINSCP
 /*
  * Exports from console frontends (wincons.c, uxcons.c)
  * that aren't equivalents to things in windlg.c et al.
@@ -1952,8 +1946,11 @@ int run_toplevel_callbacks(CALLBACK_SET_ONLY);
 int toplevel_callback_pending(CALLBACK_SET_ONLY);
 struct callback_set * get_callback_set(Plug * plug);
 struct callback_set * get_frontend_callback_set(Frontend * frontend);
+struct callback_set * get_seat_callback_set(Seat * seat);
 void delete_callbacks_for_context(CALLBACK_SET void *ctx);
-Frontend *log_get_frontend(LogContext *ctx); // WINSCP
+LogPolicy *log_get_logpolicy(LogContext *ctx); // WINSCP
+Seat * get_log_seat(LogContext * lp); // WINSCP
+struct callback_set * get_log_callback_set(LogContext * lp); // WINSCP
 
 /*
  * Another facility in callback.c deals with 'idempotent' callbacks,

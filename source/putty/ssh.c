@@ -186,7 +186,7 @@ static void ssh_got_ssh_version(struct ssh_version_receiver *rcv,
             /* Load and pick the highest GSS library on the preference
              * list. */
             if (!ssh->gss_state.libs)
-                ssh->gss_state.libs = ssh_gss_setup(ssh->conf, ssh->frontend); // WINSCP
+                ssh->gss_state.libs = ssh_gss_setup(ssh->conf, ssh->logctx); // WINSCP
             ssh->gss_state.lib = NULL;
             if (ssh->gss_state.libs->nlibraries > 0) {
                 int i, j;
@@ -816,7 +816,7 @@ static const char *ssh_init(Seat *seat, Backend **backend_handle,
     bufchain_init(&ssh->user_input);
     ssh->ic_out_raw.fn = ssh_bpp_output_raw_data_callback;
     ssh->ic_out_raw.ctx = ssh;
-    ssh->ic_out_raw.set = get_frontend_callback_set(frontend);
+    ssh->ic_out_raw.set = get_seat_callback_set(seat);
 
     ssh->backend.vt = &ssh_backend;
     *backend_handle = &ssh->backend;
@@ -1136,9 +1136,9 @@ int get_ssh_version(Backend * be)
   return ssh->version;
 }
 
-void * get_ssh_frontend(Plug * plug)
+Seat * get_ssh_seat(Plug * plug)
 {
-  return container_of(plug, Ssh, plug)->frontend;
+  return container_of(plug, Ssh, plug)->seat;
 }
 
 const ssh1_cipher * get_cipher(Backend * be)

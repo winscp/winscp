@@ -693,7 +693,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                         ppl_printf(("No passphrase required.\r\n"));
                     passphrase = NULL;
                 } else {
-                    s->cur_prompt = new_prompts(s->ppl.seat);
+                    s->cur_prompt = new_prompts(); // WINSCP removed s->ppl.seat
                     s->cur_prompt->to_server = FALSE;
                     s->cur_prompt->name = dupstr("SSH key passphrase");
                     add_prompt(s->cur_prompt,
@@ -833,7 +833,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
         /*
          * Otherwise, try various forms of password-like authentication.
          */
-        s->cur_prompt = new_prompts(s->ppl.seat);
+        s->cur_prompt = new_prompts(); // WINSCP removed s->ppl.seat
 
         if (conf_get_int(s->conf, CONF_try_tis_auth) &&
             (s->supported_auths_mask & (1 << SSH1_AUTH_TIS)) &&

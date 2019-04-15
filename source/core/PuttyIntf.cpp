@@ -85,18 +85,19 @@ TSecureShell * GetSecureShell(Plug * plug, bool & pfwd)
   }
 
   pfwd = is_pfwd(plug);
-  void * frontend;
+  Seat * seat;
   if (pfwd)
   {
-    frontend = get_pfwd_frontend(plug);
+    seat = get_pfwd_seat(plug);
   }
   else
   {
-    frontend = get_ssh_frontend(plug);
+    seat = get_ssh_seat(plug);
   }
-  DebugAssert(frontend != NULL);
+  DebugAssert(seat != NULL);
 
-  return reinterpret_cast<TSecureShell*>(frontend);
+  TSecureShell * SecureShell = static_cast<ScpSeat *>(seat)->SecureShell;
+  return SecureShell;
 }
 //---------------------------------------------------------------------------
 struct callback_set * get_callback_set(Plug * plug)
@@ -106,9 +107,10 @@ struct callback_set * get_callback_set(Plug * plug)
   return SecureShell->GetCallbackSet();
 }
 //---------------------------------------------------------------------------
-struct callback_set * get_frontend_callback_set(Frontend * frontend)
+struct callback_set * get_seat_callback_set(Seat * seat)
 {
-  return reinterpret_cast<TSecureShell *>(frontend)->GetCallbackSet();
+  TSecureShell * SecureShell = static_cast<ScpSeat *>(seat)->SecureShell;
+  return SecureShell->GetCallbackSet();
 }
 //---------------------------------------------------------------------------
 extern "C" char * do_select(Plug * plug, SOCKET skt, int startup)
@@ -127,31 +129,31 @@ extern "C" char * do_select(Plug * plug, SOCKET skt, int startup)
   return NULL;
 }
 //---------------------------------------------------------------------------
-int from_backend(Frontend * frontend, int is_stderr, const void * data, int datalen)
+static int output(Seat * seat, int is_stderr, const void * data, int len)
 {
-  DebugAssert(frontend);
+  TSecureShell * SecureShell = static_cast<ScpSeat *>(seat)->SecureShell;
   if (is_stderr >= 0)
   {
     DebugAssert((is_stderr == 0) || (is_stderr == 1));
-    ((TSecureShell *)frontend)->FromBackend((is_stderr == 1), reinterpret_cast<const unsigned char *>(data), datalen);
+    SecureShell->FromBackend((is_stderr == 1), reinterpret_cast<const unsigned char *>(data), len);
   }
   else
   {
     DebugAssert(is_stderr == -1);
-    ((TSecureShell *)frontend)->CWrite(reinterpret_cast<const char *>(data), datalen);
+    SecureShell->CWrite(reinterpret_cast<const char *>(data), len);
   }
   return 0;
 }
 //---------------------------------------------------------------------------
-int from_backend_eof(Frontend * /*frontend*/)
+static int eof(Seat *)
 {
   return FALSE;
 }
 //---------------------------------------------------------------------------
-int get_userpass_input(prompts_t * p, bufchain * DebugUsedArg(input))
+static int get_userpass_input(Seat * seat, prompts_t * p, bufchain * DebugUsedArg(input))
 {
   DebugAssert(p != NULL);
-  TSecureShell * SecureShell = reinterpret_cast<TSecureShell *>(p->frontend);
+  TSecureShell * SecureShell = static_cast<ScpSeat *>(seat)->SecureShell;
   DebugAssert(SecureShell != NULL);
 
   int Result;
@@ -217,55 +219,42 @@ int get_userpass_input(prompts_t * p, bufchain * DebugUsedArg(input))
   return Result;
 }
 //---------------------------------------------------------------------------
-char * get_ttymode(Frontend * /*frontend*/, const char * /*mode*/)
+static void connection_fatal(Seat * seat, const char * message)
 {
-  // should never happen when Config.nopty == TRUE
-  DebugFail();
-  return NULL;
-}
-//---------------------------------------------------------------------------
-void connection_fatal(Frontend * frontend, const char * fmt, ...)
-{
-  va_list Param;
-  char Buf[200];
-  va_start(Param, fmt);
-  vsnprintf(Buf, LENOF(Buf), fmt, Param); \
-  Buf[LENOF(Buf) - 1] = '\0'; \
-  va_end(Param);
 
-  DebugAssert(frontend != NULL);
-  ((TSecureShell *)frontend)->PuttyFatalError(Buf);
+  TSecureShell * SecureShell = static_cast<ScpSeat *>(seat)->SecureShell;
+  SecureShell->PuttyFatalError(UnicodeString(AnsiString(message)));
 }
 //---------------------------------------------------------------------------
-int verify_ssh_host_key(Frontend * frontend, char * host, int port, const char * keytype,
+int verify_ssh_host_key(Seat * seat, const char * host, int port, const char * keytype,
   char * keystr, char * fingerprint, void (*/*callback*/)(void * ctx, int result),
   void * /*ctx*/)
 {
-  DebugAssert(frontend != NULL);
-  reinterpret_cast<TSecureShell *>(frontend)->VerifyHostKey(host, port, keytype, keystr, fingerprint);
+  TSecureShell * SecureShell = static_cast<ScpSeat *>(seat)->SecureShell;
+  SecureShell->VerifyHostKey(host, port, keytype, keystr, fingerprint);
 
   // We should return 0 when key was not confirmed, we throw exception instead.
   return 1;
 }
 //---------------------------------------------------------------------------
-int have_ssh_host_key(void * frontend, const char * hostname, int port,
+int have_ssh_host_key(Seat * seat, const char * hostname, int port,
   const char * keytype)
 {
-  DebugAssert(frontend != NULL);
-  return static_cast<TSecureShell *>(frontend)->HaveHostKey(hostname, port, keytype) ? 1 : 0;
+  TSecureShell * SecureShell = static_cast<ScpSeat *>(seat)->SecureShell;
+  return SecureShell->HaveHostKey(hostname, port, keytype) ? 1 : 0;
 }
 //---------------------------------------------------------------------------
-int askalg(Frontend * frontend, const char * algtype, const char * algname,
+int confirm_weak_crypto_primitive(Seat * seat, const char * algtype, const char * algname,
   void (*/*callback*/)(void * ctx, int result), void * /*ctx*/)
 {
-  DebugAssert(frontend != NULL);
-  ((TSecureShell *)frontend)->AskAlg(algtype, algname);
+  TSecureShell * SecureShell = static_cast<ScpSeat *>(seat)->SecureShell;
+  SecureShell->AskAlg(algtype, algname);
 
   // We should return 0 when alg was not confirmed, we throw exception instead.
   return 1;
 }
 //---------------------------------------------------------------------------
-int askhk(Frontend * /*frontend*/, const char * /*algname*/, const char * /*betteralgs*/,
+int confirm_weak_cached_hostkey(Seat *, const char * /*algname*/, const char * /*betteralgs*/,
   void (*/*callback*/)(void *ctx, int result), void * /*ctx*/)
 {
   return 1;
@@ -276,11 +265,11 @@ void old_keyfile_warning(void)
   // no reference to TSecureShell instance available
 }
 //---------------------------------------------------------------------------
-void display_banner(Frontend * frontend, const char * banner, int size)
+void display_banner(Seat * seat, const char * banner, int size)
 {
-  DebugAssert(frontend);
+  TSecureShell * SecureShell = static_cast<ScpSeat *>(seat)->SecureShell;
   UnicodeString Banner(UTF8String(banner, size));
-  ((TSecureShell *)frontend)->DisplayBanner(Banner);
+  SecureShell->DisplayBanner(Banner);
 }
 //---------------------------------------------------------------------------
 static void SSHFatalError(const char * Format, va_list Param)
@@ -316,16 +305,6 @@ void ldisc_echoedit_update(Ldisc * /*handle*/)
   DebugFail();
 }
 //---------------------------------------------------------------------------
-void notify_remote_exit(Frontend * /*frontend*/)
-{
-  // nothing
-}
-//---------------------------------------------------------------------------
-void update_specials_menu(Frontend * /*frontend*/)
-{
-  // nothing
-}
-//---------------------------------------------------------------------------
 unsigned long schedule_timer(int ticks, timer_fn_t /*fn*/, void * /*ctx*/)
 {
   return ticks + GetTickCount();
@@ -351,11 +330,6 @@ void pinger_free(Pinger * /*pinger*/)
   // nothing
 }
 //---------------------------------------------------------------------------
-void set_busy_status(Frontend * /*frontend*/, int /*status*/)
-{
-  // nothing
-}
-//---------------------------------------------------------------------------
 void platform_get_x11_auth(struct X11Display * /*display*/, Conf * /*conf*/)
 {
   // nothing, therefore no auth.
@@ -375,6 +349,32 @@ char * get_remote_username(Conf * conf)
     result = NULL;
   }
   return result;
+}
+//---------------------------------------------------------------------------
+static const SeatVtable ScpSeatVtable =
+  {
+    output,
+    eof,
+    get_userpass_input,
+    nullseat_notify_remote_exit,
+    connection_fatal,
+    nullseat_update_specials_menu,
+    nullseat_get_ttymode,
+    nullseat_set_busy_status,
+    verify_ssh_host_key,
+    confirm_weak_crypto_primitive,
+    confirm_weak_cached_hostkey,
+    nullseat_is_always_utf8,
+    nullseat_echoedit_update,
+    nullseat_get_x_display,
+    nullseat_get_windowid,
+    nullseat_get_char_cell_size
+  };
+//---------------------------------------------------------------------------
+ScpSeat::ScpSeat(TSecureShell * ASecureShell)
+{
+  SecureShell = ASecureShell;
+  vt = &ScpSeatVtable;
 }
 //---------------------------------------------------------------------------
 static long OpenWinSCPKey(HKEY Key, const char * SubKey, HKEY * Result, bool CanCreate)

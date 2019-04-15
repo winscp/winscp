@@ -33,7 +33,20 @@ struct TPuttyTranslation
 struct ScpLogPolicy : public LogPolicy
 {
   TSecureShell * SecureShell;
+  struct Seat * Seat;
 };
+//---------------------------------------------------------------------------
+Seat * get_log_seat(LogContext * logctx)
+{
+  ScpLogPolicy * ALogPolicy = static_cast<ScpLogPolicy *>(log_get_logpolicy(logctx));
+  return ALogPolicy->Seat;
+}
+//---------------------------------------------------------------------------
+struct callback_set * get_log_callback_set(LogContext * logctx)
+{
+  ScpLogPolicy * ALogPolicy = static_cast<ScpLogPolicy *>(log_get_logpolicy(logctx));
+  return ALogPolicy->SecureShell->GetCallbackSet();
+}
 //---------------------------------------------------------------------------
 __fastcall TSecureShell::TSecureShell(TSessionUI* UI,
   TSessionData * SessionData, TSessionLog * Log, TConfiguration * Configuration)
@@ -50,6 +63,7 @@ __fastcall TSecureShell::TSecureShell(TSessionUI* UI,
   Pending = NULL;
   FBackendHandle = NULL;
   FLogPolicy = NULL;
+  FSeat = NULL;
   FLogCtx = NULL;
   ResetConnection();
   FOnCaptureOutput = NULL;
@@ -93,6 +107,8 @@ void __fastcall TSecureShell::ResetConnection()
   FStoredPassphraseTried = false;
   delete FLogPolicy;
   FLogPolicy = NULL;
+  delete FSeat;
+  FSeat = NULL;
   if (FLogCtx != NULL)
   {
     log_free(FLogCtx);
@@ -436,14 +452,15 @@ void __fastcall TSecureShell::Open()
     const char * InitError;
     Conf * conf = StoreToConfig(FSessionData, Simple);
     FSendBuf = FSessionData->SendBuf;
+    FSeat = new ScpSeat(this);
     FLogPolicy = new ScpLogPolicy();
     FLogPolicy->vt = &ScpLogPolicyVTable;
     FLogPolicy->SecureShell = this;
+    FLogPolicy->Seat = FSeat;
     try
     {
-      Frontend * AFrontend = reinterpret_cast<Frontend *>(this);
-      FLogCtx = log_init(FLogPolicy, conf, AFrontend);
-      InitError = backend_init(&ssh_backend, AFrontend, &FBackendHandle, FLogCtx, conf,
+      FLogCtx = log_init(FLogPolicy, conf);
+      InitError = backend_init(&ssh_backend, FSeat, &FBackendHandle, FLogCtx, conf,
         AnsiString(FSessionData->HostNameExpanded).c_str(), FSessionData->PortNumber, &RealHost,
         (FSessionData->TcpNoDelay ? 1 : 0),
         conf_get_int(conf, CONF_tcp_keepalives));

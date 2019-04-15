@@ -85,7 +85,7 @@ static PktIn *pq_in_after(PacketQueueBase *pqb,
 
     if (pop) {
         #ifdef WINSCP
-        struct callback_set * set = get_frontend_callback_set(pqb->frontend);
+        struct callback_set * set = get_seat_callback_set(pqb->seat);
         assert(set != NULL);
         if (set->ic_pktin_free == NULL)
         {
@@ -133,18 +133,18 @@ static PktOut *pq_out_after(PacketQueueBase *pqb,
     return container_of(node, PktOut, qnode);
 }
 
-void pq_in_init(PktInQueue *pq, Frontend * frontend) // WINSCP
+void pq_in_init(PktInQueue *pq, Seat * seat) // WINSCP
 {
     pq->pqb.ic = NULL;
-    pq->pqb.frontend = frontend;
+    pq->pqb.seat = seat;
     pq->pqb.end.next = pq->pqb.end.prev = &pq->pqb.end;
     pq->after = pq_in_after;
 }
 
-void pq_out_init(PktOutQueue *pq, Frontend * frontend) // WINSCP
+void pq_out_init(PktOutQueue *pq, Seat * seat) // WINSCP
 {
     pq->pqb.ic = NULL;
-    pq->pqb.frontend = frontend;
+    pq->pqb.seat = seat;
     pq->pqb.end.next = pq->pqb.end.prev = &pq->pqb.end;
     pq->after = pq_out_after;
 }
@@ -685,7 +685,7 @@ void ssh_ppl_replace(PacketProtocolLayer *old, PacketProtocolLayer *new)
 
 void ssh_ppl_free(PacketProtocolLayer *ppl)
 {
-    delete_callbacks_for_context(get_frontend_callback_set(ppl->frontend), ppl); // WINSCP
+    delete_callbacks_for_context(get_seat_callback_set(ppl->seat), ppl); // WINSCP
     ppl->vt->free(ppl);
 }
 
@@ -703,7 +703,7 @@ void ssh_ppl_setup_queues(PacketProtocolLayer *ppl,
     ppl->in_pq->pqb.ic = &ppl->ic_process_queue;
     ppl->ic_process_queue.fn = ssh_ppl_ic_process_queue_callback;
     ppl->ic_process_queue.ctx = ppl;
-    ppl->ic_process_queue.set = get_frontend_callback_set(ppl->frontend);
+    ppl->ic_process_queue.set = get_seat_callback_set(ppl->seat);
 
     /* If there's already something on the input queue, it will want
      * handling immediately. */
@@ -739,14 +739,14 @@ static void ssh_bpp_output_packet_callback(void *context)
 
 void ssh_bpp_common_setup(BinaryPacketProtocol *bpp)
 {
-    pq_in_init(&bpp->in_pq, log_get_frontend(bpp->logctx)); // WINSCP
-    pq_out_init(&bpp->out_pq, log_get_frontend(bpp->logctx)); // WINSCP
+    pq_in_init(&bpp->in_pq, get_log_seat(bpp->logctx)); // WINSCP
+    pq_out_init(&bpp->out_pq, get_log_seat(bpp->logctx)); // WINSCP
     bpp->input_eof = FALSE;
     bpp->ic_in_raw.fn = ssh_bpp_input_raw_data_callback;
-    bpp->ic_in_raw.set = get_frontend_callback_set(log_get_frontend(bpp->logctx));
+    bpp->ic_in_raw.set = get_log_callback_set(bpp->logctx);
     bpp->ic_in_raw.ctx = bpp;
     bpp->ic_out_pq.fn = ssh_bpp_output_packet_callback;
-    bpp->ic_out_pq.set = get_frontend_callback_set(log_get_frontend(bpp->logctx));
+    bpp->ic_out_pq.set = get_log_callback_set(bpp->logctx);
     bpp->ic_out_pq.ctx = bpp;
     bpp->out_pq.pqb.ic = &bpp->ic_out_pq;
 }
@@ -754,7 +754,7 @@ void ssh_bpp_common_setup(BinaryPacketProtocol *bpp)
 void ssh_bpp_free(BinaryPacketProtocol *bpp)
 {
     // WINSCP
-    delete_callbacks_for_context(get_frontend_callback_set(log_get_frontend(bpp->logctx)), bpp);
+    delete_callbacks_for_context(get_log_callback_set(bpp->logctx), bpp);
     bpp->vt->free(bpp);
 }
 

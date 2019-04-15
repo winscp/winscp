@@ -336,12 +336,12 @@ PacketProtocolLayer *ssh2_transport_new(
     s->server_greeting = dupstr(server_greeting);
     s->stats = stats;
 
-    pq_in_init(&s->pq_in_higher, higher_layer->frontend); // WINSCP
-    pq_out_init(&s->pq_out_higher, higher_layer->frontend); // WINSCP
+    pq_in_init(&s->pq_in_higher, higher_layer->seat); // WINSCP
+    pq_out_init(&s->pq_out_higher, higher_layer->seat); // WINSCP
     s->pq_out_higher.pqb.ic = &s->ic_pq_out_higher;
     s->ic_pq_out_higher.fn = ssh2_transport_higher_layer_packet_callback;
     s->ic_pq_out_higher.ctx = &s->ppl;
-    s->ic_pq_out_higher.set = get_frontend_callback_set(higher_layer->frontend);
+    s->ic_pq_out_higher.set = get_seat_callback_set(higher_layer->seat);
 
     s->higher_layer = higher_layer;
     s->higher_layer->selfptr = &s->higher_layer;
@@ -823,7 +823,7 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
                     if (hostkey_algs[j].id != s->preferred_hk[i])
                         continue;
                     if (have_ssh_host_key(
-                                          s->ppl.frontend, // WINSCP
+                                          s->ppl.seat, // WINSCP
                                           s->savedhost, s->savedport,
                                           hostkey_algs[j].alg->cache_id)) {
                         alg = ssh2_kexinit_addalg(s->kexlists[KEXLIST_HOSTKEY],
@@ -1122,7 +1122,7 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
                         in_commasep_string(hostkey_algs[j].alg->ssh_id,
                                            str.ptr, str.len) &&
                         !have_ssh_host_key(
-                                           s->ppl.frontend, // WINSCP
+                                           s->ppl.seat, // WINSCP
                                            s->savedhost, s->savedport,
                                            hostkey_algs[j].alg->cache_id)) {
                         s->uncert_hostkeys[s->n_uncert_hostkeys++] = j;
