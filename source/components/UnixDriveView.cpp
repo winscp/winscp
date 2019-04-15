@@ -758,8 +758,7 @@ TTreeNode * __fastcall TCustomUnixDriveView::FindNodeToPath(UnicodeString Path)
       {
         int Index = (StartIndex + EndIndex) / 2;
         UnicodeString NodeDir = Parent->Item[Index]->Text;
-        // lstrcmp is used by AlphaSort()
-        int C = lstrcmp(DirName.c_str(), NodeDir.c_str());
+        int C = DoCompareText(DirName, NodeDir);
         if (C == 0)
         {
           Result = Parent->Item[Index];
