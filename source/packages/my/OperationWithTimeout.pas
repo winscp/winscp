@@ -6,7 +6,7 @@ uses
   Winapi.Windows, Winapi.ShlObj, Winapi.ShellAPI, ActiveX;
 
 function ShellFolderGetAttributesOfWithTimeout(
-  ShellFolder: IShellFolder; cidl: UINT; var apidl: PItemIDList; var rgfInOut: UINT; Timeout: Integer): HResult;
+  ShellFolder: IShellFolder; cidl: UINT; apidl: PItemIDList; var rgfInOut: UINT; Timeout: Integer): HResult;
 
 function SHGetFileInfoWithTimeout(
   pszPath: LPCWSTR; dwFileAttributes: DWORD; var psfi: TSHFileInfoW;
@@ -149,7 +149,7 @@ begin
 end;
 
 function ShellFolderGetAttributesOfWithTimeout(
-  ShellFolder: IShellFolder; cidl: UINT; var apidl: PItemIDList; var rgfInOut: UINT; Timeout: Integer): HResult;
+  ShellFolder: IShellFolder; cidl: UINT; apidl: PItemIDList; var rgfInOut: UINT; Timeout: Integer): HResult;
 var
   Operation: TOperation;
 begin
@@ -160,7 +160,6 @@ begin
   Operation.rgfInOut := rgfInOut;
   if WaitForOperation(Operation, ShellFolderGetAttributesOfOperation, Timeout) then
   begin
-    apidl := Operation.apidl;
     rgfInOut := Operation.rgfInOut;
     Result := Operation.ResultHResult;
     Operation.Free;
