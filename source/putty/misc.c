@@ -216,12 +216,24 @@ char *host_strduptrim(const char *s)
     return dupstr(s);
 }
 
-prompts_t *new_prompts(Frontend *frontend)
+void seat_connection_fatal(Seat *seat, const char *fmt, ...)
+{
+    va_list ap;
+    char *msg;
+
+    va_start(ap, fmt);
+    msg = dupvprintf(fmt, ap);
+    va_end(ap);
+
+    seat->vt->connection_fatal(seat, msg);
+    sfree(msg);                        /* if we return */
+}
+
+prompts_t *new_prompts(void)
 {
     prompts_t *p = snew(prompts_t);
     p->prompts = NULL;
     p->n_prompts = 0;
-    p->frontend = frontend;
     p->data = NULL;
     p->to_server = TRUE; /* to be on the safe side */
     p->name = p->instruction = NULL;
@@ -1348,3 +1360,31 @@ char *buildinfo(const char *newline)
 
     return strbuf_to_str(buf);
 }
+
+int nullseat_output(
+    Seat *seat, int is_stderr, const void *data, int len) { return 0; }
+int nullseat_eof(Seat *seat) { return TRUE; }
+int nullseat_get_userpass_input(
+    Seat *seat, prompts_t *p, bufchain *input) { return 0; }
+void nullseat_notify_remote_exit(Seat *seat) {}
+void nullseat_connection_fatal(Seat *seat, const char *message) {}
+void nullseat_update_specials_menu(Seat *seat) {}
+char *nullseat_get_ttymode(Seat *seat, const char *mode) { return NULL; }
+void nullseat_set_busy_status(Seat *seat, BusyStatus status) {}
+int nullseat_verify_ssh_host_key(
+    Seat *seat, const char *host, int port,
+    const char *keytype, char *keystr, char *key_fingerprint,
+    void (*callback)(void *ctx, int result), void *ctx) { return 0; }
+int nullseat_confirm_weak_crypto_primitive(
+    Seat *seat, const char *algtype, const char *algname,
+    void (*callback)(void *ctx, int result), void *ctx) { return 0; }
+int nullseat_confirm_weak_cached_hostkey(
+    Seat *seat, const char *algname, const char *betteralgs,
+    void (*callback)(void *ctx, int result), void *ctx) { return 0; }
+int nullseat_is_never_utf8(Seat *seat) { return FALSE; }
+int nullseat_is_always_utf8(Seat *seat) { return TRUE; }
+void nullseat_echoedit_update(Seat *seat, int echoing, int editing) {}
+const char *nullseat_get_x_display(Seat *seat) { return NULL; }
+int nullseat_get_windowid(Seat *seat, long *id_out) { return FALSE; }
+int nullseat_get_char_cell_size(
+    Seat *seat, int *width, int *height) { return FALSE; }

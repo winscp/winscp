@@ -362,16 +362,17 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
              * it again.
              */
         } else if ((s->username = s->default_username) == NULL) {
-            s->cur_prompt = new_prompts(s->ppl.frontend);
+            s->cur_prompt = new_prompts();
             s->cur_prompt->to_server = TRUE;
             s->cur_prompt->name = dupstr("SSH login name");
             add_prompt(s->cur_prompt, dupstr("login as: "), TRUE); 
-            s->userpass_ret = get_userpass_input(s->cur_prompt, NULL);
+            s->userpass_ret = seat_get_userpass_input(
+                s->ppl.seat, s->cur_prompt, NULL);
             while (1) {
                 while (s->userpass_ret < 0 &&
                        bufchain_size(s->ppl.user_input) > 0)
-                    s->userpass_ret = get_userpass_input(
-                        s->cur_prompt, s->ppl.user_input);
+                    s->userpass_ret = seat_get_userpass_input(
+                        s->ppl.seat, s->cur_prompt, s->ppl.user_input);
 
                 if (s->userpass_ret >= 0)
                     break;
@@ -382,7 +383,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
             }
             if (!s->userpass_ret) {
                 /*
-                 * get_userpass_input() failed to get a username.
+                 * seat_get_userpass_input() failed to get a username.
                  * Terminate.
                  */
                 free_prompts(s->cur_prompt);
@@ -453,7 +454,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                  *
                  * The banner data has been sanitised already by this
                  * point, so we can safely pass it straight to
-                 * from_backend.
+                 * seat_stderr.
                  */
                 if (bufchain_size(&s->banner) &&
                     (flags & (FLAG_VERBOSE | FLAG_INTERACTIVE))) {
@@ -461,7 +462,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                         void *data;
                         int len;
                         bufchain_prefix(&s->banner, &data, &len);
-                        from_backend(s->ppl.frontend, TRUE, data, len);
+                        seat_stderr(s->ppl.seat, data, len);
                         bufchain_consume(&s->banner, len);
                     }
                 }
@@ -766,20 +767,21 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                         /*
                          * Get a passphrase from the user.
                          */
-                        s->cur_prompt = new_prompts(s->ppl.frontend);
+                        s->cur_prompt = new_prompts();
                         s->cur_prompt->to_server = FALSE;
                         s->cur_prompt->name = dupstr("SSH key passphrase");
                         add_prompt(s->cur_prompt,
                                    dupprintf("Passphrase for key \"%.100s\": ",
                                              s->publickey_comment),
                                    FALSE);
-                        s->userpass_ret = get_userpass_input(
-                            s->cur_prompt, NULL);
+                        s->userpass_ret = seat_get_userpass_input(
+                            s->ppl.seat, s->cur_prompt, NULL);
                         while (1) {
                             while (s->userpass_ret < 0 &&
                                    bufchain_size(s->ppl.user_input) > 0)
-                                s->userpass_ret = get_userpass_input(
-                                    s->cur_prompt, s->ppl.user_input);
+                                s->userpass_ret = seat_get_userpass_input(
+                                    s->ppl.seat, s->cur_prompt,
+                                    s->ppl.user_input);
 
                             if (s->userpass_ret >= 0)
                                 break;
@@ -1089,7 +1091,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                     name = get_string(pktin);
                     inst = get_string(pktin);
                     get_string(pktin); /* skip language tag */
-                    s->cur_prompt = new_prompts(s->ppl.frontend);
+                    s->cur_prompt = new_prompts();
                     s->cur_prompt->to_server = TRUE;
 
                     /*
@@ -1144,12 +1146,13 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                      * Display any instructions, and get the user's
                      * response(s).
                      */
-                    s->userpass_ret = get_userpass_input(s->cur_prompt, NULL);
+                    s->userpass_ret = seat_get_userpass_input(
+                        s->ppl.seat, s->cur_prompt, NULL);
                     while (1) {
                         while (s->userpass_ret < 0 &&
                                bufchain_size(s->ppl.user_input) > 0)
-                            s->userpass_ret = get_userpass_input(
-                                s->cur_prompt, s->ppl.user_input);
+                            s->userpass_ret = seat_get_userpass_input(
+                                s->ppl.seat, s->cur_prompt, s->ppl.user_input);
 
                         if (s->userpass_ret >= 0)
                             break;
@@ -1213,19 +1216,20 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
 
                 s->ppl.bpp->pls->actx = SSH2_PKTCTX_PASSWORD;
 
-                s->cur_prompt = new_prompts(s->ppl.frontend);
+                s->cur_prompt = new_prompts();
                 s->cur_prompt->to_server = TRUE;
                 s->cur_prompt->name = dupstr("SSH password");
                 add_prompt(s->cur_prompt, dupprintf("%s@%s's password: ",
                                                     s->username, s->hostname),
                            FALSE);
 
-                s->userpass_ret = get_userpass_input(s->cur_prompt, NULL);
+                s->userpass_ret = seat_get_userpass_input(
+                    s->ppl.seat, s->cur_prompt, NULL);
                 while (1) {
                     while (s->userpass_ret < 0 &&
                            bufchain_size(s->ppl.user_input) > 0)
-                        s->userpass_ret = get_userpass_input(
-                            s->cur_prompt, s->ppl.user_input);
+                        s->userpass_ret = seat_get_userpass_input(
+                            s->ppl.seat, s->cur_prompt, s->ppl.user_input);
 
                     if (s->userpass_ret >= 0)
                         break;
@@ -1306,7 +1310,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
 
                     prompt = get_string(pktin);
 
-                    s->cur_prompt = new_prompts(s->ppl.frontend);
+                    s->cur_prompt = new_prompts();
                     s->cur_prompt->to_server = TRUE;
                     s->cur_prompt->name = dupstr("New SSH password");
                     s->cur_prompt->instruction = mkstr(prompt);
@@ -1336,13 +1340,14 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                      * password twice.
                      */
                     while (!got_new) {
-                        s->userpass_ret = get_userpass_input(
-                            s->cur_prompt, NULL);
+                        s->userpass_ret = seat_get_userpass_input(
+                            s->ppl.seat, s->cur_prompt, NULL);
                         while (1) {
                             while (s->userpass_ret < 0 &&
                                    bufchain_size(s->ppl.user_input) > 0)
-                                s->userpass_ret = get_userpass_input(
-                                    s->cur_prompt, s->ppl.user_input);
+                                s->userpass_ret = seat_get_userpass_input(
+                                    s->ppl.seat, s->cur_prompt,
+                                    s->ppl.user_input);
 
                             if (s->userpass_ret >= 0)
                                 break;

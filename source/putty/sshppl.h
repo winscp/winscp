@@ -54,7 +54,7 @@ struct PacketProtocolLayer {
 
     /* Logging and error-reporting facilities. */
     LogContext *logctx;
-    void *frontend;               /* for dialog boxes etc */
+    Seat *seat;             /* for dialog boxes, session output etc */
     Ssh *ssh;   /* for session termination + assorted connection-layer ops */
 
     /* Known bugs in the remote implementation. */

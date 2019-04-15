@@ -31,7 +31,7 @@
 
 struct Ssh {
     Socket *s;
-    Frontend *frontend;
+    Seat *seat;
     Conf *conf;
 
     struct ssh_version_receiver version_receiver;
@@ -140,7 +140,7 @@ static void ssh_connect_ppl(Ssh *ssh, PacketProtocolLayer *ppl)
 {
     ppl->bpp = ssh->bpp;
     ppl->user_input = &ssh->user_input;
-    ppl->frontend = ssh->frontend;
+    ppl->seat = ssh->seat;
     ppl->ssh = ssh;
     ppl->remote_bugs = ssh->remote_bugs;
 }
@@ -282,7 +282,7 @@ static void ssh_got_ssh_version(struct ssh_version_receiver *rcv,
     ssh->base_layer->selfptr = &ssh->base_layer;
     ssh_ppl_setup_queues(ssh->base_layer, &ssh->bpp->in_pq, &ssh->bpp->out_pq);
 
-    update_specials_menu(ssh->frontend);
+    seat_update_specials_menu(ssh->seat);
     ssh->pinger = pinger_new(ssh->conf, &ssh->backend);
 
     queue_idempotent_callback(&ssh->bpp->ic_in_raw);
@@ -408,7 +408,7 @@ void ssh_remote_error(Ssh *ssh, const char *fmt, ...)
         ssh_shutdown(ssh);
 
         logevent(ssh->logctx, msg);
-        connection_fatal(ssh->frontend, "%s", msg);
+        seat_connection_fatal(ssh->seat, "%s", msg);
         sfree(msg);
     }
 }
@@ -428,7 +428,7 @@ void ssh_remote_eof(Ssh *ssh, const char *fmt, ...)
 
         logevent(ssh->logctx, msg);
         sfree(msg);
-        notify_remote_exit(ssh->frontend);
+        seat_notify_remote_exit(ssh->seat);
     } else {
         /* This is responding to EOF after we've already seen some
          * other reason for terminating the session. */
@@ -448,7 +448,7 @@ void ssh_proto_error(Ssh *ssh, const char *fmt, ...)
         ssh_initiate_connection_close(ssh);
 
         logevent(ssh->logctx, msg);
-        connection_fatal(ssh->frontend, "%s", msg);
+        seat_connection_fatal(ssh->seat, "%s", msg);
         sfree(msg);
     }
 }
@@ -463,10 +463,10 @@ void ssh_sw_abort(Ssh *ssh, const char *fmt, ...)
         ssh_initiate_connection_close(ssh);
 
         logevent(ssh->logctx, msg);
-        connection_fatal(ssh->frontend, "%s", msg);
+        seat_connection_fatal(ssh->seat, "%s", msg);
         sfree(msg);
 
-        notify_remote_exit(ssh->frontend);
+        seat_notify_remote_exit(ssh->seat);
     }
 }
 
@@ -489,7 +489,7 @@ void ssh_user_close(Ssh *ssh, const char *fmt, ...)
         logevent(ssh->logctx, msg);
         sfree(msg);
 
-        notify_remote_exit(ssh->frontend);
+        seat_notify_remote_exit(ssh->seat);
     }
 }
 
@@ -508,7 +508,7 @@ static void ssh_socket_log(Plug *plug, int type, SockAddr *addr, int port,
      */
 
     if (!ssh->attempting_connshare)
-        backend_socket_log(ssh->frontend, ssh->logctx, type, addr, port,
+        backend_socket_log(ssh->seat, ssh->logctx, type, addr, port,
                            error_msg, error_code, ssh->conf,
                            ssh->session_started);
 }
@@ -665,7 +665,7 @@ static const char *connect_to_host(Ssh *ssh, const char *host, int port,
              * behave in quite the usual way. */
             const char *msg =
                 "Reusing a shared connection to this server.\r\n";
-            from_backend(ssh->frontend, TRUE, msg, strlen(msg));
+            seat_stderr(ssh->seat, msg, strlen(msg));
         }
     } else {
         /*
@@ -689,7 +689,7 @@ static const char *connect_to_host(Ssh *ssh, const char *host, int port,
                                 &ssh->plug, ssh->conf);
         if ((err = sk_socket_error(ssh->s)) != NULL) {
             ssh->s = NULL;
-            notify_remote_exit(ssh->frontend);
+            seat_notify_remote_exit(ssh->seat);
             return err;
         }
     }
@@ -788,7 +788,7 @@ static void ssh_cache_conf_values(Ssh *ssh)
  *
  * Returns an error message, or NULL on success.
  */
-static const char *ssh_init(Frontend *frontend, Backend **backend_handle,
+static const char *ssh_init(Seat *seat, Backend **backend_handle,
                             LogContext *logctx, Conf *conf,
                             const char *host, int port, char **realhost,
 			    int nodelay, int keepalive)
@@ -813,7 +813,7 @@ static const char *ssh_init(Frontend *frontend, Backend **backend_handle,
     ssh->backend.vt = &ssh_backend;
     *backend_handle = &ssh->backend;
 
-    ssh->frontend = frontend;
+    ssh->seat = seat;
     ssh->cl_dummy.logctx = ssh->logctx = logctx;
 
     random_ref(); /* do this now - may be needed by sharing setup code */
@@ -1003,8 +1003,8 @@ static void ssh_special(Backend *be, SessionSpecialCode code, int arg)
 }
 
 /*
- * This is called when stdout/stderr (the entity to which
- * from_backend sends data) manages to clear some backlog.
+ * This is called when the seat's output channel manages to clear some
+ * backlog.
  */
 static void ssh_unthrottle(Backend *be, int bufsize)
 {

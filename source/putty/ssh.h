@@ -1397,7 +1397,7 @@ enum { SSH_IMPL_BUG_LIST(TMP_DECLARE_REAL_ENUM) };
 
 /* Shared function that writes tty modes into a pty request */
 void write_ttymodes_to_packet_from_conf(
-    BinarySink *bs, Frontend *frontend, Conf *conf,
+    BinarySink *bs, Seat *seat, Conf *conf,
     int ssh_version, int ospeed, int ispeed);
 
 /* Shared system for allocating local SSH channel ids. Expects to be

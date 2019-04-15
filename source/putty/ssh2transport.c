@@ -1136,9 +1136,9 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
                    BinarySource_UPCAST(pktin)->len + 1);
 
         if (s->warn_kex) {
-            s->dlgret = askalg(s->ppl.frontend, "key-exchange algorithm",
-                               s->kex_alg->name,
-                               ssh2_transport_dialog_callback, s);
+            s->dlgret = seat_confirm_weak_crypto_primitive(
+                s->ppl.seat, "key-exchange algorithm", s->kex_alg->name,
+                ssh2_transport_dialog_callback, s);
             crMaybeWaitUntilV(s->dlgret >= 0);
             if (s->dlgret == 0) {
                 ssh_user_close(s->ppl.ssh, "User aborted at kex warning");
@@ -1153,9 +1153,9 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
             /*
              * Change warning box wording depending on why we chose a
              * warning-level host key algorithm. If it's because
-             * that's all we have *cached*, use the askhk mechanism,
-             * and list the host keys we could usefully cross-certify.
-             * Otherwise, use askalg for the standard wording.
+             * that's all we have *cached*, list the host keys we
+             * could usefully cross-certify. Otherwise, use the same
+             * standard wording as any other weak crypto primitive.
              */
             betteralgs = NULL;
             for (j = 0; j < s->n_uncert_hostkeys; j++) {
@@ -1184,14 +1184,18 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
                 }
             }
             if (betteralgs) {
-                s->dlgret = askhk(
-                    s->ppl.frontend, s->hostkey_alg->ssh_id, betteralgs,
+                /* Use the special warning prompt that lets us provide
+                 * a list of better algorithms */
+                s->dlgret = seat_confirm_weak_cached_hostkey(
+                    s->ppl.seat, s->hostkey_alg->ssh_id, betteralgs,
                     ssh2_transport_dialog_callback, s);
                 sfree(betteralgs);
             } else {
-                s->dlgret = askalg(s->ppl.frontend, "host key type",
-                                   s->hostkey_alg->ssh_id,
-                                   ssh2_transport_dialog_callback, s);
+                /* If none exist, use the more general 'weak crypto'
+                 * warning prompt */
+                s->dlgret = seat_confirm_weak_crypto_primitive(
+                    s->ppl.seat, "host key type", s->hostkey_alg->ssh_id,
+                    ssh2_transport_dialog_callback, s);
             }
             crMaybeWaitUntilV(s->dlgret >= 0);
             if (s->dlgret == 0) {
@@ -1201,10 +1205,9 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
         }
 
         if (s->warn_cscipher) {
-            s->dlgret = askalg(s->ppl.frontend,
-                               "client-to-server cipher",
-                               s->out.cipher->name,
-                               ssh2_transport_dialog_callback, s);
+            s->dlgret = seat_confirm_weak_crypto_primitive(
+                s->ppl.seat, "client-to-server cipher", s->out.cipher->name,
+                ssh2_transport_dialog_callback, s);
             crMaybeWaitUntilV(s->dlgret >= 0);
             if (s->dlgret == 0) {
                 ssh_user_close(s->ppl.ssh, "User aborted at cipher warning");
@@ -1213,10 +1216,9 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
         }
 
         if (s->warn_sccipher) {
-            s->dlgret = askalg(s->ppl.frontend,
-                               "server-to-client cipher",
-                               s->in.cipher->name,
-                               ssh2_transport_dialog_callback, s);
+            s->dlgret = seat_confirm_weak_crypto_primitive(
+                s->ppl.seat, "server-to-client cipher", s->in.cipher->name,
+                ssh2_transport_dialog_callback, s);
             crMaybeWaitUntilV(s->dlgret >= 0);
             if (s->dlgret == 0) {
                 ssh_user_close(s->ppl.ssh, "User aborted at cipher warning");
@@ -1309,13 +1311,13 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
         /*
          * Now generate and send e for Diffie-Hellman.
          */
-        set_busy_status(s->ppl.frontend, BUSY_CPU); /* this can take a while */
+        seat_set_busy_status(s->ppl.seat, BUSY_CPU);
         s->e = dh_create_e(s->dh_ctx, s->nbits * 2);
         pktout = ssh_bpp_new_pktout(s->ppl.bpp, s->kex_init_value);
         put_mp_ssh2(pktout, s->e);
         pq_push(s->ppl.out_pq, pktout);
 
-        set_busy_status(s->ppl.frontend, BUSY_WAITING); /* wait for server */
+        seat_set_busy_status(s->ppl.seat, BUSY_WAITING);
         crMaybeWaitUntilV((pktin = ssh2_transport_pop(s)) != NULL);
         if (pktin->type != s->kex_reply_value) {
             ssh_proto_error(s->ppl.ssh, "Received unexpected packet when "
@@ -1326,7 +1328,7 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
                                           pktin->type));
             return;
         }
-        set_busy_status(s->ppl.frontend, BUSY_CPU); /* cogitate */
+        seat_set_busy_status(s->ppl.seat, BUSY_CPU);
         s->hostkeydata = get_string(pktin);
         s->hkey = ssh_key_new_pub(s->hostkey_alg, s->hostkeydata);
         s->f = get_mp_ssh2(pktin);
@@ -1349,7 +1351,7 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
 
         /* We assume everything from now on will be quick, and it might
          * involve user interaction. */
-        set_busy_status(s->ppl.frontend, BUSY_NOT);
+        seat_set_busy_status(s->ppl.seat, BUSY_NOT);
 
         put_stringpl(s->exhash, s->hostkeydata);
         if (dh_is_gex(s->kex_alg)) {
@@ -1505,7 +1507,7 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
         ppl_logevent(("Doing GSSAPI (with Kerberos V5) Diffie-Hellman key "
                       "exchange with hash %s", s->kex_alg->hash->text_name));
         /* Now generate e for Diffie-Hellman. */
-        set_busy_status(s->ppl.frontend, BUSY_CPU); /* this can take a while */
+        seat_set_busy_status(s->ppl.seat, BUSY_CPU);
         s->e = dh_create_e(s->dh_ctx, s->nbits * 2);
 
         if (s->shgss->lib->gsslogmsg)
@@ -1664,7 +1666,7 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
 
         /* We assume everything from now on will be quick, and it might
          * involve user interaction. */
-        set_busy_status(s->ppl.frontend, BUSY_NOT);
+        seat_set_busy_status(s->ppl.seat, BUSY_NOT);
 
         if (!s->hkey)
             put_stringz(s->exhash, "");
@@ -2021,11 +2023,10 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
                              "configured list");
                 return;
             } else if (s->dlgret < 0) { /* none configured; use standard handling */
-                s->dlgret = verify_ssh_host_key(s->ppl.frontend,
-                                                s->savedhost, s->savedport,
-                                                ssh_key_cache_id(s->hkey),
-                                                s->keystr, s->fingerprint,
-                                                ssh2_transport_dialog_callback, s);
+                s->dlgret = seat_verify_ssh_host_key(
+                    s->ppl.seat, s->savedhost, s->savedport,
+                    ssh_key_cache_id(s->hkey), s->keystr, s->fingerprint,
+                    ssh2_transport_dialog_callback, s);
 #ifdef FUZZING
                 s->dlgret = 1;
 #endif
@@ -2205,7 +2206,7 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
      * Update the specials menu to list the remaining uncertified host
      * keys.
      */
-    update_specials_menu(s->ppl.frontend);
+    seat_update_specials_menu(s->ppl.seat);
 
     /*
      * Key exchange is over. Loop straight back round if we have a

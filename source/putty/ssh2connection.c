@@ -1689,7 +1689,7 @@ static void ssh2_setup_pty(struct ssh2_channel *c, PktIn *pktin, void *ctx)
     {
         strbuf *modebuf = strbuf_new();
         write_ttymodes_to_packet_from_conf(
-            BinarySink_UPCAST(modebuf), cs->ppl.frontend, cs->conf,
+            BinarySink_UPCAST(modebuf), cs->ppl.seat, cs->conf,
             2, s->ospeed, s->ispeed);
         put_stringsb(pktout, modebuf);
     }
@@ -2224,7 +2224,7 @@ static void mainchan_open_confirmation(Channel *chan)
     struct ssh2_connection_state *s = mc->connlayer;
     PacketProtocolLayer *ppl = &s->ppl; /* for ppl_logevent */
 
-    update_specials_menu(s->ppl.frontend);
+    seat_update_specials_menu(s->ppl.seat);
     ppl_logevent(("Opened main channel"));
 }
 
@@ -2248,7 +2248,7 @@ static int mainchan_send(Channel *chan, int is_stderr,
     assert(chan->vt == &mainchan_channelvt);
     mainchan *mc = container_of(chan, mainchan, chan);
     struct ssh2_connection_state *s = mc->connlayer;
-    return from_backend(s->ppl.frontend, is_stderr, data, length);
+    return seat_output(s->ppl.seat, is_stderr, data, length);
 }
 
 static void mainchan_send_eof(Channel *chan)
@@ -2258,14 +2258,13 @@ static void mainchan_send_eof(Channel *chan)
     struct ssh2_connection_state *s = mc->connlayer;
     PacketProtocolLayer *ppl = &s->ppl; /* for ppl_logevent */
 
-    if (!s->mainchan_eof_sent &&
-        (from_backend_eof(s->ppl.frontend) || s->got_pty)) {
+    if (!s->mainchan_eof_sent && (seat_eof(s->ppl.seat) || s->got_pty)) {
         /*
-         * Either from_backend_eof told us that the front end wants us
-         * to close the outgoing side of the connection as soon as we
-         * see EOF from the far end, or else we've unilaterally
-         * decided to do that because we've allocated a remote pty and
-         * hence EOF isn't a particularly meaningful concept.
+         * Either seat_eof told us that the front end wants us to
+         * close the outgoing side of the connection as soon as we see
+         * EOF from the far end, or else we've unilaterally decided to
+         * do that because we've allocated a remote pty and hence EOF
+         * isn't a particularly meaningful concept.
          */
         sshfwd_write_eof(mc->sc);
         ppl_logevent(("Sent EOF message"));

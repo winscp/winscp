@@ -235,7 +235,7 @@ extern Plug *const nullplug;
 /*
  * Exports from be_misc.c.
  */
-void backend_socket_log(Frontend *frontend, LogContext *logctx,
+void backend_socket_log(Seat *seat, LogContext *logctx,
                         int type, SockAddr *addr, int port,
                         const char *error_msg, int error_code, Conf *conf,
                         int session_started);

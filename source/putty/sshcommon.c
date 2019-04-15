@@ -345,7 +345,7 @@ int chan_no_eager_close(Channel *chan, int sent_local_eof, int rcvd_remote_eof)
  */
 
 void write_ttymodes_to_packet_from_conf(
-    BinarySink *bs, Frontend *frontend, Conf *conf,
+    BinarySink *bs, Seat *seat, Conf *conf,
     int ssh_version, int ospeed, int ispeed)
 {
     int i;
@@ -446,7 +446,7 @@ void write_ttymodes_to_packet_from_conf(
          *    mode.
          */
         if (sval[0] == 'A') {
-            sval = to_free = get_ttymode(frontend, mode->mode);
+            sval = to_free = seat_get_ttymode(seat, mode->mode);
         } else if (sval[0] == 'V') {
             sval++;                    /* skip the 'V' */
         } else {
@@ -644,7 +644,7 @@ void ssh_ppl_replace(PacketProtocolLayer *old, PacketProtocolLayer *new)
     ssh_ppl_setup_queues(new, old->in_pq, old->out_pq);
     new->selfptr = old->selfptr;
     new->user_input = old->user_input;
-    new->frontend = old->frontend;
+    new->seat = old->seat;
     new->ssh = old->ssh;
 
     *new->selfptr = new;
@@ -689,7 +689,7 @@ void ssh_ppl_user_output_string_and_free(PacketProtocolLayer *ppl, char *text)
     /* Messages sent via this function are from the SSH layer, not
      * from the server-side process, so they always have the stderr
      * flag set. */
-    from_backend(ppl->frontend, TRUE, text, strlen(text));
+    seat_stderr(ppl->seat, text, strlen(text));
     sfree(text);
 }
 

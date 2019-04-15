@@ -53,6 +53,9 @@ typedef struct LogContext LogContext;
 typedef struct LogPolicy LogPolicy;
 typedef struct LogPolicyVtable LogPolicyVtable;
 
+typedef struct Seat Seat;
+typedef struct SeatVtable SeatVtable;
+
 typedef struct Frontend Frontend;
 
 typedef struct Ssh Ssh;
