@@ -1417,6 +1417,7 @@ function TDriveView.AddChildNode(ParentNode: TTreeNode; SRec: TSearchRec): TTree
 var
   NewNode: TTreeNode;
   NodeData: TNodeData;
+  ContentMask: Boolean;
 begin
   NodeData := TNodeData.Create;
   NodeData.Attr := SRec.Attr;
@@ -1431,12 +1432,16 @@ begin
   { query content attributes ("has subfolder") only if tree view is visible }
   { to avoid unnecessary scan of subfolders (which may take some time) }
   { if tree view is not visible anyway }
+  ContentMask :=
+    Visible and
+    (GetDriveTypeToNode(ParentNode) <> DRIVE_REMOTE);
+
   if not Assigned(TNodeData(ParentNode.Data).ShellFolder) then
   begin
-    GetNodeShellAttr(FDesktop, TNodeData(ParentNode.Data), NodePathName(ParentNode), Visible);
+    GetNodeShellAttr(FDesktop, TNodeData(ParentNode.Data), NodePathName(ParentNode), ContentMask);
   end;
 
-  GetNodeShellAttr(TNodeData(ParentNode.Data).ShellFolder, NodeData, SRec.Name, Visible);
+  GetNodeShellAttr(TNodeData(ParentNode.Data).ShellFolder, NodeData, SRec.Name, ContentMask);
 
   NewNode := Self.Items.AddChildObject(ParentNode, '', NodeData);
   NewNode.Text := GetDisplayName(NewNode);
