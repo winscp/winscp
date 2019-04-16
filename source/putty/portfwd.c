@@ -120,12 +120,12 @@ static void pfd_closing(Plug *plug, const char *error_msg, int error_code,
          * Socket error. Slam the connection instantly shut.
          */
         if (pf->c) {
-            sshfwd_unclean_close(pf->c, error_msg);
+            sshfwd_initiate_close(pf->c, error_msg);
         } else {
             /*
              * We might not have an SSH channel, if a socket error
              * occurred during SOCKS negotiation. If not, we must
-             * clean ourself up without sshfwd_unclean_close's call
+             * clean ourself up without sshfwd_initiate_close's call
              * back to pfd_close.
              */
             pfd_close(pf);
@@ -153,18 +153,18 @@ static SshChannel *wrap_lportfwd_open(
     ConnectionLayer *cl, const char *hostname, int port,
     Socket *s, Channel *chan)
 {
-    char *peerinfo, *description;
+    SocketPeerInfo *pi;
+    char *description;
     SshChannel *toret;
 
-    peerinfo = sk_peer_info(s);
-    if (peerinfo) {
-        description = dupprintf("forwarding from %s", peerinfo);
-        sfree(peerinfo);
+    pi = sk_peer_info(s);
+    if (pi && pi->log_text) {
+        description = dupprintf("forwarding from %s", pi->log_text);
     } else {
         description = dupstr("forwarding");
     }
-
-    toret = ssh_lportfwd_open(cl, hostname, port, description, chan);
+    toret = ssh_lportfwd_open(cl, hostname, port, description, pi, chan);
+    sk_free_peer_info(pi);
 
     sfree(description);
     return toret;
@@ -450,7 +450,11 @@ static const struct ChannelVtable PortForwarding_channelvt = {
     pfd_send_eof,
     pfd_set_input_wanted,
     pfd_log_close_msg,
-    chan_no_eager_close,
+    chan_default_want_close,
+    chan_no_exit_status,
+    chan_no_exit_signal,
+    chan_no_exit_signal_numeric,
+    chan_no_request_response,
 };
 
 /*
@@ -516,8 +520,9 @@ static const PlugVtable PortListener_plugvt = {
  * On success, returns NULL and fills in *pl_ret. On error, returns a
  * dynamically allocated error message string.
  */
-static char *pfl_listen(char *desthost, int destport, char *srcaddr,
-                        int port, ConnectionLayer *cl, Conf *conf,
+static char *pfl_listen(const char *desthost, int destport,
+                        const char *srcaddr, int port,
+                        ConnectionLayer *cl, Conf *conf,
                         struct PortListener **pl_ret, int address_family)
 {
     const char *err;

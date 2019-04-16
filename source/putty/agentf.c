@@ -155,7 +155,11 @@ static const struct ChannelVtable agentf_channelvt = {
     agentf_send_eof,
     agentf_set_input_wanted,
     agentf_log_close_msg,
-    chan_no_eager_close,
+    chan_default_want_close,
+    chan_no_exit_status,
+    chan_no_exit_signal,
+    chan_no_exit_signal_numeric,
+    chan_no_request_response,
 };
 
 Channel *agentf_new(SshChannel *c)

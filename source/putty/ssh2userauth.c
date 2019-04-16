@@ -867,8 +867,8 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                                  BinarySink_UPCAST(sigblob));
                     strbuf_free(sigdata);
                     ssh2_userauth_add_sigblob(
-                        s, s->pktout, make_ptrlen(pkblob->s, pkblob->len),
-                        make_ptrlen(sigblob->s, sigblob->len));
+                        s, s->pktout, ptrlen_from_strbuf(pkblob),
+                        ptrlen_from_strbuf(sigblob));
                     strbuf_free(pkblob);
                     strbuf_free(sigblob);
 

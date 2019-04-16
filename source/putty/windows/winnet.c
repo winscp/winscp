@@ -904,7 +904,7 @@ static int sk_net_write_oob(Socket *s, const void *data, int len);
 static void sk_net_write_eof(Socket *s);
 static void sk_net_set_frozen(Socket *s, int is_frozen);
 static const char *sk_net_socket_error(Socket *s);
-static char *sk_net_peer_info(Socket *s);
+static SocketPeerInfo *sk_net_peer_info(Socket *s);
 
 extern char *do_select(SOCKET skt, int startup);
 
@@ -1763,7 +1763,7 @@ static const char *sk_net_socket_error(Socket *sock)
     return s->error;
 }
 
-static char *sk_net_peer_info(Socket *sock)
+static SocketPeerInfo *sk_net_peer_info(Socket *sock)
 {
     NetSocket *s = container_of(sock, NetSocket, sock);
 #ifdef NO_IPV6
@@ -1773,26 +1773,43 @@ static char *sk_net_peer_info(Socket *sock)
     char buf[INET6_ADDRSTRLEN];
 #endif
     int addrlen = sizeof(addr);
+    SocketPeerInfo *pi;
 
     if (p_getpeername(s->s, (struct sockaddr *)&addr, &addrlen) < 0)
         return NULL;
 
+    pi = snew(SocketPeerInfo);
+    pi->addressfamily = ADDRTYPE_UNSPEC;
+    pi->addr_text = NULL;
+    pi->port = -1;
+    pi->log_text = NULL;
+
     if (((struct sockaddr *)&addr)->sa_family == AF_INET) {
-        return dupprintf
-            ("%s:%d",
-             p_inet_ntoa(((struct sockaddr_in *)&addr)->sin_addr),
-             (int)p_ntohs(((struct sockaddr_in *)&addr)->sin_port));
+        pi->addressfamily = ADDRTYPE_IPV4;
+        memcpy(pi->addr_bin.ipv4, &((struct sockaddr_in *)&addr)->sin_addr, 4);
+        pi->port = p_ntohs(((struct sockaddr_in *)&addr)->sin_port);
+        pi->addr_text = dupstr(
+            p_inet_ntoa(((struct sockaddr_in *)&addr)->sin_addr));
+        pi->log_text = dupprintf("%s:%d", pi->addr_text, pi->port);
+
 #ifndef NO_IPV6
     } else if (((struct sockaddr *)&addr)->sa_family == AF_INET6) {
-        return dupprintf
-            ("[%s]:%d",
-             p_inet_ntop(AF_INET6, &((struct sockaddr_in6 *)&addr)->sin6_addr,
-                         buf, sizeof(buf)),
-             (int)p_ntohs(((struct sockaddr_in6 *)&addr)->sin6_port));
+        pi->addressfamily = ADDRTYPE_IPV6;
+        memcpy(pi->addr_bin.ipv6,
+               &((struct sockaddr_in6 *)&addr)->sin6_addr, 16);
+        pi->port = p_ntohs(((struct sockaddr_in6 *)&addr)->sin6_port);
+        pi->addr_text = dupstr(
+            p_inet_ntop(AF_INET6, &((struct sockaddr_in6 *)&addr)->sin6_addr,
+                        buf, sizeof(buf)));
+        pi->log_text = dupprintf("[%s]:%d", pi->addr_text, pi->port);
+
 #endif
     } else {
+        sfree(pi);
         return NULL;
     }
+
+    return pi;
 }
 
 static void sk_net_set_frozen(Socket *sock, int is_frozen)

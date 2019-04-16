@@ -35,7 +35,7 @@ struct SocketVtable {
     void (*set_frozen) (Socket *s, int is_frozen);
     /* ignored by tcp, but vital for ssl */
     const char *(*socket_error) (Socket *s);
-    char *(*peer_info) (Socket *s);
+    SocketPeerInfo *(*peer_info) (Socket *s);
 };
 
 typedef union { void *p; int i; } accept_ctx_t;
@@ -194,11 +194,51 @@ const char *sk_addr_error(SockAddr *addr);
 #define sk_set_frozen(s, is_frozen) (((s)->vt->set_frozen) (s, is_frozen))
 
 /*
- * Return a (dynamically allocated) string giving some information
- * about the other end of the socket, suitable for putting in log
- * files. May be NULL if nothing is available at all.
+ * Return a structure giving some information about the other end of
+ * the socket. May be NULL, if nothing is available at all. If it is
+ * not NULL, then it is dynamically allocated, and should be freed by
+ * a call to sk_free_peer_info(). See below for the definition.
  */
 #define sk_peer_info(s) (((s)->vt->peer_info) (s))
+
+/*
+ * The structure returned from sk_peer_info, and a function to free
+ * one (in misc.c).
+ */
+struct SocketPeerInfo {
+    int addressfamily;
+
+    /*
+     * Text form of the IPv4 or IPv6 address of the other end of the
+     * socket, if available, in the standard text representation.
+     */
+    const char *addr_text;
+
+    /*
+     * Binary form of the same address. Filled in if and only if
+     * addr_text is not NULL. You can tell which branch of the union
+     * is used by examining 'addressfamily'.
+     */
+    union {
+        unsigned char ipv6[16];
+        unsigned char ipv4[4];
+    } addr_bin;
+
+    /*
+     * Remote port number, or -1 if not available.
+     */
+    int port;
+
+    /*
+     * Free-form text suitable for putting in log messages. For IP
+     * sockets, repeats the address and port information from above.
+     * But it can be completely different, e.g. for Unix-domain
+     * sockets it gives information about the uid, gid and pid of the
+     * connecting process.
+     */
+    const char *log_text;
+};
+void sk_free_peer_info(SocketPeerInfo *pi);
 
 /*
  * Simple wrapper on getservbyname(), needed by ssh.c. Returns the

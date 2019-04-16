@@ -132,6 +132,7 @@ int ssh1_common_filter_queue(PacketProtocolLayer *ppl)
             ssh_remote_error(ppl->ssh,
                              "Server sent disconnect message:\n\"%.*s\"",
                              PTRLEN_PRINTF(msg));
+            pq_pop(ppl->in_pq);
             return TRUE;               /* indicate that we've been freed */
 
           case SSH1_MSG_DEBUG:

@@ -270,7 +270,7 @@ static const char *sk_handle_socket_error(Socket *s)
     return hs->error;
 }
 
-static char *sk_handle_peer_info(Socket *s)
+static SocketPeerInfo *sk_handle_peer_info(Socket *s)
 {
     HandleSocket *hs = container_of(s, HandleSocket, sock);
     ULONG pid;
@@ -299,8 +299,14 @@ static char *sk_handle_peer_info(Socket *s)
      * to log what we can find out about the client end.
      */
     if (p_GetNamedPipeClientProcessId &&
-        p_GetNamedPipeClientProcessId(hs->send_H, &pid))
-        return dupprintf("process id %lu", (unsigned long)pid);
+        p_GetNamedPipeClientProcessId(hs->send_H, &pid)) {
+        SocketPeerInfo *pi = snew(SocketPeerInfo);
+        pi->addressfamily = ADDRTYPE_LOCAL;
+        pi->addr_text = NULL;
+        pi->port = -1;
+        pi->log_text = dupprintf("process id %lu", (unsigned long)pid);
+        return pi;
+    }
 
     return NULL;
 }

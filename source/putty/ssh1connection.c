@@ -26,12 +26,20 @@ struct ssh1_connection_state {
 
     tree234 *channels;		       /* indexed by local id */
 
+    /* In SSH-1, the main session doesn't take the form of a 'channel'
+     * according to the wire protocol. But we want to use the same API
+     * for it, so we define an SshChannel here - but one that uses a
+     * separate vtable from the usual one, so it doesn't map to a
+     * struct ssh1_channel as all the others do. */
+    SshChannel mainchan_sc;
+    Channel *mainchan_chan;            /* the other end of mainchan_sc */
+    mainchan *mainchan;                /* and its subtype */
+
     int got_pty;
-    int echoedit;
-    int ospeed, ispeed;
+    int ldisc_opts[LD_N_OPTIONS];
     int stdout_throttling;
-    int session_ready;
-    int session_eof_pending, session_eof_sent, session_terminated;
+    int want_user_input;
+    int session_terminated;
     int term_width, term_height, term_width_orig, term_height_orig;
 
     int X11_fwd_enabled;
@@ -101,18 +109,27 @@ static void ssh1_rportfwd_remove(
     ConnectionLayer *cl, struct ssh_rportfwd *rpf);
 static SshChannel *ssh1_lportfwd_open(
     ConnectionLayer *cl, const char *hostname, int port,
-    const char *org, Channel *chan);
+    const char *description, const SocketPeerInfo *pi, Channel *chan);
+static SshChannel *ssh1_session_open(ConnectionLayer *cl, Channel *chan);
+static struct X11FakeAuth *ssh1_add_x11_display(
+    ConnectionLayer *cl, int authtype, struct X11Display *disp);
 static int ssh1_agent_forwarding_permitted(ConnectionLayer *cl);
 static void ssh1_terminal_size(ConnectionLayer *cl, int width, int height);
 static void ssh1_stdout_unthrottle(ConnectionLayer *cl, int bufsize);
 static int ssh1_stdin_backlog(ConnectionLayer *cl);
 static void ssh1_throttle_all_channels(ConnectionLayer *cl, int throttled);
 static int ssh1_ldisc_option(ConnectionLayer *cl, int option);
+static void ssh1_set_ldisc_option(ConnectionLayer *cl, int option, int value);
+static void ssh1_enable_x_fwd(ConnectionLayer *cl);
+static void ssh1_enable_agent_fwd(ConnectionLayer *cl);
+static void ssh1_set_wants_user_input(ConnectionLayer *cl, int wanted);
 
 static const struct ConnectionLayerVtable ssh1_connlayer_vtable = {
     ssh1_rportfwd_alloc,
     ssh1_rportfwd_remove,
     ssh1_lportfwd_open,
+    ssh1_session_open,
+    ssh1_add_x11_display,
     NULL /* add_sharing_x11_display */,
     NULL /* remove_sharing_x11_display */,
     NULL /* send_packet_from_downstream */,
@@ -126,6 +143,10 @@ static const struct ConnectionLayerVtable ssh1_connlayer_vtable = {
     ssh1_stdin_backlog,
     ssh1_throttle_all_channels,
     ssh1_ldisc_option,
+    ssh1_set_ldisc_option,
+    ssh1_enable_x_fwd,
+    ssh1_enable_agent_fwd,
+    ssh1_set_wants_user_input,
 };
 
 struct ssh1_channel {
@@ -174,18 +195,78 @@ struct ssh1_channel {
 
 static int ssh1channel_write(SshChannel *c, const void *buf, int len);
 static void ssh1channel_write_eof(SshChannel *c);
-static void ssh1channel_unclean_close(SshChannel *c, const char *err);
+static void ssh1channel_initiate_close(SshChannel *c, const char *err);
 static void ssh1channel_unthrottle(SshChannel *c, int bufsize);
 static Conf *ssh1channel_get_conf(SshChannel *c);
+static void ssh1channel_window_override_removed(SshChannel *c) { /* ignore */ }
 
 static const struct SshChannelVtable ssh1channel_vtable = {
     ssh1channel_write,
     ssh1channel_write_eof,
-    ssh1channel_unclean_close,
+    ssh1channel_initiate_close,
     ssh1channel_unthrottle,
     ssh1channel_get_conf,
+    ssh1channel_window_override_removed,
+    NULL /* x11_sharing_handover is only used by SSH-2 connection sharing */,
+    NULL /* request_x11_forwarding */,
+    NULL /* request_agent_forwarding */,
+    NULL /* request_pty */,
+    NULL /* send_env_var */,
+    NULL /* start_shell */,
+    NULL /* start_command */,
+    NULL /* start_subsystem */,
+    NULL /* send_serial_break */,
+    NULL /* send_signal */,
+    NULL /* send_terminal_size_change */,
+    NULL /* hint_channel_is_simple */,
+};
+
+static void ssh1mainchan_request_x11_forwarding(
+    SshChannel *c, int want_reply, const char *authproto,
+    const char *authdata, int screen_number, int oneshot);
+static void ssh1mainchan_request_agent_forwarding(
+    SshChannel *c, int want_reply);
+static void ssh1mainchan_request_pty(
+    SshChannel *c, int want_reply, Conf *conf, int w, int h);
+static int ssh1mainchan_send_env_var(
+    SshChannel *c, int want_reply, const char *var, const char *value);
+static void ssh1mainchan_start_shell(
+    SshChannel *c, int want_reply);
+static void ssh1mainchan_start_command(
+    SshChannel *c, int want_reply, const char *command);
+static int ssh1mainchan_start_subsystem(
+    SshChannel *c, int want_reply, const char *subsystem);
+static int ssh1mainchan_send_env_var(
+    SshChannel *c, int want_reply, const char *var, const char *value);
+static int ssh1mainchan_send_serial_break(
+    SshChannel *c, int want_reply, int length);
+static int ssh1mainchan_send_signal(
+    SshChannel *c, int want_reply, const char *signame);
+static void ssh1mainchan_send_terminal_size_change(
+    SshChannel *c, int w, int h);
+static void ssh1mainchan_hint_channel_is_simple(SshChannel *c);
+static int ssh1mainchan_write(SshChannel *sc, const void *data, int len);
+static void ssh1mainchan_write_eof(SshChannel *sc);
+
+static const struct SshChannelVtable ssh1mainchan_vtable = {
+    ssh1mainchan_write,
+    ssh1mainchan_write_eof,
+    NULL /* unclean_close */,
+    NULL /* unthrottle */,
+    NULL /* get_conf */,
     NULL /* window_override_removed is only used by SSH-2 sharing */,
     NULL /* x11_sharing_handover, likewise */,
+    ssh1mainchan_request_x11_forwarding,
+    ssh1mainchan_request_agent_forwarding,
+    ssh1mainchan_request_pty,
+    ssh1mainchan_send_env_var,
+    ssh1mainchan_start_shell,
+    ssh1mainchan_start_command,
+    ssh1mainchan_start_subsystem,
+    ssh1mainchan_send_serial_break,
+    ssh1mainchan_send_signal,
+    ssh1mainchan_send_terminal_size_change,
+    ssh1mainchan_hint_channel_is_simple,
 };
 
 static void ssh1_channel_init(struct ssh1_channel *c);
@@ -198,24 +279,60 @@ static void ssh1_channel_check_close(struct ssh1_channel *c);
 static int ssh1_check_termination(struct ssh1_connection_state *s);
 
 typedef void (*sf_handler_fn_t)(struct ssh1_connection_state *s,
-                                PktIn *pktin, void *ctx);
+                                int success, void *ctx);
 struct outstanding_succfail {
     sf_handler_fn_t handler;
     void *ctx;
     struct outstanding_succfail *next;
+
+    /*
+     * The 'trivial' flag is set if this handler is in response to a
+     * request for which the SSH-1 protocol doesn't actually specify a
+     * response packet. The client of this system (mainchan.c) will
+     * expect to get an acknowledgment regardless, so we arrange to
+     * send that ack immediately after the rest of the queue empties.
+     */
+    int trivial;
 };
+
+static void ssh1_connection_process_trivial_succfails(void *vs);
+
 static void ssh1_queue_succfail_handler(
-    struct ssh1_connection_state *s, sf_handler_fn_t handler, void *ctx)
+    struct ssh1_connection_state *s, sf_handler_fn_t handler, void *ctx,
+    int trivial)
 {
     struct outstanding_succfail *osf =
         snew(struct outstanding_succfail);
     osf->handler = handler;
     osf->ctx = ctx;
+    osf->trivial = trivial;
     if (s->succfail_tail)
         s->succfail_tail->next = osf;
     else
         s->succfail_head = osf;
     s->succfail_tail = osf;
+
+    /* In case this one was trivial and the queue was already empty,
+     * we should make sure we run the handler promptly, and the
+     * easiest way is to queue it anyway and then run a trivials pass
+     * by callback. */
+    queue_toplevel_callback(ssh1_connection_process_trivial_succfails, s);
+}
+
+static void ssh1_connection_process_succfail(
+    struct ssh1_connection_state *s, int success)
+{
+    struct outstanding_succfail *prevhead = s->succfail_head;
+    s->succfail_head = s->succfail_head->next;
+    prevhead->handler(s, success, prevhead->ctx);
+    sfree(prevhead);
+}
+
+static void ssh1_connection_process_trivial_succfails(void *vs)
+{
+    struct ssh1_connection_state *s = (struct ssh1_connection_state *)vs;
+    while (s->succfail_head && s->succfail_head->trivial)
+        ssh1_connection_process_succfail(s, TRUE);
 }
 
 static int ssh1_channelcmp(void *av, void *bv)
@@ -298,6 +415,8 @@ static void ssh1_connection_free(PacketProtocolLayer *ppl)
     freetree234(s->rportfwds);
     portfwdmgr_free(s->portfwdmgr);
 
+    delete_callbacks_for_context(s);
+
     sfree(s);
 }
 
@@ -346,12 +465,10 @@ static int ssh1_connection_filter_queue(struct ssh1_connection_state *s)
                 return TRUE;
             }
 
-            s->succfail_head->handler(s, pktin, s->succfail_head->ctx);
-            {
-                struct outstanding_succfail *tmp = s->succfail_head;
-                s->succfail_head = s->succfail_head->next;
-                sfree(tmp);
-            }
+            ssh1_connection_process_succfail(
+                s, pktin->type == SSH1_SMSG_SUCCESS);
+            queue_toplevel_callback(
+                ssh1_connection_process_trivial_succfails, s);
 
             pq_pop(s->ppl.in_pq);
             break;
@@ -621,153 +738,23 @@ static void ssh1_connection_process_queue(PacketProtocolLayer *ppl)
     struct ssh1_connection_state *s =
         container_of(ppl, struct ssh1_connection_state, ppl);
     PktIn *pktin;
-    PktOut *pktout;
 
     if (ssh1_connection_filter_queue(s)) /* no matter why we were called */
         return;
 
     crBegin(s->crState);
 
-    if (ssh_agent_forwarding_permitted(&s->cl)) {
-	ppl_logevent(("Requesting agent forwarding"));
-        pktout = ssh_bpp_new_pktout(s->ppl.bpp,
-                                    SSH1_CMSG_AGENT_REQUEST_FORWARDING);
-        pq_push(s->ppl.out_pq, pktout);
-        crMaybeWaitUntilV((pktin = ssh1_connection_pop(s)) != NULL);
-	if (pktin->type == SSH1_SMSG_SUCCESS) {
-	    ppl_logevent(("Agent forwarding enabled"));
-	    s->agent_fwd_enabled = TRUE;
-	} else if (pktin->type == SSH1_SMSG_FAILURE) {
-	    ppl_logevent(("Agent forwarding refused"));
-	} else {
-            ssh_proto_error(s->ppl.ssh, "Unexpected packet received"
-                            " in response to agent forwarding request, "
-                            "type %d (%s)", pktin->type,
-                            ssh1_pkt_type(pktin->type));
-            return;
-	}
-    }
-
-    if (conf_get_int(s->conf, CONF_x11_forward)) {
-        char *x11_setup_err;
-
-        s->x11disp =
-            x11_setup_display(conf_get_str(s->conf, CONF_x11_display),
-                              s->conf, &x11_setup_err);
-        if (!s->x11disp) {
-            ppl_logevent(("X11 forwarding not enabled: unable to"
-                          " initialise X display: %s", x11_setup_err));
-            sfree(x11_setup_err);
-        } else {
-            s->x11auth = x11_invent_fake_auth
-                (s->x11authtree, conf_get_int(s->conf, CONF_x11_auth));
-            s->x11auth->disp = s->x11disp;
-
-            ppl_logevent(("Requesting X11 forwarding"));
-            pktout = ssh_bpp_new_pktout(
-                s->ppl.bpp, SSH1_CMSG_X11_REQUEST_FORWARDING);
-            put_stringz(pktout, s->x11auth->protoname);
-            put_stringz(pktout, s->x11auth->datastring);
-            if (s->local_protoflags & SSH1_PROTOFLAG_SCREEN_NUMBER)
-                put_uint32(pktout, s->x11disp->screennum);
-            pq_push(s->ppl.out_pq, pktout);
-            crMaybeWaitUntilV((pktin = ssh1_connection_pop(s)) != NULL);
-            if (pktin->type == SSH1_SMSG_SUCCESS) {
-                ppl_logevent(("X11 forwarding enabled"));
-                s->X11_fwd_enabled = TRUE;
-            } else if (pktin->type == SSH1_SMSG_FAILURE) {
-                ppl_logevent(("X11 forwarding refused"));
-            } else {
-                ssh_proto_error(s->ppl.ssh, "Unexpected packet received"
-                                " in response to X11 forwarding request, "
-                                "type %d (%s)", pktin->type,
-                                ssh1_pkt_type(pktin->type));
-                return;
-            }
-        }
-    }
-
     portfwdmgr_config(s->portfwdmgr, s->conf);
     s->portfwdmgr_configured = TRUE;
 
-    if (!conf_get_int(s->conf, CONF_nopty)) {
-	/* Unpick the terminal-speed string. */
-	/* XXX perhaps we should allow no speeds to be sent. */
-	s->ospeed = 38400; s->ispeed = 38400; /* last-resort defaults */
-	sscanf(conf_get_str(s->conf, CONF_termspeed), "%d,%d",
-               &s->ospeed, &s->ispeed);
-	/* Send the pty request. */
-	pktout = ssh_bpp_new_pktout(s->ppl.bpp, SSH1_CMSG_REQUEST_PTY);
-	put_stringz(pktout, conf_get_str(s->conf, CONF_termtype));
-	put_uint32(pktout, s->term_height);
-	put_uint32(pktout, s->term_width);
-        s->term_width_orig = s->term_width;
-        s->term_height_orig = s->term_height;
-	put_uint32(pktout, 0); /* width in pixels */
-	put_uint32(pktout, 0); /* height in pixels */
-        write_ttymodes_to_packet_from_conf(
-            BinarySink_UPCAST(pktout), s->ppl.seat, s->conf,
-            1, s->ospeed, s->ispeed);
-        pq_push(s->ppl.out_pq, pktout);
-        crMaybeWaitUntilV((pktin = ssh1_connection_pop(s)) != NULL);
-	if (pktin->type == SSH1_SMSG_SUCCESS) {
-            ppl_logevent(("Allocated pty (ospeed %dbps, ispeed %dbps)",
-                          s->ospeed, s->ispeed));
-            s->got_pty = TRUE;
-	} else if (pktin->type == SSH1_SMSG_FAILURE) {
-	    ppl_printf(("Server refused to allocate pty\r\n"));
-	    s->echoedit = TRUE;
-	} else {
-            ssh_proto_error(s->ppl.ssh, "Unexpected packet received"
-                            " in response to pty request, "
-                            "type %d (%s)", pktin->type,
-                            ssh1_pkt_type(pktin->type));
-            crStopV;
-        }
-    } else {
-	s->echoedit = TRUE;
-    }
-
     /*
-     * Start the shell or command.
-     * 
-     * Special case: if the first-choice command is an SSH-2
-     * subsystem (hence not usable here) and the second choice
-     * exists, we fall straight back to that.
+     * Start up the main session, by telling mainchan.c to do it all
+     * just as it would in SSH-2, and translating those concepts to
+     * SSH-1's non-channel-shaped idea of the main session.
      */
-    {
-	char *cmd = conf_get_str(s->conf, CONF_remote_cmd);
-	
-	if (conf_get_int(s->conf, CONF_ssh_subsys) &&
-	    conf_get_str(s->conf, CONF_remote_cmd2)) {
-	    cmd = conf_get_str(s->conf, CONF_remote_cmd2);
-	    ssh_got_fallback_cmd(s->ppl.ssh);
-	}
-	if (*cmd) {
-            pktout = ssh_bpp_new_pktout(s->ppl.bpp, SSH1_CMSG_EXEC_CMD);
-            put_stringz(pktout, cmd);
-        } else {
-            pktout = ssh_bpp_new_pktout(s->ppl.bpp, SSH1_CMSG_EXEC_SHELL);
-        }
-        pq_push(s->ppl.out_pq, pktout);
-	ppl_logevent(("Started session"));
-    }
-
-    s->session_ready = TRUE;
-    ssh_ppl_got_user_input(&s->ppl); /* in case any input is already queued */
-
-    /* If an EOF or a window-size change arrived before we were ready
-     * to handle either one, handle them now. */
-    if (s->session_eof_pending) {
-        ssh_ppl_special_cmd(&s->ppl, SS_EOF, 0);
-        s->session_eof_pending = FALSE;
-    }
-    if (s->term_width_orig != s->term_width ||
-        s->term_height_orig != s->term_height)
-	ssh_terminal_size(&s->cl, s->term_width, s->term_height);
-
-    ssh_ldisc_update(s->ppl.ssh);
-    s->finished_setup = TRUE;
+    s->mainchan = mainchan_new(
+        &s->ppl, &s->cl, s->conf, s->term_width, s->term_height,
+        FALSE /* is_simple */, NULL);
 
     while (1) {
 
@@ -783,17 +770,6 @@ static void ssh1_connection_process_queue(PacketProtocolLayer *ppl)
                             ssh1_pkt_type(pktin->type));
             return;
 	}
-        while (bufchain_size(s->ppl.user_input) > 0) {
-            void *data;
-            int len;
-            bufchain_prefix(s->ppl.user_input, &data, &len);
-            if (len > 512)
-                len = 512;
-            pktout = ssh_bpp_new_pktout(s->ppl.bpp, SSH1_CMSG_STDIN_DATA);
-            put_string(pktout, data, len);
-            pq_push(s->ppl.out_pq, pktout);
-            bufchain_consume(s->ppl.user_input, len);
-        }
 	crReturnV;
     }
 
@@ -938,6 +914,7 @@ static void ssh1_channel_init(struct ssh1_channel *c)
     c->pending_eof = FALSE;
     c->throttling_conn = FALSE;
     c->sc.vt = &ssh1channel_vtable;
+    c->sc.cl = &s->cl;
     c->localid = alloc_channel_id(s->channels, struct ssh1_channel);
     add234(s->channels, c);
 }
@@ -960,12 +937,12 @@ static void ssh1channel_write_eof(SshChannel *sc)
     ssh1_channel_try_eof(c);
 }
 
-static void ssh1channel_unclean_close(SshChannel *sc, const char *err)
+static void ssh1channel_initiate_close(SshChannel *sc, const char *err)
 {
     struct ssh1_channel *c = container_of(sc, struct ssh1_channel, sc);
     char *reason;
 
-    reason = dupprintf("due to local error: %s", err);
+    reason = err ? dupprintf("due to local error: %s", err) : NULL;
     ssh1_channel_close_local(c, reason);
     sfree(reason);
     c->pending_eof = FALSE;   /* this will confuse a zombie channel */
@@ -1006,9 +983,200 @@ static int ssh1channel_write(SshChannel *sc, const void *buf, int len)
     return 0;
 }
 
+static struct X11FakeAuth *ssh1_add_x11_display(
+    ConnectionLayer *cl, int authtype, struct X11Display *disp)
+{
+    struct ssh1_connection_state *s =
+        container_of(cl, struct ssh1_connection_state, cl);
+    struct X11FakeAuth *auth = x11_invent_fake_auth(s->x11authtree, authtype);
+    auth->disp = disp;
+    return auth;
+}
+
+static void ssh1mainchan_succfail_wantreply(struct ssh1_connection_state *s,
+                                            int success, void *ctx)
+{
+    chan_request_response(s->mainchan_chan, success);
+}
+
+static void ssh1mainchan_succfail_nowantreply(struct ssh1_connection_state *s,
+                                              int success, void *ctx)
+{
+}
+
+static void ssh1mainchan_queue_response(struct ssh1_connection_state *s,
+                                        int want_reply, int trivial)
+{
+    sf_handler_fn_t handler = (want_reply ? ssh1mainchan_succfail_wantreply :
+                               ssh1mainchan_succfail_nowantreply);
+    ssh1_queue_succfail_handler(s, handler, NULL, trivial);
+}
+
+static void ssh1mainchan_request_x11_forwarding(
+    SshChannel *sc, int want_reply, const char *authproto,
+    const char *authdata, int screen_number, int oneshot)
+{
+    struct ssh1_connection_state *s =
+        container_of(sc, struct ssh1_connection_state, mainchan_sc);
+    PktOut *pktout;
+
+    pktout = ssh_bpp_new_pktout(s->ppl.bpp, SSH1_CMSG_X11_REQUEST_FORWARDING);
+    put_stringz(pktout, authproto);
+    put_stringz(pktout, authdata);
+    if (s->local_protoflags & SSH1_PROTOFLAG_SCREEN_NUMBER)
+        put_uint32(pktout, screen_number);
+    pq_push(s->ppl.out_pq, pktout);
+
+    ssh1mainchan_queue_response(s, want_reply, FALSE);
+}
+
+static void ssh1mainchan_request_agent_forwarding(
+    SshChannel *sc, int want_reply)
+{
+    struct ssh1_connection_state *s =
+        container_of(sc, struct ssh1_connection_state, mainchan_sc);
+    PktOut *pktout;
+
+    pktout = ssh_bpp_new_pktout(
+        s->ppl.bpp, SSH1_CMSG_AGENT_REQUEST_FORWARDING);
+    pq_push(s->ppl.out_pq, pktout);
+
+    ssh1mainchan_queue_response(s, want_reply, FALSE);
+}
+
+static void ssh1mainchan_request_pty(
+    SshChannel *sc, int want_reply, Conf *conf, int w, int h)
+{
+    struct ssh1_connection_state *s =
+        container_of(sc, struct ssh1_connection_state, mainchan_sc);
+    PktOut *pktout;
+
+    pktout = ssh_bpp_new_pktout(s->ppl.bpp, SSH1_CMSG_REQUEST_PTY);
+    put_stringz(pktout, conf_get_str(s->conf, CONF_termtype));
+    put_uint32(pktout, h);
+    put_uint32(pktout, w);
+    put_uint32(pktout, 0); /* width in pixels */
+    put_uint32(pktout, 0); /* height in pixels */
+    write_ttymodes_to_packet(
+        BinarySink_UPCAST(pktout), 1,
+        get_ttymodes_from_conf(s->ppl.seat, conf));
+    pq_push(s->ppl.out_pq, pktout);
+
+    ssh1mainchan_queue_response(s, want_reply, FALSE);
+}
+
+static int ssh1mainchan_send_env_var(
+    SshChannel *sc, int want_reply, const char *var, const char *value)
+{
+    return FALSE;              /* SSH-1 doesn't support this at all */
+}
+
+static void ssh1mainchan_start_shell(
+    SshChannel *sc, int want_reply)
+{
+    struct ssh1_connection_state *s =
+        container_of(sc, struct ssh1_connection_state, mainchan_sc);
+    PktOut *pktout;
+
+    pktout = ssh_bpp_new_pktout(s->ppl.bpp, SSH1_CMSG_EXEC_SHELL);
+    pq_push(s->ppl.out_pq, pktout);
+
+    ssh1mainchan_queue_response(s, want_reply, TRUE);
+}
+
+static void ssh1mainchan_start_command(
+    SshChannel *sc, int want_reply, const char *command)
+{
+    struct ssh1_connection_state *s =
+        container_of(sc, struct ssh1_connection_state, mainchan_sc);
+    PktOut *pktout;
+
+    pktout = ssh_bpp_new_pktout(s->ppl.bpp, SSH1_CMSG_EXEC_CMD);
+    put_stringz(pktout, command);
+    pq_push(s->ppl.out_pq, pktout);
+
+    ssh1mainchan_queue_response(s, want_reply, TRUE);
+}
+
+static int ssh1mainchan_start_subsystem(
+    SshChannel *sc, int want_reply, const char *subsystem)
+{
+    return FALSE;              /* SSH-1 doesn't support this at all */
+}
+
+static int ssh1mainchan_send_serial_break(
+    SshChannel *sc, int want_reply, int length)
+{
+    return FALSE;              /* SSH-1 doesn't support this at all */
+}
+
+static int ssh1mainchan_send_signal(
+    SshChannel *sc, int want_reply, const char *signame)
+{
+    return FALSE;              /* SSH-1 doesn't support this at all */
+}
+
+static void ssh1mainchan_send_terminal_size_change(SshChannel *sc, int w, int h)
+{
+    struct ssh1_connection_state *s =
+        container_of(sc, struct ssh1_connection_state, mainchan_sc);
+    PktOut *pktout;
+
+    pktout = ssh_bpp_new_pktout(s->ppl.bpp, SSH1_CMSG_WINDOW_SIZE);
+    put_uint32(pktout, h);
+    put_uint32(pktout, w);
+    put_uint32(pktout, 0); /* width in pixels */
+    put_uint32(pktout, 0); /* height in pixels */
+    pq_push(s->ppl.out_pq, pktout);
+}
+
+static void ssh1mainchan_hint_channel_is_simple(SshChannel *c)
+{
+}
+
+static int ssh1mainchan_write(SshChannel *sc, const void *data, int len)
+{
+    struct ssh1_connection_state *s =
+        container_of(sc, struct ssh1_connection_state, mainchan_sc);
+    PktOut *pktout;
+
+    pktout = ssh_bpp_new_pktout(s->ppl.bpp, SSH1_CMSG_STDIN_DATA);
+    put_string(pktout, data, len);
+    pq_push(s->ppl.out_pq, pktout);
+
+    return 0;
+}
+
+static void ssh1mainchan_write_eof(SshChannel *sc)
+{
+    struct ssh1_connection_state *s =
+        container_of(sc, struct ssh1_connection_state, mainchan_sc);
+    PktOut *pktout;
+
+    pktout = ssh_bpp_new_pktout(s->ppl.bpp, SSH1_CMSG_EOF);
+    pq_push(s->ppl.out_pq, pktout);
+}
+
+static void ssh1_session_confirm_callback(void *vctx)
+{
+    struct ssh1_connection_state *s = (struct ssh1_connection_state *)vctx;
+    chan_open_confirmation(s->mainchan_chan);
+}
+
+static SshChannel *ssh1_session_open(ConnectionLayer *cl, Channel *chan)
+{
+    struct ssh1_connection_state *s =
+        container_of(cl, struct ssh1_connection_state, cl);
+    s->mainchan_sc.cl = &s->cl;
+    s->mainchan_sc.vt = &ssh1mainchan_vtable;
+    s->mainchan_chan = chan;
+    queue_toplevel_callback(ssh1_session_confirm_callback, s);
+    return &s->mainchan_sc;
+}
+
 static SshChannel *ssh1_lportfwd_open(
     ConnectionLayer *cl, const char *hostname, int port,
-    const char *org, Channel *chan)
+    const char *description, const SocketPeerInfo *pi, Channel *chan)
 {
     struct ssh1_connection_state *s =
         container_of(cl, struct ssh1_connection_state, cl);
@@ -1021,7 +1189,8 @@ static SshChannel *ssh1_lportfwd_open(
     c->halfopen = TRUE;
     c->chan = chan;
 
-    ppl_logevent(("Opening connection to %s:%d for %s", hostname, port, org));
+    ppl_logevent(("Opening connection to %s:%d for %s",
+                  hostname, port, description));
 
     pktout = ssh_bpp_new_pktout(s->ppl.bpp, SSH1_MSG_PORT_OPEN);
     put_uint32(pktout, c->localid);
@@ -1035,12 +1204,12 @@ static SshChannel *ssh1_lportfwd_open(
 }
 
 static void ssh1_rportfwd_response(struct ssh1_connection_state *s,
-                                   PktIn *pktin, void *ctx)
+                                   int success, void *ctx)
 {
     PacketProtocolLayer *ppl = &s->ppl; /* for ppl_logevent */
     struct ssh_rportfwd *rpf = (struct ssh_rportfwd *)ctx;
 
-    if (pktin->type == SSH1_SMSG_SUCCESS) {
+    if (success) {
 	ppl_logevent(("Remote port forwarding from %s enabled",
                       rpf->log_description));
     } else {
@@ -1084,7 +1253,7 @@ static struct ssh_rportfwd *ssh1_rportfwd_alloc(
     put_uint32(pktout, rpf->dport);
     pq_push(s->ppl.out_pq, pktout);
 
-    ssh1_queue_succfail_handler(s, ssh1_rportfwd_response, rpf);
+    ssh1_queue_succfail_handler(s, ssh1_rportfwd_response, rpf, FALSE);
 
     return rpf;
 }
@@ -1117,19 +1286,8 @@ static void ssh1_connection_special_cmd(PacketProtocolLayer *ppl,
             put_stringz(pktout, "");
             pq_push(s->ppl.out_pq, pktout);
         }
-    } else if (code == SS_EOF) {
-	if (!s->session_ready) {
-	    /*
-	     * Buffer the EOF to send as soon as the main session is
-	     * fully set up.
-	     */
-            s->session_eof_pending = TRUE;
-	} else if (!s->session_eof_sent) {
-	    pktout = ssh_bpp_new_pktout(s->ppl.bpp, SSH1_CMSG_EOF);
-            pq_push(s->ppl.out_pq, pktout);
-            ppl_logevent(("Sent EOF message"));
-            s->session_eof_sent = TRUE;
-	}
+    } else if (s->mainchan) {
+        mainchan_special_cmd(s->mainchan, code, arg);
     }
 }
 
@@ -1140,15 +1298,8 @@ static void ssh1_terminal_size(ConnectionLayer *cl, int width, int height)
 
     s->term_width = width;
     s->term_height = height;
-
-    if (s->session_ready) {
-        PktOut *pktout = ssh_bpp_new_pktout(s->ppl.bpp, SSH1_CMSG_WINDOW_SIZE);
-        put_uint32(pktout, s->term_height);
-        put_uint32(pktout, s->term_width);
-        put_uint32(pktout, 0);
-        put_uint32(pktout, 0);
-	pq_push(s->ppl.out_pq, pktout);
-    }
+    if (s->mainchan)
+        mainchan_terminal_size(s->mainchan, width, height);
 }
 
 static void ssh1_stdout_unthrottle(ConnectionLayer *cl, int bufsize)
@@ -1183,23 +1334,67 @@ static int ssh1_ldisc_option(ConnectionLayer *cl, int option)
     struct ssh1_connection_state *s =
         container_of(cl, struct ssh1_connection_state, cl);
 
-    /* We always return the same value for LD_ECHO and LD_EDIT */
-    return s->echoedit;
+    return s->ldisc_opts[option];
+}
+
+static void ssh1_set_ldisc_option(ConnectionLayer *cl, int option, int value)
+{
+    struct ssh1_connection_state *s =
+        container_of(cl, struct ssh1_connection_state, cl);
+
+    s->ldisc_opts[option] = value;
+}
+
+static void ssh1_enable_x_fwd(ConnectionLayer *cl)
+{
+    struct ssh1_connection_state *s =
+        container_of(cl, struct ssh1_connection_state, cl);
+
+    s->X11_fwd_enabled = TRUE;
+}
+
+static void ssh1_enable_agent_fwd(ConnectionLayer *cl)
+{
+    struct ssh1_connection_state *s =
+        container_of(cl, struct ssh1_connection_state, cl);
+
+    s->agent_fwd_enabled = TRUE;
+}
+
+static void ssh1_set_wants_user_input(ConnectionLayer *cl, int wanted)
+{
+    struct ssh1_connection_state *s =
+        container_of(cl, struct ssh1_connection_state, cl);
+
+    s->want_user_input = wanted;
+    s->finished_setup = TRUE;
 }
 
 static int ssh1_connection_want_user_input(PacketProtocolLayer *ppl)
 {
     struct ssh1_connection_state *s =
         container_of(ppl, struct ssh1_connection_state, ppl);
-    return s->session_ready && !s->session_eof_sent;
+
+    return s->want_user_input;
 }
 
 static void ssh1_connection_got_user_input(PacketProtocolLayer *ppl)
 {
     struct ssh1_connection_state *s =
         container_of(ppl, struct ssh1_connection_state, ppl);
-    if (s->session_ready && !s->session_eof_sent)
-        queue_idempotent_callback(&s->ppl.ic_process_queue);
+
+    while (s->mainchan && bufchain_size(s->ppl.user_input) > 0) {
+        /*
+         * Add user input to the main channel's buffer.
+         */
+        void *data;
+        int len;
+        bufchain_prefix(s->ppl.user_input, &data, &len);
+        if (len > 512)
+            len = 512;
+        sshfwd_write(&s->mainchan_sc, data, len);
+        bufchain_consume(s->ppl.user_input, len);
+    }
 }
 
 static void ssh1_connection_reconfigure(PacketProtocolLayer *ppl, Conf *conf)
