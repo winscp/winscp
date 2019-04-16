@@ -587,7 +587,7 @@ static PktIn *ssh2_transport_pop(struct ssh2_transport_state *s)
 }
 
 static void ssh2_write_kexinit_lists(
-    BinarySink *pktout,
+    /*WINSCP*/ Seat * seat, BinarySink *pktout,
     struct kexinit_algorithm kexlists[NKEXLIST][MAXKEXLIST],
     Conf *conf, int remote_bugs,
     const char *hk_host, int hk_port, const ssh_keyalg *hk_prev,
@@ -740,7 +740,7 @@ static void ssh2_write_kexinit_lists(
                 if (hostkey_algs[j].id != preferred_hk[i])
                     continue;
                     if (have_ssh_host_key(
-                                          s->ppl.seat, // WINSCP
+                                          seat, // WINSCP
                                           hk_host, hk_port,
                                       hostkey_algs[j].alg->cache_id)) {
                     alg = ssh2_kexinit_addalg(kexlists[KEXLIST_HOSTKEY],
@@ -1209,7 +1209,7 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
             put_byte(s->client_kexinit, (unsigned char) random_byte());
     }
     ssh2_write_kexinit_lists(
-        BinarySink_UPCAST(s->client_kexinit), s->kexlists,
+        /*WINSCP*/ s->ppl.seat, BinarySink_UPCAST(s->client_kexinit), s->kexlists,
         s->conf, s->ppl.remote_bugs,
         s->savedhost, s->savedport, s->hostkey_alg, s->thc,
         !s->got_session_id, s->can_gssapi_keyex,

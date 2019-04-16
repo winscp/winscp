@@ -102,7 +102,7 @@ mainchan *mainchan_new(
 
 static void mainchan_free(Channel *chan)
 {
-    assert(chan->vt == &mainchan_channelvt);
+    pinitassert(chan->vt == &mainchan_channelvt);
     mainchan *mc = container_of(chan, mainchan, chan);
     conf_free(mc->conf);
     sfree(mc);
@@ -131,7 +131,7 @@ static void mainchan_open_confirmation(Channel *chan)
         struct X11FakeAuth *x11auth;
         int retry_cmd_now = FALSE;
 
-	if (conf_get_int(mc->conf, CONF_x11_forward)) {;
+	if (conf_get_int(mc->conf, CONF_x11_forward)) {
             char *x11_setup_err;
             if ((x11disp = x11_setup_display(
                      conf_get_str(mc->conf, CONF_x11_display),
@@ -204,7 +204,7 @@ static void mainchan_try_fallback_command(mainchan *mc)
 
 static void mainchan_request_response(Channel *chan, int success)
 {
-    assert(chan->vt == &mainchan_channelvt);
+    pinitassert(chan->vt == &mainchan_channelvt);
     mainchan *mc = container_of(chan, mainchan, chan);
     PacketProtocolLayer *ppl = mc->ppl; /* for ppl_logevent */
 
@@ -277,7 +277,7 @@ static void mainchan_request_response(Channel *chan, int success)
         if (success) {
             ppl_logevent(("Started a shell/command"));
             mainchan_ready(mc);
-        } else if (*conf_get_str(mc->conf, CONF_remote_cmd2)) {
+        } else if (*conf_get_str(mc->conf, CONF_remote_cmd2) || conf_get_int(mc->conf, CONF_force_remote_cmd2)) { // WINSCP
             ppl_logevent(("Primary command failed; attempting fallback"));
             mainchan_try_fallback_command(mc);
         } else {
@@ -341,7 +341,7 @@ static void mainchan_open_failure_abort(void *vctx)
 
 static void mainchan_open_failure(Channel *chan, const char *errtext)
 {
-    assert(chan->vt == &mainchan_channelvt);
+    pinitassert(chan->vt == &mainchan_channelvt);
     mainchan *mc = container_of(chan, mainchan, chan);
 
     struct mainchan_open_failure_abort_ctx *ctx =
@@ -349,20 +349,20 @@ static void mainchan_open_failure(Channel *chan, const char *errtext)
 
     ctx->ssh = mc->ppl->ssh;
     ctx->abort_message = dupstr(errtext);
-    queue_toplevel_callback(mainchan_open_failure_abort, ctx);
+    queue_toplevel_callback(get_log_callback_set(mc->cl->logctx), mainchan_open_failure_abort, ctx);
 }
 
 static int mainchan_send(Channel *chan, int is_stderr,
                          const void *data, int length)
 {
-    assert(chan->vt == &mainchan_channelvt);
+    pinitassert(chan->vt == &mainchan_channelvt);
     mainchan *mc = container_of(chan, mainchan, chan);
     return seat_output(mc->ppl->seat, is_stderr, data, length);
 }
 
 static void mainchan_send_eof(Channel *chan)
 {
-    assert(chan->vt == &mainchan_channelvt);
+    pinitassert(chan->vt == &mainchan_channelvt);
     mainchan *mc = container_of(chan, mainchan, chan);
     PacketProtocolLayer *ppl = mc->ppl; /* for ppl_logevent */
 
@@ -383,7 +383,7 @@ static void mainchan_send_eof(Channel *chan)
 
 static void mainchan_set_input_wanted(Channel *chan, int wanted)
 {
-    assert(chan->vt == &mainchan_channelvt);
+    pinitassert(chan->vt == &mainchan_channelvt);
     mainchan *mc = container_of(chan, mainchan, chan);
 
     /*
@@ -402,7 +402,7 @@ static char *mainchan_log_close_msg(Channel *chan)
 
 static int mainchan_rcvd_exit_status(Channel *chan, int status)
 {
-    assert(chan->vt == &mainchan_channelvt);
+    pinitassert(chan->vt == &mainchan_channelvt);
     mainchan *mc = container_of(chan, mainchan, chan);
     PacketProtocolLayer *ppl = mc->ppl; /* for ppl_logevent */
 
@@ -427,7 +427,7 @@ static void mainchan_log_exit_signal_common(
 static int mainchan_rcvd_exit_signal(
     Channel *chan, ptrlen signame, int core_dumped, ptrlen msg)
 {
-    assert(chan->vt == &mainchan_channelvt);
+    pinitassert(chan->vt == &mainchan_channelvt);
     mainchan *mc = container_of(chan, mainchan, chan);
     int exitcode;
     char *signame_str;
@@ -462,7 +462,7 @@ static int mainchan_rcvd_exit_signal(
 static int mainchan_rcvd_exit_signal_numeric(
     Channel *chan, int signum, int core_dumped, ptrlen msg)
 {
-    assert(chan->vt == &mainchan_channelvt);
+    pinitassert(chan->vt == &mainchan_channelvt);
     mainchan *mc = container_of(chan, mainchan, chan);
     char *signum_str;
 

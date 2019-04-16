@@ -32,6 +32,7 @@ struct ssh2_connection_state {
     int session_attempt, session_status;
     int term_width, term_height;
     int want_user_input;
+    int ready; // WINSCP
 
     int ssh_is_simple;
     int persistent;
@@ -1117,6 +1118,11 @@ static void ssh2_connection_process_queue(PacketProtocolLayer *ppl)
     s->mainchan = mainchan_new(
         &s->ppl, &s->cl, s->conf, s->term_width, s->term_height,
         s->ssh_is_simple, &s->mainchan_sc);
+    // WINSCP
+    if (!s->mainchan)
+    {
+        s->ready = TRUE;
+    }
 
     /*
      * Transfer data!
@@ -2144,6 +2150,7 @@ static void ssh2_set_wants_user_input(ConnectionLayer *cl, int wanted)
         container_of(cl, struct ssh2_connection_state, cl);
 
     s->want_user_input = wanted;
+    s->ready = TRUE; // WINSCP
 }
 
 static int ssh2_connection_want_user_input(PacketProtocolLayer *ppl)
@@ -2191,11 +2198,19 @@ static unsigned int ssh2_connection_winscp_query(PacketProtocolLayer *ppl, int q
 
     if (query == WINSCP_QUERY_REMMAXPKT)
     {
-        return s->mainchan != NULL ? s->mainchan->remmaxpkt : 0;
+        if (!s->mainchan)
+        {
+            return 0;
+        }
+        else
+        {
+            struct ssh2_channel *c = container_of(s->mainchan_sc, struct ssh2_channel, sc);
+            return c->remmaxpkt;
+        }
     }
     else if (query == WINSCP_QUERY_MAIN_CHANNEL)
     {
-        return s->mainchan_ready;
+        return (s->ready != 0);
     }
     else
     {

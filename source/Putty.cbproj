@@ -126,6 +126,9 @@
 			<BuildOrder>27</BuildOrder>
 			<BuildOrder>11</BuildOrder>
 		</CppCompile>
+		<CppCompile Include="putty\mainchan.c">
+			<BuildOrder>69</BuildOrder>
+		</CppCompile>
 		<CppCompile Include="putty\marshal.c">
 			<BuildOrder>55</BuildOrder>
 		</CppCompile>
@@ -179,6 +182,9 @@
 		</CppCompile>
 		<CppCompile Include="putty\ssh2connection.c">
 			<BuildOrder>66</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\ssh2transhk.c">
+			<BuildOrder>70</BuildOrder>
 		</CppCompile>
 		<CppCompile Include="putty\ssh2transport.c">
 			<BuildOrder>67</BuildOrder>

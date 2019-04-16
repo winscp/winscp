@@ -12,6 +12,9 @@
 #include "sshchan.h"
 #include "sshcr.h"
 
+// WINSCP
+#define queue_toplevel_callback(FN, CTX) queue_toplevel_callback(get_log_callback_set(CTX->cl.logctx), FN, CTX)
+
 struct ssh1_channel;
 
 struct outstanding_succfail;
@@ -415,7 +418,7 @@ static void ssh1_connection_free(PacketProtocolLayer *ppl)
     freetree234(s->rportfwds);
     portfwdmgr_free(s->portfwdmgr);
 
-    delete_callbacks_for_context(s);
+    delete_callbacks_for_context(ppl->seat, s);
 
     sfree(s);
 }
@@ -880,7 +883,7 @@ static void ssh1_channel_destroy(struct ssh1_channel *c)
      * toplevel callback, just in case anything on the current call
      * stack objects to this entire PPL being freed.
      */
-    queue_toplevel_callback(get_log_callback_set(s->cl.logctx), ssh1_check_termination_callback, s); // WINSCP
+    queue_toplevel_callback(ssh1_check_termination_callback, s);
 }
 
 static int ssh1_check_termination(struct ssh1_connection_state *s)
