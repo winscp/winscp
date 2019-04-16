@@ -211,10 +211,16 @@ typedef enum {
 
     /*
      * Send a POSIX-style signal. (Useful in SSH and also pterm.)
+     *
+     * We use the master list in sshsignals.h to define these enum
+     * values, which will come out looking like names of the form
+     * SS_SIGABRT, SS_SIGINT etc.
      */
-    SS_SIGABRT, SS_SIGALRM, SS_SIGFPE,  SS_SIGHUP,  SS_SIGILL,
-    SS_SIGINT,  SS_SIGKILL, SS_SIGPIPE, SS_SIGQUIT, SS_SIGSEGV,
-    SS_SIGTERM, SS_SIGUSR1, SS_SIGUSR2,
+    #define SIGNAL_MAIN(name, text) SS_SIG ## name,
+    #define SIGNAL_SUB(name) SS_SIG ## name,
+    #include "sshsignals.h"
+    #undef SIGNAL_MAIN
+    #undef SIGNAL_SUB
 
     /*
      * These aren't really special commands, but they appear in the
@@ -235,6 +241,10 @@ struct SessionSpecial {
     SessionSpecialCode code;
     int arg;
 };
+
+/* Needed by both sshchan.h and sshppl.h */
+typedef void (*add_special_fn_t)(
+    void *ctx, const char *text, SessionSpecialCode code, int arg);
 
 typedef enum {
     MBT_NOTHING,
@@ -357,7 +367,8 @@ enum {
      * Line discipline options which the backend might try to control.
      */
     LD_EDIT,			       /* local line editing */
-    LD_ECHO			       /* local echo */
+    LD_ECHO,                           /* local echo */
+    LD_N_OPTIONS
 };
 
 enum {
@@ -472,7 +483,11 @@ enum {
      * host name has already been resolved or will be resolved at
      * the proxy end.
      */
-    ADDRTYPE_UNSPEC, ADDRTYPE_IPV4, ADDRTYPE_IPV6, ADDRTYPE_NAME
+    ADDRTYPE_UNSPEC,
+    ADDRTYPE_IPV4,
+    ADDRTYPE_IPV6,
+    ADDRTYPE_LOCAL,    /* e.g. Unix domain socket, or Windows named pipe */
+    ADDRTYPE_NAME      /* SockAddr storing an unresolved host name */
 };
 
 struct Backend {
@@ -892,12 +907,12 @@ struct SeatVtable {
     int (*get_windowid)(Seat *seat, long *id_out);
 
     /*
-     * Return the pixel size of a terminal character cell. If the
+     * Return the size of the terminal window in pixels. If the
      * concept is meaningless or the information is unavailable,
      * return FALSE; otherwise fill in the output pointers and return
      * TRUE.
      */
-    int (*get_char_cell_size)(Seat *seat, int *width, int *height);
+    int (*get_window_pixel_size)(Seat *seat, int *width, int *height);
 };
 
 #define seat_output(seat, is_stderr, data, len) \
@@ -928,8 +943,8 @@ struct SeatVtable {
     ((seat)->vt->get_x_display(seat))
 #define seat_get_windowid(seat, out) \
     ((seat)->vt->get_windowid(seat, out))
-#define seat_get_char_cell_size(seat, width, height) \
-    ((seat)->vt->get_char_cell_size(seat, width, height))
+#define seat_get_window_pixel_size(seat, width, height) \
+    ((seat)->vt->get_window_pixel_size(seat, width, height))
 
 /* Unlike the seat's actual method, the public entry point
  * seat_connection_fatal is a wrapper function with a printf-like API,
@@ -972,7 +987,7 @@ int nullseat_is_always_utf8(Seat *seat);
 void nullseat_echoedit_update(Seat *seat, int echoing, int editing);
 const char *nullseat_get_x_display(Seat *seat);
 int nullseat_get_windowid(Seat *seat, long *id_out);
-int nullseat_get_char_cell_size(Seat *seat, int *width, int *height);
+int nullseat_get_window_pixel_size(Seat *seat, int *width, int *height);
 
 /*
  * Seat functions provided by the platform's console-application
@@ -1490,6 +1505,8 @@ void logtraffic(LogContext *logctx, unsigned char c, int logmode);
 void logflush(LogContext *logctx);
 void logevent(LogContext *logctx, const char *event);
 void logeventf(LogContext *logctx, const char *fmt, ...);
+void logeventvf(LogContext *logctx, const char *fmt, va_list ap);
+
 /*
  * Pass a dynamically allocated string to logevent and immediately
  * free it. Intended for use by wrapper macros which pass the return

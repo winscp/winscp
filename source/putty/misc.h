@@ -97,7 +97,11 @@ struct tm ltime(void);
 int nullstrcmp(const char *a, const char *b);
 
 ptrlen make_ptrlen(const void *ptr, size_t len);
+ptrlen ptrlen_from_asciz(const char *str);
+ptrlen ptrlen_from_strbuf(strbuf *sb);
 int ptrlen_eq_string(ptrlen pl, const char *str);
+int ptrlen_eq_ptrlen(ptrlen pl1, ptrlen pl2);
+int ptrlen_startswith(ptrlen whole, ptrlen prefix, ptrlen *tail);
 char *mkstr(ptrlen pl);
 int string_length_for_printf(size_t);
 /* Derive two printf arguments from a ptrlen, suitable for "%.*s" */

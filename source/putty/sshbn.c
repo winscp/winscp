@@ -1588,7 +1588,9 @@ Bignum BinarySource_get_mp_ssh1(BinarySource *src)
         return bignum_from_long(0);
     } else {
         Bignum toret = bignum_from_bytes(bytes.ptr, bytes.len);
-        if (bignum_bitcount(toret) != bitc) {
+        /* SSH-1.5 spec says that it's OK for the prefix uint16 to be
+         * _greater_ than the actual number of bits */
+        if (bignum_bitcount(toret) > bitc) {
             src->err = BSE_INVALID;
             freebn(toret);
             toret = bignum_from_long(0);

@@ -8,8 +8,6 @@
 #define PUTTY_SSHPPL_H
 
 typedef void (*packet_handler_fn_t)(PacketProtocolLayer *ppl, PktIn *pktin);
-typedef void (*add_special_fn_t)(
-    void *ctx, const char *text, SessionSpecialCode code, int arg);
 
 struct PacketProtocolLayerVtable {
     void (*free)(PacketProtocolLayer *); 

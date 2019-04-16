@@ -142,6 +142,7 @@ static void ssh_connect_ppl(Ssh *ssh, PacketProtocolLayer *ppl)
     ppl->user_input = &ssh->user_input;
     ppl->seat = ssh->seat;
     ppl->ssh = ssh;
+    ppl->logctx = ssh->logctx;
     ppl->remote_bugs = ssh->remote_bugs;
 }
 

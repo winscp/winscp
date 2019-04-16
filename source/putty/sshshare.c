@@ -1914,7 +1914,7 @@ static int share_listen_accepting(Plug *plug,
         plug, struct ssh_sharing_state, plug);
     struct ssh_sharing_connstate *cs;
     const char *err;
-    char *peerinfo;
+    SocketPeerInfo *peerinfo;
 
     /*
      * A new downstream has connected to us.
@@ -1959,9 +1959,9 @@ static int share_listen_accepting(Plug *plug,
 
     peerinfo = sk_peer_info(cs->sock);
     log_downstream(cs, "connected%s%s",
-                   peerinfo ? " from " : "", peerinfo ? peerinfo : "");
-
-    sfree(peerinfo);
+                   (peerinfo && peerinfo->log_text ? " from " : ""),
+                   (peerinfo && peerinfo->log_text ? peerinfo->log_text : ""));
+    sk_free_peer_info(peerinfo);
 
     return 0;
 }

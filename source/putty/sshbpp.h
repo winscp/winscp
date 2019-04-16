@@ -56,11 +56,6 @@ BinaryPacketProtocol *ssh1_bpp_new(LogContext *logctx);
 void ssh1_bpp_new_cipher(BinaryPacketProtocol *bpp,
                          const struct ssh1_cipheralg *cipher,
                          const void *session_key);
-/* requested_compression() notifies the SSH-1 BPP that we've just sent
- * a request to enable compression, which means that on receiving the
- * next SSH1_SMSG_SUCCESS or SSH1_SMSG_FAILURE message, it should set
- * up zlib compression if it was SUCCESS. */
-void ssh1_bpp_requested_compression(BinaryPacketProtocol *bpp);
 
 /* Helper routine which does common BPP initialisation, e.g. setting
  * up in_pq and out_pq, and initialising input_consumer. */

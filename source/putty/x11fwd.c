@@ -666,7 +666,7 @@ static void x11_closing(Plug *plug, const char *error_msg, int error_code,
          * Whether we did that or not, now we slam the connection
          * shut.
          */
-        sshfwd_unclean_close(xconn->c, error_msg);
+        sshfwd_initiate_close(xconn->c, error_msg);
     } else {
         /*
          * Ordinary EOF received on socket. Send an EOF on the SSH
@@ -734,7 +734,11 @@ static const struct ChannelVtable X11Connection_channelvt = {
     x11_send_eof,
     x11_set_input_wanted,
     x11_log_close_msg,
-    chan_no_eager_close,
+    chan_default_want_close,
+    chan_no_exit_status,
+    chan_no_exit_signal,
+    chan_no_exit_signal_numeric,
+    chan_no_request_response,
 };
 
 /*

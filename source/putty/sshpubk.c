@@ -584,7 +584,7 @@ const ssh_keyalg *find_pubkey_alg_len(ptrlen name)
 
 const ssh_keyalg *find_pubkey_alg(const char *name)
 {
-    return find_pubkey_alg_len(make_ptrlen(name, strlen(name)));
+    return find_pubkey_alg_len(ptrlen_from_asciz(name));
 }
 
 struct ssh2_userkey *ssh2_load_userkey(const Filename *filename,
@@ -798,8 +798,8 @@ struct ssh2_userkey *ssh2_load_userkey(const Filename *filename,
     ret = snew(struct ssh2_userkey);
     ret->comment = comment;
     ret->key = ssh_key_new_priv(
-        alg, make_ptrlen(public_blob->u, public_blob->len),
-        make_ptrlen(private_blob->u, private_blob->len));
+        alg, ptrlen_from_strbuf(public_blob),
+        ptrlen_from_strbuf(private_blob));
     if (!ret->key) {
 	sfree(ret);
 	ret = NULL;

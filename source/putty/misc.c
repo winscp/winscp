@@ -1255,10 +1255,38 @@ ptrlen make_ptrlen(const void *ptr, size_t len)
     return pl;
 }
 
+ptrlen ptrlen_from_asciz(const char *str)
+{
+    return make_ptrlen(str, strlen(str));
+}
+
+ptrlen ptrlen_from_strbuf(strbuf *sb)
+{
+    return make_ptrlen(sb->u, sb->len);
+}
+
 int ptrlen_eq_string(ptrlen pl, const char *str)
 {
     size_t len = strlen(str);
     return (pl.len == len && !memcmp(pl.ptr, str, len));
+}
+
+int ptrlen_eq_ptrlen(ptrlen pl1, ptrlen pl2)
+{
+    return (pl1.len == pl2.len && !memcmp(pl1.ptr, pl2.ptr, pl1.len));
+}
+
+int ptrlen_startswith(ptrlen whole, ptrlen prefix, ptrlen *tail)
+{
+    if (whole.len >= prefix.len &&
+        !memcmp(whole.ptr, prefix.ptr, prefix.len)) {
+        if (tail) {
+            tail->ptr = (const char *)whole.ptr + prefix.len;
+            tail->len = whole.len - prefix.len;
+        }
+        return TRUE;
+    }
+    return FALSE;
 }
 
 char *mkstr(ptrlen pl)
@@ -1408,5 +1436,14 @@ int nullseat_is_always_utf8(Seat *seat) { return TRUE; }
 void nullseat_echoedit_update(Seat *seat, int echoing, int editing) {}
 const char *nullseat_get_x_display(Seat *seat) { return NULL; }
 int nullseat_get_windowid(Seat *seat, long *id_out) { return FALSE; }
-int nullseat_get_char_cell_size(
+int nullseat_get_window_pixel_size(
     Seat *seat, int *width, int *height) { return FALSE; }
+
+void sk_free_peer_info(SocketPeerInfo *pi)
+{
+    if (pi) {
+        sfree((char *)pi->addr_text);
+        sfree((char *)pi->log_text);
+        sfree(pi);
+    }
+}
