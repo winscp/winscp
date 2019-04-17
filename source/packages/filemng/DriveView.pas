@@ -1211,17 +1211,22 @@ begin
     if Assigned(NodeData.PIDL) then
     begin
       if ContentMask then
-        NodeData.shAttr := SFGAO_DISPLAYATTRMASK or SFGAO_CONTENTSMASK
-      else
-        NodeData.shAttr := SFGAO_DISPLAYATTRMASK;
+      begin
+        NodeData.shAttr := SFGAO_CONTENTSMASK;
 
-      if not Succeeded(ShellFolderGetAttributesOfWithTimeout(ParentFolder, 1, NodeData.PIDL, NodeData.shAttr, MSecsPerSec)) then
+        // Previously we would also make use of SFGAO_SHARE to display a share overlay.
+        // But for directories, Windows File Explorer does not display the overlay anymore (probably since Vista).
+        // And for drives (where Explorer does display the overlay), it did not work ever since we use "desktop"
+        // (and not "workspace" as before) to resolve drive interface (see Bug 1717).
+        if not Succeeded(ShellFolderGetAttributesOfWithTimeout(ParentFolder, 1, NodeData.PIDL, NodeData.shAttr, MSecsPerSec)) then
+        begin
+          NodeData.shAttr := 0;
+        end;
+      end
+        else
       begin
         NodeData.shAttr := 0;
       end;
-
-      if not ContentMask then
-        NodeData.shAttr := NodeData.shAttr or SFGAO_HASSUBFOLDER;
 
       if not Assigned(NodeData.ShellFolder) then
       begin
@@ -1338,9 +1343,6 @@ begin
               else
                 RootNode := Items.AddObject(nil, '', NodeData);
 
-              if (NodeData.shAttr and SFGAO_SHARE) <> 0 then
-                RootNode.OverlayIndex := 0;
-
               RootNode.Text := GetDisplayName(RootNode);
               RootNode.HasChildren := True;
 
@@ -1445,9 +1447,6 @@ begin
 
   NewNode := Self.Items.AddChildObject(ParentNode, '', NodeData);
   NewNode.Text := GetDisplayName(NewNode);
-
-  if (NodeData.shAttr and SFGAO_SHARE) <> 0 then
-    NewNode.OverlayIndex := 0;
 
   Result := NewNode;
 end; {AddChildNode}

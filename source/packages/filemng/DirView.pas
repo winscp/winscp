@@ -1795,21 +1795,8 @@ begin
             ShAttr := 0;
             FDesktopFolder.ParseDisplayName(ParentForm.Handle, nil,
               PChar(FPath + '\' + FileName), Eaten, PIDL, ShAttr);
-
-            {Retrieve the shell display attributes for directories:}
-            if IsDirectory and Assigned(PIDL) then
-            begin
-              shAttr := SFGAO_DISPLAYATTRMASK;
-              try
-                if Assigned(ParentFolder) and
-                   Succeeded(ParentFolder.GetAttributesOf(1, PIDL, shAttr)) then
-                begin
-                  if (shAttr and SFGAO_SHARE) <> 0 then
-                    Item.OverlayIndex := 0;
-                end;
-              except end;
-            end;
-          except end;
+          except
+          end;
         end;
 
         if IsDirectory then
