@@ -4757,7 +4757,7 @@ void __fastcall TCustomScpExplorerForm::DuplicateSession()
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::RenameSession()
 {
-  UnicodeString Name = Terminal->SessionData->Name;
+  UnicodeString Name = Terminal->SessionData->SessionName;
   if (InputDialog(LoadStr(RENAME_SESSION_TITLE), LoadStr(RENAME_SESSION_PROMPT), Name, HELP_SESSION_RENAME))
   {
     // Checks for a slash only, so it's not that big deal that we do the check after submitting the dialog only.
