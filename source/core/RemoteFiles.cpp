@@ -1816,6 +1816,7 @@ __fastcall TRemoteDirectoryChangesCache::TRemoteDirectoryChangesCache(int MaxSiz
   TStringList(),
   FMaxSize(MaxSize)
 {
+  CaseSensitive = true;
 }
 //---------------------------------------------------------------------------
 void __fastcall TRemoteDirectoryChangesCache::Clear()
