@@ -222,7 +222,7 @@ void __fastcall TScpCommanderForm::StoreParams()
     #undef RESTORE_PANEL_PARAMS
 
 
-    CommanderConfiguration.LocalPanel.LastPath = LocalDirView->Path;
+    WinConfiguration->ScpCommander.LocalPanel.LastPath = LocalDirView->Path;
 
     WinConfiguration->ScpCommander.WindowParams = StoreForm(this);
 
