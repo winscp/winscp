@@ -864,8 +864,7 @@ namespace WinSCP
             string programFiles;
             if (IntPtr.Size == 8)
             {
-                // In .NET 4 we can use Environment.SpecialFolder.ProgramFilesX86
-                programFiles = Environment.GetEnvironmentVariable("ProgramFiles(x86)");
+                programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
             }
             else
             {
