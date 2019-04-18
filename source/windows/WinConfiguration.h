@@ -40,10 +40,11 @@ struct TScpCommanderPanelConfiguration {
   int DriveViewHeightPixelsPerInch;
   int DriveViewWidth;
   int DriveViewWidthPixelsPerInch;
+  UnicodeString LastPath;
   bool __fastcall operator !=(TScpCommanderPanelConfiguration & rhc)
     { return C(DirViewParams) C(StatusBar)
         C(DriveView) C(DriveViewHeight) C(DriveViewHeightPixelsPerInch)
-        C(DriveViewWidth) C(DriveViewWidthPixelsPerInch) 0; };
+        C(DriveViewWidth) C(DriveViewWidthPixelsPerInch) C(LastPath) 0; };
 };
 //---------------------------------------------------------------------------
 struct TScpCommanderConfiguration {
