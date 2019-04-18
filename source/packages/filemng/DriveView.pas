@@ -175,8 +175,7 @@ type
     procedure SetShowVolLabel(ShowIt: Boolean);
     procedure SetDirView(Value: TDirView);
     procedure SetDirectory(Value: string); override;
-    procedure GetNodeShellAttr(ParentFolder: IShellFolder; NodeData: TNodeData;
-      Path: string; ContentMask: Boolean = True);
+    procedure GetNodeShellAttr(ParentNode: TTreeNode; NodeData: TNodeData; GetAttr: Boolean);
     function  DoScanDir(FromNode: TTreeNode): Boolean;
     function  AddChildNode(ParentNode: TTreeNode; SRec: TSearchRec): TTreeNode;
     procedure CreateWatchThread(Drive: string);
@@ -1200,17 +1199,42 @@ begin
   end;
 end; {GetDriveText}
 
-procedure TDriveView.GetNodeShellAttr(ParentFolder: IShellFolder;
-  NodeData: TNodeData; Path: string; ContentMask: Boolean = True);
+procedure TDriveView.GetNodeShellAttr(ParentNode: TTreeNode; NodeData: TNodeData; GetAttr: Boolean);
+var
+  ParentFolder: IShellFolder;
+  ParentData: TNodeData;
 begin
   NodeData.shAttr := 0;
-  if Assigned(ParentFolder) and Assigned(NodeData) then
+
+  if GetAttr then
   begin
-    if not Assigned(NodeData.PIDL) then
-      NodeData.PIDL := PIDL_GetFromParentFolder(ParentFolder, PChar(Path));
-    if Assigned(NodeData.PIDL) then
+    if Assigned(ParentNode) then
     begin
-      if ContentMask then
+      ParentData := TNodeData(ParentNode.Data);
+      if not Assigned(ParentData) then
+      begin
+        Assert(False);
+        ParentFolder := nil;
+      end
+        else
+      begin
+        if not Assigned(ParentData.ShellFolder) then
+        begin
+          GetNodeShellAttr(ParentNode.Parent, ParentData, GetAttr);
+        end;
+        ParentFolder := ParentData.ShellFolder;
+      end;
+    end
+      else
+    begin
+      ParentFolder := FDesktop;
+    end;
+
+    if Assigned(ParentFolder) and Assigned(NodeData) then
+    begin
+      if not Assigned(NodeData.PIDL) then
+        NodeData.PIDL := PIDL_GetFromParentFolder(ParentFolder, PChar(NodeData.DirName));
+      if Assigned(NodeData.PIDL) then
       begin
         NodeData.shAttr := SFGAO_CONTENTSMASK;
 
@@ -1222,18 +1246,13 @@ begin
         begin
           NodeData.shAttr := 0;
         end;
-      end
-        else
-      begin
-        NodeData.shAttr := 0;
-      end;
 
-      if not Assigned(NodeData.ShellFolder) then
-      begin
-        ParentFolder.BindToObject(NodeData.PIDL, nil, IID_IShellFolder,
-          Pointer(NodeData.ShellFolder));
-      end;
-    end
+        if not Assigned(NodeData.ShellFolder) then
+        begin
+          ParentFolder.BindToObject(NodeData.PIDL, nil, IID_IShellFolder, Pointer(NodeData.ShellFolder));
+        end;
+      end
+    end;
   end;
 
   if NodeData.shAttr = 0 then
@@ -1296,6 +1315,7 @@ var
   NextDriveNode: TTreeNode;
   Index: Integer;
   Drive: string;
+  GetAttr: Boolean;
 begin
   SaveCursor := Screen.Cursor;
   Screen.Cursor := crHourGlass;
@@ -1332,11 +1352,10 @@ begin
               NodeData.ShortName := NodeData.DirName;
 
               {Get the shared attributes:}
-              if DriveInfo.IsFixedDrive(Drive) and (DriveType <> DRIVE_REMOVABLE) and
-                 ((DriveType <> DRIVE_REMOTE) or GetNetWorkConnected(Drive)) then
-              begin
-                GetNodeShellAttr(FDesktop, NodeData, NodeData.DirName);
-              end;
+              GetAttr :=
+                DriveInfo.IsFixedDrive(Drive) and (DriveType <> DRIVE_REMOVABLE) and
+                ((DriveType <> DRIVE_REMOTE) or GetNetWorkConnected(Drive));
+              GetNodeShellAttr(nil, NodeData, GetAttr);
 
               if Assigned(NextDriveNode) then
                 RootNode := Items.InsertObject(NextDriveNode, '', NodeData)
@@ -1419,7 +1438,7 @@ function TDriveView.AddChildNode(ParentNode: TTreeNode; SRec: TSearchRec): TTree
 var
   NewNode: TTreeNode;
   NodeData: TNodeData;
-  ContentMask: Boolean;
+  GetAttr: Boolean;
 begin
   NodeData := TNodeData.Create;
   NodeData.Attr := SRec.Attr;
@@ -1434,16 +1453,10 @@ begin
   { query content attributes ("has subfolder") only if tree view is visible }
   { to avoid unnecessary scan of subfolders (which may take some time) }
   { if tree view is not visible anyway }
-  ContentMask :=
+  GetAttr :=
     Visible and
     (GetDriveTypeToNode(ParentNode) <> DRIVE_REMOTE);
-
-  if not Assigned(TNodeData(ParentNode.Data).ShellFolder) then
-  begin
-    GetNodeShellAttr(FDesktop, TNodeData(ParentNode.Data), NodePathName(ParentNode), ContentMask);
-  end;
-
-  GetNodeShellAttr(TNodeData(ParentNode.Data).ShellFolder, NodeData, SRec.Name, ContentMask);
+  GetNodeShellAttr(ParentNode, NodeData, GetAttr);
 
   NewNode := Self.Items.AddChildObject(ParentNode, '', NodeData);
   NewNode.Text := GetDisplayName(NewNode);
