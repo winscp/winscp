@@ -232,6 +232,7 @@ void __fastcall TScpCommanderForm::StoreParams()
     StorePanelParams(LocalDirView, LocalDriveView, LocalStatusBar, CommanderConfiguration.LocalPanel);
     StorePanelParams(RemoteDirView, RemoteDrivePanel, RemoteStatusBar, CommanderConfiguration.RemotePanel);
 
+    CommanderConfiguration.LocalPanel.LastPath = LocalDirView->Path;
 
     CommanderConfiguration.WindowParams = StoreForm(this);
 
@@ -536,9 +537,8 @@ void __fastcall TScpCommanderForm::TerminalChanged(bool Replaced)
     if (FFirstTerminal || !WinConfiguration->ScpCommander.PreserveLocalDirectory)
     {
       UnicodeString LocalDirectory = ManagedTerminal->StateData->LocalDirectory;
-      bool DocumentsDir = LocalDirectory.IsEmpty();
 
-      if (!DocumentsDir)
+      if (!LocalDirectory.IsEmpty())
       {
         try
         {
@@ -546,17 +546,11 @@ void __fastcall TScpCommanderForm::TerminalChanged(bool Replaced)
         }
         catch(Exception & E)
         {
-          DocumentsDir = true;
           if (!Terminal->SessionData->UpdateDirectories)
           {
             Terminal->ShowExtendedException(&E);
           }
         }
-      }
-
-      if (DocumentsDir)
-      {
-        LocalDefaultDirectory();
       }
     }
     FFirstTerminal = false;
@@ -586,15 +580,32 @@ void __fastcall TScpCommanderForm::TerminalChanged(bool Replaced)
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::LocalDefaultDirectory()
 {
-  try
+  bool DocumentsDir = true;
+  UnicodeString LastPath = WinConfiguration->ScpCommander.LocalPanel.LastPath;
+  if (!LastPath.IsEmpty())
   {
-    LocalDirView->HomeDirectory = L"";
-    LocalDirView->ExecuteHomeDirectory();
+    try
+    {
+      LocalDirView->Path = LastPath;
+      DocumentsDir = false;
+    }
+    catch (...)
+    {
+    }
   }
-  catch(Exception & E)
+
+  if (DocumentsDir)
   {
-    ShowExtendedException(NULL, &E);
-    LocalDirView->Path = ExtractFilePath(Application->ExeName);
+    try
+    {
+      LocalDirView->HomeDirectory = L"";
+      LocalDirView->ExecuteHomeDirectory();
+    }
+    catch(Exception & E)
+    {
+      ShowExtendedException(NULL, &E);
+      LocalDirView->Path = ExtractFilePath(Application->ExeName);
+    }
   }
 }
 //---------------------------------------------------------------------------
