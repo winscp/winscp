@@ -2872,19 +2872,7 @@ UnicodeString __fastcall TSessionData::GetNameWithoutHiddenPrefix()
 //---------------------------------------------------------------------
 bool __fastcall TSessionData::HasSessionName()
 {
-  UnicodeString ALocalName = ExtractLocalName(Name);
-  bool AIsWorkspaceSessionWithoutName = IsWorkspace && (ALocalName.Length() == 4); // See SaveWorkspaceData()
-  if (AIsWorkspaceSessionWithoutName)
-  {
-    int Index = 1;
-    while (AIsWorkspaceSessionWithoutName && (Index <= ALocalName.Length()))
-    {
-      AIsWorkspaceSessionWithoutName = IsHex(ALocalName[Index]);
-      Index++;
-    }
-  }
-
-  return (!GetNameWithoutHiddenPrefix().IsEmpty() && (Name != DefaultName) && !AIsWorkspaceSessionWithoutName);
+  return (!GetNameWithoutHiddenPrefix().IsEmpty() && (Name != DefaultName));
 }
 //---------------------------------------------------------------------
 UnicodeString __fastcall TSessionData::GetSessionName()
@@ -4841,6 +4829,12 @@ void __fastcall TStoredSessionList::GetFolderOrWorkspace(const UnicodeString & N
       {
         Data2->Name = RawData->NameOverride;
       }
+      else if (RawData->Link.IsEmpty())
+      {
+        // Newly opened ad-hoc session has no name, so restore the workspace that way too.
+        // Otherwise we would persist the generated internal workspace name as a real name.
+        Data2->Name = UnicodeString();
+      }
 
       List->Add(Data2);
     }
@@ -4850,26 +4844,13 @@ void __fastcall TStoredSessionList::GetFolderOrWorkspace(const UnicodeString & N
 TStrings * __fastcall TStoredSessionList::GetFolderOrWorkspaceList(
   const UnicodeString & Name)
 {
+  std::unique_ptr<TObjectList> DataList(new TObjectList());
+  GetFolderOrWorkspace(Name, DataList.get());
+
   std::unique_ptr<TStringList> Result(new TStringList());
-
-  for (int Index = 0; (Index < Count); Index++)
+  for (int Index = 0; (Index < DataList->Count); Index++)
   {
-    TSessionData * Data =
-      CheckIsInFolderOrWorkspaceAndResolve(Sessions[Index], Name);
-
-    if (Data != NULL)
-    {
-      UnicodeString Name;
-      if (!Data->NameOverride.IsEmpty())
-      {
-        Name = Data->NameOverride;
-      }
-      else
-      {
-        Name = Data->SessionName;
-      }
-      Result->Add(Name);
-    }
+    Result->Add(dynamic_cast<TSessionData *>(DataList->Items[Index])->SessionName);
   }
 
   return Result.release();
