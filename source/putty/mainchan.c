@@ -478,6 +478,7 @@ void mainchan_get_specials(
 {
     /* FIXME: this _does_ depend on whether these services are supported */
 
+    /* WINSCP (causes linker warning and we do not use these)
     add_special(ctx, "Break", SS_BRK, 0);
 
     #define SIGNAL_MAIN(name, desc) \
@@ -497,6 +498,7 @@ void mainchan_get_specials(
     #undef SIGNAL_SUB
 
     add_special(ctx, NULL, SS_EXITMENU, 0);
+    */
 }
 
 static const char *ssh_signal_lookup(SessionSpecialCode code)
