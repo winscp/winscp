@@ -57,7 +57,8 @@ typedef struct LogPolicyVtable LogPolicyVtable;
 typedef struct Seat Seat;
 typedef struct SeatVtable SeatVtable;
 
-typedef struct Frontend Frontend;
+typedef struct TermWin TermWin;
+typedef struct TermWinVtable TermWinVtable;
 
 typedef struct Ssh Ssh;
 

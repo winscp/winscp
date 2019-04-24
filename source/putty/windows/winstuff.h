@@ -206,8 +206,6 @@ struct FontSpec *fontspec_new(const char *name,
 #define DEFAULT_CODEPAGE CP_ACP
 #define USES_VTLINE_HACK
 
-typedef HDC Context;
-
 #ifndef NO_GSSAPI
 /*
  * GSS-API stuff
@@ -272,7 +270,7 @@ int win_seat_confirm_weak_cached_hostkey(
  * which takes the data string in the system code page instead of
  * Unicode.
  */
-void write_aclip(Frontend *frontend, int clipboard, char *, int, int);
+void write_aclip(int clipboard, char *, int, int);
 
 #define WM_NETEVENT  (WM_APP + 5)
 
