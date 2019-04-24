@@ -110,8 +110,8 @@ PacketProtocolLayer *ssh2_transport_new(
     Conf *conf, const char *host, int port, const char *fullhostname,
     const char *client_greeting, const char *server_greeting,
     struct ssh_connection_shared_gss_state *shgss,
-    struct DataTransferStats *stats,
-    PacketProtocolLayer *higher_layer)
+    struct DataTransferStats *stats, PacketProtocolLayer *higher_layer,
+    int is_server)
 {
     struct ssh2_transport_state *s = snew(struct ssh2_transport_state);
     memset(s, 0, sizeof(*s));
@@ -125,6 +125,7 @@ PacketProtocolLayer *ssh2_transport_new(
     s->client_greeting = dupstr(client_greeting);
     s->server_greeting = dupstr(server_greeting);
     s->stats = stats;
+    s->hostkeyblob = strbuf_new();
 
     pq_in_init(&s->pq_in_higher, higher_layer->seat); // WINSCP
     pq_out_init(&s->pq_out_higher, higher_layer->seat); // WINSCP
@@ -145,8 +146,17 @@ PacketProtocolLayer *ssh2_transport_new(
     s->thc = ssh_transient_hostkey_cache_new();
     s->gss_kex_used = FALSE;
 
-    s->client_kexinit = strbuf_new();
-    s->server_kexinit = strbuf_new();
+    s->outgoing_kexinit = strbuf_new();
+    s->incoming_kexinit = strbuf_new();
+    if (is_server) {
+        s->client_kexinit = s->incoming_kexinit;
+        s->server_kexinit = s->outgoing_kexinit;
+        s->out.mkkey_adjust = 1;
+    } else {
+        s->client_kexinit = s->outgoing_kexinit;
+        s->server_kexinit = s->incoming_kexinit;
+        s->in.mkkey_adjust = 1;
+    }
 
     ssh2_transport_set_max_data_size(s);
 
@@ -187,8 +197,9 @@ static void ssh2_transport_free(PacketProtocolLayer *ppl)
     sfree(s->server_greeting);
     sfree(s->keystr);
     sfree(s->hostkey_str);
+    strbuf_free(s->hostkeyblob);
     sfree(s->fingerprint);
-    if (s->hkey) {
+    if (s->hkey && !s->hostkeys) {
         ssh_key_free(s->hkey);
         s->hkey = NULL;
     }
@@ -204,8 +215,8 @@ static void ssh2_transport_free(PacketProtocolLayer *ppl)
         ssh_ecdhkex_freekey(s->ecdh_key);
     if (s->exhash)
         ssh_hash_free(s->exhash);
-    strbuf_free(s->client_kexinit);
-    strbuf_free(s->server_kexinit);
+    strbuf_free(s->outgoing_kexinit);
+    strbuf_free(s->incoming_kexinit);
     ssh_transient_hostkey_cache_free(s->thc);
     sfree(s);
 }
@@ -324,7 +335,7 @@ int ssh2_common_filter_queue(PacketProtocolLayer *ppl)
             msg = get_string(pktin);
 
             ssh_remote_error(
-                ppl->ssh, "Server sent disconnect message\n"
+                ppl->ssh, "Remote side sent disconnect message\n"
                 "type %d (%s):\n\"%.*s\"", reason,
                 ((reason > 0 && reason < lenof(ssh2_disconnect_reasons)) ?
                  ssh2_disconnect_reasons[reason] : "unknown"),
@@ -400,6 +411,7 @@ static void ssh2_write_kexinit_lists(
     Conf *conf, int remote_bugs,
     const char *hk_host, int hk_port, const ssh_keyalg *hk_prev,
     ssh_transient_hostkey_cache *thc,
+    ssh_key *const *our_hostkeys, int our_nhostkeys,
     int first_time, int can_gssapi_keyex, int transient_hostkey_mode)
 {
     int i, j, k, warn;
@@ -527,7 +539,18 @@ static void ssh2_write_kexinit_lists(
             }
     }
     /* List server host key algorithms. */
-    if (first_time) {
+    if (our_hostkeys) {
+        /*
+         * In server mode, we just list the algorithms that match the
+         * host keys we actually have.
+         */
+        for (i = 0; i < our_nhostkeys; i++) {
+            alg = ssh2_kexinit_addalg(kexlists[KEXLIST_HOSTKEY],
+                                      ssh_key_alg(our_hostkeys[i])->ssh_id);
+            alg->u.hk.hostkey = ssh_key_alg(our_hostkeys[i]);
+            alg->u.hk.warn = FALSE;
+        }
+    } else if (first_time) {
         /*
          * In the first key exchange, we list all the algorithms
          * we're prepared to cope with, but prefer those algorithms
@@ -1021,28 +1044,29 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
      * later.
      */
     s->client_kexinit->len = 0;
-    put_byte(s->client_kexinit, SSH2_MSG_KEXINIT);
+    put_byte(s->outgoing_kexinit, SSH2_MSG_KEXINIT);
     {
         int i;
         for (i = 0; i < 16; i++)
-            put_byte(s->client_kexinit, (unsigned char) random_byte());
+            put_byte(s->outgoing_kexinit, (unsigned char) random_byte());
     }
     ssh2_write_kexinit_lists(
-        /*WINSCP*/ s->ppl.seat, BinarySink_UPCAST(s->client_kexinit), s->kexlists,
+        /*WINSCP*/ s->ppl.seat, BinarySink_UPCAST(s->outgoing_kexinit), s->kexlists,
         s->conf, s->ppl.remote_bugs,
         s->savedhost, s->savedport, s->hostkey_alg, s->thc,
+        s->hostkeys, s->nhostkeys,
         !s->got_session_id, s->can_gssapi_keyex,
         s->gss_kex_used && !s->need_gss_transient_hostkey);
     /* First KEX packet does _not_ follow, because we're not that brave. */
-    put_bool(s->client_kexinit, FALSE);
-    put_uint32(s->client_kexinit, 0);             /* reserved */
+    put_bool(s->outgoing_kexinit, FALSE);
+    put_uint32(s->outgoing_kexinit, 0);             /* reserved */
 
     /*
      * Send our KEXINIT.
      */
     pktout = ssh_bpp_new_pktout(s->ppl.bpp, SSH2_MSG_KEXINIT);
-    put_data(pktout, s->client_kexinit->u + 1,
-             s->client_kexinit->len - 1); /* omit initial packet type byte */
+    put_data(pktout, s->outgoing_kexinit->u + 1,
+             s->outgoing_kexinit->len - 1); /* omit initial packet type byte */
     pq_push(s->ppl.out_pq, pktout);
 
     /*
@@ -1061,9 +1085,9 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
                                       s->ppl.bpp->pls->actx, pktin->type));
         return;
     }
-    s->server_kexinit->len = 0;
-    put_byte(s->server_kexinit, SSH2_MSG_KEXINIT);
-    put_data(s->server_kexinit, get_ptr(pktin), get_avail(pktin));
+    s->incoming_kexinit->len = 0;
+    put_byte(s->incoming_kexinit, SSH2_MSG_KEXINIT);
+    put_data(s->incoming_kexinit, get_ptr(pktin), get_avail(pktin));
 
     /*
      * Work through the two KEXINIT packets in parallel to find the
@@ -1246,8 +1270,8 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
     ssh_bpp_handle_output(s->ppl.bpp);
 
     /*
-     * We've sent client NEWKEYS, so create and initialise
-     * client-to-server session keys.
+     * We've sent outgoing NEWKEYS, so create and initialise outgoing
+     * session keys.
      */
     {
         strbuf *cipher_key = strbuf_new();
@@ -1255,14 +1279,15 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
         strbuf *mac_key = strbuf_new();
 
         if (s->out.cipher) {
-            ssh2_mkkey(s, cipher_iv, s->K, s->exchange_hash, 'A',
-                       s->out.cipher->blksize);
-            ssh2_mkkey(s, cipher_key, s->K, s->exchange_hash, 'C',
+            ssh2_mkkey(s, cipher_iv, s->K, s->exchange_hash,
+                       'A' + s->out.mkkey_adjust, s->out.cipher->blksize);
+            ssh2_mkkey(s, cipher_key, s->K, s->exchange_hash,
+                       'C' + s->out.mkkey_adjust,
                        s->out.cipher->padded_keybytes);
         }
         if (s->out.mac) {
-            ssh2_mkkey(s, mac_key, s->K, s->exchange_hash, 'E',
-                       s->out.mac->keylen);
+            ssh2_mkkey(s, mac_key, s->K, s->exchange_hash,
+                       'E' + s->out.mkkey_adjust, s->out.mac->keylen);
         }
 
         ssh2_bpp_new_outgoing_crypto(
@@ -1301,8 +1326,8 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
     s->stats->in.remaining = s->max_data_size;
 
     /*
-     * We've seen server NEWKEYS, so create and initialise
-     * server-to-client session keys.
+     * We've seen incoming NEWKEYS, so create and initialise
+     * incoming session keys.
      */
     {
         strbuf *cipher_key = strbuf_new();
@@ -1310,14 +1335,15 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
         strbuf *mac_key = strbuf_new();
 
         if (s->in.cipher) {
-            ssh2_mkkey(s, cipher_iv, s->K, s->exchange_hash, 'B',
-                       s->in.cipher->blksize);
-            ssh2_mkkey(s, cipher_key, s->K, s->exchange_hash, 'D',
+            ssh2_mkkey(s, cipher_iv, s->K, s->exchange_hash,
+                       'A' + s->in.mkkey_adjust, s->in.cipher->blksize);
+            ssh2_mkkey(s, cipher_key, s->K, s->exchange_hash,
+                       'C' + s->in.mkkey_adjust,
                        s->in.cipher->padded_keybytes);
         }
         if (s->in.mac) {
-            ssh2_mkkey(s, mac_key, s->K, s->exchange_hash, 'F',
-                       s->in.mac->keylen);
+            ssh2_mkkey(s, mac_key, s->K, s->exchange_hash,
+                       'E' + s->in.mkkey_adjust, s->in.mac->keylen);
         }
 
         ssh2_bpp_new_incoming_crypto(
@@ -1369,14 +1395,43 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
      * decided to initiate a rekey ourselves for some reason.
      */
     if (!s->higher_layer_ok) {
-        pktout = ssh_bpp_new_pktout(s->ppl.bpp, SSH2_MSG_SERVICE_REQUEST);
-        put_stringz(pktout, s->higher_layer->vt->name);
-        pq_push(s->ppl.out_pq, pktout);
-        crMaybeWaitUntilV((pktin = ssh2_transport_pop(s)) != NULL);
-        if (pktin->type != SSH2_MSG_SERVICE_ACCEPT) {
-            ssh_sw_abort(s->ppl.ssh, "Server refused request to start "
-                         "'%s' protocol", s->higher_layer->vt->name);
-            return;
+        if (!s->hostkeys) {
+            /* We're the client, so send SERVICE_REQUEST. */
+            pktout = ssh_bpp_new_pktout(s->ppl.bpp, SSH2_MSG_SERVICE_REQUEST);
+            put_stringz(pktout, s->higher_layer->vt->name);
+            pq_push(s->ppl.out_pq, pktout);
+            crMaybeWaitUntilV((pktin = ssh2_transport_pop(s)) != NULL);
+            if (pktin->type != SSH2_MSG_SERVICE_ACCEPT) {
+                ssh_sw_abort(s->ppl.ssh, "Server refused request to start "
+                             "'%s' protocol", s->higher_layer->vt->name);
+                return;
+            }
+        } else {
+            ptrlen service_name;
+
+            /* We're the server, so expect SERVICE_REQUEST. */
+            crMaybeWaitUntilV((pktin = ssh2_transport_pop(s)) != NULL);
+            if (pktin->type != SSH2_MSG_SERVICE_REQUEST) {
+                ssh_proto_error(s->ppl.ssh, "Received unexpected packet when "
+                                "expecting SERVICE_REQUEST, type %d (%s)",
+                                pktin->type,
+                                ssh2_pkt_type(s->ppl.bpp->pls->kctx,
+                                              s->ppl.bpp->pls->actx,
+                                              pktin->type));
+                return;
+            }
+            service_name = get_string(pktin);
+            if (!ptrlen_eq_string(service_name, s->higher_layer->vt->name)) {
+                ssh_proto_error(s->ppl.ssh, "Client requested service "
+                                "'%.*s' when we only support '%s'",
+                                PTRLEN_PRINTF(service_name),
+                                s->higher_layer->vt->name);
+                return;
+            }
+
+            pktout = ssh_bpp_new_pktout(s->ppl.bpp, SSH2_MSG_SERVICE_ACCEPT);
+            put_stringz(pktout, s->higher_layer->vt->name);
+            pq_push(s->ppl.out_pq, pktout);
         }
 
         s->higher_layer_ok = TRUE;
@@ -1405,7 +1460,7 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
                 return;
             }
             pq_push_front(s->ppl.in_pq, pktin);
-            ppl_logevent(("Server initiated key re-exchange"));
+            ppl_logevent(("Remote side initiated key re-exchange"));
             s->rekey_class = RK_SERVER;
         }
 
@@ -1450,7 +1505,7 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
              * rekey, we process it anyway!)
              */
             if ((s->ppl.remote_bugs & BUG_SSH2_REKEY)) {
-                ppl_logevent(("Server bug prevents key re-exchange (%s)",
+                ppl_logevent(("Remote bug prevents key re-exchange (%s)",
                               s->rekey_reason));
                 /* Reset the counters, so that at least this message doesn't
                  * hit the event log _too_ often. */

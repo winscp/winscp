@@ -21,7 +21,7 @@ uint64 uint64_subtract(uint64 x, uint64 y);
 double uint64_to_double(uint64 x);
 uint64 uint64_shift_right(uint64 x, int shift);
 uint64 uint64_shift_left(uint64 x, int shift);
-uint64 uint64_from_decimal(char *str);
+uint64 uint64_from_decimal(const char *str);
 
 void BinarySink_put_uint64(BinarySink *, uint64);
 uint64 BinarySource_get_uint64(BinarySource *);

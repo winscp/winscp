@@ -453,6 +453,15 @@ ptrlen BinarySource_get_string_xauth(BinarySource *src)
 #define get_string_xauth(src) \
     BinarySource_get_string_xauth(BinarySource_UPCAST(src))
 
+void BinarySink_put_stringpl_xauth(BinarySink *bs, ptrlen pl)
+{
+    assert((pl.len >> 16) == 0);
+    put_uint16(bs, pl.len);
+    put_data(bs, pl.ptr, pl.len);
+}
+#define put_stringpl_xauth(bs, ptrlen) \
+    BinarySink_put_stringpl_xauth(BinarySink_UPCAST(bs),ptrlen)
+
 void x11_get_auth_from_authfile(struct X11Display *disp,
 				const char *authfilename)
 {
@@ -635,6 +644,39 @@ void x11_get_auth_from_authfile(struct X11Display *disp,
     sfree(ourhostname);
 }
 
+void x11_format_auth_for_authfile(
+    BinarySink *bs, SockAddr *addr, int display_no,
+    ptrlen authproto, ptrlen authdata)
+{
+    if (sk_address_is_special_local(addr)) {
+        char *ourhostname = get_hostname();
+        put_uint16(bs, 256); /* indicates Unix-domain socket */
+        put_stringpl_xauth(bs, ptrlen_from_asciz(ourhostname));
+        sfree(ourhostname);
+    } else if (sk_addrtype(addr) == ADDRTYPE_IPV4) {
+        char ipv4buf[4];
+        sk_addrcopy(addr, ipv4buf);
+        put_uint16(bs, 0); /* indicates IPv4 */
+        put_stringpl_xauth(bs, make_ptrlen(ipv4buf, 4));
+    } else if (sk_addrtype(addr) == ADDRTYPE_IPV6) {
+        char ipv6buf[16];
+        sk_addrcopy(addr, ipv6buf);
+        put_uint16(bs, 6); /* indicates IPv6 */
+        put_stringpl_xauth(bs, make_ptrlen(ipv6buf, 16));
+    } else {
+        assert(FALSE && "Bad address type in x11_format_auth_for_authfile");
+    }
+
+    {
+        char *numberbuf = dupprintf("%d", display_no);
+        put_stringpl_xauth(bs, ptrlen_from_asciz(numberbuf));
+        sfree(numberbuf);
+    }
+
+    put_stringpl_xauth(bs, authproto);
+    put_stringpl_xauth(bs, authdata);
+}
+
 static void x11_log(Plug *p, int type, SockAddr *addr, int port,
 		    const char *error_msg, int error_code)
 {
@@ -738,6 +780,16 @@ static const struct ChannelVtable X11Connection_channelvt = {
     chan_no_exit_status,
     chan_no_exit_signal,
     chan_no_exit_signal_numeric,
+    chan_no_run_shell,
+    chan_no_run_command,
+    chan_no_run_subsystem,
+    chan_no_enable_x11_forwarding,
+    chan_no_enable_agent_forwarding,
+    chan_no_allocate_pty,
+    chan_no_set_env,
+    chan_no_send_break,
+    chan_no_send_signal,
+    chan_no_change_window_size,
     chan_no_request_response,
 };
 

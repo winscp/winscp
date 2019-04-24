@@ -73,6 +73,8 @@ static const struct ConnectionLayerVtable ssh2_connlayer_vtable = {
     ssh2_rportfwd_remove,
     ssh2_lportfwd_open,
     ssh2_session_open,
+    ssh2_serverside_x11_open,
+    ssh2_serverside_agent_open,
     ssh2_add_x11_display,
     ssh2_add_sharing_x11_display,
     ssh2_remove_sharing_x11_display,
@@ -120,7 +122,8 @@ static char *ssh2_channel_open_failure_error_text(PktIn *pktin)
     return dupprintf("%s [%.*s]", reason_code_string, PTRLEN_PRINTF(reason));
 }
 
-static int ssh2channel_write(SshChannel *c, const void *buf, int len);
+static int ssh2channel_write(
+    SshChannel *c, int is_stderr, const void *buf, int len);
 static void ssh2channel_write_eof(SshChannel *c);
 static void ssh2channel_initiate_close(SshChannel *c, const char *err);
 static void ssh2channel_unthrottle(SshChannel *c, int bufsize);
@@ -140,6 +143,9 @@ static const struct SshChannelVtable ssh2channel_vtable = {
     ssh2channel_get_conf,
     ssh2channel_window_override_removed,
     ssh2channel_x11_sharing_handover,
+    ssh2channel_send_exit_status,
+    ssh2channel_send_exit_signal,
+    ssh2channel_send_exit_signal_numeric,
     ssh2channel_request_x11_forwarding,
     ssh2channel_request_agent_forwarding,
     ssh2channel_request_pty,
@@ -219,6 +225,7 @@ struct outstanding_channel_request {
 static void ssh2_channel_free(struct ssh2_channel *c)
 {
     bufchain_clear(&c->outbuffer);
+    bufchain_clear(&c->errbuffer);
     while (c->chanreq_head) {
         struct outstanding_channel_request *chanreq = c->chanreq_head;
         c->chanreq_head = c->chanreq_head->next;
@@ -657,6 +664,66 @@ static int ssh2_connection_filter_queue(struct ssh2_connection_state *s)
                         reply_success = FALSE;
                         break;
                     }
+                } else if (ptrlen_eq_string(type, "shell")) {
+                    reply_success = chan_run_shell(c->chan);
+                } else if (ptrlen_eq_string(type, "exec")) {
+                    ptrlen command = get_string(pktin);
+                    reply_success = chan_run_command(c->chan, command);
+                } else if (ptrlen_eq_string(type, "subsystem")) {
+                    ptrlen subsys = get_string(pktin);
+                    reply_success = chan_run_subsystem(c->chan, subsys);
+                } else if (ptrlen_eq_string(type, "x11-req")) {
+                    int oneshot = get_bool(pktin);
+                    ptrlen authproto = get_string(pktin);
+                    ptrlen authdata = get_string(pktin);
+                    unsigned screen_number = get_uint32(pktin);
+                    reply_success = chan_enable_x11_forwarding(
+                        c->chan, oneshot, authproto, authdata, screen_number);
+                } else if (ptrlen_eq_string(type,
+                                            "auth-agent-req@openssh.com")) {
+                    reply_success = chan_enable_agent_forwarding(c->chan);
+                } else if (ptrlen_eq_string(type, "pty-req")) {
+                    ptrlen termtype = get_string(pktin);
+                    unsigned width = get_uint32(pktin);
+                    unsigned height = get_uint32(pktin);
+                    unsigned pixwidth = get_uint32(pktin);
+                    unsigned pixheight = get_uint32(pktin);
+                    ptrlen encoded_modes = get_string(pktin);
+                    BinarySource bs_modes[1];
+                    struct ssh_ttymodes modes;
+
+                    BinarySource_BARE_INIT(
+                        bs_modes, encoded_modes.ptr, encoded_modes.len);
+                    modes = read_ttymodes_from_packet(bs_modes, 2);
+                    if (get_err(bs_modes) || get_avail(bs_modes) > 0) {
+                        ppl_logevent(("Unable to decode terminal mode "
+                                      "string"));
+                        reply_success = FALSE;
+                    } else {
+                        reply_success = chan_allocate_pty(
+                            c->chan, termtype, width, height,
+                            pixwidth, pixheight, modes);
+                    }
+                } else if (ptrlen_eq_string(type, "env")) {
+                    ptrlen var = get_string(pktin);
+                    ptrlen value = get_string(pktin);
+
+                    reply_success = chan_set_env(c->chan, var, value);
+                } else if (ptrlen_eq_string(type, "break")) {
+                    unsigned length = get_uint32(pktin);
+
+                    reply_success = chan_send_break(c->chan, length);
+                } else if (ptrlen_eq_string(type, "signal")) {
+                    ptrlen signame = get_string(pktin);
+
+                    reply_success = chan_send_signal(c->chan, signame);
+                } else if (ptrlen_eq_string(type, "window-change")) {
+                    unsigned width = get_uint32(pktin);
+                    unsigned height = get_uint32(pktin);
+                    unsigned pixwidth = get_uint32(pktin);
+                    unsigned pixheight = get_uint32(pktin);
+                    reply_success = chan_change_window_size(
+                        c->chan, width, height, pixwidth, pixheight);
                 }
                 if (want_reply) {
                     int type = (reply_success ? SSH2_MSG_CHANNEL_SUCCESS :
@@ -745,6 +812,7 @@ static int ssh2_connection_filter_queue(struct ssh2_connection_state *s)
                      * stuff.
                      */
                     bufchain_clear(&c->outbuffer);
+                    bufchain_clear(&c->errbuffer);
 
                     /*
                      * Send outgoing EOF.
@@ -989,7 +1057,7 @@ static void ssh2_channel_try_eof(struct ssh2_channel *c)
     assert(c->pending_eof);          /* precondition for calling us */
     if (c->halfopen)
         return;                 /* can't close: not even opened yet */
-    if (bufchain_size(&c->outbuffer) > 0)
+    if (bufchain_size(&c->outbuffer) > 0 || bufchain_size(&c->errbuffer) > 0)
         return;              /* can't send EOF: pending outgoing data */
 
     c->pending_eof = FALSE;            /* we're about to send it */
@@ -1010,19 +1078,31 @@ static int ssh2_try_send(struct ssh2_channel *c)
     PktOut *pktout;
     int bufsize;
 
-    while (c->remwindow > 0 && bufchain_size(&c->outbuffer) > 0) {
+    while (c->remwindow > 0 &&
+           (bufchain_size(&c->outbuffer) > 0 ||
+            bufchain_size(&c->errbuffer) > 0)) {
 	int len;
 	void *data;
-	bufchain_prefix(&c->outbuffer, &data, &len);
+        bufchain *buf = (bufchain_size(&c->errbuffer) > 0 ?
+                         &c->errbuffer : &c->outbuffer);
+
+	bufchain_prefix(buf, &data, &len);
 	if ((unsigned)len > c->remwindow)
 	    len = c->remwindow;
 	if ((unsigned)len > c->remmaxpkt)
 	    len = c->remmaxpkt;
-	pktout = ssh_bpp_new_pktout(s->ppl.bpp, SSH2_MSG_CHANNEL_DATA);
-	put_uint32(pktout, c->remoteid);
+        if (buf == &c->errbuffer) {
+            pktout = ssh_bpp_new_pktout(
+                s->ppl.bpp, SSH2_MSG_CHANNEL_EXTENDED_DATA);
+            put_uint32(pktout, c->remoteid);
+            put_uint32(pktout, SSH2_EXTENDED_DATA_STDERR);
+        } else {
+            pktout = ssh_bpp_new_pktout(s->ppl.bpp, SSH2_MSG_CHANNEL_DATA);
+            put_uint32(pktout, c->remoteid);
+        }
         put_string(pktout, data, len);
         pq_push(s->ppl.out_pq, pktout);
-	bufchain_consume(&c->outbuffer, len);
+	bufchain_consume(buf, len);
 	c->remwindow -= len;
     }
 
@@ -1030,7 +1110,7 @@ static int ssh2_try_send(struct ssh2_channel *c)
      * After having sent as much data as we can, return the amount
      * still buffered.
      */
-    bufsize = bufchain_size(&c->outbuffer);
+    bufsize = bufchain_size(&c->outbuffer) + bufchain_size(&c->errbuffer);
 
     /*
      * And if there's no data pending but we need to send an EOF, send
@@ -1158,12 +1238,14 @@ void ssh2_channel_init(struct ssh2_channel *c)
     c->closes = 0;
     c->pending_eof = FALSE;
     c->throttling_conn = FALSE;
+    c->throttled_by_backlog = FALSE;
     c->sharectx = NULL;
     c->locwindow = c->locmaxwin = c->remlocwin =
         s->ssh_is_simple ? OUR_V2_BIGWIN : OUR_V2_WINSIZE;
     c->chanreq_head = NULL;
     c->throttle_state = UNTHROTTLED;
     bufchain_init(&c->outbuffer);
+    bufchain_init(&c->errbuffer);
     c->sc.vt = &ssh2channel_vtable;
     c->sc.cl = &s->cl;
     c->localid = alloc_channel_id(s->channels, struct ssh2_channel);
@@ -1273,11 +1355,12 @@ static void ssh2channel_unthrottle(SshChannel *sc, int bufsize)
     }
 }
 
-static int ssh2channel_write(SshChannel *sc, const void *buf, int len)
+static int ssh2channel_write(
+    SshChannel *sc, int is_stderr, const void *buf, int len)
 {
     struct ssh2_channel *c = container_of(sc, struct ssh2_channel, sc);
     assert(!(c->closes & CLOSES_SENT_EOF));
-    bufchain_add(&c->outbuffer, buf, len);
+    bufchain_add(is_stderr ? &c->errbuffer : &c->outbuffer, buf, len);
     return ssh2_try_send(c);
 }
 
@@ -1530,7 +1613,8 @@ static int ssh2_stdin_backlog(ConnectionLayer *cl)
     if (!s->mainchan)
         return 0;
     c = container_of(s->mainchan_sc, struct ssh2_channel, sc);
-    return s->mainchan ? bufchain_size(&c->outbuffer) : 0;
+    return s->mainchan ?
+        bufchain_size(&c->outbuffer) + bufchain_size(&c->errbuffer) : 0;
 }
 
 static void ssh2_throttle_all_channels(ConnectionLayer *cl, int throttled)

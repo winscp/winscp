@@ -34,6 +34,22 @@ struct ChannelVtable {
         Channel *chan, ptrlen signame, int core_dumped, ptrlen msg);
     int (*rcvd_exit_signal_numeric)(
         Channel *chan, int signum, int core_dumped, ptrlen msg);
+    int (*run_shell)(Channel *chan);
+    int (*run_command)(Channel *chan, ptrlen command);
+    int (*run_subsystem)(Channel *chan, ptrlen subsys);
+    int (*enable_x11_forwarding)(
+        Channel *chan, int oneshot, ptrlen authproto, ptrlen authdata,
+        unsigned screen_number);
+    int (*enable_agent_forwarding)(Channel *chan);
+    int (*allocate_pty)(
+        Channel *chan, ptrlen termtype, unsigned width, unsigned height,
+        unsigned pixwidth, unsigned pixheight, struct ssh_ttymodes modes);
+    int (*set_env)(Channel *chan, ptrlen var, ptrlen value);
+    int (*send_break)(Channel *chan, unsigned length);
+    int (*send_signal)(Channel *chan, ptrlen signame);
+    int (*change_window_size)(
+        Channel *chan, unsigned width, unsigned height,
+        unsigned pixwidth, unsigned pixheight);
 
     /* A method for signalling success/failure responses to channel
      * requests initiated from the SshChannel vtable with want_reply
@@ -61,6 +77,26 @@ struct Channel {
     ((ch)->vt->rcvd_exit_signal(ch, sig, core, msg))
 #define chan_rcvd_exit_signal_numeric(ch, sig, core, msg)   \
     ((ch)->vt->rcvd_exit_signal_numeric(ch, sig, core, msg))
+#define chan_run_shell(ch) \
+    ((ch)->vt->run_shell(ch))
+#define chan_run_command(ch, cmd) \
+    ((ch)->vt->run_command(ch, cmd))
+#define chan_run_subsystem(ch, subsys) \
+    ((ch)->vt->run_subsystem(ch, subsys))
+#define chan_enable_x11_forwarding(ch, oneshot, ap, ad, scr) \
+    ((ch)->vt->enable_x11_forwarding(ch, oneshot, ap, ad, scr))
+#define chan_enable_agent_forwarding(ch) \
+    ((ch)->vt->enable_agent_forwarding(ch))
+#define chan_allocate_pty(ch, termtype, w, h, pw, ph, modes) \
+    ((ch)->vt->allocate_pty(ch, termtype, w, h, pw, ph, modes))
+#define chan_set_env(ch, var, value) \
+    ((ch)->vt->set_env(ch, var, value))
+#define chan_send_break(ch, length) \
+    ((ch)->vt->send_break(ch, length))
+#define chan_send_signal(ch, signame) \
+    ((ch)->vt->send_signal(ch, signame))
+#define chan_change_window_size(ch, w, h, pw, ph) \
+    ((ch)->vt->change_window_size(ch, w, h, pw, ph))
 #define chan_request_response(ch, success)   \
     ((ch)->vt->request_response(ch, success))
 
@@ -81,6 +117,22 @@ int chan_default_want_close(Channel *, int, int);
 int chan_no_exit_status(Channel *, int);
 int chan_no_exit_signal(Channel *, ptrlen, int, ptrlen);
 int chan_no_exit_signal_numeric(Channel *, int, int, ptrlen);
+int chan_no_run_shell(Channel *chan);
+int chan_no_run_command(Channel *chan, ptrlen command);
+int chan_no_run_subsystem(Channel *chan, ptrlen subsys);
+int chan_no_enable_x11_forwarding(
+    Channel *chan, int oneshot, ptrlen authproto, ptrlen authdata,
+    unsigned screen_number);
+int chan_no_enable_agent_forwarding(Channel *chan);
+int chan_no_allocate_pty(
+    Channel *chan, ptrlen termtype, unsigned width, unsigned height,
+    unsigned pixwidth, unsigned pixheight, struct ssh_ttymodes modes);
+int chan_no_set_env(Channel *chan, ptrlen var, ptrlen value);
+int chan_no_send_break(Channel *chan, unsigned length);
+int chan_no_send_signal(Channel *chan, ptrlen signame);
+int chan_no_change_window_size(
+    Channel *chan, unsigned width, unsigned height,
+    unsigned pixwidth, unsigned pixheight);
 
 /* default implementation that never expects to receive a response */
 void chan_no_request_response(Channel *, int);
@@ -104,7 +156,7 @@ Channel *zombiechan_new(void);
  */
 
 struct SshChannelVtable {
-    int (*write)(SshChannel *c, const void *, int);
+    int (*write)(SshChannel *c, int is_stderr, const void *, int);
     void (*write_eof)(SshChannel *c);
     void (*initiate_close)(SshChannel *c, const char *err);
     void (*unthrottle)(SshChannel *c, int bufsize);
@@ -131,6 +183,11 @@ struct SshChannelVtable {
      * wouldn't do anything usefully different with the reply in any
      * case.)
      */
+    void (*send_exit_status)(SshChannel *c, int status);
+    void (*send_exit_signal)(
+        SshChannel *c, ptrlen signame, int core_dumped, ptrlen msg);
+    void (*send_exit_signal_numeric)(
+        SshChannel *c, int signum, int core_dumped, ptrlen msg);
     void (*request_x11_forwarding)(
         SshChannel *c, int want_reply, const char *authproto,
         const char *authdata, int screen_number, int oneshot);
@@ -160,7 +217,9 @@ struct SshChannel {
     ConnectionLayer *cl;
 };
 
-#define sshfwd_write(c, buf, len) ((c)->vt->write(c, buf, len))
+#define sshfwd_write(c, buf, len) ((c)->vt->write(c, FALSE, buf, len))
+#define sshfwd_write_ext(c, stderr, buf, len) \
+    ((c)->vt->write(c, stderr, buf, len))
 #define sshfwd_write_eof(c) ((c)->vt->write_eof(c))
 #define sshfwd_initiate_close(c, err) ((c)->vt->initiate_close(c, err))
 #define sshfwd_unthrottle(c, bufsize) ((c)->vt->unthrottle(c, bufsize))
@@ -168,6 +227,12 @@ struct SshChannel {
 #define sshfwd_window_override_removed(c) ((c)->vt->window_override_removed(c))
 #define sshfwd_x11_sharing_handover(c, cs, ch, pa, pp, e, pmaj, pmin, d, l) \
     ((c)->vt->x11_sharing_handover(c, cs, ch, pa, pp, e, pmaj, pmin, d, l))
+#define sshfwd_send_exit_status(c, status) \
+    ((c)->vt->send_exit_status(c, status))
+#define sshfwd_send_exit_signal(c, sig, core, msg) \
+    ((c)->vt->send_exit_signal(c, sig, core, msg))
+#define sshfwd_send_exit_signal_numeric(c, sig, core, msg) \
+    ((c)->vt->send_exit_signal_numeric(c, sig, core, msg))
 #define sshfwd_request_x11_forwarding(c, wr, ap, ad, scr, oneshot) \
     ((c)->vt->request_x11_forwarding(c, wr, ap, ad, scr, oneshot))
 #define sshfwd_request_agent_forwarding(c, wr) \

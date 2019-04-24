@@ -1,5 +1,6 @@
 /*
- * Packet protocol layer for the SSH-2 userauth protocol (RFC 4252).
+ * Packet protocol layer for the client side of the SSH-2 userauth
+ * protocol (RFC 4252).
  */
 
 #include <assert.h>

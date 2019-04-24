@@ -454,21 +454,23 @@ static const struct ChannelVtable PortForwarding_channelvt = {
     chan_no_exit_status,
     chan_no_exit_signal,
     chan_no_exit_signal_numeric,
+    chan_no_run_shell,
+    chan_no_run_command,
+    chan_no_run_subsystem,
+    chan_no_enable_x11_forwarding,
+    chan_no_enable_agent_forwarding,
+    chan_no_allocate_pty,
+    chan_no_set_env,
+    chan_no_send_break,
+    chan_no_send_signal,
+    chan_no_change_window_size,
     chan_no_request_response,
 };
 
-/*
- called when someone connects to the local port
- */
-
-static int pfl_accepting(Plug *p, accept_fn_t constructor, accept_ctx_t ctx)
+Channel *portfwd_raw_new(ConnectionLayer *cl, Plug **plug)
 {
     struct PortForwarding *pf;
-    struct PortListener *pl;
-    Socket *s;
-    const char *err;
 
-    pl = container_of(p, struct PortListener, plug);
     pf = new_portfwd_state();
     pf->plug.vt = &PortForwarding_plugvt;
     pf->chan.initial_fixed_window_size = 0;
@@ -476,29 +478,72 @@ static int pfl_accepting(Plug *p, accept_fn_t constructor, accept_ctx_t ctx)
     pf->input_wanted = TRUE;
 
     pf->c = NULL;
-    pf->cl = pl->cl;
 
-    pf->s = s = constructor(ctx, &pf->plug);
-    if ((err = sk_socket_error(s)) != NULL) {
-	free_portfwd_state(pf);
-	return err != NULL;
-    }
-
+    pf->cl = cl;
     pf->input_wanted = TRUE;
     pf->ready = 0;
 
+    pf->socks_state = SOCKS_NONE;
+    pf->hostname = NULL;
+    pf->port = 0;
+
+    *plug = &pf->plug;
+    return &pf->chan;
+}
+
+void portfwd_raw_free(Channel *pfchan)
+{
+    struct PortForwarding *pf;
+    assert(pfchan->vt == &PortForwarding_channelvt);
+    pf = container_of(pfchan, struct PortForwarding, chan);
+    free_portfwd_state(pf);
+}
+
+void portfwd_raw_setup(Channel *pfchan, Socket *s, SshChannel *sc)
+{
+    struct PortForwarding *pf;
+    assert(pfchan->vt == &PortForwarding_channelvt);
+    pf = container_of(pfchan, struct PortForwarding, chan);
+
+    pf->s = s;
+    pf->c = sc;
+}
+
+/*
+ called when someone connects to the local port
+ */
+
+static int pfl_accepting(Plug *p, accept_fn_t constructor, accept_ctx_t ctx)
+{
+    struct PortListener *pl = container_of(p, struct PortListener, plug);
+    struct PortForwarding *pf;
+    Channel *chan;
+    Plug *plug;
+    Socket *s;
+    const char *err;
+
+    chan = portfwd_raw_new(pl->cl, &plug);
+    s = constructor(ctx, plug);
+    if ((err = sk_socket_error(s)) != NULL) {
+	portfwd_raw_free(chan);
+	return TRUE;
+    }
+
+    pf = container_of(chan, struct PortForwarding, chan);
+
     if (pl->is_dynamic) {
+        pf->s = s;
 	pf->socks_state = SOCKS_INITIAL;
         pf->socksbuf = strbuf_new();
         pf->socksbuf_consumed = 0;
 	pf->port = 0;		       /* "hostname" buffer is so far empty */
 	sk_set_frozen(s, 0);	       /* we want to receive SOCKS _now_! */
     } else {
-	pf->socks_state = SOCKS_NONE;
 	pf->hostname = dupstr(pl->hostname);
 	pf->port = pl->port;	
-        pf->c = wrap_lportfwd_open(pl->cl, pf->hostname, pf->port,
-                                   s, &pf->chan);
+        portfwd_raw_setup(
+            chan, s,
+            wrap_lportfwd_open(pl->cl, pf->hostname, pf->port, s, &pf->chan));
     }
 
     return 0;
@@ -635,7 +680,7 @@ static void pfd_open_failure(Channel *chan, const char *errtext)
     PortForwarding *pf = container_of(chan, PortForwarding, chan);
 
     logeventf(pf->cl->logctx,
-              "Forwarded connection refused by server%s%s",
+              "Forwarded connection refused by remote%s%s",
               errtext ? ": " : "", errtext ? errtext : "");
 }
 
@@ -1005,6 +1050,72 @@ void portfwdmgr_config(PortFwdManager *mgr, Conf *conf)
             sfree(dportdesc);
         }
     }
+}
+
+int portfwdmgr_listen(PortFwdManager *mgr, const char *host, int port,
+                      const char *keyhost, int keyport, Conf *conf)
+{
+    PortFwdRecord *pfr;
+
+    pfr = snew(PortFwdRecord);
+    pfr->type = 'L';
+    pfr->saddr = host ? dupstr(host) : NULL;
+    pfr->daddr = keyhost ? dupstr(keyhost) : NULL;
+    pfr->sserv = pfr->dserv = NULL;
+    pfr->sport = port;
+    pfr->dport = keyport;
+    pfr->local = NULL;
+    pfr->remote = NULL;
+    pfr->addressfamily = ADDRTYPE_UNSPEC;
+
+    PortFwdRecord *existing = add234(mgr->forwardings, pfr);
+    if (existing != pfr) {
+        /*
+         * We had this record already. Return failure.
+         */
+        pfr_free(pfr);
+        return FALSE;
+    }
+
+    char *err = pfl_listen(keyhost, keyport, host, port,
+                           mgr->cl, conf, &pfr->local, pfr->addressfamily);
+    logeventf(mgr->cl->logctx,
+              "%s on port %s:%d to forward to client%s%s",
+              err ? "Failed to listen" : "Listening", host, port,
+              err ? ": " : "", err ? err : "");
+    if (err) {
+        sfree(err);
+        del234(mgr->forwardings, pfr);
+        pfr_free(pfr);
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+int portfwdmgr_unlisten(PortFwdManager *mgr, const char *host, int port)
+{
+    PortFwdRecord pfr_key;
+
+    pfr_key.type = 'L';
+    /* Safe to cast the const away here, because it will only be used
+     * by pfr_cmp, which won't write to the string */
+    pfr_key.saddr = pfr_key.daddr = (char *)host;
+    pfr_key.sserv = pfr_key.dserv = NULL;
+    pfr_key.sport = pfr_key.dport = port;
+    pfr_key.local = NULL;
+    pfr_key.remote = NULL;
+    pfr_key.addressfamily = ADDRTYPE_UNSPEC;
+
+    PortFwdRecord *pfr = del234(mgr->forwardings, &pfr_key);
+
+    if (!pfr)
+        return FALSE;
+
+    logeventf(mgr->cl->logctx, "Closing listening port %s:%d", host, port);
+
+    pfr_free(pfr);
+    return TRUE;
 }
 
 /*

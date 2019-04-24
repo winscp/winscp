@@ -226,6 +226,12 @@ struct ConnectionLayerVtable {
     /* Initiate opening of a 'session'-type channel */
     SshChannel *(*session_open)(ConnectionLayer *cl, Channel *chan);
 
+    /* Open outgoing channels for X and agent forwarding. (Used in the
+     * SSH server.) */
+    SshChannel *(*serverside_x11_open)(ConnectionLayer *cl, Channel *chan,
+                                       const SocketPeerInfo *pi);
+    SshChannel *(*serverside_agent_open)(ConnectionLayer *cl, Channel *chan);
+
     /* Add an X11 display for ordinary X forwarding */
     struct X11FakeAuth *(*add_x11_display)(
         ConnectionLayer *cl, int authtype, struct X11Display *x11disp);
@@ -304,6 +310,10 @@ struct ConnectionLayer {
 #define ssh_rportfwd_remove(cl, rpf) ((cl)->vt->rportfwd_remove(cl, rpf))
 #define ssh_lportfwd_open(cl, h, p, desc, pi, chan) \
     ((cl)->vt->lportfwd_open(cl, h, p, desc, pi, chan))
+#define ssh_serverside_x11_open(cl, chan, pi) \
+    ((cl)->vt->serverside_x11_open(cl, chan, pi))
+#define ssh_serverside_agent_open(cl, chan) \
+    ((cl)->vt->serverside_agent_open(cl, chan))
 #define ssh_session_open(cl, chan) \
     ((cl)->vt->session_open(cl, chan))
 #define ssh_add_x11_display(cl, auth, disp) \
@@ -337,6 +347,8 @@ struct ConnectionLayer {
 #define ssh_enable_agent_fwd(cl) ((cl)->vt->enable_agent_fwd(cl))
 #define ssh_set_wants_user_input(cl, wanted) \
     ((cl)->vt->set_wants_user_input(cl, wanted))
+#define ssh_setup_server_x_forwarding(cl, conf, ap, ad, scr) \
+    ((cl)->vt->setup_server_x_forwarding(cl, conf, ap, ad, scr))
 
 /* Exports from portfwd.c */
 PortFwdManager *portfwdmgr_new(ConnectionLayer *cl);
@@ -347,6 +359,15 @@ void portfwdmgr_close_all(PortFwdManager *mgr);
 char *portfwdmgr_connect(PortFwdManager *mgr, Channel **chan_ret,
                          char *hostname, int port, SshChannel *c,
                          int addressfamily);
+int portfwdmgr_listen(PortFwdManager *mgr, const char *host, int port,
+                      const char *keyhost, int keyport, Conf *conf);
+int portfwdmgr_unlisten(PortFwdManager *mgr, const char *host, int port);
+Channel *portfwd_raw_new(ConnectionLayer *cl, Plug **plug);
+void portfwd_raw_free(Channel *pfchan);
+void portfwd_raw_setup(Channel *pfchan, Socket *s, SshChannel *sc);
+
+Socket *platform_make_agent_socket(Plug *plug, const char *dirprefix,
+                                   char **error, char **name);
 
 LogContext *ssh_get_logctx(Ssh *ssh);
 
@@ -479,6 +500,7 @@ void BinarySource_get_rsa_ssh1_priv(
     BinarySource *src, struct RSAKey *rsa);
 int rsa_ssh1_encrypt(unsigned char *data, int length, struct RSAKey *key);
 Bignum rsa_ssh1_decrypt(Bignum input, struct RSAKey *key);
+int rsa_ssh1_decrypt_pkcs1(Bignum input, struct RSAKey *key, strbuf *outbuf);
 void rsasanitise(struct RSAKey *key);
 int rsastr_len(struct RSAKey *key);
 void rsastr_fmt(char *str, struct RSAKey *key);
@@ -507,12 +529,17 @@ int detect_attack(struct crcda_ctx *ctx, unsigned char *buf, uint32 len,
  * SSH2 RSA key exchange functions
  */
 struct ssh_hashalg;
+struct ssh_rsa_kex_extra {
+    int minklen;
+};
 struct RSAKey *ssh_rsakex_newkey(const void *data, int len);
 void ssh_rsakex_freekey(struct RSAKey *key);
 int ssh_rsakex_klen(struct RSAKey *key);
 void ssh_rsakex_encrypt(const struct ssh_hashalg *h,
                         unsigned char *in, int inlen,
                         unsigned char *out, int outlen, struct RSAKey *key);
+Bignum ssh_rsakex_decrypt(const struct ssh_hashalg *h, ptrlen ciphertext,
+                          struct RSAKey *rsa);
 
 /*
  * SSH2 ECDH key exchange functions
@@ -1021,6 +1048,9 @@ char *platform_get_x_display(void);
  */
 void x11_get_auth_from_authfile(struct X11Display *display,
 				const char *authfilename);
+void x11_format_auth_for_authfile(
+    BinarySink *bs, SockAddr *addr, int display_no,
+    ptrlen authproto, ptrlen authdata);
 int x11_identify_auth_proto(ptrlen protoname);
 void *x11_dehexify(ptrlen hex, int *outlen);
 
@@ -1456,6 +1486,8 @@ struct ssh_ttymodes {
 };
 
 struct ssh_ttymodes get_ttymodes_from_conf(Seat *seat, Conf *conf);
+struct ssh_ttymodes read_ttymodes_from_packet(
+    BinarySource *bs, int ssh_version);
 void write_ttymodes_to_packet(BinarySink *bs, int ssh_version,
                               struct ssh_ttymodes modes);
 

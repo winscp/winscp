@@ -38,6 +38,8 @@ struct ssh2_connection_state {
     PortFwdManager *portfwdmgr;
     int portfwdmgr_configured;
 
+    const SftpServerVtable *sftpserver_vt;
+
     /*
      * These store the list of global requests that we're waiting for
      * replies to. (REQUEST_FAILURE doesn't come with any indication
@@ -95,7 +97,7 @@ struct ssh2_channel {
      */
     int throttled_by_backlog;
 
-    bufchain outbuffer;
+    bufchain outbuffer, errbuffer;
     unsigned remwindow, remmaxpkt;
     /* locwindow is signed so we can cope with excess data. */
     int locwindow, locmaxwin;
@@ -164,9 +166,16 @@ struct ssh_rportfwd *ssh2_rportfwd_alloc(
     ssh_sharing_connstate *share_ctx);
 void ssh2_rportfwd_remove(
     ConnectionLayer *cl, struct ssh_rportfwd *rpf);
-
 SshChannel *ssh2_session_open(ConnectionLayer *cl, Channel *chan);
+SshChannel *ssh2_serverside_x11_open(
+    ConnectionLayer *cl, Channel *chan, const SocketPeerInfo *pi);
+SshChannel *ssh2_serverside_agent_open(ConnectionLayer *cl, Channel *chan);
 
+void ssh2channel_send_exit_status(SshChannel *c, int status);
+void ssh2channel_send_exit_signal(
+    SshChannel *c, ptrlen signame, int core_dumped, ptrlen msg);
+void ssh2channel_send_exit_signal_numeric(
+    SshChannel *c, int signum, int core_dumped, ptrlen msg);
 void ssh2channel_request_x11_forwarding(
     SshChannel *c, int want_reply, const char *authproto,
     const char *authdata, int screen_number, int oneshot);

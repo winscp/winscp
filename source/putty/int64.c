@@ -116,7 +116,7 @@ uint64 uint64_shift_left(uint64 x, int shift)
     return x;
 }
 
-uint64 uint64_from_decimal(char *str)
+uint64 uint64_from_decimal(const char *str)
 {
     uint64 ret;
     ret.hi = ret.lo = 0;
