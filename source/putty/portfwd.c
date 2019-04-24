@@ -1068,6 +1068,7 @@ int portfwdmgr_listen(PortFwdManager *mgr, const char *host, int port,
     pfr->remote = NULL;
     pfr->addressfamily = ADDRTYPE_UNSPEC;
 
+    { // WINSCP
     PortFwdRecord *existing = add234(mgr->forwardings, pfr);
     if (existing != pfr) {
         /*
@@ -1076,7 +1077,9 @@ int portfwdmgr_listen(PortFwdManager *mgr, const char *host, int port,
         pfr_free(pfr);
         return FALSE;
     }
+    } // WINSCP
 
+    { // WINSCP
     char *err = pfl_listen(keyhost, keyport, host, port,
                            mgr->cl, conf, &pfr->local, pfr->addressfamily);
     logeventf(mgr->cl->logctx,
@@ -1089,6 +1092,7 @@ int portfwdmgr_listen(PortFwdManager *mgr, const char *host, int port,
         pfr_free(pfr);
         return FALSE;
     }
+    } // WINSCP
 
     return TRUE;
 }
@@ -1107,6 +1111,7 @@ int portfwdmgr_unlisten(PortFwdManager *mgr, const char *host, int port)
     pfr_key.remote = NULL;
     pfr_key.addressfamily = ADDRTYPE_UNSPEC;
 
+    { // WINSCP
     PortFwdRecord *pfr = del234(mgr->forwardings, &pfr_key);
 
     if (!pfr)
@@ -1115,6 +1120,7 @@ int portfwdmgr_unlisten(PortFwdManager *mgr, const char *host, int port)
     logeventf(mgr->cl->logctx, "Closing listening port %s:%d", host, port);
 
     pfr_free(pfr);
+    } // WINSCP
     return TRUE;
 }
 
