@@ -857,7 +857,7 @@ int verify_ssh_manual_host_key(
 }
 
 /* ----------------------------------------------------------------------
- * Common get_specials function for the two SSH-1 layers.
+ * Common functions shared between SSH-1 layers.
  */
 
 int ssh1_common_get_specials(
@@ -874,6 +874,56 @@ int ssh1_common_get_specials(
     }
 
     return FALSE;
+}
+
+int ssh1_common_filter_queue(PacketProtocolLayer *ppl)
+{
+    PktIn *pktin;
+    ptrlen msg;
+
+    while ((pktin = pq_peek(ppl->in_pq)) != NULL) {
+        switch (pktin->type) {
+          case SSH1_MSG_DISCONNECT:
+            msg = get_string(pktin);
+            ssh_remote_error(ppl->ssh,
+                             "Remote side sent disconnect message:\n\"%.*s\"",
+                             PTRLEN_PRINTF(msg));
+            pq_pop(ppl->in_pq);
+            return TRUE;               /* indicate that we've been freed */
+
+          case SSH1_MSG_DEBUG:
+            msg = get_string(pktin);
+            ppl_logevent(("Remote debug message: %.*s", PTRLEN_PRINTF(msg)));
+            pq_pop(ppl->in_pq);
+            break;
+
+          case SSH1_MSG_IGNORE:
+            /* Do nothing, because we're ignoring it! Duhh. */
+            pq_pop(ppl->in_pq);
+            break;
+
+          default:
+            return FALSE;
+        }
+    }
+
+    return FALSE;
+}
+
+void ssh1_compute_session_id(
+    unsigned char *session_id, const unsigned char *cookie,
+    struct RSAKey *hostkey, struct RSAKey *servkey)
+{
+    struct MD5Context md5c;
+    int i;
+
+    MD5Init(&md5c);
+    for (i = (bignum_bitcount(hostkey->modulus) + 7) / 8; i-- ;)
+        put_byte(&md5c, bignum_byte(hostkey->modulus, i));
+    for (i = (bignum_bitcount(servkey->modulus) + 7) / 8; i-- ;)
+        put_byte(&md5c, bignum_byte(servkey->modulus, i));
+    put_data(&md5c, cookie, 8);
+    MD5Final(session_id, &md5c);
 }
 
 /* ----------------------------------------------------------------------

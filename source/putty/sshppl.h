@@ -140,4 +140,10 @@ void ssh1_connection_set_local_protoflags(PacketProtocolLayer *ppl, int flags);
 /* Shared get_specials method between the two ssh1 layers */
 int ssh1_common_get_specials(PacketProtocolLayer *, add_special_fn_t, void *);
 
+/* Other shared functions between ssh1 layers  */
+int ssh1_common_filter_queue(PacketProtocolLayer *ppl);
+void ssh1_compute_session_id(
+    unsigned char *session_id, const unsigned char *cookie,
+    struct RSAKey *hostkey, struct RSAKey *servkey);
+
 #endif /* PUTTY_SSHPPL_H */

@@ -120,40 +120,6 @@ static void ssh1_login_free(PacketProtocolLayer *ppl)
     sfree(s);
 }
 
-int ssh1_common_filter_queue(PacketProtocolLayer *ppl)
-{
-    PktIn *pktin;
-    ptrlen msg;
-
-    while ((pktin = pq_peek(ppl->in_pq)) != NULL) {
-        switch (pktin->type) {
-          case SSH1_MSG_DISCONNECT:
-            msg = get_string(pktin);
-            ssh_remote_error(ppl->ssh,
-                             "Server sent disconnect message:\n\"%.*s\"",
-                             PTRLEN_PRINTF(msg));
-            pq_pop(ppl->in_pq);
-            return TRUE;               /* indicate that we've been freed */
-
-          case SSH1_MSG_DEBUG:
-            msg = get_string(pktin);
-            ppl_logevent(("Remote debug message: %.*s", PTRLEN_PRINTF(msg)));
-            pq_pop(ppl->in_pq);
-            break;
-
-          case SSH1_MSG_IGNORE:
-            /* Do nothing, because we're ignoring it! Duhh. */
-            pq_pop(ppl->in_pq);
-            break;
-
-          default:
-            return FALSE;
-        }
-    }
-
-    return FALSE;
-}
-
 static int ssh1_login_filter_queue(struct ssh1_login_state *s)
 {
     return ssh1_common_filter_queue(&s->ppl);
@@ -229,17 +195,8 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
         s->remote_protoflags & SSH1_PROTOFLAGS_SUPPORTED;
     s->local_protoflags |= SSH1_PROTOFLAG_SCREEN_NUMBER;
 
-    {
-        struct MD5Context md5c;
-
-        MD5Init(&md5c);
-        for (i = (bignum_bitcount(s->hostkey.modulus) + 7) / 8; i-- ;)
-            put_byte(&md5c, bignum_byte(s->hostkey.modulus, i));
-        for (i = (bignum_bitcount(s->servkey.modulus) + 7) / 8; i-- ;)
-            put_byte(&md5c, bignum_byte(s->servkey.modulus, i));
-        put_data(&md5c, s->cookie, 8);
-        MD5Final(s->session_id, &md5c);
-    }
+    ssh1_compute_session_id(s->session_id, s->cookie,
+                            &s->hostkey, &s->servkey);
 
     for (i = 0; i < 32; i++)
         s->session_key[i] = random_byte();
