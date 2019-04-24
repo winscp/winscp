@@ -97,7 +97,7 @@ char ctrlparse(char *s, char **next)
  * various standard string.h functions.
  */
 static const char *host_strchr_internal(const char *s, const char *set,
-                                        int first)
+                                        bool first)
 {
     int brackets = 0;
     const char *ret = NULL;
@@ -123,7 +123,7 @@ static const char *host_strchr_internal(const char *s, const char *set,
 }
 size_t host_strcspn(const char *s, const char *set)
 {
-    const char *answer = host_strchr_internal(s, set, TRUE);
+    const char *answer = host_strchr_internal(s, set, true);
     if (answer)
         return answer - s;
     else
@@ -134,14 +134,14 @@ char *host_strchr(const char *s, int c)
     char set[2];
     set[0] = c;
     set[1] = '\0';
-    return (char *) host_strchr_internal(s, set, TRUE);
+    return (char *) host_strchr_internal(s, set, true);
 }
 char *host_strrchr(const char *s, int c)
 {
     char set[2];
     set[0] = c;
     set[1] = '\0';
-    return (char *) host_strchr_internal(s, set, FALSE);
+    return (char *) host_strchr_internal(s, set, false);
 }
 
 #ifdef TEST_HOST_STRFOO
@@ -235,12 +235,12 @@ prompts_t *new_prompts(void)
     p->prompts = NULL;
     p->n_prompts = 0;
     p->data = NULL;
-    p->to_server = TRUE; /* to be on the safe side */
+    p->to_server = true; /* to be on the safe side */
     p->name = p->instruction = NULL;
-    p->name_reqd = p->instr_reqd = FALSE;
+    p->name_reqd = p->instr_reqd = false;
     return p;
 }
-void add_prompt(prompts_t *p, char *promptstr, int echo)
+void add_prompt(prompts_t *p, char *promptstr, bool echo)
 {
     prompt_t *pr = snew(prompt_t);
     pr->prompt = promptstr;
@@ -347,29 +347,6 @@ void burnstr(char *string)             /* sfree(str), only clear it first */
         smemclr(string, strlen(string));
         sfree(string);
     }
-}
-
-int toint(unsigned u)
-{
-    /*
-     * Convert an unsigned to an int, without running into the
-     * undefined behaviour which happens by the strict C standard if
-     * the value overflows. You'd hope that sensible compilers would
-     * do the sensible thing in response to a cast, but actually I
-     * don't trust modern compilers not to do silly things like
-     * assuming that _obviously_ you wouldn't have caused an overflow
-     * and so they can elide an 'if (i < 0)' test immediately after
-     * the cast.
-     *
-     * Sensible compilers ought of course to optimise this entire
-     * function into 'just return the input value'!
-     */
-    if (u <= (unsigned)INT_MAX)
-        return (int)u;
-    else if (u >= (unsigned)INT_MIN)   /* wrap in cast _to_ unsigned is OK */
-        return INT_MIN + (int)(u - (unsigned)INT_MIN);
-    else
-        return INT_MIN; /* fallback; should never occur on binary machines */
 }
 
 int string_length_for_printf(size_t s)
@@ -838,13 +815,13 @@ void bufchain_fetch_consume(bufchain *ch, void *data, int len)
     bufchain_consume(ch, len);
 }
 
-int bufchain_try_fetch_consume(bufchain *ch, void *data, int len)
+bool bufchain_try_fetch_consume(bufchain *ch, void *data, int len)
 {
     if (ch->buffersize >= len) {
         bufchain_fetch_consume(ch, data, len);
-        return TRUE;
+        return true;
     } else {
-        return FALSE;
+        return false;
     }
 }
 
@@ -1026,7 +1003,7 @@ void debug_printf(const char *fmt, ...)
 }
 
 
-void debug_memdump(const void *buf, int len, int L)
+void debug_memdump(const void *buf, int len, bool L)
 {
     int i;
     const unsigned char *p = buf;
@@ -1067,7 +1044,7 @@ void debug_memdump(const void *buf, int len, int L)
  * Determine whether or not a Conf represents a session which can
  * sensibly be launched right now.
  */
-int conf_launchable(Conf *conf)
+bool conf_launchable(Conf *conf)
 {
     if (conf_get_int(conf, CONF_protocol) == PROT_SERIAL)
 	return conf_get_str(conf, CONF_serline)[0] != 0;
@@ -1125,13 +1102,13 @@ void smemclr(void *b, size_t n) {
 
 /*
  * Validate a manual host key specification (either entered in the
- * GUI, or via -hostkey). If valid, we return TRUE, and update 'key'
+ * GUI, or via -hostkey). If valid, we return true, and update 'key'
  * to contain a canonicalised version of the key string in 'key'
  * (which is guaranteed to take up at most as much space as the
  * original version), suitable for putting into the Conf. If not
- * valid, we return FALSE.
+ * valid, we return false.
  */
-int validate_manual_hostkey(char *key)
+bool validate_manual_hostkey(char *key)
 {
     char *p, *q, *r, *s;
 
@@ -1166,7 +1143,7 @@ int validate_manual_hostkey(char *key)
             for (i = 0; i < 16*3 - 1; i++)
                 key[i] = tolower(q[i]);
             key[16*3 - 1] = '\0';
-            return TRUE;
+            return true;
         }
       not_fingerprint:;
 
@@ -1212,15 +1189,15 @@ int validate_manual_hostkey(char *key)
                 goto not_ssh2_blob;    /* sorry */
 
             strcpy(key, q);
-            return TRUE;
+            return true;
         }
       not_ssh2_blob:;
     }
 
-    return FALSE;
+    return false;
 }
 
-int smemeq(const void *av, const void *bv, size_t len)
+bool smemeq(const void *av, const void *bv, size_t len)
 {
     const unsigned char *a = (const unsigned char *)av;
     const unsigned char *b = (const unsigned char *)bv;
@@ -1247,36 +1224,18 @@ int nullstrcmp(const char *a, const char *b)
     return strcmp(a, b);
 }
 
-ptrlen make_ptrlen(const void *ptr, size_t len)
-{
-    ptrlen pl;
-    pl.ptr = ptr;
-    pl.len = len;
-    return pl;
-}
-
-ptrlen ptrlen_from_asciz(const char *str)
-{
-    return make_ptrlen(str, strlen(str));
-}
-
-ptrlen ptrlen_from_strbuf(strbuf *sb)
-{
-    return make_ptrlen(sb->u, sb->len);
-}
-
-int ptrlen_eq_string(ptrlen pl, const char *str)
+bool ptrlen_eq_string(ptrlen pl, const char *str)
 {
     size_t len = strlen(str);
     return (pl.len == len && !memcmp(pl.ptr, str, len));
 }
 
-int ptrlen_eq_ptrlen(ptrlen pl1, ptrlen pl2)
+bool ptrlen_eq_ptrlen(ptrlen pl1, ptrlen pl2)
 {
     return (pl1.len == pl2.len && !memcmp(pl1.ptr, pl2.ptr, pl1.len));
 }
 
-int ptrlen_startswith(ptrlen whole, ptrlen prefix, ptrlen *tail)
+bool ptrlen_startswith(ptrlen whole, ptrlen prefix, ptrlen *tail)
 {
     if (whole.len >= prefix.len &&
         !memcmp(whole.ptr, prefix.ptr, prefix.len)) {
@@ -1284,9 +1243,9 @@ int ptrlen_startswith(ptrlen whole, ptrlen prefix, ptrlen *tail)
             tail->ptr = (const char *)whole.ptr + prefix.len;
             tail->len = whole.len - prefix.len;
         }
-        return TRUE;
+        return true;
     }
-    return FALSE;
+    return false;
 }
 
 char *mkstr(ptrlen pl)
@@ -1297,12 +1256,12 @@ char *mkstr(ptrlen pl)
     return p;
 }
 
-int strstartswith(const char *s, const char *t)
+bool strstartswith(const char *s, const char *t)
 {
     return !memcmp(s, t, strlen(t));
 }
 
-int strendswith(const char *s, const char *t)
+bool strendswith(const char *s, const char *t)
 {
     size_t slen = strlen(s), tlen = strlen(t);
     return slen >= tlen && !strcmp(s + (slen - tlen), t);
@@ -1311,7 +1270,6 @@ int strendswith(const char *s, const char *t)
 char *buildinfo(const char *newline)
 {
     strbuf *buf = strbuf_new();
-    extern const char commitid[];      /* in commitid.c */
 
     strbuf_catf(buf, "Build platform: %d-bit %s",
                 (int)(CHAR_BIT * sizeof(void *)),
@@ -1412,8 +1370,8 @@ const char * get_putty_version()
 
 #endif
 int nullseat_output(
-    Seat *seat, int is_stderr, const void *data, int len) { return 0; }
-int nullseat_eof(Seat *seat) { return TRUE; }
+    Seat *seat, bool is_stderr, const void *data, int len) { return 0; }
+bool nullseat_eof(Seat *seat) { return true; }
 int nullseat_get_userpass_input(
     Seat *seat, prompts_t *p, bufchain *input) { return 0; }
 void nullseat_notify_remote_exit(Seat *seat) {}
@@ -1431,13 +1389,13 @@ int nullseat_confirm_weak_crypto_primitive(
 int nullseat_confirm_weak_cached_hostkey(
     Seat *seat, const char *algname, const char *betteralgs,
     void (*callback)(void *ctx, int result), void *ctx) { return 0; }
-int nullseat_is_never_utf8(Seat *seat) { return FALSE; }
-int nullseat_is_always_utf8(Seat *seat) { return TRUE; }
-void nullseat_echoedit_update(Seat *seat, int echoing, int editing) {}
+bool nullseat_is_never_utf8(Seat *seat) { return false; }
+bool nullseat_is_always_utf8(Seat *seat) { return true; }
+void nullseat_echoedit_update(Seat *seat, bool echoing, bool editing) {}
 const char *nullseat_get_x_display(Seat *seat) { return NULL; }
-int nullseat_get_windowid(Seat *seat, long *id_out) { return FALSE; }
-int nullseat_get_window_pixel_size(
-    Seat *seat, int *width, int *height) { return FALSE; }
+bool nullseat_get_windowid(Seat *seat, long *id_out) { return false; }
+bool nullseat_get_window_pixel_size(
+    Seat *seat, int *width, int *height) { return false; }
 
 void sk_free_peer_info(SocketPeerInfo *pi)
 {

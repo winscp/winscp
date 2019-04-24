@@ -41,7 +41,7 @@ typedef struct HandleSocket {
     /* Data received from stderr_H, if we have one. */
     bufchain stderrdata;
 
-    int defer_close, deferred_close;   /* in case of re-entrance */
+    bool defer_close, deferred_close;   /* in case of re-entrance */
 
     char *error;
 
@@ -125,7 +125,7 @@ static void sk_handle_close(Socket *s)
     HandleSocket *hs = container_of(s, HandleSocket, sock);
 
     if (hs->defer_close) {
-        hs->deferred_close = TRUE;
+        hs->deferred_close = true;
         return;
     }
 
@@ -207,10 +207,10 @@ static void handle_socket_unfreeze(void *hsv)
      * Hand it off to the plug. Be careful of re-entrance - that might
      * have the effect of trying to close this socket.
      */
-    hs->defer_close = TRUE;
+    hs->defer_close = true;
     plug_receive(hs->plug, 0, data, len);
     bufchain_consume(&hs->inputdata, len);
-    hs->defer_close = FALSE;
+    hs->defer_close = false;
     if (hs->deferred_close) {
         sk_handle_close(&hs->sock);
         return;
@@ -231,7 +231,7 @@ static void handle_socket_unfreeze(void *hsv)
     }
 }
 
-static void sk_handle_set_frozen(Socket *s, int is_frozen)
+static void sk_handle_set_frozen(Socket *s, bool is_frozen)
 {
     HandleSocket *hs = container_of(s, HandleSocket, sock);
 
@@ -346,7 +346,7 @@ static const SocketVtable HandleSocket_sockvt = {
 };
 
 Socket *make_handle_socket(HANDLE send_H, HANDLE recv_H, HANDLE stderr_H,
-                           Plug *plug, int overlapped)
+                           Plug *plug, bool overlapped)
 {
     HandleSocket *hs;
     int flags = (overlapped ? HANDLE_FLAG_OVERLAPPED : 0);
@@ -368,7 +368,7 @@ Socket *make_handle_socket(HANDLE send_H, HANDLE recv_H, HANDLE stderr_H,
         hs->stderr_h = handle_input_new(hs->stderr_H, handle_stderr,
                                         hs, flags);
 
-    hs->defer_close = hs->deferred_close = FALSE;
+    hs->defer_close = hs->deferred_close = false;
 
     #ifdef MPEXT
     // WinSCP core uses do_select as signalization of connection up/down

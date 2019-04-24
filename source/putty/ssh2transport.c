@@ -44,11 +44,11 @@ static void ssh_comp_none_block(ssh_compressor *handle,
                                 int minlen)
 {
 }
-static int ssh_decomp_none_block(ssh_decompressor *handle,
-                                 unsigned char *block, int len,
-                                 unsigned char **outblock, int *outlen)
+static bool ssh_decomp_none_block(ssh_decompressor *handle,
+                                  unsigned char *block, int len,
+                                  unsigned char **outblock, int *outlen)
 {
-    return 0;
+    return false;
 }
 const static struct ssh_compression_alg ssh_comp_none = {
     "none", NULL,
@@ -62,11 +62,11 @@ const static struct ssh_compression_alg *const compressions[] = {
 
 static void ssh2_transport_free(PacketProtocolLayer *);
 static void ssh2_transport_process_queue(PacketProtocolLayer *);
-static int ssh2_transport_get_specials(
+static bool ssh2_transport_get_specials(
     PacketProtocolLayer *ppl, add_special_fn_t add_special, void *ctx);
 static void ssh2_transport_special_cmd(PacketProtocolLayer *ppl,
                                        SessionSpecialCode code, int arg);
-static int ssh2_transport_want_user_input(PacketProtocolLayer *ppl);
+static bool ssh2_transport_want_user_input(PacketProtocolLayer *ppl);
 static void ssh2_transport_got_user_input(PacketProtocolLayer *ppl);
 static void ssh2_transport_reconfigure(PacketProtocolLayer *ppl, Conf *conf);
 
@@ -89,11 +89,11 @@ static const struct PacketProtocolLayerVtable ssh2_transport_vtable = {
 
 #ifndef NO_GSSAPI
 static void ssh2_transport_gss_update(struct ssh2_transport_state *s,
-                                      int definitely_rekeying);
+                                      bool definitely_rekeying);
 #endif
 
-static int ssh2_transport_timer_update(struct ssh2_transport_state *s,
-                                       unsigned long rekey_time);
+static bool ssh2_transport_timer_update(struct ssh2_transport_state *s,
+                                        unsigned long rekey_time);
 
 static const char *const kexlist_descr[NKEXLIST] = {
     "key exchange algorithm",
@@ -111,7 +111,7 @@ PacketProtocolLayer *ssh2_transport_new(
     const char *client_greeting, const char *server_greeting,
     struct ssh_connection_shared_gss_state *shgss,
     struct DataTransferStats *stats, PacketProtocolLayer *higher_layer,
-    int is_server)
+    bool is_server)
 {
     struct ssh2_transport_state *s = snew(struct ssh2_transport_state);
     memset(s, 0, sizeof(*s));
@@ -144,7 +144,7 @@ PacketProtocolLayer *ssh2_transport_new(
     s->shgss->ctx = NULL;
 #endif
     s->thc = ssh_transient_hostkey_cache_new();
-    s->gss_kex_used = FALSE;
+    s->gss_kex_used = false;
 
     s->outgoing_kexinit = strbuf_new();
     s->incoming_kexinit = strbuf_new();
@@ -218,6 +218,8 @@ static void ssh2_transport_free(PacketProtocolLayer *ppl)
     strbuf_free(s->outgoing_kexinit);
     strbuf_free(s->incoming_kexinit);
     ssh_transient_hostkey_cache_free(s->thc);
+
+    expire_timer_context(s);
     sfree(s);
 }
 
@@ -303,7 +305,7 @@ static struct kexinit_algorithm *ssh2_kexinit_addalg(struct kexinit_algorithm
     return NULL;
 }
 
-int ssh2_common_filter_queue(PacketProtocolLayer *ppl)
+bool ssh2_common_filter_queue(PacketProtocolLayer *ppl)
 {
     static const char *const ssh2_disconnect_reasons[] = {
         NULL,
@@ -341,7 +343,7 @@ int ssh2_common_filter_queue(PacketProtocolLayer *ppl)
                  ssh2_disconnect_reasons[reason] : "unknown"),
                 PTRLEN_PRINTF(msg));
             pq_pop(ppl->in_pq);
-            return TRUE;               /* indicate that we've been freed */
+            return true;               /* indicate that we've been freed */
 
           case SSH2_MSG_DEBUG:
             /* XXX maybe we should actually take notice of the return value */
@@ -357,22 +359,22 @@ int ssh2_common_filter_queue(PacketProtocolLayer *ppl)
             break;
 
           default:
-            return FALSE;
+            return false;
         }
     }
 
-    return FALSE;
+    return false;
 }
 
-static int ssh2_transport_filter_queue(struct ssh2_transport_state *s)
+static bool ssh2_transport_filter_queue(struct ssh2_transport_state *s)
 {
     PktIn *pktin;
 
     while (1) {
         if (ssh2_common_filter_queue(&s->ppl))
-            return TRUE;
+            return true;
         if ((pktin = pq_peek(s->ppl.in_pq)) == NULL)
-            return FALSE;
+            return false;
 
         /* Pass on packets to the next layer if they're outside
          * the range reserved for the transport protocol. */
@@ -386,7 +388,7 @@ static int ssh2_transport_filter_queue(struct ssh2_transport_state *s)
                                 ssh2_pkt_type(s->ppl.bpp->pls->kctx,
                                               s->ppl.bpp->pls->actx,
                                               pktin->type));
-                return TRUE;
+                return true;
             }
 
             pq_pop(s->ppl.in_pq);
@@ -394,7 +396,7 @@ static int ssh2_transport_filter_queue(struct ssh2_transport_state *s)
         } else {
             /* Anything else is a transport-layer packet that the main
              * process_queue coroutine should handle. */
-            return FALSE;
+            return false;
         }
     }
 }
@@ -412,9 +414,10 @@ static void ssh2_write_kexinit_lists(
     const char *hk_host, int hk_port, const ssh_keyalg *hk_prev,
     ssh_transient_hostkey_cache *thc,
     ssh_key *const *our_hostkeys, int our_nhostkeys,
-    int first_time, int can_gssapi_keyex, int transient_hostkey_mode)
+    bool first_time, bool can_gssapi_keyex, bool transient_hostkey_mode)
 {
-    int i, j, k, warn;
+    int i, j, k;
+    bool warn;
 
     int n_preferred_kex;
     const struct ssh_kexes *preferred_kex[KEX_MAX + 1]; /* +1 for GSSAPI */
@@ -490,7 +493,7 @@ static void ssh2_write_kexinit_lists(
             preferred_ciphers[n_preferred_ciphers++] = &ssh2_blowfish;
             break;
           case CIPHER_DES:
-            if (conf_get_int(conf, CONF_ssh2_des_cbc))
+            if (conf_get_bool(conf, CONF_ssh2_des_cbc))
                 preferred_ciphers[n_preferred_ciphers++] = &ssh2_des;
             break;
           case CIPHER_3DES:
@@ -518,7 +521,7 @@ static void ssh2_write_kexinit_lists(
     /*
      * Set up preferred compression.
      */
-    if (conf_get_int(conf, CONF_compression))
+    if (conf_get_bool(conf, CONF_compression))
         preferred_comp = &ssh_zlib;
     else
         preferred_comp = &ssh_comp_none;
@@ -527,10 +530,10 @@ static void ssh2_write_kexinit_lists(
         for (j = 0; j < MAXKEXLIST; j++)
             kexlists[i][j].name = NULL;
     /* List key exchange algorithms. */
-    warn = FALSE;
+    warn = false;
     for (i = 0; i < n_preferred_kex; i++) {
         const struct ssh_kexes *k = preferred_kex[i];
-        if (!k) warn = TRUE;
+        if (!k) warn = true;
         else for (j = 0; j < k->nkexes; j++) {
                 alg = ssh2_kexinit_addalg(kexlists[KEXLIST_KEX],
                                           k->list[j]->name);
@@ -548,7 +551,7 @@ static void ssh2_write_kexinit_lists(
             alg = ssh2_kexinit_addalg(kexlists[KEXLIST_HOSTKEY],
                                       ssh_key_alg(our_hostkeys[i])->ssh_id);
             alg->u.hk.hostkey = ssh_key_alg(our_hostkeys[i]);
-            alg->u.hk.warn = FALSE;
+            alg->u.hk.warn = false;
         }
     } else if (first_time) {
         /*
@@ -563,10 +566,10 @@ static void ssh2_write_kexinit_lists(
          * they surely _do_ want to be alerted that a server
          * they're actually connecting to is using it.
          */
-        warn = FALSE;
+        warn = false;
         for (i = 0; i < n_preferred_hk; i++) {
             if (preferred_hk[i] == HK_WARN)
-                warn = TRUE;
+                warn = true;
             for (j = 0; j < lenof(ssh2_hostkey_algs); j++) {
                 if (ssh2_hostkey_algs[j].id != preferred_hk[i])
                     continue;
@@ -579,10 +582,10 @@ static void ssh2_write_kexinit_lists(
                 }
             }
         }
-        warn = FALSE;
+        warn = false;
         for (i = 0; i < n_preferred_hk; i++) {
             if (preferred_hk[i] == HK_WARN)
-                warn = TRUE;
+                warn = true;
             for (j = 0; j < lenof(ssh2_hostkey_algs); j++) {
                 if (ssh2_hostkey_algs[j].id != preferred_hk[i])
                     continue;
@@ -606,10 +609,10 @@ static void ssh2_write_kexinit_lists(
          * in which case the cache will currently be empty, which
          * isn't helpful!
          */
-        warn = FALSE;
+        warn = false;
         for (i = 0; i < n_preferred_hk; i++) {
             if (preferred_hk[i] == HK_WARN)
-                warn = TRUE;
+                warn = true;
             for (j = 0; j < lenof(ssh2_hostkey_algs); j++) {
                 if (ssh2_hostkey_algs[j].id != preferred_hk[i])
                     continue;
@@ -634,7 +637,7 @@ static void ssh2_write_kexinit_lists(
         assert(hk_prev);
         alg = ssh2_kexinit_addalg(kexlists[KEXLIST_HOSTKEY], hk_prev->ssh_id);
         alg->u.hk.hostkey = hk_prev;
-        alg->u.hk.warn = FALSE;
+        alg->u.hk.warn = false;
     }
     if (can_gssapi_keyex) {
         alg = ssh2_kexinit_addalg(kexlists[KEXLIST_HOSTKEY], "null");
@@ -642,7 +645,7 @@ static void ssh2_write_kexinit_lists(
     }
     /* List encryption algorithms (client->server then server->client). */
     for (k = KEXLIST_CSCIPHER; k <= KEXLIST_SCCIPHER; k++) {
-        warn = FALSE;
+        warn = false;
 #ifdef FUZZING
         alg = ssh2_kexinit_addalg(kexlists[k], "none");
         alg->u.cipher.cipher = NULL;
@@ -650,7 +653,7 @@ static void ssh2_write_kexinit_lists(
 #endif /* FUZZING */
         for (i = 0; i < n_preferred_ciphers; i++) {
             const struct ssh2_ciphers *c = preferred_ciphers[i];
-            if (!c) warn = TRUE;
+            if (!c) warn = true;
             else for (j = 0; j < c->nciphers; j++) {
                     alg = ssh2_kexinit_addalg(kexlists[k],
                                               c->list[j]->name);
@@ -676,12 +679,12 @@ static void ssh2_write_kexinit_lists(
 #ifdef FUZZING
         alg = ssh2_kexinit_addalg(kexlists[j], "none");
         alg->u.mac.mac = NULL;
-        alg->u.mac.etm = FALSE;
+        alg->u.mac.etm = false;
 #endif /* FUZZING */
         for (i = 0; i < nmacs; i++) {
             alg = ssh2_kexinit_addalg(kexlists[j], maclist[i]->name);
             alg->u.mac.mac = maclist[i];
-            alg->u.mac.etm = FALSE;
+            alg->u.mac.etm = false;
         }
         for (i = 0; i < nmacs; i++) {
             /* For each MAC, there may also be an ETM version,
@@ -689,7 +692,7 @@ static void ssh2_write_kexinit_lists(
             if (maclist[i]->etm_name) {
                 alg = ssh2_kexinit_addalg(kexlists[j], maclist[i]->etm_name);
                 alg->u.mac.mac = maclist[i];
-                alg->u.mac.etm = TRUE;
+                alg->u.mac.etm = true;
             }
         }
     }
@@ -702,22 +705,22 @@ static void ssh2_write_kexinit_lists(
         /* Prefer non-delayed versions */
         alg = ssh2_kexinit_addalg(kexlists[j], preferred_comp->name);
         alg->u.comp.comp = preferred_comp;
-        alg->u.comp.delayed = FALSE;
+        alg->u.comp.delayed = false;
         if (preferred_comp->delayed_name) {
             alg = ssh2_kexinit_addalg(kexlists[j],
                                       preferred_comp->delayed_name);
             alg->u.comp.comp = preferred_comp;
-            alg->u.comp.delayed = TRUE;
+            alg->u.comp.delayed = true;
         }
         for (i = 0; i < lenof(compressions); i++) {
             const struct ssh_compression_alg *c = compressions[i];
             alg = ssh2_kexinit_addalg(kexlists[j], c->name);
             alg->u.comp.comp = c;
-            alg->u.comp.delayed = FALSE;
+            alg->u.comp.delayed = false;
             if (c->delayed_name) {
                 alg = ssh2_kexinit_addalg(kexlists[j], c->delayed_name);
                 alg->u.comp.comp = c;
-                alg->u.comp.delayed = TRUE;
+                alg->u.comp.delayed = true;
             }
         }
     }
@@ -740,18 +743,18 @@ static void ssh2_write_kexinit_lists(
     put_stringz(pktout, "");
 }
 
-static int ssh2_scan_kexinits(
+static bool ssh2_scan_kexinits(
     ptrlen client_kexinit, ptrlen server_kexinit,
     struct kexinit_algorithm kexlists[NKEXLIST][MAXKEXLIST],
     const struct ssh_kex **kex_alg, const ssh_keyalg **hostkey_alg,
     transport_direction *cs, transport_direction *sc,
-    int *warn_kex, int *warn_hk, int *warn_cscipher, int *warn_sccipher,
-    Ssh *ssh, int *ignore_guess_cs_packet, int *ignore_guess_sc_packet,
+    bool *warn_kex, bool *warn_hk, bool *warn_cscipher, bool *warn_sccipher,
+    Ssh *ssh, bool *ignore_guess_cs_packet, bool *ignore_guess_sc_packet,
     int *n_server_hostkeys, int server_hostkeys[MAXKEXLIST])
 {
     BinarySource client[1], server[1];
     int i;
-    int guess_correct;
+    bool guess_correct;
     ptrlen clists[NKEXLIST], slists[NKEXLIST];
     const struct kexinit_algorithm *selected[NKEXLIST];
 
@@ -762,13 +765,14 @@ static int ssh2_scan_kexinits(
     get_data(client, 1 + 16);
     get_data(server, 1 + 16);
 
-    guess_correct = TRUE;
+    guess_correct = true;
 
     /* Find the matching string in each list, and map it to its
      * kexinit_algorithm structure. */
     for (i = 0; i < NKEXLIST; i++) {
         ptrlen clist, slist, cword, sword, found;
-        int cfirst, sfirst, j;
+        bool cfirst, sfirst;
+        int j;
 
         clists[i] = get_string(client);
         slists[i] = get_string(server);
@@ -777,13 +781,13 @@ static int ssh2_scan_kexinits(
              * agree" that we'd generate if we pressed on regardless
              * and treated the empty get_string() result as genuine */
             ssh_proto_error(ssh, "KEXINIT packet was incomplete");
-            return FALSE;
+            return false;
         }
 
-        for (cfirst = TRUE, clist = clists[i];
-             get_commasep_word(&clist, &cword); cfirst = FALSE)
-            for (sfirst = TRUE, slist = slists[i];
-                 get_commasep_word(&slist, &sword); sfirst = FALSE)
+        for (cfirst = true, clist = clists[i];
+             get_commasep_word(&clist, &cword); cfirst = false)
+            for (sfirst = true, slist = slists[i];
+                 get_commasep_word(&slist, &sword); sfirst = false)
                 if (ptrlen_eq_ptrlen(cword, sword)) {
                     found = cword;
                     goto found_match;
@@ -803,7 +807,7 @@ static int ssh2_scan_kexinits(
          * PROTOCOL.chacha20poly1305 or as far as I can see by their
          * code.)
          */
-        guess_correct = FALSE;
+        guess_correct = false;
 
         continue;
 
@@ -824,7 +828,7 @@ static int ssh2_scan_kexinits(
          * packet (if any) is officially wrong.
          */
         if ((i == KEXLIST_KEX || i == KEXLIST_HOSTKEY) && !(cfirst || sfirst))
-            guess_correct = FALSE;
+            guess_correct = false;
     }
 
     /*
@@ -872,7 +876,7 @@ static int ssh2_scan_kexinits(
              */
             ssh_sw_abort(ssh, "Couldn't agree a %s (available: %.*s)",
                          kexlist_descr[i], PTRLEN_PRINTF(slists[i]));
-            return FALSE;
+            return false;
         }
 
         switch (i) {
@@ -927,7 +931,7 @@ static int ssh2_scan_kexinits(
             break;
 
           default:
-            assert(FALSE && "Bad list index in scan_kexinits");
+            assert(false && "Bad list index in scan_kexinits");
         }
     }
 
@@ -948,7 +952,7 @@ static int ssh2_scan_kexinits(
                 server_hostkeys[(*n_server_hostkeys)++] = i;
     }
 
-    return TRUE;
+    return true;
 }
 
 void ssh2transport_finalise_exhash(struct ssh2_transport_state *s)
@@ -984,9 +988,9 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
     s->in.mac = s->out.mac = NULL;
     s->in.comp = s->out.comp = NULL;
 
-    s->got_session_id = FALSE;
-    s->need_gss_transient_hostkey = FALSE;
-    s->warned_about_no_gss_transient_hostkey = FALSE;
+    s->got_session_id = false;
+    s->need_gss_transient_hostkey = false;
+    s->warned_about_no_gss_transient_hostkey = false;
 
   begin_key_exchange:
 
@@ -997,8 +1001,8 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
          * GSS key exchange even if we could. (See comments below,
          * where the flag was set on the previous key exchange.)
          */
-        s->can_gssapi_keyex = FALSE;
-    } else if (conf_get_int(s->conf, CONF_try_gssapi_kex)) {
+        s->can_gssapi_keyex = false;
+    } else if (conf_get_bool(s->conf, CONF_try_gssapi_kex)) {
         /*
          * We always check if we have GSS creds before we come up with
          * the kex algorithm list, otherwise future rekeys will fail
@@ -1012,7 +1016,7 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
          * state is "fresh".
          */
         if (s->rekey_class != RK_GSS_UPDATE)
-            ssh2_transport_gss_update(s, TRUE);
+            ssh2_transport_gss_update(s, true);
 
         /* Do GSSAPI KEX when capable */
         s->can_gssapi_keyex = s->gss_status & GSS_KEX_CAPABLE;
@@ -1030,10 +1034,10 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
          * fresh ones.
          */
         if (!s->got_session_id && (s->gss_status & GSS_CTXT_MAYFAIL) != 0)
-            s->can_gssapi_keyex = 0;
-        s->gss_delegate = conf_get_int(s->conf, CONF_gssapifwd);
+            s->can_gssapi_keyex = false;
+        s->gss_delegate = conf_get_bool(s->conf, CONF_gssapifwd);
     } else {
-        s->can_gssapi_keyex = FALSE;
+        s->can_gssapi_keyex = false;
     }
 #endif
 
@@ -1058,7 +1062,7 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
         !s->got_session_id, s->can_gssapi_keyex,
         s->gss_kex_used && !s->need_gss_transient_hostkey);
     /* First KEX packet does _not_ follow, because we're not that brave. */
-    put_bool(s->outgoing_kexinit, FALSE);
+    put_bool(s->outgoing_kexinit, false);
     put_uint32(s->outgoing_kexinit, 0);             /* reserved */
 
     /*
@@ -1072,7 +1076,7 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
     /*
      * Flag that KEX is in progress.
      */
-    s->kex_in_progress = TRUE;
+    s->kex_in_progress = true;
 
     /*
      * Wait for the other side's KEXINIT, and save it.
@@ -1102,7 +1106,7 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
                 s->kexlists, &s->kex_alg, &s->hostkey_alg, &s->out, &s->in,
                 &s->warn_kex, &s->warn_hk, &s->warn_cscipher,
                 &s->warn_sccipher, s->ppl.ssh, NULL, &s->ignorepkt, &nhk, hks))
-            return; /* FALSE means a fatal error function was called */
+            return; /* false means a fatal error function was called */
 
         /*
          * In addition to deciding which host key we're actually going
@@ -1152,13 +1156,13 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
         for (j = 0; j < s->n_uncert_hostkeys; j++) {
             const struct ssh_signkey_with_user_pref_id *hktype =
                 &ssh2_hostkey_algs[s->uncert_hostkeys[j]];
-            int better = FALSE;
+            bool better = false;
             for (k = 0; k < HK_MAX; k++) {
                 int id = conf_get_int_int(s->conf, CONF_ssh_hklist, k);
                 if (id == HK_WARN) {
                     break;
                 } else if (id == hktype->id) {
-                    better = TRUE;
+                    better = true;
                     break;
                 }
             }
@@ -1250,7 +1254,7 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
         memcpy(s->session_id, s->exchange_hash, sizeof(s->exchange_hash));
         s->session_id_len = s->kex_alg->hash->hlen;
         assert(s->session_id_len <= sizeof(s->session_id));
-        s->got_session_id = TRUE;
+        s->got_session_id = true;
     }
 
     /*
@@ -1259,7 +1263,7 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
     pktout = ssh_bpp_new_pktout(s->ppl.bpp, SSH2_MSG_NEWKEYS);
     pq_push(s->ppl.out_pq, pktout);
     /* Start counting down the outgoing-data limit for these cipher keys. */
-    s->stats->out.running = TRUE;
+    s->stats->out.running = true;
     s->stats->out.remaining = s->max_data_size;
 
     /*
@@ -1322,7 +1326,7 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
         return;
     }
     /* Start counting down the incoming-data limit for these cipher keys. */
-    s->stats->in.running = TRUE;
+    s->stats->in.running = true;
     s->stats->in.remaining = s->max_data_size;
 
     /*
@@ -1382,7 +1386,7 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
     /*
      * Otherwise, schedule a timer for our next rekey.
      */
-    s->kex_in_progress = FALSE;
+    s->kex_in_progress = false;
     s->last_rekey = GETTICKCOUNT();
     (void) ssh2_transport_timer_update(s, 0);
 
@@ -1434,7 +1438,7 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
             pq_push(s->ppl.out_pq, pktout);
         }
 
-        s->higher_layer_ok = TRUE;
+        s->higher_layer_ok = true;
         queue_idempotent_callback(&s->higher_layer->ic_process_queue);
     }
 
@@ -1509,7 +1513,7 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
                               s->rekey_reason));
                 /* Reset the counters, so that at least this message doesn't
                  * hit the event log _too_ often. */
-                s->stats->in.running = s->stats->out.running = TRUE;
+                s->stats->in.running = s->stats->out.running = true;
                 s->stats->in.remaining = s->stats->out.remaining =
                     s->max_data_size;
                 (void) ssh2_transport_timer_update(s, 0);
@@ -1563,7 +1567,7 @@ static void ssh2_transport_timer(void *ctx, unsigned long now)
      * but not if this is unsafe.
      */
     if (conf_get_int(s->conf, CONF_gssapirekey)) {
-        ssh2_transport_gss_update(s, FALSE);
+        ssh2_transport_gss_update(s, false);
         if ((s->gss_status & GSS_KEX_CAPABLE) != 0 &&
             (s->gss_status & GSS_CTXT_MAYFAIL) == 0 &&
             (s->gss_status & (GSS_CRED_UPDATED|GSS_CTXT_EXPIRES)) != 0) {
@@ -1582,11 +1586,12 @@ static void ssh2_transport_timer(void *ctx, unsigned long now)
 /*
  * The rekey_time is zero except when re-configuring.
  *
- * We either schedule the next timer and return 0, or return 1 to run the
- * callback now, which will call us again to re-schedule on completion.
+ * We either schedule the next timer and return false, or return true
+ * to run the callback now, which will call us again to re-schedule on
+ * completion.
  */
-static int ssh2_transport_timer_update(struct ssh2_transport_state *s,
-                                       unsigned long rekey_time)
+static bool ssh2_transport_timer_update(struct ssh2_transport_state *s,
+                                        unsigned long rekey_time)
 {
     unsigned long mins;
     unsigned long ticks;
@@ -1605,7 +1610,7 @@ static int ssh2_transport_timer_update(struct ssh2_transport_state *s,
 
         /* If overdue, caller will rekey synchronously now */
         if (now - s->last_rekey > ticks)
-            return 1;
+            return true;
         ticks = next - now;
     }
 
@@ -1640,7 +1645,7 @@ static int ssh2_transport_timer_update(struct ssh2_transport_state *s,
 
     /* Schedule the next timer */
     s->next_rekey = schedule_timer(ticks, ssh2_transport_timer, s);
-    return 0;
+    return false;
 }
 
 void ssh2_transport_dialog_callback(void *loginv, int ret)
@@ -1665,7 +1670,7 @@ void ssh2_transport_dialog_callback(void *loginv, int ret)
  * newly obtained context as a proxy for the expiration of the TGT.
  */
 static void ssh2_transport_gss_update(struct ssh2_transport_state *s,
-                                      int definitely_rekeying)
+                                      bool definitely_rekeying)
 {
     PacketProtocolLayer *ppl = &s->ppl; /* for ppl_logevent */
     int gss_stat;
@@ -1683,8 +1688,8 @@ static void ssh2_transport_gss_update(struct ssh2_transport_state *s,
      */
     if (s->shgss->libs->nlibraries == 0)
         return;
-    if (!conf_get_int(s->conf, CONF_try_gssapi_auth) &&
-        !conf_get_int(s->conf, CONF_try_gssapi_kex))
+    if (!conf_get_bool(s->conf, CONF_try_gssapi_auth) &&
+        !conf_get_bool(s->conf, CONF_try_gssapi_kex))
         return;
 
     /* Import server name and cache it */
@@ -1761,7 +1766,7 @@ static void ssh2_transport_gss_update(struct ssh2_transport_state *s,
      * refresh them. We must avoid setting GSS_CRED_UPDATED or
      * GSS_CTXT_EXPIRES when credential delegation is disabled.
      */
-    if (conf_get_int(s->conf, CONF_gssapifwd) == 0)
+    if (!conf_get_bool(s->conf, CONF_gssapifwd))
         return;
 
     if (s->gss_cred_expiry != GSS_NO_EXPIRATION &&
@@ -1799,17 +1804,17 @@ void ssh2_transport_notify_auth_done(PacketProtocolLayer *ppl)
 
 #endif /* NO_GSSAPI */
 
-static int ssh2_transport_get_specials(
+static bool ssh2_transport_get_specials(
     PacketProtocolLayer *ppl, add_special_fn_t add_special, void *ctx)
 {
     struct ssh2_transport_state *s =
         container_of(ppl, struct ssh2_transport_state, ppl);
-    int need_separator = FALSE;
-    int toret;
+    bool need_separator = false;
+    bool toret;
 
     if (ssh_ppl_get_specials(s->higher_layer, add_special, ctx)) {
-        need_separator = TRUE;
-        toret = TRUE;
+        need_separator = true;
+        toret = true;
     }
 
     /*
@@ -1820,11 +1825,11 @@ static int ssh2_transport_get_specials(
     if (!(s->ppl.remote_bugs & BUG_SSH2_REKEY)) {
         if (need_separator) {
             add_special(ctx, NULL, SS_SEP, 0);
-            need_separator = FALSE;
+            need_separator = false;
         }
 
         add_special(ctx, "Repeat key exchange", SS_REKEY, 0);
-        toret = TRUE;
+        toret = true;
 
         if (s->n_uncert_hostkeys) {
             int i;
@@ -1859,7 +1864,7 @@ static void ssh2_transport_special_cmd(PacketProtocolLayer *ppl,
     } else if (code == SS_XCERT) {
 	if (!s->kex_in_progress) {
             s->hostkey_alg = ssh2_hostkey_algs[arg].alg;
-            s->cross_certifying = TRUE;
+            s->cross_certifying = true;
             s->rekey_reason = "cross-certifying new host key";
             s->rekey_class = RK_NORMAL;
             queue_idempotent_callback(&s->ppl.ic_process_queue);
@@ -1891,7 +1896,7 @@ static void ssh2_transport_reconfigure(PacketProtocolLayer *ppl, Conf *conf)
 {
     struct ssh2_transport_state *s;
     const char *rekey_reason = NULL;
-    int rekey_mandatory = FALSE;
+    bool rekey_mandatory = false;
     unsigned long old_max_data_size, rekey_time;
     int i;
 
@@ -1910,11 +1915,11 @@ static void ssh2_transport_reconfigure(PacketProtocolLayer *ppl, Conf *conf)
         if (s->max_data_size < old_max_data_size) {
             unsigned long diff = old_max_data_size - s->max_data_size;
 
-            /* Intentionally use bitwise OR instead of logical, so
-             * that we decrement both counters even if the first one
-             * runs out */
-            if ((DTS_CONSUME(s->stats, out, diff) != 0) |
-                (DTS_CONSUME(s->stats, in, diff) != 0))
+            /* We must decrement both counters, so avoid short-circuit
+             * evaluation skipping one */
+            bool out_expired = DTS_CONSUME(s->stats, out, diff);
+            bool in_expired = DTS_CONSUME(s->stats, in, diff);
+            if (out_expired || in_expired)
                 rekey_reason = "data limit lowered";
         } else {
             unsigned long diff = s->max_data_size - old_max_data_size;
@@ -1925,22 +1930,22 @@ static void ssh2_transport_reconfigure(PacketProtocolLayer *ppl, Conf *conf)
         }
     }
 
-    if (conf_get_int(s->conf, CONF_compression) !=
-	conf_get_int(conf, CONF_compression)) {
+    if (conf_get_bool(s->conf, CONF_compression) !=
+	conf_get_bool(conf, CONF_compression)) {
         rekey_reason = "compression setting changed";
-        rekey_mandatory = TRUE;
+        rekey_mandatory = true;
     }
 
     for (i = 0; i < CIPHER_MAX; i++)
 	if (conf_get_int_int(s->conf, CONF_ssh_cipherlist, i) !=
 	    conf_get_int_int(conf, CONF_ssh_cipherlist, i)) {
         rekey_reason = "cipher settings changed";
-        rekey_mandatory = TRUE;
+        rekey_mandatory = true;
     }
-    if (conf_get_int(s->conf, CONF_ssh2_des_cbc) !=
-	conf_get_int(conf, CONF_ssh2_des_cbc)) {
+    if (conf_get_bool(s->conf, CONF_ssh2_des_cbc) !=
+	conf_get_bool(conf, CONF_ssh2_des_cbc)) {
         rekey_reason = "cipher settings changed";
-        rekey_mandatory = TRUE;
+        rekey_mandatory = true;
     }
 
     conf_free(s->conf);
@@ -1960,7 +1965,7 @@ static void ssh2_transport_reconfigure(PacketProtocolLayer *ppl, Conf *conf)
     ssh_ppl_reconfigure(s->higher_layer, conf);
 }
 
-static int ssh2_transport_want_user_input(PacketProtocolLayer *ppl)
+static bool ssh2_transport_want_user_input(PacketProtocolLayer *ppl)
 {
     struct ssh2_transport_state *s =
         container_of(ppl, struct ssh2_transport_state, ppl);

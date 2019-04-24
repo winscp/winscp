@@ -33,7 +33,7 @@ void proxy_activate (ProxySocket *p)
     /* we want to ignore new receive events until we have sent
      * all of our buffered receive data.
      */
-    sk_set_frozen(p->sub_socket, 1);
+    sk_set_frozen(p->sub_socket, true);
 
     /* how many bytes of output have we buffered? */
     output_before = bufchain_size(&p->pending_oob_output_data) +
@@ -124,7 +124,7 @@ static void sk_proxy_write_eof (Socket *s)
     ProxySocket *ps = container_of(s, ProxySocket, sock);
 
     if (ps->state != PROXY_STATE_ACTIVE) {
-        ps->pending_eof = 1;
+        ps->pending_eof = true;
 	return;
     }
     sk_write_eof(ps->sub_socket);
@@ -135,13 +135,13 @@ static void sk_proxy_flush (Socket *s)
     ProxySocket *ps = container_of(s, ProxySocket, sock);
 
     if (ps->state != PROXY_STATE_ACTIVE) {
-	ps->pending_flush = 1;
+	ps->pending_flush = true;
 	return;
     }
     sk_flush(ps->sub_socket);
 }
 
-static void sk_proxy_set_frozen (Socket *s, int is_frozen)
+static void sk_proxy_set_frozen (Socket *s, bool is_frozen)
 {
     ProxySocket *ps = container_of(s, ProxySocket, sock);
 
@@ -200,7 +200,7 @@ static void plug_proxy_log(Plug *plug, int type, SockAddr *addr, int port,
 }
 
 static void plug_proxy_closing (Plug *p, const char *error_msg,
-				int error_code, int calling_back)
+				int error_code, bool calling_back)
 {
     ProxySocket *ps = container_of(p, ProxySocket, plugimpl);
 
@@ -224,7 +224,7 @@ static void plug_proxy_receive (Plug *p, int urgent, char *data, int len)
 	 * process, hopefully it won't affect the protocol above us
 	 */
 	bufchain_add(&ps->pending_input_data, data, len);
-	ps->receive_urgent = urgent;
+	ps->receive_urgent = (urgent != 0);
 	ps->receive_data = data;
 	ps->receive_len = len;
 	ps->negotiate(ps, PROXY_CHANGE_RECEIVE);
@@ -262,7 +262,7 @@ static int plug_proxy_accepting(Plug *p,
  * This function can accept a NULL pointer as `addr', in which case
  * it will only check the host name.
  */
-int proxy_for_destination (SockAddr *addr, const char *hostname,
+bool proxy_for_destination (SockAddr *addr, const char *hostname,
                            int port, Conf *conf)
 {
     int s = 0, e = 0;
@@ -277,16 +277,16 @@ int proxy_for_destination (SockAddr *addr, const char *hostname,
      * them.
      */
     if (addr && sk_address_is_special_local(addr))
-        return 0;                      /* do not proxy */
+        return false;                  /* do not proxy */
 
     /*
      * Check the host name and IP against the hard-coded
      * representations of `localhost'.
      */
-    if (!conf_get_int(conf, CONF_even_proxy_localhost) &&
+    if (!conf_get_bool(conf, CONF_even_proxy_localhost) &&
 	(sk_hostname_is_local(hostname) ||
 	 (addr && sk_address_is_local(addr))))
-	return 0;		       /* do not proxy */
+	return false;                  /* do not proxy */
 
     /* we want a string representation of the IP address for comparisons */
     if (addr) {
@@ -324,25 +324,27 @@ int proxy_for_destination (SockAddr *addr, const char *hostname,
 	    if ((addr && strnicmp(hostip + hostip_len - (e - s - 1),
 				  exclude_list + s + 1, e - s - 1) == 0) ||
 		strnicmp(hostname + hostname_len - (e - s - 1),
-			 exclude_list + s + 1, e - s - 1) == 0)
-		return 0; /* IP/hostname range excluded. do not use proxy. */
-
+                         exclude_list + s + 1, e - s - 1) == 0) {
+                /* IP/hostname range excluded. do not use proxy. */
+                return false;
+            }
 	} else if (exclude_list[e-1] == '*') {
 	    /* wildcard at end of entry */
 
 	    if ((addr && strnicmp(hostip, exclude_list + s, e - s - 1) == 0) ||
-		strnicmp(hostname, exclude_list + s, e - s - 1) == 0)
-		return 0; /* IP/hostname range excluded. do not use proxy. */
-
+                strnicmp(hostname, exclude_list + s, e - s - 1) == 0) {
+                /* IP/hostname range excluded. do not use proxy. */
+                return false;
+            }
 	} else {
 	    /* no wildcard at either end, so let's try an absolute
 	     * match (ie. a specific IP)
 	     */
 
 	    if (addr && strnicmp(hostip, exclude_list + s, e - s) == 0)
-		return 0; /* IP/hostname excluded. do not use proxy. */
+		return false; /* IP/hostname excluded. do not use proxy. */
 	    if (strnicmp(hostname, exclude_list + s, e - s) == 0)
-		return 0; /* IP/hostname excluded. do not use proxy. */
+		return false; /* IP/hostname excluded. do not use proxy. */
 	}
 
 	s = e;
@@ -354,7 +356,7 @@ int proxy_for_destination (SockAddr *addr, const char *hostname,
     }
 
     /* no matches in the exclude list, so use the proxy */
-    return 1;
+    return true;
 }
 
 static char *dns_log_msg(const char *host, int addressfamily,
@@ -410,8 +412,8 @@ static const struct PlugVtable ProxySocket_plugvt = {
 };
 
 Socket *new_connection(SockAddr *addr, const char *hostname,
-                       int port, int privport,
-                       int oobinline, int nodelay, int keepalive,
+                       int port, bool privport,
+                       bool oobinline, bool nodelay, bool keepalive,
                        Plug *plug, Conf *conf)
 {
     if (conf_get_int(conf, CONF_proxy_type) != PROXY_NONE &&
@@ -439,9 +441,9 @@ Socket *new_connection(SockAddr *addr, const char *hostname,
 	ret->remote_port = port;
 
 	ret->error = NULL;
-	ret->pending_flush = 0;
-	ret->pending_eof = 0;
-	ret->freeze = 0;
+	ret->pending_flush = false;
+	ret->pending_eof = false;
+	ret->freeze = false;
 
 	bufchain_init(&ret->pending_input_data);
 	bufchain_init(&ret->pending_output_data);
@@ -538,7 +540,7 @@ Socket *new_connection(SockAddr *addr, const char *hostname,
 }
 
 Socket *new_listener(const char *srcaddr, int port, Plug *plug,
-                     int local_host_only, Conf *conf, int addressfamily)
+                     bool local_host_only, Conf *conf, int addressfamily)
 {
     /* TODO: SOCKS (and potentially others) support inbound
      * TODO: connections via the proxy. support them.
@@ -786,7 +788,7 @@ int proxy_socks4_negotiate (ProxySocket *p, int change)
 
         strbuf *command = strbuf_new();
         char hostname[512];
-        int write_hostname = FALSE;
+        bool write_hostname = false;
 
         put_byte(command, 4);          /* SOCKS version 4 */
         put_byte(command, 1);          /* CONNECT command */
@@ -803,7 +805,7 @@ int proxy_socks4_negotiate (ProxySocket *p, int change)
           case ADDRTYPE_NAME:
             sk_getaddr(p->remote_addr, hostname, lenof(hostname));
             put_uint32(command, 1);
-            write_hostname = TRUE;
+            write_hostname = true;
             break;
           case ADDRTYPE_IPV6:
             p->error = "Proxy error: SOCKS version 4 does not support IPv6";

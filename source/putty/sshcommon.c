@@ -53,7 +53,7 @@ void pq_base_push_front(PacketQueueBase *pqb, PacketQueueNode *node)
 
 #ifndef WINSCP
 static PacketQueueNode pktin_freeq_head = {
-    &pktin_freeq_head, &pktin_freeq_head, TRUE
+    &pktin_freeq_head, &pktin_freeq_head, true
 };
 #endif
 
@@ -72,12 +72,12 @@ static PacketQueueNode pktin_freeq_head = {
 
 #ifndef WINSCP
 static IdempotentCallback ic_pktin_free = {
-    pktin_free_queue_callback, NULL, FALSE
+    pktin_free_queue_callback, NULL, false
 };
 #endif
 
 static PktIn *pq_in_after(PacketQueueBase *pqb,
-                          PacketQueueNode *prev, int pop)
+                          PacketQueueNode *prev, bool pop)
 {
     PacketQueueNode *node = prev->next;
     if (node == &pqb->end)
@@ -109,7 +109,7 @@ static PktIn *pq_in_after(PacketQueueBase *pqb,
         node->next = set->pktin_freeq_head; // WINSCP
         node->next->prev = node;
         node->prev->next = node;
-        node->on_free_queue = TRUE;
+        node->on_free_queue = true;
 
         queue_idempotent_callback(set->ic_pktin_free); // WINSCP
     }
@@ -118,7 +118,7 @@ static PktIn *pq_in_after(PacketQueueBase *pqb,
 }
 
 static PktOut *pq_out_after(PacketQueueBase *pqb,
-                            PacketQueueNode *prev, int pop)
+                            PacketQueueNode *prev, bool pop)
 {
     PacketQueueNode *node = prev->next;
     if (node == &pqb->end)
@@ -250,7 +250,7 @@ PktOut *ssh_new_packet(void)
     pkt->downstream_id = 0;
     pkt->additional_log_text = NULL;
     pkt->qnode.next = pkt->qnode.prev = NULL;
-    pkt->qnode.on_free_queue = FALSE;
+    pkt->qnode.on_free_queue = false;
 
     return pkt;
 }
@@ -287,11 +287,11 @@ void ssh_free_pktout(PktOut *pkt)
  */
 
 static void zombiechan_free(Channel *chan);
-static int zombiechan_send(Channel *chan, int is_stderr, const void *, int);
-static void zombiechan_set_input_wanted(Channel *chan, int wanted);
+static int zombiechan_send(Channel *chan, bool is_stderr, const void *, int);
+static void zombiechan_set_input_wanted(Channel *chan, bool wanted);
 static void zombiechan_do_nothing(Channel *chan);
 static void zombiechan_open_failure(Channel *chan, const char *);
-static int zombiechan_want_close(Channel *chan, int sent_eof, int rcvd_eof);
+static bool zombiechan_want_close(Channel *chan, bool sent_eof, bool rcvd_eof);
 static char *zombiechan_log_close_msg(Channel *chan) { return NULL; }
 
 static const struct ChannelVtable zombiechan_channelvt = {
@@ -343,21 +343,21 @@ static void zombiechan_open_failure(Channel *chan, const char *errtext)
     assert(chan->vt == &zombiechan_channelvt);
 }
 
-static int zombiechan_send(Channel *chan, int is_stderr,
+static int zombiechan_send(Channel *chan, bool is_stderr,
                            const void *data, int length)
 {
     assert(chan->vt == &zombiechan_channelvt);
     return 0;
 }
 
-static void zombiechan_set_input_wanted(Channel *chan, int enable)
+static void zombiechan_set_input_wanted(Channel *chan, bool enable)
 {
     assert(chan->vt == &zombiechan_channelvt);
 }
 
-static int zombiechan_want_close(Channel *chan, int sent_eof, int rcvd_eof)
+static bool zombiechan_want_close(Channel *chan, bool sent_eof, bool rcvd_eof)
 {
-    return TRUE;
+    return true;
 }
 
 /* ----------------------------------------------------------------------
@@ -375,8 +375,8 @@ void chan_remotely_opened_failure(Channel *chan, const char *errtext)
     assert(0 && "this channel type should never receive OPEN_FAILURE");
 }
 
-int chan_default_want_close(
-    Channel *chan, int sent_local_eof, int rcvd_remote_eof)
+bool chan_default_want_close(
+    Channel *chan, bool sent_local_eof, bool rcvd_remote_eof)
 {
     /*
      * Default close policy: we start initiating the CHANNEL_CLOSE
@@ -385,80 +385,80 @@ int chan_default_want_close(
     return sent_local_eof && rcvd_remote_eof;
 }
 
-int chan_no_exit_status(Channel *chan, int status)
+bool chan_no_exit_status(Channel *chan, int status)
 {
-    return FALSE;
+    return false;
 }
 
-int chan_no_exit_signal(
-    Channel *chan, ptrlen signame, int core_dumped, ptrlen msg)
+bool chan_no_exit_signal(
+    Channel *chan, ptrlen signame, bool core_dumped, ptrlen msg)
 {
-    return FALSE;
+    return false;
 }
 
-int chan_no_exit_signal_numeric(
-    Channel *chan, int signum, int core_dumped, ptrlen msg)
+bool chan_no_exit_signal_numeric(
+    Channel *chan, int signum, bool core_dumped, ptrlen msg)
 {
-    return FALSE;
+    return false;
 }
 
-int chan_no_run_shell(Channel *chan)
+bool chan_no_run_shell(Channel *chan)
 {
-    return FALSE;
+    return false;
 }
 
-int chan_no_run_command(Channel *chan, ptrlen command)
+bool chan_no_run_command(Channel *chan, ptrlen command)
 {
-    return FALSE;
+    return false;
 }
 
-int chan_no_run_subsystem(Channel *chan, ptrlen subsys)
+bool chan_no_run_subsystem(Channel *chan, ptrlen subsys)
 {
-    return FALSE;
+    return false;
 }
 
-int chan_no_enable_x11_forwarding(
-    Channel *chan, int oneshot, ptrlen authproto, ptrlen authdata,
+bool chan_no_enable_x11_forwarding(
+    Channel *chan, bool oneshot, ptrlen authproto, ptrlen authdata,
     unsigned screen_number)
 {
-    return FALSE;
+    return false;
 }
 
-int chan_no_enable_agent_forwarding(Channel *chan)
+bool chan_no_enable_agent_forwarding(Channel *chan)
 {
-    return FALSE;
+    return false;
 }
 
-int chan_no_allocate_pty(
+bool chan_no_allocate_pty(
     Channel *chan, ptrlen termtype, unsigned width, unsigned height,
     unsigned pixwidth, unsigned pixheight, struct ssh_ttymodes modes)
 {
-    return FALSE;
+    return false;
 }
 
-int chan_no_set_env(Channel *chan, ptrlen var, ptrlen value)
+bool chan_no_set_env(Channel *chan, ptrlen var, ptrlen value)
 {
-    return FALSE;
+    return false;
 }
 
-int chan_no_send_break(Channel *chan, unsigned length)
+bool chan_no_send_break(Channel *chan, unsigned length)
 {
-    return FALSE;
+    return false;
 }
 
-int chan_no_send_signal(Channel *chan, ptrlen signame)
+bool chan_no_send_signal(Channel *chan, ptrlen signame)
 {
-    return FALSE;
+    return false;
 }
 
-int chan_no_change_window_size(
+bool chan_no_change_window_size(
     Channel *chan, unsigned width, unsigned height,
     unsigned pixwidth, unsigned pixheight)
 {
-    return FALSE;
+    return false;
 }
 
-void chan_no_request_response(Channel *chan, int success)
+void chan_no_request_response(Channel *chan, bool success)
 {
     assert(0 && "this channel type should never send a want-reply request");
 }
@@ -584,7 +584,7 @@ struct ssh_ttymodes get_ttymodes_from_conf(Seat *seat, Conf *conf)
                 assert(0 && "Bad mode->type");
             }
 
-            modes.have_mode[mode->opcode] = TRUE;
+            modes.have_mode[mode->opcode] = true;
             modes.mode_val[mode->opcode] = ival;
         }
 
@@ -598,9 +598,9 @@ struct ssh_ttymodes get_ttymodes_from_conf(Seat *seat, Conf *conf)
         ospeed = ispeed = 38400;           /* last-resort defaults */
         sscanf(conf_get_str(conf, CONF_termspeed), "%u,%u", &ospeed, &ispeed);
         /* Currently we unconditionally set these */
-        modes.have_mode[TTYMODE_ISPEED] = TRUE;
+        modes.have_mode[TTYMODE_ISPEED] = true;
         modes.mode_val[TTYMODE_ISPEED] = ispeed;
-        modes.have_mode[TTYMODE_OSPEED] = TRUE;
+        modes.have_mode[TTYMODE_OSPEED] = true;
         modes.mode_val[TTYMODE_OSPEED] = ospeed;
     }
 
@@ -639,7 +639,7 @@ struct ssh_ttymodes read_ttymodes_from_packet(
 
         our_opcode = our_ttymode_opcode(real_opcode, ssh_version);
         assert(our_opcode < TTYMODE_LIMIT);
-        modes.have_mode[our_opcode] = TRUE;
+        modes.have_mode[our_opcode] = true;
 
         if (ssh_version == 1 && real_opcode >= 1 && real_opcode <= 127)
             modes.mode_val[our_opcode] = get_byte(bs);
@@ -713,12 +713,12 @@ unsigned alloc_channel_id_general(tree234 *channels, size_t localid_offset)
  * lists of protocol identifiers in SSH-2.
  */
 
-int first_in_commasep_string(char const *needle, char const *haystack,
-                             int haylen)
+bool first_in_commasep_string(char const *needle, char const *haystack,
+                              int haylen)
 {
     int needlen;
     if (!needle || !haystack)          /* protect against null pointers */
-        return 0;
+        return false;
     needlen = strlen(needle);
 
     if (haylen >= needlen &&       /* haystack is long enough */
@@ -726,28 +726,28 @@ int first_in_commasep_string(char const *needle, char const *haystack,
         (haylen == needlen || haystack[needlen] == ',')
         /* either , or EOS follows */
         )
-        return 1;
-    return 0;
+        return true;
+    return false;
 }
 
-int in_commasep_string(char const *needle, char const *haystack, int haylen)
+bool in_commasep_string(char const *needle, char const *haystack, int haylen)
 {
     char *p;
 
     if (!needle || !haystack)          /* protect against null pointers */
-        return FALSE;
+        return false;
     /*
      * Is it at the start of the string?
      */
     if (first_in_commasep_string(needle, haystack, haylen))
-        return TRUE;
+        return true;
     /*
      * If not, search for the next comma and resume after that.
      * If no comma found, terminate.
      */
     p = memchr(haystack, ',', haylen);
     if (!p)
-        return FALSE;
+        return false;
     /* + 1 to skip over comma */
     return in_commasep_string(needle, p + 1, haylen - (p + 1 - haystack));
 }
@@ -759,7 +759,7 @@ void add_to_commasep(strbuf *buf, const char *data)
     put_data(buf, data, strlen(data));
 }
 
-int get_commasep_word(ptrlen *list, ptrlen *word)
+bool get_commasep_word(ptrlen *list, ptrlen *word)
 {
     const char *comma;
 
@@ -775,7 +775,7 @@ int get_commasep_word(ptrlen *list, ptrlen *word)
     }
 
     if (!list->len)
-        return FALSE;
+        return false;
 
     comma = memchr(list->ptr, ',', list->len);
     if (!comma) {
@@ -788,7 +788,7 @@ int get_commasep_word(ptrlen *list, ptrlen *word)
         list->ptr = (const char *)list->ptr + wordlen + 1;
         list->len -= wordlen + 1;
     }
-    return TRUE;
+    return true;
 }
 
 /* ----------------------------------------------------------------------
@@ -900,7 +900,7 @@ void ssh_bpp_common_setup(BinaryPacketProtocol *bpp)
 {
     pq_in_init(&bpp->in_pq, get_log_seat(bpp->logctx)); // WINSCP
     pq_out_init(&bpp->out_pq, get_log_seat(bpp->logctx)); // WINSCP
-    bpp->input_eof = FALSE;
+    bpp->input_eof = false;
     bpp->ic_in_raw.fn = ssh_bpp_input_raw_data_callback;
     bpp->ic_in_raw.set = get_log_callback_set(bpp->logctx);
     bpp->ic_in_raw.ctx = bpp;
@@ -935,7 +935,7 @@ void ssh2_bpp_queue_disconnect(BinaryPacketProtocol *bpp,
     (0 SSH2_MESSAGE_TYPES(BITMAP_UNIVERSAL, BITMAP_CONDITIONAL, \
                           BITMAP_CONDITIONAL, (32*y)))
 
-int ssh2_bpp_check_unimplemented(BinaryPacketProtocol *bpp, PktIn *pktin)
+bool ssh2_bpp_check_unimplemented(BinaryPacketProtocol *bpp, PktIn *pktin)
 {
     #pragma warn -osh
     static const unsigned valid_bitmap[] = {
@@ -955,10 +955,10 @@ int ssh2_bpp_check_unimplemented(BinaryPacketProtocol *bpp, PktIn *pktin)
         PktOut *pkt = ssh_bpp_new_pktout(bpp, SSH2_MSG_UNIMPLEMENTED);
         put_uint32(pkt, pktin->sequence);
         pq_push(&bpp->out_pq, pkt);
-        return TRUE;
+        return true;
     }
 
-    return FALSE;
+    return false;
 }
 
 #undef BITMAP_UNIVERSAL
@@ -1024,7 +1024,7 @@ int verify_ssh_manual_host_key(
  * Common functions shared between SSH-1 layers.
  */
 
-int ssh1_common_get_specials(
+bool ssh1_common_get_specials(
     PacketProtocolLayer *ppl, add_special_fn_t add_special, void *ctx)
 {
     /*
@@ -1034,13 +1034,13 @@ int ssh1_common_get_specials(
      */
     if (!(ppl->remote_bugs & BUG_CHOKES_ON_SSH1_IGNORE)) {
         add_special(ctx, "IGNORE message", SS_NOP, 0);
-        return TRUE;
+        return true;
     }
 
-    return FALSE;
+    return false;
 }
 
-int ssh1_common_filter_queue(PacketProtocolLayer *ppl)
+bool ssh1_common_filter_queue(PacketProtocolLayer *ppl)
 {
     PktIn *pktin;
     ptrlen msg;
@@ -1053,7 +1053,7 @@ int ssh1_common_filter_queue(PacketProtocolLayer *ppl)
                              "Remote side sent disconnect message:\n\"%.*s\"",
                              PTRLEN_PRINTF(msg));
             pq_pop(ppl->in_pq);
-            return TRUE;               /* indicate that we've been freed */
+            return true;               /* indicate that we've been freed */
 
           case SSH1_MSG_DEBUG:
             msg = get_string(pktin);
@@ -1067,11 +1067,11 @@ int ssh1_common_filter_queue(PacketProtocolLayer *ppl)
             break;
 
           default:
-            return FALSE;
+            return false;
         }
     }
 
-    return FALSE;
+    return false;
 }
 
 void ssh1_compute_session_id(

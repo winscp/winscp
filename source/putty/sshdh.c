@@ -178,7 +178,7 @@ static void dh_init(struct dh_ctx *ctx)
     ctx->x = ctx->e = NULL;
 }
 
-int dh_is_gex(const struct ssh_kex *kex)
+bool dh_is_gex(const struct ssh_kex *kex)
 {
     const struct dh_extra *extra = (const struct dh_extra *)kex->extra;
     return extra->pdata == NULL;
@@ -207,6 +207,14 @@ struct dh_ctx *dh_setup_gex(Bignum pval, Bignum gval)
     ctx->g = copybn(gval);
     dh_init(ctx);
     return ctx;
+}
+
+/*
+ * Return size of DH modulus p.
+ */
+int dh_modulus_bit_size(const struct dh_ctx *ctx)
+{
+    return bignum_bitcount(ctx->p);
 }
 
 /*

@@ -85,7 +85,7 @@ static void ssh2_bare_bpp_handle_input(BinaryPacketProtocol *bpp)
          */
         s->pktin = snew_plus(PktIn, s->packetlen);
         s->pktin->qnode.prev = s->pktin->qnode.next = NULL;
-        s->pktin->qnode.on_free_queue = FALSE;
+        s->pktin->qnode.on_free_queue = false;
         s->maxlen = 0;
         s->data = snew_plus_get_aux(s->pktin);
 
@@ -111,7 +111,7 @@ static void ssh2_bare_bpp_handle_input(BinaryPacketProtocol *bpp)
         if (s->bpp.logctx) {
             logblank_t blanks[MAX_BLANKS];
             int nblanks = ssh2_censor_packet(
-                s->bpp.pls, s->pktin->type, FALSE,
+                s->bpp.pls, s->pktin->type, false,
                 make_ptrlen(s->data, s->packetlen), blanks);
             log_packet(s->bpp.logctx, PKT_INCOMING, s->pktin->type,
                        ssh2_pkt_type(s->bpp.pls->kctx, s->bpp.pls->actx,
@@ -158,7 +158,7 @@ static void ssh2_bare_bpp_format_packet(struct ssh2_bare_bpp_state *s,
         ptrlen pktdata = make_ptrlen(pkt->data + 5, pkt->length - 5);
         logblank_t blanks[MAX_BLANKS];
         int nblanks = ssh2_censor_packet(
-            s->bpp.pls, pkt->type, TRUE, pktdata, blanks);
+            s->bpp.pls, pkt->type, true, pktdata, blanks);
         log_packet(s->bpp.logctx, PKT_OUTGOING, pkt->type,
                    ssh2_pkt_type(s->bpp.pls->kctx, s->bpp.pls->actx,
                                  pkt->type),

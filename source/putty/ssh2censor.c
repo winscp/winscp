@@ -10,7 +10,7 @@
 #include "ssh.h"
 
 int ssh2_censor_packet(
-    const PacketLogSettings *pls, int type, int sender_is_client,
+    const PacketLogSettings *pls, int type, bool sender_is_client,
     ptrlen pkt, logblank_t *blanks)
 {
     int nblanks = 0;

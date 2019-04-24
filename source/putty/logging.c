@@ -87,22 +87,22 @@ static void logfopen_callback(void *vctx, int mode)
     char buf[256], *event;
     struct tm tm;
     const char *fmode;
-    int shout = FALSE;
+    bool shout = false;
 
     if (mode == 0) {
 	ctx->state = L_ERROR;	       /* disable logging */
     } else {
 	fmode = (mode == 1 ? "ab" : "wb");
-	ctx->lgfp = f_open(ctx->currlogfilename, fmode, FALSE);
+	ctx->lgfp = f_open(ctx->currlogfilename, fmode, false);
 	if (ctx->lgfp) {
 	    ctx->state = L_OPEN;
         } else {
 	    ctx->state = L_ERROR;
-            shout = TRUE;
+            shout = true;
         }
     }
 
-    if (ctx->state == L_OPEN && conf_get_int(ctx->conf, CONF_logheader)) {
+    if (ctx->state == L_OPEN && conf_get_bool(ctx->conf, CONF_logheader)) {
 	/* Write header line into log file. */
 	tm = ltime();
 	strftime(buf, 24, "%Y.%m.%d %H:%M:%S", &tm);
@@ -425,15 +425,15 @@ void log_free(LogContext *ctx)
 
 void log_reconfig(LogContext *ctx, Conf *conf)
 {
-    int reset_logging;
+    bool reset_logging;
 
     if (!filename_equal(conf_get_filename(ctx->conf, CONF_logfilename),
 			conf_get_filename(conf, CONF_logfilename)) ||
 	conf_get_int(ctx->conf, CONF_logtype) !=
 	conf_get_int(conf, CONF_logtype))
-	reset_logging = TRUE;
+	reset_logging = true;
     else
-	reset_logging = FALSE;
+	reset_logging = false;
 
     if (reset_logging)
 	logfclose(ctx);
@@ -469,7 +469,7 @@ static Filename *xlatlognam(Filename *src, char *hostname, int port,
     s = filename_to_str(src);
 
     while (*s) {
-        int sanitise = FALSE;
+        bool sanitise = false;
 	/* Let (bufp, len) be the string to append. */
 	bufp = buf;		       /* don't usually override this */
 	if (*s == '&') {
@@ -507,7 +507,7 @@ static Filename *xlatlognam(Filename *src, char *hostname, int port,
              * auto-format directives. E.g. 'hostname' can contain
              * colons, if it's an IPv6 address, and colons aren't
              * legal in filenames on Windows. */
-            sanitise = TRUE;
+            sanitise = true;
 	} else {
 	    buf[0] = *s++;
 	    size = 1;

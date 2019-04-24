@@ -277,16 +277,16 @@
  */
 
 typedef struct {
-    word32 k0246[16], k1357[16];
-    word32 iv0, iv1;
+    uint32_t k0246[16], k1357[16];
+    uint32_t iv0, iv1;
 } DESContext;
 
 #define rotl(x, c) ( (x << c) | (x >> (32-c)) )
 #define rotl28(x, c) ( ( (x << c) | (x >> (28-c)) ) & 0x0FFFFFFF)
 
-static word32 bitsel(word32 * input, const int *bitnums, int size)
+static uint32_t bitsel(uint32_t *input, const int *bitnums, int size)
 {
-    word32 ret = 0;
+    uint32_t ret = 0;
     while (size--) {
 	int bitpos = *bitnums++;
 	ret <<= 1;
@@ -296,7 +296,8 @@ static word32 bitsel(word32 * input, const int *bitnums, int size)
     return ret;
 }
 
-static void des_key_setup(word32 key_msw, word32 key_lsw, DESContext * sched)
+static void des_key_setup(
+    uint32_t key_msw, uint32_t key_lsw, DESContext *sched)
 {
 
     static const int PC1_Cbits[] = {
@@ -326,8 +327,8 @@ static void des_key_setup(word32 key_msw, word32 key_lsw, DESContext * sched)
     static const int leftshifts[] =
 	{ 1, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1 };
 
-    word32 C, D;
-    word32 buf[2];
+    uint32_t C, D;
+    uint32_t buf[2];
     int i;
 
     buf[0] = key_lsw;
@@ -348,7 +349,7 @@ static void des_key_setup(word32 key_msw, word32 key_lsw, DESContext * sched)
     sched->iv0 = sched->iv1 = 0;
 }
 
-static const word32 SPboxes[8][64] = {
+static const uint32_t SPboxes[8][64] = {
     {0x01010400, 0x00000000, 0x00010000, 0x01010404,
      0x01010004, 0x00010404, 0x00000004, 0x00010000,
      0x00000400, 0x01010400, 0x01010404, 0x00000400,
@@ -520,10 +521,10 @@ static const word32 SPboxes[8][64] = {
     bitswap(R, L, 16, 0x0000FFFF), \
     bitswap(R, L,  4, 0x0F0F0F0F))
 
-static void des_encipher(word32 * output, word32 L, word32 R,
-			 DESContext * sched)
+static void des_encipher(
+    uint32_t *output, uint32_t L, uint32_t R, DESContext *sched)
 {
-    word32 swap, s0246, s1357;
+    uint32_t swap, s0246, s1357;
 
     IP(L, R);
 
@@ -560,10 +561,10 @@ static void des_encipher(word32 * output, word32 L, word32 R,
     output[1] = R;
 }
 
-static void des_decipher(word32 * output, word32 L, word32 R,
-			 DESContext * sched)
+static void des_decipher(
+    uint32_t *output, uint32_t L, uint32_t R, DESContext *sched)
 {
-    word32 swap, s0246, s1357;
+    uint32_t swap, s0246, s1357;
 
     IP(L, R);
 
@@ -603,7 +604,7 @@ static void des_decipher(word32 * output, word32 L, word32 R,
 static void des_cbc_encrypt(unsigned char *blk,
 			    unsigned int len, DESContext * sched)
 {
-    word32 out[2], iv0, iv1;
+    uint32_t out[2], iv0, iv1;
     unsigned int i;
 
     assert((len & 7) == 0);
@@ -627,7 +628,7 @@ static void des_cbc_encrypt(unsigned char *blk,
 static void des_cbc_decrypt(unsigned char *blk,
 			    unsigned int len, DESContext * sched)
 {
-    word32 out[2], iv0, iv1, xL, xR;
+    uint32_t out[2], iv0, iv1, xL, xR;
     unsigned int i;
 
     assert((len & 7) == 0);
@@ -661,7 +662,7 @@ static void des_3cbc_encrypt(unsigned char *blk,
 static void des_cbc3_encrypt(unsigned char *blk,
 			     unsigned int len, DESContext * scheds)
 {
-    word32 out[2], iv0, iv1;
+    uint32_t out[2], iv0, iv1;
     unsigned int i;
 
     assert((len & 7) == 0);
@@ -695,7 +696,7 @@ static void des_3cbc_decrypt(unsigned char *blk,
 static void des_cbc3_decrypt(unsigned char *blk,
 			     unsigned int len, DESContext * scheds)
 {
-    word32 out[2], iv0, iv1, xL, xR;
+    uint32_t out[2], iv0, iv1, xL, xR;
     unsigned int i;
 
     assert((len & 7) == 0);
@@ -723,7 +724,7 @@ static void des_cbc3_decrypt(unsigned char *blk,
 static void des_sdctr3(unsigned char *blk,
 			     unsigned int len, DESContext * scheds)
 {
-    word32 b[2], iv0, iv1, tmp;
+    uint32_t b[2], iv0, iv1, tmp;
     unsigned int i;
 
     assert((len & 7) == 0);

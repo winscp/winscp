@@ -25,9 +25,9 @@ struct ProxySocket {
 
     bufchain pending_output_data;
     bufchain pending_oob_output_data;
-    int pending_flush;
+    bool pending_flush;
     bufchain pending_input_data;
-    int pending_eof;
+    bool pending_eof;
 
 #define PROXY_STATE_NEW    -1
 #define PROXY_STATE_ACTIVE  0
@@ -37,10 +37,10 @@ struct ProxySocket {
 		* of the initialization/setup/negotiation with the
 		* proxy server.
 		*/
-    int freeze; /* should we freeze the underlying socket when
-		 * we are done with the proxy negotiation? this
-		 * simply caches the value of sk_set_frozen calls.
-		 */
+    bool freeze; /* should we freeze the underlying socket when
+                  * we are done with the proxy negotiation? this
+                  * simply caches the value of sk_set_frozen calls.
+                  */
 
 #define PROXY_CHANGE_NEW      -1
 #define PROXY_CHANGE_CLOSING   0
@@ -64,10 +64,10 @@ struct ProxySocket {
     /* closing */
     const char *closing_error_msg;
     int closing_error_code;
-    int closing_calling_back;
+    bool closing_calling_back;
 
     /* receive */
-    int receive_urgent;
+    bool receive_urgent;
     char *receive_data;
     int receive_len;
 

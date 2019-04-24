@@ -21,7 +21,7 @@ struct ssh1_bpp_state {
 
     struct crcda_ctx *crcda_ctx;
 
-    int pending_compression_request;
+    bool pending_compression_request;
     ssh_compressor *compctx;
     ssh_decompressor *decompctx;
 
@@ -145,7 +145,7 @@ static void ssh1_bpp_handle_input(BinaryPacketProtocol *bpp)
          */
         s->pktin = snew_plus(PktIn, s->biglen);
         s->pktin->qnode.prev = s->pktin->qnode.next = NULL;
-        s->pktin->qnode.on_free_queue = FALSE;
+        s->pktin->qnode.on_free_queue = false;
         s->pktin->type = 0;
 
         s->maxlen = s->biglen;
@@ -209,7 +209,7 @@ static void ssh1_bpp_handle_input(BinaryPacketProtocol *bpp)
         if (s->bpp.logctx) {
             logblank_t blanks[MAX_BLANKS];
             int nblanks = ssh1_censor_packet(
-                s->bpp.pls, s->pktin->type, FALSE,
+                s->bpp.pls, s->pktin->type, false,
                 make_ptrlen(s->data, s->length), blanks);
             log_packet(s->bpp.logctx, PKT_INCOMING, s->pktin->type,
                        ssh1_pkt_type(s->pktin->type),
@@ -244,7 +244,7 @@ static void ssh1_bpp_handle_input(BinaryPacketProtocol *bpp)
                      * schedule a run of our output side in case we
                      * had any packets queued up in the meantime.
                      */
-                    s->pending_compression_request = FALSE;
+                    s->pending_compression_request = false;
                     queue_idempotent_callback(&s->bpp.ic_out_pq);
                 }
                 break;
@@ -287,7 +287,7 @@ static void ssh1_bpp_format_packet(struct ssh1_bpp_state *s, PktOut *pkt)
                                      pkt->length - pkt->prefix);
         logblank_t blanks[MAX_BLANKS];
         int nblanks = ssh1_censor_packet(
-            s->bpp.pls, pkt->type, TRUE, pktdata, blanks);
+            s->bpp.pls, pkt->type, true, pktdata, blanks);
         log_packet(s->bpp.logctx, PKT_OUTGOING, pkt->type,
                    ssh1_pkt_type(pkt->type),
                    pktdata.ptr, pktdata.len, nblanks, blanks,
@@ -353,7 +353,7 @@ static void ssh1_bpp_handle_output(BinaryPacketProtocol *bpp)
              * the pending flag, and stop processing packets this
              * time.
              */
-            s->pending_compression_request = TRUE;
+            s->pending_compression_request = true;
             break;
         }
     }

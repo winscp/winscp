@@ -26,14 +26,14 @@ void win_secur_cleanup(void)
 }
 #endif
 
-int got_advapi(void)
+bool got_advapi(void)
 {
-    static int attempted = FALSE;
-    static int successful;
+    static bool attempted = false;
+    static bool successful;
     static HMODULE advapi;
 
     if (!attempted) {
-        attempted = TRUE;
+        attempted = true;
         advapi = load_system32_dll("advapi32.dll");
         successful = advapi &&
             GET_WINDOWS_FUNCTION(advapi, GetSecurityInfo) &&
@@ -60,7 +60,7 @@ PSID get_user_sid(void)
     if (!got_advapi())
         goto cleanup;
 
-    if ((proc = OpenProcess(MAXIMUM_ALLOWED, FALSE,
+    if ((proc = OpenProcess(MAXIMUM_ALLOWED, false,
                             GetCurrentProcessId())) == NULL)
         goto cleanup;
 
@@ -102,7 +102,7 @@ PSID get_user_sid(void)
     return ret;
 }
 
-int getsids(char **error)
+bool getsids(char **error)
 {
 #ifdef __clang__
 #pragma clang diagnostic push
@@ -114,7 +114,7 @@ int getsids(char **error)
 #pragma clang diagnostic pop
 #endif
 
-    int ret = FALSE;
+    bool ret = false;
 
     *error = NULL;
 
@@ -145,21 +145,21 @@ int getsids(char **error)
         }
     }
 
-    ret = TRUE;
+    ret = true;
 
  cleanup:
     return ret;
 }
   
 
-int make_private_security_descriptor(DWORD permissions,
-                                     PSECURITY_DESCRIPTOR *psd,
-                                     PACL *acl,
-                                     char **error)
+bool make_private_security_descriptor(DWORD permissions,
+                                      PSECURITY_DESCRIPTOR *psd,
+                                      PACL *acl,
+                                      char **error)
 {
     EXPLICIT_ACCESS ea[3];
     int acl_err;
-    int ret = FALSE;
+    bool ret = false;
 
 
     *psd = NULL;
@@ -207,19 +207,19 @@ int make_private_security_descriptor(DWORD permissions,
         goto cleanup;
     }
 
-    if (!SetSecurityDescriptorOwner(*psd, usersid, FALSE)) {
+    if (!SetSecurityDescriptorOwner(*psd, usersid, false)) {
         *error = dupprintf("unable to set owner in security descriptor: %s",
                            win_strerror(GetLastError()));
         goto cleanup;
     }
 
-    if (!SetSecurityDescriptorDacl(*psd, TRUE, *acl, FALSE)) {
+    if (!SetSecurityDescriptorDacl(*psd, true, *acl, false)) {
         *error = dupprintf("unable to set DACL in security descriptor: %s",
                            win_strerror(GetLastError()));
         goto cleanup;
     }
 
-    ret = TRUE;
+    ret = true;
 
   cleanup:
     if (!ret) {
@@ -238,11 +238,11 @@ int make_private_security_descriptor(DWORD permissions,
     return ret;
 }
 
-static int really_restrict_process_acl(char **error)
+static bool really_restrict_process_acl(char **error)
 {
     EXPLICIT_ACCESS ea[2];
     int acl_err;
-    int ret=FALSE;
+    bool ret = false;
     PACL acl = NULL;
 
     static const DWORD nastyace=WRITE_DAC | WRITE_OWNER |
@@ -289,7 +289,7 @@ static int really_restrict_process_acl(char **error)
     }
 		      
 
-    ret=TRUE;
+    ret=true;
     
   cleanup:
     if (!ret) {
@@ -322,12 +322,12 @@ static int really_restrict_process_acl(char **error)
 void restrict_process_acl(void)
 {
     char *error = NULL;
-    int ret;
+    bool ret;
 
 #if !defined NO_SECURITY
     ret = really_restrict_process_acl(&error);
 #else
-    ret = FALSE;
+    ret = false;
     error = dupstr("ACL restrictions not compiled into this binary");
 #endif
     if (!ret)

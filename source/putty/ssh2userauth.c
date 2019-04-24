@@ -23,10 +23,10 @@ struct ssh2_userauth_state {
 
     PacketProtocolLayer *transport_layer, *successor_layer;
     Filename *keyfile;
-    int tryagent, change_username;
+    bool tryagent, change_username;
     char *hostname, *fullhostname;
     char *default_username;
-    int try_ki_auth, try_gssapi_auth, try_gssapi_kex_auth, gssapi_fwd;
+    bool try_ki_auth, try_gssapi_auth, try_gssapi_kex_auth, gssapi_fwd;
     char *loghost; // WINSCP
     int change_password; // WINSCP
 
@@ -41,28 +41,28 @@ struct ssh2_userauth_state {
         AUTH_TYPE_KEYBOARD_INTERACTIVE,
         AUTH_TYPE_KEYBOARD_INTERACTIVE_QUIET
     } type;
-    int need_pw, can_pubkey, can_passwd, can_keyb_inter;
+    bool need_pw, can_pubkey, can_passwd, can_keyb_inter;
     int userpass_ret;
-    int tried_pubkey_config, done_agent;
+    bool tried_pubkey_config, done_agent;
     struct ssh_connection_shared_gss_state *shgss;
 #ifndef NO_GSSAPI
-    int can_gssapi;
-    int can_gssapi_keyex_auth;
-    int tried_gssapi;
-    int tried_gssapi_keyex_auth;
+    bool can_gssapi;
+    bool can_gssapi_keyex_auth;
+    bool tried_gssapi;
+    bool tried_gssapi_keyex_auth;
     time_t gss_cred_expiry;
     Ssh_gss_buf gss_buf;
     Ssh_gss_buf gss_rcvtok, gss_sndtok;
     Ssh_gss_stat gss_stat;
 #endif
-    int kbd_inter_refused;
+    bool kbd_inter_refused;
     prompts_t *cur_prompt;
     int num_prompts;
     char *username;
     char *password;
-    int got_username;
+    bool got_username;
     strbuf *publickey_blob;
-    int privatekey_available, privatekey_encrypted;
+    bool privatekey_available, privatekey_encrypted;
     char *publickey_algorithm;
     char *publickey_comment;
     void *agent_response_to_free;
@@ -73,7 +73,7 @@ struct ssh2_userauth_state {
     ptrlen pk, alg, comment;
     int len;
     PktOut *pktout;
-    int want_user_input;
+    bool want_user_input;
 
     agent_pending_query *auth_agent_query;
     bufchain banner;
@@ -83,11 +83,11 @@ struct ssh2_userauth_state {
 
 static void ssh2_userauth_free(PacketProtocolLayer *); 
 static void ssh2_userauth_process_queue(PacketProtocolLayer *);
-static int ssh2_userauth_get_specials(
+static bool ssh2_userauth_get_specials(
     PacketProtocolLayer *ppl, add_special_fn_t add_special, void *ctx);
 static void ssh2_userauth_special_cmd(PacketProtocolLayer *ppl,
                                       SessionSpecialCode code, int arg);
-static int ssh2_userauth_want_user_input(PacketProtocolLayer *ppl);
+static bool ssh2_userauth_want_user_input(PacketProtocolLayer *ppl);
 static void ssh2_userauth_got_user_input(PacketProtocolLayer *ppl);
 static void ssh2_userauth_reconfigure(PacketProtocolLayer *ppl, Conf *conf);
 
@@ -116,11 +116,10 @@ static const struct PacketProtocolLayerVtable ssh2_userauth_vtable = {
 PacketProtocolLayer *ssh2_userauth_new(
     PacketProtocolLayer *successor_layer,
     const char *hostname, const char *fullhostname,
-    Filename *keyfile, int tryagent,
-    const char *default_username, int change_username,
-    int try_ki_auth,
-    int try_gssapi_auth, int try_gssapi_kex_auth,
-    int gssapi_fwd, struct ssh_connection_shared_gss_state *shgss,
+    Filename *keyfile, bool tryagent,
+    const char *default_username, bool change_username,
+    bool try_ki_auth, bool try_gssapi_auth, bool try_gssapi_kex_auth,
+    bool gssapi_fwd, struct ssh_connection_shared_gss_state *shgss,
     const char * loghost, int change_password) // WINSCP
 {
     struct ssh2_userauth_state *s = snew(struct ssh2_userauth_state);
@@ -212,8 +211,8 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
     crBegin(s->crState);
 
 #ifndef NO_GSSAPI
-    s->tried_gssapi = FALSE;
-    s->tried_gssapi_keyex_auth = FALSE;
+    s->tried_gssapi = false;
+    s->tried_gssapi_keyex_auth = false;
 #endif
 
     /*
@@ -357,7 +356,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
      *    the username they will want to be able to get back and
      *    retype it!
      */
-    s->got_username = FALSE;
+    s->got_username = false;
     while (1) {
         /*
          * Get a username.
@@ -370,9 +369,9 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
              */
         } else if ((s->username = s->default_username) == NULL) {
             s->cur_prompt = new_prompts();
-            s->cur_prompt->to_server = TRUE;
+            s->cur_prompt->to_server = true;
             s->cur_prompt->name = dupstr("SSH login name");
-            add_prompt(s->cur_prompt, dupstr("login as: "), TRUE); 
+            add_prompt(s->cur_prompt, dupstr("login as: "), true); 
             s->userpass_ret = seat_get_userpass_input(
                 s->ppl.seat, s->cur_prompt, NULL);
             while (1) {
@@ -384,9 +383,9 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                 if (s->userpass_ret >= 0)
                     break;
 
-                s->want_user_input = TRUE;
+                s->want_user_input = true;
                 crReturnV;
-                s->want_user_input = FALSE;
+                s->want_user_input = false;
             }
             if (!s->userpass_ret) {
                 /*
@@ -403,7 +402,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
             if ((flags & FLAG_VERBOSE) || (flags & FLAG_INTERACTIVE))
                 ppl_printf((WINSCP_BOM "Using username \"%s\".\r\n", s->username));
         }
-        s->got_username = TRUE;
+        s->got_username = true;
 
         /*
          * Send an authentication request using method "none": (a)
@@ -419,11 +418,11 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
         pq_push(s->ppl.out_pq, s->pktout);
         s->type = AUTH_TYPE_NONE;
 
-        s->tried_pubkey_config = FALSE;
-        s->kbd_inter_refused = FALSE;
+        s->tried_pubkey_config = false;
+        s->kbd_inter_refused = false;
 
         /* Reset agent request state. */
-        s->done_agent = FALSE;
+        s->done_agent = false;
         if (s->agent_response.ptr) {
             if (s->pkblob_pos_in_agent) {
                 s->asrc->pos = s->pkblob_pos_in_agent;
@@ -600,7 +599,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                 /* gssapi-keyex authentication */
 
                 s->type = AUTH_TYPE_GSSAPI;
-                s->tried_gssapi_keyex_auth = TRUE;
+                s->tried_gssapi_keyex_auth = true;
                 s->ppl.bpp->pls->actx = SSH2_PKTCTX_GSSAPI;
 
                 if (s->shgss->lib->gsslogmsg)
@@ -642,7 +641,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                 put_stringz(s->pktout, s->successor_layer->vt->name);
                 put_stringz(s->pktout, "publickey");
                                                     /* method */
-                put_bool(s->pktout, FALSE); /* no signature included */
+                put_bool(s->pktout, false); /* no signature included */
                 put_stringpl(s->pktout, s->alg);
                 put_stringpl(s->pktout, s->pk);
                 pq_push(s->ppl.out_pq, s->pktout);
@@ -673,7 +672,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                     put_stringz(s->pktout, s->successor_layer->vt->name);
                     put_stringz(s->pktout, "publickey");
                                                         /* method */
-                    put_bool(s->pktout, TRUE);  /* signature included */
+                    put_bool(s->pktout, true);  /* signature included */
                     put_stringpl(s->pktout, s->alg);
                     put_stringpl(s->pktout, s->pk);
 
@@ -717,12 +716,12 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
 
                 /* Do we have any keys left to try? */
                 if (s->pkblob_pos_in_agent) {
-                    s->done_agent = TRUE;
-                    s->tried_pubkey_config = TRUE;
+                    s->done_agent = true;
+                    s->tried_pubkey_config = true;
                 } else {
                     s->keyi++;
                     if (s->keyi >= s->nkeys)
-                        s->done_agent = TRUE;
+                        s->done_agent = true;
                 }
 
             } else if (s->can_pubkey && s->publickey_blob &&
@@ -733,7 +732,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
 
                 s->ppl.bpp->pls->actx = SSH2_PKTCTX_PUBLICKEY;
 
-                s->tried_pubkey_config = TRUE;
+                s->tried_pubkey_config = true;
 
                 /*
                  * Try the public key supplied in the configuration.
@@ -746,7 +745,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                 put_stringz(s->pktout, s->username);
                 put_stringz(s->pktout, s->successor_layer->vt->name);
                 put_stringz(s->pktout, "publickey");    /* method */
-                put_bool(s->pktout, FALSE);
+                put_bool(s->pktout, false);
                                                 /* no signature included */
                 put_stringz(s->pktout, s->publickey_algorithm);
                 put_string(s->pktout, s->publickey_blob->s,
@@ -779,12 +778,12 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                          * Get a passphrase from the user.
                          */
                         s->cur_prompt = new_prompts();
-                        s->cur_prompt->to_server = FALSE;
+                        s->cur_prompt->to_server = false;
                         s->cur_prompt->name = dupstr("SSH key passphrase");
                         add_prompt(s->cur_prompt,
                                    dupprintf("Passphrase for key \"%.100s\": ",
                                              s->publickey_comment),
-                                   FALSE);
+                                   false);
                         s->userpass_ret = seat_get_userpass_input(
                             s->ppl.seat, s->cur_prompt, NULL);
                         while (1) {
@@ -797,9 +796,9 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                             if (s->userpass_ret >= 0)
                                 break;
 
-                            s->want_user_input = TRUE;
+                            s->want_user_input = true;
                             crReturnV;
-                            s->want_user_input = FALSE;
+                            s->want_user_input = false;
                         }
                         if (!s->userpass_ret) {
                             /* Failed to get a passphrase. Terminate. */
@@ -855,7 +854,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                     put_stringz(s->pktout, s->username);
                     put_stringz(s->pktout, s->successor_layer->vt->name);
                     put_stringz(s->pktout, "publickey"); /* method */
-                    put_bool(s->pktout, TRUE); /* signature follows */
+                    put_bool(s->pktout, true); /* signature follows */
                     put_stringz(s->pktout, ssh_key_ssh_id(key->key));
                     pkblob = strbuf_new();
                     ssh_key_public_blob(key->key, BinarySink_UPCAST(pkblob));
@@ -874,7 +873,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                     put_data(sigdata, s->pktout->data + 5,
                              s->pktout->length - 5);
                     sigblob = strbuf_new();
-                    ssh_key_sign(key->key, sigdata->s, sigdata->len,
+                    ssh_key_sign(key->key, sigdata->s, sigdata->len, 0,
                                  BinarySink_UPCAST(sigblob));
                     strbuf_free(sigdata);
                     ssh2_userauth_add_sigblob(
@@ -899,7 +898,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                 ptrlen data;
 
                 s->type = AUTH_TYPE_GSSAPI;
-                s->tried_gssapi = TRUE;
+                s->tried_gssapi = true;
                 s->ppl.bpp->pls->actx = SSH2_PKTCTX_GSSAPI;
 
                 if (s->shgss->lib->gsslogmsg)
@@ -1033,11 +1032,44 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
 
                     if (s->gss_stat == SSH_GSS_S_CONTINUE_NEEDED) {
                         crMaybeWaitUntilV((pktin = ssh2_userauth_pop(s)) != NULL);
-                        if (pktin->type != SSH2_MSG_USERAUTH_GSSAPI_TOKEN) {
+
+                        if (pktin->type == SSH2_MSG_USERAUTH_GSSAPI_ERRTOK) {
+                            /*
+                             * Per RFC 4462 section 3.9, this packet
+                             * type MUST immediately precede an
+                             * ordinary USERAUTH_FAILURE.
+                             *
+                             * We currently don't know how to do
+                             * anything with the GSSAPI error token
+                             * contained in this packet, so we ignore
+                             * it and just wait for the following
+                             * FAILURE.
+                             */
+                            crMaybeWaitUntilV(
+                                (pktin = ssh2_userauth_pop(s)) != NULL);
+                            if (pktin->type != SSH2_MSG_USERAUTH_FAILURE) {
+                                ssh_proto_error(
+                                    s->ppl.ssh, "Received unexpected packet "
+                                    "after SSH_MSG_USERAUTH_GSSAPI_ERRTOK "
+                                    "(expected SSH_MSG_USERAUTH_FAILURE): "
+                                    "type %d (%s)", pktin->type,
+                                    ssh2_pkt_type(s->ppl.bpp->pls->kctx,
+                                                  s->ppl.bpp->pls->actx,
+                                                  pktin->type));
+                                return;
+                            }
+                        }
+
+                        if (pktin->type == SSH2_MSG_USERAUTH_FAILURE) {
+                            ppl_logevent(("GSSAPI authentication failed"));
+                            s->gss_stat = SSH_GSS_FAILURE;
+                            pq_push_front(s->ppl.in_pq, pktin);
+                            break;
+                        } else if (pktin->type !=
+                                   SSH2_MSG_USERAUTH_GSSAPI_TOKEN) {
                             ppl_logevent(("GSSAPI authentication -"
                                           " bad server response"));
                             s->gss_stat = SSH_GSS_FAILURE;
-                            pq_push_front(s->ppl.in_pq, pktin);
                             break;
                         }
                         data = get_string(pktin);
@@ -1090,7 +1122,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                      * Give up on it entirely. */
                     pq_push_front(s->ppl.in_pq, pktin);
                     s->type = AUTH_TYPE_KEYBOARD_INTERACTIVE_QUIET;
-                    s->kbd_inter_refused = TRUE; /* don't try it again */
+                    s->kbd_inter_refused = true; /* don't try it again */
                     continue;
                 }
 
@@ -1110,7 +1142,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                     inst = get_string(pktin);
                     get_string(pktin); /* skip language tag */
                     s->cur_prompt = new_prompts();
-                    s->cur_prompt->to_server = TRUE;
+                    s->cur_prompt->to_server = true;
 
                     /*
                      * Get any prompt(s) from the packet.
@@ -1118,7 +1150,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                     s->num_prompts = get_uint32(pktin);
                     for (i = 0; i < s->num_prompts; i++) {
                         ptrlen prompt;
-                        int echo;
+                        bool echo;
                         static char noprompt[] =
                             "<server failed to send prompt>: ";
 
@@ -1136,11 +1168,11 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                          * local prompts? */
                         s->cur_prompt->name =
                             dupprintf("SSH server: %.*s", PTRLEN_PRINTF(name));
-                        s->cur_prompt->name_reqd = TRUE;
+                        s->cur_prompt->name_reqd = true;
                     } else {
                         s->cur_prompt->name =
                             dupstr("SSH server authentication");
-                        s->cur_prompt->name_reqd = FALSE;
+                        s->cur_prompt->name_reqd = false;
                     }
                     /* We add a prefix to try to make it clear that a prompt
                      * has come from the server.
@@ -1155,9 +1187,9 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                                       "authentication.%s%.*s",
                                       inst.len ? "\n" : "",
                                       PTRLEN_PRINTF(inst));
-                        s->cur_prompt->instr_reqd = TRUE;
+                        s->cur_prompt->instr_reqd = true;
                     } else {
-                        s->cur_prompt->instr_reqd = FALSE;
+                        s->cur_prompt->instr_reqd = false;
                     }
 
                     /*
@@ -1175,9 +1207,9 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                         if (s->userpass_ret >= 0)
                             break;
 
-                        s->want_user_input = TRUE;
+                        s->want_user_input = true;
                         crReturnV;
-                        s->want_user_input = FALSE;
+                        s->want_user_input = false;
                     }
                     if (!s->userpass_ret) {
                         /*
@@ -1230,7 +1262,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                 /*
                  * Plain old password authentication.
                  */
-                int changereq_first_time; /* not live over crReturn */
+                bool changereq_first_time; /* not live over crReturn */
 
                 s->ppl.bpp->pls->actx = SSH2_PKTCTX_PASSWORD;
 
@@ -1245,11 +1277,11 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                 // no indentation to ease merges
                 // /WINSCP
                 s->cur_prompt = new_prompts();
-                s->cur_prompt->to_server = TRUE;
+                s->cur_prompt->to_server = true;
                 s->cur_prompt->name = dupstr("SSH password");
                 add_prompt(s->cur_prompt, dupprintf("%s@%s's password: ",
                                                     s->username, s->hostname),
-                           FALSE);
+                           false);
 
                 s->userpass_ret = seat_get_userpass_input(
                     s->ppl.seat, s->cur_prompt, NULL);
@@ -1262,9 +1294,9 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                     if (s->userpass_ret >= 0)
                         break;
 
-                    s->want_user_input = TRUE;
+                    s->want_user_input = true;
                     crReturnV;
-                    s->want_user_input = FALSE;
+                    s->want_user_input = false;
                 }
                 if (!s->userpass_ret) {
                     /*
@@ -1301,7 +1333,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                 put_stringz(s->pktout, s->username);
                 put_stringz(s->pktout, s->successor_layer->vt->name);
                 put_stringz(s->pktout, "password");
-                put_bool(s->pktout, FALSE);
+                put_bool(s->pktout, false);
                 put_stringz(s->pktout, s->password);
                 s->pktout->minlen = 256;
                 pq_push(s->ppl.out_pq, s->pktout);
@@ -1314,7 +1346,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                  */
                 crMaybeWaitUntilV((pktin = ssh2_userauth_pop(s)) != NULL);
                 } // WINSCP
-                changereq_first_time = TRUE;
+                changereq_first_time = true;
 
                 while ((pktin->type == SSH2_MSG_USERAUTH_PASSWD_CHANGEREQ) ||
                        (s->change_password != 0)) { // WINSCP
@@ -1325,7 +1357,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                      * Loop until the server accepts it.
                      */
 
-                    int got_new = FALSE; /* not live over crReturn */
+                    bool got_new = false; /* not live over crReturn */
                     ptrlen prompt;  /* not live over crReturn */
                     
                     if (s->change_password == 0) // WINSCP
@@ -1344,10 +1376,10 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                     prompt = get_string(pktin);
 
                     s->cur_prompt = new_prompts();
-                    s->cur_prompt->to_server = TRUE;
+                    s->cur_prompt->to_server = true;
                     s->cur_prompt->name = dupstr("New SSH password");
                     s->cur_prompt->instruction = mkstr(prompt);
-                    s->cur_prompt->instr_reqd = TRUE;
+                    s->cur_prompt->instr_reqd = true;
                     /*
                      * There's no explicit requirement in the protocol
                      * for the "old" passwords in the original and
@@ -1362,11 +1394,11 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                      */
                     add_prompt(s->cur_prompt,
                                dupstr("Current password (blank for previously entered password): "),
-                               FALSE);
+                               false);
                     add_prompt(s->cur_prompt, dupstr("Enter new password: "),
-                               FALSE);
+                               false);
                     add_prompt(s->cur_prompt, dupstr("Confirm new password: "),
-                               FALSE);
+                               false);
 
                     /*
                      * Loop until the user manages to enter the same
@@ -1385,9 +1417,9 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                             if (s->userpass_ret >= 0)
                                 break;
 
-                            s->want_user_input = TRUE;
+                            s->want_user_input = true;
                             crReturnV;
-                            s->want_user_input = FALSE;
+                            s->want_user_input = false;
                         }
                         if (!s->userpass_ret) {
                             /*
@@ -1441,7 +1473,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                     put_stringz(s->pktout, s->username);
                     put_stringz(s->pktout, s->successor_layer->vt->name);
                     put_stringz(s->pktout, "password");
-                    put_bool(s->pktout, TRUE);
+                    put_bool(s->pktout, true);
                     put_stringz(s->pktout, s->password);
                     put_stringz(s->pktout,
                                        s->cur_prompt->prompts[1]->result);
@@ -1456,7 +1488,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                      * new password.)
                      */
                     crMaybeWaitUntilV((pktin = ssh2_userauth_pop(s)) != NULL);
-                    changereq_first_time = FALSE;
+                    changereq_first_time = false;
 
                 }
 
@@ -1666,11 +1698,11 @@ static PktOut *ssh2_userauth_gss_packet(
 }
 #endif
 
-static int ssh2_userauth_get_specials(
+static bool ssh2_userauth_get_specials(
     PacketProtocolLayer *ppl, add_special_fn_t add_special, void *ctx)
 {
     /* No specials provided by this layer. */
-    return FALSE;
+    return false;
 }
 
 static void ssh2_userauth_special_cmd(PacketProtocolLayer *ppl,
@@ -1679,7 +1711,7 @@ static void ssh2_userauth_special_cmd(PacketProtocolLayer *ppl,
     /* No specials provided by this layer. */
 }
 
-static int ssh2_userauth_want_user_input(PacketProtocolLayer *ppl)
+static bool ssh2_userauth_want_user_input(PacketProtocolLayer *ppl)
 {
     struct ssh2_userauth_state *s =
         container_of(ppl, struct ssh2_userauth_state, ppl);

@@ -19,42 +19,42 @@ struct ChannelVtable {
     void (*open_confirmation)(Channel *);
     void (*open_failed)(Channel *, const char *error_text);
 
-    int (*send)(Channel *, int is_stderr, const void *buf, int len);
+    int (*send)(Channel *, bool is_stderr, const void *buf, int len);
     void (*send_eof)(Channel *);
-    void (*set_input_wanted)(Channel *, int wanted);
+    void (*set_input_wanted)(Channel *, bool wanted);
 
     char *(*log_close_msg)(Channel *);
 
-    int (*want_close)(Channel *, int sent_local_eof, int rcvd_remote_eof);
+    bool (*want_close)(Channel *, bool sent_local_eof, bool rcvd_remote_eof);
 
     /* A method for every channel request we know of. All of these
-     * return TRUE for success or FALSE for failure. */
-    int (*rcvd_exit_status)(Channel *, int status);
-    int (*rcvd_exit_signal)(
-        Channel *chan, ptrlen signame, int core_dumped, ptrlen msg);
-    int (*rcvd_exit_signal_numeric)(
-        Channel *chan, int signum, int core_dumped, ptrlen msg);
-    int (*run_shell)(Channel *chan);
-    int (*run_command)(Channel *chan, ptrlen command);
-    int (*run_subsystem)(Channel *chan, ptrlen subsys);
-    int (*enable_x11_forwarding)(
-        Channel *chan, int oneshot, ptrlen authproto, ptrlen authdata,
+     * return true for success or false for failure. */
+    bool (*rcvd_exit_status)(Channel *, int status);
+    bool (*rcvd_exit_signal)(
+        Channel *chan, ptrlen signame, bool core_dumped, ptrlen msg);
+    bool (*rcvd_exit_signal_numeric)(
+        Channel *chan, int signum, bool core_dumped, ptrlen msg);
+    bool (*run_shell)(Channel *chan);
+    bool (*run_command)(Channel *chan, ptrlen command);
+    bool (*run_subsystem)(Channel *chan, ptrlen subsys);
+    bool (*enable_x11_forwarding)(
+        Channel *chan, bool oneshot, ptrlen authproto, ptrlen authdata,
         unsigned screen_number);
-    int (*enable_agent_forwarding)(Channel *chan);
-    int (*allocate_pty)(
+    bool (*enable_agent_forwarding)(Channel *chan);
+    bool (*allocate_pty)(
         Channel *chan, ptrlen termtype, unsigned width, unsigned height,
         unsigned pixwidth, unsigned pixheight, struct ssh_ttymodes modes);
-    int (*set_env)(Channel *chan, ptrlen var, ptrlen value);
-    int (*send_break)(Channel *chan, unsigned length);
-    int (*send_signal)(Channel *chan, ptrlen signame);
-    int (*change_window_size)(
+    bool (*set_env)(Channel *chan, ptrlen var, ptrlen value);
+    bool (*send_break)(Channel *chan, unsigned length);
+    bool (*send_signal)(Channel *chan, ptrlen signame);
+    bool (*change_window_size)(
         Channel *chan, unsigned width, unsigned height,
         unsigned pixwidth, unsigned pixheight);
 
     /* A method for signalling success/failure responses to channel
      * requests initiated from the SshChannel vtable with want_reply
      * true. */
-    void (*request_response)(Channel *, int success);
+    void (*request_response)(Channel *, bool success);
 };
 
 struct Channel {
@@ -111,31 +111,31 @@ void chan_remotely_opened_failure(Channel *chan, const char *errtext);
 
 /* want_close for any channel that wants the default behaviour of not
  * closing until both directions have had an EOF */
-int chan_default_want_close(Channel *, int, int);
+bool chan_default_want_close(Channel *, bool, bool);
 
 /* default implementations that refuse all the channel requests */
-int chan_no_exit_status(Channel *, int);
-int chan_no_exit_signal(Channel *, ptrlen, int, ptrlen);
-int chan_no_exit_signal_numeric(Channel *, int, int, ptrlen);
-int chan_no_run_shell(Channel *chan);
-int chan_no_run_command(Channel *chan, ptrlen command);
-int chan_no_run_subsystem(Channel *chan, ptrlen subsys);
-int chan_no_enable_x11_forwarding(
-    Channel *chan, int oneshot, ptrlen authproto, ptrlen authdata,
+bool chan_no_exit_status(Channel *, int);
+bool chan_no_exit_signal(Channel *, ptrlen, bool, ptrlen);
+bool chan_no_exit_signal_numeric(Channel *, int, bool, ptrlen);
+bool chan_no_run_shell(Channel *chan);
+bool chan_no_run_command(Channel *chan, ptrlen command);
+bool chan_no_run_subsystem(Channel *chan, ptrlen subsys);
+bool chan_no_enable_x11_forwarding(
+    Channel *chan, bool oneshot, ptrlen authproto, ptrlen authdata,
     unsigned screen_number);
-int chan_no_enable_agent_forwarding(Channel *chan);
-int chan_no_allocate_pty(
+bool chan_no_enable_agent_forwarding(Channel *chan);
+bool chan_no_allocate_pty(
     Channel *chan, ptrlen termtype, unsigned width, unsigned height,
     unsigned pixwidth, unsigned pixheight, struct ssh_ttymodes modes);
-int chan_no_set_env(Channel *chan, ptrlen var, ptrlen value);
-int chan_no_send_break(Channel *chan, unsigned length);
-int chan_no_send_signal(Channel *chan, ptrlen signame);
-int chan_no_change_window_size(
+bool chan_no_set_env(Channel *chan, ptrlen var, ptrlen value);
+bool chan_no_send_break(Channel *chan, unsigned length);
+bool chan_no_send_signal(Channel *chan, ptrlen signame);
+bool chan_no_change_window_size(
     Channel *chan, unsigned width, unsigned height,
     unsigned pixwidth, unsigned pixheight);
 
 /* default implementation that never expects to receive a response */
-void chan_no_request_response(Channel *, int);
+void chan_no_request_response(Channel *, bool);
 
 /*
  * Constructor for a trivial do-nothing implementation of
@@ -156,7 +156,7 @@ Channel *zombiechan_new(void);
  */
 
 struct SshChannelVtable {
-    int (*write)(SshChannel *c, int is_stderr, const void *, int);
+    int (*write)(SshChannel *c, bool is_stderr, const void *, int);
     void (*write_eof)(SshChannel *c);
     void (*initiate_close)(SshChannel *c, const char *err);
     void (*unthrottle)(SshChannel *c, int bufsize);
@@ -174,7 +174,7 @@ struct SshChannelVtable {
      * want_reply flag, which will cause a callback to
      * chan_request_response when the result is available.
      *
-     * The ones that return 'int' use it to indicate that the SSH
+     * The ones that return 'bool' use it to indicate that the SSH
      * protocol in use doesn't support this request at all.
      *
      * (It's also intentional that not all of them have a want_reply
@@ -185,28 +185,28 @@ struct SshChannelVtable {
      */
     void (*send_exit_status)(SshChannel *c, int status);
     void (*send_exit_signal)(
-        SshChannel *c, ptrlen signame, int core_dumped, ptrlen msg);
+        SshChannel *c, ptrlen signame, bool core_dumped, ptrlen msg);
     void (*send_exit_signal_numeric)(
-        SshChannel *c, int signum, int core_dumped, ptrlen msg);
+        SshChannel *c, int signum, bool core_dumped, ptrlen msg);
     void (*request_x11_forwarding)(
-        SshChannel *c, int want_reply, const char *authproto,
-        const char *authdata, int screen_number, int oneshot);
+        SshChannel *c, bool want_reply, const char *authproto,
+        const char *authdata, int screen_number, bool oneshot);
     void (*request_agent_forwarding)(
-        SshChannel *c, int want_reply);
+        SshChannel *c, bool want_reply);
     void (*request_pty)(
-        SshChannel *c, int want_reply, Conf *conf, int w, int h);
-    int (*send_env_var)(
-        SshChannel *c, int want_reply, const char *var, const char *value);
+        SshChannel *c, bool want_reply, Conf *conf, int w, int h);
+    bool (*send_env_var)(
+        SshChannel *c, bool want_reply, const char *var, const char *value);
     void (*start_shell)(
-        SshChannel *c, int want_reply);
+        SshChannel *c, bool want_reply);
     void (*start_command)(
-        SshChannel *c, int want_reply, const char *command);
-    int (*start_subsystem)(
-        SshChannel *c, int want_reply, const char *subsystem);
-    int (*send_serial_break)(
-        SshChannel *c, int want_reply, int length); /* length=0 for default */
-    int (*send_signal)(
-        SshChannel *c, int want_reply, const char *signame);
+        SshChannel *c, bool want_reply, const char *command);
+    bool (*start_subsystem)(
+        SshChannel *c, bool want_reply, const char *subsystem);
+    bool (*send_serial_break)(
+        SshChannel *c, bool want_reply, int length); /* length=0 for default */
+    bool (*send_signal)(
+        SshChannel *c, bool want_reply, const char *signame);
     void (*send_terminal_size_change)(
         SshChannel *c, int w, int h);
     void (*hint_channel_is_simple)(SshChannel *c);
@@ -217,7 +217,7 @@ struct SshChannel {
     ConnectionLayer *cl;
 };
 
-#define sshfwd_write(c, buf, len) ((c)->vt->write(c, FALSE, buf, len))
+#define sshfwd_write(c, buf, len) ((c)->vt->write(c, false, buf, len))
 #define sshfwd_write_ext(c, stderr, buf, len) \
     ((c)->vt->write(c, stderr, buf, len))
 #define sshfwd_write_eof(c) ((c)->vt->write_eof(c))
@@ -265,7 +265,7 @@ struct SshChannel {
 
 mainchan *mainchan_new(
     PacketProtocolLayer *ppl, ConnectionLayer *cl, Conf *conf,
-    int term_width, int term_height, int is_simple, SshChannel **sc_out);
+    int term_width, int term_height, bool is_simple, SshChannel **sc_out);
 void mainchan_get_specials(
     mainchan *mc, add_special_fn_t add_special, void *ctx);
 void mainchan_special_cmd(mainchan *mc, SessionSpecialCode code, int arg);

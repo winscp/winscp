@@ -42,7 +42,7 @@ void request_callback_notifications(toplevel_callback_notify_fn_t fn,
 static void run_idempotent_callback(void *ctx)
 {
     struct IdempotentCallback *ic = (struct IdempotentCallback *)ctx;
-    ic->queued = FALSE;
+    ic->queued = false;
     ic->fn(ic->ctx);
 }
 
@@ -50,7 +50,7 @@ void queue_idempotent_callback(struct IdempotentCallback *ic)
 {
     if (ic->queued)
         return;
-    ic->queued = TRUE;
+    ic->queued = true;
 #ifdef MPEXT
     assert(ic->set != NULL);
 #endif
@@ -117,9 +117,9 @@ void queue_toplevel_callback(CALLBACK_SET toplevel_callback_fn_t fn, void *ctx)
     cb->next = NULL;
 }
 
-int run_toplevel_callbacks(CALLBACK_SET_ONLY)
+bool run_toplevel_callbacks(CALLBACK_SET_ONLY)
 {
-    int done_something = FALSE;
+    bool done_something = false;
 
     if (cbhead) {
         /*
@@ -140,12 +140,12 @@ int run_toplevel_callbacks(CALLBACK_SET_ONLY)
         sfree(cbcurr);
         cbcurr = NULL;
 
-        done_something = TRUE;
+        done_something = true;
     }
     return done_something;
 }
 
-int toplevel_callback_pending(CALLBACK_SET_ONLY)
+bool toplevel_callback_pending(CALLBACK_SET_ONLY)
 {
     // MP does not have to be guarded
     return cbcurr != NULL || cbhead != NULL;

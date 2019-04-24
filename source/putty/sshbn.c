@@ -2085,7 +2085,8 @@ Bignum modinv(Bignum number, Bignum modulus)
 char *bignum_decimal(Bignum x)
 {
     int ndigits, ndigit;
-    int i, iszero;
+    int i;
+    bool iszero;
     BignumInt carry;
     char *ret;
     BignumInt *workspace;
@@ -2130,7 +2131,7 @@ char *bignum_decimal(Bignum x)
     ndigit = ndigits - 1;
     ret[ndigit] = '\0';
     do {
-	iszero = 1;
+	iszero = true;
 	carry = 0;
 	for (i = 0; i < (int)x[0]; i++) {
             /*
@@ -2159,7 +2160,7 @@ char *bignum_decimal(Bignum x)
 	    carry = r;
 
 	    if (workspace[i])
-		iszero = 0;
+		iszero = false;
 	}
 	ret[--ndigit] = (char) (carry + '0');
     } while (!iszero);

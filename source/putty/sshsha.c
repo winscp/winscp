@@ -13,12 +13,12 @@
  * Core SHA algorithm: processes 16-word blocks into a message digest.
  */
 
-#define rol(x,y) ( ((x) << (y)) | (((uint32)x) >> (32-y)) )
+#define rol(x,y) ( ((x) << (y)) | (((uint32_t)x) >> (32-y)) )
 
 static void sha1_sw(SHA_State * s, const unsigned char *q, int len);
 static void sha1_ni(SHA_State * s, const unsigned char *q, int len);
 
-static void SHA_Core_Init(uint32 h[5])
+static void SHA_Core_Init(uint32_t h[5])
 {
     h[0] = 0x67452301;
     h[1] = 0xefcdab89;
@@ -27,10 +27,10 @@ static void SHA_Core_Init(uint32 h[5])
     h[4] = 0xc3d2e1f0;
 }
 
-void SHATransform(word32 * digest, word32 * block)
+void SHATransform(uint32_t * digest, uint32_t * block)
 {
-    word32 w[80];
-    word32 a, b, c, d, e;
+    uint32_t w[80];
+    uint32_t a, b, c, d, e;
     int t;
 
 #ifdef RANDOM_DIAGNOSTICS
@@ -52,7 +52,7 @@ void SHATransform(word32 * digest, word32 * block)
 	w[t] = block[t];
 
     for (t = 16; t < 80; t++) {
-	word32 tmp = w[t - 3] ^ w[t - 8] ^ w[t - 14] ^ w[t - 16];
+	uint32_t tmp = w[t - 3] ^ w[t - 8] ^ w[t - 14] ^ w[t - 16];
 	w[t] = rol(tmp, 1);
     }
 
@@ -63,7 +63,7 @@ void SHATransform(word32 * digest, word32 * block)
     e = digest[4];
 
     for (t = 0; t < 20; t++) {
-	word32 tmp =
+	uint32_t tmp =
 	    rol(a, 5) + ((b & c) | (d & ~b)) + e + w[t] + 0x5a827999;
 	e = d;
 	d = c;
@@ -72,7 +72,7 @@ void SHATransform(word32 * digest, word32 * block)
 	a = tmp;
     }
     for (t = 20; t < 40; t++) {
-	word32 tmp = rol(a, 5) + (b ^ c ^ d) + e + w[t] + 0x6ed9eba1;
+	uint32_t tmp = rol(a, 5) + (b ^ c ^ d) + e + w[t] + 0x6ed9eba1;
 	e = d;
 	d = c;
 	c = rol(b, 30);
@@ -80,7 +80,7 @@ void SHATransform(word32 * digest, word32 * block)
 	a = tmp;
     }
     for (t = 40; t < 60; t++) {
-	word32 tmp = rol(a,
+	uint32_t tmp = rol(a,
 			 5) + ((b & c) | (b & d) | (c & d)) + e + w[t] +
 	    0x8f1bbcdc;
 	e = d;
@@ -90,7 +90,7 @@ void SHATransform(word32 * digest, word32 * block)
 	a = tmp;
     }
     for (t = 60; t < 80; t++) {
-	word32 tmp = rol(a, 5) + (b ^ c ^ d) + e + w[t] + 0xca62c1d6;
+	uint32_t tmp = rol(a, 5) + (b ^ c ^ d) + e + w[t] + 0xca62c1d6;
 	e = d;
 	d = c;
 	c = rol(b, 30);
@@ -130,7 +130,7 @@ void SHA_Init(SHA_State * s)
 {
     SHA_Core_Init(s->h);
     s->blkused = 0;
-    s->lenhi = s->lenlo = 0;
+    s->len = 0;
     if (supports_sha_ni())
         s->sha1 = &sha1_ni;
     else
@@ -142,20 +142,18 @@ static void SHA_BinarySink_write(BinarySink *bs, const void *p, size_t len)
 {
     struct SHA_State *s = BinarySink_DOWNCAST(bs, struct SHA_State);
     const unsigned char *q = (const unsigned char *) p;
-    uint32 lenw = len;
-    assert(lenw == len);
 
     /*
      * Update the length field.
      */
-    s->lenlo += lenw;
-    s->lenhi += (s->lenlo < lenw);
+    s->len += len;
+
     (*(s->sha1))(s, q, len);
 }
 
 static void sha1_sw(SHA_State * s, const unsigned char *q, int len)
 {
-    uint32 wordblock[16];
+    uint32_t wordblock[16];
     int i;
 
     if (s->blkused && s->blkused + len < 64) {
@@ -175,10 +173,10 @@ static void sha1_sw(SHA_State * s, const unsigned char *q, int len)
 	    /* Now process the block. Gather bytes big-endian into words */
 	    for (i = 0; i < 16; i++) {
 		wordblock[i] =
-		    (((uint32) s->block[i * 4 + 0]) << 24) |
-		    (((uint32) s->block[i * 4 + 1]) << 16) |
-		    (((uint32) s->block[i * 4 + 2]) << 8) |
-		    (((uint32) s->block[i * 4 + 3]) << 0);
+		    (((uint32_t) s->block[i * 4 + 0]) << 24) |
+		    (((uint32_t) s->block[i * 4 + 1]) << 16) |
+		    (((uint32_t) s->block[i * 4 + 2]) << 8) |
+		    (((uint32_t) s->block[i * 4 + 3]) << 0);
 	    }
 	    SHATransform(s->h, wordblock);
 	    s->blkused = 0;
@@ -196,22 +194,20 @@ void SHA_Final(SHA_State * s, unsigned char *output)
     int i;
     int pad;
     unsigned char c[64];
-    uint32 lenhi, lenlo;
+    uint64_t len;
 
     if (s->blkused >= 56)
 	pad = 56 + 64 - s->blkused;
     else
 	pad = 56 - s->blkused;
 
-    lenhi = (s->lenhi << 3) | (s->lenlo >> (32 - 3));
-    lenlo = (s->lenlo << 3);
+    len = (s->len << 3);
 
     memset(c, 0, pad);
     c[0] = 0x80;
     put_data(s, &c, pad);
 
-    put_uint32(s, lenhi);
-    put_uint32(s, lenlo);
+    put_uint64(s, len);
 
     for (i = 0; i < 5; i++) {
 	output[i * 4] = (s->h[i] >> 24) & 0xFF;
@@ -443,12 +439,12 @@ const struct ssh2_macalg ssh_hmac_sha1_96_buggy = {
 #if defined(__clang__) || defined(__GNUC__)
 
 #include <cpuid.h>
-int supports_sha_ni(void)
+bool supports_sha_ni(void)
 {
     unsigned int CPUInfo[4];
     __cpuid(0, CPUInfo[0], CPUInfo[1], CPUInfo[2], CPUInfo[3]);
     if (CPUInfo[0] < 7)
-        return 0;
+        return false;
 
     __cpuid_count(7, 0, CPUInfo[0], CPUInfo[1], CPUInfo[2], CPUInfo[3]);
     return CPUInfo[1] & (1 << 29); /* SHA */
@@ -456,12 +452,12 @@ int supports_sha_ni(void)
 
 #else /* defined(__clang__) || defined(__GNUC__) */
 
-int supports_sha_ni(void)
+bool supports_sha_ni(void)
 {
     unsigned int CPUInfo[4];
     __cpuid(CPUInfo, 0);  
     if (CPUInfo[0] < 7)
-        return 0;
+        return false;
 
     __cpuidex(CPUInfo, 7, 0);
     return CPUInfo[1] & (1 << 29); /* Check SHA */
@@ -693,9 +689,9 @@ static void sha1_ni(SHA_State * s, const unsigned char *q, int len)
     assert(0);
 }
 
-int supports_sha_ni(void)
+bool supports_sha_ni(void)
 {
-    return 0;
+    return false;
 }
 
 #endif  /* COMPILER_SUPPORTS_AES_NI */

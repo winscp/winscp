@@ -104,16 +104,16 @@ static char *dss_cache_str(ssh_key *key)
     return p;
 }
 
-static int dss_verify(ssh_key *key, ptrlen sig, ptrlen data)
+static bool dss_verify(ssh_key *key, ptrlen sig, ptrlen data)
 {
     struct dss_key *dss = container_of(key, struct dss_key, sshk);
     BinarySource src[1];
     unsigned char hash[20];
     Bignum r, s, w, gu1p, yu2p, gu1yu2p, u1, u2, sha, v;
-    int ret;
+    bool toret;
 
     if (!dss->p)
-	return 0;
+	return false;
 
     BinarySource_BARE_INIT(src, sig.ptr, sig.len);
 
@@ -134,7 +134,7 @@ static int dss_verify(ssh_key *key, ptrlen sig, ptrlen data)
 
         if (get_err(src) || !ptrlen_eq_string(type, "ssh-dss") ||
             sig.len != 40)
-            return 0;
+            return false;
     }
 
     /* Now we're sitting on a 40-byte string for sure. */
@@ -145,13 +145,13 @@ static int dss_verify(ssh_key *key, ptrlen sig, ptrlen data)
             freebn(r);
         if (s)
             freebn(s);
-	return 0;
+	return false;
     }
 
     if (!bignum_cmp(s, Zero)) {
         freebn(r);
         freebn(s);
-        return 0;
+        return false;
     }
 
     /*
@@ -161,7 +161,7 @@ static int dss_verify(ssh_key *key, ptrlen sig, ptrlen data)
     if (!w) {
         freebn(r);
         freebn(s);
-        return 0;
+        return false;
     }
 
     /*
@@ -188,7 +188,7 @@ static int dss_verify(ssh_key *key, ptrlen sig, ptrlen data)
      * Step 5. v should now be equal to r.
      */
 
-    ret = !bignum_cmp(v, r);
+    toret = !bignum_cmp(v, r);
 
     freebn(w);
     freebn(sha);
@@ -201,7 +201,7 @@ static int dss_verify(ssh_key *key, ptrlen sig, ptrlen data)
     freebn(r);
     freebn(s);
 
-    return ret;
+    return toret;
 }
 
 static void dss_public_blob(ssh_key *key, BinarySink *bs)
@@ -447,7 +447,7 @@ Bignum *dss_gen_k(const char *id_string, Bignum modulus, Bignum private_key,
 }
 
 static void dss_sign(ssh_key *key, const void *data, int datalen,
-                     BinarySink *bs)
+                     unsigned flags, BinarySink *bs)
 {
     struct dss_key *dss = container_of(key, struct dss_key, sshk);
     Bignum k, gkp, hash, kinv, hxr, r, s;
@@ -504,4 +504,5 @@ const ssh_keyalg ssh_dss = {
     "ssh-dss",
     "dss",
     NULL,
+    0, /* no supported flags */
 };

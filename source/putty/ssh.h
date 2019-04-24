@@ -6,7 +6,6 @@
 #ifndef WINSCP_VS
 #include "network.h"
 #endif
-#include "int64.h"
 #include "misc.h"
 
 #ifndef WINSCP_VS
@@ -56,7 +55,7 @@ struct ssh_channel;
 typedef struct PacketQueueNode PacketQueueNode;
 struct PacketQueueNode {
     PacketQueueNode *next, *prev;
-    int on_free_queue;     /* is this packet scheduled for freeing? */
+    bool on_free_queue;     /* is this packet scheduled for freeing? */
 };
 
 typedef struct PktIn {
@@ -94,12 +93,12 @@ typedef struct PacketQueueBase {
 
 typedef struct PktInQueue {
     PacketQueueBase pqb;
-    PktIn *(*after)(PacketQueueBase *, PacketQueueNode *prev, int pop);
+    PktIn *(*after)(PacketQueueBase *, PacketQueueNode *prev, bool pop);
 } PktInQueue;
 
 typedef struct PktOutQueue {
     PacketQueueBase pqb;
-    PktOut *(*after)(PacketQueueBase *, PacketQueueNode *prev, int pop);
+    PktOut *(*after)(PacketQueueBase *, PacketQueueNode *prev, bool pop);
 } PktOutQueue;
 
 void pq_base_push(PacketQueueBase *pqb, PacketQueueNode *node);
@@ -113,22 +112,22 @@ void pq_in_clear(PktInQueue *pq);
 void pq_out_clear(PktOutQueue *pq);
 
 #define pq_push(pq, pkt)                                        \
-    TYPECHECK((pq)->after(&(pq)->pqb, NULL, FALSE) == pkt,      \
+    TYPECHECK((pq)->after(&(pq)->pqb, NULL, false) == pkt,      \
               pq_base_push(&(pq)->pqb, &(pkt)->qnode))
 #define pq_push_front(pq, pkt)                                  \
-    TYPECHECK((pq)->after(&(pq)->pqb, NULL, FALSE) == pkt,      \
+    TYPECHECK((pq)->after(&(pq)->pqb, NULL, false) == pkt,      \
               pq_base_push_front(&(pq)->pqb, &(pkt)->qnode))
-#define pq_peek(pq) ((pq)->after(&(pq)->pqb, &(pq)->pqb.end, FALSE))
-#define pq_pop(pq) ((pq)->after(&(pq)->pqb, &(pq)->pqb.end, TRUE))
+#define pq_peek(pq) ((pq)->after(&(pq)->pqb, &(pq)->pqb.end, false))
+#define pq_pop(pq) ((pq)->after(&(pq)->pqb, &(pq)->pqb.end, true))
 #define pq_concatenate(dst, q1, q2)                                     \
-    TYPECHECK((q1)->after(&(q1)->pqb, NULL, FALSE) ==                   \
-              (dst)->after(&(dst)->pqb, NULL, FALSE) &&                 \
-              (q2)->after(&(q2)->pqb, NULL, FALSE) ==                   \
-              (dst)->after(&(dst)->pqb, NULL, FALSE),                   \
+    TYPECHECK((q1)->after(&(q1)->pqb, NULL, false) ==                   \
+              (dst)->after(&(dst)->pqb, NULL, false) &&                 \
+              (q2)->after(&(q2)->pqb, NULL, false) ==                   \
+              (dst)->after(&(dst)->pqb, NULL, false),                   \
               pq_base_concatenate(&(dst)->pqb, &(q1)->pqb, &(q2)->pqb))
 
 #define pq_first(pq) pq_peek(pq)
-#define pq_next(pq, pkt) ((pq)->after(&(pq)->pqb, &(pkt)->qnode, FALSE))
+#define pq_next(pq, pkt) ((pq)->after(&(pq)->pqb, &(pkt)->qnode, false))
 
 /*
  * Packet type contexts, so that ssh2_pkt_type can correctly decode
@@ -151,17 +150,17 @@ typedef enum {
 } Pkt_ACtx;
 
 typedef struct PacketLogSettings {
-    int omit_passwords, omit_data;
+    bool omit_passwords, omit_data;
     Pkt_KCtx kctx;
     Pkt_ACtx actx;
 } PacketLogSettings;
 
 #define MAX_BLANKS 4 /* no packet needs more censored sections than this */
 int ssh1_censor_packet(
-    const PacketLogSettings *pls, int type, int sender_is_client,
+    const PacketLogSettings *pls, int type, bool sender_is_client,
     ptrlen pkt, logblank_t *blanks);
 int ssh2_censor_packet(
-    const PacketLogSettings *pls, int type, int sender_is_client,
+    const PacketLogSettings *pls, int type, bool sender_is_client,
     ptrlen pkt, logblank_t *blanks);
 
 PktOut *ssh_new_packet(void);
@@ -172,7 +171,7 @@ Socket *ssh_connection_sharing_init(
     Plug *sshplug, ssh_sharing_state **state);
 void ssh_connshare_provide_connlayer(ssh_sharing_state *sharestate,
                                      ConnectionLayer *cl);
-int ssh_share_test_for_upstream(const char *host, int port, Conf *conf);
+bool ssh_share_test_for_upstream(const char *host, int port, Conf *conf);
 void share_got_pkt_from_server(ssh_sharing_connstate *ctx, int type,
                                const void *pkt, int pktlen);
 void share_activate(ssh_sharing_state *sharestate,
@@ -189,6 +188,12 @@ void share_setup_x11_channel(ssh_sharing_connstate *cs, share_channel *chan,
                              const char *peer_addr, int peer_port, int endian,
                              int protomajor, int protominor,
                              const void *initial_data, int initial_len);
+
+/* Per-application overrides for what roles we can take in connection
+ * sharing, regardless of user configuration (e.g. pscp will never be
+ * an upstream) */
+extern const bool share_can_be_downstream;
+extern const bool share_can_be_upstream;
 
 struct X11Display;
 struct X11FakeAuth;
@@ -264,7 +269,7 @@ struct ConnectionLayerVtable {
     void (*sharing_no_more_downstreams)(ConnectionLayer *cl);
 
     /* Query whether the connection layer is doing agent forwarding */
-    int (*agent_forwarding_permitted)(ConnectionLayer *cl);
+    bool (*agent_forwarding_permitted)(ConnectionLayer *cl);
 
     /* Set the size of the main terminal window (if any) */
     void (*terminal_size)(ConnectionLayer *cl, int width, int height);
@@ -279,15 +284,15 @@ struct ConnectionLayerVtable {
      * backed up, so it should tell all currently open channels to
      * cease reading from their local input sources if they can. (Or
      * tell it that that state of affairs has gone away again.) */
-    void (*throttle_all_channels)(ConnectionLayer *cl, int throttled);
+    void (*throttle_all_channels)(ConnectionLayer *cl, bool throttled);
 
     /* Ask the connection layer about its current preference for
      * line-discipline options. */
-    int (*ldisc_option)(ConnectionLayer *cl, int option);
+    bool (*ldisc_option)(ConnectionLayer *cl, int option);
 
     /* Communicate _to_ the connection layer (from the main session
      * channel) what its preference for line-discipline options is. */
-    void (*set_ldisc_option)(ConnectionLayer *cl, int option, int value);
+    void (*set_ldisc_option)(ConnectionLayer *cl, int option, bool value);
 
     /* Communicate to the connection layer whether X and agent
      * forwarding were successfully enabled (for purposes of
@@ -297,7 +302,7 @@ struct ConnectionLayerVtable {
 
     /* Communicate to the connection layer whether the main session
      * channel currently wants user input. */
-    void (*set_wants_user_input)(ConnectionLayer *cl, int wanted);
+    void (*set_wants_user_input)(ConnectionLayer *cl, bool wanted);
 };
 
 struct ConnectionLayer {
@@ -359,9 +364,9 @@ void portfwdmgr_close_all(PortFwdManager *mgr);
 char *portfwdmgr_connect(PortFwdManager *mgr, Channel **chan_ret,
                          char *hostname, int port, SshChannel *c,
                          int addressfamily);
-int portfwdmgr_listen(PortFwdManager *mgr, const char *host, int port,
-                      const char *keyhost, int keyport, Conf *conf);
-int portfwdmgr_unlisten(PortFwdManager *mgr, const char *host, int port);
+bool portfwdmgr_listen(PortFwdManager *mgr, const char *host, int port,
+                       const char *keyhost, int keyport, Conf *conf);
+bool portfwdmgr_unlisten(PortFwdManager *mgr, const char *host, int port);
 Channel *portfwd_raw_new(ConnectionLayer *cl, Plug **plug);
 void portfwd_raw_free(Channel *pfchan);
 void portfwd_raw_setup(Channel *pfchan, Socket *s, SshChannel *sc);
@@ -420,9 +425,11 @@ struct ec_point {
     const struct ec_curve *curve;
     Bignum x, y;
     Bignum z;  /* Jacobian denominator */
-    unsigned char infinity;
+    bool infinity;
 };
 
+/* A couple of ECC functions exported for use outside sshecc.c */
+struct ec_point *ecp_mul(const struct ec_point *a, const Bignum b);
 void ec_point_free(struct ec_point *point);
 
 /* Weierstrass form curve */
@@ -469,12 +476,12 @@ const ssh_keyalg *ec_alg_by_oid(int len, const void *oid,
                                         const struct ec_curve **curve);
 const unsigned char *ec_alg_oid(const ssh_keyalg *alg, int *oidlen);
 extern const int ec_nist_curve_lengths[], n_ec_nist_curve_lengths;
-int ec_nist_alg_and_curve_by_bits(int bits,
-                                  const struct ec_curve **curve,
-                                  const ssh_keyalg **alg);
-int ec_ed_alg_and_curve_by_bits(int bits,
-                                const struct ec_curve **curve,
-                                const ssh_keyalg **alg);
+bool ec_nist_alg_and_curve_by_bits(int bits,
+                                   const struct ec_curve **curve,
+                                   const ssh_keyalg **alg);
+bool ec_ed_alg_and_curve_by_bits(int bits,
+                                 const struct ec_curve **curve,
+                                 const ssh_keyalg **alg);
 
 struct ec_key {
     struct ec_point publicKey;
@@ -498,21 +505,19 @@ void BinarySource_get_rsa_ssh1_pub(
     BinarySource *src, struct RSAKey *result, RsaSsh1Order order);
 void BinarySource_get_rsa_ssh1_priv(
     BinarySource *src, struct RSAKey *rsa);
-int rsa_ssh1_encrypt(unsigned char *data, int length, struct RSAKey *key);
+bool rsa_ssh1_encrypt(unsigned char *data, int length, struct RSAKey *key);
 Bignum rsa_ssh1_decrypt(Bignum input, struct RSAKey *key);
-int rsa_ssh1_decrypt_pkcs1(Bignum input, struct RSAKey *key, strbuf *outbuf);
+bool rsa_ssh1_decrypt_pkcs1(Bignum input, struct RSAKey *key, strbuf *outbuf);
 void rsasanitise(struct RSAKey *key);
 int rsastr_len(struct RSAKey *key);
 void rsastr_fmt(char *str, struct RSAKey *key);
 char *rsa_ssh1_fingerprint(struct RSAKey *key);
-int rsa_verify(struct RSAKey *key);
+bool rsa_verify(struct RSAKey *key);
 void rsa_ssh1_public_blob(BinarySink *bs, struct RSAKey *key,
                           RsaSsh1Order order);
 int rsa_ssh1_public_blob_len(void *data, int maxlen);
 void freersakey(struct RSAKey *key);
 #endif // WINSCP_VS
-
-typedef uint32 word32;
 
 #ifndef WINSCP_VS
 unsigned long crc32_compute(const void *s, size_t len);
@@ -522,8 +527,8 @@ unsigned long crc32_update(unsigned long crc_input, const void *s, size_t len);
 struct crcda_ctx;
 struct crcda_ctx *crcda_make_context(void);
 void crcda_free_context(struct crcda_ctx *ctx);
-int detect_attack(struct crcda_ctx *ctx, unsigned char *buf, uint32 len,
-		  unsigned char *IV);
+bool detect_attack(struct crcda_ctx *ctx, unsigned char *buf, uint32_t len,
+                   unsigned char *IV);
 
 /*
  * SSH2 RSA key exchange functions
@@ -562,14 +567,14 @@ struct ssh2_cipheralg;
 typedef const struct ssh2_cipheralg *ssh2_cipher;
 
 typedef struct {
-    uint32 h[4];
+    uint32_t h[4];
 } MD5_Core_State;
 
 struct MD5Context {
     MD5_Core_State core;
     unsigned char block[64];
     int blkused;
-    uint32 lenhi, lenlo;
+    uint64_t len;
     BinarySink_IMPLEMENTATION;
 };
 
@@ -584,7 +589,7 @@ void hmacmd5_key(struct hmacmd5_context *ctx, void const *key, int len);
 void hmacmd5_do_hmac(struct hmacmd5_context *ctx,
                      const void *blk, int len, unsigned char *hmac);
 
-int supports_sha_ni(void);
+bool supports_sha_ni(void);
 
 #ifdef MPEXT
 // Resolve ambiguity with OpenSSL
@@ -597,10 +602,10 @@ int supports_sha_ni(void);
 #endif
 
 typedef struct SHA_State {
-    uint32 h[5];
+    uint32_t h[5];
     unsigned char block[64];
     int blkused;
-    uint32 lenhi, lenlo;
+    uint64_t len;
     void (*sha1)(struct SHA_State * s, const unsigned char *p, int len);
     BinarySink_IMPLEMENTATION;
 } SHA_State;
@@ -613,10 +618,10 @@ void hmac_sha1_simple(const void *key, int keylen,
 		      unsigned char *output);
 #endif // WINSCP_VS
 typedef struct SHA256_State {
-    uint32 h[8];
+    uint32_t h[8];
     unsigned char block[64];
     int blkused;
-    uint32 lenhi, lenlo;
+    uint64_t len;
     void (*sha256)(struct SHA256_State * s, const unsigned char *p, int len);
     BinarySink_IMPLEMENTATION;
 } SHA256_State;
@@ -626,10 +631,10 @@ void SHA256_Final(SHA256_State * s, unsigned char *output);
 void SHA256_Simple(const void *p, int len, unsigned char *output);
 
 typedef struct {
-    uint64 h[8];
+    uint64_t h[8];
     unsigned char block[128];
     int blkused;
-    uint32 len[4];
+    uint64_t lenhi, lenlo;
     BinarySink_IMPLEMENTATION;
 } SHA512_State;
 #define SHA384_State SHA512_State
@@ -739,9 +744,9 @@ struct ssh2_macalg {
 #define ssh2_mac_alg(ctx) ((ctx)->vt)
 
 /* Centralised 'methods' for ssh2_mac, defined in sshmac.c */
-int ssh2_mac_verresult(ssh2_mac *, const void *);
+bool ssh2_mac_verresult(ssh2_mac *, const void *);
 void ssh2_mac_generate(ssh2_mac *, void *, int, unsigned long seq);
-int ssh2_mac_verify(ssh2_mac *, const void *, int, unsigned long seq);
+bool ssh2_mac_verify(ssh2_mac *, const void *, int, unsigned long seq);
 
 typedef struct ssh_hash {
     const struct ssh_hashalg *vt;
@@ -783,8 +788,9 @@ struct ssh_keyalg {
 
     /* Methods that operate on an existing ssh_key */
     void (*freekey) (ssh_key *key);
-    void (*sign) (ssh_key *key, const void *data, int datalen, BinarySink *);
-    int (*verify) (ssh_key *key, ptrlen sig, ptrlen data);
+    void (*sign) (ssh_key *key, const void *data, int datalen,
+                  unsigned flags, BinarySink *);
+    bool (*verify) (ssh_key *key, ptrlen sig, ptrlen data);
     void (*public_blob)(ssh_key *key, BinarySink *);
     void (*private_blob)(ssh_key *key, BinarySink *);
     void (*openssh_blob) (ssh_key *key, BinarySink *);
@@ -797,6 +803,7 @@ struct ssh_keyalg {
     const char *ssh_id;    /* string identifier in the SSH protocol */
     const char *cache_id;  /* identifier used in PuTTY's host key cache */
     const void *extra;     /* private to the public key methods */
+    const unsigned supported_flags;    /* signature-type flags we understand */
 };
 
 #define ssh_key_new_pub(alg, data) ((alg)->new_pub(alg, data))
@@ -804,7 +811,8 @@ struct ssh_keyalg {
 #define ssh_key_new_priv_openssh(alg, bs) ((alg)->new_priv_openssh(alg, bs))
 
 #define ssh_key_free(key) ((*(key))->freekey(key))
-#define ssh_key_sign(key, data, len, bs) ((*(key))->sign(key, data, len, bs))
+#define ssh_key_sign(key, data, len, flags, bs) \
+    ((*(key))->sign(key, data, len, flags, bs))
 #define ssh_key_verify(key, sig, data) ((*(key))->verify(key, sig, data))
 #define ssh_key_public_blob(key, bs) ((*(key))->public_blob(key, bs))
 #define ssh_key_private_blob(key, bs) ((*(key))->private_blob(key, bs))
@@ -816,6 +824,12 @@ struct ssh_keyalg {
 #define ssh_key_alg(key) (*(key))
 #define ssh_key_ssh_id(key) ((*(key))->ssh_id)
 #define ssh_key_cache_id(key) ((*(key))->cache_id)
+
+/*
+ * Enumeration of signature flags from draft-miller-ssh-agent-02
+ */
+#define SSH_AGENT_RSA_SHA2_256 2
+#define SSH_AGENT_RSA_SHA2_512 4
 
 typedef struct ssh_compressor {
     const struct ssh_compression_alg *vt;
@@ -836,8 +850,8 @@ struct ssh_compression_alg {
                      int minlen);
     ssh_decompressor *(*decompress_new)(void);
     void (*decompress_free)(ssh_decompressor *);
-    int (*decompress)(ssh_decompressor *, unsigned char *block, int len,
-                      unsigned char **outblock, int *outlen);
+    bool (*decompress)(ssh_decompressor *, unsigned char *block, int len,
+                       unsigned char **outblock, int *outlen);
     const char *text_name;
 };
 
@@ -918,9 +932,9 @@ extern
  * that fails. This variable is the means by which scp.c can reach
  * into the SSH code and find out which one it got.
  */
-extern int ssh_fallback_cmd(Backend *backend);
+extern bool ssh_fallback_cmd(Backend *backend);
 
-void SHATransform(word32 * digest, word32 * data);
+void SHATransform(uint32_t *digest, uint32_t *data);
 
 /*
  * Check of compiler version
@@ -955,7 +969,7 @@ enum {
 };
 struct X11Display {
     /* Broken-down components of the display name itself */
-    int unixdomain;
+    bool unixdomain;
     char *hostname;
     int displaynum;
     int screennum;
@@ -1021,12 +1035,12 @@ struct X11FakeAuth *x11_invent_fake_auth(tree234 *t, int authtype);
 void x11_free_fake_auth(struct X11FakeAuth *auth);
 Channel *x11_new_channel(tree234 *authtree, SshChannel *c,
                          const char *peeraddr, int peerport,
-                         int connection_sharing_possible);
+                         bool connection_sharing_possible);
 char *x11_display(const char *display);
 /* Platform-dependent X11 functions */
 extern void platform_get_x11_auth(struct X11Display *display, Conf *);
     /* examine a mostly-filled-in X11Display and fill in localauth* */
-extern const int platform_uses_x11_unix_by_default;
+extern const bool platform_uses_x11_unix_by_default;
     /* choose default X transport in the absence of a specified one */
 SockAddr *platform_get_x11_unix_address(const char *path, int displaynum);
     /* make up a SockAddr naming the address for displaynum */
@@ -1099,22 +1113,23 @@ Bignum BinarySource_get_mp_ssh2(BinarySource *);
 void diagbn(char *prefix, Bignum md);
 #endif
 
-int dh_is_gex(const struct ssh_kex *kex);
+bool dh_is_gex(const struct ssh_kex *kex);
 struct dh_ctx;
 struct dh_ctx *dh_setup_group(const struct ssh_kex *kex);
 struct dh_ctx *dh_setup_gex(Bignum pval, Bignum gval);
+int dh_modulus_bit_size(const struct dh_ctx *ctx);
 void dh_cleanup(struct dh_ctx *);
 Bignum dh_create_e(struct dh_ctx *, int nbits);
 const char *dh_validate_f(struct dh_ctx *, Bignum f);
 Bignum dh_find_K(struct dh_ctx *, Bignum f);
 
-int rsa_ssh1_encrypted(const Filename *filename, char **comment);
+bool rsa_ssh1_encrypted(const Filename *filename, char **comment);
 int rsa_ssh1_loadpub(const Filename *filename, BinarySink *bs,
                      char **commentptr, const char **errorstr);
 int rsa_ssh1_loadkey(const Filename *filename, struct RSAKey *key,
                      const char *passphrase, const char **errorstr);
-int rsa_ssh1_savekey(const Filename *filename, struct RSAKey *key,
-                     char *passphrase);
+bool rsa_ssh1_savekey(const Filename *filename, struct RSAKey *key,
+                      char *passphrase);
 
 extern int base64_decode_atom(const char *atom, unsigned char *out);
 extern int base64_lines(int datalen);
@@ -1126,15 +1141,15 @@ extern void base64_encode(FILE *fp, const unsigned char *data, int datalen,
 extern struct ssh2_userkey ssh2_wrong_passphrase;
 #define SSH2_WRONG_PASSPHRASE (&ssh2_wrong_passphrase)
 
-int ssh2_userkey_encrypted(const Filename *filename, char **comment);
+bool ssh2_userkey_encrypted(const Filename *filename, char **comment);
 struct ssh2_userkey *ssh2_load_userkey(const Filename *filename,
 				       const char *passphrase,
                                        const char **errorstr);
-int ssh2_userkey_loadpub(const Filename *filename, char **algorithm,
-                         BinarySink *bs,
-                         char **commentptr, const char **errorstr);
-int ssh2_save_userkey(const Filename *filename, struct ssh2_userkey *key,
-		      char *passphrase);
+bool ssh2_userkey_loadpub(const Filename *filename, char **algorithm,
+                          BinarySink *bs,
+                          char **commentptr, const char **errorstr);
+bool ssh2_save_userkey(const Filename *filename, struct ssh2_userkey *key,
+                       char *passphrase);
 const ssh_keyalg *find_pubkey_alg(const char *name);
 const ssh_keyalg *find_pubkey_alg_len(ptrlen name);
 
@@ -1197,17 +1212,17 @@ int openssh_loadpub_line(char * line, char **algorithm,
                          char **commentptr, const char **errorstr);
 #endif
 
-int import_possible(int type);
+bool import_possible(int type);
 int import_target_type(int type);
-int import_encrypted(const Filename *filename, int type, char **comment);
+bool import_encrypted(const Filename *filename, int type, char **comment);
 int import_ssh1(const Filename *filename, int type,
 		struct RSAKey *key, char *passphrase, const char **errmsg_p);
 struct ssh2_userkey *import_ssh2(const Filename *filename, int type,
 				 char *passphrase, const char **errmsg_p);
-int export_ssh1(const Filename *filename, int type,
-		struct RSAKey *key, char *passphrase);
-int export_ssh2(const Filename *filename, int type,
-                struct ssh2_userkey *key, char *passphrase);
+bool export_ssh1(const Filename *filename, int type,
+                 struct RSAKey *key, char *passphrase);
+bool export_ssh2(const Filename *filename, int type,
+                 struct ssh2_userkey *key, char *passphrase);
 
 void des3_decrypt_pubkey(const void *key, void *blk, int len);
 void des3_encrypt_pubkey(const void *key, void *blk, int len);
@@ -1261,7 +1276,7 @@ enum { SHARE_NONE, SHARE_DOWNSTREAM, SHARE_UPSTREAM };
 int platform_ssh_share(const char *name, Conf *conf,
                        Plug *downplug, Plug *upplug, Socket **sock,
                        char **logtext, char **ds_err, char **us_err,
-                       int can_upstream, int can_downstream);
+                       bool can_upstream, bool can_downstream);
 void platform_ssh_share_cleanup(const char *name);
 
 /*
@@ -1479,7 +1494,7 @@ enum {
 
 struct ssh_ttymodes {
     /* A boolean per mode, indicating whether it's set. */
-    int have_mode[TTYMODE_LIMIT];
+    bool have_mode[TTYMODE_LIMIT];
 
     /* The actual value for each mode. */
     unsigned mode_val[TTYMODE_LIMIT];
@@ -1493,7 +1508,7 @@ void write_ttymodes_to_packet(BinarySink *bs, int ssh_version,
 
 const char *ssh1_pkt_type(int type);
 const char *ssh2_pkt_type(Pkt_KCtx pkt_kctx, Pkt_ACtx pkt_actx, int type);
-int ssh2_pkt_type_code_valid(unsigned type);
+bool ssh2_pkt_type_code_valid(unsigned type);
 
 /*
  * Need this to warn about support for the original SSH-2 keyfile
@@ -1535,11 +1550,11 @@ unsigned alloc_channel_id_general(tree234 *channels, size_t localid_offset);
     TYPECHECK(&((type *)0)->localid == (unsigned *)0, \
               alloc_channel_id_general(tree, offsetof(type, localid)))
 
-int first_in_commasep_string(char const *needle, char const *haystack,
-                             int haylen);
-int in_commasep_string(char const *needle, char const *haystack, int haylen);
+bool first_in_commasep_string(char const *needle, char const *haystack,
+                              int haylen);
+bool in_commasep_string(char const *needle, char const *haystack, int haylen);
 void add_to_commasep(strbuf *buf, const char *data);
-int get_commasep_word(ptrlen *list, ptrlen *word);
+bool get_commasep_word(ptrlen *list, ptrlen *word);
 
 int verify_ssh_manual_host_key(
     Conf *conf, const char *fingerprint, ssh_key *key);
@@ -1549,10 +1564,10 @@ ssh_transient_hostkey_cache *ssh_transient_hostkey_cache_new(void);
 void ssh_transient_hostkey_cache_free(ssh_transient_hostkey_cache *thc);
 void ssh_transient_hostkey_cache_add(
     ssh_transient_hostkey_cache *thc, ssh_key *key);
-int ssh_transient_hostkey_cache_verify(
+bool ssh_transient_hostkey_cache_verify(
     ssh_transient_hostkey_cache *thc, ssh_key *key);
-int ssh_transient_hostkey_cache_has(
+bool ssh_transient_hostkey_cache_has(
     ssh_transient_hostkey_cache *thc, const ssh_keyalg *alg);
-int ssh_transient_hostkey_cache_non_empty(ssh_transient_hostkey_cache *thc);
+bool ssh_transient_hostkey_cache_non_empty(ssh_transient_hostkey_cache *thc);
 
 #endif // WINSCP_VS

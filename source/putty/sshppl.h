@@ -12,11 +12,11 @@ typedef void (*packet_handler_fn_t)(PacketProtocolLayer *ppl, PktIn *pktin);
 struct PacketProtocolLayerVtable {
     void (*free)(PacketProtocolLayer *); 
     void (*process_queue)(PacketProtocolLayer *ppl);
-    int (*get_specials)(
+    bool (*get_specials)(
         PacketProtocolLayer *ppl, add_special_fn_t add_special, void *ctx);
     void (*special_cmd)(
         PacketProtocolLayer *ppl, SessionSpecialCode code, int arg);
-    int (*want_user_input)(PacketProtocolLayer *ppl);
+    bool (*want_user_input)(PacketProtocolLayer *ppl);
     void (*got_user_input)(PacketProtocolLayer *ppl);
     void (*reconfigure)(PacketProtocolLayer *ppl, Conf *conf);
 
@@ -100,18 +100,18 @@ PacketProtocolLayer *ssh2_transport_new(
     const char *client_greeting, const char *server_greeting,
     struct ssh_connection_shared_gss_state *shgss,
     struct DataTransferStats *stats, PacketProtocolLayer *higher_layer,
-    int is_server);
+    bool is_server);
 PacketProtocolLayer *ssh2_userauth_new(
     PacketProtocolLayer *successor_layer,
     const char *hostname, const char *fullhostname,
-    Filename *keyfile, int tryagent,
-    const char *default_username, int change_username,
-    int try_ki_auth,
-    int try_gssapi_auth, int try_gssapi_kex_auth,
-    int gssapi_fwd, struct ssh_connection_shared_gss_state *shgss,
+    Filename *keyfile, bool tryagent,
+    const char *default_username, bool change_username,
+    bool try_ki_auth,
+    bool try_gssapi_auth, bool try_gssapi_kex_auth,
+    bool gssapi_fwd, struct ssh_connection_shared_gss_state *shgss,
     const char * loghost, int change_password); // WINSCP
 PacketProtocolLayer *ssh2_connection_new(
-    Ssh *ssh, ssh_sharing_state *connshare, int is_simple,
+    Ssh *ssh, ssh_sharing_state *connshare, bool is_simple,
     Conf *conf, const char *peer_verstring, ConnectionLayer **cl_out);
 
 /* Can't put this in the userauth constructor without having a
@@ -138,15 +138,22 @@ void ssh_ppl_user_output_string_and_free(PacketProtocolLayer *ppl, char *text);
 ptrlen ssh2_transport_get_session_id(PacketProtocolLayer *ssh2_transport_ptr);
 void ssh2_transport_notify_auth_done(PacketProtocolLayer *ssh2_transport_ptr);
 
+/* Shared method between ssh2 layers (defined in ssh2transport.c) to
+ * handle the common packets between login and connection: DISCONNECT,
+ * DEBUG and IGNORE. Those messages are handled by the ssh2transport
+ * layer if we have one, but in bare ssh2-connection mode they have to
+ * be handled by ssh2connection. */
+bool ssh2_common_filter_queue(PacketProtocolLayer *ppl);
+
 /* Methods for ssh1login to pass protocol flags to ssh1connection */
 void ssh1_connection_set_protoflags(
     PacketProtocolLayer *ppl, int local, int remote);
 
 /* Shared get_specials method between the two ssh1 layers */
-int ssh1_common_get_specials(PacketProtocolLayer *, add_special_fn_t, void *);
+bool ssh1_common_get_specials(PacketProtocolLayer *, add_special_fn_t, void *);
 
 /* Other shared functions between ssh1 layers  */
-int ssh1_common_filter_queue(PacketProtocolLayer *ppl);
+bool ssh1_common_filter_queue(PacketProtocolLayer *ppl);
 void ssh1_compute_session_id(
     unsigned char *session_id, const unsigned char *cookie,
     struct RSAKey *hostkey, struct RSAKey *servkey);

@@ -11,7 +11,7 @@
 void backend_socket_log(Seat *seat, LogContext *logctx,
                         int type, SockAddr *addr, int port,
                         const char *error_msg, int error_code, Conf *conf,
-                        int session_started)
+                        bool session_started)
 {
     char addrbuf[256], *msg;
 

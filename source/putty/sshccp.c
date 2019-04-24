@@ -45,7 +45,7 @@ struct chacha20 {
      * 4-11 are the key
      * 12-13 are the counter
      * 14-15 are the IV */
-    uint32 state[16];
+    uint32_t state[16];
     /* The output of the state above ready to xor */
     unsigned char current[64];
     /* The index of the above currently used to allow a true streaming cipher */
@@ -55,7 +55,7 @@ struct chacha20 {
 static INLINE void chacha20_round(struct chacha20 *ctx)
 {
     int i;
-    uint32 copy[16];
+    uint32_t copy[16];
 
     /* Take a copy */
     memcpy(copy, ctx->state, sizeof(copy));
@@ -114,7 +114,7 @@ static INLINE void chacha20_round(struct chacha20 *ctx)
     /* Increment round counter */
     ++ctx->state[12];
     /* Check for overflow, not done in one line so the 32 bits are chopped by the type */
-    if (!(uint32)(ctx->state[12])) {
+    if (!(uint32_t)(ctx->state[12])) {
         ++ctx->state[13];
     }
 }

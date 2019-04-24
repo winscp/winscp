@@ -20,7 +20,7 @@ struct ssh1_login_state {
 
     char *savedhost;
     int savedport;
-    int try_agent_auth;
+    bool try_agent_auth;
 
     int remote_protoflags;
     int local_protoflags;
@@ -31,14 +31,14 @@ struct ssh1_login_state {
     int len;
     unsigned char *rsabuf;
     unsigned long supported_ciphers_mask, supported_auths_mask;
-    int tried_publickey, tried_agent;
-    int tis_auth_refused, ccard_auth_refused;
+    bool tried_publickey, tried_agent;
+    bool tis_auth_refused, ccard_auth_refused;
     unsigned char cookie[8];
     unsigned char session_id[16];
     int cipher_type;
     strbuf *publickey_blob;
     char *publickey_comment;
-    int privatekey_available, privatekey_encrypted;
+    bool privatekey_available, privatekey_encrypted;
     prompts_t *cur_prompt;
     int userpass_ret;
     char c;
@@ -47,14 +47,14 @@ struct ssh1_login_state {
     ptrlen agent_response;
     BinarySource asrc[1];          /* response from SSH agent */
     int keyi, nkeys;
-    int authed;
+    bool authed;
     struct RSAKey key;
     Bignum challenge;
     ptrlen comment;
     int dlgret;
     Filename *keyfile;
     struct RSAKey servkey, hostkey;
-    int want_user_input;
+    bool want_user_input;
 
     PacketProtocolLayer ppl;
 };
@@ -64,7 +64,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *);
 static void ssh1_login_dialog_callback(void *, int);
 static void ssh1_login_special_cmd(PacketProtocolLayer *ppl,
                                    SessionSpecialCode code, int arg);
-static int ssh1_login_want_user_input(PacketProtocolLayer *ppl);
+static bool ssh1_login_want_user_input(PacketProtocolLayer *ppl);
 static void ssh1_login_got_user_input(PacketProtocolLayer *ppl);
 static void ssh1_login_reconfigure(PacketProtocolLayer *ppl, Conf *conf);
 
@@ -120,7 +120,7 @@ static void ssh1_login_free(PacketProtocolLayer *ppl)
     sfree(s);
 }
 
-static int ssh1_login_filter_queue(struct ssh1_login_state *s)
+static bool ssh1_login_filter_queue(struct ssh1_login_state *s)
 {
     return ssh1_common_filter_queue(&s->ppl);
 }
@@ -279,7 +279,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
     ppl_logevent(("Encrypted session key"));
 
     {
-        int cipher_chosen = 0, warn = 0;
+        bool cipher_chosen = false, warn = false;
         const char *cipher_string = NULL;
         int i;
 	for (i = 0; !cipher_chosen && i < CIPHER_MAX; i++) {
@@ -287,7 +287,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                 s->conf, CONF_ssh_cipherlist, i);
             if (next_cipher == CIPHER_WARN) {
                 /* If/when we choose a cipher, warn about it */
-                warn = 1;
+                warn = true;
             } else if (next_cipher == CIPHER_AES) {
                 /* XXX Probably don't need to mention this. */
                 ppl_logevent(("AES not supported in SSH-1, skipping"));
@@ -301,7 +301,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                     cipher_string = "single-DES"; break;
                 }
                 if (s->supported_ciphers_mask & (1 << s->cipher_type))
-                    cipher_chosen = 1;
+                    cipher_chosen = true;
             }
         }
         if (!cipher_chosen) {
@@ -394,9 +394,9 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
 
     if ((s->username = get_remote_username(s->conf)) == NULL) {
         s->cur_prompt = new_prompts();
-        s->cur_prompt->to_server = TRUE;
+        s->cur_prompt->to_server = true;
         s->cur_prompt->name = dupstr("SSH login name");
-        add_prompt(s->cur_prompt, dupstr("login as: "), TRUE);
+        add_prompt(s->cur_prompt, dupstr("login as: "), true);
         s->userpass_ret = seat_get_userpass_input(
             s->ppl.seat, s->cur_prompt, NULL);
         while (1) {
@@ -408,9 +408,9 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
             if (s->userpass_ret >= 0)
                 break;
 
-            s->want_user_input = TRUE;
+            s->want_user_input = true;
             crReturnV;
-            s->want_user_input = FALSE;
+            s->want_user_input = false;
         }
         if (!s->userpass_ret) {
             /*
@@ -436,11 +436,11 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
 
     if (!(s->supported_auths_mask & (1 << SSH1_AUTH_RSA))) {
         /* We must not attempt PK auth. Pretend we've already tried it. */
-        s->tried_publickey = s->tried_agent = TRUE;
+        s->tried_publickey = s->tried_agent = true;
     } else {
-        s->tried_publickey = s->tried_agent = FALSE;
+        s->tried_publickey = s->tried_agent = false;
     }
-    s->tis_auth_refused = s->ccard_auth_refused = FALSE;
+    s->tis_auth_refused = s->ccard_auth_refused = false;
 
     /*
      * Load the public half of any configured keyfile for later use.
@@ -481,7 +481,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
 
     /* Check whether we're configured to try Pageant, and also whether
      * it's available. */
-    s->try_agent_auth = (conf_get_int(s->conf, CONF_tryagent) &&
+    s->try_agent_auth = (conf_get_bool(s->conf, CONF_tryagent) &&
                          agent_exists());
 
     while (pktin->type == SSH1_SMSG_FAILURE) {
@@ -491,8 +491,8 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
             /*
              * Attempt RSA authentication using Pageant.
              */
-            s->authed = FALSE;
-            s->tried_agent = 1;
+            s->authed = false;
+            s->tried_agent = true;
             ppl_logevent(("Pageant is running. Requesting keys."));
 
             /* Request the keys held by the agent. */
@@ -535,7 +535,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                                     s->publickey_blob->len)) {
                             ppl_logevent(("Pageant key #%d matches "
                                           "configured key file", s->keyi));
-                            s->tried_publickey = 1;
+                            s->tried_publickey = true;
                         } else
                             /* Skip non-configured key */
                             continue;
@@ -597,7 +597,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                                                     "agent\r\n", PTRLEN_PRINTF(
                                                         s->comment)));
                                     }
-                                    s->authed = TRUE;
+                                    s->authed = true;
                                 } else
                                     ppl_logevent(("Pageant's response not "
                                                   "accepted"));
@@ -632,13 +632,13 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
              * Try public key authentication with the specified
              * key file.
              */
-            int got_passphrase; /* need not be kept over crReturn */
+            bool got_passphrase; /* need not be kept over crReturn */
             if (flags & FLAG_VERBOSE)
                 ppl_printf((WINSCP_BOM "Trying public key authentication.\r\n"));
             ppl_logevent(("Trying public key \"%s\"",
                           filename_to_str(s->keyfile)));
-            s->tried_publickey = 1;
-            got_passphrase = FALSE;
+            s->tried_publickey = true;
+            got_passphrase = false;
             while (!got_passphrase) {
                 /*
                  * Get a passphrase, if necessary.
@@ -652,11 +652,11 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                     passphrase = NULL;
                 } else {
                     s->cur_prompt = new_prompts(); // WINSCP removed s->ppl.seat
-                    s->cur_prompt->to_server = FALSE;
+                    s->cur_prompt->to_server = false;
                     s->cur_prompt->name = dupstr("SSH key passphrase");
                     add_prompt(s->cur_prompt,
                                dupprintf("Passphrase for key \"%.100s\": ",
-                                         s->publickey_comment), FALSE);
+                                         s->publickey_comment), false);
                     s->userpass_ret = seat_get_userpass_input(
                         s->ppl.seat, s->cur_prompt, NULL);
                     while (1) {
@@ -668,9 +668,9 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                         if (s->userpass_ret >= 0)
                             break;
 
-                        s->want_user_input = TRUE;
+                        s->want_user_input = true;
                         crReturnV;
-                        s->want_user_input = FALSE;
+                        s->want_user_input = false;
                     }
                     if (!s->userpass_ret) {
                         /* Failed to get a passphrase. Terminate. */
@@ -693,19 +693,19 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                 }
                 if (retd == 1) {
                     /* Correct passphrase. */
-                    got_passphrase = TRUE;
+                    got_passphrase = true;
                 } else if (retd == 0) {
                     ppl_printf((WINSCP_BOM "Couldn't load private key from %s (%s).\r\n",
                                 filename_to_str(s->keyfile), error));
-                    got_passphrase = FALSE;
+                    got_passphrase = false;
                     break;             /* go and try something else */
                 } else if (retd == -1) {
                     ppl_printf(("Wrong passphrase.\r\n"));
-                    got_passphrase = FALSE;
+                    got_passphrase = false;
                     /* and try again */
                 } else {
                     assert(0 && "unexpected return from rsa_ssh1_loadkey()");
-                    got_passphrase = FALSE;   /* placate optimisers */
+                    got_passphrase = false;   /* placate optimisers */
                 }
             }
 
@@ -793,7 +793,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
          */
         s->cur_prompt = new_prompts(); // WINSCP removed s->ppl.seat
 
-        if (conf_get_int(s->conf, CONF_try_tis_auth) &&
+        if (conf_get_bool(s->conf, CONF_try_tis_auth) &&
             (s->supported_auths_mask & (1 << SSH1_AUTH_TIS)) &&
             !s->tis_auth_refused) {
             s->pwpkt_type = SSH1_CMSG_AUTH_TIS_RESPONSE;
@@ -805,7 +805,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                 ppl_logevent(("TIS authentication declined"));
                 if (flags & FLAG_INTERACTIVE)
                     ppl_printf(("TIS authentication refused.\r\n"));
-                s->tis_auth_refused = 1;
+                s->tis_auth_refused = true;
                 continue;
             } else if (pktin->type == SSH1_SMSG_AUTH_TIS_CHALLENGE) {
                 ptrlen challenge;
@@ -818,7 +818,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                     return;
                 }
                 ppl_logevent(("Received TIS challenge"));
-                s->cur_prompt->to_server = TRUE;
+                s->cur_prompt->to_server = true;
                 s->cur_prompt->name = dupstr("SSH TIS authentication");
                 /* Prompt heuristic comes from OpenSSH */
                 if (!memchr(challenge.ptr, '\n', challenge.len)) {
@@ -832,8 +832,8 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                     dupprintf("Using TIS authentication.%s%s",
                               (*instr_suf) ? "\n" : "",
                               instr_suf);
-                s->cur_prompt->instr_reqd = TRUE;
-                add_prompt(s->cur_prompt, prompt, FALSE);
+                s->cur_prompt->instr_reqd = true;
+                add_prompt(s->cur_prompt, prompt, false);
                 sfree(instr_suf);
             } else {
                 ssh_proto_error(s->ppl.ssh, "Received unexpected packet"
@@ -842,7 +842,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                                 ssh1_pkt_type(pktin->type));
                 return;
             }
-        } else if (conf_get_int(s->conf, CONF_try_tis_auth) &&
+        } else if (conf_get_bool(s->conf, CONF_try_tis_auth) &&
             (s->supported_auths_mask & (1 << SSH1_AUTH_CCARD)) &&
             !s->ccard_auth_refused) {
             s->pwpkt_type = SSH1_CMSG_AUTH_CCARD_RESPONSE;
@@ -853,7 +853,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
             if (pktin->type == SSH1_SMSG_FAILURE) {
                 ppl_logevent(("CryptoCard authentication declined"));
                 ppl_printf(("CryptoCard authentication refused.\r\n"));
-                s->ccard_auth_refused = 1;
+                s->ccard_auth_refused = true;
                 continue;
             } else if (pktin->type == SSH1_SMSG_AUTH_CCARD_CHALLENGE) {
                 ptrlen challenge;
@@ -866,9 +866,9 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                     return;
                 }
                 ppl_logevent(("Received CryptoCard challenge"));
-                s->cur_prompt->to_server = TRUE;
+                s->cur_prompt->to_server = true;
                 s->cur_prompt->name = dupstr("SSH CryptoCard authentication");
-                s->cur_prompt->name_reqd = FALSE;
+                s->cur_prompt->name_reqd = false;
                 /* Prompt heuristic comes from OpenSSH */
                 if (!memchr(challenge.ptr, '\n', challenge.len)) {
                     instr_suf = dupstr("");
@@ -881,8 +881,8 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                     dupprintf("Using CryptoCard authentication.%s%s",
                               (*instr_suf) ? "\n" : "",
                               instr_suf);
-                s->cur_prompt->instr_reqd = TRUE;
-                add_prompt(s->cur_prompt, prompt, FALSE);
+                s->cur_prompt->instr_reqd = true;
+                add_prompt(s->cur_prompt, prompt, false);
                 sfree(instr_suf);
             } else {
                 ssh_proto_error(s->ppl.ssh, "Received unexpected packet"
@@ -898,11 +898,11 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                              "available");
                 return;
             }
-            s->cur_prompt->to_server = TRUE;
+            s->cur_prompt->to_server = true;
             s->cur_prompt->name = dupstr("SSH password");
             add_prompt(s->cur_prompt, dupprintf("%s@%s's password: ",
                                                 s->username, s->savedhost),
-                       FALSE);
+                       false);
         }
 
         /*
@@ -921,9 +921,9 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
             if (s->userpass_ret >= 0)
                 break;
 
-            s->want_user_input = TRUE;
+            s->want_user_input = true;
             crReturnV;
-            s->want_user_input = FALSE;
+            s->want_user_input = false;
         }
         if (!s->userpass_ret) {
             /*
@@ -1059,7 +1059,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
 
     ppl_logevent(("Authentication successful"));
 
-    if (conf_get_int(s->conf, CONF_compression)) {
+    if (conf_get_bool(s->conf, CONF_compression)) {
         ppl_logevent(("Requesting compression"));
         pkt = ssh_bpp_new_pktout(s->ppl.bpp, SSH1_CMSG_REQUEST_COMPRESSION);
         put_uint32(pkt, 6);         /* gzip compression level */
@@ -1145,7 +1145,7 @@ static void ssh1_login_special_cmd(PacketProtocolLayer *ppl,
     }
 }
 
-static int ssh1_login_want_user_input(PacketProtocolLayer *ppl)
+static bool ssh1_login_want_user_input(PacketProtocolLayer *ppl)
 {
     struct ssh1_login_state *s =
         container_of(ppl, struct ssh1_login_state, ppl);

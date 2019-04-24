@@ -103,7 +103,7 @@ static void initialise_wcurve(struct ec_curve *curve, int bits,
     curve->w.G.x = bignum_from_bytes(Gx, length);
     curve->w.G.y = bignum_from_bytes(Gy, length);
     curve->w.G.curve = curve;
-    curve->w.G.infinity = 0;
+    curve->w.G.infinity = false;
 }
 
 static void initialise_mcurve(struct ec_curve *curve, int bits,
@@ -128,7 +128,7 @@ static void initialise_mcurve(struct ec_curve *curve, int bits,
     curve->m.G.y = NULL;
     curve->m.G.z = NULL;
     curve->m.G.curve = curve;
-    curve->m.G.infinity = 0;
+    curve->m.G.infinity = false;
 }
 
 static void initialise_ecurve(struct ec_curve *curve, int bits,
@@ -152,13 +152,13 @@ static void initialise_ecurve(struct ec_curve *curve, int bits,
     curve->e.B.x = bignum_from_bytes(Bx, length);
     curve->e.B.y = bignum_from_bytes(By, length);
     curve->e.B.curve = curve;
-    curve->e.B.infinity = 0;
+    curve->e.B.infinity = false;
 }
 
 static struct ec_curve *ec_p256(void)
 {
     static struct ec_curve curve = { 0 };
-    static unsigned char initialised = 0;
+    static bool initialised = false;
 
     #ifdef MPEXT
     if (ec_curve_cleanup)
@@ -212,7 +212,7 @@ static struct ec_curve *ec_p256(void)
         curve.textname = curve.name = "nistp256";
 
         /* Now initialised, no need to do it again */
-        initialised = 1;
+        initialised = true;
     }
 
     return &curve;
@@ -221,7 +221,7 @@ static struct ec_curve *ec_p256(void)
 static struct ec_curve *ec_p384(void)
 {
     static struct ec_curve curve = { 0 };
-    static unsigned char initialised = 0;
+    static bool initialised = false;
 
     #ifdef MPEXT
     if (ec_curve_cleanup)
@@ -287,7 +287,7 @@ static struct ec_curve *ec_p384(void)
         curve.textname = curve.name = "nistp384";
 
         /* Now initialised, no need to do it again */
-        initialised = 1;
+        initialised = true;
     }
 
     return &curve;
@@ -296,7 +296,7 @@ static struct ec_curve *ec_p384(void)
 static struct ec_curve *ec_p521(void)
 {
     static struct ec_curve curve = { 0 };
-    static unsigned char initialised = 0;
+    static bool initialised = false;
 
     #ifdef MPEXT
     if (ec_curve_cleanup)
@@ -380,7 +380,7 @@ static struct ec_curve *ec_p521(void)
         curve.textname = curve.name = "nistp521";
 
         /* Now initialised, no need to do it again */
-        initialised = 1;
+        initialised = true;
     }
 
     return &curve;
@@ -389,7 +389,7 @@ static struct ec_curve *ec_p521(void)
 static struct ec_curve *ec_curve25519(void)
 {
     static struct ec_curve curve = { 0 };
-    static unsigned char initialised = 0;
+    static bool initialised = false;
 
     #ifdef MPEXT
     if (ec_curve_cleanup)
@@ -434,7 +434,7 @@ static struct ec_curve *ec_curve25519(void)
         curve.textname = "Curve25519";
 
         /* Now initialised, no need to do it again */
-        initialised = 1;
+        initialised = true;
     }
 
     return &curve;
@@ -443,7 +443,7 @@ static struct ec_curve *ec_curve25519(void)
 static struct ec_curve *ec_ed25519(void)
 {
     static struct ec_curve curve = { 0 };
-    static unsigned char initialised = 0;
+    static bool initialised = false;
 
     #ifdef MPEXT
     if (ec_curve_cleanup)
@@ -495,7 +495,7 @@ static struct ec_curve *ec_ed25519(void)
         curve.textname = "Ed25519";
 
         /* Now initialised, no need to do it again */
-        initialised = 1;
+        initialised = true;
     }
 
     return &curve;
@@ -503,13 +503,13 @@ static struct ec_curve *ec_ed25519(void)
 
 /* Return 1 if a is -3 % p, otherwise return 0
  * This is used because there are some maths optimisations */
-static int ec_aminus3(const struct ec_curve *curve)
+static bool ec_aminus3(const struct ec_curve *curve)
 {
-    int ret;
+    bool ret;
     Bignum _p;
 
     if (curve->type != EC_WEIERSTRASS) {
-        return 0;
+        return false;
     }
 
     _p = bignum_add_long(curve->w.a, 3);
@@ -596,20 +596,20 @@ void ec_point_free(struct ec_point *point)
     if (point->x) freebn(point->x);
     if (point->y) freebn(point->y);
     if (point->z) freebn(point->z);
-    point->infinity = 0;
+    point->infinity = false;
     sfree(point);
 }
 
 static struct ec_point *ec_point_new(const struct ec_curve *curve,
                                      const Bignum x, const Bignum y, const Bignum z,
-                                     unsigned char infinity)
+                                     bool infinity)
 {
     struct ec_point *point = snewn(1, struct ec_point);
     point->curve = curve;
     point->x = x;
     point->y = y;
     point->z = z;
-    point->infinity = infinity ? 1 : 0;
+    point->infinity = infinity;
     return point;
 }
 
@@ -623,14 +623,14 @@ static struct ec_point *ec_point_copy(const struct ec_point *a)
                         a->infinity);
 }
 
-static int ec_point_verify(const struct ec_point *a)
+static bool ec_point_verify(const struct ec_point *a)
 {
     if (a->infinity) {
-        return 1;
+        return true;
     } else if (a->curve->type == EC_EDWARDS) {
         /* Check y^2 - x^2 - 1 - d * x^2 * y^2 == 0 */
         Bignum y2, x2, tmp, tmp2, tmp3;
-        int ret;
+        bool ret;
 
         y2 = ecf_square(a->y, a->curve);
         x2 = ecf_square(a->x, a->curve);
@@ -648,7 +648,7 @@ static int ec_point_verify(const struct ec_point *a)
         return ret;
     } else if (a->curve->type == EC_WEIERSTRASS) {
         /* Verify y^2 = x^3 + ax + b */
-        int ret = 0;
+        bool ret = false;
 
         Bignum lhs = NULL, x3 = NULL, ax = NULL, x3ax = NULL, x3axm = NULL, x3axb = NULL, rhs = NULL;
 
@@ -670,13 +670,13 @@ static int ec_point_verify(const struct ec_point *a)
         rhs = bigmod(x3axb, a->curve->p);
         freebn(x3axb);
 
-        ret = bignum_cmp(lhs, rhs) ? 0 : 1;
+        ret = !bignum_cmp(lhs, rhs);
         freebn(lhs);
         freebn(rhs);
 
         return ret;
     } else {
-        return 0;
+        return false;
     }
 }
 
@@ -684,17 +684,17 @@ static int ec_point_verify(const struct ec_point *a)
  * Elliptic curve point maths
  */
 
-/* Returns 1 on success and 0 on memory error */
-static int ecp_normalise(struct ec_point *a)
+/* Returns true on success and false on memory error */
+static bool ecp_normalise(struct ec_point *a)
 {
     if (!a) {
         /* No point */
-        return 0;
+        return false;
     }
 
     if (a->infinity) {
         /* Point is at infinity - i.e. normalised */
-        return 1;
+        return true;
     }
 
     if (a->curve->type == EC_WEIERSTRASS) {
@@ -705,17 +705,17 @@ static int ecp_normalise(struct ec_point *a)
 
         if (!a->x || !a->y) {
             /* No point defined */
-            return 0;
+            return false;
         } else if (!a->z) {
             /* Already normalised */
-            return 1;
+            return true;
         }
 
         Z2 = ecf_square(a->z, a->curve);
         Z2inv = modinv(Z2, a->curve->p);
         if (!Z2inv) {
             freebn(Z2);
-            return 0;
+            return false;
         }
         tx = modmul(a->x, Z2inv, a->curve->p);
         freebn(Z2inv);
@@ -726,7 +726,7 @@ static int ecp_normalise(struct ec_point *a)
         freebn(Z3);
         if (!Z3inv) {
             freebn(tx);
-            return 0;
+            return false;
         }
         ty = modmul(a->y, Z3inv, a->curve->p);
         freebn(Z3inv);
@@ -737,7 +737,7 @@ static int ecp_normalise(struct ec_point *a)
         a->y = ty;
         freebn(a->z);
         a->z = NULL;
-        return 1;
+        return true;
     } else if (a->curve->type == EC_MONTGOMERY) {
         /* In Montgomery (X : Z) represents the x co-ord (X / Z, ?) */
 
@@ -745,15 +745,15 @@ static int ecp_normalise(struct ec_point *a)
 
         if (!a->x) {
             /* No point defined */
-            return 0;
+            return false;
         } else if (!a->z) {
             /* Already normalised */
-            return 1;
+            return true;
         }
 
         tmp = modinv(a->z, a->curve->p);
         if (!tmp) {
-            return 0;
+            return false;
         }
         tmp2 = modmul(a->x, tmp, a->curve->p);
         freebn(tmp);
@@ -762,23 +762,23 @@ static int ecp_normalise(struct ec_point *a)
         a->z = NULL;
         freebn(a->x);
         a->x = tmp2;
-        return 1;
+        return true;
     } else if (a->curve->type == EC_EDWARDS) {
         /* Always normalised */
-        return 1;
+        return true;
     } else {
-        return 0;
+        return false;
     }
 }
 
-static struct ec_point *ecp_doublew(const struct ec_point *a, const int aminus3)
+static struct ec_point *ecp_doublew(const struct ec_point *a, bool aminus3)
 {
     Bignum S, M, outx, outy, outz;
 
     if (bignum_cmp(a->y, Zero) == 0)
     {
         /* Identity */
-        return ec_point_new(a->curve, NULL, NULL, NULL, 1);
+        return ec_point_new(a->curve, NULL, NULL, NULL, true);
     }
 
     /* S = 4*X*Y^2 */
@@ -886,7 +886,7 @@ static struct ec_point *ecp_doublew(const struct ec_point *a, const int aminus3)
         freebn(YZ);
     }
 
-    return ec_point_new(a->curve, outx, outy, outz, 0);
+    return ec_point_new(a->curve, outx, outy, outz, false);
 }
 
 static struct ec_point *ecp_doublem(const struct ec_point *a)
@@ -949,20 +949,20 @@ static struct ec_point *ecp_doublem(const struct ec_point *a)
         freebn(tmp);
     }
 
-    return ec_point_new(a->curve, outx, NULL, outz, 0);
+    return ec_point_new(a->curve, outx, NULL, outz, false);
 }
 
 /* Forward declaration for Edwards curve doubling */
 static struct ec_point *ecp_add(const struct ec_point *a,
                                 const struct ec_point *b,
-                                const int aminus3);
+                                bool aminus3);
 
-static struct ec_point *ecp_double(const struct ec_point *a, const int aminus3)
+static struct ec_point *ecp_double(const struct ec_point *a, bool aminus3)
 {
     if (a->infinity)
     {
         /* Identity */
-        return ec_point_new(a->curve, NULL, NULL, NULL, 1);
+        return ec_point_new(a->curve, NULL, NULL, NULL, true);
     }
 
     if (a->curve->type == EC_EDWARDS)
@@ -981,7 +981,7 @@ static struct ec_point *ecp_double(const struct ec_point *a, const int aminus3)
 
 static struct ec_point *ecp_addw(const struct ec_point *a,
                                  const struct ec_point *b,
-                                 const int aminus3)
+                                 bool aminus3)
 {
     Bignum U1, U2, S1, S2, outx, outy, outz;
 
@@ -1033,7 +1033,7 @@ static struct ec_point *ecp_addw(const struct ec_point *a,
             freebn(S1);
             freebn(S2);
             /* Infinity */
-            return ec_point_new(a->curve, NULL, NULL, NULL, 1);
+            return ec_point_new(a->curve, NULL, NULL, NULL, true);
         }
     }
 
@@ -1103,7 +1103,7 @@ static struct ec_point *ecp_addw(const struct ec_point *a,
         }
     }
 
-    return ec_point_new(a->curve, outx, outy, outz, 0);
+    return ec_point_new(a->curve, outx, outy, outz, false);
 }
 
 static struct ec_point *ecp_addm(const struct ec_point *a,
@@ -1154,7 +1154,7 @@ static struct ec_point *ecp_addm(const struct ec_point *a,
         freebn(tmp2);
     }
 
-    return ec_point_new(a->curve, outx, NULL, outz, 0);
+    return ec_point_new(a->curve, outx, NULL, outz, false);
 }
 
 static struct ec_point *ecp_adde(const struct ec_point *a,
@@ -1219,12 +1219,12 @@ static struct ec_point *ecp_adde(const struct ec_point *a,
         freebn(tmp2);
     }
 
-    return ec_point_new(a->curve, outx, outy, NULL, 0);
+    return ec_point_new(a->curve, outx, outy, NULL, false);
 }
 
 static struct ec_point *ecp_add(const struct ec_point *a,
                                 const struct ec_point *b,
-                                const int aminus3)
+                                bool aminus3)
 {
     if (a->curve != b->curve) {
         return NULL;
@@ -1247,13 +1247,14 @@ static struct ec_point *ecp_add(const struct ec_point *a,
     return NULL;
 }
 
-static struct ec_point *ecp_mul_(const struct ec_point *a, const Bignum b, int aminus3)
+static struct ec_point *ecp_mul_(
+    const struct ec_point *a, const Bignum b, bool aminus3)
 {
     struct ec_point *A, *ret;
     int bits, i;
 
     A = ec_point_copy(a);
-    ret = ec_point_new(a->curve, NULL, NULL, NULL, 1);
+    ret = ec_point_new(a->curve, NULL, NULL, NULL, true);
 
     bits = bignum_bitcount(b);
     for (i = 0; i < bits; ++i)
@@ -1293,18 +1294,18 @@ static struct ec_point *ecp_mule(const struct ec_point *a, const Bignum b)
     int i;
     struct ec_point *ret;
 
-    ret = ec_point_new(a->curve, NULL, NULL, NULL, 1);
+    ret = ec_point_new(a->curve, NULL, NULL, NULL, true);
 
     for (i = bignum_bitcount(b); i >= 0 && ret; --i)
     {
         {
-            struct ec_point *tmp = ecp_double(ret, 0);
+            struct ec_point *tmp = ecp_double(ret, false);
             ec_point_free(ret);
             ret = tmp;
         }
         if (ret && bignum_bit(b, i))
         {
-            struct ec_point *tmp = ecp_add(ret, a, 0);
+            struct ec_point *tmp = ecp_add(ret, a, false);
             ec_point_free(ret);
             ret = tmp;
         }
@@ -1319,7 +1320,7 @@ static struct ec_point *ecp_mulm(const struct ec_point *p, const Bignum n)
     int bits, i;
 
     /* P1 <- P and P2 <- [2]P */
-    P2 = ecp_double(p, 0);
+    P2 = ecp_double(p, false);
     P1 = ec_point_copy(p);
 
     /* for i = bits − 2 down to 0 */
@@ -1334,7 +1335,7 @@ static struct ec_point *ecp_mulm(const struct ec_point *p, const Bignum n)
             P2 = tmp;
 
             /* P1 <- [2]P1 */
-            tmp = ecp_double(P1, 0);
+            tmp = ecp_double(P1, false);
             ec_point_free(P1);
             P1 = tmp;
         }
@@ -1346,7 +1347,7 @@ static struct ec_point *ecp_mulm(const struct ec_point *p, const Bignum n)
             P1 = tmp;
 
             /* P2 <- [2]P2 */
-            tmp = ecp_double(P2, 0);
+            tmp = ecp_double(P2, false);
             ec_point_free(P2);
             P2 = tmp;
         }
@@ -1378,7 +1379,7 @@ static struct ec_point *ecp_summul(const Bignum a, const Bignum b,
                                    const struct ec_point *point)
 {
     struct ec_point *aG, *bP, *ret;
-    int aminus3;
+    bool aminus3;
 
     if (point->curve->type != EC_WEIERSTRASS) {
         return NULL;
@@ -1530,23 +1531,23 @@ struct ec_point *ec_public(const Bignum privateKey, const struct ec_curve *curve
  * Basic sign and verify routines
  */
 
-static int _ecdsa_verify(const struct ec_point *publicKey,
-                         const unsigned char *data, const int dataLen,
-                         const Bignum r, const Bignum s)
+static bool _ecdsa_verify(const struct ec_point *publicKey,
+                          const unsigned char *data, const int dataLen,
+                          const Bignum r, const Bignum s)
 {
     int z_bits, n_bits;
     Bignum z;
-    int valid = 0;
+    bool valid = false;
 
     if (publicKey->curve->type != EC_WEIERSTRASS) {
-        return 0;
+        return false;
     }
 
     /* Sanity checks */
     if (bignum_cmp(r, Zero) == 0 || bignum_cmp(r, publicKey->curve->w.n) >= 0
         || bignum_cmp(s, Zero) == 0 || bignum_cmp(s, publicKey->curve->w.n) >= 0)
     {
-        return 0;
+        return false;
     }
 
     /* z = left most bitlen(curve->n) of data */
@@ -1575,7 +1576,7 @@ static int _ecdsa_verify(const struct ec_point *publicKey,
         w = modinv(s, publicKey->curve->w.n);
         if (!w) {
             freebn(z);
-            return 0;
+            return false;
         }
         u1 = modmul(z, w, publicKey->curve->w.n);
         u2 = modmul(r, w, publicKey->curve->w.n);
@@ -1586,13 +1587,13 @@ static int _ecdsa_verify(const struct ec_point *publicKey,
         freebn(u2);
         if (!tmp) {
             freebn(z);
-            return 0;
+            return false;
         }
 
         x = bigmod(tmp->x, publicKey->curve->w.n);
         ec_point_free(tmp);
 
-        valid = (bignum_cmp(r, x) == 0) ? 1 : 0;
+        valid = (bignum_cmp(r, x) == 0);
         freebn(x);
     }
 
@@ -1681,16 +1682,16 @@ static Bignum BinarySource_get_mp_le(BinarySource *src)
 }
 #define get_mp_le(src) BinarySource_get_mp_le(BinarySource_UPCAST(src))
 
-static int decodepoint_ed(const char *p, int length, struct ec_point *point)
+static bool decodepoint_ed(const char *p, int length, struct ec_point *point)
 {
     /* Got some conversion to do, first read in the y co-ord */
-    int negative;
+    bool negative;
 
     point->y = bignum_from_bytes_le((const unsigned char*)p, length);
     if ((unsigned)bignum_bitcount(point->y) > point->curve->fieldBits) {
         freebn(point->y);
         point->y = NULL;
-        return 0;
+        return false;
     }
     /* Read x bit and then reset it */
     negative = bignum_bit(point->y, point->curve->fieldBits - 1);
@@ -1702,7 +1703,7 @@ static int decodepoint_ed(const char *p, int length, struct ec_point *point)
     if (!point->x) {
         freebn(point->y);
         point->y = NULL;
-        return 0;
+        return false;
     }
     if (negative) {
         Bignum tmp = modsub(point->curve->p, point->x, point->curve->p);
@@ -1716,20 +1717,20 @@ static int decodepoint_ed(const char *p, int length, struct ec_point *point)
         point->x = NULL;
         freebn(point->y);
         point->y = NULL;
-        return 0;
+        return false;
     }
 
-    return 1;
+    return true;
 }
 
-static int decodepoint(const char *p, int length, struct ec_point *point)
+static bool decodepoint(const char *p, int length, struct ec_point *point)
 {
     if (point->curve->type == EC_EDWARDS) {
         return decodepoint_ed(p, length, point);
     }
 
     if (length < 1 || p[0] != 0x04) /* Only support uncompressed point */
-        return 0;
+        return false;
     /* Skip compression flag */
     ++p;
     --length;
@@ -1738,7 +1739,7 @@ static int decodepoint(const char *p, int length, struct ec_point *point)
         point->x = NULL;
         point->y = NULL;
         point->z = NULL;
-        return 0;
+        return false;
     }
     length = length / 2;
     point->x = bignum_from_bytes(p, length);
@@ -1752,16 +1753,16 @@ static int decodepoint(const char *p, int length, struct ec_point *point)
         point->x = NULL;
         freebn(point->y);
         point->y = NULL;
-        return 0;
+        return false;
     }
 
-    return 1;
+    return true;
 }
 
-static int BinarySource_get_point(BinarySource *src, struct ec_point *point)
+static bool BinarySource_get_point(BinarySource *src, struct ec_point *point)
 {
     ptrlen str = get_string(src);
-    if (get_err(src)) return 0;
+    if (get_err(src)) return false;
     return decodepoint(str.ptr, str.len, point);
 }
 #define get_point(src, pt) BinarySource_get_point(BinarySource_UPCAST(src), pt)
@@ -1821,7 +1822,7 @@ static ssh_key *ecdsa_new_pub(const ssh_keyalg *self, ptrlen data)
     ec->sshk = self;
 
     ec->publicKey.curve = curve;
-    ec->publicKey.infinity = 0;
+    ec->publicKey.infinity = false;
     ec->publicKey.x = NULL;
     ec->publicKey.y = NULL;
     ec->publicKey.z = NULL;
@@ -2009,7 +2010,7 @@ static ssh_key *ed25519_new_priv_openssh(const ssh_keyalg *self,
     ec->sshk = self;
 
     ec->publicKey.curve = ec_ed25519();
-    ec->publicKey.infinity = 0;
+    ec->publicKey.infinity = false;
     ec->privateKey = NULL;
     ec->publicKey.x = NULL;
     ec->publicKey.z = NULL;
@@ -2103,7 +2104,7 @@ static ssh_key *ecdsa_new_priv_openssh(const ssh_keyalg *self,
     ec->sshk = self;
 
     ec->publicKey.curve = curve;
-    ec->publicKey.infinity = 0;
+    ec->publicKey.infinity = false;
     ec->publicKey.x = NULL;
     ec->publicKey.y = NULL;
     ec->publicKey.z = NULL;
@@ -2190,27 +2191,27 @@ static int ecdsa_pubkey_bits(const ssh_keyalg *self, ptrlen blob)
     return ret;
 }
 
-static int ecdsa_verify(ssh_key *key, ptrlen sig, ptrlen data)
+static bool ecdsa_verify(ssh_key *key, ptrlen sig, ptrlen data)
 {
     struct ec_key *ec = container_of(key, struct ec_key, sshk);
     const struct ecsign_extra *extra =
         (const struct ecsign_extra *)ec->sshk->extra;
     BinarySource src[1];
     ptrlen sigstr;
-    int ret;
+    bool ret;
 
     if (!ec->publicKey.x || !ec->publicKey.y || !ec->publicKey.curve)
-        return 0;
+        return false;
 
     BinarySource_BARE_INIT(src, sig.ptr, sig.len);
 
     /* Check the signature starts with the algorithm name */
     if (!ptrlen_eq_string(get_string(src), ec->sshk->ssh_id))
-        return 0;
+        return false;
 
     sigstr = get_string(src);
     if (get_err(src))
-        return 0;
+        return false;
 
     if (ec->publicKey.curve->type == EC_EDWARDS) {
         struct ec_point *r;
@@ -2219,22 +2220,22 @@ static int ecdsa_verify(ssh_key *key, ptrlen sig, ptrlen data)
 
         /* Check that the signature is two times the length of a point */
         if (sigstr.len != pointlen * 2) {
-            return 0;
+            return false;
         }
 
         /* Check it's the 256 bit field so that SHA512 is the correct hash */
         if (ec->publicKey.curve->fieldBits != 256) {
-            return 0;
+            return false;
         }
 
         /* Get the signature */
-        r = ec_point_new(ec->publicKey.curve, NULL, NULL, NULL, 0);
+        r = ec_point_new(ec->publicKey.curve, NULL, NULL, NULL, false);
         if (!r) {
-            return 0;
+            return false;
         }
         if (!decodepoint(sigstr.ptr, pointlen, r)) {
             ec_point_free(r);
-            return 0;
+            return false;
         }
         s = bignum_from_bytes_le(
             (const char *)sigstr.ptr + pointlen, pointlen);
@@ -2277,7 +2278,7 @@ static int ecdsa_verify(ssh_key *key, ptrlen sig, ptrlen data)
             if (!lhs) {
                 ec_point_free(r);
                 freebn(h);
-                return 0;
+                return false;
             }
 
             /* rhs = r + h*publicKey */
@@ -2286,14 +2287,14 @@ static int ecdsa_verify(ssh_key *key, ptrlen sig, ptrlen data)
             if (!tmp) {
                 ec_point_free(lhs);
                 ec_point_free(r);
-                return 0;
+                return false;
             }
-            rhs = ecp_add(r, tmp, 0);
+            rhs = ecp_add(r, tmp, false);
             ec_point_free(r);
             ec_point_free(tmp);
             if (!rhs) {
                 ec_point_free(lhs);
-                return 0;
+                return false;
             }
 
             /* Check the point is the same */
@@ -2301,7 +2302,7 @@ static int ecdsa_verify(ssh_key *key, ptrlen sig, ptrlen data)
             if (ret) {
                 ret = !bignum_cmp(lhs->y, rhs->y);
                 if (ret) {
-                    ret = 1;
+                    ret = true;
                 }
             }
             ec_point_free(lhs);
@@ -2320,7 +2321,7 @@ static int ecdsa_verify(ssh_key *key, ptrlen sig, ptrlen data)
         if (get_err(src)) {
             freebn(r);
             freebn(s);
-            return 0;
+            return false;
         }
 
         digestLen = extra->hash->hlen;
@@ -2340,7 +2341,7 @@ static int ecdsa_verify(ssh_key *key, ptrlen sig, ptrlen data)
 }
 
 static void ecdsa_sign(ssh_key *key, const void *data, int datalen,
-                       BinarySink *bs)
+                       unsigned flags, BinarySink *bs)
 {
     struct ec_key *ec = container_of(key, struct ec_key, sshk);
     const struct ecsign_extra *extra =
@@ -2496,6 +2497,7 @@ const ssh_keyalg ssh_ecdsa_ed25519 = {
     "ssh-ed25519",
     "ssh-ed25519",
     &sign_extra_ed25519,
+    0, /* no supported flags */
 };
 
 /* OID: 1.2.840.10045.3.1.7 (ansiX9p256r1) */
@@ -2524,6 +2526,7 @@ const ssh_keyalg ssh_ecdsa_nistp256 = {
     "ecdsa-sha2-nistp256",
     "ecdsa-sha2-nistp256",
     &sign_extra_nistp256,
+    0, /* no supported flags */
 };
 
 /* OID: 1.3.132.0.34 (secp384r1) */
@@ -2552,6 +2555,7 @@ const ssh_keyalg ssh_ecdsa_nistp384 = {
     "ecdsa-sha2-nistp384",
     "ecdsa-sha2-nistp384",
     &sign_extra_nistp384,
+    0, /* no supported flags */
 };
 
 /* OID: 1.3.132.0.35 (secp521r1) */
@@ -2580,6 +2584,7 @@ const ssh_keyalg ssh_ecdsa_nistp521 = {
     "ecdsa-sha2-nistp521",
     "ecdsa-sha2-nistp521",
     &sign_extra_nistp521,
+    0, /* no supported flags */
 };
 
 /* ----------------------------------------------------------------------
@@ -2727,7 +2732,7 @@ Bignum ssh_ecdhkex_getkey(struct ec_key *ec,
 
     if (ec->publicKey.curve->type == EC_WEIERSTRASS) {
         remote.curve = ec->publicKey.curve;
-        remote.infinity = 0;
+        remote.infinity = false;
         if (!decodepoint(remoteKey, remoteKeyLen, &remote)) {
             return NULL;
         }
@@ -2738,7 +2743,7 @@ Bignum ssh_ecdhkex_getkey(struct ec_key *ec,
         }
 
         remote.curve = ec->publicKey.curve;
-        remote.infinity = 0;
+        remote.infinity = false;
         remote.x = bignum_from_bytes_le((const unsigned char *)remoteKey,
                                         remoteKeyLen);
         remote.y = NULL;
@@ -2830,30 +2835,28 @@ const unsigned char *ec_alg_oid(const ssh_keyalg *alg,
 const int ec_nist_curve_lengths[] = { 256, 384, 521 };
 const int n_ec_nist_curve_lengths = lenof(ec_nist_curve_lengths);
 
-int ec_nist_alg_and_curve_by_bits(int bits,
-                                  const struct ec_curve **curve,
-                                  const ssh_keyalg **alg)
+bool ec_nist_alg_and_curve_by_bits(
+    int bits, const struct ec_curve **curve, const ssh_keyalg **alg)
 {
     switch (bits) {
       case 256: *alg = &ssh_ecdsa_nistp256; break;
       case 384: *alg = &ssh_ecdsa_nistp384; break;
       case 521: *alg = &ssh_ecdsa_nistp521; break;
-      default: return FALSE;
+      default: return false;
     }
     *curve = ((struct ecsign_extra *)(*alg)->extra)->curve();
-    return TRUE;
+    return true;
 }
 
-int ec_ed_alg_and_curve_by_bits(int bits,
-                                const struct ec_curve **curve,
-                                const ssh_keyalg **alg)
+bool ec_ed_alg_and_curve_by_bits(
+    int bits, const struct ec_curve **curve, const ssh_keyalg **alg)
 {
     switch (bits) {
       case 256: *alg = &ssh_ecdsa_ed25519; break;
-      default: return FALSE;
+      default: return false;
     }
     *curve = ((struct ecsign_extra *)(*alg)->extra)->curve();
-    return TRUE;
+    return true;
 }
 
 #ifdef MPEXT
