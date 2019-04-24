@@ -280,6 +280,16 @@ static const struct ChannelVtable zombiechan_channelvt = {
     chan_no_exit_status,
     chan_no_exit_signal,
     chan_no_exit_signal_numeric,
+    chan_no_run_shell,
+    chan_no_run_command,
+    chan_no_run_subsystem,
+    chan_no_enable_x11_forwarding,
+    chan_no_enable_agent_forwarding,
+    chan_no_allocate_pty,
+    chan_no_set_env,
+    chan_no_send_break,
+    chan_no_send_signal,
+    chan_no_change_window_size,
     chan_no_request_response,
 };
 
@@ -366,6 +376,62 @@ int chan_no_exit_signal_numeric(
     return FALSE;
 }
 
+int chan_no_run_shell(Channel *chan)
+{
+    return FALSE;
+}
+
+int chan_no_run_command(Channel *chan, ptrlen command)
+{
+    return FALSE;
+}
+
+int chan_no_run_subsystem(Channel *chan, ptrlen subsys)
+{
+    return FALSE;
+}
+
+int chan_no_enable_x11_forwarding(
+    Channel *chan, int oneshot, ptrlen authproto, ptrlen authdata,
+    unsigned screen_number)
+{
+    return FALSE;
+}
+
+int chan_no_enable_agent_forwarding(Channel *chan)
+{
+    return FALSE;
+}
+
+int chan_no_allocate_pty(
+    Channel *chan, ptrlen termtype, unsigned width, unsigned height,
+    unsigned pixwidth, unsigned pixheight, struct ssh_ttymodes modes)
+{
+    return FALSE;
+}
+
+int chan_no_set_env(Channel *chan, ptrlen var, ptrlen value)
+{
+    return FALSE;
+}
+
+int chan_no_send_break(Channel *chan, unsigned length)
+{
+    return FALSE;
+}
+
+int chan_no_send_signal(Channel *chan, ptrlen signame)
+{
+    return FALSE;
+}
+
+int chan_no_change_window_size(
+    Channel *chan, unsigned width, unsigned height,
+    unsigned pixwidth, unsigned pixheight)
+{
+    return FALSE;
+}
+
 void chan_no_request_response(Channel *chan, int success)
 {
     assert(0 && "this channel type should never send a want-reply request");
@@ -384,6 +450,29 @@ static unsigned real_ttymode_opcode(unsigned our_opcode, int ssh_version)
         return ssh_version == 1 ? TTYMODE_OSPEED_SSH1 : TTYMODE_OSPEED_SSH2;
       default:
         return our_opcode;
+    }
+}
+
+static unsigned our_ttymode_opcode(unsigned real_opcode, int ssh_version)
+{
+    if (ssh_version == 1) {
+        switch (real_opcode) {
+          case TTYMODE_ISPEED_SSH1:
+            return TTYMODE_ISPEED;
+          case TTYMODE_OSPEED_SSH1:
+            return TTYMODE_OSPEED;
+          default:
+            return real_opcode;
+        }
+    } else {
+        switch (real_opcode) {
+          case TTYMODE_ISPEED_SSH2:
+            return TTYMODE_ISPEED;
+          case TTYMODE_OSPEED_SSH2:
+            return TTYMODE_OSPEED;
+          default:
+            return real_opcode;
+        }
     }
 }
 
@@ -487,6 +576,49 @@ struct ssh_ttymodes get_ttymodes_from_conf(Seat *seat, Conf *conf)
         modes.mode_val[TTYMODE_ISPEED] = ispeed;
         modes.have_mode[TTYMODE_OSPEED] = TRUE;
         modes.mode_val[TTYMODE_OSPEED] = ospeed;
+    }
+
+    return modes;
+}
+
+struct ssh_ttymodes read_ttymodes_from_packet(
+    BinarySource *bs, int ssh_version)
+{
+    struct ssh_ttymodes modes;
+    memset(&modes, 0, sizeof(modes));
+
+    while (1) {
+        unsigned real_opcode, our_opcode;
+
+        real_opcode = get_byte(bs);
+        if (real_opcode == TTYMODE_END_OF_LIST)
+            break;
+        if (real_opcode >= 160) {
+            /*
+             * RFC 4254 (and the SSH 1.5 spec): "Opcodes 160 to 255
+             * are not yet defined, and cause parsing to stop (they
+             * should only be used after any other data)."
+             *
+             * My interpretation of this is that if one of these
+             * opcodes appears, it's not a parse _error_, but it is
+             * something that we don't know how to parse even well
+             * enough to step over it to find the next opcode, so we
+             * stop parsing now and assume that the rest of the string
+             * is composed entirely of things we don't understand and
+             * (as usual for unsupported terminal modes) silently
+             * ignore.
+             */
+            return modes;
+        }
+
+        our_opcode = our_ttymode_opcode(real_opcode, ssh_version);
+        assert(our_opcode < TTYMODE_LIMIT);
+        modes.have_mode[our_opcode] = TRUE;
+
+        if (ssh_version == 1 && real_opcode >= 1 && real_opcode <= 127)
+            modes.mode_val[our_opcode] = get_byte(bs);
+        else
+            modes.mode_val[our_opcode] = get_uint32(bs);
     }
 
     return modes;

@@ -69,6 +69,8 @@ static const struct ConnectionLayerVtable ssh1_connlayer_vtable = {
     ssh1_rportfwd_remove,
     ssh1_lportfwd_open,
     ssh1_session_open,
+    ssh1_serverside_x11_open,
+    ssh1_serverside_agent_open,
     ssh1_add_x11_display,
     NULL /* add_sharing_x11_display */,
     NULL /* remove_sharing_x11_display */,
@@ -89,7 +91,8 @@ static const struct ConnectionLayerVtable ssh1_connlayer_vtable = {
     ssh1_set_wants_user_input,
 };
 
-static int ssh1channel_write(SshChannel *c, const void *buf, int len);
+static int ssh1channel_write(
+    SshChannel *c, int is_stderr, const void *buf, int len);
 static void ssh1channel_write_eof(SshChannel *c);
 static void ssh1channel_initiate_close(SshChannel *c, const char *err);
 static void ssh1channel_unthrottle(SshChannel *c, int bufsize);
@@ -104,6 +107,9 @@ static const struct SshChannelVtable ssh1channel_vtable = {
     ssh1channel_get_conf,
     ssh1channel_window_override_removed,
     NULL /* x11_sharing_handover is only used by SSH-2 connection sharing */,
+    NULL /* send_exit_status */,
+    NULL /* send_exit_signal */,
+    NULL /* send_exit_signal_numeric */,
     NULL /* request_x11_forwarding */,
     NULL /* request_agent_forwarding */,
     NULL /* request_pty */,
@@ -208,12 +214,14 @@ static void ssh1_connection_free(PacketProtocolLayer *ppl)
     sfree(s);
 }
 
-void ssh1_connection_set_local_protoflags(PacketProtocolLayer *ppl, int flags)
+void ssh1_connection_set_protoflags(PacketProtocolLayer *ppl,
+                                    int local, int remote)
 {
     assert(ppl->vt == &ssh1_connection_vtable);
     struct ssh1_connection_state *s =
         container_of(ppl, struct ssh1_connection_state, ppl);
-    s->local_protoflags = flags;
+    s->local_protoflags = local;
+    s->remote_protoflags = remote;
 }
 
 static int ssh1_connection_filter_queue(struct ssh1_connection_state *s)
@@ -581,7 +589,8 @@ static void ssh1channel_unthrottle(SshChannel *sc, int bufsize)
     }
 }
 
-static int ssh1channel_write(SshChannel *sc, const void *buf, int len)
+static int ssh1channel_write(
+    SshChannel *sc, int is_stderr, const void *buf, int len)
 {
     struct ssh1_channel *c = container_of(sc, struct ssh1_channel, sc);
     struct ssh1_connection_state *s = c->connlayer;

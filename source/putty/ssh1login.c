@@ -821,7 +821,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                 s->cur_prompt->to_server = TRUE;
                 s->cur_prompt->name = dupstr("SSH TIS authentication");
                 /* Prompt heuristic comes from OpenSSH */
-                if (memchr(challenge.ptr, '\n', challenge.len)) {
+                if (!memchr(challenge.ptr, '\n', challenge.len)) {
                     instr_suf = dupstr("");
                     prompt = mkstr(challenge);
                 } else {
@@ -842,8 +842,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                                 ssh1_pkt_type(pktin->type));
                 return;
             }
-        }
-        if (conf_get_int(s->conf, CONF_try_tis_auth) &&
+        } else if (conf_get_int(s->conf, CONF_try_tis_auth) &&
             (s->supported_auths_mask & (1 << SSH1_AUTH_CCARD)) &&
             !s->ccard_auth_refused) {
             s->pwpkt_type = SSH1_CMSG_AUTH_CCARD_RESPONSE;
@@ -871,7 +870,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                 s->cur_prompt->name = dupstr("SSH CryptoCard authentication");
                 s->cur_prompt->name_reqd = FALSE;
                 /* Prompt heuristic comes from OpenSSH */
-                if (memchr(challenge.ptr, '\n', challenge.len)) {
+                if (!memchr(challenge.ptr, '\n', challenge.len)) {
                     instr_suf = dupstr("");
                     prompt = mkstr(challenge);
                 } else {
@@ -1086,8 +1085,8 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
 	}
     }
 
-    ssh1_connection_set_local_protoflags(
-        s->successor_layer, s->local_protoflags);
+    ssh1_connection_set_protoflags(
+        s->successor_layer, s->local_protoflags, s->remote_protoflags);
     {
         PacketProtocolLayer *successor = s->successor_layer;
         s->successor_layer = NULL;     /* avoid freeing it ourself */

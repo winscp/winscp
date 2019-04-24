@@ -301,6 +301,19 @@ SshChannel *ssh2_session_open(ConnectionLayer *cl, Channel *chan)
     return &c->sc;
 }
 
+SshChannel *ssh2_serverside_x11_open(
+    ConnectionLayer *cl, Channel *chan, const SocketPeerInfo *pi)
+{
+    assert(FALSE && "Should never be called in the client");
+    return 0;                          /* placate optimiser */
+}
+
+SshChannel *ssh2_serverside_agent_open(ConnectionLayer *cl, Channel *chan)
+{
+    assert(FALSE && "Should never be called in the client");
+    return 0;                          /* placate optimiser */
+}
+
 static void ssh2_channel_response(
     struct ssh2_channel *c, PktIn *pkt, void *ctx)
 {
@@ -341,6 +354,23 @@ int ssh2channel_start_subsystem(
     pq_push(s->ppl.out_pq, pktout);
 
     return TRUE;
+}
+
+void ssh2channel_send_exit_status(SshChannel *sc, int status)
+{
+    assert(FALSE && "Should never be called in the client");
+}
+
+void ssh2channel_send_exit_signal(
+    SshChannel *sc, ptrlen signame, int core_dumped, ptrlen msg)
+{
+    assert(FALSE && "Should never be called in the client");
+}
+
+void ssh2channel_send_exit_signal_numeric(
+    SshChannel *sc, int signum, int core_dumped, ptrlen msg)
+{
+    assert(FALSE && "Should never be called in the client");
 }
 
 void ssh2channel_request_x11_forwarding(

@@ -89,6 +89,21 @@ void ssh1_bpp_new_cipher(BinaryPacketProtocol *bpp,
     }
 }
 
+void ssh1_bpp_start_compression(BinaryPacketProtocol *bpp)
+{
+    struct ssh1_bpp_state *s;
+    assert(bpp->vt == &ssh1_bpp_vtable);
+    s = container_of(bpp, struct ssh1_bpp_state, bpp);
+
+    assert(!s->compctx);
+    assert(!s->decompctx);
+
+    s->compctx = ssh_compressor_new(&ssh_zlib);
+    s->decompctx = ssh_decompressor_new(&ssh_zlib);
+
+    bpp_logevent(("Started zlib (RFC1950) compression"));
+}
+
 #define BPP_READ(ptr, len) do                                   \
     {                                                           \
         crMaybeWaitUntilV(s->bpp.input_eof ||                   \
@@ -116,7 +131,7 @@ static void ssh1_bpp_handle_input(BinaryPacketProtocol *bpp)
 
         if (s->len < 0 || s->len > 262144) { /* SSH1.5-mandated max size */
             ssh_sw_abort(s->bpp.ssh,
-                         "Extremely large packet length from server suggests"
+                         "Extremely large packet length from remote suggests"
                          " data stream corruption");
             crStopV;
         }
@@ -221,13 +236,7 @@ static void ssh1_bpp_handle_input(BinaryPacketProtocol *bpp)
                          * If the response was positive, start
                          * compression.
                          */
-                        assert(!s->compctx);
-                        assert(!s->decompctx);
-
-                        s->compctx = ssh_compressor_new(&ssh_zlib);
-                        s->decompctx = ssh_decompressor_new(&ssh_zlib);
-
-                        bpp_logevent(("Started zlib (RFC1950) compression"));
+                        ssh1_bpp_start_compression(&s->bpp);
                     }
 
                     /*
@@ -246,9 +255,9 @@ static void ssh1_bpp_handle_input(BinaryPacketProtocol *bpp)
   eof:
     if (!s->bpp.expect_close) {
         ssh_remote_error(s->bpp.ssh,
-                         "Server unexpectedly closed network connection");
+                         "Remote side unexpectedly closed network connection");
     } else {
-        ssh_remote_eof(s->bpp.ssh, "Server closed network connection");
+        ssh_remote_eof(s->bpp.ssh, "Remote side closed network connection");
     }
     return;  /* avoid touching s now it's been freed */
 

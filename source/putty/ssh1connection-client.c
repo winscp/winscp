@@ -397,7 +397,8 @@ static void ssh1mainchan_hint_channel_is_simple(SshChannel *sc)
 {
 }
 
-static int ssh1mainchan_write(SshChannel *sc, const void *data, int len)
+static int ssh1mainchan_write(
+    SshChannel *sc, int is_stderr, const void *data, int len)
 {
     struct ssh1_connection_state *s =
         container_of(sc, struct ssh1_connection_state, mainchan_sc);
@@ -428,6 +429,9 @@ static const struct SshChannelVtable ssh1mainchan_vtable = {
     NULL /* get_conf */,
     NULL /* window_override_removed is only used by SSH-2 sharing */,
     NULL /* x11_sharing_handover, likewise */,
+    NULL /* send_exit_status */,
+    NULL /* send_exit_signal */,
+    NULL /* send_exit_signal_numeric */,
     ssh1mainchan_request_x11_forwarding,
     ssh1mainchan_request_agent_forwarding,
     ssh1mainchan_request_pty,
@@ -511,4 +515,17 @@ struct ssh_rportfwd *ssh1_rportfwd_alloc(
     ssh1_queue_succfail_handler(s, ssh1_rportfwd_response, rpf, FALSE);
 
     return rpf;
+}
+
+SshChannel *ssh1_serverside_x11_open(
+    ConnectionLayer *cl, Channel *chan, const SocketPeerInfo *pi)
+{
+    assert(FALSE && "Should never be called in the client");
+    return NULL;
+}
+
+SshChannel *ssh1_serverside_agent_open(ConnectionLayer *cl, Channel *chan)
+{
+    assert(FALSE && "Should never be called in the client");
+    return NULL;
 }

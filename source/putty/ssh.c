@@ -180,7 +180,7 @@ static void ssh_got_ssh_version(struct ssh_version_receiver *rcv,
             int is_simple =
                 (conf_get_int(ssh->conf, CONF_ssh_simple) && !ssh->connshare);
 
-            ssh->bpp = ssh2_bpp_new(ssh->logctx, &ssh->stats);
+            ssh->bpp = ssh2_bpp_new(ssh->logctx, &ssh->stats, FALSE);
             ssh_connect_bpp(ssh);
 
 #ifndef NO_GSSAPI
@@ -246,7 +246,7 @@ static void ssh_got_ssh_version(struct ssh_version_receiver *rcv,
                 ssh_verstring_get_local(old_bpp),
                 ssh_verstring_get_remote(old_bpp),
                 &ssh->gss_state,
-                &ssh->stats, transport_child_layer);
+                &ssh->stats, transport_child_layer, FALSE);
             ssh_connect_ppl(ssh, ssh->base_layer);
 
             if (userauth_layer)
@@ -717,7 +717,8 @@ static const char *connect_to_host(Ssh *ssh, const char *host, int port,
     ssh->version_receiver.got_ssh_version = ssh_got_ssh_version;
     ssh->bpp = ssh_verstring_new(
         ssh->conf, ssh->logctx, ssh->bare_connection,
-        ssh->version == 1 ? "1.5" : "2.0", &ssh->version_receiver);
+        ssh->version == 1 ? "1.5" : "2.0", &ssh->version_receiver,
+        FALSE, "PuTTY");
     ssh_connect_bpp(ssh);
     queue_idempotent_callback(&ssh->bpp->ic_in_raw);
 

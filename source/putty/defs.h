@@ -61,6 +61,9 @@ typedef struct Frontend Frontend;
 
 typedef struct Ssh Ssh;
 
+typedef struct SftpServer SftpServer;
+typedef struct SftpServerVtable SftpServerVtable;
+
 typedef struct Channel Channel;
 typedef struct SshChannel SshChannel;
 typedef struct mainchan mainchan;

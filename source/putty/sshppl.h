@@ -96,8 +96,8 @@ PacketProtocolLayer *ssh2_transport_new(
     Conf *conf, const char *host, int port, const char *fullhostname,
     const char *client_greeting, const char *server_greeting,
     struct ssh_connection_shared_gss_state *shgss,
-    struct DataTransferStats *stats,
-    PacketProtocolLayer *higher_layer);
+    struct DataTransferStats *stats, PacketProtocolLayer *higher_layer,
+    int is_server);
 PacketProtocolLayer *ssh2_userauth_new(
     PacketProtocolLayer *successor_layer,
     const char *hostname, const char *fullhostname,
@@ -135,7 +135,8 @@ ptrlen ssh2_transport_get_session_id(PacketProtocolLayer *ssh2_transport_ptr);
 void ssh2_transport_notify_auth_done(PacketProtocolLayer *ssh2_transport_ptr);
 
 /* Methods for ssh1login to pass protocol flags to ssh1connection */
-void ssh1_connection_set_local_protoflags(PacketProtocolLayer *ppl, int flags);
+void ssh1_connection_set_protoflags(
+    PacketProtocolLayer *ppl, int local, int remote);
 
 /* Shared get_specials method between the two ssh1 layers */
 int ssh1_common_get_specials(PacketProtocolLayer *, add_special_fn_t, void *);
@@ -145,5 +146,9 @@ int ssh1_common_filter_queue(PacketProtocolLayer *ppl);
 void ssh1_compute_session_id(
     unsigned char *session_id, const unsigned char *cookie,
     struct RSAKey *hostkey, struct RSAKey *servkey);
+
+/* Method used by the SSH server */
+void ssh2_transport_provide_hostkeys(PacketProtocolLayer *ssh2_transport_ptr,
+                                     ssh_key *const *hostkeys, int nhostkeys);
 
 #endif /* PUTTY_SSHPPL_H */

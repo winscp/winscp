@@ -37,6 +37,16 @@ static const struct ChannelVtable mainchan_channelvt = {
     mainchan_rcvd_exit_status,
     mainchan_rcvd_exit_signal,
     mainchan_rcvd_exit_signal_numeric,
+    chan_no_run_shell,
+    chan_no_run_command,
+    chan_no_run_subsystem,
+    chan_no_enable_x11_forwarding,
+    chan_no_enable_agent_forwarding,
+    chan_no_allocate_pty,
+    chan_no_set_env,
+    chan_no_send_break,
+    chan_no_send_signal,
+    chan_no_change_window_size,
     mainchan_request_response,
 };
 

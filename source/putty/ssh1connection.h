@@ -8,7 +8,7 @@ struct ssh1_connection_state {
     Ssh *ssh;
 
     Conf *conf;
-    int local_protoflags;
+    int local_protoflags, remote_protoflags;
 
     tree234 *channels;		       /* indexed by local id */
 
@@ -48,6 +48,8 @@ struct ssh1_connection_state {
      * have to keep track of the queue ourselves.)
      */
     struct outstanding_succfail *succfail_head, *succfail_tail;
+
+    int compressing;                   /* used in server mode only */
 
     ConnectionLayer cl;
     PacketProtocolLayer ppl;
@@ -105,6 +107,9 @@ struct ssh_rportfwd *ssh1_rportfwd_alloc(
     const char *shost, int sport, const char *dhost, int dport,
     int addressfamily, const char *log_description, PortFwdRecord *pfr,
     ssh_sharing_connstate *share_ctx);
+SshChannel *ssh1_serverside_x11_open(
+    ConnectionLayer *cl, Channel *chan, const SocketPeerInfo *pi);
+SshChannel *ssh1_serverside_agent_open(ConnectionLayer *cl, Channel *chan);
 
 void ssh1_connection_direction_specific_setup(
     struct ssh1_connection_state *s);

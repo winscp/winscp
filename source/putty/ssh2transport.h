@@ -108,6 +108,7 @@ typedef struct transport_direction {
     int etm_mode;
     const struct ssh_compression_alg *comp;
     int comp_delayed;
+    int mkkey_adjust;
 } transport_direction;
 
 struct ssh2_transport_state {
@@ -131,6 +132,7 @@ struct ssh2_transport_state {
     char *hostkey_str; /* string representation, for easy checking in rekeys */
     unsigned char session_id[SSH2_KEX_MAX_HASH_LEN];
     int session_id_len;
+    int dh_min_size, dh_max_size, dh_got_size_bounds;
     struct dh_ctx *dh_ctx;
     ssh_hash *exhash;
 
@@ -163,10 +165,12 @@ struct ssh2_transport_state {
 
     int nbits, pbits, warn_kex, warn_hk, warn_cscipher, warn_sccipher;
     Bignum p, g, e, f, K;
-    strbuf *client_kexinit, *server_kexinit;
+    strbuf *outgoing_kexinit, *incoming_kexinit;
+    strbuf *client_kexinit, *server_kexinit; /* aliases to the above */
     int kex_init_value, kex_reply_value;
     transport_direction in, out;
     ptrlen hostkeydata, sigdata;
+    strbuf *hostkeyblob;
     char *keystr, *fingerprint;
     ssh_key *hkey;                     /* actual host key */
     struct RSAKey *rsa_kex_key;             /* for RSA kex */
@@ -202,6 +206,9 @@ struct ssh2_transport_state {
      * with a newly cross-certified host key.
      */
     int cross_certifying;
+
+    ssh_key *const *hostkeys;
+    int nhostkeys;
 
     PacketProtocolLayer ppl;
 };
