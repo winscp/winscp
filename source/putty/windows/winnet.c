@@ -863,10 +863,6 @@ static void sk_net_set_frozen(Socket *s, bool is_frozen);
 static const char *sk_net_socket_error(Socket *s);
 static SocketPeerInfo *sk_net_peer_info(Socket *s);
 
-#ifdef MPEXT
-extern char *do_select(Plug * plug, SOCKET skt, int startup);
-#else
-#endif
 static const SocketVtable NetSocket_sockvt = {
     sk_net_plug,
     sk_net_close,
@@ -1441,10 +1437,6 @@ Socket *sk_newlistener(const char *srcaddr, int port, Plug *plug,
 
 static void sk_net_close(Socket *sock)
 {
-#ifdef MPEXT
-    extern char *do_select(Plug * plug, SOCKET skt, int startup);
-#else
-#endif
     NetSocket *s = container_of(sock, NetSocket, sock);
 
     if (s->child)

@@ -14,13 +14,13 @@
 //---------------------------------------------------------------------------
 char sshver[50];
 extern const char commitid[] = "";
-const int platform_uses_x11_unix_by_default = TRUE;
+const bool platform_uses_x11_unix_by_default = true;
 CRITICAL_SECTION putty_section;
 bool SaveRandomSeed;
 char appname_[50];
 const char *const appname = appname_;
-extern const int share_can_be_downstream = FALSE;
-extern const int share_can_be_upstream = FALSE;
+extern const bool share_can_be_downstream = false;
+extern const bool share_can_be_upstream = false;
 //---------------------------------------------------------------------------
 extern "C"
 {
@@ -113,7 +113,7 @@ struct callback_set * get_seat_callback_set(Seat * seat)
   return SecureShell->GetCallbackSet();
 }
 //---------------------------------------------------------------------------
-extern "C" char * do_select(Plug * plug, SOCKET skt, int startup)
+extern "C" char * do_select(Plug * plug, SOCKET skt, bool startup)
 {
   bool pfwd;
   TSecureShell * SecureShell = GetSecureShell(plug, pfwd);
@@ -129,7 +129,7 @@ extern "C" char * do_select(Plug * plug, SOCKET skt, int startup)
   return NULL;
 }
 //---------------------------------------------------------------------------
-static int output(Seat * seat, int is_stderr, const void * data, int len)
+static int output(Seat * seat, bool is_stderr, const void * data, int len)
 {
   TSecureShell * SecureShell = static_cast<ScpSeat *>(seat)->SecureShell;
   if (is_stderr >= 0)
@@ -145,9 +145,9 @@ static int output(Seat * seat, int is_stderr, const void * data, int len)
   return 0;
 }
 //---------------------------------------------------------------------------
-static int eof(Seat *)
+static bool eof(Seat *)
 {
-  return FALSE;
+  return false;
 }
 //---------------------------------------------------------------------------
 static int get_userpass_input(Seat * seat, prompts_t * p, bufchain * DebugUsedArg(input))
@@ -237,7 +237,7 @@ int verify_ssh_host_key(Seat * seat, const char * host, int port, const char * k
   return 1;
 }
 //---------------------------------------------------------------------------
-int have_ssh_host_key(Seat * seat, const char * hostname, int port,
+bool have_ssh_host_key(Seat * seat, const char * hostname, int port,
   const char * keytype)
 {
   TSecureShell * SecureShell = static_cast<ScpSeat *>(seat)->SecureShell;

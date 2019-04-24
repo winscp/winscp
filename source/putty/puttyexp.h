@@ -51,11 +51,6 @@ long reg_set_winscp_value_ex(HKEY Key, const char * ValueName, unsigned long Res
   unsigned long Type, const unsigned char * Data, unsigned long DataSize);
 long reg_close_winscp_key(HKEY Key);
 
-// from winstore.c
-
-void putty_mungestr(const char *in, char *out);
-void putty_unmungestr(const char *in, char *out, int outlen);
-
 // from winnet.c
 
 void select_result(WPARAM wParam, LPARAM lParam);

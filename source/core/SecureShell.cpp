@@ -187,9 +187,11 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
       conf_set_filename(conf, KEY, filename); \
       filename_free(filename); \
     }
+  #define CONF_DEF_BOOL_NONE(KEY) conf_set_bool(conf, KEY, false);
   #define CONF_SET_DEFAULT(VALTYPE, KEYTYPE, KEYWORD) CONF_DEF_ ## VALTYPE ## _ ## KEYTYPE(CONF_ ## KEYWORD);
   CONFIG_OPTIONS(CONF_SET_DEFAULT);
   #undef CONF_SET_DEFAULT
+  #undef CONF_DEF_BOOL_NONE
   #undef CONF_DEF_FILENAME_NONE
   #undef CONF_DEF_FONT_NONE
   #undef CONF_DEF_STR_STR
@@ -202,13 +204,13 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
   conf_set_str(conf, CONF_username, UTF8String(Data->UserNameExpanded).c_str());
   conf_set_int(conf, CONF_port, Data->PortNumber);
   conf_set_int(conf, CONF_protocol, PROT_SSH);
-  conf_set_int(conf, CONF_change_password, Data->ChangePassword);
+  conf_set_bool(conf, CONF_change_password, Data->ChangePassword);
   // always set 0, as we will handle keepalives ourselves to avoid
   // multi-threaded issues in putty timer list
   conf_set_int(conf, CONF_ping_interval, 0);
-  conf_set_int(conf, CONF_compression, Data->Compression);
-  conf_set_int(conf, CONF_tryagent, Data->TryAgent);
-  conf_set_int(conf, CONF_agentfwd, Data->AgentFwd);
+  conf_set_bool(conf, CONF_compression, Data->Compression);
+  conf_set_bool(conf, CONF_tryagent, Data->TryAgent);
+  conf_set_bool(conf, CONF_agentfwd, Data->AgentFwd);
   conf_set_int(conf, CONF_addressfamily, Data->AddressFamily);
   conf_set_str(conf, CONF_ssh_rekey_data, AnsiString(Data->RekeyData).c_str());
   conf_set_int(conf, CONF_ssh_rekey_time, Data->RekeyTime);
@@ -286,13 +288,13 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
   filename_free(KeyFileFileName);
 
   conf_set_int(conf, CONF_sshprot, Data->SshProt);
-  conf_set_int(conf, CONF_ssh2_des_cbc, Data->Ssh2DES);
-  conf_set_int(conf, CONF_ssh_no_userauth, Data->SshNoUserAuth);
-  conf_set_int(conf, CONF_try_tis_auth, Data->AuthTIS);
-  conf_set_int(conf, CONF_try_ki_auth, Data->AuthKI);
-  conf_set_int(conf, CONF_try_gssapi_auth, Data->AuthGSSAPI);
-  conf_set_int(conf, CONF_gssapifwd, Data->GSSAPIFwdTGT);
-  conf_set_int(conf, CONF_change_username, Data->ChangeUsername);
+  conf_set_bool(conf, CONF_ssh2_des_cbc, Data->Ssh2DES);
+  conf_set_bool(conf, CONF_ssh_no_userauth, Data->SshNoUserAuth);
+  conf_set_bool(conf, CONF_try_tis_auth, Data->AuthTIS);
+  conf_set_bool(conf, CONF_try_ki_auth, Data->AuthKI);
+  conf_set_bool(conf, CONF_try_gssapi_auth, Data->AuthGSSAPI);
+  conf_set_bool(conf, CONF_gssapifwd, Data->GSSAPIFwdTGT);
+  conf_set_bool(conf, CONF_change_username, Data->ChangeUsername);
 
   conf_set_int(conf, CONF_proxy_type, Data->ProxyMethod);
   conf_set_str(conf, CONF_proxy_host, AnsiString(Data->ProxyHost).c_str());
@@ -308,7 +310,7 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
     conf_set_str(conf, CONF_proxy_telnet_command, AnsiString(Data->ProxyTelnetCommand).c_str());
   }
   conf_set_int(conf, CONF_proxy_dns, Data->ProxyDNS);
-  conf_set_int(conf, CONF_even_proxy_localhost, Data->ProxyLocalhost);
+  conf_set_bool(conf, CONF_even_proxy_localhost, Data->ProxyLocalhost);
 
   conf_set_int(conf, CONF_sshbug_ignore1, Data->Bug[sbIgnore1]);
   conf_set_int(conf, CONF_sshbug_plainpw1, Data->Bug[sbPlainPW1]);
@@ -337,16 +339,16 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
     }
 
     // when setting up a tunnel, do not open shell/sftp
-    conf_set_int(conf, CONF_ssh_no_shell, TRUE);
+    conf_set_bool(conf, CONF_ssh_no_shell, TRUE);
   }
   else
   {
     DebugAssert(Simple);
-    conf_set_int(conf, CONF_ssh_simple, Data->SshSimple && Simple);
+    conf_set_bool(conf, CONF_ssh_simple, Data->SshSimple && Simple);
 
     if (Data->FSProtocol == fsSCPonly)
     {
-      conf_set_int(conf, CONF_ssh_subsys, FALSE);
+      conf_set_bool(conf, CONF_ssh_subsys, FALSE);
       if (Data->Shell.IsEmpty())
       {
         // Following forces Putty to open default shell
@@ -362,18 +364,18 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
     {
       if (Data->SftpServer.IsEmpty())
       {
-        conf_set_int(conf, CONF_ssh_subsys, TRUE);
+        conf_set_bool(conf, CONF_ssh_subsys, TRUE);
         conf_set_str(conf, CONF_remote_cmd, "sftp");
       }
       else
       {
-        conf_set_int(conf, CONF_ssh_subsys, FALSE);
+        conf_set_bool(conf, CONF_ssh_subsys, FALSE);
         conf_set_str(conf, CONF_remote_cmd, AnsiString(Data->SftpServer).c_str());
       }
 
       if (Data->FSProtocol != fsSFTPonly)
       {
-        conf_set_int(conf, CONF_ssh_subsys2, FALSE);
+        conf_set_bool(conf, CONF_ssh_subsys2, FALSE);
         if (Data->Shell.IsEmpty())
         {
           // Following forces Putty to open default shell
@@ -382,7 +384,7 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
           // PuTTY ignores CONF_remote_cmd2 set to "",
           // so we have to enforce it
           // (CONF_force_remote_cmd2 is our config option)
-          conf_set_int(conf, CONF_force_remote_cmd2, 1);
+          conf_set_bool(conf, CONF_force_remote_cmd2, 1);
         }
         else
         {
@@ -393,7 +395,7 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
       if ((Data->FSProtocol == fsSFTPonly) && Data->SftpServer.IsEmpty())
       {
         // see psftp_connect() from psftp.c
-        conf_set_int(conf, CONF_ssh_subsys2, FALSE);
+        conf_set_bool(conf, CONF_ssh_subsys2, FALSE);
         conf_set_str(conf, CONF_remote_cmd2,
           "test -x /usr/lib/sftp-server && exec /usr/lib/sftp-server\n"
           "test -x /usr/local/lib/sftp-server && exec /usr/local/lib/sftp-server\n"
@@ -406,9 +408,9 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
   conf_set_int(conf, CONF_sndbuf, Data->SendBuf);
 
   // permanent settings
-  conf_set_int(conf, CONF_nopty, TRUE);
-  conf_set_int(conf, CONF_tcp_keepalives, 0);
-  conf_set_int(conf, CONF_ssh_show_banner, TRUE);
+  conf_set_bool(conf, CONF_nopty, TRUE);
+  conf_set_bool(conf, CONF_tcp_keepalives, 0);
+  conf_set_bool(conf, CONF_ssh_show_banner, TRUE);
   conf_set_int(conf, CONF_proxy_log_to_term, FORCE_OFF);
 
   conf_set_str(conf, CONF_loghost, AnsiString(Data->LogicalHostName).c_str());
@@ -463,7 +465,7 @@ void __fastcall TSecureShell::Open()
       InitError = backend_init(&ssh_backend, FSeat, &FBackendHandle, FLogCtx, conf,
         AnsiString(FSessionData->HostNameExpanded).c_str(), FSessionData->PortNumber, &RealHost,
         (FSessionData->TcpNoDelay ? 1 : 0),
-        conf_get_int(conf, CONF_tcp_keepalives));
+        conf_get_bool(conf, CONF_tcp_keepalives));
     }
     __finally
     {

@@ -109,7 +109,7 @@ PacketProtocolLayer *ssh2_userauth_new(
     bool try_ki_auth,
     bool try_gssapi_auth, bool try_gssapi_kex_auth,
     bool gssapi_fwd, struct ssh_connection_shared_gss_state *shgss,
-    const char * loghost, int change_password); // WINSCP
+    const char * loghost, bool change_password); // WINSCP
 PacketProtocolLayer *ssh2_connection_new(
     Ssh *ssh, ssh_sharing_state *connshare, bool is_simple,
     Conf *conf, const char *peer_verstring, ConnectionLayer **cl_out);

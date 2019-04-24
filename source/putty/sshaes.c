@@ -1782,11 +1782,11 @@ void call_aes_setup(void * ctx, unsigned char * key, int keylen)
 
 // Based on pre 0.71 code, with use of 0.71 macros
 
-static void aes_encrypt(AESContext * ctx, word32 * block)
+static void aes_encrypt(AESContext * ctx, uint32_t * block)
 {
   int i;
-  word32 *keysched = ctx->keysched;
-  word32 newstate[4];
+  uint32_t *keysched = ctx->keysched;
+  uint32_t newstate[4];
   ADD_ROUND_KEY;
   assert(ctx->Nr - 1 > 0);
   for (i = 0; i < ctx->Nr - 1; i++) {
@@ -1796,11 +1796,11 @@ static void aes_encrypt(AESContext * ctx, word32 * block)
   ENCLASTROUND;
 }
 
-static void aes_decrypt(AESContext * ctx, word32 * block)
+static void aes_decrypt(AESContext * ctx, uint32_t * block)
 {
   int i;
-  word32 *keysched = ctx->invkeysched;
-  word32 newstate[4];
+  uint32_t *keysched = ctx->invkeysched;
+  uint32_t newstate[4];
   ADD_ROUND_KEY;
   assert(ctx->Nr - 1 > 0);
   for (i = 0; i < ctx->Nr - 1; i++) {

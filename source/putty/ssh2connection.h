@@ -18,7 +18,7 @@ struct ssh2_connection_state {
     int session_attempt, session_status;
     int term_width, term_height;
     bool want_user_input;
-    int ready; // WINSCP
+    bool ready; // WINSCP
 
     bool ssh_is_simple;
     bool persistent;

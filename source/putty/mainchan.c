@@ -287,7 +287,7 @@ static void mainchan_request_response(Channel *chan, bool success)
         if (success) {
             ppl_logevent(("Started a shell/command"));
             mainchan_ready(mc);
-        } else if (*conf_get_str(mc->conf, CONF_remote_cmd2) || conf_get_int(mc->conf, CONF_force_remote_cmd2)) { // WINSCP
+        } else if (*conf_get_str(mc->conf, CONF_remote_cmd2) || conf_get_bool(mc->conf, CONF_force_remote_cmd2)) { // WINSCP
             ppl_logevent(("Primary command failed; attempting fallback"));
             mainchan_try_fallback_command(mc);
         } else {

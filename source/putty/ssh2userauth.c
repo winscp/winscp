@@ -28,7 +28,7 @@ struct ssh2_userauth_state {
     char *default_username;
     bool try_ki_auth, try_gssapi_auth, try_gssapi_kex_auth, gssapi_fwd;
     char *loghost; // WINSCP
-    int change_password; // WINSCP
+    bool change_password; // WINSCP
 
     ptrlen session_id;
     enum {
@@ -120,7 +120,7 @@ PacketProtocolLayer *ssh2_userauth_new(
     const char *default_username, bool change_username,
     bool try_ki_auth, bool try_gssapi_auth, bool try_gssapi_kex_auth,
     bool gssapi_fwd, struct ssh_connection_shared_gss_state *shgss,
-    const char * loghost, int change_password) // WINSCP
+    const char * loghost, bool change_password) // WINSCP
 {
     struct ssh2_userauth_state *s = snew(struct ssh2_userauth_state);
     memset(s, 0, sizeof(*s));
@@ -1267,7 +1267,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                 s->ppl.bpp->pls->actx = SSH2_PKTCTX_PASSWORD;
 
                 // WINSCP
-                if (s->change_password != 0)
+                if (s->change_password)
                 {
                     s->password = dupstr("");
                     s->type = AUTH_TYPE_PASSWORD;
@@ -1349,7 +1349,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                 changereq_first_time = true;
 
                 while ((pktin->type == SSH2_MSG_USERAUTH_PASSWD_CHANGEREQ) ||
-                       (s->change_password != 0)) { // WINSCP
+                       s->change_password) { // WINSCP
 
                     /* 
                      * We're being asked for a new password
@@ -1360,7 +1360,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                     bool got_new = false; /* not live over crReturn */
                     ptrlen prompt;  /* not live over crReturn */
                     
-                    if (s->change_password == 0) // WINSCP
+                    if (!s->change_password) // WINSCP
                     {
                         const char *msg;
                         if (changereq_first_time)
@@ -1371,7 +1371,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                         ppl_printf(("%s\r\n", msg));
                     }
 
-                    s->change_password = 0; // WINSCP
+                    s->change_password = false; // WINSCP
 
                     prompt = get_string(pktin);
 

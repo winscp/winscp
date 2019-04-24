@@ -803,7 +803,7 @@ struct ssh_keyalg {
     const char *ssh_id;    /* string identifier in the SSH protocol */
     const char *cache_id;  /* identifier used in PuTTY's host key cache */
     const void *extra;     /* private to the public key methods */
-    const unsigned supported_flags;    /* signature-type flags we understand */
+    /*WINSCP const*/ unsigned supported_flags;    /* signature-type flags we understand */
 };
 
 #define ssh_key_new_pub(alg, data) ((alg)->new_pub(alg, data))
@@ -1206,11 +1206,9 @@ char *ssh2_fingerprint_blob(const void *blob, int bloblen);
 char *ssh2_fingerprint(ssh_key *key);
 int key_type(const Filename *filename);
 const char *key_type_to_str(int type);
-#ifdef MPEXT
-int openssh_loadpub_line(char * line, char **algorithm,
+bool openssh_loadpub_line(char * line, char **algorithm, // WINSCP
                          BinarySink *bs,
                          char **commentptr, const char **errorstr);
-#endif
 
 bool import_possible(int type);
 int import_target_type(int type);

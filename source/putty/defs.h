@@ -15,6 +15,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#ifndef WINSCP
+// This is used in pageant, pscp, psftp and servers only
 #if defined _MSC_VER && _MSC_VER < 1800
 /* Work around lack of inttypes.h in older MSVC */
 #define PRIx32 "x"
@@ -22,6 +24,7 @@
 #define SCNu64 "I64u"
 #else
 #include <inttypes.h>
+#endif
 #endif
 
 typedef struct conf_tag Conf;

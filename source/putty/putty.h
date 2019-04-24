@@ -1400,8 +1400,8 @@ void cleanup_exit(int);
     /* MPEXT BEGIN */ \
     X(INT, NONE, connect_timeout) \
     X(INT, NONE, sndbuf) \
-    X(INT, NONE, force_remote_cmd2) \
-    X(INT, NONE, change_password) \
+    X(BOOL, NONE, force_remote_cmd2) \
+    X(BOOL, NONE, change_password) \
     /* MPEXT END */ \
     /* end of list */
 

@@ -118,10 +118,6 @@
 		<CppCompile Include="putty\import.c">
 			<BuildOrder>46</BuildOrder>
 		</CppCompile>
-		<CppCompile Include="putty\int64.c">
-			<BuildOrder>8</BuildOrder>
-			<BuildOrder>24</BuildOrder>
-		</CppCompile>
 		<CppCompile Include="putty\logging.c">
 			<BuildOrder>27</BuildOrder>
 			<BuildOrder>11</BuildOrder>

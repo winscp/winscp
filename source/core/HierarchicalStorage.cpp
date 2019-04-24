@@ -35,11 +35,10 @@ UnicodeString __fastcall MungeStr(const UnicodeString & Str, bool ForceAnsi, boo
       Source.Insert(Bom, 1);
     }
   }
-  // should contain ASCII characters only
-  RawByteString Dest;
-  Dest.SetLength(Source.Length() * 3 + 1);
-  putty_mungestr(Source.c_str(), Dest.c_str());
-  PackStr(Dest);
+  strbuf * sb = strbuf_new();
+  escape_registry_key(Source.c_str(), sb);
+  RawByteString Dest(sb->s);
+  strbuf_free(sb);
   if (Value)
   {
     // We do not want to munge * in PasswordMask
@@ -52,11 +51,10 @@ UnicodeString __fastcall UnMungeStr(const UnicodeString & Str)
 {
   // Str should contain ASCII characters only
   RawByteString Source = AnsiString(Str);
-  RawByteString Dest;
-  Dest.SetLength(Source.Length() + 1);
-  putty_unmungestr(Source.c_str(), Dest.c_str(), Dest.Length());
-  // Cut the string at null character
-  PackStr(Dest);
+  strbuf * sb = strbuf_new();
+  unescape_registry_key(Source.c_str(), sb);
+  RawByteString Dest(sb->s);
+  strbuf_free(sb);
   UnicodeString Result;
   if (Dest.SubString(1, LENOF(Bom)) == Bom)
   {

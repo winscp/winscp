@@ -969,11 +969,7 @@ bool rfc4716_loadpub(FILE *fp, char **algorithm,
     return false;
 }
 
-#ifdef MPEXT
-bool openssh_loadpub_line(char * aline, char **algorithm,
-#else
-bool openssh_loadpub(FILE *fp, char **algorithm,
-#endif
+bool openssh_loadpub_line(char * aline, char **algorithm, // WINSCP
                      BinarySink *bs,
                      char **commentptr, const char **errorstr)
 {

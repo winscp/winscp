@@ -974,7 +974,7 @@ static void ssh2_connection_process_queue(PacketProtocolLayer *ppl)
     // WINSCP
     if (!s->mainchan)
     {
-        s->ready = TRUE;
+        s->ready = true;
     }
 
     /*
@@ -1662,7 +1662,7 @@ static void ssh2_set_wants_user_input(ConnectionLayer *cl, bool wanted)
         container_of(cl, struct ssh2_connection_state, cl);
 
     s->want_user_input = wanted;
-    s->ready = TRUE; // WINSCP
+    s->ready = true; // WINSCP
 }
 
 static bool ssh2_connection_want_user_input(PacketProtocolLayer *ppl)
@@ -1722,7 +1722,7 @@ static unsigned int ssh2_connection_winscp_query(PacketProtocolLayer *ppl, int q
     }
     else if (query == WINSCP_QUERY_MAIN_CHANNEL)
     {
-        return (s->ready != 0);
+        return s->ready;
     }
     else
     {
