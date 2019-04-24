@@ -2,7 +2,6 @@
 #include <vcl.h>
 #pragma hdrstop
 
-#ifdef USE_COMPATIBLE_THREAD
 // CompThread.pas must be linked to project
 #include <CompThread.hpp>
 #define THREAD_CLASS TCompThread
