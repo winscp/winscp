@@ -55,8 +55,9 @@ struct kexinit_algorithm {
     X(HK_ECDSA, ssh_ecdsa_nistp256)             \
     X(HK_ECDSA, ssh_ecdsa_nistp384)             \
     X(HK_ECDSA, ssh_ecdsa_nistp521)             \
-    X(HK_DSA, ssh_dss)                          \
+    /* Changed order to match WinSCP default preference list for SshHostKeyList() */ \
     X(HK_RSA, ssh_rsa)                          \
+    X(HK_DSA, ssh_dss)                          \
     /* end of list */
 #define COUNT_HOSTKEY_ALGORITHM(type, alg) +1
 #define N_HOSTKEY_ALGORITHMS (0 HOSTKEY_ALGORITHMS(COUNT_HOSTKEY_ALGORITHM))

@@ -12,6 +12,9 @@
 #include "sshcr.h"
 #include "ssh1connection.h"
 
+// WINSCP
+#define queue_toplevel_callback(FN, CTX) queue_toplevel_callback(get_log_callback_set(CTX->cl.logctx), FN, CTX)
+
 void ssh1_connection_direction_specific_setup(
     struct ssh1_connection_state *s)
 {
@@ -471,10 +474,12 @@ static void ssh1_rportfwd_response(struct ssh1_connection_state *s,
 	ppl_logevent(("Remote port forwarding from %s refused",
                       rpf->log_description));
 
+	{ // WINSCP
 	struct ssh_rportfwd *realpf = del234(s->rportfwds, rpf);
 	assert(realpf == rpf);
         portfwdmgr_close(s->portfwdmgr, rpf->pfr);
 	free_rportfwd(rpf);
+	} // WINSCP
     }
 }
 
@@ -501,12 +506,14 @@ struct ssh_rportfwd *ssh1_rportfwd_alloc(
         return NULL;
     }
 
+    { // WINSCP
     PktOut *pktout = ssh_bpp_new_pktout(
         s->ppl.bpp, SSH1_CMSG_PORT_FORWARD_REQUEST);
     put_uint32(pktout, rpf->sport);
     put_stringz(pktout, rpf->dhost);
     put_uint32(pktout, rpf->dport);
     pq_push(s->ppl.out_pq, pktout);
+    } // WINSCP
 
     ssh1_queue_succfail_handler(s, ssh1_rportfwd_response, rpf, FALSE);
 

@@ -1948,11 +1948,11 @@ static unsigned int ssh2_transport_winscp_query(PacketProtocolLayer *ppl, int qu
 void get_hostkey_algs(int * count, cp_ssh_keyalg * SignKeys)
 {
     int i;
-    assert(lenof(hostkey_algs) <= *count);
-    *count = lenof(hostkey_algs);
+    assert(lenof(ssh2_hostkey_algs) <= *count);
+    *count = lenof(ssh2_hostkey_algs);
     for (i = 0; i < *count; i++)
     {
-        *(SignKeys + i) = hostkey_algs[i].alg;
+        *(SignKeys + i) = ssh2_hostkey_algs[i].alg;
     }
 }
 

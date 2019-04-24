@@ -168,6 +168,9 @@
 		<CppCompile Include="putty\ssh1connection.c">
 			<BuildOrder>64</BuildOrder>
 		</CppCompile>
+		<CppCompile Include="putty\ssh1connection-client.c">
+			<BuildOrder>71</BuildOrder>
+		</CppCompile>
 		<CppCompile Include="putty\ssh1login.c">
 			<BuildOrder>65</BuildOrder>
 		</CppCompile>
@@ -182,6 +185,12 @@
 		</CppCompile>
 		<CppCompile Include="putty\ssh2connection.c">
 			<BuildOrder>66</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\ssh2connection-client.c">
+			<BuildOrder>72</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\ssh2kex-client.c">
+			<BuildOrder>73</BuildOrder>
 		</CppCompile>
 		<CppCompile Include="putty\ssh2transhk.c">
 			<BuildOrder>70</BuildOrder>
