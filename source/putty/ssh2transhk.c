@@ -87,11 +87,11 @@ void ssh_transient_hostkey_cache_add(
     assert(retd == ent);
 }
 
-int ssh_transient_hostkey_cache_verify(
+bool ssh_transient_hostkey_cache_verify(
     ssh_transient_hostkey_cache *thc, ssh_key *key)
 {
     struct ssh_transient_hostkey_cache_entry *ent;
-    int toret = FALSE;
+    bool toret = false;
 
     if ((ent = find234(thc->cache, (void *)ssh_key_alg(key),
                        ssh_transient_hostkey_cache_find)) != NULL) {
@@ -101,7 +101,7 @@ int ssh_transient_hostkey_cache_verify(
         if (this_blob->len == ent->pub_blob->len &&
             !memcmp(this_blob->s, ent->pub_blob->s,
                     this_blob->len))
-            toret = TRUE;
+            toret = true;
 
         strbuf_free(this_blob);
     }
@@ -109,7 +109,7 @@ int ssh_transient_hostkey_cache_verify(
     return toret;
 }
 
-int ssh_transient_hostkey_cache_has(
+bool ssh_transient_hostkey_cache_has(
     ssh_transient_hostkey_cache *thc, const ssh_keyalg *alg)
 {
     struct ssh_transient_hostkey_cache_entry *ent =
@@ -118,7 +118,7 @@ int ssh_transient_hostkey_cache_has(
     return ent != NULL;
 }
 
-int ssh_transient_hostkey_cache_non_empty(ssh_transient_hostkey_cache *thc)
+bool ssh_transient_hostkey_cache_non_empty(ssh_transient_hostkey_cache *thc)
 {
     return count234(thc->cache) > 0;
 }

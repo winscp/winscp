@@ -15,21 +15,17 @@
  * Arithmetic implementations. Note that AND, XOR and NOT can
  * overlap destination with one source, but the others can't.
  */
-#define add(r,x,y) ( r.lo = y.lo + x.lo, \
-		     r.hi = y.hi + x.hi + ((uint32)r.lo < (uint32)y.lo) )
-#define rorB(r,x,y) ( r.lo = ((uint32)x.hi >> ((y)-32)) | ((uint32)x.lo << (64-(y))), \
-		      r.hi = ((uint32)x.lo >> ((y)-32)) | ((uint32)x.hi << (64-(y))) )
-#define rorL(r,x,y) ( r.lo = ((uint32)x.lo >> (y)) | ((uint32)x.hi << (32-(y))), \
-		      r.hi = ((uint32)x.hi >> (y)) | ((uint32)x.lo << (32-(y))) )
-#define shrB(r,x,y) ( r.lo = (uint32)x.hi >> ((y)-32), r.hi = 0 )
-#define shrL(r,x,y) ( r.lo = ((uint32)x.lo >> (y)) | ((uint32)x.hi << (32-(y))), \
-		      r.hi = (uint32)x.hi >> (y) )
-#define and(r,x,y) ( r.lo = x.lo & y.lo, r.hi = x.hi & y.hi )
-#define xor(r,x,y) ( r.lo = x.lo ^ y.lo, r.hi = x.hi ^ y.hi )
-#define not(r,x) ( r.lo = ~x.lo, r.hi = ~x.hi )
-#define INIT(h,l) { h, l }
-#define BUILD(r,h,l) ( r.hi = h, r.lo = l )
-#define EXTRACT(h,l,r) ( h = r.hi, l = r.lo )
+#define add(r,x,y) ( r = (x) + (y) )
+#define rorB(r,x,y) ( r = ((x) >> (y)) | ((x) << (64-(y))) )
+#define rorL(r,x,y) ( r = ((x) >> (y)) | ((x) << (64-(y))) )
+#define shrB(r,x,y) ( r = (x) >> (y) )
+#define shrL(r,x,y) ( r = (x) >> (y) )
+#define and(r,x,y) ( r = (x) & (y) )
+#define xor(r,x,y) ( r = (x) ^ (y) )
+#define not(r,x) ( r = ~(x) )
+#define INIT(h,l) ((((uint64_t)(h)) << 32) | (l))
+#define BUILD(r,h,l) ( r = ((((uint64_t)(h)) << 32) | (l)) )
+#define EXTRACT(h,l,r) ( h = (r) >> 32, l = (r) & 0xFFFFFFFFU )
 
 /* ----------------------------------------------------------------------
  * Core SHA512 algorithm: processes 16-doubleword blocks into a
@@ -49,7 +45,7 @@
 			     shrL(t,x,6), xor(r,r,t) )
 
 static void SHA512_Core_Init(SHA512_State *s) {
-    static const uint64 iv[] = {
+    static const uint64_t iv[] = {
 	INIT(0x6a09e667, 0xf3bcc908),
 	INIT(0xbb67ae85, 0x84caa73b),
 	INIT(0x3c6ef372, 0xfe94f82b),
@@ -65,7 +61,7 @@ static void SHA512_Core_Init(SHA512_State *s) {
 }
 
 static void SHA384_Core_Init(SHA512_State *s) {
-    static const uint64 iv[] = {
+    static const uint64_t iv[] = {
         INIT(0xcbbb9d5d, 0xc1059ed8),
         INIT(0x629a292a, 0x367cd507),
         INIT(0x9159015a, 0x3070dd17),
@@ -80,10 +76,10 @@ static void SHA384_Core_Init(SHA512_State *s) {
         s->h[i] = iv[i];
 }
 
-static void SHA512_Block(SHA512_State *s, uint64 *block) {
-    uint64 w[80];
-    uint64 a,b,c,d,e,f,g,h;
-    static const uint64 k[] = {
+static void SHA512_Block(SHA512_State *s, uint64_t *block) {
+    uint64_t w[80];
+    uint64_t a,b,c,d,e,f,g,h;
+    static const uint64_t k[] = {
 	INIT(0x428a2f98, 0xd728ae22), INIT(0x71374491, 0x23ef65cd),
 	INIT(0xb5c0fbcf, 0xec4d3b2f), INIT(0xe9b5dba5, 0x8189dbbc),
 	INIT(0x3956c25b, 0xf348b538), INIT(0x59f111f1, 0xb605d019),
@@ -132,7 +128,7 @@ static void SHA512_Block(SHA512_State *s, uint64 *block) {
         w[t] = block[t];
 
     for (t = 16; t < 80; t++) {
-	uint64 p, q, r, tmp;
+	uint64_t p, q, r, tmp;
 	smallsigma1(p, tmp, w[t-2]);
 	smallsigma0(q, tmp, w[t-15]);
 	add(r, p, q);
@@ -144,7 +140,7 @@ static void SHA512_Block(SHA512_State *s, uint64 *block) {
     e = s->h[4]; f = s->h[5]; g = s->h[6]; h = s->h[7];
 
     for (t = 0; t < 80; t+=8) {
-        uint64 tmp, p, q, r;
+        uint64_t tmp, p, q, r;
 
 #define ROUND(j,a,b,c,d,e,f,g,h) \
 	bigsigma1(p, tmp, e); \
@@ -171,7 +167,7 @@ static void SHA512_Block(SHA512_State *s, uint64 *block) {
     }
 
     {
-	uint64 tmp;
+	uint64_t tmp;
 #define UPDATE(state, local) ( tmp = state, add(state, tmp, local) )
 	UPDATE(s->h[0], a); UPDATE(s->h[1], b);
 	UPDATE(s->h[2], c); UPDATE(s->h[3], d);
@@ -190,20 +186,16 @@ static void SHA512_BinarySink_write(BinarySink *bs,
                                     const void *p, size_t len);
 
 void SHA512_Init(SHA512_State *s) {
-    int i;
     SHA512_Core_Init(s);
     s->blkused = 0;
-    for (i = 0; i < 4; i++)
-	s->len[i] = 0;
+    s->lenhi = s->lenlo = 0;
     BinarySink_INIT(s, SHA512_BinarySink_write);
 }
 
 void SHA384_Init(SHA512_State *s) {
-    int i;
     SHA384_Core_Init(s);
     s->blkused = 0;
-    for (i = 0; i < 4; i++)
-        s->len[i] = 0;
+    s->lenhi = s->lenlo = 0;
     BinarySink_INIT(s, SHA512_BinarySink_write);
 }
 
@@ -212,19 +204,14 @@ static void SHA512_BinarySink_write(BinarySink *bs,
 {
     SHA512_State *s = BinarySink_DOWNCAST(bs, SHA512_State);
     unsigned char *q = (unsigned char *)p;
-    uint64 wordblock[16];
-    uint32 lenw = len;
+    uint64_t wordblock[16];
     int i;
-
-    assert(lenw == len);
 
     /*
      * Update the length field.
      */
-    for (i = 0; i < 4; i++) {
-	s->len[i] += lenw;
-	lenw = (s->len[i] < lenw);
-    }
+    s->lenlo += len;
+    s->lenhi += (s->lenlo < len);
 
     if (s->blkused && s->blkused+len < BLKSIZE) {
         /*
@@ -241,18 +228,8 @@ static void SHA512_BinarySink_write(BinarySink *bs,
             q += BLKSIZE - s->blkused;
             len -= BLKSIZE - s->blkused;
             /* Now process the block. Gather bytes big-endian into words */
-            for (i = 0; i < 16; i++) {
-		uint32 h, l;
-                h = ( ((uint32)s->block[i*8+0]) << 24 ) |
-                    ( ((uint32)s->block[i*8+1]) << 16 ) |
-                    ( ((uint32)s->block[i*8+2]) <<  8 ) |
-                    ( ((uint32)s->block[i*8+3]) <<  0 );
-                l = ( ((uint32)s->block[i*8+4]) << 24 ) |
-                    ( ((uint32)s->block[i*8+5]) << 16 ) |
-                    ( ((uint32)s->block[i*8+6]) <<  8 ) |
-                    ( ((uint32)s->block[i*8+7]) <<  0 );
-		BUILD(wordblock[i], h, l);
-            }
+            for (i = 0; i < 16; i++)
+                wordblock[i] = GET_64BIT_MSB_FIRST(s->block + i*8);
             SHA512_Block(s, wordblock);
             s->blkused = 0;
         }
@@ -265,38 +242,25 @@ void SHA512_Final(SHA512_State *s, unsigned char *digest) {
     int i;
     int pad;
     unsigned char c[BLKSIZE];
-    uint32 len[4];
+    uint64_t lenhi, lenlo;
 
     if (s->blkused >= BLKSIZE-16)
         pad = (BLKSIZE-16) + BLKSIZE - s->blkused;
     else
         pad = (BLKSIZE-16) - s->blkused;
 
-    for (i = 4; i-- ;) {
-	uint32 lenhi = s->len[i];
-	uint32 lenlo = i > 0 ? s->len[i-1] : 0;
-	len[i] = (lenhi << 3) | (lenlo >> (32-3));
-    }
+    lenhi = (s->lenhi << 3) | (s->lenlo >> (32-3));
+    lenlo = (s->lenlo << 3);
 
     memset(c, 0, pad);
     c[0] = 0x80;
     put_data(s, &c, pad);
 
-    for (i = 0; i < 4; i++)
-        put_uint32(s, len[3-i]);
+    put_uint64(s, lenhi);
+    put_uint64(s, lenlo);
 
-    for (i = 0; i < 8; i++) {
-	uint32 h, l;
-	EXTRACT(h, l, s->h[i]);
-	digest[i*8+0] = (h >> 24) & 0xFF;
-	digest[i*8+1] = (h >> 16) & 0xFF;
-	digest[i*8+2] = (h >>  8) & 0xFF;
-	digest[i*8+3] = (h >>  0) & 0xFF;
-	digest[i*8+4] = (l >> 24) & 0xFF;
-	digest[i*8+5] = (l >> 16) & 0xFF;
-	digest[i*8+6] = (l >>  8) & 0xFF;
-	digest[i*8+7] = (l >>  0) & 0xFF;
-    }
+    for (i = 0; i < 8; i++)
+        PUT_64BIT_MSB_FIRST(digest + i*8, s->h[i]);
 }
 
 void SHA384_Final(SHA512_State *s, unsigned char *digest) {

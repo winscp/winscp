@@ -15,14 +15,14 @@
 
 #define AGENT_COPYDATA_ID 0x804e50ba   /* random goop */
 
-int agent_exists(void)
+bool agent_exists(void)
 {
     HWND hwnd;
     hwnd = FindWindow("Pageant", "Pageant");
     if (!hwnd)
-	return FALSE;
+	return false;
     else
-	return TRUE;
+	return true;
 }
 
 void agent_cancel_query(agent_pending_query *q)
@@ -75,9 +75,9 @@ agent_pending_query *agent_query(
             if (psd) {
                 if (p_InitializeSecurityDescriptor
                     (psd, SECURITY_DESCRIPTOR_REVISION) &&
-                    p_SetSecurityDescriptorOwner(psd, usersid, FALSE)) {
+                    p_SetSecurityDescriptorOwner(psd, usersid, false)) {
                     sa.nLength = sizeof(sa);
-                    sa.bInheritHandle = TRUE;
+                    sa.bInheritHandle = true;
                     sa.lpSecurityDescriptor = psd;
                     psa = &sa;
                 } else {

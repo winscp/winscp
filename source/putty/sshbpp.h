@@ -17,7 +17,7 @@ struct BinaryPacketProtocolVtable {
 struct BinaryPacketProtocol {
     const struct BinaryPacketProtocolVtable *vt;
     bufchain *in_raw, *out_raw;
-    int input_eof;   /* set this if in_raw will never be added to again */
+    bool input_eof;   /* set this if in_raw will never be added to again */
     PktInQueue in_pq;
     PktOutQueue out_pq;
     PacketLogSettings *pls;
@@ -39,7 +39,7 @@ struct BinaryPacketProtocol {
      * error message (either because it's not to be treated as an
      * error at all, or because some other error message has already
      * been emitted). */
-    int expect_close;
+    bool expect_close;
 };
 
 #define ssh_bpp_handle_input(bpp) ((bpp)->vt->handle_input(bpp))
@@ -68,7 +68,7 @@ void ssh_bpp_common_setup(BinaryPacketProtocol *);
 /* Common helper functions between the SSH-2 full and bare BPPs */
 void ssh2_bpp_queue_disconnect(BinaryPacketProtocol *bpp,
                                const char *msg, int category);
-int ssh2_bpp_check_unimplemented(BinaryPacketProtocol *bpp, PktIn *pktin);
+bool ssh2_bpp_check_unimplemented(BinaryPacketProtocol *bpp, PktIn *pktin);
 
 /* Convenience macro for BPPs to send formatted strings to the Event
  * Log. Assumes a function parameter called 'bpp' is in scope, and
@@ -92,28 +92,28 @@ int ssh2_bpp_check_unimplemented(BinaryPacketProtocol *bpp, PktIn *pktin);
  */
 struct DataTransferStats {
     struct {
-        int running;
+        bool running;
         unsigned long remaining;
     } in, out;
 };
 #define DTS_CONSUME(stats, direction, size)             \
     ((stats)->direction.running &&                      \
      (stats)->direction.remaining <= (size) ?           \
-     ((stats)->direction.running = FALSE, TRUE) :       \
-     ((stats)->direction.remaining -= (size), FALSE))
+     ((stats)->direction.running = false, true) :       \
+     ((stats)->direction.remaining -= (size), false))
 
 BinaryPacketProtocol *ssh2_bpp_new(
-    LogContext *logctx, struct DataTransferStats *stats, int is_server);
+    LogContext *logctx, struct DataTransferStats *stats, bool is_server);
 void ssh2_bpp_new_outgoing_crypto(
     BinaryPacketProtocol *bpp,
     const struct ssh2_cipheralg *cipher, const void *ckey, const void *iv,
-    const struct ssh2_macalg *mac, int etm_mode, const void *mac_key,
-    const struct ssh_compression_alg *compression, int delayed_compression);
+    const struct ssh2_macalg *mac, bool etm_mode, const void *mac_key,
+    const struct ssh_compression_alg *compression, bool delayed_compression);
 void ssh2_bpp_new_incoming_crypto(
     BinaryPacketProtocol *bpp,
     const struct ssh2_cipheralg *cipher, const void *ckey, const void *iv,
-    const struct ssh2_macalg *mac, int etm_mode, const void *mac_key,
-    const struct ssh_compression_alg *compression, int delayed_compression);
+    const struct ssh2_macalg *mac, bool etm_mode, const void *mac_key,
+    const struct ssh_compression_alg *compression, bool delayed_compression);
 
 /*
  * A query method specific to the interface between ssh2transport and
@@ -124,7 +124,7 @@ void ssh2_bpp_new_incoming_crypto(
  * to start a rekey because then we'd stop responding to anything
  * _other_ than transport-layer packets and deadlock the protocol.
  */
-int ssh2_bpp_rekey_inadvisable(BinaryPacketProtocol *bpp);
+bool ssh2_bpp_rekey_inadvisable(BinaryPacketProtocol *bpp);
 
 BinaryPacketProtocol *ssh2_bare_bpp_new(LogContext *logctx);
 
@@ -139,9 +139,9 @@ struct ssh_version_receiver {
                             int major_version);
 };
 BinaryPacketProtocol *ssh_verstring_new(
-    Conf *conf, LogContext *logctx, int bare_connection_mode,
+    Conf *conf, LogContext *logctx, bool bare_connection_mode,
     const char *protoversion, struct ssh_version_receiver *rcv,
-    int server_mode, const char *impl_name);
+    bool server_mode, const char *impl_name);
 const char *ssh_verstring_get_remote(BinaryPacketProtocol *);
 const char *ssh_verstring_get_local(BinaryPacketProtocol *);
 int ssh_verstring_get_bugs(BinaryPacketProtocol *);

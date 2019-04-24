@@ -131,14 +131,14 @@ static int wc_match_fragment(const char **fragment, const char **target,
 	     */
 	    f++;
 	} else if (*f == '[') {
-	    int invert = 0;
-	    int matched = 0;
+	    bool invert = false;
+	    bool matched = false;
 	    /*
 	     * Open bracket introduces a character class.
 	     */
 	    f++;
 	    if (*f == '^') {
-		invert = 1;
+		invert = true;
 		f++;
 	    }
 	    while (*f != ']') {
@@ -162,7 +162,7 @@ static int wc_match_fragment(const char **fragment, const char **target,
 			int t = lower; lower = upper; upper = t;
 		    }
 		    if (ourchr >= lower && ourchr <= upper)
-			matched = 1;
+			matched = true;
 		} else {
 		    matched |= (*t == *f++);
 		}
@@ -315,11 +315,11 @@ int wc_match_pl(const char *wildcard, ptrlen target)
  * the original wildcard. You can also pass NULL as the output
  * buffer if you're only interested in the return value.
  * 
- * Returns 1 on success, or 0 if a wildcard character was
+ * Returns true on success, or false if a wildcard character was
  * encountered. In the latter case the output string MAY not be
  * zero-terminated and you should not use it for anything!
  */
-int wc_unescape(char *output, const char *wildcard)
+bool wc_unescape(char *output, const char *wildcard)
 {
     while (*wildcard) {
 	if (*wildcard == '\\') {
@@ -332,7 +332,7 @@ int wc_unescape(char *output, const char *wildcard)
 	    }
 	} else if (*wildcard == '*' || *wildcard == '?' ||
 		   *wildcard == '[' || *wildcard == ']') {
-	    return 0;		       /* it's a wildcard! */
+	    return false;              /* it's a wildcard! */
 	} else {
 	    if (output)
 		*output++ = *wildcard;
@@ -341,7 +341,7 @@ int wc_unescape(char *output, const char *wildcard)
     }
     if (output)
         *output = '\0';
-    return 1;			       /* it's clean */
+    return true;                       /* it's clean */
 }
 
 #ifdef TESTMODE

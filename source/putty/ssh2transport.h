@@ -29,23 +29,23 @@ struct kexinit_algorithm {
     union {
         struct {
             const struct ssh_kex *kex;
-            int warn;
+            bool warn;
         } kex;
         struct {
             const ssh_keyalg *hostkey;
-            int warn;
+            bool warn;
         } hk;
         struct {
             const struct ssh2_cipheralg *cipher;
-            int warn;
+            bool warn;
         } cipher;
         struct {
             const struct ssh2_macalg *mac;
-            int etm;
+            bool etm;
         } mac;
         struct {
             const struct ssh_compression_alg *comp;
-            int delayed;
+            bool delayed;
         } comp;
     } u;
 };
@@ -105,9 +105,9 @@ typedef enum RekeyClass {
 typedef struct transport_direction {
     const struct ssh2_cipheralg *cipher;
     const struct ssh2_macalg *mac;
-    int etm_mode;
+    bool etm_mode;
     const struct ssh_compression_alg *comp;
-    int comp_delayed;
+    bool comp_delayed;
     int mkkey_adjust;
 } transport_direction;
 
@@ -132,7 +132,8 @@ struct ssh2_transport_state {
     char *hostkey_str; /* string representation, for easy checking in rekeys */
     unsigned char session_id[SSH2_KEX_MAX_HASH_LEN];
     int session_id_len;
-    int dh_min_size, dh_max_size, dh_got_size_bounds;
+    int dh_min_size, dh_max_size;
+    bool dh_got_size_bounds;
     struct dh_ctx *dh_ctx;
     ssh_hash *exhash;
 
@@ -140,10 +141,10 @@ struct ssh2_transport_state {
 
     char *client_greeting, *server_greeting;
 
-    int kex_in_progress;
+    bool kex_in_progress;
     unsigned long next_rekey, last_rekey;
     const char *deferred_rekey_reason;
-    int higher_layer_ok;
+    bool higher_layer_ok;
 
     /*
      * Fully qualified host name, which we need if doing GSSAPI.
@@ -161,9 +162,10 @@ struct ssh2_transport_state {
 #endif
     ssh_transient_hostkey_cache *thc;
 
-    int gss_kex_used;
+    bool gss_kex_used;
 
-    int nbits, pbits, warn_kex, warn_hk, warn_cscipher, warn_sccipher;
+    int nbits, pbits;
+    bool warn_kex, warn_hk, warn_cscipher, warn_sccipher;
     Bignum p, g, e, f, K;
     strbuf *outgoing_kexinit, *incoming_kexinit;
     strbuf *client_kexinit, *server_kexinit; /* aliases to the above */
@@ -176,22 +178,22 @@ struct ssh2_transport_state {
     struct RSAKey *rsa_kex_key;             /* for RSA kex */
     struct ec_key *ecdh_key;              /* for ECDH kex */
     unsigned char exchange_hash[SSH2_KEX_MAX_HASH_LEN];
-    int can_gssapi_keyex;
-    int need_gss_transient_hostkey;
-    int warned_about_no_gss_transient_hostkey;
-    int got_session_id;
+    bool can_gssapi_keyex;
+    bool need_gss_transient_hostkey;
+    bool warned_about_no_gss_transient_hostkey;
+    bool got_session_id;
     int dlgret;
-    int guessok;
-    int ignorepkt;
+    bool guessok;
+    bool ignorepkt;
     struct kexinit_algorithm kexlists[NKEXLIST][MAXKEXLIST];
 #ifndef NO_GSSAPI
     Ssh_gss_buf gss_buf;
     Ssh_gss_buf gss_rcvtok, gss_sndtok;
     Ssh_gss_stat gss_stat;
     Ssh_gss_buf mic;
-    int init_token_sent;
-    int complete_rcvd;
-    int gss_delegate;
+    bool init_token_sent;
+    bool complete_rcvd;
+    bool gss_delegate;
 #endif
 
     /*
@@ -205,7 +207,7 @@ struct ssh2_transport_state {
      * Flag indicating that the current rekey is intended to finish
      * with a newly cross-certified host key.
      */
-    int cross_certifying;
+    bool cross_certifying;
 
     ssh_key *const *hostkeys;
     int nhostkeys;

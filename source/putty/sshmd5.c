@@ -15,7 +15,7 @@
 #define H(x,y,z) ( (x) ^ (y) ^ (z) )
 #define I(x,y,z) ( (y) ^ ( (x) | ~(z) ) )
 
-#define rol(x,y) ( ((x) << (y)) | (((uint32)x) >> (32-y)) )
+#define rol(x,y) ( ((x) << (y)) | (((uint32_t)x) >> (32-y)) )
 
 #define subround(f,w,x,y,z,k,s,ti) \
        w = x + rol(w + f(x,y,z) + block[k] + ti, s)
@@ -28,9 +28,9 @@ static void MD5_Core_Init(MD5_Core_State * s)
     s->h[3] = 0x10325476;
 }
 
-static void MD5_Block(MD5_Core_State * s, uint32 * block)
+static void MD5_Block(MD5_Core_State *s, uint32_t *block)
 {
-    uint32 a, b, c, d;
+    uint32_t a, b, c, d;
 
     a = s->h[0];
     b = s->h[1];
@@ -122,7 +122,7 @@ void MD5Init(struct MD5Context *s)
 {
     MD5_Core_Init(&s->core);
     s->blkused = 0;
-    s->lenhi = s->lenlo = 0;
+    s->len = 0;
     BinarySink_INIT(s, MD5_BinarySink_write);
 }
 
@@ -130,8 +130,8 @@ static void MD5_BinarySink_write(BinarySink *bs, const void *data, size_t len)
 {
     struct MD5Context *s = BinarySink_DOWNCAST(bs, struct MD5Context);
     const unsigned char *q = (const unsigned char *)data;
-    uint32 wordblock[16];
-    uint32 lenw = len;
+    uint32_t wordblock[16];
+    uint32_t lenw = len;
     int i;
 
     assert(lenw == len);
@@ -139,8 +139,7 @@ static void MD5_BinarySink_write(BinarySink *bs, const void *data, size_t len)
     /*
      * Update the length field.
      */
-    s->lenlo += lenw;
-    s->lenhi += (s->lenlo < lenw);
+    s->len += lenw;
 
     if (s->blkused + len < BLKSIZE) {
 	/*
@@ -159,10 +158,10 @@ static void MD5_BinarySink_write(BinarySink *bs, const void *data, size_t len)
 	    /* Now process the block. Gather bytes little-endian into words */
 	    for (i = 0; i < 16; i++) {
 		wordblock[i] =
-		    (((uint32) s->block[i * 4 + 3]) << 24) |
-		    (((uint32) s->block[i * 4 + 2]) << 16) |
-		    (((uint32) s->block[i * 4 + 1]) << 8) |
-		    (((uint32) s->block[i * 4 + 0]) << 0);
+		    (((uint32_t) s->block[i * 4 + 3]) << 24) |
+		    (((uint32_t) s->block[i * 4 + 2]) << 16) |
+		    (((uint32_t) s->block[i * 4 + 1]) << 8) |
+		    (((uint32_t) s->block[i * 4 + 0]) << 0);
 	    }
 	    MD5_Block(&s->core, wordblock);
 	    s->blkused = 0;
@@ -177,28 +176,20 @@ void MD5Final(unsigned char output[16], struct MD5Context *s)
     int i;
     unsigned pad;
     unsigned char c[64];
-    uint32 lenhi, lenlo;
+    uint64_t len;
 
     if (s->blkused >= 56)
 	pad = 56 + 64 - s->blkused;
     else
 	pad = 56 - s->blkused;
 
-    lenhi = (s->lenhi << 3) | (s->lenlo >> (32 - 3));
-    lenlo = (s->lenlo << 3);
+    len = (s->len << 3);
 
     memset(c, 0, pad);
     c[0] = 0x80;
     put_data(s, c, pad);
 
-    c[7] = (lenhi >> 24) & 0xFF;
-    c[6] = (lenhi >> 16) & 0xFF;
-    c[5] = (lenhi >> 8) & 0xFF;
-    c[4] = (lenhi >> 0) & 0xFF;
-    c[3] = (lenlo >> 24) & 0xFF;
-    c[2] = (lenlo >> 16) & 0xFF;
-    c[1] = (lenlo >> 8) & 0xFF;
-    c[0] = (lenlo >> 0) & 0xFF;
+    PUT_64BIT_LSB_FIRST(c, len);
 
     put_data(s, c, 8);
 

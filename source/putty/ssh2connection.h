@@ -14,28 +14,28 @@ struct ssh2_connection_state {
 
     mainchan *mainchan;
     SshChannel *mainchan_sc;
-    int ldisc_opts[LD_N_OPTIONS];
+    bool ldisc_opts[LD_N_OPTIONS];
     int session_attempt, session_status;
     int term_width, term_height;
-    int want_user_input;
+    bool want_user_input;
 
-    int ssh_is_simple;
-    int persistent;
+    bool ssh_is_simple;
+    bool persistent;
 
     Conf *conf;
 
     tree234 *channels;		       /* indexed by local id */
-    int all_channels_throttled;
+    bool all_channels_throttled;
 
-    int X11_fwd_enabled;
+    bool X11_fwd_enabled;
     tree234 *x11authtree;
 
-    int got_pty;
-    int agent_fwd_enabled;
+    bool got_pty;
+    bool agent_fwd_enabled;
 
     tree234 *rportfwds;
     PortFwdManager *portfwdmgr;
-    int portfwdmgr_configured;
+    bool portfwdmgr_configured;
 
     const SftpServerVtable *sftpserver_vt;
 
@@ -62,7 +62,7 @@ struct ssh2_channel {
     unsigned remoteid, localid;
     int type;
     /* True if we opened this channel but server hasn't confirmed. */
-    int halfopen;
+    bool halfopen;
 
     /* Bitmap of whether we've sent/received CHANNEL_EOF and
      * CHANNEL_CLOSE. */
@@ -80,13 +80,13 @@ struct ssh2_channel {
      * we set this flag instead to remind us to do so once our buffer
      * is clear.
      */
-    int pending_eof;
+    bool pending_eof;
 
     /*
      * True if this channel is causing the underlying connection to be
      * throttled.
      */
-    int throttling_conn;
+    bool throttling_conn;
 
     /*
      * True if we currently have backed-up data on the direction of
@@ -94,7 +94,7 @@ struct ssh2_channel {
      * would prefer the 'Channel' implementation not to read further
      * local input if possible.
      */
-    int throttled_by_backlog;
+    bool throttled_by_backlog;
 
     bufchain outbuffer, errbuffer;
     unsigned remwindow, remmaxpkt;
@@ -172,28 +172,28 @@ SshChannel *ssh2_serverside_agent_open(ConnectionLayer *cl, Channel *chan);
 
 void ssh2channel_send_exit_status(SshChannel *c, int status);
 void ssh2channel_send_exit_signal(
-    SshChannel *c, ptrlen signame, int core_dumped, ptrlen msg);
+    SshChannel *c, ptrlen signame, bool core_dumped, ptrlen msg);
 void ssh2channel_send_exit_signal_numeric(
-    SshChannel *c, int signum, int core_dumped, ptrlen msg);
+    SshChannel *c, int signum, bool core_dumped, ptrlen msg);
 void ssh2channel_request_x11_forwarding(
-    SshChannel *c, int want_reply, const char *authproto,
-    const char *authdata, int screen_number, int oneshot);
-void ssh2channel_request_agent_forwarding(SshChannel *c, int want_reply);
+    SshChannel *c, bool want_reply, const char *authproto,
+    const char *authdata, int screen_number, bool oneshot);
+void ssh2channel_request_agent_forwarding(SshChannel *c, bool want_reply);
 void ssh2channel_request_pty(
-    SshChannel *c, int want_reply, Conf *conf, int w, int h);
-int ssh2channel_send_env_var(
-    SshChannel *c, int want_reply, const char *var, const char *value);
-void ssh2channel_start_shell(SshChannel *c, int want_reply);
+    SshChannel *c, bool want_reply, Conf *conf, int w, int h);
+bool ssh2channel_send_env_var(
+    SshChannel *c, bool want_reply, const char *var, const char *value);
+void ssh2channel_start_shell(SshChannel *c, bool want_reply);
 void ssh2channel_start_command(
-    SshChannel *c, int want_reply, const char *command);
-int ssh2channel_start_subsystem(
-    SshChannel *c, int want_reply, const char *subsystem);
-int ssh2channel_send_env_var(
-    SshChannel *c, int want_reply, const char *var, const char *value);
-int ssh2channel_send_serial_break(
-    SshChannel *c, int want_reply, int length);
-int ssh2channel_send_signal(
-    SshChannel *c, int want_reply, const char *signame);
+    SshChannel *c, bool want_reply, const char *command);
+bool ssh2channel_start_subsystem(
+    SshChannel *c, bool want_reply, const char *subsystem);
+bool ssh2channel_send_env_var(
+    SshChannel *c, bool want_reply, const char *var, const char *value);
+bool ssh2channel_send_serial_break(
+    SshChannel *c, bool want_reply, int length);
+bool ssh2channel_send_signal(
+    SshChannel *c, bool want_reply, const char *signame);
 void ssh2channel_send_terminal_size_change(SshChannel *c, int w, int h);
 
 #define CHANOPEN_RETURN_FAILURE(code, msgparams) do             \
@@ -225,7 +225,7 @@ ChanopenResult ssh2_connection_parse_channel_open(
     struct ssh2_connection_state *s, ptrlen type,
     PktIn *pktin, SshChannel *sc);
 
-int ssh2_connection_parse_global_request(
+bool ssh2_connection_parse_global_request(
     struct ssh2_connection_state *s, ptrlen type, PktIn *pktin);
 
 #endif /* PUTTY_SSH2CONNECTION_H */

@@ -49,22 +49,22 @@
 #endif
 
 struct AESContext {
-    word32 keysched_buf[(MAX_NR + 1) * NB + 3];
-    word32 invkeysched_buf[(MAX_NR + 1) * NB + 3];
-    word32 *keysched, *invkeysched;
-    word32 iv[NB];
+    uint32_t keysched_buf[(MAX_NR + 1) * NB + 3];
+    uint32_t invkeysched_buf[(MAX_NR + 1) * NB + 3];
+    uint32_t *keysched, *invkeysched;
+    uint32_t iv[NB];
     int Nr; /* number of rounds */
     void (*encrypt_cbc)(unsigned char*, int, AESContext*);
     void (*decrypt_cbc)(unsigned char*, int, AESContext*);
     void (*sdctr)(unsigned char*, int, AESContext*);
-    int isNI;
+    bool isNI;
 };
 
 static void aes_encrypt_cbc_sw(unsigned char*, int, AESContext*);
 static void aes_decrypt_cbc_sw(unsigned char*, int, AESContext*);
 static void aes_sdctr_sw(unsigned char*, int, AESContext*);
 
-INLINE static int supports_aes_ni();
+INLINE static bool supports_aes_ni();
 static void aes_setup_ni(AESContext * ctx,
                          const unsigned char *key, int keylen);
 
@@ -156,7 +156,7 @@ static const unsigned char Sboxinv[256] = {
     0xe1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0c, 0x7d
 };
 
-static const word32 E0[256] = {
+static const uint32_t E0[256] = {
     0xc66363a5, 0xf87c7c84, 0xee777799, 0xf67b7b8d,
     0xfff2f20d, 0xd66b6bbd, 0xde6f6fb1, 0x91c5c554,
     0x60303050, 0x02010103, 0xce6767a9, 0x562b2b7d,
@@ -222,7 +222,7 @@ static const word32 E0[256] = {
     0x824141c3, 0x299999b0, 0x5a2d2d77, 0x1e0f0f11,
     0x7bb0b0cb, 0xa85454fc, 0x6dbbbbd6, 0x2c16163a,
 };
-static const word32 E1[256] = {
+static const uint32_t E1[256] = {
     0xa5c66363, 0x84f87c7c, 0x99ee7777, 0x8df67b7b,
     0x0dfff2f2, 0xbdd66b6b, 0xb1de6f6f, 0x5491c5c5,
     0x50603030, 0x03020101, 0xa9ce6767, 0x7d562b2b,
@@ -288,7 +288,7 @@ static const word32 E1[256] = {
     0xc3824141, 0xb0299999, 0x775a2d2d, 0x111e0f0f,
     0xcb7bb0b0, 0xfca85454, 0xd66dbbbb, 0x3a2c1616,
 };
-static const word32 E2[256] = {
+static const uint32_t E2[256] = {
     0x63a5c663, 0x7c84f87c, 0x7799ee77, 0x7b8df67b,
     0xf20dfff2, 0x6bbdd66b, 0x6fb1de6f, 0xc55491c5,
     0x30506030, 0x01030201, 0x67a9ce67, 0x2b7d562b,
@@ -354,7 +354,7 @@ static const word32 E2[256] = {
     0x41c38241, 0x99b02999, 0x2d775a2d, 0x0f111e0f,
     0xb0cb7bb0, 0x54fca854, 0xbbd66dbb, 0x163a2c16,
 };
-static const word32 E3[256] = {
+static const uint32_t E3[256] = {
     0x6363a5c6, 0x7c7c84f8, 0x777799ee, 0x7b7b8df6,
     0xf2f20dff, 0x6b6bbdd6, 0x6f6fb1de, 0xc5c55491,
     0x30305060, 0x01010302, 0x6767a9ce, 0x2b2b7d56,
@@ -420,7 +420,7 @@ static const word32 E3[256] = {
     0x4141c382, 0x9999b029, 0x2d2d775a, 0x0f0f111e,
     0xb0b0cb7b, 0x5454fca8, 0xbbbbd66d, 0x16163a2c,
 };
-static const word32 D0[256] = {
+static const uint32_t D0[256] = {
     0x51f4a750, 0x7e416553, 0x1a17a4c3, 0x3a275e96,
     0x3bab6bcb, 0x1f9d45f1, 0xacfa58ab, 0x4be30393,
     0x2030fa55, 0xad766df6, 0x88cc7691, 0xf5024c25,
@@ -486,7 +486,7 @@ static const word32 D0[256] = {
     0x39a80171, 0x080cb3de, 0xd8b4e49c, 0x6456c190,
     0x7bcb8461, 0xd532b670, 0x486c5c74, 0xd0b85742,
 };
-static const word32 D1[256] = {
+static const uint32_t D1[256] = {
     0x5051f4a7, 0x537e4165, 0xc31a17a4, 0x963a275e,
     0xcb3bab6b, 0xf11f9d45, 0xabacfa58, 0x934be303,
     0x552030fa, 0xf6ad766d, 0x9188cc76, 0x25f5024c,
@@ -552,7 +552,7 @@ static const word32 D1[256] = {
     0x7139a801, 0xde080cb3, 0x9cd8b4e4, 0x906456c1,
     0x617bcb84, 0x70d532b6, 0x74486c5c, 0x42d0b857,
 };
-static const word32 D2[256] = {
+static const uint32_t D2[256] = {
     0xa75051f4, 0x65537e41, 0xa4c31a17, 0x5e963a27,
     0x6bcb3bab, 0x45f11f9d, 0x58abacfa, 0x03934be3,
     0xfa552030, 0x6df6ad76, 0x769188cc, 0x4c25f502,
@@ -618,7 +618,7 @@ static const word32 D2[256] = {
     0x017139a8, 0xb3de080c, 0xe49cd8b4, 0xc1906456,
     0x84617bcb, 0xb670d532, 0x5c74486c, 0x5742d0b8,
 };
-static const word32 D3[256] = {
+static const uint32_t D3[256] = {
     0xf4a75051, 0x4165537e, 0x17a4c31a, 0x275e963a,
     0xab6bcb3b, 0x9d45f11f, 0xfa58abac, 0xe303934b,
     0x30fa5520, 0x766df6ad, 0xcc769188, 0x024c25f5,
@@ -700,11 +700,11 @@ static void aes_setup(AESContext * ctx, const unsigned char *key, int keylen)
     /* Ensure the key schedule arrays are 16-byte aligned */
     bufaddr = (size_t)ctx->keysched_buf;
     ctx->keysched = ctx->keysched_buf +
-        (0xF & -bufaddr) / sizeof(word32);
+        (0xF & -bufaddr) / sizeof(uint32_t);
     assert((size_t)ctx->keysched % 16 == 0);
     bufaddr = (size_t)ctx->invkeysched_buf;
     ctx->invkeysched = ctx->invkeysched_buf +
-        (0xF & -bufaddr) / sizeof(word32);
+        (0xF & -bufaddr) / sizeof(uint32_t);
     assert((size_t)ctx->invkeysched % 16 == 0);
 
     ctx->isNI = supports_aes_ni();
@@ -726,7 +726,7 @@ static void aes_setup(AESContext * ctx, const unsigned char *key, int keylen)
 	if (i < Nk)
 	    ctx->keysched[i] = GET_32BIT_MSB_FIRST(key + 4 * i);
 	else {
-	    word32 temp = ctx->keysched[i - 1];
+	    uint32_t temp = ctx->keysched[i - 1];
 	    if (i % Nk == 0) {
 		int a, b, c, d;
 		a = (temp >> 16) & 0xFF;
@@ -758,7 +758,7 @@ static void aes_setup(AESContext * ctx, const unsigned char *key, int keylen)
      */
     for (i = 0; i <= ctx->Nr; i++) {
         for (j = 0; j < NB; j++) {
-	    word32 temp;
+	    uint32_t temp;
             temp = ctx->keysched[(ctx->Nr - i) * NB + j];
 	    if (i != 0 && i != ctx->Nr) {
 		/*
@@ -826,7 +826,7 @@ static void aes_setup(AESContext * ctx, const unsigned char *key, int keylen)
  */
 static void aes_encrypt_cbc_sw(unsigned char *blk, int len, AESContext * ctx)
 {
-    word32 block[4];
+    uint32_t block[4];
     unsigned char* finish = blk + len;
     int i;
 
@@ -835,8 +835,8 @@ static void aes_encrypt_cbc_sw(unsigned char *blk, int len, AESContext * ctx)
     memcpy(block, ctx->iv, sizeof(block));
 
     while (blk < finish) {
-        word32 *keysched = ctx->keysched;
-        word32 newstate[4];
+        uint32_t *keysched = ctx->keysched;
+        uint32_t newstate[4];
 	for (i = 0; i < 4; i++)
             block[i] ^= GET_32BIT_MSB_FIRST(blk + 4 * i);
         ADD_ROUND_KEY;
@@ -872,7 +872,7 @@ static void aes_encrypt_cbc_sw(unsigned char *blk, int len, AESContext * ctx)
 
 static void aes_sdctr_sw(unsigned char *blk, int len, AESContext *ctx)
 {
-    word32 iv[4];
+    uint32_t iv[4];
     unsigned char* finish = blk + len;
     int i;
 
@@ -881,8 +881,8 @@ static void aes_sdctr_sw(unsigned char *blk, int len, AESContext *ctx)
     memcpy(iv, ctx->iv, sizeof(iv));
 
     while (blk < finish) {
-        word32 *keysched = ctx->keysched;
-        word32 newstate[4], block[4], tmp;
+        uint32_t *keysched = ctx->keysched;
+        uint32_t newstate[4], block[4], tmp;
         memcpy(block, iv, sizeof(block));
         ADD_ROUND_KEY;
         switch (ctx->Nr) {
@@ -922,7 +922,7 @@ static void aes_sdctr_sw(unsigned char *blk, int len, AESContext *ctx)
 
 static void aes_decrypt_cbc_sw(unsigned char *blk, int len, AESContext * ctx)
 {
-    word32 iv[4];
+    uint32_t iv[4];
     unsigned char* finish = blk + len;
     int i;
 
@@ -931,8 +931,8 @@ static void aes_decrypt_cbc_sw(unsigned char *blk, int len, AESContext * ctx)
     memcpy(iv, ctx->iv, sizeof(iv));
 
     while (blk < finish) {
-        word32 *keysched = ctx->invkeysched;
-        word32 newstate[4], ct[4], block[4];
+        uint32_t *keysched = ctx->invkeysched;
+        uint32_t newstate[4], ct[4], block[4];
         for (i = 0; i < 4; i++)
             block[i] = ct[i] = GET_32BIT_MSB_FIRST(blk + 4 * i);
         ADD_ROUND_KEY;
@@ -1219,7 +1219,7 @@ const struct ssh2_ciphers ssh2_aes = {
 #if defined(__clang__) || defined(__GNUC__)
 
 #include <cpuid.h>
-INLINE static int supports_aes_ni()
+INLINE static bool supports_aes_ni()
 {
     unsigned int CPUInfo[4];
     __cpuid(1, CPUInfo[0], CPUInfo[1], CPUInfo[2], CPUInfo[3]);
@@ -1228,7 +1228,7 @@ INLINE static int supports_aes_ni()
 
 #else /* defined(__clang__) || defined(__GNUC__) */
 
-INLINE static int supports_aes_ni()
+INLINE static bool supports_aes_ni()
 {
     unsigned int CPUInfo[4];
     __cpuid(CPUInfo, 1);
@@ -1755,9 +1755,9 @@ static void aes_setup_ni(AESContext * ctx, const unsigned char *key, int keylen)
     assert(0);
 }
 
-INLINE static int supports_aes_ni()
+INLINE static bool supports_aes_ni()
 {
-    return 0;
+    return false;
 }
 
 #endif /* COMPILER_SUPPORTS_AES_NI */

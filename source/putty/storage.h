@@ -69,7 +69,7 @@ void del_settings(const char *sessionname);
  * Enumerate all saved sessions.
  */
 settings_e *enum_settings_start(void);
-char *enum_settings_next(settings_e *handle, char *buffer, int buflen);
+bool enum_settings_next(settings_e *handle, strbuf *out);
 void enum_settings_finish(settings_e *handle);
 
 /* ----------------------------------------------------------------------

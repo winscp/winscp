@@ -21,25 +21,25 @@ struct ssh1_connection_state {
     Channel *mainchan_chan;            /* the other end of mainchan_sc */
     mainchan *mainchan;                /* and its subtype */
 
-    int got_pty;
-    int ldisc_opts[LD_N_OPTIONS];
-    int stdout_throttling;
-    int want_user_input;
-    int session_terminated;
+    bool got_pty;
+    bool ldisc_opts[LD_N_OPTIONS];
+    bool stdout_throttling;
+    bool want_user_input;
+    bool session_terminated;
     int term_width, term_height, term_width_orig, term_height_orig;
 
-    int X11_fwd_enabled;
+    bool X11_fwd_enabled;
     struct X11Display *x11disp;
     struct X11FakeAuth *x11auth;
     tree234 *x11authtree;
 
-    int agent_fwd_enabled;
+    bool agent_fwd_enabled;
 
     tree234 *rportfwds;
     PortFwdManager *portfwdmgr;
-    int portfwdmgr_configured;
+    bool portfwdmgr_configured;
 
-    int finished_setup;
+    bool finished_setup;
 
     /*
      * These store the list of requests that we're waiting for
@@ -49,7 +49,7 @@ struct ssh1_connection_state {
      */
     struct outstanding_succfail *succfail_head, *succfail_tail;
 
-    int compressing;                   /* used in server mode only */
+    bool compressing;                  /* used in server mode only */
 
     ConnectionLayer cl;
     PacketProtocolLayer ppl;
@@ -61,7 +61,7 @@ struct ssh1_channel {
     unsigned remoteid, localid;
     int type;
     /* True if we opened this channel but server hasn't confirmed. */
-    int halfopen;
+    bool halfopen;
 
     /* Bitmap of whether we've sent/received CHANNEL_CLOSE and
      * CHANNEL_CLOSE_CONFIRMATION. */
@@ -79,13 +79,13 @@ struct ssh1_channel {
      * we set this flag instead to remind us to do so once our buffer
      * is clear.
      */
-    int pending_eof;
+    bool pending_eof;
 
     /*
      * True if this channel is causing the underlying connection to be
      * throttled.
      */
-    int throttling_conn;
+    bool throttling_conn;
 
     /*
      * True if we currently have backed-up data on the direction of
@@ -93,7 +93,7 @@ struct ssh1_channel {
      * would prefer the 'Channel' implementation not to read further
      * local input if possible.
      */
-    int throttled_by_backlog;
+    bool throttled_by_backlog;
 
     Channel *chan;      /* handle the client side of this channel, if not */
     SshChannel sc;      /* entry point for chan to talk back to */
@@ -113,7 +113,7 @@ SshChannel *ssh1_serverside_agent_open(ConnectionLayer *cl, Channel *chan);
 
 void ssh1_connection_direction_specific_setup(
     struct ssh1_connection_state *s);
-int ssh1_handle_direction_specific_packet(
+bool ssh1_handle_direction_specific_packet(
     struct ssh1_connection_state *s, PktIn *pktin);
 
-int ssh1_check_termination(struct ssh1_connection_state *s);
+bool ssh1_check_termination(struct ssh1_connection_state *s);

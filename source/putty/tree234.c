@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <assert.h>
 
+#include "defs.h"
 #include "tree234.h"
 
 #ifdef TEST
@@ -529,7 +530,7 @@ void *findrelpos234(tree234 * t, void *e, cmpfn234 cmp,
     search234_state ss;
     int reldir = (relation == REL234_LT || relation == REL234_LE ? -1 :
                   relation == REL234_GT || relation == REL234_GE ? +1 : 0);
-    int equal_permitted = (relation != REL234_LT && relation != REL234_GT);
+    bool equal_permitted = (relation != REL234_LT && relation != REL234_GT);
     void *toret;
 
     /* Only LT / GT relations are permitted with a null query element. */

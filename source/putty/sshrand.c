@@ -9,9 +9,6 @@
 /* Collect environmental noise every 5 minutes */
 #define NOISE_REGULAR_INTERVAL (5*60*TICKSPERSEC)
 
-void noise_get_heavy(void (*func) (void *, int));
-void noise_get_light(void (*func) (void *, int));
-
 /*
  * `pool' itself is a pool of random data which we actually use: we
  * return bytes from `pool', at position `poolpos', until `poolpos'
@@ -42,7 +39,7 @@ struct RandPool {
     unsigned char incomingb[HASHINPUT];
     int incomingpos;
 
-    int stir_pending;
+    bool stir_pending;
 };
 
 int random_active = 0;
@@ -70,8 +67,8 @@ int random_diagnostics = 0;
 
 static void random_stir(void)
 {
-    word32 block[HASHINPUT / sizeof(word32)];
-    word32 digest[HASHSIZE / sizeof(word32)];
+    uint32_t block[HASHINPUT / sizeof(uint32_t)];
+    uint32_t digest[HASHSIZE / sizeof(uint32_t)];
     int i, j, k;
 
     /*
@@ -80,7 +77,7 @@ static void random_stir(void)
      */
     if (pool.stir_pending)
 	return;
-    pool.stir_pending = TRUE;
+    pool.stir_pending = true;
 
     noise_get_light(random_add_noise);
 
@@ -91,24 +88,24 @@ static void random_stir(void)
         for (p = 0; p < POOLSIZE; p += HASHSIZE) {
             printf("   ");
             for (q = 0; q < HASHSIZE; q += 4) {
-                printf(" %08x", *(word32 *)(pool.pool + p + q));            
+                printf(" %08x", *(uint32_t *)(pool.pool + p + q));            
             }
             printf("\n");
         }
         printf("incoming:\n   ");
         for (q = 0; q < HASHSIZE; q += 4) {
-            printf(" %08x", *(word32 *)(pool.incoming + q));
+            printf(" %08x", *(uint32_t *)(pool.incoming + q));
         }
         printf("\nincomingb:\n   ");
         for (q = 0; q < HASHINPUT; q += 4) {
-            printf(" %08x", *(word32 *)(pool.incomingb + q));
+            printf(" %08x", *(uint32_t *)(pool.incomingb + q));
         }
         printf("\n");
         random_diagnostics++;
     }
 #endif
 
-    SHATransform((word32 *) pool.incoming, (word32 *) pool.incomingb);
+    SHATransform((uint32_t *) pool.incoming, (uint32_t *) pool.incomingb);
     pool.incomingpos = 0;
 
     /*
@@ -144,7 +141,7 @@ static void random_stir(void)
 	     */
 
 	    for (k = 0; k < sizeof(digest) / sizeof(*digest); k++)
-		digest[k] ^= ((word32 *) (pool.pool + j))[k];
+		digest[k] ^= ((uint32_t *) (pool.pool + j))[k];
 
 	    /*
 	     * Munge our unrevealed first block of the pool into
@@ -157,7 +154,7 @@ static void random_stir(void)
 	     */
 
 	    for (k = 0; k < sizeof(digest) / sizeof(*digest); k++)
-		((word32 *) (pool.pool + j))[k] = digest[k];
+		((uint32_t *) (pool.pool + j))[k] = digest[k];
 	}
 
 #ifdef RANDOM_DIAGNOSTICS
@@ -167,17 +164,17 @@ static void random_stir(void)
             for (p = 0; p < POOLSIZE; p += HASHSIZE) {
                 printf("   ");
                 for (q = 0; q < HASHSIZE; q += 4) {
-                    printf(" %08x", *(word32 *)(pool.pool + p + q));            
+                    printf(" %08x", *(uint32_t *)(pool.pool + p + q));
                 }
                 printf("\n");
             }
             printf("incoming:\n   ");
             for (q = 0; q < HASHSIZE; q += 4) {
-                printf(" %08x", *(word32 *)(pool.incoming + q));
+                printf(" %08x", *(uint32_t *)(pool.incoming + q));
             }
             printf("\nincomingb:\n   ");
             for (q = 0; q < HASHINPUT; q += 4) {
-                printf(" %08x", *(word32 *)(pool.incomingb + q));
+                printf(" %08x", *(uint32_t *)(pool.incomingb + q));
             }
             printf("\n");
         }
@@ -193,7 +190,7 @@ static void random_stir(void)
 
     pool.poolpos = sizeof(pool.incoming);
 
-    pool.stir_pending = FALSE;
+    pool.stir_pending = false;
 
 #ifdef RANDOM_DIAGNOSTICS
     {
@@ -202,17 +199,17 @@ static void random_stir(void)
         for (p = 0; p < POOLSIZE; p += HASHSIZE) {
             printf("   ");
             for (q = 0; q < HASHSIZE; q += 4) {
-                printf(" %08x", *(word32 *)(pool.pool + p + q));            
+                printf(" %08x", *(uint32_t *)(pool.pool + p + q));            
             }
             printf("\n");
         }
         printf("incoming:\n   ");
         for (q = 0; q < HASHSIZE; q += 4) {
-            printf(" %08x", *(word32 *)(pool.incoming + q));
+            printf(" %08x", *(uint32_t *)(pool.incoming + q));
         }
         printf("\nincomingb:\n   ");
         for (q = 0; q < HASHINPUT; q += 4) {
-            printf(" %08x", *(word32 *)(pool.incomingb + q));
+            printf(" %08x", *(uint32_t *)(pool.incomingb + q));
         }
         printf("\n");
         random_diagnostics--;
@@ -238,7 +235,7 @@ void random_add_noise(void *noise, int length)
 	       HASHINPUT - pool.incomingpos);
 	p += HASHINPUT - pool.incomingpos;
 	length -= HASHINPUT - pool.incomingpos;
-	SHATransform((word32 *) pool.incoming, (word32 *) pool.incomingb);
+	SHATransform((uint32_t *) pool.incoming, (uint32_t *) pool.incomingb);
 	for (i = 0; i < HASHSIZE; i++) {
 	    pool.pool[pool.poolpos++] ^= pool.incoming[i];
 	    if (pool.poolpos >= POOLSIZE)

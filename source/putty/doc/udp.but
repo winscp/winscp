@@ -33,22 +33,75 @@ All the modules in the main source directory - notably \e{all} of
 the code for the various back ends - are platform-generic. We want
 to keep them that way.
 
-This also means you should stick to what you are guaranteed by
-ANSI/ISO C (that is, the original C89/C90 standard, not C99). Try
-not to make assumptions about the precise size of basic types such
-as \c{int} and \c{long int}; don't use pointer casts to do
-endianness-dependent operations, and so on.
+This also means you should stick to the C semantics guaranteed by the
+C standard: try not to make assumptions about the precise size of
+basic types such as \c{int} and \c{long int}; don't use pointer casts
+to do endianness-dependent operations, and so on.
 
-(There are one or two aspects of ANSI C portability which we
-\e{don't} care about. In particular, we expect PuTTY to be compiled
-on 32-bit architectures \e{or bigger}; so it's safe to assume that
-\c{int} is at least 32 bits wide, not just the 16 you are guaranteed
-by ANSI C.  Similarly, we assume that the execution character
-encoding is a superset of the printable characters of ASCII, though
-we don't assume the numeric values of control characters,
-particularly \cw{'\\n'} and \cw{'\\r'}. Also, the X forwarding code
-assumes that \c{time_t} has the Unix format and semantics, i.e. an
-integer giving the number of seconds since 1970.)
+(Even \e{within} a platform front end you should still be careful of
+some of these portability issues. The Windows front end compiles on
+both 32- and 64-bit x86 and also Arm.)
+
+Our current choice of C standards version is C99: you can assume that
+C99 features are available (in particular \cw{<stdint.h>},
+\cw{<stdbool.h>} and \c{inline}), but you shouldn't use things that
+are new in C11 (such as \cw{<uchar.h>} or \cw{_Generic}).
+
+One small exception to that: for historical reasons, we still build in
+one configuration which lacks \cw{<inttypes.h>}. So that file is
+included centrally in \c{defs.h}, and has a set of workaround
+definitions for the \cw{PRIx64}-type macros we use. If you need to use
+another one of those macros, you need to add a workaround definition
+in \c{defs.h}, and don't casually re-include \cw{<inttypes.h>}
+anywhere else in the source file.
+
+Here are a few portability assumptions that we \e{do} currently allow
+(because we'd already have to thoroughly vet the existing code if they
+ever needed to change, and it doesn't seem worth doing that unless we
+really have to):
+
+\b You can assume \c{int} is \e{at least} 32 bits wide. (We've never
+tried to port PuTTY to a platform with 16-bit \cw{int}, and it doesn't
+look likely to be necessary in future.)
+
+\b Similarly, you can assume \c{char} is exactly 8 bits. (Exceptions
+to that are even less likely to be relevant to us than short
+\cw{int}.)
+
+\b You can assume that using \c{memset} to write zero bytes over a
+whole structure will have the effect of setting all its pointer fields
+to \cw{NULL}. (The standard itself guarantees this for \e{integer}
+fields, but not for pointers.)
+
+\b You can assume that \c{time_t} has POSIX semantics, i.e. that it
+represents an integer number of non-leap seconds since 1970-01-01
+00:00:00 UTC. (Times in this format are used in X authorisation, but
+we could work around that by carefully distinguishing local \c{time_t}
+from time values used in the wire protocol; but these semantics of
+\c{time_t} are also baked into the shared library API used by the
+GSSAPI authentication code, which would be much harder to change.)
+
+\b You can assume that the execution character encoding is a superset
+of the printable characters of ASCII. (In particular, it's fine to do
+arithmetic on a \c{char} value representing a Latin alphabetic
+character, without bothering to allow for EBCDIC or other
+non-consecutive encodings of the alphabet.)
+
+On the other hand, here are some particular things \e{not} to assume:
+
+\b Don't assume anything about the \e{signedness} of \c{char}. In
+particular, you \e{must} cast \c{char} values to \c{unsigned char}
+before passing them to any \cw{<ctype.h>} function (because those
+expect a non-negative character value, or \cw{EOF}). If you need a
+particular signedness, explicitly specify \c{signed char} or
+\c{unsigned char}, or use C99 \cw{int8_t} or \cw{uint8_t}.
+
+\b From past experience with MacOS, we're still a bit nervous about
+\cw{'\\n'} and \cw{'\\r'} potentially having unusual meanings on a
+given platform. So it's fine to say \c{\\n} in a string you're passing
+to \c{printf}, but in any context where those characters appear in a
+standardised wire protocol or a binary file format, they should be
+spelled \cw{'\\012'} and \cw{'\\015'} respectively.
 
 \H{udp-multi-backend} Multiple backends treated equally
 
@@ -312,11 +365,12 @@ as well!
 source archive saying this, but many people don't seem to read it,
 so it's worth repeating here.)
 
-\H{udp-ssh-coroutines} Coroutines in \cw{ssh.c}
+\H{udp-ssh-coroutines} Coroutines in the SSH code
 
-Large parts of the code in \cw{ssh.c} are structured using a set of
-macros that implement (something close to) Donald Knuth's
-\q{coroutines} concept in C.
+Large parts of the code in the various SSH modules (in fact most of
+the protocol layers) are structured using a set of macros that
+implement (something close to) Donald Knuth's \q{coroutines} concept
+in C.
 
 Essentially, the purpose of these macros are to arrange that a
 function can call \cw{crReturn()} to return to its caller, and the
@@ -325,15 +379,30 @@ next time it is called control will resume from just after that
 
 This means that any local (automatic) variables declared in such a
 function will be corrupted every time you call \cw{crReturn}. If you
-need a variable to persist for longer than that, you \e{must} make
-it a field in one of the persistent state structures: either the
-local state structures \c{s} or \c{st} in each function, or the
-backend-wide structure \c{ssh}.
+need a variable to persist for longer than that, you \e{must} make it
+a field in some appropriate structure containing the persistent state
+of the coroutine \dash typically the main state structure for an SSH
+protocol layer.
 
 See
 \W{https://www.chiark.greenend.org.uk/~sgtatham/coroutines.html}\c{https://www.chiark.greenend.org.uk/~sgtatham/coroutines.html}
 for a more in-depth discussion of what these macros are for and how
 they work.
+
+Another caveat: most of these coroutines are not \e{guaranteed} to run
+to completion, because the SSH connection (or whatever) that they're
+part of might be interrupted at any time by an unexpected network
+event or user action. So whenever a coroutine-managed variable refers
+to a resource that needs releasing, you should also ensure that the
+cleanup function for its containing state structure can reliably
+release it even if the coroutine is aborted at an arbitrary point.
+
+For example, if an SSH packet protocol layer has to have a field that
+sometimes points to a piece of allocated memory, then you should
+ensure that when you free that memory you reset the pointer field to
+\cw{NULL}. Then, no matter when the protocol layer's cleanup function
+is called, it can reliably free the memory if there is any, and not
+crash if there isn't.
 
 \H{udp-compile-once} Single compilation of each source file
 

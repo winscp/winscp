@@ -35,12 +35,12 @@ const char *filename_to_str(const Filename *fn)
     return fn->path;
 }
 
-int filename_equal(const Filename *f1, const Filename *f2)
+bool filename_equal(const Filename *f1, const Filename *f2)
 {
     return !strcmp(f1->path, f2->path);
 }
 
-int filename_is_null(const Filename *fn)
+bool filename_is_null(const Filename *fn)
 {
     return !*fn->path;
 }
@@ -81,12 +81,12 @@ char *get_username(void)
 {
     DWORD namelen;
     char *user;
-    int got_username = FALSE;
+    bool got_username = false;
     DECL_WINDOWS_FUNCTION(static, BOOLEAN, GetUserNameExA,
 			  (EXTENDED_NAME_FORMAT, LPSTR, PULONG));
 
     {
-	static int tried_usernameex = FALSE;
+	static bool tried_usernameex = false;
 	if (!tried_usernameex) {
 	    /* Not available on Win9x, so load dynamically */
 	    HMODULE secur32 = load_system32_dll("secur32.dll");
@@ -97,7 +97,7 @@ char *get_username(void)
 	    HMODULE sspicli = load_system32_dll("sspicli.dll");
             (void)sspicli; /* squash compiler warning about unused variable */
 	    GET_WINDOWS_FUNCTION(secur32, GetUserNameExA);
-	    tried_usernameex = TRUE;
+	    tried_usernameex = true;
 	}
     }
 
@@ -125,7 +125,7 @@ char *get_username(void)
     if (!got_username) {
 	/* Fall back to local user name */
 	namelen = 0;
-	if (GetUserName(NULL, &namelen) == FALSE) {
+	if (!GetUserName(NULL, &namelen)) {
 	    /*
 	     * Apparently this doesn't work at least on Windows XP SP2.
 	     * Thus assume a maximum of 256. It will fail again if it
@@ -559,8 +559,7 @@ void *minefield_c_realloc(void *p, size_t size)
 
 #endif				/* MINEFIELD */
 
-FontSpec *fontspec_new(const char *name,
-                        int bold, int height, int charset)
+FontSpec *fontspec_new(const char *name, bool bold, int height, int charset)
 {
     FontSpec *f = snew(FontSpec);
     f->name = dupstr(name);
@@ -594,7 +593,7 @@ FontSpec *fontspec_deserialise(BinarySource *src)
     return fontspec_new(name, isbold, height, charset);
 }
 
-int open_for_write_would_lose_data(const Filename *fn)
+bool open_for_write_would_lose_data(const Filename *fn)
 {
     WIN32_FILE_ATTRIBUTE_DATA attrs;
     if (!GetFileAttributesEx(fn->path, GetFileExInfoStandard, &attrs)) {
@@ -604,7 +603,7 @@ int open_for_write_would_lose_data(const Filename *fn)
          * let the subsequent attempt to open the file for real give a
          * more useful error message.
          */
-        return FALSE;
+        return false;
     }
     if (attrs.dwFileAttributes & (FILE_ATTRIBUTE_DEVICE |
                                   FILE_ATTRIBUTE_DIRECTORY)) {
@@ -613,7 +612,7 @@ int open_for_write_would_lose_data(const Filename *fn)
          * opening it for writing will not cause truncation. (It may
          * not _succeed_ either, but that's not our problem here!)
          */
-        return FALSE;
+        return false;
     }
     if (attrs.nFileSizeHigh == 0 && attrs.nFileSizeLow == 0) {
         /*
@@ -622,7 +621,45 @@ int open_for_write_would_lose_data(const Filename *fn)
          * opening it for writing won't truncate any data away because
          * there's nothing to truncate anyway.
          */
-        return FALSE;
+        return false;
     }
-    return TRUE;
+    return true;
+}
+
+void escape_registry_key(const char *in, strbuf *out)
+{
+    bool candot = false;
+    static const char hex[16] = "0123456789ABCDEF";
+
+    while (*in) {
+	if (*in == ' ' || *in == '\\' || *in == '*' || *in == '?' ||
+	    *in == '%' || *in < ' ' || *in > '~' || (*in == '.'
+						     && !candot)) {
+            put_byte(out, '%');
+	    put_byte(out, hex[((unsigned char) *in) >> 4]);
+	    put_byte(out, hex[((unsigned char) *in) & 15]);
+	} else
+	    put_byte(out, *in);
+	in++;
+	candot = true;
+    }
+}
+
+void unescape_registry_key(const char *in, strbuf *out)
+{
+    while (*in) {
+	if (*in == '%' && in[1] && in[2]) {
+	    int i, j;
+
+	    i = in[1] - '0';
+	    i -= (i > 9 ? 7 : 0);
+	    j = in[2] - '0';
+	    j -= (j > 9 ? 7 : 0);
+
+	    put_byte(out, (i << 4) + j);
+	    in += 3;
+	} else {
+            put_byte(out, *in++);
+	}
+    }
 }

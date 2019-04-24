@@ -19,9 +19,9 @@ DECL_WINDOWS_FUNCTION(static, BOOL, CryptReleaseContext,
                       (HCRYPTPROV, DWORD));
 static HMODULE wincrypt_module = NULL;
 
-int win_read_random(void *buf, unsigned wanted)
+bool win_read_random(void *buf, unsigned wanted)
 {
-    int toret = FALSE;
+    bool toret = false;
     HCRYPTPROV crypt_provider;
 
     if (!wincrypt_module) {

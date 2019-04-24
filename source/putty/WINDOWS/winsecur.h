@@ -33,7 +33,7 @@ DECL_WINDOWS_FUNCTION(WINSECUR_GLOBAL, DWORD, SetSecurityInfo,
 		       PSID, PSID, PACL, PACL));
 DECL_WINDOWS_FUNCTION(WINSECUR_GLOBAL, DWORD, SetEntriesInAclA,
 		      (ULONG, PEXPLICIT_ACCESS, PACL, PACL *));
-int got_advapi(void);
+bool got_advapi(void);
 
 /*
  * Find the SID describing the current user. The return value (if not
@@ -46,14 +46,12 @@ PSID get_user_sid(void);
  * servers, i.e. allowing access only to the current user id and also
  * only local (i.e. not over SMB) connections.
  *
- * If this function returns TRUE, then 'psd' and 'acl' will have been
+ * If this function returns true, then 'psd' and 'acl' will have been
  * filled in with memory allocated using LocalAlloc (and hence must be
- * freed later using LocalFree). If it returns FALSE, then instead
+ * freed later using LocalFree). If it returns false, then instead
  * 'error' has been filled with a dynamically allocated error message.
  */
-int make_private_security_descriptor(DWORD permissions,
-                                     PSECURITY_DESCRIPTOR *psd,
-                                     PACL *acl,
-                                     char **error);
+bool make_private_security_descriptor(
+    DWORD permissions, PSECURITY_DESCRIPTOR *psd, PACL *acl, char **error);
 
 #endif

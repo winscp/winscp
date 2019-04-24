@@ -27,8 +27,8 @@ typedef struct PortForwarding {
     ConnectionLayer *cl;   /* the connection layer itself */
     /* Note that ssh need not be filled in if c is non-NULL */
     Socket *s;
-    int input_wanted;
-    int ready;
+    bool input_wanted;
+    bool ready;
     SocksState socks_state;
     /*
      * `hostname' and `port' are the real hostname and port, once
@@ -51,7 +51,7 @@ typedef struct PortForwarding {
 struct PortListener {
     ConnectionLayer *cl;
     Socket *s;
-    int is_dynamic;
+    bool is_dynamic;
     /*
      * `hostname' and `port' are the real hostname and port, for
      * ordinary forwardings.
@@ -110,7 +110,7 @@ static void pfl_log(Plug *plug, int type, SockAddr *addr, int port,
 static void pfd_close(struct PortForwarding *pf);
 
 static void pfd_closing(Plug *plug, const char *error_msg, int error_code,
-			int calling_back)
+			bool calling_back)
 {
     struct PortForwarding *pf =
         container_of(plug, struct PortForwarding, plug);
@@ -143,7 +143,7 @@ static void pfd_closing(Plug *plug, const char *error_msg, int error_code,
 static void pfl_terminate(struct PortListener *pl);
 
 static void pfl_closing(Plug *plug, const char *error_msg, int error_code,
-			int calling_back)
+			bool calling_back)
 {
     struct PortListener *pl = (struct PortListener *) plug;
     pfl_terminate(pl);
@@ -254,7 +254,7 @@ static void pfd_receive(Plug *plug, int urgent, char *data, int len)
                     return;
                 if (socks_version == 4 && message_type == 1) {
                     /* CONNECT message */
-                    int name_based = FALSE;
+                    bool name_based = false;
 
                     port = get_uint16(src);
                     ipv4 = get_uint32(src);
@@ -264,7 +264,7 @@ static void pfd_receive(Plug *plug, int urgent, char *data, int len)
                          * extension to specify a hostname, which comes
                          * after the username.
                          */
-                        name_based = TRUE;
+                        name_based = true;
                     }
                     get_asciz(src);        /* skip username */
                     socks4_hostname = name_based ? get_asciz(src) : NULL;
@@ -437,9 +437,9 @@ static const PlugVtable PortForwarding_plugvt = {
 static void pfd_chan_free(Channel *chan);
 static void pfd_open_confirmation(Channel *chan);
 static void pfd_open_failure(Channel *chan, const char *errtext);
-static int pfd_send(Channel *chan, int is_stderr, const void *data, int len);
+static int pfd_send(Channel *chan, bool is_stderr, const void *data, int len);
 static void pfd_send_eof(Channel *chan);
-static void pfd_set_input_wanted(Channel *chan, int wanted);
+static void pfd_set_input_wanted(Channel *chan, bool wanted);
 static char *pfd_log_close_msg(Channel *chan);
 
 static const struct ChannelVtable PortForwarding_channelvt = {
@@ -475,13 +475,13 @@ Channel *portfwd_raw_new(ConnectionLayer *cl, Plug **plug)
     pf->plug.vt = &PortForwarding_plugvt;
     pf->chan.initial_fixed_window_size = 0;
     pf->chan.vt = &PortForwarding_channelvt;
-    pf->input_wanted = TRUE;
+    pf->input_wanted = true;
 
     pf->c = NULL;
 
     pf->cl = cl;
-    pf->input_wanted = TRUE;
-    pf->ready = 0;
+    pf->input_wanted = true;
+    pf->ready = false;
 
     pf->socks_state = SOCKS_NONE;
     pf->hostname = NULL;
@@ -526,7 +526,7 @@ static int pfl_accepting(Plug *p, accept_fn_t constructor, accept_ctx_t ctx)
     s = constructor(ctx, plug);
     if ((err = sk_socket_error(s)) != NULL) {
 	portfwd_raw_free(chan);
-	return TRUE;
+	return 1;
     }
 
     pf = container_of(chan, struct PortForwarding, chan);
@@ -581,13 +581,13 @@ static char *pfl_listen(const char *desthost, int destport,
     if (desthost) {
 	pl->hostname = dupstr(desthost);
 	pl->port = destport;
-	pl->is_dynamic = FALSE;
+	pl->is_dynamic = false;
     } else
-	pl->is_dynamic = TRUE;
+	pl->is_dynamic = true;
     pl->cl = cl;
 
     pl->s = new_listener(srcaddr, port, &pl->plug,
-                         !conf_get_int(conf, CONF_lport_acceptall),
+                         !conf_get_bool(conf, CONF_lport_acceptall),
                          conf, address_family);
     if ((err = sk_socket_error(pl->s)) != NULL) {
         char *err_ret = dupstr(err);
@@ -626,7 +626,7 @@ static void pfl_terminate(struct PortListener *pl)
     free_portlistener_state(pl);
 }
 
-static void pfd_set_input_wanted(Channel *chan, int wanted)
+static void pfd_set_input_wanted(Channel *chan, bool wanted)
 {
     assert(chan->vt == &PortForwarding_channelvt);
     PortForwarding *pf = container_of(chan, PortForwarding, chan);
@@ -644,7 +644,7 @@ static void pfd_chan_free(Channel *chan)
 /*
  * Called to send data down the raw connection.
  */
-static int pfd_send(Channel *chan, int is_stderr, const void *data, int len)
+static int pfd_send(Channel *chan, bool is_stderr, const void *data, int len)
 {
     assert(chan->vt == &PortForwarding_channelvt);
     PortForwarding *pf = container_of(chan, PortForwarding, chan);
@@ -663,7 +663,7 @@ static void pfd_open_confirmation(Channel *chan)
     assert(chan->vt == &PortForwarding_channelvt);
     PortForwarding *pf = container_of(chan, PortForwarding, chan);
 
-    pf->ready = 1;
+    pf->ready = true;
     sk_set_frozen(pf->s, 0);
     sk_write(pf->s, NULL, 0);
     if (pf->socksbuf) {
@@ -1024,7 +1024,7 @@ void portfwdmgr_config(PortFwdManager *mgr, Conf *conf)
 
                 if (pfr->saddr) {
                     shost = pfr->saddr;
-                } else if (conf_get_int(conf, CONF_rport_acceptall)) {
+                } else if (conf_get_bool(conf, CONF_rport_acceptall)) {
                     shost = "";
                 } else {
                     shost = "localhost";
@@ -1050,8 +1050,8 @@ void portfwdmgr_config(PortFwdManager *mgr, Conf *conf)
     }
 }
 
-int portfwdmgr_listen(PortFwdManager *mgr, const char *host, int port,
-                      const char *keyhost, int keyport, Conf *conf)
+bool portfwdmgr_listen(PortFwdManager *mgr, const char *host, int port,
+                       const char *keyhost, int keyport, Conf *conf)
 {
     PortFwdRecord *pfr;
 
@@ -1072,7 +1072,7 @@ int portfwdmgr_listen(PortFwdManager *mgr, const char *host, int port,
          * We had this record already. Return failure.
          */
         pfr_free(pfr);
-        return FALSE;
+        return false;
     }
 
     char *err = pfl_listen(keyhost, keyport, host, port,
@@ -1085,13 +1085,13 @@ int portfwdmgr_listen(PortFwdManager *mgr, const char *host, int port,
         sfree(err);
         del234(mgr->forwardings, pfr);
         pfr_free(pfr);
-        return FALSE;
+        return false;
     }
 
-    return TRUE;
+    return true;
 }
 
-int portfwdmgr_unlisten(PortFwdManager *mgr, const char *host, int port)
+bool portfwdmgr_unlisten(PortFwdManager *mgr, const char *host, int port)
 {
     PortFwdRecord pfr_key;
 
@@ -1108,12 +1108,12 @@ int portfwdmgr_unlisten(PortFwdManager *mgr, const char *host, int port)
     PortFwdRecord *pfr = del234(mgr->forwardings, &pfr_key);
 
     if (!pfr)
-        return FALSE;
+        return false;
 
     logeventf(mgr->cl->logctx, "Closing listening port %s:%d", host, port);
 
     pfr_free(pfr);
-    return TRUE;
+    return true;
 }
 
 /*
@@ -1152,14 +1152,14 @@ char *portfwdmgr_connect(PortFwdManager *mgr, Channel **chan_ret,
     pf->plug.vt = &PortForwarding_plugvt;
     pf->chan.initial_fixed_window_size = 0;
     pf->chan.vt = &PortForwarding_channelvt;
-    pf->input_wanted = TRUE;
-    pf->ready = 1;
+    pf->input_wanted = true;
+    pf->ready = true;
     pf->c = c;
     pf->cl = mgr->cl;
     pf->socks_state = SOCKS_NONE;
 
     pf->s = new_connection(addr, dummy_realhost, port,
-                           0, 1, 0, 0, &pf->plug, mgr->conf);
+                           false, true, false, false, &pf->plug, mgr->conf);
     sfree(dummy_realhost);
     if ((err = sk_socket_error(pf->s)) != NULL) {
         char *err_ret = dupstr(err);

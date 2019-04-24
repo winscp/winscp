@@ -13,7 +13,7 @@ struct ssh2_bpp_direction {
     unsigned long sequence;
     ssh2_cipher *cipher;
     ssh2_mac *mac;
-    int etm_mode;
+    bool etm_mode;
     const struct ssh_compression_alg *pending_compression;
 };
 
@@ -26,7 +26,7 @@ struct ssh2_bpp_state {
     unsigned cipherblk;
     PktIn *pktin;
     struct DataTransferStats *stats;
-    int cbc_ignore_workaround;
+    bool cbc_ignore_workaround;
 
     struct ssh2_bpp_direction in, out;
     /* comp and decomp logically belong in the per-direction
@@ -34,9 +34,9 @@ struct ssh2_bpp_state {
     ssh_decompressor *in_decomp;
     ssh_compressor *out_comp;
 
-    int is_server;
-    int pending_newkeys;
-    int pending_compression, seen_userauth_success;
+    bool is_server;
+    bool pending_newkeys;
+    bool pending_compression, seen_userauth_success;
 
     BinaryPacketProtocol bpp;
 };
@@ -55,7 +55,7 @@ static const struct BinaryPacketProtocolVtable ssh2_bpp_vtable = {
 };
 
 BinaryPacketProtocol *ssh2_bpp_new(
-    LogContext *logctx, struct DataTransferStats *stats, int is_server)
+    LogContext *logctx, struct DataTransferStats *stats, bool is_server)
 {
     struct ssh2_bpp_state *s = snew(struct ssh2_bpp_state);
     memset(s, 0, sizeof(*s));
@@ -90,8 +90,8 @@ static void ssh2_bpp_free(BinaryPacketProtocol *bpp)
 void ssh2_bpp_new_outgoing_crypto(
     BinaryPacketProtocol *bpp,
     const struct ssh2_cipheralg *cipher, const void *ckey, const void *iv,
-    const struct ssh2_macalg *mac, int etm_mode, const void *mac_key,
-    const struct ssh_compression_alg *compression, int delayed_compression)
+    const struct ssh2_macalg *mac, bool etm_mode, const void *mac_key,
+    const struct ssh_compression_alg *compression, bool delayed_compression)
 {
     struct ssh2_bpp_state *s;
     assert(bpp->vt == &ssh2_bpp_vtable);
@@ -117,7 +117,7 @@ void ssh2_bpp_new_outgoing_crypto(
                       ssh2_cipher_alg(s->out.cipher)->text_name));
     } else {
         s->out.cipher = NULL;
-        s->cbc_ignore_workaround = FALSE;
+        s->cbc_ignore_workaround = false;
     }
     s->out.etm_mode = etm_mode;
     if (mac) {
@@ -157,8 +157,8 @@ void ssh2_bpp_new_outgoing_crypto(
 void ssh2_bpp_new_incoming_crypto(
     BinaryPacketProtocol *bpp,
     const struct ssh2_cipheralg *cipher, const void *ckey, const void *iv,
-    const struct ssh2_macalg *mac, int etm_mode, const void *mac_key,
-    const struct ssh_compression_alg *compression, int delayed_compression)
+    const struct ssh2_macalg *mac, bool etm_mode, const void *mac_key,
+    const struct ssh_compression_alg *compression, bool delayed_compression)
 {
     struct ssh2_bpp_state *s;
     assert(bpp->vt == &ssh2_bpp_vtable);
@@ -217,14 +217,14 @@ void ssh2_bpp_new_incoming_crypto(
 
     /* Clear the pending_newkeys flag, so that handle_input below will
      * start consuming the input data again. */
-    s->pending_newkeys = FALSE;
+    s->pending_newkeys = false;
 
     /* And schedule a run of handle_input, in case there's already
      * input data in the queue. */
     queue_idempotent_callback(&s->bpp.ic_in_raw);
 }
 
-int ssh2_bpp_rekey_inadvisable(BinaryPacketProtocol *bpp)
+bool ssh2_bpp_rekey_inadvisable(BinaryPacketProtocol *bpp)
 {
     struct ssh2_bpp_state *s;
     assert(bpp->vt == &ssh2_bpp_vtable);
@@ -349,7 +349,7 @@ static void ssh2_bpp_handle_input(BinaryPacketProtocol *bpp)
             s->pktin = snew_plus(PktIn, s->maxlen);
             s->pktin->qnode.prev = s->pktin->qnode.next = NULL;
             s->pktin->type = 0;
-            s->pktin->qnode.on_free_queue = FALSE;
+            s->pktin->qnode.on_free_queue = false;
             s->data = snew_plus_get_aux(s->pktin);
             memcpy(s->data, s->buf, s->maxlen);
         } else if (s->in.mac && s->in.etm_mode) {
@@ -399,7 +399,7 @@ static void ssh2_bpp_handle_input(BinaryPacketProtocol *bpp)
             s->pktin = snew_plus(PktIn, OUR_V2_PACKETLIMIT + s->maclen);
             s->pktin->qnode.prev = s->pktin->qnode.next = NULL;
             s->pktin->type = 0;
-            s->pktin->qnode.on_free_queue = FALSE;
+            s->pktin->qnode.on_free_queue = false;
             s->data = snew_plus_get_aux(s->pktin);
             memcpy(s->data, s->buf, 4);
 
@@ -465,7 +465,7 @@ static void ssh2_bpp_handle_input(BinaryPacketProtocol *bpp)
             s->pktin = snew_plus(PktIn, s->maxlen);
             s->pktin->qnode.prev = s->pktin->qnode.next = NULL;
             s->pktin->type = 0;
-            s->pktin->qnode.on_free_queue = FALSE;
+            s->pktin->qnode.on_free_queue = false;
             s->data = snew_plus_get_aux(s->pktin);
             memcpy(s->data, s->buf, s->cipherblk);
 
@@ -562,7 +562,7 @@ static void ssh2_bpp_handle_input(BinaryPacketProtocol *bpp)
         if (s->bpp.logctx) {
             logblank_t blanks[MAX_BLANKS];
             int nblanks = ssh2_censor_packet(
-                s->bpp.pls, s->pktin->type, FALSE,
+                s->bpp.pls, s->pktin->type, false,
                 make_ptrlen(s->data, s->length), blanks);
             log_packet(s->bpp.logctx, PKT_INCOMING, s->pktin->type,
                        ssh2_pkt_type(s->bpp.pls->kctx, s->bpp.pls->actx,
@@ -590,7 +590,7 @@ static void ssh2_bpp_handle_input(BinaryPacketProtocol *bpp)
                  * the transport layer has initialised the new keys by
                  * calling ssh2_bpp_new_incoming_crypto above.
                  */
-                s->pending_newkeys = TRUE;
+                s->pending_newkeys = true;
                 crWaitUntilV(!s->pending_newkeys);
                 continue;
             }
@@ -611,7 +611,7 @@ static void ssh2_bpp_handle_input(BinaryPacketProtocol *bpp)
                  * that a delayed compression method enabled in any
                  * future rekey will be treated as un-delayed.
                  */
-                s->seen_userauth_success = TRUE;
+                s->seen_userauth_success = true;
             }
 
             if (s->pending_compression && userauth_range(type)) {
@@ -627,7 +627,7 @@ static void ssh2_bpp_handle_input(BinaryPacketProtocol *bpp)
                  * to authenticate. The next userauth packet we send
                  * will re-block the output direction.
                  */
-                s->pending_compression = FALSE;
+                s->pending_compression = false;
                 queue_idempotent_callback(&s->bpp.ic_out_pq);
             }
         }
@@ -665,7 +665,7 @@ static void ssh2_bpp_format_packet_inner(struct ssh2_bpp_state *s, PktOut *pkt)
                                      pkt->length - pkt->prefix);
         logblank_t blanks[MAX_BLANKS];
         int nblanks = ssh2_censor_packet(
-            s->bpp.pls, pkt->type, TRUE, pktdata, blanks);
+            s->bpp.pls, pkt->type, true, pktdata, blanks);
         log_packet(s->bpp.logctx, PKT_OUTGOING, pkt->type,
                    ssh2_pkt_type(s->bpp.pls->kctx, s->bpp.pls->actx,
                                  pkt->type),
@@ -894,7 +894,7 @@ static void ssh2_bpp_handle_output(BinaryPacketProtocol *bpp)
              * USERAUTH_SUCCESS. Block (non-userauth) outgoing packets
              * until we see the reply.
              */
-            s->pending_compression = TRUE;
+            s->pending_compression = true;
             return;
         } else if (type == SSH2_MSG_USERAUTH_SUCCESS && s->is_server) {
             ssh2_bpp_enable_pending_compression(s);

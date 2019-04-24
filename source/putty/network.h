@@ -32,7 +32,7 @@ struct SocketVtable {
     int (*write_oob) (Socket *s, const void *data, int len);
     void (*write_eof) (Socket *s);
     void (*flush) (Socket *s);
-    void (*set_frozen) (Socket *s, int is_frozen);
+    void (*set_frozen) (Socket *s, bool is_frozen);
     /* ignored by tcp, but vital for ssl */
     const char *(*socket_error) (Socket *s);
     SocketPeerInfo *(*peer_info) (Socket *s);
@@ -66,7 +66,7 @@ struct PlugVtable {
      *    indicate this.
      */
     void (*closing)
-     (Plug *p, const char *error_msg, int error_code, int calling_back);
+     (Plug *p, const char *error_msg, int error_code, bool calling_back);
     /* error_msg is NULL iff it is not an error (ie it closed normally) */
     /* calling_back != 0 iff there is a Plug function */
     /* currently running (would cure the fixme in try_send()) */
@@ -100,22 +100,22 @@ struct PlugVtable {
 /* NB, control of 'addr' is passed via new_connection, which takes
  * responsibility for freeing it */
 Socket *new_connection(SockAddr *addr, const char *hostname,
-                       int port, int privport,
-                       int oobinline, int nodelay, int keepalive,
+                       int port, bool privport,
+                       bool oobinline, bool nodelay, bool keepalive,
                        Plug *plug, Conf *conf);
 Socket *new_listener(const char *srcaddr, int port, Plug *plug,
-                     int local_host_only, Conf *conf, int addressfamily);
+                     bool local_host_only, Conf *conf, int addressfamily);
 SockAddr *name_lookup(const char *host, int port, char **canonicalname,
                       Conf *conf, int addressfamily, LogContext *logctx,
                       const char *lookup_reason_for_logging);
-int proxy_for_destination (SockAddr *addr, const char *hostname, int port,
-                           Conf *conf);
+bool proxy_for_destination (SockAddr *addr, const char *hostname, int port,
+                            Conf *conf);
 
 /* platform-dependent callback from new_connection() */
 /* (same caveat about addr as new_connection()) */
 Socket *platform_new_connection(SockAddr *addr, const char *hostname,
-                                int port, int privport,
-                                int oobinline, int nodelay, int keepalive,
+                                int port, bool privport,
+                                bool oobinline, bool nodelay, bool keepalive,
                                 Plug *plug, Conf *conf);
 
 /* socket functions */
@@ -126,10 +126,10 @@ void sk_cleanup(void);		       /* called just before program exit */
 SockAddr *sk_namelookup(const char *host, char **canonicalname, int address_family);
 SockAddr *sk_nonamelookup(const char *host);
 void sk_getaddr(SockAddr *addr, char *buf, int buflen);
-int sk_addr_needs_port(SockAddr *addr);
-int sk_hostname_is_local(const char *name);
-int sk_address_is_local(SockAddr *addr);
-int sk_address_is_special_local(SockAddr *addr);
+bool sk_addr_needs_port(SockAddr *addr);
+bool sk_hostname_is_local(const char *name);
+bool sk_address_is_local(SockAddr *addr);
+bool sk_address_is_special_local(SockAddr *addr);
 int sk_addrtype(SockAddr *addr);
 void sk_addrcopy(SockAddr *addr, char *buf);
 void sk_addr_free(SockAddr *addr);
@@ -142,11 +142,11 @@ SockAddr *sk_addr_dup(SockAddr *addr);
 
 /* NB, control of 'addr' is passed via sk_new, which takes responsibility
  * for freeing it, as for new_connection() */
-Socket *sk_new(SockAddr *addr, int port, int privport, int oobinline,
-               int nodelay, int keepalive, Plug *p);
+Socket *sk_new(SockAddr *addr, int port, bool privport, bool oobinline,
+               bool nodelay, bool keepalive, Plug *p);
 
 Socket *sk_newlistener(const char *srcaddr, int port, Plug *plug,
-                       int local_host_only, int address_family);
+                       bool local_host_only, int address_family);
 
 #define sk_plug(s,p) (((s)->vt->plug) (s, p))
 #define sk_close(s) (((s)->vt->close) (s))
@@ -278,7 +278,7 @@ extern Plug *const nullplug;
 void backend_socket_log(Seat *seat, LogContext *logctx,
                         int type, SockAddr *addr, int port,
                         const char *error_msg, int error_code, Conf *conf,
-                        int session_started);
+                        bool session_started);
 void log_proxy_stderr(Plug *plug, bufchain *buf, const void *vdata, int len);
 
 #endif

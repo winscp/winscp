@@ -44,12 +44,12 @@ struct Filename {
 
 struct FontSpec {
     char *name;
-    int isbold;
+    bool isbold;
     int height;
     int charset;
 };
-struct FontSpec *fontspec_new(const char *name,
-                               int bold, int height, int charset);
+struct FontSpec *fontspec_new(
+    const char *name, bool bold, int height, int charset);
 
 #ifndef CLEARTYPE_QUALITY
 #define CLEARTYPE_QUALITY 5
@@ -228,20 +228,23 @@ GLOBAL HINSTANCE hinst;
  */
 void init_help(void);
 void shutdown_help(void);
-int has_help(void);
+bool has_help(void);
 void launch_help(HWND hwnd, const char *topic);
 void quit_help(HWND hwnd);
 
 /*
  * The terminal and logging context are notionally local to the
  * Windows front end, but they must be shared between window.c and
- * windlg.c. Likewise the Seat structure for the Windows GUI.
+ * windlg.c. Likewise the Seat structure for the Windows GUI, and the
+ * Conf for the main session..
  */
 GLOBAL Terminal *term;
 GLOBAL LogContext *logctx;
+GLOBAL Conf *conf;
 
 /*
- * GUI seat methods in windlg.c.
+ * GUI seat methods in windlg.c, so that the vtable definition in
+ * window.c can refer to them.
  */
 int win_seat_verify_ssh_host_key(
     Seat *seat, const char *host, int port,
@@ -255,11 +258,17 @@ int win_seat_confirm_weak_cached_hostkey(
     void (*callback)(void *ctx, int result), void *ctx);
 
 /*
+ * The Windows GUI seat object itself, so that its methods can be
+ * called outside window.c.
+ */
+extern Seat *const win_seat;
+
+/*
  * Windows-specific clipboard helper function shared with windlg.c,
  * which takes the data string in the system code page instead of
  * Unicode.
  */
-void write_aclip(int clipboard, char *, int, int);
+void write_aclip(int clipboard, char *, int, bool);
 
 #define WM_NETEVENT  (WM_APP + 5)
 
@@ -303,7 +312,17 @@ void write_aclip(int clipboard, char *, int, int);
 /*
  * Exports from winnet.c.
  */
-extern void select_result(WPARAM, LPARAM);
+/* Report an event notification from WSA*Select */
+void select_result(WPARAM, LPARAM);
+/* Enumerate all currently live OS-level SOCKETs */
+SOCKET first_socket(int *);
+SOCKET next_socket(int *);
+/* Ask winnet.c whether we currently want to try to write to a SOCKET */
+bool socket_writable(SOCKET skt);
+/* Force a refresh of the SOCKET list by re-calling do_select for each one */
+void socket_reselect_all(void);
+/* Make a SockAddr which just holds a named pipe address. */
+SockAddr *sk_namedpipe_addr(const char *pipename);
 
 /*
  * winnet.c dynamically loads WinSock 2 or WinSock 1 depending on
@@ -331,9 +350,19 @@ DECL_WINDOWS_FUNCTION(GLOBAL, int, select,
 		       fd_set FAR *, const struct timeval FAR *));
 #endif
 
-extern int socket_writable(SOCKET skt);
+/*
+ * Provided by each client of winnet.c, and called by winnet.c to turn
+ * on or off WSA*Select for a given socket.
+ */
+char *do_select(SOCKET skt, bool startup);
 
-extern void socket_reselect_all(void);
+/*
+ * Network-subsystem-related functions provided in other Windows modules.
+ */
+Socket *make_handle_socket(HANDLE send_H, HANDLE recv_H, HANDLE stderr_H,
+                           Plug *plug, bool overlapped); /* winhsock */
+Socket *new_named_pipe_client(const char *pipename, Plug *plug); /* winnpc */
+Socket *new_named_pipe_listener(const char *pipename, Plug *plug); /* winnps */
 
 /*
  * Exports from winctrls.c.
@@ -354,7 +383,7 @@ void init_common_controls(void);       /* also does some DLL-loading */
  * Exports from winutils.c.
  */
 typedef struct filereq_tag filereq; /* cwd for file requester */
-BOOL request_file(filereq *state, OPENFILENAME *of, int preserve, int save);
+bool request_file(filereq *state, OPENFILENAME *of, bool preserve, bool save);
 filereq *filereq_new(void);
 void filereq_free(filereq *state);
 int message_box(LPCTSTR text, LPCTSTR caption, DWORD style, DWORD helpctxid);
@@ -369,7 +398,7 @@ struct prefslist {
     int listid, upbid, dnbid;
     int srcitem;
     int dummyitem;
-    int dragging;
+    bool dragging;
 };
 
 /*
@@ -384,13 +413,17 @@ struct dlgparam {
     char *errtitle;		       /* title of error sub-messageboxes */
     void *data;			       /* data to pass in refresh events */
     union control *focused, *lastfocused; /* which ctrl has focus now/before */
-    char shortcuts[128];	       /* track which shortcuts in use */
-    int coloursel_wanted;	       /* has an event handler asked for
+    bool shortcuts[128];               /* track which shortcuts in use */
+    bool coloursel_wanted;             /* has an event handler asked for
 					* a colour selector? */
-    struct { unsigned char r, g, b, ok; } coloursel_result;   /* 0-255 */
+    struct {
+        unsigned char r, g, b;         /* 0-255 */
+        bool ok;
+    } coloursel_result;
     tree234 *privdata;		       /* stores per-control private data */
-    int ended, endresult;	       /* has the dialog been ended? */
-    int fixed_pitch_fonts;             /* are we constrained to fixed fonts? */
+    bool ended;                        /* has the dialog been ended? */
+    int endresult;                     /* and if so, what was the result? */
+    bool fixed_pitch_fonts;            /* are we constrained to fixed fonts? */
 };
 
 /*
@@ -403,7 +436,7 @@ HWND doctl(struct ctlpos *cp, RECT r,
 void bartitle(struct ctlpos *cp, char *name, int id);
 void beginbox(struct ctlpos *cp, char *name, int idbox);
 void endbox(struct ctlpos *cp);
-void editboxfw(struct ctlpos *cp, int password, char *text,
+void editboxfw(struct ctlpos *cp, bool password, char *text,
 	       int staticid, int editid);
 void radioline(struct ctlpos *cp, char *text, int id, int nacross, ...);
 void bareradioline(struct ctlpos *cp, int nacross, ...);
@@ -440,7 +473,7 @@ void prefslist(struct prefslist *hdl, struct ctlpos *cp, int lines,
 	       char *stext, int sid, int listid, int upbid, int dnbid);
 int handle_prefslist(struct prefslist *hdl,
 		     int *array, int maxmemb,
-		     int is_dlmsg, HWND hwnd,
+		     bool is_dlmsg, HWND hwnd,
 		     WPARAM wParam, LPARAM lParam);
 void progressbar(struct ctlpos *cp, int id);
 void fwdsetter(struct ctlpos *cp, int listid, char *stext, int sid,
@@ -450,8 +483,8 @@ void fwdsetter(struct ctlpos *cp, int listid, char *stext, int sid,
 	       char *r1text, int r1id, char *r2text, int r2id);
 
 void dlg_auto_set_fixed_pitch_flag(dlgparam *dlg);
-int dlg_get_fixed_pitch_flag(dlgparam *dlg);
-void dlg_set_fixed_pitch_flag(dlgparam *dlg, int flag);
+bool dlg_get_fixed_pitch_flag(dlgparam *dlg);
+void dlg_set_fixed_pitch_flag(dlgparam *dlg, bool flag);
 
 #define MAX_SHORTCUTS_PER_CTRL 16
 
@@ -503,10 +536,10 @@ struct winctrl *winctrl_findbyid(struct winctrls *, int);
 struct winctrl *winctrl_findbyindex(struct winctrls *, int);
 void winctrl_layout(struct dlgparam *dp, struct winctrls *wc,
 		    struct ctlpos *cp, struct controlset *s, int *id);
-int winctrl_handle_command(struct dlgparam *dp, UINT msg,
-			   WPARAM wParam, LPARAM lParam);
+bool winctrl_handle_command(struct dlgparam *dp, UINT msg,
+                            WPARAM wParam, LPARAM lParam);
 void winctrl_rem_shortcuts(struct dlgparam *dp, struct winctrl *c);
-int winctrl_context_help(struct dlgparam *dp, HWND hwnd, int id);
+bool winctrl_context_help(struct dlgparam *dp, HWND hwnd, int id);
 
 void dp_init(struct dlgparam *dp);
 void dp_add_tree(struct dlgparam *dp, struct winctrls *tree);
@@ -515,15 +548,15 @@ void dp_cleanup(struct dlgparam *dp);
 /*
  * Exports from wincfg.c.
  */
-void win_setup_config_box(struct controlbox *b, HWND *hwndp, int has_help,
-			  int midsession, int protocol);
+void win_setup_config_box(struct controlbox *b, HWND *hwndp, bool has_help,
+			  bool midsession, int protocol);
 
 /*
  * Exports from windlg.c.
  */
 void defuse_showwindow(void);
-int do_config(void);
-int do_reconfig(HWND, int);
+bool do_config(void);
+bool do_reconfig(HWND, int);
 void showeventlog(HWND);
 void showabout(HWND);
 void force_normal(HWND hwnd);
@@ -539,7 +572,9 @@ void dll_hijacking_protection(void);
 HMODULE load_system32_dll(const char *libname);
 const char *win_strerror(int error);
 void restrict_process_acl(void);
-GLOBAL int restricted_acl;
+GLOBAL bool restricted_acl;
+void escape_registry_key(const char *in, strbuf *out);
+void unescape_registry_key(const char *in, strbuf *out);
 
 /* A few pieces of up-to-date Windows API definition needed for older
  * compilers. */
@@ -561,7 +596,7 @@ DECLSPEC_IMPORT DLL_DIRECTORY_COOKIE WINAPI AddDllDirectory (PCWSTR NewDirectory
  * Exports from sizetip.c.
  */
 void UpdateSizeTip(HWND src, int cx, int cy);
-void EnableSizeTip(int bEnable);
+void EnableSizeTip(bool bEnable);
 
 /*
  * Exports from unicode.c.
@@ -617,12 +652,12 @@ extern const struct BackendVtable serial_backend;
 void add_session_to_jumplist(const char * const sessionname);
 void remove_session_from_jumplist(const char * const sessionname);
 void clear_jumplist(void);
-BOOL set_explicit_app_user_model_id();
+bool set_explicit_app_user_model_id(void);
 
 /*
  * Exports from winnoise.c.
  */
-int win_read_random(void *buf, unsigned wanted); /* returns TRUE on success */
+bool win_read_random(void *buf, unsigned wanted); /* returns true on success */
 
 /*
  * Extra functions in winstore.c over and above the interface in
@@ -654,7 +689,7 @@ char *get_jumplist_registry_entries(void);
 #define CLIPNAME_EXPLICIT "System clipboard"
 #define CLIPNAME_EXPLICIT_OBJECT "system clipboard"
 /* These defaults are the ones PuTTY has historically had */
-#define CLIPUI_DEFAULT_AUTOCOPY TRUE
+#define CLIPUI_DEFAULT_AUTOCOPY true
 #define CLIPUI_DEFAULT_MOUSE CLIPUI_EXPLICIT
 #define CLIPUI_DEFAULT_INS CLIPUI_EXPLICIT
 

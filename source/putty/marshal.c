@@ -4,7 +4,6 @@
 
 #include "marshal.h"
 #include "misc.h"
-#include "int64.h"
 
 void BinarySink_put_data(BinarySink *bs, const void *data, size_t len)
 {
@@ -27,7 +26,7 @@ void BinarySink_put_byte(BinarySink *bs, unsigned char val)
     bs->write(bs, &val, 1);
 }
 
-void BinarySink_put_bool(BinarySink *bs, int val)
+void BinarySink_put_bool(BinarySink *bs, bool val)
 {
     unsigned char cval = val ? 1 : 0;
     bs->write(bs, &cval, 1);
@@ -47,10 +46,11 @@ void BinarySink_put_uint32(BinarySink *bs, unsigned long val)
     bs->write(bs, data, sizeof(data));
 }
 
-void BinarySink_put_uint64(BinarySink *bs, uint64 val)
+void BinarySink_put_uint64(BinarySink *bs, uint64_t val)
 {
-    BinarySink_put_uint32(bs, val.hi);
-    BinarySink_put_uint32(bs, val.lo);
+    unsigned char data[8];
+    PUT_64BIT_MSB_FIRST(data, val);
+    bs->write(bs, data, sizeof(data));
 }
 
 void BinarySink_put_string(BinarySink *bs, const void *data, size_t len)
@@ -84,28 +84,28 @@ void BinarySink_put_asciz(BinarySink *bs, const char *str)
     bs->write(bs, str, strlen(str) + 1);
 }
 
-int BinarySink_put_pstring(BinarySink *bs, const char *str)
+bool BinarySink_put_pstring(BinarySink *bs, const char *str)
 {
     size_t len = strlen(str);
     if (len > 255)
-        return FALSE; /* can't write a Pascal-style string this long */
+        return false; /* can't write a Pascal-style string this long */
     BinarySink_put_byte(bs, len);
     bs->write(bs, str, len);
-    return TRUE;
+    return true;
 }
 
 /* ---------------------------------------------------------------------- */
 
-static int BinarySource_data_avail(BinarySource *src, size_t wanted)
+static bool BinarySource_data_avail(BinarySource *src, size_t wanted)
 {
     if (src->err)
-        return FALSE;
+        return false;
 
     if (wanted <= src->len - src->pos)
-        return TRUE;
+        return true;
 
     src->err = BSE_OUT_OF_DATA;
-    return FALSE;
+    return false;
 }
 
 #define avail(wanted) BinarySource_data_avail(src, wanted)
@@ -134,12 +134,12 @@ unsigned char BinarySource_get_byte(BinarySource *src)
     return *ucp;
 }
 
-int BinarySource_get_bool(BinarySource *src)
+bool BinarySource_get_bool(BinarySource *src)
 {
     const unsigned char *ucp;
 
     if (!avail(1))
-        return 0;
+        return false;
 
     ucp = consume(1);
     return *ucp != 0;
@@ -167,20 +167,15 @@ unsigned long BinarySource_get_uint32(BinarySource *src)
     return GET_32BIT_MSB_FIRST(ucp);
 }
 
-uint64 BinarySource_get_uint64(BinarySource *src)
+uint64_t BinarySource_get_uint64(BinarySource *src)
 {
     const unsigned char *ucp;
-    uint64 toret;
 
-    if (!avail(8)) {
-        toret.hi = toret.lo = 0;
-        return toret;
-    }
+    if (!avail(8))
+        return 0;
 
     ucp = consume(8);
-    toret.hi = GET_32BIT_MSB_FIRST(ucp);
-    toret.lo = GET_32BIT_MSB_FIRST(ucp + 4);
-    return toret;
+    return GET_64BIT_MSB_FIRST(ucp);
 }
 
 ptrlen BinarySource_get_string(BinarySource *src)

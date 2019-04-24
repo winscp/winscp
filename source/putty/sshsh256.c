@@ -11,8 +11,8 @@
  * Core SHA256 algorithm: processes 16-word blocks into a message digest.
  */
 
-#define ror(x,y) ( ((x) << (32-y)) | (((uint32)(x)) >> (y)) )
-#define shr(x,y) ( (((uint32)(x)) >> (y)) )
+#define ror(x,y) ( ((x) << (32-y)) | (((uint32_t)(x)) >> (y)) )
+#define shr(x,y) ( (((uint32_t)(x)) >> (y)) )
 #define Ch(x,y,z) ( ((x) & (y)) ^ (~(x) & (z)) )
 #define Maj(x,y,z) ( ((x) & (y)) ^ ((x) & (z)) ^ ((y) & (z)) )
 #define bigsigma0(x) ( ror((x),2) ^ ror((x),13) ^ ror((x),22) )
@@ -34,9 +34,9 @@ void SHA256_Core_Init(SHA256_State *s) {
     s->h[7] = 0x5be0cd19;
 }
 
-void SHA256_Block(SHA256_State *s, uint32 *block) {
-    uint32 w[80];
-    uint32 a,b,c,d,e,f,g,h;
+void SHA256_Block(SHA256_State *s, uint32_t *block) {
+    uint32_t w[80];
+    uint32_t a,b,c,d,e,f,g,h;
     static const int k[] = {
         0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5,
         0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
@@ -68,7 +68,7 @@ void SHA256_Block(SHA256_State *s, uint32 *block) {
     e = s->h[4]; f = s->h[5]; g = s->h[6]; h = s->h[7];
 
     for (t = 0; t < 64; t+=8) {
-        uint32 t1, t2;
+        uint32_t t1, t2;
 
 #define ROUND(j,a,b,c,d,e,f,g,h) \
 	t1 = h + bigsigma1(e) + Ch(e,f,g) + k[j] + w[j]; \
@@ -103,7 +103,7 @@ static void SHA256_BinarySink_write(BinarySink *bs,
 void SHA256_Init(SHA256_State *s) {
     SHA256_Core_Init(s);
     s->blkused = 0;
-    s->lenhi = s->lenlo = 0;
+    s->len = 0;
     if (supports_sha_ni())
         s->sha256 = &SHA256_ni;
     else
@@ -117,19 +117,16 @@ static void SHA256_BinarySink_write(BinarySink *bs,
     struct SHA256_State *s = BinarySink_DOWNCAST(bs, struct SHA256_State);
     unsigned char *q = (unsigned char *)p;
 
-    uint32 lenw = len;
-    assert(len == lenw);
-
     /*
      * Update the length field.
      */
-    s->lenlo += lenw;
-    s->lenhi += (s->lenlo < lenw);
+    s->len += len;
+
     (*(s->sha256))(s, q, len);
 }
 
 static void SHA256_sw(SHA256_State *s, const unsigned char *q, int len) {
-    uint32 wordblock[16];
+    uint32_t wordblock[16];
     int i;
 
     if (s->blkused && s->blkused+len < BLKSIZE) {
@@ -149,10 +146,10 @@ static void SHA256_sw(SHA256_State *s, const unsigned char *q, int len) {
             /* Now process the block. Gather bytes big-endian into words */
             for (i = 0; i < 16; i++) {
                 wordblock[i] =
-                    ( ((uint32)s->block[i*4+0]) << 24 ) |
-                    ( ((uint32)s->block[i*4+1]) << 16 ) |
-                    ( ((uint32)s->block[i*4+2]) <<  8 ) |
-                    ( ((uint32)s->block[i*4+3]) <<  0 );
+                    ( ((uint32_t)s->block[i*4+0]) << 24 ) |
+                    ( ((uint32_t)s->block[i*4+1]) << 16 ) |
+                    ( ((uint32_t)s->block[i*4+2]) <<  8 ) |
+                    ( ((uint32_t)s->block[i*4+3]) <<  0 );
             }
             SHA256_Block(s, wordblock);
             s->blkused = 0;
@@ -166,22 +163,20 @@ void SHA256_Final(SHA256_State *s, unsigned char *digest) {
     int i;
     int pad;
     unsigned char c[64];
-    uint32 lenhi, lenlo;
+    uint64_t len;
 
     if (s->blkused >= 56)
         pad = 56 + 64 - s->blkused;
     else
         pad = 56 - s->blkused;
 
-    lenhi = (s->lenhi << 3) | (s->lenlo >> (32-3));
-    lenlo = (s->lenlo << 3);
+    len = (s->len << 3);
 
     memset(c, 0, pad);
     c[0] = 0x80;
     put_data(s, &c, pad);
 
-    put_uint32(s, lenhi);
-    put_uint32(s, lenlo);
+    put_uint64(s, len);
 
     for (i = 0; i < 8; i++) {
 	digest[i*4+0] = (s->h[i] >> 24) & 0xFF;

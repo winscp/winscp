@@ -59,13 +59,6 @@
 #define sresize(x, n, type) ( (type *) realloc((x), (n) * sizeof(type)) )
 #define sfree(x) ( free((x)) )
 
-#ifndef FALSE
-#define FALSE 0
-#endif
-#ifndef TRUE
-#define TRUE 1
-#endif
-
 typedef struct { const struct dummy *vt; } ssh_compressor;
 typedef struct { const struct dummy *vt; } ssh_decompressor;
 static const struct dummy { int i; } ssh_zlib;
@@ -97,11 +90,11 @@ static int lz77_init(struct LZ77Context *ctx);
 /*
  * Supply data to be compressed. Will update the private fields of
  * the LZ77Context, and will call literal() and match() to output.
- * If `compress' is FALSE, it will never emit a match, but will
+ * If `compress' is false, it will never emit a match, but will
  * instead call literal() for everything.
  */
 static void lz77_compress(struct LZ77Context *ctx,
-			  unsigned char *data, int len, int compress);
+			  unsigned char *data, int len, bool compress);
 
 /*
  * Modifiable parameters.
@@ -206,7 +199,7 @@ static void lz77_advance(struct LZ77InternalContext *st,
 #define CHARAT(k) ( (k)<0 ? st->data[(st->winpos+k)&(WINSIZE-1)] : data[k] )
 
 static void lz77_compress(struct LZ77Context *ctx,
-			  unsigned char *data, int len, int compress)
+			  unsigned char *data, int len, bool compress)
 {
     struct LZ77InternalContext *st = ctx->ictx;
     int i, distance, off, nmatch, matchlen, advance;
@@ -377,7 +370,7 @@ struct Outbuf {
     int outlen, outsize;
     unsigned long outbits;
     int noutbits;
-    int firstblock;
+    bool firstblock;
 };
 
 static void outbits(struct Outbuf *out, unsigned long bits, int nbits)
@@ -621,7 +614,7 @@ ssh_compressor *zlib_compress_init(void)
 
     out = snew(struct Outbuf);
     out->outbits = out->noutbits = 0;
-    out->firstblock = 1;
+    out->firstblock = true;
     comp->ectx.userdata = out;
 
     return &comp->sc;
@@ -643,7 +636,7 @@ void zlib_compress_block(ssh_compressor *sc, unsigned char *block, int len,
     struct ssh_zlib_compressor *comp =
         container_of(sc, struct ssh_zlib_compressor, sc);
     struct Outbuf *out = (struct Outbuf *) comp->ectx.userdata;
-    int in_block;
+    bool in_block;
 
     out->outbuf = NULL;
     out->outlen = out->outsize = 0;
@@ -655,11 +648,11 @@ void zlib_compress_block(ssh_compressor *sc, unsigned char *block, int len,
      */
     if (out->firstblock) {
 	outbits(out, 0x9C78, 16);
-	out->firstblock = 0;
+	out->firstblock = false;
 
-	in_block = FALSE;
+	in_block = false;
     } else
-	in_block = TRUE;
+	in_block = true;
 
     if (!in_block) {
         /*
@@ -674,7 +667,7 @@ void zlib_compress_block(ssh_compressor *sc, unsigned char *block, int len,
     /*
      * Do the compression.
      */
-    lz77_compress(&comp->ectx, block, len, TRUE);
+    lz77_compress(&comp->ectx, block, len, true);
 
     /*
      * End the block (by transmitting code 256, which is
@@ -974,8 +967,8 @@ static void zlib_emit_char(struct zlib_decompress_ctx *dctx, int c)
 
 #define EATBITS(n) ( dctx->nbits -= (n), dctx->bits >>= (n) )
 
-int zlib_decompress_block(ssh_decompressor *dc, unsigned char *block, int len,
-			  unsigned char **outblock, int *outlen)
+bool zlib_decompress_block(ssh_decompressor *dc, unsigned char *block, int len,
+                           unsigned char **outblock, int *outlen)
 {
     struct zlib_decompress_ctx *dctx =
         container_of(dc, struct zlib_decompress_ctx, dc);
@@ -1216,13 +1209,13 @@ int zlib_decompress_block(ssh_decompressor *dc, unsigned char *block, int len,
   finished:
     *outblock = dctx->outblk;
     *outlen = dctx->outlen;
-    return 1;
+    return true;
 
   decode_error:
     sfree(dctx->outblk);
     *outblock = dctx->outblk = NULL;
     *outlen = 0;
-    return 0;
+    return false;
 }
 
 #ifdef ZLIB_STANDALONE
@@ -1235,7 +1228,7 @@ int main(int argc, char **argv)
     unsigned char buf[16], *outbuf;
     int ret, outlen;
     ssh_decompressor *handle;
-    int noheader = FALSE, opts = TRUE;
+    int noheader = false, opts = true;
     char *filename = NULL;
     FILE *fp;
 
@@ -1244,9 +1237,9 @@ int main(int argc, char **argv)
 
         if (p[0] == '-' && opts) {
             if (!strcmp(p, "-d"))
-                noheader = TRUE;
+                noheader = true;
             else if (!strcmp(p, "--"))
-                opts = FALSE;          /* next thing is filename */
+                opts = false;          /* next thing is filename */
             else {
                 fprintf(stderr, "unknown command line option '%s'\n", p);
                 return 1;

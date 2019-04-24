@@ -440,7 +440,7 @@ static void link_font(WCHAR * line_tbl, WCHAR * font_tbl, WCHAR attr);
 void init_ucs(Conf *conf, struct unicode_data *ucsdata)
 {
     int i, j;
-    int used_dtf = 0;
+    bool used_dtf = false;
     int vtmode;
 
     /* Decide on the Line and Font codepages */
@@ -449,13 +449,13 @@ void init_ucs(Conf *conf, struct unicode_data *ucsdata)
 
     if (ucsdata->font_codepage <= 0) { 
 	ucsdata->font_codepage=0; 
-	ucsdata->dbcs_screenfont=0; 
+	ucsdata->dbcs_screenfont=false;
     }
 
     vtmode = conf_get_int(conf, CONF_vtmode);
     if (vtmode == VT_OEMONLY) {
 	ucsdata->font_codepage = 437;
-	ucsdata->dbcs_screenfont = 0;
+	ucsdata->dbcs_screenfont = false;
 	if (ucsdata->line_codepage <= 0)
 	    ucsdata->line_codepage = GetACP();
     } else if (ucsdata->line_codepage <= 0)
@@ -493,7 +493,7 @@ void init_ucs(Conf *conf, struct unicode_data *ucsdata)
 	 vtmode == VT_POORMAN || ucsdata->font_codepage==0)) {
 
 	/* For DBCS and POOR fonts force direct to font */
-	used_dtf = 1;
+	used_dtf = true;
 	for (i = 0; i < 32; i++)
 	    ucsdata->unitab_line[i] = (WCHAR) i;
 	for (i = 32; i < 256; i++)
@@ -1201,7 +1201,7 @@ int mb_to_wc(int codepage, int flags, const char *mbstr, int mblen,
     return MultiByteToWideChar(codepage, flags, mbstr, mblen, wcstr, wclen);
 }
 
-int is_dbcs_leadbyte(int codepage, char byte)
+bool is_dbcs_leadbyte(int codepage, char byte)
 {
     return IsDBCSLeadByteEx(codepage, byte);
 }

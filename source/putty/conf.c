@@ -13,7 +13,9 @@
 /*
  * Enumeration of types used in keys and values.
  */
-typedef enum { TYPE_NONE, TYPE_INT, TYPE_STR, TYPE_FILENAME, TYPE_FONT } Type;
+typedef enum {
+    TYPE_NONE, TYPE_BOOL, TYPE_INT, TYPE_STR, TYPE_FILENAME, TYPE_FONT
+} Type;
 
 /*
  * Arrays which allow us to look up the subkey and value types for a
@@ -51,6 +53,7 @@ struct constkey {
 
 struct value {
     union {
+	bool boolval;
 	int intval;
 	char *stringval;
 	Filename *fileval;
@@ -171,6 +174,9 @@ static void free_value(struct value *val, int type)
 static void copy_value(struct value *to, struct value *from, int type)
 {
     switch (type) {
+      case TYPE_BOOL:
+	to->u.boolval = from->u.boolval;
+	break;
       case TYPE_INT:
 	to->u.intval = from->u.intval;
 	break;
@@ -254,6 +260,19 @@ Conf *conf_copy(Conf *oldconf)
     conf_copy_into(newconf, oldconf);
 
     return newconf;
+}
+
+bool conf_get_bool(Conf *conf, int primary)
+{
+    struct key key;
+    struct conf_entry *entry;
+
+    assert(subkeytypes[primary] == TYPE_NONE);
+    assert(valuetypes[primary] == TYPE_BOOL);
+    key.primary = primary;
+    entry = find234(conf->tree, &key, NULL);
+    assert(entry);
+    return entry->value.u.boolval;
 }
 
 int conf_get_int(Conf *conf, int primary)
@@ -384,6 +403,17 @@ FontSpec *conf_get_fontspec(Conf *conf, int primary)
     return entry->value.u.fontval;
 }
 
+void conf_set_bool(Conf *conf, int primary, bool value)
+{
+    struct conf_entry *entry = snew(struct conf_entry);
+
+    assert(subkeytypes[primary] == TYPE_NONE);
+    assert(valuetypes[primary] == TYPE_BOOL);
+    entry->key.primary = primary;
+    entry->value.u.boolval = value;
+    conf_insert(conf, entry);
+}
+
 void conf_set_int(Conf *conf, int primary, int value)
 {
     struct conf_entry *entry = snew(struct conf_entry);
@@ -391,11 +421,12 @@ void conf_set_int(Conf *conf, int primary, int value)
     assert(subkeytypes[primary] == TYPE_NONE);
     assert(valuetypes[primary] == TYPE_INT);
     entry->key.primary = primary;
-    entry->value.u.intval = value; 
+    entry->value.u.intval = value;
     conf_insert(conf, entry);
 }
 
-void conf_set_int_int(Conf *conf, int primary, int secondary, int value)
+void conf_set_int_int(Conf *conf, int primary,
+                      int secondary, int value)
 {
     struct conf_entry *entry = snew(struct conf_entry);
 
@@ -486,6 +517,9 @@ void conf_serialise(BinarySink *bs, Conf *conf)
 	    break;
 	}
 	switch (valuetypes[entry->key.primary]) {
+	  case TYPE_BOOL:
+	    put_bool(bs, entry->value.u.boolval);
+	    break;
 	  case TYPE_INT:
 	    put_uint32(bs, entry->value.u.intval);
 	    break;
@@ -504,7 +538,7 @@ void conf_serialise(BinarySink *bs, Conf *conf)
     put_uint32(bs, 0xFFFFFFFFU);
 }
 
-int conf_deserialise(Conf *conf, BinarySource *src)
+bool conf_deserialise(Conf *conf, BinarySource *src)
 {
     struct conf_entry *entry;
     unsigned primary;
@@ -513,11 +547,11 @@ int conf_deserialise(Conf *conf, BinarySource *src)
         primary = get_uint32(src);
 
         if (get_err(src))
-            return FALSE;
+            return false;
         if (primary == 0xFFFFFFFFU)
-            return TRUE;
+            return true;
 	if (primary >= N_CONFIG_OPTIONS)
-	    return FALSE;
+	    return false;
 
 	entry = snew(struct conf_entry);
 	entry->key.primary = primary;
@@ -532,6 +566,9 @@ int conf_deserialise(Conf *conf, BinarySource *src)
 	}
 
 	switch (valuetypes[entry->key.primary]) {
+	  case TYPE_BOOL:
+	    entry->value.u.boolval = get_bool(src);
+	    break;
 	  case TYPE_INT:
 	    entry->value.u.intval = toint(get_uint32(src));
 	    break;
@@ -548,7 +585,7 @@ int conf_deserialise(Conf *conf, BinarySource *src)
 
         if (get_err(src)) {
             free_entry(entry);
-            return FALSE;
+            return false;
         }
 
 	conf_insert(conf, entry);

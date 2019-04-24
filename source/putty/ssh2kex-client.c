@@ -87,17 +87,24 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s)
             s->dh_ctx = dh_setup_gex(s->p, s->g);
             s->kex_init_value = SSH2_MSG_KEX_DH_GEX_INIT;
             s->kex_reply_value = SSH2_MSG_KEX_DH_GEX_REPLY;
+
+            ppl_logevent(("Doing Diffie-Hellman key exchange using %d-bit "
+                          "modulus and hash %s with a server-supplied group",
+                          dh_modulus_bit_size(s->dh_ctx),
+                          s->kex_alg->hash->text_name));
         } else {
             s->ppl.bpp->pls->kctx = SSH2_PKTCTX_DHGROUP;
             s->dh_ctx = dh_setup_group(s->kex_alg);
             s->kex_init_value = SSH2_MSG_KEXDH_INIT;
             s->kex_reply_value = SSH2_MSG_KEXDH_REPLY;
-            ppl_logevent(("Using Diffie-Hellman with standard group \"%s\"",
+
+            ppl_logevent(("Doing Diffie-Hellman key exchange using %d-bit "
+                          "modulus and hash %s with standard group \"%s\"",
+                          dh_modulus_bit_size(s->dh_ctx),
+                          s->kex_alg->hash->text_name,
                           s->kex_alg->groupname));
         }
 
-        ppl_logevent(("Doing Diffie-Hellman key exchange with hash %s",
-                      s->kex_alg->hash->text_name));
         /*
          * Now generate and send e for Diffie-Hellman.
          */
@@ -230,8 +237,8 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s)
         ptrlen data;
 
         s->ppl.bpp->pls->kctx = SSH2_PKTCTX_GSSKEX;
-        s->init_token_sent = 0;
-        s->complete_rcvd = 0;
+        s->init_token_sent = false;
+        s->complete_rcvd = false;
         s->hkey = NULL;
         s->fingerprint = NULL;
         s->keystr = NULL;
@@ -349,7 +356,7 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s)
                    s->gss_stat == SSH_GSS_S_CONTINUE_NEEDED);
 
             if (!s->init_token_sent) {
-                s->init_token_sent = 1;
+                s->init_token_sent = true;
                 pktout = ssh_bpp_new_pktout(s->ppl.bpp,
                                             SSH2_MSG_KEXGSS_INIT);
                 if (s->gss_sndtok.length == 0) {
@@ -385,7 +392,7 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s)
                 s->gss_rcvtok.length = data.len;
                 continue;
               case SSH2_MSG_KEXGSS_COMPLETE:
-                s->complete_rcvd = 1;
+                s->complete_rcvd = true;
                 s->f = get_mp_ssh2(pktin);
                 data = get_string(pktin);
                 s->mic.value = (char *)data.ptr;
@@ -618,7 +625,7 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s)
             return;
         }
 
-        s->gss_kex_used = TRUE;
+        s->gss_kex_used = true;
 
         /*-
          * If this the first KEX, save the GSS context for "gssapi-keyex"
@@ -695,7 +702,7 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s)
                  * cache.
                  */
                 if (s->hostkey_alg) {
-                    s->need_gss_transient_hostkey = TRUE;
+                    s->need_gss_transient_hostkey = true;
                 } else {
                     /*
                      * If we negotiated the "null" host key algorithm
@@ -718,7 +725,7 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s)
                      */
                     if (!s->warned_about_no_gss_transient_hostkey) {
                         ppl_logevent(("No fallback host key available"));
-                        s->warned_about_no_gss_transient_hostkey = TRUE;
+                        s->warned_about_no_gss_transient_hostkey = true;
                     }
                 }
             }
@@ -738,7 +745,7 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s)
                 ppl_logevent(("Post-GSS rekey provided fallback host key:"));
                 ppl_logevent(("%s", s->fingerprint));
                 ssh_transient_hostkey_cache_add(s->thc, s->hkey);
-                s->need_gss_transient_hostkey = FALSE;
+                s->need_gss_transient_hostkey = false;
             } else if (!ssh_transient_hostkey_cache_verify(s->thc, s->hkey)) {
                 ppl_logevent(("Non-GSS rekey after initial GSS kex "
                               "used host key:"));
@@ -836,7 +843,7 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s)
             s->fingerprint = NULL;
             store_host_key(s->savedhost, s->savedport,
                            ssh_key_cache_id(s->hkey), s->keystr);
-            s->cross_certifying = FALSE;
+            s->cross_certifying = false;
             /*
              * Don't forget to store the new key as the one we'll be
              * re-checking in future normal rekeys.

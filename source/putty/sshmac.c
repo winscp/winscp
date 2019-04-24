@@ -7,10 +7,10 @@
 
 #include "ssh.h"
 
-int ssh2_mac_verresult(ssh2_mac *mac, const void *candidate)
+bool ssh2_mac_verresult(ssh2_mac *mac, const void *candidate)
 {
     unsigned char correct[64]; /* at least as big as all known MACs */
-    int toret;
+    bool toret;
 
     assert(mac->vt->len <= sizeof(correct));
     ssh2_mac_genresult(mac, correct);
@@ -35,7 +35,8 @@ void ssh2_mac_generate(ssh2_mac *mac, void *blk, int len, unsigned long seq)
     return ssh2_mac_genresult(mac, (unsigned char *)blk + len);
 }
 
-int ssh2_mac_verify(ssh2_mac *mac, const void *blk, int len, unsigned long seq)
+bool ssh2_mac_verify(
+    ssh2_mac *mac, const void *blk, int len, unsigned long seq)
 {
     ssh2_mac_prepare(mac, blk, len, seq);
     return ssh2_mac_verresult(mac, (const unsigned char *)blk + len);

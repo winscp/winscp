@@ -22,57 +22,10 @@ static const char *const reg_jumplist_key = PUTTY_REG_POS "\\Jumplist";
 static const char *const reg_jumplist_value = "Recent sessions";
 static const char *const puttystr = PUTTY_REG_POS "\\Sessions";
 
-static const char hex[16] = "0123456789ABCDEF";
-
-static int tried_shgetfolderpath = FALSE;
+static bool tried_shgetfolderpath = false;
 static HMODULE shell32_module = NULL;
 DECL_WINDOWS_FUNCTION(static, HRESULT, SHGetFolderPathA, 
 		      (HWND, int, HANDLE, DWORD, LPSTR));
-
-static void mungestr(const char *in, char *out)
-{
-    int candot = 0;
-
-    while (*in) {
-	if (*in == ' ' || *in == '\\' || *in == '*' || *in == '?' ||
-	    *in == '%' || *in < ' ' || *in > '~' || (*in == '.'
-						     && !candot)) {
-	    *out++ = '%';
-	    *out++ = hex[((unsigned char) *in) >> 4];
-	    *out++ = hex[((unsigned char) *in) & 15];
-	} else
-	    *out++ = *in;
-	in++;
-	candot = 1;
-    }
-    *out = '\0';
-    return;
-}
-
-static void unmungestr(const char *in, char *out, int outlen)
-{
-    while (*in) {
-	if (*in == '%' && in[1] && in[2]) {
-	    int i, j;
-
-	    i = in[1] - '0';
-	    i -= (i > 9 ? 7 : 0);
-	    j = in[2] - '0';
-	    j -= (j > 9 ? 7 : 0);
-
-	    *out++ = (i << 4) + j;
-	    if (!--outlen)
-		return;
-	    in += 3;
-	} else {
-	    *out++ = *in++;
-	    if (!--outlen)
-		return;
-	}
-    }
-    *out = '\0';
-    return;
-}
 
 struct settings_w {
     HKEY sesskey;
@@ -82,32 +35,32 @@ settings_w *open_settings_w(const char *sessionname, char **errmsg)
 {
     HKEY subkey1, sesskey;
     int ret;
-    char *p;
+    strbuf *sb;
 
     *errmsg = NULL;
 
     if (!sessionname || !*sessionname)
 	sessionname = "Default Settings";
 
-    p = snewn(3 * strlen(sessionname) + 1, char);
-    mungestr(sessionname, p);
+    sb = strbuf_new();
+    escape_registry_key(sessionname, sb);
 
     ret = RegCreateKey(HKEY_CURRENT_USER, puttystr, &subkey1);
     if (ret != ERROR_SUCCESS) {
-	sfree(p);
+	strbuf_free(sb);
         *errmsg = dupprintf("Unable to create registry key\n"
                             "HKEY_CURRENT_USER\\%s", puttystr);
 	return NULL;
     }
-    ret = RegCreateKey(subkey1, p, &sesskey);
+    ret = RegCreateKey(subkey1, sb->s, &sesskey);
     RegCloseKey(subkey1);
     if (ret != ERROR_SUCCESS) {
         *errmsg = dupprintf("Unable to create registry key\n"
-                            "HKEY_CURRENT_USER\\%s\\%s", puttystr, p);
-	sfree(p);
+                            "HKEY_CURRENT_USER\\%s\\%s", puttystr, sb->s);
+	strbuf_free(sb);
 	return NULL;
     }
-    sfree(p);
+    strbuf_free(sb);
 
     settings_w *toret = snew(settings_w);
     toret->sesskey = sesskey;
@@ -141,24 +94,24 @@ struct settings_r {
 settings_r *open_settings_r(const char *sessionname)
 {
     HKEY subkey1, sesskey;
-    char *p;
+    strbuf *sb;
 
     if (!sessionname || !*sessionname)
 	sessionname = "Default Settings";
 
-    p = snewn(3 * strlen(sessionname) + 1, char);
-    mungestr(sessionname, p);
+    sb = strbuf_new();
+    escape_registry_key(sessionname, sb);
 
     if (RegOpenKey(HKEY_CURRENT_USER, puttystr, &subkey1) != ERROR_SUCCESS) {
 	sesskey = NULL;
     } else {
-	if (RegOpenKey(subkey1, p, &sesskey) != ERROR_SUCCESS) {
+	if (RegOpenKey(subkey1, sb->s, &sesskey) != ERROR_SUCCESS) {
 	    sesskey = NULL;
 	}
 	RegCloseKey(subkey1);
     }
 
-    sfree(p);
+    strbuf_free(sb);
 
     settings_r *toret = snew(settings_r);
     toret->sesskey = sesskey;
@@ -291,15 +244,15 @@ void close_settings_r(settings_r *handle)
 void del_settings(const char *sessionname)
 {
     HKEY subkey1;
-    char *p;
+    strbuf *sb;
 
     if (RegOpenKey(HKEY_CURRENT_USER, puttystr, &subkey1) != ERROR_SUCCESS)
 	return;
 
-    p = snewn(3 * strlen(sessionname) + 1, char);
-    mungestr(sessionname, p);
-    RegDeleteKey(subkey1, p);
-    sfree(p);
+    sb = strbuf_new();
+    escape_registry_key(sessionname, sb);
+    RegDeleteKey(subkey1, sb->s);
+    strbuf_free(sb);
 
     RegCloseKey(subkey1);
 
@@ -328,18 +281,27 @@ settings_e *enum_settings_start(void)
     return ret;
 }
 
-char *enum_settings_next(settings_e *e, char *buffer, int buflen)
+bool enum_settings_next(settings_e *e, strbuf *sb)
 {
-    char *otherbuf;
-    otherbuf = snewn(3 * buflen, char);
-    if (RegEnumKey(e->key, e->i++, otherbuf, 3 * buflen) == ERROR_SUCCESS) {
-	unmungestr(otherbuf, buffer, buflen);
-	sfree(otherbuf);
-	return buffer;
-    } else {
-	sfree(otherbuf);
-	return NULL;
+    size_t regbuf_size = 256;
+    char *regbuf = snewn(regbuf_size, char);
+    bool success;
+
+    while (1) {
+        DWORD retd = RegEnumKey(e->key, e->i++, regbuf, regbuf_size);
+        if (retd != ERROR_MORE_DATA) {
+            success = (retd == ERROR_SUCCESS);
+            break;
+        }
+        regbuf_size = regbuf_size * 5 / 4 + 256;
+        regbuf = sresize(regbuf, regbuf_size, char);
     }
+
+    if (success)
+        unescape_registry_key(regbuf, sb);
+
+    sfree(regbuf);
+    return success;
 }
 
 void enum_settings_finish(settings_e *e)
@@ -348,21 +310,18 @@ void enum_settings_finish(settings_e *e)
     sfree(e);
 }
 
-static void hostkey_regname(char *buffer, const char *hostname,
+static void hostkey_regname(strbuf *sb, const char *hostname,
 			    int port, const char *keytype)
 {
-    int len;
-    strcpy(buffer, keytype);
-    strcat(buffer, "@");
-    len = strlen(buffer);
-    len += sprintf(buffer + len, "%d:", port);
-    mungestr(hostname, buffer + strlen(buffer));
+    strbuf_catf(sb, "%s@%d:", keytype, port);
+    escape_registry_key(hostname, sb);
 }
 
 int verify_host_key(const char *hostname, int port,
 		    const char *keytype, const char *key)
 {
-    char *otherstr, *regname;
+    char *otherstr;
+    strbuf *regname;
     int len;
     HKEY rkey;
     DWORD readlen;
@@ -375,19 +334,18 @@ int verify_host_key(const char *hostname, int port,
      * Now read a saved key in from the registry and see what it
      * says.
      */
-    regname = snewn(3 * (strlen(hostname) + strlen(keytype)) + 15, char);
-
+    regname = strbuf_new();
     hostkey_regname(regname, hostname, port, keytype);
 
     if (RegOpenKey(HKEY_CURRENT_USER, PUTTY_REG_POS "\\SshHostKeys",
 		   &rkey) != ERROR_SUCCESS) {
-        sfree(regname);
+        strbuf_free(regname);
 	return 1;		       /* key does not exist in registry */
     }
 
     readlen = len;
     otherstr = snewn(len, char);
-    ret = RegQueryValueEx(rkey, regname, NULL,
+    ret = RegQueryValueEx(rkey, regname->s, NULL,
                           &type, (BYTE *)otherstr, &readlen);
 
     if (ret != ERROR_SUCCESS && ret != ERROR_MORE_DATA &&
@@ -397,7 +355,7 @@ int verify_host_key(const char *hostname, int port,
 	 * another trick, which is to look up the _old_ key format
 	 * under just the hostname and translate that.
 	 */
-	char *justhost = regname + 1 + strcspn(regname, ":");
+	char *justhost = regname->s + 1 + strcspn(regname->s, ":");
 	char *oldstyle = snewn(len + 10, char);	/* safety margin */
 	readlen = len;
 	ret = RegQueryValueEx(rkey, justhost, NULL, &type,
@@ -447,7 +405,7 @@ int verify_host_key(const char *hostname, int port,
 	     * wrong, and hyper-cautiously do nothing.
 	     */
 	    if (!strcmp(otherstr, key))
-		RegSetValueEx(rkey, regname, 0, REG_SZ, (BYTE *)otherstr,
+		RegSetValueEx(rkey, regname->s, 0, REG_SZ, (BYTE *)otherstr,
 			      strlen(otherstr) + 1);
 	}
 
@@ -459,7 +417,7 @@ int verify_host_key(const char *hostname, int port,
     compare = strcmp(otherstr, key);
 
     sfree(otherstr);
-    sfree(regname);
+    strbuf_free(regname);
 
     if (ret == ERROR_MORE_DATA ||
 	(ret == ERROR_SUCCESS && type == REG_SZ && compare))
@@ -470,7 +428,7 @@ int verify_host_key(const char *hostname, int port,
 	return 0;		       /* key matched OK in registry */
 }
 
-int have_ssh_host_key(const char *hostname, int port,
+bool have_ssh_host_key(const char *hostname, int port,
 		      const char *keytype)
 {
     /*
@@ -483,27 +441,27 @@ int have_ssh_host_key(const char *hostname, int port,
 void store_host_key(const char *hostname, int port,
 		    const char *keytype, const char *key)
 {
-    char *regname;
+    strbuf *regname;
     HKEY rkey;
 
-    regname = snewn(3 * (strlen(hostname) + strlen(keytype)) + 15, char);
-
+    regname = strbuf_new();
     hostkey_regname(regname, hostname, port, keytype);
 
     if (RegCreateKey(HKEY_CURRENT_USER, PUTTY_REG_POS "\\SshHostKeys",
 		     &rkey) == ERROR_SUCCESS) {
-	RegSetValueEx(rkey, regname, 0, REG_SZ, (BYTE *)key, strlen(key) + 1);
+	RegSetValueEx(rkey, regname->s, 0, REG_SZ,
+                      (BYTE *)key, strlen(key) + 1);
 	RegCloseKey(rkey);
     } /* else key does not exist in registry */
 
-    sfree(regname);
+    strbuf_free(regname);
 }
 
 /*
  * Open (or delete) the random seed file.
  */
 enum { DEL, OPEN_R, OPEN_W };
-static int try_random_seed(char const *path, int action, HANDLE *ret)
+static bool try_random_seed(char const *path, int action, HANDLE *ret)
 {
     if (action == DEL) {
         if (!DeleteFile(path) && GetLastError() != ERROR_FILE_NOT_FOUND) {
@@ -511,7 +469,7 @@ static int try_random_seed(char const *path, int action, HANDLE *ret)
                      win_strerror(GetLastError()));
         }
 	*ret = INVALID_HANDLE_VALUE;
-	return FALSE;		       /* so we'll do the next ones too */
+	return false;		       /* so we'll do the next ones too */
     }
 
     *ret = CreateFile(path,
@@ -576,7 +534,7 @@ static HANDLE access_random_seed(int action)
 	 * so stuff that. */
 	shell32_module = load_system32_dll("shell32.dll");
 	GET_WINDOWS_FUNCTION(shell32_module, SHGetFolderPathA);
-	tried_shgetfolderpath = TRUE;
+	tried_shgetfolderpath = true;
     }
     if (p_SHGetFolderPathA) {
 	if (SUCCEEDED(p_SHGetFolderPathA(NULL, CSIDL_LOCAL_APPDATA,
