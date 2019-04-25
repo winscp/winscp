@@ -10,6 +10,7 @@
 #include <assert.h>
 
 #include "putty.h"
+#include "mpint.h"
 #include "ssh.h"
 #include "misc.h"
 
@@ -276,11 +277,11 @@ int rsa_ssh1_loadpub(const Filename *filename, BinarySink *bs,
         }
 
 	memset(&key, 0, sizeof(key));
-        key.exponent = bignum_from_decimal(expp);
-        key.modulus = bignum_from_decimal(modp);
-        if (atoi(bitsp) != bignum_bitcount(key.modulus)) {
-            freebn(key.exponent);
-            freebn(key.modulus);
+        key.exponent = mp_from_decimal(expp);
+        key.modulus = mp_from_decimal(modp);
+        if (atoi(bitsp) != mp_get_nbits(key.modulus)) {
+            mp_free(key.exponent);
+            mp_free(key.modulus);
             sfree(line);
             error = "key bit count does not match in SSH-1 public key file";
             goto end;
@@ -1360,10 +1361,9 @@ char *ssh1_pubkey_str(struct RSAKey *key)
     char *buffer;
     char *dec1, *dec2;
 
-    dec1 = bignum_decimal(key->exponent);
-    dec2 = bignum_decimal(key->modulus);
-    buffer = dupprintf("%d %s %s%s%s", bignum_bitcount(key->modulus),
-		       dec1, dec2,
+    dec1 = mp_get_decimal(key->exponent);
+    dec2 = mp_get_decimal(key->modulus);
+    buffer = dupprintf("%zd %s %s%s%s", mp_get_nbits(key->modulus), dec1, dec2,
                        key->comment ? " " : "",
                        key->comment ? key->comment : "");
     sfree(dec1);

@@ -10,6 +10,7 @@
 
 #include "putty.h"
 #include "ssh.h"
+#include "mpint.h"
 #include "misc.h"
 
 static bool openssh_pem_encrypted(const Filename *file);
@@ -815,7 +816,7 @@ static bool openssh_pem_write(
          */
         if (ssh_key_alg(key->key) == &ssh_rsa) {
             ptrlen n, e, d, p, q, iqmp, dmp1, dmq1;
-            Bignum bd, bp, bq, bdmp1, bdmq1;
+            mp_int *bd, *bp, *bq, *bdmp1, *bdmq1;
 
             /*
              * These blobs were generated from inside PuTTY, so we needn't
@@ -834,29 +835,29 @@ static bool openssh_pem_write(
             assert(!get_err(src));     /* can't go wrong */
 
             /* We also need d mod (p-1) and d mod (q-1). */
-            bd = bignum_from_bytes(d.ptr, d.len);
-            bp = bignum_from_bytes(p.ptr, p.len);
-            bq = bignum_from_bytes(q.ptr, q.len);
-            decbn(bp);
-            decbn(bq);
-            bdmp1 = bigmod(bd, bp);
-            bdmq1 = bigmod(bd, bq);
-            freebn(bd);
-            freebn(bp);
-            freebn(bq);
+            bd = mp_from_bytes_be(d);
+            bp = mp_from_bytes_be(p);
+            bq = mp_from_bytes_be(q);
+            mp_sub_integer_into(bp, bp, 1);
+            mp_sub_integer_into(bq, bq, 1);
+            bdmp1 = mp_mod(bd, bp);
+            bdmq1 = mp_mod(bd, bq);
+            mp_free(bd);
+            mp_free(bp);
+            mp_free(bq);
 
-            dmp1.len = (bignum_bitcount(bdmp1)+8)/8;
-            dmq1.len = (bignum_bitcount(bdmq1)+8)/8;
+            dmp1.len = (mp_get_nbits(bdmp1)+8)/8;
+            dmq1.len = (mp_get_nbits(bdmq1)+8)/8;
             sparelen = dmp1.len + dmq1.len;
             spareblob = snewn(sparelen, unsigned char);
             dmp1.ptr = spareblob;
             dmq1.ptr = spareblob + dmp1.len;
             for (i = 0; i < dmp1.len; i++)
-                spareblob[i] = bignum_byte(bdmp1, dmp1.len-1 - i);
+                spareblob[i] = mp_get_byte(bdmp1, dmp1.len-1 - i);
             for (i = 0; i < dmq1.len; i++)
-                spareblob[i+dmp1.len] = bignum_byte(bdmq1, dmq1.len-1 - i);
-            freebn(bdmp1);
-            freebn(bdmq1);
+                spareblob[i+dmp1.len] = mp_get_byte(bdmq1, dmq1.len-1 - i);
+            mp_free(bdmp1);
+            mp_free(bdmq1);
 
             numbers[0] = make_ptrlen(zero, 1); zero[0] = '\0';
             numbers[1] = n;
@@ -913,7 +914,7 @@ static bool openssh_pem_write(
                ssh_key_alg(key->key) == &ssh_ecdsa_nistp384 ||
                ssh_key_alg(key->key) == &ssh_ecdsa_nistp521) {
         const unsigned char *oid;
-        struct ec_key *ec = container_of(key->key, struct ec_key, sshk);
+        struct ecdsa_key *ec = container_of(key->key, struct ecdsa_key, sshk);
         int oidlen;
         int pointlen;
         strbuf *seq, *sub;
@@ -929,7 +930,7 @@ static bool openssh_pem_write(
          *     BIT STRING (0x00 public key point)
          */
         oid = ec_alg_oid(ssh_key_alg(key->key), &oidlen);
-        pointlen = (ec->publicKey.curve->fieldBits + 7) / 8 * 2;
+        pointlen = (ec->curve->fieldBits + 7) / 8 * 2;
 
         seq = strbuf_new();
 

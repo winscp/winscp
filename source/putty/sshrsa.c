@@ -8,13 +8,14 @@
 #include <assert.h>
 
 #include "ssh.h"
+#include "mpint.h"
 #include "misc.h"
 
 void BinarySource_get_rsa_ssh1_pub(
     BinarySource *src, struct RSAKey *rsa, RsaSsh1Order order)
 {
     unsigned bits;
-    Bignum e, m;
+    mp_int *e, *m;
 
     bits = get_uint32(src);
     if (order == RSA_SSH1_EXPONENT_FIRST) {
@@ -29,10 +30,10 @@ void BinarySource_get_rsa_ssh1_pub(
         rsa->bits = bits;
         rsa->exponent = e;
         rsa->modulus = m;
-        rsa->bytes = (bignum_bitcount(m) + 7) / 8;
+        rsa->bytes = (mp_get_nbits(m) + 7) / 8;
     } else {
-        freebn(e);
-        freebn(m);
+        mp_free(e);
+        mp_free(m);
     }
 }
 
@@ -44,7 +45,7 @@ void BinarySource_get_rsa_ssh1_priv(
 
 bool rsa_ssh1_encrypt(unsigned char *data, int length, struct RSAKey *key)
 {
-    Bignum b1, b2;
+    mp_int *b1, *b2;
     int i;
     unsigned char *p;
 
@@ -62,17 +63,17 @@ bool rsa_ssh1_encrypt(unsigned char *data, int length, struct RSAKey *key)
     }
     data[key->bytes - length - 1] = 0;
 
-    b1 = bignum_from_bytes(data, key->bytes);
+    b1 = mp_from_bytes_be(make_ptrlen(data, key->bytes));
 
-    b2 = modpow(b1, key->exponent, key->modulus);
+    b2 = mp_modpow(b1, key->exponent, key->modulus);
 
     p = data;
     for (i = key->bytes; i--;) {
-	*p++ = bignum_byte(b2, i);
+	*p++ = mp_get_byte(b2, i);
     }
 
-    freebn(b1);
-    freebn(b2);
+    mp_free(b1);
+    mp_free(b2);
 
     return true;
 }
@@ -83,28 +84,33 @@ bool rsa_ssh1_encrypt(unsigned char *data, int length, struct RSAKey *key)
  * Uses Chinese Remainder Theorem to speed computation up over the
  * obvious implementation of a single big modpow.
  */
-Bignum crt_modpow(Bignum base, Bignum exp, Bignum mod,
-                  Bignum p, Bignum q, Bignum iqmp)
+mp_int *crt_modpow(mp_int *base, mp_int *exp, mp_int *mod,
+                      mp_int *p, mp_int *q, mp_int *iqmp)
 {
-    Bignum pm1, qm1, pexp, qexp, presult, qresult, diff, multiplier, ret0, ret;
+    mp_int *pm1, *qm1, *pexp, *qexp, *presult, *qresult;
+    mp_int *diff, *multiplier, *ret0, *ret;
 
     /*
      * Reduce the exponent mod phi(p) and phi(q), to save time when
      * exponentiating mod p and mod q respectively. Of course, since p
      * and q are prime, phi(p) == p-1 and similarly for q.
      */
-    pm1 = copybn(p);
-    decbn(pm1);
-    qm1 = copybn(q);
-    decbn(qm1);
-    pexp = bigmod(exp, pm1);
-    qexp = bigmod(exp, qm1);
+    pm1 = mp_copy(p);
+    mp_sub_integer_into(pm1, pm1, 1);
+    qm1 = mp_copy(q);
+    mp_sub_integer_into(qm1, qm1, 1);
+    pexp = mp_mod(exp, pm1);
+    qexp = mp_mod(exp, qm1);
 
     /*
      * Do the two modpows.
      */
-    presult = modpow(base, pexp, p);
-    qresult = modpow(base, qexp, q);
+    mp_int *base_mod_p = mp_mod(base, p);
+    presult = mp_modpow(base_mod_p, pexp, p);
+    mp_free(base_mod_p);
+    mp_int *base_mod_q = mp_mod(base, q);
+    qresult = mp_modpow(base_mod_q, qexp, q);
+    mp_free(base_mod_q);
 
     /*
      * Recombine the results. We want a value which is congruent to
@@ -115,189 +121,66 @@ Bignum crt_modpow(Bignum base, Bignum exp, Bignum mod,
      * (which is congruent to qresult mod both primes), and add on
      * (presult-qresult) * (iqmp * q) which adjusts it to be congruent
      * to presult mod p without affecting its value mod q.
+     *
+     * (If presult-qresult < 0, we add p to it to keep it positive.)
      */
-    if (bignum_cmp(presult, qresult) < 0) {
-        /*
-         * Can't subtract presult from qresult without first adding on
-         * p.
-         */
-        Bignum tmp = presult;
-        presult = bigadd(presult, p);
-        freebn(tmp);
-    }
-    diff = bigsub(presult, qresult);
-    multiplier = bigmul(iqmp, q);
-    ret0 = bigmuladd(multiplier, diff, qresult);
+    unsigned presult_too_small = mp_cmp_hs(qresult, presult);
+    mp_cond_add_into(presult, presult, p, presult_too_small);
+
+    diff = mp_sub(presult, qresult);
+    multiplier = mp_mul(iqmp, q);
+    ret0 = mp_mul(multiplier, diff);
+    mp_add_into(ret0, ret0, qresult);
 
     /*
      * Finally, reduce the result mod n.
      */
-    ret = bigmod(ret0, mod);
+    ret = mp_mod(ret0, mod);
 
     /*
      * Free all the intermediate results before returning.
      */
-    freebn(pm1);
-    freebn(qm1);
-    freebn(pexp);
-    freebn(qexp);
-    freebn(presult);
-    freebn(qresult);
-    freebn(diff);
-    freebn(multiplier);
-    freebn(ret0);
+    mp_free(pm1);
+    mp_free(qm1);
+    mp_free(pexp);
+    mp_free(qexp);
+    mp_free(presult);
+    mp_free(qresult);
+    mp_free(diff);
+    mp_free(multiplier);
+    mp_free(ret0);
 
     return ret;
 }
 
 /*
- * This function is a wrapper on modpow(). It has the same effect as
- * modpow(), but employs RSA blinding to protect against timing
- * attacks and also uses the Chinese Remainder Theorem (implemented
- * above, in crt_modpow()) to speed up the main operation.
+ * Wrapper on crt_modpow that looks up all the right values from an
+ * RSAKey.
  */
-static Bignum rsa_privkey_op(Bignum input, struct RSAKey *key)
+static mp_int *rsa_privkey_op(mp_int *input, struct RSAKey *key)
 {
-    Bignum random, random_encrypted, random_inverse;
-    Bignum input_blinded, ret_blinded;
-    Bignum ret;
-
-    SHA512_State ss;
-    unsigned char digest512[64];
-    int digestused = lenof(digest512);
-    int hashseq = 0;
-
-    /*
-     * Start by inventing a random number chosen uniformly from the
-     * range 2..modulus-1. (We do this by preparing a random number
-     * of the right length and retrying if it's greater than the
-     * modulus, to prevent any potential Bleichenbacher-like
-     * attacks making use of the uneven distribution within the
-     * range that would arise from just reducing our number mod n.
-     * There are timing implications to the potential retries, of
-     * course, but all they tell you is the modulus, which you
-     * already knew.)
-     * 
-     * To preserve determinism and avoid Pageant needing to share
-     * the random number pool, we actually generate this `random'
-     * number by hashing stuff with the private key.
-     */
-    while (1) {
-	int bits, byte, bitsleft, v;
-	random = copybn(key->modulus);
-	/*
-	 * Find the topmost set bit. (This function will return its
-	 * index plus one.) Then we'll set all bits from that one
-	 * downwards randomly.
-	 */
-	bits = bignum_bitcount(random);
-	byte = 0;
-	bitsleft = 0;
-	while (bits--) {
-	    if (bitsleft <= 0) {
-		bitsleft = 8;
-		/*
-		 * Conceptually the following few lines are equivalent to
-		 *    byte = random_byte();
-		 */
-		if (digestused >= lenof(digest512)) {
-		    SHA512_Init(&ss);
-		    put_data(&ss, "RSA deterministic blinding", 26);
-		    put_uint32(&ss, hashseq);
-		    put_mp_ssh2(&ss, key->private_exponent);
-		    SHA512_Final(&ss, digest512);
-		    hashseq++;
-
-		    /*
-		     * Now hash that digest plus the signature
-		     * input.
-		     */
-		    SHA512_Init(&ss);
-		    put_data(&ss, digest512, sizeof(digest512));
-		    put_mp_ssh2(&ss, input);
-		    SHA512_Final(&ss, digest512);
-
-		    digestused = 0;
-		}
-		byte = digest512[digestused++];
-	    }
-	    v = byte & 1;
-	    byte >>= 1;
-	    bitsleft--;
-	    bignum_set_bit(random, bits, v);
-	}
-        bn_restore_invariant(random);
-
-	/*
-	 * Now check that this number is strictly greater than
-	 * zero, and strictly less than modulus.
-	 */
-	if (bignum_cmp(random, Zero) <= 0 ||
-	    bignum_cmp(random, key->modulus) >= 0) {
-	    freebn(random);
-	    continue;
-	}
-
-        /*
-         * Also, make sure it has an inverse mod modulus.
-         */
-        random_inverse = modinv(random, key->modulus);
-        if (!random_inverse) {
-	    freebn(random);
-	    continue;
-        }
-
-        break;
-    }
-
-    /*
-     * RSA blinding relies on the fact that (xy)^d mod n is equal
-     * to (x^d mod n) * (y^d mod n) mod n. We invent a random pair
-     * y and y^d; then we multiply x by y, raise to the power d mod
-     * n as usual, and divide by y^d to recover x^d. Thus an
-     * attacker can't correlate the timing of the modpow with the
-     * input, because they don't know anything about the number
-     * that was input to the actual modpow.
-     * 
-     * The clever bit is that we don't have to do a huge modpow to
-     * get y and y^d; we will use the number we just invented as
-     * _y^d_, and use the _public_ exponent to compute (y^d)^e = y
-     * from it, which is much faster to do.
-     */
-    random_encrypted = crt_modpow(random, key->exponent,
-                                  key->modulus, key->p, key->q, key->iqmp);
-    input_blinded = modmul(input, random_encrypted, key->modulus);
-    ret_blinded = crt_modpow(input_blinded, key->private_exponent,
-                             key->modulus, key->p, key->q, key->iqmp);
-    ret = modmul(ret_blinded, random_inverse, key->modulus);
-
-    freebn(ret_blinded);
-    freebn(input_blinded);
-    freebn(random_inverse);
-    freebn(random_encrypted);
-    freebn(random);
-
-    return ret;
+    return crt_modpow(input, key->private_exponent,
+                      key->modulus, key->p, key->q, key->iqmp);
 }
 
-Bignum rsa_ssh1_decrypt(Bignum input, struct RSAKey *key)
+mp_int *rsa_ssh1_decrypt(mp_int *input, struct RSAKey *key)
 {
     return rsa_privkey_op(input, key);
 }
 
-bool rsa_ssh1_decrypt_pkcs1(Bignum input, struct RSAKey *key, strbuf *outbuf)
+bool rsa_ssh1_decrypt_pkcs1(mp_int *input, struct RSAKey *key,
+                            strbuf *outbuf)
 {
     strbuf *data = strbuf_new();
     bool success = false;
     BinarySource src[1];
 
     {
-        Bignum *b = rsa_ssh1_decrypt(input, key);
-        int i;
-        for (i = (bignum_bitcount(key->modulus) + 7) / 8; i-- > 0 ;) {
-            put_byte(data, bignum_byte(b, i));
+        mp_int *b = rsa_ssh1_decrypt(input, key);
+        for (size_t i = (mp_get_nbits(key->modulus) + 7) / 8; i-- > 0 ;) {
+            put_byte(data, mp_get_byte(b, i));
         }
-        freebn(b);
+        mp_free(b);
     }
 
     BinarySource_BARE_INIT(src, data->u, data->len);
@@ -321,17 +204,16 @@ bool rsa_ssh1_decrypt_pkcs1(Bignum input, struct RSAKey *key, strbuf *outbuf)
     return success;
 }
 
-static void append_hex_to_strbuf(strbuf *sb, Bignum *x)
+static void append_hex_to_strbuf(strbuf *sb, mp_int *x)
 {
     if (sb->len > 0)
         put_byte(sb, ',');
     put_data(sb, "0x", 2);
-    int nibbles = (3 + bignum_bitcount(x)) / 4;
-    if (nibbles < 1)
-	nibbles = 1;
-    static const char hex[] = "0123456789abcdef";
-    for (int i = nibbles; i--;)
-	put_byte(sb, hex[(bignum_byte(x, i / 2) >> (4 * (i % 2))) & 0xF]);
+    char *hex = mp_get_hex(x);
+    size_t hexlen = strlen(hex);
+    put_data(sb, hex, hexlen);
+    smemclr(hex, hexlen);
+    sfree(hex);
 }
 
 char *rsastr_fmt(struct RSAKey *key)
@@ -361,7 +243,7 @@ char *rsa_ssh1_fingerprint(struct RSAKey *key)
     MD5Final(digest, &md5c);
 
     out = strbuf_new();
-    strbuf_catf(out, "%d ", bignum_bitcount(key->modulus));
+    strbuf_catf(out, "%d ", mp_get_nbits(key->modulus));
     for (i = 0; i < 16; i++)
 	strbuf_catf(out, "%s%02x", i ? ":" : "", digest[i]);
     if (key->comment)
@@ -376,34 +258,32 @@ char *rsa_ssh1_fingerprint(struct RSAKey *key)
  */
 bool rsa_verify(struct RSAKey *key)
 {
-    Bignum n, ed, pm1, qm1;
-    int cmp;
+    mp_int *n, *ed, *pm1, *qm1;
+    unsigned ok = 1;
+
+    /* Preliminary checks: p,q must actually be nonzero. */
+    if (mp_eq_integer(key->p, 0) | mp_eq_integer(key->q, 0))
+        return false;
 
     /* n must equal pq. */
-    n = bigmul(key->p, key->q);
-    cmp = bignum_cmp(n, key->modulus);
-    freebn(n);
-    if (cmp != 0)
-	return false;
+    n = mp_mul(key->p, key->q);
+    ok &= mp_cmp_eq(n, key->modulus);
+    mp_free(n);
 
     /* e * d must be congruent to 1, modulo (p-1) and modulo (q-1). */
-    pm1 = copybn(key->p);
-    decbn(pm1);
-    ed = modmul(key->exponent, key->private_exponent, pm1);
-    freebn(pm1);
-    cmp = bignum_cmp(ed, One);
-    freebn(ed);
-    if (cmp != 0)
-	return false;
+    pm1 = mp_copy(key->p);
+    mp_sub_integer_into(pm1, pm1, 1);
+    ed = mp_modmul(key->exponent, key->private_exponent, pm1);
+    mp_free(pm1);
+    ok &= mp_eq_integer(ed, 1);
+    mp_free(ed);
 
-    qm1 = copybn(key->q);
-    decbn(qm1);
-    ed = modmul(key->exponent, key->private_exponent, qm1);
-    freebn(qm1);
-    cmp = bignum_cmp(ed, One);
-    freebn(ed);
-    if (cmp != 0)
-	return false;
+    qm1 = mp_copy(key->q);
+    mp_sub_integer_into(qm1, qm1, 1);
+    ed = mp_modmul(key->exponent, key->private_exponent, qm1);
+    mp_free(qm1);
+    ok &= mp_eq_integer(ed, 1);
+    mp_free(ed);
 
     /*
      * Ensure p > q.
@@ -413,33 +293,18 @@ bool rsa_verify(struct RSAKey *key)
      * should instead flip them round into the canonical order of
      * p > q. This also involves regenerating iqmp.
      */
-    if (bignum_cmp(key->p, key->q) <= 0) {
-	Bignum tmp = key->p;
-	key->p = key->q;
-	key->q = tmp;
+    unsigned swap_pq = mp_cmp_hs(key->q, key->p);
+    mp_cond_swap(key->p, key->q, swap_pq);
+    mp_free(key->iqmp);
+    key->iqmp = mp_invert(key->q, key->p);
 
-	freebn(key->iqmp);
-	key->iqmp = modinv(key->q, key->p);
-        if (!key->iqmp)
-            return false;
-    }
-
-    /*
-     * Ensure iqmp * q is congruent to 1, modulo p.
-     */
-    n = modmul(key->iqmp, key->q, key->p);
-    cmp = bignum_cmp(n, One);
-    freebn(n);
-    if (cmp != 0)
-	return false;
-
-    return true;
+    return ok;
 }
 
 void rsa_ssh1_public_blob(BinarySink *bs, struct RSAKey *key,
                           RsaSsh1Order order)
 {
-    put_uint32(bs, bignum_bitcount(key->modulus));
+    put_uint32(bs, mp_get_nbits(key->modulus));
     if (order == RSA_SSH1_EXPONENT_FIRST) {
         put_mp_ssh1(bs, key->exponent);
         put_mp_ssh1(bs, key->modulus);
@@ -459,8 +324,8 @@ int rsa_ssh1_public_blob_len(void *data, int maxlen)
     /* Expect a length word, then exponent and modulus. (It doesn't
      * even matter which order.) */
     get_uint32(src);
-    freebn(get_mp_ssh1(src));
-    freebn(get_mp_ssh1(src));
+    mp_free(get_mp_ssh1(src));
+    mp_free(get_mp_ssh1(src));
 
     if (get_err(src))
 	return -1;
@@ -472,19 +337,19 @@ int rsa_ssh1_public_blob_len(void *data, int maxlen)
 void freersapriv(struct RSAKey *key)
 {
     if (key->private_exponent) {
-	freebn(key->private_exponent);
+	mp_free(key->private_exponent);
         key->private_exponent = NULL;
     }
     if (key->p) {
-	freebn(key->p);
+	mp_free(key->p);
         key->p = NULL;
     }
     if (key->q) {
-	freebn(key->q);
+	mp_free(key->q);
         key->q = NULL;
     }
     if (key->iqmp) {
-	freebn(key->iqmp);
+	mp_free(key->iqmp);
         key->iqmp = NULL;
     }
 }
@@ -493,11 +358,11 @@ void freersakey(struct RSAKey *key)
 {
     freersapriv(key);
     if (key->modulus) {
-	freebn(key->modulus);
+	mp_free(key->modulus);
         key->modulus = NULL;
     }
     if (key->exponent) {
-	freebn(key->exponent);
+	mp_free(key->exponent);
         key->exponent = NULL;
     }
     if (key->comment) {
@@ -642,7 +507,7 @@ static int rsa2_pubkey_bits(const ssh_keyalg *self, ptrlen pub)
         return -1;
 
     rsa = container_of(sshk, struct RSAKey, sshk);
-    ret = bignum_bitcount(rsa->modulus);
+    ret = mp_get_nbits(rsa->modulus);
     rsa2_freekey(&rsa->sshk);
 
     return ret;
@@ -738,8 +603,7 @@ static bool rsa2_verify(ssh_key *key, ptrlen sig, ptrlen data)
     struct RSAKey *rsa = container_of(key, struct RSAKey, sshk);
     BinarySource src[1];
     ptrlen type, in_pl;
-    Bignum in, out;
-    bool toret;
+    mp_int *in, *out;
 
     BinarySource_BARE_INIT(src, sig.ptr, sig.len);
     type = get_string(src);
@@ -751,28 +615,27 @@ static bool rsa2_verify(ssh_key *key, ptrlen sig, ptrlen data)
      * BUG_SSH2_RSA_PADDING at the other end, we tolerate it if it's
      * there.) So we can't use get_mp_ssh2, which enforces that
      * leading-byte scheme; instead we use get_string and
-     * bignum_from_bytes, which will tolerate anything.
+     * mp_from_bytes_be, which will tolerate anything.
      */
     in_pl = get_string(src);
     if (get_err(src) || !ptrlen_eq_string(type, "ssh-rsa"))
 	return false;
 
-    in = bignum_from_bytes(in_pl.ptr, in_pl.len);
-    out = modpow(in, rsa->exponent, rsa->modulus);
-    freebn(in);
+    in = mp_from_bytes_be(in_pl);
+    out = mp_modpow(in, rsa->exponent, rsa->modulus);
+    mp_free(in);
 
-    toret = true;
+    unsigned diff = 0;
 
-    size_t nbytes = (bignum_bitcount(rsa->modulus) + 7) / 8;
+    size_t nbytes = (mp_get_nbits(rsa->modulus) + 7) / 8;
     unsigned char *bytes = rsa_pkcs1_signature_string(nbytes, &ssh_sha1, data);
     for (size_t i = 0; i < nbytes; i++)
-	if (bytes[nbytes-1 - i] != bignum_byte(out, i))
-	    toret = false;
+        diff |= bytes[nbytes-1 - i] ^ mp_get_byte(out, i);
     smemclr(bytes, nbytes);
     sfree(bytes);
-    freebn(out);
+    mp_free(out);
 
-    return toret;
+    return diff == 0;
 }
 
 static void rsa2_sign(ssh_key *key, const void *data, int datalen,
@@ -780,8 +643,8 @@ static void rsa2_sign(ssh_key *key, const void *data, int datalen,
 {
     struct RSAKey *rsa = container_of(key, struct RSAKey, sshk);
     unsigned char *bytes;
-    int nbytes;
-    Bignum in, out;
+    size_t nbytes;
+    mp_int *in, *out;
     const struct ssh_hashalg *halg;
     const char *sign_alg_name;
 
@@ -796,24 +659,24 @@ static void rsa2_sign(ssh_key *key, const void *data, int datalen,
         sign_alg_name = "ssh-rsa";
     }
 
-    nbytes = (bignum_bitcount(rsa->modulus) + 7) / 8;
+    nbytes = (mp_get_nbits(rsa->modulus) + 7) / 8;
 
     bytes = rsa_pkcs1_signature_string(
         nbytes, halg, make_ptrlen(data, datalen));
-    in = bignum_from_bytes(bytes, nbytes);
+    in = mp_from_bytes_be(make_ptrlen(bytes, nbytes));
     smemclr(bytes, nbytes);
     sfree(bytes);
 
     out = rsa_privkey_op(in, rsa);
-    freebn(in);
+    mp_free(in);
 
     put_stringz(bs, sign_alg_name);
-    nbytes = (bignum_bitcount(out) + 7) / 8;
+    nbytes = (mp_get_nbits(out) + 7) / 8;
     put_uint32(bs, nbytes);
     for (size_t i = 0; i < nbytes; i++)
-	put_byte(bs, bignum_byte(out, nbytes - 1 - i));
+	put_byte(bs, mp_get_byte(out, nbytes - 1 - i));
 
-    freebn(out);
+    mp_free(out);
 }
 
 const ssh_keyalg ssh_rsa = {
@@ -852,7 +715,7 @@ void ssh_rsakex_freekey(struct RSAKey *key)
 
 int ssh_rsakex_klen(struct RSAKey *rsa)
 {
-    return bignum_bitcount(rsa->modulus);
+    return mp_get_nbits(rsa->modulus);
 }
 
 static void oaep_mask(const struct ssh_hashalg *h, void *seed, int seedlen,
@@ -885,7 +748,7 @@ void ssh_rsakex_encrypt(const struct ssh_hashalg *h,
                         unsigned char *in, int inlen,
                         unsigned char *out, int outlen, struct RSAKey *rsa)
 {
-    Bignum b1, b2;
+    mp_int *b1, *b2;
     int k, i;
     char *p;
     const int HLEN = h->hlen;
@@ -918,7 +781,7 @@ void ssh_rsakex_encrypt(const struct ssh_hashalg *h,
      */
 
     /* k denotes the length in octets of the RSA modulus. */
-    k = (7 + bignum_bitcount(rsa->modulus)) / 8;
+    k = (7 + mp_get_nbits(rsa->modulus)) / 8;
 
     /* The length of the input data must be at most k - 2hLen - 2. */
     assert(inlen > 0 && inlen <= k - 2*HLEN - 2);
@@ -961,24 +824,24 @@ void ssh_rsakex_encrypt(const struct ssh_hashalg *h,
      * Now `out' contains precisely the data we want to
      * RSA-encrypt.
      */
-    b1 = bignum_from_bytes(out, outlen);
-    b2 = modpow(b1, rsa->exponent, rsa->modulus);
+    b1 = mp_from_bytes_be(make_ptrlen(out, outlen));
+    b2 = mp_modpow(b1, rsa->exponent, rsa->modulus);
     p = (char *)out;
     for (i = outlen; i--;) {
-	*p++ = bignum_byte(b2, i);
+	*p++ = mp_get_byte(b2, i);
     }
-    freebn(b1);
-    freebn(b2);
+    mp_free(b1);
+    mp_free(b2);
 
     /*
      * And we're done.
      */
 }
 
-Bignum ssh_rsakex_decrypt(const struct ssh_hashalg *h, ptrlen ciphertext,
-                          struct RSAKey *rsa)
+mp_int *ssh_rsakex_decrypt(const struct ssh_hashalg *h, ptrlen ciphertext,
+                              struct RSAKey *rsa)
 {
-    Bignum b1, b2;
+    mp_int *b1, *b2;
     int outlen, i;
     unsigned char *out;
     unsigned char labelhash[64];
@@ -992,18 +855,18 @@ Bignum ssh_rsakex_decrypt(const struct ssh_hashalg *h, ptrlen ciphertext,
 
     /* The length of the encrypted data should be exactly the length
      * in octets of the RSA modulus.. */
-    outlen = (7 + bignum_bitcount(rsa->modulus)) / 8;
+    outlen = (7 + mp_get_nbits(rsa->modulus)) / 8;
     if (ciphertext.len != outlen)
         return NULL;
 
     /* Do the RSA decryption, and extract the result into a byte array. */
-    b1 = bignum_from_bytes(ciphertext.ptr, ciphertext.len);
+    b1 = mp_from_bytes_be(ciphertext);
     b2 = rsa_privkey_op(b1, rsa);
     out = snewn(outlen, unsigned char);
     for (i = 0; i < outlen; i++)
-        out[i] = bignum_byte(b2, outlen-1-i);
-    freebn(b1);
-    freebn(b2);
+        out[i] = mp_get_byte(b2, outlen-1-i);
+    mp_free(b1);
+    mp_free(b2);
 
     /* Do the OAEP masking operations, in the reverse order from encryption */
     oaep_mask(h, out+HLEN+1, outlen-HLEN-1, out+1, HLEN);
@@ -1038,7 +901,7 @@ Bignum ssh_rsakex_decrypt(const struct ssh_hashalg *h, ptrlen ciphertext,
     b1 = get_mp_ssh2(src);
     sfree(out);
     if (get_err(src) || get_avail(src) != 0) {
-        freebn(b1);
+        mp_free(b1);
         return NULL;
     }
 

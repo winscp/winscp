@@ -153,6 +153,8 @@ struct strbuf;
 void BinarySink_put_stringsb(BinarySink *, struct strbuf *);
 void BinarySink_put_asciz(BinarySink *, const char *str);
 bool BinarySink_put_pstring(BinarySink *, const char *str);
+void BinarySink_put_mp_ssh1(BinarySink *bs, mp_int *x);
+void BinarySink_put_mp_ssh2(BinarySink *bs, mp_int *x);
 
 /* ---------------------------------------------------------------------- */
 
@@ -195,7 +197,7 @@ struct BinarySource {
      * types.
      *
      * If the usual return value is dynamically allocated (e.g. a
-     * Bignum, or a normal C 'char *' string), then the error value is
+     * bignum, or a normal C 'char *' string), then the error value is
      * also dynamic in the same way. So you have to free exactly the
      * same set of things whether or not there was a decoding error,
      * which simplifies exit paths - for example, you could call a big
@@ -281,5 +283,7 @@ uint64_t BinarySource_get_uint64(BinarySource *);
 ptrlen BinarySource_get_string(BinarySource *);
 const char *BinarySource_get_asciz(BinarySource *);
 ptrlen BinarySource_get_pstring(BinarySource *);
+mp_int *BinarySource_get_mp_ssh1(BinarySource *src);
+mp_int *BinarySource_get_mp_ssh2(BinarySource *src);
 
 #endif /* PUTTY_MARSHAL_H */

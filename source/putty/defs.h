@@ -63,6 +63,16 @@ typedef struct TermWinVtable TermWinVtable;
 
 typedef struct Ssh Ssh;
 
+typedef struct mp_int mp_int;
+typedef struct MontyContext MontyContext;
+
+typedef struct WeierstrassCurve WeierstrassCurve;
+typedef struct WeierstrassPoint WeierstrassPoint;
+typedef struct MontgomeryCurve MontgomeryCurve;
+typedef struct MontgomeryPoint MontgomeryPoint;
+typedef struct EdwardsCurve EdwardsCurve;
+typedef struct EdwardsPoint EdwardsPoint;
+
 typedef struct SftpServer SftpServer;
 typedef struct SftpServerVtable SftpServerVtable;
 

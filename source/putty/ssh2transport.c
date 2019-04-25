@@ -11,6 +11,7 @@
 #include "sshcr.h"
 #include "storage.h"
 #include "ssh2transport.h"
+#include "mpint.h"
 
 const struct ssh_signkey_with_user_pref_id ssh2_hostkey_algs[] = {
     #define ARRAYENT_HOSTKEY_ALGORITHM(type, alg) { &alg, type },
@@ -200,10 +201,10 @@ static void ssh2_transport_free(PacketProtocolLayer *ppl)
         ssh_key_free(s->hkey);
         s->hkey = NULL;
     }
-    if (s->f) freebn(s->f);
-    if (s->p) freebn(s->p);
-    if (s->g) freebn(s->g);
-    if (s->K) freebn(s->K);
+    if (s->f) mp_free(s->f);
+    if (s->p) mp_free(s->p);
+    if (s->g) mp_free(s->g);
+    if (s->K) mp_free(s->K);
     if (s->dh_ctx)
         dh_cleanup(s->dh_ctx);
     if (s->rsa_kex_key)
@@ -225,7 +226,7 @@ static void ssh2_transport_free(PacketProtocolLayer *ppl)
  */
 static void ssh2_mkkey(
     struct ssh2_transport_state *s, strbuf *out,
-    Bignum K, unsigned char *H, char chr, int keylen)
+    mp_int *K, unsigned char *H, char chr, int keylen)
 {
     int hlen = s->kex_alg->hash->hlen;
     int keylen_padded;
@@ -1365,7 +1366,7 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
     /*
      * Free shared secret.
      */
-    freebn(s->K); s->K = NULL;
+    mp_free(s->K); s->K = NULL;
 
     /*
      * Update the specials menu to list the remaining uncertified host

@@ -1,10 +1,15 @@
 /*
- * sshbn.h: the assorted conditional definitions of BignumInt and
- * multiply macros used throughout the bignum code to treat numbers as
- * arrays of the most conveniently sized word for the target machine.
+ * mpint_i.h: definitions used internally by the bignum code, and
+ * also a few other vaguely-bignum-like places.
+ */
+
+/* ----------------------------------------------------------------------
+ * The assorted conditional definitions of BignumInt and multiply
+ * macros used throughout the bignum code to treat numbers as arrays
+ * of the most conveniently sized word for the target machine.
  * Exported so that other code (e.g. poly1305) can use it too.
  *
- * This file must export, in whatever ifdef branch it ends up in:
+ * This code must export, in whatever ifdef branch it ends up in:
  *
  *  - two types: 'BignumInt' and 'BignumCarry'. BignumInt is an
  *    unsigned integer type which will be used as the base word size
@@ -64,7 +69,7 @@
    */
 
   typedef unsigned long long BignumInt;
-  #define BIGNUM_INT_BITS 64
+  #define BIGNUM_INT_BITS_BITS 6
   #define DEFINE_BIGNUMDBLINT typedef __uint128_t BignumDblInt
 
 #elif defined _MSC_VER && defined _M_AMD64
@@ -85,7 +90,7 @@
   #include <intrin.h>
   typedef unsigned char BignumCarry; /* the type _addcarry_u64 likes to use */
   typedef unsigned __int64 BignumInt;
-  #define BIGNUM_INT_BITS 64
+  #define BIGNUM_INT_BITS_BITS 6
   #define BignumADC(ret, retc, a, b, c) do                \
       {                                                   \
           BignumInt ADC_tmp;                              \
@@ -119,7 +124,7 @@
   /* 32-bit BignumInt, using C99 unsigned long long as BignumDblInt */
 
   typedef unsigned int BignumInt;
-  #define BIGNUM_INT_BITS 32
+  #define BIGNUM_INT_BITS_BITS 5
   #define DEFINE_BIGNUMDBLINT typedef unsigned long long BignumDblInt
 
 #elif defined _MSC_VER && defined _M_IX86
@@ -127,7 +132,7 @@
   /* 32-bit BignumInt, using Visual Studio __int64 as BignumDblInt */
 
   typedef unsigned int BignumInt;
-  #define BIGNUM_INT_BITS  32
+  #define BIGNUM_INT_BITS_BITS 5
   #define DEFINE_BIGNUMDBLINT typedef unsigned __int64 BignumDblInt
 
 #elif defined _LP64
@@ -139,7 +144,7 @@
    */
 
   typedef unsigned int BignumInt;
-  #define BIGNUM_INT_BITS  32
+  #define BIGNUM_INT_BITS_BITS 5
   #define DEFINE_BIGNUMDBLINT typedef unsigned long BignumDblInt
 
 #else
@@ -155,15 +160,16 @@
    */
 
   typedef unsigned short BignumInt;
-  #define BIGNUM_INT_BITS  16
+  #define BIGNUM_INT_BITS_BITS 4
   #define DEFINE_BIGNUMDBLINT typedef unsigned long BignumDblInt
 
 #endif
 
 /*
- * Common code across all branches of that ifdef: define the three
- * easy constant macros in terms of BIGNUM_INT_BITS.
+ * Common code across all branches of that ifdef: define all the
+ * easy constant macros in terms of BIGNUM_INT_BITS_BITS.
  */
+#define BIGNUM_INT_BITS (1 << BIGNUM_INT_BITS_BITS)
 #define BIGNUM_INT_BYTES (BIGNUM_INT_BITS / 8)
 #define BIGNUM_TOP_BIT (((BignumInt)1) << (BIGNUM_INT_BITS-1))
 #define BIGNUM_INT_MASK (BIGNUM_TOP_BIT | (BIGNUM_TOP_BIT-1))
@@ -218,3 +224,58 @@
       } while (0)
 
 #endif /* DEFINE_BIGNUMDBLINT */
+
+/* ----------------------------------------------------------------------
+ * Data structures used inside bignum.c.
+ */
+
+struct mp_int {
+    size_t nw;
+    BignumInt *w;
+};
+
+struct MontyContext {
+    /*
+     * The actual modulus.
+     */
+    mp_int *m;
+
+    /*
+     * Montgomery multiplication works by selecting a value r > m,
+     * coprime to m, which is really easy to divide by. In binary
+     * arithmetic, that means making it a power of 2; in fact we make
+     * it a whole number of BignumInt.
+     *
+     * We don't store r directly as an mp_int (there's no need). But
+     * its value is 2^rbits; we also store rw = rbits/BIGNUM_INT_BITS
+     * (the corresponding word offset within an mp_int).
+     *
+     * pw is the number of words needed to store an mp_int you're
+     * doing reduction on: it has to be big enough to hold the sum of
+     * an input value up to m^2 plus an extra addend up to m*r.
+     */
+    size_t rbits, rw, pw;
+
+    /*
+     * The key step in Montgomery reduction requires the inverse of -m
+     * mod r.
+     */
+    mp_int *minus_minv_mod_r;
+
+    /*
+     * r^1, r^2 and r^3 mod m, which are used for various purposes.
+     *
+     * (Annoyingly, this is one of the rare cases where it would have
+     * been nicer to have a Pascal-style 1-indexed array. I couldn't
+     * _quite_ bring myself to put a gratuitous zero element in here.
+     * So you just have to live with getting r^k by taking the [k-1]th
+     * element of this array.)
+     */
+    mp_int *powers_of_r_mod_m[3];
+
+    /*
+     * Persistent scratch space from which monty_* functions can
+     * allocate storage for intermediate values.
+     */
+    mp_int *scratch;
+};

@@ -7,6 +7,7 @@
 #include <stdlib.h>
 
 #include "putty.h"
+#include "mpint.h"
 #include "ssh.h"
 #include "sshbpp.h"
 #include "sshppl.h"
@@ -1008,13 +1009,12 @@ void ssh1_compute_session_id(
     struct RSAKey *hostkey, struct RSAKey *servkey)
 {
     struct MD5Context md5c;
-    int i;
 
     MD5Init(&md5c);
-    for (i = (bignum_bitcount(hostkey->modulus) + 7) / 8; i-- ;)
-        put_byte(&md5c, bignum_byte(hostkey->modulus, i));
-    for (i = (bignum_bitcount(servkey->modulus) + 7) / 8; i-- ;)
-        put_byte(&md5c, bignum_byte(servkey->modulus, i));
+    for (size_t i = (mp_get_nbits(hostkey->modulus) + 7) / 8; i-- ;)
+        put_byte(&md5c, mp_get_byte(hostkey->modulus, i));
+    for (size_t i = (mp_get_nbits(servkey->modulus) + 7) / 8; i-- ;)
+        put_byte(&md5c, mp_get_byte(servkey->modulus, i));
     put_data(&md5c, cookie, 8);
     MD5Final(session_id, &md5c);
 }

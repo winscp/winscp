@@ -390,10 +390,6 @@ void ssh_user_close(Ssh *ssh, const char *fmt, ...);
 #define SSH_CIPHER_3DES		3
 #define SSH_CIPHER_BLOWFISH	6
 
-#ifndef BIGNUM_INTERNAL
-typedef void *Bignum;
-#endif
-
 typedef struct ssh_keyalg ssh_keyalg;
 typedef struct ssh_key {
     const struct ssh_keyalg *vt;
@@ -402,57 +398,52 @@ typedef struct ssh_key {
 struct RSAKey {
     int bits;
     int bytes;
-    Bignum modulus;
-    Bignum exponent;
-    Bignum private_exponent;
-    Bignum p;
-    Bignum q;
-    Bignum iqmp;
+    mp_int *modulus;
+    mp_int *exponent;
+    mp_int *private_exponent;
+    mp_int *p;
+    mp_int *q;
+    mp_int *iqmp;
     char *comment;
     ssh_key sshk;
 };
 
 struct dss_key {
-    Bignum p, q, g, y, x;
+    mp_int *p, *q, *g, *y, *x;
     ssh_key sshk;
 };
 
 struct ec_curve;
 
-struct ec_point {
-    const struct ec_curve *curve;
-    Bignum x, y;
-    Bignum z;  /* Jacobian denominator */
-    bool infinity;
-};
-
-/* A couple of ECC functions exported for use outside sshecc.c */
-struct ec_point *ecp_mul(const struct ec_point *a, const Bignum b);
-void ec_point_free(struct ec_point *point);
-
 /* Weierstrass form curve */
 struct ec_wcurve
 {
-    Bignum a, b, n;
-    struct ec_point G;
+    WeierstrassCurve *wc;
+    WeierstrassPoint *G;
+    mp_int *G_order;
 };
 
 /* Montgomery form curve */
 struct ec_mcurve
 {
-    Bignum a, b;
-    struct ec_point G;
+    MontgomeryCurve *mc;
+    MontgomeryPoint *G;
 };
 
 /* Edwards form curve */
 struct ec_ecurve
 {
-    Bignum l, d;
-    struct ec_point B;
+    EdwardsCurve *ec;
+    EdwardsPoint *G;
+    mp_int *G_order;
 };
 
+typedef enum EllipticCurveType {
+    EC_WEIERSTRASS, EC_MONTGOMERY, EC_EDWARDS
+} EllipticCurveType;
+
 struct ec_curve {
-    enum { EC_WEIERSTRASS, EC_MONTGOMERY, EC_EDWARDS } type;
+    EllipticCurveType type;
     /* 'name' is the identifier of the curve when it has to appear in
      * wire protocol encodings, as it does in e.g. the public key and
      * signature formats for NIST curves. Curves which do not format
@@ -461,8 +452,8 @@ struct ec_curve {
      * 'textname' is non-NULL for all curves, and is a human-readable
      * identification suitable for putting in log messages. */
     const char *name, *textname;
-    unsigned int fieldBits;
-    Bignum p;
+    size_t fieldBits, fieldBytes;
+    mp_int *p;
     union {
         struct ec_wcurve w;
         struct ec_mcurve m;
@@ -481,13 +472,21 @@ bool ec_ed_alg_and_curve_by_bits(int bits,
                                  const struct ec_curve **curve,
                                  const ssh_keyalg **alg);
 
-struct ec_key {
-    struct ec_point publicKey;
-    Bignum privateKey;
+struct ecdsa_key {
+    const struct ec_curve *curve;
+    WeierstrassPoint *publicKey;
+    mp_int *privateKey;
+    ssh_key sshk;
+};
+struct eddsa_key {
+    const struct ec_curve *curve;
+    EdwardsPoint *publicKey;
+    mp_int *privateKey;
     ssh_key sshk;
 };
 
-struct ec_point *ec_public(const Bignum privateKey, const struct ec_curve *curve);
+WeierstrassPoint *ecdsa_public(mp_int *private_key, const ssh_keyalg *alg);
+EdwardsPoint *eddsa_public(mp_int *private_key, const ssh_keyalg *alg);
 
 /*
  * SSH-1 never quite decided which order to store the two components
@@ -504,8 +503,9 @@ void BinarySource_get_rsa_ssh1_pub(
 void BinarySource_get_rsa_ssh1_priv(
     BinarySource *src, struct RSAKey *rsa);
 bool rsa_ssh1_encrypt(unsigned char *data, int length, struct RSAKey *key);
-Bignum rsa_ssh1_decrypt(Bignum input, struct RSAKey *key);
-bool rsa_ssh1_decrypt_pkcs1(Bignum input, struct RSAKey *key, strbuf *outbuf);
+mp_int *rsa_ssh1_decrypt(mp_int *input, struct RSAKey *key);
+bool rsa_ssh1_decrypt_pkcs1(mp_int *input, struct RSAKey *key,
+                            strbuf *outbuf);
 char *rsastr_fmt(struct RSAKey *key);
 char *rsa_ssh1_fingerprint(struct RSAKey *key);
 bool rsa_verify(struct RSAKey *key);
@@ -538,25 +538,26 @@ int ssh_rsakex_klen(struct RSAKey *key);
 void ssh_rsakex_encrypt(const struct ssh_hashalg *h,
                         unsigned char *in, int inlen,
                         unsigned char *out, int outlen, struct RSAKey *key);
-Bignum ssh_rsakex_decrypt(const struct ssh_hashalg *h, ptrlen ciphertext,
-                          struct RSAKey *rsa);
+mp_int *ssh_rsakex_decrypt(const struct ssh_hashalg *h, ptrlen ciphertext,
+                              struct RSAKey *rsa);
 
 /*
  * SSH2 ECDH key exchange functions
  */
 struct ssh_kex;
+typedef struct ecdh_key ecdh_key;
 const char *ssh_ecdhkex_curve_textname(const struct ssh_kex *kex);
-struct ec_key *ssh_ecdhkex_newkey(const struct ssh_kex *kex);
-void ssh_ecdhkex_freekey(struct ec_key *key);
-void ssh_ecdhkex_getpublic(struct ec_key *key, BinarySink *bs);
-Bignum ssh_ecdhkex_getkey(struct ec_key *key,
-                          const void *remoteKey, int remoteKeyLen);
+ecdh_key *ssh_ecdhkex_newkey(const struct ssh_kex *kex);
+void ssh_ecdhkex_freekey(ecdh_key *key);
+void ssh_ecdhkex_getpublic(ecdh_key *key, BinarySink *bs);
+mp_int *ssh_ecdhkex_getkey(ecdh_key *key, ptrlen remoteKey);
 
 /*
  * Helper function for k generation in DSA, reused in ECDSA
  */
-Bignum *dss_gen_k(const char *id_string, Bignum modulus, Bignum private_key,
-                  unsigned char *digest, int digest_len);
+mp_int *dss_gen_k(const char *id_string,
+                     mp_int *modulus, mp_int *private_key,
+                     unsigned char *digest, int digest_len);
 
 struct ssh2_cipheralg;
 typedef struct ssh2_cipher {
@@ -740,14 +741,14 @@ typedef struct ssh_hash {
     BinarySink_DELEGATE_IMPLEMENTATION;
 } ssh_hash;
 
-struct ssh_hashalg {
+typedef struct ssh_hashalg {
     ssh_hash *(*new)(const struct ssh_hashalg *alg);
     ssh_hash *(*copy)(ssh_hash *);
     void (*final)(ssh_hash *, unsigned char *); /* ALSO FREES THE ssh_hash! */
     void (*free)(ssh_hash *);
     int hlen; /* output length in bytes */
     const char *text_name;
-};   
+} ssh_hashalg;
 
 #define ssh_hash_new(alg) ((alg)->new(alg))
 #define ssh_hash_copy(ctx) ((ctx)->vt->copy(ctx))
@@ -1053,58 +1054,15 @@ void *x11_dehexify(ptrlen hex, int *outlen);
 
 Channel *agentf_new(SshChannel *c);
 
-Bignum copybn(Bignum b);
-Bignum bn_power_2(int n);
-void bn_restore_invariant(Bignum b);
-Bignum bignum_from_long(unsigned long n);
-void freebn(Bignum b);
-Bignum modpow(Bignum base, Bignum exp, Bignum mod);
-Bignum modmul(Bignum a, Bignum b, Bignum mod);
-Bignum modsub(const Bignum a, const Bignum b, const Bignum n);
-void decbn(Bignum n);
-extern Bignum Zero, One;
-Bignum bignum_from_bytes(const void *data, int nbytes);
-Bignum bignum_from_bytes_le(const void *data, int nbytes);
-Bignum bignum_random_in_range(const Bignum lower, const Bignum upper);
-int bignum_bitcount(Bignum bn);
-int bignum_byte(Bignum bn, int i);
-int bignum_bit(Bignum bn, int i);
-void bignum_set_bit(Bignum bn, int i, int value);
-Bignum biggcd(Bignum a, Bignum b);
-unsigned short bignum_mod_short(Bignum number, unsigned short modulus);
-Bignum bignum_add_long(Bignum number, unsigned long addend);
-Bignum bigadd(Bignum a, Bignum b);
-Bignum bigsub(Bignum a, Bignum b);
-Bignum bigmul(Bignum a, Bignum b);
-Bignum bigmuladd(Bignum a, Bignum b, Bignum addend);
-Bignum bigdiv(Bignum a, Bignum b);
-Bignum bigmod(Bignum a, Bignum b);
-Bignum modinv(Bignum number, Bignum modulus);
-Bignum bignum_bitmask(Bignum number);
-Bignum bignum_rshift(Bignum number, int shift);
-Bignum bignum_lshift(Bignum number, int shift);
-int bignum_cmp(Bignum a, Bignum b);
-char *bignum_decimal(Bignum x);
-Bignum bignum_from_decimal(const char *decimal);
-
-void BinarySink_put_mp_ssh1(BinarySink *, Bignum);
-void BinarySink_put_mp_ssh2(BinarySink *, Bignum);
-Bignum BinarySource_get_mp_ssh1(BinarySource *);
-Bignum BinarySource_get_mp_ssh2(BinarySource *);
-
-#ifdef DEBUG
-void diagbn(char *prefix, Bignum md);
-#endif
-
 bool dh_is_gex(const struct ssh_kex *kex);
 struct dh_ctx;
 struct dh_ctx *dh_setup_group(const struct ssh_kex *kex);
-struct dh_ctx *dh_setup_gex(Bignum pval, Bignum gval);
+struct dh_ctx *dh_setup_gex(mp_int *pval, mp_int *gval);
 int dh_modulus_bit_size(const struct dh_ctx *ctx);
 void dh_cleanup(struct dh_ctx *);
-Bignum dh_create_e(struct dh_ctx *, int nbits);
-const char *dh_validate_f(struct dh_ctx *, Bignum f);
-Bignum dh_find_K(struct dh_ctx *, Bignum f);
+mp_int *dh_create_e(struct dh_ctx *, int nbits);
+const char *dh_validate_f(struct dh_ctx *, mp_int *f);
+mp_int *dh_find_K(struct dh_ctx *, mp_int *f);
 
 bool rsa_ssh1_encrypted(const Filename *filename, char **comment);
 int rsa_ssh1_loadpub(const Filename *filename, BinarySink *bs,
@@ -1113,6 +1071,14 @@ int rsa_ssh1_loadkey(const Filename *filename, struct RSAKey *key,
                      const char *passphrase, const char **errorstr);
 bool rsa_ssh1_savekey(const Filename *filename, struct RSAKey *key,
                       char *passphrase);
+
+static inline bool is_base64_char(char c)
+{
+    return ((c >= '0' && c <= '9') ||
+            (c >= 'a' && c <= 'z') ||
+            (c >= 'A' && c <= 'Z') ||
+            c == '+' || c == '/' || c == '=');
+}
 
 extern int base64_decode_atom(const char *atom, unsigned char *out);
 extern int base64_lines(int datalen);
@@ -1233,12 +1199,13 @@ int rsa_generate(struct RSAKey *key, int bits, progfn_t pfn,
 		 void *pfnparam);
 int dsa_generate(struct dss_key *key, int bits, progfn_t pfn,
 		 void *pfnparam);
-int ec_generate(struct ec_key *key, int bits, progfn_t pfn,
-                void *pfnparam);
-int ec_edgenerate(struct ec_key *key, int bits, progfn_t pfn,
-                  void *pfnparam);
-Bignum primegen(int bits, int modulus, int residue, Bignum factor,
-		int phase, progfn_t pfn, void *pfnparam, unsigned firstbits);
+int ecdsa_generate(struct ecdsa_key *key, int bits, progfn_t pfn,
+                   void *pfnparam);
+int eddsa_generate(struct eddsa_key *key, int bits, progfn_t pfn,
+                   void *pfnparam);
+mp_int *primegen(
+    int bits, int modulus, int residue, mp_int *factor,
+    int phase, progfn_t pfn, void *pfnparam, unsigned firstbits);
 void invent_firstbits(unsigned *one, unsigned *two);
 
 /*
