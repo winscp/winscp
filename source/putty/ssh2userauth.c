@@ -585,11 +585,13 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                 /*
                  * Scan it for method identifiers we know about.
                  */
+                { // WINSCP
                 bool srv_pubkey = false, srv_passwd = false;
                 bool srv_keyb_inter = false, srv_gssapi = false;
                 bool srv_gssapi_keyex_auth = false;
 
-                for (ptrlen method; get_commasep_word(&methods, &method) ;) {
+                ptrlen method; // WINSCP
+                for (; get_commasep_word(&methods, &method) ;) {
                     if (ptrlen_eq_string(method, "publickey"))
                         srv_pubkey = true;
                     else if (ptrlen_eq_string(method, "password"))
@@ -616,6 +618,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                     srv_gssapi_keyex_auth &&
                     s->shgss->libs->nlibraries > 0 && s->shgss->ctx;
 #endif
+                } // WINSCP
             }
 
             s->ppl.bpp->pls->actx = SSH2_PKTCTX_NOAUTH;

@@ -294,4 +294,10 @@ void debug_memdump(const void *buf, int len, bool L);
  * then safely say things like printf("%.*s", length, NULLTOEMPTY(ptr)) */
 #define NULLTOEMPTY(s) ((s)?(s):"")
 
+#ifdef MPEXT
+// Recent PuTTY code uses C99 standard that allows code before initialization.
+// Mostly that code are assertions. This assert implementation allows being used before code.
+#define pinitassert(P) const int __assert_dummy = 1/(P)
+#endif
+
 #endif

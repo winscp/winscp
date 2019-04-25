@@ -59,12 +59,17 @@ static void append_hex_to_strbuf(strbuf *sb, Bignum *x)
     if (sb->len > 0)
         put_byte(sb, ',');
     put_data(sb, "0x", 2);
+    { // WINSCP
     int nibbles = (3 + bignum_bitcount(x)) / 4;
     if (nibbles < 1)
 	nibbles = 1;
+    { // WINSCP
     static const char hex[] = "0123456789abcdef";
-    for (int i = nibbles; i--;)
+    int i; // WINSCP
+    for (i = nibbles; i--;)
 	put_byte(sb, hex[(bignum_byte(x, i / 2) >> (4 * (i % 2))) & 0xF]);
+    } // WINSCP
+    } // WINSCP
 }
 
 static char *dss_cache_str(ssh_key *key)

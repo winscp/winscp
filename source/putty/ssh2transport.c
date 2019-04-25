@@ -945,14 +945,17 @@ static bool ssh2_scan_kexinits(
          */
         *n_server_hostkeys = 0;
 
+        { // WINSCP
         ptrlen list = slists[KEXLIST_HOSTKEY];
-        for (ptrlen word; get_commasep_word(&list, &word) ;) {
+        ptrlen word; // WINSCP
+        for (; get_commasep_word(&list, &word) ;) {
             for (i = 0; i < lenof(ssh2_hostkey_algs); i++)
                 if (ptrlen_eq_string(word, ssh2_hostkey_algs[i].alg->ssh_id)) {
                     server_hostkeys[(*n_server_hostkeys)++] = i;
                     break;
                 }
         }
+        } // WINSCP
     }
 
     return true;

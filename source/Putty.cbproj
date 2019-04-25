@@ -128,6 +128,9 @@
 		<CppCompile Include="putty\marshal.c">
 			<BuildOrder>55</BuildOrder>
 		</CppCompile>
+		<CppCompile Include="putty\memory.c">
+			<BuildOrder>73</BuildOrder>
+		</CppCompile>
 		<CppCompile Include="putty\misc.c">
 			<BuildOrder>26</BuildOrder>
 			<BuildOrder>14</BuildOrder>

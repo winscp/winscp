@@ -326,12 +326,17 @@ static void append_hex_to_strbuf(strbuf *sb, Bignum *x)
     if (sb->len > 0)
         put_byte(sb, ',');
     put_data(sb, "0x", 2);
+    { // WINSCP
     int nibbles = (3 + bignum_bitcount(x)) / 4;
     if (nibbles < 1)
 	nibbles = 1;
+    { // WINSCP
     static const char hex[] = "0123456789abcdef";
-    for (int i = nibbles; i--;)
+    int i; // WINSCP
+    for (i = nibbles; i--;)
 	put_byte(sb, hex[(bignum_byte(x, i / 2) >> (4 * (i % 2))) & 0xF]);
+    } // WINSCP
+    } // WINSCP
 }
 
 char *rsastr_fmt(struct RSAKey *key)
@@ -713,8 +718,9 @@ static unsigned char *rsa_pkcs1_signature_string(
         asn1_prefix_size = sizeof(sha1_asn1_prefix);
     }
 
+    { // WINSCP
     size_t fixed_parts = halg->hlen + asn1_prefix_size + 2;
-    assert(nbytes >= fixed_parts);
+    pinitassert(nbytes >= fixed_parts);
     size_t padding = nbytes - fixed_parts;
 
     unsigned char *bytes = snewn(nbytes, unsigned char);
@@ -726,11 +732,14 @@ static unsigned char *rsa_pkcs1_signature_string(
 
     memcpy(bytes + 2 + padding, asn1_prefix, asn1_prefix_size);
 
+    { // WINSCP
     ssh_hash *h = ssh_hash_new(halg);
     put_data(h, data.ptr, data.len);
     ssh_hash_final(h, bytes + 2 + padding + asn1_prefix_size);
+    } // WINSCP
 
     return bytes;
+    } // WINSCP
 }
 
 static bool rsa2_verify(ssh_key *key, ptrlen sig, ptrlen data)
@@ -763,13 +772,16 @@ static bool rsa2_verify(ssh_key *key, ptrlen sig, ptrlen data)
 
     toret = true;
 
+    { // WINSCP
     size_t nbytes = (bignum_bitcount(rsa->modulus) + 7) / 8;
     unsigned char *bytes = rsa_pkcs1_signature_string(nbytes, &ssh_sha1, data);
-    for (size_t i = 0; i < nbytes; i++)
+    size_t i; // WINSCP
+    for (i = 0; i < nbytes; i++)
 	if (bytes[nbytes-1 - i] != bignum_byte(out, i))
 	    toret = false;
     smemclr(bytes, nbytes);
     sfree(bytes);
+    } // WINSCP
     freebn(out);
 
     return toret;
@@ -810,9 +822,11 @@ static void rsa2_sign(ssh_key *key, const void *data, int datalen,
     put_stringz(bs, sign_alg_name);
     nbytes = (bignum_bitcount(out) + 7) / 8;
     put_uint32(bs, nbytes);
-    for (size_t i = 0; i < nbytes; i++)
-
+    { // WINSCP
+    size_t i; // WINSCP
+    for (i = 0; i < nbytes; i++)
 	put_byte(bs, bignum_byte(out, nbytes - 1 - i));
+    } // WINSCP
 
     freebn(out);
 }
