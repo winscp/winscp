@@ -540,7 +540,7 @@ void x11_get_auth_from_authfile(struct X11Display *disp,
         family = get_uint16(src);
         addr = get_string_xauth(src);
         displaynum_string = mkstr(get_string_xauth(src));
-        displaynum = atoi(displaynum_string);
+        displaynum = displaynum_string[0] ? atoi(displaynum_string) : -1;
         sfree(displaynum_string);
         protoname = get_string_xauth(src);
         data = get_string_xauth(src);
@@ -570,9 +570,8 @@ void x11_get_auth_from_authfile(struct X11Display *disp,
 	 *    authority entries for Unix-domain displays on
 	 *    several machines without them clashing).
 	 * 
-	 *  - 'displaynum' is the display number. I've no idea why
-	 *    .Xauthority stores this as a string when it has a
-	 *    perfectly good integer format, but there we go.
+	 *  - 'displaynum' is the display number. An empty display
+	 *    number is a wildcard for any display number.
 	 * 
 	 *  - 'protoname' is the authorisation protocol, encoded as
 	 *    its canonical string name (i.e. "MIT-MAGIC-COOKIE-1",
@@ -582,7 +581,8 @@ void x11_get_auth_from_authfile(struct X11Display *disp,
 	 *    binary form.
 	 */
 
-	if (disp->displaynum < 0 || disp->displaynum != displaynum)
+	if (disp->displaynum < 0 ||
+	    (displaynum >= 0 && disp->displaynum != displaynum))
 	    continue;		       /* not the one */
 
 	for (protocol = 1; protocol < lenof(x11_authnames); protocol++)

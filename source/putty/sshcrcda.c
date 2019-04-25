@@ -149,6 +149,7 @@ bool detect_attack(
         for (i = HASH(c) & (ctx->n - 1); ctx->h[i] != HASH_UNUSED;
              i = (i + 1) & (ctx->n - 1)) {
             if (ctx->h[i] == HASH_IV) {
+                assert(IV); /* or we wouldn't have stored HASH_IV above */
                 if (!CMP(c, IV)) {
                     if (check_crc(c, buf, len, IV))
                         return true;      /* attack detected */

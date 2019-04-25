@@ -113,4 +113,10 @@ typedef struct PacketProtocolLayer PacketProtocolLayer;
     TYPECHECK(object == &((type *)0)->field,                            \
               ((type *)(((char *)(object)) - offsetof(type, field))))
 
+#if defined __GNUC__ || defined __clang__
+#define NORETURN __attribute__((__noreturn__))
+#else
+#define NORETURN
+#endif
+
 #endif /* PUTTY_DEFS_H */

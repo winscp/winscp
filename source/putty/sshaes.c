@@ -1520,20 +1520,18 @@ static void aes_encrypt_cbc_ni(unsigned char *blk, int len, AESContext * ctx)
 FUNC_ISA
 static void aes_decrypt_cbc_ni(unsigned char *blk, int len, AESContext * ctx)
 {
-    __m128i dec = _mm_setzero_si128();
-    __m128i last, iv;
     __m128i* block = (__m128i*)blk;
     const __m128i* finish = (__m128i*)(blk + len);
 
     assert((len & 15) == 0);
 
     /* Load IV */
-    iv = _mm_loadu_si128((__m128i*)(ctx->iv));
+    __m128i iv = _mm_loadu_si128((__m128i*)(ctx->iv));
     while (block < finish) {
         /* Key schedule ptr   */
         __m128i* keysched = (__m128i*)ctx->invkeysched;
-        last = _mm_loadu_si128(block);
-        dec  = _mm_xor_si128(last, *keysched);
+        __m128i last = _mm_loadu_si128(block);
+        __m128i dec = _mm_xor_si128(last, *keysched);
         switch (ctx->Nr) {
           case 14:
             dec = _mm_aesdec_si128(dec, *(++keysched));

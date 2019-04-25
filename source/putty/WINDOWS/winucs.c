@@ -504,15 +504,14 @@ void init_ucs(Conf *conf, struct unicode_data *ucsdata)
     }
 
 #if 0
-    debug(
-	  ("Line cp%d, Font cp%d%s\n", ucsdata->line_codepage,
-	   ucsdata->font_codepage, ucsdata->dbcs_screenfont ? " DBCS" : ""));
+    debug("Line cp%d, Font cp%d%s\n", ucsdata->line_codepage,
+          ucsdata->font_codepage, ucsdata->dbcs_screenfont ? " DBCS" : "");
 
     for (i = 0; i < 256; i += 16) {
 	for (j = 0; j < 16; j++) {
-	    debug(("%04x%s", ucsdata->unitab_line[i + j], j == 15 ? "" : ","));
+	    debug("%04x%s", ucsdata->unitab_line[i + j], j == 15 ? "" : ",");
 	}
-	debug(("\n"));
+	debug("\n");
     }
 #endif
 

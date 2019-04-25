@@ -20,8 +20,8 @@ static ChanopenResult chan_open_x11(
     char *peeraddr_str;
     Channel *ch;
 
-    ppl_logevent(("Received X11 connect request from %.*s:%d",
-                  PTRLEN_PRINTF(peeraddr), peerport));
+    ppl_logevent("Received X11 connect request from %.*s:%d",
+                 PTRLEN_PRINTF(peeraddr), peerport);
 
     if (!s->X11_fwd_enabled && !s->connshare) {
         CHANOPEN_RETURN_FAILURE(
@@ -33,7 +33,7 @@ static ChanopenResult chan_open_x11(
     ch = x11_new_channel(
         s->x11authtree, sc, peeraddr_str, peerport, s->connshare != NULL);
     sfree(peeraddr_str);
-    ppl_logevent(("Opened X11 forward channel"));
+    ppl_logevent("Opened X11 forward channel");
     CHANOPEN_RETURN_SUCCESS(ch);
 }
 
@@ -46,9 +46,9 @@ static ChanopenResult chan_open_forwarded_tcpip(
     Channel *ch;
     char *err;
 
-    ppl_logevent(("Received remote port %.*s:%d open request from %.*s:%d",
-                  PTRLEN_PRINTF(fwdaddr), fwdport,
-                  PTRLEN_PRINTF(peeraddr), peerport));
+    ppl_logevent("Received remote port %.*s:%d open request from %.*s:%d",
+                 PTRLEN_PRINTF(fwdaddr), fwdport,
+                 PTRLEN_PRINTF(peeraddr), peerport);
 
     pf.shost = mkstr(fwdaddr);
     pf.sport = fwdport;
@@ -72,17 +72,17 @@ static ChanopenResult chan_open_forwarded_tcpip(
     err = portfwdmgr_connect(
         s->portfwdmgr, &ch, realpf->dhost, realpf->dport,
         sc, realpf->addressfamily);
-    ppl_logevent(("Attempting to forward remote port to %s:%d",
-                  realpf->dhost, realpf->dport));
+    ppl_logevent("Attempting to forward remote port to %s:%d",
+                 realpf->dhost, realpf->dport);
     if (err != NULL) {
-        ppl_logevent(("Port open failed: %s", err));
+        ppl_logevent("Port open failed: %s", err);
         sfree(err);
         CHANOPEN_RETURN_FAILURE(
             SSH2_OPEN_CONNECT_FAILED,
             ("Port open failed"));
     }
 
-    ppl_logevent(("Forwarded port opened successfully"));
+    ppl_logevent("Forwarded port opened successfully");
     CHANOPEN_RETURN_SUCCESS(ch);
 }
 
@@ -150,8 +150,8 @@ PktOut *ssh2_portfwd_chanopen(
      * connect _to_.
      */
 
-    ppl_logevent(("Opening connection to %s:%d for %s",
-                  hostname, port, description));
+    ppl_logevent("Opening connection to %s:%d for %s",
+                 hostname, port, description);
 
     pktout = ssh2_chanopen_init(c, "direct-tcpip");
     {
@@ -196,11 +196,11 @@ static void ssh2_rportfwd_globreq_response(struct ssh2_connection_state *s,
     struct ssh_rportfwd *rpf = (struct ssh_rportfwd *)ctx;
 
     if (pktin->type == SSH2_MSG_REQUEST_SUCCESS) {
-	ppl_logevent(("Remote port forwarding from %s enabled",
-                      rpf->log_description));
+	ppl_logevent("Remote port forwarding from %s enabled",
+                     rpf->log_description);
     } else {
-	ppl_logevent(("Remote port forwarding from %s refused",
-                      rpf->log_description));
+	ppl_logevent("Remote port forwarding from %s refused",
+                     rpf->log_description);
 
 	struct ssh_rportfwd *realpf = del234(s->rportfwds, rpf);
 	assert(realpf == rpf);
@@ -293,7 +293,7 @@ SshChannel *ssh2_session_open(ConnectionLayer *cl, Channel *chan)
     c->halfopen = true;
     c->chan = chan;
 
-    ppl_logevent(("Opening main session channel"));
+    ppl_logevent("Opening main session channel");
 
     pktout = ssh2_chanopen_init(c, "session");
     pq_push(s->ppl.out_pq, pktout);

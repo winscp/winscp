@@ -1276,15 +1276,8 @@ int proxy_socks5_negotiate (ProxySocket *p, int change)
 char *format_telnet_command(SockAddr *addr, int port, Conf *conf)
 {
     char *fmt = conf_get_str(conf, CONF_proxy_telnet_command);
-    char *ret = NULL;
-    int retlen = 0, retsize = 0;
     int so = 0, eo = 0;
-#define ENSURE(n) do { \
-    if (retsize < retlen + n) { \
-	retsize = retlen + n + 512; \
-	ret = sresize(ret, retsize, char); \
-    } \
-} while (0)
+    strbuf *buf = strbuf_new();
 
     /* we need to escape \\, \%, \r, \n, \t, \x??, \0???, 
      * %%, %host, %port, %user, and %pass
@@ -1302,11 +1295,8 @@ char *format_telnet_command(SockAddr *addr, int port, Conf *conf)
 
 	/* if there was any unescaped text before the escape
 	 * character, send that now */
-	if (eo != so) {
-	    ENSURE(eo - so);
-	    memcpy(ret + retlen, fmt + so, eo - so);
-	    retlen += eo - so;
-	}
+	if (eo != so)
+            put_data(buf, fmt + so, eo - so);
 
 	so = eo++;
 
@@ -1323,32 +1313,27 @@ char *format_telnet_command(SockAddr *addr, int port, Conf *conf)
 	    switch (fmt[eo]) {
 
 	      case '\\':
-		ENSURE(1);
-		ret[retlen++] = '\\';
+		put_byte(buf, '\\');
 		eo++;
 		break;
 
 	      case '%':
-		ENSURE(1);
-		ret[retlen++] = '%';
+                put_byte(buf, '%');
 		eo++;
 		break;
 
 	      case 'r':
-		ENSURE(1);
-		ret[retlen++] = '\r';
+                put_byte(buf, '\r');
 		eo++;
 		break;
 
 	      case 'n':
-		ENSURE(1);
-		ret[retlen++] = '\n';
+                put_byte(buf, '\n');
 		eo++;
 		break;
 
 	      case 't':
-		ENSURE(1);
-		ret[retlen++] = '\t';
+                put_byte(buf, '\t');
 		eo++;
 		break;
 
@@ -1371,16 +1356,14 @@ char *format_telnet_command(SockAddr *addr, int port, Conf *conf)
 			    /* non hex character, so we abort and just
 			     * send the whole thing unescaped (including \x)
 			     */
-			    ENSURE(1);
-			    ret[retlen++] = '\\';
+                            put_byte(buf, '\\');
 			    eo = so + 1;
 			    break;
 			}
 
 			/* we only extract two hex characters */
 			if (i == 1) {
-			    ENSURE(1);
-			    ret[retlen++] = v;
+                            put_byte(buf, v);
 			    eo++;
 			    break;
 			}
@@ -1392,9 +1375,7 @@ char *format_telnet_command(SockAddr *addr, int port, Conf *conf)
 		break;
 
 	      default:
-		ENSURE(2);
-		memcpy(ret+retlen, fmt + so, 2);
-		retlen += 2;
+                put_data(buf, fmt + so, 2);
 		eo++;
 		break;
 	    }
@@ -1406,61 +1387,37 @@ char *format_telnet_command(SockAddr *addr, int port, Conf *conf)
 	     */
 
 	    if (fmt[eo] == '%') {
-		ENSURE(1);
-		ret[retlen++] = '%';
+                put_byte(buf, '%');
 		eo++;
 	    }
 	    else if (strnicmp(fmt + eo, "host", 4) == 0) {
 		char dest[512];
-		int destlen;
 		sk_getaddr(addr, dest, lenof(dest));
-		destlen = strlen(dest);
-		ENSURE(destlen);
-		memcpy(ret+retlen, dest, destlen);
-		retlen += destlen;
+		put_data(buf, dest, strlen(dest));
 		eo += 4;
 	    }
 	    else if (strnicmp(fmt + eo, "port", 4) == 0) {
-		char portstr[8], portlen;
-		portlen = sprintf(portstr, "%i", port);
-		ENSURE(portlen);
-		memcpy(ret + retlen, portstr, portlen);
-		retlen += portlen;
+                strbuf_catf(buf, "%d", port);
 		eo += 4;
 	    }
 	    else if (strnicmp(fmt + eo, "user", 4) == 0) {
-		char *username = conf_get_str(conf, CONF_proxy_username);
-		int userlen = strlen(username);
-		ENSURE(userlen);
-		memcpy(ret+retlen, username, userlen);
-		retlen += userlen;
+		const char *username = conf_get_str(conf, CONF_proxy_username);
+		put_data(buf, username, strlen(username));
 		eo += 4;
 	    }
 	    else if (strnicmp(fmt + eo, "pass", 4) == 0) {
-		char *password = conf_get_str(conf, CONF_proxy_password);
-		int passlen = strlen(password);
-		ENSURE(passlen);
-		memcpy(ret+retlen, password, passlen);
-		retlen += passlen;
+		const char *password = conf_get_str(conf, CONF_proxy_password);
+		put_data(buf, password, strlen(password));
 		eo += 4;
 	    }
 	    else if (strnicmp(fmt + eo, "proxyhost", 9) == 0) {
-		char *host = conf_get_str(conf, CONF_proxy_host);
-		int phlen = strlen(host);
-		ENSURE(phlen);
-		memcpy(ret+retlen, host, phlen);
-		retlen += phlen;
+		const char *host = conf_get_str(conf, CONF_proxy_host);
+		put_data(buf, host, strlen(host));
 		eo += 9;
 	    }
 	    else if (strnicmp(fmt + eo, "proxyport", 9) == 0) {
 		int port = conf_get_int(conf, CONF_proxy_port);
-                char pport[50];
-		int pplen;
-                sprintf(pport, "%d", port);
-                pplen = strlen(pport);
-		ENSURE(pplen);
-		memcpy(ret+retlen, pport, pplen);
-		retlen += pplen;
+                strbuf_catf(buf, "%d", port);
 		eo += 9;
 	    }
 	    else {
@@ -1468,8 +1425,7 @@ char *format_telnet_command(SockAddr *addr, int port, Conf *conf)
 		 * don't advance eo, so that we'll consider the
 		 * text immediately following the % as unescaped.
 		 */
-		ENSURE(1);
-		ret[retlen++] = '%';
+                put_byte(buf, '%');
 	    }
 	}
 
@@ -1479,16 +1435,10 @@ char *format_telnet_command(SockAddr *addr, int port, Conf *conf)
 
     /* if there is any unescaped text at the end of the line, send it */
     if (eo != so) {
-	ENSURE(eo - so);
-	memcpy(ret + retlen, fmt + so, eo - so);
-	retlen += eo - so;
+	put_data(buf, fmt + so, eo - so);
     }
 
-    ENSURE(1);
-    ret[retlen] = '\0';
-    return ret;
-
-#undef ENSURE
+    return strbuf_to_str(buf);
 }
 
 int proxy_telnet_negotiate (ProxySocket *p, int change)

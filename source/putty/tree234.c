@@ -639,13 +639,10 @@ void search234_step(search234_state *state, int direction)
         assert(direction);
         assert(node);
 
-        if (direction > 0) {
+        if (direction > 0)
             state->_lo = state->_last + 1;
-            direction = +1;
-        } else {
+        else
             state->_hi = state->_last - 1;
-            direction = -1;
-        }
 
         if (state->_lo > state->_hi) {
             /*

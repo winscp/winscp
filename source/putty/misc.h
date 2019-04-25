@@ -106,6 +106,7 @@ void bufchain_consume(bufchain *ch, int len);
 void bufchain_fetch(bufchain *ch, void *data, int len);
 void bufchain_fetch_consume(bufchain *ch, void *data, int len);
 bool bufchain_try_fetch_consume(bufchain *ch, void *data, int len);
+int bufchain_fetch_consume_up_to(bufchain *ch, void *data, int len);
 
 void sanitise_term_data(bufchain *out, const void *vdata, int len);
 
@@ -173,7 +174,7 @@ char *buildinfo(const char *newline);
  *
  * Output goes to debug.log
  *
- * debug(()) (note the double brackets) is like printf().
+ * debug() is like printf().
  *
  * dmemdump() and dmemdumpl() both do memory dumps.  The difference
  * is that dmemdumpl() is more suited for when the memory address is
@@ -184,11 +185,11 @@ char *buildinfo(const char *newline);
 #ifdef DEBUG
 void debug_printf(const char *fmt, ...);
 void debug_memdump(const void *buf, int len, bool L);
-#define debug(x) (debug_printf x)
+#define debug(...) (debug_printf(__VA_ARGS__))
 #define dmemdump(buf,len) debug_memdump (buf, len, false);
 #define dmemdumpl(buf,len) debug_memdump (buf, len, true);
 #else
-#define debug(x)
+#define debug(...)
 #define dmemdump(buf,len)
 #define dmemdumpl(buf,len)
 #endif

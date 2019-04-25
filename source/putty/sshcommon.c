@@ -687,45 +687,6 @@ unsigned alloc_channel_id_general(tree234 *channels, size_t localid_offset)
  * lists of protocol identifiers in SSH-2.
  */
 
-bool first_in_commasep_string(char const *needle, char const *haystack,
-                              int haylen)
-{
-    int needlen;
-    if (!needle || !haystack)          /* protect against null pointers */
-        return false;
-    needlen = strlen(needle);
-
-    if (haylen >= needlen &&       /* haystack is long enough */
-        !memcmp(needle, haystack, needlen) &&   /* initial match */
-        (haylen == needlen || haystack[needlen] == ',')
-        /* either , or EOS follows */
-        )
-        return true;
-    return false;
-}
-
-bool in_commasep_string(char const *needle, char const *haystack, int haylen)
-{
-    char *p;
-
-    if (!needle || !haystack)          /* protect against null pointers */
-        return false;
-    /*
-     * Is it at the start of the string?
-     */
-    if (first_in_commasep_string(needle, haystack, haylen))
-        return true;
-    /*
-     * If not, search for the next comma and resume after that.
-     * If no comma found, terminate.
-     */
-    p = memchr(haystack, ',', haylen);
-    if (!p)
-        return false;
-    /* + 1 to skip over comma */
-    return in_commasep_string(needle, p + 1, haylen - (p + 1 - haystack));
-}
-
 void add_to_commasep(strbuf *buf, const char *data)
 {
     if (buf->len > 0)
@@ -1025,7 +986,7 @@ bool ssh1_common_filter_queue(PacketProtocolLayer *ppl)
 
           case SSH1_MSG_DEBUG:
             msg = get_string(pktin);
-            ppl_logevent(("Remote debug message: %.*s", PTRLEN_PRINTF(msg)));
+            ppl_logevent("Remote debug message: %.*s", PTRLEN_PRINTF(msg));
             pq_pop(ppl->in_pq);
             break;
 

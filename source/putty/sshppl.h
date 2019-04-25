@@ -118,16 +118,14 @@ void ssh2_userauth_set_transport_layer(PacketProtocolLayer *userauth,
 
 /* Convenience macro for protocol layers to send formatted strings to
  * the Event Log. Assumes a function parameter called 'ppl' is in
- * scope, and takes a double pair of parens because it passes a whole
- * argument list to dupprintf. */
-#define ppl_logevent(params) ( \
-        logevent_and_free((ppl)->logctx, dupprintf params))
+ * scope. */
+#define ppl_logevent(...) ( \
+        logevent_and_free((ppl)->logctx, dupprintf(__VA_ARGS__)))
 
 /* Convenience macro for protocol layers to send formatted strings to
- * the terminal. Also expects 'ppl' to be in scope and takes double
- * parens. */
-#define ppl_printf(params) \
-    ssh_ppl_user_output_string_and_free(ppl, dupprintf params)
+ * the terminal. Also expects 'ppl' to be in scope. */
+#define ppl_printf(...) \
+    ssh_ppl_user_output_string_and_free(ppl, dupprintf(__VA_ARGS__))
 void ssh_ppl_user_output_string_and_free(PacketProtocolLayer *ppl, char *text);
 
 /* Methods for userauth to communicate back to the transport layer */

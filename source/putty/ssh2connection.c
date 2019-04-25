@@ -407,8 +407,8 @@ static bool ssh2_connection_filter_queue(struct ssh2_connection_state *s)
                 put_stringz(pktout, chanopen_result.u.failure.wire_message);
                 put_stringz(pktout, "en");	/* language tag */
                 pq_push(s->ppl.out_pq, pktout);
-                ppl_logevent(("Rejected channel open: %s",
-                              chanopen_result.u.failure.wire_message));
+                ppl_logevent("Rejected channel open: %s",
+                             chanopen_result.u.failure.wire_message);
                 sfree(chanopen_result.u.failure.wire_message);
                 sfree(c);
             } else {
@@ -685,8 +685,7 @@ static bool ssh2_connection_filter_queue(struct ssh2_connection_state *s)
                         bs_modes, encoded_modes.ptr, encoded_modes.len);
                     modes = read_ttymodes_from_packet(bs_modes, 2);
                     if (get_err(bs_modes) || get_avail(bs_modes) > 0) {
-                        ppl_logevent(("Unable to decode terminal mode "
-                                      "string"));
+                        ppl_logevent("Unable to decode terminal mode string");
                         reply_success = false;
                     } else {
                         reply_success = chan_allocate_pty(
@@ -1151,7 +1150,7 @@ static void ssh2_channel_close_local(struct ssh2_channel *c,
     msg = chan_log_close_msg(c->chan);
 
     if (msg)
-        ppl_logevent(("%s%s%s", msg, reason ? " " : "", reason ? reason : ""));
+        ppl_logevent("%s%s%s", msg, reason ? " " : "", reason ? reason : "");
 
     sfree(msg);
 

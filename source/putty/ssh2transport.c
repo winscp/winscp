@@ -39,13 +39,13 @@ static void ssh_decomp_none_cleanup(ssh_decompressor *handle)
 {
 }
 static void ssh_comp_none_block(ssh_compressor *handle,
-                                unsigned char *block, int len,
+                                const unsigned char *block, int len,
                                 unsigned char **outblock, int *outlen,
                                 int minlen)
 {
 }
 static bool ssh_decomp_none_block(ssh_decompressor *handle,
-                                  unsigned char *block, int len,
+                                  const unsigned char *block, int len,
                                   unsigned char **outblock, int *outlen)
 {
     return false;
@@ -344,7 +344,7 @@ bool ssh2_common_filter_queue(PacketProtocolLayer *ppl)
             /* XXX maybe we should actually take notice of the return value */
             get_bool(pktin);
             msg = get_string(pktin);
-            ppl_logevent(("Remote debug message: %.*s", PTRLEN_PRINTF(msg)));
+            ppl_logevent("Remote debug message: %.*s", PTRLEN_PRINTF(msg));
             pq_pop(ppl->in_pq);
             break;
 
@@ -940,11 +940,14 @@ static bool ssh2_scan_kexinits(
          */
         *n_server_hostkeys = 0;
 
-        for (i = 0; i < lenof(ssh2_hostkey_algs); i++)
-            if (in_commasep_string(ssh2_hostkey_algs[i].alg->ssh_id,
-                                   slists[KEXLIST_HOSTKEY].ptr,
-                                   slists[KEXLIST_HOSTKEY].len))
-                server_hostkeys[(*n_server_hostkeys)++] = i;
+        ptrlen list = slists[KEXLIST_HOSTKEY];
+        for (ptrlen word; get_commasep_word(&list, &word) ;) {
+            for (i = 0; i < lenof(ssh2_hostkey_algs); i++)
+                if (ptrlen_eq_string(word, ssh2_hostkey_algs[i].alg->ssh_id)) {
+                    server_hostkeys[(*n_server_hostkeys)++] = i;
+                    break;
+                }
+        }
     }
 
     return true;
@@ -958,7 +961,7 @@ void ssh2transport_finalise_exhash(struct ssh2_transport_state *s)
     s->exhash = NULL;
 
 #if 0
-    debug(("Exchange hash is:\n"));
+    debug("Exchange hash is:\n");
     dmemdump(s->exchange_hash, s->kex_alg->hash->hlen);
 #endif
 }
@@ -1233,9 +1236,12 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
     put_string(s->exhash, s->server_kexinit->u, s->server_kexinit->len);
     s->crStateKex = 0;
     while (1) {
-        ssh2kex_coroutine(s);
+        bool aborted = false;
+        ssh2kex_coroutine(s, &aborted);
+        if (aborted)
+            return;    /* disaster: our entire state has been freed */
         if (!s->crStateKex)
-            break;
+            break;     /* kex phase has terminated normally */
         crReturnV;
     }
 
@@ -1372,7 +1378,7 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
      * deferred rekey reason.
      */
     if (s->deferred_rekey_reason) {
-        ppl_logevent(("%s", s->deferred_rekey_reason));
+        ppl_logevent("%s", s->deferred_rekey_reason);
         pktin = NULL;
         s->deferred_rekey_reason = NULL;
         goto begin_key_exchange;
@@ -1459,7 +1465,7 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
                 return;
             }
             pq_push_front(s->ppl.in_pq, pktin);
-            ppl_logevent(("Remote side initiated key re-exchange"));
+            ppl_logevent("Remote side initiated key re-exchange");
             s->rekey_class = RK_SERVER;
         }
 
@@ -1504,8 +1510,8 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
              * rekey, we process it anyway!)
              */
             if ((s->ppl.remote_bugs & BUG_SSH2_REKEY)) {
-                ppl_logevent(("Remote bug prevents key re-exchange (%s)",
-                              s->rekey_reason));
+                ppl_logevent("Remote bug prevents key re-exchange (%s)",
+                             s->rekey_reason);
                 /* Reset the counters, so that at least this message doesn't
                  * hit the event log _too_ often. */
                 s->stats->in.running = s->stats->out.running = true;
@@ -1514,8 +1520,8 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
                 (void) ssh2_transport_timer_update(s, 0);
                 s->rekey_class = RK_NONE;
             } else {
-                ppl_logevent(("Initiating key re-exchange (%s)",
-                              s->rekey_reason));
+                ppl_logevent("Initiating key re-exchange (%s)",
+                             s->rekey_reason);
             }
         }
     } while (s->rekey_class == RK_NONE);
@@ -1691,11 +1697,11 @@ static void ssh2_transport_gss_update(struct ssh2_transport_state *s,
             s->shgss->lib, s->fullhostname, &s->shgss->srv_name);
         if (gss_stat != SSH_GSS_OK) {
             if (gss_stat == SSH_GSS_BAD_HOST_NAME)
-                ppl_logevent(("GSSAPI import name failed - Bad service name;"
-                              " won't use GSS key exchange"));
+                ppl_logevent("GSSAPI import name failed - Bad service name;"
+                             " won't use GSS key exchange");
             else
-                ppl_logevent(("GSSAPI import name failed;"
-                              " won't use GSS key exchange"));
+                ppl_logevent("GSSAPI import name failed;"
+                             " won't use GSS key exchange");
             return;
         }
     }
@@ -1737,7 +1743,7 @@ static void ssh2_transport_gss_update(struct ssh2_transport_state *s,
          * it shouldn't pop up all the time regardless.
          */
         if (definitely_rekeying)
-            ppl_logevent(("No GSSAPI security context available"));
+            ppl_logevent("No GSSAPI security context available");
 
         return;
     }
@@ -1803,7 +1809,7 @@ static bool ssh2_transport_get_specials(
     struct ssh2_transport_state *s =
         container_of(ppl, struct ssh2_transport_state, ppl);
     bool need_separator = false;
-    bool toret;
+    bool toret = false;
 
     if (ssh_ppl_get_specials(s->higher_layer, add_special, ctx)) {
         need_separator = true;
@@ -1856,8 +1862,7 @@ static void ssh2_transport_special_cmd(PacketProtocolLayer *ppl,
 	}
     } else if (code == SS_XCERT) {
 	if (!s->kex_in_progress) {
-            s->hostkey_alg = ssh2_hostkey_algs[arg].alg;
-            s->cross_certifying = true;
+            s->cross_certifying = s->hostkey_alg = ssh2_hostkey_algs[arg].alg;
             s->rekey_reason = "cross-certifying new host key";
             s->rekey_class = RK_NORMAL;
             queue_idempotent_callback(&s->ppl.ic_process_queue);

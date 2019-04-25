@@ -482,7 +482,7 @@ static void ssh1_channel_close_local(struct ssh1_channel *c,
     const char *msg = chan_log_close_msg(c->chan);
 
     if (msg != NULL)
-        ppl_logevent(("%s%s%s", msg, reason ? " " : "", reason ? reason : ""));
+        ppl_logevent("%s%s%s", msg, reason ? " " : "", reason ? reason : "");
 
     chan_free(c->chan);
     c->chan = zombiechan_new();
@@ -637,8 +637,8 @@ static SshChannel *ssh1_lportfwd_open(
     c->halfopen = true;
     c->chan = chan;
 
-    ppl_logevent(("Opening connection to %s:%d for %s",
-                  hostname, port, description));
+    ppl_logevent("Opening connection to %s:%d for %s",
+                 hostname, port, description);
 
     pktout = ssh_bpp_new_pktout(s->ppl.bpp, SSH1_MSG_PORT_OPEN);
     put_uint32(pktout, c->localid);

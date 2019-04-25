@@ -1938,20 +1938,19 @@ void diagbn(char *prefix, Bignum md)
     int i, nibbles, morenibbles;
     static const char hex[] = "0123456789ABCDEF";
 
-    debug(("%s0x", prefix ? prefix : ""));
+    debug("%s0x", prefix ? prefix : "");
 
     nibbles = (3 + bignum_bitcount(md)) / 4;
     if (nibbles < 1)
 	nibbles = 1;
     morenibbles = 4 * md[0] - nibbles;
     for (i = 0; i < morenibbles; i++)
-	debug(("-"));
+	debug("-");
     for (i = nibbles; i--;)
-	debug(("%c",
-	       hex[(bignum_byte(md, i / 2) >> (4 * (i % 2))) & 0xF]));
+        debug("%c", hex[(bignum_byte(md, i / 2) >> (4 * (i % 2))) & 0xF]);
 
     if (prefix)
-	debug(("\n"));
+	debug("\n");
 }
 #endif
 
