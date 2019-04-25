@@ -113,8 +113,8 @@ void ssh2_bpp_new_outgoing_crypto(
             (ssh2_cipher_alg(s->out.cipher)->flags & SSH_CIPHER_IS_CBC) &&
             !(s->bpp.remote_bugs & BUG_CHOKES_ON_SSH2_IGNORE));
 
-        bpp_logevent(("Initialised %.200s outbound encryption",
-                      ssh2_cipher_alg(s->out.cipher)->text_name));
+        bpp_logevent("Initialised %s outbound encryption",
+                     ssh2_cipher_alg(s->out.cipher)->text_name);
     } else {
         s->out.cipher = NULL;
         s->cbc_ignore_workaround = false;
@@ -124,12 +124,12 @@ void ssh2_bpp_new_outgoing_crypto(
         s->out.mac = ssh2_mac_new(mac, s->out.cipher);
         mac->setkey(s->out.mac, mac_key);
 
-        bpp_logevent(("Initialised %.200s outbound MAC algorithm%s%s",
-                      ssh2_mac_alg(s->out.mac)->text_name,
-                      etm_mode ? " (in ETM mode)" : "",
-                      (s->out.cipher &&
-                       ssh2_cipher_alg(s->out.cipher)->required_mac ?
-                       " (required by cipher)" : "")));
+        bpp_logevent("Initialised %s outbound MAC algorithm%s%s",
+                     ssh2_mac_alg(s->out.mac)->text_name,
+                     etm_mode ? " (in ETM mode)" : "",
+                     (s->out.cipher &&
+                      ssh2_cipher_alg(s->out.cipher)->required_mac ?
+                      " (required by cipher)" : ""));
     } else {
         s->out.mac = NULL;
     }
@@ -138,8 +138,8 @@ void ssh2_bpp_new_outgoing_crypto(
         s->out.pending_compression = compression;
         s->out_comp = NULL;
 
-        bpp_logevent(("Will enable %s compression after user authentication",
-                      s->out.pending_compression->text_name));
+        bpp_logevent("Will enable %s compression after user authentication",
+                     s->out.pending_compression->text_name);
     } else {
         s->out.pending_compression = NULL;
 
@@ -149,8 +149,8 @@ void ssh2_bpp_new_outgoing_crypto(
         s->out_comp = ssh_compressor_new(compression);
 
         if (s->out_comp)
-            bpp_logevent(("Initialised %s compression",
-                          ssh_compressor_alg(s->out_comp)->text_name));
+            bpp_logevent("Initialised %s compression",
+                         ssh_compressor_alg(s->out_comp)->text_name);
     }
 }
 
@@ -176,8 +176,8 @@ void ssh2_bpp_new_incoming_crypto(
         ssh2_cipher_setkey(s->in.cipher, ckey);
         ssh2_cipher_setiv(s->in.cipher, iv);
 
-        bpp_logevent(("Initialised %.200s inbound encryption",
-                      ssh2_cipher_alg(s->in.cipher)->text_name));
+        bpp_logevent("Initialised %s inbound encryption",
+                     ssh2_cipher_alg(s->in.cipher)->text_name);
     } else {
         s->in.cipher = NULL;
     }
@@ -186,12 +186,12 @@ void ssh2_bpp_new_incoming_crypto(
         s->in.mac = ssh2_mac_new(mac, s->in.cipher);
         mac->setkey(s->in.mac, mac_key);
 
-        bpp_logevent(("Initialised %.200s inbound MAC algorithm%s%s",
-                      ssh2_mac_alg(s->in.mac)->text_name,
-                      etm_mode ? " (in ETM mode)" : "",
-                      (s->in.cipher &&
-                       ssh2_cipher_alg(s->in.cipher)->required_mac ?
-                       " (required by cipher)" : "")));
+        bpp_logevent("Initialised %s inbound MAC algorithm%s%s",
+                     ssh2_mac_alg(s->in.mac)->text_name,
+                     etm_mode ? " (in ETM mode)" : "",
+                     (s->in.cipher &&
+                      ssh2_cipher_alg(s->in.cipher)->required_mac ?
+                      " (required by cipher)" : ""));
     } else {
         s->in.mac = NULL;
     }
@@ -200,8 +200,8 @@ void ssh2_bpp_new_incoming_crypto(
         s->in.pending_compression = compression;
         s->in_decomp = NULL;
 
-        bpp_logevent(("Will enable %s decompression after user authentication",
-                      s->in.pending_compression->text_name));
+        bpp_logevent("Will enable %s decompression after user authentication",
+                     s->in.pending_compression->text_name);
     } else {
         s->in.pending_compression = NULL;
 
@@ -211,8 +211,8 @@ void ssh2_bpp_new_incoming_crypto(
         s->in_decomp = ssh_decompressor_new(compression);
 
         if (s->in_decomp)
-            bpp_logevent(("Initialised %s decompression",
-                          ssh_decompressor_alg(s->in_decomp)->text_name));
+            bpp_logevent("Initialised %s decompression",
+                         ssh_decompressor_alg(s->in_decomp)->text_name);
     }
 
     /* Clear the pending_newkeys flag, so that handle_input below will
@@ -239,25 +239,26 @@ static void ssh2_bpp_enable_pending_compression(struct ssh2_bpp_state *s)
 
     if (s->in.pending_compression) {
         s->in_decomp = ssh_decompressor_new(s->in.pending_compression);
-        bpp_logevent(("Initialised delayed %s decompression",
-                      ssh_decompressor_alg(s->in_decomp)->text_name));
+        bpp_logevent("Initialised delayed %s decompression",
+                     ssh_decompressor_alg(s->in_decomp)->text_name);
         s->in.pending_compression = NULL;
     }
     if (s->out.pending_compression) {
         s->out_comp = ssh_compressor_new(s->out.pending_compression);
-        bpp_logevent(("Initialised delayed %s compression",
-                      ssh_compressor_alg(s->out_comp)->text_name));
+        bpp_logevent("Initialised delayed %s compression",
+                     ssh_compressor_alg(s->out_comp)->text_name);
         s->out.pending_compression = NULL;
     }
 }
 
-#define BPP_READ(ptr, len) do                                   \
-    {                                                           \
-        crMaybeWaitUntilV(s->bpp.input_eof ||                   \
-                          bufchain_try_fetch_consume(           \
-                              s->bpp.in_raw, ptr, len));        \
-        if (s->bpp.input_eof)                                   \
-            goto eof;                                           \
+#define BPP_READ(ptr, len) do                                           \
+    {                                                                   \
+        bool success;                                                   \
+        crMaybeWaitUntilV((success = bufchain_try_fetch_consume(        \
+                               s->bpp.in_raw, ptr, len)) ||             \
+                          s->bpp.input_eof);                            \
+        if (!success)                                                   \
+            goto eof;                                                   \
     } while (0)
 
 #define userauth_range(pkttype) ((unsigned)((pkttype) - 50) < 20)

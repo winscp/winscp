@@ -512,14 +512,13 @@ void BinarySource_get_rsa_ssh1_priv(
 bool rsa_ssh1_encrypt(unsigned char *data, int length, struct RSAKey *key);
 Bignum rsa_ssh1_decrypt(Bignum input, struct RSAKey *key);
 bool rsa_ssh1_decrypt_pkcs1(Bignum input, struct RSAKey *key, strbuf *outbuf);
-void rsasanitise(struct RSAKey *key);
-int rsastr_len(struct RSAKey *key);
-void rsastr_fmt(char *str, struct RSAKey *key);
+char *rsastr_fmt(struct RSAKey *key);
 char *rsa_ssh1_fingerprint(struct RSAKey *key);
 bool rsa_verify(struct RSAKey *key);
 void rsa_ssh1_public_blob(BinarySink *bs, struct RSAKey *key,
                           RsaSsh1Order order);
 int rsa_ssh1_public_blob_len(void *data, int maxlen);
+void freersapriv(struct RSAKey *key);
 void freersakey(struct RSAKey *key);
 #endif // WINSCP_VS
 
@@ -853,12 +852,12 @@ struct ssh_compression_alg {
     const char *delayed_name;
     ssh_compressor *(*compress_new)(void);
     void (*compress_free)(ssh_compressor *);
-    void (*compress)(ssh_compressor *, unsigned char *block, int len,
+    void (*compress)(ssh_compressor *, const unsigned char *block, int len,
                      unsigned char **outblock, int *outlen,
                      int minlen);
     ssh_decompressor *(*decompress_new)(void);
     void (*decompress_free)(ssh_decompressor *);
-    bool (*decompress)(ssh_decompressor *, unsigned char *block, int len,
+    bool (*decompress)(ssh_decompressor *, const unsigned char *block, int len,
                        unsigned char **outblock, int *outlen);
     const char *text_name;
 };
@@ -1556,9 +1555,6 @@ unsigned alloc_channel_id_general(tree234 *channels, size_t localid_offset);
     TYPECHECK(&((type *)0)->localid == (unsigned *)0, \
               alloc_channel_id_general(tree, offsetof(type, localid)))
 
-bool first_in_commasep_string(char const *needle, char const *haystack,
-                              int haylen);
-bool in_commasep_string(char const *needle, char const *haystack, int haylen);
 void add_to_commasep(strbuf *buf, const char *data);
 bool get_commasep_word(ptrlen *list, ptrlen *word);
 

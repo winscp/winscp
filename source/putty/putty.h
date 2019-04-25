@@ -1141,11 +1141,8 @@ struct TermWinVtable {
  * Global functions not specific to a connection instance.
  */
 void nonfatal(const char *, ...);
-void modalfatalbox(const char *, ...);
-#ifdef macintosh
-#pragma noreturn(modalfatalbox)
-#endif
-void cleanup_exit(int);
+NORETURN void modalfatalbox(const char *, ...);
+NORETURN void cleanup_exit(int);
 
 /*
  * Exports from conf.c, and a big enum (via parametric macro) of
@@ -1542,7 +1539,15 @@ void term_set_focus(Terminal *term, bool has_focus);
 char *term_get_ttymode(Terminal *term, const char *mode);
 int term_get_userpass_input(Terminal *term, prompts_t *p, bufchain *input);
 
+typedef enum SmallKeypadKey {
+    SKK_HOME, SKK_END, SKK_INSERT, SKK_DELETE, SKK_PGUP, SKK_PGDN,
+} SmallKeypadKey;
 int format_arrow_key(char *buf, Terminal *term, int xkey, bool ctrl);
+int format_function_key(char *buf, Terminal *term, int key_number,
+                        bool shift, bool ctrl);
+int format_small_keypad_key(char *buf, Terminal *term, SmallKeypadKey key);
+int format_numeric_keypad_key(char *buf, Terminal *term, char key,
+                              bool shift, bool ctrl);
 
 /*
  * Exports from logging.c.

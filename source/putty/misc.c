@@ -825,6 +825,15 @@ bool bufchain_try_fetch_consume(bufchain *ch, void *data, int len)
     }
 }
 
+int bufchain_fetch_consume_up_to(bufchain *ch, void *data, int len)
+{
+    if (len > ch->buffersize)
+        len = ch->buffersize;
+    if (len)
+        bufchain_fetch_consume(ch, data, len);
+    return len;
+}
+
 /* ----------------------------------------------------------------------
  * Sanitise terminal output that we have reason not to trust, e.g.
  * because it appears in the login banner or password prompt from a
@@ -862,12 +871,6 @@ void sanitise_term_data(bufchain *out, const void *vdata, int len)
  * one.
  */
 
-#ifdef MINEFIELD
-void *minefield_c_malloc(size_t size);
-void minefield_c_free(void *p);
-void *minefield_c_realloc(void *p, size_t size);
-#endif
-
 #ifdef MALLOC_LOG
 static FILE *fp = NULL;
 
@@ -886,102 +889,6 @@ void mlog(char *file, int line)
 	fprintf(fp, "%s:%d: ", file, line);
 }
 #endif
-
-void *safemalloc(size_t n, size_t size)
-{
-    void *p;
-
-    if (n > INT_MAX / size) {
-	p = NULL;
-    } else {
-	size *= n;
-	if (size == 0) size = 1;
-#ifdef MINEFIELD
-	p = minefield_c_malloc(size);
-#else
-	p = malloc(size);
-#endif
-    }
-
-    if (!p) {
-	char str[200];
-#ifdef MALLOC_LOG
-	sprintf(str, "Out of memory! (%s:%d, size=%d)",
-		mlog_file, mlog_line, size);
-	fprintf(fp, "*** %s\n", str);
-	fclose(fp);
-#else
-	strcpy(str, "Out of memory!");
-#endif
-	modalfatalbox("%s", str);
-    }
-#ifdef MALLOC_LOG
-    if (fp)
-	fprintf(fp, "malloc(%d) returns %p\n", size, p);
-#endif
-    return p;
-}
-
-void *saferealloc(void *ptr, size_t n, size_t size)
-{
-    void *p;
-
-    if (n > INT_MAX / size) {
-	p = NULL;
-    } else {
-	size *= n;
-	if (!ptr) {
-#ifdef MINEFIELD
-	    p = minefield_c_malloc(size);
-#else
-	    p = malloc(size);
-#endif
-	} else {
-#ifdef MINEFIELD
-	    p = minefield_c_realloc(ptr, size);
-#else
-	    p = realloc(ptr, size);
-#endif
-	}
-    }
-
-    if (!p) {
-	char str[200];
-#ifdef MALLOC_LOG
-	sprintf(str, "Out of memory! (%s:%d, size=%d)",
-		mlog_file, mlog_line, size);
-	fprintf(fp, "*** %s\n", str);
-	fclose(fp);
-#else
-	strcpy(str, "Out of memory!");
-#endif
-	modalfatalbox("%s", str);
-    }
-#ifdef MALLOC_LOG
-    if (fp)
-	fprintf(fp, "realloc(%p,%d) returns %p\n", ptr, size, p);
-#endif
-    return p;
-}
-
-void safefree(void *ptr)
-{
-    if (ptr) {
-#ifdef MALLOC_LOG
-	if (fp)
-	    fprintf(fp, "free(%p)\n", ptr);
-#endif
-#ifdef MINEFIELD
-	minefield_c_free(ptr);
-#else
-	free(ptr);
-#endif
-    }
-#ifdef MALLOC_LOG
-    else if (fp)
-	fprintf(fp, "freeing null pointer - no action taken\n");
-#endif
-}
 
 /* ----------------------------------------------------------------------
  * Debugging routines.

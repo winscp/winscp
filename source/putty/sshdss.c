@@ -54,54 +54,33 @@ static void dss_freekey(ssh_key *key)
     sfree(dss);
 }
 
+static void append_hex_to_strbuf(strbuf *sb, Bignum *x)
+{
+    if (sb->len > 0)
+        put_byte(sb, ',');
+    put_data(sb, "0x", 2);
+    int nibbles = (3 + bignum_bitcount(x)) / 4;
+    if (nibbles < 1)
+	nibbles = 1;
+    static const char hex[] = "0123456789abcdef";
+    for (int i = nibbles; i--;)
+	put_byte(sb, hex[(bignum_byte(x, i / 2) >> (4 * (i % 2))) & 0xF]);
+}
+
 static char *dss_cache_str(ssh_key *key)
 {
     struct dss_key *dss = container_of(key, struct dss_key, sshk);
-    char *p;
-    int len, i, pos, nibbles;
-    static const char hex[] = "0123456789abcdef";
+    strbuf *sb = strbuf_new();
+
     if (!dss->p)
 	return NULL;
-    len = 8 + 4 + 1;		       /* 4 x "0x", punctuation, \0 */
-    len += 4 * (bignum_bitcount(dss->p) + 15) / 16;
-    len += 4 * (bignum_bitcount(dss->q) + 15) / 16;
-    len += 4 * (bignum_bitcount(dss->g) + 15) / 16;
-    len += 4 * (bignum_bitcount(dss->y) + 15) / 16;
-    p = snewn(len, char);
-    if (!p)
-	return NULL;
 
-    pos = 0;
-    pos += sprintf(p + pos, "0x");
-    nibbles = (3 + bignum_bitcount(dss->p)) / 4;
-    if (nibbles < 1)
-	nibbles = 1;
-    for (i = nibbles; i--;)
-	p[pos++] =
-	    hex[(bignum_byte(dss->p, i / 2) >> (4 * (i % 2))) & 0xF];
-    pos += sprintf(p + pos, ",0x");
-    nibbles = (3 + bignum_bitcount(dss->q)) / 4;
-    if (nibbles < 1)
-	nibbles = 1;
-    for (i = nibbles; i--;)
-	p[pos++] =
-	    hex[(bignum_byte(dss->q, i / 2) >> (4 * (i % 2))) & 0xF];
-    pos += sprintf(p + pos, ",0x");
-    nibbles = (3 + bignum_bitcount(dss->g)) / 4;
-    if (nibbles < 1)
-	nibbles = 1;
-    for (i = nibbles; i--;)
-	p[pos++] =
-	    hex[(bignum_byte(dss->g, i / 2) >> (4 * (i % 2))) & 0xF];
-    pos += sprintf(p + pos, ",0x");
-    nibbles = (3 + bignum_bitcount(dss->y)) / 4;
-    if (nibbles < 1)
-	nibbles = 1;
-    for (i = nibbles; i--;)
-	p[pos++] =
-	    hex[(bignum_byte(dss->y, i / 2) >> (4 * (i % 2))) & 0xF];
-    p[pos] = '\0';
-    return p;
+    append_hex_to_strbuf(sb, dss->p);
+    append_hex_to_strbuf(sb, dss->q);
+    append_hex_to_strbuf(sb, dss->g);
+    append_hex_to_strbuf(sb, dss->y);
+
+    return strbuf_to_str(sb);
 }
 
 static bool dss_verify(ssh_key *key, ptrlen sig, ptrlen data)

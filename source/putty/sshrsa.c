@@ -321,44 +321,27 @@ bool rsa_ssh1_decrypt_pkcs1(Bignum input, struct RSAKey *key, strbuf *outbuf)
     return success;
 }
 
-int rsastr_len(struct RSAKey *key)
+static void append_hex_to_strbuf(strbuf *sb, Bignum *x)
 {
-    Bignum md, ex;
-    int mdlen, exlen;
-
-    md = key->modulus;
-    ex = key->exponent;
-    mdlen = (bignum_bitcount(md) + 15) / 16;
-    exlen = (bignum_bitcount(ex) + 15) / 16;
-    return 4 * (mdlen + exlen) + 20;
+    if (sb->len > 0)
+        put_byte(sb, ',');
+    put_data(sb, "0x", 2);
+    int nibbles = (3 + bignum_bitcount(x)) / 4;
+    if (nibbles < 1)
+	nibbles = 1;
+    static const char hex[] = "0123456789abcdef";
+    for (int i = nibbles; i--;)
+	put_byte(sb, hex[(bignum_byte(x, i / 2) >> (4 * (i % 2))) & 0xF]);
 }
 
-void rsastr_fmt(char *str, struct RSAKey *key)
+char *rsastr_fmt(struct RSAKey *key)
 {
-    Bignum md, ex;
-    int len = 0, i, nibbles;
-    static const char hex[] = "0123456789abcdef";
+    strbuf *sb = strbuf_new();
 
-    md = key->modulus;
-    ex = key->exponent;
+    append_hex_to_strbuf(sb, key->exponent);
+    append_hex_to_strbuf(sb, key->modulus);
 
-    len += sprintf(str + len, "0x");
-
-    nibbles = (3 + bignum_bitcount(ex)) / 4;
-    if (nibbles < 1)
-	nibbles = 1;
-    for (i = nibbles; i--;)
-	str[len++] = hex[(bignum_byte(ex, i / 2) >> (4 * (i % 2))) & 0xF];
-
-    len += sprintf(str + len, ",0x");
-
-    nibbles = (3 + bignum_bitcount(md)) / 4;
-    if (nibbles < 1)
-	nibbles = 1;
-    for (i = nibbles; i--;)
-	str[len++] = hex[(bignum_byte(md, i / 2) >> (4 * (i % 2))) & 0xF];
-
-    str[len] = '\0';
+    return strbuf_to_str(sb);
 }
 
 /*
@@ -486,22 +469,41 @@ int rsa_ssh1_public_blob_len(void *data, int maxlen)
     return src->pos;
 }
 
+void freersapriv(struct RSAKey *key)
+{
+    if (key->private_exponent) {
+	freebn(key->private_exponent);
+        key->private_exponent = NULL;
+    }
+    if (key->p) {
+	freebn(key->p);
+        key->p = NULL;
+    }
+    if (key->q) {
+	freebn(key->q);
+        key->q = NULL;
+    }
+    if (key->iqmp) {
+	freebn(key->iqmp);
+        key->iqmp = NULL;
+    }
+}
+
 void freersakey(struct RSAKey *key)
 {
-    if (key->modulus)
+    freersapriv(key);
+    if (key->modulus) {
 	freebn(key->modulus);
-    if (key->exponent)
+        key->modulus = NULL;
+    }
+    if (key->exponent) {
 	freebn(key->exponent);
-    if (key->private_exponent)
-	freebn(key->private_exponent);
-    if (key->p)
-	freebn(key->p);
-    if (key->q)
-	freebn(key->q);
-    if (key->iqmp)
-	freebn(key->iqmp);
-    if (key->comment)
+        key->exponent = NULL;
+    }
+    if (key->comment) {
 	sfree(key->comment);
+        key->comment = NULL;
+    }
 }
 
 /* ----------------------------------------------------------------------
@@ -545,13 +547,7 @@ static void rsa2_freekey(ssh_key *key)
 static char *rsa2_cache_str(ssh_key *key)
 {
     struct RSAKey *rsa = container_of(key, struct RSAKey, sshk);
-    char *p;
-    int len;
-
-    len = rsastr_len(rsa);
-    p = snewn(len, char);
-    rsastr_fmt(p, rsa);
-    return p;
+    return rsastr_fmt(rsa);
 }
 
 static void rsa2_public_blob(ssh_key *key, BinarySink *bs)
@@ -699,15 +695,51 @@ static const unsigned char sha512_asn1_prefix[] = {
 
 #define SHA1_ASN1_PREFIX_LEN sizeof(sha1_asn1_prefix)
 
+static unsigned char *rsa_pkcs1_signature_string(
+    size_t nbytes, const struct ssh_hashalg *halg, ptrlen data)
+{
+    const unsigned char *asn1_prefix;
+    unsigned asn1_prefix_size;
+
+    if (halg == &ssh_sha256) {
+        asn1_prefix = sha256_asn1_prefix;
+        asn1_prefix_size = sizeof(sha256_asn1_prefix);
+    } else if (halg == &ssh_sha512) {
+        asn1_prefix = sha512_asn1_prefix;
+        asn1_prefix_size = sizeof(sha512_asn1_prefix);
+    } else {
+        assert(halg == &ssh_sha1);
+        asn1_prefix = sha1_asn1_prefix;
+        asn1_prefix_size = sizeof(sha1_asn1_prefix);
+    }
+
+    size_t fixed_parts = halg->hlen + asn1_prefix_size + 2;
+    assert(nbytes >= fixed_parts);
+    size_t padding = nbytes - fixed_parts;
+
+    unsigned char *bytes = snewn(nbytes, unsigned char);
+
+    bytes[0] = 0;
+    bytes[1] = 1;
+
+    memset(bytes + 2, 0xFF, padding);
+
+    memcpy(bytes + 2 + padding, asn1_prefix, asn1_prefix_size);
+
+    ssh_hash *h = ssh_hash_new(halg);
+    put_data(h, data.ptr, data.len);
+    ssh_hash_final(h, bytes + 2 + padding + asn1_prefix_size);
+
+    return bytes;
+}
+
 static bool rsa2_verify(ssh_key *key, ptrlen sig, ptrlen data)
 {
     struct RSAKey *rsa = container_of(key, struct RSAKey, sshk);
     BinarySource src[1];
     ptrlen type, in_pl;
     Bignum in, out;
-    int bytes, i, j;
     bool toret;
-    unsigned char hash[20];
 
     BinarySource_BARE_INIT(src, sig.ptr, sig.len);
     type = get_string(src);
@@ -731,29 +763,13 @@ static bool rsa2_verify(ssh_key *key, ptrlen sig, ptrlen data)
 
     toret = true;
 
-    bytes = (bignum_bitcount(rsa->modulus)+7) / 8;
-    /* Top (partial) byte should be zero. */
-    if (bignum_byte(out, bytes - 1) != 0)
-	toret = false;
-    /* First whole byte should be 1. */
-    if (bignum_byte(out, bytes - 2) != 1)
-	toret = false;
-    /* Most of the rest should be FF. */
-    for (i = bytes - 3; i >= 20 + SHA1_ASN1_PREFIX_LEN; i--) {
-	if (bignum_byte(out, i) != 0xFF)
+    size_t nbytes = (bignum_bitcount(rsa->modulus) + 7) / 8;
+    unsigned char *bytes = rsa_pkcs1_signature_string(nbytes, &ssh_sha1, data);
+    for (size_t i = 0; i < nbytes; i++)
+	if (bytes[nbytes-1 - i] != bignum_byte(out, i))
 	    toret = false;
-    }
-    /* Then we expect to see the sha1_asn1_prefix. */
-    for (i = 20 + SHA1_ASN1_PREFIX_LEN - 1, j = 0; i >= 20; i--, j++) {
-	if (bignum_byte(out, i) != sha1_asn1_prefix[j])
-	    toret = false;
-    }
-    /* Finally, we expect to see the SHA-1 hash of the signed data. */
-    SHA_Simple(data.ptr, data.len, hash);
-    for (i = 19, j = 0; i >= 0; i--, j++) {
-	if (bignum_byte(out, i) != hash[j])
-	    toret = false;
-    }
+    smemclr(bytes, nbytes);
+    sfree(bytes);
     freebn(out);
 
     return toret;
@@ -765,50 +781,27 @@ static void rsa2_sign(ssh_key *key, const void *data, int datalen,
     struct RSAKey *rsa = container_of(key, struct RSAKey, sshk);
     unsigned char *bytes;
     int nbytes;
-    unsigned char hash[64];
     Bignum in, out;
-    int i, j;
     const struct ssh_hashalg *halg;
-    ssh_hash *h;
-    const unsigned char *asn1_prefix;
-    unsigned asn1_prefix_size;
     const char *sign_alg_name;
 
     if (flags & SSH_AGENT_RSA_SHA2_256) {
         halg = &ssh_sha256;
-        asn1_prefix = sha256_asn1_prefix;
-        asn1_prefix_size = sizeof(sha256_asn1_prefix);
         sign_alg_name = "rsa-sha2-256";
     } else if (flags & SSH_AGENT_RSA_SHA2_512) {
         halg = &ssh_sha512;
-        asn1_prefix = sha512_asn1_prefix;
-        asn1_prefix_size = sizeof(sha512_asn1_prefix);
         sign_alg_name = "rsa-sha2-512";
     } else {
         halg = &ssh_sha1;
-        asn1_prefix = sha1_asn1_prefix;
-        asn1_prefix_size = sizeof(sha1_asn1_prefix);
         sign_alg_name = "ssh-rsa";
     }
 
-    h = ssh_hash_new(halg);
-    put_data(h, data, datalen);
-    ssh_hash_final(h, hash);
+    nbytes = (bignum_bitcount(rsa->modulus) + 7) / 8;
 
-    nbytes = (bignum_bitcount(rsa->modulus) - 1) / 8;
-    assert(1 <= nbytes - halg->hlen - asn1_prefix_size);
-    bytes = snewn(nbytes, unsigned char);
-
-    bytes[0] = 1;
-    for (i = 1; i < nbytes - halg->hlen - asn1_prefix_size; i++)
-	bytes[i] = 0xFF;
-    for (i = nbytes - halg->hlen - asn1_prefix_size, j = 0;
-         i < nbytes - halg->hlen; i++, j++)
-	bytes[i] = asn1_prefix[j];
-    for (i = nbytes - halg->hlen, j = 0; i < nbytes; i++, j++)
-	bytes[i] = hash[j];
-
+    bytes = rsa_pkcs1_signature_string(
+        nbytes, halg, make_ptrlen(data, datalen));
     in = bignum_from_bytes(bytes, nbytes);
+    smemclr(bytes, nbytes);
     sfree(bytes);
 
     out = rsa_privkey_op(in, rsa);
@@ -817,7 +810,8 @@ static void rsa2_sign(ssh_key *key, const void *data, int datalen,
     put_stringz(bs, sign_alg_name);
     nbytes = (bignum_bitcount(out) + 7) / 8;
     put_uint32(bs, nbytes);
-    for (i = 0; i < nbytes; i++)
+    for (size_t i = 0; i < nbytes; i++)
+
 	put_byte(bs, bignum_byte(out, nbytes - 1 - i));
 
     freebn(out);
