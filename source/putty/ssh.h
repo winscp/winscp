@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#define WINSCP_SSH
+
 #include "puttymem.h"
 #include "tree234.h"
 #ifndef WINSCP_VS

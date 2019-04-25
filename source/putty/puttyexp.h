@@ -5,17 +5,14 @@
 
 // from ssh.c
 
-struct ssh1_cipheralg;
-typedef const struct ssh1_cipheralg *ssh1_cipher;
-struct ssh2_cipheralg;
-typedef const struct ssh2_cipheralg *ssh2_cipher;
-
 int is_ssh(Plug * plug);
 int get_ssh_version(Backend * be);
 Seat * get_ssh_seat(Plug * plug);
+#ifdef WINSCP_SSH
 const ssh1_cipher * get_cipher(Backend * be);
 const ssh2_cipher * get_cscipher(Backend * be);
 const ssh2_cipher * get_sccipher(Backend * be);
+#endif
 const struct ssh_compressor * get_cscomp(Backend * be);
 const struct ssh_decompressor * get_sccomp(Backend * be);
 #define WINSCP_QUERY_REMMAXPKT 1

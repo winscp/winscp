@@ -971,12 +971,12 @@ TStrings * SshMacList()
 //---------------------------------------------------------------------------
 UnicodeString GetCipher1Name(const ssh1_cipher * Cipher)
 {
-  return UnicodeString(UTF8String((*Cipher)->text_name));
+  return UnicodeString(UTF8String(Cipher->vt->text_name));
 }
 //---------------------------------------------------------------------------
 UnicodeString GetCipher2Name(const ssh2_cipher * Cipher)
 {
-  return UnicodeString(UTF8String((*Cipher)->text_name));
+  return UnicodeString(UTF8String(Cipher->vt->text_name));
 }
 //---------------------------------------------------------------------------
 UnicodeString GetCompressorName(const ssh_compressor * Compressor)

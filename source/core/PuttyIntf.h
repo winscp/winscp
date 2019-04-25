@@ -13,11 +13,11 @@ void __fastcall DontSaveRandomSeed();
 extern "C"
 {
 #include <putty.h>
-#include <puttyexp.h>
 // To rename ssh1_cipheralg::new member, what is a keyword in C++
 #define new _new_
 #include <ssh.h>
 #undef new
+#include <puttyexp.h>
 #include <proxy.h>
 #include <storage.h>
 // Defined in misc.h - Conflicts with std::min/max
