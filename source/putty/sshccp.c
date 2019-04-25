@@ -866,14 +866,14 @@ struct ccp_context {
     struct poly1305 mac;
 
     BinarySink_IMPLEMENTATION;
-    ssh2_cipher cvt;
+    ssh2_cipher ciph;
     ssh2_mac mac_if;
 };
 
 static ssh2_mac *poly_ssh2_new(
     const struct ssh2_macalg *alg, ssh2_cipher *cipher)
 {
-    struct ccp_context *ctx = container_of(cipher, struct ccp_context, cvt);
+    struct ccp_context *ctx = container_of(cipher, struct ccp_context, ciph);
     ctx->mac_if.vt = alg;
     BinarySink_DELEGATE_INIT(&ctx->mac_if, ctx);
     return &ctx->mac_if;
@@ -950,13 +950,13 @@ static ssh2_cipher *ccp_new(const struct ssh2_cipheralg *alg)
     struct ccp_context *ctx = snew(struct ccp_context);
     BinarySink_INIT(ctx, poly_BinarySink_write);
     poly1305_init(&ctx->mac);
-    ctx->cvt = alg;
-    return &ctx->cvt;
+    ctx->ciph.vt = alg;
+    return &ctx->ciph;
 }
 
 static void ccp_free(ssh2_cipher *cipher)
 {
-    struct ccp_context *ctx = container_of(cipher, struct ccp_context, cvt);
+    struct ccp_context *ctx = container_of(cipher, struct ccp_context, ciph);
     smemclr(&ctx->a_cipher, sizeof(ctx->a_cipher));
     smemclr(&ctx->b_cipher, sizeof(ctx->b_cipher));
     smemclr(&ctx->mac, sizeof(ctx->mac));
@@ -966,14 +966,14 @@ static void ccp_free(ssh2_cipher *cipher)
 static void ccp_iv(ssh2_cipher *cipher, const void *iv)
 {
     /* struct ccp_context *ctx =
-           container_of(cipher, struct ccp_context, cvt); */
+           container_of(cipher, struct ccp_context, ciph); */
     /* IV is set based on the sequence number */
 }
 
 static void ccp_key(ssh2_cipher *cipher, const void *vkey)
 {
     const unsigned char *key = (const unsigned char *)vkey;
-    struct ccp_context *ctx = container_of(cipher, struct ccp_context, cvt);
+    struct ccp_context *ctx = container_of(cipher, struct ccp_context, ciph);
     /* Initialise the a_cipher (for decrypting lengths) with the first 256 bits */
     chacha20_key(&ctx->a_cipher, key + 32);
     /* Initialise the b_cipher (for content and MAC) with the second 256 bits */
@@ -982,13 +982,13 @@ static void ccp_key(ssh2_cipher *cipher, const void *vkey)
 
 static void ccp_encrypt(ssh2_cipher *cipher, void *blk, int len)
 {
-    struct ccp_context *ctx = container_of(cipher, struct ccp_context, cvt);
+    struct ccp_context *ctx = container_of(cipher, struct ccp_context, ciph);
     chacha20_encrypt(&ctx->b_cipher, blk, len);
 }
 
 static void ccp_decrypt(ssh2_cipher *cipher, void *blk, int len)
 {
-    struct ccp_context *ctx = container_of(cipher, struct ccp_context, cvt);
+    struct ccp_context *ctx = container_of(cipher, struct ccp_context, ciph);
     chacha20_decrypt(&ctx->b_cipher, blk, len);
 }
 
@@ -1012,7 +1012,7 @@ static void ccp_length_op(struct ccp_context *ctx, void *blk, int len,
 static void ccp_encrypt_length(ssh2_cipher *cipher, void *blk, int len,
                                unsigned long seq)
 {
-    struct ccp_context *ctx = container_of(cipher, struct ccp_context, cvt);
+    struct ccp_context *ctx = container_of(cipher, struct ccp_context, ciph);
     ccp_length_op(ctx, blk, len, seq);
     chacha20_encrypt(&ctx->a_cipher, blk, len);
 }
@@ -1020,7 +1020,7 @@ static void ccp_encrypt_length(ssh2_cipher *cipher, void *blk, int len,
 static void ccp_decrypt_length(ssh2_cipher *cipher, void *blk, int len,
                                unsigned long seq)
 {
-    struct ccp_context *ctx = container_of(cipher, struct ccp_context, cvt);
+    struct ccp_context *ctx = container_of(cipher, struct ccp_context, ciph);
     ccp_length_op(ctx, blk, len, seq);
     chacha20_decrypt(&ctx->a_cipher, blk, len);
 }
