@@ -520,7 +520,7 @@ static ssh_key *rsa2_new_pub(const ssh_keyalg *self, ptrlen data)
 	return NULL;
 
     rsa = snew(struct RSAKey);
-    rsa->sshk = &ssh_rsa;
+    rsa->sshk.vt = &ssh_rsa;
     rsa->exponent = get_mp_ssh2(src);
     rsa->modulus = get_mp_ssh2(src);
     rsa->private_exponent = NULL;
@@ -605,7 +605,7 @@ static ssh_key *rsa2_new_priv_openssh(const ssh_keyalg *self,
     struct RSAKey *rsa;
 
     rsa = snew(struct RSAKey);
-    rsa->sshk = &ssh_rsa;
+    rsa->sshk.vt = &ssh_rsa;
     rsa->comment = NULL;
 
     rsa->modulus = get_mp_ssh2(src);

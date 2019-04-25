@@ -1735,7 +1735,7 @@ static ssh_key *ecdsa_new_pub(const ssh_keyalg *self, ptrlen data)
     }
 
     ec = snew(struct ec_key);
-    ec->sshk = self;
+    ec->sshk.vt = self;
 
     ec->publicKey.curve = curve;
     ec->publicKey.infinity = false;
@@ -1811,7 +1811,7 @@ static void ecdsa_public_blob(ssh_key *key, BinarySink *bs)
 
         assert(pointlen >= 2);
 
-        put_stringz(bs, ec->sshk->ssh_id);
+        put_stringz(bs, ec->sshk.vt->ssh_id);
         put_uint32(bs, pointlen);
 
         /* Unset last bit of y and set first bit of x in its place */
@@ -1825,7 +1825,7 @@ static void ecdsa_public_blob(ssh_key *key, BinarySink *bs)
 
         pointlen = (bignum_bitcount(ec->publicKey.curve->p) + 7) / 8;
 
-        put_stringz(bs, ec->sshk->ssh_id);
+        put_stringz(bs, ec->sshk.vt->ssh_id);
         put_stringz(bs, ec->publicKey.curve->name);
         put_uint32(bs, (2 * pointlen) + 1);
         put_byte(bs, 0x04);
@@ -1923,7 +1923,7 @@ static ssh_key *ed25519_new_priv_openssh(const ssh_keyalg *self,
         return NULL;
 
     ec = snew(struct ec_key);
-    ec->sshk = self;
+    ec->sshk.vt = self;
 
     ec->publicKey.curve = ec_ed25519();
     ec->publicKey.infinity = false;
@@ -2017,7 +2017,7 @@ static ssh_key *ecdsa_new_priv_openssh(const ssh_keyalg *self,
     assert(curve->type == EC_WEIERSTRASS);
 
     ec = snew(struct ec_key);
-    ec->sshk = self;
+    ec->sshk.vt = self;
 
     ec->publicKey.curve = curve;
     ec->publicKey.infinity = false;
@@ -2111,7 +2111,7 @@ static bool ecdsa_verify(ssh_key *key, ptrlen sig, ptrlen data)
 {
     struct ec_key *ec = container_of(key, struct ec_key, sshk);
     const struct ecsign_extra *extra =
-        (const struct ecsign_extra *)ec->sshk->extra;
+        (const struct ecsign_extra *)ec->sshk.vt->extra;
     BinarySource src[1];
     ptrlen sigstr;
     bool ret;
@@ -2122,7 +2122,7 @@ static bool ecdsa_verify(ssh_key *key, ptrlen sig, ptrlen data)
     BinarySource_BARE_INIT(src, sig.ptr, sig.len);
 
     /* Check the signature starts with the algorithm name */
-    if (!ptrlen_eq_string(get_string(src), ec->sshk->ssh_id))
+    if (!ptrlen_eq_string(get_string(src), ec->sshk.vt->ssh_id))
         return false;
 
     sigstr = get_string(src);
@@ -2261,7 +2261,7 @@ static void ecdsa_sign(ssh_key *key, const void *data, int datalen,
 {
     struct ec_key *ec = container_of(key, struct ec_key, sshk);
     const struct ecsign_extra *extra =
-        (const struct ecsign_extra *)ec->sshk->extra;
+        (const struct ecsign_extra *)ec->sshk.vt->extra;
     unsigned char digest[512 / 8];
     int digestLen;
     Bignum r = NULL, s = NULL;
@@ -2347,7 +2347,7 @@ static void ecdsa_sign(ssh_key *key, const void *data, int datalen,
         }
 
         /* Format the output */
-        put_stringz(bs, ec->sshk->ssh_id);
+        put_stringz(bs, ec->sshk.vt->ssh_id);
         pointlen = ec->publicKey.curve->fieldBits / 8;
         put_uint32(bs, pointlen * 2);
 
@@ -2379,7 +2379,7 @@ static void ecdsa_sign(ssh_key *key, const void *data, int datalen,
         assert(s);
 
         /* Format the output */
-        put_stringz(bs, ec->sshk->ssh_id);
+        put_stringz(bs, ec->sshk.vt->ssh_id);
 
         substr = strbuf_new();
         put_mp_ssh2(substr, r);
@@ -2571,7 +2571,7 @@ struct ec_key *ssh_ecdhkex_newkey(const struct ssh_kex *kex)
 
     key = snew(struct ec_key);
 
-    key->sshk = NULL;
+    key->sshk.vt = NULL;
     key->publicKey.curve = curve;
 
     if (curve->type == EC_MONTGOMERY) {

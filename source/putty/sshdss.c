@@ -21,7 +21,7 @@ static ssh_key *dss_new_pub(const ssh_keyalg *self, ptrlen data)
 	return NULL;
 
     dss = snew(struct dss_key);
-    dss->sshk = &ssh_dss;
+    dss->sshk.vt = &ssh_dss;
     dss->p = get_mp_ssh2(src);
     dss->q = get_mp_ssh2(src);
     dss->g = get_mp_ssh2(src);
@@ -280,7 +280,7 @@ static ssh_key *dss_new_priv_openssh(const ssh_keyalg *self,
     struct dss_key *dss;
 
     dss = snew(struct dss_key);
-    dss->sshk = &ssh_dss;
+    dss->sshk.vt = &ssh_dss;
 
     dss->p = get_mp_ssh2(src);
     dss->q = get_mp_ssh2(src);

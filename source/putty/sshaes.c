@@ -1042,50 +1042,50 @@ void aes256_decrypt_pubkey(const void *key, void *blk, int len)
 
 struct aes_ssh2_ctx {
     AESContext context;
-    ssh2_cipher vt;
+    ssh2_cipher ciph;
 };
 
 ssh2_cipher *aes_ssh2_new(const struct ssh2_cipheralg *alg)
 {
     struct aes_ssh2_ctx *ctx = snew(struct aes_ssh2_ctx);
-    ctx->vt = alg;
-    return &ctx->vt;
+    ctx->ciph.vt = alg;
+    return &ctx->ciph;
 }
 
 static void aes_ssh2_free(ssh2_cipher *cipher)
 {
-    struct aes_ssh2_ctx *ctx = container_of(cipher, struct aes_ssh2_ctx, vt);
+    struct aes_ssh2_ctx *ctx = container_of(cipher, struct aes_ssh2_ctx, ciph);
     smemclr(ctx, sizeof(*ctx));
     sfree(ctx);
 }
 
 static void aes_ssh2_setiv(ssh2_cipher *cipher, const void *iv)
 {
-    struct aes_ssh2_ctx *ctx = container_of(cipher, struct aes_ssh2_ctx, vt);
+    struct aes_ssh2_ctx *ctx = container_of(cipher, struct aes_ssh2_ctx, ciph);
     aes_iv(&ctx->context, iv);
 }
 
 static void aes_ssh2_setkey(ssh2_cipher *cipher, const void *key)
 {
-    struct aes_ssh2_ctx *ctx = container_of(cipher, struct aes_ssh2_ctx, vt);
-    aes_setup(&ctx->context, key, ctx->vt->padded_keybytes);
+    struct aes_ssh2_ctx *ctx = container_of(cipher, struct aes_ssh2_ctx, ciph);
+    aes_setup(&ctx->context, key, ctx->ciph.vt->padded_keybytes);
 }
 
 static void aes_ssh2_encrypt(ssh2_cipher *cipher, void *blk, int len)
 {
-    struct aes_ssh2_ctx *ctx = container_of(cipher, struct aes_ssh2_ctx, vt);
+    struct aes_ssh2_ctx *ctx = container_of(cipher, struct aes_ssh2_ctx, ciph);
     aes_encrypt_cbc(blk, len, &ctx->context);
 }
 
 static void aes_ssh2_decrypt(ssh2_cipher *cipher, void *blk, int len)
 {
-    struct aes_ssh2_ctx *ctx = container_of(cipher, struct aes_ssh2_ctx, vt);
+    struct aes_ssh2_ctx *ctx = container_of(cipher, struct aes_ssh2_ctx, ciph);
     aes_decrypt_cbc(blk, len, &ctx->context);
 }
 
 static void aes_ssh2_sdctr_method(ssh2_cipher *cipher, void *blk, int len)
 {
-    struct aes_ssh2_ctx *ctx = container_of(cipher, struct aes_ssh2_ctx, vt);
+    struct aes_ssh2_ctx *ctx = container_of(cipher, struct aes_ssh2_ctx, ciph);
     aes_sdctr(blk, len, &ctx->context);
 }
 

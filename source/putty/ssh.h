@@ -395,7 +395,9 @@ typedef void *Bignum;
 #endif
 
 typedef struct ssh_keyalg ssh_keyalg;
-typedef const struct ssh_keyalg *ssh_key;
+typedef struct ssh_key {
+    const struct ssh_keyalg *vt;
+} ssh_key;
 
 struct RSAKey {
     int bits;
@@ -558,7 +560,9 @@ Bignum *dss_gen_k(const char *id_string, Bignum modulus, Bignum private_key,
                   unsigned char *digest, int digest_len);
 
 struct ssh2_cipheralg;
-typedef const struct ssh2_cipheralg *ssh2_cipher;
+typedef struct ssh2_cipher {
+    const struct ssh2_cipheralg *vt;
+} ssh2_cipher;
 
 typedef struct {
     uint32_t h[4];
@@ -630,7 +634,9 @@ void SHA384_Simple(const void *p, int len, unsigned char *output);
 struct ssh2_macalg;
 
 struct ssh1_cipheralg;
-typedef const struct ssh1_cipheralg *ssh1_cipher;
+typedef struct ssh1_cipher {
+    const struct ssh1_cipheralg *vt;
+} ssh1_cipher;
 
 struct ssh1_cipheralg {
     ssh1_cipher *(*new)(void);
@@ -643,10 +649,10 @@ struct ssh1_cipheralg {
 };
 
 #define ssh1_cipher_new(alg) ((alg)->new())
-#define ssh1_cipher_free(ctx) ((*(ctx))->free(ctx))
-#define ssh1_cipher_sesskey(ctx, key) ((*(ctx))->sesskey(ctx, key))
-#define ssh1_cipher_encrypt(ctx, blk, len) ((*(ctx))->encrypt(ctx, blk, len))
-#define ssh1_cipher_decrypt(ctx, blk, len) ((*(ctx))->decrypt(ctx, blk, len))
+#define ssh1_cipher_free(ctx) ((ctx)->vt->free(ctx))
+#define ssh1_cipher_sesskey(ctx, key) ((ctx)->vt->sesskey(ctx, key))
+#define ssh1_cipher_encrypt(ctx, blk, len) ((ctx)->vt->encrypt(ctx, blk, len))
+#define ssh1_cipher_decrypt(ctx, blk, len) ((ctx)->vt->decrypt(ctx, blk, len))
 
 struct ssh2_cipheralg {
     ssh2_cipher *(*new)(const struct ssh2_cipheralg *alg);
@@ -684,16 +690,16 @@ struct ssh2_cipheralg {
 };
 
 #define ssh2_cipher_new(alg) ((alg)->new(alg))
-#define ssh2_cipher_free(ctx) ((*(ctx))->free(ctx))
-#define ssh2_cipher_setiv(ctx, iv) ((*(ctx))->setiv(ctx, iv))
-#define ssh2_cipher_setkey(ctx, key) ((*(ctx))->setkey(ctx, key))
-#define ssh2_cipher_encrypt(ctx, blk, len) ((*(ctx))->encrypt(ctx, blk, len))
-#define ssh2_cipher_decrypt(ctx, blk, len) ((*(ctx))->decrypt(ctx, blk, len))
+#define ssh2_cipher_free(ctx) ((ctx)->vt->free(ctx))
+#define ssh2_cipher_setiv(ctx, iv) ((ctx)->vt->setiv(ctx, iv))
+#define ssh2_cipher_setkey(ctx, key) ((ctx)->vt->setkey(ctx, key))
+#define ssh2_cipher_encrypt(ctx, blk, len) ((ctx)->vt->encrypt(ctx, blk, len))
+#define ssh2_cipher_decrypt(ctx, blk, len) ((ctx)->vt->decrypt(ctx, blk, len))
 #define ssh2_cipher_encrypt_length(ctx, blk, len, seq) \
-    ((*(ctx))->encrypt_length(ctx, blk, len, seq))
+    ((ctx)->vt->encrypt_length(ctx, blk, len, seq))
 #define ssh2_cipher_decrypt_length(ctx, blk, len, seq) \
-    ((*(ctx))->decrypt_length(ctx, blk, len, seq))
-#define ssh2_cipher_alg(ctx) (*(ctx))
+    ((ctx)->vt->decrypt_length(ctx, blk, len, seq))
+#define ssh2_cipher_alg(ctx) ((ctx)->vt)
 
 struct ssh2_ciphers {
     int nciphers;
@@ -792,20 +798,20 @@ struct ssh_keyalg {
 #define ssh_key_new_priv(alg, pub, priv) ((alg)->new_priv(alg, pub, priv))
 #define ssh_key_new_priv_openssh(alg, bs) ((alg)->new_priv_openssh(alg, bs))
 
-#define ssh_key_free(key) ((*(key))->freekey(key))
+#define ssh_key_free(key) ((key)->vt->freekey(key))
 #define ssh_key_sign(key, data, len, flags, bs) \
-    ((*(key))->sign(key, data, len, flags, bs))
-#define ssh_key_verify(key, sig, data) ((*(key))->verify(key, sig, data))
-#define ssh_key_public_blob(key, bs) ((*(key))->public_blob(key, bs))
-#define ssh_key_private_blob(key, bs) ((*(key))->private_blob(key, bs))
-#define ssh_key_openssh_blob(key, bs) ((*(key))->openssh_blob(key, bs))
-#define ssh_key_cache_str(key) ((*(key))->cache_str(key))
+    ((key)->vt->sign(key, data, len, flags, bs))
+#define ssh_key_verify(key, sig, data) ((key)->vt->verify(key, sig, data))
+#define ssh_key_public_blob(key, bs) ((key)->vt->public_blob(key, bs))
+#define ssh_key_private_blob(key, bs) ((key)->vt->private_blob(key, bs))
+#define ssh_key_openssh_blob(key, bs) ((key)->vt->openssh_blob(key, bs))
+#define ssh_key_cache_str(key) ((key)->vt->cache_str(key))
 
 #define ssh_key_public_bits(alg, blob) ((alg)->pubkey_bits(alg, blob))
 
-#define ssh_key_alg(key) (*(key))
-#define ssh_key_ssh_id(key) ((*(key))->ssh_id)
-#define ssh_key_cache_id(key) ((*(key))->cache_id)
+#define ssh_key_alg(key) (key)->vt
+#define ssh_key_ssh_id(key) ((key)->vt->ssh_id)
+#define ssh_key_cache_id(key) ((key)->vt->cache_id)
 
 /*
  * Enumeration of signature flags from draft-miller-ssh-agent-02
