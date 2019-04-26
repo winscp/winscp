@@ -860,7 +860,7 @@ static void aes_encrypt_cbc_sw(unsigned char *blk, int len, AESContext * ctx)
             ENCLASTROUND;
             break;
           default:
-            assert(0);
+            unreachable("bad AES round count");
         }
 	for (i = 0; i < 4; i++)
             PUT_32BIT_MSB_FIRST(blk + 4 * i, block[i]);
@@ -905,7 +905,7 @@ static void aes_sdctr_sw(unsigned char *blk, int len, AESContext *ctx)
             ENCLASTROUND;
             break;
           default:
-            assert(0);
+            unreachable("bad AES round count");
         }
 	for (i = 0; i < 4; i++) {
             tmp = GET_32BIT_MSB_FIRST(blk + 4 * i);
@@ -956,7 +956,7 @@ static void aes_decrypt_cbc_sw(unsigned char *blk, int len, AESContext * ctx)
             DECLASTROUND;
             break;
           default:
-            assert(0);
+            unreachable("bad AES round count");
         }
 	for (i = 0; i < 4; i++) {
             PUT_32BIT_MSB_FIRST(blk + 4 * i, iv[i] ^ block[i]);
@@ -1505,7 +1505,7 @@ static void aes_encrypt_cbc_ni(unsigned char *blk, int len, AESContext * ctx)
             enc = _mm_aesenclast_si128(enc, *(++keysched));
             break;
           default:
-            assert(0);
+            unreachable("bad AES round count");
         }
 
         /* Store and go to next block */
@@ -1552,7 +1552,7 @@ static void aes_decrypt_cbc_ni(unsigned char *blk, int len, AESContext * ctx)
             dec = _mm_aesdeclast_si128(dec, *(++keysched));
             break;
           default:
-            assert(0);
+            unreachable("bad AES round count");
         }
 
         /* Xor data with IV */
@@ -1610,7 +1610,7 @@ static void aes_sdctr_ni(unsigned char *blk, int len, AESContext *ctx)
             enc = _mm_aesenclast_si128(enc, *(++keysched));
             break;
           default:
-            assert(0);
+            unreachable("bad AES round count");
         }
 
         /* Xor with block and store result */
@@ -1725,7 +1725,7 @@ static void aes_setup_ni(AESContext * ctx,
         AES_256_Key_Expansion (key, keysched);
         break;
       default:
-        assert(0);
+        unreachable("bad AES key length");
     }
 
     /*
@@ -1742,7 +1742,7 @@ static void aes_setup_ni(AESContext * ctx,
         aes_inv_key_14(ctx);
         break;
       default:
-        assert(0);
+        unreachable("bad AES key length");
     }
 }
 
@@ -1750,7 +1750,7 @@ static void aes_setup_ni(AESContext * ctx,
 
 static void aes_setup_ni(AESContext * ctx, const unsigned char *key, int keylen)
 {
-    assert(0);
+    unreachable("aes_setup_ni called when not compiled in");
 }
 
 INLINE static bool supports_aes_ni()

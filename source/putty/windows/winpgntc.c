@@ -27,7 +27,7 @@ bool agent_exists(void)
 
 void agent_cancel_query(agent_pending_query *q)
 {
-    assert(0 && "Windows agent queries are never asynchronous!");
+    unreachable("Windows agent queries are never asynchronous!");
 }
 
 agent_pending_query *agent_query(

@@ -519,12 +519,10 @@ struct ssh_rportfwd *ssh1_rportfwd_alloc(
 SshChannel *ssh1_serverside_x11_open(
     ConnectionLayer *cl, Channel *chan, const SocketPeerInfo *pi)
 {
-    assert(false && "Should never be called in the client");
-    return NULL;
+    unreachable("Should never be called in the client");
 }
 
 SshChannel *ssh1_serverside_agent_open(ConnectionLayer *cl, Channel *chan)
 {
-    assert(false && "Should never be called in the client");
-    return NULL;
+    unreachable("Should never be called in the client");
 }

@@ -726,7 +726,7 @@ struct ssh2_macalg {
 
 #define ssh2_mac_new(alg, cipher) ((alg)->new(alg, cipher))
 #define ssh2_mac_free(ctx) ((ctx)->vt->free(ctx))
-#define ssh2_mac_setkey(ctx, key) ((ctx)->vt->free(ctx, key))
+#define ssh2_mac_setkey(ctx, key) ((ctx)->vt->setkey(ctx, key))
 #define ssh2_mac_start(ctx) ((ctx)->vt->start(ctx))
 #define ssh2_mac_genresult(ctx, out) ((ctx)->vt->genresult(ctx, out))
 #define ssh2_mac_alg(ctx) ((ctx)->vt)
@@ -859,8 +859,8 @@ struct ssh2_userkey {
     char *comment;		       /* the key comment */
 };
 
-/* The maximum length of any hash algorithm used in kex. (bytes) */
-#define SSH2_KEX_MAX_HASH_LEN (64) /* SHA-512 */
+/* The maximum length of any hash algorithm. (bytes) */
+#define MAX_HASH_LEN (64)              /* longest is SHA-512 */
 
 extern const struct ssh1_cipheralg ssh1_3des;
 extern const struct ssh1_cipheralg ssh1_des;

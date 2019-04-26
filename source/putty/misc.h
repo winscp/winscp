@@ -11,8 +11,10 @@
 
 #include <stdio.h>		       /* for FILE * */
 #include <stdarg.h>		       /* for va_list */
+#include <stdlib.h>                    /* for abort */
 #include <time.h>                      /* for struct tm */
 #include <limits.h>                    /* for INT_MAX/MIN */
+#include <assert.h>                    /* for assert (obviously) */
 
 unsigned long parse_blocksize(const char *bs);
 char ctrlparse(char *s, char **next);
@@ -168,6 +170,22 @@ void smemclr(void *b, size_t len);
 bool smemeq(const void *av, const void *bv, size_t len);
 
 char *buildinfo(const char *newline);
+
+/*
+ * A function you can put at points in the code where execution should
+ * never reach in the first place. Better than assert(false), or even
+ * assert(false && "some explanatory message"), because some compilers
+ * don't interpret assert(false) as a declaration of unreachability,
+ * so they may still warn about pointless things like some variable
+ * not being initialised on the unreachable code path.
+ *
+ * I follow the assertion with a call to abort() just in case someone
+ * compiles with -DNDEBUG, and I wrap that abort inside my own
+ * function labelled NORETURN just in case some unusual kind of system
+ * header wasn't foresighted enough to label abort() itself that way.
+ */
+static inline NORETURN void unreachable_internal(void) { abort(); }
+#define unreachable(msg) (assert(false && msg), unreachable_internal())
 
 /*
  * Debugging functions.

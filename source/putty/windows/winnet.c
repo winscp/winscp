@@ -784,7 +784,7 @@ void sk_addrcopy(SockAddr *addr, char *buf)
 	    memcpy(buf, &((struct sockaddr_in6 *)step.ai->ai_addr)->sin6_addr,
 		   sizeof(struct in6_addr));
 	else
-	    assert(false);
+	    unreachable("bad address family in sk_addrcopy");
     } else
 #endif
     if (family == AF_INET) {

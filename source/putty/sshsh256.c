@@ -632,7 +632,7 @@ static void SHA256_ni(SHA256_State * s, const unsigned char *q, int len)
 
 static void SHA256_ni(SHA256_State * s, const unsigned char *q, int len)
 {
-    assert(0);
+    unreachable("SHA256_ni not compiled in");
 }
 
 #endif  /* COMPILER_SUPPORTS_AES_NI */

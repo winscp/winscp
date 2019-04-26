@@ -42,18 +42,27 @@ to do endianness-dependent operations, and so on.
 some of these portability issues. The Windows front end compiles on
 both 32- and 64-bit x86 and also Arm.)
 
-Our current choice of C standards version is C99: you can assume that
-C99 features are available (in particular \cw{<stdint.h>},
-\cw{<stdbool.h>} and \c{inline}), but you shouldn't use things that
-are new in C11 (such as \cw{<uchar.h>} or \cw{_Generic}).
+Our current choice of C standards version is \e{mostly} C99. With a
+couple of exceptions, you can assume that C99 features are available
+(in particular \cw{<stdint.h>}, \cw{<stdbool.h>} and \c{inline}), but
+you shouldn't use things that are new in C11 (such as \cw{<uchar.h>}
+or \cw{_Generic}).
 
-One small exception to that: for historical reasons, we still build in
-one configuration which lacks \cw{<inttypes.h>}. So that file is
-included centrally in \c{defs.h}, and has a set of workaround
-definitions for the \cw{PRIx64}-type macros we use. If you need to use
-another one of those macros, you need to add a workaround definition
-in \c{defs.h}, and don't casually re-include \cw{<inttypes.h>}
-anywhere else in the source file.
+The exceptions to that rule are due to the need for Visual Studio
+compatibility:
+
+\b Don't use variable-length arrays. Visual Studio doesn't support
+them even now that it's adopted the rest of C99. We use \cw{-Wvla}
+when building with gcc and clang, to make it easier to avoid
+accidentally breaking that rule.
+
+\b For historical reasons, we still build with one older VS version
+which lacks \cw{<inttypes.h>}. So that file is included centrally in
+\c{defs.h}, and has a set of workaround definitions for the
+\cw{PRIx64}-type macros we use. If you need to use another one of
+those macros, you need to add a workaround definition in \c{defs.h},
+and don't casually re-include \cw{<inttypes.h>} anywhere else in the
+source file.
 
 Here are a few portability assumptions that we \e{do} currently allow
 (because we'd already have to thoroughly vet the existing code if they

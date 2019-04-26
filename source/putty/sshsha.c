@@ -683,7 +683,7 @@ static void sha1_ni(SHA_State * s, const unsigned char *q, int len)
 
 static void sha1_ni(SHA_State * s, const unsigned char *q, int len)
 {
-    assert(0);
+    unreachable("sha1_ni not compiled in");
 }
 
 bool supports_sha_ni(void)

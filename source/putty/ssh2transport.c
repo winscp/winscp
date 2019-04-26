@@ -927,7 +927,7 @@ static bool ssh2_scan_kexinits(
             break;
 
           default:
-            assert(false && "Bad list index in scan_kexinits");
+            unreachable("Bad list index in scan_kexinits");
         }
     }
 

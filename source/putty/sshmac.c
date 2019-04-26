@@ -32,7 +32,7 @@ static void ssh2_mac_prepare(ssh2_mac *mac, const void *blk, int len,
 void ssh2_mac_generate(ssh2_mac *mac, void *blk, int len, unsigned long seq)
 {
     ssh2_mac_prepare(mac, blk, len, seq);
-    return ssh2_mac_genresult(mac, (unsigned char *)blk + len);
+    ssh2_mac_genresult(mac, (unsigned char *)blk + len);
 }
 
 bool ssh2_mac_verify(

@@ -311,7 +311,7 @@ EdwardsPoint *eddsa_public(mp_int *private_key, const ssh_keyalg *alg)
     for (size_t i = 0; i < curve->fieldBytes; ++i)
         put_byte(h, mp_get_byte(private_key, i));
 
-    unsigned char hash[extra->hash->hlen];
+    unsigned char hash[MAX_HASH_LEN];
     ssh_hash_final(h, hash);
 
     mp_int *exponent = eddsa_exponent_from_hash(
@@ -826,7 +826,7 @@ static mp_int *ecdsa_signing_exponent_from_data(
     ptrlen data)
 {
     /* Hash the data being signed. */
-    unsigned char hash[extra->hash->hlen];
+    unsigned char hash[MAX_HASH_LEN];
     ssh_hash *h = ssh_hash_new(extra->hash);
     put_data(h, data.ptr, data.len);
     ssh_hash_final(h, hash);
@@ -919,7 +919,7 @@ static mp_int *eddsa_signing_exponent_from_data(
     ptrlen r_encoded, ptrlen data)
 {
     /* Hash (r || public key || message) */
-    unsigned char hash[extra->hash->hlen];
+    unsigned char hash[MAX_HASH_LEN];
     ssh_hash *h = ssh_hash_new(extra->hash);
     put_data(h, r_encoded.ptr, r_encoded.len);
     put_epoint(h, ek->publicKey, ek->curve, true); /* omit string header */
@@ -1055,7 +1055,7 @@ static void eddsa_sign(ssh_key *key, const void *data, int datalen,
      * First, we hash the private key integer (bare, little-endian)
      * into a hash generating 2*fieldBytes of output.
      */
-    unsigned char hash[extra->hash->hlen];
+    unsigned char hash[MAX_HASH_LEN];
     ssh_hash *h = ssh_hash_new(extra->hash);
     for (size_t i = 0; i < ek->curve->fieldBytes; ++i)
         put_byte(h, mp_get_byte(ek->privateKey, i));
@@ -1269,15 +1269,15 @@ static void ssh_ecdhkex_w_setup(ecdh_key *dh)
 
 static void ssh_ecdhkex_m_setup(ecdh_key *dh)
 {
-    unsigned char bytes[dh->curve->fieldBytes];
-    for (size_t i = 0; i < sizeof(bytes); ++i)
-        bytes[i] = random_byte();
+    strbuf *bytes = strbuf_new();
+    for (size_t i = 0; i < dh->curve->fieldBytes; ++i)
+        put_byte(bytes, random_byte());
 
-    bytes[0] &= 0xF8;
-    bytes[dh->curve->fieldBytes-1] &= 0x7F;
-    bytes[dh->curve->fieldBytes-1] |= 0x40;
-    dh->private = mp_from_bytes_le(make_ptrlen(bytes, dh->curve->fieldBytes));
-    smemclr(bytes, sizeof(bytes));
+    bytes->u[0] &= 0xF8;
+    bytes->u[bytes->len-1] &= 0x7F;
+    bytes->u[bytes->len-1] |= 0x40;
+    dh->private = mp_from_bytes_le(ptrlen_from_strbuf(bytes));
+    strbuf_free(bytes);
 
     dh->m_public = ecc_montgomery_multiply(dh->curve->m.G, dh->private);
 }

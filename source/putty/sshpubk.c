@@ -1478,7 +1478,7 @@ void ssh2_write_pubkey(FILE *fp, const char *comment,
         fprintf(fp, "%s\n", buffer);
         sfree(buffer);
     } else {
-        assert(0 && "Bad key type in ssh2_write_pubkey");
+        unreachable("Bad key type in ssh2_write_pubkey");
     }
 }
 

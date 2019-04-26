@@ -130,7 +130,7 @@ struct ssh2_transport_state {
     const struct ssh_kex *kex_alg;
     const ssh_keyalg *hostkey_alg;
     char *hostkey_str; /* string representation, for easy checking in rekeys */
-    unsigned char session_id[SSH2_KEX_MAX_HASH_LEN];
+    unsigned char session_id[MAX_HASH_LEN];
     int session_id_len;
     int dh_min_size, dh_max_size;
     bool dh_got_size_bounds;
@@ -177,7 +177,7 @@ struct ssh2_transport_state {
     ssh_key *hkey;                     /* actual host key */
     struct RSAKey *rsa_kex_key;             /* for RSA kex */
     ecdh_key *ecdh_key;                     /* for ECDH kex */
-    unsigned char exchange_hash[SSH2_KEX_MAX_HASH_LEN];
+    unsigned char exchange_hash[MAX_HASH_LEN];
     bool can_gssapi_keyex;
     bool need_gss_transient_hostkey;
     bool warned_about_no_gss_transient_hostkey;

@@ -252,6 +252,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                 return;
             }
         } else {
+            sfree(fingerprint);
             sfree(keystr);
         }
     }
@@ -689,8 +690,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                     got_passphrase = false;
                     /* and try again */
                 } else {
-                    assert(0 && "unexpected return from rsa_ssh1_loadkey()");
-                    got_passphrase = false;   /* placate optimisers */
+                    unreachable("unexpected return from rsa_ssh1_loadkey()");
                 }
             }
 

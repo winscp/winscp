@@ -727,9 +727,9 @@ static void oaep_mask(const struct ssh_hashalg *h, void *seed, int seedlen,
     while (datalen > 0) {
         int i, max = (datalen > h->hlen ? h->hlen : datalen);
         ssh_hash *s;
-        unsigned char hash[SSH2_KEX_MAX_HASH_LEN];
+        unsigned char hash[MAX_HASH_LEN];
 
-	assert(h->hlen <= SSH2_KEX_MAX_HASH_LEN);
+	assert(h->hlen <= MAX_HASH_LEN);
         s = ssh_hash_new(h);
         put_data(s, seed, seedlen);
         put_uint32(s, count);

@@ -243,7 +243,7 @@ static void pfd_receive(Plug *plug, int urgent, char *data, int len)
             switch (pf->socks_state) {
               case SOCKS_INITIAL:
               case SOCKS_NONE:
-                assert(0 && "These case values cannot appear");
+                unreachable("These case values cannot appear");
 
               case SOCKS_4:
                 /* SOCKS 4/4A connect message */
