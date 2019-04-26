@@ -146,7 +146,7 @@ static mp_int *ecc_weierstrass_equation_rhs(
 WeierstrassPoint *ecc_weierstrass_point_new_from_x(
     WeierstrassCurve *wc, mp_int *xorig, unsigned desired_y_parity)
 {
-    assert(wc->sc);
+    pinitassert(wc->sc);
 
     /*
      * The curve equation is y^2 = x^3 + ax + b, which is already
@@ -175,11 +175,13 @@ WeierstrassPoint *ecc_weierstrass_point_new_from_x(
      * Choose whichever of y and p-y has the specified parity (of its
      * lowest positive residue mod p).
      */
+    { // WINSCP
     mp_int *tmp = monty_export(wc->mc, y);
     unsigned flip = (mp_get_bit(tmp, 0) ^ desired_y_parity) & 1;
     mp_sub_into(tmp, wc->p, y);
     mp_select_into(y, y, tmp, flip);
     mp_free(tmp);
+    } // WINSCP
 
     return ecc_weierstrass_point_new_imported(wc, x, y);
 }
@@ -224,6 +226,7 @@ static inline void ecc_weierstrass_epilogue(
     out->X = monty_sub(wc->mc, lambda_n2, lambda_d2_xsum);
 
     /* Make the output y-coordinate */
+    { // WINSCP
     mp_int *lambda_d2_Px = monty_mul(wc->mc, lambda_d2, Px);
     mp_int *xdiff = monty_sub(wc->mc, lambda_d2_Px, out->X);
     mp_int *lambda_n_xdiff = monty_mul(wc->mc, lambda_n, xdiff);
@@ -242,6 +245,7 @@ static inline void ecc_weierstrass_epilogue(
     mp_free(lambda_n_xdiff);
     mp_free(lambda_d2_Px);
     mp_free(lambda_d3_Py);
+    } // WINSCP
 }
 
 /*
@@ -269,6 +273,7 @@ static inline void ecc_weierstrass_add_prologue(
     *Px = monty_mul(wc->mc, P->X, Qz2);
     *Py = monty_mul(wc->mc, P->Y, Qz3);
     *Qx = monty_mul(wc->mc, Q->X, Pz2);
+    { // WINSCP
     mp_int *Qy = monty_mul(wc->mc, Q->Y, Pz3);
 
     /* Common denominator */
@@ -283,6 +288,7 @@ static inline void ecc_weierstrass_add_prologue(
     mp_free(Qz2);
     mp_free(Qz3);
     mp_free(Qy);
+    } // WINSCP
 }
 
 WeierstrassPoint *ecc_weierstrass_add(WeierstrassPoint *P, WeierstrassPoint *Q)
@@ -290,6 +296,7 @@ WeierstrassPoint *ecc_weierstrass_add(WeierstrassPoint *P, WeierstrassPoint *Q)
     WeierstrassCurve *wc = P->wc;
     assert(Q->wc == wc);
 
+    { // WINSCP
     WeierstrassPoint *S = ecc_weierstrass_point_new_empty(wc);
 
     mp_int *Px, *Py, *Qx, *denom, *lambda_n, *lambda_d;
@@ -313,6 +320,7 @@ WeierstrassPoint *ecc_weierstrass_add(WeierstrassPoint *P, WeierstrassPoint *Q)
     mp_free(lambda_d);
 
     return S;
+    } // WINSCP
 }
 
 /*
@@ -375,6 +383,7 @@ WeierstrassPoint *ecc_weierstrass_add_general(
     WeierstrassCurve *wc = P->wc;
     assert(Q->wc == wc);
 
+    { // WINSCP
     WeierstrassPoint *S = ecc_weierstrass_point_new_empty(wc);
 
     /* Parameters for the epilogue, and slope of the line if P != Q */
@@ -383,10 +392,12 @@ WeierstrassPoint *ecc_weierstrass_add_general(
         P, Q, &Px, &Py, &Qx, &denom, &lambda_n, &lambda_d);
 
     /* Slope if P == Q */
+    { // WINSCP
     mp_int *lambda_n_tangent, *lambda_d_tangent;
     ecc_weierstrass_tangent_slope(P, &lambda_n_tangent, &lambda_d_tangent);
 
     /* Select between those slopes depending on whether P == Q */
+    { // WINSCP
     unsigned same_x_coord = mp_eq_integer(lambda_d, 0);
     unsigned same_y_coord = mp_eq_integer(lambda_n, 0);
     unsigned equality = same_x_coord & same_y_coord;
@@ -407,6 +418,7 @@ WeierstrassPoint *ecc_weierstrass_add_general(
      * z==0 already. Detect that and use it to normalise the other two
      * coordinates to zero.
      */
+    { // WINSCP
     unsigned output_id = mp_eq_integer(S->Z, 0);
     mp_cond_clear(S->X, output_id);
     mp_cond_clear(S->Y, output_id);
@@ -421,6 +433,10 @@ WeierstrassPoint *ecc_weierstrass_add_general(
     mp_free(lambda_d_tangent);
 
     return S;
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
 }
 
 WeierstrassPoint *ecc_weierstrass_multiply(WeierstrassPoint *B, mp_int *n)
@@ -438,11 +454,13 @@ WeierstrassPoint *ecc_weierstrass_multiply(WeierstrassPoint *B, mp_int *n)
      */
 
     unsigned not_started_yet = 1;
-    for (size_t bitindex = mp_max_bits(n); bitindex-- > 0 ;) {
+    size_t bitindex; // WINSCP
+    for (bitindex = mp_max_bits(n); bitindex-- > 0 ;) {
         unsigned nbit = mp_get_bit(n, bitindex);
 
         WeierstrassPoint *sum = ecc_weierstrass_add(k_B, kplus1_B);
         ecc_weierstrass_cond_swap(k_B, kplus1_B, nbit);
+        { // WINSCP
         WeierstrassPoint *other = ecc_weierstrass_double(k_B);
         ecc_weierstrass_point_free(k_B);
         ecc_weierstrass_point_free(kplus1_B);
@@ -453,6 +471,7 @@ WeierstrassPoint *ecc_weierstrass_multiply(WeierstrassPoint *B, mp_int *n)
         ecc_weierstrass_cond_overwrite(k_B, B, not_started_yet);
         ecc_weierstrass_cond_overwrite(kplus1_B, two_B, not_started_yet);
         not_started_yet &= ~nbit;
+        } // WINSCP
     }
 
     ecc_weierstrass_point_free(two_B);
@@ -543,16 +562,20 @@ MontgomeryCurve *ecc_montgomery_curve(
     mc->a = monty_import(mc->mc, a);
     mc->b = monty_import(mc->mc, b);
 
+    { // WINSCP
     mp_int *four = mp_from_integer(4);
     mp_int *fourinverse = mp_invert(four, mc->p);
     mp_int *aplus2 = mp_copy(a);
     mp_add_integer_into(aplus2, aplus2, 2);
+    { // WINSCP
     mp_int *aplus2over4 = mp_modmul(aplus2, fourinverse, mc->p);
     mc->aplus2over4 = monty_import(mc->mc, aplus2over4);
     mp_free(four);
     mp_free(fourinverse);
     mp_free(aplus2);
     mp_free(aplus2over4);
+    } // WINSCP
+    } // WINSCP
 
     return mc;
 }
@@ -631,6 +654,7 @@ MontgomeryPoint *ecc_montgomery_diff_add(
      * do a division during the main arithmetic.
      */
 
+    { // WINSCP
     MontgomeryPoint *S = ecc_montgomery_point_new_empty(mc);
 
     mp_int *Px_m_Pz = monty_sub(mc->mc, P->X, P->Z);
@@ -658,6 +682,7 @@ MontgomeryPoint *ecc_montgomery_diff_add(
     mp_free(Zpre2);
 
     return S;
+    } // WINSCP
 }
 
 MontgomeryPoint *ecc_montgomery_double(MontgomeryPoint *P)
@@ -692,6 +717,7 @@ MontgomeryPoint *ecc_montgomery_double(MontgomeryPoint *P)
     mp_int *Px_m_Pz_2 = monty_mul(mc->mc, Px_m_Pz, Px_m_Pz);
     mp_int *Px_p_Pz_2 = monty_mul(mc->mc, Px_p_Pz, Px_p_Pz);
     D->X = monty_mul(mc->mc, Px_m_Pz_2, Px_p_Pz_2);
+    { // WINSCP
     mp_int *XZ = monty_mul(mc->mc, P->X, P->Z);
     mp_int *twoXZ = monty_add(mc->mc, XZ, XZ);
     mp_int *fourXZ = monty_add(mc->mc, twoXZ, twoXZ);
@@ -708,6 +734,7 @@ MontgomeryPoint *ecc_montgomery_double(MontgomeryPoint *P)
     mp_free(fourXZ);
     mp_free(fourXZ_scaled);
     mp_free(Zpre);
+    } // WINSCP
 
     return D;
 }
@@ -759,11 +786,13 @@ MontgomeryPoint *ecc_montgomery_multiply(MontgomeryPoint *B, mp_int *n)
     MontgomeryPoint *kplus1_B = ecc_montgomery_point_copy(two_B);
 
     unsigned not_started_yet = 1;
-    for (size_t bitindex = mp_max_bits(n); bitindex-- > 0 ;) {
+    size_t bitindex; // WINSCP
+    for (bitindex = mp_max_bits(n); bitindex-- > 0 ;) {
         unsigned nbit = mp_get_bit(n, bitindex);
 
         MontgomeryPoint *sum = ecc_montgomery_diff_add(k_B, kplus1_B, B);
         ecc_montgomery_cond_swap(k_B, kplus1_B, nbit);
+        { // WINSCP
         MontgomeryPoint *other = ecc_montgomery_double(k_B);
         ecc_montgomery_point_free(k_B);
         ecc_montgomery_point_free(kplus1_B);
@@ -774,6 +803,7 @@ MontgomeryPoint *ecc_montgomery_multiply(MontgomeryPoint *B, mp_int *n)
         ecc_montgomery_cond_overwrite(k_B, B, not_started_yet);
         ecc_montgomery_cond_overwrite(kplus1_B, two_B, not_started_yet);
         not_started_yet &= ~nbit;
+        } // WINSCP
     }
 
     ecc_montgomery_point_free(two_B);
@@ -900,7 +930,7 @@ void ecc_edwards_point_free(EdwardsPoint *ep)
 EdwardsPoint *ecc_edwards_point_new_from_y(
     EdwardsCurve *ec, mp_int *yorig, unsigned desired_x_parity)
 {
-    assert(ec->sc);
+    pinitassert(ec->sc);
 
     /*
      * The curve equation is ax^2 + y^2 = 1 + dx^2y^2, which
@@ -939,11 +969,13 @@ EdwardsPoint *ecc_edwards_point_new_from_y(
      * Choose whichever of x and p-x has the specified parity (of its
      * lowest positive residue mod p).
      */
+    { // WINSCP
     mp_int *tmp = monty_export(ec->mc, x);
     unsigned flip = (mp_get_bit(tmp, 0) ^ desired_x_parity) & 1;
     mp_sub_into(tmp, ec->p, x);
     mp_select_into(x, x, tmp, flip);
     mp_free(tmp);
+    } // WINSCP
 
     return ecc_edwards_point_new_imported(ec, x, y);
 }
@@ -971,6 +1003,7 @@ EdwardsPoint *ecc_edwards_add(EdwardsPoint *P, EdwardsPoint *Q)
     EdwardsCurve *ec = P->ec;
     assert(Q->ec == ec);
 
+    { // WINSCP
     EdwardsPoint *S = ecc_edwards_point_new_empty(ec);
 
     /*
@@ -1025,6 +1058,7 @@ EdwardsPoint *ecc_edwards_add(EdwardsPoint *P, EdwardsPoint *Q)
     mp_free(H);
 
     return S;
+    } // WINSCP
 }
 
 static void ecc_edwards_normalise(EdwardsPoint *ep)
@@ -1052,11 +1086,13 @@ EdwardsPoint *ecc_edwards_multiply(EdwardsPoint *B, mp_int *n)
      */
 
     unsigned not_started_yet = 1;
-    for (size_t bitindex = mp_max_bits(n); bitindex-- > 0 ;) {
+    size_t bitindex; // WINSCP
+    for (bitindex = mp_max_bits(n); bitindex-- > 0 ;) {
         unsigned nbit = mp_get_bit(n, bitindex);
 
         EdwardsPoint *sum = ecc_edwards_add(k_B, kplus1_B);
         ecc_edwards_cond_swap(k_B, kplus1_B, nbit);
+        { // WINSCP
         EdwardsPoint *other = ecc_edwards_add(k_B, k_B);
         ecc_edwards_point_free(k_B);
         ecc_edwards_point_free(kplus1_B);
@@ -1067,6 +1103,7 @@ EdwardsPoint *ecc_edwards_multiply(EdwardsPoint *B, mp_int *n)
         ecc_edwards_cond_overwrite(k_B, B, not_started_yet);
         ecc_edwards_cond_overwrite(kplus1_B, two_B, not_started_yet);
         not_started_yet &= ~nbit;
+        } // WINSCP
     }
 
     ecc_edwards_point_free(two_B);

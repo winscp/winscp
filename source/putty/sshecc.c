@@ -42,39 +42,28 @@
 #ifdef MPEXT
 int ec_curve_cleanup = 0;
 
-static void finalize_ec_point(struct ec_point *point)
+static void finalize_common(struct ec_curve * curve)
 {
-    if (point->x != NULL) freebn(point->x);
-    if (point->y != NULL) freebn(point->y);
-    if (point->z != NULL) freebn(point->z);
+    mp_free(curve->p);
 }
 
 static void finalize_wcurve(struct ec_curve *curve)
 {
-    if (curve->p != NULL) freebn(curve->p);
-
-    if (curve->w.a != NULL) freebn(curve->w.a);
-    if (curve->w.b != NULL) freebn(curve->w.b);
-    if (curve->w.n != NULL) freebn(curve->w.n);
-    finalize_ec_point(&curve->w.G);
+    // TODO
+    finalize_common(curve);
 }
 
 static void finalize_mcurve(struct ec_curve *curve)
 {
-    if (curve->p != NULL) freebn(curve->p);
-
-    if (curve->m.a != NULL) freebn(curve->m.a);
-    if (curve->m.b != NULL) freebn(curve->m.b);
-    finalize_ec_point(&curve->m.G);
+    ecc_montgomery_curve_free(curve->m.mc);
+    ecc_montgomery_point_free(curve->m.G);
+    finalize_common(curve);
 }
 
 static void finalize_ecurve(struct ec_curve *curve)
 {
-    if (curve->p != NULL) freebn(curve->p);
-
-    if (curve->e.l != NULL) freebn(curve->e.l);
-    if (curve->e.d != NULL) freebn(curve->e.d);
-    finalize_ec_point(&curve->e.B);
+    // TODO
+    finalize_common(curve);
 }
 #endif
 
@@ -350,7 +339,7 @@ WeierstrassPoint *ecdsa_public(mp_int *private_key, const ssh_keyalg *alg)
     const struct ecsign_extra *extra =
         (const struct ecsign_extra *)alg->extra;
     struct ec_curve *curve = extra->curve();
-    assert(curve->type == EC_WEIERSTRASS);
+    pinitassert(curve->type == EC_WEIERSTRASS);
 
     mp_int *priv_reduced = mp_mod(private_key, curve->p);
     WeierstrassPoint *toret = ecc_weierstrass_multiply(
@@ -365,7 +354,7 @@ static mp_int *eddsa_exponent_from_hash(
     /*
      * Make an integer out of the hash data, little-endian.
      */
-    assert(hash.len >= curve->fieldBytes);
+    pinitassert(hash.len >= curve->fieldBytes);
     mp_int *e = mp_from_bytes_le(make_ptrlen(hash.ptr, curve->fieldBytes));
 
     /*
@@ -378,8 +367,11 @@ static mp_int *eddsa_exponent_from_hash(
     /*
      * Clear exactly three low bits.
      */
-    for (size_t bit = 0; bit < 3; bit++)
+    { // WINSCP
+    size_t bit; // WINSCP
+    for (bit = 0; bit < 3; bit++)
         mp_set_bit(e, bit, 0);
+    } // WINSCP
 
     return e;
 }
@@ -389,22 +381,28 @@ EdwardsPoint *eddsa_public(mp_int *private_key, const ssh_keyalg *alg)
     const struct ecsign_extra *extra =
         (const struct ecsign_extra *)alg->extra;
     struct ec_curve *curve = extra->curve();
-    assert(curve->type == EC_EDWARDS);
+    pinitassert(curve->type == EC_EDWARDS);
 
     ssh_hash *h = ssh_hash_new(extra->hash);
-    for (size_t i = 0; i < curve->fieldBytes; ++i)
+    size_t i; // WINSCP
+    for (i = 0; i < curve->fieldBytes; ++i)
         put_byte(h, mp_get_byte(private_key, i));
 
-    unsigned char hash[extra->hash->hlen];
+    { // WINSCP
+    unsigned char * hash = snewn(extra->hash->hlen, unsigned char); // WINSCP
     ssh_hash_final(h, hash);
 
+    { // WINSCP
     mp_int *exponent = eddsa_exponent_from_hash(
         make_ptrlen(hash, extra->hash->hlen), curve);
 
     EdwardsPoint *toret = ecc_edwards_multiply(curve->e.G, exponent);
     mp_free(exponent);
+    sfree(hash); // WINSCP
 
     return toret;
+    } // WINSCP
+    } // WINSCP
 }
 
 /* ----------------------------------------------------------------------
@@ -422,8 +420,11 @@ static void BinarySink_put_mp_le_unsigned(BinarySink *bs, mp_int *x)
     size_t bytes = (mp_get_nbits(x) + 7) / 8;
 
     put_uint32(bs, bytes);
-    for (size_t i = 0; i < bytes; ++i)
+    { // WINSCP
+    size_t i; // WINSCP
+    for (i = 0; i < bytes; ++i)
         put_byte(bs, mp_get_byte(x, i));
+    } // WINSCP
 }
 #define put_mp_le_unsigned(bs, x) \
     BinarySink_put_mp_le_unsigned(BinarySink_UPCAST(bs), x)
@@ -431,10 +432,11 @@ static void BinarySink_put_mp_le_unsigned(BinarySink *bs, mp_int *x)
 static WeierstrassPoint *ecdsa_decode(
     ptrlen encoded, const struct ec_curve *curve)
 {
-    assert(curve->type == EC_WEIERSTRASS);
+    pinitassert(curve->type == EC_WEIERSTRASS);
     BinarySource src[1];
 
     BinarySource_BARE_INIT(src, encoded.ptr, encoded.len);
+    { // WINSCP
     unsigned char format_type = get_byte(src);
 
     WeierstrassPoint *P;
@@ -484,6 +486,7 @@ static WeierstrassPoint *ecdsa_decode(
     }
 
     return P;
+    } // WINSCP
 }
 
 static WeierstrassPoint *BinarySource_get_wpoint(
@@ -527,10 +530,13 @@ static void BinarySink_put_wpoint(
          * For ECDSA, we only ever output uncompressed points.
          */
         put_byte(bs_inner, 0x04);
-        for (size_t i = curve->fieldBytes; i--;)
+        { // WINSCP
+        size_t i; // WINSCP
+        for (i = curve->fieldBytes; i--;)
             put_byte(bs_inner, mp_get_byte(x, i));
-        for (size_t i = curve->fieldBytes; i--;)
+        for (i = curve->fieldBytes; i--;)
             put_byte(bs_inner, mp_get_byte(y, i));
+        } // WINSCP
 
         mp_free(x);
         mp_free(y);
@@ -547,6 +553,7 @@ static EdwardsPoint *eddsa_decode(ptrlen encoded, const struct ec_curve *curve)
     assert(curve->type == EC_EDWARDS);
     assert(curve->fieldBits % 8 == 7);
 
+    { // WINSCP
     mp_int *y = mp_from_bytes_le(encoded);
 
     if (mp_get_nbits(y) > curve->fieldBits+1) {
@@ -556,9 +563,11 @@ static EdwardsPoint *eddsa_decode(ptrlen encoded, const struct ec_curve *curve)
 
     /* The topmost bit of the encoding isn't part of y, so it stores
      * the bottom bit of x. Extract it, and zero that bit in y. */
+    { // WINSCP
     unsigned desired_x_parity = mp_get_bit(y, curve->fieldBits);
     mp_set_bit(y, curve->fieldBits, 0);
 
+    { // WINSCP
     EdwardsPoint *P = ecc_edwards_point_new_from_y(
         curve->e.ec, y, desired_x_parity);
     mp_free(y);
@@ -567,6 +576,9 @@ static EdwardsPoint *eddsa_decode(ptrlen encoded, const struct ec_curve *curve)
      * equation, unless ecc.c wasn't able to construct one at all, in
      * which case P is now NULL. Either way, return it. */
     return P;
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
 }
 
 static EdwardsPoint *BinarySource_get_epoint(
@@ -596,8 +608,11 @@ static void BinarySink_put_epoint(
      */
     if (!bare)
         put_uint32(bs, curve->fieldBytes);   /* string length field */
-    for (size_t i = 0; i < curve->fieldBytes - 1; i++)
+    { // WINSCP
+    size_t i; // WINSCP
+    for (i = 0; i < curve->fieldBytes - 1; i++)
         put_byte(bs, mp_get_byte(y, i));
+    } // WINSCP
     put_byte(bs, (mp_get_byte(y, curve->fieldBytes - 1) & 0x7F) |
              (mp_get_bit(x, 0) << 7));
 
@@ -638,7 +653,7 @@ static ssh_key *ecdsa_new_pub(const ssh_keyalg *alg, ptrlen data)
     const struct ecsign_extra *extra =
         (const struct ecsign_extra *)alg->extra;
     struct ec_curve *curve = extra->curve();
-    assert(curve->type == EC_WEIERSTRASS);
+    pinitassert(curve->type == EC_WEIERSTRASS);
 
     BinarySource src[1];
     BinarySource_BARE_INIT(src, data.ptr, data.len);
@@ -648,6 +663,7 @@ static ssh_key *ecdsa_new_pub(const ssh_keyalg *alg, ptrlen data)
     if (!ptrlen_eq_string(get_string(src), curve->name))
         return NULL;
 
+    { // WINSCP
     struct ecdsa_key *ek = snew(struct ecdsa_key);
     ek->sshk.vt = alg;
     ek->curve = curve;
@@ -661,6 +677,7 @@ static ssh_key *ecdsa_new_pub(const ssh_keyalg *alg, ptrlen data)
     ek->privateKey = NULL;
 
     return &ek->sshk;
+    } // WINSCP
 }
 
 static ssh_key *eddsa_new_pub(const ssh_keyalg *alg, ptrlen data)
@@ -668,12 +685,13 @@ static ssh_key *eddsa_new_pub(const ssh_keyalg *alg, ptrlen data)
     const struct ecsign_extra *extra =
         (const struct ecsign_extra *)alg->extra;
     struct ec_curve *curve = extra->curve();
-    assert(curve->type == EC_EDWARDS);
+    pinitassert(curve->type == EC_EDWARDS);
 
     BinarySource src[1];
     BinarySource_BARE_INIT(src, data.ptr, data.len);
     get_string(src);
 
+    { // WINSCP
     struct eddsa_key *ek = snew(struct eddsa_key);
     ek->sshk.vt = alg;
     ek->curve = curve;
@@ -686,6 +704,7 @@ static ssh_key *eddsa_new_pub(const ssh_keyalg *alg, ptrlen data)
     }
 
     return &ek->sshk;
+    } // WINSCP
 }
 
 static char *ecc_cache_str_shared(
@@ -696,11 +715,13 @@ static char *ecc_cache_str_shared(
     if (curve_name)
         strbuf_catf(sb, "%s,", curve_name);
 
+    { // WINSCP
     char *hx = mp_get_hex(x);
     char *hy = mp_get_hex(y);
     strbuf_catf(sb, "0x%s,0x%s", hx, hy);
     sfree(hx);
     sfree(hy);
+    } // WINSCP
 
     return strbuf_to_str(sb);
 }
@@ -711,10 +732,12 @@ static char *ecdsa_cache_str(ssh_key *key)
     mp_int *x, *y;
 
     ecc_weierstrass_get_affine(ek->publicKey, &x, &y);
+    { // WINSCP
     char *toret = ecc_cache_str_shared(ek->curve->name, x, y);
     mp_free(x);
     mp_free(y);
     return toret;
+    } // WINSCP
 }
 
 static char *eddsa_cache_str(ssh_key *key)
@@ -723,10 +746,12 @@ static char *eddsa_cache_str(ssh_key *key)
     mp_int *x, *y;
 
     ecc_edwards_get_affine(ek->publicKey, &x, &y);
+    { // WINSCP
     char *toret = ecc_cache_str_shared(ek->curve->name, x, y);
     mp_free(x);
     mp_free(y);
     return toret;
+    } // WINSCP
 }
 
 static void ecdsa_public_blob(ssh_key *key, BinarySink *bs)
@@ -769,6 +794,7 @@ static ssh_key *ecdsa_new_priv(const ssh_keyalg *alg, ptrlen pub, ptrlen priv)
     ssh_key *sshk = ecdsa_new_pub(alg, pub);
     if (!sshk)
         return NULL;
+    { // WINSCP
     struct ecdsa_key *ek = container_of(sshk, struct ecdsa_key, sshk);
 
     BinarySource src[1];
@@ -776,6 +802,7 @@ static ssh_key *ecdsa_new_priv(const ssh_keyalg *alg, ptrlen pub, ptrlen priv)
     ek->privateKey = get_mp_ssh2(src);
 
     return &ek->sshk;
+    } // WINSCP
 }
 
 static ssh_key *eddsa_new_priv(const ssh_keyalg *alg, ptrlen pub, ptrlen priv)
@@ -783,6 +810,7 @@ static ssh_key *eddsa_new_priv(const ssh_keyalg *alg, ptrlen pub, ptrlen priv)
     ssh_key *sshk = eddsa_new_pub(alg, pub);
     if (!sshk)
         return NULL;
+    { // WINSCP
     struct eddsa_key *ek = container_of(sshk, struct eddsa_key, sshk);
 
     BinarySource src[1];
@@ -790,6 +818,7 @@ static ssh_key *eddsa_new_priv(const ssh_keyalg *alg, ptrlen pub, ptrlen priv)
     ek->privateKey = get_mp_le(src);
 
     return &ek->sshk;
+    } // WINSCP
 }
 
 static ssh_key *eddsa_new_priv_openssh(
@@ -800,6 +829,7 @@ static ssh_key *eddsa_new_priv_openssh(
     struct ec_curve *curve = extra->curve();
     assert(curve->type == EC_EDWARDS);
 
+    { // WINSCP
     ptrlen pubkey_pl = get_string(src);
     ptrlen privkey_extended_pl = get_string(src);
     if (get_err(src) || pubkey_pl.len != curve->fieldBytes)
@@ -813,9 +843,11 @@ static ssh_key *eddsa_new_priv_openssh(
      * won't behave identically to the way OpenSSH would have treated
      * it.
      */
+    { // WINSCP
     BinarySource subsrc[1];
     BinarySource_BARE_INIT(
         subsrc, privkey_extended_pl.ptr, privkey_extended_pl.len);
+    { // WINSCP
     ptrlen privkey_pl = get_data(subsrc, curve->fieldBytes);
     ptrlen pubkey_copy_pl = get_data(subsrc, curve->fieldBytes);
     if (get_err(subsrc) || get_avail(subsrc))
@@ -823,6 +855,7 @@ static ssh_key *eddsa_new_priv_openssh(
     if (!ptrlen_eq_ptrlen(pubkey_pl, pubkey_copy_pl))
         return NULL;
 
+    { // WINSCP
     struct eddsa_key *ek = snew(struct eddsa_key);
     ek->sshk.vt = alg;
     ek->curve = curve;
@@ -836,6 +869,10 @@ static ssh_key *eddsa_new_priv_openssh(
     ek->privateKey = mp_from_bytes_le(privkey_pl);
 
     return &ek->sshk;
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
 }
 
 static void eddsa_openssh_blob(ssh_key *key, BinarySink *bs)
@@ -844,12 +881,15 @@ static void eddsa_openssh_blob(ssh_key *key, BinarySink *bs)
     assert(ek->curve->type == EC_EDWARDS);
 
     /* Encode the public and private points as strings */
+    { // WINSCP
     strbuf *pub_sb = strbuf_new();
     put_epoint(pub_sb, ek->publicKey, ek->curve, false);
+    { // WINSCP
     ptrlen pub = make_ptrlen(pub_sb->s + 4, pub_sb->len - 4);
 
     strbuf *priv_sb = strbuf_new();
     put_mp_le_unsigned(priv_sb, ek->privateKey);
+    { // WINSCP
     ptrlen priv = make_ptrlen(priv_sb->s + 4, priv_sb->len - 4);
 
     put_stringpl(bs, pub);
@@ -862,6 +902,9 @@ static void eddsa_openssh_blob(ssh_key *key, BinarySink *bs)
 
     strbuf_free(pub_sb);
     strbuf_free(priv_sb);
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
 }
 
 static ssh_key *ecdsa_new_priv_openssh(
@@ -874,6 +917,7 @@ static ssh_key *ecdsa_new_priv_openssh(
 
     get_string(src);
 
+    { // WINSCP
     struct eddsa_key *ek = snew(struct eddsa_key);
     ek->sshk.vt = alg;
     ek->curve = curve;
@@ -887,6 +931,7 @@ static ssh_key *ecdsa_new_priv_openssh(
     ek->privateKey = get_mp_ssh2(src);
 
     return &ek->sshk;
+    } // WINSCP
 }
 
 static void ecdsa_openssh_blob(ssh_key *key, BinarySink *bs)
@@ -910,26 +955,31 @@ static mp_int *ecdsa_signing_exponent_from_data(
     ptrlen data)
 {
     /* Hash the data being signed. */
-    unsigned char hash[extra->hash->hlen];
+    unsigned char * hash = snewn(extra->hash->hlen, unsigned char); // WINSCP
     ssh_hash *h = ssh_hash_new(extra->hash);
     put_data(h, data.ptr, data.len);
     ssh_hash_final(h, hash);
+    sfree(hash);
 
     /*
      * Take the leftmost b bits of the hash of the signed data (where
      * b is the number of bits in order(G)), interpreted big-endian.
      */
+    { // WINSCP
     mp_int *z = mp_from_bytes_be(make_ptrlen(hash, extra->hash->hlen));
     size_t zbits = mp_get_nbits(z);
     size_t nbits = mp_get_nbits(curve->w.G_order);
     size_t shift = zbits - nbits;
     /* Bound the shift count below at 0, using bit twiddling to avoid
      * a conditional branch */
-    shift &= ~-(shift >> (CHAR_BIT * sizeof(size_t) - 1));
+    shift &= ~-(int)(shift >> (CHAR_BIT * sizeof(size_t) - 1)); // WINSCP
+    { // WINSCP
     mp_int *toret = mp_rshift_safe(z, shift);
     mp_free(z);
 
     return toret;
+    } // WINSCP
+    } // WINSCP
 }
 
 static bool ecdsa_verify(ssh_key *key, ptrlen sig, ptrlen data)
@@ -946,12 +996,14 @@ static bool ecdsa_verify(ssh_key *key, ptrlen sig, ptrlen data)
         return false;
 
     /* Everything else is nested inside a sub-string. Descend into that. */
+    { // WINSCP
     ptrlen sigstr = get_string(src);
     if (get_err(src))
         return false;
     BinarySource_BARE_INIT(src, sigstr.ptr, sigstr.len);
 
     /* Extract the signature integers r,s */
+    { // WINSCP
     mp_int *r = get_mp_ssh2(src);
     mp_int *s = get_mp_ssh2(src);
     if (get_err(src)) {
@@ -961,6 +1013,7 @@ static bool ecdsa_verify(ssh_key *key, ptrlen sig, ptrlen data)
     }
 
     /* Basic sanity checks: 0 < r,s < order(G) */
+    { // WINSCP
     unsigned invalid = 0;
     invalid |= mp_eq_integer(r, 0);
     invalid |= mp_eq_integer(s, 0);
@@ -968,22 +1021,28 @@ static bool ecdsa_verify(ssh_key *key, ptrlen sig, ptrlen data)
     invalid |= mp_cmp_hs(s, ek->curve->w.G_order);
 
     /* Get the hash of the signed data, converted to an integer */
+    { // WINSCP
     mp_int *z = ecdsa_signing_exponent_from_data(ek->curve, extra, data);
 
     /* Verify the signature integers against the hash */
     mp_int *w = mp_invert(s, ek->curve->w.G_order);
     mp_int *u1 = mp_modmul(z, w, ek->curve->w.G_order);
     mp_free(z);
+    { // WINSCP
     mp_int *u2 = mp_modmul(r, w, ek->curve->w.G_order);
     mp_free(w);
+    { // WINSCP
     WeierstrassPoint *u1G = ecc_weierstrass_multiply(ek->curve->w.G, u1);
     mp_free(u1);
+    { // WINSCP
     WeierstrassPoint *u2P = ecc_weierstrass_multiply(ek->publicKey, u2);
     mp_free(u2);
+    { // WINSCP
     WeierstrassPoint *sum = ecc_weierstrass_add_general(u1G, u2P);
     ecc_weierstrass_point_free(u1G);
     ecc_weierstrass_point_free(u2P);
 
+    { // WINSCP
     mp_int *x;
     ecc_weierstrass_get_affine(sum, &x, NULL);
     ecc_weierstrass_point_free(sum);
@@ -996,6 +1055,15 @@ static bool ecdsa_verify(ssh_key *key, ptrlen sig, ptrlen data)
     mp_free(s);
 
     return !invalid;
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
 }
 
 static mp_int *eddsa_signing_exponent_from_data(
@@ -1003,18 +1071,21 @@ static mp_int *eddsa_signing_exponent_from_data(
     ptrlen r_encoded, ptrlen data)
 {
     /* Hash (r || public key || message) */
-    unsigned char hash[extra->hash->hlen];
+    unsigned char * hash = snewn(extra->hash->hlen, unsigned char);
     ssh_hash *h = ssh_hash_new(extra->hash);
     put_data(h, r_encoded.ptr, r_encoded.len);
     put_epoint(h, ek->publicKey, ek->curve, true); /* omit string header */
     put_data(h, data.ptr, data.len);
     ssh_hash_final(h, hash);
+    sfree(hash);
 
     /* Convert to an integer */
+    { // WINSCP
     mp_int *toret = mp_from_bytes_le(make_ptrlen(hash, extra->hash->hlen));
 
     smemclr(hash, extra->hash->hlen);
     return toret;
+    } // WINSCP
 }
 
 static bool eddsa_verify(ssh_key *key, ptrlen sig, ptrlen data)
@@ -1032,18 +1103,22 @@ static bool eddsa_verify(ssh_key *key, ptrlen sig, ptrlen data)
 
     /* Now expect a single string which is the concatenation of an
      * encoded curve point r and an integer s. */
+    { // WINSCP
     ptrlen sigstr = get_string(src);
     if (get_err(src))
         return false;
     BinarySource_BARE_INIT(src, sigstr.ptr, sigstr.len);
+    { // WINSCP
     ptrlen rstr = get_data(src, ek->curve->fieldBytes);
     ptrlen sstr = get_data(src, ek->curve->fieldBytes);
     if (get_err(src) || get_avail(src))
         return false;
 
+    { // WINSCP
     EdwardsPoint *r = eddsa_decode(rstr, ek->curve);
     if (!r)
         return false;
+    { // WINSCP
     mp_int *s = mp_from_bytes_le(sstr);
 
     mp_int *H = eddsa_signing_exponent_from_data(ek, extra, rstr, data);
@@ -1051,16 +1126,26 @@ static bool eddsa_verify(ssh_key *key, ptrlen sig, ptrlen data)
     /* Verify that s*G == r + H*publicKey */
     EdwardsPoint *lhs = ecc_edwards_multiply(ek->curve->e.G, s);
     mp_free(s);
+    { // WINSCP
     EdwardsPoint *hpk = ecc_edwards_multiply(ek->publicKey, H);
     mp_free(H);
+    { // WINSCP
     EdwardsPoint *rhs = ecc_edwards_add(r, hpk);
     ecc_edwards_point_free(hpk);
+    { // WINSCP
     unsigned valid = ecc_edwards_eq(lhs, rhs);
     ecc_edwards_point_free(lhs);
     ecc_edwards_point_free(rhs);
     ecc_edwards_point_free(r);
 
     return valid;
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
 }
 
 static void ecdsa_sign(ssh_key *key, const void *data, int datalen,
@@ -1071,6 +1156,7 @@ static void ecdsa_sign(ssh_key *key, const void *data, int datalen,
         (const struct ecsign_extra *)ek->sshk.vt->extra;
     assert(ek->privateKey);
 
+    { // WINSCP
     mp_int *z = ecdsa_signing_exponent_from_data(
         ek->curve, extra, make_ptrlen(data, datalen));
 
@@ -1085,22 +1171,27 @@ static void ecdsa_sign(ssh_key *key, const void *data, int datalen,
             ek->privateKey, digest, sizeof(digest));
     }
 
+    { // WINSCP
     WeierstrassPoint *kG = ecc_weierstrass_multiply(ek->curve->w.G, k);
     mp_int *x;
     ecc_weierstrass_get_affine(kG, &x, NULL);
     ecc_weierstrass_point_free(kG);
 
     /* r = kG.x mod order(G) */
+    { // WINSCP
     mp_int *r = mp_mod(x, ek->curve->w.G_order);
     mp_free(x);
 
     /* s = (z + r * priv)/k mod n */
+    { // WINSCP
     mp_int *rPriv = mp_modmul(r, ek->privateKey, ek->curve->w.G_order);
     mp_int *numerator = mp_modadd(z, rPriv, ek->curve->w.G_order);
     mp_free(z);
     mp_free(rPriv);
+    { // WINSCP
     mp_int *kInv = mp_invert(k, ek->curve->w.G_order);
     mp_free(k);
+    { // WINSCP
     mp_int *s = mp_modmul(numerator, kInv, ek->curve->w.G_order);
     mp_free(numerator);
     mp_free(kInv);
@@ -1108,13 +1199,21 @@ static void ecdsa_sign(ssh_key *key, const void *data, int datalen,
     /* Format the output */
     put_stringz(bs, ek->sshk.vt->ssh_id);
 
+    { // WINSCP
     strbuf *substr = strbuf_new();
     put_mp_ssh2(substr, r);
     put_mp_ssh2(substr, s);
     put_stringsb(bs, substr);
+    } // WINSCP
 
     mp_free(r);
     mp_free(s);
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
 }
 
 static void eddsa_sign(ssh_key *key, const void *data, int datalen,
@@ -1139,16 +1238,20 @@ static void eddsa_sign(ssh_key *key, const void *data, int datalen,
      * First, we hash the private key integer (bare, little-endian)
      * into a hash generating 2*fieldBytes of output.
      */
-    unsigned char hash[extra->hash->hlen];
+    { // WINSCP
+    unsigned char * hash = snewn(extra->hash->hlen, unsigned char); // WINSCP
     ssh_hash *h = ssh_hash_new(extra->hash);
-    for (size_t i = 0; i < ek->curve->fieldBytes; ++i)
+    size_t i; // WINSCP
+    for (i = 0; i < ek->curve->fieldBytes; ++i)
         put_byte(h, mp_get_byte(ek->privateKey, i));
     ssh_hash_final(h, hash);
+    sfree(hash); // WINSCP
 
     /*
      * The first half of the output hash is converted into an
      * integer a, by the standard EdDSA transformation.
      */
+    { // WINSCP
     mp_int *a = eddsa_exponent_from_hash(
         make_ptrlen(hash, ek->curve->fieldBytes), ek->curve);
 
@@ -1162,10 +1265,12 @@ static void eddsa_sign(ssh_key *key, const void *data, int datalen,
              extra->hash->hlen - ek->curve->fieldBytes);
     put_data(h, data, datalen);
     ssh_hash_final(h, hash);
+    { // WINSCP
     mp_int *log_r_unreduced = mp_from_bytes_le(
         make_ptrlen(hash, extra->hash->hlen));
     mp_int *log_r = mp_mod(log_r_unreduced, ek->curve->e.G_order);
     mp_free(log_r_unreduced);
+    { // WINSCP
     EdwardsPoint *r = ecc_edwards_multiply(ek->curve->e.G, log_r);
 
     /*
@@ -1180,6 +1285,7 @@ static void eddsa_sign(ssh_key *key, const void *data, int datalen,
      * Compute the hash of (r || public key || message) just as
      * eddsa_verify does.
      */
+    { // WINSCP
     mp_int *H = eddsa_signing_exponent_from_data(
         ek, extra, ptrlen_from_strbuf(r_enc), make_ptrlen(data, datalen));
 
@@ -1196,9 +1302,17 @@ static void eddsa_sign(ssh_key *key, const void *data, int datalen,
     put_uint32(bs, r_enc->len + ek->curve->fieldBytes);
     put_data(bs, r_enc->u, r_enc->len);
     strbuf_free(r_enc);
-    for (size_t i = 0; i < ek->curve->fieldBytes; ++i)
+    { // WINSCP
+    size_t i;
+    for (i = 0; i < ek->curve->fieldBytes; ++i)
         put_byte(bs, mp_get_byte(s, i));
     mp_free(s);
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
 }
 
 const struct ecsign_extra sign_extra_ed25519 = {
@@ -1353,8 +1467,9 @@ static void ssh_ecdhkex_w_setup(ecdh_key *dh)
 
 static void ssh_ecdhkex_m_setup(ecdh_key *dh)
 {
-    unsigned char bytes[dh->curve->fieldBytes];
-    for (size_t i = 0; i < sizeof(bytes); ++i)
+    unsigned char * bytes = snewn(dh->curve->fieldBytes, unsigned char); // WINSCP
+    size_t i; // WINSCP
+    for (i = 0; i < sizeof(bytes); ++i)
         bytes[i] = random_byte();
 
     bytes[0] &= 0xF8;
@@ -1362,6 +1477,7 @@ static void ssh_ecdhkex_m_setup(ecdh_key *dh)
     bytes[dh->curve->fieldBytes-1] |= 0x40;
     dh->private = mp_from_bytes_le(make_ptrlen(bytes, dh->curve->fieldBytes));
     smemclr(bytes, sizeof(bytes));
+    sfree(bytes); // WINSCP
 
     dh->m_public = ecc_montgomery_multiply(dh->curve->m.G, dh->private);
 }
@@ -1386,8 +1502,9 @@ static void ssh_ecdhkex_w_getpublic(ecdh_key *dh, BinarySink *bs)
 static void ssh_ecdhkex_m_getpublic(ecdh_key *dh, BinarySink *bs)
 {
     mp_int *x;
+    size_t i; // WINSCP
     ecc_montgomery_get_affine(dh->m_public, &x);
-    for (size_t i = 0; i < dh->curve->fieldBytes; ++i)
+    for (i = 0; i < dh->curve->fieldBytes; ++i)
         put_byte(bs, mp_get_byte(x, i));
     mp_free(x);
 }
@@ -1403,6 +1520,7 @@ static mp_int *ssh_ecdhkex_w_getkey(ecdh_key *dh, ptrlen remoteKey)
     if (!remote_p)
         return NULL;
 
+    { // WINSCP
     WeierstrassPoint *p = ecc_weierstrass_multiply(remote_p, dh->private);
 
     mp_int *x;
@@ -1412,6 +1530,7 @@ static mp_int *ssh_ecdhkex_w_getkey(ecdh_key *dh, ptrlen remoteKey)
     ecc_weierstrass_point_free(p);
 
     return x;
+    } // WINSCP
 }
 
 static mp_int *ssh_ecdhkex_m_getkey(ecdh_key *dh, ptrlen remoteKey)
@@ -1421,6 +1540,7 @@ static mp_int *ssh_ecdhkex_m_getkey(ecdh_key *dh, ptrlen remoteKey)
         dh->curve->m.mc, remote_x);
     mp_free(remote_x);
 
+    { // WINSCP
     MontgomeryPoint *p = ecc_montgomery_multiply(remote_p, dh->private);
     mp_int *x;
     ecc_montgomery_get_affine(p, &x);
@@ -1442,14 +1562,18 @@ static mp_int *ssh_ecdhkex_m_getkey(ecdh_key *dh, ptrlen remoteKey)
      * being zero, so that has to be converted into an SSH-2 bignum
      * with the _low_ byte zero, i.e. a multiple of 256.
      */
+    { // WINSCP
     strbuf *sb = strbuf_new();
-    for (size_t i = 0; i < dh->curve->fieldBytes; ++i)
+    size_t i;
+    for (i = 0; i < dh->curve->fieldBytes; ++i)
         put_byte(sb, mp_get_byte(x, i));
     mp_free(x);
     x = mp_from_bytes_be(ptrlen_from_strbuf(sb));
     strbuf_free(sb);
 
     return x;
+    } // WINSCP
+    } // WINSCP
 }
 
 mp_int *ssh_ecdhkex_getkey(ecdh_key *dh, ptrlen remoteKey)

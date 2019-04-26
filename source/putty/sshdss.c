@@ -118,6 +118,7 @@ static bool dss_verify(ssh_key *key, ptrlen sig, ptrlen data)
     }
 
     /* Now we're sitting on a 40-byte string for sure. */
+    { // WINSCP
     mp_int *r = mp_from_bytes_be(make_ptrlen(sig.ptr, 20));
     mp_int *s = mp_from_bytes_be(make_ptrlen((const char *)sig.ptr + 20, 20));
     if (!r || !s) {
@@ -137,6 +138,7 @@ static bool dss_verify(ssh_key *key, ptrlen sig, ptrlen data)
     /*
      * Step 1. w <- s^-1 mod q.
      */
+    { // WINSCP
     mp_int *w = mp_invert(s, dss->q);
     if (!w) {
         mp_free(r);
@@ -148,6 +150,7 @@ static bool dss_verify(ssh_key *key, ptrlen sig, ptrlen data)
      * Step 2. u1 <- SHA(message) * w mod q.
      */
     SHA_Simple(data.ptr, data.len, hash);
+    { // WINSCP
     mp_int *sha = mp_from_bytes_be(make_ptrlen(hash, 20));
     mp_int *u1 = mp_modmul(sha, w, dss->q);
 
@@ -180,6 +183,9 @@ static bool dss_verify(ssh_key *key, ptrlen sig, ptrlen data)
     mp_free(v);
     mp_free(r);
     mp_free(s);
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
 
     return toret;
 }
@@ -404,8 +410,10 @@ mp_int *dss_gen_k(const char *id_string, mp_int *modulus,
      * Now convert the result into a bignum, and coerce it to the
      * range [2,q), which we do by reducing it mod q-2 and adding 2.
      */
+    { // WINSCP
     mp_int *modminus2 = mp_copy(modulus);
     mp_sub_integer_into(modminus2, modminus2, 2);
+    { // WINSCP
     mp_int *proto_k = mp_from_bytes_be(make_ptrlen(digest512, 64));
     mp_int *k = mp_mod(proto_k, modminus2);
     mp_free(proto_k);
@@ -416,6 +424,8 @@ mp_int *dss_gen_k(const char *id_string, mp_int *modulus,
     smemclr(digest512, sizeof(digest512));
 
     return k;
+    } // WINSCP
+    } // WINSCP
 }
 
 static void dss_sign(ssh_key *key, const void *data, int datalen,
@@ -427,6 +437,7 @@ static void dss_sign(ssh_key *key, const void *data, int datalen,
 
     SHA_Simple(data, datalen, digest);
 
+    { // WINSCP
     mp_int *k = dss_gen_k("DSA deterministic k generator", dss->q, dss->x,
                           digest, sizeof(digest));
     mp_int *kinv = mp_invert(k, dss->q);       /* k^-1 mod q */
@@ -438,9 +449,11 @@ static void dss_sign(ssh_key *key, const void *data, int datalen,
     mp_int *r = mp_mod(gkp, dss->q);        /* r = (g^k mod p) mod q */
     mp_free(gkp);
 
+    { // WINSCP
     mp_int *hash = mp_from_bytes_be(make_ptrlen(digest, 20));
     mp_int *hxr = mp_mul(dss->x, r);
     mp_add_into(hxr, hxr, hash);         /* hash + x*r */
+    { // WINSCP
     mp_int *s = mp_modmul(kinv, hxr, dss->q); /* s = k^-1 * (hash+x*r) mod q */
     mp_free(hxr);
     mp_free(kinv);
@@ -455,6 +468,9 @@ static void dss_sign(ssh_key *key, const void *data, int datalen,
         put_byte(bs, mp_get_byte(s, 19 - i));
     mp_free(r);
     mp_free(s);
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
 }
 
 const ssh_keyalg ssh_dss = {

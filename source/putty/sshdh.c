@@ -154,7 +154,7 @@ bool dh_is_gex(const struct ssh_kex *kex)
 struct dh_ctx *dh_setup_group(const struct ssh_kex *kex)
 {
     const struct dh_extra *extra = (const struct dh_extra *)kex->extra;
-    assert(!extra->gex);
+    pinitassert(!extra->gex);
     struct dh_ctx *ctx = snew(struct dh_ctx);
     extra->construct(ctx);
     dh_init(ctx);
@@ -258,10 +258,12 @@ const char *dh_validate_f(struct dh_ctx *ctx, mp_int *f)
     } else {
         mp_int *pm1 = mp_copy(ctx->p);
         mp_sub_integer_into(pm1, pm1, 1);
+        { // WINSCP
         unsigned cmp = mp_cmp_hs(f, pm1);
         mp_free(pm1);
         if (cmp)
             return "f value received is too large";
+        } // WINSCP
     }
     return NULL;
 }

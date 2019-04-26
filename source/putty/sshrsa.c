@@ -105,12 +105,16 @@ mp_int *crt_modpow(mp_int *base, mp_int *exp, mp_int *mod,
     /*
      * Do the two modpows.
      */
+    { // WINSCP
     mp_int *base_mod_p = mp_mod(base, p);
     presult = mp_modpow(base_mod_p, pexp, p);
     mp_free(base_mod_p);
+    } // WINSCP
+    { // WINSCP
     mp_int *base_mod_q = mp_mod(base, q);
     qresult = mp_modpow(base_mod_q, qexp, q);
     mp_free(base_mod_q);
+    } // WINSCP
 
     /*
      * Recombine the results. We want a value which is congruent to
@@ -124,8 +128,10 @@ mp_int *crt_modpow(mp_int *base, mp_int *exp, mp_int *mod,
      *
      * (If presult-qresult < 0, we add p to it to keep it positive.)
      */
+    { // WINSCP
     unsigned presult_too_small = mp_cmp_hs(qresult, presult);
     mp_cond_add_into(presult, presult, p, presult_too_small);
+    } // WINSCP
 
     diff = mp_sub(presult, qresult);
     multiplier = mp_mul(iqmp, q);
@@ -177,7 +183,8 @@ bool rsa_ssh1_decrypt_pkcs1(mp_int *input, struct RSAKey *key,
 
     {
         mp_int *b = rsa_ssh1_decrypt(input, key);
-        for (size_t i = (mp_get_nbits(key->modulus) + 7) / 8; i-- > 0 ;) {
+        size_t i; // WINSCP
+        for (i = (mp_get_nbits(key->modulus) + 7) / 8; i-- > 0 ;) {
             put_byte(data, mp_get_byte(b, i));
         }
         mp_free(b);
@@ -295,8 +302,10 @@ bool rsa_verify(struct RSAKey *key)
      * should instead flip them round into the canonical order of
      * p > q. This also involves regenerating iqmp.
      */
+    { // WINSCP
     unsigned swap_pq = mp_cmp_hs(key->q, key->p);
     mp_cond_swap(key->p, key->q, swap_pq);
+    } // WINSCP
     mp_free(key->iqmp);
     key->iqmp = mp_invert(key->q, key->p);
 
@@ -631,9 +640,10 @@ static bool rsa2_verify(ssh_key *key, ptrlen sig, ptrlen data)
     out = mp_modpow(in, rsa->exponent, rsa->modulus);
     mp_free(in);
 
-    unsigned diff = 0;
 
     { // WINSCP
+    unsigned diff = 0;
+
     size_t nbytes = (mp_get_nbits(rsa->modulus) + 7) / 8;
     unsigned char *bytes = rsa_pkcs1_signature_string(nbytes, &ssh_sha1, data);
     size_t i; // WINSCP
@@ -641,10 +651,10 @@ static bool rsa2_verify(ssh_key *key, ptrlen sig, ptrlen data)
         diff |= bytes[nbytes-1 - i] ^ mp_get_byte(out, i);
     smemclr(bytes, nbytes);
     sfree(bytes);
-    } // WINSCP
     mp_free(out);
 
     return diff == 0;
+    } // WINSCP
 }
 
 static void rsa2_sign(ssh_key *key, const void *data, int datalen,

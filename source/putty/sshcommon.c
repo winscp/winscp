@@ -1041,11 +1041,12 @@ void ssh1_compute_session_id(
     struct RSAKey *hostkey, struct RSAKey *servkey)
 {
     struct MD5Context md5c;
+    size_t i; // WINSCP
 
     MD5Init(&md5c);
-    for (size_t i = (mp_get_nbits(hostkey->modulus) + 7) / 8; i-- ;)
+    for (i = (mp_get_nbits(hostkey->modulus) + 7) / 8; i-- ;)
         put_byte(&md5c, mp_get_byte(hostkey->modulus, i));
-    for (size_t i = (mp_get_nbits(servkey->modulus) + 7) / 8; i-- ;)
+    for (i = (mp_get_nbits(servkey->modulus) + 7) / 8; i-- ;)
         put_byte(&md5c, mp_get_byte(servkey->modulus, i));
     put_data(&md5c, cookie, 8);
     MD5Final(session_id, &md5c);

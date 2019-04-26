@@ -112,6 +112,9 @@
 			<BuildOrder>5</BuildOrder>
 			<BuildOrder>25</BuildOrder>
 		</CppCompile>
+		<CppCompile Include="putty\ecc.c">
+			<BuildOrder>73</BuildOrder>
+		</CppCompile>
 		<CppCompile Include="putty\errsock.c">
 			<BuildOrder>44</BuildOrder>
 		</CppCompile>
@@ -137,6 +140,9 @@
 		</CppCompile>
 		<CppCompile Include="putty\miscucs.c">
 			<BuildOrder>51</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\mpint.c">
+			<BuildOrder>74</BuildOrder>
 		</CppCompile>
 		<CppCompile Include="putty\noshare.c">
 			<BuildOrder>41</BuildOrder>
@@ -214,10 +220,6 @@
 		<CppCompile Include="putty\sshblowf.c">
 			<BuildOrder>34</BuildOrder>
 			<BuildOrder>32</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\sshbn.c">
-			<BuildOrder>35</BuildOrder>
-			<BuildOrder>33</BuildOrder>
 		</CppCompile>
 		<CppCompile Include="putty\sshccp.c">
 			<BuildOrder>49</BuildOrder>
