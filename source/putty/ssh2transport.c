@@ -18,10 +18,10 @@ const struct ssh_signkey_with_user_pref_id ssh2_hostkey_algs[] = {
     HOSTKEY_ALGORITHMS(ARRAYENT_HOSTKEY_ALGORITHM)
 };
 
-const static struct ssh2_macalg *const macs[] = {
+const static ssh2_macalg *const macs[] = {
     &ssh_hmac_sha256, &ssh_hmac_sha1, &ssh_hmac_sha1_96, &ssh_hmac_md5
 };
-const static struct ssh2_macalg *const buggymacs[] = {
+const static ssh2_macalg *const buggymacs[] = {
     &ssh_hmac_sha1_buggy, &ssh_hmac_sha1_96_buggy, &ssh_hmac_md5
 };
 
@@ -51,13 +51,13 @@ static bool ssh_decomp_none_block(ssh_decompressor *handle,
 {
     return false;
 }
-const static struct ssh_compression_alg ssh_comp_none = {
+const static ssh_compression_alg ssh_comp_none = {
     "none", NULL,
     ssh_comp_none_init, ssh_comp_none_cleanup, ssh_comp_none_block,
     ssh_decomp_none_init, ssh_decomp_none_cleanup, ssh_decomp_none_block,
     NULL
 };
-const static struct ssh_compression_alg *const compressions[] = {
+const static ssh_compression_alg *const compressions[] = {
     &ssh_zlib, &ssh_comp_none
 };
 
@@ -416,13 +416,13 @@ static void ssh2_write_kexinit_lists(
     bool warn;
 
     int n_preferred_kex;
-    const struct ssh_kexes *preferred_kex[KEX_MAX + 1]; /* +1 for GSSAPI */
+    const ssh_kexes *preferred_kex[KEX_MAX + 1]; /* +1 for GSSAPI */
     int n_preferred_hk;
     int preferred_hk[HK_MAX];
     int n_preferred_ciphers;
-    const struct ssh2_ciphers *preferred_ciphers[CIPHER_MAX];
-    const struct ssh_compression_alg *preferred_comp;
-    const struct ssh2_macalg *const *maclist;
+    const ssh2_ciphers *preferred_ciphers[CIPHER_MAX];
+    const ssh_compression_alg *preferred_comp;
+    const ssh2_macalg *const *maclist;
     int nmacs;
 
     struct kexinit_algorithm *alg;
@@ -528,7 +528,7 @@ static void ssh2_write_kexinit_lists(
     /* List key exchange algorithms. */
     warn = false;
     for (i = 0; i < n_preferred_kex; i++) {
-        const struct ssh_kexes *k = preferred_kex[i];
+        const ssh_kexes *k = preferred_kex[i];
         if (!k) warn = true;
         else for (j = 0; j < k->nkexes; j++) {
                 alg = ssh2_kexinit_addalg(kexlists[KEXLIST_KEX],
@@ -648,7 +648,7 @@ static void ssh2_write_kexinit_lists(
         alg->u.cipher.warn = warn;
 #endif /* FUZZING */
         for (i = 0; i < n_preferred_ciphers; i++) {
-            const struct ssh2_ciphers *c = preferred_ciphers[i];
+            const ssh2_ciphers *c = preferred_ciphers[i];
             if (!c) warn = true;
             else for (j = 0; j < c->nciphers; j++) {
                     alg = ssh2_kexinit_addalg(kexlists[k],
@@ -709,7 +709,7 @@ static void ssh2_write_kexinit_lists(
             alg->u.comp.delayed = true;
         }
         for (i = 0; i < lenof(compressions); i++) {
-            const struct ssh_compression_alg *c = compressions[i];
+            const ssh_compression_alg *c = compressions[i];
             alg = ssh2_kexinit_addalg(kexlists[j], c->name);
             alg->u.comp.comp = c;
             alg->u.comp.delayed = false;
@@ -742,7 +742,7 @@ static void ssh2_write_kexinit_lists(
 static bool ssh2_scan_kexinits(
     ptrlen client_kexinit, ptrlen server_kexinit,
     struct kexinit_algorithm kexlists[NKEXLIST][MAXKEXLIST],
-    const struct ssh_kex **kex_alg, const ssh_keyalg **hostkey_alg,
+    const ssh_kex **kex_alg, const ssh_keyalg **hostkey_alg,
     transport_direction *cs, transport_direction *sc,
     bool *warn_kex, bool *warn_hk, bool *warn_cscipher, bool *warn_sccipher,
     Ssh *ssh, bool *ignore_guess_cs_packet, bool *ignore_guess_sc_packet,

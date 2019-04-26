@@ -233,7 +233,7 @@ struct sha1_hash {
     ssh_hash hash;
 };
 
-static ssh_hash *sha1_new(const struct ssh_hashalg *alg)
+static ssh_hash *sha1_new(const ssh_hashalg *alg)
 {
     struct sha1_hash *h = snew(struct sha1_hash);
     SHA_Init(&h->state);
@@ -271,7 +271,7 @@ static void sha1_final(ssh_hash *hash, unsigned char *output)
     sha1_free(hash);
 }
 
-const struct ssh_hashalg ssh_sha1 = {
+const ssh_hashalg ssh_sha1 = {
     sha1_new, sha1_copy, sha1_final, sha1_free, 20, "SHA-1"
 };
 
@@ -286,7 +286,7 @@ struct hmacsha1 {
 };
 
 static ssh2_mac *hmacsha1_new(
-    const struct ssh2_macalg *alg, ssh2_cipher *cipher)
+    const ssh2_macalg *alg, ssh2_cipher *cipher)
 {
     struct hmacsha1 *ctx = snew(struct hmacsha1);
     ctx->mac.vt = alg;
@@ -322,13 +322,10 @@ static void sha1_key_internal(SHA_State *keys,
     smemclr(foo, 64);		       /* burn the evidence */
 }
 
-static void hmacsha1_key(ssh2_mac *mac, const void *key)
+static void hmacsha1_key(ssh2_mac *mac, ptrlen key)
 {
     struct hmacsha1 *ctx = container_of(mac, struct hmacsha1, mac);
-    /* Reading the key length out of the ssh2_macalg structure means
-     * this same method can be used for the _buggy variants which use
-     * a shorter key */
-    sha1_key_internal(ctx->sha, key, ctx->mac.vt->keylen);
+    sha1_key_internal(ctx->sha, key.ptr, key.len);
 }
 
 static void hmacsha1_start(ssh2_mac *mac)
@@ -370,7 +367,7 @@ void hmac_sha1_simple(const void *key, int keylen,
     SHA_Final(&states[1], output);
 }
 
-const struct ssh2_macalg ssh_hmac_sha1 = {
+const ssh2_macalg ssh_hmac_sha1 = {
     hmacsha1_new, hmacsha1_free, hmacsha1_key,
     hmacsha1_start, hmacsha1_genresult,
     "hmac-sha1", "hmac-sha1-etm@openssh.com",
@@ -378,7 +375,7 @@ const struct ssh2_macalg ssh_hmac_sha1 = {
     "HMAC-SHA1"
 };
 
-const struct ssh2_macalg ssh_hmac_sha1_96 = {
+const ssh2_macalg ssh_hmac_sha1_96 = {
     hmacsha1_new, hmacsha1_free, hmacsha1_key,
     hmacsha1_start, hmacsha1_genresult,
     "hmac-sha1-96", "hmac-sha1-96-etm@openssh.com",
@@ -386,7 +383,7 @@ const struct ssh2_macalg ssh_hmac_sha1_96 = {
     "HMAC-SHA1-96"
 };
 
-const struct ssh2_macalg ssh_hmac_sha1_buggy = {
+const ssh2_macalg ssh_hmac_sha1_buggy = {
     hmacsha1_new, hmacsha1_free, hmacsha1_key,
     hmacsha1_start, hmacsha1_genresult,
     "hmac-sha1", NULL,
@@ -394,7 +391,7 @@ const struct ssh2_macalg ssh_hmac_sha1_buggy = {
     "bug-compatible HMAC-SHA1"
 };
 
-const struct ssh2_macalg ssh_hmac_sha1_96_buggy = {
+const ssh2_macalg ssh_hmac_sha1_96_buggy = {
     hmacsha1_new, hmacsha1_free, hmacsha1_key,
     hmacsha1_start, hmacsha1_genresult,
     "hmac-sha1-96", NULL,

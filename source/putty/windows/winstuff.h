@@ -101,14 +101,6 @@ struct FontSpec *fontspec_new(
 #define BOXRESULT (DLGWINDOWEXTRA + sizeof(LONG_PTR))
 #define DF_END 0x0001
 
-#ifdef __WINE__
-#define NO_SECUREZEROMEMORY            /* winelib doesn't have this */
-#endif
-
-#ifndef NO_SECUREZEROMEMORY
-#define PLATFORM_HAS_SMEMCLR /* inhibit cross-platform one in misc.c */
-#endif
-
 #ifndef __WINE__
 /* Up-to-date Windows headers warn that the unprefixed versions of
  * these names are deprecated. */

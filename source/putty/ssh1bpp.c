@@ -69,7 +69,7 @@ static void ssh1_bpp_free(BinaryPacketProtocol *bpp)
 }
 
 void ssh1_bpp_new_cipher(BinaryPacketProtocol *bpp,
-                         const struct ssh1_cipheralg *cipher,
+                         const ssh1_cipheralg *cipher,
                          const void *session_key)
 {
     struct ssh1_bpp_state *s;

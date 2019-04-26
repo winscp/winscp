@@ -928,6 +928,17 @@ bool ptrlen_eq_ptrlen(ptrlen pl1, ptrlen pl2)
     return (pl1.len == pl2.len && !memcmp(pl1.ptr, pl2.ptr, pl1.len));
 }
 
+int ptrlen_strcmp(ptrlen pl1, ptrlen pl2)
+{
+    size_t minlen = pl1.len < pl2.len ? pl1.len : pl2.len;
+    if (minlen) {  /* tolerate plX.ptr==NULL as long as plX.len==0 */
+        int cmp = memcmp(pl1.ptr, pl2.ptr, minlen);
+        if (cmp)
+            return cmp;
+    }
+    return pl1.len < pl2.len ? -1 : pl1.len > pl2.len ? +1 : 0;
+}
+
 bool ptrlen_startswith(ptrlen whole, ptrlen prefix, ptrlen *tail)
 {
     if (whole.len >= prefix.len &&

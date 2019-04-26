@@ -10,6 +10,11 @@ void BinarySink_put_data(BinarySink *bs, const void *data, size_t len)
     bs->write(bs, data, len);
 }
 
+void BinarySink_put_datapl(BinarySink *bs, ptrlen pl)
+{
+    BinarySink_put_data(bs, pl.ptr, pl.len);
+}
+
 void BinarySink_put_padding(BinarySink *bs, size_t len, unsigned char padbyte)
 {
     char buf[16];

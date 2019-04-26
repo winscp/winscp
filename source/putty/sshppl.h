@@ -150,7 +150,7 @@ bool ssh1_common_get_specials(PacketProtocolLayer *, add_special_fn_t, void *);
 bool ssh1_common_filter_queue(PacketProtocolLayer *ppl);
 void ssh1_compute_session_id(
     unsigned char *session_id, const unsigned char *cookie,
-    struct RSAKey *hostkey, struct RSAKey *servkey);
+    RSAKey *hostkey, RSAKey *servkey);
 
 /* Method used by the SSH server */
 void ssh2_transport_provide_hostkeys(PacketProtocolLayer *ssh2_transport_ptr,

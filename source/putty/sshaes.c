@@ -1045,7 +1045,7 @@ struct aes_ssh2_ctx {
     ssh2_cipher ciph;
 };
 
-ssh2_cipher *aes_ssh2_new(const struct ssh2_cipheralg *alg)
+ssh2_cipher *aes_ssh2_new(const ssh2_cipheralg *alg)
 {
     struct aes_ssh2_ctx *ctx = snew(struct aes_ssh2_ctx);
     ctx->ciph.vt = alg;
@@ -1089,7 +1089,7 @@ static void aes_ssh2_sdctr_method(ssh2_cipher *cipher, void *blk, int len)
     aes_sdctr(blk, len, &ctx->context);
 }
 
-static const struct ssh2_cipheralg ssh_aes128_ctr = {
+const ssh2_cipheralg ssh_aes128_ctr = {
     aes_ssh2_new, aes_ssh2_free, aes_ssh2_setiv, aes_ssh2_setkey,
     aes_ssh2_sdctr_method, aes_ssh2_sdctr_method, NULL, NULL,
     "aes128-ctr",
@@ -1097,7 +1097,7 @@ static const struct ssh2_cipheralg ssh_aes128_ctr = {
     NULL
 };
 
-static const struct ssh2_cipheralg ssh_aes192_ctr = {
+const ssh2_cipheralg ssh_aes192_ctr = {
     aes_ssh2_new, aes_ssh2_free, aes_ssh2_setiv, aes_ssh2_setkey,
     aes_ssh2_sdctr_method, aes_ssh2_sdctr_method, NULL, NULL,
     "aes192-ctr",
@@ -1105,7 +1105,7 @@ static const struct ssh2_cipheralg ssh_aes192_ctr = {
     NULL
 };
 
-static const struct ssh2_cipheralg ssh_aes256_ctr = {
+const ssh2_cipheralg ssh_aes256_ctr = {
     aes_ssh2_new, aes_ssh2_free, aes_ssh2_setiv, aes_ssh2_setkey,
     aes_ssh2_sdctr_method, aes_ssh2_sdctr_method, NULL, NULL,
     "aes256-ctr",
@@ -1113,7 +1113,7 @@ static const struct ssh2_cipheralg ssh_aes256_ctr = {
     NULL
 };
 
-static const struct ssh2_cipheralg ssh_aes128 = {
+const ssh2_cipheralg ssh_aes128 = {
     aes_ssh2_new, aes_ssh2_free, aes_ssh2_setiv, aes_ssh2_setkey,
     aes_ssh2_encrypt, aes_ssh2_decrypt, NULL, NULL,
     "aes128-cbc",
@@ -1121,7 +1121,7 @@ static const struct ssh2_cipheralg ssh_aes128 = {
     NULL
 };
 
-static const struct ssh2_cipheralg ssh_aes192 = {
+const ssh2_cipheralg ssh_aes192 = {
     aes_ssh2_new, aes_ssh2_free, aes_ssh2_setiv, aes_ssh2_setkey,
     aes_ssh2_encrypt, aes_ssh2_decrypt, NULL, NULL,
     "aes192-cbc",
@@ -1129,7 +1129,7 @@ static const struct ssh2_cipheralg ssh_aes192 = {
     NULL
 };
 
-static const struct ssh2_cipheralg ssh_aes256 = {
+const ssh2_cipheralg ssh_aes256 = {
     aes_ssh2_new, aes_ssh2_free, aes_ssh2_setiv, aes_ssh2_setkey,
     aes_ssh2_encrypt, aes_ssh2_decrypt, NULL, NULL,
     "aes256-cbc",
@@ -1137,7 +1137,9 @@ static const struct ssh2_cipheralg ssh_aes256 = {
     NULL
 };
 
-static const struct ssh2_cipheralg ssh_rijndael_lysator = {
+/* This cipher is just ssh_aes256 under a different protocol
+ * identifier; we leave it 'static' because testcrypt won't need it */
+static const ssh2_cipheralg ssh_rijndael_lysator = {
     aes_ssh2_new, aes_ssh2_free, aes_ssh2_setiv, aes_ssh2_setkey,
     aes_ssh2_encrypt, aes_ssh2_decrypt, NULL, NULL,
     "rijndael-cbc@lysator.liu.se",
@@ -1145,7 +1147,7 @@ static const struct ssh2_cipheralg ssh_rijndael_lysator = {
     NULL
 };
 
-static const struct ssh2_cipheralg *const aes_list[] = {
+static const ssh2_cipheralg *const aes_list[] = {
     &ssh_aes256_ctr,
     &ssh_aes256,
     &ssh_rijndael_lysator,
@@ -1155,10 +1157,7 @@ static const struct ssh2_cipheralg *const aes_list[] = {
     &ssh_aes128,
 };
 
-const struct ssh2_ciphers ssh2_aes = {
-    sizeof(aes_list) / sizeof(*aes_list),
-    aes_list
-};
+const ssh2_ciphers ssh2_aes = { lenof(aes_list), aes_list };
 
 /*
  * Implementation of AES for PuTTY using AES-NI
@@ -1573,8 +1572,8 @@ static void aes_decrypt_cbc_ni(unsigned char *blk, int len, AESContext * ctx)
 FUNC_ISA
 static void aes_sdctr_ni(unsigned char *blk, int len, AESContext *ctx)
 {
-    const __m128i BSWAP_EPI64 = _mm_setr_epi8(3,2,1,0,7,6,5,4,11,10,9,8,15,14,13,12);
-    const __m128i ONE  = _mm_setr_epi32(0,0,0,1);
+    const __m128i BSWAP_EPI64 = _mm_setr_epi8(7,6,5,4,3,2,1,0,15,14,13,12,11,10,9,8);
+    const __m128i ONE  = _mm_setr_epi32(0,0,1,0);
     const __m128i ZERO = _mm_setzero_si128();
     __m128i iv;
     __m128i* block = (__m128i*)blk;
@@ -1621,7 +1620,7 @@ static void aes_sdctr_ni(unsigned char *blk, int len, AESContext *ctx)
         iv  = _mm_shuffle_epi8(iv, BSWAP_EPI64); /* Swap endianess     */
         iv  = _mm_add_epi64(iv, ONE);            /* Inc low part       */
         enc = _mm_cmpeq_epi64(iv, ZERO);         /* Check for carry    */
-        enc = _mm_unpacklo_epi64(ZERO, enc);     /* Pack carry reg     */
+        enc = _mm_unpackhi_epi64(enc, ZERO);     /* Pack carry reg     */
         iv  = _mm_sub_epi64(iv, enc);            /* Sub carry reg      */
         iv  = _mm_shuffle_epi8(iv, BSWAP_EPI64); /* Swap enianess back */
 

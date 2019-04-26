@@ -510,7 +510,7 @@ static void zlib_match(struct LZ77Context *ectx, int distance, int len)
 	 * transmitting.
 	 */
 	i = -1;
-	j = sizeof(lencodes) / sizeof(*lencodes);
+	j = lenof(lencodes);
 	while (1) {
 	    assert(j - i >= 2);
 	    k = (j + i) / 2;
@@ -546,7 +546,7 @@ static void zlib_match(struct LZ77Context *ectx, int distance, int len)
 	 * transmitting.
 	 */
 	i = -1;
-	j = sizeof(distcodes) / sizeof(*distcodes);
+	j = lenof(distcodes);
 	while (1) {
 	    assert(j - i >= 2);
 	    k = (j + i) / 2;
@@ -1196,7 +1196,7 @@ bool zlib_decompress_block(ssh_decompressor *dc,
     return false;
 }
 
-const struct ssh_compression_alg ssh_zlib = {
+const ssh_compression_alg ssh_zlib = {
     "zlib",
     "zlib@openssh.com", /* delayed version */
     zlib_compress_init,

@@ -15,22 +15,22 @@
 
 static bool openssh_pem_encrypted(const Filename *file);
 static bool openssh_new_encrypted(const Filename *file);
-static struct ssh2_userkey *openssh_pem_read(
+static ssh2_userkey *openssh_pem_read(
     const Filename *file, const char *passphrase, const char **errmsg_p);
-static struct ssh2_userkey *openssh_new_read(
+static ssh2_userkey *openssh_new_read(
     const Filename *file, const char *passphrase, const char **errmsg_p);
 static bool openssh_auto_write(
-    const Filename *file, struct ssh2_userkey *key, const char *passphrase);
+    const Filename *file, ssh2_userkey *key, const char *passphrase);
 static bool openssh_pem_write(
-    const Filename *file, struct ssh2_userkey *key, const char *passphrase);
+    const Filename *file, ssh2_userkey *key, const char *passphrase);
 static bool openssh_new_write(
-    const Filename *file, struct ssh2_userkey *key, const char *passphrase);
+    const Filename *file, ssh2_userkey *key, const char *passphrase);
 
 static bool sshcom_encrypted(const Filename *file, char **comment);
-static struct ssh2_userkey *sshcom_read(
+static ssh2_userkey *sshcom_read(
     const Filename *file, const char *passphrase, const char **errmsg_p);
 static bool sshcom_write(
-    const Filename *file, struct ssh2_userkey *key, const char *passphrase);
+    const Filename *file, ssh2_userkey *key, const char *passphrase);
 
 /*
  * Given a key type, determine whether we know how to import it.
@@ -83,7 +83,7 @@ bool import_encrypted(const Filename *filename, int type, char **comment)
  * Import an SSH-1 key.
  */
 int import_ssh1(const Filename *filename, int type,
-		struct RSAKey *key, char *passphrase, const char **errmsg_p)
+		RSAKey *key, char *passphrase, const char **errmsg_p)
 {
     return 0;
 }
@@ -91,7 +91,7 @@ int import_ssh1(const Filename *filename, int type,
 /*
  * Import an SSH-2 key.
  */
-struct ssh2_userkey *import_ssh2(const Filename *filename, int type,
+ssh2_userkey *import_ssh2(const Filename *filename, int type,
 				 char *passphrase, const char **errmsg_p)
 {
     if (type == SSH_KEYTYPE_OPENSSH_PEM)
@@ -106,7 +106,7 @@ struct ssh2_userkey *import_ssh2(const Filename *filename, int type,
 /*
  * Export an SSH-1 key.
  */
-bool export_ssh1(const Filename *filename, int type, struct RSAKey *key,
+bool export_ssh1(const Filename *filename, int type, RSAKey *key,
                  char *passphrase)
 {
     return false;
@@ -116,7 +116,7 @@ bool export_ssh1(const Filename *filename, int type, struct RSAKey *key,
  * Export an SSH-2 key.
  */
 bool export_ssh2(const Filename *filename, int type,
-                 struct ssh2_userkey *key, char *passphrase)
+                 ssh2_userkey *key, char *passphrase)
 {
     if (type == SSH_KEYTYPE_OPENSSH_AUTO)
 	return openssh_auto_write(filename, key, passphrase);
@@ -495,15 +495,15 @@ static bool openssh_pem_encrypted(const Filename *filename)
     return ret;
 }
 
-static struct ssh2_userkey *openssh_pem_read(
+static ssh2_userkey *openssh_pem_read(
     const Filename *filename, const char *passphrase, const char **errmsg_p)
 {
     struct openssh_pem_key *key = load_openssh_pem_key(filename, errmsg_p);
-    struct ssh2_userkey *retkey;
+    ssh2_userkey *retkey;
     const ssh_keyalg *alg;
     BinarySource src[1];
     int i, num_integers;
-    struct ssh2_userkey *retval = NULL;
+    ssh2_userkey *retval = NULL;
     const char *errmsg;
     strbuf *blob = strbuf_new();
     int privptr = 0, publen;
@@ -659,7 +659,7 @@ static struct ssh2_userkey *openssh_pem_read(
         pubkey.data.len -= 1;
 
         /* Construct the key */
-        retkey = snew(struct ssh2_userkey);
+        retkey = snew(ssh2_userkey);
 
         put_stringz(blob, alg->ssh_id);
         put_stringz(blob, curve->name);
@@ -737,7 +737,7 @@ static struct ssh2_userkey *openssh_pem_read(
          * the sanity checks for free.
          */
         assert(privptr > 0);          /* should have bombed by now if not */
-        retkey = snew(struct ssh2_userkey);
+        retkey = snew(ssh2_userkey);
         alg = (key->keytype == OP_RSA ? &ssh_rsa : &ssh_dss);
         retkey->key = ssh_key_new_priv(
             alg, make_ptrlen(blob->u, privptr),
@@ -774,7 +774,7 @@ static struct ssh2_userkey *openssh_pem_read(
 }
 
 static bool openssh_pem_write(
-    const Filename *filename, struct ssh2_userkey *key, const char *passphrase)
+    const Filename *filename, ssh2_userkey *key, const char *passphrase)
 {
     strbuf *pubblob, *privblob, *outblob;
     unsigned char *spareblob;
@@ -905,7 +905,7 @@ static bool openssh_pem_write(
         seq = strbuf_new();
         for (i = 0; i < nnumbers; i++) {
             put_ber_id_len(seq, 2, numbers[i].len, 0);
-            put_data(seq, numbers[i].ptr, numbers[i].len);
+            put_datapl(seq, numbers[i]);
         }
         put_ber_id_len(outblob, 16, seq->len, ASN1_CONSTRUCTED);
         put_data(outblob, seq->s, seq->len);
@@ -1331,12 +1331,12 @@ static bool openssh_new_encrypted(const Filename *filename)
     return ret;
 }
 
-static struct ssh2_userkey *openssh_new_read(
+static ssh2_userkey *openssh_new_read(
     const Filename *filename, const char *passphrase, const char **errmsg_p)
 {
     struct openssh_new_key *key = load_openssh_new_key(filename, errmsg_p);
-    struct ssh2_userkey *retkey = NULL;
-    struct ssh2_userkey *retval = NULL;
+    ssh2_userkey *retkey = NULL;
+    ssh2_userkey *retval = NULL;
     const char *errmsg;
     unsigned checkint;
     BinarySource src[1];
@@ -1423,7 +1423,7 @@ static struct ssh2_userkey *openssh_new_read(
         goto error;
     }
 
-    retkey = snew(struct ssh2_userkey);
+    retkey = snew(ssh2_userkey);
     retkey->key = NULL;
     retkey->comment = NULL;
 
@@ -1512,7 +1512,7 @@ static struct ssh2_userkey *openssh_new_read(
 }
 
 static bool openssh_new_write(
-    const Filename *filename, struct ssh2_userkey *key, const char *passphrase)
+    const Filename *filename, ssh2_userkey *key, const char *passphrase)
 {
     strbuf *pubblob, *privblob, *cblob;
     int padvalue, i;
@@ -1641,7 +1641,7 @@ static bool openssh_new_write(
  * concrete OpenSSH output formats based on the key type.
  */
 static bool openssh_auto_write(
-    const Filename *filename, struct ssh2_userkey *key, const char *passphrase)
+    const Filename *filename, ssh2_userkey *key, const char *passphrase)
 {
     /*
      * The old OpenSSH format supports a fixed list of key types. We
@@ -1966,7 +1966,7 @@ static ptrlen BinarySource_get_mp_sshcom_as_string(BinarySource *src)
 #define get_mp_sshcom_as_string(bs) \
     BinarySource_get_mp_sshcom_as_string(BinarySource_UPCAST(bs))
 
-static struct ssh2_userkey *sshcom_read(
+static ssh2_userkey *sshcom_read(
     const Filename *filename, const char *passphrase, const char **errmsg_p)
 {
     struct sshcom_key *key = load_sshcom_key(filename, errmsg_p);
@@ -1978,7 +1978,7 @@ static struct ssh2_userkey *sshcom_read(
     const char prefix_dsa[] = "dl-modp{sign{dsa";
     enum { RSA, DSA } type;
     bool encrypted;
-    struct ssh2_userkey *ret = NULL, *retkey;
+    ssh2_userkey *ret = NULL, *retkey;
     const ssh_keyalg *alg;
     strbuf *blob = NULL;
 
@@ -2151,7 +2151,7 @@ static struct ssh2_userkey *sshcom_read(
         put_mp_ssh2_from_string(blob, x.ptr, x.len);
     }
 
-    retkey = snew(struct ssh2_userkey);
+    retkey = snew(ssh2_userkey);
     retkey->key = ssh_key_new_priv(
         alg, make_ptrlen(blob->u, publen),
         make_ptrlen(blob->u + publen, blob->len - publen));
@@ -2178,7 +2178,7 @@ static struct ssh2_userkey *sshcom_read(
 }
 
 static bool sshcom_write(
-    const Filename *filename, struct ssh2_userkey *key, const char *passphrase)
+    const Filename *filename, ssh2_userkey *key, const char *passphrase)
 {
     strbuf *pubblob, *privblob, *outblob;
     ptrlen numbers[6];

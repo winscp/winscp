@@ -14,16 +14,16 @@ struct dh_ctx {
 
 struct dh_extra {
     bool gex;
-    void (*construct)(struct dh_ctx *ctx);
+    void (*construct)(dh_ctx *ctx);
 };
 
-static void dh_group1_construct(struct dh_ctx *ctx)
+static void dh_group1_construct(dh_ctx *ctx)
 {
     ctx->p = MP_LITERAL(0xFFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD129024E088A67CC74020BBEA63B139B22514A08798E3404DDEF9519B3CD3A431B302B0A6DF25F14374FE1356D6D51C245E485B576625E7EC6F44C42E9A637ED6B0BFF5CB6F406B7EDEE386BFB5A899FA5AE9F24117C4B1FE649286651ECE65381FFFFFFFFFFFFFFFF);
     ctx->g = mp_from_integer(2);
 }
 
-static void dh_group14_construct(struct dh_ctx *ctx)
+static void dh_group14_construct(dh_ctx *ctx)
 {
     ctx->p = MP_LITERAL(0xFFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD129024E088A67CC74020BBEA63B139B22514A08798E3404DDEF9519B3CD3A431B302B0A6DF25F14374FE1356D6D51C245E485B576625E7EC6F44C42E9A637ED6B0BFF5CB6F406B7EDEE386BFB5A899FA5AE9F24117C4B1FE649286651ECE45B3DC2007CB8A163BF0598DA48361C55D39A69163FA8FD24CF5F83655D23DCA3AD961C62F356208552BB9ED529077096966D670C354E4ABC9804F1746C08CA18217C32905E462E36CE3BE39E772C180E86039B2783A2EC07A28FB5C55DF06F4C52C9DE2BCBF6955817183995497CEA956AE515D2261898FA051015728E5A8AACAA68FFFFFFFFFFFFFFFF);
     ctx->g = mp_from_integer(2);
@@ -33,65 +33,58 @@ static const struct dh_extra extra_group1 = {
     false, dh_group1_construct,
 };
 
-static const struct ssh_kex ssh_diffiehellman_group1_sha1 = {
+static const ssh_kex ssh_diffiehellman_group1_sha1 = {
     "diffie-hellman-group1-sha1", "group1",
     KEXTYPE_DH, &ssh_sha1, &extra_group1,
 };
 
-static const struct ssh_kex *const group1_list[] = {
+static const ssh_kex *const group1_list[] = {
     &ssh_diffiehellman_group1_sha1
 };
 
-const struct ssh_kexes ssh_diffiehellman_group1 = {
-    sizeof(group1_list) / sizeof(*group1_list),
-    group1_list
-};
+const ssh_kexes ssh_diffiehellman_group1 = { lenof(group1_list), group1_list };
 
 static const struct dh_extra extra_group14 = {
     false, dh_group14_construct,
 };
 
-static const struct ssh_kex ssh_diffiehellman_group14_sha256 = {
+static const ssh_kex ssh_diffiehellman_group14_sha256 = {
     "diffie-hellman-group14-sha256", "group14",
     KEXTYPE_DH, &ssh_sha256, &extra_group14,
 };
 
-static const struct ssh_kex ssh_diffiehellman_group14_sha1 = {
+static const ssh_kex ssh_diffiehellman_group14_sha1 = {
     "diffie-hellman-group14-sha1", "group14",
     KEXTYPE_DH, &ssh_sha1, &extra_group14,
 };
 
-static const struct ssh_kex *const group14_list[] = {
+static const ssh_kex *const group14_list[] = {
     &ssh_diffiehellman_group14_sha256,
     &ssh_diffiehellman_group14_sha1
 };
 
-const struct ssh_kexes ssh_diffiehellman_group14 = {
-    sizeof(group14_list) / sizeof(*group14_list),
-    group14_list
+const ssh_kexes ssh_diffiehellman_group14 = {
+    lenof(group14_list), group14_list
 };
 
 static const struct dh_extra extra_gex = { true };
 
-static const struct ssh_kex ssh_diffiehellman_gex_sha256 = {
+static const ssh_kex ssh_diffiehellman_gex_sha256 = {
     "diffie-hellman-group-exchange-sha256", NULL,
     KEXTYPE_DH, &ssh_sha256, &extra_gex,
 };
 
-static const struct ssh_kex ssh_diffiehellman_gex_sha1 = {
+static const ssh_kex ssh_diffiehellman_gex_sha1 = {
     "diffie-hellman-group-exchange-sha1", NULL,
     KEXTYPE_DH, &ssh_sha1, &extra_gex,
 };
 
-static const struct ssh_kex *const gex_list[] = {
+static const ssh_kex *const gex_list[] = {
     &ssh_diffiehellman_gex_sha256,
     &ssh_diffiehellman_gex_sha1
 };
 
-const struct ssh_kexes ssh_diffiehellman_gex = {
-    sizeof(gex_list) / sizeof(*gex_list),
-    gex_list
-};
+const ssh_kexes ssh_diffiehellman_gex = { lenof(gex_list), gex_list };
 
 /*
  * Suffix on GSSAPI SSH protocol identifiers that indicates Kerberos 5
@@ -107,42 +100,41 @@ const struct ssh_kexes ssh_diffiehellman_gex = {
  */
 #define GSS_KRB5_OID_HASH "toWM5Slw5Ew8Mqkay+al2g=="
 
-static const struct ssh_kex ssh_gssk5_diffiehellman_gex_sha1 = {
+static const ssh_kex ssh_gssk5_diffiehellman_gex_sha1 = {
     "gss-gex-sha1-" GSS_KRB5_OID_HASH, NULL,
     KEXTYPE_GSS, &ssh_sha1, &extra_gex,
 };
 
-static const struct ssh_kex ssh_gssk5_diffiehellman_group14_sha1 = {
+static const ssh_kex ssh_gssk5_diffiehellman_group14_sha1 = {
     "gss-group14-sha1-" GSS_KRB5_OID_HASH, "group14",
     KEXTYPE_GSS, &ssh_sha1, &extra_group14,
 };
 
-static const struct ssh_kex ssh_gssk5_diffiehellman_group1_sha1 = {
+static const ssh_kex ssh_gssk5_diffiehellman_group1_sha1 = {
     "gss-group1-sha1-" GSS_KRB5_OID_HASH, "group1",
     KEXTYPE_GSS, &ssh_sha1, &extra_group1,
 };
 
-static const struct ssh_kex *const gssk5_sha1_kex_list[] = {
+static const ssh_kex *const gssk5_sha1_kex_list[] = {
     &ssh_gssk5_diffiehellman_gex_sha1,
     &ssh_gssk5_diffiehellman_group14_sha1,
     &ssh_gssk5_diffiehellman_group1_sha1
 };
 
-const struct ssh_kexes ssh_gssk5_sha1_kex = {
-    sizeof(gssk5_sha1_kex_list) / sizeof(*gssk5_sha1_kex_list),
-    gssk5_sha1_kex_list
+const ssh_kexes ssh_gssk5_sha1_kex = {
+    lenof(gssk5_sha1_kex_list), gssk5_sha1_kex_list
 };
 
 /*
  * Common DH initialisation.
  */
-static void dh_init(struct dh_ctx *ctx)
+static void dh_init(dh_ctx *ctx)
 {
     ctx->q = mp_rshift_fixed(ctx->p, 1);
     ctx->x = ctx->e = NULL;
 }
 
-bool dh_is_gex(const struct ssh_kex *kex)
+bool dh_is_gex(const ssh_kex *kex)
 {
     const struct dh_extra *extra = (const struct dh_extra *)kex->extra;
     return extra->gex;
@@ -151,11 +143,11 @@ bool dh_is_gex(const struct ssh_kex *kex)
 /*
  * Initialise DH for a standard group.
  */
-struct dh_ctx *dh_setup_group(const struct ssh_kex *kex)
+dh_ctx *dh_setup_group(const ssh_kex *kex)
 {
     const struct dh_extra *extra = (const struct dh_extra *)kex->extra;
     assert(!extra->gex);
-    struct dh_ctx *ctx = snew(struct dh_ctx);
+    dh_ctx *ctx = snew(dh_ctx);
     extra->construct(ctx);
     dh_init(ctx);
     return ctx;
@@ -164,9 +156,9 @@ struct dh_ctx *dh_setup_group(const struct ssh_kex *kex)
 /*
  * Initialise DH for a server-supplied group.
  */
-struct dh_ctx *dh_setup_gex(mp_int *pval, mp_int *gval)
+dh_ctx *dh_setup_gex(mp_int *pval, mp_int *gval)
 {
-    struct dh_ctx *ctx = snew(struct dh_ctx);
+    dh_ctx *ctx = snew(dh_ctx);
     ctx->p = mp_copy(pval);
     ctx->g = mp_copy(gval);
     dh_init(ctx);
@@ -176,7 +168,7 @@ struct dh_ctx *dh_setup_gex(mp_int *pval, mp_int *gval)
 /*
  * Return size of DH modulus p.
  */
-int dh_modulus_bit_size(const struct dh_ctx *ctx)
+int dh_modulus_bit_size(const dh_ctx *ctx)
 {
     return mp_get_nbits(ctx->p);
 }
@@ -184,7 +176,7 @@ int dh_modulus_bit_size(const struct dh_ctx *ctx)
 /*
  * Clean up and free a context.
  */
-void dh_cleanup(struct dh_ctx *ctx)
+void dh_cleanup(dh_ctx *ctx)
 {
     if (ctx->x)
         mp_free(ctx->x);
@@ -214,7 +206,7 @@ void dh_cleanup(struct dh_ctx *ctx)
  * Advances in Cryptology: Proceedings of Eurocrypt '96
  * Springer-Verlag, May 1996.
  */
-mp_int *dh_create_e(struct dh_ctx *ctx, int nbits)
+mp_int *dh_create_e(dh_ctx *ctx, int nbits)
 {
     /*
      * Lower limit is just 2.
@@ -256,7 +248,7 @@ mp_int *dh_create_e(struct dh_ctx *ctx, int nbits)
  * they lead to obviously weak keys that even a passive eavesdropper
  * can figure out.)
  */
-const char *dh_validate_f(struct dh_ctx *ctx, mp_int *f)
+const char *dh_validate_f(dh_ctx *ctx, mp_int *f)
 {
     if (!mp_hs_integer(f, 2)) {
         return "f value received is too small";
@@ -274,7 +266,7 @@ const char *dh_validate_f(struct dh_ctx *ctx, mp_int *f)
 /*
  * DH stage 2: given a number f, compute K = f^x mod p.
  */
-mp_int *dh_find_K(struct dh_ctx *ctx, mp_int *f)
+mp_int *dh_find_K(dh_ctx *ctx, mp_int *f)
 {
     return mp_modpow(f, ctx->x, ctx->p);
 }

@@ -454,7 +454,7 @@ void BinarySink_put_stringpl_xauth(BinarySink *bs, ptrlen pl)
 {
     assert((pl.len >> 16) == 0);
     put_uint16(bs, pl.len);
-    put_data(bs, pl.ptr, pl.len);
+    put_datapl(bs, pl);
 }
 #define put_stringpl_xauth(bs, ptrlen) \
     BinarySink_put_stringpl_xauth(BinarySink_UPCAST(bs),ptrlen)

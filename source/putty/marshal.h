@@ -128,6 +128,8 @@ struct BinarySink {
  * rest of these macros. */
 #define put_data(bs, val, len) \
     BinarySink_put_data(BinarySink_UPCAST(bs), val, len)
+#define put_datapl(bs, pl) \
+    BinarySink_put_datapl(BinarySink_UPCAST(bs), pl)
 
 /*
  * The underlying real C functions that implement most of those
@@ -140,6 +142,7 @@ struct BinarySink {
  * declaration(s) of their other parameter type(s) are in scope.
  */
 void BinarySink_put_data(BinarySink *, const void *data, size_t len);
+void BinarySink_put_datapl(BinarySink *, ptrlen);
 void BinarySink_put_padding(BinarySink *, size_t len, unsigned char padbyte);
 void BinarySink_put_byte(BinarySink *, unsigned char);
 void BinarySink_put_bool(BinarySink *, bool);

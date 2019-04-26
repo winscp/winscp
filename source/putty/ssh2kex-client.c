@@ -537,7 +537,7 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
 
         rsakeydata = get_string(pktin);
 
-        s->rsa_kex_key = ssh_rsakex_newkey(rsakeydata.ptr, rsakeydata.len);
+        s->rsa_kex_key = ssh_rsakex_newkey(rsakeydata);
         if (!s->rsa_kex_key) {
             ssh_proto_error(s->ppl.ssh,
                             "Unable to parse RSA public key packet");
@@ -557,9 +557,7 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
             int klen = ssh_rsakex_klen(s->rsa_kex_key);
             int nbits = klen - (2*s->kex_alg->hash->hlen*8 + 49);
             int i, byte = 0;
-            strbuf *buf;
-            unsigned char *outstr;
-            int outstrlen;
+            strbuf *buf, *outstr;
 
             s->K = mp_power_2(nbits - 1);
 
@@ -579,22 +577,19 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
             /*
              * Encrypt it with the given RSA key.
              */
-            outstrlen = (klen + 7) / 8;
-            outstr = snewn(outstrlen, unsigned char);
-            ssh_rsakex_encrypt(s->kex_alg->hash, buf->u, buf->len,
-                               outstr, outstrlen, s->rsa_kex_key);
+            outstr = ssh_rsakex_encrypt(s->rsa_kex_key, s->kex_alg->hash,
+                                        ptrlen_from_strbuf(buf));
 
             /*
              * And send it off in a return packet.
              */
             pktout = ssh_bpp_new_pktout(s->ppl.bpp, SSH2_MSG_KEXRSA_SECRET);
-            put_string(pktout, outstr, outstrlen);
+            put_stringpl(pktout, ptrlen_from_strbuf(outstr));
             pq_push(s->ppl.out_pq, pktout);
 
-            put_string(s->exhash, outstr, outstrlen);
+            put_stringsb(s->exhash, outstr); /* frees outstr */
 
             strbuf_free(buf);
-            sfree(outstr);
         }
 
         ssh_rsakex_freekey(s->rsa_kex_key);

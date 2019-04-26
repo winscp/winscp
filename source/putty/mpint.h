@@ -313,7 +313,6 @@ mp_int *mp_modsqrt(ModsqrtContext *sc, mp_int *x, unsigned *success);
  * pointers are still owned by the MontyContext, so don't free them!
  */
 MontyContext *monty_new(mp_int *modulus);
-MontyContext *monty_copy(MontyContext *mc);
 void monty_free(MontyContext *mc);
 mp_int *monty_modulus(MontyContext *mc); /* doesn't transfer ownership */
 mp_int *monty_identity(MontyContext *mc); /* doesn't transfer ownership */

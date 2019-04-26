@@ -130,19 +130,6 @@ void ecc_weierstrass_point_free(WeierstrassPoint *wp)
     sfree(wp);
 }
 
-static mp_int *ecc_weierstrass_equation_rhs(
-    WeierstrassCurve *wc, mp_int *monty_x)
-{
-    mp_int *x2 = monty_mul(wc->mc, monty_x, monty_x);
-    mp_int *x2_plus_a = monty_add(wc->mc, x2, wc->a);
-    mp_int *x3_plus_ax = monty_mul(wc->mc, x2_plus_a, monty_x);
-    mp_int *rhs = monty_add(wc->mc, x3_plus_ax, wc->b);
-    mp_free(x2);
-    mp_free(x2_plus_a);
-    mp_free(x3_plus_ax);
-    return rhs;
-}
-
 WeierstrassPoint *ecc_weierstrass_point_new_from_x(
     WeierstrassCurve *wc, mp_int *xorig, unsigned desired_y_parity)
 {
@@ -156,7 +143,20 @@ WeierstrassPoint *ecc_weierstrass_point_new_from_x(
     unsigned success;
 
     mp_int *x = monty_import(wc->mc, xorig);
-    mp_int *rhs = ecc_weierstrass_equation_rhs(wc, x);
+
+    /*
+     * Compute the RHS of the curve equation. We don't need to take
+     * account of z here, because we're constructing the point from
+     * scratch. So it really is just x^3 + ax + b.
+     */
+    mp_int *x2 = monty_mul(wc->mc, x, x);
+    mp_int *x2_plus_a = monty_add(wc->mc, x2, wc->a);
+    mp_int *x3_plus_ax = monty_mul(wc->mc, x2_plus_a, x);
+    mp_int *rhs = monty_add(wc->mc, x3_plus_ax, wc->b);
+    mp_free(x2);
+    mp_free(x2_plus_a);
+    mp_free(x3_plus_ax);
+
     mp_int *y = monty_modsqrt(wc->sc, rhs, &success);
     mp_free(rhs);
 
@@ -499,11 +499,38 @@ void ecc_weierstrass_get_affine(
 
 unsigned ecc_weierstrass_point_valid(WeierstrassPoint *P)
 {
-    mp_int *rhs = ecc_weierstrass_equation_rhs(P->wc, P->X);
+    WeierstrassCurve *wc = P->wc;
+
+    /*
+     * The projective version of the curve equation is
+     * Y^2 = X^3 + a X Z^4 + b Z^6
+     */
     mp_int *lhs = monty_mul(P->wc->mc, P->Y, P->Y);
+    mp_int *x2 = monty_mul(wc->mc, P->X, P->X);
+    mp_int *x3 = monty_mul(wc->mc, x2, P->X);
+    mp_int *z2 = monty_mul(wc->mc, P->Z, P->Z);
+    mp_int *z4 = monty_mul(wc->mc, z2, z2);
+    mp_int *az4 = monty_mul(wc->mc, wc->a, z4);
+    mp_int *axz4 = monty_mul(wc->mc, az4, P->X);
+    mp_int *x3_plus_axz4 = monty_add(wc->mc, x3, axz4);
+    mp_int *z6 = monty_mul(wc->mc, z2, z4);
+    mp_int *bz6 = monty_mul(wc->mc, wc->b, z6);
+    mp_int *rhs = monty_add(wc->mc, x3_plus_axz4, bz6);
+    
     unsigned valid = mp_cmp_eq(lhs, rhs);
+
     mp_free(lhs);
+    mp_free(x2);
+    mp_free(x3);
+    mp_free(z2);
+    mp_free(z4);
+    mp_free(az4);
+    mp_free(axz4);
+    mp_free(x3_plus_axz4);
+    mp_free(z6);
+    mp_free(bz6);
     mp_free(rhs);
+
     return valid;
 }
 

@@ -416,14 +416,13 @@ mp_int *dss_gen_k(const char *id_string, mp_int *modulus,
     return k;
 }
 
-static void dss_sign(ssh_key *key, const void *data, int datalen,
-                     unsigned flags, BinarySink *bs)
+static void dss_sign(ssh_key *key, ptrlen data, unsigned flags, BinarySink *bs)
 {
     struct dss_key *dss = container_of(key, struct dss_key, sshk);
     unsigned char digest[20];
     int i;
 
-    SHA_Simple(data, datalen, digest);
+    SHA_Simple(data.ptr, data.len, digest);
 
     mp_int *k = dss_gen_k("DSA deterministic k generator", dss->q, dss->x,
                           digest, sizeof(digest));

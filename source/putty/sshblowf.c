@@ -622,7 +622,7 @@ struct blowfish_ssh2_ctx {
     ssh2_cipher ciph;
 };
 
-static ssh2_cipher *blowfish_ssh2_new(const struct ssh2_cipheralg *alg)
+static ssh2_cipher *blowfish_ssh2_new(const ssh2_cipheralg *alg)
 {
     struct blowfish_ssh2_ctx *ctx = snew(struct blowfish_ssh2_ctx);
     ctx->ciph.vt = alg;
@@ -672,14 +672,14 @@ static void blowfish_ssh2_sdctr(ssh2_cipher *cipher, void *blk, int len)
     blowfish_msb_sdctr(blk, len, &ctx->context);
 }
 
-const struct ssh1_cipheralg ssh1_blowfish = {
+const ssh1_cipheralg ssh1_blowfish = {
     blowfish_ssh1_new, blowfish_ssh1_free,
     blowfish_ssh1_sesskey,
     blowfish_ssh1_encrypt_blk, blowfish_ssh1_decrypt_blk,
     8, "Blowfish-128 CBC"
 };
 
-static const struct ssh2_cipheralg ssh_blowfish_ssh2 = {
+const ssh2_cipheralg ssh_blowfish_ssh2 = {
     blowfish_ssh2_new, blowfish_ssh2_free,
     blowfish_ssh2_setiv, blowfish_ssh2_setkey,
     blowfish_ssh2_encrypt_blk, blowfish_ssh2_decrypt_blk, NULL, NULL,
@@ -688,7 +688,7 @@ static const struct ssh2_cipheralg ssh_blowfish_ssh2 = {
     NULL
 };
 
-static const struct ssh2_cipheralg ssh_blowfish_ssh2_ctr = {
+const ssh2_cipheralg ssh_blowfish_ssh2_ctr = {
     blowfish_ssh2_new, blowfish_ssh2_free,
     blowfish_ssh2_setiv, blowfish_ssh2_setkey,
     blowfish_ssh2_sdctr, blowfish_ssh2_sdctr, NULL, NULL,
@@ -697,12 +697,9 @@ static const struct ssh2_cipheralg ssh_blowfish_ssh2_ctr = {
     NULL
 };
 
-static const struct ssh2_cipheralg *const blowfish_list[] = {
+static const ssh2_cipheralg *const blowfish_list[] = {
     &ssh_blowfish_ssh2_ctr,
     &ssh_blowfish_ssh2
 };
 
-const struct ssh2_ciphers ssh2_blowfish = {
-    sizeof(blowfish_list) / sizeof(*blowfish_list),
-    blowfish_list
-};
+const ssh2_ciphers ssh2_blowfish = { lenof(blowfish_list), blowfish_list };
