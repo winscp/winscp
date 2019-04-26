@@ -389,7 +389,7 @@ EdwardsPoint *eddsa_public(mp_int *private_key, const ssh_keyalg *alg)
         put_byte(h, mp_get_byte(private_key, i));
 
     { // WINSCP
-    unsigned char * hash = snewn(extra->hash->hlen, unsigned char); // WINSCP
+    unsigned char hash[MAX_HASH_LEN];
     ssh_hash_final(h, hash);
 
     { // WINSCP
@@ -398,7 +398,6 @@ EdwardsPoint *eddsa_public(mp_int *private_key, const ssh_keyalg *alg)
 
     EdwardsPoint *toret = ecc_edwards_multiply(curve->e.G, exponent);
     mp_free(exponent);
-    sfree(hash); // WINSCP
 
     return toret;
     } // WINSCP
@@ -955,11 +954,10 @@ static mp_int *ecdsa_signing_exponent_from_data(
     ptrlen data)
 {
     /* Hash the data being signed. */
-    unsigned char * hash = snewn(extra->hash->hlen, unsigned char); // WINSCP
+    unsigned char hash[MAX_HASH_LEN];
     ssh_hash *h = ssh_hash_new(extra->hash);
     put_data(h, data.ptr, data.len);
     ssh_hash_final(h, hash);
-    sfree(hash);
 
     /*
      * Take the leftmost b bits of the hash of the signed data (where
@@ -1071,13 +1069,12 @@ static mp_int *eddsa_signing_exponent_from_data(
     ptrlen r_encoded, ptrlen data)
 {
     /* Hash (r || public key || message) */
-    unsigned char * hash = snewn(extra->hash->hlen, unsigned char);
+    unsigned char hash[MAX_HASH_LEN];
     ssh_hash *h = ssh_hash_new(extra->hash);
     put_data(h, r_encoded.ptr, r_encoded.len);
     put_epoint(h, ek->publicKey, ek->curve, true); /* omit string header */
     put_data(h, data.ptr, data.len);
     ssh_hash_final(h, hash);
-    sfree(hash);
 
     /* Convert to an integer */
     { // WINSCP
@@ -1239,13 +1236,12 @@ static void eddsa_sign(ssh_key *key, const void *data, int datalen,
      * into a hash generating 2*fieldBytes of output.
      */
     { // WINSCP
-    unsigned char * hash = snewn(extra->hash->hlen, unsigned char); // WINSCP
+    unsigned char hash[MAX_HASH_LEN];
     ssh_hash *h = ssh_hash_new(extra->hash);
     size_t i; // WINSCP
     for (i = 0; i < ek->curve->fieldBytes; ++i)
         put_byte(h, mp_get_byte(ek->privateKey, i));
     ssh_hash_final(h, hash);
-    sfree(hash); // WINSCP
 
     /*
      * The first half of the output hash is converted into an
@@ -1467,17 +1463,16 @@ static void ssh_ecdhkex_w_setup(ecdh_key *dh)
 
 static void ssh_ecdhkex_m_setup(ecdh_key *dh)
 {
-    unsigned char * bytes = snewn(dh->curve->fieldBytes, unsigned char); // WINSCP
-    size_t i; // WINSCP
-    for (i = 0; i < sizeof(bytes); ++i)
-        bytes[i] = random_byte();
+    strbuf *bytes = strbuf_new();
+    size_t i;
+    for (i = 0; i < dh->curve->fieldBytes; ++i)
+        put_byte(bytes, random_byte());
 
-    bytes[0] &= 0xF8;
-    bytes[dh->curve->fieldBytes-1] &= 0x7F;
-    bytes[dh->curve->fieldBytes-1] |= 0x40;
-    dh->private = mp_from_bytes_le(make_ptrlen(bytes, dh->curve->fieldBytes));
-    smemclr(bytes, sizeof(bytes));
-    sfree(bytes); // WINSCP
+    bytes->u[0] &= 0xF8;
+    bytes->u[bytes->len-1] &= 0x7F;
+    bytes->u[bytes->len-1] |= 0x40;
+    dh->private = mp_from_bytes_le(ptrlen_from_strbuf(bytes));
+    strbuf_free(bytes);
 
     dh->m_public = ecc_montgomery_multiply(dh->curve->m.G, dh->private);
 }

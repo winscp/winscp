@@ -186,11 +186,16 @@ int dh_modulus_bit_size(const struct dh_ctx *ctx)
  */
 void dh_cleanup(struct dh_ctx *ctx)
 {
-    mp_free(ctx->x);
-    mp_free(ctx->e);
-    mp_free(ctx->p);
-    mp_free(ctx->g);
-    mp_free(ctx->q);
+    if (ctx->x)
+        mp_free(ctx->x);
+    if (ctx->e)
+        mp_free(ctx->e);
+    if (ctx->p)
+        mp_free(ctx->p);
+    if (ctx->g)
+        mp_free(ctx->g);
+    if (ctx->q)
+        mp_free(ctx->q);
     sfree(ctx);
 }
 

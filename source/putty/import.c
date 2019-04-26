@@ -750,7 +750,7 @@ static struct ssh2_userkey *openssh_pem_read(
         }
 
     } else {
-        assert(0 && "Bad key type from load_openssh_pem_key");
+        unreachable("Bad key type from load_openssh_pem_key");
 	errmsg = "Bad key type from load_openssh_pem_key";
 	goto error;
     }
@@ -973,8 +973,7 @@ static bool openssh_pem_write(
         header = "-----BEGIN EC PRIVATE KEY-----\n";
         footer = "-----END EC PRIVATE KEY-----\n";
     } else {
-        assert(0);                     /* zoinks! */
-	exit(1); /* XXX: GCC doesn't understand assert() on some systems. */
+        unreachable("bad key alg in openssh_pem_write");
     }
 
     /*
@@ -1363,7 +1362,7 @@ static struct ssh2_userkey *openssh_new_read(
             keysize = 48;              /* 32 byte key + 16 byte IV */
             break;
           default:
-            assert(0 && "Bad cipher enumeration value");
+            unreachable("Bad cipher enumeration value");
         }
         assert(keysize <= sizeof(keybuf));
         switch (key->kdf) {
@@ -1378,7 +1377,7 @@ static struct ssh2_userkey *openssh_new_read(
                            keybuf, keysize);
             break;
           default:
-            assert(0 && "Bad kdf enumeration value");
+            unreachable("Bad kdf enumeration value");
         }
         switch (key->cipher) {
           case ON_E_NONE:
@@ -1408,7 +1407,7 @@ static struct ssh2_userkey *openssh_new_read(
             }
             break;
           default:
-            assert(0 && "Bad cipher enumeration value");
+            unreachable("Bad cipher enumeration value");
         }
     }
 
