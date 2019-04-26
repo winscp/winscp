@@ -2,7 +2,8 @@
 #include <stdio.h>
 
 #include "defs.h"
-#include "putty.h"
+#include "misc.h"
+#include "puttymem.h"
 
 #include "mpint.h"
 #include "mpint_i.h"

@@ -3,8 +3,10 @@
  */
 
 #include <stdlib.h>
+#include <limits.h>
 
-#include "putty.h"
+#include "defs.h"
+#include "puttymem.h"
 
 void *safemalloc(size_t n, size_t size)
 {
@@ -22,22 +24,9 @@ void *safemalloc(size_t n, size_t size)
 #endif
     }
 
-    if (!p) {
-	char str[200];
-#ifdef MALLOC_LOG
-	sprintf(str, "Out of memory! (%s:%d, size=%d)",
-		mlog_file, mlog_line, size);
-	fprintf(fp, "*** %s\n", str);
-	fclose(fp);
-#else
-	strcpy(str, "Out of memory!");
-#endif
-	modalfatalbox("%s", str);
-    }
-#ifdef MALLOC_LOG
-    if (fp)
-	fprintf(fp, "malloc(%d) returns %p\n", size, p);
-#endif
+    if (!p)
+        out_of_memory();
+
     return p;
 }
 
@@ -64,41 +53,19 @@ void *saferealloc(void *ptr, size_t n, size_t size)
 	}
     }
 
-    if (!p) {
-	char str[200];
-#ifdef MALLOC_LOG
-	sprintf(str, "Out of memory! (%s:%d, size=%d)",
-		mlog_file, mlog_line, size);
-	fprintf(fp, "*** %s\n", str);
-	fclose(fp);
-#else
-	strcpy(str, "Out of memory!");
-#endif
-	modalfatalbox("%s", str);
-    }
-#ifdef MALLOC_LOG
-    if (fp)
-	fprintf(fp, "realloc(%p,%d) returns %p\n", ptr, size, p);
-#endif
+    if (!p)
+        out_of_memory();
+
     return p;
 }
 
 void safefree(void *ptr)
 {
     if (ptr) {
-#ifdef MALLOC_LOG
-	if (fp)
-	    fprintf(fp, "free(%p)\n", ptr);
-#endif
 #ifdef MINEFIELD
 	minefield_c_free(ptr);
 #else
 	free(ptr);
 #endif
     }
-#ifdef MALLOC_LOG
-    else if (fp)
-	fprintf(fp, "freeing null pointer - no action taken\n");
-#endif
 }
-

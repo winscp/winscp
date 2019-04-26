@@ -96,6 +96,8 @@ struct bufchain_granule;
 struct bufchain_tag {
     struct bufchain_granule *head, *tail;
     int buffersize;		       /* current amount of buffered data */
+
+    void (*queue_idempotent_callback)(IdempotentCallback *ic);
     IdempotentCallback *ic;
 };
 
@@ -109,6 +111,19 @@ void bufchain_fetch(bufchain *ch, void *data, int len);
 void bufchain_fetch_consume(bufchain *ch, void *data, int len);
 bool bufchain_try_fetch_consume(bufchain *ch, void *data, int len);
 int bufchain_fetch_consume_up_to(bufchain *ch, void *data, int len);
+void bufchain_set_callback_inner(
+    bufchain *ch, IdempotentCallback *ic,
+    void (*queue_idempotent_callback)(IdempotentCallback *ic));
+static inline void bufchain_set_callback(bufchain *ch, IdempotentCallback *ic)
+{
+    extern void queue_idempotent_callback(struct IdempotentCallback *ic);
+    /* Wrapper that puts in the standard queue_idempotent_callback
+     * function. Lives here rather than in utils.c so that standalone
+     * programs can use the bufchain facility without this optional
+     * callback feature and not need to provide a stub of
+     * queue_idempotent_callback. */
+    bufchain_set_callback_inner(ch, ic, queue_idempotent_callback);
+}
 
 void sanitise_term_data(bufchain *out, const void *vdata, int len);
 

@@ -8,22 +8,13 @@
 #include <stddef.h>		       /* for size_t */
 #include <string.h>		       /* for memcpy() */
 
+#include "defs.h"
 
-/* #define MALLOC_LOG  do this if you suspect putty of leaking memory */
-#ifdef MALLOC_LOG
-#define smalloc(z) (mlog(__FILE__,__LINE__), safemalloc(z,1))
-#define snmalloc(z,s) (mlog(__FILE__,__LINE__), safemalloc(z,s))
-#define srealloc(y,z) (mlog(__FILE__,__LINE__), saferealloc(y,z,1))
-#define snrealloc(y,z,s) (mlog(__FILE__,__LINE__), saferealloc(y,z,s))
-#define sfree(z) (mlog(__FILE__,__LINE__), safefree(z))
-void mlog(char *, int);
-#else
 #define smalloc(z) safemalloc(z,1)
 #define snmalloc safemalloc
 #define srealloc(y,z) saferealloc(y,z,1)
 #define snrealloc saferealloc
 #define sfree safefree
-#endif
 
 void *safemalloc(size_t, size_t);
 void *saferealloc(void *, size_t, size_t);
@@ -63,5 +54,14 @@ void safefree(void *);
  */
 #define snew_plus(type, extra) ((type *)snmalloc(1, sizeof(type) + (extra)))
 #define snew_plus_get_aux(ptr) ((void *)((ptr) + 1))
+
+/*
+ * This function is called by the innermost safemalloc/saferealloc
+ * functions when allocation fails. Usually it's provided by misc.c
+ * which ties it into an application's existing modalfatalbox()
+ * system, but standalone test applications can reimplement it some
+ * other way if they prefer.
+ */
+NORETURN void out_of_memory(void);
 
 #endif
