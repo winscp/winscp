@@ -774,7 +774,7 @@ static void poly1305_init(struct poly1305 *ctx)
 
 static void poly1305_key(struct poly1305 *ctx, ptrlen key)
 {
-    assert(key.len == 32);             /* Takes a 256 bit key */
+    pinitassert(key.len == 32);             /* Takes a 256 bit key */
 
     unsigned char key_copy[16];
     memcpy(key_copy, key.ptr, 16);

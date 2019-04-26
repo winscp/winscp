@@ -255,10 +255,13 @@ char *rsa_ssh1_fingerprint(RSAKey *key)
      */
 
     MD5Init(&md5c);
-    for (size_t i = (mp_get_nbits(key->modulus) + 7) / 8; i-- > 0 ;)
+    { // WINSCP
+    size_t i; // WINSCP
+    for (i = (mp_get_nbits(key->modulus) + 7) / 8; i-- > 0 ;)
         put_byte(&md5c, mp_get_byte(key->modulus, i));
-    for (size_t i = (mp_get_nbits(key->exponent) + 7) / 8; i-- > 0 ;)
+    for (i = (mp_get_nbits(key->exponent) + 7) / 8; i-- > 0 ;)
         put_byte(&md5c, mp_get_byte(key->exponent, i));
+    } // WINSCP
     MD5Final(digest, &md5c);
 
     out = strbuf_new();
@@ -817,6 +820,7 @@ strbuf *ssh_rsakex_encrypt(RSAKey *rsa, const ssh_hashalg *h, ptrlen in)
     assert(in.len > 0 && in.len <= k - 2*HLEN - 2);
 
     /* The length of the output data wants to be precisely k. */
+    { // WINSCP
     strbuf *toret = strbuf_new();
     int outlen = k;
     unsigned char *out = strbuf_append(toret, outlen);
@@ -869,6 +873,7 @@ strbuf *ssh_rsakex_encrypt(RSAKey *rsa, const ssh_hashalg *h, ptrlen in)
      * And we're done.
      */
     return toret;
+    } // WINSCP
 }
 
 mp_int *ssh_rsakex_decrypt(

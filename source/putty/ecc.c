@@ -157,6 +157,7 @@ WeierstrassPoint *ecc_weierstrass_point_new_from_x(
     mp_free(x2_plus_a);
     mp_free(x3_plus_ax);
 
+    { // WINSCP
     mp_int *y = monty_modsqrt(wc->sc, rhs, &success);
     mp_free(rhs);
 
@@ -184,6 +185,7 @@ WeierstrassPoint *ecc_weierstrass_point_new_from_x(
     } // WINSCP
 
     return ecc_weierstrass_point_new_imported(wc, x, y);
+    } // WINSCP
 }
 
 static void ecc_weierstrass_cond_overwrite(

@@ -319,6 +319,9 @@
 			<BuildOrder>92</BuildOrder>
 			<BuildOrder>14</BuildOrder>
 		</CppCompile>
+		<CppCompile Include="putty\WINDOWS\winmiscs.c">
+			<BuildOrder>76</BuildOrder>
+		</CppCompile>
 		<CppCompile Include="putty\windows\winnet.c">
 			<BuildOrder>95</BuildOrder>
 			<BuildOrder>17</BuildOrder>

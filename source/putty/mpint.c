@@ -2200,10 +2200,12 @@ mp_int *mp_modsub(mp_int *x, mp_int *y, mp_int *modulus)
     /* If we've just negated the residue, then it will be < 0 and need
      * the modulus adding to it to make it positive - *except* if the
      * residue was zero when we negated it. */
+    { // WINSCP
     unsigned make_positive = negate & ~mp_eq_integer(residue, 0);
     mp_cond_add_into(residue, residue, modulus, make_positive);
     mp_free(diff);
     return residue;
+    } // WINSCP
     } // WINSCP
     } // WINSCP
 }
