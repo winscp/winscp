@@ -212,7 +212,7 @@ struct sha256_hash {
     ssh_hash hash;
 };
 
-static ssh_hash *sha256_new(const struct ssh_hashalg *alg)
+static ssh_hash *sha256_new(const ssh_hashalg *alg)
 {
     struct sha256_hash *h = snew(struct sha256_hash);
     SHA256_Init(&h->state);
@@ -250,7 +250,7 @@ static void sha256_final(ssh_hash *hash, unsigned char *output)
     sha256_free(hash);
 }
 
-const struct ssh_hashalg ssh_sha256 = {
+const ssh_hashalg ssh_sha256 = {
     sha256_new, sha256_copy, sha256_final, sha256_free, 32, "SHA-256"
 };
 
@@ -265,7 +265,7 @@ struct hmacsha256 {
 };
 
 static ssh2_mac *hmacsha256_new(
-    const struct ssh2_macalg *alg, ssh2_cipher *cipher)
+    const ssh2_macalg *alg, ssh2_cipher *cipher)
 {
     struct hmacsha256 *ctx = snew(struct hmacsha256);
     ctx->mac.vt = alg;
@@ -301,10 +301,10 @@ static void sha256_key_internal(struct hmacsha256 *ctx,
     smemclr(foo, 64);		       /* burn the evidence */
 }
 
-static void hmacsha256_key(ssh2_mac *mac, const void *key)
+static void hmacsha256_key(ssh2_mac *mac, ptrlen key)
 {
     struct hmacsha256 *ctx = container_of(mac, struct hmacsha256, mac);
-    sha256_key_internal(ctx, key, ctx->mac.vt->keylen);
+    sha256_key_internal(ctx, key.ptr, key.len);
 }
 
 static void hmacsha256_start(ssh2_mac *mac)
@@ -330,7 +330,7 @@ static void hmacsha256_genresult(ssh2_mac *mac, unsigned char *hmac)
     SHA256_Final(&s, hmac);
 }
 
-const struct ssh2_macalg ssh_hmac_sha256 = {
+const ssh2_macalg ssh_hmac_sha256 = {
     hmacsha256_new, hmacsha256_free, hmacsha256_key,
     hmacsha256_start, hmacsha256_genresult,
     "hmac-sha2-256", "hmac-sha2-256-etm@openssh.com",
@@ -338,56 +338,6 @@ const struct ssh2_macalg ssh_hmac_sha256 = {
     "HMAC-SHA-256"
 };
 #endif // !WINSCP_VS
-
-#ifdef TEST
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <assert.h>
-
-int main(void) {
-    unsigned char digest[32];
-    int i, j, errors;
-
-    struct {
-	const char *teststring;
-	unsigned char digest[32];
-    } tests[] = {
-	{ "abc", {
-	    0xba, 0x78, 0x16, 0xbf, 0x8f, 0x01, 0xcf, 0xea,
-	    0x41, 0x41, 0x40, 0xde, 0x5d, 0xae, 0x22, 0x23,
-	    0xb0, 0x03, 0x61, 0xa3, 0x96, 0x17, 0x7a, 0x9c,
-	    0xb4, 0x10, 0xff, 0x61, 0xf2, 0x00, 0x15, 0xad,
-	} },
-	{ "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq", {
-	    0x24, 0x8d, 0x6a, 0x61, 0xd2, 0x06, 0x38, 0xb8,
-	    0xe5, 0xc0, 0x26, 0x93, 0x0c, 0x3e, 0x60, 0x39,
-	    0xa3, 0x3c, 0xe4, 0x59, 0x64, 0xff, 0x21, 0x67,
-	    0xf6, 0xec, 0xed, 0xd4, 0x19, 0xdb, 0x06, 0xc1,
-	} },
-    };
-
-    errors = 0;
-
-    for (i = 0; i < sizeof(tests) / sizeof(*tests); i++) {
-	SHA256_Simple(tests[i].teststring,
-		      strlen(tests[i].teststring), digest);
-	for (j = 0; j < 32; j++) {
-	    if (digest[j] != tests[i].digest[j]) {
-		fprintf(stderr,
-			"\"%s\" digest byte %d should be 0x%02x, is 0x%02x\n",
-			tests[i].teststring, j, tests[i].digest[j], digest[j]);
-		errors++;
-	    }
-	}
-    }
-
-    printf("%d errors\n", errors);
-
-    return 0;
-}
-
-#endif
 
 #ifdef COMPILER_SUPPORTS_SHA_NI
 

@@ -108,7 +108,7 @@ void ecc_weierstrass_get_affine(WeierstrassPoint *wp, mp_int **x, mp_int **y);
  * Montgomery curves.
  *
  * A curve in this form is defined by two parameters a,b, and the
- * curve equation is y^2 = x^3 + ax^2 + bx.
+ * curve equation is by^2 = x^3 + ax^2 + x.
  *
  * As with Weierstrass curves, there's an additional point at infinity
  * that is the identity element, and the inverse of (x,y) is (x,-y).

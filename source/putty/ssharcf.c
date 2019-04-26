@@ -62,7 +62,7 @@ static void arcfour_setkey(ArcfourContext *ctx, unsigned char const *key,
  * to leak data about the key.
  */
 
-static ssh2_cipher *arcfour_new(const struct ssh2_cipheralg *alg)
+static ssh2_cipher *arcfour_new(const ssh2_cipheralg *alg)
 {
     ArcfourContext *ctx = snew(ArcfourContext);
     ctx->ciph.vt = alg;
@@ -103,7 +103,7 @@ static void arcfour_ssh2_block(ssh2_cipher *cipher, void *blk, int len)
     arcfour_block(ctx, blk, len);
 }
 
-const struct ssh2_cipheralg ssh_arcfour128_ssh2 = {
+const ssh2_cipheralg ssh_arcfour128_ssh2 = {
     arcfour_new, arcfour_free, arcfour_ssh2_setiv, arcfour_ssh2_setkey,
     arcfour_ssh2_block, arcfour_ssh2_block, NULL, NULL,
     "arcfour128",
@@ -111,7 +111,7 @@ const struct ssh2_cipheralg ssh_arcfour128_ssh2 = {
     NULL
 };
 
-const struct ssh2_cipheralg ssh_arcfour256_ssh2 = {
+const ssh2_cipheralg ssh_arcfour256_ssh2 = {
     arcfour_new, arcfour_free, arcfour_ssh2_setiv, arcfour_ssh2_setkey,
     arcfour_ssh2_block, arcfour_ssh2_block, NULL, NULL,
     "arcfour256",
@@ -119,12 +119,9 @@ const struct ssh2_cipheralg ssh_arcfour256_ssh2 = {
     NULL
 };
 
-static const struct ssh2_cipheralg *const arcfour_list[] = {
+static const ssh2_cipheralg *const arcfour_list[] = {
     &ssh_arcfour256_ssh2,
     &ssh_arcfour128_ssh2,
 };
 
-const struct ssh2_ciphers ssh2_arcfour = {
-    sizeof(arcfour_list) / sizeof(*arcfour_list),
-    arcfour_list
-};
+const ssh2_ciphers ssh2_arcfour = { lenof(arcfour_list), arcfour_list };

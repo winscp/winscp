@@ -17,12 +17,12 @@
  *    type used to hold the carry flag taken as input and output by
  *    the BignumADC macro (see below).
  *
- *  - four constant macros: BIGNUM_INT_BITS, BIGNUM_INT_BYTES,
- *    BIGNUM_TOP_BIT, BIGNUM_INT_MASK. These should be more or less
- *    self-explanatory, but just in case, they give the number of bits
- *    in BignumInt, the number of bytes that works out to, the
- *    BignumInt value consisting of only the top bit, and the
- *    BignumInt value with all bits set.
+ *  - five constant macros:
+ *     + BIGNUM_INT_BITS, the number of bits in BignumInt,
+ *     + BIGNUM_INT_BYTES, the number of bytes that works out to
+ *     + BIGNUM_TOP_BIT, the BignumInt value consisting of only the top bit
+ *     + BIGNUM_INT_MASK, the BignumInt value with all bits set
+ *     + BIGNUM_INT_BITS_BITS, log to the base 2 of BIGNUM_INT_BITS.
  *
  *  - four statement macros: BignumADC, BignumMUL, BignumMULADD,
  *    BignumMULADD2. These do various kinds of multi-word arithmetic,
@@ -39,7 +39,7 @@
  *       halves of the double-width value a*b + addend1 + addend2.
  *
  * Every branch of the main ifdef below defines the type BignumInt and
- * the value BIGNUM_INT_BITS. The other three constant macros are
+ * the value BIGNUM_INT_BITS_BITS. The other constant macros are
  * filled in by common code further down.
  *
  * Most branches also define a macro DEFINE_BIGNUMDBLINT containing a
@@ -57,7 +57,11 @@
  * too.
  */
 
-#if defined __SIZEOF_INT128__
+/* You can lower the BignumInt size by defining BIGNUM_OVERRIDE on the
+ * command line to be your chosen max value of BIGNUM_INT_BITS_BITS */
+#define BB_OK(b) (!defined BIGNUM_OVERRIDE || BIGNUM_OVERRIDE >= b)
+
+#if defined __SIZEOF_INT128__ && BB_OK(6)
 
   /*
    * 64-bit BignumInt using gcc/clang style 128-bit BignumDblInt.
@@ -72,7 +76,7 @@
   #define BIGNUM_INT_BITS_BITS 6
   #define DEFINE_BIGNUMDBLINT typedef __uint128_t BignumDblInt
 
-#elif defined _MSC_VER && defined _M_AMD64
+#elif defined _MSC_VER && defined _M_AMD64 && BB_OK(6)
 
   /*
    * 64-bit BignumInt, using Visual Studio x86-64 compiler intrinsics.
@@ -119,7 +123,7 @@
           (rh) = MULADD_hi;                                               \
       } while (0)
 
-#elif defined __GNUC__ || defined _LLP64 || __STDC__ >= 199901L
+#elif (defined __GNUC__ || defined _LLP64 || __STDC__ >= 199901L) && BB_OK(5)
 
   /* 32-bit BignumInt, using C99 unsigned long long as BignumDblInt */
 
@@ -127,7 +131,7 @@
   #define BIGNUM_INT_BITS_BITS 5
   #define DEFINE_BIGNUMDBLINT typedef unsigned long long BignumDblInt
 
-#elif (defined _MSC_VER && defined _M_IX86) || defined(MPEXT)
+#elif (defined _MSC_VER && defined _M_IX86 && BB_OK(5)) || defined(MPEXT)
 
   /* 32-bit BignumInt, using Visual Studio __int64 as BignumDblInt */
 
@@ -135,7 +139,7 @@
   #define BIGNUM_INT_BITS_BITS 5
   #define DEFINE_BIGNUMDBLINT typedef unsigned __int64 BignumDblInt
 
-#elif defined _LP64
+#elif defined _LP64 && BB_OK(5)
 
   /*
    * 32-bit BignumInt, using unsigned long itself as BignumDblInt.
@@ -147,7 +151,7 @@
   #define BIGNUM_INT_BITS_BITS 5
   #define DEFINE_BIGNUMDBLINT typedef unsigned long BignumDblInt
 
-#else
+#elif BB_OK(4)
 
   /*
    * 16-bit BignumInt, using unsigned long as BignumDblInt.
@@ -163,7 +167,16 @@
   #define BIGNUM_INT_BITS_BITS 4
   #define DEFINE_BIGNUMDBLINT typedef unsigned long BignumDblInt
 
+#else
+
+  /* Should only get here if BB_OK(4) evaluated false, i.e. the
+   * command line defined BIGNUM_OVERRIDE to an absurdly small
+   * value. */
+  #error Must define BIGNUM_OVERRIDE to at least 4
+
 #endif
+
+#undef BB_OK
 
 /*
  * Common code across all branches of that ifdef: define all the

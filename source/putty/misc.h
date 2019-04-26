@@ -157,6 +157,7 @@ static inline ptrlen ptrlen_from_strbuf(strbuf *sb)
 
 bool ptrlen_eq_string(ptrlen pl, const char *str);
 bool ptrlen_eq_ptrlen(ptrlen pl1, ptrlen pl2);
+int ptrlen_strcmp(ptrlen pl1, ptrlen pl2);
 bool ptrlen_startswith(ptrlen whole, ptrlen prefix, ptrlen *tail);
 char *mkstr(ptrlen pl);
 int string_length_for_printf(size_t);

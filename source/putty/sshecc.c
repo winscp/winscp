@@ -327,7 +327,7 @@ static struct ec_curve *ec_ed25519(void)
 
 struct ecsign_extra {
     struct ec_curve *(*curve)(void);
-    const struct ssh_hashalg *hash;
+    const ssh_hashalg *hash;
 
     /* These fields are used by the OpenSSH PEM format importer/exporter */
     const unsigned char *oid;
@@ -896,8 +896,8 @@ static void eddsa_openssh_blob(ssh_key *key, BinarySink *bs)
     /* Encode the private key as the concatenation of the
      * little-endian key integer and the public key again */
     put_uint32(bs, priv.len + pub.len);
-    put_data(bs, priv.ptr, priv.len);
-    put_data(bs, pub.ptr, pub.len);
+    put_datapl(bs, priv);
+    put_datapl(bs, pub);
 
     strbuf_free(pub_sb);
     strbuf_free(priv_sb);
@@ -956,7 +956,7 @@ static mp_int *ecdsa_signing_exponent_from_data(
     /* Hash the data being signed. */
     unsigned char hash[MAX_HASH_LEN];
     ssh_hash *h = ssh_hash_new(extra->hash);
-    put_data(h, data.ptr, data.len);
+    put_datapl(h, data);
     ssh_hash_final(h, hash);
 
     /*
@@ -1071,9 +1071,9 @@ static mp_int *eddsa_signing_exponent_from_data(
     /* Hash (r || public key || message) */
     unsigned char hash[MAX_HASH_LEN];
     ssh_hash *h = ssh_hash_new(extra->hash);
-    put_data(h, r_encoded.ptr, r_encoded.len);
+    put_datapl(h, r_encoded);
     put_epoint(h, ek->publicKey, ek->curve, true); /* omit string header */
-    put_data(h, data.ptr, data.len);
+    put_datapl(h, data);
     ssh_hash_final(h, hash);
 
     /* Convert to an integer */
@@ -1145,7 +1145,7 @@ static bool eddsa_verify(ssh_key *key, ptrlen sig, ptrlen data)
     } // WINSCP
 }
 
-static void ecdsa_sign(ssh_key *key, const void *data, int datalen,
+static void ecdsa_sign(ssh_key *key, ptrlen data,
                        unsigned flags, BinarySink *bs)
 {
     struct ecdsa_key *ek = container_of(key, struct ecdsa_key, sshk);
@@ -1154,15 +1154,14 @@ static void ecdsa_sign(ssh_key *key, const void *data, int datalen,
     assert(ek->privateKey);
 
     { // WINSCP
-    mp_int *z = ecdsa_signing_exponent_from_data(
-        ek->curve, extra, make_ptrlen(data, datalen));
+    mp_int *z = ecdsa_signing_exponent_from_data(ek->curve, extra, data);
 
     /* Generate k between 1 and curve->n, using the same deterministic
      * k generation system we use for conventional DSA. */
     mp_int *k;
     {
         unsigned char digest[20];
-        SHA_Simple(data, datalen, digest);
+        SHA_Simple(data.ptr, data.len, digest);
         k = dss_gen_k(
             "ECDSA deterministic k generator", ek->curve->w.G_order,
             ek->privateKey, digest, sizeof(digest));
@@ -1213,7 +1212,7 @@ static void ecdsa_sign(ssh_key *key, const void *data, int datalen,
     } // WINSCP
 }
 
-static void eddsa_sign(ssh_key *key, const void *data, int datalen,
+static void eddsa_sign(ssh_key *key, ptrlen data,
                        unsigned flags, BinarySink *bs)
 {
     struct eddsa_key *ek = container_of(key, struct eddsa_key, sshk);
@@ -1259,7 +1258,7 @@ static void eddsa_sign(ssh_key *key, const void *data, int datalen,
     h = ssh_hash_new(extra->hash);
     put_data(h, hash + ek->curve->fieldBytes,
              extra->hash->hlen - ek->curve->fieldBytes);
-    put_data(h, data, datalen);
+    put_datapl(h, data);
     ssh_hash_final(h, hash);
     { // WINSCP
     mp_int *log_r_unreduced = mp_from_bytes_le(
@@ -1283,7 +1282,7 @@ static void eddsa_sign(ssh_key *key, const void *data, int datalen,
      */
     { // WINSCP
     mp_int *H = eddsa_signing_exponent_from_data(
-        ek, extra, ptrlen_from_strbuf(r_enc), make_ptrlen(data, datalen));
+        ek, extra, ptrlen_from_strbuf(r_enc), data);
 
     /* And then s = (log(r) + H*a) mod order(G). */
     mp_int *Ha = mp_modmul(H, a, ek->curve->e.G_order);
@@ -1445,7 +1444,7 @@ struct ecdh_key {
     };
 };
 
-const char *ssh_ecdhkex_curve_textname(const struct ssh_kex *kex)
+const char *ssh_ecdhkex_curve_textname(const ssh_kex *kex)
 {
     const struct eckex_extra *extra = (const struct eckex_extra *)kex->extra;
     struct ec_curve *curve = extra->curve();
@@ -1477,7 +1476,7 @@ static void ssh_ecdhkex_m_setup(ecdh_key *dh)
     dh->m_public = ecc_montgomery_multiply(dh->curve->m.G, dh->private);
 }
 
-ecdh_key *ssh_ecdhkex_newkey(const struct ssh_kex *kex)
+ecdh_key *ssh_ecdhkex_newkey(const ssh_kex *kex)
 {
     const struct eckex_extra *extra = (const struct eckex_extra *)kex->extra;
     const struct ec_curve *curve = extra->curve();
@@ -1600,7 +1599,7 @@ static const struct eckex_extra kex_extra_curve25519 = {
     ssh_ecdhkex_m_getpublic,
     ssh_ecdhkex_m_getkey,
 };
-static const struct ssh_kex ssh_ec_kex_curve25519 = {
+const ssh_kex ssh_ec_kex_curve25519 = {
     "curve25519-sha256@libssh.org", NULL, KEXTYPE_ECDH,
     &ssh_sha256, &kex_extra_curve25519,
 };
@@ -1612,7 +1611,7 @@ const struct eckex_extra kex_extra_nistp256 = {
     ssh_ecdhkex_w_getpublic,
     ssh_ecdhkex_w_getkey,
 };
-static const struct ssh_kex ssh_ec_kex_nistp256 = {
+const ssh_kex ssh_ec_kex_nistp256 = {
     "ecdh-sha2-nistp256", NULL, KEXTYPE_ECDH,
     &ssh_sha256, &kex_extra_nistp256,
 };
@@ -1624,7 +1623,7 @@ const struct eckex_extra kex_extra_nistp384 = {
     ssh_ecdhkex_w_getpublic,
     ssh_ecdhkex_w_getkey,
 };
-static const struct ssh_kex ssh_ec_kex_nistp384 = {
+const ssh_kex ssh_ec_kex_nistp384 = {
     "ecdh-sha2-nistp384", NULL, KEXTYPE_ECDH,
     &ssh_sha384, &kex_extra_nistp384,
 };
@@ -1636,22 +1635,19 @@ const struct eckex_extra kex_extra_nistp521 = {
     ssh_ecdhkex_w_getpublic,
     ssh_ecdhkex_w_getkey,
 };
-static const struct ssh_kex ssh_ec_kex_nistp521 = {
+const ssh_kex ssh_ec_kex_nistp521 = {
     "ecdh-sha2-nistp521", NULL, KEXTYPE_ECDH,
     &ssh_sha512, &kex_extra_nistp521,
 };
 
-static const struct ssh_kex *const ec_kex_list[] = {
+static const ssh_kex *const ec_kex_list[] = {
     &ssh_ec_kex_curve25519,
     &ssh_ec_kex_nistp256,
     &ssh_ec_kex_nistp384,
     &ssh_ec_kex_nistp521,
 };
 
-const struct ssh_kexes ssh_ecdh_kex = {
-    sizeof(ec_kex_list) / sizeof(*ec_kex_list),
-    ec_kex_list
-};
+const ssh_kexes ssh_ecdh_kex = { lenof(ec_kex_list), ec_kex_list };
 
 /* ----------------------------------------------------------------------
  * Helper functions for finding key algorithms and returning auxiliary

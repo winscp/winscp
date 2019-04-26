@@ -215,6 +215,57 @@ void MD5Simple(void const *p, unsigned len, unsigned char output[16])
 }
 
 /* ----------------------------------------------------------------------
+ * Thin abstraction for things where hashes are pluggable.
+ */
+
+struct md5_hash {
+    struct MD5Context state;
+    ssh_hash hash;
+};
+
+static ssh_hash *md5_new(const ssh_hashalg *alg)
+{
+    struct md5_hash *h = snew(struct md5_hash);
+    MD5Init(&h->state);
+    h->hash.vt = alg;
+    BinarySink_DELEGATE_INIT(&h->hash, &h->state);
+    return &h->hash;
+}
+
+static ssh_hash *md5_copy(ssh_hash *hashold)
+{
+    struct md5_hash *hold, *hnew;
+    ssh_hash *hashnew = md5_new(hashold->vt);
+
+    hold = container_of(hashold, struct md5_hash, hash);
+    hnew = container_of(hashnew, struct md5_hash, hash);
+
+    hnew->state = hold->state;
+    BinarySink_COPIED(&hnew->state);
+
+    return hashnew;
+}
+
+static void md5_free(ssh_hash *hash)
+{
+    struct md5_hash *h = container_of(hash, struct md5_hash, hash);
+
+    smemclr(h, sizeof(*h));
+    sfree(h);
+}
+
+static void md5_final(ssh_hash *hash, unsigned char *output)
+{
+    struct md5_hash *h = container_of(hash, struct md5_hash, hash);
+    MD5Final(output, &h->state);
+    md5_free(hash);
+}
+
+const ssh_hashalg ssh_md5 = {
+    md5_new, md5_copy, md5_final, md5_free, 16, "MD5"
+};
+
+/* ----------------------------------------------------------------------
  * The above is the MD5 algorithm itself. Now we implement the
  * HMAC wrapper on it.
  * 
@@ -234,7 +285,7 @@ struct hmacmd5_context *hmacmd5_make_context(void)
     return ctx;
 }
 
-static ssh2_mac *hmacmd5_ssh2_new(const struct ssh2_macalg *alg,
+static ssh2_mac *hmacmd5_ssh2_new(const ssh2_macalg *alg,
                                   ssh2_cipher *cipher)
 {
     struct hmacmd5_context *ctx = hmacmd5_make_context();
@@ -276,11 +327,11 @@ void hmacmd5_key(struct hmacmd5_context *ctx, void const *keyv, int len)
     smemclr(foo, 64);		       /* burn the evidence */
 }
 
-static void hmacmd5_ssh2_setkey(ssh2_mac *mac, const void *key)
+static void hmacmd5_ssh2_setkey(ssh2_mac *mac, ptrlen key)
 {
     struct hmacmd5_context *ctx =
         container_of(mac, struct hmacmd5_context, mac);
-    hmacmd5_key(ctx, key, ctx->mac.vt->keylen);
+    hmacmd5_key(ctx, key.ptr, key.len);
 }
 
 static void hmacmd5_start(ssh2_mac *mac)
@@ -317,7 +368,7 @@ void hmacmd5_do_hmac(struct hmacmd5_context *ctx,
     ssh2_mac_genresult(&ctx->mac, hmac);
 }
 
-const struct ssh2_macalg ssh_hmac_md5 = {
+const ssh2_macalg ssh_hmac_md5 = {
     hmacmd5_ssh2_new, hmacmd5_ssh2_free, hmacmd5_ssh2_setkey,
     hmacmd5_start, hmacmd5_genresult,
     "hmac-md5", "hmac-md5-etm@openssh.com",

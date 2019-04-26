@@ -577,7 +577,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                  * Save the methods string for use in error messages.
                  */
                 s->last_methods_string->len = 0;
-                put_data(s->last_methods_string, methods.ptr, methods.len);
+                put_datapl(s->last_methods_string, methods);
 #ifdef WINSCP
                 ppl_logevent("Server offered these authentication methods: %s", s->last_methods_string->s);
 #endif
@@ -757,7 +757,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
             } else if (s->can_pubkey && s->publickey_blob &&
                        s->privatekey_available && !s->tried_pubkey_config) {
 
-                struct ssh2_userkey *key;   /* not live over crReturn */
+                ssh2_userkey *key;   /* not live over crReturn */
                 char *passphrase;           /* not live over crReturn */
 
                 s->ppl.bpp->pls->actx = SSH2_PKTCTX_PUBLICKEY;
@@ -903,7 +903,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                     put_data(sigdata, s->pktout->data + 5,
                              s->pktout->length - 5);
                     sigblob = strbuf_new();
-                    ssh_key_sign(key->key, sigdata->s, sigdata->len, 0,
+                    ssh_key_sign(key->key, ptrlen_from_strbuf(sigdata), 0,
                                  BinarySink_UPCAST(sigblob));
                     strbuf_free(sigdata);
                     ssh2_userauth_add_sigblob(
@@ -1592,7 +1592,7 @@ static void ssh2_userauth_add_session_id(
     struct ssh2_userauth_state *s, strbuf *sigdata)
 {
     if (s->ppl.remote_bugs & BUG_SSH2_PK_SESSIONID) {
-        put_data(sigdata, s->session_id.ptr, s->session_id.len);
+        put_datapl(sigdata, s->session_id);
     } else {
         put_stringpl(sigdata, s->session_id);
     }
@@ -1678,7 +1678,7 @@ static void ssh2_userauth_add_sigblob(
 	    put_data(substr, sigblob.ptr, sig_prefix_len);
 	    put_uint32(substr, mod_mp.len);
 	    put_padding(substr, mod_mp.len - sig_mp.len, 0);
-	    put_data(substr, sig_mp.ptr, sig_mp.len);
+	    put_datapl(substr, sig_mp);
             put_stringsb(pkt, substr);
 	    return;
 	}

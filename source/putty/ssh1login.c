@@ -49,12 +49,12 @@ struct ssh1_login_state {
     BinarySource asrc[1];          /* response from SSH agent */
     int keyi, nkeys;
     bool authed;
-    struct RSAKey key;
+    RSAKey key;
     mp_int *challenge;
     ptrlen comment;
     int dlgret;
     Filename *keyfile;
-    struct RSAKey servkey, hostkey;
+    RSAKey servkey, hostkey;
     bool want_user_input;
 
     PacketProtocolLayer ppl;
@@ -264,10 +264,10 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
     }
 
     {
-        struct RSAKey *smaller = (s->hostkey.bytes > s->servkey.bytes ?
-                                  &s->servkey : &s->hostkey);
-        struct RSAKey *larger = (s->hostkey.bytes > s->servkey.bytes ?
-                                 &s->hostkey : &s->servkey);
+        RSAKey *smaller = (s->hostkey.bytes > s->servkey.bytes ?
+                           &s->servkey : &s->hostkey);
+        RSAKey *larger = (s->hostkey.bytes > s->servkey.bytes ?
+                          &s->hostkey : &s->servkey);
 
         if (!rsa_ssh1_encrypt(s->rsabuf, 32, smaller) ||
             !rsa_ssh1_encrypt(s->rsabuf, smaller->bytes, larger)) {
@@ -362,7 +362,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
     ssh_bpp_handle_output(s->ppl.bpp);
 
     {
-        const struct ssh1_cipheralg *cipher =
+        const ssh1_cipheralg *cipher =
             (s->cipher_type == SSH_CIPHER_BLOWFISH ? &ssh1_blowfish :
              s->cipher_type == SSH_CIPHER_DES ? &ssh1_des : &ssh1_3des);
         ssh1_bpp_new_cipher(s->ppl.bpp, cipher, s->session_key);

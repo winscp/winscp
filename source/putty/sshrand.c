@@ -140,7 +140,7 @@ static void random_stir(void)
 	     * digest.
 	     */
 
-	    for (k = 0; k < sizeof(digest) / sizeof(*digest); k++)
+	    for (k = 0; k < lenof(digest); k++)
 		digest[k] ^= ((uint32_t *) (pool.pool + j))[k];
 
 	    /*
@@ -153,7 +153,7 @@ static void random_stir(void)
 	     * Stick the result back into the pool.
 	     */
 
-	    for (k = 0; k < sizeof(digest) / sizeof(*digest); k++)
+	    for (k = 0; k < lenof(digest); k++)
 		((uint32_t *) (pool.pool + j))[k] = digest[k];
 	}
 

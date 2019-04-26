@@ -21,6 +21,8 @@
 /* Work around lack of inttypes.h in older MSVC */
 #define PRIx32 "x"
 #define PRIu64 "I64u"
+#define PRIdMAX "I64d"
+#define PRIXMAX "I64X"
 #define SCNu64 "I64u"
 #else
 #include <inttypes.h>
@@ -37,7 +39,7 @@ typedef struct bufchain_tag bufchain;
 
 typedef struct strbuf strbuf;
 
-struct RSAKey;
+typedef struct RSAKey RSAKey;
 
 typedef struct BinarySink BinarySink;
 typedef struct BinarySource BinarySource;
@@ -91,6 +93,26 @@ typedef struct PortFwdManager PortFwdManager;
 typedef struct PortFwdRecord PortFwdRecord;
 typedef struct ConnectionLayer ConnectionLayer;
 
+typedef struct ssh_hashalg ssh_hashalg;
+typedef struct ssh_hash ssh_hash;
+typedef struct ssh_kex ssh_kex;
+typedef struct ssh_kexes ssh_kexes;
+typedef struct ssh_keyalg ssh_keyalg;
+typedef struct ssh_key ssh_key;
+typedef struct ssh_compressor ssh_compressor;
+typedef struct ssh_decompressor ssh_decompressor;
+typedef struct ssh_compression_alg ssh_compression_alg;
+typedef struct ssh2_userkey ssh2_userkey;
+typedef struct ssh2_macalg ssh2_macalg;
+typedef struct ssh2_mac ssh2_mac;
+typedef struct ssh2_cipheralg ssh2_cipheralg;
+typedef struct ssh2_cipher ssh2_cipher;
+typedef struct ssh2_ciphers ssh2_ciphers;
+typedef struct ssh1_cipheralg ssh1_cipheralg;
+typedef struct ssh1_cipher ssh1_cipher;
+typedef struct dh_ctx dh_ctx;
+typedef struct ecdh_key ecdh_key;
+
 typedef struct dlgparam dlgparam;
 
 typedef struct settings_w settings_w;
@@ -130,6 +152,34 @@ typedef struct PacketProtocolLayer PacketProtocolLayer;
 #define NORETURN __attribute__((__noreturn__))
 #else
 #define NORETURN
+#endif
+
+/* ----------------------------------------------------------------------
+ * Platform-specific definitions.
+ *
+ * Most of these live in the per-platform header files, of which
+ * puttyps.h selects the appropriate one. But some of the sources
+ * (particularly standalone test applications) would prefer not to
+ * have to include a per-platform header at all, because that makes it
+ * more portable to platforms not supported by the code base as a
+ * whole (for example, compiling purely computational parts of the
+ * code for specialist platforms for test and analysis purposes). So
+ * any definition that has to affect even _those_ modules will have to
+ * go here, with the key constraint being that this code has to come
+ * to _some_ decision even if the compilation platform is not a
+ * recognised one at all.
+ */
+
+/* Purely computational code uses smemclr(), so we have to make the
+ * decision here about whether that's provided by utils.c or by a
+ * platform implementation. We define PLATFORM_HAS_SMEMCLR to suppress
+ * utils.c's definition. */
+#ifdef _WINDOWS
+/* Windows provides the API function 'SecureZeroMemory', which we use
+ * unless the user has told us not to by defining NO_SECUREZEROMEMORY. */
+#ifndef NO_SECUREZEROMEMORY
+#define PLATFORM_HAS_SMEMCLR
+#endif
 #endif
 
 #endif /* PUTTY_DEFS_H */

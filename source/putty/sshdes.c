@@ -869,14 +869,14 @@ struct des_ssh2_ctx {
     ssh2_cipher ciph;
 };
 
-static ssh2_cipher *des3_ssh2_new(const struct ssh2_cipheralg *alg)
+static ssh2_cipher *des3_ssh2_new(const ssh2_cipheralg *alg)
 {
     struct des3_ssh2_ctx *ctx = snew(struct des3_ssh2_ctx);
     ctx->ciph.vt = alg;
     return &ctx->ciph;
 }
 
-static ssh2_cipher *des_ssh2_new(const struct ssh2_cipheralg *alg)
+static ssh2_cipher *des_ssh2_new(const ssh2_cipheralg *alg)
 {
     struct des_ssh2_ctx *ctx = snew(struct des_ssh2_ctx);
     ctx->ciph.vt = alg;
@@ -1070,7 +1070,7 @@ void des_decrypt_xdmauth(const void *keydata, void *blk, int len)
     des_cbc_decrypt(blk, len, &dc);
 }
 
-static const struct ssh2_cipheralg ssh_3des_ssh2 = {
+const ssh2_cipheralg ssh_3des_ssh2 = {
     des3_ssh2_new, des3_ssh2_free, des3_ssh2_setiv, des3_ssh2_setkey,
     des3_ssh2_encrypt_blk, des3_ssh2_decrypt_blk, NULL, NULL,
     "3des-cbc",
@@ -1078,7 +1078,7 @@ static const struct ssh2_cipheralg ssh_3des_ssh2 = {
     NULL
 };
 
-static const struct ssh2_cipheralg ssh_3des_ssh2_ctr = {
+const ssh2_cipheralg ssh_3des_ssh2_ctr = {
     des3_ssh2_new, des3_ssh2_free, des3_ssh2_setiv, des3_ssh2_setkey,
     des3_ssh2_sdctr, des3_ssh2_sdctr, NULL, NULL,
     "3des-ctr",
@@ -1094,7 +1094,7 @@ static const struct ssh2_cipheralg ssh_3des_ssh2_ctr = {
  * apparently aren't the only people to do so, so we sigh 
  * and implement it anyway.
  */
-static const struct ssh2_cipheralg ssh_des_ssh2 = {
+const ssh2_cipheralg ssh_des_ssh2 = {
     des_ssh2_new, des_ssh2_free, des_ssh2_setiv, des_ssh2_setkey,
     des_ssh2_encrypt_blk, des_ssh2_decrypt_blk, NULL, NULL,
     "des-cbc",
@@ -1102,7 +1102,7 @@ static const struct ssh2_cipheralg ssh_des_ssh2 = {
     NULL
 };
 
-static const struct ssh2_cipheralg ssh_des_sshcom_ssh2 = {
+const ssh2_cipheralg ssh_des_sshcom_ssh2 = {
     des_ssh2_new, des_ssh2_free, des_ssh2_setiv, des_ssh2_setkey,
     des_ssh2_encrypt_blk, des_ssh2_decrypt_blk, NULL, NULL,
     "des-cbc@ssh.com",
@@ -1110,89 +1110,28 @@ static const struct ssh2_cipheralg ssh_des_sshcom_ssh2 = {
     NULL
 };
 
-static const struct ssh2_cipheralg *const des3_list[] = {
+static const ssh2_cipheralg *const des3_list[] = {
     &ssh_3des_ssh2_ctr,
     &ssh_3des_ssh2
 };
 
-const struct ssh2_ciphers ssh2_3des = {
-    sizeof(des3_list) / sizeof(*des3_list),
-    des3_list
-};
+const ssh2_ciphers ssh2_3des = { lenof(des3_list), des3_list };
 
-static const struct ssh2_cipheralg *const des_list[] = {
+static const ssh2_cipheralg *const des_list[] = {
     &ssh_des_ssh2,
     &ssh_des_sshcom_ssh2
 };
 
-const struct ssh2_ciphers ssh2_des = {
-    sizeof(des_list) / sizeof(*des_list),
-    des_list
-};
+const ssh2_ciphers ssh2_des = { lenof(des_list), des_list };
 
-const struct ssh1_cipheralg ssh1_3des = {
+const ssh1_cipheralg ssh1_3des = {
     des3_ssh1_new, des3_ssh1_free, des3_ssh1_sesskey,
     des3_ssh1_encrypt_blk, des3_ssh1_decrypt_blk,
     8, "triple-DES inner-CBC"
 };
 
-const struct ssh1_cipheralg ssh1_des = {
+const ssh1_cipheralg ssh1_des = {
     des_ssh1_new, des_ssh1_free, des_ssh1_sesskey,
     des_ssh1_encrypt_blk, des_ssh1_decrypt_blk,
     8, "single-DES CBC"
 };
-
-#ifdef TEST_XDM_AUTH
-
-/*
- * Small standalone utility which allows encryption and decryption of
- * single cipher blocks in the XDM-AUTHORIZATION-1 style. Written
- * during the rework of X authorisation for connection sharing, to
- * check the corner case when xa1_firstblock matches but the rest of
- * the authorisation is bogus.
- *
- * Just compile this file on its own with the above ifdef symbol
- * predefined:
-
-gcc -DTEST_XDM_AUTH -o sshdes sshdes.c
-
- */
-
-#include <stdlib.h>
-void *safemalloc(size_t n, size_t size) { return calloc(n, size); }
-void safefree(void *p) { return free(p); }
-void smemclr(void *p, size_t size) { memset(p, 0, size); }
-int main(int argc, char **argv)
-{
-    unsigned char words[2][8];
-    unsigned char out[8];
-    int i, j;
-
-    memset(words, 0, sizeof(words));
-
-    for (i = 0; i < 2; i++) {
-        for (j = 0; j < 8 && argv[i+1][2*j]; j++) {
-            char x[3];
-            unsigned u;
-            x[0] = argv[i+1][2*j];
-            x[1] = argv[i+1][2*j+1];
-            x[2] = 0;
-            sscanf(x, "%02x", &u);
-            words[i][j] = u;
-        }
-    }
-
-    memcpy(out, words[0], 8);
-    des_decrypt_xdmauth(words[1], out, 8);
-    printf("decrypt(%s,%s) = ", argv[1], argv[2]);
-    for (i = 0; i < 8; i++) printf("%02x", out[i]);
-    printf("\n");
-
-    memcpy(out, words[0], 8);
-    des_encrypt_xdmauth(words[1], out, 8);
-    printf("encrypt(%s,%s) = ", argv[1], argv[2]);
-    for (i = 0; i < 8; i++) printf("%02x", out[i]);
-    printf("\n");
-}
-
-#endif

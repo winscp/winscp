@@ -1038,7 +1038,7 @@ bool ssh1_common_filter_queue(PacketProtocolLayer *ppl)
 
 void ssh1_compute_session_id(
     unsigned char *session_id, const unsigned char *cookie,
-    struct RSAKey *hostkey, struct RSAKey *servkey)
+    RSAKey *hostkey, RSAKey *servkey)
 {
     struct MD5Context md5c;
     size_t i; // WINSCP
