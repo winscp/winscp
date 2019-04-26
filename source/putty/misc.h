@@ -199,7 +199,12 @@ char *buildinfo(const char *newline);
  * function labelled NORETURN just in case some unusual kind of system
  * header wasn't foresighted enough to label abort() itself that way.
  */
-static inline NORETURN void unreachable_internal(void) { abort(); }
+static inline NORETURN void unreachable_internal(void) { 
+  #ifndef WINSCP_VS
+  // Not to try to link to VS abort
+  abort();
+  #endif
+}
 #define unreachable(msg) (assert(false && msg), unreachable_internal())
 
 /*
