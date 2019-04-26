@@ -11,6 +11,7 @@
 #include "sshcr.h"
 #include "storage.h"
 #include "ssh2transport.h"
+#include "mpint.h"
 
 void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
 {
@@ -170,10 +171,10 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
 
         dh_cleanup(s->dh_ctx);
         s->dh_ctx = NULL;
-        freebn(s->f); s->f = NULL;
+        mp_free(s->f); s->f = NULL;
         if (dh_is_gex(s->kex_alg)) {
-            freebn(s->g); s->g = NULL;
-            freebn(s->p); s->p = NULL;
+            mp_free(s->g); s->g = NULL;
+            mp_free(s->p); s->p = NULL;
         }
     } else if (s->kex_alg->main_type == KEXTYPE_ECDH) {
 
@@ -223,7 +224,7 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
         {
             ptrlen keydata = get_string(pktin);
             put_stringpl(s->exhash, keydata);
-            s->K = ssh_ecdhkex_getkey(s->ecdh_key, keydata.ptr, keydata.len);
+            s->K = ssh_ecdhkex_getkey(s->ecdh_key, keydata);
             if (!get_err(pktin) && !s->K) {
                 ssh_proto_error(s->ppl.ssh, "Received invalid elliptic curve "
                                 "point in ECDH reply");
@@ -501,10 +502,10 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
 
         dh_cleanup(s->dh_ctx);
         s->dh_ctx = NULL;
-        freebn(s->f); s->f = NULL;
+        mp_free(s->f); s->f = NULL;
         if (dh_is_gex(s->kex_alg)) {
-            freebn(s->g); s->g = NULL;
-            freebn(s->p); s->p = NULL;
+            mp_free(s->g); s->g = NULL;
+            mp_free(s->p); s->p = NULL;
         }
 #endif
     } else {
@@ -560,13 +561,13 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
             unsigned char *outstr;
             int outstrlen;
 
-            s->K = bn_power_2(nbits - 1);
+            s->K = mp_power_2(nbits - 1);
 
             for (i = 0; i < nbits; i++) {
                 if ((i & 7) == 0) {
                     byte = random_byte();
                 }
-                bignum_set_bit(s->K, i, (byte >> (i & 7)) & 1);
+                mp_set_bit(s->K, i, (byte >> (i & 7)) & 1);
             }
 
             /*

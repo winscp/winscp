@@ -30,7 +30,7 @@
  */
 
 #include "ssh.h"
-#include "sshbn.h"
+#include "mpint_i.h"
 
 #ifndef INLINE
 #define INLINE
