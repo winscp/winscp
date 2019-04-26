@@ -346,7 +346,7 @@
 			<BuildOrder>12</BuildOrder>
 			<BuildOrder>110</BuildOrder>
 		</CppCompile>
-		<CppCompile Include="putty\WINDOWS\winucs.c">
+		<CppCompile Include="putty\windows\winucs.c">
 			<BuildOrder>52</BuildOrder>
 		</CppCompile>
 		<CppCompile Include="putty\x11fwd.c">
