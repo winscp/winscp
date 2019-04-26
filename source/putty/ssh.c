@@ -130,7 +130,7 @@ static void ssh_connect_bpp(Ssh *ssh)
     ssh->bpp->ssh = ssh;
     ssh->bpp->in_raw = &ssh->in_raw;
     ssh->bpp->out_raw = &ssh->out_raw;
-    ssh->bpp->out_raw->ic = &ssh->ic_out_raw;
+    bufchain_set_callback(ssh->bpp->out_raw, &ssh->ic_out_raw);
     ssh->bpp->pls = &ssh->pls;
     ssh->bpp->logctx = ssh->logctx;
     ssh->bpp->remote_bugs = ssh->remote_bugs;
