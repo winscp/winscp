@@ -1352,7 +1352,6 @@ MontyContext *monty_new(mp_int *modulus)
     } // WINSCP
 }
 
-    size_t j; // WINSCP
 void monty_free(MontyContext *mc)
 {
     size_t j; // WINSCP
