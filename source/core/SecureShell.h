@@ -112,7 +112,6 @@ protected:
     size_t Count, UnicodeString & Message, UnicodeString * HelpKeyword = NULL);
   int __fastcall TranslateAuthenticationMessage(UnicodeString & Message, UnicodeString * HelpKeyword = NULL);
   int __fastcall TranslateErrorMessage(UnicodeString & Message, UnicodeString * HelpKeyword = NULL);
-  void __fastcall AddStdError(UnicodeString Str);
   void __fastcall AddStdErrorLine(const UnicodeString & Str);
   void __fastcall inline LogEvent(const UnicodeString & Str);
   void __fastcall FatalError(UnicodeString Error, UnicodeString HelpKeyword = L"");
@@ -157,8 +156,9 @@ public:
     UnicodeString AName, bool NameRequired,
     UnicodeString Instructions, bool InstructionsRequired,
     TStrings * Prompts, TStrings * Results);
-  void __fastcall FromBackend(bool IsStdErr, const unsigned char * Data, int Length);
+  void __fastcall FromBackend(const unsigned char * Data, int Length);
   void __fastcall CWrite(const char * Data, int Length);
+  void __fastcall AddStdError(const char * Data, int Length);
   const UnicodeString & __fastcall GetStdError();
   void __fastcall VerifyHostKey(
     const UnicodeString & Host, int Port, const UnicodeString & KeyType, const UnicodeString & KeyStr,

@@ -475,7 +475,6 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                         int len;
                         bufchain_prefix(&s->banner, &data, &len);
                         display_banner(s->ppl.seat, &s->banner, len); // WINSCP
-                        seat_stderr(s->ppl.seat, data, len);
                         bufchain_consume(&s->banner, len);
                     }
                 }

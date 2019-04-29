@@ -132,15 +132,17 @@ extern "C" char * do_select(Plug * plug, SOCKET skt, bool startup)
 static int output(Seat * seat, bool is_stderr, const void * data, int len)
 {
   TSecureShell * SecureShell = static_cast<ScpSeat *>(seat)->SecureShell;
-  if (is_stderr >= 0)
+  if (static_cast<int>(static_cast<char>(is_stderr)) == -1)
   {
-    DebugAssert((is_stderr == 0) || (is_stderr == 1));
-    SecureShell->FromBackend((is_stderr == 1), reinterpret_cast<const unsigned char *>(data), len);
+    SecureShell->CWrite(reinterpret_cast<const char *>(data), len);
+  }
+  else if (!is_stderr)
+  {
+    SecureShell->FromBackend(reinterpret_cast<const unsigned char *>(data), len);
   }
   else
   {
-    DebugAssert(is_stderr == -1);
-    SecureShell->CWrite(reinterpret_cast<const char *>(data), len);
+    SecureShell->AddStdError(reinterpret_cast<const char *>(data), len);
   }
   return 0;
 }

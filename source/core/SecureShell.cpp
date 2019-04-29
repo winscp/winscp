@@ -1025,7 +1025,7 @@ void __fastcall TSecureShell::UnregisterReceiveHandler(TNotifyEvent Handler)
   FOnReceive = NULL;
 }
 //---------------------------------------------------------------------------
-void __fastcall TSecureShell::FromBackend(bool IsStdErr, const unsigned char * Data, int Length)
+void __fastcall TSecureShell::FromBackend(const unsigned char * Data, int Length)
 {
   // Note that we do not apply ConvertFromPutty to Data yet (as opposite to CWrite).
   // as there's no use for this atm.
@@ -1033,68 +1033,61 @@ void __fastcall TSecureShell::FromBackend(bool IsStdErr, const unsigned char * D
 
   if (Configuration->ActualLogProtocol >= 1)
   {
-    LogEvent(FORMAT(L"Received %u bytes (%d)", (Length, int(IsStdErr))));
+    LogEvent(FORMAT(L"Received %u bytes", (Length)));
   }
 
   // Following is taken from scp.c from_backend() and modified
 
-  if (IsStdErr)
+  const unsigned char *p = Data;
+  unsigned Len = (unsigned)Length;
+
+  // with event-select mechanism we can now receive data even before we
+  // actually expect them (OutPtr can be NULL)
+
+  if ((OutPtr != NULL) && (OutLen > 0) && (Len > 0))
   {
-    AddStdError(ConvertInput(RawByteString(reinterpret_cast<const char *>(Data), Length)));
+    unsigned Used = OutLen;
+    if (Used > Len) Used = Len;
+    memmove(OutPtr, p, Used);
+    OutPtr += Used; OutLen -= Used;
+    p += Used; Len -= Used;
   }
-  else
+
+  if (Len > 0)
   {
-    const unsigned char *p = Data;
-    unsigned Len = (unsigned)Length;
-
-    // with event-select mechanism we can now receive data even before we
-    // actually expect them (OutPtr can be NULL)
-
-    if ((OutPtr != NULL) && (OutLen > 0) && (Len > 0))
+    if (PendSize < PendLen + Len)
     {
-      unsigned Used = OutLen;
-      if (Used > Len) Used = Len;
-      memmove(OutPtr, p, Used);
-      OutPtr += Used; OutLen -= Used;
-      p += Used; Len -= Used;
+      PendSize = PendLen + Len + 4096;
+      Pending = (unsigned char *)
+        (Pending ? srealloc(Pending, PendSize) : smalloc(PendSize));
+      if (!Pending) FatalError(L"Out of memory");
     }
+    memmove(Pending + PendLen, p, Len);
+    PendLen += Len;
+  }
 
-    if (Len > 0)
+  if (FOnReceive != NULL)
+  {
+    if (!FFrozen)
     {
-      if (PendSize < PendLen + Len)
+      FFrozen = true;
+      try
       {
-        PendSize = PendLen + Len + 4096;
-        Pending = (unsigned char *)
-          (Pending ? srealloc(Pending, PendSize) : smalloc(PendSize));
-        if (!Pending) FatalError(L"Out of memory");
+        do
+        {
+          FDataWhileFrozen = false;
+          FOnReceive(NULL);
+        }
+        while (FDataWhileFrozen);
       }
-      memmove(Pending + PendLen, p, Len);
-      PendLen += Len;
+      __finally
+      {
+        FFrozen = false;
+      }
     }
-
-    if (FOnReceive != NULL)
+    else
     {
-      if (!FFrozen)
-      {
-        FFrozen = true;
-        try
-        {
-          do
-          {
-            FDataWhileFrozen = false;
-            FOnReceive(NULL);
-          }
-          while (FDataWhileFrozen);
-        }
-        __finally
-        {
-          FFrozen = false;
-        }
-      }
-      else
-      {
-        FDataWhileFrozen = true;
-      }
+      FDataWhileFrozen = true;
     }
   }
 }
@@ -1461,8 +1454,9 @@ int __fastcall TSecureShell::TranslateAuthenticationMessage(
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TSecureShell::AddStdError(UnicodeString Str)
+void __fastcall TSecureShell::AddStdError(const char * Data, int Length)
 {
+  UnicodeString Str = ConvertInput(RawByteString(Data, Length));
   FStdError += Str;
 
   Integer P;
