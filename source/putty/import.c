@@ -547,13 +547,11 @@ static ssh2_userkey *openssh_pem_read(
             des3_decrypt_pubkey_ossh(keybuf, key->iv,
                                      key->keyblob->u, key->keyblob->len);
         else {
-            AESContext *ctx;
-            assert(key->encryption == OP_E_AES);
-            ctx = aes_make_context();
-            aes128_key(ctx, keybuf);
-            aes_iv(ctx, key->iv);
-            aes_ssh2_decrypt_blk(ctx, key->keyblob->u, key->keyblob->len);
-            aes_free_context(ctx);
+            ssh2_cipher *cipher = ssh2_cipher_new(&ssh_aes128_cbc);
+            ssh2_cipher_setkey(cipher, keybuf);
+            ssh2_cipher_setiv(cipher, key->iv);
+            ssh2_cipher_decrypt(cipher, key->keyblob->u, key->keyblob->len);
+            ssh2_cipher_free(cipher);
         }
 
         smemclr(&md5c, sizeof(md5c));
@@ -1390,20 +1388,16 @@ static ssh2_userkey *openssh_new_read(
                 goto error;
             }
             {
-                void *ctx = aes_make_context();
-                aes256_key(ctx, keybuf);
-                aes_iv(ctx, keybuf + 32);
+                ssh2_cipher *cipher = ssh2_cipher_new(
+                    key->cipher == ON_E_AES256CBC ?
+                    &ssh_aes256_cbc : &ssh_aes256_sdctr);
+                ssh2_cipher_setkey(cipher, keybuf);
+                ssh2_cipher_setiv(cipher, keybuf + 32);
                 /* Decrypt the private section in place, casting away
                  * the const from key->private being a ptrlen */
-                if (key->cipher == ON_E_AES256CBC) {
-                    aes_ssh2_decrypt_blk(ctx, (char *)key->private.ptr,
-                                         key->private.len);
-                }
-                else {
-                    aes_ssh2_sdctr(ctx, (char *)key->private.ptr,
-                                   key->private.len);
-                }
-                aes_free_context(ctx);
+                ssh2_cipher_decrypt(cipher, (char *)key->private.ptr,
+                                    key->private.len);
+                ssh2_cipher_free(cipher);
             }
             break;
           default:
@@ -1594,18 +1588,17 @@ static bool openssh_new_write(
              * material: 32 bytes AES key + 16 bytes iv.
              */
             unsigned char keybuf[48];
-            void *ctx;
+            ssh2_cipher *cipher;
 
             openssh_bcrypt(passphrase,
                            bcrypt_salt, sizeof(bcrypt_salt), bcrypt_rounds,
                            keybuf, sizeof(keybuf));
 
-            ctx = aes_make_context();
-            aes256_key(ctx, keybuf);
-            aes_iv(ctx, keybuf + 32);
-            aes_ssh2_sdctr(ctx, cpblob->u,
-                           cpblob->len);
-            aes_free_context(ctx);
+            cipher = ssh2_cipher_new(&ssh_aes256_sdctr);
+            ssh2_cipher_setkey(cipher, keybuf);
+            ssh2_cipher_setiv(cipher, keybuf + 32);
+            ssh2_cipher_encrypt(cipher, cpblob->u, cpblob->len);
+            ssh2_cipher_free(cipher);
 
             smemclr(keybuf, sizeof(keybuf));
         }

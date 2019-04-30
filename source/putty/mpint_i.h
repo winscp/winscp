@@ -188,6 +188,29 @@
 #define BIGNUM_INT_MASK (BIGNUM_TOP_BIT | (BIGNUM_TOP_BIT-1))
 
 /*
+ * Just occasionally, we might need a GET_nnBIT_xSB_FIRST macro to
+ * operate on whatever BignumInt is.
+ */
+#if BIGNUM_INT_BITS_BITS == 4
+#define GET_BIGNUMINT_MSB_FIRST GET_16BIT_MSB_FIRST
+#define GET_BIGNUMINT_LSB_FIRST GET_16BIT_LSB_FIRST
+#define PUT_BIGNUMINT_MSB_FIRST PUT_16BIT_MSB_FIRST
+#define PUT_BIGNUMINT_LSB_FIRST PUT_16BIT_LSB_FIRST
+#elif BIGNUM_INT_BITS_BITS == 5
+#define GET_BIGNUMINT_MSB_FIRST GET_32BIT_MSB_FIRST
+#define GET_BIGNUMINT_LSB_FIRST GET_32BIT_LSB_FIRST
+#define PUT_BIGNUMINT_MSB_FIRST PUT_32BIT_MSB_FIRST
+#define PUT_BIGNUMINT_LSB_FIRST PUT_32BIT_LSB_FIRST
+#elif BIGNUM_INT_BITS_BITS == 6
+#define GET_BIGNUMINT_MSB_FIRST GET_64BIT_MSB_FIRST
+#define GET_BIGNUMINT_LSB_FIRST GET_64BIT_LSB_FIRST
+#define PUT_BIGNUMINT_MSB_FIRST PUT_64BIT_MSB_FIRST
+#define PUT_BIGNUMINT_LSB_FIRST PUT_64BIT_LSB_FIRST
+#else
+  #error Ran out of options for GET_BIGNUMINT_xSB_FIRST
+#endif
+
+/*
  * Common code across _most_ branches of the ifdef: define a set of
  * statement macros in terms of the BignumDblInt type provided. In
  * this case, we also define BignumCarry to be the same thing as

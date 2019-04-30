@@ -676,6 +676,9 @@ struct ssh2_cipheralg {
     const char *text_name;
     /* If set, this takes priority over other MAC. */
     const ssh2_macalg *required_mac;
+
+    /* Pointer to any extra data used by a particular implementation. */
+    const void *extra;
 };
 
 #define ssh2_cipher_new(alg) ((alg)->new(alg))
@@ -856,12 +859,12 @@ extern const ssh2_cipheralg ssh_3des_ssh2_ctr;
 extern const ssh2_cipheralg ssh_3des_ssh2;
 extern const ssh2_cipheralg ssh_des_ssh2;
 extern const ssh2_cipheralg ssh_des_sshcom_ssh2;
-extern const ssh2_cipheralg ssh_aes256_ctr;
-extern const ssh2_cipheralg ssh_aes256;
-extern const ssh2_cipheralg ssh_aes192_ctr;
-extern const ssh2_cipheralg ssh_aes192;
-extern const ssh2_cipheralg ssh_aes128_ctr;
-extern const ssh2_cipheralg ssh_aes128;
+extern const ssh2_cipheralg ssh_aes256_sdctr;
+extern const ssh2_cipheralg ssh_aes256_cbc;
+extern const ssh2_cipheralg ssh_aes192_sdctr;
+extern const ssh2_cipheralg ssh_aes192_cbc;
+extern const ssh2_cipheralg ssh_aes128_sdctr;
+extern const ssh2_cipheralg ssh_aes128_cbc;
 extern const ssh2_cipheralg ssh_blowfish_ssh2_ctr;
 extern const ssh2_cipheralg ssh_blowfish_ssh2;
 extern const ssh2_cipheralg ssh_arcfour256_ssh2;
@@ -902,17 +905,6 @@ extern const ssh2_macalg ssh_hmac_sha1_96_buggy;
 extern const ssh2_macalg ssh_hmac_sha256;
 extern const ssh2_macalg ssh2_poly1305;
 extern const ssh_compression_alg ssh_zlib;
-
-typedef struct AESContext AESContext;
-AESContext *aes_make_context(void);
-void aes_free_context(AESContext *ctx);
-void aes128_key(AESContext *ctx, const void *key);
-void aes192_key(AESContext *ctx, const void *key);
-void aes256_key(AESContext *ctx, const void *key);
-void aes_iv(AESContext *ctx, const void *iv);
-void aes_ssh2_encrypt_blk(AESContext *ctx, void *blk, int len);
-void aes_ssh2_decrypt_blk(AESContext *ctx, void *blk, int len);
-void aes_ssh2_sdctr(AESContext *ctx, void *blk, int len);
 
 /*
  * PuTTY version number formatted as an SSH version string. 
