@@ -726,7 +726,7 @@ static const char *connect_to_host(
     ssh->bpp = ssh_verstring_new(
         ssh->conf, ssh->logctx, ssh->bare_connection,
         ssh->version == 1 ? "1.5" : "2.0", &ssh->version_receiver,
-        false, "PuTTY");
+        false, ""); // WINSCP (impl_name provided in sshver already)
     ssh_connect_bpp(ssh);
     queue_idempotent_callback(&ssh->bpp->ic_in_raw);
 
