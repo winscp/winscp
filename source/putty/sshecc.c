@@ -917,11 +917,11 @@ static ssh_key *ecdsa_new_priv_openssh(
     get_string(src);
 
     { // WINSCP
-    struct eddsa_key *ek = snew(struct eddsa_key);
+    struct ecdsa_key *ek = snew(struct ecdsa_key);
     ek->sshk.vt = alg;
     ek->curve = curve;
 
-    ek->publicKey = get_epoint(src, curve);
+    ek->publicKey = get_wpoint(src, curve);
     if (!ek->publicKey) {
         eddsa_freekey(&ek->sshk);
         return NULL;
