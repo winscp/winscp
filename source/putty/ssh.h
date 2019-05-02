@@ -559,11 +559,13 @@ mp_int *ssh_ecdhkex_getkey(ecdh_key *key, ptrlen remoteKey);
 mp_int *dss_gen_k(const char *id_string,
                      mp_int *modulus, mp_int *private_key,
                      unsigned char *digest, int digest_len);
+#endif
 
 struct ssh2_cipher {
     const ssh2_cipheralg *vt;
 };
 
+#ifndef WINSCP_VS
 typedef struct {
     uint32_t h[4];
 } MD5_Core_State;
