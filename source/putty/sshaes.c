@@ -77,7 +77,7 @@ struct aes_extra {
     const ssh2_cipheralg ssh_##cid##_sw = {                             \
         aes_sw_new, aes_sw_free, aes_sw_##setiv, aes_sw_setkey,         \
         cid##_sw##encsuffix, cid##_sw##decsuffix, NULL, NULL,           \
-        pid, 16, bits, bits/8, 0, name " (unaccelerated)",              \
+        pid, 16, bits, bits/8, 0, name /*WINSCP " (unaccelerated)" */,  \
         NULL, NULL };                                                   \
                                                                         \
     static void cid##_hw##encsuffix(ssh2_cipher *, void *blk, int len); \
