@@ -448,6 +448,7 @@ void __fastcall TSessionData::Assign(TPersistent * Source)
   if (Source && Source->InheritsFrom(__classid(TSessionData)))
   {
     TSessionData * SourceData = (TSessionData *)Source;
+    // Master password prompt shows implicitly here, when cloning the session data for a new terminal
     CopyData(SourceData);
     FSource = SourceData->FSource;
   }
@@ -457,9 +458,17 @@ void __fastcall TSessionData::Assign(TPersistent * Source)
   }
 }
 //---------------------------------------------------------------------
-void __fastcall TSessionData::CopyData(TSessionData * SourceData)
+void __fastcall TSessionData::DoCopyData(TSessionData * SourceData, bool NoRecrypt)
 {
-  #define PROPERTY_HANDLER(P, F) F##P = SourceData->F##P
+  #define PROPERTY_HANDLER(P, F) \
+    if (NoRecrypt) \
+    { \
+      F##P = SourceData->F##P; \
+    } \
+    else \
+    { \
+      P = SourceData->P; \
+    }
   PROPERTY(Name);
   BASE_PROPERTIES;
   ADVANCED_PROPERTIES;
@@ -468,6 +477,16 @@ void __fastcall TSessionData::CopyData(TSessionData * SourceData)
   FOverrideCachedHostKey = SourceData->FOverrideCachedHostKey;
   FModified = SourceData->Modified;
   FSaveOnly = SourceData->FSaveOnly;
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::CopyData(TSessionData * SourceData)
+{
+  DoCopyData(SourceData, false);
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::CopyDataNoRecrypt(TSessionData * SourceData)
+{
+  DoCopyData(SourceData, true);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::CopyDirectoriesStateData(TSessionData * SourceData)

@@ -445,6 +445,7 @@ private:
   TStrings * __fastcall SaveToOptions(const TSessionData * Default);
   void __fastcall ApplyRawSettings(TStrings * RawSettings);
   TStrings * __fastcall GetRawSettingsForUrl();
+  void __fastcall DoCopyData(TSessionData * SourceData, bool NoRecrypt);
   template<class AlgoT>
   void __fastcall SetAlgoList(AlgoT * List, const AlgoT * DefaultList, const UnicodeString * Names,
     int Count, AlgoT WarnAlgo, UnicodeString value);
@@ -475,6 +476,7 @@ public:
   virtual void __fastcall Assign(TPersistent * Source);
   virtual int __fastcall Compare(TNamedObject * Other);
   void __fastcall CopyData(TSessionData * Source);
+  void __fastcall CopyDataNoRecrypt(TSessionData * SourceData);
   void __fastcall CopyDirectoriesStateData(TSessionData * SourceData);
   bool __fastcall ParseUrl(UnicodeString Url, TOptions * Options,
     TStoredSessionList * StoredSessions, bool & DefaultsOnly,
