@@ -247,9 +247,11 @@ static inline void dumpslices_BignumInt(
         mask /= ((1ULL << bigshift) + 1);                       \
         mask /= ((1ULL << smallshift) + 1);                     \
         mask <<= smallshift;                                    \
+        { /*WINSCP*/ \
         unsigned shift = bigshift - smallshift;                 \
         uint64_t diff = ((i >> shift) ^ i) & mask;              \
         i ^= diff ^ (diff << shift);                            \
+        } /*WINSCP*/ \
     } while (0)
 
 #define TO_BITSLICES(slices, bytes, uintN_t, assign_op, shift) do       \
@@ -279,6 +281,7 @@ static inline void dumpslices_BignumInt(
         i1 = (i1 << 16) | ((slices[5] >> (shift)) & 0xFFFF);    \
         i1 = (i1 << 16) | ((slices[3] >> (shift)) & 0xFFFF);    \
         i1 = (i1 << 16) | ((slices[1] >> (shift)) & 0xFFFF);    \
+        { /*WINSCP*/ \
         uint64_t i0 = ((slices[6] >> (shift)) & 0xFFFF);        \
         i0 = (i0 << 16) | ((slices[4] >> (shift)) & 0xFFFF);    \
         i0 = (i0 << 16) | ((slices[2] >> (shift)) & 0xFFFF);    \
@@ -292,6 +295,7 @@ static inline void dumpslices_BignumInt(
         SWAPINWORD(i1, 8, 1);                                   \
         PUT_64BIT_LSB_FIRST(bytes, i0);                         \
         PUT_64BIT_LSB_FIRST((bytes) + 8, i1);                   \
+        } /*WINSCP*/ \
     } while (0)
 
 /* -----
@@ -458,18 +462,24 @@ static inline void dumpslices_BignumInt(
         output[7] = t59 ^ t63;                          \
         output[1] = ~(t56 ^ t62);                       \
         output[0] = ~(t48 ^ t60);                       \
+        { /*WINSCP*/ \
         uintN_t t67 = t64 ^ t65;                        \
         output[4] = t53 ^ t66;                          \
         output[3] = t51 ^ t66;                          \
         output[2] = t47 ^ t65;                          \
         output[6] = ~(t64 ^ output[4]);                 \
         output[5] = ~(t55 ^ t67);                       \
+        } /*WINSCP*/ \
         /* end */
 
 #define BITSLICED_SUBBYTES(output, input, uintN_t) do { \
         SBOX_FORWARD_TOP_TRANSFORM(input, uintN_t);      \
+        { /*WINSCP*/ \
         SBOX_CORE(uintN_t);                             \
+        { /*WINSCP*/ \
         SBOX_FORWARD_BOTTOM_TRANSFORM(output, uintN_t);  \
+        } /*WINSCP*/ \
+        } /*WINSCP*/ \
     } while (0)
 
 /*
@@ -525,19 +535,25 @@ static inline void dumpslices_BignumInt(
     uintN_t otmp29 = otmp28 ^ z10;                      \
     output[4] = z2 ^ otmp23;                            \
     output[7] = z5 ^ otmp24;                            \
+    { /*WINSCP*/ \
     uintN_t otmp30 = z11 ^ otmp29;                      \
     output[5] = z13 ^ otmp30;                           \
+    { /*WINSCP*/ \
     uintN_t otmp31 = otmp25 ^ z8;                       \
     output[1] = z7 ^ otmp31;                            \
+    { /*WINSCP*/ \
     uintN_t otmp32 = z11 ^ z9;                          \
     uintN_t otmp33 = z17 ^ otmp32;                      \
     uintN_t otmp34 = otmp30 ^ otmp33;                   \
     output[0] = z15 ^ otmp33;                           \
+    { /*WINSCP*/ \
     uintN_t otmp35 = z12 ^ otmp34;                      \
     output[6] = otmp35 ^ z16;                           \
+    { /*WINSCP*/ \
     uintN_t otmp36 = z1 ^ otmp23;                       \
     uintN_t otmp37 = z5 ^ otmp36;                       \
     output[2] = z4 ^ otmp37;                            \
+    { /*WINSCP*/ \
     uintN_t otmp38 = z11 ^ output[1];                   \
     uintN_t otmp39 = z2 ^ otmp38;                       \
     uintN_t otmp40 = z17 ^ otmp39;                      \
@@ -546,12 +562,22 @@ static inline void dumpslices_BignumInt(
     uintN_t otmp43 = otmp42 ^ z10;                      \
     uintN_t otmp44 = otmp43 ^ z3;                       \
     output[3] = otmp44 ^ z16;                           \
+    } /*WINSCP*/ \
+    } /*WINSCP*/ \
+    } /*WINSCP*/ \
+    } /*WINSCP*/ \
+    } /*WINSCP*/ \
+    } /*WINSCP*/ \
     /* end */
 
 #define BITSLICED_INVSUBBYTES(output, input, uintN_t) do {      \
         SBOX_BACKWARD_TOP_TRANSFORM(input, uintN_t);             \
+        { /*WINSCP*/ \
         SBOX_CORE(uintN_t);                                     \
+        { /*WINSCP*/ \
         SBOX_BACKWARD_BOTTOM_TRANSFORM(output, uintN_t);         \
+        } /*WINSCP*/ \
+        } /*WINSCP*/ \
     } while (0)
 
 
@@ -667,7 +693,6 @@ static inline void dumpslices_BignumInt(
         output[0] =            bit7;                    \
     } while (0)
 
-#ifdef WINSCP_VS
 /*
  * The MixColumns constant is
  *   M = X + Y + Y^2 + (X+1)Y^3
@@ -702,6 +727,7 @@ static inline void dumpslices_BignumInt(
         BITSLICED_MUL_BY_X(X2, X, uintN_t);                     \
         BITSLICED_MUL_BY_X(X3, X2, uintN_t);                    \
         /* Sum them all and multiply by 1+Y+Y^2+Y^3. */         \
+        { /*WINSCP*/ \
         uintN_t S[8];                                           \
         BITSLICED_ADD(S, input, X);                             \
         BITSLICED_ADD(S, S, X2);                                \
@@ -709,10 +735,12 @@ static inline void dumpslices_BignumInt(
         ITERATE(BITSLICED_MUL_BY_1_Y3, S, S, uintN_t);          \
         ITERATE(BITSLICED_MUL_BY_1_Y2, S, S, uintN_t);          \
         /* Compute the X(Y+Y^2) term. */                        \
+        { /*WINSCP*/ \
         uintN_t A[8];                                           \
         ITERATE(BITSLICED_MUL_BY_1_Y3, A, X, uintN_t);          \
         ITERATE(BITSLICED_MUL_BY_Y2, A, A, uintN_t);            \
         /* Compute the X^2(Y+Y^3) term. */                      \
+        { /*WINSCP*/ \
         uintN_t B[8];                                           \
         ITERATE(BITSLICED_MUL_BY_1_Y2, B, X2, uintN_t);         \
         ITERATE(BITSLICED_MUL_BY_Y3, B, B, uintN_t);            \
@@ -720,6 +748,9 @@ static inline void dumpslices_BignumInt(
         BITSLICED_ADD(S, S, input);                             \
         BITSLICED_ADD(S, S, A);                                 \
         BITSLICED_ADD(output, S, B);                            \
+        } /*WINSCP*/ \
+        } /*WINSCP*/ \
+        } /*WINSCP*/ \
     } while (0)
 
 /* -----
@@ -779,6 +810,7 @@ static void aes_sliced_key_setup(
 
     size_t key_words = keybits / 32;
     sk->rounds = key_words + 6;
+    { // WINSCP
     size_t sched_words = (sk->rounds + 1) * 4;
 
     unsigned rconpos = 0;
@@ -788,11 +820,14 @@ static void aes_sliced_key_setup(
 
     memset(sk->roundkeys_serial, 0, sizeof(sk->roundkeys_serial));
 
+    { // WINSCP
     uint8_t inblk[16];
     memset(inblk, 0, 16);
+    { // WINSCP
     uint16_t slices[8];
 
-    for (size_t i = 0; i < sched_words; i++) {
+    size_t i; // WINSCP
+    for (i = 0; i < sched_words; i++) {
         /*
          * Prepare a word of round key in the low 4 bits of each
          * integer in slices[].
@@ -803,22 +838,24 @@ static void aes_sliced_key_setup(
         } else {
             unsigned wordindex, bitshift;
             uint16_t *prevslices;
+            size_t i2; // WINSCP
 
             /* Fetch the (i-1)th key word */
             wordindex = i-1;
             bitshift = 4 * (wordindex & 3);
             prevslices = sk->roundkeys_serial + 8 * (wordindex >> 2);
-            for (size_t i = 0; i < 8; i++)
-                slices[i] = prevslices[i] >> bitshift;
+            for (i2 = 0; i2 < 8; i2++)
+                slices[i2] = prevslices[i2] >> bitshift;
 
             /* Decide what we're doing in this expansion stage */
+            { // WINSCP
             bool rotate_and_round_constant = (i % key_words == 0);
             bool sub = rotate_and_round_constant ||
                 (key_words == 8 && i % 8 == 4);
 
             if (rotate_and_round_constant) {
-                for (size_t i = 0; i < 8; i++)
-                    slices[i] = ((slices[i] << 3) | (slices[i] >> 1)) & 0xF;
+                for (i2 = 0; i2 < 8; i2++)
+                    slices[i2] = ((slices[i2] << 3) | (slices[i2] >> 1)) & 0xF;
             }
 
             if (sub) {
@@ -826,25 +863,31 @@ static void aes_sliced_key_setup(
             }
 
             if (rotate_and_round_constant) {
-                assert(rconpos < lenof(key_setup_round_constants));
+                pinitassert(rconpos < lenof(key_setup_round_constants));
                 uint8_t rcon = key_setup_round_constants[rconpos++];
-                for (size_t i = 0; i < 8; i++)
-                    slices[i] ^= 1 & (rcon >> i);
+                for (i2 = 0; i2 < 8; i2++)
+                    slices[i2] ^= 1 & (rcon >> i2);
             }
 
             /* Combine with the (i-Nk)th key word */
             wordindex = i - key_words;
             bitshift = 4 * (wordindex & 3);
             prevslices = sk->roundkeys_serial + 8 * (wordindex >> 2);
-            for (size_t i = 0; i < 8; i++)
-                slices[i] ^= prevslices[i] >> bitshift;
+            { // WINSCP
+            for (i2 = 0; i2 < 8; i2++)
+                slices[i2] ^= prevslices[i2] >> bitshift;
+            } // WINSCP
+            } // WINSCP
 	}
 
         /*
          * Now copy it into sk.
          */
-        for (unsigned b = 0; b < 8; b++)
+        { // WINSCP
+        unsigned b;
+        for (b = 0; b < 8; b++)
             outslices[b] |= (slices[b] & 0xF) << outshift;
+        } // WINSCP
         outshift += 4;
         if (outshift == 16) {
             outshift = 0;
@@ -859,10 +902,13 @@ static void aes_sliced_key_setup(
      * Replicate that set of round keys into larger integers for the
      * parallel versions of the cipher.
      */
-    for (size_t i = 0; i < 8 * (sched_words / 4); i++) {
+    for (i = 0; i < 8 * (sched_words / 4); i++) {
         sk->roundkeys_parallel[i] = sk->roundkeys_serial[i] *
             ((BignumInt)~(BignumInt)0 / 0xFFFF);
     }
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
 }
 
 /* -----
@@ -875,23 +921,26 @@ static void aes_sliced_key_setup(
         uint8_t *output, const uint8_t *input, const aes_sliced_key *sk) \
     {                                                                   \
         uintN_t state[8];                                               \
+        unsigned i; /*WINSCP*/ \
         TO_BITSLICES(state, input, uintN_t, =, 0);                      \
-        for (unsigned i = 1; i < nblocks; i++) {                        \
+        for (i = 1; i < nblocks; i++) {                        \
             input += 16;                                                \
             TO_BITSLICES(state, input, uintN_t, |=, i*16);              \
         }                                                               \
+        { /*WINSCP*/ \
         const uintN_t *keys = sk->roundkeys_##suffix;                   \
         BITSLICED_ADD(state, state, keys);                              \
         keys += 8;                                                      \
-        for (unsigned i = 0; i < sk->rounds-1; i++) {                   \
+        for (i = 0; i < sk->rounds-1; i++) {                   \
             aes_sliced_round_e_##suffix(state, state, keys);            \
             keys += 8;                                                  \
         }                                                               \
         aes_sliced_round_e_##suffix##_last(state, state, keys);         \
-        for (unsigned i = 0; i < nblocks; i++) {                        \
+        for (i = 0; i < nblocks; i++) {                        \
             FROM_BITSLICES(output, state, i*16);                        \
             output += 16;                                               \
         }                                                               \
+        } /*WINSCP*/ \
     }
 
 #define DECRYPT_FN(suffix, uintN_t, nblocks)                            \
@@ -899,23 +948,26 @@ static void aes_sliced_key_setup(
         uint8_t *output, const uint8_t *input, const aes_sliced_key *sk) \
     {                                                                   \
         uintN_t state[8];                                               \
+        unsigned i; /*WINSCP*/ \
         TO_BITSLICES(state, input, uintN_t, =, 0);                      \
-        for (unsigned i = 1; i < nblocks; i++) {                        \
+        for (i = 1; i < nblocks; i++) {                        \
             input += 16;                                                \
             TO_BITSLICES(state, input, uintN_t, |=, i*16);              \
         }                                                               \
+        { /*WINSCP*/ \
         const uintN_t *keys = sk->roundkeys_##suffix + 8*sk->rounds;    \
         aes_sliced_round_d_##suffix##_first(state, state, keys);        \
         keys -= 8;                                                      \
-        for (unsigned i = 0; i < sk->rounds-1; i++) {                   \
+        for (i = 0; i < sk->rounds-1; i++) {                   \
             aes_sliced_round_d_##suffix(state, state, keys);            \
             keys -= 8;                                                  \
         }                                                               \
         BITSLICED_ADD(state, state, keys);                              \
-        for (unsigned i = 0; i < nblocks; i++) {                        \
+        for (i = 0; i < nblocks; i++) {                        \
             FROM_BITSLICES(output, state, i*16);                        \
             output += 16;                                               \
         }                                                               \
+        } /*WINSCP*/ \
     }
 
 ENCRYPT_FN(serial, uint16_t, 1)
@@ -989,7 +1041,8 @@ static void aes_sw_setiv_sdctr(ssh2_cipher *ciph, const void *viv)
     const uint8_t *iv = (const uint8_t *)viv;
 
     /* Import the initial counter value into the internal representation */
-    for (unsigned i = 0; i < SDCTR_WORDS; i++)
+    unsigned i; // WINSCP
+    for (i = 0; i < SDCTR_WORDS; i++)
         ctx->iv.sdctr.counter[i] =
             GET_BIGNUMINT_MSB_FIRST(
                 iv + 16 - BIGNUM_INT_BYTES - i*BIGNUM_INT_BYTES);
@@ -1027,7 +1080,8 @@ static inline void aes_cbc_sw_encrypt(
      * run.
      */
 
-    for (uint8_t *blk = (uint8_t *)vblk, *finish = blk + blklen;
+    uint8_t *blk, *finish; // WINSCP
+    for (blk = (uint8_t *)vblk, finish = blk + blklen;
          blk < finish; blk += 16) {
         /*
          * We use the IV array itself as the location for the
@@ -1081,7 +1135,9 @@ static inline void aes_cbc_sw_decrypt(
         aes_sliced_d_parallel(data, data, &ctx->sk);
 
         /* Write the output and update the IV */
-        for (size_t i = 0; i < blocks; i++) {
+        { // WINSCP
+        size_t i; // WINSCP
+        for (i = 0; i < blocks; i++) {
             uint8_t *decrypted = data + 16*i;
             uint8_t *output = blk + 16*i;
 
@@ -1093,6 +1149,7 @@ static inline void aes_cbc_sw_decrypt(
         /* Advance the input pointer. */
         blk += 16 * blocks;
         blocks_remaining -= blocks;
+        } // WINSCP
     }
 
     smemclr(data, sizeof(data));
@@ -1112,26 +1169,31 @@ static inline void aes_sdctr_sw(
     uint8_t *keystream_end =
         ctx->iv.sdctr.keystream + sizeof(ctx->iv.sdctr.keystream);
 
-    for (uint8_t *blk = (uint8_t *)vblk, *finish = blk + blklen;
+    uint8_t *blk, *finish; // WINSCP
+    for (blk = (uint8_t *)vblk, finish = blk + blklen;
          blk < finish; blk += 16) {
 
         if (ctx->iv.sdctr.keystream_pos == keystream_end) {
             /*
              * Generate some keystream.
              */
-            for (uint8_t *block = ctx->iv.sdctr.keystream;
+            uint8_t *block; // WINSCP
+            for (block = ctx->iv.sdctr.keystream;
                  block < keystream_end; block += 16) {
                 /* Format the counter value into the buffer. */
-                for (unsigned i = 0; i < SDCTR_WORDS; i++)
+                unsigned i; // WINSCP
+                for (i = 0; i < SDCTR_WORDS; i++)
                     PUT_BIGNUMINT_MSB_FIRST(
                         block + 16 - BIGNUM_INT_BYTES - i*BIGNUM_INT_BYTES,
                         ctx->iv.sdctr.counter[i]);
 
                 /* Increment the counter. */
+                { // WINSCP
                 BignumCarry carry = 1;
-                for (unsigned i = 0; i < SDCTR_WORDS; i++)
+                for (i = 0; i < SDCTR_WORDS; i++)
                     BignumADC(ctx->iv.sdctr.counter[i], carry,
                               ctx->iv.sdctr.counter[i], 0, carry);
+                } // WINSCP
             }
 
             /* Encrypt all those counter blocks. */
@@ -1487,22 +1549,26 @@ void aes256_encrypt_pubkey(const void *key, void *blk, int len)
 {
     char iv[16];
     memset(iv, 0, 16);
+    { // WINSCP
     ssh2_cipher *cipher = ssh2_cipher_new(&ssh_aes256_cbc);
     ssh2_cipher_setkey(cipher, key);
     ssh2_cipher_setiv(cipher, iv);
     ssh2_cipher_encrypt(cipher, blk, len);
     ssh2_cipher_free(cipher);
+    } // WINSCP
 }
 
 void aes256_decrypt_pubkey(const void *key, void *blk, int len)
 {
     char iv[16];
     memset(iv, 0, 16);
+    { // WINSCP
     ssh2_cipher *cipher = ssh2_cipher_new(&ssh_aes256_cbc);
     ssh2_cipher_setkey(cipher, key);
     ssh2_cipher_setiv(cipher, iv);
     ssh2_cipher_decrypt(cipher, blk, len);
     ssh2_cipher_free(cipher);
+    } // WINSCP
 }
 
 
@@ -1510,56 +1576,47 @@ void aes256_decrypt_pubkey(const void *key, void *blk, int len)
 
 #include "puttyexp.h"
 
-void call_aes_setup(void * ctx, unsigned char * key, int keylen)
+AESContext * aes_make_context()
 {
-  aes_setup((AESContext *)ctx, key, keylen);
+  ssh2_cipher * cipher = ssh2_cipher_new(&ssh_aes256_sdctr);
+  return cipher;
 }
 
-// Based on pre 0.71 code, with use of 0.71 macros
-
-static void aes_encrypt(AESContext * ctx, uint32_t * block)
+void aes_free_context(AESContext * ctx)
 {
-  int i;
-  uint32_t *keysched = ctx->keysched;
-  uint32_t newstate[4];
-  ADD_ROUND_KEY;
-  assert(ctx->Nr - 1 > 0);
-  for (i = 0; i < ctx->Nr - 1; i++) {
-    ENCROUND;
-  }
-  ADD_ROUND_KEY;
-  ENCLASTROUND;
+  ssh2_cipher * cipher = (ssh2_cipher *)ctx;
+  ssh2_cipher_free(cipher);
 }
 
-static void aes_decrypt(AESContext * ctx, uint32_t * block)
+void aes_iv(AESContext * ctx, const void * iv)
 {
-  int i;
-  uint32_t *keysched = ctx->invkeysched;
-  uint32_t newstate[4];
-  ADD_ROUND_KEY;
-  assert(ctx->Nr - 1 > 0);
-  for (i = 0; i < ctx->Nr - 1; i++) {
-    DECROUND;
-  }
-  ADD_ROUND_KEY;
-  DECLASTROUND;
+  ssh2_cipher * cipher = (ssh2_cipher *)ctx;
+  ssh2_cipher_setiv(cipher, iv);
 }
 
 void call_aes_encrypt(void * ctx, unsigned int * block)
 {
-  aes_encrypt((AESContext *)ctx, block);
+  ssh2_cipher * cipher = (ssh2_cipher *)ctx;
+  ssh2_cipher_encrypt(cipher, block, 16);
 }
 
 void call_aes_decrypt(void * ctx, unsigned int * block)
 {
-  aes_decrypt((AESContext *)ctx, block);
+  ssh2_cipher * cipher = (ssh2_cipher *)ctx;
+  ssh2_cipher_decrypt(cipher, block, 16);
+}
+
+void call_aes_setup(AESContext * ctx, unsigned char * key, int keylen)
+{
+  ssh2_cipher * cipher = (ssh2_cipher *)ctx;
+  assert(keylen == 32);
+  ssh2_cipher_setkey(cipher, key);
 }
 
 void call_aes_sdctr(unsigned char *blk, int len, void *ctx)
 {
-  aes_sdctr(blk, len, (AESContext *)ctx);
+  ssh2_cipher * cipher = (ssh2_cipher *)ctx;
+  ssh2_cipher_encrypt(cipher, blk, len);
 }
 
 #endif
-
-#endif // !WINSCP_VS

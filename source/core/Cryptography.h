@@ -18,7 +18,7 @@ RawByteString GenerateEncryptKey();
 void ValidateEncryptKey(const RawByteString & Key);
 //---------------------------------------------------------------------------
 class TFileBuffer;
-struct AESContext;
+typedef void AESContext;
 //---------------------------------------------------------------------------
 class TEncryption
 {

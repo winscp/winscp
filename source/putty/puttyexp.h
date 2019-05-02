@@ -54,10 +54,15 @@ void select_result(WPARAM wParam, LPARAM lParam);
 
 // from sshaes.c
 
-void call_aes_setup(void * ctx, unsigned char * key, int keylen);
-void call_aes_encrypt(void * ctx, unsigned int * block);
-void call_aes_decrypt(void * ctx, unsigned int * block);
-void call_aes_sdctr(unsigned char *blk, int len, void *ctx);
+typedef void AESContext;
+AESContext * aes_make_context();
+void aes_free_context(AESContext * ctx);
+void aes_iv(AESContext * ctx, const void * iv);
+void call_aes_setup(AESContext * ctx, unsigned char * key, int keylen);
+void call_aes_encrypt(AESContext * ctx, unsigned int * block);
+void call_aes_decrypt(AESContext * ctx, unsigned int * block);
+void call_aes_sdctr(unsigned char *blk, int len, AESContext * ctx);
+
 
 // from winmisc.c
 
