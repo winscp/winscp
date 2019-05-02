@@ -62,6 +62,7 @@ object RightsFrame: TRightsFrame
     Width = 29
     Height = 13
     Caption = 'O&ctal:'
+    FocusControl = OctalEdit
   end
   object OwnerReadCheck: TGrayedCheckBox
     Tag = 256
