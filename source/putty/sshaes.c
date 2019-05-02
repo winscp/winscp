@@ -1594,18 +1594,6 @@ void aes_iv(AESContext * ctx, const void * iv)
   ssh2_cipher_setiv(cipher, iv);
 }
 
-void call_aes_encrypt(void * ctx, unsigned int * block)
-{
-  ssh2_cipher * cipher = (ssh2_cipher *)ctx;
-  ssh2_cipher_encrypt(cipher, block, 16);
-}
-
-void call_aes_decrypt(void * ctx, unsigned int * block)
-{
-  ssh2_cipher * cipher = (ssh2_cipher *)ctx;
-  ssh2_cipher_decrypt(cipher, block, 16);
-}
-
 void call_aes_setup(AESContext * ctx, unsigned char * key, int keylen)
 {
   ssh2_cipher * cipher = (ssh2_cipher *)ctx;

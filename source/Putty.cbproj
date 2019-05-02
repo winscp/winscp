@@ -210,6 +210,9 @@
 			<BuildOrder>26</BuildOrder>
 			<BuildOrder>22</BuildOrder>
 		</CppCompile>
+		<CppCompile Include="putty\sshaesold.c">
+			<BuildOrder>77</BuildOrder>
+		</CppCompile>
 		<CppCompile Include="putty\ssharcf.c">
 			<BuildOrder>29</BuildOrder>
 			<BuildOrder>21</BuildOrder>

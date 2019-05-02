@@ -59,10 +59,14 @@ AESContext * aes_make_context();
 void aes_free_context(AESContext * ctx);
 void aes_iv(AESContext * ctx, const void * iv);
 void call_aes_setup(AESContext * ctx, unsigned char * key, int keylen);
-void call_aes_encrypt(AESContext * ctx, unsigned int * block);
-void call_aes_decrypt(AESContext * ctx, unsigned int * block);
 void call_aes_sdctr(unsigned char *blk, int len, AESContext * ctx);
 
+// from sshaesold.c
+
+void *aesold_make_context(void);
+void aesold_free_context(void *handle);
+void call_aesold_setup(void * ctx, int blocklen, unsigned char * key, int keylen);
+void call_aesold_encrypt(void * ctx, unsigned int * block);
 
 // from winmisc.c
 

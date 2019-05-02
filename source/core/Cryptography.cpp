@@ -173,7 +173,7 @@ void aes_encrypt_block(const unsigned char in_blk[], unsigned char out_blk[], vo
     out_blk[Index * 4 + 1] = out_blk[Index * 4 + 2];
     out_blk[Index * 4 + 2] = t;
   }
-  call_aes_encrypt(cx, reinterpret_cast<unsigned int*>(out_blk));
+  call_aesold_encrypt(cx, reinterpret_cast<unsigned int*>(out_blk));
   for (Index = 0; Index < 4; Index++)
   {
     unsigned char t;
@@ -325,8 +325,8 @@ static void fcrypt_init(
     memset(cx->nonce, 0, BLOCK_SIZE * sizeof(unsigned char));
 
     /* initialise for encryption using key 1            */
-    cx->encr_ctx = aes_make_context();
-    aes_set_encrypt_key(kbuf, KEY_LENGTH(mode), cx->encr_ctx);
+    cx->encr_ctx = aesold_make_context();
+    call_aesold_setup(cx->encr_ctx, BLOCK_SIZE, kbuf, KEY_LENGTH(mode));
 
     /* initialise for authentication using key 2        */
     hmac_sha1_begin(&cx->auth_ctx);
@@ -354,7 +354,7 @@ static void fcrypt_decrypt(unsigned char data[], unsigned int data_len, fcrypt_c
 static int fcrypt_end(unsigned char mac[], fcrypt_ctx cx[1])
 {
     hmac_sha1_end(mac, MAC_LENGTH(cx->mode), &cx->auth_ctx);
-    aes_free_context(cx->encr_ctx);
+    aesold_free_context(cx->encr_ctx);
     return MAC_LENGTH(cx->mode);    /* return MAC length in bytes   */
 }
 //---------------------------------------------------------------------------
