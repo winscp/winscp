@@ -1897,7 +1897,10 @@ namespace WinSCP
                 {
                     message += " - " + additional;
                 }
-                _logReader.SetTimeouted();
+                if (_logReader != null)
+                {
+                    _logReader.SetTimeouted();
+                }
                 throw Logger.WriteException(new TimeoutException(message));
             }
 
