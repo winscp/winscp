@@ -1330,6 +1330,7 @@ typedef struct aes_ni_context aes_ni_context;
 struct aes_ni_context {
     __m128i keysched_e[MAXROUNDKEYS], keysched_d[MAXROUNDKEYS], iv;
 
+    void *pointer_to_free;
     ssh2_cipher ciph;
 };
 
@@ -1338,16 +1339,30 @@ static ssh2_cipher *aes_hw_new(const ssh2_cipheralg *alg)
     if (!aes_hw_available_cached())
         return NULL;
 
-    aes_ni_context *ctx = snew(aes_ni_context);
+    /*
+     * The __m128i variables in the context structure need to be
+     * 16-byte aligned, but not all malloc implementations that this
+     * code has to work with will guarantee to return a 16-byte
+     * aligned pointer. So we over-allocate, manually realign the
+     * pointer ourselves, and store the original one inside the
+     * context so we know how to free it later.
+     */
+    void *allocation = smalloc(sizeof(aes_ni_context) + 15);
+    uintptr_t alloc_address = (uintptr_t)allocation;
+    uintptr_t aligned_address = (alloc_address + 15) & ~15;
+    aes_ni_context *ctx = (aes_ni_context *)aligned_address;
+
     ctx->ciph.vt = alg;
+    ctx->pointer_to_free = allocation;
     return &ctx->ciph;
 }
 
 static void aes_hw_free(ssh2_cipher *ciph)
 {
     aes_ni_context *ctx = container_of(ciph, aes_ni_context, ciph);
+    void *allocation = ctx->pointer_to_free;
     smemclr(ctx, sizeof(*ctx));
-    sfree(ctx);
+    sfree(allocation);
 }
 
 static void aes_hw_setkey(ssh2_cipher *ciph, const void *vkey)
