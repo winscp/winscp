@@ -271,6 +271,8 @@ namespace WinSCP
                     log = openCommand + log;
                     WriteCommand(command, log);
 
+                    Logger.WriteLine("Waiting for XML log file");
+
                     // Wait until the log file gets created or WinSCP terminates (in case of fatal error)
                     do
                     {
@@ -322,6 +324,8 @@ namespace WinSCP
                             logExplanation);
 
                     } while (!File.Exists(XmlLogPath));
+
+                    Logger.WriteLine("XML log file created");
 
                     _logReader = new SessionLogReader(this);
 
