@@ -1324,6 +1324,7 @@ bool ssh2_save_userkey(
 	put_string(macdata, pub_blob->s, pub_blob->len);
 	put_string(macdata, priv_blob_encrypted, priv_encrypted_len);
 
+        { // WINSCP
         ssh_hash *h = ssh_hash_new(&ssh_sha1);
 	put_data(h, header, sizeof(header)-1);
 	if (passphrase)
@@ -1333,6 +1334,7 @@ bool ssh2_save_userkey(
                    ptrlen_from_strbuf(macdata), priv_mac);
 	strbuf_free(macdata);
 	smemclr(mackey, sizeof(mackey));
+        } // WINSCP
     }
 
     if (passphrase) {
@@ -1521,7 +1523,7 @@ char *ssh2_fingerprint_blob(const void *blob, int bloblen)
     for (i = 0; i < 16; i++)
         sprintf(fingerprint_str_md5 + i*3, "%02x%s", digest[i], i==15 ? "" : ":");
 
-    SHA256_Simple(blob, bloblen, digest);
+    hash_simple(&ssh_sha256, make_ptrlen(blob, bloblen), digest);
     base64_encode_buf(digest, 32, fingerprint_str_sha256);
 
     /*

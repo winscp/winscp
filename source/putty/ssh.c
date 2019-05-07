@@ -1189,6 +1189,6 @@ unsigned int winscp_query(Backend * be, int query)
 
 void md5checksum(const char * buffer, int len, unsigned char output[16])
 {
-  MD5Simple(buffer, len, output);
+  hash_simple(&ssh_md5, make_ptrlen(buffer, len), output);
 }
 #endif

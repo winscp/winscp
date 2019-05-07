@@ -53,20 +53,39 @@
 
 #include <memory.h>
 
-#define sha1_ctx                  SHA_State
-#define sha1_begin(ctx)           putty_SHA_Init(ctx)
+#define sha1_begin(ctx)           ctx = (&ssh_sha1)->_new_(&ssh_sha1)
 #define sha1_hash(buf, len, ctx)  put_data(ctx, buf, len)
-#define sha1_end(dig, ctx)        putty_SHA_Final(ctx, dig)
+#define sha1_end(dig, ctx)        ssh_hash_final(ctx, dig); ctx = NULL
 
 #define IN_BLOCK_LENGTH     64
 #define OUT_BLOCK_LENGTH    20
 #define HMAC_IN_DATA        0xffffffff
 
-typedef struct
+struct hmac_ctx
 {   unsigned char   key[IN_BLOCK_LENGTH];
-    sha1_ctx        ctx[1];
+    ssh_hash       *ctx;
     unsigned int    klen;
-} hmac_ctx;
+    hmac_ctx()
+    {
+        memset(this, 0, sizeof(*this));
+    }
+    ~hmac_ctx()
+    {
+        if (ctx != NULL) ssh_hash_free(ctx);
+    }
+    void CopyFrom(hmac_ctx * Source)
+    {
+        if (ctx != NULL)
+        {
+            ssh_hash_free(ctx);
+        }
+        memmove(this, Source, sizeof(*this));
+        if (Source->ctx != NULL)
+        {
+            ctx = ssh_hash_copy(Source->ctx);
+        }
+    }
+};
 
 /* initialise the HMAC context to zero */
 static void hmac_sha1_begin(hmac_ctx cx[1])
@@ -236,7 +255,7 @@ static void derive_key(const unsigned char pwd[],  /* the PASSWORD     */
     hmac_sha1_key(pwd, pwd_len, c1);
 
     /* set HMAC context (c2) for password and salt      */
-    memmove(c2, c1, sizeof(hmac_ctx));
+    c2->CopyFrom(c1);
     hmac_sha1_data(salt, salt_len, c2);
 
     /* find the number of SHA blocks in the key         */
@@ -248,7 +267,7 @@ static void derive_key(const unsigned char pwd[],  /* the PASSWORD     */
         memset(ux, 0, OUT_BLOCK_LENGTH);
 
         /* set HMAC context (c3) for password and salt  */
-        memmove(c3, c2, sizeof(hmac_ctx));
+        c3->CopyFrom(c2);
 
         /* enter additional data for 1st block into uu  */
         uu[0] = (unsigned char)((i + 1) >> 24);
@@ -270,7 +289,7 @@ static void derive_key(const unsigned char pwd[],  /* the PASSWORD     */
                 ux[k] ^= uu[k];
 
             /* set HMAC context (c3) for password   */
-            memmove(c3, c1, sizeof(hmac_ctx));
+            c3->CopyFrom(c1);
         }
 
         /* compile key blocks into the key output   */

@@ -810,7 +810,7 @@ UnicodeString __fastcall GetPuTTYVersion()
 UnicodeString __fastcall Sha256(const char * Data, size_t Size)
 {
   unsigned char Digest[32];
-  SHA256_Simple(Data, Size, Digest);
+  hash_simple(&ssh_sha256, make_ptrlen(Data, Size), Digest);
   UnicodeString Result(BytesToHex(Digest, LENOF(Digest)));
   return Result;
 }
