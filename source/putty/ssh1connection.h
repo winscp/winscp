@@ -50,6 +50,7 @@ struct ssh1_connection_state {
     struct outstanding_succfail *succfail_head, *succfail_tail;
 
     bool compressing;                  /* used in server mode only */
+    bool sent_exit_status;             /* also for server mode */
 
     ConnectionLayer cl;
     PacketProtocolLayer ppl;

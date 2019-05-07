@@ -20,7 +20,7 @@
  * This has an intricate link between the cipher and the MAC. The
  * keying of both is done in by the cipher and setting of the IV is
  * done by the MAC. One cannot operate without the other. The
- * configuration of the ssh2_cipheralg structure ensures that the MAC is
+ * configuration of the ssh_cipheralg structure ensures that the MAC is
  * set (and others ignored) if this cipher is chosen.
  *
  * This cipher also encrypts the length using a different
@@ -867,12 +867,12 @@ struct ccp_context {
     struct poly1305 mac;
 
     BinarySink_IMPLEMENTATION;
-    ssh2_cipher ciph;
+    ssh_cipher ciph;
     ssh2_mac mac_if;
 };
 
 static ssh2_mac *poly_ssh2_new(
-    const ssh2_macalg *alg, ssh2_cipher *cipher)
+    const ssh2_macalg *alg, ssh_cipher *cipher)
 {
     struct ccp_context *ctx = container_of(cipher, struct ccp_context, ciph);
     ctx->mac_if.vt = alg;
@@ -946,7 +946,7 @@ const ssh2_macalg ssh2_poly1305 = {
     16, 0, "Poly1305"
 };
 
-static ssh2_cipher *ccp_new(const ssh2_cipheralg *alg)
+static ssh_cipher *ccp_new(const ssh_cipheralg *alg)
 {
     struct ccp_context *ctx = snew(struct ccp_context);
     BinarySink_INIT(ctx, poly_BinarySink_write);
@@ -955,7 +955,7 @@ static ssh2_cipher *ccp_new(const ssh2_cipheralg *alg)
     return &ctx->ciph;
 }
 
-static void ccp_free(ssh2_cipher *cipher)
+static void ccp_free(ssh_cipher *cipher)
 {
     struct ccp_context *ctx = container_of(cipher, struct ccp_context, ciph);
     smemclr(&ctx->a_cipher, sizeof(ctx->a_cipher));
@@ -964,14 +964,14 @@ static void ccp_free(ssh2_cipher *cipher)
     sfree(ctx);
 }
 
-static void ccp_iv(ssh2_cipher *cipher, const void *iv)
+static void ccp_iv(ssh_cipher *cipher, const void *iv)
 {
     /* struct ccp_context *ctx =
            container_of(cipher, struct ccp_context, ciph); */
     /* IV is set based on the sequence number */
 }
 
-static void ccp_key(ssh2_cipher *cipher, const void *vkey)
+static void ccp_key(ssh_cipher *cipher, const void *vkey)
 {
     const unsigned char *key = (const unsigned char *)vkey;
     struct ccp_context *ctx = container_of(cipher, struct ccp_context, ciph);
@@ -981,13 +981,13 @@ static void ccp_key(ssh2_cipher *cipher, const void *vkey)
     chacha20_key(&ctx->b_cipher, key);
 }
 
-static void ccp_encrypt(ssh2_cipher *cipher, void *blk, int len)
+static void ccp_encrypt(ssh_cipher *cipher, void *blk, int len)
 {
     struct ccp_context *ctx = container_of(cipher, struct ccp_context, ciph);
     chacha20_encrypt(&ctx->b_cipher, blk, len);
 }
 
-static void ccp_decrypt(ssh2_cipher *cipher, void *blk, int len)
+static void ccp_decrypt(ssh_cipher *cipher, void *blk, int len)
 {
     struct ccp_context *ctx = container_of(cipher, struct ccp_context, ciph);
     chacha20_decrypt(&ctx->b_cipher, blk, len);
@@ -1010,7 +1010,7 @@ static void ccp_length_op(struct ccp_context *ctx, void *blk, int len,
     smemclr(iv, sizeof(iv));
 }
 
-static void ccp_encrypt_length(ssh2_cipher *cipher, void *blk, int len,
+static void ccp_encrypt_length(ssh_cipher *cipher, void *blk, int len,
                                unsigned long seq)
 {
     struct ccp_context *ctx = container_of(cipher, struct ccp_context, ciph);
@@ -1018,7 +1018,7 @@ static void ccp_encrypt_length(ssh2_cipher *cipher, void *blk, int len,
     chacha20_encrypt(&ctx->a_cipher, blk, len);
 }
 
-static void ccp_decrypt_length(ssh2_cipher *cipher, void *blk, int len,
+static void ccp_decrypt_length(ssh_cipher *cipher, void *blk, int len,
                                unsigned long seq)
 {
     struct ccp_context *ctx = container_of(cipher, struct ccp_context, ciph);
@@ -1026,7 +1026,7 @@ static void ccp_decrypt_length(ssh2_cipher *cipher, void *blk, int len,
     chacha20_decrypt(&ctx->a_cipher, blk, len);
 }
 
-const ssh2_cipheralg ssh2_chacha20_poly1305 = {
+const ssh_cipheralg ssh2_chacha20_poly1305 = {
 
     ccp_new,
     ccp_free,
@@ -1043,7 +1043,7 @@ const ssh2_cipheralg ssh2_chacha20_poly1305 = {
     &ssh2_poly1305
 };
 
-static const ssh2_cipheralg *const ccp_list[] = {
+static const ssh_cipheralg *const ccp_list[] = {
     &ssh2_chacha20_poly1305
 };
 

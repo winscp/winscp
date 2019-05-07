@@ -362,9 +362,9 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
     ssh_bpp_handle_output(s->ppl.bpp);
 
     {
-        const ssh1_cipheralg *cipher =
-            (s->cipher_type == SSH_CIPHER_BLOWFISH ? &ssh1_blowfish :
-             s->cipher_type == SSH_CIPHER_DES ? &ssh1_des : &ssh1_3des);
+        const ssh_cipheralg *cipher =
+            (s->cipher_type == SSH_CIPHER_BLOWFISH ? &ssh_blowfish_ssh1 :
+             s->cipher_type == SSH_CIPHER_DES ? &ssh_des : &ssh_3des_ssh1);
         ssh1_bpp_new_cipher(s->ppl.bpp, cipher, s->session_key);
     }
 

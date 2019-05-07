@@ -1172,25 +1172,16 @@ mp_int *mp_rshift_safe(mp_int *x, size_t bits)
     /*
      * That's done the shifting by words; now we do the shifting by
      * bits.
-     *
-     * I assume here that register-controlled right shifts are
-     * time-constant. If they're not, I could replace this with
-     * another loop over bit positions.
      */
-    { // WINSCP
-    size_t upshift = BIGNUM_INT_BITS - bitshift;
-    size_t no_shift = (upshift >> BIGNUM_INT_BITS_BITS);
-    upshift &= ~-(size_t)no_shift;
-    { // WINSCP
-    BignumInt upshifted_mask = ~-(BignumInt)no_shift;
-
-    size_t i; // WINSCP
-    for (i = 0; i < r->nw; i++) {
-        r->w[i] = (r->w[i] >> bitshift) |
-            ((mp_word(r, i+1) << upshift) & upshifted_mask);
+    for (bit = 0; bit < BIGNUM_INT_BITS_BITS; bit++) { // WINSCP
+        unsigned shift = 1 << bit, upshift = BIGNUM_INT_BITS - shift;
+        BignumInt mask = -(BignumInt)((bitshift >> bit) & 1);
+        size_t i; // WINSCP
+        for (i = 0; i < r->nw; i++) {
+            BignumInt w = ((r->w[i] >> shift) | (mp_word(r, i+1) << upshift));
+            r->w[i] ^= (r->w[i] ^ w) & mask;
+        }
     }
-    } // WINSCP
-    } // WINSCP
 
     return r;
 }
@@ -1964,12 +1955,11 @@ void mp_divmod_into(mp_int *n, mp_int *d, mp_int *q_out, mp_int *r_out)
      * actual input will be close to a fixed power of two regardless
      * of where the MSB was.
      *
-     * I do this in another log n individual passes, not so much
-     * because I'm worried about the time-invariance of the CPU's
-     * register-controlled shift operation, but in case the compiler
-     * code-generates uint64_t shifts out of a variable number of
-     * smaller-word shift instructions, e.g. by splitting up into
-     * cases.
+     * I do this in another log n individual passes, partly in case
+     * the CPU's register-controlled shift operation isn't
+     * time-constant, and also in case the compiler code-generates
+     * uint64_t shifts out of a variable number of smaller-word shift
+     * instructions, e.g. by splitting up into cases.
      */
     for (i = BIGNUM_INT_BITS_BITS; i-- > 0;) {
         size_t sl = 1 << i;               /* left shift count */
