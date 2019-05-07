@@ -495,6 +495,36 @@ static bool openssh_pem_encrypted(const Filename *filename)
     return ret;
 }
 
+static void openssh_pem_derivekey(
+    ptrlen passphrase, const void *iv, uint8_t *keybuf)
+{
+    /*
+     * Derive the encryption key for a PEM key file from the
+     * passphrase and iv/salt:
+     *
+     *  - let block A equal MD5(passphrase || iv)
+     *  - let block B equal MD5(A || passphrase || iv)
+     *  - block C would be MD5(B || passphrase || iv) and so on
+     *  - encryption key is the first N bytes of A || B
+     *
+     * (Note that only 8 bytes of the iv are used for key
+     * derivation, even when the key is encrypted with AES and
+     * hence there are 16 bytes available.)
+     */
+    ssh_hash *h;
+
+    h = ssh_hash_new(&ssh_md5);
+    put_datapl(h, passphrase);
+    put_data(h, iv, 8);
+    ssh_hash_final(h, keybuf);
+
+    h = ssh_hash_new(&ssh_md5);
+    put_data(h, keybuf, 16);
+    put_datapl(h, passphrase);
+    put_data(h, iv, 8);
+    ssh_hash_final(h, keybuf + 16);
+}
+
 static ssh2_userkey *openssh_pem_read(
     const Filename *filename, const char *passphrase, const char **errmsg_p)
 {
@@ -514,34 +544,11 @@ static ssh2_userkey *openssh_pem_read(
 	return NULL;
 
     if (key->encrypted) {
-        /*
-         * Derive encryption key from passphrase and iv/salt:
-         * 
-         *  - let block A equal MD5(passphrase || iv)
-         *  - let block B equal MD5(A || passphrase || iv)
-         *  - block C would be MD5(B || passphrase || iv) and so on
-         *  - encryption key is the first N bytes of A || B
-         *
-         * (Note that only 8 bytes of the iv are used for key
-         * derivation, even when the key is encrypted with AES and
-         * hence there are 16 bytes available.)
-         */
-        struct MD5Context md5c;
         unsigned char keybuf[32];
-
-        MD5Init(&md5c);
-        put_data(&md5c, passphrase, strlen(passphrase));
-        put_data(&md5c, key->iv, 8);
-        MD5Final(keybuf, &md5c);
-
-        MD5Init(&md5c);
-        put_data(&md5c, keybuf, 16);
-        put_data(&md5c, passphrase, strlen(passphrase));
-        put_data(&md5c, key->iv, 8);
-        MD5Final(keybuf+16, &md5c);
+        openssh_pem_derivekey(ptrlen_from_asciz(passphrase), key->iv, keybuf);
 
         /*
-         * Now decrypt the key blob.
+         * Decrypt the key blob.
          */
         if (key->encryption == OP_E_3DES)
             des3_decrypt_pubkey_ossh(keybuf, key->iv,
@@ -554,7 +561,6 @@ static ssh2_userkey *openssh_pem_read(
             ssh_cipher_free(cipher);
         }
 
-        smemclr(&md5c, sizeof(md5c));
         smemclr(keybuf, sizeof(keybuf));
     }
 
@@ -981,7 +987,6 @@ static bool openssh_pem_write(
      * old-style 3DES.
      */
     if (passphrase) {
-	struct MD5Context md5c;
 	unsigned char keybuf[32];
         int origlen, outlen, pad, i;
 
@@ -1008,26 +1013,11 @@ static bool openssh_pem_write(
         put_padding(outblob, pad, pad);
 
 	/*
-	 * Invent an iv. Then derive encryption key from passphrase
-	 * and iv/salt:
-	 * 
-	 *  - let block A equal MD5(passphrase || iv)
-	 *  - let block B equal MD5(A || passphrase || iv)
-	 *  - block C would be MD5(B || passphrase || iv) and so on
-	 *  - encryption key is the first N bytes of A || B
+	 * Invent an iv, and derive the encryption key.
 	 */
 	for (i = 0; i < 8; i++) iv[i] = random_byte();
 
-	MD5Init(&md5c);
-	put_data(&md5c, passphrase, strlen(passphrase));
-	put_data(&md5c, iv, 8);
-	MD5Final(keybuf, &md5c);
-
-	MD5Init(&md5c);
-	put_data(&md5c, keybuf, 16);
-	put_data(&md5c, passphrase, strlen(passphrase));
-	put_data(&md5c, iv, 8);
-	MD5Final(keybuf+16, &md5c);
+        openssh_pem_derivekey(ptrlen_from_asciz(passphrase), iv, keybuf);
 
 	/*
 	 * Now encrypt the key blob.
@@ -1035,7 +1025,6 @@ static bool openssh_pem_write(
 	des3_encrypt_pubkey_ossh(keybuf, iv,
                                  outblob->u, outlen);
 
-        smemclr(&md5c, sizeof(md5c));
         smemclr(keybuf, sizeof(keybuf));
     }
 
@@ -1959,6 +1948,26 @@ static ptrlen BinarySource_get_mp_sshcom_as_string(BinarySource *src)
 #define get_mp_sshcom_as_string(bs) \
     BinarySource_get_mp_sshcom_as_string(BinarySource_UPCAST(bs))
 
+static void sshcom_derivekey(ptrlen passphrase, uint8_t *keybuf)
+{
+    /*
+     * Derive the encryption key for an ssh.com key file from the
+     * passphrase and iv/salt:
+     * 
+     *  - let block A equal MD5(passphrase)
+     *  - let block B equal MD5(passphrase || A)
+     *  - block C would be MD5(passphrase || A || B) and so on
+     *  - encryption key is the first N bytes of A || B
+     */
+    ssh_hash *h;
+
+    h = ssh_hash_new(&ssh_md5);
+    put_datapl(h, passphrase);
+    ssh_hash_final(ssh_hash_copy(h), keybuf);
+    put_data(h, keybuf, 16);
+    ssh_hash_final(h, keybuf + 16);
+}
+
 static ssh2_userkey *sshcom_read(
     const Filename *filename, const char *passphrase, const char **errmsg_p)
 {
@@ -2035,7 +2044,6 @@ static ssh2_userkey *sshcom_read(
 	 *  - block C would be MD5(passphrase || A || B) and so on
 	 *  - encryption key is the first N bytes of A || B
 	 */
-	struct MD5Context md5c;
 	unsigned char keybuf[32], iv[8];
 
         if (ciphertext.len % 8 != 0) {
@@ -2044,14 +2052,7 @@ static ssh2_userkey *sshcom_read(
             goto error;
         }
 
-	MD5Init(&md5c);
-	put_data(&md5c, passphrase, strlen(passphrase));
-	MD5Final(keybuf, &md5c);
-
-	MD5Init(&md5c);
-	put_data(&md5c, passphrase, strlen(passphrase));
-	put_data(&md5c, keybuf, 16);
-	MD5Final(keybuf+16, &md5c);
+        sshcom_derivekey(ptrlen_from_asciz(passphrase), keybuf);
 
 	/*
 	 * Now decrypt the key blob in place (casting away const from
@@ -2061,7 +2062,6 @@ static ssh2_userkey *sshcom_read(
 	des3_decrypt_pubkey_ossh(keybuf, iv,
                                  (char *)ciphertext.ptr, ciphertext.len);
 
-        smemclr(&md5c, sizeof(md5c));
         smemclr(keybuf, sizeof(keybuf));
 
         /*
@@ -2294,25 +2294,9 @@ static bool sshcom_write(
      * Encrypt the key.
      */
     if (passphrase) {
-	/*
-	 * Derive encryption key from passphrase and iv/salt:
-	 * 
-	 *  - let block A equal MD5(passphrase)
-	 *  - let block B equal MD5(passphrase || A)
-	 *  - block C would be MD5(passphrase || A || B) and so on
-	 *  - encryption key is the first N bytes of A || B
-	 */
-	struct MD5Context md5c;
 	unsigned char keybuf[32], iv[8];
 
-	MD5Init(&md5c);
-	put_data(&md5c, passphrase, strlen(passphrase));
-	MD5Final(keybuf, &md5c);
-
-	MD5Init(&md5c);
-	put_data(&md5c, passphrase, strlen(passphrase));
-	put_data(&md5c, keybuf, 16);
-	MD5Final(keybuf+16, &md5c);
+        sshcom_derivekey(ptrlen_from_asciz(passphrase), keybuf);
 
 	/*
 	 * Now decrypt the key blob.
@@ -2320,7 +2304,6 @@ static bool sshcom_write(
         memset(iv, 0, sizeof(iv));
 	des3_encrypt_pubkey_ossh(keybuf, iv, ciphertext, cipherlen);
 
-        smemclr(&md5c, sizeof(md5c));
         smemclr(keybuf, sizeof(keybuf));
     }
 

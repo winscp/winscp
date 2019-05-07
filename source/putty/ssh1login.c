@@ -737,11 +737,10 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                     }
 
                     {
-                        struct MD5Context md5c;
-                        MD5Init(&md5c);
-                        put_data(&md5c, buffer, 32);
-                        put_data(&md5c, s->session_id, 16);
-                        MD5Final(buffer, &md5c);
+                        ssh_hash *h = ssh_hash_new(&ssh_md5);
+                        put_data(h, buffer, 32);
+                        put_data(h, s->session_id, 16);
+                        ssh_hash_final(h, buffer);
                     }
 
                     pkt = ssh_bpp_new_pktout(

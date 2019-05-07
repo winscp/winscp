@@ -241,7 +241,6 @@ char *rsastr_fmt(RSAKey *key)
  */
 char *rsa_ssh1_fingerprint(RSAKey *key)
 {
-    struct MD5Context md5c;
     unsigned char digest[16];
     strbuf *out;
     int i;
@@ -254,15 +253,15 @@ char *rsa_ssh1_fingerprint(RSAKey *key)
      * between them.
      */
 
-    MD5Init(&md5c);
+    ssh_hash *hash = ssh_hash_new(&ssh_md5);
     { // WINSCP
     size_t i; // WINSCP
     for (i = (mp_get_nbits(key->modulus) + 7) / 8; i-- > 0 ;)
-        put_byte(&md5c, mp_get_byte(key->modulus, i));
+        put_byte(hash, mp_get_byte(key->modulus, i));
     for (i = (mp_get_nbits(key->exponent) + 7) / 8; i-- > 0 ;)
-        put_byte(&md5c, mp_get_byte(key->exponent, i));
+        put_byte(hash, mp_get_byte(key->exponent, i));
     } // WINSCP
-    MD5Final(digest, &md5c);
+    ssh_hash_final(hash, digest);
 
     out = strbuf_new();
     strbuf_catf(out, "%d ", mp_get_nbits(key->modulus));
@@ -703,7 +702,6 @@ static void rsa2_sign(ssh_key *key, ptrlen data,
 
     put_stringz(bs, sign_alg_name);
     nbytes = (mp_get_nbits(out) + 7) / 8;
-
     put_uint32(bs, nbytes);
     { // WINSCP
     size_t i; // WINSCP

@@ -18,22 +18,15 @@
 static void hmacmd5_chap(const unsigned char *challenge, int challen,
 			 const char *passwd, unsigned char *response)
 {
-    struct hmacmd5_context *hmacmd5_ctx;
-    int pwlen;
+    ptrlen key = ptrlen_from_asciz(passwd);
+    unsigned char md5buf[16];
 
-    hmacmd5_ctx = hmacmd5_make_context();
-
-    pwlen = strlen(passwd);
-    if (pwlen>64) {
-	unsigned char md5buf[16];
-	MD5Simple(passwd, pwlen, md5buf);
-	hmacmd5_key(hmacmd5_ctx, md5buf, 16);
-    } else {
-	hmacmd5_key(hmacmd5_ctx, passwd, pwlen);
+    if (key.len > 64) {
+        hash_simple(&ssh_md5, key, md5buf);
+        key = make_ptrlen(md5buf, 16);
     }
-
-    hmacmd5_do_hmac(hmacmd5_ctx, challenge, challen, response);
-    hmacmd5_free_context(hmacmd5_ctx);
+    mac_simple(&ssh_hmac_md5, key, make_ptrlen(challenge, challen), response);
+    smemclr(md5buf, sizeof(md5buf));
 }
 
 void proxy_socks5_offerencryptedauth(BinarySink *bs)
