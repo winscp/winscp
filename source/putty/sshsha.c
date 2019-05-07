@@ -9,6 +9,15 @@
 
 #include <assert.h>
 
+typedef struct SHA_State {
+    uint32_t h[5];
+    unsigned char block[64];
+    int blkused;
+    uint64_t len;
+    void (*sha1)(struct SHA_State * s, const unsigned char *p, int len);
+    BinarySink_IMPLEMENTATION;
+} SHA_State;
+
 /* ----------------------------------------------------------------------
  * Core SHA algorithm: processes 16-word blocks into a message digest.
  */

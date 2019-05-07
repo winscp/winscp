@@ -11,6 +11,14 @@
 
 #define BLKSIZE 128
 
+typedef struct {
+    uint64_t h[8];
+    unsigned char block[128];
+    int blkused;
+    uint64_t lenhi, lenlo;
+    BinarySink_IMPLEMENTATION;
+} SHA512_State;
+
 /*
  * Arithmetic implementations. Note that AND, XOR and NOT can
  * overlap destination with one source, but the others can't.

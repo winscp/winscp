@@ -232,7 +232,6 @@ char *rsastr_fmt(RSAKey *key)
  */
 char *rsa_ssh1_fingerprint(RSAKey *key)
 {
-    struct MD5Context md5c;
     unsigned char digest[16];
     strbuf *out;
     int i;
@@ -245,12 +244,12 @@ char *rsa_ssh1_fingerprint(RSAKey *key)
      * between them.
      */
 
-    MD5Init(&md5c);
+    ssh_hash *hash = ssh_hash_new(&ssh_md5);
     for (size_t i = (mp_get_nbits(key->modulus) + 7) / 8; i-- > 0 ;)
-        put_byte(&md5c, mp_get_byte(key->modulus, i));
+        put_byte(hash, mp_get_byte(key->modulus, i));
     for (size_t i = (mp_get_nbits(key->exponent) + 7) / 8; i-- > 0 ;)
-        put_byte(&md5c, mp_get_byte(key->exponent, i));
-    MD5Final(digest, &md5c);
+        put_byte(hash, mp_get_byte(key->exponent, i));
+    ssh_hash_final(hash, digest);
 
     out = strbuf_new();
     strbuf_catf(out, "%d ", mp_get_nbits(key->modulus));

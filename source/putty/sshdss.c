@@ -145,7 +145,7 @@ static bool dss_verify(ssh_key *key, ptrlen sig, ptrlen data)
     /*
      * Step 2. u1 <- SHA(message) * w mod q.
      */
-    SHA_Simple(data.ptr, data.len, hash);
+    hash_simple(&ssh_sha1, data, hash);
     mp_int *sha = mp_from_bytes_be(make_ptrlen(hash, 20));
     mp_int *u1 = mp_modmul(sha, w, dss->q);
 
@@ -206,7 +206,6 @@ static ssh_key *dss_new_priv(const ssh_keyalg *self, ptrlen pub, ptrlen priv)
     ssh_key *sshk;
     struct dss_key *dss;
     ptrlen hash;
-    SHA_State s;
     unsigned char digest[20];
     mp_int *ytest;
 
@@ -227,11 +226,11 @@ static ssh_key *dss_new_priv(const ssh_keyalg *self, ptrlen pub, ptrlen priv)
      */
     hash = get_string(src);
     if (hash.len == 20) {
-	SHA_Init(&s);
-	put_mp_ssh2(&s, dss->p);
-	put_mp_ssh2(&s, dss->q);
-	put_mp_ssh2(&s, dss->g);
-	SHA_Final(&s, digest);
+	ssh_hash *h = ssh_hash_new(&ssh_sha1);
+	put_mp_ssh2(h, dss->p);
+	put_mp_ssh2(h, dss->q);
+	put_mp_ssh2(h, dss->g);
+	ssh_hash_final(h, digest);
 	if (!smemeq(hash.ptr, digest, 20)) {
 	    dss_freekey(&dss->sshk);
 	    return NULL;
@@ -379,24 +378,24 @@ mp_int *dss_gen_k(const char *id_string, mp_int *modulus,
      * Computer Security Group for helping to argue out all the
      * fine details.
      */
-    SHA512_State ss;
+    ssh_hash *h;
     unsigned char digest512[64];
 
     /*
      * Hash some identifying text plus x.
      */
-    SHA512_Init(&ss);
-    put_asciz(&ss, id_string);
-    put_mp_ssh2(&ss, private_key);
-    SHA512_Final(&ss, digest512);
+    h = ssh_hash_new(&ssh_sha512);
+    put_asciz(h, id_string);
+    put_mp_ssh2(h, private_key);
+    ssh_hash_final(h, digest512);
 
     /*
      * Now hash that digest plus the message hash.
      */
-    SHA512_Init(&ss);
-    put_data(&ss, digest512, sizeof(digest512));
-    put_data(&ss, digest, digest_len);
-    SHA512_Final(&ss, digest512);
+    h = ssh_hash_new(&ssh_sha512);
+    put_data(h, digest512, sizeof(digest512));
+    put_data(h, digest, digest_len);
+    ssh_hash_final(h, digest512);
 
     /*
      * Now convert the result into a bignum, and coerce it to the
@@ -410,7 +409,6 @@ mp_int *dss_gen_k(const char *id_string, mp_int *modulus,
     mp_free(modminus2);
     mp_add_integer_into(k, k, 2);
 
-    smemclr(&ss, sizeof(ss));
     smemclr(digest512, sizeof(digest512));
 
     return k;
@@ -422,7 +420,7 @@ static void dss_sign(ssh_key *key, ptrlen data, unsigned flags, BinarySink *bs)
     unsigned char digest[20];
     int i;
 
-    SHA_Simple(data.ptr, data.len, digest);
+    hash_simple(&ssh_sha1, data, digest);
 
     mp_int *k = dss_gen_k("DSA deterministic k generator", dss->q, dss->x,
                           digest, sizeof(digest));

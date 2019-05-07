@@ -994,7 +994,7 @@ static void ecdsa_sign(ssh_key *key, ptrlen data,
     mp_int *k;
     {
         unsigned char digest[20];
-        SHA_Simple(data.ptr, data.len, digest);
+        hash_simple(&ssh_sha1, data, digest);
         k = dss_gen_k(
             "ECDSA deterministic k generator", ek->curve->w.G_order,
             ek->privateKey, digest, sizeof(digest));

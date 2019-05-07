@@ -20,8 +20,17 @@
 #define smallsigma0(x) ( ror((x),7) ^ ror((x),18) ^ shr((x),3) )
 #define smallsigma1(x) ( ror((x),17) ^ ror((x),19) ^ shr((x),10) )
 
+typedef struct SHA256_State {
+    uint32_t h[8];
+    unsigned char block[64];
+    int blkused;
+    uint64_t len;
+    void (*sha256)(struct SHA256_State * s, const unsigned char *p, int len);
+    BinarySink_IMPLEMENTATION;
+} SHA256_State;
+
 static void SHA256_sw(SHA256_State *s, const unsigned char *q, int len);
-static void SHA256_ni(SHA256_State * s, const unsigned char *q, int len);
+static void SHA256_ni(SHA256_State *s, const unsigned char *q, int len);
 
 void SHA256_Core_Init(SHA256_State *s) {
     s->h[0] = 0x6a09e667;

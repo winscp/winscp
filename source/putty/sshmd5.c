@@ -6,6 +6,18 @@
  * Simon Tatham.
  */
 
+typedef struct {
+    uint32_t h[4];
+} MD5_Core_State;
+
+struct MD5Context {
+    MD5_Core_State core;
+    unsigned char block[64];
+    int blkused;
+    uint64_t len;
+    BinarySink_IMPLEMENTATION;
+};
+
 /* ----------------------------------------------------------------------
  * Core MD5 algorithm: processes 16-word blocks into a message digest.
  */

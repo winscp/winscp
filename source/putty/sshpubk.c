@@ -31,7 +31,6 @@ static int rsa_ssh1_load_main(FILE * fp, RSAKey *key, bool pub_only,
     strbuf *buf;
     int ciphertype;
     int ret = 0;
-    struct MD5Context md5c;
     ptrlen comment;
     BinarySource src[1];
 
@@ -96,9 +95,7 @@ static int rsa_ssh1_load_main(FILE * fp, RSAKey *key, bool pub_only,
         if (enclen & 7)
             goto end;
 
-	MD5Init(&md5c);
-	put_data(&md5c, passphrase, strlen(passphrase));
-	MD5Final(keybuf, &md5c);
+        hash_simple(&ssh_md5, ptrlen_from_asciz(passphrase), keybuf);
 	des3_decrypt_pubkey(keybuf, buf->u + src->pos, enclen);
 	smemclr(keybuf, sizeof(keybuf));	/* burn the evidence */
     }
@@ -363,12 +360,11 @@ bool rsa_ssh1_savekey(const Filename *filename, RSAKey *key,
      * Now encrypt the encrypted portion.
      */
     if (passphrase) {
-        struct MD5Context md5c;
         unsigned char keybuf[16];
 
-	MD5Init(&md5c);
-	put_data(&md5c, passphrase, strlen(passphrase));
-	MD5Final(keybuf, &md5c);
+	ssh_hash *h = ssh_hash_new(&ssh_md5);
+	put_data(h, passphrase, strlen(passphrase));
+	ssh_hash_final(h, keybuf);
 	des3_encrypt_pubkey(keybuf, buf->u + estart, buf->len - estart);
 	smemclr(keybuf, sizeof(keybuf));	/* burn the evidence */
     }
@@ -588,6 +584,19 @@ const ssh_keyalg *find_pubkey_alg(const char *name)
     return find_pubkey_alg_len(ptrlen_from_asciz(name));
 }
 
+static void ssh2_ppk_derivekey(ptrlen passphrase, uint8_t *key)
+{
+    ssh_hash *h;
+    h = ssh_hash_new(&ssh_sha1);
+    put_uint32(h, 0);
+    put_datapl(h, passphrase);
+    ssh_hash_final(h, key + 0);
+    h = ssh_hash_new(&ssh_sha1);
+    put_uint32(h, 1);
+    put_datapl(h, passphrase);
+    ssh_hash_final(h, key + 20);
+}
+
 ssh2_userkey *ssh2_load_userkey(
     const Filename *filename, const char *passphrase, const char **errorstr)
 {
@@ -708,21 +717,13 @@ ssh2_userkey *ssh2_load_userkey(
      */
     if (cipher) {
 	unsigned char key[40];
-	SHA_State s;
 
 	if (!passphrase)
 	    goto error;
 	if (private_blob->len % cipherblk)
 	    goto error;
 
-	SHA_Init(&s);
-	put_uint32(&s, 0);
-	put_data(&s, passphrase, passlen);
-	SHA_Final(&s, key + 0);
-	SHA_Init(&s);
-	put_uint32(&s, 1);
-	put_data(&s, passphrase, passlen);
-	SHA_Final(&s, key + 20);
+        ssh2_ppk_derivekey(ptrlen_from_asciz(passphrase), key);
 	aes256_decrypt_pubkey(key, private_blob->u, private_blob->len);
     }
 
@@ -752,23 +753,27 @@ ssh2_userkey *ssh2_load_userkey(
 	}
 
 	if (is_mac) {
-	    SHA_State s;
+            ssh_hash *hash;
+            ssh2_mac *mac;
 	    unsigned char mackey[20];
 	    char header[] = "putty-private-key-file-mac-key";
 
-	    SHA_Init(&s);
-	    put_data(&s, header, sizeof(header)-1);
+            hash = ssh_hash_new(&ssh_sha1);
+	    put_data(hash, header, sizeof(header)-1);
 	    if (cipher && passphrase)
-		put_data(&s, passphrase, passlen);
-	    SHA_Final(&s, mackey);
+		put_data(hash, passphrase, passlen);
+	    ssh_hash_final(hash, mackey);
 
-	    hmac_sha1_simple(mackey, 20, macdata->s,
-                             macdata->len, binary);
+	    mac = ssh2_mac_new(&ssh_hmac_sha1, NULL);
+            ssh2_mac_setkey(mac, make_ptrlen(mackey, 20));
+            ssh2_mac_start(mac);
+            put_data(mac, macdata->s, macdata->len);
+            ssh2_mac_genresult(mac, binary);
+            ssh2_mac_free(mac);
 
 	    smemclr(mackey, sizeof(mackey));
-	    smemclr(&s, sizeof(s));
 	} else {
-	    SHA_Simple(macdata->s, macdata->len, binary);
+	    hash_simple(&ssh_sha1, ptrlen_from_strbuf(macdata), binary);
 	}
 
 	if (free_macdata)
@@ -1241,7 +1246,6 @@ bool ssh2_save_userkey(
     strbuf *pub_blob, *priv_blob;
     unsigned char *priv_blob_encrypted;
     int priv_encrypted_len;
-    int passlen;
     int cipherblk;
     int i;
     const char *cipherstr;
@@ -1272,7 +1276,7 @@ bool ssh2_save_userkey(
     memcpy(priv_blob_encrypted, priv_blob->u, priv_blob->len);
     /* Create padding based on the SHA hash of the unpadded blob. This prevents
      * too easy a known-plaintext attack on the last block. */
-    SHA_Simple(priv_blob->u, priv_blob->len, priv_mac);
+    hash_simple(&ssh_sha1, ptrlen_from_strbuf(priv_blob), priv_mac);
     assert(priv_encrypted_len - priv_blob->len < 20);
     memcpy(priv_blob_encrypted + priv_blob->len, priv_mac,
 	   priv_encrypted_len - priv_blob->len);
@@ -1280,7 +1284,6 @@ bool ssh2_save_userkey(
     /* Now create the MAC. */
     {
 	strbuf *macdata;
-	SHA_State s;
 	unsigned char mackey[20];
 	char header[] = "putty-private-key-file-mac-key";
 
@@ -1291,37 +1294,24 @@ bool ssh2_save_userkey(
 	put_string(macdata, pub_blob->s, pub_blob->len);
 	put_string(macdata, priv_blob_encrypted, priv_encrypted_len);
 
-	SHA_Init(&s);
-	put_data(&s, header, sizeof(header)-1);
+        ssh_hash *h = ssh_hash_new(&ssh_sha1);
+	put_data(h, header, sizeof(header)-1);
 	if (passphrase)
-	    put_data(&s, passphrase, strlen(passphrase));
-	SHA_Final(&s, mackey);
-	hmac_sha1_simple(mackey, 20, macdata->s,
-                         macdata->len, priv_mac);
+	    put_data(h, passphrase, strlen(passphrase));
+	ssh_hash_final(h, mackey);
+	mac_simple(&ssh_hmac_sha1, make_ptrlen(mackey, 20),
+                   ptrlen_from_strbuf(macdata), priv_mac);
 	strbuf_free(macdata);
 	smemclr(mackey, sizeof(mackey));
-	smemclr(&s, sizeof(s));
     }
 
     if (passphrase) {
 	unsigned char key[40];
-	SHA_State s;
 
-	passlen = strlen(passphrase);
-
-	SHA_Init(&s);
-	put_uint32(&s, 0);
-	put_data(&s, passphrase, passlen);
-	SHA_Final(&s, key + 0);
-	SHA_Init(&s);
-	put_uint32(&s, 1);
-	put_data(&s, passphrase, passlen);
-	SHA_Final(&s, key + 20);
-	aes256_encrypt_pubkey(key, priv_blob_encrypted,
-			      priv_encrypted_len);
+        ssh2_ppk_derivekey(ptrlen_from_asciz(passphrase), key);
+	aes256_encrypt_pubkey(key, priv_blob_encrypted, priv_encrypted_len);
 
 	smemclr(key, sizeof(key));
-	smemclr(&s, sizeof(s));
     }
 
     fp = f_open(filename, "w", true);
@@ -1496,7 +1486,7 @@ char *ssh2_fingerprint_blob(const void *blob, int bloblen)
     /*
      * The fingerprint hash itself is always just the MD5 of the blob.
      */
-    MD5Simple(blob, bloblen, digest);
+    hash_simple(&ssh_md5, make_ptrlen(blob, bloblen), digest);
     for (i = 0; i < 16; i++)
         sprintf(fingerprint_str + i*3, "%02x%s", digest[i], i==15 ? "" : ":");
 

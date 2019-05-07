@@ -1,12 +1,12 @@
 /*
- * sshauxcrypt.c: wrapper functions on ciphers for use in other
- * contexts than the main SSH packet protocol, such as encrypting
- * private key files and performing XDM-AUTHORIZATION-1.
+ * sshauxcrypt.c: wrapper functions on crypto primitives for use in
+ * other contexts than the main SSH packet protocol, such as
+ * encrypting private key files and performing XDM-AUTHORIZATION-1.
  *
- * These all work through the standard cipher APIs, so they don't need
- * to live in the same actual source files as the ciphers they wrap,
- * and I think it keeps things tidier to have them out of the way here
- * instead.
+ * These all work through the standard cipher/hash/MAC APIs, so they
+ * don't need to live in the same actual source files as the ciphers
+ * they wrap, and I think it keeps things tidier to have them out of
+ * the way here instead.
  */
 
 #include "ssh.h"
@@ -150,3 +150,19 @@ void des_decrypt_xdmauth(const void *keydata, void *blk, int len)
     ssh_cipher_free(c);
 }
 
+void hash_simple(const ssh_hashalg *alg, ptrlen data, void *output)
+{
+    ssh_hash *hash = ssh_hash_new(alg);
+    put_datapl(hash, data);
+    ssh_hash_final(hash, output);
+}
+
+void mac_simple(const ssh2_macalg *alg, ptrlen key, ptrlen data, void *output)
+{
+    ssh2_mac *mac = ssh2_mac_new(alg, NULL);
+    ssh2_mac_setkey(mac, key);
+    ssh2_mac_start(mac);
+    put_datapl(mac, data);
+    ssh2_mac_genresult(mac, output);
+    ssh2_mac_free(mac);
+}

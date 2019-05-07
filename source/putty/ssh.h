@@ -558,72 +558,7 @@ struct ssh_cipher {
     const ssh_cipheralg *vt;
 };
 
-typedef struct {
-    uint32_t h[4];
-} MD5_Core_State;
-
-struct MD5Context {
-    MD5_Core_State core;
-    unsigned char block[64];
-    int blkused;
-    uint64_t len;
-    BinarySink_IMPLEMENTATION;
-};
-
-void MD5Init(struct MD5Context *context);
-void MD5Final(unsigned char digest[16], struct MD5Context *context);
-void MD5Simple(void const *p, unsigned len, unsigned char output[16]);
-
-struct hmacmd5_context;
-struct hmacmd5_context *hmacmd5_make_context(void);
-void hmacmd5_free_context(struct hmacmd5_context *ctx);
-void hmacmd5_key(struct hmacmd5_context *ctx, void const *key, int len);
-void hmacmd5_do_hmac(struct hmacmd5_context *ctx,
-                     const void *blk, int len, unsigned char *hmac);
-
 bool supports_sha_ni(void);
-
-typedef struct SHA_State {
-    uint32_t h[5];
-    unsigned char block[64];
-    int blkused;
-    uint64_t len;
-    void (*sha1)(struct SHA_State * s, const unsigned char *p, int len);
-    BinarySink_IMPLEMENTATION;
-} SHA_State;
-void SHA_Init(SHA_State * s);
-void SHA_Final(SHA_State * s, unsigned char *output);
-void SHA_Simple(const void *p, int len, unsigned char *output);
-
-void hmac_sha1_simple(const void *key, int keylen,
-                      const void *data, int datalen,
-		      unsigned char *output);
-typedef struct SHA256_State {
-    uint32_t h[8];
-    unsigned char block[64];
-    int blkused;
-    uint64_t len;
-    void (*sha256)(struct SHA256_State * s, const unsigned char *p, int len);
-    BinarySink_IMPLEMENTATION;
-} SHA256_State;
-void SHA256_Init(SHA256_State * s);
-void SHA256_Final(SHA256_State * s, unsigned char *output);
-void SHA256_Simple(const void *p, int len, unsigned char *output);
-
-typedef struct {
-    uint64_t h[8];
-    unsigned char block[128];
-    int blkused;
-    uint64_t lenhi, lenlo;
-    BinarySink_IMPLEMENTATION;
-} SHA512_State;
-#define SHA384_State SHA512_State
-void SHA512_Init(SHA512_State * s);
-void SHA512_Final(SHA512_State * s, unsigned char *output);
-void SHA512_Simple(const void *p, int len, unsigned char *output);
-void SHA384_Init(SHA384_State * s);
-void SHA384_Final(SHA384_State * s, unsigned char *output);
-void SHA384_Simple(const void *p, int len, unsigned char *output);
 
 struct ssh_cipheralg {
     ssh_cipher *(*new)(const ssh_cipheralg *alg);
@@ -704,10 +639,16 @@ struct ssh2_macalg {
 #define ssh2_mac_genresult(ctx, out) ((ctx)->vt->genresult(ctx, out))
 #define ssh2_mac_alg(ctx) ((ctx)->vt)
 
-/* Centralised 'methods' for ssh2_mac, defined in sshmac.c */
+/* Centralised 'methods' for ssh2_mac, defined in sshmac.c. These run
+ * the MAC in a specifically SSH-2 style, i.e. taking account of a
+ * packet sequence number as well as the data to be authenticated. */
 bool ssh2_mac_verresult(ssh2_mac *, const void *);
 void ssh2_mac_generate(ssh2_mac *, void *, int, unsigned long seq);
 bool ssh2_mac_verify(ssh2_mac *, const void *, int, unsigned long seq);
+
+/* Use a MAC in its raw form, outside SSH-2 context, to MAC a given
+ * string with a given key in the most obvious way. */
+void mac_simple(const ssh2_macalg *alg, ptrlen key, ptrlen data, void *output);
 
 struct ssh_hash {
     const ssh_hashalg *vt;
@@ -728,6 +669,8 @@ struct ssh_hashalg {
 #define ssh_hash_final(ctx, out) ((ctx)->vt->final(ctx, out))
 #define ssh_hash_free(ctx) ((ctx)->vt->free(ctx))
 #define ssh_hash_alg(ctx) ((ctx)->vt)
+
+void hash_simple(const ssh_hashalg *alg, ptrlen data, void *output);
 
 struct ssh_kex {
     const char *name, *groupname;
