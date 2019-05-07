@@ -69,16 +69,17 @@ void crcda_free_context(struct crcda_ctx *ctx)
     }
 }
 
-static void crc_update(uint32_t *a, void *b)
+static void crc_update(uint32_t *a, const void *b)
 {
-    *a = crc32_update(*a, b, 4);
+    *a = crc32_update(*a, make_ptrlen(b, 4));
 }
 
 /* detect if a block is used in a particular pattern */
-static bool check_crc(uint8_t *S, uint8_t *buf, uint32_t len, uint8_t *IV)
+static bool check_crc(const uint8_t *S, const uint8_t *buf,
+                      uint32_t len, const uint8_t *IV)
 {
     uint32_t crc;
-    uint8_t *c;
+    const uint8_t *c;
 
     crc = 0;
     if (IV && !CMP(S, IV)) {
@@ -98,13 +99,14 @@ static bool check_crc(uint8_t *S, uint8_t *buf, uint32_t len, uint8_t *IV)
 }
 
 /* Detect a crc32 compensation attack on a packet */
-bool detect_attack(
-    struct crcda_ctx *ctx, uint8_t *buf, uint32_t len, uint8_t *IV)
+bool detect_attack(struct crcda_ctx *ctx,
+                   const unsigned char *buf, uint32_t len,
+                   const unsigned char *IV)
 {
     register uint32_t i, j;
     uint32_t l;
-    register uint8_t *c;
-    uint8_t *d;
+    register const uint8_t *c;
+    const uint8_t *d;
 
     assert(!(len > (SSH_MAXBLOCKS * SSH_BLOCKSIZE) ||
              len % SSH_BLOCKSIZE != 0));

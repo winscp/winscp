@@ -282,8 +282,7 @@ struct hmacmd5_context *hmacmd5_make_context(void)
     return ctx;
 }
 
-static ssh2_mac *hmacmd5_ssh2_new(const ssh2_macalg *alg,
-                                  ssh2_cipher *cipher)
+static ssh2_mac *hmacmd5_ssh2_new(const ssh2_macalg *alg, ssh_cipher *cipher)
 {
     struct hmacmd5_context *ctx = hmacmd5_make_context();
     ctx->mac.vt = alg;

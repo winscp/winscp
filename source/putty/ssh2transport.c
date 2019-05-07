@@ -652,7 +652,7 @@ static void ssh2_write_kexinit_lists(
             if (!c) warn = true;
             else for (j = 0; j < c->nciphers; j++) {
                     alg = ssh2_kexinit_addalg(kexlists[k],
-                                              c->list[j]->name);
+                                              c->list[j]->ssh2_id);
                     alg->u.cipher.cipher = c->list[j];
                     alg->u.cipher.warn = warn;
                 }
@@ -1200,7 +1200,7 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
 
     if (s->warn_cscipher) {
         s->dlgret = seat_confirm_weak_crypto_primitive(
-            s->ppl.seat, "client-to-server cipher", s->out.cipher->name,
+            s->ppl.seat, "client-to-server cipher", s->out.cipher->ssh2_id,
             ssh2_transport_dialog_callback, s);
         crMaybeWaitUntilV(s->dlgret >= 0);
         if (s->dlgret == 0) {
@@ -1211,7 +1211,7 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
 
     if (s->warn_sccipher) {
         s->dlgret = seat_confirm_weak_crypto_primitive(
-            s->ppl.seat, "server-to-client cipher", s->in.cipher->name,
+            s->ppl.seat, "server-to-client cipher", s->in.cipher->ssh2_id,
             ssh2_transport_dialog_callback, s);
         crMaybeWaitUntilV(s->dlgret >= 0);
         if (s->dlgret == 0) {

@@ -275,3 +275,12 @@ uintmax_t strtoumax(const char *nptr, char **endptr, int base)
 }
 
 #endif
+
+#if defined _M_ARM || defined _M_ARM64
+
+bool platform_aes_hw_available(void)
+{
+    return IsProcessorFeaturePresent(PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE);
+}
+
+#endif

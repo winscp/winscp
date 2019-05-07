@@ -36,7 +36,7 @@ struct kexinit_algorithm {
             bool warn;
         } hk;
         struct {
-            const ssh2_cipheralg *cipher;
+            const ssh_cipheralg *cipher;
             bool warn;
         } cipher;
         struct {
@@ -103,7 +103,7 @@ typedef enum RekeyClass {
 } RekeyClass;
 
 typedef struct transport_direction {
-    const ssh2_cipheralg *cipher;
+    const ssh_cipheralg *cipher;
     const ssh2_macalg *mac;
     bool etm_mode;
     const ssh_compression_alg *comp;

@@ -54,7 +54,7 @@ void ssh_bpp_free(BinaryPacketProtocol *bpp);
 
 BinaryPacketProtocol *ssh1_bpp_new(LogContext *logctx);
 void ssh1_bpp_new_cipher(BinaryPacketProtocol *bpp,
-                         const ssh1_cipheralg *cipher,
+                         const ssh_cipheralg *cipher,
                          const void *session_key);
 /* This is only called from outside the BPP in server mode; in client
  * mode the BPP detects compression start time automatically by
@@ -104,12 +104,12 @@ BinaryPacketProtocol *ssh2_bpp_new(
     LogContext *logctx, struct DataTransferStats *stats, bool is_server);
 void ssh2_bpp_new_outgoing_crypto(
     BinaryPacketProtocol *bpp,
-    const ssh2_cipheralg *cipher, const void *ckey, const void *iv,
+    const ssh_cipheralg *cipher, const void *ckey, const void *iv,
     const ssh2_macalg *mac, bool etm_mode, const void *mac_key,
     const ssh_compression_alg *compression, bool delayed_compression);
 void ssh2_bpp_new_incoming_crypto(
     BinaryPacketProtocol *bpp,
-    const ssh2_cipheralg *cipher, const void *ckey, const void *iv,
+    const ssh_cipheralg *cipher, const void *ckey, const void *iv,
     const ssh2_macalg *mac, bool etm_mode, const void *mac_key,
     const ssh_compression_alg *compression, bool delayed_compression);
 

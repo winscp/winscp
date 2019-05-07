@@ -285,8 +285,7 @@ struct hmacsha1 {
     ssh2_mac mac;
 };
 
-static ssh2_mac *hmacsha1_new(
-    const ssh2_macalg *alg, ssh2_cipher *cipher)
+static ssh2_mac *hmacsha1_new(const ssh2_macalg *alg, ssh_cipher *cipher)
 {
     struct hmacsha1 *ctx = snew(struct hmacsha1);
     ctx->mac.vt = alg;

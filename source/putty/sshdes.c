@@ -774,32 +774,18 @@ static void des_key(DESContext *context, const void *vkey)
 }
 
 struct des3_ssh1_ctx {
-    /* 3 cipher context for each direction */
-    DESContext contexts[6];
-    ssh1_cipher ciph;
+    DESContext contexts[3];
+    ssh_cipher ciph;
 };
 
-struct des_ssh1_ctx {
-    /* 1 cipher context for each direction */
-    DESContext contexts[2];
-    ssh1_cipher ciph;
-};
-
-static ssh1_cipher *des3_ssh1_new(void)
+static ssh_cipher *des3_ssh1_new(const ssh_cipheralg *alg)
 {
     struct des3_ssh1_ctx *ctx = snew(struct des3_ssh1_ctx);
-    ctx->ciph.vt = &ssh1_3des;
+    ctx->ciph.vt = alg;
     return &ctx->ciph;
 }
 
-static ssh1_cipher *des_ssh1_new(void)
-{
-    struct des_ssh1_ctx *ctx = snew(struct des_ssh1_ctx);
-    ctx->ciph.vt = &ssh1_des;
-    return &ctx->ciph;
-}
-
-static void des3_ssh1_free(ssh1_cipher *cipher)
+static void des3_ssh1_free(ssh_cipher *cipher)
 {
     struct des3_ssh1_ctx *ctx = container_of(
         cipher, struct des3_ssh1_ctx, ciph);
@@ -807,83 +793,65 @@ static void des3_ssh1_free(ssh1_cipher *cipher)
     sfree(ctx);
 }
 
-static void des_ssh1_free(ssh1_cipher *cipher)
-{
-    struct des_ssh1_ctx *ctx = container_of(
-        cipher, struct des_ssh1_ctx, ciph);
-    smemclr(ctx, sizeof(*ctx));
-    sfree(ctx);
-}
-
-static void des3_ssh1_sesskey(ssh1_cipher *cipher, const void *key)
+static void des3_ssh1_setkey(ssh_cipher *cipher, const void *key)
 {
     struct des3_ssh1_ctx *ctx = container_of(
         cipher, struct des3_ssh1_ctx, ciph);
     des3_key(ctx->contexts, key);
-    des3_key(ctx->contexts+3, key);
 }
 
-static void des3_ssh1_encrypt_blk(ssh1_cipher *cipher, void *blk, int len)
+static void des3_ssh1_setiv(ssh_cipher *cipher, const void *iv)
+{
+    struct des3_ssh1_ctx *ctx = container_of(
+        cipher, struct des3_ssh1_ctx, ciph);
+    /* SSH-1's idea of triple-DES CBC is three actual instances of the
+     * whole of DES-CBC, i.e. three separate CBC layers each with
+     * their own IV. So in principle we ought to be able to accept 24
+     * bytes of IV here. However, SSH-1 initialises all IVs to zero
+     * anyway, so we fudge it by just setting them all the same. */
+    for (int i = 0; i < 3; i++)
+        des_iv(&ctx->contexts[i], iv);
+}
+
+static void des3_ssh1_encrypt_blk(ssh_cipher *cipher, void *blk, int len)
 {
     struct des3_ssh1_ctx *ctx = container_of(
         cipher, struct des3_ssh1_ctx, ciph);
     des_3cbc_encrypt(blk, len, ctx->contexts);
 }
 
-static void des3_ssh1_decrypt_blk(ssh1_cipher *cipher, void *blk, int len)
+static void des3_ssh1_decrypt_blk(ssh_cipher *cipher, void *blk, int len)
 {
     struct des3_ssh1_ctx *ctx = container_of(
         cipher, struct des3_ssh1_ctx, ciph);
-    des_3cbc_decrypt(blk, len, ctx->contexts+3);
-}
-
-static void des_ssh1_sesskey(ssh1_cipher *cipher, const void *key)
-{
-    struct des_ssh1_ctx *ctx = container_of(
-        cipher, struct des_ssh1_ctx, ciph);
-    des_key(ctx->contexts, key);
-    des_key(ctx->contexts+1, key);
-}
-
-static void des_ssh1_encrypt_blk(ssh1_cipher *cipher, void *blk, int len)
-{
-    struct des_ssh1_ctx *ctx = container_of(
-        cipher, struct des_ssh1_ctx, ciph);
-    des_cbc_encrypt(blk, len, ctx->contexts);
-}
-
-static void des_ssh1_decrypt_blk(ssh1_cipher *cipher, void *blk, int len)
-{
-    struct des_ssh1_ctx *ctx = container_of(
-        cipher, struct des_ssh1_ctx, ciph);
-    des_cbc_decrypt(blk, len, ctx->contexts+1);
+    des_3cbc_decrypt(blk, len, ctx->contexts);
 }
 
 struct des3_ssh2_ctx {
     DESContext contexts[3];
-    ssh2_cipher ciph;
+    ssh_cipher ciph;
 };
 
-struct des_ssh2_ctx {
+struct des_ctx {
     DESContext context;
-    ssh2_cipher ciph;
+    ssh_cipher ciph;
 };
 
-static ssh2_cipher *des3_ssh2_new(const ssh2_cipheralg *alg)
+static ssh_cipher *des3_ssh2_new(const ssh_cipheralg *alg)
 {
     struct des3_ssh2_ctx *ctx = snew(struct des3_ssh2_ctx);
     ctx->ciph.vt = alg;
     return &ctx->ciph;
 }
 
-static ssh2_cipher *des_ssh2_new(const ssh2_cipheralg *alg)
+static ssh_cipher *des_new(const ssh_cipheralg *alg)
 {
-    struct des_ssh2_ctx *ctx = snew(struct des_ssh2_ctx);
+    struct des_ctx *ctx = snew(struct des_ctx);
     ctx->ciph.vt = alg;
     return &ctx->ciph;
 }
 
-static void des3_ssh2_free(ssh2_cipher *cipher)
+static void des3_ssh2_free(ssh_cipher *cipher)
 {
     struct des3_ssh2_ctx *ctx = container_of(
         cipher, struct des3_ssh2_ctx, ciph);
@@ -891,15 +859,14 @@ static void des3_ssh2_free(ssh2_cipher *cipher)
     sfree(ctx);
 }
 
-static void des_ssh2_free(ssh2_cipher *cipher)
+static void des_free(ssh_cipher *cipher)
 {
-    struct des_ssh2_ctx *ctx = container_of(
-        cipher, struct des_ssh2_ctx, ciph);
+    struct des_ctx *ctx = container_of(cipher, struct des_ctx, ciph);
     smemclr(ctx, sizeof(*ctx));
     sfree(ctx);
 }
 
-static void des3_ssh2_setiv(ssh2_cipher *cipher, const void *iv)
+static void des3_ssh2_setiv(ssh_cipher *cipher, const void *iv)
 {
     struct des3_ssh2_ctx *ctx = container_of(
         cipher, struct des3_ssh2_ctx, ciph);
@@ -908,169 +875,59 @@ static void des3_ssh2_setiv(ssh2_cipher *cipher, const void *iv)
      * CBC, so there's only one IV required, not three */
 }
 
-static void des3_ssh2_setkey(ssh2_cipher *cipher, const void *key)
+static void des3_ssh2_setkey(ssh_cipher *cipher, const void *key)
 {
     struct des3_ssh2_ctx *ctx = container_of(
         cipher, struct des3_ssh2_ctx, ciph);
     des3_key(ctx->contexts, key);
 }
 
-static void des_ssh2_setiv(ssh2_cipher *cipher, const void *iv)
+static void des_setiv(ssh_cipher *cipher, const void *iv)
 {
-    struct des_ssh2_ctx *ctx = container_of(
-        cipher, struct des_ssh2_ctx, ciph);
+    struct des_ctx *ctx = container_of(cipher, struct des_ctx, ciph);
     des_iv(&ctx->context, iv);
 }
 
-static void des_ssh2_setkey(ssh2_cipher *cipher, const void *key)
+static void des_setkey(ssh_cipher *cipher, const void *key)
 {
-    struct des_ssh2_ctx *ctx = container_of(
-        cipher, struct des_ssh2_ctx, ciph);
+    struct des_ctx *ctx = container_of(cipher, struct des_ctx, ciph);
     des_key(&ctx->context, key);
 }
 
-static void des3_ssh2_encrypt_blk(ssh2_cipher *cipher, void *blk, int len)
+static void des3_ssh2_encrypt_blk(ssh_cipher *cipher, void *blk, int len)
 {
     struct des3_ssh2_ctx *ctx = container_of(
         cipher, struct des3_ssh2_ctx, ciph);
     des_cbc3_encrypt(blk, len, ctx->contexts);
 }
 
-static void des3_ssh2_decrypt_blk(ssh2_cipher *cipher, void *blk, int len)
+static void des3_ssh2_decrypt_blk(ssh_cipher *cipher, void *blk, int len)
 {
     struct des3_ssh2_ctx *ctx = container_of(
         cipher, struct des3_ssh2_ctx, ciph);
     des_cbc3_decrypt(blk, len, ctx->contexts);
 }
 
-static void des3_ssh2_sdctr(ssh2_cipher *cipher, void *blk, int len)
+static void des3_ssh2_sdctr(ssh_cipher *cipher, void *blk, int len)
 {
     struct des3_ssh2_ctx *ctx = container_of(
         cipher, struct des3_ssh2_ctx, ciph);
     des_sdctr3(blk, len, ctx->contexts);
 }
 
-static void des_ssh2_encrypt_blk(ssh2_cipher *cipher, void *blk, int len)
+static void des_encrypt_blk(ssh_cipher *cipher, void *blk, int len)
 {
-    struct des_ssh2_ctx *ctx = container_of(
-        cipher, struct des_ssh2_ctx, ciph);
+    struct des_ctx *ctx = container_of(cipher, struct des_ctx, ciph);
     des_cbc_encrypt(blk, len, &ctx->context);
 }
 
-static void des_ssh2_decrypt_blk(ssh2_cipher *cipher, void *blk, int len)
+static void des_decrypt_blk(ssh_cipher *cipher, void *blk, int len)
 {
-    struct des_ssh2_ctx *ctx = container_of(
-        cipher, struct des_ssh2_ctx, ciph);
+    struct des_ctx *ctx = container_of(cipher, struct des_ctx, ciph);
     des_cbc_decrypt(blk, len, &ctx->context);
 }
 
-void des3_decrypt_pubkey(const void *vkey, void *vblk, int len)
-{
-    const unsigned char *key = (const unsigned char *)vkey;
-    unsigned char *blk = (unsigned char *)vblk;
-    DESContext ourkeys[3];
-    des_key_setup(GET_32BIT_MSB_FIRST(key),
-		  GET_32BIT_MSB_FIRST(key + 4), &ourkeys[0]);
-    des_key_setup(GET_32BIT_MSB_FIRST(key + 8),
-		  GET_32BIT_MSB_FIRST(key + 12), &ourkeys[1]);
-    des_key_setup(GET_32BIT_MSB_FIRST(key),
-		  GET_32BIT_MSB_FIRST(key + 4), &ourkeys[2]);
-    des_3cbc_decrypt(blk, len, ourkeys);
-    smemclr(ourkeys, sizeof(ourkeys));
-}
-
-void des3_encrypt_pubkey(const void *vkey, void *vblk, int len)
-{
-    const unsigned char *key = (const unsigned char *)vkey;
-    unsigned char *blk = (unsigned char *)vblk;
-    DESContext ourkeys[3];
-    des_key_setup(GET_32BIT_MSB_FIRST(key),
-		  GET_32BIT_MSB_FIRST(key + 4), &ourkeys[0]);
-    des_key_setup(GET_32BIT_MSB_FIRST(key + 8),
-		  GET_32BIT_MSB_FIRST(key + 12), &ourkeys[1]);
-    des_key_setup(GET_32BIT_MSB_FIRST(key),
-		  GET_32BIT_MSB_FIRST(key + 4), &ourkeys[2]);
-    des_3cbc_encrypt(blk, len, ourkeys);
-    smemclr(ourkeys, sizeof(ourkeys));
-}
-
-void des3_decrypt_pubkey_ossh(const void *vkey, const void *viv,
-			      void *vblk, int len)
-{
-    const unsigned char *key = (const unsigned char *)vkey;
-    const unsigned char *iv = (const unsigned char *)viv;
-    unsigned char *blk = (unsigned char *)vblk;
-    DESContext ourkeys[3];
-    des_key_setup(GET_32BIT_MSB_FIRST(key),
-		  GET_32BIT_MSB_FIRST(key + 4), &ourkeys[0]);
-    des_key_setup(GET_32BIT_MSB_FIRST(key + 8),
-		  GET_32BIT_MSB_FIRST(key + 12), &ourkeys[1]);
-    des_key_setup(GET_32BIT_MSB_FIRST(key + 16),
-		  GET_32BIT_MSB_FIRST(key + 20), &ourkeys[2]);
-    ourkeys[0].iv0 = GET_32BIT_MSB_FIRST(iv);
-    ourkeys[0].iv1 = GET_32BIT_MSB_FIRST(iv+4);
-    des_cbc3_decrypt(blk, len, ourkeys);
-    smemclr(ourkeys, sizeof(ourkeys));
-}
-
-void des3_encrypt_pubkey_ossh(const void *vkey, const void *viv,
-			      void *vblk, int len)
-{
-    const unsigned char *key = (const unsigned char *)vkey;
-    const unsigned char *iv = (const unsigned char *)viv;
-    unsigned char *blk = (unsigned char *)vblk;
-    DESContext ourkeys[3];
-    des_key_setup(GET_32BIT_MSB_FIRST(key),
-		  GET_32BIT_MSB_FIRST(key + 4), &ourkeys[0]);
-    des_key_setup(GET_32BIT_MSB_FIRST(key + 8),
-		  GET_32BIT_MSB_FIRST(key + 12), &ourkeys[1]);
-    des_key_setup(GET_32BIT_MSB_FIRST(key + 16),
-		  GET_32BIT_MSB_FIRST(key + 20), &ourkeys[2]);
-    ourkeys[0].iv0 = GET_32BIT_MSB_FIRST(iv);
-    ourkeys[0].iv1 = GET_32BIT_MSB_FIRST(iv+4);
-    des_cbc3_encrypt(blk, len, ourkeys);
-    smemclr(ourkeys, sizeof(ourkeys));
-}
-
-static void des_keysetup_xdmauth(const void *vkeydata, DESContext *dc)
-{
-    const unsigned char *keydata = (const unsigned char *)vkeydata;
-    unsigned char key[8];
-    int i, nbits, j;
-    unsigned int bits;
-
-    bits = 0;
-    nbits = 0;
-    j = 0;
-    for (i = 0; i < 8; i++) {
-	if (nbits < 7) {
-	    bits = (bits << 8) | keydata[j];
-	    nbits += 8;
-	    j++;
-	}
-	key[i] = (bits >> (nbits - 7)) << 1;
-	bits &= ~(0x7F << (nbits - 7));
-	nbits -= 7;
-    }
-
-    des_key_setup(GET_32BIT_MSB_FIRST(key), GET_32BIT_MSB_FIRST(key + 4), dc);
-}
-
-void des_encrypt_xdmauth(const void *keydata, void *blk, int len)
-{
-    DESContext dc;
-    des_keysetup_xdmauth(keydata, &dc);
-    des_cbc_encrypt(blk, len, &dc);
-}
-
-void des_decrypt_xdmauth(const void *keydata, void *blk, int len)
-{
-    DESContext dc;
-    des_keysetup_xdmauth(keydata, &dc);
-    des_cbc_decrypt(blk, len, &dc);
-}
-
-const ssh2_cipheralg ssh_3des_ssh2 = {
+const ssh_cipheralg ssh_3des_ssh2 = {
     des3_ssh2_new, des3_ssh2_free, des3_ssh2_setiv, des3_ssh2_setkey,
     des3_ssh2_encrypt_blk, des3_ssh2_decrypt_blk, NULL, NULL,
     "3des-cbc",
@@ -1078,7 +935,7 @@ const ssh2_cipheralg ssh_3des_ssh2 = {
     NULL
 };
 
-const ssh2_cipheralg ssh_3des_ssh2_ctr = {
+const ssh_cipheralg ssh_3des_ssh2_ctr = {
     des3_ssh2_new, des3_ssh2_free, des3_ssh2_setiv, des3_ssh2_setkey,
     des3_ssh2_sdctr, des3_ssh2_sdctr, NULL, NULL,
     "3des-ctr",
@@ -1094,44 +951,38 @@ const ssh2_cipheralg ssh_3des_ssh2_ctr = {
  * apparently aren't the only people to do so, so we sigh 
  * and implement it anyway.
  */
-const ssh2_cipheralg ssh_des_ssh2 = {
-    des_ssh2_new, des_ssh2_free, des_ssh2_setiv, des_ssh2_setkey,
-    des_ssh2_encrypt_blk, des_ssh2_decrypt_blk, NULL, NULL,
+const ssh_cipheralg ssh_des = {
+    des_new, des_free, des_setiv, des_setkey,
+    des_encrypt_blk, des_decrypt_blk, NULL, NULL,
     "des-cbc",
     8, 56, 8, SSH_CIPHER_IS_CBC, "single-DES CBC",
     NULL
 };
 
-const ssh2_cipheralg ssh_des_sshcom_ssh2 = {
-    des_ssh2_new, des_ssh2_free, des_ssh2_setiv, des_ssh2_setkey,
-    des_ssh2_encrypt_blk, des_ssh2_decrypt_blk, NULL, NULL,
+const ssh_cipheralg ssh_des_sshcom_ssh2 = {
+    des_new, des_free, des_setiv, des_setkey,
+    des_encrypt_blk, des_decrypt_blk, NULL, NULL,
     "des-cbc@ssh.com",
     8, 56, 8, SSH_CIPHER_IS_CBC, "single-DES CBC",
     NULL
 };
 
-static const ssh2_cipheralg *const des3_list[] = {
+static const ssh_cipheralg *const des3_list[] = {
     &ssh_3des_ssh2_ctr,
     &ssh_3des_ssh2
 };
 
 const ssh2_ciphers ssh2_3des = { lenof(des3_list), des3_list };
 
-static const ssh2_cipheralg *const des_list[] = {
-    &ssh_des_ssh2,
+static const ssh_cipheralg *const des_list[] = {
+    &ssh_des,
     &ssh_des_sshcom_ssh2
 };
 
 const ssh2_ciphers ssh2_des = { lenof(des_list), des_list };
 
-const ssh1_cipheralg ssh1_3des = {
-    des3_ssh1_new, des3_ssh1_free, des3_ssh1_sesskey,
-    des3_ssh1_encrypt_blk, des3_ssh1_decrypt_blk,
-    8, "triple-DES inner-CBC"
-};
-
-const ssh1_cipheralg ssh1_des = {
-    des_ssh1_new, des_ssh1_free, des_ssh1_sesskey,
-    des_ssh1_encrypt_blk, des_ssh1_decrypt_blk,
-    8, "single-DES CBC"
+const ssh_cipheralg ssh_3des_ssh1 = {
+    des3_ssh1_new, des3_ssh1_free, des3_ssh1_setiv, des3_ssh1_setkey,
+    des3_ssh1_encrypt_blk, des3_ssh1_decrypt_blk, NULL, NULL, NULL,
+    8, 168, 24, SSH_CIPHER_IS_CBC, "triple-DES inner-CBC", NULL
 };

@@ -13,13 +13,14 @@ struct ssh1_bpp_state {
     int crState;
     long len, pad, biglen, length, maxlen;
     unsigned char *data;
-    unsigned long realcrc, gotcrc;
+    uint32_t realcrc, gotcrc;
     int chunk;
     PktIn *pktin;
 
-    ssh1_cipher *cipher;
+    ssh_cipher *cipher_in, *cipher_out;
 
     struct crcda_ctx *crcda_ctx;
+    uint8_t iv[8];                     /* for crcda */
 
     bool pending_compression_request;
     ssh_compressor *compctx;
@@ -56,8 +57,10 @@ BinaryPacketProtocol *ssh1_bpp_new(LogContext *logctx)
 static void ssh1_bpp_free(BinaryPacketProtocol *bpp)
 {
     struct ssh1_bpp_state *s = container_of(bpp, struct ssh1_bpp_state, bpp);
-    if (s->cipher)
-        ssh1_cipher_free(s->cipher);
+    if (s->cipher_in)
+        ssh_cipher_free(s->cipher_in);
+    if (s->cipher_out)
+        ssh_cipher_free(s->cipher_out);
     if (s->compctx)
         ssh_compressor_free(s->compctx);
     if (s->decompctx)
@@ -69,23 +72,32 @@ static void ssh1_bpp_free(BinaryPacketProtocol *bpp)
 }
 
 void ssh1_bpp_new_cipher(BinaryPacketProtocol *bpp,
-                         const ssh1_cipheralg *cipher,
+                         const ssh_cipheralg *cipher,
                          const void *session_key)
 {
     struct ssh1_bpp_state *s;
     assert(bpp->vt == &ssh1_bpp_vtable);
     s = container_of(bpp, struct ssh1_bpp_state, bpp);
 
-    assert(!s->cipher);
+    assert(!s->cipher_in);
+    assert(!s->cipher_out);
 
     if (cipher) {
-        s->cipher = ssh1_cipher_new(cipher);
-        ssh1_cipher_sesskey(s->cipher, session_key);
+        s->cipher_in = ssh_cipher_new(cipher);
+        s->cipher_out = ssh_cipher_new(cipher);
+        ssh_cipher_setkey(s->cipher_in, session_key);
+        ssh_cipher_setkey(s->cipher_out, session_key);
 
         assert(!s->crcda_ctx);
         s->crcda_ctx = crcda_make_context();
 
         bpp_logevent("Initialised %s encryption", cipher->text_name);
+
+        memset(s->iv, 0, sizeof(s->iv));
+
+        assert(cipher->blksize <= sizeof(s->iv));
+        ssh_cipher_setiv(s->cipher_in, s->iv);
+        ssh_cipher_setiv(s->cipher_out, s->iv);
     }
 }
 
@@ -154,17 +166,21 @@ static void ssh1_bpp_handle_input(BinaryPacketProtocol *bpp)
 
         BPP_READ(s->data, s->biglen);
 
-        if (s->cipher && detect_attack(s->crcda_ctx,
-                                       s->data, s->biglen, NULL)) {
+        if (s->cipher_in && detect_attack(s->crcda_ctx,
+                                          s->data, s->biglen, s->iv)) {
             ssh_sw_abort(s->bpp.ssh,
                          "Network attack (CRC compensation) detected!");
             crStopV;
         }
+        /* Save the last cipher block, to be passed to the next call
+         * to detect_attack */
+        assert(s->biglen >= 8);
+        memcpy(s->iv, s->data + s->biglen - 8, sizeof(s->iv));
 
-        if (s->cipher)
-            ssh1_cipher_decrypt(s->cipher, s->data, s->biglen);
+        if (s->cipher_in)
+            ssh_cipher_decrypt(s->cipher_in, s->data, s->biglen);
 
-        s->realcrc = crc32_compute(s->data, s->biglen - 4);
+        s->realcrc = crc32_ssh1(make_ptrlen(s->data, s->biglen - 4));
         s->gotcrc = GET_32BIT(s->data + s->biglen - 4);
         if (s->gotcrc != s->realcrc) {
             ssh_sw_abort(s->bpp.ssh, "Incorrect CRC received on packet");
@@ -280,7 +296,7 @@ static PktOut *ssh1_bpp_new_pktout(int pkt_type)
 static void ssh1_bpp_format_packet(struct ssh1_bpp_state *s, PktOut *pkt)
 {
     int pad, biglen, i, pktoffs;
-    unsigned long crc;
+    uint32_t crc;
     int len;
 
     if (s->bpp.logctx) {
@@ -315,13 +331,13 @@ static void ssh1_bpp_format_packet(struct ssh1_bpp_state *s, PktOut *pkt)
 
     for (i = pktoffs; i < 4+8; i++)
         pkt->data[i] = random_byte();
-    crc = crc32_compute(pkt->data + pktoffs + 4,
-                        biglen - 4); /* all ex len */
+    crc = crc32_ssh1(
+        make_ptrlen(pkt->data + pktoffs + 4, biglen - 4)); /* all ex len */
     PUT_32BIT(pkt->data + pktoffs + 4 + biglen - 4, crc);
     PUT_32BIT(pkt->data + pktoffs, len);
 
-    if (s->cipher)
-        ssh1_cipher_encrypt(s->cipher, pkt->data + pktoffs + 4, biglen);
+    if (s->cipher_out)
+        ssh_cipher_encrypt(s->cipher_out, pkt->data + pktoffs + 4, biglen);
 
     bufchain_add(s->bpp.out_raw, pkt->data + pktoffs,
                  biglen + 4); /* len(length+padding+type+data+CRC) */
