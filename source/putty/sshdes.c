@@ -809,7 +809,8 @@ static void des3_ssh1_setiv(ssh_cipher *cipher, const void *iv)
      * their own IV. So in principle we ought to be able to accept 24
      * bytes of IV here. However, SSH-1 initialises all IVs to zero
      * anyway, so we fudge it by just setting them all the same. */
-    for (int i = 0; i < 3; i++)
+    int i; // WINSCP
+    for (i = 0; i < 3; i++)
         des_iv(&ctx->contexts[i], iv);
 }
 

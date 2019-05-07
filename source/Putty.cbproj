@@ -217,6 +217,9 @@
 			<BuildOrder>29</BuildOrder>
 			<BuildOrder>21</BuildOrder>
 		</CppCompile>
+		<CppCompile Include="putty\sshauxcrypt.c">
+			<BuildOrder>78</BuildOrder>
+		</CppCompile>
 		<CppCompile Include="putty\sshbcrypt.c">
 			<BuildOrder>50</BuildOrder>
 		</CppCompile>

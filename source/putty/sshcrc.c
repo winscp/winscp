@@ -84,7 +84,8 @@ static inline uint32_t crc32_shift_8(uint32_t v)
 uint32_t crc32_update(uint32_t crc, ptrlen data)
 {
     const uint8_t *p = (const uint8_t *)data.ptr;
-    for (size_t len = data.len; len-- > 0 ;)
+    size_t len; // WINSCP
+    for (len = data.len; len-- > 0 ;)
         crc = crc32_shift_8(crc ^ *p++);
     return crc;
 }

@@ -913,12 +913,12 @@ static void ssh2_bpp_handle_output(BinaryPacketProtocol *bpp)
 }
 
 #ifdef MPEXT
-const ssh2_cipher * ssh2_bpp_get_cscipher(BinaryPacketProtocol *bpp)
+const ssh_cipher * ssh2_bpp_get_cscipher(BinaryPacketProtocol *bpp)
 {
     return container_of(bpp, struct ssh2_bpp_state, bpp)->out.cipher;
 }
 
-const ssh2_cipher * ssh2_bpp_get_sccipher(BinaryPacketProtocol *bpp)
+const ssh_cipher * ssh2_bpp_get_sccipher(BinaryPacketProtocol *bpp)
 {
     return container_of(bpp, struct ssh2_bpp_state, bpp)->in.cipher;
 }

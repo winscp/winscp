@@ -133,7 +133,7 @@ inline void __fastcall TSecureShell::UpdateSessionInfo()
 
     if (FSshVersion == 1)
     {
-      FSessionInfo.CSCipher = GetCipher1Name(get_cipher(FBackendHandle));
+      FSessionInfo.CSCipher = GetCipherName(get_cipher(FBackendHandle));
       FSessionInfo.SCCipher = FSessionInfo.CSCipher;
       // Retrieval of compression is not implemented for SSH-1
       FSessionInfo.CSCompression = UnicodeString();
@@ -141,8 +141,8 @@ inline void __fastcall TSecureShell::UpdateSessionInfo()
     }
     else
     {
-      FSessionInfo.CSCipher = GetCipher2Name(get_cscipher(FBackendHandle));
-      FSessionInfo.SCCipher = GetCipher2Name(get_sccipher(FBackendHandle));
+      FSessionInfo.CSCipher = GetCipherName(get_cscipher(FBackendHandle));
+      FSessionInfo.SCCipher = GetCipherName(get_sccipher(FBackendHandle));
       FSessionInfo.CSCompression = GetCompressorName(get_cscomp(FBackendHandle));
       FSessionInfo.SCCompression = GetDecompressorName(get_sccomp(FBackendHandle));
     }

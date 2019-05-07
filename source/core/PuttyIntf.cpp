@@ -916,7 +916,7 @@ TStrings * SshCipherList()
   {
     for (int Index2 = 0; Index2 < Ciphers[Index]->nciphers; Index2++)
     {
-      UnicodeString Name = UnicodeString(Ciphers[Index]->list[Index2]->name);
+      UnicodeString Name = UnicodeString(Ciphers[Index]->list[Index2]->ssh2_id);
       Result->Add(Name);
     }
   }
@@ -971,12 +971,7 @@ TStrings * SshMacList()
   return Result.release();
 }
 //---------------------------------------------------------------------------
-UnicodeString GetCipher1Name(const ssh1_cipher * Cipher)
-{
-  return UnicodeString(UTF8String(Cipher->vt->text_name));
-}
-//---------------------------------------------------------------------------
-UnicodeString GetCipher2Name(const ssh2_cipher * Cipher)
+UnicodeString GetCipherName(const ssh_cipher * Cipher)
 {
   return UnicodeString(UTF8String(Cipher->vt->text_name));
 }

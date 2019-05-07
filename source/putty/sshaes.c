@@ -1888,33 +1888,33 @@ STUB_ENC_DEC(256)
 
 AESContext * aes_make_context()
 {
-  ssh2_cipher * cipher = ssh2_cipher_new(&ssh_aes256_sdctr);
+  ssh_cipher * cipher = ssh_cipher_new(&ssh_aes256_sdctr);
   return cipher;
 }
 
 void aes_free_context(AESContext * ctx)
 {
-  ssh2_cipher * cipher = (ssh2_cipher *)ctx;
-  ssh2_cipher_free(cipher);
+  ssh_cipher * cipher = (ssh_cipher *)ctx;
+  ssh_cipher_free(cipher);
 }
 
 void aes_iv(AESContext * ctx, const void * iv)
 {
-  ssh2_cipher * cipher = (ssh2_cipher *)ctx;
-  ssh2_cipher_setiv(cipher, iv);
+  ssh_cipher * cipher = (ssh_cipher *)ctx;
+  ssh_cipher_setiv(cipher, iv);
 }
 
 void call_aes_setup(AESContext * ctx, unsigned char * key, int keylen)
 {
-  ssh2_cipher * cipher = (ssh2_cipher *)ctx;
+  ssh_cipher * cipher = (ssh_cipher *)ctx;
   assert(keylen == 32);
-  ssh2_cipher_setkey(cipher, key);
+  ssh_cipher_setkey(cipher, key);
 }
 
 void call_aes_sdctr(unsigned char *blk, int len, void *ctx)
 {
-  ssh2_cipher * cipher = (ssh2_cipher *)ctx;
-  ssh2_cipher_encrypt(cipher, blk, len);
+  ssh_cipher * cipher = (ssh_cipher *)ctx;
+  ssh_cipher_encrypt(cipher, blk, len);
 }
 
 #endif

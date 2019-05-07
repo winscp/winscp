@@ -27,8 +27,7 @@ extern "C"
 #undef get_data
 }
 //---------------------------------------------------------------------------
-UnicodeString GetCipher1Name(const ssh1_cipher * Cipher);
-UnicodeString GetCipher2Name(const ssh2_cipher * Cipher);
+UnicodeString GetCipherName(const ssh_cipher * Cipher);
 UnicodeString GetCompressorName(const ssh_compressor * Compressor);
 UnicodeString GetDecompressorName(const ssh_decompressor * Decompressor);
 //---------------------------------------------------------------------------

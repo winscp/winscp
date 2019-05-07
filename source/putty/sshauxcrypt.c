@@ -19,10 +19,12 @@ static ssh_cipher *aes256_pubkey_cipher(const void *key)
      */
     char iv[16];
     memset(iv, 0, 16);
+    { // WINSCP
     ssh_cipher *cipher = ssh_cipher_new(&ssh_aes256_cbc);
     ssh_cipher_setkey(cipher, key);
     ssh_cipher_setiv(cipher, iv);
     return cipher;
+    } // WINSCP
 }
 
 void aes256_encrypt_pubkey(const void *key, void *blk, int len)
@@ -129,11 +131,13 @@ static ssh_cipher *des_xdmauth_cipher(const void *vkeydata)
 	nbits -= 7;
     }
 
+    { // WINSCP
     ssh_cipher *c = ssh_cipher_new(&ssh_des);
     ssh_cipher_setkey(c, key);
     smemclr(key, sizeof(key));
     ssh_cipher_setiv(c, key);
     return c;
+    } // WINSCP
 }
 
 void des_encrypt_xdmauth(const void *keydata, void *blk, int len)
