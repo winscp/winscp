@@ -665,6 +665,8 @@ struct ssh1_cipheralg {
 #define ssh1_cipher_encrypt(ctx, blk, len) ((ctx)->vt->encrypt(ctx, blk, len))
 #define ssh1_cipher_decrypt(ctx, blk, len) ((ctx)->vt->decrypt(ctx, blk, len))
 
+#endif
+
 struct ssh2_cipheralg {
     ssh2_cipher *(*new)(const ssh2_cipheralg *alg);
     void (*free)(ssh2_cipher *);
@@ -702,6 +704,8 @@ struct ssh2_cipheralg {
     /* Pointer to any extra data used by a particular implementation. */
     const void *extra;
 };
+
+#ifndef WINSCP_VS
 
 #define ssh2_cipher_new(alg) ((alg)->new(alg))
 #define ssh2_cipher_free(ctx) ((ctx)->vt->free(ctx))

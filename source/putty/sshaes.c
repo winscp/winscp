@@ -32,7 +32,7 @@
 #   endif
 #endif
 
-#undef HW_AES // WINSCP
+#define HW_AES HW_AES_NI // WINSCP
 
 #if defined _FORCE_SOFTWARE_AES || !defined HW_AES
 #   undef HW_AES
@@ -55,21 +55,17 @@
  * instance of.
  */
 
-#ifndef WINSCP_VS
 static ssh2_cipher *aes_select(const ssh2_cipheralg *alg);
 static ssh2_cipher *aes_sw_new(const ssh2_cipheralg *alg);
-#endif
 static void aes_sw_free(ssh2_cipher *);
 static void aes_sw_setiv_cbc(ssh2_cipher *, const void *iv);
 static void aes_sw_setiv_sdctr(ssh2_cipher *, const void *iv);
 static void aes_sw_setkey(ssh2_cipher *, const void *key);
-#ifndef WINSCP_VS
-static ssh2_cipher *aes_hw_new(const ssh2_cipheralg *alg);
-#endif
-static void aes_hw_free(ssh2_cipher *);
-static void aes_hw_setiv_cbc(ssh2_cipher *, const void *iv);
-static void aes_hw_setiv_sdctr(ssh2_cipher *, const void *iv);
-static void aes_hw_setkey(ssh2_cipher *, const void *key);
+/*WINSCP static*/ ssh2_cipher *aes_hw_new(const ssh2_cipheralg *alg);
+/*WINSCP static*/ void aes_hw_free(ssh2_cipher *);
+/*WINSCP static*/ void aes_hw_setiv_cbc(ssh2_cipher *, const void *iv);
+/*WINSCP static*/ void aes_hw_setiv_sdctr(ssh2_cipher *, const void *iv);
+/*WINSCP static*/ void aes_hw_setkey(ssh2_cipher *, const void *key);
 
 #ifndef WINSCP_VS
 struct aes_extra {
@@ -82,11 +78,11 @@ struct aes_extra {
     const ssh2_cipheralg ssh_##cid##_sw = {                             \
         aes_sw_new, aes_sw_free, aes_sw_##setiv, aes_sw_setkey,         \
         cid##_sw##encsuffix, cid##_sw##decsuffix, NULL, NULL,           \
-        pid, 16, bits, bits/8, 0, name /*WINSCP " (unaccelerated)" */,  \
+        pid, 16, bits, bits/8, 0, name " (unaccelerated)",              \
         NULL, NULL };                                                   \
                                                                         \
-    static void cid##_hw##encsuffix(ssh2_cipher *, void *blk, int len); \
-    static void cid##_hw##decsuffix(ssh2_cipher *, void *blk, int len); \
+    /*WINSCP static*/ void cid##_hw##encsuffix(ssh2_cipher *, void *blk, int len); \
+    /*WINSCP static*/ void cid##_hw##decsuffix(ssh2_cipher *, void *blk, int len); \
     const ssh2_cipheralg ssh_##cid##_hw = {                             \
         aes_hw_new, aes_hw_free, aes_hw_##setiv, aes_hw_setkey,         \
         cid##_hw##encsuffix, cid##_hw##decsuffix, NULL, NULL,           \
@@ -132,7 +128,7 @@ const ssh2_ciphers ssh2_aes = { lenof(aes_list), aes_list };
  * The actual query function that asks if hardware acceleration is
  * available.
  */
-static bool aes_hw_available(void);
+/*WINSCP static*/ bool aes_hw_available(void);
 
 /*
  * The top-level selection function, caching the results of
@@ -1195,6 +1191,8 @@ SW_ENC_DEC(256)
 
 #if HW_AES == HW_AES_NI
 
+#ifdef WINSCP_VS
+
 /*
  * Set target architecture for Clang and GCC
  */
@@ -1318,13 +1316,25 @@ static FUNC_ISA void aes_ni_key_expand(
     }
 }
 
+// WINSCP
+// WORKAROUND
+// Cannot use _mm_setr_epi* - it results in the constant being stored in .rdata segment.
+// objconv reports:
+// Warning 1060: Different alignments specified for same segment, %s. Using highest alignment.rdata
+// Despite that the code crashes.
+// This macro is based on:
+// Based on https://stackoverflow.com/q/35268036/850848
+#define _MM_SETR_EPI8(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, aa, ab, ac, ad, ae, af) \
+    { (char)a0, (char)a1, (char)a2, (char)a3, (char)a4, (char)a5, (char)a6, (char)a7, \
+      (char)a8, (char)a9, (char)aa, (char)ab, (char)ac, (char)ad, (char)ae, (char)af }
+
 /*
  * Auxiliary routine to increment the 128-bit counter used in SDCTR
  * mode.
  */
 static FUNC_ISA inline __m128i aes_ni_sdctr_increment(__m128i v)
 {
-    const __m128i ONE  = _mm_setr_epi32(1,0,0,0);
+    const __m128i ONE = _MM_SETR_EPI8(1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0); // WINSCP
     const __m128i ZERO = _mm_setzero_si128();
 
     /* Increment the low-order 64 bits of v */
@@ -1347,8 +1357,9 @@ static FUNC_ISA inline __m128i aes_ni_sdctr_increment(__m128i v)
  */
 static FUNC_ISA inline __m128i aes_ni_sdctr_reverse(__m128i v)
 {
+    const __m128i R = _MM_SETR_EPI8(15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0); // WINSCP
     v = _mm_shuffle_epi8(
-        v, _mm_setr_epi8(15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0));
+        v, R); // WINSCP
     return v;
 }
 
@@ -1364,7 +1375,7 @@ struct aes_ni_context {
     ssh2_cipher ciph;
 };
 
-static ssh2_cipher *aes_hw_new(const ssh2_cipheralg *alg)
+/*static WINSCP*/ ssh2_cipher *aes_hw_new(const ssh2_cipheralg *alg)
 {
     if (!aes_hw_available_cached())
         return NULL;
@@ -1387,7 +1398,7 @@ static ssh2_cipher *aes_hw_new(const ssh2_cipheralg *alg)
     return &ctx->ciph;
 }
 
-static void aes_hw_free(ssh2_cipher *ciph)
+/*static WINSCP*/ void aes_hw_free(ssh2_cipher *ciph)
 {
     aes_ni_context *ctx = container_of(ciph, aes_ni_context, ciph);
     void *allocation = ctx->pointer_to_free;
@@ -1395,7 +1406,7 @@ static void aes_hw_free(ssh2_cipher *ciph)
     sfree(allocation);
 }
 
-static void aes_hw_setkey(ssh2_cipher *ciph, const void *vkey)
+/*static WINSCP*/ void aes_hw_setkey(ssh2_cipher *ciph, const void *vkey)
 {
     aes_ni_context *ctx = container_of(ciph, aes_ni_context, ciph);
     const unsigned char *key = (const unsigned char *)vkey;
@@ -1404,13 +1415,13 @@ static void aes_hw_setkey(ssh2_cipher *ciph, const void *vkey)
                       ctx->keysched_e, ctx->keysched_d);
 }
 
-static FUNC_ISA void aes_hw_setiv_cbc(ssh2_cipher *ciph, const void *iv)
+/*static WINSCP*/ FUNC_ISA void aes_hw_setiv_cbc(ssh2_cipher *ciph, const void *iv)
 {
     aes_ni_context *ctx = container_of(ciph, aes_ni_context, ciph);
     ctx->iv = _mm_loadu_si128(iv);
 }
 
-static FUNC_ISA void aes_hw_setiv_sdctr(ssh2_cipher *ciph, const void *iv)
+/*static WINSCP*/ FUNC_ISA void aes_hw_setiv_sdctr(ssh2_cipher *ciph, const void *iv)
 {
     aes_ni_context *ctx = container_of(ciph, aes_ni_context, ciph);
     __m128i counter = _mm_loadu_si128(iv);
@@ -1466,19 +1477,21 @@ static FUNC_ISA inline void aes_sdctr_ni(
 }
 
 #define NI_ENC_DEC(len)                                                 \
-    static FUNC_ISA void aes##len##_cbc_hw_encrypt(                     \
+    /*static WINSCP*/ FUNC_ISA void aes##len##_cbc_hw_encrypt(          \
         ssh2_cipher *ciph, void *vblk, int blklen)                      \
     { aes_cbc_ni_encrypt(ciph, vblk, blklen, aes_ni_##len##_e); }       \
-    static FUNC_ISA void aes##len##_cbc_hw_decrypt(                     \
+    /*static WINSCP*/ FUNC_ISA void aes##len##_cbc_hw_decrypt(          \
         ssh2_cipher *ciph, void *vblk, int blklen)                      \
     { aes_cbc_ni_decrypt(ciph, vblk, blklen, aes_ni_##len##_d); }       \
-    static FUNC_ISA void aes##len##_sdctr_hw(                           \
+    /*static WINSCP*/ FUNC_ISA void aes##len##_sdctr_hw(                \
         ssh2_cipher *ciph, void *vblk, int blklen)                      \
     { aes_sdctr_ni(ciph, vblk, blklen, aes_ni_##len##_e); }             \
 
 NI_ENC_DEC(128)
 NI_ENC_DEC(192)
 NI_ENC_DEC(256)
+
+#endif // WINSCP_VS
 
 /* ----------------------------------------------------------------------
  * Stub functions if we have no hardware-accelerated AES. In this
