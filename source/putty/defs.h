@@ -90,6 +90,7 @@ typedef struct PortFwdManager PortFwdManager;
 typedef struct PortFwdRecord PortFwdRecord;
 typedef struct ConnectionLayer ConnectionLayer;
 
+typedef struct prng prng;
 typedef struct ssh_hashalg ssh_hashalg;
 typedef struct ssh_hash ssh_hash;
 typedef struct ssh_kex ssh_kex;

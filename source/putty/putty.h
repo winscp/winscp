@@ -1702,6 +1702,12 @@ extern int random_active;
  * calls random_ref on startup and random_unref on shutdown. */
 void random_ref(void);
 void random_unref(void);
+/* random_setup_special is used by PuTTYgen. It makes an extra-big
+ * random number generator. */
+void random_setup_special();
+/* Manually drop a random seed into the random number generator, e.g.
+ * just before generating a key. */
+void random_reseed(ptrlen seed);
 
 /*
  * Exports from pinger.c.

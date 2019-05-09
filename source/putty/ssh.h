@@ -867,8 +867,6 @@ extern const char sshver[];
  */
 extern bool ssh_fallback_cmd(Backend *backend);
 
-void SHATransform(uint32_t *digest, uint32_t *data);
-
 /*
  * Check of compiler version
  */
@@ -892,9 +890,35 @@ void SHATransform(uint32_t *digest, uint32_t *data);
 #   undef COMPILER_SUPPORTS_SHA_NI
 #endif
 
+/*
+ * The PRNG type, defined in sshprng.c. Visible data fields are
+ * 'savesize', which suggests how many random bytes you should request
+ * from a particular PRNG instance to write to putty.rnd, and a
+ * BinarySink implementation which you can use to write seed data in
+ * between calling prng_seed_{begin,finish}.
+ */
+struct prng {
+    size_t savesize;
+    BinarySink_IMPLEMENTATION;
+    /* (also there's a surrounding implementation struct in sshprng.c) */
+};
+prng *prng_new(const ssh_hashalg *hashalg);
+void prng_free(prng *p);
+void prng_seed_begin(prng *p);
+void prng_seed_finish(prng *p);
+void prng_read(prng *p, void *vout, size_t size);
+void prng_add_entropy(prng *p, unsigned source_id, ptrlen data);
+
+/* This function must be implemented by the platform, and returns a
+ * timer in milliseconds that the PRNG can use to know whether it's
+ * been reseeded too recently to do it again.
+ *
+ * The PRNG system has its own special timing function not because its
+ * timing needs are unusual in the real applications, but simply so
+ * that testcrypt can mock it to keep the tests deterministic. */
+uint64_t prng_reseed_time_ms(void);
+
 void random_read(void *out, size_t size);
-void random_add_noise(void *noise, int length);
-void random_add_heavynoise(void *noise, int length);
 
 /* Exports from x11fwd.c */
 enum {
