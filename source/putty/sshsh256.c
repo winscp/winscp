@@ -32,7 +32,8 @@
 #   endif
 #endif
 
-// Should be working (when set to HW_SHA256_NI), but we do not have a HW to test this on
+// Should be (almost) working (when set to HW_SHA256_NI), but we do not have a HW to test this on.
+// Need to replace _mm_setr_epi8 and there's also objconv warning about alignment.
 #undef HW_SHA256
 
 #ifdef _FORCE_SHA_NEON
@@ -922,6 +923,8 @@ const ssh_hashalg ssh_sha256_hw = {
 
 #elif HW_SHA256 == HW_SHA256_NONE
 
+#ifndef WINSCP_VS
+
 static bool sha256_hw_available(void)
 {
     return false;
@@ -943,5 +946,7 @@ const ssh_hashalg ssh_sha256_hw = {
     32, 64, HASHALG_NAMES_ANNOTATED(
         "SHA-256", "!NONEXISTENT ACCELERATED VERSION!"),
 };
+
+#endif // !WINSCP_VS
 
 #endif /* HW_SHA256 */
