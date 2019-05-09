@@ -56,6 +56,7 @@ bool rsa_ssh1_encrypt(unsigned char *data, int length, RSAKey *key)
     data[0] = 0;
     data[1] = 2;
 
+    { // WINSCP
     size_t npad = key->bytes - length - 3;
     /*
      * Generate a sequence of nonzero padding bytes. We do this in a
@@ -81,10 +82,12 @@ bool rsa_ssh1_encrypt(unsigned char *data, int length, RSAKey *key)
     mp_free(tmp);
     for (i = 2; i < key->bytes - length - 1; i++) {
         mp_mul_integer_into(randval, randval, 255);
+        { // WINSCP
         uint8_t byte = mp_get_byte(randval, random_bits / 8);
         assert(byte != 255);
         data[i] = byte + 1;
         mp_reduce_mod_2to(randval, random_bits);
+        } // WINSCP
     }
     mp_free(randval);
     data[key->bytes - length - 1] = 0;
@@ -102,6 +105,7 @@ bool rsa_ssh1_encrypt(unsigned char *data, int length, RSAKey *key)
     mp_free(b2);
 
     return true;
+    } // WINSCP
 }
 
 /*

@@ -924,8 +924,6 @@ void SHATransform(uint32_t *digest, uint32_t *data);
 #endif
 
 void random_read(void *out, size_t size);
-void random_add_noise(void *noise, int length);
-void random_add_heavynoise(void *noise, int length);
 
 /* Exports from x11fwd.c */
 enum {

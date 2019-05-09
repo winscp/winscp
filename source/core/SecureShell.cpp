@@ -1856,8 +1856,8 @@ bool __fastcall TSecureShell::EnumNetworkEvents(SOCKET Socket, WSANETWORKEVENTS 
   WSANETWORKEVENTS AEvents;
   if (WSAEnumNetworkEvents(Socket, NULL, &AEvents) == 0)
   {
-    noise_ultralight(Socket);
-    noise_ultralight(AEvents.lNetworkEvents);
+    noise_ultralight(NOISE_SOURCE_IOID, Socket);
+    noise_ultralight(NOISE_SOURCE_IOID, AEvents.lNetworkEvents);
 
     Events.lNetworkEvents |= AEvents.lNetworkEvents;
     for (int Index = 0; Index < FD_MAX_EVENTS; Index++)

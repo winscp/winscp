@@ -1006,10 +1006,12 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                 ppl_logevent("Sending length-padded password");
                 pkt = ssh_bpp_new_pktout(s->ppl.bpp, s->pwpkt_type);
                 put_asciz(padded_pw, s->cur_prompt->prompts[0]->result);
+                { // WINSCP
                 size_t pad = 63 & -padded_pw->len;
                 random_read(strbuf_append(padded_pw, pad), pad);
                 put_stringsb(pkt, padded_pw);
                 pq_push(s->ppl.out_pq, pkt);
+                } // WINSCP
             } else {
                 /*
                  * The server is believed unable to cope with

@@ -48,8 +48,7 @@ int random_active = 0;
 /*
  * Special dummy version of the RNG for use when fuzzing.
  */
-void random_add_noise(void *noise, int length) { }
-void random_add_heavynoise(void *noise, int length) { }
+void random_add_noise(NoiseSourceId source, const void *noise, int length) { }
 void random_ref(void) { }
 void random_unref(void) { }
 void random_read(void *out, size_t size)
@@ -218,7 +217,7 @@ static void random_stir(void)
 #endif
 }
 
-void random_add_noise(void *noise, int length)
+void random_add_noise(NoiseSourceId source, const void *noise, int length)
 {
     unsigned char *p = noise;
     int i;
@@ -334,41 +333,17 @@ void random_unref(void)
 
 void random_read(void *vout, size_t size)
 {
-#ifdef MPEXT
-    int pos;
-
-    assert(random_active);
-
-    pos = pool.poolpos;
-
-    if (pos < sizeof(pool.incoming) || pos >= POOLSIZE)
-    {
-      MPEXT_PUTTY_SECTION_ENTER;
-      if (pool.poolpos >= POOLSIZE)
-      {
-        random_stir();
-      }
-      pos = pool.poolpos;
-      pool.poolpos++;
-      MPEXT_PUTTY_SECTION_LEAVE;
-    }
-    else
-    {
-      pool.poolpos++;
-    }
-
-    return pool.pool[pos];
-#else
-    assert(random_active);
+    pinitassert(random_active);
 
     uint8_t *out = (uint8_t *)vout;
+    MPEXT_PUTTY_SECTION_ENTER;
     while (size-- > 0) {
         if (pool.poolpos >= POOLSIZE)
             random_stir();
 
         *out++ = pool.pool[pool.poolpos++];
     }
-#endif
+    MPEXT_PUTTY_SECTION_LEAVE;
 }
 
 void random_get_savedata(void **data, int *len)

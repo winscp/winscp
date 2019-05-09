@@ -821,13 +821,16 @@ static void ssh2_bpp_format_packet(struct ssh2_bpp_state *s, PktOut *pkt)
 
             ignore_pkt = ssh2_bpp_new_pktout(SSH2_MSG_IGNORE);
             put_uint32(ignore_pkt, length);
+            { // WINSCP
             size_t origlen = ignore_pkt->length;
-            for (size_t i = 0; i < length; i++)
+            size_t i; // WINSCP
+            for (i = 0; i < length; i++)
                 put_byte(ignore_pkt, 0);  /* make space for random padding */
             random_read(ignore_pkt->data + origlen, length);
             ssh2_bpp_format_packet_inner(s, ignore_pkt);
             bufchain_add(s->bpp.out_raw, ignore_pkt->data, ignore_pkt->length);
             ssh_free_pktout(ignore_pkt);
+            } // WINSCP
         }
     }
 

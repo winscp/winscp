@@ -2440,10 +2440,12 @@ mp_int *mp_random_bits_fn(size_t bits, random_read_fn_t random_read)
     random_read(randbuf, bytes);
     if (bytes)
         randbuf[0] &= (2 << ((bits-1) & 7)) - 1;
+    { // WINSCP
     mp_int *toret = mp_from_bytes_be(make_ptrlen(randbuf, bytes));
     smemclr(randbuf, bytes);
     sfree(randbuf);
     return toret;
+    } // WINSCP
 }
 
 mp_int *mp_random_in_range_fn(mp_int *lo, mp_int *hi, random_read_fn_t rf)
