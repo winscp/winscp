@@ -18,15 +18,8 @@
 static void hmacmd5_chap(const unsigned char *challenge, int challen,
 			 const char *passwd, unsigned char *response)
 {
-    ptrlen key = ptrlen_from_asciz(passwd);
-    unsigned char md5buf[16];
-
-    if (key.len > 64) {
-        hash_simple(&ssh_md5, key, md5buf);
-        key = make_ptrlen(md5buf, 16);
-    }
-    mac_simple(&ssh_hmac_md5, key, make_ptrlen(challenge, challen), response);
-    smemclr(md5buf, sizeof(md5buf));
+    mac_simple(&ssh_hmac_md5, ptrlen_from_asciz(passwd),
+               make_ptrlen(challenge, challen), response);
 }
 
 void proxy_socks5_offerencryptedauth(BinarySink *bs)

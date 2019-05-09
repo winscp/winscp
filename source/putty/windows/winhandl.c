@@ -689,6 +689,7 @@ void handle_got_event(HANDLE event)
 	    h->u.o.sentdata(h, -h->u.o.writeerr);
 	} else {
 	    bufchain_consume(&h->u.o.queued_data, h->u.o.lenwritten);
+            noise_ultralight(h->u.o.lenwritten);
 	    h->u.o.sentdata(h, bufchain_size(&h->u.o.queued_data));
 	    handle_try_output(&h->u.o);
 	}

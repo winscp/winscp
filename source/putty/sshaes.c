@@ -103,37 +103,42 @@ struct aes_extra {
     const ssh_cipheralg *sw, *hw;
 };
 
-#define VTABLES(cid, pid, bits, name, encsuffix, decsuffix, setiv)      \
-    static void cid##_sw##encsuffix(ssh_cipher *, void *blk, int len); \
-    static void cid##_sw##decsuffix(ssh_cipher *, void *blk, int len); \
-    const ssh_cipheralg ssh_##cid##_sw = {                             \
+#define VTABLES_INNER(cid, pid, bits, name, encsuffix,                  \
+                      decsuffix, setiv, flags)                          \
+    static void cid##_sw##encsuffix(ssh_cipher *, void *blk, int len);  \
+    static void cid##_sw##decsuffix(ssh_cipher *, void *blk, int len);  \
+    const ssh_cipheralg ssh_##cid##_sw = {                              \
         aes_sw_new, aes_sw_free, aes_sw_##setiv, aes_sw_setkey,         \
         cid##_sw##encsuffix, cid##_sw##decsuffix, NULL, NULL,           \
-        pid, 16, bits, bits/8, 0, name " (unaccelerated)",              \
+        pid, 16, bits, bits/8, flags, name " (unaccelerated)",          \
         NULL, NULL };                                                   \
                                                                         \
-    static void cid##_hw##encsuffix(ssh_cipher *, void *blk, int len); \
-    static void cid##_hw##decsuffix(ssh_cipher *, void *blk, int len); \
-    const ssh_cipheralg ssh_##cid##_hw = {                             \
+    static void cid##_hw##encsuffix(ssh_cipher *, void *blk, int len);  \
+    static void cid##_hw##decsuffix(ssh_cipher *, void *blk, int len);  \
+    const ssh_cipheralg ssh_##cid##_hw = {                              \
         aes_hw_new, aes_hw_free, aes_hw_##setiv, aes_hw_setkey,         \
         cid##_hw##encsuffix, cid##_hw##decsuffix, NULL, NULL,           \
-        pid, 16, bits, bits/8, 0, name HW_NAME_SUFFIX,                  \
+        pid, 16, bits, bits/8, flags, name HW_NAME_SUFFIX,              \
         NULL, NULL };                                                   \
                                                                         \
     const struct aes_extra extra_##cid = {                              \
         &ssh_##cid##_sw, &ssh_##cid##_hw };                             \
                                                                         \
-    const ssh_cipheralg ssh_##cid = {                                  \
+    const ssh_cipheralg ssh_##cid = {                                   \
         aes_select, NULL, NULL, NULL, NULL, NULL, NULL, NULL,           \
-        pid, 16, bits, bits/8, 0, name " (dummy selector vtable)",      \
+        pid, 16, bits, bits/8, flags, name " (dummy selector vtable)",  \
         NULL, &extra_##cid };                                           \
 
-VTABLES(aes128_cbc, "aes128", 128, "AES-128 CBC", _encrypt,_decrypt,setiv_cbc)
-VTABLES(aes192_cbc, "aes192", 192, "AES-192 CBC", _encrypt,_decrypt,setiv_cbc)
-VTABLES(aes256_cbc, "aes256", 256, "AES-256 CBC", _encrypt,_decrypt,setiv_cbc)
-VTABLES(aes128_sdctr, "aes128-ctr", 128, "AES-128 SDCTR",,, setiv_sdctr)
-VTABLES(aes192_sdctr, "aes192-ctr", 192, "AES-192 SDCTR",,, setiv_sdctr)
-VTABLES(aes256_sdctr, "aes256-ctr", 256, "AES-256 SDCTR",,, setiv_sdctr)
+#define VTABLES(keylen)                                                 \
+    VTABLES_INNER(aes ## keylen ## _cbc, "aes" #keylen,                 \
+                  keylen, "AES-" #keylen " CBC", _encrypt, _decrypt,    \
+                  setiv_cbc, SSH_CIPHER_IS_CBC)                         \
+    VTABLES_INNER(aes ## keylen ## _sdctr, "aes" #keylen "-ctr",        \
+                  keylen, "AES-" #keylen " SDCTR",,, setiv_sdctr, 0)
+
+VTABLES(128)
+VTABLES(192)
+VTABLES(256)
 
 static const ssh_cipheralg ssh_rijndael_lysator = {
     /* Same as aes256_cbc, but with a different protocol ID */

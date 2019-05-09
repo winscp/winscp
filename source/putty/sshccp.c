@@ -938,12 +938,17 @@ static void poly_genresult(ssh2_mac *mac, unsigned char *blk)
     poly1305_finalise(&ctx->mac, blk);
 }
 
+static const char *poly_text_name(ssh2_mac *mac)
+{
+    return "Poly1305";
+}
+
 const ssh2_macalg ssh2_poly1305 = {
     poly_ssh2_new, poly_ssh2_free, poly_setkey,
-    poly_start, poly_genresult,
+    poly_start, poly_genresult, poly_text_name,
 
     "", "", /* Not selectable individually, just part of ChaCha20-Poly1305 */
-    16, 0, "Poly1305"
+    16, 0,
 };
 
 static ssh_cipher *ccp_new(const ssh_cipheralg *alg)
