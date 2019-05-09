@@ -31,10 +31,16 @@ struct BinarySink {
  * put 'BinarySink_DELEGATE_IMPLEMENTATION' in its declaration, and
  * when an instance is set up, use 'BinarySink_DELEGATE_INIT' to point
  * at the object it wants to delegate to.
+ *
+ * In such a delegated structure, you might sometimes want to have the
+ * delegation stop being valid (e.g. it might be delegating to an
+ * object that only sometimes exists). You can null out the delegate
+ * pointer using BinarySink_DELEGATE_CLEAR.
  */
 #define BinarySink_DELEGATE_IMPLEMENTATION BinarySink *binarysink_
 #define BinarySink_DELEGATE_INIT(obj, othersink) \
     ((obj)->binarysink_ = BinarySink_UPCAST(othersink))
+#define BinarySink_DELEGATE_CLEAR(obj) ((obj)->binarysink_ = NULL)
 
 /*
  * The implementing type's write function will want to downcast its

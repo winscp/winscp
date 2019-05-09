@@ -553,6 +553,7 @@ static bool read_blob(FILE *fp, int nlines, BinarySink *bs)
 	}
 	sfree(line);
     }
+    sfree(blob);
     return true;
 }
 

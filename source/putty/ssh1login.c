@@ -51,7 +51,7 @@ struct ssh1_login_state {
     bool authed;
     RSAKey key;
     mp_int *challenge;
-    ptrlen comment;
+    strbuf *agent_comment;
     int dlgret;
     Filename *keyfile;
     RSAKey servkey, hostkey;
@@ -95,6 +95,7 @@ PacketProtocolLayer *ssh1_login_new(
     s->savedhost = dupstr(host);
     s->savedport = port;
     s->successor_layer = successor_layer;
+    s->agent_comment = strbuf_new();
     return &s->ppl;
 }
 
@@ -113,6 +114,7 @@ static void ssh1_login_free(PacketProtocolLayer *ppl)
     if (s->publickey_blob)
         strbuf_free(s->publickey_blob);
     sfree(s->publickey_comment);
+    strbuf_free(s->agent_comment);
     if (s->cur_prompt)
         free_prompts(s->cur_prompt);
     sfree(s->agent_response_to_free);
@@ -507,7 +509,8 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                     get_rsa_ssh1_pub(s->asrc, &s->key,
                                      RSA_SSH1_EXPONENT_FIRST);
                     end = s->asrc->pos;
-                    s->comment = get_string(s->asrc);
+                    s->agent_comment->len = 0;
+                    put_datapl(s->agent_comment, get_string(s->asrc));
                     if (get_err(s->asrc)) {
                         ppl_logevent("Pageant key list packet was truncated");
                         break;
@@ -570,7 +573,6 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                                     s->ppl.bpp, SSH1_CMSG_AUTH_RSA_RESPONSE);
                                 put_data(pkt, ret + 5, 16);
                                 pq_push(s->ppl.out_pq, pkt);
-                                sfree((char *)ret);
                                 crMaybeWaitUntilV(
                                     (pktin = ssh1_login_pop(s))
                                     != NULL);
@@ -578,10 +580,12 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                                     ppl_logevent("Pageant's response "
                                                  "accepted");
                                     if (flags & FLAG_VERBOSE) {
+                                        ptrlen comment = ptrlen_from_strbuf(
+                                            s->agent_comment);
                                         ppl_printf("Authenticated using RSA "
                                                    "key \"%.*s\" from "
-                                                   "agent\r\n", PTRLEN_PRINTF(
-                                                       s->comment));
+                                                   "agent\r\n",
+                                                   PTRLEN_PRINTF(comment));
                                     }
                                     s->authed = true;
                                 } else
