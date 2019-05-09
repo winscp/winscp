@@ -985,7 +985,7 @@ void __fastcall TSecureShell::GotHostKey()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSecureShell::CWrite(const char * Data, int Length)
+void __fastcall TSecureShell::CWrite(const char * Data, size_t Length)
 {
   // some messages to stderr may indicate that something has changed with the
   // session, so reset the session info
@@ -1025,7 +1025,7 @@ void __fastcall TSecureShell::UnregisterReceiveHandler(TNotifyEvent Handler)
   FOnReceive = NULL;
 }
 //---------------------------------------------------------------------------
-void __fastcall TSecureShell::FromBackend(const unsigned char * Data, int Length)
+void __fastcall TSecureShell::FromBackend(const unsigned char * Data, size_t Length)
 {
   // Note that we do not apply ConvertFromPutty to Data yet (as opposite to CWrite).
   // as there's no use for this atm.
@@ -1033,13 +1033,13 @@ void __fastcall TSecureShell::FromBackend(const unsigned char * Data, int Length
 
   if (Configuration->ActualLogProtocol >= 1)
   {
-    LogEvent(FORMAT(L"Received %u bytes", (Length)));
+    LogEvent(FORMAT(L"Received %u bytes", (static_cast<int>(Length))));
   }
 
   // Following is taken from scp.c from_backend() and modified
 
   const unsigned char *p = Data;
-  unsigned Len = (unsigned)Length;
+  unsigned Len = Length;
 
   // with event-select mechanism we can now receive data even before we
   // actually expect them (OutPtr can be NULL)
@@ -1454,7 +1454,7 @@ int __fastcall TSecureShell::TranslateAuthenticationMessage(
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TSecureShell::AddStdError(const char * Data, int Length)
+void __fastcall TSecureShell::AddStdError(const char * Data, size_t Length)
 {
   UnicodeString Str = ConvertInput(RawByteString(Data, Length));
   FStdError += Str;

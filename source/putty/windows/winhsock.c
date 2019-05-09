@@ -196,6 +196,7 @@ static void handle_socket_unfreeze(void *hsv)
     /*
      * Get some of the data we've buffered.
      */
+    { // WINSCP
     ptrlen data = bufchain_prefix(&hs->inputdata);
     assert(data.len > 0);
 
@@ -225,6 +226,7 @@ static void handle_socket_unfreeze(void *hsv)
         hs->frozen = UNFROZEN;
         handle_unthrottle(hs->recv_h, 0);
     }
+    } // WINSCP
 }
 
 static void sk_handle_set_frozen(Socket *s, bool is_frozen)

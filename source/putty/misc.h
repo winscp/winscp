@@ -258,14 +258,15 @@ static inline uint64_t GET_64BIT_LSB_FIRST(const void *vp)
 static inline void PUT_64BIT_LSB_FIRST(void *vp, uint64_t value)
 {
     uint8_t *p = (uint8_t *)vp;
-    p[0] = value;
-    p[1] = (value) >> 8;
-    p[2] = (value) >> 16;
-    p[3] = (value) >> 24;
-    p[4] = (value) >> 32;
-    p[5] = (value) >> 40;
-    p[6] = (value) >> 48;
-    p[7] = (value) >> 56;
+    // WINSCP cast to uint8_t
+    p[0] = (uint8_t)value;
+    p[1] = (uint8_t)((value) >> 8);
+    p[2] = (uint8_t)((value) >> 16);
+    p[3] = (uint8_t)((value) >> 24);
+    p[4] = (uint8_t)((value) >> 32);
+    p[5] = (uint8_t)((value) >> 40);
+    p[6] = (uint8_t)((value) >> 48);
+    p[7] = (uint8_t)((value) >> 56);
 }
 
 static inline uint32_t GET_32BIT_LSB_FIRST(const void *vp)
@@ -278,10 +279,11 @@ static inline uint32_t GET_32BIT_LSB_FIRST(const void *vp)
 static inline void PUT_32BIT_LSB_FIRST(void *vp, uint32_t value)
 {
     uint8_t *p = (uint8_t *)vp;
-    p[0] = value;
-    p[1] = (value) >> 8;
-    p[2] = (value) >> 16;
-    p[3] = (value) >> 24;
+    // WINSCP cast to uint8_t
+    p[0] = (uint8_t)value;
+    p[1] = (uint8_t)((value) >> 8);
+    p[2] = (uint8_t)((value) >> 16);
+    p[3] = (uint8_t)((value) >> 24);
 }
 
 static inline uint16_t GET_16BIT_LSB_FIRST(const void *vp)
@@ -293,8 +295,9 @@ static inline uint16_t GET_16BIT_LSB_FIRST(const void *vp)
 static inline void PUT_16BIT_LSB_FIRST(void *vp, uint16_t value)
 {
     uint8_t *p = (uint8_t *)vp;
-    p[0] = value;
-    p[1] = (value) >> 8;
+    // WINSCP cast to uint8_t
+    p[0] = (uint8_t)value;
+    p[1] = (uint8_t)((value) >> 8);
 }
 
 static inline uint64_t GET_64BIT_MSB_FIRST(const void *vp)
@@ -309,14 +312,15 @@ static inline uint64_t GET_64BIT_MSB_FIRST(const void *vp)
 static inline void PUT_64BIT_MSB_FIRST(void *vp, uint64_t value)
 {
     uint8_t *p = (uint8_t *)vp;
-    p[7] = value;
-    p[6] = (value) >> 8;
-    p[5] = (value) >> 16;
-    p[4] = (value) >> 24;
-    p[3] = (value) >> 32;
-    p[2] = (value) >> 40;
-    p[1] = (value) >> 48;
-    p[0] = (value) >> 56;
+    // WINSCP cast to uint8_t
+    p[7] = (uint8_t)value;
+    p[6] = (uint8_t)((value) >> 8);
+    p[5] = (uint8_t)((value) >> 16);
+    p[4] = (uint8_t)((value) >> 24);
+    p[3] = (uint8_t)((value) >> 32);
+    p[2] = (uint8_t)((value) >> 40);
+    p[1] = (uint8_t)((value) >> 48);
+    p[0] = (uint8_t)((value) >> 56);
 }
 
 static inline uint32_t GET_32BIT_MSB_FIRST(const void *vp)
@@ -329,10 +333,11 @@ static inline uint32_t GET_32BIT_MSB_FIRST(const void *vp)
 static inline void PUT_32BIT_MSB_FIRST(void *vp, uint32_t value)
 {
     uint8_t *p = (uint8_t *)vp;
-    p[3] = value;
-    p[2] = (value) >> 8;
-    p[1] = (value) >> 16;
-    p[0] = (value) >> 24;
+    // WINSCP cast to uint8_t
+    p[3] = (uint8_t)value;
+    p[2] = (uint8_t)((value) >> 8);
+    p[1] = (uint8_t)((value) >> 16);
+    p[0] = (uint8_t)((value) >> 24);
 }
 
 static inline uint16_t GET_16BIT_MSB_FIRST(const void *vp)
@@ -344,7 +349,7 @@ static inline uint16_t GET_16BIT_MSB_FIRST(const void *vp)
 static inline void PUT_16BIT_MSB_FIRST(void *vp, uint16_t value)
 {
     uint8_t *p = (uint8_t *)vp;
-    p[1] = value;
+    p[1] = (uint8_t)value;
     p[0] = (value) >> 8;
 }
 

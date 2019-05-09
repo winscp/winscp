@@ -1496,9 +1496,11 @@ void try_send(NetSocket *s)
 	    data = &s->oobdata;
 	} else {
 	    urgentflag = 0;
+            { // WINSCP
             ptrlen bufdata = bufchain_prefix(&s->output_data);
             data = bufdata.ptr;
             len = bufdata.len;
+            } // WINSCP
 	}
         len = min(len, INT_MAX);       /* WinSock send() takes an int */
 	nsent = p_send(s->s, data, len, urgentflag);

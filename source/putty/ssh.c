@@ -324,6 +324,7 @@ static void ssh_check_frozen(Ssh *ssh)
     if (!ssh->s)
         return;
 
+    { // WINSCP
     bool prev_frozen = ssh->socket_frozen;
     ssh->socket_frozen = (ssh->logically_frozen ||
                           bufchain_size(&ssh->in_raw) > SSH_MAX_BACKLOG);
@@ -335,6 +336,7 @@ static void ssh_check_frozen(Ssh *ssh)
          */
         queue_idempotent_callback(&ssh->bpp->ic_in_raw);
     }
+    } // WINSCP
 }
 
 void ssh_conn_processed_data(Ssh *ssh)

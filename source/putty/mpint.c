@@ -733,7 +733,8 @@ void mp_sub_into(mp_int *r, mp_int *a, mp_int *b)
 
 void mp_and_into(mp_int *r, mp_int *a, mp_int *b)
 {
-    for (size_t i = 0; i < r->nw; i++) {
+    size_t i; // WINSCP
+    for (i = 0; i < r->nw; i++) {
         BignumInt aword = mp_word(a, i), bword = mp_word(b, i);
         r->w[i] = aword & bword;
     }
@@ -741,7 +742,8 @@ void mp_and_into(mp_int *r, mp_int *a, mp_int *b)
 
 void mp_or_into(mp_int *r, mp_int *a, mp_int *b)
 {
-    for (size_t i = 0; i < r->nw; i++) {
+    size_t i; // WINSCP
+    for (i = 0; i < r->nw; i++) {
         BignumInt aword = mp_word(a, i), bword = mp_word(b, i);
         r->w[i] = aword | bword;
     }
@@ -749,7 +751,8 @@ void mp_or_into(mp_int *r, mp_int *a, mp_int *b)
 
 void mp_xor_into(mp_int *r, mp_int *a, mp_int *b)
 {
-    for (size_t i = 0; i < r->nw; i++) {
+    size_t i; // WINSCP
+    for (i = 0; i < r->nw; i++) {
         BignumInt aword = mp_word(a, i), bword = mp_word(b, i);
         r->w[i] = aword ^ bword;
     }
@@ -757,7 +760,8 @@ void mp_xor_into(mp_int *r, mp_int *a, mp_int *b)
 
 void mp_bic_into(mp_int *r, mp_int *a, mp_int *b)
 {
-    for (size_t i = 0; i < r->nw; i++) {
+    size_t i; // WINSCP
+    for (i = 0; i < r->nw; i++) {
         BignumInt aword = mp_word(a, i), bword = mp_word(b, i);
         r->w[i] = aword & ~bword;
     }

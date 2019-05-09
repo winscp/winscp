@@ -683,6 +683,7 @@ static ssh2_userkey *openssh_pem_read(
 
         put_stringz(blob, key->keytype == OP_DSA ? "ssh-dss" : "ssh-rsa");
 
+        { // WINSCP
         ptrlen rsa_modulus = PTRLEN_LITERAL("");
 
         for (i = 0; i < num_integers; i++) {
@@ -749,6 +750,7 @@ static ssh2_userkey *openssh_pem_read(
             errmsg = "unable to create key data structure";
             goto error;
         }
+        } // WINSCP
 
     } else {
         unreachable("Bad key type from load_openssh_pem_key");

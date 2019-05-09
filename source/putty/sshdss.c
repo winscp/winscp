@@ -136,6 +136,7 @@ static bool dss_verify(ssh_key *key, ptrlen sig, ptrlen data)
     }
 
     /* Basic sanity checks: 0 < r,s < q */
+    { // WINSCP
     unsigned invalid = 0;
     invalid |= mp_eq_integer(r, 0);
     invalid |= mp_eq_integer(s, 0);
@@ -195,6 +196,7 @@ static bool dss_verify(ssh_key *key, ptrlen sig, ptrlen data)
     mp_free(v);
     mp_free(r);
     mp_free(s);
+    } // WINSCP
     } // WINSCP
     } // WINSCP
     } // WINSCP

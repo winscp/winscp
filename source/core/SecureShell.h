@@ -156,9 +156,9 @@ public:
     UnicodeString AName, bool NameRequired,
     UnicodeString Instructions, bool InstructionsRequired,
     TStrings * Prompts, TStrings * Results);
-  void __fastcall FromBackend(const unsigned char * Data, int Length);
-  void __fastcall CWrite(const char * Data, int Length);
-  void __fastcall AddStdError(const char * Data, int Length);
+  void __fastcall FromBackend(const unsigned char * Data, size_t Length);
+  void __fastcall CWrite(const char * Data, size_t Length);
+  void __fastcall AddStdError(const char * Data, size_t Length);
   const UnicodeString & __fastcall GetStdError();
   void __fastcall VerifyHostKey(
     const UnicodeString & Host, int Port, const UnicodeString & KeyType, const UnicodeString & KeyStr,

@@ -796,7 +796,8 @@ void sanitise_term_data(bufchain *out, const void *vdata, size_t len)
      * (not to mention knowing what character set it should interpret
      * the data as).
      */
-    for (size_t i = 0; i < len; i++) {
+    size_t i; // WINSCP
+    for (i = 0; i < len; i++) {
         if (data[i] == '\n')
             bufchain_add(out, "\r\n", 2);
         else if (data[i] >= ' ' && data[i] < 0x7F)

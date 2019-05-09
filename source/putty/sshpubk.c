@@ -1525,7 +1525,7 @@ char *ssh2_fingerprint_blob(ptrlen blob)
     for (i = 0; i < 16; i++)
         sprintf(fingerprint_str_md5 + i*3, "%02x%s", digest[i], i==15 ? "" : ":");
 
-    hash_simple(&ssh_sha256, make_ptrlen(blob, bloblen), digest);
+    hash_simple(&ssh_sha256, blob, digest);
     base64_encode_buf(digest, 32, fingerprint_str_sha256);
 
     /*

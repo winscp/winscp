@@ -129,7 +129,7 @@ extern "C" char * do_select(Plug * plug, SOCKET skt, bool startup)
   return NULL;
 }
 //---------------------------------------------------------------------------
-static int output(Seat * seat, bool is_stderr, const void * data, int len)
+static size_t output(Seat * seat, bool is_stderr, const void * data, size_t len)
 {
   TSecureShell * SecureShell = static_cast<ScpSeat *>(seat)->SecureShell;
   if (static_cast<int>(static_cast<char>(is_stderr)) == -1)
