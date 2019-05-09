@@ -269,6 +269,9 @@
 			<BuildOrder>53</BuildOrder>
 			<BuildOrder>31</BuildOrder>
 		</CppCompile>
+		<CppCompile Include="putty\sshprng.c">
+			<BuildOrder>80</BuildOrder>
+		</CppCompile>
 		<CppCompile Include="putty\sshpubk.c">
 			<BuildOrder>56</BuildOrder>
 			<BuildOrder>30</BuildOrder>

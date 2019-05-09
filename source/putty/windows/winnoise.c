@@ -100,7 +100,6 @@ void noise_regular(void)
     MEMORYSTATUS memstat;
     FILETIME times[4];
 
-    MPEXT_PUTTY_SECTION_ENTER;
     w = GetForegroundWindow();
     random_add_noise(NOISE_SOURCE_FGWINDOW, &w, sizeof(w));
     w = GetCapture();
@@ -122,7 +121,6 @@ void noise_regular(void)
     GetProcessTimes(GetCurrentProcess(), times, times + 1, times + 2,
 		    times + 3);
     random_add_noise(NOISE_SOURCE_PROCTIME, &times, sizeof(times));
-    MPEXT_PUTTY_SECTION_LEAVE;
 }
 
 /*
@@ -136,7 +134,6 @@ void noise_ultralight(NoiseSourceId id, unsigned long data)
     DWORD wintime;
     LARGE_INTEGER perftime;
 
-    MPEXT_PUTTY_SECTION_ENTER;
     random_add_noise(id, &data, sizeof(DWORD));
 
     wintime = GetTickCount();
@@ -144,14 +141,15 @@ void noise_ultralight(NoiseSourceId id, unsigned long data)
 
     if (QueryPerformanceCounter(&perftime))
 	random_add_noise(NOISE_SOURCE_PERFCOUNT, &perftime, sizeof(perftime));
-    MPEXT_PUTTY_SECTION_LEAVE;
 }
 
 uint64_t prng_reseed_time_ms(void)
 {
     FILETIME ft;
     GetSystemTimeAsFileTime(&ft);
+    { // WINSCP
     uint64_t value = ft.dwHighDateTime;
     value = (value << 32) + ft.dwLowDateTime;
     return value / 10000;              /* 1 millisecond / 100ns */
+    } // WINSCP
 }

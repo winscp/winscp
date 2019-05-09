@@ -2159,16 +2159,16 @@ void request_callback_notifications(toplevel_callback_notify_fn_t notify,
 #define FROM_SURROGATES(wch1, wch2) \
     (0x10000 + (((wch1) & 0x3FF) << 10) + ((wch2) & 0x3FF))
 
-#ifdef MPEXT
+#ifdef WINSCP
 extern CRITICAL_SECTION putty_section;
 void putty_initialize();
 void putty_finalize();
 void pktin_free_queue_callback(void *vctx);
-#define MPEXT_PUTTY_SECTION_ENTER EnterCriticalSection(&putty_section);
-#define MPEXT_PUTTY_SECTION_LEAVE LeaveCriticalSection(&putty_section);
+#define WINSCP_PUTTY_SECTION_ENTER EnterCriticalSection(&putty_section);
+#define WINSCP_PUTTY_SECTION_LEAVE LeaveCriticalSection(&putty_section);
 #else
-#define MPEXT_PUTTY_SECTION_ENTER
-#define MPEXT_PUTTY_SECTION_LEAVE
+#define WINSCP_PUTTY_SECTION_ENTER
+#define WINSCP_PUTTY_SECTION_LEAVE
 #endif
 
 #ifdef MPEXT

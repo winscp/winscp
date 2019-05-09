@@ -36,25 +36,32 @@ static unsigned long next_noise_collection;
 
 void random_add_noise(NoiseSourceId source, const void *noise, int length)
 {
+    WINSCP_PUTTY_SECTION_ENTER;
     if (!random_active)
 	return;
 
     prng_add_entropy(global_prng, source, make_ptrlen(noise, length));
+    WINSCP_PUTTY_SECTION_LEAVE;
 }
 
 static void random_timer(void *ctx, unsigned long now)
 {
+    unreachable_internal(); // WINSCP
+    WINSCP_PUTTY_SECTION_ENTER;
     if (random_active > 0 && now == next_noise_collection) {
 	noise_regular();
 	next_noise_collection =
 	    schedule_timer(NOISE_REGULAR_INTERVAL, random_timer,
                            &random_timer_ctx);
     }
+    WINSCP_PUTTY_SECTION_LEAVE;
 }
 
 static void random_seed_callback(void *noise, int length)
 {
+    WINSCP_PUTTY_SECTION_ENTER;
     put_data(global_prng, noise, length);
+    WINSCP_PUTTY_SECTION_LEAVE;
 }
 
 static void random_create(const ssh_hashalg *hashalg)
@@ -80,29 +87,37 @@ static void random_create(const ssh_hashalg *hashalg)
 
 void random_ref(void)
 {
+    WINSCP_PUTTY_SECTION_ENTER;
     if (!random_active++)
         random_create(&ssh_sha256);
+    WINSCP_PUTTY_SECTION_LEAVE;
 }
 
 void random_setup_special()
 {
+    unreachable_internal(); // used by PuTTYgen only
+    WINSCP_PUTTY_SECTION_ENTER;
     random_active++;
     random_create(&ssh_sha512);
+    WINSCP_PUTTY_SECTION_LEAVE;
 }
 
 void random_reseed(ptrlen seed)
 {
+    unreachable_internal(); // used by PuTTYgen only
+    WINSCP_PUTTY_SECTION_ENTER;
     prng_seed_begin(global_prng);
     put_datapl(global_prng, seed);
     prng_seed_finish(global_prng);
+    WINSCP_PUTTY_SECTION_LEAVE;
 }
 
 void random_unref(void)
 {
-    MPEXT_PUTTY_SECTION_ENTER;
+    WINSCP_PUTTY_SECTION_ENTER;
     assert(random_active > 0);
     if (random_active == 1) {
-        #ifndef MPEXT
+        #ifndef WINSCP
         // We control this on our own in PuttyFinalize()
         random_save_seed();
         #endif
@@ -111,23 +126,27 @@ void random_unref(void)
         global_prng = NULL;
     }
     random_active--;
-    MPEXT_PUTTY_SECTION_LEAVE;
+    WINSCP_PUTTY_SECTION_LEAVE;
 }
 
 void random_read(void *buf, size_t size)
 {
-    MPEXT_PUTTY_SECTION_ENTER;
+    WINSCP_PUTTY_SECTION_ENTER;
     assert(random_active > 0);
     prng_read(global_prng, buf, size);
-    MPEXT_PUTTY_SECTION_LEAVE;
+    WINSCP_PUTTY_SECTION_LEAVE;
 }
 
 void random_get_savedata(void **data, int *len)
 {
+    WINSCP_PUTTY_SECTION_ENTER; // though called from our finalizer, when the app is single threaded only
+    { // WINSCP
     void *buf = snewn(global_prng->savesize, char);
     random_read(buf, global_prng->savesize);
     *len = global_prng->savesize;
     *data = buf;
+    } // WINSCP
+    WINSCP_PUTTY_SECTION_LEAVE;
 }
 
 #endif /* FUZZING */
