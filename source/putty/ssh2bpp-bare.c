@@ -170,7 +170,7 @@ static void ssh2_bare_bpp_format_packet(struct ssh2_bare_bpp_state *s,
 
     s->outgoing_sequence++;        /* only for diagnostics, really */
 
-    PUT_32BIT(pkt->data, pkt->length - 4);
+    PUT_32BIT_MSB_FIRST(pkt->data, pkt->length - 4);
     bufchain_add(s->bpp.out_raw, pkt->data, pkt->length);
 }
 

@@ -22,7 +22,8 @@
 #       define HW_SHA256 HW_SHA256_NI
 #   endif
 #elif defined(__GNUC__)
-#    if (__GNUC__ >= 5) && (defined(__x86_64__) || defined(__i386))
+#    if (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 9)) && \
+        (defined(__x86_64__) || defined(__i386))
 #       define HW_SHA256 HW_SHA256_NI
 #    endif
 #elif defined (_MSC_VER)

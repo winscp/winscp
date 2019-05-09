@@ -257,7 +257,7 @@ struct handle_output {
      * Data set by the main thread before signalling ev_from_main,
      * and read by the input thread after receiving that signal.
      */
-    char *buffer;		       /* the data to write */
+    const char *buffer;                /* the data to write */
     DWORD len;			       /* how much data there is */
 
     /*
@@ -347,13 +347,10 @@ static DWORD WINAPI handle_output_threadfunc(void *param)
 
 static void handle_try_output(struct handle_output *ctx)
 {
-    void *senddata;
-    int sendlen;
-
     if (!ctx->busy && bufchain_size(&ctx->queued_data)) {
-	bufchain_prefix(&ctx->queued_data, &senddata, &sendlen);
-	ctx->buffer = senddata;
-	ctx->len = sendlen;
+	ptrlen data = bufchain_prefix(&ctx->queued_data);
+	ctx->buffer = data.ptr;
+	ctx->len = min(data.len, ~(DWORD)0);
 	SetEvent(ctx->ev_from_main);
 	ctx->busy = true;
     } else if (!ctx->busy && bufchain_size(&ctx->queued_data) == 0 &&
@@ -515,7 +512,7 @@ struct handle *handle_add_foreign_event(HANDLE event,
     return h;
 }
 
-int handle_write(struct handle *h, const void *data, int len)
+size_t handle_write(struct handle *h, const void *data, size_t len)
 {
     assert(h->type == HT_OUTPUT);
     assert(h->u.o.outgoingeof == EOF_NO);
@@ -676,9 +673,9 @@ void handle_got_event(HANDLE event)
 	     * EOF, or (nearly equivalently) read error.
 	     */
 	    h->u.i.defunct = true;
-	    h->u.i.gotdata(h, NULL, -h->u.i.readerr);
+	    h->u.i.gotdata(h, NULL, 0, h->u.i.readerr);
 	} else {
-	    backlog = h->u.i.gotdata(h, h->u.i.buffer, h->u.i.len);
+	    backlog = h->u.i.gotdata(h, h->u.i.buffer, h->u.i.len, 0);
 	    handle_throttle(&h->u.i, backlog);
 	}
     #ifdef MPEXT
@@ -702,11 +699,11 @@ void handle_got_event(HANDLE event)
 	     * thread is terminating by now).
 	     */
 	    h->u.o.defunct = true;
-	    h->u.o.sentdata(h, -h->u.o.writeerr);
+	    h->u.o.sentdata(h, 0, h->u.o.writeerr);
 	} else {
 	    bufchain_consume(&h->u.o.queued_data, h->u.o.lenwritten);
             noise_ultralight(NOISE_SOURCE_IOLEN, h->u.o.lenwritten);
-	    h->u.o.sentdata(h, bufchain_size(&h->u.o.queued_data));
+	    h->u.o.sentdata(h, bufchain_size(&h->u.o.queued_data), 0);
 	    handle_try_output(&h->u.o);
 	}
     #ifdef MPEXT
@@ -726,13 +723,13 @@ void handle_got_event(HANDLE event)
     }
 }
 
-void handle_unthrottle(struct handle *h, int backlog)
+void handle_unthrottle(struct handle *h, size_t backlog)
 {
     assert(h->type == HT_INPUT);
     handle_throttle(&h->u.i, backlog);
 }
 
-int handle_backlog(struct handle *h)
+size_t handle_backlog(struct handle *h)
 {
     assert(h->type == HT_OUTPUT);
     return bufchain_size(&h->u.o.queued_data);

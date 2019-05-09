@@ -59,11 +59,10 @@ void backend_socket_log(Seat *seat, LogContext *logctx,
     }
 }
 
-void log_proxy_stderr(Plug *plug, bufchain *buf, const void *vdata, int len)
+void log_proxy_stderr(Plug *plug, bufchain *buf, const void *vdata, size_t len)
 {
     const char *data = (const char *)vdata;
-    int pos = 0;
-    int msglen;
+    size_t pos = 0;
     const char *nlpos;
     char *msg, *fullmsg;
 
@@ -88,7 +87,8 @@ void log_proxy_stderr(Plug *plug, bufchain *buf, const void *vdata, int len)
         /*
          * Collect the resulting line of data and pass it to plug_log.
          */
-        msglen = bufchain_size(buf);
+        size_t msglen = bufchain_size(buf);
+        assert(msglen < ~(size_t)0);
         msg = snewn(msglen+1, char);
         bufchain_fetch(buf, msg, msglen);
         bufchain_consume(buf, msglen);

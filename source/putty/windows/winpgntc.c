@@ -109,7 +109,7 @@ agent_pending_query *agent_query(
      */
     id = SendMessage(hwnd, WM_COPYDATA, (WPARAM) NULL, (LPARAM) &cds);
     if (id > 0) {
-	retlen = 4 + GET_32BIT(p);
+	retlen = 4 + GET_32BIT_MSB_FIRST(p);
 	ret = snewn(retlen, unsigned char);
 	if (ret) {
 	    memcpy(ret, p, retlen);

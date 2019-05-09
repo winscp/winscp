@@ -952,7 +952,7 @@ bool rfc4716_loadpub(FILE *fp, char **algorithm,
         error = "not enough data in SSH-2 public key file";
         goto error;
     }
-    alglen = toint(GET_32BIT(pubblob));
+    alglen = toint(GET_32BIT_MSB_FIRST(pubblob));
     if (alglen < 0 || alglen > pubbloblen-4) {
         error = "invalid algorithm prefix in SSH-2 public key file";
         goto error;
@@ -1027,7 +1027,7 @@ bool openssh_loadpub_line(char * aline, char **algorithm, // WINSCP
      */
     alglen = strlen(line);
     if (pubbloblen < alglen + 4 ||
-        GET_32BIT(pubblob) != alglen ||
+        GET_32BIT_MSB_FIRST(pubblob) != alglen ||
         0 != memcmp(pubblob + 4, line, alglen)) {
         error = "key algorithms do not match in OpenSSH public key file";
         goto error;
@@ -1508,7 +1508,7 @@ void ssh2_write_pubkey(FILE *fp, const char *comment,
 /* ----------------------------------------------------------------------
  * Utility functions to compute SSH-2 fingerprints in a uniform way.
  */
-char *ssh2_fingerprint_blob(const void *blob, int bloblen)
+char *ssh2_fingerprint_blob(ptrlen blob)
 {
     unsigned char digest[32];
     char fingerprint_str_md5[16*3];
@@ -1521,7 +1521,7 @@ char *ssh2_fingerprint_blob(const void *blob, int bloblen)
     /*
      * The fingerprint hash itself is always just the MD5 of the blob.
      */
-    hash_simple(&ssh_md5, make_ptrlen(blob, bloblen), digest);
+    hash_simple(&ssh_md5, blob, digest);
     for (i = 0; i < 16; i++)
         sprintf(fingerprint_str_md5 + i*3, "%02x%s", digest[i], i==15 ? "" : ":");
 
@@ -1531,12 +1531,12 @@ char *ssh2_fingerprint_blob(const void *blob, int bloblen)
     /*
      * Identify the key algorithm, if possible.
      */
-    BinarySource_BARE_INIT(src, blob, bloblen);
+    BinarySource_BARE_INIT_PL(src, blob);
     algname = get_string(src);
     if (!get_err(src)) {
         alg = find_pubkey_alg_len(algname);
         if (alg) {
-            int bits = ssh_key_public_bits(alg, make_ptrlen(blob, bloblen));
+            int bits = ssh_key_public_bits(alg, blob);
             return dupprintf("%.*s %d %s %s", PTRLEN_PRINTF(algname),
                              bits, fingerprint_str_md5, fingerprint_str_sha256);
         } else {
@@ -1557,7 +1557,7 @@ char *ssh2_fingerprint(ssh_key *data)
     strbuf *blob = strbuf_new();
     char *ret; //MPEXT
     ssh_key_public_blob(data, BinarySink_UPCAST(blob));
-    ret = ssh2_fingerprint_blob(blob->s, blob->len);
+    ret = ssh2_fingerprint_blob(ptrlen_from_strbuf(blob));
     strbuf_free(blob);
     return ret;
 }

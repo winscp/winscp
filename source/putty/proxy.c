@@ -24,9 +24,7 @@
  */
 void proxy_activate (ProxySocket *p)
 {
-    void *data;
-    int len;
-    long output_before, output_after;
+    size_t output_before, output_after;
     
     p->state = PROXY_STATE_ACTIVE;
 
@@ -43,21 +41,21 @@ void proxy_activate (ProxySocket *p)
     
     /* send buffered OOB writes */
     while (bufchain_size(&p->pending_oob_output_data) > 0) {
-	bufchain_prefix(&p->pending_oob_output_data, &data, &len);
-	output_after += sk_write_oob(p->sub_socket, data, len);
-	bufchain_consume(&p->pending_oob_output_data, len);
+        ptrlen data = bufchain_prefix(&p->pending_oob_output_data);
+	output_after += sk_write_oob(p->sub_socket, data.ptr, data.len);
+	bufchain_consume(&p->pending_oob_output_data, data.len);
     }
 
     /* send buffered normal writes */
     while (bufchain_size(&p->pending_output_data) > 0) {
-	bufchain_prefix(&p->pending_output_data, &data, &len);
-	output_after += sk_write(p->sub_socket, data, len);
-	bufchain_consume(&p->pending_output_data, len);
+	ptrlen data = bufchain_prefix(&p->pending_output_data);
+	output_after += sk_write(p->sub_socket, data.ptr, data.len);
+	bufchain_consume(&p->pending_output_data, data.len);
     }
 
     /* if we managed to send any data, let the higher levels know. */
     if (output_after < output_before)
-	plug_sent(p->plug, output_after);
+        plug_sent(p->plug, output_after);
 
     /* if we were asked to flush the output during
      * the proxy negotiation process, do so now.
@@ -95,7 +93,7 @@ static void sk_proxy_close (Socket *s)
     sfree(ps);
 }
 
-static int sk_proxy_write (Socket *s, const void *data, int len)
+static size_t sk_proxy_write (Socket *s, const void *data, size_t len)
 {
     ProxySocket *ps = container_of(s, ProxySocket, sock);
 
@@ -106,7 +104,7 @@ static int sk_proxy_write (Socket *s, const void *data, int len)
     return sk_write(ps->sub_socket, data, len);
 }
 
-static int sk_proxy_write_oob (Socket *s, const void *data, int len)
+static size_t sk_proxy_write_oob (Socket *s, const void *data, size_t len)
 {
     ProxySocket *ps = container_of(s, ProxySocket, sock);
 
@@ -160,15 +158,13 @@ static void sk_proxy_set_frozen (Socket *s, bool is_frozen)
 	 * so we have to check each time.
 	 */
         while (!ps->freeze && bufchain_size(&ps->pending_input_data) > 0) {
-	    void *data;
 	    char databuf[512];
-	    int len;
-	    bufchain_prefix(&ps->pending_input_data, &data, &len);
-	    if (len > lenof(databuf))
-		len = lenof(databuf);
-	    memcpy(databuf, data, len);
-	    bufchain_consume(&ps->pending_input_data, len);
-	    plug_receive(ps->plug, 0, databuf, len);
+	    ptrlen data = bufchain_prefix(&ps->pending_input_data);
+	    if (data.len > lenof(databuf))
+		data.len = lenof(databuf);
+	    memcpy(databuf, data.ptr, data.len);
+	    bufchain_consume(&ps->pending_input_data, data.len);
+	    plug_receive(ps->plug, 0, databuf, data.len);
 	}
 
 	/* if we're still frozen, we'll have to wait for another
@@ -214,7 +210,8 @@ static void plug_proxy_closing (Plug *p, const char *error_msg,
     }
 }
 
-static void plug_proxy_receive (Plug *p, int urgent, char *data, int len)
+static void plug_proxy_receive(
+    Plug *p, int urgent, const char *data, size_t len)
 {
     ProxySocket *ps = container_of(p, ProxySocket, plugimpl);
 
@@ -233,12 +230,11 @@ static void plug_proxy_receive (Plug *p, int urgent, char *data, int len)
     }
 }
 
-static void plug_proxy_sent (Plug *p, int bufsize)
+static void plug_proxy_sent (Plug *p, size_t bufsize)
 {
     ProxySocket *ps = container_of(p, ProxySocket, plugimpl);
 
     if (ps->state != PROXY_STATE_ACTIVE) {
-	ps->sent_bufsize = bufsize;
 	ps->negotiate(ps, PROXY_CHANGE_SENT);
 	return;
     }
@@ -553,9 +549,9 @@ Socket *new_listener(const char *srcaddr, int port, Plug *plug,
  * HTTP CONNECT proxy type.
  */
 
-static int get_line_end (char * data, int len)
+static bool get_line_end(char *data, size_t len, size_t *out)
 {
-    int off = 0;
+    size_t off = 0;
 
     while (off < len)
     {
@@ -564,16 +560,20 @@ static int get_line_end (char * data, int len)
 	    off++;
 
 	    /* is that the only thing on this line? */
-	    if (off <= 2) return off;
+            if (off <= 2) {
+                *out = off;
+                return true;
+            }
 
 	    /* if not, then there is the possibility that this header
 	     * continues onto the next line, if it starts with a space
 	     * or a tab.
 	     */
 
-	    if (off + 1 < len &&
-		data[off+1] != ' ' &&
-		data[off+1] != '\t') return off;
+            if (off + 1 < len && data[off+1] != ' ' && data[off+1] != '\t') {
+                *out = off;
+                return true;
+            }
 
 	    /* the line does continue, so we have to keep going
 	     * until we see an the header's "real" end of line.
@@ -584,7 +584,7 @@ static int get_line_end (char * data, int len)
 	off++;
     }
 
-    return -1;
+    return false;
 }
 
 int proxy_http_negotiate (ProxySocket *p, int change)
@@ -666,8 +666,7 @@ int proxy_http_negotiate (ProxySocket *p, int change)
 	 */
 
 	char *data, *datap;
-	int len;
-	int eol;
+	size_t len, eol;
 
 	if (p->state == 1) {
 
@@ -685,8 +684,7 @@ int proxy_http_negotiate (ProxySocket *p, int change)
 	     */
 	    data[len] = '\0';
 
-	    eol = get_line_end(data, len);
-	    if (eol < 0) {
+            if (!get_line_end(data, len, &eol)) {
 		sfree(data);
 		return 1;
 	    }
@@ -734,17 +732,16 @@ int proxy_http_negotiate (ProxySocket *p, int change)
 	    datap = data;
 	    bufchain_fetch(&p->pending_input_data, data, len);
 
-	    eol = get_line_end(datap, len);
-	    if (eol < 0) {
+            if (!get_line_end(datap, len, &eol)) {
 		sfree(data);
 		return 1;
 	    }
-	    while (eol > 2)
-	    {
+	    while (eol > 2) {
 		bufchain_consume(&p->pending_input_data, eol);
 		datap += eol;
 		len   -= eol;
-		eol = get_line_end(datap, len);
+                if (!get_line_end(datap, len, &eol))
+                    eol = 0;           /* terminate the loop */
 	    }
 
 	    if (eol == 2) {

@@ -17,7 +17,7 @@ int ssh1_censor_packet(
     ptrlen str;
     BinarySource src[1];
 
-    BinarySource_BARE_INIT(src, pkt.ptr, pkt.len);
+    BinarySource_BARE_INIT_PL(src, pkt);
 
     if (pls->omit_data &&
         (type == SSH1_SMSG_STDOUT_DATA ||

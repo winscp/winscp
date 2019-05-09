@@ -654,7 +654,7 @@ void bufchain_clear(bufchain *ch)
     ch->buffersize = 0;
 }
 
-int bufchain_size(bufchain *ch)
+size_t bufchain_size(bufchain *ch)
 {
     return ch->buffersize;
 }
@@ -667,7 +667,7 @@ void bufchain_set_callback_inner(
     ch->ic = ic;
 }
 
-void bufchain_add(bufchain *ch, const void *data, int len)
+void bufchain_add(bufchain *ch, const void *data, size_t len)
 {
     const char *buf = (const char *)data;
 
@@ -677,14 +677,14 @@ void bufchain_add(bufchain *ch, const void *data, int len)
 
     while (len > 0) {
 	if (ch->tail && ch->tail->bufend < ch->tail->bufmax) {
-	    int copylen = min(len, ch->tail->bufmax - ch->tail->bufend);
+	    size_t copylen = min(len, ch->tail->bufmax - ch->tail->bufend);
 	    memcpy(ch->tail->bufend, buf, copylen);
 	    buf += copylen;
 	    len -= copylen;
 	    ch->tail->bufend += copylen;
 	}
 	if (len > 0) {
-	    int grainlen =
+	    size_t grainlen =
 		max(sizeof(struct bufchain_granule) + len, BUFFER_MIN_GRANULE);
 	    struct bufchain_granule *newbuf;
 	    newbuf = smalloc(grainlen);
@@ -704,7 +704,7 @@ void bufchain_add(bufchain *ch, const void *data, int len)
         ch->queue_idempotent_callback(ch->ic);
 }
 
-void bufchain_consume(bufchain *ch, int len)
+void bufchain_consume(bufchain *ch, size_t len)
 {
     struct bufchain_granule *tmp;
 
@@ -726,13 +726,12 @@ void bufchain_consume(bufchain *ch, int len)
     }
 }
 
-void bufchain_prefix(bufchain *ch, void **data, int *len)
+ptrlen bufchain_prefix(bufchain *ch)
 {
-    *len = ch->head->bufend - ch->head->bufpos;
-    *data = ch->head->bufpos;
+    return make_ptrlen(ch->head->bufpos, ch->head->bufend - ch->head->bufpos);
 }
 
-void bufchain_fetch(bufchain *ch, void *data, int len)
+void bufchain_fetch(bufchain *ch, void *data, size_t len)
 {
     struct bufchain_granule *tmp;
     char *data_c = (char *)data;
@@ -754,13 +753,13 @@ void bufchain_fetch(bufchain *ch, void *data, int len)
     }
 }
 
-void bufchain_fetch_consume(bufchain *ch, void *data, int len)
+void bufchain_fetch_consume(bufchain *ch, void *data, size_t len)
 {
     bufchain_fetch(ch, data, len);
     bufchain_consume(ch, len);
 }
 
-bool bufchain_try_fetch_consume(bufchain *ch, void *data, int len)
+bool bufchain_try_fetch_consume(bufchain *ch, void *data, size_t len)
 {
     if (ch->buffersize >= len) {
         bufchain_fetch_consume(ch, data, len);
@@ -770,7 +769,7 @@ bool bufchain_try_fetch_consume(bufchain *ch, void *data, int len)
     }
 }
 
-int bufchain_fetch_consume_up_to(bufchain *ch, void *data, int len)
+size_t bufchain_fetch_consume_up_to(bufchain *ch, void *data, size_t len)
 {
     if (len > ch->buffersize)
         len = ch->buffersize;
@@ -786,10 +785,9 @@ int bufchain_fetch_consume_up_to(bufchain *ch, void *data, int len)
  * sequences.
  */
 
-void sanitise_term_data(bufchain *out, const void *vdata, int len)
+void sanitise_term_data(bufchain *out, const void *vdata, size_t len)
 {
     const char *data = (const char *)vdata;
-    int i;
 
     /*
      * FIXME: this method of sanitisation is ASCII-centric. It would
@@ -798,7 +796,7 @@ void sanitise_term_data(bufchain *out, const void *vdata, int len)
      * (not to mention knowing what character set it should interpret
      * the data as).
      */
-    for (i = 0; i < len; i++) {
+    for (size_t i = 0; i < len; i++) {
         if (data[i] == '\n')
             bufchain_add(out, "\r\n", 2);
         else if (data[i] >= ' ' && data[i] < 0x7F)

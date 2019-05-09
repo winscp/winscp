@@ -49,11 +49,12 @@ typedef struct HandleSocket {
     Socket sock;
 } HandleSocket;
 
-static int handle_gotdata(struct handle *h, void *data, int len)
+static size_t handle_gotdata(
+    struct handle *h, const void *data, size_t len, int err)
 {
     HandleSocket *hs = (HandleSocket *)handle_get_privdata(h);
 
-    if (len < 0) {
+    if (err) {
 	plug_closing(hs->plug, "Read error from handle", 0, 0);
 	return 0;
     } else if (len == 0) {
@@ -83,11 +84,12 @@ static int handle_gotdata(struct handle *h, void *data, int len)
     }
 }
 
-static int handle_stderr(struct handle *h, void *data, int len)
+static size_t handle_stderr(
+    struct handle *h, const void *data, size_t len, int err)
 {
     HandleSocket *hs = (HandleSocket *)handle_get_privdata(h);
 
-    if (len > 0)
+    if (!err && len > 0)
     {
         log_proxy_stderr(hs->plug, &hs->stderrdata, data, len);
     }
@@ -95,15 +97,12 @@ static int handle_stderr(struct handle *h, void *data, int len)
     return 0;
 }
 
-static void handle_sentdata(struct handle *h, int new_backlog)
+static void handle_sentdata(struct handle *h, size_t new_backlog, int err)
 {
     HandleSocket *hs = (HandleSocket *)handle_get_privdata(h);
 
-    if (new_backlog < 0) {
-        /* Special case: this is actually reporting an error writing
-         * to the underlying handle, and our input value is the error
-         * code itself, negated. */
-        plug_closing(hs->plug, win_strerror(-new_backlog), -new_backlog, 0);
+    if (err) {
+        plug_closing(hs->plug, win_strerror(err), err, 0);
         return;
     }
 
@@ -154,14 +153,14 @@ static void sk_handle_close(Socket *s)
     sfree(hs);
 }
 
-static int sk_handle_write(Socket *s, const void *data, int len)
+static size_t sk_handle_write(Socket *s, const void *data, size_t len)
 {
     HandleSocket *hs = container_of(s, HandleSocket, sock);
 
     return handle_write(hs->send_h, data, len);
 }
 
-static int sk_handle_write_oob(Socket *s, const void *data, int len)
+static size_t sk_handle_write_oob(Socket *s, const void *data, size_t len)
 {
     /*
      * oob data is treated as inband; nasty, but nothing really
@@ -186,8 +185,6 @@ static void sk_handle_flush(Socket *s)
 static void handle_socket_unfreeze(void *hsv)
 {
     HandleSocket *hs = (HandleSocket *)hsv;
-    void *data;
-    int len;
 
     /*
      * If we've been put into a state other than THAWING since the
@@ -199,16 +196,16 @@ static void handle_socket_unfreeze(void *hsv)
     /*
      * Get some of the data we've buffered.
      */
-    bufchain_prefix(&hs->inputdata, &data, &len);
-    assert(len > 0);
+    ptrlen data = bufchain_prefix(&hs->inputdata);
+    assert(data.len > 0);
 
     /*
      * Hand it off to the plug. Be careful of re-entrance - that might
      * have the effect of trying to close this socket.
      */
     hs->defer_close = true;
-    plug_receive(hs->plug, 0, data, len);
-    bufchain_consume(&hs->inputdata, len);
+    plug_receive(hs->plug, 0, data.ptr, data.len);
+    bufchain_consume(&hs->inputdata, data.len);
     hs->defer_close = false;
     if (hs->deferred_close) {
         sk_handle_close(&hs->sock);

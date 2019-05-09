@@ -428,8 +428,7 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
                 if (s->hostkey_alg) {
                     s->hkey = ssh_key_new_pub(s->hostkey_alg,
                                               s->hostkeydata);
-                    put_string(s->exhash,
-                               s->hostkeydata.ptr, s->hostkeydata.len);
+                    put_stringpl(s->exhash, s->hostkeydata);
                 }
                 /*
                  * Can't loop as we have no token to pass to

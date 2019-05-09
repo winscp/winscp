@@ -29,7 +29,7 @@ struct ssh_verstring_state {
     char prefix[PREFIX_MAXLEN];
     char *impl_name;
     char *vstring;
-    int vslen, vstrsize;
+    size_t vslen, vstrsize;
     char *protoversion;
     const char *softwareversion;
 
@@ -249,19 +249,18 @@ void ssh_verstring_handle_input(BinaryPacketProtocol *bpp)
          * If we didn't find it, consume data until we see a newline.
          */
         while (1) {
-            int len;
-            void *data;
+            ptrlen data;
             char *nl;
 
             /* Wait to receive at least 1 byte, but then consume more
              * than that if it's there. */
             BPP_WAITFOR(1);
-            bufchain_prefix(s->bpp.in_raw, &data, &len);
-            if ((nl = memchr(data, '\012', len)) != NULL) {
-                bufchain_consume(s->bpp.in_raw, nl - (char *)data + 1);
+            data = bufchain_prefix(s->bpp.in_raw);
+            if ((nl = memchr(data.ptr, '\012', data.len)) != NULL) {
+                bufchain_consume(s->bpp.in_raw, nl - (char *)data.ptr + 1);
                 break;
             } else {
-                bufchain_consume(s->bpp.in_raw, len);
+                bufchain_consume(s->bpp.in_raw, data.len);
             }
         }
     }
@@ -281,24 +280,24 @@ void ssh_verstring_handle_input(BinaryPacketProtocol *bpp)
      */
     s->i = 0;
     do {
-        int len;
-        void *data;
+        ptrlen data;
         char *nl;
 
         BPP_WAITFOR(1);
-        bufchain_prefix(s->bpp.in_raw, &data, &len);
-        if ((nl = memchr(data, '\012', len)) != NULL) {
-            len = nl - (char *)data + 1;
+        data = bufchain_prefix(s->bpp.in_raw);
+        if ((nl = memchr(data.ptr, '\012', data.len)) != NULL) {
+            data.len = nl - (char *)data.ptr + 1;
         }
 
-        if (s->vslen + len >= s->vstrsize - 1) {
-            s->vstrsize = (s->vslen + len) * 5 / 4 + 32;
+        if (s->vslen >= s->vstrsize - 1 ||
+            data.len >= s->vstrsize - 1 - s->vslen) {
+            s->vstrsize = (s->vslen + data.len) * 5 / 4 + 32;
             s->vstring = sresize(s->vstring, s->vstrsize, char);
         }
 
-        memcpy(s->vstring + s->vslen, data, len);
-        s->vslen += len;
-        bufchain_consume(s->bpp.in_raw, len);
+        memcpy(s->vstring + s->vslen, data.ptr, data.len);
+        s->vslen += data.len;
+        bufchain_consume(s->bpp.in_raw, data.len);
 
     } while (s->vstring[s->vslen-1] != '\012');
 

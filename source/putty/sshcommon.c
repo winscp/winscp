@@ -288,7 +288,8 @@ void ssh_free_pktout(PktOut *pkt)
  */
 
 static void zombiechan_free(Channel *chan);
-static int zombiechan_send(Channel *chan, bool is_stderr, const void *, int);
+static size_t zombiechan_send(
+    Channel *chan, bool is_stderr, const void *, size_t);
 static void zombiechan_set_input_wanted(Channel *chan, bool wanted);
 static void zombiechan_do_nothing(Channel *chan);
 static void zombiechan_open_failure(Channel *chan, const char *);
@@ -344,8 +345,8 @@ static void zombiechan_open_failure(Channel *chan, const char *errtext)
     assert(chan->vt == &zombiechan_channelvt);
 }
 
-static int zombiechan_send(Channel *chan, bool is_stderr,
-                           const void *data, int length)
+static size_t zombiechan_send(Channel *chan, bool is_stderr,
+                              const void *data, size_t length)
 {
     assert(chan->vt == &zombiechan_channelvt);
     return 0;
@@ -850,7 +851,11 @@ void ssh_ppl_user_output_string_and_free(PacketProtocolLayer *ppl, char *text)
 static void ssh_bpp_input_raw_data_callback(void *context)
 {
     BinaryPacketProtocol *bpp = (BinaryPacketProtocol *)context;
+    Ssh *ssh = bpp->ssh;               /* in case bpp is about to get freed */
     ssh_bpp_handle_input(bpp);
+    /* If we've now cleared enough backlog on the input connection, we
+     * may need to unfreeze it. */
+    ssh_conn_processed_data(ssh);
 }
 
 static void ssh_bpp_output_packet_callback(void *context)

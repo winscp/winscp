@@ -59,8 +59,8 @@ static void ssh2_sharing_queue_global_request(
 static void ssh2_sharing_no_more_downstreams(ConnectionLayer *cl);
 static bool ssh2_agent_forwarding_permitted(ConnectionLayer *cl);
 static void ssh2_terminal_size(ConnectionLayer *cl, int width, int height);
-static void ssh2_stdout_unthrottle(ConnectionLayer *cl, int bufsize);
-static int ssh2_stdin_backlog(ConnectionLayer *cl);
+static void ssh2_stdout_unthrottle(ConnectionLayer *cl, size_t bufsize);
+static size_t ssh2_stdin_backlog(ConnectionLayer *cl);
 static void ssh2_throttle_all_channels(ConnectionLayer *cl, bool throttled);
 static bool ssh2_ldisc_option(ConnectionLayer *cl, int option);
 static void ssh2_set_ldisc_option(ConnectionLayer *cl, int option, bool value);
@@ -122,11 +122,11 @@ static char *ssh2_channel_open_failure_error_text(PktIn *pktin)
     return dupprintf("%s [%.*s]", reason_code_string, PTRLEN_PRINTF(reason));
 }
 
-static int ssh2channel_write(
-    SshChannel *c, bool is_stderr, const void *buf, int len);
+static size_t ssh2channel_write(
+    SshChannel *c, bool is_stderr, const void *buf, size_t len);
 static void ssh2channel_write_eof(SshChannel *c);
 static void ssh2channel_initiate_close(SshChannel *c, const char *err);
-static void ssh2channel_unthrottle(SshChannel *c, int bufsize);
+static void ssh2channel_unthrottle(SshChannel *c, size_t bufsize);
 static Conf *ssh2channel_get_conf(SshChannel *c);
 static void ssh2channel_window_override_removed(SshChannel *c);
 static void ssh2channel_x11_sharing_handover(
@@ -162,7 +162,7 @@ static const struct SshChannelVtable ssh2channel_vtable = {
 static void ssh2_channel_check_close(struct ssh2_channel *c);
 static void ssh2_channel_try_eof(struct ssh2_channel *c);
 static void ssh2_set_window(struct ssh2_channel *c, int newwin);
-static int ssh2_try_send(struct ssh2_channel *c);
+static size_t ssh2_try_send(struct ssh2_channel *c);
 static void ssh2_try_send_and_unthrottle(struct ssh2_channel *c);
 static void ssh2_channel_check_throttle(struct ssh2_channel *c);
 static void ssh2_channel_close_local(struct ssh2_channel *c,
@@ -685,8 +685,7 @@ static bool ssh2_connection_filter_queue(struct ssh2_connection_state *s)
                     BinarySource bs_modes[1];
                     struct ssh_ttymodes modes;
 
-                    BinarySource_BARE_INIT(
-                        bs_modes, encoded_modes.ptr, encoded_modes.len);
+                    BinarySource_BARE_INIT_PL(bs_modes, encoded_modes);
                     modes = read_ttymodes_from_packet(bs_modes, 2);
                     if (get_err(bs_modes) || get_avail(bs_modes) > 0) {
                         ppl_logevent("Unable to decode terminal mode string");
@@ -1064,25 +1063,23 @@ static void ssh2_channel_try_eof(struct ssh2_channel *c)
 /*
  * Attempt to send data on an SSH-2 channel.
  */
-static int ssh2_try_send(struct ssh2_channel *c)
+static size_t ssh2_try_send(struct ssh2_channel *c)
 {
     struct ssh2_connection_state *s = c->connlayer;
     PktOut *pktout;
-    int bufsize;
+    size_t bufsize;
 
     while (c->remwindow > 0 &&
            (bufchain_size(&c->outbuffer) > 0 ||
             bufchain_size(&c->errbuffer) > 0)) {
-	int len;
-	void *data;
         bufchain *buf = (bufchain_size(&c->errbuffer) > 0 ?
                          &c->errbuffer : &c->outbuffer);
 
-	bufchain_prefix(buf, &data, &len);
-	if ((unsigned)len > c->remwindow)
-	    len = c->remwindow;
-	if ((unsigned)len > c->remmaxpkt)
-	    len = c->remmaxpkt;
+	ptrlen data = bufchain_prefix(buf);
+	if (data.len > c->remwindow)
+	    data.len = c->remwindow;
+	if (data.len > c->remmaxpkt)
+	    data.len = c->remmaxpkt;
         if (buf == &c->errbuffer) {
             pktout = ssh_bpp_new_pktout(
                 s->ppl.bpp, SSH2_MSG_CHANNEL_EXTENDED_DATA);
@@ -1092,10 +1089,10 @@ static int ssh2_try_send(struct ssh2_channel *c)
             pktout = ssh_bpp_new_pktout(s->ppl.bpp, SSH2_MSG_CHANNEL_DATA);
             put_uint32(pktout, c->remoteid);
         }
-        put_string(pktout, data, len);
+        put_stringpl(pktout, data);
         pq_push(s->ppl.out_pq, pktout);
-	bufchain_consume(buf, len);
-	c->remwindow -= len;
+	bufchain_consume(buf, data.len);
+	c->remwindow -= data.len;
     }
 
     /*
@@ -1331,11 +1328,11 @@ static void ssh2channel_initiate_close(SshChannel *sc, const char *err)
     ssh2_channel_check_close(c);
 }
 
-static void ssh2channel_unthrottle(SshChannel *sc, int bufsize)
+static void ssh2channel_unthrottle(SshChannel *sc, size_t bufsize)
 {
     struct ssh2_channel *c = container_of(sc, struct ssh2_channel, sc);
     struct ssh2_connection_state *s = c->connlayer;
-    int buflimit;
+    size_t buflimit;
 
     buflimit = s->ssh_is_simple ? 0 : c->locmaxwin;
     if (bufsize < buflimit)
@@ -1347,8 +1344,8 @@ static void ssh2channel_unthrottle(SshChannel *sc, int bufsize)
     }
 }
 
-static int ssh2channel_write(
-    SshChannel *sc, bool is_stderr, const void *buf, int len)
+static size_t ssh2channel_write(
+    SshChannel *sc, bool is_stderr, const void *buf, size_t len)
 {
     struct ssh2_channel *c = container_of(sc, struct ssh2_channel, sc);
     assert(!(c->closes & CLOSES_SENT_EOF));
@@ -1587,7 +1584,7 @@ static void ssh2_terminal_size(ConnectionLayer *cl, int width, int height)
         mainchan_terminal_size(s->mainchan, width, height);
 }
 
-static void ssh2_stdout_unthrottle(ConnectionLayer *cl, int bufsize)
+static void ssh2_stdout_unthrottle(ConnectionLayer *cl, size_t bufsize)
 {
     struct ssh2_connection_state *s =
         container_of(cl, struct ssh2_connection_state, cl);
@@ -1596,7 +1593,7 @@ static void ssh2_stdout_unthrottle(ConnectionLayer *cl, int bufsize)
         sshfwd_unthrottle(s->mainchan_sc, bufsize);
 }
 
-static int ssh2_stdin_backlog(ConnectionLayer *cl)
+static size_t ssh2_stdin_backlog(ConnectionLayer *cl)
 {
     struct ssh2_connection_state *s =
         container_of(cl, struct ssh2_connection_state, cl);
@@ -1680,11 +1677,9 @@ static void ssh2_connection_got_user_input(PacketProtocolLayer *ppl)
         /*
          * Add user input to the main channel's buffer.
          */
-        void *data;
-        int len;
-        bufchain_prefix(s->ppl.user_input, &data, &len);
-        sshfwd_write(s->mainchan_sc, data, len);
-        bufchain_consume(s->ppl.user_input, len);
+        ptrlen data = bufchain_prefix(s->ppl.user_input);
+        sshfwd_write(s->mainchan_sc, data.ptr, data.len);
+        bufchain_consume(s->ppl.user_input, data.len);
     }
 }
 

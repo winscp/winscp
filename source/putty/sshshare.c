@@ -164,7 +164,7 @@ struct ssh_sharing_connstate {
     int curr_packetlen;
 
     unsigned char recvbuf[0x4010];
-    int recvlen;
+    size_t recvlen;
 
     /*
      * Assorted state we have to remember about this downstream, so
@@ -776,7 +776,7 @@ static void send_packet_to_downstream(struct ssh_sharing_connstate *cs,
             put_data(packet, data.ptr, this_len);
             data.ptr = (const char *)data.ptr + this_len;
             data.len -= this_len;
-            PUT_32BIT(packet->s, packet->len-4);
+            PUT_32BIT_MSB_FIRST(packet->s, packet->len-4);
             sk_write(cs->sock, packet->s, packet->len);
             strbuf_free(packet);
         } while (data.len > 0);
@@ -788,7 +788,7 @@ static void send_packet_to_downstream(struct ssh_sharing_connstate *cs,
         put_uint32(packet, 0);     /* placeholder for length field */
         put_byte(packet, type);
         put_data(packet, pkt, pktlen);
-        PUT_32BIT(packet->s, packet->len-4);
+        PUT_32BIT_MSB_FIRST(packet->s, packet->len-4);
         sk_write(cs->sock, packet->s, packet->len);
         strbuf_free(packet);
     }
@@ -1052,7 +1052,7 @@ void share_xchannel_confirmation(struct ssh_sharing_connstate *cs,
         xc->msghead = msg->next;
 
         if (msg->datalen >= 4)
-            PUT_32BIT(msg->data, chan->downstream_id);
+            PUT_32BIT_MSB_FIRST(msg->data, chan->downstream_id);
         send_packet_to_downstream(cs, msg->type,
                                   msg->data, msg->datalen, chan);
 
@@ -1239,7 +1239,7 @@ void share_got_pkt_from_server(ssh_sharing_connstate *cs, int type,
              */
             unsigned char *rewritten = snewn(pktlen, unsigned char);
             memcpy(rewritten, pkt, pktlen);
-            PUT_32BIT(rewritten + id_pos, chan->downstream_id);
+            PUT_32BIT_MSB_FIRST(rewritten + id_pos, chan->downstream_id);
             send_packet_to_downstream(cs, type, rewritten, pktlen, chan);
             sfree(rewritten);
 
@@ -1248,8 +1248,8 @@ void share_got_pkt_from_server(ssh_sharing_connstate *cs, int type,
              */
             if (type == SSH2_MSG_CHANNEL_OPEN_CONFIRMATION) {
                 if (chan->state == UNACKNOWLEDGED && pktlen >= 8) {
-                    share_channel_set_server_id(cs, chan, GET_32BIT(pkt+4),
-                                                OPEN);
+                    share_channel_set_server_id(
+                        cs, chan, GET_32BIT_MSB_FIRST(pkt+4), OPEN);
                     if (!cs->sock) {
                         /* Retry cleaning up this connection, so that we
                          * can send an immediate CLOSE on this channel for
@@ -1490,7 +1490,7 @@ static void share_got_pkt_from_downstream(struct ssh_sharing_connstate *cs,
             goto confused;
         }
         share_add_channel(cs, old_id, new_id, 0, UNACKNOWLEDGED, maxpkt);
-        PUT_32BIT(pkt + id_pos, new_id);
+        PUT_32BIT_MSB_FIRST(pkt + id_pos, new_id);
         ssh_send_packet_from_downstream(cs->parent->cl, cs->id,
                                         type, pkt, pktlen, NULL);
         break;
@@ -1523,7 +1523,7 @@ static void share_got_pkt_from_downstream(struct ssh_sharing_connstate *cs,
             goto confused;
         }
             
-        PUT_32BIT(pkt + id_pos, new_id);
+        PUT_32BIT_MSB_FIRST(pkt + id_pos, new_id);
 
         chan = share_add_channel(cs, old_id, new_id, server_id, OPEN, maxpkt);
 
@@ -1532,7 +1532,7 @@ static void share_got_pkt_from_downstream(struct ssh_sharing_connstate *cs,
                                             type, pkt, pktlen, NULL);
             share_remove_halfchannel(cs, hc);
         } else if (xc) {
-            unsigned downstream_window = GET_32BIT(pkt + 8);
+            unsigned downstream_window = GET_32BIT_MSB_FIRST(pkt + 8);
             if (downstream_window < 256) {
                 err = dupprintf("Initial window size for x11 channel must be at least 256 (got %u)", downstream_window);
                 goto confused;
@@ -1754,7 +1754,7 @@ static void share_got_pkt_from_downstream(struct ssh_sharing_connstate *cs,
         (c) = (unsigned char)*data++;                           \
     } while (0)
 
-static void share_receive(Plug *plug, int urgent, char *data, int len)
+static void share_receive(Plug *plug, int urgent, const char *data, size_t len)
 {
     ssh_sharing_connstate *cs = container_of(
         plug, ssh_sharing_connstate, plug);
@@ -1808,7 +1808,7 @@ static void share_receive(Plug *plug, int urgent, char *data, int len)
             crGetChar(c);
             cs->recvbuf[cs->recvlen++] = c;
         }
-        cs->curr_packetlen = toint(GET_32BIT(cs->recvbuf) + 4);
+        cs->curr_packetlen = toint(GET_32BIT_MSB_FIRST(cs->recvbuf) + 4);
         if (cs->curr_packetlen < 5 ||
             cs->curr_packetlen > sizeof(cs->recvbuf)) {
             char *buf = dupprintf("Bad packet length %u\n",
@@ -1830,7 +1830,7 @@ static void share_receive(Plug *plug, int urgent, char *data, int len)
     crFinishV;
 }
 
-static void share_sent(Plug *plug, int bufsize)
+static void share_sent(Plug *plug, size_t bufsize)
 {
     /* ssh_sharing_connstate *cs = container_of(
         plug, ssh_sharing_connstate, plug); */

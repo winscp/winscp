@@ -282,8 +282,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
             strbuf_free(request);
             crWaitUntilV(!s->auth_agent_query);
         }
-        BinarySource_BARE_INIT(
-            s->asrc, s->agent_response.ptr, s->agent_response.len);
+        BinarySource_BARE_INIT_PL(s->asrc, s->agent_response);
 
         get_uint32(s->asrc); /* skip length field */
         if (get_byte(s->asrc) == SSH2_AGENT_IDENTITIES_ANSWER) {
@@ -471,11 +470,10 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                 if (bufchain_size(&s->banner) &&
                     (flags & (FLAG_VERBOSE | FLAG_INTERACTIVE))) {
                     while (bufchain_size(&s->banner) > 0) {
-                        void *data;
-                        int len;
-                        bufchain_prefix(&s->banner, &data, &len);
-                        display_banner(s->ppl.seat, &s->banner, len); // WINSCP
-                        bufchain_consume(&s->banner, len);
+                        ptrlen data = bufchain_prefix(&s->banner);
+                        seat_stderr(s->ppl.seat, data.ptr, data.len);
+                        display_banner(s->ppl.seat, &s->banner, data.len); // WINSCP
+                        bufchain_consume(&s->banner, data.len);
                     }
                 }
                 bufchain_clear(&s->banner);
@@ -659,7 +657,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                 s->comment = get_string(s->asrc);
                 {
                     BinarySource src[1];
-                    BinarySource_BARE_INIT(src, s->pk.ptr, s->pk.len);
+                    BinarySource_BARE_INIT_PL(src, s->pk);
                     s->alg = get_string(src);
                 }
 
@@ -735,10 +733,10 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                             pq_push(s->ppl.out_pq, s->pktout);
                             s->type = AUTH_TYPE_PUBLICKEY;
                         } else {
-                            /* FIXME: less drastic response */
-                            ssh_sw_abort(s->ppl.ssh, "Pageant failed to "
-                                         "provide a signature");
-                            return;
+                            ppl_logevent("Pageant refused signing request");
+                            ppl_printf("Pageant failed to "
+                                       "provide a signature\r\n");
+                            s->suppress_wait_for_response_packet = true;
                         }
                     }
                 }
@@ -865,6 +863,23 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                             ppl_printf("Unable to load private key (%s)\r\n",
                                        error);
                             key = NULL;
+                            s->suppress_wait_for_response_packet = true;
+                            break; /* try something else */
+                        }
+                    } else {
+                        /* FIXME: if we ever support variable signature
+                         * flags, this is somewhere they'll need to be
+                         * put */
+                        char *invalid = ssh_key_invalid(key->key, 0);
+                        if (invalid) {
+                            ppl_printf("Cannot use this private key (%s)\r\n",
+                                       invalid);
+                            ssh_key_free(key->key);
+                            sfree(key->comment);
+                            sfree(key);
+                            sfree(invalid);
+                            key = NULL;
+                            s->suppress_wait_for_response_packet = true;
                             break; /* try something else */
                         }
                     }
@@ -1634,8 +1649,8 @@ static void ssh2_userauth_add_sigblob(
     struct ssh2_userauth_state *s, PktOut *pkt, ptrlen pkblob, ptrlen sigblob)
 {
     BinarySource pk[1], sig[1];
-    BinarySource_BARE_INIT(pk, pkblob.ptr, pkblob.len);
-    BinarySource_BARE_INIT(sig, sigblob.ptr, sigblob.len);
+    BinarySource_BARE_INIT_PL(pk, pkblob);
+    BinarySource_BARE_INIT_PL(sig, sigblob);
 
     /* dmemdump(pkblob, pkblob_len); */
     /* dmemdump(sigblob, sigblob_len); */

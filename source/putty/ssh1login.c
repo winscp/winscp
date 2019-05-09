@@ -490,8 +490,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                 strbuf_free(request);
                 crMaybeWaitUntilV(!s->auth_agent_query);
             }
-            BinarySource_BARE_INIT(
-                s->asrc, s->agent_response.ptr, s->agent_response.len);
+            BinarySource_BARE_INIT_PL(s->asrc, s->agent_response);
 
             get_uint32(s->asrc); /* skip length field */
             if (get_byte(s->asrc) == SSH1_AGENT_RSA_IDENTITIES_ANSWER) {

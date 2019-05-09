@@ -198,6 +198,14 @@ mp_int *mp_sub(mp_int *x, mp_int *y);
 mp_int *mp_mul(mp_int *x, mp_int *y);
 
 /*
+ * Bitwise operations.
+ */
+void mp_and_into(mp_int *r, mp_int *a, mp_int *b);
+void mp_or_into(mp_int *r, mp_int *a, mp_int *b);
+void mp_xor_into(mp_int *r, mp_int *a, mp_int *b);
+void mp_bic_into(mp_int *r, mp_int *a, mp_int *b);
+
+/*
  * Addition, subtraction and multiplication with one argument small
  * enough to fit in a C integer. For mp_mul_integer_into, it has to be
  * even smaller than that.

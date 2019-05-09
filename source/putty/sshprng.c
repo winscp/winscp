@@ -297,3 +297,9 @@ void prng_add_entropy(prng *pr, unsigned source_id, ptrlen data)
         } // WINSCP
     }
 }
+
+size_t prng_seed_bits(prng *pr)
+{
+    prng_impl *pi = container_of(pr, prng_impl, Prng);
+    return pi->hashalg->hlen * 8;
+}
