@@ -93,8 +93,7 @@ struct X11FakeAuth *x11_invent_fake_auth(tree234 *authtree, int authtype)
         auth->xa1_firstblock = NULL;
 
         while (1) {
-            for (i = 0; i < auth->datalen; i++)
-                auth->data[i] = random_byte();
+            random_read(auth->data, auth->datalen);
             if (add234(authtree, auth) == auth)
                 break;
         }
@@ -111,8 +110,10 @@ struct X11FakeAuth *x11_invent_fake_auth(tree234 *authtree, int authtype)
         memset(auth->xa1_firstblock, 0, 8);
 
         while (1) {
-            for (i = 0; i < auth->datalen; i++)
-                auth->data[i] = (i == 8 ? 0 : random_byte());
+            random_read(auth->data, 15);
+            auth->data[15] = auth->data[8];
+            auth->data[8] = 0;
+
             memcpy(auth->xa1_firstblock, auth->data, 8);
             des_encrypt_xdmauth(auth->data + 9, auth->xa1_firstblock, 8);
             if (add234(authtree, auth) == auth)

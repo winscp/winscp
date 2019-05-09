@@ -295,7 +295,7 @@ static PktOut *ssh1_bpp_new_pktout(int pkt_type)
 
 static void ssh1_bpp_format_packet(struct ssh1_bpp_state *s, PktOut *pkt)
 {
-    int pad, biglen, i, pktoffs;
+    int pad, biglen, pktoffs;
     uint32_t crc;
     int len;
 
@@ -329,8 +329,7 @@ static void ssh1_bpp_format_packet(struct ssh1_bpp_state *s, PktOut *pkt)
     pktoffs = 8 - pad;
     biglen = len + pad;         /* len(padding+type+data+CRC) */
 
-    for (i = pktoffs; i < 4+8; i++)
-        pkt->data[i] = random_byte();
+    random_read(pkt->data + pktoffs, 4+8 - pktoffs);
     crc = crc32_ssh1(
         make_ptrlen(pkt->data + pktoffs + 4, biglen - 4)); /* all ex len */
     PUT_32BIT(pkt->data + pktoffs + 4 + biglen - 4, crc);

@@ -201,8 +201,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
     ssh1_compute_session_id(s->session_id, s->cookie,
                             &s->hostkey, &s->servkey);
 
-    for (i = 0; i < 32; i++)
-        s->session_key[i] = random_byte();
+    random_read(s->session_key, 32);
 
     /*
      * Verify that the `bits' and `bytes' parameters match.
@@ -986,10 +985,8 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                         put_stringz(pkt, s->cur_prompt->prompts[0]->result);
                         pq_push(s->ppl.out_pq, pkt);
                     } else {
-                        int j;
                         strbuf *random_data = strbuf_new();
-                        for (j = 0; j < i; j++)
-                            put_byte(random_data, random_byte());
+                        random_read(strbuf_append(random_data, i), i);
 
                         pkt = ssh_bpp_new_pktout(s->ppl.bpp, SSH1_MSG_IGNORE);
                         put_stringsb(pkt, random_data);
@@ -1009,9 +1006,8 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                 ppl_logevent("Sending length-padded password");
                 pkt = ssh_bpp_new_pktout(s->ppl.bpp, s->pwpkt_type);
                 put_asciz(padded_pw, s->cur_prompt->prompts[0]->result);
-                do {
-                    put_byte(padded_pw, random_byte());
-                } while (padded_pw->len % 64 != 0);
+                size_t pad = 63 & -padded_pw->len;
+                random_read(strbuf_append(padded_pw, pad), pad);
                 put_stringsb(pkt, padded_pw);
                 pq_push(s->ppl.out_pq, pkt);
             } else {

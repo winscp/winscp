@@ -1048,11 +1048,7 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
      */
     s->client_kexinit->len = 0;
     put_byte(s->outgoing_kexinit, SSH2_MSG_KEXINIT);
-    {
-        int i;
-        for (i = 0; i < 16; i++)
-            put_byte(s->outgoing_kexinit, (unsigned char) random_byte());
-    }
+    random_read(strbuf_append(s->outgoing_kexinit, 16), 16);
     ssh2_write_kexinit_lists(
         BinarySink_UPCAST(s->outgoing_kexinit), s->kexlists,
         s->conf, s->ppl.remote_bugs,

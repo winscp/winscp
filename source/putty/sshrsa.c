@@ -56,11 +56,37 @@ bool rsa_ssh1_encrypt(unsigned char *data, int length, RSAKey *key)
     data[0] = 0;
     data[1] = 2;
 
+    size_t npad = key->bytes - length - 3;
+    /*
+     * Generate a sequence of nonzero padding bytes. We do this in a
+     * reasonably uniform way and without having to loop round
+     * retrying the random number generation, by first generating an
+     * integer in [0,2^n) for an appropriately large n; then we
+     * repeatedly multiply by 255 to give an integer in [0,255*2^n),
+     * extract the top 8 bits to give an integer in [0,255), and mask
+     * those bits off before multiplying up again for the next digit.
+     * This gives us a sequence of numbers in [0,255), and of course
+     * adding 1 to each of them gives numbers in [1,256) as we wanted.
+     *
+     * (You could imagine this being a sort of fixed-point operation:
+     * given a uniformly random binary _fraction_, multiplying it by k
+     * and subtracting off the integer part will yield you a sequence
+     * of integers each in [0,k). I'm just doing that scaled up by a
+     * power of 2 to avoid the fractions.)
+     */
+    size_t random_bits = (npad + 16) * 8;
+    mp_int *randval = mp_new(random_bits + 8);
+    mp_int *tmp = mp_random_bits(random_bits);
+    mp_copy_into(randval, tmp);
+    mp_free(tmp);
     for (i = 2; i < key->bytes - length - 1; i++) {
-	do {
-	    data[i] = random_byte();
-	} while (data[i] == 0);
+        mp_mul_integer_into(randval, randval, 255);
+        uint8_t byte = mp_get_byte(randval, random_bits / 8);
+        assert(byte != 255);
+        data[i] = byte + 1;
+        mp_reduce_mod_2to(randval, random_bits);
     }
+    mp_free(randval);
     data[key->bytes - length - 1] = 0;
 
     b1 = mp_from_bytes_be(make_ptrlen(data, key->bytes));
@@ -804,8 +830,7 @@ strbuf *ssh_rsakex_encrypt(RSAKey *rsa, const ssh_hashalg *h, ptrlen in)
     /* Leading byte zero. */
     out[0] = 0;
     /* At position 1, the seed: HLEN bytes of random data. */
-    for (i = 0; i < HLEN; i++)
-        out[i + 1] = random_byte();
+    random_read(out + 1, HLEN);
     /* At position 1+HLEN, the data block DB, consisting of: */
     /* The hash of the label (we only support an empty label here) */
     {

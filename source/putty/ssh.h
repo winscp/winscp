@@ -892,7 +892,7 @@ void SHATransform(uint32_t *digest, uint32_t *data);
 #   undef COMPILER_SUPPORTS_SHA_NI
 #endif
 
-int random_byte(void);
+void random_read(void *out, size_t size);
 void random_add_noise(void *noise, int length);
 void random_add_heavynoise(void *noise, int length);
 

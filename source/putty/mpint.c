@@ -2302,21 +2302,20 @@ mp_int *monty_modsqrt(ModsqrtContext *sc, mp_int *x, unsigned *success)
     return toret;
 }
 
-mp_int *mp_random_bits_fn(size_t bits, int (*gen_byte)(void))
+mp_int *mp_random_bits_fn(size_t bits, random_read_fn_t random_read)
 {
     size_t bytes = (bits + 7) / 8;
-    size_t words = (bits + BIGNUM_INT_BITS - 1) / BIGNUM_INT_BITS;
-    mp_int *x = mp_make_sized(words);
-    for (size_t i = 0; i < bytes; i++) {
-        BignumInt byte = gen_byte();
-        unsigned mask = (1 << size_t_min(8, bits-i*8)) - 1;
-        x->w[i / BIGNUM_INT_BYTES] |=
-            (byte & mask) << (8*(i % BIGNUM_INT_BYTES));
-    }
-    return x;
+    uint8_t *randbuf = snewn(bytes, uint8_t);
+    random_read(randbuf, bytes);
+    if (bytes)
+        randbuf[0] &= (2 << ((bits-1) & 7)) - 1;
+    mp_int *toret = mp_from_bytes_be(make_ptrlen(randbuf, bytes));
+    smemclr(randbuf, bytes);
+    sfree(randbuf);
+    return toret;
 }
 
-mp_int *mp_random_in_range_fn(mp_int *lo, mp_int *hi, int (*gen_byte)(void))
+mp_int *mp_random_in_range_fn(mp_int *lo, mp_int *hi, random_read_fn_t rf)
 {
     mp_int *n_outcomes = mp_sub(hi, lo);
 
@@ -2329,8 +2328,7 @@ mp_int *mp_random_in_range_fn(mp_int *lo, mp_int *hi, int (*gen_byte)(void))
      * is acceptable on the grounds that you'd have to examine so many
      * outputs to even detect it.
      */
-    mp_int *unreduced = mp_random_bits_fn(
-        mp_max_bits(n_outcomes) + 128, gen_byte);
+    mp_int *unreduced = mp_random_bits_fn(mp_max_bits(n_outcomes) + 128, rf);
     mp_int *reduced = mp_mod(unreduced, n_outcomes);
     mp_add_into(reduced, reduced, lo);
     mp_free(unreduced);
