@@ -556,17 +556,12 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
         {
             int klen = ssh_rsakex_klen(s->rsa_kex_key);
             int nbits = klen - (2*s->kex_alg->hash->hlen*8 + 49);
-            int i, byte = 0;
             strbuf *buf, *outstr;
 
+            mp_int *tmp = mp_random_bits(nbits - 1);
             s->K = mp_power_2(nbits - 1);
-
-            for (i = 0; i < nbits; i++) {
-                if ((i & 7) == 0) {
-                    byte = random_byte();
-                }
-                mp_set_bit(s->K, i, (byte >> (i & 7)) & 1);
-            }
+            mp_add_into(s->K, s->K, tmp);
+            mp_free(tmp);
 
             /*
              * Encode this as an mpint.

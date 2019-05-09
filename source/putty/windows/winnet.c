@@ -1496,7 +1496,7 @@ void try_send(NetSocket *s)
 	    bufchain_prefix(&s->output_data, &data, &len);
 	}
 	nsent = p_send(s->s, data, len, urgentflag);
-	noise_ultralight(nsent);
+	noise_ultralight(NOISE_SOURCE_IOLEN, nsent);
 	if (nsent <= 0) {
 	    err = (nsent < 0 ? p_WSAGetLastError() : 0);
 	    if ((err < WSABASEERR && nsent < 0) || err == WSAEWOULDBLOCK) {
@@ -1653,7 +1653,7 @@ void select_result(WPARAM wParam, LPARAM lParam)
 	}
     }
 
-    noise_ultralight(lParam);
+    noise_ultralight(NOISE_SOURCE_IOID, wParam);
 
     switch (WSAGETSELECTEVENT(lParam)) {
       case FD_CONNECT:
@@ -1697,7 +1697,7 @@ void select_result(WPARAM wParam, LPARAM lParam)
 	    atmark = true;
 
 	ret = p_recv(s->s, buf, sizeof(buf), 0);
-	noise_ultralight(ret);
+	noise_ultralight(NOISE_SOURCE_IOLEN, ret);
 	if (ret < 0) {
 	    err = p_WSAGetLastError();
 	    if (err == WSAEWOULDBLOCK) {
@@ -1720,7 +1720,7 @@ void select_result(WPARAM wParam, LPARAM lParam)
 	 * end with type==2 (urgent data).
 	 */
 	ret = p_recv(s->s, buf, sizeof(buf), MSG_OOB);
-	noise_ultralight(ret);
+	noise_ultralight(NOISE_SOURCE_IOLEN, ret);
 	if (ret <= 0) {
             int err = p_WSAGetLastError();
 	    plug_closing(s->plug, winsock_error_string(err), err, 0);

@@ -52,9 +52,10 @@ void random_add_noise(void *noise, int length) { }
 void random_add_heavynoise(void *noise, int length) { }
 void random_ref(void) { }
 void random_unref(void) { }
-int random_byte(void)
+void random_read(void *out, size_t size)
 {
     return 0x45; /* Chosen by eight fair coin tosses */
+    memset(out, 0x45, size); /* Chosen by eight fair coin tosses */
 }
 void random_get_savedata(void **data, int *len) { }
 #else /* !FUZZING */
@@ -331,7 +332,7 @@ void random_unref(void)
     MPEXT_PUTTY_SECTION_LEAVE;
 }
 
-int random_byte(void)
+void random_read(void *vout, size_t size)
 {
 #ifdef MPEXT
     int pos;
@@ -360,10 +361,13 @@ int random_byte(void)
 #else
     assert(random_active);
 
-    if (pool.poolpos >= POOLSIZE)
-	random_stir();
+    uint8_t *out = (uint8_t *)vout;
+    while (size-- > 0) {
+        if (pool.poolpos >= POOLSIZE)
+            random_stir();
 
-    return pool.pool[pool.poolpos++];
+        *out++ = pool.pool[pool.poolpos++];
+    }
 #endif
 }
 

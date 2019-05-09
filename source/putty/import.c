@@ -988,7 +988,7 @@ static bool openssh_pem_write(
      */
     if (passphrase) {
 	unsigned char keybuf[32];
-        int origlen, outlen, pad, i;
+        int origlen, outlen, pad;
 
         /*
          * Padding on OpenSSH keys is deterministic. The number of
@@ -1015,7 +1015,7 @@ static bool openssh_pem_write(
 	/*
 	 * Invent an iv, and derive the encryption key.
 	 */
-	for (i = 0; i < 8; i++) iv[i] = random_byte();
+        random_read(iv, 8);
 
         openssh_pem_derivekey(ptrlen_from_asciz(passphrase), iv, keybuf);
 
@@ -1498,7 +1498,7 @@ static bool openssh_new_write(
     const Filename *filename, ssh2_userkey *key, const char *passphrase)
 {
     strbuf *pubblob, *privblob, *cblob;
-    int padvalue, i;
+    int padvalue;
     unsigned checkint;
     bool ret = false;
     unsigned char bcrypt_salt[16];
@@ -1530,8 +1530,7 @@ static bool openssh_new_write(
     } else {
         strbuf *substr;
 
-        for (i = 0; i < (int)sizeof(bcrypt_salt); i++)
-            bcrypt_salt[i] = random_byte();
+        random_read(bcrypt_salt, sizeof(bcrypt_salt));
         put_stringz(cblob, "aes256-ctr");
         put_stringz(cblob, "bcrypt");
         substr = strbuf_new();
@@ -1551,9 +1550,9 @@ static bool openssh_new_write(
         strbuf *cpblob = strbuf_new();
 
         /* checkint. */
-        checkint = 0;
-        for (i = 0; i < 4; i++)
-            checkint = (checkint << 8) + random_byte();
+        uint8_t checkint_buf[4];
+        random_read(checkint_buf, 4);
+        checkint = GET_32BIT_MSB_FIRST(checkint_buf);
         put_uint32(cpblob, checkint);
         put_uint32(cpblob, checkint);
 
@@ -2279,8 +2278,9 @@ static bool sshcom_write(
     /* Pad encrypted blob to a multiple of cipher block size. */
     if (passphrase) {
 	int padding = -(outblob->len - (lenpos+4)) & 7;
-	while (padding--)
-	    put_byte(outblob, random_byte());
+        uint8_t padding_buf[8];
+        random_read(padding_buf, padding);
+        put_data(outblob, padding_buf, padding);
     }
     ciphertext = outblob->s + lenpos + 4;
     cipherlen = outblob->len - (lenpos + 4);

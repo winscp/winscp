@@ -364,9 +364,9 @@ mp_int *mp_rshift_fixed(mp_int *x, size_t shift);
 /*
  * Generate a random mp_int.
  *
- * The _function_ definitions here will expect to be given a gen_byte
+ * The _function_ definitions here will expect to be given a gen_data
  * function that provides random data. Normally you'd use this using
- * random_byte() from random.c, and the macro wrappers automate that.
+ * random_read() from random.c, and the macro wrappers automate that.
  *
  * (This is a bit of a dodge to avoid mpint.c having a link-time
  * dependency on random.c, so that programs can link against one but
@@ -376,10 +376,11 @@ mp_int *mp_rshift_fixed(mp_int *x, size_t shift);
  * mp_random_bits[_fn] returns an integer 0 <= n < 2^bits.
  * mp_random_in_range[_fn](lo,hi) returns an integer lo <= n < hi.
  */
-mp_int *mp_random_bits_fn(size_t bits, int (*gen_byte)(void));
+typedef void (*random_read_fn_t)(void *, size_t);
+mp_int *mp_random_bits_fn(size_t bits, random_read_fn_t randfn);
 mp_int *mp_random_in_range_fn(
-    mp_int *lo_inclusive, mp_int *hi_exclusive, int (*gen_byte)(void));
-#define mp_random_bits(bits) mp_random_bits_fn(bits, random_byte)
-#define mp_random_in_range(lo, hi) mp_random_in_range_fn(lo, hi, random_byte)
+    mp_int *lo_inclusive, mp_int *hi_exclusive, random_read_fn_t randfn);
+#define mp_random_bits(bits) mp_random_bits_fn(bits, random_read)
+#define mp_random_in_range(lo, hi) mp_random_in_range_fn(lo, hi, random_read)
 
 #endif /* PUTTY_MPINT_H */

@@ -1462,10 +1462,30 @@ FontSpec *fontspec_deserialise(BinarySource *src);
 /*
  * Exports from noise.c.
  */
+typedef enum NoiseSourceId {
+    NOISE_SOURCE_TIME,
+    NOISE_SOURCE_IOID,
+    NOISE_SOURCE_IOLEN,
+    NOISE_SOURCE_KEY,
+    NOISE_SOURCE_MOUSEBUTTON,
+    NOISE_SOURCE_MOUSEPOS,
+    NOISE_SOURCE_MEMINFO,
+    NOISE_SOURCE_STAT,
+    NOISE_SOURCE_RUSAGE,
+    NOISE_SOURCE_FGWINDOW,
+    NOISE_SOURCE_CAPTURE,
+    NOISE_SOURCE_CLIPBOARD,
+    NOISE_SOURCE_QUEUE,
+    NOISE_SOURCE_CURSORPOS,
+    NOISE_SOURCE_THREADTIME,
+    NOISE_SOURCE_PROCTIME,
+    NOISE_SOURCE_PERFCOUNT,
+    NOISE_MAX_SOURCES
+} NoiseSourceId;
 void noise_get_heavy(void (*func) (void *, int));
 void noise_get_light(void (*func) (void *, int));
 void noise_regular(void);
-void noise_ultralight(unsigned long data);
+void noise_ultralight(NoiseSourceId id, unsigned long data);
 void random_save_seed(void);
 void random_destroy_seed(void);
 
@@ -1679,8 +1699,8 @@ void luni_send(Ldisc *, const wchar_t * widebuf, int len, bool interactive);
  * Exports from sshrand.c.
  */
 
-void random_add_noise(void *noise, int length);
-int random_byte(void);
+void random_add_noise(NoiseSourceId source, const void *noise, int length);
+void random_read(void *buf, size_t size);
 void random_get_savedata(void **data, int *len);
 extern int random_active;
 /* The random number subsystem is activated if at least one other entity
