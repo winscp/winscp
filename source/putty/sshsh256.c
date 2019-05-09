@@ -31,6 +31,7 @@
 #   endif
 #endif
 
+// Should be working (when set to HW_SHA256_NI), but we do not have a HW to test this on
 #undef HW_SHA256
 
 #if defined _FORCE_SOFTWARE_SHA || !defined HW_SHA256
@@ -44,13 +45,13 @@
  * The actual query function that asks if hardware acceleration is
  * available.
  */
-static bool sha256_hw_available(void);
+bool sha256_hw_available(void);
 
 /*
  * The top-level selection function, caching the results of
  * sha256_hw_available() so it only has to run once.
  */
-static bool sha256_hw_available_cached(void)
+/*WINSCP static*/ bool sha256_hw_available_cached(void)
 {
     static bool initialised = false;
     static bool hw_available;
@@ -73,6 +74,10 @@ const ssh_hashalg ssh_sha256 = {
     sha256_select, NULL, NULL, NULL,
     32, 64, "SHA-256",
 };
+
+#else
+
+bool sha256_hw_available_cached(void);
 
 #endif
 
@@ -325,6 +330,8 @@ const ssh_hashalg ssh_sha256_sw = {
 
 #if HW_SHA256 == HW_SHA256_NI
 
+#ifdef WINSCP_VS
+
 /*
  * Set target architecture for Clang and GCC
  */
@@ -357,7 +364,7 @@ const ssh_hashalg ssh_sha256_sw = {
 #define GET_CPU_ID_7(out) __cpuidex(out, 7, 0)
 #endif
 
-static bool sha256_hw_available(void)
+/*WINSCP static*/ bool sha256_hw_available(void)
 {
     unsigned int CPUInfo[4];
     GET_CPU_ID_0(CPUInfo);  
@@ -592,7 +599,7 @@ static sha256_ni *sha256_ni_alloc(void)
     return s;
 }
 
-FUNC_ISA static ssh_hash *sha256_ni_new(const ssh_hashalg *alg)
+FUNC_ISA /*WINSCP static*/ ssh_hash *sha256_ni_new(const ssh_hashalg *alg)
 {
     if (!sha256_hw_available_cached())
         return NULL;
@@ -613,7 +620,7 @@ FUNC_ISA static ssh_hash *sha256_ni_new(const ssh_hashalg *alg)
     return &s->hash;
 }
 
-static ssh_hash *sha256_ni_copy(ssh_hash *hash)
+/*WINSCP static*/ ssh_hash *sha256_ni_copy(ssh_hash *hash)
 {
     sha256_ni *s = container_of(hash, sha256_ni, hash);
     sha256_ni *copy = sha256_ni_alloc();
@@ -628,7 +635,7 @@ static ssh_hash *sha256_ni_copy(ssh_hash *hash)
     return &copy->hash;
 }
 
-static void sha256_ni_free(ssh_hash *hash)
+/*WINSCP static*/ void sha256_ni_free(ssh_hash *hash)
 {
     sha256_ni *s = container_of(hash, sha256_ni, hash);
 
@@ -646,7 +653,7 @@ static void sha256_ni_write(BinarySink *bs, const void *vp, size_t len)
             sha256_ni_block(s->core, s->blk.block);
 }
 
-FUNC_ISA static void sha256_ni_final(ssh_hash *hash, uint8_t *digest)
+FUNC_ISA /*WINSCP static*/ void sha256_ni_final(ssh_hash *hash, uint8_t *digest)
 {
     sha256_ni *s = container_of(hash, sha256_ni, hash);
 
@@ -671,10 +678,21 @@ FUNC_ISA static void sha256_ni_final(ssh_hash *hash, uint8_t *digest)
     sha256_ni_free(hash);
 }
 
+#endif // WINSCP_VS
+
+#ifndef WINSCP_VS
+
+ssh_hash *sha256_ni_new(const ssh_hashalg *alg);
+ssh_hash *sha256_ni_copy(ssh_hash *hash);
+void sha256_ni_final(ssh_hash *hash, uint8_t *digest);
+void sha256_ni_free(ssh_hash *hash);
+
 const ssh_hashalg ssh_sha256_hw = {
     sha256_ni_new, sha256_ni_copy, sha256_ni_final, sha256_ni_free,
     32, 64, "SHA-256",
 };
+
+#endif
 
 /* ----------------------------------------------------------------------
  * Stub functions if we have no hardware-accelerated SHA-256. In this
@@ -685,8 +703,6 @@ const ssh_hashalg ssh_sha256_hw = {
  */
 
 #elif HW_SHA256 == HW_SHA256_NONE
-
-#ifndef WINSCP_VS
 
 static bool sha256_hw_available(void)
 {
@@ -700,7 +716,7 @@ static ssh_hash *sha256_stub_new(const ssh_hashalg *alg)
 
 #define STUB_BODY { unreachable("Should never be called"); }
 
-static ssh_hash *sha256_stub_copy(ssh_hash *hash) STUB_BODY
+static ssh_hash *sha256_stub_copy(ssh_hash *hash) { STUB_BODY; return NULL; }
 static void sha256_stub_free(ssh_hash *hash) STUB_BODY
 static void sha256_stub_final(ssh_hash *hash, uint8_t *digest) STUB_BODY
 
@@ -708,7 +724,5 @@ const ssh_hashalg ssh_sha256_hw = {
     sha256_stub_new, sha256_stub_copy, sha256_stub_final, sha256_stub_free,
     32, 64, "SHA-256",
 };
-
-#endif // !WINSCP_VS
 
 #endif /* HW_SHA256 */

@@ -677,6 +677,8 @@ bool ssh2_mac_verify(ssh2_mac *, const void *, int, unsigned long seq);
  * string with a given key in the most obvious way. */
 void mac_simple(const ssh2_macalg *alg, ptrlen key, ptrlen data, void *output);
 
+#endif // !WINSCP_VS
+
 struct ssh_hash {
     const ssh_hashalg *vt;
     BinarySink_DELEGATE_IMPLEMENTATION;
@@ -691,6 +693,8 @@ struct ssh_hashalg {
     int blocklen; /* length of the hash's input block, or 0 for N/A */
     const char *text_name;
 };
+
+#ifndef WINSCP_VS
 
 #define ssh_hash_new(alg) ((alg)->new(alg))
 #define ssh_hash_copy(ctx) ((ctx)->vt->copy(ctx))
