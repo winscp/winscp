@@ -31,18 +31,20 @@
 #   endif
 #endif
 
+#undef HW_SHA256
+
 #if defined _FORCE_SOFTWARE_SHA || !defined HW_SHA256
 #   undef HW_SHA256
 #   define HW_SHA256 HW_SHA256_NONE
 #endif
+
+#ifndef WINSCP_VS
 
 /*
  * The actual query function that asks if hardware acceleration is
  * available.
  */
 static bool sha256_hw_available(void);
-
-#ifndef WINSCP_VS
 
 /*
  * The top-level selection function, caching the results of
@@ -58,7 +60,6 @@ static bool sha256_hw_available_cached(void)
     }
     return hw_available;
 }
-#endif // !WINSCP_VS
 
 static ssh_hash *sha256_select(const ssh_hashalg *alg)
 {
@@ -72,6 +73,8 @@ const ssh_hashalg ssh_sha256 = {
     sha256_select, NULL, NULL, NULL,
     32, 64, "SHA-256",
 };
+
+#endif
 
 /* ----------------------------------------------------------------------
  * Definitions likely to be helpful to multiple implementations.
@@ -116,7 +119,9 @@ static inline void sha256_block_setup(sha256_block *blk)
     blk->len = 0;
 }
 
-static inline bool sha256_block_write(
+#ifdef WINSCP_VS
+
+/*WINSCP static inline*/ bool sha256_block_write(
     sha256_block *blk, const void **vdata, size_t *len)
 {
     size_t blkleft = sizeof(blk->block) - blk->used;
@@ -137,7 +142,7 @@ static inline bool sha256_block_write(
     return false;
 }
 
-static inline void sha256_block_pad(sha256_block *blk, BinarySink *bs)
+/*WINSCP static inline*/ void sha256_block_pad(sha256_block *blk, BinarySink *bs)
 {
     uint64_t final_len = blk->len << 3;
     size_t pad = 1 + (63 & (55 - blk->used));
@@ -149,16 +154,14 @@ static inline void sha256_block_pad(sha256_block *blk, BinarySink *bs)
 
     assert(blk->used == 0 && "Should have exactly hit a block boundary");
 }
-#endif // !WINSCP_VS
 
-#ifndef WINSCP_VS
 /* ----------------------------------------------------------------------
  * Software implementation of SHA-256.
  */
 
 static inline uint32_t ror(uint32_t x, unsigned y)
 {
-    return (x << (31 & -y)) | (x >> (31 & y));
+    return (x << (31 & /*WINSCP*/(uint32_t)(-(int32_t)y))) | (x >> (31 & y));
 }
 
 static inline uint32_t Ch(uint32_t ctrl, uint32_t if1, uint32_t if0)
@@ -205,7 +208,7 @@ static inline void sha256_sw_round(
     *h = t1 + t2;
 }
 
-static void sha256_sw_block(uint32_t *core, const uint8_t *block)
+/*WINSCP static*/ void sha256_sw_block(uint32_t *core, const uint8_t *block)
 {
     uint32_t w[SHA256_ROUNDS];
     uint32_t a,b,c,d,e,f,g,h;
@@ -235,6 +238,15 @@ static void sha256_sw_block(uint32_t *core, const uint8_t *block)
 
     smemclr(w, sizeof(w));
 }
+
+#endif // WINSCP_VS
+
+#ifndef WINSCP_VS
+
+bool sha256_block_write(
+    sha256_block *blk, const void **vdata, size_t *len);
+void sha256_sw_block(uint32_t *core, const uint8_t *block);
+void sha256_block_pad(sha256_block *blk, BinarySink *bs);
 
 typedef struct sha256_sw {
     uint32_t core[8];
@@ -293,9 +305,12 @@ static void sha256_sw_final(ssh_hash *hash, uint8_t *digest)
     sha256_sw *s = container_of(hash, sha256_sw, hash);
 
     sha256_block_pad(&s->blk, BinarySink_UPCAST(s));
-    for (size_t i = 0; i < 8; i++)
+    { // WINSCP
+    size_t i; // WINSCP
+    for (i = 0; i < 8; i++)
         PUT_32BIT_MSB_FIRST(digest + 4*i, s->core[i]);
     sha256_sw_free(hash);
+    } // WINSCP
 }
 
 const ssh_hashalg ssh_sha256_sw = {
@@ -671,6 +686,8 @@ const ssh_hashalg ssh_sha256_hw = {
 
 #elif HW_SHA256 == HW_SHA256_NONE
 
+#ifndef WINSCP_VS
+
 static bool sha256_hw_available(void)
 {
     return false;
@@ -691,5 +708,7 @@ const ssh_hashalg ssh_sha256_hw = {
     sha256_stub_new, sha256_stub_copy, sha256_stub_final, sha256_stub_free,
     32, 64, "SHA-256",
 };
+
+#endif // !WINSCP_VS
 
 #endif /* HW_SHA256 */
