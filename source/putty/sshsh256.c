@@ -12,6 +12,7 @@
  */
 #define HW_SHA256_NONE 0
 #define HW_SHA256_NI 1
+#define HW_SHA256_NEON 2
 
 #ifdef _FORCE_SHA_NI
 #   define HW_SHA256 HW_SHA256_NI
@@ -21,8 +22,7 @@
 #       define HW_SHA256 HW_SHA256_NI
 #   endif
 #elif defined(__GNUC__)
-#    if (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 4)) && \
-    (defined(__x86_64__) || defined(__i386))
+#    if (__GNUC__ >= 5) && (defined(__x86_64__) || defined(__i386))
 #       define HW_SHA256 HW_SHA256_NI
 #    endif
 #elif defined (_MSC_VER)
@@ -33,6 +33,37 @@
 
 // Should be working (when set to HW_SHA256_NI), but we do not have a HW to test this on
 #undef HW_SHA256
+
+#ifdef _FORCE_SHA_NEON
+#   define HW_SHA256 HW_SHA256_NEON
+#elif defined __BYTE_ORDER__ && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+    /* Arm can potentially support both endiannesses, but this code
+     * hasn't been tested on anything but little. If anyone wants to
+     * run big-endian, they'll need to fix it first. */
+#elif defined __ARM_FEATURE_CRYPTO
+    /* If the Arm crypto extension is available already, we can
+     * support NEON SHA without having to enable anything by hand */
+#   define HW_SHA256 HW_SHA256_NEON
+#elif defined(__clang__)
+#   if __has_attribute(target) && __has_include(<arm_neon.h>) &&       \
+    (defined(__aarch64__))
+        /* clang can enable the crypto extension in AArch64 using
+         * __attribute__((target)) */
+#       define HW_SHA256 HW_SHA256_NEON
+#       define USE_CLANG_ATTR_TARGET_AARCH64
+#   endif
+#elif defined _MSC_VER
+    /* Visual Studio supports the crypto extension when targeting
+     * AArch64, but as of VS2017, the AArch32 header doesn't quite
+     * manage it (declaring the shae/shad intrinsics without a round
+     * key operand). */
+#   if defined _M_ARM64
+#       define HW_SHA256 HW_SHA256_NEON
+#       if defined _M_ARM64
+#           define USE_ARM64_NEON_H /* unusual header name in this case */
+#       endif
+#   endif
+#endif
 
 #if defined _FORCE_SOFTWARE_SHA || !defined HW_SHA256
 #   undef HW_SHA256
@@ -72,7 +103,7 @@ static ssh_hash *sha256_select(const ssh_hashalg *alg)
 
 const ssh_hashalg ssh_sha256 = {
     sha256_select, NULL, NULL, NULL,
-    32, 64, "SHA-256",
+    32, 64, HASHALG_NAMES_ANNOTATED("SHA-256", "dummy selector vtable"),
 };
 
 #else
@@ -320,7 +351,7 @@ static void sha256_sw_final(ssh_hash *hash, uint8_t *digest)
 
 const ssh_hashalg ssh_sha256_sw = {
     sha256_sw_new, sha256_sw_copy, sha256_sw_final, sha256_sw_free,
-    32, 64, "SHA-256",
+    32, 64, HASHALG_NAMES_ANNOTATED("SHA-256", "unaccelerated"),
 };
 #endif // !WINSCP_VS
 
@@ -335,13 +366,12 @@ const ssh_hashalg ssh_sha256_sw = {
 /*
  * Set target architecture for Clang and GCC
  */
-#if !defined(__clang__) && defined(__GNUC__)
+#if defined(__clang__) || defined(__GNUC__)
+#    define FUNC_ISA __attribute__ ((target("sse4.1,sha")))
+#if !defined(__clang__)
 #    pragma GCC target("sha")
 #    pragma GCC target("sse4.1")
 #endif
-
-#if defined(__clang__) || (defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 8)))
-#    define FUNC_ISA __attribute__ ((target("sse4.1,sha")))
 #else
 #    define FUNC_ISA
 #endif
@@ -689,7 +719,194 @@ void sha256_ni_free(ssh_hash *hash);
 
 const ssh_hashalg ssh_sha256_hw = {
     sha256_ni_new, sha256_ni_copy, sha256_ni_final, sha256_ni_free,
-    32, 64, "SHA-256",
+    32, 64, HASHALG_NAMES_ANNOTATED("SHA-256", "SHA-NI accelerated"),
+};
+
+/* ----------------------------------------------------------------------
+ * Hardware-accelerated implementation of SHA-256 using Arm NEON.
+ */
+
+#elif HW_SHA256 == HW_SHA256_NEON
+
+/*
+ * Manually set the target architecture, if we decided above that we
+ * need to.
+ */
+#ifdef USE_CLANG_ATTR_TARGET_AARCH64
+/*
+ * A spot of cheating: redefine some ACLE feature macros before
+ * including arm_neon.h. Otherwise we won't get the SHA intrinsics
+ * defined by that header, because it will be looking at the settings
+ * for the whole translation unit rather than the ones we're going to
+ * put on some particular functions using __attribute__((target)).
+ */
+#define __ARM_NEON 1
+#define __ARM_FEATURE_CRYPTO 1
+#define FUNC_ISA __attribute__ ((target("neon,crypto")))
+#endif /* USE_CLANG_ATTR_TARGET_AARCH64 */
+
+#ifndef FUNC_ISA
+#define FUNC_ISA
+#endif
+
+#ifdef USE_ARM64_NEON_H
+#include <arm64_neon.h>
+#else
+#include <arm_neon.h>
+#endif
+
+static bool sha256_hw_available(void)
+{
+    /*
+     * For Arm, we delegate to a per-platform detection function (see
+     * explanation in sshaes.c).
+     */
+    return platform_sha256_hw_available();
+}
+
+typedef struct sha256_neon_core sha256_neon_core;
+struct sha256_neon_core {
+    uint32x4_t abcd, efgh;
+};
+
+FUNC_ISA
+static inline uint32x4_t sha256_neon_load_input(const uint8_t *p)
+{
+    return vreinterpretq_u32_u8(vrev32q_u8(vld1q_u8(p)));
+}
+
+FUNC_ISA
+static inline uint32x4_t sha256_neon_schedule_update(
+    uint32x4_t m4, uint32x4_t m3, uint32x4_t m2, uint32x4_t m1)
+{
+    return vsha256su1q_u32(vsha256su0q_u32(m4, m3), m2, m1);
+}
+
+FUNC_ISA
+static inline sha256_neon_core sha256_neon_round4(
+    sha256_neon_core old, uint32x4_t sched, unsigned round)
+{
+    sha256_neon_core new;
+
+    uint32x4_t round_input = vaddq_u32(
+        sched, vld1q_u32(sha256_round_constants + round));
+    new.abcd = vsha256hq_u32 (old.abcd, old.efgh, round_input);
+    new.efgh = vsha256h2q_u32(old.efgh, old.abcd, round_input);
+    return new;
+}
+
+FUNC_ISA
+static inline void sha256_neon_block(sha256_neon_core *core, const uint8_t *p)
+{
+    uint32x4_t s0, s1, s2, s3;
+    sha256_neon_core cr = *core;
+
+    s0 = sha256_neon_load_input(p);
+    cr = sha256_neon_round4(cr, s0, 0);
+    s1 = sha256_neon_load_input(p+16);
+    cr = sha256_neon_round4(cr, s1, 4);
+    s2 = sha256_neon_load_input(p+32);
+    cr = sha256_neon_round4(cr, s2, 8);
+    s3 = sha256_neon_load_input(p+48);
+    cr = sha256_neon_round4(cr, s3, 12);
+    s0 = sha256_neon_schedule_update(s0, s1, s2, s3);
+    cr = sha256_neon_round4(cr, s0, 16);
+    s1 = sha256_neon_schedule_update(s1, s2, s3, s0);
+    cr = sha256_neon_round4(cr, s1, 20);
+    s2 = sha256_neon_schedule_update(s2, s3, s0, s1);
+    cr = sha256_neon_round4(cr, s2, 24);
+    s3 = sha256_neon_schedule_update(s3, s0, s1, s2);
+    cr = sha256_neon_round4(cr, s3, 28);
+    s0 = sha256_neon_schedule_update(s0, s1, s2, s3);
+    cr = sha256_neon_round4(cr, s0, 32);
+    s1 = sha256_neon_schedule_update(s1, s2, s3, s0);
+    cr = sha256_neon_round4(cr, s1, 36);
+    s2 = sha256_neon_schedule_update(s2, s3, s0, s1);
+    cr = sha256_neon_round4(cr, s2, 40);
+    s3 = sha256_neon_schedule_update(s3, s0, s1, s2);
+    cr = sha256_neon_round4(cr, s3, 44);
+    s0 = sha256_neon_schedule_update(s0, s1, s2, s3);
+    cr = sha256_neon_round4(cr, s0, 48);
+    s1 = sha256_neon_schedule_update(s1, s2, s3, s0);
+    cr = sha256_neon_round4(cr, s1, 52);
+    s2 = sha256_neon_schedule_update(s2, s3, s0, s1);
+    cr = sha256_neon_round4(cr, s2, 56);
+    s3 = sha256_neon_schedule_update(s3, s0, s1, s2);
+    cr = sha256_neon_round4(cr, s3, 60);
+
+    core->abcd = vaddq_u32(core->abcd, cr.abcd);
+    core->efgh = vaddq_u32(core->efgh, cr.efgh);
+}
+
+typedef struct sha256_neon {
+    sha256_neon_core core;
+    sha256_block blk;
+    BinarySink_IMPLEMENTATION;
+    ssh_hash hash;
+} sha256_neon;
+
+static void sha256_neon_write(BinarySink *bs, const void *vp, size_t len);
+
+static ssh_hash *sha256_neon_new(const ssh_hashalg *alg)
+{
+    if (!sha256_hw_available_cached())
+        return NULL;
+
+    sha256_neon *s = snew(sha256_neon);
+
+    s->core.abcd = vld1q_u32(sha256_initial_state);
+    s->core.efgh = vld1q_u32(sha256_initial_state + 4);
+
+    sha256_block_setup(&s->blk);
+
+    s->hash.vt = alg;
+    BinarySink_INIT(s, sha256_neon_write);
+    BinarySink_DELEGATE_INIT(&s->hash, s);
+    return &s->hash;
+}
+
+static ssh_hash *sha256_neon_copy(ssh_hash *hash)
+{
+    sha256_neon *s = container_of(hash, sha256_neon, hash);
+    sha256_neon *copy = snew(sha256_neon);
+
+    *copy = *s; /* structure copy */
+
+    BinarySink_COPIED(copy);
+    BinarySink_DELEGATE_INIT(&copy->hash, copy);
+
+    return &copy->hash;
+}
+
+static void sha256_neon_free(ssh_hash *hash)
+{
+    sha256_neon *s = container_of(hash, sha256_neon, hash);
+    smemclr(s, sizeof(*s));
+    sfree(s);
+}
+
+static void sha256_neon_write(BinarySink *bs, const void *vp, size_t len)
+{
+    sha256_neon *s = BinarySink_DOWNCAST(bs, sha256_neon);
+
+    while (len > 0)
+        if (sha256_block_write(&s->blk, &vp, &len))
+            sha256_neon_block(&s->core, s->blk.block);
+}
+
+static void sha256_neon_final(ssh_hash *hash, uint8_t *digest)
+{
+    sha256_neon *s = container_of(hash, sha256_neon, hash);
+
+    sha256_block_pad(&s->blk, BinarySink_UPCAST(s));
+    vst1q_u8(digest,      vrev32q_u8(vreinterpretq_u8_u32(s->core.abcd)));
+    vst1q_u8(digest + 16, vrev32q_u8(vreinterpretq_u8_u32(s->core.efgh)));
+    sha256_neon_free(hash);
+}
+
+const ssh_hashalg ssh_sha256_hw = {
+    sha256_neon_new, sha256_neon_copy, sha256_neon_final, sha256_neon_free,
+    32, 64, HASHALG_NAMES_ANNOTATED("SHA-256", "NEON accelerated"),
 };
 
 #endif
@@ -722,7 +939,8 @@ static void sha256_stub_final(ssh_hash *hash, uint8_t *digest) STUB_BODY
 
 const ssh_hashalg ssh_sha256_hw = {
     sha256_stub_new, sha256_stub_copy, sha256_stub_final, sha256_stub_free,
-    32, 64, "SHA-256",
+    32, 64, HASHALG_NAMES_ANNOTATED(
+        "SHA-256", "!NONEXISTENT ACCELERATED VERSION!"),
 };
 
 #endif /* HW_SHA256 */

@@ -80,25 +80,47 @@ bool ssh2_bpp_check_unimplemented(BinaryPacketProtocol *bpp, PktIn *pktin);
  * purposes of triggering an SSH-2 rekey when either one gets over a
  * configured limit. In each direction, the flag 'running' indicates
  * that we haven't hit the limit yet, and 'remaining' tracks how much
- * longer until we do. The macro DTS_CONSUME subtracts a given amount
- * from the counter in a particular direction, and evaluates to a
- * boolean indicating whether the limit has been hit.
+ * longer until we do. The function dts_consume() subtracts a given
+ * amount from the counter in a particular direction, and sets
+ * 'expired' if the limit has been hit.
  *
  * The limit is sticky: once 'running' has flipped to false,
  * 'remaining' is no longer decremented, so it shouldn't dangerously
  * wrap round.
  */
-struct DataTransferStats {
-    struct {
-        bool running;
-        unsigned long remaining;
-    } in, out;
+struct DataTransferStatsDirection {
+    bool running, expired;
+    unsigned long remaining;
 };
-#define DTS_CONSUME(stats, direction, size)             \
-    ((stats)->direction.running &&                      \
-     (stats)->direction.remaining <= (size) ?           \
-     ((stats)->direction.running = false, true) :       \
-     ((stats)->direction.remaining -= (size), false))
+struct DataTransferStats {
+    struct DataTransferStatsDirection in, out;
+};
+static inline void dts_consume(struct DataTransferStatsDirection *s,
+                               unsigned long size_consumed)
+{
+    if (s->running) {
+        if (s->remaining <= size_consumed) {
+            s->running = false;
+            s->expired = true;
+        } else {
+            s->remaining -= size_consumed;
+        }
+    }
+}
+static inline void dts_reset(struct DataTransferStatsDirection *s,
+                             unsigned long starting_size)
+{
+    s->expired = false;
+    s->remaining = starting_size;
+    /*
+     * The semantics of setting CONF_ssh_rekey_data to zero are to
+     * disable data-volume based rekeying completely. So if the
+     * starting size is actually zero, we don't set 'running' to true
+     * in the first place, which means we won't ever set the expired
+     * flag.
+     */
+    s->running = (starting_size != 0);
+}
 
 BinaryPacketProtocol *ssh2_bpp_new(
     LogContext *logctx, struct DataTransferStats *stats, bool is_server);

@@ -1442,6 +1442,8 @@ static void sk_net_close(Socket *sock)
     if (s->child)
 	sk_net_close(&s->child->sock);
 
+    bufchain_clear(&s->output_data);
+
     del234(sktree, s);
 #ifdef MPEXT
     do_select(s->plug, s->s, false);

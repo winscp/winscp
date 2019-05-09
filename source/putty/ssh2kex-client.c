@@ -94,7 +94,7 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
             ppl_logevent("Doing Diffie-Hellman key exchange using %d-bit "
                          "modulus and hash %s with a server-supplied group",
                          dh_modulus_bit_size(s->dh_ctx),
-                         s->kex_alg->hash->text_name);
+                         ssh_hash_alg(s->exhash)->text_name);
         } else {
             s->ppl.bpp->pls->kctx = SSH2_PKTCTX_DHGROUP;
             s->dh_ctx = dh_setup_group(s->kex_alg);
@@ -104,7 +104,7 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
             ppl_logevent("Doing Diffie-Hellman key exchange using %d-bit "
                          "modulus and hash %s with standard group \"%s\"",
                          dh_modulus_bit_size(s->dh_ctx),
-                         s->kex_alg->hash->text_name,
+                         ssh_hash_alg(s->exhash)->text_name,
                          s->kex_alg->groupname);
         }
 
@@ -180,7 +180,7 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
 
         ppl_logevent("Doing ECDH key exchange with curve %s and hash %s",
                      ssh_ecdhkex_curve_textname(s->kex_alg),
-                     s->kex_alg->hash->text_name);
+                     ssh_hash_alg(s->exhash)->text_name);
         s->ppl.bpp->pls->kctx = SSH2_PKTCTX_ECDHKEX;
 
         s->ecdh_key = ssh_ecdhkex_newkey(s->kex_alg);
@@ -314,7 +314,7 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
         }
 
         ppl_logevent("Doing GSSAPI (with Kerberos V5) Diffie-Hellman key "
-                     "exchange with hash %s", s->kex_alg->hash->text_name);
+                     "exchange with hash %s", ssh_hash_alg(s->exhash)->text_name);
         /* Now generate e for Diffie-Hellman. */
         seat_set_busy_status(s->ppl.seat, BUSY_CPU);
         s->e = dh_create_e(s->dh_ctx, s->nbits * 2);
@@ -513,7 +513,7 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
 
         assert(s->kex_alg->main_type == KEXTYPE_RSA);
         ppl_logevent("Doing RSA key exchange with hash %s",
-                     s->kex_alg->hash->text_name);
+                     ssh_hash_alg(s->exhash)->text_name);
         s->ppl.bpp->pls->kctx = SSH2_PKTCTX_RSAKEX;
         /*
          * RSA key exchange. First expect a KEXRSA_PUBKEY packet

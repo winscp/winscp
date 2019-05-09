@@ -38,6 +38,7 @@ static inline BignumInt mp_word(mp_int *x, size_t i)
 static mp_int *mp_make_sized(size_t nw)
 {
     mp_int *x = snew_plus(mp_int, nw * sizeof(BignumInt));
+    assert(nw);                   /* we outlaw the zero-word mp_int */
     x->nw = nw;
     x->w = snew_plus_get_aux(x);
     mp_clear(x);
@@ -147,8 +148,9 @@ void mp_cond_clear(mp_int *x, unsigned clear)
  */
 static mp_int *mp_from_bytes_int(ptrlen bytes, size_t m, size_t c)
 {
-    mp_int *n = mp_make_sized(
-        (bytes.len + BIGNUM_INT_BYTES - 1) / BIGNUM_INT_BYTES);
+    size_t nw = (bytes.len + BIGNUM_INT_BYTES - 1) / BIGNUM_INT_BYTES;
+    nw = size_t_max(nw, 1);
+    mp_int *n = mp_make_sized(nw);
     size_t i; // WINSCP
     for (i = 0; i < bytes.len; i++)
         n->w[i / BIGNUM_INT_BYTES] |=
@@ -192,8 +194,7 @@ mp_int *mp_from_decimal_pl(ptrlen decimal)
     size_t words = bits / BIGNUM_INT_BITS + 1;
 
     mp_int *x = mp_make_sized(words);
-    size_t i; // WINSCP
-    for (i = 0;; i++) {
+    for (size_t i = 0; i < decimal.len; i++) {
         mp_add_integer_into(x, x, ((char *)decimal.ptr)[i] - '0');
 
         if (i+1 == decimal.len)
@@ -220,6 +221,7 @@ mp_int *mp_from_hex_pl(ptrlen hex)
     pinitassert(hex.len <= (~(size_t)0) / 4);
     size_t bits = hex.len * 4;
     size_t words = (bits + BIGNUM_INT_BITS - 1) / BIGNUM_INT_BITS;
+    words = size_t_max(words, 1);
     mp_int *x = mp_make_sized(words);
     size_t nibble; // WINSCP
     for (nibble = 0; nibble < hex.len; nibble++) {
@@ -1135,7 +1137,8 @@ void mp_rshift_fixed_into(mp_int *r, mp_int *a, size_t bits)
 mp_int *mp_rshift_fixed(mp_int *x, size_t bits)
 {
     size_t words = bits / BIGNUM_INT_BITS;
-    mp_int *r = mp_make_sized(x->nw - size_t_min(x->nw, words));
+    size_t nw = x->nw - size_t_min(x->nw, words);
+    mp_int *r = mp_make_sized(size_t_max(nw, 1));
     mp_rshift_fixed_into(r, x, bits);
     return r;
 }
@@ -1210,6 +1213,7 @@ mp_int *mp_invert_mod_2to(mp_int *x, size_t p)
 
     { // WINSCP
     size_t rw = (p + BIGNUM_INT_BITS - 1) / BIGNUM_INT_BITS;
+    rw = size_t_max(rw, 1);
     mp_int *r = mp_make_sized(rw);
 
     size_t mul_scratchsize = mp_mul_scratchspace(2*rw, rw, rw);
@@ -2230,10 +2234,22 @@ void mp_min_into(mp_int *r, mp_int *x, mp_int *y)
     mp_select_into(r, x, y, mp_cmp_hs(x, y));
 }
 
+void mp_max_into(mp_int *r, mp_int *x, mp_int *y)
+{
+    mp_select_into(r, y, x, mp_cmp_hs(x, y));
+}
+
 mp_int *mp_min(mp_int *x, mp_int *y)
 {
     mp_int *r = mp_make_sized(size_t_min(x->nw, y->nw));
     mp_min_into(r, x, y);
+    return r;
+}
+
+mp_int *mp_max(mp_int *x, mp_int *y)
+{
+    mp_int *r = mp_make_sized(size_t_max(x->nw, y->nw));
+    mp_max_into(r, x, y);
     return r;
 }
 

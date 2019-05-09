@@ -343,7 +343,8 @@ static void sha512_final(ssh_hash *hash, unsigned char *output)
 }
 
 const ssh_hashalg ssh_sha512 = {
-    sha512_new, sha512_copy, sha512_final, sha512_free, 64, BLKSIZE, "SHA-512"
+    sha512_new, sha512_copy, sha512_final, sha512_free,
+    64, BLKSIZE, HASHALG_NAMES_BARE("SHA-512"),
 };
 
 static ssh_hash *sha384_new(const ssh_hashalg *alg)
@@ -363,5 +364,6 @@ static void sha384_final(ssh_hash *hash, unsigned char *output)
 }
 
 const ssh_hashalg ssh_sha384 = {
-    sha384_new, sha512_copy, sha384_final, sha512_free, 48, BLKSIZE, "SHA-384"
+    sha384_new, sha512_copy, sha384_final, sha512_free,
+    48, BLKSIZE, HASHALG_NAMES_BARE("SHA-384"),
 };

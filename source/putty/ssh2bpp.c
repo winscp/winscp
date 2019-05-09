@@ -514,7 +514,7 @@ static void ssh2_bpp_handle_input(BinaryPacketProtocol *bpp)
 
         s->length = s->payload + 5;
 
-        DTS_CONSUME(s->stats, in, s->packetlen);
+        dts_consume(&s->stats->in, s->packetlen);
 
         s->pktin->sequence = s->in.sequence++;
 
@@ -762,8 +762,7 @@ static void ssh2_bpp_format_packet_inner(struct ssh2_bpp_state *s, PktOut *pkt)
 
     s->out.sequence++;       /* whether or not we MACed */
 
-    DTS_CONSUME(s->stats, out, origlen + padding);
-
+    dts_consume(&s->stats->out, origlen + padding);
 }
 
 static void ssh2_bpp_format_packet(struct ssh2_bpp_state *s, PktOut *pkt)

@@ -371,13 +371,14 @@ bool rsa_ssh1_savekey(const Filename *filename, RSAKey *key,
      * Done. Write the result to the file.
      */
     fp = f_open(filename, "wb", true);
+    bool ret = false;
     if (fp) {
-	bool ret = (fwrite(buf->u, 1, buf->len, fp) == (size_t) (buf->len));
+        ret = (fwrite(buf->u, 1, buf->len, fp) == (size_t) (buf->len));
         if (fclose(fp))
             ret = false;
-	return ret;
-    } else
-	return false;
+    }
+    strbuf_free(buf);
+    return ret;
 }
 
 /* ----------------------------------------------------------------------
