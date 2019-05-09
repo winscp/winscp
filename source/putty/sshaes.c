@@ -369,6 +369,29 @@ static inline void dumpslices_BignumInt(
  *
  * Source: 'A new combinational logic minimization technique with
  * applications to cryptology', https://eprint.iacr.org/2009/191
+ *
+ * As a minor speed optimisation, I use a modified version of the
+ * S-box which omits the additive constant 0x63, i.e. this S-box
+ * consists of only the field inversion and linear map components.
+ * Instead, the addition of the constant is deferred until after the
+ * subsequent ShiftRows and MixColumns stages, so that it happens at
+ * the same time as adding the next round key - and then we just make
+ * it _part_ of the round key, so it doesn't cost any extra
+ * instructions to add.
+ *
+ * (Obviously adding a constant to each byte commutes with ShiftRows,
+ * which only permutes the bytes. It also commutes with MixColumns:
+ * that's not quite so obvious, but since the effect of MixColumns is
+ * to multiply a constant polynomial M into each column, it is obvious
+ * that adding some polynomial K and then multiplying by M is
+ * equivalent to multiplying by M and then adding the product KM. And
+ * in fact, since the coefficients of M happen to sum to 1, it turns
+ * out that KM = K, so we don't even have to change the constant when
+ * we move it to the far side of MixColumns.)
+ *
+ * Of course, one knock-on effect of this is that the use of the S-box
+ * *during* key setup has to be corrected by manually adding on the
+ * constant afterwards!
  */
 
 /* Initial linear transformation for the forward S-box, from Fig 2 of
@@ -495,14 +518,14 @@ static inline void dumpslices_BignumInt(
         uintN_t t65 = t61 ^ t62;                        \
         uintN_t t66 = z1 ^ t63;                         \
         output[7] = t59 ^ t63;                          \
-        output[1] = ~(t56 ^ t62);                       \
-        output[0] = ~(t48 ^ t60);                       \
+        output[1] = t56 ^ t62;                          \
+        output[0] = t48 ^ t60;                          \
         uintN_t t67 = t64 ^ t65;                        \
         output[4] = t53 ^ t66;                          \
         output[3] = t51 ^ t66;                          \
         output[2] = t47 ^ t65;                          \
-        output[6] = ~(t64 ^ output[4]);                 \
-        output[5] = ~(t55 ^ t67);                       \
+        output[6] = t64 ^ output[4];                    \
+        output[5] = t55 ^ t67;                          \
         /* end */
 
 #define BITSLICED_SUBBYTES(output, input, uintN_t) do { \
@@ -520,23 +543,19 @@ static inline void dumpslices_BignumInt(
  * S_box.
  */
 #define SBOX_BACKWARD_TOP_TRANSFORM(input, uintN_t)     \
-    /* Initial subtraction of the constant */           \
-    uintN_t iv0 = ~input[0], iv1 = ~input[1];           \
-    uintN_t iv5 = ~input[5], iv6 = ~input[6];           \
-                                                        \
-    uintN_t y5 = input[4] ^ iv6;                        \
-    uintN_t y19 = input[3] ^ iv0;                       \
-    uintN_t itmp8 = y5 ^ iv0;                           \
-    uintN_t y4 = itmp8 ^ iv1;                           \
+    uintN_t y5 = input[4] ^ input[6];                   \
+    uintN_t y19 = input[3] ^ input[0];                  \
+    uintN_t itmp8 = y5 ^ input[0];                      \
+    uintN_t y4 = itmp8 ^ input[1];                      \
     uintN_t y9 = input[4] ^ input[3];                   \
     uintN_t y2 = y9 ^ y4;                               \
     uintN_t itmp9 = y2 ^ input[7];                      \
-    uintN_t y1 = y9 ^ iv0;                              \
+    uintN_t y1 = y9 ^ input[0];                         \
     uintN_t y6 = y5 ^ input[7];                         \
-    uintN_t y18 = y9 ^ iv5;                             \
+    uintN_t y18 = y9 ^ input[5];                        \
     uintN_t y7 = y18 ^ y2;                              \
     uintN_t y16 = y7 ^ y1;                              \
-    uintN_t y21 = y7 ^ iv1;                             \
+    uintN_t y21 = y7 ^ input[1];                        \
     uintN_t y3 = input[4] ^ input[7];                   \
     uintN_t y13 = y16 ^ y21;                            \
     uintN_t y8 = input[4] ^ y6;                         \
@@ -860,7 +879,15 @@ static void aes_sliced_key_setup(
             }
 
             if (sub) {
+                /* Apply the SubBytes transform to the key word. But
+                 * here we need to apply the _full_ SubBytes from the
+                 * spec, including the constant which our S-box leaves
+                 * out. */
                 BITSLICED_SUBBYTES(slices, slices, uint16_t);
+                slices[0] ^= 0xFFFF;
+                slices[1] ^= 0xFFFF;
+                slices[5] ^= 0xFFFF;
+                slices[6] ^= 0xFFFF;
             }
 
             if (rotate_and_round_constant) {
@@ -892,6 +919,17 @@ static void aes_sliced_key_setup(
 
     smemclr(inblk, sizeof(inblk));
     smemclr(slices, sizeof(slices));
+
+    /*
+     * Add the S-box constant to every round key after the first one,
+     * compensating for it being left out in the main cipher.
+     */
+    for (size_t i = 8; i < 8 * (sched_words/4); i += 8) {
+        sk->roundkeys_serial[i+0] ^= 0xFFFF;
+        sk->roundkeys_serial[i+1] ^= 0xFFFF;
+        sk->roundkeys_serial[i+5] ^= 0xFFFF;
+        sk->roundkeys_serial[i+6] ^= 0xFFFF;
+    }
 
     /*
      * Replicate that set of round keys into larger integers for the

@@ -16,7 +16,7 @@ struct hmac {
 
 struct hmac_extra {
     const ssh_hashalg *hashalg_base;
-    const char *suffix;
+    const char *suffix, *annotation;
 };
 
 static ssh2_mac *hmac_new(const ssh2_macalg *alg, ssh_cipher *cipher)
@@ -44,8 +44,21 @@ static ssh2_mac *hmac_new(const ssh2_macalg *alg, ssh_cipher *cipher)
     ctx->digest = snewn(ctx->hashalg->hlen, uint8_t);
 
     ctx->text_name = strbuf_new();
-    strbuf_catf(ctx->text_name, "HMAC-%s%s",
-                ctx->hashalg->text_name, extra->suffix);
+    strbuf_catf(ctx->text_name, "HMAC-%s",
+                ctx->hashalg->text_basename, extra->suffix);
+    if (extra->annotation || ctx->hashalg->annotation) {
+        strbuf_catf(ctx->text_name, " (");
+        const char *sep = "";
+        if (extra->annotation) {
+            strbuf_catf(ctx->text_name, "%s%s", sep, extra->annotation);
+            sep = ", ";
+        }
+        if (ctx->hashalg->annotation) {
+            strbuf_catf(ctx->text_name, "%s%s", sep, ctx->hashalg->annotation);
+            sep = ", ";
+        }
+        strbuf_catf(ctx->text_name, ")");
+    }
 
     ctx->mac.vt = alg;
     BinarySink_DELEGATE_INIT(&ctx->mac, ctx->h_live);
@@ -56,7 +69,6 @@ static ssh2_mac *hmac_new(const ssh2_macalg *alg, ssh_cipher *cipher)
 static void hmac_free(ssh2_mac *mac)
 {
     struct hmac *ctx = container_of(mac, struct hmac, mac);
-    const struct hmac_extra *extra = (const struct hmac_extra *)mac->vt->extra;
 
     ssh_hash_free(ctx->h_outer);
     ssh_hash_free(ctx->h_inner);
@@ -75,7 +87,6 @@ static void hmac_free(ssh2_mac *mac)
 static void hmac_key(ssh2_mac *mac, ptrlen key)
 {
     struct hmac *ctx = container_of(mac, struct hmac, mac);
-    const struct hmac_extra *extra = (const struct hmac_extra *)mac->vt->extra;
 
     const uint8_t *kp;
     size_t klen;
@@ -149,7 +160,6 @@ static void hmac_start(ssh2_mac *mac)
 static void hmac_genresult(ssh2_mac *mac, unsigned char *output)
 {
     struct hmac *ctx = container_of(mac, struct hmac, mac);
-    const struct hmac_extra *extra = (const struct hmac_extra *)mac->vt->extra;
     ssh_hash *htmp;
 
     /* Leave h_live in place, so that the SSH-2 BPP can continue

@@ -664,7 +664,9 @@ struct ssh_hashalg {
     void (*free)(ssh_hash *);
     int hlen; /* output length in bytes */
     int blocklen; /* length of the hash's input block, or 0 for N/A */
-    const char *text_name;
+    const char *text_basename;     /* the semantic name of the hash */
+    const char *annotation;   /* extra info, e.g. which of multiple impls */
+    const char *text_name;    /* both combined, e.g. "SHA-n (unaccelerated)" */
 };
 
 #define ssh_hash_new(alg) ((alg)->new(alg))
@@ -672,6 +674,12 @@ struct ssh_hashalg {
 #define ssh_hash_final(ctx, out) ((ctx)->vt->final(ctx, out))
 #define ssh_hash_free(ctx) ((ctx)->vt->free(ctx))
 #define ssh_hash_alg(ctx) ((ctx)->vt)
+
+/* Handy macros for defining all those text-name fields at once */
+#define HASHALG_NAMES_BARE(base) \
+    base, NULL, base
+#define HASHALG_NAMES_ANNOTATED(base, annotation) \
+    base, annotation, base " (" annotation ")"
 
 void hash_simple(const ssh_hashalg *alg, ptrlen data, void *output);
 
@@ -856,6 +864,8 @@ extern const ssh_compression_alg ssh_zlib;
  * platform subdirectory.
  */
 bool platform_aes_hw_available(void);
+bool platform_sha256_hw_available(void);
+bool platform_sha1_hw_available(void);
 
 /*
  * PuTTY version number formatted as an SSH version string. 

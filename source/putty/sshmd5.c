@@ -271,5 +271,5 @@ static void md5_final(ssh_hash *hash, unsigned char *output)
 }
 
 const ssh_hashalg ssh_md5 = {
-    md5_new, md5_copy, md5_final, md5_free, 16, 64, "MD5"
+    md5_new, md5_copy, md5_final, md5_free, 16, 64, HASHALG_NAMES_BARE("MD5"),
 };

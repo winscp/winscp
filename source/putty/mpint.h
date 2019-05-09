@@ -152,10 +152,13 @@ unsigned mp_hs_integer(mp_int *x, uintmax_t n);
 unsigned mp_eq_integer(mp_int *x, uintmax_t n);
 
 /*
- * Take the minimum of two mp_ints, without using a conditional branch.
+ * Take the minimum or maximum of two mp_ints, without using a
+ * conditional branch.
  */
 void mp_min_into(mp_int *r, mp_int *x, mp_int *y);
+void mp_max_into(mp_int *r, mp_int *x, mp_int *y);
 mp_int *mp_min(mp_int *x, mp_int *y);
+mp_int *mp_max(mp_int *x, mp_int *y);
 
 /*
  * Diagnostic function. Writes out x in hex to the supplied stdio

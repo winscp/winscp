@@ -1261,8 +1261,7 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
     pktout = ssh_bpp_new_pktout(s->ppl.bpp, SSH2_MSG_NEWKEYS);
     pq_push(s->ppl.out_pq, pktout);
     /* Start counting down the outgoing-data limit for these cipher keys. */
-    s->stats->out.running = true;
-    s->stats->out.remaining = s->max_data_size;
+    dts_reset(&s->stats->out, s->max_data_size);
 
     /*
      * Force the BPP to synchronously marshal all packets up to and
@@ -1324,8 +1323,7 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
         return;
     }
     /* Start counting down the incoming-data limit for these cipher keys. */
-    s->stats->in.running = true;
-    s->stats->in.remaining = s->max_data_size;
+    dts_reset(&s->stats->in, s->max_data_size);
 
     /*
      * We've seen incoming NEWKEYS, so create and initialise
@@ -1490,10 +1488,10 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
         if (!s->rekey_class) {
             /* If we don't yet have any other reason to rekey, check
              * if we've hit our data limit in either direction. */
-            if (!s->stats->in.running) {
+            if (s->stats->in.expired) {
                 s->rekey_reason = "too much data received";
                 s->rekey_class = RK_NORMAL;
-            } else if (!s->stats->out.running) {
+            } else if (s->stats->out.expired) {
                 s->rekey_reason = "too much data sent";
                 s->rekey_class = RK_NORMAL;
             }
@@ -1511,9 +1509,8 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
                              s->rekey_reason);
                 /* Reset the counters, so that at least this message doesn't
                  * hit the event log _too_ often. */
-                s->stats->in.running = s->stats->out.running = true;
-                s->stats->in.remaining = s->stats->out.remaining =
-                    s->max_data_size;
+                dts_reset(&s->stats->in, s->max_data_size);
+                dts_reset(&s->stats->out, s->max_data_size);
                 (void) ssh2_transport_timer_update(s, 0);
                 s->rekey_class = RK_NONE;
             } else {
@@ -1910,11 +1907,9 @@ static void ssh2_transport_reconfigure(PacketProtocolLayer *ppl, Conf *conf)
         if (s->max_data_size < old_max_data_size) {
             unsigned long diff = old_max_data_size - s->max_data_size;
 
-            /* We must decrement both counters, so avoid short-circuit
-             * evaluation skipping one */
-            bool out_expired = DTS_CONSUME(s->stats, out, diff);
-            bool in_expired = DTS_CONSUME(s->stats, in, diff);
-            if (out_expired || in_expired)
+            dts_consume(&s->stats->out, diff);
+            dts_consume(&s->stats->in, diff);
+            if (s->stats->out.expired || s->stats->in.expired)
                 rekey_reason = "data limit lowered";
         } else {
             unsigned long diff = s->max_data_size - old_max_data_size;

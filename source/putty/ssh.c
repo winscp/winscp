@@ -1013,7 +1013,8 @@ static void ssh_unthrottle(Backend *be, int bufsize)
 {
     Ssh *ssh = container_of(be, Ssh, backend);
 
-    ssh_stdout_unthrottle(ssh->cl, bufsize);
+    if (ssh->cl)
+        ssh_stdout_unthrottle(ssh->cl, bufsize);
 }
 
 static bool ssh_connected(Backend *be)

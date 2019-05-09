@@ -1337,6 +1337,8 @@ static void sk_net_close(Socket *sock)
     if (s->child)
 	sk_net_close(&s->child->sock);
 
+    bufchain_clear(&s->output_data);
+
     del234(sktree, s);
     do_select(s->s, false);
     p_closesocket(s->s);

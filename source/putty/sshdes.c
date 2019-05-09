@@ -61,6 +61,14 @@
 #include "ssh.h"
 #include "mpint_i.h"               /* we reuse the BignumInt system */
 
+/* If you compile with -DDES_DIAGNOSTICS, intermediate results will be
+ * sent to debug() (so you also need to compile with -DDEBUG).
+ * Otherwise this ifdef will condition away all the debug() calls. */
+#ifndef DES_DIAGNOSTICS
+#undef debug
+#define debug(...) ((void)0)
+#endif
+
 /*
  * General utility functions.
  */

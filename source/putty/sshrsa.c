@@ -328,9 +328,12 @@ bool rsa_verify(RSAKey *key)
      * should instead flip them round into the canonical order of
      * p > q. This also involves regenerating iqmp.
      */
-    unsigned swap_pq = mp_cmp_hs(key->q, key->p);
-    mp_cond_swap(key->p, key->q, swap_pq);
-    mp_free(key->iqmp);
+    mp_int *p_new = mp_max(key->p, key->q);
+    mp_int *q_new = mp_min(key->p, key->q);
+    mp_free(key->p);
+    mp_free(key->q);
+    key->p = p_new;
+    key->q = q_new;
     key->iqmp = mp_invert(key->q, key->p);
 
     return ok;
