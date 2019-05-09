@@ -181,7 +181,7 @@ static void ssh1_bpp_handle_input(BinaryPacketProtocol *bpp)
             ssh_cipher_decrypt(s->cipher_in, s->data, s->biglen);
 
         s->realcrc = crc32_ssh1(make_ptrlen(s->data, s->biglen - 4));
-        s->gotcrc = GET_32BIT(s->data + s->biglen - 4);
+        s->gotcrc = GET_32BIT_MSB_FIRST(s->data + s->biglen - 4);
         if (s->gotcrc != s->realcrc) {
             ssh_sw_abort(s->bpp.ssh, "Incorrect CRC received on packet");
             crStopV;
@@ -332,8 +332,8 @@ static void ssh1_bpp_format_packet(struct ssh1_bpp_state *s, PktOut *pkt)
     random_read(pkt->data + pktoffs, 4+8 - pktoffs);
     crc = crc32_ssh1(
         make_ptrlen(pkt->data + pktoffs + 4, biglen - 4)); /* all ex len */
-    PUT_32BIT(pkt->data + pktoffs + 4 + biglen - 4, crc);
-    PUT_32BIT(pkt->data + pktoffs, len);
+    PUT_32BIT_MSB_FIRST(pkt->data + pktoffs + 4 + biglen - 4, crc);
+    PUT_32BIT_MSB_FIRST(pkt->data + pktoffs, len);
 
     if (s->cipher_out)
         ssh_cipher_encrypt(s->cipher_out, pkt->data + pktoffs + 4, biglen);

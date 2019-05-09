@@ -28,8 +28,8 @@ struct SocketVtable {
     /* if p is NULL, it doesn't change the plug */
     /* but it does return the one it's using */
     void (*close) (Socket *s);
-    int (*write) (Socket *s, const void *data, int len);
-    int (*write_oob) (Socket *s, const void *data, int len);
+    size_t (*write) (Socket *s, const void *data, size_t len);
+    size_t (*write_oob) (Socket *s, const void *data, size_t len);
     void (*write_eof) (Socket *s);
     void (*flush) (Socket *s);
     void (*set_frozen) (Socket *s, bool is_frozen);
@@ -70,7 +70,7 @@ struct PlugVtable {
     /* error_msg is NULL iff it is not an error (ie it closed normally) */
     /* calling_back != 0 iff there is a Plug function */
     /* currently running (would cure the fixme in try_send()) */
-    void (*receive) (Plug *p, int urgent, char *data, int len);
+    void (*receive) (Plug *p, int urgent, const char *data, size_t len);
     /*
      *  - urgent==0. `data' points to `len' bytes of perfectly
      *    ordinary data.
@@ -81,7 +81,7 @@ struct PlugVtable {
      *  - urgent==2. `data' points to `len' bytes of data,
      *    the first of which was the one at the Urgent mark.
      */
-    void (*sent) (Plug *p, int bufsize);
+    void (*sent) (Plug *p, size_t bufsize);
     /*
      * The `sent' function is called when the pending send backlog
      * on a socket is cleared or partially cleared. The new backlog
@@ -279,6 +279,7 @@ void backend_socket_log(Seat *seat, LogContext *logctx,
                         int type, SockAddr *addr, int port,
                         const char *error_msg, int error_code, Conf *conf,
                         bool session_started);
-void log_proxy_stderr(Plug *plug, bufchain *buf, const void *vdata, int len);
+void log_proxy_stderr(
+    Plug *plug, bufchain *buf, const void *vdata, size_t len);
 
 #endif

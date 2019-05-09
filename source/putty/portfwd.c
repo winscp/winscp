@@ -192,7 +192,7 @@ static char *ipv6_to_string(ptrlen ipv6)
                      (unsigned)GET_16BIT_MSB_FIRST(addr + 14));
 }
 
-static void pfd_receive(Plug *plug, int urgent, char *data, int len)
+static void pfd_receive(Plug *plug, int urgent, const char *data, size_t len)
 {
     struct PortForwarding *pf =
         container_of(plug, struct PortForwarding, plug);
@@ -417,7 +417,7 @@ static void pfd_receive(Plug *plug, int urgent, char *data, int len)
         sshfwd_write(pf->c, data, len);
 }
 
-static void pfd_sent(Plug *plug, int bufsize)
+static void pfd_sent(Plug *plug, size_t bufsize)
 {
     struct PortForwarding *pf =
         container_of(plug, struct PortForwarding, plug);
@@ -437,7 +437,8 @@ static const PlugVtable PortForwarding_plugvt = {
 static void pfd_chan_free(Channel *chan);
 static void pfd_open_confirmation(Channel *chan);
 static void pfd_open_failure(Channel *chan, const char *errtext);
-static int pfd_send(Channel *chan, bool is_stderr, const void *data, int len);
+static size_t pfd_send(
+    Channel *chan, bool is_stderr, const void *data, size_t len);
 static void pfd_send_eof(Channel *chan);
 static void pfd_set_input_wanted(Channel *chan, bool wanted);
 static char *pfd_log_close_msg(Channel *chan);
@@ -644,7 +645,8 @@ static void pfd_chan_free(Channel *chan)
 /*
  * Called to send data down the raw connection.
  */
-static int pfd_send(Channel *chan, bool is_stderr, const void *data, int len)
+static size_t pfd_send(
+    Channel *chan, bool is_stderr, const void *data, size_t len)
 {
     assert(chan->vt == &PortForwarding_channelvt);
     PortForwarding *pf = container_of(chan, PortForwarding, chan);

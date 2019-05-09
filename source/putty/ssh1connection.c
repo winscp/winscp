@@ -55,8 +55,8 @@ static struct X11FakeAuth *ssh1_add_x11_display(
     ConnectionLayer *cl, int authtype, struct X11Display *disp);
 static bool ssh1_agent_forwarding_permitted(ConnectionLayer *cl);
 static void ssh1_terminal_size(ConnectionLayer *cl, int width, int height);
-static void ssh1_stdout_unthrottle(ConnectionLayer *cl, int bufsize);
-static int ssh1_stdin_backlog(ConnectionLayer *cl);
+static void ssh1_stdout_unthrottle(ConnectionLayer *cl, size_t bufsize);
+static size_t ssh1_stdin_backlog(ConnectionLayer *cl);
 static void ssh1_throttle_all_channels(ConnectionLayer *cl, bool throttled);
 static bool ssh1_ldisc_option(ConnectionLayer *cl, int option);
 static void ssh1_set_ldisc_option(ConnectionLayer *cl, int option, bool value);
@@ -91,11 +91,11 @@ static const struct ConnectionLayerVtable ssh1_connlayer_vtable = {
     ssh1_set_wants_user_input,
 };
 
-static int ssh1channel_write(
-    SshChannel *c, bool is_stderr, const void *buf, int len);
+static size_t ssh1channel_write(
+    SshChannel *c, bool is_stderr, const void *buf, size_t len);
 static void ssh1channel_write_eof(SshChannel *c);
 static void ssh1channel_initiate_close(SshChannel *c, const char *err);
-static void ssh1channel_unthrottle(SshChannel *c, int bufsize);
+static void ssh1channel_unthrottle(SshChannel *c, size_t bufsize);
 static Conf *ssh1channel_get_conf(SshChannel *c);
 static void ssh1channel_window_override_removed(SshChannel *c) { /* ignore */ }
 
@@ -578,7 +578,7 @@ static void ssh1channel_initiate_close(SshChannel *sc, const char *err)
     ssh1_channel_check_close(c);
 }
 
-static void ssh1channel_unthrottle(SshChannel *sc, int bufsize)
+static void ssh1channel_unthrottle(SshChannel *sc, size_t bufsize)
 {
     struct ssh1_channel *c = container_of(sc, struct ssh1_channel, sc);
     struct ssh1_connection_state *s = c->connlayer;
@@ -589,8 +589,8 @@ static void ssh1channel_unthrottle(SshChannel *sc, int bufsize)
     }
 }
 
-static int ssh1channel_write(
-    SshChannel *sc, bool is_stderr, const void *buf, int len)
+static size_t ssh1channel_write(
+    SshChannel *sc, bool is_stderr, const void *buf, size_t len)
 {
     struct ssh1_channel *c = container_of(sc, struct ssh1_channel, sc);
     struct ssh1_connection_state *s = c->connlayer;
@@ -695,7 +695,7 @@ static void ssh1_terminal_size(ConnectionLayer *cl, int width, int height)
         mainchan_terminal_size(s->mainchan, width, height);
 }
 
-static void ssh1_stdout_unthrottle(ConnectionLayer *cl, int bufsize)
+static void ssh1_stdout_unthrottle(ConnectionLayer *cl, size_t bufsize)
 {
     struct ssh1_connection_state *s =
         container_of(cl, struct ssh1_connection_state, cl);
@@ -706,7 +706,7 @@ static void ssh1_stdout_unthrottle(ConnectionLayer *cl, int bufsize)
     }
 }
 
-static int ssh1_stdin_backlog(ConnectionLayer *cl)
+static size_t ssh1_stdin_backlog(ConnectionLayer *cl)
 {
     return 0;
 }
@@ -780,13 +780,11 @@ static void ssh1_connection_got_user_input(PacketProtocolLayer *ppl)
         /*
          * Add user input to the main channel's buffer.
          */
-        void *data;
-        int len;
-        bufchain_prefix(s->ppl.user_input, &data, &len);
-        if (len > 512)
-            len = 512;
-        sshfwd_write(&s->mainchan_sc, data, len);
-        bufchain_consume(s->ppl.user_input, len);
+        ptrlen data = bufchain_prefix(s->ppl.user_input);
+        if (data.len > 512)
+            data.len = 512;
+        sshfwd_write(&s->mainchan_sc, data.ptr, data.len);
+        bufchain_consume(s->ppl.user_input, data.len);
     }
 }
 

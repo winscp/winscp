@@ -357,7 +357,7 @@ int rsa_ssh1_public_blob_len(ptrlen data)
 {
     BinarySource src[1];
 
-    BinarySource_BARE_INIT(src, data.ptr, data.len);
+    BinarySource_BARE_INIT_PL(src, data);
 
     /* Expect a length word, then exponent and modulus. (It doesn't
      * even matter which order.) */
@@ -420,7 +420,7 @@ static ssh_key *rsa2_new_pub(const ssh_keyalg *self, ptrlen data)
     BinarySource src[1];
     RSAKey *rsa;
 
-    BinarySource_BARE_INIT(src, data.ptr, data.len);
+    BinarySource_BARE_INIT_PL(src, data);
     if (!ptrlen_eq_string(get_string(src), "ssh-rsa"))
 	return NULL;
 
@@ -484,7 +484,7 @@ static ssh_key *rsa2_new_priv(const ssh_keyalg *self,
         return NULL;
 
     rsa = container_of(sshk, RSAKey, sshk);
-    BinarySource_BARE_INIT(src, priv.ptr, priv.len);
+    BinarySource_BARE_INIT_PL(src, priv);
     rsa->private_exponent = get_mp_ssh2(src);
     rsa->p = get_mp_ssh2(src);
     rsa->q = get_mp_ssh2(src);
@@ -551,74 +551,108 @@ static int rsa2_pubkey_bits(const ssh_keyalg *self, ptrlen pub)
     return ret;
 }
 
-/*
- * This is the magic ASN.1/DER prefix that goes in the decoded
- * signature, between the string of FFs and the actual SHA hash
- * value. The meaning of it is:
- * 
- * 00 -- this marks the end of the FFs; not part of the ASN.1 bit itself
- * 
- * 30 21 -- a constructed SEQUENCE of length 0x21
- *    30 09 -- a constructed sub-SEQUENCE of length 9
- *       06 05 -- an object identifier, length 5
- *          2B 0E 03 02 1A -- object id { 1 3 14 3 2 26 }
- *                            (the 1,3 comes from 0x2B = 43 = 40*1+3)
- *       05 00 -- NULL
- *    04 14 -- a primitive OCTET STRING of length 0x14
- *       [0x14 bytes of hash data follows]
- * 
- * The object id in the middle there is listed as `id-sha1' in
- * ftp://ftp.rsasecurity.com/pub/pkcs/pkcs-1/pkcs-1v2-1d2.asn (the
- * ASN module for PKCS #1) and its expanded form is as follows:
- * 
- * id-sha1                OBJECT IDENTIFIER ::= {
- *    iso(1) identified-organization(3) oiw(14) secsig(3)
- *    algorithms(2) 26 }
- */
-static const unsigned char sha1_asn1_prefix[] = {
-    0x00, 0x30, 0x21, 0x30, 0x09, 0x06, 0x05, 0x2B,
-    0x0E, 0x03, 0x02, 0x1A, 0x05, 0x00, 0x04, 0x14,
-};
+static inline const ssh_hashalg *rsa2_hash_alg_for_flags(
+    unsigned flags, const char **protocol_id_out)
+{
+    const ssh_hashalg *halg;
+    const char *protocol_id;
 
-/*
- * Two more similar pieces of ASN.1 used for signatures using SHA-256
- * and SHA-512, in the same format but differing only in various
- * length fields and OID.
- */
-static const unsigned char sha256_asn1_prefix[] = {
-    0x00, 0x30, 0x31, 0x30, 0x0d, 0x06, 0x09, 0x60,
-    0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01,
-    0x05, 0x00, 0x04, 0x20,
-};
-static const unsigned char sha512_asn1_prefix[] = {
-    0x00, 0x30, 0x51, 0x30, 0x0d, 0x06, 0x09, 0x60,
-    0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x03,
-    0x05, 0x00, 0x04, 0x40,
-};
+    if (flags & SSH_AGENT_RSA_SHA2_256) {
+        halg = &ssh_sha256;
+        protocol_id = "rsa-sha2-256";
+    } else if (flags & SSH_AGENT_RSA_SHA2_512) {
+        halg = &ssh_sha512;
+        protocol_id = "rsa-sha2-512";
+    } else {
+        halg = &ssh_sha1;
+        protocol_id = "ssh-rsa";
+    }
 
-#define SHA1_ASN1_PREFIX_LEN sizeof(sha1_asn1_prefix)
+    if (protocol_id_out)
+        *protocol_id_out = protocol_id;
+
+    return halg;
+}
+
+static inline ptrlen rsa_pkcs1_prefix_for_hash(const ssh_hashalg *halg)
+{
+    if (halg == &ssh_sha1) {
+        /*
+         * This is the magic ASN.1/DER prefix that goes in the decoded
+         * signature, between the string of FFs and the actual SHA-1
+         * hash value. The meaning of it is:
+         *
+         * 00 -- this marks the end of the FFs; not part of the ASN.1
+         * bit itself
+         *
+         * 30 21 -- a constructed SEQUENCE of length 0x21
+         *    30 09 -- a constructed sub-SEQUENCE of length 9
+         *       06 05 -- an object identifier, length 5
+         *          2B 0E 03 02 1A -- object id { 1 3 14 3 2 26 }
+         *                            (the 1,3 comes from 0x2B = 43 = 40*1+3)
+         *       05 00 -- NULL
+         *    04 14 -- a primitive OCTET STRING of length 0x14
+         *       [0x14 bytes of hash data follows]
+         *
+         * The object id in the middle there is listed as `id-sha1' in
+         * ftp://ftp.rsasecurity.com/pub/pkcs/pkcs-1/pkcs-1v2-1d2.asn
+         * (the ASN module for PKCS #1) and its expanded form is as
+         * follows:
+         *
+         * id-sha1                OBJECT IDENTIFIER ::= {
+         *    iso(1) identified-organization(3) oiw(14) secsig(3)
+         *    algorithms(2) 26 }
+         */
+        static const unsigned char sha1_asn1_prefix[] = {
+            0x00, 0x30, 0x21, 0x30, 0x09, 0x06, 0x05, 0x2B,
+            0x0E, 0x03, 0x02, 0x1A, 0x05, 0x00, 0x04, 0x14,
+        };
+        return PTRLEN_FROM_CONST_BYTES(sha1_asn1_prefix);
+    }
+
+    if (halg == &ssh_sha256) {
+        /*
+         * A similar piece of ASN.1 used for signatures using SHA-256,
+         * in the same format but differing only in various length
+         * fields and OID.
+         */
+        static const unsigned char sha256_asn1_prefix[] = {
+            0x00, 0x30, 0x31, 0x30, 0x0d, 0x06, 0x09, 0x60,
+            0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01,
+            0x05, 0x00, 0x04, 0x20,
+        };
+        return PTRLEN_FROM_CONST_BYTES(sha256_asn1_prefix);
+    }
+
+    if (halg == &ssh_sha512) {
+        /*
+         * And one more for SHA-512.
+         */
+        static const unsigned char sha512_asn1_prefix[] = {
+            0x00, 0x30, 0x51, 0x30, 0x0d, 0x06, 0x09, 0x60,
+            0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x03,
+            0x05, 0x00, 0x04, 0x40,
+        };
+        return PTRLEN_FROM_CONST_BYTES(sha512_asn1_prefix);
+    }
+
+    unreachable("bad hash algorithm for RSA PKCS#1");
+}
+
+static inline size_t rsa_pkcs1_length_of_fixed_parts(const ssh_hashalg *halg)
+{
+    ptrlen asn1_prefix = rsa_pkcs1_prefix_for_hash(halg);
+    return halg->hlen + asn1_prefix.len + 2;
+}
 
 static unsigned char *rsa_pkcs1_signature_string(
     size_t nbytes, const ssh_hashalg *halg, ptrlen data)
 {
-    const unsigned char *asn1_prefix;
-    unsigned asn1_prefix_size;
-
-    if (halg == &ssh_sha256) {
-        asn1_prefix = sha256_asn1_prefix;
-        asn1_prefix_size = sizeof(sha256_asn1_prefix);
-    } else if (halg == &ssh_sha512) {
-        asn1_prefix = sha512_asn1_prefix;
-        asn1_prefix_size = sizeof(sha512_asn1_prefix);
-    } else {
-        assert(halg == &ssh_sha1);
-        asn1_prefix = sha1_asn1_prefix;
-        asn1_prefix_size = sizeof(sha1_asn1_prefix);
-    }
-
-    size_t fixed_parts = halg->hlen + asn1_prefix_size + 2;
+    size_t fixed_parts = rsa_pkcs1_length_of_fixed_parts(halg);
     assert(nbytes >= fixed_parts);
     size_t padding = nbytes - fixed_parts;
+
+    ptrlen asn1_prefix = rsa_pkcs1_prefix_for_hash(halg);
 
     unsigned char *bytes = snewn(nbytes, unsigned char);
 
@@ -627,11 +661,11 @@ static unsigned char *rsa_pkcs1_signature_string(
 
     memset(bytes + 2, 0xFF, padding);
 
-    memcpy(bytes + 2 + padding, asn1_prefix, asn1_prefix_size);
+    memcpy(bytes + 2 + padding, asn1_prefix.ptr, asn1_prefix.len);
 
     ssh_hash *h = ssh_hash_new(halg);
     put_datapl(h, data);
-    ssh_hash_final(h, bytes + 2 + padding + asn1_prefix_size);
+    ssh_hash_final(h, bytes + 2 + padding + asn1_prefix.len);
 
     return bytes;
 }
@@ -643,7 +677,16 @@ static bool rsa2_verify(ssh_key *key, ptrlen sig, ptrlen data)
     ptrlen type, in_pl;
     mp_int *in, *out;
 
-    BinarySource_BARE_INIT(src, sig.ptr, sig.len);
+    /* If we need to support variable flags on verify, this is where they go */
+    const ssh_hashalg *halg = rsa2_hash_alg_for_flags(0, NULL);
+
+    /* Start by making sure the key is even long enough to encode a
+     * signature. If not, everything fails to verify. */
+    size_t nbytes = (mp_get_nbits(rsa->modulus) + 7) / 8;
+    if (nbytes < rsa_pkcs1_length_of_fixed_parts(halg))
+        return false;
+
+    BinarySource_BARE_INIT_PL(src, sig);
     type = get_string(src);
     /*
      * RFC 4253 section 6.6: the signature integer in an ssh-rsa
@@ -665,8 +708,7 @@ static bool rsa2_verify(ssh_key *key, ptrlen sig, ptrlen data)
 
     unsigned diff = 0;
 
-    size_t nbytes = (mp_get_nbits(rsa->modulus) + 7) / 8;
-    unsigned char *bytes = rsa_pkcs1_signature_string(nbytes, &ssh_sha1, data);
+    unsigned char *bytes = rsa_pkcs1_signature_string(nbytes, halg, data);
     for (size_t i = 0; i < nbytes; i++)
         diff |= bytes[nbytes-1 - i] ^ mp_get_byte(out, i);
     smemclr(bytes, nbytes);
@@ -686,16 +728,7 @@ static void rsa2_sign(ssh_key *key, ptrlen data,
     const ssh_hashalg *halg;
     const char *sign_alg_name;
 
-    if (flags & SSH_AGENT_RSA_SHA2_256) {
-        halg = &ssh_sha256;
-        sign_alg_name = "rsa-sha2-256";
-    } else if (flags & SSH_AGENT_RSA_SHA2_512) {
-        halg = &ssh_sha512;
-        sign_alg_name = "rsa-sha2-512";
-    } else {
-        halg = &ssh_sha1;
-        sign_alg_name = "ssh-rsa";
-    }
+    halg = rsa2_hash_alg_for_flags(flags, &sign_alg_name);
 
     nbytes = (mp_get_nbits(rsa->modulus) + 7) / 8;
 
@@ -716,12 +749,28 @@ static void rsa2_sign(ssh_key *key, ptrlen data,
     mp_free(out);
 }
 
+char *rsa2_invalid(ssh_key *key, unsigned flags)
+{
+    RSAKey *rsa = container_of(key, RSAKey, sshk);
+    size_t bits = mp_get_nbits(rsa->modulus), nbytes = (bits + 7) / 8;
+    const char *sign_alg_name;
+    const ssh_hashalg *halg = rsa2_hash_alg_for_flags(flags, &sign_alg_name);
+    if (nbytes < rsa_pkcs1_length_of_fixed_parts(halg)) {
+        return dupprintf(
+            "%zu-bit RSA key is too short to generate %s signatures",
+            bits, sign_alg_name);
+    }
+
+    return NULL;
+}
+
 const ssh_keyalg ssh_rsa = {
     rsa2_new_pub,
     rsa2_new_priv,
     rsa2_new_priv_openssh,
 
     rsa2_freekey,
+    rsa2_invalid,
     rsa2_sign,
     rsa2_verify,
     rsa2_public_blob,

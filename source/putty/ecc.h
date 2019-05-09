@@ -61,6 +61,8 @@ WeierstrassPoint *ecc_weierstrass_point_new_from_x(
     WeierstrassCurve *curve, mp_int *x, unsigned desired_y_parity);
 
 /* Memory management: copy and free points. */
+void ecc_weierstrass_point_copy_into(
+    WeierstrassPoint *dest, WeierstrassPoint *src);
 WeierstrassPoint *ecc_weierstrass_point_copy(WeierstrassPoint *wc);
 void ecc_weierstrass_point_free(WeierstrassPoint *point);
 
@@ -143,6 +145,8 @@ void ecc_montgomery_curve_free(MontgomeryCurve *);
  * explicitly represent the identity for this application.
  */
 MontgomeryPoint *ecc_montgomery_point_new(MontgomeryCurve *mc, mp_int *x);
+void ecc_montgomery_point_copy_into(
+    MontgomeryPoint *dest, MontgomeryPoint *src);
 MontgomeryPoint *ecc_montgomery_point_copy(MontgomeryPoint *orig);
 void ecc_montgomery_point_free(MontgomeryPoint *mp);
 
@@ -213,6 +217,7 @@ EdwardsPoint *ecc_edwards_point_new_from_y(
     EdwardsCurve *curve, mp_int *y, unsigned desired_x_parity);
 
 /* Copy and free points. */
+void ecc_edwards_point_copy_into(EdwardsPoint *dest, EdwardsPoint *src);
 EdwardsPoint *ecc_edwards_point_copy(EdwardsPoint *ec);
 void ecc_edwards_point_free(EdwardsPoint *point);
 

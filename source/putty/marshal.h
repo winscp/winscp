@@ -227,19 +227,25 @@ struct BinarySource {
  * Implementation macros, similar to BinarySink.
  */
 #define BinarySource_IMPLEMENTATION BinarySource binarysource_[1]
-#define BinarySource_INIT__(obj, data_, len_)    \
-    ((obj)->data = (data_),                             \
-     (obj)->len = (len_),                               \
-     (obj)->pos = 0,                                    \
-     (obj)->err = BSE_NO_ERROR,                         \
-     (obj)->binarysource_ = (obj))
-#define BinarySource_BARE_INIT(obj, data_, len_)                \
+static inline void BinarySource_INIT__(BinarySource *src, ptrlen data)
+{
+    src->data = data.ptr;
+    src->len = data.len;
+    src->pos = 0;
+    src->err = BSE_NO_ERROR;
+    src->binarysource_ = src;
+}
+#define BinarySource_BARE_INIT_PL(obj, pl)                      \
     TYPECHECK(&(obj)->binarysource_ == (BinarySource **)0,      \
-              BinarySource_INIT__(obj, data_, len_))
-#define BinarySource_INIT(obj, data_, len_)                             \
+              BinarySource_INIT__(obj, pl))
+#define BinarySource_BARE_INIT(obj, data_, len_)                \
+    BinarySource_BARE_INIT_PL(obj, make_ptrlen(data_, len_))
+#define BinarySource_INIT_PL(obj, pl)                                   \
     TYPECHECK(&(obj)->binarysource_ == (BinarySource (*)[1])0,          \
-              BinarySource_INIT__(BinarySource_UPCAST(obj), data_, len_))
-#define BinarySource_DOWNCAST(object, type)                               \
+              BinarySource_INIT__(BinarySource_UPCAST(obj), pl))
+#define BinarySource_INIT(obj, data_, len_)             \
+    BinarySource_INIT_PL(obj, make_ptrlen(data_, len_))
+#define BinarySource_DOWNCAST(object, type)                             \
     TYPECHECK((object) == ((type *)0)->binarysource_,                     \
               ((type *)(((char *)(object)) - offsetof(type, binarysource_))))
 #define BinarySource_UPCAST(object)                                       \

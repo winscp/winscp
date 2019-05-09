@@ -603,19 +603,21 @@ void init_ucs(Conf *, struct unicode_data *);
 #define HANDLE_FLAG_IGNOREEOF 2
 #define HANDLE_FLAG_UNITBUFFER 4
 struct handle;
-typedef int (*handle_inputfn_t)(struct handle *h, void *data, int len);
-typedef void (*handle_outputfn_t)(struct handle *h, int new_backlog);
+typedef size_t (*handle_inputfn_t)(
+    struct handle *h, const void *data, size_t len, int err);
+typedef void (*handle_outputfn_t)(
+    struct handle *h, size_t new_backlog, int err);
 struct handle *handle_input_new(HANDLE handle, handle_inputfn_t gotdata,
 				void *privdata, int flags);
 struct handle *handle_output_new(HANDLE handle, handle_outputfn_t sentdata,
 				 void *privdata, int flags);
-int handle_write(struct handle *h, const void *data, int len);
+size_t handle_write(struct handle *h, const void *data, size_t len);
 void handle_write_eof(struct handle *h);
 HANDLE *handle_get_events(int *nevents);
 void handle_free(struct handle *h);
 void handle_got_event(HANDLE event);
-void handle_unthrottle(struct handle *h, int backlog);
-int handle_backlog(struct handle *h);
+void handle_unthrottle(struct handle *h, size_t backlog);
+size_t handle_backlog(struct handle *h);
 void *handle_get_privdata(struct handle *h);
 struct handle *handle_add_foreign_event(HANDLE event,
                                         void (*callback)(void *), void *ctx);

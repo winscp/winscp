@@ -17,7 +17,7 @@ static ssh_key *dss_new_pub(const ssh_keyalg *self, ptrlen data)
     BinarySource src[1];
     struct dss_key *dss;
 
-    BinarySource_BARE_INIT(src, data.ptr, data.len);
+    BinarySource_BARE_INIT_PL(src, data);
     if (!ptrlen_eq_string(get_string(src), "ssh-dss"))
 	return NULL;
 
@@ -83,6 +83,12 @@ static char *dss_cache_str(ssh_key *key)
     return strbuf_to_str(sb);
 }
 
+static char *dss_invalid(ssh_key *key, unsigned flags)
+{
+    /* No validity criterion will stop us from using a DSA key at all */
+    return NULL;
+}
+
 static bool dss_verify(ssh_key *key, ptrlen sig, ptrlen data)
 {
     struct dss_key *dss = container_of(key, struct dss_key, sshk);
@@ -93,7 +99,7 @@ static bool dss_verify(ssh_key *key, ptrlen sig, ptrlen data)
     if (!dss->p)
 	return false;
 
-    BinarySource_BARE_INIT(src, sig.ptr, sig.len);
+    BinarySource_BARE_INIT_PL(src, sig);
 
     /*
      * Commercial SSH (2.0.13) and OpenSSH disagree over the format
@@ -126,7 +132,13 @@ static bool dss_verify(ssh_key *key, ptrlen sig, ptrlen data)
 	return false;
     }
 
-    if (mp_eq_integer(s, 0)) {
+    /* Basic sanity checks: 0 < r,s < q */
+    unsigned invalid = 0;
+    invalid |= mp_eq_integer(r, 0);
+    invalid |= mp_eq_integer(s, 0);
+    invalid |= mp_cmp_hs(r, dss->q);
+    invalid |= mp_cmp_hs(s, dss->q);
+    if (invalid) {
         mp_free(r);
         mp_free(s);
         return false;
@@ -214,7 +226,7 @@ static ssh_key *dss_new_priv(const ssh_keyalg *self, ptrlen pub, ptrlen priv)
         return NULL;
 
     dss = container_of(sshk, struct dss_key, sshk);
-    BinarySource_BARE_INIT(src, priv.ptr, priv.len);
+    BinarySource_BARE_INIT_PL(src, priv);
     dss->x = get_mp_ssh2(src);
     if (get_err(src)) {
         dss_freekey(&dss->sshk);
@@ -434,10 +446,11 @@ static void dss_sign(ssh_key *key, ptrlen data, unsigned flags, BinarySink *bs)
     mp_free(gkp);
 
     mp_int *hash = mp_from_bytes_be(make_ptrlen(digest, 20));
-    mp_int *hxr = mp_mul(dss->x, r);
-    mp_add_into(hxr, hxr, hash);         /* hash + x*r */
+    mp_int *xr = mp_mul(dss->x, r);
+    mp_int *hxr = mp_add(xr, hash);         /* hash + x*r */
     mp_int *s = mp_modmul(kinv, hxr, dss->q); /* s = k^-1 * (hash+x*r) mod q */
     mp_free(hxr);
+    mp_free(xr);
     mp_free(kinv);
     mp_free(k);
     mp_free(hash);
@@ -458,6 +471,7 @@ const ssh_keyalg ssh_dss = {
     dss_new_priv_openssh,
 
     dss_freekey,
+    dss_invalid,
     dss_sign,
     dss_verify,
     dss_public_blob,

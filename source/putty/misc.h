@@ -95,7 +95,7 @@ int base64_decode_atom(const char *atom, unsigned char *out);
 struct bufchain_granule;
 struct bufchain_tag {
     struct bufchain_granule *head, *tail;
-    int buffersize;		       /* current amount of buffered data */
+    size_t buffersize;           /* current amount of buffered data */
 
     void (*queue_idempotent_callback)(IdempotentCallback *ic);
     IdempotentCallback *ic;
@@ -103,14 +103,14 @@ struct bufchain_tag {
 
 void bufchain_init(bufchain *ch);
 void bufchain_clear(bufchain *ch);
-int bufchain_size(bufchain *ch);
-void bufchain_add(bufchain *ch, const void *data, int len);
-void bufchain_prefix(bufchain *ch, void **data, int *len);
-void bufchain_consume(bufchain *ch, int len);
-void bufchain_fetch(bufchain *ch, void *data, int len);
-void bufchain_fetch_consume(bufchain *ch, void *data, int len);
-bool bufchain_try_fetch_consume(bufchain *ch, void *data, int len);
-int bufchain_fetch_consume_up_to(bufchain *ch, void *data, int len);
+size_t bufchain_size(bufchain *ch);
+void bufchain_add(bufchain *ch, const void *data, size_t len);
+ptrlen bufchain_prefix(bufchain *ch);
+void bufchain_consume(bufchain *ch, size_t len);
+void bufchain_fetch(bufchain *ch, void *data, size_t len);
+void bufchain_fetch_consume(bufchain *ch, void *data, size_t len);
+bool bufchain_try_fetch_consume(bufchain *ch, void *data, size_t len);
+size_t bufchain_fetch_consume_up_to(bufchain *ch, void *data, size_t len);
 void bufchain_set_callback_inner(
     bufchain *ch, IdempotentCallback *ic,
     void (*queue_idempotent_callback)(IdempotentCallback *ic));
@@ -125,7 +125,7 @@ static inline void bufchain_set_callback(bufchain *ch, IdempotentCallback *ic)
     bufchain_set_callback_inner(ch, ic, queue_idempotent_callback);
 }
 
-void sanitise_term_data(bufchain *out, const void *vdata, int len);
+void sanitise_term_data(bufchain *out, const void *vdata, size_t len);
 
 bool validate_manual_hostkey(char *key);
 
@@ -170,6 +170,8 @@ int string_length_for_printf(size_t);
  * string. */
 #define PTRLEN_LITERAL(stringlit) \
     TYPECHECK("" stringlit "", make_ptrlen(stringlit, sizeof(stringlit)-1))
+/* Make a ptrlen out of a constant byte array. */
+#define PTRLEN_FROM_CONST_BYTES(a) make_ptrlen(a, sizeof(a))
 
 /* Wipe sensitive data out of memory that's about to be freed. Simpler
  * than memset because we don't need the fill char parameter; also
@@ -239,93 +241,114 @@ void debug_memdump(const void *buf, int len, bool L);
 #define max(x,y) ( (x) > (y) ? (x) : (y) )
 #endif
 
-#define GET_64BIT_LSB_FIRST(cp) \
-  (((uint64_t)(unsigned char)(cp)[0]) | \
-  ((uint64_t)(unsigned char)(cp)[1] << 8) | \
-  ((uint64_t)(unsigned char)(cp)[2] << 16) | \
-  ((uint64_t)(unsigned char)(cp)[3] << 24) | \
-  ((uint64_t)(unsigned char)(cp)[4] << 32) | \
-  ((uint64_t)(unsigned char)(cp)[5] << 40) | \
-  ((uint64_t)(unsigned char)(cp)[6] << 48) | \
-  ((uint64_t)(unsigned char)(cp)[7] << 56))
+static inline uint64_t GET_64BIT_LSB_FIRST(const void *vp)
+{
+    const uint8_t *p = (const uint8_t *)vp;
+    return (((uint64_t)p[0]      ) | ((uint64_t)p[1] <<  8) |
+            ((uint64_t)p[2] << 16) | ((uint64_t)p[3] << 24) |
+            ((uint64_t)p[4] << 32) | ((uint64_t)p[5] << 40) |
+            ((uint64_t)p[6] << 48) | ((uint64_t)p[7] << 56));
+}
 
-#define PUT_64BIT_LSB_FIRST(cp, value) ( \
-  (cp)[0] = (unsigned char)(value), \
-  (cp)[1] = (unsigned char)((value) >> 8), \
-  (cp)[2] = (unsigned char)((value) >> 16), \
-  (cp)[3] = (unsigned char)((value) >> 24), \
-  (cp)[4] = (unsigned char)((value) >> 32), \
-  (cp)[5] = (unsigned char)((value) >> 40), \
-  (cp)[6] = (unsigned char)((value) >> 48), \
-  (cp)[7] = (unsigned char)((value) >> 56) )
+static inline void PUT_64BIT_LSB_FIRST(void *vp, uint64_t value)
+{
+    uint8_t *p = (uint8_t *)vp;
+    p[0] = value;
+    p[1] = (value) >> 8;
+    p[2] = (value) >> 16;
+    p[3] = (value) >> 24;
+    p[4] = (value) >> 32;
+    p[5] = (value) >> 40;
+    p[6] = (value) >> 48;
+    p[7] = (value) >> 56;
+}
 
-#define GET_32BIT_LSB_FIRST(cp) \
-  (((uint32_t)(unsigned char)(cp)[0]) | \
-  ((uint32_t)(unsigned char)(cp)[1] << 8) | \
-  ((uint32_t)(unsigned char)(cp)[2] << 16) | \
-  ((uint32_t)(unsigned char)(cp)[3] << 24))
+static inline uint32_t GET_32BIT_LSB_FIRST(const void *vp)
+{
+    const uint8_t *p = (const uint8_t *)vp;
+    return (((uint32_t)p[0]      ) | ((uint32_t)p[1] <<  8) |
+            ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24));
+}
 
-#define PUT_32BIT_LSB_FIRST(cp, value) ( \
-  (cp)[0] = (unsigned char)(value), \
-  (cp)[1] = (unsigned char)((value) >> 8), \
-  (cp)[2] = (unsigned char)((value) >> 16), \
-  (cp)[3] = (unsigned char)((value) >> 24) )
+static inline void PUT_32BIT_LSB_FIRST(void *vp, uint32_t value)
+{
+    uint8_t *p = (uint8_t *)vp;
+    p[0] = value;
+    p[1] = (value) >> 8;
+    p[2] = (value) >> 16;
+    p[3] = (value) >> 24;
+}
 
-#define GET_16BIT_LSB_FIRST(cp) \
-  (((unsigned long)(unsigned char)(cp)[0]) | \
-  ((unsigned long)(unsigned char)(cp)[1] << 8))
+static inline uint16_t GET_16BIT_LSB_FIRST(const void *vp)
+{
+    const uint8_t *p = (const uint8_t *)vp;
+    return (((uint16_t)p[0]      ) | ((uint16_t)p[1] <<  8));
+}
 
-#define PUT_16BIT_LSB_FIRST(cp, value) ( \
-  (cp)[0] = (unsigned char)(value), \
-  (cp)[1] = (unsigned char)((value) >> 8) )
+static inline void PUT_16BIT_LSB_FIRST(void *vp, uint16_t value)
+{
+    uint8_t *p = (uint8_t *)vp;
+    p[0] = value;
+    p[1] = (value) >> 8;
+}
 
-#define GET_32BIT_MSB_FIRST(cp) \
-  (((uint32_t)(unsigned char)(cp)[0] << 24) | \
-  ((uint32_t)(unsigned char)(cp)[1] << 16) | \
-  ((uint32_t)(unsigned char)(cp)[2] << 8) | \
-  ((uint32_t)(unsigned char)(cp)[3]))
+static inline uint64_t GET_64BIT_MSB_FIRST(const void *vp)
+{
+    const uint8_t *p = (const uint8_t *)vp;
+    return (((uint64_t)p[7]      ) | ((uint64_t)p[6] <<  8) |
+            ((uint64_t)p[5] << 16) | ((uint64_t)p[4] << 24) |
+            ((uint64_t)p[3] << 32) | ((uint64_t)p[2] << 40) |
+            ((uint64_t)p[1] << 48) | ((uint64_t)p[0] << 56));
+}
 
-#define GET_32BIT(cp) GET_32BIT_MSB_FIRST(cp)
+static inline void PUT_64BIT_MSB_FIRST(void *vp, uint64_t value)
+{
+    uint8_t *p = (uint8_t *)vp;
+    p[7] = value;
+    p[6] = (value) >> 8;
+    p[5] = (value) >> 16;
+    p[4] = (value) >> 24;
+    p[3] = (value) >> 32;
+    p[2] = (value) >> 40;
+    p[1] = (value) >> 48;
+    p[0] = (value) >> 56;
+}
 
-#define PUT_32BIT_MSB_FIRST(cp, value) ( \
-  (cp)[0] = (unsigned char)((value) >> 24), \
-  (cp)[1] = (unsigned char)((value) >> 16), \
-  (cp)[2] = (unsigned char)((value) >> 8), \
-  (cp)[3] = (unsigned char)(value) )
+static inline uint32_t GET_32BIT_MSB_FIRST(const void *vp)
+{
+    const uint8_t *p = (const uint8_t *)vp;
+    return (((uint32_t)p[3]      ) | ((uint32_t)p[2] <<  8) |
+            ((uint32_t)p[1] << 16) | ((uint32_t)p[0] << 24));
+}
 
-#define PUT_32BIT(cp, value) PUT_32BIT_MSB_FIRST(cp, value)
+static inline void PUT_32BIT_MSB_FIRST(void *vp, uint32_t value)
+{
+    uint8_t *p = (uint8_t *)vp;
+    p[3] = value;
+    p[2] = (value) >> 8;
+    p[1] = (value) >> 16;
+    p[0] = (value) >> 24;
+}
 
-#define GET_64BIT_MSB_FIRST(cp) \
-  (((uint64_t)(unsigned char)(cp)[0] << 56) | \
-  ((uint64_t)(unsigned char)(cp)[1] << 48) | \
-  ((uint64_t)(unsigned char)(cp)[2] << 40) | \
-  ((uint64_t)(unsigned char)(cp)[3] << 32) | \
-  ((uint64_t)(unsigned char)(cp)[4] << 24) | \
-  ((uint64_t)(unsigned char)(cp)[5] << 16) | \
-  ((uint64_t)(unsigned char)(cp)[6] << 8) | \
-  ((uint64_t)(unsigned char)(cp)[7]))
+static inline uint16_t GET_16BIT_MSB_FIRST(const void *vp)
+{
+    const uint8_t *p = (const uint8_t *)vp;
+    return (((uint16_t)p[1]      ) | ((uint16_t)p[0] <<  8));
+}
 
-#define PUT_64BIT_MSB_FIRST(cp, value) ( \
-  (cp)[0] = (unsigned char)((value) >> 56), \
-  (cp)[1] = (unsigned char)((value) >> 48), \
-  (cp)[2] = (unsigned char)((value) >> 40), \
-  (cp)[3] = (unsigned char)((value) >> 32), \
-  (cp)[4] = (unsigned char)((value) >> 24), \
-  (cp)[5] = (unsigned char)((value) >> 16), \
-  (cp)[6] = (unsigned char)((value) >> 8), \
-  (cp)[7] = (unsigned char)(value) )
-
-#define GET_16BIT_MSB_FIRST(cp) \
-  (((unsigned long)(unsigned char)(cp)[0] << 8) | \
-  ((unsigned long)(unsigned char)(cp)[1]))
-
-#define PUT_16BIT_MSB_FIRST(cp, value) ( \
-  (cp)[0] = (unsigned char)((value) >> 8), \
-  (cp)[1] = (unsigned char)(value) )
+static inline void PUT_16BIT_MSB_FIRST(void *vp, uint16_t value)
+{
+    uint8_t *p = (uint8_t *)vp;
+    p[1] = value;
+    p[0] = (value) >> 8;
+}
 
 /* Replace NULL with the empty string, permitting an idiom in which we
  * get a string (pointer,length) pair that might be NULL,0 and can
  * then safely say things like printf("%.*s", length, NULLTOEMPTY(ptr)) */
-#define NULLTOEMPTY(s) ((s)?(s):"")
+static inline const char *NULLTOEMPTY(const char *s)
+{
+    return s ? s : "";
+}
 
 #endif

@@ -130,7 +130,7 @@ struct aes_extra {
         NULL, &extra_##cid };                                           \
 
 #define VTABLES(keylen)                                                 \
-    VTABLES_INNER(aes ## keylen ## _cbc, "aes" #keylen,                 \
+    VTABLES_INNER(aes ## keylen ## _cbc, "aes" #keylen "-cbc",          \
                   keylen, "AES-" #keylen " CBC", _encrypt, _decrypt,    \
                   setiv_cbc, SSH_CIPHER_IS_CBC)                         \
     VTABLES_INNER(aes ## keylen ## _sdctr, "aes" #keylen "-ctr",        \

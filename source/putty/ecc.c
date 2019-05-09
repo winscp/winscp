@@ -112,6 +112,14 @@ WeierstrassPoint *ecc_weierstrass_point_new_identity(WeierstrassCurve *wc)
     return wp;
 }
 
+void ecc_weierstrass_point_copy_into(
+    WeierstrassPoint *dest, WeierstrassPoint *src)
+{
+    mp_copy_into(dest->X, src->X);
+    mp_copy_into(dest->Y, src->Y);
+    mp_copy_into(dest->Z, src->Z);
+}
+
 WeierstrassPoint *ecc_weierstrass_point_copy(WeierstrassPoint *orig)
 {
     WeierstrassPoint *wp = ecc_weierstrass_point_new_empty(orig->wc);
@@ -610,6 +618,13 @@ MontgomeryPoint *ecc_montgomery_point_new(MontgomeryCurve *mc, mp_int *x)
     return mp;
 }
 
+void ecc_montgomery_point_copy_into(
+    MontgomeryPoint *dest, MontgomeryPoint *src)
+{
+    mp_copy_into(dest->X, src->X);
+    mp_copy_into(dest->Z, src->Z);
+}
+
 MontgomeryPoint *ecc_montgomery_point_copy(MontgomeryPoint *orig)
 {
     MontgomeryPoint *mp = ecc_montgomery_point_new_empty(orig->mc);
@@ -902,6 +917,14 @@ EdwardsPoint *ecc_edwards_point_new(
 {
     return ecc_edwards_point_new_imported(
         ec, monty_import(ec->mc, x), monty_import(ec->mc, y));
+}
+
+void ecc_edwards_point_copy_into(EdwardsPoint *dest, EdwardsPoint *src)
+{
+    mp_copy_into(dest->X, src->X);
+    mp_copy_into(dest->Y, src->Y);
+    mp_copy_into(dest->Z, src->Z);
+    mp_copy_into(dest->T, src->T);
 }
 
 EdwardsPoint *ecc_edwards_point_copy(EdwardsPoint *orig)

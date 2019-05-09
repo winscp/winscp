@@ -754,8 +754,8 @@ static bool ssh2_scan_kexinits(
     ptrlen clists[NKEXLIST], slists[NKEXLIST];
     const struct kexinit_algorithm *selected[NKEXLIST];
 
-    BinarySource_BARE_INIT(client, client_kexinit.ptr, client_kexinit.len);
-    BinarySource_BARE_INIT(server, server_kexinit.ptr, server_kexinit.len);
+    BinarySource_BARE_INIT_PL(client, client_kexinit);
+    BinarySource_BARE_INIT_PL(server, server_kexinit);
 
     /* Skip packet type bytes and random cookies. */
     get_data(client, 1 + 16);

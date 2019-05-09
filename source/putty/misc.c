@@ -307,8 +307,8 @@ char *buildinfo(const char *newline)
     return strbuf_to_str(buf);
 }
 
-int nullseat_output(
-    Seat *seat, bool is_stderr, const void *data, int len) { return 0; }
+size_t nullseat_output(
+    Seat *seat, bool is_stderr, const void *data, size_t len) { return 0; }
 bool nullseat_eof(Seat *seat) { return true; }
 int nullseat_get_userpass_input(
     Seat *seat, prompts_t *p, bufchain *input) { return 0; }

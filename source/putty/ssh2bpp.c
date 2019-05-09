@@ -343,7 +343,7 @@ static void ssh2_bpp_handle_input(BinaryPacketProtocol *bpp)
 
                 /* See if that gives us a valid packet. */
                 if (ssh2_mac_verresult(s->in.mac, s->buf + s->packetlen) &&
-                    ((s->len = toint(GET_32BIT(s->buf))) ==
+                    ((s->len = toint(GET_32BIT_MSB_FIRST(s->buf))) ==
                      s->packetlen-4))
                     break;
                 if (s->packetlen >= (long)OUR_V2_PACKETLIMIT) {
@@ -383,9 +383,9 @@ static void ssh2_bpp_handle_input(BinaryPacketProtocol *bpp)
                 memcpy(len, s->buf, 4);
                 ssh_cipher_decrypt_length(
                     s->in.cipher, len, 4, s->in.sequence);
-                s->len = toint(GET_32BIT(len));
+                s->len = toint(GET_32BIT_MSB_FIRST(len));
             } else {
-                s->len = toint(GET_32BIT(s->buf));
+                s->len = toint(GET_32BIT_MSB_FIRST(s->buf));
             }
 
             /*
@@ -450,7 +450,7 @@ static void ssh2_bpp_handle_input(BinaryPacketProtocol *bpp)
             /*
              * Now get the length figure.
              */
-            s->len = toint(GET_32BIT(s->buf));
+            s->len = toint(GET_32BIT_MSB_FIRST(s->buf));
 
             /*
              * _Completely_ silly lengths should be stomped on before they
@@ -729,7 +729,7 @@ static void ssh2_bpp_format_packet_inner(struct ssh2_bpp_state *s, PktOut *pkt)
         put_byte(pkt, 0);              /* make space for random padding */
     random_read(pkt->data + origlen, padding);
     pkt->data[4] = padding;
-    PUT_32BIT(pkt->data, origlen + padding - 4);
+    PUT_32BIT_MSB_FIRST(pkt->data, origlen + padding - 4);
 
     /* Encrypt length if the scheme requires it */
     if (s->out.cipher &&

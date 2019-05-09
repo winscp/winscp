@@ -123,4 +123,10 @@ void random_get_savedata(void **data, int *len)
     *data = buf;
 }
 
+size_t random_seed_bits(void)
+{
+    assert(random_active > 0);
+    return prng_seed_bits(global_prng);
+}
+
 #endif /* FUZZING */

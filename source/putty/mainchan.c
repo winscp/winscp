@@ -14,7 +14,8 @@
 static void mainchan_free(Channel *chan);
 static void mainchan_open_confirmation(Channel *chan);
 static void mainchan_open_failure(Channel *chan, const char *errtext);
-static int mainchan_send(Channel *chan, bool is_stderr, const void *, int);
+static size_t mainchan_send(
+    Channel *chan, bool is_stderr, const void *, size_t);
 static void mainchan_send_eof(Channel *chan);
 static void mainchan_set_input_wanted(Channel *chan, bool wanted);
 static char *mainchan_log_close_msg(Channel *chan);
@@ -362,8 +363,8 @@ static void mainchan_open_failure(Channel *chan, const char *errtext)
     queue_toplevel_callback(mainchan_open_failure_abort, ctx);
 }
 
-static int mainchan_send(Channel *chan, bool is_stderr,
-                         const void *data, int length)
+static size_t mainchan_send(Channel *chan, bool is_stderr,
+                         const void *data, size_t length)
 {
     assert(chan->vt == &mainchan_channelvt);
     mainchan *mc = container_of(chan, mainchan, chan);

@@ -131,7 +131,7 @@
   #define BIGNUM_INT_BITS_BITS 5
   #define DEFINE_BIGNUMDBLINT typedef unsigned long long BignumDblInt
 
-#elif defined _MSC_VER && defined _M_IX86 && BB_OK(5)
+#elif defined _MSC_VER && BB_OK(5)
 
   /* 32-bit BignumInt, using Visual Studio __int64 as BignumDblInt */
 

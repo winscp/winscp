@@ -19,7 +19,7 @@ struct ChannelVtable {
     void (*open_confirmation)(Channel *);
     void (*open_failed)(Channel *, const char *error_text);
 
-    int (*send)(Channel *, bool is_stderr, const void *buf, int len);
+    size_t (*send)(Channel *, bool is_stderr, const void *buf, size_t len);
     void (*send_eof)(Channel *);
     void (*set_input_wanted)(Channel *, bool wanted);
 
@@ -156,10 +156,10 @@ Channel *zombiechan_new(void);
  */
 
 struct SshChannelVtable {
-    int (*write)(SshChannel *c, bool is_stderr, const void *, int);
+    size_t (*write)(SshChannel *c, bool is_stderr, const void *, size_t);
     void (*write_eof)(SshChannel *c);
     void (*initiate_close)(SshChannel *c, const char *err);
-    void (*unthrottle)(SshChannel *c, int bufsize);
+    void (*unthrottle)(SshChannel *c, size_t bufsize);
     Conf *(*get_conf)(SshChannel *c);
     void (*window_override_removed)(SshChannel *c);
     void (*x11_sharing_handover)(SshChannel *c,
