@@ -102,12 +102,14 @@ static void hmac_key(ssh2_mac *mac, ptrlen key)
         sb = strbuf_new();
         strbuf_append(sb, ctx->hashalg->hlen);
 
+        { // WINSCP
         ssh_hash *htmp = ssh_hash_new(ctx->hashalg);
         put_datapl(htmp, key);
         ssh_hash_final(htmp, sb->u);
 
         kp = sb->u;
         klen = sb->len;
+        } // WINSCP
     } else {
         /*
          * A short enough key is used as is.
@@ -122,19 +124,22 @@ static void hmac_key(ssh2_mac *mac, ptrlen key)
         ssh_hash_free(ctx->h_inner);
 
     ctx->h_outer = ssh_hash_new(ctx->hashalg);
-    for (size_t i = 0; i < klen; i++)
+    { // WINSCP
+    size_t i; // WINSCP
+    for (i = 0; i < klen; i++)
         put_byte(ctx->h_outer, PAD_OUTER ^ kp[i]);
-    for (size_t i = klen; i < ctx->hashalg->blocklen; i++)
+    for (i = klen; i < ctx->hashalg->blocklen; i++)
         put_byte(ctx->h_outer, PAD_OUTER);
 
     ctx->h_inner = ssh_hash_new(ctx->hashalg);
-    for (size_t i = 0; i < klen; i++)
+    for (i = 0; i < klen; i++)
         put_byte(ctx->h_inner, PAD_INNER ^ kp[i]);
-    for (size_t i = klen; i < ctx->hashalg->blocklen; i++)
+    for (i = klen; i < ctx->hashalg->blocklen; i++)
         put_byte(ctx->h_inner, PAD_INNER);
 
     if (sb)
         strbuf_free(sb);
+    } // WINSCP
 }
 
 static void hmac_start(ssh2_mac *mac)
