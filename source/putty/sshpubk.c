@@ -371,6 +371,7 @@ bool rsa_ssh1_savekey(const Filename *filename, RSAKey *key,
      * Done. Write the result to the file.
      */
     fp = f_open(filename, "wb", true);
+    { // WINSCP
     bool ret = false;
     if (fp) {
         ret = (fwrite(buf->u, 1, buf->len, fp) == (size_t) (buf->len));
@@ -379,6 +380,7 @@ bool rsa_ssh1_savekey(const Filename *filename, RSAKey *key,
     }
     strbuf_free(buf);
     return ret;
+    } // WINSCP
 }
 
 /* ----------------------------------------------------------------------

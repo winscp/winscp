@@ -150,6 +150,7 @@ static mp_int *mp_from_bytes_int(ptrlen bytes, size_t m, size_t c)
 {
     size_t nw = (bytes.len + BIGNUM_INT_BYTES - 1) / BIGNUM_INT_BYTES;
     nw = size_t_max(nw, 1);
+    { // WINSCP
     mp_int *n = mp_make_sized(nw);
     size_t i; // WINSCP
     for (i = 0; i < bytes.len; i++)
@@ -157,6 +158,7 @@ static mp_int *mp_from_bytes_int(ptrlen bytes, size_t m, size_t c)
             (BignumInt)(((const unsigned char *)bytes.ptr)[m*i+c]) <<
             (8 * (i % BIGNUM_INT_BYTES));
     return n;
+    } // WINSCP
 }
 
 mp_int *mp_from_bytes_le(ptrlen bytes)
@@ -194,7 +196,8 @@ mp_int *mp_from_decimal_pl(ptrlen decimal)
     size_t words = bits / BIGNUM_INT_BITS + 1;
 
     mp_int *x = mp_make_sized(words);
-    for (size_t i = 0; i < decimal.len; i++) {
+    size_t i; // WINSCP
+    for (i = 0; i < decimal.len; i++) {
         mp_add_integer_into(x, x, ((char *)decimal.ptr)[i] - '0');
 
         if (i+1 == decimal.len)
@@ -222,6 +225,7 @@ mp_int *mp_from_hex_pl(ptrlen hex)
     size_t bits = hex.len * 4;
     size_t words = (bits + BIGNUM_INT_BITS - 1) / BIGNUM_INT_BITS;
     words = size_t_max(words, 1);
+    { // WINSCP
     mp_int *x = mp_make_sized(words);
     size_t nibble; // WINSCP
     for (nibble = 0; nibble < hex.len; nibble++) {
@@ -244,6 +248,7 @@ mp_int *mp_from_hex_pl(ptrlen hex)
         } // WINSCP
     }
     return x;
+    } // WINSCP
 }
 
 mp_int *mp_from_hex(const char *hex)
@@ -1214,6 +1219,7 @@ mp_int *mp_invert_mod_2to(mp_int *x, size_t p)
     { // WINSCP
     size_t rw = (p + BIGNUM_INT_BITS - 1) / BIGNUM_INT_BITS;
     rw = size_t_max(rw, 1);
+    { // WINSCP
     mp_int *r = mp_make_sized(rw);
 
     size_t mul_scratchsize = mp_mul_scratchspace(2*rw, rw, rw);
@@ -1309,6 +1315,7 @@ mp_int *mp_invert_mod_2to(mp_int *x, size_t p)
 
     mp_free(scratch_orig);
     return r;
+    } // WINSCP
     } // WINSCP
 }
 

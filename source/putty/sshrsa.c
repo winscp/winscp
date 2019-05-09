@@ -344,6 +344,7 @@ bool rsa_verify(RSAKey *key)
      * should instead flip them round into the canonical order of
      * p > q. This also involves regenerating iqmp.
      */
+    { // WINSCP
     mp_int *p_new = mp_max(key->p, key->q);
     mp_int *q_new = mp_min(key->p, key->q);
     mp_free(key->p);
@@ -353,6 +354,7 @@ bool rsa_verify(RSAKey *key)
     key->iqmp = mp_invert(key->q, key->p);
 
     return ok;
+    } // WINSCP
 }
 
 void rsa_ssh1_public_blob(BinarySink *bs, RSAKey *key,

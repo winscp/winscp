@@ -696,8 +696,6 @@ struct ssh_hashalg {
     const char *text_name;    /* both combined, e.g. "SHA-n (unaccelerated)" */
 };
 
-#ifndef WINSCP_VS
-
 #define ssh_hash_new(alg) ((alg)->new(alg))
 #define ssh_hash_copy(ctx) ((ctx)->vt->copy(ctx))
 #define ssh_hash_final(ctx, out) ((ctx)->vt->final(ctx, out))
@@ -709,6 +707,8 @@ struct ssh_hashalg {
     base, NULL, base
 #define HASHALG_NAMES_ANNOTATED(base, annotation) \
     base, annotation, base " (" annotation ")"
+
+#ifndef WINSCP_VS
 
 void hash_simple(const ssh_hashalg *alg, ptrlen data, void *output);
 

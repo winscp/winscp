@@ -48,6 +48,7 @@ static ssh2_mac *hmac_new(const ssh2_macalg *alg, ssh_cipher *cipher)
                 ctx->hashalg->text_basename, extra->suffix);
     if (extra->annotation || ctx->hashalg->annotation) {
         strbuf_catf(ctx->text_name, " (");
+        { // WINSCP
         const char *sep = "";
         if (extra->annotation) {
             strbuf_catf(ctx->text_name, "%s%s", sep, extra->annotation);
@@ -58,6 +59,7 @@ static ssh2_mac *hmac_new(const ssh2_macalg *alg, ssh_cipher *cipher)
             sep = ", ";
         }
         strbuf_catf(ctx->text_name, ")");
+        } // WINSCP
     }
 
     ctx->mac.vt = alg;
