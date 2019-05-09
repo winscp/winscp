@@ -579,8 +579,6 @@ struct ssh_cipher {
 #endif
 
 #endif // WINSCP_VS
-#ifndef WINSCP_VS
-#endif
 
 struct ssh_cipheralg {
     ssh_cipher *(*new)(const ssh_cipheralg *alg);
