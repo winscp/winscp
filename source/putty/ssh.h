@@ -558,8 +558,6 @@ struct ssh_cipher {
     const ssh_cipheralg *vt;
 };
 
-bool supports_sha_ni(void);
-
 struct ssh_cipheralg {
     ssh_cipher *(*new)(const ssh_cipheralg *alg);
     void (*free)(ssh_cipher *);
@@ -819,7 +817,11 @@ extern const ssh2_ciphers ssh2_arcfour;
 extern const ssh2_ciphers ssh2_ccp;
 extern const ssh_hashalg ssh_md5;
 extern const ssh_hashalg ssh_sha1;
+extern const ssh_hashalg ssh_sha1_hw;
+extern const ssh_hashalg ssh_sha1_sw;
 extern const ssh_hashalg ssh_sha256;
+extern const ssh_hashalg ssh_sha256_hw;
+extern const ssh_hashalg ssh_sha256_sw;
 extern const ssh_hashalg ssh_sha384;
 extern const ssh_hashalg ssh_sha512;
 extern const ssh_kexes ssh_diffiehellman_group1;
@@ -866,29 +868,6 @@ extern const char sshver[];
  * into the SSH code and find out which one it got.
  */
 extern bool ssh_fallback_cmd(Backend *backend);
-
-/*
- * Check of compiler version
- */
-#ifdef _FORCE_SHA_NI
-#   define COMPILER_SUPPORTS_SHA_NI
-#elif defined(__clang__)
-#   if __has_attribute(target) && __has_include(<shaintrin.h>) && (defined(__x86_64__) || defined(__i386))
-#       define COMPILER_SUPPORTS_SHA_NI
-#   endif
-#elif defined(__GNUC__)
-#    if ((__GNUC__ >= 5) && (defined(__x86_64__) || defined(__i386)))
-#       define COMPILER_SUPPORTS_SHA_NI
-#    endif
-#elif defined (_MSC_VER)
-#   if (defined(_M_X64) || defined(_M_IX86)) && _MSC_VER >= 1900
-#      define COMPILER_SUPPORTS_SHA_NI
-#   endif
-#endif
-
-#ifdef _FORCE_SOFTWARE_SHA
-#   undef COMPILER_SUPPORTS_SHA_NI
-#endif
 
 /*
  * The PRNG type, defined in sshprng.c. Visible data fields are
