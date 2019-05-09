@@ -320,7 +320,7 @@ static void sha1_sw_final(ssh_hash *hash, uint8_t *digest)
 
 const ssh_hashalg ssh_sha1_sw = {
     sha1_sw_new, sha1_sw_copy, sha1_sw_final, sha1_sw_free,
-    20, 64, HASHALG_NAMES_ANNOTATED("SHA-1", "unaccelerated"),
+    20, 64, HASHALG_NAMES_BARE("SHA-1"), // WINSCP (removed "unaccelerated" annotation)
 };
 
 /* ----------------------------------------------------------------------

@@ -34,6 +34,7 @@
 
 // Should be (almost) working (when set to HW_SHA256_NI), but we do not have a HW to test this on.
 // Need to replace _mm_setr_epi8 and there's also objconv warning about alignment.
+// Restore "unaccelerated" annotation.
 #undef HW_SHA256
 
 #ifdef _FORCE_SHA_NEON
@@ -353,7 +354,7 @@ static void sha256_sw_final(ssh_hash *hash, uint8_t *digest)
 
 const ssh_hashalg ssh_sha256_sw = {
     sha256_sw_new, sha256_sw_copy, sha256_sw_final, sha256_sw_free,
-    32, 64, HASHALG_NAMES_ANNOTATED("SHA-256", "unaccelerated"),
+    32, 64, HASHALG_NAMES_BARE("SHA-256"), // WINSCP (removed "unaccelerated" annotation)
 };
 #endif // !WINSCP_VS
 
