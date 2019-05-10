@@ -398,11 +398,13 @@ void stripctrl_retarget(StripCtrlChars *sccpub, BinarySink *new_bs_out);
 void stripctrl_reset(StripCtrlChars *sccpub);
 void stripctrl_free(StripCtrlChars *sanpub);
 void stripctrl_enable_line_limiting(StripCtrlChars *sccpub);
+#ifndef WINSCP
 char *stripctrl_string_ptrlen(StripCtrlChars *sccpub, ptrlen str);
 static inline char *stripctrl_string(StripCtrlChars *sccpub, const char *str)
 {
     return stripctrl_string_ptrlen(sccpub, ptrlen_from_asciz(str));
 }
+#endif
 
 #ifdef MPEXT
 // Recent PuTTY code uses C99 standard that allows code before initialization.

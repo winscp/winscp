@@ -370,7 +370,9 @@ static const SeatVtable ScpSeatVtable =
     nullseat_echoedit_update,
     nullseat_get_x_display,
     nullseat_get_windowid,
-    nullseat_get_window_pixel_size
+    nullseat_get_window_pixel_size,
+    nullseat_stripctrl_new,
+    nullseat_set_trust_status_vacuously
   };
 //---------------------------------------------------------------------------
 ScpSeat::ScpSeat(TSecureShell * ASecureShell)

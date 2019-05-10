@@ -306,6 +306,9 @@
 			<BuildOrder>74</BuildOrder>
 			<BuildOrder>4</BuildOrder>
 		</CppCompile>
+		<CppCompile Include="putty\stripctrl.c">
+			<BuildOrder>81</BuildOrder>
+		</CppCompile>
 		<CppCompile Include="putty\tree234.c">
 			<BuildOrder>77</BuildOrder>
 			<BuildOrder>1</BuildOrder>

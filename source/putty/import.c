@@ -2248,7 +2248,7 @@ static bool sshcom_write(
                         outblob->len - (lenpos + 8));
     /* Pad encrypted blob to a multiple of cipher block size. */
     if (passphrase) {
-	int padding = -(outblob->len - (lenpos+4)) & 7;
+	int padding = -(ssize_t)(outblob->len - (lenpos+4)) & 7; // WINSCP
         uint8_t padding_buf[8];
         random_read(padding_buf, padding);
         put_data(outblob, padding_buf, padding);

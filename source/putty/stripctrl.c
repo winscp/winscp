@@ -12,7 +12,9 @@
 #include <wctype.h>
 
 #include "putty.h"
+#ifndef WINSCP
 #include "terminal.h"
+#endif
 #include "misc.h"
 #include "marshal.h"
 
@@ -29,10 +31,12 @@ struct StripCtrlCharsImpl {
     char buf[SCC_BUFSIZE];
     size_t buflen;
 
+#ifndef WINSCP
     Terminal *term;
     bool last_term_utf;
     struct term_utf8_decode utf8;
     unsigned long (*translate)(Terminal *, term_utf8_decode *, unsigned char);
+#endif
 
     bool line_limit;
     bool line_start;
@@ -59,6 +63,7 @@ static StripCtrlCharsImpl *stripctrl_new_common(
     return scc;
 }
 
+#ifndef WINSCP
 StripCtrlChars *stripctrl_new(
     BinarySink *bs_out, bool permit_cr, wchar_t substitution)
 {
@@ -80,6 +85,7 @@ StripCtrlChars *stripctrl_new_term_fn(
     BinarySink_INIT(&scc->public, stripctrl_term_BinarySink_write);
     return &scc->public;
 }
+#endif
 
 void stripctrl_retarget(StripCtrlChars *sccpub, BinarySink *new_bs_out)
 {
@@ -100,7 +106,9 @@ void stripctrl_reset(StripCtrlChars *sccpub)
      * start converting a fresh piece of data to send to a channel
      * that hasn't seen the previous output.
      */
+#ifndef WINSCP
     memset(&scc->utf8, 0, sizeof(scc->utf8));
+#endif
     memset(&scc->mbs_in, 0, sizeof(scc->mbs_in));
     memset(&scc->mbs_out, 0, sizeof(scc->mbs_out));
 
@@ -126,6 +134,7 @@ void stripctrl_enable_line_limiting(StripCtrlChars *sccpub)
     scc->line_start = true;
 }
 
+#ifndef WINSCP
 static inline bool stripctrl_ctrlchar_ok(StripCtrlCharsImpl *scc, wchar_t wc)
 {
     return wc == L'\n' || (wc == L'\r' && scc->permit_cr);
@@ -306,6 +315,7 @@ static void stripctrl_locale_BinarySink_write(
             to_copy = len;
 
         memcpy(scc->buf + scc->buflen, p, to_copy);
+        { // WINSCP
         size_t consumed = stripctrl_locale_try_consume(
             scc, scc->buf, scc->buflen + to_copy);
 
@@ -355,6 +365,7 @@ static void stripctrl_locale_BinarySink_write(
          */
         scc->buflen -= consumed;
         memmove(scc->buf, scc->buf + consumed, scc->buflen);
+        } // WINSCP
     }
 
     /*
@@ -419,6 +430,7 @@ char *stripctrl_string_ptrlen(StripCtrlChars *sccpub, ptrlen str)
     stripctrl_retarget(sccpub, NULL);
     return strbuf_to_str(out);
 }
+#endif
 
 #ifdef STRIPCTRL_TEST
 

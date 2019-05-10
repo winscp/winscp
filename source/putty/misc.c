@@ -214,6 +214,7 @@ bool validate_manual_hostkey(char *key)
     return false;
 }
 
+#ifndef WINSCP
 char *buildinfo(const char *newline)
 {
     strbuf *buf = strbuf_new();
@@ -313,6 +314,7 @@ char *buildinfo(const char *newline)
 
     return strbuf_to_str(buf);
 }
+#endif !WINSCP
 
 #ifdef MPEXT
 
