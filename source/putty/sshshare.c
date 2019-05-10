@@ -138,6 +138,7 @@
 #include "putty.h"
 #include "tree234.h"
 #include "ssh.h"
+#include "sshcr.h"
 
 struct ssh_sharing_state {
     char *sockname;                  /* the socket name, kept for cleanup */
@@ -1741,10 +1742,9 @@ static void share_got_pkt_from_downstream(struct ssh_sharing_connstate *cs,
 }
 
 /*
- * Coroutine macros similar to, but simplified from, those in ssh.c.
+ * An extra coroutine macro, specific to this code which is consuming
+ * 'const char *data'.
  */
-#define crBegin(v)	{ int *crLine = &v; switch(v) { case 0:;
-#define crFinishV	} *crLine = 0; return; }
 #define crGetChar(c) do                                         \
     {                                                           \
         while (len == 0) {                                      \

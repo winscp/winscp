@@ -113,6 +113,9 @@ settings_r *open_settings_r(const char *sessionname)
 
     strbuf_free(sb);
 
+    if (!sesskey)
+        return NULL;
+
     settings_r *toret = snew(settings_r);
     toret->sesskey = sesskey;
     return toret;
@@ -237,8 +240,10 @@ void write_setting_filename(settings_w *handle,
 
 void close_settings_r(settings_r *handle)
 {
-    RegCloseKey(handle->sesskey);
-    sfree(handle);
+    if (handle) {
+        RegCloseKey(handle->sesskey);
+        sfree(handle);
+    }
 }
 
 void del_settings(const char *sessionname)

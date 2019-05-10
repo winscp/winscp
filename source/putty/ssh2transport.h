@@ -196,6 +196,14 @@ struct ssh2_transport_state {
     bool gss_delegate;
 #endif
 
+    /* List of crypto primitives below the warning threshold that the
+     * user has already clicked OK to, so that we don't keep asking
+     * about them again during rekeys. This directly stores pointers
+     * to the algorithm vtables, compared by pointer value (which is
+     * not a determinism hazard, because we're only using it as a
+     * set). */
+    tree234 *weak_algorithms_consented_to;
+
     /*
      * List of host key algorithms for which we _don't_ have a stored
      * host key. These are indices into the main hostkey_algs[] array

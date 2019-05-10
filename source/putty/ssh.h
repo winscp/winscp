@@ -306,50 +306,70 @@ struct ConnectionLayer {
     const struct ConnectionLayerVtable *vt;
 };
 
-#define ssh_rportfwd_alloc(cl, sh, sp, dh, dp, af, ld, pfr, share) \
-    ((cl)->vt->rportfwd_alloc(cl, sh, sp, dh, dp, af, ld, pfr, share))
-#define ssh_rportfwd_remove(cl, rpf) ((cl)->vt->rportfwd_remove(cl, rpf))
-#define ssh_lportfwd_open(cl, h, p, desc, pi, chan) \
-    ((cl)->vt->lportfwd_open(cl, h, p, desc, pi, chan))
-#define ssh_serverside_x11_open(cl, chan, pi) \
-    ((cl)->vt->serverside_x11_open(cl, chan, pi))
-#define ssh_serverside_agent_open(cl, chan) \
-    ((cl)->vt->serverside_agent_open(cl, chan))
-#define ssh_session_open(cl, chan) \
-    ((cl)->vt->session_open(cl, chan))
-#define ssh_add_x11_display(cl, auth, disp) \
-    ((cl)->vt->add_x11_display(cl, auth, disp))
-#define ssh_add_sharing_x11_display(cl, auth, cs, ch)   \
-    ((cl)->vt->add_sharing_x11_display(cl, auth, cs, ch))
-#define ssh_remove_sharing_x11_display(cl, fa)   \
-    ((cl)->vt->remove_sharing_x11_display(cl, fa))
-#define ssh_send_packet_from_downstream(cl, id, type, pkt, len, log)    \
-    ((cl)->vt->send_packet_from_downstream(cl, id, type, pkt, len, log))
-#define ssh_alloc_sharing_channel(cl, cs) \
-    ((cl)->vt->alloc_sharing_channel(cl, cs))
-#define ssh_delete_sharing_channel(cl, ch) \
-    ((cl)->vt->delete_sharing_channel(cl, ch))
-#define ssh_sharing_queue_global_request(cl, cs) \
-    ((cl)->vt->sharing_queue_global_request(cl, cs))
-#define ssh_sharing_no_more_downstreams(cl) \
-    ((cl)->vt->sharing_no_more_downstreams(cl))
-#define ssh_agent_forwarding_permitted(cl) \
-    ((cl)->vt->agent_forwarding_permitted(cl))
-#define ssh_terminal_size(cl, w, h) ((cl)->vt->terminal_size(cl, w, h))
-#define ssh_stdout_unthrottle(cl, bufsize) \
-    ((cl)->vt->stdout_unthrottle(cl, bufsize))
-#define ssh_stdin_backlog(cl) ((cl)->vt->stdin_backlog(cl))
-#define ssh_throttle_all_channels(cl, throttled) \
-    ((cl)->vt->throttle_all_channels(cl, throttled))
-#define ssh_ldisc_option(cl, option) ((cl)->vt->ldisc_option(cl, option))
-#define ssh_set_ldisc_option(cl, opt, val) \
-    ((cl)->vt->set_ldisc_option(cl, opt, val))
-#define ssh_enable_x_fwd(cl) ((cl)->vt->enable_x_fwd(cl))
-#define ssh_enable_agent_fwd(cl) ((cl)->vt->enable_agent_fwd(cl))
-#define ssh_set_wants_user_input(cl, wanted) \
-    ((cl)->vt->set_wants_user_input(cl, wanted))
-#define ssh_setup_server_x_forwarding(cl, conf, ap, ad, scr) \
-    ((cl)->vt->setup_server_x_forwarding(cl, conf, ap, ad, scr))
+static inline struct ssh_rportfwd *ssh_rportfwd_alloc(
+    ConnectionLayer *cl, const char *sh, int sp, const char *dh, int dp,
+    int af, const char *log, PortFwdRecord *pfr, ssh_sharing_connstate *cs)
+{ return cl->vt->rportfwd_alloc(cl, sh, sp, dh, dp, af, log, pfr, cs); }
+static inline void ssh_rportfwd_remove(
+    ConnectionLayer *cl, struct ssh_rportfwd *rpf)
+{ cl->vt->rportfwd_remove(cl, rpf); }
+static inline SshChannel *ssh_lportfwd_open(
+    ConnectionLayer *cl, const char *host, int port,
+    const char *desc, const SocketPeerInfo *pi, Channel *chan)
+{ return cl->vt->lportfwd_open(cl, host, port, desc, pi, chan); }
+static inline SshChannel *ssh_session_open(ConnectionLayer *cl, Channel *chan)
+{ return cl->vt->session_open(cl, chan); }
+static inline SshChannel *ssh_serverside_x11_open(
+    ConnectionLayer *cl, Channel *chan, const SocketPeerInfo *pi)
+{ return cl->vt->serverside_x11_open(cl, chan, pi); }
+static inline SshChannel *ssh_serverside_agent_open(
+    ConnectionLayer *cl, Channel *chan)
+{ return cl->vt->serverside_agent_open(cl, chan); }
+static inline struct X11FakeAuth *ssh_add_x11_display(
+    ConnectionLayer *cl, int authtype, struct X11Display *x11disp)
+{ return cl->vt->add_x11_display(cl, authtype, x11disp); }
+static inline struct X11FakeAuth *ssh_add_sharing_x11_display(
+    ConnectionLayer *cl, int authtype, ssh_sharing_connstate *share_cs,
+    share_channel *share_chan)
+{ return cl->vt->add_sharing_x11_display(cl, authtype, share_cs, share_chan); }
+static inline void ssh_remove_sharing_x11_display(
+    ConnectionLayer *cl, struct X11FakeAuth *auth)
+{ cl->vt->remove_sharing_x11_display(cl, auth); }
+static inline void ssh_send_packet_from_downstream(
+    ConnectionLayer *cl, unsigned id, int type,
+    const void *pkt, int len, const char *log)
+{ cl->vt->send_packet_from_downstream(cl, id, type, pkt, len, log); }
+static inline unsigned ssh_alloc_sharing_channel(
+    ConnectionLayer *cl, ssh_sharing_connstate *connstate)
+{ return cl->vt->alloc_sharing_channel(cl, connstate); }
+static inline void ssh_delete_sharing_channel(
+    ConnectionLayer *cl, unsigned localid)
+{ cl->vt->delete_sharing_channel(cl, localid); }
+static inline void ssh_sharing_queue_global_request(
+    ConnectionLayer *cl, ssh_sharing_connstate *connstate)
+{ cl->vt->sharing_queue_global_request(cl, connstate); }
+static inline void ssh_sharing_no_more_downstreams(ConnectionLayer *cl)
+{ cl->vt->sharing_no_more_downstreams(cl); }
+static inline bool ssh_agent_forwarding_permitted(ConnectionLayer *cl)
+{ return cl->vt->agent_forwarding_permitted(cl); }
+static inline void ssh_terminal_size(ConnectionLayer *cl, int w, int h)
+{ cl->vt->terminal_size(cl, w, h); }
+static inline void ssh_stdout_unthrottle(ConnectionLayer *cl, size_t bufsize)
+{ cl->vt->stdout_unthrottle(cl, bufsize); }
+static inline size_t ssh_stdin_backlog(ConnectionLayer *cl)
+{ return cl->vt->stdin_backlog(cl); }
+static inline void ssh_throttle_all_channels(ConnectionLayer *cl, bool thr)
+{ cl->vt->throttle_all_channels(cl, thr); }
+static inline bool ssh_ldisc_option(ConnectionLayer *cl, int option)
+{ return cl->vt->ldisc_option(cl, option); }
+static inline void ssh_set_ldisc_option(ConnectionLayer *cl, int opt, bool val)
+{ cl->vt->set_ldisc_option(cl, opt, val); }
+static inline void ssh_enable_x_fwd(ConnectionLayer *cl)
+{ cl->vt->enable_x_fwd(cl); }
+static inline void ssh_enable_agent_fwd(ConnectionLayer *cl)
+{ cl->vt->enable_agent_fwd(cl); }
+static inline void ssh_set_wants_user_input(ConnectionLayer *cl, bool wanted)
+{ cl->vt->set_wants_user_input(cl, wanted); }
 
 /* Exports from portfwd.c */
 PortFwdManager *portfwdmgr_new(ConnectionLayer *cl);
@@ -380,6 +400,7 @@ void ssh_got_fallback_cmd(Ssh *ssh);
 
 /* Communications back to ssh.c from the BPP */
 void ssh_conn_processed_data(Ssh *ssh);
+void ssh_check_frozen(Ssh *ssh);
 
 /* Functions to abort the connection, for various reasons. */
 void ssh_remote_error(Ssh *ssh, const char *fmt, ...);
@@ -599,17 +620,26 @@ struct ssh_cipheralg {
     const void *extra;
 };
 
-#define ssh_cipher_new(alg) ((alg)->new(alg))
-#define ssh_cipher_free(ctx) ((ctx)->vt->free(ctx))
-#define ssh_cipher_setiv(ctx, iv) ((ctx)->vt->setiv(ctx, iv))
-#define ssh_cipher_setkey(ctx, key) ((ctx)->vt->setkey(ctx, key))
-#define ssh_cipher_encrypt(ctx, blk, len) ((ctx)->vt->encrypt(ctx, blk, len))
-#define ssh_cipher_decrypt(ctx, blk, len) ((ctx)->vt->decrypt(ctx, blk, len))
-#define ssh_cipher_encrypt_length(ctx, blk, len, seq) \
-    ((ctx)->vt->encrypt_length(ctx, blk, len, seq))
-#define ssh_cipher_decrypt_length(ctx, blk, len, seq) \
-    ((ctx)->vt->decrypt_length(ctx, blk, len, seq))
-#define ssh_cipher_alg(ctx) ((ctx)->vt)
+static inline ssh_cipher *ssh_cipher_new(const ssh_cipheralg *alg)
+{ return alg->new(alg); }
+static inline void ssh_cipher_free(ssh_cipher *c)
+{ c->vt->free(c); }
+static inline void ssh_cipher_setiv(ssh_cipher *c, const void *iv)
+{ c->vt->setiv(c, iv); }
+static inline void ssh_cipher_setkey(ssh_cipher *c, const void *key)
+{ c->vt->setkey(c, key); }
+static inline void ssh_cipher_encrypt(ssh_cipher *c, void *blk, int len)
+{ c->vt->encrypt(c, blk, len); }
+static inline void ssh_cipher_decrypt(ssh_cipher *c, void *blk, int len)
+{ c->vt->decrypt(c, blk, len); }
+static inline void ssh_cipher_encrypt_length(
+    ssh_cipher *c, void *blk, int len, unsigned long seq)
+{ return c->vt->encrypt_length(c, blk, len, seq); }
+static inline void ssh_cipher_decrypt_length(
+    ssh_cipher *c, void *blk, int len, unsigned long seq)
+{ return c->vt->decrypt_length(c, blk, len, seq); }
+static inline const struct ssh_cipheralg *ssh_cipher_alg(ssh_cipher *c)
+{ return c->vt; }
 
 struct ssh2_ciphers {
     int nciphers;
@@ -636,13 +666,21 @@ struct ssh2_macalg {
     const void *extra;
 };
 
-#define ssh2_mac_new(alg, cipher) ((alg)->new(alg, cipher))
-#define ssh2_mac_free(ctx) ((ctx)->vt->free(ctx))
-#define ssh2_mac_setkey(ctx, key) ((ctx)->vt->setkey(ctx, key))
-#define ssh2_mac_start(ctx) ((ctx)->vt->start(ctx))
-#define ssh2_mac_genresult(ctx, out) ((ctx)->vt->genresult(ctx, out))
-#define ssh2_mac_text_name(ctx) ((ctx)->vt->text_name(ctx))
-#define ssh2_mac_alg(ctx) ((ctx)->vt)
+static inline ssh2_mac *ssh2_mac_new(
+    const ssh2_macalg *alg, ssh_cipher *cipher)
+{ return alg->new(alg, cipher); }
+static inline void ssh2_mac_free(ssh2_mac *m)
+{ m->vt->free(m); }
+static inline void ssh2_mac_setkey(ssh2_mac *m, ptrlen key)
+{ m->vt->setkey(m, key); }
+static inline void ssh2_mac_start(ssh2_mac *m)
+{ m->vt->start(m); }
+static inline void ssh2_mac_genresult(ssh2_mac *m, unsigned char *out)
+{ m->vt->genresult(m, out); }
+static inline const char *ssh2_mac_text_name(ssh2_mac *m)
+{ return m->vt->text_name(m); }
+static inline const ssh2_macalg *ssh2_mac_alg(ssh2_mac *m)
+{ return m->vt; }
 
 /* Centralised 'methods' for ssh2_mac, defined in sshmac.c. These run
  * the MAC in a specifically SSH-2 style, i.e. taking account of a
@@ -672,11 +710,16 @@ struct ssh_hashalg {
     const char *text_name;    /* both combined, e.g. "SHA-n (unaccelerated)" */
 };
 
-#define ssh_hash_new(alg) ((alg)->new(alg))
-#define ssh_hash_copy(ctx) ((ctx)->vt->copy(ctx))
-#define ssh_hash_final(ctx, out) ((ctx)->vt->final(ctx, out))
-#define ssh_hash_free(ctx) ((ctx)->vt->free(ctx))
-#define ssh_hash_alg(ctx) ((ctx)->vt)
+static inline ssh_hash *ssh_hash_new(const ssh_hashalg *alg)
+{ return alg->new(alg); }
+static inline ssh_hash *ssh_hash_copy(ssh_hash *h)
+{ return h->vt->copy(h); }
+static inline void ssh_hash_final(ssh_hash *h, unsigned char *out)
+{ return h->vt->final(h, out); }
+static inline void ssh_hash_free(ssh_hash *h)
+{ return h->vt->free(h); }
+static inline const ssh_hashalg *ssh_hash_alg(ssh_hash *h)
+{ return h->vt; }
 
 /* Handy macros for defining all those text-name fields at once */
 #define HASHALG_NAMES_BARE(base) \
@@ -724,25 +767,39 @@ struct ssh_keyalg {
     const unsigned supported_flags;    /* signature-type flags we understand */
 };
 
-#define ssh_key_new_pub(alg, data) ((alg)->new_pub(alg, data))
-#define ssh_key_new_priv(alg, pub, priv) ((alg)->new_priv(alg, pub, priv))
-#define ssh_key_new_priv_openssh(alg, bs) ((alg)->new_priv_openssh(alg, bs))
-
-#define ssh_key_free(key) ((key)->vt->freekey(key))
-#define ssh_key_invalid(key, flags) ((key)->vt->invalid(key, flags))
-#define ssh_key_sign(key, data, flags, bs) \
-    ((key)->vt->sign(key, data, flags, bs))
-#define ssh_key_verify(key, sig, data) ((key)->vt->verify(key, sig, data))
-#define ssh_key_public_blob(key, bs) ((key)->vt->public_blob(key, bs))
-#define ssh_key_private_blob(key, bs) ((key)->vt->private_blob(key, bs))
-#define ssh_key_openssh_blob(key, bs) ((key)->vt->openssh_blob(key, bs))
-#define ssh_key_cache_str(key) ((key)->vt->cache_str(key))
-
-#define ssh_key_public_bits(alg, blob) ((alg)->pubkey_bits(alg, blob))
-
-#define ssh_key_alg(key) (key)->vt
-#define ssh_key_ssh_id(key) ((key)->vt->ssh_id)
-#define ssh_key_cache_id(key) ((key)->vt->cache_id)
+static inline ssh_key *ssh_key_new_pub(const ssh_keyalg *self, ptrlen pub)
+{ return self->new_pub(self, pub); }
+static inline ssh_key *ssh_key_new_priv(
+    const ssh_keyalg *self, ptrlen pub, ptrlen priv)
+{ return self->new_priv(self, pub, priv); }
+static inline ssh_key *ssh_key_new_priv_openssh(
+    const ssh_keyalg *self, BinarySource *src)
+{ return self->new_priv_openssh(self, src); }
+static inline void ssh_key_free(ssh_key *key)
+{ key->vt->freekey(key); }
+static inline char *ssh_key_invalid(ssh_key *key, unsigned flags)
+{ return key->vt->invalid(key, flags); }
+static inline void ssh_key_sign(
+    ssh_key *key, ptrlen data, unsigned flags, BinarySink *bs)
+{ key->vt->sign(key, data, flags, bs); }
+static inline bool ssh_key_verify(ssh_key *key, ptrlen sig, ptrlen data)
+{ return key->vt->verify(key, sig, data); }
+static inline void ssh_key_public_blob(ssh_key *key, BinarySink *bs)
+{ key->vt->public_blob(key, bs); }
+static inline void ssh_key_private_blob(ssh_key *key, BinarySink *bs)
+{ key->vt->private_blob(key, bs); }
+static inline void ssh_key_openssh_blob(ssh_key *key, BinarySink *bs)
+{ key->vt->openssh_blob(key, bs); }
+static inline char *ssh_key_cache_str(ssh_key *key)
+{ return key->vt->cache_str(key); }
+static inline int ssh_key_public_bits(const ssh_keyalg *self, ptrlen blob)
+{ return self->pubkey_bits(self, blob); }
+static inline const ssh_keyalg *ssh_key_alg(ssh_key *key)
+{ return key->vt; }
+static inline const char *ssh_key_ssh_id(ssh_key *key)
+{ return key->vt->ssh_id; }
+static inline const char *ssh_key_cache_id(ssh_key *key)
+{ return key->vt->cache_id; }
 
 /*
  * Enumeration of signature flags from draft-miller-ssh-agent-02
@@ -774,16 +831,30 @@ struct ssh_compression_alg {
     const char *text_name;
 };
 
-#define ssh_compressor_new(alg) ((alg)->compress_new())
-#define ssh_compressor_free(comp) ((comp)->vt->compress_free(comp))
-#define ssh_compressor_compress(comp, in, inlen, out, outlen, minlen) \
-    ((comp)->vt->compress(comp, in, inlen, out, outlen, minlen))
-#define ssh_compressor_alg(comp) ((comp)->vt)
-#define ssh_decompressor_new(alg) ((alg)->decompress_new())
-#define ssh_decompressor_free(comp) ((comp)->vt->decompress_free(comp))
-#define ssh_decompressor_decompress(comp, in, inlen, out, outlen) \
-    ((comp)->vt->decompress(comp, in, inlen, out, outlen))
-#define ssh_decompressor_alg(comp) ((comp)->vt)
+static inline ssh_compressor *ssh_compressor_new(
+    const ssh_compression_alg *alg)
+{ return alg->compress_new(); }
+static inline ssh_decompressor *ssh_decompressor_new(
+    const ssh_compression_alg *alg)
+{ return alg->decompress_new(); }
+static inline void ssh_compressor_free(ssh_compressor *c)
+{ c->vt->compress_free(c); }
+static inline void ssh_decompressor_free(ssh_decompressor *d)
+{ d->vt->decompress_free(d); }
+static inline void ssh_compressor_compress(
+    ssh_compressor *c, const unsigned char *block, int len,
+    unsigned char **outblock, int *outlen, int minlen)
+{ c->vt->compress(c, block, len, outblock, outlen, minlen); }
+static inline bool ssh_decompressor_decompress(
+    ssh_decompressor *d, const unsigned char *block, int len,
+    unsigned char **outblock, int *outlen)
+{ return d->vt->decompress(d, block, len, outblock, outlen); }
+static inline const ssh_compression_alg *ssh_compressor_alg(
+    ssh_compressor *c)
+{ return c->vt; }
+static inline const ssh_compression_alg *ssh_decompressor_alg(
+    ssh_decompressor *d)
+{ return d->vt; }
 
 struct ssh2_userkey {
     ssh_key *key;                      /* the key itself */
@@ -1171,7 +1242,7 @@ int eddsa_generate(struct eddsa_key *key, int bits, progfn_t pfn,
 mp_int *primegen(
     int bits, int modulus, int residue, mp_int *factor,
     int phase, progfn_t pfn, void *pfnparam, unsigned firstbits);
-void invent_firstbits(unsigned *one, unsigned *two);
+void invent_firstbits(unsigned *one, unsigned *two, unsigned min_separation);
 
 /*
  * Connection-sharing API provided by platforms. This function must

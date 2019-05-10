@@ -3,6 +3,8 @@
 
 #include "defs.h"
 
+#include <stdio.h>
+
 /*
  * A sort of 'abstract base class' or 'interface' or 'trait' which is
  * the common feature of all types that want to accept data formatted
@@ -300,5 +302,22 @@ const char *BinarySource_get_asciz(BinarySource *);
 ptrlen BinarySource_get_pstring(BinarySource *);
 mp_int *BinarySource_get_mp_ssh1(BinarySource *src);
 mp_int *BinarySource_get_mp_ssh2(BinarySource *src);
+
+/*
+ * A couple of useful standard BinarySink implementations, which live
+ * as sensibly here as anywhere else: one that makes a BinarySink
+ * whose effect is to write to a stdio stream, and one whose effect is
+ * to append to a bufchain.
+ */
+struct stdio_sink {
+    FILE *fp;
+    BinarySink_IMPLEMENTATION;
+};
+struct bufchain_sink {
+    bufchain *ch;
+    BinarySink_IMPLEMENTATION;
+};
+void stdio_sink_init(stdio_sink *sink, FILE *fp);
+void bufchain_sink_init(bufchain_sink *sink, bufchain *ch);
 
 #endif /* PUTTY_MARSHAL_H */

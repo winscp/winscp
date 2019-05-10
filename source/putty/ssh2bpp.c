@@ -269,6 +269,7 @@ static void ssh2_bpp_enable_pending_compression(struct ssh2_bpp_state *s)
                           s->bpp.input_eof);                            \
         if (!success)                                                   \
             goto eof;                                                   \
+        ssh_check_frozen(s->bpp.ssh);                                   \
     } while (0)
 
 #define userauth_range(pkttype) ((unsigned)((pkttype) - 50) < 20)

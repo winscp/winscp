@@ -715,3 +715,15 @@ void *handle_get_privdata(struct handle *h)
 {
     return h->u.g.privdata;
 }
+
+static void handle_sink_write(BinarySink *bs, const void *data, size_t len)
+{
+    handle_sink *sink = BinarySink_DOWNCAST(bs, handle_sink);
+    handle_write(sink->h, data, len);
+}
+
+void handle_sink_init(handle_sink *sink, struct handle *h)
+{
+    sink->h = h;
+    BinarySink_INIT(sink, handle_sink_write);
+}

@@ -490,32 +490,19 @@ static bool read_header(FILE * fp, char *header)
 
 static char *read_body(FILE * fp)
 {
-    char *text;
-    int len;
-    int size;
-    int c;
-
-    size = 128;
-    text = snewn(size, char);
-    len = 0;
-    text[len] = '\0';
+    strbuf *buf = strbuf_new();
 
     while (1) {
-	c = fgetc(fp);
+	int c = fgetc(fp);
 	if (c == '\r' || c == '\n' || c == EOF) {
 	    if (c != EOF) {
 		c = fgetc(fp);
 		if (c != '\r' && c != '\n')
 		    ungetc(c, fp);
 	    }
-	    return text;
+	    return strbuf_to_str(buf);
 	}
-	if (len + 1 >= size) {
-	    size += 128;
-	    text = sresize(text, size, char);
-	}
-	text[len++] = c;
-	text[len] = '\0';
+	put_byte(buf, c);
     }
 }
 
@@ -847,8 +834,7 @@ bool rfc4716_loadpub(FILE *fp, char **algorithm,
     const char *error;
     char *line, *colon, *value;
     char *comment = NULL;
-    unsigned char *pubblob = NULL;
-    int pubbloblen, pubblobsize;
+    strbuf *pubblob = NULL;
     char base64in[4];
     unsigned char base64out[3];
     int base64bytes;
@@ -909,9 +895,7 @@ bool rfc4716_loadpub(FILE *fp, char **algorithm,
      * Now line contains the initial line of base64 data. Loop round
      * while it still does contain base64.
      */
-    pubblobsize = 4096;
-    pubblob = snewn(pubblobsize, unsigned char);
-    pubbloblen = 0;
+    pubblob = strbuf_new();
     base64bytes = 0;
     while (line && line[0] != '-') {
         char *p;
@@ -919,12 +903,7 @@ bool rfc4716_loadpub(FILE *fp, char **algorithm,
             base64in[base64bytes++] = *p;
             if (base64bytes == 4) {
                 int n = base64_decode_atom(base64in, base64out);
-                if (pubbloblen + n > pubblobsize) {
-                    pubblobsize = (pubbloblen + n) * 5 / 4 + 1024;
-                    pubblob = sresize(pubblob, pubblobsize, unsigned char);
-                }
-                memcpy(pubblob + pubbloblen, base64out, n);
-                pubbloblen += n;
+                put_data(pubblob, base64out, n);
                 base64bytes = 0;
             }
         }
@@ -946,29 +925,30 @@ bool rfc4716_loadpub(FILE *fp, char **algorithm,
      * return the key algorithm string too, so look for that at the
      * start of the public blob.
      */
-    if (pubbloblen < 4) {
+    if (pubblob->len < 4) {
         error = "not enough data in SSH-2 public key file";
         goto error;
     }
-    alglen = toint(GET_32BIT_MSB_FIRST(pubblob));
-    if (alglen < 0 || alglen > pubbloblen-4) {
+    alglen = toint(GET_32BIT_MSB_FIRST(pubblob->u));
+    if (alglen < 0 || alglen > pubblob->len-4) {
         error = "invalid algorithm prefix in SSH-2 public key file";
         goto error;
     }
     if (algorithm)
-        *algorithm = dupprintf("%.*s", alglen, pubblob+4);
+        *algorithm = dupprintf("%.*s", alglen, pubblob->s+4);
     if (commentptr)
         *commentptr = comment;
     else
         sfree(comment);
-    put_data(bs, pubblob, pubbloblen);
-    sfree(pubblob);
+    put_datapl(bs, ptrlen_from_strbuf(pubblob));
+    strbuf_free(pubblob);
     return true;
 
   error:
     sfree(line);
     sfree(comment);
-    sfree(pubblob);
+    if (pubblob)
+        strbuf_free(pubblob);
     if (errorstr)
         *errorstr = error;
     return false;

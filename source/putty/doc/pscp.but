@@ -63,6 +63,7 @@ use PSCP:
 \c   -hostkey aa:bb:cc:...
 \c             manually specify a host key (may be repeated)
 \c   -batch    disable all interactive prompts
+\c   -no-sanitise-stderr  don't strip control chars from standard error
 \c   -proxycmd command
 \c             use 'command' as local proxy
 \c   -unsafe   allow server-side wildcards (DANGEROUS)
@@ -280,6 +281,15 @@ The \c{-scp} option forces PSCP to use the SCP protocol or quit.
 The \c{-sftp} option forces PSCP to use the SFTP protocol or quit.
 When this option is specified, PSCP looks harder for an SFTP server,
 which may allow use of SFTP with SSH-1 depending on server setup.
+
+\S2{pscp-option-sanitise} \I{-sanitise-stderr}\I{-no-sanitise-stderr}\c{-no-sanitise-stderr}: control error message sanitisation
+
+The \c{-no-sanitise-stderr} option will cause PSCP to pass through the
+server's standard-error stream literally, without stripping control
+characters from it first. This might be useful if the server were
+sending coloured error messages, but it also gives the server the
+ability to have unexpected effects on your terminal display. For more
+discussion, see \k{plink-option-sanitise}.
 
 \S{pscp-retval} \ii{Return value}
 

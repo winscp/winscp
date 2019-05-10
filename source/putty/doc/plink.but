@@ -79,6 +79,8 @@ use Plink:
 \c   -share    enable use of connection sharing
 \c   -hostkey aa:bb:cc:...
 \c             manually specify a host key (may be repeated)
+\c   -sanitise-stderr, -sanitise-stdout, -no-sanitise-stderr, -no-sanitise-stdout
+\c             do/don't strip control chars from standard output/error
 \c   -m file   read remote command(s) from file
 \c   -s        remote command is an SSH subsystem (SSH-2 only)
 \c   -N        don't start a shell/command (SSH-2 only)
@@ -281,6 +283,50 @@ number, a bare saved session name, \c{-load}, etc). It returns a
 zero exit status if a usable \q{upstream} exists, nonzero otherwise.
 
 (This option is only meaningful with the SSH-2 protocol.)
+
+\S2{plink-option-sanitise} \I{-sanitise-stderr}\I{-sanitise-stdout}\I{-no-sanitise-stderr}\I{-no-sanitise-stdout}\c{-sanitise-}\e{stream}: control output sanitisation
+
+In some situations, Plink applies a sanitisation pass to the output
+received from the server, to strip out control characters such as
+backspace and the escape character.
+    
+The idea of this is to prevent remote processes from sending confusing
+escape sequences through the standard error channel when Plink is
+being used as a transport for something like \cw{git} or CVS. If the
+server actually wants to send an error message, it will probably be
+plain text; if the server abuses that channel to try to write over
+unexpected parts of your terminal display, Plink will try to stop it.
+
+By default, this only happens for output channels which are sent to a
+Windows console device, or a Unix terminal device. (Any output stream
+going somewhere else is likely to be needed by an 8-bit protocol and
+must not be tampered with at all.) It also stops happening if you tell
+Plink to allocate a remote pseudo-terminal (see \k{using-cmdline-pty}
+and \k{config-ssh-pty}), on the basis that in that situation you often
+\e{want} escape sequences from the server to go to your terminal.
+
+But in case Plink guesses wrong about whether you want this
+sanitisation, you can override it in either direction, using one of
+these options:
+
+\dd \c{-sanitise-stderr}
+
+\dt Sanitise server data written to Plink's standard error channel,
+regardless of terminals and consoles and remote ptys.
+
+\dd \c{-no-sanitise-stderr}
+
+\dt Do not sanitise server data written to Plink's standard error
+channel.
+
+\dd \c{-sanitise-stdout}
+
+\dt Sanitise server data written to Plink's standard output channel.
+
+\dd \c{-no-sanitise-stdout}
+
+\dt Do not sanitise server data written to Plink's standard output
+channel.
 
 \H{plink-batch} Using Plink in \i{batch files} and \i{scripts}
 

@@ -332,6 +332,7 @@ bool rsa_verify(RSAKey *key)
     mp_int *q_new = mp_min(key->p, key->q);
     mp_free(key->p);
     mp_free(key->q);
+    mp_free(key->iqmp);
     key->p = p_new;
     key->q = q_new;
     key->iqmp = mp_invert(key->q, key->p);

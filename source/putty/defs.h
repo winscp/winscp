@@ -40,6 +40,9 @@ typedef struct RSAKey RSAKey;
 
 typedef struct BinarySink BinarySink;
 typedef struct BinarySource BinarySource;
+typedef struct stdio_sink stdio_sink;
+typedef struct bufchain_sink bufchain_sink;
+typedef struct handle_sink handle_sink;
 
 typedef struct IdempotentCallback IdempotentCallback;
 
@@ -116,6 +119,8 @@ typedef struct settings_r settings_r;
 typedef struct settings_e settings_e;
 
 typedef struct SessionSpecial SessionSpecial;
+
+typedef struct StripCtrlChars StripCtrlChars;
 
 /*
  * A small structure wrapping up a (pointer, length) pair so that it

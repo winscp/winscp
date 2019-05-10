@@ -135,6 +135,15 @@ This may help PSFTP's behaviour when it is used in automated
 scripts: using \c{-batch}, if something goes wrong at connection
 time, the batch job will fail rather than hang.
 
+\S2{psftp-option-sanitise} \I{-sanitise-stderr}\I{-no-sanitise-stderr}\c{-no-sanitise-stderr}: control error message sanitisation
+
+The \c{-no-sanitise-stderr} option will cause PSFTP to pass through the
+server's standard-error stream literally, without stripping control
+characters from it first. This might be useful if the server were
+sending coloured error messages, but it also gives the server the
+ability to have unexpected effects on your terminal display. For more
+discussion, see \k{plink-option-sanitise}.
+
 \H{psftp-commands} Running PSFTP
 
 Once you have started your PSFTP session, you will see a \c{psftp>}

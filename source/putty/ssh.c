@@ -317,7 +317,7 @@ static void ssh_got_ssh_version(struct ssh_version_receiver *rcv,
     ssh_bpp_free(old_bpp);
 }
 
-static void ssh_check_frozen(Ssh *ssh)
+void ssh_check_frozen(Ssh *ssh)
 {
     if (!ssh->s)
         return;

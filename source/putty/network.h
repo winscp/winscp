@@ -148,23 +148,31 @@ Socket *sk_new(SockAddr *addr, int port, bool privport, bool oobinline,
 Socket *sk_newlistener(const char *srcaddr, int port, Plug *plug,
                        bool local_host_only, int address_family);
 
-#define sk_plug(s,p) (((s)->vt->plug) (s, p))
-#define sk_close(s) (((s)->vt->close) (s))
-#define sk_write(s,buf,len) (((s)->vt->write) (s, buf, len))
-#define sk_write_oob(s,buf,len) (((s)->vt->write_oob) (s, buf, len))
-#define sk_write_eof(s) (((s)->vt->write_eof) (s))
-#define sk_flush(s) (((s)->vt->flush) (s))
+static inline Plug *sk_plug(Socket *s, Plug *p)
+{ return s->vt->plug(s, p); }
+static inline void sk_close(Socket *s)
+{ s->vt->close(s); }
+static inline size_t sk_write(Socket *s, const void *data, size_t len)
+{ return s->vt->write(s, data, len); }
+static inline size_t sk_write_oob(Socket *s, const void *data, size_t len)
+{ return s->vt->write_oob(s, data, len); }
+static inline void sk_write_eof(Socket *s)
+{ s->vt->write_eof(s); }
+static inline void sk_flush(Socket *s)
+{ s->vt->flush(s); }
 
-#define plug_log(p,type,addr,port,msg,code) \
-    (((p)->vt->log) (p, type, addr, port, msg, code))
-#define plug_closing(p,msg,code,callback) \
-    (((p)->vt->closing) (p, msg, code, callback))
-#define plug_receive(p,urgent,buf,len) \
-    (((p)->vt->receive) (p, urgent, buf, len))
-#define plug_sent(p,bufsize) \
-    (((p)->vt->sent) (p, bufsize))
-#define plug_accepting(p, constructor, ctx) \
-    (((p)->vt->accepting)(p, constructor, ctx))
+static inline void plug_log(
+    Plug *p, int type, SockAddr *addr, int port, const char *msg, int code)
+{ return p->vt->log(p, type, addr, port, msg, code); }
+static inline void plug_closing(
+    Plug *p, const char *msg, int code, bool calling_back)
+{ return p->vt->closing(p, msg, code, calling_back); }
+static inline void plug_receive(Plug *p, int urg, const char *data, size_t len)
+{ return p->vt->receive(p, urg, data, len); }
+static inline void plug_sent (Plug *p, size_t bufsize)
+{ return p->vt->sent(p, bufsize); }
+static inline int plug_accepting(Plug *p, accept_fn_t cons, accept_ctx_t ctx)
+{ return p->vt->accepting(p, cons, ctx); }
 
 /*
  * Special error values are returned from sk_namelookup and sk_new
@@ -172,7 +180,8 @@ Socket *sk_newlistener(const char *srcaddr, int port, Plug *plug,
  * or return NULL if there's no problem.
  */
 const char *sk_addr_error(SockAddr *addr);
-#define sk_socket_error(s) (((s)->vt->socket_error) (s))
+static inline const char *sk_socket_error(Socket *s)
+{ return s->vt->socket_error(s); }
 
 /*
  * Set the `frozen' flag on a socket. A frozen socket is one in
@@ -191,7 +200,8 @@ const char *sk_addr_error(SockAddr *addr);
  *    associated local socket in order to avoid unbounded buffer
  *    growth.
  */
-#define sk_set_frozen(s, is_frozen) (((s)->vt->set_frozen) (s, is_frozen))
+static inline void sk_set_frozen(Socket *s, bool is_frozen)
+{ s->vt->set_frozen(s, is_frozen); }
 
 /*
  * Return a structure giving some information about the other end of
@@ -199,7 +209,8 @@ const char *sk_addr_error(SockAddr *addr);
  * not NULL, then it is dynamically allocated, and should be freed by
  * a call to sk_free_peer_info(). See below for the definition.
  */
-#define sk_peer_info(s) (((s)->vt->peer_info) (s))
+static inline SocketPeerInfo *sk_peer_info(Socket *s)
+{ return s->vt->peer_info(s); }
 
 /*
  * The structure returned from sk_peer_info, and a function to free

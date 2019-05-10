@@ -42,11 +42,15 @@ struct BinaryPacketProtocol {
     bool expect_close;
 };
 
-#define ssh_bpp_handle_input(bpp) ((bpp)->vt->handle_input(bpp))
-#define ssh_bpp_handle_output(bpp) ((bpp)->vt->handle_output(bpp))
-#define ssh_bpp_new_pktout(bpp, type) ((bpp)->vt->new_pktout(type))
-#define ssh_bpp_queue_disconnect(bpp, msg, cat) \
-    ((bpp)->vt->queue_disconnect(bpp, msg, cat))
+static inline void ssh_bpp_handle_input(BinaryPacketProtocol *bpp)
+{ bpp->vt->handle_input(bpp); }
+static inline void ssh_bpp_handle_output(BinaryPacketProtocol *bpp)
+{ bpp->vt->handle_output(bpp); }
+static inline PktOut *ssh_bpp_new_pktout(BinaryPacketProtocol *bpp, int type)
+{ return bpp->vt->new_pktout(type); }
+static inline void ssh_bpp_queue_disconnect(BinaryPacketProtocol *bpp,
+                                            const char *msg, int category)
+{ bpp->vt->queue_disconnect(bpp, msg, category); }
 
 /* ssh_bpp_free is more than just a macro wrapper on the vtable; it
  * does centralised parts of the freeing too. */

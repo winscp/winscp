@@ -222,12 +222,12 @@ static inline NORETURN void unreachable_internal(void) { abort(); }
 void debug_printf(const char *fmt, ...);
 void debug_memdump(const void *buf, int len, bool L);
 #define debug(...) (debug_printf(__VA_ARGS__))
-#define dmemdump(buf,len) debug_memdump (buf, len, false);
-#define dmemdumpl(buf,len) debug_memdump (buf, len, true);
+#define dmemdump(buf,len) (debug_memdump(buf, len, false))
+#define dmemdumpl(buf,len) (debug_memdump(buf, len, true))
 #else
-#define debug(...)
-#define dmemdump(buf,len)
-#define dmemdumpl(buf,len)
+#define debug(...) ((void)0)
+#define dmemdump(buf,len) ((void)0)
+#define dmemdumpl(buf,len) ((void)0)
 #endif
 
 #ifndef lenof
@@ -349,6 +349,24 @@ static inline void PUT_16BIT_MSB_FIRST(void *vp, uint16_t value)
 static inline const char *NULLTOEMPTY(const char *s)
 {
     return s ? s : "";
+}
+
+/* StripCtrlChars, defined in stripctrl.c: an adapter you can put on
+ * the front of one BinarySink and which functions as one in turn.
+ * Interprets its input as a stream of multibyte characters in the
+ * system locale, and removes any that are not either printable
+ * characters or newlines. */
+struct StripCtrlChars {
+    BinarySink_IMPLEMENTATION;
+    /* and this is contained in a larger structure */
+};
+StripCtrlChars *stripctrl_new(
+    BinarySink *bs_out, bool permit_cr, wchar_t substitution);
+void stripctrl_free(StripCtrlChars *sanpub);
+char *stripctrl_string_ptrlen(ptrlen str);
+static inline char *stripctrl_string(const char *str)
+{
+    return stripctrl_string_ptrlen(ptrlen_from_asciz(str));
 }
 
 #endif

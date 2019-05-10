@@ -450,14 +450,11 @@ static Filename *xlatlognam(Filename *src, char *hostname, int port,
 {
     char buf[32], *bufp;
     int size;
-    char *buffer;
-    int buflen, bufsize;
+    strbuf *buffer;
     const char *s;
     Filename *ret;
 
-    bufsize = FILENAME_MAX;
-    buffer = snewn(bufsize, char);
-    buflen = 0;
+    buffer = strbuf_new();
     s = filename_to_str(src);
 
     while (*s) {
@@ -504,20 +501,15 @@ static Filename *xlatlognam(Filename *src, char *hostname, int port,
 	    buf[0] = *s++;
 	    size = 1;
 	}
-        if (bufsize <= buflen + size) {
-            bufsize = (buflen + size) * 5 / 4 + 512;
-            buffer = sresize(buffer, bufsize, char);
-        }
         while (size-- > 0) {
             char c = *bufp++;
             if (sanitise)
                 c = filename_char_sanitise(c);
-            buffer[buflen++] = c;
+            put_byte(buffer, c);
         }
     }
-    buffer[buflen] = '\0';
 
-    ret = filename_from_str(buffer);
-    sfree(buffer);
+    ret = filename_from_str(buffer->s);
+    strbuf_free(buffer);
     return ret;
 }

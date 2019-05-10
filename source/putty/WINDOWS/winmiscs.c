@@ -267,3 +267,11 @@ bool platform_sha1_hw_available(void)
 }
 
 #endif
+
+bool is_console_handle(HANDLE handle)
+{
+    DWORD ignored_output;
+    if (GetConsoleMode(handle, &ignored_output))
+        return true;
+    return false;
+}
