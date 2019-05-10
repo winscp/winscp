@@ -39,7 +39,7 @@ prompts_t *new_prompts(void)
 {
     prompts_t *p = snew(prompts_t);
     p->prompts = NULL;
-    p->n_prompts = 0;
+    p->n_prompts = p->prompts_size = 0;
     p->data = NULL;
     p->to_server = true; /* to be on the safe side */
     p->name = p->instruction = NULL;
@@ -53,9 +53,8 @@ void add_prompt(prompts_t *p, char *promptstr, bool echo)
     pr->echo = echo;
     pr->result = NULL;
     pr->resultsize = 0;
-    p->n_prompts++;
-    p->prompts = sresize(p->prompts, p->n_prompts, prompt_t *);
-    p->prompts[p->n_prompts-1] = pr;
+    sgrowarray(p->prompts, p->prompts_size, p->n_prompts);
+    p->prompts[p->n_prompts++] = pr;
 }
 void prompt_ensure_result_size(prompt_t *pr, int newlen)
 {
@@ -273,6 +272,14 @@ char *buildinfo(const char *newline)
         }
     }
 #endif
+#if defined _WINDOWS
+    {
+        int echm = has_embedded_chm();
+        if (echm >= 0)
+            strbuf_catf(buf, "%sEmbedded HTML Help file: %s", newline,
+                        echm ? "yes" : "no");
+    }
+#endif
 
 #if defined _WINDOWS && defined MINEFIELD
     strbuf_catf(buf, "%sBuild option: MINEFIELD", newline);
@@ -334,6 +341,10 @@ const char *nullseat_get_x_display(Seat *seat) { return NULL; }
 bool nullseat_get_windowid(Seat *seat, long *id_out) { return false; }
 bool nullseat_get_window_pixel_size(
     Seat *seat, int *width, int *height) { return false; }
+StripCtrlChars *nullseat_stripctrl_new(
+    Seat *seat, BinarySink *bs_out, SeatInteractionContext sic) {return NULL;}
+bool nullseat_set_trust_status(Seat *seat, bool tr) { return false; }
+bool nullseat_set_trust_status_vacuously(Seat *seat, bool tr) { return true; }
 
 void sk_free_peer_info(SocketPeerInfo *pi)
 {

@@ -1816,18 +1816,10 @@ int net_service_lookup(char *service)
 
 char *get_hostname(void)
 {
-    int len = 128;
-    char *hostname = NULL;
-    do {
-	len *= 2;
-	hostname = sresize(hostname, len, char);
-	if (p_gethostname(hostname, len) < 0) {
-	    sfree(hostname);
-	    hostname = NULL;
-	    break;
-	}
-    } while (strlen(hostname) >= (size_t)(len-1));
-    return hostname;
+    char hostbuf[256]; /* MSDN docs for gethostname() promise this is enough */
+    if (p_gethostname(hostbuf, sizeof(hostbuf)) < 0)
+        return NULL;
+    return dupstr(hostbuf);
 }
 
 SockAddr *platform_get_x11_unix_address(const char *display, int displaynum,

@@ -474,3 +474,8 @@ void ssh2channel_send_terminal_size_change(SshChannel *sc, int w, int h)
     put_uint32(pktout, 0);	       /* pixel height */
     pq_push(s->ppl.out_pq, pktout);
 }
+
+bool ssh2_connection_need_antispoof_prompt(struct ssh2_connection_state *s)
+{
+    return !seat_set_trust_status(s->ppl.seat, false);
+}

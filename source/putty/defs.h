@@ -28,6 +28,7 @@
 
 typedef struct conf_tag Conf;
 typedef struct terminal_tag Terminal;
+typedef struct term_utf8_decode term_utf8_decode;
 
 typedef struct Filename Filename;
 typedef struct FontSpec FontSpec;

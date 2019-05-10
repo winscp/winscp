@@ -298,8 +298,7 @@ bool enum_settings_next(settings_e *e, strbuf *sb)
             success = (retd == ERROR_SUCCESS);
             break;
         }
-        regbuf_size = regbuf_size * 5 / 4 + 256;
-        regbuf = sresize(regbuf, regbuf_size, char);
+        sgrowarray(regbuf, regbuf_size, regbuf_size);
     }
 
     if (success)

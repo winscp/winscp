@@ -615,7 +615,7 @@ void zlib_compress_block(ssh_compressor *sc,
     bool in_block;
 
     assert(!out->outbuf);
-    out->outbuf = strbuf_new();
+    out->outbuf = strbuf_new_nm();
 
     /*
      * If this is the first block, output the Zlib (RFC1950) header
@@ -955,7 +955,7 @@ bool zlib_decompress_block(ssh_decompressor *dc,
     };
 
     assert(!dctx->outblk);
-    dctx->outblk = strbuf_new();
+    dctx->outblk = strbuf_new_nm();
 
     while (len > 0 || dctx->nbits > 0) {
 	while (dctx->nbits < 24 && len > 0) {

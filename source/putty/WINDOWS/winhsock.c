@@ -33,8 +33,8 @@ typedef struct HandleSocket {
     /* We buffer data here if we receive it from winhandl while frozen. */
     bufchain inputdata;
 
-    /* Data received from stderr_H, if we have one. */
-    bufchain stderrdata;
+    /* Handle logging proxy error messages from stderr_H, if we have one. */
+    ProxyStderrBuf psb;
 
     bool defer_close, deferred_close;   /* in case of re-entrance */
 
@@ -86,7 +86,7 @@ static size_t handle_stderr(
     HandleSocket *hs = (HandleSocket *)handle_get_privdata(h);
 
     if (!err && len > 0)
-        log_proxy_stderr(hs->plug, &hs->stderrdata, data, len);
+        log_proxy_stderr(hs->plug, &hs->psb, data, len);
 
     return 0;
 }
@@ -127,7 +127,6 @@ static void sk_handle_close(Socket *s)
     if (hs->recv_H != hs->send_H)
         CloseHandle(hs->recv_H);
     bufchain_clear(&hs->inputdata);
-    bufchain_clear(&hs->stderrdata);
 
     sfree(hs);
 }
@@ -332,7 +331,7 @@ Socket *make_handle_socket(HANDLE send_H, HANDLE recv_H, HANDLE stderr_H,
     hs->error = NULL;
     hs->frozen = UNFROZEN;
     bufchain_init(&hs->inputdata);
-    bufchain_init(&hs->stderrdata);
+    psb_init(&hs->psb);
 
     hs->recv_H = recv_H;
     hs->recv_h = handle_input_new(hs->recv_H, handle_gotdata, hs, flags);

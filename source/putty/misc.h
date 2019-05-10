@@ -34,14 +34,26 @@ char *dupprintf(const char *fmt, ...)
 char *dupvprintf(const char *fmt, va_list ap);
 void burnstr(char *string);
 
+/*
+ * The visible part of a strbuf structure. There's a surrounding
+ * implementation struct in misc.c, which isn't exposed to client
+ * code.
+ */
 struct strbuf {
     char *s;
     unsigned char *u;
-    int len;
+    size_t len;
     BinarySink_IMPLEMENTATION;
-    /* (also there's a surrounding implementation struct in misc.c) */
 };
+
+/* strbuf constructors: strbuf_new_nm and strbuf_new differ in that a
+ * strbuf constructed using the _nm version will resize itself by
+ * alloc/copy/smemclr/free instead of realloc. Use that version for
+ * data sensitive enough that it's worth costing performance to
+ * avoid copies of it lingering in process memory. */
 strbuf *strbuf_new(void);
+strbuf *strbuf_new_nm(void);
+
 void strbuf_free(strbuf *buf);
 void *strbuf_append(strbuf *buf, size_t len);
 char *strbuf_to_str(strbuf *buf); /* does free buf, but you must free result */
@@ -125,8 +137,6 @@ static inline void bufchain_set_callback(bufchain *ch, IdempotentCallback *ic)
     bufchain_set_callback_inner(ch, ic, queue_idempotent_callback);
 }
 
-void sanitise_term_data(bufchain *out, const void *vdata, size_t len);
-
 bool validate_manual_hostkey(char *key);
 
 struct tm ltime(void);
@@ -159,6 +169,7 @@ bool ptrlen_eq_string(ptrlen pl, const char *str);
 bool ptrlen_eq_ptrlen(ptrlen pl1, ptrlen pl2);
 int ptrlen_strcmp(ptrlen pl1, ptrlen pl2);
 bool ptrlen_startswith(ptrlen whole, ptrlen prefix, ptrlen *tail);
+bool ptrlen_endswith(ptrlen whole, ptrlen suffix, ptrlen *tail);
 char *mkstr(ptrlen pl);
 int string_length_for_printf(size_t);
 /* Derive two printf arguments from a ptrlen, suitable for "%.*s" */
@@ -186,6 +197,11 @@ void smemclr(void *b, size_t len);
  * Returns false for mismatch or true for equality (unlike memcmp),
  * hinted at by the 'eq' in the name. */
 bool smemeq(const void *av, const void *bv, size_t len);
+
+/* Encode a single UTF-8 character. Assumes that illegal characters
+ * (such as things in the surrogate range, or > 0x10FFFF) have already
+ * been removed. */
+size_t encode_utf8(void *output, unsigned long ch);
 
 char *buildinfo(const char *newline);
 
@@ -362,11 +378,20 @@ struct StripCtrlChars {
 };
 StripCtrlChars *stripctrl_new(
     BinarySink *bs_out, bool permit_cr, wchar_t substitution);
+StripCtrlChars *stripctrl_new_term_fn(
+    BinarySink *bs_out, bool permit_cr, wchar_t substitution,
+    Terminal *term, unsigned long (*translate)(
+        Terminal *, term_utf8_decode *, unsigned char));
+#define stripctrl_new_term(bs, cr, sub, term) \
+    stripctrl_new_term_fn(bs, cr, sub, term, term_translate)
+void stripctrl_retarget(StripCtrlChars *sccpub, BinarySink *new_bs_out);
+void stripctrl_reset(StripCtrlChars *sccpub);
 void stripctrl_free(StripCtrlChars *sanpub);
-char *stripctrl_string_ptrlen(ptrlen str);
-static inline char *stripctrl_string(const char *str)
+void stripctrl_enable_line_limiting(StripCtrlChars *sccpub);
+char *stripctrl_string_ptrlen(StripCtrlChars *sccpub, ptrlen str);
+static inline char *stripctrl_string(StripCtrlChars *sccpub, const char *str)
 {
-    return stripctrl_string_ptrlen(ptrlen_from_asciz(str));
+    return stripctrl_string_ptrlen(sccpub, ptrlen_from_asciz(str));
 }
 
 #endif

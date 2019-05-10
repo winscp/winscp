@@ -290,7 +290,13 @@ void backend_socket_log(Seat *seat, LogContext *logctx,
                         int type, SockAddr *addr, int port,
                         const char *error_msg, int error_code, Conf *conf,
                         bool session_started);
+
+typedef struct ProxyStderrBuf {
+    char buf[8192];
+    size_t size;
+} ProxyStderrBuf;
+void psb_init(ProxyStderrBuf *psb);
 void log_proxy_stderr(
-    Plug *plug, bufchain *buf, const void *vdata, size_t len);
+    Plug *plug, ProxyStderrBuf *psb, const void *vdata, size_t len);
 
 #endif

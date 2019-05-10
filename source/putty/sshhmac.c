@@ -110,7 +110,7 @@ static void hmac_key(ssh2_mac *mac, ptrlen key)
          * the underlying hash, then we start by hashing the key, and
          * use that hash as the 'true' key for the HMAC construction.
          */
-        sb = strbuf_new();
+        sb = strbuf_new_nm();
         strbuf_append(sb, ctx->hashalg->hlen);
 
         ssh_hash *htmp = ssh_hash_new(ctx->hashalg);

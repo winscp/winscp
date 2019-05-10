@@ -223,16 +223,14 @@ HMODULE load_system32_dll(const char *libname)
      * path.)
      */
     static char *sysdir = NULL;
+    static size_t sysdirsize = 0;
     char *fullpath;
     HMODULE ret;
 
     if (!sysdir) {
-	int size = 0, len;
-	do {
-	    size = 3*size/2 + 512;
-	    sysdir = sresize(sysdir, size, char);
-	    len = GetSystemDirectory(sysdir, size);
-	} while (len >= size);
+        size_t len;
+        while ((len = GetSystemDirectory(sysdir, sysdirsize)) >= sysdirsize)
+            sgrowarray(sysdir, sysdirsize, len);
     }
 
     fullpath = dupcat(sysdir, "\\", libname, NULL);
@@ -432,3 +430,40 @@ void dputs(const char *buf)
     fflush(debug_fp);
 }
 #endif
+
+char *registry_get_string(HKEY root, const char *path, const char *leaf)
+{
+    HKEY key = root;
+    bool need_close_key = false;
+    char *toret = NULL, *str = NULL;
+
+    if (path) {
+        if (RegCreateKey(key, path, &key) != ERROR_SUCCESS)
+            goto out;
+        need_close_key = true;
+    }
+
+    DWORD type, size;
+    if (RegQueryValueEx(key, leaf, 0, &type, NULL, &size) != ERROR_SUCCESS)
+        goto out;
+    if (type != REG_SZ)
+        goto out;
+
+    str = snewn(size + 1, char);
+    DWORD size_got = size;
+    if (RegQueryValueEx(key, leaf, 0, &type, (LPBYTE)str,
+                        &size_got) != ERROR_SUCCESS)
+        goto out;
+    if (type != REG_SZ || size_got > size)
+        goto out;
+    str[size_got] = '\0';
+
+    toret = str;
+    str = NULL;
+
+  out:
+    if (need_close_key)
+        RegCloseKey(key);
+    sfree(str);
+    return toret;
+}

@@ -63,12 +63,12 @@ typedef struct PktIn {
 } PktIn;
 
 typedef struct PktOut {
-    long prefix;            /* bytes up to and including type field */
-    long length;            /* total bytes, including prefix */
+    size_t prefix;          /* bytes up to and including type field */
+    size_t length;          /* total bytes, including prefix */
     int type;
-    long minlen;            /* SSH-2: ensure wire length is at least this */
+    size_t minlen;          /* SSH-2: ensure wire length is at least this */
     unsigned char *data;    /* allocated storage */
-    long maxlen;	    /* amount of storage allocated for `data' */
+    size_t maxlen;          /* amount of storage allocated for `data' */
 
     /* Extra metadata used in SSH packet logging mode, allowing us to
      * log in the packet header line that the packet came from a

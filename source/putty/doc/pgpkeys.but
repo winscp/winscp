@@ -16,6 +16,11 @@ option), such that if you have an executable you trust, you can use
 it to establish a trust path, for instance to a newer version
 downloaded from the Internet.
 
+As of release 0.67, the Windows executables and installer also contain
+built-in signatures that are automatically verified by Windows' own
+mechanism (\q{\i{Authenticode}}). The keys used for that are different,
+and are not covered here.
+
 (Note that none of the keys, signatures, etc mentioned here have
 anything to do with keys used with SSH - they are purely for verifying
 the origin of files distributed by the PuTTY team.)

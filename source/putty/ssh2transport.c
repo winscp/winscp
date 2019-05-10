@@ -347,7 +347,7 @@ bool ssh2_common_filter_queue(PacketProtocolLayer *ppl)
                 ((reason > 0 && reason < lenof(ssh2_disconnect_reasons)) ?
                  ssh2_disconnect_reasons[reason] : "unknown"),
                 PTRLEN_PRINTF(msg));
-            pq_pop(ppl->in_pq);
+            /* don't try to pop the queue, because we've been freed! */
             return true;               /* indicate that we've been freed */
 
           case SSH2_MSG_DEBUG:
@@ -408,7 +408,8 @@ static bool ssh2_transport_filter_queue(struct ssh2_transport_state *s)
 
 PktIn *ssh2_transport_pop(struct ssh2_transport_state *s)
 {
-    ssh2_transport_filter_queue(s);
+    if (ssh2_transport_filter_queue(s))
+        return NULL;   /* we've been freed */
     return pq_pop(s->ppl.in_pq);
 }
 
@@ -988,7 +989,8 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
      * from, even if we're _not_ looping on pq_pop. That way we can
      * still proactively handle those messages even if we're waiting
      * for a user response. */
-    ssh2_transport_filter_queue(s);
+    if (ssh2_transport_filter_queue(s))
+        return;   /* we've been freed */
 
     crBegin(s->crState);
 
@@ -1283,9 +1285,9 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
      * session keys.
      */
     {
-        strbuf *cipher_key = strbuf_new();
-        strbuf *cipher_iv = strbuf_new();
-        strbuf *mac_key = strbuf_new();
+        strbuf *cipher_key = strbuf_new_nm();
+        strbuf *cipher_iv = strbuf_new_nm();
+        strbuf *mac_key = strbuf_new_nm();
 
         if (s->out.cipher) {
             ssh2_mkkey(s, cipher_iv, s->K, s->exchange_hash,
@@ -1338,9 +1340,9 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
      * incoming session keys.
      */
     {
-        strbuf *cipher_key = strbuf_new();
-        strbuf *cipher_iv = strbuf_new();
-        strbuf *mac_key = strbuf_new();
+        strbuf *cipher_key = strbuf_new_nm();
+        strbuf *cipher_iv = strbuf_new_nm();
+        strbuf *mac_key = strbuf_new_nm();
 
         if (s->in.cipher) {
             ssh2_mkkey(s, cipher_iv, s->K, s->exchange_hash,

@@ -1223,7 +1223,7 @@ int proxy_socks5_negotiate (ProxySocket *p, int change)
             const char *username = conf_get_str(p->conf, CONF_proxy_username);
             const char *password = conf_get_str(p->conf, CONF_proxy_password);
 	    if (username[0] || password[0]) {
-                strbuf *auth = strbuf_new();
+                strbuf *auth = strbuf_new_nm();
 		put_byte(auth, 1); /* version number of subnegotiation */
                 if (!put_pstring(auth, username)) {
                     p->error = "Proxy error: SOCKS 5 authentication cannot "

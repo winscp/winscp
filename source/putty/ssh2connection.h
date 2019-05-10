@@ -37,6 +37,9 @@ struct ssh2_connection_state {
     PortFwdManager *portfwdmgr;
     bool portfwdmgr_configured;
 
+    prompts_t *antispoof_prompt;
+    int antispoof_ret;
+
     const SftpServerVtable *sftpserver_vt;
 
     /*
@@ -227,5 +230,7 @@ ChanopenResult ssh2_connection_parse_channel_open(
 
 bool ssh2_connection_parse_global_request(
     struct ssh2_connection_state *s, ptrlen type, PktIn *pktin);
+
+bool ssh2_connection_need_antispoof_prompt(struct ssh2_connection_state *s);
 
 #endif /* PUTTY_SSH2CONNECTION_H */

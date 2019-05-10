@@ -41,7 +41,7 @@ use Plink:
 
 \c Z:\sysosd>plink
 \c Plink: command-line connection utility
-\c Release 0.70
+\c Release 0.71
 \c Usage: plink [options] [user@]host [command]
 \c        ("host" can also be a PuTTY saved session name)
 \c Options:
@@ -81,6 +81,7 @@ use Plink:
 \c             manually specify a host key (may be repeated)
 \c   -sanitise-stderr, -sanitise-stdout, -no-sanitise-stderr, -no-sanitise-stdout
 \c             do/don't strip control chars from standard output/error
+\c   -no-antispoof   omit anti-spoofing prompt after authentication
 \c   -m file   read remote command(s) from file
 \c   -s        remote command is an SSH subsystem (SSH-2 only)
 \c   -N        don't start a shell/command (SSH-2 only)
@@ -327,6 +328,46 @@ channel.
 
 \dt Do not sanitise server data written to Plink's standard output
 channel.
+
+\S2{plink-option-antispoof} \I{-no-antispoof}: turn off authentication spoofing protection prompt
+
+In SSH, some possible server authentication methods require user input
+(for example, password authentication, or entering a private key
+passphrase), and others do not (e.g. a private key held in Pageant).
+
+If you use Plink to run an interactive login session, and if Plink
+authenticates without needing any user interaction, and if the server
+is malicious or compromised, it could try to trick you into giving it
+authentication data that should not go to the server (such as your
+private key passphrase), by sending what \e{looks} like one of Plink's
+local prompts, as if Plink had not already authenticated.
+
+To protect against this, Plink's default policy is to finish the
+authentication phase with a final trivial prompt looking like this:
+
+\c Access granted. Press Return to begin session.
+
+so that if you saw anything that looked like an authentication prompt
+\e{after} that line, you would know it was not from Plink.
+
+That extra interactive step is inconvenient. So Plink will turn it off
+in as many situations as it can:
+
+\b If Plink's standard input is not pointing at a console or terminal
+device \dash for example, if you're using Plink as a transport for
+some automated application like version control \dash then you
+\e{can't} type passphrases into the server anyway. In that situation,
+Plink won't try to protect you from the server trying to fool you into
+doing so.
+
+\b If Plink is in batch mode (see \k{plink-usage-batch}), then it
+\e{never} does any interactive authentication. So anything looking
+like an interactive authentication prompt is automatically suspect,
+and so Plink omits the anti-spoofing prompt.
+
+But if you still find the protective prompt inconvenient, and you
+trust the server not to try a trick like this, you can turn it off
+using the \cq{-no-antispoof} option.
 
 \H{plink-batch} Using Plink in \i{batch files} and \i{scripts}
 

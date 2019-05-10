@@ -474,6 +474,15 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
                  s->gss_stat == SSH_GSS_S_CONTINUE_NEEDED ||
                  !s->complete_rcvd);
 
+        {
+            const char *err = dh_validate_f(s->dh_ctx, s->f);
+            if (err) {
+                ssh_proto_error(s->ppl.ssh, "GSSAPI reply failed "
+                                "validation: %s", err);
+                *aborted = true;
+                return;
+            }
+        }
         s->K = dh_find_K(s->dh_ctx, s->f);
 
         /* We assume everything from now on will be quick, and it might
@@ -554,7 +563,21 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
          */
         {
             int klen = ssh_rsakex_klen(s->rsa_kex_key);
+
+            const struct ssh_rsa_kex_extra *extra =
+                (const struct ssh_rsa_kex_extra *)s->kex_alg->extra;
+            if (klen < extra->minklen) {
+                ssh_proto_error(s->ppl.ssh, "Server sent %d-bit RSA key, "
+                                "less than the minimum size %d for %s "
+                                "key exchange", klen, extra->minklen,
+                                s->kex_alg->name);
+                *aborted = true;
+                return;
+            }
+
             int nbits = klen - (2*s->kex_alg->hash->hlen*8 + 49);
+            assert(nbits > 0);
+
             strbuf *buf, *outstr;
 
             mp_int *tmp = mp_random_bits(nbits - 1);
@@ -565,7 +588,7 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
             /*
              * Encode this as an mpint.
              */
-            buf = strbuf_new();
+            buf = strbuf_new_nm();
             put_mp_ssh2(buf, s->K);
 
             /*

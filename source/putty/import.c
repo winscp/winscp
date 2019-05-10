@@ -313,7 +313,7 @@ static struct openssh_pem_key *load_openssh_pem_key(const Filename *filename,
     int base64_chars = 0;
 
     ret = snew(struct openssh_pem_key);
-    ret->keyblob = strbuf_new();
+    ret->keyblob = strbuf_new_nm();
 
     fp = f_open(filename, "r", false);
     if (!fp) {
@@ -535,7 +535,7 @@ static ssh2_userkey *openssh_pem_read(
     int i, num_integers;
     ssh2_userkey *retval = NULL;
     const char *errmsg;
-    strbuf *blob = strbuf_new();
+    strbuf *blob = strbuf_new_nm();
     int privptr = 0, publen;
 
     if (!key)
@@ -794,11 +794,11 @@ static bool openssh_pem_write(
      */
     pubblob = strbuf_new();
     ssh_key_public_blob(key->key, BinarySink_UPCAST(pubblob));
-    privblob = strbuf_new();
+    privblob = strbuf_new_nm();
     ssh_key_private_blob(key->key, BinarySink_UPCAST(privblob));
     spareblob = NULL;
 
-    outblob = strbuf_new();
+    outblob = strbuf_new_nm();
 
     /*
      * Encode the OpenSSH key blob, and also decide on the header
@@ -903,7 +903,7 @@ static bool openssh_pem_write(
             footer = "-----END DSA PRIVATE KEY-----\n";
         }
 
-        seq = strbuf_new();
+        seq = strbuf_new_nm();
         for (i = 0; i < nnumbers; i++) {
             put_ber_id_len(seq, 2, numbers[i].len, 0);
             put_datapl(seq, numbers[i]);
@@ -933,7 +933,7 @@ static bool openssh_pem_write(
         oid = ec_alg_oid(ssh_key_alg(key->key), &oidlen);
         pointlen = (ec->curve->fieldBits + 7) / 8 * 2;
 
-        seq = strbuf_new();
+        seq = strbuf_new_nm();
 
         /* INTEGER 1 */
         put_ber_id_len(seq, 2, 1, 0);
@@ -1102,7 +1102,7 @@ static struct openssh_new_key *load_openssh_new_key(const Filename *filename,
     unsigned key_index;
 
     ret = snew(struct openssh_new_key);
-    ret->keyblob = strbuf_new();
+    ret->keyblob = strbuf_new_nm();
 
     fp = f_open(filename, "r", false);
     if (!fp) {
@@ -1493,13 +1493,13 @@ static bool openssh_new_write(
      */
     pubblob = strbuf_new();
     ssh_key_public_blob(key->key, BinarySink_UPCAST(pubblob));
-    privblob = strbuf_new();
+    privblob = strbuf_new_nm();
     ssh_key_openssh_blob(key->key, BinarySink_UPCAST(privblob));
 
     /*
      * Construct the cleartext version of the blob.
      */
-    cblob = strbuf_new();
+    cblob = strbuf_new_nm();
 
     /* Magic number. */
     put_asciz(cblob, "openssh-key-v1");
@@ -1516,7 +1516,7 @@ static bool openssh_new_write(
         random_read(bcrypt_salt, sizeof(bcrypt_salt));
         put_stringz(cblob, "aes256-ctr");
         put_stringz(cblob, "bcrypt");
-        substr = strbuf_new();
+        substr = strbuf_new_nm();
         put_string(substr, bcrypt_salt, sizeof(bcrypt_salt));
         put_uint32(substr, bcrypt_rounds);
         put_stringsb(cblob, substr);
@@ -1530,7 +1530,7 @@ static bool openssh_new_write(
 
     /* Private section. */
     {
-        strbuf *cpblob = strbuf_new();
+        strbuf *cpblob = strbuf_new_nm();
 
         /* checkint. */
         uint8_t checkint_buf[4];
@@ -1718,7 +1718,7 @@ static struct sshcom_key *load_sshcom_key(const Filename *filename,
 
     ret = snew(struct sshcom_key);
     ret->comment[0] = '\0';
-    ret->keyblob = strbuf_new();
+    ret->keyblob = strbuf_new_nm();
 
     fp = f_open(filename, "r", false);
     if (!fp) {
@@ -2060,7 +2060,7 @@ static ssh2_userkey *sshcom_read(
      * construct public and private blobs in our own format, and
      * end up feeding them to ssh_key_new_priv().
      */
-    blob = strbuf_new();
+    blob = strbuf_new_nm();
     if (type == RSA) {
         ptrlen n, e, d, u, p, q;
 
@@ -2157,7 +2157,7 @@ static bool sshcom_write(
      */
     pubblob = strbuf_new();
     ssh_key_public_blob(key->key, BinarySink_UPCAST(pubblob));
-    privblob = strbuf_new();
+    privblob = strbuf_new_nm();
     ssh_key_private_blob(key->key, BinarySink_UPCAST(privblob));
     outblob = NULL;
 
@@ -2225,7 +2225,7 @@ static bool sshcom_write(
         goto error;                    /* unsupported key type */
     }
 
-    outblob = strbuf_new();
+    outblob = strbuf_new_nm();
 
     /*
      * Create the unencrypted key blob.
