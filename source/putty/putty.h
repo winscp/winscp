@@ -341,7 +341,7 @@ enum {
     CIPHER_MAX			       /* no. ciphers (inc warn) */
 };
 
-enum {
+enum TriState {
     /*
      * Several different bits of the PuTTY configuration seem to be
      * three-way settings whose values are `always yes', `always
@@ -530,23 +530,39 @@ struct BackendVtable {
     int default_port;
 };
 
-#define backend_init(vt, seat, out, logctx, conf, host, port, rhost, nd, ka) \
-    ((vt)->init(seat, out, logctx, conf, host, port, rhost, nd, ka))
-#define backend_free(be) ((be)->vt->free(be))
-#define backend_reconfig(be, conf) ((be)->vt->reconfig(be, conf))
-#define backend_send(be, buf, len) ((be)->vt->send(be, buf, len))
-#define backend_sendbuffer(be) ((be)->vt->sendbuffer(be))
-#define backend_size(be, w, h) ((be)->vt->size(be, w, h))
-#define backend_special(be, code, arg) ((be)->vt->special(be, code, arg))
-#define backend_get_specials(be) ((be)->vt->get_specials(be))
-#define backend_connected(be) ((be)->vt->connected(be))
-#define backend_exitcode(be) ((be)->vt->exitcode(be))
-#define backend_sendok(be) ((be)->vt->sendok(be))
-#define backend_ldisc_option_state(be, opt) \
-    ((be)->vt->ldisc_option_state(be, opt))
-#define backend_provide_ldisc(be, ldisc) ((be)->vt->provide_ldisc(be, ldisc))
-#define backend_unthrottle(be, bufsize) ((be)->vt->unthrottle(be, bufsize))
-#define backend_cfg_info(be) ((be)->vt->cfg_info(be))
+static inline const char *backend_init(
+    const BackendVtable *vt, Seat *seat, Backend **out, LogContext *logctx,
+    Conf *conf, const char *host, int port, char **rhost, bool nd, bool ka)
+{ return vt->init(seat, out, logctx, conf, host, port, rhost, nd, ka); }
+static inline void backend_free(Backend *be)
+{ be->vt->free(be); }
+static inline void backend_reconfig(Backend *be, Conf *conf)
+{ be->vt->reconfig(be, conf); }
+static inline size_t backend_send(Backend *be, const char *buf, size_t len)
+{ return be->vt->send(be, buf, len); }
+static inline size_t backend_sendbuffer(Backend *be)
+{ return be->vt->sendbuffer(be); }
+static inline void backend_size(Backend *be, int width, int height)
+{ be->vt->size(be, width, height); }
+static inline void backend_special(
+    Backend *be, SessionSpecialCode code, int arg)
+{ be->vt->special(be, code, arg); }
+static inline const SessionSpecial *backend_get_specials(Backend *be)
+{ return be->vt->get_specials(be); }
+static inline bool backend_connected(Backend *be)
+{ return be->vt->connected(be); }
+static inline int backend_exitcode(Backend *be)
+{ return be->vt->exitcode(be); }
+static inline bool backend_sendok(Backend *be)
+{ return be->vt->sendok(be); }
+static inline bool backend_ldisc_option_state(Backend *be, int state)
+{ return be->vt->ldisc_option_state(be, state); }
+static inline void backend_provide_ldisc(Backend *be, Ldisc *ldisc)
+{ be->vt->provide_ldisc(be, ldisc); }
+static inline void backend_unthrottle(Backend *be, size_t bufsize)
+{ be->vt->unthrottle(be, bufsize); }
+static inline int backend_cfg_info(Backend *be)
+{ return be->vt->cfg_info(be); }
 
 extern const struct BackendVtable *const backends[];
 
@@ -915,36 +931,44 @@ struct SeatVtable {
     bool (*get_window_pixel_size)(Seat *seat, int *width, int *height);
 };
 
-#define seat_output(seat, is_stderr, data, len) \
-    ((seat)->vt->output(seat, is_stderr, data, len))
-#define seat_eof(seat) \
-    ((seat)->vt->eof(seat))
-#define seat_get_userpass_input(seat, p, input) \
-    ((seat)->vt->get_userpass_input(seat, p, input))
-#define seat_notify_remote_exit(seat) \
-    ((seat)->vt->notify_remote_exit(seat))
-#define seat_update_specials_menu(seat) \
-    ((seat)->vt->update_specials_menu(seat))
-#define seat_get_ttymode(seat, mode) \
-    ((seat)->vt->get_ttymode(seat, mode))
-#define seat_set_busy_status(seat, status) \
-    ((seat)->vt->set_busy_status(seat, status))
-#define seat_verify_ssh_host_key(seat, h, p, typ, str, fp, cb, ctx) \
-    ((seat)->vt->verify_ssh_host_key(seat, h, p, typ, str, fp, cb, ctx))
-#define seat_confirm_weak_crypto_primitive(seat, typ, alg, cb, ctx) \
-    ((seat)->vt->confirm_weak_crypto_primitive(seat, typ, alg, cb, ctx))
-#define seat_confirm_weak_cached_hostkey(seat, alg, better, cb, ctx) \
-    ((seat)->vt->confirm_weak_cached_hostkey(seat, alg, better, cb, ctx))
-#define seat_is_utf8(seat) \
-    ((seat)->vt->is_utf8(seat))
-#define seat_echoedit_update(seat, echoing, editing) \
-    ((seat)->vt->echoedit_update(seat, echoing, editing))
-#define seat_get_x_display(seat) \
-    ((seat)->vt->get_x_display(seat))
-#define seat_get_windowid(seat, out) \
-    ((seat)->vt->get_windowid(seat, out))
-#define seat_get_window_pixel_size(seat, width, height) \
-    ((seat)->vt->get_window_pixel_size(seat, width, height))
+static inline size_t seat_output(
+    Seat *seat, bool err, const void *data, size_t len)
+{ return seat->vt->output(seat, err, data, len); }
+static inline bool seat_eof(Seat *seat)
+{ return seat->vt->eof(seat); }
+static inline int seat_get_userpass_input(
+    Seat *seat, prompts_t *p, bufchain *input)
+{ return seat->vt->get_userpass_input(seat, p, input); }
+static inline void seat_notify_remote_exit(Seat *seat)
+{ seat->vt->notify_remote_exit(seat); }
+static inline void seat_update_specials_menu(Seat *seat)
+{ seat->vt->update_specials_menu(seat); }
+static inline char *seat_get_ttymode(Seat *seat, const char *mode)
+{ return seat->vt->get_ttymode(seat, mode); }
+static inline void seat_set_busy_status(Seat *seat, BusyStatus status)
+{ seat->vt->set_busy_status(seat, status); }
+static inline int seat_verify_ssh_host_key(
+    Seat *seat, const char *h, int p, const char *ktyp, char *kstr,
+    char *fp, void (*cb)(void *ctx, int result), void *ctx)
+{ return seat->vt->verify_ssh_host_key(seat, h, p, ktyp, kstr, fp, cb, ctx); }
+static inline int seat_confirm_weak_crypto_primitive(
+    Seat *seat, const char *atyp, const char *aname,
+    void (*cb)(void *ctx, int result), void *ctx)
+{ return seat->vt->confirm_weak_crypto_primitive(seat, atyp, aname, cb, ctx); }
+static inline int seat_confirm_weak_cached_hostkey(
+    Seat *seat, const char *aname, const char *better,
+    void (*cb)(void *ctx, int result), void *ctx)
+{ return seat->vt->confirm_weak_cached_hostkey(seat, aname, better, cb, ctx); }
+static inline bool seat_is_utf8(Seat *seat)
+{ return seat->vt->is_utf8(seat); }
+static inline void seat_echoedit_update(Seat *seat, bool ec, bool ed)
+{ seat->vt->echoedit_update(seat, ec, ed); }
+static inline const char *seat_get_x_display(Seat *seat)
+{ return seat->vt->get_x_display(seat); }
+static inline bool seat_get_windowid(Seat *seat, long *id_out)
+{ return seat->vt->get_windowid(seat, id_out); }
+static inline bool seat_get_window_pixel_size(Seat *seat, int *w, int *h)
+{ return seat->vt->get_window_pixel_size(seat, w, h); }
 
 /* Unlike the seat's actual method, the public entry point
  * seat_connection_fatal is a wrapper function with a printf-like API,
@@ -952,10 +976,10 @@ struct SeatVtable {
 void seat_connection_fatal(Seat *seat, const char *fmt, ...);
 
 /* Handy aliases for seat_output which set is_stderr to a fixed value. */
-#define seat_stdout(seat, data, len) \
-    seat_output(seat, false, data, len)
-#define seat_stderr(seat, data, len) \
-    seat_output(seat, true, data, len)
+static inline size_t seat_stdout(Seat *seat, const void *data, size_t len)
+{ return seat_output(seat, false, data, len); }
+static inline size_t seat_stderr(Seat *seat, const void *data, size_t len)
+{ return seat_output(seat, true, data, len); }
 
 /*
  * Stub methods for seat implementations that want to use the obvious
@@ -1083,60 +1107,66 @@ struct TermWinVtable {
     bool (*is_utf8)(TermWin *);
 };
 
-#define win_setup_draw_ctx(win) \
-    ((win)->vt->setup_draw_ctx(win))
-#define win_draw_text(win, x, y, text, len, attrs, lattrs, tc) \
-    ((win)->vt->draw_text(win, x, y, text, len, attrs, lattrs, tc))
-#define win_draw_cursor(win, x, y, text, len, attrs, lattrs, tc) \
-    ((win)->vt->draw_cursor(win, x, y, text, len, attrs, lattrs, tc))
-#define win_char_width(win, uc) \
-    ((win)->vt->char_width(win, uc))
-#define win_free_draw_ctx(win) \
-    ((win)->vt->free_draw_ctx(win))
-#define win_set_cursor_pos(win, x, y) \
-    ((win)->vt->set_cursor_pos(win, x, y))
-#define win_set_raw_mouse_mode(win, enable) \
-    ((win)->vt->set_raw_mouse_mode(win, enable))
-#define win_set_scrollbar(win, total, start, page) \
-    ((win)->vt->set_scrollbar(win, total, start, page))
-#define win_bell(win, mode) \
-    ((win)->vt->bell(win, mode))
-#define win_clip_write(win, clipboard, text, attrs, colours, len, desel) \
-    ((win)->vt->clip_write(win, clipboard, text, attrs, colours, len, desel))
-#define win_clip_request_paste(win, clipboard) \
-    ((win)->vt->clip_request_paste(win, clipboard))
-#define win_refresh(win) \
-    ((win)->vt->refresh(win))
-#define win_request_resize(win, w, h) \
-    ((win)->vt->request_resize(win, w, h))
-#define win_set_title(win, title) \
-    ((win)->vt->set_title(win, title))
-#define win_set_icon_title(win, ititle) \
-    ((win)->vt->set_icon_title(win, ititle))
-#define win_set_minimised(win, minimised) \
-    ((win)->vt->set_minimised(win, minimised))
-#define win_is_minimised(win) \
-    ((win)->vt->is_minimised(win))
-#define win_set_maximised(win, maximised) \
-    ((win)->vt->set_maximised(win, maximised))
-#define win_move(win, x, y) \
-    ((win)->vt->move(win, x, y))
-#define win_set_zorder(win, top) \
-    ((win)->vt->set_zorder(win, top))
-#define win_palette_get(win, n, r, g, b) \
-    ((win)->vt->palette_get(win, n, r, g, b))
-#define win_palette_set(win, n, r, g, b) \
-    ((win)->vt->palette_set(win, n, r, g, b))
-#define win_palette_reset(win) \
-    ((win)->vt->palette_reset(win))
-#define win_get_pos(win, x, y) \
-    ((win)->vt->get_pos(win, x, y))
-#define win_get_pixels(win, x, y) \
-    ((win)->vt->get_pixels(win, x, y))
-#define win_get_title(win, icon) \
-    ((win)->vt->get_title(win, icon))
-#define win_is_utf8(win) \
-    ((win)->vt->is_utf8(win))
+static inline bool win_setup_draw_ctx(TermWin *win)
+{ return win->vt->setup_draw_ctx(win); }
+static inline void win_draw_text(
+    TermWin *win, int x, int y, wchar_t *text, int len,
+    unsigned long attrs, int line_attrs, truecolour tc)
+{ win->vt->draw_text(win, x, y, text, len, attrs, line_attrs, tc); }
+static inline void win_draw_cursor(
+    TermWin *win, int x, int y, wchar_t *text, int len,
+    unsigned long attrs, int line_attrs, truecolour tc)
+{ win->vt->draw_cursor(win, x, y, text, len, attrs, line_attrs, tc); }
+static inline int win_char_width(TermWin *win, int uc)
+{ return win->vt->char_width(win, uc); }
+static inline void win_free_draw_ctx(TermWin *win)
+{ win->vt->free_draw_ctx(win); }
+static inline void win_set_cursor_pos(TermWin *win, int x, int y)
+{ win->vt->set_cursor_pos(win, x, y); }
+static inline void win_set_raw_mouse_mode(TermWin *win, bool enable)
+{ win->vt->set_raw_mouse_mode(win, enable); }
+static inline void win_set_scrollbar(TermWin *win, int t, int s, int p)
+{ win->vt->set_scrollbar(win, t, s, p); }
+static inline void win_bell(TermWin *win, int mode)
+{ win->vt->bell(win, mode); }
+static inline void win_clip_write(
+    TermWin *win, int clipboard, wchar_t *text, int *attrs,
+    truecolour *colours, int len, bool deselect)
+{ win->vt->clip_write(win, clipboard, text, attrs, colours, len, deselect); }
+static inline void win_clip_request_paste(TermWin *win, int clipboard)
+{ win->vt->clip_request_paste(win, clipboard); }
+static inline void win_refresh(TermWin *win)
+{ win->vt->refresh(win); }
+static inline void win_request_resize(TermWin *win, int w, int h)
+{ win->vt->request_resize(win, w, h); }
+static inline void win_set_title(TermWin *win, const char *title)
+{ win->vt->set_title(win, title); }
+static inline void win_set_icon_title(TermWin *win, const char *icontitle)
+{ win->vt->set_icon_title(win, icontitle); }
+static inline void win_set_minimised(TermWin *win, bool minimised)
+{ win->vt->set_minimised(win, minimised); }
+static inline bool win_is_minimised(TermWin *win)
+{ return win->vt->is_minimised(win); }
+static inline void win_set_maximised(TermWin *win, bool maximised)
+{ win->vt->set_maximised(win, maximised); }
+static inline void win_move(TermWin *win, int x, int y)
+{ win->vt->move(win, x, y); }
+static inline void win_set_zorder(TermWin *win, bool top)
+{ win->vt->set_zorder(win, top); }
+static inline bool win_palette_get(TermWin *win, int n, int *r, int *g, int *b)
+{ return win->vt->palette_get(win, n, r, g, b); }
+static inline void win_palette_set(TermWin *win, int n, int r, int g, int b)
+{ win->vt->palette_set(win, n, r, g, b); }
+static inline void win_palette_reset(TermWin *win)
+{ win->vt->palette_reset(win); }
+static inline void win_get_pos(TermWin *win, int *x, int *y)
+{ win->vt->get_pos(win, x, y); }
+static inline void win_get_pixels(TermWin *win, int *x, int *y)
+{ win->vt->get_pixels(win, x, y); }
+static inline const char *win_get_title(TermWin *win, bool icon)
+{ return win->vt->get_title(win, icon); }
+static inline bool win_is_utf8(TermWin *win)
+{ return win->vt->is_utf8(win); }
 
 /*
  * Global functions not specific to a connection instance.
@@ -1492,16 +1522,20 @@ void random_destroy_seed(void);
 
 /*
  * Exports from settings.c.
+ *
+ * load_settings() and do_defaults() return false if the provided
+ * session name didn't actually exist. But they still fill in the
+ * provided Conf with _something_.
  */
 const struct BackendVtable *backend_vt_from_name(const char *name);
 const struct BackendVtable *backend_vt_from_proto(int proto);
 char *get_remote_username(Conf *conf); /* dynamically allocated */
 char *save_settings(const char *section, Conf *conf);
 void save_open_settings(settings_w *sesskey, Conf *conf);
-void load_settings(const char *section, Conf *conf);
+bool load_settings(const char *section, Conf *conf);
 void load_open_settings(settings_r *sesskey, Conf *conf);
 void get_sesslist(struct sesslist *, bool allocate);
-void do_defaults(const char *, Conf *);
+bool do_defaults(const char *, Conf *);
 void registry_cleanup(void);
 
 /*
@@ -1612,9 +1646,15 @@ struct LogPolicyVtable {
 struct LogPolicy {
     const LogPolicyVtable *vt;
 };
-#define lp_eventlog(lp, event) ((lp)->vt->eventlog(lp, event))
-#define lp_askappend(lp, fn, cb, ctx) ((lp)->vt->askappend(lp, fn, cb, ctx))
-#define lp_logging_error(lp, event) ((lp)->vt->logging_error(lp, event))
+
+static inline void lp_eventlog(LogPolicy *lp, const char *event)
+{ lp->vt->eventlog(lp, event); }
+static inline int lp_askappend(
+    LogPolicy *lp, Filename *filename,
+    void (*callback)(void *ctx, int result), void *ctx)
+{ return lp->vt->askappend(lp, filename, callback, ctx); }
+static inline void lp_logging_error(LogPolicy *lp, const char *event)
+{ lp->vt->logging_error(lp, event); }
 
 LogContext *log_init(LogPolicy *lp, Conf *conf);
 void log_free(LogContext *logctx);
@@ -1906,7 +1946,7 @@ void setup_config_box(struct controlbox *b, bool midsession,
  */
 typedef struct bidi_char {
     unsigned int origwc, wc;
-    unsigned short index;
+    unsigned short index, nchars;
 } bidi_char;
 int do_bidi(bidi_char *line, int count);
 int do_shape(bidi_char *line, bidi_char *to, int count);

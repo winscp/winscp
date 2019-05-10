@@ -234,3 +234,27 @@ ptrlen BinarySource_get_pstring(BinarySource *src)
 
     return make_ptrlen(consume(len), len);
 }
+
+static void stdio_sink_write(BinarySink *bs, const void *data, size_t len)
+{
+    stdio_sink *sink = BinarySink_DOWNCAST(bs, stdio_sink);
+    fwrite(data, 1, len, sink->fp);
+}
+
+void stdio_sink_init(stdio_sink *sink, FILE *fp)
+{
+    sink->fp = fp;
+    BinarySink_INIT(sink, stdio_sink_write);
+}
+
+static void bufchain_sink_write(BinarySink *bs, const void *data, size_t len)
+{
+    bufchain_sink *sink = BinarySink_DOWNCAST(bs, bufchain_sink);
+    bufchain_add(sink->ch, data, len);
+}
+
+void bufchain_sink_init(bufchain_sink *sink, bufchain *ch)
+{
+    sink->ch = ch;
+    BinarySink_INIT(sink, bufchain_sink_write);
+}

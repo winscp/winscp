@@ -24,6 +24,7 @@
 #endif
 
 #include "defs.h"
+#include "marshal.h"
 
 #include "tree234.h"
 
@@ -42,12 +43,12 @@
 struct Filename {
     char *path;
 };
-#ifdef MPEXT
-FILE * mp_wfopen(const char *filename, const char *mode);
-#define f_open(filename, mode, isprivate) ( mp_wfopen((filename)->path, (mode)) )
-#else
-#define f_open(filename, mode, isprivate) ( fopen((filename)->path, (mode)) )
-#endif
+FILE * mp_wfopen(const char *filename, const char *mode); // WINSCP
+static inline FILE *f_open(const Filename *filename, const char *mode,
+                           bool isprivate)
+{
+    return mp_wfopen(filename->path, mode);
+}
 
 struct FontSpec {
     char *name;
@@ -579,6 +580,8 @@ GLOBAL bool restricted_acl;
 void escape_registry_key(const char *in, strbuf *out);
 void unescape_registry_key(const char *in, strbuf *out);
 
+bool is_console_handle(HANDLE);
+
 /* A few pieces of up-to-date Windows API definition needed for older
  * compilers. */
 #ifndef LOAD_LIBRARY_SEARCH_SYSTEM32
@@ -636,6 +639,12 @@ size_t handle_backlog(struct handle *h);
 void *handle_get_privdata(struct handle *h);
 struct handle *handle_add_foreign_event(HANDLE event,
                                         void (*callback)(void *), void *ctx);
+/* Analogue of stdio_sink in marshal.h, for a Windows handle */
+struct handle_sink {
+    struct handle *h;
+    BinarySink_IMPLEMENTATION;
+};
+void handle_sink_init(handle_sink *sink, struct handle *h);
 
 /*
  * winpgntc.c needs to schedule callbacks for asynchronous agent

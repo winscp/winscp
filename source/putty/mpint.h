@@ -101,6 +101,12 @@ uint8_t mp_get_byte(mp_int *x, size_t byte);
 unsigned mp_get_bit(mp_int *x, size_t bit);
 
 /*
+ * Retrieve the value of an mp_int as a uintmax_t, assuming it's small
+ * enough to fit.
+ */
+uintmax_t mp_get_integer(mp_int *x);
+
+/*
  * Set an mp_int bit. Again, the bit index is not considered secret.
  * Do not pass an out-of-range index, on pain of assertion failure.
  */

@@ -28,8 +28,7 @@ struct ssh_verstring_state {
     int remote_bugs;
     char prefix[PREFIX_MAXLEN];
     char *impl_name;
-    char *vstring;
-    size_t vslen, vstrsize;
+    strbuf *vstring;
     char *protoversion;
     const char *softwareversion;
 
@@ -93,6 +92,7 @@ BinaryPacketProtocol *ssh_verstring_new(
     s->our_protoversion = dupstr(protoversion);
     s->receiver = rcv;
     s->impl_name = dupstr(impl_name);
+    s->vstring = strbuf_new();
 
     /*
      * We send our version string early if we can. But if it includes
@@ -114,7 +114,7 @@ void ssh_verstring_free(BinaryPacketProtocol *bpp)
         container_of(bpp, struct ssh_verstring_state, bpp);
     conf_free(s->conf);
     sfree(s->impl_name);
-    sfree(s->vstring);
+    strbuf_free(s->vstring);
     sfree(s->protoversion);
     sfree(s->our_vstring);
     sfree(s->our_protoversion);
@@ -242,6 +242,7 @@ void ssh_verstring_handle_input(BinaryPacketProtocol *bpp)
         bufchain_fetch(s->bpp.in_raw, s->prefix, s->prefix_wanted.len);
         if (!memcmp(s->prefix, s->prefix_wanted.ptr, s->prefix_wanted.len)) {
             bufchain_consume(s->bpp.in_raw, s->prefix_wanted.len);
+            ssh_check_frozen(s->bpp.ssh);
             break;
         }
 
@@ -258,9 +259,11 @@ void ssh_verstring_handle_input(BinaryPacketProtocol *bpp)
             data = bufchain_prefix(s->bpp.in_raw);
             if ((nl = memchr(data.ptr, '\012', data.len)) != NULL) {
                 bufchain_consume(s->bpp.in_raw, nl - (char *)data.ptr + 1);
+                ssh_check_frozen(s->bpp.ssh);
                 break;
             } else {
                 bufchain_consume(s->bpp.in_raw, data.len);
+                ssh_check_frozen(s->bpp.ssh);
             }
         }
     }
@@ -268,12 +271,9 @@ void ssh_verstring_handle_input(BinaryPacketProtocol *bpp)
     s->found_prefix = true;
 
     /*
-     * Start a buffer to store the full greeting line.
+     * Copy the greeting line so far into vstring.
      */
-    s->vstrsize = s->prefix_wanted.len + 16;
-    s->vstring = snewn(s->vstrsize, char);
-    memcpy(s->vstring, s->prefix_wanted.ptr, s->prefix_wanted.len);
-    s->vslen = s->prefix_wanted.len;
+    put_data(s->vstring, s->prefix_wanted.ptr, s->prefix_wanted.len);
 
     /*
      * Now read the rest of the greeting line.
@@ -289,29 +289,23 @@ void ssh_verstring_handle_input(BinaryPacketProtocol *bpp)
             data.len = nl - (char *)data.ptr + 1;
         }
 
-        if (s->vslen >= s->vstrsize - 1 ||
-            data.len >= s->vstrsize - 1 - s->vslen) {
-            s->vstrsize = (s->vslen + data.len) * 5 / 4 + 32;
-            s->vstring = sresize(s->vstring, s->vstrsize, char);
-        }
-
-        memcpy(s->vstring + s->vslen, data.ptr, data.len);
-        s->vslen += data.len;
+        put_datapl(s->vstring, data);
         bufchain_consume(s->bpp.in_raw, data.len);
+        ssh_check_frozen(s->bpp.ssh);
 
-    } while (s->vstring[s->vslen-1] != '\012');
+    } while (s->vstring->s[s->vstring->len-1] != '\012');
 
     /*
      * Trim \r and \n from the version string, and replace them with
      * a NUL terminator.
      */
-    while (s->vslen > 0 &&
-           (s->vstring[s->vslen-1] == '\r' ||
-            s->vstring[s->vslen-1] == '\n'))
-        s->vslen--;
-    s->vstring[s->vslen] = '\0';
+    while (s->vstring->len > 0 &&
+           (s->vstring->s[s->vstring->len-1] == '\r' ||
+            s->vstring->s[s->vstring->len-1] == '\n'))
+        s->vstring->len--;
+    s->vstring->s[s->vstring->len] = '\0';
 
-    bpp_logevent("Remote version: %s", s->vstring);
+    bpp_logevent("Remote version: %s", s->vstring->s);
 
     /*
      * Pick out the protocol version and software version. The former
@@ -320,7 +314,7 @@ void ssh_verstring_handle_input(BinaryPacketProtocol *bpp)
      * tail of s->vstring, so it doesn't need to be allocated.
      */
     {
-        const char *pv_start = s->vstring + s->prefix_wanted.len;
+        const char *pv_start = s->vstring->s + s->prefix_wanted.len;
         int pv_len = strcspn(pv_start, "-");
         s->protoversion = dupprintf("%.*s", pv_len, pv_start);
         s->softwareversion = pv_start + pv_len;
@@ -610,7 +604,7 @@ const char *ssh_verstring_get_remote(BinaryPacketProtocol *bpp)
 {
     struct ssh_verstring_state *s =
         container_of(bpp, struct ssh_verstring_state, bpp);
-    return s->vstring;
+    return s->vstring->s;
 }
 
 const char *ssh_verstring_get_local(BinaryPacketProtocol *bpp)

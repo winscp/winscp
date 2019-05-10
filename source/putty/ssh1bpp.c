@@ -124,6 +124,7 @@ void ssh1_bpp_start_compression(BinaryPacketProtocol *bpp)
                           s->bpp.input_eof);                            \
         if (!success)                                                   \
             goto eof;                                                   \
+        ssh_check_frozen(s->bpp.ssh);                                   \
     } while (0)
 
 static void ssh1_bpp_handle_input(BinaryPacketProtocol *bpp)

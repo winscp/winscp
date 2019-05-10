@@ -66,6 +66,7 @@ void ssh_transient_hostkey_cache_free(ssh_transient_hostkey_cache *thc)
         sfree(ent);
     }
     freetree234(thc->cache);
+    sfree(thc);
 }
 
 void ssh_transient_hostkey_cache_add(

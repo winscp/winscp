@@ -342,8 +342,7 @@ static void lz77_compress(struct LZ77Context *ctx,
  */
 
 struct Outbuf {
-    unsigned char *outbuf;
-    int outlen, outsize;
+    strbuf *outbuf;
     unsigned long outbits;
     int noutbits;
     bool firstblock;
@@ -355,11 +354,7 @@ static void outbits(struct Outbuf *out, unsigned long bits, int nbits)
     out->outbits |= bits << out->noutbits;
     out->noutbits += nbits;
     while (out->noutbits >= 8) {
-	if (out->outlen >= out->outsize) {
-	    out->outsize = out->outlen + 64;
-	    out->outbuf = sresize(out->outbuf, out->outsize, unsigned char);
-	}
-	out->outbuf[out->outlen++] = (unsigned char) (out->outbits & 0xFF);
+        put_byte(out->outbuf, out->outbits & 0xFF);
 	out->outbits >>= 8;
 	out->noutbits -= 8;
     }
@@ -589,6 +584,7 @@ ssh_compressor *zlib_compress_init(void)
     comp->ectx.match = zlib_match;
 
     out = snew(struct Outbuf);
+    out->outbuf = NULL;
     out->outbits = out->noutbits = 0;
     out->firstblock = true;
     comp->ectx.userdata = out;
@@ -600,7 +596,10 @@ void zlib_compress_cleanup(ssh_compressor *sc)
 {
     struct ssh_zlib_compressor *comp =
         container_of(sc, struct ssh_zlib_compressor, sc);
-    sfree(comp->ectx.userdata);
+    struct Outbuf *out = (struct Outbuf *)comp->ectx.userdata;
+    if (out->outbuf)
+        strbuf_free(out->outbuf);
+    sfree(out);
     sfree(comp->ectx.ictx);
     sfree(comp);
 }
@@ -615,8 +614,8 @@ void zlib_compress_block(ssh_compressor *sc,
     struct Outbuf *out = (struct Outbuf *) comp->ectx.userdata;
     bool in_block;
 
-    out->outbuf = NULL;
-    out->outlen = out->outsize = 0;
+    assert(!out->outbuf);
+    out->outbuf = strbuf_new();
 
     /*
      * If this is the first block, output the Zlib (RFC1950) header
@@ -678,13 +677,14 @@ void zlib_compress_block(ssh_compressor *sc,
      * at least a given length, do so by emitting further empty static
      * blocks.
      */
-    while (out->outlen < minlen) {
+    while (out->outbuf->len < minlen) {
         outbits(out, 0, 7);	       /* close block */
         outbits(out, 2, 3);	       /* open new static block */
     }
 
-    *outblock = out->outbuf;
-    *outlen = out->outlen;
+    *outlen = out->outbuf->len;
+    *outblock = (unsigned char *)strbuf_to_str(out->outbuf);
+    out->outbuf = NULL;
 }
 
 /* ----------------------------------------------------------------------
@@ -855,8 +855,7 @@ struct zlib_decompress_ctx {
     int nbits;
     unsigned char window[WINSIZE];
     int winpos;
-    unsigned char *outblk;
-    int outlen, outsize;
+    strbuf *outblk;
 
     ssh_decompressor dc;
 };
@@ -878,6 +877,7 @@ ssh_decompressor *zlib_decompress_init(void)
     dctx->bits = 0;
     dctx->nbits = 0;
     dctx->winpos = 0;
+    dctx->outblk = NULL;
 
     dctx->dc.vt = &ssh_zlib;
     return &dctx->dc;
@@ -896,6 +896,8 @@ void zlib_decompress_cleanup(ssh_decompressor *dc)
 	zlib_freetable(&dctx->lenlentable);
     zlib_freetable(&dctx->staticlentable);
     zlib_freetable(&dctx->staticdisttable);
+    if (dctx->outblk)
+        strbuf_free(dctx->outblk);
     sfree(dctx);
 }
 
@@ -935,11 +937,7 @@ static void zlib_emit_char(struct zlib_decompress_ctx *dctx, int c)
 {
     dctx->window[dctx->winpos] = c;
     dctx->winpos = (dctx->winpos + 1) & (WINSIZE - 1);
-    if (dctx->outlen >= dctx->outsize) {
-	dctx->outsize = dctx->outlen + 512;
-	dctx->outblk = sresize(dctx->outblk, dctx->outsize, unsigned char);
-    }
-    dctx->outblk[dctx->outlen++] = c;
+    put_byte(dctx->outblk, c);
 }
 
 #define EATBITS(n) ( dctx->nbits -= (n), dctx->bits >>= (n) )
@@ -956,9 +954,8 @@ bool zlib_decompress_block(ssh_decompressor *dc,
 	16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15
     };
 
-    dctx->outblk = snewn(256, unsigned char);
-    dctx->outsize = 256;
-    dctx->outlen = 0;
+    assert(!dctx->outblk);
+    dctx->outblk = strbuf_new();
 
     while (len > 0 || dctx->nbits > 0) {
 	while (dctx->nbits < 24 && len > 0) {
@@ -1185,13 +1182,13 @@ bool zlib_decompress_block(ssh_decompressor *dc,
     }
 
   finished:
-    *outblock = dctx->outblk;
-    *outlen = dctx->outlen;
+    *outlen = dctx->outblk->len;
+    *outblock = (unsigned char *)strbuf_to_str(dctx->outblk);
+    dctx->outblk = NULL;
     return true;
 
   decode_error:
-    sfree(dctx->outblk);
-    *outblock = dctx->outblk = NULL;
+    *outblock = NULL;
     *outlen = 0;
     return false;
 }

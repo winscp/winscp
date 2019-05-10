@@ -1086,8 +1086,7 @@ struct openssh_new_key {
     /* This too points to a position within keyblob */
     ptrlen private;
 
-    unsigned char *keyblob;
-    int keyblob_len, keyblob_size;
+    strbuf *keyblob;
 };
 
 static struct openssh_new_key *load_openssh_new_key(const Filename *filename,
@@ -1105,8 +1104,7 @@ static struct openssh_new_key *load_openssh_new_key(const Filename *filename,
     unsigned key_index;
 
     ret = snew(struct openssh_new_key);
-    ret->keyblob = NULL;
-    ret->keyblob_len = ret->keyblob_size = 0;
+    ret->keyblob = strbuf_new();
 
     fp = f_open(filename, "r", false);
     if (!fp) {
@@ -1155,14 +1153,7 @@ static struct openssh_new_key *load_openssh_new_key(const Filename *filename,
                     goto error;
                 }
 
-                if (ret->keyblob_len + len > ret->keyblob_size) {
-                    ret->keyblob_size = ret->keyblob_len + len + 256;
-                    ret->keyblob = sresize(ret->keyblob, ret->keyblob_size,
-                                           unsigned char);
-                }
-
-                memcpy(ret->keyblob + ret->keyblob_len, out, len);
-                ret->keyblob_len += len;
+                put_data(ret->keyblob, out, len);
 
                 smemclr(out, sizeof(out));
             }
@@ -1177,12 +1168,12 @@ static struct openssh_new_key *load_openssh_new_key(const Filename *filename,
     fclose(fp);
     fp = NULL;
 
-    if (ret->keyblob_len == 0 || !ret->keyblob) {
+    if (ret->keyblob->len == 0 || !ret->keyblob) {
 	errmsg = "key body not present";
 	goto error;
     }
 
-    BinarySource_BARE_INIT(src, ret->keyblob, ret->keyblob_len);
+    BinarySource_BARE_INIT_PL(src, ptrlen_from_strbuf(ret->keyblob));
 
     if (strcmp(get_asciz(src), "openssh-key-v1") != 0) {
         errmsg = "new-style OpenSSH magic number missing\n";
@@ -1290,10 +1281,7 @@ static struct openssh_new_key *load_openssh_new_key(const Filename *filename,
     }
     smemclr(base64_bit, sizeof(base64_bit));
     if (ret) {
-	if (ret->keyblob) {
-            smemclr(ret->keyblob, ret->keyblob_size);
-            sfree(ret->keyblob);
-        }
+        strbuf_free(ret->keyblob);
         smemclr(ret, sizeof(*ret));
 	sfree(ret);
     }
@@ -1310,8 +1298,7 @@ static bool openssh_new_encrypted(const Filename *filename)
     if (!key)
 	return false;
     ret = (key->cipher != ON_E_NONE);
-    smemclr(key->keyblob, key->keyblob_size);
-    sfree(key->keyblob);
+    strbuf_free(key->keyblob);
     smemclr(key, sizeof(*key));
     sfree(key);
     return ret;
@@ -1485,8 +1472,7 @@ static ssh2_userkey *openssh_new_read(
             ssh_key_free(retkey->key);
         sfree(retkey);
     }
-    smemclr(key->keyblob, key->keyblob_size);
-    sfree(key->keyblob);
+    strbuf_free(key->keyblob);
     smemclr(key, sizeof(*key));
     sfree(key);
     if (errmsg_p) *errmsg_p = errmsg;
@@ -1716,8 +1702,7 @@ static bool openssh_auto_write(
 
 struct sshcom_key {
     char comment[256];                 /* allowing any length is overkill */
-    unsigned char *keyblob;
-    int keyblob_len, keyblob_size;
+    strbuf *keyblob;
 };
 
 static struct sshcom_key *load_sshcom_key(const Filename *filename,
@@ -1735,8 +1720,7 @@ static struct sshcom_key *load_sshcom_key(const Filename *filename,
 
     ret = snew(struct sshcom_key);
     ret->comment[0] = '\0';
-    ret->keyblob = NULL;
-    ret->keyblob_len = ret->keyblob_size = 0;
+    ret->keyblob = strbuf_new();
 
     fp = f_open(filename, "r", false);
     if (!fp) {
@@ -1833,14 +1817,7 @@ static struct sshcom_key *load_sshcom_key(const Filename *filename,
                         goto error;
                     }
 
-                    if (ret->keyblob_len + len > ret->keyblob_size) {
-                        ret->keyblob_size = ret->keyblob_len + len + 256;
-                        ret->keyblob = sresize(ret->keyblob, ret->keyblob_size,
-					       unsigned char);
-                    }
-
-                    memcpy(ret->keyblob + ret->keyblob_len, out, len);
-                    ret->keyblob_len += len;
+                    put_data(ret->keyblob, out, len);
                 }
 
 		p++;
@@ -1851,7 +1828,7 @@ static struct sshcom_key *load_sshcom_key(const Filename *filename,
 	line = NULL;
     }
 
-    if (ret->keyblob_len == 0 || !ret->keyblob) {
+    if (ret->keyblob->len == 0) {
 	errmsg = "key body not present";
 	goto error;
     }
@@ -1870,10 +1847,7 @@ static struct sshcom_key *load_sshcom_key(const Filename *filename,
 	line = NULL;
     }
     if (ret) {
-	if (ret->keyblob) {
-            smemclr(ret->keyblob, ret->keyblob_size);
-            sfree(ret->keyblob);
-        }
+        strbuf_free(ret->keyblob);
         smemclr(ret, sizeof(*ret));
 	sfree(ret);
     }
@@ -1892,7 +1866,7 @@ static bool sshcom_encrypted(const Filename *filename, char **comment)
     if (!key)
         goto done;
 
-    BinarySource_BARE_INIT(src, key->keyblob, key->keyblob_len);
+    BinarySource_BARE_INIT_PL(src, ptrlen_from_strbuf(key->keyblob));
 
     if (get_uint32(src) != SSHCOM_MAGIC_NUMBER)
         goto done;                     /* key is invalid */
@@ -1907,8 +1881,7 @@ static bool sshcom_encrypted(const Filename *filename, char **comment)
     done:
     if (key) {
         *comment = dupstr(key->comment);
-        smemclr(key->keyblob, key->keyblob_size);
-        sfree(key->keyblob);
+        strbuf_free(key->keyblob);
         smemclr(key, sizeof(*key));
         sfree(key);
     } else {
@@ -1985,7 +1958,7 @@ static ssh2_userkey *sshcom_read(
     if (!key)
         return NULL;
 
-    BinarySource_BARE_INIT(src, key->keyblob, key->keyblob_len);
+    BinarySource_BARE_INIT_PL(src, ptrlen_from_strbuf(key->keyblob));
 
     if (get_uint32(src) != SSHCOM_MAGIC_NUMBER) {
         errmsg = "key does not begin with magic number";
@@ -2160,8 +2133,7 @@ static ssh2_userkey *sshcom_read(
     if (blob) {
         strbuf_free(blob);
     }
-    smemclr(key->keyblob, key->keyblob_size);
-    sfree(key->keyblob);
+    strbuf_free(key->keyblob);
     smemclr(key, sizeof(*key));
     sfree(key);
     if (errmsg_p) *errmsg_p = errmsg;
