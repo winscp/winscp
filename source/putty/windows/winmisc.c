@@ -491,6 +491,7 @@ char *registry_get_string(HKEY root, const char *path, const char *leaf)
         need_close_key = true;
     }
 
+    { // WINSCP
     DWORD type, size;
     if (RegQueryValueEx(key, leaf, 0, &type, NULL, &size) != ERROR_SUCCESS)
         goto out;
@@ -498,6 +499,7 @@ char *registry_get_string(HKEY root, const char *path, const char *leaf)
         goto out;
 
     str = snewn(size + 1, char);
+    { // WINSCP
     DWORD size_got = size;
     if (RegQueryValueEx(key, leaf, 0, &type, (LPBYTE)str,
                         &size_got) != ERROR_SUCCESS)
@@ -514,4 +516,6 @@ char *registry_get_string(HKEY root, const char *path, const char *leaf)
         RegCloseKey(key);
     sfree(str);
     return toret;
+    } // WINSCP
+    } // WINSCP
 }

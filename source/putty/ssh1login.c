@@ -813,6 +813,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                 s->cur_prompt->from_server = true;
                 s->cur_prompt->name = dupstr("SSH TIS authentication");
 
+                { // WINSCP
                 strbuf *sb = strbuf_new();
                 put_datapl(sb, PTRLEN_LITERAL("\
 -- TIS authentication challenge from server: ---------------------------------\
@@ -834,6 +835,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                 s->cur_prompt->instr_reqd = true;
                 add_prompt(s->cur_prompt, dupstr(
                                "TIS authentication response: "), false);
+                } // WINSCP
             } else {
                 ssh_proto_error(s->ppl.ssh, "Received unexpected packet"
                                 " in response to TIS authentication, "
@@ -867,6 +869,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                 s->cur_prompt->from_server = true;
                 s->cur_prompt->name = dupstr("SSH CryptoCard authentication");
 
+                { // WINSCP
                 strbuf *sb = strbuf_new();
                 put_datapl(sb, PTRLEN_LITERAL("\
 -- CryptoCard authentication challenge from server: --------------------------\
@@ -888,6 +891,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                 s->cur_prompt->instr_reqd = true;
                 add_prompt(s->cur_prompt, dupstr(
                                "CryptoCard authentication response: "), false);
+                } // WINSCP
             } else {
                 ssh_proto_error(s->ppl.ssh, "Received unexpected packet"
                                 " in response to TIS authentication, "
@@ -1025,7 +1029,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                 pkt = ssh_bpp_new_pktout(s->ppl.bpp, s->pwpkt_type);
                 put_asciz(padded_pw, s->cur_prompt->prompts[0]->result);
                 { // WINSCP
-                size_t pad = 63 & -padded_pw->len;
+                size_t pad = 63 & -(ssize_t)padded_pw->len; // WINSCP
                 random_read(strbuf_append(padded_pw, pad), pad);
                 put_stringsb(pkt, padded_pw);
                 pq_push(s->ppl.out_pq, pkt);

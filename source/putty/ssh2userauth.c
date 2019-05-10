@@ -497,6 +497,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                     seat_set_trust_status(s->ppl.seat, false);
                 }
 
+                { // WINSCP
                 bool mid_line = false;
                 while (bufchain_size(&s->banner) > 0) {
                     ptrlen data = bufchain_prefix(&s->banner);
@@ -516,6 +517,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                     ssh2_userauth_antispoof_msg(
                         s, "End of banner message from server");
                 }
+                } // WINSCP
             }
 
             if (pktin && pktin->type == SSH2_MSG_USERAUTH_SUCCESS) {

@@ -76,7 +76,7 @@ void *safegrowarray(void *ptr, size_t *allocated, size_t eltsize,
                     size_t oldlen, size_t extralen, bool secret)
 {
     /* The largest value we can safely multiply by eltsize */
-    assert(eltsize > 0);
+    pinitassert(eltsize > 0);
     size_t maxsize = (~(size_t)0) / eltsize;
 
     size_t oldsize = *allocated;
@@ -91,6 +91,7 @@ void *safegrowarray(void *ptr, size_t *allocated, size_t eltsize,
         return ptr;
 
     /* Find out how much we need to grow the array by. */
+    { // WINSCP
     size_t increment = (oldlen + extralen) - oldsize;
 
     /* Invent a new size. We want to grow the array by at least
@@ -104,10 +105,12 @@ void *safegrowarray(void *ptr, size_t *allocated, size_t eltsize,
         increment = oldsize / 16;
 
     /* But we also can't grow beyond maxsize. */
+    { // WINSCP
     size_t maxincr = maxsize - oldsize;
     if (increment > maxincr)
         increment = maxincr;
 
+    { // WINSCP
     size_t newsize = oldsize + increment;
     void *toret;
     if (secret) {
@@ -120,4 +123,7 @@ void *safegrowarray(void *ptr, size_t *allocated, size_t eltsize,
     }
     *allocated = newsize;
     return toret;
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
 }

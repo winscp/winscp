@@ -87,7 +87,7 @@ void log_proxy_stderr(Plug *plug, ProxyStderrBuf *psb,
         /*
          * Copy as much data into psb->buf as will fit.
          */
-        assert(psb->size < lenof(psb->buf));
+        pinitassert(psb->size < lenof(psb->buf));
         size_t to_consume = lenof(psb->buf) - psb->size;
         if (to_consume > len)
             to_consume = len;
@@ -99,6 +99,7 @@ void log_proxy_stderr(Plug *plug, ProxyStderrBuf *psb,
         /*
          * Output any full lines in psb->buf.
          */
+        { // WINSCP
         size_t pos = 0;
         while (pos < psb->size) {
             char *nlpos = memchr(psb->buf + pos, '\n', psb->size - pos);
@@ -108,10 +109,12 @@ void log_proxy_stderr(Plug *plug, ProxyStderrBuf *psb,
             /*
              * Found a newline in the buffer, so we can output a line.
              */
+            { // WINSCP
             size_t endpos = nlpos - psb->buf;
             while (endpos > pos && (psb->buf[endpos-1] == '\n' ||
                                     psb->buf[endpos-1] == '\r'))
                 endpos--;
+            { // WINSCP
             char *msg = dupprintf(
                 "proxy: %.*s", (int)(endpos - pos), psb->buf + pos);
             plug_log(plug, 2, NULL, 0, msg, 0);
@@ -119,6 +122,8 @@ void log_proxy_stderr(Plug *plug, ProxyStderrBuf *psb,
 
             pos = nlpos - psb->buf + 1;
             assert(pos <= psb->size);
+            } // WINSCP
+            } // WINSCP
         }
 
         /*
@@ -138,6 +143,7 @@ void log_proxy_stderr(Plug *plug, ProxyStderrBuf *psb,
         /*
          * Now move any remaining data up to the front of the buffer.
          */
+        { // WINSCP
         size_t newsize = psb->size - pos;
         if (newsize)
             memmove(psb->buf, psb->buf + pos, newsize);
@@ -147,5 +153,7 @@ void log_proxy_stderr(Plug *plug, ProxyStderrBuf *psb,
          * And loop round again if there's more data to be read from
          * our input.
          */
+        } // WINSCP
+        } // WINSCP
     }
 }

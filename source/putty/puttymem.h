@@ -93,7 +93,7 @@ void safefree(void *);
  * the freed memory at the previous location.
  */
 void *safegrowarray(void *array, size_t *size, size_t eltsize,
-                    size_t oldlen, size_t extralen, bool private);
+                    size_t oldlen, size_t extralen, bool private_); // WINSCP (_ to avoid use of reserved keyword)
 
 /* The master macro wrapper, of which all others are special cases */
 #define sgrowarray_general(array, size, n, m, priv)                     \

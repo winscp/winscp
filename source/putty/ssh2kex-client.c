@@ -575,9 +575,11 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
                 return;
             }
 
+            { // WINSCP
             int nbits = klen - (2*s->kex_alg->hash->hlen*8 + 49);
             assert(nbits > 0);
 
+            { // WINSCP
             strbuf *buf, *outstr;
 
             mp_int *tmp = mp_random_bits(nbits - 1);
@@ -607,6 +609,8 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
             put_stringsb(s->exhash, outstr); /* frees outstr */
 
             strbuf_free(buf);
+            } // WINSCP
+            } // WINSCP
         }
 
         ssh_rsakex_freekey(s->rsa_kex_key);

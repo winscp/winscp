@@ -1561,6 +1561,7 @@ static mp_int *ssh_ecdhkex_m_getkey(ecdh_key *dh, ptrlen remoteKey)
         mp_free(remote_x);
         return NULL;
     }
+    { // WINSCP
     MontgomeryPoint *remote_p = ecc_montgomery_point_new(
         dh->curve->m.mc, remote_x);
     mp_free(remote_x);
@@ -1597,6 +1598,7 @@ static mp_int *ssh_ecdhkex_m_getkey(ecdh_key *dh, ptrlen remoteKey)
     strbuf_free(sb);
 
     return x;
+    } // WINSCP
     } // WINSCP
     } // WINSCP
 }

@@ -377,10 +377,6 @@ static inline const char *NULLTOEMPTY(const char *s)
     return s ? s : "";
 }
 
-#ifndef WINSCP
-// This is used in plink/pscp/psftp only, but strangely linker asks for stripctrl_string_ptrlen,
-// even though stripctrl_string is never used in our code.
-
 /* StripCtrlChars, defined in stripctrl.c: an adapter you can put on
  * the front of one BinarySink and which functions as one in turn.
  * Interprets its input as a stream of multibyte characters in the
@@ -407,7 +403,6 @@ static inline char *stripctrl_string(StripCtrlChars *sccpub, const char *str)
 {
     return stripctrl_string_ptrlen(sccpub, ptrlen_from_asciz(str));
 }
-#endif
 
 #ifdef MPEXT
 // Recent PuTTY code uses C99 standard that allows code before initialization.

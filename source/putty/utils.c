@@ -301,7 +301,7 @@ int string_length_for_printf(size_t s)
 }
 
 /* Work around lack of va_copy in old MSC */
-#if defined _MSC_VER && !defined va_copy
+#if (defined _MSC_VER || defined WINSCP) && !defined va_copy
 #define va_copy(a, b) TYPECHECK(                        \
         (va_list *)0 == &(a) && (va_list *)0 == &(b),   \
         memcpy(&a, &b, sizeof(va_list)))
@@ -356,18 +356,19 @@ static char *dupvprintf_inner(char *buf, size_t oldlen, size_t *sizeptr,
     while (1) {
 	va_list aq;
 	va_copy(aq, ap);
-	int len = vsnprintf(buf + oldlen, size - oldlen, fmt, aq);
-	va_end(aq);
-
+	{ // WINSCP
 #if defined _DEBUG && defined IDE
 // CodeGuard hangs in v*printf functions. But while it's possible to disable CodeGuard in vsprintf, it's not possible for vsnprintf.
 // We never want to distribute this version of the code, hence the IDE condition.
 // Put this into WinSCP.cgi along with WinSCP.exe
 // [vsprintf]
 // Disable=yes
-	len = vsprintf(buf + oldlen, fmt, ap);
+	int len = vsprintf(buf + oldlen, fmt, aq);
 #else
+	int len = vsnprintf(buf + oldlen, size - oldlen, fmt, aq);
 #endif
+	va_end(aq);
+
 	if (len >= 0 && len < size) {
 	    /* This is the C99-specified criterion for snprintf to have
 	     * been completely successful. */
@@ -382,6 +383,7 @@ static char *dupvprintf_inner(char *buf, size_t oldlen, size_t *sizeptr,
 	     * buffer wasn't big enough, so we enlarge it a bit and hope. */
 	    sgrowarray_nm(buf, size, size);
 	}
+	} // WINSCP
     }
 }
 
