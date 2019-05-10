@@ -386,7 +386,7 @@ static inline char *stripctrl_string(const char *str)
 
 #ifdef MPEXT
 // Recent PuTTY code uses C99 standard that allows code before initialization.
-// Mostly that code are assertions. This assert implementation allows being used before code.
+// Frequently that code are assertions. This assert implementation allows being used before code.
 #define pinitassert(P) const int __assert_dummy = 1/((int)(P))
 #endif
 
