@@ -958,6 +958,41 @@ static void ssh2_connection_process_queue(PacketProtocolLayer *ppl)
         share_activate(s->connshare, s->peer_verstring);
 
     /*
+     * Signal the seat that authentication is done, so that it can
+     * deploy spoofing defences. If it doesn't have any, deploy our
+     * own fallback one.
+     *
+     * We do this here rather than at the end of userauth, because we
+     * might not have gone through userauth at all (if we're a
+     * connection-sharing downstream).
+     */
+    if (ssh2_connection_need_antispoof_prompt(s)) {
+        s->antispoof_prompt = new_prompts();
+        s->antispoof_prompt->to_server = true;
+        s->antispoof_prompt->from_server = false;
+        s->antispoof_prompt->name = dupstr("Authentication successful");
+        add_prompt(
+            s->antispoof_prompt,
+            dupstr("Access granted. Press Return to begin session. "), false);
+        s->antispoof_ret = seat_get_userpass_input(
+            s->ppl.seat, s->antispoof_prompt, NULL);
+        while (1) {
+            while (s->antispoof_ret < 0 &&
+                   bufchain_size(s->ppl.user_input) > 0)
+                s->antispoof_ret = seat_get_userpass_input(
+                    s->ppl.seat, s->antispoof_prompt, s->ppl.user_input);
+
+            if (s->antispoof_ret >= 0)
+                break;
+
+            s->want_user_input = true;
+            crReturnV;
+            s->want_user_input = false;
+        }
+        free_prompts(s->antispoof_prompt);
+    }
+
+    /*
      * Enable port forwardings.
      */
     portfwdmgr_config(s->portfwdmgr, s->conf);
@@ -1069,30 +1104,32 @@ static size_t ssh2_try_send(struct ssh2_channel *c)
     PktOut *pktout;
     size_t bufsize;
 
-    while (c->remwindow > 0 &&
-           (bufchain_size(&c->outbuffer) > 0 ||
-            bufchain_size(&c->errbuffer) > 0)) {
-        bufchain *buf = (bufchain_size(&c->errbuffer) > 0 ?
-                         &c->errbuffer : &c->outbuffer);
+    if (!c->halfopen) {
+        while (c->remwindow > 0 &&
+               (bufchain_size(&c->outbuffer) > 0 ||
+                bufchain_size(&c->errbuffer) > 0)) {
+            bufchain *buf = (bufchain_size(&c->errbuffer) > 0 ?
+                             &c->errbuffer : &c->outbuffer);
 
-	ptrlen data = bufchain_prefix(buf);
-	if (data.len > c->remwindow)
-	    data.len = c->remwindow;
-	if (data.len > c->remmaxpkt)
-	    data.len = c->remmaxpkt;
-        if (buf == &c->errbuffer) {
-            pktout = ssh_bpp_new_pktout(
-                s->ppl.bpp, SSH2_MSG_CHANNEL_EXTENDED_DATA);
-            put_uint32(pktout, c->remoteid);
-            put_uint32(pktout, SSH2_EXTENDED_DATA_STDERR);
-        } else {
-            pktout = ssh_bpp_new_pktout(s->ppl.bpp, SSH2_MSG_CHANNEL_DATA);
-            put_uint32(pktout, c->remoteid);
+            ptrlen data = bufchain_prefix(buf);
+            if (data.len > c->remwindow)
+                data.len = c->remwindow;
+            if (data.len > c->remmaxpkt)
+                data.len = c->remmaxpkt;
+            if (buf == &c->errbuffer) {
+                pktout = ssh_bpp_new_pktout(
+                    s->ppl.bpp, SSH2_MSG_CHANNEL_EXTENDED_DATA);
+                put_uint32(pktout, c->remoteid);
+                put_uint32(pktout, SSH2_EXTENDED_DATA_STDERR);
+            } else {
+                pktout = ssh_bpp_new_pktout(s->ppl.bpp, SSH2_MSG_CHANNEL_DATA);
+                put_uint32(pktout, c->remoteid);
+            }
+            put_stringpl(pktout, data);
+            pq_push(s->ppl.out_pq, pktout);
+            bufchain_consume(buf, data.len);
+            c->remwindow -= data.len;
         }
-        put_stringpl(pktout, data);
-        pq_push(s->ppl.out_pq, pktout);
-	bufchain_consume(buf, data.len);
-	c->remwindow -= data.len;
     }
 
     /*

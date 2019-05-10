@@ -769,7 +769,7 @@ static void send_packet_to_downstream(struct ssh_sharing_connstate *cs,
             int this_len = (data.len > chan->downstream_maxpkt ?
                             chan->downstream_maxpkt : data.len);
 
-            packet = strbuf_new();
+            packet = strbuf_new_nm();
             put_uint32(packet, 0);     /* placeholder for length field */
             put_byte(packet, type);
             put_uint32(packet, channel);
@@ -785,7 +785,7 @@ static void send_packet_to_downstream(struct ssh_sharing_connstate *cs,
         /*
          * Just do the obvious thing.
          */
-        packet = strbuf_new();
+        packet = strbuf_new_nm();
         put_uint32(packet, 0);     /* placeholder for length field */
         put_byte(packet, type);
         put_data(packet, pkt, pktlen);
@@ -1122,7 +1122,7 @@ void share_setup_x11_channel(ssh_sharing_connstate *cs, share_channel *chan,
                                  chan->x11_auth_proto,
                                  chan->x11_auth_data, chan->x11_auth_datalen,
                                  peer_addr, peer_port, &greeting_len);
-    packet = strbuf_new();
+    packet = strbuf_new_nm();
     put_uint32(packet, 0); /* leave the channel id field unfilled - we
                             * don't know the downstream id yet */
     put_uint32(packet, greeting_len + initial_len);
@@ -1691,7 +1691,7 @@ static void share_got_pkt_from_downstream(struct ssh_sharing_connstate *cs,
                  * containing our own auth data, and send that to the
                  * server.
                  */
-                packet = strbuf_new();
+                packet = strbuf_new_nm();
                 put_uint32(packet, server_id);
                 put_stringz(packet, "x11-req");
                 put_bool(packet, want_reply);

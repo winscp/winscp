@@ -207,7 +207,7 @@ mp_int *rsa_ssh1_decrypt(mp_int *input, RSAKey *key)
 bool rsa_ssh1_decrypt_pkcs1(mp_int *input, RSAKey *key,
                             strbuf *outbuf)
 {
-    strbuf *data = strbuf_new();
+    strbuf *data = strbuf_new_nm();
     bool success = false;
     BinarySource src[1];
 
@@ -900,7 +900,7 @@ strbuf *ssh_rsakex_encrypt(RSAKey *rsa, const ssh_hashalg *h, ptrlen in)
 
     /* The length of the output data wants to be precisely k. */
     { // WINSCP
-    strbuf *toret = strbuf_new();
+    strbuf *toret = strbuf_new_nm();
     int outlen = k;
     unsigned char *out = strbuf_append(toret, outlen);
 

@@ -188,9 +188,7 @@ struct FontSpec *fontspec_new(
 #define JUMPLISTREG_ERROR_VALUEWRITE_FAILURE 4
 #define JUMPLISTREG_ERROR_INVALID_VALUE 5
 
-#define PUTTY_HELP_FILE "putty.hlp"
 #define PUTTY_CHM_FILE "putty.chm"
-#define PUTTY_HELP_CONTENTS "putty.cnt"
 
 #define GETTICKCOUNT GetTickCount
 #define CURSORBLINK GetCaretBlinkTime()
@@ -235,6 +233,7 @@ void shutdown_help(void);
 bool has_help(void);
 void launch_help(HWND hwnd, const char *topic);
 void quit_help(HWND hwnd);
+int has_embedded_chm(void);            /* 1 = yes, 0 = no, -1 = N/A */
 
 /*
  * The terminal and logging context are notionally local to the
@@ -711,15 +710,7 @@ char *get_jumplist_registry_entries(void);
 #define CLIPUI_DEFAULT_MOUSE CLIPUI_EXPLICIT
 #define CLIPUI_DEFAULT_INS CLIPUI_EXPLICIT
 
-#ifdef MINEFIELD
-/*
- * Definitions for Minefield, PuTTY's own Windows-specific malloc
- * debugger in the style of Electric Fence. Implemented in winmisc.c,
- * and referred to by the main malloc wrappers in memory.c.
- */
-void *minefield_c_malloc(size_t size);
-void minefield_c_free(void *p);
-void *minefield_c_realloc(void *p, size_t size);
-#endif
+/* In winmisc.c */
+char *registry_get_string(HKEY root, const char *path, const char *leaf);
 
 #endif

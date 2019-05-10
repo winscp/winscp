@@ -79,6 +79,13 @@ struct ssh2_userauth_state {
 
     agent_pending_query *auth_agent_query;
     bufchain banner;
+    bufchain_sink banner_bs;
+    StripCtrlChars *banner_scc;
+    bool banner_scc_initialised;
+
+    StripCtrlChars *ki_scc;
+    bool ki_scc_initialised;
+    bool ki_printed_header;
 
     PacketProtocolLayer ppl;
 };
@@ -103,6 +110,8 @@ static void ssh2_userauth_add_session_id(
 static PktOut *ssh2_userauth_gss_packet(
     struct ssh2_userauth_state *s, const char *authtype);
 #endif
+static void ssh2_userauth_antispoof_msg(
+    struct ssh2_userauth_state *s, const char *msg);
 
 static const struct PacketProtocolLayerVtable ssh2_userauth_vtable = {
     ssh2_userauth_free,
@@ -144,6 +153,7 @@ PacketProtocolLayer *ssh2_userauth_new(
     s->loghost = dupstr(loghost); // WINSCP
     s->change_password = change_password;
     bufchain_init(&s->banner);
+    bufchain_sink_init(&s->banner_bs, &s->banner);
 
     return &s->ppl;
 }
@@ -174,6 +184,10 @@ static void ssh2_userauth_free(PacketProtocolLayer *ppl)
     sfree(s->fullhostname);
     strbuf_free(s->last_methods_string);
     sfree(s->loghost);
+    if (s->banner_scc)
+        stripctrl_free(s->banner_scc);
+    if (s->ki_scc)
+        stripctrl_free(s->ki_scc);
     sfree(s);
 }
 
@@ -188,7 +202,17 @@ static void ssh2_userauth_filter_queue(struct ssh2_userauth_state *s)
             string = get_string(pktin);
             if (string.len > BANNER_LIMIT - bufchain_size(&s->banner))
                 string.len = BANNER_LIMIT - bufchain_size(&s->banner);
-	    sanitise_term_data(&s->banner, string.ptr, string.len);
+            if (!s->banner_scc_initialised) {
+                s->banner_scc = seat_stripctrl_new(
+                    s->ppl.seat, BinarySink_UPCAST(&s->banner_bs), SIC_BANNER);
+                if (s->banner_scc)
+                    stripctrl_enable_line_limiting(s->banner_scc);
+                s->banner_scc_initialised = true;
+            }
+            if (s->banner_scc)
+                put_datapl(s->banner_scc, string);
+            else
+                put_datapl(&s->banner_bs, string);
             pq_pop(s->ppl.in_pq);
             break;
 
@@ -373,6 +397,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
         } else if ((s->username = s->default_username) == NULL) {
             s->cur_prompt = new_prompts();
             s->cur_prompt->to_server = true;
+            s->cur_prompt->from_server = false;
             s->cur_prompt->name = dupstr("SSH login name");
             add_prompt(s->cur_prompt, dupstr("login as: "), true); 
             s->userpass_ret = seat_get_userpass_input(
@@ -453,31 +478,46 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
              * that we've accumulated. (This should ensure that when
              * we exit the auth loop, we haven't any left to deal
              * with.)
+             *
+             * Don't show the banner if we're operating in non-verbose
+             * non-interactive mode. (It's probably a script, which
+             * means nobody will read the banner _anyway_, and
+             * moreover the printing of the banner will screw up
+             * processing on the output of (say) plink.)
+             *
+             * The banner data has been sanitised already by this
+             * point, but we still need to precede and follow it with
+             * anti-spoofing header lines.
              */
-            {
-                /*
-                 * Don't show the banner if we're operating in
-                 * non-verbose non-interactive mode. (It's probably
-                 * a script, which means nobody will read the
-                 * banner _anyway_, and moreover the printing of
-                 * the banner will screw up processing on the
-                 * output of (say) plink.)
-                 *
-                 * The banner data has been sanitised already by this
-                 * point, so we can safely pass it straight to
-                 * seat_stderr.
-                 */
-                if (bufchain_size(&s->banner) &&
-                    (flags & (FLAG_VERBOSE | FLAG_INTERACTIVE))) {
-                    while (bufchain_size(&s->banner) > 0) {
-                        ptrlen data = bufchain_prefix(&s->banner);
-                        seat_stderr(s->ppl.seat, data.ptr, data.len);
+            if (bufchain_size(&s->banner) &&
+                (flags & (FLAG_VERBOSE | FLAG_INTERACTIVE))) {
+                if (s->banner_scc) {
+                    ssh2_userauth_antispoof_msg(
+                        s, "Pre-authentication banner message from server:");
+                    seat_set_trust_status(s->ppl.seat, false);
+                }
+
+                bool mid_line = false;
+                while (bufchain_size(&s->banner) > 0) {
+                    ptrlen data = bufchain_prefix(&s->banner);
+                    seat_stderr_pl(s->ppl.seat, data);
                         display_banner(s->ppl.seat, &s->banner, data.len); // WINSCP
-                        bufchain_consume(&s->banner, data.len);
-                    }
+                    bufchain_consume(&s->banner, data.len);
+                    mid_line =
+                        (((const char *)data.ptr)[data.len-1] != '\n');
                 }
                 bufchain_clear(&s->banner);
+
+                if (mid_line)
+                    seat_stderr_pl(s->ppl.seat, PTRLEN_LITERAL("\r\n"));
+
+                if (s->banner_scc) {
+                    seat_set_trust_status(s->ppl.seat, true);
+                    ssh2_userauth_antispoof_msg(
+                        s, "End of banner message from server");
+                }
             }
+
             if (pktin && pktin->type == SSH2_MSG_USERAUTH_SUCCESS) {
                 ppl_logevent("Access granted");
                 goto userauth_success;
@@ -806,6 +846,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                          */
                         s->cur_prompt = new_prompts();
                         s->cur_prompt->to_server = false;
+                        s->cur_prompt->from_server = false;
                         s->cur_prompt->name = dupstr("SSH key passphrase");
                         add_prompt(s->cur_prompt,
                                    dupprintf("Passphrase for key \"%s\": ",
@@ -1163,6 +1204,14 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                 
                 ppl_logevent("Attempting keyboard-interactive authentication");
 
+                if (!s->ki_scc_initialised) {
+                    s->ki_scc = seat_stripctrl_new(
+                        s->ppl.seat, NULL, SIC_KI_PROMPTS);
+                    if (s->ki_scc)
+                        stripctrl_enable_line_limiting(s->ki_scc);
+                    s->ki_scc_initialised = true;
+                }
+
                 crMaybeWaitUntilV((pktin = ssh2_userauth_pop(s)) != NULL);
                 if (pktin->type != SSH2_MSG_USERAUTH_INFO_REQUEST) {
                     /* Server is not willing to do keyboard-interactive
@@ -1175,12 +1224,15 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                     continue;
                 }
 
+                s->ki_printed_header = false;
+
                 /*
                  * Loop while the server continues to send INFO_REQUESTs.
                  */
                 while (pktin->type == SSH2_MSG_USERAUTH_INFO_REQUEST) {
 
                     ptrlen name, inst;
+                    strbuf *sb;
                     int i;
 
                     /*
@@ -1192,58 +1244,86 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                     get_string(pktin); /* skip language tag */
                     s->cur_prompt = new_prompts();
                     s->cur_prompt->to_server = true;
+                    s->cur_prompt->from_server = true;
 
                     /*
                      * Get any prompt(s) from the packet.
                      */
                     s->num_prompts = get_uint32(pktin);
                     for (i = 0; i < s->num_prompts; i++) {
-                        ptrlen prompt;
-                        bool echo;
-                        static char noprompt[] =
-                            "<server failed to send prompt>: ";
+                        ptrlen prompt = get_string(pktin);
+                        bool echo = get_bool(pktin);
 
-                        prompt = get_string(pktin);
-                        echo = get_bool(pktin);
+                        sb = strbuf_new();
                         if (!prompt.len) {
-                            prompt.ptr = noprompt;
-                            prompt.len = lenof(noprompt)-1;
+                            put_datapl(sb, PTRLEN_LITERAL(
+                                "<server failed to send prompt>: "));
+                        } else if (s->ki_scc) {
+                            stripctrl_retarget(
+                                s->ki_scc, BinarySink_UPCAST(sb));
+                            put_datapl(s->ki_scc, prompt);
+                            stripctrl_retarget(s->ki_scc, NULL);
+                        } else {
+                            put_datapl(sb, prompt);
                         }
-                        add_prompt(s->cur_prompt, mkstr(prompt), echo);
+                        add_prompt(s->cur_prompt, strbuf_to_str(sb), echo);
                     }
 
+                    /*
+                     * Make the header strings. This includes the
+                     * 'name' (optional dialog-box title) and
+                     * 'instruction' from the server.
+                     *
+                     * First, display our disambiguating header line
+                     * if this is the first time round the loop -
+                     * _unless_ the server has sent a completely empty
+                     * k-i packet with no prompts _or_ text, which
+                     * apparently some do. In that situation there's
+                     * no need to alert the user that the following
+                     * text is server- supplied, because, well, _what_
+                     * text?
+                     *
+                     * We also only do this if we got a stripctrl,
+                     * because if we didn't, that suggests this is all
+                     * being done via dialog boxes anyway.
+                     */
+                    if (!s->ki_printed_header && s->ki_scc &&
+                        (s->num_prompts || name.len || inst.len)) {
+                        ssh2_userauth_antispoof_msg(
+                            s, "Keyboard-interactive authentication "
+                            "prompts from server:");
+                        s->ki_printed_header = true;
+                        seat_set_trust_status(s->ppl.seat, false);
+                    }
+
+                    sb = strbuf_new();
                     if (name.len) {
-                        /* FIXME: better prefix to distinguish from
-                         * local prompts? */
-                        s->cur_prompt->name =
-                            dupprintf("SSH server: %.*s", PTRLEN_PRINTF(name));
+                        stripctrl_retarget(s->ki_scc, BinarySink_UPCAST(sb));
+                        put_datapl(s->ki_scc, name);
+                        stripctrl_retarget(s->ki_scc, NULL);
+
                         s->cur_prompt->name_reqd = true;
                     } else {
-                        s->cur_prompt->name =
-                            dupstr("SSH server authentication");
+                        put_datapl(sb, PTRLEN_LITERAL(
+                            "SSH server authentication"));
                         s->cur_prompt->name_reqd = false;
                     }
-                    /* We add a prefix to try to make it clear that a prompt
-                     * has come from the server.
-                     * FIXME: ugly to print "Using..." in prompt _every_
-                     * time round. Can this be done more subtly? */
-                    /* Special case: for reasons best known to themselves,
-                     * some servers send k-i requests with no prompts and
-                     * nothing to display. Keep quiet in this case. */
-                    if (s->num_prompts || name.len || inst.len) {
-                        s->cur_prompt->instruction =
-                            dupprintf("Using keyboard-interactive "
-                                      "authentication.%s%.*s",
-                                      inst.len ? "\n" : "",
-                                      PTRLEN_PRINTF(inst));
+                    s->cur_prompt->name = strbuf_to_str(sb);
+
+                    sb = strbuf_new();
+                    if (inst.len) {
+                        stripctrl_retarget(s->ki_scc, BinarySink_UPCAST(sb));
+                        put_datapl(s->ki_scc, inst);
+                        stripctrl_retarget(s->ki_scc, NULL);
+
                         s->cur_prompt->instr_reqd = true;
                     } else {
                         s->cur_prompt->instr_reqd = false;
                     }
 
                     /*
-                     * Display any instructions, and get the user's
-                     * response(s).
+                     * Our prompts_t is fully constructed now. Get the
+                     * user's response(s).
                      */
                     s->userpass_ret = seat_get_userpass_input(
                         s->ppl.seat, s->cur_prompt, NULL);
@@ -1302,6 +1382,15 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                 }
 
                 /*
+                 * Print our trailer line, if we printed a header.
+                 */
+                if (s->ki_printed_header) {
+                    seat_set_trust_status(s->ppl.seat, true);
+                    ssh2_userauth_antispoof_msg(
+                        s, "End of keyboard-interactive prompts from server");
+                }
+
+                /*
                  * We should have SUCCESS or FAILURE now.
                  */
                 pq_push_front(s->ppl.in_pq, pktin);
@@ -1327,6 +1416,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                 // /WINSCP
                 s->cur_prompt = new_prompts();
                 s->cur_prompt->to_server = true;
+                s->cur_prompt->from_server = false;
                 s->cur_prompt->name = dupstr("SSH password");
                 add_prompt(s->cur_prompt, dupprintf("%s@%s's password: ",
                                                     s->username, s->hostname),
@@ -1426,6 +1516,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
 
                     s->cur_prompt = new_prompts();
                     s->cur_prompt->to_server = true;
+                    s->cur_prompt->from_server = false;
                     s->cur_prompt->name = dupstr("New SSH password");
                     s->cur_prompt->instruction = mkstr(prompt);
                     s->cur_prompt->instr_reqd = true;
@@ -1780,4 +1871,30 @@ static void ssh2_userauth_reconfigure(PacketProtocolLayer *ppl, Conf *conf)
     struct ssh2_userauth_state *s =
         container_of(ppl, struct ssh2_userauth_state, ppl);
     ssh_ppl_reconfigure(s->successor_layer, conf);
+}
+
+static void ssh2_userauth_antispoof_msg(
+    struct ssh2_userauth_state *s, const char *msg)
+{
+    strbuf *sb = strbuf_new();
+    if (seat_set_trust_status(s->ppl.seat, true)) {
+        /*
+         * If the seat can directly indicate that this message is
+         * generated by the client, then we can just use the message
+         * unmodified as an unspoofable header.
+         */
+        put_datapl(sb, ptrlen_from_asciz(msg));
+    } else {
+        /*
+         * Otherwise, add enough padding around it that the server
+         * wouldn't be able to mimic it within our line-length
+         * constraint.
+         */
+        strbuf_catf(sb, "-- %s ", msg);
+        while (sb->len < 78)
+            put_byte(sb, '-');
+    }
+    put_datapl(sb, PTRLEN_LITERAL("\r\n"));
+    seat_stderr_pl(s->ppl.seat, ptrlen_from_strbuf(sb));
+    strbuf_free(sb);
 }

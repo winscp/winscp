@@ -645,6 +645,13 @@ static void ssh2_bpp_handle_input(BinaryPacketProtocol *bpp)
     }
 
   eof:
+    /*
+     * We've seen EOF. But we might have pushed stuff on the outgoing
+     * packet queue first, and that stuff _might_ include a DISCONNECT
+     * message, in which case we'd like to use that as the diagnostic.
+     * So first wait for the queue to have been processed.
+     */
+    crMaybeWaitUntilV(!pq_peek(&s->bpp.in_pq));
     if (!s->bpp.expect_close) {
         ssh_remote_error(s->bpp.ssh,
                          "Remote side unexpectedly closed network connection");

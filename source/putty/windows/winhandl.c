@@ -541,7 +541,8 @@ HANDLE *handle_get_events(int *nevents)
 {
     HANDLE *ret;
     struct handle *h;
-    int i, n, size;
+    int i;
+    size_t n, size;
 
     /*
      * Go through our tree counting the handle objects currently
@@ -552,10 +553,7 @@ HANDLE *handle_get_events(int *nevents)
     if (handles_by_evtomain) {
 	for (i = 0; (h = index234(handles_by_evtomain, i)) != NULL; i++) {
 	    if (h->u.g.busy) {
-		if (n >= size) {
-		    size += 32;
-		    ret = sresize(ret, size, HANDLE);
-		}
+                sgrowarray(ret, size, n);
 		ret[n++] = h->u.g.ev_to_main;
 	    }
 	}

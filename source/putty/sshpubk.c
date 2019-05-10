@@ -24,6 +24,18 @@
 
 static int key_type_fp(FILE *fp);
 
+/*
+ * Fairly arbitrary size limit on any public or private key blob.
+ * Chosen to match AGENT_MAX_MSGLEN, on the basis that any key too
+ * large to transfer over the ssh-agent protocol is probably too large
+ * to be useful in general.
+ *
+ * MAX_KEY_BLOB_LINES is the corresponding limit on the Public-Lines
+ * or Private-Lines header field in a key file.
+ */
+#define MAX_KEY_BLOB_SIZE 262144
+#define MAX_KEY_BLOB_LINES (MAX_KEY_BLOB_SIZE / 48)
+
 static int rsa_ssh1_load_main(FILE * fp, RSAKey *key, bool pub_only,
                               char **commentptr, const char *passphrase,
                               const char **error)
@@ -37,7 +49,7 @@ static int rsa_ssh1_load_main(FILE * fp, RSAKey *key, bool pub_only,
     *error = NULL;
 
     /* Slurp the whole file (minus the header) into a buffer. */
-    buf = strbuf_new();
+    buf = strbuf_new_nm();
     {
         int ch;
         while ((ch = fgetc(fp)) != EOF)
@@ -310,7 +322,7 @@ int rsa_ssh1_loadpub(const Filename *filename, BinarySink *bs,
 bool rsa_ssh1_savekey(const Filename *filename, RSAKey *key,
                       char *passphrase)
 {
-    strbuf *buf = strbuf_new();
+    strbuf *buf = strbuf_new_nm();
     int estart;
     FILE *fp;
 
@@ -492,7 +504,7 @@ static bool read_header(FILE * fp, char *header)
 
 static char *read_body(FILE * fp)
 {
-    strbuf *buf = strbuf_new();
+    strbuf *buf = strbuf_new_nm();
 
     while (1) {
 	int c = fgetc(fp);
@@ -516,7 +528,9 @@ static bool read_blob(FILE *fp, int nlines, BinarySink *bs)
     int i, j, k;
 
     /* We expect at most 64 base64 characters, ie 48 real bytes, per line. */
+    assert(nlines < MAX_KEY_BLOB_LINES);
     blob = snewn(48 * nlines, unsigned char);
+
     for (i = 0; i < nlines; i++) {
 	line = read_body(fp);
 	if (!line) {
@@ -584,6 +598,16 @@ static void ssh2_ppk_derivekey(ptrlen passphrase, uint8_t *key)
     put_uint32(h, 1);
     put_datapl(h, passphrase);
     ssh_hash_final(h, key + 20);
+}
+
+static int userkey_parse_line_counter(const char *text)
+{
+    char *endptr;
+    unsigned long ul = strtoul(text, &endptr, 10);
+    if (*text && !*endptr && ul < MAX_KEY_BLOB_LINES)
+        return ul;
+    else
+        return -1;
 }
 
 ssh2_userkey *ssh2_load_userkey(
@@ -667,8 +691,10 @@ ssh2_userkey *ssh2_load_userkey(
 	goto error;
     if ((b = read_body(fp)) == NULL)
 	goto error;
-    i = atoi(b);
+    i = userkey_parse_line_counter(b);
     sfree(b);
+    if (i < 0)
+        goto error;
     public_blob = strbuf_new();
     if (!read_blob(fp, i, BinarySink_UPCAST(public_blob)))
 	goto error;
@@ -678,9 +704,11 @@ ssh2_userkey *ssh2_load_userkey(
 	goto error;
     if ((b = read_body(fp)) == NULL)
 	goto error;
-    i = atoi(b);
+    i = userkey_parse_line_counter(b);
     sfree(b);
-    private_blob = strbuf_new();
+    if (i < 0)
+        goto error;
+    private_blob = strbuf_new_nm();
     if (!read_blob(fp, i, BinarySink_UPCAST(private_blob)))
 	goto error;
 
@@ -730,7 +758,7 @@ ssh2_userkey *ssh2_load_userkey(
 	    macdata = private_blob;
 	    free_macdata = false;
 	} else {
-            macdata = strbuf_new();
+            macdata = strbuf_new_nm();
 	    put_stringz(macdata, alg->ssh_id);
 	    put_stringz(macdata, encryption);
 	    put_stringz(macdata, comment);
@@ -1124,8 +1152,10 @@ bool ssh2_userkey_loadpub(const Filename *filename, char **algorithm,
 	goto error;
     if ((b = read_body(fp)) == NULL)
 	goto error;
-    i = atoi(b);
+    i = userkey_parse_line_counter(b);
     sfree(b);
+    if (i < 0)
+        goto error;
     if (!read_blob(fp, i, bs))
 	goto error;
 
@@ -1268,7 +1298,7 @@ bool ssh2_save_userkey(
      */
     pub_blob = strbuf_new();
     ssh_key_public_blob(key->key, BinarySink_UPCAST(pub_blob));
-    priv_blob = strbuf_new();
+    priv_blob = strbuf_new_nm();
     ssh_key_private_blob(key->key, BinarySink_UPCAST(priv_blob));
 
     /*
@@ -1299,7 +1329,7 @@ bool ssh2_save_userkey(
 	unsigned char mackey[20];
 	char header[] = "putty-private-key-file-mac-key";
 
-	macdata = strbuf_new();
+	macdata = strbuf_new_nm();
 	put_stringz(macdata, ssh_key_ssh_id(key->key));
 	put_stringz(macdata, cipherstr);
 	put_stringz(macdata, key->comment);

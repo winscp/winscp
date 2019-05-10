@@ -724,7 +724,7 @@ static const char *connect_to_host(
              * behave in quite the usual way. */
             const char *msg =
                 "Reusing a shared connection to this server.\r\n";
-            seat_stderr(ssh->seat, msg, strlen(msg));
+            seat_stderr_pl(ssh->seat, ptrlen_from_asciz(msg));
         }
     } else {
         /*
@@ -910,6 +910,8 @@ static void ssh_free(Backend *be)
 	ssh_gss_cleanup(ssh->gss_state.libs);
 #endif
 
+    delete_callbacks_for_context(ssh); /* likely to catch ic_out_raw */
+
     need_random_unref = ssh->need_random_unref;
     sfree(ssh);
 
@@ -991,7 +993,7 @@ static void ssh_size(Backend *be, int width, int height)
 
 struct ssh_add_special_ctx {
     SessionSpecial *specials;
-    int nspecials, specials_size;
+    size_t nspecials, specials_size;
 };
 
 static void ssh_add_special(void *vctx, const char *text,
@@ -1000,12 +1002,7 @@ static void ssh_add_special(void *vctx, const char *text,
     struct ssh_add_special_ctx *ctx = (struct ssh_add_special_ctx *)vctx;
     SessionSpecial *spec;
 
-    if (ctx->nspecials >= ctx->specials_size) {
-        ctx->specials_size = ctx->nspecials * 5 / 4 + 32;
-        ctx->specials = sresize(ctx->specials, ctx->specials_size,
-                                SessionSpecial);
-    }
-
+    sgrowarray(ctx->specials, ctx->specials_size, ctx->nspecials);
     spec = &ctx->specials[ctx->nspecials++];
     spec->name = text;
     spec->code = code;

@@ -892,7 +892,7 @@ static void eddsa_openssh_blob(ssh_key *key, BinarySink *bs)
     { // WINSCP
     ptrlen pub = make_ptrlen(pub_sb->s + 4, pub_sb->len - 4);
 
-    strbuf *priv_sb = strbuf_new();
+    strbuf *priv_sb = strbuf_new_nm();
     put_mp_le_unsigned(priv_sb, ek->privateKey);
     { // WINSCP
     ptrlen priv = make_ptrlen(priv_sb->s + 4, priv_sb->len - 4);
@@ -1473,7 +1473,7 @@ static void ssh_ecdhkex_w_setup(ecdh_key *dh)
 
 static void ssh_ecdhkex_m_setup(ecdh_key *dh)
 {
-    strbuf *bytes = strbuf_new();
+    strbuf *bytes = strbuf_new_nm();
     random_read(strbuf_append(bytes, dh->curve->fieldBytes),
                 dh->curve->fieldBytes);
 
@@ -1524,6 +1524,12 @@ static mp_int *ssh_ecdhkex_w_getkey(ecdh_key *dh, ptrlen remoteKey)
     if (!remote_p)
         return NULL;
 
+    if (ecc_weierstrass_is_identity(remote_p)) {
+        /* Not a sensible Diffie-Hellman input value */
+        ecc_weierstrass_point_free(remote_p);
+        return NULL;
+    }
+
     { // WINSCP
     WeierstrassPoint *p = ecc_weierstrass_multiply(remote_p, dh->private);
 
@@ -1540,6 +1546,21 @@ static mp_int *ssh_ecdhkex_w_getkey(ecdh_key *dh, ptrlen remoteKey)
 static mp_int *ssh_ecdhkex_m_getkey(ecdh_key *dh, ptrlen remoteKey)
 {
     mp_int *remote_x = mp_from_bytes_le(remoteKey);
+    if (mp_eq_integer(remote_x, 0)) {
+        /*
+         * The libssh spec for Curve25519 key exchange says that
+         * 'every possible public key maps to a valid ECC Point' and
+         * therefore no validation needs to be done on the server's
+         * provided x-coordinate. However, I don't believe it: an
+         * x-coordinate of zero doesn't work sensibly, because you end
+         * up dividing by zero in the doubling formula
+         * (x+1)^2(x-1)^2/(4(x^3+ax^2+x)). (Put another way, although
+         * that point P is not the _identity_ of the curve, it is a
+         * torsion point such that 2P is the identity.)
+         */
+        mp_free(remote_x);
+        return NULL;
+    }
     MontgomeryPoint *remote_p = ecc_montgomery_point_new(
         dh->curve->m.mc, remote_x);
     mp_free(remote_x);

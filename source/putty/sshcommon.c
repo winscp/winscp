@@ -256,18 +256,11 @@ PktOut *ssh_new_packet(void)
     return pkt;
 }
 
-static void ssh_pkt_ensure(PktOut *pkt, int length)
-{
-    if (pkt->maxlen < length) {
-        pkt->maxlen = length + 256;
-        pkt->data = sresize(pkt->data, pkt->maxlen, unsigned char);
-    }
-}
 static void ssh_pkt_adddata(PktOut *pkt, const void *data, int len)
 {
+    sgrowarrayn_nm(pkt->data, pkt->maxlen, pkt->length, len);
+    memcpy(pkt->data + pkt->length, data, len);
     pkt->length += len;
-    ssh_pkt_ensure(pkt, pkt->length);
-    memcpy(pkt->data + pkt->length - len, data, len);
 }
 
 static void ssh_pkt_BinarySink_write(BinarySink *bs,
