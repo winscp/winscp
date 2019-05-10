@@ -276,7 +276,8 @@ unsigned mp_get_bit(mp_int *x, size_t bit)
 uintmax_t mp_get_integer(mp_int *x)
 {
     uintmax_t toret = 0;
-    for (size_t i = x->nw; i-- > 0 ;) {
+    size_t i; // WINSCP
+    for (i = x->nw; i-- > 0 ;) {
         /* Shift in two stages to avoid undefined behaviour if the
          * shift count equals the integer width */
         toret = (toret << (BIGNUM_INT_BITS/2)) << (BIGNUM_INT_BITS/2);

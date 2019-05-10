@@ -75,7 +75,8 @@ static inline void ssh_ppl_got_user_input(PacketProtocolLayer *ppl)
 { ppl->vt->got_user_input(ppl); }
 static inline void ssh_ppl_reconfigure(PacketProtocolLayer *ppl, Conf *conf)
 { ppl->vt->reconfigure(ppl, conf); }
-#define ssh_ppl_winscp_query(ppl, query) ((ppl)->vt->winscp_query(ppl, query))
+static inline unsigned int ssh_ppl_winscp_query(PacketProtocolLayer *ppl, int query)
+{ return ppl->vt->winscp_query(ppl, query); }
 
 /* ssh_ppl_free is more than just a macro wrapper on the vtable; it
  * does centralised parts of the freeing too. */

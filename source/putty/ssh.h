@@ -659,10 +659,10 @@ static inline void ssh_cipher_decrypt(ssh_cipher *c, void *blk, int len)
 { c->vt->decrypt(c, blk, len); }
 static inline void ssh_cipher_encrypt_length(
     ssh_cipher *c, void *blk, int len, unsigned long seq)
-{ return c->vt->encrypt_length(c, blk, len, seq); }
+{ /*WINSCP return*/ c->vt->encrypt_length(c, blk, len, seq); }
 static inline void ssh_cipher_decrypt_length(
     ssh_cipher *c, void *blk, int len, unsigned long seq)
-{ return c->vt->decrypt_length(c, blk, len, seq); }
+{ /*WINSCP return*/ c->vt->decrypt_length(c, blk, len, seq); }
 static inline const struct ssh_cipheralg *ssh_cipher_alg(ssh_cipher *c)
 { return c->vt; }
 
@@ -742,9 +742,9 @@ static inline ssh_hash *ssh_hash_new(const ssh_hashalg *alg)
 static inline ssh_hash *ssh_hash_copy(ssh_hash *h)
 { return h->vt->copy(h); }
 static inline void ssh_hash_final(ssh_hash *h, unsigned char *out)
-{ return h->vt->final(h, out); }
+{ /*WINSCP return*/ h->vt->final(h, out); }
 static inline void ssh_hash_free(ssh_hash *h)
-{ return h->vt->free(h); }
+{ /*WINSCP return*/ h->vt->free(h); }
 static inline const ssh_hashalg *ssh_hash_alg(ssh_hash *h)
 { return h->vt; }
 
