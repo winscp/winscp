@@ -287,6 +287,8 @@ __fastcall TCustomScpExplorerForm::~TCustomScpExplorerForm()
 {
   // this has to be one of the very first things to do
   StopUpdateThread();
+  // This is needed when shuting down Windows only. Otherwise it's already set NULL from Execute()
+  TTerminalManager::Instance()->ScpExplorer = NULL;
 
   delete FCustomCommandLocalFileList;
   delete FCustomCommandRemoteFileList;
