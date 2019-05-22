@@ -216,7 +216,8 @@ UnicodeString CopyToChars(const UnicodeString & Str, int & From, UnicodeString C
     {
       if (DoubleDelimiterEscapes &&
           (P < Str.Length()) &&
-          IsDelimiter(Chs, Str, P + 1))
+          IsDelimiter(Chs, Str, P + 1) &&
+          (Str[P + 1] == Str[P]))
       {
         Result += Str[P];
         P++;
