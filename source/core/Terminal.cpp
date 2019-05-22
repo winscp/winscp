@@ -3297,7 +3297,7 @@ void __fastcall TTerminal::LogRemoteFile(TRemoteFile * File)
 UnicodeString __fastcall TTerminal::FormatFileDetailsForLog(const UnicodeString & FileName, TDateTime Modification, __int64 Size)
 {
   UnicodeString Result;
-    // optimization
+  // optimization
   if (Log->Logging)
   {
     Result = FORMAT(L"'%s' [%s] [%s]", (FileName, (Modification != TDateTime() ? StandardTimestamp(Modification) : UnicodeString(L"n/a")), IntToStr(Size)));
