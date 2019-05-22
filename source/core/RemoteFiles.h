@@ -107,8 +107,7 @@ private:
   int __fastcall GetAttr();
   bool __fastcall GetBrokenLink();
   bool __fastcall GetIsDirectory() const;
-  TRemoteFile * __fastcall GetLinkedFile();
-  void __fastcall SetLinkedFile(TRemoteFile * value);
+  const TRemoteFile * __fastcall GetLinkedFile() const;
   UnicodeString __fastcall GetModificationStr();
   void __fastcall SetModification(const TDateTime & value);
   void __fastcall SetListingStr(UnicodeString value);
@@ -144,6 +143,7 @@ public:
   bool __fastcall IsTimeShiftingApplicable();
   void __fastcall Complete();
   void __fastcall SetEncrypted();
+  const TRemoteFile * __fastcall Resolve() const;
 
   static bool __fastcall IsTimeShiftingApplicable(TModificationFmt ModificationFmt);
   static void __fastcall ShiftTimeInSeconds(TDateTime & DateTime, TModificationFmt ModificationFmt, __int64 Seconds);
@@ -165,7 +165,7 @@ public:
   __property TDateTime LastAccess = { read = FLastAccess, write = FLastAccess };
   __property bool IsSymLink = { read = FIsSymLink };
   __property bool IsDirectory = { read = GetIsDirectory };
-  __property TRemoteFile * LinkedFile = { read = GetLinkedFile, write = SetLinkedFile };
+  __property const TRemoteFile * LinkedFile = { read = GetLinkedFile };
   __property UnicodeString LinkTo = { read = FLinkTo, write = FLinkTo };
   __property UnicodeString ListingStr = { read = GetListingStr, write = SetListingStr };
   __property TRights * Rights = { read = FRights, write = SetRights };

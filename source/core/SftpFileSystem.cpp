@@ -4501,7 +4501,7 @@ void __fastcall TSFTPFileSystem::Source(
       if (DestFileExists)
       {
         FTerminal->LogEvent(FORMAT(L"File exists: %s", (FTerminal->GetRemoteFileInfo(File))));
-        OpenParams.DestFileSize = File->Size;
+        OpenParams.DestFileSize = File->Resolve()->Size;
         FileParams.DestSize = OpenParams.DestFileSize;
         FileParams.DestTimestamp = File->Modification;
         DestRights = *File->Rights;
@@ -4544,7 +4544,7 @@ void __fastcall TSFTPFileSystem::Source(
         FTerminal->LogEvent(L"Checking existence of partially transferred file.");
         if (RemoteFileExists(DestPartialFullName, &File))
         {
-          ResumeOffset = File->Size;
+          ResumeOffset = File->Resolve()->Size; // Though partial file should not be symlink
           delete File;
           File = NULL;
 
@@ -4983,7 +4983,7 @@ int __fastcall TSFTPFileSystem::SFTPOpenRemote(void * AOpenParams, void * /*Para
           UnicodeString RealFileName = LocalCanonify(OpenParams->RemoteFileName);
           ReadFile(RealFileName, File);
           DebugAssert(File);
-          OpenParams->DestFileSize = File->Size;
+          OpenParams->DestFileSize = File->Size; // Resolve symlinks?
           if (OpenParams->FileParams != NULL)
           {
             OpenParams->FileParams->DestTimestamp = File->Modification;
@@ -5380,7 +5380,7 @@ void __fastcall TSFTPFileSystem::Sink(
       {
         TSFTPPacket DataPacket;
 
-        int QueueLen = int(File->Size / DownloadBlockSize(OperationProgress)) + 1;
+        int QueueLen = int(OperationProgress->TransferSize / DownloadBlockSize(OperationProgress)) + 1;
         if ((QueueLen > FTerminal->SessionData->SFTPDownloadQueue) ||
             (QueueLen < 0))
         {

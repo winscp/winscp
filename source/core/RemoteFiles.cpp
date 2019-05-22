@@ -970,19 +970,10 @@ void __fastcall TRemoteFile::SetType(wchar_t AType)
   FIsSymLink = ((wchar_t)towupper(FType) == FILETYPE_SYMLINK);
 }
 //---------------------------------------------------------------------------
-TRemoteFile * __fastcall TRemoteFile::GetLinkedFile()
+const TRemoteFile * __fastcall TRemoteFile::GetLinkedFile() const
 {
   // do not call FindLinkedFile as it would be called repeatedly for broken symlinks
   return FLinkedFile;
-}
-//---------------------------------------------------------------------------
-void __fastcall TRemoteFile::SetLinkedFile(TRemoteFile * value)
-{
-  if (FLinkedFile != value)
-  {
-    if (FLinkedFile) delete FLinkedFile;
-    FLinkedFile = value;
-  }
 }
 //---------------------------------------------------------------------------
 bool __fastcall TRemoteFile::GetBrokenLink()
@@ -1410,6 +1401,16 @@ void __fastcall TRemoteFile::FindLinkedFile()
       }
     }
   }
+}
+//---------------------------------------------------------------------------
+const TRemoteFile * __fastcall TRemoteFile::Resolve() const
+{
+  const TRemoteFile * Result = this;
+  while (Result->LinkedFile != NULL)
+  {
+    Result = Result->LinkedFile;
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TRemoteFile::GetListingStr()

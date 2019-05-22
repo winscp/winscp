@@ -3294,23 +3294,29 @@ void __fastcall TTerminal::LogRemoteFile(TRemoteFile * File)
   }
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TTerminal::FormatFileDetailsForLog(const UnicodeString & FileName, TDateTime Modification, __int64 Size)
+UnicodeString __fastcall TTerminal::FormatFileDetailsForLog(
+  const UnicodeString & FileName, TDateTime Modification, __int64 Size, const TRemoteFile * LinkedFile)
 {
   UnicodeString Result;
   // optimization
   if (Log->Logging)
   {
     Result = FORMAT(L"'%s' [%s] [%s]", (FileName, (Modification != TDateTime() ? StandardTimestamp(Modification) : UnicodeString(L"n/a")), IntToStr(Size)));
+    if (LinkedFile != NULL)
+    {
+      LinkedFile = LinkedFile->Resolve(); // in case it's symlink to symlink
+      Result += FORMAT(L" - Link to: %s", (FormatFileDetailsForLog(LinkedFile->FileName, LinkedFile->Modification, LinkedFile->Size, NULL)));
+    }
   }
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::LogFileDetails(const UnicodeString & FileName, TDateTime Modification, __int64 Size)
+void __fastcall TTerminal::LogFileDetails(const UnicodeString & FileName, TDateTime Modification, __int64 Size, const TRemoteFile * LinkedFile)
 {
   // optimization
   if (Log->Logging)
   {
-    LogEvent(FORMAT("File: %s", (FormatFileDetailsForLog(FileName, Modification, Size))));
+    LogEvent(FORMAT("File: %s", (FormatFileDetailsForLog(FileName, Modification, Size, LinkedFile))));
   }
 }
 //---------------------------------------------------------------------------
@@ -3399,7 +3405,7 @@ TRemoteFileList * __fastcall TTerminal::ReadDirectoryListing(UnicodeString Direc
         {
           TRemoteFile * File = FileList->Files[Index];
           TFileMasks::TParams Params;
-          Params.Size = File->Size;
+          Params.Size = File->Resolve()->Size;
           Params.Modification = File->Modification;
           // Have to use UnicodeString(), instead of L"", as with that
           // overload with (UnicodeString, bool, bool, TParams*) wins
@@ -4317,7 +4323,7 @@ void __fastcall TTerminal::CalculateFileSize(UnicodeString FileName,
     }
     else
     {
-      AParams->Size += File->Size;
+      AParams->Size += File->Resolve()->Size;
 
       AParams->Stats->Files++;
     }
@@ -5167,7 +5173,7 @@ bool __fastcall TTerminal::DoAllowRemoteFileTransfer(
   const TRemoteFile * File, const TCopyParamType * CopyParam, bool DisallowTemporaryTransferFiles)
 {
   TFileMasks::TParams MaskParams;
-  MaskParams.Size = File->Size;
+  MaskParams.Size = File->Resolve()->Size;
   MaskParams.Modification = File->Modification;
   UnicodeString FullRemoteFileName = UnixExcludeTrailingBackslash(File->FullFileName);
   UnicodeString BaseFileName = GetBaseFileName(FullRemoteFileName);
@@ -5772,7 +5778,7 @@ void __fastcall TTerminal::DoSynchronizeCollectFile(const UnicodeString FileName
       ChecklistItem->Remote.Directory = Data->RemoteDirectory;
       ChecklistItem->Remote.Modification = File->Modification;
       ChecklistItem->Remote.ModificationFmt = File->ModificationFmt;
-      ChecklistItem->Remote.Size = File->Size;
+      ChecklistItem->Remote.Size = File->Resolve()->Size;
 
       bool Modified = false;
       bool New = false;
@@ -5863,13 +5869,13 @@ void __fastcall TTerminal::DoSynchronizeCollectFile(const UnicodeString FileName
                 (FormatFileDetailsForLog(LocalData->Info.Directory + LocalData->Info.FileName,
                    LocalData->Info.Modification, LocalData->Info.Size),
                  FormatFileDetailsForLog(FullRemoteFileName,
-                   File->Modification, File->Size))));
+                   File->Modification, File->Size, File->LinkedFile))));
             }
 
             if (Modified)
             {
               LogEvent(FORMAT(L"Remote file %s is modified comparing to local file %s",
-                (FormatFileDetailsForLog(FullRemoteFileName, File->Modification, File->Size),
+                (FormatFileDetailsForLog(FullRemoteFileName, File->Modification, File->Size, File->LinkedFile),
                  FormatFileDetailsForLog(LocalData->Info.Directory + LocalData->Info.FileName,
                    LocalData->Info.Modification, LocalData->Info.Size))));
             }
@@ -5888,7 +5894,7 @@ void __fastcall TTerminal::DoSynchronizeCollectFile(const UnicodeString FileName
         {
           ChecklistItem->Local.Directory = Data->LocalDirectory;
           LogEvent(FORMAT(L"Remote file %s is new",
-            (FormatFileDetailsForLog(FullRemoteFileName, File->Modification, File->Size))));
+            (FormatFileDetailsForLog(FullRemoteFileName, File->Modification, File->Size, File->LinkedFile))));
         }
       }
 
@@ -5937,7 +5943,7 @@ void __fastcall TTerminal::DoSynchronizeCollectFile(const UnicodeString FileName
   else
   {
     LogEvent(0, FORMAT(L"Remote file %s excluded from synchronization",
-      (FormatFileDetailsForLog(FullRemoteFileName, File->Modification, File->Size))));
+      (FormatFileDetailsForLog(FullRemoteFileName, File->Modification, File->Size, File->LinkedFile))));
   }
 }
 //---------------------------------------------------------------------------
@@ -6277,7 +6283,7 @@ void __fastcall TTerminal::FileFind(UnicodeString FileName,
     }
 
     TFileMasks::TParams MaskParams;
-    MaskParams.Size = File->Size;
+    MaskParams.Size = File->Resolve()->Size;
     MaskParams.Modification = File->Modification;
 
     UnicodeString FullFileName = UnixExcludeTrailingBackslash(File->FullFileName);
@@ -7361,11 +7367,11 @@ void __fastcall TTerminal::Sink(
 
   if (CopyParam->SkipTransfer(FileName, File->IsDirectory))
   {
-    OperationProgress->AddSkippedFileSize(File->Size);
+    OperationProgress->AddSkippedFileSize(File->Resolve()->Size);
     throw ESkipFile();
   }
 
-  LogFileDetails(FileName, File->Modification, File->Size);
+  LogFileDetails(FileName, File->Modification, File->Size, File->LinkedFile);
 
   OperationProgress->SetFile(FileName);
 
@@ -7428,14 +7434,15 @@ void __fastcall TTerminal::Sink(
 
     // Will we use ASCII or BINARY file transfer?
     UnicodeString BaseFileName = GetBaseFileName(FileName);
+    const TRemoteFile * UltimateFile = File->Resolve();
     TFileMasks::TParams MaskParams;
-    MaskParams.Size = File->Size;
+    MaskParams.Size = UltimateFile->Size;
     MaskParams.Modification = File->Modification;
     SelectTransferMode(BaseFileName, osRemote, CopyParam, MaskParams);
 
     // Suppose same data size to transfer as to write
     // (not true with ASCII transfer)
-    __int64 TransferSize = File->Size;
+    __int64 TransferSize = UltimateFile->Size;
     OperationProgress->SetLocalSize(TransferSize);
     if (IsFileEncrypted(FileName))
     {
