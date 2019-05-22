@@ -7426,7 +7426,7 @@ void __fastcall TTerminal::Sink(
   {
     LogEvent(FORMAT(L"Copying \"%s\" to local directory started.", (FileName)));
 
-    // Will we use ASCII of BINARY file transfer?
+    // Will we use ASCII or BINARY file transfer?
     UnicodeString BaseFileName = GetBaseFileName(FileName);
     TFileMasks::TParams MaskParams;
     MaskParams.Size = File->Size;
