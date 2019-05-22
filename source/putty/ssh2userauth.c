@@ -502,7 +502,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                 while (bufchain_size(&s->banner) > 0) {
                     ptrlen data = bufchain_prefix(&s->banner);
                     seat_stderr_pl(s->ppl.seat, data);
-                        display_banner(s->ppl.seat, &s->banner, data.len); // WINSCP
+                    display_banner(s->ppl.seat, data.ptr, data.len); // WINSCP
                     bufchain_consume(&s->banner, data.len);
                     mid_line =
                         (((const char *)data.ptr)[data.len-1] != '\n');
