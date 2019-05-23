@@ -1945,12 +1945,9 @@ bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventR
     }
     unsigned int TicksBefore = GetTickCount();
     int HandleCount;
-    // note that this returns all handles, not only the session-related handles
-    HANDLE * Handles = handle_get_events(&HandleCount);
+    HANDLE * Handles = NULL;
     try
     {
-      Handles = sresize(Handles, HandleCount + 1, HANDLE);
-      Handles[HandleCount] = FSocketEvent;
       unsigned int Timeout = MSec;
 
       unsigned int WaitResult;
@@ -1963,6 +1960,16 @@ bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventR
           TimeoutStep = 0;
         }
         Timeout -= TimeoutStep;
+        if (Handles != NULL)
+        {
+          sfree(Handles);
+        }
+        // Note that this returns all handles, not only the this-session-related handles,
+        // so we can possibly be processing handles of other sessions, what may be very wrong.
+        // It returns only busy handles, so the set can change with every call to run_toplevel_callbacks.
+        Handles = handle_get_events(&HandleCount);
+        Handles = sresize(Handles, HandleCount + 1, HANDLE);
+        Handles[HandleCount] = FSocketEvent;
         WaitResult = WaitForMultipleObjects(HandleCount + 1, Handles, FALSE, TimeoutStep);
         FUI->ProcessGUI();
         // run_toplevel_callbacks can cause processing of pending raw data, so:
