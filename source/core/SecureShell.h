@@ -131,7 +131,6 @@ public:
   void __fastcall Send(const unsigned char * Buf, int Len);
   void __fastcall SendSpecial(int Code);
   void __fastcall Idle(unsigned int MSec = 0);
-  void __fastcall SendEOF();
   void __fastcall SendLine(const UnicodeString & Line);
   void __fastcall SendNull();
 

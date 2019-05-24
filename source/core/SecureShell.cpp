@@ -84,10 +84,6 @@ __fastcall TSecureShell::~TSecureShell()
   Active = false;
   ResetConnection();
   CloseHandle(FSocketEvent);
-  sfree(FCallbackSet->ic_pktin_free);
-  pktin_free_queue_callback(FCallbackSet.get());
-  DebugAssert(FCallbackSet->pktin_freeq_head->next == FCallbackSet->pktin_freeq_head);
-  sfree(FCallbackSet->pktin_freeq_head);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::ResetConnection()
@@ -1236,11 +1232,6 @@ void __fastcall TSecureShell::SendSpecial(int Code)
   FLastDataSent = Now();
 }
 //---------------------------------------------------------------------------
-void __fastcall TSecureShell::SendEOF()
-{
-  SendSpecial(SS_EOF);
-}
-//---------------------------------------------------------------------------
 unsigned int __fastcall TSecureShell::TimeoutPrompt(TQueryParamsTimerEvent PoolEvent)
 {
   FWaiting++;
@@ -1672,6 +1663,24 @@ void __fastcall TSecureShell::FreeBackend()
   {
     backend_free(FBackendHandle);
     FBackendHandle = NULL;
+
+    // After destroying backend, ic_pktin_free should be the only remaining callback.
+    if (is_idempotent_callback_pending(FCallbackSet.get(), FCallbackSet->ic_pktin_free))
+    {
+      // This releases the callback and should be noop otherwise.
+      run_toplevel_callbacks(FCallbackSet.get());
+    }
+
+    sfree(FCallbackSet->ic_pktin_free);
+    FCallbackSet->ic_pktin_free = NULL;
+
+    DebugAssert(FCallbackSet->cbcurr == NULL);
+    DebugAssert(FCallbackSet->cbhead == NULL);
+    DebugAssert(FCallbackSet->cbtail == NULL);
+
+    DebugAssert(FCallbackSet->pktin_freeq_head->next == FCallbackSet->pktin_freeq_head);
+    sfree(FCallbackSet->pktin_freeq_head);
+    FCallbackSet->pktin_freeq_head = NULL;
   }
 }
 //---------------------------------------------------------------------------
@@ -1692,11 +1701,17 @@ void __fastcall TSecureShell::Close()
   LogEvent(L"Closing connection.");
   DebugAssert(FActive);
 
-  if (backend_exitcode(FBackendHandle) < 0)
+  // Without main channel SS_EOF is ignored and would get stuck waiting for exit code.
+  if ((backend_exitcode(FBackendHandle) < 0) && winscp_query(FBackendHandle, WINSCP_QUERY_MAIN_CHANNEL))
   {
     // this is particularly necessary when using local proxy command
     // (e.g. plink), otherwise it hangs in sk_localproxy_close
-    SendEOF();
+    SendSpecial(SS_EOF);
+    // Wait for the EOF exchange to complete (among other to avoid packet queue memory leaks)
+    while (backend_exitcode(FBackendHandle) < 0)
+    {
+      EventSelectLoop(100, false, NULL);
+    }
   }
 
   FreeBackend();

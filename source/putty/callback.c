@@ -150,3 +150,12 @@ bool toplevel_callback_pending(CALLBACK_SET_ONLY)
     // MP does not have to be guarded
     return cbcurr != NULL || cbhead != NULL;
 }
+
+// WINSCP
+bool is_idempotent_callback_pending(CALLBACK_SET struct IdempotentCallback *ic)
+{
+    return
+      (cbhead != NULL) &&
+      (cbhead->fn == run_idempotent_callback) &&
+      (cbhead->ctx == ic);
+}

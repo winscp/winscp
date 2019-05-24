@@ -2195,6 +2195,7 @@ struct callback_set {
 void queue_toplevel_callback(CALLBACK_SET toplevel_callback_fn_t fn, void *ctx);
 bool run_toplevel_callbacks(CALLBACK_SET_ONLY);
 bool toplevel_callback_pending(CALLBACK_SET_ONLY);
+bool is_idempotent_callback_pending(CALLBACK_SET struct IdempotentCallback *ic); // WINSCP
 struct callback_set * get_callback_set(Plug * plug);
 struct callback_set * get_seat_callback_set(Seat * seat);
 void delete_callbacks_for_context(CALLBACK_SET void *ctx);
