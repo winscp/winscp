@@ -178,8 +178,9 @@ bool __fastcall TConsoleDialog::Execute(const UnicodeString Command,
 //---------------------------------------------------------------------------
 void __fastcall TConsoleDialog::TerminalClose(TObject * Sender)
 {
+  // Not deassociating terminal here, leaving it to the destructor.
+  // Because at this point, we could be in the midddle of a reconnect and the event handlers can be set to TTerminalThread.
   Close();
-  Terminal = NULL;
   if (FPrevTerminalClose)
   {
     FPrevTerminalClose(Sender);
