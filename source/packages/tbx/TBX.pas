@@ -2607,7 +2607,11 @@ procedure TTBXToolbar.SetParent(AParent: TWinControl);
 begin
   inherited;
   if AParent is TTBXFloatingWindowParent then
+  begin
     TTBXFloatingWindowParent(AParent).SnapDistance := SnapDistance;
+    // See the comment in TTBXToolbar.Rebuild
+    Rebuild;
+  end;
 end;
 
 procedure TTBXToolbar.SetSnapDistance(Value: Integer);
@@ -2640,8 +2644,17 @@ end;
 
 procedure TTBXToolbar.Rebuild;
 begin
-  if Floating then UpdateNCArea(TTBXFloatingWindowParent(Parent), GetWinViewType(Self))
-    else UpdateNCArea(Self, GetWinViewType(Self));
+  if Floating then
+  begin
+    // Is not set yet, when called from within SetParent > WMDpiChangedAfterParent while undocking on
+    // per-monitor-DPI system. We will call Rebuild again at the end of the SetParent
+    if Assigned(Parent) then
+      UpdateNCArea(TTBXFloatingWindowParent(Parent), GetWinViewType(Self));
+  end
+    else
+  begin
+    UpdateNCArea(Self, GetWinViewType(Self));
+  end;
   Invalidate;
   Arrange;
 end;
