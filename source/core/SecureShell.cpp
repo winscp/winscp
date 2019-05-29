@@ -1707,10 +1707,15 @@ void __fastcall TSecureShell::Close()
     // this is particularly necessary when using local proxy command
     // (e.g. plink), otherwise it hangs in sk_localproxy_close
     SendSpecial(SS_EOF);
-    // Wait for the EOF exchange to complete (among other to avoid packet queue memory leaks)
-    while (backend_exitcode(FBackendHandle) < 0)
+    // Try waiting for the EOF exchange to complete (among other to avoid packet queue memory leaks)
+    int Timeout = 500;
+    while ((backend_exitcode(FBackendHandle) < 0) && (Timeout > 0))
     {
-      EventSelectLoop(100, false, NULL);
+      const int Step = 100;
+      if (!EventSelectLoop(Step, false, NULL))
+      {
+        Timeout -= Step;
+      }
     }
   }
 
