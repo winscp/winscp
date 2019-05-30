@@ -12,9 +12,9 @@
 #include "field.h"
 
 static const gf MODULUS = {
-    FIELD_LITERAL(0xffffffffffffffULL, 0xffffffffffffffULL, 0xffffffffffffffULL,
-                  0xffffffffffffffULL, 0xfffffffffffffeULL, 0xffffffffffffffULL,
-                  0xffffffffffffffULL, 0xffffffffffffffULL)
+    FIELD_LITERAL(0xffffffffffffff, 0xffffffffffffff, 0xffffffffffffff,
+                  0xffffffffffffff, 0xfffffffffffffe, 0xffffffffffffff,
+                  0xffffffffffffff, 0xffffffffffffff)
 };
 
 /* Serialize to wire format. */

@@ -43,7 +43,7 @@ typedef int64_t dsword_t;
 # if C448_WORD_BITS == 64
 #  define SC_LIMB(x) (x)
 # elif C448_WORD_BITS == 32
-#  define SC_LIMB(x) ((uint32_t)(x##LL)),((x##LL) >> 32)
+#  define SC_LIMB(x) ((uint32_t)(x##ULL)),((x##ULL) >> 32)
 # else
 #  error "For now we only support 32- and 64-bit architectures."
 # endif
