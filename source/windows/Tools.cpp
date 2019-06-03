@@ -181,6 +181,41 @@ void __fastcall LoadListViewStr(TListView * ListView, UnicodeString ALayoutStr)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall LoadFormDimensions(
+  const UnicodeString & LeftStr, const UnicodeString & TopStr, const UnicodeString & RightStr, const UnicodeString & BottomStr,
+  int PixelsPerInch, Forms::TMonitor * Monitor, TForm * Form, TRect & Bounds, bool & DefaultPos)
+{
+  int Left = StrToDimensionDef(LeftStr, PixelsPerInch, Form, Bounds.Left);
+  int Top = StrToDimensionDef(TopStr, PixelsPerInch, Form, Bounds.Top);
+  DefaultPos = (Left == -1) && (Top == -1);
+  if (!DefaultPos)
+  {
+    Bounds.Left = Left;
+    Bounds.Top = Top;
+  }
+  else
+  {
+    Bounds.Left = 0;
+    Bounds.Top = 0;
+  }
+  Bounds.Right = StrToDimensionDef(RightStr, PixelsPerInch, Form, Bounds.Right);
+  Bounds.Bottom = StrToDimensionDef(BottomStr, PixelsPerInch, Form, Bounds.Bottom);
+
+  // move to the target monitor
+  OffsetRect(Bounds, Monitor->Left, Monitor->Top);
+
+  // reduce window size to that of monitor size
+  // (this does not cut window into monitor!)
+  if (Bounds.Width() > Monitor->WorkareaRect.Width())
+  {
+    Bounds.Right -= (Bounds.Width() - Monitor->WorkareaRect.Width());
+  }
+  if (Bounds.Height() > Monitor->WorkareaRect.Height())
+  {
+    Bounds.Bottom -= (Bounds.Height() - Monitor->WorkareaRect.Height());
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall RestoreForm(UnicodeString Data, TForm * Form, bool PositionOnly)
 {
   DebugAssert(Form);
@@ -195,38 +230,14 @@ void __fastcall RestoreForm(UnicodeString Data, TForm * Form, bool PositionOnly)
     TWindowState State = (TWindowState)StrToIntDef(CutToChar(Data, L';', true), (int)wsNormal);
     int PixelsPerInch = LoadPixelsPerInch(CutToChar(Data, L';', true), Form);
 
-    TRect Bounds = Form->BoundsRect;
-    int Left = StrToDimensionDef(LeftStr, PixelsPerInch, Form, Bounds.Left);
-    int Top = StrToDimensionDef(TopStr, PixelsPerInch, Form, Bounds.Top);
-    bool DefaultPos = (Left == -1) && (Top == -1);
-    if (!DefaultPos)
-    {
-      Bounds.Left = Left;
-      Bounds.Top = Top;
-    }
-    else
-    {
-      Bounds.Left = 0;
-      Bounds.Top = 0;
-    }
-    Bounds.Right = StrToDimensionDef(RightStr, PixelsPerInch, Form, Bounds.Right);
-    Bounds.Bottom = StrToDimensionDef(BottomStr, PixelsPerInch, Form, Bounds.Bottom);
+    TRect OriginalBounds = Form->BoundsRect;
+    int OriginalPixelsPerInch = Form->PixelsPerInch;
     Form->WindowState = State;
     if (State == wsNormal)
     {
-      // move to the target monitor
-      OffsetRect(Bounds, Monitor->Left, Monitor->Top);
-
-      // reduce window size to that of monitor size
-      // (this does not cut window into monitor!)
-      if (Bounds.Width() > Monitor->WorkareaRect.Width())
-      {
-        Bounds.Right -= (Bounds.Width() - Monitor->WorkareaRect.Width());
-      }
-      if (Bounds.Height() > Monitor->WorkareaRect.Height())
-      {
-        Bounds.Bottom -= (Bounds.Height() - Monitor->WorkareaRect.Height());
-      }
+      bool DefaultPos;
+      TRect Bounds = OriginalBounds;
+      LoadFormDimensions(LeftStr, TopStr, RightStr, BottomStr, PixelsPerInch, Monitor, Form, Bounds, DefaultPos);
 
       if (DefaultPos ||
           ((Bounds.Left < Monitor->Left) ||
@@ -281,6 +292,17 @@ void __fastcall RestoreForm(UnicodeString Data, TForm * Form, bool PositionOnly)
         if (!PositionOnly)
         {
           Form->BoundsRect = Bounds;
+          // If setting bounds moved the form to another monitor with non-default DPI,
+          // recalculate the size to avoid rounding issues
+          // (as the form was very likely moved to the monitor, where the sizes were saved)
+          // See also TCustomScpExplorerForm::DoShow()
+          if (OriginalPixelsPerInch != Form->PixelsPerInch)
+          {
+            TRect Bounds2 = OriginalBounds;
+            LoadFormDimensions(LeftStr, TopStr, RightStr, BottomStr, PixelsPerInch, Monitor, Form, Bounds2, DefaultPos);
+            DebugAssert(!DefaultPos);
+            Form->BoundsRect = Bounds2;
+          }
         }
       }
     }
@@ -290,9 +312,9 @@ void __fastcall RestoreForm(UnicodeString Data, TForm * Form, bool PositionOnly)
 
       if (!PositionOnly)
       {
-        Bounds = Form->BoundsRect;
-        OffsetRect(Bounds, Monitor->Left, Monitor->Top);
-        Form->BoundsRect = Bounds;
+        TRect Bounds2 = Form->BoundsRect;
+        OffsetRect(Bounds2, Monitor->Left, Monitor->Top);
+        Form->BoundsRect = Bounds2;
       }
     }
   }

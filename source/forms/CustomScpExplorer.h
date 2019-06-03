@@ -325,6 +325,7 @@ private:
   void __fastcall DoBookmarkClick(TOperationSide Side, TObject * Sender);
   void __fastcall LocalBookmarkClick(TObject * Sender);
   void __fastcall RemoteBookmarkClick(TObject * Sender);
+  void __fastcall InitControls();
 
 protected:
   TOperationSide FCurrentSide;

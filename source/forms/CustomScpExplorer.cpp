@@ -164,6 +164,7 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   FCurrentSide = osRemote;
   FEverShown = false;
   FDocks = new TList();
+  InitControls();
   RestoreParams();
   ConfigurationChanged();
   RemoteDirView->Invalidate();
@@ -1238,7 +1239,7 @@ void __fastcall TCustomScpExplorerForm::RestoreFormParams()
 {
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::RestoreParams()
+void __fastcall TCustomScpExplorerForm::InitControls()
 {
   DebugAssert(FDocks != NULL);
   for (int Index = 0; Index < ComponentCount; Index++)
@@ -1251,7 +1252,10 @@ void __fastcall TCustomScpExplorerForm::RestoreParams()
   }
 
   CollectItemsWithTextDisplayMode(this);
-
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::RestoreParams()
+{
   ConfigurationChanged();
 
   QueuePanel->Height =
@@ -6829,6 +6833,17 @@ void __fastcall TCustomScpExplorerForm::DoShow()
   // only now are the controls resized finally, so the size constraints
   // will not conflict with possibly very small window size
   RestoreFormParams();
+  // This indicates that the form was rescaled after parameters were loaded and
+  // as most probably the parameters were actually saved with the current form scaling
+  // (windows was the last time likely closed on the same monitor, where it is starting now),
+  // rescaling happened twice already. Reload the parameters, as now they likely won't need any scaling
+  // and no rounding problems will occur.
+  // See also RestoreForm.
+  // (we should be safe to call RestoreParams unconditionally)
+  if (PixelsPerInch != Screen->PixelsPerInch)
+  {
+    RestoreParams();
+  }
 
   FixControlsPlacement();
 
