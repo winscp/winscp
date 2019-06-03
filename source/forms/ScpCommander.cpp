@@ -687,7 +687,7 @@ void __fastcall TScpCommanderForm::ConfigurationChanged()
 
     bool TreeOnLeft = WinConfiguration->ScpCommander.TreeOnLeft;
 
-    // save value only is it was set yet
+    // save value only if it was set yet
     if (FPanelsRestored)
     {
       if (TreeOnLeft)
