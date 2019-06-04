@@ -62,7 +62,9 @@ static void finalize_mcurve(struct ec_curve *curve)
 
 static void finalize_ecurve(struct ec_curve *curve)
 {
-    // TODO
+    ecc_edwards_curve_free(curve->e.ec);
+    ecc_edwards_point_free(curve->e.G);
+    mp_free(curve->e.G_order);
     finalize_common(curve);
 }
 #endif
