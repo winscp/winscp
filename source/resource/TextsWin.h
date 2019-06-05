@@ -617,6 +617,7 @@
 #define PREFERENCES_DRAGEXT_BROKEN 6018
 #define FILE_COLOR_CAPTION      6019
 #define UPDATES_DONATE_HTML     6020
+#define EDITOR_NEW              6021
 
 // 2xxx is reserved for TextsFileZilla.h
 

@@ -28,7 +28,8 @@
 TForm * __fastcall ShowEditorForm(const UnicodeString FileName, TForm * ParentForm,
   TNotifyEvent OnFileChanged, TNotifyEvent OnFileReload, TFileClosedEvent OnClose,
   TNotifyEvent OnSaveAll, TAnyModifiedEvent OnAnyModified,
-  const UnicodeString Caption, bool StandaloneEditor, TColor Color, int InternalEditorEncodingOverride)
+  const UnicodeString Caption, bool StandaloneEditor, TColor Color, int InternalEditorEncodingOverride,
+  bool NewFile)
 {
   TEditorForm * Dialog = new TEditorForm(Application);
   try
@@ -44,6 +45,7 @@ TForm * __fastcall ShowEditorForm(const UnicodeString FileName, TForm * ParentFo
     Dialog->StandaloneEditor = StandaloneEditor;
     Dialog->BackgroundColor = Color;
     Dialog->InternalEditorEncodingOverride = InternalEditorEncodingOverride;
+    Dialog->NewFile = NewFile;
     // load before showing, so when loading failes,
     // we do not show an empty editor
     Dialog->LoadFile();
@@ -804,7 +806,7 @@ void __fastcall TEditorForm::EditorActionsUpdate(TBasicAction *Action,
   }
   else if (Action == ReloadAction)
   {
-    ReloadAction->Enabled = !FReloading;
+    ReloadAction->Enabled = !FReloading && !NewFile;
   }
   else if (Action == DefaultEncodingAction)
   {
@@ -843,6 +845,7 @@ void __fastcall TEditorForm::SaveFile()
     }
     FSaving = true;
     EditorMemo->Modified = false;
+    NewFile = false;
     UpdateControls();
   }
 }
@@ -1090,6 +1093,10 @@ void __fastcall TEditorForm::UpdateControls()
   {
     Status = LoadStr(EDITOR_SAVING);
   }
+  else if (NewFile)
+  {
+    Status = LoadStr(EDITOR_NEW);
+  }
   else if (IsFileModified())
   {
     Status = LoadStr(EDITOR_MODIFIED);
@@ -1097,6 +1104,7 @@ void __fastcall TEditorForm::UpdateControls()
   StatusBar->Panels->Items[4]->Caption = Status;
 
   EditorActions->UpdateAction(SaveAction);
+  Encoding->Enabled = !NewFile;
 }
 //---------------------------------------------------------------------------
 void __fastcall TEditorForm::EditorMemoMouseUp(TObject * /*Sender*/,

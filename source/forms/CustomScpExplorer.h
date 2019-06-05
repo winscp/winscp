@@ -512,7 +512,7 @@ protected:
   void __fastcall CustomExecuteFile(TOperationSide Side,
     TExecuteFileBy ExecuteFileBy, UnicodeString FileName, UnicodeString OriginalFileName,
     const TEditorData * ExternalEditor, UnicodeString LocalRootDirectory,
-    UnicodeString RemoteDirectory);
+    UnicodeString RemoteDirectory, bool NewFile);
   void __fastcall ExecuteFile(TOperationSide Side,
     TExecuteFileBy ExecuteFileBy, const TEditorData * ExternalEditor,
     UnicodeString FullFileName, TObject * Object,

@@ -3060,7 +3060,8 @@ void __fastcall TCustomScpExplorerForm::EditNew(TOperationSide Side)
 
       if (!ExistingFile)
       {
-        if (!FileExists(ApiPath(LocalFileName)))
+        bool NewFile = !FileExists(ApiPath(LocalFileName));
+        if (NewFile)
         {
           int File = FileCreate(ApiPath(LocalFileName));
           if (File < 0)
@@ -3084,7 +3085,7 @@ void __fastcall TCustomScpExplorerForm::EditNew(TOperationSide Side)
           false, MaskParams);
 
         CustomExecuteFile(Side, ExecuteFileBy, LocalFileName, TargetFileName,
-          ExternalEditor, RootTempDir, RemoteDirectory);
+          ExternalEditor, RootTempDir, RemoteDirectory, NewFile);
       }
     }
   }
@@ -3105,7 +3106,7 @@ bool __fastcall TCustomScpExplorerForm::RemoteExecuteForceText(
 void __fastcall TCustomScpExplorerForm::CustomExecuteFile(TOperationSide Side,
   TExecuteFileBy ExecuteFileBy, UnicodeString FileName, UnicodeString OriginalFileName,
   const TEditorData * ExternalEditor, UnicodeString LocalRootDirectory,
-  UnicodeString RemoteDirectory)
+  UnicodeString RemoteDirectory, bool NewFile)
 {
   DebugAssert(!WinConfiguration->DisableOpenEdit);
   DebugAssert((ExecuteFileBy == efExternalEditor) ==
@@ -3150,7 +3151,7 @@ void __fastcall TCustomScpExplorerForm::CustomExecuteFile(TOperationSide Side,
         Editor = ShowEditorForm(FileName, this, OnFileChanged,
           FEditorManager->FileReload, FEditorManager->FileClosed,
           OnSaveAll, OnAnyModified,
-          Caption, FStandaloneEditing, SessionColor, Terminal->SessionData->InternalEditorEncoding);
+          Caption, FStandaloneEditing, SessionColor, Terminal->SessionData->InternalEditorEncoding, NewFile);
       }
       catch(...)
       {
@@ -3169,7 +3170,7 @@ void __fastcall TCustomScpExplorerForm::CustomExecuteFile(TOperationSide Side,
       TForm * Editor =
         ShowEditorForm(FileName, this, NULL, NULL, LocalEditorClosed,
           SaveAllInternalEditors, AnyInternalEditorModified,
-          L"", false, SessionColor, -1);
+          L"", false, SessionColor, -1, NewFile);
       FLocalEditors->Add(Editor);
     }
   }
@@ -3560,7 +3561,7 @@ void __fastcall TCustomScpExplorerForm::ExecuteFile(TOperationSide Side,
     Configuration->Usage->Inc(Counter);
 
     CustomExecuteFile(Side, ExecuteFileBy, LocalFileName, OriginalFileName,
-      ExternalEditor, LocalRootDirectory, RemoteDirectory);
+      ExternalEditor, LocalRootDirectory, RemoteDirectory, false);
   }
 }
 //---------------------------------------------------------------------------

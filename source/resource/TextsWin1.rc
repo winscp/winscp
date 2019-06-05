@@ -622,6 +622,7 @@ BEGIN
         PREFERENCES_DRAGEXT_BROKEN, "Shell extension cannot work on this system."
         FILE_COLOR_CAPTION, "File color"
         UPDATES_DONATE_HTML, "To enable automatic updates, please <a href=\"%DONATE_URL%\">donate to WinSCP development</a> or %GET_IMG% WinSCP from <a href=\"%STORE_URL%\">Microsoft Store</a>."
+        EDITOR_NEW, "New"
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
         WINSCP_COPYRIGHT, "Copyright © 2000-2019 Martin Prikryl"
