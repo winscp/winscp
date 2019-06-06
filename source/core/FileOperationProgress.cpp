@@ -411,7 +411,7 @@ void __fastcall TFileOperationProgressType::SetSpeedCounters()
   }
 }
 //---------------------------------------------------------------------------
-// Used in WebDAV protocol
+// Used in WebDAV and S3 protocols
 void __fastcall TFileOperationProgressType::ThrottleToCPSLimit(
   unsigned long Size)
 {

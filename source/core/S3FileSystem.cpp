@@ -1256,6 +1256,7 @@ int TS3FileSystem::PutObjectData(int BufferSize, char * Buffer, TLibS3PutObjectD
       }
       FILE_OPERATION_LOOP_END(FMTLOAD(READ_ERROR, (Data.FileName)));
 
+      OperationProgress->ThrottleToCPSLimit(Result);
       OperationProgress->AddTransferred(Result);
     }
     catch (Exception & E)
@@ -1576,6 +1577,7 @@ S3Status TS3FileSystem::GetObjectData(int BufferSize, const char * Buffer, TLibS
       }
       FILE_OPERATION_LOOP_END(FMTLOAD(WRITE_ERROR, (Data.FileName)));
 
+      OperationProgress->ThrottleToCPSLimit(BufferSize);
       OperationProgress->AddTransferred(BufferSize);
     }
     catch (Exception & E)
