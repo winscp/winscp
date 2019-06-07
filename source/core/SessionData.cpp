@@ -4829,7 +4829,7 @@ void __fastcall TStoredSessionList::GetFolderOrWorkspace(const UnicodeString & N
       {
         Data2->Name = RawData->NameOverride;
       }
-      else if (RawData->Link.IsEmpty())
+      else if (RawData->Link.IsEmpty() && RawData->IsWorkspace)
       {
         // Newly opened ad-hoc session has no name, so restore the workspace that way too.
         // Otherwise we would persist the generated internal workspace name as a real name.
