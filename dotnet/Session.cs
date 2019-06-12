@@ -758,6 +758,66 @@ namespace WinSCP
             }
         }
 
+        public TransferOperationResult PutFilesToDirectory(
+            string localDirectory, string remoteDirectory, string filemask = null, bool remove = false, TransferOptions options = null)
+        {
+            // Not locking, locked in PutFiles
+            using (Logger.CreateCallstack())
+            {
+                if (localDirectory == null)
+                {
+                    throw Logger.WriteException(new ArgumentNullException("localDirectory"));
+                }
+                if (remoteDirectory == null)
+                {
+                    throw Logger.WriteException(new ArgumentNullException("remoteDirectory"));
+                }
+                if (string.IsNullOrEmpty(filemask))
+                {
+                    filemask = "*";
+                }
+                string localPath = Path.Combine(localDirectory, filemask);
+                const string remoteSeparator = "/";
+                string remotePath =
+                    remoteDirectory +
+                    (remoteDirectory.EndsWith(remoteSeparator, StringComparison.Ordinal) ? string.Empty : remoteSeparator);
+                return PutFiles(localPath, remotePath, remove, options);
+            }
+        }
+
+        public TransferEventArgs PutFileToDirectory(string localFilePath, string remoteDirectory, bool remove = false, TransferOptions options = null)
+        {
+            // Not locking, locked in PutFiles (within PutFilesToDirectory)
+            using (Logger.CreateCallstack())
+            {
+                if (string.IsNullOrEmpty(localFilePath))
+                {
+                    throw Logger.WriteException(new ArgumentException("File to path cannot be empty", "localFilePath"));
+                }
+
+                if (!File.Exists(localFilePath))
+                {
+                    throw Logger.WriteException(new FileNotFoundException($"File {localFilePath} does not exist", localFilePath));
+                }
+                string localDirectory = Path.GetDirectoryName(localFilePath);
+                string filemask = RemotePath.EscapeFileMask(Path.GetFileName(localFilePath));
+
+                TransferOperationResult operationResult =
+                    PutFilesToDirectory(localDirectory, remoteDirectory, filemask, remove, options);
+                operationResult.Check();
+                // Should not happen
+                if (operationResult.Transfers.Count == 0)
+                {
+                    throw Logger.WriteException(new FileNotFoundException("File not found"));
+                }
+                if (operationResult.Transfers.Count > 1)
+                {
+                    throw Logger.WriteException(new InvalidOperationException("More then one file has been unexpectedly found"));
+                }
+                return operationResult.Transfers[0];
+            }
+        }
+
         private void AddTransfer(TransferOperationResult result, TransferEventArgs args)
         {
             if (args != null)
@@ -771,6 +831,15 @@ namespace WinSCP
         {
             using (Logger.CreateCallstackAndLock())
             {
+                return DoGetFiles(remotePath, localPath, remove, options, string.Empty);
+            }
+        }
+
+        private TransferOperationResult DoGetFiles(
+            string remotePath, string localPath, bool remove, TransferOptions options, string additionalParams)
+        {
+            using (Logger.CreateCallstack())
+            {
                 if (options == null)
                 {
                     options = new TransferOptions();
@@ -779,8 +848,8 @@ namespace WinSCP
                 CheckOpened();
 
                 WriteCommand(
-                    string.Format(CultureInfo.InvariantCulture, "get {0} {1} -- \"{2}\" \"{3}\"",
-                        BooleanSwitch(remove, "delete"), options.ToSwitches(),
+                    string.Format(CultureInfo.InvariantCulture, "get {0} {1} {2} -- \"{3}\" \"{4}\"",
+                        BooleanSwitch(remove, "delete"), options.ToSwitches(), additionalParams,
                         Tools.ArgumentEscape(remotePath), Tools.ArgumentEscape(localPath)));
 
                 TransferOperationResult result = new TransferOperationResult();
@@ -815,6 +884,73 @@ namespace WinSCP
                 }
 
                 return result;
+            }
+        }
+
+        public TransferOperationResult GetFilesToDirectory(
+            string remoteDirectory, string localDirectory, string filemask = null, bool remove = false, TransferOptions options = null)
+        {
+            using (Logger.CreateCallstackAndLock())
+            {
+                return DoGetFilesToDirectory(remoteDirectory, localDirectory, filemask, remove, options, null);
+            }
+        }
+
+        private TransferOperationResult DoGetFilesToDirectory(
+            string remoteDirectory, string localDirectory, string filemask, bool remove, TransferOptions options, string additionalParams)
+        {
+            using (Logger.CreateCallstack())
+            {
+                if (remoteDirectory == null)
+                {
+                    throw Logger.WriteException(new ArgumentNullException("remoteDirectory"));
+                }
+                if (localDirectory == null)
+                {
+                    throw Logger.WriteException(new ArgumentNullException("localDirectory"));
+                }
+                if (string.IsNullOrEmpty(filemask))
+                {
+                    filemask = "*";
+                }
+                string remotePath = RemotePath.Combine(remoteDirectory, filemask);
+                if (!Directory.Exists(localDirectory))
+                {
+                    throw Logger.WriteException(new DirectoryNotFoundException(localDirectory));
+                }
+                string localSeparator = Path.DirectorySeparatorChar.ToString();
+                string localPath =
+                    localDirectory +
+                    (localDirectory.EndsWith(localSeparator, StringComparison.Ordinal) ? string.Empty : localSeparator);
+                return DoGetFiles(remotePath, localPath, remove, options, additionalParams);
+            }
+        }
+
+        public TransferEventArgs GetFileToDirectory(string remoteFilePath, string localDirectory, bool remove = false, TransferOptions options = null)
+        {
+            using (Logger.CreateCallstackAndLock())
+            {
+                if (string.IsNullOrEmpty(remoteFilePath))
+                {
+                    throw Logger.WriteException(new ArgumentException("File to path cannot be empty", "remoteDirectory"));
+                }
+
+                string remoteDirectory = RemotePath.GetDirectoryName(remoteFilePath);
+                string filemask = RemotePath.EscapeFileMask(RemotePath.GetFileName(remoteFilePath));
+
+                TransferOperationResult operationResult =
+                    DoGetFilesToDirectory(remoteDirectory, localDirectory, filemask, remove, options, "-onlyfile");
+                operationResult.Check();
+                // Should happen only when the filename is mask-like, otherwise "get" throws straight away
+                if (operationResult.Transfers.Count == 0)
+                {
+                    throw Logger.WriteException(new FileNotFoundException("File not found"));
+                }
+                if (operationResult.Transfers.Count > 1)
+                {
+                    throw Logger.WriteException(new InvalidOperationException("More then one file has been unexpectedly found"));
+                }
+                return operationResult.Transfers[0];
             }
         }
 

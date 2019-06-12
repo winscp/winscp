@@ -1453,6 +1453,18 @@ void __fastcall TScript::GetProc(TScriptProcParams * Parameters)
     (TFileListType)(fltQueryServer | fltMask | FLAGMASK(Latest, fltLatest)));
   try
   {
+    // For internal use by .NET Session.GetFileToDirectory
+    if (Parameters->FindSwitch(L"onlyfile"))
+    {
+      for (int Index = 0; Index < FileList->Count; Index++)
+      {
+        TRemoteFile * File = dynamic_cast<TRemoteFile *>(FileList->Objects[Index]);
+        if (File->IsDirectory)
+        {
+          throw Exception(FMTLOAD(NOT_FILE_ERROR, (File->FileName)));
+        }
+      }
+    }
 
     UnicodeString TargetDirectory;
     if (Parameters->ParamCount == 1)
