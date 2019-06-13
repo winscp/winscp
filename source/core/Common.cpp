@@ -444,6 +444,46 @@ bool IsNumber(const UnicodeString Str)
   return TryStrToInt(Str, Value);
 }
 //---------------------------------------------------------------------------
+UnicodeString Base64ToUrlSafe(const UnicodeString & S)
+{
+  UnicodeString Result = S;
+  while (EndsStr(L"=", Result))
+  {
+    Result.SetLength(Result.Length() - 1);
+  }
+  // See https://en.wikipedia.org/wiki/Base64#Implementations_and_history
+  Result = ReplaceChar(Result, L'+', L'-');
+  Result = ReplaceChar(Result, L'/', L'_');
+  return Result;
+}
+//---------------------------------------------------------------------------
+const wchar_t NormalizedFingerprintSeparator = L'-';
+//---------------------------------------------------------------------------
+UnicodeString MD5ToUrlSafe(const UnicodeString & S)
+{
+  return ReplaceChar(S, L':', NormalizedFingerprintSeparator);
+}
+//---------------------------------------------------------------------------
+bool SameChecksum(const UnicodeString & AChecksum1, const UnicodeString & AChecksum2, bool Base64)
+{
+  UnicodeString Checksum1(AChecksum1);
+  UnicodeString Checksum2(AChecksum2);
+  bool Result;
+  if (Base64)
+  {
+    Checksum1 = Base64ToUrlSafe(Checksum1);
+    Checksum2 = Base64ToUrlSafe(Checksum2);
+    Result = SameStr(Checksum1, Checksum2);
+  }
+  else
+  {
+    Checksum1 = MD5ToUrlSafe(Checksum1);
+    Checksum2 = MD5ToUrlSafe(Checksum2);
+    Result = SameText(Checksum1, Checksum2);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall SystemTemporaryDirectory()
 {
   UnicodeString TempDir;
@@ -2709,9 +2749,9 @@ UnicodeString __fastcall DoEncodeUrl(UnicodeString S, const UnicodeString & DoNo
   return S;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall EncodeUrlString(UnicodeString S, const UnicodeString & DoNotEncode)
+UnicodeString __fastcall EncodeUrlString(UnicodeString S)
 {
-  return DoEncodeUrl(S, DoNotEncode);
+  return DoEncodeUrl(S, UnicodeString());
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall EncodeUrlPath(UnicodeString S)

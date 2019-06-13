@@ -438,10 +438,10 @@ namespace WinSCP
         private Protocol _protocol;
 
         private const string _listPattern = @"{0}(;{0})*";
-        private const string _sshHostKeyPattern = @"((ssh-rsa|ssh-dss|ssh-ed25519|ecdsa-sha2-nistp(256|384|521))( |-))?(\d+ )?(([0-9a-f]{2}(:|-)){15}[0-9a-f]{2}|[0-9a-zA-Z+/]{43}=)";
+        private const string _sshHostKeyPattern = @"((ssh-rsa|ssh-dss|ssh-ed25519|ecdsa-sha2-nistp(256|384|521))( |-))?(\d+ )?(([0-9a-fA-F]{2}(:|-)){15}[0-9a-fA-F]{2}|[0-9a-zA-Z+/\-_]{43}=?)";
         private static readonly Regex _sshHostKeyRegex =
             new Regex(string.Format(CultureInfo.InvariantCulture, _listPattern, _sshHostKeyPattern));
-        private const string _tlsCertificatePattern = @"([0-9a-f]{2}:){19}[0-9a-f]{2}";
+        private const string _tlsCertificatePattern = @"([0-9a-fA-F]{2}[:\-]){19}[0-9a-fA-F]{2}";
         private static readonly Regex _tlsCertificateRegex =
             new Regex(string.Format(CultureInfo.InvariantCulture, _listPattern, _tlsCertificatePattern));
     }

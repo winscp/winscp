@@ -2200,11 +2200,69 @@ UnicodeString __fastcall TSecureShell::RetrieveHostKey(UnicodeString Host, int P
   return Result;
 }
 //---------------------------------------------------------------------------
+static bool DoVerifyFingerprint(const UnicodeString & AFingerprintFromUser, const UnicodeString & AFingerprintFromHost, bool Base64)
+{
+  UnicodeString FingerprintFromUser = AFingerprintFromUser;
+  UnicodeString FingerprintFromHost = AFingerprintFromHost;
+  UnicodeString FingerprintFromUserName, FingerprintFromHostName;
+  NormalizeFingerprint(FingerprintFromUser, FingerprintFromUserName);
+  NormalizeFingerprint(FingerprintFromHost, FingerprintFromHostName);
+  bool Result;
+  if (DebugAlwaysFalse(FingerprintFromHostName.IsEmpty()))
+  {
+    Result = false;
+  }
+  else
+  {
+    // In all below three formats, the checksum can be any of these formats:
+    // MD5 (case insensitive):
+    // xx:xx:xx
+    // xx-xx-xx
+    // SHA-256 (case sensitive):
+    // xxxx+xx/xxx=
+    // xxxx+xx/xxx
+    // xxxx-xx_xxx=
+    // xxxx-xx_xxx
+
+    // Full fingerprint format "type bits checksum"
+    if (!FingerprintFromUserName.IsEmpty())
+    {
+      Result =
+        SameText(FingerprintFromUserName, FingerprintFromHostName) &&
+        SameChecksum(FingerprintFromUser, FingerprintFromHost, Base64);
+    }
+    else
+    {
+      // normalized format "type-checksum"
+      UnicodeString NormalizedPrefix = FingerprintFromHost + NormalizedFingerprintSeparator;
+      if (StartsText(NormalizedPrefix, FingerprintFromUser))
+      {
+        FingerprintFromUser.Delete(1, NormalizedPrefix.Length());
+        Result = SameChecksum(FingerprintFromUser, FingerprintFromHost, Base64);
+      }
+      else
+      {
+        // last resort: "checksum" only
+        Result = SameChecksum(FingerprintFromUser, FingerprintFromHost, Base64);
+      }
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+static bool VerifyFingerprint(
+  const UnicodeString & FingerprintFromUser, const UnicodeString & FingerprintFromHostMD5, const UnicodeString & FingerprintFromHostSHA256)
+{
+  return
+    DoVerifyFingerprint(FingerprintFromUser, FingerprintFromHostMD5, false) ||
+    DoVerifyFingerprint(FingerprintFromUser, FingerprintFromHostSHA256, true);
+}
+//---------------------------------------------------------------------------
 struct TPasteKeyHandler
 {
   UnicodeString KeyStr;
-  UnicodeString NormalizedFingerprintMD5;
-  UnicodeString NormalizedFingerprintSHA256;
+  UnicodeString FingerprintMD5;
+  UnicodeString FingerprintSHA256;
   TSessionUI * UI;
 
   void __fastcall Paste(TObject * Sender, unsigned int & Answer);
@@ -2215,10 +2273,7 @@ void __fastcall TPasteKeyHandler::Paste(TObject * /*Sender*/, unsigned int & Ans
   UnicodeString ClipboardText;
   if (TextFromClipboard(ClipboardText, true))
   {
-    UnicodeString NormalizedClipboardFingerprint = NormalizeFingerprint(ClipboardText);
-    // case insensitive comparison, contrary to VerifyHostKey (we should change to insesitive there too)
-    if (SameText(NormalizedClipboardFingerprint, NormalizedFingerprintMD5) ||
-        SameText(NormalizedClipboardFingerprint, NormalizedFingerprintSHA256) ||
+    if (VerifyFingerprint(ClipboardText, FingerprintMD5, FingerprintSHA256) ||
         SameText(ClipboardText, KeyStr))
     {
       Answer = qaYes;
@@ -2271,8 +2326,6 @@ void __fastcall TSecureShell::VerifyHostKey(
   UnicodeString FingerprintMD5 = SignKeyType + L' ' + MD5;
   UnicodeString SHA256 = Buf;
   UnicodeString FingerprintSHA256 = SignKeyType + L' ' + SHA256;
-  UnicodeString NormalizedFingerprintMD5 = NormalizeFingerprint(FingerprintMD5);
-  UnicodeString NormalizedFingerprintSHA256 = NormalizeFingerprint(FingerprintSHA256);
 
   FSessionInfo.HostKeyFingerprintSHA256 = FingerprintSHA256;
   FSessionInfo.HostKeyFingerprintMD5 = FingerprintMD5;
@@ -2291,18 +2344,17 @@ void __fastcall TSecureShell::VerifyHostKey(
     UnicodeString StoredKey = CutToChar(Buf, HostKeyDelimiter, false);
     // skip leading ECDH subtype identification
     int P = StoredKey.Pos(L",");
-    // start from beginning or after the comma, if there's any
+    // Start from beginning or after the comma, if there's any.
+    // If it does not start with 0x, it's probably a fingerprint (stored by TSessionData::CacheHostKey).
     bool Fingerprint = (StoredKey.SubString(P + 1, 2) != L"0x");
-    // it's probably a fingerprint (stored by TSessionData::CacheHostKey)
-    UnicodeString NormalizedExpectedKey;
-    if (Fingerprint)
-    {
-      NormalizedExpectedKey = NormalizeFingerprint(StoredKey);
-    }
-    if ((!Fingerprint && (StoredKey == KeyStr)) ||
-        (Fingerprint && ((NormalizedExpectedKey == NormalizedFingerprintMD5) || (NormalizedExpectedKey == NormalizedFingerprintSHA256))))
+    if (!Fingerprint && (StoredKey == KeyStr))
     {
       LogEvent(L"Host key matches cached key");
+      Result = true;
+    }
+    else if (Fingerprint && VerifyFingerprint(StoredKey, FingerprintMD5, FingerprintSHA256))
+    {
+      LogEvent(L"Host key matches cached key fingerprint");
       Result = true;
     }
     else
@@ -2328,7 +2380,6 @@ void __fastcall TSecureShell::VerifyHostKey(
     while (!Result && !Buf.IsEmpty())
     {
       UnicodeString ExpectedKey = CutToChar(Buf, HostKeyDelimiter, false);
-      UnicodeString NormalizedExpectedKey = NormalizeFingerprint(ExpectedKey);
       if (ExpectedKey == L"*")
       {
         UnicodeString Message = LoadStr(ANY_HOSTKEY);
@@ -2336,14 +2387,14 @@ void __fastcall TSecureShell::VerifyHostKey(
         FLog->Add(llException, Message);
         Result = true;
       }
-      else if ((NormalizedExpectedKey == NormalizedFingerprintMD5) || (NormalizedExpectedKey == NormalizedFingerprintSHA256))
+      else if (VerifyFingerprint(ExpectedKey, FingerprintMD5, FingerprintSHA256))
       {
-        LogEvent(L"Host key matches configured key");
+        LogEvent(L"Host key matches configured key fingerprint");
         Result = true;
       }
       else
       {
-        LogEvent(FORMAT(L"Host key does not match configured key %s", (ExpectedKey)));
+        LogEvent(FORMAT(L"Host key does not match configured key fingerprint %s", (ExpectedKey)));
       }
     }
 
@@ -2374,8 +2425,8 @@ void __fastcall TSecureShell::VerifyHostKey(
       ClipboardHandler.Text = FingerprintSHA256 + L"\n" + FingerprintMD5;
       TPasteKeyHandler PasteKeyHandler;
       PasteKeyHandler.KeyStr = KeyStr;
-      PasteKeyHandler.NormalizedFingerprintMD5 = NormalizedFingerprintMD5;
-      PasteKeyHandler.NormalizedFingerprintSHA256 = NormalizedFingerprintSHA256;
+      PasteKeyHandler.FingerprintMD5 = FingerprintMD5;
+      PasteKeyHandler.FingerprintSHA256 = FingerprintSHA256;
       PasteKeyHandler.UI = FUI;
 
       bool Unknown = StoredKeys.IsEmpty();

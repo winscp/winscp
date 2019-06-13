@@ -7629,7 +7629,7 @@ bool  __fastcall TTerminal::VerifyCertificate(
     if (Storage->ValueExists(SiteKey))
     {
       UnicodeString CachedCertificateData = Storage->ReadString(SiteKey, L"");
-      if (CertificateData == CachedCertificateData)
+      if (SameChecksum(CertificateData, CachedCertificateData, false))
       {
         LogEvent(FORMAT(L"Certificate for \"%s\" matches cached fingerprint and failures", (CertificateSubject)));
         Result = true;
@@ -7655,7 +7655,7 @@ bool  __fastcall TTerminal::VerifyCertificate(
         Log->Add(llException, Message);
         Result = true;
       }
-      else if (ExpectedKey == Fingerprint)
+      else if (SameChecksum(ExpectedKey, Fingerprint, false))
       {
         LogEvent(FORMAT(L"Certificate for \"%s\" matches configured fingerprint", (CertificateSubject)));
         Result = true;

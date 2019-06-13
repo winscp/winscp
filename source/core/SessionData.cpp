@@ -1683,7 +1683,7 @@ void __fastcall TSessionData::CacheHostKeyIfNotCached()
     UnicodeString HostKeyName = PuttyMungeStr(FORMAT(L"%s@%d:%s", (KeyType, PortNumber, HostName)));
     if (!Storage->ValueExists(HostKeyName))
     {
-      // fingerprint is MD5 of host key, so it cannot be translated back to host key,
+      // fingerprint is a checksum of a host key, so it cannot be translated back to host key,
       // so we store fingerprint and TSecureShell::VerifyHostKey was
       // modified to accept also fingerprint
       Storage->WriteString(HostKeyName, HostKey);
@@ -3072,13 +3072,22 @@ UnicodeString __fastcall TSessionData::GenerateSessionUrl(unsigned int Flags)
 
     if (FLAGSET(Flags, sufHostKey) && !HostKey.IsEmpty())
     {
-      // Many SHA-256 fingeprints end with an equal sign and we do not really need it to be encoded, so avoid that.
-      // Also colons in TLS/SSL fingerprint do not really need encoding.
-      UnicodeString S = EncodeUrlString(NormalizeFingerprint(HostKey), L"=:");
+      UnicodeString KeyName;
+      UnicodeString Fingerprint = HostKey;
+      NormalizeFingerprint(Fingerprint, KeyName);
+      UnicodeString S = Fingerprint;
+      if (!KeyName.IsEmpty())
+      {
+        S = KeyName + NormalizedFingerprintSeparator + S;
+      }
+      S = Base64ToUrlSafe(S); // Noop for MD5 (both in SSH host keys and TLS/SSL)
+      S = MD5ToUrlSafe(S); // TLS/SSL fingerprints
+      UnicodeString S2 = EncodeUrlString(S);
+      DebugAssert(S2 == S2); // There should be nothing left for encoding
 
       Url +=
         UnicodeString(UrlParamSeparator) + UrlHostKeyParamName +
-        UnicodeString(UrlParamValueSeparator) + S;
+        UnicodeString(UrlParamValueSeparator) + S2;
     }
 
     if (FLAGSET(Flags, sufRawSettings))

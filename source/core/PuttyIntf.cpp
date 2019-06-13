@@ -744,9 +744,8 @@ bool __fastcall HasGSSAPI(UnicodeString CustomPath)
   return (has > 0);
 }
 //---------------------------------------------------------------------------
-static void __fastcall DoNormalizeFingerprint(UnicodeString & Fingerprint, UnicodeString & KeyType)
+static void __fastcall DoNormalizeFingerprint(UnicodeString & Fingerprint, UnicodeString & KeyName, UnicodeString & KeyType)
 {
-  const wchar_t NormalizedSeparator = L'-';
   const int MaxCount = 10;
   const ssh_keyalg * SignKeys[MaxCount];
   int Count = LENOF(SignKeys);
@@ -760,40 +759,42 @@ static void __fastcall DoNormalizeFingerprint(UnicodeString & Fingerprint, Unico
     UnicodeString Name = UnicodeString(SignKey->ssh_id);
     if (StartsStr(Name + L" ", Fingerprint))
     {
-      int LenStart = Name.Length() + 1;
-      Fingerprint[LenStart] = NormalizedSeparator;
-      int Space = Fingerprint.Pos(L" ");
+      UnicodeString Rest = Fingerprint.SubString(Name.Length() + 2, Fingerprint.Length() - Name.Length() - 1);
+      int Space = Rest.Pos(L" ");
       // If not a number, it's an invalid input,
       // either something completelly wrong, or it can be OpenSSH base64 public key,
       // that got here from TPasteKeyHandler::Paste
-      if (IsNumber(Fingerprint.SubString(LenStart + 1, Space - LenStart - 1)))
+      if (IsNumber(Rest.SubString(1, Space - 1)))
       {
-        Fingerprint.Delete(LenStart + 1, Space - LenStart);
-        // noop for SHA256 fingerprints
-        Fingerprint = ReplaceChar(Fingerprint, L':', NormalizedSeparator);
+        KeyName = Name;
+        Fingerprint = Rest.SubString(Space + 1, Fingerprint.Length() - Space);
+        Fingerprint = Base64ToUrlSafe(Fingerprint);
+        Fingerprint = MD5ToUrlSafe(Fingerprint);
         KeyType = UnicodeString(SignKey->cache_id);
         return;
       }
     }
-    else if (StartsStr(Name + NormalizedSeparator, Fingerprint))
+    else if (StartsStr(Name + NormalizedFingerprintSeparator, Fingerprint))
     {
       KeyType = UnicodeString(SignKey->cache_id);
+      KeyName = Name;
+      Fingerprint.Delete(1, Name.Length() + 1);
       return;
     }
   }
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall NormalizeFingerprint(UnicodeString Fingerprint)
+void __fastcall NormalizeFingerprint(UnicodeString & Fingerprint, UnicodeString & KeyName)
 {
-  UnicodeString KeyType; // unused
-  DoNormalizeFingerprint(Fingerprint, KeyType);
-  return Fingerprint;
+  UnicodeString KeyType;
+  DoNormalizeFingerprint(Fingerprint, KeyName, KeyType);
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall KeyTypeFromFingerprint(UnicodeString Fingerprint)
 {
   UnicodeString KeyType;
-  DoNormalizeFingerprint(Fingerprint, KeyType);
+  UnicodeString KeyName; // unused
+  DoNormalizeFingerprint(Fingerprint, KeyName, KeyType);
   return KeyType;
 }
 //---------------------------------------------------------------------------

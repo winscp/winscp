@@ -25,7 +25,7 @@ bool __fastcall HasGSSAPI(UnicodeString CustomPath);
 void __fastcall AES256EncodeWithMAC(char * Data, size_t Len, const char * Password,
   size_t PasswordLen, const char * Salt);
 //---------------------------------------------------------------------------
-UnicodeString __fastcall NormalizeFingerprint(UnicodeString Fingerprint);
+void __fastcall NormalizeFingerprint(UnicodeString & Fingerprint, UnicodeString & KeyName);
 UnicodeString __fastcall KeyTypeFromFingerprint(UnicodeString Fingerprint);
 //---------------------------------------------------------------------------
 UnicodeString __fastcall GetPuTTYVersion();
