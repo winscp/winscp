@@ -502,6 +502,9 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
 
     switch (WinConfiguration->PanelSearch)
     {
+      case isOff:
+        PanelSearchCombo->ItemIndex = -1;
+        break;
       case isNameStartOnly:
         PanelSearchCombo->ItemIndex = 0;
         break;
@@ -876,6 +879,9 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
 
     switch (PanelSearchCombo->ItemIndex)
     {
+      case -1:
+        WinConfiguration->PanelSearch = isOff;
+        break;
       case 0:
         WinConfiguration->PanelSearch = isNameStartOnly;
         break;
