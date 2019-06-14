@@ -32,7 +32,7 @@ struct TConsoleWinConfiguration
     { return C(WindowSize) 0; };
 };
 //---------------------------------------------------------------------------
-enum TIncrementalSearch { isNameStartOnly, isName, isAll };
+enum TIncrementalSearch { isOff = -1, isNameStartOnly, isName, isAll };
 //---------------------------------------------------------------------------
 struct TLoginDialogConfiguration : public TConsoleWinConfiguration
 {

@@ -10310,7 +10310,7 @@ void __fastcall TCustomScpExplorerForm::DirViewKeyDown(TObject * Sender, WORD & 
 void __fastcall TCustomScpExplorerForm::DirViewKeyPress(TObject * Sender, wchar_t & Key)
 {
   TCustomDirView * DirView = dynamic_cast<TCustomDirView *>(Sender);
-  if (!DirView->IsEditing())
+  if (!DirView->IsEditing() && (WinConfiguration->PanelSearch != isOff))
   {
     // Filter control sequences.
     // When not searching yet, prefer use of the space for toggling file selection
