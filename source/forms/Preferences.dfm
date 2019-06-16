@@ -966,7 +966,7 @@ object PreferencesDialog: TPreferencesDialog
           Width = 389
           Height = 74
           Anchors = [akLeft, akTop, akRight]
-          Caption = 'Compare directory criterions'
+          Caption = 'Compare directory criteria'
           TabOrder = 2
           DesignSize = (
             389
