@@ -1678,9 +1678,12 @@ void __fastcall TSecureShell::FreeBackend()
     DebugAssert(FCallbackSet->cbhead == NULL);
     DebugAssert(FCallbackSet->cbtail == NULL);
 
-    DebugAssert(FCallbackSet->pktin_freeq_head->next == FCallbackSet->pktin_freeq_head);
-    sfree(FCallbackSet->pktin_freeq_head);
-    FCallbackSet->pktin_freeq_head = NULL;
+    if (FCallbackSet->pktin_freeq_head != NULL)
+    {
+      DebugAssert(FCallbackSet->pktin_freeq_head->next == FCallbackSet->pktin_freeq_head);
+      sfree(FCallbackSet->pktin_freeq_head);
+      FCallbackSet->pktin_freeq_head = NULL;
+    }
   }
 }
 //---------------------------------------------------------------------------
