@@ -8261,7 +8261,7 @@ UnicodeString __fastcall TCustomScpExplorerForm::FileStatusBarText(
   }
   else if (!IsSideLocalBrowser(Side) && (Terminal == NULL))
   {
-   // noop
+    // noop
   }
   else
   {
