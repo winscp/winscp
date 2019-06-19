@@ -893,6 +893,10 @@ void __fastcall TScpCommanderForm::UpdateControls()
 
   CommandLineCombo->Enabled = IsSideLocalBrowser(FCurrentSide) || CanConsole();
   CommandLinePromptLabel->Enabled = CommandLineCombo->Enabled;
+
+  // Ad hoc hack to disable the drop down menu, when all its items (and all other buttons on the toolbar) are disabled,
+  // otherwise it shines too much on the toolbar.
+  RemoteNewSubmenuItem->Enabled = DirViewEnabled(osRemote);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::ChangePath(TOperationSide Side)
