@@ -97,7 +97,7 @@ inherited ScpExplorerForm: TScpExplorerForm
         object TBXSeparatorItem42: TTBXSeparatorItem
         end
         object TBXItem62: TTBXItem
-          Action = NonVisualDataModule.CurrentCopyAction
+          Action = NonVisualDataModule.CurrentCopyToClipboardAction
         end
         object TBXItem36: TTBXItem
           Action = NonVisualDataModule.PasteAction2

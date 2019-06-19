@@ -254,7 +254,7 @@ inherited ScpCommanderForm: TScpCommanderForm
         object TBXSeparatorItem62: TTBXSeparatorItem
         end
         object TBXItem163: TTBXItem
-          Action = NonVisualDataModule.CurrentCopyAction
+          Action = NonVisualDataModule.CurrentCopyToClipboardAction
         end
         object TBXItem36: TTBXItem
           Action = NonVisualDataModule.PasteAction2

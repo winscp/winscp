@@ -618,7 +618,7 @@ __published:    // IDE-managed Components
   TAction *PrivateKeyUploadAction;
   TAction *RenameSessionAction;
   TTBXItem *TBXItem78;
-  TAction *CurrentCopyAction;
+  TAction *CurrentCopyToClipboardAction;
   TAction *FileColorsPreferencesAction;
   TAction *DisconnectSessionAction;
   TTBXItem *TBXItem79;

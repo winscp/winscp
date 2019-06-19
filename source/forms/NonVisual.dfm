@@ -2259,7 +2259,7 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'task_connections'
       Hint = 'Rename session|Changes name of the current session'
     end
-    object CurrentCopyAction: TAction
+    object CurrentCopyToClipboardAction: TAction
       Tag = 15
       Category = 'Selected Operation'
       Caption = '&Copy'
