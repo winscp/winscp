@@ -110,7 +110,7 @@ __published:    // IDE-managed Components
   TTimer *SessionIdleTimer;
   TAction *NewSessionAction;
   TAction *SiteManagerAction;
-  TAction *CloseSessionAction;
+  TAction *CloseSessionAction2;
   TAction *SavedSessionsAction2;
   TAction *WorkspacesAction;
   TAction *ExplorerSessionBandAction;
@@ -620,6 +620,10 @@ __published:    // IDE-managed Components
   TTBXItem *TBXItem78;
   TAction *CurrentCopyAction;
   TAction *FileColorsPreferencesAction;
+  TAction *DisconnectSessionAction;
+  TTBXItem *TBXItem79;
+  TAction *ReconnectSessionAction;
+  TTBXItem *TBXItem80;
   void __fastcall ExplorerActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall SessionIdleTimerTimer(TObject *Sender);

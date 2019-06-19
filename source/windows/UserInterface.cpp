@@ -228,6 +228,7 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
     {
       if (ForActiveTerminal)
       {
+        DebugAssert(!Terminal->Active);
         Manager->DisconnectActiveTerminal();
       }
 
@@ -355,7 +356,7 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
     {
       if (ForActiveTerminal)
       {
-        Manager->FreeActiveTerminal();
+        Manager->DisconnectActiveTerminal();
       }
     }
   }

@@ -28,6 +28,9 @@ public:
   TDateTime DirectoryLoaded;
   TTerminalThread * TerminalThread;
   TDateTime QueueOperationStart;
+  // To distinguish sessions that were explicitly disconnected and
+  // should not be reconnected when their tab is activated.
+  bool Disconnected;
 };
 //---------------------------------------------------------------------------
 class TTerminalManager : public TTerminalList

@@ -134,7 +134,7 @@ inherited ScpExplorerForm: TScpExplorerForm
         object TBXSeparatorItem1: TTBXSeparatorItem
         end
         object TBXItem1: TTBXItem
-          Action = NonVisualDataModule.CloseSessionAction
+          Action = NonVisualDataModule.CloseSessionAction2
         end
         object TBXItem2: TTBXItem
           Action = NonVisualDataModule.CloseApplicationAction
@@ -291,7 +291,13 @@ inherited ScpExplorerForm: TScpExplorerForm
           Action = NonVisualDataModule.NewSessionAction
         end
         object TBXItem115: TTBXItem
-          Action = NonVisualDataModule.CloseSessionAction
+          Action = NonVisualDataModule.CloseSessionAction2
+        end
+        object TBXItem162: TTBXItem
+          Action = NonVisualDataModule.DisconnectSessionAction
+        end
+        object TBXItem163: TTBXItem
+          Action = NonVisualDataModule.ReconnectSessionAction
         end
         object TBXItem90: TTBXItem
           Action = NonVisualDataModule.DuplicateSessionAction
@@ -765,7 +771,7 @@ inherited ScpExplorerForm: TScpExplorerForm
         Action = NonVisualDataModule.DuplicateSessionAction
       end
       object TBXItem124: TTBXItem
-        Action = NonVisualDataModule.CloseSessionAction
+        Action = NonVisualDataModule.CloseSessionAction2
       end
       object TBXItem125: TTBXItem
         Action = NonVisualDataModule.SaveCurrentSessionAction2

@@ -122,7 +122,7 @@ void __fastcall TThemePageControl::PaintWindow(HDC DC)
   ::SendMessage(Handle, TCM_ADJUSTRECT, FALSE, (LPARAM)&PageRect);
 
   ClientRect.Top = PageRect.Top - 2;
-  DrawThemesXpTabItem(DC, -1, ClientRect, true, 0);
+  DrawThemesXpTabItem(DC, -1, ClientRect, true, 0, false);
 
   // 2nd paint the inactive tabs
 
@@ -165,12 +165,12 @@ void __fastcall TThemePageControl::DrawThemesXpTab(HDC DC, int Tab)
   {
     State = TIS_SELECTED;
   }
-  DrawThemesXpTabItem(DC, Tab, Rect, false, State);
+  DrawThemesXpTabItem(DC, Tab, Rect, false, State, Shadowed);
 }
 //----------------------------------------------------------------------------------------------------------
 // This function draws Themes Tab control parts: a) Tab-Body and b) Tab-tabs
 void __fastcall TThemePageControl::DrawThemesXpTabItem(HDC DC, int Item,
-  const TRect & Rect, bool Body, int State)
+  const TRect & Rect, bool Body, int State, bool Shadowed)
 {
   TSize Size = Rect.Size;
 
@@ -210,7 +210,7 @@ void __fastcall TThemePageControl::DrawThemesXpTabItem(HDC DC, int Item,
 
   if (!Body && (Item >= 0))
   {
-    DrawTabItem(DCMem, Item, Rect, RectItemMem, (State == TIS_SELECTED), (State == TIS_DISABLED));
+    DrawTabItem(DCMem, Item, Rect, RectItemMem, (State == TIS_SELECTED), Shadowed);
   }
 
   // Blit image to the screen

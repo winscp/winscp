@@ -612,7 +612,7 @@ void __fastcall TCustomScpExplorerForm::TerminalChanged(bool Replaced)
       }
     }
 
-    if (!Replaced)
+    if (!Replaced && Terminal->Active)
     {
       InitStatusBar();
     }
@@ -1675,7 +1675,7 @@ bool __fastcall TCustomScpExplorerForm::DirViewEnabled(TOperationSide Side)
 {
   DebugAssert(GetSide(Side) == osRemote);
   DebugUsedParam(Side);
-  return (Terminal != NULL);
+  return (Terminal != NULL) && Terminal->Active;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::GetEnableFocusedOperation(
@@ -4837,6 +4837,30 @@ void __fastcall TCustomScpExplorerForm::CloseSession()
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::DisconnectSession()
+{
+  if (CanCloseQueue())
+  {
+    TManagedTerminal * ManagedTerminal = dynamic_cast<TManagedTerminal *>(Terminal);
+    TTerminalManager::Instance()->DisconnectActiveTerminal();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::TerminalDisconnected()
+{
+  RemoteDirView->Terminal = Terminal;
+  UpdateRemotePathComboBox(false);
+  UpdateControls();
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::ReconnectSession()
+{
+  if (DebugAlwaysTrue(!Terminal->Active))
+  {
+    TTerminalManager::Instance()->ReconnectActiveTerminal();
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::OpenStoredSession(TSessionData * Data)
 {
   if (OpenInNewWindow())
@@ -6544,6 +6568,7 @@ void __fastcall TCustomScpExplorerForm::DoTerminalListChanged()
       {
         TabSheet->ImageIndex = FNewSessionTabImageIndex;
         TabSheet->Tag = 0; // not really needed
+        TabSheet->Shadowed = false;
         // We know that we are at the last page, otherwise we could not call this (it assumes that new session tab is the last one)
         UpdateNewSessionTab();
       }
@@ -7001,6 +7026,10 @@ void __fastcall TCustomScpExplorerForm::ShowExtendedException(
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::TerminalReady()
 {
+  if (Terminal->Active)
+  {
+    InitStatusBar();
+  }
   // cannot rely on active page being page for active terminal,
   // as it can happen that active page is the "new session" page
   // (e.g. when reconnecting active terminal, while login dialog
@@ -8259,7 +8288,7 @@ UnicodeString __fastcall TCustomScpExplorerForm::FileStatusBarText(
   {
     Result = FormatIncrementalSearchStatus(FIncrementalSearch, FIncrementalSearchHaveNext);
   }
-  else if (!IsSideLocalBrowser(Side) && (Terminal == NULL))
+  else if (!IsSideLocalBrowser(Side) && ((Terminal == NULL) || (dynamic_cast<TManagedTerminal *>(Terminal)->Disconnected)))
   {
     // noop
   }
@@ -8414,15 +8443,24 @@ void __fastcall TCustomScpExplorerForm::UpdateControls()
   // See also EnableControl
   if (Showing)
   {
-    bool HasTerminal = (Terminal != NULL) && Terminal->Active;
-    if (HasTerminal)
+    if (Terminal != NULL)
     {
       // Update path when it changes
       if ((SessionsPageControl->ActivePage != NULL) && (GetSessionTabTerminal(SessionsPageControl->ActivePage) == Terminal))
       {
         UpdateSessionTab(SessionsPageControl->ActivePage);
       }
+    }
 
+    NonVisualDataModule->ReconnectSessionAction->Update();
+    ReconnectToolbar->Visible = NonVisualDataModule->ReconnectSessionAction->Visible;
+    // ReconnectSessionAction is hidden when disabled, so enabling it actualy resizes the toolbar
+    CenterReconnectToolbar();
+
+    bool HasTerminal = (Terminal != NULL) && Terminal->Active;
+
+    if (HasTerminal)
+    {
       // TODO needed yet with second local browser?
       if (!RemoteDirView->Enabled)
       {
@@ -8970,6 +9008,12 @@ void __fastcall TCustomScpExplorerForm::CMShowingChanged(TMessage & Message)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::CenterReconnectToolbar()
+{
+  ReconnectToolbar->Left = (ReconnectToolbar->Parent->ClientWidth - ReconnectToolbar->Width) / 2;
+  ReconnectToolbar->Top = (ReconnectToolbar->Parent->ClientHeight - ReconnectToolbar->Height) / 2;
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::FormConstrainedResize(
   TObject * /*Sender*/, int & MinWidth, int & MinHeight, int & MaxWidth,
   int & MaxHeight)
@@ -9309,7 +9353,7 @@ void __fastcall TCustomScpExplorerForm::UpdateRemotePathComboBox(bool TextOnly)
     try
     {
       Items->Clear();
-      if (Terminal != NULL)
+      if ((Terminal != NULL) && !RemoteDirView->Path.IsEmpty())
       {
         UnicodeString APath = UnixExcludeTrailingBackslash(RemoteDirView->Path);
         while (!IsUnixRootPath(APath))
@@ -10552,5 +10596,10 @@ void __fastcall TCustomScpExplorerForm::DirViewChangeFocus(TObject *, TListItem 
 void __fastcall TCustomScpExplorerForm::RemoteStatusBarMouseDown(TObject *, TMouseButton, TShiftState, int, int)
 {
   CountClicksForWindowPrint(this);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::RemoteDirViewResize(TObject *)
+{
+  CenterReconnectToolbar();
 }
 //---------------------------------------------------------------------------

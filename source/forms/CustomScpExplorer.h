@@ -103,6 +103,8 @@ __published:
   TTBXItem *QueueDeleteAllDoneQueueToolbarItem;
   TTBXItem *TBXItem173;
   TApplicationEvents *ApplicationEvents;
+  TTBXToolbar *ReconnectToolbar;
+  TTBXItem *TBXItem254;
   void __fastcall ApplicationMinimize(TObject * Sender);
   void __fastcall ApplicationRestore(TObject * Sender);
   void __fastcall RemoteDirViewContextPopup(TObject *Sender,
@@ -203,6 +205,7 @@ __published:
   void __fastcall ApplicationEventsModalBegin(TObject *Sender);
   void __fastcall DirViewChangeFocus(TObject *Sender, TListItem *Item);
   void __fastcall RemoteStatusBarMouseDown(TObject *Sender, TMouseButton Button, TShiftState Shift, int X, int Y);
+  void __fastcall RemoteDirViewResize(TObject *Sender);
 
 private:
   TTerminal * FTerminal;
@@ -678,6 +681,7 @@ protected:
   TListItem * __fastcall SearchFile(const UnicodeString & Text, bool SkipCurrent, bool Reverse);
   void __fastcall CMDialogKey(TWMKeyDown & Message);
   DYNAMIC void __fastcall Deactivate();
+  void __fastcall CenterReconnectToolbar();
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();
@@ -712,6 +716,8 @@ public:
   void __fastcall DuplicateSession();
   void __fastcall RenameSession();
   void __fastcall CloseSession();
+  void __fastcall DisconnectSession();
+  void __fastcall ReconnectSession();
   void __fastcall OpenDirectory(TOperationSide Side);
   virtual void __fastcall HomeDirectory(TOperationSide Side);
   void __fastcall ReloadDirectory(TOperationSide Side);
@@ -748,6 +754,7 @@ public:
   UnicodeString __fastcall GetQueueProgressTitle();
   void __fastcall LastTerminalClosed(TObject * Sender);
   void __fastcall TerminalRemoved(TObject * Sender);
+  void __fastcall TerminalDisconnected();
   void __fastcall TerminalListChanged(TObject * Sender);
   void __fastcall ApplicationTitleChanged();
   unsigned int __fastcall MoreMessageDialog(const UnicodeString Message,

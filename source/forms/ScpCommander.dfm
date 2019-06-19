@@ -415,7 +415,13 @@ inherited ScpCommanderForm: TScpCommanderForm
           Action = NonVisualDataModule.NewSessionAction
         end
         object TBXItem115: TTBXItem
-          Action = NonVisualDataModule.CloseSessionAction
+          Action = NonVisualDataModule.CloseSessionAction2
+        end
+        object TBXItem252: TTBXItem
+          Action = NonVisualDataModule.DisconnectSessionAction
+        end
+        object TBXItem253: TTBXItem
+          Action = NonVisualDataModule.ReconnectSessionAction
         end
         object TBXItem218: TTBXItem
           Action = NonVisualDataModule.DuplicateSessionAction
@@ -843,7 +849,7 @@ inherited ScpCommanderForm: TScpCommanderForm
         Action = NonVisualDataModule.DuplicateSessionAction
       end
       object TBXItem124: TTBXItem
-        Action = NonVisualDataModule.CloseSessionAction
+        Action = NonVisualDataModule.CloseSessionAction2
       end
       object TBXItem125: TTBXItem
         Action = NonVisualDataModule.SaveCurrentSessionAction2

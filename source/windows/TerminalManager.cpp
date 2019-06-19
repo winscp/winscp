@@ -31,7 +31,7 @@ __fastcall TManagedTerminal::TManagedTerminal(TSessionData * SessionData,
   TConfiguration * Configuration) :
   TTerminal(SessionData, Configuration),
   LocalExplorerState(NULL), RemoteExplorerState(NULL),
-  ReopenStart(0), DirectoryLoaded(Now()), TerminalThread(NULL)
+  ReopenStart(0), DirectoryLoaded(Now()), TerminalThread(NULL), Disconnected(false)
 {
   StateData = new TSessionData(L"");
   StateData->Assign(SessionData);
@@ -249,6 +249,7 @@ void __fastcall TTerminalManager::DoConnectTerminal(TTerminal * Terminal, bool R
           ManagedTerminal->ReopenStart = Now();
         }
 
+        ManagedTerminal->Disconnected = false;
         DebugAssert(ManagedTerminal->TerminalThread == NULL);
         ManagedTerminal->TerminalThread = TerminalThread;
       }
@@ -391,7 +392,7 @@ bool __fastcall TTerminalManager::ConnectActiveTerminalImpl(bool Reopen)
 
   if (Action == tpFree)
   {
-    FreeActiveTerminal();
+    DisconnectActiveTerminal();
   }
 
   return Result;
@@ -447,6 +448,10 @@ bool __fastcall TTerminalManager::ConnectActiveTerminal()
 void __fastcall TTerminalManager::DisconnectActiveTerminal()
 {
   DebugAssert(ActiveTerminal);
+  if (ActiveTerminal->Active)
+  {
+    ActiveTerminal->Close();
+  }
 
   int Index = IndexOf(ActiveTerminal);
 
@@ -457,6 +462,15 @@ void __fastcall TTerminalManager::DisconnectActiveTerminal()
   FQueues->Items[Index] = NewQueue;
   ScpExplorer->Queue = NewQueue;
   delete OldQueue;
+
+  dynamic_cast<TManagedTerminal *>(ActiveTerminal)->Disconnected = true;
+  if (ScpExplorer != NULL)
+  {
+    TerminalReady(); // in case it was never connected
+    ScpExplorer->TerminalDisconnected();
+  }
+  // disconnecting duplidate session removes need to distinguish the only connected session with short path
+  DoTerminalListChanged();
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::ReconnectActiveTerminal()
@@ -484,7 +498,7 @@ void __fastcall TTerminalManager::ReconnectActiveTerminal()
   }
   catch(...)
   {
-    FreeActiveTerminal();
+    DisconnectActiveTerminal();
     throw;
   }
 }
@@ -611,7 +625,7 @@ void __fastcall TTerminalManager::DoSetActiveTerminal(TTerminal * value, bool Au
     UpdateAppTitle();
     if (ScpExplorer)
     {
-      if (ActiveTerminal && (ActiveTerminal->Status == ssOpened))
+      if (ActiveTerminal && ((ActiveTerminal->Status == ssOpened) || dynamic_cast<TManagedTerminal *>(ActiveTerminal)->Disconnected))
       {
         TerminalReady();
       }
@@ -662,7 +676,9 @@ void __fastcall TTerminalManager::DoSetActiveTerminal(TTerminal * value, bool Au
       }
     }
 
-    if ((ActiveTerminal != NULL) && !ActiveTerminal->Active)
+
+    if ((ActiveTerminal != NULL) && !ActiveTerminal->Active &&
+        !dynamic_cast<TManagedTerminal *>(ActiveTerminal)->Disconnected)
     {
       ConnectActiveTerminal();
     }
@@ -1320,13 +1336,14 @@ UnicodeString __fastcall TTerminalManager::GetTerminalTitle(TTerminal * Terminal
   if (Unique)
   {
     int Index = IndexOf(Terminal);
-    // not for background transfer sessions
-    if (Index >= 0)
+    // not for background transfer sessions and disconnected sessions
+    if ((Index >= 0) && Terminal->Active)
     {
       for (int Index2 = 0; Index2 < Count; Index2++)
       {
         UnicodeString Name = Terminals[Index2]->SessionData->SessionName;
         if ((Terminals[Index2] != Terminal) &&
+            Terminals[Index2]->Active &&
             SameText(Name, Result))
         {
           UnicodeString Path = GetTerminalShortPath(Terminal);

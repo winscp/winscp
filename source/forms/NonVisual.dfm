@@ -622,15 +622,29 @@ object NonVisualDataModule: TNonVisualDataModule
         'Site Manager|Opens site manager (hold down Shift to open site ma' +
         'nager in new window)'
     end
-    object CloseSessionAction: TAction
+    object CloseSessionAction2: TAction
       Tag = 15
       Category = 'Session'
-      Caption = '&Disconnect'
-      Hint = 'Close session|Terminate current session'
+      Caption = '&Close Session'
+      Hint = 'Close session|Terminate the current session and close the tab'
       ImageIndex = 26
       SecondaryShortCuts.Strings = (
         'Ctrl+W')
       ShortCut = 24644
+    end
+    object DisconnectSessionAction: TAction
+      Tag = 15
+      Category = 'Session'
+      Caption = '&Disconnect Session'
+      Hint = 
+        'Disconnect session|Disconnect the current session, but keep the ' +
+        'tab opened'
+    end
+    object ReconnectSessionAction: TAction
+      Tag = 15
+      Category = 'Session'
+      Caption = '&Reconnect Session'
+      Hint = 'Reconnect session|Reconnect the current disconnected session'
     end
     object SavedSessionsAction2: TAction
       Tag = 15
@@ -3009,7 +3023,13 @@ object NonVisualDataModule: TNonVisualDataModule
     Left = 480
     Top = 176
     object TBXItem124: TTBXItem
-      Action = CloseSessionAction
+      Action = CloseSessionAction2
+    end
+    object TBXItem79: TTBXItem
+      Action = DisconnectSessionAction
+    end
+    object TBXItem80: TTBXItem
+      Action = ReconnectSessionAction
     end
     object TBXItem219: TTBXItem
       Action = DuplicateSessionAction

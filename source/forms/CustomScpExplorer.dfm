@@ -92,6 +92,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
         OnExit = DirViewExit
         OnKeyDown = DirViewKeyDown
         OnKeyPress = DirViewKeyPress
+        OnResize = RemoteDirViewResize
         NortonLike = nlOff
         UnixColProperties.ExtWidth = 20
         UnixColProperties.TypeVisible = False
@@ -117,6 +118,21 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
         OnHistoryChange = DirViewHistoryChange
         OnDisplayProperties = RemoteDirViewDisplayProperties
         OnRead = RemoteDirViewRead
+      end
+      object ReconnectToolbar: TTBXToolbar
+        Left = 136
+        Top = 112
+        Width = 107
+        Height = 21
+        Caption = 'ReconnectToolbar'
+        Images = GlyphsModule.ExplorerImages
+        Options = [tboShowHint]
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 1
+        object TBXItem254: TTBXItem
+          Action = NonVisualDataModule.ReconnectSessionAction
+        end
       end
     end
     object RemoteDrivePanel: TPanel

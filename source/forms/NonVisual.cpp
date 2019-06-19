@@ -136,7 +136,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
     return;
   }
   void * Param;
-  #define HasTerminal (ScpExplorer->Terminal != NULL)
+  #define HasTerminal (ScpExplorer->Terminal != NULL) && ScpExplorer->Terminal->Active
   // CURRENT DIRVIEW
   #define EnabledSelectedOperation (ScpExplorer->EnableSelectedOperation[osCurrent])
   #define EnabledFocusedOperation (ScpExplorer->EnableFocusedOperation[osCurrent])
@@ -400,7 +400,9 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(SiteManagerAction, true)
   UPD(DuplicateSessionAction, HasTerminal)
   UPD(RenameSessionAction, HasTerminal)
-  UPD(CloseSessionAction, HasTerminal)
+  UPD(CloseSessionAction2, (ScpExplorer->Terminal != NULL))
+  UPDEX1(DisconnectSessionAction, HasTerminal, DisconnectSessionAction->Visible = (ScpExplorer->Terminal == NULL) || !dynamic_cast<TManagedTerminal *>(ScpExplorer->Terminal)->Disconnected)
+  UPDEX1(ReconnectSessionAction, (ScpExplorer->Terminal != NULL) && dynamic_cast<TManagedTerminal *>(ScpExplorer->Terminal)->Disconnected, ReconnectSessionAction->Visible = ReconnectSessionAction->Enabled)
   UPD(SavedSessionsAction2, true)
   UPD(WorkspacesAction, StoredSessions->HasAnyWorkspace())
   UPD(OpenedSessionsAction, HasTerminal)
@@ -717,7 +719,9 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(SiteManagerAction, ScpExplorer->NewSession(true))
     EXE(DuplicateSessionAction, ScpExplorer->DuplicateSession())
     EXE(RenameSessionAction, ScpExplorer->RenameSession())
-    EXE(CloseSessionAction, ScpExplorer->CloseSession())
+    EXE(CloseSessionAction2, ScpExplorer->CloseSession())
+    EXE(DisconnectSessionAction, ScpExplorer->DisconnectSession())
+    EXE(ReconnectSessionAction, ScpExplorer->ReconnectSession())
     EXE(SavedSessionsAction2, CreateSessionListMenu(SavedSessionsAction2))
     EXE(WorkspacesAction, CreateWorkspacesMenu(WorkspacesAction))
     EXE(OpenedSessionsAction, CreateOpenedSessionListMenu(OpenedSessionsAction))
