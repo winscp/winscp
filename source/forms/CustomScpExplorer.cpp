@@ -6544,7 +6544,7 @@ void __fastcall TCustomScpExplorerForm::DoTerminalListChanged()
       {
         TabSheet->ImageIndex = FNewSessionTabImageIndex;
         TabSheet->Tag = 0; // not really needed
-        // We know that we are at the last page, sotherwise we could not call this (it assumes that new session tab is the last one)
+        // We know that we are at the last page, otherwise we could not call this (it assumes that new session tab is the last one)
         UpdateNewSessionTab();
       }
 
