@@ -199,7 +199,7 @@ TTerminal * __fastcall TTerminalManager::NewTerminals(TList * DataList)
   for (int Index = 0; Index < DataList->Count; Index++)
   {
     TTerminal * Terminal =
-      NewTerminal(reinterpret_cast<TSessionData *>(DataList->Items[Index]));
+      DoNewTerminal(reinterpret_cast<TSessionData *>(DataList->Items[Index]));
     if (Index == 0)
     {
       Result = Terminal;
