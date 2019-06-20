@@ -4841,7 +4841,6 @@ void __fastcall TCustomScpExplorerForm::DisconnectSession()
 {
   if (CanCloseQueue())
   {
-    TManagedTerminal * ManagedTerminal = dynamic_cast<TManagedTerminal *>(Terminal);
     TTerminalManager::Instance()->DisconnectActiveTerminal();
   }
 }
