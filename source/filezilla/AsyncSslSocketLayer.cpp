@@ -1040,40 +1040,6 @@ void CAsyncSslSocketLayer::apps_ssl_info_callback(const SSL *s, int where, int r
   if (w & SSL_ST_CONNECT)
   {
     str = "TLS connect";
-    if (pLayer->m_sessionreuse)
-    {
-      SSL_SESSION * sessionid = SSL_get1_session(pLayer->m_ssl);
-      if (pLayer->m_sessionid != sessionid)
-      {
-        if (pLayer->m_sessionid == NULL)
-        {
-          if (SSL_session_reused(pLayer->m_ssl))
-          {
-            pLayer->LogSocketMessageRaw(FZ_LOG_PROGRESS, L"Session ID reused");
-          }
-          else
-          {
-            if ((pLayer->m_Main != NULL) && (pLayer->m_Main->m_sessionid != NULL))
-            {
-              pLayer->LogSocketMessageRaw(FZ_LOG_INFO, L"Main TLS session ID not reused, will not try again");
-              SSL_SESSION_free(pLayer->m_Main->m_sessionid);
-              pLayer->m_Main->m_sessionid = NULL;
-            }
-          }
-          pLayer->LogSocketMessageRaw(FZ_LOG_DEBUG, L"Saving session ID");
-        }
-        else
-        {
-          SSL_SESSION_free(pLayer->m_sessionid);
-          pLayer->LogSocketMessageRaw(FZ_LOG_INFO, L"Session ID changed");
-        }
-        pLayer->m_sessionid = sessionid;
-      }
-      else
-      {
-        SSL_SESSION_free(sessionid);
-      }
-    }
   }
   else if (w & SSL_ST_ACCEPT)
     str = "TLS accept";
@@ -1161,6 +1127,40 @@ void CAsyncSslSocketLayer::apps_ssl_info_callback(const SSL *s, int where, int r
   }
   if (where & SSL_CB_HANDSHAKE_DONE)
   {
+    if (pLayer->m_sessionreuse)
+    {
+      SSL_SESSION * sessionid = SSL_get1_session(pLayer->m_ssl);
+      if (pLayer->m_sessionid != sessionid)
+      {
+        if (pLayer->m_sessionid == NULL)
+        {
+          if (SSL_session_reused(pLayer->m_ssl))
+          {
+            pLayer->LogSocketMessageRaw(FZ_LOG_PROGRESS, L"Session ID reused");
+          }
+          else
+          {
+            if ((pLayer->m_Main != NULL) && (pLayer->m_Main->m_sessionid != NULL))
+            {
+              pLayer->LogSocketMessageRaw(FZ_LOG_INFO, L"Main TLS session ID not reused, will not try again");
+              SSL_SESSION_free(pLayer->m_Main->m_sessionid);
+              pLayer->m_Main->m_sessionid = NULL;
+            }
+          }
+          pLayer->LogSocketMessageRaw(FZ_LOG_DEBUG, L"Saving session ID");
+        }
+        else
+        {
+          SSL_SESSION_free(pLayer->m_sessionid);
+          pLayer->LogSocketMessageRaw(FZ_LOG_INFO, L"Session ID changed");
+        }
+        pLayer->m_sessionid = sessionid;
+      }
+      else
+      {
+        SSL_SESSION_free(sessionid);
+      }
+    }
     int error = SSL_get_verify_result(pLayer->m_ssl);
     pLayer->DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, SSL_VERIFY_CERT, error);
     pLayer->m_bBlocking = TRUE;
