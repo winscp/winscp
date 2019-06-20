@@ -778,7 +778,7 @@ public:
   void __fastcall StandaloneEdit(const UnicodeString & FileName);
   bool __fastcall CanPasteFromClipBoard();
   virtual void __fastcall PasteFromClipBoard();
-  virtual void __fastcall CopyFilesToClipboard(TOperationSide Side);
+  virtual void __fastcall CopyFilesToClipboard(TOperationSide Side, bool OnFocused);
   void __fastcall ToggleQueueVisibility();
   virtual UnicodeString __fastcall PathForCaption();
   void __fastcall FileListFromClipboard();

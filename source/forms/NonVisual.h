@@ -624,6 +624,11 @@ __published:    // IDE-managed Components
   TTBXItem *TBXItem79;
   TAction *ReconnectSessionAction;
   TTBXItem *TBXItem80;
+  TAction *CurrentCopyToClipboardFocusedAction;
+  TTBXSeparatorItem *TBXSeparatorItem11;
+  TTBXItem *TBXItem81;
+  TTBXSeparatorItem *TBXSeparatorItem12;
+  TTBXItem *TBXItem82;
   void __fastcall ExplorerActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall SessionIdleTimerTimer(TObject *Sender);

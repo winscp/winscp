@@ -2249,16 +2249,16 @@ void __fastcall TScpCommanderForm::RemoteOpenDirButtonPopup(TTBCustomItem * /*Se
   CreateOpenDirMenu(RemoteOpenDirButton, osRemote);
 }
 //---------------------------------------------------------------------------
-void __fastcall TScpCommanderForm::CopyFilesToClipboard(TOperationSide Side)
+void __fastcall TScpCommanderForm::CopyFilesToClipboard(TOperationSide Side, bool OnFocused)
 {
   if (IsSideLocalBrowser(Side))
   {
     TInstantOperationVisualizer Visualizer;
-    dynamic_cast<TDirView *>(DirView(Side))->CopyToClipBoard();
+    dynamic_cast<TDirView *>(DirView(Side))->CopyToClipBoard(OnFocused);
   }
   else
   {
-    TCustomScpExplorerForm::CopyFilesToClipboard(Side);
+    TCustomScpExplorerForm::CopyFilesToClipboard(Side, OnFocused);
   }
 }
 //---------------------------------------------------------------------------

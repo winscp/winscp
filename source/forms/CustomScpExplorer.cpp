@@ -10257,7 +10257,7 @@ void __fastcall TCustomScpExplorerForm::SessionsPageControlCloseButtonClick(TPag
   CloseSessionTab(Index);
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::CopyFilesToClipboard(TOperationSide Side)
+void __fastcall TCustomScpExplorerForm::CopyFilesToClipboard(TOperationSide Side, bool OnFocused)
 {
   if (DebugAlwaysTrue(!IsSideLocalBrowser(Side)))
   {
@@ -10284,7 +10284,7 @@ void __fastcall TCustomScpExplorerForm::CopyFilesToClipboard(TOperationSide Side
     FClipboardTerminal = FTerminal;
 
     // Need full paths, as cwd can be different once files are pasted
-    FClipboardFileList.reset(TRemoteFileList::CloneStrings(RemoteDirView->CreateFileList(false, true)));
+    FClipboardFileList.reset(TRemoteFileList::CloneStrings(RemoteDirView->CreateFileList(OnFocused, true)));
     for (int Index = 0; Index < FClipboardFileList->Count; Index++)
     {
       FClipboardFileList->Strings[Index] = UnixExcludeTrailingBackslash(FClipboardFileList->Strings[Index]);

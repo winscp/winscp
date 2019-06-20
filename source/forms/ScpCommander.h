@@ -620,7 +620,7 @@ public:
   virtual void __fastcall HistoryGo(TOperationSide Side, int Index);
   virtual void __fastcall DisplaySystemContextMenu();
   virtual void __fastcall GoToAddress();
-  virtual void __fastcall CopyFilesToClipboard(TOperationSide Side);
+  virtual void __fastcall CopyFilesToClipboard(TOperationSide Side, bool OnFocused);
   virtual void __fastcall PasteFromClipBoard();
 
   __property double LeftPanelWidth = { read = GetLeftPanelWidth, write = SetLeftPanelWidth };

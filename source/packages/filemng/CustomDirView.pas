@@ -250,6 +250,7 @@ type
     procedure ColClick(Column: TListColumn); override;
     procedure CreateWnd; override;
     procedure DestroyWnd; override;
+    function OperateOnFocusedFile(Focused: Boolean; OnlyFocused: Boolean = False): Boolean;
     function CustomCreateFileList(Focused, OnlyFocused: Boolean;
       FullPath: Boolean; FileList: TStrings = nil; ItemObject: Boolean = False): TStrings;
     function CustomDrawItem(Item: TListItem; State: TCustomDrawState;
@@ -2202,6 +2203,13 @@ begin
   Result := nil;
 end;
 
+function TCustomDirView.OperateOnFocusedFile(Focused, OnlyFocused: Boolean): Boolean;
+begin
+  Result :=
+    Assigned(ItemFocused) and
+    ((Focused and (not ItemFocused.Selected)) or (SelCount = 0) or OnlyFocused);
+end;
+
 function TCustomDirView.CustomCreateFileList(Focused, OnlyFocused: Boolean;
   FullPath: Boolean; FileList: TStrings; ItemObject: Boolean): TStrings;
 
@@ -2224,8 +2232,7 @@ begin
     else Result := TStringList.Create;
 
   try
-    if Assigned(ItemFocused) and
-       ((Focused and (not ItemFocused.Selected)) or (SelCount = 0) or OnlyFocused) then
+    if OperateOnFocusedFile(Focused, OnlyFocused) then
     begin
       AddItem(ItemFocused)
     end

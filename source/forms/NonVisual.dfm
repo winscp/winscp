@@ -45,6 +45,11 @@ object NonVisualDataModule: TNonVisualDataModule
     object Rename1: TTBXItem
       Action = CurrentRenameAction
     end
+    object TBXSeparatorItem12: TTBXSeparatorItem
+    end
+    object TBXItem82: TTBXItem
+      Action = CurrentCopyToClipboardFocusedAction
+    end
     object N45: TTBXSeparatorItem
     end
     object RemoteFilePopupCustomCommandsMenu: TTBXSubmenuItem
@@ -2274,6 +2279,14 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'ui_pref_file_colors'
       Hint = 'Configure file color rules'
     end
+    object CurrentCopyToClipboardFocusedAction: TAction
+      Tag = 12
+      Category = 'Focused Operation'
+      Caption = '&Copy'
+      Hint = 'Copy|Copy the selected files to clipboard'
+      ImageIndex = 111
+      ShortCut = 16451
+    end
   end
   object ExplorerBarPopup: TTBXPopupMenu
     Images = GlyphsModule.ExplorerImages
@@ -3106,6 +3119,11 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object TBXItem58: TTBXItem
       Action = CurrentRenameAction
+    end
+    object TBXSeparatorItem11: TTBXSeparatorItem
+    end
+    object TBXItem81: TTBXItem
+      Action = CurrentCopyToClipboardFocusedAction
     end
     object TBXSeparatorItem3: TTBXSeparatorItem
     end

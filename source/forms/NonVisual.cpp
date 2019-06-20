@@ -158,6 +158,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
     !WinConfiguration->DisableOpenEdit)
   UPD(CurrentEditInternalFocusedAction, EnabledFocusedFileOperation &&
     !WinConfiguration->DisableOpenEdit)
+  UPD(CurrentCopyToClipboardFocusedAction, EnabledFocusedOperation)
   // file operation
   UPD(CurrentRenameAction, EnabledFocusedOperation &&
     ((ScpExplorer->HasDirView[osLocal] && DirView(osLocal) == DirView(osCurrent)) ||
@@ -509,6 +510,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(CurrentSystemMenuFocusedAction, ScpExplorer->DisplaySystemContextMenu())
     EXE(CurrentEditWithFocusedAction, ScpExplorer->ExecuteCurrentFileWith(true))
     EXE(CurrentEditInternalFocusedAction, ScpExplorer->ExecuteFile(osCurrent, efInternalEditor, NULL, true, true))
+    EXE(CurrentCopyToClipboardFocusedAction, ScpExplorer->CopyFilesToClipboard(osCurrent, true))
     // operation
     EXE(CurrentEditAction, ScpExplorer->ExecuteFile(osCurrent, efDefaultEditor, NULL, true, false))
     EXE(CurrentEditInternalAction, ScpExplorer->ExecuteFile(osCurrent, efInternalEditor, NULL, true, false))
@@ -521,7 +523,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(CurrentDeleteAction, ScpExplorer->ExecuteFileOperationCommand(foDelete, osCurrent, false))
     EXE(CurrentDeleteAlternativeAction, ScpExplorer->ExecuteFileOperationCommand(foDelete, osCurrent, false, false, (void*)true))
     EXE(CurrentPropertiesAction, ScpExplorer->ExecuteFileOperationCommand(foSetProperties, osCurrent, false))
-    EXE(CurrentCopyToClipboardAction, ScpExplorer->CopyFilesToClipboard(osCurrent))
+    EXE(CurrentCopyToClipboardAction, ScpExplorer->CopyFilesToClipboard(osCurrent, false))
     EXE(FileListToCommandLineAction, ScpExplorer->PanelExport(osCurrent, peFileList, pedCommandLine))
     EXE(FileListToClipboardAction, ScpExplorer->PanelExport(osCurrent, peFileList, pedClipboard))
     EXE(FullFileListToClipboardAction, ScpExplorer->PanelExport(osCurrent, peFullFileList, pedClipboard))

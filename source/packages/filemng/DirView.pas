@@ -236,6 +236,7 @@ type
     procedure CMRecreateWnd(var Message: TMessage); message CM_RECREATEWND;
     procedure Load(DoFocusSomething: Boolean); override;
     function GetFileInfo(pszPath: LPCWSTR; dwFileAttributes: DWORD; var psfi: TSHFileInfoW; cbFileInfo, uFlags: UINT): DWORD_PTR;
+    function DoCopyToClipboard(Focused: Boolean; Cut: Boolean; Operation: TClipBoardOperation): Boolean;
 
     function HiddenCount: Integer; override;
     function FilteredCount: Integer; override;
@@ -255,8 +256,8 @@ type
     function UndoCopyMove: Boolean; dynamic;
     {Clipboard fileoperation methods (requires drag&drop enabled):}
     procedure EmptyClipboard; dynamic;
-    function CopyToClipBoard: Boolean; dynamic;
-    function CutToClipBoard: Boolean; dynamic;
+    function CopyToClipBoard(Focused: Boolean): Boolean; dynamic;
+    function CutToClipBoard(Focused: Boolean): Boolean; dynamic;
     function PasteFromClipBoard(TargetPath: string = ''): Boolean; override;
     function DuplicateSelectedFiles: Boolean; dynamic;
     procedure DisplayPropertiesMenu; override;
@@ -3328,7 +3329,7 @@ begin
   end;
 end; {EmptyClipBoard}
 
-function TDirView.CopyToClipBoard : Boolean;
+function TDirView.DoCopyToClipboard(Focused: Boolean; Cut: Boolean; Operation: TClipBoardOperation): Boolean;
 var
   Item: TListItem;
   SaveCursor: TCursor;
@@ -3339,44 +3340,40 @@ begin
     Result := False;
     EmptyClipBoard;
     DragDropFilesEx.FileList.Clear;
-    if SelCount > 0 then
+    if OperateOnFocusedFile(Focused) or (SelCount > 0) then
     begin
-      Item := GetNextItem(nil, sdAll, [isSelected]);
-      while Assigned(Item) do
+      if OperateOnFocusedFile(Focused) then
       begin
-        DragDropFilesEx.FileList.AddItem(nil, ItemFullFileName(Item));
-        Item := GetNextItem(Item, sdAll, [isSelected]);
+        DragDropFilesEx.FileList.AddItem(nil, ItemFullFileName(ItemFocused));
+      end
+        else
+      begin
+        Item := GetNextItem(nil, sdAll, [isSelected]);
+        while Assigned(Item) do
+        begin
+          DragDropFilesEx.FileList.AddItem(nil, ItemFullFileName(Item));
+          Item.Cut := Cut;
+          Item := GetNextItem(Item, sdAll, [isSelected]);
+        end;
       end;
 
       Result := DragDropFilesEx.CopyToClipBoard;
-      LastClipBoardOperation := cboCopy;
+      LastClipBoardOperation := Operation;
     end;
   finally
     Screen.Cursor := SaveCursor;
   end;
-end; {CopyToClipBoard}
+end; {DoCopyToClipBoard}
 
-function TDirView.CutToClipBoard : Boolean;
-var
-  Item: TListItem;
+function TDirView.CopyToClipBoard(Focused: Boolean): Boolean;
 begin
-  Result := False;
-  EmptyClipBoard;
-  DragDropFilesEx.FileList.Clear;
-  if SelCount > 0 then
-  begin
-    Item := GetNextItem(nil, sdAll, [isSelected]);
-    while Assigned(Item) do
-    begin
-      DragDropFilesEx.FileList.AddItem(nil, ItemFullFileName(Item));
-      Item.Cut := True;
-      Item := GetNextItem(Item, sdAll, [isSelected]);
-    end;
+  Result := DoCopyToClipboard(Focused, False, cboCopy);
+end;
 
-    Result := DragDropFilesEx.CopyToClipBoard;
-    LastClipBoardOperation := cboCut;
-  end;
-end; {CutToClipBoard}
+function TDirView.CutToClipBoard(Focused: Boolean): Boolean;
+begin
+  Result := DoCopyToClipboard(Focused, True, cboCut);
+end;
 
 function TDirView.PasteFromClipBoard(TargetPath: string): Boolean;
 begin
@@ -3421,7 +3418,7 @@ begin
   Result := False;
   if SelCount > 0 then
   begin
-    Result := CopyToClipBoard;
+    Result := CopyToClipBoard(False);
     if Result then
       try
         SelectNewFiles := True;
