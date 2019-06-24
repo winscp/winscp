@@ -22,8 +22,8 @@
 #pragma resource "*.dfm"
 #endif
 //---------------------------------------------------------------------------
-__fastcall TSynchronizeProgressForm::TSynchronizeProgressForm(TComponent * Owner,
-  bool AllowMinimize, bool CompareOnly)
+// Used for comparing only
+__fastcall TSynchronizeProgressForm::TSynchronizeProgressForm(TComponent * Owner, bool AllowMinimize)
   : TForm(Owner)
 {
   FStarted = false;
@@ -31,7 +31,6 @@ __fastcall TSynchronizeProgressForm::TSynchronizeProgressForm(TComponent * Owner
   FElapsed = EncodeTimeVerbose(0, 0, 0, 0);
   FShowAsModalStorage = NULL;
   FMinimizedByMe = false;
-  FCompareOnly = CompareOnly;
   UseSystemSettings(this);
   HideComponentsPanel(this);
   SelectScaledImageList(ImageList);
@@ -67,7 +66,7 @@ void __fastcall TSynchronizeProgressForm::Start()
   FStartTime = Now();
   UpdateTimer->Enabled = true;
   StartTimeLabel->Caption = FStartTime.TimeString();
-  Caption = FormatFormCaption(this, LoadStr(FCompareOnly ? SYNCHRONIZE_PROGRESS_COMPARE : SYNCHRONIZE_PROGRESS_SYNCHRONIZE2));
+  Caption = FormatFormCaption(this, LoadStr(SYNCHRONIZE_PROGRESS_COMPARE));
   if (!IsApplicationMinimized())
   {
     // Do not show the progress when the application is minimized,

@@ -44,8 +44,7 @@ __published:
   void __fastcall CancelItemClick(TObject *Sender);
 
 public:
-  __fastcall TSynchronizeProgressForm(TComponent * Owner, bool AllowMinimize,
-    bool CompareOnly);
+  __fastcall TSynchronizeProgressForm(TComponent * Owner, bool AllowMinimize);
   virtual __fastcall ~TSynchronizeProgressForm();
 
   void __fastcall Start();
@@ -64,7 +63,6 @@ private:
   bool FCanceled;
   void * FShowAsModalStorage;
   bool FMinimizedByMe;
-  bool FCompareOnly;
   TFrameAnimation FFrameAnimation;
 
   void __fastcall UpdateControls();

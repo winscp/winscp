@@ -5417,7 +5417,7 @@ void __fastcall TCustomScpExplorerForm::Synchronize(const UnicodeString LocalDir
   TSynchronizeChecklist * AChecklist = NULL;
   try
   {
-    FSynchronizeProgressForm = new TSynchronizeProgressForm(Application, true, true);
+    FSynchronizeProgressForm = new TSynchronizeProgressForm(Application, true);
     if (FLAGCLEAR(Params, TTerminal::spDelayProgress))
     {
       FSynchronizeProgressForm->Start();
@@ -5771,7 +5771,7 @@ int __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
 
       try
       {
-        FSynchronizeProgressForm = new TSynchronizeProgressForm(Application, true, true);
+        FSynchronizeProgressForm = new TSynchronizeProgressForm(Application, true);
         FSynchronizeProgressForm->Start();
 
         Checklist = Terminal->SynchronizeCollect(LocalDirectory, RemoteDirectory,
