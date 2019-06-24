@@ -1562,14 +1562,12 @@ void __fastcall TWinConfiguration::CopyData(THierarchicalStorage * Source, THier
 {
   TCustomWinConfiguration::CopyData(Source, Target);
 
-  if (Source->OpenSubKey(ConfigurationSubKey, false))
+  if (CopySubKey(Source, Target, ConfigurationSubKey))
   {
-    if (Target->OpenSubKey(ConfigurationSubKey, true))
-    {
-      Target->WriteString(L"JumpList", Source->ReadString(L"JumpList", L""));
-      Target->WriteString(L"JumpListWorkspaces", Source->ReadString(L"JumpListWorkspaces", L""));
-      Target->CloseSubKey();
-    }
+    Target->WriteString(L"JumpList", Source->ReadString(L"JumpList", L""));
+    Target->WriteString(L"JumpListWorkspaces", Source->ReadString(L"JumpListWorkspaces", L""));
+
+    Target->CloseSubKey();
     Source->CloseSubKey();
   }
 }

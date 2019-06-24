@@ -469,79 +469,65 @@ void __fastcall TConfiguration::Load(THierarchicalStorage * Storage)
   }
 }
 //---------------------------------------------------------------------------
+bool __fastcall TConfiguration::CopySubKey(THierarchicalStorage * Source, THierarchicalStorage * Target, const UnicodeString & Name)
+{
+  bool Result = Source->OpenSubKey(Name, false);
+  if (Result)
+  {
+    Result = Target->OpenSubKey(Name, true);
+    if (!Result)
+    {
+      Source->CloseSubKey();
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TConfiguration::CopyAllStringsInSubKey(
+  THierarchicalStorage * Source, THierarchicalStorage * Target, const UnicodeString & Name)
+{
+  if (CopySubKey(Source, Target, Name))
+  {
+    std::unique_ptr<TStrings> Names(new TStringList());
+    Source->GetValueNames(Names.get());
+
+    for (int Index = 0; Index < Names->Count; Index++)
+    {
+      UnicodeString Buf = Source->ReadStringRaw(Names->Strings[Index], UnicodeString());
+      Target->WriteStringRaw(Names->Strings[Index], Buf);
+    }
+
+    Target->CloseSubKey();
+    Source->CloseSubKey();
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TConfiguration::CopyData(THierarchicalStorage * Source,
   THierarchicalStorage * Target)
 {
-  TStrings * Names = new TStringList();
-  try
+  if (CopySubKey(Source, Target, ConfigurationSubKey))
   {
-    if (Source->OpenSubKey(ConfigurationSubKey, false))
+    if (CopySubKey(Source, Target, L"CDCache"))
     {
-      if (Target->OpenSubKey(ConfigurationSubKey, true))
+      std::unique_ptr<TStrings> Names(new TStringList());
+      Source->GetValueNames(Names.get());
+
+      for (int Index = 0; Index < Names->Count; Index++)
       {
-        if (Source->OpenSubKey(L"CDCache", false))
-        {
-          if (Target->OpenSubKey(L"CDCache", true))
-          {
-            Names->Clear();
-            Source->GetValueNames(Names);
-
-            for (int Index = 0; Index < Names->Count; Index++)
-            {
-              Target->WriteBinaryData(Names->Strings[Index],
-                Source->ReadBinaryData(Names->Strings[Index]));
-            }
-
-            Target->CloseSubKey();
-          }
-          Source->CloseSubKey();
-        }
-
-        if (Source->OpenSubKey(L"Banners", false))
-        {
-          if (Target->OpenSubKey(L"Banners", true))
-          {
-            Names->Clear();
-            Source->GetValueNames(Names);
-
-            for (int Index = 0; Index < Names->Count; Index++)
-            {
-              Target->WriteString(Names->Strings[Index],
-                Source->ReadString(Names->Strings[Index], L""));
-            }
-
-            Target->CloseSubKey();
-          }
-          Source->CloseSubKey();
-        }
-
-        Target->CloseSubKey();
+        Target->WriteBinaryData(Names->Strings[Index], Source->ReadBinaryData(Names->Strings[Index]));
       }
+
+      Target->CloseSubKey();
       Source->CloseSubKey();
     }
 
-    if (Source->OpenSubKey(SshHostKeysSubKey, false))
-    {
-      if (Target->OpenSubKey(SshHostKeysSubKey, true))
-      {
-        Names->Clear();
-        Source->GetValueNames(Names);
+    CopyAllStringsInSubKey(Source, Target, L"Banners");
 
-        for (int Index = 0; Index < Names->Count; Index++)
-        {
-          Target->WriteStringRaw(Names->Strings[Index],
-            Source->ReadStringRaw(Names->Strings[Index], L""));
-        }
+    Target->CloseSubKey();
+    Source->CloseSubKey();
+  }
 
-        Target->CloseSubKey();
-      }
-      Source->CloseSubKey();
-    }
-  }
-  __finally
-  {
-    delete Names;
-  }
+  CopyAllStringsInSubKey(Source, Target, SshHostKeysSubKey);
 }
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::LoadDirectoryChangesCache(const UnicodeString SessionKey,

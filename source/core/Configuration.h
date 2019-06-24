@@ -160,6 +160,9 @@ protected:
   virtual UnicodeString __fastcall GetDefaultKeyFile();
   virtual void __fastcall Saved();
   void __fastcall CleanupRegistry(UnicodeString CleanupSubKey);
+  void __fastcall CopyAllStringsInSubKey(
+    THierarchicalStorage * Source, THierarchicalStorage * Target, const UnicodeString & Name);
+  bool __fastcall CopySubKey(THierarchicalStorage * Source, THierarchicalStorage * Target, const UnicodeString & Name);
   UnicodeString __fastcall BannerHash(const UnicodeString & Banner);
   void __fastcall SetBannerData(const UnicodeString & SessionKey, const UnicodeString & BannerHash, unsigned int Params);
   void __fastcall GetBannerData(const UnicodeString & SessionKey, UnicodeString & BannerHash, unsigned int & Params);
