@@ -35,7 +35,9 @@ const UnicodeString Crc32ChecksumAlg(L"crc32");
 const UnicodeString SshFingerprintType(L"ssh");
 const UnicodeString TlsFingerprintType(L"tls");
 //---------------------------------------------------------------------------
+const UnicodeString FtpsCertificateStorageKey(L"FtpsCertificates");
 const UnicodeString HttpsCertificateStorageKey(L"HttpsCertificates");
+const UnicodeString LastFingerprintsStorageKey(L"LastFingerprints");
 //---------------------------------------------------------------------------
 __fastcall TConfiguration::TConfiguration()
 {
@@ -522,12 +524,15 @@ void __fastcall TConfiguration::CopyData(THierarchicalStorage * Source,
     }
 
     CopyAllStringsInSubKey(Source, Target, L"Banners");
+    CopyAllStringsInSubKey(Source, Target, LastFingerprintsStorageKey);
 
     Target->CloseSubKey();
     Source->CloseSubKey();
   }
 
   CopyAllStringsInSubKey(Source, Target, SshHostKeysSubKey);
+  CopyAllStringsInSubKey(Source, Target, FtpsCertificateStorageKey);
+  CopyAllStringsInSubKey(Source, Target, HttpsCertificateStorageKey);
 }
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::LoadDirectoryChangesCache(const UnicodeString SessionKey,
@@ -647,7 +652,7 @@ void __fastcall TConfiguration::RememberLastFingerprint(const UnicodeString & Si
   Storage->AccessMode = smReadWrite;
 
   if (Storage->OpenSubKey(ConfigurationSubKey, true) &&
-      Storage->OpenSubKey(L"LastFingerprints", true))
+      Storage->OpenSubKey(LastFingerprintsStorageKey, true))
   {
     UnicodeString FingerprintKey = FormatFingerprintKey(SiteKey, FingerprintType);
     Storage->WriteString(FingerprintKey, Fingerprint);
@@ -662,7 +667,7 @@ UnicodeString __fastcall TConfiguration::LastFingerprint(const UnicodeString & S
   Storage->AccessMode = smRead;
 
   if (Storage->OpenSubKey(ConfigurationSubKey, false) &&
-      Storage->OpenSubKey(L"LastFingerprints", false))
+      Storage->OpenSubKey(LastFingerprintsStorageKey, false))
   {
     UnicodeString FingerprintKey = FormatFingerprintKey(SiteKey, FingerprintType);
     Result = Storage->ReadString(FingerprintKey, L"");

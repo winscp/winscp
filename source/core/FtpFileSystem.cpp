@@ -186,7 +186,6 @@ struct TFileTransferData
   TDateTime Modification;
 };
 //---------------------------------------------------------------------------
-const UnicodeString CertificateStorageKey(L"FtpsCertificates");
 const UnicodeString SiteCommand(L"SITE");
 const UnicodeString SymlinkSiteCommand(L"SYMLINK");
 const UnicodeString CopySiteCommand(L"COPY");
@@ -3944,7 +3943,7 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestVerifyCertificate(
 
       if (!VerificationResult)
       {
-        if (FTerminal->VerifyCertificate(CertificateStorageKey, FTerminal->SessionData->SiteKey,
+        if (FTerminal->VerifyCertificate(FtpsCertificateStorageKey, FTerminal->SessionData->SiteKey,
               FSessionInfo.CertificateFingerprint, CertificateSubject, Data.VerificationResult))
         {
           // certificate is trusted, but for not purposes of info dialog
@@ -4009,7 +4008,7 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestVerifyCertificate(
 
       if (RequestResult == 0)
       {
-        if (FTerminal->ConfirmCertificate(FSessionInfo, Data.VerificationResult, CertificateStorageKey, true))
+        if (FTerminal->ConfirmCertificate(FSessionInfo, Data.VerificationResult, FtpsCertificateStorageKey, true))
         {
           // FZ's VerifyCertDlg.cpp returns 2 for "cached", what we do nto distinguish here,
           // however FZAPI takes all non-zero values equally.
