@@ -852,7 +852,7 @@ void __fastcall TCustomScpExplorerForm::SetTaskbarListProgressState(TBPFLAG Flag
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::SetTaskbarListProgressValue(TFileOperationProgressType * ProgressData)
 {
-  if (ProgressData->Operation != foCalculateSize)
+  if (!TFileOperationProgressType::IsIndeterminateOperation(ProgressData->Operation))
   {
     int OverallProgress;
     // FProgressForm is null when this is called from SetQueueProgress
