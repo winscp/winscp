@@ -290,6 +290,7 @@
 #define USAGE_INFO              1581
 #define USAGE_RAWTRANSFERSETTINGS 1582
 #define CUSTOM_COMMAND_PATTERNS_HINT6 1583
+#define USAGE_PASSPHRASE        1584
 
 #define WIN_FORMS_STRINGS       1600
 #define COPY_FILE               1605

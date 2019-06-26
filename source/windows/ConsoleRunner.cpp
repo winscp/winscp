@@ -2167,8 +2167,10 @@ void __fastcall Usage(TConsole * Console)
     PrintUsageSyntax(Console, FORMAT(L"[mysession] /%s [local_dir] [remote_dir] [/%s]", (LowerCase(SYNCHRONIZE_SWITCH), LowerCase(DEFAULTS_SWITCH))));
     PrintUsageSyntax(Console, FORMAT(L"[mysession] /%s [local_dir] [remote_dir] [/%s]", (LowerCase(KEEP_UP_TO_DATE_SWITCH), LowerCase(DEFAULTS_SWITCH))));
     PrintUsageSyntax(Console, FORMAT(L"[mysession] /%s [path]", (LowerCase(REFRESH_SWITCH))));
-    PrintUsageSyntax(Console, L"[mysession] [/privatekey=<file>] [/hostkey=<fingerprint>]");
-    PrintUsageSyntax(Console, L"[mysession] [/clientcert=<file>] [/certificate=<fingerprint>]");
+    PrintUsageSyntax(Console, FORMAT(L"[mysession] [/privatekey=<file> [/%s=<passphrase>]]", (PassphraseOption)));
+    PrintUsageSyntax(Console, L"[mysession] [/hostkey=<fingerprint>]");
+    PrintUsageSyntax(Console, FORMAT(L"[mysession] [/clientcert=<file> [/%s=<passphrase>]]", (PassphraseOption)));
+    PrintUsageSyntax(Console, L"[mysession] [/certificate=<fingerprint>]");
     PrintUsageSyntax(Console, L"[mysession] [/passive[=on|off]] [/implicit|explicit]");
     PrintUsageSyntax(Console, L"[mysession] [/timeout=<sec>]");
     PrintUsageSyntax(Console, L"[mysession] [/rawsettings setting1=value1 setting2=value2 ...]");
@@ -2210,6 +2212,7 @@ void __fastcall Usage(TConsole * Console)
     RegisterSwitch(SwitchesUsage, L"/hostkey=", USAGE_HOSTKEY);
     RegisterSwitch(SwitchesUsage, L"/clientcert=", USAGE_CLIENTCERT);
     RegisterSwitch(SwitchesUsage, L"/certificate=", USAGE_CERTIFICATE);
+    RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(PassphraseOption) + L"=", USAGE_PASSPHRASE);
     RegisterSwitch(SwitchesUsage, L"/passive=", USAGE_PASSIVE);
     RegisterSwitch(SwitchesUsage, L"/implicit", USAGE_IMPLICIT);
     RegisterSwitch(SwitchesUsage, L"/explicit", USAGE_EXPLICIT);

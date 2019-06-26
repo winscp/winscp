@@ -295,6 +295,7 @@ BEGIN
         USAGE_INFO, "Prints list of supported ciphers and algorithms."
         USAGE_RAWTRANSFERSETTINGS, "Configures any transfer settings using a raw format as in an INI file."
         CUSTOM_COMMAND_PATTERNS_HINT6, "!E expands to serialized connection data of current session"
+        USAGE_PASSPHRASE, "A passphrase for an encrypted private key or a client certificate"
 
         WIN_FORMS_STRINGS, "WIN_FORMS_STRINGS"
         COPY_FILE, "%s file '%s' to %s:"
