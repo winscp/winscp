@@ -5760,6 +5760,11 @@ void __fastcall TTerminal::DoSynchronizeCollectFile(const UnicodeString FileName
 {
   TSynchronizeData * Data = static_cast<TSynchronizeData *>(Param);
 
+  if (Data->Options != NULL)
+  {
+    Data->Options->Files++;
+  }
+
   UnicodeString LocalFileName = ChangeFileName(Data->CopyParam, File->FileName, osRemote, false);
   UnicodeString FullRemoteFileName = UnixExcludeTrailingBackslash(File->FullFileName);
   if (DoAllowRemoteFileTransfer(File, Data->CopyParam, true) &&
@@ -6211,8 +6216,8 @@ void __fastcall TTerminal::DoSynchronizeProgress(const TSynchronizeData & Data,
   if (Data.OnSynchronizeDirectory != NULL)
   {
     bool Continue = true;
-    Data.OnSynchronizeDirectory(Data.LocalDirectory, Data.RemoteDirectory,
-      Continue, Collect);
+    Data.OnSynchronizeDirectory(
+      Data.LocalDirectory, Data.RemoteDirectory, Continue, Collect, Data.Options);
 
     if (!Continue)
     {

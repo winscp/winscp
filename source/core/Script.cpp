@@ -2394,8 +2394,8 @@ void __fastcall TManagementScript::TerminalOperationFinished(
 }
 //---------------------------------------------------------------------------
 void __fastcall TManagementScript::TerminalSynchronizeDirectory(
-  const UnicodeString LocalDirectory, const UnicodeString RemoteDirectory,
-  bool & Continue, bool Collect)
+  const UnicodeString & LocalDirectory, const UnicodeString & RemoteDirectory,
+  bool & Continue, bool Collect, const TSynchronizeOptions *)
 {
   int SynchronizeMode = FSynchronizeMode;
   if (FKeepingUpToDate)

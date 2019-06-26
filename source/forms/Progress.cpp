@@ -325,7 +325,7 @@ void __fastcall TProgressForm::UpdateControls()
     if (FData.TotalSizeSet)
     {
       UnicodeString TimeLeftCaption;
-      if (SecondsBetween(FData.StartTime, Now()) >= 3)
+      if (CanShowTimeEstimate(FData.StartTime))
       {
         TDateTime TimeLeft;
         if (SynchronizeProgress != NULL)

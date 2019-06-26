@@ -27,6 +27,7 @@
 #include <Vcl.ScreenTips.hpp>
 #include <HistoryComboBox.hpp>
 #include <vssym32.h>
+#include <DateUtils.hpp>
 
 #include "Animations96.h"
 #include "Animations120.h"
@@ -2109,4 +2110,9 @@ void __fastcall FindComponentClass(
   {
     ComponentClass = __classid(TUIStateAwareComboBox);
   }
+}
+//---------------------------------------------------------------------------
+bool CanShowTimeEstimate(TDateTime StartTime)
+{
+  return (SecondsBetween(StartTime, Now()) >= 3);
 }

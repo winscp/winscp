@@ -850,28 +850,35 @@ void __fastcall TCustomScpExplorerForm::SetTaskbarListProgressState(TBPFLAG Flag
   FTaskbarList->SetProgressState(GetMainForm()->Handle, Flags);
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::SetTaskbarListProgressValue(TFileOperationProgressType * ProgressData)
+void __fastcall TCustomScpExplorerForm::SetTaskbarListProgressValue(int Progress)
 {
-  if (!TFileOperationProgressType::IsIndeterminateOperation(ProgressData->Operation))
+  if (Progress >= 0)
   {
-    int OverallProgress;
-    // FProgressForm is null when this is called from SetQueueProgress
-    if ((FProgressForm != NULL) && (FProgressForm->SynchronizeProgress != NULL))
-    {
-      OverallProgress = FProgressForm->SynchronizeProgress->Progress(ProgressData);
-    }
-    else
-    {
-      OverallProgress = ProgressData->OverallProgress();
-    }
-
-    // implies TBPF_NORMAL
-    FTaskbarList->SetProgressValue(GetMainForm()->Handle, OverallProgress, 100);
+    FTaskbarList->SetProgressValue(GetMainForm()->Handle, Progress, 100);
   }
   else
   {
     SetTaskbarListProgressState(TBPF_INDETERMINATE);
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::SetTaskbarListProgressValue(TFileOperationProgressType * ProgressData)
+{
+  int OverallProgress;
+  // FProgressForm is null when this is called from SetQueueProgress
+  if ((FProgressForm != NULL) && (FProgressForm->SynchronizeProgress != NULL))
+  {
+    OverallProgress = FProgressForm->SynchronizeProgress->Progress(ProgressData);
+  }
+  else if (!TFileOperationProgressType::IsIndeterminateOperation(ProgressData->Operation))
+  {
+    OverallProgress = ProgressData->OverallProgress();
+  }
+  else
+  {
+    OverallProgress = -1;
+  }
+  SetTaskbarListProgressValue(OverallProgress);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::SetQueueProgress()
@@ -5417,7 +5424,7 @@ void __fastcall TCustomScpExplorerForm::Synchronize(const UnicodeString LocalDir
   TSynchronizeChecklist * AChecklist = NULL;
   try
   {
-    FSynchronizeProgressForm = new TSynchronizeProgressForm(Application, true);
+    FSynchronizeProgressForm = new TSynchronizeProgressForm(Application, true, -1);
     if (FLAGCLEAR(Params, TTerminal::spDelayProgress))
     {
       FSynchronizeProgressForm->Start();
@@ -5771,13 +5778,32 @@ int __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
 
       try
       {
-        FSynchronizeProgressForm = new TSynchronizeProgressForm(Application, true);
+        UnicodeString SessionKey = Terminal->SessionData->SessionKey;
+        std::unique_ptr<TStrings> DataList(Configuration->LoadDirectoryStatisticsCache(SessionKey, RemoteDirectory, CopyParam));
+
+        int Files = -1;
+        if (DataList->Count >= 1)
+        {
+          Files = StrToIntDef(DataList->Strings[0], Files);
+        }
+        else
+        {
+          DataList->Add(UnicodeString());
+        }
+
+        FSynchronizeProgressForm = new TSynchronizeProgressForm(Application, true, Files);
         FSynchronizeProgressForm->Start();
 
         Checklist = Terminal->SynchronizeCollect(LocalDirectory, RemoteDirectory,
           static_cast<TTerminal::TSynchronizeMode>(Mode),
           &CopyParam, Params | TTerminal::spNoConfirmation, TerminalSynchronizeDirectory,
           &SynchronizeOptions);
+
+        if (Terminal->SessionData->CacheDirectories)
+        {
+          DataList->Strings[0] = IntToStr(SynchronizeOptions.Files);
+          Configuration->SaveDirectoryStatisticsCache(SessionKey, RemoteDirectory, CopyParam, DataList.get());
+        }
       }
       __finally
       {
@@ -5834,8 +5860,8 @@ int __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::TerminalSynchronizeDirectory(
-  const UnicodeString LocalDirectory, const UnicodeString RemoteDirectory,
-  bool & Continue, bool Collect)
+  const UnicodeString & LocalDirectory, const UnicodeString & RemoteDirectory,
+  bool & Continue, bool Collect, const TSynchronizeOptions * Options)
 {
   if (Collect)
   {
@@ -5844,7 +5870,8 @@ void __fastcall TCustomScpExplorerForm::TerminalSynchronizeDirectory(
     {
       FSynchronizeProgressForm->Start();
     }
-    FSynchronizeProgressForm->SetData(LocalDirectory, RemoteDirectory, Continue);
+    int CompareProgress = FSynchronizeProgressForm->SetData(LocalDirectory, RemoteDirectory, Options->Files, Continue);
+    SetTaskbarListProgressValue(CompareProgress);
   }
   else
   {

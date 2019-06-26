@@ -61,6 +61,7 @@ void LoadBrowserDocument(TWebBrowserEx * WebBrowser, const UnicodeString & Docum
 TComponent * __fastcall FindComponentRecursively(TComponent * Root, const UnicodeString & Name);
 void __fastcall GetInstrutionsTheme(
   TColor & MainInstructionColor, HFONT & MainInstructionFont, HFONT & InstructionFont);
+bool CanShowTimeEstimate(TDateTime StartTime);
 //---------------------------------------------------------------------------
 class TLocalCustomCommand : public TFileCustomCommand
 {

@@ -18,6 +18,7 @@ extern const wchar_t * NotAutoSwitchNames;
 enum TAutoSwitch { asOn, asOff, asAuto }; // Has to match PuTTY FORCE_ON, FORCE_OFF, AUTO
 //---------------------------------------------------------------------------
 class TStoredSessionList;
+class TCopyParamType;
 //---------------------------------------------------------------------------
 class TConfiguration : public TObject
 {
@@ -169,6 +170,9 @@ protected:
   static UnicodeString __fastcall PropertyToKey(const UnicodeString & Property);
   virtual void __fastcall DoSave(bool All, bool Explicit);
   UnicodeString __fastcall FormatFingerprintKey(const UnicodeString & SiteKey, const UnicodeString & FingerprintType);
+  THierarchicalStorage * OpenDirectoryStatisticsCache(bool CanCreate);
+  UnicodeString __fastcall GetDirectoryStatisticsCacheKey(
+    const UnicodeString & SessionKey, const UnicodeString & Path, const TCopyParamType & CopyParam);
 
   virtual bool __fastcall GetConfirmOverwriting();
   virtual void __fastcall SetConfirmOverwriting(bool value);
@@ -227,6 +231,10 @@ public:
     TRemoteDirectoryChangesCache * DirectoryChangesCache);
   void __fastcall SaveDirectoryChangesCache(const UnicodeString SessionKey,
     TRemoteDirectoryChangesCache * DirectoryChangesCache);
+  TStrings * __fastcall LoadDirectoryStatisticsCache(
+    const UnicodeString & SessionKey, const UnicodeString & Path, const TCopyParamType & CopyParam);
+  void __fastcall SaveDirectoryStatisticsCache(
+    const UnicodeString & SessionKey, const UnicodeString & Path, const TCopyParamType & CopyParam, TStrings * DataList);
   bool __fastcall ShowBanner(const UnicodeString & SessionKey, const UnicodeString & Banner, unsigned int & Params);
   void __fastcall NeverShowBanner(const UnicodeString & SessionKey, const UnicodeString & Banner);
   void __fastcall SetBannerParams(const UnicodeString & SessionKey, unsigned int Params);

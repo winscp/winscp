@@ -53,8 +53,8 @@ typedef void __fastcall (__closure *TProcessFileEventEx)
 typedef int __fastcall (__closure *TFileOperationEvent)
   (void * Param1, void * Param2);
 typedef void __fastcall (__closure *TSynchronizeDirectory)
-  (const UnicodeString LocalDirectory, const UnicodeString RemoteDirectory,
-   bool & Continue, bool Collect);
+  (const UnicodeString & LocalDirectory, const UnicodeString & RemoteDirectory,
+   bool & Continue, bool Collect, const TSynchronizeOptions * Options);
 typedef void __fastcall (__closure *TUpdatedSynchronizationChecklistItems)(
   const TSynchronizeChecklist::TItemList & Items);
 typedef void __fastcall (__closure *TProcessedSynchronizationChecklistItem)(
@@ -763,6 +763,7 @@ struct TSynchronizeOptions
   ~TSynchronizeOptions();
 
   TStringList * Filter;
+  int Files;
 
   bool __fastcall FilterFind(const UnicodeString & FileName);
   bool __fastcall MatchesFilter(const UnicodeString & FileName);

@@ -438,8 +438,9 @@ protected:
   DYNAMIC void __fastcall DoShow();
   TStrings * __fastcall CreateVisitedDirectories(TOperationSide Side);
   void __fastcall HandleErrorList(TStringList *& ErrorList);
-  void __fastcall TerminalSynchronizeDirectory(const UnicodeString LocalDirectory,
-    const UnicodeString RemoteDirectory, bool & Continue, bool Collect);
+  void __fastcall TerminalSynchronizeDirectory(
+    const UnicodeString & LocalDirectory, const UnicodeString & RemoteDirectory,
+    bool & Continue, bool Collect, const TSynchronizeOptions * Options);
   void __fastcall DoSynchronize(TSynchronizeController * Sender,
     const UnicodeString LocalDirectory, const UnicodeString RemoteDirectory,
     const TCopyParamType & CopyParam, const TSynchronizeParamType & Params,
@@ -623,6 +624,7 @@ protected:
   void __fastcall SetQueueProgress();
   void __fastcall UpdateQueueLabel();
   void __fastcall SetTaskbarListProgressState(TBPFLAG Flags);
+  void __fastcall SetTaskbarListProgressValue(int Progress);
   void __fastcall SetTaskbarListProgressValue(TFileOperationProgressType * ProgressData);
   TTerminal * __fastcall GetSessionTabTerminal(TTabSheet * TabSheet);
   bool __fastcall SessionTabSwitched();

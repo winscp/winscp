@@ -13,6 +13,7 @@
 #include "CoreMain.h"
 #include "Security.h"
 #include "FileMasks.h"
+#include "CopyParam.h"
 #include <shlobj.h>
 #include <System.IOUtils.hpp>
 #include <System.StrUtils.hpp>
@@ -1441,6 +1442,64 @@ void __fastcall TConfiguration::SetRandomSeedFile(UnicodeString value)
       // ignore any error
       DeleteFile(ApiPath(PrevRandomSeedFileName));
     }
+  }
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TConfiguration::GetDirectoryStatisticsCacheKey(
+  const UnicodeString & SessionKey, const UnicodeString & Path, const TCopyParamType & CopyParam)
+{
+  std::unique_ptr<TStringList> RawOptions(new TStringList());
+  RawOptions->Add(SessionKey);
+  RawOptions->Add(UnixExcludeTrailingBackslash(Path));
+
+  TCopyParamType Defaults;
+  TCopyParamType FilterCopyParam;
+  FilterCopyParam.IncludeFileMask = CopyParam.IncludeFileMask;
+  FilterCopyParam.ExcludeHiddenFiles = CopyParam.ExcludeHiddenFiles;
+  FilterCopyParam.ExcludeEmptyDirectories = CopyParam.ExcludeEmptyDirectories;
+
+  std::unique_ptr<TOptionsStorage> OptionsStorage(new TOptionsStorage(RawOptions.get(), true));
+  FilterCopyParam.Save(OptionsStorage.get(), &Defaults);
+
+  UTF8String RawOptionsBuf(RawOptions->CommaText.LowerCase());
+  UnicodeString Result = Sha256(RawOptionsBuf.c_str(), RawOptionsBuf.Length());
+  return Result;
+}
+//---------------------------------------------------------------------------
+THierarchicalStorage * TConfiguration::OpenDirectoryStatisticsCache(bool CanCreate)
+{
+  std::unique_ptr<THierarchicalStorage> Storage(Configuration->CreateConfigStorage());
+  Storage->AccessMode = CanCreate ? smReadWrite : smRead;
+  if (!Storage->OpenSubKey(L"DirectoryStatisticsCache", CanCreate))
+  {
+    Storage.reset(NULL);
+  }
+  return Storage.release();
+}
+//---------------------------------------------------------------------------
+TStrings * __fastcall TConfiguration::LoadDirectoryStatisticsCache(
+  const UnicodeString & SessionKey, const UnicodeString & Path, const TCopyParamType & CopyParam)
+{
+  std::unique_ptr<THierarchicalStorage> Storage(OpenDirectoryStatisticsCache(false));
+  std::unique_ptr<TStringList> Result(new TStringList());
+  if (Storage.get() != NULL)
+  {
+    UnicodeString Key = GetDirectoryStatisticsCacheKey(SessionKey, Path, CopyParam);
+    UnicodeString Buf = Storage->ReadString(Key, UnicodeString());
+    Result->CommaText = Buf;
+  }
+  return Result.release();
+}
+//---------------------------------------------------------------------------
+void __fastcall TConfiguration::SaveDirectoryStatisticsCache(
+  const UnicodeString & SessionKey, const UnicodeString & Path, const TCopyParamType & CopyParam, TStrings * DataList)
+{
+  std::unique_ptr<THierarchicalStorage> Storage(OpenDirectoryStatisticsCache(true));
+  if (Storage.get() != NULL)
+  {
+    UnicodeString Key = GetDirectoryStatisticsCacheKey(SessionKey, Path, CopyParam);
+    UnicodeString Buf = DataList->CommaText;
+    Storage->WriteString(Key, Buf);
   }
 }
 //---------------------------------------------------------------------

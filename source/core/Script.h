@@ -236,8 +236,9 @@ protected:
   void __fastcall FreeTerminal(TTerminal * Terminal);
   void __fastcall PrintProgress(bool First, const UnicodeString Str);
   bool __fastcall QueryCancel();
-  void __fastcall TerminalSynchronizeDirectory(const UnicodeString LocalDirectory,
-    const UnicodeString RemoteDirectory, bool & Continue, bool Collect);
+  void __fastcall TerminalSynchronizeDirectory(
+    const UnicodeString & LocalDirectory, const UnicodeString & RemoteDirectory,
+    bool & Continue, bool Collect, const TSynchronizeOptions * Options);
   void __fastcall DoChangeLocalDirectory(UnicodeString Directory);
   void __fastcall DoClose(TTerminal * Terminal);
   virtual bool __fastcall HandleExtendedException(Exception * E,

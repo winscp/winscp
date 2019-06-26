@@ -15,6 +15,7 @@
 #include "TBX.hpp"
 #include <Vcl.ImgList.hpp>
 #include <GUITools.h>
+#include <Vcl.ComCtrls.hpp>
 //---------------------------------------------------------------------------
 class TSynchronizeProgressForm : public TForm
 {
@@ -24,7 +25,7 @@ __published:
   TPathLabel *RemoteDirectoryLabel;
   TPathLabel *LocalDirectoryLabel;
   TLabel *StartTimeLabel;
-  TLabel *Label4;
+  TLabel *StartTimeLabelLabel;
   TLabel *Label3;
   TLabel *TimeElapsedLabel;
   TTimer *UpdateTimer;
@@ -39,26 +40,29 @@ __published:
   TPngImageList *ImageList120;
   TPngImageList *ImageList144;
   TPngImageList *ImageList192;
+  TProgressBar *OperationProgress;
+  TLabel *TimeLeftLabelLabel;
+  TLabel *TimeLeftLabel;
   void __fastcall UpdateTimerTimer(TObject *Sender);
   void __fastcall MinimizeItemClick(TObject *Sender);
   void __fastcall CancelItemClick(TObject *Sender);
 
 public:
-  __fastcall TSynchronizeProgressForm(TComponent * Owner, bool AllowMinimize);
+  __fastcall TSynchronizeProgressForm(TComponent * Owner, bool AllowMinimize, int Files);
   virtual __fastcall ~TSynchronizeProgressForm();
 
   void __fastcall Start();
-  void __fastcall SetData(const UnicodeString LocalDirectory,
-    const UnicodeString RemoteDirectory, bool & Continue);
+  int __fastcall SetData(
+    const UnicodeString & LocalDirectory, const UnicodeString & RemoteDirectory, int Progress, bool & Continue);
 
   __property bool Started = { read = FStarted };
 
 protected:
   virtual void __fastcall Dispatch(void * Message);
+  int __fastcall CalculateProgress();
 
 private:
   TDateTime FStartTime;
-  TDateTime FElapsed;
   bool FStarted;
   bool FCanceled;
   void * FShowAsModalStorage;

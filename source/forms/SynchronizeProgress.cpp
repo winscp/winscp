@@ -23,14 +23,20 @@
 #endif
 //---------------------------------------------------------------------------
 // Used for comparing only
-__fastcall TSynchronizeProgressForm::TSynchronizeProgressForm(TComponent * Owner, bool AllowMinimize)
+__fastcall TSynchronizeProgressForm::TSynchronizeProgressForm(TComponent * Owner, bool AllowMinimize, int Files)
   : TForm(Owner)
 {
   FStarted = false;
   FCanceled = false;
-  FElapsed = EncodeTimeVerbose(0, 0, 0, 0);
   FShowAsModalStorage = NULL;
   FMinimizedByMe = false;
+  bool KnowsTotalFiles = (Files >= 0);
+  OperationProgress->Style = (KnowsTotalFiles ? pbstNormal : pbstMarquee);
+  OperationProgress->Max = (KnowsTotalFiles ? Files : 1);
+  TimeLeftLabelLabel->Visible = KnowsTotalFiles;
+  TimeLeftLabel->Visible = KnowsTotalFiles;
+  StartTimeLabelLabel->Visible = !KnowsTotalFiles;
+  StartTimeLabel->Visible = !KnowsTotalFiles;
   UseSystemSettings(this);
   HideComponentsPanel(this);
   SelectScaledImageList(ImageList);
@@ -66,7 +72,8 @@ void __fastcall TSynchronizeProgressForm::Start()
   FStartTime = Now();
   UpdateTimer->Enabled = true;
   StartTimeLabel->Caption = FStartTime.TimeString();
-  Caption = FormatFormCaption(this, LoadStr(SYNCHRONIZE_PROGRESS_COMPARE));
+  OperationProgress->Position = OperationProgress->Min;
+  UpdateControls();
   if (!IsApplicationMinimized())
   {
     // Do not show the progress when the application is minimized,
@@ -82,25 +89,56 @@ void __fastcall TSynchronizeProgressForm::Start()
   FFrameAnimation.Start();
 }
 //---------------------------------------------------------------------------
-void __fastcall TSynchronizeProgressForm::SetData(const UnicodeString LocalDirectory,
-  const UnicodeString RemoteDirectory, bool & Continue)
+int __fastcall TSynchronizeProgressForm::SetData(
+  const UnicodeString & LocalDirectory, const UnicodeString & RemoteDirectory, int Progress, bool & Continue)
 {
   DebugAssert(FStarted);
   LocalDirectoryLabel->Caption = LocalDirectory;
   RemoteDirectoryLabel->Caption = RemoteDirectory;
+  OperationProgress->Position = Progress;
   Continue = !FCanceled;
 
   UpdateControls();
   Application->ProcessMessages();
+  return CalculateProgress();
+}
+//---------------------------------------------------------------------------
+int __fastcall TSynchronizeProgressForm::CalculateProgress()
+{
+  return ((OperationProgress->Style == pbstMarquee) ? -1 : ((OperationProgress->Position * 100) / OperationProgress->Max));
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeProgressForm::UpdateControls()
 {
+  TDateTime Elapsed;
+  UnicodeString ACaption = FormatFormCaption(this, LoadStr(SYNCHRONIZE_PROGRESS_COMPARE));
   if (FStarted)
   {
-    FElapsed = Now() - FStartTime;
+    Elapsed = Now() - FStartTime;
+    int Progress = CalculateProgress();
+    if (Progress >= 0)
+    {
+      ACaption = FORMAT(L"%d%% %s", (Progress, ACaption));
+    }
   }
-  TimeElapsedLabel->Caption = FormatDateTimeSpan(Configuration->TimeFormat, FElapsed);
+  else
+  {
+    Elapsed = EncodeTimeVerbose(0, 0, 0, 0);
+  }
+  Caption = ACaption;
+  TimeElapsedLabel->Caption = FormatDateTimeSpan(Configuration->TimeFormat, Elapsed);
+  UnicodeString TimeLeftCaption;
+  int Position = OperationProgress->Position;
+  if (FStarted && CanShowTimeEstimate(FStartTime) && (Position > 0))
+  {
+    TDateTime TimeLeft = TDateTime(double(double(Elapsed) * (OperationProgress->Max - Position) / Position));
+    TimeLeftCaption = FormatDateTimeSpan(Configuration->TimeFormat, TimeLeft);
+  }
+  else
+  {
+    TimeLeftCaption = LoadStr(PROGRESS_TIME_LEFT_CALCULATING);
+  }
+  TimeLeftLabel->Caption = TimeLeftCaption;
   CancelItem->Enabled = !FCanceled;
 }
 //---------------------------------------------------------------------------
