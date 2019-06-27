@@ -31,6 +31,9 @@ public:
   // To distinguish sessions that were explicitly disconnected and
   // should not be reconnected when their tab is activated.
   bool Disconnected;
+  // Sessions that should not close when they fail to connect
+  // (i.e. those that were ever connected or were opened as a part of a workspace)
+  bool Permanent;
 };
 //---------------------------------------------------------------------------
 class TTerminalManager : public TTerminalList

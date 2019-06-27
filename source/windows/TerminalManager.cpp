@@ -213,8 +213,16 @@ TManagedTerminal * __fastcall TTerminalManager::NewTerminals(TList * DataList)
   TManagedTerminal * Result = NULL;
   for (int Index = 0; Index < DataList->Count; Index++)
   {
-    TManagedTerminal * Terminal =
-      DoNewTerminal(reinterpret_cast<TSessionData *>(DataList->Items[Index]));
+    TSessionData * Data = reinterpret_cast<TSessionData *>(DataList->Items[Index]);
+    TManagedTerminal * Terminal = DoNewTerminal(Data);
+    // When opening workspace/folder, keep the sessions open, even if they fail to connect.
+    // We cannot detect a folder here, so we "guess" it by a session set size.
+    // After all, no one will have a folder with a one session only (while a workspace with one session is likely).
+    // And when when opening a folder with a one session only, it's not that big problem, if we treat it the same way
+    // as when opening the session only.
+    // Also closing a workspace session will remove the session from the workspace.
+    // While closing a folder session won't remove the session from the folder.
+    Terminal->Permanent = Data->IsWorkspace || (DataList->Count > 1);
     if (Index == 0)
     {
       Result = Terminal;
@@ -327,6 +335,7 @@ void __fastcall TTerminalManager::DoConnectTerminal(TTerminal * Terminal, bool R
     if (Terminal->Active && (ManagedTerminal != NULL))
     {
       ManagedTerminal->ReopenStart = 0;
+      ManagedTerminal->Permanent = true;
     }
   }
 
@@ -407,7 +416,14 @@ bool __fastcall TTerminalManager::ConnectActiveTerminalImpl(bool Reopen)
 
   if (Action == tpFree)
   {
-    DisconnectActiveTerminal();
+    if (ActiveTerminal->Permanent)
+    {
+      DisconnectActiveTerminal();
+    }
+    else
+    {
+      FreeActiveTerminal();
+    }
   }
 
   return Result;
