@@ -1093,14 +1093,13 @@ int __fastcall Execute()
               bool CanStart;
               if (DataList->Count > 0)
               {
-                TTerminal * Terminal = TerminalManager->NewTerminals(DataList.get());
+                TManagedTerminal * Terminal = TerminalManager->NewTerminals(DataList.get());
                 if (!DownloadFile.IsEmpty())
                 {
                   Terminal->AutoReadDirectory = false;
                   DownloadFile = UnixIncludeTrailingBackslash(Terminal->SessionData->RemoteDirectory) + DownloadFile;
                   Terminal->SessionData->RemoteDirectory = L"";
-                  TManagedTerminal * ManagedTerminal = DebugNotNull(dynamic_cast<TManagedTerminal *>(Terminal));
-                  ManagedTerminal->StateData->RemoteDirectory = Terminal->SessionData->RemoteDirectory;
+                  Terminal->StateData->RemoteDirectory = Terminal->SessionData->RemoteDirectory;
                 }
                 TerminalManager->ActiveTerminal = Terminal;
                 CanStart = (TerminalManager->Count > 0);

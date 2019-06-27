@@ -246,20 +246,18 @@ void __fastcall TScpCommanderForm::StoreParams()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TScpCommanderForm::UpdateTerminal(TTerminal * Terminal)
+void __fastcall TScpCommanderForm::UpdateTerminal(TManagedTerminal * Terminal)
 {
   DebugAssert(!IsLocalBrowserMode());
   TCustomScpExplorerForm::UpdateTerminal(Terminal);
 
-  TManagedTerminal * ManagedTerminal = dynamic_cast<TManagedTerminal *>(Terminal);
-  DebugAssert(ManagedTerminal != NULL);
   DebugAssert(LocalDirView != NULL);
 
-  SAFE_DESTROY(ManagedTerminal->LocalExplorerState);
+  SAFE_DESTROY(Terminal->LocalExplorerState);
 
   if (WinConfiguration->PreservePanelState)
   {
-    ManagedTerminal->LocalExplorerState = LocalDirView->SaveState();
+    Terminal->LocalExplorerState = LocalDirView->SaveState();
   }
 }
 //---------------------------------------------------------------------------
@@ -528,15 +526,12 @@ void __fastcall TScpCommanderForm::TerminalChanged(bool Replaced)
     // do not attempt to select previously selected directory
     LocalDirView->ContinueSession(false);
 
-    TManagedTerminal * ManagedTerminal = dynamic_cast<TManagedTerminal *>(Terminal);
-    DebugAssert(ManagedTerminal != NULL);
-
     // reset home directory
     LocalDirView->HomeDirectory = L"";
 
     if (FFirstTerminal || !WinConfiguration->ScpCommander.PreserveLocalDirectory)
     {
-      UnicodeString LocalDirectory = ManagedTerminal->StateData->LocalDirectory;
+      UnicodeString LocalDirectory = Terminal->StateData->LocalDirectory;
 
       if (!LocalDirectory.IsEmpty())
       {
@@ -564,16 +559,16 @@ void __fastcall TScpCommanderForm::TerminalChanged(bool Replaced)
     if (WinConfiguration->PreservePanelState &&
         !WinConfiguration->ScpCommander.PreserveLocalDirectory)
     {
-      if (ManagedTerminal->LocalExplorerState != NULL)
+      if (Terminal->LocalExplorerState != NULL)
       {
-        LocalDirView->RestoreState(ManagedTerminal->LocalExplorerState);
+        LocalDirView->RestoreState(Terminal->LocalExplorerState);
       }
       else
       {
         LocalDirView->ClearState();
       }
 
-      NonVisualDataModule->SynchronizeBrowsingAction->Checked = ManagedTerminal->StateData->SynchronizeBrowsing;
+      NonVisualDataModule->SynchronizeBrowsingAction->Checked = Terminal->StateData->SynchronizeBrowsing;
     }
   }
 }

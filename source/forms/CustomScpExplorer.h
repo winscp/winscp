@@ -49,6 +49,7 @@ struct TEditedFileData;
 class ITaskbarList3;
 struct TSynchronizeParams;
 class TBookmark;
+class TManagedTerminal;
 //---------------------------------------------------------------------------
 enum TActionAllowed { aaShortCut, aaUpdate, aaExecute };
 enum TActionFlag { afLocal = 1, afRemote = 2, afExplorer = 4 , afCommander = 8 };
@@ -208,7 +209,7 @@ __published:
   void __fastcall RemoteDirViewResize(TObject *Sender);
 
 private:
-  TTerminal * FTerminal;
+  TManagedTerminal * FTerminal;
   TTerminalQueue * FQueue;
   TTerminalQueueStatus * FQueueStatus;
   TCriticalSection * FQueueStatusSection;
@@ -226,7 +227,7 @@ private:
   UnicodeString FClipboardFakeDirectory;
   std::unique_ptr<TObjectList> FClipboardFakeMonitors;
   std::unique_ptr<TDragDropFilesEx> FClipboardDragDropFilesEx;
-  TTerminal * FClipboardTerminal;
+  TManagedTerminal * FClipboardTerminal;
   std::unique_ptr<TStrings> FClipboardFileList;
   TStrings * FDelayedDeletionList;
   TTimer * FDelayedDeletionTimer;
@@ -282,8 +283,8 @@ private:
 
   bool __fastcall GetEnableFocusedOperation(TOperationSide Side, int FilesOnly);
   bool __fastcall GetEnableSelectedOperation(TOperationSide Side, int FilesOnly);
-  void __fastcall SetTerminal(TTerminal * value);
-  void __fastcall DoSetTerminal(TTerminal * value, bool Replace);
+  void __fastcall SetTerminal(TManagedTerminal * value);
+  void __fastcall DoSetTerminal(TManagedTerminal * value, bool Replace);
   void __fastcall SetQueue(TTerminalQueue * value);
   void __fastcall TransferListChange(TObject * Sender);
   void __fastcall TransferListDrawItem(TTBXCustomList * Sender, TCanvas * ACanvas,
@@ -300,7 +301,7 @@ private:
   void __fastcall AddQueueItem(TTerminalQueue * Queue, TTransferDirection Direction,
     TStrings * FileList, const UnicodeString TargetDirectory,
     const TGUICopyParamType & CopyParam, int Params);
-  void __fastcall AddQueueItem(TTerminalQueue * Queue, TQueueItem * QueueItem, TTerminal * Terminal);
+  void __fastcall AddQueueItem(TTerminalQueue * Queue, TQueueItem * QueueItem, TManagedTerminal * Terminal);
   void __fastcall ClearTransferSourceSelection(TTransferDirection Direction);
   void __fastcall SessionsDDDragOver(int KeyState, const TPoint & Point, int & Effect);
   void __fastcall SessionsDDProcessDropped(TObject * Sender, int KeyState, const TPoint & Point, int Effect);
@@ -368,13 +369,13 @@ protected:
     UnicodeString & TargetDirectory, TGUICopyParamType & CopyParam, bool Confirm,
     bool DragDrop, int Options);
   virtual void __fastcall CopyParamDialogAfter(TTransferDirection Direction, bool Temp, const UnicodeString & TargetDirectory);
-  virtual bool __fastcall RemoteTransferDialog(TTerminal *& Session,
+  virtual bool __fastcall RemoteTransferDialog(TManagedTerminal *& Session,
     TStrings * FileList, UnicodeString & Target, UnicodeString & FileMask, bool & DirectCopy,
     bool NoConfirmation, bool Move);
   virtual void __fastcall CreateParams(TCreateParams & Params);
   void __fastcall DeleteFiles(TOperationSide Side, TStrings * FileList, bool Alternative);
   bool __fastcall RemoteTransferFiles(TStrings * FileList, bool NoConfirmation,
-    bool Move, TTerminal * Session);
+    bool Move, TManagedTerminal * Session);
   virtual void __fastcall DoDirViewExecFile(TObject * Sender, TListItem * Item, bool & AllowExec);
   virtual TControl * __fastcall GetComponent(Byte Component);
   bool __fastcall GetComponentVisible(Byte Component);
@@ -626,7 +627,7 @@ protected:
   void __fastcall SetTaskbarListProgressState(TBPFLAG Flags);
   void __fastcall SetTaskbarListProgressValue(int Progress);
   void __fastcall SetTaskbarListProgressValue(TFileOperationProgressType * ProgressData);
-  TTerminal * __fastcall GetSessionTabTerminal(TTabSheet * TabSheet);
+  TManagedTerminal * __fastcall GetSessionTabTerminal(TTabSheet * TabSheet);
   bool __fastcall SessionTabSwitched();
   void __fastcall RestoreApp();
   void __fastcall GoToQueue();
@@ -734,7 +735,7 @@ public:
   virtual void __fastcall CompareDirectories();
   void __fastcall ExecuteCurrentFile();
   virtual void __fastcall OpenConsole(UnicodeString Command = L"");
-  virtual void __fastcall UpdateTerminal(TTerminal * Terminal);
+  virtual void __fastcall UpdateTerminal(TManagedTerminal * Terminal);
   virtual void __fastcall SynchronizeDirectories();
   virtual void __fastcall FullSynchronizeDirectories() = 0;
   virtual void __fastcall ExploreLocalDirectory();
@@ -770,7 +771,7 @@ public:
   void __fastcall ShowExtendedException(TTerminal * Terminal, Exception * E);
   void __fastcall InactiveTerminalException(TTerminal * Terminal, Exception * E);
   void __fastcall TerminalReady();
-  void __fastcall QueueEvent(TTerminal * Terminal, TTerminalQueue * Queue, TQueueEvent Event);
+  void __fastcall QueueEvent(TManagedTerminal * Terminal, TTerminalQueue * Queue, TQueueEvent Event);
   void __fastcall QueueEmptyNoteClicked(TObject * Sender);
   bool __fastcall DoSynchronizeDirectories(UnicodeString & LocalDirectory,
     UnicodeString & RemoteDirectory, bool UseDefaults);
@@ -812,7 +813,7 @@ public:
   bool __fastcall CanPrivateKeyUpload();
   void __fastcall PrivateKeyUpload();
   bool __fastcall IsComponentPossible(Byte Component);
-  void __fastcall ReplaceTerminal(TTerminal * value);
+  void __fastcall ReplaceTerminal(TManagedTerminal * value);
 
   __property bool ComponentVisible[Byte Component] = { read = GetComponentVisible, write = SetComponentVisible };
   __property bool EnableFocusedOperation[TOperationSide Side] = { read = GetEnableFocusedOperation, index = 0 };
@@ -820,7 +821,7 @@ public:
   __property bool EnableFocusedFileOperation[TOperationSide Side] = { read = GetEnableFocusedOperation, index = 1 };
   __property bool EnableSelectedFileOperation[TOperationSide Side] = { read = GetEnableSelectedOperation, index = 1 };
   __property bool HasDirView[TOperationSide Side] = { read = GetHasDirView };
-  __property TTerminal * Terminal = { read = FTerminal, write = SetTerminal };
+  __property TManagedTerminal * Terminal = { read = FTerminal, write = SetTerminal };
   __property TTerminalQueue * Queue = { read = FQueue, write = SetQueue };
   __property TColor SessionColor = { read = FSessionColor, write = SetSessionColor };
 };

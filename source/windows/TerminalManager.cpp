@@ -145,9 +145,19 @@ TTerminalQueue * __fastcall TTerminalManager::NewQueue(TTerminal * Terminal)
   return Queue;
 }
 //---------------------------------------------------------------------------
-TTerminal * __fastcall TTerminalManager::CreateTerminal(TSessionData * Data)
+TManagedTerminal * __fastcall TTerminalManager::CreateManagedTerminal(TSessionData * Data)
 {
   return new TManagedTerminal(Data, Configuration);
+}
+//---------------------------------------------------------------------------
+TTerminal * __fastcall TTerminalManager::CreateTerminal(TSessionData * Data)
+{
+  return CreateManagedTerminal(Data);
+}
+//---------------------------------------------------------------------------
+TManagedTerminal * __fastcall TTerminalManager::GetTerminal(int Index)
+{
+  return DebugNotNull(dynamic_cast<TManagedTerminal *>(TTerminalList::Terminals[Index]));
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::SetupTerminal(TTerminal * Terminal)
@@ -164,9 +174,9 @@ void __fastcall TTerminalManager::SetupTerminal(TTerminal * Terminal)
   Terminal->OnCustomCommand = TerminalCustomCommand;
 }
 //---------------------------------------------------------------------------
-TTerminal * __fastcall TTerminalManager::DoNewTerminal(TSessionData * Data)
+TManagedTerminal * __fastcall TTerminalManager::DoNewTerminal(TSessionData * Data)
 {
-  TTerminal * Terminal = TTerminalList::NewTerminal(Data);
+  TManagedTerminal * Terminal = DebugNotNull(dynamic_cast<TManagedTerminal *>(TTerminalList::NewTerminal(Data)));
   try
   {
     FQueues->Add(NewQueue(Terminal));
@@ -193,12 +203,17 @@ TTerminal * __fastcall TTerminalManager::NewTerminal(TSessionData * Data)
   return Terminal;
 }
 //---------------------------------------------------------------------------
-TTerminal * __fastcall TTerminalManager::NewTerminals(TList * DataList)
+TManagedTerminal * __fastcall TTerminalManager::NewManagedTerminal(TSessionData * Data)
 {
-  TTerminal * Result = NULL;
+  return DebugNotNull(dynamic_cast<TManagedTerminal *>(NewTerminal(Data)));
+}
+//---------------------------------------------------------------------------
+TManagedTerminal * __fastcall TTerminalManager::NewTerminals(TList * DataList)
+{
+  TManagedTerminal * Result = NULL;
   for (int Index = 0; Index < DataList->Count; Index++)
   {
-    TTerminal * Terminal =
+    TManagedTerminal * Terminal =
       DoNewTerminal(reinterpret_cast<TSessionData *>(DataList->Items[Index]));
     if (Index == 0)
     {
@@ -274,16 +289,16 @@ void __fastcall TTerminalManager::DoConnectTerminal(TTerminal * Terminal, bool R
         if (!AdHoc && (DebugAlwaysTrue(Terminal == FActiveTerminal)))
         {
           // terminal was abandoned, must create a new one to replace it
-          Terminal = CreateTerminal(new TSessionData(L""));
+          Terminal = ManagedTerminal = CreateManagedTerminal(new TSessionData(L""));
           SetupTerminal(Terminal);
           OwnsObjects = false;
           Items[ActiveTerminalIndex] = Terminal;
           OwnsObjects = true;
-          FActiveTerminal = Terminal;
+          FActiveTerminal = ManagedTerminal;
           // Can be NULL, when opening the first session from command-line
           if (FScpExplorer != NULL)
           {
-            FScpExplorer->ReplaceTerminal(Terminal);
+            FScpExplorer->ReplaceTerminal(ManagedTerminal);
           }
         }
         // Now we do not have any reference to an abandoned terminal, so we can safely allow the thread
@@ -601,17 +616,17 @@ void __fastcall TTerminalManager::SetScpExplorer(TCustomScpExplorerForm * value)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminalManager::SetActiveTerminal(TTerminal * value)
+void __fastcall TTerminalManager::SetActiveTerminal(TManagedTerminal * value)
 {
   DoSetActiveTerminal(value, false);
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminalManager::SetActiveTerminalWithAutoReconnect(TTerminal * value)
+void __fastcall TTerminalManager::SetActiveTerminalWithAutoReconnect(TManagedTerminal * value)
 {
   DoSetActiveTerminal(value, true);
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminalManager::DoSetActiveTerminal(TTerminal * value, bool AutoReconnect)
+void __fastcall TTerminalManager::DoSetActiveTerminal(TManagedTerminal * value, bool AutoReconnect)
 {
   if (ActiveTerminal != value)
   {
@@ -1303,7 +1318,7 @@ TStrings * __fastcall TTerminalManager::GetTerminalList()
   FTerminalList->Clear();
   for (int i = 0; i < Count; i++)
   {
-    TTerminal * Terminal = Terminals[i];
+    TManagedTerminal * Terminal = Terminals[i];
     UnicodeString Name = GetTerminalTitle(Terminal, true);
     FTerminalList->AddObject(Name, Terminal);
   }
@@ -1563,7 +1578,7 @@ void __fastcall TTerminalManager::Idle(bool SkipCurrentTerminal)
       // the session may not exist anymore
       if (Index >= 0)
       {
-        TTerminal * Terminal = Terminals[Index];
+        TManagedTerminal * Terminal = Terminals[Index];
         // we can hardly have a queue event without explorer
         DebugAssert(ScpExplorer != NULL);
         if (ScpExplorer != NULL)

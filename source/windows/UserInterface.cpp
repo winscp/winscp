@@ -292,11 +292,10 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
         if (ForActiveTerminal)
         {
           int SessionReopenTimeout = 0;
-          TManagedTerminal * ManagedTerminal = dynamic_cast<TManagedTerminal *>(Manager->ActiveTerminal);
-          if ((ManagedTerminal != NULL) &&
+          if (DebugAlwaysTrue(Manager->ActiveTerminal != NULL) &&
               ((Configuration->SessionReopenTimeout == 0) ||
-               ((double)ManagedTerminal->ReopenStart == 0) ||
-               (int(double(Now() - ManagedTerminal->ReopenStart) * MSecsPerDay) < Configuration->SessionReopenTimeout)))
+               ((double)Manager->ActiveTerminal->ReopenStart == 0) ||
+               (int(double(Now() - Manager->ActiveTerminal->ReopenStart) * MSecsPerDay) < Configuration->SessionReopenTimeout)))
           {
             SessionReopenTimeout = GUIConfiguration->SessionReopenAutoIdle;
           }

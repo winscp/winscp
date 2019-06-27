@@ -607,7 +607,7 @@ public:
   virtual bool __fastcall AllowedAction(TAction * Action, TActionAllowed Allowed);
   virtual void __fastcall ChangePath(TOperationSide Side);
   virtual void __fastcall CompareDirectories();
-  virtual void __fastcall UpdateTerminal(TTerminal * Terminal);
+  virtual void __fastcall UpdateTerminal(TManagedTerminal * Terminal);
   virtual void __fastcall SynchronizeDirectories();
   virtual void __fastcall FullSynchronizeDirectories();
   virtual void __fastcall StoreParams();

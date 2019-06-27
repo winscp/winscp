@@ -42,8 +42,8 @@ public:
   __fastcall TTerminalManager();
   __fastcall ~TTerminalManager();
 
-  virtual TTerminal * __fastcall NewTerminal(TSessionData * Data);
-  TTerminal * __fastcall NewTerminals(TList * DataList);
+  TManagedTerminal * __fastcall NewManagedTerminal(TSessionData * Data);
+  TManagedTerminal * __fastcall NewTerminals(TList * DataList);
   virtual void __fastcall FreeTerminal(TTerminal * Terminal);
   void __fastcall Move(TTerminal * Source, TTerminal * Target);
   void __fastcall DisconnectActiveTerminal();
@@ -51,7 +51,7 @@ public:
   void __fastcall FreeActiveTerminal();
   void __fastcall CycleTerminals(bool Forward);
   bool __fastcall ConnectTerminal(TTerminal * Terminal);
-  void __fastcall SetActiveTerminalWithAutoReconnect(TTerminal * value);
+  void __fastcall SetActiveTerminalWithAutoReconnect(TManagedTerminal * value);
   void __fastcall UpdateAppTitle();
   bool __fastcall CanOpenInPutty();
   void __fastcall OpenInPutty();
@@ -69,22 +69,24 @@ public:
   bool __fastcall UploadPublicKey(TTerminal * Terminal, TSessionData * Data, UnicodeString & FileName);
 
   __property TCustomScpExplorerForm * ScpExplorer = { read = FScpExplorer, write = SetScpExplorer };
-  __property TTerminal * ActiveTerminal = { read = FActiveTerminal, write = SetActiveTerminal };
+  __property TManagedTerminal * ActiveTerminal = { read = FActiveTerminal, write = SetActiveTerminal };
   __property TTerminalQueue * ActiveQueue = { read = GetActiveQueue };
   __property int ActiveTerminalIndex = { read = GetActiveTerminalIndex, write = SetActiveTerminalIndex };
   __property TStrings * TerminalList = { read = GetTerminalList };
   __property TNotifyEvent OnLastTerminalClosed = { read = FOnLastTerminalClosed, write = FOnLastTerminalClosed };
   __property TNotifyEvent OnTerminalListChanged = { read = FOnTerminalListChanged, write = FOnTerminalListChanged };
   __property TTerminal * LocalTerminal = { read = FLocalTerminal };
+  __property TManagedTerminal * Terminals[int Index]  = { read=GetTerminal };
 
 protected:
   virtual TTerminal * __fastcall CreateTerminal(TSessionData * Data);
   void __fastcall DoConnectTerminal(TTerminal * Terminal, bool Reopen, bool AdHoc);
+  virtual TTerminal * __fastcall NewTerminal(TSessionData * Data);
 
 private:
   static TTerminalManager * FInstance;
   TCustomScpExplorerForm * FScpExplorer;
-  TTerminal * FActiveTerminal;
+  TManagedTerminal * FActiveTerminal;
   TTerminal * FLocalTerminal;
   bool FDestroying;
   TTerminalPendingAction FTerminalPendingAction;
@@ -114,8 +116,8 @@ private:
   bool __fastcall ConnectActiveTerminal();
   TTerminalQueue * __fastcall NewQueue(TTerminal * Terminal);
   void __fastcall SetScpExplorer(TCustomScpExplorerForm * value);
-  void __fastcall DoSetActiveTerminal(TTerminal * value, bool AutoReconnect);
-  void __fastcall SetActiveTerminal(TTerminal * value);
+  void __fastcall DoSetActiveTerminal(TManagedTerminal * value, bool AutoReconnect);
+  void __fastcall SetActiveTerminal(TManagedTerminal * value);
   void __fastcall UpdateAll();
   void __fastcall ApplicationException(TObject * Sender, Exception * E);
   void __fastcall ApplicationShowHint(UnicodeString & HintStr, bool & CanShow,
@@ -162,7 +164,7 @@ private:
   void __fastcall UpdateTaskbarList();
   void __fastcall AuthenticateFormCancel(TObject * Sender);
   void __fastcall DoTerminalListChanged();
-  TTerminal * __fastcall DoNewTerminal(TSessionData * Data);
+  TManagedTerminal * __fastcall DoNewTerminal(TSessionData * Data);
   static void __fastcall TerminalThreadIdle(void * Data, TObject * Sender);
   void __fastcall SetQueueConfiguration(TTerminalQueue * Queue);
   void __fastcall ApplicationModalBegin(TObject * Sender);
@@ -175,6 +177,8 @@ private:
   void __fastcall AuthenticatingDone();
   TRemoteFile * __fastcall CheckRights(
     TTerminal * Terminal, const UnicodeString & EntryType, const UnicodeString & FileName, bool & WrongRights);
+  TManagedTerminal * __fastcall CreateManagedTerminal(TSessionData * Data);
+  TManagedTerminal * __fastcall GetTerminal(int Index);
 };
 //---------------------------------------------------------------------------
 #endif

@@ -402,8 +402,8 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(DuplicateSessionAction, HasTerminal)
   UPD(RenameSessionAction, HasTerminal)
   UPD(CloseSessionAction2, (ScpExplorer->Terminal != NULL))
-  UPDEX1(DisconnectSessionAction, HasTerminal, DisconnectSessionAction->Visible = (ScpExplorer->Terminal == NULL) || !dynamic_cast<TManagedTerminal *>(ScpExplorer->Terminal)->Disconnected)
-  UPDEX1(ReconnectSessionAction, (ScpExplorer->Terminal != NULL) && dynamic_cast<TManagedTerminal *>(ScpExplorer->Terminal)->Disconnected, ReconnectSessionAction->Visible = ReconnectSessionAction->Enabled)
+  UPDEX1(DisconnectSessionAction, HasTerminal, DisconnectSessionAction->Visible = (ScpExplorer->Terminal == NULL) || !ScpExplorer->Terminal->Disconnected)
+  UPDEX1(ReconnectSessionAction, (ScpExplorer->Terminal != NULL) && ScpExplorer->Terminal->Disconnected, ReconnectSessionAction->Visible = ReconnectSessionAction->Enabled)
   UPD(SavedSessionsAction2, true)
   UPD(WorkspacesAction, StoredSessions->HasAnyWorkspace())
   UPD(OpenedSessionsAction, HasTerminal)
@@ -1459,7 +1459,7 @@ void __fastcall TNonVisualDataModule::CreateOpenedSessionListMenu(TAction * Acti
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::OpenedSessionItemClick(TObject * Sender)
 {
-  TTerminalManager::Instance()->ActiveTerminal = (TTerminal*)(((TMenuItem *)Sender)->Tag);
+  TTerminalManager::Instance()->ActiveTerminal = (TManagedTerminal*)(((TMenuItem *)Sender)->Tag);
 }
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::CreateEditorListMenu(TTBCustomItem * Menu, bool OnFocused)
