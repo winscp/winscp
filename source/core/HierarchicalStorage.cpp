@@ -15,10 +15,10 @@
 //---------------------------------------------------------------------------
 #define READ_REGISTRY(Method) \
   if (FRegistry->ValueExists(Name)) \
-  try { return FRegistry->Method(Name); } catch(...) { FFailed++; return Default; } \
+  try { return FRegistry->Method(Name); } catch(...) { return Default; } \
   else return Default;
 #define WRITE_REGISTRY(Method) \
-  try { FRegistry->Method(Name, Value); } catch(...) { FFailed++; }
+  try { FRegistry->Method(Name, Value); } catch(...) { }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall MungeStr(const UnicodeString & Str, bool ForceAnsi, bool Value)
 {
@@ -432,7 +432,6 @@ __fastcall TRegistryStorage::TRegistryStorage(const UnicodeString AStorage, HKEY
 //---------------------------------------------------------------------------
 void __fastcall TRegistryStorage::Init()
 {
-  FFailed = 0;
   FRegistry = new TRegistry();
   FRegistry->Access = KEY_READ | FWowMode;
 }
@@ -615,7 +614,6 @@ __int64 __fastcall TRegistryStorage::ReadInt64(const UnicodeString Name, __int64
     }
     catch(...)
     {
-      FFailed++;
     }
   }
   return Result;
@@ -639,7 +637,6 @@ size_t __fastcall TRegistryStorage::ReadBinaryData(const UnicodeString Name,
     catch(...)
     {
       Result = 0;
-      FFailed++;
     }
   }
   else
@@ -682,7 +679,6 @@ void __fastcall TRegistryStorage::WriteInt64(const UnicodeString Name, __int64 V
   }
   catch(...)
   {
-    FFailed++;
   }
 }
 //---------------------------------------------------------------------------
@@ -695,15 +691,7 @@ void __fastcall TRegistryStorage::WriteBinaryData(const UnicodeString Name,
   }
   catch(...)
   {
-    FFailed++;
   }
-}
-//---------------------------------------------------------------------------
-int __fastcall TRegistryStorage::GetFailed()
-{
-  int Result = FFailed;
-  FFailed = 0;
-  return Result;
 }
 //===========================================================================
 __fastcall TCustomIniFileStorage::TCustomIniFileStorage(const UnicodeString Storage, TCustomIniFile * IniFile) :

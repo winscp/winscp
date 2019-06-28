@@ -128,17 +128,13 @@ public:
   virtual void __fastcall GetValueNames(Classes::TStrings* Strings);
 
 protected:
-  int __fastcall GetFailed();
   virtual void __fastcall SetAccessMode(TStorageAccessMode value);
   virtual bool __fastcall DoKeyExists(const UnicodeString SubKey, bool ForceAnsi);
   virtual bool __fastcall DoOpenSubKey(const UnicodeString SubKey, bool CanCreate);
   virtual UnicodeString __fastcall GetSource();
 
-  __property int Failed  = { read=GetFailed, write=FFailed };
-
 private:
   TRegistry * FRegistry;
-  int FFailed;
   REGSAM FWowMode;
 
   void __fastcall Init();
