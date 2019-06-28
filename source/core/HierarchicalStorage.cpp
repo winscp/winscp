@@ -606,16 +606,10 @@ int __fastcall TRegistryStorage::ReadInteger(const UnicodeString Name, int Defau
 //---------------------------------------------------------------------------
 __int64 __fastcall TRegistryStorage::ReadInt64(const UnicodeString Name, __int64 Default)
 {
-  __int64 Result = Default;
-  if (FRegistry->ValueExists(Name))
+  __int64 Result;
+  if (ReadBinaryData(Name, &Result, sizeof(Result)) == 0)
   {
-    try
-    {
-      FRegistry->ReadBinaryData(Name, &Result, sizeof(Result));
-    }
-    catch(...)
-    {
-    }
+    Result = Default;
   }
   return Result;
 }
@@ -674,13 +668,7 @@ void __fastcall TRegistryStorage::WriteInteger(const UnicodeString Name, int Val
 //---------------------------------------------------------------------------
 void __fastcall TRegistryStorage::WriteInt64(const UnicodeString Name, __int64 Value)
 {
-  try
-  {
-    FRegistry->WriteBinaryData(Name, &Value, sizeof(Value));
-  }
-  catch(...)
-  {
-  }
+  WriteBinaryData(Name, &Value, sizeof(Value));
 }
 //---------------------------------------------------------------------------
 void __fastcall TRegistryStorage::WriteBinaryData(const UnicodeString Name,
