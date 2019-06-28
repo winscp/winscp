@@ -422,6 +422,7 @@ __fastcall TRegistryStorage::~TRegistryStorage()
   delete FRegistry;
 };
 //---------------------------------------------------------------------------
+// Used only in OpenSessionInPutty
 bool __fastcall TRegistryStorage::Copy(TRegistryStorage * Storage)
 {
   TRegistry * Registry = Storage->FRegistry;
