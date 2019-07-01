@@ -242,16 +242,6 @@ bool __fastcall THierarchicalStorage::HasSubKeys()
   return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall THierarchicalStorage::HasSubKey(const UnicodeString & SubKey)
-{
-  bool Result = OpenSubKey(SubKey, false);
-  if (Result)
-  {
-    CloseSubKey();
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
 bool __fastcall THierarchicalStorage::KeyExists(const UnicodeString & SubKey)
 {
   return DoKeyExists(SubKey, ForceAnsi);

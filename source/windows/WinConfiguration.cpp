@@ -1502,7 +1502,7 @@ void __fastcall TWinConfiguration::LoadData(THierarchicalStorage * Storage)
     Storage->CloseSubKey();
   }
 
-  if (Storage->HasSubKey(L"CustomCommands"))
+  if (Storage->KeyExists(L"CustomCommands"))
   {
     FCustomCommandList->Load(Storage);
     FCustomCommandsDefaults = false;

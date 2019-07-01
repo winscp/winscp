@@ -23,7 +23,6 @@ public:
   virtual void __fastcall GetSubKeyNames(TStrings* Strings) = 0;
   virtual void __fastcall GetValueNames(TStrings* Strings) = 0;
   bool __fastcall HasSubKeys();
-  bool __fastcall HasSubKey(const UnicodeString & SubKey);
   bool __fastcall KeyExists(const UnicodeString & SubKey);
   virtual bool __fastcall ValueExists(const UnicodeString & Value) = 0;
   virtual void __fastcall RecursiveDeleteSubKey(const UnicodeString & Key);
