@@ -927,7 +927,14 @@ void __fastcall TRemoteFile::SetIsHidden(bool value)
 //---------------------------------------------------------------------------
 Boolean __fastcall TRemoteFile::GetIsDirectory() const
 {
-  return (toupper(Type) == FILETYPE_DIRECTORY);
+  if (IsSymLink && (FLinkedFile != NULL))
+  {
+    return FLinkedFile->IsDirectory;
+  }
+  else
+  {
+    return (toupper(Type) == FILETYPE_DIRECTORY);
+  }
 }
 //---------------------------------------------------------------------------
 Boolean __fastcall TRemoteFile::GetIsParentDirectory() const
@@ -960,8 +967,7 @@ Boolean __fastcall TRemoteFile::GetIsInaccesibleDirectory() const
 //---------------------------------------------------------------------------
 wchar_t __fastcall TRemoteFile::GetType() const
 {
-  if (IsSymLink && FLinkedFile) return FLinkedFile->Type;
-    else return FType;
+  return FType;
 }
 //---------------------------------------------------------------------------
 void __fastcall TRemoteFile::SetType(wchar_t AType)

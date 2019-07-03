@@ -405,7 +405,7 @@ protected:
   {
     FLog->AddIndented(Indent + L"<file>");
     FLog->AddIndented(Indent + FORMAT(L"  <filename value=\"%s\" />", (XmlAttributeEscape(File->FileName))));
-    FLog->AddIndented(Indent + FORMAT(L"  <type value=\"%s\" />", (XmlAttributeEscape(File->Type))));
+    FLog->AddIndented(Indent + FORMAT(L"  <type value=\"%s\" />", (XmlAttributeEscape(towupper(File->Type)))));
     if (!File->IsDirectory)
     {
       FLog->AddIndented(Indent + FORMAT(L"  <size value=\"%s\" />", (IntToStr(File->Size))));
