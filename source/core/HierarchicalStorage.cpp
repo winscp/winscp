@@ -204,6 +204,7 @@ void __fastcall THierarchicalStorage::CloseSubKey()
   {
     FKeyHistory->Delete(FKeyHistory->Count - 1);
   }
+  DoCloseSubKey();
 }
 //---------------------------------------------------------------------------
 void __fastcall THierarchicalStorage::CloseAll()
@@ -226,12 +227,15 @@ void __fastcall THierarchicalStorage::ClearSubKeys()
 //---------------------------------------------------------------------------
 void __fastcall THierarchicalStorage::RecursiveDeleteSubKey(const UnicodeString & Key)
 {
-  if (OpenSubKey(Key, false))
+  if (CanWrite())
   {
-    ClearSubKeys();
-    CloseSubKey();
+    if (OpenSubKey(Key, false))
+    {
+      ClearSubKeys();
+      CloseSubKey();
+    }
+    DoDeleteSubKey(Key);
   }
-  DeleteSubKey(Key);
 }
 //---------------------------------------------------------------------------
 bool __fastcall THierarchicalStorage::HasSubKeys()
@@ -242,9 +246,40 @@ bool __fastcall THierarchicalStorage::HasSubKeys()
   return Result;
 }
 //---------------------------------------------------------------------------
+bool __fastcall THierarchicalStorage::DeleteValue(const UnicodeString & Name)
+{
+  if (CanWrite())
+  {
+    return DoDeleteValue(Name);
+  }
+  else
+  {
+    return false;
+  }
+}
+//---------------------------------------------------------------------------
 bool __fastcall THierarchicalStorage::KeyExists(const UnicodeString & SubKey)
 {
-  return DoKeyExists(SubKey, ForceAnsi);
+  if (CanRead())
+  {
+    return DoKeyExists(SubKey, ForceAnsi);
+  }
+  else
+  {
+    return false;
+  }
+}
+//---------------------------------------------------------------------------
+bool __fastcall THierarchicalStorage::ValueExists(const UnicodeString & Value)
+{
+  if (CanRead())
+  {
+    return DoValueExists(Value);
+  }
+  else
+  {
+    return false;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall THierarchicalStorage::ReadValues(TStrings * Strings, bool MaintainKeys)
@@ -295,18 +330,150 @@ void __fastcall THierarchicalStorage::WriteValues(TStrings * Strings, bool Maint
   }
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall THierarchicalStorage::ReadString(const UnicodeString & Name, const UnicodeString & Default)
+bool __fastcall THierarchicalStorage::CanRead()
 {
-  UnicodeString Result;
-  if (MungeStringValues)
+  return true;
+}
+//---------------------------------------------------------------------------
+void __fastcall THierarchicalStorage::GetSubKeyNames(TStrings * Strings)
+{
+  if (CanRead())
   {
-    Result = UnMungeStr(ReadStringRaw(Name, MungeStr(Default, ForceAnsi, true)));
+    DoGetSubKeyNames(Strings);
   }
   else
   {
-    Result = ReadStringRaw(Name, Default);
+    Strings->Clear();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall THierarchicalStorage::GetValueNames(TStrings * Strings)
+{
+  if (CanRead())
+  {
+    DoGetValueNames(Strings);
+  }
+  else
+  {
+    Strings->Clear();
+  }
+}
+//---------------------------------------------------------------------------
+bool __fastcall THierarchicalStorage::ReadBool(const UnicodeString & Name, bool Default)
+{
+  if (CanRead())
+  {
+    return DoReadBool(Name, Default);
+  }
+  else
+  {
+    return Default;
+  }
+}
+//---------------------------------------------------------------------------
+int __fastcall THierarchicalStorage::ReadInteger(const UnicodeString & Name, int Default)
+{
+  if (CanRead())
+  {
+    return DoReadInteger(Name, Default);
+  }
+  else
+  {
+    return Default;
+  }
+}
+//---------------------------------------------------------------------------
+__int64 __fastcall THierarchicalStorage::ReadInt64(const UnicodeString & Name, __int64 Default)
+{
+  if (CanRead())
+  {
+    return DoReadInt64(Name, Default);
+  }
+  else
+  {
+    return Default;
+  }
+}
+//---------------------------------------------------------------------------
+TDateTime __fastcall THierarchicalStorage::ReadDateTime(const UnicodeString & Name, TDateTime Default)
+{
+  if (CanRead())
+  {
+    return DoReadDateTime(Name, Default);
+  }
+  else
+  {
+    return Default;
+  }
+}
+//---------------------------------------------------------------------------
+double __fastcall THierarchicalStorage::ReadFloat(const UnicodeString & Name, double Default)
+{
+  if (CanRead())
+  {
+    return DoReadFloat(Name, Default);
+  }
+  else
+  {
+    return Default;
+  }
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall THierarchicalStorage::ReadStringRaw(const UnicodeString & Name, const UnicodeString & Default)
+{
+  if (CanRead())
+  {
+    return DoReadStringRaw(Name, Default);
+  }
+  else
+  {
+    return Default;
+  }
+}
+//---------------------------------------------------------------------------
+size_t __fastcall THierarchicalStorage::ReadBinaryData(const UnicodeString & Name, void * Buffer, size_t Size)
+{
+  if (CanRead())
+  {
+    return DoReadBinaryData(Name, Buffer, Size);
+  }
+  else
+  {
+    return 0;
+  }
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall THierarchicalStorage::ReadString(const UnicodeString & Name, const UnicodeString & Default)
+{
+  UnicodeString Result;
+  if (CanRead())
+  {
+    if (MungeStringValues)
+    {
+      Result = UnMungeStr(ReadStringRaw(Name, MungeStr(Default, ForceAnsi, true)));
+    }
+    else
+    {
+      Result = ReadStringRaw(Name, Default);
+    }
+  }
+  else
+  {
+    Result = Default;
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+size_t __fastcall THierarchicalStorage::BinaryDataSize(const UnicodeString & Name)
+{
+  if (CanRead())
+  {
+    return DoBinaryDataSize(Name);
+  }
+  else
+  {
+    return 0;
+  }
 }
 //---------------------------------------------------------------------------
 RawByteString __fastcall THierarchicalStorage::ReadBinaryData(const UnicodeString & Name)
@@ -330,6 +497,61 @@ RawByteString __fastcall THierarchicalStorage::ReadStringAsBinaryData(const Unic
   return Result;
 }
 //---------------------------------------------------------------------------
+bool __fastcall THierarchicalStorage::CanWrite()
+{
+  return true;
+}
+//---------------------------------------------------------------------------
+void __fastcall THierarchicalStorage::WriteBool(const UnicodeString & Name, bool Value)
+{
+  if (CanWrite())
+  {
+    DoWriteBool(Name, Value);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall THierarchicalStorage::WriteStringRaw(const UnicodeString & Name, const UnicodeString & Value)
+{
+  if (CanWrite())
+  {
+    DoWriteStringRaw(Name, Value);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall THierarchicalStorage::WriteInteger(const UnicodeString & Name, int Value)
+{
+  if (CanWrite())
+  {
+    DoWriteInteger(Name, Value);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall THierarchicalStorage::WriteInt64(const UnicodeString & Name, __int64 Value)
+{
+  if (CanWrite())
+  {
+    DoWriteInt64(Name, Value);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall THierarchicalStorage::WriteDateTime(const UnicodeString & Name, TDateTime Value)
+{
+  if (CanWrite())
+  {
+    // TRegistry.WriteDateTime does this internally
+    DoWriteBinaryData(Name, &Value, sizeof(Value));
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall THierarchicalStorage::WriteFloat(const UnicodeString & Name, double Value)
+{
+  if (CanWrite())
+  {
+    // TRegistry.WriteFloat does this internally
+    DoWriteBinaryData(Name, &Value, sizeof(Value));
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall THierarchicalStorage::WriteString(const UnicodeString & Name, const UnicodeString & Value)
 {
   if (MungeStringValues)
@@ -339,6 +561,14 @@ void __fastcall THierarchicalStorage::WriteString(const UnicodeString & Name, co
   else
   {
     WriteStringRaw(Name, Value);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall THierarchicalStorage::WriteBinaryData(const UnicodeString & Name, const void * Buffer, int Size)
+{
+  if (CanWrite())
+  {
+    DoWriteBinaryData(Name, Buffer, Size);
   }
 }
 //---------------------------------------------------------------------------
@@ -490,17 +720,16 @@ bool __fastcall TRegistryStorage::DoOpenSubKey(const UnicodeString & SubKey, boo
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TRegistryStorage::CloseSubKey()
+void __fastcall TRegistryStorage::DoCloseSubKey()
 {
   FRegistry->CloseKey();
-  THierarchicalStorage::CloseSubKey();
-  if (FKeyHistory->Count)
+  if (FKeyHistory->Count > 0)
   {
     FRegistry->OpenKey(Storage + GetCurrentSubKeyMunged(), True);
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall TRegistryStorage::DeleteSubKey(const UnicodeString & SubKey)
+void __fastcall TRegistryStorage::DoDeleteSubKey(const UnicodeString & SubKey)
 {
   UnicodeString K;
   if (FKeyHistory->Count == 0)
@@ -508,10 +737,10 @@ bool __fastcall TRegistryStorage::DeleteSubKey(const UnicodeString & SubKey)
     K = Storage + CurrentSubKey;
   }
   K += MungeKeyName(SubKey);
-  return FRegistry->DeleteKey(K);
+  FRegistry->DeleteKey(K);
 }
 //---------------------------------------------------------------------------
-void __fastcall TRegistryStorage::GetSubKeyNames(TStrings * Strings)
+void __fastcall TRegistryStorage::DoGetSubKeyNames(TStrings * Strings)
 {
   FRegistry->GetKeyNames(Strings);
   for (int Index = 0; Index < Strings->Count; Index++)
@@ -520,12 +749,12 @@ void __fastcall TRegistryStorage::GetSubKeyNames(TStrings * Strings)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TRegistryStorage::GetValueNames(TStrings * Strings)
+void __fastcall TRegistryStorage::DoGetValueNames(TStrings * Strings)
 {
   FRegistry->GetValueNames(Strings);
 }
 //---------------------------------------------------------------------------
-bool __fastcall TRegistryStorage::DeleteValue(const UnicodeString & Name)
+bool __fastcall TRegistryStorage::DoDeleteValue(const UnicodeString & Name)
 {
   return FRegistry->DeleteValue(Name);
 }
@@ -537,54 +766,56 @@ bool __fastcall TRegistryStorage::DoKeyExists(const UnicodeString & SubKey, bool
   return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TRegistryStorage::ValueExists(const UnicodeString & Value)
+bool __fastcall TRegistryStorage::DoValueExists(const UnicodeString & Value)
 {
   bool Result = FRegistry->ValueExists(Value);
   return Result;
 }
 //---------------------------------------------------------------------------
-size_t __fastcall TRegistryStorage::BinaryDataSize(const UnicodeString & Name)
+size_t __fastcall TRegistryStorage::DoBinaryDataSize(const UnicodeString & Name)
 {
   size_t Result = FRegistry->GetDataSize(Name);
   return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TRegistryStorage::ReadBool(const UnicodeString & Name, bool Default)
+bool __fastcall TRegistryStorage::DoReadBool(const UnicodeString & Name, bool Default)
 {
   READ_REGISTRY(ReadBool);
 }
 //---------------------------------------------------------------------------
-TDateTime __fastcall TRegistryStorage::ReadDateTime(const UnicodeString & Name, TDateTime Default)
+TDateTime __fastcall TRegistryStorage::DoReadDateTime(const UnicodeString & Name, TDateTime Default)
 {
+  // Internally does what would DoReadBinaryData do (like in DoReadInt64)
   READ_REGISTRY(ReadDateTime);
 }
 //---------------------------------------------------------------------------
-double __fastcall TRegistryStorage::ReadFloat(const UnicodeString & Name, double Default)
+double __fastcall TRegistryStorage::DoReadFloat(const UnicodeString & Name, double Default)
 {
+  // Internally does what would DoReadBinaryData do (like in DoReadInt64)
   READ_REGISTRY(ReadFloat);
 }
 //---------------------------------------------------------------------------
-int __fastcall TRegistryStorage::ReadInteger(const UnicodeString & Name, int Default)
+int __fastcall TRegistryStorage::DoReadInteger(const UnicodeString & Name, int Default)
 {
   READ_REGISTRY(ReadInteger);
 }
 //---------------------------------------------------------------------------
-__int64 __fastcall TRegistryStorage::ReadInt64(const UnicodeString & Name, __int64 Default)
+__int64 __fastcall TRegistryStorage::DoReadInt64(const UnicodeString & Name, __int64 Default)
 {
   __int64 Result;
-  if (ReadBinaryData(Name, &Result, sizeof(Result)) == 0)
+  if (DoReadBinaryData(Name, &Result, sizeof(Result)) == 0)
   {
     Result = Default;
   }
   return Result;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TRegistryStorage::ReadStringRaw(const UnicodeString & Name, const UnicodeString & Default)
+UnicodeString __fastcall TRegistryStorage::DoReadStringRaw(const UnicodeString & Name, const UnicodeString & Default)
 {
   READ_REGISTRY(ReadString);
 }
 //---------------------------------------------------------------------------
-size_t __fastcall TRegistryStorage::ReadBinaryData(const UnicodeString & Name, void * Buffer, size_t Size)
+size_t __fastcall TRegistryStorage::DoReadBinaryData(const UnicodeString & Name, void * Buffer, size_t Size)
 {
   size_t Result;
   if (FRegistry->ValueExists(Name))
@@ -605,37 +836,27 @@ size_t __fastcall TRegistryStorage::ReadBinaryData(const UnicodeString & Name, v
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TRegistryStorage::WriteBool(const UnicodeString & Name, bool Value)
+void __fastcall TRegistryStorage::DoWriteBool(const UnicodeString & Name, bool Value)
 {
   WRITE_REGISTRY(WriteBool);
 }
 //---------------------------------------------------------------------------
-void __fastcall TRegistryStorage::WriteDateTime(const UnicodeString & Name, TDateTime Value)
-{
-  WRITE_REGISTRY(WriteDateTime);
-}
-//---------------------------------------------------------------------------
-void __fastcall TRegistryStorage::WriteFloat(const UnicodeString & Name, double Value)
-{
-  WRITE_REGISTRY(WriteFloat);
-}
-//---------------------------------------------------------------------------
-void __fastcall TRegistryStorage::WriteStringRaw(const UnicodeString & Name, const UnicodeString & Value)
+void __fastcall TRegistryStorage::DoWriteStringRaw(const UnicodeString & Name, const UnicodeString & Value)
 {
   WRITE_REGISTRY(WriteString);
 }
 //---------------------------------------------------------------------------
-void __fastcall TRegistryStorage::WriteInteger(const UnicodeString & Name, int Value)
+void __fastcall TRegistryStorage::DoWriteInteger(const UnicodeString & Name, int Value)
 {
   WRITE_REGISTRY(WriteInteger);
 }
 //---------------------------------------------------------------------------
-void __fastcall TRegistryStorage::WriteInt64(const UnicodeString & Name, __int64 Value)
+void __fastcall TRegistryStorage::DoWriteInt64(const UnicodeString & Name, __int64 Value)
 {
   WriteBinaryData(Name, &Value, sizeof(Value));
 }
 //---------------------------------------------------------------------------
-void __fastcall TRegistryStorage::WriteBinaryData(const UnicodeString & Name, const void * Buffer, int Size)
+void __fastcall TRegistryStorage::DoWriteBinaryData(const UnicodeString & Name, const void * Buffer, int Size)
 {
   try
   {
@@ -758,10 +979,8 @@ bool __fastcall TCustomIniFileStorage::OpenSubKey(const UnicodeString & Key, boo
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomIniFileStorage::CloseSubKey()
+void __fastcall TCustomIniFileStorage::DoCloseSubKey()
 {
-  THierarchicalStorage::CloseSubKey();
-
   // What we are called to restore previous key from OpenSubKey,
   // when opening path component fails, the master storage was not involved yet
   if (!FOpeningSubKey && (FMasterStorage.get() != NULL))
@@ -777,27 +996,26 @@ void __fastcall TCustomIniFileStorage::CloseSubKey()
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall TCustomIniFileStorage::DeleteSubKey(const UnicodeString & SubKey)
+void __fastcall TCustomIniFileStorage::DoDeleteSubKey(const UnicodeString & SubKey)
 {
-  bool Result;
   try
   {
     ResetCache();
     FIniFile->EraseSection(CurrentSubKey + MungeKeyName(SubKey));
-    Result = true;
   }
   catch (...)
   {
-    Result = false;
   }
   if (HandleByMasterStorage())
   {
-    Result = FMasterStorage->DeleteSubKey(SubKey);
+    if (FMasterStorage->CanWrite())
+    {
+      FMasterStorage->DoDeleteSubKey(SubKey);
+    }
   }
-  return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomIniFileStorage::GetSubKeyNames(TStrings * Strings)
+void __fastcall TCustomIniFileStorage::DoGetSubKeyNames(TStrings * Strings)
 {
   Strings->Clear();
   if (HandleByMasterStorage())
@@ -826,7 +1044,7 @@ void __fastcall TCustomIniFileStorage::GetSubKeyNames(TStrings * Strings)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomIniFileStorage::GetValueNames(TStrings * Strings)
+void __fastcall TCustomIniFileStorage::DoGetValueNames(TStrings * Strings)
 {
   if (HandleByMasterStorage())
   {
@@ -846,19 +1064,19 @@ bool __fastcall TCustomIniFileStorage::DoKeyExists(const UnicodeString & SubKey,
     FIniFile->SectionExists(CurrentSubKey + MungeStr(SubKey, AForceAnsi, false));
 }
 //---------------------------------------------------------------------------
-bool __fastcall TCustomIniFileStorage::DoValueExists(const UnicodeString & Value)
+bool __fastcall TCustomIniFileStorage::DoValueExistsInternal(const UnicodeString & Value)
 {
   return FIniFile->ValueExists(CurrentSection, MungeIniName(Value));
 }
 //---------------------------------------------------------------------------
-bool __fastcall TCustomIniFileStorage::ValueExists(const UnicodeString & Value)
+bool __fastcall TCustomIniFileStorage::DoValueExists(const UnicodeString & Value)
 {
   return
     (HandleByMasterStorage() && FMasterStorage->ValueExists(Value)) ||
-    DoValueExists(Value);
+    DoValueExistsInternal(Value);
 }
 //---------------------------------------------------------------------------
-bool __fastcall TCustomIniFileStorage::DeleteValue(const UnicodeString & Name)
+bool __fastcall TCustomIniFileStorage::DoDeleteValue(const UnicodeString & Name)
 {
   bool Result = true;
   if (HandleByMasterStorage())
@@ -879,10 +1097,10 @@ bool __fastcall TCustomIniFileStorage::HandleByMasterStorage()
 //---------------------------------------------------------------------------
 bool __fastcall TCustomIniFileStorage::HandleReadByMasterStorage(const UnicodeString & Name)
 {
-  return HandleByMasterStorage() && !DoValueExists(Name);
+  return HandleByMasterStorage() && !DoValueExistsInternal(Name);
 }
 //---------------------------------------------------------------------------
-size_t __fastcall TCustomIniFileStorage::BinaryDataSize(const UnicodeString & Name)
+size_t __fastcall TCustomIniFileStorage::DoBinaryDataSize(const UnicodeString & Name)
 {
   if (HandleReadByMasterStorage(Name))
   {
@@ -894,7 +1112,7 @@ size_t __fastcall TCustomIniFileStorage::BinaryDataSize(const UnicodeString & Na
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall TCustomIniFileStorage::ReadBool(const UnicodeString & Name, bool Default)
+bool __fastcall TCustomIniFileStorage::DoReadBool(const UnicodeString & Name, bool Default)
 {
   if (HandleReadByMasterStorage(Name))
   {
@@ -906,7 +1124,7 @@ bool __fastcall TCustomIniFileStorage::ReadBool(const UnicodeString & Name, bool
   }
 }
 //---------------------------------------------------------------------------
-int __fastcall TCustomIniFileStorage::ReadInteger(const UnicodeString & Name, int Default)
+int __fastcall TCustomIniFileStorage::DoReadInteger(const UnicodeString & Name, int Default)
 {
   int Result;
   if (HandleReadByMasterStorage(Name))
@@ -920,7 +1138,7 @@ int __fastcall TCustomIniFileStorage::ReadInteger(const UnicodeString & Name, in
   return Result;
 }
 //---------------------------------------------------------------------------
-__int64 __fastcall TCustomIniFileStorage::ReadInt64(const UnicodeString & Name, __int64 Default)
+__int64 __fastcall TCustomIniFileStorage::DoReadInt64(const UnicodeString & Name, __int64 Default)
 {
   __int64 Result;
   if (HandleReadByMasterStorage(Name))
@@ -940,7 +1158,7 @@ __int64 __fastcall TCustomIniFileStorage::ReadInt64(const UnicodeString & Name, 
   return Result;
 }
 //---------------------------------------------------------------------------
-TDateTime __fastcall TCustomIniFileStorage::ReadDateTime(const UnicodeString & Name, TDateTime Default)
+TDateTime __fastcall TCustomIniFileStorage::DoReadDateTime(const UnicodeString & Name, TDateTime Default)
 {
   TDateTime Result;
   if (HandleReadByMasterStorage(Name))
@@ -978,7 +1196,7 @@ TDateTime __fastcall TCustomIniFileStorage::ReadDateTime(const UnicodeString & N
   return Result;
 }
 //---------------------------------------------------------------------------
-double __fastcall TCustomIniFileStorage::ReadFloat(const UnicodeString & Name, double Default)
+double __fastcall TCustomIniFileStorage::DoReadFloat(const UnicodeString & Name, double Default)
 {
   double Result;
   if (HandleReadByMasterStorage(Name))
@@ -1016,7 +1234,7 @@ double __fastcall TCustomIniFileStorage::ReadFloat(const UnicodeString & Name, d
   return Result;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TCustomIniFileStorage::ReadStringRaw(const UnicodeString & Name, const UnicodeString & Default)
+UnicodeString __fastcall TCustomIniFileStorage::DoReadStringRaw(const UnicodeString & Name, const UnicodeString & Default)
 {
   UnicodeString Result;
   if (HandleReadByMasterStorage(Name))
@@ -1030,7 +1248,7 @@ UnicodeString __fastcall TCustomIniFileStorage::ReadStringRaw(const UnicodeStrin
   return Result;
 }
 //---------------------------------------------------------------------------
-size_t __fastcall TCustomIniFileStorage::ReadBinaryData(const UnicodeString & Name, void * Buffer, size_t Size)
+size_t __fastcall TCustomIniFileStorage::DoReadBinaryData(const UnicodeString & Name, void * Buffer, size_t Size)
 {
   size_t Len;
   if (HandleReadByMasterStorage(Name))
@@ -1051,7 +1269,7 @@ size_t __fastcall TCustomIniFileStorage::ReadBinaryData(const UnicodeString & Na
   return Size;
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomIniFileStorage::WriteBool(const UnicodeString & Name, bool Value)
+void __fastcall TCustomIniFileStorage::DoWriteBool(const UnicodeString & Name, bool Value)
 {
   if (HandleByMasterStorage())
   {
@@ -1061,7 +1279,7 @@ void __fastcall TCustomIniFileStorage::WriteBool(const UnicodeString & Name, boo
   FIniFile->WriteBool(CurrentSection, MungeIniName(Name), Value);
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomIniFileStorage::WriteInteger(const UnicodeString & Name, int Value)
+void __fastcall TCustomIniFileStorage::DoWriteInteger(const UnicodeString & Name, int Value)
 {
   if (HandleByMasterStorage())
   {
@@ -1071,60 +1289,37 @@ void __fastcall TCustomIniFileStorage::WriteInteger(const UnicodeString & Name, 
   FIniFile->WriteInteger(CurrentSection, MungeIniName(Name), Value);
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomIniFileStorage::WriteInt64(const UnicodeString & Name, __int64 Value)
+void __fastcall TCustomIniFileStorage::DoWriteInt64(const UnicodeString & Name, __int64 Value)
 {
   if (HandleByMasterStorage())
   {
     FMasterStorage->WriteInt64(Name, Value);
   }
-  DoWriteStringRaw(Name, IntToStr(Value));
+  DoWriteStringRawInternal(Name, IntToStr(Value));
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomIniFileStorage::WriteDateTime(const UnicodeString & Name, TDateTime Value)
-{
-  if (HandleByMasterStorage())
-  {
-    FMasterStorage->WriteDateTime(Name, Value);
-  }
-  DoWriteBinaryData(Name, &Value, sizeof(Value));
-}
-//---------------------------------------------------------------------------
-void __fastcall TCustomIniFileStorage::WriteFloat(const UnicodeString & Name, double Value)
-{
-  if (HandleByMasterStorage())
-  {
-    FMasterStorage->WriteFloat(Name, Value);
-  }
-  DoWriteBinaryData(Name, &Value, sizeof(Value));
-}
-//---------------------------------------------------------------------------
-void __fastcall TCustomIniFileStorage::DoWriteStringRaw(const UnicodeString & Name, const UnicodeString & Value)
+void __fastcall TCustomIniFileStorage::DoWriteStringRawInternal(const UnicodeString & Name, const UnicodeString & Value)
 {
   ResetCache();
   FIniFile->WriteString(CurrentSection, MungeIniName(Name), Value);
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomIniFileStorage::WriteStringRaw(const UnicodeString & Name, const UnicodeString & Value)
+void __fastcall TCustomIniFileStorage::DoWriteStringRaw(const UnicodeString & Name, const UnicodeString & Value)
 {
   if (HandleByMasterStorage())
   {
     FMasterStorage->WriteStringRaw(Name, Value);
   }
-  DoWriteStringRaw(Name, Value);
+  DoWriteStringRawInternal(Name, Value);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomIniFileStorage::DoWriteBinaryData(const UnicodeString & Name, const void * Buffer, int Size)
-{
-  DoWriteStringRaw(Name, BytesToHex(RawByteString(static_cast<const char*>(Buffer), Size)));
-}
-//---------------------------------------------------------------------------
-void __fastcall TCustomIniFileStorage::WriteBinaryData(const UnicodeString & Name, const void * Buffer, int Size)
 {
   if (HandleByMasterStorage())
   {
     FMasterStorage->WriteBinaryData(Name, Buffer, Size);
   }
-  DoWriteBinaryData(Name, Buffer, Size);
+  DoWriteStringRawInternal(Name, BytesToHex(RawByteString(static_cast<const char*>(Buffer), Size)));
 }
 //===========================================================================
 TIniFileStorage * __fastcall TIniFileStorage::CreateFromPath(const UnicodeString & AStorage)

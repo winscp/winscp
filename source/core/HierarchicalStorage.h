@@ -19,42 +19,38 @@ public:
   virtual bool __fastcall OpenSubKey(const UnicodeString & SubKey, bool CanCreate, bool Path = false);
   virtual void __fastcall CloseSubKey();
   void __fastcall CloseAll();
-  virtual bool __fastcall DeleteSubKey(const UnicodeString & SubKey) = 0;
-  virtual void __fastcall GetSubKeyNames(TStrings* Strings) = 0;
-  virtual void __fastcall GetValueNames(TStrings* Strings) = 0;
+  void __fastcall GetSubKeyNames(TStrings * Strings);
+  void __fastcall GetValueNames(TStrings * Strings);
   bool __fastcall HasSubKeys();
   bool __fastcall KeyExists(const UnicodeString & SubKey);
-  virtual bool __fastcall ValueExists(const UnicodeString & Value) = 0;
+  bool __fastcall ValueExists(const UnicodeString & Value);
   virtual void __fastcall RecursiveDeleteSubKey(const UnicodeString & Key);
   virtual void __fastcall ClearSubKeys();
   virtual void __fastcall ReadValues(TStrings* Strings, bool MaintainKeys = false);
   virtual void __fastcall WriteValues(TStrings* Strings, bool MaintainKeys = false);
   virtual void __fastcall ClearValues();
-  virtual bool __fastcall DeleteValue(const UnicodeString & Name) = 0;
+  bool __fastcall DeleteValue(const UnicodeString & Name);
 
-  virtual size_t __fastcall BinaryDataSize(const UnicodeString & Name) = 0;
-
-  virtual bool __fastcall ReadBool(const UnicodeString & Name, bool Default) = 0;
-  virtual int __fastcall ReadInteger(const UnicodeString & Name, int Default) = 0;
-  virtual __int64 __fastcall ReadInt64(const UnicodeString & Name, __int64 Default) = 0;
-  virtual TDateTime __fastcall ReadDateTime(const UnicodeString & Name, TDateTime Default) = 0;
-  virtual double __fastcall ReadFloat(const UnicodeString & Name, double Default) = 0;
-  virtual UnicodeString __fastcall ReadStringRaw(const UnicodeString & Name, const UnicodeString & Default) = 0;
-  virtual size_t __fastcall ReadBinaryData(const UnicodeString & Name, void * Buffer, size_t Size) = 0;
+  bool __fastcall ReadBool(const UnicodeString & Name, bool Default);
+  int __fastcall ReadInteger(const UnicodeString & Name, int Default);
+  __int64 __fastcall ReadInt64(const UnicodeString & Name, __int64 Default);
+  TDateTime __fastcall ReadDateTime(const UnicodeString & Name, TDateTime Default);
+  double __fastcall ReadFloat(const UnicodeString & Name, double Default);
+  UnicodeString __fastcall ReadStringRaw(const UnicodeString & Name, const UnicodeString & Default);
+  size_t __fastcall ReadBinaryData(const UnicodeString & Name, void * Buffer, size_t Size);
 
   virtual UnicodeString __fastcall ReadString(const UnicodeString & Name, const UnicodeString & Default);
   RawByteString __fastcall ReadBinaryData(const UnicodeString & Name);
   RawByteString __fastcall ReadStringAsBinaryData(const UnicodeString & Name, const RawByteString & Default);
 
-  virtual void __fastcall WriteBool(const UnicodeString & Name, bool Value) = 0;
-  virtual void __fastcall WriteStringRaw(const UnicodeString & Name, const UnicodeString & Value) = 0;
-  virtual void __fastcall WriteInteger(const UnicodeString & Name, int Value) = 0;
-  virtual void __fastcall WriteInt64(const UnicodeString & Name, __int64 Value) = 0;
-  virtual void __fastcall WriteDateTime(const UnicodeString & Name, TDateTime Value) = 0;
-  virtual void __fastcall WriteFloat(const UnicodeString & Name, double Value) = 0;
-  virtual void __fastcall WriteBinaryData(const UnicodeString & Name, const void * Buffer, int Size) = 0;
-
-  virtual void __fastcall WriteString(const UnicodeString & Name, const UnicodeString & Value);
+  void __fastcall WriteBool(const UnicodeString & Name, bool Value);
+  void __fastcall WriteStringRaw(const UnicodeString & Name, const UnicodeString & Value);
+  void __fastcall WriteInteger(const UnicodeString & Name, int Value);
+  void __fastcall WriteInt64(const UnicodeString & Name, __int64 Value);
+  void __fastcall WriteDateTime(const UnicodeString & Name, TDateTime Value);
+  void __fastcall WriteFloat(const UnicodeString & Name, double Value);
+  void __fastcall WriteBinaryData(const UnicodeString & Name, const void * Buffer, int Size);
+  void __fastcall WriteString(const UnicodeString & Name, const UnicodeString & Value);
   void __fastcall WriteBinaryData(const UnicodeString & Name, const RawByteString & Value);
   void __fastcall WriteBinaryDataAsString(const UnicodeString & Name, const RawByteString & Value);
 
@@ -83,12 +79,39 @@ protected:
   UnicodeString __fastcall GetCurrentSubKeyMunged();
   virtual void __fastcall SetAccessMode(TStorageAccessMode value);
   virtual bool __fastcall DoKeyExists(const UnicodeString & SubKey, bool ForceAnsi) = 0;
+  virtual bool __fastcall DoValueExists(const UnicodeString & Value) = 0;
   static UnicodeString __fastcall IncludeTrailingBackslash(const UnicodeString & S);
   static UnicodeString __fastcall ExcludeTrailingBackslash(const UnicodeString & S);
   virtual bool __fastcall DoOpenSubKey(const UnicodeString & SubKey, bool CanCreate) = 0;
+  virtual void __fastcall DoCloseSubKey() = 0;
   UnicodeString __fastcall MungeKeyName(const UnicodeString & Key);
   virtual UnicodeString __fastcall GetSource() = 0;
   virtual bool __fastcall GetTemporary();
+  virtual void __fastcall DoDeleteSubKey(const UnicodeString & SubKey) = 0;
+  virtual bool __fastcall DoDeleteValue(const UnicodeString & Name) = 0;
+
+  virtual void __fastcall DoGetSubKeyNames(TStrings * Strings) = 0;
+  virtual void __fastcall DoGetValueNames(TStrings * Strings) = 0;
+
+  virtual void __fastcall DoWriteBool(const UnicodeString & Name, bool Value) = 0;
+  virtual void __fastcall DoWriteStringRaw(const UnicodeString & Name, const UnicodeString & Value) = 0;
+  virtual void __fastcall DoWriteInteger(const UnicodeString & Name, int Value) = 0;
+  virtual void __fastcall DoWriteInt64(const UnicodeString & Name, __int64 Value) = 0;
+  virtual void __fastcall DoWriteBinaryData(const UnicodeString & Name, const void * Buffer, int Size) = 0;
+
+  virtual bool __fastcall DoReadBool(const UnicodeString & Name, bool Default) = 0;
+  virtual UnicodeString __fastcall DoReadStringRaw(const UnicodeString & Name, const UnicodeString & Default) = 0;
+  virtual int __fastcall DoReadInteger(const UnicodeString & Name, int Default) = 0;
+  virtual __int64 __fastcall DoReadInt64(const UnicodeString & Name, __int64 Default) = 0;
+  virtual TDateTime __fastcall DoReadDateTime(const UnicodeString & Name, TDateTime Default) = 0;
+  virtual double __fastcall DoReadFloat(const UnicodeString & Name, double Default) = 0;
+  virtual size_t __fastcall DoReadBinaryData(const UnicodeString & Name, void * Buffer, size_t Size) = 0;
+
+  virtual size_t __fastcall DoBinaryDataSize(const UnicodeString & Name) = 0;
+
+  size_t __fastcall BinaryDataSize(const UnicodeString & Name);
+  bool __fastcall CanRead();
+  bool __fastcall CanWrite();
 };
 //---------------------------------------------------------------------------
 class TRegistryStorage : public THierarchicalStorage
@@ -100,37 +123,33 @@ public:
 
   bool __fastcall Copy(TRegistryStorage * Storage);
 
-  virtual void __fastcall CloseSubKey();
-  virtual bool __fastcall DeleteSubKey(const UnicodeString & SubKey);
-  virtual bool __fastcall DeleteValue(const UnicodeString & Name);
-  virtual void __fastcall GetSubKeyNames(TStrings * Strings);
-  virtual bool __fastcall ValueExists(const UnicodeString & Value);
-
-  virtual size_t __fastcall BinaryDataSize(const UnicodeString & Name);
-
-  virtual bool __fastcall ReadBool(const UnicodeString & Name, bool Default);
-  virtual int __fastcall ReadInteger(const UnicodeString & Name, int Default);
-  virtual __int64 __fastcall ReadInt64(const UnicodeString & Name, __int64 Default);
-  virtual TDateTime __fastcall ReadDateTime(const UnicodeString & Name, TDateTime Default);
-  virtual double __fastcall ReadFloat(const UnicodeString & Name, double Default);
-  virtual UnicodeString __fastcall ReadStringRaw(const UnicodeString & Name, const UnicodeString & Default);
-  virtual size_t __fastcall ReadBinaryData(const UnicodeString & Name, void * Buffer, size_t Size);
-
-  virtual void __fastcall WriteBool(const UnicodeString & Name, bool Value);
-  virtual void __fastcall WriteInteger(const UnicodeString & Name, int Value);
-  virtual void __fastcall WriteInt64(const UnicodeString & Name, __int64 Value);
-  virtual void __fastcall WriteDateTime(const UnicodeString & Name, TDateTime Value);
-  virtual void __fastcall WriteFloat(const UnicodeString & Name, double Value);
-  virtual void __fastcall WriteStringRaw(const UnicodeString & Name, const UnicodeString & Value);
-  virtual void __fastcall WriteBinaryData(const UnicodeString & Name, const void * Buffer, int Size);
-
-  virtual void __fastcall GetValueNames(TStrings* Strings);
-
 protected:
   virtual void __fastcall SetAccessMode(TStorageAccessMode value);
   virtual bool __fastcall DoKeyExists(const UnicodeString & SubKey, bool ForceAnsi);
+  virtual bool __fastcall DoValueExists(const UnicodeString & Value);
   virtual bool __fastcall DoOpenSubKey(const UnicodeString & SubKey, bool CanCreate);
+  virtual void __fastcall DoCloseSubKey();
   virtual UnicodeString __fastcall GetSource();
+  virtual size_t __fastcall DoBinaryDataSize(const UnicodeString & Name);
+  virtual void __fastcall DoDeleteSubKey(const UnicodeString & SubKey);
+  virtual bool __fastcall DoDeleteValue(const UnicodeString & Name);
+
+  virtual void __fastcall DoGetSubKeyNames(TStrings * Strings);
+  virtual void __fastcall DoGetValueNames(TStrings* Strings);
+
+  virtual void __fastcall DoWriteBool(const UnicodeString & Name, bool Value);
+  virtual void __fastcall DoWriteStringRaw(const UnicodeString & Name, const UnicodeString & Value);
+  virtual void __fastcall DoWriteInteger(const UnicodeString & Name, int Value);
+  virtual void __fastcall DoWriteInt64(const UnicodeString & Name, __int64 Value);
+  virtual void __fastcall DoWriteBinaryData(const UnicodeString & Name, const void * Buffer, int Size);
+
+  virtual bool __fastcall DoReadBool(const UnicodeString & Name, bool Default);
+  virtual int __fastcall DoReadInteger(const UnicodeString & Name, int Default);
+  virtual __int64 __fastcall DoReadInt64(const UnicodeString & Name, __int64 Default);
+  virtual TDateTime __fastcall DoReadDateTime(const UnicodeString & Name, TDateTime Default);
+  virtual double __fastcall DoReadFloat(const UnicodeString & Name, double Default);
+  virtual UnicodeString __fastcall DoReadStringRaw(const UnicodeString & Name, const UnicodeString & Default);
+  virtual size_t __fastcall DoReadBinaryData(const UnicodeString & Name, void * Buffer, size_t Size);
 
 private:
   TRegistry * FRegistry;
@@ -147,39 +166,13 @@ public:
 
   virtual bool __fastcall OpenRootKey(bool CanCreate);
   virtual bool __fastcall OpenSubKey(const UnicodeString & SubKey, bool CanCreate, bool Path = false);
-  virtual void __fastcall CloseSubKey();
-  virtual bool __fastcall DeleteSubKey(const UnicodeString & SubKey);
-  virtual bool __fastcall DeleteValue(const UnicodeString & Name);
-  virtual void __fastcall GetSubKeyNames(TStrings * Strings);
-  virtual bool __fastcall ValueExists(const UnicodeString & Value);
-
-  virtual size_t __fastcall BinaryDataSize(const UnicodeString & Name);
-
-  virtual bool __fastcall ReadBool(const UnicodeString & Name, bool Default);
-  virtual int __fastcall ReadInteger(const UnicodeString & Name, int Default);
-  virtual __int64 __fastcall ReadInt64(const UnicodeString & Name, __int64 Default);
-  virtual TDateTime __fastcall ReadDateTime(const UnicodeString & Name, TDateTime Default);
-  virtual double __fastcall ReadFloat(const UnicodeString & Name, double Default);
-  virtual UnicodeString __fastcall ReadStringRaw(const UnicodeString & Name, const UnicodeString & Default);
-  virtual size_t __fastcall ReadBinaryData(const UnicodeString & Name, void * Buffer, size_t Size);
-
-  virtual void __fastcall WriteBool(const UnicodeString & Name, bool Value);
-  virtual void __fastcall WriteInteger(const UnicodeString & Name, int Value);
-  virtual void __fastcall WriteInt64(const UnicodeString & Name, __int64 Value);
-  virtual void __fastcall WriteDateTime(const UnicodeString & Name, TDateTime Value);
-  virtual void __fastcall WriteFloat(const UnicodeString & Name, double Value);
-  virtual void __fastcall WriteStringRaw(const UnicodeString & Name, const UnicodeString & Value);
-  virtual void __fastcall WriteBinaryData(const UnicodeString & Name, const void * Buffer, int Size);
-
-  virtual void __fastcall GetValueNames(TStrings * Strings);
 
 private:
   UnicodeString __fastcall GetCurrentSection();
   inline bool __fastcall HandleByMasterStorage();
   inline bool __fastcall HandleReadByMasterStorage(const UnicodeString & Name);
-  inline bool __fastcall DoValueExists(const UnicodeString & Value);
-  void __fastcall DoWriteStringRaw(const UnicodeString & Name, const UnicodeString & Value);
-  void __fastcall DoWriteBinaryData(const UnicodeString & Name, const void * Buffer, int Size);
+  inline bool __fastcall DoValueExistsInternal(const UnicodeString & Value);
+  void __fastcall DoWriteStringRawInternal(const UnicodeString & Name, const UnicodeString & Value);
 
 protected:
   TCustomIniFile * FIniFile;
@@ -191,8 +184,31 @@ protected:
   __property UnicodeString CurrentSection = { read = GetCurrentSection };
   virtual void __fastcall SetAccessMode(TStorageAccessMode value);
   virtual bool __fastcall DoKeyExists(const UnicodeString & SubKey, bool ForceAnsi);
+  virtual bool __fastcall DoValueExists(const UnicodeString & Value);
   virtual bool __fastcall DoOpenSubKey(const UnicodeString & SubKey, bool CanCreate);
+  virtual void __fastcall DoCloseSubKey();
   virtual UnicodeString __fastcall GetSource();
+  virtual size_t __fastcall DoBinaryDataSize(const UnicodeString & Name);
+  virtual void __fastcall DoDeleteSubKey(const UnicodeString & SubKey);
+  virtual bool __fastcall DoDeleteValue(const UnicodeString & Name);
+
+  virtual void __fastcall DoGetSubKeyNames(TStrings * Strings);
+  virtual void __fastcall DoGetValueNames(TStrings * Strings);
+
+  virtual void __fastcall DoWriteBool(const UnicodeString & Name, bool Value);
+  virtual void __fastcall DoWriteStringRaw(const UnicodeString & Name, const UnicodeString & Value);
+  virtual void __fastcall DoWriteInteger(const UnicodeString & Name, int Value);
+  virtual void __fastcall DoWriteInt64(const UnicodeString & Name, __int64 Value);
+  virtual void __fastcall DoWriteBinaryData(const UnicodeString & Name, const void * Buffer, int Size);
+
+  virtual bool __fastcall DoReadBool(const UnicodeString & Name, bool Default);
+  virtual int __fastcall DoReadInteger(const UnicodeString & Name, int Default);
+  virtual __int64 __fastcall DoReadInt64(const UnicodeString & Name, __int64 Default);
+  virtual TDateTime __fastcall DoReadDateTime(const UnicodeString & Name, TDateTime Default);
+  virtual double __fastcall DoReadFloat(const UnicodeString & Name, double Default);
+  virtual UnicodeString __fastcall DoReadStringRaw(const UnicodeString & Name, const UnicodeString & Default);
+  virtual size_t __fastcall DoReadBinaryData(const UnicodeString & Name, void * Buffer, size_t Size);
+
   void __fastcall CacheSections();
   void __fastcall ResetCache();
 };
