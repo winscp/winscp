@@ -1413,7 +1413,9 @@ void __fastcall TEditorForm::CheckFileSize()
         }
       }
 
+      // Those are actually nearly all internal exceptions we ever practically get
       IgnoreException(typeid(EOutOfMemory));
+      IgnoreException(typeid(EAccessViolation));
     }
   }
 }
