@@ -545,7 +545,7 @@ BEGIN
         ABOUT_FILEMANAGER, "Filemanager Toolset library Version 2.6"
         ABOUT_FILEMANAGER_COPYRIGHT, "Copyright © Ingo Eckel"
         ABOUT_JCL, "JEDI Code Library (JCL) %s"
-        ABOUT_JCL_URL, "http://jcl.delphi-jedi.org/"
+        ABOUT_JCL_URL, "https://jcl.delphi-jedi.org/"
         ABOUT_PNG, "PngComponents 1.4.1"
         ABOUT_PNG_COPYRIGHT, "Copyright © Uwe Raabe and Martijn Saly"
         ABOUT_PNG_URL, "https://bitbucket.org/uweraabe/pngcomponents"
