@@ -1447,8 +1447,9 @@ begin
   NodeData.FIsRecycleBin :=
     (SRec.Attr and faSysFile <> 0) and
     (ParentNode.Level = 0) and
-    ((UpperCase(SRec.Name) = 'RECYCLED') or
-     (UpperCase(SRec.Name) = 'RECYCLER'));
+    (SameText(SRec.Name, 'RECYCLED') or
+     SameText(SRec.Name, 'RECYCLER') or
+     SameText(SRec.Name, '$RECYCLE.BIN'));
 
   { query content attributes ("has subfolder") only if tree view is visible }
   { to avoid unnecessary scan of subfolders (which may take some time) }
