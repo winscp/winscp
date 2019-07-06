@@ -2222,7 +2222,7 @@ UnicodeString __fastcall GetPowerShellVersionStr()
       for (int Index = 0; Index < Keys->Count; Index++)
       {
         UnicodeString Key = Keys->Strings[Index];
-        if (Registry->OpenSubKey(Key + L"\\PowerShellEngine", false, true))
+        if (Registry->OpenSubKeyPath(Key + L"\\PowerShellEngine", false))
         {
           UnicodeString VersionStr = Registry->ReadString(L"PowerShellVersion", L"");
           if (!VersionStr.IsEmpty() && (CompareVersion(VersionStr, PowerShellVersionStr) > 0))
@@ -2230,7 +2230,7 @@ UnicodeString __fastcall GetPowerShellVersionStr()
             PowerShellVersionStr = VersionStr;
           }
 
-          Registry->CloseSubKey();
+          Registry->CloseSubKeyPath();
         }
       }
     }
@@ -2245,7 +2245,7 @@ static void CollectCLSIDKey(
   UnicodeString & CommonCodeBase, const UnicodeString & Platform, UnicodeString & Platforms)
 {
   UnicodeString CLSIDKey = FORMAT(L"CLSID\\%s", (CLSID));
-  if (Storage->OpenSubKey(CLSIDKey, false, true))
+  if (Storage->OpenSubKeyPath(CLSIDKey, false))
   {
     int Index = Keys->IndexOf(CLSIDKey);
     if (Index >= 0)
@@ -2292,7 +2292,7 @@ static void CollectCLSIDKey(
       }
       Storage->CloseSubKey();
     }
-    Storage->CloseSubKey();
+    Storage->CloseSubKeyPath();
 
     UnicodeString Buf = Platform;
     AddToList(Buf, CodeBase, L" - ");
@@ -2345,7 +2345,7 @@ static void DoCollectComRegistration(TConsole * Console, TStrings * Keys)
   {
     Console->PrintLine(FORMAT(L"Versions of type library %s:", (TypeLib)));
     UnicodeString TypeLibKey = FORMAT(L"TypeLib\\%s", (TypeLib));
-    if (Storage->OpenSubKey(TypeLibKey, false, true))
+    if (Storage->OpenSubKeyPath(TypeLibKey, false))
     {
       Keys->Add(TypeLibKey);
       std::unique_ptr<TStringList> KeyNames(new TStringList());
@@ -2359,7 +2359,7 @@ static void DoCollectComRegistration(TConsole * Console, TStrings * Keys)
         for (int Index = 0; Index < KeyNames->Count; Index++)
         {
           UnicodeString Version = KeyNames->Strings[Index];
-          if (!Storage->OpenSubKey(FORMAT(L"%s\\0", (Version)), false, true))
+          if (!Storage->OpenSubKeyPath(FORMAT(L"%s\\0", (Version)), false))
           {
             Console->PrintLine(FORMAT(L"Warning: Subkey \"0\" for type library \"%s\" cannot be opened.", (Version)));
           }
@@ -2389,11 +2389,11 @@ static void DoCollectComRegistration(TConsole * Console, TStrings * Keys)
                 }
               }
             }
-            Storage->CloseSubKey();
+            Storage->CloseSubKeyPath();
           }
         }
       }
-      Storage->CloseSubKey();
+      Storage->CloseSubKeyPath();
     }
     else
     {
@@ -2412,11 +2412,11 @@ static void DoCollectComRegistration(TConsole * Console, TStrings * Keys)
       UnicodeString KeyName = KeyNames->Strings[Index];
       if (StartsText(NamespacePrefix, KeyName))
       {
-        if (Storage->OpenSubKey(FORMAT(L"%s\\%s", (KeyName, L"CLSID")), false, true))
+        if (Storage->OpenSubKeyPath(FORMAT(L"%s\\%s", (KeyName, L"CLSID")), false))
         {
           UnicodeString Class = KeyName;
           UnicodeString CLSID = Trim(Storage->ReadString(UnicodeString(), UnicodeString()));
-          Storage->CloseSubKey();
+          Storage->CloseSubKeyPath();
 
           if (!CLSID.IsEmpty())
           {
@@ -2488,11 +2488,11 @@ static void DoCollectComRegistration(TConsole * Console, TStrings * Keys)
         // Open sub key first, to check if we are interested in the interface, as an optimization
         int PlatformSet = reinterpret_cast<int>(KeyNames->Objects[Index]);
         THierarchicalStorage * KeyStorage = FLAGSET(PlatformSet, 32) ? Storage.get() : Storage64.get();
-        if (KeyStorage->OpenSubKey(FORMAT(L"%s\\TypeLib", (KeyName)), false, true))
+        if (KeyStorage->OpenSubKeyPath(FORMAT(L"%s\\TypeLib", (KeyName)), false))
         {
           UnicodeString InterfaceTypeLib = KeyStorage->ReadString(UnicodeString(), UnicodeString());
           UnicodeString Version = KeyStorage->ReadString(L"Version", UnicodeString());
-          KeyStorage->CloseSubKey();
+          KeyStorage->CloseSubKeyPath();
           if (SameText(InterfaceTypeLib, TypeLib))
           {
             if (KeyStorage->OpenSubKey(KeyName, false))

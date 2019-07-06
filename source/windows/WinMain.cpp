@@ -349,7 +349,7 @@ void __fastcall RecordWrapperVersions(UnicodeString ConsoleVersion, UnicodeStrin
       {
         Storage->AccessMode = smReadWrite;
         if (Storage->OpenSubKey(Configuration->ConfigurationSubKey, true) &&
-            Storage->OpenSubKey(L"Interface\\Updates", true, true))
+            Storage->OpenSubKeyPath(L"Interface\\Updates", true))
         {
           if (!DotNetVersion.IsEmpty())
           {

@@ -105,7 +105,6 @@ UnicodeString __fastcall UnMungeIniName(const UnicodeString & Str)
 __fastcall THierarchicalStorage::THierarchicalStorage(const UnicodeString & AStorage)
 {
   FStorage = AStorage;
-  FKeyHistory = new TStringList();
   AccessMode = smRead;
   Explicit = false;
   ForceSave = false;
@@ -118,7 +117,6 @@ __fastcall THierarchicalStorage::THierarchicalStorage(const UnicodeString & ASto
 //---------------------------------------------------------------------------
 __fastcall THierarchicalStorage::~THierarchicalStorage()
 {
-  delete FKeyHistory;
 }
 //---------------------------------------------------------------------------
 void __fastcall THierarchicalStorage::Flush()
@@ -132,9 +130,9 @@ void __fastcall THierarchicalStorage::SetAccessMode(TStorageAccessMode value)
 //---------------------------------------------------------------------------
 UnicodeString __fastcall THierarchicalStorage::GetCurrentSubKeyMunged()
 {
-  if (FKeyHistory->Count > 0)
+  if (!FKeyHistory.empty())
   {
-    return FKeyHistory->Strings[FKeyHistory->Count - 1];
+    return FKeyHistory.back().Key;
   }
   else
   {
@@ -163,47 +161,81 @@ UnicodeString __fastcall THierarchicalStorage::MungeKeyName(const UnicodeString 
   return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall THierarchicalStorage::OpenSubKey(const UnicodeString & Key, bool CanCreate, bool Path)
+bool __fastcall THierarchicalStorage::OpenSubKeyPath(const UnicodeString & KeyPath, bool CanCreate)
 {
-  UnicodeString MungedKey;
-  if (Path)
+  DebugAssert(!KeyPath.IsEmpty() && (KeyPath[KeyPath.Length()] != L'\\'));
+  bool Result;
+  UnicodeString Buf(KeyPath);
+  int Opens = 0;
+  while (!Buf.IsEmpty())
   {
-    DebugAssert(Key.IsEmpty() || (Key[Key.Length()] != L'\\'));
-    UnicodeString Buf(Key);
-    while (!Buf.IsEmpty())
+    UnicodeString SubKey = CutToChar(Buf, L'\\', false);
+    Result = OpenSubKey(SubKey, CanCreate);
+    if (Result)
     {
-      if (!MungedKey.IsEmpty())
-      {
-        MungedKey += L'\\';
-      }
-      MungedKey += MungeKeyName(CutToChar(Buf, L'\\', false));
+      Opens++;
     }
   }
-  else
-  {
-    MungedKey = MungeKeyName(Key);
-  }
-
-  bool Result = DoOpenSubKey(MungedKey, CanCreate);
 
   if (Result)
   {
-    FKeyHistory->Add(IncludeTrailingBackslash(CurrentSubKey+MungedKey));
+    FKeyHistory.back().Levels = Opens;
+  }
+  else
+  {
+    while (Opens > 0)
+    {
+      CloseSubKey();
+      Opens--;
+    }
   }
 
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall THierarchicalStorage::CloseSubKey()
+bool __fastcall THierarchicalStorage::OpenSubKey(const UnicodeString & Key, bool CanCreate)
 {
-  if (FKeyHistory->Count == 0)
+  UnicodeString MungedKey = MungeKeyName(Key);
+
+  bool Result = DoOpenSubKey(MungedKey, CanCreate);
+
+  if (Result)
+  {
+    TKeyEntry Entry;
+    Entry.Key = IncludeTrailingBackslash(CurrentSubKey + MungedKey);
+    Entry.Levels = 1;
+    FKeyHistory.push_back(Entry);
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall THierarchicalStorage::CloseSubKeyPath()
+{
+  if (FKeyHistory.empty())
   {
     throw Exception(UnicodeString());
   }
-  else
+
+  int Levels = FKeyHistory.back().Levels;
+  FKeyHistory.back().Levels = 1; // to satify the assertion in CloseSubKey()
+  while (Levels > 0)
   {
-    FKeyHistory->Delete(FKeyHistory->Count - 1);
+    CloseSubKey();
+    Levels--;
+    DebugAssert((Levels == 0) || (FKeyHistory.back().Levels == 1));
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall THierarchicalStorage::CloseSubKey()
+{
+  if (FKeyHistory.empty())
+  {
+    throw Exception(UnicodeString());
+  }
+
+  DebugAssert(FKeyHistory.back().Levels == 1);
+  FKeyHistory.pop_back();
   DoCloseSubKey();
 }
 //---------------------------------------------------------------------------
@@ -211,7 +243,7 @@ void __fastcall THierarchicalStorage::CloseAll()
 {
   while (!CurrentSubKey.IsEmpty())
   {
-    CloseSubKey();
+    CloseSubKeyPath();
   }
 }
 //---------------------------------------------------------------------------
@@ -723,7 +755,7 @@ bool __fastcall TRegistryStorage::DoOpenSubKey(const UnicodeString & SubKey, boo
 void __fastcall TRegistryStorage::DoCloseSubKey()
 {
   FRegistry->CloseKey();
-  if (FKeyHistory->Count > 0)
+  if (!FKeyHistory.empty())
   {
     FRegistry->OpenKey(Storage + GetCurrentSubKeyMunged(), True);
   }
@@ -732,7 +764,7 @@ void __fastcall TRegistryStorage::DoCloseSubKey()
 void __fastcall TRegistryStorage::DoDeleteSubKey(const UnicodeString & SubKey)
 {
   UnicodeString K;
-  if (FKeyHistory->Count == 0)
+  if (FKeyHistory.empty())
   {
     K = Storage + CurrentSubKey;
   }
@@ -946,13 +978,13 @@ bool __fastcall TCustomIniFileStorage::OpenRootKey(bool CanCreate)
   return THierarchicalStorage::OpenRootKey(CanCreate);
 }
 //---------------------------------------------------------------------------
-bool __fastcall TCustomIniFileStorage::OpenSubKey(const UnicodeString & Key, bool CanCreate, bool Path)
+bool __fastcall TCustomIniFileStorage::OpenSubKey(const UnicodeString & Key, bool CanCreate)
 {
   bool Result;
 
   {
     TAutoFlag Flag(FOpeningSubKey);
-    Result = THierarchicalStorage::OpenSubKey(Key, CanCreate, Path);
+    Result = THierarchicalStorage::OpenSubKey(Key, CanCreate);
   }
 
   if (FMasterStorage.get() != NULL)
@@ -963,10 +995,10 @@ bool __fastcall TCustomIniFileStorage::OpenSubKey(const UnicodeString & Key, boo
     }
     else
     {
-      bool MasterResult = FMasterStorage->OpenSubKey(Key, CanCreate, Path);
+      bool MasterResult = FMasterStorage->OpenSubKey(Key, CanCreate);
       if (!Result && MasterResult)
       {
-        Result = THierarchicalStorage::OpenSubKey(Key, true, Path);
+        Result = THierarchicalStorage::OpenSubKey(Key, true);
         DebugAssert(Result);
       }
       else if (Result && !MasterResult)

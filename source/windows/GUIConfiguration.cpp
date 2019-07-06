@@ -625,7 +625,7 @@ void __fastcall TGUIConfiguration::UpdateStaticUsage()
 //---------------------------------------------------------------------------
 // duplicated from core\configuration.cpp
 #define BLOCK(KEY, CANCREATE, BLOCK) \
-  if (Storage->OpenSubKey(KEY, CANCREATE, true)) try { BLOCK } __finally { Storage->CloseSubKey(); }
+  if (Storage->OpenSubKeyPath(KEY, CANCREATE)) try { BLOCK } __finally { Storage->CloseSubKeyPath(); }
 #define KEY(TYPE, VAR) KEYEX(TYPE, VAR, PropertyToKey(TEXT(#VAR)))
 #define REGCONFIG(CANCREATE) \
   BLOCK(L"Interface", CANCREATE, \
@@ -657,7 +657,7 @@ void __fastcall TGUIConfiguration::UpdateStaticUsage()
 //---------------------------------------------------------------------------
 bool __fastcall TGUIConfiguration::DoSaveCopyParam(THierarchicalStorage * Storage, const TCopyParamType * CopyParam, const TCopyParamType * Defaults)
 {
-  bool Result = Storage->OpenSubKey(L"Interface\\CopyParam", true, true);
+  bool Result = Storage->OpenSubKeyPath(L"Interface\\CopyParam", true);
   if (Result)
   {
     CopyParam->Save(Storage, Defaults);
@@ -692,24 +692,24 @@ void __fastcall TGUIConfiguration::SaveData(THierarchicalStorage * Storage, bool
   }
   __finally
   {
-    Storage->CloseSubKey();
+    Storage->CloseSubKeyPath();
   }
 
-  if (Storage->OpenSubKey(L"Interface\\NewDirectory2", true, true))
+  if (Storage->OpenSubKeyPath(L"Interface\\NewDirectory2", true))
   try
   {
     FNewDirectoryProperties.Save(Storage);
   }
   __finally
   {
-    Storage->CloseSubKey();
+    Storage->CloseSubKeyPath();
   }
 }
 //---------------------------------------------------------------------------
 bool __fastcall TGUIConfiguration::LoadCopyParam(THierarchicalStorage * Storage, TCopyParamType * CopyParam)
 {
   bool Result =
-    Storage->OpenSubKey(L"Interface\\CopyParam", false, true);
+    Storage->OpenSubKeyPath(L"Interface\\CopyParam", false);
   if (Result)
   {
     try
@@ -718,7 +718,7 @@ bool __fastcall TGUIConfiguration::LoadCopyParam(THierarchicalStorage * Storage,
     }
     catch (...)
     {
-      Storage->CloseSubKey();
+      Storage->CloseSubKeyPath();
       throw;
     }
   }
@@ -761,7 +761,7 @@ void __fastcall TGUIConfiguration::LoadData(THierarchicalStorage * Storage)
   }
   __finally
   {
-    Storage->CloseSubKey();
+    Storage->CloseSubKeyPath();
   }
 
   // Make it compatible with versions prior to 3.7.1 that have not saved PuttyPath
@@ -778,14 +778,14 @@ void __fastcall TGUIConfiguration::LoadData(THierarchicalStorage * Storage)
     FPuttyPath = FormatCommand(FPuttyPath, L"");
   }
 
-  if (Storage->OpenSubKey(L"Interface\\NewDirectory2", false, true))
+  if (Storage->OpenSubKeyPath(L"Interface\\NewDirectory2", false))
   try
   {
     FNewDirectoryProperties.Load(Storage);
   }
   __finally
   {
-    Storage->CloseSubKey();
+    Storage->CloseSubKeyPath();
   }
 }
 //---------------------------------------------------------------------------

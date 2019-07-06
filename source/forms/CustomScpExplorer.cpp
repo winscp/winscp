@@ -5510,7 +5510,7 @@ UnicodeString __fastcall TCustomScpExplorerForm::SerializeCopyParamForCommandLin
   TCopyParamType Defaults;
   std::unique_ptr<THierarchicalStorage> ConfigStorage(Configuration->CreateConfigStorage());
   ConfigStorage->AccessMode = smRead;
-  if (ConfigStorage->OpenSubKey(Configuration->ConfigurationSubKey, false, false))
+  if (ConfigStorage->OpenSubKey(Configuration->ConfigurationSubKey, false))
   {
     GUIConfiguration->LoadCopyParam(ConfigStorage.get(), &Defaults);
   }

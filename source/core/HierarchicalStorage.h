@@ -16,9 +16,11 @@ public:
   __fastcall THierarchicalStorage(const UnicodeString & AStorage);
   virtual __fastcall ~THierarchicalStorage();
   virtual bool __fastcall OpenRootKey(bool CanCreate);
-  virtual bool __fastcall OpenSubKey(const UnicodeString & SubKey, bool CanCreate, bool Path = false);
+  virtual bool __fastcall OpenSubKey(const UnicodeString & SubKey, bool CanCreate);
   virtual void __fastcall CloseSubKey();
   void __fastcall CloseAll();
+  bool __fastcall OpenSubKeyPath(const UnicodeString & KeyPath, bool CanCreate);
+  void __fastcall CloseSubKeyPath();
   void __fastcall GetSubKeyNames(TStrings * Strings);
   void __fastcall GetValueNames(TStrings * Strings);
   bool __fastcall HasSubKeys();
@@ -67,8 +69,14 @@ public:
   __property bool Temporary = { read = GetTemporary };
 
 protected:
+  struct TKeyEntry
+  {
+    UnicodeString Key;
+    int Levels;
+  };
+
   UnicodeString FStorage;
-  TStrings * FKeyHistory;
+  std::vector<TKeyEntry> FKeyHistory;
   TStorageAccessMode FAccessMode;
   bool FExplicit;
   bool FForceSave;
@@ -165,7 +173,7 @@ public:
   virtual __fastcall ~TCustomIniFileStorage();
 
   virtual bool __fastcall OpenRootKey(bool CanCreate);
-  virtual bool __fastcall OpenSubKey(const UnicodeString & SubKey, bool CanCreate, bool Path = false);
+  virtual bool __fastcall OpenSubKey(const UnicodeString & SubKey, bool CanCreate);
 
 private:
   UnicodeString __fastcall GetCurrentSection();
