@@ -1737,6 +1737,7 @@ begin
       NewNode := AddChildNode(Node, SRec);
       if DoScanDir(NewNode) then
       begin
+        // We have seen the SFGAO_HASSUBFOLDER to be absent on C: drive $Recycle.Bin
         NewNode.HasChildren := Bool(TNodeData(NewNode.Data).shAttr and SFGAO_HASSUBFOLDER);
 
         TNodeData(NewNode.Data).Scanned := not NewNode.HasChildren;
