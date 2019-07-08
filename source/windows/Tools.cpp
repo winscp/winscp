@@ -680,7 +680,7 @@ void __fastcall ValidateMaskEdit(TMemo * Edit, bool Directory)
 //---------------------------------------------------------------------------
 TStrings * __fastcall GetUnwrappedMemoLines(TMemo * Memo)
 {
-  // This removes soft linebreakes when text in memo wraps
+  // This removes soft linebreaks when text in memo wraps
   // (Memo->Lines includes soft linebreaks, while Memo->Text does not)
   return TextToStringList(Memo->Text);
 }
