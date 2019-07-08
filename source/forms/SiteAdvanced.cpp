@@ -1543,6 +1543,7 @@ void __fastcall TSiteAdvancedDialog::PrivateKeyGenerateItemClick(TObject * /*Sen
 //---------------------------------------------------------------------------
 void __fastcall TSiteAdvancedDialog::PrivateKeyUploadItemClick(TObject * /*Sender*/)
 {
+  // This has an unwanted side effect of persisting the values, as if the dialog was submitted.
   SaveSession();
   FSessionData->FSProtocol = fsSFTPonly; // no SCP fallback, as SCP does not implement GetHomeDirectory
   FSessionData->RemoteDirectory = UnicodeString();
