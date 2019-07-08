@@ -85,5 +85,7 @@ void __fastcall SetRescaleFunction(
   TComponent * Component, TRescaleEvent OnRescale, TObject * Token = NULL, bool OwnsToken = false);
 void __fastcall RecordFormImplicitRescale(TForm * Form);
 void __fastcall CountClicksForWindowPrint(TForm * Form);
+bool IsButtonBeingClicked(TButtonControl * Button);
+bool IsCancelButtonBeingClicked(TControl * Control);
 //---------------------------------------------------------------------------
 #endif  // VCLCommonH

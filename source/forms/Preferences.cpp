@@ -937,7 +937,8 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     Configuration->LogFileName = LogFileNameEdit3->Text;
     Configuration->LogFileAppend = LogFileAppendButton->Checked;
     __int64 LogMaxSize;
-    if (LogMaxSizeCheck->Checked && DebugAlwaysTrue(TryStrToSize(LogMaxSizeCombo->Text, LogMaxSize)))
+    // TryStrToSize can fail, only if LogMaxSizeComboExit is bypassed due to IsCancelButtonBeingClicked
+    if (LogMaxSizeCheck->Checked && TryStrToSize(LogMaxSizeCombo->Text, LogMaxSize))
     {
       Configuration->LogMaxSize = LogMaxSize;
     }
@@ -2495,40 +2496,43 @@ void __fastcall TPreferencesDialog::PanelFontLabelDblClick(TObject * Sender)
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::UpdatesAuthenticationEmailEditExit(TObject * /*Sender*/)
 {
-  if (FVerifiedUpdatesAuthenticationEmail != UpdatesAuthenticationEmailEdit->Text)
+  if (!IsCancelButtonBeingClicked(this))
   {
-    if (!UpdatesAuthenticationEmailEdit->Text.IsEmpty())
+    if (FVerifiedUpdatesAuthenticationEmail != UpdatesAuthenticationEmailEdit->Text)
     {
-      TUpdatesConfiguration Updates = SaveUpdates();
-
+      if (!UpdatesAuthenticationEmailEdit->Text.IsEmpty())
       {
-        TInstantOperationVisualizer Visualizer;
-        QueryUpdates(Updates);
+        TUpdatesConfiguration Updates = SaveUpdates();
+
+        {
+          TInstantOperationVisualizer Visualizer;
+          QueryUpdates(Updates);
+        }
+
+        UnicodeString AuthenticationError = Updates.Results.AuthenticationError;
+        if (!AuthenticationError.IsEmpty())
+        {
+          AuthenticationError = FormatUpdatesMessage(AuthenticationError);
+          if (HasParagraphs(AuthenticationError))
+          {
+            AuthenticationError = MainInstructionsFirstParagraph(AuthenticationError);
+          }
+          else
+          {
+            AuthenticationError = MainInstructions(AuthenticationError);
+          }
+
+          unsigned int Result =
+            MoreMessageDialog(AuthenticationError, NULL, qtError, qaIgnore | qaAbort, HELP_AUTOMATIC_UPDATE);
+          if (Result == qaAbort)
+          {
+            Abort();
+          }
+        }
       }
 
-      UnicodeString AuthenticationError = Updates.Results.AuthenticationError;
-      if (!AuthenticationError.IsEmpty())
-      {
-        AuthenticationError = FormatUpdatesMessage(AuthenticationError);
-        if (HasParagraphs(AuthenticationError))
-        {
-          AuthenticationError = MainInstructionsFirstParagraph(AuthenticationError);
-        }
-        else
-        {
-          AuthenticationError = MainInstructions(AuthenticationError);
-        }
-
-        unsigned int Result =
-          MoreMessageDialog(AuthenticationError, NULL, qtError, qaIgnore | qaAbort, HELP_AUTOMATIC_UPDATE);
-        if (Result == qaAbort)
-        {
-          Abort();
-        }
-      }
+      FVerifiedUpdatesAuthenticationEmail = UpdatesAuthenticationEmailEdit->Text;
     }
-
-    FVerifiedUpdatesAuthenticationEmail = UpdatesAuthenticationEmailEdit->Text;
   }
 }
 //---------------------------------------------------------------------------
@@ -2915,29 +2919,35 @@ void __fastcall TPreferencesDialog::LanguagesViewCustomDrawItem(
 void __fastcall TPreferencesDialog::LogMaxSizeComboExit(TObject * /*Sender*/)
 {
   __int64 Size;
-  if (!TryStrToSize(LogMaxSizeCombo->Text, Size))
+  if (!IsCancelButtonBeingClicked(this))
   {
-    LogMaxSizeCombo->SetFocus();
-    throw Exception(FMTLOAD(SIZE_INVALID, (LogMaxSizeCombo->Text)));
-  }
-  else
-  {
-    LogMaxSizeCombo->Text = SizeToStr(Size);
+    if (!TryStrToSize(LogMaxSizeCombo->Text, Size))
+    {
+      LogMaxSizeCombo->SetFocus();
+      throw Exception(FMTLOAD(SIZE_INVALID, (LogMaxSizeCombo->Text)));
+    }
+    else
+    {
+      LogMaxSizeCombo->Text = SizeToStr(Size);
+    }
   }
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::PuttyPathEditExit(TObject * /*Sender*/)
 {
-  try
+  if (!IsCancelButtonBeingClicked(this))
   {
-    UnicodeString Program, AParams, Dir;
-    SplitCommand(PuttyPathEdit->Text, Program, AParams, Dir);
-  }
-  catch(...)
-  {
-    PuttyPathEdit->SelectAll();
-    PuttyPathEdit->SetFocus();
-    throw;
+    try
+    {
+      UnicodeString Program, AParams, Dir;
+      SplitCommand(PuttyPathEdit->Text, Program, AParams, Dir);
+    }
+    catch(...)
+    {
+      PuttyPathEdit->SelectAll();
+      PuttyPathEdit->SetFocus();
+      throw;
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -2993,7 +3003,15 @@ void __fastcall TPreferencesDialog::CustomIniFileStorageChanged()
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::CustomIniFileStorageEditExit(TObject * /*Sender*/)
 {
-  CustomIniFileStorageChanged();
+  if (!IsCancelButtonBeingClicked(this))
+  {
+    CustomIniFileStorageChanged();
+  }
+  else
+  {
+    // Reset the value to prevent accidental overwide of an INI file, in case the dialog cancel does not complete
+    CustomIniFileStorageEdit->Text = FCustomIniFileStorageName;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::CustomIniFileStorageEditAfterDialog(TObject * Sender, UnicodeString & Name, bool & Action)

@@ -675,11 +675,10 @@ void __fastcall TRightsFrame::OctalEditChange(TObject *)
 //---------------------------------------------------------------------------
 void __fastcall TRightsFrame::OctalEditExit(TObject *)
 {
-  if (!Visible)
+  if ((!Visible && DebugAlwaysTrue(Popup)) || // Popup assert: should happen only if popup is closed by esc key
+      IsCancelButtonBeingClicked(this) || // CloseButton
+      ((FCancelButton != NULL) && IsButtonBeingClicked(FCancelButton)))
   {
-    // should happen only if popup is closed by esc key
-    DebugAssert(Popup);
-
     // cancel changes
     ForceUpdate();
   }

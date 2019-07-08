@@ -417,6 +417,10 @@ TSshProt __fastcall TSiteAdvancedDialog::GetSshProt()
 //---------------------------------------------------------------------
 void __fastcall TSiteAdvancedDialog::SaveSession()
 {
+  // Last resort validation,
+  // in case the test in EncryptKeyEditExit was previously bypassed due to IsCancelButtonBeingClicked
+  EncryptKeyEditExit(GetEncryptKeyEdit());
+
   // SSH page
   FSessionData->Compression = CompressionCheck->Checked;
   FSessionData->Ssh2DES = Ssh2LegacyDESCheck->Checked;
@@ -1622,10 +1626,13 @@ void __fastcall TSiteAdvancedDialog::GenerateKeyButtonClick(TObject * /*Sender*/
 //---------------------------------------------------------------------------
 void __fastcall TSiteAdvancedDialog::EncryptKeyEditExit(TObject * /*Sender*/)
 {
-  UnicodeString HexKey = GetEncryptKeyEdit()->Text;
-  if (!HexKey.IsEmpty())
+  if (!IsCancelButtonBeingClicked(this))
   {
-    ValidateEncryptKey(HexToBytes(HexKey));
+    UnicodeString HexKey = GetEncryptKeyEdit()->Text;
+    if (!HexKey.IsEmpty())
+    {
+      ValidateEncryptKey(HexToBytes(HexKey));
+    }
   }
 }
 //---------------------------------------------------------------------------

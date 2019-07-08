@@ -641,24 +641,32 @@ IShellLink * __fastcall CreateDesktopSessionShortCut(
       InfoTip, SpecialFolder, IconIndex, Return);
 }
 //---------------------------------------------------------------------------
+void ValidateMask(const UnicodeString & Mask, int ForceDirectoryMasks)
+{
+  TFileMasks Masks(ForceDirectoryMasks);
+  Masks = Mask;
+}
+//---------------------------------------------------------------------------
 template<class TEditControl>
 void __fastcall ValidateMaskEditT(const UnicodeString & Mask, TEditControl * Edit, int ForceDirectoryMasks)
 {
   DebugAssert(Edit != NULL);
-  TFileMasks Masks(ForceDirectoryMasks);
-  try
+  if (!IsCancelButtonBeingClicked(Edit))
   {
-    Masks = Mask;
-  }
-  catch(EFileMasksException & E)
-  {
-    ShowExtendedException(&E);
-    Edit->SetFocus();
-    // This does not work for TEdit and TMemo (descendants of TCustomEdit) anymore,
-    // as it re-selects whole text on exception in TCustomEdit.CMExit
-    Edit->SelStart = E.ErrorStart - 1;
-    Edit->SelLength = E.ErrorLen;
-    Abort();
+    try
+    {
+      ValidateMask(Mask, ForceDirectoryMasks);
+    }
+    catch(EFileMasksException & E)
+    {
+      ShowExtendedException(&E);
+      Edit->SetFocus();
+      // This does not work for TEdit and TMemo (descendants of TCustomEdit) anymore,
+      // as it re-selects whole text on exception in TCustomEdit.CMExit
+      Edit->SelStart = E.ErrorStart - 1;
+      Edit->SelLength = E.ErrorLen;
+      Abort();
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -674,8 +682,11 @@ void __fastcall ValidateMaskEdit(TEdit * Edit)
 //---------------------------------------------------------------------------
 void __fastcall ValidateMaskEdit(TMemo * Edit, bool Directory)
 {
-  UnicodeString Mask = TFileMasks::ComposeMaskStr(GetUnwrappedMemoLines(Edit), Directory);
-  ValidateMaskEditT(Mask, Edit, Directory ? 1 : 0);
+  if (!IsCancelButtonBeingClicked(Edit))
+  {
+    UnicodeString Mask = TFileMasks::ComposeMaskStr(GetUnwrappedMemoLines(Edit), Directory);
+    ValidateMaskEditT(Mask, Edit, Directory ? 1 : 0);
+  }
 }
 //---------------------------------------------------------------------------
 TStrings * __fastcall GetUnwrappedMemoLines(TMemo * Memo)

@@ -2434,7 +2434,7 @@ bool __fastcall SupportsSplitButton()
   return (Win32MajorVersion >= 6);
 }
 //---------------------------------------------------------------------------
-static TButton * __fastcall FindDefaultButton(TWinControl * Control)
+static TButton * __fastcall FindStandardButton(TWinControl * Control, bool Default)
 {
   TButton * Result = NULL;
   int Index = 0;
@@ -2442,7 +2442,7 @@ static TButton * __fastcall FindDefaultButton(TWinControl * Control)
   {
     TControl * ChildControl = Control->Controls[Index];
     TButton * Button = dynamic_cast<TButton *>(ChildControl);
-    if ((Button != NULL) && Button->Default)
+    if ((Button != NULL) && (Default ? Button->Default : Button->Cancel))
     {
       Result = Button;
     }
@@ -2451,7 +2451,7 @@ static TButton * __fastcall FindDefaultButton(TWinControl * Control)
       TWinControl * WinControl = dynamic_cast<TWinControl *>(ChildControl);
       if (WinControl != NULL)
       {
-        Result = FindDefaultButton(WinControl);
+        Result = FindStandardButton(WinControl, Default);
       }
     }
     Index++;
@@ -2468,7 +2468,7 @@ TModalResult __fastcall DefaultResult(TCustomForm * Form, TButton * DefaultButto
   // ModalResult being mrNone, when Windows session is being logged off.
   // We interpreted mrNone as OK, causing lots of troubles.
   TModalResult Result = mrNone;
-  TButton * Button = FindDefaultButton(Form);
+  TButton * Button = FindStandardButton(Form, true);
   if (DebugAlwaysTrue(Button != NULL))
   {
     Result = Button->ModalResult;
@@ -2798,4 +2798,28 @@ TPanel * __fastcall CreateBlankPanel(TComponent * Owner)
   Panel->BevelInner = bvNone; // default
   Panel->BevelKind = bkNone;
   return Panel;
+}
+//---------------------------------------------------------------------------
+bool IsButtonBeingClicked(TButtonControl * Button)
+{
+  class TPublicButtonControl : public TButtonControl
+  {
+  public:
+    __property ClicksDisabled;
+  };
+  TPublicButtonControl * PublicButton = reinterpret_cast<TPublicButtonControl *>(Button);
+  // HACK ClicksDisabled is set in TButtonControl.WndProc while changing focus as response to WM_LBUTTONDOWN.
+  return PublicButton->ClicksDisabled;
+}
+//---------------------------------------------------------------------------
+// When using this in OnExit handers, it's still possible that the user does not actually click the
+// CanceButton (for example, when the button is released out of the button).
+// Then the validation is bypassed. Consequently, all dialogs that uses this must still
+// gracefully handle submission with non-validated data.
+bool IsCancelButtonBeingClicked(TControl * Control)
+{
+  TCustomForm * Form = GetParentForm(Control);
+  TButtonControl * CancelButton = FindStandardButton(Form, false);
+  // Find dialog has no Cancel button
+  return (CancelButton != NULL) && IsButtonBeingClicked(CancelButton);
 }
