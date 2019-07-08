@@ -306,7 +306,7 @@ namespace WinSCP
             int indent = GetIndent();
 
             string s =
-                string.Format(CultureInfo.InvariantCulture, "[{0:yyyy-MM-dd HH:mm:ss.fffZ}] [{1:x4}] {2}{3}",
+                string.Format(CultureInfo.InvariantCulture, "[{0:yyyy-MM-dd HH:mm:ss.fff}] [{1:x4}] {2}{3}",
                 DateTime.Now, Thread.CurrentThread.ManagedThreadId,
                 (indent > 0 ? new string(' ', indent * 2) : string.Empty), message);
             _writter.WriteLine(s);
@@ -353,6 +353,11 @@ namespace WinSCP
 #if NETSTANDARD
             WriteLine("Operating system information: {0} {1} {2}", RuntimeInformation.OSDescription, RuntimeInformation.OSArchitecture, RuntimeInformation.ProcessArchitecture);
 #endif
+            TimeSpan offset = TimeZoneInfo.Local.GetUtcOffset(DateTime.UtcNow);
+            WriteLine(
+                "Timezone: {0}; {1}",
+                ((offset > TimeSpan.Zero ? "+" : (offset < TimeSpan.Zero ? "-" : string.Empty)) + offset.ToString("hh\\:mm")),
+                (TimeZoneInfo.Local.IsDaylightSavingTime(DateTime.Now) ? TimeZoneInfo.Local.DaylightName : TimeZoneInfo.Local.StandardName));
             WriteLine("User: {0}@{1}@{2}; Interactive: {3}", Environment.UserName, Environment.UserDomainName, Environment.MachineName, Environment.UserInteractive);
             WriteLine("Runtime: {0}", Environment.Version);
 #if NETSTANDARD
