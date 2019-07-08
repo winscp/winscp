@@ -537,8 +537,9 @@ void __fastcall TRightsFrame::Dispatch(void * Message)
 void __fastcall TRightsFrame::DropDown()
 {
   TCustomForm * Form = GetParentForm(this);
-  // due to lack of better idea, we clear "default" and "cancel" flags of respective
+  // Due to lack of better idea, we clear "default" and "cancel" flags of respective
   // form buttons to prevent them to handle ESC/ENTER keys.
+  // Could use FindStandardButton.
   for (int Index = 0; Index < Form->ControlCount; Index++)
   {
     TButton * Button = dynamic_cast<TButton *>(Form->Controls[Index]);
