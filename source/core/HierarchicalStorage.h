@@ -219,6 +219,7 @@ protected:
 
   void __fastcall CacheSections();
   void __fastcall ResetCache();
+  bool __fastcall DoKeyExistsInternal(const UnicodeString & SubKey);
 };
 //---------------------------------------------------------------------------
 class TIniFileStorage : public TCustomIniFileStorage

@@ -946,26 +946,30 @@ void __fastcall TCustomIniFileStorage::SetAccessMode(TStorageAccessMode value)
   THierarchicalStorage::SetAccessMode(value);
 }
 //---------------------------------------------------------------------------
-bool __fastcall TCustomIniFileStorage::DoOpenSubKey(const UnicodeString & SubKey, bool CanCreate)
+bool __fastcall TCustomIniFileStorage::DoKeyExistsInternal(const UnicodeString & SubKey)
 {
-  bool Result = CanCreate;
-
-  if (!Result)
+  CacheSections();
+  bool Result = false;
+  UnicodeString NewKey = ExcludeTrailingBackslash(CurrentSubKey + SubKey);
+  if (FSections->Count > 0)
   {
-    CacheSections();
-    UnicodeString NewKey = ExcludeTrailingBackslash(CurrentSubKey+SubKey);
-    if (FSections->Count > 0)
+    int Index = -1;
+    Result = FSections->Find(NewKey, Index);
+    if (!Result &&
+        (Index < FSections->Count) &&
+        (FSections->Strings[Index].SubString(1, NewKey.Length()+1) == NewKey + L"\\"))
     {
-      int Index = -1;
-      Result = FSections->Find(NewKey, Index);
-      if (!Result &&
-          (Index < FSections->Count) &&
-          (FSections->Strings[Index].SubString(1, NewKey.Length()+1) == NewKey + L"\\"))
-      {
-        Result = true;
-      }
+      Result = true;
     }
   }
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TCustomIniFileStorage::DoOpenSubKey(const UnicodeString & SubKey, bool CanCreate)
+{
+  bool Result =
+    CanCreate ||
+    DoKeyExistsInternal(SubKey);
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -1093,7 +1097,7 @@ bool __fastcall TCustomIniFileStorage::DoKeyExists(const UnicodeString & SubKey,
 {
   return
     (HandleByMasterStorage() && FMasterStorage->DoKeyExists(SubKey, AForceAnsi)) ||
-    FIniFile->SectionExists(CurrentSubKey + MungeStr(SubKey, AForceAnsi, false));
+    DoKeyExistsInternal(MungeStr(SubKey, AForceAnsi, false));
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCustomIniFileStorage::DoValueExistsInternal(const UnicodeString & Value)
