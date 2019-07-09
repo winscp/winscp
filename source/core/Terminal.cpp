@@ -1142,7 +1142,10 @@ void __fastcall TTerminal::Open()
   try
   {
     FEncryptKey = HexToBytes(FSessionData->EncryptKey);
-    ValidateEncryptKey(FEncryptKey);
+    if (IsEncryptingFiles())
+    {
+      ValidateEncryptKey(FEncryptKey);
+    }
 
     DoInformation(L"", true, 1);
     try
