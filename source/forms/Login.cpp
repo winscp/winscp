@@ -1446,7 +1446,7 @@ void __fastcall TLoginDialog::LoadState()
   // calling TTreeNode::MakeVisible() when tree view is not visible yet,
   // sometimes scrolls view horizontally when not needed
   // (seems like it happens for sites that are at the same level
-  // as site folders, e.g. for the very last root-level site, at long as
+  // as site folders, e.g. for the very last root-level site, as long as
   // there are any folders)
   if (!FForceNewSite &&
       !WinConfiguration->LastStoredSession.IsEmpty() && DebugAlwaysTrue(Visible))
