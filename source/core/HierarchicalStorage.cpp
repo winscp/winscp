@@ -102,6 +102,9 @@ UnicodeString __fastcall UnMungeIniName(const UnicodeString & Str)
   }
 }
 //===========================================================================
+UnicodeString AccessValueName(L"Access");
+UnicodeString DefaultAccessString(L"inherit");
+//---------------------------------------------------------------------------
 __fastcall THierarchicalStorage::THierarchicalStorage(const UnicodeString & AStorage)
 {
   FStorage = AStorage;
@@ -113,6 +116,8 @@ __fastcall THierarchicalStorage::THierarchicalStorage(const UnicodeString & ASto
   // data written in Unicode/UTF8 can be read by all versions back to 5.0.
   ForceAnsi = false;
   MungeStringValues = true;
+  FFakeReadOnlyOpens = 0;
+  FRootAccess = -1;
 }
 //---------------------------------------------------------------------------
 __fastcall THierarchicalStorage::~THierarchicalStorage()
@@ -154,9 +159,82 @@ UnicodeString __fastcall THierarchicalStorage::MungeKeyName(const UnicodeString 
 {
   UnicodeString Result = MungeStr(Key, ForceAnsi, false);
   // if there's already ANSI-munged subkey, keep ANSI munging
-  if ((Result != Key) && !ForceAnsi && DoKeyExists(Key, true))
+  if ((Result != Key) && !ForceAnsi && CanRead() && DoKeyExists(Key, true))
   {
     Result = MungeStr(Key, true, false);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall THierarchicalStorage::DoReadRootAccessString()
+{
+  UnicodeString Result;
+  if (OpenRootKey(false))
+  {
+    Result = ReadAccessString();
+    CloseSubKey();
+  }
+  else
+  {
+    Result = DefaultAccessString;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall THierarchicalStorage::ReadAccessString()
+{
+  UnicodeString Result;
+  if (!FKeyHistory.empty())
+  {
+    Result = ReadString(AccessValueName, DefaultAccessString);
+  }
+  else
+  {
+    Result = DoReadRootAccessString();
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+unsigned int __fastcall THierarchicalStorage::ReadAccess(unsigned int CurrentAccess)
+{
+  UnicodeString Access = ReadAccessString();
+  unsigned int Result = 0;
+  while (!Access.IsEmpty())
+  {
+    UnicodeString Token = CutToChar(Access, L',', true);
+    if (SameText(Token, L"inherit"))
+    {
+      Result |= CurrentAccess;
+    }
+    else if (SameText(Token, "read"))
+    {
+      Result |= hsaRead;
+    }
+    else if (SameText(Token, "full"))
+    {
+      Result |= hsaRead | hsaWrite;
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+unsigned int __fastcall THierarchicalStorage::GetCurrentAccess()
+{
+  unsigned int Result;
+  if (!FKeyHistory.empty())
+  {
+    // We must have resolved root access when opening the sub key the latest.
+    DebugAssert(FRootAccess >= 0);
+    Result = FKeyHistory.back().Access;
+  }
+  else
+  {
+    if (FRootAccess < 0)
+    {
+      FRootAccess = hsaRead; // Prevent recursion to allow reading the access
+      FRootAccess = ReadAccess(hsaRead | hsaWrite);
+    }
+    Result = FRootAccess;
   }
   return Result;
 }
@@ -197,14 +275,32 @@ bool __fastcall THierarchicalStorage::OpenSubKey(const UnicodeString & Key, bool
 {
   UnicodeString MungedKey = MungeKeyName(Key);
 
-  bool Result = DoOpenSubKey(MungedKey, CanCreate);
+  bool Result;
+  unsigned int InheritAccess;
+  unsigned int Access;
+  // For the first open, CanWrite > GetCurrentAccess > ReadAccess has a (needed) side effect of caching root access.
+  if (!CanWrite() && CanCreate && !KeyExists(MungedKey))
+  {
+    InheritAccess = Access = 0; // do not even try to read the access, as the key is actually not opened
+    FFakeReadOnlyOpens++;
+    Result = true;
+  }
+  else
+  {
+    Access = hsaRead; // allow reading the access
+    InheritAccess = GetCurrentAccess();
+    Result = DoOpenSubKey(MungedKey, CanCreate);
+  }
 
   if (Result)
   {
     TKeyEntry Entry;
     Entry.Key = IncludeTrailingBackslash(CurrentSubKey + MungedKey);
     Entry.Levels = 1;
+    Entry.Access = Access;
     FKeyHistory.push_back(Entry);
+    // Read the real access only now, that the key is finally opened (it's in FKeyHistory)
+    FKeyHistory.back().Access = ReadAccess(InheritAccess);
   }
 
   return Result;
@@ -236,7 +332,14 @@ void __fastcall THierarchicalStorage::CloseSubKey()
 
   DebugAssert(FKeyHistory.back().Levels == 1);
   FKeyHistory.pop_back();
-  DoCloseSubKey();
+  if (FFakeReadOnlyOpens > 0)
+  {
+    FFakeReadOnlyOpens--;
+  }
+  else
+  {
+    DoCloseSubKey();
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall THierarchicalStorage::CloseAll()
@@ -259,14 +362,26 @@ void __fastcall THierarchicalStorage::ClearSubKeys()
 //---------------------------------------------------------------------------
 void __fastcall THierarchicalStorage::RecursiveDeleteSubKey(const UnicodeString & Key)
 {
-  if (CanWrite())
+  bool CanWriteParent = CanWrite();
+  if (OpenSubKey(Key, false))
   {
-    if (OpenSubKey(Key, false))
+    bool CanWriteKey = CanWrite();
+    ClearSubKeys();
+
+    // Cannot delete the key itself, but can delete its contents, so at least delete the values
+    // (which would otherwise be deleted implicitly by DoDeleteSubKey)
+    if (!CanWriteParent && CanWrite())
     {
-      ClearSubKeys();
-      CloseSubKey();
+      ClearValues();
     }
-    DoDeleteSubKey(Key);
+
+    CloseSubKey();
+
+    // Only if all subkeys were successfully deleted in ClearSubKeys
+    if (CanWriteParent && HasSubKeys())
+    {
+      DoDeleteSubKey(Key);
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -362,9 +477,17 @@ void __fastcall THierarchicalStorage::WriteValues(TStrings * Strings, bool Maint
   }
 }
 //---------------------------------------------------------------------------
+bool __fastcall THierarchicalStorage::HasAccess(unsigned int Access)
+{
+  return
+    FLAGSET(GetCurrentAccess(), Access) &&
+    // There should never be any kind of access to a non-existent key
+    DebugAlwaysTrue(FFakeReadOnlyOpens == 0);
+}
+//---------------------------------------------------------------------------
 bool __fastcall THierarchicalStorage::CanRead()
 {
-  return true;
+  return HasAccess(hsaRead);
 }
 //---------------------------------------------------------------------------
 void __fastcall THierarchicalStorage::GetSubKeyNames(TStrings * Strings)
@@ -384,6 +507,19 @@ void __fastcall THierarchicalStorage::GetValueNames(TStrings * Strings)
   if (CanRead())
   {
     DoGetValueNames(Strings);
+
+    int Index = 0;
+    while (Index < Strings->Count)
+    {
+      if (SameText(Strings->Strings[Index], AccessValueName))
+      {
+        Strings->Delete(Index);
+      }
+      else
+      {
+        Index++;
+      }
+    }
   }
   else
   {
@@ -531,7 +667,7 @@ RawByteString __fastcall THierarchicalStorage::ReadStringAsBinaryData(const Unic
 //---------------------------------------------------------------------------
 bool __fastcall THierarchicalStorage::CanWrite()
 {
-  return true;
+  return HasAccess(hsaWrite);
 }
 //---------------------------------------------------------------------------
 void __fastcall THierarchicalStorage::WriteBool(const UnicodeString & Name, bool Value)
@@ -986,6 +1122,9 @@ bool __fastcall TCustomIniFileStorage::OpenSubKey(const UnicodeString & Key, boo
 {
   bool Result;
 
+  // To cache root access in advance, otherwise we end up calling outselves, what TAutoFlag does not like
+  GetCurrentAccess();
+
   {
     TAutoFlag Flag(FOpeningSubKey);
     Result = THierarchicalStorage::OpenSubKey(Key, CanCreate);
@@ -1356,6 +1495,21 @@ void __fastcall TCustomIniFileStorage::DoWriteBinaryData(const UnicodeString & N
     FMasterStorage->WriteBinaryData(Name, Buffer, Size);
   }
   DoWriteStringRawInternal(Name, BytesToHex(RawByteString(static_cast<const char*>(Buffer), Size)));
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TCustomIniFileStorage::DoReadRootAccessString()
+{
+  UnicodeString Result;
+  if (OpenSubKey(L"_", false))
+  {
+    Result = ReadAccessString();
+    CloseSubKey();
+  }
+  else
+  {
+    Result = DefaultAccessString;
+  }
+  return Result;
 }
 //===========================================================================
 TIniFileStorage * __fastcall TIniFileStorage::CreateFromPath(const UnicodeString & AStorage)

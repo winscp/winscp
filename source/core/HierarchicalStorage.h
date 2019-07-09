@@ -69,10 +69,12 @@ public:
   __property bool Temporary = { read = GetTemporary };
 
 protected:
+  enum THierarchicalStorageAccess { hsaRead = 0x01, hsaWrite = 0x02 };
   struct TKeyEntry
   {
     UnicodeString Key;
     int Levels;
+    unsigned int Access;
   };
 
   UnicodeString FStorage;
@@ -82,6 +84,8 @@ protected:
   bool FForceSave;
   bool FMungeStringValues;
   bool FForceAnsi;
+  int FFakeReadOnlyOpens;
+  int FRootAccess;
 
   UnicodeString __fastcall GetCurrentSubKey();
   UnicodeString __fastcall GetCurrentSubKeyMunged();
@@ -117,9 +121,15 @@ protected:
 
   virtual size_t __fastcall DoBinaryDataSize(const UnicodeString & Name) = 0;
 
+  virtual UnicodeString __fastcall DoReadRootAccessString();
+
   size_t __fastcall BinaryDataSize(const UnicodeString & Name);
-  bool __fastcall CanRead();
-  bool __fastcall CanWrite();
+  UnicodeString __fastcall ReadAccessString();
+  unsigned int __fastcall ReadAccess(unsigned int CurrentAccess);
+  inline bool __fastcall HasAccess(unsigned int Access);
+  inline bool __fastcall CanRead();
+  inline bool __fastcall CanWrite();
+  unsigned int __fastcall GetCurrentAccess();
 };
 //---------------------------------------------------------------------------
 class TRegistryStorage : public THierarchicalStorage
@@ -216,6 +226,8 @@ protected:
   virtual double __fastcall DoReadFloat(const UnicodeString & Name, double Default);
   virtual UnicodeString __fastcall DoReadStringRaw(const UnicodeString & Name, const UnicodeString & Default);
   virtual size_t __fastcall DoReadBinaryData(const UnicodeString & Name, void * Buffer, size_t Size);
+
+  virtual UnicodeString __fastcall DoReadRootAccessString();
 
   void __fastcall CacheSections();
   void __fastcall ResetCache();
