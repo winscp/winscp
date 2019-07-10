@@ -5073,7 +5073,11 @@ int __fastcall TSFTPFileSystem::SFTPOpenRemote(void * AOpenParams, void * /*Para
           else
           {
             OperationProgress->Progress();
-            FTerminal->RecycleFile(OpenParams->RemoteFileName, NULL);
+            if (!FTerminal->RecycleFile(OpenParams->RemoteFileName, NULL))
+            {
+              // Allow normal overwrite
+              OpenParams->DontRecycle = true;
+            }
           }
         }
       }

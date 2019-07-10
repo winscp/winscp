@@ -273,8 +273,9 @@ protected:
     int Params);
   void __fastcall DoCustomCommandOnFile(UnicodeString FileName,
     const TRemoteFile * File, UnicodeString Command, int Params, TCaptureOutputEvent OutputEvent);
-  void __fastcall DoRenameFile(const UnicodeString FileName, const TRemoteFile * File,
+  bool __fastcall DoRenameFile(const UnicodeString FileName, const TRemoteFile * File,
     const UnicodeString NewName, bool Move);
+  bool __fastcall DoMoveFile(const UnicodeString & FileName, const TRemoteFile * File, /*const TMoveFileParams*/ void * Param);
   void __fastcall DoCopyFile(const UnicodeString FileName, const TRemoteFile * File, const UnicodeString NewName);
   void __fastcall DoChangeFileProperties(const UnicodeString FileName,
     const TRemoteFile * File, const TRemoteProperties * Properties);
@@ -359,7 +360,7 @@ protected:
   void __fastcall DoSynchronizeProgress(const TSynchronizeData & Data, bool Collect);
   void __fastcall DeleteLocalFile(UnicodeString FileName,
     const TRemoteFile * File, void * Param);
-  void __fastcall RecycleFile(UnicodeString FileName, const TRemoteFile * File);
+  bool __fastcall RecycleFile(const UnicodeString & FileName, const TRemoteFile * File);
   TStrings * __fastcall GetFixedPaths();
   void __fastcall DoStartup();
   virtual bool __fastcall DoQueryReopen(Exception * E);

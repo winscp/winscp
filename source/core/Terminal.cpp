@@ -485,10 +485,12 @@ public:
   void Error(Exception & E, const UnicodeString & Message);
   void Error(Exception & E, TSessionAction & Action, const UnicodeString & Message);
   bool Retry();
+  bool Succeeded();
 
 private:
   TTerminal * FTerminal;
   bool FRetry;
+  bool FSucceeded;
 
   void DoError(Exception & E, TSessionAction * Action, const UnicodeString & Message);
 };
@@ -497,10 +499,12 @@ TRetryOperationLoop::TRetryOperationLoop(TTerminal * Terminal)
 {
   FTerminal = Terminal;
   FRetry = false;
+  FSucceeded = true;
 }
 //---------------------------------------------------------------------------
 void TRetryOperationLoop::DoError(Exception & E, TSessionAction * Action, const UnicodeString & Message)
 {
+  FSucceeded = false;
   // Note that the action may already be canceled when RollbackAction is called
   unsigned int Result;
   try
@@ -571,7 +575,16 @@ bool TRetryOperationLoop::Retry()
 {
   bool Result = FRetry;
   FRetry = false;
+  if (Result)
+  {
+    FSucceeded = true;
+  }
   return Result;
+}
+//---------------------------------------------------------------------------
+bool TRetryOperationLoop::Succeeded()
+{
+  return FSucceeded;
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
@@ -3885,16 +3898,21 @@ bool __fastcall TTerminal::IsRecycledFile(UnicodeString FileName)
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::RecycleFile(UnicodeString FileName,
-  const TRemoteFile * File)
+bool __fastcall TTerminal::RecycleFile(const UnicodeString & AFileName, const TRemoteFile * File)
 {
+  UnicodeString FileName = AFileName;
   if (FileName.IsEmpty())
   {
     DebugAssert(File != NULL);
     FileName = File->FileName;
   }
 
-  if (!IsRecycledFile(FileName))
+  bool Result;
+  if (IsRecycledFile(FileName))
+  {
+    Result = true;
+  }
+  else
   {
     LogEvent(FORMAT(L"Moving file \"%s\" to remote recycle bin '%s'.",
       (FileName, SessionData->RecycleBinPath)));
@@ -3903,13 +3921,15 @@ void __fastcall TTerminal::RecycleFile(UnicodeString FileName,
     Params.Target = SessionData->RecycleBinPath;
     Params.FileMask = FORMAT(L"*-%s.*", (FormatDateTime(L"yyyymmdd-hhnnss", Now())));
 
-    MoveFile(FileName, File, &Params);
+    Result = DoMoveFile(FileName, File, &Params);
 
-    if ((OperationProgress != NULL) && (OperationProgress->Operation == foDelete))
+    if (Result && (OperationProgress != NULL) && (OperationProgress->Operation == foDelete))
     {
       OperationProgress->Succeeded();
     }
   }
+
+  return Result;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TTerminal::TryStartOperationWithFile(
@@ -4456,7 +4476,7 @@ void __fastcall TTerminal::RenameFile(const TRemoteFile * File,
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::DoRenameFile(const UnicodeString FileName, const TRemoteFile * File,
+bool __fastcall TTerminal::DoRenameFile(const UnicodeString FileName, const TRemoteFile * File,
   const UnicodeString NewName, bool Move)
 {
   TRetryOperationLoop RetryLoop(this);
@@ -4475,10 +4495,10 @@ void __fastcall TTerminal::DoRenameFile(const UnicodeString FileName, const TRem
     }
   }
   while (RetryLoop.Retry());
+  return RetryLoop.Succeeded();
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::MoveFile(const UnicodeString FileName,
-  const TRemoteFile * File, /*const TMoveFileParams*/ void * Param)
+bool __fastcall TTerminal::DoMoveFile(const UnicodeString & FileName, const TRemoteFile * File, /*const TMoveFileParams*/ void * Param)
 {
   StartOperationWithFile(FileName, foRemoteMove, foDelete);
   DebugAssert(Param != NULL);
@@ -4487,8 +4507,17 @@ void __fastcall TTerminal::MoveFile(const UnicodeString FileName,
     MaskFileName(UnixExtractFileName(FileName), Params.FileMask);
   LogEvent(FORMAT(L"Moving file \"%s\" to \"%s\".", (FileName, NewName)));
   FileModified(File, FileName);
-  DoRenameFile(FileName, File, NewName, true);
-  ReactOnCommand(fsMoveFile);
+  bool Result = DoRenameFile(FileName, File, NewName, true);
+  if (Result)
+  {
+    ReactOnCommand(fsMoveFile);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminal::MoveFile(const UnicodeString FileName, const TRemoteFile * File, /*const TMoveFileParams*/ void * Param)
+{
+  DoMoveFile(FileName, File, Param);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TTerminal::MoveFiles(TStrings * FileList, const UnicodeString Target,
