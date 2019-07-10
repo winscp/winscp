@@ -10350,15 +10350,28 @@ void __fastcall TCustomScpExplorerForm::ClipboardDownload(const UnicodeString & 
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::ClipboardFakeCreated(TObject * /*Sender*/, const UnicodeString FileName)
 {
+  // It can actually rarelly happen that some random file is created, while we are shuttting down the monitor
+  // (as it pumps a Windows message queue while beign shutted down)
   if (DebugAlwaysTrue(!FClipboardFakeDirectory.IsEmpty()) &&
       SameText(ExtractFileName(FileName), ExtractFileName(FClipboardFakeDirectory)))
   {
-    RemoveDir(ApiPath(FileName));
+    // Can fail as it can be e.g. locked by AV, so we retry that later
+    bool Removed = RemoveDir(ApiPath(FileName));
 
-    if (!NonVisualDataModule->Busy)
+    try
     {
-      bool NoConfirmation = (WinConfiguration->DDTransferConfirmation == asOff);
-      ClipboardDownload(ExtractFilePath(FileName), NoConfirmation, true);
+      if (!NonVisualDataModule->Busy)
+      {
+        bool NoConfirmation = (WinConfiguration->DDTransferConfirmation == asOff);
+        ClipboardDownload(ExtractFilePath(FileName), NoConfirmation, true);
+      }
+    }
+    __finally
+    {
+      if (!Removed)
+      {
+        RemoveDir(ApiPath(FileName));
+      }
     }
   }
 }
