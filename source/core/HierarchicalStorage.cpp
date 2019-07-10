@@ -365,7 +365,6 @@ void __fastcall THierarchicalStorage::RecursiveDeleteSubKey(const UnicodeString 
   bool CanWriteParent = CanWrite();
   if (OpenSubKey(Key, false))
   {
-    bool CanWriteKey = CanWrite();
     ClearSubKeys();
 
     // Cannot delete the key itself, but can delete its contents, so at least delete the values
