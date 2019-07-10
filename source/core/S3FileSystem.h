@@ -173,7 +173,8 @@ protected:
   static S3Status LibS3MultipartResponsePropertiesCallback(const S3ResponseProperties * Properties, void * CallbackData);
   static S3Status LibS3GetObjectDataCallback(int BufferSize, const char * Buffer, void * CallbackData);
 
-  static const int S3MultiPartChunkSize;
+  static const int S3MinMultiPartChunkSize;
+  static const int S3MaxMultiPartChunks;
 };
 //------------------------------------------------------------------------------
 UnicodeString __fastcall S3LibVersion();
