@@ -47,7 +47,8 @@ UnicodeString __fastcall S3LibDefaultRegion()
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
-const int TS3FileSystem::S3MultiPartChunkSize = 5 * 1024 * 1024;
+const int TS3FileSystem::S3MinMultiPartChunkSize = 5 * 1024 * 1024;
+const int TS3FileSystem::S3MaxMultiPartChunks = 10000;
 //---------------------------------------------------------------------------
 TS3FileSystem::TS3FileSystem(TTerminal * ATerminal) :
   TCustomFileSystem(ATerminal),
@@ -1382,7 +1383,9 @@ void __fastcall TS3FileSystem::Source(
       0
     };
 
-  int Parts = std::max(1, static_cast<int>((Handle.Size + S3MultiPartChunkSize - 1) / S3MultiPartChunkSize));
+  int Parts = std::min(S3MaxMultiPartChunks, std::max(1, static_cast<int>((Handle.Size + S3MinMultiPartChunkSize - 1) / S3MinMultiPartChunkSize)));
+  int ChunkSize = std::max(S3MinMultiPartChunkSize, static_cast<int>((Handle.Size + Parts - 1) / Parts));
+  DebugAssert((ChunkSize == S3MinMultiPartChunkSize) || (Handle.Size > static_cast<__int64>(S3MaxMultiPartChunks) * S3MinMultiPartChunkSize));
   bool Multipart = (Parts > 1);
 
   RawByteString MultipartUploadId;
@@ -1390,7 +1393,7 @@ void __fastcall TS3FileSystem::Source(
 
   if (Multipart)
   {
-    FTerminal->LogEvent(FORMAT(L"Initiating multipart upload (%d parts)", (Parts)));
+    FTerminal->LogEvent(FORMAT(L"Initiating multipart upload (%d parts - chunk size %s)", (Parts, IntToStr(ChunkSize))));
 
     FILE_OPERATION_LOOP_BEGIN
     {
@@ -1445,7 +1448,7 @@ void __fastcall TS3FileSystem::Source(
             { CreateResponseHandlerCustom(LibS3MultipartResponsePropertiesCallback), LibS3PutObjectDataCallback };
           __int64 Remaining = Stream->Size - Stream->Position;
           int RemainingInt = static_cast<int>(std::min(static_cast<__int64>(std::numeric_limits<int>::max()), Remaining));
-          int PartLength = std::min(S3MultiPartChunkSize, RemainingInt);
+          int PartLength = std::min(ChunkSize, RemainingInt);
           FTerminal->LogEvent(FORMAT(L"Uploading part %d [%s]", (Part, IntToStr(PartLength))));
           S3_upload_part(
             &BucketContext, StrToS3(Key), &PutProperties, &UploadPartHandler, Part, MultipartUploadId.c_str(),
