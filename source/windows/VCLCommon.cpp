@@ -852,7 +852,7 @@ static unsigned int WindowPrintClickCount = 0;
 //---------------------------------------------------------------------------
 void __fastcall CountClicksForWindowPrint(TForm * Form)
 {
-  if (WinConfiguration->AllowWindowPrint)
+  if ((WinConfiguration != NULL) && WinConfiguration->AllowWindowPrint)
   {
     DWORD Tick = GetTickCount();
     if (WindowPrintForm != Form)
