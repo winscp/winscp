@@ -3688,18 +3688,18 @@ void __fastcall TTerminal::OperationFinish(
 void __fastcall TTerminal::OperationStart(
   TFileOperationProgressType & Progress, TFileOperation Operation, TOperationSide Side, int Count)
 {
-  OperationStart(Progress, Operation, Side, Count, false, UnicodeString(), 0);
+  OperationStart(Progress, Operation, Side, Count, false, UnicodeString(), 0, odoIdle);
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::OperationStart(
   TFileOperationProgressType & Progress, TFileOperation Operation, TOperationSide Side, int Count,
-  bool Temp, const UnicodeString & Directory, unsigned long CPSLimit)
+  bool Temp, const UnicodeString & Directory, unsigned long CPSLimit, TOnceDoneOperation OnceDoneOperation)
 {
   if (FOperationProgressPersistence != NULL)
   {
     Progress.Restore(*FOperationProgressPersistence);
   }
-  Progress.Start(Operation, Side, Count, Temp, Directory, CPSLimit);
+  Progress.Start(Operation, Side, Count, Temp, Directory, CPSLimit, OnceDoneOperation);
   DebugAssert(FOperationProgress == NULL);
   FOperationProgress = &Progress;
 }
@@ -6691,7 +6691,7 @@ bool __fastcall TTerminal::CopyToRemote(
     TFileOperationProgressType OperationProgress(&DoProgress, &DoFinished);
     OperationStart(
       OperationProgress, (Params & cpDelete ? foMove : foCopy), osLocal,
-      FilesToCopy->Count, Params & cpTemporary, TargetDir, CopyParam->CPSLimit);
+      FilesToCopy->Count, Params & cpTemporary, TargetDir, CopyParam->CPSLimit, CopyParam->OnceDoneOperation);
 
     bool CollectingUsage = false;
     try
@@ -7147,7 +7147,7 @@ bool __fastcall TTerminal::CopyToLocal(
     }
 
     OperationStart(OperationProgress, (Params & cpDelete ? foMove : foCopy), osRemote,
-      FilesToCopy->Count, Params & cpTemporary, TargetDir, CopyParam->CPSLimit);
+      FilesToCopy->Count, Params & cpTemporary, TargetDir, CopyParam->CPSLimit, CopyParam->OnceDoneOperation);
 
     bool CollectingUsage = false;
     try

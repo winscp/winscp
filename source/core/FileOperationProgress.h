@@ -95,6 +95,7 @@ private:
   bool FReset;
   unsigned int FLastSecond;
   unsigned long FRemainingCPS;
+  TOnceDoneOperation FInitialOnceDoneOperation;
   TPersistence FPersistence;
   TCriticalSection * FSection;
   TCriticalSection * FUserSelectionsSection;
@@ -152,6 +153,7 @@ public:
   __property __int64 OperationTransferred = { read = GetOperationTransferred };
   __property __int64 TotalSize = { read = GetTotalSize };
   __property int FilesFinishedSuccessfully = { read = FFilesFinishedSuccessfully };
+  __property TOnceDoneOperation InitialOnceDoneOperation = { read = FInitialOnceDoneOperation };
 
   __property TBatchOverwrite BatchOverwrite = { read = GetBatchOverwrite };
   __property bool SkipToAll = { read = GetSkipToAll };
@@ -198,7 +200,7 @@ public:
   void __fastcall Start(TFileOperation AOperation, TOperationSide ASide, int ACount);
   void __fastcall Start(TFileOperation AOperation,
     TOperationSide ASide, int ACount, bool ATemp, const UnicodeString ADirectory,
-    unsigned long ACPSLimit);
+    unsigned long ACPSLimit, TOnceDoneOperation InitialOnceDoneOperation);
   void __fastcall Stop();
   void __fastcall SetDone();
   void __fastcall Suspend();

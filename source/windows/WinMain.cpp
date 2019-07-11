@@ -108,6 +108,9 @@ void __fastcall Upload(TTerminal * Terminal, TStrings * FileList, bool UseDefaul
       DoCopyDialog(true, false, FileList, TargetDirectory, &CopyParam, Options,
         CopyParamAttrs, Data.get(), NULL))
   {
+    // Setting parameter overrides only now, otherwise the dialog would present the parametes as non-default
+    CopyParam.OnceDoneOperation = odoDisconnect;
+
     Terminal->CopyToRemote(FileList, TargetDirectory, &CopyParam, 0, NULL);
   }
 }
@@ -157,12 +160,16 @@ void __fastcall Download(TTerminal * Terminal, const UnicodeString FileName,
         DoCopyDialog(false, false, FileListFriendly.get(), TargetDirectory, &CopyParam,
           Options, CopyParamAttrs, NULL, NULL))
     {
+      // Setting parameter overrides only now, otherwise the dialog would present the parametes as non-default
+
       if (CustomDisplayName)
       {
         // Set only now, so that it is not redundantly displayed on the copy dialog.
         // We should escape the * and ?'s.
         CopyParam.FileMask = DisplayName;
       }
+
+      CopyParam.OnceDoneOperation = odoDisconnect;
 
       std::unique_ptr<TStrings> FileList(new TStringList());
       FileList->AddObject(FileName, File);

@@ -58,6 +58,7 @@ void __fastcall TCopyParamType::Default()
   ExcludeHiddenFiles = false;
   ExcludeEmptyDirectories = false;
   Size = -1;
+  OnceDoneOperation = odoIdle;
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TCopyParamType::GetInfoStr(
@@ -574,6 +575,7 @@ void __fastcall TCopyParamType::Assign(const TCopyParamType * Source)
   COPY(ExcludeHiddenFiles);
   COPY(ExcludeEmptyDirectories);
   COPY(Size);
+  COPY(OnceDoneOperation);
   #undef COPY
 }
 //---------------------------------------------------------------------------
@@ -898,6 +900,7 @@ void __fastcall TCopyParamType::Load(THierarchicalStorage * Storage)
   ExcludeHiddenFiles = Storage->ReadBool(L"ExcludeHiddenFiles", ExcludeHiddenFiles);
   ExcludeEmptyDirectories = Storage->ReadBool(L"ExcludeEmptyDirectories", ExcludeEmptyDirectories);
   Size = -1;
+  OnceDoneOperation = odoIdle;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamType::Save(THierarchicalStorage * Storage, const TCopyParamType * Defaults) const
@@ -945,6 +948,7 @@ void __fastcall TCopyParamType::Save(THierarchicalStorage * Storage, const TCopy
   WRITE_DATA(Bool, ExcludeHiddenFiles);
   WRITE_DATA(Bool, ExcludeEmptyDirectories);
   DebugAssert(Size < 0);
+  DebugAssert(OnceDoneOperation == odoIdle);
 }
 //---------------------------------------------------------------------------
 #define C(Property) (Property == rhp.Property)
@@ -980,6 +984,7 @@ bool __fastcall TCopyParamType::operator==(const TCopyParamType & rhp) const
     C(ExcludeHiddenFiles) &&
     C(ExcludeEmptyDirectories) &&
     C(Size) &&
+    C(OnceDoneOperation) &&
     true;
 }
 #undef C
