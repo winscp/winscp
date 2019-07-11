@@ -524,11 +524,15 @@ bool __fastcall TSessionData::IsSame(const TSessionData * Default, bool Advanced
   #define PROPERTY_HANDLER(P, F) \
     if (F##P != Default->F##P) \
     { \
+      Result = false; \
       if (DifferentProperties != NULL) \
       { \
         DifferentProperties->Add(#P); \
       } \
-      Result = false; \
+      else \
+      { \
+        return Result; \
+      } \
     }
 
   if (!AdvancedOnly)
