@@ -150,12 +150,12 @@ void __fastcall TFileOperationProgressType::ClearTransfer()
 void __fastcall TFileOperationProgressType::Start(TFileOperation AOperation,
   TOperationSide ASide, int ACount)
 {
-  Start(AOperation, ASide, ACount, false, L"", 0);
+  Start(AOperation, ASide, ACount, false, L"", 0, odoIdle);
 }
 //---------------------------------------------------------------------------
 void __fastcall TFileOperationProgressType::Start(TFileOperation AOperation,
   TOperationSide ASide, int ACount, bool ATemp,
-  const UnicodeString ADirectory, unsigned long ACPSLimit)
+  const UnicodeString ADirectory, unsigned long ACPSLimit, TOnceDoneOperation InitialOnceDoneOperation)
 {
 
   {
@@ -169,6 +169,7 @@ void __fastcall TFileOperationProgressType::Start(TFileOperation AOperation,
     FCancel = csContinue;
     FDirectory = ADirectory;
     FTemp = ATemp;
+    FInitialOnceDoneOperation = InitialOnceDoneOperation;
     FPersistence.CPSLimit = ACPSLimit;
   }
 

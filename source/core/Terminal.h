@@ -391,7 +391,7 @@ protected:
     TFileOperationProgressType & Progress, TFileOperation Operation, TOperationSide Side, int Count);
   void __fastcall OperationStart(
     TFileOperationProgressType & Progress, TFileOperation Operation, TOperationSide Side, int Count,
-    bool Temp, const UnicodeString & Directory, unsigned long CPSLimit);
+    bool Temp, const UnicodeString & Directory, unsigned long CPSLimit, TOnceDoneOperation OnceDoneOperation);
   void __fastcall OperationStop(TFileOperationProgressType & Progress);
   virtual void __fastcall Information(const UnicodeString & Str, bool Status);
   virtual unsigned int __fastcall QueryUser(const UnicodeString Query,

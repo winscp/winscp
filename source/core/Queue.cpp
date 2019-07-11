@@ -2276,7 +2276,7 @@ void __fastcall TParallelTransferQueueItem::DoExecute(TTerminal * Terminal)
   OperationProgress.Start(
     // CPS limit inherited from parent OperationProgress.
     // Count not known and won't be needed as we will always have TotalSize as  we always transfer a single file at a time.
-    Operation, FParallelOperation->Side, -1, Temp, FParallelOperation->TargetDir, 0);
+    Operation, FParallelOperation->Side, -1, Temp, FParallelOperation->TargetDir, 0, odoIdle);
 
   try
   {

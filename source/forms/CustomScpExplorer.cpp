@@ -1441,17 +1441,8 @@ void __fastcall TCustomScpExplorerForm::FileOperationProgress(
   if (ProgressData.InProgress && !FProgressForm)
   {
     CreateProgressForm(NULL);
-    // When main window is hidden, synchronisation form does not exist (we do not get here during synchronization - only comparing),
-    // we suppose "/upload" or URL download mode
-    if (!Visible && (ProgressData.Operation != foCalculateSize) &&
-        (ProgressData.Operation != foCalculateChecksum) &&
-        // Hack to prevent renames from DoSynchronizeMove (synchronize checklist) closing the connection
-        (ProgressData.Operation != foRemoteMove) &&
-        (FSynchronizeProgressForm == NULL) &&
-        !FStandaloneEditing)
-    {
-      FProgressForm->OnceDoneOperation = odoDisconnect;
-    }
+    DebugAssert(FProgressForm->OnceDoneOperation == odoIdle);
+    FProgressForm->OnceDoneOperation = ProgressData.InitialOnceDoneOperation;
   }
   // operation is finished (or terminated), so we hide progress form
   else if (!ProgressData.InProgress && (FProgressForm != NULL) && (FProgressForm->SynchronizeProgress == NULL))
