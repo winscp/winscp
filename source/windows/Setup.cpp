@@ -679,7 +679,7 @@ void __fastcall LaunchAdvancedAssociationUI()
 
   RegisterForDefaultPrograms();
   NotifyChangedAssociations();
-  // sleep recommended by https://docs.microsoft.com/en-us/windows/desktop/shell/default-programs#becoming-the-default-browser
+  // sleep recommended by https://docs.microsoft.com/en-us/windows/win32/shell/default-programs#becoming-the-default-browser
   Sleep(1000);
 
   if (IsWin10())
