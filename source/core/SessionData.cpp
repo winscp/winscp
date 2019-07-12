@@ -1562,7 +1562,7 @@ bool __fastcall TSessionData::HasAnyPassword()
     HasAnySessionPassword() ||
     !FProxyPassword.IsEmpty() ||
     // will probably be never used
-    FNewPassword.IsEmpty();
+    !FNewPassword.IsEmpty();
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::ClearSessionPasswords()
