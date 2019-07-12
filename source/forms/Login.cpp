@@ -1648,6 +1648,7 @@ void __fastcall TLoginDialog::SetDefaultSessionActionExecute(
   {
     std::unique_ptr<TSessionData> SessionData(new TSessionData(L""));
     SaveSession(SessionData.get());
+    // See the comment to the other use of the method in DoSaveSession.
     CustomWinConfiguration->AskForMasterPasswordIfNotSetAndNeededToPersistSessionData(SessionData.get());
     StoredSessions->DefaultSettings = SessionData.get();
 

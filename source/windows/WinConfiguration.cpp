@@ -1724,7 +1724,8 @@ RawByteString __fastcall TWinConfiguration::StronglyRecryptPassword(RawByteStrin
       TCustomWinConfiguration::DecryptPassword(Password, Key);
     if (!PasswordText.IsEmpty())
     {
-      // can be not set for instance, when editing=>saving site with no prior password
+      // Can be not set for instance, when editing=>saving site with no prior password.
+      // Though it should not actually happen, as we call AskForMasterPasswordIfNotSetAndNeededToPersistSessionData in DoSaveSession.
       AskForMasterPasswordIfNotSet();
       Password = ScramblePassword(PasswordText);
       AES256EncyptWithMAC(Password, FPlainMasterPasswordEncrypt, Result);

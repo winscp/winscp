@@ -562,6 +562,9 @@ TSessionData * __fastcall DoSaveSession(TSessionData * SessionData,
   bool CreateShortcut = false;
   if (!ForceDialog && ((PSavePassword == NULL) || SavePassword))
   {
+    // This is probably here to ask before session is started saving.
+    // Otherwise we would ask implicitly, when saving passwords, but at that moment,
+    // part of the site is already saved and when the user cancel the prompt it's too late.
     CustomWinConfiguration->AskForMasterPasswordIfNotSetAndNeededToPersistSessionData(SessionData);
     Result = true;
   }

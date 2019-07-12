@@ -1587,20 +1587,27 @@ bool __fastcall TSessionData::HasPassword()
 //---------------------------------------------------------------------
 bool __fastcall TSessionData::HasAnySessionPassword()
 {
-  return HasPassword() || !FTunnelPassword.IsEmpty();
-}
-//---------------------------------------------------------------------
-bool __fastcall TSessionData::HasAnyPassword()
-{
+  // Keep in sync with ClearSessionPasswords
   return
-    HasAnySessionPassword() ||
-    !FProxyPassword.IsEmpty() ||
+    HasPassword() ||
+    !FTunnelPassword.IsEmpty()  ||
     // will probably be never used
     !FNewPassword.IsEmpty();
 }
 //---------------------------------------------------------------------
+bool __fastcall TSessionData::HasAnyPassword()
+{
+  // Keep in sync with MaskPasswords
+  return
+    HasAnySessionPassword() ||
+    !FProxyPassword.IsEmpty() ||
+    !FEncryptKey.IsEmpty() ||
+    !FPassphrase.IsEmpty();
+}
+//---------------------------------------------------------------------
 void __fastcall TSessionData::ClearSessionPasswords()
 {
+  // Keep in sync with HasAnySessionPassword
   FPassword = L"";
   FNewPassword = L"";
   FTunnelPassword = L"";
@@ -1763,6 +1770,7 @@ bool __fastcall TSessionData::MaskPasswordInOptionParameter(const UnicodeString 
 //---------------------------------------------------------------------
 void __fastcall TSessionData::MaskPasswords()
 {
+  // Keep in sync with HasAnyPassword
   if (!Password.IsEmpty())
   {
     Password = PasswordMask;
