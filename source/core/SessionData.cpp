@@ -518,11 +518,13 @@ void __fastcall TSessionData::CopyNonCoreData(TSessionData * SourceData)
   Note = SourceData->Note;
 }
 //---------------------------------------------------------------------
-bool __fastcall TSessionData::IsSame(const TSessionData * Default, bool AdvancedOnly, TStrings * DifferentProperties)
+bool __fastcall TSessionData::IsSame(
+  const TSessionData * Default, bool AdvancedOnly, TStrings * DifferentProperties, bool Decrypted)
 {
   bool Result = true;
   #define PROPERTY_HANDLER(P, F) \
-    if (F##P != Default->F##P) \
+    if ((Decrypted && (P != Default->P)) || \
+        (!Decrypted && (F##P != Default->F##P))) \
     { \
       Result = false; \
       if (DifferentProperties != NULL) \
@@ -547,7 +549,12 @@ bool __fastcall TSessionData::IsSame(const TSessionData * Default, bool Advanced
 //---------------------------------------------------------------------
 bool __fastcall TSessionData::IsSame(const TSessionData * Default, bool AdvancedOnly)
 {
-  return IsSame(Default, AdvancedOnly, NULL);
+  return IsSame(Default, AdvancedOnly, NULL, false);
+}
+//---------------------------------------------------------------------
+bool __fastcall TSessionData::IsSameDecrypted(const TSessionData * Default)
+{
+  return IsSame(Default, false, NULL, true);
 }
 //---------------------------------------------------------------------
 TFSProtocol NormalizeFSProtocol(TFSProtocol FSProtocol)
@@ -4610,9 +4617,9 @@ void __fastcall TStoredSessionList::UpdateStaticUsage()
         Note++;
       }
 
-      // this effectively does not take passwords (proxy + tunnel) into account,
-      // when master password is set, as master password handler in not set up yet
-      if (!Data->IsSame(FactoryDefaults.get(), true, DifferentAdvancedProperties.get()))
+      // This would not work for passwords, as they are compared in their encrypted form.
+      // But there are no passwords set in factory defaults anyway.
+      if (!Data->IsSame(FactoryDefaults.get(), true, DifferentAdvancedProperties.get(), false))
       {
         Advanced++;
       }

@@ -414,7 +414,7 @@ private:
   _di_IXMLNode __fastcall FindSettingsNode(_di_IXMLNode Node, const UnicodeString & Name);
   UnicodeString __fastcall ReadSettingsNode(_di_IXMLNode Node, const UnicodeString & Name, const UnicodeString & Default);
   int __fastcall ReadSettingsNode(_di_IXMLNode Node, const UnicodeString & Name, int Default);
-  bool __fastcall IsSame(const TSessionData * Default, bool AdvancedOnly, TStrings * DifferentProperties);
+  bool __fastcall IsSame(const TSessionData * Default, bool AdvancedOnly, TStrings * DifferentProperties, bool Decrypted);
   UnicodeString __fastcall GetNameWithoutHiddenPrefix();
   bool __fastcall HasStateData();
   void __fastcall CopyStateData(TSessionData * SourceData);
@@ -487,6 +487,7 @@ public:
   void __fastcall ExpandEnvironmentVariables();
   void __fastcall DisableAuthentationsExceptPassword();
   bool __fastcall IsSame(const TSessionData * Default, bool AdvancedOnly);
+  bool __fastcall IsSameDecrypted(const TSessionData * Default);
   bool __fastcall IsSameSite(const TSessionData * Default);
   bool __fastcall IsInFolderOrWorkspace(UnicodeString Name);
   UnicodeString __fastcall GenerateSessionUrl(unsigned int Flags);
