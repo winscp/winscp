@@ -416,17 +416,22 @@ bool __fastcall TTerminalManager::ConnectActiveTerminalImpl(bool Reopen)
 
   if (Action == tpFree)
   {
-    if (ActiveTerminal->Permanent)
-    {
-      DisconnectActiveTerminal();
-    }
-    else
-    {
-      FreeActiveTerminal();
-    }
+    DisconnectActiveTerminalIfPermanentFreeOtherwise();
   }
 
   return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminalManager::DisconnectActiveTerminalIfPermanentFreeOtherwise()
+{
+  if (ActiveTerminal->Permanent)
+  {
+    DisconnectActiveTerminal();
+  }
+  else
+  {
+    FreeActiveTerminal();
+  }
 }
 //---------------------------------------------------------------------------
 bool __fastcall TTerminalManager::ConnectActiveTerminal()

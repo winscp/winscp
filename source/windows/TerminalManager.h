@@ -49,6 +49,7 @@ public:
   TManagedTerminal * __fastcall NewTerminals(TList * DataList);
   virtual void __fastcall FreeTerminal(TTerminal * Terminal);
   void __fastcall Move(TTerminal * Source, TTerminal * Target);
+  void __fastcall DisconnectActiveTerminalIfPermanentFreeOtherwise();
   void __fastcall DisconnectActiveTerminal();
   void __fastcall ReconnectActiveTerminal();
   void __fastcall FreeActiveTerminal();

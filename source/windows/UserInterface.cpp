@@ -355,7 +355,7 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
     {
       if (ForActiveTerminal)
       {
-        Manager->DisconnectActiveTerminal();
+        Manager->DisconnectActiveTerminalIfPermanentFreeOtherwise();
       }
     }
   }
