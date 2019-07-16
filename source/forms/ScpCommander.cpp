@@ -550,6 +550,13 @@ void __fastcall TScpCommanderForm::TerminalChanged(bool Replaced)
     }
     FFirstTerminal = false;
 
+    // Happens when opening a connection from a command-line (StartingDisconnected was not called),
+    // which does not have a local directory set yet.
+    if (LocalDirView->Path.IsEmpty())
+    {
+      LocalDefaultDirectory();
+    }
+
     if (WinConfiguration->DefaultDirIsHome &&
         !Terminal->SessionData->UpdateDirectories)
     {
