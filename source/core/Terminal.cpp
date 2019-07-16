@@ -4419,6 +4419,10 @@ bool __fastcall TTerminal::CalculateFilesSize(TStrings * FileList,
   Param.AllowDirs = AllowDirs;
   ProcessFiles(FileList, foCalculateSize, DoCalculateFileSize, &Param);
   Size = Param.Size;
+  if (Configuration->ActualLogProtocol >= 1)
+  {
+    LogEvent(FORMAT(L"Size of %d remote files/folders calculated as %s", (FileList->Count, IntToStr(Size))));
+  }
   return Param.Result;
 }
 //---------------------------------------------------------------------------
@@ -5391,6 +5395,11 @@ bool __fastcall TTerminal::CalculateLocalFilesSize(TStrings * FileList,
   __finally
   {
     OperationStop(OperationProgress);
+  }
+
+  if (Configuration->ActualLogProtocol >= 1)
+  {
+    LogEvent(FORMAT(L"Size of %d local files/folders calculated as %s", (FileList->Count, IntToStr(Size))));
   }
 
   if (OnceDoneOperation != odoIdle)
