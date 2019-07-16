@@ -2981,15 +2981,22 @@ __int64 TSynchronizeProgress::GetProcessed(const TFileOperationProgressType * Cu
 //---------------------------------------------------------------------------
 int TSynchronizeProgress::Progress(const TFileOperationProgressType * CurrentItemOperationProgress) const
 {
-  __int64 Processed = GetProcessed(CurrentItemOperationProgress);
   int Result;
-  if (FTotalSize > 0)
+  if (TFileOperationProgressType::IsIndeterminateOperation(CurrentItemOperationProgress->Operation))
   {
-    Result = (Processed * 100) / FTotalSize;
+    Result = -1;
   }
   else
   {
-    Result = 0;
+    __int64 Processed = GetProcessed(CurrentItemOperationProgress);
+    if (FTotalSize > 0)
+    {
+      Result = (Processed * 100) / FTotalSize;
+    }
+    else
+    {
+      Result = 0;
+    }
   }
   return Result;
 }
