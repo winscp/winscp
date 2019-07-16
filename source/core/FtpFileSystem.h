@@ -271,6 +271,7 @@ private:
   bool FDoListAll;
   TFTPServerCapabilities * FServerCapabilities;
   TDateTime FLastDataSent;
+  bool FAnyTransferSucceeded;
   bool FDetectTimeDifference;
   __int64 FTimeDifference;
   std::unique_ptr<TStrings> FChecksumAlgs;

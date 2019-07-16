@@ -1730,7 +1730,7 @@ unsigned int __fastcall TTerminal::QueryUserException(const UnicodeString Query,
 {
   unsigned int Result;
   UnicodeString ExMessage;
-  if (DebugAlwaysTrue(ExceptionMessage(E, ExMessage) || !Query.IsEmpty()))
+  if (DebugAlwaysTrue(ExceptionMessageFormatted(E, ExMessage) || !Query.IsEmpty()))
   {
     TStrings * MoreMessages = new TStringList();
     try

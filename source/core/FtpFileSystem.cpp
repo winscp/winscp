@@ -261,6 +261,7 @@ __fastcall TFTPFileSystem::TFTPFileSystem(TTerminal * ATerminal):
   FBytesAvailable = -1;
   FBytesAvailableSuppoted = false;
   FLoggedIn = false;
+  FAnyTransferSucceeded = false; // Do not reset on reconnect
 
   FChecksumAlgs.reset(new TStringList());
   FChecksumCommands.reset(new TStringList());
@@ -1514,6 +1515,7 @@ void __fastcall TFTPFileSystem::FileTransfer(const UnicodeString & FileName,
     // call non-guarded variant to avoid deadlock with keepalives
     // (we are not waiting for reply anymore so keepalives are free to proceed)
     DoFileTransferProgress(OperationProgress->TransferSize, OperationProgress->TransferSize);
+    FAnyTransferSucceeded = true;
   }
 }
 //---------------------------------------------------------------------------
@@ -1963,6 +1965,7 @@ void __fastcall TFTPFileSystem::DoReadDirectory(TRemoteFileList * FileList)
   }
 
   FLastDataSent = Now();
+  FAnyTransferSucceeded = true;
 }
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::CheckTimeDifference()
@@ -3012,6 +3015,7 @@ UnicodeString __fastcall TFTPFileSystem::GotReply(unsigned int Reply, unsigned i
       bool Disconnected =
         FLAGSET(Reply, TFileZillaIntf::REPLY_DISCONNECTED) ||
         FLAGSET(Reply, TFileZillaIntf::REPLY_NOTCONNECTED);
+      bool DoClose = false;
 
       UnicodeString HelpKeyword;
       TStrings * MoreMessages = new TStringList();
@@ -3072,6 +3076,22 @@ UnicodeString __fastcall TFTPFileSystem::GotReply(unsigned int Reply, unsigned i
           HelpKeyword = HELP_STATUSMSG_DISCONNECTED;
         }
 
+        if (FAnyTransferSucceeded && (FLastError->Count > 0))
+        {
+          UnicodeString CantOpenTransferChannelMessage = LoadStr(IDS_ERRORMSG_CANTOPENTRANSFERCHANNEL);
+          int P = CantOpenTransferChannelMessage.Pos(L"%");
+          if (DebugAlwaysTrue(P > 0))
+          {
+            CantOpenTransferChannelMessage.SetLength(P - 1);
+          }
+          if (ContainsText(FLastError->Strings[0], CantOpenTransferChannelMessage))
+          {
+            Disconnected = true;
+            // Close only later, as we still need to use FLast* fields
+            DoClose = true;
+          }
+        }
+
         MoreMessages->AddStrings(FLastError);
         // already cleared from WaitForReply, but GotReply can be also called
         // from Closed. then make sure that error from previous command not
@@ -3105,6 +3125,10 @@ UnicodeString __fastcall TFTPFileSystem::GotReply(unsigned int Reply, unsigned i
 
       if (Disconnected)
       {
+        if (DoClose)
+        {
+          Close();
+        }
         // for fatal error, it is essential that there is some message
         DebugAssert(!Error.IsEmpty());
         ExtException * E = new ExtException(Error, MoreMessages, true, HelpKeyword);
