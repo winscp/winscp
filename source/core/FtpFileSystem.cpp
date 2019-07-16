@@ -543,8 +543,7 @@ void __fastcall TFTPFileSystem::Close()
   if (DebugAlwaysTrue(Result))
   {
     DebugAssert(FActive);
-    Discard();
-    FTerminal->Closed();
+    Disconnect();
   }
 }
 //---------------------------------------------------------------------------
@@ -2957,6 +2956,12 @@ void __fastcall TFTPFileSystem::GotNonCommandReply(unsigned int Reply)
   DebugFail();
 }
 //---------------------------------------------------------------------------
+void __fastcall TFTPFileSystem::Disconnect()
+{
+  Discard();
+  FTerminal->Closed();
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall TFTPFileSystem::GotReply(unsigned int Reply, unsigned int Flags,
   UnicodeString Error, unsigned int * Code, TStrings ** Response)
 {
@@ -3017,8 +3022,7 @@ UnicodeString __fastcall TFTPFileSystem::GotReply(unsigned int Reply, unsigned i
           if (FLAGCLEAR(Flags, REPLY_CONNECT))
           {
             MoreMessages->Add(LoadStr(LOST_CONNECTION));
-            Discard();
-            FTerminal->Closed();
+            Disconnect();
           }
           else
           {
