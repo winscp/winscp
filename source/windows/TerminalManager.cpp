@@ -499,7 +499,7 @@ void __fastcall TTerminalManager::DisconnectActiveTerminal()
   ScpExplorer->Queue = NewQueue;
   delete OldQueue;
 
-  dynamic_cast<TManagedTerminal *>(ActiveTerminal)->Disconnected = true;
+  ActiveTerminal->Disconnected = true;
   if (ScpExplorer != NULL)
   {
     TerminalReady(); // in case it was never connected
@@ -661,7 +661,7 @@ void __fastcall TTerminalManager::DoSetActiveTerminal(TManagedTerminal * value, 
     UpdateAppTitle();
     if (ScpExplorer)
     {
-      if (ActiveTerminal && ((ActiveTerminal->Status == ssOpened) || dynamic_cast<TManagedTerminal *>(ActiveTerminal)->Disconnected))
+      if (ActiveTerminal && ((ActiveTerminal->Status == ssOpened) || ActiveTerminal->Disconnected))
       {
         TerminalReady();
       }
@@ -714,7 +714,7 @@ void __fastcall TTerminalManager::DoSetActiveTerminal(TManagedTerminal * value, 
 
 
     if ((ActiveTerminal != NULL) && !ActiveTerminal->Active &&
-        !dynamic_cast<TManagedTerminal *>(ActiveTerminal)->Disconnected)
+        !ActiveTerminal->Disconnected)
     {
       ConnectActiveTerminal();
     }
@@ -1517,17 +1517,15 @@ void __fastcall TTerminalManager::Idle(bool SkipCurrentTerminal)
 
   for (int Index = 0; Index < Count; Index++)
   {
-    TTerminal * Terminal = Terminals[Index];
+    TManagedTerminal * Terminal = Terminals[Index];
     try
     {
       if (!SkipCurrentTerminal || (Terminal != ActiveTerminal))
       {
-        TManagedTerminal * ManagedTerminal = dynamic_cast<TManagedTerminal *>(Terminal);
-        DebugAssert(ManagedTerminal != NULL);
         // make sure Idle is called on the thread that runs the terminal
-        if (ManagedTerminal->TerminalThread != NULL)
+        if (Terminal->TerminalThread != NULL)
         {
-          ManagedTerminal->TerminalThread->Idle();
+          Terminal->TerminalThread->Idle();
         }
         else
         {
@@ -1654,7 +1652,7 @@ void __fastcall TTerminalManager::SaveWorkspace(TList * DataList)
 {
   for (int Index = 0; Index < Count; Index++)
   {
-    TManagedTerminal * ManagedTerminal = dynamic_cast<TManagedTerminal *>(Terminals[Index]);
+    TManagedTerminal * ManagedTerminal = Terminals[Index];
     TSessionData * Data = StoredSessions->SaveWorkspaceData(ManagedTerminal->StateData, Index);
     DataList->Add(Data);
   }
