@@ -8983,7 +8983,7 @@ void __fastcall TCustomScpExplorerForm::CMShowingChanged(TMessage & Message)
     // When we are starting minimized (i.e. from an installer),
     // postpone showing Login dialog until we get restored.
     // Otherwise the Login dialog (and Authentication window) show restored
-    // over invidible (minimized) main window.
+    // over invisible (minimized) main window.
     if (WindowState == wsMinimized)
     {
       FNeedSession = true;
