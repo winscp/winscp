@@ -6750,7 +6750,7 @@ void __fastcall TCustomScpExplorerForm::WMQueryEndSession(TMessage & Message)
   // Do not call default handling as that triggers OnCloseQuery,
   // where our implementation will popup confirmation dialogs, what we do not want,
   // as per Vista guidelines:
-  // https://docs.microsoft.com/en-us/windows/desktop/shutdown/shutting-down
+  // https://docs.microsoft.com/en-us/windows/win32/shutdown/shutting-down
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::WMEndSession(TWMEndSession & Message)
