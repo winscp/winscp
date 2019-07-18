@@ -594,7 +594,13 @@ void __fastcall TTerminalManager::FreeTerminal(TTerminal * Terminal)
     {
       if ((Count > 0) && !FDestroying)
       {
-        ActiveTerminal = Terminals[Index < Count ? Index : Index - 1];
+        TManagedTerminal * NewActiveTerminal = Terminals[Index < Count ? Index : Index - 1];
+        if (!NewActiveTerminal->Disconnected)
+        {
+          NewActiveTerminal->Disconnected = true;
+          NewActiveTerminal->DisconnectedTemporarily = true;
+        }
+        ActiveTerminal = NewActiveTerminal;
       }
       else
       {
