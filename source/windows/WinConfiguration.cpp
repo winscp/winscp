@@ -609,7 +609,7 @@ void __fastcall TWinConfiguration::Default()
   FGenerateUrlAssemblyLanguage = alCSharp;
   FExternalSessionInExistingInstance = true;
   FShowLoginWhenNoSession = true;
-  FKeepOpenWhenNoSession = false;
+  FKeepOpenWhenNoSession = true;
   FLocalIconsByExt = false;
   FBidiModeOverride = lfoLanguageIfRecommended;
   FFlipChildrenOverride = lfoLanguageIfRecommended;
