@@ -643,7 +643,7 @@ protected:
   void __fastcall AnyInternalEditorModified(TObject * Sender, bool & Modified);
   virtual void __fastcall StartingDisconnected();
   void __fastcall DoTerminalListChanged();
-  void __fastcall NeedSession(bool ReloadSessions);
+  void __fastcall NeedSession(bool Startup);
   bool __fastcall DraggingAllFilesFromDirView(TOperationSide Side, TStrings * FileList);
   bool __fastcall SelectedAllFilesInDirView(TCustomDirView * DView);
   TSessionData * __fastcall SessionDataForCode();
@@ -685,6 +685,7 @@ protected:
   void __fastcall CMDialogKey(TWMKeyDown & Message);
   DYNAMIC void __fastcall Deactivate();
   void __fastcall CenterReconnectToolbar();
+  void __fastcall DoOpenFolderOrWorkspace(const UnicodeString & Name, bool ConnectFirstTerminal);
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();

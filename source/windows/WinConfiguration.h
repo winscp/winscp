@@ -442,6 +442,7 @@ private:
   TScriptFormat FGenerateUrlScriptFormat;
   TAssemblyLanguage FGenerateUrlAssemblyLanguage;
   bool FExternalSessionInExistingInstance;
+  bool FShowLoginWhenNoSession;
   bool FKeepOpenWhenNoSession;
   bool FLocalIconsByExt;
   TLocaleFlagOverride FBidiModeOverride;
@@ -543,6 +544,7 @@ private:
   void __fastcall SetGenerateUrlScriptFormat(TScriptFormat value);
   void __fastcall SetGenerateUrlAssemblyLanguage(TAssemblyLanguage value);
   void __fastcall SetExternalSessionInExistingInstance(bool value);
+  void __fastcall SetShowLoginWhenNoSession(bool value);
   void __fastcall SetKeepOpenWhenNoSession(bool value);
   void __fastcall SetLocalIconsByExt(bool value);
   void __fastcall SetBidiModeOverride(TLocaleFlagOverride value);
@@ -731,6 +733,7 @@ public:
   __property TScriptFormat GenerateUrlScriptFormat = { read = FGenerateUrlScriptFormat, write = SetGenerateUrlScriptFormat };
   __property TAssemblyLanguage GenerateUrlAssemblyLanguage = { read = FGenerateUrlAssemblyLanguage, write = SetGenerateUrlAssemblyLanguage };
   __property bool ExternalSessionInExistingInstance = { read = FExternalSessionInExistingInstance, write = SetExternalSessionInExistingInstance };
+  __property bool ShowLoginWhenNoSession = { read = FShowLoginWhenNoSession, write = SetShowLoginWhenNoSession };
   __property bool KeepOpenWhenNoSession = { read = FKeepOpenWhenNoSession, write = SetKeepOpenWhenNoSession };
   __property bool LocalIconsByExt = { read = FLocalIconsByExt, write = SetLocalIconsByExt };
   __property TLocaleFlagOverride BidiModeOverride = { read = FBidiModeOverride, write = SetBidiModeOverride };

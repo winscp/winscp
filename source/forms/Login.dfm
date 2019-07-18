@@ -391,6 +391,7 @@ object LoginDialog: TLoginDialog
         Anchors = [akRight, akBottom]
         Cancel = True
         Caption = 'Close'
+        DropDownMenu = CloseDropDownMenu
         ModalResult = 2
         TabOrder = 1
       end
@@ -670,6 +671,16 @@ object LoginDialog: TLoginDialog
       Category = 'Other'
       Caption = 'All &Major Site Fields'
       OnExecute = SearchSiteActionExecute
+    end
+    object CloseAction: TAction
+      Category = 'Other'
+      Caption = 'Close'
+    end
+    object NeverShowAgainAction: TAction
+      Category = 'Other'
+      AutoCheck = True
+      Caption = 'Close and Do Not Show Automatically Again'
+      OnExecute = NeverShowAgainActionExecute
     end
   end
   object ToolsPopupMenu: TPopupMenu
@@ -4296,5 +4307,18 @@ object LoginDialog: TLoginDialog
     Left = 398
     Top = 525
     Bitmap = {}
+  end
+  object CloseDropDownMenu: TPopupMenu
+    Images = ActionImageList
+    Left = 36
+    Top = 397
+    object MenuItem15: TMenuItem
+      Action = CloseAction
+      Default = True
+    end
+    object MenuItem20: TMenuItem
+      Action = NeverShowAgainAction
+      AutoCheck = True
+    end
   end
 end

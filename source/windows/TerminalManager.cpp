@@ -31,7 +31,7 @@ __fastcall TManagedTerminal::TManagedTerminal(TSessionData * SessionData,
   TConfiguration * Configuration) :
   TTerminal(SessionData, Configuration),
   LocalExplorerState(NULL), RemoteExplorerState(NULL),
-  ReopenStart(0), DirectoryLoaded(Now()), TerminalThread(NULL), Disconnected(false)
+  ReopenStart(0), DirectoryLoaded(Now()), TerminalThread(NULL), Disconnected(false), DisconnectedTemporarily(false)
 {
   StateData = new TSessionData(L"");
   StateData->Assign(SessionData);
@@ -273,6 +273,7 @@ void __fastcall TTerminalManager::DoConnectTerminal(TTerminal * Terminal, bool R
         }
 
         ManagedTerminal->Disconnected = false;
+        ManagedTerminal->DisconnectedTemporarily = false;
         DebugAssert(ManagedTerminal->TerminalThread == NULL);
         ManagedTerminal->TerminalThread = TerminalThread;
       }
@@ -654,7 +655,7 @@ void __fastcall TTerminalManager::DoSetActiveTerminal(TManagedTerminal * value, 
     // here used to be call to TCustomScpExporer::UpdateSessionData (now UpdateTerminal)
     // but it seems to be duplicate to call from TCustomScpExporer::TerminalChanging
 
-    TTerminal * PActiveTerminal = ActiveTerminal;
+    TManagedTerminal * PActiveTerminal = ActiveTerminal;
     FActiveTerminal = value;
     // moved from else block of next if (ActiveTerminal) statement
     // so ScpExplorer can update its caption
@@ -672,9 +673,18 @@ void __fastcall TTerminalManager::DoSetActiveTerminal(TManagedTerminal * value, 
       }
     }
 
-    if (PActiveTerminal && !PActiveTerminal->Active)
+    if (PActiveTerminal != NULL)
     {
-      SaveTerminal(PActiveTerminal);
+      if (PActiveTerminal->DisconnectedTemporarily && DebugAlwaysTrue(PActiveTerminal->Disconnected))
+      {
+        PActiveTerminal->Disconnected = false;
+        PActiveTerminal->DisconnectedTemporarily = false;
+      }
+
+      if (!PActiveTerminal->Active)
+      {
+        SaveTerminal(PActiveTerminal);
+      }
     }
 
     if (ActiveTerminal)

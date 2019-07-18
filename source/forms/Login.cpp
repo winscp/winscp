@@ -109,6 +109,12 @@ void __fastcall TLoginDialog::Init(TStoredSessionList *SessionList, TForm * Link
   UnicodeString Dummy;
   RunPageantAction->Visible = FindTool(PageantTool, Dummy);
   RunPuttygenAction->Visible = FindTool(PuttygenTool, Dummy);
+  // Bit of a hack: Assume an auto open, when we are linked to the main form
+  if (LinkedForm != NULL)
+  {
+    DebugAssert(WinConfiguration->ShowLoginWhenNoSession);
+    CloseButton->Style = TCustomButton::bsSplitButton;
+  }
   UpdateControls();
 }
 //---------------------------------------------------------------------
@@ -3073,5 +3079,11 @@ void __fastcall TLoginDialog::ChangeScale(int M, int D)
 void __fastcall TLoginDialog::ButtonPanelMouseDown(TObject *, TMouseButton, TShiftState, int, int)
 {
   CountClicksForWindowPrint(this);
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::NeverShowAgainActionExecute(TObject *)
+{
+  WinConfiguration->ShowLoginWhenNoSession = false;
+  ModalResult = mrCancel;
 }
 //---------------------------------------------------------------------------

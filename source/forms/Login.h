@@ -206,6 +206,11 @@ __published:
   TPngImageList *SessionImageList192;
   TPngImageList *ActionImageList144;
   TPngImageList *ActionImageList192;
+  TPopupMenu *CloseDropDownMenu;
+  TMenuItem *MenuItem15;
+  TMenuItem *MenuItem20;
+  TAction *CloseAction;
+  TAction *NeverShowAgainAction;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall SessionTreeDblClick(TObject *Sender);
@@ -283,6 +288,7 @@ __published:
   void __fastcall SearchSiteNameActionExecute(TObject *Sender);
   void __fastcall SearchSiteActionExecute(TObject *Sender);
   void __fastcall ButtonPanelMouseDown(TObject *Sender, TMouseButton Button, TShiftState Shift, int X, int Y);
+  void __fastcall NeverShowAgainActionExecute(TObject *Sender);
 
 private:
   int NoUpdate;

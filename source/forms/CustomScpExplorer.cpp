@@ -4698,7 +4698,7 @@ void __fastcall TCustomScpExplorerForm::ApplicationRestore(TObject * /*Sender*/)
     NonVisualDataModule->StartBusy();
     try
     {
-      NeedSession(false);
+      NeedSession(true);
     }
     __finally
     {
@@ -4865,6 +4865,20 @@ void __fastcall TCustomScpExplorerForm::OpenStoredSession(TSessionData * Data)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::DoOpenFolderOrWorkspace(const UnicodeString & Name, bool ConnectFirstTerminal)
+{
+  TTerminalManager * Manager = TTerminalManager::Instance();
+  std::unique_ptr<TObjectList> DataList(new TObjectList());
+  StoredSessions->GetFolderOrWorkspace(Name, DataList.get());
+  TManagedTerminal * FirstTerminal = Manager->NewTerminals(DataList.get());
+  if (!ConnectFirstTerminal)
+  {
+    FirstTerminal->Disconnected = true;
+    FirstTerminal->DisconnectedTemporarily = true;
+  }
+  Manager->ActiveTerminal = FirstTerminal;
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::OpenFolderOrWorkspace(const UnicodeString & Name)
 {
   if (OpenInNewWindow())
@@ -4873,10 +4887,7 @@ void __fastcall TCustomScpExplorerForm::OpenFolderOrWorkspace(const UnicodeStrin
   }
   else
   {
-    TTerminalManager * Manager = TTerminalManager::Instance();
-    std::unique_ptr<TObjectList> DataList(new TObjectList());
-    StoredSessions->GetFolderOrWorkspace(Name, DataList.get());
-    Manager->ActiveTerminal = Manager->NewTerminals(DataList.get());
+    DoOpenFolderOrWorkspace(Name, true);
   }
 }
 //---------------------------------------------------------------------------
@@ -6503,20 +6514,35 @@ void __fastcall TCustomScpExplorerForm::LastTerminalClosed(TObject * /*Sender*/)
   UpdateControls();
   SessionColor = TColor(0);
   UpdateRemotePathComboBox(false);
-  NeedSession(true);
+  NeedSession(false);
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::NeedSession(bool ReloadSessions)
+void __fastcall TCustomScpExplorerForm::NeedSession(bool Startup)
 {
   try
   {
+    // Cache, as the login dialog can change its value
+    bool ShowLogin = WinConfiguration->ShowLoginWhenNoSession;
     try
     {
-      TTerminalManager::Instance()->NewSession(false, L"", ReloadSessions, this);
+      if (ShowLogin)
+      {
+        bool ReloadSessions = !Startup;
+        TTerminalManager::Instance()->NewSession(false, L"", ReloadSessions, this);
+      }
+      else if (Startup && WinConfiguration->AutoSaveWorkspace && !WinConfiguration->AutoWorkspace.IsEmpty() &&
+               // This detects if workspace was saved the last time the main widow was closed
+               SameText(WinConfiguration->LastStoredSession, WinConfiguration->AutoWorkspace))
+      {
+        DoOpenFolderOrWorkspace(WinConfiguration->AutoWorkspace, false);
+      }
     }
     __finally
     {
-      if (!WinConfiguration->KeepOpenWhenNoSession &&
+      // Do not terminate, if we are only starting up and we are not showing Login dialog
+      // (so there was no chance for the user to open any session yet)
+      if ((ShowLogin || !Startup) &&
+          !WinConfiguration->KeepOpenWhenNoSession &&
           ((Terminal == NULL) || (!Terminal->Active && !Terminal->Permanent)))
       {
         TerminateApplication();
@@ -9002,7 +9028,7 @@ void __fastcall TCustomScpExplorerForm::CMShowingChanged(TMessage & Message)
         // by TDriveView, but with Explorer interface, we need to call it explicily
         Application->ProcessMessages();
         // do not reload sessions, they have been loaded just now (optimization)
-        NeedSession(false);
+        NeedSession(true);
       }
       __finally
       {

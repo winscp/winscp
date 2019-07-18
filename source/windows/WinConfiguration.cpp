@@ -608,6 +608,7 @@ void __fastcall TWinConfiguration::Default()
   FGenerateUrlScriptFormat = sfScriptFile;
   FGenerateUrlAssemblyLanguage = alCSharp;
   FExternalSessionInExistingInstance = true;
+  FShowLoginWhenNoSession = true;
   FKeepOpenWhenNoSession = false;
   FLocalIconsByExt = false;
   FBidiModeOverride = lfoLanguageIfRecommended;
@@ -1010,6 +1011,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Integer,  GenerateUrlScriptFormat); \
     KEY(Integer,  GenerateUrlAssemblyLanguage); \
     KEY(Bool,     ExternalSessionInExistingInstance); \
+    KEY(Bool,     ShowLoginWhenNoSession); \
     KEY(Bool,     KeepOpenWhenNoSession); \
     KEY(Bool,     LocalIconsByExt); \
     KEY(Integer,  BidiModeOverride); \
@@ -2285,6 +2287,11 @@ void __fastcall TWinConfiguration::SetGenerateUrlAssemblyLanguage(TAssemblyLangu
 void __fastcall TWinConfiguration::SetExternalSessionInExistingInstance(bool value)
 {
   SET_CONFIG_PROPERTY(ExternalSessionInExistingInstance);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetShowLoginWhenNoSession(bool value)
+{
+  SET_CONFIG_PROPERTY(ShowLoginWhenNoSession);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetKeepOpenWhenNoSession(bool value)
