@@ -4906,25 +4906,37 @@ void __fastcall TCustomScpExplorerForm::FormCloseQuery(TObject * /*Sender*/,
       {
         if (!WinConfiguration->AutoSaveWorkspace)
         {
-          Message = LoadStr(CLOSE_SESSIONS_WORKSPACE2);
-          Answers = qaYes | qaNo | qaCancel;
+          Message = LoadStr(CLOSE_SESSIONS_WORKSPACE3);
         }
         else
         {
-          Message = MainInstructions(LoadStr(CLOSE_SESSIONS));
+          Message = LoadStr(CLOSE_SESSIONS);
         }
       }
       else
       {
-        Message = MainInstructions(FMTLOAD(CLOSE_SESSION, (Terminal->SessionData->SessionName)));
+        if (!WinConfiguration->AutoSaveWorkspace)
+        {
+          Message = LoadStr(CLOSE_SESSION_WORKSPACE);
+        }
+        else
+        {
+          Message = LoadStr(CLOSE_SESSION);
+        }
+        Message = FORMAT(Message, (Terminal->SessionData->SessionName));
       }
 
+      UnicodeString Note;
       if (WinConfiguration->AutoSaveWorkspace)
       {
-        Message =
-          FORMAT("%s\n\n%s", (Message,
-            FMTLOAD(AUTO_WORKSPACE, (WorkspaceName()))));
+        Note = FMTLOAD(AUTO_WORKSPACE, (WorkspaceName()));
       }
+      else
+      {
+        Note = LoadStr(AUTO_WORKSPACE_ENABLE);
+        Answers = qaYes | qaNo | qaCancel;
+      }
+      Message = FORMAT("%s\n\n%s", (MainInstructions(Message), Note));
 
       SetFocus();
       Result = MessageDialog(Message, qtConfirmation,

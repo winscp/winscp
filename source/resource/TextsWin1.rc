@@ -145,7 +145,7 @@ BEGIN
         CONFIRM_CREATE_SHORTCUT_FOLDER, "Create desktop shortcut for site folder '%s'?"
         CONFIRM_CREATE_SHORTCUT_WORKSPACE, "Create desktop shortcut for workspace '%s'?"
         EDIT_SESSION_RECONNECT, "Do you want to reconnect session '%s' to upload edited file '%s'?"
-        CLOSE_SESSIONS_WORKSPACE2, "**Terminate all sessions and close application without saving a workspace?**\n\nPress 'No' to enable automatic saving of the workspace."
+        CLOSE_SESSIONS_WORKSPACE3, "Terminate all sessions and close application without saving a workspace?"
         IMPORT_SESSIONS2, "**You have stored sessions/sites in %s.\n\nDo you want to import them into WinSCP?**\n\n(You can import them anytime later from Login dialog)|PuTTY SSH client|FileZilla FTP client|%s and %s"
         IMPORT_CONFIGURATION, "Importing configuration will overwrite all your preferences and sites.\n\nDo you want to continue?"
         ALL_BUTTON, "A&ll"
@@ -160,6 +160,7 @@ BEGIN
         EXTENSION_NOT_LATEST, "**Using the last compatible and trusted version of the extension.**\n\nThe latest version of the extension is either not reviewed yet or is not compatible with this version of WinSCP."
         CUSTOM_INI_FILE_OVERWRITE, "**Do you want to overwrite an existing INI file '%s'?**\n\nChoose 'Overwrite' to overwrite the selected INI file with the current configuration.\n\nChoose 'Use' to restart WinSCP with a configuration loaded from the selected INI file. Your current configuration will be preserved and you can revert to it, if needed.|&Overwrite|&Use"
         READONLY_INI_FILE_OVERWRITE, "**Do you want to overwrite a read-only INI file '%s' to save your current configuration?**This question is asked, when you hold down Shift key while closing WinSCP and your INI file is set read-only. Normally read-only INI files are not overwritten and any changes to configuration are lost when closing WinSCP."
+        CLOSE_SESSION_WORKSPACE, "Terminate session '%s' and close application without saving a workspace?"
 
         WIN_INFORMATION_STRINGS, "WIN_INFORMATION"
         COMPARE_NO_DIFFERENCES, "No differences found."
@@ -296,6 +297,7 @@ BEGIN
         USAGE_RAWTRANSFERSETTINGS, "Configures any transfer settings using a raw format as in an INI file."
         CUSTOM_COMMAND_PATTERNS_HINT6, "!E expands to serialized connection data of current session"
         USAGE_PASSPHRASE, "A passphrase for an encrypted private key or a client certificate"
+        AUTO_WORKSPACE_ENABLE, "Press 'No' to enable automatic saving of the workspace."
 
         WIN_FORMS_STRINGS, "WIN_FORMS_STRINGS"
         COPY_FILE, "%s file '%s' to %s:"
