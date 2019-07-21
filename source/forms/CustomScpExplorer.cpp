@@ -10313,7 +10313,10 @@ void __fastcall TCustomScpExplorerForm::CopyFilesToClipboard(TOperationSide Side
     DebugAssert(FClipboardFakeMonitors.get() == NULL);
 
     FClipboardFakeDirectory = CreateFakeTransferDirectory();
-    FClipboardFakeMonitors.reset(StartCreationDirectoryMonitorsOnEachDrive(FILE_NOTIFY_CHANGE_DIR_NAME, ClipboardFakeCreated));
+    // Intermediate variable to WORKAROUND a crash in compiler
+    TObjectList * ClipboardFakeMonitors =
+      StartCreationDirectoryMonitorsOnEachDrive(FILE_NOTIFY_CHANGE_DIR_NAME, ClipboardFakeCreated);
+    FClipboardFakeMonitors.reset(ClipboardFakeMonitors);
 
     if (FClipboardDragDropFilesEx.get() == NULL)
     {
