@@ -52,6 +52,7 @@ static const struct BinaryPacketProtocolVtable ssh2_bpp_vtable = {
     ssh2_bpp_handle_output,
     ssh2_bpp_new_pktout,
     ssh2_bpp_queue_disconnect, /* in sshcommon.c */
+    0xFFFFFFFF, /* no special packet size limit for this bpp */
 };
 
 BinaryPacketProtocol *ssh2_bpp_new(

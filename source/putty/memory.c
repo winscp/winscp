@@ -10,26 +10,41 @@
 #include "puttymem.h"
 #include "misc.h"
 
-void *safemalloc(size_t n, size_t size)
+void *safemalloc(size_t factor1, size_t factor2, size_t addend)
 {
-    void *p;
+    if (factor1 > SIZE_MAX / factor2)
+        goto fail;
+    { // WINSCP
+    size_t product = factor1 * factor2;
 
-    if (n > INT_MAX / size) {
-	p = NULL;
-    } else {
-	size *= n;
-	if (size == 0) size = 1;
+    if (addend > SIZE_MAX)
+        goto fail;
+    if (product > SIZE_MAX - addend)
+        goto fail;
+    { // WINSCP
+    size_t size = product + addend;
+
+    if (size == 0)
+        size = 1;
+
+    { // WINSCP
+    void *p;
 #ifdef MINEFIELD
-	p = minefield_c_malloc(size);
+    p = minefield_c_malloc(size);
 #else
-	p = malloc(size);
+    p = malloc(size);
 #endif
-    }
 
     if (!p)
-        out_of_memory();
+        goto fail;
 
     return p;
+
+  fail:
+    out_of_memory();
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
 }
 
 void *saferealloc(void *ptr, size_t n, size_t size)
@@ -114,7 +129,7 @@ void *safegrowarray(void *ptr, size_t *allocated, size_t eltsize,
     size_t newsize = oldsize + increment;
     void *toret;
     if (secret) {
-        toret = safemalloc(newsize, eltsize);
+        toret = safemalloc(newsize, eltsize, 0);
         memcpy(toret, ptr, oldsize * eltsize);
         smemclr(ptr, oldsize * eltsize);
         sfree(ptr);

@@ -258,9 +258,7 @@ void sk_init(void)
     if (GetProcAddress(winsock_module, "getaddrinfo") != NULL) {
 	GET_WINDOWS_FUNCTION(winsock_module, getaddrinfo);
 	GET_WINDOWS_FUNCTION(winsock_module, freeaddrinfo);
-#pragma option push -w-cpt
-	GET_WINDOWS_FUNCTION(winsock_module, getnameinfo);
-#pragma option pop
+	GET_WINDOWS_FUNCTION_NO_TYPECHECK(winsock_module, getnameinfo);
         /* This function would fail its type-check if we did one,
          * because the VS header file provides an inline definition
          * which is __cdecl instead of WINAPI. */
@@ -271,10 +269,8 @@ void sk_init(void)
 	if (wship6_module) {
 	    GET_WINDOWS_FUNCTION(wship6_module, getaddrinfo);
 	    GET_WINDOWS_FUNCTION(wship6_module, freeaddrinfo);
-#pragma option push -w-cpt
-	    GET_WINDOWS_FUNCTION(wship6_module, getnameinfo);
-#pragma option pop
             /* See comment above about type check */
+	    GET_WINDOWS_FUNCTION_NO_TYPECHECK(wship6_module, getnameinfo);
             GET_WINDOWS_FUNCTION_NO_TYPECHECK(winsock_module, gai_strerror);
 	} else {
 	}
@@ -1453,6 +1449,7 @@ static void sk_net_close(Socket *sock)
     p_closesocket(s->s);
     if (s->addr)
 	sk_addr_free(s->addr);
+    delete_callbacks_for_context(get_callback_set(s->plug), s);
     sfree(s);
 }
 

@@ -109,13 +109,13 @@ agent_pending_query *agent_query(
      */
     id = SendMessage(hwnd, WM_COPYDATA, (WPARAM) NULL, (LPARAM) &cds);
     if (id > 0) {
-        unsigned int length_field = GET_32BIT_MSB_FIRST(p);
+        uint32_t length_field = GET_32BIT_MSB_FIRST(p);
         if (length_field > 0 && length_field <= AGENT_MAX_MSGLEN - 4) {
-	    retlen = length_field + 4;
-	    ret = snewn(retlen, unsigned char);
+            retlen = length_field + 4;
+            ret = snewn(retlen, unsigned char);
 	    memcpy(ret, p, retlen);
-	    *out = ret;
-	    *outlen = retlen;
+            *out = ret;
+            *outlen = retlen;
         } else {
             /*
              * If we get here, we received an out-of-range length

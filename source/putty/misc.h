@@ -24,11 +24,27 @@ char *host_strchr(const char *s, int c);
 char *host_strrchr(const char *s, int c);
 char *host_strduptrim(const char *s);
 
+#ifdef __GNUC__
+/*
+ * On MinGW, the correct compiler format checking for vsnprintf() etc
+ * can depend on compile-time flags; these control whether you get
+ * ISO C or Microsoft's non-standard format strings.
+ * We sometimes use __attribute__ ((format)) for our own printf-like
+ * functions, which are ultimately interpreted by the toolchain-chosen
+ * printf, so we need to take that into account to get correct warnings.
+ */
+#ifdef __MINGW_PRINTF_FORMAT
+#define PUTTY_PRINTF_ARCHETYPE __MINGW_PRINTF_FORMAT
+#else
+#define PUTTY_PRINTF_ARCHETYPE printf
+#endif
+#endif /* __GNUC__ */
+
 char *dupstr(const char *s);
 char *dupcat(const char *s1, ...);
 char *dupprintf(const char *fmt, ...)
 #ifdef __GNUC__
-    __attribute__ ((format (printf, 1, 2)))
+    __attribute__ ((format (PUTTY_PRINTF_ARCHETYPE, 1, 2)))
 #endif
     ;
 char *dupvprintf(const char *fmt, va_list ap);
@@ -97,6 +113,7 @@ static inline int toint(unsigned u)
 }
 
 char *fgetline(FILE *fp);
+bool read_file_into(BinarySink *bs, FILE *fp);
 char *chomp(char *str);
 bool strstartswith(const char *s, const char *t);
 bool strendswith(const char *s, const char *t);
@@ -168,8 +185,14 @@ static inline ptrlen ptrlen_from_strbuf(strbuf *sb)
 bool ptrlen_eq_string(ptrlen pl, const char *str);
 bool ptrlen_eq_ptrlen(ptrlen pl1, ptrlen pl2);
 int ptrlen_strcmp(ptrlen pl1, ptrlen pl2);
+/* ptrlen_startswith and ptrlen_endswith write through their 'tail'
+ * argument if and only if it is non-NULL and they return true. Hence
+ * you can write ptrlen_startswith(thing, prefix, &thing), writing
+ * back to the same ptrlen it read from, to remove a prefix if present
+ * and say whether it did so. */
 bool ptrlen_startswith(ptrlen whole, ptrlen prefix, ptrlen *tail);
 bool ptrlen_endswith(ptrlen whole, ptrlen suffix, ptrlen *tail);
+ptrlen ptrlen_get_word(ptrlen *input, const char *separators);
 char *mkstr(ptrlen pl);
 int string_length_for_printf(size_t);
 /* Derive two printf arguments from a ptrlen, suitable for "%.*s" */
@@ -274,15 +297,14 @@ static inline uint64_t GET_64BIT_LSB_FIRST(const void *vp)
 static inline void PUT_64BIT_LSB_FIRST(void *vp, uint64_t value)
 {
     uint8_t *p = (uint8_t *)vp;
-    // WINSCP cast to uint8_t
-    p[0] = (uint8_t)value;
-    p[1] = (uint8_t)((value) >> 8);
-    p[2] = (uint8_t)((value) >> 16);
-    p[3] = (uint8_t)((value) >> 24);
-    p[4] = (uint8_t)((value) >> 32);
-    p[5] = (uint8_t)((value) >> 40);
-    p[6] = (uint8_t)((value) >> 48);
-    p[7] = (uint8_t)((value) >> 56);
+    p[0] = (uint8_t)(value);
+    p[1] = (uint8_t)(value >> 8);
+    p[2] = (uint8_t)(value >> 16);
+    p[3] = (uint8_t)(value >> 24);
+    p[4] = (uint8_t)(value >> 32);
+    p[5] = (uint8_t)(value >> 40);
+    p[6] = (uint8_t)(value >> 48);
+    p[7] = (uint8_t)(value >> 56);
 }
 
 static inline uint32_t GET_32BIT_LSB_FIRST(const void *vp)
@@ -295,11 +317,10 @@ static inline uint32_t GET_32BIT_LSB_FIRST(const void *vp)
 static inline void PUT_32BIT_LSB_FIRST(void *vp, uint32_t value)
 {
     uint8_t *p = (uint8_t *)vp;
-    // WINSCP cast to uint8_t
-    p[0] = (uint8_t)value;
-    p[1] = (uint8_t)((value) >> 8);
-    p[2] = (uint8_t)((value) >> 16);
-    p[3] = (uint8_t)((value) >> 24);
+    p[0] = (uint8_t)(value);
+    p[1] = (uint8_t)(value >> 8);
+    p[2] = (uint8_t)(value >> 16);
+    p[3] = (uint8_t)(value >> 24);
 }
 
 static inline uint16_t GET_16BIT_LSB_FIRST(const void *vp)
@@ -311,9 +332,8 @@ static inline uint16_t GET_16BIT_LSB_FIRST(const void *vp)
 static inline void PUT_16BIT_LSB_FIRST(void *vp, uint16_t value)
 {
     uint8_t *p = (uint8_t *)vp;
-    // WINSCP cast to uint8_t
-    p[0] = (uint8_t)value;
-    p[1] = (uint8_t)((value) >> 8);
+    p[0] = (uint8_t)(value);
+    p[1] = (uint8_t)(value >> 8);
 }
 
 static inline uint64_t GET_64BIT_MSB_FIRST(const void *vp)
@@ -328,15 +348,14 @@ static inline uint64_t GET_64BIT_MSB_FIRST(const void *vp)
 static inline void PUT_64BIT_MSB_FIRST(void *vp, uint64_t value)
 {
     uint8_t *p = (uint8_t *)vp;
-    // WINSCP cast to uint8_t
-    p[7] = (uint8_t)value;
-    p[6] = (uint8_t)((value) >> 8);
-    p[5] = (uint8_t)((value) >> 16);
-    p[4] = (uint8_t)((value) >> 24);
-    p[3] = (uint8_t)((value) >> 32);
-    p[2] = (uint8_t)((value) >> 40);
-    p[1] = (uint8_t)((value) >> 48);
-    p[0] = (uint8_t)((value) >> 56);
+    p[7] = (uint8_t)(value);
+    p[6] = (uint8_t)(value >> 8);
+    p[5] = (uint8_t)(value >> 16);
+    p[4] = (uint8_t)(value >> 24);
+    p[3] = (uint8_t)(value >> 32);
+    p[2] = (uint8_t)(value >> 40);
+    p[1] = (uint8_t)(value >> 48);
+    p[0] = (uint8_t)(value >> 56);
 }
 
 static inline uint32_t GET_32BIT_MSB_FIRST(const void *vp)
@@ -349,11 +368,10 @@ static inline uint32_t GET_32BIT_MSB_FIRST(const void *vp)
 static inline void PUT_32BIT_MSB_FIRST(void *vp, uint32_t value)
 {
     uint8_t *p = (uint8_t *)vp;
-    // WINSCP cast to uint8_t
-    p[3] = (uint8_t)value;
-    p[2] = (uint8_t)((value) >> 8);
-    p[1] = (uint8_t)((value) >> 16);
-    p[0] = (uint8_t)((value) >> 24);
+    p[3] = (uint8_t)(value);
+    p[2] = (uint8_t)(value >> 8);
+    p[1] = (uint8_t)(value >> 16);
+    p[0] = (uint8_t)(value >> 24);
 }
 
 static inline uint16_t GET_16BIT_MSB_FIRST(const void *vp)
@@ -365,8 +383,8 @@ static inline uint16_t GET_16BIT_MSB_FIRST(const void *vp)
 static inline void PUT_16BIT_MSB_FIRST(void *vp, uint16_t value)
 {
     uint8_t *p = (uint8_t *)vp;
-    p[1] = (uint8_t)value;
-    p[0] = (value) >> 8;
+    p[1] = (uint8_t)(value);
+    p[0] = (uint8_t)(value >> 8);
 }
 
 /* Replace NULL with the empty string, permitting an idiom in which we

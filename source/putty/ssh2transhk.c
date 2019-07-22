@@ -76,6 +76,7 @@ void ssh_transient_hostkey_cache_add(
 
     if ((ent = find234(thc->cache, (void *)ssh_key_alg(key),
                        ssh_transient_hostkey_cache_find)) != NULL) {
+        del234(thc->cache, ent);
         strbuf_free(ent->pub_blob);
         sfree(ent);
     }

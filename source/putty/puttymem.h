@@ -10,13 +10,13 @@
 
 #include "defs.h"
 
-#define smalloc(z) safemalloc(z,1)
+#define smalloc(z) safemalloc(z,1,0)
 #define snmalloc safemalloc
 #define srealloc(y,z) saferealloc(y,z,1)
 #define snrealloc saferealloc
 #define sfree safefree
 
-void *safemalloc(size_t, size_t);
+void *safemalloc(size_t factor1, size_t factor2, size_t addend);
 void *saferealloc(void *, size_t, size_t);
 void safefree(void *);
 
@@ -28,8 +28,8 @@ void safefree(void *);
  * TYPECHECK to verify that the _input_ pointer is a pointer to the
  * correct type.
  */
-#define snew(type) ((type *)snmalloc(1, sizeof(type)))
-#define snewn(n, type) ((type *)snmalloc((n), sizeof(type)))
+#define snew(type) ((type *)snmalloc(1, sizeof(type), 0))
+#define snewn(n, type) ((type *)snmalloc((n), sizeof(type), 0))
 #define sresize(ptr, n, type) TYPECHECK((type *)0 == (ptr), \
     ((type *)snrealloc((ptr), (n), sizeof(type))))
 
@@ -45,7 +45,7 @@ void safefree(void *);
  * result to void *, so you can assign it straight to wherever you
  * wanted it.
  */
-#define snew_plus(type, extra) ((type *)snmalloc(1, sizeof(type) + (extra)))
+#define snew_plus(type, extra) ((type *)snmalloc(1, sizeof(type), (extra)))
 #define snew_plus_get_aux(ptr) ((void *)((ptr) + 1))
 
 /*

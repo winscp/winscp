@@ -1168,7 +1168,7 @@ static struct openssh_new_key *load_openssh_new_key(const Filename *filename,
     fclose(fp);
     fp = NULL;
 
-    if (ret->keyblob->len == 0 || !ret->keyblob) {
+    if (ret->keyblob->len == 0) {
 	errmsg = "key body not present";
 	goto error;
     }
@@ -1444,7 +1444,7 @@ static ssh2_userkey *openssh_new_read(
         }
     }
 
-    if (!retkey) {
+    if (!retkey->key) {
         errmsg = "key index out of range";
         goto error;
     }

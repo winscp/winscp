@@ -18,12 +18,13 @@
 #ifndef WINSCP
 // This is used in pageant, pscp, psftp and servers only
 #if defined _MSC_VER && _MSC_VER < 1800
-/* Work around lack of inttypes.h in older MSVC */
+/* Work around lack of inttypes.h and strtoumax in older MSVC */
 #define PRIx32 "x"
 #define PRIu64 "I64u"
 #define PRIdMAX "I64d"
 #define PRIXMAX "I64X"
 #define SCNu64 "I64u"
+uintmax_t strtoumax(const char *nptr, char **endptr, int base);
 #else
 #include <inttypes.h>
 #endif
@@ -82,6 +83,7 @@ typedef struct MontgomeryPoint MontgomeryPoint;
 typedef struct EdwardsCurve EdwardsCurve;
 typedef struct EdwardsPoint EdwardsPoint;
 
+typedef struct SshServerConfig SshServerConfig;
 typedef struct SftpServer SftpServer;
 typedef struct SftpServerVtable SftpServerVtable;
 

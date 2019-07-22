@@ -147,6 +147,8 @@ static void sk_handle_close(Socket *s)
     }
 #endif
 
+    delete_callbacks_for_context(get_callback_set(hs->plug), hs);
+
     sfree(hs);
 }
 
