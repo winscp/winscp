@@ -2748,7 +2748,7 @@ void __fastcall TTerminal::CloseOnCompletion(
     LogEvent(L"Closing session after completed operation (as requested by user)");
     Close();
     throw ESshTerminate(NULL,
-      Message.IsEmpty() ? UnicodeString(LoadStr(CLOSED_ON_COMPLETION)) : Message,
+      MainInstructions(Message.IsEmpty() ? LoadStr(CLOSED_ON_COMPLETION) : Message),
       Operation, TargetLocalPath, DestLocalFileName);
   }
 }

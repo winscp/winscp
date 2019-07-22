@@ -267,9 +267,12 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
         if (ForActiveTerminal)
         {
           UnicodeString MessageFormat =
-            MainInstructions((Manager->Count > 1) ?
+            (Manager->Count > 1) ?
               FMTLOAD(DISCONNECT_ON_COMPLETION, (Manager->Count - 1)) :
-              LoadStr(EXIT_ON_COMPLETION));
+              LoadStr(EXIT_ON_COMPLETION);
+          // Remove the leading "%s\n\n" (not to change the translation originals - previously the error message was prepended)
+          MessageFormat = FORMAT(MessageFormat, (UnicodeString())).Trim();
+          MessageFormat = MainInstructions(MessageFormat) + L"\n\n%s";
           Result = FatalExceptionMessageDialog(E, qtInformation, 0,
             MessageFormat,
             Answers | qaYes | qaNo, HELP_NONE, &Params);

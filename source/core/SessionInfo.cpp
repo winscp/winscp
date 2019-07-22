@@ -925,7 +925,7 @@ void __fastcall TSessionLog::Add(TLogLineType Type, const UnicodeString & Line)
       FConfiguration->Logging = false;
       try
       {
-        throw ExtException(&E, LoadStr(LOG_GEN_ERROR));
+        throw ExtException(&E, MainInstructions(LoadStr(LOG_GEN_ERROR)));
       }
       catch (Exception &E)
       {
@@ -1008,7 +1008,7 @@ void __fastcall TSessionLog::OpenLogFile()
     FConfiguration->LogFileName = UnicodeString();
     try
     {
-      throw ExtException(&E, LoadStr(LOG_GEN_ERROR));
+      throw ExtException(&E, MainInstructions(LoadStr(LOG_GEN_ERROR)));
     }
     catch (Exception & E)
     {

@@ -657,6 +657,10 @@ unsigned int __fastcall ExceptionMessageDialog(Exception * E, TQueryType Type,
   // this is always called from within ExceptionMessage check,
   // so it should never fail here
   DebugCheck(ExceptionMessageFormatted(E, Message));
+  if (!MessageFormat.IsEmpty())
+  {
+    Message = FORMAT(MessageFormat, (UnformatMessage(Message)));
+  }
 
   HelpKeyword = MergeHelpKeyword(HelpKeyword, GetExceptionHelpKeyword(E));
 
@@ -667,8 +671,7 @@ unsigned int __fastcall ExceptionMessageDialog(Exception * E, TQueryType Type,
   }
 
   return MoreMessageDialog(
-    FORMAT(MessageFormat.IsEmpty() ? UnicodeString(L"%s") : MessageFormat, (Message)),
-    MoreMessages, Type, Answers, HelpKeyword, Params);
+    Message, MoreMessages, Type, Answers, HelpKeyword, Params);
 }
 //---------------------------------------------------------------------------
 unsigned int __fastcall FatalExceptionMessageDialog(Exception * E, TQueryType Type,
