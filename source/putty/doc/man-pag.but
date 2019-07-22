@@ -20,6 +20,8 @@
 \e bbbbbbb bb
 \c pageant -l
 \e bbbbbbb bb
+\c pageant --askpass prompt
+\e bbbbbbb bbbbbbbbb iiiiii
 
 \S{pageant-manpage-description} DESCRIPTION
 
@@ -76,8 +78,9 @@ extra command-line arguments, e.g.
 in which case Pageant will prompt for the keys' passphrases (if any)
 and start the agent with those keys already loaded. Passphrase prompts
 will use the controlling terminal if one is available, or failing that
-the GUI if one of those is available. If neither is available, no
-passphrase prompting can be done.
+the GUI if one of those is available. (The prompt method can be
+overridden with the \cw{--gui-prompt} or \cw{--tty-prompt} options.)
+If neither is available, no passphrase prompting can be done.
 
 To use Pageant to talk to an existing agent, you can add new keys
 using \cw{-a}, list the current set of keys' fingerprints and comments
@@ -173,8 +176,8 @@ already have set.
 \dt \cw{-a} \e{key-files}
 
 \dd Load the specified private key file(s), decrypt them if necessary
-by prompting for their passphrases, and add them to the
-already-running agent.
+by prompting for their passphrases (with the same choice of user
+interfaces as in agent mode), and add them to the already-running agent.
 
 \lcont{
 
@@ -217,7 +220,7 @@ fingerprint prefix respectively.
 
 }
 
-\dt \cw{--public-openssh} \e{key-identifiers}
+\dt \cw{--public-openssh} \e{key-identifiers}, \cw{-L} \e{key-identifiers}
 
 \dd Print the public half of each specified key, in the one-line
 format used by OpenSSH, suitable for putting in
@@ -233,6 +236,27 @@ using \cw{pageant -a}.
 
 \dd Delete all keys from the agent's memory, leaving it completely
 empty.
+
+\S{pageant-manpage-askpass} SSH-ASKPASS REPLACEMENT
+
+\dt \cw{--askpass} \e{prompt}
+
+\dd With this option, \c{pageant} acts as an \e{ssh-askpass(1)}
+replacement, rather than performing any SSH agent functionality. This
+may be useful if you prefer Pageant's GUI prompt style, which
+minimises information leakage about your passphrase length in its
+visual feedback, compared to other \e{ssh-askpass(1)} implementations.
+
+\lcont{
+
+\c{pageant --askpass} implements the standard \e{ssh-askpass(1)}
+interface: it can be passed a prompt to display (as a single argument)
+and, if successful, prints the passphrase on standard output and
+returns a zero exit status. Typically you would use the environment
+variable \cw{SSH_ASKPASS} to tell other programs to use \c{pageant} in
+this way.
+
+}
 
 \S{pageant-manpage-options} OPTIONS
 
@@ -268,11 +292,19 @@ respectively. If neither option is given, Pageant will guess based on
 whether the environment variable \cw{SHELL} has a value ending in
 \cq{csh}.
 
+\dt \cw{--gui-prompt}, \cw{--tty-prompt}
+
+\dd Force Pageant to prompt for key passphrases with a particular
+method (GUI or terminal) rather than trying to guess the most
+appropriate method as described above. (These options are relevant
+whenever an encrypted key filename is specified to \c{pageant},
+and in \c{--askpass} mode.)
+
 \dt \cw{--help}
 
 \dd Print a brief summary of command-line options and terminate.
 
-\dt \cw{--version}
+\dt \cw{--version}, \cw{-V}
 
 \dd Print the version of Pageant.
 

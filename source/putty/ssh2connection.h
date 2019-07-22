@@ -41,6 +41,7 @@ struct ssh2_connection_state {
     int antispoof_ret;
 
     const SftpServerVtable *sftpserver_vt;
+    const SshServerConfig *ssc;
 
     /*
      * These store the list of global requests that we're waiting for

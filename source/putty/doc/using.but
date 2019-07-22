@@ -154,54 +154,6 @@ have special commands.
 The \q{break} signal can also be invoked from the keyboard with
 \i{Ctrl-Break}.
 
-The following \I{Telnet special commands}special commands are
-available in Telnet:
-
-\b \I{Are You There, Telnet special command}Are You There
-
-\b \I{Break, Telnet special command}Break
-
-\b \I{Synch, Telnet special command}Synch
-
-\b \I{Erase Character, Telnet special command}Erase Character
-
-\lcont{
-PuTTY can also be configured to send this when the Backspace key is
-pressed; see \k{config-telnetkey}.
-}
-
-\b \I{Erase Line, Telnet special command}Erase Line
-
-\b \I{Go Ahead, Telnet special command}Go Ahead
-
-\b \I{No Operation, Telnet special command}No Operation
-
-\lcont{
-Should have no effect.
-}
-
-\b \I{Abort Process, Telnet special command}Abort Process
-
-\b \I{Abort Output, Telnet special command}Abort Output
-
-\b \I{Interrupt Process, Telnet special command}Interrupt Process
-
-\lcont{
-PuTTY can also be configured to send this when Ctrl-C is typed; see
-\k{config-telnetkey}.
-}
-
-\b \I{Suspend Process, Telnet special command}Suspend Process
-
-\lcont{
-PuTTY can also be configured to send this when Ctrl-Z is typed; see
-\k{config-telnetkey}.
-}
-
-\b \I{End Of Record, Telnet special command}End Of Record
-
-\b \I{End Of File, Telnet special command}End Of File
-
 In an SSH connection, the following \I{SSH special commands}special
 commands are available:
 
@@ -256,6 +208,54 @@ default break length.
 Only available in SSH-2, and only during a session. Sends various
 POSIX signals. Not honoured by all servers.
 }
+
+The following \I{Telnet special commands}special commands are
+available in Telnet:
+
+\b \I{Are You There, Telnet special command}Are You There
+
+\b \I{Break, Telnet special command}Break
+
+\b \I{Synch, Telnet special command}Synch
+
+\b \I{Erase Character, Telnet special command}Erase Character
+
+\lcont{
+PuTTY can also be configured to send this when the Backspace key is
+pressed; see \k{config-telnetkey}.
+}
+
+\b \I{Erase Line, Telnet special command}Erase Line
+
+\b \I{Go Ahead, Telnet special command}Go Ahead
+
+\b \I{No Operation, Telnet special command}No Operation
+
+\lcont{
+Should have no effect.
+}
+
+\b \I{Abort Process, Telnet special command}Abort Process
+
+\b \I{Abort Output, Telnet special command}Abort Output
+
+\b \I{Interrupt Process, Telnet special command}Interrupt Process
+
+\lcont{
+PuTTY can also be configured to send this when Ctrl-C is typed; see
+\k{config-telnetkey}.
+}
+
+\b \I{Suspend Process, Telnet special command}Suspend Process
+
+\lcont{
+PuTTY can also be configured to send this when Ctrl-Z is typed; see
+\k{config-telnetkey}.
+}
+
+\b \I{End Of Record, Telnet special command}End Of Record
+
+\b \I{End Of File, Telnet special command}End Of File
 
 With a serial connection, the only available special command is
 \I{Break, serial special command}\q{Break}.
@@ -619,8 +619,6 @@ use the \c{-load} option (described in \k{using-cmdline-load}).
 \c putty.exe -load "session name"
 
 \S{using-cleanup} \i\c{-cleanup}
-
-\cfg{winhelp-topic}{options.cleanup}
 
 If invoked with the \c{-cleanup} option, rather than running as
 normal, PuTTY will remove its \I{removing registry entries}registry
@@ -1071,4 +1069,4 @@ Pageant stores the more critical information (hence benefits more from
 the extra protection), so it's reasonable to want to run Pageant but
 not PuTTY with the ACL restrictions. You can force Pageant to start
 subsidiary PuTTY processes with a restricted ACL if you also pass the
-\c{-restrict-putty-acl} option.
+\i\c{-restrict-putty-acl} option.

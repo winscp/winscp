@@ -18,11 +18,6 @@
 #define DH_MIN_SIZE 1024
 #define DH_MAX_SIZE 8192
 
-enum kexlist {
-    KEXLIST_KEX, KEXLIST_HOSTKEY, KEXLIST_CSCIPHER, KEXLIST_SCCIPHER,
-    KEXLIST_CSMAC, KEXLIST_SCMAC, KEXLIST_CSCOMP, KEXLIST_SCCOMP,
-    NKEXLIST
-};
 #define MAXKEXLIST 16
 struct kexinit_algorithm {
     const char *name;
@@ -139,6 +134,8 @@ struct ssh2_transport_state {
 
     struct DataTransferStats *stats;
 
+    const SshServerConfig *ssc;
+
     char *client_greeting, *server_greeting;
 
     bool kex_in_progress;
@@ -170,12 +167,13 @@ struct ssh2_transport_state {
     strbuf *outgoing_kexinit, *incoming_kexinit;
     strbuf *client_kexinit, *server_kexinit; /* aliases to the above */
     int kex_init_value, kex_reply_value;
-    transport_direction in, out;
+    transport_direction in, out, *cstrans, *sctrans;
     ptrlen hostkeydata, sigdata;
     strbuf *hostkeyblob;
     char *keystr, *fingerprint;
     ssh_key *hkey;                     /* actual host key */
     RSAKey *rsa_kex_key;             /* for RSA kex */
+    bool rsa_kex_key_needs_freeing;
     ecdh_key *ecdh_key;                     /* for ECDH kex */
     unsigned char exchange_hash[MAX_HASH_LEN];
     bool can_gssapi_keyex;

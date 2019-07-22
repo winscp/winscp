@@ -12,6 +12,7 @@ struct BinaryPacketProtocolVtable {
     PktOut *(*new_pktout)(int type);
     void (*queue_disconnect)(BinaryPacketProtocol *,
                              const char *msg, int category);
+    uint32_t packet_size_limit;
 };
 
 struct BinaryPacketProtocol {

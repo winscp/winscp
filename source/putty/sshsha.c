@@ -702,8 +702,6 @@ struct sha1_neon_core {
     uint32_t e;
 };
 
-/* ------------- got up to here ----------------------------------------- */
-
 FUNC_ISA
 static inline uint32x4_t sha1_neon_load_input(const uint8_t *p)
 {

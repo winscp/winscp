@@ -1170,21 +1170,28 @@ int wc_to_mb(int codepage, int flags, const wchar_t *wcstr, int wclen,
 	    wchar_t ch = wcstr[i];
 	    int by;
 	    char *p1;
-	    if (ucsdata->uni_tbl && (p1 = ucsdata->uni_tbl[(ch >> 8) & 0xFF])
-		&& (by = p1[ch & 0xFF]))
-		*p++ = by;
+
+            #define WRITECH(chr) do             \
+            {                                   \
+                assert(p - mbstr < mblen);      \
+                *p++ = (char)(chr);             \
+            } while (0)
+
+            if (ucsdata->uni_tbl &&
+                (p1 = ucsdata->uni_tbl[(ch >> 8) & 0xFF]) != NULL &&
+		(by = p1[ch & 0xFF]) != '\0')
+                WRITECH(by);
 	    else if (ch < 0x80)
-		*p++ = (char) ch;
-	    else if (defchr) {
-		int j;
-		for (j = 0; defchr[j]; j++)
-		    *p++ = defchr[j];
-	    }
+                WRITECH(ch);
+            else if (defchr)
+                for (const char *q = defchr; *q; q++)
+                    WRITECH(*q);
 #if 1
 	    else
-		*p++ = '.';
+		WRITECH('.');
 #endif
-	    assert(p - mbstr < mblen);
+
+            #undef WRITECH
 	}
 	return p - mbstr;
     } else {

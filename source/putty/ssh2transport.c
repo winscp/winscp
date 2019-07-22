@@ -9,6 +9,7 @@
 #include "sshbpp.h"
 #include "sshppl.h"
 #include "sshcr.h"
+#include "sshserver.h"
 #include "storage.h"
 #include "ssh2transport.h"
 #include "mpint.h"
@@ -115,7 +116,7 @@ PacketProtocolLayer *ssh2_transport_new(
     const char *client_greeting, const char *server_greeting,
     struct ssh_connection_shared_gss_state *shgss,
     struct DataTransferStats *stats, PacketProtocolLayer *higher_layer,
-    bool is_server)
+    const SshServerConfig *ssc)
 {
     struct ssh2_transport_state *s = snew(struct ssh2_transport_state);
     memset(s, 0, sizeof(*s));
@@ -151,13 +152,18 @@ PacketProtocolLayer *ssh2_transport_new(
 
     s->outgoing_kexinit = strbuf_new();
     s->incoming_kexinit = strbuf_new();
-    if (is_server) {
+    if (ssc) {
+        s->ssc = ssc;
         s->client_kexinit = s->incoming_kexinit;
         s->server_kexinit = s->outgoing_kexinit;
+        s->cstrans = &s->in;
+        s->sctrans = &s->out;
         s->out.mkkey_adjust = 1;
     } else {
         s->client_kexinit = s->outgoing_kexinit;
         s->server_kexinit = s->incoming_kexinit;
+        s->cstrans = &s->out;
+        s->sctrans = &s->in;
         s->in.mkkey_adjust = 1;
     }
 
@@ -214,8 +220,10 @@ static void ssh2_transport_free(PacketProtocolLayer *ppl)
     if (s->K) mp_free(s->K);
     if (s->dh_ctx)
         dh_cleanup(s->dh_ctx);
-    if (s->rsa_kex_key)
+    if (s->rsa_kex_key_needs_freeing) {
         ssh_rsakex_freekey(s->rsa_kex_key);
+        sfree(s->rsa_kex_key);
+    }
     if (s->ecdh_key)
         ssh_ecdhkex_freekey(s->ecdh_key);
     if (s->exhash)
@@ -416,7 +424,7 @@ PktIn *ssh2_transport_pop(struct ssh2_transport_state *s)
 static void ssh2_write_kexinit_lists(
     BinarySink *pktout,
     struct kexinit_algorithm kexlists[NKEXLIST][MAXKEXLIST],
-    Conf *conf, int remote_bugs,
+    Conf *conf, const SshServerConfig *ssc, int remote_bugs,
     const char *hk_host, int hk_port, const ssh_keyalg *hk_prev,
     ssh_transient_hostkey_cache *thc,
     ssh_key *const *our_hostkeys, int our_nhostkeys,
@@ -737,9 +745,13 @@ static void ssh2_write_kexinit_lists(
      */
     for (i = 0; i < NKEXLIST; i++) {
         strbuf *list = strbuf_new();
-        for (j = 0; j < MAXKEXLIST; j++) {
-            if (kexlists[i][j].name == NULL) break;
-            add_to_commasep(list, kexlists[i][j].name);
+        if (ssc && ssc->kex_override[i].ptr) {
+            put_datapl(list, ssc->kex_override[i]);
+        } else {
+            for (j = 0; j < MAXKEXLIST; j++) {
+                if (kexlists[i][j].name == NULL) break;
+                add_to_commasep(list, kexlists[i][j].name);
+            }
         }
         put_stringsb(pktout, list);
     }
@@ -821,12 +833,26 @@ static bool ssh2_scan_kexinits(
 
         selected[i] = NULL;
         for (j = 0; j < MAXKEXLIST; j++) {
-            if (ptrlen_eq_string(found, kexlists[i][j].name)) {
+            if (kexlists[i][j].name &&
+                ptrlen_eq_string(found, kexlists[i][j].name)) {
                 selected[i] = &kexlists[i][j];
                 break;
             }
         }
-        assert(selected[i]); /* kexlists[] must cover one of the inputs */
+        if (!selected[i]) {
+            /*
+             * In the client, this should never happen! But in the
+             * server, where we allow manual override on the command
+             * line of the exact KEXINIT strings, it can happen
+             * because the command line contained a typo. So we
+             * produce a reasonably useful message instead of an
+             * assertion failure.
+             */
+            ssh_sw_abort(ssh, "Selected %s \"%.*s\" does not correspond to "
+                         "any supported algorithm",
+                         kexlist_descr[i], PTRLEN_PRINTF(found));
+            return false;
+        }
 
         /*
          * If the kex or host key algorithm is not the first one in
@@ -1062,7 +1088,7 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
     random_read(strbuf_append(s->outgoing_kexinit, 16), 16);
     ssh2_write_kexinit_lists(
         BinarySink_UPCAST(s->outgoing_kexinit), s->kexlists,
-        s->conf, s->ppl.remote_bugs,
+        s->conf, s->ssc, s->ppl.remote_bugs,
         s->savedhost, s->savedport, s->hostkey_alg, s->thc,
         s->hostkeys, s->nhostkeys,
         !s->got_session_id, s->can_gssapi_keyex,
@@ -1109,8 +1135,8 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
         if (!ssh2_scan_kexinits(
                 ptrlen_from_strbuf(s->client_kexinit),
                 ptrlen_from_strbuf(s->server_kexinit),
-                s->kexlists, &s->kex_alg, &s->hostkey_alg, &s->out, &s->in,
-                &s->warn_kex, &s->warn_hk, &s->warn_cscipher,
+                s->kexlists, &s->kex_alg, &s->hostkey_alg, s->cstrans,
+                s->sctrans, &s->warn_kex, &s->warn_hk, &s->warn_cscipher,
                 &s->warn_sccipher, s->ppl.ssh, NULL, &s->ignorepkt, &nhk, hks))
             return; /* false means a fatal error function was called */
 
@@ -1781,6 +1807,7 @@ static void ssh2_transport_gss_update(struct ssh2_transport_state *s,
     if (mins > 0 && s->gss_ctxt_lifetime <= mins * 60)
         s->gss_status |= GSS_CTXT_EXPIRES;
 }
+#endif /* NO_GSSAPI */
 
 ptrlen ssh2_transport_get_session_id(PacketProtocolLayer *ppl)
 {
@@ -1804,8 +1831,6 @@ void ssh2_transport_notify_auth_done(PacketProtocolLayer *ppl)
     s->rekey_class = RK_POST_USERAUTH;
     queue_idempotent_callback(&s->ppl.ic_process_queue);
 }
-
-#endif /* NO_GSSAPI */
 
 static bool ssh2_transport_get_specials(
     PacketProtocolLayer *ppl, add_special_fn_t add_special, void *ctx)

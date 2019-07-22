@@ -1,7 +1,5 @@
 \A{pgpkeys} PuTTY download keys and signatures
 
-\cfg{winhelp-topic}{pgpfingerprints}
-
 \I{verifying new versions}We create \i{GPG signatures} for all the PuTTY
 files distributed from our web site, so that users can be confident
 that the files have not been tampered with. Here we identify

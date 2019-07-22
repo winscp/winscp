@@ -31,6 +31,7 @@ static const struct BinaryPacketProtocolVtable ssh2_bare_bpp_vtable = {
     ssh2_bare_bpp_handle_output,
     ssh2_bare_bpp_new_pktout,
     ssh2_bpp_queue_disconnect, /* in sshcommon.c */
+    0x4000, /* packet size limit, per protocol spec in sshshare.c comment */
 };
 
 BinaryPacketProtocol *ssh2_bare_bpp_new(LogContext *logctx)

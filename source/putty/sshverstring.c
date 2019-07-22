@@ -51,6 +51,7 @@ static const struct BinaryPacketProtocolVtable ssh_verstring_vtable = {
     ssh_verstring_handle_output,
     ssh_verstring_new_pktout,
     ssh_verstring_queue_disconnect,
+    0xFFFFFFFF, /* no special packet size limit for this bpp */
 };
 
 static void ssh_detect_bugs(struct ssh_verstring_state *s);

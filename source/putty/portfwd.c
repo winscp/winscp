@@ -959,8 +959,10 @@ void portfwdmgr_config(PortFwdManager *mgr, Conf *conf)
                  * rejected.
                  */
                 ssh_rportfwd_remove(mgr->cl, pfr->remote);
+                pfr->remote = NULL;
             } else if (pfr->local) {
                 pfl_terminate(pfr->local);
+                pfr->local = NULL;
             }
 
             delpos234(mgr->forwardings, i);

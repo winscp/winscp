@@ -71,7 +71,7 @@ static int rsa_ssh1_load_main(FILE * fp, RSAKey *key, bool pub_only,
 
     /* One byte giving encryption type, and one reserved uint32. */
     ciphertype = get_byte(src);
-    if (ciphertype != 0 && ciphertype != SSH_CIPHER_3DES)
+    if (ciphertype != 0 && ciphertype != SSH1_CIPHER_3DES)
 	goto end;
     if (get_uint32(src) != 0)
         goto end;                 /* reserved field nonzero, panic! */
@@ -330,7 +330,7 @@ bool rsa_ssh1_savekey(const Filename *filename, RSAKey *key,
      * The public part of the key.
      */
     put_data(buf, rsa_signature, sizeof(rsa_signature));
-    put_byte(buf, passphrase ? SSH_CIPHER_3DES : 0); /* encryption type */
+    put_byte(buf, passphrase ? SSH1_CIPHER_3DES : 0); /* encryption type */
     put_uint32(buf, 0);                              /* reserved */
     rsa_ssh1_public_blob(BinarySink_UPCAST(buf), key,
                          RSA_SSH1_MODULUS_FIRST);

@@ -163,14 +163,14 @@ static inline void sk_flush(Socket *s)
 
 static inline void plug_log(
     Plug *p, int type, SockAddr *addr, int port, const char *msg, int code)
-{ return p->vt->log(p, type, addr, port, msg, code); }
+{ p->vt->log(p, type, addr, port, msg, code); }
 static inline void plug_closing(
     Plug *p, const char *msg, int code, bool calling_back)
-{ return p->vt->closing(p, msg, code, calling_back); }
+{ p->vt->closing(p, msg, code, calling_back); }
 static inline void plug_receive(Plug *p, int urg, const char *data, size_t len)
-{ return p->vt->receive(p, urg, data, len); }
+{ p->vt->receive(p, urg, data, len); }
 static inline void plug_sent (Plug *p, size_t bufsize)
-{ return p->vt->sent(p, bufsize); }
+{ p->vt->sent(p, bufsize); }
 static inline int plug_accepting(Plug *p, accept_fn_t cons, accept_ctx_t ctx)
 { return p->vt->accepting(p, cons, ctx); }
 

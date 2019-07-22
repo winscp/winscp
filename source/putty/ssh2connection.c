@@ -310,6 +310,11 @@ static void ssh2_connection_free(PacketProtocolLayer *ppl)
     }
     portfwdmgr_free(s->portfwdmgr);
 
+    if (s->antispoof_prompt)
+        free_prompts(s->antispoof_prompt);
+
+    delete_callbacks_for_context(s);
+
     sfree(s);
 }
 
@@ -416,6 +421,8 @@ static bool ssh2_connection_filter_queue(struct ssh2_connection_state *s)
                 ssh2_channel_init(c);
                 c->remwindow = winsize;
                 c->remmaxpkt = pktsize;
+                if (c->remmaxpkt > s->ppl.bpp->vt->packet_size_limit)
+                    c->remmaxpkt = s->ppl.bpp->vt->packet_size_limit;
                 if (c->chan->initial_fixed_window_size) {
                     c->locwindow = c->locmaxwin = c->remlocwin =
                         c->chan->initial_fixed_window_size;
@@ -482,6 +489,8 @@ static bool ssh2_connection_filter_queue(struct ssh2_connection_state *s)
                 c->halfopen = false;
                 c->remwindow = get_uint32(pktin);
                 c->remmaxpkt = get_uint32(pktin);
+                if (c->remmaxpkt > s->ppl.bpp->vt->packet_size_limit)
+                    c->remmaxpkt = s->ppl.bpp->vt->packet_size_limit;
 
                 chan_open_confirmation(c->chan);
 
@@ -534,6 +543,17 @@ static bool ssh2_connection_filter_queue(struct ssh2_connection_state *s)
                     bufsize = chan_send(
                         c->chan, ext_type == SSH2_EXTENDED_DATA_STDERR,
                         data.ptr, data.len);
+
+                    /*
+                     * The channel may have turned into a connection-
+                     * shared one as a result of that chan_send, e.g.
+                     * if the data we just provided completed the X11
+                     * auth phase and caused a callback to
+                     * x11_sharing_handover. If so, do nothing
+                     * further.
+                     */
+                    if (c->sharectx)
+                        break;
 
                     /*
                      * If it looks like the remote end hit the end of
@@ -986,6 +1006,7 @@ static void ssh2_connection_process_queue(PacketProtocolLayer *ppl)
             s->want_user_input = false;
         }
         free_prompts(s->antispoof_prompt);
+        s->antispoof_prompt = NULL;
     }
 
     /*

@@ -25,9 +25,8 @@ is almost guaranteed to make us reject a contribution.
 
 The PuTTY source base is divided into platform-specific modules and
 platform-generic modules. The Unix-specific modules are all in the
-\c{unix} subdirectory; the Mac-specific modules are in the \c{mac}
-subdirectory; the Windows-specific modules are in the \c{windows}
-subdirectory.
+\c{unix} subdirectory; the Windows-specific modules are in the
+\c{windows} subdirectory.
 
 All the modules in the main source directory - notably \e{all} of
 the code for the various back ends - are platform-generic. We want

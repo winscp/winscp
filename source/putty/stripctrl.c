@@ -159,16 +159,19 @@ static inline void stripctrl_check_line_limit(
 
 static inline void stripctrl_locale_put_wc(StripCtrlCharsImpl *scc, wchar_t wc)
 {
-    if (iswprint(wc) || stripctrl_ctrlchar_ok(scc, wc)) {
+    int width = mk_wcwidth(wc);
+    if ((iswprint(wc) && width >= 0) || stripctrl_ctrlchar_ok(scc, wc)) {
         /* Printable character, or one we're going to let through anyway. */
     } else if (scc->substitution) {
         wc = scc->substitution;
+        width = mk_wcwidth(wc);
+        assert(width >= 0);
     } else {
         /* No defined substitution, so don't write any output wchar_t. */
         return;
     }
 
-    stripctrl_check_line_limit(scc, wc, mk_wcwidth(wc));
+    stripctrl_check_line_limit(scc, wc, width);
 
     char outbuf[MB_LEN_MAX];
     size_t produced = wcrtomb(outbuf, wc, &scc->mbs_out);
@@ -180,15 +183,19 @@ static inline void stripctrl_term_put_wc(
     StripCtrlCharsImpl *scc, unsigned long wc)
 {
     ptrlen prefix = PTRLEN_LITERAL("");
+    int width = term_char_width(scc->term, wc);
 
-    if (!(wc & ~0x9F)) {
+    if (!(wc & ~0x9F) || width < 0) {
         /* This is something the terminal interprets as a control
          * character. */
         if (!stripctrl_ctrlchar_ok(scc, wc)) {
-            if (!scc->substitution)
+            if (!scc->substitution) {
                 return;
-            else
+            } else {
                 wc = scc->substitution;
+                width = term_char_width(scc->term, wc);
+                assert(width >= 0);
+            }
         }
 
         if (wc == '\012') {
@@ -200,7 +207,7 @@ static inline void stripctrl_term_put_wc(
         }
     }
 
-    stripctrl_check_line_limit(scc, wc, term_char_width(scc->term, wc));
+    stripctrl_check_line_limit(scc, wc, width);
 
     if (prefix.len)
         put_datapl(scc->bs_out, prefix);

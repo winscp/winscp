@@ -109,13 +109,24 @@ agent_pending_query *agent_query(
      */
     id = SendMessage(hwnd, WM_COPYDATA, (WPARAM) NULL, (LPARAM) &cds);
     if (id > 0) {
-	retlen = 4 + GET_32BIT_MSB_FIRST(p);
-	ret = snewn(retlen, unsigned char);
-	if (ret) {
+        uint32_t length_field = GET_32BIT_MSB_FIRST(p);
+        if (length_field > 0 && length_field <= AGENT_MAX_MSGLEN - 4) {
+            retlen = length_field + 4;
+            ret = snewn(retlen, unsigned char);
 	    memcpy(ret, p, retlen);
-	    *out = ret;
-	    *outlen = retlen;
-	}
+            *out = ret;
+            *outlen = retlen;
+        } else {
+            /*
+             * If we get here, we received an out-of-range length
+             * field, either without space for a message type code or
+             * overflowing the FileMapping.
+             *
+             * Treat this as if Pageant didn't answer at all - which
+             * actually means we do nothing, and just don't fill in
+             * out and outlen.
+             */
+        }
     }
     UnmapViewOfFile(p);
     CloseHandle(filemap);

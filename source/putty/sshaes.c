@@ -52,15 +52,17 @@
 #       define USE_CLANG_ATTR_TARGET_AARCH64
 #   endif
 #elif defined _MSC_VER
-    /* Visual Studio supports the crypto extension when targeting
-     * AArch64, but as of VS2017, the AArch32 header doesn't quite
-     * manage it (declaring the aese/aesd intrinsics without a round
-     * key operand). */
 #   if defined _M_ARM64
 #       define HW_AES HW_AES_NEON
-#       if defined _M_ARM64
-#           define USE_ARM64_NEON_H /* unusual header name in this case */
-#       endif
+        /* 64-bit Visual Studio uses the header <arm64_neon.h> in place
+         * of the standard <arm_neon.h> */
+#       define USE_ARM64_NEON_H
+#   elif defined _M_ARM
+#       define HW_AES HW_AES_NEON
+        /* 32-bit Visual Studio uses the right header name, but requires
+         * this #define to enable a set of intrinsic definitions that
+         * do not omit one of the parameters for vaes[ed]q_u8 */
+#       define _ARM_USE_NEW_NEON_INTRINSICS
 #   endif
 #endif
 

@@ -42,6 +42,7 @@ static const struct BinaryPacketProtocolVtable ssh1_bpp_vtable = {
     ssh1_bpp_handle_output,
     ssh1_bpp_new_pktout,
     ssh1_bpp_queue_disconnect,
+    0xFFFFFFFF, /* no special packet size limit for this bpp */
 };
 
 BinaryPacketProtocol *ssh1_bpp_new(LogContext *logctx)
@@ -143,9 +144,9 @@ static void ssh1_bpp_handle_input(BinaryPacketProtocol *bpp)
             s->len = toint(GET_32BIT_MSB_FIRST(lenbuf));
         }
 
-        if (s->len < 0 || s->len > 262144) { /* SSH1.5-mandated max size */
+        if (s->len < 5 || s->len > 262144) { /* SSH1.5-mandated max size */
             ssh_sw_abort(s->bpp.ssh,
-                         "Extremely large packet length from remote suggests"
+                         "Out-of-range packet length from remote suggests"
                          " data stream corruption");
             crStopV;
         }

@@ -308,7 +308,10 @@ int string_length_for_printf(size_t s)
 #endif
 
 /* Also lack of vsnprintf before VS2015 */
-#if defined _WINDOWS && !defined __WINE__ && _MSC_VER < 1900
+#if defined _WINDOWS && \
+    !defined __MINGW32__ && \
+    !defined __WINE__ && \
+    _MSC_VER < 1900
 #define vsnprintf _vsnprintf
 #endif
 
@@ -499,6 +502,20 @@ char *fgetline(FILE *fp)
     }
     ret[len] = '\0';
     return ret;
+}
+
+/*
+ * Read an entire file into a BinarySink.
+ */
+bool read_file_into(BinarySink *bs, FILE *fp)
+{
+    char buf[4096];
+    while (1) {
+        size_t retd = fread(buf, 1, sizeof(buf), fp);
+        if (retd == 0)
+            return !ferror(fp);
+        put_data(bs, buf, retd);
+    }
 }
 
 /*
@@ -936,6 +953,26 @@ bool ptrlen_endswith(ptrlen whole, ptrlen suffix, ptrlen *tail)
         return true;
     }
     return false;
+}
+
+ptrlen ptrlen_get_word(ptrlen *input, const char *separators)
+{
+    const char *p = input->ptr, *end = p + input->len;
+    ptrlen toret;
+
+    while (p < end && strchr(separators, *p))
+        p++;
+    toret.ptr = p;
+    while (p < end && !strchr(separators, *p))
+        p++;
+    toret.len = p - (const char *)toret.ptr;
+
+    size_t to_consume = p - (const char *)input->ptr;
+    assert(to_consume <= input->len);
+    input->ptr = (const char *)input->ptr + to_consume;
+    input->len -= to_consume;
+
+    return toret;
 }
 
 char *mkstr(ptrlen pl)

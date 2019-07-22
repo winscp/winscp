@@ -45,10 +45,11 @@ implemented.
 
 \S{faq-ssh2}{Question} Does PuTTY support SSH-2?
 
-Yes. SSH-2 support has been available in PuTTY since version 0.50.
+Yes. SSH-2 support has been available in PuTTY since version 0.50 in
+2000.
 
-Public key authentication (both RSA and DSA) in SSH-2 is new in
-version 0.52.
+Public key authentication (both RSA and DSA) in SSH-2 was new in
+version 0.52 in 2002.
 
 \S{faq-ssh2-keyfmt}{Question} Does PuTTY support reading OpenSSH or
 \cw{ssh.com} SSH-2 private key files?
@@ -102,7 +103,7 @@ a method of achieving the same effect.
 \S{faq-fullscreen}{Question} Does PuTTY support full-screen mode,
 like a DOS box?
 
-Yes; this is a new feature in version 0.52.
+Yes; this was added in version 0.52, in 2002.
 
 \S{faq-password-remember}{Question} Does PuTTY have the ability to
 \i{remember my password} so I don't have to type it every time?
@@ -194,9 +195,9 @@ available if anyone else wants to try it.
 
 Unfortunately not.
 
-Until recently, this was a limitation of the file transfer protocols:
-the SCP and SFTP protocols had no notion of transferring a file in
-anything other than binary mode. (This is still true of SCP.)
+This was a limitation of the file transfer protocols as originally
+specified: the SCP and SFTP protocols had no notion of transferring
+a file in anything other than binary mode. (This is still true of SCP.)
 
 The current draft protocol spec of SFTP proposes a means of
 implementing ASCII transfer. At some point PSCP/PSFTP may implement
@@ -207,12 +208,11 @@ this proposal.
 The eventual goal is for PuTTY to be a multi-platform program, able
 to run on at least Windows, Mac OS and Unix.
 
-Porting will become easier once PuTTY has a generalised porting
-layer, drawing a clear line between platform-dependent and
-platform-independent code. The general intention was for this
-porting layer to evolve naturally as part of the process of doing
-the first port; a Unix port has now been released and the plan
-seems to be working so far.
+PuTTY has been gaining a generalised porting layer, drawing a clear
+line between platform-dependent and platform-independent code. The
+general intention was for this porting layer to evolve naturally as
+part of the process of doing the first port; a Unix port has now been
+released and the plan seems to be working so far.
 
 \S{faq-ports-general}{Question} What ports of PuTTY exist?
 
@@ -222,9 +222,11 @@ systems and Unix.
 As of 0.68, the supplied PuTTY executables run on versions of Windows
 from XP onwards, up to and including Windows 10; and we know of no
 reason why PuTTY should not continue to work on future versions of
-Windows. We provide 32-bit and 64-bit Windows executables; see
-\k{faq-32bit-64bit} for discussion of the compatibility issues around
-that.
+Windows. We provide 32-bit and 64-bit Windows executables for the
+common x86 processor family; see \k{faq-32bit-64bit} for discussion
+of the compatibility issues around that. The 32-bit executables
+require a \i{Pentium 4} or newer processor. We also provide
+executables for Windows on Arm processors.
 
 (We used to also provide executables for Windows for the Alpha
 processor, but stopped after 0.58 due to lack of interest.)
@@ -244,15 +246,21 @@ on the
 
 \S{faq-unix}{Question} \I{Unix version}Is there a port to Unix?
 
-As of 0.54, there are Unix ports of most of the traditional PuTTY
-tools, and also one entirely new application.
+There are Unix ports of most of the traditional PuTTY tools, and also
+one entirely new application.
 
 If you look at the source release, you should find a \c{unix}
 subdirectory. There are a couple of ways of building it,
 including the usual \c{configure}/\c{make}; see the file \c{README}
-in the source distribution. This should build you Unix
-ports of Plink, PuTTY itself, PuTTYgen, PSCP, PSFTP, Pageant, and also
-\i\c{pterm} - an \cw{xterm}-type program which supports the same
+in the source distribution. This should build you:
+
+\b Unix ports of PuTTY, Plink, PSCP, and PSFTP, which work pretty much
+the same as their Windows counterparts;
+
+\b Command-line versions of PuTTYgen and Pageant, whose user interface
+is quite different to the Windows GUI versions;
+
+\b \i\c{pterm} - an \cw{xterm}-type program which supports the same
 terminal emulation as PuTTY.
 
 If you don't have \i{Gtk}, you should still be able to build the
@@ -317,7 +325,7 @@ unfinished.
 
 If any OS X and/or GTK programming experts are keen to have a finished
 version of this, we urge them to help out with some of the remaining
-problems!
+problems! See the TODO list in \c{unix/gtkapp.c} in the source code.
 
 \S{faq-epoc}{Question} Will there be a port to EPOC?
 
@@ -423,7 +431,7 @@ You can ask PuTTY to delete all this data; see \k{faq-cleanup}.
 On Unix, PuTTY stores all of this data in a directory \cw{~/.putty}
 by default.
 
-\S{faq-trust-sigils} Why do small PuTTY icons appear next to the login
+\S{faq-trust-sigils} Why do small \i{PuTTY icon}s appear next to the login
 prompts?
 
 As of PuTTY 0.71, some lines of text in the terminal window are marked
@@ -1535,7 +1543,14 @@ a mismatch. Similarly, the development snapshot binaries go with the
 development snapshot checksums, and so on. (We've colour-coded the
 download page in an effort to reduce this confusion a bit.)
 
-If you have double-checked that, and you still think there's a real
+Another thing to watch out for: as of 0.71, executables like
+\c{putty.exe} come in two flavours for each platform: the standalone
+versions on the website, each of which contains embedded help, and the
+versions installed by the installer, which use a separate help file
+also in the installer. We provide checksums for both; the latter are
+indicated with \cq{(installer version)} after the filename.
+
+If you have double-checked all that, and you still think there's a real
 mismatch, then please send us a report carefully quoting everything
 relevant:
 

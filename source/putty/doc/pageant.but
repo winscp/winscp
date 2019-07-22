@@ -1,7 +1,5 @@
 \C{pageant} Using \i{Pageant} for authentication
 
-\cfg{winhelp-topic}{pageant.general}
-
 Pageant is an SSH \i{authentication agent}. It holds your \i{private key}s
 in memory, already decoded, so that you can use them often
 \I{passwordless login}without needing to type a \i{passphrase}.
@@ -58,8 +56,6 @@ existing keys.
 
 \S{pageant-mainwin-keylist} The key list box
 
-\cfg{winhelp-topic}{pageant.keylist}
-
 The large list box in the Pageant main window lists the private keys
 that are currently loaded into Pageant. The list might look
 something like this:
@@ -69,12 +65,12 @@ something like this:
 
 For each key, the list box will tell you:
 
-\b The type of the key. Currently, this can be \c{ssh1} (an RSA key
-for use with the SSH-1 protocol), \c{ssh-rsa} (an RSA key for use
-with the SSH-2 protocol), \c{ssh-dss} (a DSA key for use with
-the SSH-2 protocol), \c{ecdsa-sha2-*} (an ECDSA key for use with
-the SSH-2 protocol), or \c{ssh-ed25519} (an Ed25519 key for use with
-the SSH-2 protocol).
+\b The type of the key. Currently, this can be
+\c{ssh-rsa} (an RSA key for use with the SSH-2 protocol),
+\c{ssh-dss} (a DSA key for use with the SSH-2 protocol),
+\c{ecdsa-sha2-*} (an ECDSA key for use with the SSH-2 protocol),
+\c{ssh-ed25519} (an Ed25519 key for use with the SSH-2 protocol),
+or \c{ssh1} (an RSA key for use with the old SSH-1 protocol).
 
 \b The size (in bits) of the key.
 
@@ -86,8 +82,6 @@ applied to your \c{authorized_keys} file.
 \b The comment attached to the key.
 
 \S{pageant-mainwin-addkey} The \q{Add Key} button
-
-\cfg{winhelp-topic}{pageant.addkey}
 
 To add a key to Pageant by reading it out of a local disk file,
 press the \q{Add Key} button in the Pageant main window, or
@@ -108,8 +102,6 @@ also add one from a remote system by using agent forwarding; see
 \k{pageant-forward} for details.)
 
 \S{pageant-mainwin-remkey} The \q{Remove Key} button
-
-\cfg{winhelp-topic}{pageant.remkey}
 
 If you need to remove a key from Pageant, select that key in the
 list box, and press the \q{Remove Key} button. Pageant will remove
@@ -159,14 +151,26 @@ by the command, like this:
 
 \c C:\PuTTY\pageant.exe d:\main.ppk -c C:\PuTTY\putty.exe
 
+\S{pageant-cmdline-restrict-acl} Restricting the \i{Windows process ACL}
+
+Pageant supports the same \i\c{-restrict-acl} option as the other
+PuTTY utilities to lock down the Pageant process's access control;
+see \k{using-cmdline-restrict-acl} for why you might want to do this.
+
+By default, if Pageant is started with \c{-restrict-acl}, it won't
+pass this to any PuTTY sessions started from its System Tray submenu.
+Use \c{-restrict-putty-acl} to change this. (Again, see
+\k{using-cmdline-restrict-acl} for details.)
+
 \H{pageant-forward} Using \i{agent forwarding}
 
 Agent forwarding is a mechanism that allows applications on your SSH
 server machine to talk to the agent on your client machine.
 
-Note that at present, agent forwarding in SSH-2 is only available
-when your SSH server is \i{OpenSSH}. The \i\cw{ssh.com} server uses a
-different agent protocol, which PuTTY does not yet support.
+Note that at present, whether agent forwarding in SSH-2 is available
+depends on your server. Pageant's protocol is compatible with the
+\i{OpenSSH} server, but the \i\cw{ssh.com} server uses a different
+agent protocol, which PuTTY does not yet support.
 
 To enable agent forwarding, first start Pageant. Then set up a PuTTY
 SSH session in which \q{Allow agent forwarding} is enabled (see

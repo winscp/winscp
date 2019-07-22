@@ -1393,8 +1393,8 @@ NORETURN void cleanup_exit(int);
     X(INT, NONE, window_border) /* in pixels */ \
     X(STR, NONE, answerback) \
     X(STR, NONE, printer) \
-    X(BOOL, NONE, arabicshaping) \
-    X(BOOL, NONE, bidi) \
+    X(BOOL, NONE, no_arabicshaping) \
+    X(BOOL, NONE, no_bidi) \
     /* Colour options */ \
     X(BOOL, NONE, ansi_colour) \
     X(BOOL, NONE, xterm_256_colour) \
@@ -1533,10 +1533,6 @@ bool conf_deserialise(Conf *conf, BinarySource *src);/*returns true on success*/
  * Functions to copy, free, serialise and deserialise FontSpecs.
  * Provided per-platform, to go with the platform's idea of a
  * FontSpec's contents.
- *
- * fontspec_serialise returns the number of bytes written, and can
- * handle data==NULL without crashing. So you can call it once to find
- * out a size, then again once you've allocated a buffer.
  */
 FontSpec *fontspec_copy(const FontSpec *f);
 void fontspec_free(FontSpec *f);
@@ -1634,7 +1630,6 @@ void term_invalidate(Terminal *);
 void term_blink(Terminal *, bool set_cursor);
 void term_do_paste(Terminal *, const wchar_t *, int);
 void term_nopaste(Terminal *);
-bool term_ldisc(Terminal *, int option);
 void term_copyall(Terminal *, const int *, int);
 void term_reconfig(Terminal *, Conf *);
 void term_request_copy(Terminal *, const int *clipboards, int n_clipboards);
@@ -1647,6 +1642,8 @@ void term_set_focus(Terminal *term, bool has_focus);
 char *term_get_ttymode(Terminal *term, const char *mode);
 int term_get_userpass_input(Terminal *term, prompts_t *p, bufchain *input);
 void term_set_trust_status(Terminal *term, bool trusted);
+void term_keyinput(Terminal *, int codepage, const void *buf, int len);
+void term_keyinputw(Terminal *, const wchar_t * widebuf, int len);
 
 typedef enum SmallKeypadKey {
     SKK_HOME, SKK_END, SKK_INSERT, SKK_DELETE, SKK_PGUP, SKK_PGDN,
@@ -1784,13 +1781,6 @@ void ldisc_send(Ldisc *, const void *buf, int len, bool interactive);
 void ldisc_echoedit_update(Ldisc *);
 
 /*
- * Exports from ldiscucs.c.
- */
-void lpage_send(Ldisc *, int codepage, const char *buf, int len,
-                bool interactive);
-void luni_send(Ldisc *, const wchar_t * widebuf, int len, bool interactive);
-
-/*
  * Exports from sshrand.c.
  */
 
@@ -1803,6 +1793,13 @@ extern int random_active;
  * calls random_ref on startup and random_unref on shutdown. */
 void random_ref(void);
 void random_unref(void);
+/* random_clear is equivalent to calling random_unref as many times as
+ * necessary to shut down the global PRNG instance completely. It's
+ * not needed in normal applications, but the command-line PuTTYgen
+ * test finds it useful to clean up after each invocation of the
+ * logical main() no matter whether it needed random numbers or
+ * not. */
+void random_clear(void);
 /* random_setup_special is used by PuTTYgen. It makes an extra-big
  * random number generator. */
 void random_setup_special();

@@ -488,12 +488,17 @@ static bool try_random_seed(char const *path, int action, HANDLE *ret)
     return (*ret != INVALID_HANDLE_VALUE);
 }
 
+static bool try_random_seed_and_free(char *path, int action, HANDLE *hout)
+{
+    bool retd = try_random_seed(path, action, hout);
+    sfree(path);
+    return retd;
+}
+
 static HANDLE access_random_seed(int action)
 {
     HKEY rkey;
-    DWORD type, size;
     HANDLE rethandle;
-    char seedpath[2 * MAX_PATH + 10] = "\0";
 
     /*
      * Iterate over a selection of possible random seed paths until
@@ -510,17 +515,18 @@ static HANDLE access_random_seed(int action)
      * First, try the location specified by the user in the
      * Registry, if any.
      */
-    size = sizeof(seedpath);
-    if (RegOpenKey(HKEY_CURRENT_USER, PUTTY_REG_POS, &rkey) ==
-	ERROR_SUCCESS) {
-	int ret = RegQueryValueEx(rkey, "RandSeedFile",
-				  0, &type, (BYTE *)seedpath, &size);
-	if (ret != ERROR_SUCCESS || type != REG_SZ)
-	    seedpath[0] = '\0';
-	RegCloseKey(rkey);
-
-	if (*seedpath && try_random_seed(seedpath, action, &rethandle))
-	    return rethandle;
+    {
+        char regpath[MAX_PATH + 1];
+        DWORD type, size = sizeof(regpath);
+        if (RegOpenKey(HKEY_CURRENT_USER, PUTTY_REG_POS, &rkey) ==
+            ERROR_SUCCESS) {
+            int ret = RegQueryValueEx(rkey, "RandSeedFile",
+                                      0, &type, (BYTE *)regpath, &size);
+            RegCloseKey(rkey);
+            if (ret == ERROR_SUCCESS && type == REG_SZ &&
+                try_random_seed(regpath, action, &rethandle))
+                return rethandle;
+        }
     }
 
     /*
@@ -541,19 +547,20 @@ static HANDLE access_random_seed(int action)
 	tried_shgetfolderpath = true;
     }
     if (p_SHGetFolderPathA) {
+        char profile[MAX_PATH + 1];
 	if (SUCCEEDED(p_SHGetFolderPathA(NULL, CSIDL_LOCAL_APPDATA,
-					 NULL, SHGFP_TYPE_CURRENT, seedpath))) {
-	    strcat(seedpath, "\\PUTTY.RND");
-	    if (try_random_seed(seedpath, action, &rethandle))
-		return rethandle;
-	}
+					 NULL, SHGFP_TYPE_CURRENT, profile)) &&
+            try_random_seed_and_free(dupcat(profile, "\\PUTTY.RND",
+                                            (const char *)NULL),
+                                     action, &rethandle))
+            return rethandle;
 
 	if (SUCCEEDED(p_SHGetFolderPathA(NULL, CSIDL_APPDATA,
-					 NULL, SHGFP_TYPE_CURRENT, seedpath))) {
-	    strcat(seedpath, "\\PUTTY.RND");
-	    if (try_random_seed(seedpath, action, &rethandle))
-		return rethandle;
-	}
+					 NULL, SHGFP_TYPE_CURRENT, profile)) &&
+            try_random_seed_and_free(dupcat(profile, "\\PUTTY.RND",
+                                            (const char *)NULL),
+                                     action, &rethandle))
+            return rethandle;
     }
 
     /*
@@ -561,28 +568,36 @@ static HANDLE access_random_seed(int action)
      * user's home directory.
      */
     {
-	int len, ret;
+	char drv[MAX_PATH], path[MAX_PATH];
 
-	len =
-	    GetEnvironmentVariable("HOMEDRIVE", seedpath,
-				   sizeof(seedpath));
-	ret =
-	    GetEnvironmentVariable("HOMEPATH", seedpath + len,
-				   sizeof(seedpath) - len);
-	if (ret != 0) {
-	    strcat(seedpath, "\\PUTTY.RND");
-	    if (try_random_seed(seedpath, action, &rethandle))
-		return rethandle;
-	}
+        DWORD drvlen = GetEnvironmentVariable("HOMEDRIVE", drv, sizeof(drv));
+        DWORD pathlen = GetEnvironmentVariable("HOMEPATH", path, sizeof(path));
+
+        /* We permit %HOMEDRIVE% to expand to an empty string, but if
+         * %HOMEPATH% does that, we abort the attempt. Same if either
+         * variable overflows its buffer. */
+        if (drvlen == 0)
+            drv[0] = '\0';
+
+        if (drvlen < lenof(drv) && pathlen < lenof(path) && pathlen > 0 &&
+            try_random_seed_and_free(
+                dupcat(drv, path, "\\PUTTY.RND", (const char *)NULL),
+                action, &rethandle))
+            return rethandle;
     }
 
     /*
      * And finally, fall back to C:\WINDOWS.
      */
-    GetWindowsDirectory(seedpath, sizeof(seedpath));
-    strcat(seedpath, "\\PUTTY.RND");
-    if (try_random_seed(seedpath, action, &rethandle))
-	return rethandle;
+    {
+        char windir[MAX_PATH];
+        DWORD len = GetWindowsDirectory(windir, sizeof(windir));
+        if (len < lenof(windir) &&
+            try_random_seed_and_free(
+                dupcat(windir, "\\PUTTY.RND", (const char *)NULL),
+                action, &rethandle))
+            return rethandle;
+    }
 
     /*
      * If even that failed, give up.

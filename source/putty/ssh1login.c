@@ -217,8 +217,11 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
         return;
     }
 
-    s->len = (s->hostkey.bytes > s->servkey.bytes ?
-              s->hostkey.bytes : s->servkey.bytes);
+    s->len = 32;
+    if (s->len < s->hostkey.bytes)
+        s->len = s->hostkey.bytes;
+    if (s->len < s->servkey.bytes)
+        s->len = s->servkey.bytes;
 
     s->rsabuf = snewn(s->len, unsigned char);
 
@@ -300,11 +303,11 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                 ppl_logevent("AES not supported in SSH-1, skipping");
             } else {
                 switch (next_cipher) {
-                  case CIPHER_3DES:     s->cipher_type = SSH_CIPHER_3DES;
+                  case CIPHER_3DES:     s->cipher_type = SSH1_CIPHER_3DES;
                     cipher_string = "3DES"; break;
-                  case CIPHER_BLOWFISH: s->cipher_type = SSH_CIPHER_BLOWFISH;
+                  case CIPHER_BLOWFISH: s->cipher_type = SSH1_CIPHER_BLOWFISH;
                     cipher_string = "Blowfish"; break;
-                  case CIPHER_DES:      s->cipher_type = SSH_CIPHER_DES;
+                  case CIPHER_DES:      s->cipher_type = SSH1_CIPHER_DES;
                     cipher_string = "single-DES"; break;
                 }
                 if (s->supported_ciphers_mask & (1 << s->cipher_type))
@@ -312,7 +315,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
             }
         }
         if (!cipher_chosen) {
-            if ((s->supported_ciphers_mask & (1 << SSH_CIPHER_3DES)) == 0) {
+            if ((s->supported_ciphers_mask & (1 << SSH1_CIPHER_3DES)) == 0) {
                 ssh_proto_error(s->ppl.ssh, "Server violates SSH-1 protocol "
                                 "by not supporting 3DES encryption");
             } else {
@@ -336,13 +339,13 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
     }
 
     switch (s->cipher_type) {
-      case SSH_CIPHER_3DES:
+      case SSH1_CIPHER_3DES:
         ppl_logevent("Using 3DES encryption");
         break;
-      case SSH_CIPHER_DES:
+      case SSH1_CIPHER_DES:
         ppl_logevent("Using single-DES encryption");
         break;
-      case SSH_CIPHER_BLOWFISH:
+      case SSH1_CIPHER_BLOWFISH:
         ppl_logevent("Using Blowfish encryption");
         break;
     }
@@ -369,8 +372,8 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
 
     {
         const ssh_cipheralg *cipher =
-            (s->cipher_type == SSH_CIPHER_BLOWFISH ? &ssh_blowfish_ssh1 :
-             s->cipher_type == SSH_CIPHER_DES ? &ssh_des : &ssh_3des_ssh1);
+            (s->cipher_type == SSH1_CIPHER_BLOWFISH ? &ssh_blowfish_ssh1 :
+             s->cipher_type == SSH1_CIPHER_DES ? &ssh_des : &ssh_3des_ssh1);
         ssh1_bpp_new_cipher(s->ppl.bpp, cipher, s->session_key);
     }
 

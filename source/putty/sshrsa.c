@@ -296,8 +296,11 @@ bool rsa_verify(RSAKey *key)
     mp_int *n, *ed, *pm1, *qm1;
     unsigned ok = 1;
 
-    /* Preliminary checks: p,q must actually be nonzero. */
-    if (mp_eq_integer(key->p, 0) | mp_eq_integer(key->q, 0))
+    /* Preliminary checks: p,q can't be 0 or 1. (Of course no other
+     * very small value is any good either, but these are the values
+     * we _must_ check for to avoid assertion failures further down
+     * this function.) */
+    if (!(mp_hs_integer(key->p, 2) & mp_hs_integer(key->q, 2)))
         return false;
 
     /* n must equal pq. */

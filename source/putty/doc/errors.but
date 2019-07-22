@@ -13,8 +13,6 @@ bug (see \k{feedback}) and we will add documentation for it.
 \H{errors-hostkey-absent} \q{The server's host key is not cached in
 the registry}
 
-\cfg{winhelp-topic}{errors.hostkey.absent}
-
 This error message occurs when PuTTY connects to a new SSH server.
 Every server identifies itself by means of a host key; once PuTTY
 knows the host key for a server, it will be able to detect if a
@@ -36,8 +34,6 @@ See \k{gs-hostkey} for more information on host keys.
 
 \H{errors-hostkey-wrong} \q{WARNING - POTENTIAL SECURITY BREACH!}
 
-\cfg{winhelp-topic}{errors.hostkey.changed}
-
 This message, followed by \q{The server's host key does not match
 the one PuTTY has cached in the registry}, means that PuTTY has
 connected to the SSH server before, knows what its host key
@@ -57,7 +53,7 @@ in the same way as you would if it was new.
 See \k{gs-hostkey} for more information on host keys.
 
 \H{errors-ssh-protocol} \q{SSH protocol version 2 required by our
-configuration but server only provides (old, insecure) SSH-1}
+configuration but remote only provides (old, insecure) SSH-1}
 
 By default, PuTTY only supports connecting to SSH servers that
 implement \i{SSH protocol version 2}. If you see this message, the
@@ -80,11 +76,15 @@ attack.
 
 This occurs when the SSH server does not offer any ciphers which you
 have configured PuTTY to consider strong enough. By default, PuTTY
-puts up this warning only for \ii{single-DES} and \i{Arcfour} encryption.
+puts up this warning only for \i{Blowfish}, \ii{single-DES}, and
+\i{Arcfour} encryption.
 
 See \k{config-ssh-encryption} for more information on this message.
 
-\H{errors-toomanyauth} \q{Server sent disconnect message type 2
+(There are similar messages for other cryptographic primitives, such
+as host key algorithms.)
+
+\H{errors-toomanyauth} \q{Remote side sent disconnect message type 2
 (protocol error): "Too many authentication failures for root"}
 
 This message is produced by an \i{OpenSSH} (or \i{Sun SSH}) server if it
@@ -141,10 +141,8 @@ Similarly, any error message starting with \q{Assertion failed} is a
 bug in PuTTY. Please report it to us, and include the exact text
 from the error message box.
 
-\H{errors-cant-load-key} \q{Unable to use this private key file},
-\q{Couldn't load private key}, \q{Key is of wrong type}
-
-\cfg{winhelp-topic}{errors.cantloadkey}
+\H{errors-cant-load-key} \q{Unable to use key file},
+\q{Couldn't load private key}, \q{Couldn't load this key}
 
 Various forms of this error are printed in the PuTTY window, or
 written to the PuTTY Event Log (see \k{using-eventlog}) when trying
@@ -155,18 +153,18 @@ If you see one of these messages, it often indicates that you've tried
 to load a key of an inappropriate type into PuTTY, Plink, PSCP, PSFTP,
 or Pageant.
 
-You may have specified a key that's inappropriate for the connection
-you're making. The SSH-1 and SSH-2 protocols require different private
-key formats, and a SSH-1 key can't be used for a SSH-2 connection (or
-vice versa).
-
-Alternatively, you may have tried to load an SSH-2 key in a \q{foreign}
+You may have tried to load an SSH-2 key in a \q{foreign}
 format (OpenSSH or \cw{ssh.com}) directly into one of the PuTTY tools,
 in which case you need to import it into PuTTY's native format
-(\c{*.PPK}) using PuTTYgen - see \k{puttygen-conversions}.
+(\c{*.PPK}) using PuTTYgen \dash see \k{puttygen-conversions}.
 
-\H{errors-refused} \q{Server refused our public key} or \q{Key
-refused}
+Alternatively, you may have specified a key that's inappropriate for
+the connection you're making. The SSH-2 and the old SSH-1 protocols
+require different private key formats, and a SSH-1 key can't be used
+for a SSH-2 connection (or vice versa).
+
+\H{errors-refused} \q{Server refused our key},
+\q{Server refused our public key}, \q{Key refused}
 
 Various forms of this error are printed in the PuTTY window, or
 written to the PuTTY Event Log (see \k{using-eventlog}) when trying
@@ -211,11 +209,11 @@ Upgrade your server, or use the workarounds described in
 
 This error indicates that PuTTY has run out of ways to authenticate
 you to an SSH server.  This may be because PuTTY has TIS or
-keyboard-interactive authentication disabled, in which case
+keyboard-interactive authentication disabled, in which case see
 \k{config-ssh-tis} and \k{config-ssh-ki}.
 
-\H{errors-crc} \q{Incorrect \i{CRC} received on packet} or \q{Incorrect
-\i{MAC} received on packet}
+\H{errors-crc} \q{Incorrect \i{MAC} received on packet} or
+\q{Incorrect \i{CRC} received on packet}
 
 This error occurs when PuTTY decrypts an SSH packet and its checksum
 is not correct. This probably means something has gone wrong in the

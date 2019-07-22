@@ -850,7 +850,51 @@ struct zlib_decompress_ctx {
 	lenrep;
     int uncomplen;
     unsigned char lenlen[19];
-    unsigned char lengths[286 + 32];
+
+    /*
+     * Array that accumulates the code lengths sent in the header of a
+     * dynamic-Huffman-tree block.
+     *
+     * There are 286 actual symbols in the literal/length alphabet
+     * (256 literals plus 20 length categories), and 30 symbols in the
+     * distance alphabet. However, the block header transmits the
+     * number of code lengths for the former alphabet as a 5-bit value
+     * HLIT to be added to 257, and the latter as a 5-bit value HDIST
+     * to be added to 1. This means that the number of _code lengths_
+     * can go as high as 288 for the symbol alphabet and 32 for the
+     * distance alphabet - each of those values being 2 more than the
+     * maximum number of actual symbols.
+     *
+     * It's tempting to rule that sending out-of-range HLIT or HDIST
+     * is therefore just illegal, and to fault it when we initially
+     * receive that header. But instead I've chosen to permit the
+     * Huffman-code definition to include code length entries for
+     * those unused symbols; if a header of that form is transmitted,
+     * then the effect will be that in the main body of the block,
+     * some bit sequence(s) will generate an illegal symbol number,
+     * and _that_ will be faulted as a decoding error.
+     *
+     * Rationale: this can already happen! The standard Huffman code
+     * used in a _static_ block for the literal/length alphabet is
+     * defined in such a way that it includes codes for symbols 287
+     * and 288, which are then never actually sent in the body of the
+     * block. And I think that if the standard static tree definition
+     * is willing to include Huffman codes that don't correspond to a
+     * symbol, then it's an excessive restriction on dynamic tables
+     * not to permit them to do the same. In particular, it would be
+     * strange for a dynamic block not to be able to exactly mimic
+     * either or both of the Huffman codes used by a static block for
+     * the corresponding alphabet.
+     *
+     * So we place no constraint on HLIT or HDIST during code
+     * construction, and we make this array large enough to include
+     * the maximum number of code lengths that can possibly arise as a
+     * result. It's only trying to _use_ the junk Huffman codes after
+     * table construction is completed that will provoke a decode
+     * error.
+     */
+    unsigned char lengths[288 + 32];
+
     unsigned long bits;
     int nbits;
     unsigned char window[WINSIZE];
@@ -1105,10 +1149,13 @@ bool zlib_decompress_block(ssh_decompressor *dc,
 		    zlib_freetable(&dctx->currdisttable);
 		    dctx->currdisttable = NULL;
 		}
-	    } else if (code < 286) {   /* static tree can give >285; ignore */
+	    } else if (code < 286) {
 		dctx->state = GOTLENSYM;
 		dctx->sym = code;
-	    }
+	    } else {
+                /* literal/length symbols 286 and 287 are invalid */
+                goto decode_error;
+            }
 	    break;
 	  case GOTLENSYM:
 	    rec = &lencodes[dctx->sym - 257];

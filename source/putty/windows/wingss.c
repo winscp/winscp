@@ -170,6 +170,8 @@ struct ssh_gss_liblist *ssh_gss_setup(Conf *conf)
         BIND_GSS_FN(release_buffer);
         BIND_GSS_FN(release_cred);
         BIND_GSS_FN(release_name);
+        BIND_GSS_FN(acquire_cred);
+        BIND_GSS_FN(inquire_cred_by_mech);
 
 #undef BIND_GSS_FN
 
@@ -252,6 +254,8 @@ struct ssh_gss_liblist *ssh_gss_setup(Conf *conf)
         BIND_GSS_FN(release_buffer);
         BIND_GSS_FN(release_cred);
         BIND_GSS_FN(release_name);
+        BIND_GSS_FN(acquire_cred);
+        BIND_GSS_FN(inquire_cred_by_mech);
 
 #undef BIND_GSS_FN
 

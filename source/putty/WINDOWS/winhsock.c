@@ -128,6 +128,8 @@ static void sk_handle_close(Socket *s)
         CloseHandle(hs->recv_H);
     bufchain_clear(&hs->inputdata);
 
+    delete_callbacks_for_context(hs);
+
     sfree(hs);
 }
 

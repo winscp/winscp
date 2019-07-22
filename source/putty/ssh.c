@@ -50,7 +50,9 @@ struct Ssh {
     ssh_sharing_state *connshare;
     bool attempting_connshare;
 
+#ifndef NO_GSSAPI
     struct ssh_connection_shared_gss_state gss_state;
+#endif
 
     char *savedhost;
     int savedport;
@@ -130,6 +132,8 @@ struct Ssh {
     bool session_started;
 
     Pinger *pinger;
+
+    char *deferred_abort_message;
 
     bool need_random_unref;
 };
@@ -249,13 +253,22 @@ static void ssh_got_ssh_version(struct ssh_version_receiver *rcv,
                 userauth_layer = ssh2_userauth_new(
                     connection_layer, ssh->savedhost, ssh->fullhostname,
                     conf_get_filename(ssh->conf, CONF_keyfile),
+                    conf_get_bool(ssh->conf, CONF_ssh_show_banner),
                     conf_get_bool(ssh->conf, CONF_tryagent), username,
                     conf_get_bool(ssh->conf, CONF_change_username),
                     conf_get_bool(ssh->conf, CONF_try_ki_auth),
+#ifndef NO_GSSAPI
                     conf_get_bool(ssh->conf, CONF_try_gssapi_auth),
                     conf_get_bool(ssh->conf, CONF_try_gssapi_kex),
                     conf_get_bool(ssh->conf, CONF_gssapifwd),
-                    &ssh->gss_state);
+                    &ssh->gss_state
+#else
+                    false,
+                    false,
+                    false,
+                    NULL
+#endif
+                    );
                 ssh_connect_ppl(ssh, userauth_layer);
                 transport_child_layer = userauth_layer;
 
@@ -267,8 +280,12 @@ static void ssh_got_ssh_version(struct ssh_version_receiver *rcv,
                 ssh->fullhostname,
                 ssh_verstring_get_local(old_bpp),
                 ssh_verstring_get_remote(old_bpp),
+#ifndef NO_GSSAPI
                 &ssh->gss_state,
-                &ssh->stats, transport_child_layer, false);
+#else
+                NULL,
+#endif
+                &ssh->stats, transport_child_layer, NULL);
             ssh_connect_ppl(ssh, ssh->base_layer);
 
             if (userauth_layer)
@@ -540,6 +557,24 @@ void ssh_user_close(Ssh *ssh, const char *fmt, ...)
     }
 }
 
+void ssh_deferred_abort_callback(void *vctx)
+{
+    Ssh *ssh = (Ssh *)vctx;
+    char *msg = ssh->deferred_abort_message;
+    ssh->deferred_abort_message = NULL;
+    ssh_sw_abort(ssh, msg);
+    sfree(msg);
+}
+
+void ssh_sw_abort_deferred(Ssh *ssh, const char *fmt, ...)
+{
+    if (!ssh->deferred_abort_message) {
+        GET_FORMATTED_MSG;
+        ssh->deferred_abort_message = msg;
+        queue_toplevel_callback(ssh_deferred_abort_callback, ssh);
+    }
+}
+
 static void ssh_socket_log(Plug *plug, int type, SockAddr *addr, int port,
                            const char *error_msg, int error_code)
 {
@@ -565,7 +600,7 @@ static void ssh_closing(Plug *plug, const char *error_msg, int error_code,
 {
     Ssh *ssh = container_of(plug, Ssh, plug);
     if (error_msg) {
-        ssh_remote_error(ssh, "Network error: %s", error_msg);
+        ssh_remote_error(ssh, "%s", error_msg);
     } else if (ssh->bpp) {
         ssh->bpp->input_eof = true;
         queue_idempotent_callback(&ssh->bpp->ic_in_raw);
@@ -899,6 +934,8 @@ static void ssh_free(Backend *be)
     if (ssh->gss_state.libs)
 	ssh_gss_cleanup(ssh->gss_state.libs);
 #endif
+
+    sfree(ssh->deferred_abort_message);
 
     delete_callbacks_for_context(ssh); /* likely to catch ic_out_raw */
 
