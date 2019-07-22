@@ -10383,7 +10383,7 @@ void __fastcall TCustomScpExplorerForm::ClipboardDownload(const UnicodeString & 
 void __fastcall TCustomScpExplorerForm::ClipboardFakeCreated(TObject * /*Sender*/, const UnicodeString FileName)
 {
   // It can actually rarelly happen that some random file is created, while we are shuttting down the monitor
-  // (as it pumps a Windows message queue while beign shutted down)
+  // (as it pumps a Windows message queue while being shutted down)
   if (DebugAlwaysTrue(!FClipboardFakeDirectory.IsEmpty()) &&
       SameText(ExtractFileName(FileName), ExtractFileName(FClipboardFakeDirectory)))
   {
