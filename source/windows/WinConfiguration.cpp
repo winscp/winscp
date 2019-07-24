@@ -2817,6 +2817,7 @@ void __fastcall TWinConfiguration::UpdateStaticUsage()
   Usage->Set(L"FileColors", !FileColors.IsEmpty());
   Usage->Set(L"DragDropDrives", !DDDrives.IsEmpty());
   Usage->Set(L"ShowingTips", ShowTips);
+  Usage->Set(L"KeepingOpenWhenNoSession", KeepOpenWhenNoSession);
   TipsUpdateStaticUsage();
 
   Usage->Set(L"CommanderNortonLikeMode", int(ScpCommander.NortonLikeMode));
