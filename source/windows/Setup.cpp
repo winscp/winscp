@@ -908,7 +908,9 @@ static bool __fastcall DoQueryUpdates(TUpdatesConfiguration & Updates, bool Coll
       URL += L"&localever=" + LocaleVersion;
       URL += L"&localecompl=" + LoadStr(TRANSLATION_COMPLETENESS);
     }
-    if (!Updates.AuthenticationEmail.IsEmpty())
+    // Even if donor email is inherited from normal installation,
+    // do not use it as this all is merely to report usage statistics, not to check for updates, in UWP.
+    if (!Updates.AuthenticationEmail.IsEmpty() && !IsUWP())
     {
       RawByteString AuthenticationEmailBuf = RawByteString(UTF8String(Updates.AuthenticationEmail.LowerCase()));
       URL += L"&authentication=" + Sha256(AuthenticationEmailBuf.c_str(), AuthenticationEmailBuf.Length()).LowerCase();
