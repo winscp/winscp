@@ -1,8 +1,8 @@
 STRINGTABLE
 BEGIN
-  // GitHub organization description
   // Site slogan
   DESCRIPTION_45_LETTERS2, "Free SFTP, SCP, S3 and FTP client for Windows"
+  // GitHub organization description
   // <meta name="description">
   DESCRIPTION_80_LETTERS2, "WinSCP is a free SFTP, SCP, Amazon S3, WebDAV, and FTP client for Windows."
   // REGISTERED_APP_DESC3
