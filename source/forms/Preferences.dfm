@@ -2537,7 +2537,8 @@ object PreferencesDialog: TPreferencesDialog
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 
-              '&Show Login dialog on startup and when the last session is closed'
+              '&Show Login dialog on startup and when the last session is close' +
+              'd'
             TabOrder = 2
             OnClick = ControlChange
           end
