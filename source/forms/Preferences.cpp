@@ -129,6 +129,21 @@ __fastcall TPreferencesDialog::TPreferencesDialog(
 
   AutomaticIniFileStorageLabel->Caption = ExpandEnvironmentVariables(Configuration->GetAutomaticIniFileStorageName(false));
 
+  if (IsUWP())
+  {
+    UpdatesSheet->Caption = LoadStr(PREFERENCES_STATISTICS_CAPTION);
+    int ProxyOffset = UpdatesProxyGroup->Top - UpdatesOptionsGroup->Top - UpdatesOptionsGroup->Height;
+    UpdatesGroup2->Visible = false;
+    UpdatesOptionsGroup->Top = UpdatesGroup2->Top;
+    UpdatesBetaVersionsCombo->Visible = false;
+    UpdatesBetaVersionsLabel->Visible = false;
+    int Offset = UsageViewButton->Top - UpdatesBetaVersionsCombo->Top;
+    CollectUsageCheck->Top = CollectUsageCheck->Top - Offset;
+    UsageViewButton->Top = UsageViewButton->Top - Offset;
+    UpdatesOptionsGroup->Height = UpdatesOptionsGroup->Height - Offset;
+    UpdatesProxyGroup->Top = UpdatesOptionsGroup->Top + UpdatesOptionsGroup->Height + ProxyOffset;
+  }
+
   HideComponentsPanel(this);
 }
 //---------------------------------------------------------------------------
@@ -908,7 +923,24 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     WinConfiguration->FileColors = TFileColorData::SaveList(FFileColors);
 
     // updates
-    WinConfiguration->Updates = SaveUpdates();
+    TUpdatesConfiguration Updates = SaveUpdates();
+
+    if ((Configuration->CollectUsage != CollectUsageCheck->Checked) && IsUWP())
+    {
+      if (CollectUsageCheck->Checked)
+      {
+        if (Updates.Period == TDateTime(0))
+        {
+          Updates.Period = 7;
+        }
+      }
+      else
+      {
+        Updates.Period = 0;
+      }
+    }
+
+    WinConfiguration->Updates = Updates;
 
     Configuration->CollectUsage = CollectUsageCheck->Checked;
 

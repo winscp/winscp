@@ -621,6 +621,7 @@
 #define FILE_COLOR_CAPTION      6019
 #define UPDATES_DONATE_HTML     6020
 #define EDITOR_NEW              6021
+#define PREFERENCES_STATISTICS_CAPTION 6022
 
 // 2xxx is reserved for TextsFileZilla.h
 
