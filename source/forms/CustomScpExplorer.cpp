@@ -6547,6 +6547,7 @@ void __fastcall TCustomScpExplorerForm::NeedSession(bool Startup)
                SameText(WinConfiguration->LastStoredSession, WinConfiguration->AutoWorkspace))
       {
         DoOpenFolderOrWorkspace(WinConfiguration->AutoWorkspace, false);
+        Configuration->Usage->Inc(L"OpenedWorkspacesAuto");
       }
     }
     __finally
