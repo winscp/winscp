@@ -1487,6 +1487,7 @@ NORETURN void cleanup_exit(int);
     /* MPEXT BEGIN */ \
     X(INT, NONE, connect_timeout) \
     X(INT, NONE, sndbuf) \
+    X(STR, NONE, srcaddr) \
     X(BOOL, NONE, force_remote_cmd2) \
     X(BOOL, NONE, change_password) \
     /* MPEXT END */ \

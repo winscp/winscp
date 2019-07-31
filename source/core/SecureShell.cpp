@@ -402,6 +402,7 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
 
   conf_set_int(conf, CONF_connect_timeout, Data->Timeout * MSecsPerSec);
   conf_set_int(conf, CONF_sndbuf, Data->SendBuf);
+  conf_set_str(conf, CONF_srcaddr, AnsiString(Data->SourceAddress).c_str());
 
   // permanent settings
   conf_set_bool(conf, CONF_nopty, TRUE);

@@ -151,7 +151,8 @@ Socket *sk_new(SockAddr *addr, int port, bool privport, bool oobinline,
                bool nodelay, bool keepalive, Plug *p,
 #ifdef MPEXT
               int timeout,
-              int sndbuf
+              int sndbuf,
+              const char *srcaddr
 #endif
 	      );
 

@@ -313,7 +313,7 @@ struct X11Display *x11_setup_display(const char *display, Conf *conf,
 	    Socket *s = sk_new(sk_addr_dup(ux), 0, false, false,
 	                       false, false, nullplug,
 	    #ifdef MPEXT
-	    0, 0
+	    0, 0, NULL
 	    #endif
 	    );
 	    err = sk_socket_error(s);

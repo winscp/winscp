@@ -1249,6 +1249,10 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
     {
       ADF(L"Send buffer: %d", (Data->SendBuf));
     }
+    if (Data->UsesSsh && !Data->SourceAddress.IsEmpty())
+    {
+      ADF(L"Source address: %s", (Data->SourceAddress));
+    }
     if (Data->UsesSsh)
     {
       ADF(L"SSH protocol version: %s; Compression: %s",

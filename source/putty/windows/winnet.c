@@ -924,7 +924,8 @@ static Socket *sk_net_accept(accept_ctx_t ctx, Plug *plug)
 static DWORD try_connect(NetSocket *sock,
 #ifdef MPEXT
                          int timeout,
-                         int sndbuf
+                         int sndbuf,
+                         const char *srcaddr
 #endif
 )
 {
@@ -1027,7 +1028,11 @@ static DWORD try_connect(NetSocket *sock,
 #endif
 	{
 	    a.sin_family = AF_INET;
-	    a.sin_addr.s_addr = p_htonl(INADDR_ANY);
+	    if (srcaddr && srcaddr[0]) {
+	        a.sin_addr.s_addr = p_inet_addr(srcaddr);
+	    } else {
+	        a.sin_addr.s_addr = p_htonl(INADDR_ANY);
+	    }
 	    a.sin_port = p_htons(localport);
 	}
 #ifndef NO_IPV6
@@ -1185,7 +1190,8 @@ Socket *sk_new(SockAddr *addr, int port, bool privport, bool oobinline,
                bool nodelay, bool keepalive, Plug *plug,
 #ifdef MPEXT
 	      int timeout,
-	      int sndbuf
+	      int sndbuf,
+	      const char *srcaddr
 #endif
 	      )
 {
@@ -1225,7 +1231,7 @@ Socket *sk_new(SockAddr *addr, int port, bool privport, bool oobinline,
 #endif
         err = try_connect(ret
 #ifdef MPEXT
-            , timeout, sndbuf
+            , timeout, sndbuf, srcaddr
 #endif
         );
     } while (err && sk_nextaddr(ret->addr, &ret->step));
@@ -1646,7 +1652,7 @@ void select_result(WPARAM wParam, LPARAM lParam)
 	    while (err && s->addr && sk_nextaddr(s->addr, &s->step)) {
 		err = try_connect(s
 #ifdef MPEXT
-		    , 0, 0
+		    , 0, 0, NULL
 #endif
 		);
 	    }

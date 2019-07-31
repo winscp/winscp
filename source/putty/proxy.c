@@ -514,7 +514,8 @@ Socket *new_connection(SockAddr *addr, const char *hostname,
 				 privport, oobinline,
 				 nodelay, keepalive, &ret->plugimpl,
 				 #ifdef MPEXT
-				 conf_get_int(conf, CONF_connect_timeout), conf_get_int(conf, CONF_sndbuf)
+				 conf_get_int(conf, CONF_connect_timeout), conf_get_int(conf, CONF_sndbuf),
+				 conf_get_str(conf, CONF_srcaddr)
 				 #endif
 				 );
 	if (sk_socket_error(ret->sub_socket) != NULL)
@@ -530,7 +531,8 @@ Socket *new_connection(SockAddr *addr, const char *hostname,
     /* no proxy, so just return the direct socket */
     return sk_new(addr, port, privport, oobinline, nodelay, keepalive, plug,
       #ifdef MPEXT
-      conf_get_int(conf, CONF_connect_timeout), conf_get_int(conf, CONF_sndbuf)
+      conf_get_int(conf, CONF_connect_timeout), conf_get_int(conf, CONF_sndbuf),
+      conf_get_str(conf, CONF_srcaddr)
       #endif
       );
 }
