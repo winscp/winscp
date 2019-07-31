@@ -1760,7 +1760,7 @@ bool __fastcall TCustomScpExplorerForm::CustomCommandRemoteAllowed()
 {
   // remote custom commands can be executed only if the server supports shell commands
   // or have secondary shell
-  return (FTerminal != NULL) && (FTerminal->IsCapable[fcSecondaryShell] || FTerminal->IsCapable[fcShellAnyCommand]);
+  return (FTerminal != NULL) && FTerminal->Active && (FTerminal->IsCapable[fcSecondaryShell] || FTerminal->IsCapable[fcShellAnyCommand]);
 }
 //---------------------------------------------------------------------------
 int __fastcall TCustomScpExplorerForm::CustomCommandState(
