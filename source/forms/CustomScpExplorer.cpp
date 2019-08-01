@@ -1793,9 +1793,9 @@ int __fastcall TCustomScpExplorerForm::CustomCommandState(
     }
     else
     {
-      if ((ListType == ccltAll) || (ListType == ccltFile))
+      if ((ListType == ccltAll) || ((ListType == ccltFile) && !IsSideLocalBrowser(FCurrentSide)))
       {
-        Result = (!IsSideLocalBrowser(FCurrentSide) && DirView(FCurrentSide)->AnyFileSelected(OnFocused, false, true)) ? AllowedState : 0;
+        Result = (DirView(FCurrentSide)->AnyFileSelected(OnFocused, false, true)) ? AllowedState : 0;
       }
       else
       {
@@ -1836,7 +1836,8 @@ int __fastcall TCustomScpExplorerForm::CustomCommandState(
     }
     else
     {
-      if ((ListType == ccltAll) || (ListType == ccltFile))
+      if ((ListType == ccltAll) ||
+          ((ListType == ccltFile) && (!IsSideLocalBrowser(FCurrentSide) || FLAGCLEAR(Command.Params, ccRemoteFiles))))
       {
         Result = DirView(FCurrentSide)->AnyFileSelected(OnFocused, false, true) ? 1 : 0;
       }
