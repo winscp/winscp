@@ -1781,9 +1781,9 @@ int __fastcall TCustomScpExplorerForm::CustomCommandState(
     // custom command that does not operate with files can be executed anytime ...
     if (!NonInteractiveCustomCommand->IsFileCommand(Cmd))
     {
+      // ... but do not show such command in remote file menu
       if ((ListType == ccltAll) || (ListType == ccltNonFile))
       {
-        // ... but do not show such command in remote file menu (TODO)
         Result = AllowedState;
       }
       else
