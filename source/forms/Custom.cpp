@@ -918,7 +918,7 @@ __fastcall TCustomCommandOptionsDialog::TCustomCommandOptionsDialog(
   FFlags = Flags;
   FCustomCommandOptions = CustomCommandOptions;
   FSite = Site;
-  Caption = FMTLOAD(EXTENSION_OPTIONS_CAPTION, (StripEllipsis(StripHotkey(FCommand->Name))));
+  Caption = StripEllipsis(StripHotkey(FCommand->Name));
   Width = ScaleByTextHeight(this, 400);
 
   bool HasGroups = false;

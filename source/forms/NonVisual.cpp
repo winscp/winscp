@@ -1002,10 +1002,9 @@ UnicodeString __fastcall TNonVisualDataModule::CustomCommandCaption(const TCusto
 UnicodeString __fastcall TNonVisualDataModule::CustomCommandHint(const TCustomCommandType * Command)
 {
   UnicodeString Name = StripHotkey(Command->Name);
-  UnicodeString ShortHint = FMTLOAD(CUSTOM_COMMAND_HINT, (Name));
   UnicodeString LongHint =
     !Command->Description.IsEmpty() ? Command->Description : FMTLOAD(CUSTOM_COMMAND_HINT_LONG, (Name, Command->Command));
-  UnicodeString Result = FORMAT(L"%s|%s", (ShortHint, LongHint));
+  UnicodeString Result = FORMAT(L"%s|%s", (Name, LongHint));
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -1648,7 +1647,7 @@ void __fastcall TNonVisualDataModule::CustomCommandsLastUpdate(TAction * Action)
       TitleCommand = TitleCommand.SubString(1, MaxTitleCommandLen - 3) + Ellipsis;
     }
     Action->Caption = FMTLOAD(CUSTOM_COMMAND_LAST, (EscapeHotkey(TitleCommand)));
-    Action->Hint = FMTLOAD(CUSTOM_COMMAND_HINT, (Command.Command));
+    Action->Hint = Command.Command;
     Action->Enabled = (State > 0);
   }
 }
