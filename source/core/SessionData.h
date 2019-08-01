@@ -444,7 +444,7 @@ private:
   void __fastcall AddAssemblyProperty(
     UnicodeString & Result, TAssemblyLanguage Language,
     const UnicodeString & Name, bool Value);
-  TStrings * __fastcall SaveToOptions(const TSessionData * Default);
+  TStrings * __fastcall SaveToOptions(const TSessionData * Default, bool SaveName);
   void __fastcall ApplyRawSettings(TStrings * RawSettings);
   TStrings * __fastcall GetRawSettingsForUrl();
   void __fastcall DoCopyData(TSessionData * SourceData, bool NoRecrypt);

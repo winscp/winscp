@@ -46,6 +46,7 @@ namespace WinSCP
             RawSettings = new Dictionary<string,string>();
         }
 
+        public string Name { get { return GetName(); } set { _name = value; } }
         public Protocol Protocol { get { return _protocol; } set { SetProtocol(value); } }
         public string HostName { get; set; }
         public int PortNumber { get { return _portNumber; } set { SetPortNumber(value); } }
@@ -217,7 +218,15 @@ namespace WinSCP
                     }
                     else if (parameterName.StartsWith(RawSettingsPrefix, StringComparison.OrdinalIgnoreCase))
                     {
-                        AddRawSettings(UriUnescape(parameterName.Substring(RawSettingsPrefix.Length)), parameter);
+                        parameterName = UriUnescape(parameterName.Substring(RawSettingsPrefix.Length));
+                        if (parameterName.Equals("name", StringComparison.OrdinalIgnoreCase))
+                        {
+                            Name = parameter;
+                        }
+                        else
+                        {
+                            AddRawSettings(parameterName, parameter);
+                        }
                     }
                     else
                     {
@@ -427,6 +436,36 @@ namespace WinSCP
             }
         }
 
+        private string GetName()
+        {
+            string result;
+            if (_name != null)
+            {
+                result = _name;
+            }
+            else
+            {
+                if (!string.IsNullOrEmpty(HostName) && !string.IsNullOrEmpty(UserName))
+                {
+                    result = $"{UserName}@{HostName}";
+                }
+                else if (!string.IsNullOrEmpty(HostName))
+                {
+                    result = HostName;
+                }
+                else
+                {
+                    result = "session";
+                }
+            }
+            return result;
+        }
+
+        public override string ToString()
+        {
+            return Name;
+        }
+
         private SecureString _securePassword;
         private SecureString _secureNewPassword;
         private SecureString _securePrivateKeyPassphrase;
@@ -436,6 +475,7 @@ namespace WinSCP
         private int _portNumber;
         private string _webdavRoot;
         private Protocol _protocol;
+        private string _name;
 
         private const string _listPattern = @"{0}(;{0})*";
         private const string _sshHostKeyPattern = @"((ssh-rsa|ssh-dss|ssh-ed25519|ecdsa-sha2-nistp(256|384|521))( |-))?(\d+ )?(([0-9a-fA-F]{2}(:|-)){15}[0-9a-fA-F]{2}|[0-9a-zA-Z+/\-_]{43}=?)";

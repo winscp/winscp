@@ -1179,10 +1179,14 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
   SavePasswords(Storage, PuttyExport, DoNotEncryptPasswords);
 }
 //---------------------------------------------------------------------
-TStrings * __fastcall TSessionData::SaveToOptions(const TSessionData * Default)
+TStrings * __fastcall TSessionData::SaveToOptions(const TSessionData * Default, bool SaveName)
 {
   std::unique_ptr<TStringList> Options(new TStringList());
   std::unique_ptr<TOptionsStorage> OptionsStorage(new TOptionsStorage(Options.get(), true));
+  if (SaveName)
+  {
+    OptionsStorage->WriteString(L"Name", Name);
+  }
   DoSave(OptionsStorage.get(), false, Default, true);
   return Options.release();
 }
@@ -2051,9 +2055,17 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
         }
         else if (StartsText(UrlRawSettingsParamNamePrefix, ConnectionParamName))
         {
-          UnicodeString Name = RightStr(ConnectionParamName, ConnectionParamName.Length() - UrlRawSettingsParamNamePrefix.Length());
-          Name = DecodeUrlChars(Name);
-          RawSettings->Values[Name] = DecodeUrlChars(ConnectionParam);
+          UnicodeString AName = RightStr(ConnectionParamName, ConnectionParamName.Length() - UrlRawSettingsParamNamePrefix.Length());
+          AName = DecodeUrlChars(AName);
+          UnicodeString Value = DecodeUrlChars(ConnectionParam);
+          if (SameText(AName, L"Name"))
+          {
+            Name = Value;
+          }
+          else
+          {
+            RawSettings->Values[AName] = Value;
+          }
         }
       }
 
@@ -3064,7 +3076,9 @@ TStrings * __fastcall TSessionData::GetRawSettingsForUrl()
   SessionData->Ftps = FactoryDefaults->Ftps;
   SessionData->HostKey = FactoryDefaults->HostKey;
   SessionData->CopyNonCoreData(FactoryDefaults.get());
-  return SessionData->SaveToOptions(FactoryDefaults.get());
+  // Cannot be decided in SaveToOptions as it does not have HostName and UserName, so it cannot calculate DefaultSessionName.
+  bool SaveName = HasSessionName() && (Name != DefaultSessionName);
+  return SessionData->SaveToOptions(FactoryDefaults.get(), SaveName);
 }
 //---------------------------------------------------------------------
 bool __fastcall TSessionData::HasRawSettingsForUrl()
@@ -3240,7 +3254,7 @@ UnicodeString __fastcall TSessionData::GenerateOpenCommandArgs(bool Rtf)
     SessionData->Timeout = FactoryDefaults->Timeout;
   }
 
-  std::unique_ptr<TStrings> RawSettings(SessionData->SaveToOptions(FactoryDefaults.get()));
+  std::unique_ptr<TStrings> RawSettings(SessionData->SaveToOptions(FactoryDefaults.get(), false));
 
   if (RawSettings->Count > 0)
   {
@@ -3454,7 +3468,7 @@ void __fastcall TSessionData::GenerateAssemblyCode(
 
   Head += AssemblyNewClassInstanceEnd(Language, false);
 
-  std::unique_ptr<TStrings> RawSettings(SessionData->SaveToOptions(FactoryDefaults.get()));
+  std::unique_ptr<TStrings> RawSettings(SessionData->SaveToOptions(FactoryDefaults.get(), false));
 
   UnicodeString SessionOptionsVariableName = AssemblyVariableName(Language, SessionOptionsClassName);
 
