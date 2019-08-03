@@ -62,6 +62,8 @@ private:
   bool FCopyShortCutHintShown;
   bool FHttpForWebDAV;
   TNotifyEvent FOnMasterPasswordRecrypt;
+  UnicodeString FDefaultFixedWidthFontName;
+  int FDefaultFixedWidthFontSize;
 
   void __fastcall SetInterface(TInterface value);
   void __fastcall SetHistory(const UnicodeString Index, TStrings * value);

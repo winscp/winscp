@@ -123,6 +123,8 @@ void __fastcall TCustomWinConfiguration::Default()
   FFontColors = L"";
   FCopyShortCutHintShown = false;
   FHttpForWebDAV = false;
+  FDefaultFixedWidthFontName = L"";
+  FDefaultFixedWidthFontSize = 0;
 
   DefaultHistory();
 }
@@ -153,6 +155,8 @@ void __fastcall TCustomWinConfiguration::Saved()
     KEY(String,   FontColors); \
     KEY(Bool,     CopyShortCutHintShown); \
     KEY(Bool,     HttpForWebDAV); \
+    KEY(String,   FDefaultFixedWidthFontName); \
+    KEY(Integer,  FDefaultFixedWidthFontSize); \
   ) \
   BLOCK(L"Interface\\SynchronizeChecklist", CANCREATE, \
     KEY(String,   SynchronizeChecklist.WindowParams); \
@@ -511,7 +515,11 @@ UnicodeString __fastcall TCustomWinConfiguration::GetDefaultFixedWidthFontName()
 {
   // These are defaults for respective version of Windows Notepad
   UnicodeString Result;
-  if (IsWin8())
+  if (!FDefaultFixedWidthFontName.IsEmpty())
+  {
+    Result = FDefaultFixedWidthFontName;
+  }
+  else if (IsWin8())
   {
     Result = L"Consolas";
   }
@@ -526,7 +534,11 @@ int __fastcall TCustomWinConfiguration::GetDefaultFixedWidthFontSize()
 {
   // These are defaults for respective version of Windows Notepad
   int Result;
-  if (IsWin8())
+  if (FDefaultFixedWidthFontSize != 0)
+  {
+    Result = FDefaultFixedWidthFontSize;
+  }
+  else if (IsWin8())
   {
     Result = 11;
   }
