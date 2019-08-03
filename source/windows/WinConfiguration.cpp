@@ -938,8 +938,6 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
 }
 //---------------------------------------------------------------------------
 // duplicated from core\configuration.cpp
-#define LASTELEM(ELEM) \
-  ELEM.SubString(ELEM.LastDelimiter(L".>")+1, ELEM.Length() - ELEM.LastDelimiter(L".>"))
 #define BLOCK(KEY, CANCREATE, BLOCK) \
   if (Storage->OpenSubKeyPath(KEY, CANCREATE)) try { BLOCK } __finally { Storage->CloseSubKeyPath(); }
 #define KEY(TYPE, VAR) KEYEX(TYPE, VAR, PropertyToKey(TEXT(#VAR)))
