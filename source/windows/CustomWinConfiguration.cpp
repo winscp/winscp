@@ -141,10 +141,9 @@ void __fastcall TCustomWinConfiguration::Saved()
 }
 //---------------------------------------------------------------------------
 // duplicated from core\configuration.cpp
-#define LASTELEM(ELEM) \
-  ELEM.SubString(ELEM.LastDelimiter(L".>")+1, ELEM.Length() - ELEM.LastDelimiter(L".>"))
 #define BLOCK(KEY, CANCREATE, BLOCK) \
   if (Storage->OpenSubKeyPath(KEY, CANCREATE)) try { BLOCK } __finally { Storage->CloseSubKeyPath(); }
+#define KEY(TYPE, VAR) KEYEX(TYPE, VAR, PropertyToKey(TEXT(#VAR)))
 #define REGCONFIG(CANCREATE) \
   BLOCK(L"Interface", CANCREATE, \
     KEY(Integer,  Interface); \
@@ -177,9 +176,11 @@ void __fastcall TCustomWinConfiguration::SaveData(
   TGUIConfiguration::SaveData(Storage, All);
 
   // duplicated from core\configuration.cpp
-  #define KEY(TYPE, VAR) Storage->Write ## TYPE(LASTELEM(UnicodeString(TEXT(#VAR))), VAR)
+  #define KEYEX(TYPE, VAR, NAME) Storage->Write ## TYPE(NAME, VAR)
+  #pragma warn -eas
   REGCONFIG(true);
-  #undef KEY
+  #pragma warn +eas
+  #undef KEYEX
 
   if (FHistory->Count > 0)
   {
@@ -270,11 +271,11 @@ void __fastcall TCustomWinConfiguration::LoadData(
   FAppliedInterface = FInterface;
 
   // duplicated from core\configuration.cpp
-  #define KEY(TYPE, VAR) VAR = Storage->Read ## TYPE(LASTELEM(UnicodeString(TEXT(#VAR))), VAR)
+  #define KEYEX(TYPE, VAR, NAME) VAR = Storage->Read ## TYPE(NAME, VAR)
   #pragma warn -eas
   REGCONFIG(false);
   #pragma warn +eas
-  #undef KEY
+  #undef KEYEX
 
   DefaultHistory();
   if (Storage->OpenSubKey(L"History", false))
