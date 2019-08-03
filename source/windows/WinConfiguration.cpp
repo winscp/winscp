@@ -1021,9 +1021,9 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Integer,  RunsSinceLastTip); \
     KEY(Bool,     HonorDrivePolicy); \
     KEY(Integer,  LastMachineInstallations); \
-    KEYEX(String, FExtensionsDeleted, L"ExtensionsDeleted"); \
-    KEYEX(String, FExtensionsOrder, L"ExtensionsOrder"); \
-    KEYEX(String, FExtensionsShortCuts, L"ExtensionsShortCuts"); \
+    KEY(String,   FExtensionsDeleted); \
+    KEY(String,   FExtensionsOrder); \
+    KEY(String,   FExtensionsShortCuts); \
     KEY(Bool,     TimeoutShellOperations); \
     KEY(Bool,     TimeoutShellIconRetrieval); \
     KEY(Bool,     AllowWindowPrint); \
@@ -1148,8 +1148,8 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(String,  ScpCommander.RemotePanel.LastPath); \
   ); \
   BLOCK(L"Security", CANCREATE, \
-    KEYEX(Bool,  FUseMasterPassword, L"UseMasterPassword"); \
-    KEYEX(String,FMasterPasswordVerifier, L"MasterPasswordVerifier"); \
+    KEY(Bool,    FUseMasterPassword); \
+    KEY(String,  FMasterPasswordVerifier); \
   );
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SaveData(THierarchicalStorage * Storage, bool All)
