@@ -1560,13 +1560,33 @@ void __fastcall TIniFileStorage::Flush()
         SetFileAttributes(ApiPath(Storage).c_str(), Attr & ~FILE_ATTRIBUTE_READONLY);
       }
 
-      HANDLE Handle = CreateFile(ApiPath(Storage).c_str(), GENERIC_READ | GENERIC_WRITE,
-        0, NULL, CREATE_ALWAYS, Attr, 0);
+      HANDLE Handle;
+      int Error;
+      bool Retry;
+      int Trying = 0;
+      do
+      {
+        Error = 0;
+        Handle =
+          CreateFile(ApiPath(Storage).c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, Attr, 0);
+        if (Handle == INVALID_HANDLE_VALUE)
+        {
+          Error = GetLastError();
+        }
+        Retry = (Error == ERROR_SHARING_VIOLATION) && (Trying < 2000);
+        if (Retry)
+        {
+          const int Step = 100;
+          Sleep(Step);
+          Trying += Step;
+        }
+      }
+      while (Retry);
 
       if (Handle == INVALID_HANDLE_VALUE)
       {
         // "access denied" errors upon implicit saves to existing file are ignored
-        if (Explicit || !Exists || (GetLastError() != ERROR_ACCESS_DENIED))
+        if (Explicit || !Exists || (Error != ERROR_ACCESS_DENIED))
         {
           throw EOSExtException(FMTLOAD((Exists ? WRITE_ERROR : CREATE_FILE_ERROR), (Storage)));
         }
