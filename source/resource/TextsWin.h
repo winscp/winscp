@@ -620,6 +620,10 @@
 #define UPDATES_DONATE_HTML     6020
 #define EDITOR_NEW              6021
 #define PREFERENCES_STATISTICS_CAPTION 6022
+#define SITE_RAW_CAPTION        6023
+#define SITE_RAW_ADD            6024
+#define SITE_RAW_ADD_CAPTION    6025
+#define SITE_RAW_ADD_LABEL      6026
 
 // 2xxx is reserved for TextsFileZilla.h
 

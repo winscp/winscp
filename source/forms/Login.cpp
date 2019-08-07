@@ -1182,6 +1182,10 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction * BasicAction,
   {
     SessionAdvancedAction->Enabled = Editable;
   }
+  else if (Action == SessionRawAction)
+  {
+    SessionRawAction->Enabled = Editable;
+  }
   else if (Action == SaveAsSessionAction)
   {
     // Save as is needed for new site only when !SupportsSplitButton()
@@ -2773,7 +2777,7 @@ void __fastcall TLoginDialog::PersistNewSiteIfNeeded()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TLoginDialog::SessionAdvancedActionExecute(TObject * /*Sender*/)
+void __fastcall TLoginDialog::SessionAdvancedActionExecute(TObject * Sender)
 {
   // If we ever allow showing advanced settings, while read-only,
   // we must make sure that FSessionData actually holds the advanced settings,
@@ -2789,7 +2793,14 @@ void __fastcall TLoginDialog::SessionAdvancedActionExecute(TObject * /*Sender*/)
     ParseHostName();
 
     SaveSession(FSessionData);
-    DoSiteAdvancedDialog(FSessionData);
+    if (Sender == SessionAdvancedAction)
+    {
+      DoSiteAdvancedDialog(FSessionData);
+    }
+    else
+    {
+      DoSiteRawDialog(FSessionData);
+    }
     // Needed only for Note.
     // The only other property visible on Login dialog that Advanced site dialog
     // can change is protocol (between fsSFTP and fsSFTPonly),

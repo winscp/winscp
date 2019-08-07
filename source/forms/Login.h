@@ -211,6 +211,8 @@ __published:
   TMenuItem *MenuItem20;
   TAction *CloseAction;
   TAction *NeverShowAgainAction;
+  TAction *SessionRawAction;
+  TMenuItem *EditRawSettings1;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall SessionTreeDblClick(TObject *Sender);

@@ -682,6 +682,11 @@ object LoginDialog: TLoginDialog
       Caption = 'Close and Do Not Show Automatically Again'
       OnExecute = NeverShowAgainActionExecute
     end
+    object SessionRawAction: TAction
+      Category = 'Session'
+      Caption = 'Edit &Raw Settings...'
+      OnExecute = SessionAdvancedActionExecute
+    end
   end
   object ToolsPopupMenu: TPopupMenu
     Left = 144
@@ -1386,6 +1391,9 @@ object LoginDialog: TLoginDialog
     object MenuItem9: TMenuItem
       Action = SessionAdvancedAction
       Default = True
+    end
+    object EditRawSettings1: TMenuItem
+      Action = SessionRawAction
     end
     object TransferSettingsRule1: TMenuItem
       Action = CopyParamRuleAction

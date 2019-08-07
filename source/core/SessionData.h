@@ -403,7 +403,7 @@ private:
   void __fastcall SetEncryptKey(UnicodeString value);
 
   TDateTime __fastcall GetTimeoutDT();
-  void __fastcall SavePasswords(THierarchicalStorage * Storage, bool PuttyExport, bool DoNotEncryptPasswords);
+  void __fastcall SavePasswords(THierarchicalStorage * Storage, bool PuttyExport, bool DoNotEncryptPasswords, bool SaveAll);
   UnicodeString __fastcall GetLocalName();
   UnicodeString __fastcall GetFolderName();
   void __fastcall Modify();
@@ -444,8 +444,6 @@ private:
   void __fastcall AddAssemblyProperty(
     UnicodeString & Result, TAssemblyLanguage Language,
     const UnicodeString & Name, bool Value);
-  TStrings * __fastcall SaveToOptions(const TSessionData * Default, bool SaveName);
-  void __fastcall ApplyRawSettings(TStrings * RawSettings);
   TStrings * __fastcall GetRawSettingsForUrl();
   void __fastcall DoCopyData(TSessionData * SourceData, bool NoRecrypt);
   template<class AlgoT>
@@ -460,8 +458,10 @@ public:
   virtual __fastcall ~TSessionData();
   TSessionData * __fastcall Clone();
   void __fastcall Default();
+  void __fastcall DefaultSettings();
   void __fastcall NonPersistant();
   void __fastcall Load(THierarchicalStorage * Storage, bool PuttyImport);
+  void __fastcall ApplyRawSettings(TStrings * RawSettings);
   void __fastcall ApplyRawSettings(THierarchicalStorage * Storage);
   void __fastcall ImportFromFilezilla(_di_IXMLNode Node, const UnicodeString & Path, _di_IXMLNode SettingsNode);
   void __fastcall Save(THierarchicalStorage * Storage, bool PuttyExport,
@@ -483,6 +483,7 @@ public:
   bool __fastcall ParseUrl(UnicodeString Url, TOptions * Options,
     TStoredSessionList * StoredSessions, bool & DefaultsOnly,
     UnicodeString * FileName, bool * AProtocolDefined, UnicodeString * MaskedUrl, int Flags);
+  TStrings * __fastcall SaveToOptions(const TSessionData * Default, bool SaveName);
   void __fastcall ConfigureTunnel(int PortNumber);
   void __fastcall RollbackTunnel();
   void __fastcall ExpandEnvironmentVariables();

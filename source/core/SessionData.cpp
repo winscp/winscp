@@ -116,7 +116,7 @@ TSessionData * __fastcall TSessionData::Clone()
   return Data.release();
 }
 //---------------------------------------------------------------------
-void __fastcall TSessionData::Default()
+void __fastcall TSessionData::DefaultSettings()
 {
   HostName = L"";
   PortNumber = SshPortNumber;
@@ -275,6 +275,11 @@ void __fastcall TSessionData::Default()
 
   CustomParam1 = L"";
   CustomParam2 = L"";
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::Default()
+{
+  DefaultSettings();
 
   IsWorkspace = false;
   Link = L"";
@@ -1176,7 +1181,12 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
     WRITE_DATA(String, CustomParam2);
   }
 
-  SavePasswords(Storage, PuttyExport, DoNotEncryptPasswords);
+  // This is for collecting all keys for TSiteRawDialog::AddButtonClick.
+  // It should be enough to test for (Default == NULL),
+  // the DoNotEncryptPasswords and PuttyExport were added to limit a possible unintended impact.
+  bool SaveAll = (Default == NULL) && DoNotEncryptPasswords && !PuttyExport;
+
+  SavePasswords(Storage, PuttyExport, DoNotEncryptPasswords, SaveAll);
 }
 //---------------------------------------------------------------------
 TStrings * __fastcall TSessionData::SaveToOptions(const TSessionData * Default, bool SaveName)
@@ -1486,21 +1496,26 @@ void __fastcall TSessionData::ImportFromFilezilla(
 
 }
 //---------------------------------------------------------------------
-void __fastcall TSessionData::SavePasswords(THierarchicalStorage * Storage, bool PuttyExport, bool DoNotEncryptPasswords)
+void __fastcall TSessionData::SavePasswords(THierarchicalStorage * Storage, bool PuttyExport, bool DoNotEncryptPasswords, bool SaveAll)
 {
-  if (!Configuration->DisablePasswordStoring && !PuttyExport && !FPassword.IsEmpty())
+  if (!Configuration->DisablePasswordStoring && !PuttyExport && (!FPassword.IsEmpty() || SaveAll))
   {
-    // DoNotEncryptPasswords is set when called from GenerateOpenCommandArgs only
-    // and it never saves session password
-    DebugAssert(!DoNotEncryptPasswords);
-
-    Storage->WriteBinaryDataAsString(L"Password", StronglyRecryptPassword(FPassword, UserName+HostName));
+    if (DoNotEncryptPasswords)
+    {
+      Storage->WriteString(L"PasswordPlain", Password);
+      Storage->DeleteValue(L"Password");
+    }
+    else
+    {
+      Storage->WriteBinaryDataAsString(L"Password", StronglyRecryptPassword(FPassword, UserName+HostName));
+      Storage->DeleteValue(L"PasswordPlain");
+    }
   }
   else
   {
     Storage->DeleteValue(L"Password");
+    Storage->DeleteValue(L"PasswordPlain");
   }
-  Storage->DeleteValue(L"PasswordPlain");
 
   if (PuttyExport)
   {
@@ -1511,7 +1526,7 @@ void __fastcall TSessionData::SavePasswords(THierarchicalStorage * Storage, bool
   {
     if (DoNotEncryptPasswords)
     {
-      if (!FProxyPassword.IsEmpty())
+      if (!FProxyPassword.IsEmpty() || SaveAll)
       {
         Storage->WriteString(L"ProxyPassword", ProxyPassword);
       }
@@ -1524,7 +1539,7 @@ void __fastcall TSessionData::SavePasswords(THierarchicalStorage * Storage, bool
     else
     {
       // save password encrypted
-      if (!FProxyPassword.IsEmpty())
+      if (!FProxyPassword.IsEmpty() || SaveAll)
       {
         Storage->WriteBinaryDataAsString(L"ProxyPasswordEnc", StronglyRecryptPassword(FProxyPassword, ProxyUsername+ProxyHost));
       }
@@ -1537,7 +1552,7 @@ void __fastcall TSessionData::SavePasswords(THierarchicalStorage * Storage, bool
 
     if (DoNotEncryptPasswords)
     {
-      if (!FTunnelPassword.IsEmpty())
+      if (!FTunnelPassword.IsEmpty() || SaveAll)
       {
         Storage->WriteString(L"TunnelPasswordPlain", TunnelPassword);
       }
@@ -1548,7 +1563,7 @@ void __fastcall TSessionData::SavePasswords(THierarchicalStorage * Storage, bool
     }
     else
     {
-      if (!Configuration->DisablePasswordStoring && !FTunnelPassword.IsEmpty())
+      if (!Configuration->DisablePasswordStoring && (!FTunnelPassword.IsEmpty() || SaveAll))
       {
         Storage->WriteBinaryDataAsString(L"TunnelPassword", StronglyRecryptPassword(FTunnelPassword, TunnelUserName+TunnelHostName));
       }
@@ -1560,7 +1575,7 @@ void __fastcall TSessionData::SavePasswords(THierarchicalStorage * Storage, bool
 
     if (DoNotEncryptPasswords)
     {
-      if (!FEncryptKey.IsEmpty())
+      if (!FEncryptKey.IsEmpty() || SaveAll)
       {
         Storage->WriteString(L"EncryptKeyPlain", EncryptKey);
       }
@@ -1572,7 +1587,7 @@ void __fastcall TSessionData::SavePasswords(THierarchicalStorage * Storage, bool
     }
     else
     {
-      if (!FEncryptKey.IsEmpty())
+      if (!FEncryptKey.IsEmpty() || SaveAll)
       {
         Storage->WriteBinaryDataAsString(L"EncryptKey", StronglyRecryptPassword(FEncryptKey, UserName+HostName));
       }
@@ -1664,7 +1679,7 @@ void __fastcall TSessionData::SaveRecryptedPasswords(THierarchicalStorage * Stor
     {
       RecryptPasswords();
 
-      SavePasswords(Storage, false, false);
+      SavePasswords(Storage, false, false, false);
     }
     __finally
     {

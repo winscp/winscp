@@ -150,6 +150,7 @@ bool __fastcall DoCustomCommandOptionsDialog(
   const TCustomCommandType * Command, TStrings * CustomCommandOptions, TShortCut * ShortCut, unsigned int Flags,
   TCustomCommand * CustomCommandForOptions, const UnicodeString & Site, const TShortCuts * ShortCuts);
 void __fastcall DoUsageStatisticsDialog();
+void __fastcall DoSiteRawDialog(TSessionData * Data);
 
 // windows\UserInterface.cpp
 bool __fastcall DoMasterPasswordDialog();

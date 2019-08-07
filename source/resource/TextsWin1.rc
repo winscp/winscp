@@ -625,6 +625,10 @@ BEGIN
         UPDATES_DONATE_HTML, "To enable automatic updates, please <a href=\"%DONATE_URL%\">donate to WinSCP development</a> or %GET_IMG% WinSCP from <a href=\"%STORE_URL%\">Microsoft Store</a>."
         EDITOR_NEW, "New"
         PREFERENCES_STATISTICS_CAPTION, "Statistics"
+        SITE_RAW_CAPTION, "Raw Site Settings"
+        SITE_RAW_ADD, "&Add..."
+        SITE_RAW_ADD_CAPTION, "Add Raw Site Setting"
+        SITE_RAW_ADD_LABEL, "&Site Setting:"
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
         WINSCP_COPYRIGHT, "Copyright © 2000-2019 Martin Prikryl"
