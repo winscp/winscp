@@ -87,5 +87,7 @@ void __fastcall RecordFormImplicitRescale(TForm * Form);
 void __fastcall CountClicksForWindowPrint(TForm * Form);
 bool IsButtonBeingClicked(TButtonControl * Button);
 bool IsCancelButtonBeingClicked(TControl * Control);
+TCanvas * CreateControlCanvas(TControl * Control);
+void AutoSizeButton(TButton * Button);
 //---------------------------------------------------------------------------
 #endif  // VCLCommonH

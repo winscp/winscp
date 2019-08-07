@@ -127,6 +127,8 @@ __fastcall TPreferencesDialog::TPreferencesDialog(
   LinkLabel(UpdatesLink);
   LinkAppLabel(BackgroundConfirmationsLink);
 
+  AutoSizeButton(UsageViewButton);
+
   AutomaticIniFileStorageLabel->Caption = ExpandEnvironmentVariables(Configuration->GetAutomaticIniFileStorageName(false));
 
   if (IsUWP())

@@ -460,6 +460,7 @@ class TPublicControl : public TControl
 {
 friend void __fastcall RealignControl(TControl * Control);
 friend void __fastcall DoFormWindowProc(TCustomForm * Form, TWndMethod WndProc, TMessage & Message);
+friend TCanvas * CreateControlCanvas(TControl * Control);
 };
 //---------------------------------------------------------------------
 class TPublicForm : public TForm
@@ -1812,14 +1813,11 @@ void __fastcall InvokeHelp(TWinControl * Control)
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 static void __fastcall FocusableLabelCanvas(TStaticText * StaticText,
-  TControlCanvas ** ACanvas, TRect & R)
+  TCanvas ** ACanvas, TRect & R)
 {
-  TControlCanvas * Canvas = new TControlCanvas();
+  TCanvas * Canvas = CreateControlCanvas(StaticText);
   try
   {
-    Canvas->Control = StaticText;
-    Canvas->Font = StaticText->Font;
-
     R = StaticText->ClientRect;
 
     TSize TextSize;
@@ -1944,7 +1942,7 @@ static void __fastcall FocusableLabelWindowProc(void * Data, TMessage & Message,
   if (Message.Msg == WM_PAINT)
   {
     TRect R;
-    TControlCanvas * Canvas;
+    TCanvas * Canvas;
     FocusableLabelCanvas(StaticText, &Canvas, R);
     try
     {
@@ -2822,4 +2820,27 @@ bool IsCancelButtonBeingClicked(TControl * Control)
   TButtonControl * CancelButton = FindStandardButton(Form, false);
   // Find dialog has no Cancel button
   return (CancelButton != NULL) && IsButtonBeingClicked(CancelButton);
+}
+//---------------------------------------------------------------------------
+TCanvas * CreateControlCanvas(TControl * Control)
+{
+  std::unique_ptr<TControlCanvas> Canvas(new TControlCanvas());
+  Canvas->Control = Control;
+  TPublicControl * PublicControl = static_cast<TPublicControl *>(Control);
+  Canvas->Font = PublicControl->Font;
+  return Canvas.release();
+}
+//---------------------------------------------------------------------------
+void AutoSizeButton(TButton * Button)
+{
+  std::unique_ptr<TCanvas> Canvas(CreateControlCanvas(Button));
+  int MinWidth = Canvas->TextWidth(Button->Caption) + ScaleByTextHeight(Button, (2 * 8));
+  if (Button->Width < MinWidth)
+  {
+    if (Button->Anchors.Contains(akRight))
+    {
+      Button->Left = Button->Left - (MinWidth - Button->Width);
+    }
+    Button->Width = MinWidth;
+  }
 }

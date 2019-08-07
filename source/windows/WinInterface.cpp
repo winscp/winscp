@@ -1296,9 +1296,7 @@ void __fastcall CenterButtonImage(TButton * Button)
     Button->ImageAlignment = iaCenter;
     int ImageWidth = Button->Images->Width;
 
-    std::unique_ptr<TControlCanvas> Canvas(new TControlCanvas());
-    Canvas->Control = Button;
-    Canvas->Font = Button->Font;
+    std::unique_ptr<TCanvas> Canvas(CreateControlCanvas(Button));
 
     UnicodeString Caption = Button->Caption.Trim();
     UnicodeString Padding;
