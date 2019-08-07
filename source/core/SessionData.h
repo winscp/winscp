@@ -483,7 +483,6 @@ public:
   bool __fastcall ParseUrl(UnicodeString Url, TOptions * Options,
     TStoredSessionList * StoredSessions, bool & DefaultsOnly,
     UnicodeString * FileName, bool * AProtocolDefined, UnicodeString * MaskedUrl, int Flags);
-  bool __fastcall ParseOptions(TOptions * Options);
   void __fastcall ConfigureTunnel(int PortNumber);
   void __fastcall RollbackTunnel();
   void __fastcall ExpandEnvironmentVariables();
