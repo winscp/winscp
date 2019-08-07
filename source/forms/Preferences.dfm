@@ -2010,7 +2010,7 @@ object PreferencesDialog: TPreferencesDialog
           object SessionReopenAutoCheck: TCheckBox
             Left = 16
             Top = 21
-            Width = 337
+            Width = 363
             Height = 17
             Caption = '&Automatically reconnect session, if it breaks during transfer'
             TabOrder = 0
@@ -2032,7 +2032,7 @@ object PreferencesDialog: TPreferencesDialog
           object SessionReopenAutoIdleCheck: TCheckBox
             Left = 16
             Top = 72
-            Width = 337
+            Width = 363
             Height = 17
             Caption = 'Automatically reconnect session, if it breaks &while idle'
             TabOrder = 2
@@ -2054,7 +2054,7 @@ object PreferencesDialog: TPreferencesDialog
           object SessionReopenAutoStallCheck: TCheckBox
             Left = 16
             Top = 122
-            Width = 337
+            Width = 363
             Height = 17
             Caption = 'Automatically reconnect session, if it &stalls'
             TabOrder = 4
