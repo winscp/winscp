@@ -59,6 +59,7 @@ namespace WinSCP
         public int TimeoutInMilliseconds { get { return Tools.TimeSpanToMilliseconds(Timeout); } set { Timeout = Tools.MillisecondsToTimeSpan(value); } }
         public string PrivateKeyPassphrase { get { return GetPassword(_securePrivateKeyPassphrase); } set { SetPassword(ref _securePrivateKeyPassphrase, value); } }
         public SecureString SecurePrivateKeyPassphrase { get { return _securePrivateKeyPassphrase; } set { _securePrivateKeyPassphrase = value; } }
+        public string RootPath { get { return _rootPath; } set { SetRootPath(value); } }
 
         // SSH
         public string SshHostKeyFingerprint { get { return _sshHostKeyFingerprint; } set { SetSshHostKeyFingerprint(value); } }
@@ -73,7 +74,8 @@ namespace WinSCP
 
         // WebDAV
         public bool WebdavSecure { get; set; }
-        public string WebdavRoot { get { return _webdavRoot; } set { SetWebdavRoot(value); } }
+        [Obsolete("Use RootPath")]
+        public string WebdavRoot { get { return RootPath; } set { RootPath = value; } }
 
         // TLS
         public string TlsHostCertificateFingerprint { get { return _tlsHostCertificateFingerprint; } set { SetHostTlsCertificateFingerprint(value); } }
@@ -108,7 +110,7 @@ namespace WinSCP
 
             url = url.Substring(index + protocolSeparator.Length).Trim();
             index = url.IndexOf('/');
-            WebdavRoot = null;
+            RootPath = null;
             if (index >= 0)
             {
                 string path = url.Substring(index).Trim();
@@ -117,11 +119,11 @@ namespace WinSCP
                 path = CutToChar(ref parameters, ';');
                 if (!string.IsNullOrEmpty(path) && (path != "/"))
                 {
-                    if (Protocol != Protocol.Webdav)
+                    if ((Protocol != Protocol.Webdav) && (Protocol != Protocol.S3))
                     {
-                        throw new ArgumentException("Root folder can be specified for WebDAV protocol only", "url");
+                        throw new ArgumentException("Root path can be specified for WebDAV and S3 protocols only", "url");
                     }
-                    WebdavRoot = path;
+                    RootPath = path;
                 }
 
                 // forward compatibility
@@ -390,13 +392,13 @@ namespace WinSCP
             }
         }
 
-        private void SetWebdavRoot(string value)
+        private void SetRootPath(string value)
         {
             if (!string.IsNullOrEmpty(value) && (value[0] != '/'))
             {
-                throw new ArgumentException("WebDAV root path has to start with slash");
+                throw new ArgumentException("Root path has to start with a slash");
             }
-            _webdavRoot = value;
+            _rootPath = value;
         }
 
         private static void SetPassword(ref SecureString securePassword, string value)
@@ -473,7 +475,7 @@ namespace WinSCP
         private string _tlsHostCertificateFingerprint;
         private TimeSpan _timeout;
         private int _portNumber;
-        private string _webdavRoot;
+        private string _rootPath;
         private Protocol _protocol;
         private string _name;
 

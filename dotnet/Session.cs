@@ -1747,14 +1747,14 @@ namespace WinSCP
                     tail += ":" + sessionOptions.PortNumber.ToString(CultureInfo.InvariantCulture);
                 }
 
-                if (!string.IsNullOrEmpty(sessionOptions.WebdavRoot) && !scanFingerprint)
+                if (!string.IsNullOrEmpty(sessionOptions.RootPath) && !scanFingerprint)
                 {
-                    if (sessionOptions.Protocol != Protocol.Webdav)
+                    if ((sessionOptions.Protocol != Protocol.Webdav) && (sessionOptions.Protocol != Protocol.S3))
                     {
-                        throw Logger.WriteException(new ArgumentException("SessionOptions.WebdavRoot is set, but SessionOptions.Protocol is not Protocol.Webdav."));
+                        throw Logger.WriteException(new ArgumentException("SessionOptions.RootPath is set, but SessionOptions.Protocol is not Protocol.Webdav nor Protocol.S3."));
                     }
 
-                    tail += sessionOptions.WebdavRoot;
+                    tail += sessionOptions.RootPath;
                 }
 
                 url += tail;
