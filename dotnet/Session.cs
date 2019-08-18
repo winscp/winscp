@@ -72,7 +72,6 @@ namespace WinSCP
         public string AdditionalExecutableArguments { get { return _additionalExecutableArguments; } set { CheckNotOpened(); _additionalExecutableArguments = value; } }
         [Obsolete("Use AddRawConfiguration")]
         public bool DefaultConfiguration { get { return _defaultConfiguration; } set { CheckNotOpened(); _defaultConfiguration = value; } }
-        [Obsolete("Always use the same version of assembly and WinSCP")]
         public bool DisableVersionCheck { get { return _disableVersionCheck; } set { CheckNotOpened(); _disableVersionCheck = value; } }
         [Obsolete("Use AddRawConfiguration")]
         public string IniFilePath { get { return _iniFilePath; } set { CheckNotOpened(); _iniFilePath = value; } }
@@ -2521,7 +2520,6 @@ namespace WinSCP
         internal Dictionary<string, string> RawConfiguration { get; private set; }
         internal bool DefaultConfigurationInternal { get { return _defaultConfiguration; } }
         internal string IniFilePathInternal { get { return _iniFilePath; } }
-        internal bool DisableVersionCheckInternal { get { return _disableVersionCheck; } }
 
         private ExeSessionProcess _process;
         private DateTime _lastOutput;

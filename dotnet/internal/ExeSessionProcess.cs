@@ -936,7 +936,7 @@ namespace WinSCP
 
                     _logger.WriteLine("Version of {0} is {1}, product {2} version is {3}", exePath, version.FileVersion, version.ProductName, version.ProductVersion);
 
-                    if (_session.DisableVersionCheckInternal)
+                    if (_session.DisableVersionCheck)
                     {
                         _logger.WriteLine("Version check disabled (not recommended)");
                     }
