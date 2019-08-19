@@ -233,6 +233,7 @@ protected:
   virtual int __fastcall GetResourceModuleCompleteness(HINSTANCE Module);
   virtual bool __fastcall IsTranslationComplete(HINSTANCE Module);
   static int __fastcall LocalesCompare(void * Item1, void * Item2);
+  LCID __fastcall InternalLocale();
   bool __fastcall DoSaveCopyParam(THierarchicalStorage * Storage, const TCopyParamType * CopyParam, const TCopyParamType * Defaults);
 
 public:
@@ -245,7 +246,7 @@ public:
 
   HANDLE __fastcall ChangeToDefaultResourceModule();
   HANDLE __fastcall ChangeResourceModule(HANDLE Instance);
-  LCID __fastcall InternalLocale();
+  bool __fastcall UsingInternalTranslation();
   UnicodeString __fastcall AppliedLocaleCopyright();
   UnicodeString __fastcall AppliedLocaleVersion();
   TStoredSessionList * __fastcall SelectPuttySessionsForImport(TStoredSessionList * Sessions, UnicodeString & Error);
