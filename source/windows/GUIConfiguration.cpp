@@ -825,7 +825,9 @@ HINSTANCE __fastcall TGUIConfiguration::LoadNewResourceModule(LCID ALocale,
 {
   UnicodeString LibraryFileName;
   HINSTANCE NewInstance = 0;
-  bool Internal = (ALocale == InternalLocale());
+  LCID AInternalLocale = InternalLocale();
+  bool Internal = (ALocale == AInternalLocale);
+  DWORD PrimaryLang = PRIMARYLANGID(ALocale);
   if (!Internal)
   {
     UnicodeString Module;
@@ -855,7 +857,6 @@ HINSTANCE __fastcall TGUIConfiguration::LoadNewResourceModule(LCID ALocale,
     }
     else
     {
-      DWORD PrimaryLang = PRIMARYLANGID(ALocale);
       DWORD SubLang = SUBLANGID(ALocale);
       DebugAssert(SUBLANG_DEFAULT == SUBLANG_CHINESE_TRADITIONAL);
       // Finally look for a language-only translation.
@@ -873,6 +874,13 @@ HINSTANCE __fastcall TGUIConfiguration::LoadNewResourceModule(LCID ALocale,
         }
       }
     }
+  }
+
+  // If the locale is non-US English and we do not have that translation (and it's unlikely we ever have),
+  // treat it as if it were US English.
+  if (!NewInstance && !Internal && (PrimaryLang == static_cast<DWORD>(PRIMARYLANGID(AInternalLocale))))
+  {
+    Internal = true;
   }
 
   if (!NewInstance && !Internal)
@@ -1001,17 +1009,21 @@ bool __fastcall TGUIConfiguration::GetCanApplyLocaleImmediately()
     (Screen->DataModuleCount == 0);
 }
 //---------------------------------------------------------------------------
+bool __fastcall TGUIConfiguration::UsingInternalTranslation()
+{
+  return FLocaleModuleName.IsEmpty();
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall TGUIConfiguration::AppliedLocaleCopyright()
 {
   UnicodeString Result;
-  if ((FAppliedLocale == 0) || (FAppliedLocale == InternalLocale()))
+  if (UsingInternalTranslation())
   {
     DebugFail(); // we do not expect to get called with internal locale
     Result = UnicodeString();
   }
   else
   {
-    DebugAssert(!FLocaleModuleName.IsEmpty());
     Result = GetFileFileInfoString(L"LegalCopyright", FLocaleModuleName);
   }
   return Result;
@@ -1020,7 +1032,7 @@ UnicodeString __fastcall TGUIConfiguration::AppliedLocaleCopyright()
 UnicodeString __fastcall TGUIConfiguration::AppliedLocaleVersion()
 {
   UnicodeString Result;
-  if ((FAppliedLocale == 0) || (FAppliedLocale == InternalLocale()))
+  if (UsingInternalTranslation())
   {
     // noop
   }

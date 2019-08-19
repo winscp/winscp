@@ -199,7 +199,7 @@ void __fastcall TAboutDialog::DoLoadThirdParty()
   UnicodeString ThirdParty;
   UnicodeString Br = "<br/>\n";
 
-  if (GUIConfiguration->AppliedLocale != GUIConfiguration->InternalLocale())
+  if (!GUIConfiguration->UsingInternalTranslation())
   {
     UnicodeString TranslatorUrl = LoadStr(TRANSLATOR_URL);
     UnicodeString TranslatorInfo = LoadStr(TRANSLATOR_INFO2);
