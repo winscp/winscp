@@ -407,13 +407,22 @@ void __fastcall TMessageTimeout::DoTimer(TObject * /*Sender*/)
     TForm * Dialog = dynamic_cast<TForm *>(FButton->Parent);
     DebugAssert(Dialog != NULL);
 
-    Dialog->ModalResult = FButton->ModalResult;
+    // Needed particularly for "keep up to date" dialog, which does not close on the button click
+    Enabled = false;
+    FButton->Click();
   }
   else
   {
     FTimeout -= Interval;
     UpdateButton();
   }
+}
+//---------------------------------------------------------------------------
+void InitiateDialogTimeout(TForm * Dialog, unsigned int Timeout, TButton * Button)
+{
+  TMessageTimeout * MessageTimeout = new TMessageTimeout(Application, Timeout, Button);
+  MessageTimeout->Name = L"MessageTimeout";
+  Dialog->InsertComponent(MessageTimeout);
 }
 //---------------------------------------------------------------------
 class TPublicControl : public TControl
@@ -464,9 +473,7 @@ TForm * __fastcall CreateMoreMessageDialogEx(const UnicodeString Message, TStrin
   {
     if (Params->Timeout > 0)
     {
-      TMessageTimeout * Timeout = new TMessageTimeout(Application, Params->Timeout, TimeoutButton);
-      Timeout->Name = L"MessageTimeout";
-      Dialog->InsertComponent(Timeout);
+      InitiateDialogTimeout(Dialog.get(), Params->Timeout, TimeoutButton);
     }
   }
 

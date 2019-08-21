@@ -1125,7 +1125,7 @@ bool __fastcall TCustomScpExplorerForm::CopyParamDialog(
     std::unique_ptr<TSessionData> SessionData(SessionDataForCode());
     FlashOnBackground(); // Particularly when called from ClipboardFakeCreated
     Result = DoCopyDialog(Direction == tdToRemote, Type == ttMove,
-      FileList, TargetDirectory, &CopyParam, Options, CopyParamAttrs, SessionData.get(), &OutputOptions);
+      FileList, TargetDirectory, &CopyParam, Options, CopyParamAttrs, SessionData.get(), &OutputOptions, -1);
 
     if (Result)
     {
@@ -5267,7 +5267,7 @@ void __fastcall TCustomScpExplorerForm::SynchronizeDirectories()
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::DoSynchronizeDirectories(
-  UnicodeString & LocalDirectory, UnicodeString & RemoteDirectory, bool UseDefaults)
+  UnicodeString & LocalDirectory, UnicodeString & RemoteDirectory, int UseDefaults)
 {
   TSynchronizeParamType Params;
   Params.LocalDirectory = LocalDirectory;
@@ -5744,7 +5744,7 @@ void __fastcall TCustomScpExplorerForm::FullSynchronizeInNewWindow(
 //---------------------------------------------------------------------------
 int __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
   UnicodeString & LocalDirectory, UnicodeString & RemoteDirectory,
-  TSynchronizeMode & Mode, int Params, bool & SaveMode, bool UseDefaults)
+  TSynchronizeMode & Mode, int Params, bool & SaveMode, int UseDefaults)
 {
   int Result;
 
@@ -5755,9 +5755,9 @@ int __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
   TCopyParamType CopyParam = GUIConfiguration->CurrentCopyParam;
   TUsableCopyParamAttrs CopyParamAttrs = Terminal->UsableCopyParamAttrs(0);
   bool Continue =
-    UseDefaults ||
+    (UseDefaults == 0) ||
     DoFullSynchronizeDialog(Mode, Params, LocalDirectory, RemoteDirectory,
-      &CopyParam, SaveSettings, SaveMode, Options, CopyParamAttrs, FullSynchronizeInNewWindow);
+      &CopyParam, SaveSettings, SaveMode, Options, CopyParamAttrs, FullSynchronizeInNewWindow, UseDefaults);
   if (Continue)
   {
     Configuration->Usage->Inc(L"Synchronizations");

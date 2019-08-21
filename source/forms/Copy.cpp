@@ -21,10 +21,10 @@
 #pragma resource "*.dfm"
 #endif
 //---------------------------------------------------------------------------
-bool __fastcall DoCopyDialog(bool ToRemote,
-  bool Move, TStrings * FileList, UnicodeString & TargetDirectory,
+bool __fastcall DoCopyDialog(
+  bool ToRemote, bool Move, TStrings * FileList, UnicodeString & TargetDirectory,
   TGUICopyParamType * Params, int Options, int CopyParamAttrs, TSessionData * SessionData,
-  int * OutputOptions)
+  int * OutputOptions, int AutoSubmit)
 {
   bool Result;
   TCopyDialog *CopyDialog = new TCopyDialog(Application, ToRemote, Move, FileList, Options, CopyParamAttrs, SessionData);
@@ -42,6 +42,10 @@ bool __fastcall DoCopyDialog(bool ToRemote,
     }
     CopyDialog->Directory = TargetDirectory;
     CopyDialog->Params = *Params;
+    if (AutoSubmit > 0)
+    {
+      InitiateDialogTimeout(CopyDialog, AutoSubmit * MSecsPerSec, CopyDialog->OkButton);
+    }
     Result = CopyDialog->Execute();
     if (Result)
     {

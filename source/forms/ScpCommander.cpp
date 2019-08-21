@@ -1007,7 +1007,7 @@ void __fastcall TScpCommanderForm::SynchronizeDirectories()
 {
   UnicodeString LocalDirectory = LocalDirView->PathName;
   UnicodeString RemoteDirectory = RemoteDirView->PathName;
-  DoSynchronizeDirectories(LocalDirectory, RemoteDirectory, false);
+  DoSynchronizeDirectories(LocalDirectory, RemoteDirectory, -1);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::FullSynchronizeDirectories()

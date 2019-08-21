@@ -92,7 +92,7 @@ void __fastcall GetLoginData(UnicodeString SessionName, TOptions * Options,
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall Upload(TTerminal * Terminal, TStrings * FileList, bool UseDefaults)
+void __fastcall Upload(TTerminal * Terminal, TStrings * FileList, int UseDefaults)
 {
   UnicodeString TargetDirectory;
   TGUICopyParamType CopyParam = GUIConfiguration->DefaultCopyParam;
@@ -104,9 +104,9 @@ void __fastcall Upload(TTerminal * Terminal, TStrings * FileList, bool UseDefaul
 
   int Options = coDisableQueue;
   int CopyParamAttrs = Terminal->UsableCopyParamAttrs(0).Upload;
-  if (UseDefaults ||
+  if ((UseDefaults == 0) ||
       DoCopyDialog(true, false, FileList, TargetDirectory, &CopyParam, Options,
-        CopyParamAttrs, Data.get(), NULL))
+        CopyParamAttrs, Data.get(), NULL, UseDefaults))
   {
     // Setting parameter overrides only now, otherwise the dialog would present the parametes as non-default
     CopyParam.OnceDoneOperation = odoDisconnect;
@@ -115,8 +115,7 @@ void __fastcall Upload(TTerminal * Terminal, TStrings * FileList, bool UseDefaul
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall Download(TTerminal * Terminal, const UnicodeString FileName,
-  bool UseDefaults)
+void __fastcall Download(TTerminal * Terminal, const UnicodeString FileName, int UseDefaults)
 {
   TRemoteFile * File = NULL;
 
@@ -156,9 +155,9 @@ void __fastcall Download(TTerminal * Terminal, const UnicodeString FileName,
 
     int Options = coDisableQueue;
     int CopyParamAttrs = Terminal->UsableCopyParamAttrs(0).Download;
-    if (UseDefaults ||
+    if ((UseDefaults == 0) ||
         DoCopyDialog(false, false, FileListFriendly.get(), TargetDirectory, &CopyParam,
-          Options, CopyParamAttrs, NULL, NULL))
+          Options, CopyParamAttrs, NULL, NULL, UseDefaults))
     {
       // Setting parameter overrides only now, otherwise the dialog would present the parametes as non-default
 
@@ -219,8 +218,8 @@ void __fastcall SynchronizeDirectories(TTerminal * Terminal,
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall FullSynchronize(TTerminal * Terminal, TCustomScpExplorerForm * ScpExplorer,
-  TStrings * CommandParams, bool UseDefaults)
+void __fastcall FullSynchronize(
+  TTerminal * Terminal, TCustomScpExplorerForm * ScpExplorer, TStrings * CommandParams, int UseDefaults)
 {
   UnicodeString LocalDirectory;
   UnicodeString RemoteDirectory;
@@ -249,8 +248,8 @@ void __fastcall FullSynchronize(TTerminal * Terminal, TCustomScpExplorerForm * S
   Abort();
 }
 //---------------------------------------------------------------------------
-void __fastcall Synchronize(TTerminal * Terminal, TCustomScpExplorerForm * ScpExplorer,
-  TStrings * CommandParams, bool UseDefaults)
+void __fastcall Synchronize(
+  TTerminal * Terminal, TCustomScpExplorerForm * ScpExplorer, TStrings * CommandParams, int UseDefaults)
 {
   UnicodeString LocalDirectory;
   UnicodeString RemoteDirectory;
@@ -961,7 +960,7 @@ int __fastcall Execute()
       ParamCommand = pcNone;
       UnicodeString AutoStartSession;
       UnicodeString DownloadFile;
-      bool UseDefaults = false;
+      int UseDefaults = -1;
 
       // do not check for temp dirs for service tasks (like RegisterAsUrlHandler)
       if (OnlyInstance &&
@@ -978,9 +977,10 @@ int __fastcall Execute()
 
       if (!Params->Empty)
       {
-        if (Params->FindSwitch(DEFAULTS_SWITCH) && CheckSafe(Params))
+        UnicodeString Value;
+        if (Params->FindSwitch(DEFAULTS_SWITCH, Value) && CheckSafe(Params))
         {
-          UseDefaults = true;
+          UseDefaults = StrToIntDef(Value, 0);
         }
 
         if (Params->FindSwitch(UPLOAD_SWITCH, CommandParams))

@@ -142,7 +142,7 @@ public:
     TGetSynchronizeOptionsEvent OnGetOptions,
     TSynchronizeSessionLog OnSynchronizeSessionLog,
     TFeedSynchronizeError & OnFeedSynchronizeError, TSynchronizeInNewWindow OnSynchronizeInNewWindow,
-    bool StartImmediately);
+    int AutoSubmit);
   virtual __fastcall ~TSynchronizeDialog();
 
   bool __fastcall Execute();

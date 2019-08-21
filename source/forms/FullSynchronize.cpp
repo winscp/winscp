@@ -27,7 +27,8 @@
 bool __fastcall DoFullSynchronizeDialog(TSynchronizeMode & Mode, int & Params,
   UnicodeString & LocalDirectory, UnicodeString & RemoteDirectory,
   TCopyParamType * CopyParams, bool & SaveSettings, bool & SaveMode, int Options,
-  const TUsableCopyParamAttrs & CopyParamAttrs, TFullSynchronizeInNewWindow OnFullSynchronizeInNewWindow)
+  const TUsableCopyParamAttrs & CopyParamAttrs, TFullSynchronizeInNewWindow OnFullSynchronizeInNewWindow,
+  int AutoSubmit)
 {
   bool Result;
   TFullSynchronizeDialog * Dialog = SafeFormCreate<TFullSynchronizeDialog>();
@@ -41,6 +42,10 @@ bool __fastcall DoFullSynchronizeDialog(TSynchronizeMode & Mode, int & Params,
     Dialog->CopyParams = *CopyParams;
     Dialog->SaveSettings = SaveSettings;
     Dialog->SaveMode = SaveMode;
+    if (AutoSubmit > 0)
+    {
+      InitiateDialogTimeout(Dialog, AutoSubmit * MSecsPerSec, Dialog->OkButton);
+    }
     Result = Dialog->Execute();
     if (Result)
     {

@@ -774,11 +774,11 @@ public:
   void __fastcall TerminalReady();
   void __fastcall QueueEvent(TManagedTerminal * Terminal, TTerminalQueue * Queue, TQueueEvent Event);
   void __fastcall QueueEmptyNoteClicked(TObject * Sender);
-  bool __fastcall DoSynchronizeDirectories(UnicodeString & LocalDirectory,
-    UnicodeString & RemoteDirectory, bool UseDefaults);
-  int __fastcall DoFullSynchronizeDirectories(UnicodeString & LocalDirectory,
-    UnicodeString & RemoteDirectory, TSynchronizeMode & Mode, int Params, bool & SaveMode,
-    bool UseDefaults);
+  bool __fastcall DoSynchronizeDirectories(
+    UnicodeString & LocalDirectory, UnicodeString & RemoteDirectory, int UseDefaults);
+  int __fastcall DoFullSynchronizeDirectories(
+    UnicodeString & LocalDirectory, UnicodeString & RemoteDirectory, TSynchronizeMode & Mode,
+    int Params, bool & SaveMode, int UseDefaults);
   void __fastcall StandaloneEdit(const UnicodeString & FileName);
   bool __fastcall CanPasteFromClipBoard();
   virtual void __fastcall PasteFromClipBoard();

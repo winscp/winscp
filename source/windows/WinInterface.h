@@ -112,6 +112,8 @@ Tbx::TTBXSeparatorItem * __fastcall AddMenuSeparator(Tb2item::TTBCustomItem * Me
 void __fastcall AddMenuLabel(Tb2item::TTBCustomItem * Menu, const UnicodeString & Label);
 void __fastcall ClickToolbarItem(Tb2item::TTBCustomItem * Item, bool PositionCursor);
 
+void InitiateDialogTimeout(TForm * Dialog, unsigned int Timeout, TButton * Button);
+
 // windows\WinHelp.cpp
 void __fastcall InitializeWinHelp();
 void __fastcall FinalizeWinHelp();
@@ -211,10 +213,10 @@ const coAllFiles            = 0x1000;
 const cooDoNotShowAgain     = 0x01;
 const cooRemoteTransfer     = 0x02;
 const cooSaveSettings       = 0x04;
-bool __fastcall DoCopyDialog(bool ToRemote,
-  bool Move, TStrings * FileList, UnicodeString & TargetDirectory,
+bool __fastcall DoCopyDialog(
+  bool ToRemote, bool Move, TStrings * FileList, UnicodeString & TargetDirectory,
   TGUICopyParamType * Params, int Options, int CopyParamAttrs,
-  TSessionData * SessionData, int * OutputOptions);
+  TSessionData * SessionData, int * OutputOptions, int AutoSubmit);
 
 // forms\CreateDirectory.cpp
 bool __fastcall DoCreateDirectoryDialog(UnicodeString & Directory,
@@ -336,7 +338,7 @@ bool __fastcall DoSynchronizeDialog(TSynchronizeParamType & Params,
   TSynchronizeSessionLog OnSynchronizeSessionLog,
   TFeedSynchronizeError & OnFeedSynchronizeError,
   TSynchronizeInNewWindow OnSynchronizeInNewWindow,
-  bool Start);
+  int AutoSubmit);
 
 // forms\FullSynchronize.cpp
 struct TUsableCopyParamAttrs;
@@ -351,7 +353,7 @@ bool __fastcall DoFullSynchronizeDialog(TSynchronizeMode & Mode, int & Params,
   UnicodeString & LocalDirectory, UnicodeString & RemoteDirectory,
   TCopyParamType * CopyParams, bool & SaveSettings, bool & SaveMode,
   int Options, const TUsableCopyParamAttrs & CopyParamAttrs,
-  TFullSynchronizeInNewWindow OnFullSynchronizeInNewWindow);
+  TFullSynchronizeInNewWindow OnFullSynchronizeInNewWindow, int AutoSubmit);
 
 // forms\SynchronizeChecklist.cpp
 class TSynchronizeChecklist;

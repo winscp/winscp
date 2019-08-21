@@ -227,7 +227,7 @@ void __fastcall TScpExplorerForm::SynchronizeDirectories()
 {
   UnicodeString LocalDirectory = WinConfiguration->ScpExplorer.LastLocalTargetDirectory;
   UnicodeString RemoteDirectory = RemoteDirView->PathName;
-  if (DoSynchronizeDirectories(LocalDirectory, RemoteDirectory, false))
+  if (DoSynchronizeDirectories(LocalDirectory, RemoteDirectory, -1))
   {
     WinConfiguration->ScpExplorer.LastLocalTargetDirectory = LocalDirectory;
   }
