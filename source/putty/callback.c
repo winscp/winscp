@@ -138,6 +138,8 @@ bool run_toplevel_callbacks(CALLBACK_SET_ONLY)
          */
         cbcurr->fn(cbcurr->ctx);
         sfree(cbcurr);
+        // WINSCP: this does not happen, when exception (disconnect) occurs while the callback is called.
+        // See also the comment in TSecureShell::FreeBackend().
         cbcurr = NULL;
 
         done_something = true;

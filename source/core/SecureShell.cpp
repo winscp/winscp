@@ -1675,7 +1675,8 @@ void __fastcall TSecureShell::FreeBackend()
     sfree(FCallbackSet->ic_pktin_free);
     FCallbackSet->ic_pktin_free = NULL;
 
-    DebugAssert(FCallbackSet->cbcurr == NULL);
+    // Not checking that cbcurr is NULL. It may be non-null, when (fatal?) exception occurs, while the callback is called.
+    FCallbackSet->cbcurr = NULL;
     DebugAssert(FCallbackSet->cbhead == NULL);
     DebugAssert(FCallbackSet->cbtail == NULL);
 
