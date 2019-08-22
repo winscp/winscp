@@ -404,8 +404,6 @@ void __fastcall TMessageTimeout::DoTimer(TObject * /*Sender*/)
   if (FTimeout <= Interval)
   {
     DebugAssert(FButton != NULL);
-    TForm * Dialog = dynamic_cast<TForm *>(FButton->Parent);
-    DebugAssert(Dialog != NULL);
 
     // Needed particularly for "keep up to date" dialog, which does not close on the button click
     Enabled = false;
