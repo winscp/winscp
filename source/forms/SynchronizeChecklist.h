@@ -64,6 +64,10 @@ __published:
   TMenuItem *N3;
   TMenuItem *CheckAllFilesinThisDirectory1;
   TMenuItem *UncheckAllActionsinThisDirectory1;
+  TAction *BrowseLocalAction;
+  TAction *BrowseRemoteAction;
+  TMenuItem *BrowseLocalDirectory1;
+  TMenuItem *BrowseLocalDirectory2;
   void __fastcall HelpButtonClick(TObject * Sender);
   void __fastcall FormShow(TObject * Sender);
   void __fastcall StatusBarDrawPanel(TStatusBar *StatusBar,
@@ -102,6 +106,8 @@ __published:
   void __fastcall MoveActionExecute(TObject *Sender);
   void __fastcall CheckDirectoryActionExecute(TObject *Sender);
   void __fastcall UncheckDirectoryActionExecute(TObject *Sender);
+  void __fastcall BrowseLocalActionExecute(TObject *Sender);
+  void __fastcall BrowseRemoteActionExecute(TObject *Sender);
 
 public:
   __fastcall TSynchronizeChecklistDialog(
@@ -109,7 +115,7 @@ public:
     const UnicodeString & LocalDirectory, const UnicodeString & RemoteDirectory,
     TCustomCommandMenuEvent OnCustomCommandMenu, TFullSynchronizeEvent OnSynchronize,
     TSynchronizeChecklistCalculateSize OnSynchronizeChecklistCalculateSize, TSynchronizeMoveEvent OnSynchronizeMove,
-    void * Token);
+    TSynchronizeBrowseEvent OnSynchronizeBrowse, void * Token);
   virtual __fastcall ~TSynchronizeChecklistDialog();
 
   bool __fastcall Execute(TSynchronizeChecklist * Checklist);
@@ -133,6 +139,7 @@ protected:
   TCustomCommandMenuEvent FOnCustomCommandMenu;
   TSynchronizeChecklistCalculateSize FOnSynchronizeChecklistCalculateSize;
   TSynchronizeMoveEvent FOnSynchronizeMove;
+  TSynchronizeBrowseEvent FOnSynchronizeBrowse;
   typedef std::map<const TSynchronizeChecklist::TItem *, TSynchronizeChecklist::TAction> TActions;
   TActions FActions;
   TFullSynchronizeEvent FOnSynchronize;
@@ -172,6 +179,7 @@ protected:
   TSynchronizeMoveItems __fastcall GetMoveItems();
   void __fastcall DeleteItem(TListItem * Item);
   void __fastcall CheckDirectory(bool Check);
+  void __fastcall DoBrowse(TOperationSide Side);
   static int __fastcall CompareNumber(__int64 Value1, __int64 Value2);
 };
 //----------------------------------------------------------------------------

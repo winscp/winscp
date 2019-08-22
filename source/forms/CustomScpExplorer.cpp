@@ -4755,18 +4755,22 @@ void __fastcall TCustomScpExplorerForm::NewSession(bool FromSite, const UnicodeS
   }
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TCustomScpExplorerForm::CreateHiddenDuplicateSession()
+UnicodeString __fastcall TCustomScpExplorerForm::SaveHiddenDuplicateSession(TSessionData * SessionData)
 {
   UnicodeString SessionName = StoredSessions->HiddenPrefix + Terminal->SessionData->SessionName;
-
-  // current working directories become defaults here, what is not right
-  std::unique_ptr<TSessionData> SessionData(CloneCurrentSessionData());
-  StoredSessions->NewSession(SessionName, SessionData.get());
+  StoredSessions->NewSession(SessionName, SessionData);
   // modified only, explicit
   StoredSessions->Save(false, true);
 
   // encode session name because of slashes in hierarchical sessions
   return EncodeUrlString(SessionName);
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TCustomScpExplorerForm::CreateHiddenDuplicateSession()
+{
+  // current working directories become defaults here, what is not right
+  std::unique_ptr<TSessionData> SessionData(CloneCurrentSessionData());
+  return SaveHiddenDuplicateSession(SessionData.get());
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::DuplicateSession()
@@ -5726,6 +5730,28 @@ void __fastcall TCustomScpExplorerForm::DoSynchronizeMove(
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::DoSynchronizeBrowse(TOperationSide Side, const TSynchronizeChecklist::TItem * Item)
+{
+  UnicodeString LocalPath = ExcludeTrailingBackslash(Item->Local.Directory);
+  if (Side == osLocal)
+  {
+    OpenFolderInExplorer(LocalPath);
+  }
+  else if (DebugAlwaysTrue(Side == osRemote))
+  {
+    // Similar to CreateHiddenDuplicateSession, except that it modifies the initial directories
+    std::unique_ptr<TSessionData> SessionData(CloneCurrentSessionData());
+    SessionData->RemoteDirectory = UnixExcludeTrailingBackslash(Item->Remote.Directory);
+    if (!LocalPath.IsEmpty())
+    {
+      SessionData->LocalDirectory = LocalPath;
+    }
+
+    UnicodeString SessionName = SaveHiddenDuplicateSession(SessionData.get());
+    ExecuteNewInstance(SessionName);
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::FullSynchronizeInNewWindow(
   TSynchronizeMode Mode, int Params, const UnicodeString & LocalDirectory, const UnicodeString & RemoteDirectory,
    const TCopyParamType * CopyParams)
@@ -5835,7 +5861,7 @@ int __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
         {
           if (!DoSynchronizeChecklistDialog(
                 Checklist, Mode, Params, LocalDirectory, RemoteDirectory, CustomCommandMenu, DoFullSynchronize,
-                DoSynchronizeChecklistCalculateSize, DoSynchronizeMove, &SynchronizeParams))
+                DoSynchronizeChecklistCalculateSize, DoSynchronizeMove, DoSynchronizeBrowse, &SynchronizeParams))
           {
             Result = -1;
           }

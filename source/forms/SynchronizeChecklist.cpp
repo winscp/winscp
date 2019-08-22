@@ -35,12 +35,12 @@ bool __fastcall DoSynchronizeChecklistDialog(TSynchronizeChecklist * Checklist,
   const UnicodeString LocalDirectory, const UnicodeString RemoteDirectory,
   TCustomCommandMenuEvent OnCustomCommandMenu, TFullSynchronizeEvent OnSynchronize,
   TSynchronizeChecklistCalculateSize OnSynchronizeChecklistCalculateSize, TSynchronizeMoveEvent OnSynchronizeMove,
-  void * Token)
+  TSynchronizeBrowseEvent OnSynchronizeBrowse, void * Token)
 {
   std::unique_ptr<TSynchronizeChecklistDialog> Dialog(
     new TSynchronizeChecklistDialog(
       Application, Mode, Params, LocalDirectory, RemoteDirectory, OnCustomCommandMenu, OnSynchronize,
-      OnSynchronizeChecklistCalculateSize, OnSynchronizeMove, Token));
+      OnSynchronizeChecklistCalculateSize, OnSynchronizeMove, OnSynchronizeBrowse, Token));
   return Dialog->Execute(Checklist);
 }
 //---------------------------------------------------------------------
@@ -48,7 +48,8 @@ __fastcall TSynchronizeChecklistDialog::TSynchronizeChecklistDialog(
   TComponent * AOwner, TSynchronizeMode Mode, int Params,
   const UnicodeString & LocalDirectory, const UnicodeString & RemoteDirectory,
   TCustomCommandMenuEvent OnCustomCommandMenu, TFullSynchronizeEvent OnSynchronize,
-  TSynchronizeChecklistCalculateSize OnSynchronizeChecklistCalculateSize, TSynchronizeMoveEvent OnSynchronizeMove, void * Token)
+  TSynchronizeChecklistCalculateSize OnSynchronizeChecklistCalculateSize, TSynchronizeMoveEvent OnSynchronizeMove,
+  TSynchronizeBrowseEvent OnSynchronizeBrowse, void * Token)
   : TForm(AOwner)
 {
   FFormRestored = false;
@@ -59,6 +60,7 @@ __fastcall TSynchronizeChecklistDialog::TSynchronizeChecklistDialog(
   FOnCustomCommandMenu = OnCustomCommandMenu;
   FOnSynchronizeChecklistCalculateSize = OnSynchronizeChecklistCalculateSize;
   FOnSynchronizeMove = OnSynchronizeMove;
+  FOnSynchronizeBrowse = OnSynchronizeBrowse;
   DebugAssert(OnSynchronize != NULL);
   FOnSynchronize = OnSynchronize;
   FToken = Token;
@@ -189,6 +191,8 @@ void __fastcall TSynchronizeChecklistDialog::UpdateControls()
   ReverseAction->Enabled = (ListView->SelCount > 0) && DebugAlwaysTrue(!FSynchronizing);
   MoveAction->Enabled = (GetMoveItems() != TSynchronizeMoveItems());
   CalculateSizeAction->Enabled = (ListView->SelCount > 0) && AnyDirectory && DebugAlwaysTrue(!FSynchronizing);
+  BrowseLocalAction->Enabled = (ListView->SelCount == 1) && (GetChecklistItem(ListView->Selected)->Action != TSynchronizeChecklist::saDeleteRemote);
+  BrowseRemoteAction->Enabled = (ListView->SelCount == 1) && (GetChecklistItem(ListView->Selected)->Action != TSynchronizeChecklist::saDeleteLocal);
 
   SelectAllAction->Enabled = (ListView->SelCount < ListView->Items->Count) && !FSynchronizing;
 }
@@ -1307,5 +1311,21 @@ void __fastcall TSynchronizeChecklistDialog::CheckDirectoryActionExecute(TObject
 void __fastcall TSynchronizeChecklistDialog::UncheckDirectoryActionExecute(TObject *)
 {
   CheckDirectory(false);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeChecklistDialog::DoBrowse(TOperationSide Side)
+{
+  const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(ListView->Selected);
+  FOnSynchronizeBrowse(Side, ChecklistItem);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeChecklistDialog::BrowseLocalActionExecute(TObject *)
+{
+  DoBrowse(osLocal);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeChecklistDialog::BrowseRemoteActionExecute(TObject *)
+{
+  DoBrowse(osRemote);
 }
 //---------------------------------------------------------------------------

@@ -660,6 +660,7 @@ protected:
     TSynchronizeChecklist * Checklist, const TSynchronizeChecklist::TItemList & Items, void * Token);
   void __fastcall DoSynchronizeMove(
     TOperationSide Side, const UnicodeString & FileName, const UnicodeString & NewFileName, TRemoteFile * RemoteFile);
+  void __fastcall DoSynchronizeBrowse(TOperationSide Side, const TSynchronizeChecklist::TItem * Item);
   void __fastcall FullSynchronize(
     TSynchronizeParams & Params, TProcessedSynchronizationChecklistItem OnProcessedItem,
     TUpdatedSynchronizationChecklistItems OnUpdatedSynchronizationChecklistItems);
@@ -731,6 +732,7 @@ public:
   __fastcall TCustomScpExplorerForm(TComponent* Owner);
   void __fastcall SaveCurrentSession();
   UnicodeString __fastcall CreateHiddenDuplicateSession();
+  UnicodeString __fastcall SaveHiddenDuplicateSession(TSessionData * SessionData);
   TSessionData * __fastcall CloneCurrentSessionData();
   bool __fastcall SaveWorkspace(bool EnableAutoSave);
   virtual void __fastcall CompareDirectories();
