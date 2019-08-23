@@ -14,6 +14,7 @@
 #include <DateUtils.hpp>
 #include <Consts.hpp>
 #include <HistoryComboBox.hpp>
+#include <windowsx.h>
 
 #include "Progress.h"
 //---------------------------------------------------------------------
@@ -91,6 +92,7 @@ __fastcall TProgressForm::TProgressForm(
   FPendingSkip = false;
   FSynchronizeProgress = SynchronizeProgress;
   FAllowSkip = AllowSkip;
+  FWheelDelta = 0;
   UseSystemSettings(this);
 
   FOnceDoneItems.Add(odoIdle, IdleOnceDoneItem);
@@ -700,6 +702,7 @@ UnicodeString __fastcall TProgressForm::ItemSpeed(const UnicodeString & Text,
   UnicodeString Result = SetSpeedLimit(FCPSLimit);
   SaveToHistory(Item->Strings, Result);
   CustomWinConfiguration->History[L"SpeedLimit"] = Item->Strings;
+  FWheelDelta = 0;
 
   return Result;
 }
@@ -751,5 +754,78 @@ void __fastcall TProgressForm::SetCancelLower(TCancelStatus ACancel)
 void __fastcall TProgressForm::SkipItemClick(TObject * /*Sender*/)
 {
   SetCancelLower(csCancelFile);
+}
+//---------------------------------------------------------------------------
+void __fastcall TProgressForm::MouseWheelHandler(TMessage & Message)
+{
+  int X = GET_X_LPARAM(Message.LParam);
+  int Y = GET_Y_LPARAM(Message.LParam);
+  TPoint P = Toolbar->ScreenToClient(TPoint(X, Y));
+  if (Toolbar->ClientRect.Contains(P))
+  {
+    TTBItemViewer * Viewer = Toolbar->View->Find(SpeedComboBoxItem);
+    if (Viewer->BoundsRect.Contains(P))
+    {
+      int Delta = GET_WHEEL_DELTA_WPARAM(Message.WParam);
+      FWheelDelta += Delta;
+      unsigned long CurrentSpeed = GetSpeedLimit(SpeedComboBoxItem->Text);
+      unsigned long Speed = CurrentSpeed;
+      unsigned int CPS = FData.CPS();
+      int Step = 4 * WHEEL_DELTA;
+      if (FWheelDelta > 0)
+      {
+        while (FWheelDelta > Step)
+        {
+          if (Speed > 0)
+          {
+            Speed *= 2;
+            if (Speed > std::max(MaxSpeed, static_cast<unsigned long>(CPS) * 2))
+            {
+              Speed = 0;
+            }
+          }
+          FWheelDelta -= Step;
+        }
+      }
+      else if (FWheelDelta < 0)
+      {
+        while (FWheelDelta < -Step)
+        {
+          if (Speed == 0)
+          {
+            Speed = 8;
+            while (Speed * 2 < CPS)
+            {
+              Speed *= 2;
+            }
+          }
+          else
+          {
+            if (Speed > MinSpeed)
+            {
+              Speed /= 2;
+            }
+          }
+          FWheelDelta += Step;
+        }
+      }
+
+      if (Speed != CurrentSpeed)
+      {
+        TTBEditItemViewer * EditViewer = dynamic_cast<TTBEditItemViewer *>(Viewer);
+        if (EditViewer->EditControl != NULL)
+        {
+          EditViewer->View->CancelMode();
+        }
+
+        FCPSLimit = Speed;
+        SpeedComboBoxItem->Text = SetSpeedLimit(Speed);
+      }
+
+      Message.Result = 1;
+    }
+  }
+
+  TForm::MouseWheelHandler(Message);
 }
 //---------------------------------------------------------------------------

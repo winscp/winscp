@@ -73,10 +73,10 @@ void __fastcall TCustomWinConfiguration::DefaultHistory()
   // If we need to solve this for another history, we should introduce
   // a generic solution, like language-specific history ("SpeedLimitEN")
   Strings->Add(LoadStr(SPEED_UNLIMITED));
-  unsigned long Speed = 8192;
-  while (Speed >= 8)
+  unsigned long Speed = MaxSpeed;
+  while (Speed >= MinSpeed)
   {
-    Strings->Add(IntToStr(int(Speed)));
+    Strings->Add(SetSpeedLimit(Speed));
     Speed = Speed / 2;
   }
   FHistory->AddObject(L"SpeedLimit", Strings.release());
