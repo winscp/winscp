@@ -1894,7 +1894,7 @@ void __fastcall TNonVisualDataModule::ControlContextPopup(TObject * Sender, cons
   if (Dock != NULL)
   {
     // While we can identify toolbar for which context menu is popping up in OnExecute,
-    // we cannot in OnUpdate, so we have to remeber it here.
+    // we cannot in OnUpdate, so we have to remember it here.
     FCustomizedToolbar = dynamic_cast<TTBCustomToolbar *>(Dock->ControlAtPos(MousePos, true, true, false));
   }
   else
