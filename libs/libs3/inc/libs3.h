@@ -703,6 +703,7 @@ typedef struct S3BucketContext
      * The name of the host to connect to when making S3 requests.  If set to
      * NULL, the default S3 hostname passed in to S3_initialize will be used.
      **/
+    // WINSCP: Can contain port number
     const char *hostName;
 
     /**

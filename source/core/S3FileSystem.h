@@ -116,6 +116,7 @@ protected:
   UTF8String FAccessKeyId;
   UTF8String FSecretAccessKey;
   UTF8String FHostName;
+  UTF8String FPortSuffix;
   int FTimeout;
   S3RequestContext * FRequestContext;
   _S3Protocol FLibS3Protocol;

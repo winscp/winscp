@@ -1279,7 +1279,15 @@ static S3Status setup_neon(Request *request,
 
     // WINSCP (hostHeader is added implicitly by neon based on uri, but for certificate check, we use base hostname
     // as the bucket name can contain dots, for which the certificate check would fail)
-    ne_set_realhost(request->NeonSession, params->bucketContext.hostName ? params->bucketContext.hostName : defaultHostNameG);
+    char * hostName = strdup(params->bucketContext.hostName ? params->bucketContext.hostName : defaultHostNameG);
+    char * colon = strchr(hostName, ':');
+    if (colon != NULL)
+    {
+        *colon = '\0';
+    }
+    ne_set_realhost(request->NeonSession, hostName);
+    free(hostName);
+
     append_standard_header(cacheControlHeader);
     append_standard_header(contentTypeHeader);
     append_standard_header(md5Header);

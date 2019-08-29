@@ -606,8 +606,6 @@ void __fastcall TLoginDialog::UpdateControls()
     bool S3Protocol = (FSProtocol == fsS3);
 
     // session
-    PortNumberEdit->Visible = !S3Protocol;
-    Label2->Visible = PortNumberEdit->Visible;
     FtpsCombo->Visible = Editable && FtpProtocol;
     FtpsLabel->Visible = FtpProtocol;
     WebDavsCombo->Visible = Editable && WebDavProtocol;
