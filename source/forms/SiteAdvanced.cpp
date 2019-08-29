@@ -213,6 +213,9 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     ComboAutoSwitchLoad(FtpForcePasvIpCombo, FSessionData->FtpForcePasvIp);
     ComboAutoSwitchLoad(FtpHostCombo, FSessionData->FtpHost);
 
+    // S3 page
+    S3DefaultReqionCombo->Text = FSessionData->S3DefaultRegion;
+
     // Authentication page
     SshNoUserAuthCheck->Checked = FSessionData->SshNoUserAuth;
     TryAgentCheck->Checked = FSessionData->TryAgent;
@@ -595,6 +598,9 @@ void __fastcall TSiteAdvancedDialog::SaveSession()
   FSessionData->FtpUseMlsd = ComboAutoSwitchSave(FtpUseMlsdCombo);
   FSessionData->FtpForcePasvIp = ComboAutoSwitchSave(FtpForcePasvIpCombo);
   FSessionData->FtpHost = ComboAutoSwitchSave(FtpHostCombo);
+
+  // S3 page
+  FSessionData->S3DefaultRegion = S3DefaultReqionCombo->Text;
 
   // Proxy page
   FSessionData->ProxyMethod = GetProxyMethod();
@@ -994,6 +1000,9 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
       FtpPasvModeCheck->Checked &&
       (IPAutoButton->Checked || IPv4Button->Checked));
     EnableControl(FtpForcePasvIpLabel, FtpForcePasvIpCombo->Enabled);
+
+    // environment/s3
+    S3Sheet->Enabled = S3Protocol;
 
     // tunnel sheet
     TunnelSheet->Enabled = SshProtocol;

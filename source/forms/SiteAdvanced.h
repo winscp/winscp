@@ -270,6 +270,12 @@ __published:
   TCheckBox *ShowEncryptionKeyCheck;
   TButton *GenerateKeyButton;
   TEdit *EncryptKeyVisibleEdit;
+  TTabSheet *S3Sheet;
+  TGroupBox *S3Group;
+  TLabel *Label27;
+  TComboBox *S3DefaultReqionCombo;
+  TLabel *Label5;
+  TComboBox *S3UrlStyleCombo;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall PageControlChange(TObject *Sender);
