@@ -1744,6 +1744,7 @@ S3Status request_neon_code_to_status(NeonCode code)
 }
 
 
+#ifndef WINSCP
 S3Status S3_generate_authenticated_query_string
     (char *buffer, const S3BucketContext *bucketContext,
      const char *key, int expires, const char *resource,
@@ -1795,3 +1796,4 @@ S3Status S3_generate_authenticated_query_string
                        bucketContext, computed.urlEncodedKey, resource,
                        queryParams);
 }
+#endif
