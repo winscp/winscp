@@ -274,7 +274,7 @@ __published:
   TGroupBox *S3Group;
   TLabel *Label27;
   TComboBox *S3DefaultReqionCombo;
-  TLabel *Label5;
+  TLabel *S3UrlStyleLabel;
   TComboBox *S3UrlStyleCombo;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);

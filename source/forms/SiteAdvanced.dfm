@@ -948,13 +948,13 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           Left = 0
           Top = 6
           Width = 393
-          Height = 46
+          Height = 70
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Protocol options'
           TabOrder = 0
           DesignSize = (
             393
-            46)
+            70)
           object Label27: TLabel
             Left = 12
             Top = 20
@@ -962,6 +962,14 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Height = 13
             Caption = '&Default region:'
             FocusControl = S3DefaultReqionCombo
+          end
+          object S3UrlStyleLabel: TLabel
+            Left = 12
+            Top = 44
+            Width = 50
+            Height = 13
+            Caption = '&URL Style:'
+            FocusControl = S3UrlStyleCombo
           end
           object S3DefaultReqionCombo: TComboBox
             Left = 168
@@ -997,6 +1005,20 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
               'us-gov-west-1'
               'us-west-1'
               'us-west-2')
+          end
+          object S3UrlStyleCombo: TComboBox
+            Left = 168
+            Top = 39
+            Width = 213
+            Height = 21
+            AutoComplete = False
+            Style = csDropDownList
+            Anchors = [akLeft, akTop, akRight]
+            MaxLength = 50
+            TabOrder = 1
+            Items.Strings = (
+              'Virtual Host'
+              'Path')
           end
         end
       end

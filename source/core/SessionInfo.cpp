@@ -1352,6 +1352,7 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
     {
       FtpsOn = (Data->Ftps != ftpsNone);
       ADF(L"HTTPS: %s", (BooleanToEngStr(FtpsOn)));
+      ADF(L"S3: URL Style: %s", (EnumName(Data->S3UrlStyle, L"Virtual Host;Path")));
       if (!Data->S3DefaultRegion.IsEmpty())
       {
         ADF(L"S3: Default region: %s", (Data->S3DefaultRegion));

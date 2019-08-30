@@ -215,6 +215,14 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
 
     // S3 page
     S3DefaultReqionCombo->Text = FSessionData->S3DefaultRegion;
+    if (FSessionData->S3UrlStyle == s3usPath)
+    {
+      S3UrlStyleCombo->ItemIndex = 1;
+    }
+    else
+    {
+      S3UrlStyleCombo->ItemIndex = 0;
+    }
 
     // Authentication page
     SshNoUserAuthCheck->Checked = FSessionData->SshNoUserAuth;
@@ -601,6 +609,14 @@ void __fastcall TSiteAdvancedDialog::SaveSession()
 
   // S3 page
   FSessionData->S3DefaultRegion = S3DefaultReqionCombo->Text;
+  if (S3UrlStyleCombo->ItemIndex == 1)
+  {
+    FSessionData->S3UrlStyle = s3usPath;
+  }
+  else
+  {
+    FSessionData->S3UrlStyle = s3usVirtualHost;
+  }
 
   // Proxy page
   FSessionData->ProxyMethod = GetProxyMethod();

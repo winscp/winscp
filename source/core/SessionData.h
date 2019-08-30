@@ -37,6 +37,8 @@ enum TFtps { ftpsNone, ftpsImplicit, ftpsExplicitSsl, ftpsExplicitTls };
 // has to match SSL_VERSION_XXX constants in AsyncSslSocketLayer.h
 // ssl2 has no effect now
 enum TTlsVersion { ssl2 = 2, ssl3 = 3, tls10 = 10, tls11 = 11, tls12 = 12 };
+// has to match libs3 S3UriStyle
+enum TS3UrlStyle { s3usVirtualHost, s3usPath };
 enum TSessionSource { ssNone, ssStored, ssStoredModified };
 enum TSessionUrlFlags
 {
@@ -218,6 +220,7 @@ private:
   TAutoSwitch FNotUtf;
   int FInternalEditorEncoding;
   UnicodeString FS3DefaultRegion;
+  TS3UrlStyle FS3UrlStyle;
   bool FIsWorkspace;
   UnicodeString FLink;
   UnicodeString FNameOverride;
@@ -392,6 +395,7 @@ private:
   void __fastcall SetNotUtf(TAutoSwitch value);
   void __fastcall SetInternalEditorEncoding(int value);
   void __fastcall SetS3DefaultRegion(UnicodeString value);
+  void __fastcall SetS3UrlStyle(TS3UrlStyle value);
   void __fastcall SetLogicalHostName(UnicodeString value);
   void __fastcall SetIsWorkspace(bool value);
   void __fastcall SetLink(UnicodeString value);
@@ -649,6 +653,7 @@ public:
   __property TAutoSwitch NotUtf = { read = FNotUtf, write = SetNotUtf };
   __property int InternalEditorEncoding = { read = FInternalEditorEncoding, write = SetInternalEditorEncoding };
   __property UnicodeString S3DefaultRegion = { read = FS3DefaultRegion, write = SetS3DefaultRegion };
+  __property TS3UrlStyle S3UrlStyle = { read = FS3UrlStyle, write = SetS3UrlStyle };
   __property bool IsWorkspace = { read = FIsWorkspace, write = SetIsWorkspace };
   __property UnicodeString Link = { read = FLink, write = SetLink };
   __property UnicodeString NameOverride = { read = FNameOverride, write = SetNameOverride };

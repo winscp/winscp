@@ -472,6 +472,10 @@ TLibS3BucketContext TS3FileSystem::GetBucketContext(const UnicodeString & Bucket
     if (I != FRegions.end())
     {
       Region = I->second;
+      if (Region.IsEmpty())
+      {
+        Region = FAuthRegion;
+      }
     }
     else
     {
@@ -484,11 +488,20 @@ TLibS3BucketContext TS3FileSystem::GetBucketContext(const UnicodeString & Bucket
       Retry = true;
     }
 
+    S3UriStyle UriStyle = S3UriStyle(FTerminal->SessionData->S3UrlStyle);
+
     I = FHostNames.find(BucketName);
     UnicodeString HostName;
     if (I != FHostNames.end())
     {
       HostName = I->second;
+      if (SameText(HostName.SubString(1, BucketName.Length() + 1), BucketName + L"."))
+      {
+        HostName.Delete(1, BucketName.Length() + 1);
+        // Even when using path-style URL Amazon seems to redirect us to bucket hostname and
+        // we need to switch to virtual host style URL (without bucket name in the path)
+        UriStyle = S3UriStyleVirtualHost;
+      }
     }
     else
     {
@@ -500,7 +513,7 @@ TLibS3BucketContext TS3FileSystem::GetBucketContext(const UnicodeString & Bucket
     Result.BucketNameBuf = UTF8String(BucketName);
     Result.bucketName = Result.BucketNameBuf.c_str();
     Result.protocol = FLibS3Protocol;
-    Result.uriStyle = S3UriStyleVirtualHost;
+    Result.uriStyle = UriStyle;
     Result.accessKeyId = FAccessKeyId.c_str();
     Result.secretAccessKey = FSecretAccessKey.c_str();
     Result.securityToken = NULL;
@@ -530,16 +543,18 @@ TLibS3BucketContext TS3FileSystem::GetBucketContext(const UnicodeString & Bucket
                !Data.EndpointDetail.IsEmpty())
       {
         UnicodeString Endpoint = Data.EndpointDetail;
-        if (SameText(Endpoint.SubString(1, BucketName.Length() + 1), BucketName + L"."))
-        {
-          Endpoint.Delete(1, BucketName.Length() + 1);
-        }
         if (HostName != Endpoint)
         {
           FTerminal->LogEvent(FORMAT("Will use endpoint \"%s\" for bucket \"%s\" from now on.", (Endpoint, BucketName)));
           FHostNames.insert(std::make_pair(BucketName, Endpoint));
           Retry = true;
         }
+      }
+      // Minio
+      else if (Data.Status == S3StatusOK)
+      {
+        FTerminal->LogEvent(FORMAT("Will use default region for bucket \"%s\" from now on.", (BucketName)));
+        FRegions.insert(std::make_pair(BucketName, UnicodeString()));
       }
     }
   }
