@@ -20,7 +20,7 @@ namespace WinSCP
             string path = lastSlash > 0 ? fileMask.Substring(0, lastSlash + 1) : string.Empty;
             string mask = lastSlash > 0 ? fileMask.Substring(lastSlash + 1) : fileMask;
             // Keep in sync with EscapeFileMask in GenerateUrl.cpp
-            mask = mask.Replace("[", "[[]").Replace("*", "[*]").Replace("?", "[?]");
+            mask = mask.Replace("[", "[[]").Replace("*", "[*]").Replace("?", "[?]").Replace("<", "<<").Replace(">", ">>");
             return path + mask;
         }
 

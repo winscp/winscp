@@ -247,7 +247,9 @@ static UnicodeString __fastcall QuoteStringParam(UnicodeString S)
 // Keep in sync with .NET Session.EscapeFileMask
 static UnicodeString __fastcall EscapeFileMask(UnicodeString S)
 {
-  return ReplaceStr(ReplaceStr(ReplaceStr(S, L"[", L"[[]"), L"*", L"[*]"), L"?", L"[?]");
+  return
+    ReplaceStr(ReplaceStr(ReplaceStr(ReplaceStr(ReplaceStr(
+      S, L"[", L"[[]"), L"*", L"[*]"), L"?", L"[?]"), L">", L">>"), L"<", L"<<");
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TGenerateUrlDialog::GenerateUrl()
