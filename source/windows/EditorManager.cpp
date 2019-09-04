@@ -464,8 +464,9 @@ bool __fastcall TEditorManager::HasFileChanged(int Index, TDateTime & NewTimesta
   }
   else
   {
-    FileAge(FileData->FileName, NewTimestamp);
-    Result = (FileData->Timestamp != NewTimestamp);
+    Result =
+      FileAge(FileData->FileName, NewTimestamp) &&
+      (FileData->Timestamp != NewTimestamp);
   }
   return Result;
 }
