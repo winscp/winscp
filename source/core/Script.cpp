@@ -310,6 +310,7 @@ __fastcall TScript::TScript(bool LimitedOutput)
   FTerminal = NULL;
   FGroups = false;
   FWantsProgress = false;
+  FInteractive = false;
   FIncludeFileMaskOptionUsed = false;
   FPendingLogLines = new TStringList();
 
@@ -2666,7 +2667,7 @@ void __fastcall TManagementScript::Connect(const UnicodeString Session,
         TScriptCommands::CheckParams(Options, false);
       }
 
-      if (!Session.IsEmpty() && !Data->Name.IsEmpty() && (Batch != TScript::BatchOff))
+      if (!Session.IsEmpty() && !Data->Name.IsEmpty() && (Batch != TScript::BatchOff) && !Interactive)
       {
         std::unique_ptr<TSessionData> DataWithFingerprint(Data->Clone());
         DataWithFingerprint->LookupLastFingerprint();

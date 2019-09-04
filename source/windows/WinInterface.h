@@ -625,6 +625,7 @@ public:
   virtual bool __fastcall LimitedOutput() = 0;
   virtual bool __fastcall LiveOutput() = 0;
   virtual bool __fastcall NoInteractiveInput() = 0;
+  virtual bool __fastcall Interactive() = 0;
   virtual void __fastcall WaitBeforeExit() = 0;
   virtual bool __fastcall CommandLineOnly() = 0;
   virtual bool __fastcall WantsProgress() = 0;

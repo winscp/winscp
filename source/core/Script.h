@@ -75,6 +75,7 @@ public:
   __property TTerminal * Terminal = { read = FTerminal };
   __property bool Groups = { read = FGroups, write = FGroups };
   __property bool WantsProgress = { read = FWantsProgress, write = FWantsProgress };
+  __property bool Interactive = { read = FInteractive, write = FInteractive };
 
 protected:
   TTerminal * FTerminal;
@@ -101,6 +102,7 @@ protected:
   int FInteractiveSessionReopenTimeout;
   bool FGroups;
   bool FWantsProgress;
+  bool FInteractive;
   TStrings * FPendingLogLines;
   bool FWarnNonDefaultCopyParam;
   bool FWarnNonDefaultSynchronizeParams;

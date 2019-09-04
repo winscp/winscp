@@ -60,6 +60,7 @@ public:
   virtual bool __fastcall LimitedOutput();
   virtual bool __fastcall LiveOutput();
   virtual bool __fastcall NoInteractiveInput();
+  virtual bool __fastcall Interactive();
   virtual void __fastcall WaitBeforeExit();
   virtual bool __fastcall CommandLineOnly();
   virtual bool __fastcall WantsProgress();
@@ -478,6 +479,11 @@ bool __fastcall TOwnConsole::NoInteractiveInput()
   return false;
 }
 //---------------------------------------------------------------------------
+bool __fastcall TOwnConsole::Interactive()
+{
+  return true;
+}
+//---------------------------------------------------------------------------
 void __fastcall TOwnConsole::WaitBeforeExit()
 {
   unsigned long Read;
@@ -534,6 +540,7 @@ public:
   virtual bool __fastcall LiveOutput();
   virtual bool __fastcall NoInteractiveInput();
   virtual void __fastcall WaitBeforeExit();
+  virtual bool __fastcall Interactive();
   virtual bool __fastcall CommandLineOnly();
   virtual bool __fastcall WantsProgress();
   virtual void __fastcall Progress(TScriptProgress & Progress);
@@ -550,6 +557,7 @@ private:
   bool FPipeOutput;
   bool FNoInteractiveInput;
   bool FWantsProgress;
+  bool FInteractive;
   unsigned int FMaxSend;
 
   inline TConsoleCommStruct * __fastcall GetCommStruct();
@@ -831,6 +839,9 @@ void __fastcall TExternalConsole::Init()
       (CommStruct->InitEvent.OutputType != FILE_TYPE_DISK) &&
       (CommStruct->InitEvent.OutputType != FILE_TYPE_PIPE);
     FPipeOutput = (CommStruct->InitEvent.OutputType != FILE_TYPE_PIPE);
+    FInteractive =
+      (CommStruct->InitEvent.InputType != FILE_TYPE_DISK) &&
+      (CommStruct->InitEvent.InputType != FILE_TYPE_PIPE);
     FWantsProgress = CommStruct->InitEvent.WantsProgress;
   }
   __finally
@@ -852,6 +863,11 @@ bool __fastcall TExternalConsole::LiveOutput()
 bool __fastcall TExternalConsole::NoInteractiveInput()
 {
   return FNoInteractiveInput;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TExternalConsole::Interactive()
+{
+  return FInteractive;
 }
 //---------------------------------------------------------------------------
 void __fastcall TExternalConsole::WaitBeforeExit()
@@ -950,6 +966,7 @@ public:
   virtual bool __fastcall LimitedOutput();
   virtual bool __fastcall LiveOutput();
   virtual bool __fastcall NoInteractiveInput();
+  virtual bool __fastcall Interactive();
   virtual void __fastcall WaitBeforeExit();
   virtual bool __fastcall CommandLineOnly();
 
@@ -1015,6 +1032,11 @@ bool __fastcall TNullConsole::NoInteractiveInput()
   // do not matter, even if we return false,
   // it fails immediately afterwards in TNullConsole::Input
   return true;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TNullConsole::Interactive()
+{
+  return false;
 }
 //---------------------------------------------------------------------------
 void __fastcall TNullConsole::WaitBeforeExit()
@@ -1994,6 +2016,7 @@ int __fastcall TConsoleRunner::Run(const UnicodeString Session, TOptions * Optio
       FScript->OnQueryCancel = ScriptQueryCancel;
       FScript->OnSynchronizeStartStop = ScriptSynchronizeStartStop;
       FScript->OnProgress = ScriptProgress;
+      FScript->Interactive = (ScriptCommands == NULL) && FConsole->Interactive();
 
       UpdateTitle();
 
@@ -2003,7 +2026,10 @@ int __fastcall TConsoleRunner::Run(const UnicodeString Session, TOptions * Optio
 
       if (!Session.IsEmpty())
       {
-        PrintMessage(LoadStr(SCRIPT_CMDLINE_SESSION));
+        if (!FScript->Interactive)
+        {
+          PrintMessage(LoadStr(SCRIPT_CMDLINE_SESSION));
+        }
         FCommandError = false;
         FScript->Connect(Session, Options, false);
         if (FCommandError)
