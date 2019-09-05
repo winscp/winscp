@@ -624,6 +624,7 @@ void __fastcall TWinConfiguration::Default()
   HonorDrivePolicy = true;
   TimeoutShellOperations = true;
   TimeoutShellIconRetrieval = false;
+  UseIconUpdateThread = true;
   AllowWindowPrint = false;
 
   FEditor.Font.FontName = DefaultFixedWidthFontName;
@@ -1026,6 +1027,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(String,   FExtensionsShortCuts); \
     KEY(Bool,     TimeoutShellOperations); \
     KEY(Bool,     TimeoutShellIconRetrieval); \
+    KEY(Bool,     UseIconUpdateThread); \
     KEY(Bool,     AllowWindowPrint); \
   ); \
   BLOCK(L"Interface\\Editor", CANCREATE, \
@@ -2682,6 +2684,11 @@ void __fastcall TWinConfiguration::SetTimeoutShellOperations(bool value)
 void __fastcall TWinConfiguration::SetTimeoutShellIconRetrieval(bool value)
 {
   SET_CONFIG_PROPERTY(TimeoutShellIconRetrieval);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetUseIconUpdateThread(bool value)
+{
+  SET_CONFIG_PROPERTY(UseIconUpdateThread);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetAllowWindowPrint(bool value)
