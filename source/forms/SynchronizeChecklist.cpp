@@ -191,8 +191,10 @@ void __fastcall TSynchronizeChecklistDialog::UpdateControls()
   ReverseAction->Enabled = (ListView->SelCount > 0) && DebugAlwaysTrue(!FSynchronizing);
   MoveAction->Enabled = (GetMoveItems() != TSynchronizeMoveItems());
   CalculateSizeAction->Enabled = (ListView->SelCount > 0) && AnyDirectory && DebugAlwaysTrue(!FSynchronizing);
-  BrowseLocalAction->Enabled = (ListView->SelCount == 1) && (GetChecklistItem(ListView->Selected)->Action != TSynchronizeChecklist::saDeleteRemote);
-  BrowseRemoteAction->Enabled = (ListView->SelCount == 1) && (GetChecklistItem(ListView->Selected)->Action != TSynchronizeChecklist::saDeleteLocal);
+  TSynchronizeChecklist::TAction SelectedItemAction =
+    (ListView->SelCount == 1) ? GetChecklistItemAction(GetChecklistItem(ListView->Selected)) : TSynchronizeChecklist::saNone;
+  BrowseLocalAction->Enabled = (ListView->SelCount == 1) && (SelectedItemAction != TSynchronizeChecklist::saDeleteRemote);
+  BrowseRemoteAction->Enabled = (ListView->SelCount == 1) && (SelectedItemAction != TSynchronizeChecklist::saDeleteLocal);
 
   SelectAllAction->Enabled = (ListView->SelCount < ListView->Items->Count) && !FSynchronizing;
 }
