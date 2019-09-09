@@ -288,6 +288,7 @@ private:
   void __fastcall SetFSProtocol(TFSProtocol value);
   UnicodeString __fastcall GetFSProtocolStr();
   void __fastcall SetLocalDirectory(UnicodeString value);
+  UnicodeString __fastcall GetLocalDirectoryExpanded();
   void __fastcall SetRemoteDirectory(UnicodeString value);
   void __fastcall SetSynchronizeBrowsing(bool value);
   void __fastcall SetUpdateDirectories(bool value);
@@ -558,6 +559,7 @@ public:
   __property UnicodeString SessionName  = { read=GetSessionName };
   __property UnicodeString DefaultSessionName  = { read=GetDefaultSessionName };
   __property UnicodeString LocalDirectory  = { read=FLocalDirectory, write=SetLocalDirectory };
+  __property UnicodeString LocalDirectoryExpanded = { read = GetLocalDirectoryExpanded };
   __property UnicodeString RemoteDirectory  = { read=FRemoteDirectory, write=SetRemoteDirectory };
   __property bool SynchronizeBrowsing = { read=FSynchronizeBrowsing, write=SetSynchronizeBrowsing };
   __property bool UpdateDirectories = { read=FUpdateDirectories, write=SetUpdateDirectories };

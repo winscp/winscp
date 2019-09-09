@@ -3570,6 +3570,11 @@ void __fastcall TSessionData::SetLocalDirectory(UnicodeString value)
   SET_SESSION_PROPERTY(LocalDirectory);
 }
 //---------------------------------------------------------------------
+UnicodeString __fastcall TSessionData::GetLocalDirectoryExpanded()
+{
+  return ExpandFileName(::ExpandEnvironmentVariables(LocalDirectory));
+}
+//---------------------------------------------------------------------
 void __fastcall TSessionData::SetRemoteDirectory(UnicodeString value)
 {
   SET_SESSION_PROPERTY(RemoteDirectory);

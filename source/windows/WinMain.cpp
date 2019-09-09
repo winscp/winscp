@@ -131,7 +131,7 @@ void __fastcall Download(TTerminal * Terminal, const UnicodeString FileName, int
       Terminal->ExceptionOnFail = false;
     }
     File->FullFileName = FileName;
-    UnicodeString LocalDirectory = ExpandFileName(Terminal->SessionData->LocalDirectory);
+    UnicodeString LocalDirectory = Terminal->SessionData->LocalDirectoryExpanded;
     if (LocalDirectory.IsEmpty())
     {
       LocalDirectory = GetPersonalFolder();
@@ -201,7 +201,7 @@ void __fastcall SynchronizeDirectories(TTerminal * Terminal,
   }
   else if (!Terminal->SessionData->LocalDirectory.IsEmpty())
   {
-    LocalDirectory = ExpandFileName(Terminal->SessionData->LocalDirectory);
+    LocalDirectory = Terminal->SessionData->LocalDirectoryExpanded;
   }
   else
   {

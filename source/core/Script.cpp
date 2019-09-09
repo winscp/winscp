@@ -2736,7 +2736,7 @@ void __fastcall TManagementScript::Connect(const UnicodeString Session,
         {
           try
           {
-            DoChangeLocalDirectory(ExpandFileName(Data->LocalDirectory));
+            DoChangeLocalDirectory(Data->LocalDirectoryExpanded);
           }
           catch(Exception & E)
           {

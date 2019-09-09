@@ -560,7 +560,7 @@ void __fastcall TScpCommanderForm::TerminalChanged(bool Replaced)
     if (WinConfiguration->DefaultDirIsHome &&
         !Terminal->SessionData->UpdateDirectories)
     {
-      LocalDirView->HomeDirectory = ExpandFileName(Terminal->SessionData->LocalDirectory);
+      LocalDirView->HomeDirectory = Terminal->SessionData->LocalDirectoryExpanded;
     }
 
     if (WinConfiguration->PreservePanelState &&
@@ -617,7 +617,7 @@ void __fastcall TScpCommanderForm::ConfigurationChanged()
   if (WinConfiguration->DefaultDirIsHome && Terminal &&
       !Terminal->SessionData->UpdateDirectories)
   {
-    LocalDirView->HomeDirectory = ExpandFileName(Terminal->SessionData->LocalDirectory);
+    LocalDirView->HomeDirectory = Terminal->SessionData->LocalDirectoryExpanded;
   }
   else
   {

@@ -35,7 +35,7 @@ __fastcall TManagedTerminal::TManagedTerminal(TSessionData * SessionData,
 {
   StateData = new TSessionData(L"");
   StateData->Assign(SessionData);
-  StateData->LocalDirectory = ::ExpandFileName(StateData->LocalDirectory);
+  StateData->LocalDirectory = StateData->LocalDirectoryExpanded;
 }
 //---------------------------------------------------------------------------
 __fastcall TManagedTerminal::~TManagedTerminal()
