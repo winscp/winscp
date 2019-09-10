@@ -1098,9 +1098,25 @@ int __fastcall Execute()
               DebugAssert(!TerminalManager->ActiveTerminal);
 
               bool CanStart;
+              bool Browse = false;
               if (DataList->Count > 0)
               {
                 TManagedTerminal * Terminal = TerminalManager->NewTerminals(DataList.get());
+                UnicodeString BrowseFile;
+                if (Params->FindSwitch(BROWSE_SWITCH, BrowseFile) &&
+                    (!BrowseFile.IsEmpty() || !DownloadFile.IsEmpty()))
+                {
+                  if (BrowseFile.IsEmpty())
+                  {
+                    BrowseFile = DownloadFile;
+                  }
+                  DebugAssert(Terminal->RemoteExplorerState == NULL);
+                  Terminal->RemoteExplorerState = CreateDirViewStateForFocusedItem(BrowseFile);
+                  DebugAssert(Terminal->LocalExplorerState == NULL);
+                  Terminal->LocalExplorerState = CreateDirViewStateForFocusedItem(BrowseFile);
+                  DownloadFile = UnicodeString();
+                  Browse = true;
+                }
                 if (!DownloadFile.IsEmpty())
                 {
                   Terminal->AutoReadDirectory = false;
@@ -1164,6 +1180,11 @@ int __fastcall Execute()
                   {
                     Download(TerminalManager->ActiveTerminal, DownloadFile,
                       UseDefaults);
+                  }
+
+                  if (Browse)
+                  {
+                    ScpExplorer->BrowseFile();
                   }
 
                   Application->Run();

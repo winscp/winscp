@@ -504,6 +504,8 @@ resourcestring
   SDriveNotReady = 'Drive ''%s:'' is not ready.';
   SDirNotExists = 'Directory ''%s'' doesn''t exist.';
 
+function CreateDirViewStateForFocusedItem(FocusedItem: string): TObject;
+
 {Additional non-component specific functions:}
 
 {Create and resolve a shell link (file shortcut):}
@@ -619,6 +621,15 @@ begin
   HistoryPaths.Free;
 
   inherited;
+end;
+
+function CreateDirViewStateForFocusedItem(FocusedItem: string): TObject;
+var
+  State: TDirViewState;
+begin
+  State := TDirViewState.Create;
+  State.FocusedItem := FocusedItem;
+  Result := State;
 end;
 
 function IsExecutable(FileName: string): Boolean;
@@ -3187,13 +3198,17 @@ begin
   State := AState as TDirViewState;
   Assert(Assigned(State));
 
-  FHistoryPaths.Assign(State.HistoryPaths);
+  if Assigned(State.HistoryPaths) then
+    FHistoryPaths.Assign(State.HistoryPaths);
   FBackCount := State.BackCount;
   DoHistoryChange;
-  // TCustomDirViewColProperties should not be here
-  DirColProperties := ColProperties as TCustomDirViewColProperties;
-  Assert(Assigned(DirColProperties));
-  DirColProperties.SortStr := State.SortStr;
+  if State.SortStr <> '' then
+  begin
+    // TCustomDirViewColProperties should not be here
+    DirColProperties := ColProperties as TCustomDirViewColProperties;
+    Assert(Assigned(DirColProperties));
+    DirColProperties.SortStr := State.SortStr;
+  end;
   Mask := State.Mask;
   if State.FocusedItem <> '' then
   begin

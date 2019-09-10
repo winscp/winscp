@@ -293,6 +293,7 @@
 #define CUSTOM_COMMAND_PATTERNS_HINT6 1583
 #define USAGE_PASSPHRASE        1584
 #define AUTO_WORKSPACE_ENABLE   1585
+#define USAGE_BROWSE            1586
 
 #define WIN_FORMS_STRINGS       1600
 #define COPY_FILE               1605

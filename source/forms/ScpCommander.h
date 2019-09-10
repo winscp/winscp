@@ -622,6 +622,7 @@ public:
   virtual void __fastcall GoToAddress();
   virtual void __fastcall CopyFilesToClipboard(TOperationSide Side, bool OnFocused);
   virtual void __fastcall PasteFromClipBoard();
+  virtual void __fastcall BrowseFile();
 
   __property double LeftPanelWidth = { read = GetLeftPanelWidth, write = SetLeftPanelWidth };
 };

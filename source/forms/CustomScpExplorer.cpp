@@ -10689,3 +10689,11 @@ void __fastcall TCustomScpExplorerForm::RemoteDirViewResize(TObject *)
   CenterReconnectToolbar();
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::BrowseFile()
+{
+  if (RemoteDirView->ItemFocused != NULL)
+  {
+    RemoteDirView->ItemFocused->Selected = true;
+  }
+}
+//---------------------------------------------------------------------------

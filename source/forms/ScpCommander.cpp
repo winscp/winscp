@@ -2286,3 +2286,23 @@ void __fastcall TScpCommanderForm::FileColorsChanged()
   DoFileColorsChanged(LocalDirView);
 }
 //---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::BrowseFile()
+{
+  TCustomScpExplorerForm::BrowseFile();
+  if (LocalDirView->ItemFocused != NULL)
+  {
+    LocalDirView->ItemFocused->Selected = true;
+  }
+  TScpCommanderConfiguration ScpCommander = WinConfiguration->ScpCommander;
+  // Select the panel that has the file, with preference on the remote panel
+  if (RemoteDirView->ItemFocused->Selected)
+  {
+    ScpCommander.CurrentPanel = osRemote;
+  }
+  else if (LocalDirView->ItemFocused->Selected)
+  {
+    ScpCommander.CurrentPanel = osLocal;
+  }
+  WinConfiguration->ScpCommander = ScpCommander;
+}
+//---------------------------------------------------------------------------
