@@ -660,7 +660,7 @@ protected:
     TSynchronizeChecklist * Checklist, const TSynchronizeChecklist::TItemList & Items, void * Token);
   void __fastcall DoSynchronizeMove(
     TOperationSide Side, const UnicodeString & FileName, const UnicodeString & NewFileName, TRemoteFile * RemoteFile);
-  void __fastcall DoSynchronizeBrowse(TOperationSide Side, const TSynchronizeChecklist::TItem * Item);
+  void __fastcall DoSynchronizeBrowse(TOperationSide Side, TSynchronizeChecklist::TAction Action, const TSynchronizeChecklist::TItem * Item);
   void __fastcall FullSynchronize(
     TSynchronizeParams & Params, TProcessedSynchronizationChecklistItem OnProcessedItem,
     TUpdatedSynchronizationChecklistItems OnUpdatedSynchronizationChecklistItems);

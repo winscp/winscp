@@ -36,6 +36,7 @@
 #include <DateUtils.hpp>
 #include <TB2Common.hpp>
 #include <DirectoryMonitor.hpp>
+#include <System.IOUtils.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "CustomDirView"
@@ -5730,12 +5731,19 @@ void __fastcall TCustomScpExplorerForm::DoSynchronizeMove(
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::DoSynchronizeBrowse(TOperationSide Side, const TSynchronizeChecklist::TItem * Item)
+void __fastcall TCustomScpExplorerForm::DoSynchronizeBrowse(TOperationSide Side, TSynchronizeChecklist::TAction Action, const TSynchronizeChecklist::TItem * Item)
 {
   UnicodeString LocalPath = ExcludeTrailingBackslash(Item->Local.Directory);
   if (Side == osLocal)
   {
-    OpenFolderInExplorer(LocalPath);
+    if (Action == TSynchronizeChecklist::saDownloadNew)
+    {
+      OpenFolderInExplorer(LocalPath);
+    }
+    else
+    {
+      OpenFileInExplorer(TPath::Combine(LocalPath, Item->GetFileName()));
+    }
   }
   else if (DebugAlwaysTrue(Side == osRemote))
   {
@@ -5748,7 +5756,7 @@ void __fastcall TCustomScpExplorerForm::DoSynchronizeBrowse(TOperationSide Side,
     }
 
     UnicodeString SessionName = SaveHiddenDuplicateSession(SessionData.get());
-    ExecuteNewInstance(SessionName);
+    ExecuteNewInstance(SessionName, FORMAT(L"%s=%s", (TProgramParams::FormatSwitch(BROWSE_SWITCH), Item->GetFileName())));
   }
 }
 //---------------------------------------------------------------------------

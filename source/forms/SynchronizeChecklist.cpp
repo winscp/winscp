@@ -1318,7 +1318,8 @@ void __fastcall TSynchronizeChecklistDialog::UncheckDirectoryActionExecute(TObje
 void __fastcall TSynchronizeChecklistDialog::DoBrowse(TOperationSide Side)
 {
   const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(ListView->Selected);
-  FOnSynchronizeBrowse(Side, ChecklistItem);
+  TSynchronizeChecklist::TAction Action = GetChecklistItemAction(ChecklistItem);
+  FOnSynchronizeBrowse(Side, Action, ChecklistItem);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::BrowseLocalActionExecute(TObject *)
