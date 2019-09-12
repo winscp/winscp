@@ -1190,7 +1190,12 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
   else
   {
     ADF(L"Session name: %s (%s)", (Data->SessionName, Data->Source));
-    ADF(L"Host name: %s (Port: %d)", (Data->HostNameExpanded, Data->PortNumber));
+    UnicodeString AddressFamily;
+    if (Data->AddressFamily != afAuto)
+    {
+      AddressFamily = FORMAT(L"%s, ", (Data->AddressFamily == afIPv4 ? L"IPv4" : L"IPv6"));
+    }
+    ADF(L"Host name: %s (%sPort: %d)", (Data->HostNameExpanded, AddressFamily, Data->PortNumber));
     ADF(L"User name: %s (Password: %s, Key file: %s, Passphrase: %s)",
       (Data->UserNameExpanded, LogSensitive(NormalizeString(Data->Password)),
        LogSensitive(Data->PublicKeyFile), LogSensitive(Data->Passphrase)));
