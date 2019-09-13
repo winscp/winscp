@@ -1493,7 +1493,9 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     ReadOnly = True
     RowSelect = True
     ParentDoubleBuffered = False
+    ParentShowHint = False
     PopupMenu = ListViewPopupMenu
+    ShowHint = True
     TabOrder = 0
     ViewStyle = vsReport
     OnChange = ListViewChange
@@ -1603,7 +1605,6 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     ParentShowHint = False
     ShowHint = True
     OnMouseDown = StatusBarMouseDown
-    OnMouseMove = StatusBarMouseMove
     OnDrawPanel = StatusBarDrawPanel
     OnResize = StatusBarResize
   end

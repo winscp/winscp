@@ -14,6 +14,7 @@
 #define WM_CAN_DISPLAY_UPDATES (WM_WINSCP_USER + 10)
 // CM_DPICHANGED + 10 (packages/my/PasTools.pas)
 #define WM_WANTS_MOUSEWHEEL_INACTIVE (WM_WINSCP_USER + 11)
+#define WM_WANTS_SCREEN_TIPS (WM_WINSCP_USER + 12)
 //---------------------------------------------------------------------------
 #define C(Property) (Property != rhc.Property) ||
 struct TSynchronizeChecklistConfiguration

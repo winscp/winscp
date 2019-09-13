@@ -72,8 +72,6 @@ __published:
   void __fastcall FormShow(TObject * Sender);
   void __fastcall StatusBarDrawPanel(TStatusBar *StatusBar,
           TStatusPanel *Panel, const TRect &Rect);
-  void __fastcall StatusBarMouseMove(TObject *Sender, TShiftState Shift,
-          int X, int Y);
   void __fastcall ListViewChange(TObject *Sender, TListItem *Item,
           TItemChange Change);
   void __fastcall ListViewChanging(TObject *Sender, TListItem *Item,
@@ -128,6 +126,7 @@ protected:
   UnicodeString FLocalDirectory;
   UnicodeString FRemoteDirectory;
   TWndMethod FOrigListViewWindowProc;
+  TWndMethod FOrigStatusBarWindowProc;
   int FTotals[1 + TSynchronizeChecklist::ActionCount];
   int FChecked[1 + TSynchronizeChecklist::ActionCount];
   __int64 FCheckedSize[1 + TSynchronizeChecklist::ActionCount];
@@ -135,7 +134,6 @@ protected:
   bool FChangingItemChecked;
   bool FChangingItemIgnore;
   bool FChangingItemMass;
-  UnicodeString FGeneralHint;
   TCustomCommandMenuEvent FOnCustomCommandMenu;
   TSynchronizeChecklistCalculateSize FOnSynchronizeChecklistCalculateSize;
   TSynchronizeMoveEvent FOnSynchronizeMove;
@@ -154,6 +152,7 @@ protected:
   void __fastcall LoadItem(TListItem * Item);
   void __fastcall LoadList();
   void __fastcall ListViewWindowProc(TMessage & Message);
+  void __fastcall StatusBarWindowProc(TMessage & Message);
   int __fastcall PanelAt(int X);
   void __fastcall CheckAll(bool Check);
   void __fastcall Check(bool Check);
@@ -181,6 +180,8 @@ protected:
   void __fastcall CheckDirectory(bool Check);
   void __fastcall DoBrowse(TOperationSide Side);
   static int __fastcall CompareNumber(__int64 Value1, __int64 Value2);
+  void __fastcall ListViewHintShow(TCMHintShow & HintShow);
+  void __fastcall StatusBarHintShow(TCMHintShow & HintShow);
 };
 //----------------------------------------------------------------------------
 #endif

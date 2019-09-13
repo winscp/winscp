@@ -630,6 +630,13 @@ BEGIN
         SITE_RAW_ADD, "&Add..."
         SITE_RAW_ADD_CAPTION, "Add Raw Site Setting"
         SITE_RAW_ADD_LABEL, "&Site Setting:"
+        SYNCHRONIZE_CHECKLIST_UPLOAD_NEW, "Upload new local file"
+        SYNCHRONIZE_CHECKLIST_DOWNLOAD_NEW, "Download new remote file"
+        SYNCHRONIZE_CHECKLIST_UPLOAD_UPDATE, "Upload updated local file"
+        SYNCHRONIZE_CHECKLIST_DOWNLOAD_UPDATE, "Download updated remote file"
+        SYNCHRONIZE_CHECKLIST_DELETE_REMOTE, "Delete obsolete remote file"
+        SYNCHRONIZE_CHECKLIST_DELETE_LOCAL, "Delete obsolete local file"
+        SYNCHRONIZE_CHECKLIST_REVERSE, "Click to reverse"
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
         WINSCP_COPYRIGHT, "Copyright © 2000-2019 Martin Prikryl"

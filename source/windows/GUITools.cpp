@@ -1791,7 +1791,8 @@ bool __fastcall TScreenTipHintWindow::UseBoldShortHint(TControl * HintControl)
 {
   return
     (dynamic_cast<TTBCustomDockableWindow *>(HintControl) != NULL) ||
-    (dynamic_cast<TTBPopupWindow *>(HintControl) != NULL);
+    (dynamic_cast<TTBPopupWindow *>(HintControl) != NULL) ||
+    (HintControl->Perform(WM_WANTS_SCREEN_TIPS, 0, 0) == 1);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TScreenTipHintWindow::IsPathLabel(TControl * HintControl)
