@@ -1020,7 +1020,7 @@ void __fastcall TScpCommanderForm::FullSynchronizeDirectories()
     (SaveMode ? (TSynchronizeMode)GUIConfiguration->SynchronizeModeAuto :
       ((FCurrentSide == osLocal) ? smRemote : smLocal));
   int Params = GUIConfiguration->SynchronizeParams;
-  if (DoFullSynchronizeDirectories(LocalDirectory, RemoteDirectory, Mode, Params, SaveMode, false) >= 0)
+  if (DoFullSynchronizeDirectories(LocalDirectory, RemoteDirectory, Mode, Params, SaveMode, -1) >= 0)
   {
     if (SaveMode)
     {
