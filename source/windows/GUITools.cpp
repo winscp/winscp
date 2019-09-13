@@ -1773,7 +1773,7 @@ void __fastcall TFrameAnimation::CalculateNextFrameTick()
 // - Cleanup list tooltip (multi line)
 // - Combo edit button
 // - Transfer settings label (multi line, follows label size and font)
-// - HintLabel (hint and persistent hint, multipline)
+// - HintLabel (hint and persistent hint, multi line)
 // - status bar hints
 //---------------------------------------------------------------------------
 __fastcall TScreenTipHintWindow::TScreenTipHintWindow(TComponent * Owner) :
