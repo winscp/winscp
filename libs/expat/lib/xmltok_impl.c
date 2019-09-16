@@ -1765,6 +1765,7 @@ PREFIX(updatePosition)(const ENCODING *enc, const char *ptr, const char *end,
                        POSITION *pos) {
   while (HAS_CHAR(enc, ptr, end)) {
     switch (BYTE_TYPE(enc, ptr)) {
+// The "if (end - ptr < n)" branch is a patch from chromium\third_party\expat\files\lib
 #  define LEAD_CASE(n)                                                         \
   case BT_LEAD##n:                                                             \
       if (end - ptr < n) { \
