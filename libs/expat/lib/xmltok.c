@@ -359,8 +359,6 @@ _INTERNAL_trim_to_complete_utf8_characters(const char *from,
 static enum XML_Convert_Result PTRCALL
 utf8_toUtf8(const ENCODING *enc, const char **fromP, const char *fromLim,
             char **toP, const char *toLim) {
-  const char * fromLimBefore;
-  ptrdiff_t bytesToCopy;
   bool input_incomplete = false;
   bool output_exhausted = false;
 
