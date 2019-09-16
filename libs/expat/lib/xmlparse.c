@@ -734,28 +734,32 @@ writeRandomBytes_arc4random(void *target, size_t count) {
 
 #ifdef _WIN32
 
+// WINSCP - See writeRandomBytes_rand_s
+typedef BOOLEAN (APIENTRY *RTLGENRANDOM_FUNC)(PVOID, ULONG);
+HMODULE _Expat_LoadLibrary(LPCTSTR filename);  /* see loadlibrary.c */
+
 /* Obtain entropy on Windows using the rand_s() function which
  * generates cryptographically secure random numbers.  Internally it
  * uses RtlGenRandom API which is present in Windows XP and later.
  */
 static int
 writeRandomBytes_rand_s(void *target, size_t count) {
-  size_t bytesWrittenTotal = 0;
+  // WINSCP, we do not have rand_s in C++ Builder
+  int success = 0;  /* full count bytes written? */
+  const HMODULE advapi32 = _Expat_LoadLibrary(TEXT("ADVAPI32.DLL"));
 
-  while (bytesWrittenTotal < count) {
-    unsigned int random32 = 0;
-    size_t i = 0;
-
-    if (rand_s(&random32))
-      return 0; /* failure */
-
-    for (; (i < sizeof(random32)) && (bytesWrittenTotal < count);
-         i++, bytesWrittenTotal++) {
-      const uint8_t random8 = (uint8_t)(random32 >> (i * 8));
-      ((uint8_t *)target)[bytesWrittenTotal] = random8;
+  if (advapi32) {
+    const RTLGENRANDOM_FUNC RtlGenRandom
+        = (RTLGENRANDOM_FUNC)GetProcAddress(advapi32, "SystemFunction036");
+    if (RtlGenRandom) {
+      if (RtlGenRandom((PVOID)target, (ULONG)count) == TRUE) {
+        success = 1;
+      }
     }
+    FreeLibrary(advapi32);
   }
-  return 1; /* success */
+
+  return success;
 }
 
 #endif /* _WIN32 */
