@@ -1593,14 +1593,21 @@ void __fastcall TIniFileStorage::Flush()
       }
       else
       {
-        std::unique_ptr<TStream> Stream(new THandleStream(int(Handle)));
         try
         {
-          Strings->SaveToStream(Stream.get());
+          std::unique_ptr<TStream> Stream(new TSafeHandleStream(int(Handle)));
+          try
+          {
+            Strings->SaveToStream(Stream.get());
+          }
+          __finally
+          {
+            CloseHandle(Handle);
+          }
         }
-        __finally
+        catch (Exception & E)
         {
-          CloseHandle(Handle);
+          throw ExtException(&E, FMTLOAD(WRITE_ERROR, (Storage)));
         }
       }
     }

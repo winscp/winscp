@@ -273,7 +273,7 @@ int __fastcall TSafeHandleStream::Read(System::DynamicArray<System::Byte> Buffer
 //---------------------------------------------------------------------------
 int __fastcall TSafeHandleStream::Write(const System::DynamicArray<System::Byte> Buffer, int Offset, int Count)
 {
-  DebugFail(); // untested
+  // This is invoked for example by TIniFileStorage::Flush
   int Result = FileWrite(FHandle, Buffer, Offset, Count);
   if (Result == -1)
   {
