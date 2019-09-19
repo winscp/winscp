@@ -67,7 +67,7 @@ namespace WinSCP
             {
                 if (threshold <= 0)
                 {
-                    throw new ArgumentOutOfRangeException("threshold", "Threshold must be positive");
+                    throw new ArgumentOutOfRangeException(nameof(threshold), "Threshold must be positive");
                 }
                 State = TransferResumeSupportState.Smart;
                 _threshold = threshold;

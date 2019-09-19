@@ -91,7 +91,7 @@ namespace WinSCP
         {
             if (url == null)
             {
-                throw new ArgumentNullException("url");
+                throw new ArgumentNullException(nameof(url));
             }
 
             url = url.Trim();
@@ -99,13 +99,13 @@ namespace WinSCP
             int index = url.IndexOf(protocolSeparator, StringComparison.OrdinalIgnoreCase);
             if (index < 0)
             {
-                throw new ArgumentException("Protocol not specified", "url");
+                throw new ArgumentException("Protocol not specified", nameof(url));
             }
 
             string protocol = url.Substring(0, index).Trim();
             if (!ParseProtocol(protocol))
             {
-                throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, "Unknown protocol {0}", protocol), "url");
+                throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, "Unknown protocol {0}", protocol), nameof(url));
             }
 
             url = url.Substring(index + protocolSeparator.Length).Trim();
@@ -121,7 +121,7 @@ namespace WinSCP
                 {
                     if ((Protocol != Protocol.Webdav) && (Protocol != Protocol.S3))
                     {
-                        throw new ArgumentException("Root path can be specified for WebDAV and S3 protocols only", "url");
+                        throw new ArgumentException("Root path can be specified for WebDAV and S3 protocols only", nameof(url));
                     }
                     RootPath = path;
                 }
@@ -129,7 +129,7 @@ namespace WinSCP
                 // forward compatibility
                 if (!string.IsNullOrEmpty(parameters))
                 {
-                    throw new ArgumentException("No session parameters are supported", "url");
+                    throw new ArgumentException("No session parameters are supported", nameof(url));
                 }
             }
 
@@ -157,7 +157,7 @@ namespace WinSCP
                 {
                     if (hostInfo[0] != ':')
                     {
-                        throw new ArgumentException("Unexpected syntax after ]", "url");
+                        throw new ArgumentException("Unexpected syntax after ]", nameof(url));
                     }
                     else
                     {
@@ -173,7 +173,7 @@ namespace WinSCP
 
             if (string.IsNullOrEmpty(HostName))
             {
-                throw new ArgumentException("No host name", "url");
+                throw new ArgumentException("No host name", nameof(url));
             }
 
             if (string.IsNullOrEmpty(portNumber))
@@ -185,7 +185,7 @@ namespace WinSCP
                 portNumber = UriUnescape(portNumber);
                 if (!int.TryParse(portNumber, 0, CultureInfo.InvariantCulture, out int number))
                 {
-                    throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, "{0} is not a valid port number", portNumber), "url");
+                    throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, "{0} is not a valid port number", portNumber), nameof(url));
                 }
                 else
                 {
@@ -232,7 +232,7 @@ namespace WinSCP
                     }
                     else
                     {
-                        throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, "Unsupported connection parameter {0}", parameterName), "url");
+                        throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, "Unsupported connection parameter {0}", parameterName), nameof(url));
                     }
                 }
             }

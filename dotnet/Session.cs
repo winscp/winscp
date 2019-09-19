@@ -231,7 +231,7 @@ namespace WinSCP
 
                 if (sessionOptions == null)
                 {
-                    throw Logger.WriteException(new ArgumentNullException("sessionOptions"));
+                    throw Logger.WriteException(new ArgumentNullException(nameof(sessionOptions)));
                 }
 
                 try
@@ -402,7 +402,7 @@ namespace WinSCP
                 string normalizeAlgorithm = NormalizeIdent(algorithm);
                 if (string.IsNullOrEmpty(normalizeAlgorithm))
                 {
-                    throw Logger.WriteException(new ArgumentException("Algorithm cannot be empty", "algorithm"));
+                    throw Logger.WriteException(new ArgumentException("Algorithm cannot be empty", nameof(algorithm)));
                 }
 
                 string result;
@@ -765,11 +765,11 @@ namespace WinSCP
             {
                 if (localDirectory == null)
                 {
-                    throw Logger.WriteException(new ArgumentNullException("localDirectory"));
+                    throw Logger.WriteException(new ArgumentNullException(nameof(localDirectory)));
                 }
                 if (remoteDirectory == null)
                 {
-                    throw Logger.WriteException(new ArgumentNullException("remoteDirectory"));
+                    throw Logger.WriteException(new ArgumentNullException(nameof(remoteDirectory)));
                 }
                 if (string.IsNullOrEmpty(filemask))
                 {
@@ -791,7 +791,7 @@ namespace WinSCP
             {
                 if (string.IsNullOrEmpty(localFilePath))
                 {
-                    throw Logger.WriteException(new ArgumentException("File to path cannot be empty", "localFilePath"));
+                    throw Logger.WriteException(new ArgumentException("File to path cannot be empty", nameof(localFilePath)));
                 }
 
                 if (!File.Exists(localFilePath))
@@ -902,11 +902,11 @@ namespace WinSCP
             {
                 if (remoteDirectory == null)
                 {
-                    throw Logger.WriteException(new ArgumentNullException("remoteDirectory"));
+                    throw Logger.WriteException(new ArgumentNullException(nameof(remoteDirectory)));
                 }
                 if (localDirectory == null)
                 {
-                    throw Logger.WriteException(new ArgumentNullException("localDirectory"));
+                    throw Logger.WriteException(new ArgumentNullException(nameof(localDirectory)));
                 }
                 if (string.IsNullOrEmpty(filemask))
                 {
@@ -931,7 +931,7 @@ namespace WinSCP
             {
                 if (string.IsNullOrEmpty(remoteFilePath))
                 {
-                    throw Logger.WriteException(new ArgumentException("File to path cannot be empty", "remoteDirectory"));
+                    throw Logger.WriteException(new ArgumentException("File to path cannot be empty", nameof(remoteFilePath)));
                 }
 
                 string remoteDirectory = RemotePath.GetDirectoryName(remoteFilePath);
@@ -1031,7 +1031,7 @@ namespace WinSCP
                     modeName = "both";
                     break;
                 default:
-                    throw Logger.WriteException(new ArgumentOutOfRangeException("mode"));
+                    throw Logger.WriteException(new ArgumentOutOfRangeException(nameof(mode)));
             }
 
             string criteriaName;
@@ -1050,7 +1050,7 @@ namespace WinSCP
                     criteriaName = "either";
                     break;
                 default:
-                    throw Logger.WriteException(new ArgumentOutOfRangeException("criteria"));
+                    throw Logger.WriteException(new ArgumentOutOfRangeException(nameof(criteria)));
             }
 
             WriteCommand(
@@ -2396,7 +2396,7 @@ namespace WinSCP
 
                     if (target == null)
                     {
-                        throw Logger.WriteException(new ArgumentNullException("target"));
+                        throw Logger.WriteException(new ArgumentNullException(nameof(target)));
                     }
 
                     Type type = target.GetType();
@@ -2424,7 +2424,7 @@ namespace WinSCP
 
                             if (args == null)
                             {
-                                throw Logger.WriteException(new ArgumentNullException("args"));
+                                throw Logger.WriteException(new ArgumentNullException(nameof(args)));
                             }
 
                             if (method != null)
