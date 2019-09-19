@@ -166,11 +166,12 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   FEverShown = false;
   FDocks = new TList();
   InitControls();
+  DebugAssert(NonVisualDataModule && !NonVisualDataModule->ScpExplorer);
+  // So that UpdateCustomCommandsToolbar called from RestoreParams works
+  NonVisualDataModule->ScpExplorer = this;
   RestoreParams();
   ConfigurationChanged();
   RemoteDirView->Invalidate();
-  DebugAssert(NonVisualDataModule && !NonVisualDataModule->ScpExplorer);
-  NonVisualDataModule->ScpExplorer = this;
   FAutoOperation = false;
   FOnFileOperationFinished = NULL;
   FForceExecution = false;
@@ -1267,6 +1268,7 @@ void __fastcall TCustomScpExplorerForm::RestoreParams()
   LoadListViewStr(QueueView3, WinConfiguration->QueueView.Layout);
   QueueDock->Visible = WinConfiguration->QueueView.ToolBar;
   QueueLabel->Visible = WinConfiguration->QueueView.Label;
+  UpdateCustomCommandsToolbar();
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::StoreParams()
@@ -1375,7 +1377,7 @@ UnicodeString __fastcall TCustomScpExplorerForm::GetToolbarsButtonsStr()
         // Currently all buttons are visible by default, so we can safely remember all hidden buttons.
         // Once we introduce any buttons that are hidden by default, we would have to remember their initial state
         // and save the changes here only.
-        if (!Item->Visible)
+        if (NonVisualDataModule->IsCustomizableToolbarItem(Item) && !Item->Visible)
         {
           UnicodeString Name = GetToolbarItemName(Item);
           DebugAssert(Name.Pos(L"TBX") == 0);
@@ -2449,7 +2451,7 @@ void __fastcall TCustomScpExplorerForm::CustomCommandMenu(
   {
     FCustomCommandMenu->Items->Clear();
 
-    NonVisualDataModule->CreateCustomCommandsMenu(FCustomCommandMenu->Items, false, false, ccltBoth);
+    NonVisualDataModule->CreateCustomCommandsMenu(FCustomCommandMenu->Items, false, false, ccltBoth, NULL);
     MenuPopup(FCustomCommandMenu, Button);
   }
   else

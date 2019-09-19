@@ -1013,8 +1013,25 @@ const int CustomCommandBoth = 0x0200;
 const int CustomCommandExtension = 0x0400;
 const int CustomCommandIndexMask = 0x00FF;
 //---------------------------------------------------------------------------
+// See IsValidIdent
+static UnicodeString MakeIdent(const UnicodeString & S)
+{
+  UnicodeString Result;
+  for (int Index = 1; Index <= S.Length(); Index++)
+  {
+    wchar_t C = S[Index];
+    if (IsLetter(C) ||
+        (!Result.IsEmpty() && IsDigit(C)))
+    {
+      Result += C;
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 int __fastcall TNonVisualDataModule::CreateCustomCommandsListMenu(
-  TCustomCommandList * List, TTBCustomItem * Menu, bool OnFocused, bool Toolbar, TCustomCommandListType ListType, int Tag)
+  TCustomCommandList * List, TTBCustomItem * Menu, bool OnFocused, bool Toolbar, TCustomCommandListType ListType,
+  int Tag, TStrings * HiddenCommands)
 {
   int Result = 0;
 
@@ -1029,6 +1046,26 @@ int __fastcall TNonVisualDataModule::CreateCustomCommandsListMenu(
       Item->Caption = CustomCommandCaption(Command, Toolbar);
       Item->Tag = Index | Tag;
       Item->Enabled = (State > 0);
+      if (Toolbar)
+      {
+        UnicodeString Name = ExtractFileName(Command->Id);
+        if (Name.IsEmpty())
+        {
+          Name = MakeIdent(Command->Name);
+        }
+        Name += L"CustomCommand";
+        // This is only the last resort to avoid run-time errors.
+        // If there are duplicates, button hidding won't be deterministic.
+        int X = 0;
+        UnicodeString UniqueName = Name;
+        while (Owner->FindComponent(UniqueName) != NULL)
+        {
+          X++;
+          UniqueName = FORMAT(L"%s%d", (Name, X));
+        }
+        Item->Name = UniqueName;
+        Item->Visible = (HiddenCommands->IndexOf(Item->Name) < 0);
+      }
       if (OnFocused)
       {
         Item->Tag = Item->Tag | CustomCommandOnFocused;
@@ -1054,9 +1091,9 @@ int __fastcall TNonVisualDataModule::CreateCustomCommandsListMenu(
 }
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(
-  TTBCustomItem * Menu, bool OnFocused, bool Toolbar, TCustomCommandListType ListType)
+  TTBCustomItem * Menu, bool OnFocused, bool Toolbar, TCustomCommandListType ListType, TStrings * HiddenCommands)
 {
-  CreateCustomCommandsListMenu(WinConfiguration->CustomCommandList, Menu, OnFocused, Toolbar, ListType, 0);
+  CreateCustomCommandsListMenu(WinConfiguration->CustomCommandList, Menu, OnFocused, Toolbar, ListType, 0, HiddenCommands);
 
   TTBCustomItem * Item;
 
@@ -1076,7 +1113,8 @@ void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(
   }
 
   TTBXSeparatorItem * Separator = AddMenuSeparator(Menu);
-  int ExtensionItems = CreateCustomCommandsListMenu(WinConfiguration->ExtensionList, Menu, OnFocused, Toolbar, ListType, CustomCommandExtension);
+  int ExtensionItems =
+    CreateCustomCommandsListMenu(WinConfiguration->ExtensionList, Menu, OnFocused, Toolbar, ListType, CustomCommandExtension, HiddenCommands);
   Separator->Visible = (ExtensionItems > 0);
 
   AddMenuSeparator(Menu);
@@ -1088,9 +1126,9 @@ void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(
     Item->Action = (ListType == ccltFile) ? CustomCommandsNonFileAction : CustomCommandsFileAction;
     Item->Action = NULL;
     TCustomCommandListType SubListType = (ListType == ccltFile) ? ccltNonFile : ccltFile;
-    int CustomCommandItems = CreateCustomCommandsListMenu(WinConfiguration->CustomCommandList, Item, OnFocused, Toolbar, SubListType, 0);
+    int CustomCommandItems = CreateCustomCommandsListMenu(WinConfiguration->CustomCommandList, Item, OnFocused, Toolbar, SubListType, 0, HiddenCommands);
     TTBXSeparatorItem * Separator = AddMenuSeparator(Item);
-    int ExtensionItems = CreateCustomCommandsListMenu(WinConfiguration->ExtensionList, Item, OnFocused, Toolbar, SubListType, CustomCommandExtension);
+    int ExtensionItems = CreateCustomCommandsListMenu(WinConfiguration->ExtensionList, Item, OnFocused, Toolbar, SubListType, CustomCommandExtension, HiddenCommands);
     Separator->Visible = (ExtensionItems > 0);
     Item->Enabled = (CustomCommandItems + ExtensionItems > 0);
 
@@ -1118,7 +1156,7 @@ void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(
   {
     int PrevCount = Menu->Count;
 
-    CreateCustomCommandsMenu(Menu, OnFocused, false, ListType);
+    CreateCustomCommandsMenu(Menu, OnFocused, false, ListType, NULL);
 
     for (int Index = 0; Index < PrevCount; Index++)
     {
@@ -1173,12 +1211,6 @@ void __fastcall TNonVisualDataModule::UpdateCustomCommandsToolbarList(TTBXToolba
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::UpdateCustomCommandsToolbar(TTBXToolbar * Toolbar)
 {
-  // can be called while explorer is being created
-  if (ScpExplorer == NULL)
-  {
-    return;
-  }
-
   TCustomCommandList * CustomCommandList = WinConfiguration->CustomCommandList;
   TCustomCommandList * ExtensionList = WinConfiguration->ExtensionList;
   int AfterCustomCommandsCommandCount = 2; // ad hoc, last
@@ -1208,8 +1240,17 @@ void __fastcall TNonVisualDataModule::UpdateCustomCommandsToolbar(TTBXToolbar * 
     Toolbar->BeginUpdate();
     try
     {
+      std::unique_ptr<TStrings> HiddenCommands(CreateSortedStringList());
+      for (int Index = 0; Index < Toolbar->Items->Count; Index++)
+      {
+        TTBCustomItem * Item = Toolbar->Items->Items[Index];
+        if (IsCustomizableToolbarItem(Item) && !Item->Visible)
+        {
+          HiddenCommands->Add(Item->Name);
+        }
+      }
       Toolbar->Items->Clear();
-      CreateCustomCommandsMenu(Toolbar->Items, false, true, ccltAll);
+      CreateCustomCommandsMenu(Toolbar->Items, false, true, ccltAll, HiddenCommands.get());
       DebugAssert(CommandCount + AdditionalCommands == Toolbar->Items->Count);
     }
     __finally
@@ -1833,8 +1874,10 @@ void __fastcall TNonVisualDataModule::ToolbarButtonItemClick(TObject * Sender)
 bool __fastcall TNonVisualDataModule::IsCustomizableToolbarItem(TTBCustomItem * Item)
 {
   return
-    (dynamic_cast<TTBXItem *>(Item) != NULL) ||
-    (dynamic_cast<TTBXSubmenuItem *>(Item) != NULL);
+    ((dynamic_cast<TTBXItem *>(Item) != NULL) ||
+     (dynamic_cast<TTBXSubmenuItem *>(Item) != NULL)) &&
+    (Item->Action != CustomCommandsLastAction) &&
+    DebugAlwaysTrue(Item->Action != CustomCommandsLastFocusedAction);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TNonVisualDataModule::IsToolbarCustomizable()
