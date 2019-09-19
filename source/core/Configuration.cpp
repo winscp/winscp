@@ -1392,7 +1392,7 @@ TStoredSessionList * __fastcall TConfiguration::SelectKnownHostsSessionsForImpor
     if (FileExists(ApiPath(KnownHostsFile)))
     {
       std::unique_ptr<TStrings> Lines(new TStringList());
-      LoadScriptFromFile(KnownHostsFile, Lines.get());
+      LoadScriptFromFile(KnownHostsFile, Lines.get(), true);
       ImportSessionList->ImportFromKnownHosts(Lines.get());
     }
     else

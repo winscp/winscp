@@ -3967,7 +3967,7 @@ UnicodeString __fastcall AssemblyAddRawSettings(
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall LoadScriptFromFile(UnicodeString FileName, TStrings * Lines)
+void __fastcall LoadScriptFromFile(UnicodeString FileName, TStrings * Lines, bool FallbackToAnsi)
 {
   std::auto_ptr<TFileStream> Stream(new TFileStream(ApiPath(FileName), fmOpenRead | fmShareDenyWrite));
   Lines->DefaultEncoding = TEncoding::UTF8;
@@ -3977,7 +3977,17 @@ void __fastcall LoadScriptFromFile(UnicodeString FileName, TStrings * Lines)
   }
   catch (EEncodingError & E)
   {
-    throw ExtException(LoadStr(TEXT_FILE_ENCODING), &E);
+    if (FallbackToAnsi)
+    {
+      Lines->DefaultEncoding = TEncoding::ANSI;
+      Lines->Clear();
+      Stream->Position = 0;
+      Lines->LoadFromStream(Stream.get());
+    }
+    else
+    {
+      throw ExtException(LoadStr(TEXT_FILE_ENCODING), &E);
+    }
   }
 }
 //---------------------------------------------------------------------------

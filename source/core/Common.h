@@ -177,7 +177,7 @@ void __fastcall ParseCertificate(const UnicodeString & Path,
 bool __fastcall IsHttpUrl(const UnicodeString & S);
 bool __fastcall IsHttpOrHttpsUrl(const UnicodeString & S);
 UnicodeString __fastcall ChangeUrlProtocol(const UnicodeString & S, const UnicodeString & Protocol);
-void __fastcall LoadScriptFromFile(UnicodeString FileName, TStrings * Lines);
+void __fastcall LoadScriptFromFile(UnicodeString FileName, TStrings * Lines, bool FallbackToAnsi = false);
 UnicodeString __fastcall StripEllipsis(const UnicodeString & S);
 UnicodeString __fastcall GetFileMimeType(const UnicodeString & FileName);
 bool __fastcall IsRealFile(const UnicodeString & FileName);
