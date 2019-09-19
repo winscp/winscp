@@ -1373,7 +1373,7 @@ UnicodeString __fastcall TCustomScpExplorerForm::GetToolbarsButtonsStr()
       {
         TTBCustomItem * Item = Toolbar->Items->Items[ItemIndex];
         // Currently all buttons are visible by default, so we can safely remember all hidden buttons.
-        // Once we introduce any buttons that aer hidden by default, we would have to remember their initial state
+        // Once we introduce any buttons that are hidden by default, we would have to remember their initial state
         // and save the changes here only.
         if (!Item->Visible)
         {
