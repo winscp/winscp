@@ -109,12 +109,6 @@ void __fastcall TLoginDialog::Init(TStoredSessionList *SessionList, TForm * Link
   UnicodeString Dummy;
   RunPageantAction->Visible = FindTool(PageantTool, Dummy);
   RunPuttygenAction->Visible = FindTool(PuttygenTool, Dummy);
-  // Bit of a hack: Assume an auto open, when we are linked to the main form
-  if (LinkedForm != NULL)
-  {
-    DebugAssert(WinConfiguration->ShowLoginWhenNoSession);
-    CloseButton->Style = TCustomButton::bsSplitButton;
-  }
   UpdateControls();
 }
 //---------------------------------------------------------------------
@@ -714,6 +708,9 @@ void __fastcall TLoginDialog::FormShow(TObject * /*Sender*/)
   ManageButton->Top = ManageButton->Top + Offset;
   SessionTree->Height = SessionTree->Height + Offset;
 
+  // Bit of a hack: Assume an auto open, when we are linked to the main form
+  ShowAgainPanel->Visible = (FLinkedForm != NULL);
+
   // among other this makes the expanded nodes look like expanded,
   // because the LoadState call in Execute would be too early,
   // and some stray call to collapsed event during showing process,
@@ -1311,6 +1308,12 @@ bool __fastcall TLoginDialog::Execute(TList * DataList)
     SaveConfiguration();
     // DataList saved already from FormCloseQuery
   }
+
+  if (!ShowAgainCheck->Checked)
+  {
+    WinConfiguration->ShowLoginWhenNoSession = false;
+  }
+
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -3085,14 +3088,8 @@ void __fastcall TLoginDialog::ChangeScale(int M, int D)
   FNoteGroupOffset = MulDiv(FNoteGroupOffset, M, D);
 }
 //---------------------------------------------------------------------------
-void __fastcall TLoginDialog::ButtonPanelMouseDown(TObject *, TMouseButton, TShiftState, int, int)
+void __fastcall TLoginDialog::PanelMouseDown(TObject *, TMouseButton, TShiftState, int, int)
 {
   CountClicksForWindowPrint(this);
-}
-//---------------------------------------------------------------------------
-void __fastcall TLoginDialog::NeverShowAgainActionExecute(TObject *)
-{
-  WinConfiguration->ShowLoginWhenNoSession = false;
-  ModalResult = mrCancel;
 }
 //---------------------------------------------------------------------------

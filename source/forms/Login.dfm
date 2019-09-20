@@ -5,10 +5,10 @@ object LoginDialog: TLoginDialog
   HelpKeyword = 'ui_login'
   BorderIcons = [biSystemMenu, biMinimize, biHelp]
   Caption = 'Login'
-  ClientHeight = 575
+  ClientHeight = 599
   ClientWidth = 630
   Color = clBtnFace
-  Constraints.MinHeight = 375
+  Constraints.MinHeight = 399
   Constraints.MinWidth = 600
   ParentFont = True
   KeyPreview = True
@@ -365,7 +365,7 @@ object LoginDialog: TLoginDialog
       Align = alBottom
       BevelOuter = bvNone
       TabOrder = 2
-      OnMouseDown = ButtonPanelMouseDown
+      OnMouseDown = PanelMouseDown
       DesignSize = (
         361
         41)
@@ -391,7 +391,6 @@ object LoginDialog: TLoginDialog
         Anchors = [akRight, akBottom]
         Cancel = True
         Caption = 'Close'
-        DropDownMenu = CloseDropDownMenu
         ModalResult = 2
         TabOrder = 1
       end
@@ -414,7 +413,7 @@ object LoginDialog: TLoginDialog
     Height = 334
     Align = alClient
     BevelOuter = bvNone
-    TabOrder = 1
+    TabOrder = 2
     DesignSize = (
       269
       334)
@@ -491,20 +490,42 @@ object LoginDialog: TLoginDialog
   end
   object ComponentsPanel: TPanel
     Left = 0
-    Top = 334
+    Top = 358
     Width = 630
     Height = 241
     Align = alBottom
     BevelOuter = bvNone
     Color = clWindow
     ParentBackground = False
-    TabOrder = 2
+    TabOrder = 3
+  end
+  object ShowAgainPanel: TPanel
+    Left = 0
+    Top = 334
+    Width = 630
+    Height = 24
+    Align = alBottom
+    BevelOuter = bvNone
+    TabOrder = 1
+    OnMouseDown = PanelMouseDown
+    object ShowAgainCheck: TCheckBox
+      Left = 12
+      Top = 0
+      Width = 333
+      Height = 17
+      Caption = 
+        '&Show Login dialog on startup and when the last session is close' +
+        'd'
+      Checked = True
+      State = cbChecked
+      TabOrder = 0
+    end
   end
   object ActionList: TActionList
     Images = ActionImageList
     OnUpdate = ActionListUpdate
     Left = 36
-    Top = 341
+    Top = 365
     object EditSessionAction: TAction
       Category = 'Sessions'
       Caption = '&Edit'
@@ -672,16 +693,6 @@ object LoginDialog: TLoginDialog
       Caption = 'All &Major Site Fields'
       OnExecute = SearchSiteActionExecute
     end
-    object CloseAction: TAction
-      Category = 'Other'
-      Caption = 'Close'
-    end
-    object NeverShowAgainAction: TAction
-      Category = 'Other'
-      AutoCheck = True
-      Caption = 'Close and Do Not Show Automatically Again'
-      OnExecute = NeverShowAgainActionExecute
-    end
     object SessionRawAction: TAction
       Category = 'Session'
       Caption = 'Edit &Raw Settings...'
@@ -690,7 +701,7 @@ object LoginDialog: TLoginDialog
   end
   object ToolsPopupMenu: TPopupMenu
     Left = 144
-    Top = 397
+    Top = 421
     object Import1: TMenuItem
       Action = ImportSessionsAction
     end
@@ -1110,12 +1121,12 @@ object LoginDialog: TLoginDialog
           E40000000049454E44AE426082}
       end>
     Left = 36
-    Top = 461
+    Top = 485
     Bitmap = {}
   end
   object SaveDropDownMenu: TPopupMenu
     Left = 268
-    Top = 341
+    Top = 365
     object SaveSessionMenuItem: TMenuItem
       Action = SaveSessionAction
       Default = True
@@ -1133,7 +1144,7 @@ object LoginDialog: TLoginDialog
   object ManageSitePopupMenu: TPopupMenu
     Images = ActionImageList
     Left = 396
-    Top = 341
+    Top = 365
     object Shellicon1: TMenuItem
       Caption = 'Site'
       Enabled = False
@@ -1211,7 +1222,7 @@ object LoginDialog: TLoginDialog
   object ManageFolderPopupMenu: TPopupMenu
     Images = ActionImageList
     Left = 398
-    Top = 397
+    Top = 421
     object MenuItem1: TMenuItem
       Caption = 'Site Folder'
       Enabled = False
@@ -1268,7 +1279,7 @@ object LoginDialog: TLoginDialog
   object ManageNewSitePopupMenu: TPopupMenu
     Images = ActionImageList
     Left = 543
-    Top = 341
+    Top = 365
     object MenuItem12: TMenuItem
       Caption = 'New Site'
       Enabled = False
@@ -1332,7 +1343,7 @@ object LoginDialog: TLoginDialog
   object ManageWorkspacePopupMenu: TPopupMenu
     Images = ActionImageList
     Left = 542
-    Top = 397
+    Top = 421
     object MenuItem2: TMenuItem
       Caption = 'Workspace'
       Enabled = False
@@ -1382,7 +1393,7 @@ object LoginDialog: TLoginDialog
   end
   object SessionAdvancedPopupMenu: TPopupMenu
     Left = 144
-    Top = 341
+    Top = 365
     object Session1: TMenuItem
       Caption = 'Session'
       Enabled = False
@@ -1864,13 +1875,13 @@ object LoginDialog: TLoginDialog
           AE426082}
       end>
     Left = 33
-    Top = 525
+    Top = 549
     Bitmap = {}
   end
   object LoginDropDownMenu: TPopupMenu
     Images = ActionImageList
     Left = 270
-    Top = 397
+    Top = 421
     object Login1: TMenuItem
       Action = LoginAction
       Default = True
@@ -2196,7 +2207,7 @@ object LoginDialog: TLoginDialog
           49454E44AE426082}
       end>
     Left = 143
-    Top = 461
+    Top = 485
     Bitmap = {}
   end
   object ActionImageList120: TPngImageList
@@ -2599,7 +2610,7 @@ object LoginDialog: TLoginDialog
           399E6C933D3B0000000049454E44AE426082}
       end>
     Left = 145
-    Top = 525
+    Top = 549
     Bitmap = {}
   end
   object SessionImageList144: TPngImageList
@@ -2947,7 +2958,7 @@ object LoginDialog: TLoginDialog
           62FAB43A0000000049454E44AE426082}
       end>
     Left = 271
-    Top = 461
+    Top = 485
     Bitmap = {}
   end
   object SessionImageList192: TPngImageList
@@ -3249,7 +3260,7 @@ object LoginDialog: TLoginDialog
           44AE426082}
       end>
     Left = 399
-    Top = 461
+    Top = 485
     Bitmap = {}
   end
   object ActionImageList144: TPngImageList
@@ -3760,7 +3771,7 @@ object LoginDialog: TLoginDialog
           7E020EF8EA5A9F9886D50000000049454E44AE426082}
       end>
     Left = 270
-    Top = 525
+    Top = 549
     Bitmap = {}
   end
   object ActionImageList192: TPngImageList
@@ -4313,20 +4324,7 @@ object LoginDialog: TLoginDialog
           00000049454E44AE426082}
       end>
     Left = 398
-    Top = 525
+    Top = 549
     Bitmap = {}
-  end
-  object CloseDropDownMenu: TPopupMenu
-    Images = ActionImageList
-    Left = 36
-    Top = 397
-    object MenuItem15: TMenuItem
-      Action = CloseAction
-      Default = True
-    end
-    object MenuItem20: TMenuItem
-      Action = NeverShowAgainAction
-      AutoCheck = True
-    end
   end
 end
