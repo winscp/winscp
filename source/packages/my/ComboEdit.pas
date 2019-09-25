@@ -478,10 +478,10 @@ end;
 
 procedure TCustomComboEdit.SetEditRect;
 var
-  Loc: TRect;
+  RMargin: Integer;
 begin
-  SetRect(Loc, 0, 0, ClientWidth - FBtnControl.Width - 2, ClientHeight + 1);
-  SendMessage(Handle, EM_SETRECTNP, 0, LongInt(@Loc));
+  RMargin := FBtnControl.Width + ScaleByTextHeight(Self, 2);
+  SendMessage(Handle, EM_SETMARGINS, EC_RIGHTMARGIN, MakeLong(0, RMargin));
 end;
 
 procedure TCustomComboEdit.UpdateBtnBounds;
@@ -564,7 +564,9 @@ end;
 procedure TCustomComboEdit.CMFontChanged(var Message: TMessage);
 begin
   inherited;
-  if HandleAllocated then SetEditRect;
+  // Among other, this counters the EM_SETMARGINS call in TCustomEdit.WMSetFont.
+  // Equivalent to TCustomButtonedEdit.WndProc.
+  if HandleAllocated then UpdateBtnBounds;
 end;
 
 procedure TCustomComboEdit.CMEnabledChanged(var Message: TMessage);
