@@ -966,9 +966,9 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           object S3UrlStyleLabel: TLabel
             Left = 12
             Top = 44
-            Width = 50
+            Width = 49
             Height = 13
-            Caption = '&URL Style:'
+            Caption = '&URL style:'
             FocusControl = S3UrlStyleCombo
           end
           object S3DefaultReqionCombo: TComboBox
