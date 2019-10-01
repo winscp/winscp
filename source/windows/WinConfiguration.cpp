@@ -115,6 +115,7 @@ bool __fastcall TEditorData::DecideExternalEditorText(UnicodeString ExternalEdit
   // By default we use default transfer mode (binary),
   // as all reasonable 3rd party editors support all EOL styles.
   // A notable exception is Windows Notepad, so here's an exception for it.
+  // Notepad support unix line endings since Windows 10 1809. Once that's widespread, remove this.
 
   ReformatFileNameCommand(ExternalEditor);
   UnicodeString ProgramName = ExtractProgramName(ExternalEditor);
