@@ -627,6 +627,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Category = 'Session'
       Caption = '&Disconnect'
       Hint = 'Close session|Terminate current session'
+      HelpKeyword = 'task_connections#closing'
       ImageIndex = 26
       SecondaryShortCuts.Strings = (
         'Ctrl+W')
@@ -2242,7 +2243,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'Session'
       Caption = '&Rename Session'
-      HelpKeyword = 'task_connections'
+      HelpKeyword = 'task_connections#renaming'
       Hint = 'Rename session|Changes name of the current session'
     end
     object CurrentCopyAction: TAction
