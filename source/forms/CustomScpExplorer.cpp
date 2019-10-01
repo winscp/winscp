@@ -1414,6 +1414,7 @@ void __fastcall TCustomScpExplorerForm::CreateProgressForm(TSynchronizeProgress 
   if (FTaskbarList != NULL)
   {
     // Actually, do not know what hides the progress once the operation finishes
+    // (it is possibly the SetQueueProgress - and we should not rely on that)
     SetTaskbarListProgressState(TBPF_NORMAL);
   }
 }
@@ -5449,6 +5450,7 @@ void __fastcall TCustomScpExplorerForm::Synchronize(const UnicodeString LocalDir
       &CopyParam, Params | TTerminal::spNoConfirmation, TerminalSynchronizeDirectory,
       Options);
 
+    SetTaskbarListProgressState(TBPF_NOPROGRESS);
     SAFE_DESTROY(FSynchronizeProgressForm);
 
     AnyOperation = (AChecklist->CheckedCount > 0);
@@ -5851,6 +5853,7 @@ int __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
       __finally
       {
         FAutoOperation = false;
+        SetTaskbarListProgressState(TBPF_NOPROGRESS);
         SAFE_DESTROY(FSynchronizeProgressForm);
       }
 
