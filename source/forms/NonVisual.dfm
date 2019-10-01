@@ -631,6 +631,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'Session'
       Caption = '&Close Session'
+      HelpKeyword = 'task_connections#closing'
       Hint = 'Close session|Terminate the current session and close the tab'
       ImageIndex = 26
       SecondaryShortCuts.Strings = (
@@ -641,6 +642,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'Session'
       Caption = '&Disconnect Session'
+      HelpKeyword = 'task_connections#closing'
       Hint = 
         'Disconnect session|Disconnect the current session, but keep the ' +
         'tab opened'
@@ -649,6 +651,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'Session'
       Caption = '&Reconnect Session'
+      HelpKeyword = 'task_connections'
       Hint = 'Reconnect session|Reconnect the current disconnected session'
     end
     object SavedSessionsAction2: TAction
@@ -2261,7 +2264,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'Session'
       Caption = '&Rename Session'
-      HelpKeyword = 'task_connections'
+      HelpKeyword = 'task_connections#renaming'
       Hint = 'Rename session|Changes name of the current session'
     end
     object CurrentCopyToClipboardAction: TAction
