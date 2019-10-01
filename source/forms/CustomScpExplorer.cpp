@@ -1610,7 +1610,7 @@ void __fastcall TCustomScpExplorerForm::DoOperationFinished(
 
   if (Success && (FSynchronizeController != NULL))
   {
-    DebugAssert(!IsSideLocalBrowser(Side));
+    DebugAssert(!IsSideLocalBrowser(osRemote));
     if (Operation == foCopy)
     {
       DebugAssert(Side == osLocal);
