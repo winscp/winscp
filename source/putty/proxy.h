@@ -25,7 +25,6 @@ struct ProxySocket {
 
     bufchain pending_output_data;
     bufchain pending_oob_output_data;
-    bool pending_flush;
     bufchain pending_input_data;
     bool pending_eof;
 
