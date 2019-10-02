@@ -26,7 +26,7 @@ Socket *platform_new_connection(SockAddr *addr, const char *hostname,
     PROCESS_INFORMATION pi;
 
     if (conf_get_int(conf, CONF_proxy_type) != PROXY_CMD)
-	return NULL;
+        return NULL;
 
     cmd = format_telnet_command(addr, port, conf);
 
@@ -34,9 +34,9 @@ Socket *platform_new_connection(SockAddr *addr, const char *hostname,
     sk_addr_free(addr);
 
     {
-	char *msg = dupprintf("Starting local proxy command: %s", cmd);
-	plug_log(plug, 2, NULL, 0, msg, 0);
-	sfree(msg);
+        char *msg = dupprintf("Starting local proxy command: %s", cmd);
+        plug_log(plug, 2, NULL, 0, msg, 0);
+        sfree(msg);
     }
 
     /*
@@ -48,16 +48,16 @@ Socket *platform_new_connection(SockAddr *addr, const char *hostname,
     sa.bInheritHandle = true;
     if (!CreatePipe(&us_from_cmd, &cmd_to_us, &sa, 0)) {
         sfree(cmd);
-	return new_error_socket_fmt(
+        return new_error_socket_fmt(
             plug, "Unable to create pipes for proxy command: %s",
             win_strerror(GetLastError()));
     }
 
     if (!CreatePipe(&cmd_from_us, &us_to_cmd, &sa, 0)) {
         sfree(cmd);
-	CloseHandle(us_from_cmd);
-	CloseHandle(cmd_to_us);
-	return new_error_socket_fmt(
+        CloseHandle(us_from_cmd);
+        CloseHandle(cmd_to_us);
+        return new_error_socket_fmt(
             plug, "Unable to create pipes for proxy command: %s",
             win_strerror(GetLastError()));
     }
@@ -89,8 +89,8 @@ Socket *platform_new_connection(SockAddr *addr, const char *hostname,
     si.hStdOutput = cmd_to_us;
     si.hStdError = cmd_err_to_us;
     CreateProcess(NULL, cmd, NULL, NULL, true,
-		  CREATE_NO_WINDOW | NORMAL_PRIORITY_CLASS,
-		  NULL, NULL, &si, &pi);
+                  CREATE_NO_WINDOW | NORMAL_PRIORITY_CLASS,
+                  NULL, NULL, &si, &pi);
     CloseHandle(pi.hProcess);
     CloseHandle(pi.hThread);
 

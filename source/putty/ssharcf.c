@@ -22,16 +22,16 @@ static void arcfour_block(void *handle, void *vblk, int len)
     s = ctx->s;
     i = ctx->i; j = ctx->j;
     for (k = 0; (int)k < len; k++) {
-	i  = (i + 1) & 0xff;
-	j  = (j + s[i]) & 0xff;
-	tmp = s[i]; s[i] = s[j]; s[j] = tmp;
-	blk[k] ^= s[(s[i]+s[j]) & 0xff];
+        i  = (i + 1) & 0xff;
+        j  = (j + s[i]) & 0xff;
+        tmp = s[i]; s[i] = s[j]; s[j] = tmp;
+        blk[k] ^= s[(s[i]+s[j]) & 0xff];
     }
     ctx->i = i; ctx->j = j;
 }
 
 static void arcfour_setkey(ArcfourContext *ctx, unsigned char const *key,
-			   unsigned keybytes)
+                           unsigned keybytes)
 {
     unsigned char tmp, k[256], *s;
     unsigned i, j;
@@ -40,13 +40,13 @@ static void arcfour_setkey(ArcfourContext *ctx, unsigned char const *key,
     assert(keybytes <= 256);
     ctx->i = ctx->j = 0;
     for (i = 0; i < 256; i++) {
-	s[i] = i;
-	k[i] = key[i % keybytes];
+        s[i] = i;
+        k[i] = key[i % keybytes];
     }
     j = 0;
     for (i = 0; i < 256; i++) {
-	j = (j + s[i] + k[i]) & 0xff;
-	tmp = s[i]; s[i] = s[j]; s[j] = tmp;
+        j = (j + s[i] + k[i]) & 0xff;
+        tmp = s[i]; s[i] = s[j]; s[j] = tmp;
     }
 }
 
@@ -56,7 +56,7 @@ static void arcfour_setkey(ArcfourContext *ctx, unsigned char const *key,
  * We don't implement Arcfour in SSH-1 because it's utterly insecure in
  * several ways.  See CERT Vulnerability Notes VU#25309, VU#665372,
  * and VU#565052.
- * 
+ *
  * We don't implement the "arcfour" algorithm in SSH-2 because it doesn't
  * stir the cipher state before emitting keystream, and hence is likely
  * to leak data about the key.

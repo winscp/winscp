@@ -6,7 +6,7 @@
 #define PUTTY_SSHBPP_H
 
 struct BinaryPacketProtocolVtable {
-    void (*free)(BinaryPacketProtocol *); 
+    void (*free)(BinaryPacketProtocol *);
     void (*handle_input)(BinaryPacketProtocol *);
     void (*handle_output)(BinaryPacketProtocol *);
     PktOut *(*new_pktout)(int type);

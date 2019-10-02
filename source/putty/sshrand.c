@@ -39,7 +39,7 @@ void random_add_noise(NoiseSourceId source, const void *noise, int length)
 {
     WINSCP_PUTTY_SECTION_ENTER;
     if (!random_active)
-	return;
+        return;
 
     prng_add_entropy(global_prng, source, make_ptrlen(noise, length));
     WINSCP_PUTTY_SECTION_LEAVE;
@@ -50,9 +50,9 @@ static void random_timer(void *ctx, unsigned long now)
     unreachable_internal(); // WINSCP
     WINSCP_PUTTY_SECTION_ENTER;
     if (random_active > 0 && now == next_noise_collection) {
-	noise_regular();
-	next_noise_collection =
-	    schedule_timer(NOISE_REGULAR_INTERVAL, random_timer,
+        noise_regular();
+        next_noise_collection =
+            schedule_timer(NOISE_REGULAR_INTERVAL, random_timer,
                            &random_timer_ctx);
     }
     WINSCP_PUTTY_SECTION_LEAVE;
@@ -92,9 +92,9 @@ void random_save_seed(void)
     void *data;
 
     if (random_active) {
-	random_get_savedata(&data, &len);
-	write_random_seed(data, len);
-	sfree(data);
+        random_get_savedata(&data, &len);
+        write_random_seed(data, len);
+        sfree(data);
     }
 }
 

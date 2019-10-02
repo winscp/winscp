@@ -10,7 +10,7 @@
 typedef void (*packet_handler_fn_t)(PacketProtocolLayer *ppl, PktIn *pktin);
 
 struct PacketProtocolLayerVtable {
-    void (*free)(PacketProtocolLayer *); 
+    void (*free)(PacketProtocolLayer *);
     void (*process_queue)(PacketProtocolLayer *ppl);
     bool (*get_specials)(
         PacketProtocolLayer *ppl, add_special_fn_t add_special, void *ctx);

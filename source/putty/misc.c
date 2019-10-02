@@ -85,11 +85,11 @@ void free_prompts(prompts_t *p)
 {
     size_t i;
     for (i=0; i < p->n_prompts; i++) {
-	prompt_t *pr = p->prompts[i];
-	smemclr(pr->result, pr->resultsize); /* burn the evidence */
-	sfree(pr->result);
-	sfree(pr->prompt);
-	sfree(pr);
+        prompt_t *pr = p->prompts[i];
+        smemclr(pr->result, pr->resultsize); /* burn the evidence */
+        sfree(pr->result);
+        sfree(pr->prompt);
+        sfree(pr);
     }
     sfree(p->prompts);
     sfree(p->name);
@@ -104,17 +104,17 @@ void free_prompts(prompts_t *p)
 bool conf_launchable(Conf *conf)
 {
     if (conf_get_int(conf, CONF_protocol) == PROT_SERIAL)
-	return conf_get_str(conf, CONF_serline)[0] != 0;
+        return conf_get_str(conf, CONF_serline)[0] != 0;
     else
-	return conf_get_str(conf, CONF_host)[0] != 0;
+        return conf_get_str(conf, CONF_host)[0] != 0;
 }
 
 char const *conf_dest(Conf *conf)
 {
     if (conf_get_int(conf, CONF_protocol) == PROT_SERIAL)
-	return conf_get_str(conf, CONF_serline);
+        return conf_get_str(conf, CONF_serline);
     else
-	return conf_get_str(conf, CONF_host);
+        return conf_get_str(conf, CONF_host);
 }
 
 /*

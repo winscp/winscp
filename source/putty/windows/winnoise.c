@@ -57,10 +57,10 @@ void noise_get_heavy(void (*func) (void *, int))
     strcat(winpath, "\\*");
     srch = FindFirstFile(winpath, &finddata);
     if (srch != INVALID_HANDLE_VALUE) {
-	do {
-	    func(&finddata, sizeof(finddata));
-	} while (FindNextFile(srch, &finddata));
-	FindClose(srch);
+        do {
+            func(&finddata, sizeof(finddata));
+        } while (FindNextFile(srch, &finddata));
+        FindClose(srch);
     }
 
     pid = GetCurrentProcessId();
@@ -104,10 +104,10 @@ void noise_regular(void)
     random_add_noise(NOISE_SOURCE_MEMINFO, &memstat, sizeof(memstat));
 
     GetThreadTimes(GetCurrentThread(), times, times + 1, times + 2,
-		   times + 3);
+                   times + 3);
     random_add_noise(NOISE_SOURCE_THREADTIME, &times, sizeof(times));
     GetProcessTimes(GetCurrentProcess(), times, times + 1, times + 2,
-		    times + 3);
+                    times + 3);
     random_add_noise(NOISE_SOURCE_PROCTIME, &times, sizeof(times));
 }
 
@@ -128,7 +128,7 @@ void noise_ultralight(NoiseSourceId id, unsigned long data)
     random_add_noise(NOISE_SOURCE_TIME, &wintime, sizeof(DWORD));
 
     if (QueryPerformanceCounter(&perftime))
-	random_add_noise(NOISE_SOURCE_PERFCOUNT, &perftime, sizeof(perftime));
+        random_add_noise(NOISE_SOURCE_PERFCOUNT, &perftime, sizeof(perftime));
 }
 
 uint64_t prng_reseed_time_ms(void)

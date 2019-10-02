@@ -90,7 +90,7 @@ static ssh_cipher *des3_pubkey_ossh_cipher(const void *vkey, const void *viv)
 }
 
 void des3_decrypt_pubkey_ossh(const void *vkey, const void *viv,
-			      void *vblk, int len)
+                              void *vblk, int len)
 {
     ssh_cipher *c = des3_pubkey_ossh_cipher(vkey, viv);
     ssh_cipher_decrypt(c, vblk, len);
@@ -98,7 +98,7 @@ void des3_decrypt_pubkey_ossh(const void *vkey, const void *viv,
 }
 
 void des3_encrypt_pubkey_ossh(const void *vkey, const void *viv,
-			      void *vblk, int len)
+                              void *vblk, int len)
 {
     ssh_cipher *c = des3_pubkey_ossh_cipher(vkey, viv);
     ssh_cipher_encrypt(c, vblk, len);
@@ -121,14 +121,14 @@ static ssh_cipher *des_xdmauth_cipher(const void *vkeydata)
     nbits = 0;
     j = 0;
     for (i = 0; i < 8; i++) {
-	if (nbits < 7) {
-	    bits = (bits << 8) | keydata[j];
-	    nbits += 8;
-	    j++;
-	}
-	key[i] = (bits >> (nbits - 7)) << 1;
-	bits &= ~(0x7F << (nbits - 7));
-	nbits -= 7;
+        if (nbits < 7) {
+            bits = (bits << 8) | keydata[j];
+            nbits += 8;
+            j++;
+        }
+        key[i] = (bits >> (nbits - 7)) << 1;
+        bits &= ~(0x7F << (nbits - 7));
+        nbits -= 7;
     }
 
     { // WINSCP

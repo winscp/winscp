@@ -55,11 +55,11 @@ static size_t handle_gotdata(
     HandleSocket *hs = (HandleSocket *)handle_get_privdata(h);
 
     if (err) {
-	plug_closing(hs->plug, "Read error from handle", 0, 0);
-	return 0;
+        plug_closing(hs->plug, "Read error from handle", 0, 0);
+        return 0;
     } else if (len == 0) {
-	plug_closing(hs->plug, NULL, 0, 0);
-	return 0;
+        plug_closing(hs->plug, NULL, 0, 0);
+        return 0;
     } else {
         assert(hs->frozen != FROZEN && hs->frozen != THAWING);
         if (hs->frozen == FREEZING) {
@@ -79,7 +79,7 @@ static size_t handle_gotdata(
             return INT_MAX;
         } else {
             plug_receive(hs->plug, 0, data, len);
-	    return 0;
+            return 0;
         }
     }
 }
@@ -112,7 +112,7 @@ static Plug *sk_handle_plug(Socket *s, Plug *p)
     HandleSocket *hs = container_of(s, HandleSocket, sock);
     Plug *ret = hs->plug;
     if (p)
-	hs->plug = p;
+        hs->plug = p;
     return ret;
 }
 
