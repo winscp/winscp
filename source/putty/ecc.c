@@ -524,7 +524,7 @@ unsigned ecc_weierstrass_point_valid(WeierstrassPoint *P)
     mp_int *z6 = monty_mul(wc->mc, z2, z4);
     mp_int *bz6 = monty_mul(wc->mc, wc->b, z6);
     mp_int *rhs = monty_add(wc->mc, x3_plus_axz4, bz6);
-    
+
     unsigned valid = mp_cmp_eq(lhs, rhs);
 
     mp_free(lhs);

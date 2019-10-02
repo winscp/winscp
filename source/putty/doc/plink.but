@@ -290,7 +290,7 @@ zero exit status if a usable \q{upstream} exists, nonzero otherwise.
 In some situations, Plink applies a sanitisation pass to the output
 received from the server, to strip out control characters such as
 backspace and the escape character.
-    
+
 The idea of this is to prevent remote processes from sending confusing
 escape sequences through the standard error channel when Plink is
 being used as a transport for something like \cw{git} or CVS. If the
@@ -418,7 +418,7 @@ labelled \q{Check for an alternate \cw{rsh} name} and in the text
 entry field to the right enter the full path to \c{plink.exe}.
 Select \q{OK} on the \q{Preferences} dialogue box.
 
-Next, select \q{Command Line} from the WinCVS \q{Admin} menu, and type 
+Next, select \q{Command Line} from the WinCVS \q{Admin} menu, and type
 a CVS command as in \k{plink-cvs}, for example:
 
 \c cvs -d :ext:user@hostname:/path/to/repository co module

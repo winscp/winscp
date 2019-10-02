@@ -193,7 +193,7 @@ Various forms of this error are printed in the PuTTY window, or
 written to the PuTTY Event Log (see \k{using-eventlog}) during
 authentication.
 
-If you see one of these messages, it means that the server has refused 
+If you see one of these messages, it means that the server has refused
 all the forms of authentication PuTTY has tried and it has no further
 ideas.
 
@@ -231,7 +231,7 @@ noticed.
 
 Occasionally this has been caused by server bugs. An example is the
 bug described at \k{config-ssh-bug-hmac2}, although you're very
-unlikely to encounter that one these days. 
+unlikely to encounter that one these days.
 
 In this context MAC stands for \ii{Message Authentication Code}. It's a
 cryptographic term, and it has nothing at all to do with Ethernet

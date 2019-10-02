@@ -25,7 +25,7 @@
  * A given key will be written at most once while saving a session.
  * Keys may be up to 255 characters long.  String values have no length
  * limit.
- * 
+ *
  * Any returned error message must be freed after use.
  */
 settings_w *open_settings_w(const char *sessionname, char **errmsg);
@@ -42,12 +42,12 @@ void close_settings_w(settings_w *handle);
  * open_setting_r() to get a `void *' handle, then pass that to a
  * number of calls to read_setting_s() and read_setting_i(), and
  * then close it using close_settings_r().
- * 
+ *
  * read_setting_s() returns a dynamically allocated string which the
  * caller must free. read_setting_filename() and
  * read_setting_fontspec() likewise return dynamically allocated
  * structures.
- * 
+ *
  * If a particular string setting is not present in the session,
  * read_setting_s() can return NULL, in which case the caller
  * should invent a sensible default. If an integer setting is not
@@ -82,14 +82,14 @@ void enum_settings_finish(settings_e *handle);
  * or 2 (entry exists in database and is different).
  */
 int verify_host_key(const char *hostname, int port,
-		    const char *keytype, const char *key);
+                    const char *keytype, const char *key);
 
 /*
  * Write a host key into the database, overwriting any previous
  * entry that might have been there.
  */
 void store_host_key(const char *hostname, int port,
-		    const char *keytype, const char *key);
+                    const char *keytype, const char *key);
 
 /* ----------------------------------------------------------------------
  * Functions to access PuTTY's random number seed file.

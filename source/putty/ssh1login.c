@@ -63,7 +63,7 @@ struct ssh1_login_state {
     PacketProtocolLayer ppl;
 };
 
-static void ssh1_login_free(PacketProtocolLayer *); 
+static void ssh1_login_free(PacketProtocolLayer *);
 static void ssh1_login_process_queue(PacketProtocolLayer *);
 static void ssh1_login_dialog_callback(void *, int);
 static void ssh1_login_special_cmd(PacketProtocolLayer *ppl,
@@ -292,8 +292,8 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
         bool cipher_chosen = false, warn = false;
         const char *cipher_string = NULL;
         int i;
-	for (i = 0; !cipher_chosen && i < CIPHER_MAX; i++) {
-	    int next_cipher = conf_get_int_int(
+        for (i = 0; !cipher_chosen && i < CIPHER_MAX; i++) {
+            int next_cipher = conf_get_int_int(
                 s->conf, CONF_ssh_cipherlist, i);
             if (next_cipher == CIPHER_WARN) {
                 /* If/when we choose a cipher, warn about it */
@@ -953,29 +953,29 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
              * SSH1_MSG_IGNORE packets. This way a passive
              * listener can't tell which is the password, and
              * hence can't deduce the password length.
-             * 
+             *
              * Anybody with a password length greater than 16
              * bytes is going to have enough entropy in their
              * password that a listener won't find it _that_
              * much help to know how long it is. So what we'll
              * do is:
-             * 
+             *
              *  - if password length < 16, we send 15 packets
              *    containing string lengths 1 through 15
-             * 
+             *
              *  - otherwise, we let N be the nearest multiple
              *    of 8 below the password length, and send 8
              *    packets containing string lengths N through
              *    N+7. This won't obscure the order of
              *    magnitude of the password length, but it will
              *    introduce a bit of extra uncertainty.
-             * 
+             *
              * A few servers can't deal with SSH1_MSG_IGNORE, at
              * least in this context. For these servers, we need
              * an alternative defence. We make use of the fact
              * that the password is interpreted as a C string:
              * so we can append a NUL, then some random data.
-             * 
+             *
              * A few servers can deal with neither SSH1_MSG_IGNORE
              * here _nor_ a padded password string.
              * For these servers we are left with no defences
@@ -1015,7 +1015,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                     }
                 }
                 ppl_logevent("Sending password with camouflage packets");
-            } 
+            }
             else if (!(s->ppl.remote_bugs & BUG_NEEDS_SSH1_PLAIN_PASSWORD)) {
                 /*
                  * The server can't deal with SSH1_MSG_IGNORE
@@ -1070,7 +1070,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
         put_uint32(pkt, 6);         /* gzip compression level */
         pq_push(s->ppl.out_pq, pkt);
         crMaybeWaitUntilV((pktin = ssh1_login_pop(s)) != NULL);
-	if (pktin->type == SSH1_SMSG_SUCCESS) {
+        if (pktin->type == SSH1_SMSG_SUCCESS) {
             /*
              * We don't have to actually do anything here: the SSH-1
              * BPP will take care of automatically starting the
@@ -1079,15 +1079,15 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
              * easiest way to avoid race conditions if other packets
              * cross in transit.)
              */
-	} else if (pktin->type == SSH1_SMSG_FAILURE) {
+        } else if (pktin->type == SSH1_SMSG_FAILURE) {
             ppl_logevent("Server refused to enable compression");
-	    ppl_printf("Server refused to compress\r\n");
+            ppl_printf("Server refused to compress\r\n");
         } else {
             ssh_proto_error(s->ppl.ssh, "Received unexpected packet"
                             " in response to compression request, type %d "
                             "(%s)", pktin->type, ssh1_pkt_type(pktin->type));
             return;
-	}
+        }
     }
 
     ssh1_connection_set_protoflags(

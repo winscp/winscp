@@ -96,13 +96,13 @@ static void free_portlistener_state(struct PortListener *pl)
 }
 
 static void pfd_log(Plug *plug, int type, SockAddr *addr, int port,
-		    const char *error_msg, int error_code)
+                    const char *error_msg, int error_code)
 {
     /* we have to dump these since we have no interface to logging.c */
 }
 
 static void pfl_log(Plug *plug, int type, SockAddr *addr, int port,
-		    const char *error_msg, int error_code)
+                    const char *error_msg, int error_code)
 {
     /* we have to dump these since we have no interface to logging.c */
 }
@@ -110,7 +110,7 @@ static void pfl_log(Plug *plug, int type, SockAddr *addr, int port,
 static void pfd_close(struct PortForwarding *pf);
 
 static void pfd_closing(Plug *plug, const char *error_msg, int error_code,
-			bool calling_back)
+                        bool calling_back)
 {
     struct PortForwarding *pf =
         container_of(plug, struct PortForwarding, plug);
@@ -143,7 +143,7 @@ static void pfd_closing(Plug *plug, const char *error_msg, int error_code,
 static void pfl_terminate(struct PortListener *pl);
 
 static void pfl_closing(Plug *plug, const char *error_msg, int error_code,
-			bool calling_back)
+                        bool calling_back)
 {
     struct PortListener *pl = (struct PortListener *) plug;
     pfl_terminate(pl);
@@ -399,16 +399,16 @@ static void pfd_receive(Plug *plug, int urgent, const char *data, size_t len)
             }
         }
 
-	/*
-	 * We come here when we're ready to make an actual
-	 * connection.
-	 */
+        /*
+         * We come here when we're ready to make an actual
+         * connection.
+         */
 
-	/*
-	 * Freeze the socket until the SSH server confirms the
-	 * connection.
-	 */
-	sk_set_frozen(pf->s, 1);
+        /*
+         * Freeze the socket until the SSH server confirms the
+         * connection.
+         */
+        sk_set_frozen(pf->s, 1);
 
         pf->c = wrap_lportfwd_open(pf->cl, pf->hostname, pf->port, pf->s,
                                    &pf->chan);
@@ -423,7 +423,7 @@ static void pfd_sent(Plug *plug, size_t bufsize)
         container_of(plug, struct PortForwarding, plug);
 
     if (pf->c)
-	sshfwd_unthrottle(pf->c, bufsize);
+        sshfwd_unthrottle(pf->c, bufsize);
 }
 
 static const PlugVtable PortForwarding_plugvt = {
@@ -526,22 +526,22 @@ static int pfl_accepting(Plug *p, accept_fn_t constructor, accept_ctx_t ctx)
     chan = portfwd_raw_new(pl->cl, &plug);
     s = constructor(ctx, plug);
     if ((err = sk_socket_error(s)) != NULL) {
-	portfwd_raw_free(chan);
-	return 1;
+        portfwd_raw_free(chan);
+        return 1;
     }
 
     pf = container_of(chan, struct PortForwarding, chan);
 
     if (pl->is_dynamic) {
         pf->s = s;
-	pf->socks_state = SOCKS_INITIAL;
+        pf->socks_state = SOCKS_INITIAL;
         pf->socksbuf = strbuf_new();
         pf->socksbuf_consumed = 0;
-	pf->port = 0;		       /* "hostname" buffer is so far empty */
-	sk_set_frozen(s, 0);	       /* we want to receive SOCKS _now_! */
+        pf->port = 0;                  /* "hostname" buffer is so far empty */
+        sk_set_frozen(s, 0);           /* we want to receive SOCKS _now_! */
     } else {
-	pf->hostname = dupstr(pl->hostname);
-	pf->port = pl->port;	
+        pf->hostname = dupstr(pl->hostname);
+        pf->port = pl->port;
         portfwd_raw_setup(
             chan, s,
             wrap_lportfwd_open(pl->cl, pf->hostname, pf->port, s, &pf->chan));
@@ -580,11 +580,11 @@ static char *pfl_listen(const char *desthost, int destport,
     pl = *pl_ret = new_portlistener_state();
     pl->plug.vt = &PortListener_plugvt;
     if (desthost) {
-	pl->hostname = dupstr(desthost);
-	pl->port = destport;
-	pl->is_dynamic = false;
+        pl->hostname = dupstr(desthost);
+        pl->port = destport;
+        pl->is_dynamic = false;
     } else
-	pl->is_dynamic = true;
+        pl->is_dynamic = true;
     pl->cl = cl;
 
     pl->s = new_listener(srcaddr, port, &pl->plug,
@@ -593,9 +593,9 @@ static char *pfl_listen(const char *desthost, int destport,
     if ((err = sk_socket_error(pl->s)) != NULL) {
         char *err_ret = dupstr(err);
         sk_close(pl->s);
-	free_portlistener_state(pl);
+        free_portlistener_state(pl);
         *pl_ret = NULL;
-	return err_ret;
+        return err_ret;
     }
 
     return NULL;
@@ -609,7 +609,7 @@ static char *pfd_log_close_msg(Channel *chan)
 static void pfd_close(struct PortForwarding *pf)
 {
     if (!pf)
-	return;
+        return;
 
     sk_close(pf->s);
     free_portfwd_state(pf);
@@ -621,7 +621,7 @@ static void pfd_close(struct PortForwarding *pf)
 static void pfl_terminate(struct PortListener *pl)
 {
     if (!pl)
-	return;
+        return;
 
     sk_close(pl->s);
     free_portlistener_state(pl);
@@ -669,7 +669,7 @@ static void pfd_open_confirmation(Channel *chan)
     sk_set_frozen(pf->s, 0);
     sk_write(pf->s, NULL, 0);
     if (pf->socksbuf) {
-	sshfwd_write(pf->c, pf->socksbuf->u + pf->socksbuf_consumed,
+        sshfwd_write(pf->c, pf->socksbuf->u + pf->socksbuf_consumed,
                      pf->socksbuf->len - pf->socksbuf_consumed);
         strbuf_free(pf->socksbuf);
         pf->socksbuf = NULL;

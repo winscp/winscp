@@ -8,7 +8,7 @@
 #ifndef NO_GSSAPI
 
 static Ssh_gss_stat ssh_gssapi_indicate_mech(struct ssh_gss_library *lib,
-					     Ssh_gss_buf *mech)
+                                             Ssh_gss_buf *mech)
 {
     /* Copy constant into mech */
     mech->length  = GSS_MECH_KRB5->length;
@@ -17,8 +17,8 @@ static Ssh_gss_stat ssh_gssapi_indicate_mech(struct ssh_gss_library *lib,
 }
 
 static Ssh_gss_stat ssh_gssapi_import_name(struct ssh_gss_library *lib,
-					   char *host,
-					   Ssh_gss_name *srv_name)
+                                           char *host,
+                                           Ssh_gss_name *srv_name)
 {
     struct gssapi_functions *gss = &lib->u.gssapi;
     OM_uint32 min_stat,maj_stat;
@@ -31,7 +31,7 @@ static Ssh_gss_stat ssh_gssapi_import_name(struct ssh_gss_library *lib,
     host_buf.length = strlen(pStr);
 
     maj_stat = gss->import_name(&min_stat, &host_buf,
-				GSS_C_NT_HOSTBASED_SERVICE, srv_name);
+                                GSS_C_NT_HOSTBASED_SERVICE, srv_name);
     /* Release buffer */
     sfree(pStr);
     if (maj_stat == GSS_S_COMPLETE) return SSH_GSS_OK;
@@ -101,10 +101,10 @@ static Ssh_gss_stat ssh_gssapi_acquire_cred(struct ssh_gss_library *lib,
 }
 
 static Ssh_gss_stat ssh_gssapi_init_sec_context(struct ssh_gss_library *lib,
-						Ssh_gss_ctx *ctx,
-						Ssh_gss_name srv_name,
-						int to_deleg,
-						Ssh_gss_buf *recv_tok,
+                                                Ssh_gss_ctx *ctx,
+                                                Ssh_gss_name srv_name,
+                                                int to_deleg,
+                                                Ssh_gss_buf *recv_tok,
                                                 Ssh_gss_buf *send_tok,
                                                 time_t *expiry,
                                                 unsigned long *lifetime)
@@ -116,18 +116,18 @@ static Ssh_gss_stat ssh_gssapi_init_sec_context(struct ssh_gss_library *lib,
 
     if (to_deleg) to_deleg = GSS_C_DELEG_FLAG;
     gssctx->maj_stat = gss->init_sec_context(&gssctx->min_stat,
-					     GSS_C_NO_CREDENTIAL,
-					     &gssctx->ctx,
-					     srv_name,
-					     (gss_OID) GSS_MECH_KRB5,
-					     GSS_C_MUTUAL_FLAG |
-					     GSS_C_INTEG_FLAG | to_deleg,
-					     0,
-					     GSS_C_NO_CHANNEL_BINDINGS,
-					     recv_tok,
-					     NULL,   /* ignore mech type */
-					     send_tok,
-					     &ret_flags,
+                                             GSS_C_NO_CREDENTIAL,
+                                             &gssctx->ctx,
+                                             srv_name,
+                                             (gss_OID) GSS_MECH_KRB5,
+                                             GSS_C_MUTUAL_FLAG |
+                                             GSS_C_INTEG_FLAG | to_deleg,
+                                             0,
+                                             GSS_C_NO_CHANNEL_BINDINGS,
+                                             recv_tok,
+                                             NULL,   /* ignore mech type */
+                                             send_tok,
+                                             &ret_flags,
                                              &lifetime_rec);
 
     if (lifetime) {
@@ -149,8 +149,8 @@ static Ssh_gss_stat ssh_gssapi_init_sec_context(struct ssh_gss_library *lib,
 }
 
 static Ssh_gss_stat ssh_gssapi_display_status(struct ssh_gss_library *lib,
-					      Ssh_gss_ctx ctx,
-					      Ssh_gss_buf *buf)
+                                              Ssh_gss_ctx ctx,
+                                              Ssh_gss_buf *buf)
 {
     struct gssapi_functions *gss = &lib->u.gssapi;
     gssapi_ssh_gss_ctx *gssctx = (gssapi_ssh_gss_ctx *) ctx;
@@ -193,7 +193,7 @@ static Ssh_gss_stat ssh_gssapi_display_status(struct ssh_gss_library *lib,
 }
 
 static Ssh_gss_stat ssh_gssapi_free_tok(struct ssh_gss_library *lib,
-					Ssh_gss_buf *send_tok)
+                                        Ssh_gss_buf *send_tok)
 {
     struct gssapi_functions *gss = &lib->u.gssapi;
     OM_uint32 min_stat,maj_stat;
@@ -204,7 +204,7 @@ static Ssh_gss_stat ssh_gssapi_free_tok(struct ssh_gss_library *lib,
 }
 
 static Ssh_gss_stat ssh_gssapi_release_cred(struct ssh_gss_library *lib,
-					    Ssh_gss_ctx *ctx)
+                                            Ssh_gss_ctx *ctx)
 {
     struct gssapi_functions *gss = &lib->u.gssapi;
     gssapi_ssh_gss_ctx *gssctx = (gssapi_ssh_gss_ctx *) *ctx;
@@ -223,7 +223,7 @@ static Ssh_gss_stat ssh_gssapi_release_cred(struct ssh_gss_library *lib,
 
 
 static Ssh_gss_stat ssh_gssapi_release_name(struct ssh_gss_library *lib,
-					    Ssh_gss_name *srv_name)
+                                            Ssh_gss_name *srv_name)
 {
     struct gssapi_functions *gss = &lib->u.gssapi;
     OM_uint32 min_stat,maj_stat;
@@ -234,8 +234,8 @@ static Ssh_gss_stat ssh_gssapi_release_name(struct ssh_gss_library *lib,
 }
 
 static Ssh_gss_stat ssh_gssapi_get_mic(struct ssh_gss_library *lib,
-				       Ssh_gss_ctx ctx, Ssh_gss_buf *buf,
-				       Ssh_gss_buf *hash)
+                                       Ssh_gss_ctx ctx, Ssh_gss_buf *buf,
+                                       Ssh_gss_buf *hash)
 {
     struct gssapi_functions *gss = &lib->u.gssapi;
     gssapi_ssh_gss_ctx *gssctx = (gssapi_ssh_gss_ctx *) ctx;
@@ -254,7 +254,7 @@ static Ssh_gss_stat ssh_gssapi_verify_mic(struct ssh_gss_library *lib,
 }
 
 static Ssh_gss_stat ssh_gssapi_free_mic(struct ssh_gss_library *lib,
-					Ssh_gss_buf *hash)
+                                        Ssh_gss_buf *hash)
 {
     /* On Unix this is the same freeing process as ssh_gssapi_free_tok. */
     return ssh_gssapi_free_tok(lib, hash);

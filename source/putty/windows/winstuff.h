@@ -9,7 +9,7 @@
 #include <winsock2.h>
 #endif
 #include <windows.h>
-#include <stdio.h>		       /* for FILENAME_MAX */
+#include <stdio.h>                     /* for FILENAME_MAX */
 
 /* We use uintptr_t for Win32/Win64 portability, so we should in
  * principle include stdint.h, which defines it according to the C
@@ -66,7 +66,7 @@ struct FontSpec *fontspec_new(
     CLEARTYPE_QUALITY)
 
 #define PLATFORM_IS_UTF16 /* enable UTF-16 processing when exchanging
-			   * wchar_t strings with environment */
+                           * wchar_t strings with environment */
 
 #define PLATFORM_CLIPBOARDS(X)                      \
     X(CLIP_SYSTEM, "system clipboard")              \
@@ -185,7 +185,7 @@ struct FontSpec *fontspec_new(
 
 #define GETTICKCOUNT GetTickCount
 #define CURSORBLINK GetCaretBlinkTime()
-#define TICKSPERSEC 1000	       /* GetTickCount returns milliseconds */
+#define TICKSPERSEC 1000               /* GetTickCount returns milliseconds */
 
 #define DEFAULT_CODEPAGE CP_ACP
 #define USES_VTLINE_HACK
@@ -210,7 +210,7 @@ typedef void *Ssh_gss_name;
  * Window handles for the windows that can be running during a
  * PuTTY session.
  */
-GLOBAL HWND hwnd;	/* the main terminal window */
+GLOBAL HWND hwnd;       /* the main terminal window */
 GLOBAL HWND logbox;
 
 /*
@@ -299,11 +299,11 @@ void write_aclip(int clipboard, char *, int, bool);
  * `lpstrFilter' in an OPENFILENAME structure.
  */
 #define FILTER_KEY_FILES ("PuTTY Private Key Files (*.ppk)\0*.ppk\0" \
-			      "All Files (*.*)\0*\0\0\0")
+                              "All Files (*.*)\0*\0\0\0")
 #define FILTER_WAVE_FILES ("Wave Files (*.wav)\0*.WAV\0" \
-			       "All Files (*.*)\0*\0\0\0")
+                               "All Files (*.*)\0*\0\0\0")
 #define FILTER_DYNLIB_FILES ("Dynamic Library Files (*.dll)\0*.dll\0" \
-				 "All Files (*.*)\0*\0\0\0")
+                                 "All Files (*.*)\0*\0\0\0")
 
 /*
  * Exports from winnet.c.
@@ -327,12 +327,12 @@ SockAddr *sk_namedpipe_addr(const char *pipename);
  * here they are.
  */
 DECL_WINDOWS_FUNCTION(GLOBAL, int, WSAAsyncSelect,
-		      (SOCKET, HWND, u_int, long));
+                      (SOCKET, HWND, u_int, long));
 DECL_WINDOWS_FUNCTION(GLOBAL, int, WSAEventSelect,
-		      (SOCKET, WSAEVENT, long));
+                      (SOCKET, WSAEVENT, long));
 DECL_WINDOWS_FUNCTION(GLOBAL, int, WSAGetLastError, (void));
 DECL_WINDOWS_FUNCTION(GLOBAL, int, WSAEnumNetworkEvents,
-		      (SOCKET, WSAEVENT, LPWSANETWORKEVENTS));
+                      (SOCKET, WSAEVENT, LPWSANETWORKEVENTS));
 #ifdef NEED_DECLARATION_OF_SELECT
 /* This declaration is protected by an ifdef for the sake of building
  * against winelib, in which you have to include winsock2.h before
@@ -342,8 +342,8 @@ DECL_WINDOWS_FUNCTION(GLOBAL, int, WSAEnumNetworkEvents,
  * this function pointer will see its declaration, and _those_ modules
  * - which will be Windows-specific anyway - can take more care. */
 DECL_WINDOWS_FUNCTION(GLOBAL, int, select,
-		      (int, fd_set FAR *, fd_set FAR *,
-		       fd_set FAR *, const struct timeval FAR *));
+                      (int, fd_set FAR *, fd_set FAR *,
+                       fd_set FAR *, const struct timeval FAR *));
 #endif
 
 /*
@@ -402,21 +402,21 @@ struct prefslist {
  * parameter, and hence is passed back to winctrls access functions.
  */
 struct dlgparam {
-    HWND hwnd;			       /* the hwnd of the dialog box */
+    HWND hwnd;                         /* the hwnd of the dialog box */
     struct winctrls *controltrees[8];  /* can have several of these */
     int nctrltrees;
-    char *wintitle;		       /* title of actual window */
-    char *errtitle;		       /* title of error sub-messageboxes */
-    void *data;			       /* data to pass in refresh events */
+    char *wintitle;                    /* title of actual window */
+    char *errtitle;                    /* title of error sub-messageboxes */
+    void *data;                        /* data to pass in refresh events */
     union control *focused, *lastfocused; /* which ctrl has focus now/before */
     bool shortcuts[128];               /* track which shortcuts in use */
     bool coloursel_wanted;             /* has an event handler asked for
-					* a colour selector? */
+                                        * a colour selector? */
     struct {
         unsigned char r, g, b;         /* 0-255 */
         bool ok;
     } coloursel_result;
-    tree234 *privdata;		       /* stores per-control private data */
+    tree234 *privdata;                 /* stores per-control private data */
     bool ended;                        /* has the dialog been ended? */
     int endresult;                     /* and if so, what was the result? */
     bool fixed_pitch_fonts;            /* are we constrained to fixed fonts? */
@@ -426,57 +426,57 @@ struct dlgparam {
  * Exports from winctrls.c.
  */
 void ctlposinit(struct ctlpos *cp, HWND hwnd,
-		int leftborder, int rightborder, int topborder);
+                int leftborder, int rightborder, int topborder);
 HWND doctl(struct ctlpos *cp, RECT r,
-	   char *wclass, int wstyle, int exstyle, char *wtext, int wid);
+           char *wclass, int wstyle, int exstyle, char *wtext, int wid);
 void bartitle(struct ctlpos *cp, char *name, int id);
 void beginbox(struct ctlpos *cp, char *name, int idbox);
 void endbox(struct ctlpos *cp);
 void editboxfw(struct ctlpos *cp, bool password, char *text,
-	       int staticid, int editid);
+               int staticid, int editid);
 void radioline(struct ctlpos *cp, char *text, int id, int nacross, ...);
 void bareradioline(struct ctlpos *cp, int nacross, ...);
 void radiobig(struct ctlpos *cp, char *text, int id, ...);
 void checkbox(struct ctlpos *cp, char *text, int id);
 void statictext(struct ctlpos *cp, char *text, int lines, int id);
 void staticbtn(struct ctlpos *cp, char *stext, int sid,
-	       char *btext, int bid);
+               char *btext, int bid);
 void static2btn(struct ctlpos *cp, char *stext, int sid,
-		char *btext1, int bid1, char *btext2, int bid2);
+                char *btext1, int bid1, char *btext2, int bid2);
 void staticedit(struct ctlpos *cp, char *stext,
-		int sid, int eid, int percentedit);
+                int sid, int eid, int percentedit);
 void staticddl(struct ctlpos *cp, char *stext,
-	       int sid, int lid, int percentlist);
+               int sid, int lid, int percentlist);
 void combobox(struct ctlpos *cp, char *text, int staticid, int listid);
 void staticpassedit(struct ctlpos *cp, char *stext,
-		    int sid, int eid, int percentedit);
+                    int sid, int eid, int percentedit);
 void bigeditctrl(struct ctlpos *cp, char *stext,
-		 int sid, int eid, int lines);
+                 int sid, int eid, int lines);
 void ersatztab(struct ctlpos *cp, char *stext, int sid, int lid, int s2id);
 void editbutton(struct ctlpos *cp, char *stext, int sid,
-		int eid, char *btext, int bid);
+                int eid, char *btext, int bid);
 void sesssaver(struct ctlpos *cp, char *text,
-	       int staticid, int editid, int listid, ...);
+               int staticid, int editid, int listid, ...);
 void envsetter(struct ctlpos *cp, char *stext, int sid,
-	       char *e1stext, int e1sid, int e1id,
-	       char *e2stext, int e2sid, int e2id,
-	       int listid, char *b1text, int b1id, char *b2text, int b2id);
+               char *e1stext, int e1sid, int e1id,
+               char *e2stext, int e2sid, int e2id,
+               int listid, char *b1text, int b1id, char *b2text, int b2id);
 void charclass(struct ctlpos *cp, char *stext, int sid, int listid,
-	       char *btext, int bid, int eid, char *s2text, int s2id);
+               char *btext, int bid, int eid, char *s2text, int s2id);
 void colouredit(struct ctlpos *cp, char *stext, int sid, int listid,
-		char *btext, int bid, ...);
+                char *btext, int bid, ...);
 void prefslist(struct prefslist *hdl, struct ctlpos *cp, int lines,
-	       char *stext, int sid, int listid, int upbid, int dnbid);
+               char *stext, int sid, int listid, int upbid, int dnbid);
 int handle_prefslist(struct prefslist *hdl,
-		     int *array, int maxmemb,
-		     bool is_dlmsg, HWND hwnd,
-		     WPARAM wParam, LPARAM lParam);
+                     int *array, int maxmemb,
+                     bool is_dlmsg, HWND hwnd,
+                     WPARAM wParam, LPARAM lParam);
 void progressbar(struct ctlpos *cp, int id);
 void fwdsetter(struct ctlpos *cp, int listid, char *stext, int sid,
-	       char *e1stext, int e1sid, int e1id,
-	       char *e2stext, int e2sid, int e2id,
-	       char *btext, int bid,
-	       char *r1text, int r1id, char *r2text, int r2id);
+               char *e1stext, int e1sid, int e1id,
+               char *e2stext, int e2sid, int e2id,
+               char *btext, int bid,
+               char *r1text, int r1id, char *r2text, int r2id);
 
 void dlg_auto_set_fixed_pitch_flag(dlgparam *dlg);
 bool dlg_get_fixed_pitch_flag(dlgparam *dlg);
@@ -531,7 +531,7 @@ struct winctrl *winctrl_findbyctrl(struct winctrls *, union control *);
 struct winctrl *winctrl_findbyid(struct winctrls *, int);
 struct winctrl *winctrl_findbyindex(struct winctrls *, int);
 void winctrl_layout(struct dlgparam *dp, struct winctrls *wc,
-		    struct ctlpos *cp, struct controlset *s, int *id);
+                    struct ctlpos *cp, struct controlset *s, int *id);
 bool winctrl_handle_command(struct dlgparam *dp, UINT msg,
                             WPARAM wParam, LPARAM lParam);
 void winctrl_rem_shortcuts(struct dlgparam *dp, struct winctrl *c);
@@ -545,7 +545,7 @@ void dp_cleanup(struct dlgparam *dp);
  * Exports from wincfg.c.
  */
 void win_setup_config_box(struct controlbox *b, HWND *hwndp, bool has_help,
-			  bool midsession, int protocol);
+                          bool midsession, int protocol);
 
 /*
  * Exports from windlg.c.
@@ -614,9 +614,9 @@ typedef size_t (*handle_inputfn_t)(
 typedef void (*handle_outputfn_t)(
     struct handle *h, size_t new_backlog, int err);
 struct handle *handle_input_new(HANDLE handle, handle_inputfn_t gotdata,
-				void *privdata, int flags);
+                                void *privdata, int flags);
 struct handle *handle_output_new(HANDLE handle, handle_outputfn_t sentdata,
-				 void *privdata, int flags);
+                                 void *privdata, int flags);
 size_t handle_write(struct handle *h, const void *data, size_t len);
 void handle_write_eof(struct handle *h);
 HANDLE *handle_get_events(int *nevents);
@@ -638,12 +638,12 @@ void handle_sink_init(handle_sink *sink, struct handle *h);
  * winpgntc.c needs to schedule callbacks for asynchronous agent
  * requests. This has to be done differently in GUI and console, so
  * there's an exported function used for the purpose.
- * 
+ *
  * Also, we supply FLAG_SYNCAGENT to force agent requests to be
  * synchronous in pscp and psftp.
  */
 void agent_schedule_callback(void (*callback)(void *, void *, int),
-			     void *callback_ctx, void *data, int len);
+                             void *callback_ctx, void *data, int len);
 #define FLAG_SYNCAGENT 0x1000
 
 /*

@@ -21,7 +21,7 @@ static Plug *sk_error_plug(Socket *s, Plug *p)
     ErrorSocket *es = container_of(s, ErrorSocket, sock);
     Plug *ret = es->plug;
     if (p)
-	es->plug = p;
+        es->plug = p;
     return ret;
 }
 

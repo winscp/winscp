@@ -1,6 +1,6 @@
 /*
  * SHA-256 algorithm as described at
- * 
+ *
  *   http://csrc.nist.gov/cryptval/shs.html
  */
 
@@ -241,20 +241,20 @@ static void sha256_sw_block(uint32_t *core, const uint8_t *block)
         w[t] = GET_32BIT_MSB_FIRST(block + 4*t);
 
     for (size_t t = 16; t < SHA256_ROUNDS; t++)
-	w[t] = sigma_1(w[t-2]) + w[t-7] + sigma_0(w[t-15]) + w[t-16];
+        w[t] = sigma_1(w[t-2]) + w[t-7] + sigma_0(w[t-15]) + w[t-16];
 
     a = core[0]; b = core[1]; c = core[2]; d = core[3];
     e = core[4]; f = core[5]; g = core[6]; h = core[7];
 
     for (size_t t = 0; t < SHA256_ROUNDS; t += 8) {
-	sha256_sw_round(t+0, w, &a,&b,&c,&d,&e,&f,&g,&h);
-	sha256_sw_round(t+1, w, &h,&a,&b,&c,&d,&e,&f,&g);
-	sha256_sw_round(t+2, w, &g,&h,&a,&b,&c,&d,&e,&f);
-	sha256_sw_round(t+3, w, &f,&g,&h,&a,&b,&c,&d,&e);
-	sha256_sw_round(t+4, w, &e,&f,&g,&h,&a,&b,&c,&d);
-	sha256_sw_round(t+5, w, &d,&e,&f,&g,&h,&a,&b,&c);
-	sha256_sw_round(t+6, w, &c,&d,&e,&f,&g,&h,&a,&b);
-	sha256_sw_round(t+7, w, &b,&c,&d,&e,&f,&g,&h,&a);
+        sha256_sw_round(t+0, w, &a,&b,&c,&d,&e,&f,&g,&h);
+        sha256_sw_round(t+1, w, &h,&a,&b,&c,&d,&e,&f,&g);
+        sha256_sw_round(t+2, w, &g,&h,&a,&b,&c,&d,&e,&f);
+        sha256_sw_round(t+3, w, &f,&g,&h,&a,&b,&c,&d,&e);
+        sha256_sw_round(t+4, w, &e,&f,&g,&h,&a,&b,&c,&d);
+        sha256_sw_round(t+5, w, &d,&e,&f,&g,&h,&a,&b,&c);
+        sha256_sw_round(t+6, w, &c,&d,&e,&f,&g,&h,&a,&b);
+        sha256_sw_round(t+7, w, &b,&c,&d,&e,&f,&g,&h,&a);
     }
 
     core[0] += a; core[1] += b; core[2] += c; core[3] += d;
@@ -370,7 +370,7 @@ const ssh_hashalg ssh_sha256_sw = {
 static bool sha256_hw_available(void)
 {
     unsigned int CPUInfo[4];
-    GET_CPU_ID_0(CPUInfo);  
+    GET_CPU_ID_0(CPUInfo);
     if (CPUInfo[0] < 7)
         return false;
 

@@ -73,62 +73,62 @@ char *get_username(void)
     char *user;
     bool got_username = false;
     DECL_WINDOWS_FUNCTION(static, BOOLEAN, GetUserNameExA,
-			  (EXTENDED_NAME_FORMAT, LPSTR, PULONG));
+                          (EXTENDED_NAME_FORMAT, LPSTR, PULONG));
 
     {
-	static bool tried_usernameex = false;
-	if (!tried_usernameex) {
-	    /* Not available on Win9x, so load dynamically */
-	    HMODULE secur32 = load_system32_dll("secur32.dll");
-	    /* If MIT Kerberos is installed, the following call to
-	       GET_WINDOWS_FUNCTION makes Windows implicitly load
-	       sspicli.dll WITHOUT proper path sanitizing, so better
-	       load it properly before */
-	    HMODULE sspicli = load_system32_dll("sspicli.dll");
+        static bool tried_usernameex = false;
+        if (!tried_usernameex) {
+            /* Not available on Win9x, so load dynamically */
+            HMODULE secur32 = load_system32_dll("secur32.dll");
+            /* If MIT Kerberos is installed, the following call to
+               GET_WINDOWS_FUNCTION makes Windows implicitly load
+               sspicli.dll WITHOUT proper path sanitizing, so better
+               load it properly before */
+            HMODULE sspicli = load_system32_dll("sspicli.dll");
             (void)sspicli; /* squash compiler warning about unused variable */
-	    GET_WINDOWS_FUNCTION(secur32, GetUserNameExA);
-	    tried_usernameex = true;
-	}
+            GET_WINDOWS_FUNCTION(secur32, GetUserNameExA);
+            tried_usernameex = true;
+        }
     }
 
     if (p_GetUserNameExA) {
-	/*
-	 * If available, use the principal -- this avoids the problem
-	 * that the local username is case-insensitive but Kerberos
-	 * usernames are case-sensitive.
-	 */
+        /*
+         * If available, use the principal -- this avoids the problem
+         * that the local username is case-insensitive but Kerberos
+         * usernames are case-sensitive.
+         */
 
-	/* Get the length */
-	namelen = 0;
-	(void) p_GetUserNameExA(NameUserPrincipal, NULL, &namelen);
+        /* Get the length */
+        namelen = 0;
+        (void) p_GetUserNameExA(NameUserPrincipal, NULL, &namelen);
 
-	user = snewn(namelen, char);
-	got_username = p_GetUserNameExA(NameUserPrincipal, user, &namelen);
-	if (got_username) {
-	    char *p = strchr(user, '@');
-	    if (p) *p = 0;
-	} else {
-	    sfree(user);
-	}
+        user = snewn(namelen, char);
+        got_username = p_GetUserNameExA(NameUserPrincipal, user, &namelen);
+        if (got_username) {
+            char *p = strchr(user, '@');
+            if (p) *p = 0;
+        } else {
+            sfree(user);
+        }
     }
 
     if (!got_username) {
-	/* Fall back to local user name */
-	namelen = 0;
-	if (!GetUserName(NULL, &namelen)) {
-	    /*
-	     * Apparently this doesn't work at least on Windows XP SP2.
-	     * Thus assume a maximum of 256. It will fail again if it
-	     * doesn't fit.
-	     */
-	    namelen = 256;
-	}
+        /* Fall back to local user name */
+        namelen = 0;
+        if (!GetUserName(NULL, &namelen)) {
+            /*
+             * Apparently this doesn't work at least on Windows XP SP2.
+             * Thus assume a maximum of 256. It will fail again if it
+             * doesn't fit.
+             */
+            namelen = 256;
+        }
 
-	user = snewn(namelen, char);
-	got_username = GetUserName(user, &namelen);
-	if (!got_username) {
-	    sfree(user);
-	}
+        user = snewn(namelen, char);
+        got_username = GetUserName(user, &namelen);
+        if (!got_username) {
+            sfree(user);
+        }
     }
 
     return got_username ? user : NULL;
@@ -372,35 +372,35 @@ void escape_registry_key(const char *in, strbuf *out)
     static const char hex[16] = "0123456789ABCDEF";
 
     while (*in) {
-	if (*in == ' ' || *in == '\\' || *in == '*' || *in == '?' ||
-	    *in == '%' || *in < ' ' || *in > '~' || (*in == '.'
-						     && !candot)) {
+        if (*in == ' ' || *in == '\\' || *in == '*' || *in == '?' ||
+            *in == '%' || *in < ' ' || *in > '~' || (*in == '.'
+                                                     && !candot)) {
             put_byte(out, '%');
-	    put_byte(out, hex[((unsigned char) *in) >> 4]);
-	    put_byte(out, hex[((unsigned char) *in) & 15]);
-	} else
-	    put_byte(out, *in);
-	in++;
-	candot = true;
+            put_byte(out, hex[((unsigned char) *in) >> 4]);
+            put_byte(out, hex[((unsigned char) *in) & 15]);
+        } else
+            put_byte(out, *in);
+        in++;
+        candot = true;
     }
 }
 
 void unescape_registry_key(const char *in, strbuf *out)
 {
     while (*in) {
-	if (*in == '%' && in[1] && in[2]) {
-	    int i, j;
+        if (*in == '%' && in[1] && in[2]) {
+            int i, j;
 
-	    i = in[1] - '0';
-	    i -= (i > 9 ? 7 : 0);
-	    j = in[2] - '0';
-	    j -= (j > 9 ? 7 : 0);
+            i = in[1] - '0';
+            i -= (i > 9 ? 7 : 0);
+            j = in[2] - '0';
+            j -= (j > 9 ? 7 : 0);
 
-	    put_byte(out, (i << 4) + j);
-	    in += 3;
-	} else {
+            put_byte(out, (i << 4) + j);
+            in += 3;
+        } else {
             put_byte(out, *in++);
-	}
+        }
     }
 }
 
@@ -414,17 +414,17 @@ void dputs(const char *buf)
     DWORD dw;
 
     if (!debug_got_console) {
-	if (AllocConsole()) {
-	    debug_got_console = 1;
-	    debug_hdl = GetStdHandle(STD_OUTPUT_HANDLE);
-	}
+        if (AllocConsole()) {
+            debug_got_console = 1;
+            debug_hdl = GetStdHandle(STD_OUTPUT_HANDLE);
+        }
     }
     if (!debug_fp) {
-	debug_fp = fopen("debug.log", "w");
+        debug_fp = fopen("debug.log", "w");
     }
 
     if (debug_hdl != INVALID_HANDLE_VALUE) {
-	WriteFile(debug_hdl, buf, strlen(buf), &dw, NULL);
+        WriteFile(debug_hdl, buf, strlen(buf), &dw, NULL);
     }
     fputs(buf, debug_fp);
     fflush(debug_fp);

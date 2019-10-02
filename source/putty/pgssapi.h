@@ -16,7 +16,7 @@
  */
 #ifdef STATIC_GSSAPI
 #include <gssapi/gssapi.h>
-typedef gss_OID const_gss_OID;	       /* for our prototypes below */
+typedef gss_OID const_gss_OID;         /* for our prototypes below */
 #else /* STATIC_GSSAPI */
 
 /*******************************************************************************

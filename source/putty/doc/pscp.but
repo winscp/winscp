@@ -78,7 +78,7 @@ familiar with that.)
 
 \S{pscp-usage-basics} The basics
 
-To \I{receiving files}receive (a) file(s) from a remote server: 
+To \I{receiving files}receive (a) file(s) from a remote server:
 
 \c pscp [options] [user@]host:source target
 
@@ -87,7 +87,7 @@ user \c{fred} to the file \c{c:\\temp\\example-hosts.txt}, you would type:
 
 \c pscp fred@example.com:/etc/hosts c:\temp\example-hosts.txt
 
-To \I{sending files}send (a) file(s) to a remote server: 
+To \I{sending files}send (a) file(s) to a remote server:
 
 \c pscp [options] source [source...] [user@]host:target
 
@@ -146,7 +146,7 @@ trying to get out of that directory using pathnames including
 \S2{pscp-usage-basics-user} \c{user}
 
 The \i{login name} on the remote server. If this is omitted, and \c{host}
-is a PuTTY saved session, PSCP will use any username specified by that 
+is a PuTTY saved session, PSCP will use any username specified by that
 saved session.  Otherwise, PSCP will attempt to use the local Windows
 username.
 
@@ -160,8 +160,8 @@ number, cipher type and username will be used.
 
 One or more source files. \ii{Wildcards} are allowed.  The syntax of
 wildcards depends on the system to which they apply, so if you are
-copying \e{from} a Windows system \e{to} a UNIX system, you should use 
-Windows wildcard syntax (e.g. \c{*.*}), but if you are copying \e{from} 
+copying \e{from} a Windows system \e{to} a UNIX system, you should use
+Windows wildcard syntax (e.g. \c{*.*}), but if you are copying \e{from}
 a UNIX system \e{to} a Windows system, you would use the wildcard
 syntax allowed by your UNIX shell (e.g. \c{*}).
 
@@ -179,7 +179,7 @@ target of \c{.}.  For example:
 
 \c pscp fred@example.com:/home/tom/.emacs .
 
-...would copy \c{/home/tom/.emacs} on the remote server to the current 
+...would copy \c{/home/tom/.emacs} on the remote server to the current
 directory.
 
 As with the \c{source} parameter, if the target is on a remote server
@@ -235,7 +235,7 @@ these statistics.
 
 By default, PSCP will only copy files.  Any directories you specify to
 copy will be skipped, as will their contents.  The \c{-r} option tells
-PSCP to descend into any directories you specify, and to copy them and 
+PSCP to descend into any directories you specify, and to copy them and
 their contents.  This allows you to use PSCP to transfer whole
 directory structures between machines.
 

@@ -228,7 +228,7 @@
           (ret) = (BignumInt)ADC_temp;                            \
           (retc) = (BignumCarry)(ADC_temp >> BIGNUM_INT_BITS);    \
       } while (0)
-  
+
   #define BignumMUL(rh, rl, a, b) do                              \
       {                                                           \
           DEFINE_BIGNUMDBLINT;                                    \
@@ -237,7 +237,7 @@
           (rh) = (BignumInt)(MUL_temp >> BIGNUM_INT_BITS);        \
           (rl) = (BignumInt)(MUL_temp);                           \
       } while (0)
-  
+
   #define BignumMULADD(rh, rl, a, b, addend) do                   \
       {                                                           \
           DEFINE_BIGNUMDBLINT;                                    \
@@ -247,7 +247,7 @@
           (rh) = (BignumInt)(MUL_temp >> BIGNUM_INT_BITS);        \
           (rl) = (BignumInt)(MUL_temp);                           \
       } while (0)
-  
+
   #define BignumMULADD2(rh, rl, a, b, addend1, addend2) do        \
       {                                                           \
           DEFINE_BIGNUMDBLINT;                                    \

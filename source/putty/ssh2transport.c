@@ -1579,7 +1579,7 @@ static void ssh2_transport_timer(void *ctx, unsigned long now)
 
     mins = sanitise_rekey_time(conf_get_int(s->conf, CONF_ssh_rekey_time), 60);
     if (mins == 0)
-	return;
+        return;
 
     /* Rekey if enough time has elapsed */
     ticks = mins * 60 * TICKSPERSEC;
@@ -1884,18 +1884,18 @@ static void ssh2_transport_special_cmd(PacketProtocolLayer *ppl,
         container_of(ppl, struct ssh2_transport_state, ppl);
 
     if (code == SS_REKEY) {
-	if (!s->kex_in_progress) {
+        if (!s->kex_in_progress) {
             s->rekey_reason = "at user request";
             s->rekey_class = RK_NORMAL;
             queue_idempotent_callback(&s->ppl.ic_process_queue);
-	}
+        }
     } else if (code == SS_XCERT) {
-	if (!s->kex_in_progress) {
+        if (!s->kex_in_progress) {
             s->cross_certifying = s->hostkey_alg = ssh2_hostkey_algs[arg].alg;
             s->rekey_reason = "cross-certifying new host key";
             s->rekey_class = RK_NORMAL;
             queue_idempotent_callback(&s->ppl.ic_process_queue);
-	}
+        }
     } else {
         /* Send everything else to the next layer up. This includes
          * SS_PING/SS_NOP, which we _could_ handle here - but it's
@@ -1938,7 +1938,7 @@ static void ssh2_transport_reconfigure(PacketProtocolLayer *ppl, Conf *conf)
     old_max_data_size = s->max_data_size;
     ssh2_transport_set_max_data_size(s);
     if (old_max_data_size != s->max_data_size &&
-	s->max_data_size != 0) {
+        s->max_data_size != 0) {
         if (s->max_data_size < old_max_data_size) {
             unsigned long diff = old_max_data_size - s->max_data_size;
 
@@ -1956,19 +1956,19 @@ static void ssh2_transport_reconfigure(PacketProtocolLayer *ppl, Conf *conf)
     }
 
     if (conf_get_bool(s->conf, CONF_compression) !=
-	conf_get_bool(conf, CONF_compression)) {
+        conf_get_bool(conf, CONF_compression)) {
         rekey_reason = "compression setting changed";
         rekey_mandatory = true;
     }
 
     for (i = 0; i < CIPHER_MAX; i++)
-	if (conf_get_int_int(s->conf, CONF_ssh_cipherlist, i) !=
-	    conf_get_int_int(conf, CONF_ssh_cipherlist, i)) {
+        if (conf_get_int_int(s->conf, CONF_ssh_cipherlist, i) !=
+            conf_get_int_int(conf, CONF_ssh_cipherlist, i)) {
         rekey_reason = "cipher settings changed";
         rekey_mandatory = true;
     }
     if (conf_get_bool(s->conf, CONF_ssh2_des_cbc) !=
-	conf_get_bool(conf, CONF_ssh2_des_cbc)) {
+        conf_get_bool(conf, CONF_ssh2_des_cbc)) {
         rekey_reason = "cipher settings changed";
         rekey_mandatory = true;
     }

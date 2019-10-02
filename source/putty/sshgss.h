@@ -20,9 +20,9 @@ typedef enum Ssh_gss_stat {
 
 #define SSH_GSS_S_COMPLETE SSH_GSS_OK
 
-#define SSH_GSS_CLEAR_BUF(buf) do {		\
-    (*buf).length = 0;				\
-    (*buf).value = NULL;				\
+#define SSH_GSS_CLEAR_BUF(buf) do {             \
+    (*buf).length = 0;                          \
+    (*buf).value = NULL;                                \
 } while (0)
 
 typedef gss_buffer_desc Ssh_gss_buf;
@@ -30,7 +30,7 @@ typedef gss_name_t Ssh_gss_name;
 
 #define GSS_NO_EXPIRATION ((time_t)-1)
 
-#define GSS_DEF_REKEY_MINS 2	/* Default minutes between GSS cache checks */
+#define GSS_DEF_REKEY_MINS 2    /* Default minutes between GSS cache checks */
 
 /* Functions, provided by either wingss.c or sshgssc.c */
 
@@ -61,7 +61,7 @@ void ssh_gss_cleanup(struct ssh_gss_liblist *list);
  * use. buf->data is not dynamically allocated.
  */
 typedef Ssh_gss_stat (*t_ssh_gss_indicate_mech)(struct ssh_gss_library *lib,
-						Ssh_gss_buf *buf);
+                                                Ssh_gss_buf *buf);
 
 /*
  * Converts a name such as a hostname into a GSSAPI internal form,
@@ -69,14 +69,14 @@ typedef Ssh_gss_stat (*t_ssh_gss_indicate_mech)(struct ssh_gss_library *lib,
  * ssh_gss_release_name().
  */
 typedef Ssh_gss_stat (*t_ssh_gss_import_name)(struct ssh_gss_library *lib,
-					      char *in, Ssh_gss_name *out);
+                                              char *in, Ssh_gss_name *out);
 
 /*
  * Frees the contents of an Ssh_gss_name structure filled in by
  * ssh_gss_import_name().
  */
 typedef Ssh_gss_stat (*t_ssh_gss_release_name)(struct ssh_gss_library *lib,
-					       Ssh_gss_name *name);
+                                               Ssh_gss_name *name);
 
 /*
  * The main GSSAPI security context setup function. The "out"
@@ -96,7 +96,7 @@ typedef Ssh_gss_stat (*t_ssh_gss_init_sec_context)
  * way.
  */
 typedef Ssh_gss_stat (*t_ssh_gss_free_tok)(struct ssh_gss_library *lib,
-					   Ssh_gss_buf *);
+                                           Ssh_gss_buf *);
 
 /*
  * Acquires the credentials to perform authentication in the first
@@ -111,14 +111,14 @@ typedef Ssh_gss_stat (*t_ssh_gss_acquire_cred)(struct ssh_gss_library *lib,
  * ssh_gss_acquire_cred().
  */
 typedef Ssh_gss_stat (*t_ssh_gss_release_cred)(struct ssh_gss_library *lib,
-					       Ssh_gss_ctx *);
+                                               Ssh_gss_ctx *);
 
 /*
  * Gets a MIC for some input data. "out" needs to be freed by
  * ssh_gss_free_mic().
  */
 typedef Ssh_gss_stat (*t_ssh_gss_get_mic)(struct ssh_gss_library *lib,
-					  Ssh_gss_ctx ctx, Ssh_gss_buf *in,
+                                          Ssh_gss_ctx ctx, Ssh_gss_buf *in,
                                           Ssh_gss_buf *out);
 
 /*
@@ -137,17 +137,17 @@ typedef Ssh_gss_stat (*t_ssh_gss_verify_mic)(struct ssh_gss_library *lib,
  * way.
  */
 typedef Ssh_gss_stat (*t_ssh_gss_free_mic)(struct ssh_gss_library *lib,
-					   Ssh_gss_buf *);
+                                           Ssh_gss_buf *);
 
 /*
  * Return an error message after authentication failed. The
  * message string is returned in "buf", with buf->len giving the
  * number of characters of printable message text and buf->data
  * containing one more character which is a trailing NUL.
- * buf->data should be manually freed by the caller. 
+ * buf->data should be manually freed by the caller.
  */
 typedef Ssh_gss_stat (*t_ssh_gss_display_status)(struct ssh_gss_library *lib,
-						 Ssh_gss_ctx, Ssh_gss_buf *buf);
+                                                 Ssh_gss_ctx, Ssh_gss_buf *buf);
 
 struct ssh_gss_library {
     /*
@@ -185,12 +185,12 @@ struct ssh_gss_library {
      * Additional data for the wrapper layers.
      */
     union {
-	struct gssapi_functions gssapi;
-	/*
-	 * The SSPI wrappers don't need to store their Windows API
-	 * function pointers in this structure, because there can't
-	 * be more than one set of them available.
-	 */
+        struct gssapi_functions gssapi;
+        /*
+         * The SSPI wrappers don't need to store their Windows API
+         * function pointers in this structure, because there can't
+         * be more than one set of them available.
+         */
     } u;
 
     /*

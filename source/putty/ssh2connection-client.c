@@ -181,11 +181,11 @@ static int ssh2_rportfwd_cmp(void *av, void *bv)
     struct ssh_rportfwd *b = (struct ssh_rportfwd *) bv;
     int i;
     if ( (i = strcmp(a->shost, b->shost)) != 0)
-	return i < 0 ? -1 : +1;
+        return i < 0 ? -1 : +1;
     if (a->sport > b->sport)
-	return +1;
+        return +1;
     if (a->sport < b->sport)
-	return -1;
+        return -1;
     return 0;
 }
 
@@ -196,16 +196,16 @@ static void ssh2_rportfwd_globreq_response(struct ssh2_connection_state *s,
     struct ssh_rportfwd *rpf = (struct ssh_rportfwd *)ctx;
 
     if (pktin->type == SSH2_MSG_REQUEST_SUCCESS) {
-	ppl_logevent("Remote port forwarding from %s enabled",
+        ppl_logevent("Remote port forwarding from %s enabled",
                      rpf->log_description);
     } else {
-	ppl_logevent("Remote port forwarding from %s refused",
+        ppl_logevent("Remote port forwarding from %s refused",
                      rpf->log_description);
 
-	struct ssh_rportfwd *realpf = del234(s->rportfwds, rpf);
-	assert(realpf == rpf);
+        struct ssh_rportfwd *realpf = del234(s->rportfwds, rpf);
+        assert(realpf == rpf);
         portfwdmgr_close(s->portfwdmgr, rpf->pfr);
-	free_rportfwd(rpf);
+        free_rportfwd(rpf);
     }
 }
 
@@ -410,8 +410,8 @@ void ssh2channel_request_pty(
     put_stringz(pktout, conf_get_str(conf, CONF_termtype));
     put_uint32(pktout, w);
     put_uint32(pktout, h);
-    put_uint32(pktout, 0);	       /* pixel width */
-    put_uint32(pktout, 0);	       /* pixel height */
+    put_uint32(pktout, 0);             /* pixel width */
+    put_uint32(pktout, 0);             /* pixel height */
     modebuf = strbuf_new();
     write_ttymodes_to_packet(
         BinarySink_UPCAST(modebuf), 2,
@@ -470,8 +470,8 @@ void ssh2channel_send_terminal_size_change(SshChannel *sc, int w, int h)
     PktOut *pktout = ssh2_chanreq_init(c, "window-change", NULL, NULL);
     put_uint32(pktout, w);
     put_uint32(pktout, h);
-    put_uint32(pktout, 0);	       /* pixel width */
-    put_uint32(pktout, 0);	       /* pixel height */
+    put_uint32(pktout, 0);             /* pixel width */
+    put_uint32(pktout, 0);             /* pixel height */
     pq_push(s->ppl.out_pq, pktout);
 }
 

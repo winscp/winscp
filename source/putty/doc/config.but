@@ -359,8 +359,8 @@ Most servers send two control characters, \i{CR} and \i{LF}, to start a
 left-hand side of the screen. The LF character makes the cursor move
 one line down (and might make the screen scroll).
 
-Some servers only send CR, and so the newly 
-written line is overwritten by the following line. This option causes 
+Some servers only send CR, and so the newly
+written line is overwritten by the following line. This option causes
 a line feed so that all lines are displayed.
 
 \S{config-erase} \q{Use \i{background colour} to erase screen}
@@ -1194,7 +1194,7 @@ characters should be treated as single-width for the purposes of \I{wrapping,
 terminal}wrapping and so on; however, in some CJK contexts, they are better
 treated as double-width for historical reasons, and some server-side
 applications may expect them to be displayed as such. Setting this option
-will cause PuTTY to take the double-width interpretation. 
+will cause PuTTY to take the double-width interpretation.
 
 If you use legacy CJK applications, and you find your lines are
 wrapping in the wrong places, or you are having other display
@@ -1508,7 +1508,7 @@ If you enable \q{Copy to clipboard in RTF as well as plain text},
 PuTTY will write formatting information to the clipboard as well as
 the actual text you copy. The effect of this is
 that if you paste into (say) a word processor, the text will appear
-in the word processor in the same \i{font}, \i{colour}, and style 
+in the word processor in the same \i{font}, \i{colour}, and style
 (e.g. bold, underline) PuTTY was using to display it.
 
 This option can easily be inconvenient, so by default it is
@@ -2053,7 +2053,7 @@ itself.
 
 Also, the special strings \c{%host} and \c{%port} will be replaced
 by the host name and port number you want to connect to. The strings
-\c{%user} and \c{%pass} will be replaced by the proxy username and 
+\c{%user} and \c{%pass} will be replaced by the proxy username and
 password you specify. The strings \c{%proxyhost} and \c{%proxyport}
 will be replaced by the host details specified on the \e{Proxy} panel,
 if any (this is most likely to be useful for the Local proxy type).
@@ -2064,8 +2064,8 @@ before commands can be sent, you can use a command such as:
 
 \c %user\n%pass\nconnect %host %port\n
 
-This will send your username and password as the first two lines to 
-the proxy, followed by a command to connect to the desired host and 
+This will send your username and password as the first two lines to
+the proxy, followed by a command to connect to the desired host and
 port. Note that if you do not include the \c{%user} or \c{%pass}
 tokens in the Telnet command, then the \q{Username} and \q{Password}
 configuration fields will be ignored.
@@ -3565,13 +3565,13 @@ once it's been successfully saved back to the file.
 Here is \c{PUTTYDEL.REG}:
 
 \c REGEDIT4
-\c  
+\c
 \c [-HKEY_CURRENT_USER\Software\SimonTatham\PuTTY]
 
 Here is an example \c{PUTTYRND.REG} file:
 
 \c REGEDIT4
-\c  
+\c
 \c [HKEY_CURRENT_USER\Software\SimonTatham\PuTTY]
 \c "RandSeedFile"="a:\\putty.rnd"
 

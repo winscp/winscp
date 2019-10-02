@@ -856,7 +856,7 @@ static void aes_sliced_key_setup(
          * Prepare a word of round key in the low 4 bits of each
          * integer in slices[].
          */
-	if (i < key_words) {
+        if (i < key_words) {
             memcpy(inblk, key + 4*i, 4);
             TO_BITSLICES(slices, inblk, uint16_t, =, 0);
         } else {
@@ -905,7 +905,7 @@ static void aes_sliced_key_setup(
             prevslices = sk->roundkeys_serial + 8 * (wordindex >> 2);
             for (size_t i = 0; i < 8; i++)
                 slices[i] ^= prevslices[i] >> bitshift;
-	}
+        }
 
         /*
          * Now copy it into sk.
@@ -1321,10 +1321,10 @@ static FUNC_ISA void aes_ni_key_expand(
     unsigned rconpos = 0;
 
     for (size_t i = 0; i < sched_words; i++) {
-	if (i < key_words) {
+        if (i < key_words) {
             sched[i] = GET_32BIT_LSB_FIRST(key + 4 * i);
         } else {
-	    uint32_t temp = sched[i - 1];
+            uint32_t temp = sched[i - 1];
 
             bool rotate_and_round_constant = (i % key_words == 0);
             bool only_sub = (key_words == 8 && i % 8 == 4);
@@ -1343,7 +1343,7 @@ static FUNC_ISA void aes_ni_key_expand(
             }
 
             sched[i] = sched[i - key_words] ^ temp;
-	}
+        }
     }
 
     /*
@@ -1625,10 +1625,10 @@ static FUNC_ISA void aes_neon_key_expand(
     unsigned rconpos = 0;
 
     for (size_t i = 0; i < sched_words; i++) {
-	if (i < key_words) {
+        if (i < key_words) {
             sched[i] = GET_32BIT_LSB_FIRST(key + 4 * i);
         } else {
-	    uint32_t temp = sched[i - 1];
+            uint32_t temp = sched[i - 1];
 
             bool rotate_and_round_constant = (i % key_words == 0);
             bool sub = rotate_and_round_constant ||
@@ -1651,7 +1651,7 @@ static FUNC_ISA void aes_neon_key_expand(
             }
 
             sched[i] = sched[i - key_words] ^ temp;
-	}
+        }
     }
 
     /*

@@ -1846,7 +1846,7 @@ void mp_divmod_into(mp_int *n, mp_int *d, mp_int *q_out, mp_int *r_out)
      *
      * So when we multiply n (the input numerator) by our final
      * reciprocal approximation r, but actually r differs from R/d by
-     * up to 2, then it follows that 
+     * up to 2, then it follows that
      *
      *   n/d - nr/R = n/d - [ n (R/d + e) ] / R
      *              = n/d - [ (n/d) R + n e ] / R

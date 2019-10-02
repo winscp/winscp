@@ -10,7 +10,7 @@ struct ssh1_connection_state {
     Conf *conf;
     int local_protoflags, remote_protoflags;
 
-    tree234 *channels;		       /* indexed by local id */
+    tree234 *channels;                 /* indexed by local id */
 
     /* In SSH-1, the main session doesn't take the form of a 'channel'
      * according to the wire protocol. But we want to use the same API

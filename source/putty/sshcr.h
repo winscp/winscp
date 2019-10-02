@@ -8,16 +8,16 @@
 /*
  * If these macros look impenetrable to you, you might find it helpful
  * to read
- * 
+ *
  *   https://www.chiark.greenend.org.uk/~sgtatham/coroutines.html
- * 
+ *
  * which explains the theory behind these macros.
- * 
+ *
  * In particular, if you are getting `case expression not constant'
  * errors when building with MS Visual Studio, this is because MS's
  * Edit and Continue debugging feature causes their compiler to
  * violate ANSI C. To disable Edit and Continue debugging:
- * 
+ *
  *  - right-click ssh.c in the FileView
  *  - click Settings
  *  - select the C/C++ tab and the General category

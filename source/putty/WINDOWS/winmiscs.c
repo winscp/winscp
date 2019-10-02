@@ -25,15 +25,15 @@ void smemclr(void *b, size_t n) {
 
 /*
  * Design:
- * 
+ *
  * We start by reserving as much virtual address space as Windows
  * will sensibly (or not sensibly) let us have. We flag it all as
  * invalid memory.
- * 
+ *
  * Any allocation attempt is satisfied by committing one or more
  * pages, with an uncommitted page on either side. The returned
  * memory region is jammed up against the _end_ of the pages.
- * 
+ *
  * Freeing anything causes instantaneous decommitment of the pages
  * involved, so stale pointers are caught as soon as possible.
  */
@@ -59,10 +59,10 @@ static void minefield_init(void)
     int i;
 
     for (size = 0x40000000; size > 0; size = ((size >> 3) * 7) & ~0xFFF) {
-	minefield_region = VirtualAlloc(NULL, size,
-					MEM_RESERVE, PAGE_NOACCESS);
-	if (minefield_region)
-	    break;
+        minefield_region = VirtualAlloc(NULL, size,
+                                        MEM_RESERVE, PAGE_NOACCESS);
+        if (minefield_region)
+            break;
     }
     minefield_size = size;
 
@@ -80,13 +80,13 @@ static void minefield_init(void)
      * Commit the admin region.
      */
     VirtualAlloc(minefield_admin, minefield_npages * 2,
-		 MEM_COMMIT, PAGE_READWRITE);
+                 MEM_COMMIT, PAGE_READWRITE);
 
     /*
      * Mark all pages as unused (0xFFFF).
      */
     for (i = 0; i < minefield_npages; i++)
-	minefield_admin[i] = 0xFFFF;
+        minefield_admin[i] = 0xFFFF;
 
     /*
      * Hide the admin region.
@@ -119,27 +119,27 @@ static void *minefield_alloc(int size)
     pos = minefield_curpos;
     lim = minefield_npages;
     while (1) {
-	/* Skip over used pages. */
-	while (pos < lim && minefield_admin[pos] != 0xFFFF)
-	    pos++;
-	/* Count unused pages. */
-	start = pos;
-	while (pos < lim && pos - start < npages + 2 &&
-	       minefield_admin[pos] == 0xFFFF)
-	    pos++;
-	if (pos - start == npages + 2)
-	    break;
-	/* If we've reached the limit, reset the limit or stop. */
-	if (pos >= lim) {
-	    if (lim == minefield_npages) {
-		/* go round and start again at zero */
-		lim = minefield_curpos;
-		pos = 0;
-	    } else {
-		minefield_admin_hide(1);
-		return NULL;
-	    }
-	}
+        /* Skip over used pages. */
+        while (pos < lim && minefield_admin[pos] != 0xFFFF)
+            pos++;
+        /* Count unused pages. */
+        start = pos;
+        while (pos < lim && pos - start < npages + 2 &&
+               minefield_admin[pos] == 0xFFFF)
+            pos++;
+        if (pos - start == npages + 2)
+            break;
+        /* If we've reached the limit, reset the limit or stop. */
+        if (pos >= lim) {
+            if (lim == minefield_npages) {
+                /* go round and start again at zero */
+                lim = minefield_curpos;
+                pos = 0;
+            } else {
+                minefield_admin_hide(1);
+                return NULL;
+            }
+        }
     }
 
     minefield_curpos = pos - 1;
@@ -156,13 +156,13 @@ static void *minefield_alloc(int size)
      * Update the admin region.
      */
     for (i = start + 2; i < start + npages + 1; i++)
-	minefield_admin[i] = 0xFFFE;   /* used but no region starts here */
+        minefield_admin[i] = 0xFFFE;   /* used but no region starts here */
     minefield_admin[start + 1] = region_start % PAGESIZE;
 
     minefield_admin_hide(1);
 
     VirtualAlloc((char *) minefield_pages + region_start, size,
-		 MEM_COMMIT, PAGE_READWRITE);
+                 MEM_COMMIT, PAGE_READWRITE);
     return (char *) minefield_pages + region_start;
 }
 
@@ -175,10 +175,10 @@ static void minefield_free(void *ptr)
     region_start = (char *) ptr - (char *) minefield_pages;
     i = region_start / PAGESIZE;
     if (i < 0 || i >= minefield_npages ||
-	minefield_admin[i] != region_start % PAGESIZE)
-	minefield_bomb();
+        minefield_admin[i] != region_start % PAGESIZE)
+        minefield_bomb();
     for (j = i; j < minefield_npages && minefield_admin[j] != 0xFFFF; j++) {
-	minefield_admin[j] = 0xFFFF;
+        minefield_admin[j] = 0xFFFF;
     }
 
     VirtualFree(ptr, j * PAGESIZE - region_start, MEM_DECOMMIT);
@@ -195,8 +195,8 @@ static int minefield_get_size(void *ptr)
     region_start = (char *) ptr - (char *) minefield_pages;
     i = region_start / PAGESIZE;
     if (i < 0 || i >= minefield_npages ||
-	minefield_admin[i] != region_start % PAGESIZE)
-	minefield_bomb();
+        minefield_admin[i] != region_start % PAGESIZE)
+        minefield_bomb();
     for (j = i; j < minefield_npages && minefield_admin[j] != 0xFFFF; j++);
 
     minefield_admin_hide(1);
@@ -207,14 +207,14 @@ static int minefield_get_size(void *ptr)
 void *minefield_c_malloc(size_t size)
 {
     if (!minefield_initialised)
-	minefield_init();
+        minefield_init();
     return minefield_alloc(size);
 }
 
 void minefield_c_free(void *p)
 {
     if (!minefield_initialised)
-	minefield_init();
+        minefield_init();
     minefield_free(p);
 }
 
@@ -227,7 +227,7 @@ void *minefield_c_realloc(void *p, size_t size)
     size_t oldsize;
     void *q;
     if (!minefield_initialised)
-	minefield_init();
+        minefield_init();
     q = minefield_alloc(size);
     oldsize = minefield_get_size(p);
     memcpy(q, p, (oldsize < size ? oldsize : size));
@@ -235,7 +235,7 @@ void *minefield_c_realloc(void *p, size_t size)
     return q;
 }
 
-#endif				/* MINEFIELD */
+#endif                          /* MINEFIELD */
 
 #if defined _MSC_VER && _MSC_VER < 1800
 

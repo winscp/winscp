@@ -9,8 +9,8 @@
 #include "puttymem.h"
 #include "marshal.h"
 
-#include <stdio.h>		       /* for FILE * */
-#include <stdarg.h>		       /* for va_list */
+#include <stdio.h>                     /* for FILE * */
+#include <stdarg.h>                    /* for va_list */
 #include <stdlib.h>                    /* for abort */
 #include <time.h>                      /* for struct tm */
 #include <limits.h>                    /* for INT_MAX/MIN */

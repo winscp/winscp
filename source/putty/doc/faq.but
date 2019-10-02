@@ -166,7 +166,7 @@ will not. Adding an option to turn host key checking off completely is
 the wrong solution and we will not do it.
 
 If you have host keys available in the common \i\c{known_hosts} format,
-we have a script called 
+we have a script called
 \W{https://git.tartarus.org/?p=simon/putty.git;a=blob;f=contrib/kh2reg.py;hb=HEAD}\c{kh2reg.py}
 to convert them to a Windows .REG file, which can be installed ahead of
 time by double-clicking or using \c{REGEDIT}.
@@ -241,7 +241,7 @@ present time. If anyone told you we had an Android port, or an iOS
 port, or any other port of PuTTY, they were mistaken. We don't.
 
 There are some third-party ports to various platforms, mentioned
-on the 
+on the
 \W{https://www.chiark.greenend.org.uk/~sgtatham/putty/links.html}{Links page of our website}.
 
 \S{faq-unix}{Question} \I{Unix version}Is there a port to Unix?
@@ -991,7 +991,7 @@ means you need to use non-\cw{127.0.0.1} addresses to forward
 Terminal Services in the first place.)
 
 \S{faq-missing-slash}{Question} PSFTP commands seem to be missing a
-directory separator (slash). 
+directory separator (slash).
 
 Some people have reported the following incorrect behaviour with
 PSFTP:

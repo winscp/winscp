@@ -19,7 +19,7 @@ static ssh_key *dss_new_pub(const ssh_keyalg *self, ptrlen data)
 
     BinarySource_BARE_INIT_PL(src, data);
     if (!ptrlen_eq_string(get_string(src), "ssh-dss"))
-	return NULL;
+        return NULL;
 
     dss = snew(struct dss_key);
     dss->sshk.vt = &ssh_dss;
@@ -73,7 +73,7 @@ static char *dss_cache_str(ssh_key *key)
     strbuf *sb = strbuf_new();
 
     if (!dss->p)
-	return NULL;
+        return NULL;
 
     append_hex_to_strbuf(sb, dss->p);
     append_hex_to_strbuf(sb, dss->q);
@@ -97,7 +97,7 @@ static bool dss_verify(ssh_key *key, ptrlen sig, ptrlen data)
     bool toret;
 
     if (!dss->p)
-	return false;
+        return false;
 
     BinarySource_BARE_INIT_PL(src, sig);
 
@@ -113,7 +113,7 @@ static bool dss_verify(ssh_key *key, ptrlen sig, ptrlen data)
      * else is assumed to be RFC-compliant.
      */
     if (sig.len != 40) {      /* bug not present; read admin fields */
-	ptrlen type = get_string(src);
+        ptrlen type = get_string(src);
         sig = get_string(src);
 
         if (get_err(src) || !ptrlen_eq_string(type, "ssh-dss") ||
@@ -129,7 +129,7 @@ static bool dss_verify(ssh_key *key, ptrlen sig, ptrlen data)
             mp_free(r);
         if (s)
             mp_free(s);
-	return false;
+        return false;
     }
 
     /* Basic sanity checks: 0 < r,s < q */
@@ -238,15 +238,15 @@ static ssh_key *dss_new_priv(const ssh_keyalg *self, ptrlen pub, ptrlen priv)
      */
     hash = get_string(src);
     if (hash.len == 20) {
-	ssh_hash *h = ssh_hash_new(&ssh_sha1);
-	put_mp_ssh2(h, dss->p);
-	put_mp_ssh2(h, dss->q);
-	put_mp_ssh2(h, dss->g);
-	ssh_hash_final(h, digest);
-	if (!smemeq(hash.ptr, digest, 20)) {
-	    dss_freekey(&dss->sshk);
-	    return NULL;
-	}
+        ssh_hash *h = ssh_hash_new(&ssh_sha1);
+        put_mp_ssh2(h, dss->p);
+        put_mp_ssh2(h, dss->q);
+        put_mp_ssh2(h, dss->g);
+        ssh_hash_final(h, digest);
+        if (!smemeq(hash.ptr, digest, 20)) {
+            dss_freekey(&dss->sshk);
+            return NULL;
+        }
     }
 
     /*
@@ -255,8 +255,8 @@ static ssh_key *dss_new_priv(const ssh_keyalg *self, ptrlen pub, ptrlen priv)
     ytest = mp_modpow(dss->g, dss->x, dss->p);
     if (!mp_cmp_eq(ytest, dss->y)) {
         mp_free(ytest);
-	dss_freekey(&dss->sshk);
-	return NULL;
+        dss_freekey(&dss->sshk);
+        return NULL;
     }
     mp_free(ytest);
 
@@ -321,59 +321,59 @@ mp_int *dss_gen_k(const char *id_string, mp_int *modulus,
 {
     /*
      * The basic DSS signing algorithm is:
-     * 
+     *
      *  - invent a random k between 1 and q-1 (exclusive).
      *  - Compute r = (g^k mod p) mod q.
      *  - Compute s = k^-1 * (hash + x*r) mod q.
-     * 
+     *
      * This has the dangerous properties that:
-     * 
+     *
      *  - if an attacker in possession of the public key _and_ the
      *    signature (for example, the host you just authenticated
      *    to) can guess your k, he can reverse the computation of s
      *    and work out x = r^-1 * (s*k - hash) mod q. That is, he
      *    can deduce the private half of your key, and masquerade
      *    as you for as long as the key is still valid.
-     * 
+     *
      *  - since r is a function purely of k and the public key, if
      *    the attacker only has a _range of possibilities_ for k
      *    it's easy for him to work through them all and check each
      *    one against r; he'll never be unsure of whether he's got
      *    the right one.
-     * 
+     *
      *  - if you ever sign two different hashes with the same k, it
      *    will be immediately obvious because the two signatures
      *    will have the same r, and moreover an attacker in
      *    possession of both signatures (and the public key of
      *    course) can compute k = (hash1-hash2) * (s1-s2)^-1 mod q,
      *    and from there deduce x as before.
-     * 
+     *
      *  - the Bleichenbacher attack on DSA makes use of methods of
      *    generating k which are significantly non-uniformly
      *    distributed; in particular, generating a 160-bit random
      *    number and reducing it mod q is right out.
-     * 
+     *
      * For this reason we must be pretty careful about how we
      * generate our k. Since this code runs on Windows, with no
      * particularly good system entropy sources, we can't trust our
      * RNG itself to produce properly unpredictable data. Hence, we
      * use a totally different scheme instead.
-     * 
+     *
      * What we do is to take a SHA-512 (_big_) hash of the private
      * key x, and then feed this into another SHA-512 hash that
      * also includes the message hash being signed. That is:
-     * 
+     *
      *   proto_k = SHA512 ( SHA512(x) || SHA160(message) )
-     * 
+     *
      * This number is 512 bits long, so reducing it mod q won't be
      * noticeably non-uniform. So
-     * 
+     *
      *   k = proto_k mod q
-     * 
+     *
      * This has the interesting property that it's _deterministic_:
      * signing the same hash twice with the same key yields the
      * same signature.
-     * 
+     *
      * Despite this determinism, it's still not predictable to an
      * attacker, because in order to repeat the SHA-512
      * construction that created it, the attacker would have to
@@ -384,7 +384,7 @@ mp_int *dss_gen_k(const char *id_string, mp_int *modulus,
      * Reuse of k is left to chance; all it does is prevent
      * _excessively high_ chances of reuse of k due to entropy
      * problems.)
-     * 
+     *
      * Thanks to Colin Plumb for the general idea of using x to
      * ensure k is hard to guess, and to the Cambridge University
      * Computer Security Group for helping to argue out all the
@@ -458,7 +458,7 @@ static void dss_sign(ssh_key *key, ptrlen data, unsigned flags, BinarySink *bs)
     put_stringz(bs, "ssh-dss");
     put_uint32(bs, 40);
     for (i = 0; i < 20; i++)
-	put_byte(bs, mp_get_byte(r, 19 - i));
+        put_byte(bs, mp_get_byte(r, 19 - i));
     for (i = 0; i < 20; i++)
         put_byte(bs, mp_get_byte(s, 19 - i));
     mp_free(r);

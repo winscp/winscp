@@ -1,6 +1,6 @@
 /*
  * SHA-1 algorithm as described at
- * 
+ *
  *   http://csrc.nist.gov/cryptval/shs.html
  */
 
@@ -206,7 +206,7 @@ static void sha1_sw_block(uint32_t *core, const uint8_t *block)
         w[t] = GET_32BIT_MSB_FIRST(block + 4*t);
 
     for (size_t t = 16; t < SHA1_ROUNDS; t++)
-	w[t] = rol(w[t - 3] ^ w[t - 8] ^ w[t - 14] ^ w[t - 16], 1);
+        w[t] = rol(w[t - 3] ^ w[t - 8] ^ w[t - 14] ^ w[t - 16], 1);
 
     a = core[0]; b = core[1]; c = core[2]; d = core[3];
     e = core[4];
@@ -354,7 +354,7 @@ const ssh_hashalg ssh_sha1_sw = {
 static bool sha1_hw_available(void)
 {
     unsigned int CPUInfo[4];
-    GET_CPU_ID_0(CPUInfo);  
+    GET_CPU_ID_0(CPUInfo);
     if (CPUInfo[0] < 7)
         return false;
 

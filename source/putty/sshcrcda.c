@@ -1,4 +1,4 @@
-/*	$OpenBSD: deattack.c,v 1.14 2001/06/23 15:12:18 itojun Exp $	*/
+/*      $OpenBSD: deattack.c,v 1.14 2001/06/23 15:12:18 itojun Exp $    */
 
 /*
  * Cryptographic attack detector for ssh - source code
@@ -17,7 +17,7 @@
  *
  * Ariel Futoransky <futo@core-sdi.com>
  * <http://www.core-sdi.com>
- * 
+ *
  * Modified for use in PuTTY by Simon Tatham
  */
 
@@ -26,23 +26,23 @@
 #include "ssh.h"
 
 /* SSH Constants */
-#define SSH_MAXBLOCKS	(32 * 1024)
-#define SSH_BLOCKSIZE	(8)
+#define SSH_MAXBLOCKS   (32 * 1024)
+#define SSH_BLOCKSIZE   (8)
 
 /* Hashing constants */
-#define HASH_MINSIZE	(8 * 1024)
-#define HASH_ENTRYSIZE	(sizeof(uint16_t))
-#define HASH_FACTOR(x)	((x)*3/2)
-#define HASH_UNUSEDCHAR	(0xff)
-#define HASH_UNUSED	(0xffff)
-#define HASH_IV     	(0xfffe)
+#define HASH_MINSIZE    (8 * 1024)
+#define HASH_ENTRYSIZE  (sizeof(uint16_t))
+#define HASH_FACTOR(x)  ((x)*3/2)
+#define HASH_UNUSEDCHAR (0xff)
+#define HASH_UNUSED     (0xffff)
+#define HASH_IV         (0xfffe)
 
-#define HASH_MINBLOCKS	(7*SSH_BLOCKSIZE)
+#define HASH_MINBLOCKS  (7*SSH_BLOCKSIZE)
 
 /* Hash function (Input keys are cipher results) */
-#define HASH(x)		GET_32BIT_MSB_FIRST(x)
+#define HASH(x)         GET_32BIT_MSB_FIRST(x)
 
-#define CMP(a, b)	(memcmp(a, b, SSH_BLOCKSIZE))
+#define CMP(a, b)       (memcmp(a, b, SSH_BLOCKSIZE))
 
 uint8_t ONE[4] = { 1, 0, 0, 0 };
 uint8_t ZERO[4] = { 0, 0, 0, 0 };
@@ -63,9 +63,9 @@ struct crcda_ctx *crcda_make_context(void)
 void crcda_free_context(struct crcda_ctx *ctx)
 {
     if (ctx) {
-	sfree(ctx->h);
-	ctx->h = NULL;
-	sfree(ctx);
+        sfree(ctx->h);
+        ctx->h = NULL;
+        sfree(ctx);
     }
 }
 

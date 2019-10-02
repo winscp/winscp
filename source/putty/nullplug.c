@@ -13,7 +13,7 @@ static void nullplug_socket_log(Plug *plug, int type, SockAddr *addr, int port,
 }
 
 static void nullplug_closing(Plug *plug, const char *error_msg, int error_code,
-			     bool calling_back)
+                             bool calling_back)
 {
 }
 

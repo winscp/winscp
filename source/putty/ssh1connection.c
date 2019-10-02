@@ -19,15 +19,15 @@ static int ssh1_rportfwd_cmp(void *av, void *bv)
     struct ssh_rportfwd *b = (struct ssh_rportfwd *) bv;
     int i;
     if ( (i = strcmp(a->dhost, b->dhost)) != 0)
-	return i < 0 ? -1 : +1;
+        return i < 0 ? -1 : +1;
     if (a->dport > b->dport)
-	return +1;
+        return +1;
     if (a->dport < b->dport)
-	return -1;
+        return -1;
     return 0;
 }
 
-static void ssh1_connection_free(PacketProtocolLayer *); 
+static void ssh1_connection_free(PacketProtocolLayer *);
 static void ssh1_connection_process_queue(PacketProtocolLayer *);
 static void ssh1_connection_special_cmd(PacketProtocolLayer *ppl,
                                         SessionSpecialCode code, int arg);
@@ -134,9 +134,9 @@ static int ssh1_channelcmp(void *av, void *bv)
     const struct ssh1_channel *a = (const struct ssh1_channel *) av;
     const struct ssh1_channel *b = (const struct ssh1_channel *) bv;
     if (a->localid < b->localid)
-	return -1;
+        return -1;
     if (a->localid > b->localid)
-	return +1;
+        return +1;
     return 0;
 }
 
@@ -145,9 +145,9 @@ static int ssh1_channelfind(void *av, void *bv)
     const unsigned *a = (const unsigned *) av;
     const struct ssh1_channel *b = (const struct ssh1_channel *) bv;
     if (*a < b->localid)
-	return -1;
+        return -1;
     if (*a > b->localid)
-	return +1;
+        return +1;
     return 0;
 }
 
@@ -201,7 +201,7 @@ static void ssh1_connection_free(PacketProtocolLayer *ppl)
         chan_free(s->mainchan_chan);
 
     if (s->x11disp)
-	x11_free_display(s->x11disp);
+        x11_free_display(s->x11disp);
     while ((auth = delpos234(s->x11authtree, 0)) != NULL)
         x11_free_fake_auth(auth);
     freetree234(s->x11authtree);
@@ -270,7 +270,7 @@ static bool ssh1_connection_filter_queue(struct ssh1_connection_state *s)
                     localid);
                 return true;
             }
- 
+
             switch (pktin->type) {
               case SSH1_MSG_CHANNEL_OPEN_CONFIRMATION:
                 assert(c->halfopen);
@@ -427,19 +427,19 @@ static void ssh1_connection_process_queue(PacketProtocolLayer *ppl)
 
     while (1) {
 
-	/*
-	 * By this point, most incoming packets are already being
-	 * handled by filter_queue, and we need only pay attention to
-	 * the unusual ones.
-	 */
+        /*
+         * By this point, most incoming packets are already being
+         * handled by filter_queue, and we need only pay attention to
+         * the unusual ones.
+         */
 
-	if ((pktin = ssh1_connection_pop(s)) != NULL) {
+        if ((pktin = ssh1_connection_pop(s)) != NULL) {
             ssh_proto_error(s->ppl.ssh, "Unexpected packet received, "
                             "type %d (%s)", pktin->type,
                             ssh1_pkt_type(pktin->type));
             return;
-	}
-	crReturnV;
+        }
+        crReturnV;
     }
 
     crFinishV;
@@ -462,7 +462,7 @@ static void ssh1_channel_check_close(struct ssh1_channel *c)
     if ((!((CLOSES_SENT_CLOSE | CLOSES_RCVD_CLOSE) & ~c->closes) ||
          chan_want_close(c->chan, (c->closes & CLOSES_SENT_CLOSE),
                          (c->closes & CLOSES_RCVD_CLOSE))) &&
-	!(c->closes & CLOSES_SENT_CLOSECONF)) {
+        !(c->closes & CLOSES_SENT_CLOSECONF)) {
         /*
          * We have both sent and received CLOSE (or the channel type
          * doesn't need us to), which means the channel is in final
@@ -625,8 +625,8 @@ static void ssh1channel_unthrottle(SshChannel *sc, size_t bufsize)
     struct ssh1_connection_state *s = c->connlayer;
 
     if (c->throttling_conn && bufsize <= SSH1_BUFFER_LIMIT) {
-	c->throttling_conn = false;
-	ssh_throttle_conn(s->ppl.ssh, -1);
+        c->throttling_conn = false;
+        ssh_throttle_conn(s->ppl.ssh, -1);
     }
 }
 

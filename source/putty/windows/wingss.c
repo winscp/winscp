@@ -12,8 +12,8 @@
 
 #include "misc.h"
 
-#define UNIX_EPOCH	11644473600ULL	/* Seconds from Windows epoch */
-#define CNS_PERSEC	10000000ULL	/* # 100ns per second */
+#define UNIX_EPOCH      11644473600ULL  /* Seconds from Windows epoch */
+#define CNS_PERSEC      10000000ULL     /* # 100ns per second */
 
 /*
  * Note, as a special case, 0 relative to the Windows epoch (unspecified) maps
@@ -49,29 +49,29 @@ const struct keyvalwhere gsslibkeywords[] = {
 };
 
 DECL_WINDOWS_FUNCTION(static, SECURITY_STATUS,
-		      AcquireCredentialsHandleA,
-		      (SEC_CHAR *, SEC_CHAR *, ULONG, PVOID,
-		       PVOID, SEC_GET_KEY_FN, PVOID, PCredHandle, PTimeStamp));
+                      AcquireCredentialsHandleA,
+                      (SEC_CHAR *, SEC_CHAR *, ULONG, PVOID,
+                       PVOID, SEC_GET_KEY_FN, PVOID, PCredHandle, PTimeStamp));
 DECL_WINDOWS_FUNCTION(static, SECURITY_STATUS,
-		      InitializeSecurityContextA,
-		      (PCredHandle, PCtxtHandle, SEC_CHAR *, ULONG, ULONG,
-		       ULONG, PSecBufferDesc, ULONG, PCtxtHandle,
-		       PSecBufferDesc, PULONG, PTimeStamp));
+                      InitializeSecurityContextA,
+                      (PCredHandle, PCtxtHandle, SEC_CHAR *, ULONG, ULONG,
+                       ULONG, PSecBufferDesc, ULONG, PCtxtHandle,
+                       PSecBufferDesc, PULONG, PTimeStamp));
 DECL_WINDOWS_FUNCTION(static, SECURITY_STATUS,
-		      FreeContextBuffer,
-		      (PVOID));
+                      FreeContextBuffer,
+                      (PVOID));
 DECL_WINDOWS_FUNCTION(static, SECURITY_STATUS,
-		      FreeCredentialsHandle,
-		      (PCredHandle));
+                      FreeCredentialsHandle,
+                      (PCredHandle));
 DECL_WINDOWS_FUNCTION(static, SECURITY_STATUS,
-		      DeleteSecurityContext,
-		      (PCtxtHandle));
+                      DeleteSecurityContext,
+                      (PCtxtHandle));
 DECL_WINDOWS_FUNCTION(static, SECURITY_STATUS,
-		      QueryContextAttributesA,
-		      (PCtxtHandle, ULONG, PVOID));
+                      QueryContextAttributesA,
+                      (PCtxtHandle, ULONG, PVOID));
 DECL_WINDOWS_FUNCTION(static, SECURITY_STATUS,
-		      MakeSignature,
-		      (PCtxtHandle, ULONG, PSecBufferDesc, ULONG));
+                      MakeSignature,
+                      (PCtxtHandle, ULONG, PSecBufferDesc, ULONG));
 DECL_WINDOWS_FUNCTION(static, SECURITY_STATUS,
                       VerifySignature,
                       (PCtxtHandle, PSecBufferDesc, ULONG, PULONG));
@@ -118,19 +118,19 @@ struct ssh_gss_liblist *ssh_gss_setup(Conf *conf)
     /* MIT Kerberos GSSAPI implementation */
     module = NULL;
     if (RegOpenKey(HKEY_LOCAL_MACHINE, "SOFTWARE\\MIT\\Kerberos", &regkey)
-	== ERROR_SUCCESS) {
-	DWORD type, size;
-	LONG ret;
-	char *buffer;
+        == ERROR_SUCCESS) {
+        DWORD type, size;
+        LONG ret;
+        char *buffer;
 
-	/* Find out the string length */
+        /* Find out the string length */
         ret = RegQueryValueEx(regkey, "InstallDir", NULL, &type, NULL, &size);
 
-	if (ret == ERROR_SUCCESS && type == REG_SZ) {
-	    buffer = snewn(size + 20, char);
-	    ret = RegQueryValueEx(regkey, "InstallDir", NULL,
-				  &type, (LPBYTE)buffer, &size);
-	    if (ret == ERROR_SUCCESS && type == REG_SZ) {
+        if (ret == ERROR_SUCCESS && type == REG_SZ) {
+            buffer = snewn(size + 20, char);
+            ret = RegQueryValueEx(regkey, "InstallDir", NULL,
+                                  &type, (LPBYTE)buffer, &size);
+            if (ret == ERROR_SUCCESS && type == REG_SZ) {
                 strcat (buffer, "\\bin");
                 if(p_AddDllDirectory) {
                     /* Add MIT Kerberos' path to the DLL search path,
@@ -145,18 +145,18 @@ struct ssh_gss_liblist *ssh_gss_setup(Conf *conf)
                                         LOAD_LIBRARY_SEARCH_SYSTEM32 |
                                         LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR |
                                         LOAD_LIBRARY_SEARCH_USER_DIRS);
-	    }
-	    sfree(buffer);
-	}
-	RegCloseKey(regkey);
+            }
+            sfree(buffer);
+        }
+        RegCloseKey(regkey);
     }
     if (module) {
-	struct ssh_gss_library *lib =
-	    &list->libraries[list->nlibraries++];
+        struct ssh_gss_library *lib =
+            &list->libraries[list->nlibraries++];
 
-	lib->id = 0;
-	lib->gsslogmsg = "Using GSSAPI from GSSAPI"MIT_KERB_SUFFIX".DLL";
-	lib->handle = (void *)module;
+        lib->id = 0;
+        lib->gsslogmsg = "Using GSSAPI from GSSAPI"MIT_KERB_SUFFIX".DLL";
+        lib->handle = (void *)module;
 
 #define BIND_GSS_FN(name) \
     lib->u.gssapi.name = (t_gss_##name) GetProcAddress(module, "gss_" #name)
@@ -181,23 +181,23 @@ struct ssh_gss_liblist *ssh_gss_setup(Conf *conf)
     /* Microsoft SSPI Implementation */
     module = load_system32_dll("secur32.dll");
     if (module) {
-	struct ssh_gss_library *lib =
-	    &list->libraries[list->nlibraries++];
+        struct ssh_gss_library *lib =
+            &list->libraries[list->nlibraries++];
 
-	lib->id = 1;
-	lib->gsslogmsg = "Using SSPI from SECUR32.DLL";
-	lib->handle = (void *)module;
+        lib->id = 1;
+        lib->gsslogmsg = "Using SSPI from SECUR32.DLL";
+        lib->handle = (void *)module;
 
-	GET_WINDOWS_FUNCTION(module, AcquireCredentialsHandleA);
-	GET_WINDOWS_FUNCTION(module, InitializeSecurityContextA);
-	GET_WINDOWS_FUNCTION(module, FreeContextBuffer);
-	GET_WINDOWS_FUNCTION(module, FreeCredentialsHandle);
-	GET_WINDOWS_FUNCTION(module, DeleteSecurityContext);
-	GET_WINDOWS_FUNCTION(module, QueryContextAttributesA);
-	GET_WINDOWS_FUNCTION(module, MakeSignature);
+        GET_WINDOWS_FUNCTION(module, AcquireCredentialsHandleA);
+        GET_WINDOWS_FUNCTION(module, InitializeSecurityContextA);
+        GET_WINDOWS_FUNCTION(module, FreeContextBuffer);
+        GET_WINDOWS_FUNCTION(module, FreeCredentialsHandle);
+        GET_WINDOWS_FUNCTION(module, DeleteSecurityContext);
+        GET_WINDOWS_FUNCTION(module, QueryContextAttributesA);
+        GET_WINDOWS_FUNCTION(module, MakeSignature);
         GET_WINDOWS_FUNCTION(module, VerifySignature);
 
-	ssh_sspi_bind_fns(lib);
+        ssh_sspi_bind_fns(lib);
     }
 
     /*
@@ -234,13 +234,13 @@ struct ssh_gss_liblist *ssh_gss_setup(Conf *conf)
                                LOAD_LIBRARY_SEARCH_USER_DIRS);
     }
     if (module) {
-	struct ssh_gss_library *lib =
-	    &list->libraries[list->nlibraries++];
+        struct ssh_gss_library *lib =
+            &list->libraries[list->nlibraries++];
 
-	lib->id = 2;
-	lib->gsslogmsg = dupprintf("Using GSSAPI from user-specified"
-				   " library '%s'", path);
-	lib->handle = (void *)module;
+        lib->id = 2;
+        lib->gsslogmsg = dupprintf("Using GSSAPI from user-specified"
+                                   " library '%s'", path);
+        lib->handle = (void *)module;
 
 #define BIND_GSS_FN(name) \
     lib->u.gssapi.name = (t_gss_##name) GetProcAddress(module, "gss_" #name)
@@ -280,19 +280,19 @@ void ssh_gss_cleanup(struct ssh_gss_liblist *list)
      * another SSH instance still using it.
      */
     for (i = 0; i < list->nlibraries; i++) {
-	FreeLibrary((HMODULE)list->libraries[i].handle);
-	if (list->libraries[i].id == 2) {
-	    /* The 'custom' id involves a dynamically allocated message.
-	     * Note that we must cast away the 'const' to free it. */
-	    sfree((char *)list->libraries[i].gsslogmsg);
-	}
+        FreeLibrary((HMODULE)list->libraries[i].handle);
+        if (list->libraries[i].id == 2) {
+            /* The 'custom' id involves a dynamically allocated message.
+             * Note that we must cast away the 'const' to free it. */
+            sfree((char *)list->libraries[i].gsslogmsg);
+        }
     }
     sfree(list->libraries);
     sfree(list);
 }
 
 static Ssh_gss_stat ssh_sspi_indicate_mech(struct ssh_gss_library *lib,
-					   Ssh_gss_buf *mech)
+                                           Ssh_gss_buf *mech)
 {
     *mech = gss_mech_krb5;
     return SSH_GSS_OK;
@@ -300,13 +300,13 @@ static Ssh_gss_stat ssh_sspi_indicate_mech(struct ssh_gss_library *lib,
 
 
 static Ssh_gss_stat ssh_sspi_import_name(struct ssh_gss_library *lib,
-					 char *host, Ssh_gss_name *srv_name)
+                                         char *host, Ssh_gss_name *srv_name)
 {
     char *pStr;
 
     /* Check hostname */
     if (host == NULL) return SSH_GSS_FAILURE;
-    
+
     /* copy it into form host/FQDN */
     pStr = dupcat("host/", host, NULL);
 
@@ -330,13 +330,13 @@ static Ssh_gss_stat ssh_sspi_acquire_cred(struct ssh_gss_library *lib,
        the current logged-in user */
 
     winctx->maj_stat = p_AcquireCredentialsHandleA(NULL,
-						   "Kerberos",
-						   SECPKG_CRED_OUTBOUND,
-						   NULL,
-						   NULL,
-						   NULL,
-						   NULL,
-						   &winctx->cred_handle,
+                                                   "Kerberos",
+                                                   SECPKG_CRED_OUTBOUND,
+                                                   NULL,
+                                                   NULL,
+                                                   NULL,
+                                                   NULL,
+                                                   &winctx->cred_handle,
                                                    NULL);
 
     if (winctx->maj_stat != SEC_E_OK) {
@@ -407,10 +407,10 @@ static void localexp_to_exp_lifetime(TimeStamp *localexp,
 }
 
 static Ssh_gss_stat ssh_sspi_init_sec_context(struct ssh_gss_library *lib,
-					      Ssh_gss_ctx *ctx,
-					      Ssh_gss_name srv_name,
-					      int to_deleg,
-					      Ssh_gss_buf *recv_tok,
+                                              Ssh_gss_ctx *ctx,
+                                              Ssh_gss_name srv_name,
+                                              int to_deleg,
+                                              Ssh_gss_buf *recv_tok,
                                               Ssh_gss_buf *send_tok,
                                               time_t *expiry,
                                               unsigned long *lifetime)
@@ -421,23 +421,23 @@ static Ssh_gss_stat ssh_sspi_init_sec_context(struct ssh_gss_library *lib,
     SecBufferDesc output_desc={SECBUFFER_VERSION,1,&wsend_tok};
     SecBufferDesc input_desc ={SECBUFFER_VERSION,1,&wrecv_tok};
     unsigned long flags=ISC_REQ_MUTUAL_AUTH|ISC_REQ_REPLAY_DETECT|
-	ISC_REQ_CONFIDENTIALITY|ISC_REQ_ALLOCATE_MEMORY;
+        ISC_REQ_CONFIDENTIALITY|ISC_REQ_ALLOCATE_MEMORY;
     unsigned long ret_flags=0;
     TimeStamp localexp;
-    
+
     /* check if we have to delegate ... */
     if (to_deleg) flags |= ISC_REQ_DELEGATE;
     winctx->maj_stat = p_InitializeSecurityContextA(&winctx->cred_handle,
-						    winctx->context_handle,
-						    (char*) srv_name,
-						    flags,
-						    0,          /* reserved */
-						    SECURITY_NATIVE_DREP,
-						    &input_desc,
-						    0,          /* reserved */
-						    &winctx->context,
-						    &output_desc,
-						    &ret_flags,
+                                                    winctx->context_handle,
+                                                    (char*) srv_name,
+                                                    flags,
+                                                    0,          /* reserved */
+                                                    SECURITY_NATIVE_DREP,
+                                                    &input_desc,
+                                                    0,          /* reserved */
+                                                    &winctx->context,
+                                                    &output_desc,
+                                                    &ret_flags,
                                                     &localexp);
 
     localexp_to_exp_lifetime(&localexp, expiry, lifetime);
@@ -446,16 +446,16 @@ static Ssh_gss_stat ssh_sspi_init_sec_context(struct ssh_gss_library *lib,
     winctx->context_handle = &winctx->context;
     send_tok->value = wsend_tok.pvBuffer;
     send_tok->length = wsend_tok.cbBuffer;
-  
+
     /* check & return our status */
     if (winctx->maj_stat==SEC_E_OK) return SSH_GSS_S_COMPLETE;
     if (winctx->maj_stat==SEC_I_CONTINUE_NEEDED) return SSH_GSS_S_CONTINUE_NEEDED;
-    
+
     return SSH_GSS_FAILURE;
 }
 
 static Ssh_gss_stat ssh_sspi_free_tok(struct ssh_gss_library *lib,
-				      Ssh_gss_buf *send_tok)
+                                      Ssh_gss_buf *send_tok)
 {
     /* check input */
     if (send_tok == NULL) return SSH_GSS_FAILURE;
@@ -463,12 +463,12 @@ static Ssh_gss_stat ssh_sspi_free_tok(struct ssh_gss_library *lib,
     /* free Windows buffer */
     p_FreeContextBuffer(send_tok->value);
     SSH_GSS_CLEAR_BUF(send_tok);
-    
+
     return SSH_GSS_OK;
 }
 
 static Ssh_gss_stat ssh_sspi_release_cred(struct ssh_gss_library *lib,
-					  Ssh_gss_ctx *ctx)
+                                          Ssh_gss_ctx *ctx)
 {
     winSsh_gss_ctx *winctx= (winSsh_gss_ctx *) *ctx;
 
@@ -488,7 +488,7 @@ static Ssh_gss_stat ssh_sspi_release_cred(struct ssh_gss_library *lib,
 
 
 static Ssh_gss_stat ssh_sspi_release_name(struct ssh_gss_library *lib,
-					  Ssh_gss_name *srv_name)
+                                          Ssh_gss_name *srv_name)
 {
     char *pStr= (char *) *srv_name;
 
@@ -500,7 +500,7 @@ static Ssh_gss_stat ssh_sspi_release_name(struct ssh_gss_library *lib,
 }
 
 static Ssh_gss_stat ssh_sspi_display_status(struct ssh_gss_library *lib,
-					    Ssh_gss_ctx ctx, Ssh_gss_buf *buf)
+                                            Ssh_gss_ctx ctx, Ssh_gss_buf *buf)
 {
     winSsh_gss_ctx *winctx = (winSsh_gss_ctx *) ctx;
     const char *msg;
@@ -511,48 +511,48 @@ static Ssh_gss_stat ssh_sspi_display_status(struct ssh_gss_library *lib,
     switch (winctx->maj_stat) {
       case SEC_E_OK: msg="SSPI status OK"; break;
       case SEC_E_INVALID_HANDLE: msg="The handle passed to the function"
-	    " is invalid.";
-	break;
+            " is invalid.";
+        break;
       case SEC_E_TARGET_UNKNOWN: msg="The target was not recognized."; break;
       case SEC_E_LOGON_DENIED: msg="The logon failed."; break;
       case SEC_E_INTERNAL_ERROR: msg="The Local Security Authority cannot"
-	    " be contacted.";
-	break;
+            " be contacted.";
+        break;
       case SEC_E_NO_CREDENTIALS: msg="No credentials are available in the"
-	    " security package.";
-	break;
+            " security package.";
+        break;
       case SEC_E_NO_AUTHENTICATING_AUTHORITY:
-	msg="No authority could be contacted for authentication."
-	    "The domain name of the authenticating party could be wrong,"
-	    " the domain could be unreachable, or there might have been"
-	    " a trust relationship failure.";
-	break;
+        msg="No authority could be contacted for authentication."
+            "The domain name of the authenticating party could be wrong,"
+            " the domain could be unreachable, or there might have been"
+            " a trust relationship failure.";
+        break;
       case SEC_E_INSUFFICIENT_MEMORY:
-	msg="One or more of the SecBufferDesc structures passed as"
-	    " an OUT parameter has a buffer that is too small.";
-	break;
+        msg="One or more of the SecBufferDesc structures passed as"
+            " an OUT parameter has a buffer that is too small.";
+        break;
       case SEC_E_INVALID_TOKEN:
-	msg="The error is due to a malformed input token, such as a"
-	    " token corrupted in transit, a token"
-	    " of incorrect size, or a token passed into the wrong"
-	    " security package. Passing a token to"
-	    " the wrong package can happen if client and server did not"
-	    " negotiate the proper security package.";
-	break;
+        msg="The error is due to a malformed input token, such as a"
+            " token corrupted in transit, a token"
+            " of incorrect size, or a token passed into the wrong"
+            " security package. Passing a token to"
+            " the wrong package can happen if client and server did not"
+            " negotiate the proper security package.";
+        break;
       default:
-	msg = "Internal SSPI error";
-	break;
+        msg = "Internal SSPI error";
+        break;
     }
 
     buf->value = dupstr(msg);
     buf->length = strlen(buf->value);
-    
+
     return SSH_GSS_OK;
 }
 
 static Ssh_gss_stat ssh_sspi_get_mic(struct ssh_gss_library *lib,
-				     Ssh_gss_ctx ctx, Ssh_gss_buf *buf,
-				     Ssh_gss_buf *hash)
+                                     Ssh_gss_ctx ctx, Ssh_gss_buf *buf,
+                                     Ssh_gss_buf *hash)
 {
     winSsh_gss_ctx *winctx= (winSsh_gss_ctx *) ctx;
     SecPkgContext_Sizes ContextSizes;
@@ -560,18 +560,18 @@ static Ssh_gss_stat ssh_sspi_get_mic(struct ssh_gss_library *lib,
     SecBuffer InputSecurityToken[2];
 
     if (winctx == NULL) return SSH_GSS_FAILURE;
-  
+
     winctx->maj_stat = 0;
 
     memset(&ContextSizes, 0, sizeof(ContextSizes));
 
     winctx->maj_stat = p_QueryContextAttributesA(&winctx->context,
-						 SECPKG_ATTR_SIZES,
-						 &ContextSizes);
-    
+                                                 SECPKG_ATTR_SIZES,
+                                                 &ContextSizes);
+
     if (winctx->maj_stat != SEC_E_OK ||
-	ContextSizes.cbMaxSignature == 0)
-	return winctx->maj_stat;
+        ContextSizes.cbMaxSignature == 0)
+        return winctx->maj_stat;
 
     InputBufferDescriptor.cBuffers = 2;
     InputBufferDescriptor.pBuffers = InputSecurityToken;
@@ -584,13 +584,13 @@ static Ssh_gss_stat ssh_sspi_get_mic(struct ssh_gss_library *lib,
     InputSecurityToken[1].pvBuffer = snewn(ContextSizes.cbMaxSignature, char);
 
     winctx->maj_stat = p_MakeSignature(&winctx->context,
-				       0,
-				       &InputBufferDescriptor,
-				       0);
+                                       0,
+                                       &InputBufferDescriptor,
+                                       0);
 
     if (winctx->maj_stat == SEC_E_OK) {
-	hash->length = InputSecurityToken[1].cbBuffer;
-	hash->value = InputSecurityToken[1].pvBuffer;
+        hash->length = InputSecurityToken[1].cbBuffer;
+        hash->value = InputSecurityToken[1].pvBuffer;
     }
 
     return winctx->maj_stat;
@@ -627,7 +627,7 @@ static Ssh_gss_stat ssh_sspi_verify_mic(struct ssh_gss_library *lib,
 }
 
 static Ssh_gss_stat ssh_sspi_free_mic(struct ssh_gss_library *lib,
-				      Ssh_gss_buf *hash)
+                                      Ssh_gss_buf *hash)
 {
     sfree(hash->value);
     return SSH_GSS_OK;

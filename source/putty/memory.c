@@ -46,22 +46,22 @@ void *saferealloc(void *ptr, size_t n, size_t size)
     void *p;
 
     if (n > INT_MAX / size) {
-	p = NULL;
+        p = NULL;
     } else {
-	size *= n;
-	if (!ptr) {
+        size *= n;
+        if (!ptr) {
 #ifdef MINEFIELD
-	    p = minefield_c_malloc(size);
+            p = minefield_c_malloc(size);
 #else
-	    p = malloc(size);
+            p = malloc(size);
 #endif
-	} else {
+        } else {
 #ifdef MINEFIELD
-	    p = minefield_c_realloc(ptr, size);
+            p = minefield_c_realloc(ptr, size);
 #else
-	    p = realloc(ptr, size);
+            p = realloc(ptr, size);
 #endif
-	}
+        }
     }
 
     if (!p)
@@ -74,9 +74,9 @@ void safefree(void *ptr)
 {
     if (ptr) {
 #ifdef MINEFIELD
-	minefield_c_free(ptr);
+        minefield_c_free(ptr);
 #else
-	free(ptr);
+        free(ptr);
 #endif
     }
 }

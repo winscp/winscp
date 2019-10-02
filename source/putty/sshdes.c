@@ -583,7 +583,7 @@ static inline LR des_round(LR in, const des_keysched *sched, size_t round)
 
 static inline LR des_inner_cipher(LR lr, const des_keysched *sched,
                                   size_t start, size_t step)
-{ 
+{
     lr = des_round(lr, sched, start+0x0*step);
     lr = des_round(lr, sched, start+0x1*step);
     lr = des_round(lr, sched, start+0x2*step);

@@ -148,7 +148,7 @@ information:
 use the \q{About PuTTY} option from the System menu. Please \e{do
 not} just tell us \q{I'm running the latest version}; e-mail can be
 delayed and it may not be obvious which version was the latest at
-the time you sent the message. 
+the time you sent the message.
 
 \b PuTTY is a multi-platform application; tell us what version of what
 OS you are running PuTTY on. (If you're running on Unix, or Windows
@@ -218,7 +218,7 @@ Secure Contact Key. See \k{pgpkeys-pubkey} for details of this.
 much information as possible about them, the same way you would with
 any other bug report.)
 
-\H{feedback-features} Requesting extra features 
+\H{feedback-features} Requesting extra features
 
 If you want to request a new feature in PuTTY, the very first things
 you should do are:
