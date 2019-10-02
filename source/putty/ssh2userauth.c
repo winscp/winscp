@@ -1302,10 +1302,14 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
 
                     sb = strbuf_new();
                     if (name.len) {
-                        stripctrl_retarget(s->ki_scc, BinarySink_UPCAST(sb));
-                        put_datapl(s->ki_scc, name);
-                        stripctrl_retarget(s->ki_scc, NULL);
-
+                        if (s->ki_scc) {
+                            stripctrl_retarget(s->ki_scc,
+                                               BinarySink_UPCAST(sb));
+                            put_datapl(s->ki_scc, name);
+                            stripctrl_retarget(s->ki_scc, NULL);
+                        } else {
+                            put_datapl(sb, name);
+                        }
                         s->cur_prompt->name_reqd = true;
                     } else {
                         put_datapl(sb, PTRLEN_LITERAL(
@@ -1316,10 +1320,14 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
 
                     sb = strbuf_new();
                     if (inst.len) {
-                        stripctrl_retarget(s->ki_scc, BinarySink_UPCAST(sb));
-                        put_datapl(s->ki_scc, inst);
-                        stripctrl_retarget(s->ki_scc, NULL);
-
+                        if (s->ki_scc) {
+                            stripctrl_retarget(s->ki_scc,
+                                               BinarySink_UPCAST(sb));
+                            put_datapl(s->ki_scc, inst);
+                            stripctrl_retarget(s->ki_scc, NULL);
+                        } else {
+                            put_datapl(sb, inst);
+                        }
                         s->cur_prompt->instr_reqd = true;
                     } else {
                         s->cur_prompt->instr_reqd = false;

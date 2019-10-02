@@ -50,7 +50,6 @@ static const SocketVtable ErrorSocket_sockvt = {
     NULL /* write */,
     NULL /* write_oob */,
     NULL /* write_eof */,
-    NULL /* flush */,
     NULL /* set_frozen */,
     sk_error_socket_error,
     sk_error_peer_info,

@@ -887,6 +887,9 @@ static const char *ssh_init(Seat *seat, Backend **backend_handle,
     ssh->ic_out_raw.fn = ssh_bpp_output_raw_data_callback;
     ssh->ic_out_raw.ctx = ssh;
 
+    ssh->term_width = conf_get_int(ssh->conf, CONF_width);
+    ssh->term_height = conf_get_int(ssh->conf, CONF_height);
+
     ssh->backend.vt = &ssh_backend;
     *backend_handle = &ssh->backend;
 

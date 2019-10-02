@@ -156,12 +156,6 @@ static void sk_handle_write_eof(Socket *s)
     handle_write_eof(hs->send_h);
 }
 
-static void sk_handle_flush(Socket *s)
-{
-    /* HandleSocket *hs = container_of(s, HandleSocket, sock); */
-    /* do nothing */
-}
-
 static void handle_socket_unfreeze(void *hsv)
 {
     HandleSocket *hs = (HandleSocket *)hsv;
@@ -315,7 +309,6 @@ static const SocketVtable HandleSocket_sockvt = {
     sk_handle_write,
     sk_handle_write_oob,
     sk_handle_write_eof,
-    sk_handle_flush,
     sk_handle_set_frozen,
     sk_handle_socket_error,
     sk_handle_peer_info,

@@ -124,7 +124,7 @@ static tree234 *sktree;
 static int cmpfortree(void *av, void *bv)
 {
     NetSocket *a = (NetSocket *)av, *b = (NetSocket *)bv;
-    unsigned long as = (unsigned long) a->s, bs = (unsigned long) b->s;
+    uintptr_t as = (uintptr_t) a->s, bs = (uintptr_t) b->s;
     if (as < bs)
 	return -1;
     if (as > bs)
@@ -823,14 +823,6 @@ static Plug *sk_net_plug(Socket *sock, Plug *p)
     return ret;
 }
 
-static void sk_net_flush(Socket *s)
-{
-    /*
-     * We send data to the socket as soon as we can anyway,
-     * so we don't need to do anything here.  :-)
-     */
-}
-
 static void sk_net_close(Socket *s);
 static size_t sk_net_write(Socket *s, const void *data, size_t len);
 static size_t sk_net_write_oob(Socket *s, const void *data, size_t len);
@@ -845,7 +837,6 @@ static const SocketVtable NetSocket_sockvt = {
     sk_net_write,
     sk_net_write_oob,
     sk_net_write_eof,
-    sk_net_flush,
     sk_net_set_frozen,
     sk_net_socket_error,
     sk_net_peer_info,

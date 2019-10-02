@@ -162,6 +162,8 @@ static inline void stripctrl_locale_put_wc(StripCtrlCharsImpl *scc, wchar_t wc)
     int width = mk_wcwidth(wc);
     if ((iswprint(wc) && width >= 0) || stripctrl_ctrlchar_ok(scc, wc)) {
         /* Printable character, or one we're going to let through anyway. */
+        if (width < 0)
+            width = 0;   /* sanitise for stripctrl_check_line_limit */
     } else if (scc->substitution) {
         wc = scc->substitution;
         width = mk_wcwidth(wc);
@@ -196,6 +198,9 @@ static inline void stripctrl_term_put_wc(
                 width = term_char_width(scc->term, wc);
                 assert(width >= 0);
             }
+        } else {
+            if (width < 0)
+                width = 0; /* sanitise for stripctrl_check_line_limit */
         }
 
         if (wc == '\012') {

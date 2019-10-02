@@ -288,12 +288,12 @@ settings_e *enum_settings_start(void)
 
 bool enum_settings_next(settings_e *e, strbuf *sb)
 {
-    size_t regbuf_size = 256;
+    size_t regbuf_size = MAX_PATH + 1;
     char *regbuf = snewn(regbuf_size, char);
     bool success;
 
     while (1) {
-        DWORD retd = RegEnumKey(e->key, e->i++, regbuf, regbuf_size);
+        DWORD retd = RegEnumKey(e->key, e->i, regbuf, regbuf_size);
         if (retd != ERROR_MORE_DATA) {
             success = (retd == ERROR_SUCCESS);
             break;
@@ -304,6 +304,7 @@ bool enum_settings_next(settings_e *e, strbuf *sb)
     if (success)
         unescape_registry_key(regbuf, sb);
 
+    e->i++;
     sfree(regbuf);
     return success;
 }
