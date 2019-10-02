@@ -980,7 +980,7 @@ bool ssh1_common_filter_queue(PacketProtocolLayer *ppl)
             ssh_remote_error(ppl->ssh,
                              "Remote side sent disconnect message:\n\"%.*s\"",
                              PTRLEN_PRINTF(msg));
-            pq_pop(ppl->in_pq);
+            /* don't try to pop the queue, because we've been freed! */
             return true;               /* indicate that we've been freed */
 
           case SSH1_MSG_DEBUG:

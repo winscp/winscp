@@ -314,8 +314,8 @@ static struct kexinit_algorithm *ssh2_kexinit_addalg(struct kexinit_algorithm
             list[i].name = name;
             return &list[i];
         }
-    assert(!"No space in KEXINIT list");
-    return NULL;
+
+    unreachable("Should never run out of space in KEXINIT list");
 }
 
 bool ssh2_common_filter_queue(PacketProtocolLayer *ppl)

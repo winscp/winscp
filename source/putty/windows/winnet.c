@@ -1140,7 +1140,6 @@ Socket *sk_newlistener(const char *srcaddr, int port, Plug *plug,
     char *errstr;
     NetSocket *ret;
     int retcode;
-    int on = 1;
 
     int address_family;
 
@@ -1197,7 +1196,11 @@ Socket *sk_newlistener(const char *srcaddr, int port, Plug *plug,
 
     ret->oobinline = false;
 
-    p_setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (const char *)&on, sizeof(on));
+    {
+        BOOL on = true;
+        p_setsockopt(s, SOL_SOCKET, SO_EXCLUSIVEADDRUSE,
+                     (const char *)&on, sizeof(on));
+    }
 
 #ifndef NO_IPV6
         if (address_family == AF_INET6) {

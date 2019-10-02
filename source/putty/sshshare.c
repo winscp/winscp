@@ -1292,8 +1292,7 @@ void share_got_pkt_from_server(ssh_sharing_connstate *cs, int type,
         break;
 
       default:
-        assert(!"This packet type should never have come from ssh.c");
-        break;
+        unreachable("This packet type should never have come from ssh.c");
     }
 }
 
