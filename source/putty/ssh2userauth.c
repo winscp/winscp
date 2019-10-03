@@ -1327,6 +1327,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
 
                     sb = strbuf_new();
                     if (name.len) {
+                        put_datapl(sb, PTRLEN_LITERAL("SSH server: ")); // WINSCP
                         if (s->ki_scc) {
                             stripctrl_retarget(s->ki_scc,
                                                BinarySink_UPCAST(sb));
