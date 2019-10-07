@@ -371,7 +371,7 @@ void __fastcall TFTPFileSystem::Open()
 
   UnicodeString HostName = Data->HostNameExpanded;
   UnicodeString UserName = Data->UserNameExpanded;
-  UnicodeString Password = NormalizeString(Data->Password);
+  UnicodeString Password = Data->Password;
   UnicodeString Account = Data->FtpAccount;
   UnicodeString Path = Data->RemoteDirectory;
   int ServerType;

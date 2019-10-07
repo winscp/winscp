@@ -1076,7 +1076,7 @@ UnicodeString __fastcall TSessionLog::LogSensitive(const UnicodeString & Str)
 {
   if (FConfiguration->LogSensitive && !Str.IsEmpty())
   {
-    return Str;
+    return NormalizeString(Str);
   }
   else
   {
@@ -1197,7 +1197,7 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
     }
     ADF(L"Host name: %s (%sPort: %d)", (Data->HostNameExpanded, AddressFamily, Data->PortNumber));
     ADF(L"User name: %s (Password: %s, Key file: %s, Passphrase: %s)",
-      (Data->UserNameExpanded, LogSensitive(NormalizeString(Data->Password)),
+      (Data->UserNameExpanded, LogSensitive(Data->Password),
        LogSensitive(Data->PublicKeyFile), LogSensitive(Data->Passphrase)));
     if (Data->UsesSsh)
     {
