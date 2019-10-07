@@ -1454,7 +1454,6 @@ public:
 
 private:
   TMemo * SettingsMemo;
-  TButton * AdddButton;
 
   void __fastcall AddButtonClick(TObject * Sender);
   void __fastcall SettingsMemoKeyDown(TObject * Sender, WORD & Key, TShiftState Shift);
@@ -1473,11 +1472,11 @@ __fastcall TSiteRawDialog::TSiteRawDialog() :
   SettingsMemo->OnKeyDown = SettingsMemoKeyDown;
   AddEdit(SettingsMemo, NULL);
 
-  AdddButton = new TButton(this);
-  AdddButton->Caption = LoadStr(SITE_RAW_ADD);
-  AdddButton->Width = OKButton->Width;
-  AdddButton->OnClick = AddButtonClick;
-  AddDialogButton(AdddButton);
+  TButton * AddButton = new TButton(this);
+  AddButton->Caption = LoadStr(SITE_RAW_ADD);
+  AddButton->Width = OKButton->Width;
+  AddButton->OnClick = AddButtonClick;
+  AddDialogButton(AddButton);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TSiteRawDialog::Execute(TSessionData * Data)
