@@ -1452,9 +1452,6 @@ public:
 
   bool __fastcall Execute(TSessionData * Data);
 
-protected:
-//  virtual void __fastcall DoChange(bool & CanSubmit);
-
 private:
   TMemo * SettingsMemo;
   TButton * AdddButton;
@@ -1586,19 +1583,6 @@ void TSiteRawDialog::DeleteNames(TStrings * Names, TStrings * Options)
     }
   }
 }
-//---------------------------------------------------------------------------
-/*void __fastcall TUsageStatisticsDialog::DoChange(bool & CanSubmit)
-{
-  TCustomDialog::DoChange(CanSubmit);
-  UnicodeString Text = Configuration->Usage->Serialize(L"\n", FilterEdit->Text);
-  bool NoUsage = Text.IsEmpty();
-  ClipboardButton->Enabled = !NoUsage;
-  if (NoUsage)
-  {
-    Text = LoadStr(USAGE_DATA_NONE2);
-  }
-  UsageMemo->Lines->Text = Text;
-} */
 //---------------------------------------------------------------------------
 void __fastcall DoSiteRawDialog(TSessionData * Data)
 {
