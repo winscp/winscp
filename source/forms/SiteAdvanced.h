@@ -323,6 +323,7 @@ public:
 
 protected:
   void __fastcall ChangePage(TTabSheet * Tab);
+  void __fastcall PageChanged();
   virtual void __fastcall Dispatch(void * Message);
   bool __fastcall AllowAlgDrag(TListBox * AlgListBox, int X, int Y);
   void __fastcall AlgMove(TListBox * AlgListBox, int Source, int Dest);

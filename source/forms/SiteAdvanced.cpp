@@ -1108,6 +1108,7 @@ void __fastcall TSiteAdvancedDialog::NavigationTreeChange(TObject * /*Sender*/,
       ResetSystemSettings(this);
     }
 
+    PageChanged();
     UpdateControls();
   }
 }
@@ -1115,12 +1116,13 @@ void __fastcall TSiteAdvancedDialog::NavigationTreeChange(TObject * /*Sender*/,
 void __fastcall TSiteAdvancedDialog::ChangePage(TTabSheet * Tab)
 {
   PageControl->ActivePage = Tab;
-  PageControlChange(PageControl);
-  FPrivateKeyMonitors.reset(NULL);
+  PageChanged();
 }
 //---------------------------------------------------------------------------
-void __fastcall TSiteAdvancedDialog::PageControlChange(TObject *Sender)
+void __fastcall TSiteAdvancedDialog::PageChanged()
 {
+  FPrivateKeyMonitors.reset(NULL);
+
   bool Found = false;
   if (PageControl->ActivePage)
   {
@@ -1137,8 +1139,14 @@ void __fastcall TSiteAdvancedDialog::PageControlChange(TObject *Sender)
 
   if (DebugAlwaysTrue(Found))
   {
-    DataChange(Sender);
+    DataChange(NULL);
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSiteAdvancedDialog::PageControlChange(TObject *)
+{
+  DebugFail(); // should never happen as user cannot change the page
+  PageChanged();
 }
 //---------------------------------------------------------------------------
 void __fastcall TSiteAdvancedDialog::CMDialogKey(TWMKeyDown & Message)
