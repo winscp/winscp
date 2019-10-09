@@ -166,34 +166,7 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
 {
   Conf * conf = conf_new();
 
-  DebugAssert((asOn == FORCE_ON) && (asOff == FORCE_OFF) && (asAuto == AUTO));
-
-  #define CONF_ssh_cipherlist_MAX CIPHER_MAX
-  #define CONF_DEF_INT_NONE(KEY) conf_set_int(conf, KEY, 0);
-  #define CONF_DEF_STR_NONE(KEY) conf_set_str(conf, KEY, "");
-  // noop, used only for these and we set the first four explicitly below and latter two are not used in our code
-  #define CONF_DEF_INT_INT(KEY) DebugAssert((KEY == CONF_ssh_cipherlist) || (KEY == CONF_ssh_kexlist) || (KEY == CONF_ssh_gsslist) || (KEY == CONF_ssh_hklist) || (KEY == CONF_colours) || (KEY == CONF_wordness));
-  // noop, used only for these four and they all can handle undef value
-  #define CONF_DEF_STR_STR(KEY) DebugAssert((KEY == CONF_ttymodes) || (KEY == CONF_portfwd) || (KEY == CONF_environmt) || (KEY == CONF_ssh_manual_hostkeys));
-  // noop, not used in our code
-  #define CONF_DEF_FONT_NONE(KEY) DebugAssert((KEY == CONF_font) || (KEY == CONF_boldfont) || (KEY == CONF_widefont) || (KEY == CONF_wideboldfont));
-  #define CONF_DEF_FILENAME_NONE(KEY) \
-    { \
-      Filename * filename = filename_from_str(""); \
-      conf_set_filename(conf, KEY, filename); \
-      filename_free(filename); \
-    }
-  #define CONF_DEF_BOOL_NONE(KEY) conf_set_bool(conf, KEY, false);
-  #define CONF_SET_DEFAULT(VALTYPE, KEYTYPE, KEYWORD) CONF_DEF_ ## VALTYPE ## _ ## KEYTYPE(CONF_ ## KEYWORD);
-  CONFIG_OPTIONS(CONF_SET_DEFAULT);
-  #undef CONF_SET_DEFAULT
-  #undef CONF_DEF_BOOL_NONE
-  #undef CONF_DEF_FILENAME_NONE
-  #undef CONF_DEF_FONT_NONE
-  #undef CONF_DEF_STR_STR
-  #undef CONF_DEF_INT_INT
-  #undef CONF_DEF_STR_NONE
-  #undef CONF_DEF_INT_NONE
+  do_defaults(NULL, conf);
 
   // user-configurable settings
   conf_set_str(conf, CONF_host, AnsiString(Data->HostNameExpanded).c_str());
