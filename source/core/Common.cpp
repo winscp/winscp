@@ -4036,3 +4036,21 @@ TStrings * TlsCipherList()
 
   return Result.release();
 }
+//---------------------------------------------------------------------------
+void SetStringValueEvenIfEmpty(TStrings * Strings, const UnicodeString & Name, const UnicodeString & Value)
+{
+  if (Value.IsEmpty())
+  {
+    int Index = Strings->IndexOfName(Name);
+    if (Index < 0)
+    {
+      Index = Strings->Add(L"");
+    }
+    UnicodeString Line = Name + Strings->NameValueSeparator;
+    Strings->Strings[Index] = Line;
+  }
+  else
+  {
+    Strings->Values[Name] = Value;
+  }
+}

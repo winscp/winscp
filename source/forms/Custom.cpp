@@ -1263,20 +1263,7 @@ bool __fastcall TCustomCommandOptionsDialog::Execute(TShortCut * ShortCut)
 
           // The default value setter deletes the "name" when the value is empty.
           // It would cause us to fall back to the default value, but we want to remember the empty value.
-          if (Value.IsEmpty())
-          {
-            int Index = FCustomCommandOptions->IndexOfName(OptionKey);
-            if (Index < 0)
-            {
-              Index = FCustomCommandOptions->Add(L"");
-            }
-            UnicodeString Line = OptionKey + FCustomCommandOptions->NameValueSeparator;
-            FCustomCommandOptions->Strings[Index] = Line;
-          }
-          else
-          {
-            FCustomCommandOptions->Values[OptionKey] = Value;
-          }
+          SetStringValueEvenIfEmpty(FCustomCommandOptions, OptionKey, Value);
         }
 
         ControlIndex++;

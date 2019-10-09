@@ -1781,7 +1781,7 @@ void __fastcall TOptionsIniFile::WriteString(const UnicodeString Section, const 
       DebugAlwaysTrue(AllowSection(Section)))
   {
     UnicodeString Name = FormatKey(Section, Ident);
-    FOptions->Values[Name] = Value;
+    SetStringValueEvenIfEmpty(FOptions, Name, Value);
   }
 }
 //---------------------------------------------------------------------------
