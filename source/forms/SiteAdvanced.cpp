@@ -426,212 +426,212 @@ TSshProt __fastcall TSiteAdvancedDialog::GetSshProt()
   return (SshProtCombo2->ItemIndex == 0) ? ssh1only : ssh2only;
 }
 //---------------------------------------------------------------------
-void __fastcall TSiteAdvancedDialog::SaveSession()
+void __fastcall TSiteAdvancedDialog::SaveSession(TSessionData * SessionData)
 {
   // Last resort validation,
   // in case the test in EncryptKeyEditExit was previously bypassed due to IsCancelButtonBeingClicked
   EncryptKeyEditExit(GetEncryptKeyEdit());
 
   // SSH page
-  FSessionData->Compression = CompressionCheck->Checked;
-  FSessionData->Ssh2DES = Ssh2LegacyDESCheck->Checked;
+  SessionData->Compression = CompressionCheck->Checked;
+  SessionData->Ssh2DES = Ssh2LegacyDESCheck->Checked;
 
-  FSessionData->SshProt = GetSshProt();
+  SessionData->SshProt = GetSshProt();
 
   for (int Index = 0; Index < CIPHER_COUNT; Index++)
   {
-    FSessionData->Cipher[Index] = (TCipher)CipherListBox->Items->Objects[Index];
+    SessionData->Cipher[Index] = (TCipher)CipherListBox->Items->Objects[Index];
   }
 
   // Kex page
 
   for (int Index = 0; Index < KEX_COUNT; Index++)
   {
-    FSessionData->Kex[Index] = (TKex)KexListBox->Items->Objects[Index];
+    SessionData->Kex[Index] = (TKex)KexListBox->Items->Objects[Index];
   }
 
-  FSessionData->RekeyTime = RekeyTimeEdit->AsInteger;
-  FSessionData->RekeyData = RekeyDataEdit->Text;
+  SessionData->RekeyTime = RekeyTimeEdit->AsInteger;
+  SessionData->RekeyData = RekeyDataEdit->Text;
 
   // Authentication page
-  FSessionData->SshNoUserAuth = SshNoUserAuthCheck->Checked;
-  FSessionData->TryAgent = TryAgentCheck->Checked;
-  FSessionData->AuthTIS = AuthTISCheck->Checked;
-  FSessionData->AuthKI = AuthKICheck->Checked;
-  FSessionData->AuthKIPassword = AuthKIPasswordCheck->Checked;
-  FSessionData->AuthGSSAPI = AuthGSSAPICheck3->Checked;
-  FSessionData->GSSAPIFwdTGT = GSSAPIFwdTGTCheck->Checked;
-  FSessionData->AgentFwd = AgentFwdCheck->Checked;
-  FSessionData->PublicKeyFile = PrivateKeyEdit3->Text;
+  SessionData->SshNoUserAuth = SshNoUserAuthCheck->Checked;
+  SessionData->TryAgent = TryAgentCheck->Checked;
+  SessionData->AuthTIS = AuthTISCheck->Checked;
+  SessionData->AuthKI = AuthKICheck->Checked;
+  SessionData->AuthKIPassword = AuthKIPasswordCheck->Checked;
+  SessionData->AuthGSSAPI = AuthGSSAPICheck3->Checked;
+  SessionData->GSSAPIFwdTGT = GSSAPIFwdTGTCheck->Checked;
+  SessionData->AgentFwd = AgentFwdCheck->Checked;
+  SessionData->PublicKeyFile = PrivateKeyEdit3->Text;
 
   // Connection page
-  FSessionData->FtpPasvMode = FtpPasvModeCheck->Checked;
-  FSessionData->SendBuf = BufferSizeCheck->Checked ? DefaultSendBuf : 0;
-  FSessionData->SshSimple = BufferSizeCheck->Checked;
+  SessionData->FtpPasvMode = FtpPasvModeCheck->Checked;
+  SessionData->SendBuf = BufferSizeCheck->Checked ? DefaultSendBuf : 0;
+  SessionData->SshSimple = BufferSizeCheck->Checked;
 
   if (PingNullPacketButton->Checked)
   {
-    FSessionData->PingType = ptNullPacket;
+    SessionData->PingType = ptNullPacket;
   }
   else if (PingDummyCommandButton->Checked)
   {
-    FSessionData->PingType = ptDummyCommand;
+    SessionData->PingType = ptDummyCommand;
   }
   else
   {
-    FSessionData->PingType = ptOff;
+    SessionData->PingType = ptOff;
   }
-  FSessionData->PingInterval = PingIntervalSecEdit->AsInteger;
-  FSessionData->FtpPingType = (FtpPingDummyCommandButton->Checked ? ptDummyCommand : ptOff);
-  FSessionData->FtpPingInterval = FtpPingIntervalSecEdit->AsInteger;
-  FSessionData->Timeout = TimeoutEdit->AsInteger;
+  SessionData->PingInterval = PingIntervalSecEdit->AsInteger;
+  SessionData->FtpPingType = (FtpPingDummyCommandButton->Checked ? ptDummyCommand : ptOff);
+  SessionData->FtpPingInterval = FtpPingIntervalSecEdit->AsInteger;
+  SessionData->Timeout = TimeoutEdit->AsInteger;
 
   if (IPv4Button->Checked)
   {
-    FSessionData->AddressFamily = afIPv4;
+    SessionData->AddressFamily = afIPv4;
   }
   else if (IPv6Button->Checked)
   {
-    FSessionData->AddressFamily = afIPv6;
+    SessionData->AddressFamily = afIPv6;
   }
   else
   {
-    FSessionData->AddressFamily = afAuto;
+    SessionData->AddressFamily = afAuto;
   }
 
   // Directories page
-  FSessionData->SynchronizeBrowsing = SynchronizeBrowsingCheck->Checked;
-  FSessionData->LocalDirectory = LocalDirectoryEdit->Text;
-  FSessionData->RemoteDirectory = RemoteDirectoryEdit->Text;
-  FSessionData->UpdateDirectories = UpdateDirectoriesCheck->Checked;
-  FSessionData->CacheDirectories = CacheDirectoriesCheck->Checked;
-  FSessionData->CacheDirectoryChanges = CacheDirectoryChangesCheck->Checked;
-  FSessionData->PreserveDirectoryChanges = PreserveDirectoryChangesCheck->Checked;
-  FSessionData->ResolveSymlinks = ResolveSymlinksCheck->Checked;
-  FSessionData->FollowDirectorySymlinks = FollowDirectorySymlinksCheck->Checked;
+  SessionData->SynchronizeBrowsing = SynchronizeBrowsingCheck->Checked;
+  SessionData->LocalDirectory = LocalDirectoryEdit->Text;
+  SessionData->RemoteDirectory = RemoteDirectoryEdit->Text;
+  SessionData->UpdateDirectories = UpdateDirectoriesCheck->Checked;
+  SessionData->CacheDirectories = CacheDirectoriesCheck->Checked;
+  SessionData->CacheDirectoryChanges = CacheDirectoryChangesCheck->Checked;
+  SessionData->PreserveDirectoryChanges = PreserveDirectoryChangesCheck->Checked;
+  SessionData->ResolveSymlinks = ResolveSymlinksCheck->Checked;
+  SessionData->FollowDirectorySymlinks = FollowDirectorySymlinksCheck->Checked;
 
   // Environment page
   if (DSTModeUnixCheck->Checked)
   {
-    FSessionData->DSTMode = dstmUnix;
+    SessionData->DSTMode = dstmUnix;
   }
   else if (DSTModeKeepCheck->Checked)
   {
-    FSessionData->DSTMode = dstmKeep;
+    SessionData->DSTMode = dstmKeep;
   }
   else
   {
-    FSessionData->DSTMode = dstmWin;
+    SessionData->DSTMode = dstmWin;
   }
 
   if (EOLTypeCombo->ItemIndex == 0)
   {
-    FSessionData->EOLType = eolLF;
+    SessionData->EOLType = eolLF;
   }
   else
   {
-    FSessionData->EOLType = eolCRLF;
+    SessionData->EOLType = eolCRLF;
   }
 
   switch (UtfCombo->ItemIndex)
   {
     case 1:
-      FSessionData->NotUtf = asOn;
+      SessionData->NotUtf = asOn;
       break;
 
     case 2:
-      FSessionData->NotUtf = asOff;
+      SessionData->NotUtf = asOff;
       break;
 
     default:
-      FSessionData->NotUtf = asAuto;
+      SessionData->NotUtf = asAuto;
       break;
   }
-  FSessionData->TimeDifference =
+  SessionData->TimeDifference =
     (double(TimeDifferenceEdit->AsInteger) / HoursPerDay) +
     (double(TimeDifferenceMinutesEdit->AsInteger) / MinsPerDay);
-  FSessionData->TimeDifferenceAuto = TimeDifferenceAutoCheck->Checked;
+  SessionData->TimeDifferenceAuto = TimeDifferenceAutoCheck->Checked;
 
-  FSessionData->TrimVMSVersions = TrimVMSVersionsCheck->Checked;
+  SessionData->TrimVMSVersions = TrimVMSVersionsCheck->Checked;
 
   // Environment/Recycle bin page
-  FSessionData->DeleteToRecycleBin = DeleteToRecycleBinCheck->Checked;
-  FSessionData->OverwrittenToRecycleBin = OverwrittenToRecycleBinCheck->Checked;
-  FSessionData->RecycleBinPath =
-    FSessionData->DeleteToRecycleBin || FSessionData->OverwrittenToRecycleBin ||
+  SessionData->DeleteToRecycleBin = DeleteToRecycleBinCheck->Checked;
+  SessionData->OverwrittenToRecycleBin = OverwrittenToRecycleBinCheck->Checked;
+  SessionData->RecycleBinPath =
+    SessionData->DeleteToRecycleBin || SessionData->OverwrittenToRecycleBin ||
     (RecycleBinPathEdit->Text != DefaultRecycleBinPath) ?
       RecycleBinPathEdit->Text : UnicodeString();
 
   // SCP page
-  FSessionData->DefaultShell = (ShellEdit->Text == ShellEdit->Items->Strings[0]);
-  FSessionData->Shell = (FSessionData->DefaultShell ? UnicodeString() : ShellEdit->Text);
-  FSessionData->DetectReturnVar = (ReturnVarEdit->Text == ReturnVarEdit->Items->Strings[0]);
-  FSessionData->ReturnVar = (FSessionData->DetectReturnVar ? UnicodeString() : ReturnVarEdit->Text);
-  FSessionData->ListingCommand = ListingCommandEdit->Text;
-  FSessionData->LookupUserGroups = CheckBoxAutoSwitchSave(LookupUserGroupsCheck);
-  FSessionData->ClearAliases = ClearAliasesCheck->Checked;
-  FSessionData->IgnoreLsWarnings = IgnoreLsWarningsCheck->Checked;
-  FSessionData->Scp1Compatibility = Scp1CompatibilityCheck->Checked;
-  FSessionData->UnsetNationalVars = UnsetNationalVarsCheck->Checked;
-  FSessionData->SCPLsFullTime = SCPLsFullTimeAutoCheck->Checked ? asAuto : asOff;
+  SessionData->DefaultShell = (ShellEdit->Text == ShellEdit->Items->Strings[0]);
+  SessionData->Shell = (SessionData->DefaultShell ? UnicodeString() : ShellEdit->Text);
+  SessionData->DetectReturnVar = (ReturnVarEdit->Text == ReturnVarEdit->Items->Strings[0]);
+  SessionData->ReturnVar = (SessionData->DetectReturnVar ? UnicodeString() : ReturnVarEdit->Text);
+  SessionData->ListingCommand = ListingCommandEdit->Text;
+  SessionData->LookupUserGroups = CheckBoxAutoSwitchSave(LookupUserGroupsCheck);
+  SessionData->ClearAliases = ClearAliasesCheck->Checked;
+  SessionData->IgnoreLsWarnings = IgnoreLsWarningsCheck->Checked;
+  SessionData->Scp1Compatibility = Scp1CompatibilityCheck->Checked;
+  SessionData->UnsetNationalVars = UnsetNationalVarsCheck->Checked;
+  SessionData->SCPLsFullTime = SCPLsFullTimeAutoCheck->Checked ? asAuto : asOff;
 
   // SFTP page
-  FSessionData->SftpServer =
+  SessionData->SftpServer =
     ((SftpServerEdit->Text == SftpServerEdit->Items->Strings[0]) ?
       UnicodeString() : SftpServerEdit->Text);
-  FSessionData->SFTPMaxVersion = SFTPMaxVersionCombo->ItemIndex;
-  if (AllowScpFallbackCheck->Checked != (FSessionData->FSProtocol == fsSFTP))
+  SessionData->SFTPMaxVersion = SFTPMaxVersionCombo->ItemIndex;
+  if (AllowScpFallbackCheck->Checked != (SessionData->FSProtocol == fsSFTP))
   {
     if (AllowScpFallbackCheck->Checked)
     {
-      DebugAssert(FSessionData->FSProtocol == fsSFTPonly);
-      FSessionData->FSProtocol = fsSFTP;
+      DebugAssert(SessionData->FSProtocol == fsSFTPonly);
+      SessionData->FSProtocol = fsSFTP;
     }
     else
     {
-      DebugAssert(FSessionData->FSProtocol == fsSFTP);
-      FSessionData->FSProtocol = fsSFTPonly;
+      DebugAssert(SessionData->FSProtocol == fsSFTP);
+      SessionData->FSProtocol = fsSFTPonly;
     }
   }
 
-  #define SAVE_SFTP_BUG_COMBO(BUG) FSessionData->SFTPBug[sb ## BUG] = ComboAutoSwitchSave(SFTPBug ## BUG ## Combo);
+  #define SAVE_SFTP_BUG_COMBO(BUG) SessionData->SFTPBug[sb ## BUG] = ComboAutoSwitchSave(SFTPBug ## BUG ## Combo);
   SAVE_SFTP_BUG_COMBO(Symlink);
   SAVE_SFTP_BUG_COMBO(SignedTS);
   #undef SAVE_SFTP_BUG_COMBO
 
   // FTP page
-  FSessionData->FtpAccount = FtpAccountEdit->Text;
-  FSessionData->PostLoginCommands = PostLoginCommandsMemo->Lines->Text;
-  FSessionData->FtpListAll = ComboAutoSwitchSave(FtpListAllCombo);
-  FSessionData->FtpUseMlsd = ComboAutoSwitchSave(FtpUseMlsdCombo);
-  FSessionData->FtpForcePasvIp = ComboAutoSwitchSave(FtpForcePasvIpCombo);
-  FSessionData->FtpHost = ComboAutoSwitchSave(FtpHostCombo);
+  SessionData->FtpAccount = FtpAccountEdit->Text;
+  SessionData->PostLoginCommands = PostLoginCommandsMemo->Lines->Text;
+  SessionData->FtpListAll = ComboAutoSwitchSave(FtpListAllCombo);
+  SessionData->FtpUseMlsd = ComboAutoSwitchSave(FtpUseMlsdCombo);
+  SessionData->FtpForcePasvIp = ComboAutoSwitchSave(FtpForcePasvIpCombo);
+  SessionData->FtpHost = ComboAutoSwitchSave(FtpHostCombo);
 
   // S3 page
-  FSessionData->S3DefaultRegion = S3DefaultReqionCombo->Text;
+  SessionData->S3DefaultRegion = S3DefaultReqionCombo->Text;
   if (S3UrlStyleCombo->ItemIndex == 1)
   {
-    FSessionData->S3UrlStyle = s3usPath;
+    SessionData->S3UrlStyle = s3usPath;
   }
   else
   {
-    FSessionData->S3UrlStyle = s3usVirtualHost;
+    SessionData->S3UrlStyle = s3usVirtualHost;
   }
 
   // Proxy page
-  FSessionData->ProxyMethod = GetProxyMethod();
-  FSessionData->FtpProxyLogonType = GetFtpProxyLogonType();
-  FSessionData->ProxyHost = ProxyHostEdit->Text;
-  FSessionData->ProxyPort = ProxyPortEdit->AsInteger;
-  FSessionData->ProxyUsername = ProxyUsernameEdit->Text;
-  FSessionData->ProxyPassword = ProxyPasswordEdit->Text;
-  FSessionData->ProxyTelnetCommand = ProxyTelnetCommandEdit->Text;
-  FSessionData->ProxyLocalCommand = ProxyLocalCommandEdit->Text;
-  FSessionData->ProxyLocalhost = ProxyLocalhostCheck->Checked;
-  FSessionData->ProxyDNS = (TAutoSwitch)(2 - ProxyDNSCombo->ItemIndex);
+  SessionData->ProxyMethod = GetProxyMethod();
+  SessionData->FtpProxyLogonType = GetFtpProxyLogonType();
+  SessionData->ProxyHost = ProxyHostEdit->Text;
+  SessionData->ProxyPort = ProxyPortEdit->AsInteger;
+  SessionData->ProxyUsername = ProxyUsernameEdit->Text;
+  SessionData->ProxyPassword = ProxyPasswordEdit->Text;
+  SessionData->ProxyTelnetCommand = ProxyTelnetCommandEdit->Text;
+  SessionData->ProxyLocalCommand = ProxyLocalCommandEdit->Text;
+  SessionData->ProxyLocalhost = ProxyLocalhostCheck->Checked;
+  SessionData->ProxyDNS = (TAutoSwitch)(2 - ProxyDNSCombo->ItemIndex);
 
   // Bugs page
-  #define SAVE_BUG_COMBO(BUG) FSessionData->Bug[sb ## BUG] = ComboAutoSwitchSave(Bug ## BUG ## Combo)
+  #define SAVE_BUG_COMBO(BUG) SessionData->Bug[sb ## BUG] = ComboAutoSwitchSave(Bug ## BUG ## Combo)
   SAVE_BUG_COMBO(Ignore1);
   SAVE_BUG_COMBO(PlainPW1);
   SAVE_BUG_COMBO(RSA1);
@@ -646,35 +646,35 @@ void __fastcall TSiteAdvancedDialog::SaveSession()
   #undef SAVE_BUG_COMBO
 
   // Tunnel page
-  FSessionData->Tunnel = TunnelCheck->Checked;
-  FSessionData->TunnelUserName = TunnelUserNameEdit->Text;
-  FSessionData->TunnelPortNumber = TunnelPortNumberEdit->AsInteger;
-  FSessionData->TunnelHostName = TunnelHostNameEdit->Text;
-  FSessionData->TunnelPassword = TunnelPasswordEdit->Text;
-  FSessionData->TunnelPublicKeyFile = TunnelPrivateKeyEdit3->Text;
+  SessionData->Tunnel = TunnelCheck->Checked;
+  SessionData->TunnelUserName = TunnelUserNameEdit->Text;
+  SessionData->TunnelPortNumber = TunnelPortNumberEdit->AsInteger;
+  SessionData->TunnelHostName = TunnelHostNameEdit->Text;
+  SessionData->TunnelPassword = TunnelPasswordEdit->Text;
+  SessionData->TunnelPublicKeyFile = TunnelPrivateKeyEdit3->Text;
   if (TunnelLocalPortNumberEdit->Text == TunnelLocalPortNumberEdit->Items->Strings[0])
   {
-    FSessionData->TunnelLocalPortNumber = 0;
+    SessionData->TunnelLocalPortNumber = 0;
   }
   else
   {
-    FSessionData->TunnelLocalPortNumber = StrToIntDef(TunnelLocalPortNumberEdit->Text, 0);
+    SessionData->TunnelLocalPortNumber = StrToIntDef(TunnelLocalPortNumberEdit->Text, 0);
   }
 
   // connection/tls/ssl page
-  FSessionData->MinTlsVersion = IndexToTlsVersion(MinTlsVersionCombo->ItemIndex);
-  FSessionData->MaxTlsVersion = IndexToTlsVersion(MaxTlsVersionCombo->ItemIndex);
-  FSessionData->SslSessionReuse = SslSessionReuseCheck->Checked;
-  FSessionData->TlsCertificateFile = TlsCertificateFileEdit->Text;
+  SessionData->MinTlsVersion = IndexToTlsVersion(MinTlsVersionCombo->ItemIndex);
+  SessionData->MaxTlsVersion = IndexToTlsVersion(MaxTlsVersionCombo->ItemIndex);
+  SessionData->SslSessionReuse = SslSessionReuseCheck->Checked;
+  SessionData->TlsCertificateFile = TlsCertificateFileEdit->Text;
 
   // Note page
-  FSessionData->Note = NoteMemo->Lines->Text;
+  SessionData->Note = NoteMemo->Lines->Text;
 
   // Encryption page
-  FSessionData->EncryptKey = EncryptFilesCheck->Checked ? GetEncryptKeyEdit()->Text : UnicodeString();
+  SessionData->EncryptKey = EncryptFilesCheck->Checked ? GetEncryptKeyEdit()->Text : UnicodeString();
 
   // color
-  FSessionData->Color = FColor;
+  SessionData->Color = FColor;
 }
 //---------------------------------------------------------------------
 void __fastcall TSiteAdvancedDialog::UpdateNavigationTree()
@@ -1085,7 +1085,7 @@ bool __fastcall TSiteAdvancedDialog::Execute(TSessionData * SessionData)
 
   if (Result)
   {
-    SaveSession();
+    SaveSession(SessionData);
   }
 
   return Result;
@@ -1580,13 +1580,14 @@ void __fastcall TSiteAdvancedDialog::PrivateKeyGenerateItemClick(TObject * /*Sen
 //---------------------------------------------------------------------------
 void __fastcall TSiteAdvancedDialog::PrivateKeyUploadItemClick(TObject * /*Sender*/)
 {
-  // This has an unwanted side effect of persisting the values, as if the dialog was submitted.
-  SaveSession();
-  FSessionData->FSProtocol = fsSFTPonly; // no SCP fallback, as SCP does not implement GetHomeDirectory
-  FSessionData->RemoteDirectory = UnicodeString();
+  std::unique_ptr<TSessionData> SessionData(new TSessionData(UnicodeString()));
+  SessionData->Assign(FSessionData);
+  SaveSession(SessionData.get());
+  SessionData->FSProtocol = fsSFTPonly; // no SCP fallback, as SCP does not implement GetHomeDirectory
+  SessionData->RemoteDirectory = UnicodeString();
 
   UnicodeString FileName = PrivateKeyEdit3->Text;
-  if (TTerminalManager::Instance()->UploadPublicKey(NULL, FSessionData, FileName))
+  if (TTerminalManager::Instance()->UploadPublicKey(NULL, SessionData.get(), FileName))
   {
     PrivateKeyEdit3->Text = FileName;
     PrivateKeyEdit3->SetFocus();

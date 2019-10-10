@@ -343,7 +343,7 @@ private:
 
   void __fastcall LoadSession();
   void __fastcall UpdateControls();
-  void __fastcall SaveSession();
+  void __fastcall SaveSession(TSessionData * SessionData);
   void __fastcall CMDialogKey(TWMKeyDown & Message);
   void __fastcall WMHelp(TWMHelp & Message);
   int __fastcall LastSupportedFtpProxyMethod();
