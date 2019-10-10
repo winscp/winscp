@@ -171,6 +171,7 @@ private:
   bool FProxyLocalhost;
   int FFtpProxyLogonType;
   TAutoSwitch FBugs[BUG_COUNT];
+  UnicodeString FPuttySettings;
   UnicodeString FCustomParam1;
   UnicodeString FCustomParam2;
   bool FResolveSymlinks;
@@ -343,6 +344,7 @@ private:
   void __fastcall SetBug(TSshBug Bug, TAutoSwitch value);
   TAutoSwitch __fastcall GetBug(TSshBug Bug) const;
   UnicodeString __fastcall GetSessionKey();
+  void __fastcall SetPuttySettings(UnicodeString value);
   void __fastcall SetCustomParam1(UnicodeString value);
   void __fastcall SetCustomParam2(UnicodeString value);
   void __fastcall SetResolveSymlinks(bool value);
@@ -604,6 +606,7 @@ public:
   __property bool ProxyLocalhost  = { read=FProxyLocalhost, write=SetProxyLocalhost };
   __property int FtpProxyLogonType  = { read=FFtpProxyLogonType, write=SetFtpProxyLogonType };
   __property TAutoSwitch Bug[TSshBug Bug]  = { read=GetBug, write=SetBug };
+  __property UnicodeString PuttySettings = { read = FPuttySettings, write = SetPuttySettings };
   __property UnicodeString CustomParam1 = { read = FCustomParam1, write = SetCustomParam1 };
   __property UnicodeString CustomParam2 = { read = FCustomParam2, write = SetCustomParam2 };
   __property UnicodeString SessionKey = { read = GetSessionKey };

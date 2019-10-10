@@ -274,6 +274,8 @@ void __fastcall TSessionData::DefaultSettings()
 
   FtpProxyLogonType = 0; // none
 
+  PuttySettings = UnicodeString();
+
   CustomParam1 = L"";
   CustomParam2 = L"";
 }
@@ -444,6 +446,8 @@ void __fastcall TSessionData::NonPersistant()
   PROPERTY(WinTitle); \
   \
   PROPERTY_HANDLER(EncryptKey, F); \
+  \
+  PROPERTY(PuttySettings); \
   \
   PROPERTY(CustomParam1); \
   PROPERTY(CustomParam2);
@@ -846,6 +850,8 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   Link = Storage->ReadString(L"Link", Link);
   NameOverride = Storage->ReadString(L"NameOverride", NameOverride);
 
+  PuttySettings = Storage->ReadString(L"PuttySettings", PuttySettings);
+
   CustomParam1 = Storage->ReadString(L"CustomParam1", CustomParam1);
   CustomParam2 = Storage->ReadString(L"CustomParam2", CustomParam2);
 
@@ -1181,6 +1187,8 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
     WRITE_DATA(String, Link);
     WRITE_DATA(String, NameOverride);
 
+    WRITE_DATA(String, PuttySettings);
+
     WRITE_DATA(String, CustomParam1);
     WRITE_DATA(String, CustomParam2);
   }
@@ -1191,6 +1199,11 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
   bool SaveAll = (Default == NULL) && DoNotEncryptPasswords && !PuttyExport;
 
   SavePasswords(Storage, PuttyExport, DoNotEncryptPasswords, SaveAll);
+
+  if (PuttyExport)
+  {
+    WritePuttySettings(Storage, PuttySettings);
+  }
 }
 //---------------------------------------------------------------------
 TStrings * __fastcall TSessionData::SaveToOptions(const TSessionData * Default, bool SaveName)
@@ -3741,6 +3754,11 @@ TAutoSwitch __fastcall TSessionData::GetBug(TSshBug Bug) const
 {
   DebugAssert(Bug >= 0 && static_cast<unsigned int>(Bug) < LENOF(FBugs));
   return FBugs[Bug];
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetPuttySettings(UnicodeString value)
+{
+  SET_SESSION_PROPERTY(PuttySettings);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetCustomParam1(UnicodeString value)

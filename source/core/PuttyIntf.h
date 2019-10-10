@@ -30,6 +30,7 @@ extern "C"
 UnicodeString GetCipherName(const ssh_cipher * Cipher);
 UnicodeString GetCompressorName(const ssh_compressor * Compressor);
 UnicodeString GetDecompressorName(const ssh_decompressor * Decompressor);
+void PuttyDefaults(Conf * conf);
 //---------------------------------------------------------------------------
 class TSecureShell;
 struct ScpSeat : public Seat

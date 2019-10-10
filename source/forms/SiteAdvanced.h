@@ -276,6 +276,10 @@ __published:
   TComboBox *S3DefaultReqionCombo;
   TLabel *S3UrlStyleLabel;
   TComboBox *S3UrlStyleCombo;
+  TGroupBox *PuttyGroup;
+  TButton *PuttySettingsButton;
+  TLabel *PuttySettingsLabel;
+  TEdit *PuttySettingsEdit;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall PageControlChange(TObject *Sender);
@@ -315,6 +319,8 @@ __published:
   void __fastcall ShowEncryptionKeyCheckClick(TObject *Sender);
   void __fastcall GenerateKeyButtonClick(TObject *Sender);
   void __fastcall EncryptKeyEditExit(TObject *Sender);
+  void __fastcall PuttySettingsButtonClick(TObject *Sender);
+  void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
 
 
 public:
@@ -340,9 +346,12 @@ private:
   TColor FColor;
   std::unique_ptr<TPopupMenu> FColorPopupMenu;
   std::unique_ptr<TObjectList> FPrivateKeyMonitors;
+  std::unique_ptr<TStrings> FPuttyRegSettings;
+  std::unique_ptr<TTimer> FPuttySettingsTimer;
 
   void __fastcall LoadSession();
   void __fastcall UpdateControls();
+  TSessionData * __fastcall GetSessionData();
   void __fastcall SaveSession(TSessionData * SessionData);
   void __fastcall CMDialogKey(TWMKeyDown & Message);
   void __fastcall WMHelp(TWMHelp & Message);
@@ -360,6 +369,11 @@ private:
   bool __fastcall IsNeon(TFSProtocol FSProtocol);
   void __fastcall PrivateKeyCreatedOrModified(TObject * Sender, const UnicodeString FileName);
   TCustomEdit * __fastcall GetEncryptKeyEdit(bool AShow = true);
+  void __fastcall PuttySettingsTimer(TObject * Sender);
+  UnicodeString __fastcall GetPuttySiteName();
+  UnicodeString __fastcall GetPuttySiteKey();
+  void __fastcall ClosePuttySettings();
+  void SerializePuttyRegistry(const UnicodeString & Key, TStrings * Values);
 
   INTERFACE_HOOK;
 };

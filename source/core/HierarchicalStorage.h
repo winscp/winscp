@@ -15,6 +15,7 @@ friend class TCustomIniFileStorage;
 public:
   __fastcall THierarchicalStorage(const UnicodeString & AStorage);
   virtual __fastcall ~THierarchicalStorage();
+  void __fastcall ConfigureForPutty();
   virtual bool __fastcall OpenRootKey(bool CanCreate);
   virtual bool __fastcall OpenSubKey(const UnicodeString & SubKey, bool CanCreate);
   virtual void __fastcall CloseSubKey();
@@ -259,5 +260,6 @@ protected:
 };
 //---------------------------------------------------------------------------
 UnicodeString __fastcall PuttyMungeStr(const UnicodeString & Str);
+AnsiString PuttyStr(const UnicodeString & Str);
 //---------------------------------------------------------------------------
 #endif

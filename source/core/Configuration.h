@@ -93,6 +93,7 @@ private:
   UnicodeString __fastcall GetFileVersion(TVSFixedFileInfo * Info);
   UnicodeString __fastcall GetStoredSessionsSubKey();
   UnicodeString __fastcall GetPuttySessionsKey();
+  UnicodeString __fastcall GetPuttySessionsSubKey();
   void __fastcall SetRandomSeedFile(UnicodeString value);
   UnicodeString __fastcall GetRandomSeedFileName();
   void __fastcall SetPuttyRegistryStorageKey(UnicodeString value);
@@ -270,6 +271,7 @@ public:
   __property UnicodeString StoredSessionsSubKey = {read=GetStoredSessionsSubKey};
   __property UnicodeString PuttyRegistryStorageKey  = { read=FPuttyRegistryStorageKey, write=SetPuttyRegistryStorageKey };
   __property UnicodeString PuttySessionsKey  = { read=GetPuttySessionsKey };
+  __property UnicodeString PuttySessionsSubKey  = { read=GetPuttySessionsSubKey };
   __property UnicodeString RandomSeedFile  = { read=FRandomSeedFile, write=SetRandomSeedFile };
   __property UnicodeString RandomSeedFileName  = { read=GetRandomSeedFileName };
   __property UnicodeString SshHostKeysSubKey  = { read=GetSshHostKeysSubKey };

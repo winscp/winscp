@@ -12,6 +12,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
   ParentFont = True
   OldCreateOrder = True
   Position = poOwnerFormCenter
+  OnClose = FormClose
   OnCloseQuery = FormCloseQuery
   OnShow = FormShow
   DesignSize = (
@@ -67,7 +68,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Top = 20
             Width = 241
             Height = 13
-            Caption = '&End-of-line characters (if not indicated by server):'
+            Caption = 'End-of-line &characters (if not indicated by server):'
             FocusControl = EOLTypeCombo
           end
           object UtfLabel: TLabel
@@ -211,6 +212,47 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Caption = 'Preser&ve remote timestamp'
             TabOrder = 2
             OnClick = DataChange
+          end
+        end
+        object PuttyGroup: TGroupBox
+          Left = 0
+          Top = 252
+          Width = 393
+          Height = 98
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'PuTTY'
+          TabOrder = 2
+          DesignSize = (
+            393
+            98)
+          object PuttySettingsLabel: TLabel
+            Left = 12
+            Top = 18
+            Width = 116
+            Height = 13
+            Caption = '&PuTTY terminal settings:'
+            FocusControl = EncryptKeyPasswordEdit
+          end
+          object PuttySettingsButton: TButton
+            Left = 12
+            Top = 61
+            Width = 125
+            Height = 25
+            Anchors = [akTop, akRight]
+            Caption = '&Edit in PuTTY...'
+            TabOrder = 1
+            OnClick = PuttySettingsButtonClick
+          end
+          object PuttySettingsEdit: TEdit
+            Left = 12
+            Top = 34
+            Width = 370
+            Height = 21
+            MaxLength = 64
+            TabOrder = 0
+            Text = 'PuttySettingsEdit'
+            OnChange = DataChange
+            OnExit = EncryptKeyEditExit
           end
         end
       end

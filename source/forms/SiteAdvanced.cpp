@@ -177,6 +177,8 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
 
     TrimVMSVersionsCheck->Checked = FSessionData->TrimVMSVersions;
 
+    PuttySettingsEdit->Text = FSessionData->PuttySettings;
+
     // Environment/Recycle bin page
     DeleteToRecycleBinCheck->Checked = FSessionData->DeleteToRecycleBin;
     OverwrittenToRecycleBinCheck->Checked = FSessionData->OverwrittenToRecycleBin;
@@ -418,6 +420,8 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     FColor = (TColor)FSessionData->Color;
   }
 
+  EnableControl(PuttyGroup, !DoesSessionExistInPutty(FSessionData));
+
   UpdateControls();
 }
 //---------------------------------------------------------------------
@@ -554,6 +558,8 @@ void __fastcall TSiteAdvancedDialog::SaveSession(TSessionData * SessionData)
 
   SessionData->TrimVMSVersions = TrimVMSVersionsCheck->Checked;
 
+  SessionData->PuttySettings = PuttySettingsEdit->Text;
+
   // Environment/Recycle bin page
   SessionData->DeleteToRecycleBin = DeleteToRecycleBinCheck->Checked;
   SessionData->OverwrittenToRecycleBin = OverwrittenToRecycleBinCheck->Checked;
@@ -675,6 +681,14 @@ void __fastcall TSiteAdvancedDialog::SaveSession(TSessionData * SessionData)
 
   // color
   SessionData->Color = FColor;
+}
+//---------------------------------------------------------------------
+TSessionData * __fastcall TSiteAdvancedDialog::GetSessionData()
+{
+  std::unique_ptr<TSessionData> SessionData(new TSessionData(UnicodeString()));
+  SessionData->Assign(FSessionData);
+  SaveSession(SessionData.get());
+  return SessionData.release();
 }
 //---------------------------------------------------------------------
 void __fastcall TSiteAdvancedDialog::UpdateNavigationTree()
@@ -1122,6 +1136,7 @@ void __fastcall TSiteAdvancedDialog::ChangePage(TTabSheet * Tab)
 void __fastcall TSiteAdvancedDialog::PageChanged()
 {
   FPrivateKeyMonitors.reset(NULL);
+  ClosePuttySettings();
 
   bool Found = false;
   if (PageControl->ActivePage)
@@ -1580,9 +1595,7 @@ void __fastcall TSiteAdvancedDialog::PrivateKeyGenerateItemClick(TObject * /*Sen
 //---------------------------------------------------------------------------
 void __fastcall TSiteAdvancedDialog::PrivateKeyUploadItemClick(TObject * /*Sender*/)
 {
-  std::unique_ptr<TSessionData> SessionData(new TSessionData(UnicodeString()));
-  SessionData->Assign(FSessionData);
-  SaveSession(SessionData.get());
+  std::unique_ptr<TSessionData> SessionData(GetSessionData());
   SessionData->FSProtocol = fsSFTPonly; // no SCP fallback, as SCP does not implement GetHomeDirectory
   SessionData->RemoteDirectory = UnicodeString();
 
@@ -1668,5 +1681,125 @@ void __fastcall TSiteAdvancedDialog::EncryptKeyEditExit(TObject * /*Sender*/)
       ValidateEncryptKey(HexToBytes(HexKey));
     }
   }
+}
+//---------------------------------------------------------------------------
+void TSiteAdvancedDialog::SerializePuttyRegistry(const UnicodeString & Key, TStrings * Values)
+{
+  std::unique_ptr<TRegistry> Registry(new TRegistry());
+  if (DebugAlwaysTrue(Registry->OpenKeyReadOnly(Key)))
+  {
+    std::unique_ptr<TStrings> Names(new TStringList());
+    Registry->GetValueNames(Names.get());
+    for (int Index = 0; Index < Names->Count; Index++)
+    {
+      UnicodeString Name = Names->Strings[Index];
+      TRegDataType Type = Registry->GetDataType(Name);
+      UnicodeString Value;
+      if (Type == rdString)
+      {
+        Value = UnicodeString(PuttyStr(Registry->ReadString(Name)));
+      }
+      else if (DebugAlwaysTrue(Type == rdInteger))
+      {
+        Value = StrToInt(Registry->ReadInteger(Name));
+      }
+      SetStringValueEvenIfEmpty(Values, Name, Value);
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSiteAdvancedDialog::PuttySettingsTimer(TObject *)
+{
+  if (PuttySettingsEdit->Modified)
+  {
+    FPuttySettingsTimer->Enabled = false;
+  }
+  else
+  {
+    std::unique_ptr<TStrings> NewPuttyRegSettings(new TStringList());
+    SerializePuttyRegistry(GetPuttySiteKey(), NewPuttyRegSettings.get());
+
+    std::unique_ptr<TStrings> PuttySettings(new TStringList());
+    for (int NewIndex = 0; NewIndex < NewPuttyRegSettings->Count; NewIndex++)
+    {
+      UnicodeString Name = NewPuttyRegSettings->Names[NewIndex];
+      UnicodeString NewValue = NewPuttyRegSettings->ValueFromIndex[NewIndex];
+      int Index = -1; // shut up
+      // Ignoring values we do not know (from future versions of PuTTY),
+      // as we cannot tell if they are modified or not
+      if (((Index = FPuttyRegSettings->IndexOfName(Name)) >= 0) &&
+          (FPuttyRegSettings->ValueFromIndex[Index] != NewValue))
+      {
+        SetStringValueEvenIfEmpty(PuttySettings.get(), Name, NewValue);
+      }
+    }
+
+    PuttySettingsEdit->Text = StringsToParams(PuttySettings.get()).TrimLeft();
+    UpdateControls();
+  }
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TSiteAdvancedDialog::GetPuttySiteName()
+{
+  return FORMAT(L"(%s)", (FMTLOAD(PUTTY_SETTINGS_SITE_NAME, (FSessionData->SessionName))));
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TSiteAdvancedDialog::GetPuttySiteKey()
+{
+  return OriginalPuttyRegistryStorageKey + L"\\" + Configuration->PuttySessionsSubKey + L"\\" + PuttyMungeStr(GetPuttySiteName());
+}
+//---------------------------------------------------------------------------
+void __fastcall TSiteAdvancedDialog::ClosePuttySettings()
+{
+  if (FPuttySettingsTimer.get() != NULL)
+  {
+    FPuttySettingsTimer.reset(NULL);
+    std::unique_ptr<TRegistry> Registry(new TRegistry());
+    Registry->DeleteKey(GetPuttySiteKey());
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSiteAdvancedDialog::PuttySettingsButtonClick(TObject *)
+{
+  ClosePuttySettings();
+  UnicodeString SiteName = GetPuttySiteName();
+
+  MessageDialog(FMTLOAD(PUTTY_SETTINGS_INSTRUCTIONS, (SiteName, SiteName)), qtInformation, qaOK, HELP_PUTTY_SETTINGS);
+
+  PuttySettingsEdit->Modified = false;
+  std::unique_ptr<TSessionData> SessionData(GetSessionData());
+  UnicodeString PuttySettings = SessionData->PuttySettings;
+  SessionData->PuttySettings = UnicodeString();
+  SavePuttyDefaults(SiteName);
+  ExportSessionToPutty(SessionData.get(), false, SiteName);
+
+  UnicodeString PuttySiteKey = GetPuttySiteKey();
+  FPuttyRegSettings.reset(new TStringList());
+  SerializePuttyRegistry(PuttySiteKey, FPuttyRegSettings.get());
+
+  SessionData->PuttySettings = PuttySettings;
+  ExportSessionToPutty(SessionData.get(), false, SiteName);
+
+  UnicodeString Program, Params, Dir;
+  SplitCommand(GUIConfiguration->PuttyPath, Program, Params, Dir);
+  Program = ExpandEnvironmentVariables(Program);
+  if (!FindFile(Program))
+  {
+    throw Exception(FMTLOAD(EXECUTE_APP_ERROR, (Program)));
+  }
+
+  ExecuteShellChecked(Program, L"");
+
+  FPuttySettingsTimer.reset(new TTimer(this));
+  FPuttySettingsTimer->OnTimer = PuttySettingsTimer;
+  FPuttySettingsTimer->Interval = MSecsPerSec;
+  FPuttySettingsTimer->Enabled = true;
+
+  UpdateControls();
+}
+//---------------------------------------------------------------------------
+void __fastcall TSiteAdvancedDialog::FormClose(TObject *, TCloseAction &)
+{
+  ClosePuttySettings();
 }
 //---------------------------------------------------------------------------

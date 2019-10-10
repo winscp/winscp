@@ -381,6 +381,12 @@ ScpSeat::ScpSeat(TSecureShell * ASecureShell)
   vt = &ScpSeatVtable;
 }
 //---------------------------------------------------------------------------
+static std::unique_ptr<TCriticalSection> PuttyRegistrySection(TraceInitPtr(new TCriticalSection()));
+enum TPuttyRegistryMode { prmPass, prmRedirect, prmCollect, prmFail };
+static TPuttyRegistryMode PuttyRegistryMode = prmRedirect;
+typedef std::map<UnicodeString, unsigned long> TPuttyRegistryTypes;
+TPuttyRegistryTypes PuttyRegistryTypes;
+//---------------------------------------------------------------------------
 static long OpenWinSCPKey(HKEY Key, const char * SubKey, HKEY * Result, bool CanCreate)
 {
   long R;
@@ -428,17 +434,53 @@ static long OpenWinSCPKey(HKEY Key, const char * SubKey, HKEY * Result, bool Can
 //---------------------------------------------------------------------------
 long reg_open_winscp_key(HKEY Key, const char * SubKey, HKEY * Result)
 {
+  if (PuttyRegistryMode == prmPass)
+  {
+    return RegOpenKeyA(Key, SubKey, Result);
+  }
+  else if (PuttyRegistryMode == prmCollect)
+  {
+    *Result = reinterpret_cast<HKEY>(1);
+    return ERROR_SUCCESS;
+  }
+  else if (PuttyRegistryMode == prmFail)
+  {
+    return ERROR_CANTOPEN;
+  }
+
+  DebugAssert(PuttyRegistryMode == prmRedirect);
   return OpenWinSCPKey(Key, SubKey, Result, false);
 }
 //---------------------------------------------------------------------------
 long reg_create_winscp_key(HKEY Key, const char * SubKey, HKEY * Result)
 {
+  if (PuttyRegistryMode == prmPass)
+  {
+    return RegCreateKeyA(Key, SubKey, Result);
+  }
+  else if (PuttyRegistryMode == prmCollect)
+  {
+    *Result = reinterpret_cast<HKEY>(1);
+    return ERROR_SUCCESS;
+  }
+
+  DebugAssert(PuttyRegistryMode == prmRedirect);
   return OpenWinSCPKey(Key, SubKey, Result, true);
 }
 //---------------------------------------------------------------------------
-long reg_query_winscp_value_ex(HKEY Key, const char * ValueName, unsigned long * /*Reserved*/,
+long reg_query_winscp_value_ex(HKEY Key, const char * ValueName, unsigned long * Reserved,
   unsigned long * Type, unsigned char * Data, unsigned long * DataSize)
 {
+  if (PuttyRegistryMode == prmPass)
+  {
+    return RegQueryValueExA(Key, ValueName, Reserved, Type, Data, DataSize);
+  }
+  else if (PuttyRegistryMode == prmCollect)
+  {
+    return ERROR_READ_FAULT;
+  }
+
+  DebugAssert(PuttyRegistryMode == prmRedirect);
   long R;
   DebugAssert(Configuration != NULL);
 
@@ -483,9 +525,19 @@ long reg_query_winscp_value_ex(HKEY Key, const char * ValueName, unsigned long *
   return R;
 }
 //---------------------------------------------------------------------------
-long reg_set_winscp_value_ex(HKEY Key, const char * ValueName, unsigned long /*Reserved*/,
+long reg_set_winscp_value_ex(HKEY Key, const char * ValueName, unsigned long Reserved,
   unsigned long Type, const unsigned char * Data, unsigned long DataSize)
 {
+  if (PuttyRegistryMode == prmPass)
+  {
+    return RegSetValueExA(Key, ValueName, Reserved, Type, Data, DataSize);
+  }
+  else if (PuttyRegistryMode == prmCollect)
+  {
+    PuttyRegistryTypes[ValueName] = Type;
+    return ERROR_SUCCESS;
+  }
+  DebugAssert(PuttyRegistryMode == prmRedirect);
   DebugAssert(Configuration != NULL);
 
   DebugAssert(Type == REG_SZ);
@@ -503,6 +555,15 @@ long reg_set_winscp_value_ex(HKEY Key, const char * ValueName, unsigned long /*R
 //---------------------------------------------------------------------------
 long reg_close_winscp_key(HKEY Key)
 {
+  if (PuttyRegistryMode == prmPass)
+  {
+    return RegCloseKey(Key);
+  }
+  else if (PuttyRegistryMode == prmCollect)
+  {
+    return ERROR_SUCCESS;
+  }
+  DebugAssert(PuttyRegistryMode == prmRedirect);
   DebugAssert(Configuration != NULL);
 
   THierarchicalStorage * Storage = reinterpret_cast<THierarchicalStorage *>(Key);
@@ -997,6 +1058,80 @@ UnicodeString GetDecompressorName(const ssh_decompressor * Decompressor)
     Result = UnicodeString(UTF8String(Decompressor->vt->name));
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+void WritePuttySettings(THierarchicalStorage * Storage, const UnicodeString & ASettings)
+{
+  if (PuttyRegistryTypes.empty())
+  {
+    TGuard Guard(PuttyRegistrySection.get());
+    TValueRestorer<TPuttyRegistryMode> PuttyRegistryModeRestorer(PuttyRegistryMode);
+    PuttyRegistryMode = prmCollect;
+    Conf * conf = conf_new();
+    try
+    {
+      do_defaults(NULL, conf);
+      save_settings(NULL, conf);
+    }
+    __finally
+    {
+      conf_free(conf);
+    }
+  }
+
+  std::unique_ptr<TStrings> Settings(new TStringList());
+  UnicodeString Buf = ASettings;
+  UnicodeString Setting;
+  while (CutToken(Buf, Setting))
+  {
+    Settings->Add(Setting);
+  }
+
+  for (int Index = 0; Index < Settings->Count; Index++)
+  {
+    UnicodeString Name = Settings->Names[Index];
+    TPuttyRegistryTypes::const_iterator IType = PuttyRegistryTypes.find(Name);
+    if (IType != PuttyRegistryTypes.end())
+    {
+      UnicodeString Value = Settings->ValueFromIndex[Index];
+      int I;
+      if (IType->second == REG_SZ)
+      {
+        Storage->WriteStringRaw(Name, Value);
+      }
+      else if (DebugAlwaysTrue(IType->second == REG_DWORD) &&
+               TryStrToInt(Value, I))
+      {
+        Storage->WriteInteger(Name, I);
+      }
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void PuttyDefaults(Conf * conf)
+{
+  TGuard Guard(PuttyRegistrySection.get());
+  TValueRestorer<TPuttyRegistryMode> PuttyRegistryModeRestorer(PuttyRegistryMode);
+  PuttyRegistryMode = prmFail;
+  do_defaults(NULL, conf);
+}
+//---------------------------------------------------------------------------
+void SavePuttyDefaults(const UnicodeString & Name)
+{
+  TGuard Guard(PuttyRegistrySection.get());
+  TValueRestorer<TPuttyRegistryMode> PuttyRegistryModeRestorer(PuttyRegistryMode);
+  PuttyRegistryMode = prmPass;
+  Conf * conf = conf_new();
+  try
+  {
+    PuttyDefaults(conf);
+    AnsiString PuttyName = PuttyStr(Name);
+    save_settings(PuttyName.c_str(), conf);
+  }
+  __finally
+  {
+    conf_free(conf);
+  }
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

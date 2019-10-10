@@ -1225,9 +1225,14 @@ TStrings * __fastcall TConfiguration::GetOptionsStorage()
   return FOptionsStorage.get();
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall TConfiguration::GetPuttySessionsSubKey()
+{
+  return StoredSessionsSubKey;
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall TConfiguration::GetPuttySessionsKey()
 {
-  return PuttyRegistryStorageKey + L"\\Sessions";
+  return PuttyRegistryStorageKey + L"\\" + PuttySessionsSubKey;
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TConfiguration::GetStoredSessionsSubKey()

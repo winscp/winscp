@@ -166,7 +166,7 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
 {
   Conf * conf = conf_new();
 
-  do_defaults(NULL, conf);
+  PuttyDefaults(conf);
 
   // user-configurable settings
   conf_set_str(conf, CONF_host, AnsiString(Data->HostNameExpanded).c_str());

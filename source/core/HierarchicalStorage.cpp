@@ -26,7 +26,7 @@ UnicodeString __fastcall MungeStr(const UnicodeString & Str, bool ForceAnsi, boo
   RawByteString Source;
   if (ForceAnsi)
   {
-    Source = RawByteString(AnsiString(Str));
+    Source = RawByteString(PuttyStr(Str));
   }
   else
   {
@@ -69,9 +69,14 @@ UnicodeString __fastcall UnMungeStr(const UnicodeString & Str)
   return Result;
 }
 //---------------------------------------------------------------------------
+AnsiString PuttyStr(const UnicodeString & Str)
+{
+  return AnsiString(Str);
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall PuttyMungeStr(const UnicodeString & Str)
 {
-  return MungeStr(Str, false, false);
+  return MungeStr(Str, true, false);
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall MungeIniName(const UnicodeString & Str)
@@ -148,6 +153,12 @@ UnicodeString __fastcall THierarchicalStorage::GetCurrentSubKeyMunged()
 UnicodeString __fastcall THierarchicalStorage::GetCurrentSubKey()
 {
   return UnMungeStr(GetCurrentSubKeyMunged());
+}
+//---------------------------------------------------------------------------
+void __fastcall THierarchicalStorage::ConfigureForPutty()
+{
+  MungeStringValues = false;
+  ForceAnsi = true;
 }
 //---------------------------------------------------------------------------
 bool __fastcall THierarchicalStorage::OpenRootKey(bool CanCreate)

@@ -66,5 +66,6 @@
 #define HELP_FILE_COLORS             "ui_file_color"
 #define HELP_AUTOMATIC_UPDATE        "updates#automatic_upgrade"
 #define HELP_SITE_RAW                "ui_login_raw"
+#define HELP_PUTTY_SETTINGS          "ui_login_environment#putty"
 
 #endif // TextsWin

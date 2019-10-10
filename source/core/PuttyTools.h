@@ -45,4 +45,10 @@ TStrings * SshKexList();
 TStrings * SshHostKeyList();
 TStrings * SshMacList();
 //---------------------------------------------------------------------------
+class TSessionData;
+void SaveAsPutty(const UnicodeString & Name, TSessionData * Data);
+class THierarchicalStorage;
+void WritePuttySettings(THierarchicalStorage * Storage, const UnicodeString & Settings);
+void SavePuttyDefaults(const UnicodeString & Name);
+//---------------------------------------------------------------------------
 #endif
