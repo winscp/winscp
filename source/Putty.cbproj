@@ -100,6 +100,9 @@
 		<CppCompile Include="putty\be_misc.c">
 			<BuildOrder>47</BuildOrder>
 		</CppCompile>
+		<CppCompile Include="putty\be_ssh.c">
+			<BuildOrder>84</BuildOrder>
+		</CppCompile>
 		<CppCompile Include="putty\callback.c">
 			<BuildOrder>5</BuildOrder>
 			<BuildOrder>25</BuildOrder>
@@ -159,6 +162,9 @@
 		</CppCompile>
 		<CppCompile Include="putty\proxy.c">
 			<BuildOrder>20</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\settings.c">
+			<BuildOrder>82</BuildOrder>
 		</CppCompile>
 		<CppCompile Include="putty\ssh.c">
 			<BuildOrder>23</BuildOrder>
@@ -319,6 +325,9 @@
 		<CppCompile Include="putty\wildcard.c">
 			<BuildOrder>83</BuildOrder>
 			<BuildOrder>3</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\WINDOWS\windefs.c">
+			<BuildOrder>83</BuildOrder>
 		</CppCompile>
 		<CppCompile Include="putty\windows\wingss.c">
 			<BuildOrder>86</BuildOrder>
