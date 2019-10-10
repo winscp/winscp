@@ -14,6 +14,7 @@ public:
   __fastcall TOptions();
 
   void __fastcall Add(UnicodeString Option);
+  void __fastcall Parse(const UnicodeString & CmdLine);
 
   bool __fastcall FindSwitch(const UnicodeString Switch);
   bool __fastcall FindSwitch(const UnicodeString Switch, UnicodeString & Value);

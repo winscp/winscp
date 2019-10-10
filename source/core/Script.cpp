@@ -27,12 +27,7 @@ __fastcall TScriptProcParams::TScriptProcParams(const UnicodeString & FullComman
 
   FFullCommand = FullCommand;
   FParamsStr = ParamsStr;
-  UnicodeString Param;
-  UnicodeString AParamsStr = ParamsStr;
-  while (CutToken(AParamsStr, Param))
-  {
-    Add(Param);
-  }
+  Parse(ParamsStr);
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

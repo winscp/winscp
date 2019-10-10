@@ -20,6 +20,16 @@ __fastcall TOptions::TOptions()
   FParamCount = 0;
 }
 //---------------------------------------------------------------------------
+void __fastcall TOptions::Parse(const UnicodeString & CmdLine)
+{
+  UnicodeString ACmdLine = CmdLine;
+  UnicodeString Param;
+  while (CutToken(ACmdLine, Param))
+  {
+    Add(Param);
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TOptions::Add(UnicodeString Value)
 {
   if (!FNoMoreSwitches &&
