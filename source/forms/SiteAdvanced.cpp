@@ -829,7 +829,7 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
       ((AuthTISCheck->Enabled && AuthTISCheck->Checked) ||
        (AuthKICheck->Enabled && AuthKICheck->Checked)));
     EnableControl(AuthenticationParamsGroup, AuthenticationGroup->Enabled);
-    EnableControl(AgentFwdCheck, AuthenticationParamsGroup->Enabled && FSessionData->TryAgent);
+    EnableControl(AgentFwdCheck, AuthenticationParamsGroup->Enabled && TryAgentCheck->Checked);
     EnableControl(PrivateKeyViewButton, PrivateKeyEdit3->Enabled && !PrivateKeyEdit3->Text.IsEmpty());
     EnableControl(AuthGSSAPICheck3,
       AuthenticationGroup->Enabled && (GetSshProt() == ssh2only));
