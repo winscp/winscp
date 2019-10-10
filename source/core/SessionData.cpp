@@ -568,7 +568,7 @@ bool __fastcall TSessionData::IsSameDecrypted(const TSessionData * Default)
 //---------------------------------------------------------------------
 TFSProtocol NormalizeFSProtocol(TFSProtocol FSProtocol)
 {
-  if ((FSProtocol == fsSCPonly) || (FSProtocol == fsSFTPonly))
+  if (FSProtocol == fsSFTPonly)
   {
     FSProtocol = fsSFTP;
   }
