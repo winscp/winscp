@@ -1724,10 +1724,10 @@ void __fastcall TSiteAdvancedDialog::PuttySettingsTimer(TObject *)
     {
       UnicodeString Name = NewPuttyRegSettings->Names[NewIndex];
       UnicodeString NewValue = NewPuttyRegSettings->ValueFromIndex[NewIndex];
-      int Index = -1; // shut up
+      int Index = FPuttyRegSettings->IndexOfName(Name);
       // Ignoring values we do not know (from future versions of PuTTY),
       // as we cannot tell if they are modified or not
-      if (((Index = FPuttyRegSettings->IndexOfName(Name)) >= 0) &&
+      if ((Index >= 0) &&
           (FPuttyRegSettings->ValueFromIndex[Index] != NewValue))
       {
         SetStringValueEvenIfEmpty(PuttySettings.get(), Name, NewValue);
