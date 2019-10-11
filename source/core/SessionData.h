@@ -490,7 +490,7 @@ public:
   bool __fastcall ParseUrl(UnicodeString Url, TOptions * Options,
     TStoredSessionList * StoredSessions, bool & DefaultsOnly,
     UnicodeString * FileName, bool * AProtocolDefined, UnicodeString * MaskedUrl, int Flags);
-  TStrings * __fastcall SaveToOptions(const TSessionData * Default, bool SaveName);
+  TStrings * __fastcall SaveToOptions(const TSessionData * Default, bool SaveName, bool PuttyExport);
   void __fastcall ConfigureTunnel(int PortNumber);
   void __fastcall RollbackTunnel();
   void __fastcall ExpandEnvironmentVariables();
@@ -517,6 +517,7 @@ public:
   static bool __fastcall IsOptionWithParameters(const UnicodeString & Option);
   static bool __fastcall MaskPasswordInOptionParameter(const UnicodeString & Option, UnicodeString & Param);
   static UnicodeString __fastcall FormatSiteKey(const UnicodeString & HostName, int PortNumber);
+  static TStrings * GetAllOptionNames(bool PuttyExport);
 
   __property UnicodeString HostName  = { read=FHostName, write=SetHostName };
   __property UnicodeString HostNameExpanded  = { read=GetHostNameExpanded };

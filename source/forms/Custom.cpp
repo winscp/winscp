@@ -1482,7 +1482,7 @@ bool __fastcall TSiteRawDialog::Execute(TSessionData * Data)
   RawData->Password = FactoryDefaults->Password;
   RawData->Ftps = FactoryDefaults->Ftps;
 
-  std::unique_ptr<TStrings> Options(RawData->SaveToOptions(FactoryDefaults.get(), false));
+  std::unique_ptr<TStrings> Options(RawData->SaveToOptions(FactoryDefaults.get(), false, false));
 
   SettingsMemo->Lines = Options.get();
 
@@ -1522,9 +1522,9 @@ void __fastcall TSiteRawDialog::AddButtonClick(TObject *)
   BasicData->UserName = FactoryDefaults->UserName + RandomAppendix;
   BasicData->Password = FactoryDefaults->Password + RandomAppendix;
 
-  std::unique_ptr<TStrings> BasicOptions(BasicData->SaveToOptions(FactoryDefaults.get(), false));
+  std::unique_ptr<TStrings> BasicOptions(BasicData->SaveToOptions(FactoryDefaults.get(), false, false));
 
-  std::unique_ptr<TStrings> AllOptions(FactoryDefaults->SaveToOptions(NULL, false));
+  std::unique_ptr<TStrings> AllOptions(TSessionData::GetAllOptionNames(false));
 
   std::unique_ptr<TStrings> Names(CreateSortedStringList());
   for (int Index = 0; Index < AllOptions->Count; Index++)

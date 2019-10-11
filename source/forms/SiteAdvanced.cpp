@@ -1726,7 +1726,10 @@ void __fastcall TSiteAdvancedDialog::PuttySettingsTimer(TObject *)
       UnicodeString NewValue = NewPuttyRegSettings->ValueFromIndex[NewIndex];
       int Index = FPuttyRegSettings->IndexOfName(Name);
       // Ignoring values we do not know (from future versions of PuTTY),
-      // as we cannot tell if they are modified or not
+      // as we cannot tell if they are modified or not.
+      // Ignoring also all value that we export outselves from WinSCP settings
+      // (primarily to avoid collecting all those values, when the user forgets to load the temporary site in PuTTY,
+      // and only saves the changed terminal settings with the basic session settings set to empty values)
       if ((Index >= 0) &&
           (FPuttyRegSettings->ValueFromIndex[Index] != NewValue))
       {
@@ -1776,6 +1779,16 @@ void __fastcall TSiteAdvancedDialog::PuttySettingsButtonClick(TObject *)
   UnicodeString PuttySiteKey = GetPuttySiteKey();
   FPuttyRegSettings.reset(new TStringList());
   SerializePuttyRegistry(PuttySiteKey, FPuttyRegSettings.get());
+
+  std::unique_ptr<TStrings> AllOptions(TSessionData::GetAllOptionNames(true));
+  for (int Index = 0; Index < AllOptions->Count; Index++)
+  {
+    int I = FPuttyRegSettings->IndexOfName(AllOptions->Names[Index]);
+    if (I >= 0)
+    {
+      FPuttyRegSettings->Delete(I);
+    }
+  }
 
   SessionData->PuttySettings = PuttySettings;
   ExportSessionToPutty(SessionData.get(), false, SiteName);

@@ -1206,7 +1206,7 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
   }
 }
 //---------------------------------------------------------------------
-TStrings * __fastcall TSessionData::SaveToOptions(const TSessionData * Default, bool SaveName)
+TStrings * __fastcall TSessionData::SaveToOptions(const TSessionData * Default, bool SaveName, bool PuttyExport)
 {
   std::unique_ptr<TStringList> Options(new TStringList());
   std::unique_ptr<TOptionsStorage> OptionsStorage(new TOptionsStorage(Options.get(), true));
@@ -1214,7 +1214,7 @@ TStrings * __fastcall TSessionData::SaveToOptions(const TSessionData * Default, 
   {
     OptionsStorage->WriteString(L"Name", Name);
   }
-  DoSave(OptionsStorage.get(), false, Default, true);
+  DoSave(OptionsStorage.get(), PuttyExport, Default, true);
   return Options.release();
 }
 //---------------------------------------------------------------------
@@ -3110,7 +3110,7 @@ TStrings * __fastcall TSessionData::GetRawSettingsForUrl()
   SessionData->CopyNonCoreData(FactoryDefaults.get());
   // Cannot be decided in SaveToOptions as it does not have HostName and UserName, so it cannot calculate DefaultSessionName.
   bool SaveName = HasSessionName() && (Name != DefaultSessionName);
-  return SessionData->SaveToOptions(FactoryDefaults.get(), SaveName);
+  return SessionData->SaveToOptions(FactoryDefaults.get(), SaveName, false);
 }
 //---------------------------------------------------------------------
 bool __fastcall TSessionData::HasRawSettingsForUrl()
@@ -3286,7 +3286,7 @@ UnicodeString __fastcall TSessionData::GenerateOpenCommandArgs(bool Rtf)
     SessionData->Timeout = FactoryDefaults->Timeout;
   }
 
-  std::unique_ptr<TStrings> RawSettings(SessionData->SaveToOptions(FactoryDefaults.get(), false));
+  std::unique_ptr<TStrings> RawSettings(SessionData->SaveToOptions(FactoryDefaults.get(), false, false));
 
   if (RawSettings->Count > 0)
   {
@@ -3500,7 +3500,7 @@ void __fastcall TSessionData::GenerateAssemblyCode(
 
   Head += AssemblyNewClassInstanceEnd(Language, false);
 
-  std::unique_ptr<TStrings> RawSettings(SessionData->SaveToOptions(FactoryDefaults.get(), false));
+  std::unique_ptr<TStrings> RawSettings(SessionData->SaveToOptions(FactoryDefaults.get(), false, false));
 
   UnicodeString SessionOptionsVariableName = AssemblyVariableName(Language, SessionOptionsClassName);
 
@@ -4128,6 +4128,12 @@ void __fastcall TSessionData::DisableAuthentationsExceptPassword()
   TlsCertificateFile = L"";
   Passphrase = L"";
   TryAgent = false;
+}
+//---------------------------------------------------------------------
+TStrings * TSessionData::GetAllOptionNames(bool PuttyExport)
+{
+  std::unique_ptr<TSessionData> FactoryDefaults(new TSessionData(L""));
+  return FactoryDefaults->SaveToOptions(NULL, false, PuttyExport);
 }
 //=== TStoredSessionList ----------------------------------------------
 __fastcall TStoredSessionList::TStoredSessionList(bool aReadOnly):
