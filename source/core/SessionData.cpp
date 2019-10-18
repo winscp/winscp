@@ -4938,6 +4938,11 @@ TSessionData * __fastcall TStoredSessionList::CheckIsInFolderOrWorkspaceAndResol
 //---------------------------------------------------------------------------
 void __fastcall TStoredSessionList::GetFolderOrWorkspace(const UnicodeString & Name, TList * List)
 {
+  DoGetFolderOrWorkspace(Name, List, false);
+}
+//---------------------------------------------------------------------------
+void __fastcall TStoredSessionList::DoGetFolderOrWorkspace(const UnicodeString & Name, TList * List, bool NoRecrypt)
+{
   for (int Index = 0; (Index < Count); Index++)
   {
     TSessionData * RawData = Sessions[Index];
@@ -4947,7 +4952,14 @@ void __fastcall TStoredSessionList::GetFolderOrWorkspace(const UnicodeString & N
     if (Data != NULL)
     {
       TSessionData * Data2 = new TSessionData(L"");
-      Data2->Assign(Data);
+      if (NoRecrypt)
+      {
+        Data2->CopyDataNoRecrypt(Data);
+      }
+      else
+      {
+        Data2->Assign(Data);
+      }
 
       if (!RawData->Link.IsEmpty() && (DebugAlwaysTrue(Data != RawData)) &&
           // BACKWARD COMPATIBILITY
@@ -4979,7 +4991,7 @@ TStrings * __fastcall TStoredSessionList::GetFolderOrWorkspaceList(
   const UnicodeString & Name)
 {
   std::unique_ptr<TObjectList> DataList(new TObjectList());
-  GetFolderOrWorkspace(Name, DataList.get());
+  DoGetFolderOrWorkspace(Name, DataList.get(), true);
 
   std::unique_ptr<TStringList> Result(new TStringList());
   for (int Index = 0; (Index < DataList->Count); Index++)
