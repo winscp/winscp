@@ -729,7 +729,6 @@ private:
   TSessionData * __fastcall CheckIsInFolderOrWorkspaceAndResolve(
     TSessionData * Data, const UnicodeString & Name);
   void __fastcall ImportLevelFromFilezilla(_di_IXMLNode Node, const UnicodeString & Path, _di_IXMLNode SettingsNode);
-  void __fastcall DoGetFolderOrWorkspace(const UnicodeString & Name, TList * List, bool NoRecrypt);
   static THierarchicalStorage * __fastcall CreateHostKeysStorageForWritting();
 };
 //---------------------------------------------------------------------------
