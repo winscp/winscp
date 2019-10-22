@@ -1418,14 +1418,14 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 14
       Category = 'Command'
       Caption = 'File &Custom Commands'
-      HelpKeyword = 'remote_command#custom_commands'
+      HelpKeyword = 'custom_command'
       Hint = 'Execute custom commands with selected file(s)'
     end
     object CustomCommandsNonFileAction: TAction
       Tag = 15
       Category = 'Command'
       Caption = 'Static &Custom Commands'
-      HelpKeyword = 'remote_command#custom_commands'
+      HelpKeyword = 'custom_command'
       Hint = 'Execute custom commands that do not operate with files'
     end
     object CustomCommandsCustomizeAction: TAction
@@ -1440,7 +1440,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'Command'
       Caption = '&Enter...'
-      HelpKeyword = 'remote_command#executing_and_configuring_custom_commands'
+      HelpKeyword = 'custom_command#executing_and_configuring'
       Hint = 'Enter ad hoc custom command'
       ImageIndex = 90
     end
@@ -1448,7 +1448,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 12
       Category = 'Command'
       Caption = '&Enter...'
-      HelpKeyword = 'remote_command#executing_and_configuring_custom_commands'
+      HelpKeyword = 'custom_command#executing_and_configuring'
       Hint = 'Enter ad hoc custom command'
       ImageIndex = 90
     end
@@ -1470,13 +1470,13 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'Command'
       Caption = 'CustomCommandsLastAction'
-      HelpKeyword = 'remote_command#executing_and_configuring_custom_commands'
+      HelpKeyword = 'custom_command#executing_and_configuring'
     end
     object CustomCommandsLastFocusedAction: TAction
       Tag = 12
       Category = 'Command'
       Caption = 'CustomCommandsLastFocusedAction'
-      HelpKeyword = 'remote_command#executing_and_configuring_custom_commands'
+      HelpKeyword = 'custom_command#executing_and_configuring'
     end
     object FileSystemInfoAction: TAction
       Tag = 15
@@ -1524,21 +1524,21 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'View'
       Caption = '&Bytes'
-      HelpKeyword = 'ui_file_panel#size_format'
+      HelpKeyword = 'ui_pref_panels#common'
       Hint = 'Show files sizes in bytes'
     end
     object LocalPathToClipboardAction: TAction
       Tag = 15
       Category = 'Local Directory'
       Caption = 'Copy &Path to Clipboard'
-      HelpKeyword = 'filenames#current_working_directory'
+      HelpKeyword = 'filenames#cwd'
       Hint = 'Copy current local path to clipboard'
     end
     object RemotePathToClipboardAction: TAction
       Tag = 15
       Category = 'Remote Directory'
       Caption = 'Copy &Path to Clipboard'
-      HelpKeyword = 'filenames#current_working_directory'
+      HelpKeyword = 'filenames#cwd'
       Hint = 'Copy current remote path to clipboard'
     end
     object FileListToCommandLineAction: TAction
@@ -1744,14 +1744,14 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'View'
       Caption = '&Kilobytes'
-      HelpKeyword = 'ui_file_panel#size_format'
+      HelpKeyword = 'ui_pref_panels#common'
       Hint = 'Show files sizes in kilobytes'
     end
     object FormatSizeBytesShortAction: TAction
       Tag = 15
       Category = 'View'
       Caption = '&Short format'
-      HelpKeyword = 'ui_file_panel#size_format'
+      HelpKeyword = 'ui_pref_panels#common'
       Hint = 'Show files sizes in short format'
     end
     object PresetsPreferencesAction: TAction
@@ -1964,7 +1964,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 9
       Category = 'Local Directory'
       Caption = '&Filter...'
-      HelpKeyword = 'ui_file_panel#filter'
+      HelpKeyword = 'ui_file_panel#filtering'
       Hint = 'Filter|Filter displayed files'
       ImageIndex = 92
       ShortCut = 49222
@@ -1973,7 +1973,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 14
       Category = 'Remote Directory'
       Caption = '&Filter...'
-      HelpKeyword = 'ui_file_panel#filter'
+      HelpKeyword = 'ui_file_panel#filtering'
       Hint = 'Filter|Filter displayed files'
       ImageIndex = 92
       ShortCut = 49222
@@ -2642,7 +2642,7 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object LocalFormatSizeBytesPopupItem: TTBXSubmenuItem
       Caption = 'Show File Si&zes In'
-      HelpKeyword = 'ui_file_panel#size_format'
+      HelpKeyword = 'ui_pref_panels#common'
       Hint = 'Select files sizes display format'
       object TBXItem64: TTBXItem
         Action = FormatSizeBytesNoneAction
@@ -2700,7 +2700,7 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object RemoteFormatSizeBytesPopupItem: TTBXSubmenuItem
       Caption = 'Show File Si&zes In'
-      HelpKeyword = 'ui_file_panel#size_format'
+      HelpKeyword = 'ui_pref_panels#common'
       Hint = 'Select files sizes display format'
       object TBXItem67: TTBXItem
         Action = FormatSizeBytesNoneAction
