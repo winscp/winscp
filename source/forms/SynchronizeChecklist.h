@@ -179,7 +179,6 @@ protected:
   void __fastcall DeleteItem(TListItem * Item);
   void __fastcall CheckDirectory(bool Check);
   void __fastcall DoBrowse(TOperationSide Side);
-  static int __fastcall CompareNumber(__int64 Value1, __int64 Value2);
   void __fastcall ListViewHintShow(TCMHintShow & HintShow);
   void __fastcall StatusBarHintShow(TCMHintShow & HintShow);
 };

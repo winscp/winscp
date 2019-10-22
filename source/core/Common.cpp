@@ -904,6 +904,24 @@ int __fastcall CompareLogicalText(
   }
 }
 //---------------------------------------------------------------------------
+int __fastcall CompareNumber(__int64 Value1, __int64 Value2)
+{
+  int Result;
+  if (Value1 < Value2)
+  {
+    Result = -1;
+  }
+  else if (Value1 == Value2)
+  {
+    Result = 0;
+  }
+  else
+  {
+    Result = 1;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 bool ContainsTextSemiCaseSensitive(const UnicodeString & Text, const UnicodeString & SubText)
 {
   bool Result;

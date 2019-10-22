@@ -327,6 +327,7 @@ var
   OrderStr: string;
   PixelsPerInch: Integer;
 begin
+  // TFileFindDialog uses / as separator of its settings
   S := CutToChar(Value, '|', True);
   WidthsStr := CutToChar(S, '@', True);
   PixelsPerInch := LoadPixelsPerInch(S, FListView);

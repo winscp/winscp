@@ -98,6 +98,7 @@ bool __fastcall SamePaths(const UnicodeString & Path1, const UnicodeString & Pat
 bool __fastcall IsPathToSameFile(const UnicodeString & Path1, const UnicodeString & Path2);
 int __fastcall CompareLogicalText(
   const UnicodeString & S1, const UnicodeString & S2, bool NaturalOrderNumericalSorting);
+int __fastcall CompareNumber(__int64 Value1, __int64 Value2);
 bool ContainsTextSemiCaseSensitive(const UnicodeString & Text, const UnicodeString & SubText);
 bool __fastcall IsReservedName(UnicodeString FileName);
 UnicodeString __fastcall ApiPath(UnicodeString Path);

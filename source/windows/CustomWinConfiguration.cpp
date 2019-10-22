@@ -113,7 +113,7 @@ void __fastcall TCustomWinConfiguration::Default()
   FSynchronizeChecklist.WindowParams = L"0;" + FormatDefaultWindowParams(ChecklistWidth, ChecklistHeight);
   FSynchronizeChecklist.ListParams = L"1;1|150,1;100,1;80,1;130,1;25,1;100,1;80,1;130,1;@" + SaveDefaultPixelsPerInch() + L"|0;1;2;3;4;5;6;7";
   FFindFile.WindowParams = FormatDefaultWindowSize(646, 481);
-  FFindFile.ListParams = L"3;1|125,1;181,1;80,1;122,1;@" + SaveDefaultPixelsPerInch() + L"|0;1;2;3";
+  FFindFile.ListParams = L"1;1|125,1;181,1;80,1;122,1;@" + SaveDefaultPixelsPerInch() + L"|0;1;2;3|/1";
   FConsoleWin.WindowSize = FormatDefaultWindowSize(570, 430);
   FLoginDialog.WindowSize = FormatDefaultWindowSize(640, 430);
   FLoginDialog.SiteSearch = isName;

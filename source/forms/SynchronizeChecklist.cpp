@@ -881,25 +881,6 @@ void __fastcall TSynchronizeChecklistDialog::StatusBarMouseDown(
   }
 }
 //---------------------------------------------------------------------------
-int __fastcall TSynchronizeChecklistDialog::CompareNumber(__int64 Value1,
-  __int64 Value2)
-{
-  int Result;
-  if (Value1 < Value2)
-  {
-    Result = -1;
-  }
-  else if (Value1 == Value2)
-  {
-    Result = 0;
-  }
-  else
-  {
-    Result = 1;
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::ListViewCompare(
   TObject * /*Sender*/, TListItem * Item1, TListItem * Item2, int /*Data*/,
   int & Compare)
