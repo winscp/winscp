@@ -155,7 +155,7 @@ inherited ScpExplorerForm: TScpExplorerForm
         end
         object QueueSubmenuItem: TTBXSubmenuItem
           Caption = 'Q&ueue'
-          HelpKeyword = 'ui_queue#managing_the_queue'
+          HelpKeyword = 'ui_queue#manage'
           Hint = 'Queue list commands'
           OnPopup = QueueSubmenuItemPopup
           object QueueEnableItem2: TTBXItem
@@ -204,7 +204,7 @@ inherited ScpExplorerForm: TScpExplorerForm
           end
           object TBXSubmenuItem13: TTBXSubmenuItem
             Caption = '&All'
-            HelpKeyword = 'ui_queue#managing_the_queue'
+            HelpKeyword = 'ui_queue#manage'
             Hint = 'Mass queue management commands'
             object TBXItem198: TTBXItem
               Action = NonVisualDataModule.QueuePauseAllAction

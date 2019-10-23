@@ -220,7 +220,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 12
       Category = 'Queue'
       Caption = '&Show Query'
-      HelpKeyword = 'ui_queue#managing_the_queue'
+      HelpKeyword = 'ui_queue#manage'
       Hint = 'Show pending query of selected queue item'
       ImageIndex = 67
     end
@@ -228,7 +228,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 12
       Category = 'Queue'
       Caption = '&Show Error'
-      HelpKeyword = 'ui_queue#managing_the_queue'
+      HelpKeyword = 'ui_queue#manage'
       Hint = 'Show pending error message of selected queue item'
       ImageIndex = 68
     end
@@ -236,7 +236,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 12
       Category = 'Queue'
       Caption = '&Show Prompt'
-      HelpKeyword = 'ui_queue#managing_the_queue'
+      HelpKeyword = 'ui_queue#manage'
       Hint = 'Show pending prompt of selected queue item'
       ImageIndex = 69
     end
@@ -252,7 +252,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 12
       Category = 'Queue'
       Caption = '&Cancel'
-      HelpKeyword = 'ui_queue#managing_the_queue'
+      HelpKeyword = 'ui_queue#manage'
       Hint = 'Remove selected queue item'
       ImageIndex = 71
     end
@@ -260,7 +260,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 12
       Category = 'Queue'
       Caption = '&Execute Now'
-      HelpKeyword = 'ui_queue#managing_the_queue'
+      HelpKeyword = 'ui_queue#manage'
       Hint = 
         'Execute selected queue item immediately by granting it additiona' +
         'l connection'
@@ -358,7 +358,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 14
       Category = 'Remote Selected Operation'
       Caption = 'Mo&ve To...'
-      HelpKeyword = 'task_move_duplicate#moving_remote_files'
+      HelpKeyword = 'task_move_duplicate#move'
       Hint = 
         'Move|Move selected remote file(s) to another remote directory or' +
         ' another name'
@@ -505,7 +505,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 14
       Category = 'Remote Directory'
       Caption = '&Open Directory/Bookmark...'
-      HelpKeyword = 'task_navigate#entering_path_manually'
+      HelpKeyword = 'task_navigate#manual'
       Hint = 
         'Open directory/bookmark|Open specified directory or saved bookma' +
         'rk'
@@ -711,7 +711,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 9
       Category = 'Local Directory'
       Caption = '&Open Directory/Bookmark...'
-      HelpKeyword = 'task_navigate#entering_path_manually'
+      HelpKeyword = 'task_navigate#manual'
       Hint = 
         'Open directory/bookmark|Open specified directory or saved bookma' +
         'rk'
@@ -1111,7 +1111,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'Session'
       Caption = '&Save Session as Site...'
-      HelpKeyword = 'task_connections#saving_opened_session'
+      HelpKeyword = 'task_connections#saving'
       Hint = 'Save session as site|Save current session as site'
       ImageIndex = 43
     end
@@ -1371,7 +1371,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'Session'
       Caption = '&Opened Sessions'
-      HelpKeyword = 'task_connections#switching_connections'
+      HelpKeyword = 'task_connections#switch'
       Hint = 'Select session|Select opened session to activate'
       ImageIndex = 62
     end
@@ -1485,7 +1485,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 14
       Category = 'Remote Focused Operation'
       Caption = 'Mo&ve To...'
-      HelpKeyword = 'task_move_duplicate#moving_remote_files'
+      HelpKeyword = 'task_move_duplicate#move'
       Hint = 
         'Move|Move selected remote file(s) to another remote directory or' +
         ' another name'
@@ -1548,7 +1548,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'Queue'
       Caption = '&Go To'
-      HelpKeyword = 'ui_queue#managing_the_queue'
+      HelpKeyword = 'ui_queue#manage'
       Hint = 'Go to transfer queue list'
       ImageIndex = 74
       ShortCut = 16465
@@ -1557,7 +1557,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 12
       Category = 'Queue'
       Caption = 'Move &Up'
-      HelpKeyword = 'ui_queue#managing_the_queue'
+      HelpKeyword = 'ui_queue#manage'
       Hint = 'Move selected queue item up to be processed earlier'
       ImageIndex = 72
     end
@@ -1565,7 +1565,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 12
       Category = 'Queue'
       Caption = 'Move &Down'
-      HelpKeyword = 'ui_queue#managing_the_queue'
+      HelpKeyword = 'ui_queue#manage'
       Hint = 'Move selected queue item down to be processed later'
       ImageIndex = 73
     end
@@ -1643,7 +1643,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 14
       Category = 'Remote Focused Operation'
       Caption = '&Duplicate...'
-      HelpKeyword = 'task_move_duplicate#duplicating_remote_files'
+      HelpKeyword = 'task_move_duplicate#duplicate'
       Hint = 
         'Duplicate|Duplicate selected remote file(s) to another remote di' +
         'rectory or another name'
@@ -1653,7 +1653,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 14
       Category = 'Remote Selected Operation'
       Caption = 'Du&plicate...'
-      HelpKeyword = 'task_move_duplicate#duplicating_remote_files'
+      HelpKeyword = 'task_move_duplicate#duplicate'
       Hint = 
         'Duplicate|Duplicate selected remote file(s) to another remote di' +
         'rectory or another name'
@@ -1780,7 +1780,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 12
       Category = 'Queue'
       Caption = '&Suspend'
-      HelpKeyword = 'ui_queue#managing_the_queue'
+      HelpKeyword = 'ui_queue#manage'
       Hint = 'Suspend selected queue item'
       ImageIndex = 83
     end
@@ -1788,7 +1788,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 12
       Category = 'Queue'
       Caption = '&Resume'
-      HelpKeyword = 'ui_queue#managing_the_queue'
+      HelpKeyword = 'ui_queue#manage'
       Hint = 'Resume selected suspended queue item'
       ImageIndex = 70
     end
@@ -1796,7 +1796,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 12
       Category = 'Queue'
       Caption = '&Suspend All'
-      HelpKeyword = 'ui_queue#managing_the_queue'
+      HelpKeyword = 'ui_queue#manage'
       Hint = 'Suspend all running queue items'
       ImageIndex = 84
     end
@@ -1804,7 +1804,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 12
       Category = 'Queue'
       Caption = '&Resume All'
-      HelpKeyword = 'ui_queue#managing_the_queue'
+      HelpKeyword = 'ui_queue#manage'
       Hint = 'Resume all suspended queue items'
       ImageIndex = 85
     end
@@ -1812,7 +1812,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 12
       Category = 'Queue'
       Caption = 'Delete All &Completed'
-      HelpKeyword = 'ui_queue#managing_the_queue'
+      HelpKeyword = 'ui_queue#manage'
       Hint = 'Remove all completed queue items'
       ImageIndex = 99
     end
@@ -1820,7 +1820,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'Queue'
       Caption = '&Process Queue'
-      HelpKeyword = 'ui_queue#managing_the_queue'
+      HelpKeyword = 'ui_queue#manage'
       Hint = 
         'Enable queue processing|Enable queue processing (pending queue i' +
         'tems will not start, when queue processing is disabled)'
@@ -1926,7 +1926,7 @@ object NonVisualDataModule: TNonVisualDataModule
     object QueueItemSpeedAction: TTBEditAction
       Tag = 12
       Category = 'Queue'
-      HelpKeyword = 'ui_queue#managing_the_queue'
+      HelpKeyword = 'ui_queue#manage'
       Hint = 'Change speed limit of selected queue item'
       ImageIndex = 109
       EditCaption = '&Speed'
@@ -1935,7 +1935,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 12
       Category = 'Queue'
       Caption = '&Cancel All'
-      HelpKeyword = 'ui_queue#managing_the_queue'
+      HelpKeyword = 'ui_queue#manage'
       Hint = 'Remove all queue items'
       ImageIndex = 106
     end
@@ -2764,7 +2764,7 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object TBXSubmenuItem1: TTBXSubmenuItem
       Caption = '&All'
-      HelpKeyword = 'ui_queue#managing_the_queue'
+      HelpKeyword = 'ui_queue#manage'
       Hint = 'Mass queue management commands'
       object TBXItem11: TTBXItem
         Action = QueuePauseAllAction
