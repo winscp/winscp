@@ -842,6 +842,7 @@ namespace WinSCP
                 else
                 {
                     if (!TryFindExecutableInPath(GetAssemblyPath(), out executablePath) &&
+                        !TryFindExecutableInPath(GetEntryAssemblyPath(), out executablePath) &&
 #if !NETSTANDARD
                         !TryFindExecutableInPath(GetInstallationPath(RegistryHive.CurrentUser), out executablePath) &&
                         !TryFindExecutableInPath(GetInstallationPath(RegistryHive.LocalMachine), out executablePath) &&
@@ -851,8 +852,8 @@ namespace WinSCP
                         throw _logger.WriteException(
                             new SessionLocalException(_session,
                                 string.Format(CultureInfo.CurrentCulture,
-                                    "The {0} executable was not found at location of the assembly ({1}), nor in an installation path. You may use Session.ExecutablePath property to explicitly set path to {0}.",
-                                    ExeExecutableFileName, GetAssemblyPath())));
+                                    "The {0} executable was not found at location of the assembly {1} ({2}), nor the executing assembly {3} ({4}), nor in an installation path. You may use Session.ExecutablePath property to explicitly set path to {0}.",
+                                    ExeExecutableFileName, Assembly.GetExecutingAssembly(), GetAssemblyPath(), Assembly.GetEntryAssembly(), GetEntryAssemblyPath())));
                     }
                 }
                 return executablePath;
@@ -908,7 +909,16 @@ namespace WinSCP
 
         private string GetAssemblyPath()
         {
-            string codeBasePath = _logger.GetAssemblyFilePath();
+            return DoGetAssemblyPath(_logger.GetAssemblyFilePath());
+        }
+
+        private string GetEntryAssemblyPath()
+        {
+            return DoGetAssemblyPath(_logger.GetEntryAssemblyFilePath());
+        }
+
+        private static string DoGetAssemblyPath(string codeBasePath)
+        {
             string path = null;
             if (!string.IsNullOrEmpty(codeBasePath))
             {

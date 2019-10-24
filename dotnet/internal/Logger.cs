@@ -19,6 +19,17 @@ namespace WinSCP
         public string GetAssemblyFilePath()
         {
             Assembly assembly = Assembly.GetExecutingAssembly();
+            return DoGetAssemblyFilePath(assembly);
+        }
+
+        public string GetEntryAssemblyFilePath()
+        {
+            Assembly assembly = Assembly.GetEntryAssembly();
+            return DoGetAssemblyFilePath(assembly);
+        }
+
+        private string DoGetAssemblyFilePath(Assembly assembly)
+        {
             string path = null;
 
             // https://blogs.msdn.microsoft.com/suzcook/2003/06/26/assembly-codebase-vs-assembly-location/
@@ -369,6 +380,7 @@ namespace WinSCP
             FileVersionInfo version = string.IsNullOrEmpty(path) ? null : FileVersionInfo.GetVersionInfo(path);
             WriteLine("Assembly path: {0}", path);
             WriteLine("Assembly product version: {0}", ((version != null) ? version.ProductVersion : "unknown"));
+            WriteLine("Entry assembly path: {0}", GetEntryAssemblyFilePath());
         }
 
         public static string LastWin32ErrorMessage()
