@@ -25,7 +25,7 @@ namespace WinSCP
         public string GetEntryAssemblyFilePath()
         {
             Assembly assembly = Assembly.GetEntryAssembly();
-            return DoGetAssemblyFilePath(assembly);
+            return (assembly != null) ? DoGetAssemblyFilePath(assembly) : null;
         }
 
         private string DoGetAssemblyFilePath(Assembly assembly)
@@ -380,7 +380,10 @@ namespace WinSCP
             FileVersionInfo version = string.IsNullOrEmpty(path) ? null : FileVersionInfo.GetVersionInfo(path);
             WriteLine("Assembly path: {0}", path);
             WriteLine("Assembly product version: {0}", ((version != null) ? version.ProductVersion : "unknown"));
-            WriteLine("Entry assembly path: {0}", GetEntryAssemblyFilePath());
+            if (Assembly.GetEntryAssembly() != null)
+            {
+                WriteLine("Entry assembly path: {0}", GetEntryAssemblyFilePath());
+            }
         }
 
         public static string LastWin32ErrorMessage()

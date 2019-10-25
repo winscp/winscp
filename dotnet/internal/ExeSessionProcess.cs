@@ -849,11 +849,17 @@ namespace WinSCP
 #endif
                         !TryFindExecutableInPath(GetDefaultInstallationPath(), out executablePath))
                     {
+                        string entryAssemblyDesc = string.Empty;
+                        Assembly entryAssembly = Assembly.GetEntryAssembly();
+                        if (entryAssembly != null)
+                        {
+                            entryAssemblyDesc = $", nor the entry assembly {entryAssembly.GetName().Name} ({GetEntryAssemblyPath()})";
+                        }
                         throw _logger.WriteException(
                             new SessionLocalException(_session,
                                 string.Format(CultureInfo.CurrentCulture,
-                                    "The {0} executable was not found at location of the assembly {1} ({2}), nor the executing assembly {3} ({4}), nor in an installation path. You may use Session.ExecutablePath property to explicitly set path to {0}.",
-                                    ExeExecutableFileName, Assembly.GetExecutingAssembly(), GetAssemblyPath(), Assembly.GetEntryAssembly(), GetEntryAssemblyPath())));
+                                    "The {0} executable was not found at location of the assembly {1} ({2}){3}, nor in an installation path. You may use Session.ExecutablePath property to explicitly set path to {0}.",
+                                    ExeExecutableFileName, Assembly.GetExecutingAssembly().GetName().Name, GetAssemblyPath(), entryAssemblyDesc)));
                     }
                 }
                 return executablePath;
