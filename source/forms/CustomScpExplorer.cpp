@@ -162,6 +162,7 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
     FFormRestored(false),
     TForm(Owner)
 {
+  FInvalid = false;
   FCurrentSide = osRemote;
   FEverShown = false;
   FDocks = new TList();
@@ -288,6 +289,7 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
 //---------------------------------------------------------------------------
 __fastcall TCustomScpExplorerForm::~TCustomScpExplorerForm()
 {
+  FInvalid = true;
   // this has to be one of the very first things to do
   StopUpdateThread();
   // This is needed when shuting down Windows only. Otherwise it's already set NULL from Execute()
@@ -8911,9 +8913,13 @@ void __fastcall TCustomScpExplorerForm::QueueSplitterDblClick(TObject * /*Sender
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::WMWinIniChange(TMessage & Message)
 {
-  WinConfiguration->ResetSysDarkTheme();
-  ConfigurationChanged();
-  ConfigureInterface();
+  // Do not handle, when shutting down anyway (maybe also when not setup completelly yet?)
+  if (FInvalid)
+  {
+    WinConfiguration->ResetSysDarkTheme();
+    ConfigurationChanged();
+    ConfigureInterface();
+  }
   TForm::Dispatch(&Message);
 }
 //---------------------------------------------------------------------------
