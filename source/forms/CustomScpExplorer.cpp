@@ -3192,7 +3192,7 @@ void __fastcall TCustomScpExplorerForm::CustomExecuteFile(TOperationSide Side,
     }
     else
     {
-      DebugAssert(IsSideLocalBrowser(Side));
+      DebugAssert(!IsSideLocalBrowser(Side));
       if (!ExecuteShell(FileName, L"", Process))
       {
         throw EOSExtException(FMTLOAD(EXECUTE_FILE_ERROR, (FileName)));
