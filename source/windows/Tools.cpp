@@ -110,6 +110,7 @@ TColor __fastcall GetWindowTextColor(TColor BackgroundColor, TColor Color)
 {
   if (Color == TColor(0))
   {
+    // Could use current theme TMT_TEXTCOLOR - see https://github.com/ysc3839/win32-darkmode/
     Color = (IsDarkColor(BackgroundColor) ? clWhite : clWindowText);
     SetContrast(Color, BackgroundColor, 180);
   }
@@ -120,6 +121,7 @@ TColor __fastcall GetWindowColor(TColor Color)
 {
   if (Color == TColor(0))
   {
+    // Could use current theme TMT_FILLCOLOR - see https://github.com/ysc3839/win32-darkmode/
     Color = (WinConfiguration->UseDarkTheme() ? static_cast<TColor>(RGB(0x20, 0x20, 0x20)) : clWindow);
   }
   return Color;
