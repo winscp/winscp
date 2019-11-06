@@ -2565,42 +2565,20 @@ begin
 end; {StartIconUpdateThread}
 
 procedure TDirView.StopIconUpdateThread;
-var
-  Counter: Integer;
 begin
   if Assigned(FIconUpdateThread) then
   begin
-    Counter := 0;
     FIconUpdateThread.Terminate;
     FIconUpdateThread.Priority := tpHigher;
     if fIconUpdateThread.Suspended then
       FIconUpdateThread.Resume;
-    Sleep(0);
-
-    try
-      {Wait until the thread has teminated to prevent AVs:}
-      while not FIUThreadFinished do
-      begin
-        Sleep(10);
-        // Not really sure why this is here, but definitelly, when recreating
-        // the dir view, it may cause recursion calls back to destryed dir view,
-        // causing AVs
-        // May not be necessary anymore after the recursion check in
-        // TDirView.CMRecreateWnd
-        if not (csRecreating in ControlState) then
-          Application.ProcessMessages;
-        Inc(Counter);
-        {Raise an exception after 2 second, if the thread has not terminated:}
-        if Counter = 200 then
-        begin
-          {MP}raise EIUThread.Create(SIconUpdateThreadTerminationError);
-          Break;
-        end;
-      end;
-    finally
-      FIconUpdateThread.Destroy;
-      FIconUpdateThread := nil;
+    if not FIconUpdateThread.WaitFor(MSecsPerSec div 4) then
+    begin
+      // This prevents Destroy from waiting for (stalled) thread
+      FIconUpdateThread.Suspend;
     end;
+    FIconUpdateThread.Destroy;
+    FIconUpdateThread := nil;
   end;
 end; {StopIconUpdateThread}
 
