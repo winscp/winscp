@@ -1225,7 +1225,8 @@ begin
   if DarkMode <> Value then
   begin
     FDarkMode := Value;
-    RecreateWnd;
+    // See TCustomDirView.SetDarkMode
+    if HandleAllocated then AllowDarkModeForWindow(Self, DarkMode);
   end;
 end;
 
