@@ -3230,7 +3230,9 @@ begin
   if DarkMode <> Value then
   begin
     FDarkMode := Value;
-    RecreateWnd;
+    // Call only when switching to dark more and when switching back to the light mode.
+    // But not for initial light mode - To reduce an impact of calling an undocumented function.
+    if HandleAllocated then AllowDarkModeForWindow(Self, DarkMode);
   end;
 end;
 
