@@ -8739,7 +8739,7 @@ void __fastcall TCustomScpExplorerForm::QueueSplitterDblClick(TObject * /*Sender
 void __fastcall TCustomScpExplorerForm::WMWinIniChange(TMessage & Message)
 {
   // Do not handle, when shutting down anyway (maybe also when not setup completelly yet?)
-  if (FInvalid)
+  if (!FInvalid)
   {
     WinConfiguration->ResetSysDarkTheme();
     ConfigurationChanged();
