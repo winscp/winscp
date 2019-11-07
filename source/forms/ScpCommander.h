@@ -598,6 +598,7 @@ protected:
   virtual void __fastcall StartingDisconnected();
   virtual void __fastcall UpdateImages();
   virtual void __fastcall FileColorsChanged();
+  virtual void __fastcall ThemeChanged();
 
 public:
   __fastcall TScpCommanderForm(TComponent* Owner);

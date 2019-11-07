@@ -679,7 +679,7 @@ protected:
   virtual void __fastcall FileColorsChanged();
   TColor __fastcall PanelColor();
   TColor __fastcall DisabledPanelColor();
-  void __fastcall WMWinIniChange(TMessage & Message);
+  void __fastcall WMSettingChange(TMessage & Message);
   void __fastcall ResetIncrementalSearch();
   void __fastcall IncrementalSearch(const UnicodeString & Text, bool SkipCurrent, bool Reverse);
   TListItem * __fastcall GetNextFile(TListItem * Item, bool Reverse);
@@ -688,6 +688,7 @@ protected:
   DYNAMIC void __fastcall Deactivate();
   void __fastcall CenterReconnectToolbar();
   void __fastcall DoOpenFolderOrWorkspace(const UnicodeString & Name, bool ConnectFirstTerminal);
+  virtual void __fastcall ThemeChanged();
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();

@@ -8911,14 +8911,25 @@ void __fastcall TCustomScpExplorerForm::QueueSplitterDblClick(TObject * /*Sender
   PostComponentHide(fcQueueView);
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::WMWinIniChange(TMessage & Message)
+void __fastcall TCustomScpExplorerForm::ThemeChanged()
+{
+  // We hoped this will refresh scrollbar colors, but it does not have any effect here.
+  RefreshColorMode();
+  WinConfiguration->ResetSysDarkTheme();
+  ConfigurationChanged();
+  ConfigureInterface();
+  // Should be called for all controls
+  RemoteDirView->Perform(WM_THEMECHANGED, 0, 0);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::WMSettingChange(TMessage & Message)
 {
   // Do not handle, when shutting down anyway (maybe also when not setup completelly yet?)
-  if (!FInvalid)
+  if (!FInvalid &&
+      (Message.LParam != 0) &&
+      (wcscmp(reinterpret_cast<LPCWCH>(Message.LParam), L"ImmersiveColorSet") == 0))
   {
-    WinConfiguration->ResetSysDarkTheme();
-    ConfigurationChanged();
-    ConfigureInterface();
+    ThemeChanged();
   }
   TForm::Dispatch(&Message);
 }
@@ -9007,8 +9018,8 @@ void __fastcall TCustomScpExplorerForm::Dispatch(void * Message)
       CMDpiChanged(*M);
       break;
 
-    case WM_WININICHANGE:
-      WMWinIniChange(*M);
+    case WM_SETTINGCHANGE:
+      WMSettingChange(*M);
       break;
 
     case CM_DIALOGKEY:
@@ -9554,6 +9565,9 @@ TDragDropFilesEx * __fastcall TCustomScpExplorerForm::CreateDragDropFilesEx()
 void __fastcall TCustomScpExplorerForm::CreateWnd()
 {
   TForm::CreateWnd();
+
+  // win32-darkmode calls AllowDarkModeForWindow(this, true) here, but it does not seem to have any effect
+
   if (FSessionsDragDropFilesEx == NULL)
   {
     FSessionsDragDropFilesEx = CreateDragDropFilesEx();

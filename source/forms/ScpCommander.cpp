@@ -2306,3 +2306,9 @@ void __fastcall TScpCommanderForm::BrowseFile()
   WinConfiguration->ScpCommander = ScpCommander;
 }
 //---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::ThemeChanged()
+{
+  TCustomScpExplorerForm::ThemeChanged();
+  LocalDirView->Perform(WM_THEMECHANGED, 0, 0);
+}
+//---------------------------------------------------------------------------
