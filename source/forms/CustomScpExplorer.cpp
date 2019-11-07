@@ -8567,8 +8567,8 @@ void __fastcall TCustomScpExplorerForm::UpdateControls()
         // An even later in TScpCommanderForm::DoShow()
         FRemoteDirViewWasFocused = (ActiveControl == RemoteDirView);
         RemoteDirView->Enabled = false;
-        RemoteDirView->Color = DisabledPanelColor();
       }
+      RemoteDirView->Color = DisabledPanelColor();
     }
 
     RemoteDirView->Font->Color = GetWindowTextColor(RemoteDirView->Color);
