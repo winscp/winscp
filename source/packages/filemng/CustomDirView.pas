@@ -494,7 +494,6 @@ type
   end;
 
 resourcestring
-  SErrorOpenFile = 'Can''t open file: ';
   SErrorRenameFile = 'Can''t rename file or directory: ';
   SErrorRenameFileExists = 'File already exists: ';
   SErrorInvalidName= 'Filename contains invalid characters:';
@@ -502,7 +501,6 @@ resourcestring
   STextFiles = '%u Files';
   STextDirectories = '%u Directories';
   SParentDir = 'Parent directory';
-  SIconUpdateThreadTerminationError = 'Can''t terminate icon update thread.';
   SDragDropError = 'DragDrop Error: %d';
   SDriveNotReady = 'Drive ''%s:'' is not ready.';
   SDirNotExists = 'Directory ''%s'' doesn''t exist.';
