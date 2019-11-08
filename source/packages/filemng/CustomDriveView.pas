@@ -226,9 +226,6 @@ type
     property LastDDResult: TDragResult read FLastDDResult;
   end;
 
-resourcestring
-  SDragDropError = 'Drag&drop error: %d';
-
 implementation
 
 uses
