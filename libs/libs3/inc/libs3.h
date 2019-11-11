@@ -7,7 +7,9 @@
  *
  * libs3 is free software: you can redistribute it and/or modify it under the
  * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, version 3 of the License.
+ * Software Foundation, version 3 or above of the License.  You can also
+ * redistribute and/or modify it under the terms of the GNU General Public
+ * License, version 2 or above of the License.
  *
  * In addition, as a special exception, the copyright holders give
  * permission to link the code of this library and its programs with the
@@ -20,6 +22,10 @@
  *
  * You should have received a copy of the GNU Lesser General Public License
  * version 3 along with libs3, in a file named COPYING.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ *
+ * You should also have received a copy of the GNU General Public License
+ * version 2 along with libs3, in a file named COPYING-GPLv2.  If not, see
  * <http://www.gnu.org/licenses/>.
  *
  ************************************************************************** **/
@@ -498,7 +504,8 @@ typedef enum
     S3CannedAclPrivate                  = 0, /* private */
     S3CannedAclPublicRead               = 1, /* public-read */
     S3CannedAclPublicReadWrite          = 2, /* public-read-write */
-    S3CannedAclAuthenticatedRead        = 3  /* authenticated-read */
+    S3CannedAclAuthenticatedRead        = 3, /* authenticated-read */
+    S3CannedAclBucketOwnerFullControl   = 4  /* bucket-owner-full-control */
 } S3CannedAcl;
 
 
@@ -1240,6 +1247,28 @@ typedef S3Status (S3MultipartCommitResponseCallback)(const char *location,
                                                      void *callbackData);
 
 
+/**
+ * Mechanism for S3 application to customize each CURL easy request
+ * associated with the given S3 request context.
+ *
+ * This callback can be optinally configured using S3_create_request_context_ex
+ * and will be invoked every time a new CURL request is created in the
+ * context of the given CURLM handle. Invocation will occur after
+ * libs3 has finished configuring its own options of CURL, but before
+ * CURL is started.
+ *
+ * @param curl_multi is the CURLM handle associated with this context.
+ * @param curl_easy is the CURL request being created.
+ * @param setupData is the setupCurlCallbackData parameter passed to
+ *        S3_create_request_context_ex.
+ * @return S3StatusOK to continue processing the request, anything else to
+ *         immediately abort the request and pass this status
+ *         to the S3ResponseCompleteCallback for this request.
+ **/
+typedef S3Status (*S3SetupCurlCallback)(void *curlMulti, void *curlEasy,
+                                        void *setupData);
+
+
 /** **************************************************************************
  * Callback Structures
  ************************************************************************** **/
@@ -1584,6 +1613,51 @@ S3Status S3_create_request_context(S3RequestContext **requestContextReturn);
 
 
 /**
+ * Extended version of S3_create_request_context used to create S3RequestContext
+ * for curl_multi_socket_action CURLM handles that will be managed by libs3 user.
+ * This type of handles offer better performance for applications with large
+ * number of simultaneous connections. For details, see MULTI_SOCKET chapter here:
+ * https://curl.haxx.se/libcurl/c/libcurl-multi.html
+ *
+ * In this mode libs3 user will
+ *  - create its own CURLM using curl_multi_init()
+ *  - configure it for its own handlers using
+ *    CURLMOPT_SOCKETFUNCTION/CURLMOPT_TIMERFUNCTION/etc
+ *  - use S3_create_request_context_ex to create S3RequestContext
+ *    for the above CURLM handle
+ *  - start S3 request
+ *  - every time setupCurlCallback is called, will configure new CURL
+ *    object with its own handlers using
+ *    CURLOPT_OPENSOCKETFUNCTION/CURLOPT_CLOSESOCKETFUNCTION/etc
+ *  - the moment libs3 adds CURL object to CURLM handle, curl will start
+ *    communicating directly with libs3 user to drive socket operations,
+ *    where libs3 user will be responsible for calling curl_multi_socket_action
+ *    when necessary.
+ *  - whenever curl_multi_socket_action indicates change in running_handles
+ *    libs3 user should call S3_process_request_context to let libs3 process
+ *    any completed curl transfers and notify back to libs3 user if that was
+ *    the final transfer for a given S3 request.
+ *
+ * @param requestContextReturn returns the newly-created S3RequestContext
+ *        structure, which if successfully returned, must be destroyed via a
+ *        call to S3_destroy_request_context when it is no longer needed.  If
+ *        an error status is returned from this function, then
+ *        requestContextReturn will not have been filled in, and
+ *        S3_destroy_request_context should not be called on it
+ * @param curlMulti is the CURLM handle to be associated with this context.
+ * @param setupCurlCallback is an optional callback routine to be invoked
+ *        by libs3 every time another CURL request is being created for
+ *        use in this context.
+ * @param setupCurlCallbackData is an opaque data to be passed to
+ *        setupCurlCallback.
+ **/
+S3Status S3_create_request_context_ex(S3RequestContext **requestContextReturn,
+                                      void *curlMulti,
+                                      S3SetupCurlCallback setupCurlCallback,
+                                      void *setupCurlCallbackData);
+
+
+/**
  * Destroys an S3RequestContext which was created with
  * S3_create_request_context.  Any requests which are currently being
  * processed by the S3RequestContext will immediately be aborted and their
@@ -1638,6 +1712,26 @@ S3Status S3_runall_request_context(S3RequestContext *requestContext);
  **/
 S3Status S3_runonce_request_context(S3RequestContext *requestContext,
                                     int *requestsRemainingReturn);
+
+
+/**
+ * Extract and finish requests completed by curl multi handle mechanism
+ * in curl_multi_socket_action mode. Should be called by libs3 user when
+ * curl_multi_socket_action indicates a change in running_handles.
+ *
+ * @param requestContext is the S3RequestContext to process
+ * @return One of:
+ *         S3StatusOK if request processing proceeded without error
+ *         S3StatusConnectionFailed if the socket connection to the server
+ *             failed
+ *         S3StatusServerFailedVerification if the SSL certificate of the
+ *             server could not be verified.
+ *         S3StatusInternalError if an internal error prevented the
+ *             S3RequestContext from running one or more requests
+ *         S3StatusOutOfMemory if requests could not be processed due to
+ *             an out of memory error
+ **/
+S3Status S3_process_request_context(S3RequestContext *requestContext);
 
 
 /**
