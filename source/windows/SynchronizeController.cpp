@@ -237,9 +237,14 @@ void __fastcall TSynchronizeController::SynchronizeFilter(TObject * /*Sender*/,
       Add = FOptions->Filter->Find(ExtractFileName(DirectoryName), FoundIndex);
     }
   }
-  TFileMasks::TParams MaskParams; // size/time does not matter for directories
-  // Missing call to GetBaseFileName
-  Add = Add && FCopyParam.AllowTransfer(DirectoryName, osLocal, true, MaskParams);
+
+  if (Add && !FCopyParam.AllowAnyTransfer()) // optimization
+  {
+    TFileMasks::TParams MaskParams; // size/time does not matter for directories
+    bool Hidden = FLAGSET(FileGetAttrFix(DirectoryName), faHidden);
+    // Missing call to GetBaseFileName
+    Add = FCopyParam.AllowTransfer(DirectoryName, osLocal, true, MaskParams, Hidden);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeController::SynchronizeInvalid(

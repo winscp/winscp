@@ -356,7 +356,7 @@ void ne_debug(void * Context, int Channel, const char * Format, ...)
       FLAGSET(Channel, NE_DBG_HTTPAUTH) ||
       FLAGSET(Channel, NE_DBG_SSL))
   {
-    DoLog = true;
+    DoLog = (Configuration->ActualLogProtocol >= 0);
   }
   else if (FLAGSET(Channel, NE_DBG_XML) ||
            FLAGSET(Channel, NE_DBG_WINSCP_HTTP_DETAIL))

@@ -19,8 +19,7 @@
 #define HELP_SYNCHRONIZE_SAVE_MODE   "ui_synchronize"
 #define HELP_PROGRESS_CANCEL         "ui_progress#controlling"
 #define HELP_KEEPUPTODATE_SYNCHRONIZE "task_keep_up_to_date"
-#define HELP_DND_DOWNLOAD_MOVE_WARNING "ui_pref_dragdrop#temporary"
-#define HELP_DD_WARN_LACK_OF_TEMP_SPACE HELP_DND_DOWNLOAD_MOVE_WARNING
+#define HELP_DD_WARN_LACK_OF_TEMP_SPACE "ui_pref_dragdrop#temporary"
 #define HELP_EDITOR_EARLY_CLOSED     "task_edit#mdi"
 #define HELP_APP_EARLY_CLOSED        HELP_EDITOR_EARLY_CLOSED
 #define HELP_OPEN_FILE_NO_PROCESS    HELP_EDITOR_EARLY_CLOSED
@@ -53,13 +52,18 @@
 #define HELP_MOVE_CONFIGURATION      HELP_IMPORT_CONFIGURATION
 #define HELP_DELETE_FILE             "task_delete"
 #define HELP_COLOR                   "task_connections#session_color"
-#define HELP_DRAGEXT_TARGET_NOT_INSTALLED "dragext"
-#define HELP_DRAGEXT_TARGET_UNKNOWN  HELP_DRAGEXT_TARGET_NOT_INSTALLED
+#define HELP_DRAGEXT_TARGET_UNKNOWN  "dragext"
 #define HELP_KEY_TYPE_UNSUPPORTED    "ui_puttygen#other_formats"
 #define HELP_TIPS                    "ui_tips"
 #define HELP_DEBUGGING               "debugging"
 #define HELP_EXTENSION_OPTIONS       "ui_pref_commands"
 #define HELP_CHANGE_PASSWORD         "task_change_password"
 #define HELP_FILTER                  "ui_filter"
+#define HELP_LOGIN_AUTHORIZED_KEYS   "guide_public_key"
+#define HELP_READONLY_INI_FILE       "config#ini_readonly"
+#define HELP_SESSION_RENAME          "task_connections#renaming"
+#define HELP_DD_TARGET_UNKNOWN       "ui_pref_dragdrop#fake_file"
+#define HELP_FILE_COLORS             "ui_file_color"
+#define HELP_AUTOMATIC_UPDATE        "updates#automatic_upgrade"
 
 #endif // TextsWin

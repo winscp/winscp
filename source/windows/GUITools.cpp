@@ -3,11 +3,13 @@
 #pragma hdrstop
 
 #include <shlobj.h>
+#include <mshtmhst.h>
 #include <Common.h>
 
 #include "GUITools.h"
-#include "GUIConfiguration.h"
+#include "WinConfiguration.h"
 #include <TextsCore.h>
+#include <TextsWin.h>
 #include <CoreMain.h>
 #include <SessionData.h>
 #include <WinInterface.h>
@@ -23,6 +25,8 @@
 #include <VCLCommon.h>
 #include <WinApi.h>
 #include <Vcl.ScreenTips.hpp>
+#include <HistoryComboBox.hpp>
+#include <vssym32.h>
 
 #include "Animations96.h"
 #include "Animations120.h"
@@ -106,6 +110,18 @@ void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
 
     if (!RemoteCustomCommand.IsSiteCommand(AParams))
     {
+      {
+        bool SessionList = false;
+        std::unique_ptr<THierarchicalStorage> SourceHostKeyStorage(Configuration->CreateScpStorage(SessionList));
+        std::unique_ptr<THierarchicalStorage> TargetHostKeyStorage(new TRegistryStorage(Configuration->PuttyRegistryStorageKey));
+        TargetHostKeyStorage->Explicit = true;
+        TargetHostKeyStorage->AccessMode = smReadWrite;
+        std::unique_ptr<TStoredSessionList> HostKeySessionList(new TStoredSessionList());
+        HostKeySessionList->OwnsObjects = false;
+        HostKeySessionList->Add(SessionData);
+        TStoredSessionList::ImportHostKeys(SourceHostKeyStorage.get(), TargetHostKeyStorage.get(), HostKeySessionList.get(), false);
+      }
+
       if (IsUWP())
       {
         bool Telnet = (SessionData->FSProtocol == fsFTP) && GUIConfiguration->TelnetForFtpInPutty;
@@ -234,6 +250,7 @@ void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
 
     if (!Password.IsEmpty() && !RemoteCustomCommand.IsPasswordCommand(AParams))
     {
+      Password = NormalizeString(Password); // if password is empty, we should quote it always
       AddToList(PuttyParams, FORMAT(L"-pw %s", (EscapePuttyCommandParam(Password))), L" ");
     }
 
@@ -267,6 +284,78 @@ bool __fastcall FindTool(const UnicodeString & Name, UnicodeString & Path)
     }
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall ExecuteTool(const UnicodeString & Name)
+{
+  UnicodeString Path;
+  if (!FindTool(Name, Path))
+  {
+    throw Exception(FMTLOAD(EXECUTE_APP_ERROR, (Name)));
+  }
+
+  ExecuteShellChecked(Path, L"");
+}
+//---------------------------------------------------------------------------
+TObjectList * StartCreationDirectoryMonitorsOnEachDrive(unsigned int Filter, TFileChangedEvent OnChanged)
+{
+  std::unique_ptr<TStrings> Drives(new TStringList());
+
+  std::unique_ptr<TStrings> DDDrives(new TStringList());
+  DDDrives->CommaText = WinConfiguration->DDDrives;
+  UnicodeString ExcludedDrives;
+  for (int Index = 0; Index < DDDrives->Count; Index++)
+  {
+    UnicodeString S = Trim(DDDrives->Strings[Index]);
+    if (!S.IsEmpty() && (S[1] == L'-'))
+    {
+      S = Trim(S.SubString(2, S.Length() - 1));
+      if (!S.IsEmpty())
+      {
+        ExcludedDrives += S[1];
+      }
+    }
+    else
+    {
+      Drives->Add(S);
+    }
+  }
+
+  for (char Drive = FirstDrive; Drive <= LastDrive; Drive++)
+  {
+    if (ExcludedDrives.Pos(Drive) == 0)
+    {
+      TDriveInfoRec * DriveInfoRec = DriveInfo->Get(Drive);
+      if (DriveInfoRec->Valid &&
+          (DriveInfoRec->DriveType != DRIVE_CDROM) &&
+          ((DriveInfoRec->DriveType != DRIVE_REMOVABLE) || (Drive >= FirstFixedDrive)))
+      {
+        Drives->Add(Drive);
+      }
+    }
+  }
+
+  std::unique_ptr<TObjectList> Result(new TObjectList());
+  for (int Index = 0; Index < Drives->Count; Index++)
+  {
+    UnicodeString Drive = Drives->Strings[Index];
+    std::unique_ptr<TDirectoryMonitor> Monitor(new TDirectoryMonitor(Application));
+    try
+    {
+      Monitor->Path = DriveInfo->GetDriveRoot(Drive);
+      Monitor->WatchSubtree = true;
+      Monitor->WatchFilters = Filter;
+      Monitor->OnCreated = OnChanged;
+      Monitor->OnModified = OnChanged;
+      Monitor->Active = true;
+      Result->Add(Monitor.release());
+    }
+    catch (Exception & E)
+    {
+      // Ignore errors watching not-ready drives
+    }
+  }
+  return Result.release();
 }
 //---------------------------------------------------------------------------
 bool DontCopyCommandToClipboard = false;
@@ -364,7 +453,7 @@ void __fastcall ExecuteShellCheckedAndWait(const UnicodeString Command,
         do
         {
           // Same as in ExecuteProcessAndReadOutput
-          WaitResult = WaitForSingleObject(ProcessHandle, 200);
+          WaitResult = WaitForSingleObject(ProcessHandle, 50);
           if (WaitResult == WAIT_FAILED)
           {
             throw Exception(LoadStr(DOCUMENT_WAIT_ERROR));
@@ -418,13 +507,13 @@ UnicodeString __fastcall UniqTempDir(const UnicodeString BaseDir, const UnicodeS
 //---------------------------------------------------------------------------
 bool __fastcall DeleteDirectory(const UnicodeString DirName)
 {
-  TSearchRecChecked sr;
+  TSearchRecOwned sr;
   bool retval = true;
   if (FindFirstUnchecked(DirName + L"\\*", faAnyFile, sr) == 0) // VCL Function
   {
-    if (FLAGSET(sr.Attr, faDirectory))
+    if (sr.IsDirectory())
     {
-      if (sr.Name != L"." && sr.Name != L"..")
+      if (sr.IsRealFile())
         retval = DeleteDirectory(DirName + L"\\" + sr.Name);
     }
     else
@@ -436,9 +525,9 @@ bool __fastcall DeleteDirectory(const UnicodeString DirName)
     {
       while (FindNextChecked(sr) == 0)
       { // VCL Function
-        if (FLAGSET(sr.Attr, faDirectory))
+        if (sr.IsDirectory())
         {
-          if (sr.Name != L"." && sr.Name != L"..")
+          if (sr.IsRealFile())
             retval = DeleteDirectory(DirName + L"\\" + sr.Name);
         }
         else
@@ -450,61 +539,128 @@ bool __fastcall DeleteDirectory(const UnicodeString DirName)
       }
     }
   }
-  FindClose(sr);
+  sr.Close();
   if (retval) retval = RemoveDir(ApiPath(DirName)); // VCL function
   return retval;
 }
 //---------------------------------------------------------------------------
-void __fastcall AddSessionColorImage(
+class TSessionColors : public TComponent
+{
+public:
+  __fastcall TSessionColors(TComponent * Owner) : TComponent(Owner)
+  {
+    Name = QualifiedClassName();
+  }
+
+  static TSessionColors * __fastcall Retrieve(TComponent * Component)
+  {
+    TSessionColors * SessionColors = dynamic_cast<TSessionColors *>(Component->FindComponent(QualifiedClassName()));
+    if (SessionColors == NULL)
+    {
+      SessionColors = new TSessionColors(Component);
+    }
+    return SessionColors;
+  }
+
+  typedef std::map<TColor, int> TColorMap;
+  TColorMap ColorMap;
+};
+//---------------------------------------------------------------------------
+int __fastcall GetSessionColorImage(
   TCustomImageList * ImageList, TColor Color, int MaskIndex)
 {
 
-  // This overly complex drawing is here to support color button on SiteAdvanced
-  // dialog. There we use plain TImageList, instead of TPngImageList,
-  // TButton does not work with transparent images
-  // (not even TBitmap with Transparent = true)
-  std::unique_ptr<TBitmap> MaskBitmap(new TBitmap());
-  ImageList->GetBitmap(MaskIndex, MaskBitmap.get());
+  TSessionColors * SessionColors = TSessionColors::Retrieve(ImageList);
 
-  std::unique_ptr<TPngImage> MaskImage(new TPngImage());
-  MaskImage->Assign(MaskBitmap.get());
-
-  std::unique_ptr<TPngImage> ColorImage(new TPngImage(COLOR_RGB, 16, ImageList->Width, ImageList->Height));
-
-  TColor MaskTransparentColor = MaskImage->Pixels[0][0];
-  TColor TransparentColor = MaskTransparentColor;
-  // Expecting that the color to be replaced is in the centre of the image (HACK)
-  TColor MaskColor = MaskImage->Pixels[ImageList->Width / 2][ImageList->Height / 2];
-
-  for (int Y = 0; Y < ImageList->Height; Y++)
+  int Result;
+  TSessionColors::TColorMap::const_iterator I = SessionColors->ColorMap.find(Color);
+  if (I != SessionColors->ColorMap.end())
   {
-    for (int X = 0; X < ImageList->Width; X++)
+    Result = I->second;
+  }
+  else
+  {
+    // This overly complex drawing is here to support color button on SiteAdvanced
+    // dialog. There we use plain TImageList, instead of TPngImageList,
+    // TButton does not work with transparent images
+    // (not even TBitmap with Transparent = true)
+    std::unique_ptr<TBitmap> MaskBitmap(new TBitmap());
+    ImageList->GetBitmap(MaskIndex, MaskBitmap.get());
+
+    std::unique_ptr<TPngImage> MaskImage(new TPngImage());
+    MaskImage->Assign(MaskBitmap.get());
+
+    std::unique_ptr<TPngImage> ColorImage(new TPngImage(COLOR_RGB, 16, ImageList->Width, ImageList->Height));
+
+    TColor MaskTransparentColor = MaskImage->Pixels[0][0];
+    TColor TransparentColor = MaskTransparentColor;
+    // Expecting that the color to be replaced is in the centre of the image (HACK)
+    TColor MaskColor = MaskImage->Pixels[ImageList->Width / 2][ImageList->Height / 2];
+
+    for (int Y = 0; Y < ImageList->Height; Y++)
     {
-      TColor SourceColor = MaskImage->Pixels[X][Y];
-      TColor DestColor;
-      // this branch is pointless as long as MaskTransparentColor and
-      // TransparentColor are the same
-      if (SourceColor == MaskTransparentColor)
+      for (int X = 0; X < ImageList->Width; X++)
       {
-        DestColor = TransparentColor;
+        TColor SourceColor = MaskImage->Pixels[X][Y];
+        TColor DestColor;
+        // this branch is pointless as long as MaskTransparentColor and
+        // TransparentColor are the same
+        if (SourceColor == MaskTransparentColor)
+        {
+          DestColor = TransparentColor;
+        }
+        else if (SourceColor == MaskColor)
+        {
+          DestColor = Color;
+        }
+        else
+        {
+          DestColor = SourceColor;
+        }
+        ColorImage->Pixels[X][Y] = DestColor;
       }
-      else if (SourceColor == MaskColor)
-      {
-        DestColor = Color;
-      }
-      else
-      {
-        DestColor = SourceColor;
-      }
-      ColorImage->Pixels[X][Y] = DestColor;
+    }
+
+    std::unique_ptr<TBitmap> Bitmap(new TBitmap());
+    Bitmap->SetSize(ImageList->Width, ImageList->Height);
+    ColorImage->AssignTo(Bitmap.get());
+
+    Result = ImageList->AddMasked(Bitmap.get(), TransparentColor);
+
+    SessionColors->ColorMap.insert(std::make_pair(Color, Result));
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall RegenerateSessionColorsImageList(TCustomImageList * ImageList, int MaskIndex)
+{
+  TSessionColors * SessionColors = TSessionColors::Retrieve(ImageList);
+
+  std::vector<TColor> Colors;
+  size_t FixedImages = static_cast<size_t>(ImageList->Count);
+  Colors.resize(FixedImages + SessionColors->ColorMap.size());
+  TSessionColors::TColorMap::const_iterator I = SessionColors->ColorMap.begin();
+  while (I != SessionColors->ColorMap.end())
+  {
+    DebugAssert(Colors[I->second] == TColor());
+    Colors[I->second] = I->first;
+    I++;
+  }
+
+  TSessionColors::TColorMap ColorMap = SessionColors->ColorMap;
+  SessionColors->ColorMap.clear();
+
+  for (size_t Index = 0; Index < Colors.size(); Index++)
+  {
+    bool IsFixedImageIndex = (Index < FixedImages);
+    DebugAssert((Colors[Index] == TColor()) == IsFixedImageIndex);
+    if (!IsFixedImageIndex)
+    {
+      GetSessionColorImage(ImageList, Colors[Index], MaskIndex);
     }
   }
 
-  std::unique_ptr<TBitmap> Bitmap(new TBitmap());
-  Bitmap->SetSize(ImageList->Width, ImageList->Height);
-  ColorImage->AssignTo(Bitmap.get());
-
-  ImageList->AddMasked(Bitmap.get(), TransparentColor);
+  DebugAssert(SessionColors->ColorMap == ColorMap);
 }
 //---------------------------------------------------------------------------
 void __fastcall SetSubmenu(TTBXCustomItem * Item)
@@ -809,6 +965,136 @@ void __fastcall HideComponentsPanel(TForm * Form)
   }
 }
 //---------------------------------------------------------------------------
+UnicodeString FormatIncrementalSearchStatus(const UnicodeString & Text, bool HaveNext)
+{
+  UnicodeString Result =
+    L" " + FMTLOAD(INC_SEARCH, (Text)) +
+    (HaveNext ? L" " + LoadStr(INC_NEXT_SEARCH) : UnicodeString());
+  return Result;
+}
+//---------------------------------------------------------------------------
+class TCustomDocHandler : public TComponent, public ::IDocHostUIHandler
+{
+public:
+  __fastcall TCustomDocHandler(TComponent * Owner) : TComponent(Owner)
+  {
+  }
+
+protected:
+  #pragma warn -hid
+  virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID ClassId, void ** Intf)
+  {
+    HRESULT Result = S_OK;
+    if (ClassId == IID_IUnknown)
+    {
+      *Intf = (IUnknown *)this;
+    }
+    else if (ClassId == ::IID_IDocHostUIHandler)
+    {
+      *Intf = (::IDocHostUIHandler *)this;
+    }
+    else
+    {
+      Result = E_NOINTERFACE;
+    }
+    return Result;
+  }
+  #pragma warn .hid
+
+  virtual ULONG STDMETHODCALLTYPE AddRef()
+  {
+    return -1;
+  }
+
+  virtual ULONG STDMETHODCALLTYPE Release()
+  {
+    return -1;
+  }
+
+  virtual HRESULT STDMETHODCALLTYPE ShowContextMenu(
+    DWORD dwID, POINT * ppt, IUnknown * pcmdtReserved, IDispatch * pdispReserved)
+  {
+    // No context menu
+    // (implementing IDocHostUIHandler reenabled context menu disabled by TBrowserViewer::DoContextPopup)
+    return S_OK;
+  }
+
+  virtual HRESULT STDMETHODCALLTYPE GetHostInfo(::_DOCHOSTUIINFO * Info)
+  {
+    // Setting ControlBorder is ignored with IDocHostUIHandler.
+    // DOCHOSTUIFLAG_DPI_AWARE does not seem to have any effect
+    Info->dwFlags |= DOCHOSTUIFLAG_SCROLL_NO | DOCHOSTUIFLAG_NO3DBORDER | DOCHOSTUIFLAG_DPI_AWARE;
+    return S_OK;
+  }
+
+  virtual HRESULT STDMETHODCALLTYPE ShowUI(
+    DWORD dwID, IOleInPlaceActiveObject * pActiveObject, IOleCommandTarget * pCommandTarget, IOleInPlaceFrame * pFrame,
+    IOleInPlaceUIWindow * pDoc)
+  {
+    return E_NOTIMPL;
+  }
+
+  virtual HRESULT STDMETHODCALLTYPE HideUI()
+  {
+    return E_NOTIMPL;
+  }
+
+  virtual HRESULT STDMETHODCALLTYPE UpdateUI()
+  {
+    return E_NOTIMPL;
+  }
+
+  virtual HRESULT STDMETHODCALLTYPE EnableModeless(BOOL fEnable)
+  {
+    return E_NOTIMPL;
+  }
+
+  virtual HRESULT STDMETHODCALLTYPE OnDocWindowActivate(BOOL fActivate)
+  {
+    return E_NOTIMPL;
+  }
+
+  virtual HRESULT STDMETHODCALLTYPE OnFrameWindowActivate(BOOL fActivate)
+  {
+    return E_NOTIMPL;
+  }
+
+  virtual HRESULT STDMETHODCALLTYPE ResizeBorder(LPCRECT prcBorder, IOleInPlaceUIWindow * pUIWindow, BOOL fRameWindow)
+  {
+    return E_NOTIMPL;
+  }
+
+  virtual HRESULT STDMETHODCALLTYPE TranslateAccelerator(LPMSG lpMsg, const GUID * pguidCmdGroup, DWORD nCmdID)
+  {
+    return E_NOTIMPL;
+  }
+
+  virtual HRESULT STDMETHODCALLTYPE GetOptionKeyPath(LPOLESTR * pchKey, DWORD dw)
+  {
+    return E_NOTIMPL;
+  }
+
+  virtual HRESULT STDMETHODCALLTYPE GetDropTarget(IDropTarget * pDropTarget, IDropTarget ** ppDropTarget)
+  {
+    return E_NOTIMPL;
+  }
+
+  virtual HRESULT STDMETHODCALLTYPE GetExternal(IDispatch ** ppDispatch)
+  {
+    return E_NOTIMPL;
+  }
+
+  virtual HRESULT STDMETHODCALLTYPE TranslateUrl(DWORD dwTranslate, OLECHAR * pchURLIn, OLECHAR ** ppchURLOut)
+  {
+    return E_NOTIMPL;
+  }
+
+  virtual HRESULT STDMETHODCALLTYPE FilterDataObject(IDataObject * pDO, IDataObject ** ppDORet)
+  {
+    return E_NOTIMPL;
+  }
+};
+//---------------------------------------------------------------------------
 class TBrowserViewer : public TWebBrowserEx
 {
 public:
@@ -851,7 +1137,8 @@ void __fastcall TBrowserViewer::AddLinkHandler(
 //---------------------------------------------------------------------------
 void __fastcall TBrowserViewer::DoContextPopup(const TPoint & MousePos, bool & Handled)
 {
-  // suppress built-in context menu
+  // Suppress built-in context menu.
+  // Is ignored with IDocHostUIHandler. Needs to be overriden by ShowContextMenu.
   Handled = true;
   TWebBrowserEx::DoContextPopup(MousePos, Handled);
 }
@@ -917,6 +1204,7 @@ TWebBrowserEx * __fastcall CreateBrowserViewer(TPanel * Parent, const UnicodeStr
   static_cast<TWinControl *>(Result)->Name = L"BrowserViewer";
   static_cast<TWinControl *>(Result)->Parent = Parent;
   Result->Align = alClient;
+  // Is ignored with IDocHostUIHandler. Needs to be overriden by DOCHOSTUIFLAG_NO3DBORDER in GetHostInfo.
   Result->ControlBorder = cbNone;
 
   Result->LoadingPanel = CreateLabelPanel(Parent, LoadingLabel);
@@ -951,6 +1239,95 @@ void __fastcall NavigateBrowserToUrl(TWebBrowserEx * WebBrowser, const UnicodeSt
   }
 }
 //---------------------------------------------------------------------------
+void ReadyBrowserForStreaming(TWebBrowserEx * WebBrowser)
+{
+  // This creates TWebBrowserEx::Document, which we need to stream in an in-memory document
+  NavigateBrowserToUrl(WebBrowser, L"about:blank");
+  // Needs to be followed by WaitBrowserToIdle
+}
+//---------------------------------------------------------------------------
+void WaitBrowserToIdle(TWebBrowserEx * WebBrowser)
+{
+  while (WebBrowser->ReadyState < ::READYSTATE_INTERACTIVE)
+  {
+    Application->ProcessMessages();
+  }
+}
+//---------------------------------------------------------------------------
+void HideBrowserScrollbars(TWebBrowserEx * WebBrowser)
+{
+  ICustomDoc * CustomDoc = NULL;
+  if (DebugAlwaysTrue(WebBrowser->Document != NULL) &&
+      SUCCEEDED(WebBrowser->Document->QueryInterface(&CustomDoc)) &&
+      DebugAlwaysTrue(CustomDoc != NULL))
+  {
+    TCustomDocHandler * Handler = new TCustomDocHandler(WebBrowser);
+    CustomDoc->SetUIHandler(Handler);
+  }
+}
+//---------------------------------------------------------------------------
+UnicodeString GenerateAppHtmlPage(TFont * Font, TPanel * Parent, const UnicodeString & Body, bool Seamless)
+{
+  UnicodeString Result =
+    L"<!DOCTYPE html>\n"
+    L"<meta charset=\"utf-8\">\n"
+    L"<html>\n"
+    L"<head>\n"
+    L"<style>\n"
+    L"\n"
+    L"body\n"
+    L"{\n"
+    L"    font-family: '" + Font->Name + L"';\n"
+    L"    margin: " + UnicodeString(Seamless ? L"0" : L"0.5em") + L";\n"
+    L"    background-color: " + ColorToWebColorStr(Parent->Color) + L";\n" +
+    UnicodeString(Seamless ? L"    overflow: hidden;\n" : L"") +
+    L"}\n"
+    L"\n"
+    L"body\n"
+    L"{\n"
+    L"    font-size: " + IntToStr(Font->Size) + L"pt;\n"
+    L"}\n"
+    L"\n"
+    L"p\n"
+    L"{\n"
+    L"    margin-top: 0;\n"
+    L"    margin-bottom: 1em;\n"
+    L"}\n"
+    L"\n"
+    L"a, a:visited, a:hover, a:visited, a:current\n"
+    L"{\n"
+    L"    color: " + ColorToWebColorStr(LinkColor) + L";\n"
+    L"}\n"
+    L"</style>\n"
+    L"</head>\n"
+    L"<body>\n" +
+    Body +
+    L"</body>\n"
+    L"</html>\n";
+  return Result;
+}
+//---------------------------------------------------------------------------
+void LoadBrowserDocument(TWebBrowserEx * WebBrowser, const UnicodeString & Document)
+{
+  std::unique_ptr<TMemoryStream> DocumentStream(new TMemoryStream());
+  UTF8String DocumentUTF8 = UTF8String(Document);
+  DocumentStream->Write(DocumentUTF8.c_str(), DocumentUTF8.Length());
+  DocumentStream->Seek(0, 0);
+
+  // For stream-loaded document, when set only after loading from OnDocumentComplete,
+  // browser stops working
+  SetBrowserDesignModeOff(WebBrowser);
+
+  TStreamAdapter * DocumentStreamAdapter = new TStreamAdapter(DocumentStream.get(), soReference);
+  IPersistStreamInit * PersistStreamInit = NULL;
+  if (DebugAlwaysTrue(WebBrowser->Document != NULL) &&
+      SUCCEEDED(WebBrowser->Document->QueryInterface(IID_IPersistStreamInit, (void **)&PersistStreamInit)) &&
+      DebugAlwaysTrue(PersistStreamInit != NULL))
+  {
+    PersistStreamInit->Load(static_cast<_di_IStream>(*DocumentStreamAdapter));
+  }
+}
+//---------------------------------------------------------------------------
 TComponent * __fastcall FindComponentRecursively(TComponent * Root, const UnicodeString & Name)
 {
   for (int Index = 0; Index < Root->ComponentCount; Index++)
@@ -968,6 +1345,41 @@ TComponent * __fastcall FindComponentRecursively(TComponent * Root, const Unicod
     }
   }
   return NULL;
+}
+//---------------------------------------------------------------------------
+void __fastcall GetInstrutionsTheme(
+  TColor & MainInstructionColor, HFONT & MainInstructionFont, HFONT & InstructionFont)
+{
+  MainInstructionColor = Graphics::clNone;
+  MainInstructionFont = 0;
+  InstructionFont = 0;
+  HTHEME Theme = OpenThemeData(0, L"TEXTSTYLE");
+  if (Theme != NULL)
+  {
+    LOGFONT AFont;
+    COLORREF AColor;
+
+    memset(&AFont, 0, sizeof(AFont));
+    // Using Canvas->Handle in the 2nd argument we can get scaled font,
+    // but at this point the form is sometime not scaled yet (difference is particularly for standalone messages like
+    // /UninstallCleanup), so the results are inconsistent.
+    if (GetThemeFont(Theme, NULL, TEXT_MAININSTRUCTION, 0, TMT_FONT, &AFont) == S_OK)
+    {
+      MainInstructionFont = CreateFontIndirect(&AFont);
+    }
+    if (GetThemeColor(Theme, TEXT_MAININSTRUCTION, 0, TMT_TEXTCOLOR, &AColor) == S_OK)
+    {
+      MainInstructionColor = (TColor)AColor;
+    }
+
+    memset(&AFont, 0, sizeof(AFont));
+    if (GetThemeFont(Theme, NULL, TEXT_INSTRUCTION, 0, TMT_FONT, &AFont) == S_OK)
+    {
+      InstructionFont = CreateFontIndirect(&AFont);
+    }
+
+    CloseThemeData(Theme);
+  }
 }
 //---------------------------------------------------------------------------
 TLocalCustomCommand::TLocalCustomCommand()
@@ -1386,17 +1798,11 @@ bool __fastcall TScreenTipHintWindow::IsPathLabel(TControl * HintControl)
   return (dynamic_cast<TPathLabel *>(HintControl) != NULL);
 }
 //---------------------------------------------------------------------------
-bool __fastcall TScreenTipHintWindow::IsHintPopup(TControl * HintControl, const UnicodeString & Hint)
-{
-  TLabel * HintLabel = dynamic_cast<TLabel *>(HintControl);
-  return (HintLabel != NULL) && HasLabelHintPopup(HintLabel, Hint);
-}
-//---------------------------------------------------------------------------
 int __fastcall TScreenTipHintWindow::GetMargin(TControl * HintControl, const UnicodeString & Hint)
 {
   int Result;
 
-  if (IsHintPopup(HintControl, Hint) || IsPathLabel(HintControl))
+  if (HasLabelHintPopup(HintControl, Hint) || IsPathLabel(HintControl))
   {
     Result = 3;
   }
@@ -1413,7 +1819,7 @@ int __fastcall TScreenTipHintWindow::GetMargin(TControl * HintControl, const Uni
 TFont * __fastcall TScreenTipHintWindow::GetFont(TControl * HintControl, const UnicodeString & Hint)
 {
   TFont * Result;
-  if (IsHintPopup(HintControl, Hint) || IsPathLabel(HintControl))
+  if (HasLabelHintPopup(HintControl, Hint) || IsPathLabel(HintControl))
   {
     Result = reinterpret_cast<TLabel *>(dynamic_cast<TCustomLabel *>(HintControl))->Font;
   }
@@ -1437,8 +1843,9 @@ TRect __fastcall TScreenTipHintWindow::CalcHintRect(int MaxWidth, const UnicodeS
 {
   TControl * HintControl = GetHintControl(AData);
   int Margin = GetMargin(HintControl, AHint);
-  const UnicodeString ShortHint = GetShortHint(AHint);
-  const UnicodeString LongHint = GetLongHintIfAny(AHint);
+  UnicodeString ShortHint;
+  UnicodeString LongHint;
+  SplitHint(HintControl, AHint, ShortHint, LongHint);
 
   Canvas->Font->Assign(GetFont(HintControl, AHint));
 
@@ -1458,7 +1865,7 @@ TRect __fastcall TScreenTipHintWindow::CalcHintRect(int MaxWidth, const UnicodeS
     MaxWidth *= 2;
   }
 
-  bool HintPopup = IsHintPopup(HintControl, AHint);
+  bool HintPopup = HasLabelHintPopup(HintControl, AHint);
   if (HintPopup)
   {
     MaxWidth = HintControl->Width;
@@ -1505,13 +1912,26 @@ TRect __fastcall TScreenTipHintWindow::CalcHintRect(int MaxWidth, const UnicodeS
   return Result;
 }
 //---------------------------------------------------------------------------
+void __fastcall TScreenTipHintWindow::SplitHint(
+  TControl * HintControl, const UnicodeString & Hint, UnicodeString & ShortHint, UnicodeString & LongHint)
+{
+  if (HasLabelHintPopup(HintControl, Hint))
+  {
+    ShortHint = HintControl->Hint;
+  }
+  else
+  {
+    ShortHint = GetShortHint(Hint);
+    LongHint = GetLongHintIfAny(Hint);
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TScreenTipHintWindow::ActivateHintData(const TRect & ARect, const UnicodeString AHint, void * AData)
 {
-  FShortHint = GetShortHint(AHint);
-  FLongHint = GetLongHintIfAny(AHint);
   FHintControl = GetHintControl(AData);
+  SplitHint(FHintControl, AHint, FShortHint, FLongHint);
   FMargin = GetMargin(FHintControl, AHint);
-  FHintPopup = IsHintPopup(FHintControl, AHint);
+  FHintPopup = HasLabelHintPopup(FHintControl, AHint);
 
   Canvas->Font->Assign(GetFont(FHintControl, AHint));
 
@@ -1627,7 +2047,7 @@ void __fastcall TNewRichEdit::CreateParams(TCreateParams & Params)
 
   TCustomMemo::CreateParams(Params);
   // MSDN says that we should use MSFTEDIT_CLASS to load Rich Edit 4.1:
-  // https://docs.microsoft.com/en-us/windows/desktop/controls/about-rich-edit-controls
+  // https://docs.microsoft.com/en-us/windows/win32/controls/about-rich-edit-controls
   // But MSFTEDIT_CLASS is defined as "RICHEDIT50W",
   // so not sure what version we are loading.
   // Seem to work on Windows XP SP3.
@@ -1647,5 +2067,46 @@ void __fastcall TNewRichEdit::DestroyWnd()
   if (FLibrary != 0)
   {
     FreeLibrary(FLibrary);
+  }
+}
+//---------------------------------------------------------------------------
+static int HideAccelFlag(TControl * Control)
+{
+  //ask the top level window about its UI state
+  while (Control->Parent != NULL)
+  {
+    Control = Control->Parent;
+  }
+  int Result;
+  if (FLAGSET(Control->Perform(WM_QUERYUISTATE, 0, 0), UISF_HIDEACCEL))
+  {
+    Result = DT_HIDEPREFIX;
+  }
+  else
+  {
+    Result = 0;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TUIStateAwareLabel::DoDrawText(TRect & Rect, int Flags)
+{
+  if (ShowAccelChar)
+  {
+    Flags = Flags | HideAccelFlag(this);
+  }
+  TLabel::DoDrawText(Rect, Flags);
+}
+//---------------------------------------------------------------------------
+void __fastcall FindComponentClass(
+  void *, TReader *, const UnicodeString DebugUsedArg(ClassName), TComponentClass & ComponentClass)
+{
+  if (ComponentClass == __classid(TLabel))
+  {
+    ComponentClass = __classid(TUIStateAwareLabel);
+  }
+  else if (ComponentClass == __classid(TComboBox))
+  {
+    ComponentClass = __classid(TUIStateAwareComboBox);
   }
 }

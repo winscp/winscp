@@ -66,6 +66,7 @@ function GetSystemMetricsForControl(Control: TControl; nIndex: Integer): Integer
 type
   TImageListSize = (ilsSmall, ilsLarge);
 
+procedure NeedShellImageLists;
 function ShellImageListForControl(Control: TControl; Size: TImageListSize): TImageList;
 
 function ControlHasRecreationPersistenceData(Control: TControl): Boolean;
@@ -73,8 +74,14 @@ function ControlHasRecreationPersistenceData(Control: TControl): Boolean;
 function IsAppIconic: Boolean;
 procedure SetAppIconic(Value: Boolean);
 procedure SetAppMainForm(Value: TForm);
+procedure SetAppTerminated(Value: Boolean);
 
 procedure ForceColorChange(Control: TWinControl);
+
+function IsUncPath(Path: string): Boolean;
+
+function SupportsDarkMode: Boolean;
+procedure AllowDarkModeForWindow(Control: TWinControl; Allow: Boolean);
 
 type
   TApiPathEvent = function(Path: string): string;
@@ -466,37 +473,53 @@ begin
   end;
 end;
 
+var
+  ShellImageLists: TDictionary<Integer, TImageList> = nil;
+
+procedure InitializeShellImageLists;
 type
   TSHGetImageList = function (iImageList: integer; const riid: TGUID; var ppv: Pointer): hResult; stdcall;
-
 const
   IID_IImageList: TGUID = '{46EB5926-582E-4017-9FDF-E8998DAA0950}';
-
 var
-  SHGetImageList: TSHGetImageList;
-  ShellImageLists: TDictionary<Integer, TImageList>;
-
-procedure AddShellImageList(ImageList: Integer);
-var
+  Lib: THandle;
+  ImageList: Integer;
   Handle: THandle;
   Height, Width: Integer;
   ShellImageList: TImageList;
+  SHGetImageList: TSHGetImageList;
+  HR: HRESULT;
 begin
-  // VCL have declaration for SHGetImageList in ShellAPI, but it does not link
-  if (SHGetImageList(ImageList, IID_IImageList, Pointer(Handle)) = S_OK) and
-     ImageList_GetIconSize(Handle, Width, Height) then
+  Lib := LoadLibrary('shell32');
+  SHGetImageList := GetProcAddress(Lib, 'SHGetImageList');
+  ShellImageLists := TDictionary<Integer, TImageList>.Create;
+  for ImageList := 0 to SHIL_LAST do
   begin
-
-    // We could use AddOrSetValue instead, but to be on a safe siz, we prefer e.g. SHIL_SMALL over SHIL_SYSSMALL,
-    // while they actually can be the same
-    if not ShellImageLists.ContainsKey(Width) then
+    // VCL have declaration for SHGetImageList in ShellAPI, but it does not link
+    HR := SHGetImageList(ImageList, IID_IImageList, Pointer(Handle));
+    if (HR = S_OK) and
+       ImageList_GetIconSize(Handle, Width, Height) then
     begin
-      ShellImageList := TImageList.Create(Application);
-      ShellImageList.Handle := Handle;
-      ShellImageList.ShareImages := True;
-      ShellImageList.DrawingStyle := dsTransparent;
-      ShellImageLists.Add(Width, ShellImageList);
+
+      // We could use AddOrSetValue instead, but to be on a safe siz, we prefer e.g. SHIL_SMALL over SHIL_SYSSMALL,
+      // while they actually can be the same
+      if not ShellImageLists.ContainsKey(Width) then
+      begin
+        ShellImageList := TImageList.Create(Application);
+        ShellImageList.Handle := Handle;
+        ShellImageList.ShareImages := True;
+        ShellImageList.DrawingStyle := dsTransparent;
+        ShellImageLists.Add(Width, ShellImageList);
+      end;
     end;
+  end;
+end;
+
+procedure NeedShellImageLists;
+begin
+  if ShellImageLists = nil then
+  begin
+    InitializeShellImageLists;
   end;
 end;
 
@@ -506,6 +529,9 @@ var
   Width, ImageListWidth: Integer;
   Diff, BestDiff: Integer;
 begin
+  // Delay load image lists, not to waste resources in console/scripting mode
+  NeedShellImageLists;
+
   case Size of
     ilsSmall: Width := 16;
     ilsLarge: Width := 32;
@@ -586,6 +612,7 @@ type
     function IsAppIconic: Boolean;
     procedure SetAppIconic(Value: Boolean);
     procedure SetMainForm(Value: TForm);
+    procedure SetTerminated(Value: Boolean);
   end;
 
 function TApplicationHelper.IsAppIconic: Boolean;
@@ -603,6 +630,11 @@ begin
   Self.FMainForm := Value;
 end;
 
+procedure TApplicationHelper.SetTerminated(Value: Boolean);
+begin
+  Self.FTerminate := Value;
+end;
+
 function IsAppIconic: Boolean;
 begin
   Result := Application.IsAppIconic;
@@ -616,6 +648,11 @@ end;
 procedure SetAppMainForm(Value: TForm);
 begin
   Application.SetMainForm(Value);
+end;
+
+procedure SetAppTerminated(Value: Boolean);
+begin
+  Application.SetTerminated(Value);
 end;
 
 function ApiPath(Path: string): string;
@@ -943,9 +980,48 @@ begin
   end;
 end;
 
+function IsUncPath(Path: string): Boolean;
+begin
+  Result := (Copy(Path, 1, 2) = '\\') or (Copy(Path, 1, 2) = '//');
+end;
+
+var
+  AllowDarkModeForWindowLoaded: Boolean = False;
+  AAllowDarkModeForWindow: function(hWnd: HWND; Allow: BOOL): BOOL; stdcall;
+
+function SupportsDarkMode: Boolean;
+var
+  OSVersionInfo: TOSVersionInfoEx;
+  UxThemeLib: HMODULE;
+begin
+  if not AllowDarkModeForWindowLoaded then
+  begin
+    OSVersionInfo.dwOSVersionInfoSize := SizeOf(OSVersionInfo);
+    if GetVersionEx(OSVersionInfo) and (OSVersionInfo.dwBuildNumber >= 17763) then
+    begin
+      UxThemeLib := GetModuleHandle('UxTheme');
+      if UxThemeLib <> 0 then
+      begin
+        AAllowDarkModeForWindow := GetProcAddress(UxThemeLib, MakeIntResource(133));
+      end;
+    end;
+    AllowDarkModeForWindowLoaded := True;
+  end;
+
+  Result := Assigned(AAllowDarkModeForWindow);
+end;
+
+procedure AllowDarkModeForWindow(Control: TWinControl; Allow: Boolean);
+begin
+  Assert(Control.HandleAllocated);
+  if SupportsDarkMode and Control.HandleAllocated then
+  begin
+    AAllowDarkModeForWindow(Control.Handle, Allow);
+  end;
+end;
+
 var
   Lib: THandle;
-  I: Integer;
 initialization
   Lib := LoadLibrary('shcore');
   if Lib <> 0 then
@@ -958,14 +1034,6 @@ initialization
   begin
     GetSystemMetricsForDpi := GetProcAddress(Lib, 'GetSystemMetricsForDpi');
     SystemParametersInfoForDpi := GetProcAddress(Lib, 'SystemParametersInfoForDpi');
-  end;
-
-  Lib := LoadLibrary('shell32');
-  SHGetImageList := GetProcAddress(Lib, 'SHGetImageList');
-  ShellImageLists := TDictionary<Integer, TImageList>.Create;
-  for I := 0 to SHIL_LAST do
-  begin
-    AddShellImageList(I);
   end;
 
 finalization

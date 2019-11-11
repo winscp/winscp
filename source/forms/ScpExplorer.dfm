@@ -17,6 +17,7 @@ inherited ScpExplorerForm: TScpExplorerForm
   inherited TopDock: TTBXDock
     Width = 632
     Height = 209
+    OnContextPopup = DockContextPopup
     object MenuToolbar: TTBXToolbar
       Left = 0
       Top = 0
@@ -93,6 +94,11 @@ inherited ScpExplorerForm: TScpExplorerForm
         object TBXItem33: TTBXItem
           Action = NonVisualDataModule.RemoteMoveToAction
         end
+        object TBXSeparatorItem42: TTBXSeparatorItem
+        end
+        object TBXItem62: TTBXItem
+          Action = NonVisualDataModule.CurrentCopyAction
+        end
         object TBXItem36: TTBXItem
           Action = NonVisualDataModule.PasteAction2
         end
@@ -149,7 +155,7 @@ inherited ScpExplorerForm: TScpExplorerForm
         end
         object QueueSubmenuItem: TTBXSubmenuItem
           Caption = 'Q&ueue'
-          HelpKeyword = 'ui_queue#managing_the_queue'
+          HelpKeyword = 'ui_queue#manage'
           Hint = 'Queue list commands'
           OnPopup = QueueSubmenuItemPopup
           object QueueEnableItem2: TTBXItem
@@ -198,7 +204,7 @@ inherited ScpExplorerForm: TScpExplorerForm
           end
           object TBXSubmenuItem13: TTBXSubmenuItem
             Caption = '&All'
-            HelpKeyword = 'ui_queue#managing_the_queue'
+            HelpKeyword = 'ui_queue#manage'
             Hint = 'Mass queue management commands'
             object TBXItem198: TTBXItem
               Action = NonVisualDataModule.QueuePauseAllAction
@@ -284,11 +290,14 @@ inherited ScpExplorerForm: TScpExplorerForm
         object TBXItem113: TTBXItem
           Action = NonVisualDataModule.NewSessionAction
         end
+        object TBXItem115: TTBXItem
+          Action = NonVisualDataModule.CloseSessionAction
+        end
         object TBXItem90: TTBXItem
           Action = NonVisualDataModule.DuplicateSessionAction
         end
-        object TBXItem115: TTBXItem
-          Action = NonVisualDataModule.CloseSessionAction
+        object TBXItem61: TTBXItem
+          Action = NonVisualDataModule.RenameSessionAction
         end
         object TBXItem114: TTBXItem
           Action = NonVisualDataModule.SaveCurrentSessionAction2
@@ -303,6 +312,15 @@ inherited ScpExplorerForm: TScpExplorerForm
         end
         object TBXItem160: TTBXItem
           Action = NonVisualDataModule.ChangePasswordAction
+        end
+        object TBXItem14: TTBXItem
+          Action = NonVisualDataModule.PrivateKeyUploadAction
+        end
+        object TBXSeparatorItem23: TTBXSeparatorItem
+        end
+        object ColorMenuItem: TTBXColorItem
+          Action = NonVisualDataModule.ColorMenuAction
+          Color = clNone
         end
         object TBXSeparatorItem29: TTBXSeparatorItem
         end
@@ -539,12 +557,6 @@ inherited ScpExplorerForm: TScpExplorerForm
         end
         object TBXItem138: TTBXItem
           Action = NonVisualDataModule.RemoteFilterAction
-        end
-        object TBXSeparatorItem23: TTBXSeparatorItem
-        end
-        object ColorMenuItem: TTBXColorItem
-          Action = NonVisualDataModule.ColorMenuAction
-          Color = clNone
         end
         object TBXSeparatorItem5: TTBXSeparatorItem
         end
@@ -879,6 +891,7 @@ inherited ScpExplorerForm: TScpExplorerForm
       TabOrder = 1
       OnResize = ToolBarResize
       OnGetBaseSize = ToolbarGetBaseSize
+      OnEndModal = AddressToolbarEndModal
       object TBXLabelItem1: TTBXLabelItem
         Caption = 'Address'
         Margin = 2
@@ -899,8 +912,17 @@ inherited ScpExplorerForm: TScpExplorerForm
       object TBXItem22: TTBXItem
         Action = NonVisualDataModule.RemoteOpenDirAction
       end
-      object TBXItem229: TTBXItem
+      object TBXItem229: TTBXSubmenuItem
         Action = NonVisualDataModule.RemoteFilterAction
+        DropdownCombo = True
+        object TBXItem127: TTBXItem
+          Action = NonVisualDataModule.RemoteFilterAction
+        end
+        object TBXSeparatorItem43: TTBXSeparatorItem
+        end
+        object TBXItem161: TTBXItem
+          Action = NonVisualDataModule.FileColorsPreferencesAction
+        end
       end
     end
     object UpdatesToolbar: TTBXToolbar

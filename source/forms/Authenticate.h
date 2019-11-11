@@ -116,6 +116,8 @@ private:
   int FVerticalLogPadding;
   TTextFormat FLogTextFormat;
   bool FShowNoActivate;
+
+  INTERFACE_HOOK;
 };
 //---------------------------------------------------------------------------
 #endif

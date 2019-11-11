@@ -2,7 +2,7 @@
 #ifndef OpenDirectoryH
 #define OpenDirectoryH
 //----------------------------------------------------------------------------
-#include "IEComboBox.hpp"
+#include "HistoryComboBox.hpp"
 #include <System.Classes.hpp>
 #include <Vcl.ComCtrls.hpp>
 #include <Vcl.Controls.hpp>
@@ -12,7 +12,6 @@
 #include <Terminal.h>
 #include <WinInterface.h>
 #include <Bookmarks.h>
-#include "IEComboBox.hpp"
 #include <PasTools.hpp>
 #include <ComCtrls.hpp>
 #include <Vcl.ExtCtrls.hpp>
@@ -23,8 +22,8 @@ class TOpenDirectoryDialog : public TForm
 __published:
   TButton *OKBtn;
   TButton *CancelBtn;
-  TIEComboBox *RemoteDirectoryEdit;
-  TIEComboBox *LocalDirectoryEdit;
+  THistoryComboBox *RemoteDirectoryEdit;
+  THistoryComboBox *LocalDirectoryEdit;
   TLabel *EditLabel;
   TPageControl *PageControl;
   TButton *LocalDirectoryBrowseButton;
@@ -121,9 +120,11 @@ private:
     TButton * UpBookmarkButton, TButton * DownBookmarkButton,
     TListBox * BookmarksList, bool ListBoxUpdate);
   void __fastcall BookmarkSelected(TObject * Sender);
-  inline UnicodeString __fastcall BookmarkDirectory(TBookmark * Bookmark);
+  UnicodeString __fastcall BookmarkDirectory(TBookmark * Bookmark);
   UnicodeString __fastcall BookmarkText(TBookmark * Bookmark);
   inline TBookmark * __fastcall GetBookmark(TListBox * BookmarksList, int Index);
+
+  INTERFACE_HOOK;
 };
 //----------------------------------------------------------------------------
 #endif

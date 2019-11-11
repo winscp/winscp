@@ -44,6 +44,7 @@ object ProgressForm: TProgressForm
       Width = 26
       Height = 13
       Caption = 'FileX:'
+      ShowAccelChar = False
     end
     object FileLabel: TPathLabel
       Left = 56
@@ -62,6 +63,7 @@ object ProgressForm: TProgressForm
       Width = 36
       Height = 13
       Caption = 'Target:'
+      ShowAccelChar = False
     end
     object TargetPathLabel: TPathLabel
       Left = 56
@@ -74,7 +76,7 @@ object ProgressForm: TProgressForm
       Anchors = [akLeft, akTop, akRight]
       AutoSize = False
     end
-    object TopProgress: TProgressBar
+    object OperationProgress: TProgressBar
       Left = 0
       Top = 42
       Width = 302
@@ -105,6 +107,7 @@ object ProgressForm: TProgressForm
       Alignment = taRightJustify
       AutoSize = False
       Caption = '00:00:00'
+      ShowAccelChar = False
     end
     object TimeLeftLabel: TLabel
       Left = 88
@@ -114,6 +117,7 @@ object ProgressForm: TProgressForm
       Alignment = taRightJustify
       AutoSize = False
       Caption = '00:00:00'
+      ShowAccelChar = False
     end
     object TimeLeftLabelLabel: TLabel
       Left = 0
@@ -121,6 +125,7 @@ object ProgressForm: TProgressForm
       Width = 45
       Height = 13
       Caption = 'Time left:'
+      ShowAccelChar = False
     end
     object CPSLabel: TLabel
       Left = 237
@@ -131,6 +136,7 @@ object ProgressForm: TProgressForm
       Anchors = [akTop, akRight]
       AutoSize = False
       Caption = '0 KB/s'
+      ShowAccelChar = False
     end
     object TimeElapsedLabel: TLabel
       Left = 237
@@ -141,6 +147,7 @@ object ProgressForm: TProgressForm
       Anchors = [akTop, akRight]
       AutoSize = False
       Caption = '00:00:00'
+      ShowAccelChar = False
     end
     object BytesTransferredLabel: TLabel
       Left = 88
@@ -150,6 +157,7 @@ object ProgressForm: TProgressForm
       Alignment = taRightJustify
       AutoSize = False
       Caption = '0 KB'
+      ShowAccelChar = False
     end
     object Label3: TLabel
       Left = 165
@@ -158,6 +166,7 @@ object ProgressForm: TProgressForm
       Height = 13
       Anchors = [akTop, akRight]
       Caption = 'Time elapsed:'
+      ShowAccelChar = False
     end
     object StartTimeLabelLabel: TLabel
       Left = 0
@@ -165,6 +174,7 @@ object ProgressForm: TProgressForm
       Width = 51
       Height = 13
       Caption = 'Start time:'
+      ShowAccelChar = False
     end
     object Label4: TLabel
       Left = 0
@@ -172,6 +182,7 @@ object ProgressForm: TProgressForm
       Width = 89
       Height = 13
       Caption = 'Bytes transferred:'
+      ShowAccelChar = False
     end
     object Label12: TLabel
       Left = 165
@@ -180,8 +191,9 @@ object ProgressForm: TProgressForm
       Height = 13
       Anchors = [akTop, akRight]
       Caption = 'Speed:'
+      ShowAccelChar = False
     end
-    object BottomProgress: TProgressBar
+    object FileProgress: TProgressBar
       Left = 0
       Top = 37
       Width = 302

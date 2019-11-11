@@ -47,10 +47,10 @@ __fastcall TCustomUnixDriveView::TCustomUnixDriveView(TComponent* Owner) :
   FRootName = Customunixdirview_SUnixDefaultRootName;
   FIgnoreChange = false;
   FPrevSelected = NULL;
-  DDAllowMove = false;
   FShowInaccesibleDirectories = true;
   FDummyDragFile = NULL;
   FPendingDelete = new TList();
+  FDragDropFilesEx->PreferCopy = true;
 }
 //---------------------------------------------------------------------------
 __fastcall TCustomUnixDriveView::~TCustomUnixDriveView()
@@ -207,7 +207,7 @@ void __fastcall TCustomUnixDriveView::UpdatePath(TTreeNode * Node, bool Force,
       for (int i = 0; i < Data->FileList->Count; i++)
       {
         TRemoteFile * File = Data->FileList->Files[i];
-        if (File->IsDirectory && !File->IsParentDirectory && !File->IsThisDirectory &&
+        if (File->IsDirectory && IsRealFile(File->FileName) &&
             (ShowHiddenDirs || !File->IsHidden) &&
             (ShowInaccesibleDirectories || !File->IsInaccesibleDirectory))
         {
@@ -555,8 +555,8 @@ void __fastcall TCustomUnixDriveView::PerformDragDropFileOperation(
       TargetDirectory = NodeData(Node)->Directory;
 
       bool DoFileOperation = true;
-      OnDDFileOperation(this, Effect, SourceDirectory, TargetDirectory,
-        DoFileOperation);
+      OnDDFileOperation(
+        this, Effect, SourceDirectory, TargetDirectory, false, DoFileOperation);
     }
   }
 }
@@ -564,18 +564,18 @@ void __fastcall TCustomUnixDriveView::PerformDragDropFileOperation(
 void __fastcall TCustomUnixDriveView::DDChooseEffect(int KeyState, int & Effect)
 {
   // if any drop effect is allowed at all (e.g. no drop to self and drop to parent)
-  if (Effect != DROPEFFECT_None)
+  if (Effect != DROPEFFECT_NONE)
   {
     if (DropTarget != NULL)
     {
       if ((KeyState & (MK_CONTROL | MK_SHIFT)) == 0)
       {
-        Effect = DROPEFFECT_Copy;
+        Effect = DROPEFFECT_COPY;
       }
     }
     else
     {
-      Effect = DROPEFFECT_None;
+      Effect = DROPEFFECT_NONE;
     }
   }
 
@@ -627,13 +627,7 @@ bool __fastcall TCustomUnixDriveView::DragCompleteFileList()
 //---------------------------------------------------------------------------
 TDropEffectSet __fastcall TCustomUnixDriveView::DDSourceEffects()
 {
-  TDropEffectSet Result;
-  Result << deCopy;
-  if (DDAllowMove)
-  {
-    Result << deMove;
-  }
-  return Result;
+  return TDropEffectSet() << deCopy << deMove;
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TCustomUnixDriveView::NodePathName(TTreeNode * Node)
@@ -708,11 +702,18 @@ Word __fastcall TCustomUnixDriveView::NodeOverlayIndexes(TTreeNode * Node)
   if (Node->Parent != NULL)
   {
     TRemoteFile * File = NodeFile(Node);
-    if ((File != NULL) && (File->IsSymLink))
+    if (File != NULL)
     {
-      // broken link cannot probably happen anyway
-      // as broken links are treated as files
-      Result |= File->BrokenLink ? oiBrokenLink : oiLink;
+      if (File->IsSymLink)
+      {
+        // broken link cannot probably happen anyway
+        // as broken links are treated as files
+        Result |= File->BrokenLink ? oiBrokenLink : oiLink;
+      }
+      if (File->IsEncrypted)
+      {
+        Result |= oiEncrypted;
+      }
     }
   }
   return Result;
@@ -757,8 +758,7 @@ TTreeNode * __fastcall TCustomUnixDriveView::FindNodeToPath(UnicodeString Path)
       {
         int Index = (StartIndex + EndIndex) / 2;
         UnicodeString NodeDir = Parent->Item[Index]->Text;
-        // lstrcmp is used by AlphaSort()
-        int C = lstrcmp(DirName.c_str(), NodeDir.c_str());
+        int C = DoCompareText(DirName, NodeDir);
         if (C == 0)
         {
           Result = Parent->Item[Index];

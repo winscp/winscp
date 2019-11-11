@@ -36,12 +36,20 @@ namespace WinSCP
         public int SpeedLimit { get; set; }
         public OverwriteMode OverwriteMode { get; set; }
 
+        internal Dictionary<string, string> RawSettings { get; private set; }
+
         public TransferOptions()
         {
             PreserveTimestamp = true;
             TransferMode = TransferMode.Binary;
             ResumeSupport = new TransferResumeSupport();
             OverwriteMode = OverwriteMode.Overwrite;
+            RawSettings = new Dictionary<string,string>();
+        }
+
+        public void AddRawSettings(string setting, string value)
+        {
+            RawSettings.Add(setting, value);
         }
 
         internal string ToSwitches()
@@ -106,7 +114,10 @@ namespace WinSCP
                     throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, "{0} is not supported", OverwriteMode));
             }
 
-            return string.Join(" ", switches.ToArray());
+            string arguments = string.Join(" ", switches.ToArray());
+            Tools.AddRawParameters(ref arguments, RawSettings, "-rawtransfersettings", true);
+
+            return arguments;
         }
     }
 }

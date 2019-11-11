@@ -31,6 +31,7 @@ object CleanupDialog: TCleanupDialog
       'tance of application is running, please close it before cleaning' +
       ' data.'#13#10#13#10'Notice: Opening session and/or next execution of appli' +
       'cation will recreate some of data.'
+    ShowAccelChar = False
     WordWrap = True
   end
   object OKButton: TButton

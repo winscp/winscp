@@ -89,15 +89,17 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
     end
   end
   object OkButton: TButton
-    Left = 233
+    Left = 220
     Top = 396
-    Width = 75
+    Width = 88
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = 'OK'
     Default = True
     ModalResult = 1
     TabOrder = 8
+    OnClick = OkButtonClick
+    OnDropDownClick = OkButtonDropDownClick
   end
   object CancelButton: TButton
     Left = 315
@@ -184,6 +186,7 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
       Width = 138
       Height = 17
       Caption = '&Both'
+      Checked = True
       TabOrder = 0
       OnClick = ControlChange
     end
@@ -268,6 +271,7 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
       Anchors = [akLeft, akTop, akRight, akBottom]
       AutoSize = False
       Caption = 'CopyParamLabel'
+      ShowAccelChar = False
       WordWrap = True
       OnClick = CopyParamGroupClick
     end
@@ -316,6 +320,19 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
       Caption = 'Synchronize &timestamps'
       TabOrder = 2
       OnClick = ControlChange
+    end
+  end
+  object OkMenu: TPopupMenu
+    Left = 416
+    Top = 336
+    object Start1: TMenuItem
+      Caption = '&Start'
+      Default = True
+      OnClick = Start1Click
+    end
+    object StartInNewWindow1: TMenuItem
+      Caption = 'Start in &New Window'
+      OnClick = StartInNewWindow1Click
     end
   end
 end

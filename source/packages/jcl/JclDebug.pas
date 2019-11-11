@@ -5050,8 +5050,10 @@ begin
     AlignedContext^.ContextFlags := CONTEXT_FULL;
     {$IFDEF CPU32}
     if GetThreadContext(ThreadHandle, AlignedContext^) then
+    begin
       Result := JclCreateStackList(Raw, -1, Pointer(AlignedContext^.Eip), False, Pointer(AlignedContext^.Ebp),
                   Pointer(GetThreadTopOfStack(ThreadHandle)));
+    end;
     {$ENDIF CPU32}
     {$IFDEF CPU64}
     if GetThreadContext(ThreadHandle, AlignedContext^) then
@@ -5239,13 +5241,17 @@ procedure TJclStackInfoList.AddToStrings(Strings: TStrings; IncludeModuleName, I
   IncludeStartProcLineOffset, IncludeVAddress: Boolean);
 var
   I: Integer;
+  S: string;
 begin
   ForceStackTracing;
   Strings.BeginUpdate;
   try
     for I := 0 to Count - 1 do
-      Strings.Add(GetLocationInfoStr(Items[I].CallerAddr, IncludeModuleName, IncludeAddressOffset,
-        IncludeStartProcLineOffset, IncludeVAddress));
+    begin
+      S := GetLocationInfoStr(Items[I].CallerAddr, IncludeModuleName, IncludeAddressOffset,
+        IncludeStartProcLineOffset, IncludeVAddress);
+      Strings.Add(S);
+    end;
   finally
     Strings.EndUpdate;
   end;

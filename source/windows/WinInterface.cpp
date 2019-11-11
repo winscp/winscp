@@ -797,6 +797,7 @@ const int cpiConfigure = -2;
 const int cpiCustom = -3;
 const int cpiSaveSettings = -4;
 const int cpiGenerateCode = -5;
+const int cpiSavePreset = -6;
 //---------------------------------------------------------------------------
 void __fastcall CopyParamListPopup(TRect Rect, TPopupMenu * Menu,
   const TCopyParamType & Param, UnicodeString Preset, TNotifyEvent OnClick,
@@ -804,19 +805,15 @@ void __fastcall CopyParamListPopup(TRect Rect, TPopupMenu * Menu,
 {
   Menu->Items->Clear();
 
-  TMenuItem * CustomizeItem = NULL;
   TMenuItem * Item;
 
-  if (FLAGSET(Options, cplCustomize))
-  {
-    Item = new TMenuItem(Menu);
-    Item->Caption = LoadStr(COPY_PARAM_CUSTOM);
-    Item->Tag = cpiCustom;
-    Item->Default = FLAGSET(Options, cplCustomizeDefault);
-    Item->OnClick = OnClick;
-    Menu->Items->Add(Item);
-    CustomizeItem = Item;
-  }
+  Item = new TMenuItem(Menu);
+  Item->Caption = LoadStr(COPY_PARAM_CUSTOM);
+  Item->Tag = cpiCustom;
+  Item->Default = FLAGSET(Options, cplCustomizeDefault);
+  Item->OnClick = OnClick;
+  Menu->Items->Add(Item);
+  TMenuItem * CustomizeItem = Item;
 
   if (FLAGSET(Options, cplSaveSettings))
   {
@@ -827,6 +824,12 @@ void __fastcall CopyParamListPopup(TRect Rect, TPopupMenu * Menu,
     Item->OnClick = OnClick;
     Menu->Items->Add(Item);
   }
+
+  Item = new TMenuItem(Menu);
+  Item->Caption = LoadStr(COPY_PARAM_SAVE_PRESET);
+  Item->Tag = cpiSavePreset;
+  Item->OnClick = OnClick;
+  Menu->Items->Add(Item);
 
   Item = new TMenuItem(Menu);
   Item->Caption = LoadStr(COPY_PARAM_PRESET_HEADER);
@@ -868,10 +871,7 @@ void __fastcall CopyParamListPopup(TRect Rect, TPopupMenu * Menu,
     }
   }
 
-  if (CustomizeItem != NULL)
-  {
-    CustomizeItem->Checked = !AnyChecked;
-  }
+  CustomizeItem->Checked = !AnyChecked;
 
   Item = new TMenuItem(Menu);
   Item->Caption = L"-";
@@ -906,7 +906,7 @@ int __fastcall CopyParamListPopupClick(TObject * Sender,
 {
   TComponent * Item = dynamic_cast<TComponent *>(Sender);
   DebugAssert(Item != NULL);
-  DebugAssert((Item->Tag >= cpiGenerateCode) && (Item->Tag < GUIConfiguration->CopyParamList->Count));
+  DebugAssert((Item->Tag >= cpiSavePreset) && (Item->Tag < GUIConfiguration->CopyParamList->Count));
 
   int Result;
   if (Item->Tag == cpiConfigure)
@@ -929,6 +929,22 @@ int __fastcall CopyParamListPopupClick(TObject * Sender,
     if (DebugAlwaysTrue(SaveSettings != NULL))
     {
       *SaveSettings = !*SaveSettings;
+    }
+    Result = 0;
+  }
+  else if (Item->Tag == cpiSavePreset)
+  {
+    std::unique_ptr<TCopyParamList> CopyParamList(new TCopyParamList());
+    *CopyParamList = *GUIConfiguration->CopyParamList;
+    int Index = -1;
+    if (DoCopyParamPresetDialog(CopyParamList.get(), Index, cpmAdd, NULL, Param))
+    {
+      GUIConfiguration->CopyParamList = CopyParamList.get();
+      // If saved unmodified, then make this the selected preset
+      if (*CopyParamList->CopyParams[Index] == Param)
+      {
+        Preset = CopyParamList->Names[Index];
+      }
     }
     Result = 0;
   }
@@ -1370,36 +1386,58 @@ void __fastcall CallGlobalMinimizeHandler(TObject * Sender)
 //---------------------------------------------------------------------------
 static void __fastcall DoApplicationMinimizeRestore(bool Minimize)
 {
-  // WORKAROUND
-  // When main window is hidden (command-line operation),
-  // we do not want it to be shown by TApplication.Restore,
-  // so we temporarily detach it from an application.
-  // Probably not really necessary for minimizing phase,
-  // but we do it for consistency anyway.
   TForm * MainForm = Application->MainForm;
-  bool RestoreMainForm = false;
-  if (DebugAlwaysTrue(MainForm != NULL) &&
-      !MainForm->Visible)
+  TForm * MainLikeForm = GetMainForm();
+  if ((MainLikeForm != MainForm) && !WinConfiguration->MinimizeToTray)
   {
-    SetAppMainForm(NULL);
-    RestoreMainForm = true;
-  }
-  try
-  {
+    static TWindowState PreviousWindowState = wsNormal;
     if (Minimize)
     {
-      Application->Minimize();
+      PreviousWindowState = MainLikeForm->WindowState;
+      // This works correctly with child windows thanks to Application->OnGetMainFormHandle
+      MainLikeForm->WindowState = wsMinimized;
     }
     else
     {
-      Application->Restore();
+      MainLikeForm->WindowState = PreviousWindowState;
     }
   }
-  __finally
+  else
   {
-    if (RestoreMainForm)
+    // What is described below should not ever happen, except when minimizing to tray,
+    // as we capture command-line operation above.
+    // Had we called TApplication::Minimize, it would hide all non-MainForm windows, including MainLineForm,
+    // so it actually also hides taskbar button, what we do not want.
+    // WORKAROUND
+    // When main window is hidden (command-line operation),
+    // we do not want it to be shown by TApplication.Restore,
+    // so we temporarily detach it from an application.
+    // Probably not really necessary for minimizing phase,
+    // but we do it for consistency anyway.
+    bool RestoreMainForm = false;
+    if (DebugAlwaysTrue(MainForm != NULL) &&
+        !MainForm->Visible)
     {
-      SetAppMainForm(MainForm);
+      SetAppMainForm(NULL);
+      RestoreMainForm = true;
+    }
+    try
+    {
+      if (Minimize)
+      {
+        Application->Minimize();
+      }
+      else
+      {
+        Application->Restore();
+      }
+    }
+    __finally
+    {
+      if (RestoreMainForm)
+      {
+        SetAppMainForm(MainForm);
+      }
     }
   }
 }
@@ -1461,6 +1499,36 @@ void __fastcall ClickToolbarItem(TTBCustomItem * Item, bool PositionCursor)
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
+UnicodeString DumpCallstackEventName(int ProcessId)
+{
+  return FORMAT(DUMPCALLSTACK_EVENT, (ProcessId));
+}
+//---------------------------------------------------------------------------
+UnicodeString DumpCallstackFileName(int ProcessId)
+{
+  UnicodeString FileName = FORMAT(L"%s.txt", (DumpCallstackEventName(ProcessId)));
+  UnicodeString Result = TPath::Combine(SystemTemporaryDirectory(), FileName);
+  return Result;
+}
+//---------------------------------------------------------------------------
+void CheckConfigurationForceSave()
+{
+  if (UseAlternativeFunction() && Configuration->Persistent &&
+      (Configuration->Storage == stIniFile) && Sysutils::FileExists(ApiPath(Configuration->IniFileStorageName)) &&
+      !Configuration->ForceSave)
+  {
+    int Attr = GetFileAttributes(ApiPath(Configuration->IniFileStorageName).c_str());
+    if (FLAGSET(Attr, FILE_ATTRIBUTE_READONLY))
+    {
+      UnicodeString Message = FMTLOAD(READONLY_INI_FILE_OVERWRITE, (Configuration->IniFileStorageName));
+      if (MessageDialog(Message, qtConfirmation, qaOK | qaCancel, HELP_READONLY_INI_FILE) == qaOK)
+      {
+        Configuration->ForceSave = true;
+      }
+    }
+  }
+}
+//---------------------------------------------------------------------------
 class TCallstackThread : public TSignalThread
 {
 public:
@@ -1470,7 +1538,6 @@ protected:
   virtual void __fastcall ProcessEvent();
 
 private:
-  static UnicodeString DoGetName();
   static HANDLE DoCreateEvent();
 };
 //---------------------------------------------------------------------------
@@ -1483,8 +1550,7 @@ void __fastcall TCallstackThread::ProcessEvent()
 {
   try
   {
-    UnicodeString FileName = FORMAT(L"%s.txt", (DoGetName()));
-    UnicodeString Path = TPath::Combine(SystemTemporaryDirectory(), FileName);
+    UnicodeString Path = DumpCallstackFileName(GetCurrentProcessId());
     std::unique_ptr<TStrings> StackStrings;
     HANDLE MainThreadHandle = reinterpret_cast<HANDLE>(MainThreadID);
     if (SuspendThread(MainThreadHandle) < 0)
@@ -1514,19 +1580,26 @@ void __fastcall TCallstackThread::ProcessEvent()
   }
 }
 //---------------------------------------------------------------------------
-UnicodeString TCallstackThread::DoGetName()
-{
-  return FORMAT("WinSCPCallstack%d", (GetCurrentProcessId()));
-}
-//---------------------------------------------------------------------------
 HANDLE TCallstackThread::DoCreateEvent()
 {
-  UnicodeString Name = DoGetName();
+  UnicodeString Name = DumpCallstackEventName(GetCurrentProcessId());
   return CreateEvent(NULL, false, false, Name.c_str());
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 std::unique_ptr<TCallstackThread> CallstackThread;
+//---------------------------------------------------------------------------
+static void __fastcall AppGetMainFormHandle(void * /*Data*/, HWND & Handle)
+{
+  TForm * MainForm = GetMainForm();
+  // This, among other, causes minimizing of the top-level non-MainForm minimize other child windows.
+  // Like clicking "Minimize" on Progress window over Synchronization progress window over Synchronization checklist window.
+  // Would also have a lot of other effects (hopefully possitive) and may render lot of existing MainFormLike code obsolete.
+  if ((MainForm != NULL) && IsMainFormLike(MainForm) && MainForm->HandleAllocated())
+  {
+    Handle = MainForm->Handle;
+  }
+}
 //---------------------------------------------------------------------------
 void __fastcall WinInitialize()
 {
@@ -1541,6 +1614,7 @@ void __fastcall WinInitialize()
   SetErrorMode(SEM_FAILCRITICALERRORS);
   OnApiPath = ApiPath;
   MainThread = GetCurrentThreadId();
+  Application->OnGetMainFormHandle = MakeMethod<TGetHandleEvent>(NULL, AppGetMainFormHandle);
 
 #pragma warn -8111
 #pragma warn .8111

@@ -69,7 +69,6 @@ type
     function NewColProperties: TCustomListViewColProperties; virtual; abstract;
     procedure FocusSomething; virtual;
     function EnableDragOnClick: Boolean; virtual;
-    procedure FocusItem(Item: TListItem);
     function GetItemFromHItem(const Item: TLVItem): TListItem;
     function GetValid: Boolean; virtual;
     function GetSelCount: Integer; override;
@@ -87,6 +86,7 @@ type
     function GetNextItem(StartItem: TListItem; Direction: TSearchDirection;
       States: TItemStates): TListItem;
     procedure MakeProgressVisible(Item: TListItem);
+    procedure FocusItem(Item: TListItem);
 
     property ColProperties: TCustomListViewColProperties read FColProperties write FColProperties stored False;
 
@@ -572,8 +572,12 @@ begin
   begin
     if (GetKeyState(VK_CONTROL) >= 0) then
     begin
-      if Assigned(ItemFocused) then
-        ItemFocused.Selected := not ItemFocused.Selected;
+      // If not handled in TCustomScpExplorerForm::DirViewKeyPress
+      if not DoKeyPress(Message) then
+      begin
+        if Assigned(ItemFocused) then
+          ItemFocused.Selected := not ItemFocused.Selected;
+      end;
     end
       else inherited;
   end
@@ -617,16 +621,53 @@ begin
 end;
 
 procedure TCustomNortonLikeListView.FocusItem(Item: TListItem);
+var
+  P: TPoint;
+  PLastSelectMethod: TSelectMethod;
+  PDontUnSelectItem: Boolean;
+  PDontSelectItem: Boolean;
+  WParam: UINT_PTR;
+  LParam: INT_PTR;
 begin
-  // This method was introduced in 3.7.6 for reasons long forgotten.
-  // It simulated a mouse click on the item. Possibly because the mere ItemFocused := Item
-  // did not work due to at-the-time-not-realized conflict with FocusSomething.
-  // Now that this is fixed, the method is no longer needed.
-  // Keeping it for a while with this comment, in case some regression is discovered.
-  // References:
-  // - 3.7.6: When reloading directory content, file panel tries to preserve its position.
-  // - Bugs 999 and 1161
-  ItemFocused := Item;
+  // This whole is replacement for mere ItemFocused := Item
+  // because that does not reset some internal focused pointer,
+  // causing subsequent Shift-Click selects range from the first item,
+  // not from focused item.
+  Item.MakeVisible(False);
+  Assert(Focused);
+  if Focused then
+  begin
+    P := Item.GetPosition;
+    PLastSelectMethod := FLastSelectMethod;
+    PDontSelectItem := FDontSelectItem;
+    PDontUnSelectItem := FDontUnSelectItem;
+    FLastSelectMethod := smNoneYet;
+    FDontSelectItem := True;
+    FDontUnSelectItem := True;
+    FFocusingItem := True;
+    try
+      // HACK
+      // WM_LBUTTONDOWN enters loop, waiting for WM_LBUTTONUP,
+      // so we have to post it in advance to break the loop immediately
+
+      // Without MK_CONTROL, if there are more items selected,
+      // they won't get unselected on subsequent focus change
+      // (with explorer-style selection).
+      // And it also makes the click the least obtrusive, affecting the focused
+      // file only.
+      WParam := MK_LBUTTON or MK_CONTROL;
+      LParam := MAKELPARAM(P.X, P.Y);
+      PostMessage(Handle, WM_LBUTTONUP, WParam, LParam);
+      SendMessage(Handle, WM_LBUTTONDOWN, WParam, LParam);
+    finally
+      FFocusingItem := False;
+      FLastSelectMethod := PLastSelectMethod;
+      FDontSelectItem := PDontSelectItem;
+      FDontUnSelectItem := PDontUnSelectItem;
+    end;
+  end;
+  if ItemFocused <> Item then
+    ItemFocused := Item;
 end;
 
 procedure TCustomNortonLikeListView.SelectAll(Mode: TSelectMode; Exclude: TListItem);
@@ -845,6 +886,19 @@ begin
     if States = [isCut] then
     begin
       Result := inherited GetNextItem(StartItem, Direction, States);
+    end
+      else
+    if States = [] then
+    begin
+      if Assigned(StartItem) then
+        Start := StartItem.Index
+      else
+        Start := -1;
+      Inc(Start);
+      if Start < Items.Count then
+        Result := Items[Start]
+      else
+        Result := nil;
     end
       else
     begin

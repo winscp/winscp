@@ -65,6 +65,7 @@ public:
   __property UnicodeString CurrentSubKey  = { read=GetCurrentSubKey };
   __property TStorageAccessMode AccessMode  = { read=FAccessMode, write=SetAccessMode };
   __property bool Explicit = { read = FExplicit, write = FExplicit };
+  __property bool ForceSave = { read = FForceSave, write = FForceSave };
   __property bool ForceAnsi = { read = FForceAnsi, write = FForceAnsi };
   __property bool MungeStringValues = { read = FMungeStringValues, write = FMungeStringValues };
   __property UnicodeString Source = { read = GetSource };
@@ -75,6 +76,7 @@ protected:
   TStrings * FKeyHistory;
   TStorageAccessMode FAccessMode;
   bool FExplicit;
+  bool FForceSave;
   bool FMungeStringValues;
   bool FForceAnsi;
 
@@ -93,7 +95,7 @@ protected:
 class TRegistryStorage : public THierarchicalStorage
 {
 public:
-  __fastcall TRegistryStorage(const UnicodeString AStorage, HKEY ARootKey);
+  __fastcall TRegistryStorage(const UnicodeString AStorage, HKEY ARootKey, REGSAM WowMode = 0);
   __fastcall TRegistryStorage(const UnicodeString AStorage);
   virtual __fastcall ~TRegistryStorage();
 
@@ -137,6 +139,7 @@ protected:
 private:
   TRegistry * FRegistry;
   int FFailed;
+  REGSAM FWowMode;
 
   void __fastcall Init();
 };

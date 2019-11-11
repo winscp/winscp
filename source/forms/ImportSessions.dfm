@@ -23,8 +23,8 @@ object ImportSessionsDialog: TImportSessionsDialog
     Top = 13
     Width = 61
     Height = 13
-    Anchors = [akLeft, akTop, akRight]
     Caption = '&Import from:'
+    FocusControl = SourceComboBox
   end
   object OKButton: TButton
     Left = 135
@@ -118,11 +118,12 @@ object ImportSessionsDialog: TImportSessionsDialog
     object ErrorLabel: TLabel
       Left = 0
       Top = 0
-      Width = 49
-      Height = 13
+      Width = 281
+      Height = 97
       Align = alClient
       Alignment = taCenter
       Caption = 'ErrorLabel'
+      ShowAccelChar = False
       Layout = tlCenter
       WordWrap = True
     end

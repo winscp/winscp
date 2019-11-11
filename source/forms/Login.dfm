@@ -55,6 +55,7 @@ object LoginDialog: TLoginDialog
           Width = 31
           Height = 13
           Caption = 'Name:'
+          ShowAccelChar = False
         end
         object ContentsNameEdit: TEdit
           Left = 66
@@ -214,7 +215,6 @@ object LoginDialog: TLoginDialog
           Alignment = taRightJustify
           MaxValue = 65535.000000000000000000
           MinValue = 1.000000000000000000
-          Value = 1.000000000000000000
           Anchors = [akTop, akRight]
           TabOrder = 6
           OnChange = PortNumberEditChange
@@ -365,6 +365,7 @@ object LoginDialog: TLoginDialog
       Align = alBottom
       BevelOuter = bvNone
       TabOrder = 2
+      OnMouseDown = ButtonPanelMouseDown
       DesignSize = (
         361
         41)

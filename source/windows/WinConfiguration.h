@@ -8,7 +8,7 @@
 //---------------------------------------------------------------------------
 enum TEditor { edInternal, edExternal, edOpen };
 enum TGenerateUrlCodeTarget { guctUrl, guctScript, guctAssembly };
-enum TScriptFormat { sfScriptFile, sfBatchFile, sfCommandLine };
+enum TScriptFormat { sfScriptFile, sfBatchFile, sfCommandLine, sfPowerShell };
 enum TLocaleFlagOverride { lfoLanguageIfRecommended, lfoLanguage, lfoAlways, lfoNever };
 //---------------------------------------------------------------------------
 #define C(Property) (Property != rhc.Property) ||
@@ -16,6 +16,7 @@ struct TScpExplorerConfiguration {
   UnicodeString WindowParams;
   UnicodeString DirViewParams;
   UnicodeString ToolbarsLayout;
+  UnicodeString ToolbarsButtons;
   bool SessionsTabs;
   bool StatusBar;
   UnicodeString LastLocalTargetDirectory;
@@ -25,7 +26,7 @@ struct TScpExplorerConfiguration {
   int DriveViewWidth;
   int DriveViewWidthPixelsPerInch;
   bool __fastcall operator !=(TScpExplorerConfiguration & rhc)
-    { return C(WindowParams) C(DirViewParams) C(ToolbarsLayout)
+    { return C(WindowParams) C(DirViewParams) C(ToolbarsLayout) C(ToolbarsButtons)
         C(SessionsTabs) C(StatusBar)
         C(LastLocalTargetDirectory) C(ViewStyle) C(ShowFullAddress)
         C(DriveView) C(DriveViewWidth) C(DriveViewWidthPixelsPerInch) 0; };
@@ -39,16 +40,18 @@ struct TScpCommanderPanelConfiguration {
   int DriveViewHeightPixelsPerInch;
   int DriveViewWidth;
   int DriveViewWidthPixelsPerInch;
+  UnicodeString LastPath;
   bool __fastcall operator !=(TScpCommanderPanelConfiguration & rhc)
     { return C(DirViewParams) C(StatusBar)
         C(DriveView) C(DriveViewHeight) C(DriveViewHeightPixelsPerInch)
-        C(DriveViewWidth) C(DriveViewWidthPixelsPerInch) 0; };
+        C(DriveViewWidth) C(DriveViewWidthPixelsPerInch) C(LastPath) 0; };
 };
 //---------------------------------------------------------------------------
 struct TScpCommanderConfiguration {
   UnicodeString WindowParams;
   double LocalPanelWidth;
   UnicodeString ToolbarsLayout;
+  UnicodeString ToolbarsButtons;
   bool SessionsTabs;
   bool StatusBar;
   TOperationSide CurrentPanel;
@@ -63,7 +66,7 @@ struct TScpCommanderConfiguration {
   bool ExplorerKeyboardShortcuts;
   bool SystemContextMenu;
   bool __fastcall operator !=(TScpCommanderConfiguration & rhc)
-    { return C(WindowParams) C(LocalPanelWidth) C(ToolbarsLayout)
+    { return C(WindowParams) C(LocalPanelWidth) C(ToolbarsLayout) C(ToolbarsButtons)
       C(SessionsTabs) C(StatusBar)
       C(LocalPanel) C(RemotePanel) C(CurrentPanel)
       C(NortonLikeMode) C(PreserveLocalDirectory)
@@ -248,6 +251,20 @@ struct TEditorData
   static bool __fastcall DecideExternalEditorText(UnicodeString ExternalEditor);
 };
 //---------------------------------------------------------------------------
+struct TFileColorData
+{
+  TFileColorData();
+
+  TFileMasks FileMask;
+  TColor Color;
+
+  void Load(const UnicodeString & S);
+  UnicodeString Save() const;
+  typedef std::vector<TFileColorData> TList;
+  static void LoadList(const UnicodeString & S, TList & List);
+  static UnicodeString SaveList(const TList & List);
+};
+//---------------------------------------------------------------------------
 #undef C
 //---------------------------------------------------------------------------
 class TEditorPreferences
@@ -334,8 +351,6 @@ private:
   UnicodeString FAutoStartSession;
   TDoubleClickAction FDoubleClickAction;
   bool FCopyOnDoubleClickConfirmation;
-  bool FDDAllowMove;
-  bool FDDAllowMoveInit;
   TAutoSwitch FDDTransferConfirmation;
   bool FDeleteToRecycleBin;
   bool FDimmHiddenFiles;
@@ -346,6 +361,7 @@ private:
   UnicodeString FSelectMask;
   bool FShowHiddenFiles;
   TFormatBytesStyle FFormatSizeBytes;
+  TIncrementalSearch FPanelSearch;
   bool FShowInaccesibleDirectories;
   bool FConfirmTransferring;
   bool FConfirmDeleting;
@@ -353,8 +369,8 @@ private:
   bool FUseLocationProfiles;
   bool FUseSharedBookmarks;
   UnicodeString FDDTemporaryDirectory;
+  UnicodeString FDDDrives;
   bool FDDWarnLackOfTempSpace;
-  bool FDDExtEnabled;
   bool FDDFakeFile;
   int FDDExtInstalled;
   int FDDExtTimeout;
@@ -367,6 +383,7 @@ private:
   TCustomCommandList * FExtensionList;
   UnicodeString FExtensionsDeleted;
   UnicodeString FExtensionsOrder;
+  UnicodeString FExtensionsShortCuts;
   bool FCustomCommandsDefaults;
   TEditorConfiguration FEditor;
   TQueueViewConfiguration FQueueView;
@@ -384,6 +401,8 @@ private:
   UnicodeString FDefaultTranslationFile;
   UnicodeString FInvalidDefaultTranslationMessage;
   bool FPreservePanelState;
+  TAutoSwitch FDarkTheme;
+  int FSysDarkTheme;
   UnicodeString FLastStoredSession;
   UnicodeString FLastWorkspace;
   bool FAutoSaveWorkspace;
@@ -430,9 +449,11 @@ private:
   bool FShowTips;
   UnicodeString FTipsSeen;
   TDateTime FTipsShown;
+  UnicodeString FFileColors;
   int FRunsSinceLastTip;
   bool FLockedInterface;
   bool FTimeoutShellIconRetrieval;
+  bool FAllowWindowPrint;
   int FDontDecryptPasswords;
   int FMasterPasswordSession;
   bool FMasterPasswordSessionAsked;
@@ -446,8 +467,6 @@ private:
 
   void __fastcall SetDoubleClickAction(TDoubleClickAction value);
   void __fastcall SetCopyOnDoubleClickConfirmation(bool value);
-  void __fastcall SetDDAllowMove(bool value);
-  void __fastcall SetDDAllowMoveInit(bool value);
   void __fastcall SetDDTransferConfirmation(TAutoSwitch value);
   void __fastcall SetDeleteToRecycleBin(bool value);
   void __fastcall SetDimmHiddenFiles(bool value);
@@ -457,6 +476,7 @@ private:
   void __fastcall SetSelectDirectories(bool value);
   void __fastcall SetShowHiddenFiles(bool value);
   void __fastcall SetFormatSizeBytes(TFormatBytesStyle value);
+  void __fastcall SetPanelSearch(TIncrementalSearch value);
   void __fastcall SetShowInaccesibleDirectories(bool value);
   void __fastcall SetConfirmTransferring(bool value);
   void __fastcall SetConfirmDeleting(bool value);
@@ -464,9 +484,9 @@ private:
   void __fastcall SetUseLocationProfiles(bool value);
   void __fastcall SetUseSharedBookmarks(bool value);
   void __fastcall SetDDTemporaryDirectory(UnicodeString value);
+  void __fastcall SetDDDrives(UnicodeString value);
   void __fastcall SetDDWarnLackOfTempSpace(bool value);
-  void __fastcall SetDDExtEnabled(bool value);
-  bool __fastcall GetDDExtEnabled();
+  void __fastcall SetDDFakeFile(bool value);
   void __fastcall SetDDExtTimeout(int value);
   void __fastcall SetConfirmClosingSession(bool value);
   void __fastcall SetDDWarnLackOfTempSpaceRatio(double value);
@@ -488,6 +508,7 @@ private:
   void __fastcall SetTemporaryDirectoryCleanup(bool value);
   void __fastcall SetConfirmTemporaryDirectoryCleanup(bool value);
   void __fastcall SetPreservePanelState(bool value);
+  void __fastcall SetDarkTheme(TAutoSwitch value);
   void __fastcall SetLastStoredSession(UnicodeString value);
   void __fastcall SetAutoSaveWorkspace(bool value);
   void __fastcall SetAutoSaveWorkspacePasswords(bool value);
@@ -529,6 +550,7 @@ private:
   void __fastcall SetShowTips(bool value);
   void __fastcall SetTipsSeen(UnicodeString value);
   void __fastcall SetTipsShown(TDateTime value);
+  void __fastcall SetFileColors(UnicodeString value);
   void __fastcall SetRunsSinceLastTip(int value);
   bool __fastcall GetHonorDrivePolicy();
   void __fastcall SetHonorDrivePolicy(bool value);
@@ -539,6 +561,7 @@ private:
   bool __fastcall GetTimeoutShellOperations();
   void __fastcall SetTimeoutShellOperations(bool value);
   void __fastcall SetTimeoutShellIconRetrieval(bool value);
+  void __fastcall SetAllowWindowPrint(bool value);
   int __fastcall GetLocaleCompletenessTreshold();
 
   bool __fastcall GetDDExtInstalled();
@@ -583,8 +606,6 @@ protected:
   void __fastcall ReleaseExtensionTranslations();
   void __fastcall LoadExtensionTranslations();
 
-  __property bool DDFakeFile = { read=FDDFakeFile, write=FDDFakeFile };
-
 public:
   __fastcall TWinConfiguration();
   virtual __fastcall ~TWinConfiguration();
@@ -621,6 +642,9 @@ public:
   UnicodeString __fastcall UniqueExtensionName(const UnicodeString & ExtensionName, int Counter);
   UnicodeString __fastcall GetProvisionaryExtensionId(const UnicodeString & FileName);
   bool __fastcall IsDDExtRunning();
+  bool __fastcall IsDDExtBroken();
+  bool __fastcall UseDarkTheme();
+  void __fastcall ResetSysDarkTheme();
 
   static void __fastcall RestoreFont(const TFontConfiguration & Configuration, TFont * Font);
   static void __fastcall StoreFont(TFont * Font, TFontConfiguration & Configuration);
@@ -631,6 +655,7 @@ public:
   __property UnicodeString SelectMask = { read = FSelectMask, write = FSelectMask };
   __property bool ShowHiddenFiles = { read = FShowHiddenFiles, write = SetShowHiddenFiles };
   __property TFormatBytesStyle FormatSizeBytes = { read = FFormatSizeBytes, write = SetFormatSizeBytes };
+  __property TIncrementalSearch PanelSearch = { read = FPanelSearch, write = SetPanelSearch };
   __property bool ShowInaccesibleDirectories = { read = FShowInaccesibleDirectories, write = SetShowInaccesibleDirectories };
   __property TEditorConfiguration Editor = { read = FEditor, write = SetEditor };
   __property TQueueViewConfiguration QueueView = { read = FQueueView, write = SetQueueView };
@@ -642,8 +667,6 @@ public:
   __property UnicodeString AutoStartSession = { read = FAutoStartSession, write = SetAutoStartSession };
   __property TDoubleClickAction DoubleClickAction = { read = FDoubleClickAction, write = SetDoubleClickAction };
   __property bool CopyOnDoubleClickConfirmation = { read = FCopyOnDoubleClickConfirmation, write = SetCopyOnDoubleClickConfirmation };
-  __property bool DDAllowMove = { read = FDDAllowMove, write = SetDDAllowMove };
-  __property bool DDAllowMoveInit = { read = FDDAllowMoveInit, write = SetDDAllowMoveInit };
   __property TAutoSwitch DDTransferConfirmation = { read = FDDTransferConfirmation, write = SetDDTransferConfirmation };
   __property bool DeleteToRecycleBin = { read = FDeleteToRecycleBin, write = SetDeleteToRecycleBin };
   __property bool DimmHiddenFiles = { read = FDimmHiddenFiles, write = SetDimmHiddenFiles };
@@ -654,8 +677,9 @@ public:
   __property bool UseLocationProfiles = { read = FUseLocationProfiles, write = SetUseLocationProfiles};
   __property bool UseSharedBookmarks = { read = FUseSharedBookmarks, write = SetUseSharedBookmarks};
   __property UnicodeString DDTemporaryDirectory  = { read=FDDTemporaryDirectory, write=SetDDTemporaryDirectory };
+  __property UnicodeString DDDrives  = { read=FDDDrives, write=SetDDDrives };
   __property bool DDWarnLackOfTempSpace  = { read=FDDWarnLackOfTempSpace, write=SetDDWarnLackOfTempSpace };
-  __property bool DDExtEnabled = { read=GetDDExtEnabled, write=SetDDExtEnabled };
+  __property bool DDFakeFile = { read=FDDFakeFile, write=SetDDFakeFile };
   __property bool DDExtInstalled = { read=GetDDExtInstalled };
   __property int DDExtTimeout = { read=FDDExtTimeout, write=SetDDExtTimeout };
   __property bool ConfirmClosingSession  = { read=FConfirmClosingSession, write=SetConfirmClosingSession };
@@ -675,6 +699,7 @@ public:
   __property bool TemporaryDirectoryCleanup = { read = FTemporaryDirectoryCleanup, write = SetTemporaryDirectoryCleanup };
   __property bool ConfirmTemporaryDirectoryCleanup = { read = FConfirmTemporaryDirectoryCleanup, write = SetConfirmTemporaryDirectoryCleanup };
   __property bool PreservePanelState = { read = FPreservePanelState, write = SetPreservePanelState };
+  __property TAutoSwitch DarkTheme = { read = FDarkTheme, write = SetDarkTheme };
   __property UnicodeString LastStoredSession = { read = FLastStoredSession, write = SetLastStoredSession };
   __property UnicodeString LastWorkspace = { read = FLastWorkspace, write = FLastWorkspace };
   __property bool AutoSaveWorkspace = { read = FAutoSaveWorkspace, write = SetAutoSaveWorkspace };
@@ -713,6 +738,7 @@ public:
   __property bool ShowTips = { read = FShowTips, write = SetShowTips };
   __property UnicodeString TipsSeen = { read = FTipsSeen, write = SetTipsSeen };
   __property TDateTime TipsShown = { read = FTipsShown, write = SetTipsShown };
+  __property UnicodeString FileColors = { read = FFileColors, write = SetFileColors };
   __property int RunsSinceLastTip = { read = FRunsSinceLastTip, write = SetRunsSinceLastTip };
   __property bool HonorDrivePolicy = { read = GetHonorDrivePolicy, write = SetHonorDrivePolicy };
   __property TMasterPasswordPromptEvent OnMasterPasswordPrompt = { read = FOnMasterPasswordPrompt, write = FOnMasterPasswordPrompt };
@@ -720,6 +746,7 @@ public:
   __property bool LockedInterface = { read = FLockedInterface, write = SetLockedInterface };
   __property bool TimeoutShellOperations = { read = GetTimeoutShellOperations, write = SetTimeoutShellOperations };
   __property bool TimeoutShellIconRetrieval = { read = FTimeoutShellIconRetrieval, write = SetTimeoutShellIconRetrieval };
+  __property bool AllowWindowPrint = { read = FAllowWindowPrint, write = SetAllowWindowPrint };
   __property LCID DefaultLocale = { read = FDefaultLocale };
   __property int LocaleCompletenessTreshold = { read = GetLocaleCompletenessTreshold };
 };
@@ -781,6 +808,7 @@ public:
   UnicodeString __fastcall GetOptionKey(const TOption & Option, const UnicodeString & Site) const;
   UnicodeString __fastcall GetCommandWithExpandedOptions(
     TStrings * CustomCommandOptions, const UnicodeString & Site) const;
+  bool __fastcall HasCustomShortCut() const;
 
 protected:
   bool __fastcall ParseOption(const UnicodeString & Value, TOption & Option, const UnicodeString & ExtensionBaseName);
@@ -792,6 +820,7 @@ private:
   UnicodeString FCommand;
   int FParams;
   TShortCut FShortCut;
+  TShortCut FShortCutOriginal;
   UnicodeString FId;
   UnicodeString FFileName;
   UnicodeString FDescription;

@@ -17,6 +17,7 @@
 #include <HelpWin.h>
 #include <WinConfiguration.h>
 #include <StrUtils.hpp>
+#include <Tools.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "HistoryComboBox"
@@ -33,12 +34,13 @@ bool __fastcall DoSynchronizeDialog(TSynchronizeParamType & Params,
   TGetSynchronizeOptionsEvent OnGetOptions,
   TSynchronizeSessionLog OnSynchronizeSessionLog,
   TFeedSynchronizeError & OnFeedSynchronizeError,
+  TSynchronizeInNewWindow OnSynchronizeInNewWindow,
   bool Start)
 {
   bool Result;
   TSynchronizeDialog * Dialog = SafeFormCreate<TSynchronizeDialog>(Application);
 
-  Dialog->Init(OnStartStop, OnGetOptions, OnSynchronizeSessionLog, OnFeedSynchronizeError, Start);
+  Dialog->Init(OnStartStop, OnGetOptions, OnSynchronizeSessionLog, OnFeedSynchronizeError, OnSynchronizeInNewWindow, Start);
 
   try
   {
@@ -94,12 +96,15 @@ void __fastcall TSynchronizeDialog::Init(TSynchronizeStartStopEvent OnStartStop,
   TGetSynchronizeOptionsEvent OnGetOptions,
   TSynchronizeSessionLog OnSynchronizeSessionLog,
   TFeedSynchronizeError & OnFeedSynchronizeError,
+  TSynchronizeInNewWindow OnSynchronizeInNewWindow,
   bool StartImmediately)
 {
   FOnStartStop = OnStartStop;
   FOnGetOptions = OnGetOptions;
   FOnSynchronizeSessionLog = OnSynchronizeSessionLog;
   FOnFeedSynchronizeError = &OnFeedSynchronizeError;
+  DebugAssert(OnSynchronizeInNewWindow != NULL);
+  FOnSynchronizeInNewWindow = OnSynchronizeInNewWindow;
   FStartImmediately = StartImmediately;
 }
 //---------------------------------------------------------------------------
@@ -180,6 +185,13 @@ void __fastcall TSynchronizeDialog::UpdateControls()
   // When minimizing to tray globally, no point showing special "minimize to tray" command
   MinimizeButton->Style =
     !WinConfiguration->MinimizeToTray ? TCustomButton::bsSplitButton : TCustomButton::bsPushButton;
+
+  StartButton->Style = AllowStartInNewWindow() ? TCustomButton::bsSplitButton : TCustomButton::bsPushButton;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TSynchronizeDialog::AllowStartInNewWindow()
+{
+  return !IsMainFormLike(this);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeDialog::ControlChange(TObject * /*Sender*/)
@@ -259,7 +271,7 @@ void __fastcall TSynchronizeDialog::CopyParamListPopup(TRect R, int AdditionalOp
   // display checkbox next to user-selected preset
   ::CopyParamListPopup(
     R, FPresetsMenu, FCopyParams, FPreset, CopyParamClick,
-    cplCustomize | AdditionalOptions, ActualCopyParamAttrs());
+    AdditionalOptions, ActualCopyParamAttrs());
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeDialog::TransferSettingsButtonClick(
@@ -392,6 +404,18 @@ void __fastcall TSynchronizeDialog::DoLog(TSynchronizeController * /*Controller*
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeDialog::StartButtonClick(TObject * /*Sender*/)
 {
+  if (AllowStartInNewWindow() && OpenInNewWindow())
+  {
+    StartInNewWindow();
+  }
+  else
+  {
+    Start();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeDialog::Start()
+{
   bool Synchronize;
   bool Continue = true;
   if (SynchronizeSynchronizeCheck->State == cbGrayed)
@@ -428,10 +452,7 @@ void __fastcall TSynchronizeDialog::StartButtonClick(TObject * /*Sender*/)
   {
     DebugAssert(!FSynchronizing);
 
-    LocalDirectoryEdit->SaveToHistory();
-    CustomWinConfiguration->History[L"LocalDirectory"] = LocalDirectoryEdit->Items;
-    RemoteDirectoryEdit->SaveToHistory();
-    CustomWinConfiguration->History[L"RemoteDirectory"] = RemoteDirectoryEdit->Items;
+    SaveHistory();
 
     FSynchronizing = true;
     try
@@ -449,6 +470,14 @@ void __fastcall TSynchronizeDialog::StartButtonClick(TObject * /*Sender*/)
       throw;
     }
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeDialog::SaveHistory()
+{
+  LocalDirectoryEdit->SaveToHistory();
+  CustomWinConfiguration->History[L"LocalDirectory"] = LocalDirectoryEdit->Items;
+  RemoteDirectoryEdit->SaveToHistory();
+  CustomWinConfiguration->History[L"RemoteDirectory"] = RemoteDirectoryEdit->Items;
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeDialog::StopButtonClick(TObject * /*Sender*/)
@@ -690,5 +719,24 @@ void __fastcall TSynchronizeDialog::MinimizetoTray1Click(TObject * Sender)
 void __fastcall TSynchronizeDialog::MinimizeButtonDropDownClick(TObject * /*Sender*/)
 {
   MenuPopup(MinimizeMenu, MinimizeButton);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeDialog::StartInNewWindow1Click(TObject * /*Sender*/)
+{
+  StartInNewWindow();
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeDialog::StartInNewWindow()
+{
+  SaveHistory();
+  TSynchronizeParamType AParams = Params;
+  TCopyParamType ACopyParams = CopyParams;
+  FOnSynchronizeInNewWindow(AParams, &ACopyParams);
+  Close();
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeDialog::StartButtonDropDownClick(TObject * /*Sender*/)
+{
+  MenuPopup(StartMenu, StartButton);
 }
 //---------------------------------------------------------------------------

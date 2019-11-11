@@ -1532,35 +1532,48 @@ object FileFindDialog: TFileFindDialog
     Height = 25
     Action = CopyAction
     Anchors = [akRight, akBottom]
-    TabOrder = 7
+    TabOrder = 8
   end
   object DeleteButton: TButton
     Left = 448
-    Top = 204
+    Top = 235
     Width = 108
     Height = 25
     Action = DeleteAction
     Anchors = [akTop, akRight]
-    TabOrder = 6
+    TabOrder = 7
   end
   object DownloadButton: TButton
     Left = 448
-    Top = 173
+    Top = 204
     Width = 108
     Height = 25
     Action = DownloadAction
     Anchors = [akTop, akRight]
+    TabOrder = 6
+  end
+  object EditButton: TButton
+    Left = 448
+    Top = 173
+    Width = 108
+    Height = 25
+    Action = EditAction
+    Anchors = [akTop, akRight]
+    Caption = 'Edi&t'
     TabOrder = 5
   end
   object FileViewPopupMenu: TPopupMenu
-    Left = 478
-    Top = 237
+    Left = 486
+    Top = 269
     object Focus1: TMenuItem
       Action = FocusAction
       Default = True
     end
     object N1: TMenuItem
       Caption = '-'
+    end
+    object Edit1: TMenuItem
+      Action = EditAction
     end
     object Download1: TMenuItem
       Action = DownloadAction
@@ -1582,8 +1595,8 @@ object FileFindDialog: TFileFindDialog
     end
   end
   object ActionList: TActionList
-    Left = 478
-    Top = 293
+    Left = 486
+    Top = 317
     object DeleteAction: TAction
       Caption = '&Delete'
       SecondaryShortCuts.Strings = (
@@ -1609,6 +1622,13 @@ object FileFindDialog: TFileFindDialog
       Caption = 'Down&load...'
       ShortCut = 116
       OnExecute = DownloadActionExecute
+    end
+    object EditAction: TAction
+      Caption = '&Edit'
+      SecondaryShortCuts.Strings = (
+        'Ctrl+E')
+      ShortCut = 115
+      OnExecute = EditActionExecute
     end
   end
 end

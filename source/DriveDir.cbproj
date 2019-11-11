@@ -59,6 +59,7 @@
 		<OutputExt>bpl</OutputExt>
 		<ProjectType>CppPackage</ProjectType>
 		<SanitizedProjectName>DriveDir</SanitizedProjectName>
+		<TLIB_PageSize>32</TLIB_PageSize>
 		<VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
 		<VerInfo_Locale>1033</VerInfo_Locale>
 	</PropertyGroup>
@@ -138,14 +139,6 @@
 			<BuildOrder>20</BuildOrder>
 			<BuildOrder>19</BuildOrder>
 		</DelphiCompile>
-		<ResFiles Include="packages\filemng\IEComboBox.dcr">
-			<BuildOrder>-1</BuildOrder>
-			<BuildOrder>29</BuildOrder>
-		</ResFiles>
-		<DelphiCompile Include="packages\filemng\IEComboBox.pas">
-			<BuildOrder>26</BuildOrder>
-			<BuildOrder>24</BuildOrder>
-		</DelphiCompile>
 		<DelphiCompile Include="packages\filemng\IEDriveInfo.pas">
 			<BuildOrder>38</BuildOrder>
 			<BuildOrder>22</BuildOrder>
@@ -173,7 +166,7 @@
 		<PackageImport Include="DragDropP.bpi">
 			<BuildOrder>25</BuildOrder>
 		</PackageImport>
-		<PackageImport Include="Moje.bpi">
+		<PackageImport Include="My.bpi">
 			<BuildOrder>24</BuildOrder>
 		</PackageImport>
 		<PackageImport Include="rtl.bpi">

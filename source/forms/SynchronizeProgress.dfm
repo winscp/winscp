@@ -21,6 +21,7 @@ object SynchronizeProgressForm: TSynchronizeProgressForm
     Width = 28
     Height = 13
     Caption = 'Local:'
+    ShowAccelChar = False
   end
   object Label2: TLabel
     Left = 49
@@ -28,6 +29,7 @@ object SynchronizeProgressForm: TSynchronizeProgressForm
     Width = 41
     Height = 13
     Caption = 'Remote:'
+    ShowAccelChar = False
   end
   object RemoteDirectoryLabel: TPathLabel
     Left = 141
@@ -59,6 +61,7 @@ object SynchronizeProgressForm: TSynchronizeProgressForm
     Height = 13
     AutoSize = False
     Caption = '00:00:00'
+    ShowAccelChar = False
   end
   object Label4: TLabel
     Left = 49
@@ -66,6 +69,7 @@ object SynchronizeProgressForm: TSynchronizeProgressForm
     Width = 51
     Height = 13
     Caption = 'Start time:'
+    ShowAccelChar = False
   end
   object Label3: TLabel
     Left = 49
@@ -73,6 +77,7 @@ object SynchronizeProgressForm: TSynchronizeProgressForm
     Width = 66
     Height = 13
     Caption = 'Time elapsed:'
+    ShowAccelChar = False
   end
   object TimeElapsedLabel: TLabel
     Left = 141
@@ -81,6 +86,7 @@ object SynchronizeProgressForm: TSynchronizeProgressForm
     Height = 13
     AutoSize = False
     Caption = '00:00:00'
+    ShowAccelChar = False
   end
   object AnimationPaintBox: TPaintBox
     Left = 8

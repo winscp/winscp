@@ -2,7 +2,6 @@
 #include "..\\resource\\TextsCore1.rc"
 #include "..\\resource\\TextsCore2.rc"
 #include "..\\resource\\TextsWin1.rc"
-#include "..\\resource\\TextsWin2.rc"
 
 Z_1_SITE ICON "..\\resource\\Site.ico"
 Z_2_SITE_FOLDER ICON "..\\resource\\SiteFolder.ico"

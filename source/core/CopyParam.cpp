@@ -54,6 +54,11 @@ void __fastcall TCopyParamType::Default()
   RemoveBOM = false;
   CPSLimit = 0;
   NewerOnly = false;
+  EncryptNewFiles = true;
+  ExcludeHiddenFiles = false;
+  ExcludeEmptyDirectories = false;
+  Size = -1;
+  OnceDoneOperation = odoIdle;
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TCopyParamType::GetInfoStr(
@@ -62,12 +67,10 @@ UnicodeString __fastcall TCopyParamType::GetInfoStr(
   UnicodeString Result;
   bool SomeAttrIncluded;
   UnicodeString ScriptArgs;
-  bool NoScriptArgs;
   UnicodeString AssemblyCode;
-  bool NoCodeProperties;
   DoGetInfoStr(
     Separator, Attrs, Result, SomeAttrIncluded,
-    UnicodeString(), ScriptArgs, NoScriptArgs, TAssemblyLanguage(0), AssemblyCode, NoCodeProperties);
+    UnicodeString(), ScriptArgs, TAssemblyLanguage(0), AssemblyCode);
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -76,62 +79,48 @@ bool __fastcall TCopyParamType::AnyUsableCopyParam(int Attrs) const
   UnicodeString Result;
   bool SomeAttrIncluded;
   UnicodeString ScriptArgs;
-  bool NoScriptArgs;
   UnicodeString AssemblyCode;
-  bool NoCodeProperties;
   DoGetInfoStr(
     L";", Attrs, Result, SomeAttrIncluded,
-    UnicodeString(), ScriptArgs, NoScriptArgs, TAssemblyLanguage(0), AssemblyCode, NoCodeProperties);
+    UnicodeString(), ScriptArgs, TAssemblyLanguage(0), AssemblyCode);
   return SomeAttrIncluded;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TCopyParamType::GenerateTransferCommandArgs(int Attrs, const UnicodeString & Link, bool & NoScriptArgs) const
+UnicodeString __fastcall TCopyParamType::GenerateTransferCommandArgs(int Attrs, const UnicodeString & Link) const
 {
   UnicodeString Result;
   bool SomeAttrIncluded;
   UnicodeString ScriptArgs;
   UnicodeString AssemblyCode;
-  bool NoCodeProperties;
   DoGetInfoStr(
     L";", Attrs, Result, SomeAttrIncluded,
-    Link, ScriptArgs, NoScriptArgs, TAssemblyLanguage(0), AssemblyCode, NoCodeProperties);
+    Link, ScriptArgs, TAssemblyLanguage(0), AssemblyCode);
   return ScriptArgs;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TCopyParamType::GenerateAssemblyCode(
-  TAssemblyLanguage Language, int Attrs, bool & NoCodeProperties) const
+UnicodeString __fastcall TCopyParamType::GenerateAssemblyCode(TAssemblyLanguage Language, int Attrs) const
 {
   UnicodeString Result;
   bool SomeAttrIncluded;
   UnicodeString ScriptArgs;
-  bool NoScriptArgs;
   UnicodeString AssemblyCode;
-  DoGetInfoStr(L";", Attrs, Result, SomeAttrIncluded, UnicodeString(), ScriptArgs, NoScriptArgs, Language, AssemblyCode, NoCodeProperties);
+  DoGetInfoStr(L";", Attrs, Result, SomeAttrIncluded, UnicodeString(), ScriptArgs, Language, AssemblyCode);
   return AssemblyCode;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamType::DoGetInfoStr(
   UnicodeString Separator, int Options,
   UnicodeString & Result, bool & SomeAttrIncluded,
-  const UnicodeString & Link, UnicodeString & ScriptArgs, bool & NoScriptArgs, TAssemblyLanguage Language, UnicodeString & AssemblyCode,
-  bool & NoCodeProperties) const
+  const UnicodeString & Link, UnicodeString & ScriptArgs, TAssemblyLanguage Language, UnicodeString & AssemblyCode) const
 {
   TCopyParamType Defaults;
+  TCopyParamType ScriptNonDefaults;
+  TCopyParamType CodeNonDefaults;
 
   bool SomeAttrExcluded = false;
-  NoScriptArgs = false;
-  NoCodeProperties = false;
   SomeAttrIncluded = false;
   #define ADD(STR, EXCEPT) \
-    if (FLAGCLEAR(Options, EXCEPT)) \
-    { \
-      AddToList(Result, (STR), Separator); \
-      SomeAttrIncluded = true; \
-    } \
-    else \
-    { \
-      SomeAttrExcluded = true; \
-    }
+    FLAGCLEAR(Options, EXCEPT) ? (AddToList(Result, (STR), Separator), SomeAttrIncluded = true, true) : (SomeAttrExcluded = true, false)
 
   bool AsciiFileMaskDiffers = (TransferMode == tmAutomatic) && !(AsciiFileMask == Defaults.AsciiFileMask);
   bool TransferModeDiffers = ((TransferMode != Defaults.TransferMode) || AsciiFileMaskDiffers);
@@ -175,8 +164,8 @@ void __fastcall TCopyParamType::DoGetInfoStr(
         Language, TransferOptionsClassName, L"TransferMode", L"TransferMode", TransferModeMembers[TransferMode], false);
       if (AsciiFileMaskDiffers)
       {
-        NoScriptArgs = true;
-        NoCodeProperties = true;
+        ScriptNonDefaults.AsciiFileMask = AsciiFileMask;
+        CodeNonDefaults.AsciiFileMask = AsciiFileMask;
       }
     }
   }
@@ -185,32 +174,33 @@ void __fastcall TCopyParamType::DoGetInfoStr(
     if (TransferModeDiffers)
     {
       SomeAttrExcluded = true;
-      NoScriptArgs = true;
-      NoCodeProperties = true;
     }
   }
 
   if (FileNameCase != Defaults.FileNameCase)
   {
-    ADD(FORMAT(LoadStrPart(COPY_INFO_FILENAME, 1),
-      (LoadStrPart(COPY_INFO_FILENAME, FileNameCase + 2))),
-      cpaIncludeMaskOnly);
-
-    NoScriptArgs = true;
-    NoCodeProperties = true;
+    if (ADD(FORMAT(LoadStrPart(COPY_INFO_FILENAME, 1),
+         (LoadStrPart(COPY_INFO_FILENAME, FileNameCase + 2))),
+         cpaIncludeMaskOnly))
+    {
+      ScriptNonDefaults.FileNameCase = FileNameCase;
+      CodeNonDefaults.FileNameCase = FileNameCase;
+    }
   }
 
-  if ((InvalidCharsReplacement == NoReplacement) !=
-        (Defaults.InvalidCharsReplacement == NoReplacement))
+  if (InvalidCharsReplacement != Defaults.InvalidCharsReplacement)
   {
-    DebugAssert(InvalidCharsReplacement == NoReplacement);
+    int Except = cpaIncludeMaskOnly;
     if (InvalidCharsReplacement == NoReplacement)
     {
-      ADD(LoadStr(COPY_INFO_DONT_REPLACE_INV_CHARS), cpaIncludeMaskOnly);
+      ADD(LoadStr(COPY_INFO_DONT_REPLACE_INV_CHARS), Except);
     }
 
-    NoScriptArgs = true;
-    NoCodeProperties = true;
+    if (FLAGCLEAR(Options, Except))
+    {
+      ScriptNonDefaults.InvalidCharsReplacement = InvalidCharsReplacement;
+      CodeNonDefaults.InvalidCharsReplacement = InvalidCharsReplacement;
+    }
   }
 
   if ((PreserveRights != Defaults.PreserveRights) ||
@@ -245,8 +235,8 @@ void __fastcall TCopyParamType::DoGetInfoStr(
 
     if ((AddXToDirectories != Defaults.AddXToDirectories) && FLAGCLEAR(Options, Except))
     {
-      NoScriptArgs = true;
-      NoCodeProperties = true;
+      ScriptNonDefaults.AddXToDirectories = AddXToDirectories;
+      CodeNonDefaults.AddXToDirectories = AddXToDirectories;
     }
   }
 
@@ -292,7 +282,7 @@ void __fastcall TCopyParamType::DoGetInfoStr(
         if (PreserveTimeDirs && FLAGCLEAR(Options, ExceptDirs))
         {
           ScriptArgs += RtfSwitchValue(PRESERVETIME_SWITCH, Link, PRESERVETIMEDIRS_SWITCH_VALUE);
-          NoCodeProperties = true;
+          CodeNonDefaults.PreserveTimeDirs = PreserveTimeDirs;
         }
         else
         {
@@ -313,12 +303,10 @@ void __fastcall TCopyParamType::DoGetInfoStr(
   {
     if (DebugAlwaysTrue(IgnorePermErrors))
     {
-      const int Except = cpaIncludeMaskOnly | cpaNoIgnorePermErrors;
-      ADD(LoadStr(COPY_INFO_IGNORE_PERM_ERRORS), Except);
-      if (FLAGCLEAR(Options, Except))
+      if (ADD(LoadStr(COPY_INFO_IGNORE_PERM_ERRORS), cpaIncludeMaskOnly | cpaNoIgnorePermErrors))
       {
-        NoScriptArgs = true;
-        NoCodeProperties = true;
+        ScriptNonDefaults.IgnorePermErrors = IgnorePermErrors;
+        CodeNonDefaults.IgnorePermErrors = IgnorePermErrors;
       }
     }
   }
@@ -327,12 +315,10 @@ void __fastcall TCopyParamType::DoGetInfoStr(
   {
     if (DebugAlwaysTrue(PreserveReadOnly))
     {
-      const int Except = cpaIncludeMaskOnly | cpaNoPreserveReadOnly;
-      ADD(LoadStr(COPY_INFO_PRESERVE_READONLY), Except);
-      if (FLAGCLEAR(Options, Except))
+      if (ADD(LoadStr(COPY_INFO_PRESERVE_READONLY), cpaIncludeMaskOnly | cpaNoPreserveReadOnly))
       {
-        NoScriptArgs = true;
-        NoCodeProperties = true;
+        ScriptNonDefaults.PreserveReadOnly = PreserveReadOnly;
+        CodeNonDefaults.PreserveReadOnly = PreserveReadOnly;
       }
     }
   }
@@ -341,7 +327,7 @@ void __fastcall TCopyParamType::DoGetInfoStr(
   {
     if (DebugAlwaysTrue(!CalculateSize))
     {
-      ADD(LoadStr(COPY_INFO_DONT_CALCULATE_SIZE), cpaIncludeMaskOnly);
+      ADD(LoadStr(COPY_INFO_DONT_CALCULATE_SIZE), cpaIncludeMaskOnly | cpaNoCalculateSize);
       // Always false in scripting, in assembly controlled by use of FileTransferProgress
     }
   }
@@ -350,12 +336,10 @@ void __fastcall TCopyParamType::DoGetInfoStr(
   {
     if (DebugAlwaysTrue(ClearArchive))
     {
-      const int Except = cpaIncludeMaskOnly | cpaNoClearArchive;
-      ADD(LoadStr(COPY_INFO_CLEAR_ARCHIVE), Except);
-      if (FLAGCLEAR(Options, Except))
+      if (ADD(LoadStr(COPY_INFO_CLEAR_ARCHIVE), cpaIncludeMaskOnly | cpaNoClearArchive))
       {
-        NoScriptArgs = true;
-        NoCodeProperties = true;
+        ScriptNonDefaults.ClearArchive = ClearArchive;
+        CodeNonDefaults.ClearArchive = ClearArchive;
       }
     }
   }
@@ -366,12 +350,10 @@ void __fastcall TCopyParamType::DoGetInfoStr(
     {
       if (DebugAlwaysTrue(RemoveBOM))
       {
-        const int Except = cpaIncludeMaskOnly | cpaNoRemoveBOM | cpaNoTransferMode;
-        ADD(LoadStr(COPY_INFO_REMOVE_BOM), Except);
-        if (FLAGCLEAR(Options, Except))
+        if (ADD(LoadStr(COPY_INFO_REMOVE_BOM), cpaIncludeMaskOnly | cpaNoRemoveBOM | cpaNoTransferMode))
         {
-          NoScriptArgs = true;
-          NoCodeProperties = true;
+          ScriptNonDefaults.RemoveBOM = RemoveBOM;
+          CodeNonDefaults.RemoveBOM = RemoveBOM;
         }
       }
     }
@@ -380,12 +362,10 @@ void __fastcall TCopyParamType::DoGetInfoStr(
     {
       if (DebugAlwaysTrue(RemoveCtrlZ))
       {
-        const int Except = cpaIncludeMaskOnly | cpaNoRemoveCtrlZ | cpaNoTransferMode;
-        ADD(LoadStr(COPY_INFO_REMOVE_CTRLZ),Except);
-        if (FLAGCLEAR(Options, Except))
+        if (ADD(LoadStr(COPY_INFO_REMOVE_CTRLZ), cpaIncludeMaskOnly | cpaNoRemoveCtrlZ | cpaNoTransferMode))
         {
-          NoScriptArgs = true;
-          NoCodeProperties = true;
+          ScriptNonDefaults.RemoveCtrlZ = RemoveCtrlZ;
+          CodeNonDefaults.RemoveCtrlZ = RemoveCtrlZ;
         }
       }
     }
@@ -393,11 +373,11 @@ void __fastcall TCopyParamType::DoGetInfoStr(
 
   if (!(IncludeFileMask == Defaults.IncludeFileMask))
   {
-    ADD(FORMAT(LoadStr(COPY_INFO_FILE_MASK), (IncludeFileMask.Masks)),
-      cpaNoIncludeMask);
-
-    ScriptArgs += RtfSwitch(FILEMASK_SWITCH, Link, IncludeFileMask.Masks);
-    AssemblyCode += AssemblyProperty(Language, TransferOptionsClassName, L"FileMask", IncludeFileMask.Masks, false);
+    if (ADD(FORMAT(LoadStr(COPY_INFO_FILE_MASK), (IncludeFileMask.Masks)), cpaNoIncludeMask))
+    {
+      ScriptArgs += RtfSwitch(FILEMASK_SWITCH, Link, IncludeFileMask.Masks);
+      AssemblyCode += AssemblyProperty(Language, TransferOptionsClassName, L"FileMask", IncludeFileMask.Masks, false);
+    }
   }
 
   DebugAssert(FTransferSkipList.get() == NULL);
@@ -406,22 +386,57 @@ void __fastcall TCopyParamType::DoGetInfoStr(
   if (CPSLimit > 0)
   {
     int LimitKB = int(CPSLimit / 1024);
-    ADD(FMTLOAD(COPY_INFO_CPS_LIMIT2, (LimitKB)), cpaIncludeMaskOnly);
-
-    ScriptArgs += RtfSwitch(SPEED_SWITCH, Link, LimitKB);
-    AssemblyCode += AssemblyProperty(Language, TransferOptionsClassName, L"SpeedLimit", LimitKB, false);
+    if (ADD(FMTLOAD(COPY_INFO_CPS_LIMIT2, (LimitKB)), cpaIncludeMaskOnly))
+    {
+      ScriptArgs += RtfSwitch(SPEED_SWITCH, Link, LimitKB);
+      AssemblyCode += AssemblyProperty(Language, TransferOptionsClassName, L"SpeedLimit", LimitKB, false);
+    }
   }
 
   if (NewerOnly != Defaults.NewerOnly)
   {
     if (DebugAlwaysTrue(NewerOnly))
     {
-      const int Except = cpaIncludeMaskOnly | cpaNoNewerOnly;
-      ADD(StripHotkey(LoadStr(COPY_PARAM_NEWER_ONLY)), Except);
-      if (FLAGCLEAR(Options, Except))
+      if (ADD(StripHotkey(LoadStr(COPY_PARAM_NEWER_ONLY)), cpaIncludeMaskOnly | cpaNoNewerOnly))
       {
         ScriptArgs += RtfSwitch(NEWERONLY_SWICH, Link);
-        NoCodeProperties = true;
+        CodeNonDefaults.NewerOnly = NewerOnly;
+      }
+    }
+  }
+
+  if (EncryptNewFiles != Defaults.EncryptNewFiles)
+  {
+    if (!DebugAlwaysFalse(EncryptNewFiles))
+    {
+      if (ADD(StripHotkey(LoadStr(COPY_INFO_DONT_ENCRYPT_NEW_FILES)), cpaIncludeMaskOnly | cpaNoEncryptNewFiles))
+      {
+        ScriptNonDefaults.EncryptNewFiles = EncryptNewFiles;
+        CodeNonDefaults.EncryptNewFiles = EncryptNewFiles;
+      }
+    }
+  }
+
+  if (ExcludeHiddenFiles != Defaults.ExcludeHiddenFiles)
+  {
+    if (DebugAlwaysTrue(ExcludeHiddenFiles))
+    {
+      if (ADD(StripHotkey(LoadStr(COPY_INFO_EXCLUDE_HIDDEN_FILES)), cpaNoIncludeMask))
+      {
+        ScriptNonDefaults.ExcludeHiddenFiles = ExcludeHiddenFiles;
+        CodeNonDefaults.ExcludeHiddenFiles = ExcludeHiddenFiles;
+      }
+    }
+  }
+
+  if (ExcludeEmptyDirectories != Defaults.ExcludeEmptyDirectories)
+  {
+    if (DebugAlwaysTrue(ExcludeEmptyDirectories))
+    {
+      if (ADD(StripHotkey(LoadStr(COPY_INFO_EXCLUDE_EMPTY_DIRS)), 0))
+      {
+        ScriptNonDefaults.ExcludeEmptyDirectories = ExcludeEmptyDirectories;
+        CodeNonDefaults.ExcludeEmptyDirectories = ExcludeEmptyDirectories;
       }
     }
   }
@@ -468,6 +483,53 @@ void __fastcall TCopyParamType::DoGetInfoStr(
     AssemblyCode += AssemblyPropertyRaw(Language, TransferOptionsClassName, L"ResumeSupport", ResumeSupportCode, false);
   }
 
+  std::unique_ptr<TStringList> RawOptions;
+  std::unique_ptr<TOptionsStorage> OptionsStorage;
+
+  RawOptions.reset(new TStringList());
+  OptionsStorage.reset(new TOptionsStorage(RawOptions.get(), true));
+  ScriptNonDefaults.Save(OptionsStorage.get(), &Defaults);
+
+  if (RawOptions->Count > 0)
+  {
+    ScriptArgs +=
+      RtfSwitch(RAWTRANSFERSETTINGS_SWITCH, Link) +
+      FORMAT(L"[%d]", (RawOptions->Count)) +
+      StringsToParams(RawOptions.get());
+  }
+
+  RawOptions.reset(new TStringList());
+  OptionsStorage.reset(new TOptionsStorage(RawOptions.get(), true));
+  CodeNonDefaults.Save(OptionsStorage.get(), &Defaults);
+
+  if (!AssemblyCode.IsEmpty())
+  {
+    AssemblyCode =
+      AssemblyNewClassInstanceStart(Language, TransferOptionsClassName, false) +
+      AssemblyCode +
+      AssemblyNewClassInstanceEnd(Language, false);
+  }
+
+  if (RawOptions->Count > 0)
+  {
+    if (AssemblyCode.IsEmpty())
+    {
+      AssemblyCode = AssemblyVariableDeclaration(Language) + AssemblyNewClassInstance(Language, TransferOptionsClassName, false);
+      if (Language == alCSharp)
+      {
+        AssemblyCode += RtfText(L"()");
+      }
+      AssemblyCode += AssemblyStatementSeparator(Language) + RtfPara;
+    }
+    else
+    {
+      AssemblyCode += RtfPara;
+    }
+
+    AssemblyCode +=
+      AssemblyAddRawSettings(Language, RawOptions.get(), TransferOptionsClassName, L"AddRawSettings");
+  }
+
   if (SomeAttrExcluded)
   {
     Result += (Result.IsEmpty() ? UnicodeString() : Separator) +
@@ -509,6 +571,11 @@ void __fastcall TCopyParamType::Assign(const TCopyParamType * Source)
   COPY(RemoveBOM);
   COPY(CPSLimit);
   COPY(NewerOnly);
+  COPY(EncryptNewFiles);
+  COPY(ExcludeHiddenFiles);
+  COPY(ExcludeEmptyDirectories);
+  COPY(Size);
+  COPY(OnceDoneOperation);
   #undef COPY
 }
 //---------------------------------------------------------------------------
@@ -679,7 +746,7 @@ UnicodeString __fastcall TCopyParamType::GetLogStr() const
        BooleanToEngStr(CalculateSize),
        FileMask)) +
     FORMAT(
-      L"  TM: %s; ClAr: %s; RemEOF: %s; RemBOM: %s; CPS: %u; NewerOnly: %s; InclM: %s; ResumeL: %d\n"
+      L"  TM: %s; ClAr: %s; RemEOF: %s; RemBOM: %s; CPS: %u; NewerOnly: %s; EncryptNewFiles: %s; ExcludeHiddenFiles: %s; ExcludeEmptyDirectories: %s; InclM: %s; ResumeL: %d\n"
        "  AscM: %s\n",
       (ModeC[TransferMode],
        BooleanToEngStr(ClearArchive),
@@ -687,6 +754,9 @@ UnicodeString __fastcall TCopyParamType::GetLogStr() const
        BooleanToEngStr(RemoveBOM),
        int(CPSLimit),
        BooleanToEngStr(NewerOnly),
+       BooleanToEngStr(EncryptNewFiles),
+       BooleanToEngStr(ExcludeHiddenFiles),
+       BooleanToEngStr(ExcludeEmptyDirectories),
        IncludeFileMask.Masks,
        ((FTransferSkipList.get() != NULL) ? FTransferSkipList->Count : 0) + (!FTransferResumeFile.IsEmpty() ? 1 : 0),
        AsciiFileMask.Masks));
@@ -717,15 +787,21 @@ bool __fastcall TCopyParamType::AllowAnyTransfer() const
 {
   return
     IncludeFileMask.Masks.IsEmpty() &&
+    !ExcludeHiddenFiles &&
+    !ExcludeEmptyDirectories &&
     ((FTransferSkipList.get() == NULL) || (FTransferSkipList->Count == 0)) &&
     FTransferResumeFile.IsEmpty();
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCopyParamType::AllowTransfer(UnicodeString FileName,
-  TOperationSide Side, bool Directory, const TFileMasks::TParams & Params) const
+  TOperationSide Side, bool Directory, const TFileMasks::TParams & Params, bool Hidden) const
 {
   bool Result = true;
-  if (!IncludeFileMask.Masks.IsEmpty())
+  if (Hidden && ExcludeHiddenFiles)
+  {
+    Result = false;
+  }
+  else if (!IncludeFileMask.Masks.IsEmpty())
   {
     Result = IncludeFileMask.Matches(FileName, (Side == osLocal),
       Directory, &Params);
@@ -820,35 +896,59 @@ void __fastcall TCopyParamType::Load(THierarchicalStorage * Storage)
   RemoveBOM = Storage->ReadBool(L"RemoveBOM", RemoveBOM);
   CPSLimit = Storage->ReadInteger(L"CPSLimit", CPSLimit);
   NewerOnly = Storage->ReadBool(L"NewerOnly", NewerOnly);
+  EncryptNewFiles = Storage->ReadBool(L"EncryptNewFiles", EncryptNewFiles);
+  ExcludeHiddenFiles = Storage->ReadBool(L"ExcludeHiddenFiles", ExcludeHiddenFiles);
+  ExcludeEmptyDirectories = Storage->ReadBool(L"ExcludeEmptyDirectories", ExcludeEmptyDirectories);
+  Size = -1;
+  OnceDoneOperation = odoIdle;
 }
 //---------------------------------------------------------------------------
-void __fastcall TCopyParamType::Save(THierarchicalStorage * Storage) const
+void __fastcall TCopyParamType::Save(THierarchicalStorage * Storage, const TCopyParamType * Defaults) const
 {
-  Storage->WriteBool(L"AddXToDirectories", AddXToDirectories);
-  Storage->WriteString(L"Masks", AsciiFileMask.Masks);
-  Storage->WriteInteger(L"FileNameCase", FileNameCase);
-  Storage->WriteBool(L"PreserveReadOnly", PreserveReadOnly);
-  Storage->WriteBool(L"PreserveTime", PreserveTime);
-  Storage->WriteBool(L"PreserveTimeDirs", PreserveTimeDirs);
-  Storage->WriteBool(L"PreserveRights", PreserveRights);
-  Storage->WriteBool(L"IgnorePermErrors", IgnorePermErrors);
-  Storage->WriteString(L"Text", Rights.Text);
-  Storage->WriteInteger(L"TransferMode", TransferMode);
-  Storage->WriteInteger(L"ResumeSupport", ResumeSupport);
-  Storage->WriteInt64(L"ResumeThreshold", ResumeThreshold);
-  Storage->WriteInteger(L"ReplaceInvalidChars", (unsigned int)InvalidCharsReplacement);
-  Storage->WriteString(L"LocalInvalidChars", LocalInvalidChars);
-  Storage->WriteBool(L"CalculateSize", CalculateSize);
-  Storage->WriteString(L"IncludeFileMask", IncludeFileMask.Masks);
+  // Same as in TSessionData::DoSave
+  #define WRITE_DATA_EX(TYPE, NAME, PROPERTY, CONV) \
+    if ((Defaults != NULL) && (CONV(Defaults->PROPERTY) == CONV(PROPERTY))) \
+    { \
+      Storage->DeleteValue(NAME); \
+    } \
+    else \
+    { \
+      Storage->Write ## TYPE(NAME, CONV(PROPERTY)); \
+    }
+  #define WRITE_DATA_CONV(TYPE, NAME, PROPERTY) WRITE_DATA_EX(TYPE, NAME, PROPERTY, WRITE_DATA_CONV_FUNC)
+  #define WRITE_DATA(TYPE, PROPERTY) WRITE_DATA_EX(TYPE, TEXT(#PROPERTY), PROPERTY, )
+
+  WRITE_DATA(Bool, AddXToDirectories);
+  WRITE_DATA_EX(String, L"Masks", AsciiFileMask.Masks, );
+  WRITE_DATA(Integer, FileNameCase);
+  WRITE_DATA(Bool, PreserveReadOnly);
+  WRITE_DATA(Bool, PreserveTime);
+  WRITE_DATA(Bool, PreserveTimeDirs);
+  WRITE_DATA(Bool, PreserveRights);
+  WRITE_DATA(Bool, IgnorePermErrors);
+  WRITE_DATA_EX(String, L"Text", Rights.Text, );
+  WRITE_DATA(Integer, TransferMode);
+  WRITE_DATA(Integer, ResumeSupport);
+  WRITE_DATA(Int64, ResumeThreshold);
+  #define WRITE_DATA_CONV_FUNC(X) (unsigned int)(X)
+  WRITE_DATA_CONV(Integer, L"ReplaceInvalidChars", InvalidCharsReplacement);
+  WRITE_DATA(String, LocalInvalidChars);
+  WRITE_DATA(Bool, CalculateSize);
+  WRITE_DATA_EX(String, L"IncludeFileMask", IncludeFileMask.Masks, );
   Storage->DeleteValue(L"ExcludeFileMask"); // obsolete
   Storage->DeleteValue(L"NegativeExclude"); // obsolete
   DebugAssert(FTransferSkipList.get() == NULL);
   DebugAssert(FTransferResumeFile.IsEmpty());
-  Storage->WriteBool(L"ClearArchive", ClearArchive);
-  Storage->WriteBool(L"RemoveCtrlZ", RemoveCtrlZ);
-  Storage->WriteBool(L"RemoveBOM", RemoveBOM);
-  Storage->WriteInteger(L"CPSLimit", CPSLimit);
-  Storage->WriteBool(L"NewerOnly", NewerOnly);
+  WRITE_DATA(Bool, ClearArchive);
+  WRITE_DATA(Bool, RemoveCtrlZ);
+  WRITE_DATA(Bool, RemoveBOM);
+  WRITE_DATA(Integer, CPSLimit);
+  WRITE_DATA(Bool, NewerOnly);
+  WRITE_DATA(Bool, EncryptNewFiles);
+  WRITE_DATA(Bool, ExcludeHiddenFiles);
+  WRITE_DATA(Bool, ExcludeEmptyDirectories);
+  DebugAssert(Size < 0);
+  DebugAssert(OnceDoneOperation == odoIdle);
 }
 //---------------------------------------------------------------------------
 #define C(Property) (Property == rhp.Property)
@@ -880,6 +980,11 @@ bool __fastcall TCopyParamType::operator==(const TCopyParamType & rhp) const
     C(RemoveBOM) &&
     C(CPSLimit) &&
     C(NewerOnly) &&
+    C(EncryptNewFiles) &&
+    C(ExcludeHiddenFiles) &&
+    C(ExcludeEmptyDirectories) &&
+    C(Size) &&
+    C(OnceDoneOperation) &&
     true;
 }
 #undef C

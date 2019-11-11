@@ -50,8 +50,8 @@ private:
   bool FDirectCopy;
   bool FMulti;
   TDirectRemoteCopy FAllowDirectCopy;
+
+  INTERFACE_HOOK;
 };
-//---------------------------------------------------------------------------
-extern PACKAGE TRemoteTransferDialog * RemoteTransferDialog;
 //---------------------------------------------------------------------------
 #endif

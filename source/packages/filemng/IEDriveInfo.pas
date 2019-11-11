@@ -25,12 +25,13 @@ unit IEDriveInfo;
 
 {Required compiler options:}
 {$A+,B-,X+,H+,P+}
+{$WARN SYMBOL_PLATFORM OFF}
 
 interface
 
 uses
   Windows, Registry, SysUtils, Classes, ComCtrls, ShellApi, ShlObj, CommCtrl, Forms,
-  BaseUtils;
+  BaseUtils, System.Generics.Collections;
 
 const
   {Flags used by TDriveInfo.ReadDriveStatus and TDriveView.RefreshRootNodes:}
@@ -46,9 +47,7 @@ const
   LastSpecialFolder   = CSIDL_PRINTHOOD;
 
 type
-  TDrive    = Char;
-  PDriveInfoRec = ^TDriveInfoRec;
-  TDriveInfoRec = record
+  TDriveInfoRec = class
     PIDL        : PItemIDList; {Fully qualyfied PIDL}
     Init        : Boolean;     {Drivestatus was updated once}
     Valid       : Boolean;     {Drivestatus is valid}
@@ -61,6 +60,7 @@ type
     ImageIndex  : Integer;     {Drive imageIndex}
   end;
 
+  TRealDrive = char;
   TSpecialFolder = FirstSpecialFolder..LastSpecialFolder;
   PSpecialFolderRec = ^TSpecialFolderRec;
   TSpecialFolderRec = record
@@ -73,35 +73,44 @@ type
 
   TDriveInfo = class(TObject)
   private
-    FData: array[FirstDrive..LastDrive] of TDriveInfoRec;
+    FData: TObjectDictionary<string, TDriveInfoRec>;
     FNoDrives: DWORD;
     FDesktop: IShellFolder;
     FFolders: array[TSpecialFolder] of TSpecialFolderRec;
     FHonorDrivePolicy: Boolean;
-    function GetData(Drive: TDrive): PDriveInfoRec;
+    FLoaded: Boolean;
     function GetFolder(Folder: TSpecialFolder): PSpecialFolderRec;
-    procedure ReadDriveBasicStatus(Drive: TDrive);
-    procedure ResetDrive(Drive: TDrive);
+    procedure ReadDriveBasicStatus(Drive: string);
+    procedure ResetDrive(Drive: string);
     procedure SetHonorDrivePolicy(Value: Boolean);
+    procedure NeedData;
+    procedure Load;
+    function AddDrive(Drive: string): TDriveInfoRec;
 
   public
-    property Data[Drive: TDrive]: PDriveInfoRec read GetData; default;
+    function Get(Drive: string): TDriveInfoRec;
     property SpecialFolder[Folder: TSpecialFolder]: PSpecialFolderRec read GetFolder;
 
-    function GetImageIndex(Drive: TDrive): Integer;
-    function GetDisplayName(Drive: TDrive): string;
-    function GetPrettyName(Drive: TDrive): string;
-    function ReadDriveStatus(Drive: TDrive; Flags: Integer): Boolean;
+    function AnyValidPath: string;
+    function GetDriveKey(Path: string): string;
+    function GetDriveRoot(Drive: string): string;
+    function IsRealDrive(Drive: string): Boolean;
+    function IsFixedDrive(Drive: string): Boolean;
+    function GetImageIndex(Drive: string): Integer;
+    function GetSimpleName(Drive: string): string;
+    function GetDisplayName(Drive: string): string;
+    function GetPrettyName(Drive: string): string;
+    function ReadDriveStatus(Drive: string; Flags: Integer): Boolean;
     property HonorDrivePolicy: Boolean read FHonorDrivePolicy write SetHonorDrivePolicy;
     constructor Create;
     destructor Destroy; override;
-    procedure Load;
   end;
 
 function GetShellFileName(const Name: string): string; overload;
-function GetShellFileName(PIDL: PItemIDList): string; overLoad;
-function GetNetWorkName(Drive: Char): string;
-function GetNetWorkConnected(Drive: Char): Boolean;
+function GetShellFileName(PIDL: PItemIDList): string; overload;
+function GetNetWorkName(Drive: string): string;
+function GetNetWorkConnected(Drive: string): Boolean;
+function IsRootPath(Path: string): Boolean;
 
 {Central drive information object instance of TDriveInfo}
 var
@@ -113,30 +122,97 @@ resourceString
 implementation
 
 uses
-  Math, PIDL, OperationWithTimeout;
+  Math, PIDL, OperationWithTimeout, PasTools;
 
 constructor TDriveInfo.Create;
 begin
   inherited;
 
   FHonorDrivePolicy := True;
-  Load;
+  FLoaded := False;
+  FData := TObjectDictionary<string, TDriveInfoRec>.Create([doOwnsValues]);
 end; {TDriveInfo.Create}
 
 destructor TDriveInfo.Destroy;
-var
-  Drive: TDrive;
 begin
-  for Drive := FirstDrive to LastDrive do
-    with FData[Drive] do
-    begin
-      SetLength(DisplayName, 0);
-      SetLength(PrettyName, 0);
-      // This causes access violation
-      // FreePIDL(PIDL);
-    end;
+  FData.Free;
   inherited;
 end; {TDriveInfo.Destroy}
+
+procedure TDriveInfo.NeedData;
+begin
+  if not FLoaded then
+  begin
+    Load;
+    FLoaded := True;
+  end;
+end;
+
+function TDriveInfo.AnyValidPath: string;
+var
+  Drive: TRealDrive;
+begin
+  for Drive := FirstFixedDrive to LastDrive do
+    if Get(Drive).Valid and
+       (Get(Drive).DriveType = DRIVE_FIXED) and
+       DirectoryExists(ApiPath(DriveInfo.GetDriveRoot(Drive))) then
+    begin
+      Result := DriveInfo.GetDriveRoot(Drive);
+      Exit;
+    end;
+  for Drive := FirstFixedDrive to LastDrive do
+    if Get(Drive).Valid and
+       (Get(Drive).DriveType = DRIVE_REMOTE) and
+       DirectoryExists(ApiPath(DriveInfo.GetDriveRoot(Drive))) then
+    begin
+      Result := DriveInfo.GetDriveRoot(Drive);
+      Exit;
+    end;
+  raise Exception.Create(SNoValidPath);
+end;
+
+function TDriveInfo.IsRealDrive(Drive: string): Boolean;
+begin
+  Result := (Length(Drive) = 1);
+  Assert((not Result) or ((Drive[1] >= FirstDrive) and (Drive[1] <= LastDrive)));
+end;
+
+function TDriveInfo.IsFixedDrive(Drive: string): Boolean;
+begin
+  Result := True;
+  if IsRealDrive(Drive) and (Drive[1] < FirstFixedDrive) then Result := False;
+end;
+
+function TDriveInfo.GetDriveKey(Path: string): string;
+begin
+  Result := ExtractFileDrive(Path);
+  if (Length(Result) = 2) and (Result[2] = DriveDelim) then
+  begin
+    Result := Upcase(Result[1]);
+  end
+    else
+  if IsUncPath(Path) then
+  begin
+    Result := LowerCase(Result);
+  end
+    else
+  begin
+    raise EConvertError.Create(Format(ErrorInvalidDrive, [Path]))
+  end;
+end;
+
+function TDriveInfo.GetDriveRoot(Drive: string): string;
+begin
+  if IsRealDrive(Drive) then
+  begin
+    Result := Drive + ':\'
+  end
+    else
+  begin
+    Assert(IsUncPath(Drive));
+    Result := IncludeTrailingBackslash(Drive);
+  end;
+end;
 
 function TDriveInfo.GetFolder(Folder: TSpecialFolder): PSpecialFolderRec;
 var
@@ -144,6 +220,7 @@ var
   Path: PChar;
   Flags: Word;
 begin
+  NeedData;
   Assert((Folder >= Low(FFolders)) and (Folder <= High(FFolders)));
 
   with FFolders[Folder] do
@@ -175,30 +252,34 @@ end;
 
 procedure TDriveInfo.SetHonorDrivePolicy(Value: Boolean);
 var
-  Drive: TDrive;
+  Drive: TRealDrive;
 begin
   if HonorDrivePolicy <> Value then
   begin
     FHonorDrivePolicy := Value;
-    for Drive := FirstDrive to LastDrive do
+    if FLoaded then
     begin
-      ReadDriveBasicStatus(Drive);
+      for Drive := FirstDrive to LastDrive do
+      begin
+        ReadDriveBasicStatus(Drive);
+      end;
     end;
   end;
 end;
 
-procedure TDriveInfo.ReadDriveBasicStatus(Drive: TDrive);
+procedure TDriveInfo.ReadDriveBasicStatus(Drive: string);
 begin
+  Assert(FData.ContainsKey(Drive));
   with FData[Drive] do
   begin
-    DriveType := Windows.GetDriveType(PChar(Drive + ':\'));
+    DriveType := Windows.GetDriveType(PChar(DriveInfo.GetDriveRoot(Drive)));
     Valid :=
-      ((not FHonorDrivePolicy) or (not Bool((1 shl (Ord(Drive) - 65)) and FNoDrives))) and
+      ((not IsRealDrive(Drive)) or (not FHonorDrivePolicy) or (not Bool((1 shl (Ord(Drive[1]) - 65)) and FNoDrives))) and
       (DriveType in [DRIVE_REMOVABLE, DRIVE_FIXED, DRIVE_CDROM, DRIVE_RAMDISK, DRIVE_REMOTE]);
   end;
 end;
 
-procedure TDriveInfo.ResetDrive(Drive: TDrive);
+procedure TDriveInfo.ResetDrive(Drive: string);
 begin
   with FData[Drive] do
   begin
@@ -213,7 +294,7 @@ end;
 
 procedure TDriveInfo.Load;
 var
-  Drive: TDrive;
+  Drive: TRealDrive;
   Reg: TRegistry;
   Folder: TSpecialFolder;
 begin
@@ -234,108 +315,121 @@ begin
 
   for Drive := FirstDrive to LastDrive do
   begin
-    with FData[Drive] do
-    begin
-      ReadDriveBasicStatus(Drive);
-      Init := False;
-      PIDL := nil;
-      ResetDrive(Drive);
-    end;
+    AddDrive(Drive);
   end;
 
   for Folder := Low(FFolders) to High(FFolders) do
     FFolders[Folder].Valid := False;
 end;
 
-function TDriveInfo.GetImageIndex(Drive: TDrive): Integer;
+function TDriveInfo.AddDrive(Drive: string): TDriveInfoRec;
 begin
-  if (Drive < FirstDrive) or (Drive > LastDrive) then
-    raise EConvertError.Create(Format(ErrorInvalidDrive, [Drive]));
+  Result := TDriveInfoRec.Create;
+  FData.Add(Drive, Result);
+  ResetDrive(Drive);
+  ReadDriveBasicStatus(Drive);
+end;
+
+function TDriveInfo.GetImageIndex(Drive: string): Integer;
+begin
+  NeedData;
 
   Result := 0;
 
-  if FData[Drive].Valid then
+  if Get(Drive).Valid then
   begin
-    if FData[Drive].ImageIndex = 0 then
+    if Get(Drive).ImageIndex = 0 then
       ReadDriveStatus(Drive, dsImageIndex);
-    Result := FData[Drive].ImageIndex;
+    Result := Get(Drive).ImageIndex;
   end;
 end; {TDriveInfo.GetImageIndex}
 
-function TDriveInfo.GetDisplayName(Drive: TDrive): string;
+function TDriveInfo.GetDisplayName(Drive: string): string;
 begin
-  if (Drive < FirstDrive) or (Drive > LastDrive) then
-    raise EConvertError.Create(Format(ErrorInvalidDrive, [Drive]));
-
-  Result := Drive + ':';
-
-  if FData[Drive].Valid then
+  if Get(Drive).Valid then
   begin
-    if Length(FData[Drive].DisplayName) = 0 then
+    if Length(Get(Drive).DisplayName) = 0 then
       ReadDriveStatus(Drive, dsDisplayName);
-    Result := FData[Drive].DisplayName;
+    Result := Get(Drive).DisplayName;
+  end
+    else
+  begin
+    Result := GetSimpleName(Drive);
   end;
 end; {TDriveInfo.GetDisplayname}
 
-function TDriveInfo.GetPrettyName(Drive: TDrive): string;
+function TDriveInfo.GetPrettyName(Drive: string): string;
 begin
-  if (Drive < FirstDrive) or (Drive > LastDrive) then
-    raise EConvertError.Create(Format(ErrorInvalidDrive, [Drive]));
-
-  Result := Drive + ':';
-
-  if FData[Drive].Valid then
+  if Get(Drive).Valid then
   begin
-    if Length(FData[Drive].PrettyName) = 0 then
+    if Length(Get(Drive).PrettyName) = 0 then
       ReadDriveStatus(Drive, dsDisplayName);
-    Result := FData[Drive].PrettyName;
+    Result := Get(Drive).PrettyName;
+  end
+    else
+  begin
+    Result := GetSimpleName(Drive);
   end;
 end; {TDriveInfo.GetPrettyName}
 
-function TDriveInfo.GetData(Drive: TDrive): PDriveInfoRec;
+function TDriveInfo.GetSimpleName(Drive: string): string;
 begin
-  if not CharInSet(Upcase(Drive), ['A'..'Z']) then
-    raise EConvertError.Create(Format(ErrorInvalidDrive, [Drive]));
+  Result := Drive;
+  if IsRealDrive(Result) then Result := Result + ':';
+end;
 
-  Result := @FData[Upcase(Drive)];
+function TDriveInfo.Get(Drive: string): TDriveInfoRec;
+begin
+  NeedData;
+  if not FData.TryGetValue(Drive, Result) then
+  begin
+    Assert(IsUncPath(Drive));
+    Result := AddDrive(Drive);
+  end;
 end; {TDriveInfo.GetData}
 
-function TDriveInfo.ReadDriveStatus(Drive: TDrive; Flags: Integer): Boolean;
+function TDriveInfo.ReadDriveStatus(Drive: string; Flags: Integer): Boolean;
 var
   ErrorMode: Word;
   FileInfo: TShFileInfo;
+  DriveRoot: string;
   DriveID: string;
   CPos: Integer;
   Eaten: ULONG;
   ShAttr: ULONG;
   MaxFileNameLength: DWORD;
   FileSystemFlags: DWORD;
+  FreeSpace: Int64;
+  SimpleName: string;
+  DriveInfoRec: TDriveInfoRec;
+  S: string;
 begin
   if not Assigned(FDesktop) then
     SHGetDesktopFolder(FDesktop);
 
-  Drive := Upcase(Drive);
-  if (Drive < FirstDrive) or (Drive > LastDrive) then
-    raise EConvertError.Create(Format(ErrorInvalidDrive, [Drive]));
+  DriveRoot := DriveInfo.GetDriveRoot(Drive);
 
-  with FData[Drive] do
+  // When this method is called, the entry always exists already
+  Assert(FData.ContainsKey(Drive));
+  DriveInfoRec := FData[Drive];
+  with DriveInfoRec do
   begin
     Init := True;
     ReadDriveBasicStatus(Drive);
 
     if Valid then
     begin
-      if (not Assigned(PIDL)) and (Drive >= FirstFixedDrive) then
+      if (not Assigned(PIDL)) and IsFixedDrive(Drive) then
       begin
         ShAttr := 0;
         if DriveType = DRIVE_REMOTE then
         begin
           ShellFolderParseDisplayNameWithTimeout(
-            FDesktop, Application.Handle, nil, PChar(Drive + ':\'), Eaten, PIDL, ShAttr, 2 * MSecsPerSec);
+            FDesktop, Application.Handle, nil, PChar(DriveRoot), Eaten, PIDL, ShAttr, 2 * MSecsPerSec);
         end
           else
         begin
-          FDesktop.ParseDisplayName(Application.Handle, nil, PChar(Drive + ':\'), Eaten, PIDL, ShAttr);
+          FDesktop.ParseDisplayName(Application.Handle, nil, PChar(DriveRoot), Eaten, PIDL, ShAttr);
         end;
       end;
 
@@ -345,14 +439,11 @@ begin
         { turn off critical errors }
         ErrorMode := SetErrorMode(SEM_FailCriticalErrors or SEM_NOOPENFILEERRORBOX);
         try
-          { drive 1 = a, 2 = b, 3 = c, etc. }
-
-          Size := DiskSize(Ord(Drive) - $40);
-          DriveReady := (Size >= 0);
+          DriveReady := GetDiskFreeSpaceEx(PChar(DriveRoot), FreeSpace, Size, nil);
           if DriveReady then
           begin
             {Access the physical drive:}
-            if GetVolumeInformation(PChar(Drive + ':\'), nil, 0,
+            if GetVolumeInformation(PChar(DriveRoot), nil, 0,
                  @DriveSerial, MaxFileNameLength, FileSystemFlags,
                  nil, 0) then
             begin
@@ -376,27 +467,36 @@ begin
       if (Flags and dsDisplayName <> 0) then
       begin
         {Fetch drives displayname:}
+        SimpleName := GetSimpleName(Drive);
         if Assigned(PIDL) then DisplayName := GetShellFileName(PIDL)
           else
-        if Drive < FirstFixedDrive then DisplayName := GetShellFileName(Drive + ':\')
+        begin
           // typical reason we do not have PIDL is that it took too long to
           // call ParseDisplayName, in what case calling SHGetFileInfo with
           // path (instead of PIDL) will take long too, avoiding that and using
           // fallback
-          else DisplayName := '(' + Drive + ':)';
+          DisplayName := '(' + SimpleName + ')';
+        end;
 
         if DriveType <> DRIVE_REMOTE then
         begin
-          PrettyName := Drive + ': ' + DisplayName;
+          PrettyName := SimpleName + ' ' + DisplayName;
 
-          CPos := Pos(' (' + Drive + ':)', PrettyName);
+          S := ' (' + SimpleName + ')';
+          CPos := Pos(S, PrettyName);
           if CPos > 0 then
-            Delete(PrettyName, CPos, 5);
+            Delete(PrettyName, CPos, Length(S));
+        end
+          else
+        if IsRealDrive(Drive) then
+        begin
+          DriveID := GetNetWorkName(Drive);
+          PrettyName := Format('%s %s (%s)', [SimpleName, ExtractFileName(DriveID), ExtractFileDir(DriveID)]);
         end
           else
         begin
-          DriveID := GetNetWorkName(Drive);
-          PrettyName := Format('%s: %s (%s)', [Drive, ExtractFileName(DriveID), ExtractFileDir(DriveID)]);
+          Assert(IsUncPath(DriveRoot));
+          PrettyName := SimpleName;
         end;
       end;
 
@@ -409,7 +509,7 @@ begin
         end
           else
         begin
-          SHGetFileInfo(PChar(Drive + ':\'), 0, FileInfo, SizeOf(FileInfo), SHGFI_SYSICONINDEX or SHGFI_SMALLICON);
+          SHGetFileInfo(PChar(DriveRoot), 0, FileInfo, SizeOf(FileInfo), SHGFI_SYSICONINDEX or SHGFI_SMALLICON);
         end;
         ImageIndex := FileInfo.iIcon;
       end;
@@ -452,13 +552,15 @@ begin
   end;
 end; {GetShellFileName}
 
-function GetNetWorkName(Drive: Char): string;
+function GetNetWorkName(Drive: string): string;
 var
+  Path: string;
   P: array[0..MAX_PATH] of Char;
   MaxLen : DWORD;
 begin
+  Path := ExcludeTrailingBackslash(DriveInfo.GetDriveRoot(Drive));
   MaxLen := MAX_PATH;
-  if WNetGetConnection(PChar(string(Drive + ':')), P, MaxLen) = NO_ERROR then
+  if WNetGetConnection(PChar(Path), P, MaxLen) = NO_ERROR then
     Result := P
   else
     Result := '';
@@ -493,23 +595,66 @@ const
 function NetUseGetInfo(UncServerName: LMSTR; UseName: LMSTR; Level: DWORD; var BufPtr: LPBYTE): NET_API_STATUS; stdcall; external 'netapi32.dll';
 function NetApiBufferFree(Buffer: Pointer): DWORD; stdcall; external 'netapi32.dll';
 
-function GetNetWorkConnected(Drive: Char): Boolean;
+function GetNetWorkConnected(Drive: string): Boolean;
 var
   BufPtr: LPBYTE;
   NetResult: Integer;
+  ServerName: string;
+  PServerName: PChar;
+  Name: string;
+  P: Integer;
 begin
-  NetResult := NetUseGetInfo(nil, PChar(Drive + ':'), 1, BufPtr);
-  if NetResult = 0 then
+  Name := '';
+  PServerName := nil;
+  if DriveInfo.IsRealDrive(Drive) then
   begin
-    Result := (PUSE_INFO_1(BufPtr)^.ui1_status = USE_OK);
-    NetApiBufferFree(LPVOID(BufPtr));
+    Name := Drive + ':';
+  end
+    else
+  if IsUncPath(Drive) then
+  begin
+    Name := Copy(Drive, 3, Length(Drive) - 2);
+    P := Pos('\', Name);
+    if P > 0 then
+    begin
+      ServerName := Copy(Name, P + 1, Length(Name) - P);
+      PServerName := PChar(ServerName);
+      SetLength(Name, P - 1);
+    end
+      else
+    begin
+      Assert(False);
+    end;
   end
     else
   begin
-    // NetUseGetInfo works for DFS shares only, hence when it fails
-    // we suppose different share type and fallback to "connected"
-    Result := True;
+    Assert(False);
   end;
+
+  if Name = '' then
+  begin
+    Result := False;
+  end
+    else
+  begin
+    NetResult := NetUseGetInfo(PServerName, PChar(Name), 1, BufPtr);
+    if NetResult = 0 then
+    begin
+      Result := (PUSE_INFO_1(BufPtr)^.ui1_status = USE_OK);
+      NetApiBufferFree(LPVOID(BufPtr));
+    end
+      else
+    begin
+      // NetUseGetInfo works for DFS shares only, hence when it fails
+      // we suppose different share type and fallback to "connected"
+      Result := True;
+    end;
+  end;
+end;
+
+function IsRootPath(Path: string): Boolean;
+begin
+  Result := SameText(ExcludeTrailingBackslash(ExtractFileDrive(Path)), ExcludeTrailingBackslash(Path));
 end;
 
 initialization

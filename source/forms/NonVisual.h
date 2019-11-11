@@ -610,6 +610,16 @@ __published:    // IDE-managed Components
   TAction *ChangePasswordAction;
   TAction *RemoteNewFileAction;
   TAction *LocalNewFileAction;
+  TTBXSubmenuItem *TBXItem77;
+  TAction *CustomizeToolbarAction;
+  TTBXSubmenuItem *TBXSubmenuItem4;
+  TTBXSubmenuItem *TBXSubmenuItem6;
+  TTBXSubmenuItem *TBXSubmenuItem9;
+  TAction *PrivateKeyUploadAction;
+  TAction *RenameSessionAction;
+  TTBXItem *TBXItem78;
+  TAction *CurrentCopyAction;
+  TAction *FileColorsPreferencesAction;
   void __fastcall ExplorerActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall SessionIdleTimerTimer(TObject *Sender);
@@ -629,6 +639,7 @@ private:
   TCustomScpExplorerForm * FScpExplorer;
   bool FSessionIdleTimerExecuting;
   int FBusy;
+  TTBCustomToolbar * FCustomizedToolbar;
 
   void __fastcall SetScpExplorer(TCustomScpExplorerForm * value);
   bool __fastcall GetBusy();
@@ -636,6 +647,9 @@ private:
 protected:
   void __fastcall CreateSessionListMenu(TAction * Action);
   void __fastcall CreateSessionListMenuLevel(TTBCustomItem * Menu, int Index, int Level);
+  void __fastcall CreateToolbarButtonsList();
+  bool __fastcall IsCustomizableToolbarItem(TTBCustomItem * Item);
+  bool __fastcall IsToolbarCustomizable();
   UnicodeString __fastcall GetSessionFolderRoot(TSessionData * Data, int Level);
   void __fastcall CreateWorkspacesMenu(TAction * Action);
   void __fastcall WorkspaceItemClick(TObject * Sender);
@@ -668,6 +682,7 @@ protected:
   void __fastcall SetQueueOnceEmptyAction(TAction * Action);
   TAction * __fastcall CurrentQueueOnceEmptyAction();
   void __fastcall CloneShortcuts();
+  void __fastcall ToolbarButtonItemClick(TObject * Sender);
 
 public:
   __fastcall TNonVisualDataModule(TComponent * Owner);
@@ -687,6 +702,7 @@ public:
   void __fastcall ResetQueueOnceEmptyOperation();
   void __fastcall StartBusy();
   void __fastcall EndBusy();
+  void __fastcall ControlContextPopup(TObject * Sender, const TPoint & MousePos);
 
   __property TListColumn * ListColumn = { read = FListColumn, write = FListColumn };
   __property TCustomScpExplorerForm * ScpExplorer = { read = FScpExplorer, write = SetScpExplorer };

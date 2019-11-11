@@ -17,6 +17,7 @@
 #include <openssl/pkcs12.h>
 #include <openssl/pem.h>
 #include <openssl/err.h>
+#include <openssl/ssl.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -34,6 +35,7 @@ const wchar_t TokenReplacement = wchar_t(true);
 const UnicodeString LocalInvalidChars(TraceInitStr(L"/\\:*?\"<>|"));
 const UnicodeString PasswordMask(TraceInitStr(L"***"));
 const UnicodeString Ellipsis(TraceInitStr(L"..."));
+const UnicodeString EmptyString(TraceInitStr(L"\1\1\1")); // magic
 //---------------------------------------------------------------------------
 UnicodeString ReplaceChar(UnicodeString Str, wchar_t A, wchar_t B)
 {
@@ -96,6 +98,11 @@ void __fastcall Shred(UTF8String & Str)
 }
 //---------------------------------------------------------------------------
 void __fastcall Shred(AnsiString & Str)
+{
+  DoShred(Str);
+}
+//---------------------------------------------------------------------------
+void __fastcall Shred(RawByteString & Str)
 {
   DoShred(Str);
 }
@@ -209,7 +216,8 @@ UnicodeString CopyToChars(const UnicodeString & Str, int & From, UnicodeString C
     {
       if (DoubleDelimiterEscapes &&
           (P < Str.Length()) &&
-          IsDelimiter(Chs, Str, P + 1))
+          IsDelimiter(Chs, Str, P + 1) &&
+          (Str[P + 1] == Str[P]))
       {
         Result += Str[P];
         P++;
@@ -258,6 +266,16 @@ UnicodeString CopyToChar(const UnicodeString & Str, wchar_t Ch, bool Trim)
 {
   int From = 1;
   return CopyToChars(Str, From, UnicodeString(Ch), Trim);
+}
+//---------------------------------------------------------------------------
+UnicodeString RemoveSuffix(const UnicodeString & Str, const UnicodeString & Suffix)
+{
+  UnicodeString Result = Str;
+  if (EndsStr(Suffix, Result))
+  {
+    Result.SetLength(Result.Length() - Suffix.Length());
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 UnicodeString DelimitStr(UnicodeString Str, UnicodeString Chars)
@@ -771,6 +789,24 @@ UnicodeString __fastcall EscapePuttyCommandParam(UnicodeString Param)
   return Param;
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall StringsToParams(TStrings * Strings)
+{
+  UnicodeString Result;
+
+  for (int Index = 0; Index < Strings->Count; Index++)
+  {
+    UnicodeString Name = Strings->Names[Index];
+    UnicodeString Value = Strings->ValueFromIndex[Index];
+    // Do not quote if it is all-numeric
+    if (IntToStr(StrToIntDef(Value, -1)) != Value)
+    {
+      Value = FORMAT(L"\"%s\"", (EscapeParam(Value)));
+    }
+    Result += FORMAT(L" %s=%s", (Name, Value));
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall ExpandEnvironmentVariables(const UnicodeString & Str)
 {
   UnicodeString Buf;
@@ -827,6 +863,20 @@ int __fastcall CompareLogicalText(
   {
     return lstrcmpi(S1.c_str(), S2.c_str());
   }
+}
+//---------------------------------------------------------------------------
+bool ContainsTextSemiCaseSensitive(const UnicodeString & Text, const UnicodeString & SubText)
+{
+  bool Result;
+  if (AnsiLowerCase(SubText) == SubText)
+  {
+    Result = ContainsText(Text, SubText);
+  }
+  else
+  {
+    Result = ContainsStr(Text, SubText);
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 bool __fastcall IsReservedName(UnicodeString FileName)
@@ -1291,6 +1341,52 @@ bool __fastcall IsHex(wchar_t Ch)
     ((Ch >= 'a') && (Ch <= 'f'));
 }
 //---------------------------------------------------------------------------
+TSearchRecSmart::TSearchRecSmart()
+{
+  FLastWriteTimeSource.dwLowDateTime = 0;
+  FLastWriteTimeSource.dwLowDateTime = 0;
+}
+//---------------------------------------------------------------------------
+TDateTime TSearchRecSmart::GetLastWriteTime() const
+{
+  if ((FindData.ftLastWriteTime.dwLowDateTime != FLastWriteTimeSource.dwLowDateTime) ||
+      (FindData.ftLastWriteTime.dwHighDateTime != FLastWriteTimeSource.dwHighDateTime))
+  {
+    FLastWriteTimeSource = FindData.ftLastWriteTime;
+    FLastWriteTime = FileTimeToDateTime(FLastWriteTimeSource);
+  }
+  return FLastWriteTime;
+}
+//---------------------------------------------------------------------------
+bool TSearchRecSmart::IsRealFile() const
+{
+  return ::IsRealFile(Name);
+}
+//---------------------------------------------------------------------------
+bool TSearchRecSmart::IsDirectory() const
+{
+  return FLAGSET(Attr, faDirectory);
+}
+//---------------------------------------------------------------------------
+bool TSearchRecSmart::IsHidden() const
+{
+  return FLAGSET(Attr, faHidden);
+}
+//---------------------------------------------------------------------------
+TSearchRecOwned::~TSearchRecOwned()
+{
+  if (Opened)
+  {
+    FindClose(*this);
+  }
+}
+//---------------------------------------------------------------------------
+void TSearchRecOwned::Close()
+{
+  FindClose(*this);
+  Opened = false;
+}
+//---------------------------------------------------------------------------
 int __fastcall FindCheck(int Result, const UnicodeString & Path)
 {
   if ((Result != ERROR_SUCCESS) &&
@@ -1305,7 +1401,9 @@ int __fastcall FindCheck(int Result, const UnicodeString & Path)
 int __fastcall FindFirstUnchecked(const UnicodeString & Path, int Attr, TSearchRecChecked & F)
 {
   F.Path = Path;
-  return FindFirst(ApiPath(Path), Attr, F);
+  int Result = FindFirst(ApiPath(Path), Attr, F);
+  F.Opened = (Result == 0);
+  return Result;
 }
 //---------------------------------------------------------------------------
 int __fastcall FindFirstChecked(const UnicodeString & Path, int Attr, TSearchRecChecked & F)
@@ -1339,6 +1437,30 @@ bool __fastcall FileSearchRec(const UnicodeString FileName, TSearchRec & Rec)
   return Result;
 }
 //---------------------------------------------------------------------------
+void CopySearchRec(const TSearchRec & Source, TSearchRec & Dest)
+{
+  // Strangely issues a compiler warning (W8111 due to TSearchRec::Time), when used in Script.cpp, but not here.
+  Dest = Source;
+}
+//---------------------------------------------------------------------------
+bool __fastcall IsRealFile(const UnicodeString & FileName)
+{
+  return (FileName != THISDIRECTORY) && (FileName != PARENTDIRECTORY);
+}
+//---------------------------------------------------------------------------
+UnicodeString GetOSInfo()
+{
+  UnicodeString Result = WindowsVersionLong();
+  AddToList(Result, WindowsProductName(), L" - ");
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString GetEnvironmentInfo()
+{
+  UnicodeString Result = FORMAT(L"WinSCP %s (OS %s)", (Configuration->VersionStr, GetOSInfo()));
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall ProcessLocalDirectory(UnicodeString DirName,
   TProcessLocalFileEvent CallBackFunc, void * Param,
   int FindAttrs)
@@ -1348,26 +1470,19 @@ void __fastcall ProcessLocalDirectory(UnicodeString DirName,
   {
     FindAttrs = faReadOnly | faHidden | faSysFile | faDirectory | faArchive;
   }
-  TSearchRecChecked SearchRec;
 
   DirName = IncludeTrailingBackslash(DirName);
+  TSearchRecOwned SearchRec;
   if (FindFirstChecked(DirName + L"*.*", FindAttrs, SearchRec) == 0)
   {
-    try
+    do
     {
-      do
+      if (SearchRec.IsRealFile())
       {
-        if ((SearchRec.Name != L".") && (SearchRec.Name != L".."))
-        {
-          CallBackFunc(DirName + SearchRec.Name, SearchRec, Param);
-        }
+        CallBackFunc(DirName + SearchRec.Name, SearchRec, Param);
+      }
 
-      } while (FindNextChecked(SearchRec) == 0);
-    }
-    __finally
-    {
-      FindClose(SearchRec);
-    }
+    } while (FindNextChecked(SearchRec) == 0);
   }
 }
 //---------------------------------------------------------------------------
@@ -1375,13 +1490,21 @@ int __fastcall FileGetAttrFix(const UnicodeString FileName)
 {
   // The default for FileGetAttr is to follow links
   bool FollowLink = true;
-  // But the FileGetAttr whe called for link with FollowLink set will always fail
-  // as its calls InternalGetFileNameFromSymLink, which test for CheckWin32Version(6, 0)
+  // WORKAROUND:
+  // But the FileGetAttr when called for link with FollowLink set will always fail
+  // as it calls InternalGetFileNameFromSymLink, which test for CheckWin32Version(6, 0)
   if (!IsWinVista())
   {
     FollowLink = false;
   }
-  return FileGetAttr(FileName, FollowLink);
+  int Result = FileGetAttr(FileName, FollowLink);
+  if (Result < 0)
+  {
+    // When referring to files in some special symlinked locations
+    // (like a deduplicated drive or a commvault archive), the first call to GetFileAttributes fails.
+    Result = FileGetAttr(FileName, FollowLink);
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 TDateTime __fastcall EncodeDateVerbose(Word Year, Word Month, Word Day)
@@ -1683,6 +1806,15 @@ bool __fastcall TryRelativeStrToDateTime(UnicodeString S, TDateTime & DateTime, 
 {
   S = S.Trim();
   int Index = 1;
+  if (SameText(S, L"today"))
+  {
+    S = L"0DS";
+  }
+  else if (SameText(S, L"yesterday"))
+  {
+    S = L"1DS";
+  }
+
   while ((Index <= S.Length()) && IsDigit(S[Index]))
   {
     Index++;
@@ -1698,27 +1830,52 @@ bool __fastcall TryRelativeStrToDateTime(UnicodeString S, TDateTime & DateTime, 
     }
     S.Delete(1, Index - 1);
     S = S.Trim().UpperCase();
+    bool Start = (S.Length() == 2) && (S[2] == L'S');
+    if (Start)
+    {
+      S.SetLength(S.Length() - 1);
+    }
     DateTime = Now();
     // These may not overlap with ParseSize (K, M and G)
-    if (S == "S")
+    if (S == L"S")
     {
       DateTime = IncSecond(DateTime, Number);
+      if (Start)
+      {
+        DateTime = IncMilliSecond(DateTime, -static_cast<int>(MilliSecondOfTheSecond(DateTime)));
+      }
     }
-    else if (S == "N")
+    else if (S == L"N")
     {
       DateTime = IncMinute(DateTime, Number);
+      if (Start)
+      {
+        DateTime = IncMilliSecond(DateTime, -static_cast<int>(MilliSecondOfTheMinute(DateTime)));
+      }
     }
-    else if (S == "H")
+    else if (S == L"H")
     {
       DateTime = IncHour(DateTime, Number);
+      if (Start)
+      {
+        DateTime = IncMilliSecond(DateTime, -static_cast<int>(MilliSecondOfTheHour(DateTime)));
+      }
     }
-    else if (S == "D")
+    else if (S == L"D")
     {
       DateTime = IncDay(DateTime, Number);
+      if (Start)
+      {
+        DateTime = IncMilliSecond(DateTime, -static_cast<int>(MilliSecondOfTheDay(DateTime)));
+      }
     }
-    else if (S == "Y")
+    else if (S == L"Y")
     {
       DateTime = IncYear(DateTime, Number);
+      if (Start)
+      {
+        DateTime = IncMilliSecond(DateTime, -MilliSecondOfTheYear(DateTime));
+      }
     }
     else
     {
@@ -1726,6 +1883,17 @@ bool __fastcall TryRelativeStrToDateTime(UnicodeString S, TDateTime & DateTime, 
     }
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+bool TryStrToDateTimeStandard(const UnicodeString & S, TDateTime & Value)
+{
+  TFormatSettings FormatSettings = TFormatSettings::Create(GetDefaultLCID());
+  FormatSettings.DateSeparator = L'-';
+  FormatSettings.TimeSeparator = L':';
+  FormatSettings.ShortDateFormat = "yyyy/mm/dd";
+  FormatSettings.ShortTimeFormat = "hh:nn:ss";
+
+  return TryStrToDateTime(S, Value, FormatSettings);
 }
 //---------------------------------------------------------------------------
 const wchar_t KiloSize = L'K';
@@ -2202,9 +2370,11 @@ int __fastcall TimeToMinutes(TDateTime T)
   return TimeToSeconds(T) / SecsPerMin;
 }
 //---------------------------------------------------------------------------
-static bool __fastcall DoRecursiveDeleteFile(const UnicodeString FileName, bool ToRecycleBin, UnicodeString & ErrorPath)
+static bool __fastcall DoRecursiveDeleteFile(
+  const UnicodeString FileName, bool ToRecycleBin, UnicodeString & ErrorPath, int & Deleted)
 {
   bool Result;
+  Deleted = 0;
 
   UnicodeString AErrorPath = FileName;
 
@@ -2214,9 +2384,13 @@ static bool __fastcall DoRecursiveDeleteFile(const UnicodeString FileName, bool 
     Result = FileSearchRec(FileName, SearchRec);
     if (Result)
     {
-      if (FLAGCLEAR(SearchRec.Attr, faDirectory))
+      if (!SearchRec.IsDirectory())
       {
         Result = DeleteFile(ApiPath(FileName));
+        if (Result)
+        {
+          Deleted++;
+        }
       }
       else
       {
@@ -2229,11 +2403,11 @@ static bool __fastcall DoRecursiveDeleteFile(const UnicodeString FileName, bool 
             do
             {
               UnicodeString FileName2 = FileName + L"\\" + SearchRec.Name;
-              if (FLAGSET(SearchRec.Attr, faDirectory))
+              if (SearchRec.IsDirectory())
               {
-                if ((SearchRec.Name != L".") && (SearchRec.Name != L".."))
+                if (SearchRec.IsRealFile())
                 {
-                  Result = DoRecursiveDeleteFile(FileName2, DebugAlwaysFalse(ToRecycleBin), AErrorPath);
+                  Result = DoRecursiveDeleteFile(FileName2, DebugAlwaysFalse(ToRecycleBin), AErrorPath, Deleted);
                 }
               }
               else
@@ -2242,6 +2416,10 @@ static bool __fastcall DoRecursiveDeleteFile(const UnicodeString FileName, bool 
                 if (!Result)
                 {
                   AErrorPath = FileName2;
+                }
+                else
+                {
+                  Deleted++;
                 }
               }
             }
@@ -2255,6 +2433,10 @@ static bool __fastcall DoRecursiveDeleteFile(const UnicodeString FileName, bool 
           if (Result)
           {
             Result = RemoveDir(ApiPath(FileName));
+            if (Result)
+            {
+              Deleted++;
+            }
           }
         }
       }
@@ -2294,6 +2476,11 @@ static bool __fastcall DoRecursiveDeleteFile(const UnicodeString FileName, bool 
       }
       SetLastError(ErrorCode);
     }
+
+    if (Result)
+    {
+      Deleted = 1;
+    }
   }
 
   if (!Result)
@@ -2307,17 +2494,20 @@ static bool __fastcall DoRecursiveDeleteFile(const UnicodeString FileName, bool 
 bool __fastcall RecursiveDeleteFile(const UnicodeString & FileName, bool ToRecycleBin)
 {
   UnicodeString ErrorPath; // unused
-  bool Result = DoRecursiveDeleteFile(FileName, ToRecycleBin, ErrorPath);
+  int Deleted;
+  bool Result = DoRecursiveDeleteFile(FileName, ToRecycleBin, ErrorPath, Deleted);
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall RecursiveDeleteFileChecked(const UnicodeString & FileName, bool ToRecycleBin)
+int __fastcall RecursiveDeleteFileChecked(const UnicodeString & FileName, bool ToRecycleBin)
 {
   UnicodeString ErrorPath;
-  if (!DoRecursiveDeleteFile(FileName, ToRecycleBin, ErrorPath))
+  int Deleted;
+  if (!DoRecursiveDeleteFile(FileName, ToRecycleBin, ErrorPath, Deleted))
   {
     throw EOSExtException(FMTLOAD(DELETE_LOCAL_FILE_ERROR, (ErrorPath)));
   }
+  return Deleted;
 }
 //---------------------------------------------------------------------------
 void __fastcall DeleteFileChecked(const UnicodeString & FileName)
@@ -3355,9 +3545,14 @@ UnicodeString __fastcall RtfRemoveHyperlinks(UnicodeString Text)
   return Text;
 }
 //---------------------------------------------------------------------
-UnicodeString __fastcall RtfEscapeParam(UnicodeString Param)
+UnicodeString __fastcall RtfEscapeParam(UnicodeString Param, bool PowerShellEscape)
 {
   const UnicodeString Quote(L"\"");
+  UnicodeString Escape(Quote);
+  if (PowerShellEscape)
+  {
+    Escape = "`" + Escape + "`";
+  }
   // Equivalent of EscapeParam, except that it does not double quotes in HYPERLINK.
   // See also RtfRemoveHyperlinks.
   int Index = 1;
@@ -3380,8 +3575,8 @@ UnicodeString __fastcall RtfEscapeParam(UnicodeString Param)
       }
       else
       {
-        Param.Insert(Quote, P1);
-        Index = P1 + (Quote.Length() * 2);
+        Param.Insert(Escape, P1);
+        Index = P1 + (Escape.Length() + Quote.Length());
       }
     }
   }
@@ -3618,30 +3813,42 @@ UnicodeString __fastcall AssemblyNewClassInstance(TAssemblyLanguage Language, co
   return Result;
 }
 //---------------------------------------------------------------------
-UnicodeString __fastcall AssemblyNewClassInstanceStart(
-  TAssemblyLanguage Language, const UnicodeString & ClassName, bool Inline)
+UnicodeString __fastcall AssemblyVariableDeclaration(TAssemblyLanguage Language)
 {
-  UnicodeString NewClassInstance = AssemblyNewClassInstance(Language, ClassName, Inline);
-  UnicodeString SpaceOrPara = (Inline ? UnicodeString(L" ") : RtfPara);
-
   UnicodeString Result;
   switch (Language)
   {
+    case alVBNET:
+      Result = RtfKeyword(L"Dim") + RtfText(L" ");
+      break;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall AssemblyNewClassInstanceStart(
+  TAssemblyLanguage Language, const UnicodeString & ClassName, bool Inline)
+{
+  UnicodeString SpaceOrPara = (Inline ? UnicodeString(L" ") : RtfPara);
+
+  UnicodeString Result;
+  if (!Inline)
+  {
+    Result += AssemblyVariableDeclaration(Language);
+  }
+  Result += AssemblyNewClassInstance(Language, ClassName, Inline);
+
+  switch (Language)
+  {
     case alCSharp:
-      Result =
-        NewClassInstance + SpaceOrPara +
-        RtfText(L"{") + SpaceOrPara;
+      Result += SpaceOrPara + RtfText(L"{") + SpaceOrPara;
       break;
 
     case alVBNET:
       // Historically we use Dim .. With instead of object initilizer.
       // But for inline use, we have to use object initialize.
       // We should consistently always use object initilizers.
-      if (!Inline)
-      {
-        Result += RtfKeyword(L"Dim") + RtfText(L" ");
-      }
-      Result += NewClassInstance + SpaceOrPara + RtfKeyword(L"With");
+      // Unfortunatelly VB.NET object initializer (contrary to C#) does not allow trailing comma.
+      Result += SpaceOrPara + RtfKeyword(L"With");
       if (Inline)
       {
         Result += RtfText(L" { ");
@@ -3653,7 +3860,7 @@ UnicodeString __fastcall AssemblyNewClassInstanceStart(
       break;
 
     case alPowerShell:
-      Result = NewClassInstance + RtfText(" -Property @{") + SpaceOrPara;
+      Result += RtfText(" -Property @{") + SpaceOrPara;
       break;
   }
   return Result;
@@ -3702,6 +3909,24 @@ UnicodeString __fastcall AssemblyNewClassInstanceEnd(TAssemblyLanguage Language,
   return Result;
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall AssemblyAddRawSettings(
+  TAssemblyLanguage Language, TStrings * RawSettings, const UnicodeString & ClassName,
+  const UnicodeString & MethodName)
+{
+  UnicodeString Result;
+  for (int Index = 0; Index < RawSettings->Count; Index++)
+  {
+    UnicodeString Name = RawSettings->Names[Index];
+    UnicodeString Value = RawSettings->ValueFromIndex[Index];
+    UnicodeString AddRawSettingsMethod =
+      RtfLibraryMethod(ClassName, MethodName, false) +
+      FORMAT(L"(%s, %s)", (AssemblyString(Language, Name), AssemblyString(Language, Value)));
+    UnicodeString VariableName = AssemblyVariableName(Language, ClassName);
+    Result += RtfText(VariableName + L".") + AddRawSettingsMethod + AssemblyStatementSeparator(Language) + RtfPara;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall LoadScriptFromFile(UnicodeString FileName, TStrings * Lines)
 {
   std::auto_ptr<TFileStream> Stream(new TFileStream(ApiPath(FileName), fmOpenRead | fmShareDenyWrite));
@@ -3737,4 +3962,38 @@ UnicodeString __fastcall GetFileMimeType(const UnicodeString & FileName)
     CoTaskMemFree(MimeOut);
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString NormalizeString(const UnicodeString & S)
+{
+  UnicodeString Result = S;
+  if (Result == EmptyString)
+  {
+    Result = UnicodeString();
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+TStrings * TlsCipherList()
+{
+  // OpenSSL initialization happens in NeonInitialize
+  std::unique_ptr<TStrings> Result(new TStringList());
+  const SSL_METHOD * Method = TLSv1_client_method();
+  SSL_CTX * Ctx = SSL_CTX_new(Method);
+  SSL * Ssl = SSL_new(Ctx);
+
+  int Index = 0;
+  const char * CipherName;
+  do
+  {
+    CipherName = SSL_get_cipher_list(Ssl, Index);
+    Index++;
+    if (CipherName != NULL)
+    {
+      Result->Add(UnicodeString(CipherName));
+    }
+  }
+  while (CipherName != NULL);
+
+  return Result.release();
 }

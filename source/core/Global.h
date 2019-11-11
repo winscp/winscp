@@ -51,5 +51,6 @@ void __fastcall DoAssert(wchar_t * Message, wchar_t * Filename, int LineNumber);
 #define TraceInitPtr(p) (p)
 #define TraceInitStr(p) (p)
 #define DebugUsedParam(p) ((&p) == (&p))
+#define DebugUsedArg(p)
 //---------------------------------------------------------------------------
 #endif

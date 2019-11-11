@@ -148,7 +148,7 @@ implementation
 
 uses
   { SysUtils must overload deprecated FileCtrl (implements MinimizeName) }
-  FileCtrl, SysUtils, Math;
+  FileCtrl, SysUtils, Math, PasTools;
 
 const
   // magic value
@@ -696,16 +696,28 @@ begin
         repeat
           Assert(Path <> '');
 
-          DelimPos := Pos(GetSeparator, Path);
-          if DelimPos > 0 then
+          if (not FUnixPath) and (Result = '') and IsUncPath(Path) then
           begin
-            Result := Result + Copy(Path, 1, DelimPos);
-            Delete(Path, 1, DelimPos);
+            Result := ExtractFileDrive(Path);
+            if Copy(Path, Length(Result) + 1, 1) = GetSeparator then
+            begin
+              Result := Result + GetSeparator;
+            end;
+            Delete(Path, 1, Length(Result));
           end
             else
           begin
-            Result := Result + Path;
-            Path := '';
+            DelimPos := Pos(GetSeparator, Path);
+            if DelimPos > 0 then
+            begin
+              Result := Result + Copy(Path, 1, DelimPos);
+              Delete(Path, 1, DelimPos);
+            end
+              else
+            begin
+              Result := Result + Path;
+              Path := '';
+            end;
           end;
 
         until (Canvas.TextWidth(Result) >= Len) or (Path = '');

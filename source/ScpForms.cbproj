@@ -24,7 +24,7 @@
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Base)'!=''">
 		<_TCHARMapping>wchar_t</_TCHARMapping>
-		<AllPackageLibs>vcl.lib;rtl.lib;Moje.lib;vclx.lib;DriveDir.lib;DragDropP.lib;tb2k.lib;tbxp.lib;bcbie.lib;PngComponents.lib;xmlrtl.lib;vclactnband.lib;vclimg.lib;vclie.lib</AllPackageLibs>
+		<AllPackageLibs>vcl.lib;rtl.lib;My.lib;vclx.lib;DriveDir.lib;DragDropP.lib;tb2k.lib;tbxp.lib;bcbie.lib;PngComponents.lib;xmlrtl.lib;vclactnband.lib;vclimg.lib;vclie.lib</AllPackageLibs>
 		<BCC_AllWarnings>true</BCC_AllWarnings>
 		<BCC_ExtendedErrorInfo>true</BCC_ExtendedErrorInfo>
 		<BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
@@ -37,7 +37,7 @@
 		<Manifest_File>None</Manifest_File>
 		<Multithreaded>true</Multithreaded>
 		<OutputExt>lib</OutputExt>
-		<PackageImports>vcl.bpi;rtl.bpi;vclx.bpi;DragDrop.bpi;Moje.bpi;DriveDir.bpi;$(PackageImports)</PackageImports>
+		<PackageImports>vcl.bpi;rtl.bpi;vclx.bpi;DragDrop.bpi;My.bpi;DriveDir.bpi;$(PackageImports)</PackageImports>
 		<ProjectType>CppStaticLibrary</ProjectType>
 		<SanitizedProjectName>ScpForms</SanitizedProjectName>
 		<TLIB_PageSize>512</TLIB_PageSize>
@@ -277,14 +277,6 @@
 			<BuildOrder>101</BuildOrder>
 		</CppCompile>
 		<FormResources Include="forms\Rights.dfm"/>
-		<CppCompile Include="forms\RightsExt.cpp">
-			<BuildOrder>17</BuildOrder>
-			<Form>RightsExtFrame</Form>
-			<DesignClass>TFrame</DesignClass>
-			<DependentOn>forms\RightsExt.h</DependentOn>
-			<BuildOrder>104</BuildOrder>
-		</CppCompile>
-		<FormResources Include="forms\RightsExt.dfm"/>
 		<CppCompile Include="forms\SelectMask.cpp">
 			<BuildOrder>14</BuildOrder>
 			<Form>SelectMaskDialog</Form>

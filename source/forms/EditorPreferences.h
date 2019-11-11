@@ -8,6 +8,8 @@
 #include <Forms.hpp>
 #include "HistoryComboBox.hpp"
 //---------------------------------------------------------------------------
+#include <GUITools.h>
+//---------------------------------------------------------------------------
 class TEditorPreferencesDialog : public TForm
 {
 __published:
@@ -49,6 +51,8 @@ private:
 
   bool FMayRemote;
   UnicodeString FSystemExternalEditor;
+
+  INTERFACE_HOOK;
 };
 //---------------------------------------------------------------------------
 #endif

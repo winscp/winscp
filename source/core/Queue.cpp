@@ -2028,6 +2028,30 @@ TQueueItemProxy * __fastcall TTerminalQueueStatus::FindByQueueItem(
   return NULL;
 }
 //---------------------------------------------------------------------------
+// TBootstrapQueueItem
+//---------------------------------------------------------------------------
+__fastcall TBootstrapQueueItem::TBootstrapQueueItem()
+{
+  FInfo->SingleFile = true;
+}
+//---------------------------------------------------------------------------
+void __fastcall TBootstrapQueueItem::DoExecute(TTerminal * DebugUsedArg(Terminal))
+{
+  // noop
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TBootstrapQueueItem::StartupDirectory() const
+{
+  return UnicodeString();
+}
+//---------------------------------------------------------------------------
+bool __fastcall TBootstrapQueueItem::Complete()
+{
+  TQueueItem::Complete();
+  // To hide the item, even if "keep done items" is on
+  return false;
+}
+//---------------------------------------------------------------------------
 // TLocatedQueueItem
 //---------------------------------------------------------------------------
 __fastcall TLocatedQueueItem::TLocatedQueueItem(TTerminal * Terminal) :
@@ -2252,7 +2276,7 @@ void __fastcall TParallelTransferQueueItem::DoExecute(TTerminal * Terminal)
   OperationProgress.Start(
     // CPS limit inherited from parent OperationProgress.
     // Count not known and won't be needed as we will always have TotalSize as  we always transfer a single file at a time.
-    Operation, FParallelOperation->Side, -1, Temp, FParallelOperation->TargetDir, 0);
+    Operation, FParallelOperation->Side, -1, Temp, FParallelOperation->TargetDir, 0, odoIdle);
 
   try
   {

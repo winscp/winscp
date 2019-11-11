@@ -76,16 +76,26 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 8
           Width = 389
-          Height = 272
+          Height = 295
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Confirmations'
           TabOrder = 0
           DesignSize = (
             389
-            272)
+            295)
+          object SynchronizeSummaryCheck: TCheckBox
+            Left = 16
+            Top = 244
+            Width = 357
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Sync&hronization summary'
+            TabOrder = 10
+            OnClick = ControlChange
+          end
           object ConfirmOverwritingCheck: TCheckBox
             Left = 16
-            Top = 44
+            Top = 67
             Width = 357
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -95,7 +105,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object ConfirmDeletingCheck: TCheckBox
             Left = 16
-            Top = 106
+            Top = 129
             Width = 357
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -105,7 +115,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object ConfirmClosingSessionCheck2: TCheckBox
             Left = 16
-            Top = 152
+            Top = 175
             Width = 357
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -113,29 +123,29 @@ object PreferencesDialog: TPreferencesDialog
             TabOrder = 6
             OnClick = ControlChange
           end
-          object DDTransferConfirmationCheck: TCheckBox
-            Left = 16
-            Top = 198
-            Width = 357
+          object DDTransferConfirmationCheck2: TCheckBox
+            Left = 32
+            Top = 44
+            Width = 341
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'D&rag && drop operations'
+            Caption = 'D&rag && drop operations and paste to other applications'
             TabOrder = 8
             OnClick = ControlChange
           end
           object ContinueOnErrorCheck: TCheckBox
             Left = 16
-            Top = 244
+            Top = 267
             Width = 357
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Continue on &error (advanced users)'
-            TabOrder = 10
+            TabOrder = 11
             OnClick = ControlChange
           end
           object ConfirmExitOnCompletionCheck: TCheckBox
             Left = 16
-            Top = 175
+            Top = 198
             Width = 357
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -145,7 +155,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object ConfirmResumeCheck: TCheckBox
             Left = 16
-            Top = 67
+            Top = 90
             Width = 357
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -165,7 +175,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object ConfirmRecyclingCheck: TCheckBox
             Left = 16
-            Top = 129
+            Top = 152
             Width = 357
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -185,7 +195,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object BackgroundConfirmationsLink: TStaticText
             Left = 32
-            Top = 88
+            Top = 111
             Width = 345
             Height = 17
             Alignment = taRightJustify
@@ -198,7 +208,7 @@ object PreferencesDialog: TPreferencesDialog
         end
         object NotificationsGroup: TGroupBox
           Left = 8
-          Top = 286
+          Top = 309
           Width = 389
           Height = 73
           Anchors = [akLeft, akTop, akRight]
@@ -214,6 +224,7 @@ object PreferencesDialog: TPreferencesDialog
             Height = 13
             Anchors = [akTop, akRight]
             Caption = 's'
+            ShowAccelChar = False
           end
           object BeepOnFinishCheck: TCheckBox
             Left = 16
@@ -278,14 +289,15 @@ object PreferencesDialog: TPreferencesDialog
             Height = 13
             Caption = 'files'
             FocusControl = LogMaxSizeCountEdit
+            ShowAccelChar = False
           end
           object LogFileNameLabel: TLabel
             Left = 40
             Top = 46
             Width = 46
             Height = 13
-            Anchors = [akLeft, akTop, akRight]
             Caption = '&Log path:'
+            FocusControl = LogFileNameEdit3
             OnClick = ControlChange
           end
           object LogFileNameEdit3: TFilenameEdit
@@ -334,7 +346,7 @@ object PreferencesDialog: TPreferencesDialog
               OnClick = ControlChange
             end
           end
-          object LogProtocolCombo: TComboBox
+          object LogProtocolCombo2: TComboBox
             Left = 256
             Top = 21
             Width = 119
@@ -344,6 +356,7 @@ object PreferencesDialog: TPreferencesDialog
             TabOrder = 1
             OnChange = ControlChange
             Items.Strings = (
+              'Reduced'
               'Normal'
               'Debug 1'
               'Debug 2')
@@ -492,19 +505,20 @@ object PreferencesDialog: TPreferencesDialog
           398)
         object InterfaceChangeLabel: TLabel
           Left = 8
-          Top = 222
+          Top = 280
           Width = 177
           Height = 13
           Caption = 'Changes will apply on the next start.'
+          ShowAccelChar = False
         end
         object InterfaceGroup: TGroupBox
           Left = 8
-          Top = 8
+          Top = 66
           Width = 389
           Height = 208
           Anchors = [akLeft, akTop, akRight, akBottom]
           Caption = 'User Interface'
-          TabOrder = 0
+          TabOrder = 1
           DesignSize = (
             389
             208)
@@ -573,6 +587,39 @@ object PreferencesDialog: TPreferencesDialog
             OnClick = ControlChange
           end
         end
+        object ThemeGroup: TGroupBox
+          Left = 8
+          Top = 8
+          Width = 389
+          Height = 52
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'Theme'
+          TabOrder = 0
+          DesignSize = (
+            389
+            52)
+          object Label7: TLabel
+            Left = 16
+            Top = 23
+            Width = 82
+            Height = 13
+            Caption = 'Interface &theme:'
+            FocusControl = ThemeCombo
+          end
+          object ThemeCombo: TComboBox
+            Left = 132
+            Top = 18
+            Width = 141
+            Height = 21
+            Style = csDropDownList
+            Anchors = [akLeft, akTop, akRight]
+            TabOrder = 0
+            Items.Strings = (
+              'Automatic'
+              'Light'
+              'Dark')
+          end
+        end
       end
       object PanelsSheet: TTabSheet
         Tag = 4
@@ -588,13 +635,13 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 8
           Width = 389
-          Height = 195
+          Height = 222
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Common'
           TabOrder = 0
           DesignSize = (
             389
-            195)
+            222)
           object Label1: TLabel
             Left = 16
             Top = 167
@@ -602,6 +649,15 @@ object PreferencesDialog: TPreferencesDialog
             Height = 13
             Caption = 'Show file si&zes in:'
             FocusControl = FormatSizeBytesCombo
+            OnClick = ControlChange
+          end
+          object Label2: TLabel
+            Left = 16
+            Top = 194
+            Width = 96
+            Height = 13
+            Caption = '&Incremental search:'
+            FocusControl = PanelSearchCombo
             OnClick = ControlChange
           end
           object ShowHiddenFilesCheck: TCheckBox
@@ -679,10 +735,25 @@ object PreferencesDialog: TPreferencesDialog
             TabOrder = 5
             OnClick = ControlChange
           end
+          object PanelSearchCombo: TComboBox
+            Left = 216
+            Top = 191
+            Width = 156
+            Height = 21
+            Style = csDropDownList
+            Anchors = [akTop, akRight]
+            MaxLength = 1
+            TabOrder = 7
+            OnChange = ControlChange
+            Items.Strings = (
+              'Beginning of name only'
+              'Any part of name'
+              'All columns')
+          end
         end
         object DoubleClickGroup: TGroupBox
           Left = 8
-          Top = 209
+          Top = 236
           Width = 389
           Height = 74
           Anchors = [akLeft, akTop, akRight]
@@ -727,7 +798,7 @@ object PreferencesDialog: TPreferencesDialog
         end
         object PanelFontGroup: TGroupBox
           Left = 8
-          Top = 289
+          Top = 316
           Width = 389
           Height = 82
           Anchors = [akLeft, akRight, akBottom]
@@ -746,6 +817,7 @@ object PreferencesDialog: TPreferencesDialog
             Caption = 'PanelFontLabel'
             Color = clWindow
             ParentColor = False
+            ShowAccelChar = False
             Transparent = False
             WordWrap = True
             OnDblClick = PanelFontLabelDblClick
@@ -755,7 +827,7 @@ object PreferencesDialog: TPreferencesDialog
             Top = 44
             Width = 129
             Height = 25
-            Caption = 'Select fo&nt...'
+            Caption = 'Select fon&t...'
             TabOrder = 1
             OnClick = PanelFontButtonClick
           end
@@ -764,7 +836,7 @@ object PreferencesDialog: TPreferencesDialog
             Top = 21
             Width = 129
             Height = 17
-            Caption = 'Use custom &font'
+            Caption = '&Use custom font'
             TabOrder = 0
             OnClick = ControlChange
           end
@@ -787,7 +859,8 @@ object PreferencesDialog: TPreferencesDialog
           Height = 29
           Anchors = [akLeft, akTop, akRight]
           AutoSize = False
-          Caption = 'Preferences on this page applies to Commander interface only.'
+          Caption = 'Preferences on this page apply to Commander interface only.'
+          ShowAccelChar = False
           WordWrap = True
         end
         object PanelsGroup: TGroupBox
@@ -893,7 +966,7 @@ object PreferencesDialog: TPreferencesDialog
           Width = 389
           Height = 74
           Anchors = [akLeft, akTop, akRight]
-          Caption = 'Compare directory criterions'
+          Caption = 'Compare directory criteria'
           TabOrder = 2
           DesignSize = (
             389
@@ -937,7 +1010,8 @@ object PreferencesDialog: TPreferencesDialog
           Height = 29
           Anchors = [akLeft, akTop, akRight]
           AutoSize = False
-          Caption = 'Preferences on this page applies to Explorer interface only.'
+          Caption = 'Preferences on this page apply to Explorer interface only.'
+          ShowAccelChar = False
           WordWrap = True
         end
         object GroupBox2: TGroupBox
@@ -1302,30 +1376,31 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 8
           Width = 389
-          Height = 252
+          Height = 310
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Drag && Drop downloads'
           TabOrder = 0
           DesignSize = (
             389
-            252)
-          object DDExtEnabledLabel: TLabel
+            310)
+          object DDFakeFileEnabledLabel: TLabel
             Left = 35
-            Top = 68
+            Top = 44
             Width = 345
             Height = 53
             Anchors = [akLeft, akTop, akRight]
             AutoSize = False
             Caption = 
-              'Allows direct downloads to regular local folders (e.g. Window Ex' +
-              'plorer). Does not allow downloads to other destinations (ZIP arc' +
-              'hives,  FTP, etc.)'
+              'Allows direct downloads to regular local folders (e.g. Windows E' +
+              'xplorer). Does not allow downloads to other destinations (ZIP ar' +
+              'chives,  FTP, etc.). Uses drag&&drop shell extension, when avail' +
+              'able.'
             WordWrap = True
-            OnClick = DDExtLabelClick
+            OnClick = DDLabelClick
           end
-          object DDExtDisabledLabel: TLabel
+          object DDFakeFileDisabledLabel: TLabel
             Left = 35
-            Top = 144
+            Top = 221
             Width = 346
             Height = 54
             Anchors = [akLeft, akTop, akRight]
@@ -1335,21 +1410,40 @@ object PreferencesDialog: TPreferencesDialog
               'ves,  FTP, etc.). Files are downloaded first to temporary folder' +
               ', from where they are delivered to the destination.'
             WordWrap = True
-            OnClick = DDExtLabelClick
+            OnClick = DDLabelClick
           end
-          object DDExtEnabledButton: TRadioButton
+          object DragExtStatusLabel: TLabel
+            Left = 35
+            Top = 96
+            Width = 95
+            Height = 13
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'DragExtStatusLabel'
+            ShowAccelChar = False
+            OnClick = DDLabelClick
+          end
+          object DDDrivesLabel: TLabel
+            Left = 35
+            Top = 116
+            Width = 246
+            Height = 13
+            AutoSize = False
+            Caption = 'Allow dropping files to these &network drives:'
+            FocusControl = DDDrivesMemo
+          end
+          object DDFakeFileEnabledButton: TRadioButton
             Left = 16
-            Top = 48
+            Top = 24
             Width = 364
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Determine drop target by dragging a &fake file'
-            TabOrder = 1
+            TabOrder = 0
             OnClick = ControlChange
           end
-          object DDExtDisabledButton: TRadioButton
+          object DDFakeFileDisabledButton: TRadioButton
             Left = 16
-            Top = 124
+            Top = 202
             Width = 356
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -1357,16 +1451,16 @@ object PreferencesDialog: TPreferencesDialog
             TabOrder = 2
             OnClick = ControlChange
           end
-          object DDExtDisabledPanel: TPanel
+          object DDFakeFileDisabledPanel: TPanel
             Left = 34
-            Top = 195
+            Top = 272
             Width = 315
-            Height = 51
+            Height = 28
             BevelOuter = bvNone
-            TabOrder = 3
+            TabOrder = 1
             DesignSize = (
               315
-              51)
+              28)
             object DDWarnLackOfTempSpaceCheck: TCheckBox
               Left = 0
               Top = 5
@@ -1377,26 +1471,16 @@ object PreferencesDialog: TPreferencesDialog
               TabOrder = 0
               OnClick = ControlChange
             end
-            object DDWarnOnMoveCheck: TCheckBox
-              Left = 0
-              Top = 28
-              Width = 315
-              Height = 17
-              Anchors = [akLeft, akTop, akRight]
-              Caption = 'Warn when mo&ving via temporary directory'
-              TabOrder = 1
-              OnClick = ControlChange
-            end
           end
-          object DDAllowMoveInitCheck: TCheckBox
-            Left = 16
-            Top = 24
-            Width = 364
-            Height = 17
-            Anchors = [akLeft, akTop, akRight]
-            Caption = 'Allow &moving from remote directory to other applications'
-            TabOrder = 0
-            OnClick = ControlChange
+          object DDDrivesMemo: TMemo
+            Left = 34
+            Top = 132
+            Width = 337
+            Height = 61
+            Lines.Strings = (
+              'DDDrivesMemo')
+            ScrollBars = ssVertical
+            TabOrder = 3
           end
         end
       end
@@ -1446,7 +1530,6 @@ object PreferencesDialog: TPreferencesDialog
             Alignment = taRightJustify
             MaxValue = 9.000000000000000000
             MinValue = 1.000000000000000000
-            Value = 1.000000000000000000
             Anchors = [akTop, akRight]
             MaxLength = 1
             TabOrder = 0
@@ -1659,6 +1742,7 @@ object PreferencesDialog: TPreferencesDialog
             Anchors = [akLeft, akTop, akRight]
             AutoSize = False
             Caption = 'Specify where to temporarily store edited and downloaded files.'
+            ShowAccelChar = False
             WordWrap = True
           end
           object DDSystemTemporaryDirectoryButton: TRadioButton
@@ -1926,7 +2010,7 @@ object PreferencesDialog: TPreferencesDialog
           object SessionReopenAutoCheck: TCheckBox
             Left = 16
             Top = 21
-            Width = 337
+            Width = 363
             Height = 17
             Caption = '&Automatically reconnect session, if it breaks during transfer'
             TabOrder = 0
@@ -1948,7 +2032,7 @@ object PreferencesDialog: TPreferencesDialog
           object SessionReopenAutoIdleCheck: TCheckBox
             Left = 16
             Top = 72
-            Width = 337
+            Width = 363
             Height = 17
             Caption = 'Automatically reconnect session, if it breaks &while idle'
             TabOrder = 2
@@ -1970,7 +2054,7 @@ object PreferencesDialog: TPreferencesDialog
           object SessionReopenAutoStallCheck: TCheckBox
             Left = 16
             Top = 122
-            Width = 337
+            Width = 363
             Height = 17
             Caption = 'Automatically reconnect session, if it &stalls'
             TabOrder = 4
@@ -2122,7 +2206,6 @@ object PreferencesDialog: TPreferencesDialog
             Alignment = taRightJustify
             MaxValue = 65535.000000000000000000
             MinValue = 1.000000000000000000
-            Value = 1.000000000000000000
             Anchors = [akTop, akRight]
             TabOrder = 4
           end
@@ -2246,6 +2329,7 @@ object PreferencesDialog: TPreferencesDialog
             Anchors = [akLeft, akRight, akBottom]
             AutoSize = False
             Caption = 'CopyParamLabel'
+            ShowAccelChar = False
             WordWrap = True
             OnClick = CopyParamLabelClick
           end
@@ -2279,7 +2363,7 @@ object PreferencesDialog: TPreferencesDialog
             OnDblClick = CopyParamListViewDblClick
             OnEndDrag = ListViewEndDrag
             OnDragDrop = CopyParamListViewDragDrop
-            OnDragOver = ListViewDragOver
+            OnDragOver = CopyParamListViewDragOver
             OnKeyDown = CopyParamListViewKeyDown
             OnSelectItem = ListViewSelectItem
             OnStartDrag = ListViewStartDrag
@@ -2780,6 +2864,7 @@ object PreferencesDialog: TPreferencesDialog
             Width = 5
             Height = 13
             Caption = 's'
+            ShowAccelChar = False
           end
           object ShowInaccesibleDirectoriesCheck: TCheckBox
             Left = 16
@@ -2905,6 +2990,7 @@ object PreferencesDialog: TPreferencesDialog
             Height = 13
             Anchors = [akLeft, akBottom]
             Caption = 'Changes will apply on the next start.'
+            ShowAccelChar = False
           end
           object LanguagesView: TListView
             Left = 16
@@ -2993,7 +3079,6 @@ object PreferencesDialog: TPreferencesDialog
             Alignment = taRightJustify
             MaxValue = 99.000000000000000000
             MinValue = 1.000000000000000000
-            Value = 1.000000000000000000
             Anchors = [akLeft, akTop, akRight]
             MaxLength = 2
             TabOrder = 1
@@ -3032,6 +3117,7 @@ object PreferencesDialog: TPreferencesDialog
             Caption = 'EditorFontLabel'
             Color = clWhite
             ParentColor = False
+            ShowAccelChar = False
             Transparent = False
             OnDblClick = EditorFontLabelDblClick
           end
@@ -3064,6 +3150,111 @@ object PreferencesDialog: TPreferencesDialog
             Caption = 'Default &background'
             TabOrder = 2
             OnClick = EditorBackgroundColorButtonClick
+          end
+        end
+      end
+      object FileColorsSheet: TTabSheet
+        Tag = 25
+        HelpType = htKeyword
+        HelpKeyword = 'ui_pref_file_colors'
+        Caption = 'File colors'
+        ImageIndex = 23
+        TabVisible = False
+        DesignSize = (
+          405
+          398)
+        object FileColorsGroup: TGroupBox
+          Left = 8
+          Top = 8
+          Width = 389
+          Height = 380
+          Anchors = [akLeft, akTop, akRight, akBottom]
+          Caption = 'File colors'
+          TabOrder = 0
+          DesignSize = (
+            389
+            380)
+          object FileColorsView: TListView
+            Left = 16
+            Top = 24
+            Width = 356
+            Height = 283
+            Anchors = [akLeft, akTop, akRight, akBottom]
+            Columns = <
+              item
+              end>
+            ColumnClick = False
+            DoubleBuffered = True
+            DragMode = dmAutomatic
+            HideSelection = False
+            OwnerData = True
+            ReadOnly = True
+            RowSelect = True
+            ParentDoubleBuffered = False
+            ParentShowHint = False
+            ShowColumnHeaders = False
+            ShowHint = False
+            TabOrder = 0
+            ViewStyle = vsReport
+            OnCustomDrawItem = FileColorsViewCustomDrawItem
+            OnData = FileColorsViewData
+            OnDblClick = FileColorsViewDblClick
+            OnEndDrag = ListViewEndDrag
+            OnDragDrop = FileColorsViewDragDrop
+            OnDragOver = ListViewDragOver
+            OnKeyDown = FileColorsViewKeyDown
+            OnSelectItem = ListViewSelectItem
+            OnStartDrag = ListViewStartDrag
+          end
+          object AddFileColorButton: TButton
+            Left = 16
+            Top = 313
+            Width = 83
+            Height = 25
+            Anchors = [akLeft, akBottom]
+            Caption = '&Add...'
+            TabOrder = 1
+            OnClick = AddEditFileColorButtonClick
+          end
+          object RemoveFileColorButton: TButton
+            Left = 16
+            Top = 344
+            Width = 83
+            Height = 25
+            Anchors = [akLeft, akBottom]
+            Caption = '&Remove'
+            TabOrder = 3
+            OnClick = RemoveFileColorButtonClick
+          end
+          object UpFileColorButton: TButton
+            Left = 290
+            Top = 313
+            Width = 83
+            Height = 25
+            Anchors = [akRight, akBottom]
+            Caption = '&Up'
+            TabOrder = 4
+            OnClick = UpDownFileColorButtonClick
+          end
+          object DownFileColorButton: TButton
+            Left = 290
+            Top = 344
+            Width = 83
+            Height = 25
+            Anchors = [akRight, akBottom]
+            Caption = '&Down'
+            TabOrder = 5
+            OnClick = UpDownFileColorButtonClick
+          end
+          object EditFileColorButton: TButton
+            Left = 112
+            Top = 313
+            Width = 83
+            Height = 25
+            Anchors = [akLeft, akBottom]
+            Caption = '&Edit...'
+            TabOrder = 2
+            OnClick = AddEditFileColorButtonClick
           end
         end
       end
@@ -3109,33 +3300,35 @@ object PreferencesDialog: TPreferencesDialog
           0070006C006F007200650072005800320000000000000017000000FFFFFFFFFF
           FFFFFF000000000000000000000000010A4C0061006E00670075006100670065
           00730058002C0000000000000004000000FFFFFFFFFFFFFFFF00000000000000
-          00020000000107500061006E0065006C00730058002C00000000000000150000
-          00FFFFFFFFFFFFFFFF0000000000000000000000000107520065006D006F0074
-          00650058002A0000000000000016000000FFFFFFFFFFFFFFFF00000000000000
-          000000000001064C006F00630061006C0058002C0000000000000008000000FF
-          FFFFFFFFFFFFFF000000000000000001000000010745006400690074006F0072
-          0058003E0000000000000018000000FFFFFFFFFFFFFFFF000000000000000000
-          000000011049006E007400650072006E0061006C00200065006400690074006F
-          0072005800300000000000000010000000FFFFFFFFFFFFFFFF00000000000000
-          000300000001095400720061006E007300660065007200580030000000000000
-          000B000000FFFFFFFFFFFFFFFF00000000000000000000000001094400720061
-          006700440072006F007000580034000000000000000C000000FFFFFFFFFFFFFF
-          FF000000000000000000000000010B4200610063006B00670072006F0075006E
-          00640058002C000000000000000E000000FFFFFFFFFFFFFFFF00000000000000
-          0000000000010752006500730075006D00650058002E00000000000000140000
-          00FFFFFFFFFFFFFFFF00000000000000000000000001084E006500740077006F
-          0072006B005800300000000000000013000000FFFFFFFFFFFFFFFF0000000000
-          0000000000000001095300650063007500720069007400790058002E00000000
-          00000002000000FFFFFFFFFFFFFFFF00000000000000000000000001084C006F
-          006700670069006E0067005800360000000000000009000000FFFFFFFFFFFFFF
-          FF000000000000000001000000010C49006E0074006500670072006100740069
-          006F006E005800380000000000000012000000FFFFFFFFFFFFFFFF0000000000
-          00000000000000010D4100700070006C00690063006100740069006F006E0073
-          00580030000000000000000A000000FFFFFFFFFFFFFFFF000000000000000000
-          000000010943006F006D006D0061006E006400730058002E000000000000000D
-          000000FFFFFFFFFFFFFFFF0000000000000000000000000108530074006F0072
-          0061006700650058002E000000000000000F000000FFFFFFFFFFFFFFFF000000
-          000000000000000000010855007000640061007400650073005800}
+          00030000000107500061006E0065006C00730058003600000000000000190000
+          00FFFFFFFFFFFFFFFF000000000000000000000000010C460069006C00650020
+          0063006F006C006F007200730058002C0000000000000015000000FFFFFFFFFF
+          FFFFFF0000000000000000000000000107520065006D006F007400650058002A
+          0000000000000016000000FFFFFFFFFFFFFFFF00000000000000000000000001
+          064C006F00630061006C0058002C0000000000000008000000FFFFFFFFFFFFFF
+          FF000000000000000001000000010745006400690074006F00720058003E0000
+          000000000018000000FFFFFFFFFFFFFFFF000000000000000000000000011049
+          006E007400650072006E0061006C00200065006400690074006F007200580030
+          0000000000000010000000FFFFFFFFFFFFFFFF00000000000000000300000001
+          095400720061006E007300660065007200580030000000000000000B000000FF
+          FFFFFFFFFFFFFF00000000000000000000000001094400720061006700440072
+          006F007000580034000000000000000C000000FFFFFFFFFFFFFFFF0000000000
+          00000000000000010B4200610063006B00670072006F0075006E00640058002C
+          000000000000000E000000FFFFFFFFFFFFFFFF00000000000000000000000001
+          0752006500730075006D00650058002E0000000000000014000000FFFFFFFFFF
+          FFFFFF00000000000000000000000001084E006500740077006F0072006B0058
+          00300000000000000013000000FFFFFFFFFFFFFFFF0000000000000000000000
+          0001095300650063007500720069007400790058002E00000000000000020000
+          00FFFFFFFFFFFFFFFF00000000000000000000000001084C006F006700670069
+          006E0067005800360000000000000009000000FFFFFFFFFFFFFFFF0000000000
+          00000001000000010C49006E0074006500670072006100740069006F006E0058
+          00380000000000000012000000FFFFFFFFFFFFFFFF0000000000000000000000
+          00010D4100700070006C00690063006100740069006F006E0073005800300000
+          00000000000A000000FFFFFFFFFFFFFFFF000000000000000000000000010943
+          006F006D006D0061006E006400730058002E000000000000000D000000FFFFFF
+          FFFFFFFFFF0000000000000000000000000108530074006F0072006100670065
+          0058002E000000000000000F000000FFFFFFFFFFFFFFFF000000000000000000
+          000000010855007000640061007400650073005800}
       end
     end
   end

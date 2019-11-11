@@ -42,14 +42,18 @@ type
     ToolbarSeparatorColor: TColor;
     IconShadowColor: TColor;
     StatusPanelFrameColor: TColor;
+    FDark: Boolean;
 
     procedure SetupColorCache; virtual;
   protected
     { Internal Methods }
     function GetPartColor(const ItemInfo: TTBXItemInfo; ItemPart: TItemPart): TColor;
     function GetBtnColor(const ItemInfo: TTBXItemInfo; ItemPart: TItemPart): TColor;
+    function GetStandardColor(Color: TColor): TColor;
+    procedure Init;
+    constructor CreateEx(const AName: string; Dark: Boolean); overload;
   public
-    constructor Create(const AName: string); override;
+    constructor Create(const AName: string); overload; override;
     destructor Destroy; override;
 
     { Metrics access}
@@ -64,6 +68,7 @@ type
     procedure GetViewBorder(Control: TControl; ViewType: Integer; out Border: TPoint); override;
     function  GetViewColor(AViewType: Integer): TColor; override;
     procedure GetViewMargins(ViewType: Integer; out Margins: TTBXMargins); override;
+    function GetSysColor(nIndex: Integer): DWORD; override;
 
     { Painting routines }
     procedure PaintBackgnd(Canvas: TCanvas; const ADockRect, ARect, AClipRect: TRect; AColor: TColor; Transparent: Boolean; AViewType: Integer); override;
@@ -85,6 +90,14 @@ type
     procedure PaintToolbarNCArea(Monitor: TMonitor; Canvas: TCanvas; R: TRect; const ToolbarInfo: TTBXToolbarInfo); override;
     procedure PaintStatusBar(Control: TWinControl; Canvas: TCanvas; R: TRect; Part: Integer); override;
   end;
+
+type
+  TTBXDarkOfficeXPTheme = class(TTBXOfficeXPTheme)
+  public
+    constructor Create(const AName: string); override;
+  end;
+
+function GetSelectedBodyColor: TColor;
 
 implementation
 
@@ -163,7 +176,7 @@ begin
   end
   else if (AViewType and VT_POPUP) = VT_POPUP then
   begin
-    if (AViewType and PVT_LISTBOX) = PVT_LISTBOX then Result := clWindow
+    if (AViewType and PVT_LISTBOX) = PVT_LISTBOX then Result := GetStandardColor(clWindow)
     else Result := PopupColor;
   end
   else if (AViewType and VT_DOCKPANEL) = VT_DOCKPANEL then Result := DockPanelColor
@@ -459,8 +472,8 @@ begin
           R := ARect;
           if not Embedded then
           begin
-            FrameRectEx(DC, R, clWindow, False);
-            C := clWindow;
+            FrameRectEx(DC, R, GetStandardColor(clWindow), False);
+            C := GetStandardColor(clWindow);
           end
           else C := GetBtnColor(ItemInfo, ipFrame);
           DrawLineEx(DC, R.Left - 1, R.Top, R.Left - 1, R.Bottom, C);
@@ -487,8 +500,8 @@ begin
           BR.Left := ARect.Left; BR.Top := ARect.Top; BR.Right := ARect.Right;
           if not Embedded then
           begin
-            FrameRectEx(DC, BR, clWindow, False);
-            C := clWindow;
+            FrameRectEx(DC, BR, GetStandardColor(clWindow), False);
+            C := GetStandardColor(clWindow);
           end
           else C := GetBtnColor(ItemInfo, ipFrame);
           DrawLineEx(DC, BR.Left - 1, BR.Top, BR.Left - 1, BR.Bottom, C);
@@ -513,8 +526,8 @@ begin
           BR.Left := ARect.Left; BR.Bottom := ARect.Bottom; BR.Right := ARect.Right;
           if not Embedded then
           begin
-            FrameRectEx(DC, BR, clWindow, False);
-            C := clWindow;
+            FrameRectEx(DC, BR, GetStandardColor(clWindow), False);
+            C := GetStandardColor(clWindow);
           end
           else C := GetBtnColor(ItemInfo, ipFrame);
           DrawLineEx(DC, BR.Left - 1, BR.Top, BR.Left - 1, BR.Bottom, C);
@@ -554,10 +567,10 @@ begin
     if ((ItemInfo.ViewType and VT_TOOLBAR) <> VT_TOOLBAR) and (GetPartColor(ItemInfo, ipFrame) = clNone) then
       FrameRectEx(DC, R, ToolbarColor, False)
     else
-      FrameRectEx(DC, R, clWindow, False);
+      FrameRectEx(DC, R, GetStandardColor(clWindow), False);
 
     InflateRect(R, -1, -1);
-    FillRectEx(DC, R, clWindow);
+    FillRectEx(DC, R, GetStandardColor(clWindow));
     if ((ItemInfo.ViewType and VT_TOOLBAR) <> VT_TOOLBAR) and (GetPartColor(ItemInfo, ipFrame) = clNone) then
     begin
       R := ARect;
@@ -778,7 +791,7 @@ begin
 
     if not Enabled then
     begin
-      HiContrast := ColorIntensity(GetItemImageBackground(ItemInfo)) < 80;
+      HiContrast := (not FDark) and (ColorIntensity(GetItemImageBackground(ItemInfo)) < 80);
       if not HiContrast then
         DrawTBXIconShadow(Canvas, ARect, ImageList, ImageIndex, 0)
       else
@@ -1190,9 +1203,18 @@ begin
  else
   begin
     { View/Window Colors }
-    MenubarColor := clBtnFace;
-    ToolbarColor := Blend(clWindow, clBtnFace, 165);
-    PopupColor := Blend(clBtnFace, clWindow, 143);
+    if not FDark then
+    begin
+      MenubarColor := clBtnFace;
+      ToolbarColor := Blend(clWindow, clBtnFace, 165);
+      PopupColor := Blend(clBtnFace, clWindow, 143);
+    end
+      else
+    begin
+      MenubarColor := clBlack;
+      ToolbarColor := RGB(32, 32, 32);
+      PopupColor := RGB(43, 43, 43);
+    end;
     DockPanelColor := PopupColor;
     PopupFrameColor := Blend(clBtnText, clBtnShadow, 20);
     SetContrast(PopupFrameColor, PopupColor, 100);
@@ -1220,15 +1242,25 @@ begin
     SetContrast(PnlFrameColors[wfsInactive, wfpCaptionText], clBtnFace, 120);
 
     BtnItemColors[bisNormal, ipBody]           := clNone;
-    BtnItemColors[bisNormal, ipText]           := clBtnText;
+    if not FDark then
+      BtnItemColors[bisNormal, ipText]         := clBtnText
+    else
+      BtnItemColors[bisNormal, ipText]         := clWhite;
     SetContrast(BtnItemColors[bisNormal, ipText], ToolbarColor, 180);
     BtnItemColors[bisNormal, ipFrame]          := clNone;
     BtnItemColors[bisDisabled, ipBody]         := clNone;
     BtnItemColors[bisDisabled, ipText]         := DisabledText;
     SetContrast(BtnItemColors[bisDisabled, ipText], ToolbarColor, 80);
     BtnItemColors[bisDisabled, ipFrame]        := clNone;
-    BtnItemColors[bisSelected, ipBody]         := Blend(clHighlight, Blend(clBtnFace, clWindow, 50), 10);
-    SetContrast(BtnItemColors[bisSelected, ipBody], ToolbarColor, 5);
+    if not FDark then
+    begin
+      BtnItemColors[bisSelected, ipBody]       := GetSelectedBodyColor;
+      SetContrast(BtnItemColors[bisSelected, ipBody], ToolbarColor, 5);
+    end
+      else
+    begin
+      BtnItemColors[bisSelected, ipBody]       := clBlack;
+    end;
     BtnItemColors[bisSelected, ipText]         := BtnItemColors[bisNormal, ipText];
     BtnItemColors[bisSelected, ipFrame]        := clHighlight;
     BtnItemColors[bisPressed, ipBody]          := Blend(clHighlight, clWindow, 50);
@@ -1253,8 +1285,15 @@ begin
     BtnItemColors[bisPopupParent, ipFrame]     := PopupFrameColor;
 
     MenuItemColors[misNormal, ipBody]          := clNone;
-    MenuItemColors[misNormal, ipText]          := clWindowText;
-    SetContrast(MenuItemColors[misNormal, ipText], PopupColor, 180);
+    if not FDark then
+    begin
+      MenuItemColors[misNormal, ipText]        := clWindowText;
+      SetContrast(MenuItemColors[misNormal, ipText], PopupColor, 180);
+    end
+      else
+    begin
+      MenuItemColors[misNormal, ipText]        := clWhite;
+    end;
     MenuItemColors[misNormal, ipFrame]         := clNone;
     MenuItemColors[misDisabled, ipBody]        := clNone;
     MenuItemColors[misDisabled, ipText]        := Blend(clGrayText, clWindow, 70);
@@ -1268,14 +1307,23 @@ begin
     MenuItemColors[misDisabledHot, ipFrame]    := clHighlight;
 
     { Other Colors }
-    DragHandleColor := Blend(clBtnShadow, clWindow, 75);
+    if not FDark then
+    begin
+      DragHandleColor := Blend(clBtnShadow, clWindow, 75);
+      ToolbarSeparatorColor := Blend(clBtnShadow, clWindow, 70);
+      StatusPanelFrameColor := Blend(clWindow, clBtnFace, 30);
+      SetContrast(StatusPanelFrameColor, clBtnFace, 30);
+    end
+      else
+    begin
+      DragHandleColor := RGB(65, 65, 65);
+      ToolbarSeparatorColor := DragHandleColor;
+      StatusPanelFrameColor := DragHandleColor;
+    end;
     SetContrast(DragHandleColor, ToolbarColor, 85);
     IconShadowColor := Blend(clBlack, HotBtnFace, 25);
-    ToolbarSeparatorColor := Blend(clBtnShadow, clWindow, 70);
     SetContrast(ToolbarSeparatorColor, ToolbarColor, 50);
     PopupSeparatorColor := ToolbarSeparatorColor;
-    StatusPanelFrameColor := Blend(clWindow, clBtnFace, 30);
-    SetContrast(StatusPanelFrameColor, clBtnFace, 30);
 
     Undither(MenubarColor);
     Undither(ToolbarColor);
@@ -1345,7 +1393,18 @@ end;
 
 constructor TTBXOfficeXPTheme.Create(const AName: string);
 begin
+  CreateEx(AName, False);
+end;
+
+constructor TTBXOfficeXPTheme.CreateEx(const AName: string; Dark: Boolean);
+begin
   inherited;
+  FDark := Dark;
+  Init;
+end;
+
+procedure TTBXOfficeXPTheme.Init;
+begin
   if CounterLock = 0 then InitializeStock;
   Inc(CounterLock);
   AddTBXSysChangeNotification(Self);
@@ -1368,6 +1427,26 @@ begin
   Margins.BottomHeight := 0;
 end;
 
+function TTBXOfficeXPTheme.GetSysColor(nIndex: Integer): DWORD;
+begin
+  if FDark and (nIndex = COLOR_WINDOWTEXT) then
+    Result := clWhite
+  else
+    Result := Windows.GetSysColor(nIndex);
+end;
+
+function TTBXOfficeXPTheme.GetStandardColor(Color: TColor): TColor;
+begin
+  if FDark then
+  begin
+    if Color = clWindow then
+    begin
+      Color := RGB(65, 65, 65);
+    end;
+  end;
+  Result := Color;
+end;
+
 procedure TTBXOfficeXPTheme.PaintStatusBar(Control: TWinControl; Canvas: TCanvas; R: TRect; Part: Integer);
 var
   D: Integer;
@@ -1382,12 +1461,15 @@ var
 
 var
   Theme: THandle;
+  C: TColor;
 begin
   DC := Canvas.Handle;
   case Part of
     SBP_BODY:
       begin
-        FillRectEx(DC, R, clBtnFace);
+        if not FDark then C := clBtnFace
+          else C := ToolbarColor;
+        FillRectEx(DC, R, C);
       end;
     SBP_PANE, SBP_LASTPANE:
       begin
@@ -1407,6 +1489,18 @@ end;
 procedure TTBXOfficeXPTheme.TBXSysCommand(var Message: TMessage);
 begin
   if Message.WParam = TSC_VIEWCHANGE then SetupColorCache;
+end;
+
+function GetSelectedBodyColor: TColor;
+begin
+  Result := Blend(clHighlight, Blend(clBtnFace, clWindow, 50), 10);
+end;
+
+{ TTBXDarkOfficeXPTheme }
+
+constructor TTBXDarkOfficeXPTheme.Create(const AName: string);
+begin
+  inherited CreateEx(AName, True);
 end;
 
 end.

@@ -257,6 +257,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Width = 241
             Height = 13
             Caption = 'Local directory is not used with Explorer interface.'
+            ShowAccelChar = False
           end
           object LocalDirectoryEdit: TDirectoryEdit
             Left = 12
@@ -420,6 +421,84 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             TabOrder = 2
             Text = 'RecycleBinPathEdit'
             OnChange = DataChange
+          end
+        end
+      end
+      object EncryptionSheet: TTabSheet
+        Tag = 2
+        HelpType = htKeyword
+        HelpKeyword = 'ui_login_encryption'
+        Caption = 'Encryption'
+        TabVisible = False
+        DesignSize = (
+          401
+          382)
+        object EncryptFilesCheck: TCheckBox
+          Left = 12
+          Top = 8
+          Width = 382
+          Height = 17
+          Anchors = [akLeft, akTop, akRight]
+          Caption = '&Encrypt files'
+          TabOrder = 0
+          OnClick = DataChange
+        end
+        object EncryptFilesGroup: TGroupBox
+          Left = 0
+          Top = 32
+          Width = 393
+          Height = 121
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'Encryption options'
+          TabOrder = 1
+          object Label13: TLabel
+            Left = 12
+            Top = 18
+            Width = 75
+            Height = 13
+            Caption = 'Encryption &key:'
+            FocusControl = EncryptKeyPasswordEdit
+          end
+          object EncryptKeyVisibleEdit: TEdit
+            Left = 12
+            Top = 34
+            Width = 370
+            Height = 21
+            MaxLength = 64
+            TabOrder = 1
+            Text = 'EncryptKeyVisibleEdit'
+            Visible = False
+            OnChange = DataChange
+            OnExit = EncryptKeyEditExit
+          end
+          object EncryptKeyPasswordEdit: TPasswordEdit
+            Left = 12
+            Top = 34
+            Width = 370
+            Height = 21
+            MaxLength = 64
+            TabOrder = 0
+            Text = 'EncryptKeyPasswordEdit'
+            OnChange = DataChange
+            OnExit = EncryptKeyEditExit
+          end
+          object ShowEncryptionKeyCheck: TCheckBox
+            Left = 12
+            Top = 61
+            Width = 97
+            Height = 17
+            Caption = '&Show key'
+            TabOrder = 2
+            OnClick = ShowEncryptionKeyCheckClick
+          end
+          object GenerateKeyButton: TButton
+            Left = 12
+            Top = 84
+            Width = 117
+            Height = 25
+            Caption = '&Generate Key'
+            TabOrder = 3
+            OnClick = GenerateKeyButtonClick
           end
         end
       end
@@ -892,7 +971,6 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Alignment = taRightJustify
             MaxValue = 3600.000000000000000000
             MinValue = 1.000000000000000000
-            Value = 1.000000000000000000
             MaxLength = 4
             TabOrder = 3
             OnChange = DataChange
@@ -966,7 +1044,6 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Increment = 5.000000000000000000
             MaxValue = 6000.000000000000000000
             MinValue = 5.000000000000000000
-            Value = 5.000000000000000000
             Anchors = [akTop, akRight]
             MaxLength = 4
             TabOrder = 0
@@ -1000,7 +1077,6 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Alignment = taRightJustify
             MaxValue = 3600.000000000000000000
             MinValue = 1.000000000000000000
-            Value = 1.000000000000000000
             Anchors = [akTop, akRight]
             MaxLength = 4
             TabOrder = 3
@@ -1192,7 +1268,6 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Alignment = taRightJustify
             MaxValue = 65535.000000000000000000
             MinValue = 1.000000000000000000
-            Value = 1.000000000000000000
             Anchors = [akTop, akRight]
             TabOrder = 4
             OnChange = DataChange
@@ -1302,6 +1377,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Width = 168
             Height = 13
             Caption = 'Do &DNS name lookup at proxy end:'
+            FocusControl = ProxyDNSCombo
           end
           object ProxyLocalCommandLabel: TLabel
             Left = 12
@@ -1484,7 +1560,6 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Alignment = taRightJustify
             MaxValue = 65535.000000000000000000
             MinValue = 1.000000000000000000
-            Value = 1.000000000000000000
             Anchors = [akTop, akRight]
             TabOrder = 1
             OnChange = DataChange
@@ -2001,16 +2076,16 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           end
         end
         object AuthenticationParamsGroup: TGroupBox
-          Left = 2
+          Left = 0
           Top = 154
           Width = 393
-          Height = 94
+          Height = 120
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Authentication parameters'
           TabOrder = 2
           DesignSize = (
             393
-            94)
+            120)
           object PrivateKeyLabel: TLabel
             Left = 12
             Top = 42
@@ -2048,10 +2123,28 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Text = 'PrivateKeyEdit3'
             OnChange = DataChange
           end
+          object PrivateKeyToolsButton: TButton
+            Left = 151
+            Top = 86
+            Width = 101
+            Height = 25
+            Caption = '&Tools'
+            TabOrder = 3
+            OnClick = PrivateKeyToolsButtonClick
+          end
+          object PrivateKeyViewButton: TButton
+            Left = 12
+            Top = 86
+            Width = 133
+            Height = 25
+            Caption = '&Display Public Key'
+            TabOrder = 2
+            OnClick = PrivateKeyViewButtonClick
+          end
         end
         object GSSAPIGroup: TGroupBox
           Left = 0
-          Top = 254
+          Top = 279
           Width = 393
           Height = 71
           Anchors = [akLeft, akTop, akRight]
@@ -2367,28 +2460,29 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
         OnCollapsing = NavigationTreeCollapsing
         Items.NodeData = {
           030400000036000000000000000000000000000000FFFFFFFF00000000000000
-          0005000000010C45006E007600690072006F006E006D0065006E007400580036
+          0006000000010C45006E007600690072006F006E006D0065006E007400580036
           000000000000000000000000000000FFFFFFFF00000000000000000000000001
           0C4400690072006500630074006F007200690065007300580036000000000000
           000000000000000000FFFFFFFF000000000000000000000000010C5200650063
-          00790063006C0065002000620069006E00580028000000000000000000000000
-          000000FFFFFFFF00000000000000000000000001055300460054005000580026
-          000000000000000000000000000000FFFFFFFF00000000000000000000000001
-          045300430050005800260000000000000000000000FFFFFFFFFFFFFFFF000000
-          0000000000000000000104460054005000580034000000000000000000000000
-          000000FFFFFFFF000000000000000002000000010B43006F006E006E00650063
-          00740069006F006E0058002A000000000000000000000000000000FFFFFFFF00
-          00000000000000000000000106500072006F007800790058002C000000000000
-          000000000000000000FFFFFFFF0000000000000000000000000107540075006E
-          006E0065006C00580026000000000000000000000000000000FFFFFFFF000000
-          0000000000030000000104530053004800580038000000000000000000000000
-          000000FFFFFFFF000000000000000000000000010D4B00650078002000650078
-          006300680061006E006700650058003C000000000000000000000000000000FF
-          FFFFFF000000000000000000000000010F410075007400680065006E00740069
-          0063006100740069006F006E00580028000000000000000000000000000000FF
-          FFFFFF0000000000000000000000000105420075006700730058002800000000
-          0000000000000000000000FFFFFFFF00000000000000000000000001054E006F
-          00740065005800}
+          00790063006C0065002000620069006E005800340000000000000000000000FF
+          FFFFFFFFFFFFFF000000000000000000000000010B45006E0063007200790070
+          00740069006F006E00580028000000000000000000000000000000FFFFFFFF00
+          0000000000000000000000010553004600540050005800260000000000000000
+          00000000000000FFFFFFFF000000000000000000000000010453004300500058
+          00260000000000000000000000FFFFFFFFFFFFFFFF0000000000000000000000
+          000104460054005000580034000000000000000000000000000000FFFFFFFF00
+          0000000000000002000000010B43006F006E006E0065006300740069006F006E
+          0058002A000000000000000000000000000000FFFFFFFF000000000000000000
+          0000000106500072006F007800790058002C0000000000000000000000000000
+          00FFFFFFFF0000000000000000000000000107540075006E006E0065006C0058
+          0026000000000000000000000000000000FFFFFFFF0000000000000000030000
+          000104530053004800580038000000000000000000000000000000FFFFFFFF00
+          0000000000000000000000010D4B00650078002000650078006300680061006E
+          006700650058003C000000000000000000000000000000FFFFFFFF0000000000
+          00000000000000010F410075007400680065006E007400690063006100740069
+          006F006E00580028000000000000000000000000000000FFFFFFFF0000000000
+          0000000000000001054200750067007300580028000000000000000000000000
+          000000FFFFFFFF00000000000000000000000001054E006F00740065005800}
       end
     end
   end
@@ -3651,5 +3745,17 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
       C0000003000000000000000000000000FFFFFFFF000000000000000000000000
       FFFFFFFF00000000000000000000000000000000000000000000000000000000
       000000000000}
+  end
+  object PrivateKeyMenu: TPopupMenu
+    Left = 128
+    Top = 384
+    object PrivateKeyGenerateItem: TMenuItem
+      Caption = '&Generate New Key Pair with PuTTYgen...'
+      OnClick = PrivateKeyGenerateItemClick
+    end
+    object PrivateKeyUploadItem: TMenuItem
+      Caption = '&Install Public Key into Server...'
+      OnClick = PrivateKeyUploadItemClick
+    end
   end
 end

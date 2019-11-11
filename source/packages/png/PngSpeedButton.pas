@@ -33,7 +33,7 @@ type
 implementation
 
 uses
-  Graphics, ActnList, PngButtonFunctions;
+  Graphics, ActnList, PngButtonFunctions, PngImageList;
 
 { TPngSpeedButton }
 
@@ -47,8 +47,8 @@ end;
 
 destructor TPngSpeedButton.Destroy;
 begin
-  FPngImage.Free;
   inherited Destroy;
+  FPngImage.Free;
 end;
 
 procedure TPngSpeedButton.ActionChange(Sender: TObject; CheckDefaults: Boolean);

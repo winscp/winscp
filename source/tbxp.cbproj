@@ -114,7 +114,7 @@
 			<BuildOrder>2</BuildOrder>
 			<BuildOrder>10</BuildOrder>
 		</CppCompile>
-		<PackageImport Include="moje.bpi">
+		<PackageImport Include="my.bpi">
 			<BuildOrder>14</BuildOrder>
 		</PackageImport>
 		<PackageImport Include="rtl.bpi">

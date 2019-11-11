@@ -5,13 +5,17 @@
 #include <Common.h>
 #include "Option.h"
 #include "TextsCore.h"
+#include "System.StrUtils.hpp"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
+//---------------------------------------------------------------------------
+const wchar_t ArrayValueDelimiter = L'[';
+const wchar_t ArrayValueEnd = L']';
 //---------------------------------------------------------------------------
 __fastcall TOptions::TOptions()
 {
   FSwitchMarks = L"/-";
-  FSwitchValueDelimiters = L"=:";
+  FSwitchValueDelimiters = UnicodeString(L"=:") + ArrayValueDelimiter;
   FNoMoreSwitches = false;
   FParamCount = 0;
 }
@@ -30,6 +34,7 @@ void __fastcall TOptions::Add(UnicodeString Value)
     bool Switch = false;
     int Index = 0; // shut up
     wchar_t SwitchMark = L'\0';
+    wchar_t ValueDelimiter = L'\0';
     if (!FNoMoreSwitches &&
         (Value.Length() >= 2) &&
         (FSwitchMarks.Pos(Value[1]) > 0))
@@ -41,6 +46,7 @@ void __fastcall TOptions::Add(UnicodeString Value)
       {
         if (Value.IsDelimiter(FSwitchValueDelimiters, Index))
         {
+          ValueDelimiter = Value[Index];
           break;
         }
         // this is to treat /home/martin as parameter, not as switch
@@ -60,6 +66,10 @@ void __fastcall TOptions::Add(UnicodeString Value)
       Option.Type = otSwitch;
       Option.Name = Value.SubString(2, Index - 2);
       Option.Value = Value.SubString(Index + 1, Value.Length());
+      if ((ValueDelimiter == ArrayValueDelimiter) && EndsStr(ArrayValueEnd, Option.Value))
+      {
+        Option.Value.SetLength(Option.Value.Length() - 1);
+      }
       Option.ValueSet = (Index <= Value.Length());
     }
     else
@@ -205,6 +215,11 @@ bool __fastcall TOptions::DoFindSwitch(const UnicodeString Switch,
   bool Result = FindSwitch(Switch, Value, ParamsStart, ParamsCount, CaseSensitive, ValueSet);
   if (Result)
   {
+    int AParamsCount;
+    if (TryStrToInt(Value, AParamsCount) && (AParamsCount < ParamsCount))
+    {
+      ParamsCount = AParamsCount;
+    }
     if ((ParamsMax >= 0) && (ParamsCount > ParamsMax))
     {
       ParamsCount = ParamsMax;

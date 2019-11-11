@@ -220,7 +220,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 12
       Category = 'Queue'
       Caption = '&Show Query'
-      HelpKeyword = 'ui_queue#managing_the_queue'
+      HelpKeyword = 'ui_queue#manage'
       Hint = 'Show pending query of selected queue item'
       ImageIndex = 67
     end
@@ -228,7 +228,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 12
       Category = 'Queue'
       Caption = '&Show Error'
-      HelpKeyword = 'ui_queue#managing_the_queue'
+      HelpKeyword = 'ui_queue#manage'
       Hint = 'Show pending error message of selected queue item'
       ImageIndex = 68
     end
@@ -236,7 +236,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 12
       Category = 'Queue'
       Caption = '&Show Prompt'
-      HelpKeyword = 'ui_queue#managing_the_queue'
+      HelpKeyword = 'ui_queue#manage'
       Hint = 'Show pending prompt of selected queue item'
       ImageIndex = 69
     end
@@ -252,7 +252,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 12
       Category = 'Queue'
       Caption = '&Cancel'
-      HelpKeyword = 'ui_queue#managing_the_queue'
+      HelpKeyword = 'ui_queue#manage'
       Hint = 'Remove selected queue item'
       ImageIndex = 71
     end
@@ -260,7 +260,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 12
       Category = 'Queue'
       Caption = '&Execute Now'
-      HelpKeyword = 'ui_queue#managing_the_queue'
+      HelpKeyword = 'ui_queue#manage'
       Hint = 
         'Execute selected queue item immediately by granting it additiona' +
         'l connection'
@@ -358,7 +358,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 14
       Category = 'Remote Selected Operation'
       Caption = 'Mo&ve To...'
-      HelpKeyword = 'task_move_duplicate#moving_remote_files'
+      HelpKeyword = 'task_move_duplicate#move'
       Hint = 
         'Move|Move selected remote file(s) to another remote directory or' +
         ' another name'
@@ -505,7 +505,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 14
       Category = 'Remote Directory'
       Caption = '&Open Directory/Bookmark...'
-      HelpKeyword = 'task_navigate#entering_path_manually'
+      HelpKeyword = 'task_navigate#manual'
       Hint = 
         'Open directory/bookmark|Open specified directory or saved bookma' +
         'rk'
@@ -627,6 +627,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Category = 'Session'
       Caption = '&Disconnect'
       Hint = 'Close session|Terminate current session'
+      HelpKeyword = 'task_connections#closing'
       ImageIndex = 26
       SecondaryShortCuts.Strings = (
         'Ctrl+W')
@@ -710,7 +711,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 9
       Category = 'Local Directory'
       Caption = '&Open Directory/Bookmark...'
-      HelpKeyword = 'task_navigate#entering_path_manually'
+      HelpKeyword = 'task_navigate#manual'
       Hint = 
         'Open directory/bookmark|Open specified directory or saved bookma' +
         'rk'
@@ -1110,7 +1111,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'Session'
       Caption = '&Save Session as Site...'
-      HelpKeyword = 'task_connections#saving_opened_session'
+      HelpKeyword = 'task_connections#saving'
       Hint = 'Save session as site|Save current session as site'
       ImageIndex = 43
     end
@@ -1297,7 +1298,7 @@ object NonVisualDataModule: TNonVisualDataModule
         'Open terminal|Open terminal window that allow executing arbitrar' +
         'y command (with exception of commands that require user input)'
       ImageIndex = 55
-      ShortCut = 16468
+      ShortCut = 24660
     end
     object PuttyAction: TAction
       Tag = 15
@@ -1370,7 +1371,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'Session'
       Caption = '&Opened Sessions'
-      HelpKeyword = 'task_connections#switching_connections'
+      HelpKeyword = 'task_connections#switch'
       Hint = 'Select session|Select opened session to activate'
       ImageIndex = 62
     end
@@ -1396,14 +1397,14 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 14
       Category = 'Command'
       Caption = 'File &Custom Commands'
-      HelpKeyword = 'remote_command#custom_commands'
+      HelpKeyword = 'custom_command'
       Hint = 'Execute custom commands with selected file(s)'
     end
     object CustomCommandsNonFileAction: TAction
       Tag = 15
       Category = 'Command'
       Caption = 'Static &Custom Commands'
-      HelpKeyword = 'remote_command#custom_commands'
+      HelpKeyword = 'custom_command'
       Hint = 'Execute custom commands that do not operate with files'
     end
     object CustomCommandsCustomizeAction: TAction
@@ -1418,7 +1419,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'Command'
       Caption = '&Enter...'
-      HelpKeyword = 'remote_command#executing_and_configuring_custom_commands'
+      HelpKeyword = 'custom_command#executing_and_configuring'
       Hint = 'Enter ad hoc custom command'
       ImageIndex = 90
     end
@@ -1426,7 +1427,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 12
       Category = 'Command'
       Caption = '&Enter...'
-      HelpKeyword = 'remote_command#executing_and_configuring_custom_commands'
+      HelpKeyword = 'custom_command#executing_and_configuring'
       Hint = 'Enter ad hoc custom command'
       ImageIndex = 90
     end
@@ -1448,13 +1449,13 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'Command'
       Caption = 'CustomCommandsLastAction'
-      HelpKeyword = 'remote_command#executing_and_configuring_custom_commands'
+      HelpKeyword = 'custom_command#executing_and_configuring'
     end
     object CustomCommandsLastFocusedAction: TAction
       Tag = 12
       Category = 'Command'
       Caption = 'CustomCommandsLastFocusedAction'
-      HelpKeyword = 'remote_command#executing_and_configuring_custom_commands'
+      HelpKeyword = 'custom_command#executing_and_configuring'
     end
     object FileSystemInfoAction: TAction
       Tag = 15
@@ -1484,7 +1485,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 14
       Category = 'Remote Focused Operation'
       Caption = 'Mo&ve To...'
-      HelpKeyword = 'task_move_duplicate#moving_remote_files'
+      HelpKeyword = 'task_move_duplicate#move'
       Hint = 
         'Move|Move selected remote file(s) to another remote directory or' +
         ' another name'
@@ -1502,21 +1503,21 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'View'
       Caption = '&Bytes'
-      HelpKeyword = 'ui_file_panel#size_format'
+      HelpKeyword = 'ui_pref_panels#common'
       Hint = 'Show files sizes in bytes'
     end
     object LocalPathToClipboardAction: TAction
       Tag = 15
       Category = 'Local Directory'
       Caption = 'Copy &Path to Clipboard'
-      HelpKeyword = 'filenames#current_working_directory'
+      HelpKeyword = 'filenames#cwd'
       Hint = 'Copy current local path to clipboard'
     end
     object RemotePathToClipboardAction: TAction
       Tag = 15
       Category = 'Remote Directory'
       Caption = 'Copy &Path to Clipboard'
-      HelpKeyword = 'filenames#current_working_directory'
+      HelpKeyword = 'filenames#cwd'
       Hint = 'Copy current remote path to clipboard'
     end
     object FileListToCommandLineAction: TAction
@@ -1547,7 +1548,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'Queue'
       Caption = '&Go To'
-      HelpKeyword = 'ui_queue#managing_the_queue'
+      HelpKeyword = 'ui_queue#manage'
       Hint = 'Go to transfer queue list'
       ImageIndex = 74
       ShortCut = 16465
@@ -1556,7 +1557,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 12
       Category = 'Queue'
       Caption = 'Move &Up'
-      HelpKeyword = 'ui_queue#managing_the_queue'
+      HelpKeyword = 'ui_queue#manage'
       Hint = 'Move selected queue item up to be processed earlier'
       ImageIndex = 72
     end
@@ -1564,7 +1565,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 12
       Category = 'Queue'
       Caption = 'Move &Down'
-      HelpKeyword = 'ui_queue#managing_the_queue'
+      HelpKeyword = 'ui_queue#manage'
       Hint = 'Move selected queue item down to be processed later'
       ImageIndex = 73
     end
@@ -1642,7 +1643,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 14
       Category = 'Remote Focused Operation'
       Caption = '&Duplicate...'
-      HelpKeyword = 'task_move_duplicate#duplicating_remote_files'
+      HelpKeyword = 'task_move_duplicate#duplicate'
       Hint = 
         'Duplicate|Duplicate selected remote file(s) to another remote di' +
         'rectory or another name'
@@ -1652,7 +1653,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 14
       Category = 'Remote Selected Operation'
       Caption = 'Du&plicate...'
-      HelpKeyword = 'task_move_duplicate#duplicating_remote_files'
+      HelpKeyword = 'task_move_duplicate#duplicate'
       Hint = 
         'Duplicate|Duplicate selected remote file(s) to another remote di' +
         'rectory or another name'
@@ -1722,14 +1723,14 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'View'
       Caption = '&Kilobytes'
-      HelpKeyword = 'ui_file_panel#size_format'
+      HelpKeyword = 'ui_pref_panels#common'
       Hint = 'Show files sizes in kilobytes'
     end
     object FormatSizeBytesShortAction: TAction
       Tag = 15
       Category = 'View'
       Caption = '&Short format'
-      HelpKeyword = 'ui_file_panel#size_format'
+      HelpKeyword = 'ui_pref_panels#common'
       Hint = 'Show files sizes in short format'
     end
     object PresetsPreferencesAction: TAction
@@ -1779,7 +1780,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 12
       Category = 'Queue'
       Caption = '&Suspend'
-      HelpKeyword = 'ui_queue#managing_the_queue'
+      HelpKeyword = 'ui_queue#manage'
       Hint = 'Suspend selected queue item'
       ImageIndex = 83
     end
@@ -1787,7 +1788,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 12
       Category = 'Queue'
       Caption = '&Resume'
-      HelpKeyword = 'ui_queue#managing_the_queue'
+      HelpKeyword = 'ui_queue#manage'
       Hint = 'Resume selected suspended queue item'
       ImageIndex = 70
     end
@@ -1795,7 +1796,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 12
       Category = 'Queue'
       Caption = '&Suspend All'
-      HelpKeyword = 'ui_queue#managing_the_queue'
+      HelpKeyword = 'ui_queue#manage'
       Hint = 'Suspend all running queue items'
       ImageIndex = 84
     end
@@ -1803,7 +1804,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 12
       Category = 'Queue'
       Caption = '&Resume All'
-      HelpKeyword = 'ui_queue#managing_the_queue'
+      HelpKeyword = 'ui_queue#manage'
       Hint = 'Resume all suspended queue items'
       ImageIndex = 85
     end
@@ -1811,7 +1812,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 12
       Category = 'Queue'
       Caption = 'Delete All &Completed'
-      HelpKeyword = 'ui_queue#managing_the_queue'
+      HelpKeyword = 'ui_queue#manage'
       Hint = 'Remove all completed queue items'
       ImageIndex = 99
     end
@@ -1819,7 +1820,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'Queue'
       Caption = '&Process Queue'
-      HelpKeyword = 'ui_queue#managing_the_queue'
+      HelpKeyword = 'ui_queue#manage'
       Hint = 
         'Enable queue processing|Enable queue processing (pending queue i' +
         'tems will not start, when queue processing is disabled)'
@@ -1925,7 +1926,7 @@ object NonVisualDataModule: TNonVisualDataModule
     object QueueItemSpeedAction: TTBEditAction
       Tag = 12
       Category = 'Queue'
-      HelpKeyword = 'ui_queue#managing_the_queue'
+      HelpKeyword = 'ui_queue#manage'
       Hint = 'Change speed limit of selected queue item'
       ImageIndex = 109
       EditCaption = '&Speed'
@@ -1934,7 +1935,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 12
       Category = 'Queue'
       Caption = '&Cancel All'
-      HelpKeyword = 'ui_queue#managing_the_queue'
+      HelpKeyword = 'ui_queue#manage'
       Hint = 'Remove all queue items'
       ImageIndex = 106
     end
@@ -1942,7 +1943,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 9
       Category = 'Local Directory'
       Caption = '&Filter...'
-      HelpKeyword = 'ui_file_panel#filter'
+      HelpKeyword = 'ui_file_panel#filtering'
       Hint = 'Filter|Filter displayed files'
       ImageIndex = 92
       ShortCut = 49222
@@ -1951,7 +1952,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 14
       Category = 'Remote Directory'
       Caption = '&Filter...'
-      HelpKeyword = 'ui_file_panel#filter'
+      HelpKeyword = 'ui_file_panel#filtering'
       Hint = 'Filter|Filter displayed files'
       ImageIndex = 92
       ShortCut = 49222
@@ -2208,6 +2209,13 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'task_change_password'
       Hint = 'Change account password'
     end
+    object PrivateKeyUploadAction: TAction
+      Tag = 15
+      Category = 'Session'
+      Caption = '&Install Public Key into Server...'
+      HelpKeyword = 'guide_public_key'
+      Hint = 'Install public key for authentication into the server'
+    end
     object RemoteNewFileAction: TAction
       Tag = 15
       Category = 'Remote Selected Operation'
@@ -2223,6 +2231,35 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'task_edit'
       Hint = 'Create file|Create new file and open it in editor'
       ImageIndex = 77
+    end
+    object CustomizeToolbarAction: TAction
+      Tag = 15
+      Category = 'View'
+      Caption = '&Customize Toolbar'
+      HelpKeyword = 'ui_toolbars'
+      Hint = 'Show/hide toolbar buttons'
+    end
+    object RenameSessionAction: TAction
+      Tag = 15
+      Category = 'Session'
+      Caption = '&Rename Session'
+      HelpKeyword = 'task_connections#renaming'
+      Hint = 'Rename session|Changes name of the current session'
+    end
+    object CurrentCopyAction: TAction
+      Tag = 15
+      Category = 'Selected Operation'
+      Caption = '&Copy'
+      Hint = 'Copy|Copy the selected files to clipboard'
+      ImageIndex = 111
+      ShortCut = 16451
+    end
+    object FileColorsPreferencesAction: TAction
+      Tag = 15
+      Category = 'View'
+      Caption = 'File &Colors...'
+      HelpKeyword = 'ui_pref_file_colors'
+      Hint = 'Configure file color rules'
     end
   end
   object ExplorerBarPopup: TTBXPopupMenu
@@ -2262,6 +2299,9 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object TBXItem48: TTBXItem
       Action = SelectiveToolbarTextAction
+    end
+    object TBXSubmenuItem4: TTBXSubmenuItem
+      Action = CustomizeToolbarAction
     end
     object N5: TTBXSeparatorItem
     end
@@ -2342,6 +2382,9 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object TBXItem46: TTBXItem
       Action = SelectiveToolbarTextAction
+    end
+    object TBXItem77: TTBXSubmenuItem
+      Action = CustomizeToolbarAction
     end
     object N26: TTBXSeparatorItem
     end
@@ -2481,6 +2524,9 @@ object NonVisualDataModule: TNonVisualDataModule
     object TBXItem49: TTBXItem
       Action = SelectiveToolbarTextAction
     end
+    object TBXSubmenuItem9: TTBXSubmenuItem
+      Action = CustomizeToolbarAction
+    end
     object N28: TTBXSeparatorItem
     end
     object Tree5: TTBXItem
@@ -2532,6 +2578,9 @@ object NonVisualDataModule: TNonVisualDataModule
     object TBXItem47: TTBXItem
       Action = SelectiveToolbarTextAction
     end
+    object TBXSubmenuItem6: TTBXSubmenuItem
+      Action = CustomizeToolbarAction
+    end
     object N29: TTBXSeparatorItem
     end
     object Tree6: TTBXItem
@@ -2564,7 +2613,7 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object LocalFormatSizeBytesPopupItem: TTBXSubmenuItem
       Caption = 'Show File Si&zes In'
-      HelpKeyword = 'ui_file_panel#size_format'
+      HelpKeyword = 'ui_pref_panels#common'
       Hint = 'Select files sizes display format'
       object TBXItem64: TTBXItem
         Action = FormatSizeBytesNoneAction
@@ -2622,7 +2671,7 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object RemoteFormatSizeBytesPopupItem: TTBXSubmenuItem
       Caption = 'Show File Si&zes In'
-      HelpKeyword = 'ui_file_panel#size_format'
+      HelpKeyword = 'ui_pref_panels#common'
       Hint = 'Select files sizes display format'
       object TBXItem67: TTBXItem
         Action = FormatSizeBytesNoneAction
@@ -2715,7 +2764,7 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object TBXSubmenuItem1: TTBXSubmenuItem
       Caption = '&All'
-      HelpKeyword = 'ui_queue#managing_the_queue'
+      HelpKeyword = 'ui_queue#manage'
       Hint = 'Mass queue management commands'
       object TBXItem11: TTBXItem
         Action = QueuePauseAllAction
@@ -2966,6 +3015,9 @@ object NonVisualDataModule: TNonVisualDataModule
     object TBXItem219: TTBXItem
       Action = DuplicateSessionAction
     end
+    object TBXItem78: TTBXItem
+      Action = RenameSessionAction
+    end
     object TBXItem125: TTBXItem
       Action = SaveCurrentSessionAction2
     end
@@ -2977,6 +3029,12 @@ object NonVisualDataModule: TNonVisualDataModule
     object TBXItem52: TTBXItem
       Action = SessionGenerateUrlAction2
     end
+    object TBXSeparatorItem52: TTBXSeparatorItem
+    end
+    object ColorMenuItem: TTBXColorItem
+      Action = ColorMenuAction
+      Color = clNone
+    end
     object TBXSeparatorItem34: TTBXSeparatorItem
     end
     object TBXItem123: TTBXItem
@@ -2985,12 +3043,6 @@ object NonVisualDataModule: TNonVisualDataModule
     object TBXSubmenuItem23: TTBXSubmenuItem
       Action = SavedSessionsAction2
       Options = [tboDropdownArrow]
-    end
-    object TBXSeparatorItem52: TTBXSeparatorItem
-    end
-    object ColorMenuItem: TTBXColorItem
-      Action = ColorMenuAction
-      Color = clNone
     end
     object TBXSeparatorItem35: TTBXSeparatorItem
     end

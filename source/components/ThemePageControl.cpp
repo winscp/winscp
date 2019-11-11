@@ -5,6 +5,8 @@
 #include <Common.h>
 #include <vsstyle.h>
 #include <memory>
+#include <PasTools.hpp>
+#include <TBXOfficeXPTheme.hpp>
 #include "ThemePageControl.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
@@ -12,14 +14,7 @@
 // Based on
 // https://www.codeproject.com/Articles/6355/XP-Themes-Tab-Control-in-any-orientation
 //---------------------------------------------------------------------------
-//#define USE_DEFAULT_XP_TOPTAB     // XP top tab is drawn only for test purpose. To use default, uncoment this line
-//---------------------------------------------------------------------------
-// constant string definitions here (or you can put it into resource string table)
 #define IDS_UTIL_TAB            L"TAB"
-#define IDS_UTIL_UXTHEME        L"UxTheme.dll"
-#define IDS_UTIL_THEMEACT       "IsThemeActive"
-#define IDS_UTIL_THEMEOPN       "OpenThemeData"
-#define IDS_UTIL_THEMEBCKG      "DrawThemeBackground"
 //---------------------------------------------------------------------------
 static inline void ValidCtrCheck(TThemePageControl *)
 {
@@ -39,6 +34,20 @@ __fastcall TThemeTabSheet::TThemeTabSheet(TComponent * Owner) :
   TTabSheet(Owner)
 {
   FShadowed = false;
+  FShowCloseButton = false;
+}
+//----------------------------------------------------------------------------------------------------------
+void __fastcall TThemeTabSheet::Invalidate()
+{
+  TThemePageControl * ThemePageControl = dynamic_cast<TThemePageControl *>(Parent);
+  if (DebugAlwaysTrue(ThemePageControl != NULL))
+  {
+    ThemePageControl->InvalidateTab(TabIndex);
+  }
+  else
+  {
+    Parent->Invalidate();
+  }
 }
 //----------------------------------------------------------------------------------------------------------
 void __fastcall TThemeTabSheet::SetShadowed(bool Value)
@@ -46,16 +55,16 @@ void __fastcall TThemeTabSheet::SetShadowed(bool Value)
   if (Shadowed != Value)
   {
     FShadowed = Value;
-
-    TThemePageControl * ThemePageControl = dynamic_cast<TThemePageControl *>(Parent);
-    if (DebugAlwaysTrue(ThemePageControl != NULL))
-    {
-      ThemePageControl->InvalidateTab(TabIndex);
-    }
-    else
-    {
-      Parent->Invalidate();
-    }
+    Invalidate();
+  }
+}
+//----------------------------------------------------------------------------------------------------------
+void __fastcall TThemeTabSheet::SetShowCloseButton(bool Value)
+{
+  if (ShowCloseButton != Value)
+  {
+    FShowCloseButton = Value;
+    Invalidate();
   }
 }
 //----------------------------------------------------------------------------------------------------------
@@ -64,6 +73,7 @@ __fastcall TThemePageControl::TThemePageControl(TComponent * Owner) :
   TPageControl(Owner)
 {
   FOldTabIndex = -1;
+  FHotCloseButton = -1;
 }
 //----------------------------------------------------------------------------------------------------------
 int __fastcall TThemePageControl::GetTabsHeight()
@@ -116,30 +126,46 @@ void __fastcall TThemePageControl::PaintWindow(HDC DC)
 
   // 2nd paint the inactive tabs
 
-  TPoint Point = ScreenToClient(Mouse->CursorPos);
-  int HotIndex = IndexOfTabAt(Point.X, Point.Y);
-  int SelectedIndex = TabIndex;
+  int SelectedIndex = TabIndex; // optimization
 
   for (int Tab = 0; Tab < PageCount; Tab++)
   {
     if (Tab != SelectedIndex)
     {
-      TThemeTabSheet * ThemeTabSheet = dynamic_cast<TThemeTabSheet *>(Pages[Tab]);
-      bool Shadowed = (ThemeTabSheet != NULL) ? ThemeTabSheet->Shadowed : false;
-      TRect Rect = TabRect(Tab);
-      int State = (Tab == HotIndex ? TIS_HOT : (Shadowed ? TIS_DISABLED : TIS_NORMAL));
-      DrawThemesXpTabItem(DC, Tab, Rect, false, State);
+      DrawThemesXpTab(DC, Tab);
     }
   }
 
   if (SelectedIndex >= 0)
   {
-    // 3rd paint the active selected tab
-    TRect Rect = TabRect(SelectedIndex);
-    Rect.Inflate(2, 2);
-    Rect.Bottom--;
-    DrawThemesXpTabItem(DC, SelectedIndex, Rect, false, TIS_SELECTED);
+    DrawThemesXpTab(DC, TabIndex);
   }
+}
+//----------------------------------------------------------------------------------------------------------
+bool __fastcall TThemePageControl::HasTabCloseButton(int Index)
+{
+  TThemeTabSheet * ThemeTabSheet = dynamic_cast<TThemeTabSheet *>(Pages[Index]);
+  return (UseThemes() && (ThemeTabSheet != NULL)) ? ThemeTabSheet->ShowCloseButton : false;
+}
+//----------------------------------------------------------------------------------------------------------
+void __fastcall TThemePageControl::DrawThemesXpTab(HDC DC, int Tab)
+{
+  TThemeTabSheet * ThemeTabSheet = dynamic_cast<TThemeTabSheet *>(Pages[Tab]);
+  bool Shadowed = (ThemeTabSheet != NULL) ? ThemeTabSheet->Shadowed : false;
+  TRect Rect = TabRect(Tab);
+  ItemTabRect(Tab, Rect);
+  int State;
+  if (Tab != TabIndex)
+  {
+    TPoint Point = ScreenToClient(Mouse->CursorPos);
+    int HotIndex = IndexOfTabAt(Point.X, Point.Y);
+    State = (Tab == HotIndex ? TIS_HOT : (Shadowed ? TIS_DISABLED : TIS_NORMAL));
+  }
+  else
+  {
+    State = TIS_SELECTED;
+  }
+  DrawThemesXpTabItem(DC, Tab, Rect, false, State);
 }
 //----------------------------------------------------------------------------------------------------------
 // This function draws Themes Tab control parts: a) Tab-Body and b) Tab-tabs
@@ -154,6 +180,7 @@ void __fastcall TThemePageControl::DrawThemesXpTabItem(HDC DC, int Item,
   HBITMAP BitmapOld = (HBITMAP)SelectObject(DCMem, BitmapMem);
 
   TRect RectMem(0, 0, Size.Width, Size.Height);
+  TRect RectItemMem(RectMem);
   if (!Body && (State == TIS_SELECTED))
   {
     RectMem.Bottom++;
@@ -183,12 +210,7 @@ void __fastcall TThemePageControl::DrawThemesXpTabItem(HDC DC, int Item,
 
   if (!Body && (Item >= 0))
   {
-    if ((State == TIS_SELECTED))
-    {
-      RectMem.Bottom--;
-    }
-
-    DrawTabItem(DCMem, Item, RectMem, (State == TIS_SELECTED), (State == TIS_DISABLED));
+    DrawTabItem(DCMem, Item, Rect, RectItemMem, (State == TIS_SELECTED), (State == TIS_DISABLED));
   }
 
   // Blit image to the screen
@@ -198,25 +220,78 @@ void __fastcall TThemePageControl::DrawThemesXpTabItem(HDC DC, int Item,
   DeleteDC(DCMem);
 }
 //----------------------------------------------------------------------------------------------------------
-// draw tab item context: possible icon and text
-void __fastcall TThemePageControl::DrawTabItem(HDC DC, int Item, TRect Rect,
-  bool Selected, bool Shadowed)
+void __fastcall TThemePageControl::ItemTabRect(int Item, TRect & Rect)
 {
+  if (Item == TabIndex)
+  {
+    // Countered in CloseButtonRect
+    Rect.Inflate(2, 2);
+    Rect.Bottom--;
+  }
+}
+//----------------------------------------------------------------------------------------------------------
+void __fastcall TThemePageControl::ItemContentsRect(int Item, TRect & Rect)
+{
+  bool Selected = (Item == TabIndex);
+
+  Rect.Left += 6;
+  Rect.Top += 2;
+
   if (Selected)
   {
-    Rect.Bottom -= 1;
+    Rect.Bottom -= 2;
+    Rect.Top += 1;
   }
   else
   {
     Rect.Bottom += 2;
+    Rect.Top += 3;
   }
-
-  Rect.Left += 6;
-  Rect.Top += 2 + (Selected ? 1 : 3);
+}
+//----------------------------------------------------------------------------------------------------------
+bool __fastcall TThemePageControl::HasItemImage(int Item)
+{
+  return (Images != NULL) && (Pages[Item]->ImageIndex >= 0);
+}
+//----------------------------------------------------------------------------------------------------------
+void __fastcall TThemePageControl::ItemTextRect(int Item, TRect & Rect)
+{
+  if (HasItemImage(Item))
+  {
+    Rect.Left += Images->Width + 3;
+  }
+  else
+  {
+    Rect.Left -= 2;
+  }
+  Rect.Right -= 3;
+  OffsetRect(&Rect, 0, ((Item == TabIndex) ? 0 : -2));
+}
+//----------------------------------------------------------------------------------------------------------
+void __fastcall TThemePageControl::DrawCross(HDC DC, int Width, COLORREF Color, const TRect & Rect)
+{
+  HPEN Pen = CreatePen(PS_SOLID, Width, Color);
+  HPEN OldPen = static_cast<HPEN>(SelectObject(DC, Pen));
+  // To-and-back - to make both ends look the same
+  MoveToEx(DC, Rect.Left, Rect.Bottom - 1, NULL);
+  LineTo(DC, Rect.Right - 1, Rect.Top);
+  LineTo(DC, Rect.Left, Rect.Bottom - 1);
+  MoveToEx(DC, Rect.Left, Rect.Top, NULL);
+  LineTo(DC, Rect.Right - 1, Rect.Bottom - 1);
+  LineTo(DC, Rect.Left, Rect.Top);
+  SelectObject(DC, OldPen);
+  DeleteObject(Pen);
+}
+//----------------------------------------------------------------------------------------------------------
+// draw tab item context: possible icon and text
+void __fastcall TThemePageControl::DrawTabItem(
+  HDC DC, int Item, TRect TabRect, TRect Rect, bool Selected, bool Shadowed)
+{
+  ItemContentsRect(Item, Rect);
 
   UnicodeString Text = Pages[Item]->Caption;
 
-  if ((Images != NULL) && (Pages[Item]->ImageIndex >= 0))
+  if (HasItemImage(Item))
   {
     int Left;
     if (!Text.IsEmpty())
@@ -231,30 +306,130 @@ void __fastcall TThemePageControl::DrawTabItem(HDC DC, int Item, TRect Rect,
     std::unique_ptr<TCanvas> Canvas(new TCanvas());
     Canvas->Handle = DC;
     Images->Draw(Canvas.get(), Left, Y, Pages[Item]->ImageIndex, !Shadowed);
-    Rect.Left += Images->Width + 3;
-  }
-  else
-  {
-    Rect.Left -= 2;
   }
 
+  int TextHeight = 20;
   int OldMode = SetBkMode(DC, TRANSPARENT);
   if (!Text.IsEmpty())
   {
+    ItemTextRect(Item, Rect);
     HFONT OldFont = (HFONT)SelectObject(DC, Font->Handle);
-    Rect.Right -= 3;
     wchar_t * Buf = new wchar_t[Text.Length() + 1 + 4];
     wcscpy(Buf, Text.c_str());
-    TRect TextRect(0, 0, Rect.Right - Rect.Left, 20);
+    TRect TextRect(0, 0, Rect.Right - Rect.Left, TextHeight);
+    // Truncates too long texts with ellipsis
     ::DrawText(DC, Buf, -1, &TextRect, DT_CALCRECT | DT_SINGLELINE | DT_MODIFYSTRING | DT_END_ELLIPSIS);
 
-    OffsetRect(&Rect, 0, (Selected ? 0 : -2));
     DrawText(DC, Buf, -1, &Rect, DT_NOPREFIX | DT_CENTER);
     delete[] Buf;
+
+    if (HasTabCloseButton(Item))
+    {
+      Rect = CloseButtonRect(Item);
+      Rect.Offset(-TabRect.Left, -TabRect.Top);
+
+      if (FHotCloseButton == Item)
+      {
+        HBRUSH Brush = CreateSolidBrush(GetSelectedBodyColor());
+        FillRect(DC, &Rect, Brush);
+        DeleteObject(Brush);
+
+        HPEN Pen = CreatePen(PS_SOLID, 1, ColorToRGB(clHighlight));
+        HPEN OldPen = static_cast<HPEN>(SelectObject(DC, Pen));
+        Rectangle(DC, Rect.Left, Rect.Top, Rect.Right, Rect.Bottom);
+        SelectObject(DC, OldPen);
+        DeleteObject(Pen);
+      }
+
+      int CrossPadding = GetCrossPadding();
+
+      COLORREF BackColor = GetPixel(DC, Rect.Left + (Rect.Width() / 2), Rect.Top + (Rect.Height() / 2));
+      COLORREF CrossColor = ColorToRGB(Font->Color);
+      #define BlendValue(FN) (((4 * static_cast<int>(FN(BackColor))) + static_cast<int>(FN(CrossColor))) / 5)
+      COLORREF BlendColor = RGB(BlendValue(GetRValue), BlendValue(GetGValue), BlendValue(GetBValue));
+      #undef BlendValue
+
+      TRect CrossRect(Rect);
+      CrossRect.Inflate(-CrossPadding, -CrossPadding);
+
+      int CrossWidth = ScaleByTextHeight(this, 1);
+      DrawCross(DC, CrossWidth + 1, BlendColor, CrossRect);
+      DrawCross(DC, CrossWidth, CrossColor, CrossRect);
+    }
+
     SelectObject(DC, OldFont);
   }
 
   SetBkMode(DC, OldMode);
+}
+//----------------------------------------------------------------------------------------------------------
+int __fastcall TThemePageControl::CloseButtonSize()
+{
+  return ScaleByTextHeight(this, 16);
+}
+//----------------------------------------------------------------------------------------------------------
+int __fastcall TThemePageControl::GetCrossPadding()
+{
+  return ScaleByTextHeight(this, 4);
+}
+//----------------------------------------------------------------------------------------------------------
+TRect __fastcall TThemePageControl::CloseButtonRect(int Index)
+{
+  TRect Rect = TabRect(Index);
+  ItemTabRect(Index, Rect);
+  ItemContentsRect(Index, Rect);
+  ItemTextRect(Index, Rect);
+
+  int ACloseButtonSize = CloseButtonSize();
+  int CrossPadding = GetCrossPadding();
+
+  TEXTMETRIC TextMetric;
+  Canvas->Font = Font;
+  GetTextMetrics(Canvas->Handle, &TextMetric);
+
+  Rect.Top += TextMetric.tmAscent - ACloseButtonSize + CrossPadding;
+  Rect.Left = Rect.Right - ACloseButtonSize - ScaleByTextHeight(this, 1);
+  if (Index == TabIndex)
+  {
+    // To counter Inflate(2, 2) in ItemTabRect
+    Rect.Left -= 2;
+  }
+  Rect.Right = Rect.Left + ACloseButtonSize;
+  Rect.Bottom = Rect.Top + ACloseButtonSize;
+  return Rect;
+}
+//----------------------------------------------------------------------------------------------------------
+void __fastcall TThemePageControl::SetHotCloseButton(int Index)
+{
+  if (Index != FHotCloseButton)
+  {
+    if (FHotCloseButton >= 0)
+    {
+      InvalidateTab(FHotCloseButton);
+    }
+    FHotCloseButton = Index;
+    if (FHotCloseButton >= 0)
+    {
+      InvalidateTab(FHotCloseButton);
+    }
+  }
+}
+//----------------------------------------------------------------------------------------------------------
+void __fastcall TThemePageControl::MouseMove(TShiftState /*Shift*/, int X, int Y)
+{
+  SetHotCloseButton(IndexOfCloseButtonAt(X, Y));
+}
+//----------------------------------------------------------------------------------------------------------
+int __fastcall TThemePageControl::IndexOfCloseButtonAt(int X, int Y)
+{
+  int Result = IndexOfTabAt(X, Y);
+  if ((Result < 0) ||
+      !HasTabCloseButton(Result) ||
+      !CloseButtonRect(Result).Contains(TPoint(X, Y)))
+  {
+    Result = -1;
+  }
+  return Result;
 }
 //----------------------------------------------------------------------------------------------------------
 void __fastcall TThemePageControl::DrawThemesPart(HDC DC, int PartId,
@@ -267,8 +442,7 @@ void __fastcall TThemePageControl::DrawThemesPart(HDC DC, int PartId,
     CloseThemeData(Theme);
   }
 }
-//==========================================================================================================
-// these two messages are necessary only to properly redraw deselected tab background, because
+//----------------------------------------------------------------------------------------------------------
 bool __fastcall TThemePageControl::CanChange()
 {
   FOldTabIndex = ActivePageIndex;
@@ -301,6 +475,56 @@ void __fastcall TThemePageControl::Change()
   }
 
   TPageControl::Change();
+}
+//----------------------------------------------------------------------------------------------------------
+UnicodeString __fastcall TThemePageControl::FormatCaptionWithCloseButton(const UnicodeString & Caption)
+{
+  UnicodeString Result = Caption;
+  if (UseThemes())
+  {
+    int OrigWidth = Canvas->TextWidth(Caption);
+    int CloseButtonWidth = CloseButtonSize();
+    while (Canvas->TextWidth(Result) < OrigWidth + CloseButtonWidth)
+    {
+      Result += L" ";
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TThemePageControl::WMLButtonDown(TWMLButtonDown & Message)
+{
+  int Index = IndexOfCloseButtonAt(Message.XPos, Message.YPos);
+  if (Index >= 0)
+  {
+    Message.Result = 1;
+    if (FOnCloseButtonClick != NULL)
+    {
+      FOnCloseButtonClick(this, Index);
+    }
+  }
+  else
+  {
+    TPageControl::Dispatch(&Message);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TThemePageControl::Dispatch(void * Message)
+{
+  TMessage * M = reinterpret_cast<TMessage*>(Message);
+  if (M->Msg == CM_MOUSELEAVE)
+  {
+    SetHotCloseButton(-1);
+    TPageControl::Dispatch(Message);
+  }
+  else if (M->Msg == WM_LBUTTONDOWN)
+  {
+    WMLButtonDown(*reinterpret_cast<TWMLButtonDown *>(M));
+  }
+  else
+  {
+    TPageControl::Dispatch(Message);
+  }
 }
 //----------------------------------------------------------------------------------------------------------
 #ifdef _DEBUG

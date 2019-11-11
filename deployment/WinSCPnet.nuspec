@@ -22,7 +22,8 @@ The NuGet package includes the assembly itself and a required WinSCP executable.
     <tags>winscp sftp ftp ftps webdav s3 scp transfer</tags>
   </metadata>
   <files>
-    <file src="$DotNetBuildConfigDir$\WinSCPnet.dll" target="lib\net"/>
+    <file src="$DotNetBuildConfigDir$\net40\WinSCPnet.dll" target="lib\net"/>
+    <file src="$DotNetBuildConfigDir$\netstandard2.0\WinSCPnet.dll" target="lib\netstandard"/>
     <file src="$BuildConfigDir$\WinSCP.exe" target="tools"/>
     <file src="WinSCP.targets" target="build"/>
   </files>

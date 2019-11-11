@@ -7,7 +7,9 @@
  *
  * libs3 is free software: you can redistribute it and/or modify it under the
  * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation, version 3 of the License.
+ * Software Foundation, version 3 or above of the License.  You can also
+ * redistribute and/or modify it under the terms of the GNU General Public
+ * License, version 2 or above of the License.
  *
  * In addition, as a special exception, the copyright holders give
  * permission to link the code of this library and its programs with the
@@ -20,6 +22,10 @@
  *
  * You should have received a copy of the GNU Lesser General Public License
  * version 3 along with libs3, in a file named COPYING.  If not, see
+ * <https://www.gnu.org/licenses/>.
+ *
+ * You should also have received a copy of the GNU General Public License
+ * version 2 along with libs3, in a file named COPYING-GPLv2.  If not, see
  * <https://www.gnu.org/licenses/>.
  *
  ************************************************************************** **/
@@ -96,6 +102,14 @@ static S3Status initialMultipartXmlCallback(const char *elementPath,
     return S3StatusOK;
 }
 
+static S3Status InitialMultipartPropertiesCallback(const S3ResponseProperties *properties, 
+                                                   void *callbackData) 
+{
+  InitialMultipartData *mdata = (InitialMultipartData *)callbackData;
+  return mdata->handler->responseHandler.propertiesCallback(properties, mdata->userdata);
+}
+
+
 void S3_initiate_multipart(S3BucketContext *bucketContext, const char *key,
                           S3PutProperties *putProperties,
                           S3MultipartInitialHandler *handler,
@@ -131,7 +145,7 @@ void S3_initiate_multipart(S3BucketContext *bucketContext, const char *key,
         0,                                            // startByte
         0,                                            // byteCount
         putProperties,                                // putProperties
-        handler->responseHandler.propertiesCallback,  // propertiesCallback
+        InitialMultipartPropertiesCallback,           // propertiesCallback
         0,                                            // toS3Callback
         0,                                            // toS3CallbackTotalSize
         InitialMultipartCallback,                     // fromS3Callback

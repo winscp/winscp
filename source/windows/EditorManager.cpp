@@ -116,9 +116,14 @@ bool __fastcall TEditorManager::CanAddFile(const UnicodeString RemoteDirectory,
           }
           else
           {
-            // get directory where the file already is so we download it there again
-            ExistingLocalRootDirectory = FileData->Data->LocalRootDirectory;
-            ExistingLocalDirectory = ExtractFilePath(FileData->FileName);
+            UnicodeString AExistingLocalDirectory = ExtractFilePath(FileData->FileName);
+            // If the temporary directory was deleted, behave like the file was never opened
+            if (DirectoryExists(AExistingLocalDirectory))
+            {
+              // get directory where the file already is so we download it there again
+              ExistingLocalRootDirectory = FileData->Data->LocalRootDirectory;
+              ExistingLocalDirectory = AExistingLocalDirectory;
+            }
             CloseFile(i, false, false); // do not delete file
             Result = true;
           }
@@ -464,8 +469,9 @@ bool __fastcall TEditorManager::HasFileChanged(int Index, TDateTime & NewTimesta
   }
   else
   {
-    FileAge(FileData->FileName, NewTimestamp);
-    Result = (FileData->Timestamp != NewTimestamp);
+    Result =
+      FileAge(FileData->FileName, NewTimestamp) &&
+      (FileData->Timestamp != NewTimestamp);
   }
   return Result;
 }

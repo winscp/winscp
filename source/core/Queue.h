@@ -209,7 +209,7 @@ protected:
   virtual UnicodeString __fastcall StartupDirectory() const = 0;
   virtual void __fastcall ProgressUpdated();
   virtual TQueueItem * __fastcall CreateParallelOperation();
-  bool __fastcall Complete();
+  virtual bool __fastcall Complete();
 };
 //---------------------------------------------------------------------------
 class TQueueItemProxy
@@ -297,6 +297,17 @@ private:
   int __fastcall GetActiveAndPendingPrimaryCount();
   void __fastcall SetDoneCount(int Value);
   TQueueItemProxy * __fastcall GetItem(int Index);
+};
+//---------------------------------------------------------------------------
+class TBootstrapQueueItem : public TQueueItem
+{
+public:
+  __fastcall TBootstrapQueueItem();
+
+protected:
+  virtual void __fastcall DoExecute(TTerminal * Terminal);
+  virtual UnicodeString __fastcall StartupDirectory() const;
+  virtual bool __fastcall Complete();
 };
 //---------------------------------------------------------------------------
 class TLocatedQueueItem : public TQueueItem

@@ -65,8 +65,10 @@ namespace WinSCP
     public sealed class Session : IDisposable, IReflect
     {
         public string ExecutablePath { get { return _executablePath; } set { CheckNotOpened(); _executablePath = value; } }
+#if !NETSTANDARD
         public string ExecutableProcessUserName { get { return _executableProcessUserName; } set { CheckNotOpened(); _executableProcessUserName = value; } }
         public SecureString ExecutableProcessPassword { get { return _executableProcessPassword; } set { CheckNotOpened(); _executableProcessPassword = value; } }
+#endif
         public string AdditionalExecutableArguments { get { return _additionalExecutableArguments; } set { CheckNotOpened(); _additionalExecutableArguments = value; } }
         [Obsolete("Use AddRawConfiguration")]
         public bool DefaultConfiguration { get { return _defaultConfiguration; } set { CheckNotOpened(); _defaultConfiguration = value; } }
@@ -269,6 +271,8 @@ namespace WinSCP
                     log = openCommand + log;
                     WriteCommand(command, log);
 
+                    Logger.WriteLine("Waiting for XML log file");
+
                     // Wait until the log file gets created or WinSCP terminates (in case of fatal error)
                     do
                     {
@@ -297,7 +301,9 @@ namespace WinSCP
 
                         if (_process.HasExited && !File.Exists(XmlLogPath))
                         {
+#if !NETSTANDARD
                             Logger.WriteCounters();
+#endif
                             Logger.WriteProcesses();
                             _process.WriteStatus();
                             string exitCode = string.Format(CultureInfo.CurrentCulture, "{0}", _process.ExitCode);
@@ -318,6 +324,8 @@ namespace WinSCP
                             logExplanation);
 
                     } while (!File.Exists(XmlLogPath));
+
+                    Logger.WriteLine("XML log file created");
 
                     _logReader = new SessionLogReader(this);
 
@@ -629,7 +637,7 @@ namespace WinSCP
 
                         if (fileInfo.IsDirectory && allDirectories)
                         {
-                            foreach (RemoteFileInfo fileInfo2 in DoEnumerateRemoteFiles(RemotePath.CombinePaths(path, fileInfo.Name), regex, options, false))
+                            foreach (RemoteFileInfo fileInfo2 in DoEnumerateRemoteFiles(RemotePath.Combine(path, fileInfo.Name), regex, options, false))
                             {
                                 yield return fileInfo2;
                             }
@@ -657,7 +665,7 @@ namespace WinSCP
             }
         }
 
-        private static Regex MaskToRegex(string mask)
+        internal static Regex MaskToRegex(string mask)
         {
             if (string.IsNullOrEmpty(mask) ||
                 // *.* has to match even filename without dot
@@ -843,75 +851,83 @@ namespace WinSCP
         {
             using (Logger.CreateCallstackAndLock())
             {
-                if (options == null)
-                {
-                    options = new TransferOptions();
-                }
-
-                CheckOpened();
-
-                if (removeFiles && (mode == SynchronizationMode.Both))
-                {
-                    throw Logger.WriteException(new ArgumentException("Cannot delete files in synchronization mode Both"));
-                }
-
-                if (mirror && (mode == SynchronizationMode.Both))
-                {
-                    throw Logger.WriteException(new ArgumentException("Cannot mirror files in synchronization mode Both"));
-                }
-
-                if ((criteria != SynchronizationCriteria.Time) && (mode == SynchronizationMode.Both))
-                {
-                    throw Logger.WriteException(new ArgumentException("Only Time criteria is allowed in synchronization mode Both"));
-                }
-
-                string modeName;
-                switch (mode)
-                {
-                    case SynchronizationMode.Local:
-                        modeName = "local";
-                        break;
-                    case SynchronizationMode.Remote:
-                        modeName = "remote";
-                        break;
-                    case SynchronizationMode.Both:
-                        modeName = "both";
-                        break;
-                    default:
-                        throw Logger.WriteException(new ArgumentOutOfRangeException("mode"));
-                }
-
-                string criteriaName;
-                switch (criteria)
-                {
-                    case SynchronizationCriteria.None:
-                        criteriaName = "none";
-                        break;
-                    case SynchronizationCriteria.Time:
-                        criteriaName = "time";
-                        break;
-                    case SynchronizationCriteria.Size:
-                        criteriaName = "size";
-                        break;
-                    case SynchronizationCriteria.Either:
-                        criteriaName = "either";
-                        break;
-                    default:
-                        throw Logger.WriteException(new ArgumentOutOfRangeException("criteria"));
-                }
-
-                WriteCommand(
-                    string.Format(CultureInfo.InvariantCulture,
-                        "synchronize {0} {1} {2} {3} -criteria=\"{4}\" -- \"{5}\" \"{6}\"",
-                        modeName,
-                        BooleanSwitch(removeFiles, "delete"),
-                        BooleanSwitch(mirror, "mirror"),
-                        options.ToSwitches(),
-                        criteriaName,
-                        Tools.ArgumentEscape(localPath), Tools.ArgumentEscape(remotePath)));
+                DoSynchronizeDirectories(mode, localPath, remotePath, removeFiles, mirror, criteria, options, string.Empty);
 
                 return ReadSynchronizeDirectories();
             }
+        }
+
+        private void DoSynchronizeDirectories(
+            SynchronizationMode mode, string localPath, string remotePath, bool removeFiles, bool mirror,
+            SynchronizationCriteria criteria, TransferOptions options, string additionalParameters)
+        {
+            if (options == null)
+            {
+                options = new TransferOptions();
+            }
+
+            CheckOpened();
+
+            if (removeFiles && (mode == SynchronizationMode.Both))
+            {
+                throw Logger.WriteException(new ArgumentException("Cannot delete files in synchronization mode Both"));
+            }
+
+            if (mirror && (mode == SynchronizationMode.Both))
+            {
+                throw Logger.WriteException(new ArgumentException("Cannot mirror files in synchronization mode Both"));
+            }
+
+            if ((criteria != SynchronizationCriteria.Time) && (mode == SynchronizationMode.Both))
+            {
+                throw Logger.WriteException(new ArgumentException("Only Time criteria is allowed in synchronization mode Both"));
+            }
+
+            string modeName;
+            switch (mode)
+            {
+                case SynchronizationMode.Local:
+                    modeName = "local";
+                    break;
+                case SynchronizationMode.Remote:
+                    modeName = "remote";
+                    break;
+                case SynchronizationMode.Both:
+                    modeName = "both";
+                    break;
+                default:
+                    throw Logger.WriteException(new ArgumentOutOfRangeException("mode"));
+            }
+
+            string criteriaName;
+            switch (criteria)
+            {
+                case SynchronizationCriteria.None:
+                    criteriaName = "none";
+                    break;
+                case SynchronizationCriteria.Time:
+                    criteriaName = "time";
+                    break;
+                case SynchronizationCriteria.Size:
+                    criteriaName = "size";
+                    break;
+                case SynchronizationCriteria.Either:
+                    criteriaName = "either";
+                    break;
+                default:
+                    throw Logger.WriteException(new ArgumentOutOfRangeException("criteria"));
+            }
+
+            WriteCommand(
+                string.Format(CultureInfo.InvariantCulture,
+                    "synchronize {0} {1} {2} {3} -criteria=\"{4}\" {5} -- \"{6}\" \"{7}\"",
+                    modeName,
+                    BooleanSwitch(removeFiles, "delete"),
+                    BooleanSwitch(mirror, "mirror"),
+                    options.ToSwitches(),
+                    criteriaName,
+                    additionalParameters,
+                    Tools.ArgumentEscape(localPath), Tools.ArgumentEscape(remotePath)));
         }
 
         private SynchronizationResult ReadSynchronizeDirectories()
@@ -983,6 +999,132 @@ namespace WinSCP
 
                     AddSynchronizationTransfer(result, transfer);
                 }
+                return result;
+            }
+        }
+
+        public ComparisonDifferenceCollection CompareDirectories(
+            SynchronizationMode mode, string localPath, string remotePath,
+            bool removeFiles, bool mirror = false, SynchronizationCriteria criteria = SynchronizationCriteria.Time,
+            TransferOptions options = null)
+        {
+            using (Logger.CreateCallstackAndLock())
+            {
+                DoSynchronizeDirectories(mode, localPath, remotePath, removeFiles, mirror, criteria, options, "-preview");
+
+                return ReadCompareDirectories();
+            }
+        }
+
+        private ComparisonDifferenceCollection ReadCompareDirectories()
+        {
+            using (Logger.CreateCallstack())
+            {
+                ComparisonDifferenceCollection result = new ComparisonDifferenceCollection();
+
+                using (ElementLogReader groupReader = _reader.WaitForGroupAndCreateLogReader())
+                {
+                    while (groupReader.TryWaitForNonEmptyElement("difference", LogReadFlags.ThrowFailures))
+                    {
+                        using (ElementLogReader differenceReader = groupReader.CreateLogReader())
+                        {
+                            ComparisonDifference difference = new ComparisonDifference();
+                            ComparisonFileInfo current = null;
+
+                            while (differenceReader.Read(0))
+                            {
+                                if (differenceReader.GetEmptyElementValue("action", out string actionName))
+                                {
+                                    if ((difference.Local != null) || (difference.Remote != null))
+                                    {
+                                        throw Logger.WriteException(new InvalidOperationException("Tag action after filename"));
+                                    }
+                                    if (actionName.Equals("uploadnew", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        difference.Action = SynchronizationAction.UploadNew;
+                                        difference.Local = new ComparisonFileInfo();
+                                    }
+                                    else if (actionName.Equals("downloadnew", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        difference.Action = SynchronizationAction.DownloadNew;
+                                        difference.Remote = new ComparisonFileInfo();
+                                    }
+                                    else if (actionName.Equals("uploadupdate", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        difference.Action = SynchronizationAction.UploadUpdate;
+                                        difference.Local = new ComparisonFileInfo();
+                                        difference.Remote = new ComparisonFileInfo();
+                                    }
+                                    else if (actionName.Equals("downloadupdate", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        difference.Action = SynchronizationAction.DownloadUpdate;
+                                        difference.Remote = new ComparisonFileInfo();
+                                        difference.Local = new ComparisonFileInfo();
+                                    }
+                                    else if (actionName.Equals("deleteremote", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        difference.Action = SynchronizationAction.DeleteRemote;
+                                        difference.Remote = new ComparisonFileInfo();
+                                    }
+                                    else if (actionName.Equals("deletelocal", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        difference.Action = SynchronizationAction.DeleteLocal;
+                                        difference.Local = new ComparisonFileInfo();
+                                    }
+                                    else
+                                    {
+                                        throw Logger.WriteException(new InvalidOperationException(string.Format(CultureInfo.CurrentCulture, "Unknown synchronization action \"{0}\"", actionName)));
+                                    }
+                                }
+                                else if (differenceReader.GetEmptyElementValue("filename", out string value))
+                                {
+                                    if (current == null)
+                                    {
+                                        current = difference.Local ?? difference.Remote;
+                                    }
+                                    else if (current == difference.Local)
+                                    {
+                                        current = difference.Remote;
+                                    }
+                                    if (current == null)
+                                    {
+                                        throw Logger.WriteException(new InvalidOperationException("Unexpected filename tag"));
+                                    }
+                                    current.FileName = value;
+                                }
+                                else if (differenceReader.GetEmptyElementValue("modification", out value))
+                                {
+                                    if (current == null)
+                                    {
+                                        throw Logger.WriteException(new InvalidOperationException("Unexpected modification tag"));
+                                    }
+                                    current.LastWriteTime = XmlConvert.ToDateTime(value, XmlDateTimeSerializationMode.Local);
+                                }
+                                else if (differenceReader.GetEmptyElementValue("size", out value))
+                                {
+                                    if (current == null)
+                                    {
+                                        throw Logger.WriteException(new InvalidOperationException("Unexpected size tag"));
+                                    }
+                                    current.Length = long.Parse(value, CultureInfo.InvariantCulture);
+                                }
+                            }
+
+                            if (difference.Action == default(SynchronizationAction))
+                            {
+                                throw Logger.WriteException(new InvalidOperationException("No action tag found"));
+                            }
+                            if (((difference.Local != null) && string.IsNullOrEmpty(difference.Local.FileName)) ||
+                                ((difference.Remote != null) && string.IsNullOrEmpty(difference.Remote.FileName)))
+                            {
+                                throw Logger.WriteException(new InvalidOperationException("Missing file information"));
+                            }
+
+                            result.InternalAdd(difference);
+                        }
+                    }
+                }
+
                 return result;
             }
         }
@@ -1193,7 +1335,7 @@ namespace WinSCP
         [Obsolete("Use RemotePath.CombinePaths")]
         public string CombinePaths(string path1, string path2)
         {
-            return RemotePath.CombinePaths(path1, path2);
+            return RemotePath.Combine(path1, path2);
         }
 
         public void AddRawConfiguration(string setting, string value)
@@ -1202,6 +1344,7 @@ namespace WinSCP
             RawConfiguration.Add(setting, value);
         }
 
+#if !NETSTANDARD
         [ComRegisterFunction]
         private static void ComRegister(Type t)
         {
@@ -1222,6 +1365,7 @@ namespace WinSCP
             string subKey = GetTypeLibKey(t);
             Registry.ClassesRoot.DeleteSubKey(subKey, false);
         }
+#endif
 
         private void ReadFile(RemoteFileInfo fileInfo, CustomLogReader fileReader)
         {
@@ -1484,8 +1628,8 @@ namespace WinSCP
                 SessionOptionsToSwitches(sessionOptions, scanFingerprint, out string arguments, out string logArguments);
 
                 const string switchName = "-rawsettings";
-                Tools.AddRawParameters(ref arguments, sessionOptions.RawSettings, "-rawsettings");
-                Tools.AddRawParameters(ref logArguments, sessionOptions.RawSettings, switchName);
+                Tools.AddRawParameters(ref arguments, sessionOptions.RawSettings, switchName, false);
+                Tools.AddRawParameters(ref logArguments, sessionOptions.RawSettings, switchName, false);
 
                 if (!string.IsNullOrEmpty(arguments))
                 {
@@ -1756,6 +1900,10 @@ namespace WinSCP
                 if (additional != null)
                 {
                     message += " - " + additional;
+                }
+                if (_logReader != null)
+                {
+                    _logReader.SetTimeouted();
                 }
                 throw Logger.WriteException(new TimeoutException(message));
             }
@@ -2263,8 +2411,10 @@ namespace WinSCP
         private int _progressHandling;
         private bool _guardProcessWithJob;
         private string _homePath;
+#if !NETSTANDARD
         private string _executableProcessUserName;
         private SecureString _executableProcessPassword;
+#endif
         private StringCollection _error;
         private bool _ignoreFailed;
         private TimeSpan _sessionTimeout;

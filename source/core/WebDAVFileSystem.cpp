@@ -190,6 +190,7 @@ void __fastcall TWebDAVFileSystem::Open()
   TSessionData * Data = FTerminal->SessionData;
 
   FSessionInfo.LoginTime = Now();
+  FSessionInfo.CertificateVerifiedManually = false;
 
   UnicodeString HostName = Data->HostNameExpanded;
   size_t Port = Data->PortNumber;
@@ -806,7 +807,7 @@ void TWebDAVFileSystem::NeonPropsResult(
     UnicodeString FileListPath = Data.FileSystem->AbsolutePath(Data.FileList->Directory, false);
     if (UnixSamePath(Path, FileListPath))
     {
-      Path = UnixIncludeTrailingBackslash(UnixIncludeTrailingBackslash(Path) + L"..");
+      Path = UnixIncludeTrailingBackslash(UnixIncludeTrailingBackslash(Path) + PARENTDIRECTORY);
     }
     std::unique_ptr<TRemoteFile> File(new TRemoteFile(NULL));
     File->Terminal = Data.FileSystem->FTerminal;
@@ -1058,7 +1059,7 @@ void __fastcall TWebDAVFileSystem::CopyFile(const UnicodeString FileName, const 
   CheckStatus(NeonStatus);
 }
 //---------------------------------------------------------------------------
-void __fastcall TWebDAVFileSystem::CreateDirectory(const UnicodeString DirName)
+void __fastcall TWebDAVFileSystem::CreateDirectory(const UnicodeString & DirName, bool /*Encrypt*/)
 {
   ClearNeonError();
   TOperationVisualizer Visualizer(FTerminal->UseBusyCursor);
@@ -1398,8 +1399,8 @@ void TWebDAVFileSystem::NeonPreSend(
     // Needed by IIS server to make it download source code, not code output,
     // and mainly to even allow downloading file with unregistered extensions.
     // Without it files like .001 return 404 (Not found) HTTP code.
-    // https://msdn.microsoft.com/en-us/library/cc250098.aspx
-    // https://msdn.microsoft.com/en-us/library/cc250216.aspx
+    // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-wdv/e37a9543-9290-4843-8c04-66457c60fa0a
+    // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-wdvse/501879f9-3875-4d7a-ab88-3cecab440034
     // http://lists.manyfish.co.uk/pipermail/neon/2012-April/001452.html
     // It's also supported by Oracle server:
     // https://docs.oracle.com/cd/E19146-01/821-1828/gczya/index.html
@@ -1731,24 +1732,32 @@ bool TWebDAVFileSystem::VerifyCertificate(TNeonCertificateData Data, bool Aux)
   }
   else
   {
-    FTerminal->LogEvent(CertificateVerificationMessage(Data));
+    FTerminal->LogEvent(0, CertificateVerificationMessage(Data));
 
     UnicodeString SiteKey = TSessionData::FormatSiteKey(FHostName, FPortNumber);
     Result =
       FTerminal->VerifyCertificate(HttpsCertificateStorageKey, SiteKey, Data.Fingerprint, Data.Subject, Data.Failures);
 
-    if (!Result)
+    if (Result)
+    {
+      FSessionInfo.CertificateVerifiedManually = true;
+    }
+    else
     {
       UnicodeString Message;
       Result = NeonWindowsValidateCertificateWithMessage(Data, Message);
-      FTerminal->LogEvent(Message);
+      FTerminal->LogEvent(0, Message);
     }
 
     FSessionInfo.Certificate = CertificateSummary(Data, FHostName);
 
     if (!Result)
     {
-      Result = FTerminal->ConfirmCertificate(FSessionInfo, Data.Failures, HttpsCertificateStorageKey, !Aux);
+      if (FTerminal->ConfirmCertificate(FSessionInfo, Data.Failures, HttpsCertificateStorageKey, !Aux))
+      {
+        Result = true;
+        FSessionInfo.CertificateVerifiedManually = true;
+      }
     }
 
     if (Result && !Aux)
@@ -1766,7 +1775,7 @@ void __fastcall TWebDAVFileSystem::CollectTLSSessionInfo()
   // Have to cache the value as the connection (the neon HTTP session, not "our" session)
   // can be closed at the time we need it in CollectUsage().
   UnicodeString Message = NeonTlsSessionInfo(FNeonSession, FSessionInfo, FTlsVersionStr);
-  FTerminal->LogEvent(Message);
+  FTerminal->LogEvent(0, Message);
 }
 //------------------------------------------------------------------------------
 // A neon-session callback to validate the SSL certificate when the CA
@@ -1867,7 +1876,7 @@ int TWebDAVFileSystem::NeonRequestAuth(
     {
       if (!SessionData->Password.IsEmpty() && !FileSystem->FStoredPasswordTried)
       {
-        APassword = SessionData->Password;
+        APassword = NormalizeString(SessionData->Password);
         FileSystem->FStoredPasswordTried = true;
       }
       else

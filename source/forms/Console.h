@@ -18,6 +18,7 @@
 #include "PngImageList.hpp"
 #include <Vcl.Imaging.pngimage.hpp>
 #include <System.Actions.hpp>
+#include <GUITools.h>
 //----------------------------------------------------------------------------
 class TConsoleDialog : public TForm
 {
@@ -78,6 +79,8 @@ protected:
   virtual void __fastcall CreateParams(TCreateParams & Params);
   virtual void __fastcall Dispatch(void * Message);
   void __fastcall DoAdjustWindow();
+
+  INTERFACE_HOOK;
 
 public:
   virtual __fastcall ~TConsoleDialog();

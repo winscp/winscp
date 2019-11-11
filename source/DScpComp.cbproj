@@ -50,7 +50,7 @@
 		<ILINK_GenerateImportLibrary>true</ILINK_GenerateImportLibrary>
 		<ILINK_GenerateLibFile>true</ILINK_GenerateLibFile>
 		<ILINK_LibraryPath>components\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
-		<IncludePath>components\;core;packages\filemng;packages\dragndrop;packages\my;$(BDS)\include;$(BDS)\include\windows\vcl;$(IncludePath)</IncludePath>
+		<IncludePath>components\;core;packages\filemng;packages\dragndrop;packages\my;packages\tb2k;packages\tbx;$(BDS)\include;$(BDS)\include\windows\vcl;$(IncludePath)</IncludePath>
 		<IntermediateOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</IntermediateOutputDir>
 		<LinkPackageStatics>rtl.lib;vcl.lib;vclx.lib</LinkPackageStatics>
 		<Multithreaded>true</Multithreaded>
@@ -109,12 +109,15 @@
 		<PackageImport Include="DriveDir.bpi">
 			<BuildOrder>9</BuildOrder>
 		</PackageImport>
-		<PackageImport Include="Moje.bpi">
+		<PackageImport Include="My.bpi">
 			<BuildOrder>10</BuildOrder>
 		</PackageImport>
 		<PackageImport Include="rtl.bpi">
 			<BuildOrder>20</BuildOrder>
 			<BuildOrder>1</BuildOrder>
+		</PackageImport>
+		<PackageImport Include="tbxp.bpi">
+			<BuildOrder>8</BuildOrder>
 		</PackageImport>
 		<PackageImport Include="vcl.bpi">
 			<BuildOrder>23</BuildOrder>

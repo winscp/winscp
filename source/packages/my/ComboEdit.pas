@@ -25,63 +25,43 @@ type
 
   { TCustomComboEdit }
 
-  TCustomComboEdit = class(TCustomMaskEdit)
+  TCustomComboEdit = class(TCustomEdit)
   private
     FButton: TButton;
     FBtnControl: TWinControl;
     FOnButtonClick: TNotifyEvent;
     FClickKey: TShortCut;
-    FReadOnly: Boolean;
-    FDirectInput: Boolean;
-    FAlwaysEnable: Boolean;
-    FAlignment: TAlignment;
     procedure SetEditRect;
     procedure UpdateBtnBounds;
     procedure EditButtonClick(Sender: TObject);
     function GetMinHeight: Integer;
     function GetTextHeight: Integer;
-    procedure SetShowCaret;
     function GetButtonWidth: Integer;
     procedure SetButtonWidth(Value: Integer);
     function GetButtonHint: string;
     procedure SetButtonHint(const Value: string);
-    procedure SetDirectInput(Value: Boolean);
-    procedure SetReadOnly(Value: Boolean);
-    procedure SetAlignment(Value: TAlignment);
     function BtnWidthStored: Boolean;
     procedure CMEnabledChanged(var Message: TMessage); message CM_ENABLEDCHANGED;
     procedure CMFontChanged(var Message: TMessage); message CM_FONTCHANGED;
-    procedure CMEnter(var Message: TMessage); message CM_ENTER;
     procedure CNCtlColor(var Message: TMessage); message CN_CTLCOLOREDIT;
     procedure WMSize(var Message: TWMSize); message WM_SIZE;
-    procedure WMSetFocus(var Message: TMessage); message WM_SETFOCUS;
-    procedure WMPaste(var Message: TWMPaste); message WM_PASTE;
-    procedure WMCut(var Message: TWMCut); message WM_CUT;
     procedure CMCtl3DChanged(var Message: TMessage); message CM_CTL3DCHANGED;
   protected
     procedure CreateParams(var Params: TCreateParams); override;
     procedure CreateWnd; override;
-    function EditCanModify: Boolean; override;
-    function GetReadOnly: Boolean; virtual;
     procedure KeyDown(var Key: Word; Shift: TShiftState); override;
-    procedure KeyPress(var Key: Char); override;
     procedure ButtonClick; dynamic;
-    property Alignment: TAlignment read FAlignment write SetAlignment default taLeftJustify;
-    property AlwaysEnable: Boolean read FAlwaysEnable write FAlwaysEnable default False;
     property Button: TButton read FButton;
     property ClickKey: TShortCut read FClickKey write FClickKey
       default scAltDown;
     property ButtonWidth: Integer read GetButtonWidth write SetButtonWidth
       stored BtnWidthStored;
     property ButtonHint: string read GetButtonHint write SetButtonHint;
-    property DirectInput: Boolean read FDirectInput write SetDirectInput default True;
-    property ReadOnly: Boolean read GetReadOnly write SetReadOnly default False;
     property OnButtonClick: TNotifyEvent read FOnButtonClick write FOnButtonClick;
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
     procedure DoClick;
-    procedure SelectAll;
   end;
 
 type
@@ -94,10 +74,8 @@ type
     property ClickKey;
     property Color;
     property Ctl3D;
-    property DirectInput;
     property DragCursor;
     property DragMode;
-    property EditMask;
     property Enabled;
     property Font;
     property ButtonWidth;
@@ -114,7 +92,6 @@ type
     property ParentFont;
     property ParentShowHint;
     property PopupMenu;
-    property ReadOnly;
     property ShowHint;
     property TabOrder;
     property TabStop;
@@ -245,10 +222,8 @@ type
     property ClickKey;
     property Color;
     property Ctl3D;
-    property DirectInput;
     property DragCursor;
     property DragMode;
-    property EditMask;
     property Enabled;
     property Font;
     property ButtonWidth;
@@ -265,7 +240,6 @@ type
     property ParentFont;
     property ParentShowHint;
     property PopupMenu;
-    property ReadOnly;
     property ShowHint;
     property TabOrder;
     property TabStop;
@@ -313,10 +287,8 @@ type
     property ClickKey;
     property Color;
     property Ctl3D;
-    property DirectInput;
     property DragCursor;
     property DragMode;
-    property EditMask;
     property Enabled;
     property Font;
     property ButtonWidth;
@@ -333,7 +305,6 @@ type
     property ParentFont;
     property ParentShowHint;
     property PopupMenu;
-    property ReadOnly;
     property ShowHint;
     property TabOrder;
     property TabStop;
@@ -415,7 +386,6 @@ begin
   inherited Create(AOwner);
   ControlStyle := ControlStyle + [csCaptureMouse];
   AutoSize := False;
-  FDirectInput := True;
   FClickKey := scCtrlEnter;
   FBtnControl := TWinControl.Create(Self);
   with FBtnControl do
@@ -448,23 +418,15 @@ begin
 end;
 
 procedure TCustomComboEdit.CreateParams(var Params: TCreateParams);
-const
-  Alignments: array[TAlignment] of Longword = (ES_LEFT, ES_RIGHT, ES_CENTER);
 begin
   inherited CreateParams(Params);
-  Params.Style := Params.Style or ES_MULTILINE or WS_CLIPCHILDREN
-    or Alignments[FAlignment];
+  Params.Style := Params.Style or WS_CLIPCHILDREN;
 end;
 
 procedure TCustomComboEdit.CreateWnd;
 begin
   inherited CreateWnd;
   SetEditRect;
-end;
-
-function TCustomComboEdit.EditCanModify: Boolean;
-begin
-  Result := not FReadOnly;
 end;
 
 procedure TCustomComboEdit.KeyDown(var Key: Word; Shift: TShiftState);
@@ -475,25 +437,6 @@ begin
     EditButtonClick(Self);
     Key := 0;
   end;
-end;
-
-procedure TCustomComboEdit.KeyPress(var Key: Char);
-var
-  OrigKey: Char;
-begin
-  if (Key = Char(VK_RETURN)) or (Key = Char(VK_ESCAPE)) or (Key = #10) then
-  begin
-    OrigKey := Key;
-    { must catch and remove this, since is actually multi-line }
-    GetParentForm(Self).Perform(CM_DIALOGKEY, Byte(Key), 0);
-    if Key = OrigKey then
-    begin
-      inherited KeyPress(Key);
-      Key := #0;
-      Exit;
-    end;
-  end;
-  inherited KeyPress(Key);
 end;
 
 function TCustomComboEdit.GetButtonWidth: Integer;
@@ -535,10 +478,10 @@ end;
 
 procedure TCustomComboEdit.SetEditRect;
 var
-  Loc: TRect;
+  RMargin: Integer;
 begin
-  SetRect(Loc, 0, 0, ClientWidth - FBtnControl.Width - 2, ClientHeight + 1);
-  SendMessage(Handle, EM_SETRECTNP, 0, LongInt(@Loc));
+  RMargin := FBtnControl.Width + ScaleByTextHeight(Self, 2);
+  SendMessage(Handle, EM_SETMARGINS, EC_RIGHTMARGIN, MakeLong(0, RMargin));
 end;
 
 procedure TCustomComboEdit.UpdateBtnBounds;
@@ -621,19 +564,15 @@ end;
 procedure TCustomComboEdit.CMFontChanged(var Message: TMessage);
 begin
   inherited;
-  if HandleAllocated then SetEditRect;
+  // Among other, this counters the EM_SETMARGINS call in TCustomEdit.WMSetFont.
+  // Equivalent to TCustomButtonedEdit.WndProc.
+  if HandleAllocated then UpdateBtnBounds;
 end;
 
 procedure TCustomComboEdit.CMEnabledChanged(var Message: TMessage);
 begin
   inherited;
   FButton.Enabled := Enabled;
-end;
-
-procedure TCustomComboEdit.CMEnter(var Message: TMessage);
-begin
-  if AutoSelect and not (csLButtonDown in ControlState) then SelectAll;
-  inherited;
 end;
 
 procedure TCustomComboEdit.CNCtlColor(var Message: TMessage);
@@ -649,23 +588,9 @@ begin
   end;
 end;
 
-procedure TCustomComboEdit.WMSetFocus(var Message: TMessage);
-begin
-  inherited;
-  SetShowCaret;
-end;
-
-procedure TCustomComboEdit.SetShowCaret;
-const
-  CaretWidth: array[Boolean] of Byte = (1, 2);
-begin
-  CreateCaret(Handle, 0, CaretWidth[fsBold in Font.Style], GetTextHeight);
-  ShowCaret(Handle);
-end;
-
 procedure TCustomComboEdit.EditButtonClick(Sender: TObject);
 begin
-  if (not FReadOnly) or AlwaysEnable then ButtonClick;
+  ButtonClick;
 end;
 
 procedure TCustomComboEdit.DoClick;
@@ -676,50 +601,6 @@ end;
 procedure TCustomComboEdit.ButtonClick;
 begin
   if Assigned(FOnButtonClick) then FOnButtonClick(Self);
-end;
-
-procedure TCustomComboEdit.SelectAll;
-begin
-  if DirectInput then inherited SelectAll;
-end;
-
-procedure TCustomComboEdit.SetDirectInput(Value: Boolean);
-begin
-  inherited ReadOnly := not Value or FReadOnly;
-  FDirectInput := Value;
-end;
-
-procedure TCustomComboEdit.WMPaste(var Message: TWMPaste);
-begin
-  if not FDirectInput or ReadOnly then Exit;
-  inherited;
-end;
-
-procedure TCustomComboEdit.WMCut(var Message: TWMCut);
-begin
-  if not FDirectInput or ReadOnly then Exit;
-  inherited;
-end;
-
-function TCustomComboEdit.GetReadOnly: Boolean;
-begin
-  Result := FReadOnly;
-end;
-
-procedure TCustomComboEdit.SetReadOnly(Value: Boolean);
-begin
-  if Value <> FReadOnly then begin
-    FReadOnly := Value;
-    inherited ReadOnly := Value or not FDirectInput;
-  end;
-end;
-
-procedure TCustomComboEdit.SetAlignment(Value: TAlignment);
-begin
-  if FAlignment <> Value then begin
-    FAlignment := Value;
-    RecreateWnd;
-  end;
 end;
 
 function TCustomComboEdit.BtnWidthStored: Boolean;

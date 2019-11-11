@@ -11,7 +11,7 @@
 
 #include <WinInterface.h>
 
-#include "RightsExt.h"
+#include "Rights.h"
 #include "ComboEdit.hpp"
 #include <Mask.hpp>
 //---------------------------------------------------------------------------
@@ -50,6 +50,9 @@ __published:
   TCheckBox *NewerOnlyCheck;
   TCheckBox *RemoveCtrlZAndBOMCheck;
   TCheckBox *PreserveTimeDirsCheck;
+  TCheckBox *EncryptNewFilesCheck;
+  TCheckBox *ExcludeHiddenFilesCheck;
+  TCheckBox *ExcludeEmptyDirectoriesCheck;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall ValidateMaskComboExit(TObject *Sender);
   void __fastcall RightsEditButtonClick(TObject *Sender);
@@ -62,7 +65,7 @@ private:
   UnicodeString FOrigMasks;
   TCopyParamType * FParams;
   int FCopyParamAttrs;
-  TRightsExtFrame * FRightsFrame;
+  TRightsFrame * FRightsFrame;
   bool FRemoveCtrlZ;
   void __fastcall SetParams(TCopyParamType value);
   TCopyParamType __fastcall GetParams();

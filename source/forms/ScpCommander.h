@@ -338,8 +338,8 @@ __published:
   TTBXToolbar *CommandLineToolbar;
   TTBXComboBoxItem *CommandLineCombo;
   TTBXLabelItem *CommandLinePromptLabel;
-  TTBXItem *TBXItem163;
-  TTBXItem *TBXItem169;
+  TTBXSubmenuItem *LocalOpenDirButton;
+  TTBXSubmenuItem *RemoteOpenDirButton;
   TTBXComboBoxItem *QueueSpeedComboBoxItem;
   TTBXItem *TBXItem220;
   TTBXItem *TBXItem221;
@@ -348,8 +348,8 @@ __published:
   TTBXItem *TBXItem223;
   TTBXItem *TBXItem224;
   TTBXItem *TBXItem210;
-  TTBXItem *TBXItem228;
-  TTBXItem *TBXItem229;
+  TTBXSubmenuItem *TBXItem228;
+  TTBXSubmenuItem *TBXItem229;
   TTBXSeparatorItem *TBXSeparatorItem53;
   TTBXItem *TBXItem230;
   TTBXSubmenuItem *TBXSubmenuItem231;
@@ -423,6 +423,16 @@ __published:
   TTBXItem *TBXItem248;
   TTBXItem *TBXItem249;
   TTBXItem *TBXItem250;
+  TTBXItem *TBXItem76;
+  TTBXItem *TBXItem127;
+  TTBXSeparatorItem *TBXSeparatorItem62;
+  TTBXItem *TBXItem163;
+  TTBXItem *TBXItem169;
+  TTBXSeparatorItem *TBXSeparatorItem63;
+  TTBXItem *TBXItem237;
+  TTBXItem *TBXItem245;
+  TTBXSeparatorItem *TBXSeparatorItem64;
+  TTBXItem *TBXItem251;
   void __fastcall SplitterMoved(TObject *Sender);
   void __fastcall SplitterCanResize(TObject *Sender, int &NewSize,
     bool &Accept);
@@ -433,17 +443,13 @@ __published:
   void __fastcall LocalFileControlDDDragEnter(TObject *Sender,
     IDataObject *DataObj, int grfKeyState, TPoint &Point,
     int &dwEffect, bool &Accept);
-  void __fastcall LocalFileControlDDDragOver(TObject *Sender, int grfKeyState,
-    TPoint &Point, int &dwEffect);
-  void __fastcall LocalFileControlDDFileOperation(TObject *Sender,
-    int dwEffect, UnicodeString SourcePath, UnicodeString TargetPath,
-    bool &DoOperation);
+  void __fastcall LocalFileControlDDFileOperation(
+    TObject *Sender, int dwEffect, UnicodeString SourcePath, UnicodeString TargetPath,
+    bool Paste, bool &DoOperation);
   void __fastcall RemoteFileControlDDFileOperationExecuted(TObject *Sender,
     int dwEffect, UnicodeString SourcePath, UnicodeString TargetPath);
   void __fastcall LocalDirViewDDTargetHasDropHandler(TObject *Sender,
     TListItem *Item, int &Effect, bool &DropHandler);
-  void __fastcall LocalFileControlDDMenuPopup(TObject *Sender, HMENU AMenu,
-    IDataObject *DataObj, int AMinCustCmd, int grfKeyState, TPoint &pt);
   void __fastcall PathLabelDblClick(TObject *Sender);
   void __fastcall LocalDirViewEnter(TObject *Sender);
   void __fastcall LocalPathLabelGetStatus(TCustomPathLabel *Sender,
@@ -482,6 +488,8 @@ __published:
   void __fastcall RemoteStatusBarPanelClick(TTBXCustomStatusBar *Sender, TTBXStatusPanel *Panel);
   void __fastcall RemotePathLabelMaskClick(TObject *Sender);
   void __fastcall LocalPathLabelMaskClick(TObject *Sender);
+  void __fastcall LocalOpenDirButtonPopup(TTBCustomItem *Sender, bool FromLink);
+  void __fastcall RemoteOpenDirButtonPopup(TTBCustomItem *Sender, bool FromLink);
 
 private:
   bool FConstructed;
@@ -493,9 +501,10 @@ private:
   TStrings * FInternalDDDownloadList;
   UnicodeString FPrevPath[2];
   bool FFirstTerminal;
-  UnicodeString FDDExtTarget;
+  UnicodeString FDDFakeFileTarget;
   bool FCommandLineComboPopulated;
   TStrings* FLocalPathComboBoxPaths;
+  int FLocalSpecialPaths;
   unsigned int FSpecialFolders;
   TEdit * FCommandLineComboEdit;
   TWndMethod FToolbarEditOldWndProc;
@@ -537,7 +546,7 @@ protected:
   bool __fastcall InternalDDDownload(UnicodeString & TargetDirectory);
   virtual bool __fastcall DDGetTarget(
     UnicodeString & Directory, bool & ForceQueue, UnicodeString & CounterName);
-  virtual void __fastcall DDExtInitDrag(TFileList * FileList, bool & Created);
+  virtual void __fastcall DDFakeFileInitDrag(TFileList * FileList, bool & Created);
   virtual void __fastcall SideEnter(TOperationSide Side);
   void __fastcall SaveCommandLine();
   bool __fastcall ExecuteCommandLine();
@@ -568,7 +577,7 @@ protected:
   void __fastcall LocalPathComboUpdate();
   virtual void __fastcall ToolbarItemResize(TTBXCustomDropDownItem * Item, int Width);
   void __fastcall DoOpenBookmark(UnicodeString Local, UnicodeString Remote);
-  virtual bool __fastcall OpenBookmark(UnicodeString Local, UnicodeString Remote);
+  virtual bool __fastcall OpenBookmark(TOperationSide Side, TBookmark * Bookmark);
   virtual void __fastcall DoFocusRemotePath(TTerminal * Terminal, const UnicodeString & Path);
   UnicodeString __fastcall ChangeFilePath(UnicodeString Path, TOperationSide Side);
   virtual bool __fastcall EligibleForImageDisplayMode(TTBCustomItem * Item);
@@ -577,6 +586,7 @@ protected:
   virtual UnicodeString __fastcall DefaultDownloadTargetDirectory();
   virtual void __fastcall StartingDisconnected();
   virtual void __fastcall UpdateImages();
+  virtual void __fastcall FileColorsChanged();
 
 public:
   __fastcall TScpCommanderForm(TComponent* Owner);
@@ -600,6 +610,8 @@ public:
   virtual void __fastcall HistoryGo(TOperationSide Side, int Index);
   virtual void __fastcall DisplaySystemContextMenu();
   virtual void __fastcall GoToAddress();
+  virtual void __fastcall CopyFilesToClipboard(TOperationSide Side);
+  virtual void __fastcall PasteFromClipBoard();
 
   __property double LeftPanelWidth = { read = GetLeftPanelWidth, write = SetLeftPanelWidth };
 };

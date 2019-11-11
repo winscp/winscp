@@ -61,7 +61,6 @@ type
     procedure CreateProperties(ACount: Integer);
 
     property Columns: TListColumns read GetColumns stored False;
-    property Count: Integer read GetCount stored False;
   public
     constructor Create(ListView: TCustomListView; ColCount: Integer);
     destructor Destroy; override;
@@ -70,6 +69,7 @@ type
     procedure ListViewWndCreated;
     procedure ListViewWndDestroying;
     procedure ListViewWndDestroyed;
+    property Count: Integer read GetCount stored False;
     property Alignments[Index: Integer]: TAlignment read GetAlignments write SetAlignments;
     property Captions[Index: Integer]: string read GetCaptions write SetCaptions;
     property Widths[Index: Integer]: Integer read GetWidths write SetWidths;

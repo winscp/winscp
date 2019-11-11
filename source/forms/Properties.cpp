@@ -16,7 +16,6 @@
 //---------------------------------------------------------------------
 #pragma link "PathLabel"
 #pragma link "Rights"
-#pragma link "RightsExt"
 #ifndef NO_RESOURCES
 #pragma resource "*.dfm"
 #endif
@@ -71,6 +70,8 @@ __fastcall TPropertiesDialog::TPropertiesDialog(TComponent* AOwner,
   FUserList = UserList;
   FChecksumAlgs = ChecksumAlgs;
 
+  ReadOnlyControl(ChecksumEdit);
+  ChecksumUnknownLabel->Caption = LoadStr(PROPERTIES_CHECKSUM_UNKNOWN);
   LoadInfo();
 
   UseSystemSettings(this);
@@ -227,6 +228,13 @@ void __fastcall TPropertiesDialog::LoadInfo()
       Stats.SymLinks++;
     }
     FilesSize += File->Size;
+  }
+
+  if (!FMultiple)
+  {
+    // Show only file name, if we have only single file/directory.
+    // For directory, this changes, once "Calculate" button is pressed
+    Stats = TCalculateSizeStats();
   }
 
   LoadRemoteTokens(GroupComboBox, FGroupList);
@@ -553,9 +561,8 @@ void __fastcall TPropertiesDialog::UpdateControls()
   EnableControl(ChecksumSheet, ChecksumSupported());
   EnableControl(ChecksumButton, ChecksumSheet->Enabled &&
     !ChecksumAlgEdit->Text.IsEmpty());
-  // hide checksum edit at least if it is disabled to get rid of ugly
-  // visage on XP
-  ChecksumEdit->Visible = ChecksumEdit->Enabled;
+  ChecksumEdit->Visible = !ChecksumEdit->Text.IsEmpty();
+  ChecksumUnknownLabel->Visible = !ChecksumEdit->Visible;
 
   DefaultButton(ChecksumButton, ChecksumAlgEdit->Focused());
   DefaultButton(OkButton, !ChecksumAlgEdit->Focused());
@@ -603,7 +610,7 @@ void __fastcall TPropertiesDialog::HelpButtonClick(TObject * /*Sender*/)
 void __fastcall TPropertiesDialog::ResetChecksum()
 {
   ChecksumView->Items->Clear();
-  ChecksumEdit->Text = LoadStr(PROPERTIES_CHECKSUM_UNKNOWN);
+  ChecksumEdit->Text = UnicodeString();
   AutoSizeListColumnsWidth(ChecksumView);
 }
 //---------------------------------------------------------------------------
@@ -661,6 +668,7 @@ void __fastcall TPropertiesDialog::CalculatedChecksum(
     ChecksumEdit->Text = Hash;
   }
   FAlgUsed = Alg;
+  UpdateControls();
 }
 //---------------------------------------------------------------------------
 void __fastcall TPropertiesDialog::NeedChecksum()

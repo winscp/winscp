@@ -30,6 +30,9 @@
 #include <VCLCommon.h>
 #include <WebBrowserEx.hpp>
 #include <DateUtils.hpp>
+#include <OperationWithTimeout.hpp>
+#include <Soap.HTTPUtil.hpp>
+#include <Web.HTTPApp.hpp>
 //---------------------------------------------------------------------------
 #define KEY _T("SYSTEM\\CurrentControlSet\\Control\\") \
             _T("Session Manager\\Environment")
@@ -489,7 +492,7 @@ static void __fastcall RegisterProtocolForDefaultPrograms(HKEY RootKey, const Un
   // application is registered for the protocol (i.e. RegisterProtocol would be enough)
   RegisterAsUrlHandler(RootKey, Protocol);
 
-  // see https://docs.microsoft.com/en-us/windows/desktop/shell/default-programs#registering-an-application-for-use-with-default-programs
+  // see https://docs.microsoft.com/en-us/windows/win32/shell/default-programs#registering-an-application-for-use-with-default-programs
   std::unique_ptr<TRegistry> Registry(CreateRegistry(RootKey));
 
   // create capabilities record
@@ -503,7 +506,7 @@ static void __fastcall RegisterProtocolForDefaultPrograms(HKEY RootKey, const Un
     Abort();
   }
 
-  UnicodeString Description = LoadStr(REGISTERED_APP_DESC2);
+  UnicodeString Description = LoadStr(REGISTERED_APP_DESC3);
   Registry->WriteString(L"ApplicationDescription", Description);
 
   if (!Registry->OpenKey(L"UrlAssociations", true))
@@ -676,7 +679,7 @@ void __fastcall LaunchAdvancedAssociationUI()
 
   RegisterForDefaultPrograms();
   NotifyChangedAssociations();
-  // sleep recommended by https://docs.microsoft.com/en-us/windows/desktop/shell/default-programs#becoming-the-default-browser
+  // sleep recommended by https://docs.microsoft.com/en-us/windows/win32/shell/default-programs#becoming-the-default-browser
   Sleep(1000);
 
   if (IsWin10())
@@ -691,6 +694,7 @@ void __fastcall LaunchAdvancedAssociationUI()
         NULL, CLSCTX_INPROC, __uuidof(IOpenControlPanel), (void**)&OpenControlPanel);
     if (SUCCEEDED(Result))
     {
+      // This does not work anymore since April 2018 Update, it now has the same effect as mere "pageDefaultProgram".
       UnicodeString Page = FORMAT(L"pageDefaultProgram\\pageAdvancedSettings?pszAppName=%s", (AppNameString()));
       OpenControlPanel->Open(L"Microsoft.DefaultPrograms", Page.c_str(), NULL);
       OpenControlPanel->Release();
@@ -1183,14 +1187,9 @@ void __fastcall GetUpdatesMessage(UnicodeString & Message, bool & New,
   }
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall GetEnableAutomaticUpdatesUrl()
-{
-  return AppendUrlParams(LoadStr(DONATE_URL), L"automaticupdates=1");
-}
-//---------------------------------------------------------------------------
 void __fastcall EnableAutomaticUpdates()
 {
-  OpenBrowser(GetEnableAutomaticUpdatesUrl());
+  ShowHelp(HELP_AUTOMATIC_UPDATE);
 }
 //---------------------------------------------------------------------------
 static void __fastcall OpenHistory(void * /*Data*/, TObject * /*Sender*/, unsigned int & /*Answer*/)
@@ -1522,26 +1521,60 @@ static void __fastcall InsertDonateLink(void * /*Data*/, TObject * Sender)
   // OnShow can happen multiple times, for example when showing dialog on start up (being main window)
   if (FindComponentRecursively(Dialog, DonatePanelName) == NULL)
   {
+    UnicodeString DocumentBody = LoadStr(UPDATES_DONATE_HTML);
+    DocumentBody = ReplaceStr(DocumentBody, L"%DONATE_URL%", AppendUrlParams(LoadStr(DONATE_URL), L"automaticupdates=1"));
+    UnicodeString AboutStoreUrl = LoadStr(ABOUT_STORE_URL);
+    DocumentBody = ReplaceStr(DocumentBody, L"%STORE_URL%", AboutStoreUrl);
+    UnicodeString StoreButtonUrl = ProgramUrl(LoadStr(STORE_GET_IMG_URL));
+    StoreButtonUrl = HTMLEscape(StoreButtonUrl);
+    UnicodeString StoreButton =
+      FORMAT(L"<img src=\"%s\" style=\"height: 1.8em; vertical-align: -0.4em; padding-top: 0.2em; border: 0;\">", (StoreButtonUrl));
+    UnicodeString StoreUrl = FMTLOAD(STORE_URL, (L"update"));
+    UnicodeString StoreLink = FORMAT(L"<a href=\"%s\">%s</a>", (StoreUrl, StoreButton));
+
+    UnicodeString PlainBody = HTMLDecode(DocumentBody);
+    int P1, P2;
+    while (((P1 = PlainBody.Pos(L"<")) > 0) && ((P2 = PlainBody.Pos(L">")) > 0) && (P1 < P2))
+    {
+      PlainBody.Delete(P1, P2 - P1 + 1);
+    }
+    while ((P1 = PlainBody.Pos(L"  ")) > 0)
+    {
+      PlainBody.Delete(P1, 1);
+    }
+
+    DocumentBody = ReplaceStr(DocumentBody, L"%GET_IMG% ", FORMAT(L"%s&nbsp;", (StoreLink)));
+    DocumentBody = FORMAT(L"<p>%s</p>", (DocumentBody));
+
     TPanel * Panel = CreateBlankPanel(Dialog);
     Panel->Name = DonatePanelName;
     Panel->Caption = UnicodeString(); // override default use of Name
 
-    TStaticText * StaticText = new TStaticText(Panel);
-    StaticText->Top = 0;
-    StaticText->Left = 0;
-    StaticText->AutoSize = true;
-    StaticText->Caption = LoadStr(UPDATES_DONATE_LINK);
-    StaticText->Parent = Panel;
-    StaticText->OnClick = MakeMethod<TNotifyEvent>(NULL, UpdatesDonateClick);
-    StaticText->TabStop = true;
+    TWebBrowserEx * DonateBrowser = CreateBrowserViewer(Panel, UnicodeString());
+    ReadyBrowserForStreaming(DonateBrowser);
+    WaitBrowserToIdle(DonateBrowser);
 
-    LinkLabel(StaticText);
+    int Height = 36;
+    int TextWidth = Dialog->Canvas->TextWidth(PlainBody);
+    int ContentLimit = (GetMessageDialogContentWidth(Dialog) * 5 / 3);
+    if (TextWidth > ContentLimit)
+    {
+      Height = Height * 3 / 2;
+    }
+    DonateBrowser->Height = ScaleByTextHeight(Dialog, Height);
 
-    Panel->Height = StaticText->Height;
+    DonateBrowser->Top = 0;
+    DonateBrowser->Left = 0;
+
+    Panel->Height = DonateBrowser->Height;
 
     // Currently this is noop (will fail assertion), if MoreMessagesUrl is not set
     // (what should not happen)
     InsertPanelToMessageDialog(Dialog, Panel);
+
+    UnicodeString Document = GenerateAppHtmlPage(Dialog->Font, Panel, DocumentBody, true);
+    LoadBrowserDocument(DonateBrowser, Document);
+    HideBrowserScrollbars(DonateBrowser);
   }
 }
 //---------------------------------------------------------------------------
@@ -1591,7 +1624,7 @@ bool __fastcall CheckForUpdates(bool CachedResults)
 
     if (Updates.HaveResults &&
         (double(Updates.Period) > 0) &&
-        // do not chow next check time, if we have new version info
+        // do not show next check time, if we have new version info
         !New)
     {
       Message += L"\n\n" +
@@ -1645,7 +1678,9 @@ bool __fastcall CheckForUpdates(bool CachedResults)
 
     if (New)
     {
-      if (Updates.Results.DownloadUrl.IsEmpty() && IsInstalled())
+      // Internet Explorer on Windows XP cannot talk to CDN77, where we host Store Get button.
+      // As a simple solution, we just do not display the donation panel on Windows XP.
+      if (Updates.Results.DownloadUrl.IsEmpty() && IsInstalled() && IsWinVista())
       {
         DebugAssert(Dialog->OnShow == NULL);
         // InsertDonateLink need to be called only after MessageBrowser is created
@@ -1811,7 +1846,7 @@ static bool __fastcall AddJumpListCategory(TStrings * Names,
 void __fastcall UpdateJumpList(TStrings * SessionNames, TStrings * WorkspaceNames)
 {
   ICustomDestinationList * DestinationList = NULL;
-  IObjectArray * RemovedArray = NULL;
+  IObjectArray * RemovedArray;
   TStringList * Removed = NULL;
   int OldErrMode = SetErrorMode(SEM_FAILCRITICALERRORS);
 
@@ -1822,9 +1857,7 @@ void __fastcall UpdateJumpList(TStrings * SessionNames, TStrings * WorkspaceName
     {
 
       unsigned int MinSlots;
-      unsigned int * PMinSlots = &MinSlots;
-      void ** PRemovedArray = (void**)&RemovedArray;
-      HRESULT Result = DestinationList->BeginList(PMinSlots, IID_IObjectArray, PRemovedArray);
+      HRESULT Result = DestinationListBeginList(DestinationList, MinSlots, IID_IObjectArray, reinterpret_cast<void *>(RemovedArray), 50000);
       if (SUCCEEDED(Result) && DebugAlwaysTrue(RemovedArray != NULL))
       {
         Removed = new TStringList();
@@ -1864,10 +1897,6 @@ void __fastcall UpdateJumpList(TStrings * SessionNames, TStrings * WorkspaceName
   __finally
   {
     SetErrorMode(OldErrMode);
-    if (RemovedArray != NULL)
-    {
-      RemovedArray->Release();
-    }
     if (DestinationList != NULL)
     {
       DestinationList->Release();
@@ -2208,4 +2237,476 @@ UnicodeString __fastcall GetPowerShellVersionStr()
   }
 
   return PowerShellVersionStr;
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+static void CollectCLSIDKey(
+  TConsole * Console, TStrings * Keys, int PlatformSet, TRegistryStorage * Storage, const UnicodeString & CLSID,
+  UnicodeString & CommonCodeBase, const UnicodeString & Platform, UnicodeString & Platforms)
+{
+  UnicodeString CLSIDKey = FORMAT(L"CLSID\\%s", (CLSID));
+  if (Storage->OpenSubKey(CLSIDKey, false, true))
+  {
+    int Index = Keys->IndexOf(CLSIDKey);
+    if (Index >= 0)
+    {
+      Keys->Objects[Index] = reinterpret_cast<TObject *>(PlatformSet | reinterpret_cast<int>(Keys->Objects[Index]));
+    }
+    else
+    {
+      Keys->AddObject(CLSIDKey, reinterpret_cast<TObject *>(PlatformSet));
+    }
+    UnicodeString CodeBase;
+    if (Storage->OpenSubKey(L"InprocServer32", false))
+    {
+      CodeBase = Storage->ReadString(L"CodeBase", UnicodeString());
+      UnicodeString Assembly = Storage->ReadString(L"Assembly", UnicodeString());
+      UnicodeString Version;
+      if (!Assembly.IsEmpty())
+      {
+        UnicodeString VersionPrefix = L"Version=";
+        int P = Assembly.UpperCase().Pos(VersionPrefix.UpperCase());
+        if (P > 0)
+        {
+          Assembly.Delete(1, P + VersionPrefix.Length() - 1);
+          Version = CutToChar(Assembly, L',', true);
+        }
+      }
+      if (CodeBase.IsEmpty() || Version.IsEmpty())
+      {
+        Console->PrintLine(FORMAT(L"Warning: Could not find codebase and version for %s.", (CLSID)));
+        CodeBase = UnicodeString();
+      }
+      else
+      {
+        CodeBase = FORMAT(L"%s (%s)", (CodeBase, Version));
+        if (CommonCodeBase.IsEmpty())
+        {
+          Console->PrintLine(FORMAT(L"Codebase %s, unless stated otherwise", (CodeBase)));
+          CommonCodeBase = CodeBase;
+        }
+        if (SameText(CommonCodeBase, CodeBase))
+        {
+          CodeBase = L"";
+        }
+      }
+      Storage->CloseSubKey();
+    }
+    Storage->CloseSubKey();
+
+    UnicodeString Buf = Platform;
+    AddToList(Buf, CodeBase, L" - ");
+    AddToList(Platforms, Buf, ", ");
+  }
+}
+//---------------------------------------------------------------------------
+static UnicodeString PlatformStr(int PlatformSet)
+{
+  UnicodeString Result;
+  if (PlatformSet == 0)
+  {
+    Result = L"shared";
+  }
+  else
+  {
+    if (FLAGSET(PlatformSet, 32))
+    {
+      Result = L"32-bit";
+    }
+    if (FLAGSET(PlatformSet, 64))
+    {
+      AddToList(Result, L"64-bit", L", ");
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+static void DoCollectComRegistration(TConsole * Console, TStrings * Keys)
+{
+  UnicodeString TypeLib = L"{A0B93468-D98A-4845-A234-8076229AD93F}"; // Duplicated in AssemblyInfo.cs
+  std::unique_ptr<TRegistryStorage> Storage(new TRegistryStorage(UnicodeString(), HKEY_CLASSES_ROOT));
+  Storage->MungeStringValues = false;
+  Storage->AccessMode = smRead;
+  std::unique_ptr<TRegistryStorage> Storage64;
+  if (IsWin64())
+  {
+    Storage64.reset(new TRegistryStorage(UnicodeString(), HKEY_CLASSES_ROOT, KEY_WOW64_64KEY));
+    Storage64->MungeStringValues = false;
+    Storage64->AccessMode = smRead;
+  }
+
+  // Classes, TypeLib and Record are shared between 32-bit and 64-bit registry view.
+  // 32-bit and 64-bit version of regasm adds CLSID keys to its respective view.
+  // Both 32-bit and 64-bit version of regasm seem to add Interface keys to both 32-bit and 64-bit views.
+  // On Vista, Interface keys are reflected (so when 32-bit keys is deleted, it's also deleted from 64-bit key,
+  // and we show an error, trying to delete the 64-bit key).
+
+  if (Storage->OpenRootKey(false))
+  {
+    Console->PrintLine(FORMAT(L"Versions of type library %s:", (TypeLib)));
+    UnicodeString TypeLibKey = FORMAT(L"TypeLib\\%s", (TypeLib));
+    if (Storage->OpenSubKey(TypeLibKey, false, true))
+    {
+      Keys->Add(TypeLibKey);
+      std::unique_ptr<TStringList> KeyNames(new TStringList());
+      Storage->GetSubKeyNames(KeyNames.get());
+      if (KeyNames->Count == 0)
+      {
+        Console->PrintLine(L"Warning: The type library key exists, but no type libraries are present.");
+      }
+      else
+      {
+        for (int Index = 0; Index < KeyNames->Count; Index++)
+        {
+          UnicodeString Version = KeyNames->Strings[Index];
+          if (!Storage->OpenSubKey(FORMAT(L"%s\\0", (Version)), false, true))
+          {
+            Console->PrintLine(FORMAT(L"Warning: Subkey \"0\" for type library \"%s\" cannot be opened.", (Version)));
+          }
+          else
+          {
+            std::unique_ptr<TStringList> Platforms(new TStringList());
+            Storage->GetSubKeyNames(Platforms.get());
+            if (Platforms->Count == 0)
+            {
+              Console->PrintLine(FORMAT(L"Warning: Subkey \"0\" for type library \"%s\" exists, but platforms are present.", (Version)));
+            }
+            else
+            {
+              for (int Index2 = 0; Index2 < Platforms->Count; Index2++)
+              {
+                UnicodeString Platform = Platforms->Strings[Index2];
+                if (!Storage->OpenSubKey(Platform, false))
+                {
+                  Console->PrintLine(FORMAT(L"Warning: Platform \"%s\" for type library \"%s\" cannot be opened.", (Platform, Version)));
+                }
+                else
+                {
+                  UnicodeString TypeLibraryPath = Storage->ReadString(UnicodeString(), UnicodeString());
+                  UnicodeString Exists = FileExists(TypeLibraryPath) ? L"exists" : L"does not exist";
+                  Console->PrintLine(FORMAT(L"%s (%s): %s (%s)", (Version, Platform, TypeLibraryPath, Exists)));
+                  Storage->CloseSubKey();
+                }
+              }
+            }
+            Storage->CloseSubKey();
+          }
+        }
+      }
+      Storage->CloseSubKey();
+    }
+    else
+    {
+      Console->PrintLine(L"Type library not registered.");
+    }
+    Console->PrintLine();
+
+    std::unique_ptr<TStringList> KeyNames(new TStringList());
+    Storage->GetSubKeyNames(KeyNames.get());
+    UnicodeString NamespacePrefix = L"WinSCP.";
+    Console->PrintLine(L"Classes:");
+    UnicodeString CommonCodeBase;
+    int Found = 0;
+    for (int Index = 0; Index < KeyNames->Count; Index++)
+    {
+      UnicodeString KeyName = KeyNames->Strings[Index];
+      if (StartsText(NamespacePrefix, KeyName))
+      {
+        if (Storage->OpenSubKey(FORMAT(L"%s\\%s", (KeyName, L"CLSID")), false, true))
+        {
+          UnicodeString Class = KeyName;
+          UnicodeString CLSID = Trim(Storage->ReadString(UnicodeString(), UnicodeString()));
+          Storage->CloseSubKey();
+
+          if (!CLSID.IsEmpty())
+          {
+            Keys->Add(KeyName);
+            UnicodeString Platforms;
+            CollectCLSIDKey(Console, Keys, 32, Storage.get(), CLSID, CommonCodeBase, L"32-bit", Platforms);
+            if (Storage64.get() != NULL)
+            {
+              CollectCLSIDKey(Console, Keys, 64, Storage64.get(), CLSID, CommonCodeBase, L"64-bit", Platforms);
+            }
+
+            UnicodeString Line = FORMAT(L"%s - %s", (Class, CLSID));
+
+            if (Platforms.IsEmpty())
+            {
+              Console->PrintLine(FORMAT(L"Warning: Could not find CLSID %s for class %s.", (CLSID, Class)));
+            }
+            else
+            {
+              Line += FORMAT(L" [%s]", (Platforms));
+            }
+
+            Console->PrintLine(Line);
+            Found++;
+          }
+        }
+      }
+    }
+    if (Found == 0)
+    {
+      Console->PrintLine(L"No classes found.");
+    }
+    Console->PrintLine();
+
+    UnicodeString InterfaceKey = L"Interface";
+    if (Storage->OpenSubKey(InterfaceKey, false) &&
+        ((Storage64.get() == NULL) || Storage64->OpenSubKey(InterfaceKey, false)))
+    {
+      Console->PrintLine(L"Interfaces:");
+      std::unique_ptr<TStringList> KeyNames(new TStringList());
+      Storage->GetSubKeyNames(KeyNames.get());
+      KeyNames->Sorted = true;
+      for (int Index = 0; Index < KeyNames->Count; Index++)
+      {
+        KeyNames->Objects[Index] = reinterpret_cast<TObject *>(32);
+      }
+      if (Storage64.get() != NULL)
+      {
+        std::unique_ptr<TStringList> KeyNames64(new TStringList());
+        Storage64->GetSubKeyNames(KeyNames64.get());
+        for (int Index = 0; Index < KeyNames64->Count; Index++)
+        {
+          UnicodeString Key64 = KeyNames64->Strings[Index];
+          int Index32 = KeyNames->IndexOf(Key64);
+          if (Index32 >= 0)
+          {
+            KeyNames->Objects[Index32] = reinterpret_cast<TObject *>(32 | 64);
+          }
+          else
+          {
+            KeyNames->AddObject(Key64, reinterpret_cast<TObject *>(64));
+          }
+        }
+      }
+      int Found = 0;
+      for (int Index = 0; Index < KeyNames->Count; Index++)
+      {
+        UnicodeString KeyName = KeyNames->Strings[Index];
+        // Open sub key first, to check if we are interested in the interface, as an optimization
+        int PlatformSet = reinterpret_cast<int>(KeyNames->Objects[Index]);
+        THierarchicalStorage * KeyStorage = FLAGSET(PlatformSet, 32) ? Storage.get() : Storage64.get();
+        if (KeyStorage->OpenSubKey(FORMAT(L"%s\\TypeLib", (KeyName)), false, true))
+        {
+          UnicodeString InterfaceTypeLib = KeyStorage->ReadString(UnicodeString(), UnicodeString());
+          UnicodeString Version = KeyStorage->ReadString(L"Version", UnicodeString());
+          KeyStorage->CloseSubKey();
+          if (SameText(InterfaceTypeLib, TypeLib))
+          {
+            if (KeyStorage->OpenSubKey(KeyName, false))
+            {
+              UnicodeString Key = ExcludeTrailingBackslash(KeyStorage->CurrentSubKey);
+              UnicodeString Interface = KeyStorage->ReadString(UnicodeString(), UnicodeString());
+              KeyStorage->CloseSubKey();
+              Keys->AddObject(Key, reinterpret_cast<TObject *>(PlatformSet));
+              Console->PrintLine(FORMAT(L"%s - %s (%s) [%s]", (Interface, KeyName, Version, PlatformStr(PlatformSet))));
+              Found++;
+            }
+          }
+        }
+      }
+      if (Found == 0)
+      {
+        Console->PrintLine(L"No interfaces found.");
+      }
+      Storage->CloseSubKey();
+      Console->PrintLine();
+    }
+
+    if (Storage->OpenSubKey(L"Record", false))
+    {
+      Console->PrintLine(L"Value types:");
+      std::unique_ptr<TStringList> KeyNames(new TStringList());
+      Storage->GetSubKeyNames(KeyNames.get());
+      int Found = 0;
+      for (int Index = 0; Index < KeyNames->Count; Index++)
+      {
+        UnicodeString KeyName = KeyNames->Strings[Index];
+        if (Storage->OpenSubKey(KeyName, false))
+        {
+          std::unique_ptr<TStringList> Versions(new TStringList());
+          Storage->GetSubKeyNames(Versions.get());
+          UnicodeString VersionsStr;
+          std::unique_ptr<TStringList> Classes(CreateSortedStringList());
+          for (int Index2 = 0; Index2 < Versions->Count; Index2++)
+          {
+            UnicodeString Version = Versions->Strings[Index2];
+            if (Storage->OpenSubKey(Version, false))
+            {
+              UnicodeString Class = Storage->ReadString(L"Class", UnicodeString());
+              Classes->Add(Class);
+              if (StartsStr(NamespacePrefix, Class))
+              {
+                AddToList(VersionsStr, Version, L", ");
+              }
+              Storage->CloseSubKey();
+            }
+          }
+          if (!VersionsStr.IsEmpty())
+          {
+            if (Classes->Count != 1)
+            {
+              Console->PrintLine(FORMAT(L"Warning: Different class names for the same value type %s: %s", (KeyName, Classes->CommaText)));
+            }
+            else
+            {
+              Keys->Add(ExcludeTrailingBackslash(Storage->CurrentSubKey));
+              Console->PrintLine(FORMAT(L"%s - %s (%s)", (Classes->Strings[0], KeyName, VersionsStr)));
+              Found++;
+            }
+          }
+          Storage->CloseSubKey();
+        }
+      }
+      if (Found == 0)
+      {
+        Console->PrintLine(L"No value types found.");
+      }
+      Storage->CloseSubKey();
+      Console->PrintLine();
+    }
+  }
+}
+//---------------------------------------------------------------------------
+bool DoUnregisterChoice(TConsole * Console)
+{
+  return (Console->Choice(L"U", -1, -1, -1, 0, 0, 0, UnicodeString()) == 1);
+}
+//---------------------------------------------------------------------------
+typedef HRESULT WINAPI (* RegDeleteTreeProc)(HKEY Key, LPCWSTR SubKey);
+static RegDeleteTreeProc ARegDeleteTree = NULL;
+//---------------------------------------------------------------------------
+void DoDeleteKey(TConsole * Console, TRegistry * Registry, const UnicodeString & Key, int Platform, bool & AnyDeleted, bool & AllDeleted)
+{
+  UnicodeString ParentKey = ExtractFileDir(Key);
+  UnicodeString ChildKey = ExtractFileName(Key);
+  bool Result = Registry->OpenKey(ParentKey, false);
+  if (Result)
+  {
+    if (DebugAlwaysFalse(ARegDeleteTree == NULL))
+    {
+      Result = false;
+    }
+    else
+    {
+      Result = (ARegDeleteTree(Registry->CurrentKey, ChildKey.c_str()) == 0);
+    }
+    Registry->CloseKey();
+  }
+
+  UnicodeString Status;
+  if (Result)
+  {
+    Status = L"removed";
+    AnyDeleted = true;
+  }
+  else
+  {
+    AllDeleted = false;
+    Status = L"NOT removed";
+  }
+  Console->PrintLine(FORMAT(L"%s [%s] - %s", (Key, PlatformStr(Platform), Status)));
+}
+//---------------------------------------------------------------------------
+int ComRegistration(TConsole * Console)
+{
+  int Result = RESULT_SUCCESS;
+  try
+  {
+    if (ARegDeleteTree == NULL)
+    {
+      HINSTANCE AdvapiLibrary = LoadLibrary(L"advapi32.dll");
+      if (DebugAlwaysTrue(AdvapiLibrary != NULL))
+      {
+        ARegDeleteTree = reinterpret_cast<RegDeleteTreeProc>(GetProcAddress(AdvapiLibrary, "RegDeleteTreeW"));
+      }
+    }
+
+    if (ARegDeleteTree == NULL)
+    {
+      throw Exception(FORMAT(L"Not supported on %s", (GetOSInfo())));
+    }
+
+    Console->PrintLine(GetEnvironmentInfo());
+    Console->PrintLine();
+
+    std::unique_ptr<TStrings> Keys(new TStringList());
+    DoCollectComRegistration(Console, Keys.get());
+
+    if (Keys->Count == 0)
+    {
+      Console->PrintLine(L"No registration found.");
+      Console->WaitBeforeExit();
+    }
+    else
+    {
+      Console->PrintLine(L"Press (U) to unregister or Esc to exit...");
+      if (DoUnregisterChoice(Console))
+      {
+        Console->PrintLine();
+        Console->PrintLine(L"The following registry keys will be removed from HKCR registry hive:");
+        for (int Index = 0; Index < Keys->Count; Index++)
+        {
+          Console->PrintLine(FORMAT(L"%s [%s]", (Keys->Strings[Index], PlatformStr(reinterpret_cast<int>(Keys->Objects[Index])))));
+        }
+        Console->PrintLine();
+
+        Console->PrintLine(L"You need Administrator privileges to remove the keys.");
+        Console->PrintLine(L"Press (U) again to proceed with unregistration or Esc to abort...");
+        if (DoUnregisterChoice(Console))
+        {
+          std::unique_ptr<TRegistry> Registry64(new TRegistry(KEY_READ | KEY_WRITE | KEY_WOW64_64KEY));
+          Registry64->RootKey = HKEY_CLASSES_ROOT;
+          std::unique_ptr<TRegistry> Registry32(new TRegistry(KEY_READ | KEY_WRITE | KEY_WOW64_32KEY));
+          Registry32->RootKey = HKEY_CLASSES_ROOT;
+
+          bool AnyDeleted = false;
+          bool AllDeleted = true;
+          for (int Index = 0; Index < Keys->Count; Index++)
+          {
+            UnicodeString Key = Keys->Strings[Index];
+            int PlatformSet = reinterpret_cast<int>(Keys->Objects[Index]);
+            if (PlatformSet == 0)
+            {
+              DoDeleteKey(Console, Registry32.get(), Key, 0, AnyDeleted, AllDeleted);
+            }
+            else
+            {
+              if (FLAGSET(PlatformSet, 32))
+              {
+                DoDeleteKey(Console, Registry32.get(), Key, 32, AnyDeleted, AllDeleted);
+              }
+              if (FLAGSET(PlatformSet, 64))
+              {
+                DoDeleteKey(Console, Registry64.get(), Key, 64, AnyDeleted, AllDeleted);
+              }
+            }
+          }
+
+          Console->PrintLine();
+          if (!AnyDeleted)
+          {
+            Console->PrintLine(L"No keys were removed. Make sure you have Administrator privileges.");
+          }
+          else if (!AllDeleted)
+          {
+            Console->PrintLine(L"Some keys were not removed. Make sure you have Administrator privileges.");
+          }
+          else
+          {
+            Console->PrintLine(L"All keys were removed. Unregistration succeeded.");
+          }
+          Console->WaitBeforeExit();
+        }
+      }
+    }
+  }
+  catch (Exception & E)
+  {
+    Result = HandleException(Console, E);
+    Console->WaitBeforeExit();
+  }
+  return Result;
 }

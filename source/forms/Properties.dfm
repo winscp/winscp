@@ -69,6 +69,7 @@ object PropertiesDialog: TPropertiesDialog
         Width = 44
         Height = 13
         Caption = 'Location:'
+        ShowAccelChar = False
       end
       object LocationLabel: TPathLabel
         Left = 85
@@ -89,6 +90,7 @@ object PropertiesDialog: TPropertiesDialog
         Height = 13
         AutoSize = False
         Caption = 'FileLabel'
+        ShowAccelChar = False
       end
       object Label2: TLabel
         Left = 8
@@ -96,6 +98,7 @@ object PropertiesDialog: TPropertiesDialog
         Width = 23
         Height = 13
         Caption = 'Size:'
+        ShowAccelChar = False
       end
       object SizeLabel: TLabel
         Left = 85
@@ -105,6 +108,7 @@ object PropertiesDialog: TPropertiesDialog
         Anchors = [akLeft, akTop, akRight]
         AutoSize = False
         Caption = 'SizeLabel'
+        ShowAccelChar = False
       end
       object LinksToLabelLabel: TLabel
         Left = 8
@@ -112,6 +116,7 @@ object PropertiesDialog: TPropertiesDialog
         Width = 40
         Height = 13
         Caption = 'Links to:'
+        ShowAccelChar = False
       end
       object LinksToLabel: TPathLabel
         Left = 85
@@ -180,7 +185,7 @@ object PropertiesDialog: TPropertiesDialog
         Anchors = [akLeft, akTop, akRight]
         Shape = bsTopLine
       end
-      inline RightsFrame: TRightsExtFrame
+      inline RightsFrame: TRightsFrame
         Left = 84
         Top = 200
         Width = 244
@@ -308,6 +313,14 @@ object PropertiesDialog: TPropertiesDialog
         DesignSize = (
           326
           41)
+        object ChecksumUnknownLabel: TLabel
+          Left = 10
+          Top = 18
+          Width = 117
+          Height = 13
+          Caption = 'ChecksumUnknownLabel'
+          ShowAccelChar = False
+        end
         object ChecksumEdit: TEdit
           Left = 10
           Top = 18

@@ -24,6 +24,7 @@
 #define NONEWERONLY_SWICH L"noneweronly"
 #define DELETE_SWITCH L"delete"
 #define REFRESH_SWITCH L"refresh"
+#define RAWTRANSFERSETTINGS_SWITCH L"rawtransfersettings"
 extern const wchar_t * TransferModeNames[];
 extern const int TransferModeNamesCount;
 extern const wchar_t * ToggleNames[];

@@ -75,6 +75,10 @@ protected:
   void __fastcall AdjustTransferControls();
   bool __fastcall RemotePaths();
   void __fastcall CopyParamListPopup(TRect R, int AdditionalOptions);
+  int __fastcall ActualCopyParamAttrs();
+
+  INTERFACE_HOOK;
+
 public:
   __fastcall TCopyDialog(
     TComponent* Owner, bool ToRemote, bool Move, TStrings * FileList, int Options,

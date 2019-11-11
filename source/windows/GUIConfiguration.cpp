@@ -86,9 +86,10 @@ void __fastcall TGUICopyParamType::Load(THierarchicalStorage * Storage)
   QueueParallel = Storage->ReadBool(L"QueueParallel", QueueParallel);
 }
 //---------------------------------------------------------------------------
-void __fastcall TGUICopyParamType::Save(THierarchicalStorage * Storage)
+void __fastcall TGUICopyParamType::Save(THierarchicalStorage * Storage, const TCopyParamType * Defaults) const
 {
-  TCopyParamType::Save(Storage);
+  DebugAssert(Defaults == NULL);
+  TCopyParamType::Save(Storage, Defaults);
 
   Storage->WriteBool(L"Queue", Queue);
   Storage->WriteBool(L"QueueNoConfirmation", QueueNoConfirmation);
@@ -556,6 +557,7 @@ void __fastcall TGUIConfiguration::Default()
   FMaxWatchDirectories = 500;
   FSynchronizeOptions = soRecurse | soSynchronizeAsk;
   FQueueTransfersLimit = 2;
+  FQueueBootstrap = false;
   FQueueKeepDoneItems = true;
   FQueueKeepDoneItemsFor = 15;
   FQueueAutoPopup = true;
@@ -635,6 +637,7 @@ void __fastcall TGUIConfiguration::UpdateStaticUsage()
     KEY(Integer,  SynchronizeMode); \
     KEY(Integer,  MaxWatchDirectories); \
     KEY(Integer,  QueueTransfersLimit); \
+    KEY(Bool,     QueueBootstrap); \
     KEY(Integer,  QueueKeepDoneItems); \
     KEY(Integer,  QueueKeepDoneItemsFor); \
     KEY(Bool,     QueueAutoPopup); \
@@ -652,6 +655,16 @@ void __fastcall TGUIConfiguration::UpdateStaticUsage()
     KEY(Integer,  SessionReopenAutoIdle); \
   ); \
 //---------------------------------------------------------------------------
+bool __fastcall TGUIConfiguration::DoSaveCopyParam(THierarchicalStorage * Storage, const TCopyParamType * CopyParam, const TCopyParamType * Defaults)
+{
+  bool Result = Storage->OpenSubKey(L"Interface\\CopyParam", true, true);
+  if (Result)
+  {
+    CopyParam->Save(Storage, Defaults);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall TGUIConfiguration::SaveData(THierarchicalStorage * Storage, bool All)
 {
   TConfiguration::SaveData(Storage, All);
@@ -661,7 +674,7 @@ void __fastcall TGUIConfiguration::SaveData(THierarchicalStorage * Storage, bool
   REGCONFIG(true);
   #undef KEYEX
 
-  if (Storage->OpenSubKey(L"Interface\\CopyParam", true, true))
+  if (DoSaveCopyParam(Storage, &FDefaultCopyParam, NULL))
   try
   {
     FDefaultCopyParam.Save(Storage);
@@ -693,6 +706,30 @@ void __fastcall TGUIConfiguration::SaveData(THierarchicalStorage * Storage, bool
   }
 }
 //---------------------------------------------------------------------------
+bool __fastcall TGUIConfiguration::LoadCopyParam(THierarchicalStorage * Storage, TCopyParamType * CopyParam)
+{
+  bool Result =
+    Storage->OpenSubKey(L"Interface\\CopyParam", false, true);
+  if (Result)
+  {
+    try
+    {
+      CopyParam->Load(Storage);
+    }
+    catch (...)
+    {
+      Storage->CloseSubKey();
+      throw;
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TGUIConfiguration::LoadDefaultCopyParam(THierarchicalStorage * Storage)
+{
+  FDefaultCopyParam.Load(Storage);
+}
+//---------------------------------------------------------------------------
 void __fastcall TGUIConfiguration::LoadData(THierarchicalStorage * Storage)
 {
   TConfiguration::LoadData(Storage);
@@ -704,12 +741,10 @@ void __fastcall TGUIConfiguration::LoadData(THierarchicalStorage * Storage)
   #pragma warn +eas
   #undef KEYEX
 
-  if (Storage->OpenSubKey(L"Interface\\CopyParam", false, true))
+  // FDefaultCopyParam must be loaded before eventual setting defaults for CopyParamList
+  if (LoadCopyParam(Storage, &FDefaultCopyParam))
   try
   {
-    // must be loaded before eventual setting defaults for CopyParamList
-    FDefaultCopyParam.Load(Storage);
-
     int CopyParamListCount = Storage->ReadInteger(L"CopyParamList", -1);
     FCopyParamListDefaults = (CopyParamListCount < 0);
     if (!FCopyParamListDefaults)
@@ -790,7 +825,9 @@ HINSTANCE __fastcall TGUIConfiguration::LoadNewResourceModule(LCID ALocale,
 {
   UnicodeString LibraryFileName;
   HINSTANCE NewInstance = 0;
-  bool Internal = (ALocale == InternalLocale());
+  LCID AInternalLocale = InternalLocale();
+  bool Internal = (ALocale == AInternalLocale);
+  DWORD PrimaryLang = PRIMARYLANGID(ALocale);
   if (!Internal)
   {
     UnicodeString Module;
@@ -820,7 +857,6 @@ HINSTANCE __fastcall TGUIConfiguration::LoadNewResourceModule(LCID ALocale,
     }
     else
     {
-      DWORD PrimaryLang = PRIMARYLANGID(ALocale);
       DWORD SubLang = SUBLANGID(ALocale);
       DebugAssert(SUBLANG_DEFAULT == SUBLANG_CHINESE_TRADITIONAL);
       // Finally look for a language-only translation.
@@ -838,6 +874,13 @@ HINSTANCE __fastcall TGUIConfiguration::LoadNewResourceModule(LCID ALocale,
         }
       }
     }
+  }
+
+  // If the locale is non-US English and we do not have that translation (and it's unlikely we ever have),
+  // treat it as if it were US English.
+  if (!NewInstance && !Internal && (PrimaryLang == static_cast<DWORD>(PRIMARYLANGID(AInternalLocale))))
+  {
+    Internal = true;
   }
 
   if (!NewInstance && !Internal)
@@ -966,17 +1009,21 @@ bool __fastcall TGUIConfiguration::GetCanApplyLocaleImmediately()
     (Screen->DataModuleCount == 0);
 }
 //---------------------------------------------------------------------------
+bool __fastcall TGUIConfiguration::UsingInternalTranslation()
+{
+  return FLocaleModuleName.IsEmpty();
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall TGUIConfiguration::AppliedLocaleCopyright()
 {
   UnicodeString Result;
-  if ((FAppliedLocale == 0) || (FAppliedLocale == InternalLocale()))
+  if (UsingInternalTranslation())
   {
     DebugFail(); // we do not expect to get called with internal locale
     Result = UnicodeString();
   }
   else
   {
-    DebugAssert(!FLocaleModuleName.IsEmpty());
     Result = GetFileFileInfoString(L"LegalCopyright", FLocaleModuleName);
   }
   return Result;
@@ -985,7 +1032,7 @@ UnicodeString __fastcall TGUIConfiguration::AppliedLocaleCopyright()
 UnicodeString __fastcall TGUIConfiguration::AppliedLocaleVersion()
 {
   UnicodeString Result;
-  if ((FAppliedLocale == 0) || (FAppliedLocale == InternalLocale()))
+  if (UsingInternalTranslation())
   {
     // noop
   }
@@ -1045,31 +1092,21 @@ void __fastcall TGUIConfiguration::SetResourceModule(HINSTANCE Instance)
 void __fastcall TGUIConfiguration::FindLocales(const UnicodeString & LocalesMask, TStrings * Exts, UnicodeString & LocalesExts)
 {
   int FindAttrs = faReadOnly | faArchive;
-  TSearchRecChecked SearchRec;
-  bool Found;
 
-  Found =
-    (FindFirstUnchecked(LocalesMask, FindAttrs, SearchRec) == 0);
-  try
+  TSearchRecOwned SearchRec;
+  bool Found = (FindFirstUnchecked(LocalesMask, FindAttrs, SearchRec) == 0);
+  while (Found)
   {
-    UnicodeString Ext;
-    while (Found)
+    UnicodeString Ext = ExtractFileExt(SearchRec.Name).UpperCase();
+    // DLL is a remnant from times the .NET assembly was winscp.dll, not winscpnet.dll
+    if ((Ext.Length() >= 3) && (Ext != L".EXE") && (Ext != L".COM") &&
+        (Ext != L".DLL") && (Ext != L".INI") && (Ext != L".MAP"))
     {
-      Ext = ExtractFileExt(SearchRec.Name).UpperCase();
-      // DLL is a remnant from times the .NET assembly was winscp.dll, not winscpnet.dll
-      if ((Ext.Length() >= 3) && (Ext != L".EXE") && (Ext != L".COM") &&
-          (Ext != L".DLL") && (Ext != L".INI") && (Ext != L".MAP"))
-      {
-        Ext = Ext.SubString(2, Ext.Length() - 1);
-        LocalesExts += Ext;
-        Exts->Add(Ext);
-      }
-      Found = (FindNextChecked(SearchRec) == 0);
+      Ext = Ext.SubString(2, Ext.Length() - 1);
+      LocalesExts += Ext;
+      Exts->Add(Ext);
     }
-  }
-  __finally
-  {
-    FindClose(SearchRec);
+    Found = (FindNextChecked(SearchRec) == 0);
   }
 }
 //---------------------------------------------------------------------------
@@ -1316,6 +1353,11 @@ void __fastcall TGUIConfiguration::SetNewDirectoryProperties(
 void __fastcall TGUIConfiguration::SetQueueTransfersLimit(int value)
 {
   SET_CONFIG_PROPERTY(QueueTransfersLimit);
+}
+//---------------------------------------------------------------------------
+void __fastcall TGUIConfiguration::SetQueueBootstrap(bool value)
+{
+  SET_CONFIG_PROPERTY(QueueBootstrap);
 }
 //---------------------------------------------------------------------------
 void __fastcall TGUIConfiguration::SetQueueKeepDoneItems(bool value)

@@ -1649,7 +1649,7 @@ void CAsyncSslSocketLayer::PrintSessionInfo()
       m_TlsVersionStr.c_str(),
       m_CipherName.c_str());
   USES_CONVERSION;
-  LogSocketMessageRaw(FZ_LOG_WARNING, A2T(buffer));
+  LogSocketMessageRaw(FZ_LOG_PROGRESS, A2T(buffer));
   delete [] buffer;
   delete [] buffer2;
 }

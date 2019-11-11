@@ -106,14 +106,28 @@ bool __fastcall SameFont(TFont * Font1, TFont * Font2)
     (Font1->Charset == Font2->Charset) && (Font1->Style == Font2->Style);
 }
 //---------------------------------------------------------------------------
-TColor __fastcall GetWindowTextColor(TColor Color)
+TColor __fastcall GetWindowTextColor(TColor BackgroundColor, TColor Color)
 {
-  return (Color == TColor(0)) ? clWindowText : Color;
+  if (Color == TColor(0))
+  {
+    Color = (IsDarkColor(BackgroundColor) ? clWhite : clWindowText);
+    SetContrast(Color, BackgroundColor, 180);
+  }
+  return Color;
 }
 //---------------------------------------------------------------------------
 TColor __fastcall GetWindowColor(TColor Color)
 {
-  return (Color == TColor(0)) ? clWindow : Color;
+  if (Color == TColor(0))
+  {
+    Color = (WinConfiguration->UseDarkTheme() ? static_cast<TColor>(RGB(0x20, 0x20, 0x20)) : clWindow);
+  }
+  return Color;
+}
+//---------------------------------------------------------------------------
+TColor __fastcall GetBtnFaceColor()
+{
+  return WinConfiguration->UseDarkTheme() ? TColor(RGB(43, 43, 43)) : clBtnFace;
 }
 //---------------------------------------------------------------------------
 TColor __fastcall GetNonZeroColor(TColor Color)
@@ -167,6 +181,41 @@ void __fastcall LoadListViewStr(TListView * ListView, UnicodeString ALayoutStr)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall LoadFormDimensions(
+  const UnicodeString & LeftStr, const UnicodeString & TopStr, const UnicodeString & RightStr, const UnicodeString & BottomStr,
+  int PixelsPerInch, Forms::TMonitor * Monitor, TForm * Form, TRect & Bounds, bool & DefaultPos)
+{
+  int Left = StrToDimensionDef(LeftStr, PixelsPerInch, Form, Bounds.Left);
+  int Top = StrToDimensionDef(TopStr, PixelsPerInch, Form, Bounds.Top);
+  DefaultPos = (Left == -1) && (Top == -1);
+  if (!DefaultPos)
+  {
+    Bounds.Left = Left;
+    Bounds.Top = Top;
+  }
+  else
+  {
+    Bounds.Left = 0;
+    Bounds.Top = 0;
+  }
+  Bounds.Right = StrToDimensionDef(RightStr, PixelsPerInch, Form, Bounds.Right);
+  Bounds.Bottom = StrToDimensionDef(BottomStr, PixelsPerInch, Form, Bounds.Bottom);
+
+  // move to the target monitor
+  OffsetRect(Bounds, Monitor->Left, Monitor->Top);
+
+  // reduce window size to that of monitor size
+  // (this does not cut window into monitor!)
+  if (Bounds.Width() > Monitor->WorkareaRect.Width())
+  {
+    Bounds.Right -= (Bounds.Width() - Monitor->WorkareaRect.Width());
+  }
+  if (Bounds.Height() > Monitor->WorkareaRect.Height())
+  {
+    Bounds.Bottom -= (Bounds.Height() - Monitor->WorkareaRect.Height());
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall RestoreForm(UnicodeString Data, TForm * Form, bool PositionOnly)
 {
   DebugAssert(Form);
@@ -181,38 +230,14 @@ void __fastcall RestoreForm(UnicodeString Data, TForm * Form, bool PositionOnly)
     TWindowState State = (TWindowState)StrToIntDef(CutToChar(Data, L';', true), (int)wsNormal);
     int PixelsPerInch = LoadPixelsPerInch(CutToChar(Data, L';', true), Form);
 
-    TRect Bounds = Form->BoundsRect;
-    int Left = StrToDimensionDef(LeftStr, PixelsPerInch, Form, Bounds.Left);
-    int Top = StrToDimensionDef(TopStr, PixelsPerInch, Form, Bounds.Top);
-    bool DefaultPos = (Left == -1) && (Top == -1);
-    if (!DefaultPos)
-    {
-      Bounds.Left = Left;
-      Bounds.Top = Top;
-    }
-    else
-    {
-      Bounds.Left = 0;
-      Bounds.Top = 0;
-    }
-    Bounds.Right = StrToDimensionDef(RightStr, PixelsPerInch, Form, Bounds.Right);
-    Bounds.Bottom = StrToDimensionDef(BottomStr, PixelsPerInch, Form, Bounds.Bottom);
+    TRect OriginalBounds = Form->BoundsRect;
+    int OriginalPixelsPerInch = Form->PixelsPerInch;
     Form->WindowState = State;
     if (State == wsNormal)
     {
-      // move to the target monitor
-      OffsetRect(Bounds, Monitor->Left, Monitor->Top);
-
-      // reduce window size to that of monitor size
-      // (this does not cut window into monitor!)
-      if (Bounds.Width() > Monitor->WorkareaRect.Width())
-      {
-        Bounds.Right -= (Bounds.Width() - Monitor->WorkareaRect.Width());
-      }
-      if (Bounds.Height() > Monitor->WorkareaRect.Height())
-      {
-        Bounds.Bottom -= (Bounds.Height() - Monitor->WorkareaRect.Height());
-      }
+      bool DefaultPos;
+      TRect Bounds = OriginalBounds;
+      LoadFormDimensions(LeftStr, TopStr, RightStr, BottomStr, PixelsPerInch, Monitor, Form, Bounds, DefaultPos);
 
       if (DefaultPos ||
           ((Bounds.Left < Monitor->Left) ||
@@ -255,7 +280,10 @@ void __fastcall RestoreForm(UnicodeString Data, TForm * Form, bool PositionOnly)
               Monitor->Top + ((Monitor->Height - Bounds.Height()) / 2),
               Bounds.Width(), Bounds.Height());
           }
-          Form->Position = poDesigned;
+          if (!Form->HandleAllocated())
+          {
+            Form->Position = poDesigned;
+          }
         }
       }
       else
@@ -264,6 +292,17 @@ void __fastcall RestoreForm(UnicodeString Data, TForm * Form, bool PositionOnly)
         if (!PositionOnly)
         {
           Form->BoundsRect = Bounds;
+          // If setting bounds moved the form to another monitor with non-default DPI,
+          // recalculate the size to avoid rounding issues
+          // (as the form was very likely moved to the monitor, where the sizes were saved)
+          // See also TCustomScpExplorerForm::DoShow()
+          if (OriginalPixelsPerInch != Form->PixelsPerInch)
+          {
+            TRect Bounds2 = OriginalBounds;
+            LoadFormDimensions(LeftStr, TopStr, RightStr, BottomStr, PixelsPerInch, Monitor, Form, Bounds2, DefaultPos);
+            DebugAssert(!DefaultPos);
+            Form->BoundsRect = Bounds2;
+          }
         }
       }
     }
@@ -273,9 +312,9 @@ void __fastcall RestoreForm(UnicodeString Data, TForm * Form, bool PositionOnly)
 
       if (!PositionOnly)
       {
-        Bounds = Form->BoundsRect;
-        OffsetRect(Bounds, Monitor->Left, Monitor->Top);
-        Form->BoundsRect = Bounds;
+        TRect Bounds2 = Form->BoundsRect;
+        OffsetRect(Bounds2, Monitor->Left, Monitor->Top);
+        Form->BoundsRect = Bounds2;
       }
     }
   }
@@ -380,7 +419,7 @@ static void __fastcall ExecuteProcessAndReadOutput(const
           }
         }
         // Same as in ExecuteShellCheckedAndWait
-        Sleep(200);
+        Sleep(50);
         Application->ProcessMessages();
       }
 
@@ -449,12 +488,16 @@ bool __fastcall OpenInNewWindow()
   return UseAlternativeFunction();
 }
 //---------------------------------------------------------------------------
-void __fastcall ExecuteNewInstance(const UnicodeString & Param)
+void __fastcall ExecuteNewInstance(const UnicodeString & Param, const UnicodeString & AdditionalParams)
 {
   UnicodeString Arg = Param;
   if (!Arg.IsEmpty())
   {
     Arg = FORMAT(L"\"%s\" %s", (Arg, TProgramParams::FormatSwitch(NEWINSTANCE_SWICH)));
+    if (!AdditionalParams.IsEmpty())
+    {
+      Arg += L" " + AdditionalParams;
+    }
   }
 
   ExecuteShellChecked(Application->ExeName, Arg);
@@ -1109,7 +1152,7 @@ void __fastcall SuspendWindows()
 {
   AcquireShutDownPrivileges();
 
-  // https://docs.microsoft.com/en-us/windows/desktop/api/powrprof/nf-powrprof-setsuspendstate
+  // https://docs.microsoft.com/en-us/windows/win32/api/powrprof/nf-powrprof-setsuspendstate
   Win32Check(SetSuspendState(false, false, false));
 }
 //---------------------------------------------------------------------------
@@ -1148,9 +1191,9 @@ static void __fastcall ConvertKey(UnicodeString & FileName, TKeyType Type)
 
   try
   {
-    FileName = ChangeFileExt(FileName, ".ppk");
+    FileName = ChangeFileExt(FileName, FORMAT(L".%s", (PuttyKeyExt)));
 
-    if (!SaveDialog(LoadStr(CONVERTKEY_SAVE_TITLE), LoadStr(CONVERTKEY_SAVE_FILTER), L"ppk", FileName))
+    if (!SaveDialog(LoadStr(CONVERTKEY_SAVE_TITLE), LoadStr(CONVERTKEY_SAVE_FILTER), PuttyKeyExt, FileName))
     {
       Abort();
     }
@@ -1166,7 +1209,7 @@ static void __fastcall ConvertKey(UnicodeString & FileName, TKeyType Type)
 }
 //---------------------------------------------------------------------------
 static void __fastcall DoVerifyKey(
-  UnicodeString & FileName, TSshProt SshProt, bool Convert)
+  UnicodeString & FileName, TSshProt SshProt, bool Convert, bool CanIgnore)
 {
   if (!FileName.Trim().IsEmpty())
   {
@@ -1246,8 +1289,8 @@ static void __fastcall DoVerifyKey(
     if (!Message.IsEmpty())
     {
       Configuration->Usage->Inc(L"PrivateKeySelectErrors");
-      if (MoreMessageDialog(Message, MoreMessages.get(), qtWarning, qaIgnore | qaAbort,
-           HelpKeyword) == qaAbort)
+      unsigned int Answers = (CanIgnore ? (qaIgnore | qaAbort) : qaOK);
+      if (MoreMessageDialog(Message, MoreMessages.get(), qtWarning, Answers, HelpKeyword) != qaIgnore)
       {
         Abort();
       }
@@ -1255,14 +1298,14 @@ static void __fastcall DoVerifyKey(
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall VerifyAndConvertKey(UnicodeString & FileName, TSshProt SshProt)
+void __fastcall VerifyAndConvertKey(UnicodeString & FileName, TSshProt SshProt, bool CanIgnore)
 {
-  DoVerifyKey(FileName, SshProt, true);
+  DoVerifyKey(FileName, SshProt, true, CanIgnore);
 }
 //---------------------------------------------------------------------------
 void __fastcall VerifyKey(UnicodeString FileName, TSshProt SshProt)
 {
-  DoVerifyKey(FileName, SshProt, false);
+  DoVerifyKey(FileName, SshProt, false, true);
 }
 //---------------------------------------------------------------------------
 void __fastcall VerifyCertificate(const UnicodeString & FileName)

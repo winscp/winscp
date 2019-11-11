@@ -2,6 +2,8 @@
 #ifndef BookmarksH
 #define BookmarksH
 //---------------------------------------------------------------------------
+#include <CopyParam.h>
+//---------------------------------------------------------------------------
 class THierarchicalStorage;
 class TBookmarkList;
 class TShortCuts;
@@ -82,6 +84,8 @@ public:
   __fastcall TBookmark();
 
   virtual void __fastcall Assign(TPersistent * Source);
+
+  UnicodeString __fastcall GetSideDirectory(TOperationSide Side);
 
   __property UnicodeString Name = { read = FName, write = SetName };
   __property UnicodeString Local = { read = FLocal, write = SetLocal };

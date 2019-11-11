@@ -1386,6 +1386,7 @@ object ConsoleDialog: TConsoleDialog
     Width = 87
     Height = 13
     Caption = 'Current directory:'
+    ShowAccelChar = False
   end
   object Label4: TLabel
     Left = 51
@@ -1395,6 +1396,7 @@ object ConsoleDialog: TConsoleDialog
     Anchors = [akLeft, akTop, akRight]
     AutoSize = False
     Caption = 'Do not execute commands that require user-input or data transfer'
+    ShowAccelChar = False
   end
   object DirectoryLabel: TPathLabel
     Left = 158

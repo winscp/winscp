@@ -29,7 +29,7 @@
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Base)'!=''">
 		<_TCHARMapping>wchar_t</_TCHARMapping>
-		<AllPackageLibs>vclx.lib;vcl.lib;rtl.lib;DriveDir.lib;Moje.lib;DragDropP.lib</AllPackageLibs>
+		<AllPackageLibs>vclx.lib;vcl.lib;rtl.lib;DriveDir.lib;My.lib;DragDropP.lib</AllPackageLibs>
 		<BCC_AllWarnings>true</BCC_AllWarnings>
 		<BCC_ExtendedErrorInfo>true</BCC_ExtendedErrorInfo>
 		<BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
@@ -38,7 +38,7 @@
 		<DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;$(DCC_Namespace)</DCC_Namespace>
 		<FinalOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</FinalOutputDir>
 		<ILINK_LibraryPath>$(BDS)\lib;$(ILINK_LibraryPath)</ILINK_LibraryPath>
-		<IncludePath>components\;core;windows;packages\filemng;packages\dragndrop;packages\my;$(BDS)\include;$(BDS)\include\windows\vcl;$(IncludePath)</IncludePath>
+		<IncludePath>components\;core;windows;packages\filemng;packages\dragndrop;packages\my;packages\tb2k;packages\tbx;$(BDS)\include;$(BDS)\include\windows\vcl;$(IncludePath)</IncludePath>
 		<IntermediateOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</IntermediateOutputDir>
 		<Manifest_File>None</Manifest_File>
 		<Multithreaded>true</Multithreaded>

@@ -35,7 +35,8 @@ namespace WinSCP
             return value;
         }
 
-        public static void AddRawParameters(ref string arguments, Dictionary<string, string> parameters, string switchName)
+        public static void AddRawParameters(
+            ref string arguments, Dictionary<string, string> parameters, string switchName, bool count)
         {
             if (parameters.Count > 0)
             {
@@ -44,11 +45,26 @@ namespace WinSCP
                     arguments += " ";
                 }
                 arguments += switchName;
+                if (count)
+                {
+                    arguments += string.Format(CultureInfo.InvariantCulture, "[{0}]", parameters.Count);
+                }
+
                 foreach (KeyValuePair<string, string> rawSetting in parameters)
                 {
                     arguments += string.Format(CultureInfo.InvariantCulture, " {0}=\"{1}\"", rawSetting.Key, ArgumentEscape(rawSetting.Value));
                 }
             }
+        }
+
+        public static int LengthTo32Bit(long length)
+        {
+            if (length < int.MinValue || length > int.MaxValue)
+            {
+                throw new OverflowException(string.Format(CultureInfo.CurrentCulture, "Size {0} cannot be represented using 32-bit value", length));
+            }
+
+            return (int)length;
         }
     }
 }

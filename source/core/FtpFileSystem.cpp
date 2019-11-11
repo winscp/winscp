@@ -261,6 +261,7 @@ __fastcall TFTPFileSystem::TFTPFileSystem(TTerminal * ATerminal):
   FPrivateKey = NULL;
   FBytesAvailable = -1;
   FBytesAvailableSuppoted = false;
+  FLoggedIn = false;
 
   FChecksumAlgs.reset(new TStringList());
   FChecksumCommands.reset(new TStringList());
@@ -316,6 +317,7 @@ void __fastcall TFTPFileSystem::Open()
   ResetCaches();
   FReadCurrentDirectory = true;
   FHomeDirectory = L"";
+  FLoggedIn = false;
 
   FLastDataSent = Now();
 
@@ -332,6 +334,10 @@ void __fastcall TFTPFileSystem::Open()
       switch (FTerminal->Configuration->ActualLogProtocol)
       {
         default:
+        case -1:
+          LogLevel = TFileZillaIntf::LOG_WARNING;
+          break;
+
         case 0:
         case 1:
           LogLevel = TFileZillaIntf::LOG_PROGRESS;
@@ -361,10 +367,11 @@ void __fastcall TFTPFileSystem::Open()
   FTransferActiveImmediately = (Data->FtpTransferActiveImmediately == asOn);
 
   FSessionInfo.LoginTime = Now();
+  FSessionInfo.CertificateVerifiedManually = false;
 
   UnicodeString HostName = Data->HostNameExpanded;
   UnicodeString UserName = Data->UserNameExpanded;
-  UnicodeString Password = Data->Password;
+  UnicodeString Password = NormalizeString(Data->Password);
   UnicodeString Account = Data->FtpAccount;
   UnicodeString Path = Data->RemoteDirectory;
   int ServerType;
@@ -516,6 +523,7 @@ void __fastcall TFTPFileSystem::Open()
   FSessionInfo.SCCipher = FSessionInfo.CSCipher;
   UnicodeString TlsVersionStr = FFileZillaIntf->GetTlsVersionStr().c_str();
   AddToList(FSessionInfo.SecurityProtocolName, TlsVersionStr, L", ");
+  FLoggedIn = true;
 }
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::Close()
@@ -1160,7 +1168,7 @@ void __fastcall TFTPFileSystem::DoCalculateFilesChecksum(bool UsingHashCommand,
     if (File->IsDirectory)
     {
       if (FTerminal->CanRecurseToDirectory(File) &&
-          !File->IsParentDirectory && !File->IsThisDirectory &&
+          IsRealFile(File->FileName) &&
           // recurse into subdirectories only if we have callback function
           (OnCalculatedChecksum != NULL))
       {
@@ -1245,9 +1253,7 @@ void __fastcall TFTPFileSystem::CalculateFilesChecksum(const UnicodeString & Alg
   TCalculatedChecksumEvent OnCalculatedChecksum)
 {
   TFileOperationProgressType Progress(&FTerminal->DoProgress, &FTerminal->DoFinished);
-  Progress.Start(foCalculateChecksum, osRemote, FileList->Count);
-
-  FTerminal->FOperationProgress = &Progress;
+  FTerminal->OperationStart(Progress, foCalculateChecksum, osRemote, FileList->Count);
 
   try
   {
@@ -1275,8 +1281,7 @@ void __fastcall TFTPFileSystem::CalculateFilesChecksum(const UnicodeString & Alg
   }
   __finally
   {
-    FTerminal->FOperationProgress = NULL;
-    Progress.Stop();
+    FTerminal->OperationStop(Progress);
   }
 }
 //---------------------------------------------------------------------------
@@ -1486,7 +1491,7 @@ void __fastcall TFTPFileSystem::FileTransfer(const UnicodeString & FileName,
 {
   FILE_OPERATION_LOOP_BEGIN
   {
-    FFileZillaIntf->FileTransfer(LocalFile.c_str(), RemoteFile.c_str(),
+    FFileZillaIntf->FileTransfer(ApiPath(LocalFile).c_str(), RemoteFile.c_str(),
       RemotePath.c_str(), Get, Size, Type, &UserData);
     // we may actually catch response code of the listing
     // command (when checking for existence of the remote file)
@@ -1667,7 +1672,7 @@ void __fastcall TFTPFileSystem::Source(
   FLastDataSent = Now();
 }
 //---------------------------------------------------------------------------
-void __fastcall TFTPFileSystem::CreateDirectory(const UnicodeString ADirName)
+void __fastcall TFTPFileSystem::CreateDirectory(const UnicodeString & ADirName, bool /*Encrypt*/)
 {
   UnicodeString DirName = AbsolutePath(ADirName, false);
 
@@ -2630,7 +2635,7 @@ int __fastcall TFTPFileSystem::GetOptionVal(int OptionID) const
       break;
 
     case OPTION_DEBUGSHOWLISTING:
-      Result = true;
+      Result = (FTerminal->Configuration->ActualLogProtocol >= 0);
       break;
 
     case OPTION_PASV:
@@ -2844,14 +2849,18 @@ bool __fastcall TFTPFileSystem::NoFinalLastCode()
 //---------------------------------------------------------------------------
 bool __fastcall TFTPFileSystem::KeepWaitingForReply(unsigned int & ReplyToAwait, bool WantLastCode)
 {
-  // to keep waiting,
+  // To keep waiting,
   // non-command reply must be unset,
   // the reply we wait for must be unset or
-  // last code must be unset (if we wait for it)
+  // last code must be unset (if we wait for it).
+
+  // Though make sure that disconnect makes it through always. As for example when connection is closed already,
+  // when sending commands, we may get REPLY_DISCONNECTED as a command response and no other response after,
+  // what would cause a hang.
   return
      (FReply == 0) &&
      ((ReplyToAwait == 0) ||
-      (WantLastCode && NoFinalLastCode()));
+      (WantLastCode && NoFinalLastCode() && FLAGCLEAR(ReplyToAwait, TFileZillaIntf::REPLY_DISCONNECTED)));
 }
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::DoWaitForReply(unsigned int & ReplyToAwait, bool WantLastCode)
@@ -3444,7 +3453,10 @@ bool __fastcall TFTPFileSystem::HandleStatus(const wchar_t * AStatus, int Type)
       {
         FLastCommand = CMD_UNKNOWN;
       }
-      LogType = llInput;
+      if (!FLoggedIn || (FTerminal->Configuration->ActualLogProtocol >= 0))
+      {
+        LogType = llInput;
+      }
       break;
 
     case TFileZillaIntf::LOG_ERROR:
@@ -3481,7 +3493,10 @@ bool __fastcall TFTPFileSystem::HandleStatus(const wchar_t * AStatus, int Type)
 
     case TFileZillaIntf::LOG_REPLY:
       HandleReplyStatus(AStatus);
-      LogType = llOutput;
+      if (!FLoggedIn || (FTerminal->Configuration->ActualLogProtocol >= 0))
+      {
+        LogType = llOutput;
+      }
       break;
 
     case TFileZillaIntf::LOG_INFO:
@@ -3934,6 +3949,7 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestVerifyCertificate(
         {
           // certificate is trusted, but for not purposes of info dialog
           VerificationResult = true;
+          FSessionInfo.CertificateVerifiedManually = true;
         }
       }
 
@@ -3993,10 +4009,13 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestVerifyCertificate(
 
       if (RequestResult == 0)
       {
-        bool Confirmed = FTerminal->ConfirmCertificate(FSessionInfo, Data.VerificationResult, CertificateStorageKey, true);
-        // FZ's VerifyCertDlg.cpp returns 2 for "cached", what we do nto distinguish here,
-        // however FZAPI takes all non-zero values equally.
-        RequestResult = Confirmed ? 1 : 0;
+        if (FTerminal->ConfirmCertificate(FSessionInfo, Data.VerificationResult, CertificateStorageKey, true))
+        {
+          // FZ's VerifyCertDlg.cpp returns 2 for "cached", what we do nto distinguish here,
+          // however FZAPI takes all non-zero values equally.
+          RequestResult = 1;
+          FSessionInfo.CertificateVerifiedManually = true;
+        }
       }
     }
 

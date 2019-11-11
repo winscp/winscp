@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 // General Information about an assembly is controlled through the following
@@ -17,6 +18,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
+// Duplicated in ConsoleRunner.cpp
 [assembly: Guid("a0b93468-d98a-4845-a234-8076229ad93f")]
 
 [assembly: AssemblyVersion(WinSCP.AssemblyConstants.Version)]
@@ -25,13 +27,15 @@ using System.Runtime.InteropServices;
 
 [assembly: CLSCompliant(true)]
 
+[assembly: InternalsVisibleTo("Tests")]
+
 namespace WinSCP
 {
     internal static class AssemblyConstants
     {
         public const string UndefinedProductVersion = "9.9.9.9";
 
-        public const string Version = "1.5.7.0";
-        public const string ProductVersion = "5.13.10.0";
+        public const string Version = "1.6.5.0";
+        public const string ProductVersion = "5.15.7.0";
     }
 }

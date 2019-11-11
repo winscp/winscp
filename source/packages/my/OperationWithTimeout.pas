@@ -16,6 +16,9 @@ function ShellFolderParseDisplayNameWithTimeout(
   ShellFolder: IShellFolder; hwndOwner: HWND; pbcReserved: Pointer; lpszDisplayName: POLESTR;
   out pchEaten: ULONG; out ppidl: PItemIDList; var dwAttributes: ULONG; Timeout: Integer): HResult;
 
+function DestinationListBeginList(
+  DestinationList: ICustomDestinationList; var pcMaxSlots: UINT; const riid: TIID; out ppv: Pointer; Timeout: Integer): HRESULT;
+
 var
   TimeoutShellOperations: Boolean = True;
 
@@ -56,6 +59,11 @@ type
     ppidl: PItemIDList;
     dwAttributes: ULONG;
 
+    // DestinationListBeginList uses ResultHResult
+    DestinationList: ICustomDestinationList;
+    pcMaxSlots: UINT;
+    riid: TIID;
+    ppv: Pointer;
   end;
 
 type
@@ -246,6 +254,35 @@ begin
   begin
     ppidl := nil;
     dwAttributes := 0;
+    Result := E_FAIL;
+  end;
+end;
+
+procedure DestinationListBeginListOperation(Operation: TOperation);
+begin
+  Operation.ResultHResult := Operation.DestinationList.BeginList(Operation.pcMaxSlots, Operation.riid, Operation.ppv);
+end;
+
+function DestinationListBeginList(
+  DestinationList: ICustomDestinationList; var pcMaxSlots: UINT; const riid: TIID; out ppv: Pointer; Timeout: Integer): HRESULT;
+var
+  Operation: TOperation;
+begin
+  Operation := TOperation.Create;
+  Operation.DestinationList := DestinationList;
+  Operation.pcMaxSlots := pcMaxSlots;
+  Operation.riid := riid;
+  Operation.ppv := ppv;
+  if WaitForOperation(Operation, DestinationListBeginListOperation, Timeout) then
+  begin
+    pcMaxSlots := Operation.pcMaxSlots;
+    ppv := Operation.ppv;
+    Result := Operation.ResultHResult;
+    Operation.Free;
+  end
+    else
+  begin
+    ppv := nil;
     Result := E_FAIL;
   end;
 end;

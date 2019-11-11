@@ -35,6 +35,8 @@
 #pragma resource "*.dfm"
 #endif
 //---------------------------------------------------------------------
+const int BelowNormalLogLevels = 1;
+//---------------------------------------------------------------------
 bool __fastcall DoPreferencesDialog(TPreferencesMode APreferencesMode,
   TPreferencesDialogData * DialogData)
 {
@@ -46,6 +48,7 @@ bool __fastcall DoPreferencesDialog(TPreferencesMode APreferencesMode,
     Result = PreferencesDialog->Execute(DialogData);
     if (Result)
     {
+      CheckConfigurationForceSave();
       Configuration->SaveExplicit();
     }
   }
@@ -88,6 +91,7 @@ __fastcall TPreferencesDialog::TPreferencesDialog(
   FixListColumnWidth(CopyParamListView, -1);
   FEditorScrollOnDragOver = new TListViewScrollOnDragOver(EditorListView3, true);
   FixListColumnWidth(EditorListView3, -1);
+  FFileColorScrollOnDragOver = new TListViewScrollOnDragOver(FileColorsView, true);
 
   FOrigCustomCommandsViewWindowProc = CustomCommandsView->WindowProc;
   CustomCommandsView->WindowProc = CustomCommandsViewWindowProc;
@@ -130,6 +134,7 @@ __fastcall TPreferencesDialog::TPreferencesDialog(
 //---------------------------------------------------------------------------
 __fastcall TPreferencesDialog::~TPreferencesDialog()
 {
+  SAFE_DESTROY(FFileColorScrollOnDragOver);
   SAFE_DESTROY(FEditorScrollOnDragOver);
   SAFE_DESTROY(FCopyParamScrollOnDragOver);
   SAFE_DESTROY(FCustomCommandsScrollOnDragOver);
@@ -245,7 +250,6 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     BOOLPROP(DefaultDirIsHome);
     BOOLPROP(PreservePanelState);
     BOOLPROP(DeleteToRecycleBin);
-    BOOLPROP(DDTransferConfirmation);
     BOOLPROP(DDWarnLackOfTempSpace);
     BOOLPROP(ShowHiddenFiles);
     BOOLPROP(RenameWholeName);
@@ -259,7 +263,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     BOOLPROP(ConfirmExitOnCompletion);
     BOOLPROP(ConfirmCommandSession);
     BOOLPROP(ContinueOnError);
-    BOOLPROP(DDAllowMoveInit);
+    BOOLPROP(SynchronizeSummary);
     BOOLPROP(BeepOnFinish);
     BOOLPROP(TemporaryDirectoryAppendSession);
     BOOLPROP(TemporaryDirectoryAppendPath);
@@ -276,17 +280,17 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
       // allow grayed state only initially,
       // once the off state is confirmed, never allow returning
       // to the undefined state
-      DDTransferConfirmationCheck->AllowGrayed = true;
+      DDTransferConfirmationCheck2->AllowGrayed = true;
     }
-    CheckBoxAutoSwitchLoad(DDTransferConfirmationCheck, WinConfiguration->DDTransferConfirmation);
+    CheckBoxAutoSwitchLoad(DDTransferConfirmationCheck2, WinConfiguration->DDTransferConfirmation);
 
     BeepOnFinishAfterEdit->AsInteger =
       int(static_cast<double>(GUIConfiguration->BeepOnFinishAfter) * SecsPerDay);
     BOOLPROP(BalloonNotifications);
 
-    DDExtEnabledButton->Checked = WinConfiguration->DDExtEnabled;
-    DDExtDisabledButton->Checked = !DDExtEnabledButton->Checked;
-    DDWarnOnMoveCheck->Checked = !WinConfiguration->DDAllowMove;
+    DDFakeFileEnabledButton->Checked = WinConfiguration->DDFakeFile;
+    DDFakeFileDisabledButton->Checked = !DDFakeFileEnabledButton->Checked;
+    DDDrivesMemo->Lines->CommaText = WinConfiguration->DDDrives;
 
     if (WinConfiguration->DDTemporaryDirectory.IsEmpty())
     {
@@ -496,6 +500,24 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
         DebugFail();
     }
 
+    switch (WinConfiguration->PanelSearch)
+    {
+      case isOff:
+        PanelSearchCombo->ItemIndex = -1;
+        break;
+      case isNameStartOnly:
+        PanelSearchCombo->ItemIndex = 0;
+        break;
+      case isName:
+        PanelSearchCombo->ItemIndex = 1;
+        break;
+      case isAll:
+        PanelSearchCombo->ItemIndex = 2;
+        break;
+      default:
+        DebugFail();
+    }
+
     bool CustomPanelFont = !WinConfiguration->PanelFont.FontName.IsEmpty();
     PanelFontCheck->Checked = CustomPanelFont;
     if (CustomPanelFont)
@@ -507,6 +529,10 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
       // Default to system icon font, when starting customization
       FPanelFont->Assign(Screen->IconFont);
     }
+
+    // file colors
+    TFileColorData::LoadList(WinConfiguration->FileColors, FFileColors);
+    UpdateFileColorsView();
 
     // updates
     TUpdatesConfiguration Updates = WinConfiguration->Updates;
@@ -561,6 +587,8 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     BOOLPROP(CopyParamAutoSelectNotice);
 
     // interface
+    ComboAutoSwitchLoad(ThemeCombo, WinConfiguration->DarkTheme);
+
     switch (CustomWinConfiguration->Interface)
     {
       case ifCommander:
@@ -588,7 +616,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
 
     // logging
     EnableLoggingCheck->Checked = Configuration->Logging;
-    LogProtocolCombo->ItemIndex = Configuration->LogProtocol;
+    LogProtocolCombo2->ItemIndex = Configuration->LogProtocol + BelowNormalLogLevels;
     LogFileNameEdit3->Text =
       !Configuration->LogFileName.IsEmpty() ? Configuration->LogFileName : Configuration->DefaultLogFileName;
     if (Configuration->LogFileAppend)
@@ -642,7 +670,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     BOOLPROP(ConfirmExitOnCompletion);
     BOOLPROP(ConfirmCommandSession);
     BOOLPROP(ContinueOnError);
-    BOOLPROP(DDAllowMoveInit);
+    BOOLPROP(SynchronizeSummary);
     BOOLPROP(BeepOnFinish);
     BOOLPROP(TemporaryDirectoryAppendSession);
     BOOLPROP(TemporaryDirectoryAppendPath);
@@ -655,14 +683,14 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     WinConfiguration->ConfirmClosingSession = ConfirmClosingSessionCheck2->Checked;
 
     WinConfiguration->DDTransferConfirmation =
-      CheckBoxAutoSwitchSave(DDTransferConfirmationCheck);
+      CheckBoxAutoSwitchSave(DDTransferConfirmationCheck2);
 
     GUIConfiguration->BeepOnFinishAfter =
       static_cast<double>(BeepOnFinishAfterEdit->Value / SecsPerDay);
     BOOLPROP(BalloonNotifications);
 
-    WinConfiguration->DDAllowMove = !DDWarnOnMoveCheck->Checked;
-    WinConfiguration->DDExtEnabled = DDExtEnabledButton->Checked;
+    WinConfiguration->DDFakeFile = DDFakeFileEnabledButton->Checked;
+    WinConfiguration->DDDrives = DDDrivesMemo->Lines->CommaText;
 
     if (DDSystemTemporaryDirectoryButton->Checked)
     {
@@ -849,12 +877,33 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
         DebugFail();
     }
 
+    switch (PanelSearchCombo->ItemIndex)
+    {
+      case -1:
+        WinConfiguration->PanelSearch = isOff;
+        break;
+      case 0:
+        WinConfiguration->PanelSearch = isNameStartOnly;
+        break;
+      case 1:
+        WinConfiguration->PanelSearch = isName;
+        break;
+      case 2:
+        WinConfiguration->PanelSearch = isAll;
+        break;
+      default:
+        DebugFail();
+    }
+
     TFontConfiguration PanelFontConfiguration;
     if (PanelFontCheck->Checked)
     {
       TWinConfiguration::StoreFont(FPanelFont.get(), PanelFontConfiguration);
     }
     WinConfiguration->PanelFont = PanelFontConfiguration;
+
+    // file colors
+    WinConfiguration->FileColors = TFileColorData::SaveList(FFileColors);
 
     // updates
     WinConfiguration->Updates = SaveUpdates();
@@ -866,6 +915,8 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     BOOLPROP(CopyParamAutoSelectNotice);
 
     // interface
+    WinConfiguration->DarkTheme = ComboAutoSwitchSave(ThemeCombo);
+
     if (GetInterface() != CustomWinConfiguration->Interface)
     {
       Configuration->Usage->Inc(L"InterfaceChanges");
@@ -882,7 +933,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
 
     // logging
     Configuration->Logging = EnableLoggingCheck->Checked && !LogFileNameEdit3->Text.IsEmpty();
-    Configuration->LogProtocol = LogProtocolCombo->ItemIndex;
+    Configuration->LogProtocol = LogProtocolCombo2->ItemIndex - BelowNormalLogLevels;
     Configuration->LogFileName = LogFileNameEdit3->Text;
     Configuration->LogFileAppend = LogFileAppendButton->Checked;
     __int64 LogMaxSize;
@@ -1032,6 +1083,7 @@ void __fastcall TPreferencesDialog::FormShow(TObject * /*Sender*/)
     case pmEditors: PageControl->ActivePage = EditorSheet; break;
     case pmCommander: PageControl->ActivePage = CommanderSheet; break;
     case pmEditorInternal: PageControl->ActivePage = EditorInternalSheet; break;
+    case pmFileColors: PageControl->ActivePage = FileColorsSheet; break;
     default: PageControl->ActivePage = PreferencesSheet; break;
   }
   PageControlChange(NULL);
@@ -1110,6 +1162,7 @@ void __fastcall TPreferencesDialog::UpdateControls()
 {
   if (FNoUpdate == 0)
   {
+    EnableControl(DDTransferConfirmationCheck2, ConfirmTransferringCheck->Checked);
     EnableControl(BeepOnFinishAfterEdit, BeepOnFinishCheck->Checked);
     EnableControl(BeepOnFinishAfterText, BeepOnFinishCheck->Checked);
 
@@ -1161,16 +1214,16 @@ void __fastcall TPreferencesDialog::UpdateControls()
     EditorFontLabelText += TabSample(L"ABCD") + L"\n";
     EditorFontLabelText += TabSample(L"1234");
     EditorFontLabel->Caption = EditorFontLabelText;
+    EditorFontLabel->Color = GetWindowColor(FEditorBackgroundColor);
     std::unique_ptr<TFont> EditorFont(new TFont());
     EditorFont->Assign(FEditorFont.get());
-    EditorFont->Color = GetWindowTextColor(FEditorFont->Color);
+    EditorFont->Color = GetWindowTextColor(EditorFontLabel->Color, FEditorFont->Color);
     EditorFont->Size = ScaleByPixelsPerInchFromSystem(FEditorFont->Size, this);
     if (!SameFont(EditorFontLabel->Font, EditorFont.get()) ||
         (EditorFontLabel->Font->Color != EditorFont->Color))
     {
       EditorFontLabel->Font = EditorFont.get();
     }
-    EditorFontLabel->Color = GetWindowColor(FEditorBackgroundColor);
 
     TCustomCommandList * CommandList = GetCommandList(CustomCommandsView->ItemIndex);
     int CommandIndex = GetCommandIndex(CustomCommandsView->ItemIndex);
@@ -1179,7 +1232,7 @@ void __fastcall TPreferencesDialog::UpdateControls()
     bool ExtensionSelected = CommandSelected && (CommandList == FExtensionList);
     EnableControl(EditCommandButton, CustomCommandSelected);
     EditCommandButton->Visible = !ExtensionSelected;
-    EnableControl(ConfigureCommandButton, ExtensionSelected && CommandList->Commands[CommandIndex]->AnyOptionWithFlag(TCustomCommandType::ofConfig));
+    EnableControl(ConfigureCommandButton, ExtensionSelected);
     ConfigureCommandButton->Visible = ExtensionSelected;
     EnableControl(RemoveCommandButton, CommandSelected);
     EnableControl(UpCommandButton, CommandSelected && (CommandIndex > 0));
@@ -1214,13 +1267,35 @@ void __fastcall TPreferencesDialog::UpdateControls()
     }
     SetLabelHintPopup(CopyParamLabel, InfoStr);
 
-    EnableControl(DDExtEnabledButton, IsUWP() || WinConfiguration->DDExtInstalled);
-    EnableControl(DDExtEnabledLabel, DDExtEnabledButton->Enabled);
-    EnableControl(DDExtDisabledPanel, DDExtDisabledButton->Checked);
+    if (WinConfiguration->IsDDExtBroken())
+    {
+      DragExtStatusLabel->Caption = LoadStr(PREFERENCES_DRAGEXT_BROKEN);
+      DragExtStatusLabel->Enabled = false;
+      DragExtStatusLabel->Font->Color = clWindowText;
+    }
+    else if (!WinConfiguration->DDExtInstalled)
+    {
+      DragExtStatusLabel->Caption = LoadStr(PREFERENCES_DRAGEXT_NOT_INSTALLED);
+      DragExtStatusLabel->Enabled = false;
+      DragExtStatusLabel->Font->Color = clWindowText;
+    }
+    else if (!WinConfiguration->IsDDExtRunning())
+    {
+      DragExtStatusLabel->Caption = LoadStr(PREFERENCES_DRAGEXT_NOT_RUNNING);
+      DragExtStatusLabel->Enabled = DDFakeFileEnabledButton->Checked;
+      DragExtStatusLabel->Font->Color = clGrayText;
+    }
+    else
+    {
+      DragExtStatusLabel->Caption = LoadStr(PREFERENCES_DRAGEXT_RUNNING);
+      DragExtStatusLabel->Enabled = DDFakeFileEnabledButton->Checked;
+      DragExtStatusLabel->Font->Color = clWindowText;
+    }
+    EnableControl(DDDrivesMemo, DDFakeFileEnabledButton->Checked);
+    EnableControl(DDDrivesLabel, DDDrivesMemo->Enabled);
+    EnableControl(DDFakeFileDisabledPanel, DDFakeFileDisabledButton->Checked);
     EnableControl(DDTemporaryDirectoryEdit, DDCustomTemporaryDirectoryButton->Enabled &&
       DDCustomTemporaryDirectoryButton->Checked);
-    EnableControl(DDWarnOnMoveCheck, DDExtDisabledButton->Checked &&
-      DDAllowMoveInitCheck->Checked);
     EnableControl(ConfirmTemporaryDirectoryCleanupCheck,
       TemporaryDirectoryCleanupCheck->Checked);
     // allow only when some of the known storages is selected,
@@ -1231,6 +1306,7 @@ void __fastcall TPreferencesDialog::UpdateControls()
     AutomaticIniFileStorageLabel->UpdateStatus();
     EnableControl(CustomIniFileStorageEdit, CustomIniFileStorageButton->Checked);
 
+    // editors
     EditorFontLabel->WordWrap = EditorWordWrapCheck->Checked;
     bool EditorSelected = (EditorListView3->Selected != NULL);
     EnableControl(EditEditorButton, EditorSelected);
@@ -1239,6 +1315,13 @@ void __fastcall TPreferencesDialog::UpdateControls()
       (EditorListView3->ItemIndex > 0));
     EnableControl(DownEditorButton, EditorSelected &&
       (EditorListView3->ItemIndex < EditorListView3->Items->Count - 1));
+
+    // file colors
+    bool FileColorSelected = (FileColorsView->Selected != NULL);
+    EnableControl(EditFileColorButton, FileColorSelected);
+    EnableControl(RemoveFileColorButton, FileColorSelected);
+    EnableControl(UpFileColorButton, FileColorSelected && (FileColorsView->ItemIndex > 0));
+    EnableControl(DownFileColorButton, FileColorSelected && (FileColorsView->ItemIndex < FileColorsView->Items->Count - 1));
 
     // updates
     EnableControl(UpdatesAuthenticationEmailEdit, FAutomaticUpdatesPossible);
@@ -1299,8 +1382,8 @@ void __fastcall TPreferencesDialog::UpdateControls()
       (static_cast<TLocaleInfo *>(LanguagesView->ItemFocused->Data)->Locale != GUIConfiguration->AppliedLocale);
 
     // logging
-    EnableControl(LogProtocolCombo, EnableLoggingCheck->Checked);
-    EnableControl(LogFileNameEdit3, LogProtocolCombo->Enabled);
+    EnableControl(LogProtocolCombo2, EnableLoggingCheck->Checked);
+    EnableControl(LogFileNameEdit3, LogProtocolCombo2->Enabled);
     EnableControl(LogFileNameHintText, LogFileNameEdit3->Enabled);
     EnableControl(LogFileAppendButton, LogFileNameEdit3->Enabled);
     EnableControl(LogFileOverwriteButton, LogFileNameEdit3->Enabled);
@@ -1310,7 +1393,7 @@ void __fastcall TPreferencesDialog::UpdateControls()
     EnableControl(LogMaxSizeCountEdit, LogMaxSizeCountCheck->Enabled && LogMaxSizeCountCheck->Checked);
     EnableControl(LogMaxSizeCountFilesLabel, LogMaxSizeCountEdit->Enabled);
 
-    EnableControl(LogSensitiveCheck, LogProtocolCombo->Enabled);
+    EnableControl(LogSensitiveCheck, LogProtocolCombo2->Enabled);
 
     EnableControl(ActionsLogFileNameEdit, EnableActionsLoggingCheck->Checked);
     EnableControl(ActionsLogFileNameHintText, ActionsLogFileNameEdit->Enabled);
@@ -1341,7 +1424,7 @@ void __fastcall TPreferencesDialog::EditorFontColorButtonClick(TObject * /*Sende
   // WORKAROUND: Compiler keeps crashing randomly (but frequently) with
   // "internal error" when passing menu directly to unique_ptr.
   // Splitting it to two statements seems to help.
-  // The same hack exists in TSiteAdvancedDialog::ColorButtonClick and TOpenLocalPathHandler::Open
+  // The same hack exists in TSiteAdvancedDialog::ColorButtonClick, TOpenLocalPathHandler::Open and TSelectMaskDialog::ColorButtonClick
   TPopupMenu * Menu = CreateColorPopupMenu(FEditorFont->Color, EditorFontColorChange);
   // Popup menu has to survive the popup as TBX calls click handler asynchronously (post).
   FColorPopupMenu.reset(Menu);
@@ -1513,6 +1596,18 @@ static int __fastcall AddCommandToList(TCustomCommandList * List, int Index, TCu
   return Index;
 }
 //---------------------------------------------------------------------------
+TShortCuts __fastcall TPreferencesDialog::GetShortCuts()
+{
+  TShortCuts ShortCuts;
+  if (WinConfiguration->SharedBookmarks != NULL)
+  {
+    WinConfiguration->SharedBookmarks->ShortCuts(ShortCuts);
+  }
+  FCustomCommandList->ShortCuts(ShortCuts);
+  FExtensionList->ShortCuts(ShortCuts);
+  return ShortCuts;
+}
+//---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::AddEditCommand(bool Edit)
 {
   TCustomCommandType Command;
@@ -1525,13 +1620,7 @@ void __fastcall TPreferencesDialog::AddEditCommand(bool Edit)
     Command = *FCustomCommandList->Commands[GetCommandIndex(Index)];
   }
 
-  TShortCuts ShortCuts;
-  if (WinConfiguration->SharedBookmarks != NULL)
-  {
-    WinConfiguration->SharedBookmarks->ShortCuts(ShortCuts);
-  }
-  FCustomCommandList->ShortCuts(ShortCuts);
-  FExtensionList->ShortCuts(ShortCuts);
+  TShortCuts ShortCuts = GetShortCuts();
 
   if (DoCustomCommandDialog(Command, FCustomCommandList,
         (Edit ? ccmEdit : ccmAdd), 0, NULL, &ShortCuts))
@@ -1583,9 +1672,6 @@ void __fastcall TPreferencesDialog::CustomCommandMove(int Source, int Dest)
   int SourceIndex = GetCommandIndex(Source);
   int DestIndex = GetCommandIndex(Dest);
   List->Move(SourceIndex, DestIndex);
-  // workaround for bug in VCL
-  CustomCommandsView->ItemIndex = -1;
-  CustomCommandsView->ItemFocused = CustomCommandsView->Selected;
   CustomCommandsView->ItemIndex = Dest;
   UpdateCustomCommandsView();
   UpdateControls();
@@ -1610,6 +1696,10 @@ TListViewScrollOnDragOver * __fastcall TPreferencesDialog::ScrollOnDragOver(TObj
   else if (ListView == EditorListView3)
   {
     return FEditorScrollOnDragOver;
+  }
+  else if (ListView == FileColorsView)
+  {
+    return FFileColorScrollOnDragOver;
   }
   else
   {
@@ -1695,21 +1785,11 @@ const TCopyParamType * TPreferencesDialog::GetCopyParam(int Index)
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::CopyParamMove(int Source, int Dest)
 {
-  if (Source >= 1 && Source < (1 + FCopyParamList->Count) &&
-      Dest >= 0 && Dest < (1 + FCopyParamList->Count))
-  {
-    if (Dest == 0)
-    {
-      Dest = 1;
-    }
-    FCopyParamList->Move(Source - 1, Dest - 1);
-    // workaround for bug in VCL
-    CopyParamListView->ItemIndex = -1;
-    CopyParamListView->ItemFocused = CopyParamListView->Selected;
-    CopyParamListView->ItemIndex = Dest;
-    UpdateCopyParamListView();
-    UpdateControls();
-  }
+  DebugAssert((Source > 0) && (Dest > 0));
+  FCopyParamList->Move(Source - 1, Dest - 1);
+  CopyParamListView->ItemIndex = Dest;
+  UpdateCopyParamListView();
+  UpdateControls();
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::CopyParamListViewDragDrop(
@@ -1717,9 +1797,26 @@ void __fastcall TPreferencesDialog::CopyParamListViewDragDrop(
 {
   if (Source == CopyParamListView)
   {
-    if (AllowListViewDrag(Sender, X, Y))
+    if ((FListViewDragSource > 0) &&
+        AllowListViewDrag(Sender, X, Y) &&
+        (FListViewDragDest > 0))
     {
       CopyParamMove(FListViewDragSource, FListViewDragDest);
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::CopyParamListViewDragOver(
+  TObject * Sender, TObject * Source, int X, int Y, TDragState State, bool & Accept)
+{
+  ListViewDragOver(Sender, Source, X, Y, State, Accept);
+
+  if (Source == Sender)
+  {
+    int Dest = PointToListViewIndex(Sender, X, Y);
+    if ((FListViewDragSource == 0) || (Dest == 0))
+    {
+      Accept = false;
     }
   }
 }
@@ -1754,7 +1851,21 @@ void __fastcall TPreferencesDialog::AddEditCopyParam(TCopyParamPresetMode Mode)
       (FDialogData != NULL ? FDialogData->CopyParamRuleData : NULL);
     // negative (when default is selected) means add to the end
     Index--;
-    Result = DoCopyParamPresetDialog(FCopyParamList, Index, Mode, CopyParamRuleData, FCopyParams);
+
+    TCopyParamType DefaultCopyParams;
+    // For cpmAdd use defaults.
+    if (Mode == cpmDuplicate)
+    {
+      // Only used, when duplicating default settings (Index < 0)
+      DefaultCopyParams = FCopyParams;
+    }
+    else if (Mode == cpmEdit)
+    {
+      // For cpmEdit, DefaultCopyParams is never used.
+      DebugAssert(Index >= 0);
+    }
+
+    Result = DoCopyParamPresetDialog(FCopyParamList, Index, Mode, CopyParamRuleData, DefaultCopyParams);
     if (Result)
     {
       UpdateCopyParamListView();
@@ -1810,17 +1921,10 @@ void __fastcall TPreferencesDialog::CopyParamListViewKeyDown(
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::EditorMove(int Source, int Dest)
 {
-  if (Source >= 0 && Source < FEditorList->Count &&
-      Dest >= 0 && Dest < FEditorList->Count)
-  {
-    FEditorList->Move(Source, Dest);
-    // workaround for bug in VCL
-    EditorListView3->ItemIndex = -1;
-    EditorListView3->ItemFocused = EditorListView3->Selected;
-    EditorListView3->ItemIndex = Dest;
-    UpdateEditorListView();
-    UpdateControls();
-  }
+  FEditorList->Move(Source, Dest);
+  EditorListView3->ItemIndex = Dest;
+  UpdateEditorListView();
+  UpdateControls();
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::EditorListView3DragDrop(TObject * Sender,
@@ -2093,10 +2197,9 @@ void __fastcall TPreferencesDialog::MakeDefaultHandlerItemClick(TObject * /*Send
   LaunchAdvancedAssociationUI();
 }
 //---------------------------------------------------------------------------
-void __fastcall TPreferencesDialog::DDExtLabelClick(TObject * Sender)
+void __fastcall TPreferencesDialog::DDLabelClick(TObject * Sender)
 {
-  ((Sender == DDExtEnabledLabel) ? DDExtEnabledButton : DDExtDisabledButton)->
-    SetFocus();
+  ((Sender != DDFakeFileDisabledLabel) ? DDFakeFileEnabledButton : DDFakeFileDisabledButton)->SetFocus();
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::AddSearchPathButtonClick(
@@ -2422,9 +2525,8 @@ void __fastcall TPreferencesDialog::UpdatesAuthenticationEmailEditExit(TObject *
           AuthenticationError = MainInstructions(AuthenticationError);
         }
 
-        UnicodeString HelpUrl = GetEnableAutomaticUpdatesUrl();
         unsigned int Result =
-          MoreMessageDialog(AuthenticationError, NULL, qtError, qaIgnore | qaAbort, HelpUrl);
+          MoreMessageDialog(AuthenticationError, NULL, qtError, qaIgnore | qaAbort, HELP_AUTOMATIC_UPDATE);
         if (Result == qaAbort)
         {
           Abort();
@@ -2774,7 +2876,9 @@ void __fastcall TPreferencesDialog::ConfigureCommandButtonClick(TObject * /*Send
 void __fastcall TPreferencesDialog::ConfigureCommand()
 {
   int Index = CustomCommandsView->ItemIndex;
-  const TCustomCommandType * Command = GetCommandList(Index)->Commands[GetCommandIndex(Index)];
+  TCustomCommandList * CommandList = GetCommandList(Index);
+  int CommandIndex = GetCommandIndex(Index);
+  const TCustomCommandType * Command = CommandList->Commands[CommandIndex];
 
   UnicodeString Site = GetSessionKey();
   if (Command->AnyOptionWithFlag(TCustomCommandType::ofSite) &&
@@ -2782,8 +2886,17 @@ void __fastcall TPreferencesDialog::ConfigureCommand()
   {
     throw Exception(LoadStr(NO_SITE_FOR_COMMAND));
   }
-  DoCustomCommandOptionsDialog(Command, FCustomCommandOptions.get(), TCustomCommandType::ofConfig, NULL, GetSessionKey());
-  UpdateCustomCommandsView();
+  TShortCut ShortCut = Command->ShortCut;
+  TShortCuts ShortCuts = GetShortCuts();
+  if (DoCustomCommandOptionsDialog(
+        Command, FCustomCommandOptions.get(), &ShortCut, TCustomCommandType::ofConfig, NULL, GetSessionKey(), &ShortCuts))
+  {
+    TCustomCommandType * UpdatedCommand = new TCustomCommandType(*Command);
+    UpdatedCommand->ShortCut = ShortCut;
+    CommandList->Change(CommandIndex, UpdatedCommand);
+
+    UpdateCustomCommandsView();
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::LanguagesViewCustomDrawItem(
@@ -2908,5 +3021,119 @@ void __fastcall TPreferencesDialog::CustomIniFileStorageButtonClick(TObject * /*
     // Focus to force validation
     CustomIniFileStorageEdit->SetFocus();
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::UpdateFileColorsView()
+{
+  FileColorsView->Items->Count = FFileColors.size();
+  AutoSizeListColumnsWidth(FileColorsView);
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::FileColorsViewData(TObject *, TListItem * Item)
+{
+  Item->Caption = FFileColors[Item->Index].FileMask.Masks;
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::FileColorsViewCustomDrawItem(
+  TCustomListView * Sender, TListItem * Item, TCustomDrawState, bool & DebugUsedArg(DefaultDraw))
+{
+  Sender->Canvas->Font->Color = FFileColors[Item->Index].Color;
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::AddEditFileColor(bool Edit)
+{
+  TFileColorData FileColorData;
+  int Index = FileColorsView->ItemIndex;
+  if (Edit)
+  {
+    FileColorData = FFileColors[Index];
+  }
+  else
+  {
+    FileColorData.FileMask = AnyMask;
+  }
+
+  if (DoFileColorDialog(FileColorData))
+  {
+    if (Edit)
+    {
+      FFileColors[Index] = FileColorData;
+    }
+    else
+    {
+      if (Index < 0)
+      {
+        FFileColors.push_back(FileColorData);
+      }
+      else
+      {
+        FFileColors.insert(&FFileColors[Index], FileColorData);
+      }
+    }
+
+    UpdateFileColorsView();
+    FileColorsView->ItemIndex = Index;
+    UpdateControls();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::AddEditFileColorButtonClick(TObject * Sender)
+{
+  bool Edit = (Sender == EditFileColorButton);
+  AddEditFileColor(Edit);
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::FileColorMove(int Source, int Dest)
+{
+  FFileColors.insert(FFileColors.begin() + Dest + ((Dest > Source) ? 1 : 0), FFileColors[Source]);
+  FFileColors.erase(FFileColors.begin() + Source + ((Dest < Source) ? 1 : 0));
+  FileColorsView->ItemIndex = Dest;
+  UpdateFileColorsView();
+  UpdateControls();
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::FileColorsViewDragDrop(TObject * Sender, TObject * Source, int X, int Y)
+{
+  if (Source == FileColorsView)
+  {
+    if (AllowListViewDrag(Sender, X, Y))
+    {
+      FileColorMove(FListViewDragSource, FListViewDragDest);
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::FileColorsViewKeyDown(TObject *, WORD & Key, TShiftState)
+{
+  if (RemoveFileColorButton->Enabled && (Key == VK_DELETE))
+  {
+    RemoveFileColorButtonClick(NULL);
+  }
+
+  if (DebugAlwaysTrue(AddFileColorButton->Enabled) && (Key == VK_INSERT))
+  {
+    AddEditFileColor(false);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::RemoveFileColorButtonClick(TObject *)
+{
+  FFileColors.erase(FFileColors.begin() + FileColorsView->ItemIndex);
+  UpdateFileColorsView();
+  UpdateControls();
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::FileColorsViewDblClick(TObject *)
+{
+  if (EditFileColorButton->Enabled)
+  {
+    AddEditFileColor(true);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::UpDownFileColorButtonClick(TObject * Sender)
+{
+  int DestIndex = FileColorsView->ItemIndex + (Sender == UpFileColorButton ? -1 : 1);
+  FileColorMove(FileColorsView->ItemIndex, DestIndex);
 }
 //---------------------------------------------------------------------------

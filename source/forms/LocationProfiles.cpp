@@ -16,7 +16,7 @@
 #include <Math.hpp>
 #include <GUITools.h>
 //---------------------------------------------------------------------
-#pragma link "IEComboBox"
+#pragma link "HistoryComboBox"
 #pragma link "PngImageList"
 #ifndef NO_RESOURCES
 #pragma resource "*.dfm"

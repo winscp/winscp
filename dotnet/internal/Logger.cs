@@ -20,8 +20,19 @@ namespace WinSCP
         {
             Assembly assembly = Assembly.GetExecutingAssembly();
             string path = null;
+
+            // https://blogs.msdn.microsoft.com/suzcook/2003/06/26/assembly-codebase-vs-assembly-location/
+            // The CodeBase is a URL to the place where the file was found,
+            // while the Location is the path from where it was actually loaded.
+            // For example, if the assembly was downloaded from the internet, its CodeBase may start with "http://",
+            // but its Location may start with "C:\".
+            // If the file was shadow copied, the Location would be the path to the copy of the file in the shadow-copy dir.
+
+            // It's also good to know that the CodeBase is not guaranteed to be set for assemblies in the GAC.
+            // Location will always be set for assemblies loaded from disk, however.
             string codeBase = assembly.CodeBase;
             string location = assembly.Location;
+
             // cannot use Uri.UnescapeDataString, because it treats some characters valid in
             // local path (like #) specially
             const string protocol = "file://";
@@ -62,6 +73,7 @@ namespace WinSCP
             return path;
         }
 
+#if !NETSTANDARD
         private void CreateCounters()
         {
             try
@@ -96,6 +108,7 @@ namespace WinSCP
             counter.NextValue();
             _performanceCounters.Add(counter);
         }
+#endif
 
         public void WriteLine(string line)
         {
@@ -168,19 +181,24 @@ namespace WinSCP
             {
                 if (Logging)
                 {
+#if !NETSTANDARD
                     WriteCounters();
+#endif
                     WriteProcesses();
                     _writter.Dispose();
                     _writter = null;
                 }
 
+#if !NETSTANDARD
                 foreach (PerformanceCounter counter in _performanceCounters)
                 {
                     counter.Dispose();
                 }
+#endif
             }
         }
 
+#if !NETSTANDARD
         public void WriteCounters()
         {
             if (Logging && (LogLevel >= 1))
@@ -202,6 +220,7 @@ namespace WinSCP
                 }
             }
         }
+#endif
 
         public void WriteProcesses()
         {
@@ -287,7 +306,7 @@ namespace WinSCP
             int indent = GetIndent();
 
             string s =
-                string.Format(CultureInfo.InvariantCulture, "[{0:yyyy-MM-dd HH:mm:ss.fffZ}] [{1:x4}] {2}{3}",
+                string.Format(CultureInfo.InvariantCulture, "[{0:yyyy-MM-dd HH:mm:ss.fff}] [{1:x4}] {2}{3}",
                 DateTime.Now, Thread.CurrentThread.ManagedThreadId,
                 (indent > 0 ? new string(' ', indent * 2) : string.Empty), message);
             _writter.WriteLine(s);
@@ -306,10 +325,12 @@ namespace WinSCP
                         _writter = File.CreateText(_logPath);
                         _writter.AutoFlush = true;
                         WriteEnvironmentInfo();
+#if !NETSTANDARD
                         if (_logLevel >= 1)
                         {
                             CreateCounters();
                         }
+#endif
                     }
                 }
             }
@@ -318,14 +339,30 @@ namespace WinSCP
         private void WriteEnvironmentInfo()
         {
             Assembly assembly = Assembly.GetExecutingAssembly();
+#if NETSTANDARD
+            WriteLine(".NET Standard build");
+#else
+            WriteLine(".NET Framework build");
+#endif
             WriteLine("Executing assembly: {0}", assembly);
             WriteLine("Executing assembly codebase: {0}", (assembly.CodeBase ?? "unknown"));
             WriteLine("Executing assembly location: {0}", (assembly.Location ?? "unknown"));
             Assembly entryAssembly = Assembly.GetEntryAssembly();
             WriteLine("Entry Assembly: {0}", (entryAssembly != null ? entryAssembly.ToString() : "unmanaged"));
             WriteLine("Operating system: {0}", Environment.OSVersion);
+#if NETSTANDARD
+            WriteLine("Operating system information: {0} {1} {2}", RuntimeInformation.OSDescription, RuntimeInformation.OSArchitecture, RuntimeInformation.ProcessArchitecture);
+#endif
+            TimeSpan offset = TimeZoneInfo.Local.GetUtcOffset(DateTime.UtcNow);
+            WriteLine(
+                "Timezone: {0}; {1}",
+                ((offset > TimeSpan.Zero ? "+" : (offset < TimeSpan.Zero ? "-" : string.Empty)) + offset.ToString("hh\\:mm")),
+                (TimeZoneInfo.Local.IsDaylightSavingTime(DateTime.Now) ? TimeZoneInfo.Local.DaylightName : TimeZoneInfo.Local.StandardName));
             WriteLine("User: {0}@{1}@{2}; Interactive: {3}", Environment.UserName, Environment.UserDomainName, Environment.MachineName, Environment.UserInteractive);
             WriteLine("Runtime: {0}", Environment.Version);
+#if NETSTANDARD
+            WriteLine("Framework description: {0}", RuntimeInformation.FrameworkDescription);
+#endif
             WriteLine("Console encoding: Input: {0} ({1}); Output: {2} ({3})", Console.InputEncoding.EncodingName, Console.InputEncoding.CodePage, Console.OutputEncoding.EncodingName, Console.OutputEncoding.CodePage);
             WriteLine("Working directory: {0}", Environment.CurrentDirectory);
             string path = GetAssemblyFilePath();
@@ -341,7 +378,7 @@ namespace WinSCP
 
         private void SetLogLevel(int value)
         {
-            if ((value < 0) || (value > 2))
+            if ((value < -1) || (value > 2))
             {
                 throw WriteException(new ArgumentOutOfRangeException(string.Format(CultureInfo.CurrentCulture, "Logging level has to be in range 0-2")));
             }
@@ -353,7 +390,9 @@ namespace WinSCP
         private readonly Dictionary<int, int> _indents = new Dictionary<int, int>();
         private readonly object _logLock = new object();
         private readonly Lock _lock = new Lock();
+#if !NETSTANDARD
         private List<PerformanceCounter> _performanceCounters = new List<PerformanceCounter>();
+#endif
         private int _logLevel;
     }
 }

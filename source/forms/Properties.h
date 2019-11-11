@@ -4,7 +4,6 @@
 //----------------------------------------------------------------------------
 #include "PathLabel.hpp"
 #include "Rights.h"
-#include "RightsExt.h"
 #include <System.Classes.hpp>
 #include <Vcl.ComCtrls.hpp>
 #include <Vcl.Controls.hpp>
@@ -13,10 +12,9 @@
 #include <Vcl.Graphics.hpp>
 #include <Vcl.Menus.hpp>
 #include <Vcl.StdCtrls.hpp>
-//----------------------------------------------------------------------------
-#include "Rights.h"
-#include "RightsExt.h"
 #include <Menus.hpp>
+//----------------------------------------------------------------------------
+#include <GUITools.h>
 //----------------------------------------------------------------------------
 struct TCalculateSizeStats;
 //----------------------------------------------------------------------------
@@ -46,7 +44,7 @@ __published:
   TBevel *RecursiveBevel;
   TCheckBox *RecursiveCheck;
   TButton *CalculateSizeButton;
-  TRightsExtFrame *RightsFrame;
+  TRightsFrame *RightsFrame;
   TButton *HelpButton;
   TTabSheet *ChecksumSheet;
   TListView *ChecksumView;
@@ -57,6 +55,7 @@ __published:
   TEdit *ChecksumEdit;
   TPopupMenu *ListViewMenu;
   TMenuItem *Copy;
+  TLabel *ChecksumUnknownLabel;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
   void __fastcall CalculateSizeButtonClick(TObject *Sender);
@@ -119,6 +118,8 @@ protected:
   void __fastcall LoadStats(__int64 FilesSize, const TCalculateSizeStats & Stats);
   virtual void __fastcall Dispatch(void * Message);
   void __fastcall UpdateFileImage();
+
+  INTERFACE_HOOK;
 
 public:
   virtual __fastcall TPropertiesDialog(TComponent * AOwner,

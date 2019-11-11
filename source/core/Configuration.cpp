@@ -43,6 +43,7 @@ __fastcall TConfiguration::TConfiguration()
   FUpdating = 0;
   FStorage = stDetect;
   FDontSave = false;
+  FForceSave = false;
   FApplicationInfo = NULL;
   FUsage = new TUsage(this);
   FDefaultCollectUsage = false;
@@ -105,6 +106,8 @@ void __fastcall TConfiguration::Default()
   FTryFtpWhenSshFails = true;
   FParallelDurationThreshold = 10;
   FMimeTypes = UnicodeString();
+  FDontReloadMoreThanSessions = 1000;
+  FScriptProgressFileNameLimit = 25;
   CollectUsage = FDefaultCollectUsage;
 
   FLogging = false;
@@ -226,6 +229,8 @@ UnicodeString __fastcall TConfiguration::PropertyToKey(const UnicodeString & Pro
     KEY(Bool,     TryFtpWhenSshFails); \
     KEY(Integer,  ParallelDurationThreshold); \
     KEY(String,   MimeTypes); \
+    KEY(Integer,  DontReloadMoreThanSessions); \
+    KEY(Integer,  ScriptProgressFileNameLimit); \
     KEY(Bool,     CollectUsage); \
   ); \
   BLOCK(L"Logging", CANCREATE, \
@@ -274,6 +279,7 @@ void __fastcall TConfiguration::DoSave(bool All, bool Explicit)
   {
     AStorage->AccessMode = smReadWrite;
     AStorage->Explicit = Explicit;
+    AStorage->ForceSave = FForceSave;
     if (AStorage->OpenSubKey(ConfigurationSubKey, true))
     {
       // if saving to TOptionsStorage, make sure we save everything so that
@@ -1783,7 +1789,7 @@ void __fastcall TConfiguration::SetShowFtpWelcomeMessage(bool value)
 //---------------------------------------------------------------------------
 bool __fastcall TConfiguration::GetPersistent()
 {
-  return (Storage != stNul);
+  return (Storage != stNul) && !FDontSave;
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

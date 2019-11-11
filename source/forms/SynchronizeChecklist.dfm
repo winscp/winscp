@@ -4,7 +4,7 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
   HelpType = htKeyword
   HelpKeyword = 'ui_synchronize_checklist'
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
-  Caption = 'Synchronization checklist'
+  Caption = 'Synchronization checklist X'
   ClientHeight = 521
   ClientWidth = 695
   Color = clBtnFace
@@ -1382,6 +1382,7 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       Default = True
       ModalResult = 1
       TabOrder = 0
+      OnClick = OkButtonClick
     end
     object CancelButton: TButton
       Left = 8
@@ -1442,13 +1443,13 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     end
     object CustomCommandsButton2: TButton
       Left = 8
-      Top = 292
+      Top = 353
       Width = 108
       Height = 25
       Action = CustomCommandsAction
       Anchors = [akLeft, akTop, akRight]
       Caption = 'Co&mmands'
-      TabOrder = 8
+      TabOrder = 9
     end
     object ReverseButton: TButton
       Left = 8
@@ -1459,6 +1460,24 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       Anchors = [akLeft, akTop, akRight]
       TabOrder = 7
     end
+    object CalculateSizeButton: TButton
+      Left = 8
+      Top = 322
+      Width = 108
+      Height = 25
+      Action = CalculateSizeAction
+      Anchors = [akLeft, akTop, akRight]
+      TabOrder = 10
+    end
+    object MoveButton: TButton
+      Left = 8
+      Top = 291
+      Width = 108
+      Height = 25
+      Action = MoveAction
+      Anchors = [akLeft, akTop, akRight]
+      TabOrder = 8
+    end
   end
   object ListView: TIEListView
     Left = 0
@@ -1468,10 +1487,12 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     Align = alClient
     Checkboxes = True
     Constraints.MinWidth = 240
+    DoubleBuffered = True
     FullDrag = True
     HideSelection = False
     ReadOnly = True
     RowSelect = True
+    ParentDoubleBuffered = False
     PopupMenu = ListViewPopupMenu
     TabOrder = 0
     ViewStyle = vsReport
@@ -2316,11 +2337,26 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     object UncheckItem: TMenuItem
       Action = UncheckAction
     end
+    object N3: TMenuItem
+      Caption = '-'
+    end
+    object CheckAllFilesinThisDirectory1: TMenuItem
+      Action = CheckDirectoryAction
+    end
+    object UncheckAllActionsinThisDirectory1: TMenuItem
+      Action = UncheckDirectoryAction
+    end
     object N1: TMenuItem
       Caption = '-'
     end
     object ReverseItem: TMenuItem
       Action = ReverseAction
+    end
+    object MoveItem: TMenuItem
+      Action = MoveAction
+    end
+    object Calculate1: TMenuItem
+      Action = CalculateSizeAction
     end
     object TMenuItem
       Action = CustomCommandsAction
@@ -2372,6 +2408,27 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     object ReverseAction: TAction
       Caption = '&Reverse'
       OnExecute = ReverseActionExecute
+    end
+    object CalculateSizeAction: TAction
+      Caption = 'C&alculate'
+      OnExecute = CalculateSizeActionExecute
+    end
+    object CalculateSizeAllAction: TAction
+      ShortCut = 49217
+      OnExecute = CalculateSizeAllActionExecute
+    end
+    object MoveAction: TAction
+      Caption = '&Move'
+      ShortCut = 117
+      OnExecute = MoveActionExecute
+    end
+    object CheckDirectoryAction: TAction
+      Caption = 'Check All Actions in &This Directory'
+      OnExecute = CheckDirectoryActionExecute
+    end
+    object UncheckDirectoryAction: TAction
+      Caption = 'Uncheck All Actions in This &Directory'
+      OnExecute = UncheckDirectoryActionExecute
     end
   end
   object ActionImages120: TPngImageList

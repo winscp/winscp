@@ -72,17 +72,35 @@ __fastcall TAboutDialog::TAboutDialog(TComponent * AOwner,
   UseSystemSettings(this);
   LinkLabel(HomepageLabel, LoadStr(HOMEPAGE_URL));
   LinkLabel(ForumUrlLabel, LoadStr(FORUM_URL));
-  ApplicationLabel->ParentFont = true;
-  ApplicationLabel->Font->Style = ApplicationLabel->Font->Style << fsBold;
+
   ApplicationLabel->Caption = AppName;
+  TColor MainInstructionColor;
+  HFONT MainInstructionFont;
+  HFONT InstructionFont;
+  GetInstrutionsTheme(MainInstructionColor, MainInstructionFont, InstructionFont);
+  if (MainInstructionFont != 0)
+  {
+    int PrevHeight = ApplicationLabel->Height;
+    ApplicationLabel->Font->Handle = MainInstructionFont;
+    if (MainInstructionColor != Graphics::clNone)
+    {
+      ApplicationLabel->Font->Color = MainInstructionColor;
+    }
+    ShiftControls(ApplicationLabel->Top + 1, (ApplicationLabel->Height - PrevHeight));
+  }
+  else
+  {
+    ApplicationLabel->ParentFont = true;
+    ApplicationLabel->Font->Style = ApplicationLabel->Font->Style << fsBold;
+  }
+
   WinSCPCopyrightLabel->Caption = LoadStr(WINSCP_COPYRIGHT);
 
   if (Registration == NULL)
   {
     RegistrationLabel->Visible = false;
     RegistrationBox->Visible = false;
-    ClientHeight = ClientHeight -
-      (ThirdPartyPanel->Top - RegistrationBox->Top);
+    ShiftControls(RegistrationLabel->Top, (RegistrationBox->Top - ThirdPartyPanel->Top));
   }
   else
   {
@@ -129,7 +147,7 @@ __fastcall TAboutDialog::TAboutDialog(TComponent * AOwner,
     CreateLabelPanel(ThirdPartyPanel, LoadStr(MESSAGE_DISPLAY_ERROR));
   }
 
-  int IconSize = DialogImageSize(this);
+  int IconSize = ScaleByPixelsPerInch(48, this);
   FIconHandle = (HICON)LoadImage(MainInstance, L"MAINICON", IMAGE_ICON, IconSize, IconSize, 0);
   IconPaintBox->Width = IconSize;
   IconPaintBox->Height = IconSize;
@@ -138,6 +156,18 @@ __fastcall TAboutDialog::TAboutDialog(TComponent * AOwner,
 __fastcall TAboutDialog::~TAboutDialog()
 {
   DestroyIcon(FIconHandle);
+}
+//---------------------------------------------------------------------------
+void __fastcall TAboutDialog::ShiftControls(int From, int Diff)
+{
+  for (int Index = 0; Index < Panel->ControlCount; Index++)
+  {
+    if (Panel->Controls[Index]->Top > From)
+    {
+      Panel->Controls[Index]->Top = Panel->Controls[Index]->Top + Diff;
+    }
+  }
+  ClientHeight = ClientHeight + Diff;
 }
 //---------------------------------------------------------------------------
 void __fastcall TAboutDialog::LoadData()
@@ -156,61 +186,20 @@ void __fastcall TAboutDialog::LoadThirdParty()
 {
   FThirdPartyWebBrowser = CreateBrowserViewer(ThirdPartyPanel, L"");
 
-  reinterpret_cast<TLabel *>(FThirdPartyWebBrowser)->Color = clBtnFace;
+  reinterpret_cast<TLabel *>(FThirdPartyWebBrowser)->Color = ThirdPartyPanel->Color;
 
-  NavigateBrowserToUrl(FThirdPartyWebBrowser, L"about:blank");
+  ReadyBrowserForStreaming(FThirdPartyWebBrowser);
   DoLoadThirdParty();
 }
 //---------------------------------------------------------------------------
 void __fastcall TAboutDialog::DoLoadThirdParty()
 {
-  while (FThirdPartyWebBrowser->ReadyState < ::READYSTATE_INTERACTIVE)
-  {
-    Application->ProcessMessages();
-  }
-
-  std::unique_ptr<TFont> DefaultFont(new TFont());
-  DefaultFont->Assign(Application->DefaultFont);
-  DefaultFont->Height = ScaleByPixelsPerInchFromSystem(DefaultFont->Height, this);
+  WaitBrowserToIdle(FThirdPartyWebBrowser);
 
   UnicodeString ThirdParty;
-
-  ThirdParty +=
-    L"<!DOCTYPE html>\n"
-    L"<meta charset=\"utf-8\">\n"
-    L"<html>\n"
-    L"<head>\n"
-    L"<style>\n"
-    L"\n"
-    L"body\n"
-    L"{\n"
-    L"  font-family: '" + DefaultFont->Name + L"';\n"
-    L"  margin: 0.5em;\n"
-    L"  background-color: " + ColorToWebColorStr(Color) + L";\n"
-    L"}\n"
-    L"\n"
-    L"body\n"
-    L"{\n"
-    L"    font-size: " + IntToStr(DefaultFont->Size) + L"pt;\n"
-    L"}\n"
-    L"\n"
-    L"p\n"
-    L"{\n"
-    L"    margin-top: 0;\n"
-    L"    margin-bottom: 1em;\n"
-    L"}\n"
-    L"\n"
-    L"a, a:visited, a:hover, a:visited, a:current\n"
-    L"{\n"
-    L"    color: " + ColorToWebColorStr(LinkColor) + L";\n"
-    L"}\n"
-    L"</style>\n"
-    L"</head>\n"
-    L"<body>\n";
-
   UnicodeString Br = "<br/>\n";
 
-  if (GUIConfiguration->AppliedLocale != GUIConfiguration->InternalLocale())
+  if (!GUIConfiguration->UsingInternalTranslation())
   {
     UnicodeString TranslatorUrl = LoadStr(TRANSLATOR_URL);
     UnicodeString TranslatorInfo = LoadStr(TRANSLATOR_INFO2);
@@ -306,27 +295,13 @@ void __fastcall TAboutDialog::DoLoadThirdParty()
     LoadStr(ABOUT_PNG_COPYRIGHT) + Br +
     CreateLink(LoadStr(ABOUT_PNG_URL)));
 
-  ThirdParty +=
-    L"</body>\n"
-    L"</html>\n";
+  std::unique_ptr<TFont> DefaultFont(new TFont());
+  DefaultFont->Assign(Application->DefaultFont);
+  DefaultFont->Height = ScaleByPixelsPerInchFromSystem(DefaultFont->Height, this);
 
-  std::unique_ptr<TMemoryStream> ThirdPartyStream(new TMemoryStream());
-  UTF8String ThirdPartyUTF8 = UTF8String(ThirdParty);
-  ThirdPartyStream->Write(ThirdPartyUTF8.c_str(), ThirdPartyUTF8.Length());
-  ThirdPartyStream->Seek(0, 0);
+  ThirdParty = GenerateAppHtmlPage(DefaultFont.get(), ThirdPartyPanel, ThirdParty, false);
 
-  // For stream-loaded document, when set only after loading from OnDocumentComplete,
-  // browser stops working
-  SetBrowserDesignModeOff(FThirdPartyWebBrowser);
-
-  TStreamAdapter * ThirdPartyStreamAdapter = new TStreamAdapter(ThirdPartyStream.get(), soReference);
-  IPersistStreamInit * PersistStreamInit = NULL;
-  if (DebugAlwaysTrue(FThirdPartyWebBrowser->Document != NULL) &&
-      SUCCEEDED(FThirdPartyWebBrowser->Document->QueryInterface(IID_IPersistStreamInit, (void **)&PersistStreamInit)) &&
-      DebugAlwaysTrue(PersistStreamInit != NULL))
-  {
-    PersistStreamInit->Load(static_cast<_di_IStream>(*ThirdPartyStreamAdapter));
-  }
+  LoadBrowserDocument(FThirdPartyWebBrowser, ThirdParty);
 }
 //---------------------------------------------------------------------------
 void __fastcall TAboutDialog::AddPara(UnicodeString & Text, const UnicodeString & S)

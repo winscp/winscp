@@ -47,6 +47,8 @@ class TEditorData;
 class TTransferPresetNoteData;
 struct TEditedFileData;
 class ITaskbarList3;
+struct TSynchronizeParams;
+class TBookmark;
 //---------------------------------------------------------------------------
 enum TActionAllowed { aaShortCut, aaUpdate, aaExecute };
 enum TActionFlag { afLocal = 1, afRemote = 2, afExplorer = 4 , afCommander = 8 };
@@ -60,6 +62,7 @@ enum TCustomCommandListType { ccltAll, ccltBoth, ccltNonFile, ccltFile };
 //---------------------------------------------------------------------------
 class TCustomScpExplorerForm : public TForm
 {
+friend class TAutoBatch;
 __published:
   TPanel *RemotePanel;
   TTBXStatusBar *RemoteStatusBar;
@@ -132,9 +135,9 @@ __published:
   void __fastcall QueueView3Enter(TObject *Sender);
   void __fastcall QueueView3SelectItem(TObject *Sender, TListItem *Item,
     bool Selected);
-  void __fastcall RemoteFileControlDDFileOperation(TObject * Sender,
-    int Effect, UnicodeString SourcePath, UnicodeString TargetPath,
-    bool & DoOperation);
+  void __fastcall RemoteFileControlDDFileOperation(
+    TObject * Sender, int Effect, UnicodeString SourcePath, UnicodeString TargetPath,
+    bool Paste, bool & DoOperation);
   void __fastcall RemoteFileContolDDChooseEffect(TObject * Sender,
     int grfKeyState, int & dwEffect);
   void __fastcall RemoteFileControlDDDragFileName(TObject * Sender,
@@ -186,6 +189,17 @@ __published:
   void __fastcall EditMenuItemPopup(TTBCustomItem *Sender, bool FromLink);
   void __fastcall DirViewBusy(TObject *Sender, int Busy, bool & Allow);
   void __fastcall SessionsPageControlContextPopup(TObject *Sender, TPoint &MousePos, bool &Handled);
+  void __fastcall DockContextPopup(TObject *Sender, TPoint &MousePos, bool &Handled);
+  void __fastcall SessionsPageControlCloseButtonClick(TPageControl *Sender, int Index);
+  void __fastcall DirViewGetItemColor(
+    TObject * Sender, UnicodeString FileName, bool Directory, __int64 Size, TDateTime Modification, TColor & Color);
+  void __fastcall DirViewExit(TObject *Sender);
+  void __fastcall DirViewKeyDown(TObject *Sender, WORD &Key, TShiftState Shift);
+  void __fastcall DirViewKeyPress(TObject *Sender, System::WideChar &Key);
+  void __fastcall ApplicationEventsDeactivate(TObject *Sender);
+  void __fastcall ApplicationEventsModalBegin(TObject *Sender);
+  void __fastcall DirViewChangeFocus(TObject *Sender, TListItem *Item);
+  void __fastcall RemoteStatusBarMouseDown(TObject *Sender, TMouseButton Button, TShiftState Shift, int X, int Y);
 
 private:
   TTerminal * FTerminal;
@@ -201,8 +215,13 @@ private:
   unsigned short FIgnoreNextDialogChar;
   TStringList * FErrorList;
   HANDLE FDDExtMutex;
-  UnicodeString FDragExtFakeDirectory;
+  UnicodeString FDragFakeDirectory;
   TObjectList * FDragFakeMonitors;
+  UnicodeString FClipboardFakeDirectory;
+  std::unique_ptr<TObjectList> FClipboardFakeMonitors;
+  std::unique_ptr<TDragDropFilesEx> FClipboardDragDropFilesEx;
+  TTerminal * FClipboardTerminal;
+  std::unique_ptr<TStrings> FClipboardFileList;
   TStrings * FDelayedDeletionList;
   TTimer * FDelayedDeletionTimer;
   TStrings * FDDFileList;
@@ -253,6 +272,8 @@ private:
   TFeedSynchronizeError FOnFeedSynchronizeError;
   bool FNeedSession;
   TTerminal * FFileFindTerminal;
+  UnicodeString FFileColorsCurrent;
+  bool FInvalid;
 
   bool __fastcall GetEnableFocusedOperation(TOperationSide Side, int FilesOnly);
   bool __fastcall GetEnableSelectedOperation(TOperationSide Side, int FilesOnly);
@@ -279,7 +300,7 @@ private:
   void __fastcall SessionsDDDragOver(int KeyState, const TPoint & Point, int & Effect);
   void __fastcall SessionsDDProcessDropped(TObject * Sender, int KeyState, const TPoint & Point, int Effect);
   void __fastcall RemoteFileControlDragDropFileOperation(
-    TObject * Sender, int Effect, UnicodeString TargetPath, bool ForceQueue);
+    TObject * Sender, int Effect, UnicodeString TargetPath, bool ForceQueue, bool Paste);
   void __fastcall SessionsDDDragEnter(_di_IDataObject DataObj, int KeyState,
     const TPoint & Point, int & Effect, bool & Accept);
   void __fastcall SessionsDDDragLeave();
@@ -295,11 +316,14 @@ private:
   TDragDropFilesEx * __fastcall CreateDragDropFilesEx();
   void __fastcall KeyProcessed(Word & Key, TShiftState Shift);
   void __fastcall CheckCustomCommandShortCut(TCustomCommandList * List, Word & Key, Classes::TShiftState Shift, TShortCut KeyShortCut);
-  bool __fastcall CanPasteToDirViewFromClipBoard();
   void __fastcall CMShowingChanged(TMessage & Message);
   void __fastcall WMClose(TMessage & Message);
   void __fastcall CMDpiChanged(TMessage & Message);
   void __fastcall WMDpiChanged(TMessage & Message);
+  void __fastcall DoBookmarkClick(TOperationSide Side, TObject * Sender);
+  void __fastcall LocalBookmarkClick(TObject * Sender);
+  void __fastcall RemoteBookmarkClick(TObject * Sender);
+  void __fastcall InitControls();
 
 protected:
   TOperationSide FCurrentSide;
@@ -308,7 +332,6 @@ protected:
   TProgressForm * FProgressForm;
   TSynchronizeProgressForm * FSynchronizeProgressForm;
   HANDLE FDDExtMapFile;
-  bool FDDMoveSlipped;
   TTimer * FUserActionTimer;
   TQueueItemProxy * FPendingQueueActionItem;
   TTBXPopupMenu * FHistoryMenu[2][2];
@@ -328,8 +351,12 @@ protected:
   TDragDropFilesEx * FQueueDragDropFilesEx;
   TPoint FLastContextPopupScreenPoint;
   bool FRemoteDirViewWasFocused;
-  bool FDoNotIdleCurrentTerminal;
+  int FDoNotIdleCurrentTerminal;
   UnicodeString FFakeFileDropTarget;
+  TFileColorData::TList FFileColors;
+  UnicodeString FIncrementalSearch;
+  int FIncrementalSearching;
+  bool FIncrementalSearchHaveNext;
 
   virtual bool __fastcall CopyParamDialog(TTransferDirection Direction,
     TTransferType Type, bool Temp, TStrings * FileList,
@@ -362,7 +389,7 @@ protected:
   void __fastcall LocalCustomCommandPure(
     TStrings * FileList, const TCustomCommandType & ACommand, const UnicodeString & Command, TStrings * ALocalFileList,
     const TCustomCommandData & Data, bool LocalFileCommand, bool FileListCommand, UnicodeString * POutput);
-  void __fastcall LocalCustomCommandWithRemoteFiles(
+  void __fastcall LocalCustomCommandWithLocalFiles(
     const TCustomCommandType & ACommand, const UnicodeString & Command, const TCustomCommandData & Data,
     bool FileListCommand, UnicodeString * POutput);
   void __fastcall LocalCustomCommand(TStrings * FileList,
@@ -378,6 +405,8 @@ protected:
     TOperationSide Side, bool Temp, const UnicodeString & FileName, bool Success,
     TOnceDoneOperation & OnceDoneOperation);
   virtual void __fastcall DoOpenDirectoryDialog(TOpenDirectoryMode Mode, TOperationSide Side);
+  void __fastcall CreateProgressForm(TSynchronizeProgress * SynchronizeProgress);
+  void __fastcall DestroyProgressForm();
   virtual void __fastcall FileOperationProgress(TFileOperationProgressType & ProgressData);
   void __fastcall OperationComplete(const TDateTime & StartTime);
   void __fastcall ExecutedFileChanged(const UnicodeString FileName,
@@ -416,15 +445,26 @@ protected:
     TSynchronizeOptions * Options);
   void __fastcall SynchronizeSessionLog(const UnicodeString & Message);
   void __fastcall GetSynchronizeOptions(int Params, TSynchronizeOptions & Options);
+  UnicodeString __fastcall SerializeCopyParamForCommandLine(const TCopyParamType * CopyParams);
+  void __fastcall SynchronizeInNewWindow(const TSynchronizeParamType & Params, const TCopyParamType * CopyParams);
+  void __fastcall FullSynchronizeInNewWindow(
+    TSynchronizeMode Mode, int Params, const UnicodeString & LocalDirectory, const UnicodeString & RemoteDirectory,
+     const TCopyParamType * CopyParams);
   bool __fastcall SynchronizeAllowSelectedOnly();
   virtual void __fastcall BatchStart(void *& Storage);
   virtual void __fastcall BatchEnd(void * Storage);
   bool __fastcall ExecuteFileOperation(TFileOperation Operation, TOperationSide Side,
     TStrings * FileList, bool NoConfirmation, void * Param);
+  bool __fastcall ExecuteCopyMoveFileOperation(
+    TFileOperation Operation, TOperationSide Side, TStrings * FileList, bool NoConfirmation, void * Param);
+  bool __fastcall ExecuteDeleteFileOperation(TOperationSide Side, TStrings * FileList, void * Param);
   virtual bool __fastcall DDGetTarget(UnicodeString & Directory,
     bool & ForceQueue, UnicodeString & CounterName);
-  virtual void __fastcall DDExtInitDrag(TFileList * FileList, bool & Created);
+  virtual void __fastcall DDFakeFileInitDrag(TFileList * FileList, bool & Created);
+  UnicodeString __fastcall CreateFakeTransferDirectory();
   void __fastcall DDFakeCreated(TObject * Sender, const UnicodeString FileName);
+  void __fastcall ClipboardFakeCreated(TObject * Sender, const UnicodeString FileName);
+  void __fastcall ClipboardDataObjectRelease(TObject * Sender);
   virtual void __fastcall SideEnter(TOperationSide Side);
   virtual TOperationSide __fastcall GetSide(TOperationSide Side);
   TStrings * __fastcall PanelExport(TOperationSide Side, TPanelExport Export);
@@ -442,6 +482,7 @@ protected:
   void __fastcall QueueViewDeleteItem(int Index);
   void __fastcall UserActionTimer(TObject * Sender);
   void __fastcall UpdateQueueView();
+  bool __fastcall CanCloseQueue(TTerminalQueue * Queue);
   bool __fastcall CanCloseQueue();
   virtual bool __fastcall IsFileControl(TObject * Control, TOperationSide Side);
   virtual void __fastcall ReloadLocalDirectory(const UnicodeString Directory = L"");
@@ -454,8 +495,8 @@ protected:
   void __fastcall RemoteFileControlDDTargetDrop();
   bool __fastcall RemoteFileControlFileOperation(TObject * Sender,
     TFileOperation Operation, bool NoConfirmation, void * Param);
-  void __fastcall DDDownload(TStrings * FilesToCopy,
-    const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params);
+  void __fastcall DDDownload(
+    TStrings * FilesToCopy, const UnicodeString & TargetDir, const TCopyParamType * CopyParam, int Params);
   bool __fastcall EnsureCommandSessionFallback(TFSCapability Capability);
   bool __fastcall CommandSessionFallback();
   void __fastcall FileTerminalRemoved(const UnicodeString FileName,
@@ -502,8 +543,10 @@ protected:
   inline bool __fastcall CustomCommandRemoteAllowed();
   void __fastcall CustomCommandMenu(
     TAction * Action, TStrings * LocalFileList, TStrings * RemoteFileList);
-  void __fastcall LoadToolbarsLayoutStr(UnicodeString LayoutStr);
+  void __fastcall LoadToolbarsLayoutStr(UnicodeString LayoutStr, UnicodeString ButtonsStr);
+  UnicodeString __fastcall GetToolbarItemName(TTBCustomItem * Item);
   UnicodeString __fastcall GetToolbarsLayoutStr();
+  UnicodeString __fastcall GetToolbarsButtonsStr();
   virtual void __fastcall Dispatch(void * Message);
   void __fastcall PostComponentHide(Byte Component);
   void __fastcall GetSpaceAvailable(const UnicodeString Path,
@@ -514,6 +557,7 @@ protected:
     TCalculatedChecksumEvent OnCalculatedChecksum, bool & Close);
   void __fastcall UpdateCustomCommandsToolbar();
   virtual void __fastcall UpdateActions();
+  void __fastcall UpdateSessionColor(TColor value);
   void __fastcall SetSessionColor(TColor value);
   void __fastcall NoteTimer(TObject * Sender);
   void __fastcall AddNote(UnicodeString Note, bool UpdateNow = true);
@@ -535,14 +579,16 @@ protected:
   virtual void __fastcall ToolbarItemResize(TTBXCustomDropDownItem * Item, int Width);
   virtual void __fastcall CreateWnd();
   virtual void __fastcall DestroyWnd();
-  virtual bool __fastcall OpenBookmark(UnicodeString Local, UnicodeString Remote);
+  virtual bool __fastcall OpenBookmark(TOperationSide Side, TBookmark * Bookmark);
   void __fastcall DoFindFiles(TTerminal * Terminal, UnicodeString Directory, const TFileMasks & FileMask,
     TFileFoundEvent OnFileFound, TFindingFileEvent OnFindingFile);
   virtual void __fastcall DoFocusRemotePath(TTerminal * Terminal, const UnicodeString & Path);
+  bool __fastcall CanOperateOnFoundFiles(TTerminal * ATerminal);
   void __fastcall DoOperationOnFoundFiles(
     TFileOperation Operation, TTerminal * ATerminal, TStrings * FileList, TFileOperationFinishedEvent OnFileOperationFinished);
   void __fastcall DoDeleteFoundFiles(TTerminal * Terminal, TStrings * FileList, TFileOperationFinishedEvent OnFileOperationFinished);
   void __fastcall DoDownloadFoundFiles(TTerminal * ATerminal, TStrings * FileList, TFileOperationFinishedEvent OnFileOperationFinished);
+  void __fastcall DoEditFoundFiles(TTerminal * ATerminal, TStrings * FileList, TFileOperationFinishedEvent OnFileOperationFinished);
   bool __fastcall ExecuteFileOperation(TFileOperation Operation, TOperationSide Side,
     bool OnFocused, bool NoConfirmation = false, void * Param = NULL);
   void __fastcall UpdateCopyParamCounters(const TCopyParamType & CopyParam);
@@ -553,7 +599,7 @@ protected:
   int __fastcall AddFixedSessionImage(int GlyphsSourceIndex);
   TObjectList * __fastcall DoCollectWorkspace();
   void __fastcall DoSaveWorkspace(const UnicodeString & Name,
-    TObjectList * DataList, bool SavePasswords);
+    TObjectList * DataList, bool SavePasswords, bool Explicit);
   UnicodeString __fastcall WorkspaceName();
   virtual bool __fastcall EligibleForImageDisplayMode(TTBCustomItem * Item);
   virtual bool __fastcall UpdateToolbarDisplayMode();
@@ -584,7 +630,7 @@ protected:
     void * Arg);
   void __fastcall AnyInternalEditorModified(TObject * Sender, bool & Modified);
   virtual void __fastcall StartingDisconnected();
-  void __fastcall DoTerminalListChanged(bool Force);
+  void __fastcall DoTerminalListChanged();
   void __fastcall NeedSession(bool ReloadSessions);
   bool __fastcall DraggingAllFilesFromDirView(TOperationSide Side, TStrings * FileList);
   bool __fastcall SelectedAllFilesInDirView(TCustomDirView * DView);
@@ -593,6 +639,39 @@ protected:
   DYNAMIC void __fastcall ChangeScale(int M, int D);
   virtual void __fastcall UpdateImages();
   void __fastcall UpdatePixelsPerInchMainWindowCounter();
+  void __fastcall CopyPopup(TControl * DestControl, TControl * SourceControl);
+  void __fastcall CreateRemoteDirectory(const UnicodeString & Path, TRemoteProperties & Properties);
+  void __fastcall DoFullSynchronize(
+    void * Token, TProcessedSynchronizationChecklistItem OnProcessedItem,
+    TUpdatedSynchronizationChecklistItems OnUpdatedSynchronizationChecklistItems);
+  void __fastcall DoSynchronizeChecklistCalculateSize(
+    TSynchronizeChecklist * Checklist, const TSynchronizeChecklist::TItemList & Items, void * Token);
+  void __fastcall DoSynchronizeMove(
+    TOperationSide Side, const UnicodeString & FileName, const UnicodeString & NewFileName, TRemoteFile * RemoteFile);
+  void __fastcall FullSynchronize(
+    TSynchronizeParams & Params, TProcessedSynchronizationChecklistItem OnProcessedItem,
+    TUpdatedSynchronizationChecklistItems OnUpdatedSynchronizationChecklistItems);
+  void __fastcall SynchronizeProcessedItem(void * Token, const TSynchronizeChecklist::TItem * ChecklistItem);
+  void __fastcall CreateOpenDirMenuList(TTBCustomItem * Menu, TOperationSide Side, TBookmarkList * BookmarkList);
+  void __fastcall CreateOpenDirMenu(TTBCustomItem * Menu, TOperationSide Side);
+  bool __fastcall TryOpenDirectory(TOperationSide Side, const UnicodeString & Path);
+  void __fastcall ClipboardStop();
+  void __fastcall ClipboardClear();
+  void __fastcall ClipboardDownload(const UnicodeString & TargetDirectory, bool NoConfirmation, bool DragDrop);
+  bool __fastcall DoesClipboardContainOurFiles();
+  bool __fastcall CanPasteToDirViewFromClipBoard();
+  void __fastcall CloseSessionTab(int Index);
+  void __fastcall DoFileColorsChanged(TCustomDirView * DirView);
+  virtual void __fastcall FileColorsChanged();
+  TColor __fastcall PanelColor();
+  TColor __fastcall DisabledPanelColor();
+  void __fastcall WMWinIniChange(TMessage & Message);
+  void __fastcall ResetIncrementalSearch();
+  void __fastcall IncrementalSearch(const UnicodeString & Text, bool SkipCurrent, bool Reverse);
+  TListItem * __fastcall GetNextFile(TListItem * Item, bool Reverse);
+  TListItem * __fastcall SearchFile(const UnicodeString & Text, bool SkipCurrent, bool Reverse);
+  void __fastcall CMDialogKey(TWMKeyDown & Message);
+  DYNAMIC void __fastcall Deactivate();
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();
@@ -625,14 +704,17 @@ public:
 
   void __fastcall NewSession(bool FromSite, const UnicodeString & SessionUrl = L"");
   void __fastcall DuplicateSession();
+  void __fastcall RenameSession();
   void __fastcall CloseSession();
   void __fastcall OpenDirectory(TOperationSide Side);
   virtual void __fastcall HomeDirectory(TOperationSide Side);
+  void __fastcall ReloadDirectory(TOperationSide Side);
   void __fastcall OpenStoredSession(TSessionData * Data);
   void __fastcall OpenFolderOrWorkspace(const UnicodeString & Name);
   void __fastcall Idle();
   __fastcall TCustomScpExplorerForm(TComponent* Owner);
   void __fastcall SaveCurrentSession();
+  UnicodeString __fastcall CreateHiddenDuplicateSession();
   TSessionData * __fastcall CloneCurrentSessionData();
   bool __fastcall SaveWorkspace(bool EnableAutoSave);
   virtual void __fastcall CompareDirectories();
@@ -669,6 +751,7 @@ public:
   void __fastcall OperationFinished(TFileOperation Operation, TOperationSide Side,
     bool Temp, const UnicodeString & FileName, bool Success, TOnceDoneOperation & OnceDoneOperation);
   void __fastcall OperationProgress(TFileOperationProgressType & ProgressData);
+  UnicodeString __fastcall GetProgressTitle();
   void __fastcall ShowExtendedException(TTerminal * Terminal, Exception * E);
   void __fastcall InactiveTerminalException(TTerminal * Terminal, Exception * E);
   void __fastcall TerminalReady();
@@ -676,12 +759,13 @@ public:
   void __fastcall QueueEmptyNoteClicked(TObject * Sender);
   bool __fastcall DoSynchronizeDirectories(UnicodeString & LocalDirectory,
     UnicodeString & RemoteDirectory, bool UseDefaults);
-  bool __fastcall DoFullSynchronizeDirectories(UnicodeString & LocalDirectory,
-    UnicodeString & RemoteDirectory, TSynchronizeMode & Mode, bool & SaveMode,
+  int __fastcall DoFullSynchronizeDirectories(UnicodeString & LocalDirectory,
+    UnicodeString & RemoteDirectory, TSynchronizeMode & Mode, int Params, bool & SaveMode,
     bool UseDefaults);
   void __fastcall StandaloneEdit(const UnicodeString & FileName);
   bool __fastcall CanPasteFromClipBoard();
-  void __fastcall PasteFromClipBoard();
+  virtual void __fastcall PasteFromClipBoard();
+  virtual void __fastcall CopyFilesToClipboard(TOperationSide Side);
   void __fastcall ToggleQueueVisibility();
   virtual UnicodeString __fastcall PathForCaption();
   void __fastcall FileListFromClipboard();
@@ -710,6 +794,8 @@ public:
   bool __fastcall CanConsole();
   bool __fastcall CanChangePassword();
   void __fastcall ChangePassword();
+  bool __fastcall CanPrivateKeyUpload();
+  void __fastcall PrivateKeyUpload();
   bool __fastcall IsComponentPossible(Byte Component);
   void __fastcall ReplaceTerminal(TTerminal * value);
 

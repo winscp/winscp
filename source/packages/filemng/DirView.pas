@@ -41,7 +41,7 @@ uses
   Windows, ShlObj, ComCtrls, CompThread, CustomDirView, ListExt,
   ExtCtrls, Graphics, FileOperator, DiscMon, Classes, DirViewColProperties,
   DragDrop, Messages, ListViewColProperties, CommCtrl, DragDropFilesEx,
-  FileCtrl, SysUtils, BaseUtils, Controls, CustomDriveView, Winapi.ShellAPI;
+  FileCtrl, SysUtils, BaseUtils, Controls, CustomDriveView, System.Generics.Collections, Winapi.ShellAPI;
 
 {$I ResStrings.pas }
 
@@ -63,8 +63,6 @@ type
   EDragDrop = class(Exception);
   EInvalidFileName = class(Exception);
   ERenameFileFailed = class(Exception);
-
-  TDriveLetter = 'A'..'Z';
 
   TClipboardOperation = (cboNone, cboCut, cboCopy);
 
@@ -145,7 +143,6 @@ type
     FUseIconUpdateThread: Boolean;
     FIUThreadFinished: Boolean;
     FDriveType: Integer;
-    FCompressedColor: TColor;
     FParentFolder: IShellFolder;
     FDesktopFolder: IShellFolder;
     FDirOK: Boolean;
@@ -167,7 +164,7 @@ type
     iRecycleFolder: iShellFolder;
     PIDLRecycle: PItemIDList;
 
-    FLastPath: array[TDriveLetter] of string;
+    FLastPath: TDictionary<string, string>;
     FTimeoutShellIconRetrieval: Boolean;
 
     {Drag&Drop:}
@@ -176,8 +173,8 @@ type
 
     {Drag&drop helper functions:}
     procedure SignalFileDelete(Sender: TObject; Files: TStringList);
-    procedure PerformDragDropFileOperation(TargetPath: string; dwEffect: Integer;
-      RenameOnCollision: Boolean);
+    procedure PerformDragDropFileOperation(TargetPath: string; Effect: Integer;
+      RenameOnCollision: Boolean; Paste: Boolean);
     procedure SetDirColProperties(Value: TDirViewColProperties);
 
   protected
@@ -210,7 +207,6 @@ type
     procedure SetPath(Value: string); override;
     procedure PathChanged; override;
     procedure SetItemImageIndex(Item: TListItem; Index: Integer); override;
-    procedure SetCompressedColor(Value: TColor);
     procedure ChangeDetected(Sender: TObject; const Directory: string;
       var SubdirsChanged: Boolean);
     procedure ChangeInvalid(Sender: TObject; const Directory: string; const ErrorStr: string);
@@ -233,7 +229,7 @@ type
     function FileMatches(FileName: string; const SearchRec: TSearchRec): Boolean;
     function ItemOverlayIndexes(Item: TListItem): Word; override;
     procedure LoadFiles; override;
-    procedure PerformItemDragDropOperation(Item: TListItem; Effect: Integer); override;
+    procedure PerformItemDragDropOperation(Item: TListItem; Effect: Integer; Paste: Boolean); override;
     procedure SortItems; override;
     procedure StartFileDeleteThread;
     procedure WMDestroy(var Msg: TWMDestroy); message WM_DESTROY;
@@ -308,13 +304,12 @@ type
 
     function FormatFileTime(FileTime: TFileTime): string; virtual;
     function GetAttrString(Attr: Integer): string; virtual;
-    procedure FetchAllDisplayData;
 
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
     procedure ExecuteHomeDirectory; override;
     procedure ReloadDirectory; override;
-    procedure ExecuteDrive(Drive: TDriveLetter);
+    procedure ExecuteDrive(Drive: string);
     property HomeDirectory: string read GetHomeDirectory write FHomeDirectory;
     property TimeoutShellIconRetrieval: Boolean read FTimeoutShellIconRetrieval write FTimeoutShellIconRetrieval;
 
@@ -323,7 +318,6 @@ type
     property PathLabel;
     property OnUpdateStatusBar;
 
-    property LoadAnimation;
     property DimmHiddenFiles;
     property ShowHiddenFiles;
     property WantUseDragImages;
@@ -350,14 +344,12 @@ type
     property OnDDExecuted;
     property OnDDFileOperation;
     property OnDDFileOperationExecuted;
-    property OnDDMenuPopup;
 
     property OnExecFile;
     property OnMatchMask;
     property OnGetOverlay;
+    property OnGetItemColor;
 
-    property CompressedColor: TColor
-      read FCompressedColor write SetCompressedColor default clBlue;
     {Confirm deleting files}
     property ConfirmDelete: Boolean
       read FConfirmDelete write FConfirmDelete default True;
@@ -388,6 +380,7 @@ type
     property OnHistoryGo;
     property OnPathChange;
     property OnBusy;
+    property OnChangeFocus;
 
     property ColumnClick;
     property MultiSelect;
@@ -402,6 +395,13 @@ procedure Register;
 
 {Returns True, if the specified extension matches one of the extensions in ExtList:}
 function MatchesFileExt(Ext: string; const FileExtList: string): Boolean;
+
+function DropLink(Item: PFDDListItem; TargetPath: string): Boolean;
+function DropFiles(
+  DragDropFilesEx: TCustomizableDragDropFilesEx; Effect: Integer; FileOperator: TFileOperator; TargetPath: string;
+  RenameOnCollision: Boolean; IsRecycleBin: Boolean; ConfirmDelete: Boolean; ConfirmOverwrite: Boolean; Paste: Boolean;
+  Sender: TObject; OnDDFileOperation: TDDFileOperationEvent;
+  out SourcePath: string; out SourceIsDirectory: Boolean): Boolean;
 
 var
   LastClipBoardOperation: TClipBoardOperation;
@@ -480,6 +480,142 @@ begin
 {$WARNINGS ON}
   end;
 end;
+
+function DropLink(Item: PFDDListItem; TargetPath: string): Boolean;
+var
+  Drive: string;
+  SourcePath: string;
+  SourceFile: string;
+begin
+  SourceFile := Item.Name;
+  if IsRootPath(SourceFile) then
+  begin
+    Drive := DriveInfo.GetDriveKey(SourceFile);
+    SourcePath := Copy(DriveInfo.Get(Drive).PrettyName, 4, 255) + ' (' + Drive + ')'
+  end
+    else
+  begin
+    SourcePath := ExtractFileName(SourceFile);
+  end;
+
+  Result :=
+    CreateFileShortCut(SourceFile,
+      IncludeTrailingBackslash(TargetPath) + ChangeFileExt(SourcePath, '.lnk'),
+      ExtractFileNameOnly(SourceFile));
+end;
+
+function DropFiles(
+  DragDropFilesEx: TCustomizableDragDropFilesEx; Effect: Integer; FileOperator: TFileOperator; TargetPath: string;
+  RenameOnCollision: Boolean; IsRecycleBin: Boolean; ConfirmDelete: Boolean; ConfirmOverwrite: Boolean; Paste: Boolean;
+  Sender: TObject; OnDDFileOperation: TDDFileOperationEvent;
+  out SourcePath: string; out SourceIsDirectory: Boolean): Boolean;
+var
+  Index: Integer;
+  DoFileOperation: Boolean;
+begin
+  SourcePath := '';
+
+  {Set the source filenames:}
+  for Index := 0 to DragDropFilesEx.FileList.Count - 1 do
+  begin
+    FileOperator.OperandFrom.Add(
+      TFDDListItem(DragDropFilesEx.FileList[Index]^).Name);
+    if DragDropFilesEx.FileNamesAreMapped then
+      FileOperator.OperandTo.Add(IncludeTrailingPathDelimiter(TargetPath) +
+        TFDDListItem(DragDropFilesEx.FileList[Index]^).MappedName);
+
+    if SourcePath = '' then
+    begin
+      if DirectoryExists(TFDDListItem(DragDropFilesEx.FileList[Index]^).Name) then
+      begin
+        SourcePath := TFDDListItem(DragDropFilesEx.FileList[Index]^).Name;
+        SourceIsDirectory := True;
+      end
+        else
+      begin
+        SourcePath := ExtractFilePath(TFDDListItem(DragDropFilesEx.FileList[Index]^).Name);
+        SourceIsDirectory := False;
+      end;
+    end;
+  end;
+
+  FileOperator.Flags := [foAllowUndo, foNoConfirmMkDir];
+  if RenameOnCollision then
+  begin
+    FileOperator.Flags := FileOperator.Flags + [foRenameOnCollision];
+    FileOperator.WantMappingHandle := True;
+  end
+    else FileOperator.WantMappingHandle := False;
+
+  {Set the target directory or the target filenames:}
+  if DragDropFilesEx.FileNamesAreMapped and (not IsRecycleBin) then
+  begin
+    FileOperator.Flags := FileOperator.Flags + [foMultiDestFiles];
+  end
+    else
+  begin
+    FileOperator.Flags := FileOperator.Flags - [foMultiDestFiles];
+    FileOperator.OperandTo.Clear;
+    FileOperator.OperandTo.Add(TargetPath);
+  end;
+
+  {if the target directory is the recycle bin, then delete the selected files:}
+  if IsRecycleBin then
+  begin
+    FileOperator.Operation := foDelete;
+  end
+    else
+  begin
+    case Effect of
+      DROPEFFECT_COPY: FileOperator.Operation := foCopy;
+      DROPEFFECT_MOVE: FileOperator.Operation := foMove;
+    end;
+  end;
+
+  if IsRecycleBin then
+  begin
+    if not ConfirmDelete then
+      FileOperator.Flags := FileOperator.Flags + [foNoConfirmation];
+  end
+    else
+  begin
+    if not ConfirmOverwrite then
+      FileOperator.Flags := FileOperator.Flags + [foNoConfirmation];
+  end;
+
+  DoFileOperation := True;
+  if Assigned(OnDDFileOperation) then
+  begin
+    OnDDFileOperation(Sender, Effect, SourcePath, TargetPath, False, DoFileOperation);
+  end;
+
+  Result := DoFileOperation and (FileOperator.OperandFrom.Count > 0);
+  if Result then
+  begin
+    FileOperator.Execute;
+    if DragDropFilesEx.FileNamesAreMapped then
+      FileOperator.ClearUndo;
+  end;
+end;
+
+function GetShellDisplayName(
+  const ShellFolder: IShellFolder; IDList: PItemIDList; Flags: DWORD; var Name: string): Boolean;
+var
+  Str: TStrRet;
+begin
+  Result := True;
+  Name := '';
+  if ShellFolder.GetDisplayNameOf(IDList, Flags, Str) = NOERROR then
+  begin
+    case Str.uType of
+      STRRET_WSTR: Name := WideCharToString(Str.pOleStr);
+      STRRET_OFFSET: Name := PChar(UINT(IDList) + Str.uOffset);
+      STRRET_CSTR: Name := string(Str.cStr);
+      else Result := False;
+    end;
+  end
+    else Result := False;
+end; {GetShellDisplayName}
 
 { TIconUpdateThread }
 
@@ -658,8 +794,6 @@ end; {TIconUpdateThread.Terminate}
 { TDirView }
 
 constructor TDirView.Create(AOwner: TComponent);
-var
-  D: TDriveLetter;
 begin
   inherited Create(AOwner);
 
@@ -667,7 +801,6 @@ begin
   FDriveType := DRIVE_UNKNOWN;
   FUseIconCache := False;
   FConfirmDelete := True;
-  FCompressedColor := clBlue;
   FParentFolder := nil;
   FDesktopFolder := nil;
   SelectNewFiles := False;
@@ -703,14 +836,14 @@ begin
     ShellExtensions.DropHandler := True;
   end;
 
-  for D := Low(FLastPath) to High(FLastPath) do
-    FLastPath[D] := '';
+  FLastPath := nil;
 end; {Create}
 
 destructor TDirView.Destroy;
 begin
   if Assigned(PIDLRecycle) then FreePIDL(PIDLRecycle);
 
+  FLastPath.Free;
   FInfoCacheList.Free;
   FFileOperator.Free;
   FChangeTimer.Free;
@@ -753,17 +886,17 @@ begin
     else
   begin
     Result := UserDocumentDirectory;
-    if (Result = '') or // in rare case the CSIDL_PERSONAL cannot be resolved
-       IsUNCPath(Result) then
+    // in rare case the CSIDL_PERSONAL cannot be resolved
+    if Result = '' then
     begin
-      Result := AnyValidPath;
+      Result := DriveInfo.AnyValidPath;
     end;
   end;
 end; { GetHomeDirectory }
 
 function TDirView.GetIsRoot: Boolean;
 begin
-  Result := (Length(Path) = 2) and (Path[2] = ':');
+  Result := IsRootPath(Path);
 end;
 
 function TDirView.GetPath: string;
@@ -781,8 +914,11 @@ begin
   // ExpandFileName resolves to current working directory
   // on the drive, not to root path
   Expanded := ExpandFileName(PathName);
-  Assert(Pos(':', Expanded) = 2);
-  FLastPath[UpCase(Expanded[1])] := Expanded;
+  if not Assigned(FLastPath) then
+  begin
+    FLastPath := TDictionary<string, string>.Create;
+  end;
+  FLastPath.AddOrSetValue(DriveInfo.GetDriveKey(Expanded), Expanded);
 end;
 
 procedure TDirView.SetPath(Value: string);
@@ -791,8 +927,6 @@ begin
   // it would truncate non-existing directory to first superior existing
   Value := ReplaceStr(Value, '/', '\');
 
-  if IsUncPath(Value) then
-    raise Exception.CreateFmt(SUcpPathsNotSupported, [Value]);
   if not DirectoryExists(ApiPath(Value)) then
     raise Exception.CreateFmt(SDirNotExists, [Value]);
 
@@ -827,18 +961,9 @@ begin
   end;
 end; {SetLoadEnabled}
 
-procedure TDirView.SetCompressedColor(Value: TColor);
-begin
-  if Value <> CompressedColor then
-  begin
-    FCompressedColor := Value;
-    Invalidate;
-  end;
-end; {SetCompressedColor}
-
 function TDirView.GetPathName: string;
 begin
-  if (Length(Path) = 2) and (Path[2] = ':') then Result := Path + '\'
+  if IsRoot then Result := IncludeTrailingBackslash(Path)
     else Result := Path;
 end; {GetPathName}
 
@@ -966,7 +1091,7 @@ begin
   begin
     PIDLRecycleLocal := nil;
     try
-      OLECheck(shGetSpecialFolderLocation(Self.Handle,
+      OLECheck(SHGetSpecialFolderLocation(Self.Handle,
         CSIDL_BITBUCKET, PIDLRecycleLocal));
       PIDLRecycle := PIDL_Concatenate(nil, PIDLRecycleLocal);
 
@@ -1051,7 +1176,7 @@ var
 begin
   Result := nil;
   if not Assigned(FDesktopFolder) then
-    ShGetDesktopFolder(FDesktopFolder);
+    SHGetDesktopFolder(FDesktopFolder);
 
   if Assigned(FDesktopFolder) then
   begin
@@ -1182,6 +1307,7 @@ var
   DirsCount: Integer;
   SelTreeNode: TTreeNode;
   Node: TTreeNode;
+  Drive: string;
 begin
   FHiddenCount := 0;
   FFilteredCount := 0;
@@ -1189,13 +1315,16 @@ begin
   try
     if Length(FPath) > 0 then
     begin
-      DriveInfo.ReadDriveStatus(FPath[1], dsSize);
-      FDriveType := DriveInfo[FPath[1]].DriveType;
+      Drive := DriveInfo.GetDriveKey(FPath);
+      DriveInfo.ReadDriveStatus(Drive, dsSize);
+      FDriveType := DriveInfo.Get(Drive).DriveType;
+      FDirOK := DriveInfo.Get(Drive).DriveReady and DirectoryExists(FPath);
     end
-      else FDriveType := DRIVE_UNKNOWN;
-
-    FDirOK := (Length(FPath) > 0) and
-      DriveInfo[FPath[1]].DriveReady and DirectoryExists(FPath);
+      else
+    begin
+      FDriveType := DRIVE_UNKNOWN;
+      FDirOK := False;
+    end;
 
     if DirOK then
     begin
@@ -1211,7 +1340,7 @@ begin
         (Uppercase(Copy(FPath, 2, 10)) = ':\RECYCLER');
 
       if not Assigned(FDesktopFolder) then
-        shGetDesktopFolder(FDesktopFolder);
+        SHGetDesktopFolder(FDesktopFolder);
 
       if IsRecycleBin then LoadFromRecycleBin(Path)
         else
@@ -1233,7 +1362,7 @@ begin
         end;
         SysUtils.FindClose(SRec);
 
-        if AddParentDir and (Length(FPath) > 2) then
+        if AddParentDir and (not IsRoot) then
         begin
           AddParentDirItem;
         end;
@@ -1526,7 +1655,7 @@ begin
             if FocusedIsVisible and Assigned(ItemFocused) then
               ItemFocused.MakeVisible(False);
 
-            UpdateStatusBar;
+            DoUpdateStatusBar;
 
             Screen.Cursor := SaveCursor;
           end;
@@ -1541,23 +1670,32 @@ begin
   end;
 end; {Reload2}
 
-procedure TDirView.PerformItemDragDropOperation(Item: TListItem; Effect: Integer);
+procedure TDirView.PerformItemDragDropOperation(Item: TListItem; Effect: Integer; Paste: Boolean);
+var
+  TargetPath: string;
+  RenameOnCollision: Boolean;
 begin
+  TargetPath := '';
+  RenameOnCollision := False;
+
   if Assigned(Item) then
   begin
     if Assigned(Item.Data) then
     begin
       if ItemIsParentDirectory(Item) then
-        PerformDragDropFileOperation(ExcludeTrailingPathDelimiter(ExtractFilePath(Path)),
-          Effect, False)
+        TargetPath := ExcludeTrailingPathDelimiter(ExtractFilePath(Path))
       else
-        PerformDragDropFileOperation(IncludeTrailingPathDelimiter(PathName) +
-          ItemFileName(Item), Effect, False);
+        TargetPath := IncludeTrailingPathDelimiter(PathName) + ItemFileName(Item);
     end;
   end
     else
-  PerformDragDropFileOperation(PathName, Effect,
-    DDOwnerIsSource and (Effect = DropEffect_Copy));
+  begin
+    TargetPath := PathName;
+    RenameOnCollision := DDOwnerIsSource and (Effect = DROPEFFECT_COPY);
+  end;
+
+  if TargetPath <> '' then
+    PerformDragDropFileOperation(TargetPath, Effect, RenameOnCollision, Paste);
 end;
 
 procedure TDirView.ReLoad(CacheIcons: Boolean);
@@ -1607,7 +1745,7 @@ function TDirView.GetFileInfo(
 begin
   if TimeoutShellIconRetrieval then
   begin
-     Result := SHGetFileInfoWithTimeout(pszPath, dwFileAttributes, psfi, cbFileInfo, uFlags,MSecsPerSec div 4);
+     Result := SHGetFileInfoWithTimeout(pszPath, dwFileAttributes, psfi, cbFileInfo, uFlags, MSecsPerSec div 4);
   end
     else
   begin
@@ -1657,21 +1795,8 @@ begin
             ShAttr := 0;
             FDesktopFolder.ParseDisplayName(ParentForm.Handle, nil,
               PChar(FPath + '\' + FileName), Eaten, PIDL, ShAttr);
-
-            {Retrieve the shell display attributes for directories:}
-            if IsDirectory and Assigned(PIDL) then
-            begin
-              shAttr := SFGAO_DISPLAYATTRMASK;
-              try
-                if Assigned(ParentFolder) and
-                   Succeeded(ParentFolder.GetAttributesOf(1, PIDL, shAttr)) then
-                begin
-                  if (shAttr and SFGAO_SHARE) <> 0 then
-                    Item.OverlayIndex := 0;
-                end;
-              except end;
-            end;
-          except end;
+          except
+          end;
         end;
 
         if IsDirectory then
@@ -1733,6 +1858,7 @@ begin
             begin
               // Files with PIDL are typically .exe files.
               // It may take long to retrieve an icon from exe file.
+              // We typically do not get here, now that we have UseIconUpdateThread enabled.
               if GetFileInfo(
                    PChar(PIDL), FILE_ATTRIBUTE_NORMAL, FileInfo, SizeOf(FileInfo),
                    SHGFI_TYPENAME or SHGFI_USEFILEATTRIBUTES or SHGFI_SYSICONINDEX or SHGFI_PIDL) = 0 then
@@ -1838,16 +1964,6 @@ begin
   Result := ExtractFileExt(PFileRec(Item.Data)^.FileName);
 end; {ItemFileExt}
 
-function StrCmpLogicalW(const sz1, sz2: UnicodeString): Integer; stdcall; external 'shlwapi.dll';
-
-function CompareLogicalText(const S1, S2: string; NaturalOrderNumericalSorting: Boolean): Integer;
-begin
-  if NaturalOrderNumericalSorting then
-    Result := StrCmpLogicalW(PChar(S1), PChar(S2))
-  else
-    Result := lstrcmpi(PChar(S1), PChar(S2));
-end;
-
 function CompareFileType(I1, I2: TListItem; P1, P2: PFileRec): Integer;
 var
   Key1, Key2: string;
@@ -1864,7 +1980,7 @@ begin
     Key1 := P1.TypeName + ' ' + P1.FileExt + ' ' + P1.DisplayName;
     Key2 := P2.TypeName + ' ' + P2.FileExt + ' ' + P2.DisplayName;
   end;
-  Result := CompareLogicalText(Key1, Key2, TDirView(I1.ListView).NaturalOrderNumericalSorting);
+  Result := CompareLogicalTextPas(Key1, Key2, TDirView(I1.ListView).NaturalOrderNumericalSorting);
 end;
 
 function CompareFileTime(P1, P2: PFileRec): Integer;
@@ -1949,7 +2065,7 @@ begin
         dvExt:
           if not P1.isDirectory then
           begin
-            Result := CompareLogicalText(
+            Result := CompareLogicalTextPas(
               P1.FileExt + ' ' + P1.DisplayName, P2.FileExt + ' ' + P2.DisplayName,
               AOwner.NaturalOrderNumericalSorting);
           end
@@ -1961,7 +2077,7 @@ begin
 
       if Result = fEqual then
       begin
-        Result := CompareLogicalText(P1.DisplayName, P2.DisplayName, AOwner.NaturalOrderNumericalSorting)
+        Result := CompareLogicalTextPas(P1.DisplayName, P2.DisplayName, AOwner.NaturalOrderNumericalSorting)
       end;
     end;
   end;
@@ -2056,7 +2172,7 @@ begin
       if Updating then
         Items.EndUpdate;
       if Updated then
-        UpdateStatusBar;
+        DoUpdateStatusBar;
       FileList.Free;
     end;
   end;
@@ -2113,7 +2229,7 @@ var
   Item: TListItem;
 begin
   // keep absolute path as is
-  if Copy(DirName, 2, 1) <> ':' then
+  if ExtractFileDrive(DirName) = '' then
     DirName := Path + '\' + DirName;
 
   if WatchForChanges then StopWatchThread;
@@ -2161,7 +2277,7 @@ end; {CreateDirectory}
 
 procedure TDirView.DisplayContextMenu(Where: TPoint);
 var
-  FileList : TStringList;
+  FileList: TStringList;
   Index: Integer;
   Item: TListItem;
   DefDir: string;
@@ -2404,7 +2520,10 @@ end;
 function TDirView.ItemColor(Item: TListItem): TColor;
 begin
   if PFileRec(Item.Data).Attr and FILE_ATTRIBUTE_COMPRESSED <> 0 then
-      Result := FCompressedColor
+  begin
+    if SupportsDarkMode and DarkMode then Result := clSkyBlue
+      else Result := clBlue;
+  end
     else
   if DimmHiddenFiles and not Item.Selected and
      (PFileRec(Item.Data).Attr and FILE_ATTRIBUTE_HIDDEN <> 0) then
@@ -2446,42 +2565,20 @@ begin
 end; {StartIconUpdateThread}
 
 procedure TDirView.StopIconUpdateThread;
-var
-  Counter: Integer;
 begin
   if Assigned(FIconUpdateThread) then
   begin
-    Counter := 0;
     FIconUpdateThread.Terminate;
     FIconUpdateThread.Priority := tpHigher;
     if fIconUpdateThread.Suspended then
       FIconUpdateThread.Resume;
-    Sleep(0);
-
-    try
-      {Wait until the thread has teminated to prevent AVs:}
-      while not FIUThreadFinished do
-      begin
-        Sleep(10);
-        // Not really sure why this is here, but definitelly, when recreating
-        // the dir view, it may cause recursion calls back to destryed dir view,
-        // causing AVs
-        // May not be necessary anymore after the recursion check in
-        // TDirView.CMRecreateWnd
-        if not (csRecreating in ControlState) then
-          Application.ProcessMessages;
-        Inc(Counter);
-        {Raise an exception after 2 second, if the thread has not terminated:}
-        if Counter = 200 then
-        begin
-          {MP}raise EIUThread.Create(SIconUpdateThreadTerminationError);
-          Break;
-        end;
-      end;
-    finally
-      FIconUpdateThread.Destroy;
-      FIconUpdateThread := nil;
+    if not FIconUpdateThread.WaitFor(MSecsPerSec div 4) then
+    begin
+      // This prevents Destroy from waiting for (stalled) thread
+      FIconUpdateThread.Suspend;
     end;
+    FIconUpdateThread.Destroy;
+    FIconUpdateThread := nil;
   end;
 end; {StopIconUpdateThread}
 
@@ -2676,20 +2773,32 @@ begin
   end;
 end;
 
-procedure TDirView.ExecuteDrive(Drive: TDriveLetter);
+procedure TDirView.ExecuteDrive(Drive: string);
 var
   APath: string;
 begin
-  if FLastPath[Drive] <> '' then
+  if Assigned(FLastPath) and FLastPath.ContainsKey(Drive) then
   begin
     APath := FLastPath[Drive];
     if not DirectoryExists(ApiPath(APath)) then
-      APath := Format('%s:', [Drive]);
+    begin
+      if DriveInfo.IsRealDrive(Drive) then
+        APath := Format('%s:', [Drive])
+      else
+        APath := Drive;
+    end;
   end
     else
   begin
-    GetDir(Integer(Drive) - Integer('A') + 1, APath);
-    APath := ExcludeTrailingPathDelimiter(APath);
+    if DriveInfo.IsRealDrive(Drive) then
+    begin
+      GetDir(Integer(Drive[1]) - Integer('A') + 1, APath);
+      APath := ExcludeTrailingPathDelimiter(APath);
+    end
+      else
+    begin
+      APath := Drive;
+    end;
   end;
 
   if Path <> APath then
@@ -2992,27 +3101,29 @@ procedure TDirView.DDChooseEffect(grfKeyState: Integer;
   var dwEffect: Integer);
 begin
   if DragDropFilesEx.OwnerIsSource and
-     (dwEffect = DropEffect_Copy) and (not Assigned(DropTarget)) then
+     (dwEffect = DROPEFFECT_COPY) and (not Assigned(DropTarget)) then
   begin
-    dwEffect := DropEffect_None
+    dwEffect := DROPEFFECT_NONE
   end
     else
   if (grfKeyState and (MK_CONTROL or MK_SHIFT) = 0) then
   begin
-    if ExeDrag and (Path[1] >= FirstFixedDrive) and
-      (DragDrive >= FirstFixedDrive) then
+    if FDragDrive <> '' then
     begin
-      dwEffect := DropEffect_Link
-    end
-      else
-    begin
-      if DragOnDriveIsMove and
-         (not DDOwnerIsSource or Assigned(DropTarget)) and
-         (((DragDrive = Upcase(Path[1])) and (dwEffect = DropEffect_Copy) and
-         (DragDropFilesEx.AvailableDropEffects and DropEffect_Move <> 0))
-           or IsRecycleBin) then
+      if ExeDrag and DriveInfo.IsFixedDrive(DriveInfo.GetDriveKey(Path)) and DriveInfo.IsFixedDrive(FDragDrive) then
       begin
-        dwEffect := DropEffect_Move;
+        dwEffect := DROPEFFECT_LINK;
+      end
+        else
+      begin
+        if DragOnDriveIsMove and
+           (not DDOwnerIsSource or Assigned(DropTarget)) and
+           ((SameText(FDragDrive, DriveInfo.GetDriveKey(Path)) and (dwEffect = DROPEFFECT_COPY) and
+           (DragDropFilesEx.AvailableDropEffects and DROPEFFECT_MOVE <> 0))
+             or IsRecycleBin) then
+        begin
+          dwEffect := DROPEFFECT_MOVE;
+        end;
       end;
     end;
   end;
@@ -3021,14 +3132,12 @@ begin
 end;
 
 procedure TDirView.PerformDragDropFileOperation(TargetPath: string;
-  dwEffect: Integer; RenameOnCollision: Boolean);
+  Effect: Integer; RenameOnCollision: Boolean; Paste: Boolean);
 var
   Index: Integer;
   SourcePath: string;
-  SourceFile: string;
   OldCursor: TCursor;
   OldWatchForChanges: Boolean;
-  DoFileOperation: Boolean;
   IsRecycleBin: Boolean;
   SourceIsDirectory: Boolean;
   Node: TTreeNode;
@@ -3055,7 +3164,7 @@ begin
           Screen.Cursor := crHourGlass;
           WatchForChanges := False;
 
-          if (dwEffect in [DropEffect_Copy, DropEffect_Move]) then
+          if Effect in [DROPEFFECT_COPY, DROPEFFECT_MOVE] then
           begin
             StopWatchThread;
 
@@ -3066,113 +3175,27 @@ begin
                (DropSourceControl is TDirView) then
                 TDirView(DropSourceControl).StopWatchThread;
 
-            SourcePath := '';
-
-            {Set the source filenames:}
-            for Index := 0 to DragDropFilesEx.FileList.Count - 1 do
+            if DropFiles(
+                 DragDropFilesEx, Effect, FFileOperator, TargetPath, RenameOnCollision, IsRecycleBin,
+                 ConfirmDelete, ConfirmOverwrite, Paste,
+                 Self, OnDDFileOperation, SourcePath, SourceIsDirectory) then
             begin
-              FFileOperator.OperandFrom.Add(
-                TFDDListItem(DragDropFilesEx.FileList[Index]^).Name);
-              if DragDropFilesEx.FileNamesAreMapped then
-                FFileOperator.OperandTo.Add(IncludeTrailingPathDelimiter(TargetPath) +
-                  TFDDListItem(DragDropFilesEx.FileList[Index]^).MappedName);
-
-              if SourcePath = '' then
-              begin
-                if DirectoryExists(TFDDListItem(DragDropFilesEx.FileList[Index]^).Name) then
-                begin
-                  SourcePath := TFDDListItem(DragDropFilesEx.FileList[Index]^).Name;
-                  SourceIsDirectory := True;
-                end
-                  else
-                begin
-                  SourcePath := ExtractFilePath(TFDDListItem(DragDropFilesEx.FileList[Index]^).Name);
-                  SourceIsDirectory := False;
-                end;
-              end;
-            end;
-
-            FFileOperator.Flags := [foAllowUndo, foNoConfirmMkDir];
-            if RenameOnCollision then
-            begin
-              FFileOperator.Flags := FFileOperator.Flags + [foRenameOnCollision];
-              FFileOperator.WantMappingHandle := True;
-            end
-              else FFileOperator.WantMappingHandle := False;
-
-            {Set the target directory or the target filenames:}
-            if DragDropFilesEx.FileNamesAreMapped and (not IsRecycleBin) then
-            begin
-              FFileOperator.Flags := FFileOperator.Flags + [foMultiDestFiles];
-            end
-              else
-            begin
-              FFileOperator.Flags := FFileOperator.Flags - [foMultiDestFiles];
-              FFileOperator.OperandTo.Clear;
-              FFileOperator.OperandTo.Add(TargetPath);
-            end;
-
-            {if the target directory is the recycle bin, then delete the selected files:}
-            if IsRecycleBin then
-            begin
-              FFileOperator.Operation := foDelete;
-            end
-              else
-            begin
-              case dwEffect of
-                DropEffect_Copy: FFileOperator.Operation := foCopy;
-                DropEffect_Move: FFileOperator.Operation := foMove;
-              end;
-            end;
-
-            if IsRecycleBin then
-            begin
-              if not ConfirmDelete then
-                FFileOperator.Flags := FFileOperator.Flags + [foNoConfirmation];
-            end
-              else
-            begin
-              if not ConfirmOverwrite then
-                FFileOperator.Flags := FFileOperator.Flags + [foNoConfirmation];
-            end;
-
-            DoFileOperation := True;
-            if Assigned(OnDDFileOperation) then
-            begin
-              OnDDFileOperation(Self, dwEffect, SourcePath, TargetPath,
-                DoFileOperation);
-            end;
-
-            if DoFileOperation and (FFileOperator.OperandFrom.Count > 0) then
-            begin
-              FFileOperator.Execute;
               ReLoad2;
-              if DragDropFilesEx.FileNamesAreMapped then
-                FFileOperator.ClearUndo;
               if Assigned(OnDDFileOperationExecuted) then
-                OnDDFileOperationExecuted(Self, dwEffect, SourcePath, TargetPath);
+                OnDDFileOperationExecuted(Self, Effect, SourcePath, TargetPath);
             end;
           end
             else
-          if dwEffect = DropEffect_Link then
+          if Effect = DROPEFFECT_LINK then
           (* Create Link requested: *)
           begin
             StopWatchThread;
             for Index := 0 to DragDropFilesEx.FileList.Count - 1 do
             begin
-              SourceFile := TFDDListItem(DragDropFilesEx.FileList[Index]^).Name;
-
-              if Length(SourceFile) = 3 then
-                {Create a link to a drive:}
-                SourcePath := Copy(DriveInfo[SourceFile[1]].PrettyName, 4, 255) + '(' + SourceFile[1] + ')'
-              else
-                {Create a link to a file or directory:}
-                SourcePath := ExtractFileName(SourceFile);
-
-              if not CreateFileShortCut(SourceFile, IncludeTrailingPathDelimiter(TargetPath) +
-                ChangeFileExt(SourcePath,'.lnk'),
-                ExtractFileNameOnly(SourceFile)) then
-                  DDError(DDCreateShortCutError);
+              if not DropLink(PFDDListItem(DragDropFilesEx.FileList[Index]), TargetPath) then
+              begin
+                DDError(DDCreateShortCutError);
+              end;
             end;
             ReLoad2;
           end;
@@ -3180,10 +3203,13 @@ begin
           if Assigned(DropSourceControl) and
              (DropSourceControl is TDirView) and
              (DropSourceControl <> Self) and
-             (dwEffect = DropEffect_Move) then
-                TDirView(DropSourceControl).ValidateSelectedFiles;
+             (Effect = DROPEFFECT_MOVE) then
+          begin
+            TDirView(DropSourceControl).ValidateSelectedFiles;
+          end;
 
           if Assigned(FDriveView) and SourceIsDirectory then
+          begin
             with TDriveView(FDriveView) do
             begin
               try
@@ -3191,7 +3217,7 @@ begin
               except
               end;
 
-              if (dwEffect = DropEffect_Move) or IsRecycleBin then
+              if (Effect = DROPEFFECT_MOVE) or IsRecycleBin then
               try
                 Node := FindNodeToPath(SourcePath);
                 if Assigned(Node) and Assigned(Node.Parent) then
@@ -3200,6 +3226,7 @@ begin
               except
               end;
             end;
+          end;
         finally
           FFileOperator.OperandFrom.Clear;
           FFileOperator.OperandTo.Clear;
@@ -3341,19 +3368,19 @@ begin
     case LastClipBoardOperation of
       cboNone:
         begin
-          PerformDragDropFileOperation(TargetPath, DropEffect_Copy, False);
-          if Assigned(OnDDExecuted) then OnDDExecuted(Self, DropEffect_Copy);
+          PerformDragDropFileOperation(TargetPath, DROPEFFECT_COPY, False, True);
+          if Assigned(OnDDExecuted) then OnDDExecuted(Self, DROPEFFECT_COPY);
         end;
       cboCopy:
         begin
-          PerformDragDropFileOperation(TargetPath, DropEffect_Copy,
-            ExcludeTrailingPathDelimiter(ExtractFilePath(TFDDListItem(DragDropFilesEx.FileList[0]^).Name)) = Path);
-          if Assigned(OnDDExecuted) then OnDDExecuted(Self, DropEffect_Copy);
+          PerformDragDropFileOperation(TargetPath, DROPEFFECT_COPY,
+            ExcludeTrailingPathDelimiter(ExtractFilePath(TFDDListItem(DragDropFilesEx.FileList[0]^).Name)) = Path, True);
+          if Assigned(OnDDExecuted) then OnDDExecuted(Self, DROPEFFECT_COPY);
         end;
       cboCut:
         begin
-          PerformDragDropFileOperation(TargetPath, DropEffect_Move, False);
-          if Assigned(OnDDExecuted) then OnDDExecuted(Self, DropEffect_Move);
+          PerformDragDropFileOperation(TargetPath, DROPEFFECT_MOVE, False, True);
+          if Assigned(OnDDExecuted) then OnDDExecuted(Self, DROPEFFECT_MOVE);
           EmptyClipBoard;
         end;
     end;
@@ -3392,16 +3419,6 @@ begin
   end;
   EmptyClipBoard;
 end; {DuplicateFiles}
-
-procedure TDirView.FetchAllDisplayData;
-var
-  Index: Integer;
-begin
-  for Index := 0 to Items.Count - 1 do
-    if Assigned(Items[Index]) and Assigned(Items[Index].Data) then
-      if PFileRec(Items[Index].Data)^.Empty then
-        GetDisplayData(Items[Index], False);
-end; {FetchAllDisplayData}
 
 function TDirView.NewColProperties: TCustomListViewColProperties;
 begin

@@ -55,6 +55,8 @@ private:
 protected:
   void __fastcall UpdateControls();
 
+  INTERFACE_HOOK;
+
 public:
   __fastcall TCustomCommandDialog(TComponent* Owner,
     const TCustomCommandList * CustomCommandList, TCustomCommandsMode Mode,

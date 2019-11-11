@@ -16,11 +16,12 @@
 #include <Dialogs.hpp>
 #include <PasTools.hpp>
 #include "HistoryComboBox.hpp"
-#include <WinInterface.h>
+#include "PathLabel.hpp"
 #include <Vcl.Imaging.pngimage.hpp>
 #include <Vcl.Menus.hpp>
+#include <WinInterface.h>
 #include <WinConfiguration.h>
-#include "PathLabel.hpp"
+#include <GUITools.h>
 //----------------------------------------------------------------------------
 class TCustomCommandList;
 class TEditorList;
@@ -38,7 +39,7 @@ __published:
   TCheckBox *ConfirmOverwritingCheck;
   TCheckBox *ConfirmDeletingCheck;
   TCheckBox *ConfirmClosingSessionCheck2;
-  TCheckBox *DDTransferConfirmationCheck;
+  TCheckBox *DDTransferConfirmationCheck2;
   TCheckBox *ContinueOnErrorCheck;
   TTabSheet *LogSheet;
   TTabSheet *GeneralSheet;
@@ -83,13 +84,12 @@ __published:
   TButton *RegisterAsUrlHandlersButton;
   TTabSheet *DragDropSheet;
   TGroupBox *DragDropDownloadsGroup;
-  TLabel *DDExtEnabledLabel;
-  TLabel *DDExtDisabledLabel;
-  TRadioButton *DDExtEnabledButton;
-  TRadioButton *DDExtDisabledButton;
-  TPanel *DDExtDisabledPanel;
+  TLabel *DDFakeFileEnabledLabel;
+  TLabel *DDFakeFileDisabledLabel;
+  TRadioButton *DDFakeFileEnabledButton;
+  TRadioButton *DDFakeFileDisabledButton;
+  TPanel *DDFakeFileDisabledPanel;
   TCheckBox *DDWarnLackOfTempSpaceCheck;
-  TCheckBox *DDWarnOnMoveCheck;
   TCheckBox *ConfirmExitOnCompletionCheck;
   TTabSheet *QueueSheet;
   TGroupBox *QueueGroup;
@@ -101,7 +101,6 @@ __published:
   TRadioButton *QueueViewHideButton;
   TCheckBox *QueueAutoPopupCheck;
   TCheckBox *QueueCheck;
-  TCheckBox *DDAllowMoveInitCheck;
   TCheckBox *ConfirmResumeCheck;
   TTabSheet *StorageSheet;
   TGroupBox *StorageGroup;
@@ -259,7 +258,7 @@ __published:
   TPanel *LogFilePanel;
   TRadioButton *LogFileAppendButton;
   TRadioButton *LogFileOverwriteButton;
-  TComboBox *LogProtocolCombo;
+  TComboBox *LogProtocolCombo2;
   TStaticText *LogFileNameHintText;
   TCheckBox *EnableLoggingCheck;
   TGroupBox *ActionsLoggingGroup;
@@ -320,6 +319,23 @@ __published:
   TFilenameEdit *CustomIniFileStorageEdit;
   TPathLabel *AutomaticIniFileStorageLabel;
   TCheckBox *NaturalOrderNumericalSortingCheck;
+  TLabel *DragExtStatusLabel;
+  TCheckBox *SynchronizeSummaryCheck;
+  TMemo *DDDrivesMemo;
+  TLabel *DDDrivesLabel;
+  TTabSheet *FileColorsSheet;
+  TGroupBox *FileColorsGroup;
+  TListView *FileColorsView;
+  TButton *AddFileColorButton;
+  TButton *RemoveFileColorButton;
+  TButton *UpFileColorButton;
+  TButton *DownFileColorButton;
+  TButton *EditFileColorButton;
+  TGroupBox *ThemeGroup;
+  TLabel *Label7;
+  TComboBox *ThemeCombo;
+  TComboBox *PanelSearchCombo;
+  TLabel *Label2;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);
@@ -341,7 +357,7 @@ __published:
   void __fastcall NavigationTreeChange(TObject *Sender, TTreeNode *Node);
   void __fastcall PageControlChange(TObject *Sender);
   void __fastcall RegisterAsUrlHandlersButtonClick(TObject *Sender);
-  void __fastcall DDExtLabelClick(TObject *Sender);
+  void __fastcall DDLabelClick(TObject *Sender);
   void __fastcall CustomCommandsViewDblClick(TObject *Sender);
   void __fastcall AddSearchPathButtonClick(TObject *Sender);
   void __fastcall EditorFontLabelDblClick(TObject *Sender);
@@ -415,6 +431,15 @@ __published:
   void __fastcall CustomIniFileStorageEditExit(TObject *Sender);
   void __fastcall CustomIniFileStorageEditAfterDialog(TObject *Sender, UnicodeString &Name, bool &Action);
   void __fastcall CustomIniFileStorageButtonClick(TObject *Sender);
+  void __fastcall FileColorsViewData(TObject *Sender, TListItem *Item);
+  void __fastcall AddEditFileColorButtonClick(TObject *Sender);
+  void __fastcall FileColorsViewCustomDrawItem(TCustomListView *Sender, TListItem *Item, TCustomDrawState State, bool &DefaultDraw);
+  void __fastcall FileColorsViewDragDrop(TObject *Sender, TObject *Source, int X, int Y);
+  void __fastcall FileColorsViewKeyDown(TObject *Sender, WORD &Key, TShiftState Shift);
+  void __fastcall RemoveFileColorButtonClick(TObject *Sender);
+  void __fastcall FileColorsViewDblClick(TObject *Sender);
+  void __fastcall UpDownFileColorButtonClick(TObject *Sender);
+  void __fastcall CopyParamListViewDragOver(TObject *Sender, TObject *Source, int X, int Y, TDragState State, bool &Accept);
 
 private:
   TPreferencesMode FPreferencesMode;
@@ -435,6 +460,7 @@ private:
   TListViewScrollOnDragOver * FCustomCommandsScrollOnDragOver;
   TListViewScrollOnDragOver * FCopyParamScrollOnDragOver;
   TListViewScrollOnDragOver * FEditorScrollOnDragOver;
+  TListViewScrollOnDragOver * FFileColorScrollOnDragOver;
   int FNoUpdate;
   bool FLanguagesLoaded;
   std::unique_ptr<TPopupMenu> FColorPopupMenu;
@@ -445,6 +471,7 @@ private:
   std::unique_ptr<TStrings> FAddedExtensions;
   std::unique_ptr<TStringList> FCustomCommandOptions;
   UnicodeString FCustomIniFileStorageName;
+  TFileColorData::TList FFileColors;
   void __fastcall CMDialogKey(TWMKeyDown & Message);
   void __fastcall WMHelp(TWMHelp & Message);
   void __fastcall CMDpiChanged(TMessage & Message);
@@ -492,6 +519,12 @@ protected:
   void __fastcall ConfigureCommand();
   void __fastcall CustomIniFileStorageChanged();
   UnicodeString __fastcall GetCustomIniFileStorageName();
+  TShortCuts __fastcall GetShortCuts();
+  void __fastcall FileColorMove(int Source, int Dest);
+  void __fastcall UpdateFileColorsView();
+  void __fastcall AddEditFileColor(bool Edit);
+
+  INTERFACE_HOOK;
 };
 //----------------------------------------------------------------------------
 #endif

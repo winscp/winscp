@@ -9,6 +9,7 @@
 #include <Buttons.hpp>
 //---------------------------------------------------------------------------
 #include <WinInterface.h>
+#include <GUITools.h>
 //---------------------------------------------------------------------------
 class TEditMaskDialog : public TForm
 {
@@ -52,6 +53,8 @@ protected:
   void __fastcall SaveFileMasks(TFileMasks & Mask);
   void __fastcall LoadFileMasks(TMemo * Memo, TStrings * MasksStr);
   void __fastcall UpdateControls();
+
+  INTERFACE_HOOK;
 
 private:
   UnicodeString FExcludeDirectoryMasks;

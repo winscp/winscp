@@ -1,8 +1,8 @@
 object RightsFrame: TRightsFrame
   Left = 0
   Top = 0
-  Width = 163
-  Height = 87
+  Width = 239
+  Height = 109
   TabOrder = 0
   OnContextPopup = FrameContextPopup
   object OwnerLabel: TLabel
@@ -56,6 +56,14 @@ object RightsFrame: TRightsFrame
     Flat = True
     OnClick = RightsButtonsClick
   end
+  object OctalLabel: TLabel
+    Left = 4
+    Top = 68
+    Width = 29
+    Height = 13
+    Caption = 'O&ctal:'
+    FocusControl = OctalEdit
+  end
   object OwnerReadCheck: TGrayedCheckBox
     Tag = 256
     Left = 58
@@ -104,7 +112,7 @@ object RightsFrame: TRightsFrame
     Caption = 'R'
     ParentShowHint = False
     ShowHint = True
-    TabOrder = 3
+    TabOrder = 4
     OnClick = ControlChange
   end
   object GroupWriteCheck: TGrayedCheckBox
@@ -116,7 +124,7 @@ object RightsFrame: TRightsFrame
     Caption = 'W'
     ParentShowHint = False
     ShowHint = True
-    TabOrder = 4
+    TabOrder = 5
     OnClick = ControlChange
   end
   object GroupExecuteCheck: TGrayedCheckBox
@@ -128,7 +136,7 @@ object RightsFrame: TRightsFrame
     Caption = 'X'
     ParentShowHint = False
     ShowHint = True
-    TabOrder = 5
+    TabOrder = 6
     OnClick = ControlChange
   end
   object OthersReadCheck: TGrayedCheckBox
@@ -140,7 +148,7 @@ object RightsFrame: TRightsFrame
     Caption = 'R'
     ParentShowHint = False
     ShowHint = True
-    TabOrder = 6
+    TabOrder = 8
     OnClick = ControlChange
   end
   object OthersWriteCheck: TGrayedCheckBox
@@ -152,7 +160,7 @@ object RightsFrame: TRightsFrame
     Caption = 'W'
     ParentShowHint = False
     ShowHint = True
-    TabOrder = 7
+    TabOrder = 9
     OnClick = ControlChange
   end
   object OthersExecuteCheck: TGrayedCheckBox
@@ -164,17 +172,68 @@ object RightsFrame: TRightsFrame
     Caption = 'X'
     ParentShowHint = False
     ShowHint = True
-    TabOrder = 8
+    TabOrder = 10
     OnClick = ControlChange
   end
   object DirectoriesXCheck: TCheckBox
     Left = 5
-    Top = 65
+    Top = 89
     Width = 156
     Height = 17
     Caption = 'Add &X to directories'
-    TabOrder = 9
+    TabOrder = 13
     OnClick = ControlChange
+  end
+  object OctalEdit: TEdit
+    Left = 55
+    Top = 64
+    Width = 64
+    Height = 21
+    MaxLength = 4
+    TabOrder = 12
+    Text = 'OctalEdit'
+    OnChange = OctalEditChange
+    OnExit = OctalEditExit
+  end
+  object SetUidCheck: TGrayedCheckBox
+    Tag = 2048
+    Left = 169
+    Top = 3
+    Width = 70
+    Height = 17
+    Caption = 'Set UID'
+    TabOrder = 3
+    OnClick = ControlChange
+  end
+  object SetGIDCheck: TGrayedCheckBox
+    Tag = 1024
+    Left = 169
+    Top = 23
+    Width = 70
+    Height = 17
+    Caption = 'Set GID'
+    TabOrder = 7
+    OnClick = ControlChange
+  end
+  object StickyBitCheck: TGrayedCheckBox
+    Tag = 512
+    Left = 169
+    Top = 43
+    Width = 70
+    Height = 17
+    Caption = 'Sticky bit'
+    TabOrder = 11
+    OnClick = ControlChange
+  end
+  object CloseButton: TButton
+    Left = 160
+    Top = 80
+    Width = 75
+    Height = 25
+    Caption = 'Close'
+    TabOrder = 14
+    Visible = False
+    OnClick = CloseButtonClick
   end
   object RightsPopup: TPopupMenu
     Images = RightsImages

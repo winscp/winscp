@@ -36,12 +36,7 @@ namespace WinSCP
 
         private int GetLength32()
         {
-            if ((Length < int.MinValue) || (Length > int.MaxValue))
-            {
-                throw new OverflowException(string.Format(CultureInfo.CurrentCulture, "Size {0} cannot be represented using 32-bit value", Length));
-            }
-
-            return (int) Length;
+            return Tools.LengthTo32Bit(Length);
         }
 
         private void SetLength32(int value)

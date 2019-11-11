@@ -13,7 +13,6 @@
 
 #include "CreateDirectory.h"
 //---------------------------------------------------------------------
-#pragma link "RightsExt"
 #pragma link "Rights"
 #ifndef NO_RESOURCES
 #pragma resource "*.dfm"

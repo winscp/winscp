@@ -16,7 +16,6 @@
 #include <StrUtils.hpp>
 #include <PasTools.hpp>
 #include <Math.hpp>
-#include <vssym32.h>
 #include <WebBrowserEx.hpp>
 #include <Setup.h>
 #include <WinApi.h>
@@ -657,6 +656,18 @@ void __fastcall TMessageForm::InsertPanel(TPanel * Panel)
   }
 }
 //---------------------------------------------------------------------------
+int __fastcall TMessageForm::GetContentWidth()
+{
+  int Result = 0;
+  if (DebugAlwaysTrue(MessageBrowser != NULL))
+  {
+    // we currently use this for updates message box only
+    TControl * ContentsControl = static_cast<TControl *>(DebugNotNull(MessageBrowser))->Parent;
+    Result = ContentsControl->Width;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall TMessageForm::NavigateToUrl(const UnicodeString & Url)
 {
   if (DebugAlwaysTrue(MessageBrowser != NULL))
@@ -788,36 +799,10 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
     *TimeoutButton = NULL;
   }
 
-  TColor MainInstructionColor = Graphics::clNone;
-  HFONT MainInstructionFont = 0;
-  HFONT InstructionFont = 0;
-  HTHEME Theme = OpenThemeData(0, L"TEXTSTYLE");
-  if (Theme != NULL)
-  {
-    LOGFONT AFont;
-    COLORREF AColor;
-
-    memset(&AFont, 0, sizeof(AFont));
-    // Using Canvas->Handle in the 2nd argument we can get scales font,
-    // but at this point the form is sometime not scaled yet (difference is particularly for standalone messages like
-    // /UninstallCleanup), so the results are inconsistent.
-    if (GetThemeFont(Theme, NULL, TEXT_MAININSTRUCTION, 0, TMT_FONT, &AFont) == S_OK)
-    {
-      MainInstructionFont = CreateFontIndirect(&AFont);
-    }
-    if (GetThemeColor(Theme, TEXT_MAININSTRUCTION, 0, TMT_TEXTCOLOR, &AColor) == S_OK)
-    {
-      MainInstructionColor = (TColor)AColor;
-    }
-
-    memset(&AFont, 0, sizeof(AFont));
-    if (GetThemeFont(Theme, NULL, TEXT_INSTRUCTION, 0, TMT_FONT, &AFont) == S_OK)
-    {
-      InstructionFont = CreateFontIndirect(&AFont);
-    }
-
-    CloseThemeData(Theme);
-  }
+  TColor MainInstructionColor;
+  HFONT MainInstructionFont;
+  HFONT InstructionFont;
+  GetInstrutionsTheme(MainInstructionColor, MainInstructionFont, InstructionFont);
 
   TMessageForm * Result = SafeFormCreate<TMessageForm>();
   if (InstructionFont != 0)
@@ -1270,4 +1255,10 @@ void __fastcall NavigateMessageDialogToUrl(TCustomForm * Form, const UnicodeStri
 {
   TMessageForm * MessageForm = DebugNotNull(dynamic_cast<TMessageForm *>(Form));
   MessageForm->NavigateToUrl(Url);
+}
+//---------------------------------------------------------------------------
+int __fastcall GetMessageDialogContentWidth(TCustomForm * Form)
+{
+  TMessageForm * MessageForm = DebugNotNull(dynamic_cast<TMessageForm *>(Form));
+  return MessageForm->GetContentWidth();
 }

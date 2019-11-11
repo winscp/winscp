@@ -21,7 +21,7 @@ bool __fastcall DoCopyParamPresetDialog(TCopyParamList * CopyParamList,
   const TCopyParamType & DefaultCopyParams)
 {
   bool Result;
-  TCopyParamPresetDialog * Dialog = new TCopyParamPresetDialog(GetFormOwner() , Mode, CurrentRuleData);
+  TCopyParamPresetDialog * Dialog = new TCopyParamPresetDialog(GetFormOwner(), Mode, CurrentRuleData);
   try
   {
     Result = Dialog->Execute(CopyParamList, Index, DefaultCopyParams);
@@ -100,8 +100,7 @@ bool __fastcall TCopyParamPresetDialog::Execute(TCopyParamList * CopyParamList,
   else
   {
     DescriptionEdit->Text = L"";
-    TCopyParamType Default;
-    CopyParamsFrame->Params = Default;
+    CopyParamsFrame->Params = DefaultCopyParams;
     if (FMode == cpmAddCurrent)
     {
       SetRuleData(*FCurrentRuleData);

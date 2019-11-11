@@ -7,11 +7,13 @@
 #include <StdCtrls.hpp>
 #include <Forms.hpp>
 #include <HistoryComboBox.hpp>
-
-#include <WinInterface.h>
-#include <CopyParam.h>
 #include <Vcl.ExtCtrls.hpp>
 #include <Vcl.Imaging.pngimage.hpp>
+#include <Vcl.Menus.hpp>
+//---------------------------------------------------------------------------
+#include <WinInterface.h>
+#include <CopyParam.h>
+#include <GUITools.h>
 //---------------------------------------------------------------------------
 class TFullSynchronizeDialog : public TForm
 {
@@ -46,6 +48,9 @@ __published:
   TRadioButton *MirrorFilesButton;
   TRadioButton *SynchronizeTimestampsButton;
   TImage *Image;
+  TPopupMenu *OkMenu;
+  TMenuItem *Start1;
+  TMenuItem *StartInNewWindow1;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall LocalDirectoryBrowseButtonClick(TObject *Sender);
   void __fastcall TransferSettingsButtonClick(TObject *Sender);
@@ -56,6 +61,10 @@ __published:
   void __fastcall CopyParamGroupClick(TObject *Sender);
   void __fastcall HelpButtonClick(TObject *Sender);
   void __fastcall TransferSettingsButtonDropDownClick(TObject *Sender);
+  void __fastcall Start1Click(TObject *Sender);
+  void __fastcall OkButtonDropDownClick(TObject *Sender);
+  void __fastcall OkButtonClick(TObject *Sender);
+  void __fastcall StartInNewWindow1Click(TObject *Sender);
 
 private:
   int FParams;
@@ -67,6 +76,7 @@ private:
   TPopupMenu * FPresetsMenu;
   UnicodeString FPreset;
   UnicodeString FSynchronizeBySizeCaption;
+  TFullSynchronizeInNewWindow FOnFullSynchronizeInNewWindow;
   void __fastcall SetRemoteDirectory(const UnicodeString value);
   UnicodeString __fastcall GetRemoteDirectory();
   void __fastcall SetLocalDirectory(const UnicodeString value);
@@ -77,16 +87,21 @@ private:
   int __fastcall GetParams();
   void __fastcall SetSaveSettings(bool value);
   bool __fastcall GetSaveSettings();
-  void __fastcall SetOptions(int value);
   void __fastcall SetCopyParams(const TCopyParamType & value);
   TCopyParamType __fastcall GetCopyParams();
   void __fastcall CopyParamClick(TObject * Sender);
   int __fastcall ActualCopyParamAttrs();
   void __fastcall CopyParamListPopup(TRect R, int AdditionalOptions);
+  bool __fastcall AllowStartInNewWindow();
+  void __fastcall Submitted();
+  void __fastcall StartInNewWindow();
 
 public:
   __fastcall TFullSynchronizeDialog(TComponent* Owner);
   virtual __fastcall ~TFullSynchronizeDialog();
+
+  void __fastcall Init(
+    int Options, const TUsableCopyParamAttrs & CopyParamAttrs, TFullSynchronizeInNewWindow OnFullSynchronizeInNewWindow);
 
   bool __fastcall Execute();
 
@@ -96,12 +111,12 @@ public:
   __property TSynchronizeMode Mode = { read = GetMode, write = SetMode };
   __property bool SaveSettings = { read = GetSaveSettings, write = SetSaveSettings };
   __property bool SaveMode = { read = FSaveMode, write = FSaveMode };
-  __property int Options = { read = FOptions, write = SetOptions };
-  __property TUsableCopyParamAttrs CopyParamAttrs = { read = FCopyParamAttrs, write = FCopyParamAttrs };
   __property TCopyParamType CopyParams = { read = GetCopyParams, write = SetCopyParams };
 
 protected:
   void __fastcall UpdateControls();
+
+  INTERFACE_HOOK;
 };
 //---------------------------------------------------------------------------
 #endif

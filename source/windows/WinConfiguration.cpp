@@ -28,6 +28,52 @@
 TWinConfiguration * WinConfiguration = NULL;
 //---------------------------------------------------------------------------
 static UnicodeString NotepadName(L"notepad.exe");
+static UnicodeString ToolbarsLayoutKey(L"ToolbarsLayout2");
+static UnicodeString ToolbarsLayoutOldKey(L"ToolbarsLayout");
+//---------------------------------------------------------------------------
+static const wchar_t FileColorDataSeparator = L':';
+TFileColorData::TFileColorData() :
+  Color(TColor())
+{
+}
+//---------------------------------------------------------------------------
+void TFileColorData::Load(const UnicodeString & S)
+{
+  UnicodeString Buf(S);
+  Color = RestoreColor(CutToChar(Buf, FileColorDataSeparator, true));
+  FileMask = Buf;
+}
+//---------------------------------------------------------------------------
+UnicodeString TFileColorData::Save() const
+{
+  UnicodeString Result = StoreColor(Color) + FileColorDataSeparator + FileMask.Masks;
+  return Result;
+}
+//---------------------------------------------------------------------------
+void TFileColorData::LoadList(const UnicodeString & S, TList & List)
+{
+  std::unique_ptr<TStringList> Strings(new TStringList());
+  Strings->CommaText = S;
+
+  List.clear();
+  for (int Index = 0; Index < Strings->Count; Index++)
+  {
+    TFileColorData FileColorData;
+    FileColorData.Load(Strings->Strings[Index]);
+    List.push_back(FileColorData);
+  }
+}
+//---------------------------------------------------------------------------
+UnicodeString TFileColorData::SaveList(const TList & List)
+{
+  std::unique_ptr<TStringList> Strings(new TStringList());
+  for (TFileColorData::TList::const_iterator Iter = List.begin(); Iter != List.end(); Iter++)
+  {
+    Strings->Add((*Iter).Save());
+  }
+  return Strings->CommaText;
+}
+//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 __fastcall TEditorData::TEditorData() :
   FileMask(AnyMask),
@@ -433,6 +479,7 @@ bool __fastcall TEditorList::IsDefaultList() const
 //---------------------------------------------------------------------------
 __fastcall TWinConfiguration::TWinConfiguration(): TCustomWinConfiguration()
 {
+  ResetSysDarkTheme();
   FInvalidDefaultTranslationMessage = L"";
   FDDExtInstalled = -1;
   FBookmarks = new TBookmarks();
@@ -487,13 +534,11 @@ void __fastcall TWinConfiguration::Default()
   int WorkAreaHeightScaled = DimensionToDefaultPixelsPerInch(Screen->WorkAreaHeight);
   UnicodeString PixelsPerInchToolbarValue = "PixelsPerInch=" + SaveDefaultPixelsPerInch();
 
-  FDDAllowMove = false;
-  FDDAllowMoveInit = false;
   FDDTransferConfirmation = asAuto;
   FDDTemporaryDirectory = L"";
+  FDDDrives = L"";
   FDDWarnLackOfTempSpace = true;
   FDDWarnLackOfTempSpaceRatio = 1.1;
-  FDDExtEnabled = DDExtInstalled;
   FDDFakeFile = true;
   FDDExtTimeout = MSecsPerSec;
   FDeleteToRecycleBin = true;
@@ -501,6 +546,7 @@ void __fastcall TWinConfiguration::Default()
   FSelectMask = AnyMask;
   FShowHiddenFiles = false;
   FFormatSizeBytes = fbKilobytes;
+  FPanelSearch = isNameStartOnly;
   FShowInaccesibleDirectories = true;
   FConfirmTransferring = true;
   FConfirmDeleting = true;
@@ -522,6 +568,7 @@ void __fastcall TWinConfiguration::Default()
   FTemporaryDirectoryCleanup = true;
   FConfirmTemporaryDirectoryCleanup = true;
   FPreservePanelState = true;
+  FDarkTheme = asAuto;
   FLastStoredSession = L"";
   // deliberately not being saved, so that when saving ad-hoc workspace,
   // we do not offer to overwrite the last saved workspace, what may be undesirable
@@ -568,12 +615,15 @@ void __fastcall TWinConfiguration::Default()
   FShowTips = true;
   FTipsSeen = L"";
   FTipsShown = Now();
+  FFileColors = L"";
   FRunsSinceLastTip = 0;
   FExtensionsDeleted = L"";
   FLockedInterface = false;
 
   HonorDrivePolicy = true;
+  TimeoutShellOperations = true;
   TimeoutShellIconRetrieval = false;
+  AllowWindowPrint = false;
 
   FEditor.Font.FontName = DefaultFixedWidthFontName;
   FEditor.Font.FontSize = DefaultFixedWidthFontSize;
@@ -633,18 +683,19 @@ void __fastcall TWinConfiguration::Default()
   FScpExplorer.DirViewParams = L"0;1;0|150,1;70,1;150,1;79,1;62,1;55,0;20,0;150,0;125,0;@" + SaveDefaultPixelsPerInch() + L"|6;7;8;0;1;2;3;4;5";
   FScpExplorer.ToolbarsLayout =
     UnicodeString(
-      L"Queue_Visible=1,Queue_LastDock=QueueDock,Queue_DockRow=0,Queue_DockPos=-1,Queue_FloatLeft=0,Queue_FloatTop=0,Queue_FloatRightX=0,"
-       "Menu_Visible=1,Menu_DockedTo=TopDock,Menu_LastDock=TopDock,Menu_DockRow=0,Menu_DockPos=0,Menu_FloatLeft=0,Menu_FloatTop=0,Menu_FloatRightX=0,"
-       "Buttons_Visible=1,Buttons_DockedTo=TopDock,Buttons_LastDock=TopDock,Buttons_DockRow=2,Buttons_DockPos=0,Buttons_FloatLeft=0,Buttons_FloatTop=0,Buttons_FloatRightX=0,"
-       "Selection_Visible=0,Selection_DockedTo=TopDock,Selection_LastDock=TopDock,Selection_DockRow=3,Selection_DockPos=0,Selection_FloatLeft=227,Selection_FloatTop=445,Selection_FloatRightX=0,"
-       "Session_Visible=0,Session_DockedTo=TopDock,Session_LastDock=TopDock,Session_DockRow=6,Session_DockPos=0,Session_FloatLeft=39,Session_FloatTop=160,Session_FloatRightX=0,"
-       "Preferences_Visible=1,Preferences_DockedTo=TopDock,Preferences_LastDock=TopDock,Preferences_DockRow=4,Preferences_DockPos=0,Preferences_FloatLeft=0,Preferences_FloatTop=0,Preferences_FloatRightX=0,"
-       "Sort_Visible=0,Sort_DockedTo=TopDock,Sort_LastDock=TopDock,Sort_DockRow=5,Sort_DockPos=0,Sort_FloatLeft=0,Sort_FloatTop=0,Sort_FloatRightX=0,"
-       "Address_Visible=1,Address_DockedTo=TopDock,Address_LastDock=TopDock,Address_DockRow=1,Address_DockPos=0,Address_FloatLeft=0,Address_FloatTop=0,Address_FloatRightX=0,"
-       "Updates_Visible=1,Updates_DockedTo=TopDock,Updates_LastDock=TopDock,Updates_DockRow=4,Updates_DockPos=416,Updates_FloatLeft=0,Updates_FloatTop=0,Updates_FloatRightX=0,"
-       "Transfer_Visible=1,Transfer_DockedTo=TopDock,Transfer_LastDock=TopDock,Transfer_DockRow=4,Transfer_DockPos=194,Transfer_FloatLeft=0,Transfer_FloatTop=0,Transfer_FloatRightX=0,"
-       "CustomCommands_Visible=0,CustomCommands_DockedTo=TopDock,CustomCommands_LastDock=TopDock,CustomCommands_DockRow=7,CustomCommands_DockPos=0,CustomCommands_FloatLeft=0,CustomCommands_FloatTop=0,CustomCommands_FloatRightX=0,") +
+      L"Queue=1::0+-1,"
+       "Menu=1:TopDock:0+0,"
+       "Buttons=1:TopDock:2+0,"
+       "Selection=0:TopDock:3+0,"
+       "Session=0:TopDock:6+0,"
+       "Preferences=1:TopDock:4+0,"
+       "Sort=0:TopDock:5+0,"
+       "Address=1:TopDock:1+0,"
+       "Updates=1:TopDock:4+416,"
+       "Transfer=1:TopDock:4+194,"
+       "CustomCommands=0:TopDock:7+0,") +
     PixelsPerInchToolbarValue;
+  FScpExplorer.ToolbarsButtons = UnicodeString();
   FScpExplorer.SessionsTabs = true;
   FScpExplorer.StatusBar = true;
   FScpExplorer.LastLocalTargetDirectory = GetPersonalFolder();
@@ -664,31 +715,31 @@ void __fastcall TWinConfiguration::Default()
   FScpCommander.StatusBar = true;
   FScpCommander.NortonLikeMode = nlKeyboard;
   FScpCommander.PreserveLocalDirectory = false;
-  // Toolbar2_FloatRightX=1 makes keybar apper initially "in column" when undocked
   FScpCommander.ToolbarsLayout =
     UnicodeString(
-      L"Queue_Visible=1,Queue_LastDock=QueueDock,Queue_DockRow=0,Queue_DockPos=-1,Queue_FloatLeft=0,Queue_FloatTop=0,Queue_FloatRightX=0,"
-       "Menu_Visible=1,Menu_DockedTo=TopDock,Menu_LastDock=TopDock,Menu_DockRow=0,Menu_DockPos=0,Menu_FloatLeft=0,Menu_FloatTop=0,Menu_FloatRightX=0,"
-       "Preferences_Visible=1,Preferences_DockedTo=TopDock,Preferences_LastDock=TopDock,Preferences_DockRow=1,Preferences_DockPos=228,Preferences_FloatLeft=0,Preferences_FloatTop=0,Preferences_FloatRightX=0,"
-       "Session_Visible=0,Session_DockedTo=TopDock,Session_LastDock=TopDock,Session_DockRow=1,Session_DockPos=602,Session_FloatLeft=380,Session_FloatTop=197,Session_FloatRightX=0,"
-       "Sort_Visible=0,Sort_DockedTo=TopDock,Sort_LastDock=TopDock,Sort_DockRow=2,Sort_DockPos=0,Sort_FloatLeft=0,Sort_FloatTop=0,Sort_FloatRightX=0,"
-       "Commands_Visible=1,Commands_DockedTo=TopDock,Commands_LastDock=TopDock,Commands_DockRow=1,Commands_DockPos=0,Commands_FloatLeft=0,Commands_FloatTop=0,Commands_FloatRightX=0,"
-       "Updates_Visible=1,Updates_DockedTo=TopDock,Updates_LastDock=TopDock,Updates_DockRow=1,Updates_DockPos=619,Updates_FloatLeft=0,Updates_FloatTop=0,Updates_FloatRightX=0,"
-       "Transfer_Visible=1,Transfer_DockedTo=TopDock,Transfer_LastDock=TopDock,Transfer_DockRow=1,Transfer_DockPos=364,Transfer_FloatLeft=0,Transfer_FloatTop=0,Transfer_FloatRightX=0,"
-       "CustomCommands_Visible=0,CustomCommands_DockedTo=TopDock,CustomCommands_LastDock=TopDock,CustomCommands_DockRow=3,CustomCommands_DockPos=0,CustomCommands_FloatLeft=0,CustomCommands_FloatTop=0,CustomCommands_FloatRightX=0,"
-       "RemoteHistory_Visible=1,RemoteHistory_DockedTo=RemoteTopDock,RemoteHistory_LastDock=RemoteTopDock,RemoteHistory_DockRow=0,RemoteHistory_DockPos=172,RemoteHistory_FloatLeft=0,RemoteHistory_FloatTop=0,RemoteHistory_FloatRightX=0,"
-       "RemoteNavigation_Visible=1,RemoteNavigation_DockedTo=RemoteTopDock,RemoteNavigation_LastDock=RemoteTopDock,RemoteNavigation_DockRow=0,RemoteNavigation_DockPos=252,RemoteNavigation_FloatLeft=0,RemoteNavigation_FloatTop=0,RemoteNavigation_FloatRightX=0,"
-       "RemotePath_Visible=1,RemotePath_DockedTo=RemoteTopDock,RemotePath_LastDock=RemoteTopDock,RemotePath_DockRow=0,RemotePath_DockPos=0,RemotePath_FloatLeft=0,RemotePath_FloatTop=0,RemotePath_FloatRightX=0,"
-       "RemoteFile_Visible=1,RemoteFile_DockedTo=RemoteTopDock,RemoteFile_LastDock=RemoteTopDock,RemoteFile_DockRow=1,RemoteFile_DockPos=0,RemoteFile_FloatLeft=0,RemoteFile_FloatTop=0,RemoteFile_FloatRightX=0,"
-       "RemoteSelection_Visible=1,RemoteSelection_DockedTo=RemoteTopDock,RemoteSelection_LastDock=RemoteTopDock,RemoteSelection_DockRow=1,RemoteSelection_DockPos=345,RemoteSelection_FloatLeft=0,RemoteSelection_FloatTop=0,RemoteSelection_FloatRightX=0,"
-       "LocalHistory_Visible=1,LocalHistory_DockedTo=LocalTopDock,LocalHistory_LastDock=LocalTopDock,LocalHistory_DockRow=0,LocalHistory_DockPos=207,LocalHistory_FloatLeft=0,LocalHistory_FloatTop=0,LocalHistory_FloatRightX=0,"
-       "LocalNavigation_Visible=1,LocalNavigation_DockedTo=LocalTopDock,LocalNavigation_LastDock=LocalTopDock,LocalNavigation_DockRow=0,LocalNavigation_DockPos=287,LocalNavigation_FloatLeft=0,LocalNavigation_FloatTop=0,LocalNavigation_FloatRightX=0,"
-       "LocalPath_Visible=1,LocalPath_DockedTo=LocalTopDock,LocalPath_LastDock=LocalTopDock,LocalPath_DockRow=0,LocalPath_DockPos=0,LocalPath_FloatLeft=0,LocalPath_FloatTop=0,LocalPath_FloatRightX=0,"
-       "LocalFile_Visible=1,LocalFile_DockedTo=LocalTopDock,LocalFile_LastDock=LocalTopDock,LocalFile_DockRow=1,LocalFile_DockPos=0,LocalFile_FloatLeft=0,LocalFile_FloatTop=0,LocalFile_FloatRightX=0,"
-       "LocalSelection_Visible=1,LocalSelection_DockedTo=LocalTopDock,LocalSelection_LastDock=LocalTopDock,LocalSelection_DockRow=1,LocalSelection_DockPos=329,LocalSelection_FloatLeft=0,LocalSelection_FloatTop=0,LocalSelection_FloatRightX=0,"
-       "Toolbar2_Visible=0,Toolbar2_DockedTo=BottomDock,Toolbar2_LastDock=BottomDock,Toolbar2_DockRow=1,Toolbar2_DockPos=0,Toolbar2_FloatLeft=0,Toolbar2_FloatTop=0,Toolbar2_FloatRightX=1,"
-       "CommandLine_Visible=0,CommandLine_DockedTo=BottomDock,CommandLine_LastDock=BottomDock,CommandLine_DockRow=0,CommandLine_DockPos=0,CommandLine_FloatLeft=0,CommandLine_FloatTop=0,CommandLine_FloatRightX=0,") +
+      L"Queue=1::0+-1,"
+       "Menu=1:TopDock:0+0,"
+       "Preferences=1:TopDock:1+228,"
+       "Session=0:TopDock:1+602,"
+       "Sort=0:TopDock:2+0,"
+       "Commands=1:TopDock:1+0,"
+       "Updates=1:TopDock:1+619,"
+       "Transfer=1:TopDock:1+364,"
+       "CustomCommands=0:TopDock:3+0,"
+       "RemoteHistory=1:RemoteTopDock:0+172,"
+       "RemoteNavigation=1:RemoteTopDock:0+252,"
+       "RemotePath=1:RemoteTopDock:0+0,"
+       "RemoteFile=1:RemoteTopDock:1+0,"
+       "RemoteSelection=1:RemoteTopDock:1+345,"
+       "LocalHistory=1:LocalTopDock:0+207,"
+       "LocalNavigation=1:LocalTopDock:0+287,"
+       "LocalPath=1:LocalTopDock:0+0,"
+       "LocalFile=1:LocalTopDock:1+0,"
+       "LocalSelection=1:LocalTopDock:1+329,"
+       "Toolbar2=0:BottomDock:1+0,"
+       "CommandLine=0:BottomDock:0+0,") +
     PixelsPerInchToolbarValue;
+  FScpCommander.ToolbarsButtons = UnicodeString();
   FScpCommander.CurrentPanel = osLocal;
   FScpCommander.CompareByTime = true;
   FScpCommander.CompareBySize = false;
@@ -702,6 +753,7 @@ void __fastcall TWinConfiguration::Default()
   FScpCommander.RemotePanel.DriveViewHeightPixelsPerInch = USER_DEFAULT_SCREEN_DPI;
   FScpCommander.RemotePanel.DriveViewWidth = 100;
   FScpCommander.RemotePanel.DriveViewWidthPixelsPerInch = USER_DEFAULT_SCREEN_DPI;
+  FScpCommander.RemotePanel.LastPath = UnicodeString();
   FScpCommander.LocalPanel.DirViewParams = L"0;1;0|150,1;70,1;120,1;150,1;55,0;55,0;@" + SaveDefaultPixelsPerInch() + L"|5;0;1;2;3;4";
   FScpCommander.LocalPanel.StatusBar = true;
   FScpCommander.LocalPanel.DriveView = false;
@@ -709,6 +761,7 @@ void __fastcall TWinConfiguration::Default()
   FScpCommander.LocalPanel.DriveViewHeightPixelsPerInch = USER_DEFAULT_SCREEN_DPI;
   FScpCommander.LocalPanel.DriveViewWidth = 100;
   FScpCommander.LocalPanel.DriveViewWidthPixelsPerInch = USER_DEFAULT_SCREEN_DPI;
+  FScpCommander.LocalPanel.LastPath = UnicodeString();
 
   FBookmarks->Clear();
 }
@@ -731,8 +784,6 @@ void __fastcall TWinConfiguration::DefaultLocalized()
     FCustomCommandList->Add(LoadStr(CUSTOM_COMMAND_GREP),
       FORMAT(L"grep \"!?%s?!\" !&", (LoadStr(CUSTOM_COMMAND_GREP_PATTERN))),
       ccShowResults);
-    FCustomCommandList->Add(LoadStr(CUSTOM_COMMAND_FC),
-      L"cmd /c fc \"!\" \"\!^!\" | more && pause", ccLocal);
     FCustomCommandList->Add(LoadStr(CUSTOM_COMMAND_PRINT), L"notepad.exe /p \"!\"", ccLocal);
     FCustomCommandList->Reset();
     FCustomCommandsDefaults = true;
@@ -895,10 +946,9 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
   BLOCK(L"Interface", CANCREATE, \
     KEYEX(Integer,DoubleClickAction, L"CopyOnDoubleClick"); \
     KEY(Bool,     CopyOnDoubleClickConfirmation); \
-    KEY(Bool,     DDAllowMove); \
-    KEY(Bool,     DDAllowMoveInit); \
     KEYEX(Integer, DDTransferConfirmation, L"DDTransferConfirmation2"); \
     KEY(String,   DDTemporaryDirectory); \
+    KEY(String,   DDDrives); \
     KEY(Bool,     DDWarnLackOfTempSpace); \
     KEY(Float,    DDWarnLackOfTempSpaceRatio); \
     KEY(Bool,     DeleteToRecycleBin); \
@@ -908,6 +958,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(String,   SelectMask); \
     KEY(Bool,     ShowHiddenFiles); \
     KEY(Integer,  FormatSizeBytes); \
+    KEY(Integer,  PanelSearch); \
     KEY(Bool,     ShowInaccesibleDirectories); \
     KEY(Bool,     ConfirmTransferring); \
     KEY(Bool,     ConfirmDeleting); \
@@ -917,7 +968,6 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Bool,     UseLocationProfiles); \
     KEY(Bool,     UseSharedBookmarks); \
     KEY(Integer,  LocaleSafe); \
-    KEY(Bool,     DDExtEnabled); \
     KEY(Bool,     DDFakeFile); \
     KEY(Integer,  DDExtTimeout); \
     KEY(Bool,     DefaultDirIsHome); \
@@ -927,6 +977,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Bool,     TemporaryDirectoryCleanup); \
     KEY(Bool,     ConfirmTemporaryDirectoryCleanup); \
     KEY(Bool,     PreservePanelState); \
+    KEY(Integer,  DarkTheme); \
     KEY(String,   LastStoredSession); \
     KEY(Bool,     AutoSaveWorkspace); \
     KEY(Bool,     AutoSaveWorkspacePasswords); \
@@ -966,13 +1017,16 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Bool,     ShowTips); \
     KEY(String,   TipsSeen); \
     KEY(DateTime, TipsShown); \
+    KEY(String,   FileColors); \
     KEY(Integer,  RunsSinceLastTip); \
     KEY(Bool,     HonorDrivePolicy); \
     KEY(Integer,  LastMachineInstallations); \
     KEYEX(String, FExtensionsDeleted, L"ExtensionsDeleted"); \
     KEYEX(String, FExtensionsOrder, L"ExtensionsOrder"); \
-    KEY(Bool,  TimeoutShellOperations); \
+    KEYEX(String, FExtensionsShortCuts, L"ExtensionsShortCuts"); \
+    KEY(Bool,     TimeoutShellOperations); \
     KEY(Bool,     TimeoutShellIconRetrieval); \
+    KEY(Bool,     AllowWindowPrint); \
   ); \
   BLOCK(L"Interface\\Editor", CANCREATE, \
     KEYEX(String,   Editor.Font.FontName, L"FontName2"); \
@@ -1043,7 +1097,8 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(String,   FUpdates.ConsoleVersion); \
   ); \
   BLOCK(L"Interface\\Explorer", CANCREATE, \
-    KEY(String,  ScpExplorer.ToolbarsLayout); \
+    KEYEX(String,  ScpExplorer.ToolbarsLayout, ToolbarsLayoutKey); \
+    KEY(String,  ScpExplorer.ToolbarsButtons); \
     KEY(String,  ScpExplorer.DirViewParams); \
     KEY(String,  ScpExplorer.LastLocalTargetDirectory); \
     KEY(Bool,    ScpExplorer.SessionsTabs); \
@@ -1056,7 +1111,8 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Integer, ScpExplorer.DriveViewWidthPixelsPerInch); \
   ); \
   BLOCK(L"Interface\\Commander", CANCREATE, \
-    KEY(String,  ScpCommander.ToolbarsLayout); \
+    KEYEX(String,  ScpCommander.ToolbarsLayout, ToolbarsLayoutKey); \
+    KEY(String,  ScpCommander.ToolbarsButtons); \
     KEY(Integer, ScpCommander.CurrentPanel); \
     KEY(Float,   ScpCommander.LocalPanelWidth); \
     KEY(Bool,    ScpCommander.SwappedPanels); \
@@ -1079,6 +1135,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Integer, ScpCommander.LocalPanel.DriveViewHeightPixelsPerInch); \
     KEY(Integer, ScpCommander.LocalPanel.DriveViewWidth); \
     KEY(Integer, ScpCommander.LocalPanel.DriveViewWidthPixelsPerInch); \
+    KEY(String,  ScpCommander.LocalPanel.LastPath); \
   ); \
   BLOCK(L"Interface\\Commander\\RemotePanel", CANCREATE, \
     KEY(String,  ScpCommander.RemotePanel.DirViewParams); \
@@ -1088,6 +1145,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Integer, ScpCommander.RemotePanel.DriveViewHeightPixelsPerInch); \
     KEY(Integer, ScpCommander.RemotePanel.DriveViewWidth); \
     KEY(Integer, ScpCommander.RemotePanel.DriveViewWidthPixelsPerInch); \
+    KEY(String,  ScpCommander.RemotePanel.LastPath); \
   ); \
   BLOCK(L"Security", CANCREATE, \
     KEYEX(Bool,  FUseMasterPassword, L"UseMasterPassword"); \
@@ -1191,7 +1249,7 @@ void __fastcall TWinConfiguration::LoadFrom(THierarchicalStorage * Storage)
 
     // Additionally, this needs to be after Locale is loaded
     LoadExtensionTranslations();
-    // and this after the ExtensionsDeleted and ExtensionsOrder are loaded
+    // and this after the ExtensionsDeleted, ExtensionsOrder and ExtensionsShortCuts are loaded
     LoadExtensionList();
   }
   __finally
@@ -1210,46 +1268,39 @@ void __fastcall TWinConfiguration::LoadFrom(THierarchicalStorage * Storage)
 void __fastcall TWinConfiguration::DoLoadExtensionList(
   const UnicodeString & Path, const UnicodeString & PathId, TStringList * DeletedExtensions)
 {
-  TSearchRecChecked SearchRec;
+  TSearchRecOwned SearchRec;
   int FindAttrs = faReadOnly | faArchive;
   if (FindFirstUnchecked(IncludeTrailingBackslash(Path) + L"*.*", FindAttrs, SearchRec) == 0)
   {
-    try
+    do
     {
-      do
+      UnicodeString Id = TCustomCommandType::GetExtensionId(SearchRec.Name);
+      if (!Id.IsEmpty())
       {
-        UnicodeString Id = TCustomCommandType::GetExtensionId(SearchRec.Name);
-        if (!Id.IsEmpty())
+        Id = IncludeTrailingBackslash(PathId) + Id;
+        if (DeletedExtensions->IndexOf(Id) >= 0)
         {
-          Id = IncludeTrailingBackslash(PathId) + Id;
-          if (DeletedExtensions->IndexOf(Id) >= 0)
-          {
-            // reconstruct the list, so that we remove the commands that no longer exists
-            AddToList(FExtensionsDeleted, Id, L"|");
-          }
-          else
-          {
-            std::unique_ptr<TCustomCommandType> CustomCommand(new TCustomCommandType());
-            CustomCommand->Id = Id;
+          // reconstruct the list, so that we remove the commands that no longer exists
+          AddToList(FExtensionsDeleted, Id, L"|");
+        }
+        else
+        {
+          std::unique_ptr<TCustomCommandType> CustomCommand(new TCustomCommandType());
+          CustomCommand->Id = Id;
 
-            try
-            {
-              CustomCommand->LoadExtension(IncludeTrailingBackslash(Path) + SearchRec.Name);
-              FExtensionList->Add(CustomCommand.release());
-            }
-            catch (...)
-            {
-              // skip invalid extension files
-            }
+          try
+          {
+            CustomCommand->LoadExtension(IncludeTrailingBackslash(Path) + SearchRec.Name);
+            FExtensionList->Add(CustomCommand.release());
+          }
+          catch (...)
+          {
+            // skip invalid extension files
           }
         }
       }
-      while (FindNextChecked(SearchRec) == 0);
     }
-    __finally
-    {
-      FindClose(SearchRec);
-    }
+    while (FindNextChecked(SearchRec) == 0);
   }
 }
 //---------------------------------------------------------------------------
@@ -1405,6 +1456,30 @@ void __fastcall TWinConfiguration::LoadExtensionList()
   std::unique_ptr<TStringList> OrderedExtensions(new TStringList());
   ParseExtensionList(OrderedExtensions.get(), FExtensionsOrder);
   FExtensionList->SortBy(OrderedExtensions.get());
+
+  UnicodeString ShortCuts = FExtensionsShortCuts;
+  while (!ShortCuts.IsEmpty())
+  {
+    UnicodeString S = CutToChar(ShortCuts, L'|', false);
+    TShortCut ShortCut = static_cast<TShortCut>(StrToInt(CutToChar(S, L'=', false)));
+    for (int Index = 0; Index < FExtensionList->Count; Index++)
+    {
+      if (FExtensionList->Commands[Index]->Id == S)
+      {
+        const_cast<TCustomCommandType *>(FExtensionList->Commands[Index])->ShortCut = ShortCut;
+      }
+    }
+  }
+}
+//---------------------------------------------------------------------------
+static UnicodeString KeyName(THierarchicalStorage * Storage, const UnicodeString & Name)
+{
+  UnicodeString Result = Name;
+  if ((Result == ToolbarsLayoutKey) && !Storage->KeyExists(Result) && Storage->KeyExists(ToolbarsLayoutOldKey))
+  {
+    Result = ToolbarsLayoutOldKey;
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::LoadData(THierarchicalStorage * Storage)
@@ -1412,7 +1487,7 @@ void __fastcall TWinConfiguration::LoadData(THierarchicalStorage * Storage)
   TCustomWinConfiguration::LoadData(Storage);
 
   // duplicated from core\configuration.cpp
-  #define KEYEX(TYPE, VAR, NAME) VAR = Storage->Read ## TYPE(NAME, VAR)
+  #define KEYEX(TYPE, VAR, NAME) VAR = Storage->Read ## TYPE(KeyName(Storage, NAME), VAR)
   #pragma warn -eas
   REGCONFIG(false);
   #pragma warn +eas
@@ -1628,6 +1703,12 @@ bool __fastcall TWinConfiguration::IsDDExtRunning()
   return Result;
 }
 //---------------------------------------------------------------------------
+bool __fastcall TWinConfiguration::IsDDExtBroken()
+{
+  int Build = GetWindowsBuild();
+  return (Build >= 17134) && (Build < 17763);
+}
+//---------------------------------------------------------------------------
 RawByteString __fastcall TWinConfiguration::StronglyRecryptPassword(RawByteString Password, UnicodeString Key)
 {
   RawByteString Dummy;
@@ -1802,16 +1883,6 @@ void __fastcall TWinConfiguration::EndMasterPasswordSession()
   FMasterPasswordSessionAsked = false;
 }
 //---------------------------------------------------------------------------
-void __fastcall TWinConfiguration::SetDDAllowMove(bool value)
-{
-  SET_CONFIG_PROPERTY(DDAllowMove);
-}
-//---------------------------------------------------------------------------
-void __fastcall TWinConfiguration::SetDDAllowMoveInit(bool value)
-{
-  SET_CONFIG_PROPERTY(DDAllowMoveInit);
-}
-//---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetDDTransferConfirmation(TAutoSwitch value)
 {
   SET_CONFIG_PROPERTY(DDTransferConfirmation);
@@ -1822,28 +1893,14 @@ void __fastcall TWinConfiguration::SetDDTemporaryDirectory(UnicodeString value)
   SET_CONFIG_PROPERTY(DDTemporaryDirectory);
 }
 //---------------------------------------------------------------------------
-bool __fastcall TWinConfiguration::GetDDExtEnabled()
+void __fastcall TWinConfiguration::SetDDDrives(UnicodeString value)
 {
-  if (IsUWP())
-  {
-    return FDDFakeFile;
-  }
-  else
-  {
-    return FDDExtEnabled;
-  }
+  SET_CONFIG_PROPERTY(DDDrives);
 }
 //---------------------------------------------------------------------------
-void __fastcall TWinConfiguration::SetDDExtEnabled(bool value)
+void __fastcall TWinConfiguration::SetDDFakeFile(bool value)
 {
-  if (IsUWP())
-  {
-    SET_CONFIG_PROPERTY(DDFakeFile);
-  }
-  else
-  {
-    SET_CONFIG_PROPERTY(DDExtEnabled);
-  }
+  SET_CONFIG_PROPERTY(DDFakeFile);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetDDExtTimeout(int value)
@@ -1926,6 +1983,11 @@ void __fastcall TWinConfiguration::SetShowHiddenFiles(bool value)
 void __fastcall TWinConfiguration::SetFormatSizeBytes(TFormatBytesStyle value)
 {
   SET_CONFIG_PROPERTY(FormatSizeBytes);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetPanelSearch(TIncrementalSearch value)
+{
+  SET_CONFIG_PROPERTY(PanelSearch);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetShowInaccesibleDirectories(bool value)
@@ -2026,6 +2088,57 @@ void __fastcall TWinConfiguration::SetConfirmTemporaryDirectoryCleanup(bool valu
 void __fastcall TWinConfiguration::SetPreservePanelState(bool value)
 {
   SET_CONFIG_PROPERTY(PreservePanelState);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetDarkTheme(TAutoSwitch value)
+{
+  SET_CONFIG_PROPERTY_EX(DarkTheme, ConfigureInterface());
+}
+//---------------------------------------------------------------------------
+static int __fastcall SysDarkTheme(HKEY RootKey)
+{
+  std::unique_ptr<TRegistry> Registry(new TRegistry());
+  Registry->RootKey = RootKey;
+  UnicodeString ThemesPersonalizeKey = L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
+  UnicodeString AppsUseLightThemeValue = L"AppsUseLightTheme";
+  int Result = -1;
+  if (Registry->OpenKeyReadOnly(ThemesPersonalizeKey) &&
+      Registry->ValueExists(AppsUseLightThemeValue))
+  {
+    Result = Registry->ReadBool(AppsUseLightThemeValue) ? 0 : 1;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::ResetSysDarkTheme()
+{
+  FSysDarkTheme = -1;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TWinConfiguration::UseDarkTheme()
+{
+  if (FSysDarkTheme < 0)
+  {
+    FSysDarkTheme = SysDarkTheme(HKEY_CURRENT_USER);
+    if (FSysDarkTheme < 0)
+    {
+      FSysDarkTheme = SysDarkTheme(HKEY_LOCAL_MACHINE);
+      if (FSysDarkTheme < 0)
+      {
+        FSysDarkTheme = 0;
+      }
+    }
+  }
+
+  switch (WinConfiguration->DarkTheme)
+  {
+    case asOn:
+      return true;
+    case asOff:
+      return false;
+    default:
+      return (FSysDarkTheme > 0);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetLastStoredSession(UnicodeString value)
@@ -2210,6 +2323,11 @@ void __fastcall TWinConfiguration::SetTipsShown(TDateTime value)
   SET_CONFIG_PROPERTY(TipsShown);
 }
 //---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetFileColors(UnicodeString value)
+{
+  SET_CONFIG_PROPERTY(FileColors);
+}
+//---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetRunsSinceLastTip(int value)
 {
   SET_CONFIG_PROPERTY(RunsSinceLastTip);
@@ -2281,6 +2399,16 @@ void __fastcall TWinConfiguration::SetExtensionList(TCustomCommandList * value)
       AddToList(FExtensionsDeleted, DeletedExtensions->Strings[Index], L"|");
     }
 
+    FExtensionsShortCuts = L"";
+    for (int Index = 0; Index < value->Count; Index++)
+    {
+      const TCustomCommandType * Extension = value->Commands[Index];
+      if (Extension->HasCustomShortCut())
+      {
+        AddToList(FExtensionsShortCuts, FORMAT(L"%d=%s", (Extension->ShortCut, Extension->Id)), L"|");
+      }
+    }
+
     Changed();
   }
 }
@@ -2350,14 +2478,14 @@ TStrings * __fastcall TWinConfiguration::FindTemporaryFolders()
   TStrings * Result = new TStringList();
   try
   {
-    TSearchRecChecked SRec;
+    TSearchRecOwned SRec;
     UnicodeString Mask = TemporaryDir(true);
     UnicodeString Directory = ExtractFilePath(Mask);
-    if (FindFirstUnchecked(Mask, faDirectory, SRec) == 0)
+    if (FindFirstUnchecked(Mask, faDirectory | faHidden, SRec) == 0)
     {
       do
       {
-        if (FLAGSET(SRec.Attr, faDirectory))
+        if (SRec.IsDirectory())
         {
           Result->Add(Directory + SRec.Name);
         }
@@ -2552,6 +2680,11 @@ void __fastcall TWinConfiguration::SetTimeoutShellIconRetrieval(bool value)
   SET_CONFIG_PROPERTY(TimeoutShellIconRetrieval);
 }
 //---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetAllowWindowPrint(bool value)
+{
+  SET_CONFIG_PROPERTY(AllowWindowPrint);
+}
+//---------------------------------------------------------------------------
 TStringList * __fastcall TWinConfiguration::LoadJumpList(
   THierarchicalStorage * Storage, UnicodeString Name)
 {
@@ -2663,6 +2796,7 @@ void __fastcall TWinConfiguration::UpdateStaticUsage()
   Usage->Set(L"Beta", IsBeta);
 
   Usage->Set(L"Interface", Interface);
+  Usage->Set(L"ThemeDark", UseDarkTheme());
   Usage->Set(L"CustomCommandsCount", (FCustomCommandsDefaults ? 0 : FCustomCommandList->Count));
   Usage->Set(L"UsingLocationProfiles", UseLocationProfiles);
   Usage->Set(L"UsingMasterPassword", UseMasterPassword);
@@ -2672,6 +2806,10 @@ void __fastcall TWinConfiguration::UpdateStaticUsage()
       ScpExplorer.DriveView :
       (ScpCommander.LocalPanel.DriveView || ScpCommander.RemotePanel.DriveView));
   Usage->Set(L"MinimizeToTray", MinimizeToTray);
+  UnicodeString ToolbarsButtons = (Interface == ifExplorer) ? ScpExplorer.ToolbarsButtons : ScpCommander.ToolbarsButtons;
+  Usage->Set(L"AnyHiddenToolbarButtons", !ToolbarsButtons.IsEmpty());
+  Usage->Set(L"FileColors", !FileColors.IsEmpty());
+  Usage->Set(L"DragDropDrives", !DDDrives.IsEmpty());
   Usage->Set(L"ShowingTips", ShowTips);
   TipsUpdateStaticUsage();
 
@@ -2748,7 +2886,7 @@ void __fastcall TWinConfiguration::StoreFont(
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 __fastcall TCustomCommandType::TCustomCommandType() :
-  FParams(0), FShortCut(0)
+  FParams(0), FShortCut(0), FShortCutOriginal(0)
 {
 }
 //---------------------------------------------------------------------------
@@ -2757,6 +2895,7 @@ __fastcall TCustomCommandType::TCustomCommandType(const TCustomCommandType & Oth
   FCommand(Other.FCommand),
   FParams(Other.FParams),
   FShortCut(Other.FShortCut),
+  FShortCutOriginal(Other.FShortCutOriginal),
   FId(Other.FId),
   FFileName(Other.FFileName),
   FDescription(Other.FDescription),
@@ -2772,6 +2911,7 @@ TCustomCommandType & TCustomCommandType::operator=(const TCustomCommandType & Ot
   FCommand = Other.FCommand;
   FParams = Other.FParams;
   FShortCut = Other.FShortCut;
+  FShortCutOriginal = Other.FShortCutOriginal;
   FId = Other.FId;
   FFileName = Other.FFileName;
   FDescription = Other.FDescription;
@@ -2788,6 +2928,7 @@ bool __fastcall TCustomCommandType::Equals(const TCustomCommandType * Other) con
     (FCommand == Other->FCommand) &&
     (FParams == Other->FParams) &&
     (FShortCut == Other->FShortCut) &&
+    (FShortCutOriginal == Other->FShortCutOriginal) &&
     (FId == Other->FId) &&
     (FFileName == Other->FFileName) &&
     (FDescription == Other->FDescription) &&
@@ -2983,6 +3124,7 @@ void __fastcall TCustomCommandType::LoadExtension(TStrings * Lines, const Unicod
           if (IsCustomShortCut(AShortCut))
           {
             ShortCut = AShortCut;
+            FShortCutOriginal = AShortCut;
           }
           else
           {
@@ -3303,6 +3445,11 @@ UnicodeString __fastcall TCustomCommandType::GetOptionCommand(const TOption & Op
   }
 
   return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TCustomCommandType::HasCustomShortCut() const
+{
+  return (ShortCut != FShortCutOriginal);
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

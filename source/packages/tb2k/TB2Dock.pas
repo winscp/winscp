@@ -227,11 +227,6 @@ type
     ReadStringProc: TTBPositionReadStringProc;
     ExtraData: Pointer;
   end;
-  TTBWritePositionData = record
-    WriteIntProc: TTBPositionWriteIntProc;
-    WriteStringProc: TTBPositionWriteStringProc;
-    ExtraData: Pointer;
-  end;
   TTBDockableWindowStyles = set of (tbdsResizeEightCorner, tbdsResizeClipCursor);
   TTBShrinkMode = (tbsmNone, tbsmWrap, tbsmChevron);
 
@@ -452,7 +447,6 @@ type
     procedure BeginMoving(const InitX, InitY: Integer);
     procedure BeginSizing(const ASizeHandle: TTBSizeHandle);
     procedure BeginUpdate;
-    procedure DoneReadingPositionData(const Data: TTBReadPositionData); dynamic;
     procedure EndUpdate;
     procedure GetDockedNCArea(var TopLeft, BottomRight: TPoint;
       const LeftRight: Boolean);
@@ -460,9 +454,9 @@ type
     procedure GetFloatingNCArea(var TopLeft, BottomRight: TPoint);
     function IsMovable: Boolean;
     procedure MoveOnScreen(const OnlyIfFullyOffscreen: Boolean);
-    procedure ReadPositionData(const Data: TTBReadPositionData); dynamic;
+    procedure ReadPositionData(var S: string); dynamic;
     procedure RemoveDockForm(const Form: TCustomForm);
-    procedure WritePositionData(const Data: TTBWritePositionData); dynamic;
+    function WritePositionData: string; dynamic;
   published
     property Height stored IsWidthAndHeightStored;
     property Width stored IsWidthAndHeightStored;
@@ -2841,16 +2835,13 @@ begin
   end;
 end;
 
-procedure TTBCustomDockableWindow.ReadPositionData(const Data: TTBReadPositionData);
+procedure TTBCustomDockableWindow.ReadPositionData(var S: string);
 begin
 end;
 
-procedure TTBCustomDockableWindow.DoneReadingPositionData(const Data: TTBReadPositionData);
+function TTBCustomDockableWindow.WritePositionData: string;
 begin
-end;
-
-procedure TTBCustomDockableWindow.WritePositionData(const Data: TTBWritePositionData);
-begin
+  Result := '';
 end;
 
 procedure TTBCustomDockableWindow.InitializeOrdering;
@@ -4971,7 +4962,7 @@ var
       @Data.ReadIntProc := @ReadIntProc;
       @Data.ReadStringProc := @ReadStringProc;
       Data.ExtraData := ExtraData;
-      ReadPositionData(Data);
+      // not restoring floating width with legacy configuration
       FloatingPosition := Pos;
       if Assigned(NewDock) then
         Parent := NewDock
@@ -4989,7 +4980,6 @@ var
         end;
       end;
       Arrange;
-      DoneReadingPositionData(Data);
     end;
   end;
 
@@ -4999,6 +4989,9 @@ var
   ToolWindow: TComponent;
   ADock: TTBDock;
   DockedToName: String;
+  LastDockName: String;
+  Pos: TPoint;
+  S: string;
 begin
   DocksDisabled := TList.Create;
   try
@@ -5016,18 +5009,59 @@ begin
           {}{should skip over toolbars that are neither Docked nor Floating }
           if Name = '' then
             raise Exception.Create(STBToolWinNameNotSet);
-          Rev := ReadIntProc(Name, rvRev, 0, ExtraData);
-          if Rev = 2000 then begin
-            Visible := ReadIntProc(Name, rvVisible, Ord(Visible), ExtraData) <> 0;
-            DockedToName := ReadStringProc(Name, rvDockedTo, '', ExtraData);
-            if DockedToName <> '' then begin
-              if DockedToName <> rdDockedToFloating then begin
+          S := ReadStringProc(Name, '', '', ExtraData);
+          if S <> '' then
+          begin
+            Visible := (StrToIntDef(CutToChar(S, ':', true), 0) <> 0);
+            DockedToName := CutToChar(S, ':', true);
+            DockRow := StrToIntDef(CutToChar(S, '+', true), DockRow);
+            DockPos := StrToIntDef(CutToChar(S, ':', true), DockPos);
+            if DockedToName <> '' then
+            begin
+              if DockedToName <> rdDockedToFloating then
+              begin
                 ADock := FindDock(DockedToName);
-                if (ADock <> nil) and (ADock.FAllowDrag) then
-                  ReadValues(TTBCustomDockableWindow(ToolWindow), ADock);
+                if (ADock <> nil) and ADock.FAllowDrag then
+                begin
+                  Parent := ADock;
+                end;
               end
-              else
-                ReadValues(TTBCustomDockableWindow(ToolWindow), nil);
+                else
+              begin
+                LastDockName := CutToChar(S, ':', true);
+                Pos.X := StrToIntDef(CutToChar(S, 'x', true), 0);
+                Pos.Y := StrToIntDef(CutToChar(S, ':', true), 0);
+                FloatingPosition := Pos;
+                Floating := True;
+                ReadPositionData(S);
+                MoveOnScreen(True);
+                if FUseLastDock then
+                begin
+                  if LastDockName <> '' then
+                  begin
+                    ADock := FindDock(LastDockName);
+                    if Assigned(ADock) then
+                      LastDock := ADock;
+                  end;
+                end;
+              end;
+            end;
+          end
+            else
+          begin
+            Rev := ReadIntProc(Name, rvRev, 0, ExtraData);
+            if Rev = 2000 then begin
+              Visible := ReadIntProc(Name, rvVisible, Ord(Visible), ExtraData) <> 0;
+              DockedToName := ReadStringProc(Name, rvDockedTo, '', ExtraData);
+              if DockedToName <> '' then begin
+                if DockedToName <> rdDockedToFloating then begin
+                  ADock := FindDock(DockedToName);
+                  if (ADock <> nil) and (ADock.FAllowDrag) then
+                    ReadValues(TTBCustomDockableWindow(ToolWindow), ADock);
+                end
+                else
+                  ReadValues(TTBCustomDockableWindow(ToolWindow), nil);
+              end;
             end;
           end;
         end;
@@ -5044,8 +5078,7 @@ procedure TBCustomSavePositions(const OwnerComponent: TComponent;
   const WriteStringProc: TTBPositionWriteStringProc; const ExtraData: Pointer);
 var
   I: Integer;
-  N, L: String;
-  Data: TTBWritePositionData;
+  N, S: String;
 begin
   for I := 0 to OwnerComponent.ComponentCount-1 do
     if OwnerComponent.Components[I] is TTBCustomDockableWindow then
@@ -5065,21 +5098,20 @@ begin
         end
         else
           Continue;  { skip if it's neither floating nor docked }
-        L := '';
-        if Assigned(FLastDock) then
-          L := FLastDock.Name;
-        WriteIntProc(Name, rvRev, rdCurrentRev, ExtraData);
-        WriteIntProc(Name, rvVisible, Ord(Visible), ExtraData);
-        WriteStringProc(Name, rvDockedTo, N, ExtraData);
-        WriteStringProc(Name, rvLastDock, L, ExtraData);
-        WriteIntProc(Name, rvDockRow, FDockRow, ExtraData);
-        WriteIntProc(Name, rvDockPos, FDockPos, ExtraData);
-        WriteIntProc(Name, rvFloatLeft, FFloatingPosition.X, ExtraData);
-        WriteIntProc(Name, rvFloatTop, FFloatingPosition.Y, ExtraData);
-        @Data.WriteIntProc := @WriteIntProc;
-        @Data.WriteStringProc := @WriteStringProc;
-        Data.ExtraData := ExtraData;
-        WritePositionData(Data);
+        S := IntToStr(Ord(Visible));
+        S := S + ':' + N;
+        S := S + ':' + IntToStr(FDockRow);
+        S := S + '+' + IntToStr(FDockPos);
+        if Floating then
+        begin
+          S := S + ':';
+          if Assigned(FLastDock) then
+            S := S + FLastDock.Name;
+          S := S + ':' + IntToStr(FFloatingPosition.X);
+          S := S + 'x' + IntToStr(FFloatingPosition.Y);
+        end;
+        S := S + WritePositionData;
+        WriteStringProc(Name, '', S, ExtraData);
       end;
 end;
 

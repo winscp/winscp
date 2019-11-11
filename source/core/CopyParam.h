@@ -4,6 +4,7 @@
 
 #include "FileMasks.h"
 #include "RemoteFiles.h"
+#include "Exceptions.h"
 //---------------------------------------------------------------------------
 // When adding new options, mind TCopyParamType::GetLogStr()
 enum TOperationSide { osLocal, osRemote, osCurrent };
@@ -25,6 +26,8 @@ const int cpaNoRemoveCtrlZ      = 0x200;
 const int cpaNoRemoveBOM        = 0x400;
 const int cpaNoPreserveTimeDirs = 0x800;
 const int cpaNoResumeSupport    = 0x1000;
+const int cpaNoEncryptNewFiles  = 0x2000;
+const int cpaNoCalculateSize    = 0x4000;
 //---------------------------------------------------------------------------
 struct TUsableCopyParamAttrs
 {
@@ -62,6 +65,11 @@ private:
   bool FRemoveBOM;
   unsigned long FCPSLimit;
   bool FNewerOnly;
+  bool FEncryptNewFiles;
+  bool FExcludeHiddenFiles;
+  bool FExcludeEmptyDirectories;
+  __int64 FSize;
+  TOnceDoneOperation FOnceDoneOperation;
   static const wchar_t TokenPrefix = L'%';
   static const wchar_t NoReplacement = wchar_t(false);
   static const wchar_t TokenReplacement = wchar_t(true);
@@ -71,9 +79,8 @@ private:
   void __fastcall SetReplaceInvalidChars(bool value);
   UnicodeString __fastcall RestoreChars(UnicodeString FileName) const;
   void __fastcall DoGetInfoStr(UnicodeString Separator, int Attrs,
-    UnicodeString & Result, bool & SomeAttrIncluded,
-    const UnicodeString & Link, UnicodeString & ScriptArgs, bool & NoScriptArgs,
-    TAssemblyLanguage Language, UnicodeString & AssemblyCode, bool & NoCodeProperties) const;
+    UnicodeString & Result, bool & SomeAttrIncluded, const UnicodeString & Link, UnicodeString & ScriptArgs,
+    TAssemblyLanguage Language, UnicodeString & AssemblyCode) const;
   TStrings * __fastcall GetTransferSkipList() const;
   void __fastcall SetTransferSkipList(TStrings * value);
 
@@ -96,16 +103,15 @@ public:
   UnicodeString __fastcall ValidLocalPath(UnicodeString Path) const;
   bool __fastcall AllowAnyTransfer() const;
   bool __fastcall AllowTransfer(UnicodeString FileName, TOperationSide Side,
-    bool Directory, const TFileMasks::TParams & Params) const;
+    bool Directory, const TFileMasks::TParams & Params, bool Hidden) const;
   bool __fastcall SkipTransfer(UnicodeString FileName, bool Directory) const;
 
-  void __fastcall Load(THierarchicalStorage * Storage);
-  void __fastcall Save(THierarchicalStorage * Storage) const;
+  virtual void __fastcall Load(THierarchicalStorage * Storage);
+  virtual void __fastcall Save(THierarchicalStorage * Storage, const TCopyParamType * Defaults = NULL) const;
   UnicodeString __fastcall GetInfoStr(UnicodeString Separator, int Attrs) const;
   bool __fastcall AnyUsableCopyParam(int Attrs) const;
-  UnicodeString __fastcall GenerateTransferCommandArgs(
-    int Attrs, const UnicodeString & Link, bool & NoScriptArgs) const;
-  UnicodeString __fastcall GenerateAssemblyCode(TAssemblyLanguage Language, int Attrs, bool & NoCodeProperties) const;
+  UnicodeString __fastcall GenerateTransferCommandArgs(int Attrs, const UnicodeString & Link) const;
+  UnicodeString __fastcall GenerateAssemblyCode(TAssemblyLanguage Language, int Attrs) const;
 
   bool __fastcall operator==(const TCopyParamType & rhp) const;
 
@@ -135,6 +141,11 @@ public:
   __property bool RemoveBOM = { read = FRemoveBOM, write = FRemoveBOM };
   __property unsigned long CPSLimit = { read = FCPSLimit, write = FCPSLimit };
   __property bool NewerOnly = { read = FNewerOnly, write = FNewerOnly };
+  __property bool EncryptNewFiles = { read = FEncryptNewFiles, write = FEncryptNewFiles };
+  __property bool ExcludeHiddenFiles = { read = FExcludeHiddenFiles, write = FExcludeHiddenFiles };
+  __property bool ExcludeEmptyDirectories = { read = FExcludeEmptyDirectories, write = FExcludeEmptyDirectories };
+  __property __int64 Size = { read = FSize, write = FSize };
+  __property TOnceDoneOperation OnceDoneOperation = { read = FOnceDoneOperation, write = FOnceDoneOperation };
 };
 //---------------------------------------------------------------------------
 unsigned long __fastcall GetSpeedLimit(const UnicodeString & Text);

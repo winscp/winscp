@@ -26,7 +26,7 @@ type
     FDragFileList: TStringList;
     FDragDropFilesEx: TCustomizableDragDropFilesEx;
     FDragImageList: TDragImageList;
-    FDragDrive: TDrive;
+    FDragDrive: string;
     FExeDrag: Boolean;
     FDDLinkOnExeDrag: Boolean;
     FDragNode: TTreeNode;
@@ -38,6 +38,8 @@ type
     FUseSystemContextMenu: Boolean;
     FDimmHiddenDirs: Boolean;
     FShowHiddenDirs: Boolean;
+    FNaturalOrderNumericalSorting: Boolean;
+    FDarkMode: Boolean;
     FContinue: Boolean;
     FImageList: TImageList;
     FScrollOnDragOver: TTreeViewScrollOnDragOver;
@@ -50,7 +52,6 @@ type
     FOnDDChooseEffect: TDDOnChooseEffect;
     FOnDDGiveFeedback: TDDOnGiveFeedback;
     FOnDDDragDetect: TDDOnDragDetect;
-    FOnDDMenuPopup: TOnMenuPopup;
     FOnDDProcessDropped: TOnProcessDropped;
     FOnDDError: TDDErrorEvent;
     FOnDDExecuted: TDDExecutedEvent;
@@ -66,6 +67,8 @@ type
     procedure SetTargetPopUpMenu(Value: Boolean);
     procedure SetDimmHiddenDirs(Value: Boolean);
     procedure SetShowHiddenDirs(Value: Boolean);
+    procedure SetNaturalOrderNumericalSorting(Value: Boolean);
+    procedure SetDarkMode(Value: Boolean);
 
     function GetDirectory: string; virtual;
     procedure SetDirectory(Value: string); virtual;
@@ -80,6 +83,8 @@ type
     function CustomDrawItem(Node: TTreeNode; State: TCustomDrawState;
       Stage: TCustomDrawStage; var PaintImages: Boolean): Boolean; override;
     procedure NeedImageLists(Recreate: Boolean);
+    procedure DoCompare(Sender: TObject; Node1, Node2: TTreeNode; Data: Integer; var Compare: Integer);
+    function DoCompareText(Text1, Text2: string): Integer;
 
     procedure CNNotify(var Msg: TWMNotify); message CN_NOTIFY;
     procedure CMColorChanged(var Msg: TMessage); message CM_COLORCHANGED;
@@ -87,6 +92,7 @@ type
     procedure WMLButtonDown(var Msg: TWMLButtonDown); message WM_LBUTTONDOWN;
     procedure WMLButtonUp(var Msg: TWMLButtonDown); message WM_LBUTTONUP;
     procedure WMRButtonDown(var Msg: TWMRButtonDown); message WM_RBUTTONDOWN;
+    procedure WMLButtonDblClk(var Message: TWMLButtonDblClk); message WM_LBUTTONDBLCLK;
     procedure WMContextMenu(var Msg: TWMContextMenu); message WM_CONTEXTMENU;
     procedure WMKeyDown(var Message: TWMKeyDown); message WM_KEYDOWN;
     procedure CMDPIChanged(var Message: TMessage); message CM_DPICHANGED;
@@ -110,9 +116,6 @@ type
     procedure DDDropHandlerSucceeded(Sender: TObject; KeyState: Longint;
       Point: TPoint; Effect: Longint);
     procedure DDGiveFeedback(Effect: Longint; var Result: HResult);
-    procedure DDMenuPopup(Sender: TObject; AMenu: HMenu; DataObj: IDataObject;
-      AMinCustCmd: Integer; grfKeyState: Longint; Point: TPoint);
-    procedure DDMenuDone(Sender: TObject; AMenu: HMenu);
     procedure DDProcessDropped(Sender: TObject; KeyState: Longint;
       Point: TPoint; Effect: Longint);
     procedure DDError(Error: TDDError); virtual;
@@ -173,6 +176,8 @@ type
       write SetDimmHiddenDirs default False;
     property ShowHiddenDirs: Boolean read FShowHiddenDirs
       write SetShowHiddenDirs default False;
+    property NaturalOrderNumericalSorting: Boolean read FNaturalOrderNumericalSorting write SetNaturalOrderNumericalSorting;
+    property DarkMode: Boolean read FDarkMode write SetDarkMode;
 
     property DDLinkOnExeDrag: Boolean read FDDLinkOnExeDrag write FDDLinkOnExeDrag default True;
 
@@ -207,7 +212,6 @@ type
       read FOnDDEnd write FOnDDEnd;
     property OnDDCreateDataObject: TDDOnCreateDataObject
       read FOnDDCreateDataObject write FOnDDCreateDataObject;
-    property OnDDMenuPopup: TOnMenuPopup read FOnDDMenuPopup write FOnDDMenuPopup;
 
     property OnBusy: TDirViewBusy read FOnBusy write FOnBusy;
 
@@ -222,13 +226,10 @@ type
     property LastDDResult: TDragResult read FLastDDResult;
   end;
 
-resourcestring
-  SDragDropError = 'Drag&drop error: %d';
-
 implementation
 
 uses
-  SysUtils, ShellApi, ImgList,
+  SysUtils, ShellApi, ImgList, ActiveX,
   IEListView, BaseUtils;
 
 constructor TCustomDriveView.Create(AOwner: TComponent);
@@ -237,13 +238,16 @@ begin
 
   DragMode := dmAutomatic;
   FDragFileList := TStringList.Create;
-  FDragDrive := #0;
+  FDragDrive := '';
   FExeDrag := False;
   FDDLinkOnExeDrag := True;
   FContextMenu := False;
   FCanChange := True;
   FUseSystemContextMenu := True;
   FContinue := True;
+  FNaturalOrderNumericalSorting := True;
+  FDarkMode := False;
+  OnCompare := DoCompare;
 
   FDragDropFilesEx := TCustomizableDragDropFilesEx.Create(Self);
   with FDragDropFilesEx do
@@ -264,8 +268,6 @@ begin
     OnDrop := DDDrop;
     OnQueryContinueDrag := DDQueryContinueDrag;
     OnSpecifyDropTarget := DDSpecifyDropTarget;
-    OnMenuPopup := DDMenuPopup;
-    OnMenuDestroy := DDMenuDone;
     OnDropHandlerSucceeded := DDDropHandlerSucceeded;
     OnGiveFeedback := DDGiveFeedback;
     OnProcessDropped := DDProcessDropped;
@@ -342,6 +344,8 @@ procedure TCustomDriveView.CreateWnd;
 begin
   inherited;
 
+  if DarkMode then AllowDarkModeForWindow(Self, DarkMode);
+
   NeedImageLists(False);
 
   if not (csDesigning in ComponentState) then
@@ -413,10 +417,15 @@ begin
   if (FDragDropFilesEx.FileList.Count > 0) and
      (Length(TFDDListItem(FDragDropFilesEx.FileList[0]^).Name) > 0) Then
   begin
-    FDragDrive := Upcase(TFDDListItem(FDragDropFilesEx.FileList[0]^).Name[1]);
+    try
+      FDragDrive := DriveInfo.GetDriveKey(TFDDListItem(FDragDropFilesEx.FileList[0]^).Name);
+    except
+      // WinRAR gives us only filename on "enter", we get a full path only on "drop".
+      FDragDrive := '';
+    end;
     FExeDrag := FDDLinkOnExeDrag and
       (deLink in DragDropFilesEx.TargetEffects) and
-      ((DragDropFilesEx.AvailableDropEffects and DropEffect_Link) <> 0);
+      ((DragDropFilesEx.AvailableDropEffects and DROPEFFECT_LINK) <> 0);
 
     if FExeDrag then
     begin
@@ -430,7 +439,7 @@ begin
   end
     else
   begin
-    FDragDrive := #0;
+    FDragDrive := '';
   end;
 
   FScrollOnDragOver.StartDrag;
@@ -460,7 +469,7 @@ var
   UpdateImage: Boolean;
   LastDragNode: TTreeNode;
 begin
-  if Effect <> DropEffect_None then
+  if Effect <> DROPEFFECT_NONE then
   begin
     Node := GetNodeAt(Point.X, Point.Y);
 
@@ -502,9 +511,9 @@ begin
 
       {Drop-operation allowed at this location?}
       if Assigned(FDragNode) and
-         (Effect <> DropEffect_Link) and
+         (Effect <> DROPEFFECT_LINK) and
          ((Node = FDragNode) or Node.HasAsParent(FDragNode) or (FDragNode.Parent = Node)) then
-         Effect := DropEffect_None;
+         Effect := DROPEFFECT_NONE;
 
       FScrollOnDragOver.DragOver(Point);
     end {Assigned(Node)}
@@ -519,12 +528,12 @@ begin
   if Assigned(FOnDDDragOver) then
     FOnDDDragOver(Self, KeyState, Point, Effect);
 
-  if not Assigned(DropTarget) then Effect := DropEffect_None
+  if not Assigned(DropTarget) then Effect := DROPEFFECT_NONE
     else
   if NodeIsRecycleBin(DropTarget) then
   begin
-    if FDragDropFilesEx.FileNamesAreMapped then Effect := DropEffect_None
-      else Effect := DropEffect_Move;
+    if FDragDropFilesEx.FileNamesAreMapped then Effect := DROPEFFECT_NONE
+      else Effect := DROPEFFECT_MOVE;
   end;
 end; {DDDragOver}
 
@@ -534,7 +543,7 @@ begin
   if GlobalDragImageList.Dragging then
     GlobalDragImageList.HideDragImage;
 
-  if Effect = DropEffect_None then
+  if Effect = DROPEFFECT_NONE then
     DropTarget := nil;
 
   if Assigned(FOnDDDrop) then
@@ -586,19 +595,6 @@ begin
   end;
 end; {DDQueryContinueDrag}
 
-procedure TCustomDriveView.DDMenuPopup(Sender: TObject; AMenu: HMenu;
-  DataObj: IDataObject; AMinCustCmd: Integer; grfKeyState: Longint; Point: TPoint);
-begin
-  if Assigned(OnDDMenuPopup) then
-  begin
-    OnDDMenuPopup(Self, AMenu, DataObj, AMinCustCmd, grfKeyState, Point);
-  end;
-end;
-
-procedure TCustomDriveView.DDMenuDone(Sender: TObject; AMenu: HMenu);
-begin
-end;
-
 procedure TCustomDriveView.DDDropHandlerSucceeded(Sender: TObject;
   KeyState: Integer; Point: TPoint; Effect: Integer);
 begin
@@ -627,7 +623,7 @@ begin
       begin
         if Assigned(FOnDDProcessDropped) then
           FOnDDProcessDropped(Self, KeyState, Point, Effect);
-        if Effect <> DropEffect_None then
+        if Effect <> DROPEFFECT_NONE then
         begin
           PerformDragDropFileOperation(DropTarget, Effect);
           if Assigned(FOnDDExecuted) then
@@ -694,7 +690,7 @@ begin
       Exit;
     end;
 
-    FDragDrive := #0;
+    FDragDrive := '';
 
     ClearDragFileList(FDragDropFilesEx.FileList);
     FDragDropFilesEx.CompleteFileList := DragCompleteFileList;
@@ -760,7 +756,7 @@ begin
     finally
       ClearDragFileList(FDragDropFilesEx.FileList);
 
-      FDragDrive := #0;
+      FDragDrive := '';
       DropTarget := nil;
 
       try
@@ -864,9 +860,12 @@ end;
 
 procedure TCustomDriveView.WMLButtonDown(var Msg: TWMLButtonDown);
 begin
-  FCanChange := False;
-  GetCursorPos(FStartPos);
-  inherited;
+  if not IsBusy then
+  begin
+    FCanChange := False;
+    GetCursorPos(FStartPos);
+    inherited;
+  end;
 end; {WMLButtonDown}
 
 procedure TCustomDriveView.WMLButtonUp(var Msg: TWMLButtonDown);
@@ -880,11 +879,22 @@ end; {WMLButtonUp}
 
 procedure TCustomDriveView.WMRButtonDown(var Msg: TWMRButtonDown);
 begin
-  GetCursorPos(FStartPos);
-  if FDragDropFilesEx.DragDetectStatus <> ddsDrag then
-    FContextMenu := True;
-  inherited;
+  if not IsBusy then
+  begin
+    GetCursorPos(FStartPos);
+    if FDragDropFilesEx.DragDetectStatus <> ddsDrag then
+      FContextMenu := True;
+    inherited;
+  end;
 end; {WMRButtonDown}
+
+procedure TCustomDriveView.WMLButtonDblClk(var Message: TWMLButtonDblClk);
+begin
+  if not IsBusy then
+  begin
+    inherited;
+  end;
+end;
 
 procedure TCustomDriveView.WMContextMenu(var Msg: TWMContextMenu);
 var
@@ -1084,26 +1094,19 @@ begin
   end;
 end; {CenterNode}
 
-function TCustomDriveView.SortChildren(ParentNode: TTreeNode; Recurse: Boolean): Boolean;
-var
-  Node: TTreeNode;
+function TCustomDriveView.DoCompareText(Text1, Text2: string): Integer;
 begin
-  Result := False;
-  if Assigned(ParentNode) and
-     TreeView_SortChildren(Self.Handle, ParentNode.ItemID, LongBool(0)) then
-  begin
-    Result := True;
-    if Recurse then
-    begin
-      Node := ParentNode.GetFirstChild;
-      while Assigned(Node) do
-      begin
-        if Node.HasChildren then
-          SortChildren(Node, Recurse);
-        Node := ParentNode.GetNextChild(Node);
-      end;
-    end;
-  end;
+  Result := CompareLogicalTextPas(Text1, Text2, NaturalOrderNumericalSorting);
+end;
+
+procedure TCustomDriveView.DoCompare(Sender: TObject; Node1, Node2: TTreeNode; Data: Integer; var Compare: Integer);
+begin
+  Compare := DoCompareText(Node1.Text, Node2.Text);
+end;
+
+function TCustomDriveView.SortChildren(ParentNode: TTreeNode; Recurse: Boolean): Boolean;
+begin
+  Result := Assigned(ParentNode) and ParentNode.AlphaSort(Recurse);
 end; {SortChildren}
 
 function TCustomDriveView.IterateSubTree(var StartNode : TTreeNode;
@@ -1142,15 +1145,19 @@ function TCustomDriveView.IterateSubTree(var StartNode : TTreeNode;
 begin {IterateSubTree}
   Result := False;
   FContinue := True;
-  if not Assigned(CallBackFunc) then Exit;
+  if Assigned(CallBackFunc) then
+  begin
+    if ScanStartNode = coScanStartNode then
+    begin
+      CallBackFunc(StartNode, Data);
+    end;
 
-  if ScanStartNode = coScanStartNode then
-    CallBackFunc(StartNode, Data);
-
-  if Assigned(StartNode) then
-    if (not FContinue) or (not ScanSubTree(StartNode)) then Exit;
-
-  Result := True;
+    if (not Assigned(StartNode)) or
+       FContinue and ScanSubTree(StartNode) then
+    begin
+      Result := True;
+    end;
+  end;
 end; {IterateSubTree}
 
 procedure TCustomDriveView.ClearDragFileList(FileList: TFileList);
@@ -1200,6 +1207,25 @@ begin
     RebuildTree;
   end;
 end; {SetDimmHiddenDirs}
+
+procedure TCustomDriveView.SetNaturalOrderNumericalSorting(Value: Boolean);
+begin
+  if NaturalOrderNumericalSorting <> Value then
+  begin
+    FNaturalOrderNumericalSorting := Value;
+    AlphaSort;
+  end;
+end;
+
+procedure TCustomDriveView.SetDarkMode(Value: Boolean);
+begin
+  if DarkMode <> Value then
+  begin
+    FDarkMode := Value;
+    // See TCustomDirView.SetDarkMode
+    if HandleAllocated then AllowDarkModeForWindow(Self, DarkMode);
+  end;
+end;
 
 function TCustomDriveView.GetTargetPopupMenu: Boolean;
 begin

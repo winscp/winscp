@@ -21,7 +21,6 @@
 #pragma link "IEListView"
 #pragma link "NortonLikeListView"
 #pragma link "UnixDirView"
-#pragma link "IEComboBox"
 #pragma link "CustomDriveView"
 #pragma link "UnixDriveView"
 #pragma link "TB2Dock"
@@ -46,13 +45,13 @@ __fastcall TScpExplorerForm::TScpExplorerForm(TComponent* Owner)
   ForwardButton->LinkSubitems = HistoryMenu(osRemote, false)->Items;
 
   TopDock->PopupMenu = NonVisualDataModule->ExplorerBarPopup;
-  RemoteStatusBar->PopupMenu = TopDock->PopupMenu;
-  QueueDock->PopupMenu = TopDock->PopupMenu;
-  QueueLabel->PopupMenu = TopDock->PopupMenu;
-  RemoteDriveView->PopupMenu = TopDock->PopupMenu;
-  BottomDock->PopupMenu = TopDock->PopupMenu;
-  LeftDock->PopupMenu = TopDock->PopupMenu;
-  RightDock->PopupMenu = TopDock->PopupMenu;
+  CopyPopup(RemoteStatusBar, TopDock);
+  CopyPopup(QueueDock, TopDock);
+  CopyPopup(QueueLabel, TopDock);
+  CopyPopup(RemoteDriveView, TopDock);
+  CopyPopup(BottomDock, TopDock);
+  CopyPopup(LeftDock, TopDock);
+  CopyPopup(RightDock, TopDock);
   reinterpret_cast<TLabel*>(RemotePanelSplitter)->OnDblClick = RemotePanelSplitterDblClick;
 
   QueuePanel->Parent = RemotePanel;
@@ -95,7 +94,7 @@ void __fastcall TScpExplorerForm::RestoreParams()
     RemoteDirView->HandleNeeded();
   }
 
-  LoadToolbarsLayoutStr(WinConfiguration->ScpExplorer.ToolbarsLayout);
+  LoadToolbarsLayoutStr(WinConfiguration->ScpExplorer.ToolbarsLayout, WinConfiguration->ScpExplorer.ToolbarsButtons);
   if (IsUWP())
   {
     UpdatesToolbar->Visible = false;
@@ -116,6 +115,7 @@ void __fastcall TScpExplorerForm::StoreParams()
   try
   {
     WinConfiguration->ScpExplorer.ToolbarsLayout = GetToolbarsLayoutStr();
+    WinConfiguration->ScpExplorer.ToolbarsButtons = GetToolbarsButtonsStr();
     WinConfiguration->ScpExplorer.SessionsTabs = SessionsPageControl->Visible;
     WinConfiguration->ScpExplorer.StatusBar = RemoteStatusBar->Visible;
 
@@ -239,8 +239,8 @@ void __fastcall TScpExplorerForm::FullSynchronizeDirectories()
   UnicodeString RemoteDirectory = RemoteDirView->PathName;
   bool SaveMode = true;
   TSynchronizeMode Mode = (TSynchronizeMode)GUIConfiguration->SynchronizeMode;
-  if (DoFullSynchronizeDirectories(LocalDirectory, RemoteDirectory, Mode,
-        SaveMode, false))
+  int Params = GUIConfiguration->SynchronizeParams;
+  if (DoFullSynchronizeDirectories(LocalDirectory, RemoteDirectory, Mode, Params, SaveMode, false) >= 0)
   {
     WinConfiguration->ScpExplorer.LastLocalTargetDirectory = LocalDirectory;
     if (SaveMode)
@@ -290,6 +290,20 @@ void __fastcall TScpExplorerForm::UnixPathComboBoxBeginEdit(
   TTBEditItem * /*Sender*/, TTBEditItemViewer * /*Viewer*/, TEdit * EditControl)
 {
   InstallPathWordBreakProc(EditControl);
+  if (!FFailedAddress.IsEmpty())
+  {
+    EditControl->Text = FFailedAddress;
+    EditControl->SelectAll();
+  }
+  FFailedAddress = UnicodeString();
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpExplorerForm::AddressToolbarEndModal(TObject * /*Sender*/)
+{
+  if (!FFailedAddress.IsEmpty())
+  {
+    GoToAddress();
+  }
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TScpExplorerForm::RemotePathComboBoxText()
@@ -320,8 +334,15 @@ void __fastcall TScpExplorerForm::UnixPathComboBoxAcceptText(
 {
   if (RemoteDirView->Path != NewText)
   {
-    RemoteDirView->Path = NewText;
-    NewText = RemotePathComboBoxText();
+    if (!TryOpenDirectory(osRemote, NewText))
+    {
+      FFailedAddress = NewText;
+      Abort();
+    }
+    else
+    {
+      NewText = RemotePathComboBoxText();
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -336,6 +357,7 @@ void __fastcall TScpExplorerForm::RemoteDirViewPathChange(
   TCustomDirView * /*Sender*/)
 {
   UpdateRemotePathComboBox(false);
+  ResetIncrementalSearch();
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpExplorerForm::ToolbarItemResize(TTBXCustomDropDownItem * Item, int Width)

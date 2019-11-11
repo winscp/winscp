@@ -294,6 +294,7 @@ type
     procedure GetViewBorder(Control: TControl; ViewType: Integer; out Border: TPoint); virtual; abstract;
     function  GetViewColor(ViewType: Integer): TColor; virtual; abstract;
     procedure GetViewMargins(ViewType: Integer; out Margins: TTBXMargins); virtual; abstract;
+    function GetSysColor(nIndex: Integer): DWORD; virtual; abstract;
 
     { General painting routines }
     procedure PaintBackgnd(Canvas: TCanvas; const ADockRect, ARect, AClipRect: TRect; AColor: TColor; Transparent: Boolean; AViewType: Integer); virtual; abstract;

@@ -204,7 +204,7 @@ BEGIN
   CONFIGURED_KEY_NOT_MATCH, "Host key does not match configured key \"%s\"!"
   SFTP_STATUS_OWNER_INVALID, "The name specified can not be assigned as an owner of a file."
   SFTP_STATUS_GROUP_INVALID, "The name specified can not be assigned as the primary group of a file."
-  SFTP_STATUS_NO_MATCHING_BYTE_RANGE_LOCK, "The requested operation could not be completed because the specifed byte range lock has not been granted."
+  SFTP_STATUS_NO_MATCHING_BYTE_RANGE_LOCK, "The requested operation could not be completed because the specified byte range lock has not been granted."
   KEY_TYPE_UNOPENABLE, "Private key file '%s' does not exist or cannot be opened."
   UNKNOWN_CHECKSUM, "Checksum algorithm '%s' is not supported."
   ALG_NOT_VERIFIED, "The %s %s was not verified!"
@@ -239,6 +239,9 @@ BEGIN
   S3_STATUS_ACCESS_DENIED, "Access denied."
   DUPLICATE_FOLDER_NOT_SUPPORTED, "Direct duplication of folders is not supported. Use a duplication via a local temporary copy."
   MISSING_TARGET_BUCKET, "Specify target bucket."
+  UNKNOWN_FILE_ENCRYPTION, "File is not encrypted using a known encryption."
+  INVALID_ENCRYPT_KEY, "**Invalid encryption key.**\n\nEncryption key for %s encryption must have %d bytes. It must be entered in hexadecimal representation (i.e. %d characters)."
+  UNREQUESTED_FILE, "Server sent a file that was not requested."
 
   CORE_CONFIRMATION_STRINGS, "CORE_CONFIRMATION"
   CONFIRM_PROLONG_TIMEOUT3, "Host is not communicating for %d seconds.\n\nWait for another %0:d seconds?"
@@ -445,6 +448,9 @@ BEGIN
   KEY_DETAILS, "    Algorithm:\t%s\n    SHA-256:\t%s\n    MD5:\t%s"
   COPY_KEY_ACTION, "&Copy key fingerprints to clipboard"
   COPY_CERTIFICATE_ACTION, "&Copy certificate fingerprint to clipboard"
+  COPY_INFO_DONT_ENCRYPT_NEW_FILES, "Do not encrypt new files"
+  COPY_INFO_EXCLUDE_HIDDEN_FILES, "Exclude hidden files"
+  COPY_INFO_EXCLUDE_EMPTY_DIRS, "Exclude empty directories"
 
   CORE_VARIABLE_STRINGS, "CORE_VARIABLE"
   PUTTY_BASED_ON, "SSH and SCP code based on PuTTY %s"

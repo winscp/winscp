@@ -28,8 +28,8 @@ public:
   __fastcall TGUICopyParamType(const TCopyParamType & Source);
   __fastcall TGUICopyParamType(const TGUICopyParamType & Source);
 
-  void __fastcall Load(THierarchicalStorage * Storage);
-  void __fastcall Save(THierarchicalStorage * Storage);
+  virtual void __fastcall Load(THierarchicalStorage * Storage);
+  virtual void __fastcall Save(THierarchicalStorage * Storage, const TCopyParamType * Defaults = NULL) const;
 
   virtual void __fastcall Default();
   virtual void __fastcall Assign(const TCopyParamType * Source);
@@ -171,6 +171,7 @@ private:
   bool FQueueAutoPopup;
   bool FSessionRememberPassword;
   int FQueueTransfersLimit;
+  bool FQueueBootstrap;
   bool FQueueKeepDoneItems;
   int FQueueKeepDoneItemsFor;
   TGUICopyParamType FDefaultCopyParam;
@@ -220,6 +221,7 @@ protected:
   void __fastcall SetNewDirectoryProperties(const TRemoteProperties & value);
   virtual void __fastcall Saved();
   void __fastcall SetQueueTransfersLimit(int value);
+  void __fastcall SetQueueBootstrap(bool value);
   void __fastcall SetQueueKeepDoneItems(bool value);
   void __fastcall SetQueueKeepDoneItemsFor(int value);
   void __fastcall SetLocaleInternal(LCID value, bool Safe, bool CompleteOnly);
@@ -231,16 +233,20 @@ protected:
   virtual int __fastcall GetResourceModuleCompleteness(HINSTANCE Module);
   virtual bool __fastcall IsTranslationComplete(HINSTANCE Module);
   static int __fastcall LocalesCompare(void * Item1, void * Item2);
+  LCID __fastcall InternalLocale();
+  bool __fastcall DoSaveCopyParam(THierarchicalStorage * Storage, const TCopyParamType * CopyParam, const TCopyParamType * Defaults);
 
 public:
   __fastcall TGUIConfiguration();
   virtual __fastcall ~TGUIConfiguration();
   virtual void __fastcall Default();
   virtual void __fastcall UpdateStaticUsage();
+  bool __fastcall LoadCopyParam(THierarchicalStorage * Storage, TCopyParamType * CopyParam);
+  void __fastcall LoadDefaultCopyParam(THierarchicalStorage * Storage);
 
   HANDLE __fastcall ChangeToDefaultResourceModule();
   HANDLE __fastcall ChangeResourceModule(HANDLE Instance);
-  LCID __fastcall InternalLocale();
+  bool __fastcall UsingInternalTranslation();
   UnicodeString __fastcall AppliedLocaleCopyright();
   UnicodeString __fastcall AppliedLocaleVersion();
   TStoredSessionList * __fastcall SelectPuttySessionsForImport(TStoredSessionList * Sessions, UnicodeString & Error);
@@ -254,6 +260,7 @@ public:
   __property int SynchronizeMode = { read = FSynchronizeMode, write = FSynchronizeMode };
   __property int MaxWatchDirectories = { read = FMaxWatchDirectories, write = FMaxWatchDirectories };
   __property int QueueTransfersLimit = { read = FQueueTransfersLimit, write = SetQueueTransfersLimit };
+  __property bool QueueBootstrap = { read = FQueueBootstrap, write = SetQueueBootstrap };
   __property bool QueueKeepDoneItems = { read = FQueueKeepDoneItems, write = SetQueueKeepDoneItems };
   __property int QueueKeepDoneItemsFor = { read = FQueueKeepDoneItemsFor, write = SetQueueKeepDoneItemsFor };
   __property bool QueueAutoPopup = { read = FQueueAutoPopup, write = FQueueAutoPopup };

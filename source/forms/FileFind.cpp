@@ -26,13 +26,13 @@ TFileFindDialog * FileFindDialog = NULL;
 //---------------------------------------------------------------------------
 void __fastcall ShowFileFindDialog(
   TTerminal * Terminal, UnicodeString Directory, TFindEvent OnFind, TFocusFileEvent OnFocusFile,
-  TFileListOperationEvent OnDeleteFiles, TFileListOperationEvent OnDownloadFiles)
+  TFileListOperationEvent OnDeleteFiles, TFileListOperationEvent OnDownloadFiles, TFileListOperationEvent OnEditFiles)
 {
   if (FileFindDialog == NULL)
   {
     FileFindDialog = new TFileFindDialog(Application);
   }
-  FileFindDialog->Init(Terminal, Directory, OnFind, OnFocusFile, OnDeleteFiles, OnDownloadFiles);
+  FileFindDialog->Init(Terminal, Directory, OnFind, OnFocusFile, OnDeleteFiles, OnDownloadFiles, OnEditFiles);
   FileFindDialog->Show();
 }
 //---------------------------------------------------------------------------
@@ -117,6 +117,7 @@ void __fastcall TFileFindDialog::UpdateControls()
   bool EnableFileOperations = !Finding && (FileView->SelCount > 0);
   DeleteAction->Enabled = EnableFileOperations;
   DownloadAction->Enabled = EnableFileOperations;
+  EditAction->Enabled = EnableFileOperations;
   CopyAction->Enabled = (FileView->Items->Count > 0);
   SelectAllAction->Enabled = (FileView->SelCount < FileView->Items->Count);
 
@@ -162,7 +163,7 @@ void __fastcall TFileFindDialog::ControlChange(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TFileFindDialog::Init(
   TTerminal * Terminal, UnicodeString Directory, TFindEvent OnFind, TFocusFileEvent OnFocusFile,
-  TFileListOperationEvent OnDeleteFiles, TFileListOperationEvent OnDownloadFiles)
+  TFileListOperationEvent OnDeleteFiles, TFileListOperationEvent OnDownloadFiles, TFileListOperationEvent OnEditFiles)
 {
   if (FTerminal != Terminal)
   {
@@ -177,6 +178,7 @@ void __fastcall TFileFindDialog::Init(
   FOnFocusFile = OnFocusFile;
   FOnDeleteFiles = OnDeleteFiles;
   FOnDownloadFiles = OnDownloadFiles;
+  FOnEditFiles = OnEditFiles;
 
   MaskEdit->Text = WinConfiguration->SelectMask;
   RemoteDirectoryEdit->Text = UnixExcludeTrailingBackslash(Directory);
@@ -635,5 +637,10 @@ void __fastcall TFileFindDialog::SelectAllActionExecute(TObject * /*Sender*/)
 void __fastcall TFileFindDialog::DownloadActionExecute(TObject * /*Sender*/)
 {
   FileListOperation(FOnDownloadFiles, FileDownloadFinished);
+}
+//---------------------------------------------------------------------------
+void __fastcall TFileFindDialog::EditActionExecute(TObject * /*Sender*/)
+{
+  FileListOperation(FOnEditFiles, FileDownloadFinished);
 }
 //---------------------------------------------------------------------------
