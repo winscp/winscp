@@ -20,7 +20,7 @@
  * This has an intricate link between the cipher and the MAC. The
  * keying of both is done in by the cipher and setting of the IV is
  * done by the MAC. One cannot operate without the other. The
- * configuration of the ssh2_cipher structure ensures that the MAC is
+ * configuration of the ssh_cipheralg structure ensures that the MAC is
  * set (and others ignored) if this cipher is chosen.
  *
  * This cipher also encrypts the length using a different
@@ -30,7 +30,7 @@
  */
 
 #include "ssh.h"
-#include "sshbn.h"
+#include "mpint_i.h"
 
 #ifndef INLINE
 #define INLINE
@@ -45,7 +45,7 @@ struct chacha20 {
      * 4-11 are the key
      * 12-13 are the counter
      * 14-15 are the IV */
-    uint32 state[16];
+    uint32_t state[16];
     /* The output of the state above ready to xor */
     unsigned char current[64];
     /* The index of the above currently used to allow a true streaming cipher */
@@ -55,7 +55,7 @@ struct chacha20 {
 static INLINE void chacha20_round(struct chacha20 *ctx)
 {
     int i;
-    uint32 copy[16];
+    uint32_t copy[16];
 
     /* Take a copy */
     memcpy(copy, ctx->state, sizeof(copy));
@@ -114,7 +114,7 @@ static INLINE void chacha20_round(struct chacha20 *ctx)
     /* Increment round counter */
     ++ctx->state[12];
     /* Check for overflow, not done in one line so the 32 bits are chopped by the type */
-    if (!(uint32)(ctx->state[12])) {
+    if (!(uint32_t)(ctx->state[12])) {
         ++ctx->state[13];
     }
 }
@@ -772,11 +772,12 @@ static void poly1305_init(struct poly1305 *ctx)
     bigval_clear(&ctx->h);
 }
 
-/* Takes a 256 bit key */
-static void poly1305_key(struct poly1305 *ctx, const unsigned char *key)
+static void poly1305_key(struct poly1305 *ctx, ptrlen key)
 {
+    assert(key.len == 32);             /* Takes a 256 bit key */
+
     unsigned char key_copy[16];
-    memcpy(key_copy, key, 16);
+    memcpy(key_copy, key.ptr, 16);
 
     /* Key the MAC itself
      * bytes 4, 8, 12 and 16 are required to have their top four bits clear */
@@ -791,8 +792,8 @@ static void poly1305_key(struct poly1305 *ctx, const unsigned char *key)
     bigval_import_le(&ctx->r, key_copy, 16);
     smemclr(key_copy, sizeof(key_copy));
 
-    /* Use second 128 bits are the nonce */
-    memcpy(ctx->nonce, key+16, 16);
+    /* Use second 128 bits as the nonce */
+    memcpy(ctx->nonce, (const char *)key.ptr + 16, 16);
 }
 
 /* Feed up to 16 bytes (should only be less for the last chunk) */
@@ -864,35 +865,44 @@ struct ccp_context {
     unsigned char mac_iv[8];
 
     struct poly1305 mac;
+
+    BinarySink_IMPLEMENTATION;
+    ssh_cipher ciph;
+    ssh2_mac mac_if;
 };
 
-static void *poly_make_context(void *ctx)
+static ssh2_mac *poly_ssh2_new(
+    const ssh2_macalg *alg, ssh_cipher *cipher)
 {
-    return ctx;
+    struct ccp_context *ctx = container_of(cipher, struct ccp_context, ciph);
+    ctx->mac_if.vt = alg;
+    BinarySink_DELEGATE_INIT(&ctx->mac_if, ctx);
+    return &ctx->mac_if;
 }
 
-static void poly_free_context(void *ctx)
+static void poly_ssh2_free(ssh2_mac *mac)
 {
     /* Not allocated, just forwarded, no need to free */
 }
 
-static void poly_setkey(void *ctx, unsigned char *key)
+static void poly_setkey(ssh2_mac *mac, ptrlen key)
 {
     /* Uses the same context as ChaCha20, so ignore */
 }
 
-static void poly_start(void *handle)
+static void poly_start(ssh2_mac *mac)
 {
-    struct ccp_context *ctx = (struct ccp_context *)handle;
+    struct ccp_context *ctx = container_of(mac, struct ccp_context, mac_if);
 
     ctx->mac_initialised = 0;
     memset(ctx->mac_iv, 0, 8);
     poly1305_init(&ctx->mac);
 }
 
-static void poly_bytes(void *handle, unsigned char const *blk, int len)
+static void poly_BinarySink_write(BinarySink *bs, const void *blkv, size_t len)
 {
-    struct ccp_context *ctx = (struct ccp_context *)handle;
+    struct ccp_context *ctx = BinarySink_DOWNCAST(bs, struct ccp_context);
+    const unsigned char *blk = (const unsigned char *)blkv;
 
     /* First 4 bytes are the IV */
     while (ctx->mac_initialised < 4 && len) {
@@ -910,7 +920,7 @@ static void poly_bytes(void *handle, unsigned char const *blk, int len)
         chacha20_round(&ctx->b_cipher);
 
         /* Set the poly key */
-        poly1305_key(&ctx->mac, ctx->b_cipher.current);
+        poly1305_key(&ctx->mac, make_ptrlen(ctx->b_cipher.current, 32));
 
         /* Set the first round as used */
         ctx->b_cipher.currentIndex = 64;
@@ -922,106 +932,73 @@ static void poly_bytes(void *handle, unsigned char const *blk, int len)
     }
 }
 
-static void poly_genresult(void *handle, unsigned char *blk)
+static void poly_genresult(ssh2_mac *mac, unsigned char *blk)
 {
-    struct ccp_context *ctx = (struct ccp_context *)handle;
+    struct ccp_context *ctx = container_of(mac, struct ccp_context, mac_if);
     poly1305_finalise(&ctx->mac, blk);
 }
 
-static int poly_verresult(void *handle, unsigned char const *blk)
+static const char *poly_text_name(ssh2_mac *mac)
 {
-    struct ccp_context *ctx = (struct ccp_context *)handle;
-    int res;
-    unsigned char mac[16];
-    poly1305_finalise(&ctx->mac, mac);
-    res = smemeq(blk, mac, 16);
-    return res;
+    return "Poly1305";
 }
 
-/* The generic poly operation used before generate and verify */
-static void poly_op(void *handle, unsigned char *blk, int len, unsigned long seq)
-{
-    unsigned char iv[4];
-    poly_start(handle);
-    PUT_32BIT_MSB_FIRST(iv, seq);
-    /* poly_bytes expects the first 4 bytes to be the IV */
-    poly_bytes(handle, iv, 4);
-    smemclr(iv, sizeof(iv));
-    poly_bytes(handle, blk, len);
-}
-
-static void poly_generate(void *handle, unsigned char *blk, int len, unsigned long seq)
-{
-    poly_op(handle, blk, len, seq);
-    poly_genresult(handle, blk+len);
-}
-
-static int poly_verify(void *handle, unsigned char *blk, int len, unsigned long seq)
-{
-    poly_op(handle, blk, len, seq);
-    return poly_verresult(handle, blk+len);
-}
-
-static const struct ssh_mac ssh2_poly1305 = {
-    poly_make_context, poly_free_context,
-    poly_setkey,
-
-    /* whole-packet operations */
-    poly_generate, poly_verify,
-
-    /* partial-packet operations */
-    poly_start, poly_bytes, poly_genresult, poly_verresult,
+const ssh2_macalg ssh2_poly1305 = {
+    poly_ssh2_new, poly_ssh2_free, poly_setkey,
+    poly_start, poly_genresult, poly_text_name,
 
     "", "", /* Not selectable individually, just part of ChaCha20-Poly1305 */
-    16, 0, "Poly1305"
+    16, 0,
 };
 
-static void *ccp_make_context(void)
+static ssh_cipher *ccp_new(const ssh_cipheralg *alg)
 {
     struct ccp_context *ctx = snew(struct ccp_context);
-    if (ctx) {
-        poly1305_init(&ctx->mac);
-    }
-    return ctx;
+    BinarySink_INIT(ctx, poly_BinarySink_write);
+    poly1305_init(&ctx->mac);
+    ctx->ciph.vt = alg;
+    return &ctx->ciph;
 }
 
-static void ccp_free_context(void *vctx)
+static void ccp_free(ssh_cipher *cipher)
 {
-    struct ccp_context *ctx = (struct ccp_context *)vctx;
+    struct ccp_context *ctx = container_of(cipher, struct ccp_context, ciph);
     smemclr(&ctx->a_cipher, sizeof(ctx->a_cipher));
     smemclr(&ctx->b_cipher, sizeof(ctx->b_cipher));
     smemclr(&ctx->mac, sizeof(ctx->mac));
     sfree(ctx);
 }
 
-static void ccp_iv(void *vctx, unsigned char *iv)
+static void ccp_iv(ssh_cipher *cipher, const void *iv)
 {
-    /* struct ccp_context *ctx = (struct ccp_context *)vctx; */
+    /* struct ccp_context *ctx =
+           container_of(cipher, struct ccp_context, ciph); */
     /* IV is set based on the sequence number */
 }
 
-static void ccp_key(void *vctx, unsigned char *key)
+static void ccp_key(ssh_cipher *cipher, const void *vkey)
 {
-    struct ccp_context *ctx = (struct ccp_context *)vctx;
+    const unsigned char *key = (const unsigned char *)vkey;
+    struct ccp_context *ctx = container_of(cipher, struct ccp_context, ciph);
     /* Initialise the a_cipher (for decrypting lengths) with the first 256 bits */
     chacha20_key(&ctx->a_cipher, key + 32);
     /* Initialise the b_cipher (for content and MAC) with the second 256 bits */
     chacha20_key(&ctx->b_cipher, key);
 }
 
-static void ccp_encrypt(void *vctx, unsigned char *blk, int len)
+static void ccp_encrypt(ssh_cipher *cipher, void *blk, int len)
 {
-    struct ccp_context *ctx = (struct ccp_context *)vctx;
+    struct ccp_context *ctx = container_of(cipher, struct ccp_context, ciph);
     chacha20_encrypt(&ctx->b_cipher, blk, len);
 }
 
-static void ccp_decrypt(void *vctx, unsigned char *blk, int len)
+static void ccp_decrypt(ssh_cipher *cipher, void *blk, int len)
 {
-    struct ccp_context *ctx = (struct ccp_context *)vctx;
+    struct ccp_context *ctx = container_of(cipher, struct ccp_context, ciph);
     chacha20_decrypt(&ctx->b_cipher, blk, len);
 }
 
-static void ccp_length_op(struct ccp_context *ctx, unsigned char *blk, int len,
+static void ccp_length_op(struct ccp_context *ctx, void *blk, int len,
                           unsigned long seq)
 {
     unsigned char iv[8];
@@ -1038,26 +1015,26 @@ static void ccp_length_op(struct ccp_context *ctx, unsigned char *blk, int len,
     smemclr(iv, sizeof(iv));
 }
 
-static void ccp_encrypt_length(void *vctx, unsigned char *blk, int len,
+static void ccp_encrypt_length(ssh_cipher *cipher, void *blk, int len,
                                unsigned long seq)
 {
-    struct ccp_context *ctx = (struct ccp_context *)vctx;
+    struct ccp_context *ctx = container_of(cipher, struct ccp_context, ciph);
     ccp_length_op(ctx, blk, len, seq);
     chacha20_encrypt(&ctx->a_cipher, blk, len);
 }
 
-static void ccp_decrypt_length(void *vctx, unsigned char *blk, int len,
+static void ccp_decrypt_length(ssh_cipher *cipher, void *blk, int len,
                                unsigned long seq)
 {
-    struct ccp_context *ctx = (struct ccp_context *)vctx;
+    struct ccp_context *ctx = container_of(cipher, struct ccp_context, ciph);
     ccp_length_op(ctx, blk, len, seq);
     chacha20_decrypt(&ctx->a_cipher, blk, len);
 }
 
-static const struct ssh2_cipher ssh2_chacha20_poly1305 = {
+const ssh_cipheralg ssh2_chacha20_poly1305 = {
 
-    ccp_make_context,
-    ccp_free_context,
+    ccp_new,
+    ccp_free,
     ccp_iv,
     ccp_key,
     ccp_encrypt,
@@ -1071,11 +1048,8 @@ static const struct ssh2_cipher ssh2_chacha20_poly1305 = {
     &ssh2_poly1305
 };
 
-static const struct ssh2_cipher *const ccp_list[] = {
+static const ssh_cipheralg *const ccp_list[] = {
     &ssh2_chacha20_poly1305
 };
 
-const struct ssh2_ciphers ssh2_ccp = {
-    sizeof(ccp_list) / sizeof(*ccp_list),
-    ccp_list
-};
+const ssh2_ciphers ssh2_ccp = { lenof(ccp_list), ccp_list };

@@ -16,7 +16,7 @@
  */
 #ifdef STATIC_GSSAPI
 #include <gssapi/gssapi.h>
-typedef gss_OID const_gss_OID;	       /* for our prototypes below */
+typedef gss_OID const_gss_OID;         /* for our prototypes below */
 #else /* STATIC_GSSAPI */
 
 /*******************************************************************************
@@ -24,7 +24,7 @@ typedef gss_OID const_gss_OID;	       /* for our prototypes below */
  ******************************************************************************/
 
 /* GSSAPI Type Definitions */
-typedef uint32 OM_uint32;
+typedef uint32_t OM_uint32;
 
 typedef struct gss_OID_desc_struct {
     OM_uint32 length;
@@ -58,6 +58,7 @@ typedef void * gss_name_t;
 typedef void * gss_cred_id_t;
 
 typedef OM_uint32 gss_qop_t;
+typedef int gss_cred_usage_t;
 
 /* Flag bits for context-level services. */
 
@@ -75,6 +76,13 @@ typedef OM_uint32 gss_qop_t;
 #define GSS_C_BOTH     0
 #define GSS_C_INITIATE 1
 #define GSS_C_ACCEPT   2
+
+/*-
+ * RFC 2744 Page 86
+ * Expiration time of 2^32-1 seconds means infinite lifetime for a
+ * credential or security context
+ */
+#define GSS_C_INDEFINITE 0xfffffffful
 
 /* Status code types for gss_display_status */
 #define GSS_C_GSS_CODE  1
@@ -256,6 +264,13 @@ typedef OM_uint32 (GSS_CC *t_gss_get_mic)
              const gss_buffer_t             /*message_buffer*/,
              gss_buffer_t                   /*msg_token*/);
 
+typedef OM_uint32 (GSS_CC *t_gss_verify_mic)
+            (OM_uint32                    * /*minor_status*/,
+             const gss_ctx_id_t             /*context_handle*/,
+             const gss_buffer_t             /*message_buffer*/,
+             const gss_buffer_t             /*msg_token*/,
+             gss_qop_t                    * /*qop_state*/);
+
 typedef OM_uint32 (GSS_CC *t_gss_display_status)
             (OM_uint32                   * /*minor_status*/,
              OM_uint32                     /*status_value*/,
@@ -280,15 +295,37 @@ typedef OM_uint32 (GSS_CC *t_gss_release_buffer)
             (OM_uint32                   * /*minor_status*/,
              gss_buffer_t                  /*buffer*/);
 
+typedef OM_uint32 (GSS_CC *t_gss_acquire_cred)
+            (OM_uint32                    * /*minor_status*/,
+             const gss_name_t               /*desired_name*/,
+             OM_uint32                      /*time_req*/,
+             const gss_OID_set              /*desired_mechs*/,
+             gss_cred_usage_t               /*cred_usage*/,
+             gss_cred_id_t                * /*output_cred_handle*/,
+             gss_OID_set                  * /*actual_mechs*/,
+             OM_uint32                    * /*time_rec*/);
+
+typedef OM_uint32 (GSS_CC *t_gss_inquire_cred_by_mech)
+            (OM_uint32                    * /*minor_status*/,
+             const gss_cred_id_t            /*cred_handle*/,
+             const gss_OID                  /*mech_type*/,
+             gss_name_t                   * /*name*/,
+             OM_uint32                    * /*initiator_lifetime*/,
+             OM_uint32                    * /*acceptor_lifetime*/,
+             gss_cred_usage_t             * /*cred_usage*/);
+
 struct gssapi_functions {
     t_gss_delete_sec_context delete_sec_context;
     t_gss_display_status display_status;
     t_gss_get_mic get_mic;
+    t_gss_verify_mic verify_mic;
     t_gss_import_name import_name;
     t_gss_init_sec_context init_sec_context;
     t_gss_release_buffer release_buffer;
     t_gss_release_cred release_cred;
     t_gss_release_name release_name;
+    t_gss_acquire_cred acquire_cred;
+    t_gss_inquire_cred_by_mech inquire_cred_by_mech;
 };
 
 #endif /* NO_GSSAPI */

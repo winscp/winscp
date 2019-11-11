@@ -113,10 +113,26 @@ changes to this section!
 After you have connected, and perhaps verified the server's host
 key, you will be asked to log in, probably using a \i{username} and
 a \i{password}. Your system administrator should have provided you
-with these. Enter the username and the password, and the server
-should grant you access and begin your session. If you have
-\I{mistyping a password}mistyped your password, most servers will
-give you several chances to get it right.
+with these. (If, instead, your system administrator has asked you to
+provide, or provided you with, a \q{public key} or \q{key file}, see
+\k{pubkey}.)
+
+PuTTY will display a text window (the \q{\i{terminal window}} \dash it
+will have a black background unless you've changed the defaults), and
+prompt you to type your username and password into that window. (These
+prompts will include the \i{PuTTY icon}, to distinguish them from any
+text sent by the server in the same window.)
+
+Enter the username and the password, and the server should grant you
+access and begin your session. If you have
+\I{mistyping a password}mistyped your password, most servers will give
+you several chances to get it right.
+
+While you are typing your password, you will not usually see the
+cursor moving in the window, but PuTTY \e{is} registering what you
+type, and will send it when you press Return. (It works this way to
+avoid revealing the length of your password to anyone watching your
+screen.)
 
 If you are using SSH, be careful not to type your username wrongly,
 because you will not have a chance to correct it after you press

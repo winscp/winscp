@@ -13,18 +13,24 @@ typedef enum Ssh_gss_stat {
     SSH_GSS_S_CONTINUE_NEEDED,
     SSH_GSS_NO_MEM,
     SSH_GSS_BAD_HOST_NAME,
+    SSH_GSS_BAD_MIC,
+    SSH_GSS_NO_CREDS,
     SSH_GSS_FAILURE
 } Ssh_gss_stat;
 
 #define SSH_GSS_S_COMPLETE SSH_GSS_OK
 
-#define SSH_GSS_CLEAR_BUF(buf) do {		\
-    (*buf).length = 0;				\
-    (*buf).value = NULL;				\
+#define SSH_GSS_CLEAR_BUF(buf) do {             \
+    (*buf).length = 0;                          \
+    (*buf).value = NULL;                                \
 } while (0)
 
 typedef gss_buffer_desc Ssh_gss_buf;
 typedef gss_name_t Ssh_gss_name;
+
+#define GSS_NO_EXPIRATION ((time_t)-1)
+
+#define GSS_DEF_REKEY_MINS 2    /* Default minutes between GSS cache checks */
 
 /* Functions, provided by either wingss.c or sshgssc.c */
 
@@ -55,7 +61,7 @@ void ssh_gss_cleanup(struct ssh_gss_liblist *list);
  * use. buf->data is not dynamically allocated.
  */
 typedef Ssh_gss_stat (*t_ssh_gss_indicate_mech)(struct ssh_gss_library *lib,
-						Ssh_gss_buf *buf);
+                                                Ssh_gss_buf *buf);
 
 /*
  * Converts a name such as a hostname into a GSSAPI internal form,
@@ -63,14 +69,14 @@ typedef Ssh_gss_stat (*t_ssh_gss_indicate_mech)(struct ssh_gss_library *lib,
  * ssh_gss_release_name().
  */
 typedef Ssh_gss_stat (*t_ssh_gss_import_name)(struct ssh_gss_library *lib,
-					      char *in, Ssh_gss_name *out);
+                                              char *in, Ssh_gss_name *out);
 
 /*
  * Frees the contents of an Ssh_gss_name structure filled in by
  * ssh_gss_import_name().
  */
 typedef Ssh_gss_stat (*t_ssh_gss_release_name)(struct ssh_gss_library *lib,
-					       Ssh_gss_name *name);
+                                               Ssh_gss_name *name);
 
 /*
  * The main GSSAPI security context setup function. The "out"
@@ -79,7 +85,8 @@ typedef Ssh_gss_stat (*t_ssh_gss_release_name)(struct ssh_gss_library *lib,
 typedef Ssh_gss_stat (*t_ssh_gss_init_sec_context)
     (struct ssh_gss_library *lib,
      Ssh_gss_ctx *ctx, Ssh_gss_name name, int delegate,
-     Ssh_gss_buf *in, Ssh_gss_buf *out);
+     Ssh_gss_buf *in, Ssh_gss_buf *out, time_t *expiry,
+     unsigned long *lifetime);
 
 /*
  * Frees the contents of an Ssh_gss_buf filled in by
@@ -89,29 +96,38 @@ typedef Ssh_gss_stat (*t_ssh_gss_init_sec_context)
  * way.
  */
 typedef Ssh_gss_stat (*t_ssh_gss_free_tok)(struct ssh_gss_library *lib,
-					   Ssh_gss_buf *);
+                                           Ssh_gss_buf *);
 
 /*
  * Acquires the credentials to perform authentication in the first
  * place. Needs to be freed by ssh_gss_release_cred().
  */
 typedef Ssh_gss_stat (*t_ssh_gss_acquire_cred)(struct ssh_gss_library *lib,
-					       Ssh_gss_ctx *);
+                                               Ssh_gss_ctx *,
+                                               time_t *expiry);
 
 /*
  * Frees the contents of an Ssh_gss_ctx filled in by
  * ssh_gss_acquire_cred().
  */
 typedef Ssh_gss_stat (*t_ssh_gss_release_cred)(struct ssh_gss_library *lib,
-					       Ssh_gss_ctx *);
+                                               Ssh_gss_ctx *);
 
 /*
  * Gets a MIC for some input data. "out" needs to be freed by
  * ssh_gss_free_mic().
  */
 typedef Ssh_gss_stat (*t_ssh_gss_get_mic)(struct ssh_gss_library *lib,
-					  Ssh_gss_ctx ctx, Ssh_gss_buf *in,
-                 Ssh_gss_buf *out);
+                                          Ssh_gss_ctx ctx, Ssh_gss_buf *in,
+                                          Ssh_gss_buf *out);
+
+/*
+ * Validates an input MIC for some input data.
+ */
+typedef Ssh_gss_stat (*t_ssh_gss_verify_mic)(struct ssh_gss_library *lib,
+                                             Ssh_gss_ctx ctx,
+                                             Ssh_gss_buf *in_data,
+                                             Ssh_gss_buf *in_mic);
 
 /*
  * Frees the contents of an Ssh_gss_buf filled in by
@@ -121,17 +137,17 @@ typedef Ssh_gss_stat (*t_ssh_gss_get_mic)(struct ssh_gss_library *lib,
  * way.
  */
 typedef Ssh_gss_stat (*t_ssh_gss_free_mic)(struct ssh_gss_library *lib,
-					   Ssh_gss_buf *);
+                                           Ssh_gss_buf *);
 
 /*
  * Return an error message after authentication failed. The
  * message string is returned in "buf", with buf->len giving the
  * number of characters of printable message text and buf->data
  * containing one more character which is a trailing NUL.
- * buf->data should be manually freed by the caller. 
+ * buf->data should be manually freed by the caller.
  */
 typedef Ssh_gss_stat (*t_ssh_gss_display_status)(struct ssh_gss_library *lib,
-						 Ssh_gss_ctx, Ssh_gss_buf *buf);
+                                                 Ssh_gss_ctx, Ssh_gss_buf *buf);
 
 struct ssh_gss_library {
     /*
@@ -161,6 +177,7 @@ struct ssh_gss_library {
     t_ssh_gss_acquire_cred acquire_cred;
     t_ssh_gss_release_cred release_cred;
     t_ssh_gss_get_mic get_mic;
+    t_ssh_gss_verify_mic verify_mic;
     t_ssh_gss_free_mic free_mic;
     t_ssh_gss_display_status display_status;
 
@@ -168,12 +185,12 @@ struct ssh_gss_library {
      * Additional data for the wrapper layers.
      */
     union {
-	struct gssapi_functions gssapi;
-	/*
-	 * The SSPI wrappers don't need to store their Windows API
-	 * function pointers in this structure, because there can't
-	 * be more than one set of them available.
-	 */
+        struct gssapi_functions gssapi;
+        /*
+         * The SSPI wrappers don't need to store their Windows API
+         * function pointers in this structure, because there can't
+         * be more than one set of them available.
+         */
     } u;
 
     /*
@@ -181,6 +198,18 @@ struct ssh_gss_library {
      * of some sort for cleanup time.
      */
     void *handle;
+};
+
+/*
+ * State that has to be shared between all GSSAPI-using parts of the
+ * same SSH connection, in particular between GSS key exchange and the
+ * subsequent trivial userauth method that reuses its output.
+ */
+struct ssh_connection_shared_gss_state {
+    struct ssh_gss_liblist *libs;
+    struct ssh_gss_library *lib;
+    Ssh_gss_name srv_name;
+    Ssh_gss_ctx ctx;
 };
 
 #endif /* NO_GSSAPI */

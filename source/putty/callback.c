@@ -14,16 +14,59 @@ struct callback {
     void *ctx;
 };
 
-struct callback *cbhead = NULL, *cbtail = NULL;
+struct callback *cbcurr = NULL, *cbhead = NULL, *cbtail = NULL;
 
 toplevel_callback_notify_fn_t notify_frontend = NULL;
-void *frontend = NULL;
+void *notify_ctx = NULL;
 
 void request_callback_notifications(toplevel_callback_notify_fn_t fn,
-                                    void *fr)
+                                    void *ctx)
 {
     notify_frontend = fn;
-    frontend = fr;
+    notify_ctx = ctx;
+}
+
+static void run_idempotent_callback(void *ctx)
+{
+    struct IdempotentCallback *ic = (struct IdempotentCallback *)ctx;
+    ic->queued = false;
+    ic->fn(ic->ctx);
+}
+
+void queue_idempotent_callback(struct IdempotentCallback *ic)
+{
+    if (ic->queued)
+        return;
+    ic->queued = true;
+    queue_toplevel_callback(run_idempotent_callback, ic);
+}
+
+void delete_callbacks_for_context(void *ctx)
+{
+    struct callback *newhead, *newtail;
+
+    newhead = newtail = NULL;
+    while (cbhead) {
+        struct callback *cb = cbhead;
+        cbhead = cbhead->next;
+        if (cb->ctx == ctx ||
+            (cb->fn == run_idempotent_callback &&
+             ((struct IdempotentCallback *)cb->ctx)->ctx == ctx)) {
+            sfree(cb);
+        } else {
+            if (!newhead)
+                newhead = cb;
+            else
+                newtail->next = cb;
+
+            newtail = cb;
+        }
+    }
+
+    cbhead = newhead;
+    cbtail = newtail;
+    if (newtail)
+        newtail->next = NULL;
 }
 
 void queue_toplevel_callback(toplevel_callback_fn_t fn, void *ctx)
@@ -34,11 +77,19 @@ void queue_toplevel_callback(toplevel_callback_fn_t fn, void *ctx)
     cb->fn = fn;
     cb->ctx = ctx;
 
-    /* If the front end has requested notification of pending
+    /*
+     * If the front end has requested notification of pending
      * callbacks, and we didn't already have one queued, let it know
-     * we do have one now. */
-    if (notify_frontend && !cbhead)
-        notify_frontend(frontend);
+     * we do have one now.
+     *
+     * If cbcurr is non-NULL, i.e. we are actually in the middle of
+     * executing a callback right now, then we count that as the queue
+     * already having been non-empty. That saves the front end getting
+     * a constant stream of needless re-notifications if the last
+     * callback keeps re-scheduling itself.
+     */
+    if (notify_frontend && !cbhead && !cbcurr)
+        notify_frontend(notify_ctx);
 
     if (cbtail)
         cbtail->next = cb;
@@ -48,27 +99,35 @@ void queue_toplevel_callback(toplevel_callback_fn_t fn, void *ctx)
     cb->next = NULL;
 }
 
-void run_toplevel_callbacks(void)
+bool run_toplevel_callbacks(void)
 {
+    bool done_something = false;
+
     if (cbhead) {
-        struct callback *cb = cbhead;
         /*
-         * Careful ordering here. We call the function _before_
-         * advancing cbhead (though, of course, we must free cb
-         * _after_ advancing it). This means that if the very last
-         * callback schedules another callback, cbhead does not become
-         * NULL at any point, and so the frontend notification
-         * function won't be needlessly pestered.
+         * Transfer the head callback into cbcurr to indicate that
+         * it's being executed. Then operations which transform the
+         * queue, like delete_callbacks_for_context, can proceed as if
+         * it's not there.
          */
-        cb->fn(cb->ctx);
-        cbhead = cb->next;
-        sfree(cb);
+        cbcurr = cbhead;
+        cbhead = cbhead->next;
         if (!cbhead)
             cbtail = NULL;
+
+        /*
+         * Now run the callback, and then clear it out of cbcurr.
+         */
+        cbcurr->fn(cbcurr->ctx);
+        sfree(cbcurr);
+        cbcurr = NULL;
+
+        done_something = true;
     }
+    return done_something;
 }
 
-int toplevel_callback_pending(void)
+bool toplevel_callback_pending(void)
 {
-    return cbhead != NULL;
+    return cbcurr != NULL || cbhead != NULL;
 }

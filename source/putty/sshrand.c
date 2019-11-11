@@ -1,344 +1,151 @@
 /*
- * cryptographic random number generator for PuTTY's ssh client
+ * sshrand.c: manage the global live PRNG instance.
  */
 
 #include "putty.h"
 #include "ssh.h"
+#include "storage.h"
 #include <assert.h>
 
 /* Collect environmental noise every 5 minutes */
 #define NOISE_REGULAR_INTERVAL (5*60*TICKSPERSEC)
 
-void noise_get_heavy(void (*func) (void *, int));
-void noise_get_light(void (*func) (void *, int));
-
-/*
- * `pool' itself is a pool of random data which we actually use: we
- * return bytes from `pool', at position `poolpos', until `poolpos'
- * reaches the end of the pool. At this point we generate more
- * random data, by adding noise, stirring well, and resetting
- * `poolpos' to point to just past the beginning of the pool (not
- * _the_ beginning, since otherwise we'd give away the whole
- * contents of our pool, and attackers would just have to guess the
- * next lot of noise).
- *
- * `incomingb' buffers acquired noise data, until it gets full, at
- * which point the acquired noise is SHA'ed into `incoming' and
- * `incomingb' is cleared. The noise in `incoming' is used as part
- * of the noise for each stirring of the pool, in addition to local
- * time, process listings, and other such stuff.
- */
-
-#define HASHINPUT 64		       /* 64 bytes SHA input */
-#define HASHSIZE 20		       /* 160 bits SHA output */
-#define POOLSIZE 1200		       /* size of random pool */
-
-struct RandPool {
-    unsigned char pool[POOLSIZE];
-    int poolpos;
-
-    unsigned char incoming[HASHSIZE];
-
-    unsigned char incomingb[HASHINPUT];
-    int incomingpos;
-
-    int stir_pending;
-};
-
 int random_active = 0;
 
 #ifdef FUZZING
+
 /*
  * Special dummy version of the RNG for use when fuzzing.
  */
-void random_add_noise(void *noise, int length) { }
-void random_add_heavynoise(void *noise, int length) { }
+void random_add_noise(NoiseSourceId source, const void *noise, int length) { }
 void random_ref(void) { }
+void random_setup_special(void) { }
 void random_unref(void) { }
-int random_byte(void)
+void random_read(void *out, size_t size)
 {
-    return 0x45; /* Chosen by eight fair coin tosses */
+    memset(out, 0x45, size); /* Chosen by eight fair coin tosses */
 }
 void random_get_savedata(void **data, int *len) { }
+
 #else /* !FUZZING */
-static struct RandPool pool;
-long next_noise_collection;
 
-#ifdef RANDOM_DIAGNOSTICS
-int random_diagnostics = 0;
-#endif
+/* Dummy structure for the sake of having something to expire_timer_context */
+static struct random_timer_context { int dummy; } random_timer_ctx;
 
-static void random_stir(void)
+static prng *global_prng;
+static unsigned long next_noise_collection;
+
+void random_add_noise(NoiseSourceId source, const void *noise, int length)
 {
-    word32 block[HASHINPUT / sizeof(word32)];
-    word32 digest[HASHSIZE / sizeof(word32)];
-    int i, j, k;
-
-    /*
-     * noise_get_light will call random_add_noise, which may call
-     * back to here. Prevent recursive stirs.
-     */
-    if (pool.stir_pending)
-	return;
-    pool.stir_pending = TRUE;
-
-    noise_get_light(random_add_noise);
-
-#ifdef RANDOM_DIAGNOSTICS
-    {
-        int p, q;
-        printf("random stir starting\npool:\n");
-        for (p = 0; p < POOLSIZE; p += HASHSIZE) {
-            printf("   ");
-            for (q = 0; q < HASHSIZE; q += 4) {
-                printf(" %08x", *(word32 *)(pool.pool + p + q));            
-            }
-            printf("\n");
-        }
-        printf("incoming:\n   ");
-        for (q = 0; q < HASHSIZE; q += 4) {
-            printf(" %08x", *(word32 *)(pool.incoming + q));
-        }
-        printf("\nincomingb:\n   ");
-        for (q = 0; q < HASHINPUT; q += 4) {
-            printf(" %08x", *(word32 *)(pool.incomingb + q));
-        }
-        printf("\n");
-        random_diagnostics++;
-    }
-#endif
-
-    SHATransform((word32 *) pool.incoming, (word32 *) pool.incomingb);
-    pool.incomingpos = 0;
-
-    /*
-     * Chunks of this code are blatantly endianness-dependent, but
-     * as it's all random bits anyway, WHO CARES?
-     */
-    memcpy(digest, pool.incoming, sizeof(digest));
-
-    /*
-     * Make two passes over the pool.
-     */
-    for (i = 0; i < 2; i++) {
-
-	/*
-	 * We operate SHA in CFB mode, repeatedly adding the same
-	 * block of data to the digest. But we're also fiddling
-	 * with the digest-so-far, so this shouldn't be Bad or
-	 * anything.
-	 */
-	memcpy(block, pool.pool, sizeof(block));
-
-	/*
-	 * Each pass processes the pool backwards in blocks of
-	 * HASHSIZE, just so that in general we get the output of
-	 * SHA before the corresponding input, in the hope that
-	 * things will be that much less predictable that way
-	 * round, when we subsequently return bytes ...
-	 */
-	for (j = POOLSIZE; (j -= HASHSIZE) >= 0;) {
-	    /*
-	     * XOR the bit of the pool we're processing into the
-	     * digest.
-	     */
-
-	    for (k = 0; k < sizeof(digest) / sizeof(*digest); k++)
-		digest[k] ^= ((word32 *) (pool.pool + j))[k];
-
-	    /*
-	     * Munge our unrevealed first block of the pool into
-	     * it.
-	     */
-	    SHATransform(digest, block);
-
-	    /*
-	     * Stick the result back into the pool.
-	     */
-
-	    for (k = 0; k < sizeof(digest) / sizeof(*digest); k++)
-		((word32 *) (pool.pool + j))[k] = digest[k];
-	}
-
-#ifdef RANDOM_DIAGNOSTICS
-        if (i == 0) {
-            int p, q;
-            printf("random stir midpoint\npool:\n");
-            for (p = 0; p < POOLSIZE; p += HASHSIZE) {
-                printf("   ");
-                for (q = 0; q < HASHSIZE; q += 4) {
-                    printf(" %08x", *(word32 *)(pool.pool + p + q));            
-                }
-                printf("\n");
-            }
-            printf("incoming:\n   ");
-            for (q = 0; q < HASHSIZE; q += 4) {
-                printf(" %08x", *(word32 *)(pool.incoming + q));
-            }
-            printf("\nincomingb:\n   ");
-            for (q = 0; q < HASHINPUT; q += 4) {
-                printf(" %08x", *(word32 *)(pool.incomingb + q));
-            }
-            printf("\n");
-        }
-#endif
-    }
-
-    /*
-     * Might as well save this value back into `incoming', just so
-     * there'll be some extra bizarreness there.
-     */
-    SHATransform(digest, block);
-    memcpy(pool.incoming, digest, sizeof(digest));
-
-    pool.poolpos = sizeof(pool.incoming);
-
-    pool.stir_pending = FALSE;
-
-#ifdef RANDOM_DIAGNOSTICS
-    {
-        int p, q;
-        printf("random stir done\npool:\n");
-        for (p = 0; p < POOLSIZE; p += HASHSIZE) {
-            printf("   ");
-            for (q = 0; q < HASHSIZE; q += 4) {
-                printf(" %08x", *(word32 *)(pool.pool + p + q));            
-            }
-            printf("\n");
-        }
-        printf("incoming:\n   ");
-        for (q = 0; q < HASHSIZE; q += 4) {
-            printf(" %08x", *(word32 *)(pool.incoming + q));
-        }
-        printf("\nincomingb:\n   ");
-        for (q = 0; q < HASHINPUT; q += 4) {
-            printf(" %08x", *(word32 *)(pool.incomingb + q));
-        }
-        printf("\n");
-        random_diagnostics--;
-    }
-#endif
-}
-
-void random_add_noise(void *noise, int length)
-{
-    unsigned char *p = noise;
-    int i;
-
     if (!random_active)
-	return;
+        return;
 
-    /*
-     * This function processes HASHINPUT bytes into only HASHSIZE
-     * bytes, so _if_ we were getting incredibly high entropy
-     * sources then we would be throwing away valuable stuff.
-     */
-    while (length >= (HASHINPUT - pool.incomingpos)) {
-	memcpy(pool.incomingb + pool.incomingpos, p,
-	       HASHINPUT - pool.incomingpos);
-	p += HASHINPUT - pool.incomingpos;
-	length -= HASHINPUT - pool.incomingpos;
-	SHATransform((word32 *) pool.incoming, (word32 *) pool.incomingb);
-	for (i = 0; i < HASHSIZE; i++) {
-	    pool.pool[pool.poolpos++] ^= pool.incoming[i];
-	    if (pool.poolpos >= POOLSIZE)
-		pool.poolpos = 0;
-	}
-	if (pool.poolpos < HASHSIZE)
-	    random_stir();
-
-	pool.incomingpos = 0;
-    }
-
-    memcpy(pool.incomingb + pool.incomingpos, p, length);
-    pool.incomingpos += length;
-}
-
-void random_add_heavynoise(void *noise, int length)
-{
-    unsigned char *p = noise;
-    int i;
-
-    while (length >= POOLSIZE) {
-	for (i = 0; i < POOLSIZE; i++)
-	    pool.pool[i] ^= *p++;
-	random_stir();
-	length -= POOLSIZE;
-    }
-
-    for (i = 0; i < length; i++)
-	pool.pool[i] ^= *p++;
-    random_stir();
-}
-
-static void random_add_heavynoise_bitbybit(void *noise, int length)
-{
-    unsigned char *p = noise;
-    int i;
-
-    while (length >= POOLSIZE - pool.poolpos) {
-	for (i = 0; i < POOLSIZE - pool.poolpos; i++)
-	    pool.pool[pool.poolpos + i] ^= *p++;
-	random_stir();
-	length -= POOLSIZE - pool.poolpos;
-	pool.poolpos = 0;
-    }
-
-    for (i = 0; i < length; i++)
-	pool.pool[i] ^= *p++;
-    pool.poolpos = i;
+    prng_add_entropy(global_prng, source, make_ptrlen(noise, length));
 }
 
 static void random_timer(void *ctx, unsigned long now)
 {
     if (random_active > 0 && now == next_noise_collection) {
-	noise_regular();
-	next_noise_collection =
-	    schedule_timer(NOISE_REGULAR_INTERVAL, random_timer, &pool);
+        noise_regular();
+        next_noise_collection =
+            schedule_timer(NOISE_REGULAR_INTERVAL, random_timer,
+                           &random_timer_ctx);
+    }
+}
+
+static void random_seed_callback(void *noise, int length)
+{
+    put_data(global_prng, noise, length);
+}
+
+static void random_create(const ssh_hashalg *hashalg)
+{
+    assert(!global_prng);
+    global_prng = prng_new(hashalg);
+
+    prng_seed_begin(global_prng);
+    noise_get_heavy(random_seed_callback);
+    prng_seed_finish(global_prng);
+
+    next_noise_collection =
+        schedule_timer(NOISE_REGULAR_INTERVAL, random_timer,
+                       &random_timer_ctx);
+
+    /* noise_get_heavy probably read our random seed file.
+     * Therefore (in fact, even if it didn't), we should write a
+     * fresh one, in case another instance of ourself starts up
+     * before we finish, and also in case an attacker gets hold of
+     * the seed data we used. */
+    random_save_seed();
+}
+
+void random_save_seed(void)
+{
+    int len;
+    void *data;
+
+    if (random_active) {
+        random_get_savedata(&data, &len);
+        write_random_seed(data, len);
+        sfree(data);
     }
 }
 
 void random_ref(void)
 {
-    if (!random_active) {
-	memset(&pool, 0, sizeof(pool));    /* just to start with */
+    if (!random_active++)
+        random_create(&ssh_sha256);
+}
 
-	noise_get_heavy(random_add_heavynoise_bitbybit);
-	random_stir();
-
-	next_noise_collection =
-	    schedule_timer(NOISE_REGULAR_INTERVAL, random_timer, &pool);
-    }
+void random_setup_special()
+{
     random_active++;
+    random_create(&ssh_sha512);
+}
+
+void random_reseed(ptrlen seed)
+{
+    prng_seed_begin(global_prng);
+    put_datapl(global_prng, seed);
+    prng_seed_finish(global_prng);
+}
+
+void random_clear(void)
+{
+    if (global_prng) {
+        random_save_seed();
+        expire_timer_context(&random_timer_ctx);
+        prng_free(global_prng);
+        global_prng = NULL;
+        random_active = 0;
+    }
 }
 
 void random_unref(void)
 {
     assert(random_active > 0);
-    if (random_active == 1) {
-        random_save_seed();
-        expire_timer_context(&pool);
-    }
-    random_active--;
+    if (--random_active == 0)
+        random_clear();
 }
 
-int random_byte(void)
+void random_read(void *buf, size_t size)
 {
-    assert(random_active);
-
-    if (pool.poolpos >= POOLSIZE)
-	random_stir();
-
-    return pool.pool[pool.poolpos++];
+    assert(random_active > 0);
+    prng_read(global_prng, buf, size);
 }
 
 void random_get_savedata(void **data, int *len)
 {
-    void *buf = snewn(POOLSIZE / 2, char);
-    random_stir();
-    memcpy(buf, pool.pool + pool.poolpos, POOLSIZE / 2);
-    *len = POOLSIZE / 2;
+    void *buf = snewn(global_prng->savesize, char);
+    random_read(buf, global_prng->savesize);
+    *len = global_prng->savesize;
     *data = buf;
-    random_stir();
 }
-#endif
+
+size_t random_seed_bits(void)
+{
+    assert(random_active > 0);
+    return prng_seed_bits(global_prng);
+}
+
+#endif /* FUZZING */

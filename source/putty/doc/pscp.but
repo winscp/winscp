@@ -39,7 +39,7 @@ use PSCP:
 
 \c Z:\owendadmin>pscp
 \c PuTTY Secure Copy client
-\c Release 0.70
+\c Release 0.73
 \c Usage: pscp [options] [user@]host:source target
 \c        pscp [options] source [source...] [user@]host:target
 \c        pscp [options] -ls [user@]host:filespec
@@ -63,6 +63,7 @@ use PSCP:
 \c   -hostkey aa:bb:cc:...
 \c             manually specify a host key (may be repeated)
 \c   -batch    disable all interactive prompts
+\c   -no-sanitise-stderr  don't strip control chars from standard error
 \c   -proxycmd command
 \c             use 'command' as local proxy
 \c   -unsafe   allow server-side wildcards (DANGEROUS)
@@ -77,7 +78,7 @@ familiar with that.)
 
 \S{pscp-usage-basics} The basics
 
-To \I{receiving files}receive (a) file(s) from a remote server: 
+To \I{receiving files}receive (a) file(s) from a remote server:
 
 \c pscp [options] [user@]host:source target
 
@@ -86,7 +87,7 @@ user \c{fred} to the file \c{c:\\temp\\example-hosts.txt}, you would type:
 
 \c pscp fred@example.com:/etc/hosts c:\temp\example-hosts.txt
 
-To \I{sending files}send (a) file(s) to a remote server: 
+To \I{sending files}send (a) file(s) to a remote server:
 
 \c pscp [options] source [source...] [user@]host:target
 
@@ -145,7 +146,7 @@ trying to get out of that directory using pathnames including
 \S2{pscp-usage-basics-user} \c{user}
 
 The \i{login name} on the remote server. If this is omitted, and \c{host}
-is a PuTTY saved session, PSCP will use any username specified by that 
+is a PuTTY saved session, PSCP will use any username specified by that
 saved session.  Otherwise, PSCP will attempt to use the local Windows
 username.
 
@@ -159,8 +160,8 @@ number, cipher type and username will be used.
 
 One or more source files. \ii{Wildcards} are allowed.  The syntax of
 wildcards depends on the system to which they apply, so if you are
-copying \e{from} a Windows system \e{to} a UNIX system, you should use 
-Windows wildcard syntax (e.g. \c{*.*}), but if you are copying \e{from} 
+copying \e{from} a Windows system \e{to} a UNIX system, you should use
+Windows wildcard syntax (e.g. \c{*.*}), but if you are copying \e{from}
 a UNIX system \e{to} a Windows system, you would use the wildcard
 syntax allowed by your UNIX shell (e.g. \c{*}).
 
@@ -178,7 +179,7 @@ target of \c{.}.  For example:
 
 \c pscp fred@example.com:/home/tom/.emacs .
 
-...would copy \c{/home/tom/.emacs} on the remote server to the current 
+...would copy \c{/home/tom/.emacs} on the remote server to the current
 directory.
 
 As with the \c{source} parameter, if the target is on a remote server
@@ -234,7 +235,7 @@ these statistics.
 
 By default, PSCP will only copy files.  Any directories you specify to
 copy will be skipped, as will their contents.  The \c{-r} option tells
-PSCP to descend into any directories you specify, and to copy them and 
+PSCP to descend into any directories you specify, and to copy them and
 their contents.  This allows you to use PSCP to transfer whole
 directory structures between machines.
 
@@ -280,6 +281,15 @@ The \c{-scp} option forces PSCP to use the SCP protocol or quit.
 The \c{-sftp} option forces PSCP to use the SFTP protocol or quit.
 When this option is specified, PSCP looks harder for an SFTP server,
 which may allow use of SFTP with SSH-1 depending on server setup.
+
+\S2{pscp-option-sanitise} \I{-sanitise-stderr}\I{-no-sanitise-stderr}\c{-no-sanitise-stderr}: control error message sanitisation
+
+The \c{-no-sanitise-stderr} option will cause PSCP to pass through the
+server's standard-error stream literally, without stripping control
+characters from it first. This might be useful if the server were
+sending coloured error messages, but it also gives the server the
+ability to have unexpected effects on your terminal display. For more
+discussion, see \k{plink-option-sanitise}.
 
 \S{pscp-retval} \ii{Return value}
 

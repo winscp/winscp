@@ -1,3 +1,3 @@
 *.suo
-tools
+/tools
 /packages/

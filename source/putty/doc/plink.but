@@ -41,7 +41,7 @@ use Plink:
 
 \c Z:\sysosd>plink
 \c Plink: command-line connection utility
-\c Release 0.70
+\c Release 0.73
 \c Usage: plink [options] [user@]host [command]
 \c        ("host" can also be a PuTTY saved session name)
 \c Options:
@@ -75,8 +75,13 @@ use Plink:
 \c   -i key    private key file for user authentication
 \c   -noagent  disable use of Pageant
 \c   -agent    enable use of Pageant
+\c   -noshare  disable use of connection sharing
+\c   -share    enable use of connection sharing
 \c   -hostkey aa:bb:cc:...
 \c             manually specify a host key (may be repeated)
+\c   -sanitise-stderr, -sanitise-stdout, -no-sanitise-stderr, -no-sanitise-stdout
+\c             do/don't strip control chars from standard output/error
+\c   -no-antispoof   omit anti-spoofing prompt after authentication
 \c   -m file   read remote command(s) from file
 \c   -s        remote command is an SSH subsystem (SSH-2 only)
 \c   -N        don't start a shell/command (SSH-2 only)
@@ -237,6 +242,28 @@ line.
 
 (This option is only meaningful with the SSH-2 protocol.)
 
+\S2{plink-option-share} \I{-share-plink}\c{-share}:
+Test and try to share an existing connection.
+
+This option tris to detect if an existing connection can be shared
+(See \k{config-ssh-sharing} for more information about SSH connection
+sharing.) and reuses that connection.
+
+A Plink invocation of the form:
+
+\c plink -share <session>
+\e              iiiiiiiii
+
+will test whether there is currently a viable \q{upstream} for the
+session in question, which can be specified using any syntax you'd
+normally use with Plink to make an actual connection (a host/port
+number, a bare saved session name, \c{-load}, etc). If no \q{upstream}
+viable session is found and \c{-share} is specified, this connection
+will be become the \q{upstream} connection for subsequent connection
+sharing tries.
+
+(This option is only meaningful with the SSH-2 protocol.)
+
 \S2{plink-option-shareexists} \I{-shareexists-plink}\c{-shareexists}:
 test for connection-sharing upstream
 
@@ -257,6 +284,90 @@ number, a bare saved session name, \c{-load}, etc). It returns a
 zero exit status if a usable \q{upstream} exists, nonzero otherwise.
 
 (This option is only meaningful with the SSH-2 protocol.)
+
+\S2{plink-option-sanitise} \I{-sanitise-stderr}\I{-sanitise-stdout}\I{-no-sanitise-stderr}\I{-no-sanitise-stdout}\c{-sanitise-}\e{stream}: control output sanitisation
+
+In some situations, Plink applies a sanitisation pass to the output
+received from the server, to strip out control characters such as
+backspace and the escape character.
+
+The idea of this is to prevent remote processes from sending confusing
+escape sequences through the standard error channel when Plink is
+being used as a transport for something like \cw{git} or CVS. If the
+server actually wants to send an error message, it will probably be
+plain text; if the server abuses that channel to try to write over
+unexpected parts of your terminal display, Plink will try to stop it.
+
+By default, this only happens for output channels which are sent to a
+Windows console device, or a Unix terminal device. (Any output stream
+going somewhere else is likely to be needed by an 8-bit protocol and
+must not be tampered with at all.) It also stops happening if you tell
+Plink to allocate a remote pseudo-terminal (see \k{using-cmdline-pty}
+and \k{config-ssh-pty}), on the basis that in that situation you often
+\e{want} escape sequences from the server to go to your terminal.
+
+But in case Plink guesses wrong about whether you want this
+sanitisation, you can override it in either direction, using one of
+these options:
+
+\dd \c{-sanitise-stderr}
+
+\dt Sanitise server data written to Plink's standard error channel,
+regardless of terminals and consoles and remote ptys.
+
+\dd \c{-no-sanitise-stderr}
+
+\dt Do not sanitise server data written to Plink's standard error
+channel.
+
+\dd \c{-sanitise-stdout}
+
+\dt Sanitise server data written to Plink's standard output channel.
+
+\dd \c{-no-sanitise-stdout}
+
+\dt Do not sanitise server data written to Plink's standard output
+channel.
+
+\S2{plink-option-antispoof} \I{-no-antispoof}: turn off authentication spoofing protection prompt
+
+In SSH, some possible server authentication methods require user input
+(for example, password authentication, or entering a private key
+passphrase), and others do not (e.g. a private key held in Pageant).
+
+If you use Plink to run an interactive login session, and if Plink
+authenticates without needing any user interaction, and if the server
+is malicious or compromised, it could try to trick you into giving it
+authentication data that should not go to the server (such as your
+private key passphrase), by sending what \e{looks} like one of Plink's
+local prompts, as if Plink had not already authenticated.
+
+To protect against this, Plink's default policy is to finish the
+authentication phase with a final trivial prompt looking like this:
+
+\c Access granted. Press Return to begin session.
+
+so that if you saw anything that looked like an authentication prompt
+\e{after} that line, you would know it was not from Plink.
+
+That extra interactive step is inconvenient. So Plink will turn it off
+in as many situations as it can:
+
+\b If Plink's standard input is not pointing at a console or terminal
+device \dash for example, if you're using Plink as a transport for
+some automated application like version control \dash then you
+\e{can't} type passphrases into the server anyway. In that situation,
+Plink won't try to protect you from the server trying to fool you into
+doing so.
+
+\b If Plink is in batch mode (see \k{plink-usage-batch}), then it
+\e{never} does any interactive authentication. So anything looking
+like an interactive authentication prompt is automatically suspect,
+and so Plink omits the anti-spoofing prompt.
+
+But if you still find the protective prompt inconvenient, and you
+trust the server not to try a trick like this, you can turn it off
+using the \cq{-no-antispoof} option.
 
 \H{plink-batch} Using Plink in \i{batch files} and \i{scripts}
 
@@ -307,7 +418,7 @@ labelled \q{Check for an alternate \cw{rsh} name} and in the text
 entry field to the right enter the full path to \c{plink.exe}.
 Select \q{OK} on the \q{Preferences} dialogue box.
 
-Next, select \q{Command Line} from the WinCVS \q{Admin} menu, and type 
+Next, select \q{Command Line} from the WinCVS \q{Admin} menu, and type
 a CVS command as in \k{plink-cvs}, for example:
 
 \c cvs -d :ext:user@hostname:/path/to/repository co module
