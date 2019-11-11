@@ -1476,7 +1476,6 @@ object FileFindDialog: TFileFindDialog
     Width = 434
     Height = 252
     Anchors = [akLeft, akTop, akRight, akBottom]
-    ColumnClick = False
     FullDrag = True
     ReadOnly = True
     RowSelect = True
@@ -1505,6 +1504,7 @@ object FileFindDialog: TFileFindDialog
         Caption = 'Changed'
         Width = 90
       end>
+    OnCompare = FileViewCompare
     OnContextPopup = FileViewContextPopup
     OnSelectItem = FileViewSelectItem
   end

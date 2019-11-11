@@ -27,7 +27,7 @@ unit BaseUtils;
 interface
 
 uses
-  SysUtils, Windows, Forms, ShlObj, PIDL, Classes, Controls, DragDropFilesEx;
+  ShlObj;
 
 type
   TDateTimePrecision = (tpNone, tpDay, tpMinute, tpSecond, tpMillisecond);
@@ -60,7 +60,7 @@ resourcestring
 implementation
 
 uses
-  IEDriveInfo, DateUtils, ShellApi, SysConst, PasTools, Math, CustomDirView, FileOperator, DragDrop;
+  Windows, SysUtils, DateUtils, SysConst, Math, PIDL, Forms;
 
 function StrContains(Str1, Str2: string): Boolean;
 var

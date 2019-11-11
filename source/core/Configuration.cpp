@@ -13,6 +13,7 @@
 #include "CoreMain.h"
 #include "Security.h"
 #include "FileMasks.h"
+#include "CopyParam.h"
 #include <shlobj.h>
 #include <System.IOUtils.hpp>
 #include <System.StrUtils.hpp>
@@ -35,7 +36,9 @@ const UnicodeString Crc32ChecksumAlg(L"crc32");
 const UnicodeString SshFingerprintType(L"ssh");
 const UnicodeString TlsFingerprintType(L"tls");
 //---------------------------------------------------------------------------
+const UnicodeString FtpsCertificateStorageKey(L"FtpsCertificates");
 const UnicodeString HttpsCertificateStorageKey(L"HttpsCertificates");
+const UnicodeString LastFingerprintsStorageKey(L"LastFingerprints");
 //---------------------------------------------------------------------------
 __fastcall TConfiguration::TConfiguration()
 {
@@ -204,11 +207,16 @@ UnicodeString __fastcall TConfiguration::PropertyToKey(const UnicodeString & Pro
 {
   // no longer useful
   int P = Property.LastDelimiter(L".>");
-  return Property.SubString(P + 1, Property.Length() - P);
+  UnicodeString Result = Property.SubString(P + 1, Property.Length() - P);
+  if ((Result[1] == L'F') && ((wchar_t)toupper(Result[2]) == Result[2]))
+  {
+    Result.Delete(1, 1);
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 #define BLOCK(KEY, CANCREATE, BLOCK) \
-  if (Storage->OpenSubKey(KEY, CANCREATE, true)) try { BLOCK } __finally { Storage->CloseSubKey(); }
+  if (Storage->OpenSubKeyPath(KEY, CANCREATE)) try { BLOCK } __finally { Storage->CloseSubKeyPath(); }
 #define KEY(TYPE, VAR) KEYEX(TYPE, VAR, PropertyToKey(TEXT(#VAR)))
 #define REGCONFIG(CANCREATE) \
   BLOCK(L"Interface", CANCREATE, \
@@ -469,79 +477,68 @@ void __fastcall TConfiguration::Load(THierarchicalStorage * Storage)
   }
 }
 //---------------------------------------------------------------------------
+bool __fastcall TConfiguration::CopySubKey(THierarchicalStorage * Source, THierarchicalStorage * Target, const UnicodeString & Name)
+{
+  bool Result = Source->OpenSubKey(Name, false);
+  if (Result)
+  {
+    Result = Target->OpenSubKey(Name, true);
+    if (!Result)
+    {
+      Source->CloseSubKey();
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TConfiguration::CopyAllStringsInSubKey(
+  THierarchicalStorage * Source, THierarchicalStorage * Target, const UnicodeString & Name)
+{
+  if (CopySubKey(Source, Target, Name))
+  {
+    std::unique_ptr<TStrings> Names(new TStringList());
+    Source->GetValueNames(Names.get());
+
+    for (int Index = 0; Index < Names->Count; Index++)
+    {
+      UnicodeString Buf = Source->ReadStringRaw(Names->Strings[Index], UnicodeString());
+      Target->WriteStringRaw(Names->Strings[Index], Buf);
+    }
+
+    Target->CloseSubKey();
+    Source->CloseSubKey();
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TConfiguration::CopyData(THierarchicalStorage * Source,
   THierarchicalStorage * Target)
 {
-  TStrings * Names = new TStringList();
-  try
+  if (CopySubKey(Source, Target, ConfigurationSubKey))
   {
-    if (Source->OpenSubKey(ConfigurationSubKey, false))
+    if (CopySubKey(Source, Target, L"CDCache"))
     {
-      if (Target->OpenSubKey(ConfigurationSubKey, true))
+      std::unique_ptr<TStrings> Names(new TStringList());
+      Source->GetValueNames(Names.get());
+
+      for (int Index = 0; Index < Names->Count; Index++)
       {
-        if (Source->OpenSubKey(L"CDCache", false))
-        {
-          if (Target->OpenSubKey(L"CDCache", true))
-          {
-            Names->Clear();
-            Source->GetValueNames(Names);
-
-            for (int Index = 0; Index < Names->Count; Index++)
-            {
-              Target->WriteBinaryData(Names->Strings[Index],
-                Source->ReadBinaryData(Names->Strings[Index]));
-            }
-
-            Target->CloseSubKey();
-          }
-          Source->CloseSubKey();
-        }
-
-        if (Source->OpenSubKey(L"Banners", false))
-        {
-          if (Target->OpenSubKey(L"Banners", true))
-          {
-            Names->Clear();
-            Source->GetValueNames(Names);
-
-            for (int Index = 0; Index < Names->Count; Index++)
-            {
-              Target->WriteString(Names->Strings[Index],
-                Source->ReadString(Names->Strings[Index], L""));
-            }
-
-            Target->CloseSubKey();
-          }
-          Source->CloseSubKey();
-        }
-
-        Target->CloseSubKey();
+        Target->WriteBinaryData(Names->Strings[Index], Source->ReadBinaryData(Names->Strings[Index]));
       }
+
+      Target->CloseSubKey();
       Source->CloseSubKey();
     }
 
-    if (Source->OpenSubKey(SshHostKeysSubKey, false))
-    {
-      if (Target->OpenSubKey(SshHostKeysSubKey, true))
-      {
-        Names->Clear();
-        Source->GetValueNames(Names);
+    CopyAllStringsInSubKey(Source, Target, L"Banners");
+    CopyAllStringsInSubKey(Source, Target, LastFingerprintsStorageKey);
 
-        for (int Index = 0; Index < Names->Count; Index++)
-        {
-          Target->WriteStringRaw(Names->Strings[Index],
-            Source->ReadStringRaw(Names->Strings[Index], L""));
-        }
+    Target->CloseSubKey();
+    Source->CloseSubKey();
+  }
 
-        Target->CloseSubKey();
-      }
-      Source->CloseSubKey();
-    }
-  }
-  __finally
-  {
-    delete Names;
-  }
+  CopyAllStringsInSubKey(Source, Target, SshHostKeysSubKey);
+  CopyAllStringsInSubKey(Source, Target, FtpsCertificateStorageKey);
+  CopyAllStringsInSubKey(Source, Target, HttpsCertificateStorageKey);
 }
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::LoadDirectoryChangesCache(const UnicodeString SessionKey,
@@ -661,7 +658,7 @@ void __fastcall TConfiguration::RememberLastFingerprint(const UnicodeString & Si
   Storage->AccessMode = smReadWrite;
 
   if (Storage->OpenSubKey(ConfigurationSubKey, true) &&
-      Storage->OpenSubKey(L"LastFingerprints", true))
+      Storage->OpenSubKey(LastFingerprintsStorageKey, true))
   {
     UnicodeString FingerprintKey = FormatFingerprintKey(SiteKey, FingerprintType);
     Storage->WriteString(FingerprintKey, Fingerprint);
@@ -676,7 +673,7 @@ UnicodeString __fastcall TConfiguration::LastFingerprint(const UnicodeString & S
   Storage->AccessMode = smRead;
 
   if (Storage->OpenSubKey(ConfigurationSubKey, false) &&
-      Storage->OpenSubKey(L"LastFingerprints", false))
+      Storage->OpenSubKey(LastFingerprintsStorageKey, false))
   {
     UnicodeString FingerprintKey = FormatFingerprintKey(SiteKey, FingerprintType);
     Result = Storage->ReadString(FingerprintKey, L"");
@@ -1228,9 +1225,14 @@ TStrings * __fastcall TConfiguration::GetOptionsStorage()
   return FOptionsStorage.get();
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall TConfiguration::GetPuttySessionsSubKey()
+{
+  return StoredSessionsSubKey;
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall TConfiguration::GetPuttySessionsKey()
 {
-  return PuttyRegistryStorageKey + L"\\Sessions";
+  return PuttyRegistryStorageKey + L"\\" + PuttySessionsSubKey;
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TConfiguration::GetStoredSessionsSubKey()
@@ -1395,7 +1397,7 @@ TStoredSessionList * __fastcall TConfiguration::SelectKnownHostsSessionsForImpor
     if (FileExists(ApiPath(KnownHostsFile)))
     {
       std::unique_ptr<TStrings> Lines(new TStringList());
-      LoadScriptFromFile(KnownHostsFile, Lines.get());
+      LoadScriptFromFile(KnownHostsFile, Lines.get(), true);
       ImportSessionList->ImportFromKnownHosts(Lines.get());
     }
     else
@@ -1450,6 +1452,64 @@ void __fastcall TConfiguration::SetRandomSeedFile(UnicodeString value)
       // ignore any error
       DeleteFile(ApiPath(PrevRandomSeedFileName));
     }
+  }
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TConfiguration::GetDirectoryStatisticsCacheKey(
+  const UnicodeString & SessionKey, const UnicodeString & Path, const TCopyParamType & CopyParam)
+{
+  std::unique_ptr<TStringList> RawOptions(new TStringList());
+  RawOptions->Add(SessionKey);
+  RawOptions->Add(UnixExcludeTrailingBackslash(Path));
+
+  TCopyParamType Defaults;
+  TCopyParamType FilterCopyParam;
+  FilterCopyParam.IncludeFileMask = CopyParam.IncludeFileMask;
+  FilterCopyParam.ExcludeHiddenFiles = CopyParam.ExcludeHiddenFiles;
+  FilterCopyParam.ExcludeEmptyDirectories = CopyParam.ExcludeEmptyDirectories;
+
+  std::unique_ptr<TOptionsStorage> OptionsStorage(new TOptionsStorage(RawOptions.get(), true));
+  FilterCopyParam.Save(OptionsStorage.get(), &Defaults);
+
+  UTF8String RawOptionsBuf(RawOptions->CommaText.LowerCase());
+  UnicodeString Result = Sha256(RawOptionsBuf.c_str(), RawOptionsBuf.Length());
+  return Result;
+}
+//---------------------------------------------------------------------------
+THierarchicalStorage * TConfiguration::OpenDirectoryStatisticsCache(bool CanCreate)
+{
+  std::unique_ptr<THierarchicalStorage> Storage(Configuration->CreateConfigStorage());
+  Storage->AccessMode = CanCreate ? smReadWrite : smRead;
+  if (!Storage->OpenSubKey(L"DirectoryStatisticsCache", CanCreate))
+  {
+    Storage.reset(NULL);
+  }
+  return Storage.release();
+}
+//---------------------------------------------------------------------------
+TStrings * __fastcall TConfiguration::LoadDirectoryStatisticsCache(
+  const UnicodeString & SessionKey, const UnicodeString & Path, const TCopyParamType & CopyParam)
+{
+  std::unique_ptr<THierarchicalStorage> Storage(OpenDirectoryStatisticsCache(false));
+  std::unique_ptr<TStringList> Result(new TStringList());
+  if (Storage.get() != NULL)
+  {
+    UnicodeString Key = GetDirectoryStatisticsCacheKey(SessionKey, Path, CopyParam);
+    UnicodeString Buf = Storage->ReadString(Key, UnicodeString());
+    Result->CommaText = Buf;
+  }
+  return Result.release();
+}
+//---------------------------------------------------------------------------
+void __fastcall TConfiguration::SaveDirectoryStatisticsCache(
+  const UnicodeString & SessionKey, const UnicodeString & Path, const TCopyParamType & CopyParam, TStrings * DataList)
+{
+  std::unique_ptr<THierarchicalStorage> Storage(OpenDirectoryStatisticsCache(true));
+  if (Storage.get() != NULL)
+  {
+    UnicodeString Key = GetDirectoryStatisticsCacheKey(SessionKey, Path, CopyParam);
+    UnicodeString Buf = DataList->CommaText;
+    Storage->WriteString(Key, Buf);
   }
 }
 //---------------------------------------------------------------------

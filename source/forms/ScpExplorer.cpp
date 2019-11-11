@@ -101,8 +101,8 @@ void __fastcall TScpExplorerForm::RestoreParams()
   }
   SessionsPageControl->Visible = WinConfiguration->ScpExplorer.SessionsTabs;
   RemoteStatusBar->Visible = WinConfiguration->ScpExplorer.StatusBar;
-  RemoteDriveView->Visible = WinConfiguration->ScpExplorer.DriveView;
-  RemoteDriveView->Width =
+  RemoteDrivePanel->Visible = WinConfiguration->ScpExplorer.DriveView;
+  RemoteDrivePanel->Width =
     LoadDimension(
       WinConfiguration->ScpExplorer.DriveViewWidth, WinConfiguration->ScpExplorer.DriveViewWidthPixelsPerInch, this);
 }
@@ -122,8 +122,8 @@ void __fastcall TScpExplorerForm::StoreParams()
     WinConfiguration->ScpExplorer.WindowParams = StoreForm(this);
     WinConfiguration->ScpExplorer.DirViewParams = RemoteDirView->UnixColProperties->ParamsStr;
     WinConfiguration->ScpExplorer.ViewStyle = RemoteDirView->ViewStyle;
-    WinConfiguration->ScpExplorer.DriveView = RemoteDriveView->Visible;
-    WinConfiguration->ScpExplorer.DriveViewWidth = RemoteDriveView->Width;
+    WinConfiguration->ScpExplorer.DriveView = RemoteDrivePanel->Visible;
+    WinConfiguration->ScpExplorer.DriveViewWidth = RemoteDrivePanel->Width;
     WinConfiguration->ScpExplorer.DriveViewWidthPixelsPerInch = GetControlPixelsPerInch(this);
     TCustomScpExplorerForm::StoreParams();
   }
@@ -227,7 +227,7 @@ void __fastcall TScpExplorerForm::SynchronizeDirectories()
 {
   UnicodeString LocalDirectory = WinConfiguration->ScpExplorer.LastLocalTargetDirectory;
   UnicodeString RemoteDirectory = RemoteDirView->PathName;
-  if (DoSynchronizeDirectories(LocalDirectory, RemoteDirectory, false))
+  if (DoSynchronizeDirectories(LocalDirectory, RemoteDirectory, -1))
   {
     WinConfiguration->ScpExplorer.LastLocalTargetDirectory = LocalDirectory;
   }
@@ -240,7 +240,7 @@ void __fastcall TScpExplorerForm::FullSynchronizeDirectories()
   bool SaveMode = true;
   TSynchronizeMode Mode = (TSynchronizeMode)GUIConfiguration->SynchronizeMode;
   int Params = GUIConfiguration->SynchronizeParams;
-  if (DoFullSynchronizeDirectories(LocalDirectory, RemoteDirectory, Mode, Params, SaveMode, false) >= 0)
+  if (DoFullSynchronizeDirectories(LocalDirectory, RemoteDirectory, Mode, Params, SaveMode, -1) >= 0)
   {
     WinConfiguration->ScpExplorer.LastLocalTargetDirectory = LocalDirectory;
     if (SaveMode)
@@ -255,11 +255,11 @@ void __fastcall TScpExplorerForm::FixControlsPlacement()
   TCustomScpExplorerForm::FixControlsPlacement();
 
   TControl * ControlsOrder[] =
-    { RemoteDirView, QueueSplitter, QueuePanel, BottomDock, RemoteStatusBar };
+    { RemoteDirPanel, QueueSplitter, QueuePanel, BottomDock, RemoteStatusBar };
   SetVerticalControlsOrder(ControlsOrder, LENOF(ControlsOrder));
 
   TControl * RemoteControlsOrder[] =
-    { RemoteDriveView, RemotePanelSplitter, RemoteDirView };
+    { RemoteDrivePanel, RemotePanelSplitter, RemoteDirPanel };
   SetHorizontalControlsOrder(RemoteControlsOrder, LENOF(RemoteControlsOrder));
 }
 //---------------------------------------------------------------------------

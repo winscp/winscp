@@ -74,7 +74,7 @@ namespace WinSCP
     }
 
     [Flags]
-    public enum FileMapAccess : int
+    internal enum FileMapAccess : int
     {
         FileMapCopy = 0x0001,
         FileMapWrite = 0x0002,

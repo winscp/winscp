@@ -562,6 +562,9 @@ TSessionData * __fastcall DoSaveSession(TSessionData * SessionData,
   bool CreateShortcut = false;
   if (!ForceDialog && ((PSavePassword == NULL) || SavePassword))
   {
+    // This is probably here to ask before session is started saving.
+    // Otherwise we would ask implicitly, when saving passwords, but at that moment,
+    // part of the site is already saved and when the user cancel the prompt it's too late.
     CustomWinConfiguration->AskForMasterPasswordIfNotSetAndNeededToPersistSessionData(SessionData);
     Result = true;
   }
@@ -915,7 +918,7 @@ __fastcall TCustomCommandOptionsDialog::TCustomCommandOptionsDialog(
   FFlags = Flags;
   FCustomCommandOptions = CustomCommandOptions;
   FSite = Site;
-  Caption = FMTLOAD(EXTENSION_OPTIONS_CAPTION, (StripEllipsis(StripHotkey(FCommand->Name))));
+  Caption = StripEllipsis(StripHotkey(FCommand->Name));
   Width = ScaleByTextHeight(this, 400);
 
   bool HasGroups = false;
@@ -1260,20 +1263,7 @@ bool __fastcall TCustomCommandOptionsDialog::Execute(TShortCut * ShortCut)
 
           // The default value setter deletes the "name" when the value is empty.
           // It would cause us to fall back to the default value, but we want to remember the empty value.
-          if (Value.IsEmpty())
-          {
-            int Index = FCustomCommandOptions->IndexOfName(OptionKey);
-            if (Index < 0)
-            {
-              Index = FCustomCommandOptions->Add(L"");
-            }
-            UnicodeString Line = OptionKey + FCustomCommandOptions->NameValueSeparator;
-            FCustomCommandOptions->Strings[Index] = Line;
-          }
-          else
-          {
-            FCustomCommandOptions->Values[OptionKey] = Value;
-          }
+          SetStringValueEvenIfEmpty(FCustomCommandOptions, OptionKey, Value);
         }
 
         ControlIndex++;
@@ -1439,4 +1429,149 @@ void __fastcall DoUsageStatisticsDialog()
 {
   std::unique_ptr<TUsageStatisticsDialog> Dialog(new TUsageStatisticsDialog());
   Dialog->Execute();
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+class TSiteRawDialog : public TCustomDialog
+{
+public:
+  __fastcall TSiteRawDialog();
+
+  bool __fastcall Execute(TSessionData * Data);
+
+private:
+  TMemo * SettingsMemo;
+
+  void __fastcall AddButtonClick(TObject * Sender);
+  void __fastcall SettingsMemoKeyDown(TObject * Sender, WORD & Key, TShiftState Shift);
+
+  void DeleteNames(TStrings * Names, TStrings * Options);
+};
+//---------------------------------------------------------------------------
+__fastcall TSiteRawDialog::TSiteRawDialog() :
+  TCustomDialog(HELP_SITE_RAW)
+{
+  Caption = LoadStr(SITE_RAW_CAPTION);
+  Width = ScaleByTextHeight(this, 400);
+
+  SettingsMemo = new TMemo(this);
+  SettingsMemo->Height = ScaleByTextHeight(this, 300);
+  SettingsMemo->OnKeyDown = SettingsMemoKeyDown;
+  AddEdit(SettingsMemo, NULL);
+
+  TButton * AddButton = new TButton(this);
+  AddButton->Caption = LoadStr(SITE_RAW_ADD);
+  AddButton->Width = OKButton->Width;
+  AddButton->OnClick = AddButtonClick;
+  AddDialogButton(AddButton);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TSiteRawDialog::Execute(TSessionData * Data)
+{
+  std::unique_ptr<TSessionData> FactoryDefaults(new TSessionData(L""));
+  std::unique_ptr<TSessionData> RawData(new TSessionData(L""));
+  RawData->Assign(Data);
+  // SFTP-only is not reflected by the protocol prefix, we have to use rawsettings for that
+  if (RawData->FSProtocol != fsSFTPonly)
+  {
+    RawData->FSProtocol = FactoryDefaults->FSProtocol;
+  }
+  RawData->HostName = FactoryDefaults->HostName;
+  RawData->PortNumber = FactoryDefaults->PortNumber;
+  RawData->UserName = FactoryDefaults->UserName;
+  RawData->Password = FactoryDefaults->Password;
+  RawData->Ftps = FactoryDefaults->Ftps;
+
+  std::unique_ptr<TStrings> Options(RawData->SaveToOptions(FactoryDefaults.get(), false, false));
+
+  SettingsMemo->Lines = Options.get();
+
+  bool Result = TCustomDialog::Execute();
+  if (Result)
+  {
+    std::unique_ptr<TSessionData> BackupData(new TSessionData(L""));
+    BackupData->Assign(Data);
+    Data->DefaultSettings();
+
+    Data->FSProtocol = BackupData->FSProtocol;
+    Data->HostName = BackupData->HostName;
+    Data->PortNumber = BackupData->PortNumber;
+    Data->UserName = BackupData->UserName;
+    Data->Password = BackupData->Password;
+    Data->Ftps = BackupData->Ftps;
+
+    Data->ApplyRawSettings(SettingsMemo->Lines);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TSiteRawDialog::SettingsMemoKeyDown(TObject * Sender, WORD & Key, TShiftState Shift)
+{
+  MemoKeyDown(Sender, Key, Shift);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSiteRawDialog::AddButtonClick(TObject *)
+{
+  std::unique_ptr<TSessionData> FactoryDefaults(new TSessionData(L""));
+  std::unique_ptr<TSessionData> BasicData(new TSessionData(L""));
+  BasicData->FSProtocol = TFSProtocol(FactoryDefaults->FSProtocol + 1);
+  UnicodeString RandomAppendix(L"_");
+  BasicData->HostName = FactoryDefaults->HostName + RandomAppendix;
+  BasicData->Ftps = TFtps(FactoryDefaults->Ftps + 1);
+  BasicData->PortNumber = DefaultPort(BasicData->FSProtocol, BasicData->Ftps) + 1;
+  BasicData->UserName = FactoryDefaults->UserName + RandomAppendix;
+  BasicData->Password = FactoryDefaults->Password + RandomAppendix;
+
+  std::unique_ptr<TStrings> BasicOptions(BasicData->SaveToOptions(FactoryDefaults.get(), false, false));
+
+  std::unique_ptr<TStrings> AllOptions(TSessionData::GetAllOptionNames(false));
+
+  std::unique_ptr<TStrings> Names(CreateSortedStringList());
+  for (int Index = 0; Index < AllOptions->Count; Index++)
+  {
+    Names->Add(AllOptions->Names[Index]);
+  }
+  DeleteNames(Names.get(), BasicOptions.get());
+  DeleteNames(Names.get(), SettingsMemo->Lines);
+
+  std::unique_ptr<TCustomDialog> AddDialog(new TCustomDialog(HelpKeyword));
+  AddDialog->Caption = LoadStr(SITE_RAW_ADD_CAPTION);
+  TComboBox * AddComboBox = new TComboBox(AddDialog.get());
+  AddComboBox->Style = csDropDownList;
+  AddComboBox->DropDownCount = Max(AddComboBox->DropDownCount, 16);
+  AddDialog->AddComboBox(AddComboBox, CreateLabel(LoadStr(SITE_RAW_ADD_LABEL)), Names.get(), true);
+  AddComboBox->ItemIndex = 0;
+  if (AddDialog->Execute())
+  {
+    UnicodeString Name = AddComboBox->Items->Strings[AddComboBox->ItemIndex];
+    UnicodeString Value = AllOptions->Values[Name];
+    UnicodeString NameAndSeparator = Name + SettingsMemo->Lines->NameValueSeparator;
+    int Start = (SettingsMemo->Lines->Text + NameAndSeparator).Length();
+    SettingsMemo->Lines->Add(NameAndSeparator + Value);
+    SettingsMemo->SetFocus();
+    SettingsMemo->SelStart = Start;
+    SettingsMemo->SelLength = Value.Length();
+  }
+}
+//---------------------------------------------------------------------------
+void TSiteRawDialog::DeleteNames(TStrings * Names, TStrings * Options)
+{
+  for (int Index = 0; Index < Options->Count; Index++)
+  {
+    UnicodeString Name = Options->Names[Index];
+    if (!Name.IsEmpty())
+    {
+      int I = Names->IndexOf(Name);
+      if (I >= 0)
+      {
+        Names->Delete(I);
+      }
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall DoSiteRawDialog(TSessionData * Data)
+{
+  std::unique_ptr<TSiteRawDialog> Dialog(new TSiteRawDialog());
+  Dialog->Execute(Data);
 }

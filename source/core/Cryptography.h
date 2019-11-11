@@ -18,6 +18,7 @@ RawByteString GenerateEncryptKey();
 void ValidateEncryptKey(const RawByteString & Key);
 //---------------------------------------------------------------------------
 class TFileBuffer;
+typedef void AESContext;
 //---------------------------------------------------------------------------
 class TEncryption
 {
@@ -43,7 +44,7 @@ private:
   RawByteString FInputHeader;
   RawByteString FOverflowBuffer;
   bool FOutputtedHeader;
-  void * FContext;
+  AESContext * FContext;
 
   void Init(const RawByteString & Key, const RawByteString & Salt);
   void Aes(char * Buffer, int Size);

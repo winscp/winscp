@@ -27,6 +27,7 @@
 #include <Vcl.ScreenTips.hpp>
 #include <HistoryComboBox.hpp>
 #include <vssym32.h>
+#include <DateUtils.hpp>
 
 #include "Animations96.h"
 #include "Animations120.h"
@@ -76,9 +77,64 @@ bool __fastcall FindFile(UnicodeString & Path)
   return Result;
 }
 //---------------------------------------------------------------------------
+bool DoesSessionExistInPutty(TSessionData * SessionData)
+{
+  std::unique_ptr<TRegistryStorage> Storage(new TRegistryStorage(Configuration->PuttySessionsKey));
+  Storage->ConfigureForPutty();
+  return Storage->OpenRootKey(true) && Storage->KeyExists(SessionData->StorageKey);
+}
+//---------------------------------------------------------------------------
+bool __fastcall ExportSessionToPutty(TSessionData * SessionData, bool ReuseExisting, const UnicodeString & SessionName)
+{
+  bool Result = true;
+  std::unique_ptr<TRegistryStorage> Storage(new TRegistryStorage(Configuration->PuttySessionsKey));
+  Storage->AccessMode = smReadWrite;
+  Storage->ConfigureForPutty();
+  if (Storage->OpenRootKey(true))
+  {
+    Result = ReuseExisting && Storage->KeyExists(SessionData->StorageKey);
+    if (!Result)
+    {
+      std::unique_ptr<TRegistryStorage> SourceStorage(new TRegistryStorage(Configuration->PuttySessionsKey));
+      SourceStorage->ConfigureForPutty();
+      if (SourceStorage->OpenSubKey(StoredSessions->DefaultSettings->Name, false) &&
+          Storage->OpenSubKey(SessionName, true))
+      {
+        Storage->Copy(SourceStorage.get());
+        Storage->CloseSubKey();
+      }
+
+      std::unique_ptr<TSessionData> ExportData(new TSessionData(L""));
+      ExportData->Assign(SessionData);
+      ExportData->Modified = true;
+      ExportData->Name = SessionName;
+      ExportData->WinTitle = SessionData->SessionName;
+      ExportData->Password = L"";
+
+      if (SessionData->FSProtocol == fsFTP)
+      {
+        if (GUIConfiguration->TelnetForFtpInPutty)
+        {
+          ExportData->PuttyProtocol = PuttyTelnetProtocol;
+          ExportData->PortNumber = TelnetPortNumber;
+        }
+        else
+        {
+          ExportData->PuttyProtocol = PuttySshProtocol;
+          ExportData->PortNumber = SshPortNumber;
+        }
+      }
+
+      ExportData->Save(Storage.get(), true);
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
   TSessionData * SessionData)
 {
+  // See also TSiteAdvancedDialog::PuttySettingsButtonClick
   UnicodeString Program, AParams, Dir;
   SplitCommand(PuttyPath, Program, AParams, Dir);
   Program = ExpandEnvironmentVariables(Program);
@@ -176,67 +232,19 @@ void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
       else
       {
         UnicodeString SessionName;
-        TRegistryStorage * Storage = NULL;
-        TSessionData * ExportData = NULL;
-        TRegistryStorage * SourceStorage = NULL;
-        try
+        if (ExportSessionToPutty(SessionData, true, GUIConfiguration->PuttySession))
         {
-          Storage = new TRegistryStorage(Configuration->PuttySessionsKey);
-          Storage->AccessMode = smReadWrite;
-          // make it compatible with putty
-          Storage->MungeStringValues = false;
-          Storage->ForceAnsi = true;
-          if (Storage->OpenRootKey(true))
-          {
-            if (Storage->KeyExists(SessionData->StorageKey))
-            {
-              SessionName = SessionData->SessionName;
-            }
-            else
-            {
-              SourceStorage = new TRegistryStorage(Configuration->PuttySessionsKey);
-              SourceStorage->MungeStringValues = false;
-              SourceStorage->ForceAnsi = true;
-              if (SourceStorage->OpenSubKey(StoredSessions->DefaultSettings->Name, false) &&
-                  Storage->OpenSubKey(GUIConfiguration->PuttySession, true))
-              {
-                Storage->Copy(SourceStorage);
-                Storage->CloseSubKey();
-              }
-
-              ExportData = new TSessionData(L"");
-              ExportData->Assign(SessionData);
-              ExportData->Modified = true;
-              ExportData->Name = GUIConfiguration->PuttySession;
-              ExportData->WinTitle = SessionData->SessionName;
-              ExportData->Password = L"";
-
-              if (SessionData->FSProtocol == fsFTP)
-              {
-                if (GUIConfiguration->TelnetForFtpInPutty)
-                {
-                  ExportData->PuttyProtocol = PuttyTelnetProtocol;
-                  ExportData->PortNumber = TelnetPortNumber;
-                  // PuTTY  does not allow -pw for telnet
-                  Password = L"";
-                }
-                else
-                {
-                  ExportData->PuttyProtocol = PuttySshProtocol;
-                  ExportData->PortNumber = SshPortNumber;
-                }
-              }
-
-              ExportData->Save(Storage, true);
-              SessionName = GUIConfiguration->PuttySession;
-            }
-          }
+          SessionName = SessionData->SessionName;
         }
-        __finally
+        else
         {
-          delete Storage;
-          delete ExportData;
-          delete SourceStorage;
+          SessionName = GUIConfiguration->PuttySession;
+          if ((SessionData->FSProtocol == fsFTP) &&
+              GUIConfiguration->TelnetForFtpInPutty)
+          {
+            // PuTTY  does not allow -pw for telnet
+            Password = L"";
+          }
         }
 
         UnicodeString LoadSwitch = L"-load";
@@ -1772,7 +1780,7 @@ void __fastcall TFrameAnimation::CalculateNextFrameTick()
 // - Cleanup list tooltip (multi line)
 // - Combo edit button
 // - Transfer settings label (multi line, follows label size and font)
-// - HintLabel (hint and persistent hint, multipline)
+// - HintLabel (hint and persistent hint, multi line)
 // - status bar hints
 //---------------------------------------------------------------------------
 __fastcall TScreenTipHintWindow::TScreenTipHintWindow(TComponent * Owner) :
@@ -1790,7 +1798,8 @@ bool __fastcall TScreenTipHintWindow::UseBoldShortHint(TControl * HintControl)
 {
   return
     (dynamic_cast<TTBCustomDockableWindow *>(HintControl) != NULL) ||
-    (dynamic_cast<TTBPopupWindow *>(HintControl) != NULL);
+    (dynamic_cast<TTBPopupWindow *>(HintControl) != NULL) ||
+    (HintControl->Perform(WM_WANTS_SCREEN_TIPS, 0, 0) == 1);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TScreenTipHintWindow::IsPathLabel(TControl * HintControl)
@@ -2109,4 +2118,9 @@ void __fastcall FindComponentClass(
   {
     ComponentClass = __classid(TUIStateAwareComboBox);
   }
+}
+//---------------------------------------------------------------------------
+bool CanShowTimeEstimate(TDateTime StartTime)
+{
+  return (SecondsBetween(StartTime, Now()) >= 3);
 }

@@ -537,8 +537,9 @@ void __fastcall TRightsFrame::Dispatch(void * Message)
 void __fastcall TRightsFrame::DropDown()
 {
   TCustomForm * Form = GetParentForm(this);
-  // due to lack of better idea, we clear "default" and "cancel" flags of respective
+  // Due to lack of better idea, we clear "default" and "cancel" flags of respective
   // form buttons to prevent them to handle ESC/ENTER keys.
+  // Could use FindStandardButton.
   for (int Index = 0; Index < Form->ControlCount; Index++)
   {
     TButton * Button = dynamic_cast<TButton *>(Form->Controls[Index]);
@@ -675,11 +676,10 @@ void __fastcall TRightsFrame::OctalEditChange(TObject *)
 //---------------------------------------------------------------------------
 void __fastcall TRightsFrame::OctalEditExit(TObject *)
 {
-  if (!Visible)
+  if ((!Visible && DebugAlwaysTrue(Popup)) || // Popup assert: should happen only if popup is closed by esc key
+      IsCancelButtonBeingClicked(this) || // CloseButton
+      ((FCancelButton != NULL) && IsButtonBeingClicked(FCancelButton)))
   {
-    // should happen only if popup is closed by esc key
-    DebugAssert(Popup);
-
     // cancel changes
     ForceUpdate();
   }

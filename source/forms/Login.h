@@ -206,6 +206,10 @@ __published:
   TPngImageList *SessionImageList192;
   TPngImageList *ActionImageList144;
   TPngImageList *ActionImageList192;
+  TAction *SessionRawAction;
+  TMenuItem *EditRawSettings1;
+  TPanel *ShowAgainPanel;
+  TCheckBox *ShowAgainCheck;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall SessionTreeDblClick(TObject *Sender);
@@ -282,7 +286,7 @@ __published:
   void __fastcall SearchSiteNameStartOnlyActionExecute(TObject *Sender);
   void __fastcall SearchSiteNameActionExecute(TObject *Sender);
   void __fastcall SearchSiteActionExecute(TObject *Sender);
-  void __fastcall ButtonPanelMouseDown(TObject *Sender, TMouseButton Button, TShiftState Shift, int X, int Y);
+  void __fastcall PanelMouseDown(TObject *Sender, TMouseButton Button, TShiftState Shift, int X, int Y);
 
 private:
   int NoUpdate;

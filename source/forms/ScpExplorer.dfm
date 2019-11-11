@@ -97,7 +97,7 @@ inherited ScpExplorerForm: TScpExplorerForm
         object TBXSeparatorItem42: TTBXSeparatorItem
         end
         object TBXItem62: TTBXItem
-          Action = NonVisualDataModule.CurrentCopyAction
+          Action = NonVisualDataModule.CurrentCopyToClipboardAction
         end
         object TBXItem36: TTBXItem
           Action = NonVisualDataModule.PasteAction2
@@ -134,7 +134,7 @@ inherited ScpExplorerForm: TScpExplorerForm
         object TBXSeparatorItem1: TTBXSeparatorItem
         end
         object TBXItem1: TTBXItem
-          Action = NonVisualDataModule.CloseSessionAction
+          Action = NonVisualDataModule.CloseSessionAction2
         end
         object TBXItem2: TTBXItem
           Action = NonVisualDataModule.CloseApplicationAction
@@ -291,7 +291,13 @@ inherited ScpExplorerForm: TScpExplorerForm
           Action = NonVisualDataModule.NewSessionAction
         end
         object TBXItem115: TTBXItem
-          Action = NonVisualDataModule.CloseSessionAction
+          Action = NonVisualDataModule.CloseSessionAction2
+        end
+        object TBXItem162: TTBXItem
+          Action = NonVisualDataModule.DisconnectSessionAction
+        end
+        object TBXItem163: TTBXItem
+          Action = NonVisualDataModule.ReconnectSessionAction
         end
         object TBXItem90: TTBXItem
           Action = NonVisualDataModule.DuplicateSessionAction
@@ -765,7 +771,7 @@ inherited ScpExplorerForm: TScpExplorerForm
         Action = NonVisualDataModule.DuplicateSessionAction
       end
       object TBXItem124: TTBXItem
-        Action = NonVisualDataModule.CloseSessionAction
+        Action = NonVisualDataModule.CloseSessionAction2
       end
       object TBXItem125: TTBXItem
         Action = NonVisualDataModule.SaveCurrentSessionAction2
@@ -1088,13 +1094,15 @@ inherited ScpExplorerForm: TScpExplorerForm
       OnPanelClick = RemoteStatusBarPanelClick
       OnPanelDblClick = StatusBarPanelDblClick
     end
-    inherited RemoteDirView: TUnixDirView
+    inherited RemoteDirPanel: TPanel
       Width = 442
       Height = 71
-      OnUpdateStatusBar = RemoteDirViewUpdateStatusBar
-      OnPathChange = RemoteDirViewPathChange
+      inherited RemoteDirView: TUnixDirView
+        OnUpdateStatusBar = RemoteDirViewUpdateStatusBar
+        OnPathChange = RemoteDirViewPathChange
+      end
     end
-    inherited RemoteDriveView: TUnixDriveView
+    inherited RemoteDrivePanel: TPanel
       Height = 71
       Constraints.MinWidth = 40
     end

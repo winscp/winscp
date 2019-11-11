@@ -734,31 +734,34 @@ void __fastcall TPropertiesDialog::ChecksumViewContextPopup(
   MenuPopup(Sender, MousePos, Handled);
 }
 //---------------------------------------------------------------------------
-void __fastcall TPropertiesDialog::ResolveRemoteToken(
+void __fastcall TPropertiesDialog::ValidateRemoteToken(
   const TRemoteToken & Orig, int Message, TComboBox * ComboBox,
   const TRemoteTokenList * List)
 {
-  try
+  if (!IsCancelButtonBeingClicked(this))
   {
-    ComboBox->Text =
-      LoadRemoteToken(StoreRemoteToken(Orig, ComboBox->Text, Message, List));
-  }
-  catch(...)
-  {
-    ComboBox->SetFocus();
-    throw;
+    try
+    {
+      ComboBox->Text =
+        LoadRemoteToken(StoreRemoteToken(Orig, ComboBox->Text, Message, List));
+    }
+    catch(...)
+    {
+      ComboBox->SetFocus();
+      throw;
+    }
   }
 }
 //---------------------------------------------------------------------------
 void __fastcall TPropertiesDialog::GroupComboBoxExit(TObject * Sender)
 {
-  ResolveRemoteToken(FOrigProperties.Group, PROPERTIES_INVALID_GROUP,
+  ValidateRemoteToken(FOrigProperties.Group, PROPERTIES_INVALID_GROUP,
     dynamic_cast<TComboBox *>(Sender), FGroupList);
 }
 //---------------------------------------------------------------------------
 void __fastcall TPropertiesDialog::OwnerComboBoxExit(TObject * Sender)
 {
-  ResolveRemoteToken(FOrigProperties.Owner, PROPERTIES_INVALID_OWNER,
+  ValidateRemoteToken(FOrigProperties.Owner, PROPERTIES_INVALID_OWNER,
     dynamic_cast<TComboBox *>(Sender), FUserList);
 }
 //---------------------------------------------------------------------------

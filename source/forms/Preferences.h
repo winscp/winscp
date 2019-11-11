@@ -68,7 +68,6 @@ __published:
   TTabSheet *IntegrationSheet;
   TGroupBox *ShellIconsGroup;
   TButton *DesktopIconButton;
-  TButton *QuickLaunchIconButton;
   TButton *SendToHookButton;
   TTabSheet *CustomCommandsSheet;
   TGroupBox *CustomCommandsGroup;
@@ -336,6 +335,7 @@ __published:
   TComboBox *ThemeCombo;
   TComboBox *PanelSearchCombo;
   TLabel *Label2;
+  TCheckBox *ShowLoginWhenNoSessionCheck;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);

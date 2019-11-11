@@ -1738,6 +1738,7 @@ begin
       NewNode := AddChildNode(Node, SRec);
       if DoScanDir(NewNode) then
       begin
+        // We have seen the SFGAO_HASSUBFOLDER to be absent on C: drive $Recycle.Bin
         NewNode.HasChildren := Bool(TNodeData(NewNode.Data).shAttr and SFGAO_HASSUBFOLDER);
 
         TNodeData(NewNode.Data).Scanned := not NewNode.HasChildren;
@@ -1759,11 +1760,7 @@ begin
   Application.ProcessMessages;
 end; {ReadSubDirs}
 
-function TDriveView.CallBackValidateDir(Var Node: TTreeNode; Data: Pointer): Boolean;
-
-type
-  PSearchRec = ^TSearchRec;
-
+function TDriveView.CallBackValidateDir(var Node: TTreeNode; Data: Pointer): Boolean;
 var
   WorkNode: TTreeNode;
   DelNode: TTreeNode;
@@ -1777,7 +1774,6 @@ var
   ParentDir: string;
   NodeData: TNodeData;
   ScanDirInfo: PScanDirInfo;
-
 begin {CallBackValidateDir}
   Result := True;
   if (not Assigned(Node)) or (not Assigned(Node.Data)) then
@@ -1809,68 +1805,68 @@ begin {CallBackValidateDir}
   begin
     if DoScanDir(Node) then
     begin
-    ParentDir := IncludeTrailingBackslash(NodePath(Node));
-    {Build list of existing subnodes:}
-    SubDirList := TStringList.Create;
-    while Assigned(WorkNode) do
-    begin
-      SubDirList.Add(TNodeData(WorkNode.Data).DirName);
-      WorkNode := Node.GetNextChild(WorkNode);
-    end;
-    {Sorting not required, because the subnodes are already sorted!}
-
-    SRecList := TStringList.Create;
-    DosError := FindFirst(ApiPath(ParentDir + '*.*'), DirAttrMask, SRec);
-    while DosError = 0 do
-    begin
-      if (Srec.Name <> '.' ) and
-         (Srec.Name <> '..') and
-         (Srec.Attr and faDirectory <> 0) then
+      ParentDir := IncludeTrailingBackslash(NodePath(Node));
+      {Build list of existing subnodes:}
+      SubDirList := TStringList.Create;
+      while Assigned(WorkNode) do
       begin
-        SrecList.Add(Srec.Name);
-        if not SubDirList.Find(Srec.Name, Index) then
-        {Subnode does not exists: add it:}
-        begin
-          NewNode := AddChildNode(Node, SRec);
-          NewNode.HasChildren := CheckForSubDirs(ParentDir + Srec.Name);
-          TNodeData(NewNode.Data).Scanned := Not NewNode.HasChildren;
-          NewDirFound  := True;
-        end;
-      end;
-      DosError := FindNext(Srec);
-    end;
-    FindClose(Srec);
-    Sreclist.Sort;
-
-    {Remove not existing subnodes:}
-    WorkNode := Node.GetFirstChild;
-    while Assigned(WorkNode) do
-    begin
-      if not Assigned(WorkNode.Data) or
-         not SrecList.Find(TNodeData(WorkNode.Data).DirName, Index) then
-      begin
-        DelNode := WorkNode;
-        WorkNode := Node.GetNextChild(WorkNode);
-        DelNode.Delete;
-      end
-        else
-      begin
-        if (SrecList[Index] <> TNodeData(WorkNode.Data).DirName) then
-        begin
-          {Case of directory letters has changed:}
-          TNodeData(WorkNode.Data).DirName := SrecList[Index];
-          TNodeData(WorkNode.Data).ShortName := ExtractShortPathName(NodePathName(WorkNode));
-          WorkNode.Text := SrecList[Index];
-        end;
-        SrecList.Delete(Index);
+        SubDirList.Add(TNodeData(WorkNode.Data).DirName);
         WorkNode := Node.GetNextChild(WorkNode);
       end;
-    end;
-    SrecList.Free;
-    SubDirList.Free;
-    {Sort subnodes:}
-    if NewDirFound then
-      SortChildren(Node, False);
+      {Sorting not required, because the subnodes are already sorted!}
+
+      SRecList := TStringList.Create;
+      DosError := FindFirst(ApiPath(ParentDir + '*.*'), DirAttrMask, SRec);
+      while DosError = 0 do
+      begin
+        if (Srec.Name <> '.' ) and
+           (Srec.Name <> '..') and
+           (Srec.Attr and faDirectory <> 0) then
+        begin
+          SrecList.Add(Srec.Name);
+          if not SubDirList.Find(Srec.Name, Index) then
+          {Subnode does not exists: add it:}
+          begin
+            NewNode := AddChildNode(Node, SRec);
+            NewNode.HasChildren := CheckForSubDirs(ParentDir + Srec.Name);
+            TNodeData(NewNode.Data).Scanned := Not NewNode.HasChildren;
+            NewDirFound  := True;
+          end;
+        end;
+        DosError := FindNext(Srec);
+      end;
+      FindClose(Srec);
+      Sreclist.Sort;
+
+      {Remove not existing subnodes:}
+      WorkNode := Node.GetFirstChild;
+      while Assigned(WorkNode) do
+      begin
+        if not Assigned(WorkNode.Data) or
+           not SrecList.Find(TNodeData(WorkNode.Data).DirName, Index) then
+        begin
+          DelNode := WorkNode;
+          WorkNode := Node.GetNextChild(WorkNode);
+          DelNode.Delete;
+        end
+          else
+        begin
+          if (SrecList[Index] <> TNodeData(WorkNode.Data).DirName) then
+          begin
+            {Case of directory letters has changed:}
+            TNodeData(WorkNode.Data).DirName := SrecList[Index];
+            TNodeData(WorkNode.Data).ShortName := ExtractShortPathName(NodePathName(WorkNode));
+            WorkNode.Text := SrecList[Index];
+          end;
+          SrecList.Delete(Index);
+          WorkNode := Node.GetNextChild(WorkNode);
+        end;
+      end;
+      SrecList.Free;
+      SubDirList.Free;
+      {Sort subnodes:}
+      if NewDirFound then
+        SortChildren(Node, False);
     end;
   end
     else
@@ -2006,7 +2002,6 @@ begin
       FDirView.StartWatchThread;
       FDirView.Reload2;
     end;
-
   end;
 end; {CreateDirectory}
 

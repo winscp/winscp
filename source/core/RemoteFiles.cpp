@@ -927,7 +927,14 @@ void __fastcall TRemoteFile::SetIsHidden(bool value)
 //---------------------------------------------------------------------------
 Boolean __fastcall TRemoteFile::GetIsDirectory() const
 {
-  return (toupper(Type) == FILETYPE_DIRECTORY);
+  if (IsSymLink && (FLinkedFile != NULL))
+  {
+    return FLinkedFile->IsDirectory;
+  }
+  else
+  {
+    return (toupper(Type) == FILETYPE_DIRECTORY);
+  }
 }
 //---------------------------------------------------------------------------
 Boolean __fastcall TRemoteFile::GetIsParentDirectory() const
@@ -960,8 +967,7 @@ Boolean __fastcall TRemoteFile::GetIsInaccesibleDirectory() const
 //---------------------------------------------------------------------------
 wchar_t __fastcall TRemoteFile::GetType() const
 {
-  if (IsSymLink && FLinkedFile) return FLinkedFile->Type;
-    else return FType;
+  return FType;
 }
 //---------------------------------------------------------------------------
 void __fastcall TRemoteFile::SetType(wchar_t AType)
@@ -970,19 +976,10 @@ void __fastcall TRemoteFile::SetType(wchar_t AType)
   FIsSymLink = ((wchar_t)towupper(FType) == FILETYPE_SYMLINK);
 }
 //---------------------------------------------------------------------------
-TRemoteFile * __fastcall TRemoteFile::GetLinkedFile()
+const TRemoteFile * __fastcall TRemoteFile::GetLinkedFile() const
 {
   // do not call FindLinkedFile as it would be called repeatedly for broken symlinks
   return FLinkedFile;
-}
-//---------------------------------------------------------------------------
-void __fastcall TRemoteFile::SetLinkedFile(TRemoteFile * value)
-{
-  if (FLinkedFile != value)
-  {
-    if (FLinkedFile) delete FLinkedFile;
-    FLinkedFile = value;
-  }
 }
 //---------------------------------------------------------------------------
 bool __fastcall TRemoteFile::GetBrokenLink()
@@ -1412,6 +1409,16 @@ void __fastcall TRemoteFile::FindLinkedFile()
   }
 }
 //---------------------------------------------------------------------------
+const TRemoteFile * __fastcall TRemoteFile::Resolve() const
+{
+  const TRemoteFile * Result = this;
+  while (Result->LinkedFile != NULL)
+  {
+    Result = Result->LinkedFile;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall TRemoteFile::GetListingStr()
 {
   // note that ModificationStr is longer than 12 for mfFull
@@ -1816,6 +1823,7 @@ __fastcall TRemoteDirectoryChangesCache::TRemoteDirectoryChangesCache(int MaxSiz
   TStringList(),
   FMaxSize(MaxSize)
 {
+  CaseSensitive = true;
 }
 //---------------------------------------------------------------------------
 void __fastcall TRemoteDirectoryChangesCache::Clear()
@@ -2973,15 +2981,22 @@ __int64 TSynchronizeProgress::GetProcessed(const TFileOperationProgressType * Cu
 //---------------------------------------------------------------------------
 int TSynchronizeProgress::Progress(const TFileOperationProgressType * CurrentItemOperationProgress) const
 {
-  __int64 Processed = GetProcessed(CurrentItemOperationProgress);
   int Result;
-  if (FTotalSize > 0)
+  if (TFileOperationProgressType::IsIndeterminateOperation(CurrentItemOperationProgress->Operation))
   {
-    Result = (Processed * 100) / FTotalSize;
+    Result = -1;
   }
   else
   {
-    Result = 0;
+    __int64 Processed = GetProcessed(CurrentItemOperationProgress);
+    if (FTotalSize > 0)
+    {
+      Result = (Processed * 100) / FTotalSize;
+    }
+    else
+    {
+      Result = 0;
+    }
   }
   return Result;
 }

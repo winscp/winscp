@@ -1493,7 +1493,9 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     ReadOnly = True
     RowSelect = True
     ParentDoubleBuffered = False
+    ParentShowHint = False
     PopupMenu = ListViewPopupMenu
+    ShowHint = True
     TabOrder = 0
     ViewStyle = vsReport
     OnChange = ListViewChange
@@ -1603,7 +1605,6 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     ParentShowHint = False
     ShowHint = True
     OnMouseDown = StatusBarMouseDown
-    OnMouseMove = StatusBarMouseMove
     OnDrawPanel = StatusBarDrawPanel
     OnResize = StatusBarResize
   end
@@ -2363,6 +2364,12 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       object TMenuItem
       end
     end
+    object BrowseLocalDirectory2: TMenuItem
+      Action = BrowseLocalAction
+    end
+    object BrowseLocalDirectory1: TMenuItem
+      Action = BrowseRemoteAction
+    end
     object N2: TMenuItem
       Caption = '-'
     end
@@ -2429,6 +2436,14 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     object UncheckDirectoryAction: TAction
       Caption = 'Uncheck All Actions in This &Directory'
       OnExecute = UncheckDirectoryActionExecute
+    end
+    object BrowseLocalAction: TAction
+      Caption = 'Browse &Local Directory'
+      OnExecute = BrowseLocalActionExecute
+    end
+    object BrowseRemoteAction: TAction
+      Caption = 'Browse &Remote Directory'
+      OnExecute = BrowseRemoteActionExecute
     end
   end
   object ActionImages120: TPngImageList

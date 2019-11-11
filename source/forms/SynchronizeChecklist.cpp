@@ -35,12 +35,12 @@ bool __fastcall DoSynchronizeChecklistDialog(TSynchronizeChecklist * Checklist,
   const UnicodeString LocalDirectory, const UnicodeString RemoteDirectory,
   TCustomCommandMenuEvent OnCustomCommandMenu, TFullSynchronizeEvent OnSynchronize,
   TSynchronizeChecklistCalculateSize OnSynchronizeChecklistCalculateSize, TSynchronizeMoveEvent OnSynchronizeMove,
-  void * Token)
+  TSynchronizeBrowseEvent OnSynchronizeBrowse, void * Token)
 {
   std::unique_ptr<TSynchronizeChecklistDialog> Dialog(
     new TSynchronizeChecklistDialog(
       Application, Mode, Params, LocalDirectory, RemoteDirectory, OnCustomCommandMenu, OnSynchronize,
-      OnSynchronizeChecklistCalculateSize, OnSynchronizeMove, Token));
+      OnSynchronizeChecklistCalculateSize, OnSynchronizeMove, OnSynchronizeBrowse, Token));
   return Dialog->Execute(Checklist);
 }
 //---------------------------------------------------------------------
@@ -48,7 +48,8 @@ __fastcall TSynchronizeChecklistDialog::TSynchronizeChecklistDialog(
   TComponent * AOwner, TSynchronizeMode Mode, int Params,
   const UnicodeString & LocalDirectory, const UnicodeString & RemoteDirectory,
   TCustomCommandMenuEvent OnCustomCommandMenu, TFullSynchronizeEvent OnSynchronize,
-  TSynchronizeChecklistCalculateSize OnSynchronizeChecklistCalculateSize, TSynchronizeMoveEvent OnSynchronizeMove, void * Token)
+  TSynchronizeChecklistCalculateSize OnSynchronizeChecklistCalculateSize, TSynchronizeMoveEvent OnSynchronizeMove,
+  TSynchronizeBrowseEvent OnSynchronizeBrowse, void * Token)
   : TForm(AOwner)
 {
   FFormRestored = false;
@@ -59,6 +60,7 @@ __fastcall TSynchronizeChecklistDialog::TSynchronizeChecklistDialog(
   FOnCustomCommandMenu = OnCustomCommandMenu;
   FOnSynchronizeChecklistCalculateSize = OnSynchronizeChecklistCalculateSize;
   FOnSynchronizeMove = OnSynchronizeMove;
+  FOnSynchronizeBrowse = OnSynchronizeBrowse;
   DebugAssert(OnSynchronize != NULL);
   FOnSynchronize = OnSynchronize;
   FToken = Token;
@@ -69,13 +71,14 @@ __fastcall TSynchronizeChecklistDialog::TSynchronizeChecklistDialog(
   FChangingItem = NULL;
   FChangingItemIgnore = false;
   FChangingItemMass = false;
-  FGeneralHint = StatusBar->Hint;
   FSynchronizing = false;
 
   SelectScaledImageList(ActionImages);
 
   FOrigListViewWindowProc = ListView->WindowProc;
   ListView->WindowProc = ListViewWindowProc;
+  FOrigStatusBarWindowProc = StatusBar->WindowProc;
+  StatusBar->WindowProc = StatusBarWindowProc;
 
   UpdateImages();
 
@@ -87,6 +90,7 @@ __fastcall TSynchronizeChecklistDialog::TSynchronizeChecklistDialog(
 //---------------------------------------------------------------------
 __fastcall TSynchronizeChecklistDialog::~TSynchronizeChecklistDialog()
 {
+  StatusBar->WindowProc = FOrigStatusBarWindowProc;
   ListView->WindowProc = FOrigListViewWindowProc;
 }
 //---------------------------------------------------------------------
@@ -189,6 +193,10 @@ void __fastcall TSynchronizeChecklistDialog::UpdateControls()
   ReverseAction->Enabled = (ListView->SelCount > 0) && DebugAlwaysTrue(!FSynchronizing);
   MoveAction->Enabled = (GetMoveItems() != TSynchronizeMoveItems());
   CalculateSizeAction->Enabled = (ListView->SelCount > 0) && AnyDirectory && DebugAlwaysTrue(!FSynchronizing);
+  TSynchronizeChecklist::TAction SelectedItemAction =
+    (ListView->SelCount == 1) ? GetChecklistItemAction(GetChecklistItem(ListView->Selected)) : TSynchronizeChecklist::saNone;
+  BrowseLocalAction->Enabled = (ListView->SelCount == 1) && (SelectedItemAction != TSynchronizeChecklist::saDeleteRemote);
+  BrowseRemoteAction->Enabled = (ListView->SelCount == 1) && (SelectedItemAction != TSynchronizeChecklist::saDeleteLocal);
 
   SelectAllAction->Enabled = (ListView->SelCount < ListView->Items->Count) && !FSynchronizing;
 }
@@ -490,9 +498,105 @@ void __fastcall TSynchronizeChecklistDialog::ListViewWindowProc(TMessage & Messa
           R.Left, ((R.Top + R.Bottom - ActionImages->Height) / 2), ILD_TRANSPARENT);
       }
     }
+
+    FOrigListViewWindowProc(Message);
+  }
+  else if (Message.Msg == CM_HINTSHOW)
+  {
+    ListViewHintShow(reinterpret_cast<TCMHintShow &>(Message));
+  }
+  else if (Message.Msg == WM_WANTS_SCREEN_TIPS)
+  {
+    Message.Result = 1;
+  }
+  else
+  {
+    FOrigListViewWindowProc(Message);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeChecklistDialog::ListViewHintShow(TCMHintShow & HintShow)
+{
+  TLVHitTestInfo HitTest;
+  HitTest.pt = HintShow.HintInfo->CursorPos;
+  int Index = ListView_SubItemHitTest(ListView->Handle, &HitTest);
+  if ((Index >= 0) && (HitTest.iSubItem == ImageColumnIndex))
+  {
+    TListItem * Item = ListView->Items->Item[Index];
+    const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(Item);
+    int ActionHint = 0;
+    switch (int(GetChecklistItemAction(ChecklistItem)))
+    {
+      case TSynchronizeChecklist::saUploadNew:
+        ActionHint = SYNCHRONIZE_CHECKLIST_UPLOAD_NEW;
+        break;
+      case TSynchronizeChecklist::saDownloadNew:
+        ActionHint = SYNCHRONIZE_CHECKLIST_DOWNLOAD_NEW;
+        break;
+      case TSynchronizeChecklist::saUploadUpdate:
+        ActionHint = SYNCHRONIZE_CHECKLIST_UPLOAD_UPDATE;
+        break;
+      case TSynchronizeChecklist::saDownloadUpdate:
+        ActionHint = SYNCHRONIZE_CHECKLIST_DOWNLOAD_UPDATE;
+        break;
+      case TSynchronizeChecklist::saDeleteRemote:
+        ActionHint = SYNCHRONIZE_CHECKLIST_DELETE_REMOTE;
+        break;
+      case TSynchronizeChecklist::saDeleteLocal:
+        ActionHint = SYNCHRONIZE_CHECKLIST_DELETE_LOCAL;
+        break;
+    }
+    if (DebugAlwaysTrue(ActionHint != 0))
+    {
+      HintShow.HintInfo->HintStr = FORMAT(L"%s|%s", (LoadStr(ActionHint), LoadStr(SYNCHRONIZE_CHECKLIST_REVERSE)));
+      ListView_GetSubItemRect(ListView->Handle, Index, ImageColumnIndex, LVIR_BOUNDS, &HintShow.HintInfo->CursorRect);
+      HintShow.Result = 0;
+    }
   }
 
-  FOrigListViewWindowProc(Message);
+  FOrigListViewWindowProc(reinterpret_cast<TMessage &>(HintShow));
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeChecklistDialog::StatusBarHintShow(TCMHintShow & HintShow)
+{
+  int IPanel = PanelAt(HintShow.HintInfo->CursorPos.x);
+
+  if (IPanel >= 0)
+  {
+    TStatusPanel * Panel = StatusBar->Panels->Items[IPanel];
+    HintShow.HintInfo->HintStr = FORMAT(L"%s|%s", (Panel->Text, StatusBar->Hint));
+
+    HintShow.HintInfo->CursorRect.Left = 0;
+    while (IPanel > 0)
+    {
+      IPanel--;
+      HintShow.HintInfo->CursorRect.Left += StatusBar->Panels->Items[IPanel]->Width;
+    }
+
+    HintShow.HintInfo->CursorRect.Top = 0;
+    HintShow.HintInfo->CursorRect.Bottom = StatusBar->ClientHeight;
+    HintShow.HintInfo->CursorRect.Right = HintShow.HintInfo->CursorRect.Left + Panel->Width;
+
+    HintShow.Result = 0;
+  }
+
+  FOrigListViewWindowProc(reinterpret_cast<TMessage &>(HintShow));
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeChecklistDialog::StatusBarWindowProc(TMessage & Message)
+{
+  if (Message.Msg == WM_WANTS_SCREEN_TIPS)
+  {
+    Message.Result = 1;
+  }
+  else if (Message.Msg == CM_HINTSHOW)
+  {
+    StatusBarHintShow(reinterpret_cast<TCMHintShow &>(Message));
+  }
+  else
+  {
+    FOrigStatusBarWindowProc(Message);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::ListViewAdvancedCustomDrawSubItem(
@@ -607,28 +711,6 @@ int __fastcall TSynchronizeChecklistDialog::PanelAt(int X)
   }
 
   return ((Result < StatusBar->Panels->Count - 1) ? Result : -1);
-}
-//---------------------------------------------------------------------------
-void __fastcall TSynchronizeChecklistDialog::StatusBarMouseMove(
-  TObject * /*Sender*/, TShiftState /*Shift*/, int X, int /*Y*/)
-{
-  UnicodeString Hint;
-  int IPanel = PanelAt(X);
-
-  if (IPanel >= 0)
-  {
-    Hint = StatusBar->Panels->Items[IPanel]->Text;
-    if (IPanel > 0)
-    {
-      Hint = FORMAT(L"%s\n%s", (Hint, FGeneralHint));
-    }
-  }
-
-  if (Hint != StatusBar->Hint)
-  {
-    Application->CancelHint();
-    StatusBar->Hint = Hint;
-  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::ListViewChange(
@@ -797,25 +879,6 @@ void __fastcall TSynchronizeChecklistDialog::StatusBarMouseDown(
       ListView->SetFocus();
     }
   }
-}
-//---------------------------------------------------------------------------
-int __fastcall TSynchronizeChecklistDialog::CompareNumber(__int64 Value1,
-  __int64 Value2)
-{
-  int Result;
-  if (Value1 < Value2)
-  {
-    Result = -1;
-  }
-  else if (Value1 == Value2)
-  {
-    Result = 0;
-  }
-  else
-  {
-    Result = 1;
-  }
-  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::ListViewCompare(
@@ -1307,5 +1370,22 @@ void __fastcall TSynchronizeChecklistDialog::CheckDirectoryActionExecute(TObject
 void __fastcall TSynchronizeChecklistDialog::UncheckDirectoryActionExecute(TObject *)
 {
   CheckDirectory(false);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeChecklistDialog::DoBrowse(TOperationSide Side)
+{
+  const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(ListView->Selected);
+  TSynchronizeChecklist::TAction Action = GetChecklistItemAction(ChecklistItem);
+  FOnSynchronizeBrowse(Side, Action, ChecklistItem);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeChecklistDialog::BrowseLocalActionExecute(TObject *)
+{
+  DoBrowse(osLocal);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeChecklistDialog::BrowseRemoteActionExecute(TObject *)
+{
+  DoBrowse(osRemote);
 }
 //---------------------------------------------------------------------------

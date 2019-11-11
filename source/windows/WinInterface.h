@@ -48,6 +48,7 @@ const int mpAllowContinueOnError = 0x02;
 #define DUMPCALLSTACK_SWITCH L"DumpCallstack"
 #define INFO_SWITCH L"Info"
 #define COMREGISTRATION_SWITCH L"ComRegistration"
+#define BROWSE_SWITCH L"Browse"
 
 #define DUMPCALLSTACK_EVENT L"WinSCPCallstack%d"
 
@@ -112,6 +113,8 @@ Tbx::TTBXSeparatorItem * __fastcall AddMenuSeparator(Tb2item::TTBCustomItem * Me
 void __fastcall AddMenuLabel(Tb2item::TTBCustomItem * Menu, const UnicodeString & Label);
 void __fastcall ClickToolbarItem(Tb2item::TTBCustomItem * Item, bool PositionCursor);
 
+void InitiateDialogTimeout(TForm * Dialog, unsigned int Timeout, TButton * Button);
+
 // windows\WinHelp.cpp
 void __fastcall InitializeWinHelp();
 void __fastcall FinalizeWinHelp();
@@ -150,6 +153,7 @@ bool __fastcall DoCustomCommandOptionsDialog(
   const TCustomCommandType * Command, TStrings * CustomCommandOptions, TShortCut * ShortCut, unsigned int Flags,
   TCustomCommand * CustomCommandForOptions, const UnicodeString & Site, const TShortCuts * ShortCuts);
 void __fastcall DoUsageStatisticsDialog();
+void __fastcall DoSiteRawDialog(TSessionData * Data);
 
 // windows\UserInterface.cpp
 bool __fastcall DoMasterPasswordDialog();
@@ -210,10 +214,10 @@ const coAllFiles            = 0x1000;
 const cooDoNotShowAgain     = 0x01;
 const cooRemoteTransfer     = 0x02;
 const cooSaveSettings       = 0x04;
-bool __fastcall DoCopyDialog(bool ToRemote,
-  bool Move, TStrings * FileList, UnicodeString & TargetDirectory,
+bool __fastcall DoCopyDialog(
+  bool ToRemote, bool Move, TStrings * FileList, UnicodeString & TargetDirectory,
   TGUICopyParamType * Params, int Options, int CopyParamAttrs,
-  TSessionData * SessionData, int * OutputOptions);
+  TSessionData * SessionData, int * OutputOptions, int AutoSubmit);
 
 // forms\CreateDirectory.cpp
 bool __fastcall DoCreateDirectoryDialog(UnicodeString & Directory,
@@ -335,7 +339,7 @@ bool __fastcall DoSynchronizeDialog(TSynchronizeParamType & Params,
   TSynchronizeSessionLog OnSynchronizeSessionLog,
   TFeedSynchronizeError & OnFeedSynchronizeError,
   TSynchronizeInNewWindow OnSynchronizeInNewWindow,
-  bool Start);
+  int AutoSubmit);
 
 // forms\FullSynchronize.cpp
 struct TUsableCopyParamAttrs;
@@ -350,7 +354,7 @@ bool __fastcall DoFullSynchronizeDialog(TSynchronizeMode & Mode, int & Params,
   UnicodeString & LocalDirectory, UnicodeString & RemoteDirectory,
   TCopyParamType * CopyParams, bool & SaveSettings, bool & SaveMode,
   int Options, const TUsableCopyParamAttrs & CopyParamAttrs,
-  TFullSynchronizeInNewWindow OnFullSynchronizeInNewWindow);
+  TFullSynchronizeInNewWindow OnFullSynchronizeInNewWindow, int AutoSubmit);
 
 // forms\SynchronizeChecklist.cpp
 class TSynchronizeChecklist;
@@ -363,12 +367,14 @@ typedef void __fastcall (__closure *TSynchronizeChecklistCalculateSize)
   (TSynchronizeChecklist * Checklist, const TSynchronizeChecklist::TItemList & Items, void * Token);
 typedef void __fastcall (__closure *TSynchronizeMoveEvent)(
   TOperationSide Side, const UnicodeString & FileName, const UnicodeString & NewFileName, TRemoteFile * RemoteFile);
+typedef void __fastcall (__closure *TSynchronizeBrowseEvent)(
+  TOperationSide Side, TSynchronizeChecklist::TAction Action, const TSynchronizeChecklist::TItem * Item);
 bool __fastcall DoSynchronizeChecklistDialog(TSynchronizeChecklist * Checklist,
   TSynchronizeMode Mode, int Params,
   const UnicodeString LocalDirectory, const UnicodeString RemoteDirectory,
   TCustomCommandMenuEvent OnCustomCommandMenu, TFullSynchronizeEvent OnSynchronize,
   TSynchronizeChecklistCalculateSize OnSynchronizeChecklistCalculateSize, TSynchronizeMoveEvent OnSynchronizeMove,
-  void * Token);
+  TSynchronizeBrowseEvent OnSynchronizeBrowse, void * Token);
 
 // forms\Editor.cpp
 typedef void __fastcall (__closure *TFileClosedEvent)
@@ -378,7 +384,8 @@ typedef void __fastcall (__closure *TAnyModifiedEvent)
 TForm * __fastcall ShowEditorForm(const UnicodeString FileName, TForm * ParentForm,
   TNotifyEvent OnFileChanged, TNotifyEvent OnFileReload, TFileClosedEvent OnClose,
   TNotifyEvent OnSaveAll, TAnyModifiedEvent OnAnyModified,
-  const UnicodeString Caption, bool StandaloneEditor, TColor Color, int InternalEditorEncodingOverride);
+  const UnicodeString Caption, bool StandaloneEditor, TColor Color, int InternalEditorEncodingOverride,
+  bool NewFile);
 void __fastcall ReconfigureEditorForm(TForm * Form);
 void __fastcall EditorFormFileUploadComplete(TForm * Form);
 void __fastcall EditorFormFileSave(TForm * Form);
@@ -620,6 +627,7 @@ public:
   virtual bool __fastcall LimitedOutput() = 0;
   virtual bool __fastcall LiveOutput() = 0;
   virtual bool __fastcall NoInteractiveInput() = 0;
+  virtual bool __fastcall Interactive() = 0;
   virtual void __fastcall WaitBeforeExit() = 0;
   virtual bool __fastcall CommandLineOnly() = 0;
   virtual bool __fastcall WantsProgress() = 0;

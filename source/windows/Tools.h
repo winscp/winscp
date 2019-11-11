@@ -38,6 +38,7 @@ TColor __fastcall GetWindowTextColor(TColor BackgroundColor, TColor Color = stat
 TColor __fastcall GetWindowColor(TColor Color = static_cast<TColor>(0));
 TColor __fastcall GetBtnFaceColor();
 TColor __fastcall GetNonZeroColor(TColor Color);
+void ValidateMask(const UnicodeString & Mask, int ForceDirectoryMasks = -1);
 void __fastcall ValidateMaskEdit(TComboBox * Edit);
 void __fastcall ValidateMaskEdit(TEdit * Edit);
 void __fastcall ValidateMaskEdit(TMemo * Edit, bool Directory);

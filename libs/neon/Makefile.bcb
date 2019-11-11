@@ -29,7 +29,7 @@ MKLIB=tlib /P64 /C
 # OBJ_D  - temp object file directory
 OBJ_D=$(TMP_D)
 INCL_D=src
-INCL=$(INCL_D);../openssl;../expat/lib;
+INCL=$(INCL_D);../openssl/include;../expat/lib;
 
 O_NEON=$(OUT_D)\neon.lib
 

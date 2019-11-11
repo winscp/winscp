@@ -60,6 +60,7 @@ public:
   virtual bool __fastcall LimitedOutput();
   virtual bool __fastcall LiveOutput();
   virtual bool __fastcall NoInteractiveInput();
+  virtual bool __fastcall Interactive();
   virtual void __fastcall WaitBeforeExit();
   virtual bool __fastcall CommandLineOnly();
   virtual bool __fastcall WantsProgress();
@@ -478,6 +479,11 @@ bool __fastcall TOwnConsole::NoInteractiveInput()
   return false;
 }
 //---------------------------------------------------------------------------
+bool __fastcall TOwnConsole::Interactive()
+{
+  return true;
+}
+//---------------------------------------------------------------------------
 void __fastcall TOwnConsole::WaitBeforeExit()
 {
   unsigned long Read;
@@ -534,6 +540,7 @@ public:
   virtual bool __fastcall LiveOutput();
   virtual bool __fastcall NoInteractiveInput();
   virtual void __fastcall WaitBeforeExit();
+  virtual bool __fastcall Interactive();
   virtual bool __fastcall CommandLineOnly();
   virtual bool __fastcall WantsProgress();
   virtual void __fastcall Progress(TScriptProgress & Progress);
@@ -550,6 +557,7 @@ private:
   bool FPipeOutput;
   bool FNoInteractiveInput;
   bool FWantsProgress;
+  bool FInteractive;
   unsigned int FMaxSend;
 
   inline TConsoleCommStruct * __fastcall GetCommStruct();
@@ -831,6 +839,9 @@ void __fastcall TExternalConsole::Init()
       (CommStruct->InitEvent.OutputType != FILE_TYPE_DISK) &&
       (CommStruct->InitEvent.OutputType != FILE_TYPE_PIPE);
     FPipeOutput = (CommStruct->InitEvent.OutputType != FILE_TYPE_PIPE);
+    FInteractive =
+      (CommStruct->InitEvent.InputType != FILE_TYPE_DISK) &&
+      (CommStruct->InitEvent.InputType != FILE_TYPE_PIPE);
     FWantsProgress = CommStruct->InitEvent.WantsProgress;
   }
   __finally
@@ -852,6 +863,11 @@ bool __fastcall TExternalConsole::LiveOutput()
 bool __fastcall TExternalConsole::NoInteractiveInput()
 {
   return FNoInteractiveInput;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TExternalConsole::Interactive()
+{
+  return FInteractive;
 }
 //---------------------------------------------------------------------------
 void __fastcall TExternalConsole::WaitBeforeExit()
@@ -950,6 +966,7 @@ public:
   virtual bool __fastcall LimitedOutput();
   virtual bool __fastcall LiveOutput();
   virtual bool __fastcall NoInteractiveInput();
+  virtual bool __fastcall Interactive();
   virtual void __fastcall WaitBeforeExit();
   virtual bool __fastcall CommandLineOnly();
 
@@ -1015,6 +1032,11 @@ bool __fastcall TNullConsole::NoInteractiveInput()
   // do not matter, even if we return false,
   // it fails immediately afterwards in TNullConsole::Input
   return true;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TNullConsole::Interactive()
+{
+  return false;
 }
 //---------------------------------------------------------------------------
 void __fastcall TNullConsole::WaitBeforeExit()
@@ -1994,6 +2016,7 @@ int __fastcall TConsoleRunner::Run(const UnicodeString Session, TOptions * Optio
       FScript->OnQueryCancel = ScriptQueryCancel;
       FScript->OnSynchronizeStartStop = ScriptSynchronizeStartStop;
       FScript->OnProgress = ScriptProgress;
+      FScript->Interactive = (ScriptCommands == NULL) && FConsole->Interactive();
 
       UpdateTitle();
 
@@ -2003,7 +2026,10 @@ int __fastcall TConsoleRunner::Run(const UnicodeString Session, TOptions * Optio
 
       if (!Session.IsEmpty())
       {
-        PrintMessage(LoadStr(SCRIPT_CMDLINE_SESSION));
+        if (!FScript->Interactive)
+        {
+          PrintMessage(LoadStr(SCRIPT_CMDLINE_SESSION));
+        }
         FCommandError = false;
         FScript->Connect(Session, Options, false);
         if (FCommandError)
@@ -2164,18 +2190,21 @@ void __fastcall Usage(TConsole * Console)
     PrintUsageSyntax(Console, FORMAT(L"[mysession] /%s=<name>", (LowerCase(SESSIONNAME_SWICH))));
     PrintUsageSyntax(Console, L"[mysession] /newinstance");
     PrintUsageSyntax(Console, L"[mysession] /edit <path>");
+    PrintUsageSyntax(Console, FORMAT(L"[mysession] /%s[=<file>]", (LowerCase(BROWSE_SWITCH))));
     PrintUsageSyntax(Console, FORMAT(L"[mysession] /%s [local_dir] [remote_dir] [/%s]", (LowerCase(SYNCHRONIZE_SWITCH), LowerCase(DEFAULTS_SWITCH))));
     PrintUsageSyntax(Console, FORMAT(L"[mysession] /%s [local_dir] [remote_dir] [/%s]", (LowerCase(KEEP_UP_TO_DATE_SWITCH), LowerCase(DEFAULTS_SWITCH))));
     PrintUsageSyntax(Console, FORMAT(L"[mysession] /%s [path]", (LowerCase(REFRESH_SWITCH))));
-    PrintUsageSyntax(Console, L"[mysession] [/privatekey=<file>] [/hostkey=<fingerprint>]");
-    PrintUsageSyntax(Console, L"[mysession] [/clientcert=<file>] [/certificate=<fingerprint>]");
+    PrintUsageSyntax(Console, FORMAT(L"[mysession] [/privatekey=<file> [/%s=<passphrase>]]", (PassphraseOption)));
+    PrintUsageSyntax(Console, L"[mysession] [/hostkey=<fingerprint>]");
+    PrintUsageSyntax(Console, FORMAT(L"[mysession] [/clientcert=<file> [/%s=<passphrase>]]", (PassphraseOption)));
+    PrintUsageSyntax(Console, L"[mysession] [/certificate=<fingerprint>]");
     PrintUsageSyntax(Console, L"[mysession] [/passive[=on|off]] [/implicit|explicit]");
     PrintUsageSyntax(Console, L"[mysession] [/timeout=<sec>]");
     PrintUsageSyntax(Console, L"[mysession] [/rawsettings setting1=value1 setting2=value2 ...]");
   }
   PrintUsageSyntax(Console,
     UnicodeString(!Console->CommandLineOnly() ? L"[/console] " : L"") +
-    FORMAT(L"[/script=file] [/%s cmd1...] [/parameter // param1...]", (LowerCase(COMMAND_SWITCH))));
+    FORMAT(L"[/script=<file>] [/%s cmd1...] [/parameter // param1...]", (LowerCase(COMMAND_SWITCH))));
   PrintUsageSyntax(Console,
     FORMAT(L"[/%s=<logfile> [/loglevel=<level>]] [/%s=[<count>%s]<size>]", (LowerCase(LOG_SWITCH), LowerCase(LOGSIZE_SWITCH), LOGSIZE_SEPARATOR)));
   PrintUsageSyntax(Console, L"[/xmllog=<logfile> [/xmlgroups]]");
@@ -2184,7 +2213,7 @@ void __fastcall Usage(TConsole * Console)
   PrintUsageSyntax(Console, FORMAT(L"[/%s config1=value1 config2=value2 ...]", (LowerCase(RAW_CONFIG_SWITCH))));
   PrintUsageSyntax(Console, FORMAT(L"[/%s setting1=value1 setting2=value2 ...]", (LowerCase(RAWTRANSFERSETTINGS_SWITCH))));
   PrintUsageSyntax(Console, L"/batchsettings <site_mask> setting1=value1 setting2=value2 ...");
-  PrintUsageSyntax(Console, FORMAT(L"/%s keyfile [/%s=output] [/%s] [/%s=comment]",
+  PrintUsageSyntax(Console, FORMAT(L"/%s keyfile [/%s=<file>] [/%s] [/%s=<text>]",
     (LowerCase(KEYGEN_SWITCH), LowerCase(KEYGEN_OUTPUT_SWITCH), LowerCase(KEYGEN_CHANGE_PASSPHRASE_SWITCH), LowerCase(KEYGEN_COMMENT_SWITCH))));
   if (!Console->CommandLineOnly())
   {
@@ -2202,6 +2231,7 @@ void __fastcall Usage(TConsole * Console)
     RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(SESSIONNAME_SWICH) + L"=", USAGE_SESSIONNAME);
     RegisterSwitch(SwitchesUsage, L"/newinstance", USAGE_NEWINSTANCE);
     RegisterSwitch(SwitchesUsage, L"/edit", USAGE_EDIT);
+    RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(BROWSE_SWITCH), USAGE_BROWSE);
     RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(SYNCHRONIZE_SWITCH), USAGE_SYNCHRONIZE);
     RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(KEEP_UP_TO_DATE_SWITCH), USAGE_KEEPUPTODATE);
     RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(REFRESH_SWITCH), USAGE_REFRESH);
@@ -2210,6 +2240,7 @@ void __fastcall Usage(TConsole * Console)
     RegisterSwitch(SwitchesUsage, L"/hostkey=", USAGE_HOSTKEY);
     RegisterSwitch(SwitchesUsage, L"/clientcert=", USAGE_CLIENTCERT);
     RegisterSwitch(SwitchesUsage, L"/certificate=", USAGE_CERTIFICATE);
+    RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(PassphraseOption) + L"=", USAGE_PASSPHRASE);
     RegisterSwitch(SwitchesUsage, L"/passive=", USAGE_PASSIVE);
     RegisterSwitch(SwitchesUsage, L"/implicit", USAGE_IMPLICIT);
     RegisterSwitch(SwitchesUsage, L"/explicit", USAGE_EXPLICIT);
@@ -2288,57 +2319,6 @@ void __fastcall Usage(TConsole * Console)
   Console->WaitBeforeExit();
 }
 //---------------------------------------------------------------------------
-void __fastcall BatchSettings(TConsole * Console, TProgramParams * Params)
-{
-  std::unique_ptr<TStrings> Arguments(new TStringList());
-  if (DebugAlwaysTrue(Params->FindSwitch(L"batchsettings", Arguments.get())))
-  {
-    if (Arguments->Count < 1)
-    {
-      Console->PrintLine(LoadStr(BATCH_SET_NO_MASK));
-    }
-    else if (Arguments->Count < 2)
-    {
-      Console->PrintLine(LoadStr(BATCH_SET_NO_SETTINGS));
-    }
-    else
-    {
-      TFileMasks Mask(Arguments->Strings[0]);
-      Arguments->Delete(0);
-
-      std::unique_ptr<TOptionsStorage> OptionsStorage(new TOptionsStorage(Arguments.get(), false));
-
-      int Matches = 0;
-      int Changes = 0;
-
-      for (int Index = 0; Index < StoredSessions->Count; Index++)
-      {
-        TSessionData * Data = StoredSessions->Sessions[Index];
-        if (!Data->IsWorkspace &&
-            Mask.Matches(Data->Name, false, false))
-        {
-          Matches++;
-          std::unique_ptr<TSessionData> OriginalData(new TSessionData(L""));
-          OriginalData->Assign(Data);
-          Data->ApplyRawSettings(OptionsStorage.get());
-          bool Changed = !OriginalData->IsSame(Data, false);
-          if (Changed)
-          {
-            Changes++;
-          }
-          UnicodeString StateStr = LoadStr(Changed ? BATCH_SET_CHANGED : BATCH_SET_NOT_CHANGED);
-          Console->PrintLine(FORMAT(L"%s - %s", (Data->Name, StateStr)));
-        }
-      }
-
-      StoredSessions->Save(false, true); // explicit
-      Console->PrintLine(FMTLOAD(BATCH_SET_SUMMARY, (Matches, Changes)));
-    }
-
-    Console->WaitBeforeExit();
-  }
-}
-//---------------------------------------------------------------------------
 int __fastcall HandleException(TConsole * Console, Exception & E)
 {
   UnicodeString Message;
@@ -2347,6 +2327,70 @@ int __fastcall HandleException(TConsole * Console, Exception & E)
     Console->Print(Message);
   }
   return RESULT_ANY_ERROR;
+}
+//---------------------------------------------------------------------------
+int __fastcall BatchSettings(TConsole * Console, TProgramParams * Params)
+{
+  int Result = RESULT_SUCCESS;
+  try
+  {
+    std::unique_ptr<TStrings> Arguments(new TStringList());
+    if (!DebugAlwaysTrue(Params->FindSwitch(L"batchsettings", Arguments.get())))
+    {
+      Abort();
+    }
+    else
+    {
+      if (Arguments->Count < 1)
+      {
+        throw Exception(LoadStr(BATCH_SET_NO_MASK));
+      }
+      else if (Arguments->Count < 2)
+      {
+        throw Exception(LoadStr(BATCH_SET_NO_SETTINGS));
+      }
+      else
+      {
+        TFileMasks Mask(Arguments->Strings[0]);
+        Arguments->Delete(0);
+
+        std::unique_ptr<TOptionsStorage> OptionsStorage(new TOptionsStorage(Arguments.get(), false));
+
+        int Matches = 0;
+        int Changes = 0;
+
+        for (int Index = 0; Index < StoredSessions->Count; Index++)
+        {
+          TSessionData * Data = StoredSessions->Sessions[Index];
+          if (!Data->IsWorkspace &&
+              Mask.Matches(Data->Name, false, false))
+          {
+            Matches++;
+            std::unique_ptr<TSessionData> OriginalData(new TSessionData(L""));
+            OriginalData->CopyDataNoRecrypt(Data);
+            Data->ApplyRawSettings(OptionsStorage.get());
+            bool Changed = !OriginalData->IsSame(Data, false);
+            if (Changed)
+            {
+              Changes++;
+            }
+            UnicodeString StateStr = LoadStr(Changed ? BATCH_SET_CHANGED : BATCH_SET_NOT_CHANGED);
+            Console->PrintLine(FORMAT(L"%s - %s", (Data->Name, StateStr)));
+          }
+        }
+
+        StoredSessions->Save(false, true); // explicit
+        Console->PrintLine(FMTLOAD(BATCH_SET_SUMMARY, (Matches, Changes)));
+      }
+    }
+  }
+  catch (Exception & E)
+  {
+    Result = HandleException(Console, E);
+  }
+
+  Console->WaitBeforeExit();
+  return Result;
 }
 //---------------------------------------------------------------------------
 bool __fastcall FindPuttygenCompatibleSwitch(
@@ -2683,7 +2727,7 @@ int __fastcall Console(TConsoleMode Mode)
       if (CheckSafe(Params))
       {
         Configuration->Usage->Inc(L"BatchSettings");
-        BatchSettings(Console, Params);
+        Result = BatchSettings(Console, Params);
       }
     }
     else if (Mode == cmKeyGen)

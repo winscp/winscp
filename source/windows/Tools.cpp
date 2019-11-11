@@ -110,6 +110,7 @@ TColor __fastcall GetWindowTextColor(TColor BackgroundColor, TColor Color)
 {
   if (Color == TColor(0))
   {
+    // Could use current theme TMT_TEXTCOLOR - see https://github.com/ysc3839/win32-darkmode/
     Color = (IsDarkColor(BackgroundColor) ? clWhite : clWindowText);
     SetContrast(Color, BackgroundColor, 180);
   }
@@ -120,6 +121,7 @@ TColor __fastcall GetWindowColor(TColor Color)
 {
   if (Color == TColor(0))
   {
+    // Could use current theme TMT_FILLCOLOR - see https://github.com/ysc3839/win32-darkmode/
     Color = (WinConfiguration->UseDarkTheme() ? static_cast<TColor>(RGB(0x20, 0x20, 0x20)) : clWindow);
   }
   return Color;
@@ -641,24 +643,32 @@ IShellLink * __fastcall CreateDesktopSessionShortCut(
       InfoTip, SpecialFolder, IconIndex, Return);
 }
 //---------------------------------------------------------------------------
+void ValidateMask(const UnicodeString & Mask, int ForceDirectoryMasks)
+{
+  TFileMasks Masks(ForceDirectoryMasks);
+  Masks = Mask;
+}
+//---------------------------------------------------------------------------
 template<class TEditControl>
 void __fastcall ValidateMaskEditT(const UnicodeString & Mask, TEditControl * Edit, int ForceDirectoryMasks)
 {
   DebugAssert(Edit != NULL);
-  TFileMasks Masks(ForceDirectoryMasks);
-  try
+  if (!IsCancelButtonBeingClicked(Edit))
   {
-    Masks = Mask;
-  }
-  catch(EFileMasksException & E)
-  {
-    ShowExtendedException(&E);
-    Edit->SetFocus();
-    // This does not work for TEdit and TMemo (descendants of TCustomEdit) anymore,
-    // as it re-selects whole text on exception in TCustomEdit.CMExit
-    Edit->SelStart = E.ErrorStart - 1;
-    Edit->SelLength = E.ErrorLen;
-    Abort();
+    try
+    {
+      ValidateMask(Mask, ForceDirectoryMasks);
+    }
+    catch(EFileMasksException & E)
+    {
+      ShowExtendedException(&E);
+      Edit->SetFocus();
+      // This does not work for TEdit and TMemo (descendants of TCustomEdit) anymore,
+      // as it re-selects whole text on exception in TCustomEdit.CMExit
+      Edit->SelStart = E.ErrorStart - 1;
+      Edit->SelLength = E.ErrorLen;
+      Abort();
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -674,13 +684,16 @@ void __fastcall ValidateMaskEdit(TEdit * Edit)
 //---------------------------------------------------------------------------
 void __fastcall ValidateMaskEdit(TMemo * Edit, bool Directory)
 {
-  UnicodeString Mask = TFileMasks::ComposeMaskStr(GetUnwrappedMemoLines(Edit), Directory);
-  ValidateMaskEditT(Mask, Edit, Directory ? 1 : 0);
+  if (!IsCancelButtonBeingClicked(Edit))
+  {
+    UnicodeString Mask = TFileMasks::ComposeMaskStr(GetUnwrappedMemoLines(Edit), Directory);
+    ValidateMaskEditT(Mask, Edit, Directory ? 1 : 0);
+  }
 }
 //---------------------------------------------------------------------------
 TStrings * __fastcall GetUnwrappedMemoLines(TMemo * Memo)
 {
-  // This removes soft linebreakes when text in memo wraps
+  // This removes soft linebreaks when text in memo wraps
   // (Memo->Lines includes soft linebreaks, while Memo->Text does not)
   return TextToStringList(Memo->Text);
 }
@@ -724,7 +737,10 @@ void __fastcall OpenBrowser(UnicodeString URL)
     DebugAssert(!IsHttpUrl(URL));
     URL = CampaignUrl(URL);
   }
-  ShellExecute(Application->Handle, L"open", URL.c_str(), NULL, NULL, SW_SHOWNORMAL);
+  if (!CopyCommandToClipboard(URL))
+  {
+    ShellExecute(Application->Handle, L"open", URL.c_str(), NULL, NULL, SW_SHOWNORMAL);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall OpenFolderInExplorer(const UnicodeString & Path)

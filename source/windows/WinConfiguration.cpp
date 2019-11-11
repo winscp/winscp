@@ -115,6 +115,7 @@ bool __fastcall TEditorData::DecideExternalEditorText(UnicodeString ExternalEdit
   // By default we use default transfer mode (binary),
   // as all reasonable 3rd party editors support all EOL styles.
   // A notable exception is Windows Notepad, so here's an exception for it.
+  // Notepad support unix line endings since Windows 10 1809. Once that's widespread, remove this.
 
   ReformatFileNameCommand(ExternalEditor);
   UnicodeString ProgramName = ExtractProgramName(ExternalEditor);
@@ -608,7 +609,8 @@ void __fastcall TWinConfiguration::Default()
   FGenerateUrlScriptFormat = sfScriptFile;
   FGenerateUrlAssemblyLanguage = alCSharp;
   FExternalSessionInExistingInstance = true;
-  FKeepOpenWhenNoSession = false;
+  FShowLoginWhenNoSession = true;
+  FKeepOpenWhenNoSession = true;
   FLocalIconsByExt = false;
   FBidiModeOverride = lfoLanguageIfRecommended;
   FFlipChildrenOverride = lfoLanguageIfRecommended;
@@ -623,6 +625,7 @@ void __fastcall TWinConfiguration::Default()
   HonorDrivePolicy = true;
   TimeoutShellOperations = true;
   TimeoutShellIconRetrieval = false;
+  UseIconUpdateThread = true;
   AllowWindowPrint = false;
 
   FEditor.Font.FontName = DefaultFixedWidthFontName;
@@ -937,10 +940,8 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
 }
 //---------------------------------------------------------------------------
 // duplicated from core\configuration.cpp
-#define LASTELEM(ELEM) \
-  ELEM.SubString(ELEM.LastDelimiter(L".>")+1, ELEM.Length() - ELEM.LastDelimiter(L".>"))
 #define BLOCK(KEY, CANCREATE, BLOCK) \
-  if (Storage->OpenSubKey(KEY, CANCREATE, true)) try { BLOCK } __finally { Storage->CloseSubKey(); }
+  if (Storage->OpenSubKeyPath(KEY, CANCREATE)) try { BLOCK } __finally { Storage->CloseSubKeyPath(); }
 #define KEY(TYPE, VAR) KEYEX(TYPE, VAR, PropertyToKey(TEXT(#VAR)))
 #define REGCONFIG(CANCREATE) \
   BLOCK(L"Interface", CANCREATE, \
@@ -1010,6 +1011,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Integer,  GenerateUrlScriptFormat); \
     KEY(Integer,  GenerateUrlAssemblyLanguage); \
     KEY(Bool,     ExternalSessionInExistingInstance); \
+    KEY(Bool,     ShowLoginWhenNoSession); \
     KEY(Bool,     KeepOpenWhenNoSession); \
     KEY(Bool,     LocalIconsByExt); \
     KEY(Integer,  BidiModeOverride); \
@@ -1021,11 +1023,12 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Integer,  RunsSinceLastTip); \
     KEY(Bool,     HonorDrivePolicy); \
     KEY(Integer,  LastMachineInstallations); \
-    KEYEX(String, FExtensionsDeleted, L"ExtensionsDeleted"); \
-    KEYEX(String, FExtensionsOrder, L"ExtensionsOrder"); \
-    KEYEX(String, FExtensionsShortCuts, L"ExtensionsShortCuts"); \
+    KEY(String,   FExtensionsDeleted); \
+    KEY(String,   FExtensionsOrder); \
+    KEY(String,   FExtensionsShortCuts); \
     KEY(Bool,     TimeoutShellOperations); \
     KEY(Bool,     TimeoutShellIconRetrieval); \
+    KEY(Bool,     UseIconUpdateThread); \
     KEY(Bool,     AllowWindowPrint); \
   ); \
   BLOCK(L"Interface\\Editor", CANCREATE, \
@@ -1148,8 +1151,8 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(String,  ScpCommander.RemotePanel.LastPath); \
   ); \
   BLOCK(L"Security", CANCREATE, \
-    KEYEX(Bool,  FUseMasterPassword, L"UseMasterPassword"); \
-    KEYEX(String,FMasterPasswordVerifier, L"MasterPasswordVerifier"); \
+    KEY(Bool,    FUseMasterPassword); \
+    KEY(String,  FMasterPasswordVerifier); \
   );
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SaveData(THierarchicalStorage * Storage, bool All)
@@ -1182,14 +1185,14 @@ void __fastcall TWinConfiguration::SaveData(THierarchicalStorage * Storage, bool
   }
 
   if ((All || FEditorList->Modified) &&
-      Storage->OpenSubKey(L"Interface\\Editor", true, true))
+      Storage->OpenSubKeyPath(L"Interface\\Editor", true))
   try
   {
     FEditorList->Save(Storage);
   }
   __finally
   {
-    Storage->CloseSubKey();
+    Storage->CloseSubKeyPath();
   }
 }
 //---------------------------------------------------------------------------
@@ -1502,7 +1505,7 @@ void __fastcall TWinConfiguration::LoadData(THierarchicalStorage * Storage)
     Storage->CloseSubKey();
   }
 
-  if (Storage->HasSubKey(L"CustomCommands"))
+  if (Storage->KeyExists(L"CustomCommands"))
   {
     FCustomCommandList->Load(Storage);
     FCustomCommandsDefaults = false;
@@ -1524,7 +1527,7 @@ void __fastcall TWinConfiguration::LoadData(THierarchicalStorage * Storage)
     FCustomCommandOptionsModified = false;
   }
 
-  if (Storage->OpenSubKey(L"Interface\\Editor", false, true))
+  if (Storage->OpenSubKeyPath(L"Interface\\Editor", false))
   try
   {
     FEditorList->Clear();
@@ -1532,12 +1535,12 @@ void __fastcall TWinConfiguration::LoadData(THierarchicalStorage * Storage)
   }
   __finally
   {
-    Storage->CloseSubKey();
+    Storage->CloseSubKeyPath();
   }
 
   // load legacy editor configuration
   DebugAssert(FLegacyEditor != NULL);
-  if (Storage->OpenSubKey(L"Interface\\Editor", false, true))
+  if (Storage->OpenSubKeyPath(L"Interface\\Editor", false))
   {
     try
     {
@@ -1545,7 +1548,7 @@ void __fastcall TWinConfiguration::LoadData(THierarchicalStorage * Storage)
     }
     __finally
     {
-      Storage->CloseSubKey();
+      Storage->CloseSubKeyPath();
     }
   }
 }
@@ -1562,14 +1565,12 @@ void __fastcall TWinConfiguration::CopyData(THierarchicalStorage * Source, THier
 {
   TCustomWinConfiguration::CopyData(Source, Target);
 
-  if (Source->OpenSubKey(ConfigurationSubKey, false))
+  if (CopySubKey(Source, Target, ConfigurationSubKey))
   {
-    if (Target->OpenSubKey(ConfigurationSubKey, true))
-    {
-      Target->WriteString(L"JumpList", Source->ReadString(L"JumpList", L""));
-      Target->WriteString(L"JumpListWorkspaces", Source->ReadString(L"JumpListWorkspaces", L""));
-      Target->CloseSubKey();
-    }
+    Target->WriteString(L"JumpList", Source->ReadString(L"JumpList", L""));
+    Target->WriteString(L"JumpListWorkspaces", Source->ReadString(L"JumpListWorkspaces", L""));
+
+    Target->CloseSubKey();
     Source->CloseSubKey();
   }
 }
@@ -1726,7 +1727,8 @@ RawByteString __fastcall TWinConfiguration::StronglyRecryptPassword(RawByteStrin
       TCustomWinConfiguration::DecryptPassword(Password, Key);
     if (!PasswordText.IsEmpty())
     {
-      // can be not set for instance, when editing=>saving site with no prior password
+      // Can be not set for instance, when editing=>saving site with no prior password.
+      // Though it should not actually happen, as we call AskForMasterPasswordIfNotSetAndNeededToPersistSessionData in DoSaveSession.
       AskForMasterPasswordIfNotSet();
       Password = ScramblePassword(PasswordText);
       AES256EncyptWithMAC(Password, FPlainMasterPasswordEncrypt, Result);
@@ -2288,6 +2290,11 @@ void __fastcall TWinConfiguration::SetExternalSessionInExistingInstance(bool val
   SET_CONFIG_PROPERTY(ExternalSessionInExistingInstance);
 }
 //---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetShowLoginWhenNoSession(bool value)
+{
+  SET_CONFIG_PROPERTY(ShowLoginWhenNoSession);
+}
+//---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetKeepOpenWhenNoSession(bool value)
 {
   SET_CONFIG_PROPERTY(KeepOpenWhenNoSession);
@@ -2680,6 +2687,11 @@ void __fastcall TWinConfiguration::SetTimeoutShellIconRetrieval(bool value)
   SET_CONFIG_PROPERTY(TimeoutShellIconRetrieval);
 }
 //---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetUseIconUpdateThread(bool value)
+{
+  SET_CONFIG_PROPERTY(UseIconUpdateThread);
+}
+//---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetAllowWindowPrint(bool value)
 {
   SET_CONFIG_PROPERTY(AllowWindowPrint);
@@ -2811,6 +2823,8 @@ void __fastcall TWinConfiguration::UpdateStaticUsage()
   Usage->Set(L"FileColors", !FileColors.IsEmpty());
   Usage->Set(L"DragDropDrives", !DDDrives.IsEmpty());
   Usage->Set(L"ShowingTips", ShowTips);
+  Usage->Set(L"KeepingOpenWhenNoSession", KeepOpenWhenNoSession);
+  Usage->Set(L"ShowingLoginWhenNoSession", ShowLoginWhenNoSession);
   TipsUpdateStaticUsage();
 
   Usage->Set(L"CommanderNortonLikeMode", int(ScpCommander.NortonLikeMode));

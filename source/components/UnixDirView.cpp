@@ -507,7 +507,8 @@ void __fastcall TUnixDirView::SetDriveView(TCustomUnixDriveView * Value)
 void __fastcall TUnixDirView::DoSetTerminal(TTerminal * value, bool Replace)
 {
   DebugUsedParam(Replace);
-  if (FTerminal != value)
+  if ((FTerminal != value) ||
+      ((FTerminal != NULL) && !FTerminal->Active)) // Abused by TCustomScpExplorerForm::DisconnectSession
   {
     if (FTerminal)
     {
@@ -549,6 +550,10 @@ void __fastcall TUnixDirView::DoSetTerminal(TTerminal * value, bool Replace)
         DoStartReadDirectory(FTerminal); // just for style and the assertions
         DoReadDirectoryImpl(FTerminal, false);
       }
+      else
+      {
+        PathChanged(); // To clear path combo box
+      }
     }
     UpdatePathLabel();
   }
@@ -586,10 +591,9 @@ void __fastcall TUnixDirView::DoReadDirectoryImpl(TObject * /*Sender*/, bool Rel
   FLoading = false;
 
 #ifndef DESIGN_ONLY
+  CancelEdit();
   if (Terminal->Active)
   {
-    CancelEdit();
-
     if (ReloadOnly)
     {
       Reload(false);

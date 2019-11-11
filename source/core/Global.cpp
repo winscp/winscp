@@ -6,6 +6,18 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
+const UnicodeString EmptyString(TraceInitStr(L"\1\1\1")); // magic
+//---------------------------------------------------------------------------
+UnicodeString NormalizeString(const UnicodeString & S)
+{
+  UnicodeString Result = S;
+  if (Result == EmptyString)
+  {
+    Result = UnicodeString();
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 // TGuard
 //---------------------------------------------------------------------------
 __fastcall TGuard::TGuard(TCriticalSection * ACriticalSection) :

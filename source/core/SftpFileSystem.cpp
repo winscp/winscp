@@ -1849,6 +1849,7 @@ struct TOpenRemoteFileParams
   RawByteString RemoteFileHandle; // output
   TOverwriteFileParams * FileParams;
   bool Confirmed;
+  bool DontRecycle;
 };
 //===========================================================================
 __fastcall TSFTPFileSystem::TSFTPFileSystem(TTerminal * ATerminal,
@@ -3578,13 +3579,13 @@ void __fastcall TSFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
 void __fastcall TSFTPFileSystem::ReadSymlink(TRemoteFile * SymlinkFile,
   TRemoteFile *& File)
 {
-  DebugAssert(SymlinkFile && SymlinkFile->IsSymLink);
+  DebugAssert(SymlinkFile != NULL);
   DebugAssert(FVersion >= 3); // symlinks are supported with SFTP version 3 and later
 
   // need to use full filename when resolving links within subdirectory
   // (i.e. for download)
   UnicodeString FileName = LocalCanonify(
-    SymlinkFile->Directory != NULL ? SymlinkFile->FullFileName : SymlinkFile->FileName);
+    SymlinkFile->HaveFullFileName ? SymlinkFile->FullFileName : SymlinkFile->FileName);
 
   TSFTPPacket ReadLinkPacket(SSH_FXP_READLINK);
   AddPathString(ReadLinkPacket, FileName);
@@ -4457,6 +4458,14 @@ bool TSFTPFileSystem::SFTPConfirmResume(const UnicodeString DestFileName,
   return ResumeTransfer;
 }
 //---------------------------------------------------------------------------
+bool __fastcall TSFTPFileSystem::DoesFileLookLikeSymLink(TRemoteFile * File)
+{
+  return
+    (FVersion < 4) &&
+    ((*File->Rights & TRights::rfAll) == TRights::rfAll) &&
+    (File->Size < 100);
+}
+//---------------------------------------------------------------------------
 void __fastcall TSFTPFileSystem::Source(
   TLocalFileHandle & Handle, const UnicodeString & TargetDir, UnicodeString & DestFileName,
   const TCopyParamType * CopyParam, int Params,
@@ -4501,7 +4510,7 @@ void __fastcall TSFTPFileSystem::Source(
       if (DestFileExists)
       {
         FTerminal->LogEvent(FORMAT(L"File exists: %s", (FTerminal->GetRemoteFileInfo(File))));
-        OpenParams.DestFileSize = File->Size;
+        OpenParams.DestFileSize = File->Resolve()->Size;
         FileParams.DestSize = OpenParams.DestFileSize;
         FileParams.DestTimestamp = File->Modification;
         DestRights = *File->Rights;
@@ -4517,9 +4526,7 @@ void __fastcall TSFTPFileSystem::Source(
         // if file has all permissions and is small, then it is likely symlink.
         // also it is not likely that such a small file (if it is not symlink)
         // gets overwritten by large file (that would trigger resumable transfer).
-        else if ((FVersion < 4) &&
-                 ((*File->Rights & TRights::rfAll) == TRights::rfAll) &&
-                 (File->Size < 100))
+        else if (DoesFileLookLikeSymLink(File))
         {
           ResumeAllowed = false;
           FTerminal->LogEvent(L"Existing file looks like a symbolic link, not doing resumable transfer.");
@@ -4544,7 +4551,7 @@ void __fastcall TSFTPFileSystem::Source(
         FTerminal->LogEvent(L"Checking existence of partially transferred file.");
         if (RemoteFileExists(DestPartialFullName, &File))
         {
-          ResumeOffset = File->Size;
+          ResumeOffset = File->Resolve()->Size; // Though partial file should not be symlink
           delete File;
           File = NULL;
 
@@ -4606,6 +4613,7 @@ void __fastcall TSFTPFileSystem::Source(
   OpenParams.Params = Params;
   OpenParams.FileParams = &FileParams;
   OpenParams.Confirmed = false;
+  OpenParams.DontRecycle = false;
 
   FTerminal->LogEvent(0, L"Opening remote file.");
   FTerminal->FileOperationLoop(SFTPOpenRemote, OperationProgress, folAllowSkip,
@@ -4946,7 +4954,7 @@ int __fastcall TSFTPFileSystem::SFTPOpenRemote(void * AOpenParams, void * /*Para
       // when we want to preserve overwritten files, we need to find out that
       // they exist first... even if overwrite confirmation is disabled.
       // but not when we already know we are not going to overwrite (but e.g. to append)
-      if ((ConfirmOverwriting || FTerminal->SessionData->OverwrittenToRecycleBin) &&
+      if ((ConfirmOverwriting || (FTerminal->SessionData->OverwrittenToRecycleBin && !OpenParams->DontRecycle)) &&
           (OpenParams->OverwriteMode == omOverwrite))
       {
         OpenType |= SSH_FXF_EXCL;
@@ -4972,6 +4980,7 @@ int __fastcall TSFTPFileSystem::SFTPOpenRemote(void * AOpenParams, void * /*Para
         FTerminal->LogEvent(FORMAT(L"Cannot create new file \"%s\", checking if it exists already", (OpenParams->RemoteFileName)));
 
         bool ThrowOriginal = false;
+        std::unique_ptr<TRemoteFile> File;
 
         // When exclusive opening of file fails, try to detect if file exists.
         // When file does not exist, failure was probably caused by 'permission denied'
@@ -4979,18 +4988,17 @@ int __fastcall TSFTPFileSystem::SFTPOpenRemote(void * AOpenParams, void * /*Para
         try
         {
           OperationProgress->Progress();
-          TRemoteFile * File;
+          TRemoteFile * AFile;
           UnicodeString RealFileName = LocalCanonify(OpenParams->RemoteFileName);
-          ReadFile(RealFileName, File);
-          DebugAssert(File);
-          OpenParams->DestFileSize = File->Size;
+          ReadFile(RealFileName, AFile);
+          File.reset(AFile);
+          File->FullFileName = RealFileName;
+          OpenParams->DestFileSize = File->Size; // Resolve symlinks?
           if (OpenParams->FileParams != NULL)
           {
             OpenParams->FileParams->DestTimestamp = File->Modification;
             OpenParams->FileParams->DestSize = OpenParams->DestFileSize;
           }
-          // file exists (otherwise exception was thrown)
-          SAFE_DESTROY(File);
         }
         catch(...)
         {
@@ -5022,6 +5030,8 @@ int __fastcall TSFTPFileSystem::SFTPOpenRemote(void * AOpenParams, void * /*Para
           {
             OpenParams->RemoteFileName =
               UnixExtractFilePath(OpenParams->RemoteFileName) + RemoteFileNameOnly;
+            // no longer points to a relevant file
+            File.reset(NULL);
           }
           OpenParams->Confirmed = true;
         }
@@ -5034,8 +5044,41 @@ int __fastcall TSFTPFileSystem::SFTPOpenRemote(void * AOpenParams, void * /*Para
             FTerminal->SessionData->OverwrittenToRecycleBin &&
             !FTerminal->SessionData->RecycleBinPath.IsEmpty())
         {
-          OperationProgress->Progress();
-          FTerminal->RecycleFile(OpenParams->RemoteFileName, NULL);
+          bool IsSymLink = (File.get() != NULL) && File->IsSymLink;
+          if (!IsSymLink && (File.get() != NULL) && DoesFileLookLikeSymLink(File.get()) && IsCapable(fcResolveSymlink))
+          {
+            FTerminal->LogEvent(L"Existing file looks like a symbolic link, checking if it really is.");
+            try
+            {
+              OperationProgress->Progress();
+              TRemoteFile * LinkedFile;
+              ReadSymlink(File.get(), LinkedFile);
+              delete LinkedFile;
+              IsSymLink = true;
+            }
+            catch (...)
+            {
+              if (!FTerminal->Active)
+              {
+                throw;
+              }
+            }
+          }
+
+          if (IsSymLink)
+          {
+            FTerminal->LogEvent(L"Existing file is a symbolic link, it will not be moved to a recycle bin.");
+            OpenParams->DontRecycle = true;
+          }
+          else
+          {
+            OperationProgress->Progress();
+            if (!FTerminal->RecycleFile(OpenParams->RemoteFileName, NULL))
+            {
+              // Allow normal overwrite
+              OpenParams->DontRecycle = true;
+            }
+          }
         }
       }
       else if (FTerminal->Active)
@@ -5380,7 +5423,7 @@ void __fastcall TSFTPFileSystem::Sink(
       {
         TSFTPPacket DataPacket;
 
-        int QueueLen = int(File->Size / DownloadBlockSize(OperationProgress)) + 1;
+        int QueueLen = int(OperationProgress->TransferSize / DownloadBlockSize(OperationProgress)) + 1;
         if ((QueueLen > FTerminal->SessionData->SFTPDownloadQueue) ||
             (QueueLen < 0))
         {

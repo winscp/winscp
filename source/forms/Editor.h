@@ -118,6 +118,7 @@ private:
   bool FClosePending;
   TColor FBackgroundColor;
   int FInternalEditorEncodingOverride;
+  bool FNewFile;
   bool FReloading;
 
   static unsigned int FInstances;
@@ -141,6 +142,7 @@ public:
   __property TForm * ParentForm = { read = FParentForm, write = FParentForm };
   __property TColor BackgroundColor = { read = FBackgroundColor, write = SetBackgroundColor };
   __property int InternalEditorEncodingOverride = { read = FInternalEditorEncodingOverride, write = FInternalEditorEncodingOverride };
+  __property bool NewFile = { read = FNewFile, write = FNewFile };
 protected:
   bool __fastcall CursorInUpperPart();
   void __fastcall Find();

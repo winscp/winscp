@@ -34,10 +34,7 @@ void __fastcall TProgramParams::Init(const UnicodeString & CmdLine)
 
   UnicodeString Param;
   CutToken(CommandLine, Param);
-  while (CutToken(CommandLine, Param))
-  {
-    Add(Param);
-  }
+  Parse(CommandLine);
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TProgramParams::FormatSwitch(const UnicodeString & Switch)

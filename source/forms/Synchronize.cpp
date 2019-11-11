@@ -35,12 +35,12 @@ bool __fastcall DoSynchronizeDialog(TSynchronizeParamType & Params,
   TSynchronizeSessionLog OnSynchronizeSessionLog,
   TFeedSynchronizeError & OnFeedSynchronizeError,
   TSynchronizeInNewWindow OnSynchronizeInNewWindow,
-  bool Start)
+  int AutoSubmit)
 {
   bool Result;
   TSynchronizeDialog * Dialog = SafeFormCreate<TSynchronizeDialog>(Application);
 
-  Dialog->Init(OnStartStop, OnGetOptions, OnSynchronizeSessionLog, OnFeedSynchronizeError, OnSynchronizeInNewWindow, Start);
+  Dialog->Init(OnStartStop, OnGetOptions, OnSynchronizeSessionLog, OnFeedSynchronizeError, OnSynchronizeInNewWindow, AutoSubmit);
 
   try
   {
@@ -97,7 +97,7 @@ void __fastcall TSynchronizeDialog::Init(TSynchronizeStartStopEvent OnStartStop,
   TSynchronizeSessionLog OnSynchronizeSessionLog,
   TFeedSynchronizeError & OnFeedSynchronizeError,
   TSynchronizeInNewWindow OnSynchronizeInNewWindow,
-  bool StartImmediately)
+  int AutoSubmit)
 {
   FOnStartStop = OnStartStop;
   FOnGetOptions = OnGetOptions;
@@ -105,7 +105,19 @@ void __fastcall TSynchronizeDialog::Init(TSynchronizeStartStopEvent OnStartStop,
   FOnFeedSynchronizeError = &OnFeedSynchronizeError;
   DebugAssert(OnSynchronizeInNewWindow != NULL);
   FOnSynchronizeInNewWindow = OnSynchronizeInNewWindow;
-  FStartImmediately = StartImmediately;
+  if (AutoSubmit == 0)
+  {
+    FStartImmediately = true;
+  }
+  else
+  {
+    FStartImmediately = false;
+
+    if (AutoSubmit > 0)
+    {
+      InitiateDialogTimeout(this, AutoSubmit * MSecsPerSec, StartButton);
+    }
+  }
 }
 //---------------------------------------------------------------------------
 __fastcall TSynchronizeDialog::~TSynchronizeDialog()

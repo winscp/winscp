@@ -22,6 +22,8 @@ void __fastcall ExecuteShellCheckedAndWait(const UnicodeString Command, TProcess
 TObjectList * StartCreationDirectoryMonitorsOnEachDrive(unsigned int Filter, TFileChangedEvent OnChanged);
 extern bool DontCopyCommandToClipboard;
 bool __fastcall CopyCommandToClipboard(const UnicodeString & Command);
+bool DoesSessionExistInPutty(TSessionData * SessionData);
+bool __fastcall ExportSessionToPutty(TSessionData * SessionData, bool ReuseExisting, const UnicodeString & SessionName);
 void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
   TSessionData * SessionData);
 bool __fastcall SpecialFolderLocation(int PathID, UnicodeString & Path);
@@ -61,6 +63,7 @@ void LoadBrowserDocument(TWebBrowserEx * WebBrowser, const UnicodeString & Docum
 TComponent * __fastcall FindComponentRecursively(TComponent * Root, const UnicodeString & Name);
 void __fastcall GetInstrutionsTheme(
   TColor & MainInstructionColor, HFONT & MainInstructionFont, HFONT & InstructionFont);
+bool CanShowTimeEstimate(TDateTime StartTime);
 //---------------------------------------------------------------------------
 class TLocalCustomCommand : public TFileCustomCommand
 {

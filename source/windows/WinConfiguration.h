@@ -442,6 +442,7 @@ private:
   TScriptFormat FGenerateUrlScriptFormat;
   TAssemblyLanguage FGenerateUrlAssemblyLanguage;
   bool FExternalSessionInExistingInstance;
+  bool FShowLoginWhenNoSession;
   bool FKeepOpenWhenNoSession;
   bool FLocalIconsByExt;
   TLocaleFlagOverride FBidiModeOverride;
@@ -453,6 +454,7 @@ private:
   int FRunsSinceLastTip;
   bool FLockedInterface;
   bool FTimeoutShellIconRetrieval;
+  bool FUseIconUpdateThread;
   bool FAllowWindowPrint;
   int FDontDecryptPasswords;
   int FMasterPasswordSession;
@@ -543,6 +545,7 @@ private:
   void __fastcall SetGenerateUrlScriptFormat(TScriptFormat value);
   void __fastcall SetGenerateUrlAssemblyLanguage(TAssemblyLanguage value);
   void __fastcall SetExternalSessionInExistingInstance(bool value);
+  void __fastcall SetShowLoginWhenNoSession(bool value);
   void __fastcall SetKeepOpenWhenNoSession(bool value);
   void __fastcall SetLocalIconsByExt(bool value);
   void __fastcall SetBidiModeOverride(TLocaleFlagOverride value);
@@ -561,6 +564,7 @@ private:
   bool __fastcall GetTimeoutShellOperations();
   void __fastcall SetTimeoutShellOperations(bool value);
   void __fastcall SetTimeoutShellIconRetrieval(bool value);
+  void __fastcall SetUseIconUpdateThread(bool value);
   void __fastcall SetAllowWindowPrint(bool value);
   int __fastcall GetLocaleCompletenessTreshold();
 
@@ -731,6 +735,7 @@ public:
   __property TScriptFormat GenerateUrlScriptFormat = { read = FGenerateUrlScriptFormat, write = SetGenerateUrlScriptFormat };
   __property TAssemblyLanguage GenerateUrlAssemblyLanguage = { read = FGenerateUrlAssemblyLanguage, write = SetGenerateUrlAssemblyLanguage };
   __property bool ExternalSessionInExistingInstance = { read = FExternalSessionInExistingInstance, write = SetExternalSessionInExistingInstance };
+  __property bool ShowLoginWhenNoSession = { read = FShowLoginWhenNoSession, write = SetShowLoginWhenNoSession };
   __property bool KeepOpenWhenNoSession = { read = FKeepOpenWhenNoSession, write = SetKeepOpenWhenNoSession };
   __property bool LocalIconsByExt = { read = FLocalIconsByExt, write = SetLocalIconsByExt };
   __property TLocaleFlagOverride BidiModeOverride = { read = FBidiModeOverride, write = SetBidiModeOverride };
@@ -746,6 +751,7 @@ public:
   __property bool LockedInterface = { read = FLockedInterface, write = SetLockedInterface };
   __property bool TimeoutShellOperations = { read = GetTimeoutShellOperations, write = SetTimeoutShellOperations };
   __property bool TimeoutShellIconRetrieval = { read = FTimeoutShellIconRetrieval, write = SetTimeoutShellIconRetrieval };
+  __property bool UseIconUpdateThread = { read = FUseIconUpdateThread, write = SetUseIconUpdateThread };
   __property bool AllowWindowPrint = { read = FAllowWindowPrint, write = SetAllowWindowPrint };
   __property LCID DefaultLocale = { read = FDefaultLocale };
   __property int LocaleCompletenessTreshold = { read = GetLocaleCompletenessTreshold };

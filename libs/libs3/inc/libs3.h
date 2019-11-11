@@ -703,6 +703,7 @@ typedef struct S3BucketContext
      * The name of the host to connect to when making S3 requests.  If set to
      * NULL, the default S3 hostname passed in to S3_initialize will be used.
      **/
+    // WINSCP: Can contain port number
     const char *hostName;
 
     /**
@@ -1830,6 +1831,7 @@ void S3_set_request_context_verify_peer(S3RequestContext *requestContext,
  * S3 Utility Functions
  ************************************************************************** **/
 
+ #ifndef WINSCP
 /**
  * Generates an HTTP authenticated query string, which may then be used by
  * a browser (or other web client) to issue the request.  The request is
@@ -1861,6 +1863,7 @@ S3Status S3_generate_authenticated_query_string
     (char *buffer, const S3BucketContext *bucketContext,
      const char *key, int expires, const char *resource,
      const char *httpMethod);
+#endif
 
 
 /** **************************************************************************

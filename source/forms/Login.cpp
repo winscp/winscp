@@ -600,8 +600,6 @@ void __fastcall TLoginDialog::UpdateControls()
     bool S3Protocol = (FSProtocol == fsS3);
 
     // session
-    PortNumberEdit->Visible = !S3Protocol;
-    Label2->Visible = PortNumberEdit->Visible;
     FtpsCombo->Visible = Editable && FtpProtocol;
     FtpsLabel->Visible = FtpProtocol;
     WebDavsCombo->Visible = Editable && WebDavProtocol;
@@ -709,6 +707,9 @@ void __fastcall TLoginDialog::FormShow(TObject * /*Sender*/)
   ToolsMenuButton->Top = ToolsMenuButton->Top + Offset;
   ManageButton->Top = ManageButton->Top + Offset;
   SessionTree->Height = SessionTree->Height + Offset;
+
+  // Bit of a hack: Assume an auto open, when we are linked to the main form
+  ShowAgainPanel->Visible = (FLinkedForm != NULL);
 
   // among other this makes the expanded nodes look like expanded,
   // because the LoadState call in Execute would be too early,
@@ -1176,6 +1177,10 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction * BasicAction,
   {
     SessionAdvancedAction->Enabled = Editable;
   }
+  else if (Action == SessionRawAction)
+  {
+    SessionRawAction->Enabled = Editable;
+  }
   else if (Action == SaveAsSessionAction)
   {
     // Save as is needed for new site only when !SupportsSplitButton()
@@ -1270,12 +1275,11 @@ bool __fastcall TLoginDialog::Execute(TList * DataList)
       FNewSiteData->CopyData(SessionData);
       FNewSiteData->Special = false;
 
-      // This is actualy bit pointless, as we focus the last selected site anyway
-      // in LoadState(). As of now, we hardly get any useful data
-      // in ad-hoc DataList anyway, so it is not a big deal
+      // This is actualy bit pointless.
+      // As of now, we hardly ever get any useful data in ad-hoc DataList.
       // (this was implemented for support taking session url from clipboard instead
       // of command-line, but without autoconnect, but this functionality was cancelled)
-      if (!FNewSiteData->IsSame(StoredSessions->DefaultSettings, false))
+      if (!FNewSiteData->IsSameDecrypted(StoredSessions->DefaultSettings))
       {
         // we want to start with new site page
         FForceNewSite = true;
@@ -1304,6 +1308,12 @@ bool __fastcall TLoginDialog::Execute(TList * DataList)
     SaveConfiguration();
     // DataList saved already from FormCloseQuery
   }
+
+  if (!ShowAgainCheck->Checked)
+  {
+    WinConfiguration->ShowLoginWhenNoSession = false;
+  }
+
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -1446,7 +1456,7 @@ void __fastcall TLoginDialog::LoadState()
   // calling TTreeNode::MakeVisible() when tree view is not visible yet,
   // sometimes scrolls view horizontally when not needed
   // (seems like it happens for sites that are at the same level
-  // as site folders, e.g. for the very last root-level site, at long as
+  // as site folders, e.g. for the very last root-level site, as long as
   // there are any folders)
   if (!FForceNewSite &&
       !WinConfiguration->LastStoredSession.IsEmpty() && DebugAlwaysTrue(Visible))
@@ -1648,6 +1658,7 @@ void __fastcall TLoginDialog::SetDefaultSessionActionExecute(
   {
     std::unique_ptr<TSessionData> SessionData(new TSessionData(L""));
     SaveSession(SessionData.get());
+    // See the comment to the other use of the method in DoSaveSession.
     CustomWinConfiguration->AskForMasterPasswordIfNotSetAndNeededToPersistSessionData(SessionData.get());
     StoredSessions->DefaultSettings = SessionData.get();
 
@@ -2767,7 +2778,7 @@ void __fastcall TLoginDialog::PersistNewSiteIfNeeded()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TLoginDialog::SessionAdvancedActionExecute(TObject * /*Sender*/)
+void __fastcall TLoginDialog::SessionAdvancedActionExecute(TObject * Sender)
 {
   // If we ever allow showing advanced settings, while read-only,
   // we must make sure that FSessionData actually holds the advanced settings,
@@ -2783,7 +2794,14 @@ void __fastcall TLoginDialog::SessionAdvancedActionExecute(TObject * /*Sender*/)
     ParseHostName();
 
     SaveSession(FSessionData);
-    DoSiteAdvancedDialog(FSessionData);
+    if (Sender == SessionAdvancedAction)
+    {
+      DoSiteAdvancedDialog(FSessionData);
+    }
+    else
+    {
+      DoSiteRawDialog(FSessionData);
+    }
     // Needed only for Note.
     // The only other property visible on Login dialog that Advanced site dialog
     // can change is protocol (between fsSFTP and fsSFTPonly),
@@ -3070,7 +3088,7 @@ void __fastcall TLoginDialog::ChangeScale(int M, int D)
   FNoteGroupOffset = MulDiv(FNoteGroupOffset, M, D);
 }
 //---------------------------------------------------------------------------
-void __fastcall TLoginDialog::ButtonPanelMouseDown(TObject *, TMouseButton, TShiftState, int, int)
+void __fastcall TLoginDialog::PanelMouseDown(TObject *, TMouseButton, TShiftState, int, int)
 {
   CountClicksForWindowPrint(this);
 }

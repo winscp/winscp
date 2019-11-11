@@ -21,6 +21,12 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
+#define SET_SESSION_PROPERTY_FROM(PROPERTY, FROM) \
+  if (F##PROPERTY != FROM) { F##PROPERTY = FROM; Modify(); }
+//---------------------------------------------------------------------------
+#define SET_SESSION_PROPERTY(PROPERTY) \
+  SET_SESSION_PROPERTY_FROM(PROPERTY, value)
+//---------------------------------------------------------------------------
 const wchar_t * PingTypeNames = L"Off;Null;Dummy";
 const wchar_t * ProxyMethodNames = L"None;SOCKS4;SOCKS5;HTTP;Telnet;Cmd";
 const wchar_t * DefaultName = L"Default Settings";
@@ -110,7 +116,7 @@ TSessionData * __fastcall TSessionData::Clone()
   return Data.release();
 }
 //---------------------------------------------------------------------
-void __fastcall TSessionData::Default()
+void __fastcall TSessionData::DefaultSettings()
 {
   HostName = L"";
   PortNumber = SshPortNumber;
@@ -156,6 +162,7 @@ void __fastcall TSessionData::Default()
   FPuttyProtocol = L"";
   TcpNoDelay = false;
   SendBuf = DefaultSendBuf;
+  SourceAddress = L"";
   SshSimple = true;
   HostKey = L"";
   FingerprintScan = false;
@@ -223,6 +230,7 @@ void __fastcall TSessionData::Default()
   NotUtf = asAuto;
 
   S3DefaultRegion = L"";
+  S3UrlStyle = s3usVirtualHost;
 
   // SFTP
   SftpServer = L"";
@@ -266,8 +274,15 @@ void __fastcall TSessionData::Default()
 
   FtpProxyLogonType = 0; // none
 
+  PuttySettings = UnicodeString();
+
   CustomParam1 = L"";
   CustomParam2 = L"";
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::Default()
+{
+  DefaultSettings();
 
   IsWorkspace = false;
   Link = L"";
@@ -287,13 +302,14 @@ void __fastcall TSessionData::NonPersistant()
   PreserveDirectoryChanges = false;
 }
 //---------------------------------------------------------------------
+#define PROPERTY(P) PROPERTY_HANDLER(P, )
 #define BASE_PROPERTIES \
   PROPERTY(HostName); \
   PROPERTY(PortNumber); \
   PROPERTY(UserName); \
-  PROPERTY(Password); \
+  PROPERTY_HANDLER(Password, F); \
   PROPERTY(PublicKeyFile); \
-  PROPERTY(Passphrase); \
+  PROPERTY_HANDLER(Passphrase, F); \
   PROPERTY(FSProtocol); \
   PROPERTY(Ftps); \
   PROPERTY(LocalDirectory); \
@@ -303,7 +319,7 @@ void __fastcall TSessionData::NonPersistant()
   PROPERTY(Note);
 //---------------------------------------------------------------------
 #define ADVANCED_PROPERTIES \
-  PROPERTY(NewPassword); \
+  PROPERTY_HANDLER(NewPassword, F); \
   PROPERTY(ChangePassword); \
   PROPERTY(PingInterval); \
   PROPERTY(PingType); \
@@ -357,6 +373,7 @@ void __fastcall TSessionData::NonPersistant()
   PROPERTY(TimeDifferenceAuto); \
   PROPERTY(TcpNoDelay); \
   PROPERTY(SendBuf); \
+  PROPERTY(SourceAddress); \
   PROPERTY(SshSimple); \
   PROPERTY(AuthKI); \
   PROPERTY(AuthKIPassword); \
@@ -369,12 +386,13 @@ void __fastcall TSessionData::NonPersistant()
   PROPERTY(PostLoginCommands); \
   \
   PROPERTY(S3DefaultRegion); \
+  PROPERTY(S3UrlStyle); \
   \
   PROPERTY(ProxyMethod); \
   PROPERTY(ProxyHost); \
   PROPERTY(ProxyPort); \
   PROPERTY(ProxyUsername); \
-  PROPERTY(ProxyPassword); \
+  PROPERTY_HANDLER(ProxyPassword, F); \
   PROPERTY(ProxyTelnetCommand); \
   PROPERTY(ProxyLocalCommand); \
   PROPERTY(ProxyDNS); \
@@ -401,7 +419,7 @@ void __fastcall TSessionData::NonPersistant()
   PROPERTY(TunnelHostName); \
   PROPERTY(TunnelPortNumber); \
   PROPERTY(TunnelUserName); \
-  PROPERTY(TunnelPassword); \
+  PROPERTY_HANDLER(TunnelPassword, F); \
   PROPERTY(TunnelPublicKeyFile); \
   PROPERTY(TunnelLocalPortNumber); \
   PROPERTY(TunnelPortFwd); \
@@ -427,7 +445,9 @@ void __fastcall TSessionData::NonPersistant()
   \
   PROPERTY(WinTitle); \
   \
-  PROPERTY(EncryptKey); \
+  PROPERTY_HANDLER(EncryptKey, F); \
+  \
+  PROPERTY(PuttySettings); \
   \
   PROPERTY(CustomParam1); \
   PROPERTY(CustomParam2);
@@ -441,6 +461,7 @@ void __fastcall TSessionData::Assign(TPersistent * Source)
   if (Source && Source->InheritsFrom(__classid(TSessionData)))
   {
     TSessionData * SourceData = (TSessionData *)Source;
+    // Master password prompt shows implicitly here, when cloning the session data for a new terminal
     CopyData(SourceData);
     FSource = SourceData->FSource;
   }
@@ -450,17 +471,35 @@ void __fastcall TSessionData::Assign(TPersistent * Source)
   }
 }
 //---------------------------------------------------------------------
-void __fastcall TSessionData::CopyData(TSessionData * SourceData)
+void __fastcall TSessionData::DoCopyData(TSessionData * SourceData, bool NoRecrypt)
 {
-  #define PROPERTY(P) P = SourceData->P
+  #define PROPERTY_HANDLER(P, F) \
+    if (NoRecrypt) \
+    { \
+      F##P = SourceData->F##P; \
+    } \
+    else \
+    { \
+      P = SourceData->P; \
+    }
   PROPERTY(Name);
   BASE_PROPERTIES;
   ADVANCED_PROPERTIES;
   META_PROPERTIES;
-  #undef PROPERTY
+  #undef PROPERTY_HANDLER
   FOverrideCachedHostKey = SourceData->FOverrideCachedHostKey;
   FModified = SourceData->Modified;
   FSaveOnly = SourceData->FSaveOnly;
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::CopyData(TSessionData * SourceData)
+{
+  DoCopyData(SourceData, false);
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::CopyDataNoRecrypt(TSessionData * SourceData)
+{
+  DoCopyData(SourceData, true);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::CopyDirectoriesStateData(TSessionData * SourceData)
@@ -492,17 +531,23 @@ void __fastcall TSessionData::CopyNonCoreData(TSessionData * SourceData)
   Note = SourceData->Note;
 }
 //---------------------------------------------------------------------
-bool __fastcall TSessionData::IsSame(const TSessionData * Default, bool AdvancedOnly, TStrings * DifferentProperties)
+bool __fastcall TSessionData::IsSame(
+  const TSessionData * Default, bool AdvancedOnly, TStrings * DifferentProperties, bool Decrypted)
 {
   bool Result = true;
-  #define PROPERTY(P) \
-    if (P != Default->P) \
+  #define PROPERTY_HANDLER(P, F) \
+    if ((Decrypted && (P != Default->P)) || \
+        (!Decrypted && (F##P != Default->F##P))) \
     { \
+      Result = false; \
       if (DifferentProperties != NULL) \
       { \
         DifferentProperties->Add(#P); \
       } \
-      Result = false; \
+      else \
+      { \
+        return Result; \
+      } \
     }
 
   if (!AdvancedOnly)
@@ -511,18 +556,23 @@ bool __fastcall TSessionData::IsSame(const TSessionData * Default, bool Advanced
     META_PROPERTIES;
   }
   ADVANCED_PROPERTIES;
-  #undef PROPERTY
+  #undef PROPERTY_HANDLER
   return Result;
 }
 //---------------------------------------------------------------------
 bool __fastcall TSessionData::IsSame(const TSessionData * Default, bool AdvancedOnly)
 {
-  return IsSame(Default, AdvancedOnly, NULL);
+  return IsSame(Default, AdvancedOnly, NULL, false);
+}
+//---------------------------------------------------------------------
+bool __fastcall TSessionData::IsSameDecrypted(const TSessionData * Default)
+{
+  return IsSame(Default, false, NULL, true);
 }
 //---------------------------------------------------------------------
 TFSProtocol NormalizeFSProtocol(TFSProtocol FSProtocol)
 {
-  if ((FSProtocol == fsSCPonly) || (FSProtocol == fsSFTPonly))
+  if (FSProtocol == fsSFTPonly)
   {
     FSProtocol = fsSFTP;
   }
@@ -565,7 +615,8 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
     }
     else
     {
-      FPassword = Storage->ReadStringAsBinaryData(L"Password", FPassword);
+      RawByteString APassword = Storage->ReadStringAsBinaryData(L"Password", FPassword);
+      SET_SESSION_PROPERTY_FROM(Password, APassword);
     }
   }
   HostKey = Storage->ReadString(L"SshHostKey", HostKey); // probably never used
@@ -663,6 +714,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   InternalEditorEncoding = Storage->ReadInteger(L"InternalEditorEncoding", InternalEditorEncoding);
 
   S3DefaultRegion = Storage->ReadString(L"S3DefaultRegion", S3DefaultRegion);
+  S3UrlStyle = (TS3UrlStyle)Storage->ReadInteger(L"S3UrlStyle", S3UrlStyle);
 
   // PuTTY defaults to TcpNoDelay, but the psftp/pscp ignores this preference, and always set this to off (what is our default too)
   if (!PuttyImport)
@@ -670,6 +722,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
     TcpNoDelay = Storage->ReadBool(L"TcpNoDelay", TcpNoDelay);
   }
   SendBuf = Storage->ReadInteger(L"SendBuf", Storage->ReadInteger("SshSendBuf", SendBuf));
+  SourceAddress = Storage->ReadString(L"SourceAddress", SourceAddress);
   SshSimple = Storage->ReadBool(L"SshSimple", SshSimple);
 
   ProxyMethod = (TProxyMethod)Storage->ReadInteger(L"ProxyMethod", ProxyMethod);
@@ -684,7 +737,8 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   else
   {
     // load encrypted password
-    FProxyPassword = Storage->ReadStringAsBinaryData(L"ProxyPasswordEnc", FProxyPassword);
+    RawByteString AProxyPassword = Storage->ReadStringAsBinaryData(L"ProxyPasswordEnc", FProxyPassword);
+    SET_SESSION_PROPERTY_FROM(ProxyPassword, AProxyPassword);
   }
   if (ProxyMethod == pmCmd)
   {
@@ -753,7 +807,8 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
     }
     else
     {
-      FTunnelPassword = Storage->ReadStringAsBinaryData(L"TunnelPassword", FTunnelPassword);
+      RawByteString ATunnelPassword = Storage->ReadStringAsBinaryData(L"TunnelPassword", FTunnelPassword);
+      SET_SESSION_PROPERTY_FROM(TunnelPassword, ATunnelPassword);
     }
   }
   TunnelPublicKeyFile = Storage->ReadString(L"TunnelPublicKeyFile", TunnelPublicKeyFile);
@@ -787,12 +842,15 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   }
   else
   {
-    FEncryptKey = Storage->ReadStringAsBinaryData(L"EncryptKey", FEncryptKey);
+    RawByteString AEncryptKey = Storage->ReadStringAsBinaryData(L"EncryptKey", FEncryptKey);
+    SET_SESSION_PROPERTY_FROM(EncryptKey, AEncryptKey);
   }
 
   IsWorkspace = Storage->ReadBool(L"IsWorkspace", IsWorkspace);
   Link = Storage->ReadString(L"Link", Link);
   NameOverride = Storage->ReadString(L"NameOverride", NameOverride);
+
+  PuttySettings = Storage->ReadString(L"PuttySettings", PuttySettings);
 
   CustomParam1 = Storage->ReadString(L"CustomParam1", CustomParam1);
   CustomParam2 = Storage->ReadString(L"CustomParam2", CustomParam2);
@@ -1032,7 +1090,9 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
     WRITE_DATA_EX(Integer, L"Utf", NotUtf, );
     WRITE_DATA(Integer, InternalEditorEncoding);
     WRITE_DATA(String, S3DefaultRegion);
+    WRITE_DATA(Integer, S3UrlStyle);
     WRITE_DATA(Integer, SendBuf);
+    WRITE_DATA(String, SourceAddress);
     WRITE_DATA(Bool, SshSimple);
   }
 
@@ -1127,18 +1187,34 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
     WRITE_DATA(String, Link);
     WRITE_DATA(String, NameOverride);
 
+    WRITE_DATA(String, PuttySettings);
+
     WRITE_DATA(String, CustomParam1);
     WRITE_DATA(String, CustomParam2);
   }
 
-  SavePasswords(Storage, PuttyExport, DoNotEncryptPasswords);
+  // This is for collecting all keys for TSiteRawDialog::AddButtonClick.
+  // It should be enough to test for (Default == NULL),
+  // the DoNotEncryptPasswords and PuttyExport were added to limit a possible unintended impact.
+  bool SaveAll = (Default == NULL) && DoNotEncryptPasswords && !PuttyExport;
+
+  SavePasswords(Storage, PuttyExport, DoNotEncryptPasswords, SaveAll);
+
+  if (PuttyExport)
+  {
+    WritePuttySettings(Storage, PuttySettings);
+  }
 }
 //---------------------------------------------------------------------
-TStrings * __fastcall TSessionData::SaveToOptions(const TSessionData * Default)
+TStrings * __fastcall TSessionData::SaveToOptions(const TSessionData * Default, bool SaveName, bool PuttyExport)
 {
   std::unique_ptr<TStringList> Options(new TStringList());
   std::unique_ptr<TOptionsStorage> OptionsStorage(new TOptionsStorage(Options.get(), true));
-  DoSave(OptionsStorage.get(), false, Default, true);
+  if (SaveName)
+  {
+    OptionsStorage->WriteString(L"Name", Name);
+  }
+  DoSave(OptionsStorage.get(), PuttyExport, Default, true);
   return Options.release();
 }
 //---------------------------------------------------------------------
@@ -1437,21 +1513,26 @@ void __fastcall TSessionData::ImportFromFilezilla(
 
 }
 //---------------------------------------------------------------------
-void __fastcall TSessionData::SavePasswords(THierarchicalStorage * Storage, bool PuttyExport, bool DoNotEncryptPasswords)
+void __fastcall TSessionData::SavePasswords(THierarchicalStorage * Storage, bool PuttyExport, bool DoNotEncryptPasswords, bool SaveAll)
 {
-  if (!Configuration->DisablePasswordStoring && !PuttyExport && !FPassword.IsEmpty())
+  if (!Configuration->DisablePasswordStoring && !PuttyExport && (!FPassword.IsEmpty() || SaveAll))
   {
-    // DoNotEncryptPasswords is set when called from GenerateOpenCommandArgs only
-    // and it never saves session password
-    DebugAssert(!DoNotEncryptPasswords);
-
-    Storage->WriteBinaryDataAsString(L"Password", StronglyRecryptPassword(FPassword, UserName+HostName));
+    if (DoNotEncryptPasswords)
+    {
+      Storage->WriteString(L"PasswordPlain", Password);
+      Storage->DeleteValue(L"Password");
+    }
+    else
+    {
+      Storage->WriteBinaryDataAsString(L"Password", StronglyRecryptPassword(FPassword, UserName+HostName));
+      Storage->DeleteValue(L"PasswordPlain");
+    }
   }
   else
   {
     Storage->DeleteValue(L"Password");
+    Storage->DeleteValue(L"PasswordPlain");
   }
-  Storage->DeleteValue(L"PasswordPlain");
 
   if (PuttyExport)
   {
@@ -1462,7 +1543,7 @@ void __fastcall TSessionData::SavePasswords(THierarchicalStorage * Storage, bool
   {
     if (DoNotEncryptPasswords)
     {
-      if (!FProxyPassword.IsEmpty())
+      if (!FProxyPassword.IsEmpty() || SaveAll)
       {
         Storage->WriteString(L"ProxyPassword", ProxyPassword);
       }
@@ -1475,7 +1556,7 @@ void __fastcall TSessionData::SavePasswords(THierarchicalStorage * Storage, bool
     else
     {
       // save password encrypted
-      if (!FProxyPassword.IsEmpty())
+      if (!FProxyPassword.IsEmpty() || SaveAll)
       {
         Storage->WriteBinaryDataAsString(L"ProxyPasswordEnc", StronglyRecryptPassword(FProxyPassword, ProxyUsername+ProxyHost));
       }
@@ -1488,7 +1569,7 @@ void __fastcall TSessionData::SavePasswords(THierarchicalStorage * Storage, bool
 
     if (DoNotEncryptPasswords)
     {
-      if (!FTunnelPassword.IsEmpty())
+      if (!FTunnelPassword.IsEmpty() || SaveAll)
       {
         Storage->WriteString(L"TunnelPasswordPlain", TunnelPassword);
       }
@@ -1499,7 +1580,7 @@ void __fastcall TSessionData::SavePasswords(THierarchicalStorage * Storage, bool
     }
     else
     {
-      if (!Configuration->DisablePasswordStoring && !FTunnelPassword.IsEmpty())
+      if (!Configuration->DisablePasswordStoring && (!FTunnelPassword.IsEmpty() || SaveAll))
       {
         Storage->WriteBinaryDataAsString(L"TunnelPassword", StronglyRecryptPassword(FTunnelPassword, TunnelUserName+TunnelHostName));
       }
@@ -1511,7 +1592,7 @@ void __fastcall TSessionData::SavePasswords(THierarchicalStorage * Storage, bool
 
     if (DoNotEncryptPasswords)
     {
-      if (!FEncryptKey.IsEmpty())
+      if (!FEncryptKey.IsEmpty() || SaveAll)
       {
         Storage->WriteString(L"EncryptKeyPlain", EncryptKey);
       }
@@ -1523,7 +1604,7 @@ void __fastcall TSessionData::SavePasswords(THierarchicalStorage * Storage, bool
     }
     else
     {
-      if (!FEncryptKey.IsEmpty())
+      if (!FEncryptKey.IsEmpty() || SaveAll)
       {
         Storage->WriteBinaryDataAsString(L"EncryptKey", StronglyRecryptPassword(FEncryptKey, UserName+HostName));
       }
@@ -1553,20 +1634,27 @@ bool __fastcall TSessionData::HasPassword()
 //---------------------------------------------------------------------
 bool __fastcall TSessionData::HasAnySessionPassword()
 {
-  return HasPassword() || !FTunnelPassword.IsEmpty();
-}
-//---------------------------------------------------------------------
-bool __fastcall TSessionData::HasAnyPassword()
-{
+  // Keep in sync with ClearSessionPasswords
   return
-    HasAnySessionPassword() ||
-    !FProxyPassword.IsEmpty() ||
+    HasPassword() ||
+    !FTunnelPassword.IsEmpty()  ||
     // will probably be never used
     !FNewPassword.IsEmpty();
 }
 //---------------------------------------------------------------------
+bool __fastcall TSessionData::HasAnyPassword()
+{
+  // Keep in sync with MaskPasswords
+  return
+    HasAnySessionPassword() ||
+    !FProxyPassword.IsEmpty() ||
+    !FEncryptKey.IsEmpty() ||
+    !FPassphrase.IsEmpty();
+}
+//---------------------------------------------------------------------
 void __fastcall TSessionData::ClearSessionPasswords()
 {
+  // Keep in sync with HasAnySessionPassword
   FPassword = L"";
   FNewPassword = L"";
   FTunnelPassword = L"";
@@ -1608,7 +1696,7 @@ void __fastcall TSessionData::SaveRecryptedPasswords(THierarchicalStorage * Stor
     {
       RecryptPasswords();
 
-      SavePasswords(Storage, false, false);
+      SavePasswords(Storage, false, false, false);
     }
     __finally
     {
@@ -1653,7 +1741,7 @@ void __fastcall TSessionData::CacheHostKeyIfNotCached()
     UnicodeString HostKeyName = PuttyMungeStr(FORMAT(L"%s@%d:%s", (KeyType, PortNumber, HostName)));
     if (!Storage->ValueExists(HostKeyName))
     {
-      // fingerprint is MD5 of host key, so it cannot be translated back to host key,
+      // fingerprint is a checksum of a host key, so it cannot be translated back to host key,
       // so we store fingerprint and TSecureShell::VerifyHostKey was
       // modified to accept also fingerprint
       Storage->WriteString(HostKeyName, HostKey);
@@ -1729,6 +1817,7 @@ bool __fastcall TSessionData::MaskPasswordInOptionParameter(const UnicodeString 
 //---------------------------------------------------------------------
 void __fastcall TSessionData::MaskPasswords()
 {
+  // Keep in sync with HasAnyPassword
   if (!Password.IsEmpty())
   {
     Password = PasswordMask;
@@ -1998,9 +2087,17 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
         }
         else if (StartsText(UrlRawSettingsParamNamePrefix, ConnectionParamName))
         {
-          UnicodeString Name = RightStr(ConnectionParamName, ConnectionParamName.Length() - UrlRawSettingsParamNamePrefix.Length());
-          Name = DecodeUrlChars(Name);
-          RawSettings->Values[Name] = DecodeUrlChars(ConnectionParam);
+          UnicodeString AName = RightStr(ConnectionParamName, ConnectionParamName.Length() - UrlRawSettingsParamNamePrefix.Length());
+          AName = DecodeUrlChars(AName);
+          UnicodeString Value = DecodeUrlChars(ConnectionParam);
+          if (SameText(AName, L"Name"))
+          {
+            Name = Value;
+          }
+          else
+          {
+            RawSettings->Values[AName] = Value;
+          }
         }
       }
 
@@ -3011,7 +3108,9 @@ TStrings * __fastcall TSessionData::GetRawSettingsForUrl()
   SessionData->Ftps = FactoryDefaults->Ftps;
   SessionData->HostKey = FactoryDefaults->HostKey;
   SessionData->CopyNonCoreData(FactoryDefaults.get());
-  return SessionData->SaveToOptions(FactoryDefaults.get());
+  // Cannot be decided in SaveToOptions as it does not have HostName and UserName, so it cannot calculate DefaultSessionName.
+  bool SaveName = HasSessionName() && (Name != DefaultSessionName);
+  return SessionData->SaveToOptions(FactoryDefaults.get(), SaveName, false);
 }
 //---------------------------------------------------------------------
 bool __fastcall TSessionData::HasRawSettingsForUrl()
@@ -3042,13 +3141,22 @@ UnicodeString __fastcall TSessionData::GenerateSessionUrl(unsigned int Flags)
 
     if (FLAGSET(Flags, sufHostKey) && !HostKey.IsEmpty())
     {
-      // Many SHA-256 fingeprints end with an equal sign and we do not really need it to be encoded, so avoid that.
-      // Also colons in TLS/SSL fingerprint do not really need encoding.
-      UnicodeString S = EncodeUrlString(NormalizeFingerprint(HostKey), L"=:");
+      UnicodeString KeyName;
+      UnicodeString Fingerprint = HostKey;
+      NormalizeFingerprint(Fingerprint, KeyName);
+      UnicodeString S = Fingerprint;
+      if (!KeyName.IsEmpty())
+      {
+        S = KeyName + NormalizedFingerprintSeparator + S;
+      }
+      S = Base64ToUrlSafe(S); // Noop for MD5 (both in SSH host keys and TLS/SSL)
+      S = MD5ToUrlSafe(S); // TLS/SSL fingerprints
+      UnicodeString S2 = EncodeUrlString(S);
+      DebugAssert(S2 == S2); // There should be nothing left for encoding
 
       Url +=
         UnicodeString(UrlParamSeparator) + UrlHostKeyParamName +
-        UnicodeString(UrlParamValueSeparator) + S;
+        UnicodeString(UrlParamValueSeparator) + S2;
     }
 
     if (FLAGSET(Flags, sufRawSettings))
@@ -3178,7 +3286,7 @@ UnicodeString __fastcall TSessionData::GenerateOpenCommandArgs(bool Rtf)
     SessionData->Timeout = FactoryDefaults->Timeout;
   }
 
-  std::unique_ptr<TStrings> RawSettings(SessionData->SaveToOptions(FactoryDefaults.get()));
+  std::unique_ptr<TStrings> RawSettings(SessionData->SaveToOptions(FactoryDefaults.get(), false, false));
 
   if (RawSettings->Count > 0)
   {
@@ -3392,7 +3500,7 @@ void __fastcall TSessionData::GenerateAssemblyCode(
 
   Head += AssemblyNewClassInstanceEnd(Language, false);
 
-  std::unique_ptr<TStrings> RawSettings(SessionData->SaveToOptions(FactoryDefaults.get()));
+  std::unique_ptr<TStrings> RawSettings(SessionData->SaveToOptions(FactoryDefaults.get(), false, false));
 
   UnicodeString SessionOptionsVariableName = AssemblyVariableName(Language, SessionOptionsClassName);
 
@@ -3473,6 +3581,11 @@ void __fastcall TSessionData::SetTimeDifferenceAuto(bool value)
 void __fastcall TSessionData::SetLocalDirectory(UnicodeString value)
 {
   SET_SESSION_PROPERTY(LocalDirectory);
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall TSessionData::GetLocalDirectoryExpanded()
+{
+  return ExpandFileName(::ExpandEnvironmentVariables(LocalDirectory));
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetRemoteDirectory(UnicodeString value)
@@ -3565,6 +3678,11 @@ void __fastcall TSessionData::SetSendBuf(int value)
   SET_SESSION_PROPERTY(SendBuf);
 }
 //---------------------------------------------------------------------
+void __fastcall TSessionData::SetSourceAddress(const UnicodeString & value)
+{
+  SET_SESSION_PROPERTY(SourceAddress);
+}
+//---------------------------------------------------------------------
 void __fastcall TSessionData::SetSshSimple(bool value)
 {
   SET_SESSION_PROPERTY(SshSimple);
@@ -3636,6 +3754,11 @@ TAutoSwitch __fastcall TSessionData::GetBug(TSshBug Bug) const
 {
   DebugAssert(Bug >= 0 && static_cast<unsigned int>(Bug) < LENOF(FBugs));
   return FBugs[Bug];
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetPuttySettings(UnicodeString value)
+{
+  SET_SESSION_PROPERTY(PuttySettings);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetCustomParam1(UnicodeString value)
@@ -3880,6 +4003,11 @@ void __fastcall TSessionData::SetS3DefaultRegion(UnicodeString value)
   SET_SESSION_PROPERTY(S3DefaultRegion);
 }
 //---------------------------------------------------------------------
+void __fastcall TSessionData::SetS3UrlStyle(TS3UrlStyle value)
+{
+  SET_SESSION_PROPERTY(S3UrlStyle);
+}
+//---------------------------------------------------------------------
 void __fastcall TSessionData::SetIsWorkspace(bool value)
 {
   SET_SESSION_PROPERTY(IsWorkspace);
@@ -4000,6 +4128,12 @@ void __fastcall TSessionData::DisableAuthentationsExceptPassword()
   TlsCertificateFile = L"";
   Passphrase = L"";
   TryAgent = false;
+}
+//---------------------------------------------------------------------
+TStrings * TSessionData::GetAllOptionNames(bool PuttyExport)
+{
+  std::unique_ptr<TSessionData> FactoryDefaults(new TSessionData(L""));
+  return FactoryDefaults->SaveToOptions(NULL, false, PuttyExport);
 }
 //=== TStoredSessionList ----------------------------------------------
 __fastcall TStoredSessionList::TStoredSessionList(bool aReadOnly):
@@ -4357,12 +4491,12 @@ void __fastcall TStoredSessionList::ImportFromKnownHosts(TStrings * Lines)
             }
           }
 
-          const struct ssh_signkey * Algorithm;
+          const struct ssh_keyalg * Algorithm;
           UnicodeString Key = ParseOpenSshPubLine(Line, Algorithm);
           UnicodeString KeyKey =
-            FORMAT(L"%s@%d:%s", (Algorithm->keytype, SessionData->PortNumber, HostNameStr));
+            FORMAT(L"%s@%d:%s", (Algorithm->cache_id, SessionData->PortNumber, HostNameStr));
           UnicodeString HostKey =
-            FORMAT(L"%s:%s=%s", (Algorithm->name, KeyKey, Key));
+            FORMAT(L"%s:%s=%s", (Algorithm->ssh_id, KeyKey, Key));
           UnicodeString HostKeyList = SessionData->HostKey;
           AddToList(HostKeyList, HostKey, L";");
           SessionData->HostKey = HostKeyList;
@@ -4559,9 +4693,9 @@ void __fastcall TStoredSessionList::UpdateStaticUsage()
         Note++;
       }
 
-      // this effectively does not take passwords (proxy + tunnel) into account,
-      // when master password is set, as master password handler in not set up yet
-      if (!Data->IsSame(FactoryDefaults.get(), true, DifferentAdvancedProperties.get()))
+      // This would not work for passwords, as they are compared in their encrypted form.
+      // But there are no passwords set in factory defaults anyway.
+      if (!Data->IsSame(FactoryDefaults.get(), true, DifferentAdvancedProperties.get(), false))
       {
         Advanced++;
       }
@@ -4804,6 +4938,11 @@ TSessionData * __fastcall TStoredSessionList::CheckIsInFolderOrWorkspaceAndResol
 //---------------------------------------------------------------------------
 void __fastcall TStoredSessionList::GetFolderOrWorkspace(const UnicodeString & Name, TList * List)
 {
+  DoGetFolderOrWorkspace(Name, List, false);
+}
+//---------------------------------------------------------------------------
+void __fastcall TStoredSessionList::DoGetFolderOrWorkspace(const UnicodeString & Name, TList * List, bool NoRecrypt)
+{
   for (int Index = 0; (Index < Count); Index++)
   {
     TSessionData * RawData = Sessions[Index];
@@ -4813,7 +4952,14 @@ void __fastcall TStoredSessionList::GetFolderOrWorkspace(const UnicodeString & N
     if (Data != NULL)
     {
       TSessionData * Data2 = new TSessionData(L"");
-      Data2->Assign(Data);
+      if (NoRecrypt)
+      {
+        Data2->CopyDataNoRecrypt(Data);
+      }
+      else
+      {
+        Data2->Assign(Data);
+      }
 
       if (!RawData->Link.IsEmpty() && (DebugAlwaysTrue(Data != RawData)) &&
           // BACKWARD COMPATIBILITY
@@ -4845,7 +4991,7 @@ TStrings * __fastcall TStoredSessionList::GetFolderOrWorkspaceList(
   const UnicodeString & Name)
 {
   std::unique_ptr<TObjectList> DataList(new TObjectList());
-  GetFolderOrWorkspace(Name, DataList.get());
+  DoGetFolderOrWorkspace(Name, DataList.get(), true);
 
   std::unique_ptr<TStringList> Result(new TStringList());
   for (int Index = 0; (Index < DataList->Count); Index++)

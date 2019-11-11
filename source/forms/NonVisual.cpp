@@ -136,7 +136,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
     return;
   }
   void * Param;
-  #define HasTerminal (ScpExplorer->Terminal != NULL)
+  #define HasTerminal (ScpExplorer->Terminal != NULL) && ScpExplorer->Terminal->Active
   // CURRENT DIRVIEW
   #define EnabledSelectedOperation (ScpExplorer->EnableSelectedOperation[osCurrent])
   #define EnabledFocusedOperation (ScpExplorer->EnableFocusedOperation[osCurrent])
@@ -158,6 +158,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
     !WinConfiguration->DisableOpenEdit)
   UPD(CurrentEditInternalFocusedAction, EnabledFocusedFileOperation &&
     !WinConfiguration->DisableOpenEdit)
+  UPD(CurrentCopyToClipboardFocusedAction, EnabledFocusedOperation)
   // file operation
   UPD(CurrentRenameAction, EnabledFocusedOperation &&
     ((ScpExplorer->HasDirView[osLocal] && DirView(osLocal) == DirView(osCurrent)) ||
@@ -177,7 +178,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(CurrentDeleteAction, EnabledSelectedOperation)
   UPD(CurrentDeleteAlternativeAction, EnabledSelectedOperation)
   UPD(CurrentPropertiesAction, EnabledSelectedOperation)
-  UPD(CurrentCopyAction, EnabledSelectedOperation)
+  UPD(CurrentCopyToClipboardAction, EnabledSelectedOperation)
   UPD(RemoteMoveToAction, EnabledSelectedOperation &&
     (DirView(osRemote) == DirView(osCurrent)) &&
     ScpExplorer->Terminal->IsCapable[fcRemoteMove])
@@ -400,7 +401,9 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(SiteManagerAction, true)
   UPD(DuplicateSessionAction, HasTerminal)
   UPD(RenameSessionAction, HasTerminal)
-  UPD(CloseSessionAction, HasTerminal)
+  UPD(CloseSessionAction2, (ScpExplorer->Terminal != NULL))
+  UPDEX1(DisconnectSessionAction, HasTerminal, DisconnectSessionAction->Visible = (ScpExplorer->Terminal == NULL) || !ScpExplorer->Terminal->Disconnected)
+  UPDEX1(ReconnectSessionAction, (ScpExplorer->Terminal != NULL) && ScpExplorer->Terminal->Disconnected, ReconnectSessionAction->Visible = ReconnectSessionAction->Enabled)
   UPD(SavedSessionsAction2, true)
   UPD(WorkspacesAction, StoredSessions->HasAnyWorkspace())
   UPD(OpenedSessionsAction, HasTerminal)
@@ -507,6 +510,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(CurrentSystemMenuFocusedAction, ScpExplorer->DisplaySystemContextMenu())
     EXE(CurrentEditWithFocusedAction, ScpExplorer->ExecuteCurrentFileWith(true))
     EXE(CurrentEditInternalFocusedAction, ScpExplorer->ExecuteFile(osCurrent, efInternalEditor, NULL, true, true))
+    EXE(CurrentCopyToClipboardFocusedAction, ScpExplorer->CopyFilesToClipboard(osCurrent, true))
     // operation
     EXE(CurrentEditAction, ScpExplorer->ExecuteFile(osCurrent, efDefaultEditor, NULL, true, false))
     EXE(CurrentEditInternalAction, ScpExplorer->ExecuteFile(osCurrent, efInternalEditor, NULL, true, false))
@@ -519,7 +523,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(CurrentDeleteAction, ScpExplorer->ExecuteFileOperationCommand(foDelete, osCurrent, false))
     EXE(CurrentDeleteAlternativeAction, ScpExplorer->ExecuteFileOperationCommand(foDelete, osCurrent, false, false, (void*)true))
     EXE(CurrentPropertiesAction, ScpExplorer->ExecuteFileOperationCommand(foSetProperties, osCurrent, false))
-    EXE(CurrentCopyAction, ScpExplorer->CopyFilesToClipboard(osCurrent))
+    EXE(CurrentCopyToClipboardAction, ScpExplorer->CopyFilesToClipboard(osCurrent, false))
     EXE(FileListToCommandLineAction, ScpExplorer->PanelExport(osCurrent, peFileList, pedCommandLine))
     EXE(FileListToClipboardAction, ScpExplorer->PanelExport(osCurrent, peFileList, pedClipboard))
     EXE(FullFileListToClipboardAction, ScpExplorer->PanelExport(osCurrent, peFullFileList, pedClipboard))
@@ -717,7 +721,9 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(SiteManagerAction, ScpExplorer->NewSession(true))
     EXE(DuplicateSessionAction, ScpExplorer->DuplicateSession())
     EXE(RenameSessionAction, ScpExplorer->RenameSession())
-    EXE(CloseSessionAction, ScpExplorer->CloseSession())
+    EXE(CloseSessionAction2, ScpExplorer->CloseSession())
+    EXE(DisconnectSessionAction, ScpExplorer->DisconnectSession())
+    EXE(ReconnectSessionAction, ScpExplorer->ReconnectSession())
     EXE(SavedSessionsAction2, CreateSessionListMenu(SavedSessionsAction2))
     EXE(WorkspacesAction, CreateWorkspacesMenu(WorkspacesAction))
     EXE(OpenedSessionsAction, CreateOpenedSessionListMenu(OpenedSessionsAction))
@@ -996,10 +1002,9 @@ UnicodeString __fastcall TNonVisualDataModule::CustomCommandCaption(const TCusto
 UnicodeString __fastcall TNonVisualDataModule::CustomCommandHint(const TCustomCommandType * Command)
 {
   UnicodeString Name = StripHotkey(Command->Name);
-  UnicodeString ShortHint = FMTLOAD(CUSTOM_COMMAND_HINT, (Name));
   UnicodeString LongHint =
     !Command->Description.IsEmpty() ? Command->Description : FMTLOAD(CUSTOM_COMMAND_HINT_LONG, (Name, Command->Command));
-  UnicodeString Result = FORMAT(L"%s|%s", (ShortHint, LongHint));
+  UnicodeString Result = FORMAT(L"%s|%s", (Name, LongHint));
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -1008,8 +1013,25 @@ const int CustomCommandBoth = 0x0200;
 const int CustomCommandExtension = 0x0400;
 const int CustomCommandIndexMask = 0x00FF;
 //---------------------------------------------------------------------------
+// See IsValidIdent
+static UnicodeString MakeIdent(const UnicodeString & S)
+{
+  UnicodeString Result;
+  for (int Index = 1; Index <= S.Length(); Index++)
+  {
+    wchar_t C = S[Index];
+    if (IsLetter(C) ||
+        (!Result.IsEmpty() && IsDigit(C)))
+    {
+      Result += C;
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 int __fastcall TNonVisualDataModule::CreateCustomCommandsListMenu(
-  TCustomCommandList * List, TTBCustomItem * Menu, bool OnFocused, bool Toolbar, TCustomCommandListType ListType, int Tag)
+  TCustomCommandList * List, TTBCustomItem * Menu, bool OnFocused, bool Toolbar, TCustomCommandListType ListType,
+  int Tag, TStrings * HiddenCommands)
 {
   int Result = 0;
 
@@ -1024,6 +1046,26 @@ int __fastcall TNonVisualDataModule::CreateCustomCommandsListMenu(
       Item->Caption = CustomCommandCaption(Command, Toolbar);
       Item->Tag = Index | Tag;
       Item->Enabled = (State > 0);
+      if (Toolbar)
+      {
+        UnicodeString Name = ExtractFileName(Command->Id);
+        if (Name.IsEmpty())
+        {
+          Name = MakeIdent(Command->Name);
+        }
+        Name += L"CustomCommand";
+        // This is only the last resort to avoid run-time errors.
+        // If there are duplicates, button hidding won't be deterministic.
+        int X = 0;
+        UnicodeString UniqueName = Name;
+        while (Owner->FindComponent(UniqueName) != NULL)
+        {
+          X++;
+          UniqueName = FORMAT(L"%s%d", (Name, X));
+        }
+        Item->Name = UniqueName;
+        Item->Visible = (HiddenCommands->IndexOf(Item->Name) < 0);
+      }
       if (OnFocused)
       {
         Item->Tag = Item->Tag | CustomCommandOnFocused;
@@ -1049,9 +1091,9 @@ int __fastcall TNonVisualDataModule::CreateCustomCommandsListMenu(
 }
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(
-  TTBCustomItem * Menu, bool OnFocused, bool Toolbar, TCustomCommandListType ListType)
+  TTBCustomItem * Menu, bool OnFocused, bool Toolbar, TCustomCommandListType ListType, TStrings * HiddenCommands)
 {
-  CreateCustomCommandsListMenu(WinConfiguration->CustomCommandList, Menu, OnFocused, Toolbar, ListType, 0);
+  CreateCustomCommandsListMenu(WinConfiguration->CustomCommandList, Menu, OnFocused, Toolbar, ListType, 0, HiddenCommands);
 
   TTBCustomItem * Item;
 
@@ -1071,7 +1113,8 @@ void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(
   }
 
   TTBXSeparatorItem * Separator = AddMenuSeparator(Menu);
-  int ExtensionItems = CreateCustomCommandsListMenu(WinConfiguration->ExtensionList, Menu, OnFocused, Toolbar, ListType, CustomCommandExtension);
+  int ExtensionItems =
+    CreateCustomCommandsListMenu(WinConfiguration->ExtensionList, Menu, OnFocused, Toolbar, ListType, CustomCommandExtension, HiddenCommands);
   Separator->Visible = (ExtensionItems > 0);
 
   AddMenuSeparator(Menu);
@@ -1083,9 +1126,9 @@ void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(
     Item->Action = (ListType == ccltFile) ? CustomCommandsNonFileAction : CustomCommandsFileAction;
     Item->Action = NULL;
     TCustomCommandListType SubListType = (ListType == ccltFile) ? ccltNonFile : ccltFile;
-    int CustomCommandItems = CreateCustomCommandsListMenu(WinConfiguration->CustomCommandList, Item, OnFocused, Toolbar, SubListType, 0);
+    int CustomCommandItems = CreateCustomCommandsListMenu(WinConfiguration->CustomCommandList, Item, OnFocused, Toolbar, SubListType, 0, HiddenCommands);
     TTBXSeparatorItem * Separator = AddMenuSeparator(Item);
-    int ExtensionItems = CreateCustomCommandsListMenu(WinConfiguration->ExtensionList, Item, OnFocused, Toolbar, SubListType, CustomCommandExtension);
+    int ExtensionItems = CreateCustomCommandsListMenu(WinConfiguration->ExtensionList, Item, OnFocused, Toolbar, SubListType, CustomCommandExtension, HiddenCommands);
     Separator->Visible = (ExtensionItems > 0);
     Item->Enabled = (CustomCommandItems + ExtensionItems > 0);
 
@@ -1113,7 +1156,7 @@ void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(
   {
     int PrevCount = Menu->Count;
 
-    CreateCustomCommandsMenu(Menu, OnFocused, false, ListType);
+    CreateCustomCommandsMenu(Menu, OnFocused, false, ListType, NULL);
 
     for (int Index = 0; Index < PrevCount; Index++)
     {
@@ -1168,12 +1211,6 @@ void __fastcall TNonVisualDataModule::UpdateCustomCommandsToolbarList(TTBXToolba
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::UpdateCustomCommandsToolbar(TTBXToolbar * Toolbar)
 {
-  // can be called while explorer is being created
-  if (ScpExplorer == NULL)
-  {
-    return;
-  }
-
   TCustomCommandList * CustomCommandList = WinConfiguration->CustomCommandList;
   TCustomCommandList * ExtensionList = WinConfiguration->ExtensionList;
   int AfterCustomCommandsCommandCount = 2; // ad hoc, last
@@ -1203,8 +1240,17 @@ void __fastcall TNonVisualDataModule::UpdateCustomCommandsToolbar(TTBXToolbar * 
     Toolbar->BeginUpdate();
     try
     {
+      std::unique_ptr<TStrings> HiddenCommands(CreateSortedStringList());
+      for (int Index = 0; Index < Toolbar->Items->Count; Index++)
+      {
+        TTBCustomItem * Item = Toolbar->Items->Items[Index];
+        if (IsCustomizableToolbarItem(Item) && !Item->Visible)
+        {
+          HiddenCommands->Add(Item->Name);
+        }
+      }
       Toolbar->Items->Clear();
-      CreateCustomCommandsMenu(Toolbar->Items, false, true, ccltAll);
+      CreateCustomCommandsMenu(Toolbar->Items, false, true, ccltAll, HiddenCommands.get());
       DebugAssert(CommandCount + AdditionalCommands == Toolbar->Items->Count);
     }
     __finally
@@ -1453,7 +1499,7 @@ void __fastcall TNonVisualDataModule::CreateOpenedSessionListMenu(TAction * Acti
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::OpenedSessionItemClick(TObject * Sender)
 {
-  TTerminalManager::Instance()->ActiveTerminal = (TTerminal*)(((TMenuItem *)Sender)->Tag);
+  TTerminalManager::Instance()->ActiveTerminal = (TManagedTerminal*)(((TMenuItem *)Sender)->Tag);
 }
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::CreateEditorListMenu(TTBCustomItem * Menu, bool OnFocused)
@@ -1642,7 +1688,7 @@ void __fastcall TNonVisualDataModule::CustomCommandsLastUpdate(TAction * Action)
       TitleCommand = TitleCommand.SubString(1, MaxTitleCommandLen - 3) + Ellipsis;
     }
     Action->Caption = FMTLOAD(CUSTOM_COMMAND_LAST, (EscapeHotkey(TitleCommand)));
-    Action->Hint = FMTLOAD(CUSTOM_COMMAND_HINT, (Command.Command));
+    Action->Hint = Command.Command;
     Action->Enabled = (State > 0);
   }
 }
@@ -1828,8 +1874,10 @@ void __fastcall TNonVisualDataModule::ToolbarButtonItemClick(TObject * Sender)
 bool __fastcall TNonVisualDataModule::IsCustomizableToolbarItem(TTBCustomItem * Item)
 {
   return
-    (dynamic_cast<TTBXItem *>(Item) != NULL) ||
-    (dynamic_cast<TTBXSubmenuItem *>(Item) != NULL);
+    ((dynamic_cast<TTBXItem *>(Item) != NULL) ||
+     (dynamic_cast<TTBXSubmenuItem *>(Item) != NULL)) &&
+    (Item->Action != CustomCommandsLastAction) &&
+    DebugAlwaysTrue(Item->Action != CustomCommandsLastFocusedAction);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TNonVisualDataModule::IsToolbarCustomizable()
@@ -1889,7 +1937,7 @@ void __fastcall TNonVisualDataModule::ControlContextPopup(TObject * Sender, cons
   if (Dock != NULL)
   {
     // While we can identify toolbar for which context menu is popping up in OnExecute,
-    // we cannot in OnUpdate, so we have to remeber it here.
+    // we cannot in OnUpdate, so we have to remember it here.
     FCustomizedToolbar = dynamic_cast<TTBCustomToolbar *>(Dock->ControlAtPos(MousePos, true, true, false));
   }
   else

@@ -113,6 +113,7 @@ private:
   bool FAllowSkip;
   TSynchronizeProgress * FSynchronizeProgress;
   UnicodeString FProgressStr;
+  int FWheelDelta;
 
   void __fastcall SetOnceDoneOperation(TOnceDoneOperation value);
   TTBCustomItem * __fastcall CurrentOnceDoneItem();
@@ -133,6 +134,7 @@ protected:
   void __fastcall Minimize(TObject * Sender);
   virtual void __fastcall Dispatch(void * Message);
   void __fastcall SetCancelLower(TCancelStatus ACancel);
+  DYNAMIC void __fastcall MouseWheelHandler(TMessage & Message);
 
   INTERFACE_HOOK;
 

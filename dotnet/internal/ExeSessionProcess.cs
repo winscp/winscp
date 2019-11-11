@@ -842,17 +842,24 @@ namespace WinSCP
                 else
                 {
                     if (!TryFindExecutableInPath(GetAssemblyPath(), out executablePath) &&
+                        !TryFindExecutableInPath(GetEntryAssemblyPath(), out executablePath) &&
 #if !NETSTANDARD
                         !TryFindExecutableInPath(GetInstallationPath(RegistryHive.CurrentUser), out executablePath) &&
                         !TryFindExecutableInPath(GetInstallationPath(RegistryHive.LocalMachine), out executablePath) &&
 #endif
                         !TryFindExecutableInPath(GetDefaultInstallationPath(), out executablePath))
                     {
+                        string entryAssemblyDesc = string.Empty;
+                        Assembly entryAssembly = Assembly.GetEntryAssembly();
+                        if (entryAssembly != null)
+                        {
+                            entryAssemblyDesc = $", nor the entry assembly {entryAssembly.GetName().Name} ({GetEntryAssemblyPath()})";
+                        }
                         throw _logger.WriteException(
                             new SessionLocalException(_session,
                                 string.Format(CultureInfo.CurrentCulture,
-                                    "The {0} executable was not found at location of the assembly ({1}), nor in an installation path. You may use Session.ExecutablePath property to explicitly set path to {0}.",
-                                    ExeExecutableFileName, GetAssemblyPath())));
+                                    "The {0} executable was not found at location of the assembly {1} ({2}){3}, nor in an installation path. You may use Session.ExecutablePath property to explicitly set path to {0}.",
+                                    ExeExecutableFileName, Assembly.GetExecutingAssembly().GetName().Name, GetAssemblyPath(), entryAssemblyDesc)));
                     }
                 }
                 return executablePath;
@@ -908,7 +915,16 @@ namespace WinSCP
 
         private string GetAssemblyPath()
         {
-            string codeBasePath = _logger.GetAssemblyFilePath();
+            return DoGetAssemblyPath(_logger.GetAssemblyFilePath());
+        }
+
+        private string GetEntryAssemblyPath()
+        {
+            return DoGetAssemblyPath(_logger.GetEntryAssemblyFilePath());
+        }
+
+        private static string DoGetAssemblyPath(string codeBasePath)
+        {
             string path = null;
             if (!string.IsNullOrEmpty(codeBasePath))
             {
@@ -936,7 +952,7 @@ namespace WinSCP
 
                     _logger.WriteLine("Version of {0} is {1}, product {2} version is {3}", exePath, version.FileVersion, version.ProductName, version.ProductVersion);
 
-                    if (_session.DisableVersionCheckInternal)
+                    if (_session.DisableVersionCheck)
                     {
                         _logger.WriteLine("Version check disabled (not recommended)");
                     }

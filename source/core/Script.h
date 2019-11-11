@@ -75,6 +75,7 @@ public:
   __property TTerminal * Terminal = { read = FTerminal };
   __property bool Groups = { read = FGroups, write = FGroups };
   __property bool WantsProgress = { read = FWantsProgress, write = FWantsProgress };
+  __property bool Interactive = { read = FInteractive, write = FInteractive };
 
 protected:
   TTerminal * FTerminal;
@@ -101,6 +102,7 @@ protected:
   int FInteractiveSessionReopenTimeout;
   bool FGroups;
   bool FWantsProgress;
+  bool FInteractive;
   TStrings * FPendingLogLines;
   bool FWarnNonDefaultCopyParam;
   bool FWarnNonDefaultSynchronizeParams;
@@ -236,8 +238,9 @@ protected:
   void __fastcall FreeTerminal(TTerminal * Terminal);
   void __fastcall PrintProgress(bool First, const UnicodeString Str);
   bool __fastcall QueryCancel();
-  void __fastcall TerminalSynchronizeDirectory(const UnicodeString LocalDirectory,
-    const UnicodeString RemoteDirectory, bool & Continue, bool Collect);
+  void __fastcall TerminalSynchronizeDirectory(
+    const UnicodeString & LocalDirectory, const UnicodeString & RemoteDirectory,
+    bool & Continue, bool Collect, const TSynchronizeOptions * Options);
   void __fastcall DoChangeLocalDirectory(UnicodeString Directory);
   void __fastcall DoClose(TTerminal * Terminal);
   virtual bool __fastcall HandleExtendedException(Exception * E,

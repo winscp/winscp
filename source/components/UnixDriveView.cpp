@@ -74,11 +74,11 @@ void __fastcall TCustomUnixDriveView::CreateWnd()
 //---------------------------------------------------------------------------
 void __fastcall TCustomUnixDriveView::SetTerminal(TTerminal * value)
 {
-  if (FTerminal != value)
+  #ifndef DESIGN_ONLY
+  if ((FTerminal != value) || ((FTerminal != NULL) && !FTerminal->Active)) // Abused by TCustomScpExplorerForm::DisconnectSession
   {
     FTerminal = value;
     Items->Clear();
-    #ifndef DESIGN_ONLY
     // If terminal is not active initially, we will never load fixed paths, when it become active.
     // But actually terminal is not active here, only when we are replacing an abandoned terminal
     // with a dummy one (which will never become active)
@@ -93,8 +93,10 @@ void __fastcall TCustomUnixDriveView::SetTerminal(TTerminal * value)
         }
       }
     }
-    #endif
   }
+  #else
+  DebugUsedParam(value);
+  #endif
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomUnixDriveView::SetDirView(TUnixDirView * Value)

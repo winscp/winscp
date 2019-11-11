@@ -460,6 +460,7 @@ class TPublicControl : public TControl
 {
 friend void __fastcall RealignControl(TControl * Control);
 friend void __fastcall DoFormWindowProc(TCustomForm * Form, TWndMethod WndProc, TMessage & Message);
+friend TCanvas * CreateControlCanvas(TControl * Control);
 };
 //---------------------------------------------------------------------
 class TPublicForm : public TForm
@@ -1812,14 +1813,11 @@ void __fastcall InvokeHelp(TWinControl * Control)
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 static void __fastcall FocusableLabelCanvas(TStaticText * StaticText,
-  TControlCanvas ** ACanvas, TRect & R)
+  TCanvas ** ACanvas, TRect & R)
 {
-  TControlCanvas * Canvas = new TControlCanvas();
+  TCanvas * Canvas = CreateControlCanvas(StaticText);
   try
   {
-    Canvas->Control = StaticText;
-    Canvas->Font = StaticText->Font;
-
     R = StaticText->ClientRect;
 
     TSize TextSize;
@@ -1944,7 +1942,7 @@ static void __fastcall FocusableLabelWindowProc(void * Data, TMessage & Message,
   if (Message.Msg == WM_PAINT)
   {
     TRect R;
-    TControlCanvas * Canvas;
+    TCanvas * Canvas;
     FocusableLabelCanvas(StaticText, &Canvas, R);
     try
     {
@@ -2434,7 +2432,7 @@ bool __fastcall SupportsSplitButton()
   return (Win32MajorVersion >= 6);
 }
 //---------------------------------------------------------------------------
-static TButton * __fastcall FindDefaultButton(TWinControl * Control)
+static TButton * __fastcall FindStandardButton(TWinControl * Control, bool Default)
 {
   TButton * Result = NULL;
   int Index = 0;
@@ -2442,7 +2440,7 @@ static TButton * __fastcall FindDefaultButton(TWinControl * Control)
   {
     TControl * ChildControl = Control->Controls[Index];
     TButton * Button = dynamic_cast<TButton *>(ChildControl);
-    if ((Button != NULL) && Button->Default)
+    if ((Button != NULL) && (Default ? Button->Default : Button->Cancel))
     {
       Result = Button;
     }
@@ -2451,7 +2449,7 @@ static TButton * __fastcall FindDefaultButton(TWinControl * Control)
       TWinControl * WinControl = dynamic_cast<TWinControl *>(ChildControl);
       if (WinControl != NULL)
       {
-        Result = FindDefaultButton(WinControl);
+        Result = FindStandardButton(WinControl, Default);
       }
     }
     Index++;
@@ -2468,7 +2466,7 @@ TModalResult __fastcall DefaultResult(TCustomForm * Form, TButton * DefaultButto
   // ModalResult being mrNone, when Windows session is being logged off.
   // We interpreted mrNone as OK, causing lots of troubles.
   TModalResult Result = mrNone;
-  TButton * Button = FindDefaultButton(Form);
+  TButton * Button = FindStandardButton(Form, true);
   if (DebugAlwaysTrue(Button != NULL))
   {
     Result = Button->ModalResult;
@@ -2644,7 +2642,7 @@ void TDesktopFontManager::UpdateControl(TControl * Control)
 
   // Neither CreateFontIndirect nor RestoreFont set  color, so we should should have the default set by TFont constructor here.
   DebugAssert(DesktopFont->Color == clWindowText);
-  // Preserve color (particularly whice color of file panel font in dark mode)
+  // Preserve color (particularly white color of file panel font in dark mode)
   DesktopFont->Color = PublicControl->Font->Color;
 
   PublicControl->Font->Assign(DesktopFont.get());
@@ -2798,4 +2796,51 @@ TPanel * __fastcall CreateBlankPanel(TComponent * Owner)
   Panel->BevelInner = bvNone; // default
   Panel->BevelKind = bkNone;
   return Panel;
+}
+//---------------------------------------------------------------------------
+bool IsButtonBeingClicked(TButtonControl * Button)
+{
+  class TPublicButtonControl : public TButtonControl
+  {
+  public:
+    __property ClicksDisabled;
+  };
+  TPublicButtonControl * PublicButton = reinterpret_cast<TPublicButtonControl *>(Button);
+  // HACK ClicksDisabled is set in TButtonControl.WndProc while changing focus as response to WM_LBUTTONDOWN.
+  return PublicButton->ClicksDisabled;
+}
+//---------------------------------------------------------------------------
+// When using this in OnExit handers, it's still possible that the user does not actually click the
+// CanceButton (for example, when the button is released out of the button).
+// Then the validation is bypassed. Consequently, all dialogs that uses this must still
+// gracefully handle submission with non-validated data.
+bool IsCancelButtonBeingClicked(TControl * Control)
+{
+  TCustomForm * Form = GetParentForm(Control);
+  TButtonControl * CancelButton = FindStandardButton(Form, false);
+  // Find dialog has no Cancel button
+  return (CancelButton != NULL) && IsButtonBeingClicked(CancelButton);
+}
+//---------------------------------------------------------------------------
+TCanvas * CreateControlCanvas(TControl * Control)
+{
+  std::unique_ptr<TControlCanvas> Canvas(new TControlCanvas());
+  Canvas->Control = Control;
+  TPublicControl * PublicControl = static_cast<TPublicControl *>(Control);
+  Canvas->Font = PublicControl->Font;
+  return Canvas.release();
+}
+//---------------------------------------------------------------------------
+void AutoSizeButton(TButton * Button)
+{
+  std::unique_ptr<TCanvas> Canvas(CreateControlCanvas(Button));
+  int MinWidth = Canvas->TextWidth(Button->Caption) + ScaleByTextHeight(Button, (2 * 8));
+  if (Button->Width < MinWidth)
+  {
+    if (Button->Anchors.Contains(akRight))
+    {
+      Button->Left = Button->Left - (MinWidth - Button->Width);
+    }
+    Button->Width = MinWidth;
+  }
 }

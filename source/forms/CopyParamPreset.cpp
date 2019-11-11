@@ -167,9 +167,14 @@ TCopyParamRule * __fastcall TCopyParamPresetDialog::GetRule()
   if (HasRuleCheck->Checked)
   {
     TCopyParamRuleData Data;
+    // Last resort check, in case the mask escapes validation in OnExit by IsCancelButtonBeingClicked
+    ValidateMask(HostNameEdit->Text);
     Data.HostName = HostNameEdit->Text;
+    ValidateMask(UserNameEdit->Text);
     Data.UserName = UserNameEdit->Text;
+    ValidateMask(RemoteDirectoryEdit->Text);
     Data.RemoteDirectory = RemoteDirectoryEdit->Text;
+    ValidateMask(LocalDirectoryEdit->Text);
     Data.LocalDirectory = LocalDirectoryEdit->Text;
     Rule = new TCopyParamRule(Data);
   }

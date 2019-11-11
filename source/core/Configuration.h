@@ -18,6 +18,7 @@ extern const wchar_t * NotAutoSwitchNames;
 enum TAutoSwitch { asOn, asOff, asAuto }; // Has to match PuTTY FORCE_ON, FORCE_OFF, AUTO
 //---------------------------------------------------------------------------
 class TStoredSessionList;
+class TCopyParamType;
 //---------------------------------------------------------------------------
 class TConfiguration : public TObject
 {
@@ -92,6 +93,7 @@ private:
   UnicodeString __fastcall GetFileVersion(TVSFixedFileInfo * Info);
   UnicodeString __fastcall GetStoredSessionsSubKey();
   UnicodeString __fastcall GetPuttySessionsKey();
+  UnicodeString __fastcall GetPuttySessionsSubKey();
   void __fastcall SetRandomSeedFile(UnicodeString value);
   UnicodeString __fastcall GetRandomSeedFileName();
   void __fastcall SetPuttyRegistryStorageKey(UnicodeString value);
@@ -160,12 +162,18 @@ protected:
   virtual UnicodeString __fastcall GetDefaultKeyFile();
   virtual void __fastcall Saved();
   void __fastcall CleanupRegistry(UnicodeString CleanupSubKey);
+  void __fastcall CopyAllStringsInSubKey(
+    THierarchicalStorage * Source, THierarchicalStorage * Target, const UnicodeString & Name);
+  bool __fastcall CopySubKey(THierarchicalStorage * Source, THierarchicalStorage * Target, const UnicodeString & Name);
   UnicodeString __fastcall BannerHash(const UnicodeString & Banner);
   void __fastcall SetBannerData(const UnicodeString & SessionKey, const UnicodeString & BannerHash, unsigned int Params);
   void __fastcall GetBannerData(const UnicodeString & SessionKey, UnicodeString & BannerHash, unsigned int & Params);
   static UnicodeString __fastcall PropertyToKey(const UnicodeString & Property);
   virtual void __fastcall DoSave(bool All, bool Explicit);
   UnicodeString __fastcall FormatFingerprintKey(const UnicodeString & SiteKey, const UnicodeString & FingerprintType);
+  THierarchicalStorage * OpenDirectoryStatisticsCache(bool CanCreate);
+  UnicodeString __fastcall GetDirectoryStatisticsCacheKey(
+    const UnicodeString & SessionKey, const UnicodeString & Path, const TCopyParamType & CopyParam);
 
   virtual bool __fastcall GetConfirmOverwriting();
   virtual void __fastcall SetConfirmOverwriting(bool value);
@@ -224,6 +232,10 @@ public:
     TRemoteDirectoryChangesCache * DirectoryChangesCache);
   void __fastcall SaveDirectoryChangesCache(const UnicodeString SessionKey,
     TRemoteDirectoryChangesCache * DirectoryChangesCache);
+  TStrings * __fastcall LoadDirectoryStatisticsCache(
+    const UnicodeString & SessionKey, const UnicodeString & Path, const TCopyParamType & CopyParam);
+  void __fastcall SaveDirectoryStatisticsCache(
+    const UnicodeString & SessionKey, const UnicodeString & Path, const TCopyParamType & CopyParam, TStrings * DataList);
   bool __fastcall ShowBanner(const UnicodeString & SessionKey, const UnicodeString & Banner, unsigned int & Params);
   void __fastcall NeverShowBanner(const UnicodeString & SessionKey, const UnicodeString & Banner);
   void __fastcall SetBannerParams(const UnicodeString & SessionKey, unsigned int Params);
@@ -259,6 +271,7 @@ public:
   __property UnicodeString StoredSessionsSubKey = {read=GetStoredSessionsSubKey};
   __property UnicodeString PuttyRegistryStorageKey  = { read=FPuttyRegistryStorageKey, write=SetPuttyRegistryStorageKey };
   __property UnicodeString PuttySessionsKey  = { read=GetPuttySessionsKey };
+  __property UnicodeString PuttySessionsSubKey  = { read=GetPuttySessionsSubKey };
   __property UnicodeString RandomSeedFile  = { read=FRandomSeedFile, write=SetRandomSeedFile };
   __property UnicodeString RandomSeedFileName  = { read=GetRandomSeedFileName };
   __property UnicodeString SshHostKeysSubKey  = { read=GetSshHostKeysSubKey };
@@ -350,6 +363,7 @@ extern const UnicodeString Crc32ChecksumAlg;
 extern const UnicodeString SshFingerprintType;
 extern const UnicodeString TlsFingerprintType;
 //---------------------------------------------------------------------------
+extern const UnicodeString FtpsCertificateStorageKey;
 extern const UnicodeString HttpsCertificateStorageKey;
 //---------------------------------------------------------------------------
 #endif

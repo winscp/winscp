@@ -27,12 +27,7 @@ __fastcall TScriptProcParams::TScriptProcParams(const UnicodeString & FullComman
 
   FFullCommand = FullCommand;
   FParamsStr = ParamsStr;
-  UnicodeString Param;
-  UnicodeString AParamsStr = ParamsStr;
-  while (CutToken(AParamsStr, Param))
-  {
-    Add(Param);
-  }
+  Parse(ParamsStr);
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
@@ -310,6 +305,7 @@ __fastcall TScript::TScript(bool LimitedOutput)
   FTerminal = NULL;
   FGroups = false;
   FWantsProgress = false;
+  FInteractive = false;
   FIncludeFileMaskOptionUsed = false;
   FPendingLogLines = new TStringList();
 
@@ -1453,6 +1449,18 @@ void __fastcall TScript::GetProc(TScriptProcParams * Parameters)
     (TFileListType)(fltQueryServer | fltMask | FLAGMASK(Latest, fltLatest)));
   try
   {
+    // For internal use by .NET Session.GetFileToDirectory
+    if (Parameters->FindSwitch(L"onlyfile"))
+    {
+      for (int Index = 0; Index < FileList->Count; Index++)
+      {
+        TRemoteFile * File = dynamic_cast<TRemoteFile *>(FileList->Objects[Index]);
+        if (File->IsDirectory)
+        {
+          throw Exception(FMTLOAD(NOT_FILE_ERROR, (File->FileName)));
+        }
+      }
+    }
 
     UnicodeString TargetDirectory;
     if (Parameters->ParamCount == 1)
@@ -2382,8 +2390,8 @@ void __fastcall TManagementScript::TerminalOperationFinished(
 }
 //---------------------------------------------------------------------------
 void __fastcall TManagementScript::TerminalSynchronizeDirectory(
-  const UnicodeString LocalDirectory, const UnicodeString RemoteDirectory,
-  bool & Continue, bool Collect)
+  const UnicodeString & LocalDirectory, const UnicodeString & RemoteDirectory,
+  bool & Continue, bool Collect, const TSynchronizeOptions *)
 {
   int SynchronizeMode = FSynchronizeMode;
   if (FKeepingUpToDate)
@@ -2654,7 +2662,7 @@ void __fastcall TManagementScript::Connect(const UnicodeString Session,
         TScriptCommands::CheckParams(Options, false);
       }
 
-      if (!Session.IsEmpty() && !Data->Name.IsEmpty() && (Batch != TScript::BatchOff))
+      if (!Session.IsEmpty() && !Data->Name.IsEmpty() && (Batch != TScript::BatchOff) && !Interactive)
       {
         std::unique_ptr<TSessionData> DataWithFingerprint(Data->Clone());
         DataWithFingerprint->LookupLastFingerprint();
@@ -2723,7 +2731,7 @@ void __fastcall TManagementScript::Connect(const UnicodeString Session,
         {
           try
           {
-            DoChangeLocalDirectory(ExpandFileName(Data->LocalDirectory));
+            DoChangeLocalDirectory(Data->LocalDirectoryExpanded);
           }
           catch(Exception & E)
           {

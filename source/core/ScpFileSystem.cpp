@@ -1757,7 +1757,15 @@ void __fastcall TSCPFileSystem::SCPSource(const UnicodeString FileName,
     OperationProgress->SetTransferSize(OperationProgress->LocalSize);
     OperationProgress->SetTransferringFile(false);
 
-    FTerminal->SelectSourceTransferMode(Handle, CopyParam);
+    if (Handle.Size > 512*1024*1024)
+    {
+      OperationProgress->SetAsciiTransfer(false);
+      FTerminal->LogEvent(FORMAT(L"Binary transfer mode selected as the file is too large (%s) to be uploaded in Ascii mode using SCP protocol.", (IntToStr(Handle.Size))));
+    }
+    else
+    {
+      FTerminal->SelectSourceTransferMode(Handle, CopyParam);
+    }
 
     TUploadSessionAction Action(FTerminal->ActionLog);
     Action.FileName(ExpandUNCFileName(FileName));

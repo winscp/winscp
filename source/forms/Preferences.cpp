@@ -127,7 +127,24 @@ __fastcall TPreferencesDialog::TPreferencesDialog(
   LinkLabel(UpdatesLink);
   LinkAppLabel(BackgroundConfirmationsLink);
 
+  AutoSizeButton(UsageViewButton);
+
   AutomaticIniFileStorageLabel->Caption = ExpandEnvironmentVariables(Configuration->GetAutomaticIniFileStorageName(false));
+
+  if (IsUWP())
+  {
+    UpdatesSheet->Caption = LoadStr(PREFERENCES_STATISTICS_CAPTION);
+    int ProxyOffset = UpdatesProxyGroup->Top - UpdatesOptionsGroup->Top - UpdatesOptionsGroup->Height;
+    UpdatesGroup2->Visible = false;
+    UpdatesOptionsGroup->Top = UpdatesGroup2->Top;
+    UpdatesBetaVersionsCombo->Visible = false;
+    UpdatesBetaVersionsLabel->Visible = false;
+    int Offset = UsageViewButton->Top - UpdatesBetaVersionsCombo->Top;
+    CollectUsageCheck->Top = CollectUsageCheck->Top - Offset;
+    UsageViewButton->Top = UsageViewButton->Top - Offset;
+    UpdatesOptionsGroup->Height = UpdatesOptionsGroup->Height - Offset;
+    UpdatesProxyGroup->Top = UpdatesOptionsGroup->Top + UpdatesOptionsGroup->Height + ProxyOffset;
+  }
 
   HideComponentsPanel(this);
 }
@@ -475,6 +492,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     }
     BOOLPROP(MinimizeToTray);
     BOOLPROP(ExternalSessionInExistingInstance);
+    BOOLPROP(ShowLoginWhenNoSession);
     BOOLPROP(KeepOpenWhenNoSession);
     BOOLPROP(ShowTips);
 
@@ -852,6 +870,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     }
     BOOLPROP(MinimizeToTray);
     BOOLPROP(ExternalSessionInExistingInstance);
+    BOOLPROP(ShowLoginWhenNoSession);
     BOOLPROP(KeepOpenWhenNoSession);
     BOOLPROP(ShowTips);
 
@@ -906,7 +925,24 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     WinConfiguration->FileColors = TFileColorData::SaveList(FFileColors);
 
     // updates
-    WinConfiguration->Updates = SaveUpdates();
+    TUpdatesConfiguration Updates = SaveUpdates();
+
+    if ((Configuration->CollectUsage != CollectUsageCheck->Checked) && IsUWP())
+    {
+      if (CollectUsageCheck->Checked)
+      {
+        if (Updates.Period == TDateTime(0))
+        {
+          Updates.Period = 7;
+        }
+      }
+      else
+      {
+        Updates.Period = 0;
+      }
+    }
+
+    WinConfiguration->Updates = Updates;
 
     Configuration->CollectUsage = CollectUsageCheck->Checked;
 
@@ -937,7 +973,8 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     Configuration->LogFileName = LogFileNameEdit3->Text;
     Configuration->LogFileAppend = LogFileAppendButton->Checked;
     __int64 LogMaxSize;
-    if (LogMaxSizeCheck->Checked && DebugAlwaysTrue(TryStrToSize(LogMaxSizeCombo->Text, LogMaxSize)))
+    // TryStrToSize can fail, only if LogMaxSizeComboExit is bypassed due to IsCancelButtonBeingClicked
+    if (LogMaxSizeCheck->Checked && TryStrToSize(LogMaxSizeCombo->Text, LogMaxSize))
     {
       Configuration->LogMaxSize = LogMaxSize;
     }
@@ -1371,8 +1408,6 @@ void __fastcall TPreferencesDialog::UpdateControls()
 
     // integration
     EnableControl(ShellIconsGroup, !IsUWP());
-    // There's no quick launch in Windows 7
-    EnableControl(QuickLaunchIconButton, ShellIconsGroup->Enabled && !IsWin7());
     MakeDefaultHandlerItem->Visible = IsWinVista();
 
     // languages
@@ -1492,28 +1527,24 @@ void __fastcall TPreferencesDialog::IconButtonClick(TObject *Sender)
         break;
     }
   }
-  else
+  else if (Sender == SendToHookButton)
   {
     if (MessageDialog(MainInstructions(LoadStr(CONFIRM_CREATE_ICON)),
           qtConfirmation, qaYes | qaNo, HELP_CREATE_ICON) == qaYes)
     {
-      if (Sender == SendToHookButton)
-      {
-        IconName = FMTLOAD(SENDTO_HOOK_NAME2, (AppName));
-        SpecialFolder = CSIDL_SENDTO;
-        Params = TProgramParams::FormatSwitch(UPLOAD_SWITCH);
-      }
-      else if (Sender == QuickLaunchIconButton)
-      {
-        IconName = L"Microsoft\\Internet Explorer\\Quick Launch\\" +
-          AppName;
-        SpecialFolder = CSIDL_APPDATA;
-      }
+      IconName = FMTLOAD(SENDTO_HOOK_NAME2, (AppName));
+      SpecialFolder = CSIDL_SENDTO;
+      Params = TProgramParams::FormatSwitch(UPLOAD_SWITCH);
     }
     else
     {
       Abort();
     }
+  }
+  else
+  {
+    DebugFail();
+    Abort();
   }
 
   TInstantOperationVisualizer Visualizer;
@@ -2501,40 +2532,43 @@ void __fastcall TPreferencesDialog::PanelFontLabelDblClick(TObject * Sender)
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::UpdatesAuthenticationEmailEditExit(TObject * /*Sender*/)
 {
-  if (FVerifiedUpdatesAuthenticationEmail != UpdatesAuthenticationEmailEdit->Text)
+  if (!IsCancelButtonBeingClicked(this))
   {
-    if (!UpdatesAuthenticationEmailEdit->Text.IsEmpty())
+    if (FVerifiedUpdatesAuthenticationEmail != UpdatesAuthenticationEmailEdit->Text)
     {
-      TUpdatesConfiguration Updates = SaveUpdates();
-
+      if (!UpdatesAuthenticationEmailEdit->Text.IsEmpty())
       {
-        TInstantOperationVisualizer Visualizer;
-        QueryUpdates(Updates);
+        TUpdatesConfiguration Updates = SaveUpdates();
+
+        {
+          TInstantOperationVisualizer Visualizer;
+          QueryUpdates(Updates);
+        }
+
+        UnicodeString AuthenticationError = Updates.Results.AuthenticationError;
+        if (!AuthenticationError.IsEmpty())
+        {
+          AuthenticationError = FormatUpdatesMessage(AuthenticationError);
+          if (HasParagraphs(AuthenticationError))
+          {
+            AuthenticationError = MainInstructionsFirstParagraph(AuthenticationError);
+          }
+          else
+          {
+            AuthenticationError = MainInstructions(AuthenticationError);
+          }
+
+          unsigned int Result =
+            MoreMessageDialog(AuthenticationError, NULL, qtError, qaIgnore | qaAbort, HELP_AUTOMATIC_UPDATE);
+          if (Result == qaAbort)
+          {
+            Abort();
+          }
+        }
       }
 
-      UnicodeString AuthenticationError = Updates.Results.AuthenticationError;
-      if (!AuthenticationError.IsEmpty())
-      {
-        AuthenticationError = FormatUpdatesMessage(AuthenticationError);
-        if (HasParagraphs(AuthenticationError))
-        {
-          AuthenticationError = MainInstructionsFirstParagraph(AuthenticationError);
-        }
-        else
-        {
-          AuthenticationError = MainInstructions(AuthenticationError);
-        }
-
-        unsigned int Result =
-          MoreMessageDialog(AuthenticationError, NULL, qtError, qaIgnore | qaAbort, HELP_AUTOMATIC_UPDATE);
-        if (Result == qaAbort)
-        {
-          Abort();
-        }
-      }
+      FVerifiedUpdatesAuthenticationEmail = UpdatesAuthenticationEmailEdit->Text;
     }
-
-    FVerifiedUpdatesAuthenticationEmail = UpdatesAuthenticationEmailEdit->Text;
   }
 }
 //---------------------------------------------------------------------------
@@ -2921,29 +2955,35 @@ void __fastcall TPreferencesDialog::LanguagesViewCustomDrawItem(
 void __fastcall TPreferencesDialog::LogMaxSizeComboExit(TObject * /*Sender*/)
 {
   __int64 Size;
-  if (!TryStrToSize(LogMaxSizeCombo->Text, Size))
+  if (!IsCancelButtonBeingClicked(this))
   {
-    LogMaxSizeCombo->SetFocus();
-    throw Exception(FMTLOAD(SIZE_INVALID, (LogMaxSizeCombo->Text)));
-  }
-  else
-  {
-    LogMaxSizeCombo->Text = SizeToStr(Size);
+    if (!TryStrToSize(LogMaxSizeCombo->Text, Size))
+    {
+      LogMaxSizeCombo->SetFocus();
+      throw Exception(FMTLOAD(SIZE_INVALID, (LogMaxSizeCombo->Text)));
+    }
+    else
+    {
+      LogMaxSizeCombo->Text = SizeToStr(Size);
+    }
   }
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::PuttyPathEditExit(TObject * /*Sender*/)
 {
-  try
+  if (!IsCancelButtonBeingClicked(this))
   {
-    UnicodeString Program, AParams, Dir;
-    SplitCommand(PuttyPathEdit->Text, Program, AParams, Dir);
-  }
-  catch(...)
-  {
-    PuttyPathEdit->SelectAll();
-    PuttyPathEdit->SetFocus();
-    throw;
+    try
+    {
+      UnicodeString Program, AParams, Dir;
+      SplitCommand(PuttyPathEdit->Text, Program, AParams, Dir);
+    }
+    catch(...)
+    {
+      PuttyPathEdit->SelectAll();
+      PuttyPathEdit->SetFocus();
+      throw;
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -2999,7 +3039,15 @@ void __fastcall TPreferencesDialog::CustomIniFileStorageChanged()
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::CustomIniFileStorageEditExit(TObject * /*Sender*/)
 {
-  CustomIniFileStorageChanged();
+  if (!IsCancelButtonBeingClicked(this))
+  {
+    CustomIniFileStorageChanged();
+  }
+  else
+  {
+    // Reset the value to prevent accidental overwide of an INI file, in case the dialog cancel does not complete
+    CustomIniFileStorageEdit->Text = FCustomIniFileStorageName;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::CustomIniFileStorageEditAfterDialog(TObject * Sender, UnicodeString & Name, bool & Action)

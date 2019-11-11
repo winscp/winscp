@@ -254,7 +254,7 @@ inherited ScpCommanderForm: TScpCommanderForm
         object TBXSeparatorItem62: TTBXSeparatorItem
         end
         object TBXItem163: TTBXItem
-          Action = NonVisualDataModule.CurrentCopyAction
+          Action = NonVisualDataModule.CurrentCopyToClipboardAction
         end
         object TBXItem36: TTBXItem
           Action = NonVisualDataModule.PasteAction2
@@ -415,7 +415,13 @@ inherited ScpCommanderForm: TScpCommanderForm
           Action = NonVisualDataModule.NewSessionAction
         end
         object TBXItem115: TTBXItem
-          Action = NonVisualDataModule.CloseSessionAction
+          Action = NonVisualDataModule.CloseSessionAction2
+        end
+        object TBXItem252: TTBXItem
+          Action = NonVisualDataModule.DisconnectSessionAction
+        end
+        object TBXItem253: TTBXItem
+          Action = NonVisualDataModule.ReconnectSessionAction
         end
         object TBXItem218: TTBXItem
           Action = NonVisualDataModule.DuplicateSessionAction
@@ -843,7 +849,7 @@ inherited ScpCommanderForm: TScpCommanderForm
         Action = NonVisualDataModule.DuplicateSessionAction
       end
       object TBXItem124: TTBXItem
-        Action = NonVisualDataModule.CloseSessionAction
+        Action = NonVisualDataModule.CloseSessionAction2
       end
       object TBXItem125: TTBXItem
         Action = NonVisualDataModule.SaveCurrentSessionAction2
@@ -1092,27 +1098,35 @@ inherited ScpCommanderForm: TScpCommanderForm
         end>
       OnPanelClick = RemoteStatusBarPanelClick
     end
-    inherited RemoteDirView: TUnixDirView
+    inherited RemoteDirPanel: TPanel
       Left = 0
       Top = 146
       Width = 458
       Height = 124
       Constraints.MinHeight = 70
-      NortonLike = nlOn
-      OnUpdateStatusBar = RemoteDirViewUpdateStatusBar
-      PathLabel = RemotePathLabel
-      AddParentDir = True
-      OnDDFileOperationExecuted = RemoteFileControlDDFileOperationExecuted
-      OnHistoryGo = DirViewHistoryGo
-      OnPathChange = RemoteDirViewPathChange
+      inherited RemoteDirView: TUnixDirView
+        Width = 458
+        Height = 124
+        NortonLike = nlOn
+        OnUpdateStatusBar = RemoteDirViewUpdateStatusBar
+        PathLabel = RemotePathLabel
+        AddParentDir = True
+        OnDDFileOperationExecuted = RemoteFileControlDDFileOperationExecuted
+        OnHistoryGo = DirViewHistoryGo
+        OnPathChange = RemoteDirViewPathChange
+      end
     end
-    inherited RemoteDriveView: TUnixDriveView
+    inherited RemoteDrivePanel: TPanel
       Top = 98
       Width = 458
       Height = 45
       Align = alTop
       Constraints.MinHeight = 30
-      TabStop = False
+      inherited RemoteDriveView: TUnixDriveView
+        Width = 458
+        Height = 45
+        TabStop = False
+      end
     end
     object RemoteTopDock: TTBXDock
       Left = 0

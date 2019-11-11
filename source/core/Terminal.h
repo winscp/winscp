@@ -53,8 +53,8 @@ typedef void __fastcall (__closure *TProcessFileEventEx)
 typedef int __fastcall (__closure *TFileOperationEvent)
   (void * Param1, void * Param2);
 typedef void __fastcall (__closure *TSynchronizeDirectory)
-  (const UnicodeString LocalDirectory, const UnicodeString RemoteDirectory,
-   bool & Continue, bool Collect);
+  (const UnicodeString & LocalDirectory, const UnicodeString & RemoteDirectory,
+   bool & Continue, bool Collect, const TSynchronizeOptions * Options);
 typedef void __fastcall (__closure *TUpdatedSynchronizationChecklistItems)(
   const TSynchronizeChecklist::TItemList & Items);
 typedef void __fastcall (__closure *TProcessedSynchronizationChecklistItem)(
@@ -273,8 +273,9 @@ protected:
     int Params);
   void __fastcall DoCustomCommandOnFile(UnicodeString FileName,
     const TRemoteFile * File, UnicodeString Command, int Params, TCaptureOutputEvent OutputEvent);
-  void __fastcall DoRenameFile(const UnicodeString FileName, const TRemoteFile * File,
+  bool __fastcall DoRenameFile(const UnicodeString FileName, const TRemoteFile * File,
     const UnicodeString NewName, bool Move);
+  bool __fastcall DoMoveFile(const UnicodeString & FileName, const TRemoteFile * File, /*const TMoveFileParams*/ void * Param);
   void __fastcall DoCopyFile(const UnicodeString FileName, const TRemoteFile * File, const UnicodeString NewName);
   void __fastcall DoChangeFileProperties(const UnicodeString FileName,
     const TRemoteFile * File, const TRemoteProperties * Properties);
@@ -359,7 +360,7 @@ protected:
   void __fastcall DoSynchronizeProgress(const TSynchronizeData & Data, bool Collect);
   void __fastcall DeleteLocalFile(UnicodeString FileName,
     const TRemoteFile * File, void * Param);
-  void __fastcall RecycleFile(UnicodeString FileName, const TRemoteFile * File);
+  bool __fastcall RecycleFile(const UnicodeString & FileName, const TRemoteFile * File);
   TStrings * __fastcall GetFixedPaths();
   void __fastcall DoStartup();
   virtual bool __fastcall DoQueryReopen(Exception * E);
@@ -419,8 +420,9 @@ protected:
   UnicodeString __fastcall DecryptPassword(const RawByteString & Password);
   UnicodeString __fastcall GetRemoteFileInfo(TRemoteFile * File);
   void __fastcall LogRemoteFile(TRemoteFile * File);
-  UnicodeString __fastcall FormatFileDetailsForLog(const UnicodeString & FileName, TDateTime Modification, __int64 Size);
-  void __fastcall LogFileDetails(const UnicodeString & FileName, TDateTime Modification, __int64 Size);
+  UnicodeString __fastcall FormatFileDetailsForLog(
+    const UnicodeString & FileName, TDateTime Modification, __int64 Size, const TRemoteFile * LinkedFile = NULL);
+  void __fastcall LogFileDetails(const UnicodeString & FileName, TDateTime Modification, __int64 Size, const TRemoteFile * LinkedFile = NULL);
   void __fastcall LogFileDone(TFileOperationProgressType * OperationProgress, const UnicodeString & DestFileName);
   void __fastcall LogTotalTransferDetails(
     const UnicodeString TargetDir, const TCopyParamType * CopyParam,
@@ -762,6 +764,7 @@ struct TSynchronizeOptions
   ~TSynchronizeOptions();
 
   TStringList * Filter;
+  int Files;
 
   bool __fastcall FilterFind(const UnicodeString & FileName);
   bool __fastcall MatchesFilter(const UnicodeString & FileName);

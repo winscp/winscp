@@ -46,7 +46,7 @@
 		<Defines>_WIN32;$(Defines)</Defines>
 		<FinalOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</FinalOutputDir>
 		<ILINK_LibraryPath>$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\psdk;$(ILINK_LibraryPath)</ILINK_LibraryPath>
-		<IncludePath>filezilla\misc\;filezilla\;resource;core;..\libs\openssl;$(BDS)\include;$(BDS)\include\windows\vcl;$(BDS)\include\mfc;$(IncludePath)</IncludePath>
+		<IncludePath>filezilla\misc\;filezilla\;resource;core;..\libs\openssl\include;$(BDS)\include;$(BDS)\include\windows\vcl;$(BDS)\include\mfc;$(IncludePath)</IncludePath>
 		<IntermediateOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</IntermediateOutputDir>
 		<Manifest_File>None</Manifest_File>
 		<Multithreaded>true</Multithreaded>

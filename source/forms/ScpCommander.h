@@ -433,6 +433,8 @@ __published:
   TTBXItem *TBXItem245;
   TTBXSeparatorItem *TBXSeparatorItem64;
   TTBXItem *TBXItem251;
+  TTBXItem *TBXItem252;
+  TTBXItem *TBXItem253;
   void __fastcall SplitterMoved(TObject *Sender);
   void __fastcall SplitterCanResize(TObject *Sender, int &NewSize,
     bool &Accept);
@@ -530,14 +532,23 @@ protected:
     UnicodeString & TargetDirectory, TGUICopyParamType & CopyParam, bool Confirm,
     bool DragDrop, int Options);
   virtual TCustomDirView * __fastcall DirView(TOperationSide Side);
+  virtual TCustomDriveView * __fastcall DriveView(TOperationSide Side);
   virtual bool __fastcall DirViewEnabled(TOperationSide Side);
   TControl * __fastcall GetComponent(Byte Component);
   virtual void __fastcall RestoreFormParams();
+  void __fastcall RestorePanelParams(
+    TCustomDirView * DirView, TControl * DriveControl, TTBXStatusBar * StatusBar,
+    const TScpCommanderPanelConfiguration & PanelConfiguration);
+  void __fastcall StorePanelParams(
+    TCustomDirView * DirView, TControl * DriveControl, TTBXStatusBar * StatusBar,
+    TScpCommanderPanelConfiguration & PanelConfiguration);
   virtual void __fastcall RestoreParams();
   virtual void __fastcall FixControlsPlacement();
   virtual void __fastcall TerminalChanged(bool Replaced);
   virtual void __fastcall ConfigurationChanged();
   virtual bool __fastcall GetHasDirView(TOperationSide Side);
+  virtual bool IsSideLocalBrowser(TOperationSide Side);
+  virtual TCustomDirView * GetCurrentLocalBrowser();
   virtual void __fastcall UpdateControls();
   virtual void __fastcall FileOperationProgress(
     TFileOperationProgressType & ProgressData);
@@ -587,6 +598,7 @@ protected:
   virtual void __fastcall StartingDisconnected();
   virtual void __fastcall UpdateImages();
   virtual void __fastcall FileColorsChanged();
+  virtual void __fastcall ThemeChanged();
 
 public:
   __fastcall TScpCommanderForm(TComponent* Owner);
@@ -596,7 +608,7 @@ public:
   virtual bool __fastcall AllowedAction(TAction * Action, TActionAllowed Allowed);
   virtual void __fastcall ChangePath(TOperationSide Side);
   virtual void __fastcall CompareDirectories();
-  virtual void __fastcall UpdateTerminal(TTerminal * Terminal);
+  virtual void __fastcall UpdateTerminal(TManagedTerminal * Terminal);
   virtual void __fastcall SynchronizeDirectories();
   virtual void __fastcall FullSynchronizeDirectories();
   virtual void __fastcall StoreParams();
@@ -605,13 +617,13 @@ public:
   virtual void __fastcall GoToTree();
   virtual void __fastcall OpenConsole(UnicodeString Command = L"");
   virtual UnicodeString __fastcall PathForCaption();
-  virtual void __fastcall BeforeAction();
   virtual void __fastcall HomeDirectory(TOperationSide Side);
   virtual void __fastcall HistoryGo(TOperationSide Side, int Index);
   virtual void __fastcall DisplaySystemContextMenu();
   virtual void __fastcall GoToAddress();
-  virtual void __fastcall CopyFilesToClipboard(TOperationSide Side);
+  virtual void __fastcall CopyFilesToClipboard(TOperationSide Side, bool OnFocused);
   virtual void __fastcall PasteFromClipBoard();
+  virtual void __fastcall BrowseFile();
 
   __property double LeftPanelWidth = { read = GetLeftPanelWidth, write = SetLeftPanelWidth };
 };

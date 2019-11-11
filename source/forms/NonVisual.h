@@ -110,7 +110,7 @@ __published:    // IDE-managed Components
   TTimer *SessionIdleTimer;
   TAction *NewSessionAction;
   TAction *SiteManagerAction;
-  TAction *CloseSessionAction;
+  TAction *CloseSessionAction2;
   TAction *SavedSessionsAction2;
   TAction *WorkspacesAction;
   TAction *ExplorerSessionBandAction;
@@ -618,8 +618,17 @@ __published:    // IDE-managed Components
   TAction *PrivateKeyUploadAction;
   TAction *RenameSessionAction;
   TTBXItem *TBXItem78;
-  TAction *CurrentCopyAction;
+  TAction *CurrentCopyToClipboardAction;
   TAction *FileColorsPreferencesAction;
+  TAction *DisconnectSessionAction;
+  TTBXItem *TBXItem79;
+  TAction *ReconnectSessionAction;
+  TTBXItem *TBXItem80;
+  TAction *CurrentCopyToClipboardFocusedAction;
+  TTBXSeparatorItem *TBXSeparatorItem11;
+  TTBXItem *TBXItem81;
+  TTBXSeparatorItem *TBXSeparatorItem12;
+  TTBXItem *TBXItem82;
   void __fastcall ExplorerActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall SessionIdleTimerTimer(TObject *Sender);
@@ -648,13 +657,12 @@ protected:
   void __fastcall CreateSessionListMenu(TAction * Action);
   void __fastcall CreateSessionListMenuLevel(TTBCustomItem * Menu, int Index, int Level);
   void __fastcall CreateToolbarButtonsList();
-  bool __fastcall IsCustomizableToolbarItem(TTBCustomItem * Item);
   bool __fastcall IsToolbarCustomizable();
   UnicodeString __fastcall GetSessionFolderRoot(TSessionData * Data, int Level);
   void __fastcall CreateWorkspacesMenu(TAction * Action);
   void __fastcall WorkspaceItemClick(TObject * Sender);
   int __fastcall CreateCustomCommandsListMenu(TCustomCommandList * List, TTBCustomItem * Menu, bool OnFocused,
-    bool Toolbar, TCustomCommandListType ListType, int Tag);
+    bool Toolbar, TCustomCommandListType ListType, int Tag, TStrings * HiddenCommands);
   void __fastcall CreateCustomCommandsMenu(TAction * Action, TCustomCommandListType ListType);
   bool __fastcall CheckCustomCommandsToolbarList(TTBXToolbar * Toolbar, TCustomCommandList * List, int & Index);
   void __fastcall UpdateCustomCommandsToolbarList(TTBXToolbar * Toolbar, TCustomCommandList * List, int & Index);
@@ -696,13 +704,14 @@ public:
   void __fastcall QueueSpeedComboBoxItem(TTBXComboBoxItem * Item);
   void __fastcall QueueSpeedComboBoxItemUpdate(TTBXComboBoxItem * Item);
   void __fastcall CreateCustomCommandsMenu(TTBCustomItem * Menu, bool OnFocused,
-    bool Toolbar, TCustomCommandListType ListType);
+    bool Toolbar, TCustomCommandListType ListType, TStrings * HiddenCommands);
   void __fastcall CreateCustomCommandsMenu(TAction * Action, bool OnFocused, TCustomCommandListType ListType);
   TOnceDoneOperation __fastcall CurrentQueueOnceEmptyOperation();
   void __fastcall ResetQueueOnceEmptyOperation();
   void __fastcall StartBusy();
   void __fastcall EndBusy();
   void __fastcall ControlContextPopup(TObject * Sender, const TPoint & MousePos);
+  bool __fastcall IsCustomizableToolbarItem(TTBCustomItem * Item);
 
   __property TListColumn * ListColumn = { read = FListColumn, write = FListColumn };
   __property TCustomScpExplorerForm * ScpExplorer = { read = FScpExplorer, write = SetScpExplorer };

@@ -420,7 +420,7 @@ begin
     for Index := 0 to Columns.Count-1 do
     begin
       HdItem.Mask := HDI_FORMAT;
-      Header_GetItem(GetDlgItem(Self.Handle,0), Index, HdItem);
+      Header_GetItem(FHeaderHandle, Index, HdItem);
 
       SecondaryColumn := SecondaryColumnHeader(Index);
       ShowImage := False;
@@ -455,7 +455,7 @@ begin
       begin
         HdItem.Mask := HDI_FORMAT;
         HdItem.fmt := NewFmt;
-        Header_SetItem(GetDlgItem(Self.Handle, 0), Index, HDItem);
+        Header_SetItem(FHeaderHandle, Index, HDItem);
       end;
     end;
   end;
