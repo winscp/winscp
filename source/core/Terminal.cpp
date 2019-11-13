@@ -5802,7 +5802,7 @@ void __fastcall TTerminal::DoSynchronizeCollectFile(const UnicodeString FileName
 {
   TSynchronizeData * Data = static_cast<TSynchronizeData *>(Param);
 
-  if (Data->Options != NULL)
+  if (DebugAlwaysTrue(Data->Options != NULL))
   {
     Data->Options->Files++;
   }

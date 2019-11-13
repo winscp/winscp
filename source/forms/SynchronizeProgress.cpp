@@ -105,7 +105,7 @@ int __fastcall TSynchronizeProgressForm::SetData(
 //---------------------------------------------------------------------------
 int __fastcall TSynchronizeProgressForm::CalculateProgress()
 {
-  return ((OperationProgress->Style == pbstMarquee) ? -1 : ((OperationProgress->Position * 100) / OperationProgress->Max));
+  return (((OperationProgress->Style == pbstMarquee) || (OperationProgress->Max == 0)) ? -1 : ((OperationProgress->Position * 100) / OperationProgress->Max));
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeProgressForm::UpdateControls()

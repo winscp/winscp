@@ -39,6 +39,9 @@ const UnicodeString TlsFingerprintType(L"tls");
 const UnicodeString FtpsCertificateStorageKey(L"FtpsCertificates");
 const UnicodeString HttpsCertificateStorageKey(L"HttpsCertificates");
 const UnicodeString LastFingerprintsStorageKey(L"LastFingerprints");
+const UnicodeString DirectoryStatisticsCacheKey(L"DirectoryStatisticsCache");
+const UnicodeString CDCacheKey(L"CDCache");
+const UnicodeString BannersKey(L"Banners");
 //---------------------------------------------------------------------------
 __fastcall TConfiguration::TConfiguration()
 {
@@ -515,7 +518,7 @@ void __fastcall TConfiguration::CopyData(THierarchicalStorage * Source,
 {
   if (CopySubKey(Source, Target, ConfigurationSubKey))
   {
-    if (CopySubKey(Source, Target, L"CDCache"))
+    if (CopySubKey(Source, Target, CDCacheKey))
     {
       std::unique_ptr<TStrings> Names(new TStringList());
       Source->GetValueNames(Names.get());
@@ -529,7 +532,7 @@ void __fastcall TConfiguration::CopyData(THierarchicalStorage * Source,
       Source->CloseSubKey();
     }
 
-    CopyAllStringsInSubKey(Source, Target, L"Banners");
+    CopyAllStringsInSubKey(Source, Target, BannersKey);
     CopyAllStringsInSubKey(Source, Target, LastFingerprintsStorageKey);
 
     Target->CloseSubKey();
@@ -549,7 +552,7 @@ void __fastcall TConfiguration::LoadDirectoryChangesCache(const UnicodeString Se
   {
     Storage->AccessMode = smRead;
     if (Storage->OpenSubKey(ConfigurationSubKey, false) &&
-        Storage->OpenSubKey(L"CDCache", false) &&
+        Storage->OpenSubKey(CDCacheKey, false) &&
         Storage->ValueExists(SessionKey))
     {
       DirectoryChangesCache->Deserialize(Storage->ReadBinaryData(SessionKey));
@@ -569,7 +572,7 @@ void __fastcall TConfiguration::SaveDirectoryChangesCache(const UnicodeString Se
   {
     Storage->AccessMode = smReadWrite;
     if (Storage->OpenSubKey(ConfigurationSubKey, true) &&
-        Storage->OpenSubKey(L"CDCache", true))
+        Storage->OpenSubKey(CDCacheKey, true))
     {
       UnicodeString Data;
       DirectoryChangesCache->Serialize(Data);
@@ -601,7 +604,7 @@ void __fastcall TConfiguration::GetBannerData(
   std::unique_ptr<THierarchicalStorage> Storage(CreateConfigStorage());
   Storage->AccessMode = smRead;
   if (Storage->OpenSubKey(ConfigurationSubKey, false) &&
-      Storage->OpenSubKey(L"Banners", false))
+      Storage->OpenSubKey(BannersKey, false))
   {
     UnicodeString S = Storage->ReadString(SessionKey, L"");
     BannerHash = CutToChar(S, L',', true);
@@ -625,7 +628,7 @@ void __fastcall TConfiguration::SetBannerData(
   Storage->AccessMode = smReadWrite;
 
   if (Storage->OpenSubKey(ConfigurationSubKey, true) &&
-      Storage->OpenSubKey(L"Banners", true))
+      Storage->OpenSubKey(BannersKey, true))
   {
     Storage->WriteString(SessionKey, BannerHash + L"," + UIntToStr(Params));
   }
@@ -744,26 +747,30 @@ void __fastcall TConfiguration::CleanupConfiguration()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TConfiguration::CleanupRegistry(UnicodeString CleanupSubKey)
+void __fastcall TConfiguration::CleanupRegistry(const UnicodeString & CleanupSubKey, const UnicodeString & ParentKey)
 {
-  TRegistryStorage *Registry = new TRegistryStorage(RegistryStorageKey);
-  try
+  std::unique_ptr<TRegistryStorage> Registry(new TRegistryStorage(RegistryStorageKey));
+
+  if (ParentKey.IsEmpty() ||
+      Registry->OpenSubKeyPath(ParentKey, false))
   {
     Registry->RecursiveDeleteSubKey(CleanupSubKey);
   }
-  __finally
-  {
-    delete Registry;
-  }
 }
 //---------------------------------------------------------------------------
-void __fastcall TConfiguration::CleanupHostKeys()
+void __fastcall TConfiguration::CleanupCaches()
 {
   try
   {
     CleanupRegistry(SshHostKeysSubKey);
+    CleanupRegistry(FtpsCertificateStorageKey);
+    CleanupRegistry(HttpsCertificateStorageKey);
+    CleanupRegistry(DirectoryStatisticsCacheKey);
+    CleanupRegistry(CDCacheKey, ConfigurationSubKey);
+    CleanupRegistry(BannersKey, ConfigurationSubKey);
+    CleanupRegistry(LastFingerprintsStorageKey, ConfigurationSubKey);
   }
-  catch (Exception &E)
+  catch (Exception & E)
   {
     throw ExtException(&E, LoadStr(CLEANUP_HOSTKEYS_ERROR));
   }
@@ -1480,7 +1487,7 @@ THierarchicalStorage * TConfiguration::OpenDirectoryStatisticsCache(bool CanCrea
 {
   std::unique_ptr<THierarchicalStorage> Storage(Configuration->CreateConfigStorage());
   Storage->AccessMode = CanCreate ? smReadWrite : smRead;
-  if (!Storage->OpenSubKey(L"DirectoryStatisticsCache", CanCreate))
+  if (!Storage->OpenSubKey(DirectoryStatisticsCacheKey, CanCreate))
   {
     Storage.reset(NULL);
   }
