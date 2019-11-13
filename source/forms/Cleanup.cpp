@@ -103,7 +103,7 @@ void __fastcall TCleanupDialog::InitControls()
         break;
 
       case wdCaches:
-        Caption = LoadStr(CLEANUP_HOSTKEYS);
+        Caption = LoadStr(CLEANUP_CACHES);
         Location = L"...";
         break;
 

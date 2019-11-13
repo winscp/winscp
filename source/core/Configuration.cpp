@@ -772,7 +772,7 @@ void __fastcall TConfiguration::CleanupCaches()
   }
   catch (Exception & E)
   {
-    throw ExtException(&E, LoadStr(CLEANUP_HOSTKEYS_ERROR));
+    throw ExtException(&E, LoadStr(CLEANUP_CACHES_ERROR));
   }
 }
 //---------------------------------------------------------------------------

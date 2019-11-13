@@ -18,7 +18,7 @@ BEGIN
   LIST_LINE_ERROR, "Unexpected directory listing line '%s'."
   RIGHTS_ERROR, "Invalid rights description '%s'"
   CLEANUP_CONFIG_ERROR, "Error cleaning up general configuration."
-  CLEANUP_HOSTKEYS_ERROR, "Error cleaning up sites."
+  CLEANUP_CACHES_ERROR, "Error cleaning up caches."
   CLEANUP_SEEDFILE_ERROR, "Error cleaning up random seed file."
   CLEANUP_SESSIONS_ERROR, "Error cleaning up cached host keys."
   DETECT_RETURNVAR_ERROR, "Error detecting variable containing return code of last command."
