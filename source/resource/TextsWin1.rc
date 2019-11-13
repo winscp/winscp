@@ -362,7 +362,7 @@ BEGIN
         PROGRESS_CALCULATE_SIZE, "Calculating directory size"
         CLEANUP_CONFIG, "General configuration"
         CLEANUP_SESSIONS, "Sites"
-        CLEANUP_HOSTKEYS, "Cached host keys"
+        CLEANUP_CACHES, "Caches"
         CLEANUP_INIFILE, "Configuration INI file"
         CLEANUP_SEEDFILE, "Random seed file"
         SELECT_LOCAL_DIRECTORY, "Select local directory."
