@@ -12,7 +12,7 @@
 #include <WinInterface.h>
 #include <GUITools.h>
 //---------------------------------------------------------------------
-enum TWinSCPData {wdConfiguration = 1, wdStoredSessions, wdHostKeys,
+enum TWinSCPData {wdConfiguration = 1, wdStoredSessions, wdCaches,
   wdConfigurationIniFile, wdRandomSeedFile, wdTemporaryFolders };
 //---------------------------------------------------------------------
 class TCleanupDialog : public TForm

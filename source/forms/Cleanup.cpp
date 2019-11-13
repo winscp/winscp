@@ -44,8 +44,8 @@ Boolean __fastcall DoCleanupDialog(TStoredSessionList *SessionList,
                 SessionList->Cleanup();
                 break;
 
-              case wdHostKeys:
-                Configuration->CleanupHostKeys();
+              case wdCaches:
+                Configuration->CleanupCaches();
                 break;
 
               case wdConfigurationIniFile:
@@ -102,9 +102,9 @@ void __fastcall TCleanupDialog::InitControls()
         Location = Configuration->StoredSessionsSubKey;
         break;
 
-      case wdHostKeys:
+      case wdCaches:
         Caption = LoadStr(CLEANUP_HOSTKEYS);
-        Location = Configuration->SshHostKeysSubKey;
+        Location = L"...";
         break;
 
       case wdConfigurationIniFile:
