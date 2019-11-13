@@ -385,10 +385,12 @@ void __fastcall THierarchicalStorage::RecursiveDeleteSubKey(const UnicodeString 
       ClearValues();
     }
 
+    // Only if all subkeys were successfully deleted in ClearSubKeys
+    bool Delete = CanWriteParent && !HasSubKeys();
+
     CloseSubKey();
 
-    // Only if all subkeys were successfully deleted in ClearSubKeys
-    if (CanWriteParent && HasSubKeys())
+    if (Delete)
     {
       DoDeleteSubKey(Key);
     }
