@@ -17,6 +17,7 @@ extern const char commitid[] = "";
 const bool platform_uses_x11_unix_by_default = true;
 CRITICAL_SECTION putty_section;
 bool SaveRandomSeed;
+bool HadRandomSeed;
 char appname_[50];
 const char *const appname = appname_;
 extern const bool share_can_be_downstream = false;
@@ -38,6 +39,7 @@ void __fastcall PuttyInitialize()
 
   InitializeCriticalSection(&putty_section);
 
+  HadRandomSeed = FileExists(ApiPath(Configuration->RandomSeedFileName));
   // make sure random generator is initialised, so random_save_seed()
   // in destructor can proceed
   random_ref();
@@ -61,6 +63,11 @@ void __fastcall PuttyFinalize()
     random_save_seed();
   }
   random_unref();
+  // random_ref in PuttyInitialize creates the seed file. Delete it, if didn't want to create it.
+  if (!HadRandomSeed && !SaveRandomSeed)
+  {
+    DeleteFile(ApiPath(Configuration->RandomSeedFileName));
+  }
 
   sk_cleanup();
   win_misc_cleanup();
