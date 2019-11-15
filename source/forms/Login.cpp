@@ -392,35 +392,39 @@ void __fastcall TLoginDialog::SetNewSiteNodeLabel()
 //---------------------------------------------------------------------
 void __fastcall TLoginDialog::LoadSessions()
 {
-  TAutoFlag LoadingFlag(FLoading);
-  SessionTree->Items->BeginUpdate();
-  SessionTree->Images->BeginUpdate();
-  try
   {
-    // optimization
-    SessionTree->SortType = Comctrls::stNone;
-
-    SessionTree->Items->Clear();
-
-    TTreeNode * Node = SessionTree->Items->AddChild(NULL, L"");
-    Node->Data = FNewSiteData;
-    SetNewSiteNodeLabel();
-    SetNodeImage(Node, NewSiteImageIndex);
-
-    DebugAssert(StoredSessions != NULL);
-    for (int Index = 0; Index < StoredSessions->Count; Index++)
+    // Otherwise, once the selected node is deleted, another code is selected and we get failure
+    // while trying to access its data somewhere in LoadContents
+    TAutoFlag LoadingFlag(FLoading);
+    SessionTree->Items->BeginUpdate();
+    SessionTree->Images->BeginUpdate();
+    try
     {
-      AddSession(StoredSessions->Sessions[Index]);
+      // optimization
+      SessionTree->SortType = Comctrls::stNone;
+
+      SessionTree->Items->Clear();
+
+      TTreeNode * Node = SessionTree->Items->AddChild(NULL, L"");
+      Node->Data = FNewSiteData;
+      SetNewSiteNodeLabel();
+      SetNodeImage(Node, NewSiteImageIndex);
+
+      DebugAssert(StoredSessions != NULL);
+      for (int Index = 0; Index < StoredSessions->Count; Index++)
+      {
+        AddSession(StoredSessions->Sessions[Index]);
+      }
     }
-  }
-  __finally
-  {
-    // Restore sorting. Moreover, folders would not be sorted automatically even when
-    // SortType is set (not having set the data property), so we would have to
-    // call AlphaSort here explicitly
-    SessionTree->SortType = Comctrls::stBoth;
-    SessionTree->Images->EndUpdate();
-    SessionTree->Items->EndUpdate();
+    __finally
+    {
+      // Restore sorting. Moreover, folders would not be sorted automatically even when
+      // SortType is set (not having set the data property), so we would have to
+      // call AlphaSort here explicitly
+      SessionTree->SortType = Comctrls::stBoth;
+      SessionTree->Images->EndUpdate();
+      SessionTree->Items->EndUpdate();
+    }
   }
   SessionTree->Selected = SessionTree->Items->GetFirstNode();
   UpdateControls();
@@ -732,17 +736,20 @@ void __fastcall TLoginDialog::FormShow(TObject * /*Sender*/)
 void __fastcall TLoginDialog::SessionTreeChange(TObject * /*Sender*/,
   TTreeNode * /*Node*/)
 {
-  if (FIncrementalSearching <= 0)
+  if (!FLoading)
   {
-    // Make sure UpdateControls is called here, no matter what,
-    // now it is always called from ResetSitesIncrementalSearch.
-    // For the "else" scenario, UpdateControls is called later from SitesIncrementalSearch.
-    ResetSitesIncrementalSearch();
-  }
+    if (FIncrementalSearching <= 0)
+    {
+      // Make sure UpdateControls is called here, no matter what,
+      // now it is always called from ResetSitesIncrementalSearch.
+      // For the "else" scenario, UpdateControls is called later from SitesIncrementalSearch.
+      ResetSitesIncrementalSearch();
+    }
 
-  if (FInitialized)
-  {
-    LoadContents();
+    if (FInitialized)
+    {
+      LoadContents();
+    }
   }
 }
 //---------------------------------------------------------------------------
