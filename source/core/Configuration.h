@@ -161,7 +161,7 @@ protected:
   virtual void __fastcall LoadAdmin(THierarchicalStorage * Storage);
   virtual UnicodeString __fastcall GetDefaultKeyFile();
   virtual void __fastcall Saved();
-  void __fastcall CleanupRegistry(const UnicodeString & CleanupSubKey, const UnicodeString & ParentKey = UnicodeString());
+  void __fastcall CleanupRegistry(const UnicodeString & RegistryPath);
   void __fastcall CopyAllStringsInSubKey(
     THierarchicalStorage * Source, THierarchicalStorage * Target, const UnicodeString & Name);
   bool __fastcall CopySubKey(THierarchicalStorage * Source, THierarchicalStorage * Target, const UnicodeString & Name);
@@ -186,6 +186,7 @@ protected:
   UnicodeString __fastcall LoadCustomIniFileStorageName();
   void __fastcall SaveCustomIniFileStorageName();
   UnicodeString __fastcall GetRegistryStorageOverrideKey();
+  TStrings * GetCaches();
 
   virtual UnicodeString __fastcall ModuleFileName();
 
@@ -224,6 +225,7 @@ public:
   void __fastcall CleanupConfiguration();
   void __fastcall CleanupIniFile();
   void __fastcall CleanupCaches();
+  bool __fastcall HasAnyCache();
   void __fastcall CleanupRandomSeedFile();
   void __fastcall BeginUpdate();
   void __fastcall EndUpdate();
@@ -255,6 +257,7 @@ public:
   UnicodeString __fastcall GetFileDescription(const UnicodeString & FileName);
   UnicodeString __fastcall GetFileVersion(const UnicodeString & FileName);
   UnicodeString __fastcall GetFileMimeType(const UnicodeString & FileName);
+  bool RegistryPathExists(const UnicodeString & RegistryPath);
 
   TStoredSessionList * __fastcall SelectFilezillaSessionsForImport(
     TStoredSessionList * Sessions, UnicodeString & Error);

@@ -12,9 +12,6 @@
 #include <WinInterface.h>
 #include <GUITools.h>
 //---------------------------------------------------------------------
-enum TWinSCPData {wdConfiguration = 1, wdStoredSessions, wdCaches,
-  wdConfigurationIniFile, wdRandomSeedFile, wdTemporaryFolders };
-//---------------------------------------------------------------------
 class TCleanupDialog : public TForm
 {
 __published:
@@ -34,19 +31,23 @@ __published:
     TListItem *Item, UnicodeString &InfoTip);
   void __fastcall HelpButtonClick(TObject *Sender);
 private:
-  TStoredSessionList *FSessionList;
-  TConfiguration * FConfiguration;
+  std::vector<UnicodeString> FCaptions;
+  std::vector<UnicodeString> FLocations;
+  typedef void __fastcall (__closure *TCleanupEvent)();
+  std::vector<TCleanupEvent> FCleanupEvents;
+  bool FAnyData;
   void __fastcall InitControls();
   void __fastcall UpdateControls();
-  bool __fastcall GetCleanupData(TWinSCPData Data);
+  void __fastcall FindData();
+  void __fastcall AddLocation(int CaptionId, const UnicodeString & Location, TCleanupEvent Event);
+  void __fastcall AddRegistryLocation(int CaptionId, const UnicodeString & Location, TCleanupEvent Event);
 
   INTERFACE_HOOK;
 
 public:
-  virtual __fastcall TCleanupDialog(TComponent* AOwner);
-  __property TStoredSessionList *SessionList  = { read=FSessionList, write=FSessionList };
-  __property TConfiguration * Configuration  = { read=FConfiguration, write=FConfiguration };
-  __property Boolean CleanupData[TWinSCPData Data]  = { read=GetCleanupData };
+  virtual __fastcall TCleanupDialog(TComponent * AOwner);
+  bool __fastcall Execute();
+  bool __fastcall AnyData();
 };
 //----------------------------------------------------------------------------
 #endif

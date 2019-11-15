@@ -56,6 +56,11 @@ void __fastcall PuttyInitialize()
   strcpy(appname_, AppName.c_str());
 }
 //---------------------------------------------------------------------------
+static bool DeleteRandomSeedOnExit()
+{
+  return !HadRandomSeed && !SaveRandomSeed;
+}
+//---------------------------------------------------------------------------
 void __fastcall PuttyFinalize()
 {
   if (SaveRandomSeed)
@@ -64,7 +69,7 @@ void __fastcall PuttyFinalize()
   }
   random_unref();
   // random_ref in PuttyInitialize creates the seed file. Delete it, if didn't want to create it.
-  if (!HadRandomSeed && !SaveRandomSeed)
+  if (DeleteRandomSeedOnExit())
   {
     DeleteFile(ApiPath(Configuration->RandomSeedFileName));
   }
@@ -79,6 +84,13 @@ void __fastcall PuttyFinalize()
 void __fastcall DontSaveRandomSeed()
 {
   SaveRandomSeed = false;
+}
+//---------------------------------------------------------------------------
+bool RandomSeedExists()
+{
+  return
+    !DeleteRandomSeedOnExit() &&
+    FileExists(ApiPath(Configuration->RandomSeedFileName));
 }
 //---------------------------------------------------------------------------
 TSecureShell * GetSecureShell(Plug * plug, bool & pfwd)

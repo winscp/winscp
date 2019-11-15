@@ -1113,7 +1113,7 @@ void __fastcall TLoginDialog::ImportSessionsActionExecute(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::CleanUpActionExecute(TObject * /*Sender*/)
 {
-  if (DoCleanupDialog(StoredSessions, Configuration))
+  if (DoCleanupDialog())
   {
     SaveState();
     LoadSessions();

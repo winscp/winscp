@@ -51,4 +51,6 @@ class THierarchicalStorage;
 void WritePuttySettings(THierarchicalStorage * Storage, const UnicodeString & Settings);
 void SavePuttyDefaults(const UnicodeString & Name);
 //---------------------------------------------------------------------------
+bool RandomSeedExists();
+//---------------------------------------------------------------------------
 #endif

@@ -865,14 +865,13 @@ int __fastcall Execute()
     if (Params->FindSwitch(L"UninstallCleanup"))
     {
       MaintenanceTask();
+      Configuration->DontSave();
       // The innosetup cannot skip UninstallCleanup run task for silent uninstalls,
       // workaround is that we create mutex in uninstaller, if it runs silent, and
       // ignore the UninstallCleanup, when the mutex exists.
-      if ((OpenMutex(SYNCHRONIZE, false, L"WinSCPSilentUninstall") == NULL) &&
-          (MessageDialog(LoadStr(UNINSTALL_CLEANUP), qtConfirmation,
-            qaYes | qaNo, HELP_UNINSTALL_CLEANUP) == qaYes))
+      if (OpenMutex(SYNCHRONIZE, false, L"WinSCPSilentUninstall") == NULL)
       {
-        DoCleanupDialog(StoredSessions, Configuration);
+        DoCleanupDialogIfAnyDataAndWanted();
       }
     }
     else if (Params->FindSwitch(L"RegisterForDefaultProtocols") ||

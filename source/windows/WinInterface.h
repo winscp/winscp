@@ -193,8 +193,8 @@ void __fastcall DoAboutDialog(TConfiguration * Configuration,
 void __fastcall DoAboutDialog(TConfiguration *Configuration);
 
 // forms\Cleanup.cpp
-bool __fastcall DoCleanupDialog(TStoredSessionList *SessionList,
-    TConfiguration *Configuration);
+bool __fastcall DoCleanupDialog();
+void __fastcall DoCleanupDialogIfAnyDataAndWanted();
 
 // forms\Console.cpp
 void __fastcall DoConsoleDialog(TTerminal * Terminal,
