@@ -11,9 +11,7 @@
 #include <PuttyTools.h>
 #include "Cleanup.h"
 //---------------------------------------------------------------------
-#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
-#endif
 //---------------------------------------------------------------------
 bool __fastcall DoCleanupDialog()
 {

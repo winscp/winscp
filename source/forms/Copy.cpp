@@ -17,9 +17,7 @@
 #pragma link "Rights"
 #pragma link "CopyParams"
 #pragma link "HistoryComboBox"
-#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
-#endif
 //---------------------------------------------------------------------------
 bool __fastcall DoCopyDialog(
   bool ToRemote, bool Move, TStrings * FileList, UnicodeString & TargetDirectory,

@@ -24,9 +24,7 @@
 #pragma link "ComboEdit"
 #pragma link "PasswordEdit"
 #pragma link "UpDownEdit"
-#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
-#endif
 //---------------------------------------------------------------------------
 const int SiteImageIndex = 1;
 const int OpenFolderImageIndex = 2;

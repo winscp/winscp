@@ -45,9 +45,7 @@
 #pragma link "TBXStatusBars"
 #pragma link "TBXToolPals"
 #pragma link "ThemePageControl"
-#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
-#endif
 //---------------------------------------------------------------------------
 class TSynchronizedBrowsingGuard
 {

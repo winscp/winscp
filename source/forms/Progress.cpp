@@ -26,9 +26,7 @@
 #pragma link "TBX"
 #pragma link "TB2ExtItems"
 #pragma link "TBXExtItems"
-#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
-#endif
 //---------------------------------------------------------------------
 UnicodeString __fastcall TProgressForm::ProgressStr(
   const TSynchronizeProgress * SynchronizeProgress, const TFileOperationProgressType * ProgressData)

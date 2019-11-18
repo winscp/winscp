@@ -24,9 +24,7 @@
 #pragma link "IEListView"
 #pragma link "NortonLikeListView"
 #pragma link "PngImageList"
-#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
-#endif
 //---------------------------------------------------------------------
 const int ImageColumnIndex = 4;
 //---------------------------------------------------------------------

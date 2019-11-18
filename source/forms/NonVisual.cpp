@@ -24,9 +24,7 @@
 #pragma link "TB2ExtItems"
 #pragma link "TBXExtItems"
 #pragma link "TBXToolPals"
-#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
-#endif
 TNonVisualDataModule *NonVisualDataModule;
 //---------------------------------------------------------------------------
 #define SCPCOMMANDER ((TScpCommanderForm *)ScpExplorer)

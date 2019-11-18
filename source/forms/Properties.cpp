@@ -16,9 +16,7 @@
 //---------------------------------------------------------------------
 #pragma link "PathLabel"
 #pragma link "Rights"
-#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
-#endif
 //---------------------------------------------------------------------
 bool __fastcall DoPropertiesDialog(TStrings * FileList,
   const UnicodeString Directory, const TRemoteTokenList * GroupList,

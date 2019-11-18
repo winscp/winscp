@@ -21,9 +21,7 @@
 #pragma link "TBXStatusBars"
 #pragma link "PngImageList"
 #pragma link "TBXExtItems"
-#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
-#endif
 //---------------------------------------------------------------------------
 TForm * __fastcall ShowEditorForm(const UnicodeString FileName, TForm * ParentForm,
   TNotifyEvent OnFileChanged, TNotifyEvent OnFileReload, TFileClosedEvent OnClose,

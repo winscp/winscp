@@ -14,9 +14,7 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "HistoryComboBox"
-#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
-#endif
 //---------------------------------------------------------------------------
 bool __fastcall DoCustomCommandDialog(TCustomCommandType & Command,
   const TCustomCommandList * CustomCommandList,

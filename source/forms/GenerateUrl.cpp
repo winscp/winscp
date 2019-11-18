@@ -14,9 +14,7 @@
 #include <GUITools.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
-#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
-#endif
 //---------------------------------------------------------------------------
 const UnicodeString AllFilesMask(L"*");
 const UnicodeString NoOpOperationMask(L"*");
