@@ -85,7 +85,7 @@ void __fastcall GetLoginData(UnicodeString SessionName, TOptions * Options,
     // - the specified session does not contain enough information to login [= not even hostname]
 
     DebugAssert(DataList->Count <= 1);
-    if (!DoLoginDialog(StoredSessions, DataList, LinkedForm))
+    if (!DoLoginDialog(DataList, LinkedForm))
     {
       Abort();
     }
