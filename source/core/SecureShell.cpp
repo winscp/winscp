@@ -2288,6 +2288,45 @@ void __fastcall TPasteKeyHandler::Paste(TObject * /*Sender*/, unsigned int & Ans
   }
 }
 //---------------------------------------------------------------------------
+bool TSecureShell::VerifyCachedHostKey(
+  const UnicodeString & StoredKeys, const UnicodeString & KeyStr, const UnicodeString & FingerprintMD5, const UnicodeString & FingerprintSHA256)
+{
+  bool Result = false;
+  UnicodeString Buf = StoredKeys;
+  while (!Result && !Buf.IsEmpty())
+  {
+    UnicodeString StoredKey = CutToChar(Buf, HostKeyDelimiter, false);
+    // skip leading ECDH subtype identification
+    int P = StoredKey.Pos(L",");
+    // Start from beginning or after the comma, if there's any.
+    // If it does not start with 0x, it's probably a fingerprint (stored by TSessionData::CacheHostKey).
+    bool Fingerprint = (StoredKey.SubString(P + 1, 2) != L"0x");
+    if (!Fingerprint && (StoredKey == KeyStr))
+    {
+      LogEvent(L"Host key matches cached key");
+      Result = true;
+    }
+    else if (Fingerprint && VerifyFingerprint(StoredKey, FingerprintMD5, FingerprintSHA256))
+    {
+      LogEvent(L"Host key matches cached key fingerprint");
+      Result = true;
+    }
+    else
+    {
+      if (Configuration->ActualLogProtocol >= 1)
+      {
+        UnicodeString FormattedKey = Fingerprint ? StoredKey : FormatKeyStr(StoredKey);
+        LogEvent(FORMAT(L"Host key does not match cached key %s", (FormattedKey)));
+      }
+      else
+      {
+        LogEvent(L"Host key does not match cached key");
+      }
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall TSecureShell::VerifyHostKey(
   const UnicodeString & AHost, int Port, const UnicodeString & KeyType, const UnicodeString & KeyStr,
   const UnicodeString & Fingerprint)
@@ -2340,38 +2379,7 @@ void __fastcall TSecureShell::VerifyHostKey(
   bool Result = false;
 
   UnicodeString StoredKeys = RetrieveHostKey(Host, Port, KeyType);
-  Buf = StoredKeys;
-  while (!Result && !Buf.IsEmpty())
-  {
-    UnicodeString StoredKey = CutToChar(Buf, HostKeyDelimiter, false);
-    // skip leading ECDH subtype identification
-    int P = StoredKey.Pos(L",");
-    // Start from beginning or after the comma, if there's any.
-    // If it does not start with 0x, it's probably a fingerprint (stored by TSessionData::CacheHostKey).
-    bool Fingerprint = (StoredKey.SubString(P + 1, 2) != L"0x");
-    if (!Fingerprint && (StoredKey == KeyStr))
-    {
-      LogEvent(L"Host key matches cached key");
-      Result = true;
-    }
-    else if (Fingerprint && VerifyFingerprint(StoredKey, FingerprintMD5, FingerprintSHA256))
-    {
-      LogEvent(L"Host key matches cached key fingerprint");
-      Result = true;
-    }
-    else
-    {
-      if (Configuration->ActualLogProtocol >= 1)
-      {
-        UnicodeString FormattedKey = Fingerprint ? StoredKey : FormatKeyStr(StoredKey);
-        LogEvent(FORMAT(L"Host key does not match cached key %s", (FormattedKey)));
-      }
-      else
-      {
-        LogEvent(L"Host key does not match cached key");
-      }
-    }
-  }
+  Result = VerifyCachedHostKey(StoredKeys, KeyStr, FingerprintMD5, FingerprintSHA256);
 
   bool ConfiguredKeyNotMatch = false;
 

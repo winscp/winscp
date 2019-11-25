@@ -103,6 +103,8 @@ private:
   UnicodeString __fastcall ConvertInput(const RawByteString & Input);
   void __fastcall GetRealHost(UnicodeString & Host, int & Port);
   UnicodeString __fastcall RetrieveHostKey(UnicodeString Host, int Port, const UnicodeString KeyType);
+  bool VerifyCachedHostKey(
+    const UnicodeString & StoredKeys, const UnicodeString & KeyStr, const UnicodeString & FingerprintMD5, const UnicodeString & FingerprintSHA256);
 
 protected:
   TCaptureOutputEvent FOnCaptureOutput;
