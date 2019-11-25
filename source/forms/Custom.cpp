@@ -21,9 +21,7 @@
 #include "Custom.h"
 //---------------------------------------------------------------------
 #pragma link "PasswordEdit"
-#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
-#endif
 //---------------------------------------------------------------------
 __fastcall TCustomDialog::TCustomDialog(UnicodeString AHelpKeyword)
   : TForm(GetFormOwner())

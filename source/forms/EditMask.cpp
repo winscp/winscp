@@ -13,9 +13,7 @@
 #include "WinConfiguration.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
-#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
-#endif
 //---------------------------------------------------------------------------
 bool __fastcall DoEditMaskDialog(TFileMasks & Mask)
 {

@@ -31,9 +31,7 @@
 #pragma link "ComboEdit"
 #pragma link "HistoryComboBox"
 #pragma link "PathLabel"
-#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
-#endif
 //---------------------------------------------------------------------
 const int BelowNormalLogLevels = 1;
 //---------------------------------------------------------------------

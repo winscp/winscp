@@ -34,9 +34,7 @@
 #pragma link "TBXLists"
 #pragma link "ThemePageControl"
 #pragma link "PathLabel"
-#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
-#endif
 //---------------------------------------------------------------------------
 __fastcall TScpExplorerForm::TScpExplorerForm(TComponent* Owner)
         : TCustomScpExplorerForm(Owner)

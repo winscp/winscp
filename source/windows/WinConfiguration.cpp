@@ -2480,87 +2480,75 @@ UnicodeString __fastcall TWinConfiguration::TemporaryDir(bool Mask)
   return UniqTempDir(ExpandedTemporaryDirectory(), L"scp", Mask);
 }
 //---------------------------------------------------------------------------
+TStrings * __fastcall TWinConfiguration::DoFindTemporaryFolders(bool OnlyFirst)
+{
+  std::unique_ptr<TStrings> Result(new TStringList());
+  TSearchRecOwned SRec;
+  UnicodeString Mask = TemporaryDir(true);
+  UnicodeString Directory = ExtractFilePath(Mask);
+  if (FindFirstUnchecked(Mask, faDirectory | faHidden, SRec) == 0)
+  {
+    do
+    {
+      if (SRec.IsDirectory())
+      {
+        Result->Add(Directory + SRec.Name);
+      }
+    }
+    while ((FindNextChecked(SRec) == 0) && (!OnlyFirst || Result->Count == 0));
+  }
+
+  if (Result->Count == 0)
+  {
+    Result.reset(NULL);
+  }
+
+  return Result.release();
+}
+//---------------------------------------------------------------------------
 TStrings * __fastcall TWinConfiguration::FindTemporaryFolders()
 {
-  TStrings * Result = new TStringList();
-  try
+  return DoFindTemporaryFolders(false);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TWinConfiguration::AnyTemporaryFolders()
+{
+  std::unique_ptr<TStrings> Folders(DoFindTemporaryFolders(true));
+  return (Folders.get() != NULL);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::CleanupTemporaryFolders()
+{
+  std::unique_ptr<TStrings> Folders(FindTemporaryFolders());
+  if (Folders.get() != NULL)
   {
-    TSearchRecOwned SRec;
-    UnicodeString Mask = TemporaryDir(true);
-    UnicodeString Directory = ExtractFilePath(Mask);
-    if (FindFirstUnchecked(Mask, faDirectory | faHidden, SRec) == 0)
-    {
-      do
-      {
-        if (SRec.IsDirectory())
-        {
-          Result->Add(Directory + SRec.Name);
-        }
-      }
-      while (FindNextChecked(SRec) == 0);
-    }
-
-    if (Result->Count == 0)
-    {
-      delete Result;
-      Result = NULL;
-    }
+    CleanupTemporaryFolders(Folders.get());
   }
-  catch(...)
-  {
-    delete Result;
-    throw;
-  }
-
-  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::CleanupTemporaryFolders(TStrings * Folders)
 {
+  if (DebugAlwaysTrue(Folders->Count > 0))
+  {
+    Usage->Inc(L"TemporaryDirectoryCleanups");
+  }
+
   UnicodeString ErrorList;
-  TStrings * F;
-  if (Folders == NULL)
+  for (int i = 0; i < Folders->Count; i++)
   {
-    F = FindTemporaryFolders();
+    if (!DeleteDirectory(Folders->Strings[i]))
+    {
+      if (!ErrorList.IsEmpty())
+      {
+        ErrorList += L"\n";
+      }
+      ErrorList += Folders->Strings[i];
+    }
   }
-  else
+
+  if (!ErrorList.IsEmpty())
   {
-    F = Folders;
-  }
-
-  if (F != NULL)
-  {
-    try
-    {
-      if (DebugAlwaysTrue(F->Count > 0))
-      {
-        Usage->Inc(L"TemporaryDirectoryCleanups");
-      }
-
-      for (int i = 0; i < F->Count; i++)
-      {
-        if (!DeleteDirectory(F->Strings[i]))
-        {
-          if (!ErrorList.IsEmpty())
-          {
-            ErrorList += L"\n";
-          }
-          ErrorList += F->Strings[i];
-        }
-      }
-    }
-    __finally
-    {
-      if (Folders == NULL)
-      {
-        delete F;
-      }
-    }
-
-    if (!ErrorList.IsEmpty())
-    {
-      throw ExtException(LoadStr(CLEANUP_TEMP_ERROR), ErrorList);
-    }
+    throw ExtException(LoadStr(CLEANUP_TEMP_ERROR), ErrorList);
   }
 }
 //---------------------------------------------------------------------------
@@ -2737,7 +2725,9 @@ void __fastcall TWinConfiguration::UpdateEntryInJumpList(
     FDontDecryptPasswords++;
     Storage->AccessMode = smReadWrite;
 
-    if (Storage->OpenSubKey(ConfigurationSubKey, true))
+    // For initial call from UpdateJumpList, do not create the key if it does ot exist yet.
+    // To avoid creating the key if we are being started just for a maintenance task.
+    if (Storage->OpenSubKey(ConfigurationSubKey, !Name.IsEmpty()))
     {
       std::unique_ptr<TStringList> ListSessions(LoadJumpList(Storage, L"JumpList"));
       std::unique_ptr<TStringList> ListWorkspaces(LoadJumpList(Storage, L"JumpListWorkspaces"));

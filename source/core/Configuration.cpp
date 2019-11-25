@@ -747,28 +747,69 @@ void __fastcall TConfiguration::CleanupConfiguration()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TConfiguration::CleanupRegistry(const UnicodeString & CleanupSubKey, const UnicodeString & ParentKey)
+bool TConfiguration::RegistryPathExists(const UnicodeString & RegistryPath)
 {
   std::unique_ptr<TRegistryStorage> Registry(new TRegistryStorage(RegistryStorageKey));
 
+  UnicodeString ParentKey = ExtractFileDir(RegistryPath);
+  UnicodeString SubKey = ExtractFileName(RegistryPath);
+  return
+    Registry->OpenRootKey(false) &&
+    (ParentKey.IsEmpty() ||
+     Registry->OpenSubKeyPath(ParentKey, false)) &&
+    Registry->KeyExists(SubKey);
+}
+//---------------------------------------------------------------------------
+void __fastcall TConfiguration::CleanupRegistry(const UnicodeString & RegistryPath)
+{
+  std::unique_ptr<TRegistryStorage> Registry(new TRegistryStorage(RegistryStorageKey));
+
+  UnicodeString ParentKey = ExtractFileDir(RegistryPath);
   if (ParentKey.IsEmpty() ||
       Registry->OpenSubKeyPath(ParentKey, false))
   {
-    Registry->RecursiveDeleteSubKey(CleanupSubKey);
+    UnicodeString SubKey = ExtractFileName(RegistryPath);
+    Registry->RecursiveDeleteSubKey(SubKey);
   }
+}
+//---------------------------------------------------------------------------
+TStrings * TConfiguration::GetCaches()
+{
+  std::unique_ptr<TStrings> Result(new TStringList());
+  Result->Add(SshHostKeysSubKey);
+  Result->Add(FtpsCertificateStorageKey);
+  Result->Add(HttpsCertificateStorageKey);
+  Result->Add(DirectoryStatisticsCacheKey);
+  Result->Add(TPath::Combine(ConfigurationSubKey, CDCacheKey));
+  Result->Add(TPath::Combine(ConfigurationSubKey, BannersKey));
+  Result->Add(TPath::Combine(ConfigurationSubKey, LastFingerprintsStorageKey));
+  return Result.release();
+}
+//---------------------------------------------------------------------------
+bool __fastcall TConfiguration::HasAnyCache()
+{
+  bool Result = false;
+  std::unique_ptr<TStrings> Caches(GetCaches());
+  for (int Index = 0; Index < Caches->Count; Index++)
+  {
+    if (RegistryPathExists(Caches->Strings[Index]))
+    {
+      Result = true;
+      break;
+    }
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::CleanupCaches()
 {
   try
   {
-    CleanupRegistry(SshHostKeysSubKey);
-    CleanupRegistry(FtpsCertificateStorageKey);
-    CleanupRegistry(HttpsCertificateStorageKey);
-    CleanupRegistry(DirectoryStatisticsCacheKey);
-    CleanupRegistry(CDCacheKey, ConfigurationSubKey);
-    CleanupRegistry(BannersKey, ConfigurationSubKey);
-    CleanupRegistry(LastFingerprintsStorageKey, ConfigurationSubKey);
+    std::unique_ptr<TStrings> Caches(GetCaches());
+    for (int Index = 0; Index < Caches->Count; Index++)
+    {
+      CleanupRegistry(Caches->Strings[Index]);
+    }
   }
   catch (Exception & E)
   {

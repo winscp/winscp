@@ -15,9 +15,7 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "PasswordEdit"
-#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
-#endif
 //---------------------------------------------------------------------------
 __fastcall TAuthenticateForm::TAuthenticateForm(TComponent * Owner)
   : TForm(Owner), FSessionData(NULL), FTerminal(NULL)

@@ -13,9 +13,7 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "HistoryComboBox"
-#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
-#endif
 //---------------------------------------------------------------------------
 bool __fastcall DoEditorPreferencesDialog(TEditorData * Editor,
   bool & Remember, TEditorPreferencesMode Mode, bool MayRemote)

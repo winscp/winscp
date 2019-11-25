@@ -18,9 +18,7 @@
 //---------------------------------------------------------------------
 #pragma link "HistoryComboBox"
 #pragma link "PngImageList"
-#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
-#endif
 //---------------------------------------------------------------------
 bool __fastcall LocationProfilesDialog(TOpenDirectoryMode Mode,
   TOperationSide Side, UnicodeString & LocalDirectory, UnicodeString & RemoteDirectory,

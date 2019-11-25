@@ -511,8 +511,9 @@ object LoginDialog: TLoginDialog
     object ShowAgainCheck: TCheckBox
       Left = 12
       Top = 0
-      Width = 333
+      Width = 606
       Height = 17
+      Anchors = [akLeft, akTop, akRight]
       Caption = 
         '&Show Login dialog on startup and when the last session is close' +
         'd'

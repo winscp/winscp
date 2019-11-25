@@ -18,9 +18,7 @@
 #pragma link "IEListView"
 #pragma link "NortonLikeListView"
 #pragma link "PngImageList"
-#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
-#endif
 //---------------------------------------------------------------------------
 TFileFindDialog * FileFindDialog = NULL;
 static const int NoSort = 1;

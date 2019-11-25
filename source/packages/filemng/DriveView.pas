@@ -1692,7 +1692,9 @@ begin {FindNodeToPath}
     if Length(Path) > 0 then
     begin
       if not GetDriveStatus(Drive).Scanned then
+      begin
         ScanDrive(Drive);
+      end;
       Result := SearchSubDirs(GetDriveStatus(Drive).RootNode, UpperCase(Path));
     end
       else Result := GetDriveStatus(Drive).RootNode;

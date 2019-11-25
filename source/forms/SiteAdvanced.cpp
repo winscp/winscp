@@ -24,9 +24,7 @@
 #pragma link "ComboEdit"
 #pragma link "PasswordEdit"
 #pragma link "UpDownEdit"
-#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
-#endif
 //---------------------------------------------------------------------------
 // Sheet tag:
 // 01 top, 02 indented

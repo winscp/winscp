@@ -21,9 +21,7 @@
 #include <WinApi.h>
 #include "MessageDlg.h"
 //---------------------------------------------------------------------------
-#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
-#endif
 //---------------------------------------------------------------------------
 const UnicodeString MessagePanelName(L"Panel");
 const UnicodeString MainMessageLabelName(L"MainMessage");

@@ -53,9 +53,7 @@
 #pragma link "TB2Toolbar"
 #pragma link "ThemePageControl"
 #pragma link "PathLabel"
-#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
-#endif
 //---------------------------------------------------------------------------
 #define WM_COMPONENT_HIDE (WM_WINSCP_USER + 4)
 static const int SessionPanelCount = 4;

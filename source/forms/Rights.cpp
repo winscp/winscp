@@ -13,9 +13,7 @@
 #pragma package(smart_init)
 #pragma link "GrayedCheckBox"
 #pragma link "PngImageList"
-#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
-#endif
 //---------------------------------------------------------------------------
 __fastcall TRightsFrame::TRightsFrame(TComponent* Owner)
         : TFrame(Owner)

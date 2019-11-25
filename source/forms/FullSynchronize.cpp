@@ -20,9 +20,7 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "HistoryComboBox"
-#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
-#endif
 //---------------------------------------------------------------------------
 bool __fastcall DoFullSynchronizeDialog(TSynchronizeMode & Mode, int & Params,
   UnicodeString & LocalDirectory, UnicodeString & RemoteDirectory,

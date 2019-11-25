@@ -28,9 +28,7 @@
 #include <S3FileSystem.h>
 //---------------------------------------------------------------------
 #pragma link "SHDocVw_OCX"
-#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
-#endif
 //---------------------------------------------------------------------------
 static void __fastcall DoAboutDialog(TConfiguration * Configuration,
   bool AllowLicense, TRegistration * Registration, bool LoadThirdParty)

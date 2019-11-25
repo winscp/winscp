@@ -609,6 +609,7 @@ protected:
   void __fastcall LoadExtensionList();
   void __fastcall ReleaseExtensionTranslations();
   void __fastcall LoadExtensionTranslations();
+  TStrings * __fastcall DoFindTemporaryFolders(bool OnlyFirst);
 
 public:
   __fastcall TWinConfiguration();
@@ -618,6 +619,8 @@ public:
   virtual THierarchicalStorage * CreateScpStorage(bool & SessionList);
   UnicodeString __fastcall TemporaryDir(bool Mask = false);
   TStrings * __fastcall FindTemporaryFolders();
+  bool __fastcall AnyTemporaryFolders();
+  void __fastcall CleanupTemporaryFolders();
   void __fastcall CleanupTemporaryFolders(TStrings * Folders = NULL);
   UnicodeString __fastcall ExpandedTemporaryDirectory();
   void __fastcall CheckDefaultTranslation();

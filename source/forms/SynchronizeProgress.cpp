@@ -13,14 +13,12 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "PathLabel"
-#ifndef NO_RESOURCES
 #pragma link "PngImageList"
 #pragma link "TB2Dock"
 #pragma link "TB2Item"
 #pragma link "TB2Toolbar"
 #pragma link "TBX"
 #pragma resource "*.dfm"
-#endif
 //---------------------------------------------------------------------------
 // Used for comparing only
 __fastcall TSynchronizeProgressForm::TSynchronizeProgressForm(TComponent * Owner, bool AllowMinimize, int Files)

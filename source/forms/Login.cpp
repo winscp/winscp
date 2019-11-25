@@ -24,9 +24,7 @@
 #pragma link "ComboEdit"
 #pragma link "PasswordEdit"
 #pragma link "UpDownEdit"
-#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
-#endif
 //---------------------------------------------------------------------------
 const int SiteImageIndex = 1;
 const int OpenFolderImageIndex = 2;
@@ -35,14 +33,14 @@ const int WorkspaceImageIndex = 4;
 const int NewSiteImageIndex = 6;
 const int SiteColorMaskImageIndex = 8;
 //---------------------------------------------------------------------------
-bool __fastcall DoLoginDialog(TStoredSessionList *SessionList, TList * DataList, TForm * LinkedForm)
+bool __fastcall DoLoginDialog(TList * DataList, TForm * LinkedForm)
 {
   DebugAssert(DataList != NULL);
   TLoginDialog * LoginDialog = SafeFormCreate<TLoginDialog>();
   bool Result;
   try
   {
-    LoginDialog->Init(SessionList, LinkedForm);
+    LoginDialog->Init(LinkedForm);
     Result = LoginDialog->Execute(DataList);
   }
   __finally
@@ -101,9 +99,8 @@ void __fastcall TLoginDialog::InvalidateSessionData()
   FSessionData = NULL;
 }
 //---------------------------------------------------------------------
-void __fastcall TLoginDialog::Init(TStoredSessionList *SessionList, TForm * LinkedForm)
+void __fastcall TLoginDialog::Init(TForm * LinkedForm)
 {
-  FStoredSessions = SessionList;
   FLinkedForm = LinkedForm;
   LoadSessions();
   UnicodeString Dummy;
@@ -392,35 +389,39 @@ void __fastcall TLoginDialog::SetNewSiteNodeLabel()
 //---------------------------------------------------------------------
 void __fastcall TLoginDialog::LoadSessions()
 {
-  TAutoFlag LoadingFlag(FLoading);
-  SessionTree->Items->BeginUpdate();
-  SessionTree->Images->BeginUpdate();
-  try
   {
-    // optimization
-    SessionTree->SortType = Comctrls::stNone;
-
-    SessionTree->Items->Clear();
-
-    TTreeNode * Node = SessionTree->Items->AddChild(NULL, L"");
-    Node->Data = FNewSiteData;
-    SetNewSiteNodeLabel();
-    SetNodeImage(Node, NewSiteImageIndex);
-
-    DebugAssert(StoredSessions != NULL);
-    for (int Index = 0; Index < StoredSessions->Count; Index++)
+    // Otherwise, once the selected node is deleted, another code is selected and we get failure
+    // while trying to access its data somewhere in LoadContents
+    TAutoFlag LoadingFlag(FLoading);
+    SessionTree->Items->BeginUpdate();
+    SessionTree->Images->BeginUpdate();
+    try
     {
-      AddSession(StoredSessions->Sessions[Index]);
+      // optimization
+      SessionTree->SortType = Comctrls::stNone;
+
+      SessionTree->Items->Clear();
+
+      TTreeNode * Node = SessionTree->Items->AddChild(NULL, L"");
+      Node->Data = FNewSiteData;
+      SetNewSiteNodeLabel();
+      SetNodeImage(Node, NewSiteImageIndex);
+
+      DebugAssert(StoredSessions != NULL);
+      for (int Index = 0; Index < StoredSessions->Count; Index++)
+      {
+        AddSession(StoredSessions->Sessions[Index]);
+      }
     }
-  }
-  __finally
-  {
-    // Restore sorting. Moreover, folders would not be sorted automatically even when
-    // SortType is set (not having set the data property), so we would have to
-    // call AlphaSort here explicitly
-    SessionTree->SortType = Comctrls::stBoth;
-    SessionTree->Images->EndUpdate();
-    SessionTree->Items->EndUpdate();
+    __finally
+    {
+      // Restore sorting. Moreover, folders would not be sorted automatically even when
+      // SortType is set (not having set the data property), so we would have to
+      // call AlphaSort here explicitly
+      SessionTree->SortType = Comctrls::stBoth;
+      SessionTree->Images->EndUpdate();
+      SessionTree->Items->EndUpdate();
+    }
   }
   SessionTree->Selected = SessionTree->Items->GetFirstNode();
   UpdateControls();
@@ -732,17 +733,20 @@ void __fastcall TLoginDialog::FormShow(TObject * /*Sender*/)
 void __fastcall TLoginDialog::SessionTreeChange(TObject * /*Sender*/,
   TTreeNode * /*Node*/)
 {
-  if (FIncrementalSearching <= 0)
+  if (!FLoading)
   {
-    // Make sure UpdateControls is called here, no matter what,
-    // now it is always called from ResetSitesIncrementalSearch.
-    // For the "else" scenario, UpdateControls is called later from SitesIncrementalSearch.
-    ResetSitesIncrementalSearch();
-  }
+    if (FIncrementalSearching <= 0)
+    {
+      // Make sure UpdateControls is called here, no matter what,
+      // now it is always called from ResetSitesIncrementalSearch.
+      // For the "else" scenario, UpdateControls is called later from SitesIncrementalSearch.
+      ResetSitesIncrementalSearch();
+    }
 
-  if (FInitialized)
-  {
-    LoadContents();
+    if (FInitialized)
+    {
+      LoadContents();
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -1106,7 +1110,7 @@ void __fastcall TLoginDialog::ImportSessionsActionExecute(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::CleanUpActionExecute(TObject * /*Sender*/)
 {
-  if (DoCleanupDialog(StoredSessions, Configuration))
+  if (DoCleanupDialog())
   {
     SaveState();
     LoadSessions();
@@ -1238,14 +1242,14 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction * BasicAction,
 //---------------------------------------------------------------------------
 bool __fastcall TLoginDialog::IsCloneToNewSiteDefault()
 {
-  return !FEditing && !FRenaming && IsSiteNode(SessionTree->Selected) && !FStoredSessions->CanLogin(GetSessionData());
+  return !FEditing && !FRenaming && IsSiteNode(SessionTree->Selected) && !StoredSessions->CanLogin(GetSessionData());
 }
 //---------------------------------------------------------------------------
 bool __fastcall TLoginDialog::CanLogin()
 {
   TSessionData * Data = GetSessionData();
   return
-    ((Data != NULL) && FStoredSessions->CanLogin(Data) && !FEditing) ||
+    ((Data != NULL) && StoredSessions->CanLogin(Data) && !FEditing) ||
     (IsFolderOrWorkspaceNode(SessionTree->Selected) && HasNodeAnySession(SessionTree->Selected, true));
 }
 //---------------------------------------------------------------------------
@@ -1738,7 +1742,7 @@ bool __fastcall TLoginDialog::HasNodeAnySession(TTreeNode * Node, bool NeedCanLo
   {
     Result =
       IsSessionNode(ANode) &&
-      (!NeedCanLogin || FStoredSessions->CanLogin(GetNodeSession(ANode)));
+      (!NeedCanLogin || StoredSessions->CanLogin(GetNodeSession(ANode)));
     ANode = ANode->GetNext();
   }
   return Result;
@@ -2354,7 +2358,7 @@ UnicodeString __fastcall TLoginDialog::GetFolderOrWorkspaceContents(
   UnicodeString Contents;
 
   UnicodeString Path = SessionNodePath(Node);
-  std::unique_ptr<TStrings> Names(FStoredSessions->GetFolderOrWorkspaceList(Path));
+  std::unique_ptr<TStrings> Names(StoredSessions->GetFolderOrWorkspaceList(Path));
   for (int Index = 0; Index < Names->Count; Index++)
   {
     UnicodeString Name = Names->Strings[Index];
@@ -2905,7 +2909,7 @@ void __fastcall TLoginDialog::CancelEditing()
 void __fastcall TLoginDialog::CloneToNewSite()
 {
   FNewSiteData->CopyData(SelectedSession);
-  FNewSiteData->MakeUniqueIn(FStoredSessions);
+  FNewSiteData->MakeUniqueIn(StoredSessions);
   FNewSiteKeepName = true;
   NewSite();
   EditSession();

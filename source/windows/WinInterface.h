@@ -193,8 +193,8 @@ void __fastcall DoAboutDialog(TConfiguration * Configuration,
 void __fastcall DoAboutDialog(TConfiguration *Configuration);
 
 // forms\Cleanup.cpp
-bool __fastcall DoCleanupDialog(TStoredSessionList *SessionList,
-    TConfiguration *Configuration);
+bool __fastcall DoCleanupDialog();
+void __fastcall DoCleanupDialogIfAnyDataAndWanted();
 
 // forms\Console.cpp
 void __fastcall DoConsoleDialog(TTerminal * Terminal,
@@ -230,7 +230,7 @@ bool __fastcall DoImportSessionsDialog(TList * Imported);
 enum TLicense { lcNoLicense = -1, lcWinScp, lcExpat };
 void __fastcall DoLicenseDialog(TLicense License);
 
-bool __fastcall DoLoginDialog(TStoredSessionList * SessionList, TList * DataList, TForm * LinkedForm);
+bool __fastcall DoLoginDialog(TList * DataList, TForm * LinkedForm);
 
   // forms\SiteAdvanced.cpp
 bool __fastcall DoSiteAdvancedDialog(TSessionData * SessionData);

@@ -5802,7 +5802,8 @@ void __fastcall TTerminal::DoSynchronizeCollectFile(const UnicodeString FileName
 {
   TSynchronizeData * Data = static_cast<TSynchronizeData *>(Param);
 
-  if (DebugAlwaysTrue(Data->Options != NULL))
+  // Can be NULL in scripting
+  if (Data->Options != NULL)
   {
     Data->Options->Files++;
   }
