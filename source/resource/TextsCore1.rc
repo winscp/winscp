@@ -242,6 +242,7 @@ BEGIN
   UNKNOWN_FILE_ENCRYPTION, "File is not encrypted using a known encryption."
   INVALID_ENCRYPT_KEY, "**Invalid encryption key.**\n\nEncryption key for %s encryption must have %d bytes. It must be entered in hexadecimal representation (i.e. %d characters)."
   UNREQUESTED_FILE, "Server sent a file that was not requested."
+  STORE_NEW_HOSTKEY_ERROR, "Failed to store new host key."
 
   CORE_CONFIRMATION_STRINGS, "CORE_CONFIRMATION"
   CONFIRM_PROLONG_TIMEOUT3, "Host is not communicating for %d seconds.\n\nWait for another %0:d seconds?"

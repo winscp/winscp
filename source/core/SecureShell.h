@@ -102,9 +102,13 @@ private:
   bool __fastcall TryFtp();
   UnicodeString __fastcall ConvertInput(const RawByteString & Input);
   void __fastcall GetRealHost(UnicodeString & Host, int & Port);
-  UnicodeString __fastcall RetrieveHostKey(UnicodeString Host, int Port, const UnicodeString KeyType);
+  UnicodeString __fastcall RetrieveHostKey(const UnicodeString & Host, int Port, const UnicodeString & KeyType);
+  bool HaveAcceptNewHostKeyPolicy();
+  THierarchicalStorage * GetHostKeyStorage();
   bool VerifyCachedHostKey(
     const UnicodeString & StoredKeys, const UnicodeString & KeyStr, const UnicodeString & FingerprintMD5, const UnicodeString & FingerprintSHA256);
+  UnicodeString StoreHostKey(
+    const UnicodeString & Host, int Port, const UnicodeString & KeyType, const UnicodeString & KeyStr);
 
 protected:
   TCaptureOutputEvent FOnCaptureOutput;

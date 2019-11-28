@@ -22,6 +22,7 @@
 #define MAX_BUFSIZE 32768
 //---------------------------------------------------------------------------
 const wchar_t HostKeyDelimiter = L';';
+static std::unique_ptr<TCriticalSection> PuttyStorageSection(TraceInitPtr(new TCriticalSection()));
 //---------------------------------------------------------------------------
 struct TPuttyTranslation
 {
@@ -2164,8 +2165,32 @@ void __fastcall TSecureShell::GetRealHost(UnicodeString & Host, int & Port)
   }
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TSecureShell::RetrieveHostKey(UnicodeString Host, int Port, const UnicodeString KeyType)
+bool TSecureShell::HaveAcceptNewHostKeyPolicy()
 {
+  return SameText(FSessionData->HostKey.Trim(), L"acceptnew");
+}
+//---------------------------------------------------------------------------
+THierarchicalStorage * TSecureShell::GetHostKeyStorage()
+{
+  if (!Configuration->Persistent && HaveAcceptNewHostKeyPolicy())
+  {
+    return Configuration->CreateConfigRegistryStorage();
+  }
+  else
+  {
+    return Configuration->CreateConfigStorage();
+  }
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TSecureShell::RetrieveHostKey(const UnicodeString & Host, int Port, const UnicodeString & KeyType)
+{
+  std::unique_ptr<THierarchicalStorage> Storage(GetHostKeyStorage());
+  Storage->AccessMode = smRead;
+  TGuard Guard(PuttyStorageSection.get());
+  DebugAssert(PuttyStorage == NULL);
+  TValueRestorer<THierarchicalStorage *> StorageRestorer(PuttyStorage);
+  PuttyStorage = Storage.get();
+
   AnsiString AnsiStoredKeys;
   AnsiStoredKeys.SetLength(10240);
   UnicodeString Result;
@@ -2319,6 +2344,19 @@ bool TSecureShell::VerifyCachedHostKey(
   return Result;
 }
 //---------------------------------------------------------------------------
+UnicodeString TSecureShell::StoreHostKey(
+  const UnicodeString & Host, int Port, const UnicodeString & KeyType, const UnicodeString & KeyStr)
+{
+  TGuard Guard(PuttyStorageSection.get());
+  DebugAssert(PuttyStorage == NULL);
+  TValueRestorer<THierarchicalStorage *> StorageRestorer(PuttyStorage);
+  std::unique_ptr<THierarchicalStorage> Storage(GetHostKeyStorage());
+  Storage->AccessMode = smReadWrite;
+  PuttyStorage = Storage.get();
+  store_host_key(AnsiString(Host).c_str(), Port, AnsiString(KeyType).c_str(), AnsiString(KeyStr).c_str());
+  return Storage->Source;
+}
+//---------------------------------------------------------------------------
 void __fastcall TSecureShell::VerifyHostKey(
   const UnicodeString & AHost, int Port, const UnicodeString & KeyType, const UnicodeString & KeyStr,
   const UnicodeString & Fingerprint)
@@ -2352,17 +2390,35 @@ void __fastcall TSecureShell::VerifyHostKey(
     Abort();
   }
 
-  bool Result = false;
+  bool AcceptNew = HaveAcceptNewHostKeyPolicy();
+  UnicodeString ConfigHostKey;
+  if (!AcceptNew)
+  {
+    ConfigHostKey = FSessionData->HostKey;
+  }
 
   UnicodeString StoredKeys = RetrieveHostKey(Host, Port, KeyType);
-  Result = VerifyCachedHostKey(StoredKeys, KeyStr, FingerprintMD5, FingerprintSHA256);
+  bool Result = VerifyCachedHostKey(StoredKeys, KeyStr, FingerprintMD5, FingerprintSHA256);
+  if (!Result && AcceptNew)
+  {
+    if (!StoredKeys.IsEmpty()) // optimization + avoiding the log message
+    {
+      AcceptNew = false;
+    }
+    else if (have_any_ssh2_hostkey(FSeat, AnsiString(Host).c_str(), Port))
+    {
+      LogEvent(L"Host key not found in the cache, but other key types found, cannot accept new key");
+      AcceptNew = false;
+    }
+  }
 
   bool ConfiguredKeyNotMatch = false;
 
-  if (!Result && !FSessionData->HostKey.IsEmpty() &&
+  if (!Result && !ConfigHostKey.IsEmpty() &&
+      // Should test have_any_ssh2_hostkey + No need to bother with AcceptNew, as we never get here
       (StoredKeys.IsEmpty() || FSessionData->OverrideCachedHostKey))
   {
-    UnicodeString Buf = FSessionData->HostKey;
+    UnicodeString Buf = ConfigHostKey;
     while (!Result && !Buf.IsEmpty())
     {
       UnicodeString ExpectedKey = CutToChar(Buf, HostKeyDelimiter, false);
@@ -2387,6 +2443,26 @@ void __fastcall TSecureShell::VerifyHostKey(
     if (!Result)
     {
       ConfiguredKeyNotMatch = true;
+    }
+  }
+
+  if (!Result && AcceptNew && DebugAlwaysTrue(ConfigHostKey.IsEmpty()))
+  {
+    try
+    {
+      UnicodeString StorageSource = StoreHostKey(Host, Port, KeyType, KeyStr);
+      UnicodeString StoredKeys = RetrieveHostKey(Host, Port, KeyType);
+      if (StoredKeys != KeyStr)
+      {
+        throw Exception(UnicodeString());
+      }
+      Configuration->Usage->Inc(L"HostKeyNewAccepted");
+      LogEvent(FORMAT(L"Warning: Stored new host key to %s - This should occur only on the first connection", (StorageSource)));
+      Result = true;
+    }
+    catch (Exception & E)
+    {
+      FUI->FatalError(&E, LoadStr(STORE_NEW_HOSTKEY_ERROR));
     }
   }
 
@@ -2468,7 +2544,7 @@ void __fastcall TSecureShell::VerifyHostKey(
           StoreKeyStr = (StoredKeys + HostKeyDelimiter + StoreKeyStr);
           // fall thru
         case qaYes:
-          store_host_key(AnsiString(Host).c_str(), Port, AnsiString(KeyType).c_str(), AnsiString(StoreKeyStr).c_str());
+          StoreHostKey(Host, Port, KeyType, StoreKeyStr);
           Verified = true;
           break;
 
@@ -2489,7 +2565,7 @@ void __fastcall TSecureShell::VerifyHostKey(
       UnicodeString Message;
       if (ConfiguredKeyNotMatch)
       {
-        Message = FMTLOAD(CONFIGURED_KEY_NOT_MATCH, (FSessionData->HostKey));
+        Message = FMTLOAD(CONFIGURED_KEY_NOT_MATCH, (ConfigHostKey));
       }
       else if (!Configuration->Persistent && Configuration->Scripting)
       {

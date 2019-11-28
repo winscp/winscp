@@ -40,4 +40,6 @@ struct ScpSeat : public Seat
   ScpSeat(TSecureShell * SecureShell);
 };
 //---------------------------------------------------------------------------
+extern THierarchicalStorage * PuttyStorage;
+//---------------------------------------------------------------------------
 #endif

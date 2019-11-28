@@ -2086,3 +2086,16 @@ void get_macs(int * count, const struct ssh2_macalg *** amacs)
     *amacs = macs;
     *count = lenof(macs);
 }
+
+int have_any_ssh2_hostkey(Seat * seat, const char * host, int port)
+{
+    int j;
+    for (j = 0; j < lenof(ssh2_hostkey_algs); j++)
+    {
+        if (have_ssh_host_key(seat, host, port, ssh2_hostkey_algs[j].alg->cache_id))
+        {
+            return 1;
+        }
+    }
+    return 0;
+}
