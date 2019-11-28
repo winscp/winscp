@@ -2086,8 +2086,3 @@ void get_macs(int * count, const struct ssh2_macalg *** amacs)
     *amacs = macs;
     *count = lenof(macs);
 }
-
-void call_ssh_timer(Backend * be)
-{
-    // TODO
-}
