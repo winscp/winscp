@@ -1847,17 +1847,29 @@ namespace WinSCP
                 List<string> switches = new List<string>();
 
                 if (!string.IsNullOrEmpty(sessionOptions.SshHostKeyFingerprint) ||
-                    (sessionOptions.GiveUpSecurityAndAcceptAnySshHostKey && !scanFingerprint))
+                    ((sessionOptions.SshHostKeyPolicy != SshHostKeyPolicy.Check) && !scanFingerprint))
                 {
                     if (!sessionOptions.IsSsh)
                     {
-                        throw Logger.WriteException(new ArgumentException("SessionOptions.SshHostKeyFingerprint or SessionOptions.GiveUpSecurityAndAcceptAnySshHostKey is set, but SessionOptions.Protocol is neither Protocol.Sftp nor Protocol.Scp."));
+                        throw Logger.WriteException(new ArgumentException("SessionOptions.SshHostKeyFingerprint is set or sessionOptions.SshHostKeyPolicy has not the default value Check, but SessionOptions.Protocol is neither Protocol.Sftp nor Protocol.Scp."));
                     }
                     string sshHostKeyFingerprint = sessionOptions.SshHostKeyFingerprint;
-                    if (sessionOptions.GiveUpSecurityAndAcceptAnySshHostKey)
+                    switch (sessionOptions.SshHostKeyPolicy)
                     {
-                        Logger.WriteLine("WARNING! Giving up security and accepting any key as configured");
-                        sshHostKeyFingerprint = AddStarToList(sshHostKeyFingerprint);
+                        case SshHostKeyPolicy.Check:
+                            // noop
+                            break;
+                        case SshHostKeyPolicy.GiveUpSecurityAndAcceptAny:
+                            sshHostKeyFingerprint = AddStarToList(sshHostKeyFingerprint);
+                            Logger.WriteLine("WARNING! Giving up security and accepting any key as configured");
+                            break;
+                        case SshHostKeyPolicy.AcceptNew:
+                            if (!string.IsNullOrEmpty(sshHostKeyFingerprint))
+                            {
+                                throw Logger.WriteException(new ArgumentException("SessionOptions.SshHostKeyFingerprint is set and SshHostKeyPolicy is not Check"));
+                            }
+                            sshHostKeyFingerprint = "acceptnew";
+                            break;
                     }
                     switches.Add(FormatSwitch("hostkey", sshHostKeyFingerprint));
                 }

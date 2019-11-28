@@ -166,13 +166,18 @@ THierarchicalStorage * TConfiguration::CreateConfigStorage()
   return CreateScpStorage(SessionList);
 }
 //---------------------------------------------------------------------------
+THierarchicalStorage * TConfiguration::CreateConfigRegistryStorage()
+{
+  return new TRegistryStorage(RegistryStorageKey);
+}
+//---------------------------------------------------------------------------
 THierarchicalStorage * TConfiguration::CreateScpStorage(bool & SessionList)
 {
   TGuard Guard(FCriticalSection);
   THierarchicalStorage * Result;
   if (Storage == stRegistry)
   {
-    Result = new TRegistryStorage(RegistryStorageKey);
+    Result = CreateConfigRegistryStorage();
   }
   else if (Storage == stNul)
   {

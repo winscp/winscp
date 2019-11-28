@@ -35,6 +35,15 @@ namespace WinSCP
         Explicit = 3,
     }
 
+    [Guid("8A98AB8F-30E8-4539-A3DE-A33DDC43B33C")]
+    [ComVisible(true)]
+    public enum SshHostKeyPolicy
+    {
+        Check = 0,
+        GiveUpSecurityAndAcceptAny = 1,
+        AcceptNew = 2,
+    }
+
     [Guid("2D4EF368-EE80-4C15-AE77-D12AEAF4B00A")]
     [ClassInterface(Constants.ClassInterface)]
     [ComVisible(true)]
@@ -63,7 +72,9 @@ namespace WinSCP
 
         // SSH
         public string SshHostKeyFingerprint { get { return _sshHostKeyFingerprint; } set { SetSshHostKeyFingerprint(value); } }
-        public bool GiveUpSecurityAndAcceptAnySshHostKey { get; set; }
+        public SshHostKeyPolicy SshHostKeyPolicy { get; set; }
+        [Obsolete("Use SshHostKeyPolicy")]
+        public bool GiveUpSecurityAndAcceptAnySshHostKey { get { return GetGiveUpSecurityAndAcceptAnySshHostKey(); } set { SetGiveUpSecurityAndAcceptAnySshHostKey(value); } }
         public string SshPrivateKeyPath { get; set; }
         [Obsolete("Use PrivateKeyPassphrase")]
         public string SshPrivateKeyPassphrase { get { return PrivateKeyPassphrase; } set { PrivateKeyPassphrase = value; } }
@@ -196,7 +207,7 @@ namespace WinSCP
             UserName = null;
             Password = null;
             SshHostKeyFingerprint = null;
-            GiveUpSecurityAndAcceptAnySshHostKey = false;
+            SshHostKeyPolicy = SshHostKeyPolicy.Check;
             TlsHostCertificateFingerprint = null;
             GiveUpSecurityAndAcceptAnyTlsHostCertificate = false;
             if (!string.IsNullOrEmpty(userInfo))
@@ -466,6 +477,16 @@ namespace WinSCP
         public override string ToString()
         {
             return Name;
+        }
+
+        private void SetGiveUpSecurityAndAcceptAnySshHostKey(bool value)
+        {
+            SshHostKeyPolicy = value ? SshHostKeyPolicy.GiveUpSecurityAndAcceptAny : SshHostKeyPolicy.Check;
+        }
+
+        private bool GetGiveUpSecurityAndAcceptAnySshHostKey()
+        {
+            return (SshHostKeyPolicy == SshHostKeyPolicy.GiveUpSecurityAndAcceptAny);
         }
 
         private SecureString _securePassword;

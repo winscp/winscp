@@ -22,6 +22,7 @@ char appname_[50];
 const char *const appname = appname_;
 extern const bool share_can_be_downstream = false;
 extern const bool share_can_be_upstream = false;
+THierarchicalStorage * PuttyStorage = NULL;
 //---------------------------------------------------------------------------
 extern "C"
 {
@@ -409,7 +410,6 @@ TPuttyRegistryTypes PuttyRegistryTypes;
 static long OpenWinSCPKey(HKEY Key, const char * SubKey, HKEY * Result, bool CanCreate)
 {
   long R;
-  DebugAssert(Configuration != NULL);
 
   DebugAssert(Key == HKEY_CURRENT_USER);
   DebugUsedParam(Key);
@@ -431,19 +431,18 @@ static long OpenWinSCPKey(HKEY Key, const char * SubKey, HKEY * Result, bool Can
   }
   else
   {
-    // we expect this to be called only from verify_host_key() or store_host_key()
+    // we expect this to be called only from retrieve_host_key() or store_host_key()
     DebugAssert(RegKey == L"SshHostKeys");
 
-    THierarchicalStorage * Storage = Configuration->CreateConfigStorage();
-    Storage->AccessMode = (CanCreate ? smReadWrite : smRead);
-    if (Storage->OpenSubKey(RegKey, CanCreate))
+    DebugAssert(PuttyStorage != NULL);
+    DebugAssert(PuttyStorage->AccessMode == (CanCreate ? smReadWrite : smRead));
+    if (PuttyStorage->OpenSubKey(RegKey, CanCreate))
     {
-      *Result = reinterpret_cast<HKEY>(Storage);
+      *Result = reinterpret_cast<HKEY>(PuttyStorage);
       R = ERROR_SUCCESS;
     }
     else
     {
-      delete Storage;
       R = ERROR_CANTOPEN;
     }
   }
@@ -557,7 +556,6 @@ long reg_set_winscp_value_ex(HKEY Key, const char * ValueName, unsigned long Res
     return ERROR_SUCCESS;
   }
   DebugAssert(PuttyRegistryMode == prmRedirect);
-  DebugAssert(Configuration != NULL);
 
   DebugAssert(Type == REG_SZ);
   DebugUsedParam(Type);
@@ -583,13 +581,6 @@ long reg_close_winscp_key(HKEY Key)
     return ERROR_SUCCESS;
   }
   DebugAssert(PuttyRegistryMode == prmRedirect);
-  DebugAssert(Configuration != NULL);
-
-  THierarchicalStorage * Storage = reinterpret_cast<THierarchicalStorage *>(Key);
-  if (Storage != NULL)
-  {
-    delete Storage;
-  }
 
   return ERROR_SUCCESS;
 }

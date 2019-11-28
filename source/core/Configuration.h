@@ -245,6 +245,7 @@ public:
   void __fastcall RememberLastFingerprint(const UnicodeString & SiteKey, const UnicodeString & FingerprintType, const UnicodeString & Fingerprint);
   UnicodeString __fastcall LastFingerprint(const UnicodeString & SiteKey, const UnicodeString & FingerprintType);
   THierarchicalStorage * CreateConfigStorage();
+  THierarchicalStorage * CreateConfigRegistryStorage();
   virtual THierarchicalStorage * CreateScpStorage(bool & SessionList);
   void __fastcall TemporaryLogging(const UnicodeString ALogFileName);
   void __fastcall TemporaryActionsLogging(const UnicodeString ALogFileName);
