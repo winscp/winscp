@@ -1586,6 +1586,7 @@ void __fastcall TWinConfiguration::ClearTemporaryLoginData()
 void __fastcall TWinConfiguration::AddVersionToHistory()
 {
   int CurrentVersion = CompoundVersion;
+  DebugAssert(ZeroBuildNumber(CurrentVersion) == CurrentVersion);
 
   int From = 1;
   bool CurrentVersionPresent = false;
@@ -1595,10 +1596,13 @@ void __fastcall TWinConfiguration::AddVersionToHistory()
     UnicodeString VersionStr = CutToChar(VersionInfo, L',', true);
     int Version;
 
-    if (TryStrToInt(VersionStr, Version) &&
-        (Version == CurrentVersion))
+    if (TryStrToInt(VersionStr, Version))
     {
-      CurrentVersionPresent = true;
+      Version = ZeroBuildNumber(Version);
+      if (Version == CurrentVersion)
+      {
+        CurrentVersionPresent = true;
+      }
     }
   }
 

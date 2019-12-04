@@ -261,12 +261,15 @@ UnicodeString __fastcall GetFileInfoString(void * FileInfo,
   return Result;
 }
 //---------------------------------------------------------------------------
-int __fastcall CalculateCompoundVersion(int MajorVer,
-  int MinorVer, int Release, int Build)
+int __fastcall CalculateCompoundVersion(int MajorVer, int MinorVer, int Release)
 {
-  int CompoundVer = Build + 10000 * (Release + 100 * (MinorVer +
-    100 * MajorVer));
+  int CompoundVer = 10000 * (Release + 100 * (MinorVer + 100 * MajorVer));
   return CompoundVer;
+}
+//---------------------------------------------------------------------------
+int ZeroBuildNumber(int CompoundVersion)
+{
+  return (CompoundVersion / 10000 * 10000);
 }
 //---------------------------------------------------------------------------
 int __fastcall StrToCompoundVersion(UnicodeString S)
@@ -274,8 +277,7 @@ int __fastcall StrToCompoundVersion(UnicodeString S)
   int MajorVer = Min(StrToInt(CutToChar(S, L'.', false)), 99);
   int MinorVer = Min(StrToInt(CutToChar(S, L'.', false)), 99);
   int Release = S.IsEmpty() ? 0 : Min(StrToInt(CutToChar(S, L'.', false)), 99);
-  int Build = S.IsEmpty() ? 0 : Min(StrToInt(CutToChar(S, L'.', false)), 9999);
-  return CalculateCompoundVersion(MajorVer, MinorVer, Release, Build);
+  return CalculateCompoundVersion(MajorVer, MinorVer, Release);
 }
 //---------------------------------------------------------------------------
 int __fastcall CompareVersion(UnicodeString V1, UnicodeString V2)

@@ -5,6 +5,7 @@
 //---------------------------------------------------------------------------
 #include "CustomWinConfiguration.h"
 #include "CustomDirView.hpp"
+#include "FileInfo.h"
 //---------------------------------------------------------------------------
 enum TEditor { edInternal, edExternal, edOpen };
 enum TGenerateUrlCodeTarget { guctUrl, guctScript, guctAssembly };
@@ -230,7 +231,7 @@ struct TUpdatesConfiguration
     return
       HaveResults &&
       (double(Period) > 0) &&
-      (Results.ForVersion == CompoundVersion);
+      (ZeroBuildNumber(Results.ForVersion) == CompoundVersion);
   }
 };
 //---------------------------------------------------------------------------
