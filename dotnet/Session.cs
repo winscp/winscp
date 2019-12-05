@@ -10,6 +10,7 @@ using Microsoft.Win32;
 using System.Diagnostics;
 using System.Security;
 using System.Text.RegularExpressions;
+using System.Linq;
 
 namespace WinSCP
 {
@@ -804,16 +805,7 @@ namespace WinSCP
                 TransferOperationResult operationResult =
                     PutFilesToDirectory(localDirectory, remoteDirectory, filemask, remove, options);
                 operationResult.Check();
-                // Should not happen
-                if (operationResult.Transfers.Count == 0)
-                {
-                    throw Logger.WriteException(new FileNotFoundException("File not found"));
-                }
-                if (operationResult.Transfers.Count > 1)
-                {
-                    throw Logger.WriteException(new InvalidOperationException("More then one file has been unexpectedly found"));
-                }
-                return operationResult.Transfers[0];
+                return GetOnlyFileOperation(operationResult.Transfers);
             }
         }
 
@@ -940,17 +932,23 @@ namespace WinSCP
                 TransferOperationResult operationResult =
                     DoGetFilesToDirectory(remoteDirectory, localDirectory, filemask, remove, options, "-onlyfile");
                 operationResult.Check();
-                // Should happen only when the filename is mask-like, otherwise "get" throws straight away
-                if (operationResult.Transfers.Count == 0)
-                {
-                    throw Logger.WriteException(new FileNotFoundException("File not found"));
-                }
-                if (operationResult.Transfers.Count > 1)
-                {
-                    throw Logger.WriteException(new InvalidOperationException("More then one file has been unexpectedly found"));
-                }
-                return operationResult.Transfers[0];
+                return GetOnlyFileOperation(operationResult.Transfers);
             }
+        }
+
+        private T GetOnlyFileOperation<T>(ICollection<T> operations)
+        {
+            // For "get", this should happen only when the filename is mask-like, otherwise "get" throws straight away.
+            // For "put", this should not happen.
+            if (operations.Count == 0)
+            {
+                throw Logger.WriteException(new FileNotFoundException("File not found"));
+            }
+            if (operations.Count > 1)
+            {
+                throw Logger.WriteException(new InvalidOperationException("More then one file has been unexpectedly found"));
+            }
+            return operations.First();
         }
 
         public RemovalOperationResult RemoveFiles(string path)
