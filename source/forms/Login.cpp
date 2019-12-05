@@ -390,7 +390,7 @@ void __fastcall TLoginDialog::SetNewSiteNodeLabel()
 void __fastcall TLoginDialog::LoadSessions()
 {
   {
-    // Otherwise, once the selected node is deleted, another code is selected and we get failure
+    // Otherwise, once the selected node is deleted, another node is selected and we get failure
     // while trying to access its data somewhere in LoadContents
     TAutoFlag LoadingFlag(FLoading);
     SessionTree->Items->BeginUpdate();
