@@ -122,7 +122,8 @@ protected:
     fltDirectories = 0x01,
     fltQueryServer = 0x02,
     fltMask =        0x04,
-    fltLatest =      0x08
+    fltLatest =      0x08,
+    fltOnlyFile =    0x10,
   };
   TStrings * __fastcall CreateFileList(TScriptProcParams * Parameters, int Start,
     int End, TFileListType ListType = fltDefault);

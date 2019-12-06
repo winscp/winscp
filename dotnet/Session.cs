@@ -955,9 +955,17 @@ namespace WinSCP
         {
             using (Logger.CreateCallstackAndLock())
             {
+                return DoRemoveFiles(path, string.Empty);
+            }
+        }
+
+        private RemovalOperationResult DoRemoveFiles(string path, string additionalParams)
+        {
+            using (Logger.CreateCallstack())
+            {
                 CheckOpened();
 
-                WriteCommand(string.Format(CultureInfo.InvariantCulture, "rm -- \"{0}\"", Tools.ArgumentEscape(path)));
+                WriteCommand(string.Format(CultureInfo.InvariantCulture, "rm {0} -- \"{1}\"", additionalParams, Tools.ArgumentEscape(path)));
 
                 RemovalOperationResult result = new RemovalOperationResult();
 
@@ -974,6 +982,29 @@ namespace WinSCP
                 }
 
                 return result;
+            }
+        }
+
+        public RemovalEventArgs RemoveFile(string path)
+        {
+            using (Logger.CreateCallstackAndLock())
+            {
+                if (string.IsNullOrEmpty(path))
+                {
+                    throw Logger.WriteException(new ArgumentException("File to path cannot be empty", nameof(path)));
+                }
+
+                string remoteDirectory = RemotePath.GetDirectoryName(path);
+                string filemask = RemotePath.EscapeFileMask(RemotePath.GetFileName(path));
+                if (string.IsNullOrEmpty(filemask))
+                {
+                    throw Logger.WriteException(new ArgumentException("File name cannot be empty", nameof(path)));
+                }
+                path = RemotePath.Combine(remoteDirectory, filemask);
+
+                RemovalOperationResult operationResult = DoRemoveFiles(path, "-onlyfile");
+                operationResult.Check();
+                return GetOnlyFileOperation(operationResult.Removals);
             }
         }
 
