@@ -1240,6 +1240,10 @@ namespace WinSCP
                                         throw Logger.WriteException(new InvalidOperationException(string.Format(CultureInfo.CurrentCulture, "Unknown synchronization action \"{0}\"", actionName)));
                                     }
                                 }
+                                else if (differenceReader.GetEmptyElementValue("type", out string fileType))
+                                {
+                                    difference.IsDirectory = (fileType.Length == 1) && RemoteFileInfo.IsDirectoryFileType(fileType[0]);
+                                }
                                 else if (differenceReader.GetEmptyElementValue("filename", out string value))
                                 {
                                     if (current == null)
