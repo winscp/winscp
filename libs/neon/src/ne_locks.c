@@ -476,7 +476,12 @@ end_element_common(struct ne_lock *l, int state, const char *cdata)
 	break;
     case ELM_depth:
 	NE_DEBUG(NE_DBG_LOCKS, "Got depth: %s\n", cdata);
-	l->depth = parse_depth(cdata);
+	{
+	char * depth = strdup(cdata);
+	char * depth_shaved = ne_shave(depth, "\r\n\t ");
+	l->depth = parse_depth(depth_shaved);
+	ne_free(depth);
+	}
 	if (l->depth == -1) {
 	    return -1;
 	}
