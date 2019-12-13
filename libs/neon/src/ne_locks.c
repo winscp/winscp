@@ -488,7 +488,12 @@ end_element_common(struct ne_lock *l, int state, const char *cdata)
 	break;
     case ELM_timeout:
 	NE_DEBUG(NE_DBG_LOCKS, "Got timeout: %s\n", cdata);
-	l->timeout = parse_timeout(cdata);
+	{
+	char * timeout = strdup(cdata);
+	char * timeout_shaved = ne_shave(timeout, "\r\n\t ");
+	l->timeout = parse_timeout(timeout_shaved);
+	ne_free(timeout);
+	}
 	if (l->timeout == NE_TIMEOUT_INVALID) {
 	    return -1;
 	}
