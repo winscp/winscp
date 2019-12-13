@@ -773,6 +773,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
               'Default'
               '/bin/bash'
               '/bin/ksh'
+              '/bin/sh'
               'sudo su -')
           end
           object ReturnVarEdit: TComboBox
