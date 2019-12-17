@@ -487,6 +487,7 @@ protected:
   void __fastcall QueueListUpdate(TTerminalQueue * Queue);
   void __fastcall QueueItemUpdate(TTerminalQueue * Queue, TQueueItem * Item);
   void __fastcall UpdateQueueStatus(bool QueueChanging);
+  bool IsAnythingQueued();
   void __fastcall RefreshQueueItems();
   virtual int __fastcall GetStaticComponentsHeight();
   void __fastcall FillQueueViewItem(TListItem * Item,
