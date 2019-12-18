@@ -1437,6 +1437,9 @@ public:
 
   bool __fastcall Execute(TSessionData * Data);
 
+protected:
+  DYNAMIC void __fastcall DoShow();
+
 private:
   TMemo * SettingsMemo;
 
@@ -1462,6 +1465,12 @@ __fastcall TSiteRawDialog::TSiteRawDialog() :
   AddButton->Width = OKButton->Width;
   AddButton->OnClick = AddButtonClick;
   AddDialogButton(AddButton);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSiteRawDialog::DoShow()
+{
+  TCustomDialog::DoShow();
+  InstallPathWordBreakProc(SettingsMemo);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TSiteRawDialog::Execute(TSessionData * Data)
