@@ -1495,7 +1495,6 @@ static void __fastcall PathWordBreakEditWindowProc(void * Data, TMessage & Messa
     if (CharMessage.CharCode == '\x7F')
     {
       TCustomComboBox * ComboBox = static_cast<TCustomComboBox *>(Data);
-      TWinControl * WinControl = static_cast<TWinControl *>(Data);
 
       if (((Edit != NULL) && (Edit->SelLength == 0)) ||
           ((ComboBox != NULL) && (ComboBox->SelLength == 0)))
