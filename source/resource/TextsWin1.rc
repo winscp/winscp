@@ -624,7 +624,7 @@ BEGIN
         UPDATES_DONATE_HTML, "To enable automatic updates, please <a href=\"%DONATE_URL%\">donate to WinSCP development</a> or %GET_IMG% WinSCP from <a href=\"%STORE_URL%\">Microsoft Store</a>."
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
-        WINSCP_COPYRIGHT, "Copyright © 2000-2019 Martin Prikryl"
+        WINSCP_COPYRIGHT, "Copyright © 2000-2020 Martin Prikryl"
         HOMEPAGE_URL, "https://winscp.net/"
         HISTORY_URL, "https://winscp.net/eng/docs/history"
         FORUM_URL, "https://winscp.net/forum/"
