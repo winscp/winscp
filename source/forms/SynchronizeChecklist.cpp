@@ -1387,3 +1387,28 @@ void __fastcall TSynchronizeChecklistDialog::BrowseRemoteActionExecute(TObject *
   DoBrowse(osRemote);
 }
 //---------------------------------------------------------------------------
+void __fastcall TSynchronizeChecklistDialog::KeyDown(Word & Key, TShiftState Shift)
+{
+  TShortCut KeyShortCut = ShortCut(Key, Shift);
+  TShortCut CustomShortCut = NormalizeCustomShortCut(KeyShortCut);
+  if (IsCustomShortCut(CustomShortCut))
+  {
+    TTBXItem * MenuItem = new TTBXItem(this);
+    CustomCommandsAction->ActionComponent = MenuItem;
+    CustomCommandsAction->Execute();
+
+    for (int Index = 0; Index < MenuItem->Count; Index++)
+    {
+      TTBCustomItem * Item = MenuItem->Items[Index];
+      if (Item->Enabled && (Item->ShortCut == CustomShortCut))
+      {
+        TAutoFlag DontCopyCommandToClipboardFlag(DontCopyCommandToClipboard);
+        Item->Click();
+        Key = 0;
+        break;
+      }
+    }
+  }
+
+  TForm::KeyDown(Key, Shift);
+}

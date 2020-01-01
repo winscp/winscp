@@ -901,7 +901,7 @@ int __fastcall TConfiguration::GetCompoundVersion()
   TVSFixedFileInfo * FileInfo = FixedApplicationInfo;
   return CalculateCompoundVersion(
     HIWORD(FileInfo->dwFileVersionMS), LOWORD(FileInfo->dwFileVersionMS),
-    HIWORD(FileInfo->dwFileVersionLS), LOWORD(FileInfo->dwFileVersionLS));
+    HIWORD(FileInfo->dwFileVersionLS));
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TConfiguration::ModuleFileName()

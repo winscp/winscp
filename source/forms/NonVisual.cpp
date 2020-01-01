@@ -1073,10 +1073,7 @@ int __fastcall TNonVisualDataModule::CreateCustomCommandsListMenu(
         Item->Tag = Item->Tag | CustomCommandBoth;
       }
       Item->Hint = CustomCommandHint(Command);
-      if (ListType != ccltBoth)
-      {
-        Item->ShortCut = Command->ShortCut;
-      }
+      Item->ShortCut = Command->ShortCut;
       Item->OnClick = CustomCommandClick;
 
       Menu->Add(Item);

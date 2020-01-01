@@ -1,7 +1,6 @@
 ﻿using System;
-using System.Globalization;
+using System.IO;
 using System.Runtime.InteropServices;
-using WinSCP;
 
 namespace WinSCP
 {
@@ -46,8 +45,81 @@ namespace WinSCP
         public ComparisonFileInfo Local { get; internal set; }
         public ComparisonFileInfo Remote { get; internal set; }
 
-        internal ComparisonDifference()
+        internal ComparisonDifference(string localPath, string remotePath)
         {
+            _localPath = localPath;
+            _remotePath = remotePath;
         }
+
+        public FileOperationEventArgs Resolve(Session session, TransferOptions options = null)
+        {
+            if (session == null)
+            {
+                throw new ArgumentNullException(nameof(session));
+            }
+
+            switch (Action)
+            {
+                case SynchronizationAction.UploadNew:
+                case SynchronizationAction.UploadUpdate:
+                    {
+                        string remoteDirectory =
+                            RemotePath.TranslateLocalPathToRemote(Path.GetDirectoryName(Local.FileName), _localPath, _remotePath);
+                        if (!IsDirectory)
+                        {
+                            return session.PutFileToDirectory(Local.FileName, remoteDirectory, options: options);
+                        }
+                        else
+                        {
+                            session.PutEntryToDirectory(Local.FileName, remoteDirectory, options: options);
+                            return null;
+                        }
+                    }
+
+                case SynchronizationAction.DownloadNew:
+                case SynchronizationAction.DownloadUpdate:
+                    {
+                        string localDirectory =
+                            RemotePath.TranslateRemotePathToLocal(RemotePath.GetDirectoryName(Remote.FileName), _remotePath, _localPath);
+                        if (!IsDirectory)
+                        {
+                            return session.GetFileToDirectory(Remote.FileName, localDirectory, options: options);
+                        }
+                        else
+                        {
+                            session.GetEntryToDirectory(Remote.FileName, localDirectory, options: options);
+                            return null;
+                        }
+                    }
+
+                case SynchronizationAction.DeleteRemote:
+                    if (!IsDirectory)
+                    {
+                        return session.RemoveFile(Remote.FileName);
+                    }
+                    else
+                    {
+                        session.RemoveEntry(Remote.FileName);
+                        return null;
+                    }
+
+                case SynchronizationAction.DeleteLocal:
+                    if (!IsDirectory)
+                    {
+                        File.Delete(Local.FileName);
+                    }
+                    else
+                    {
+                        Directory.Delete(Local.FileName, true);
+                    }
+                    return null;
+
+                default:
+                    throw session.Logger.WriteException(new InvalidOperationException());
+            }
+        }
+
+        private readonly string _localPath;
+        private readonly string _remotePath;
     }
 }

@@ -352,7 +352,7 @@ void __fastcall TScript::Init()
   FCommands->Register(L"cd", SCRIPT_CD_DESC, SCRIPT_CD_HELP, &CdProc, 0, 1, false);
   FCommands->Register(L"ls", SCRIPT_LS_DESC, SCRIPT_LS_HELP2, &LsProc, 0, 1, false);
   FCommands->Register(L"dir", 0, SCRIPT_LS_HELP2, &LsProc, 0, 1, false);
-  FCommands->Register(L"rm", SCRIPT_RM_DESC, SCRIPT_RM_HELP2, &RmProc, 1, -1, false);
+  FCommands->Register(L"rm", SCRIPT_RM_DESC, SCRIPT_RM_HELP2, &RmProc, 1, -1, true);
   FCommands->Register(L"rmdir", SCRIPT_RMDIR_DESC, SCRIPT_RMDIR_HELP, &RmDirProc, 1, -1, false);
   FCommands->Register(L"mv", SCRIPT_MV_DESC, SCRIPT_MV_HELP2, &MvProc, 2, -1, false);
   FCommands->Register(L"rename", 0, SCRIPT_MV_HELP2, &MvProc, 2, -1, false);
@@ -707,6 +707,19 @@ TStrings * __fastcall TScript::CreateFileList(TScriptProcParams * Parameters, in
     FreeFiles(Result);
     Result->Clear();
     Result->AddObject(Path, File);
+  }
+
+  if (FLAGSET(ListType, fltOnlyFile))
+  {
+    // For internal use by .NET assembly
+    for (int Index = 0; Index < Result->Count; Index++)
+    {
+      TRemoteFile * File = dynamic_cast<TRemoteFile *>(Result->Objects[Index]);
+      if (File->IsDirectory)
+      {
+        throw Exception(FMTLOAD(NOT_FILE_ERROR, (File->FileName)));
+      }
+    }
   }
 
   return Result;
@@ -1311,11 +1324,13 @@ void __fastcall TScript::RmProc(TScriptProcParams * Parameters)
 {
   CheckSession();
 
+  bool OnlyFile = Parameters->FindSwitch(L"onlyfile");
   TStrings * FileList = CreateFileList(
     Parameters, 1, Parameters->ParamCount,
-    (TFileListType)(fltQueryServer | fltMask));
+    (TFileListType)(fltQueryServer | fltMask| FLAGMASK(OnlyFile, fltOnlyFile)));
   try
   {
+    CheckParams(Parameters);
     FTerminal->DeleteFiles(FileList);
   }
   __finally
@@ -1437,6 +1452,7 @@ void __fastcall TScript::GetProc(TScriptProcParams * Parameters)
   ResetTransfer();
 
   bool Latest = Parameters->FindSwitch(L"latest");
+  bool OnlyFile = Parameters->FindSwitch(L"onlyfile");
   CheckDefaultCopyParam();
   TCopyParamType CopyParam = FCopyParam;
   CopyParamParams(CopyParam, Parameters);
@@ -1446,22 +1462,9 @@ void __fastcall TScript::GetProc(TScriptProcParams * Parameters)
   RequireParams(Parameters, 1);
   int LastFileParam = (Parameters->ParamCount == 1 ? 1 : Parameters->ParamCount - 1);
   TStrings * FileList = CreateFileList(Parameters, 1, LastFileParam,
-    (TFileListType)(fltQueryServer | fltMask | FLAGMASK(Latest, fltLatest)));
+    (TFileListType)(fltQueryServer | fltMask | FLAGMASK(Latest, fltLatest) | FLAGMASK(OnlyFile, fltOnlyFile)));
   try
   {
-    // For internal use by .NET Session.GetFileToDirectory
-    if (Parameters->FindSwitch(L"onlyfile"))
-    {
-      for (int Index = 0; Index < FileList->Count; Index++)
-      {
-        TRemoteFile * File = dynamic_cast<TRemoteFile *>(FileList->Objects[Index]);
-        if (File->IsDirectory)
-        {
-          throw Exception(FMTLOAD(NOT_FILE_ERROR, (File->FileName)));
-        }
-      }
-    }
-
     UnicodeString TargetDirectory;
     if (Parameters->ParamCount == 1)
     {

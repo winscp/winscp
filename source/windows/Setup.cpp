@@ -717,62 +717,52 @@ void __fastcall LaunchAdvancedAssociationUI()
 //---------------------------------------------------------------------------
 void __fastcall TemporaryDirectoryCleanup()
 {
-  bool Continue = true;
-  TStrings * Folders = NULL;
-  try
+  std::unique_ptr<TStrings> Folders(WinConfiguration->FindTemporaryFolders());
+  if (Folders.get() != NULL)
   {
+    bool Continue = true;
     if (WinConfiguration->ConfirmTemporaryDirectoryCleanup)
     {
-      Folders = WinConfiguration->FindTemporaryFolders();
-      Continue = (Folders != NULL);
+      Configuration->Usage->Inc(L"TemporaryDirectoryCleanupConfirmations");
 
-      if (Continue)
+      TQueryButtonAlias Aliases[1];
+      Aliases[0].Button = qaRetry;
+      Aliases[0].Alias = LoadStr(OPEN_BUTTON);
+      TMessageParams Params(mpNeverAskAgainCheck);
+      Params.Aliases = Aliases;
+      Params.AliasesCount = LENOF(Aliases);
+
+      unsigned int Answer = MoreMessageDialog(
+        FMTLOAD(CLEANTEMP_CONFIRM2, (Folders->Count)), Folders.get(),
+        qtConfirmation, qaYes | qaNo | qaRetry, HELP_CLEAN_TEMP_CONFIRM, &Params);
+
+      if (Answer == qaNeverAskAgain)
       {
-        Configuration->Usage->Inc(L"TemporaryDirectoryCleanupConfirmations");
-
-        TQueryButtonAlias Aliases[1];
-        Aliases[0].Button = qaRetry;
-        Aliases[0].Alias = LoadStr(OPEN_BUTTON);
-        TMessageParams Params(mpNeverAskAgainCheck);
-        Params.Aliases = Aliases;
-        Params.AliasesCount = LENOF(Aliases);
-
-        unsigned int Answer = MoreMessageDialog(
-          FMTLOAD(CLEANTEMP_CONFIRM2, (Folders->Count)), Folders,
-          qtConfirmation, qaYes | qaNo | qaRetry, HELP_CLEAN_TEMP_CONFIRM, &Params);
-
-        if (Answer == qaNeverAskAgain)
-        {
-          WinConfiguration->ConfirmTemporaryDirectoryCleanup = false;
-          Answer = qaYes;
-        }
-        else if (Answer == qaRetry)
-        {
-          for (int Index = 0; Index < Folders->Count; Index++)
-          {
-            ShellExecute(Application->Handle, NULL,
-              Folders->Strings[Index].c_str(), NULL, NULL, SW_SHOWNORMAL);
-          }
-        }
-        Continue = (Answer == qaYes);
+        WinConfiguration->ConfirmTemporaryDirectoryCleanup = false;
+        Answer = qaYes;
       }
+      else if (Answer == qaRetry)
+      {
+        for (int Index = 0; Index < Folders->Count; Index++)
+        {
+          ShellExecute(Application->Handle, NULL,
+            Folders->Strings[Index].c_str(), NULL, NULL, SW_SHOWNORMAL);
+        }
+      }
+      Continue = (Answer == qaYes);
     }
 
     if (Continue)
     {
       try
       {
-        WinConfiguration->CleanupTemporaryFolders(Folders);
+        WinConfiguration->CleanupTemporaryFolders(Folders.get());
       }
       catch (Exception &E)
       {
         ShowExtendedException(&E);
       }
     }
-  }
-  __finally
-  {
-    delete Folders;
   }
 }
 //-------------------------------------------- -------------------------------

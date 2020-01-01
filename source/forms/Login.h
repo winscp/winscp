@@ -317,6 +317,7 @@ private:
   int FSiteButtonsPadding;
   UnicodeString FUserNameLabel;
   UnicodeString FPasswordLabel;
+  int FFixedSessionImages;
 
   void __fastcall LoadSession(TSessionData * SessionData);
   void __fastcall LoadContents();
@@ -384,7 +385,6 @@ private:
   bool __fastcall IsCloneToNewSiteDefault();
   bool __fastcall IsDefaultResult(TModalResult Result);
   void __fastcall UpdateNodeImage(TTreeNode * Node);
-  void __fastcall UpdateNodeImages();
   int __fastcall GetSessionImageIndex(TSessionData * Data);
   void __fastcall SetNodeImage(TTreeNode * Node, int ImageIndex);
   void __fastcall CancelEditing();
@@ -399,7 +399,7 @@ private:
   int __fastcall AddLoginButtonImage(bool Enabled);
   void __fastcall WMMoving(TMessage & Message);
   void __fastcall CMDpiChanged(TMessage & Message);
-  void __fastcall GenerateButtonImages();
+  void __fastcall GenerateImages();
 
 protected:
   void __fastcall Default();

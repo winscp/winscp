@@ -77,6 +77,9 @@ __fastcall TLoginDialog::TLoginDialog(TComponent* AOwner)
   // (so that CM_SHOWINGCHANGED handling is applied)
   UseSystemSettingsPre(this);
 
+  FFixedSessionImages = SessionImageList->Count;
+  DebugAssert(SiteColorMaskImageIndex == FFixedSessionImages - 1);
+
   FBasicGroupBaseHeight = BasicGroup->Height - BasicSshPanel->Height - BasicFtpPanel->Height;
   FNoteGroupOffset = NoteGroup->Top - (BasicGroup->Top + BasicGroup->Height);
   FUserNameLabel = UserNameLabel->Caption;
@@ -143,11 +146,9 @@ void __fastcall TLoginDialog::InitControls()
   CenterButtonImage(LoginButton);
 
   SelectScaledImageList(SessionImageList);
-  // have to recreate the site images
-  UpdateNodeImages();
   SelectScaledImageList(ActionImageList);
 
-  GenerateButtonImages();
+  GenerateImages();
 
   if (SessionTree->Items->Count > 0)
   {
@@ -155,7 +156,7 @@ void __fastcall TLoginDialog::InitControls()
   }
 }
 //---------------------------------------------------------------------
-void __fastcall TLoginDialog::GenerateButtonImages()
+void __fastcall TLoginDialog::GenerateImages()
 {
   // Generate button images.
   // The button does not support alpha channel,
@@ -166,6 +167,20 @@ void __fastcall TLoginDialog::GenerateButtonImages()
 
   LoginButton->ImageIndex = AddLoginButtonImage(true);
   LoginButton->DisabledImageIndex = AddLoginButtonImage(false);
+
+  SessionImageList->BeginUpdate();
+  try
+  {
+    while (SessionImageList->Count > FFixedSessionImages)
+    {
+      SessionImageList->Delete(SessionImageList->Count - 1);
+    }
+    RegenerateSessionColorsImageList(SessionImageList, SiteColorMaskImageIndex);
+  }
+  __finally
+  {
+    SessionImageList->EndUpdate();
+  }
 }
 //---------------------------------------------------------------------
 int __fastcall TLoginDialog::AddLoginButtonImage(bool Enabled)
@@ -324,27 +339,6 @@ TTreeNode * __fastcall TLoginDialog::AddSession(TSessionData * Data)
   return Node;
 }
 //---------------------------------------------------------------------------
-void __fastcall TLoginDialog::UpdateNodeImages()
-{
-  SessionTree->Images->BeginUpdate();
-  try
-  {
-    TTreeNode * Node = SessionTree->Items->GetFirstNode();
-    while (Node != NULL)
-    {
-      if (IsSiteNode(Node))
-      {
-        UpdateNodeImage(Node);
-      }
-      Node = Node->GetNext();
-    }
-  }
-  __finally
-  {
-    SessionTree->Images->EndUpdate();
-  }
-}
-//---------------------------------------------------------------------------
 void __fastcall TLoginDialog::UpdateNodeImage(TTreeNode * Node)
 {
   SetNodeImage(Node, GetSessionImageIndex(GetNodeSession(Node)));
@@ -390,7 +384,7 @@ void __fastcall TLoginDialog::SetNewSiteNodeLabel()
 void __fastcall TLoginDialog::LoadSessions()
 {
   {
-    // Otherwise, once the selected node is deleted, another code is selected and we get failure
+    // Otherwise, once the selected node is deleted, another node is selected and we get failure
     // while trying to access its data somewhere in LoadContents
     TAutoFlag LoadingFlag(FLoading);
     SessionTree->Items->BeginUpdate();
@@ -1597,7 +1591,7 @@ void __fastcall TLoginDialog::WMMoving(TMessage & Message)
 void __fastcall TLoginDialog::CMDpiChanged(TMessage & Message)
 {
   TForm::Dispatch(&Message);
-  GenerateButtonImages();
+  GenerateImages();
   CenterButtonImage(LoginButton);
 }
 //---------------------------------------------------------------------------

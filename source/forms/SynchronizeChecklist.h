@@ -181,6 +181,7 @@ protected:
   void __fastcall DoBrowse(TOperationSide Side);
   void __fastcall ListViewHintShow(TCMHintShow & HintShow);
   void __fastcall StatusBarHintShow(TCMHintShow & HintShow);
+  DYNAMIC void __fastcall KeyDown(Word & Key, TShiftState Shift);
 };
 //----------------------------------------------------------------------------
 #endif

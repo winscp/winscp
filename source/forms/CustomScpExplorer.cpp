@@ -663,6 +663,11 @@ void __fastcall TCustomScpExplorerForm::QueueView3Deletion(TObject * /*Sender*/,
   }
 }
 //---------------------------------------------------------------------------
+bool TCustomScpExplorerForm::IsAnythingQueued()
+{
+  return (FQueueStatus != NULL) && (FQueueStatus->ActiveAndPendingPrimaryCount > 0);
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::UpdateQueueStatus(bool QueueChanging)
 {
   {
@@ -687,7 +692,7 @@ void __fastcall TCustomScpExplorerForm::UpdateQueueStatus(bool QueueChanging)
 
   UpdateQueueView();
 
-  bool IsEmpty = (FQueueStatus == NULL) || (FQueueStatus->Count == 0);
+  bool IsEmpty = !IsAnythingQueued();
 
   if (IsEmpty && (Terminal != NULL))
   {
@@ -7815,7 +7820,7 @@ bool __fastcall TCustomScpExplorerForm::AllowQueueOperation(
       return ComponentVisible[fcQueueView] && QueueView3->Enabled;
 
     case qoOnceEmpty:
-      return !FQueueController->Empty;
+      return IsAnythingQueued();
 
     default:
       return FQueueController->AllowOperation(Operation, Param);

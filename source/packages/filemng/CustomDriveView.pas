@@ -387,6 +387,11 @@ begin
     begin
       Canvas.Brush.Color := clBtnFace;
       Canvas.Font.Color := clBtnText;
+    end
+      else
+    if Node.Selected and (not Self.Focused) and DarkMode then
+    begin
+      Canvas.Font.Color := Font.Color;
     end;
   end;
 end; {InternalOnDrawItem}

@@ -7071,6 +7071,8 @@ void __fastcall TTerminal::UpdateSource(const TLocalFileHandle & Handle, const T
   {
     if (!Handle.Directory)
     {
+      LogEvent(FORMAT(L"Deleting successfully uploaded source file \"%s\".", (Handle.FileName)));
+
       FILE_OPERATION_LOOP_BEGIN
       {
         THROWOSIFFALSE(Sysutils::DeleteFile(ApiPath(Handle.FileName)));

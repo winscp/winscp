@@ -6,6 +6,7 @@
 #include <CoreMain.h>
 #include <Common.h>
 #include <Usage.h>
+#include <FileInfo.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -170,7 +171,9 @@ void __fastcall TUsage::UpdateCurrentVersion()
 {
   TGuard Guard(FCriticalSection);
   int CompoundVersion = FConfiguration->CompoundVersion;
-  int PrevVersion = StrToIntDef(Get(L"CurrentVersion"), 0);
+  DebugAssert(ZeroBuildNumber(CompoundVersion) == CompoundVersion);
+  // ZeroBuildNumber for compatibility with versions that stored build number into the compound version
+  int PrevVersion = ZeroBuildNumber(StrToIntDef(Get(L"CurrentVersion"), 0));
   if (PrevVersion != CompoundVersion)
   {
     Set(L"Installed", StandardTimestamp());

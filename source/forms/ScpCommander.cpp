@@ -599,7 +599,14 @@ void __fastcall TScpCommanderForm::LocalDefaultDirectory()
     try
     {
       LocalDirView->HomeDirectory = L"";
-      LocalDirView->ExecuteHomeDirectory();
+      if (IsUncPath(LocalDirView->HomeDirectory))
+      {
+        LocalDirView->Path = DriveInfo->AnyValidPath();
+      }
+      else
+      {
+        LocalDirView->ExecuteHomeDirectory();
+      }
     }
     catch(Exception & E)
     {

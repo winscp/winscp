@@ -75,20 +75,12 @@ namespace WinSCP
                 throw new ArgumentNullException(nameof(localRoot));
             }
 
-            if ((localRoot.Length > 0) && !localRoot.EndsWith("\\", StringComparison.Ordinal))
-            {
-                localRoot += "\\";
-            }
-
-            // not adding to empty root paths, because the path may not even start with slash
-            if ((remoteRoot.Length > 0) && !remoteRoot.EndsWith("/", StringComparison.Ordinal))
-            {
-                remoteRoot += "/";
-            }
+            localRoot = AddSeparator(localRoot, @"\");
+            remoteRoot = AddSeparator(remoteRoot, "/");
 
             string localPath;
             // special case
-            if (remotePath == remoteRoot)
+            if (AddSeparator(remotePath, "/") == remoteRoot)
             {
                 localPath = localRoot;
             }
@@ -111,6 +103,16 @@ namespace WinSCP
             return localPath;
         }
 
+        private static string AddSeparator(string path, string separator)
+        {
+            // not adding to empty root paths, because the path may not even start with slash
+            if ((path.Length > 0) && !path.EndsWith(separator, StringComparison.Ordinal))
+            {
+                path += separator;
+            }
+            return path;
+        }
+
         public static string TranslateLocalPathToRemote(string localPath, string localRoot, string remoteRoot)
         {
             if (localPath == null)
@@ -128,20 +130,12 @@ namespace WinSCP
                 throw new ArgumentNullException(nameof(remoteRoot));
             }
 
-            if ((localRoot.Length > 0) && !localRoot.EndsWith("\\", StringComparison.Ordinal))
-            {
-                localRoot += "\\";
-            }
-
-            // not adding to empty root paths, because the path may not even start with slash
-            if ((remoteRoot.Length > 0) && !remoteRoot.EndsWith("/", StringComparison.Ordinal))
-            {
-                remoteRoot += "/";
-            }
+            localRoot = AddSeparator(localRoot, @"\");
+            remoteRoot = AddSeparator(remoteRoot, "/");
 
             string remotePath;
             // special case
-            if (localPath == localRoot)
+            if (AddSeparator(localPath, @"\") == localRoot)
             {
                 remotePath = remoteRoot;
             }

@@ -1414,7 +1414,7 @@ TAutoSwitch __fastcall CheckBoxAutoSwitchSave(TCheckBox * CheckBox)
   }
 }
 //---------------------------------------------------------------------------
-static const wchar_t PathWordDelimiters[] = L"\\/ ;,.";
+static const wchar_t PathWordDelimiters[] = L"\\/ ;,.\r\n=";
 //---------------------------------------------------------------------------
 static bool IsPathWordDelimiter(wchar_t Ch)
 {
@@ -1483,39 +1483,49 @@ int CALLBACK PathWordBreakProc(wchar_t * Ch, int Current, int Len, int Code)
   return Result;
 }
 //---------------------------------------------------------------------------
-static void __fastcall PathEditKeyPress(void * /*Data*/, TObject * Sender, char & Key)
+static void __fastcall PathWordBreakEditWindowProc(void * Data, TMessage & Message)
 {
-  // Ctrl+Backspace
-  // Have to use OnKeyPress as the Ctrl+Backspace is handled in WM_CHAR as any other char,
-  // so we have to swallow it here to prevent it getting inserted to the text
-  if (Key == '\x7F')
+  TCustomEdit * Edit = static_cast<TCustomEdit *>(Data);
+  if (Message.Msg == WM_CHAR)
   {
-    Key = '\0';
-
-    TCustomEdit * Edit = dynamic_cast<TCustomEdit *>(Sender);
-    TCustomComboBox * ComboBox = dynamic_cast<TCustomComboBox *>(Sender);
-    TWinControl * WinControl = DebugNotNull(dynamic_cast<TWinControl *>(Sender));
-
-    if (((Edit != NULL) && (Edit->SelLength == 0)) ||
-        ((ComboBox != NULL) && (ComboBox->SelLength == 0)))
+    // Ctrl+Backspace
+    // Ctrl+Backspace is handled in WM_CHAR as any other char,
+    // so we have to swallow it here to prevent it getting inserted to the text
+    TWMChar & CharMessage = *reinterpret_cast<TWMChar *>(&Message);
+    if (CharMessage.CharCode == '\x7F')
     {
-      // See TCustomMaskEdit.SetCursor
-      TKeyboardState KeyState;
-      GetKeyboardState(KeyState);
-      TKeyboardState NewKeyState;
-      memset(NewKeyState, 0, sizeof(NewKeyState));
-      NewKeyState[VK_CONTROL] = 0x81;
-      NewKeyState[VK_SHIFT] = 0x81;
-      SetKeyboardState(NewKeyState);
+      TCustomComboBox * ComboBox = static_cast<TCustomComboBox *>(Data);
 
-      SendMessage(WinControl->Handle, WM_KEYDOWN, VK_LEFT, 1);
-      NewKeyState[VK_SHIFT] = 0;
-      NewKeyState[VK_CONTROL] = 0;
-      SetKeyboardState(NewKeyState);
+      if (((Edit != NULL) && (Edit->SelLength == 0)) ||
+          ((ComboBox != NULL) && (ComboBox->SelLength == 0)))
+      {
+        // See TCustomMaskEdit.SetCursor
+        TKeyboardState KeyState;
+        GetKeyboardState(KeyState);
+        TKeyboardState NewKeyState;
+        memset(NewKeyState, 0, sizeof(NewKeyState));
+        NewKeyState[VK_CONTROL] = 0x81;
+        NewKeyState[VK_SHIFT] = 0x81;
+        SetKeyboardState(NewKeyState);
 
-      SendMessage(WinControl->Handle, WM_KEYDOWN, VK_DELETE, 1);
-      SetKeyboardState(KeyState);
+        SendMessage(Edit->Handle, WM_KEYDOWN, VK_LEFT, 1);
+        NewKeyState[VK_SHIFT] = 0;
+        NewKeyState[VK_CONTROL] = 0;
+        SetKeyboardState(NewKeyState);
+
+        SendMessage(Edit->Handle, WM_KEYDOWN, VK_DELETE, 1);
+        SetKeyboardState(KeyState);
+      }
+      Message.Result = 1;
     }
+    else
+    {
+      ControlWndProc(Edit)(Message);
+    }
+  }
+  else
+  {
+    ControlWndProc(Edit)(Message);
   }
 }
 //---------------------------------------------------------------------------
@@ -1544,11 +1554,7 @@ void __fastcall InstallPathWordBreakProc(TWinControl * Control)
   }
   SendMessage(Wnd, EM_SETWORDBREAKPROC, 0, (LPARAM)(EDITWORDBREAKPROC)PathWordBreakProc);
 
-  TPublicWinControl * PublicWinControl = static_cast<TPublicWinControl *>(Control);
-  if (DebugAlwaysTrue(PublicWinControl->OnKeyDown == NULL))
-  {
-    PublicWinControl->OnKeyPress = MakeMethod<TKeyPressEvent>(NULL, PathEditKeyPress);
-  }
+  Control->WindowProc = MakeMethod<TWndMethod>(Control, PathWordBreakEditWindowProc);
 }
 //---------------------------------------------------------------------------
 static void __fastcall RemoveHiddenControlsFromOrder(TControl ** ControlsOrder, int & Count)

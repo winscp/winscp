@@ -69,7 +69,7 @@ void __fastcall PuttyFinalize()
     random_save_seed();
   }
   random_unref();
-  // random_ref in PuttyInitialize creates the seed file. Delete it, if didn't want to create it.
+  // random_ref in PuttyInitialize creates the seed file. Delete it, if we didn't want to create it.
   if (DeleteRandomSeedOnExit())
   {
     DeleteFile(ApiPath(Configuration->RandomSeedFileName));
