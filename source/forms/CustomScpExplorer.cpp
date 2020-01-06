@@ -850,15 +850,21 @@ void __fastcall TCustomScpExplorerForm::RefreshQueueItems()
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::SetTaskbarListProgressState(TBPFLAG Flags)
 {
-  // Could now use Application->MainFormHandle, now that we implement Application->OnGetMainFormHandle
-  FTaskbarList->SetProgressState(GetMainForm()->Handle, Flags);
+  if (FTaskbarList != NULL)
+  {
+    // Could now use Application->MainFormHandle, now that we implement Application->OnGetMainFormHandle
+    FTaskbarList->SetProgressState(GetMainForm()->Handle, Flags);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::SetTaskbarListProgressValue(int Progress)
 {
   if (Progress >= 0)
   {
-    FTaskbarList->SetProgressValue(GetMainForm()->Handle, Progress, 100);
+    if (FTaskbarList != NULL)
+    {
+      FTaskbarList->SetProgressValue(GetMainForm()->Handle, Progress, 100);
+    }
   }
   else
   {
@@ -1416,12 +1422,9 @@ void __fastcall TCustomScpExplorerForm::CreateProgressForm(TSynchronizeProgress 
   // As progress window has delayed show now, we need to lock ourselves, (at least) until then
   LockWindow();
 
-  if (FTaskbarList != NULL)
-  {
-    // Actually, do not know what hides the progress once the operation finishes
-    // (it is possibly the SetQueueProgress - and we should not rely on that)
-    SetTaskbarListProgressState(TBPF_NORMAL);
-  }
+  // Actually, do not know what hides the progress once the operation finishes
+  // (it is possibly the SetQueueProgress - and we should not rely on that)
+  SetTaskbarListProgressState(TBPF_NORMAL);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::DestroyProgressForm()
@@ -1486,11 +1489,8 @@ void __fastcall TCustomScpExplorerForm::FileOperationProgress(
   {
     FProgressForm->SetProgressData(ProgressData);
 
-    if (FTaskbarList != NULL)
-    {
-      DebugAssert(ProgressData.InProgress);
-      SetTaskbarListProgressValue(&ProgressData);
-    }
+    DebugAssert(ProgressData.InProgress);
+    SetTaskbarListProgressValue(&ProgressData);
 
     if (FProgressForm->Cancel > csContinue)
     {
