@@ -71,4 +71,6 @@ BEGIN
   NEW_5_16_ARCHIVE_DOWNLOAD, "Extension 'Archive and Download' to archive remote files and download the archive"
   NEW_5_16_SYNC_CHECKLIST, "Improvements to Synchronization checklist window"
   NEW_5_16_FIND_SORT, "Find results can be sorted"
+
+  NEW_5_18_TBD, "TBD"
 END
