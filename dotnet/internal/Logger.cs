@@ -32,7 +32,7 @@ namespace WinSCP
         {
             string path = null;
 
-            // https://blogs.msdn.microsoft.com/suzcook/2003/06/26/assembly-codebase-vs-assembly-location/
+            // https://docs.microsoft.com/en-us/archive/blogs/suzcook/assembly-codebase-vs-assembly-location
             // The CodeBase is a URL to the place where the file was found,
             // while the Location is the path from where it was actually loaded.
             // For example, if the assembly was downloaded from the internet, its CodeBase may start with "http://",
