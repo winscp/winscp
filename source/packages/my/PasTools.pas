@@ -429,8 +429,9 @@ begin
   Form := GetParentForm(Control);
   if Form = nil then
   begin
-    // This should happen only for screen tip over dropped down menu
-    Assert(Control.ClassName = 'TTBXPopupWindow');
+    // This should happen only for screen tip over dropped down menu.
+    // The other condition is a temporary fix is for TCustomComboEdit on TCopyParamsFrame.
+    Assert((Control.ClassName = 'TTBXPopupWindow') or ((Control.Parent <> nil) and (Control.Parent.ClassName = 'TCopyParamsFrame')) or ((Control.Parent.Parent <> nil) and (Control.Parent.Parent.ClassName = 'TCopyParamsFrame')));
     Result := ScaleByPixelsPerInch(Dimension, Control);
   end
     else
