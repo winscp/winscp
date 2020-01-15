@@ -286,7 +286,6 @@ void __fastcall TCopyParamType::DoGetInfoStr(
         }
         else
         {
-          DebugFail(); // should never get here
           ScriptArgs += RtfSwitch(PRESERVETIME_SWITCH, Link);
         }
       }
