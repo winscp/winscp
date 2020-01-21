@@ -599,6 +599,13 @@ IShellLink * __fastcall CreateDesktopShortCut(const UnicodeString & Name,
   return pLink;
 }
 //---------------------------------------------------------------------------
+IShellLink * __fastcall CreateAppDesktopShortCut(
+  const UnicodeString & Name, const UnicodeString & Params, const UnicodeString & Description,
+  int SpecialFolder, int IconIndex, bool Return)
+{
+  return CreateDesktopShortCut(Name, Application->ExeName, Params, Description, SpecialFolder, IconIndex, Return);
+}
+//---------------------------------------------------------------------------
 IShellLink * __fastcall CreateDesktopSessionShortCut(
   const UnicodeString & SessionName, UnicodeString Name,
   const UnicodeString & AdditionalParams, int SpecialFolder, int IconIndex,
@@ -638,7 +645,7 @@ IShellLink * __fastcall CreateDesktopSessionShortCut(
   }
 
   return
-    CreateDesktopShortCut(ValidLocalFileName(Name), Application->ExeName,
+    CreateAppDesktopShortCut(ValidLocalFileName(Name),
       FORMAT(L"\"%s\"%s%s", (EncodeUrlString(SessionName), (AdditionalParams.IsEmpty() ? L"" : L" "), AdditionalParams)),
       InfoTip, SpecialFolder, IconIndex, Return);
 }

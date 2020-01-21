@@ -1547,8 +1547,7 @@ void __fastcall TPreferencesDialog::IconButtonClick(TObject *Sender)
 
   TInstantOperationVisualizer Visualizer;
 
-  CreateDesktopShortCut(IconName,
-    Application->ExeName, Params, L"", SpecialFolder);
+  CreateAppDesktopShortCut(IconName, Params, L"", SpecialFolder);
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::CustomCommandsViewData(TObject * /*Sender*/,
