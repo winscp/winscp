@@ -18,8 +18,8 @@ bool __fastcall IsKeyPressed(int VirtualKey);
 bool __fastcall UseAlternativeFunction();
 bool __fastcall OpenInNewWindow();
 void __fastcall ExecuteNewInstance(const UnicodeString & Param, const UnicodeString & AdditionalParams = UnicodeString());
-IShellLink * __fastcall CreateDesktopShortCut(const UnicodeString &Name,
-  const UnicodeString &File, const UnicodeString & Params, const UnicodeString & Description,
+IShellLink * __fastcall CreateAppDesktopShortCut(
+  const UnicodeString & Name, const UnicodeString & Params, const UnicodeString & Description,
   int SpecialFolder = -1, int IconIndex = 0, bool Return = false);
 IShellLink * __fastcall CreateDesktopSessionShortCut(
   const UnicodeString & SessionName, UnicodeString Name,

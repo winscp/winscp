@@ -2048,7 +2048,7 @@ void __fastcall TNewRichEdit::CreateParams(TCreateParams & Params)
   SetErrorMode(OldError);
 
   // No fallback, MSFTEDIT.DLL is available since Windows XP
-  // https://blogs.msdn.microsoft.com/murrays/2006/10/13/richedit-versions/
+  // https://docs.microsoft.com/en-us/archive/blogs/murrays/richedit-versions
   if (FLibrary == 0)
   {
     throw Exception(FORMAT(L"Cannot load %s", (RichEditModuleName)));
