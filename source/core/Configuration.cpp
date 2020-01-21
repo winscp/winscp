@@ -1240,6 +1240,21 @@ UnicodeString __fastcall TConfiguration::GetAutomaticIniFileStorageName(bool Rea
   }
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall TConfiguration::GetIniFileParamValue()
+{
+  UnicodeString Result;
+  if (Storage == stNul)
+  {
+    Result = INI_NUL;
+  }
+  // See the comment in GetIniFileStorageName
+  else if ((Storage == stIniFile) && !FIniFileStorageName.IsEmpty())
+  {
+    Result = FIniFileStorageName;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall TConfiguration::GetIniFileStorageName(bool ReadingOnly)
 {
   UnicodeString Result;

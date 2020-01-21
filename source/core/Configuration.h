@@ -220,6 +220,7 @@ public:
   void __fastcall SetDefaultStorage();
   UnicodeString __fastcall GetAutomaticIniFileStorageName(bool ReadingOnly);
   UnicodeString __fastcall GetDefaultIniFileExportPath();
+  UnicodeString __fastcall GetIniFileParamValue();
   void __fastcall Export(const UnicodeString & FileName);
   void __fastcall Import(const UnicodeString & FileName);
   void __fastcall CleanupConfiguration();

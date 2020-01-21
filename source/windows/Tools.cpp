@@ -600,9 +600,19 @@ IShellLink * __fastcall CreateDesktopShortCut(const UnicodeString & Name,
 }
 //---------------------------------------------------------------------------
 IShellLink * __fastcall CreateAppDesktopShortCut(
-  const UnicodeString & Name, const UnicodeString & Params, const UnicodeString & Description,
+  const UnicodeString & Name, const UnicodeString & AParams, const UnicodeString & Description,
   int SpecialFolder, int IconIndex, bool Return)
 {
+  UnicodeString ParamValue = Configuration->GetIniFileParamValue();
+
+  UnicodeString Params;
+  if (!ParamValue.IsEmpty())
+  {
+    Params = TProgramParams::FormatSwitch(INI_SWITCH) + L"=" + AddQuotes(ParamValue);
+  }
+
+  AddToList(Params, AParams, L" ");
+
   return CreateDesktopShortCut(Name, Application->ExeName, Params, Description, SpecialFolder, IconIndex, Return);
 }
 //---------------------------------------------------------------------------
