@@ -1243,6 +1243,7 @@ UnicodeString __fastcall TConfiguration::GetAutomaticIniFileStorageName(bool Rea
 UnicodeString __fastcall TConfiguration::GetIniFileStorageName(bool ReadingOnly)
 {
   UnicodeString Result;
+  // This does not work correctly with MoveStorage
   if (!FIniFileStorageName.IsEmpty())
   {
     Result = FIniFileStorageName;
