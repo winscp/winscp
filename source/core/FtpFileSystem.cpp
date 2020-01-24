@@ -2114,6 +2114,7 @@ void __fastcall TFTPFileSystem::AutoDetectTimeDifference(TRemoteFileList * FileL
           // and using LIST (no conversion, expecting the server uses the same timezone as the client).
           // Note that FormatTimeZone reverses the value.
           FTimeDifference = static_cast<__int64>(SecsPerDay * (UtcModification - File->Modification));
+          double Hours = TTimeSpan::FromSeconds(FTimeDifference).TotalHours;
 
           UnicodeString FileLog =
             FORMAT(L"%s (Listing: %s, UTC: %s)", (File->FullFileName, StandardTimestamp(File->Modification), StandardTimestamp(UtcModification)));
@@ -2121,6 +2122,12 @@ void __fastcall TFTPFileSystem::AutoDetectTimeDifference(TRemoteFileList * FileL
           if (FTimeDifference == 0)
           {
             LogMessage = FORMAT(L"No timezone difference detected using file %s", (FileLog));
+          }
+          // Seen with "GamingDeluxe FTP Server", which returns "213 00010101000000"
+          else if (fabs(Hours) >= 48)
+          {
+            FTimeDifference = 0;
+            LogMessage = FORMAT(L"Ignoring suspicious timezone difference of %s hours, detected using file %s", (IntToStr(__int64(Hours)), FileLog));
           }
           else
           {
