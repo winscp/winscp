@@ -6400,6 +6400,8 @@ void __fastcall TTerminal::FilesFind(UnicodeString Directory, const TFileMasks &
 {
   TFilesFindParams Params;
   Params.FileMask = FileMask;
+  Params.FileMask.NoImplicitMatchWithDirExcludeMask = true;
+  Params.FileMask.AllDirsAreImplicitlyIncluded = true;
   Params.OnFileFound = OnFileFound;
   Params.OnFindingFile = OnFindingFile;
   Params.Cancel = false;

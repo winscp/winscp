@@ -248,6 +248,8 @@ __fastcall TFileMasks::TFileMasks(const TFileMasks & Source)
 {
   Init();
   FForceDirectoryMasks = Source.FForceDirectoryMasks;
+  FNoImplicitMatchWithDirExcludeMask = Source.FNoImplicitMatchWithDirExcludeMask;
+  FAllDirsAreImplicitlyIncluded = Source.FAllDirsAreImplicitlyIncluded;
   SetStr(Source.Masks, false);
 }
 //---------------------------------------------------------------------------
@@ -265,6 +267,8 @@ __fastcall TFileMasks::~TFileMasks()
 void __fastcall TFileMasks::Init()
 {
   FForceDirectoryMasks = -1;
+  FNoImplicitMatchWithDirExcludeMask = false;
+  FAllDirsAreImplicitlyIncluded = false;
 
   DoInit(false);
 }
@@ -420,14 +424,14 @@ bool __fastcall TFileMasks::Matches(const UnicodeString FileName, bool Directory
   const UnicodeString Path, const TParams * Params,
   bool RecurseInclude, bool & ImplicitMatch) const
 {
-  bool ImplicitIncludeMatch = FMasks[MASK_INDEX(Directory, true)].empty();
+  bool ImplicitIncludeMatch = (FAllDirsAreImplicitlyIncluded && Directory) || FMasks[MASK_INDEX(Directory, true)].empty();
   bool ExplicitIncludeMatch = MatchesMasks(FileName, Directory, Path, Params, FMasks[MASK_INDEX(Directory, true)], RecurseInclude);
   bool Result =
     (ImplicitIncludeMatch || ExplicitIncludeMatch) &&
     !MatchesMasks(FileName, Directory, Path, Params, FMasks[MASK_INDEX(Directory, false)], false);
   ImplicitMatch =
     Result && ImplicitIncludeMatch && !ExplicitIncludeMatch &&
-    FMasks[MASK_INDEX(Directory, false)].empty();
+    ((Directory && FNoImplicitMatchWithDirExcludeMask) || FMasks[MASK_INDEX(Directory, false)].empty());
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -475,6 +479,8 @@ TFileMasks & __fastcall TFileMasks::operator =(const UnicodeString & rhs)
 TFileMasks & __fastcall TFileMasks::operator =(const TFileMasks & rhm)
 {
   FForceDirectoryMasks = rhm.FForceDirectoryMasks;
+  FNoImplicitMatchWithDirExcludeMask = rhm.FNoImplicitMatchWithDirExcludeMask;
+  FAllDirsAreImplicitlyIncluded = rhm.FAllDirsAreImplicitlyIncluded;
   Masks = rhm.Masks;
   return *this;
 }
