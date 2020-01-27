@@ -58,6 +58,8 @@ public:
     const TParams * Params, bool RecurseInclude, bool & ImplicitMatch) const;
 
   __property UnicodeString Masks = { read = FStr, write = SetMasks };
+  __property bool NoImplicitMatchWithDirExcludeMask = { read = FNoImplicitMatchWithDirExcludeMask, write = FNoImplicitMatchWithDirExcludeMask };
+  __property bool AllDirsAreImplicitlyIncluded = { read = FAllDirsAreImplicitlyIncluded, write = FAllDirsAreImplicitlyIncluded };
 
   __property TStrings * IncludeFileMasksStr = { read = GetMasksStr, index = MASK_INDEX(false, true) };
   __property TStrings * ExcludeFileMasksStr = { read = GetMasksStr, index = MASK_INDEX(false, false) };
@@ -67,6 +69,8 @@ public:
 private:
   int FForceDirectoryMasks;
   UnicodeString FStr;
+  bool FNoImplicitMatchWithDirExcludeMask;
+  bool FAllDirsAreImplicitlyIncluded;
 
   struct TMaskMask
   {
