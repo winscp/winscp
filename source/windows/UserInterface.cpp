@@ -45,7 +45,7 @@ TConfiguration * __fastcall CreateConfiguration()
     else if (CheckSafe(Params))
     {
       IniFileName = ExpandFileName(ExpandEnvironmentVariables(IniFileName));
-      WinConfiguration->IniFileStorageName = IniFileName;
+      WinConfiguration->SetExplicitIniFileStorageName(IniFileName);
     }
   }
 

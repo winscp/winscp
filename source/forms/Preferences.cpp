@@ -355,8 +355,10 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
 
     // select none when stNul
     RegistryStorageButton->Checked = (Configuration->Storage == stRegistry);
-    AutomaticIniFileStorageButton->Checked = (Configuration->Storage == stIniFile) && Configuration->CustomIniFileStorageName.IsEmpty();
-    CustomIniFileStorageButton->Checked = (Configuration->Storage == stIniFile) && !Configuration->CustomIniFileStorageName.IsEmpty();
+    AutomaticIniFileStorageButton->Checked =
+      (Configuration->Storage == stIniFile) && Configuration->ExplicitIniFileStorageName.IsEmpty() && Configuration->CustomIniFileStorageName.IsEmpty();
+    CustomIniFileStorageButton->Checked =
+      (Configuration->Storage == stIniFile) && Configuration->ExplicitIniFileStorageName.IsEmpty() && !Configuration->CustomIniFileStorageName.IsEmpty();
     CustomIniFileStorageEdit->Text = Configuration->CustomIniFileStorageName;
     if (Configuration->CustomIniFileStorageName.IsEmpty())
     {
@@ -1333,11 +1335,9 @@ void __fastcall TPreferencesDialog::UpdateControls()
       DDCustomTemporaryDirectoryButton->Checked);
     EnableControl(ConfirmTemporaryDirectoryCleanupCheck,
       TemporaryDirectoryCleanupCheck->Checked);
-    // allow only when some of the known storages is selected,
-    // and particularly do not allow switching storage, when we start with stNul,
+    // do not allow switching storage, when we start with stNul,
     // as that would destroy the stored configuration
-    EnableControl(StorageGroup,
-      RegistryStorageButton->Checked || AutomaticIniFileStorageButton->Checked || CustomIniFileStorageButton->Checked);
+    EnableControl(StorageGroup, Configuration->Storage != stNul);
     AutomaticIniFileStorageLabel->UpdateStatus();
     EnableControl(CustomIniFileStorageEdit, CustomIniFileStorageButton->Checked);
 
