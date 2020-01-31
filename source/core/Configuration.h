@@ -124,7 +124,6 @@ private:
   UnicodeString __fastcall GetIniFileStorageNameForReadingWriting();
   UnicodeString __fastcall GetIniFileStorageNameForReading();
   UnicodeString __fastcall GetIniFileStorageName(bool ReadingOnly);
-  void __fastcall SetIniFileStorageName(UnicodeString value);
   void __fastcall SetOptionsStorage(TStrings * value);
   TStrings * __fastcall GetOptionsStorage();
   UnicodeString __fastcall GetPartialExt() const;
@@ -216,6 +215,7 @@ public:
   void __fastcall SaveExplicit();
   void __fastcall MoveStorage(TStorage AStorage, const UnicodeString & ACustomIniFileStorageName);
   void __fastcall ScheduleCustomIniFileStorageUse(const UnicodeString & ACustomIniFileStorageName);
+  void __fastcall SetExplicitIniFileStorageName(const UnicodeString & FileName);
   void __fastcall SetNulStorage();
   void __fastcall SetDefaultStorage();
   UnicodeString __fastcall GetAutomaticIniFileStorageName(bool ReadingOnly);
@@ -328,7 +328,8 @@ public:
   __property TStorage Storage  = { read=GetStorage };
   __property UnicodeString RegistryStorageKey  = { read=GetRegistryStorageKey };
   __property UnicodeString CustomIniFileStorageName  = { read=FCustomIniFileStorageName };
-  __property UnicodeString IniFileStorageName  = { read=GetIniFileStorageNameForReadingWriting, write=SetIniFileStorageName };
+  __property UnicodeString ExplicitIniFileStorageName  = { read=FIniFileStorageName };
+  __property UnicodeString IniFileStorageName  = { read=GetIniFileStorageNameForReadingWriting };
   __property UnicodeString IniFileStorageNameForReading  = { read=GetIniFileStorageNameForReading };
   __property TStrings * OptionsStorage = { read = GetOptionsStorage, write = SetOptionsStorage };
   __property bool Persistent = { read = GetPersistent };

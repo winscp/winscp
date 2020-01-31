@@ -1159,9 +1159,9 @@ void __fastcall TConfiguration::SetDefaultStorage()
   FStorage = stDetect;
 }
 //---------------------------------------------------------------------------
-void __fastcall TConfiguration::SetIniFileStorageName(UnicodeString value)
+void __fastcall TConfiguration::SetExplicitIniFileStorageName(const UnicodeString & FileName)
 {
-  FIniFileStorageName = value;
+  FIniFileStorageName = FileName;
   FStorage = stIniFile;
 }
 //---------------------------------------------------------------------------
@@ -1252,7 +1252,6 @@ UnicodeString __fastcall TConfiguration::GetIniFileParamValue()
   {
     Result = INI_NUL;
   }
-  // See the comment in GetIniFileStorageName
   else if ((Storage == stIniFile) && !FIniFileStorageName.IsEmpty())
   {
     Result = FIniFileStorageName;
@@ -1263,7 +1262,6 @@ UnicodeString __fastcall TConfiguration::GetIniFileParamValue()
 UnicodeString __fastcall TConfiguration::GetIniFileStorageName(bool ReadingOnly)
 {
   UnicodeString Result;
-  // This does not work correctly with MoveStorage
   if (!FIniFileStorageName.IsEmpty())
   {
     Result = FIniFileStorageName;
@@ -1327,10 +1325,12 @@ UnicodeString __fastcall TConfiguration::GetRootKeyStr()
 void __fastcall TConfiguration::MoveStorage(TStorage AStorage, const UnicodeString & ACustomIniFileStorageName)
 {
   if ((FStorage != AStorage) ||
+      ((FStorage == stIniFile) && !FIniFileStorageName.IsEmpty()) ||
       !IsPathToSameFile(FCustomIniFileStorageName, ACustomIniFileStorageName))
   {
     TStorage StorageBak = FStorage;
     UnicodeString CustomIniFileStorageNameBak = FCustomIniFileStorageName;
+    UnicodeString IniFileStorageNameBak = FIniFileStorageName;
     try
     {
       THierarchicalStorage * SourceStorage = NULL;
@@ -1343,6 +1343,7 @@ void __fastcall TConfiguration::MoveStorage(TStorage AStorage, const UnicodeStri
 
         FStorage = AStorage;
         FCustomIniFileStorageName = ACustomIniFileStorageName;
+        FIniFileStorageName = UnicodeString();
 
         TargetStorage = CreateConfigStorage();
         TargetStorage->AccessMode = smReadWrite;
@@ -1371,6 +1372,7 @@ void __fastcall TConfiguration::MoveStorage(TStorage AStorage, const UnicodeStri
       //   (possible, when the INI file is in Program Files folder)
       FStorage = StorageBak;
       FCustomIniFileStorageName = CustomIniFileStorageNameBak;
+      FIniFileStorageName = IniFileStorageNameBak;
       throw;
     }
   }
