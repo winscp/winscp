@@ -301,6 +301,8 @@ BEGIN
         USAGE_BROWSE, "Selects the specified file in file panel(s)."
         PUTTY_SETTINGS_INSTRUCTIONS, "**Edit terminal settings in PuTTY.**\n\nPuTTY will be started. Edit terminal settings of a temporary site %s. WinSCP will remember these settings after you close PuTTY."
         PUTTY_SETTINGS_SITE_NAME, "Terminal settings for %s"
+        USAGE_USERNAME, "An alternative way to provide a username"
+        USAGE_PASSWORD, "An alternative way to provide a password"
 
         WIN_FORMS_STRINGS, "WIN_FORMS_STRINGS"
         COPY_FILE, "%s file '%s' to %s:"

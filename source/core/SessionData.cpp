@@ -1784,6 +1784,7 @@ bool __fastcall TSessionData::IsSensitiveOption(const UnicodeString & Option)
 {
   return
     SameText(Option, PassphraseOption) ||
+    SameText(Option, PASSWORD_SWITCH) ||
     SameText(Option, NEWPASSWORD_SWITCH);
 }
 //---------------------------------------------------------------------
@@ -2185,6 +2186,14 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
     // as the option should not make session "connectable"
 
     UnicodeString Value;
+    if (Options->FindSwitch(USERNAME_SWITCH, Value))
+    {
+      UserName = Value;
+    }
+    if (Options->FindSwitch(PASSWORD_SWITCH, Value))
+    {
+      Password = Value;
+    }
     if (Options->FindSwitch(SESSIONNAME_SWICH, Value))
     {
       Name = Value;

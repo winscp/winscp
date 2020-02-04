@@ -296,6 +296,8 @@
 #define USAGE_BROWSE            1586
 #define PUTTY_SETTINGS_INSTRUCTIONS 1587
 #define PUTTY_SETTINGS_SITE_NAME 1588
+#define USAGE_USERNAME          1589
+#define USAGE_PASSWORD          1590
 
 #define WIN_FORMS_STRINGS       1600
 #define COPY_FILE               1605

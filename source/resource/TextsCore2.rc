@@ -77,6 +77,8 @@ BEGIN
     "  -implicit          Implicit TLS/SSL (FTP protocol only)\n"
     "  -explicit          Explicit TLS/SSL (FTP protocol only)\n"
     "  -timeout=<sec>     Server response timeout\n"
+    "  -username=<user>   An alternative way to provide a username\n"
+    "  -password=<password> An alternative way to provide a password\n"
     "  -rawsettings setting1=value1 setting2=value2 ...\n"
     "                     Configures any site settings using raw format\n"
     "                     as in an INI file\n"
