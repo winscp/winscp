@@ -1082,10 +1082,14 @@ void __fastcall ApplySystemSettingsOnControl(TControl * Control)
     {
       IListView_Win7 * ListViewIntf = NULL;
       SendMessage(IEListView->Handle, LVM_QUERYINTERFACE, reinterpret_cast<WPARAM>(&IID_IListView_Win7), reinterpret_cast<LPARAM>(&ListViewIntf));
-      if (DebugAlwaysTrue(ListViewIntf != NULL))
+      if (ListViewIntf != NULL)
       {
         ListViewIntf->SetSelectionFlags(1, 1);
         ListViewIntf->Release();
+      }
+      else
+      {
+        DebugAssert(IsWine());
       }
     }
   }
