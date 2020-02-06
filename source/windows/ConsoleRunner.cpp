@@ -2675,9 +2675,9 @@ int Info(TConsole * Console)
   try
   {
     PrintListAndFree(Console, L"SSH encryption ciphers:", SshCipherList());
-    PrintListAndFree(Console, L"SSH key exchange algoritms:", SshKexList());
-    PrintListAndFree(Console, L"SSH host key algoritms:", SshHostKeyList());
-    PrintListAndFree(Console, L"SSH MAC algoritms:", SshMacList());
+    PrintListAndFree(Console, L"SSH key exchange algorithms:", SshKexList());
+    PrintListAndFree(Console, L"SSH host key algorithms:", SshHostKeyList());
+    PrintListAndFree(Console, L"SSH MAC algorithms:", SshMacList());
     PrintListAndFree(Console, L"TLS/SSL cipher suites:", TlsCipherList());
   }
   catch (Exception & E)
