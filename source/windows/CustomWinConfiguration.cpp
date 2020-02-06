@@ -86,6 +86,8 @@ void __fastcall TCustomWinConfiguration::DefaultHistory()
   Strings->Add(FormatCommand(DefaultPuttyPath, L"-t -m \"%TEMP%\\putty.txt\" !`cmd.exe /c echo cd '!/' ; /bin/bash -login > \"%TEMP%\\putty.txt\"`"));
   Strings->Add(KittyExecutable);
   Strings->Add(FORMAT(L"%s -cmd \"cd '!/'\" !U@!@ -P !# -title \"!N\"", (KittyExecutable)));
+  Strings->Add(L"%SystemRoot%\\Sysnative\\OpenSSH\\ssh.exe !U@!@ -p !#");
+  Strings->Add(L"%SystemRoot%\\Sysnative\\OpenSSH\\ssh.exe !U@!@ -p !# -t \"cd !/ ; /bin/bash\"");
   FHistory->AddObject(L"PuttyPath", Strings.release());
 }
 //---------------------------------------------------------------------------
