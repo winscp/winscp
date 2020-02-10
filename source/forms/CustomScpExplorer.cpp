@@ -6480,6 +6480,7 @@ bool __fastcall TCustomScpExplorerForm::CanAddEditLink(TOperationSide Side)
   return
     (IsSideLocalBrowser(Side) ||
      ((Terminal != NULL) &&
+      Terminal->Active &&
       Terminal->ResolvingSymlinks &&
       Terminal->IsCapable[fcSymbolicLink]));
 }
