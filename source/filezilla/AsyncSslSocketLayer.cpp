@@ -8,6 +8,7 @@
 //---------------------------------------------------------------------------
 #include "stdafx.h"
 #include "AsyncSslSocketLayer.h"
+#include "FilezillaTools.h"
 
 #include <openssl/x509v3.h>
 #include <openssl/err.h>
@@ -637,7 +638,7 @@ BOOL CAsyncSslSocketLayer::Connect(LPCTSTR lpszHostAddress, UINT nHostPort)
 
 int CAsyncSslSocketLayer::InitSSLConnection(bool clientMode,
   CAsyncSslSocketLayer* main, bool sessionreuse,
-  int minTlsVersion, int maxTlsVersion,
+  CFileZillaTools * tools,
   void* pSslContext /*=0*/)
 {
   if (m_bUseSSL)
@@ -731,16 +732,7 @@ int CAsyncSslSocketLayer::InitSSLConnection(bool clientMode,
     return SSL_FAILURE_INITSSL;
   }
 
-  // See also TWebDAVFileSystem::InitSslSession
-  #define MASK_TLS_VERSION(VERSION, FLAG) ((minTlsVersion > VERSION) || (maxTlsVersion < VERSION) ? FLAG : 0)
-  long options =
-    SSL_OP_ALL |
-    MASK_TLS_VERSION(SSL_VERSION_SSL3, SSL_OP_NO_SSLv3) |
-    MASK_TLS_VERSION(SSL_VERSION_TLS10, SSL_OP_NO_TLSv1) |
-    MASK_TLS_VERSION(SSL_VERSION_TLS11, SSL_OP_NO_TLSv1_1) |
-    MASK_TLS_VERSION(SSL_VERSION_TLS12, SSL_OP_NO_TLSv1_2);
-  // adds flags (not sets)
-  SSL_set_options(m_ssl, options);
+  tools->SetupSsl(m_ssl);
 
   //Init SSL connection
   void *ssl_sessionid = NULL;

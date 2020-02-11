@@ -414,8 +414,7 @@ void CTransferSocket::Start()
     AddLayer(m_pSslLayer);
     int res = m_pSslLayer->InitSSLConnection(true, m_pOwner->m_pSslLayer,
       GetOptionVal(OPTION_MPEXT_SSLSESSIONREUSE),
-      GetOptionVal(OPTION_MPEXT_MIN_TLS_VERSION),
-      GetOptionVal(OPTION_MPEXT_MAX_TLS_VERSION));
+      m_pOwner->m_pTools);
     if (res == SSL_FAILURE_INITSSL)
     {
       m_pOwner->ShowStatus(IDS_ERRORMSG_CANTINITSSL, FZ_LOG_ERROR);

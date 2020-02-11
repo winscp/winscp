@@ -15,6 +15,7 @@
 #include "TextsFileZilla.h"
 #include "HelpCore.h"
 #include "Security.h"
+#include "NeonIntf.h"
 #include <StrUtils.hpp>
 #include <DateUtils.hpp>
 #include <openssl/x509_vfy.h>
@@ -61,6 +62,7 @@ protected:
   virtual bool GetFileModificationTimeInUtc(const wchar_t * FileName, struct tm & Time);
   virtual wchar_t * LastSysErrorMessage();
   virtual std::wstring GetClientString();
+  virtual void SetupSsl(ssl_st * Ssl);
 
 private:
   TFTPFileSystem * FFileSystem;
@@ -160,6 +162,11 @@ wchar_t * TFileZillaImpl::LastSysErrorMessage()
 std::wstring TFileZillaImpl::GetClientString()
 {
   return std::wstring(SshVersionString().c_str());
+}
+//---------------------------------------------------------------------------
+void TFileZillaImpl::SetupSsl(ssl_st * Ssl)
+{
+  ::SetupSsl(Ssl, FFileSystem->FTerminal->SessionData->MinTlsVersion, FFileSystem->FTerminal->SessionData->MaxTlsVersion);
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
@@ -2701,14 +2708,6 @@ int __fastcall TFTPFileSystem::GetOptionVal(int OptionID) const
 
     case OPTION_MPEXT_SSLSESSIONREUSE:
       Result = (Data->SslSessionReuse ? TRUE : FALSE);
-      break;
-
-    case OPTION_MPEXT_MIN_TLS_VERSION:
-      Result = Data->MinTlsVersion;
-      break;
-
-    case OPTION_MPEXT_MAX_TLS_VERSION:
-      Result = Data->MaxTlsVersion;
       break;
 
     case OPTION_MPEXT_SNDBUF:

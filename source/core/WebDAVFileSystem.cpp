@@ -1957,7 +1957,6 @@ void TWebDAVFileSystem::NeonNotifier(void * UserData, ne_session_status Status, 
 //------------------------------------------------------------------------------
 void TWebDAVFileSystem::InitSslSession(ssl_st * Ssl, ne_session * /*Session*/)
 {
-  // See also CAsyncSslSocketLayer::InitSSLConnection
   SetupSsl(Ssl, FTerminal->SessionData->MinTlsVersion, FTerminal->SessionData->MaxTlsVersion);
 }
 //---------------------------------------------------------------------------

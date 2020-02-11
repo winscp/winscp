@@ -188,7 +188,6 @@ void TS3FileSystem::LibS3SessionCallback(ne_session_s * Session, void * Callback
 //------------------------------------------------------------------------------
 void TS3FileSystem::InitSslSession(ssl_st * Ssl, ne_session * /*Session*/)
 {
-  // See also CAsyncSslSocketLayer::InitSSLConnection
   SetupSsl(Ssl, FTerminal->SessionData->MinTlsVersion, FTerminal->SessionData->MaxTlsVersion);
 }
 //---------------------------------------------------------------------------

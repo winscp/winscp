@@ -505,8 +505,7 @@ void CFtpControlSocket::Connect(t_server &server)
     }
     int res = m_pSslLayer->InitSSLConnection(true, NULL,
       GetOptionVal(OPTION_MPEXT_SSLSESSIONREUSE),
-      GetOptionVal(OPTION_MPEXT_MIN_TLS_VERSION),
-      GetOptionVal(OPTION_MPEXT_MAX_TLS_VERSION));
+      m_pTools);
     if (res == SSL_FAILURE_INITSSL)
       ShowStatus(IDS_ERRORMSG_CANTINITSSL, FZ_LOG_ERROR);
     if (res)
@@ -636,8 +635,7 @@ void CFtpControlSocket::LogOnToServer(BOOL bSkipReply /*=FALSE*/)
       }
       int res = m_pSslLayer->InitSSLConnection(true, NULL,
         GetOptionVal(OPTION_MPEXT_SSLSESSIONREUSE),
-        GetOptionVal(OPTION_MPEXT_MIN_TLS_VERSION),
-        GetOptionVal(OPTION_MPEXT_MAX_TLS_VERSION));
+        m_pTools);
       if (res == SSL_FAILURE_INITSSL)
         ShowStatus(IDS_ERRORMSG_CANTINITSSL, FZ_LOG_ERROR);
       if (res)
