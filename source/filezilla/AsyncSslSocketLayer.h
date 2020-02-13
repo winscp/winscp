@@ -116,6 +116,7 @@ struct t_SslCertData
 };
 //---------------------------------------------------------------------------
 class CCriticalSectionWrapper;
+class CFileZillaTools;
 //---------------------------------------------------------------------------
 class CAsyncSslSocketLayer : public CAsyncSocketExLayer
 {
@@ -133,7 +134,7 @@ public:
   bool IsUsingSSL();
   int InitSSLConnection(bool clientMode,
     CAsyncSslSocketLayer * main,
-    bool sessionreuse, int minTlsVersion, int maxTlsVersion,
+    bool sessionreuse, CFileZillaTools * tools,
     void* pContext = 0);
 
   // Send raw text, useful to send a confirmation after the ssl connection
@@ -246,5 +247,6 @@ private:
 #define SSL_VERSION_TLS10 10
 #define SSL_VERSION_TLS11 11
 #define SSL_VERSION_TLS12 12
+#define SSL_VERSION_TLS13 13
 //---------------------------------------------------------------------------
 #endif // AsyncSslSocketLayerH

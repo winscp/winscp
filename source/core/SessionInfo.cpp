@@ -1069,6 +1069,8 @@ UnicodeString __fastcall TSessionLog::GetTlsVersionName(TTlsVersion TlsVersion)
       return "TLSv1.1";
     case tls12:
       return "TLSv1.2";
+    case tls13:
+      return "TLSv1.3";
   }
 }
 //---------------------------------------------------------------------------

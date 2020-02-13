@@ -1489,6 +1489,8 @@ TTlsVersion __fastcall TSiteAdvancedDialog::IndexToTlsVersion(int Index)
       return tls11;
     case 3:
       return tls12;
+    case 4:
+      return tls13;
   }
 }
 //---------------------------------------------------------------------------
@@ -1507,6 +1509,8 @@ int __fastcall TSiteAdvancedDialog::TlsVersionToIndex(TTlsVersion TlsVersion)
       return 2;
     case tls12:
       return 3;
+    case tls13:
+      return 4;
   }
 }
 //---------------------------------------------------------------------------

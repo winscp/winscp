@@ -265,7 +265,7 @@ void __fastcall TSessionData::DefaultSettings()
   FtpTransferActiveImmediately = asAuto;
   Ftps = ftpsNone;
   MinTlsVersion = tls10;
-  MaxTlsVersion = tls12;
+  MaxTlsVersion = tls13;
   FtpListAll = asAuto;
   FtpHost = asAuto;
   FtpDeleteFromCwd = asAuto;

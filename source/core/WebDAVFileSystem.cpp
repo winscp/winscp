@@ -1325,7 +1325,7 @@ void __fastcall TWebDAVFileSystem::Source(
           // But it announces itself as "Server: Apache",
           // so it's not reliable to autodetect the support.
           // Microsoft Office alegedly uses <Win32LastModifiedTime>
-          // http://sabre.io/dav/clients/msoffice/
+          // https://sabre.io/dav/clients/msoffice/
           // Carot DAV does that too. But we do not know what server does support this.
           TouchAction.Cancel();
         }
@@ -1957,7 +1957,6 @@ void TWebDAVFileSystem::NeonNotifier(void * UserData, ne_session_status Status, 
 //------------------------------------------------------------------------------
 void TWebDAVFileSystem::InitSslSession(ssl_st * Ssl, ne_session * /*Session*/)
 {
-  // See also CAsyncSslSocketLayer::InitSSLConnection
   SetupSsl(Ssl, FTerminal->SessionData->MinTlsVersion, FTerminal->SessionData->MaxTlsVersion);
 }
 //---------------------------------------------------------------------------

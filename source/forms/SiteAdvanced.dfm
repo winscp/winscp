@@ -1830,7 +1830,8 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
               'SSL 3.0'
               'TLS 1.0'
               'TLS 1.1'
-              'TLS 1.2')
+              'TLS 1.2'
+              'TLS 1.3')
           end
           object MaxTlsVersionCombo: TComboBox
             Left = 304
@@ -1845,7 +1846,8 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
               'SSL 3.0'
               'TLS 1.0'
               'TLS 1.1'
-              'TLS 1.2')
+              'TLS 1.2'
+              'TLS 1.3')
           end
           object SslSessionReuseCheck: TCheckBox
             Left = 12
