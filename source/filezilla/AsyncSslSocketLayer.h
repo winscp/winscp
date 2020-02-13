@@ -246,10 +246,4 @@ private:
 #define SSL_FAILURE_VERIFYCERT 8
 #define SSL_FAILURE_CERTREJECTED 0x10
 //---------------------------------------------------------------------------
-#define SSL_VERSION_SSL3 3
-#define SSL_VERSION_TLS10 10
-#define SSL_VERSION_TLS11 11
-#define SSL_VERSION_TLS12 12
-#define SSL_VERSION_TLS13 13
-//---------------------------------------------------------------------------
 #endif // AsyncSslSocketLayerH
