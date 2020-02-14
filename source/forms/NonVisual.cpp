@@ -899,8 +899,10 @@ void __fastcall TNonVisualDataModule::CommanderShortcuts()
   RemoteFindFilesAction->ShortCut =
     ExplorerKeyboardShortcuts ? ShortCut(VK_F3, NONE) : ShortCut(VK_F7, ALT);
   // legacy shortcut (can be removed when necessary)
+  NewFileAction->SecondaryShortCuts->Clear();
   NewFileAction->SecondaryShortCuts->Add(ShortCutToText(ShortCut(VK_F4, CTRLSHIFT)));
   // Backward compatibility, can be abandoned, once there's a better use for Ctrl+T
+  ConsoleAction->SecondaryShortCuts->Clear();
   ConsoleAction->SecondaryShortCuts->Add(ShortCutToText(ShortCut(L'T', CTRL)));
 
   CloseApplicationAction->ShortCut = ShortCut(VK_F10, NONE);
