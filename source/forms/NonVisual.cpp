@@ -905,6 +905,20 @@ void __fastcall TNonVisualDataModule::CommanderShortcuts()
 
   CloseApplicationAction->ShortCut = ShortCut(VK_F10, NONE);
 
+  TShortCut CtrlF4 = ShortCut(VK_F4, CTRL);
+  LocalSortByExtAction->ShortCut = ExplorerKeyboardShortcuts ? TShortCut(0) : CtrlF4;
+  RemoteSortByExtAction->ShortCut = LocalSortByExtAction->ShortCut;
+  CurrentSortByExtAction->ShortCut = LocalSortByExtAction->ShortCut;
+  int Index = CloseSessionAction2->SecondaryShortCuts->IndexOfShortCut(CtrlF4);
+  if (ExplorerKeyboardShortcuts && (Index < 0))
+  {
+    CloseSessionAction2->SecondaryShortCuts->Add(ShortCutToText(CtrlF4));
+  }
+  else if (!ExplorerKeyboardShortcuts && (Index >= 0))
+  {
+    CloseSessionAction2->SecondaryShortCuts->Delete(Index);
+  }
+
   CloneShortcuts();
 }
 #undef CTRL
