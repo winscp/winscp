@@ -207,8 +207,10 @@ static void mainchan_try_fallback_command(mainchan *mc)
     const char *cmd = conf_get_str(mc->conf, CONF_remote_cmd2);
     if (conf_get_bool(mc->conf, CONF_ssh_subsys2)) {
         sshfwd_start_subsystem(mc->sc, true, cmd);
-    } else {
+    } else if (*cmd) {
         sshfwd_start_command(mc->sc, true, cmd);
+    } else {
+        sshfwd_start_shell(mc->sc, true); // WINSCP
     }
     mc->req_cmd_fallback = true;
 }
