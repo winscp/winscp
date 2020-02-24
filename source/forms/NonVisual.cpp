@@ -1063,8 +1063,9 @@ int __fastcall TNonVisualDataModule::CreateCustomCommandsListMenu(
         UnicodeString Name = ExtractFileName(Command->Id);
         if (Name.IsEmpty())
         {
-          Name = MakeIdent(Command->Name);
+          Name = Command->Name;
         }
+        Name = MakeIdent(Name);
         Name += L"CustomCommand";
         // This is only the last resort to avoid run-time errors.
         // If there are duplicates, button hidding won't be deterministic.
