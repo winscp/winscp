@@ -1483,9 +1483,23 @@ int CALLBACK PathWordBreakProc(wchar_t * Ch, int Current, int Len, int Code)
   return Result;
 }
 //---------------------------------------------------------------------------
-static void __fastcall PathWordBreakEditWindowProc(void * Data, TMessage & Message)
+class TPathWordBreakProcComponent : public TComponent
 {
-  TCustomEdit * Edit = static_cast<TCustomEdit *>(Data);
+public:
+  __fastcall TPathWordBreakProcComponent() :
+    TComponent(NULL)
+  {
+  }
+
+  void __fastcall PathWordBreakEditWindowProc(TMessage & Message);
+
+  TWinControl * WinControl;
+  TWndMethod PrevWindowProc;
+};
+//---------------------------------------------------------------------------
+void __fastcall TPathWordBreakProcComponent::PathWordBreakEditWindowProc(TMessage & Message)
+{
+  bool Handled = false;
   if (Message.Msg == WM_CHAR)
   {
     // Ctrl+Backspace
@@ -1494,7 +1508,8 @@ static void __fastcall PathWordBreakEditWindowProc(void * Data, TMessage & Messa
     TWMChar & CharMessage = *reinterpret_cast<TWMChar *>(&Message);
     if (CharMessage.CharCode == '\x7F')
     {
-      TCustomComboBox * ComboBox = static_cast<TCustomComboBox *>(Data);
+      TCustomEdit * Edit = dynamic_cast<TCustomEdit *>(WinControl);
+      TCustomComboBox * ComboBox = dynamic_cast<TCustomComboBox *>(WinControl);
 
       if (((Edit != NULL) && (Edit->SelLength == 0)) ||
           ((ComboBox != NULL) && (ComboBox->SelLength == 0)))
@@ -1508,24 +1523,29 @@ static void __fastcall PathWordBreakEditWindowProc(void * Data, TMessage & Messa
         NewKeyState[VK_SHIFT] = 0x81;
         SetKeyboardState(NewKeyState);
 
-        SendMessage(Edit->Handle, WM_KEYDOWN, VK_LEFT, 1);
+        SendMessage(WinControl->Handle, WM_KEYDOWN, VK_LEFT, 1);
         NewKeyState[VK_SHIFT] = 0;
         NewKeyState[VK_CONTROL] = 0;
         SetKeyboardState(NewKeyState);
 
-        SendMessage(Edit->Handle, WM_KEYDOWN, VK_DELETE, 1);
+        SendMessage(WinControl->Handle, WM_KEYDOWN, VK_DELETE, 1);
         SetKeyboardState(KeyState);
       }
       Message.Result = 1;
+      Handled = true;
+    }
+  }
+
+  if (!Handled)
+  {
+    if (PrevWindowProc != NULL)
+    {
+      PrevWindowProc(Message);
     }
     else
     {
-      ControlWndProc(Edit)(Message);
+      ControlWndProc(WinControl)(Message);
     }
-  }
-  else
-  {
-    ControlWndProc(Edit)(Message);
   }
 }
 //---------------------------------------------------------------------------
@@ -1554,7 +1574,16 @@ void __fastcall InstallPathWordBreakProc(TWinControl * Control)
   }
   SendMessage(Wnd, EM_SETWORDBREAKPROC, 0, (LPARAM)(EDITWORDBREAKPROC)PathWordBreakProc);
 
-  Control->WindowProc = MakeMethod<TWndMethod>(Control, PathWordBreakEditWindowProc);
+  TPathWordBreakProcComponent * PathWordBreakProcComponent = new TPathWordBreakProcComponent();
+  PathWordBreakProcComponent->Name = TPathWordBreakProcComponent::QualifiedClassName();
+  Control->InsertComponent(PathWordBreakProcComponent);
+  PathWordBreakProcComponent->WinControl = Control;
+  // Have to remember the proc because of TTBEditItemViewer.EditWndProc
+  PathWordBreakProcComponent->PrevWindowProc =
+    // Test is probably redundant, it's there to limit impact of the change.
+    ((Control->WindowProc != ControlWndProc(Control)) ? Control->WindowProc : TWndMethod());
+
+  Control->WindowProc = PathWordBreakProcComponent->PathWordBreakEditWindowProc;
 }
 //---------------------------------------------------------------------------
 static void __fastcall RemoveHiddenControlsFromOrder(TControl ** ControlsOrder, int & Count)
