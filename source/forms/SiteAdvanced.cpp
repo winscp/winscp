@@ -1043,6 +1043,7 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
     SslSheet->Enabled = Ssl;
     // TLS/SSL session reuse is not configurable for WebDAV/S3 yet
     SslSessionReuseCheck->Enabled = SslSheet->Enabled && FtpProtocol;
+    TlsAuthenticationGroup->Visible = Ssl && (FtpProtocol || WebDavProtocol);
 
     // encryption sheet
     EncryptionSheet->Enabled = SftpProtocol;
