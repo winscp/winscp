@@ -3282,17 +3282,10 @@ void __fastcall ParseCertificate(const UnicodeString & Path,
 
   if (Pkcs12 != NULL)
   {
-    // Modeled after OPENSSL_asc2uni (reversed bitness to what UnicodeString/wchar_t use)
-    std::vector<char> Buf;
-    Buf.resize(Passphrase.Length() * sizeof(wchar_t) + sizeof(wchar_t));
-    for (int Index = 0; Index <= Passphrase.Length(); Index++)
-    {
-      Buf[(Index * 2)] = (Passphrase.c_str()[Index] >> 8);
-      Buf[(Index * 2) + 1] = (Passphrase.c_str()[Index] & 0x00FF);
-    }
+    UTF8String PassphraseUtf(Passphrase);
 
     bool Result =
-      (PKCS12_parse(Pkcs12, &Buf[0], &PrivateKey, &Certificate, NULL) == 1);
+      (PKCS12_parse(Pkcs12, PassphraseUtf.c_str(), &PrivateKey, &Certificate, NULL) == 1);
     PKCS12_free(Pkcs12);
 
     if (!Result)

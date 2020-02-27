@@ -27,32 +27,6 @@ void h__dump(unsigned char *p, int len);
 # define min(a,b) ((a) < (b) ? (a) : (b))
 #endif
 
-#if defined(WINSCP) && defined(PBE_UNICODE)
-#undef PKCS12_key_gen_uni
-
-int PKCS12_key_gen_uni(unsigned char *pass, int passlen, unsigned char *salt,
-                       int saltlen, int id, int iter, int n,
-                       unsigned char *out, const EVP_MD *md_type);
-
-int PKCS12_key_gen_wrap(unsigned char *pass, int passlen, unsigned char *salt,
-                        int saltlen, int id, int iter, int n,
-                        unsigned char *out, const EVP_MD *md_type)
-{
-    if (pass == NULL)
-    {
-        // noop
-    }
-    // PKCS12_key_gen_uni cannot handle -1 length (contrary to PKCS12_key_gen_asc).
-    // OPENSSL_asc2uni adds the trailing \0 to the length,
-    // even if input ascii password length does not include it.
-    else if (passlen < 0)
-    {
-        passlen = (wcslen((wchar_t*)pass) * sizeof(wchar_t)) + sizeof(wchar_t);
-    }
-    return PKCS12_key_gen_uni(pass, passlen, salt, saltlen, id, iter, n, out, md_type);
-}
-#endif
-
 int PKCS12_key_gen_asc(const char *pass, int passlen, unsigned char *salt,
                        int saltlen, int id, int iter, int n,
                        unsigned char *out, const EVP_MD *md_type)
