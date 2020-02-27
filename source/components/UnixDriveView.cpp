@@ -70,6 +70,8 @@ void __fastcall TCustomUnixDriveView::CreateWnd()
   TCustomDriveView::CreateWnd();
 
   FDragDropFilesEx->TargetEffects = TDropEffectSet() << deCopy << deMove;
+  // in case the items were recreated
+  FPrevSelected = Selected;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomUnixDriveView::SetTerminal(TTerminal * value)
