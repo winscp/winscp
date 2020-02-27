@@ -4954,7 +4954,7 @@ void __fastcall TCustomScpExplorerForm::FormCloseQuery(TObject * /*Sender*/,
 
       SetFocus();
       Result = MessageDialog(Message, qtConfirmation,
-        Answers, HELP_NONE, &Params);
+        Answers, HELP_CLOSE_SESSION_WORKSPACE, &Params);
 
       if (Result == qaNeverAskAgain)
       {

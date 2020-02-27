@@ -2283,4 +2283,10 @@ void pktin_free_queue_callback(void *vctx);
 #define WINSCP_BOM "\xEF\xBB\xBF"
 #endif
 
+#ifdef _DEBUG
+#undef assert
+void DoAssertC(char * Message, char * Filename, int LineNumber);
+#define assert(p) ((p) ? (void)0 : DoAssertC(TEXT(#p), TEXT(__FILE__), __LINE__))
+#endif
+
 #endif
