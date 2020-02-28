@@ -7830,7 +7830,7 @@ bool __fastcall TTerminal::LoadTlsCertificate(X509 *& Certificate, EVP_PKEY *& P
     {
       Retry = false;
 
-      bool WrongPassphrase = false;
+      bool WrongPassphrase;
       ParseCertificate(SessionData->TlsCertificateFile, Passphrase, Certificate, PrivateKey, WrongPassphrase);
       if (WrongPassphrase)
       {
