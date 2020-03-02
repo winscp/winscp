@@ -489,31 +489,51 @@ void __fastcall TEditorManager::CheckFileChange(int Index, bool Force)
     }
     else
     {
-      FileData->UploadCompleteEvent = CreateEvent(NULL, false, false, NULL);
-      FUploadCompleteEvents.push_back(FileData->UploadCompleteEvent);
-
-      FileData->Timestamp = NewTimestamp;
-      FileData->Saves++;
-      if (FileData->Saves == 1)
+      bool Upload = true;
+      if (!Force)
       {
-        Configuration->Usage->Inc(L"RemoteFilesSaved");
-      }
-      Configuration->Usage->Inc(L"RemoteFileSaves");
-
-      try
-      {
-        DebugAssert(OnFileChange != NULL);
-        OnFileChange(FileData->FileName, FileData->Data,
-          FileData->UploadCompleteEvent);
-      }
-      catch(...)
-      {
-        // upload failed (was not even started)
-        if (FileData->UploadCompleteEvent != INVALID_HANDLE_VALUE)
+        HANDLE Handle = CreateFile(ApiPath(FileData->FileName).c_str(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, 0);
+        if (Handle == INVALID_HANDLE_VALUE)
         {
-          UploadComplete(Index);
+          int Error = GetLastError();
+          if (Error == ERROR_ACCESS_DENIED)
+          {
+            Upload = false;
+          }
         }
-        throw;
+        else
+        {
+          CloseHandle(Handle);
+        }
+      }
+      if (Upload)
+      {
+        FileData->UploadCompleteEvent = CreateEvent(NULL, false, false, NULL);
+        FUploadCompleteEvents.push_back(FileData->UploadCompleteEvent);
+
+        FileData->Timestamp = NewTimestamp;
+        FileData->Saves++;
+        if (FileData->Saves == 1)
+        {
+          Configuration->Usage->Inc(L"RemoteFilesSaved");
+        }
+        Configuration->Usage->Inc(L"RemoteFileSaves");
+
+        try
+        {
+          DebugAssert(OnFileChange != NULL);
+          OnFileChange(FileData->FileName, FileData->Data,
+            FileData->UploadCompleteEvent);
+        }
+        catch(...)
+        {
+          // upload failed (was not even started)
+          if (FileData->UploadCompleteEvent != INVALID_HANDLE_VALUE)
+          {
+            UploadComplete(Index);
+          }
+          throw;
+        }
       }
     }
   }
