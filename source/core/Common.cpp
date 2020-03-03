@@ -3269,6 +3269,7 @@ void __fastcall ParseCertificate(const UnicodeString & Path,
 {
   Certificate = NULL;
   PrivateKey = NULL;
+  WrongPassphrase = false;
   bool HasPassphrase = !Passphrase.IsEmpty();
 
   FILE * File;
