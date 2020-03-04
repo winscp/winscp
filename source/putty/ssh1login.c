@@ -71,6 +71,7 @@ static void ssh1_login_special_cmd(PacketProtocolLayer *ppl,
 static bool ssh1_login_want_user_input(PacketProtocolLayer *ppl);
 static void ssh1_login_got_user_input(PacketProtocolLayer *ppl);
 static void ssh1_login_reconfigure(PacketProtocolLayer *ppl, Conf *conf);
+static unsigned int ssh1_login_winscp_query(PacketProtocolLayer *ppl, int query);
 
 static const struct PacketProtocolLayerVtable ssh1_login_vtable = {
     ssh1_login_free,
@@ -81,6 +82,7 @@ static const struct PacketProtocolLayerVtable ssh1_login_vtable = {
     ssh1_login_got_user_input,
     ssh1_login_reconfigure,
     NULL /* no layer names in SSH-1 */,
+    ssh1_login_winscp_query,
 };
 
 static void ssh1_login_agent_query(struct ssh1_login_state *s, strbuf *req);
@@ -1186,4 +1188,24 @@ static void ssh1_login_reconfigure(PacketProtocolLayer *ppl, Conf *conf)
     struct ssh1_login_state *s =
         container_of(ppl, struct ssh1_login_state, ppl);
     ssh_ppl_reconfigure(s->successor_layer, conf);
+}
+
+#include <puttyexp.h>
+
+static unsigned int ssh1_login_winscp_query(PacketProtocolLayer *ppl, int query)
+{
+    struct ssh1_login_state *s =
+        container_of(ppl, struct ssh1_login_state, ppl);
+    if (query == WINSCP_QUERY_TIMER)
+    {
+        return 0;
+    }
+    else if (s->successor_layer->vt->winscp_query != NULL)
+    {
+        return ssh_ppl_winscp_query(s->successor_layer, query);
+    }
+    else
+    {
+        return 0;
+    }
 }

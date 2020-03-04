@@ -2297,12 +2297,28 @@ void __fastcall TSecureShell::VerifyHostKey(
   GetRealHost(Host, Port);
 
   UnicodeString Buf = Fingerprint;
-  UnicodeString SignKeyAlg = CutToChar(Buf, L' ', false);
-  UnicodeString SignKeySize = CutToChar(Buf, L' ', false);
+  UnicodeString SignKeyAlg, SignKeySize, MD5, SHA256;
+  if (get_ssh_version(FBackendHandle) == 1)
+  {
+    SignKeyAlg = GetSsh1KeyType();
+  }
+  else
+  {
+    SignKeyAlg = CutToChar(Buf, L' ', false);
+  }
+  SignKeySize = CutToChar(Buf, L' ', false);
+  MD5 = CutToChar(Buf, L' ', false);
+  if (get_ssh_version(FBackendHandle) == 1)
+  {
+    SHA256 = L"-";
+    DebugAssert(Buf.IsEmpty());
+  }
+  else
+  {
+    SHA256 = Buf;
+  }
   UnicodeString SignKeyType = SignKeyAlg + L' ' + SignKeySize;
-  UnicodeString MD5 = CutToChar(Buf, L' ', false);
   UnicodeString FingerprintMD5 = SignKeyType + L' ' + MD5;
-  UnicodeString SHA256 = Buf;
   UnicodeString FingerprintSHA256 = SignKeyType + L' ' + SHA256;
 
   FSessionInfo.HostKeyFingerprintSHA256 = FingerprintSHA256;
