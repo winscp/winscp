@@ -9,13 +9,13 @@ unit TB2Dock;
   not use or distribute this file except in compliance with the
   "Toolbar2000 License". A copy of the "Toolbar2000 License" may be found in
   TB2k-LICENSE.txt or at:
-    http://www.jrsoftware.org/files/tb2k/TB2k-LICENSE.txt
+    https://jrsoftware.org/files/tb2k/TB2k-LICENSE.txt
 
   Alternatively, the contents of this file may be used under the terms of the
   GNU General Public License (the "GPL"), in which case the provisions of the
   GPL are applicable instead of those in the "Toolbar2000 License". A copy of
   the GPL may be found in GPL-LICENSE.txt or at:
-    http://www.jrsoftware.org/files/tb2k/GPL-LICENSE.txt
+    https://jrsoftware.org/files/tb2k/GPL-LICENSE.txt
   If you wish to allow use of your version of this file only under the terms of
   the GPL and not to allow others to use your version of this file under the
   "Toolbar2000 License", indicate your decision by deleting the provisions

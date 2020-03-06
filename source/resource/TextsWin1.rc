@@ -543,7 +543,7 @@ BEGIN
         ABOUT_THIRDPARTY_LICENSE, "Display license"
         ABOUT_TOOLBAR2000, "Toolbar2000 library %s"
         ABOUT_TOOLBAR2000_COPYRIGHT, "Copyright © Jordan Russell"
-        ABOUT_TOOLBAR2000_URL, "http://www.jrsoftware.org/tb2kdl.php"
+        ABOUT_TOOLBAR2000_URL, "https://jrsoftware.org/tb2kdl.php"
         ABOUT_TBX, "TBX library %s"
         ABOUT_TBX_COPYRIGHT, "Copyright © Alex A. Denisov and contributors"
         ABOUT_TBX_URL, "https://github.com/plashenkov/TBX"

@@ -282,7 +282,7 @@ const
     '©1998-2004 by Jordan Russell'#13#10 +
     'For conditions of distribution and use, see Toolbar2000 documentation.'#13#10 +
     #13#10 +
-    'Visit http://www.jrsoftware.org/ for the latest versions of Toolbar2000'#13#10 +
+    'Visit https://jrsoftware.org/ for the latest versions of Toolbar2000'#13#10 +
     '';
 begin
   case Index of
