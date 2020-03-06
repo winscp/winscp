@@ -7790,7 +7790,11 @@ void __fastcall TTerminal::CacheCertificate(const UnicodeString & CertificateSto
 void __fastcall TTerminal::CollectTlsUsage(const UnicodeString & TlsVersionStr)
 {
   // see SSL_get_version() in OpenSSL ssl_lib.c
-  if (TlsVersionStr == L"TLSv1.2")
+  if (TlsVersionStr == L"TLSv1.3")
+  {
+    Configuration->Usage->Inc(L"OpenedSessionsTLS13");
+  }
+  else if (TlsVersionStr == L"TLSv1.2")
   {
     Configuration->Usage->Inc(L"OpenedSessionsTLS12");
   }
