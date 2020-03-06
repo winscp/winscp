@@ -169,6 +169,7 @@ private:
   static int verify_callback(int preverify_ok, X509_STORE_CTX * ctx);
   static int ProvideClientCert(
     SSL * Ssl, X509 ** Certificate, EVP_PKEY ** PrivateKey);
+  static int NewSessionCallback(struct ssl_st * Ssl, SSL_SESSION * Session);
   static CAsyncSslSocketLayer * LookupLayer(SSL * Ssl);
 
   bool m_bUseSSL;
@@ -201,6 +202,7 @@ private:
   SSL* m_ssl;      // current session handle
   SSL_SESSION * m_sessionid;
   bool m_sessionreuse;
+  bool m_sessionreuse_failed;
   CAsyncSslSocketLayer * m_Main;
 
   // Data channels for encrypted/unencrypted data
