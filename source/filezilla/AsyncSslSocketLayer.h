@@ -161,6 +161,7 @@ private:
   int InitSSL();
   void UnloadSSL();
   void PrintLastErrorMsg();
+  bool HandleSession(SSL_SESSION * Session);
 
   void TriggerEvents();
 

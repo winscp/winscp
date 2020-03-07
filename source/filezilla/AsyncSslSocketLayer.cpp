@@ -637,39 +637,51 @@ BOOL CAsyncSslSocketLayer::Connect(LPCTSTR lpszHostAddress, UINT nHostPort)
   return res;
 }
 
+bool CAsyncSslSocketLayer::HandleSession(SSL_SESSION * Session)
+{
+  bool Result = false;
+  if (m_sessionreuse)
+  {
+    if (m_sessionid != Session)
+    {
+      if (m_sessionid == NULL)
+      {
+        if (SSL_session_reused(m_ssl))
+        {
+          LogSocketMessageRaw(FZ_LOG_PROGRESS, L"Session ID reused");
+        }
+        else
+        {
+          if ((m_Main != NULL) && !m_Main->m_sessionreuse_failed)
+          {
+            LogSocketMessageRaw(FZ_LOG_INFO, L"Main TLS session ID not reused, will not try again");
+            m_Main->m_sessionreuse_failed = true;
+          }
+        }
+        LogSocketMessageRaw(FZ_LOG_DEBUG, L"Saving session ID");
+      }
+      else
+      {
+        SSL_SESSION_free(m_sessionid);
+        LogSocketMessageRaw(FZ_LOG_INFO, L"Session ID changed");
+      }
+      m_sessionid = Session;
+      Result = true;
+    }
+  }
+  return Result;
+}
+
 int CAsyncSslSocketLayer::NewSessionCallback(struct ssl_st * Ssl, SSL_SESSION * Session)
 {
   CAsyncSslSocketLayer * Layer = LookupLayer(Ssl);
 
   int Result = 0;
-  if (Layer->m_sessionreuse)
+  // This is not called for TLS 1.2 and older when session is reused (so "Session ID reused" won't be logged).
+  // So for 1.2 and older, we call HandleSession from apps_ssl_info_callback as we always did.
+  if ((SSL_version(Ssl) >= TLS1_3_VERSION) && Layer->HandleSession(Session))
   {
-    if (Layer->m_sessionid != Session)
-    {
-      if (Layer->m_sessionid == NULL)
-      {
-        if (SSL_session_reused(Layer->m_ssl))
-        {
-          Layer->LogSocketMessageRaw(FZ_LOG_PROGRESS, L"Session ID reused");
-        }
-        else
-        {
-          if ((Layer->m_Main != NULL) && !Layer->m_Main->m_sessionreuse_failed)
-          {
-            Layer->LogSocketMessageRaw(FZ_LOG_INFO, L"Main TLS session ID not reused, will not try again");
-            Layer->m_Main->m_sessionreuse_failed = true;
-          }
-        }
-        Layer->LogSocketMessageRaw(FZ_LOG_DEBUG, L"Saving session ID");
-      }
-      else
-      {
-        SSL_SESSION_free(Layer->m_sessionid);
-        Layer->LogSocketMessageRaw(FZ_LOG_INFO, L"Session ID changed");
-      }
-      Layer->m_sessionid = Session;
-      Result = 1;
-    }
+    Result = 1;
   }
 
   return Result;
@@ -1167,6 +1179,16 @@ void CAsyncSslSocketLayer::apps_ssl_info_callback(const SSL *s, int where, int r
   }
   if (where & SSL_CB_HANDSHAKE_DONE)
   {
+    // For 1.2 and older, session is always established at this point.
+    // For 1.3, session can be restarted later, so this is handled in NewSessionCallback.
+    if (SSL_version(pLayer->m_ssl) < TLS1_3_VERSION)
+    {
+      SSL_SESSION * sessionid = SSL_get1_session(pLayer->m_ssl);
+      if (!pLayer->HandleSession(sessionid))
+      {
+        SSL_SESSION_free(sessionid);
+      }
+    }
     int error = SSL_get_verify_result(pLayer->m_ssl);
     pLayer->DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, SSL_VERIFY_CERT, error);
     pLayer->m_bBlocking = TRUE;
