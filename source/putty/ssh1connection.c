@@ -37,6 +37,7 @@ static void ssh1_connection_special_cmd(PacketProtocolLayer *ppl,
 static bool ssh1_connection_want_user_input(PacketProtocolLayer *ppl);
 static void ssh1_connection_got_user_input(PacketProtocolLayer *ppl);
 static void ssh1_connection_reconfigure(PacketProtocolLayer *ppl, Conf *conf);
+static unsigned int ssh1_connection_winscp_query(PacketProtocolLayer *ppl, int query);
 
 static const struct PacketProtocolLayerVtable ssh1_connection_vtable = {
     ssh1_connection_free,
@@ -47,6 +48,7 @@ static const struct PacketProtocolLayerVtable ssh1_connection_vtable = {
     ssh1_connection_got_user_input,
     ssh1_connection_reconfigure,
     NULL /* no layer names in SSH-1 */,
+    ssh1_connection_winscp_query,
 };
 
 static void ssh1_rportfwd_remove(
@@ -217,7 +219,7 @@ static void ssh1_connection_free(PacketProtocolLayer *ppl)
     if (s->antispoof_prompt)
         free_prompts(s->antispoof_prompt);
 
-    delete_callbacks_for_context(ppl->seat, s);
+    delete_callbacks_for_context(get_seat_callback_set(ppl->seat), s);
 
     sfree(s);
 }
@@ -842,4 +844,30 @@ static void ssh1_connection_reconfigure(PacketProtocolLayer *ppl, Conf *conf)
 
     if (s->portfwdmgr_configured)
         portfwdmgr_config(s->portfwdmgr, s->conf);
+}
+
+#include <puttyexp.h>
+
+static unsigned int ssh1_connection_winscp_query(PacketProtocolLayer *ppl, int query)
+{
+    struct ssh1_connection_state *s =
+        container_of(ppl, struct ssh1_connection_state, ppl);
+
+    if (query == WINSCP_QUERY_TIMER)
+    {
+        return 0; // dummy
+    }
+    else if (query == WINSCP_QUERY_REMMAXPKT)
+    {
+        return 0; // dummy
+    }
+    else if (query == WINSCP_QUERY_MAIN_CHANNEL)
+    {
+        return s->finished_setup;
+    }
+    else
+    {
+        assert(0);
+        return 0;
+    }
 }

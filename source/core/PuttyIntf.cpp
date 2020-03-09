@@ -937,6 +937,11 @@ UnicodeString __fastcall ParseOpenSshPubLine(const UnicodeString & Line, const s
   return Result;
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall GetSsh1KeyType()
+{
+  return UnicodeString(ssh_rsa.cache_id);
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall GetKeyTypeHuman(const UnicodeString & KeyType)
 {
   UnicodeString Result;
@@ -944,7 +949,8 @@ UnicodeString __fastcall GetKeyTypeHuman(const UnicodeString & KeyType)
   {
     Result = L"DSA";
   }
-  else if (KeyType == ssh_rsa.cache_id)
+  else if ((KeyType == ssh_rsa.cache_id) ||
+           (KeyType == L"rsa")) // SSH1
   {
     Result = L"RSA";
   }

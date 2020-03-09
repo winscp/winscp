@@ -54,6 +54,7 @@ CAsyncSslSocketLayer::CAsyncSslSocketLayer()
   m_Main = NULL;
   m_sessionid = NULL;
   m_sessionreuse = true;
+  m_sessionreuse_failed = false;
 
   FCertificate = NULL;
   FPrivateKey = NULL;
@@ -636,6 +637,56 @@ BOOL CAsyncSslSocketLayer::Connect(LPCTSTR lpszHostAddress, UINT nHostPort)
   return res;
 }
 
+bool CAsyncSslSocketLayer::HandleSession(SSL_SESSION * Session)
+{
+  bool Result = false;
+  if (m_sessionreuse)
+  {
+    if (m_sessionid != Session)
+    {
+      if (m_sessionid == NULL)
+      {
+        if (SSL_session_reused(m_ssl))
+        {
+          LogSocketMessageRaw(FZ_LOG_PROGRESS, L"Session ID reused");
+        }
+        else
+        {
+          if ((m_Main != NULL) && !m_Main->m_sessionreuse_failed)
+          {
+            LogSocketMessageRaw(FZ_LOG_INFO, L"Main TLS session ID not reused, will not try again");
+            m_Main->m_sessionreuse_failed = true;
+          }
+        }
+        LogSocketMessageRaw(FZ_LOG_DEBUG, L"Saving session ID");
+      }
+      else
+      {
+        SSL_SESSION_free(m_sessionid);
+        LogSocketMessageRaw(FZ_LOG_INFO, L"Session ID changed");
+      }
+      m_sessionid = Session;
+      Result = true;
+    }
+  }
+  return Result;
+}
+
+int CAsyncSslSocketLayer::NewSessionCallback(struct ssl_st * Ssl, SSL_SESSION * Session)
+{
+  CAsyncSslSocketLayer * Layer = LookupLayer(Ssl);
+
+  int Result = 0;
+  // This is not called for TLS 1.2 and older when session is reused (so "Session ID reused" won't be logged).
+  // So for 1.2 and older, we call HandleSession from apps_ssl_info_callback as we always did.
+  if ((SSL_version(Ssl) >= TLS1_3_VERSION) && Layer->HandleSession(Session))
+  {
+    Result = 1;
+  }
+
+  return Result;
+}
+
 int CAsyncSslSocketLayer::InitSSLConnection(bool clientMode,
   CAsyncSslSocketLayer* main, bool sessionreuse,
   CFileZillaTools * tools,
@@ -683,6 +734,9 @@ int CAsyncSslSocketLayer::InitSSLConnection(bool clientMode,
       USES_CONVERSION;
       SSL_CTX_set_verify(m_ssl_ctx, SSL_VERIFY_PEER, verify_callback);
       SSL_CTX_set_client_cert_cb(m_ssl_ctx, ProvideClientCert);
+      // https://www.mail-archive.com/openssl-users@openssl.org/msg86186.html
+      SSL_CTX_set_session_cache_mode(m_ssl_ctx, SSL_SESS_CACHE_CLIENT | SSL_SESS_CACHE_NO_INTERNAL_STORE | SSL_SESS_CACHE_NO_AUTO_CLEAR);
+      SSL_CTX_sess_set_new_cb(m_ssl_ctx, NewSessionCallback);
       CFileStatus Dummy;
       if (CFile::GetStatus((LPCTSTR)m_CertStorage, Dummy))
       {
@@ -740,7 +794,12 @@ int CAsyncSslSocketLayer::InitSSLConnection(bool clientMode,
   m_sessionreuse = sessionreuse;
   if ((m_Main != NULL) && m_sessionreuse)
   {
-    if (m_Main->m_sessionid != NULL)
+    if (m_Main->m_sessionid == NULL)
+    {
+      DebugFail();
+      SSL_set_session(m_ssl, NULL);
+    }
+    else if (!m_Main->m_sessionreuse_failed)
     {
       if (!SSL_set_session(m_ssl, m_Main->m_sessionid))
       {
@@ -882,6 +941,7 @@ void CAsyncSslSocketLayer::ResetSslSession()
     m_sessionid = NULL;
   }
   m_sessionreuse = true;
+  m_sessionreuse_failed = false;
 
   m_sCriticalSection.Unlock();
 }
@@ -1119,36 +1179,12 @@ void CAsyncSslSocketLayer::apps_ssl_info_callback(const SSL *s, int where, int r
   }
   if (where & SSL_CB_HANDSHAKE_DONE)
   {
-    if (pLayer->m_sessionreuse)
+    // For 1.2 and older, session is always established at this point.
+    // For 1.3, session can be restarted later, so this is handled in NewSessionCallback.
+    if (SSL_version(pLayer->m_ssl) < TLS1_3_VERSION)
     {
       SSL_SESSION * sessionid = SSL_get1_session(pLayer->m_ssl);
-      if (pLayer->m_sessionid != sessionid)
-      {
-        if (pLayer->m_sessionid == NULL)
-        {
-          if (SSL_session_reused(pLayer->m_ssl))
-          {
-            pLayer->LogSocketMessageRaw(FZ_LOG_PROGRESS, L"Session ID reused");
-          }
-          else
-          {
-            if ((pLayer->m_Main != NULL) && (pLayer->m_Main->m_sessionid != NULL))
-            {
-              pLayer->LogSocketMessageRaw(FZ_LOG_INFO, L"Main TLS session ID not reused, will not try again");
-              SSL_SESSION_free(pLayer->m_Main->m_sessionid);
-              pLayer->m_Main->m_sessionid = NULL;
-            }
-          }
-          pLayer->LogSocketMessageRaw(FZ_LOG_DEBUG, L"Saving session ID");
-        }
-        else
-        {
-          SSL_SESSION_free(pLayer->m_sessionid);
-          pLayer->LogSocketMessageRaw(FZ_LOG_INFO, L"Session ID changed");
-        }
-        pLayer->m_sessionid = sessionid;
-      }
-      else
+      if (!pLayer->HandleSession(sessionid))
       {
         SSL_SESSION_free(sessionid);
       }
