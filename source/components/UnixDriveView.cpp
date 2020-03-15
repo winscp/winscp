@@ -487,7 +487,11 @@ void __fastcall TCustomUnixDriveView::Change(TTreeNode * Node)
         }
 
         FDirectoryLoaded = false;
-        StartBusy();
+        bool SetBusy = !ControlState.Contains(csRecreating);
+        if (SetBusy)
+        {
+          StartBusy();
+        }
         try
         {
           Terminal->ChangeDirectory(NodePathName(Node));
@@ -495,7 +499,10 @@ void __fastcall TCustomUnixDriveView::Change(TTreeNode * Node)
         }
         __finally
         {
-          EndBusy();
+          if (SetBusy)
+          {
+            EndBusy();
+          }
           if (!FDirectoryLoaded)
           {
             DebugAssert(!FIgnoreChange);
