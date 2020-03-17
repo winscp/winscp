@@ -31,6 +31,7 @@ protected:
   DYNAMIC void __fastcall Delete(TTreeNode * Node);
   DYNAMIC void __fastcall Change(TTreeNode * Node);
   virtual void __fastcall CreateWnd();
+  virtual void __fastcall DestroyWnd();
 
   void __fastcall LoadDirectory();
   TTreeNode * __fastcall LoadPath(UnicodeString Path);

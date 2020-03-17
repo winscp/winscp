@@ -74,6 +74,13 @@ void __fastcall TCustomUnixDriveView::CreateWnd()
   FPrevSelected = Selected;
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomUnixDriveView::DestroyWnd()
+{
+  // in case we are recreating (TCustomTreeView.DestroyWnd deletes items)
+  FPrevSelected = NULL;
+  TCustomDriveView::DestroyWnd();
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomUnixDriveView::SetTerminal(TTerminal * value)
 {
   #ifndef DESIGN_ONLY
