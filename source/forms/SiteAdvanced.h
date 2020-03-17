@@ -334,6 +334,7 @@ protected:
   bool __fastcall AllowAlgDrag(TListBox * AlgListBox, int X, int Y);
   void __fastcall AlgMove(TListBox * AlgListBox, int Source, int Dest);
   void __fastcall InitControls();
+  bool IsDefaultSftpServer();
 
 private:
   int NoUpdate;

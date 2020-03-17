@@ -428,6 +428,13 @@ TSshProt __fastcall TSiteAdvancedDialog::GetSshProt()
   return (SshProtCombo2->ItemIndex == 0) ? ssh1only : ssh2only;
 }
 //---------------------------------------------------------------------
+bool TSiteAdvancedDialog::IsDefaultSftpServer()
+{
+  return
+    SftpServerEdit->Text.IsEmpty() ||
+    (SftpServerEdit->Text == SftpServerEdit->Items->Strings[0]);
+}
+//---------------------------------------------------------------------
 void __fastcall TSiteAdvancedDialog::SaveSession(TSessionData * SessionData)
 {
   // Last resort validation,
@@ -580,9 +587,7 @@ void __fastcall TSiteAdvancedDialog::SaveSession(TSessionData * SessionData)
   SessionData->SCPLsFullTime = SCPLsFullTimeAutoCheck->Checked ? asAuto : asOff;
 
   // SFTP page
-  SessionData->SftpServer =
-    ((SftpServerEdit->Text == SftpServerEdit->Items->Strings[0]) ?
-      UnicodeString() : SftpServerEdit->Text);
+  SessionData->SftpServer = (IsDefaultSftpServer() ? UnicodeString() : SftpServerEdit->Text);
   SessionData->SFTPMaxVersion = SFTPMaxVersionCombo->ItemIndex;
   if (AllowScpFallbackCheck->Checked != (SessionData->FSProtocol == fsSFTP))
   {
@@ -1009,6 +1014,7 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
 
     // environment/sftp sheet
     SftpSheet->Enabled = SftpProtocol;
+    EnableControl(AllowScpFallbackCheck, IsDefaultSftpServer());
 
     // environment/scp/shell
     ScpSheet->Enabled = SshProtocol;
