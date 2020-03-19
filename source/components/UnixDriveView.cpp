@@ -470,7 +470,7 @@ void __fastcall TCustomUnixDriveView::Change(TTreeNode * Node)
   {
     // During D&D Selected is set to NULL and then back to previous selection,
     // prevent actually changing directory in such case
-    if (Reading || ControlState.Contains(csRecreating) ||
+    if (Reading || ControlState.Contains(csRecreating) || FRecreatingHandle ||
         (Node == NULL) || (Node == FPrevSelected))
     {
       TCustomDriveView::Change(Node);
