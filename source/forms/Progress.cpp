@@ -139,11 +139,13 @@ void __fastcall TProgressForm::UpdateControls()
   SkipItem->Visible = TransferOperation && FAllowSkip;
   SkipItem->Enabled = !FReadOnly && (FCancel < csCancelFile) && !FPendingSkip;
   MoveToQueueItem->Enabled = !FMoveToQueue && (FCancel == csContinue) && !FPendingSkip;
-  CycleOnceDoneItem->Visible =
-    !FReadOnly &&
-    (FData.Operation != foCalculateSize) &&
-    (FData.Operation != foGetProperties) &&
-    (FData.Operation != foCalculateChecksum);
+  bool HideOnceDone =
+    FReadOnly ||
+    (FData.Operation == foCalculateSize) ||
+    (FData.Operation == foGetProperties) ||
+    (FData.Operation == foCalculateChecksum) ||
+    ((FData.Operation == foDelete) && (FData.Side == osLocal));
+  CycleOnceDoneItem->Visible = !HideOnceDone;
   CycleOnceDoneItem->ImageIndex = CurrentOnceDoneItem()->ImageIndex;
   SpeedComboBoxItem->Visible = TransferOperation;
 
