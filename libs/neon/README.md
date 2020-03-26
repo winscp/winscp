@@ -1,5 +1,9 @@
 
-neon is an HTTP and WebDAV client library, with a C language API.
+[![Travis CI Build Status](https://travis-ci.org/notroj/neon.svg?branch=master)](https://travis-ci.org/notroj/neon)
+
+# neon
+
+_neon_ is an HTTP and WebDAV client library, with a C language API.
 
 Mailing list: neon@lists.manyfish.co.uk || Web site: http://www.webdav.org/neon/
 
@@ -38,20 +42,22 @@ licensed under the terms of the GNU GPL; see test/COPYING for terms.
 The autoconf macros in the "macros" directory are under a less
 restrictive license, see each file for details.
 
-neon is Copyright (C) 1999-2008 Joe Orton <joe@manyfish.co.uk>
+~~~
+neon is Copyright (C) 1999-2008 Joe Orton
 Portions are:
-Copyright (C) Aleix Conchillo Flaque <aleix@member.fsf.org>
+Copyright (C) Aleix Conchillo Flaque
 Copyright (C) Arfrever Frehtes Taifersar Arahesis
-Copyright (C) Arun Garg <arung@pspl.co.in>
-Copyright (C) Daniel Stenberg <daniel@haxx.se>
+Copyright (C) Arun Garg
+Copyright (C) Daniel Stenberg
 Copyright (C) Free Software Foundation, Inc.
-Copyright (C) Henrik Holst <henrik.holst2@gmail.com>
-Copyright (C) Jiang Lei <tristone@deluxe.ocn.ne.jp>
-Copyright (C) Kai Sommerfeld <kso@openoffice.org>
+Copyright (C) Henrik Holst
+Copyright (C) Jiang Lei
+Copyright (C) Kai Sommerfeld
 Copyright (C) Karl Ove Hufthammer.
 Copyright (C) Michael Sobolev
-Copyright (C) Nobuyuki Tsuchimura <tutimura@nn.iij4u.or.jp>
-Copyright (C) Sylvain Glaize <mokona@puupuu.org>
-Copyright (C) Thomas Schultz <tststs@gmx.de>
-Copyright (C) Vladimir Berezniker @ http://public.xdi.org/=vmpn
-Copyright (C) Yves Martin  <ymartin59@free.fr>
+Copyright (C) Nobuyuki Tsuchimura
+Copyright (C) Sylvain Glaize
+Copyright (C) Thomas Schultz
+Copyright (C) Vladimir Berezniker
+Copyright (C) Yves Martin
+~~~

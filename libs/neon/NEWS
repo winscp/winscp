@@ -1,3 +1,23 @@
+Changes in release 0.31.0:
+* Interface changes:
+ - none, API and ABI backwards-compatible with 0.27.x and later
+* New interfaces and features:
+ - add more gcc "nonnull" attributes to ne_request_* functions.
+ - for OpenSSL builds, ne_md5 code uses the OpenSSL implementation
+ - add NE_SESSFLAG_SHAREPOINT session flag which enables workarounds
+   for RFC non-compliance issues in Sharepoint (thanks to
+   Jan-Marek Glogowski and Giuseppe Castagno)
+ - ne_uri.h: add ne_path_escapef() in support of above
+ - ne_207.h: add ne_207_set_flags() likewise in support of above
+* API clarification:
+ - ne_version_match() behaviour now matches actual 0.27+ ABI history
+* Bug fixes:
+ - fixes for OpenSSL 1.1.1 and TLSv1.3 support
+ - fix crash with GnuTLS in client cert support (Henrik Holst)
+ - fix possible crash in ne_set_request_flag()
+ - fix build with libxml2 2.9.10 and later
+ - fix handling lock timeouts >LONG_MAX (Giuseppe Castagno)
+
 Changes in release 0.30.2:
 * Add support for OpenSSL 1.1.x (Kurt Roeckx).
 * Fix PKCS#11 support under GnuTLS 3.x.

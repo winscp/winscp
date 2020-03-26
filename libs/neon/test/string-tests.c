@@ -320,7 +320,7 @@ static int str_errors(void)
 {
     char expect[200], actual[200];
     
-    strncpy(expect, strerror(ENOENT), sizeof(expect));
+    strncpy(expect, strerror(ENOENT), sizeof(expect)-1);
     ONN("ne_strerror did not return passed-in buffer",
 	ne_strerror(ENOENT, actual, sizeof(actual)) != actual);
     
@@ -341,12 +341,12 @@ static int str_errors(void)
 
 static int strnzcpy(void)
 {
-    char buf[5];
+    char buf[16];
 
-    ne_strnzcpy(buf, "abcdefghi", sizeof buf);
+    ne_strnzcpy(buf, "abcdefghi", 5);
     ONV(strcmp(buf, "abcd"), ("result was `%s' not `abcd'", buf));
     
-    ne_strnzcpy(buf, "ab", sizeof buf);
+    ne_strnzcpy(buf, "ab", 5);
     ONV(strcmp(buf, "ab"), ("result was `%s' not `ab'", buf));    
 
     return OK;    

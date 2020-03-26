@@ -14,8 +14,10 @@ cd data
 if test -x ../bin/ssl; then
     rm -rf ca
 
+    touch ../configure
+
     echo "INIT: generating SSL ceritifcates..."
-    if sh ./makekeys.sh 2> makekeys.out; then :; else
+    if sh ./makekeys 2> makekeys.out; then :; else
         echo FAIL: could not generate SSL certificates
         exit 2
     fi

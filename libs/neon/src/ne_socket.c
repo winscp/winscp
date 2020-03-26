@@ -27,7 +27,7 @@
 #include "config.h"
 
 #include <sys/types.h>
-#ifdef HAVE_SYS_UIO_h
+#ifdef HAVE_SYS_UIO_H
 #include <sys/uio.h> /* writev(2) */
 #endif
 #ifdef HAVE_SYS_TIME_H
@@ -179,6 +179,9 @@ typedef struct in_addr ne_inet_addr;
 /* Socket read timeout */
 #define SOCKET_READ_TIMEOUT 120
 
+/* Internal read retry value */
+#define NE_SOCK_RETRY (-6)
+    
 /* Critical I/O functions on a socket: useful abstraction for easily
  * handling SSL I/O alongside raw socket I/O. */
 struct iofns {
@@ -600,12 +603,51 @@ static ssize_t writev_dummy(ne_socket *sock, const struct ne_iovec *vector, int 
 static const struct iofns iofns_raw = { read_raw, write_raw, readable_raw, writev_raw };
 
 #ifdef HAVE_OPENSSL
+static int error_ossl(ne_socket *sock, int sret);
+#endif
+
+#ifdef HAVE_OPENSSL
 /* OpenSSL I/O function implementations. */
 static int readable_ossl(ne_socket *sock, int secs)
 {
+#if OPENSSL_VERSION_NUMBER < 0x10101000L
+    /* Sufficient for TLSv1.2 and earlier. */
     if (SSL_pending(sock->ssl))
 	return 0;
     return readable_raw(sock, secs);
+#else
+    /* TLSv1.3 sends a lot more handshake data so the presence of data
+     * on the socket - i.e. poll() returning 1, is an insufficient
+     * test for app-data readability. */
+    char pending;
+    int ret;
+    size_t bytes;
+
+    /* Loop while no app data is pending, each time attempting a one
+     * byte peek, and retrying the poll if that fails due to absence
+     * of app data. */
+    while (!SSL_pending(sock->ssl)) {
+	ret = readable_raw(sock, secs);
+	if (ret == NE_SOCK_TIMEOUT) {
+	    return ret;
+	}
+        
+	ret = SSL_peek_ex(sock->ssl, &pending, 1, &bytes);
+	if (ret) {
+            /* App data definitely available. */
+	    break;
+	}
+	else {
+            /* If this gave SSL_ERROR_WANT_READ, loop and probably
+             * block again, else some other error happened. */
+            ret = error_ossl(sock, ret);
+            if (ret != NE_SOCK_RETRY)
+                return ret;
+	}
+    }
+
+    return 0;
+#endif /* OPENSSL_VERSION_NUMBER < 1.1.1 */
 }
 
 /* SSL error handling, according to SSL_get_error(3). */
@@ -617,6 +659,10 @@ static int error_ossl(ne_socket *sock, int sret)
     if (errnum == SSL_ERROR_ZERO_RETURN) {
 	set_error(sock, _("Connection closed"));
         return NE_SOCK_CLOSED;
+    }
+    else if (errnum == SSL_ERROR_WANT_READ) {
+        set_error(sock, _("Retry operation"));
+        return NE_SOCK_RETRY;
     }
     
     /* for all other errors, look at the OpenSSL error stack */
@@ -656,13 +702,15 @@ static ssize_t read_ossl(ne_socket *sock, char *buffer, size_t len)
 {
     int ret;
 
-    ret = readable_ossl(sock, sock->rdtimeout);
-    if (ret) return ret;
-    
-    ret = SSL_read(sock->ssl, buffer, CAST2INT(len));
-    if (ret <= 0)
-	ret = error_ossl(sock, ret);
-
+    do {
+        ret = readable_ossl(sock, sock->rdtimeout);
+        if (ret) return ret;
+        
+        ret = SSL_read(sock->ssl, buffer, CAST2INT(len));
+        if (ret <= 0)
+            ret = error_ossl(sock, ret);
+    } while (ret == NE_SOCK_RETRY);
+        
     return ret;
 }
 
@@ -1761,7 +1809,11 @@ int ne_sock_connect_ssl(ne_socket *sock, ne_ssl_context *ctx, void *userdata)
     }
     
     SSL_set_app_data(ssl, userdata);
+#if OPENSSL_VERSION_NUMBER < 0x10101000L
     SSL_set_mode(ssl, SSL_MODE_AUTO_RETRY);
+#else
+    SSL_clear_mode(ssl, SSL_MODE_AUTO_RETRY);
+#endif    
     SSL_set_fd(ssl, sock->fd);
     sock->ops = &iofns_ssl;
 
@@ -1923,12 +1975,13 @@ int ne_sock_close(ne_socket *sock)
 {
     int ret;
 
-    /* Per API description - for an SSL connection, simply send the
-     * close_notify but do not wait for the peer's response. */
+    /* Complete a bidirectional shutdown for SSL/TLS. */
 #if defined(HAVE_OPENSSL)
     if (sock->ssl) {
-        SSL_shutdown(sock->ssl);
-	SSL_free(sock->ssl);
+        if (SSL_shutdown(sock->ssl) == 0) {
+            SSL_shutdown(sock->ssl);
+        }
+        SSL_free(sock->ssl);
     }
 #elif defined(HAVE_GNUTLS)
     if (sock->ssl) {

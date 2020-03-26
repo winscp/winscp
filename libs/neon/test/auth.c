@@ -376,7 +376,7 @@ struct digest_parms {
     const char *realm, *nonce, *opaque, *domain;
     int rfc2617;
     int send_ainfo;
-    int md5_sess;
+    enum { ALG_MD5 = 0, ALG_MD5_SESS = 1, ALG_SHA256 = 2 } alg;
     int proxy;
     int send_nextnonce;
     int num_requests;
@@ -418,6 +418,7 @@ static void make_digest(struct digest_state *state, struct digest_parms *parms,
 
     /* H(A1) */
     ctx = ne_md5_create_ctx();
+    if (!ctx) return;
     ne_md5_process_bytes(state->username, strlen(state->username), ctx);
     ne_md5_process_bytes(":", 1, ctx);
     ne_md5_process_bytes(state->realm, strlen(state->realm), ctx);
@@ -425,7 +426,7 @@ static void make_digest(struct digest_state *state, struct digest_parms *parms,
     ne_md5_process_bytes(state->password, strlen(state->password), ctx);
     ne_md5_finish_ascii(ctx, h_a1);
 
-    if (parms->md5_sess) {
+    if (parms->alg == ALG_MD5_SESS) {
         ne_md5_reset_ctx(ctx);
         ne_md5_process_bytes(h_a1, 32, ctx);
         ne_md5_process_bytes(":", 1, ctx);
@@ -515,7 +516,7 @@ static int verify_digest_header(struct digest_state *state,
         name = ne_shave(ptr, " ");
 
         val = strchr(name, '=');
-        ONV(val == NULL, ("bad name/value pair: %s", val));
+        ONV(val == NULL, ("bad name/value pair: %s", name));
         
         *val++ = '\0';
 
@@ -691,7 +692,12 @@ static int serve_digest(ne_socket *sock, void *userdata)
     state.username = username;
     state.password = password;
     state.nc = 1;
-    state.algorithm = parms->md5_sess ? "MD5-sess" : "MD5";
+    switch (parms->alg) {
+    case ALG_SHA256: state.algorithm = "SHA-256"; break;
+    case ALG_MD5_SESS: state.algorithm = "MD5-sess"; break;
+    default:
+    case ALG_MD5: state.algorithm = "MD5"; break;
+    }
     state.qop = "auth";
 
     state.cnonce = state.digest = state.ncval = NULL;
@@ -837,6 +843,11 @@ static int digest(void)
         /* Proxy + A-I */
         { "WallyWorld", "this-is-also-a-nonce", "opaque-string", NULL, 1, 1, 0, 1, 0, 1, 0, fail_not },
 
+#if 0
+        /* RFC 6717. */
+        { "WallyWorld", "nonce-sha-nonce", "opaque-string", NULL, 1, 1, ALG_SHA256, 0, 0, 1, 0, fail_not },
+#endif
+        
         { NULL }
     };
     size_t n;

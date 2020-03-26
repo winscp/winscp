@@ -1,12 +1,12 @@
 <?xml version='1.0'?> <!-- -*- nxml -*- -->
 
-<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
-  "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+  "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd" [
 
 <!ENTITY % isoent SYSTEM
-    "http://www.oasis-open.org/docbook/xml/4.2/ent/iso-num.ent">
+    "http://www.oasis-open.org/docbook/xml/4.5/ent/isonum.ent">
 <!ENTITY % isopub SYSTEM
-    "http://www.oasis-open.org/docbook/xml/4.2/ent/iso-pub.ent">
+    "http://www.oasis-open.org/docbook/xml/4.5/ent/isopub.ent">
 
 %isoent;
 %isopub;

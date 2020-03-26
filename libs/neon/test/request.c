@@ -902,8 +902,6 @@ static int iterate_many(void)
     ONREQ(ne_request_dispatch(req));
 
     while ((cursor = ne_response_header_iterate(req, cursor, &name, &value))) {
-        n = -1;
-
         ONV(strncmp(name, "x-", 2) || strncmp(value, "Y-", 2)
             || strcmp(name + 2, value + 2)
             || (n = atoi(name + 2)) >= MANY_HEADERS
@@ -2358,6 +2356,21 @@ static int socks_fail(void)
     return await_server();
 }
 
+static int safe_flags(void)
+{
+    ne_session *sess = ne_session_create("http", "localhost", 80);
+    ne_request *req = ne_request_create(sess, "GET", "/");
+
+    ne_set_request_flag(req, NE_REQFLAG_LAST, 0xAAAAAAAA);
+
+    ONN("flags array bound check failed", ne_get_session(req) != sess);
+
+    ne_request_destroy(req);
+    ne_session_destroy(sess);
+
+    return OK;
+}
+
 /* TODO: test that ne_set_notifier(, NULL, NULL) DTRT too. */
 
 ne_test tests[] = {
@@ -2451,5 +2464,6 @@ ne_test tests[] = {
     T(socks_fail),
     T(fail_lookup),
     T(fail_double_lookup),
+    T(safe_flags),
     T(NULL)
 };

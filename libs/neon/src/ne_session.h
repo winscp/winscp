@@ -100,6 +100,10 @@ typedef enum ne_session_flag_e {
     NE_SESSFLAG_EXPECT100, /* enable this flag to enable the flag
                             * NE_REQFLAG_EXPECT100 for new requests. */
 
+    NE_SESSFLAG_SHAREPOINT, /* this flag enables various workarounds
+                             * to improve interoperability with
+                             * SharePoint */
+
     NE_SESSFLAG_LAST /* enum sentinel value */
 } ne_session_flag;
 

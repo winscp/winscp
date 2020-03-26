@@ -569,7 +569,8 @@ void ne__ssl_set_verify_err(ne_session *sess, int failures)
     };
     int n, flag = 0;
 
-    strcpy(sess->error, _("Server certificate verification failed: "));
+    ne_strnzcpy(sess->error, _("Server certificate verification failed: "),
+                sizeof sess->error);
 
     for (n = 0; reasons[n].bit; n++) {
 	if (failures & reasons[n].bit) {

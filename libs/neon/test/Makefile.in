@@ -14,7 +14,8 @@ VPATH = @srcdir@
 AR = ar
 
 RANLIB = @RANLIB@
-LIBS = $(LIBTEST)
+LIBS = @LIBS@
+TEST_LIBS = $(LIBTEST) $(LIBS)
 CC = @CC@
 OPENSSL = @OPENSSL@
 
@@ -23,7 +24,7 @@ BASIC_TESTS = uri-tests util-tests string-tests socket \
 	session request auth basic stubs redirect
 ZLIB_TESTS = compress
 ZLIB_HELPERS = file1.gz file2.gz trailing.gz badcsum.gz truncated.gz \
-	corrupt1.gz corrupt2.gz empty.gz random.txt
+	corrupt1.gz corrupt2.gz empty.gz random.txt hello.txt hello.gz
 DAV_TESTS = xml xmlreq oldacl acl3744 props lock
 SSL_TESTS = socket-ssl ssl
 SSL_HELPERS = ca-stamp
@@ -35,6 +36,7 @@ OBJDEPS = $(srcdir)/common/tests.h $(srcdir)/common/child.h $(srcdir)/utils.h \
 	$(top_builddir)/config.h $(top_builddir)/src/libneon.la
 # Test program just depends on libtest
 DEPS = $(LIBTEST)
+LDADD = $(DEPS) $(LIBS)
 
 LIBTEST = libtest.la
 LIBNEON = $(top_builddir)/src/libneon.la
@@ -52,6 +54,7 @@ INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL = @INSTALL@
+TEST_INSTALL_DIR = $(libdir)/neon-tests
 
 INSTALL_HELPERS = $(HELPERS) server.key makekeys \
 	$(srcdir)/openssl.conf $(srcdir)/notvalid.pem \
@@ -64,7 +67,7 @@ INSTALL_HELPERS = $(HELPERS) server.key makekeys \
 all: $(TESTS)
 
 clean:
-	rm -f $(TESTS) $(HELPERS) *.*o common/*.*o libtest.*a *.log
+	rm -f $(TESTS) $(HELPERS) *.o *.lo common/*.o common/*.lo libtest.*a *.log
 	rm -f *.gc* *.da *.bb* common/*.bb* common/*.gc* common/*.da
 	rm -rf ca ca2 .libs nssdb*
 	rm -f ca-stamp client.key *.csr ssigned.pem wrongcn.pem \
@@ -80,17 +83,17 @@ lfs-check: largefile $(LFS_HELPERS)
 	@SRCDIR=$(srcdir) $(SHELL) $(srcdir)/run.sh largefile
 
 install: $(TESTS) $(HELPERS)
-	@$(INSTALL) -d $(DESTDIR)$(libdir)/neon-tests
-	@$(INSTALL) -d $(DESTDIR)$(libdir)/neon-tests/bin
-	@$(INSTALL) -d $(DESTDIR)$(libdir)/neon-tests/data
+	@$(INSTALL) -d $(DESTDIR)$(TEST_INSTALL_DIR)
+	@$(INSTALL) -d $(DESTDIR)$(TEST_INSTALL_DIR)/bin
+	@$(INSTALL) -d $(DESTDIR)$(TEST_INSTALL_DIR)/data
 	@for t in $(TESTS); do \
 	 $(LIBTOOL) --mode=install \
-	      $(INSTALL_PROGRAM) $$t $(DESTDIR)$(libdir)/neon-tests/bin; \
+	      $(INSTALL_PROGRAM) $$t $(DESTDIR)$(TEST_INSTALL_DIR)/bin; \
 	done
 	@for h in $(INSTALL_HELPERS); do \
-	 $(INSTALL_DATA) $$h $(DESTDIR)$(libdir)/neon-tests/data; \
+	 $(INSTALL_DATA) $$h $(DESTDIR)$(TEST_INSTALL_DIR)/data; \
 	done
-	@$(INSTALL_PROGRAM) $(srcdir)/run-tests.sh $(DESTDIR)$(libdir)/neon-tests
+	@$(INSTALL_PROGRAM) -p $(srcdir)/run-tests.sh $(DESTDIR)$(TEST_INSTALL_DIR)
 
 NEWS = $(top_srcdir)/NEWS
 
@@ -99,6 +102,12 @@ file1.gz: $(NEWS)
 
 file2.gz: $(NEWS)
 	gzip -c --name $(NEWS) > $@
+
+hello.txt:
+	echo hello world > $@
+
+hello.gz: hello.txt
+	gzip -c hello.txt > $@
 
 # gzip file with trailing bytes.
 trailing.gz: $(NEWS)
@@ -146,7 +155,7 @@ makekeys: $(srcdir)/makekeys.sh
 LIBOBJS = common/tests.lo common/child.lo utils.lo util-socks.lo
 
 $(LIBTEST): $(LIBOBJS)
-	$(LINK) -o $(LIBTEST) $(LIBOBJS) $(LIBNEON)
+	$(LINK) -o $(LIBTEST) $(LIBOBJS) $(LIBNEON) $(LIBS)
 
 .c.lo:
 	$(COMPILE) -c $< -o $@
@@ -156,7 +165,7 @@ socket-ssl.lo: $(srcdir)/socket.c $(HDRS)
 	$(COMPILE) -DSOCKET_SSL -c $(srcdir)/socket.c -o $@
 
 socket-ssl: socket-ssl.lo $(LIBTEST)
-	$(LINK) -o $@ socket-ssl.lo $(LIBS)
+	$(LINK) -o $@ socket-ssl.lo $(TEST_LIBS)
 
 resolve: resolve.lo $(LIBNEON)
 	$(LINK) -o $@ resolve.lo $(LIBNEON)
@@ -187,46 +196,46 @@ lock.lo: $(srcdir)/lock.c $(OBJDEPS)
 largefile.lo: $(srcdir)/largefile.c $(OBJDEPS)
 
 auth: auth.lo $(DEPS)
-	$(LINK) -o $@ auth.lo $(DEPS)
+	$(LINK) -o $@ auth.lo $(LDADD)
 basic: basic.lo $(DEPS)
-	$(LINK) -o $@ basic.lo $(DEPS)
+	$(LINK) -o $@ basic.lo $(LDADD)
 uri-tests: uri-tests.lo $(DEPS)
-	$(LINK) -o $@ uri-tests.lo $(DEPS)
+	$(LINK) -o $@ uri-tests.lo $(LDADD)
 util-tests: util-tests.lo $(DEPS)
-	$(LINK) -o $@ util-tests.lo $(DEPS)
+	$(LINK) -o $@ util-tests.lo $(LDADD)
 string-tests: string-tests.lo $(DEPS)
-	$(LINK) -o $@ string-tests.lo $(DEPS)
+	$(LINK) -o $@ string-tests.lo $(LDADD)
 socket: socket.lo $(DEPS)
-	$(LINK) -o $@ socket.lo $(DEPS)
+	$(LINK) -o $@ socket.lo $(LDADD)
 server: server.lo $(DEPS)
-	$(LINK) -o $@ server.lo $(DEPS)
+	$(LINK) -o $@ server.lo $(LDADD)
 request: request.lo $(DEPS)
-	$(LINK) -o $@ request.lo $(DEPS)
+	$(LINK) -o $@ request.lo $(LDADD)
 regress: regress.lo $(DEPS)
-	$(LINK) -o $@ regress.lo $(DEPS)
+	$(LINK) -o $@ regress.lo $(LDADD)
 compress: compress.lo $(DEPS)
-	$(LINK) -o $@ compress.lo $(DEPS)
+	$(LINK) -o $@ compress.lo $(LDADD)
 oldacl: oldacl.lo $(DEPS)
-	$(LINK) -o $@ oldacl.lo $(DEPS)
+	$(LINK) -o $@ oldacl.lo $(LDADD)
 acl3744: acl3744.lo $(DEPS)
-	$(LINK) -o $@ acl3744.lo $(DEPS)
+	$(LINK) -o $@ acl3744.lo $(LDADD)
 utils: utils.lo $(DEPS)
-	$(LINK) -o $@ utils.lo $(DEPS)
+	$(LINK) -o $@ utils.lo $(LDADD)
 stubs: stubs.lo $(DEPS)
-	$(LINK) -o $@ stubs.lo $(DEPS)
+	$(LINK) -o $@ stubs.lo $(LDADD)
 props: props.lo $(DEPS)
-	$(LINK) -o $@ props.lo $(DEPS)
+	$(LINK) -o $@ props.lo $(LDADD)
 session: session.lo $(DEPS)
-	$(LINK) -o $@ session.lo $(DEPS)
+	$(LINK) -o $@ session.lo $(LDADD)
 redirect: redirect.lo $(DEPS)
-	$(LINK) -o $@ redirect.lo $(DEPS)
+	$(LINK) -o $@ redirect.lo $(LDADD)
 ssl: ssl.lo $(DEPS)
-	$(LINK) -o $@ ssl.lo $(DEPS)
+	$(LINK) -o $@ ssl.lo $(LDADD)
 xml: xml.lo $(DEPS)
-	$(LINK) -o $@ xml.lo $(DEPS)
+	$(LINK) -o $@ xml.lo $(LDADD)
 xmlreq: xmlreq.lo $(DEPS)
-	$(LINK) -o $@ xmlreq.lo $(DEPS)
+	$(LINK) -o $@ xmlreq.lo $(LDADD)
 lock: lock.lo $(DEPS)
-	$(LINK) -o $@ lock.lo $(DEPS)
+	$(LINK) -o $@ lock.lo $(LDADD)
 largefile: largefile.lo $(DEPS)
-	$(LINK) -o $@ largefile.lo $(DEPS)
+	$(LINK) -o $@ largefile.lo $(LDADD)

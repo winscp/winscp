@@ -494,6 +494,7 @@ static void pf_destructor(void *userdata, void *private)
 enum pftype { 
     PF_SIMPLE, /* using ne_simple_propfind */
     PF_NAMED,  /* using ne_propfind_named */
+    PF_SP_NAMED, /* using ne_propfind_named w/SHAREPOINT hacks */
     PF_ALLPROP /* using ne_propfind_allprop */
 };
 
@@ -511,7 +512,12 @@ static int run_propfind(const ne_propname *props, char *resp,
     }
     else {
         ne_propfind_handler *hdl;
-        
+
+        if (type == PF_SP_NAMED) {
+            ne_set_session_flag(sess, NE_SESSFLAG_SHAREPOINT, 1);
+            type = PF_NAMED;
+        }
+
         hdl = ne_propfind_create(sess, "/propfind", depth);
 
         ne_propfind_set_private(hdl, pf_creator, pf_destructor,
@@ -613,7 +619,24 @@ static int propfind(void)
           "creator[/foop]//"
           "results(/foop,prop:[{DAV:,fishbone}='hello, world':{212 Well OK}];)//"
           "destructor[/foop]//",
-          0, PF_NAMED }
+          0, PF_NAMED },
+
+        /* 207 with badly encoded URI in href */
+        { MULTI_207(RESP_207("http://example.com/foo€bar", \
+                             PSTAT_207(PROPS_207(APROP_207("fishbone", "hello, world")) \
+                                       STAT_207("209 Good News")))),
+          "creator[/foo%e2%82%acbar]//"
+          "results(/foo%e2%82%acbar,prop:[{DAV:,fishbone}='hello, world':{209 Good News}];)//"
+          "destructor[/foo%e2%82%acbar]//",
+          0, PF_SP_NAMED },
+
+        { MULTI_207(RESP_207("/foo%20bar/€bar", \
+                             PSTAT_207(PROPS_207(APROP_207("fishbone", "hello, world")) \
+                                       STAT_207("209 Good News")))),
+          "creator[/foo%20bar/%e2%82%acbar]//"
+          "results(/foo%20bar/%e2%82%acbar,prop:[{DAV:,fishbone}='hello, world':{209 Good News}];)//"
+          "destructor[/foo%20bar/%e2%82%acbar]//",
+          0, PF_SP_NAMED }
 
     };
     const ne_propname pset1[] = {

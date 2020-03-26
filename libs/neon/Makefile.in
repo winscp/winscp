@@ -205,9 +205,13 @@ compile-gmo:
 	done
 
 update-copyright: Makefile
-	sed -n '/^Copyright/q;p' < README > README.orig
-	(cat README.orig; grep -h Copyright src/*.[ch] po/*.po macros/*.m4 \
-		| sed -r 's/\(C\) [12].+[0-9],? /(C) /;s/^\#//;s/^dnl//;s/[ ]*//;s/ *$$//;/Orton/d' | sort -u) > README
+	@mv README.md README.orig
+	@(sed -n '/^Copyright/q;p' < README.orig; \
+	 grep -h Copyright src/*.[ch] po/*.po macros/*.m4 | \
+	 sed -r 's/\(C\) [12].+[0-9],? /(C) /;s/^\#*//;s/^dnl//;s/<.*>//g;s/ @ .*//;s/[ ]*//;s/ *$$//;/Orton/d' | \
+	 sort -u; echo '~~~') > README.md
+	@diff -u README.orig README.md
+	@rm -f README.orig
 
 doc-status:
 	@echo -n "Missing docs for:"

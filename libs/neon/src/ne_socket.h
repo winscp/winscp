@@ -42,6 +42,7 @@ NE_BEGIN_DECLS
 #define NE_SOCK_RESET (-4)
 /* Secure connection was closed without proper SSL shutdown. */
 #define NE_SOCK_TRUNC (-5)
+/* Reserved value -   (-6) */
 
 /* ne_socket represents a TCP socket. */
 typedef struct ne_socket_s ne_socket;
