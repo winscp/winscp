@@ -1374,6 +1374,8 @@ void __fastcall TSessionData::ImportFromFilezilla(
     }
   }
 
+  PublicKeyFile = ReadXmlNode(Node, L"Keyfile", PublicKeyFile);
+
   int DefaultTimeDifference = TimeToSeconds(TimeDifference);
   TimeDifference =
     (double(ReadXmlNode(Node, L"TimezoneOffset", DefaultTimeDifference) / SecsPerDay));
@@ -1428,7 +1430,7 @@ void __fastcall TSessionData::ImportFromFilezilla(
 
   if (SettingsNode != NULL)
   {
-    if (UsesSsh)
+    if (UsesSsh && PublicKeyFile.IsEmpty())
     {
       UnicodeString KeyFiles = ReadSettingsNode(SettingsNode, L"SFTP keyfiles", UnicodeString());
       UnicodeString KeyFile = CutToChar(KeyFiles, L'\n', true).Trim();
