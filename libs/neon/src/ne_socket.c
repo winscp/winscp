@@ -1988,7 +1988,10 @@ int ne_sock_close(ne_socket *sock)
 #if defined(HAVE_OPENSSL)
     if (sock->ssl) {
         if (SSL_shutdown(sock->ssl) == 0) {
+            #ifndef WINSCP
+            // Hangs with OneDrive
             SSL_shutdown(sock->ssl);
+            #endif
         }
         SSL_free(sock->ssl);
     }
