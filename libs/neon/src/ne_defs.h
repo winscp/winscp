@@ -61,8 +61,10 @@ typedef off_t ne_off_t;
 #define NE_PRIVATE __attribute__((visibility ("hidden")))
 #endif
 #define ne_attribute_malloc __attribute__((malloc))
+#define ne_attribute_alloc_size(x) __attribute__((alloc_size(x)))
 #else
 #define ne_attribute_malloc
+#define ne_attribute_alloc_size(x)
 #endif
 #if __GNUC__ > 3
 #define ne_attribute_sentinel __attribute__((sentinel))
@@ -73,6 +75,7 @@ typedef off_t ne_off_t;
 #else
 #define ne_attribute(x)
 #define ne_attribute_malloc
+#define ne_attribute_alloc_size(x)
 #define ne_attribute_sentinel
 #endif
 

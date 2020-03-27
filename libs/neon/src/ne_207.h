@@ -71,6 +71,12 @@ typedef struct ne_207_parser_s ne_207_parser;
 ne_207_parser *ne_207_create(ne_xml_parser *parser, const ne_uri *base, 
                              void *userdata);
 
+/* Enable special href escaping hacks for Microsoft SharePoint. */
+#define NE_207_MSSP_ESCAPING (0x0001)
+
+/* Set given flags for the parser. */
+void ne_207_set_flags(ne_207_parser *p, unsigned int flags);
+
 /* Register response handling callbacks. */
 void ne_207_set_response_handlers(ne_207_parser *p,
                                   ne_207_start_response *start,

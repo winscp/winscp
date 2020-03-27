@@ -576,7 +576,7 @@ int ne_xml_parse(ne_xml_parser *p, const char *block, size_t len)
         if (p->bom_pos == 0) {
             p->bom_pos = 3; /* no BOM */
         } else if (p->bom_pos > 0 && p->bom_pos < 3) {
-            strcpy(p->error, _("Invalid Byte Order Mark"));
+            ne_strnzcpy(p->error, _("Invalid Byte Order Mark"), sizeof p->error);
             return p->failure = 1;
         }
     }

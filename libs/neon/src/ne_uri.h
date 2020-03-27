@@ -32,6 +32,18 @@ NE_BEGIN_DECLS
  * string and never NULL. */
 char *ne_path_escape(const char *path);
 
+ /* NE_PATH_NONRES - anything other than "unreserved" and the
+  * forward-slash character percent-encoded according to the URI
+  * encoding rules; same rules as ne_path_escape(). */
+#define NE_PATH_NONRES (0x0001)
+/* Escape any characters outside of those allowed in URIs. */
+#define NE_PATH_NONURI (0x0002)
+
+/* Return a copy of a path string with escaping applied per rules
+ * determined by any combination of NE_PATH_* flags given.  Returns a
+ * malloc-allocated string and never NULL. */
+char *ne_path_escapef(const char *path, unsigned int flags);
+
 /* Return a decoded copy of a percent-encoded path string. Returns
  * malloc-allocated path on success, or NULL if the string contained
  * any syntactically invalid percent-encoding sequences. */

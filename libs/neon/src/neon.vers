@@ -20,3 +20,8 @@ NEON_0_30 {
     ne_ssl_context_get_flag;
     ne_set_addrlist2;
 };
+
+NEON_0_31 {
+    ne_path_escapef;
+    ne_207_set_flags;
+};

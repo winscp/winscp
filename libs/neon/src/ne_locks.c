@@ -32,6 +32,11 @@
 #ifdef HAVE_LIMITS_H
 #include <limits.h>
 #endif
+#ifdef HAVE_ERRNO_H
+#include <errno.h>
+#endif
+
+#include <assert.h>
 
 #include <ctype.h> /* for isdigit() */
 
@@ -132,16 +137,32 @@ static void lk_pre_send(ne_request *r, void *userdata, ne_buffer *req)
 
     if (lrc->submit != NULL) {
 	struct lock_list *item;
+        int ntl = ne_get_session_flag(ne_get_session(r), NE_SESSFLAG_SHAREPOINT);
+
+        /* Sharepoint doesn't like the more-accurate tagged-list
+         * format for If: headers, so use the no-tag-list format iff
+         * the Sharepoint hacks flag is enabled.  See
+         * <https://tools.ietf.org/html/rfc4918#section-10.4.2> */
+        if (ntl)
+            NE_DEBUG(NE_DBG_LOCKS, "lock: Using no-tag-list If: header construction\n");
 
 	/* Add in the If header */
-	ne_buffer_czappend(req, "If:");
+        ne_buffer_zappend(req, ntl ? "If: (" : "If:");
+
 	for (item = lrc->submit; item != NULL; item = item->next) {
-	    char *uri = ne_uri_unparse(&item->lock->uri);
-	    ne_buffer_concat(req, " <", uri, "> (<",
-			     item->lock->token, ">)", NULL);
-	    ne_free(uri);
+            if (ntl) {
+                ne_buffer_concat(req, "<", item->lock->token, ">",
+                                 item->next ? " " : "", NULL);
+            }
+            else {
+                char *uri = ne_uri_unparse(&item->lock->uri);
+                ne_buffer_concat(req, " <", uri, "> (<",
+                                 item->lock->token, ">)", NULL);
+                ne_free(uri);
+            }
 	}
-	ne_buffer_czappend(req, "\r\n");
+
+	ne_buffer_zappend(req, ntl ? ")\r\n" : "\r\n");
     }
 }
 
@@ -334,6 +355,9 @@ void ne_lockstore_remove(ne_lock_store *store, struct ne_lock *lock)
     for (item = store->locks; item != NULL; item = item->next)
 	if (item->lock == lock)
 	    break;
+
+    /* API condition that lock is present in the store. */
+    assert(item);
     
     if (item->prev != NULL) {
 	item->prev->next = item->next;
@@ -430,10 +454,21 @@ static long parse_timeout(const char *timeout)
     if (ne_strcasecmp(timeout, "infinite") == 0) {
 	return NE_TIMEOUT_INFINITE;
     } else if (strncasecmp(timeout, "Second-", 7) == 0) {
-	long to = strtol(timeout+7, NULL, 10);
-	if (to == LONG_MIN || to == LONG_MAX)
-	    return NE_TIMEOUT_INVALID;
-	return to;
+	unsigned long ut;
+
+        /* The value for a lock timeout should be unsigned 32-bit per
+         * <http://tools.ietf.org/html/rfc4918#section-10.7> but the
+         * ne_lock API used a "long" timeout, so map anything bigger
+         * to LONG_MAX. */
+        errno = 0;
+        ut = strtoul(timeout+7, NULL, 10);
+        if (ut == ULONG_MAX && errno == ERANGE)
+            return NE_TIMEOUT_INVALID;
+
+        if (ut > LONG_MAX)
+            return LONG_MAX;
+        else
+            return (long)ut;
     } else {
 	return NE_TIMEOUT_INVALID;
     }

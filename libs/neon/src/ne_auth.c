@@ -313,8 +313,6 @@ static void clean_session(auth_session *sess)
     sess->sspi_token = NULL;
     ne_sspi_destroy_context(sess->sspi_context);
     sess->sspi_context = NULL;
-    if (sess->sspi_host) ne_free(sess->sspi_host);
-    sess->sspi_host = NULL;
 #endif
 #ifdef HAVE_NTLM
     if (sess->ntlm_context) {
@@ -2038,6 +2036,10 @@ static void free_auth(void *cookie)
     }
 
     clean_session(sess);
+#ifdef HAVE_SSPI
+    if (sess->sspi_host) ne_free(sess->sspi_host);
+    sess->sspi_host = NULL;
+#endif
     ne_free(sess);
 }
 
@@ -2070,6 +2072,18 @@ static void auth_register(ne_session *sess, int isproxy, unsigned protomask,
         protomask |= NE_AUTH_GSSAPI_ONLY | NE_AUTH_SSPI;
     }
 
+    if (protomask | NE_AUTH_DIGEST) {
+        struct ne_md5_ctx *ctx = ne_md5_create_ctx();
+
+        if (ctx) {
+            ne_md5_destroy_ctx(ctx);
+        }
+        else {
+            NE_DEBUG(NE_DBG_HTTPAUTH, "auth: Disabling Digest support without MD5.\n");
+            protomask &= ~NE_AUTH_DIGEST;
+        }
+    }
+    
     ahs = ne_get_session_private(sess, id);
     if (ahs == NULL) {
         ahs = ne_calloc(sizeof *ahs);
