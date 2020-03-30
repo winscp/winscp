@@ -66,9 +66,11 @@
                      * ... except "+" which is PS */
 
 #define OT (0x4000) /* others */
+/* UNUSED  (0x8000) .. only remaining bit. */
 
 #define URI_ALPHA (AL)
 #define URI_DIGIT (DG)
+#define URI_NONURI (OT)
 
 /* unreserved = ALPHA / DIGIT / "-" / "." / "_" / "~" */
 #define URI_UNRESERVED (AL | DG | DS | DT | US | TD)
@@ -92,7 +94,7 @@
 /* any characters which should be path-escaped: */
 #define URI_ESCAPE ((URI_GENDELIM & ~(FS)) | URI_SUBDELIM | OT | PC)
 
-static const unsigned int uri_chars[256] = {
+static const unsigned short uri_chars[256] = {
 /* 0xXX    x0      x2      x4      x6      x8      xA      xC      xE     */
 /*   0x */ OT, OT, OT, OT, OT, OT, OT, OT, OT, OT, OT, OT, OT, OT, OT, OT,
 /*   1x */ OT, OT, OT, OT, OT, OT, OT, OT, OT, OT, OT, OT, OT, OT, OT, OT,
@@ -475,16 +477,25 @@ char *ne_path_unescape(const char *uri)
 
 /* CH must be an unsigned char; evaluates to 1 if CH should be
  * percent-encoded (note !!x == x ? 1 : 0). */
-#define path_escape_ch(ch) (!!(uri_lookup(ch) & URI_ESCAPE))
+#define path_escape_ch(ch, mask) (!!(uri_lookup(ch) & (mask)))
 
-char *ne_path_escape(const char *path) 
+char *ne_path_escape(const char *path)
+{
+    return ne_path_escapef(path, NE_PATH_NONRES);
+}
+
+char *ne_path_escapef(const char *path, unsigned int flags)
 {
     const unsigned char *pnt;
     char *ret, *p;
     size_t count = 0;
+    unsigned short mask = 0;
+
+    if (flags & NE_PATH_NONRES) mask |= URI_ESCAPE;
+    if (flags & NE_PATH_NONURI) mask |= URI_NONURI;
 
     for (pnt = (const unsigned char *)path; *pnt != '\0'; pnt++) {
-        count += path_escape_ch(*pnt);
+        count += path_escape_ch(*pnt, mask);
     }
 
     if (count == 0) {
@@ -493,7 +504,7 @@ char *ne_path_escape(const char *path)
 
     p = ret = ne_malloc(strlen(path) + 2 * count + 1);
     for (pnt = (const unsigned char *)path; *pnt != '\0'; pnt++) {
-	if (path_escape_ch(*pnt)) {
+	if (path_escape_ch(*pnt, mask)) {
 	    /* Escape it - %<hex><hex> */
 	    sprintf(p, "%%%02x", (unsigned char) *pnt);
 	    p += 3;

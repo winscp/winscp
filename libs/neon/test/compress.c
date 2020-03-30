@@ -33,7 +33,7 @@
 
 static enum { f_partial = 0, f_mismatch, f_complete } failed;
 
-static const char *newsfn = "random.txt";
+static const char newsfn[] = "random.txt", hellofn[] = "hello.txt";
 
 static int init(void)
 {
@@ -173,6 +173,12 @@ static int not_compressed(void)
 static int simple(void)
 {
     return fetch(newsfn, "file1.gz", 0);
+}
+
+/* Triggers -fsanitizer=shift. */
+static int hello(void)
+{
+    return fetch(hellofn, "hello.gz", 0);
 }
 
 /* file1.gz has an embedded filename. */
@@ -411,6 +417,7 @@ ne_test tests[] = {
     T_LEAKY(init),
     T(not_compressed),
     T(simple),
+    T(hello),
     T(withname),
     T(fail_trailing),
     T(fail_trailing_1b),

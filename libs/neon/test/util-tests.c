@@ -101,13 +101,16 @@ static int status_lines(void)
 }
 
 /* Write MD5 of 'len' bytes of 'str' to 'digest' */
-static unsigned char *digest_md5(const char *data, size_t len,
+static const unsigned char *digest_md5(const char *data, size_t len,
                                  unsigned int digest[4])
 {
     struct ne_md5_ctx *ctx;
 
 #define CHUNK 100
     ctx = ne_md5_create_ctx();
+    if (!ctx) {
+        return (unsigned char *)"NO-MD5-SUPPORT";
+    }        
     /* exercise the buffering interface */
     while (len > CHUNK) {
         ne_md5_process_bytes(data, CHUNK, ctx);
@@ -154,6 +157,7 @@ static int md5_alignment(void)
      * the process_bytes function would SIGBUS if the buffer argument
      * isn't 32-bit aligned. Won't trigger on x86 though. */
     ctx = ne_md5_create_ctx();
+    ONN("could not create MD5 context", ctx == NULL);
     ne_md5_process_bytes(bb + 1, 65, ctx);
     ne_md5_destroy_ctx(ctx);
     ne_free(bb);
@@ -203,18 +207,24 @@ static int parse_dates(void)
     return OK;
 }
 
-/* trigger segfaults in ne_rfc1036_parse() in <=0.24.5. */
-static int regress_dates(void)
+#define BAD_DATE(format, result) \
+    ONN(format " date parse must fail", result != -1)
+
+/* Test for bad dates; trigger segfaults in ne_rfc1036_parse() in
+ * <=0.24.5. */
+static int bad_dates(void)
 {
     static const char *dates[] = {
-        "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+        "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "Friday, 08-Jun-01",
     };
     size_t n;
     
     for (n = 0; n < sizeof(dates)/sizeof(dates[0]); n++) {
-        ne_rfc1036_parse(dates[n]);
-        ne_iso8601_parse(dates[n]);
-        ne_rfc1123_parse(dates[n]);
+        BAD_DATE("rfc1036", ne_rfc1036_parse(dates[n]));
+        BAD_DATE("iso8601", ne_iso8601_parse(dates[n]));
+        BAD_DATE("rfc1123", ne_rfc1123_parse(dates[n]));
+        BAD_DATE("asctime", ne_asctime_parse(dates[n]));
     }
 
     return OK;
@@ -236,7 +246,11 @@ static int versioning(void)
     GOOD(NE_VERSION_MAJOR, NE_VERSION_MINOR - 1, "earlier minor");
 #endif /* NE_VERSION_MINOR > 0 */
 #else /* where NE_VERSION_MAJOR == 0 */
-    BAD(0, NE_VERSION_MINOR - 1, "earlier minor for 0.x");
+    BAD(0, 26, "earlier minor for 0.x");
+    GOOD(0, 27, "current version back-compat to 0.27");
+    GOOD(0, 28, "current version back-compat to 0.28");
+    GOOD(0, 29, "current version back-compat to 0.29");
+    GOOD(0, 30, "current version back-compat to 0.30");
 #endif
     return OK;
 }
@@ -303,7 +317,7 @@ ne_test tests[] = {
     T(md5),
     T(md5_alignment),
     T(parse_dates),
-    T(regress_dates),
+    T(bad_dates),
     T(versioning),
     T(version_string),
     T(support),

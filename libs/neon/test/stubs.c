@@ -37,6 +37,7 @@
 #include "ne_request.h"
 #include "ne_socket.h"
 #include "ne_compress.h"
+#include "ne_pkcs11.h"
 
 #include "tests.h"
 #include "child.h"
@@ -151,6 +152,33 @@ static int stub_ssl(void)
     ne_session_destroy(sess);
     return OK;
 }
+
+static int stub_pkcs11(void)
+{
+    ne_session *sess = ne_session_create("https", "localhost", 1234);
+    ne_ssl_pkcs11_provider *prov;
+
+    if (ne_ssl_pkcs11_provider_init(&prov, "neon-test-failure-case") == NE_PK11_OK) {
+        ONN("this code shouldn't run", prov != NULL);
+        ne_ssl_pkcs11_provider_pin(prov, NULL, NULL); /* noop */
+        ne_ssl_set_pkcs11_provider(sess, prov); /* noop */
+        ne_ssl_pkcs11_provider_destroy(prov);
+    }
+
+    ONN("must return NOTIMPL",
+        ne_ssl_pkcs11_provider_init(&prov, "neon-test-failure-case-2") != NE_PK11_NOTIMPL);
+
+    if (ne_ssl_pkcs11_nss_provider_init(&prov, "neon-test-failure-case",
+                                        "neon-test", NULL, NULL, NULL) == NE_PK11_OK) {
+        ONN("this code shouldn't run", prov != NULL);
+        ne_ssl_pkcs11_provider_destroy(prov);
+    }
+
+    ne_session_destroy(sess);
+
+    return OK;
+}
+
 #endif
 
 #ifdef NO_TESTS
@@ -163,6 +191,7 @@ ne_test tests[] = {
 #endif
 #ifndef NE_HAVE_SSL
     T(stub_ssl),
+    T(stub_pkcs11),
 #endif
 /* to prevent failure when SSL and zlib are supported. */
 #ifdef NO_TESTS

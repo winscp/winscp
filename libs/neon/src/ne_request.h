@@ -48,16 +48,19 @@ typedef struct ne_request_s ne_request;
  * 'path' must conform to the 'abs_path' grammar in RFC2396, with an
  * optional "? query" part, and MUST be URI-escaped by the caller. */
 ne_request *ne_request_create(ne_session *sess,
-			      const char *method, const char *path);
+                              const char *method, const char *path)
+    ne_attribute((nonnull));
 
 /* The request body will be taken from 'size' bytes of 'buffer'. */
 void ne_set_request_body_buffer(ne_request *req, const char *buffer,
-				size_t size);
+                                size_t size)
+    ne_attribute((nonnull));
 
 /* The request body will be taken from 'length' bytes read from the
  * file descriptor 'fd', starting from file offset 'offset'. */
 void ne_set_request_body_fd(ne_request *req, int fd,
-                            ne_off_t offset, ne_off_t length);
+                            ne_off_t offset, ne_off_t length)
+    ne_attribute((nonnull));
 
 /* "Pull"-based request body provider: a callback which is invoked to
  * provide blocks of request body on demand.
@@ -82,7 +85,8 @@ typedef ssize_t (*ne_provide_body)(void *userdata,
  * total size of the request is unknown by the caller and chunked 
  * tranfer will be used. */
 void ne_set_request_body_provider(ne_request *req, ne_off_t length,
-                                  ne_provide_body provider, void *userdata);
+                                  ne_provide_body provider, void *userdata)
+    ne_attribute((nonnull (1)));
 
 /* Handling response bodies; two callbacks must be provided:
  *

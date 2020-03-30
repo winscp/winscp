@@ -499,7 +499,7 @@ static int ne_output_ntlm(ne_ntlm_context *ctx)
     ntrespoff = lmrespoff + 0x18;
 
     /* Create the big type-3 message binary blob */
-    size = ne_snprintf((char *)ntlmbuf, sizeof(ntlmbuf),
+    ne_snprintf((char *)ntlmbuf, sizeof(ntlmbuf),
                     "NTLMSSP%c"
                     "\x03%c%c%c" /* type-3, 32 bits */
 

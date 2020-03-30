@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: sitecopy 0.10.14\n"
 "Report-Msgid-Bugs-To: neon@lists.manyfish.co.uk\n"
-"POT-Creation-Date: 2016-09-30 09:51+0100\n"
+"POT-Creation-Date: 2020-02-25 08:20+0000\n"
 "PO-Revision-Date: 2001-01-16 07:32+0900\n"
 "Last-Translator: Nobuyuki Tsuchimura <tutimura@nn.iij4u.or.jp>\n"
 "Language-Team: ja\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Type: text/plain; charset=EUC-JP\n"
 "Content-Transfer-Encoding: 8-bit\n"
 
-#: src/ne_207.c:198
+#: src/ne_207.c:213
 #, c-format
 msgid ""
 "Invalid HTTP status line in status element at line %d of response:\n"
@@ -32,104 +32,104 @@ msgstr "プロキシーサーバーに接続できません"
 msgid "Could not authenticate to proxy server: %s"
 msgstr "プロキシーサーバーに接続できません"
 
-#: src/ne_auth.c:386
+#: src/ne_auth.c:384
 #, c-format
 msgid "rejected %s challenge"
 msgstr ""
 
-#: src/ne_auth.c:402
+#: src/ne_auth.c:400
 msgid "missing realm in Basic challenge"
 msgstr ""
 
-#: src/ne_auth.c:497
+#: src/ne_auth.c:495
 msgid "invalid Negotiate token"
 msgstr ""
 
-#: src/ne_auth.c:520
+#: src/ne_auth.c:518
 #, fuzzy
 msgid "GSSAPI authentication error: "
 msgstr "%s への認証が %s で必要です '%s':\n"
 
-#: src/ne_auth.c:533
+#: src/ne_auth.c:531
 #, c-format
 msgid "GSSAPI failure (code %u)"
 msgstr ""
 
-#: src/ne_auth.c:568
+#: src/ne_auth.c:566
 msgid "ignoring empty Negotiate continuation"
 msgstr ""
 
-#: src/ne_auth.c:583
+#: src/ne_auth.c:581
 #, c-format
 msgid "Negotiate response verification failed: invalid response header token"
 msgstr ""
 
-#: src/ne_auth.c:605
+#: src/ne_auth.c:603
 #, c-format
 msgid "Negotiate response verification failure: %s"
 msgstr ""
 
-#: src/ne_auth.c:669
+#: src/ne_auth.c:667
 #, c-format
 msgid "SSPI response verification failed: invalid response header token"
 msgstr ""
 
-#: src/ne_auth.c:802
+#: src/ne_auth.c:800
 msgid "unknown algorithm in Digest challenge"
 msgstr ""
 
-#: src/ne_auth.c:806
+#: src/ne_auth.c:804
 msgid "incompatible algorithm in Digest challenge"
 msgstr ""
 
-#: src/ne_auth.c:810
+#: src/ne_auth.c:808
 msgid "missing parameter in Digest challenge"
 msgstr ""
 
-#: src/ne_auth.c:814
+#: src/ne_auth.c:812
 msgid "initial Digest challenge was stale"
 msgstr ""
 
-#: src/ne_auth.c:821
+#: src/ne_auth.c:819
 msgid "stale Digest challenge with new algorithm or realm"
 msgstr ""
 
-#: src/ne_auth.c:833
+#: src/ne_auth.c:831
 #, fuzzy
 msgid "could not parse domain in Digest challenge"
 msgstr "chunk の大きさを解析できません"
 
-#: src/ne_auth.c:1142
+#: src/ne_auth.c:1140
 #, c-format
 msgid "Digest mutual authentication failure: missing parameters"
 msgstr ""
 
-#: src/ne_auth.c:1147
+#: src/ne_auth.c:1145
 #, c-format
 msgid "Digest mutual authentication failure: client nonce mismatch"
 msgstr ""
 
-#: src/ne_auth.c:1157
+#: src/ne_auth.c:1155
 #, c-format
 msgid "Digest mutual authentication failure: could not parse nonce count"
 msgstr ""
 
-#: src/ne_auth.c:1162
+#: src/ne_auth.c:1160
 #, c-format
 msgid "Digest mutual authentication failure: nonce count mismatch (%u not %u)"
 msgstr ""
 
-#: src/ne_auth.c:1205
+#: src/ne_auth.c:1203
 #, c-format
 msgid "Digest mutual authentication failure: request-digest mismatch"
 msgstr ""
 
-#: src/ne_auth.c:1336
+#: src/ne_auth.c:1334
 #, c-format
 msgid "ignored %s challenge"
 msgstr ""
 
-#: src/ne_auth.c:1415
+#: src/ne_auth.c:1413
 #, fuzzy
 msgid "could not parse challenge"
 msgstr "chunk の大きさを解析できません"
@@ -192,7 +192,7 @@ msgstr ""
 msgid "unrecognized errors (%u)"
 msgstr ""
 
-#: src/ne_gnutls.c:951 src/ne_openssl.c:477
+#: src/ne_gnutls.c:951 src/ne_openssl.c:481
 #, c-format
 msgid "Server certificate was missing commonName attribute in subject name"
 msgstr ""
@@ -202,41 +202,41 @@ msgstr ""
 msgid "Could not verify server certificate: %s"
 msgstr "ファイルが書けません: %s"
 
-#: src/ne_gnutls.c:977 src/ne_openssl.c:464
+#: src/ne_gnutls.c:984 src/ne_openssl.c:468
 #, c-format
 msgid "Certificate verification error: %s"
 msgstr ""
 
-#: src/ne_gnutls.c:1010 src/ne_openssl.c:710
+#: src/ne_gnutls.c:1017 src/ne_openssl.c:717
 #, c-format
 msgid "SSL handshake failed, client certificate was requested: %s"
 msgstr ""
 
-#: src/ne_gnutls.c:1015 src/ne_openssl.c:715
+#: src/ne_gnutls.c:1022 src/ne_openssl.c:722
 #, fuzzy, c-format
 msgid "SSL handshake failed: %s"
 msgstr "ファイルが書けません: %s"
 
-#: src/ne_gnutls.c:1025
+#: src/ne_gnutls.c:1032
 #, c-format
 msgid "Server did not send certificate chain"
 msgstr ""
 
-#: src/ne_locks.c:584
+#: src/ne_locks.c:619
 msgid "LOCK response missing Lock-Token header"
 msgstr ""
 
-#: src/ne_locks.c:759
+#: src/ne_locks.c:794
 #, c-format
 msgid "Response missing activelock for %s"
 msgstr ""
 
-#: src/ne_locks.c:801
+#: src/ne_locks.c:836
 #, c-format
 msgid "No activelock for <%s> returned in LOCK refresh response"
 msgstr ""
 
-#: src/ne_openssl.c:735
+#: src/ne_openssl.c:742
 #, c-format
 msgid "SSL server did not present certificate"
 msgstr ""
@@ -293,100 +293,104 @@ msgstr ""
 msgid "Could not send chunked request terminator"
 msgstr "プロキシーサーバーに接続できません"
 
-#: src/ne_request.c:784
+#: src/ne_request.c:785
 msgid "Could not read chunk size"
 msgstr "chunk の大きさが読めません"
 
-#: src/ne_request.c:791
+#: src/ne_request.c:792
 msgid "Could not parse chunk size"
 msgstr "chunk の大きさを解析できません"
 
-#: src/ne_request.c:828
+#: src/ne_request.c:829
 msgid "Could not read response body"
 msgstr "response body が読めません"
 
-#: src/ne_request.c:844
+#: src/ne_request.c:845
 #, fuzzy
 msgid "Could not read chunk delimiter"
 msgstr "chunk の大きさが読めません"
 
-#: src/ne_request.c:847
+#: src/ne_request.c:848
 msgid "Chunk delimiter was invalid"
 msgstr ""
 
-#: src/ne_request.c:952
+#: src/ne_request.c:960
+msgid "Could not read status line (TLS client certificate was requested)"
+msgstr ""
+
+#: src/ne_request.c:961
 msgid "Could not read status line"
 msgstr ""
 
-#: src/ne_request.c:974
+#: src/ne_request.c:984
 #, fuzzy
 msgid "Could not parse response status line"
 msgstr "response body が読めません"
 
-#: src/ne_request.c:986
+#: src/ne_request.c:996
 #, fuzzy
 msgid "Could not read interim response headers"
 msgstr "response body が読めません"
 
-#: src/ne_request.c:1020
+#: src/ne_request.c:1030
 msgid "Could not send request"
 msgstr ""
 
-#: src/ne_request.c:1068 src/ne_request.c:1086 src/ne_request.c:1096
+#: src/ne_request.c:1078 src/ne_request.c:1096 src/ne_request.c:1106
 msgid "Error reading response headers"
 msgstr ""
 
-#: src/ne_request.c:1114
+#: src/ne_request.c:1124
 #, c-format
 msgid "Response header too long"
 msgstr ""
 
-#: src/ne_request.c:1196
+#: src/ne_request.c:1206
 msgid "Response exceeded maximum number of header fields"
 msgstr ""
 
-#: src/ne_request.c:1211
+#: src/ne_request.c:1221
 #, fuzzy, c-format
 msgid "Could not resolve hostname `%s': %s"
 msgstr "%s: エラー: サーバーのホスト名 (%s) を IP アドレスに変換できません。\n"
 
-#: src/ne_request.c:1342
+#: src/ne_request.c:1352
 msgid "Unknown transfer-coding in response"
 msgstr ""
 
-#: src/ne_request.c:1355
+#: src/ne_request.c:1365
 msgid "Invalid Content-Length in response"
 msgstr ""
 
-#: src/ne_request.c:1428
+#: src/ne_request.c:1438
 #, c-format
 msgid "Could not write to file: %s"
 msgstr "ファイルが書けません: %s"
 
-#: src/ne_request.c:1501
+#: src/ne_request.c:1511
 #, fuzzy, c-format
 msgid "Could not create SSL connection through proxy server: %s"
 msgstr "プロキシーサーバーに SSL 接続できません"
 
-#: src/ne_request.c:1540
+#: src/ne_request.c:1550
 #, fuzzy, c-format
 msgid "Could not create socket"
 msgstr "プロキシーサーバーに SSL 接続できません"
 
-#: src/ne_request.c:1574
+#: src/ne_request.c:1584
 msgid "Could not connect to server"
 msgstr "プロキシーサーバーに接続できません"
 
-#: src/ne_request.c:1576
+#: src/ne_request.c:1586
 msgid "Could not connect to proxy server"
 msgstr "プロキシーサーバーに接続できません"
 
-#: src/ne_request.c:1619
+#: src/ne_request.c:1629
 #, c-format
 msgid "Could not find IPv4 address of hostname %s for SOCKS v4 proxy"
 msgstr ""
 
-#: src/ne_request.c:1677
+#: src/ne_request.c:1687
 #, fuzzy, c-format
 msgid "Could not establish connection from SOCKS proxy (%s:%u): %s"
 msgstr "プロキシーサーバーに SSL 接続できません"
@@ -423,65 +427,69 @@ msgstr ""
 msgid "Server certificate verification failed: "
 msgstr ""
 
-#: src/ne_socket.c:522 src/ne_socket.c:618 src/ne_socket.c:722
+#: src/ne_socket.c:525 src/ne_socket.c:660 src/ne_socket.c:770
 #, fuzzy
 msgid "Connection closed"
 msgstr "%s: 接続がサーバーに切られました。"
 
-#: src/ne_socket.c:628 src/ne_socket.c:736
+#: src/ne_socket.c:664
+msgid "Retry operation"
+msgstr ""
+
+#: src/ne_socket.c:674 src/ne_socket.c:784
 #, fuzzy
 msgid "Secure connection truncated"
 msgstr "接続タイムアウト。"
 
-#: src/ne_socket.c:640 src/ne_socket.c:748
+#: src/ne_socket.c:686 src/ne_socket.c:796
 #, c-format
 msgid "SSL error: %s"
 msgstr ""
 
-#: src/ne_socket.c:643
+#: src/ne_socket.c:689
 #, c-format
 msgid "SSL error code %d/%d/%lu"
 msgstr ""
 
-#: src/ne_socket.c:727
+#: src/ne_socket.c:775
 #, c-format
 msgid "SSL alert received: %s"
 msgstr ""
 
-#: src/ne_socket.c:744
+#: src/ne_socket.c:792
 msgid "SSL socket read failed"
 msgstr ""
 
-#: src/ne_socket.c:875
+#: src/ne_socket.c:923
 msgid "Line too long"
 msgstr ""
 
-#: src/ne_socket.c:1036 src/ne_socket.c:1042
+#: src/ne_socket.c:1084 src/ne_socket.c:1090
 msgid "Host not found"
 msgstr ""
 
-#: src/ne_socket.c:1251
+#: src/ne_socket.c:1299
 #, fuzzy
 msgid "Connection timed out"
 msgstr "%s: 接続タイムアウトです。"
 
-#: src/ne_socket.c:1444
+#: src/ne_socket.c:1492
 msgid "Socket descriptor number exceeds FD_SETSIZE"
 msgstr ""
 
-#: src/ne_socket.c:1506
+#: src/ne_socket.c:1554
 msgid "Socket family not supported"
 msgstr ""
 
-#: src/ne_socket.c:1737
+#: src/ne_socket.c:1785
 msgid "Client certificate verification failed"
 msgstr ""
 
-#: src/ne_socket.c:1753
+#: src/ne_socket.c:1801
 msgid "SSL disabled due to lack of entropy"
 msgstr ""
 
-#: src/ne_socket.c:1759
+#: src/ne_socket.c:1807
 #, fuzzy
 msgid "Could not create SSL structure"
 msgstr "プロキシーサーバーに SSL 接続できません"

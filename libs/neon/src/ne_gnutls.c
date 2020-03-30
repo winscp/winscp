@@ -660,7 +660,7 @@ static int provide_client_cert(gnutls_session_t session,
                 return ret;
             }
             
-            *pcert = gnutls_malloc(sizeof *pcert);
+            *pcert = gnutls_calloc(1, sizeof **pcert);
             gnutls_pcert_import_x509(*pcert, sess->client_cert->cert.subject, 0);
             *pcert_length = 1;
 #else /* !HAVE_GNUTLS_CERTIFICATE_SET_RETRIEVE_FUNCTION2 */
@@ -967,10 +967,17 @@ static int check_certificate(ne_session *sess, gnutls_session_t sock,
         return NE_ERROR;
     }
 
-    failures |= map_verify_failures(&status);
+    ret = map_verify_failures(&status);
+    /* For CA expiry/not-yet-valid, mask out the failure bits if
+     * they've been caught and treated as chain errors already by check_chain_expiry(). */
+    if ((ret & (NE_SSL_EXPIRED|NE_SSL_NOTYETVALID)) != 0
+        && (failures & NE_SSL_BADCHAIN) == NE_SSL_BADCHAIN) {
+        ret &= ~(NE_SSL_EXPIRED|NE_SSL_NOTYETVALID);
+    }
+    failures |= ret;
 
-    NE_DEBUG(NE_DBG_SSL, "ssl: Verification failures = %d (status = %u).\n", 
-             failures, status);
+    NE_DEBUG(NE_DBG_SSL, "ssl: Verification failures %d => %d (status = %u).\n",
+             ret, failures, status);
     
     if (status && status != GNUTLS_CERT_INVALID) {
         char *errstr = verify_error_string(status);

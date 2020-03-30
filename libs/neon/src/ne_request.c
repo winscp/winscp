@@ -329,7 +329,7 @@ static ssize_t body_fd_send(void *userdata, char *buffer, size_t count)
                 /* errno was set */
                 ne_strerror(errno, err, sizeof err);
             } else {
-                strcpy(err, _("offset invalid"));
+                ne_strnzcpy(err, _("offset invalid"), sizeof err);
             }
             ne_snprintf(offstr, sizeof offstr, "%" FMT_NE_OFF_T,
                         req->body.file.offset);
@@ -456,14 +456,14 @@ static int send_request_body(ne_request *req, int retry)
     return NE_OK;
 }
 
-/* Lob the User-Agent, connection and host headers in to the request
- * headers */
-static void add_fixed_headers(ne_request *req) 
+/* Set up buffer for initial request headers. */
+static ne_buffer *initial_request_headers(ne_request *req) 
 {
     ne_session *const sess = req->session;
+    ne_buffer *hdrs = ne_buffer_create();
 
     if (sess->user_agent) {
-        ne_buffer_zappend(req->headers, sess->user_agent);
+        ne_buffer_zappend(hdrs, sess->user_agent);
     }
 
     /* If persistent connections are disabled, just send Connection:
@@ -471,25 +471,27 @@ static void add_fixed_headers(ne_request *req)
      * servers to try harder to get a persistent connection, except if
      * using a proxy as per 2068§19.7.1.  Always add TE: trailers. */
     if (!sess->flags[NE_SESSFLAG_PERSIST]) {
-       ne_buffer_czappend(req->headers, "Connection: TE, close" EOL);
+       ne_buffer_czappend(hdrs, "Connection: TE, close" EOL);
     } 
     else if (!sess->is_http11 && !sess->any_proxy_http) {
-        ne_buffer_czappend(req->headers, 
+        ne_buffer_czappend(hdrs, 
                            "Keep-Alive: " EOL
                           "Connection: TE, Keep-Alive" EOL);
     } 
     else if (!req->session->is_http11 && !sess->any_proxy_http) {
-        ne_buffer_czappend(req->headers, 
+        ne_buffer_czappend(hdrs, 
                            "Keep-Alive: " EOL
                            "Proxy-Connection: Keep-Alive" EOL
                            "Connection: TE" EOL);
     } 
     else {
-        ne_buffer_czappend(req->headers, "Connection: TE" EOL);
+        ne_buffer_czappend(hdrs, "Connection: TE" EOL);
     }
 
-    ne_buffer_concat(req->headers, "TE: trailers" EOL "Host: ", 
+    ne_buffer_concat(hdrs, "TE: trailers" EOL "Host: ", 
                      req->session->server.hostport, EOL, NULL);
+
+    return hdrs;
 }
 
 int ne_accept_always(void *userdata, ne_request *req, const ne_status *st)
@@ -508,7 +510,6 @@ ne_request *ne_request_create(ne_session *sess,
     ne_request *req = ne_calloc(sizeof *req);
 
     req->session = sess;
-    req->headers = ne_buffer_create();
     
     /* Presume the method is idempotent by default. */
     req->flags[NE_REQFLAG_IDEMPOTENT] = 1;
@@ -516,7 +517,7 @@ ne_request *ne_request_create(ne_session *sess,
     req->flags[NE_REQFLAG_EXPECT100] = sess->flags[NE_SESSFLAG_EXPECT100];
 
     /* Add in the fixed headers */
-    add_fixed_headers(req);
+    req->headers = initial_request_headers(req);
 
     /* Set the standard stuff */
     req->method = ne_strdup(method);
@@ -585,7 +586,7 @@ void ne_set_request_body_fd(ne_request *req, int fd,
 
 void ne_set_request_flag(ne_request *req, ne_request_flag flag, int value)
 {
-    if (flag < (ne_request_flag)NE_SESSFLAG_LAST) {
+    if (flag < (ne_request_flag)NE_REQFLAG_LAST) {
         req->flags[flag] = value;
     }
 }
@@ -940,6 +941,12 @@ static inline void strip_eol(char *buf, ssize_t *len)
     }
 }
 
+#ifdef NE_HAVE_SSL
+#define SSL_CC_REQUESTED(_r) (_r->session->ssl_cc_requested)
+#else
+#define SSL_CC_REQUESTED(_r) (0)
+#endif
+
 /* Read and parse response status-line into 'status'.  'retry' is non-zero
  * if an NE_RETRY should be returned if an EOF is received. */
 static int read_status_line(ne_request *req, ne_status *status, int retry)
@@ -949,8 +956,11 @@ static int read_status_line(ne_request *req, ne_status *status, int retry)
 
     ret = ne_sock_readline(req->session->socket, buffer, sizeof req->respbuf);
     if (ret <= 0) {
-	int aret = aborted(req, _("Could not read status line"), ret);
-	return RETRY_RET(retry, ret, aret);
+        const char *errstr = SSL_CC_REQUESTED(req)
+            ? _("Could not read status line (TLS client certificate was requested)")
+            : _("Could not read status line");
+        int aret = aborted(req, errstr, ret);
+        return RETRY_RET(retry, ret, aret);
     }
     
     NE_DEBUG(NE_DBG_HTTP, "[status-line] < %s", buffer);

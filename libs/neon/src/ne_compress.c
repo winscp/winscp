@@ -81,7 +81,7 @@ struct ne_decompress_s {
 };
 
 /* Convert 'buf' to unsigned int; 'buf' must be 'unsigned char *' */
-#define BUF2UINT(buf) (((buf)[3]<<24) + ((buf)[2]<<16) + ((buf)[1]<<8) + (buf)[0])
+#define BUF2UINT(buf) ((((unsigned int)(buf)[3])<<24) + ((buf)[2]<<16) + ((buf)[1]<<8) + (buf)[0])
 
 #define ID1 0x1f
 #define ID2 0x8b

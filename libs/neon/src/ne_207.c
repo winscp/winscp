@@ -43,6 +43,7 @@ struct ne_207_parser_s {
     ne_207_end_propstat *end_propstat;
     ne_xml_parser *parser;
     void *userdata;
+    unsigned int flags;
 
     ne_uri base;
 
@@ -177,15 +178,29 @@ end_element(void *userdata, int state, const char *nspace, const char *name)
 	/* Now we have the href, begin the response */
 	if (p->start_response && HAVE_CDATA(p)) {
             ne_uri ref, resolved;
+            int ret;
+            char *hh = NULL;
 
-            if (ne_uri_parse(cdata, &ref) == 0) {
+            if (p->flags & NE_207_MSSP_ESCAPING) {
+                hh = ne_path_escapef(cdata, NE_PATH_NONURI);
+                NE_DEBUG(NE_DBG_XML, "207: Enabled href escaping hacks [%s]->[%s]\n",
+                         cdata, hh);
+                cdata = hh;
+            }
+
+            ret = ne_uri_parse(cdata, &ref);
+            if (!ret) {
                 ne_uri_resolve(&p->base, &ref, &resolved);
 
                 p->response = p->start_response(p->userdata, &resolved);
                 p->in_response = 1;
                 ne_uri_free(&resolved);
             }
+            else {
+                NE_DEBUG(NE_DBG_XML, "207: Failed to parse href: [%s]\n", cdata);
+            }
             ne_uri_free(&ref);
+            if (hh) ne_free(hh);
 	}
 	break;
     case ELM_status:
@@ -244,6 +259,11 @@ ne_207_parser *ne_207_create(ne_xml_parser *parser, const ne_uri *base,
     ne_xml_push_handler(parser, start_element, cdata_207, end_element, p);
     
     return p;
+}
+
+void ne_207_set_flags(ne_207_parser *p, unsigned int flags)
+{
+    p->flags = flags;
 }
 
 void ne_207_destroy(ne_207_parser *p) 

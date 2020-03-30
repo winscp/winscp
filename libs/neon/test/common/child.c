@@ -248,87 +248,15 @@ int spawn_server_addr(int bind_local, int port, server_fn fn, void *ud)
     }
 }
 
-int spawn_server_repeat(int port, server_fn fn, void *userdata, int n)
-{
-    int fds[2];
-
-#ifdef USE_PIPE
-    if (pipe(fds)) {
-	perror("spawn_server: pipe");
-	return FAIL;
-    }
-#else
-    /* avoid using uninitialized variable. */
-    fds[0] = fds[1] = 0;
-#endif
-
-    child = fork();
-    
-    if (child == 0) {
-	/* this is the child. */
-	int listener, count = 0;
-	
-	in_child();
-	
-	listener = do_listen(lh_addr, port);
-
-#ifdef USE_PIPE
-	if (write(fds[1], "Z", 1) != 1) abort();
-#endif
-
-	close(fds[1]);
-	close(fds[0]);
-
-	/* Loop serving requests. */
-	while (++count < n) {
-	    ne_socket *sock = ne_sock_create();
-	    int ret;
-
-	    NE_DEBUG(NE_DBG_HTTP, "child awaiting connection #%d.\n", count);
-	    ONN("accept failed", ne_sock_accept(sock, listener));
-	    ret = fn(sock, userdata);
-	    NE_DEBUG(NE_DBG_HTTP, "child handled connection, %d.\n", ret);
-	    close_socket(sock);
-	    if (ret) {
-                printf("server child failed (%s, iteration %d/%d): %s\n", 
-                       tests[test_num].name, count, n, test_context);
-		exit(-1);
-	    }
-	    /* don't send back notification to parent more than
-	     * once. */
-	}
-	
-	NE_DEBUG(NE_DBG_HTTP, "child aborted.\n");
-	close(listener);
-
-	exit(-1);
-    
-    } else {
-	char ch;
-	/* this is the parent. wait for the child to get ready */
-#ifdef USE_PIPE
-	if (read(fds[0], &ch, 1) < 0)
-	    perror("parent read");
-
-	close(fds[0]);
-	close(fds[1]);
-#else
-	minisleep();
-#endif
-    }
-
-    return OK;
-}
-
 int new_spawn_server(int count, server_fn fn, void *userdata,
                      unsigned int *port)
 {
-    ne_inet_addr *addr;
+    ne_inet_addr *addr = NULL;
     int ret;
 
     ret = new_spawn_server2(count, fn, userdata, &addr, port);
-    
-    ne_iaddr_free(addr);
+    if (addr)
+        ne_iaddr_free(addr);
 
     return ret;
 }

@@ -33,6 +33,14 @@
 #include "ne_md5.h"
 #include "ne_string.h" /* for NE_ASC2HEX */
 
+#if SIZEOF_INT == 4
+typedef unsigned int md5_uint32;
+#elif SIZEOF_LONG == 4
+typedef unsigned long md5_uint32;
+#else
+# error "Cannot determine unsigned 32-bit data type."
+#endif
+
 #define md5_process_block ne_md5_process_block
 #define md5_process_bytes ne_md5_process_bytes
 #define md5_finish_ctx ne_md5_finish_ctx
@@ -40,19 +48,13 @@
 #define md5_stream ne_md5_stream
 #define md5_ctx ne_md5_ctx
 
+#ifndef HAVE_OPENSSL
+
 #ifdef WORDS_BIGENDIAN
 # define SWAP(n)							\
     (((n) << 24) | (((n) & 0xff00) << 8) | (((n) >> 8) & 0xff00) | ((n) >> 24))
 #else
 # define SWAP(n) (n)
-#endif
-
-#if SIZEOF_INT == 4
-typedef unsigned int md5_uint32;
-#elif SIZEOF_LONG == 4
-typedef unsigned long md5_uint32;
-#else
-# error "Cannot determine unsigned 32-bit data type."
 #endif
 
 /* Structure to save state of computation between the single steps.  */
@@ -162,60 +164,6 @@ md5_finish_ctx (struct md5_ctx *ctx, void *resbuf)
   md5_process_block (ctx->buffer, bytes + pad + 8, ctx);
 
   return md5_read_ctx (ctx, resbuf);
-}
-
-/* Compute MD5 message digest for bytes read from STREAM.  The
-   resulting message digest number will be written into the 16 bytes
-   beginning at RESBLOCK.  */
-int
-md5_stream (FILE *stream, void *resblock)
-{
-  /* Important: BLOCKSIZE must be a multiple of 64.  */
-#define BLOCKSIZE 4096
-  struct md5_ctx ctx;
-  char buffer[BLOCKSIZE + 72];
-  size_t sum;
-
-  /* Initialize the computation context.  */
-  md5_init_ctx (&ctx);
-
-  /* Iterate over full file contents.  */
-  while (1)
-    {
-      /* We read the file in blocks of BLOCKSIZE bytes.  One call of the
-	 computation function processes the whole buffer so that with the
-	 next round of the loop another block can be read.  */
-      size_t n;
-      sum = 0;
-
-      /* Read block.  Take care for partial reads.  */
-      do
-	{
-	  n = fread (buffer + sum, 1, BLOCKSIZE - sum, stream);
-
-	  sum += n;
-	}
-      while (sum < BLOCKSIZE && n != 0);
-      if (n == 0 && ferror (stream))
-        return 1;
-
-      /* If end of file is reached, end the loop.  */
-      if (n == 0)
-	break;
-
-      /* Process buffer with BLOCKSIZE bytes.  Note that
-			BLOCKSIZE % 64 == 0
-       */
-      md5_process_block (buffer, BLOCKSIZE, &ctx);
-    }
-
-  /* Add the last bytes if necessary.  */
-  if (sum > 0)
-    md5_process_bytes (buffer, sum, &ctx);
-
-  /* Construct result in desired memory.  */
-  md5_finish_ctx (&ctx, resblock);
-  return 0;
 }
 
 void
@@ -427,6 +375,64 @@ md5_process_block (const void *buffer, size_t len, struct md5_ctx *ctx)
   ctx->B = B;
   ctx->C = C;
   ctx->D = D;
+}
+
+#endif
+
+/* Compute MD5 message digest for bytes read from STREAM.  The
+   resulting message digest number will be written into the 16 bytes
+   beginning at RESBLOCK.  */
+int
+md5_stream (FILE *stream, void *resblock)
+{
+  /* Important: BLOCKSIZE must be a multiple of 64.  */
+#define BLOCKSIZE 4096
+  struct ne_md5_ctx *ctx;
+  char buffer[BLOCKSIZE + 72];
+  size_t sum;
+
+  /* Initialize the computation context.  */
+  ctx = ne_md5_create_ctx ();
+
+  /* Iterate over full file contents.  */
+  while (1)
+    {
+      /* We read the file in blocks of BLOCKSIZE bytes.  One call of the
+	 computation function processes the whole buffer so that with the
+	 next round of the loop another block can be read.  */
+      size_t n;
+      sum = 0;
+
+      /* Read block.  Take care for partial reads.  */
+      do
+	{
+	  n = fread (buffer + sum, 1, BLOCKSIZE - sum, stream);
+
+	  sum += n;
+	}
+      while (sum < BLOCKSIZE && n != 0);
+      if (n == 0 && ferror (stream))
+        return 1;
+
+      /* If end of file is reached, end the loop.  */
+      if (n == 0)
+	break;
+
+      /* Process buffer with BLOCKSIZE bytes.  Note that
+			BLOCKSIZE % 64 == 0
+       */
+      md5_process_block (buffer, BLOCKSIZE, ctx);
+    }
+
+  /* Add the last bytes if necessary.  */
+  if (sum > 0)
+    md5_process_bytes (buffer, sum, ctx);
+
+  /* Construct result in desired memory.  */
+  md5_finish_ctx (ctx, resblock);
+  ne_md5_destroy_ctx (ctx);
+  
+  return 0;
 }
 
 /* Writes the ASCII representation of the MD5 digest into the
