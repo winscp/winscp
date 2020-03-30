@@ -72,8 +72,10 @@ struct TFtpsCertificateData
 
   const wchar_t * SubjectAltName;
 
-  const unsigned char * Hash;
-  static const size_t HashLen = 20;
+  const unsigned char * HashSha1;
+  static const size_t HashSha1Len = 20;
+  const unsigned char * HashSha256;
+  static const size_t HashSha256Len = 32;
 
   const unsigned char * Certificate;
   size_t CertificateLen;

@@ -1571,8 +1571,13 @@ BOOL CAsyncSslSocketLayer::GetPeerCertificateData(t_SslCertData &SslCertData, LP
     BIO_vfree(subjectAltNameBio);
   }
 
-  unsigned int length = 20;
-  X509_digest(pX509, EVP_sha1(), SslCertData.hash, &length);
+  unsigned int length;
+  length = sizeof(SslCertData.hashSha1);
+  X509_digest(pX509, EVP_sha1(), SslCertData.hashSha1, &length);
+  DebugAssert(length == sizeof(SslCertData.hashSha1));
+  length = sizeof(SslCertData.hashSha256);
+  X509_digest(pX509, EVP_sha256(), SslCertData.hashSha256, &length);
+  DebugAssert(length == sizeof(SslCertData.hashSha256));
 
   // Inspired by ne_ssl_cert_export()
   // Find the length of the DER encoding.

@@ -371,7 +371,10 @@ bool __fastcall TFileZillaIntf::HandleMessage(WPARAM wParam, LPARAM lParam)
           CopyValidityTime(Data.ValidFrom, AData->pCertData->validFrom);
           CopyValidityTime(Data.ValidUntil, AData->pCertData->validUntil);
           Data.SubjectAltName = AData->pCertData->subjectAltName;
-          Data.Hash = AData->pCertData->hash;
+          Data.HashSha1 = AData->pCertData->hashSha1;
+          DebugAssert(Data.HashSha1Len == sizeof(AData->pCertData->hashSha1));
+          Data.HashSha256 = AData->pCertData->hashSha256;
+          DebugAssert(Data.HashSha256Len == sizeof(AData->pCertData->hashSha256));
           Data.Certificate = AData->pCertData->certificate;
           Data.CertificateLen = AData->pCertData->certificateLen;
           Data.VerificationResult = AData->pCertData->verificationResult;

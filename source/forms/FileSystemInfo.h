@@ -39,7 +39,7 @@ __published:
   TEdit *SpaceAvailablePathEdit;
   TButton *SpaceAvailableButton;
   TGroupBox *CertificateGroup;
-  TEdit *CertificateFingerprintEdit;
+  TEdit *CertificateFingerprintSha256Edit;
   TButton *CertificateViewButton;
   TLabel *Label2;
   TEdit *HostKeyAlgorithmEdit;
@@ -51,6 +51,9 @@ __published:
   TEditCopy *EditCopyAction;
   TEditSelectAll *EditSelectAllAction;
   TMenuItem *Copy1;
+  TLabel *Label5;
+  TEdit *CertificateFingerprintSha1Edit;
+  TLabel *Label6;
   void __fastcall HelpButtonClick(TObject *Sender);
   void __fastcall ClipboardButtonClick(TObject *Sender);
   void __fastcall CopyClick(TObject *Sender);

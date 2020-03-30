@@ -433,10 +433,11 @@ protected:
   void __fastcall DoEndTransaction(bool Inform);
   bool  __fastcall VerifyCertificate(
     const UnicodeString & CertificateStorageKey, const UnicodeString & SiteKey,
-    const UnicodeString & Fingerprint,
+    const UnicodeString & FingerprintSHA1, const UnicodeString & FingerprintSHA256,
     const UnicodeString & CertificateSubject, int Failures);
   void __fastcall CacheCertificate(const UnicodeString & CertificateStorageKey,
-    const UnicodeString & SiteKey, const UnicodeString & Fingerprint, int Failures);
+    const UnicodeString & SiteKey, const UnicodeString & FingerprintSHA1, const UnicodeString & FingerprintSHA256,
+    int Failures);
   bool __fastcall ConfirmCertificate(
     TSessionInfo & SessionInfo, int Failures, const UnicodeString & CertificateStorageKey, bool CanRemember);
   void __fastcall CollectTlsUsage(const UnicodeString & TlsVersionStr);

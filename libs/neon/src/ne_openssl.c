@@ -1152,18 +1152,20 @@ char *ne_ssl_cert_export(const ne_ssl_certificate *cert)
 # error SHA digest length is not 20 bytes
 #endif
 
-int ne_ssl_cert_digest(const ne_ssl_certificate *cert, char *digest)
+int ne_ssl_cert_digest(const ne_ssl_certificate *cert, char *digest, int sha256) // WINSCP
 {
     unsigned char sha1[EVP_MAX_MD_SIZE];
     unsigned int len, j;
     char *p;
+    const EVP_MD *type = sha256 ? EVP_sha256() : EVP_sha1(); // WINSCP
+    unsigned int type_len = sha256 ? 32 : 20;
 
-    if (!X509_digest(cert->subject, EVP_sha1(), sha1, &len) || len != 20) {
+    if (!X509_digest(cert->subject, type, sha1, &len) || len != type_len) { // WINSCP
         ERR_clear_error();
         return -1;
     }
     
-    for (j = 0, p = digest; j < 20; j++) {
+    for (j = 0, p = digest; j < type_len; j++) {
         *p++ = NE_HEX2ASC((sha1[j] >> 4) & 0x0f);
         *p++ = NE_HEX2ASC(sha1[j] & 0x0f);
         *p++ = ':';

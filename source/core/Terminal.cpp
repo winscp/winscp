@@ -1329,8 +1329,9 @@ void __fastcall TTerminal::Open()
         if (SessionData->FingerprintScan && (FFileSystem != NULL) &&
             DebugAlwaysTrue(SessionData->Ftps != ftpsNone))
         {
-          FFingerprintScannedSHA256 = UnicodeString();
-          FFingerprintScannedSHA1 = FFileSystem->GetSessionInfo().CertificateFingerprint;
+          const TSessionInfo & SessionInfo = FFileSystem->GetSessionInfo();
+          FFingerprintScannedSHA256 = SessionInfo.CertificateFingerprintSHA256;
+          FFingerprintScannedSHA1 = SessionInfo.CertificateFingerprintSHA1;
           FFingerprintScannedMD5 = UnicodeString();
         }
         // Particularly to prevent reusing a wrong client certificate passphrase
@@ -4835,9 +4836,9 @@ void __fastcall TTerminal::FillSessionDataForCode(TSessionData * Data)
   {
     Data->HostKey = SessionInfo.HostKeyFingerprintSHA256;
   }
-  else if (SessionInfo.CertificateVerifiedManually && DebugAlwaysTrue(!SessionInfo.CertificateFingerprint.IsEmpty()))
+  else if (SessionInfo.CertificateVerifiedManually && DebugAlwaysTrue(!SessionInfo.CertificateFingerprintSHA256.IsEmpty()))
   {
-    Data->HostKey = SessionInfo.CertificateFingerprint;
+    Data->HostKey = SessionInfo.CertificateFingerprintSHA256;
   }
 }
 //---------------------------------------------------------------------------
@@ -7673,12 +7674,13 @@ static UnicodeString __fastcall FormatCertificateData(const UnicodeString & Fing
 //---------------------------------------------------------------------------
 bool  __fastcall TTerminal::VerifyCertificate(
   const UnicodeString & CertificateStorageKey, const UnicodeString & SiteKey,
-  const UnicodeString & Fingerprint,
+  const UnicodeString & FingerprintSHA1, const UnicodeString & FingerprintSHA256,
   const UnicodeString & CertificateSubject, int Failures)
 {
   bool Result = false;
 
-  UnicodeString CertificateData = FormatCertificateData(Fingerprint, Failures);
+  UnicodeString CertificateDataSHA1 = FormatCertificateData(FingerprintSHA1, Failures);
+  UnicodeString CertificateDataSHA256 = FormatCertificateData(FingerprintSHA256, Failures);
 
   std::unique_ptr<THierarchicalStorage> Storage(Configuration->CreateConfigStorage());
   Storage->AccessMode = smRead;
@@ -7688,13 +7690,14 @@ bool  __fastcall TTerminal::VerifyCertificate(
     if (Storage->ValueExists(SiteKey))
     {
       UnicodeString CachedCertificateData = Storage->ReadString(SiteKey, L"");
-      if (SameChecksum(CertificateData, CachedCertificateData, false))
+      if (SameChecksum(CertificateDataSHA1, CachedCertificateData, false) ||
+          SameChecksum(CertificateDataSHA256, CachedCertificateData, false))
       {
         LogEvent(FORMAT(L"Certificate for \"%s\" matches cached fingerprint and failures", (CertificateSubject)));
         Result = true;
       }
     }
-    else if (Storage->ValueExists(Fingerprint))
+    else if (Storage->ValueExists(FingerprintSHA1) || Storage->ValueExists(FingerprintSHA256))
     {
       LogEvent(FORMAT(L"Certificate for \"%s\" matches legacy cached fingerprint", (CertificateSubject)));
       Result = true;
@@ -7714,7 +7717,8 @@ bool  __fastcall TTerminal::VerifyCertificate(
         Log->Add(llException, Message);
         Result = true;
       }
-      else if (SameChecksum(ExpectedKey, Fingerprint, false))
+      else if (SameChecksum(ExpectedKey, FingerprintSHA1, false) ||
+               SameChecksum(ExpectedKey, FingerprintSHA256, false))
       {
         LogEvent(FORMAT(L"Certificate for \"%s\" matches configured fingerprint", (CertificateSubject)));
         Result = true;
@@ -7729,7 +7733,8 @@ bool __fastcall TTerminal::ConfirmCertificate(
   TSessionInfo & SessionInfo, int Failures, const UnicodeString & CertificateStorageKey, bool CanRemember)
 {
   TClipboardHandler ClipboardHandler;
-  ClipboardHandler.Text = SessionInfo.CertificateFingerprint;
+  ClipboardHandler.Text =
+    FORMAT(L"SHA-256: %s\nSHA-1: %s", (SessionInfo.CertificateFingerprintSHA256, SessionInfo.CertificateFingerprintSHA1));
 
   TQueryButtonAlias Aliases[1];
   Aliases[0].Button = qaRetry;
@@ -7752,7 +7757,8 @@ bool __fastcall TTerminal::ConfirmCertificate(
   {
     case qaYes:
       CacheCertificate(
-        CertificateStorageKey, SessionData->SiteKey, SessionInfo.CertificateFingerprint, Failures);
+        CertificateStorageKey, SessionData->SiteKey,
+        SessionInfo.CertificateFingerprintSHA1, SessionInfo.CertificateFingerprintSHA256, Failures);
       Result = true;
       break;
 
@@ -7775,15 +7781,16 @@ bool __fastcall TTerminal::ConfirmCertificate(
   if (Result && CanRemember)
   {
     Configuration->RememberLastFingerprint(
-      SessionData->SiteKey, TlsFingerprintType, SessionInfo.CertificateFingerprint);
+      SessionData->SiteKey, TlsFingerprintType, SessionInfo.CertificateFingerprintSHA256);
   }
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::CacheCertificate(const UnicodeString & CertificateStorageKey,
-  const UnicodeString & SiteKey, const UnicodeString & Fingerprint, int Failures)
+void __fastcall TTerminal::CacheCertificate(
+  const UnicodeString & CertificateStorageKey, const UnicodeString & SiteKey,
+  const UnicodeString & DebugUsedArg(FingerprintSHA1), const UnicodeString & FingerprintSHA256, int Failures)
 {
-  UnicodeString CertificateData = FormatCertificateData(Fingerprint, Failures);
+  UnicodeString CertificateData = FormatCertificateData(FingerprintSHA256, Failures);
 
   std::unique_ptr<THierarchicalStorage> Storage(Configuration->CreateConfigStorage());
   Storage->AccessMode = smReadWrite;

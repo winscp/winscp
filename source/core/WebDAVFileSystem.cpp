@@ -1723,7 +1723,8 @@ void __fastcall TWebDAVFileSystem::Sink(
 // Similar to TS3FileSystem::VerifyCertificate
 bool TWebDAVFileSystem::VerifyCertificate(TNeonCertificateData Data, bool Aux)
 {
-  FSessionInfo.CertificateFingerprint = Data.Fingerprint;
+  FSessionInfo.CertificateFingerprintSHA1 = Data.FingerprintSHA1;
+  FSessionInfo.CertificateFingerprintSHA256 = Data.FingerprintSHA256;
 
   bool Result;
   if (FTerminal->SessionData->FingerprintScan)
@@ -1736,7 +1737,8 @@ bool TWebDAVFileSystem::VerifyCertificate(TNeonCertificateData Data, bool Aux)
 
     UnicodeString SiteKey = TSessionData::FormatSiteKey(FHostName, FPortNumber);
     Result =
-      FTerminal->VerifyCertificate(HttpsCertificateStorageKey, SiteKey, Data.Fingerprint, Data.Subject, Data.Failures);
+      FTerminal->VerifyCertificate(
+        HttpsCertificateStorageKey, SiteKey, Data.FingerprintSHA1, Data.FingerprintSHA256, Data.Subject, Data.Failures);
 
     if (Result)
     {
