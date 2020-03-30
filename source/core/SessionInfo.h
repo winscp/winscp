@@ -26,7 +26,8 @@ struct TSessionInfo
   UnicodeString HostKeyFingerprintSHA256;
   UnicodeString HostKeyFingerprintMD5;
 
-  UnicodeString CertificateFingerprint;
+  UnicodeString CertificateFingerprintSHA1;
+  UnicodeString CertificateFingerprintSHA256;
   UnicodeString Certificate;
   bool CertificateVerifiedManually;
 };

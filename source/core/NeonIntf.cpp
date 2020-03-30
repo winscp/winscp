@@ -434,12 +434,21 @@ void __fastcall UnregisterFromNeonDebug(TTerminal * Terminal)
 void __fastcall RetrieveNeonCertificateData(
   int Failures, const ne_ssl_certificate * Certificate, TNeonCertificateData & Data)
 {
-  char Fingerprint[NE_SSL_DIGESTLEN] = {0};
-  if (ne_ssl_cert_digest(Certificate, Fingerprint) != 0)
+  char Fingerprint[NE_SSL_DIGESTLEN];
+  Fingerprint[0] = '\0';
+  if (ne_ssl_cert_digest(Certificate, Fingerprint, 0) != 0)
   {
     strcpy(Fingerprint, "<unknown>");
   }
-  Data.Fingerprint = StrFromNeon(Fingerprint);
+  Data.FingerprintSHA1 = StrFromNeon(Fingerprint);
+
+  Fingerprint[0] = '\0';
+  if (ne_ssl_cert_digest(Certificate, Fingerprint, 1) != 0)
+  {
+    strcpy(Fingerprint, "<unknown>");
+  }
+  Data.FingerprintSHA256 = StrFromNeon(Fingerprint);
+
   Data.AsciiCert = NeonExportCertificate(Certificate);
 
   char * Subject = ne_ssl_readable_dname(ne_ssl_cert_subject(Certificate));
@@ -462,7 +471,7 @@ UnicodeString __fastcall CertificateVerificationMessage(const TNeonCertificateDa
 {
   return
     FORMAT(L"Verifying certificate for \"%s\" with fingerprint %s and %2.2X failures",
-           (Data.Subject, Data.Fingerprint, Data.Failures));
+           (Data.Subject, Data.FingerprintSHA256, Data.Failures));
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall CertificateSummary(const TNeonCertificateData & Data, const UnicodeString & HostName)
@@ -479,12 +488,13 @@ UnicodeString __fastcall CertificateSummary(const TNeonCertificateData & Data, c
 
   UnicodeString ValidityTimeFormat = L"ddddd tt";
   return
-    FMTLOAD(CERT_TEXT, (
+    FMTLOAD(CERT_TEXT2, (
       Data.Issuer + L"\n",
       Data.Subject + L"\n",
       FormatDateTime(ValidityTimeFormat, Data.ValidFrom),
       FormatDateTime(ValidityTimeFormat, Data.ValidUntil),
-      Data.Fingerprint,
+      Data.FingerprintSHA256,
+      Data.FingerprintSHA1,
       Summary));
 }
 //---------------------------------------------------------------------------

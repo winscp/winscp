@@ -3874,8 +3874,10 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestVerifyCertificate(
   }
   else
   {
-    FSessionInfo.CertificateFingerprint =
-      BytesToHex(RawByteString((const char*)Data.Hash, Data.HashLen), false, L':');
+    FSessionInfo.CertificateFingerprintSHA1 =
+      BytesToHex(RawByteString((const char*)Data.HashSha1, Data.HashSha1Len), false, L':');
+    FSessionInfo.CertificateFingerprintSHA256 =
+      BytesToHex(RawByteString((const char*)Data.HashSha256, Data.HashSha256Len), false, L':');
 
     if (FTerminal->SessionData->FingerprintScan)
     {
@@ -3884,7 +3886,7 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestVerifyCertificate(
     else
     {
       UnicodeString CertificateSubject = Data.Subject.Organization;
-      FTerminal->LogEvent(FORMAT(L"Verifying certificate for \"%s\" with fingerprint %s and %d failures", (CertificateSubject, FSessionInfo.CertificateFingerprint, Data.VerificationResult)));
+      FTerminal->LogEvent(FORMAT(L"Verifying certificate for \"%s\" with fingerprint %s and %d failures", (CertificateSubject, FSessionInfo.CertificateFingerprintSHA256, Data.VerificationResult)));
 
       bool Trusted = false;
       bool TryWindowsSystemCertificateStore = false;
@@ -3978,7 +3980,8 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestVerifyCertificate(
       if (!VerificationResult)
       {
         if (FTerminal->VerifyCertificate(FtpsCertificateStorageKey, FTerminal->SessionData->SiteKey,
-              FSessionInfo.CertificateFingerprint, CertificateSubject, Data.VerificationResult))
+              FSessionInfo.CertificateFingerprintSHA1, FSessionInfo.CertificateFingerprintSHA256,
+              CertificateSubject, Data.VerificationResult))
         {
           // certificate is trusted, but for not purposes of info dialog
           VerificationResult = true;
@@ -4030,12 +4033,13 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestVerifyCertificate(
       }
 
       FSessionInfo.Certificate =
-        FMTLOAD(CERT_TEXT, (
+        FMTLOAD(CERT_TEXT2, (
           FormatContact(Data.Issuer),
           FormatContact(Data.Subject),
           FormatValidityTime(Data.ValidFrom),
           FormatValidityTime(Data.ValidUntil),
-          FSessionInfo.CertificateFingerprint,
+          FSessionInfo.CertificateFingerprintSHA256,
+          FSessionInfo.CertificateFingerprintSHA1,
           Summary));
 
       RequestResult = VerificationResult ? 1 : 0;

@@ -17,6 +17,7 @@
 #include <PasTools.hpp>
 #include <Math.hpp>
 #include <WebBrowserEx.hpp>
+#include <RegularExpressions.hpp>
 #include <Setup.h>
 #include <WinApi.h>
 #include "MessageDlg.h"
@@ -997,6 +998,12 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
   }
 
   int MaxTextWidth = ScaleByTextHeightRunTime(Result, mcMaxDialogWidth);
+  // If the message contains SHA-256 hex fingerprint (CERT_TEXT2 on TLS/SSL certificate verification dialog),
+  // allow wider box to fit it
+  if (TRegEx::IsMatch(Msg, L"([0-9a-fA-F]{2}[:\-]){31}[0-9a-fA-F]{2}"))
+  {
+    MaxTextWidth = MaxTextWidth * 3 / 2;
+  }
   // if the dialog would be wide anyway (overwrite confirmation on Windows XP),
   // to fit the buttons, do not restrict the text
   if (MaxTextWidth < ButtonGroupWidth - IconWidth)

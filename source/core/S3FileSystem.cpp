@@ -202,7 +202,8 @@ int TS3FileSystem::LibS3SslCallback(int Failures, const ne_ssl_certificate_s * C
 // Similar to TWebDAVFileSystem::VerifyCertificate
 bool TS3FileSystem::VerifyCertificate(TNeonCertificateData Data)
 {
-  FSessionInfo.CertificateFingerprint = Data.Fingerprint;
+  FSessionInfo.CertificateFingerprintSHA1 = Data.FingerprintSHA1;
+  FSessionInfo.CertificateFingerprintSHA256 = Data.FingerprintSHA256;
 
   bool Result;
   if (FTerminal->SessionData->FingerprintScan)
@@ -215,7 +216,8 @@ bool TS3FileSystem::VerifyCertificate(TNeonCertificateData Data)
 
     UnicodeString SiteKey = TSessionData::FormatSiteKey(FTerminal->SessionData->HostNameExpanded, FTerminal->SessionData->PortNumber);
     Result =
-      FTerminal->VerifyCertificate(HttpsCertificateStorageKey, SiteKey, Data.Fingerprint, Data.Subject, Data.Failures);
+      FTerminal->VerifyCertificate(
+        HttpsCertificateStorageKey, SiteKey, Data.FingerprintSHA1, Data.FingerprintSHA256, Data.Subject, Data.Failures);
 
     if (Result)
     {

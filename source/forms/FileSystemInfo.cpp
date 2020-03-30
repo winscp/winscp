@@ -46,7 +46,8 @@ __fastcall TFileSystemInfoDialog::TFileSystemInfoDialog(TComponent * AOwner,
   ReadOnlyControl(HostKeyAlgorithmEdit);
   ReadOnlyControl(HostKeyFingerprintSHA256Edit);
   ReadOnlyControl(HostKeyFingerprintMD5Edit);
-  ReadOnlyControl(CertificateFingerprintEdit);
+  ReadOnlyControl(CertificateFingerprintSha256Edit);
+  ReadOnlyControl(CertificateFingerprintSha1Edit);
   ReadOnlyControl(InfoMemo);
 }
 //---------------------------------------------------------------------
@@ -113,7 +114,8 @@ void __fastcall TFileSystemInfoDialog::Feed(TFeedFileSystemData AddItem)
 
   AddItem(HostKeyFingerprintSHA256Edit, 0, FSessionInfo.HostKeyFingerprintSHA256);
   AddItem(HostKeyFingerprintMD5Edit, 0, FSessionInfo.HostKeyFingerprintMD5);
-  AddItem(CertificateFingerprintEdit, 0, FSessionInfo.CertificateFingerprint);
+  AddItem(CertificateFingerprintSha256Edit, 0, FSessionInfo.CertificateFingerprintSHA256);
+  AddItem(CertificateFingerprintSha1Edit, 0, FSessionInfo.CertificateFingerprintSHA1);
 
   AddItem(ProtocolView, FSINFO_MODE_CHANGING, CapabilityStr(fcModeChanging));
   AddItem(ProtocolView, FSINFO_OWNER_GROUP_CHANGING, CapabilityStr(fcGroupChanging));
@@ -164,11 +166,11 @@ void __fastcall TFileSystemInfoDialog::ControlsAddItem(TControl * Control,
     HostKeyAlgorithmEdit->Text = FORMAT(L"%s %s", (Alg1, Alg2));
     DebugNotNull(dynamic_cast<TEdit *>(Control))->Text = Value;
   }
-  else if (Control == CertificateFingerprintEdit)
+  else if ((Control == CertificateFingerprintSha256Edit) || (Control == CertificateFingerprintSha1Edit))
   {
     EnableControl(CertificateGroup, !Value.IsEmpty());
     CertificateGroup->Visible = !Value.IsEmpty();
-    CertificateFingerprintEdit->Text = Value;
+    DebugNotNull(dynamic_cast<TEdit *>(Control))->Text = Value;
   }
   else if (Control == InfoMemo)
   {

@@ -104,7 +104,8 @@ struct t_SslCertData
 
   TCHAR subjectAltName[10240];
 
-  unsigned char hash[20];
+  unsigned char hashSha1[20];
+  unsigned char hashSha256[32];
 
   unsigned char * certificate;
   size_t certificateLen;
