@@ -72,8 +72,10 @@ void __fastcall DefaultButton(TButton * Button, bool Default);
 void __fastcall MemoKeyDown(TObject * Sender, WORD & Key, TShiftState Shift);
 void __fastcall UseDesktopFont(TControl * Control);
 void __fastcall UpdateDesktopFont();
-UnicodeString __fastcall FormatFormCaption(TCustomForm * Form, const UnicodeString & Caption);
-UnicodeString __fastcall FormatMainFormCaption(const UnicodeString & Caption);
+UnicodeString __fastcall FormatFormCaption(
+  TCustomForm * Form, const UnicodeString & Caption, const UnicodeString & SessionName = UnicodeString());
+UnicodeString __fastcall FormatMainFormCaption(
+  const UnicodeString & Caption, const UnicodeString & SessionName = UnicodeString());
 TShiftState __fastcall AllKeyShiftStates();
 void __fastcall RealignControl(TControl * Control);
 void __fastcall HookFormActivation(TCustomForm * Form);

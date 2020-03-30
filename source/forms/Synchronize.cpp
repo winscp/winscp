@@ -16,6 +16,7 @@
 #include <TextsWin.h>
 #include <HelpWin.h>
 #include <WinConfiguration.h>
+#include <TerminalManager.h>
 #include <StrUtils.hpp>
 #include <Tools.h>
 //---------------------------------------------------------------------------
@@ -160,7 +161,9 @@ void __fastcall TSynchronizeDialog::UpdateControls()
     // some of the above steps hides accelerators when start button is pressed with mouse
     ResetSystemSettings(this);
   }
-  Caption = FormatFormCaption(this, LoadStr(FSynchronizing ? SYNCHRONIZE_SYCHRONIZING : SYNCHRONIZE_TITLE));
+  TTerminalManager * Manager = TTerminalManager::Instance();
+  UnicodeString Title = LoadStr(FSynchronizing ? SYNCHRONIZE_SYCHRONIZING : SYNCHRONIZE_TITLE);
+  Caption = Manager->FormatFormCaptionWithSession(this, Title);
   EnableControl(TransferSettingsButton, !FSynchronizing);
   CancelButton->Visible = !FSynchronizing || FLAGSET(FOptions, soNoMinimize);
   EnableControl(CancelButton, !FSynchronizing);
