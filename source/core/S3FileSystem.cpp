@@ -90,7 +90,7 @@ void __fastcall TS3FileSystem::Open()
   FLibS3Protocol = (Data->Ftps != ftpsNone) ? S3ProtocolHTTPS : S3ProtocolHTTP;
 
   UnicodeString AccessKeyId = Data->UserNameExpanded;
-  if (AccessKeyId.IsEmpty())
+  if (AccessKeyId.IsEmpty() && !FTerminal->SessionData->FingerprintScan)
   {
     if (!FTerminal->PromptUser(Data, pkUserName, LoadStr(S3_ACCESS_KEY_ID_TITLE), L"",
           LoadStr(S3_ACCESS_KEY_ID_PROMPT), true, 0, AccessKeyId))
@@ -102,7 +102,7 @@ void __fastcall TS3FileSystem::Open()
   FAccessKeyId = UTF8String(AccessKeyId);
 
   UnicodeString SecretAccessKey = UTF8String(NormalizeString(Data->Password));
-  if (SecretAccessKey.IsEmpty())
+  if (SecretAccessKey.IsEmpty() && !FTerminal->SessionData->FingerprintScan)
   {
     if (!FTerminal->PromptUser(Data, pkPassword, LoadStr(S3_SECRET_ACCESS_KEY_TITLE), L"",
           LoadStr(S3_SECRET_ACCESS_KEY_PROMPT), false, 0, SecretAccessKey))
