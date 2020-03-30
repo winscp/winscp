@@ -606,6 +606,9 @@ ne_propfind_create(ne_session *sess, const char *uri, int depth)
     ne_207_set_propstat_handlers(ret->parser207, start_propstat,
 				  end_propstat);
 
+    if (ne_get_session_flag(sess, NE_SESSFLAG_SHAREPOINT))
+        ne_207_set_flags(ret->parser207, NE_207_MSSP_ESCAPING);
+
     /* The start of the request body is fixed: */
     ne_buffer_czappend(ret->body, 
                        "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" 

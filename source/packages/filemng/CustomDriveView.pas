@@ -43,6 +43,7 @@ type
     FContinue: Boolean;
     FImageList: TImageList;
     FScrollOnDragOver: TTreeViewScrollOnDragOver;
+    FRecreatingHandle: Boolean;
 
     FOnDDDragEnter: TDDOnDragEnter;
     FOnDDDragLeave: TDDOnDragLeave;
@@ -247,6 +248,7 @@ begin
   FContinue := True;
   FNaturalOrderNumericalSorting := True;
   FDarkMode := False;
+  FRecreatingHandle := False;
   OnCompare := DoCompare;
 
   FDragDropFilesEx := TCustomizableDragDropFilesEx.Create(Self);
@@ -961,7 +963,13 @@ begin
   // (as the handle is implicitly created somewhere in the middle of the reload and chaos ensures).
   if HadHandle then
   begin
-    HandleNeeded;
+    Assert(not FRecreatingHandle);
+    FRecreatingHandle := True;
+    try
+      HandleNeeded;
+    finally
+      FRecreatingHandle := False;
+    end;
   end;
 end;
 

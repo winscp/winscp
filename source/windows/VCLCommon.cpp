@@ -416,16 +416,21 @@ bool __fastcall IsMainFormLike(TCustomForm * Form)
     IsMainFormHidden();
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall FormatMainFormCaption(const UnicodeString & Caption)
+UnicodeString __fastcall FormatMainFormCaption(const UnicodeString & Caption, const UnicodeString & SessionName)
 {
+  UnicodeString Suffix = AppName;
+  if (!SessionName.IsEmpty())
+  {
+    Suffix = SessionName + L" - " + Suffix;
+  }
   UnicodeString Result = Caption;
   if (Result.IsEmpty())
   {
-    Result = AppName;
+    Result = Suffix;
   }
   else
   {
-    UnicodeString Suffix = L" - " + AppName;
+    Suffix = L" - " + Suffix;
     if (!EndsStr(Suffix, Result))
     {
       Result += Suffix;
@@ -434,12 +439,13 @@ UnicodeString __fastcall FormatMainFormCaption(const UnicodeString & Caption)
   return Result;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall FormatFormCaption(TCustomForm * Form, const UnicodeString & Caption)
+UnicodeString __fastcall FormatFormCaption(
+  TCustomForm * Form, const UnicodeString & Caption, const UnicodeString & SessionName)
 {
   UnicodeString Result = Caption;
   if (IsMainFormLike(Form))
   {
-    Result = FormatMainFormCaption(Result);
+    Result = FormatMainFormCaption(Result, SessionName);
   }
   return Result;
 }

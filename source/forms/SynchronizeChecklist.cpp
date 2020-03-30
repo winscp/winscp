@@ -134,7 +134,7 @@ void __fastcall TSynchronizeChecklistDialog::UpdateCaption()
   {
     AddToList(Title, StatusTitle, L" - ");
   }
-  Caption = FormatFormCaption(this, Title);
+  Caption = Manager->FormatFormCaptionWithSession(this, Title);
 }
 //---------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::UpdateControls()

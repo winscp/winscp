@@ -754,6 +754,11 @@ bool __fastcall TTerminalManager::ShouldDisplayQueueStatusOnAppTitle()
   return Result;
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall TTerminalManager::FormatFormCaptionWithSession(TCustomForm * Form, const UnicodeString & Caption)
+{
+  return FormatFormCaption(Form, Caption, GetActiveTerminalTitle(false));
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall TTerminalManager::GetAppProgressTitle()
 {
   UnicodeString Result;

@@ -654,6 +654,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             MaxLength = 255
             TabOrder = 0
             Text = 'SftpServerEdit'
+            OnChange = DataChange
             Items.Strings = (
               'Default'
               '/bin/sftp-server'

@@ -336,9 +336,13 @@ static bool ssh2_connection_filter_queue(struct ssh2_connection_state *s)
 
     while (1) {
         if (ssh2_common_filter_queue(&s->ppl))
+        {
             return true;
+        }
         if ((pktin = pq_peek(s->ppl.in_pq)) == NULL)
+        {
             return false;
+        }
 
         switch (pktin->type) {
           case SSH2_MSG_GLOBAL_REQUEST:

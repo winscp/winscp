@@ -329,6 +329,7 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
       {
         conf_set_str(conf, CONF_remote_cmd, AnsiString(Data->Shell).c_str());
       }
+      conf_set_bool(conf, CONF_force_remote_cmd2, 0);
     }
     else
     {
@@ -361,15 +362,21 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
           conf_set_str(conf, CONF_remote_cmd2, AnsiString(Data->Shell).c_str());
         }
       }
-
-      if ((Data->FSProtocol == fsSFTPonly) && Data->SftpServer.IsEmpty())
+      else
       {
-        // see psftp_connect() from psftp.c
-        conf_set_bool(conf, CONF_ssh_subsys2, FALSE);
-        conf_set_str(conf, CONF_remote_cmd2,
-          "test -x /usr/lib/sftp-server && exec /usr/lib/sftp-server\n"
-          "test -x /usr/local/lib/sftp-server && exec /usr/local/lib/sftp-server\n"
-          "exec sftp-server");
+        if (Data->SftpServer.IsEmpty())
+        {
+          // see psftp_connect() from psftp.c
+          conf_set_bool(conf, CONF_ssh_subsys2, FALSE);
+          conf_set_str(conf, CONF_remote_cmd2,
+            "test -x /usr/lib/sftp-server && exec /usr/lib/sftp-server\n"
+            "test -x /usr/local/lib/sftp-server && exec /usr/local/lib/sftp-server\n"
+            "exec sftp-server");
+        }
+        else
+        {
+          conf_set_bool(conf, CONF_force_remote_cmd2, 0);
+        }
       }
     }
   }

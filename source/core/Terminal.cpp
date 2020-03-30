@@ -1124,7 +1124,7 @@ void __fastcall TTerminal::ResetConnection()
   // as they can still be referenced in the GUI atm
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::FingerprintScan(UnicodeString & SHA256, UnicodeString & MD5)
+void __fastcall TTerminal::FingerprintScan(UnicodeString & SHA256, UnicodeString & SHA1, UnicodeString & MD5)
 {
   SessionData->FingerprintScan = true;
   try
@@ -1136,9 +1136,12 @@ void __fastcall TTerminal::FingerprintScan(UnicodeString & SHA256, UnicodeString
   }
   catch (...)
   {
-    if (!FFingerprintScannedSHA256.IsEmpty() || !FFingerprintScannedMD5.IsEmpty())
+    if (!FFingerprintScannedSHA256.IsEmpty() ||
+        !FFingerprintScannedSHA1.IsEmpty() ||
+        !FFingerprintScannedMD5.IsEmpty())
     {
       SHA256 = FFingerprintScannedSHA256;
+      SHA1 = FFingerprintScannedSHA1;
       MD5 = FFingerprintScannedMD5;
     }
     else
@@ -1240,6 +1243,7 @@ void __fastcall TTerminal::Open()
                   if (SessionData->FingerprintScan)
                   {
                     FSecureShell->GetHostKeyFingerprint(FFingerprintScannedSHA256, FFingerprintScannedMD5);
+                    FFingerprintScannedSHA1 = UnicodeString();
                   }
                   if (!FSecureShell->Active && !FTunnelError.IsEmpty())
                   {
@@ -1326,7 +1330,8 @@ void __fastcall TTerminal::Open()
             DebugAlwaysTrue(SessionData->Ftps != ftpsNone))
         {
           FFingerprintScannedSHA256 = UnicodeString();
-          FFingerprintScannedMD5 = FFileSystem->GetSessionInfo().CertificateFingerprint;
+          FFingerprintScannedSHA1 = FFileSystem->GetSessionInfo().CertificateFingerprint;
+          FFingerprintScannedMD5 = UnicodeString();
         }
         // Particularly to prevent reusing a wrong client certificate passphrase
         // in the next login attempt

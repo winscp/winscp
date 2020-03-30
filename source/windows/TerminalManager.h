@@ -66,6 +66,7 @@ public:
   UnicodeString __fastcall GetTerminalTitle(TTerminal * Terminal, bool Unique);
   UnicodeString __fastcall GetActiveTerminalTitle(bool Unique);
   UnicodeString __fastcall GetAppProgressTitle();
+  UnicodeString __fastcall FormatFormCaptionWithSession(TCustomForm * Form, const UnicodeString & Caption);
   void __fastcall HandleException(Exception * E);
   void __fastcall SaveWorkspace(TList * DataList);
   void __fastcall QueueStatusUpdated();

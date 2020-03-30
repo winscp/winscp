@@ -218,6 +218,7 @@ private:
   bool FRememberedTunnelPasswordTried;
   int FNesting;
   UnicodeString FFingerprintScannedSHA256;
+  UnicodeString FFingerprintScannedSHA1;
   UnicodeString FFingerprintScannedMD5;
   DWORD FLastProgressLogged;
   UnicodeString FDestFileName;
@@ -495,7 +496,7 @@ public:
   __fastcall ~TTerminal();
   void __fastcall Open();
   void __fastcall Close();
-  void __fastcall FingerprintScan(UnicodeString & SHA256, UnicodeString & MD5);
+  void __fastcall FingerprintScan(UnicodeString & SHA256, UnicodeString & SHA1, UnicodeString & MD5);
   void __fastcall Reopen(int Params);
   virtual void __fastcall DirectoryModified(const UnicodeString Path, bool SubDirs);
   virtual void __fastcall DirectoryLoaded(TRemoteFileList * FileList);

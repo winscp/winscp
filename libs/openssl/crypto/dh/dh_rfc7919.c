@@ -9,10 +9,11 @@
 
 #include <stdio.h>
 #include "internal/cryptlib.h"
-#include "dh_locl.h"
+#include "dh_local.h"
 #include <openssl/bn.h>
 #include <openssl/objects.h>
-#include "internal/bn_dh.h"
+#include "crypto/bn_dh.h"
+#include "../crypto/bn/bn_local.h"
 
 static DH *dh_param_init(const BIGNUM *p, int32_t nbits)
 {

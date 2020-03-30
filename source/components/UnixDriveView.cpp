@@ -74,6 +74,13 @@ void __fastcall TCustomUnixDriveView::CreateWnd()
   FPrevSelected = Selected;
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomUnixDriveView::DestroyWnd()
+{
+  // in case we are recreating (TCustomTreeView.DestroyWnd deletes items)
+  FPrevSelected = NULL;
+  TCustomDriveView::DestroyWnd();
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomUnixDriveView::SetTerminal(TTerminal * value)
 {
   #ifndef DESIGN_ONLY
@@ -463,7 +470,7 @@ void __fastcall TCustomUnixDriveView::Change(TTreeNode * Node)
   {
     // During D&D Selected is set to NULL and then back to previous selection,
     // prevent actually changing directory in such case
-    if (Reading || ControlState.Contains(csRecreating) ||
+    if (Reading || ControlState.Contains(csRecreating) || FRecreatingHandle ||
         (Node == NULL) || (Node == FPrevSelected))
     {
       TCustomDriveView::Change(Node);
@@ -487,7 +494,11 @@ void __fastcall TCustomUnixDriveView::Change(TTreeNode * Node)
         }
 
         FDirectoryLoaded = false;
-        StartBusy();
+        bool SetBusy = !ControlState.Contains(csRecreating);
+        if (SetBusy)
+        {
+          StartBusy();
+        }
         try
         {
           Terminal->ChangeDirectory(NodePathName(Node));
@@ -495,7 +506,10 @@ void __fastcall TCustomUnixDriveView::Change(TTreeNode * Node)
         }
         __finally
         {
-          EndBusy();
+          if (SetBusy)
+          {
+            EndBusy();
+          }
           if (!FDirectoryLoaded)
           {
             DebugAssert(!FIgnoreChange);

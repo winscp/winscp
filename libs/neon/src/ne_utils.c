@@ -117,12 +117,18 @@ static const char version_string[] = "neon " NEON_VERSION ": "
 #ifdef NE_HAVE_SOCKS
    ", SOCKSv5"
 #endif
+#ifdef NE_HAVE_LFS
+   ", LFS"
+#endif
 #ifdef HAVE_OPENSSL
 #ifdef OPENSSL_VERSION_TEXT
     ", " OPENSSL_VERSION_TEXT
 #else
    "OpenSSL (unknown version)"
 #endif /* OPENSSL_VERSION_TEXT */
+#ifdef NE_HAVE_TS_SSL
+    " (thread-safe)"
+#endif
 #endif /* HAVE_OPENSSL */
 #ifdef HAVE_GNUTLS
     ", GNU TLS " LIBGNUTLS_VERSION
@@ -130,6 +136,12 @@ static const char version_string[] = "neon " NEON_VERSION ": "
 #ifdef HAVE_SSPI
     ", SSPI"
 #endif /* HAVE_SSPI */
+#ifdef HAVE_PAKCHOIS
+    ", PKCS#11"
+#endif
+#ifdef NE_HAVE_LIBPXY
+    ", libproxy"
+#endif
    "."
 ;
 
@@ -138,10 +150,13 @@ const char *ne_version_string(void)
     return version_string;
 }
 
+#define LAST_COMPAT_ZERO_MINOR (27)
+
 int ne_version_match(int major, int minor)
 {
-    return NE_VERSION_MAJOR != major || NE_VERSION_MINOR < minor
-        || (NE_VERSION_MAJOR == 0 && NE_VERSION_MINOR != minor);
+    return !
+        (NE_VERSION_MAJOR == 0 &&
+         (minor <= NE_VERSION_MINOR && minor >= LAST_COMPAT_ZERO_MINOR));
 }
 
 int ne_has_support(int feature)
