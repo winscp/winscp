@@ -7527,7 +7527,7 @@ bool __fastcall TCustomScpExplorerForm::DDGetTarget(
 void __fastcall TCustomScpExplorerForm::AddDelayedDirectoryDeletion(
   const UnicodeString TempDir, int SecDelay)
 {
-  TDateTime Alarm = Now() + (double)((double)SecDelay*OneMillisecond);
+  TDateTime Alarm = IncSecond(Now(), SecDelay);
   FDelayedDeletionList->AddObject(TempDir, reinterpret_cast<TObject*>(Alarm.FileDate()));
   if (FDelayedDeletionTimer == NULL)
   {
