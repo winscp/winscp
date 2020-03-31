@@ -1514,7 +1514,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'View'
       Caption = 'Show/Hide &Hidden Files'
-      HelpKeyword = 'ui_file_panel#special_files'
+      HelpKeyword = 'ui_file_panel#hidden_files'
       Hint = 'Toggle showing hidden files in panel(s)'
       ShortCut = 49224
     end
