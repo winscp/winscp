@@ -463,7 +463,7 @@ BEGIN
   OPENSSL_COPYRIGHT2, "Copyright © 1998-%s The OpenSSL Project"
   OPENSSL_URL, "https://www.openssl.org/"
   NEON_BASED_ON2, "WebDAV/HTTP code based on neon library %s"
-  NEON_COPYRIGHT, "Copyright © 1999-2016 Joe Orton"
+  NEON_COPYRIGHT, "Copyright © 1999-2020 Joe Orton"
   NEON_URL, "http://www.webdav.org/neon/"
   EXPAT_BASED_ON, "eXpat library %s"
   EXPAT_URL, "http://www.libexpat.org/"
