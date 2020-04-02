@@ -76,6 +76,7 @@ private:
   ScpLogPolicy * FLogPolicy;
   ScpSeat * FSeat;
   LogContext * FLogCtx;
+  bool FSentEof;
 
   void __fastcall Init();
   void __fastcall SetActive(bool value);
@@ -155,6 +156,7 @@ public:
     UnicodeString AName, bool NameRequired,
     UnicodeString Instructions, bool InstructionsRequired,
     TStrings * Prompts, TStrings * Results);
+  bool __fastcall EofReceived();
   void __fastcall FromBackend(const unsigned char * Data, size_t Length);
   void __fastcall CWrite(const char * Data, size_t Length);
   void __fastcall AddStdError(const char * Data, size_t Length);

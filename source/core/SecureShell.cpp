@@ -74,6 +74,7 @@ __fastcall TSecureShell::TSecureShell(TSessionUI* UI,
   FSimple = false;
   FCollectPrivateKeyUsage = false;
   FWaitingForData = 0;
+  FSentEof = false;
   FCallbackSet.reset(new callback_set());
   memset(FCallbackSet.get(), 0, sizeof(callback_set));
 }
@@ -101,6 +102,7 @@ void __fastcall TSecureShell::ResetConnection()
   FStoredPasswordTried = false;
   FStoredPasswordTriedForKI = false;
   FStoredPassphraseTried = false;
+  FSentEof = false;
   delete FLogPolicy;
   FLogPolicy = NULL;
   delete FSeat;
@@ -1002,6 +1004,15 @@ void __fastcall TSecureShell::UnregisterReceiveHandler(TNotifyEvent Handler)
   FOnReceive = NULL;
 }
 //---------------------------------------------------------------------------
+bool __fastcall TSecureShell::EofReceived()
+{
+  if (!FSentEof)
+  {
+    FatalError(MainInstructions(LoadStr(NOT_CONNECTED)));
+  }
+  return false;
+}
+//---------------------------------------------------------------------------
 void __fastcall TSecureShell::FromBackend(const unsigned char * Data, size_t Length)
 {
   // Note that we do not apply ConvertFromPutty to Data yet (as opposite to CWrite).
@@ -1691,6 +1702,7 @@ void __fastcall TSecureShell::Close()
   {
     // this is particularly necessary when using local proxy command
     // (e.g. plink), otherwise it hangs in sk_localproxy_close
+    FSentEof = true;
     SendSpecial(SS_EOF);
     // Try waiting for the EOF exchange to complete (among other to avoid packet queue memory leaks)
     int Timeout = 500;
