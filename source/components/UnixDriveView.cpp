@@ -579,7 +579,7 @@ void __fastcall TCustomUnixDriveView::PerformDragDropFileOperation(
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomUnixDriveView::DDChooseEffect(int KeyState, int & Effect)
+void __fastcall TCustomUnixDriveView::DDChooseEffect(int KeyState, int & Effect, int PreferredEffect)
 {
   // if any drop effect is allowed at all (e.g. no drop to self and drop to parent)
   if (Effect != DROPEFFECT_NONE)
@@ -597,7 +597,7 @@ void __fastcall TCustomUnixDriveView::DDChooseEffect(int KeyState, int & Effect)
     }
   }
 
-  TCustomDriveView::DDChooseEffect(KeyState, Effect);
+  TCustomDriveView::DDChooseEffect(KeyState, Effect, PreferredEffect);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomUnixDriveView::UpdateDropTarget()

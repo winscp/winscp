@@ -9784,8 +9784,8 @@ void __fastcall TCustomScpExplorerForm::SessionsPageControlDragOver(
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::SessionsDDDragOver(int /*KeyState*/,
-  const TPoint & Point, int & Effect)
+void __fastcall TCustomScpExplorerForm::SessionsDDDragOver(
+  int DebugUsedArg(KeyState), const TPoint & Point, int & Effect, int DebugUsedArg(PreferredEffect))
 {
   int Index = SessionsPageControl->IndexOfTabAt(Point.X, Point.Y);
   if (Index < 0)

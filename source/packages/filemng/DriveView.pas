@@ -211,7 +211,7 @@ type
     function CreateNode: TTreeNode; override;
 
     function DDSourceEffects: TDropEffectSet; override;
-    procedure DDChooseEffect(KeyState: Integer; var Effect: Integer); override;
+    procedure DDChooseEffect(KeyState: Integer; var Effect: Integer; PreferredEffect: Integer); override;
     function DragCompleteFileList: Boolean; override;
     function DDExecute: TDragResult; override;
 
@@ -2448,11 +2448,11 @@ begin
     Result := [deLink, deCopy, deMove];
 end;
 
-procedure TDriveView.DDChooseEffect(KeyState: Integer; var Effect: Integer);
+procedure TDriveView.DDChooseEffect(KeyState: Integer; var Effect: Integer; PreferredEffect: Integer);
 begin
   if DropTarget = nil then Effect := DROPEFFECT_NONE
     else
-  if (KeyState and (MK_CONTROL or MK_SHIFT) = 0) then
+  if (KeyState and (MK_CONTROL or MK_SHIFT) = 0) and (PreferredEffect = 0) then
   begin
     if FDragDrive <> '' then
     begin
