@@ -1397,7 +1397,7 @@ void __fastcall TEditorForm::CheckFileSize()
         TMessageParams Params(mpNeverAskAgainCheck);
         unsigned int Answer =
           MoreMessageDialog(
-            FMTLOAD(INTERNAL_EDITOR_LARGE_FILE, (FormatBytes(Size))), NULL,
+            FMTLOAD(INTERNAL_EDITOR_LARGE_FILE2, (FormatBytes(Size))), NULL,
             qtConfirmation, qaOK | qaCancel, HELP_NONE, &Params);
         switch (Answer)
         {
