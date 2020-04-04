@@ -166,10 +166,9 @@ static size_t output(Seat * seat, bool is_stderr, const void * data, size_t len)
   return 0;
 }
 //---------------------------------------------------------------------------
-static bool eof(Seat * seat)
+static bool eof(Seat *)
 {
-  TSecureShell * SecureShell = static_cast<ScpSeat *>(seat)->SecureShell;
-  return SecureShell->EofReceived();
+  return false;
 }
 //---------------------------------------------------------------------------
 static int get_userpass_input(Seat * seat, prompts_t * p, bufchain * DebugUsedArg(input))
