@@ -1420,7 +1420,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Top = 102
             Width = 182
             Height = 21
-            MaxLength = 50
+            MaxLength = 100
             TabOrder = 5
             Text = 'ProxyUsernameEdit'
             OnChange = DataChange
@@ -1431,7 +1431,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Width = 182
             Height = 21
             Anchors = [akLeft, akTop, akRight]
-            MaxLength = 50
+            MaxLength = 100
             TabOrder = 6
             Text = 'ProxyPasswordEdit'
             OnChange = DataChange
@@ -1668,7 +1668,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Top = 85
             Width = 182
             Height = 21
-            MaxLength = 50
+            MaxLength = 100
             TabOrder = 2
             Text = 'TunnelUserNameEdit'
             OnChange = DataChange
@@ -1679,7 +1679,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Width = 182
             Height = 21
             Anchors = [akLeft, akTop, akRight]
-            MaxLength = 50
+            MaxLength = 100
             TabOrder = 3
             Text = 'TunnelPasswordEdit'
             OnChange = DataChange
