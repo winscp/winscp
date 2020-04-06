@@ -197,7 +197,7 @@ type
     procedure DDMenuDone(Sender: TObject; AMenu: HMenu); override;
     procedure DDDropHandlerSucceeded(Sender: TObject; grfKeyState: Longint;
       Point: TPoint; dwEffect: Longint); override;
-    procedure DDChooseEffect(grfKeyState: Integer; var dwEffect: Integer); override;
+    procedure DDChooseEffect(grfKeyState: Integer; var dwEffect: Integer; PreferredEffect: Integer); override;
 
     function GetPathName: string; override;
     procedure SetChangeInterval(Value: Cardinal); virtual;
@@ -3103,8 +3103,7 @@ begin
   end;
 end; {DDDragDetect}
 
-procedure TDirView.DDChooseEffect(grfKeyState: Integer;
-  var dwEffect: Integer);
+procedure TDirView.DDChooseEffect(grfKeyState: Integer; var dwEffect: Integer; PreferredEffect: Integer);
 begin
   if DragDropFilesEx.OwnerIsSource and
      (dwEffect = DROPEFFECT_COPY) and (not Assigned(DropTarget)) then
@@ -3112,7 +3111,7 @@ begin
     dwEffect := DROPEFFECT_NONE
   end
     else
-  if (grfKeyState and (MK_CONTROL or MK_SHIFT) = 0) then
+  if (grfKeyState and (MK_CONTROL or MK_SHIFT) = 0) and (PreferredEffect = 0) then
   begin
     if FDragDrive <> '' then
     begin

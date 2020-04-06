@@ -41,7 +41,7 @@ protected:
   virtual void __fastcall DDDragDetect(int grfKeyState, const TPoint &DetectStart,
     const TPoint &Point, TDragDetectStatus DragStatus);
   virtual void __fastcall DDMenuDone(TObject* Sender, HMENU AMenu);
-  virtual void __fastcall DDChooseEffect(int grfKeyState, int &dwEffect);
+  virtual void __fastcall DDChooseEffect(int grfKeyState, int &dwEffect, int PreferredEffect);
   virtual void __fastcall AddToDragFileList(TFileList* FileList, TListItem* Item);
   void __fastcall DoChangeDirectory(TObject * Sender);
   void __fastcall DoReadDirectory(TObject * Sender, bool ReloadOnly);

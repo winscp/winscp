@@ -518,77 +518,75 @@ IShellLink * __fastcall CreateDesktopShortCut(const UnicodeString & Name,
 
   try
   {
-    if (SUCCEEDED(CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER,
-         IID_IShellLink, (void **) &pLink)))
-    {
-      try
-      {
-        pLink->SetPath(File.c_str());
-        pLink->SetDescription(Description.c_str());
-        pLink->SetArguments(Params.c_str());
-        pLink->SetShowCmd(SW_SHOW);
-        // Explicitly setting icon file,
-        // without this icons are not shown at least in Windows 7 jumplist
-        pLink->SetIconLocation(File.c_str(), IconIndex);
+    OleCheck(CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, IID_IShellLink, (void **) &pLink));
 
-        IPersistFile* pPersistFile;
-        if (!Return &&
-            SUCCEEDED(pLink->QueryInterface(IID_IPersistFile, (void **)&pPersistFile)))
+    try
+    {
+      pLink->SetPath(File.c_str());
+      pLink->SetDescription(Description.c_str());
+      pLink->SetArguments(Params.c_str());
+      pLink->SetShowCmd(SW_SHOW);
+      // Explicitly setting icon file,
+      // without this icons are not shown at least in Windows 7 jumplist
+      pLink->SetIconLocation(File.c_str(), IconIndex);
+
+      IPersistFile* pPersistFile;
+      if (!Return &&
+          SUCCEEDED(pLink->QueryInterface(IID_IPersistFile, (void **)&pPersistFile)))
+      {
+        try
         {
+          LPMALLOC      ShellMalloc;
+          LPITEMIDLIST  DesktopPidl;
+          wchar_t DesktopDir[MAX_PATH];
+
+          OleCheck(SHGetMalloc(&ShellMalloc));
+
           try
           {
-            LPMALLOC      ShellMalloc;
-            LPITEMIDLIST  DesktopPidl;
-            wchar_t DesktopDir[MAX_PATH];
+            OleCheck(SHGetSpecialFolderLocation(NULL, SpecialFolder, &DesktopPidl));
 
-            OleCheck(SHGetMalloc(&ShellMalloc));
-
-            try
-            {
-              OleCheck(SHGetSpecialFolderLocation(NULL, SpecialFolder, &DesktopPidl));
-
-              OleCheck(SHGetPathFromIDList(DesktopPidl, DesktopDir));
-            }
-            __finally
-            {
-              ShellMalloc->Free(DesktopPidl);
-              ShellMalloc->Release();
-            }
-
-            WideString strShortCutLocation(DesktopDir);
-            // Name can contain even path (e.g. to create quick launch icon)
-            strShortCutLocation += UnicodeString(L"\\") + Name + L".lnk";
-            OleCheck(pPersistFile->Save(strShortCutLocation.c_bstr(), TRUE));
+            OleCheck(SHGetPathFromIDList(DesktopPidl, DesktopDir));
           }
           __finally
           {
-            pPersistFile->Release();
+            ShellMalloc->Free(DesktopPidl);
+            ShellMalloc->Release();
           }
-        }
 
-        // this is necessary for Windows 7 taskbar jump list links
-        IPropertyStore * PropertyStore;
-        if (SUCCEEDED(pLink->QueryInterface(IID_IPropertyStore, (void**)&PropertyStore)))
+          WideString strShortCutLocation(DesktopDir);
+          // Name can contain even path (e.g. to create quick launch icon)
+          strShortCutLocation += UnicodeString(L"\\") + Name + L".lnk";
+          OleCheck(pPersistFile->Save(strShortCutLocation.c_bstr(), TRUE));
+        }
+        __finally
         {
-          PROPVARIANT Prop;
-          Prop.vt = VT_LPWSTR;
-          Prop.pwszVal = Name.c_str();
-          PropertyStore->SetValue(PKEY_Title, Prop);
-          PropertyStore->Commit();
-          PropertyStore->Release();
+          pPersistFile->Release();
         }
       }
-      catch(...)
-      {
-        pLink->Release();
-        throw;
-      }
 
-      if (!Return)
+      // this is necessary for Windows 7 taskbar jump list links
+      IPropertyStore * PropertyStore;
+      if (SUCCEEDED(pLink->QueryInterface(IID_IPropertyStore, (void**)&PropertyStore)))
       {
-        pLink->Release();
-        pLink = NULL;
+        PROPVARIANT Prop;
+        Prop.vt = VT_LPWSTR;
+        Prop.pwszVal = Name.c_str();
+        PropertyStore->SetValue(PKEY_Title, Prop);
+        PropertyStore->Commit();
+        PropertyStore->Release();
       }
+    }
+    catch(...)
+    {
+      pLink->Release();
+      throw;
+    }
+
+    if (!Return)
+    {
+      pLink->Release();
+      pLink = NULL;
     }
   }
   catch(Exception & E)

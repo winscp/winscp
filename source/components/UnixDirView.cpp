@@ -814,14 +814,14 @@ bool __fastcall TUnixDirView::TargetHasDropHandler(TListItem * /* Item */, int /
   return false;
 }
 //---------------------------------------------------------------------------
-void __fastcall TUnixDirView::DDChooseEffect(int grfKeyState, int &dwEffect)
+void __fastcall TUnixDirView::DDChooseEffect(int grfKeyState, int &dwEffect, int PreferredEffect)
 {
   if ((grfKeyState & (MK_CONTROL | MK_SHIFT)) == 0)
   {
     dwEffect = DROPEFFECT_COPY;
   }
 
-  TCustomDirView::DDChooseEffect(grfKeyState, dwEffect);
+  TCustomDirView::DDChooseEffect(grfKeyState, dwEffect, PreferredEffect);
 }
 //---------------------------------------------------------------------------
 TDropEffectSet __fastcall TUnixDirView::GetDragSourceEffects()

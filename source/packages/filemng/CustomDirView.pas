@@ -230,8 +230,8 @@ type
     procedure DDDragDetect(grfKeyState: Longint; DetectStart, Point: TPoint; DragStatus: TDragDetectStatus); virtual;
     procedure DDDragEnter(DataObj: IDataObject; grfKeyState: Longint; Point: TPoint; var dwEffect: longint; var Accept: Boolean);
     procedure DDDragLeave;
-    procedure DDDragOver(grfKeyState: Longint; Point: TPoint; var dwEffect: Longint);
-    procedure DDChooseEffect(grfKeyState: Integer; var dwEffect: Integer); virtual;
+    procedure DDDragOver(grfKeyState: Longint; Point: TPoint; var dwEffect: Longint; PreferredEffect: LongInt);
+    procedure DDChooseEffect(grfKeyState: Integer; var dwEffect: Integer; PreferredEffect: Integer); virtual;
     procedure DDDrop(DataObj: IDataObject; grfKeyState: LongInt; Point: TPoint; var dwEffect: Longint);
     procedure DDDropHandlerSucceeded(Sender: TObject; grfKeyState: Longint; Point: TPoint; dwEffect: Longint); virtual;
     procedure DDGiveFeedback(dwEffect: Longint; var Result: HResult); virtual;
@@ -2190,7 +2190,7 @@ begin
 end;
 
 procedure TCustomDirView.DDDragOver(grfKeyState: Integer; Point: TPoint;
-  var dwEffect: Integer);
+  var dwEffect: Integer; PreferredEffect: Integer);
 var
   DropItem: TListItem;
   CanDrop: Boolean;
@@ -2235,7 +2235,7 @@ begin
   {Set dropeffect:}
   if (not HasDropHandler) and (not Loading) then
   begin
-    DDChooseEffect(grfKeyState, dwEffect);
+    DDChooseEffect(grfKeyState, dwEffect, PreferredEffect);
 
     if Assigned(FOnDDDragOver) then
       FOnDDDragOver(Self, grfKeyState, Point, dwEffect);
@@ -2442,7 +2442,7 @@ begin
   DropTarget := nil;
 end;
 
-procedure TCustomDirView.DDChooseEffect(grfKeyState: Integer; var dwEffect: Integer);
+procedure TCustomDirView.DDChooseEffect(grfKeyState: Integer; var dwEffect: Integer; PreferredEffect: Integer);
 begin
   if Assigned(FOnDDChooseEffect) then
     FOnDDChooseEffect(Self, grfKeyState, dwEffect);

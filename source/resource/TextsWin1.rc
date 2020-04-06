@@ -154,7 +154,7 @@ BEGIN
         MASTER_PASSWORD_OTHER_INSTANCE, "There is other instance of WinSCP running.\n\nSetting or clearing master password, while another instance of WinSCP is running, can cause loss of your stored passwords.\n\nPlease quit other instances of WinSCP before continuing."
         EDIT_SESSION_REATTACH, "**Do you want to attach edited file '%s' to session '%s'?**\n\nOriginal session used to download file '%s' to editor was closed already."
         CONFIRM_UNREGISTER_URL, "Do you want to unregister WinSCP from handling all URL addresses?"
-        INTERNAL_EDITOR_LARGE_FILE, "**Try to open large file?**\n\nThe file you are trying to open in an internal editor is too large (%s). WinSCP internal editor is not designed for editing large files. Consider using an external editor capable of editing large files.\n\nYou may try to open the file anyway, but you may run out of memory."
+        INTERNAL_EDITOR_LARGE_FILE2, "**Try to open large file?**\n\nThe file you are trying to open in an internal editor is too large (%s). WinSCP internal editor is not designed for editing large files. Consider using an external editor capable of editing large files.\n\nYou may try to open the file anyway, but WinSCP may fail."
         CLOSE_BUTTON, "Close"
         EXTENSION_UNTRUSTED, "The extension does not come from a trusted source. Are you sure you want to install it?"
         EXTENSION_NOT_LATEST, "**Using the last compatible and trusted version of the extension.**\n\nThe latest version of the extension is either not reviewed yet or is not compatible with this version of WinSCP."

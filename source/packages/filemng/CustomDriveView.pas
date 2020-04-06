@@ -109,7 +109,7 @@ type
     procedure DDDragEnter(DataObj: IDataObject; KeyState: Longint;
       Point: TPoint; var Effect: Longint; var Accept: Boolean);
     procedure DDDragLeave;
-    procedure DDDragOver(KeyState: Longint; Point: TPoint; var Effect: Longint);
+    procedure DDDragOver(KeyState: Longint; Point: TPoint; var Effect: Longint; PreferredEffect: LongInt);
     procedure DDDrop(DataObj: IDataObject; KeyState: Longint; Point: TPoint;
       var Effect: Longint);
     procedure DDQueryContinueDrag(EscapePressed: BOOL; KeyState: Longint;
@@ -126,7 +126,7 @@ type
       DragStatus: TDragDetectStatus); virtual;
     procedure PerformDragDropFileOperation(Node: TTreeNode; Effect: Integer); virtual; abstract;
 
-    procedure DDChooseEffect(KeyState: Integer; var Effect: Integer); virtual;
+    procedure DDChooseEffect(KeyState: Integer; var Effect: Integer; PreferredEffect: Integer); virtual;
     function DragCompleteFileList: Boolean; virtual; abstract;
     function DDExecute: TDragResult; virtual;
     function DDSourceEffects: TDropEffectSet; virtual; abstract;
@@ -469,7 +469,7 @@ begin
     FOnDDDragLeave(Self);
 end; {DragLeave}
 
-procedure TCustomDriveView.DDDragOver(KeyState: Longint; Point: TPoint; var Effect: Longint);
+procedure TCustomDriveView.DDDragOver(KeyState: Longint; Point: TPoint; var Effect: Longint; PreferredEffect: Longint);
 var
   Node: TTreeNode;
   Rect1: TRect;
@@ -530,7 +530,7 @@ begin
     end;
   end;
 
-  DDChooseEffect(KeyState, Effect);
+  DDChooseEffect(KeyState, Effect, PreferredEffect);
 
   if Assigned(FOnDDDragOver) then
     FOnDDDragOver(Self, KeyState, Point, Effect);
@@ -608,7 +608,7 @@ begin
   DropTarget := nil;
 end;
 
-procedure TCustomDriveView.DDChooseEffect(KeyState: Integer; var Effect: Integer);
+procedure TCustomDriveView.DDChooseEffect(KeyState: Integer; var Effect: Integer; PreferredEffect: Integer);
 begin
   if Assigned(FOnDDChooseEffect) then
     FOnDDChooseEffect(Self, KeyState, Effect);

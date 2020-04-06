@@ -319,7 +319,8 @@ SshChannel *ssh2_serverside_agent_open(ConnectionLayer *cl, Channel *chan)
 static void ssh2_channel_response(
     struct ssh2_channel *c, PktIn *pkt, void *ctx)
 {
-    chan_request_response(c->chan, pkt->type == SSH2_MSG_CHANNEL_SUCCESS);
+    chan_request_response(c->chan,
+                          pkt && pkt->type == SSH2_MSG_CHANNEL_SUCCESS);
 }
 
 void ssh2channel_start_shell(SshChannel *sc, bool want_reply)

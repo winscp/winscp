@@ -304,7 +304,7 @@ private:
     const TGUICopyParamType & CopyParam, int Params);
   void __fastcall AddQueueItem(TTerminalQueue * Queue, TQueueItem * QueueItem, TManagedTerminal * Terminal);
   void __fastcall ClearTransferSourceSelection(TTransferDirection Direction);
-  void __fastcall SessionsDDDragOver(int KeyState, const TPoint & Point, int & Effect);
+  void __fastcall SessionsDDDragOver(int KeyState, const TPoint & Point, int & Effect, int PreferredEffect);
   void __fastcall SessionsDDProcessDropped(TObject * Sender, int KeyState, const TPoint & Point, int Effect);
   void __fastcall RemoteFileControlDragDropFileOperation(
     TObject * Sender, int Effect, UnicodeString TargetPath, bool ForceQueue, bool Paste);

@@ -54,7 +54,7 @@ protected:
   void __fastcall SetDirView(TUnixDirView * Value);
 
   virtual void __fastcall PerformDragDropFileOperation(TTreeNode * Node, int Effect);
-  virtual void __fastcall DDChooseEffect(int KeyState, int & Effect);
+  virtual void __fastcall DDChooseEffect(int KeyState, int & Effect, int PreferredEffect);
   virtual bool __fastcall DragCompleteFileList();
   virtual TDropEffectSet __fastcall DDSourceEffects();
 
