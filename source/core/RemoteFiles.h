@@ -368,10 +368,11 @@ public:
   __fastcall operator unsigned short() const;
   __fastcall operator unsigned long() const;
 
+  UnicodeString __fastcall GetChmodStr(int Directory) const;
+
   __property bool AllowUndef = { read = FAllowUndef, write = SetAllowUndef };
   __property bool IsUndef = { read = GetIsUndef };
   __property UnicodeString ModeStr = { read = GetModeStr };
-  __property UnicodeString SimplestStr = { read = GetSimplestStr };
   __property UnicodeString Octal = { read = GetOctal, write = SetOctal };
   __property unsigned short Number = { read = GetNumber, write = SetNumber };
   __property unsigned short NumberSet = { read = FSet };
@@ -392,7 +393,6 @@ private:
 
   bool __fastcall GetIsUndef() const;
   UnicodeString __fastcall GetModeStr() const;
-  UnicodeString __fastcall GetSimplestStr() const;
   void __fastcall SetNumber(unsigned short value);
   UnicodeString __fastcall GetText() const;
   void __fastcall SetText(const UnicodeString & value);
