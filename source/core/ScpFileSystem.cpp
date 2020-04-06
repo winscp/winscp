@@ -1237,7 +1237,8 @@ void __fastcall TSCPFileSystem::ChangeFileProperties(const UnicodeString FileNam
   TChmodSessionAction & Action)
 {
   DebugAssert(Properties);
-  bool IsDirectory = File && File->IsDirectory;
+  int Directory = ((File == NULL) ? -1 : (File->IsDirectory ? 1 : 0));
+  bool IsDirectory = (Directory > 0);
   bool Recursive = Properties->Recursive && IsDirectory;
   UnicodeString RecursiveStr = Recursive ? L"-R" : L"";
 
@@ -1269,7 +1270,7 @@ void __fastcall TSCPFileSystem::ChangeFileProperties(const UnicodeString FileNam
     if ((Rights.NumberSet | Rights.NumberUnset) != TRights::rfNo)
     {
       ExecCommand(fsChangeMode,
-        ARRAYOFCONST((RecursiveStr, Rights.SimplestStr, DelimitedName)));
+        ARRAYOFCONST((RecursiveStr, Rights.GetChmodStr(Directory), DelimitedName)));
     }
 
     // if file is directory and we do recursive mode settings with
@@ -1278,7 +1279,7 @@ void __fastcall TSCPFileSystem::ChangeFileProperties(const UnicodeString FileNam
     {
       Rights.AddExecute();
       ExecCommand(fsChangeMode,
-        ARRAYOFCONST((L"", Rights.SimplestStr, DelimitedName)));
+        ARRAYOFCONST((L"", Rights.GetChmodStr(Directory), DelimitedName)));
     }
   }
   else

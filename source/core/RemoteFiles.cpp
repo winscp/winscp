@@ -2431,16 +2431,23 @@ bool  __fastcall TRights::GetReadOnly()
   return Right[rrUserWrite] && Right[rrGroupWrite] && Right[rrOtherWrite];
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TRights::GetSimplestStr() const
+UnicodeString __fastcall TRights::GetChmodStr(int Directory) const
 {
+  UnicodeString Result;
   if (IsUndef)
   {
-    return ModeStr;
+    Result = ModeStr;
   }
   else
   {
-    return Octal;
+    Result = Octal;
+    if (Directory != 0) // unknown or folder
+    {
+      // New versions of coreutils need leading 5th zero to unset UID/GID for directories
+      Result = UnicodeString(L"0") + Result;
+    }
   }
+  return Result;
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TRights::GetModeStr() const
