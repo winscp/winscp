@@ -241,11 +241,12 @@ void __fastcall RestoreForm(UnicodeString Data, TForm * Form, bool PositionOnly)
       TRect Bounds = OriginalBounds;
       LoadFormDimensions(LeftStr, TopStr, RightStr, BottomStr, PixelsPerInch, Monitor, Form, Bounds, DefaultPos);
 
+      int Padding = ScaleByPixelsPerInch(20, Monitor);
       if (DefaultPos ||
-          ((Bounds.Left < Monitor->Left) ||
-           (Bounds.Left > Monitor->Left + Monitor->WorkareaRect.Width() - 20) ||
-           (Bounds.Top < Monitor->Top) ||
-           (Bounds.Top > Monitor->Top + Monitor->WorkareaRect.Height() - 20)))
+          ((Bounds.Left < Monitor->Left - Padding) ||
+           (Bounds.Left > Monitor->Left + Monitor->WorkareaRect.Width() - Padding) ||
+           (Bounds.Top < Monitor->Top - Padding) ||
+           (Bounds.Top > Monitor->Top + Monitor->WorkareaRect.Height() - Padding)))
       {
         bool ExplicitPlacing = !Monitor->Primary;
         if (!ExplicitPlacing)
