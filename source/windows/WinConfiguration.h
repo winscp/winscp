@@ -341,6 +341,7 @@ class TBookmarks;
 class TBookmarkList;
 class TCustomCommandList;
 enum TPathInCaption { picShort, picFull, picNone };
+enum TSessionTabNameFormat { stnfNone, stnfShortPath, stnfShortPathTrunc };
 // constants must be compatible with legacy CopyOnDoubleClick
 enum TDoubleClickAction { dcaOpen = 0, dcaCopy = 1, dcaEdit = 2 };
 //---------------------------------------------------------------------------
@@ -410,6 +411,7 @@ private:
   bool FAutoSaveWorkspacePasswords;
   UnicodeString FAutoWorkspace;
   TPathInCaption FPathInCaption;
+  TSessionTabNameFormat FSessionTabNameFormat;
   bool FMinimizeToTray;
   bool FMinimizeToTrayOnce;
   bool FBalloonNotifications;
@@ -517,6 +519,7 @@ private:
   void __fastcall SetAutoSaveWorkspacePasswords(bool value);
   void __fastcall SetAutoWorkspace(UnicodeString value);
   void __fastcall SetPathInCaption(TPathInCaption value);
+  void __fastcall SetSessionTabNameFormat(TSessionTabNameFormat value);
   void __fastcall SetMinimizeToTray(bool value);
   bool __fastcall GetMinimizeToTray();
   void __fastcall SetBalloonNotifications(bool value);
@@ -714,6 +717,7 @@ public:
   __property bool AutoSaveWorkspacePasswords = { read = FAutoSaveWorkspacePasswords, write = SetAutoSaveWorkspacePasswords };
   __property UnicodeString AutoWorkspace = { read = FAutoWorkspace, write = SetAutoWorkspace };
   __property TPathInCaption PathInCaption = { read = FPathInCaption, write = SetPathInCaption };
+  __property TSessionTabNameFormat SessionTabNameFormat = { read = FSessionTabNameFormat, write = FSessionTabNameFormat };
   __property bool MinimizeToTray = { read = GetMinimizeToTray, write = SetMinimizeToTray };
   __property bool BalloonNotifications = { read = FBalloonNotifications, write = SetBalloonNotifications };
   __property unsigned int NotificationsTimeout = { read = FNotificationsTimeout, write = SetNotificationsTimeout };

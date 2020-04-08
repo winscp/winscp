@@ -1390,7 +1390,8 @@ UnicodeString __fastcall TTerminalManager::GetTerminalShortPath(TTerminal * Term
 UnicodeString __fastcall TTerminalManager::GetTerminalTitle(TTerminal * Terminal, bool Unique)
 {
   UnicodeString Result = Terminal->SessionData->SessionName;
-  if (Unique)
+  if (Unique &&
+      (WinConfiguration->SessionTabNameFormat != stnfNone))
   {
     int Index = IndexOf(Terminal);
     // not for background transfer sessions and disconnected sessions
@@ -1406,6 +1407,12 @@ UnicodeString __fastcall TTerminalManager::GetTerminalTitle(TTerminal * Terminal
           UnicodeString Path = GetTerminalShortPath(Terminal);
           if (!Path.IsEmpty())
           {
+            const int MaxPathLen = 16;
+            if ((WinConfiguration->SessionTabNameFormat == stnfShortPathTrunc) &&
+                (Path.Length() > MaxPathLen))
+            {
+              Path = Path.SubString(1, MaxPathLen - 2) + Ellipsis;
+            }
             Result = FORMAT(L"%s (%s)", (Result, Path));
           }
           break;
