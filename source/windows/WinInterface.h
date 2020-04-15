@@ -49,6 +49,7 @@ const int mpAllowContinueOnError = 0x02;
 #define INFO_SWITCH L"Info"
 #define COMREGISTRATION_SWITCH L"ComRegistration"
 #define BROWSE_SWITCH L"Browse"
+#define NOINTERACTIVEINPUT_SWITCH L"NoInteractiveInput"
 
 #define DUMPCALLSTACK_EVENT L"WinSCPCallstack%d"
 
