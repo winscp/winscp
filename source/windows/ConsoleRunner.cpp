@@ -55,15 +55,10 @@ public:
   virtual int __fastcall Choice(
     UnicodeString Options, int Cancel, int Break, int Continue, int Timeouted, bool Timeouting, unsigned int Timer,
     UnicodeString Message);
+  virtual bool __fastcall HasFlag(TConsoleFlag Flag) const;
   virtual bool __fastcall PendingAbort();
   virtual void __fastcall SetTitle(UnicodeString Title);
-  virtual bool __fastcall LimitedOutput();
-  virtual bool __fastcall LiveOutput();
-  virtual bool __fastcall NoInteractiveInput();
-  virtual bool __fastcall Interactive();
   virtual void __fastcall WaitBeforeExit();
-  virtual bool __fastcall CommandLineOnly();
-  virtual bool __fastcall WantsProgress();
   virtual void __fastcall Progress(TScriptProgress & Progress);
   virtual UnicodeString __fastcall FinalLogMessage();
 
@@ -464,24 +459,24 @@ void __fastcall TOwnConsole::SetTitle(UnicodeString Title)
   SetConsoleTitle(Title.c_str());
 }
 //---------------------------------------------------------------------------
-bool __fastcall TOwnConsole::LimitedOutput()
+bool __fastcall TOwnConsole::HasFlag(TConsoleFlag Flag) const
 {
-  return true;
-}
-//---------------------------------------------------------------------------
-bool __fastcall TOwnConsole::LiveOutput()
-{
-  return true;
-}
-//---------------------------------------------------------------------------
-bool __fastcall TOwnConsole::NoInteractiveInput()
-{
-  return false;
-}
-//---------------------------------------------------------------------------
-bool __fastcall TOwnConsole::Interactive()
-{
-  return true;
+  switch (Flag)
+  {
+    case cfLimitedOutput:
+    case cfLiveOutput:
+    case cfInteractive:
+      return true;
+
+    case cfNoInteractiveInput:
+    case cfCommandLineOnly:
+    case cfWantsProgress:
+      return false;
+
+    default:
+      DebugFail();
+      return false;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TOwnConsole::WaitBeforeExit()
@@ -501,16 +496,6 @@ void __fastcall TOwnConsole::WaitBeforeExit()
     Sleep(50);
     ProcessMessages();
   }
-}
-//---------------------------------------------------------------------------
-bool __fastcall TOwnConsole::CommandLineOnly()
-{
-  return false;
-}
-//---------------------------------------------------------------------------
-bool __fastcall TOwnConsole::WantsProgress()
-{
-  return false;
 }
 //---------------------------------------------------------------------------
 void __fastcall TOwnConsole::Progress(TScriptProgress & /*Progress*/)
@@ -534,15 +519,10 @@ public:
   virtual int __fastcall Choice(
     UnicodeString Options, int Cancel, int Break, int Continue, int Timeouted, bool Timeouting, unsigned int Timer,
     UnicodeString Message);
+  virtual bool __fastcall HasFlag(TConsoleFlag Flag) const;
   virtual bool __fastcall PendingAbort();
   virtual void __fastcall SetTitle(UnicodeString Title);
-  virtual bool __fastcall LimitedOutput();
-  virtual bool __fastcall LiveOutput();
-  virtual bool __fastcall NoInteractiveInput();
   virtual void __fastcall WaitBeforeExit();
-  virtual bool __fastcall Interactive();
-  virtual bool __fastcall CommandLineOnly();
-  virtual bool __fastcall WantsProgress();
   virtual void __fastcall Progress(TScriptProgress & Progress);
   virtual UnicodeString __fastcall FinalLogMessage();
 
@@ -850,39 +830,37 @@ void __fastcall TExternalConsole::Init()
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall TExternalConsole::LimitedOutput()
+bool __fastcall TExternalConsole::HasFlag(TConsoleFlag Flag) const
 {
-  return FLimitedOutput;
-}
-//---------------------------------------------------------------------------
-bool __fastcall TExternalConsole::LiveOutput()
-{
-  return FLiveOutput;
-}
-//---------------------------------------------------------------------------
-bool __fastcall TExternalConsole::NoInteractiveInput()
-{
-  return FNoInteractiveInput;
-}
-//---------------------------------------------------------------------------
-bool __fastcall TExternalConsole::Interactive()
-{
-  return FInteractive;
+  switch (Flag)
+  {
+    case cfLimitedOutput:
+      return FLimitedOutput;
+
+    case cfLiveOutput:
+      return FLiveOutput;
+
+    case cfNoInteractiveInput:
+      return FNoInteractiveInput;
+
+    case cfInteractive:
+      return FInteractive;
+
+    case cfCommandLineOnly:
+      return true;
+
+    case cfWantsProgress:
+      return FWantsProgress;
+
+    default:
+      DebugFail();
+      return false;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TExternalConsole::WaitBeforeExit()
 {
   // noop
-}
-//---------------------------------------------------------------------------
-bool __fastcall TExternalConsole::CommandLineOnly()
-{
-  return true;
-}
-//---------------------------------------------------------------------------
-bool __fastcall TExternalConsole::WantsProgress()
-{
-  return FWantsProgress;
 }
 //---------------------------------------------------------------------------
 void __fastcall TExternalConsole::Progress(TScriptProgress & Progress)
@@ -961,16 +939,11 @@ public:
   virtual int __fastcall Choice(
     UnicodeString Options, int Cancel, int Break, int Continue, int Timeouted, bool Timeouting, unsigned int Timer,
     UnicodeString Message);
+  virtual bool __fastcall HasFlag(TConsoleFlag Flag) const;
   virtual bool __fastcall PendingAbort();
   virtual void __fastcall SetTitle(UnicodeString Title);
-  virtual bool __fastcall LimitedOutput();
-  virtual bool __fastcall LiveOutput();
-  virtual bool __fastcall NoInteractiveInput();
-  virtual bool __fastcall Interactive();
   virtual void __fastcall WaitBeforeExit();
-  virtual bool __fastcall CommandLineOnly();
 
-  virtual bool __fastcall WantsProgress();
   virtual void __fastcall Progress(TScriptProgress & Progress);
   virtual UnicodeString __fastcall FinalLogMessage();
 };
@@ -1017,43 +990,33 @@ void __fastcall TNullConsole::SetTitle(UnicodeString /*Title*/)
   // noop
 }
 //---------------------------------------------------------------------------
-bool __fastcall TNullConsole::LimitedOutput()
+bool __fastcall TNullConsole::HasFlag(TConsoleFlag Flag) const
 {
-  return false;
-}
-//---------------------------------------------------------------------------
-bool __fastcall TNullConsole::LiveOutput()
-{
-  return false;
-}
-//---------------------------------------------------------------------------
-bool __fastcall TNullConsole::NoInteractiveInput()
-{
-  // do not matter, even if we return false,
-  // it fails immediately afterwards in TNullConsole::Input
-  return true;
-}
-//---------------------------------------------------------------------------
-bool __fastcall TNullConsole::Interactive()
-{
-  return false;
+  switch (Flag)
+  {
+    // do not matter, even if we return false,
+    // it fails immediately afterwards in TNullConsole::Input
+    case cfNoInteractiveInput:
+      return true;
+
+    case cfLimitedOutput:
+    case cfLiveOutput:
+    case cfInteractive:
+    case cfCommandLineOnly:
+    case cfWantsProgress:
+      return false;
+
+    default:
+      DebugFail();
+      return false;
+  }
+
 }
 //---------------------------------------------------------------------------
 void __fastcall TNullConsole::WaitBeforeExit()
 {
   DebugFail();
   // noop
-}
-//---------------------------------------------------------------------------
-bool __fastcall TNullConsole::CommandLineOnly()
-{
-  DebugFail();
-  return false;
-}
-//---------------------------------------------------------------------------
-bool __fastcall TNullConsole::WantsProgress()
-{
-  return false;
 }
 //---------------------------------------------------------------------------
 void __fastcall TNullConsole::Progress(TScriptProgress & /*Progress*/)
@@ -1540,7 +1503,7 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
     {
       Retry = false;
 
-      if (FirstOutput || FConsole->LiveOutput())
+      if (FirstOutput || FConsole->HasFlag(cfLiveOutput))
       {
         UnicodeString Output;
         for (unsigned int i = 0; i < Buttons.size(); i++)
@@ -1598,7 +1561,7 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
         {
           if (Timer == 0)
           {
-            if (FConsole->NoInteractiveInput())
+            if (FConsole->HasFlag(cfNoInteractiveInput))
             {
               ActualTimer = Timeout;
             }
@@ -1624,7 +1587,7 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
           ActualTimer = Timer;
         }
         // Not to get preliminary "host is not responding" messages to .NET assembly
-        if (FConsole->NoInteractiveInput() && (Timer > 0))
+        if (FConsole->HasFlag(cfNoInteractiveInput) && (Timer > 0))
         {
           Sleep(Timer);
           AnswerIndex = -2;
@@ -1885,7 +1848,7 @@ bool __fastcall TConsoleRunner::DoInput(UnicodeString & Str, bool Echo,
   unsigned int Timeout, bool Interactive)
 {
   bool Result;
-  if (Interactive && FConsole->NoInteractiveInput())
+  if (Interactive && FConsole->HasFlag(cfNoInteractiveInput))
   {
     Result = false;
   }
@@ -2002,11 +1965,11 @@ int __fastcall TConsoleRunner::Run(const UnicodeString Session, TOptions * Optio
 
     try
     {
-      FScript = new TManagementScript(StoredSessions, FConsole->LimitedOutput());
+      FScript = new TManagementScript(StoredSessions, FConsole->HasFlag(cfLimitedOutput));
 
       FScript->CopyParam = GUIConfiguration->DefaultCopyParam;
       FScript->SynchronizeParams = GUIConfiguration->SynchronizeParams;
-      FScript->WantsProgress = FConsole->WantsProgress();
+      FScript->WantsProgress = FConsole->HasFlag(cfWantsProgress);
       FScript->OnPrint = ScriptPrint;
       FScript->OnPrintProgress = ScriptPrintProgress;
       FScript->OnInput = ScriptInput;
@@ -2016,7 +1979,7 @@ int __fastcall TConsoleRunner::Run(const UnicodeString Session, TOptions * Optio
       FScript->OnQueryCancel = ScriptQueryCancel;
       FScript->OnSynchronizeStartStop = ScriptSynchronizeStartStop;
       FScript->OnProgress = ScriptProgress;
-      FScript->Interactive = (ScriptCommands == NULL) && FConsole->Interactive();
+      FScript->Interactive = (ScriptCommands == NULL) && FConsole->HasFlag(cfInteractive);
 
       UpdateTitle();
 
@@ -2183,7 +2146,8 @@ void __fastcall Usage(TConsole * Console)
   Console->PrintLine();
   Console->PrintLine(LoadStr(USAGE_SYNTAX_LABEL));
 
-  if (!Console->CommandLineOnly())
+  bool CommandLineOnly = Console->HasFlag(cfCommandLineOnly);
+  if (!CommandLineOnly)
   {
     PrintUsageSyntax(Console, L"site|workspace|folder");
     PrintUsageSyntax(Console, L"(sftp|scp|ftp[es]|dav[s]|s3)://[user[:password]@]host[:port][/path/[file]]");
@@ -2204,11 +2168,11 @@ void __fastcall Usage(TConsole * Console)
     PrintUsageSyntax(Console, L"[mysession] [/rawsettings setting1=value1 setting2=value2 ...]");
   }
   PrintUsageSyntax(Console,
-    UnicodeString(!Console->CommandLineOnly() ? L"[/console] " : L"") +
+    UnicodeString(!CommandLineOnly ? L"[/console] " : L"") +
     FORMAT(L"[/script=<file>] [/%s cmd1...] [/parameter // param1...]", (LowerCase(COMMAND_SWITCH))));
   PrintUsageSyntax(Console,
     FORMAT(L"[/%s=<logfile> [/loglevel=<level>]] [/%s=[<count>%s]<size>]", (LowerCase(LOG_SWITCH), LowerCase(LOGSIZE_SWITCH), LOGSIZE_SEPARATOR)));
-  if (!Console->CommandLineOnly())
+  if (!CommandLineOnly)
   {
     PrintUsageSyntax(Console, L"[/xmllog=<logfile> [/xmlgroups]]");
   }
@@ -2223,7 +2187,7 @@ void __fastcall Usage(TConsole * Console)
   PrintUsageSyntax(Console, L"/batchsettings <site_mask> setting1=value1 setting2=value2 ...");
   PrintUsageSyntax(Console, FORMAT(L"/%s keyfile [/%s=<file>] [/%s] [/%s=<text>]",
     (LowerCase(KEYGEN_SWITCH), LowerCase(KEYGEN_OUTPUT_SWITCH), LowerCase(KEYGEN_CHANGE_PASSPHRASE_SWITCH), LowerCase(KEYGEN_COMMENT_SWITCH))));
-  if (!Console->CommandLineOnly())
+  if (!CommandLineOnly)
   {
     PrintUsageSyntax(Console, L"/update");
   }
@@ -2233,7 +2197,7 @@ void __fastcall Usage(TConsole * Console)
   Console->PrintLine();
 
   TSwitchesUsage SwitchesUsage;
-  if (!Console->CommandLineOnly())
+  if (!CommandLineOnly)
   {
     RegisterSwitch(SwitchesUsage, L"session", USAGE_SESSION);
     RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(SESSIONNAME_SWICH) + L"=", USAGE_SESSIONNAME);
@@ -2266,7 +2230,7 @@ void __fastcall Usage(TConsole * Console)
   RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(LOGSIZE_SWITCH) + L"=", USAGE_LOGSIZE);
   RegisterSwitch(SwitchesUsage, L"/xmllog=", USAGE_XMLLOG);
   RegisterSwitch(SwitchesUsage, L"/xmlgroups", USAGE_XMLGROUPS);
-  if (Console->CommandLineOnly())
+  if (CommandLineOnly)
   {
     RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(NOINTERACTIVEINPUT_SWITCH), USAGE_INTERACTIVEINPUT);
   }
@@ -2280,7 +2244,7 @@ void __fastcall Usage(TConsole * Console)
       TProgramParams::FormatSwitch(LowerCase(KEYGEN_CHANGE_PASSPHRASE_SWITCH)),
       TProgramParams::FormatSwitch(LowerCase(KEYGEN_COMMENT_SWITCH)) + L"="));
   RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(KEYGEN_SWITCH), KeyGenDesc);
-  if (!Console->CommandLineOnly())
+  if (!CommandLineOnly)
   {
     RegisterSwitch(SwitchesUsage, L"/update", USAGE_UPDATE);
   }

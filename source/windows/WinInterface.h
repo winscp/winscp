@@ -613,6 +613,16 @@ private:
   void __fastcall BalloonCancelled();
 };
 //---------------------------------------------------------------------------
+enum TConsoleFlag
+{
+  cfLimitedOutput,
+  cfLiveOutput,
+  cfNoInteractiveInput,
+  cfInteractive,
+  cfCommandLineOnly,
+  cfWantsProgress
+};
+//---------------------------------------------------------------------------
 class TConsole
 {
 public:
@@ -623,15 +633,10 @@ public:
   virtual int __fastcall Choice(
     UnicodeString Options, int Cancel, int Break, int Continue, int Timeouted, bool Timeouting, unsigned int Timer,
     UnicodeString Message) = 0;
+  virtual bool __fastcall HasFlag(TConsoleFlag Flag) const = 0;
   virtual bool __fastcall PendingAbort() = 0;
   virtual void __fastcall SetTitle(UnicodeString Title) = 0;
-  virtual bool __fastcall LimitedOutput() = 0;
-  virtual bool __fastcall LiveOutput() = 0;
-  virtual bool __fastcall NoInteractiveInput() = 0;
-  virtual bool __fastcall Interactive() = 0;
   virtual void __fastcall WaitBeforeExit() = 0;
-  virtual bool __fastcall CommandLineOnly() = 0;
-  virtual bool __fastcall WantsProgress() = 0;
   virtual void __fastcall Progress(TScriptProgress & Progress) = 0;
   virtual UnicodeString __fastcall FinalLogMessage() = 0;
 };
