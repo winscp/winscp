@@ -193,7 +193,7 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
     // (which always uses /nointeractiveinput),
     // but can be useful for other console runs too
     TProgramParams * Params = TProgramParams::Instance();
-    if (Params->FindSwitch(L"nointeractiveinput"))
+    if (Params->FindSwitch(NOINTERACTIVEINPUT_SWITCH))
     {
       DoNotDisplay = true;
       if (Show && CheckXmlLogParam(Params))

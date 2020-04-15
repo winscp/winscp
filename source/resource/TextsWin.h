@@ -298,6 +298,7 @@
 #define PUTTY_SETTINGS_SITE_NAME 1588
 #define USAGE_USERNAME          1589
 #define USAGE_PASSWORD          1590
+#define USAGE_INTERACTIVEINPUT  1591
 
 #define WIN_FORMS_STRINGS       1600
 #define COPY_FILE               1605

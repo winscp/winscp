@@ -303,6 +303,7 @@ BEGIN
         PUTTY_SETTINGS_SITE_NAME, "Terminal settings for %s"
         USAGE_USERNAME, "An alternative way to provide a username"
         USAGE_PASSWORD, "An alternative way to provide a password"
+        USAGE_INTERACTIVEINPUT, "All prompts are automatically cancelled"
 
         WIN_FORMS_STRINGS, "WIN_FORMS_STRINGS"
         COPY_FILE, "%s file '%s' to %s:"

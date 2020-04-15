@@ -2208,7 +2208,14 @@ void __fastcall Usage(TConsole * Console)
     FORMAT(L"[/script=<file>] [/%s cmd1...] [/parameter // param1...]", (LowerCase(COMMAND_SWITCH))));
   PrintUsageSyntax(Console,
     FORMAT(L"[/%s=<logfile> [/loglevel=<level>]] [/%s=[<count>%s]<size>]", (LowerCase(LOG_SWITCH), LowerCase(LOGSIZE_SWITCH), LOGSIZE_SEPARATOR)));
-  PrintUsageSyntax(Console, L"[/xmllog=<logfile> [/xmlgroups]]");
+  if (!Console->CommandLineOnly())
+  {
+    PrintUsageSyntax(Console, L"[/xmllog=<logfile> [/xmlgroups]]");
+  }
+  else
+  {
+    PrintUsageSyntax(Console, FORMAT(L"[/xmllog=<logfile> [/xmlgroups]] [/%s]", (LowerCase(NOINTERACTIVEINPUT_SWITCH))));
+  }
   PrintUsageSyntax(Console,
     FORMAT(L"[/%s=<inifile>]", (LowerCase(INI_SWITCH))));
   PrintUsageSyntax(Console, FORMAT(L"[/%s config1=value1 config2=value2 ...]", (LowerCase(RAW_CONFIG_SWITCH))));
@@ -2259,6 +2266,10 @@ void __fastcall Usage(TConsole * Console)
   RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(LOGSIZE_SWITCH) + L"=", USAGE_LOGSIZE);
   RegisterSwitch(SwitchesUsage, L"/xmllog=", USAGE_XMLLOG);
   RegisterSwitch(SwitchesUsage, L"/xmlgroups", USAGE_XMLGROUPS);
+  if (Console->CommandLineOnly())
+  {
+    RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(NOINTERACTIVEINPUT_SWITCH), USAGE_INTERACTIVEINPUT);
+  }
   RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(INI_SWITCH) + L"=", USAGE_INI);
   RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(RAW_CONFIG_SWITCH), USAGE_RAWCONFIG);
   RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(RAWTRANSFERSETTINGS_SWITCH), USAGE_RAWTRANSFERSETTINGS);
@@ -2710,7 +2721,8 @@ int __fastcall Console(TConsoleMode Mode)
     if (Params->FindSwitch(L"consoleinstance", ConsoleInstance))
     {
       Configuration->Usage->Inc(L"ConsoleExternal");
-      Console = new TExternalConsole(ConsoleInstance, Params->FindSwitch(L"nointeractiveinput"));
+      bool NoInteractiveInput = Params->FindSwitch(NOINTERACTIVEINPUT_SWITCH);
+      Console = new TExternalConsole(ConsoleInstance, NoInteractiveInput);
     }
     else if (Params->FindSwitch(L"Console") || (Mode != cmScripting))
     {
