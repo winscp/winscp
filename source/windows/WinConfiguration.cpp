@@ -578,6 +578,7 @@ void __fastcall TWinConfiguration::Default()
   FAutoSaveWorkspacePasswords = false;
   FAutoWorkspace = L"";
   FPathInCaption = picShort;
+  FSessionTabNameFormat = stnfShortPathTrunc;
   FMinimizeToTray = false;
   FMinimizeToTrayOnce = false;
   FBalloonNotifications = true;
@@ -984,6 +985,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Bool,     AutoSaveWorkspacePasswords); \
     KEY(String,   AutoWorkspace); \
     KEY(Integer,  PathInCaption); \
+    KEY(Integer,  SessionTabNameFormat); \
     KEY(Bool,     MinimizeToTray); \
     KEY(Bool,     BalloonNotifications); \
     KEY(Integer,  NotificationsTimeout); \

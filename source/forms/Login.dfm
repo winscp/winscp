@@ -5,8 +5,8 @@ object LoginDialog: TLoginDialog
   HelpKeyword = 'ui_login'
   BorderIcons = [biSystemMenu, biMinimize, biHelp]
   Caption = 'Login'
-  ClientHeight = 599
-  ClientWidth = 630
+  ClientHeight = 385
+  ClientWidth = 873
   Color = clBtnFace
   Constraints.MinHeight = 399
   Constraints.MinWidth = 600
@@ -19,10 +19,10 @@ object LoginDialog: TLoginDialog
   PixelsPerInch = 96
   TextHeight = 13
   object MainPanel: TPanel
-    Left = 269
+    Left = 512
     Top = 0
     Width = 361
-    Height = 334
+    Height = 361
     Align = alRight
     BevelOuter = bvNone
     TabOrder = 0
@@ -30,25 +30,25 @@ object LoginDialog: TLoginDialog
       Left = 0
       Top = 0
       Width = 361
-      Height = 293
+      Height = 320
       Align = alClient
       BevelOuter = bvNone
       TabOrder = 0
       Visible = False
       DesignSize = (
         361
-        293)
+        320)
       object ContentsGroupBox: TGroupBox
         Left = 2
         Top = 12
         Width = 347
-        Height = 278
+        Height = 305
         Anchors = [akLeft, akTop, akBottom]
         Caption = 'ContentsGroupBox'
         TabOrder = 0
         DesignSize = (
           347
-          278)
+          305)
         object ContentsLabel: TLabel
           Left = 12
           Top = 20
@@ -70,7 +70,7 @@ object LoginDialog: TLoginDialog
           Left = 12
           Top = 42
           Width = 324
-          Height = 224
+          Height = 251
           Anchors = [akLeft, akTop, akRight, akBottom]
           Lines.Strings = (
             'ContentsMemo')
@@ -82,14 +82,14 @@ object LoginDialog: TLoginDialog
       Left = 0
       Top = 0
       Width = 361
-      Height = 293
+      Height = 320
       Align = alClient
       Anchors = [akTop, akRight, akBottom]
       BevelOuter = bvNone
       TabOrder = 1
       DesignSize = (
         361
-        293)
+        320)
       object BasicGroup: TGroupBox
         Left = 2
         Top = 12
@@ -333,18 +333,18 @@ object LoginDialog: TLoginDialog
         Left = 2
         Top = 247
         Width = 347
-        Height = 43
+        Height = 70
         Anchors = [akLeft, akTop, akRight, akBottom]
         Caption = 'Note'
         TabOrder = 1
         DesignSize = (
           347
-          43)
+          70)
         object NoteMemo: TMemo
           Left = 7
           Top = 15
           Width = 333
-          Height = 19
+          Height = 46
           TabStop = False
           Anchors = [akLeft, akTop, akRight, akBottom]
           BevelInner = bvNone
@@ -359,7 +359,7 @@ object LoginDialog: TLoginDialog
     end
     object ButtonPanel: TPanel
       Left = 0
-      Top = 293
+      Top = 320
       Width = 361
       Height = 41
       Align = alBottom
@@ -409,19 +409,19 @@ object LoginDialog: TLoginDialog
   object SitesPanel: TPanel
     Left = 0
     Top = 0
-    Width = 269
-    Height = 334
+    Width = 512
+    Height = 361
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 2
     DesignSize = (
-      269
-      334)
+      512
+      361)
     object SessionTree: TTreeView
       Left = 11
       Top = 12
-      Width = 247
-      Height = 285
+      Width = 490
+      Height = 312
       Anchors = [akLeft, akTop, akRight, akBottom]
       DoubleBuffered = True
       DragMode = dmAutomatic
@@ -457,8 +457,8 @@ object LoginDialog: TLoginDialog
     end
     object SitesIncrementalSearchLabel: TStaticText
       Left = 14
-      Top = 277
-      Width = 142
+      Top = 304
+      Width = 385
       Height = 17
       Anchors = [akLeft, akRight, akBottom]
       BorderStyle = sbsSingle
@@ -468,8 +468,8 @@ object LoginDialog: TLoginDialog
       Visible = False
     end
     object ManageButton: TButton
-      Left = 160
-      Top = 303
+      Left = 403
+      Top = 330
       Width = 98
       Height = 25
       Anchors = [akRight, akBottom]
@@ -479,7 +479,7 @@ object LoginDialog: TLoginDialog
     end
     object ToolsMenuButton: TButton
       Left = 11
-      Top = 303
+      Top = 330
       Width = 98
       Height = 25
       Anchors = [akLeft, akBottom]
@@ -488,30 +488,22 @@ object LoginDialog: TLoginDialog
       OnClick = ToolsMenuButtonClick
     end
   end
-  object ComponentsPanel: TPanel
-    Left = 0
-    Top = 358
-    Width = 630
-    Height = 241
-    Align = alBottom
-    BevelOuter = bvNone
-    Color = clWindow
-    ParentBackground = False
-    TabOrder = 3
-  end
   object ShowAgainPanel: TPanel
     Left = 0
-    Top = 334
-    Width = 630
+    Top = 361
+    Width = 873
     Height = 24
     Align = alBottom
     BevelOuter = bvNone
     TabOrder = 1
     OnMouseDown = PanelMouseDown
+    DesignSize = (
+      873
+      24)
     object ShowAgainCheck: TCheckBox
       Left = 12
       Top = 0
-      Width = 606
+      Width = 849
       Height = 17
       Anchors = [akLeft, akTop, akRight]
       Caption = 
@@ -525,8 +517,8 @@ object LoginDialog: TLoginDialog
   object ActionList: TActionList
     Images = ActionImageList
     OnUpdate = ActionListUpdate
-    Left = 36
-    Top = 365
+    Left = 44
+    Top = 21
     object EditSessionAction: TAction
       Category = 'Sessions'
       Caption = '&Edit'
@@ -701,8 +693,8 @@ object LoginDialog: TLoginDialog
     end
   end
   object ToolsPopupMenu: TPopupMenu
-    Left = 144
-    Top = 421
+    Left = 152
+    Top = 77
     object Import1: TMenuItem
       Action = ImportSessionsAction
     end
@@ -1121,13 +1113,13 @@ object LoginDialog: TLoginDialog
           C4345A5A322BB385B32146A201840664A5C8004D1BC9A91500C1524F7165D321
           E40000000049454E44AE426082}
       end>
-    Left = 36
-    Top = 485
+    Left = 44
+    Top = 189
     Bitmap = {}
   end
   object SaveDropDownMenu: TPopupMenu
-    Left = 268
-    Top = 365
+    Left = 276
+    Top = 21
     object SaveSessionMenuItem: TMenuItem
       Action = SaveSessionAction
       Default = True
@@ -1144,8 +1136,8 @@ object LoginDialog: TLoginDialog
   end
   object ManageSitePopupMenu: TPopupMenu
     Images = ActionImageList
-    Left = 396
-    Top = 365
+    Left = 404
+    Top = 21
     object Shellicon1: TMenuItem
       Caption = 'Site'
       Enabled = False
@@ -1222,8 +1214,8 @@ object LoginDialog: TLoginDialog
   end
   object ManageFolderPopupMenu: TPopupMenu
     Images = ActionImageList
-    Left = 398
-    Top = 421
+    Left = 406
+    Top = 77
     object MenuItem1: TMenuItem
       Caption = 'Site Folder'
       Enabled = False
@@ -1279,8 +1271,8 @@ object LoginDialog: TLoginDialog
   end
   object ManageNewSitePopupMenu: TPopupMenu
     Images = ActionImageList
-    Left = 543
-    Top = 365
+    Left = 151
+    Top = 133
     object MenuItem12: TMenuItem
       Caption = 'New Site'
       Enabled = False
@@ -1343,8 +1335,8 @@ object LoginDialog: TLoginDialog
   end
   object ManageWorkspacePopupMenu: TPopupMenu
     Images = ActionImageList
-    Left = 542
-    Top = 421
+    Left = 406
+    Top = 141
     object MenuItem2: TMenuItem
       Caption = 'Workspace'
       Enabled = False
@@ -1393,8 +1385,8 @@ object LoginDialog: TLoginDialog
     end
   end
   object SessionAdvancedPopupMenu: TPopupMenu
-    Left = 144
-    Top = 365
+    Left = 152
+    Top = 21
     object Session1: TMenuItem
       Caption = 'Session'
       Enabled = False
@@ -1875,14 +1867,14 @@ object LoginDialog: TLoginDialog
           BFF8D73C06EB61FCFFFF3F297A310000D54FEADB815A8A100000000049454E44
           AE426082}
       end>
-    Left = 33
-    Top = 549
+    Left = 41
+    Top = 253
     Bitmap = {}
   end
   object LoginDropDownMenu: TPopupMenu
     Images = ActionImageList
-    Left = 270
-    Top = 421
+    Left = 278
+    Top = 77
     object Login1: TMenuItem
       Action = LoginAction
       Default = True
@@ -2207,8 +2199,8 @@ object LoginDialog: TLoginDialog
           39F9E10FBF7D9BC06146B20BF100E25D48090000D9537415156A030000000000
           49454E44AE426082}
       end>
-    Left = 143
-    Top = 485
+    Left = 151
+    Top = 189
     Bitmap = {}
   end
   object ActionImageList120: TPngImageList
@@ -2610,8 +2602,8 @@ object LoginDialog: TLoginDialog
           D56C9F3609C3C0C340DA86816CF0FF905FCD637BB881FFFF139D95890200B8D8
           399E6C933D3B0000000049454E44AE426082}
       end>
-    Left = 145
-    Top = 549
+    Left = 153
+    Top = 253
     Bitmap = {}
   end
   object SessionImageList144: TPngImageList
@@ -2958,8 +2950,8 @@ object LoginDialog: TLoginDialog
           2E070A6F922DB072F2232AF88EEDDB44960528414400901E44D402001D69BC19
           62FAB43A0000000049454E44AE426082}
       end>
-    Left = 271
-    Top = 485
+    Left = 279
+    Top = 189
     Bitmap = {}
   end
   object SessionImageList192: TPngImageList
@@ -3260,8 +3252,8 @@ object LoginDialog: TLoginDialog
           E0D8BE4D54710046149000288F025A0300B035FD21AB80C6790000000049454E
           44AE426082}
       end>
-    Left = 399
-    Top = 485
+    Left = 407
+    Top = 189
     Bitmap = {}
   end
   object ActionImageList144: TPngImageList
@@ -3771,8 +3763,8 @@ object LoginDialog: TLoginDialog
           BA0C3CD30349C6BB2693432AAF653200CFE8B12FFE592375E1C77BFC7480FFD9
           7E020EF8EA5A9F9886D50000000049454E44AE426082}
       end>
-    Left = 270
-    Top = 549
+    Left = 278
+    Top = 253
     Bitmap = {}
   end
   object ActionImageList192: TPngImageList
@@ -4324,8 +4316,8 @@ object LoginDialog: TLoginDialog
           209FA6A7CBB18441E79A49DF3DB88215E04EC51D07F80B8CCA82E42EA50F1200
           00000049454E44AE426082}
       end>
-    Left = 398
-    Top = 549
+    Left = 406
+    Top = 253
     Bitmap = {}
   end
 end

@@ -86,7 +86,6 @@ __fastcall TLoginDialog::TLoginDialog(TComponent* AOwner)
   FPasswordLabel = PasswordLabel->Caption;
 
   FSiteButtonsPadding = SitesPanel->ClientHeight - ToolsMenuButton->Top - ToolsMenuButton->Height;
-  HideComponentsPanel(this);
 }
 //---------------------------------------------------------------------
 __fastcall TLoginDialog::~TLoginDialog()
@@ -698,6 +697,7 @@ void __fastcall TLoginDialog::FormShow(TObject * /*Sender*/)
   }
 
   // WORKAROUND for a bug in the VCL layout code for bottom aligned controls
+  // This is probably no longer needed after ComponentsPanel was removed
   int Offset = (SitesPanel->ClientHeight - FSiteButtonsPadding - ToolsMenuButton->Height) - ToolsMenuButton->Top;
   ToolsMenuButton->Top = ToolsMenuButton->Top + Offset;
   ManageButton->Top = ManageButton->Top + Offset;

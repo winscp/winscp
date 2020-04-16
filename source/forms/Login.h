@@ -176,7 +176,6 @@ __published:
   TMenuItem *TransferSettingsRule1;
   TGroupBox *NoteGroup;
   TMemo *NoteMemo;
-  TPanel *ComponentsPanel;
   TPngImageList *SessionImageList120;
   TPngImageList *ActionImageList120;
   TAction *SearchSiteNameStartOnlyAction;
