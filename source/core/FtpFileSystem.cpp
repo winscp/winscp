@@ -1813,8 +1813,8 @@ bool __fastcall TFTPFileSystem::IsCapable(int Capability) const
     case fcRemoteMove:
     case fcRemoveBOMUpload:
     case fcMoveToQueue:
-    case fsSkipTransfer:
-    case fsParallelTransfers:
+    case fcSkipTransfer:
+    case fcParallelTransfers:
       return true;
 
     case fcPreservingTimestampUpload:

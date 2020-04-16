@@ -1946,7 +1946,7 @@ bool __fastcall TTerminal::GetIsCapable(TFSCapability Capability) const
   {
     switch (Capability)
     {
-      case fsBackgroundTransfers:
+      case fcBackgroundTransfers:
         return !IsEncryptingFiles();
 
       default:
@@ -6638,7 +6638,7 @@ bool __fastcall TTerminal::CanParallel(
 {
   return
     (ParallelOperation != NULL) &&
-    FFileSystem->IsCapable(fsParallelTransfers) &&
+    FFileSystem->IsCapable(fcParallelTransfers) &&
     // parallel transfer is not implemented for operations needed to be done on a folder
     // after all its files are processed
     FLAGCLEAR(Params, cpDelete) &&

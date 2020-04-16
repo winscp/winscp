@@ -2067,8 +2067,8 @@ bool __fastcall TSFTPFileSystem::IsCapable(int Capability) const
 
     case fcMoveToQueue:
     case fcResumeSupport:
-    case fsSkipTransfer:
-    case fsParallelTransfers:
+    case fcSkipTransfer:
+    case fcParallelTransfers:
       return !FTerminal->IsEncryptingFiles();
 
     case fcRename:

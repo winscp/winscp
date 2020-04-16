@@ -553,8 +553,8 @@ bool __fastcall TWebDAVFileSystem::IsCapable(int Capability) const
     // Only to make double-click on file edit/open the file,
     // instead of trying to open it as directory
     case fcResolveSymlink:
-    case fsSkipTransfer:
-    case fsParallelTransfers:
+    case fcSkipTransfer:
+    case fcParallelTransfers:
     case fcRemoteCopy:
       return true;
 
