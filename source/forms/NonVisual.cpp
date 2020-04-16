@@ -196,7 +196,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
     ScpExplorer->Terminal->IsCapable[fcLocking])
   // local selected operation
   UPD(LocalCopyAction, HasTerminal && EnabledLocalSelectedOperation)
-  UPD(LocalCopyQueueAction, HasTerminal && EnabledLocalSelectedOperation && ScpExplorer->Terminal->IsCapable[fsBackgroundTransfers])
+  UPD(LocalCopyQueueAction, HasTerminal && EnabledLocalSelectedOperation && ScpExplorer->Terminal->IsCapable[fcBackgroundTransfers])
   UPD(LocalCopyNonQueueAction, HasTerminal && EnabledLocalSelectedOperation)
   UPD(LocalRenameAction, EnabledLocalSelectedOperation)
   UPD(LocalEditAction, EnabledLocalSelectedFileOperation && !WinConfiguration->DisableOpenEdit)
@@ -208,12 +208,12 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(LocalNewFileAction, !WinConfiguration->DisableOpenEdit)
   // local focused operation
   UPD(LocalCopyFocusedAction, HasTerminal && EnabledLocalFocusedOperation)
-  UPD(LocalCopyFocusedQueueAction, HasTerminal && EnabledLocalFocusedOperation && ScpExplorer->Terminal->IsCapable[fsBackgroundTransfers])
+  UPD(LocalCopyFocusedQueueAction, HasTerminal && EnabledLocalFocusedOperation && ScpExplorer->Terminal->IsCapable[fcBackgroundTransfers])
   UPD(LocalCopyFocusedNonQueueAction, HasTerminal && EnabledLocalFocusedOperation)
   UPD(LocalMoveFocusedAction, HasTerminal && EnabledLocalFocusedOperation)
   // remote selected operation
   UPD(RemoteCopyAction, EnabledRemoteSelectedOperation)
-  UPD(RemoteCopyQueueAction, EnabledRemoteSelectedOperation && ScpExplorer->Terminal->IsCapable[fsBackgroundTransfers])
+  UPD(RemoteCopyQueueAction, EnabledRemoteSelectedOperation && ScpExplorer->Terminal->IsCapable[fcBackgroundTransfers])
   UPD(RemoteCopyNonQueueAction, EnabledRemoteSelectedOperation)
   UPD(RemoteRenameAction, EnabledRemoteSelectedOperation &&
     ScpExplorer->Terminal->IsCapable[fcRename])
@@ -226,7 +226,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(RemoteAddEditLinkAction2, ScpExplorer->CanAddEditLink(osRemote))
   // remote focused operation
   UPD(RemoteCopyFocusedAction, EnabledRemoteFocusedOperation)
-  UPD(RemoteCopyFocusedQueueAction, EnabledRemoteFocusedOperation && ScpExplorer->Terminal->IsCapable[fsBackgroundTransfers])
+  UPD(RemoteCopyFocusedQueueAction, EnabledRemoteFocusedOperation && ScpExplorer->Terminal->IsCapable[fcBackgroundTransfers])
   UPD(RemoteCopyFocusedNonQueueAction, EnabledRemoteFocusedOperation)
   UPD(RemoteMoveFocusedAction, EnabledRemoteFocusedOperation)
   UPD(RemoteMoveToFocusedAction, EnabledFocusedOperation &&

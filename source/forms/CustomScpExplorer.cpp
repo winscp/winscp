@@ -1126,7 +1126,7 @@ bool __fastcall TCustomScpExplorerForm::CopyParamDialog(
       ToTemp;
     Options |=
       FLAGMASK(ToTemp, coTemp) |
-      FLAGMASK(!Terminal->IsCapable[fsBackgroundTransfers], coDisableQueue) |
+      FLAGMASK(!Terminal->IsCapable[fcBackgroundTransfers], coDisableQueue) |
       coDoNotShowAgain;
     TUsableCopyParamAttrs UsableCopyParamAttrs = Terminal->UsableCopyParamAttrs(Params);
     int CopyParamAttrs = (Direction == tdToRemote ?
@@ -1172,7 +1172,7 @@ bool __fastcall TCustomScpExplorerForm::CopyParamDialog(
     }
   }
 
-  if (Result && CopyParam.Queue && !ToTemp && Terminal->IsCapable[fsBackgroundTransfers])
+  if (Result && CopyParam.Queue && !ToTemp && Terminal->IsCapable[fcBackgroundTransfers])
   {
 
     Configuration->Usage->Inc(L"TransfersOnBackground");
@@ -1409,7 +1409,7 @@ UnicodeString __fastcall TCustomScpExplorerForm::GetToolbarsButtonsStr()
 void __fastcall TCustomScpExplorerForm::CreateProgressForm(TSynchronizeProgress * SynchronizeProgress)
 {
   DebugAssert(FProgressForm == NULL);
-  bool AllowSkip = (Terminal != NULL) ? Terminal->IsCapable[fsSkipTransfer] : false;
+  bool AllowSkip = (Terminal != NULL) ? Terminal->IsCapable[fcSkipTransfer] : false;
   FProgressForm = new TProgressForm(Application, (FTransferResumeList != NULL), AllowSkip, SynchronizeProgress);
 
   FProgressForm->DeleteLocalToRecycleBin =
@@ -3146,7 +3146,7 @@ void __fastcall TCustomScpExplorerForm::CustomExecuteFile(TOperationSide Side,
         TNotifyEvent OnSaveAll = NULL;
         TAnyModifiedEvent OnAnyModified = NULL;
         // Edited files are uploaded in background queue, what we do not support with encrypted files
-        if (Terminal->IsCapable[fsBackgroundTransfers])
+        if (Terminal->IsCapable[fcBackgroundTransfers])
         {
           OnFileChanged = FEditorManager->FileChanged;
           OnSaveAll = SaveAllInternalEditors;
@@ -8581,7 +8581,7 @@ void __fastcall TCustomScpExplorerForm::UpdateControls()
     RemoteDriveView->Color = RemoteDirView->Color;
     RemoteDriveView->Font->Color = RemoteDirView->Font->Color;
 
-    QueueView3->Enabled = HasTerminal && Terminal->IsCapable[fsBackgroundTransfers];
+    QueueView3->Enabled = HasTerminal && Terminal->IsCapable[fcBackgroundTransfers];
     QueueView3->Color = QueueView3->Enabled ? GetWindowColor() : DisabledPanelColor();
     QueueView3->Font->Color =  GetWindowTextColor(QueueView3->Color);
     QueueLabelUpdateStatus();
