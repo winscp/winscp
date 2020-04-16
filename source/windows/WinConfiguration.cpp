@@ -2712,18 +2712,19 @@ void __fastcall TWinConfiguration::TrimJumpList(TStringList * List)
 void __fastcall TWinConfiguration::UpdateEntryInJumpList(
   bool Session, const UnicodeString & Name, bool Add)
 {
-  THierarchicalStorage * Storage = CreateConfigStorage();
   try
   {
-    FDontDecryptPasswords++;
+    std::auto_ptr<THierarchicalStorage> Storage(CreateConfigStorage());
+    TAutoNestingCounter DontDecryptPasswordsCounter(FDontDecryptPasswords);
+
     Storage->AccessMode = smReadWrite;
 
     // For initial call from UpdateJumpList, do not create the key if it does ot exist yet.
     // To avoid creating the key if we are being started just for a maintenance task.
     if (Storage->OpenSubKey(ConfigurationSubKey, !Name.IsEmpty()))
     {
-      std::unique_ptr<TStringList> ListSessions(LoadJumpList(Storage, L"JumpList"));
-      std::unique_ptr<TStringList> ListWorkspaces(LoadJumpList(Storage, L"JumpListWorkspaces"));
+      std::unique_ptr<TStringList> ListSessions(LoadJumpList(Storage.get(), L"JumpList"));
+      std::unique_ptr<TStringList> ListWorkspaces(LoadJumpList(Storage.get(), L"JumpListWorkspaces"));
 
       if (!Name.IsEmpty())
       {
@@ -2745,14 +2746,13 @@ void __fastcall TWinConfiguration::UpdateEntryInJumpList(
 
       ::UpdateJumpList(ListSessions.get(), ListWorkspaces.get());
 
-      SaveJumpList(Storage, L"JumpList", ListSessions.get());
-      SaveJumpList(Storage, L"JumpListWorkspaces", ListWorkspaces.get());
+      SaveJumpList(Storage.get(), L"JumpList", ListSessions.get());
+      SaveJumpList(Storage.get(), L"JumpListWorkspaces", ListWorkspaces.get());
     }
   }
-  __finally
+  catch (Exception & E)
   {
-    FDontDecryptPasswords--;
-    delete Storage;
+    throw ExtException(&E, MainInstructions(LoadStr(JUMPLIST_ERROR)));
   }
 }
 //---------------------------------------------------------------------------
