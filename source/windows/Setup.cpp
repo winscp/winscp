@@ -1763,7 +1763,14 @@ void __fastcall StopUpdateThread()
 //---------------------------------------------------------------------------
 void __fastcall SetupInitialize()
 {
-  WinConfiguration->UpdateJumpList();
+  try
+  {
+    WinConfiguration->UpdateJumpList();
+  }
+  catch (Exception & E)
+  {
+    ShowExtendedException(&E);
+  }
 }
 //---------------------------------------------------------------------------
 static bool __fastcall AddJumpListCategory(TStrings * Names,
