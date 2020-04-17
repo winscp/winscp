@@ -1004,8 +1004,8 @@ void __fastcall TScpCommanderForm::CompareDirectories()
     WinConfiguration->ScpCommander.CompareCriterias());
   if (LocalDirView->SelCount + DirView(osOther)->SelCount == 0)
   {
-    MessageDialog(LoadStr(COMPARE_NO_DIFFERENCES), qtInformation, qaOK,
-      HELP_COMPARE_NO_DIFFERENCES);
+    UnicodeString Message = MainInstructions(LoadStr(COMPARE_NO_DIFFERENCES));
+    MessageDialog(Message, qtInformation, qaOK, HELP_COMPARE_NO_DIFFERENCES);
   }
 }
 //---------------------------------------------------------------------------
