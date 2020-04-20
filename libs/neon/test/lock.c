@@ -303,7 +303,7 @@ static void got_if_header(char *value)
 	     verify_if, value, verify_if_expect);
 }
 
-/* Server callback which checks that an If: header is recevied. */
+/* Server callback which checks that an If: header is received. */
 static int serve_verify_if(ne_socket *sock, void *userdata)
 {
     /* tell us about If headers in the request. */

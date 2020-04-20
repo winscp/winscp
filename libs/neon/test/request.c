@@ -598,7 +598,7 @@ static int incr_server(ne_socket *sock, void *arg)
 }
 
 /* Emulates a persistent connection timeout on the server. This tests
- * the timeout occuring after between 1 and 10 requests down the
+ * the timeout occurring after between 1 and 10 requests down the
  * connection. */
 static int persist_timeout(void)
 {
@@ -1326,7 +1326,7 @@ static void s_progress(void *userdata, ne_off_t prog, ne_off_t total)
 	    prog_state = prog_error;
 	}
 	else if (prog_last != -1 && prog_last > prog) {
-	    t_context("progess went backwards: " FOFF " to " FOFF, prog_last, prog);
+	    t_context("progress went backwards: " FOFF " to " FOFF, prog_last, prog);
 	    prog_state = prog_error;
 	}
 	else if (prog_last == prog) {
@@ -1421,7 +1421,7 @@ static int fail_noserver(const char *hostname, unsigned int port, int code)
      ne_session_destroy(sess);
 
      ONV(ret == NE_OK,
-	 ("request to server at %s:%u succeded?!", hostname, port));
+	 ("request to server at %s:%u succeeded?!", hostname, port));
      ONV(ret != code, ("request failed with %d not %d", ret, code));
 
      return OK;
@@ -1521,7 +1521,7 @@ static int serve_then_abort(ne_socket *sock, void *ud)
     exit(0);
 }
 
-/* Test that after an aborted request on a peristent connection, a
+/* Test that after an aborted request on a persistent connection, a
  * failure of the *subsequent* request is not treated as a persistent
  * connection timeout and retried.  */
 static int retry_after_abort(void)

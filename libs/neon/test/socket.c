@@ -177,7 +177,7 @@ static int begin(ne_socket **sock, server_fn fn, void *ud)
     CALL(new_spawn_server(1, wrap_serve, &pair, &port));
     CALL(do_connect(sock, localhost, port));
     ONV(ne_sock_connect_ssl(*sock, client_ctx, NULL),
-	("SSL negotation failed: %s", ne_sock_error(*sock)));
+	("SSL negotiation failed: %s", ne_sock_error(*sock)));
     return OK;
 }
 

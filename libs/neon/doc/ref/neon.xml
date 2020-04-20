@@ -170,7 +170,7 @@
       </varlistentry>
 
       <varlistentry>
-        <term>inflate, deflate, crc32, compress, uncompres, adler32,
+        <term>inflate, deflate, crc32, compress, uncompress, adler32,
         zlib</term>
 	<listitem><simpara>Namespaces used by the zlib library; a
 	relatively small number of symbols are used without these
@@ -231,7 +231,7 @@
     <para>As a pure library interface, &neon; will never produce
     output on <constant>stdout</constant> or
     <constant>stderr</constant>; all user interaction is the
-    responsibilty of the application.</para>
+    responsibility of the application.</para>
   </refsect2>
 
   <refsect2>
@@ -279,7 +279,8 @@
   <refsect1>
     <title>See also</title>
 
-    <para><xref linkend="refsess"/>, <xref linkend="ne_oom_callback"/></para>
+    <para><xref linkend="refsess"/>, <xref linkend="ne_oom_callback"/>,
+    <ulink url="https://notroj.github.io/neon/"/></para>
   </refsect1>
 
 </refentry>

@@ -127,7 +127,11 @@ int ne_lock(ne_session *sess, struct ne_lock *lock);
 /* Issue an UNLOCK request for the given lock */
 int ne_unlock(ne_session *sess, const struct ne_lock *lock);
 
-/* Refresh a lock. Updates lock->timeout appropriately. */
+/* Refresh a lock; returns an NE_* code.  If lock->timeout is non-zero
+ * on entry, the server is requested to update the lock timeout to the
+ * given value (per RFC4918§7.7, servers MAY ignore the requested
+ * timeout).  On success, lock->timeout is updated to the new timeout
+ * given by the server. */
 int ne_lock_refresh(ne_session *sess, struct ne_lock *lock);
 
 /* Callback for lock discovery.  If 'lock' is NULL, something went

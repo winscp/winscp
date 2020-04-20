@@ -173,7 +173,7 @@ int ne_strncasecmp(const char *s1, const char *s2, size_t n);
  * char. */
 #define ne_tolower(c) (ne_tolower_array()[(unsigned char)c])
 
-const unsigned char *const ne_tolower_array(void);
+const unsigned char *ne_tolower_array(void) ne_attribute((const));
 
 /* Convert an ASCII hexadecimal character in the ranges '0'..'9'
  * 'a'..'f' 'A'..'F' to its numeric equivalent. */
