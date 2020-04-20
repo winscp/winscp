@@ -6930,18 +6930,27 @@ void __fastcall TTerminal::SourceRobust(
   while (RobustLoop.Retry());
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::CreateTargetDirectory(
+bool __fastcall TTerminal::CreateTargetDirectory(
   const UnicodeString & DirectoryPath, int Attrs, const TCopyParamType * CopyParam)
 {
-  TRemoteProperties Properties;
-  if (CopyParam->PreserveRights)
+  TRemoteFile * File = NULL;
+  bool DoCreate =
+    !FileExists(DirectoryPath, &File) ||
+    !File->IsDirectory; // just try to create and make it fail
+  delete File;
+  if (DoCreate)
   {
-    Properties.Valid = Properties.Valid << vpRights;
-    Properties.Rights = CopyParam->RemoteFileRights(Attrs);
+    TRemoteProperties Properties;
+    if (CopyParam->PreserveRights)
+    {
+      Properties.Valid = Properties.Valid << vpRights;
+      Properties.Rights = CopyParam->RemoteFileRights(Attrs);
+    }
+    Properties.Valid = Properties.Valid << vpEncrypt;
+    Properties.Encrypt = CopyParam->EncryptNewFiles;
+    CreateDirectory(DirectoryPath, &Properties);
   }
-  Properties.Valid = Properties.Valid << vpEncrypt;
-  Properties.Encrypt = CopyParam->EncryptNewFiles;
-  CreateDirectory(DirectoryPath, &Properties);
+  return DoCreate;
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::DirectorySource(
@@ -6956,14 +6965,13 @@ void __fastcall TTerminal::DirectorySource(
   OperationProgress->SetFile(DirectoryName);
 
   bool PostCreateDir = FLAGCLEAR(Flags, tfPreCreateDir);
-  // WebDAV and SFTP
+  // WebDAV, SFTP and S3
   if (!PostCreateDir)
   {
     // This is originally a code for WebDAV, SFTP used a slightly different logic,
     // but functionally it should be very similar.
-    if (!FileExists(DestFullName))
+    if (CreateTargetDirectory(DestFullName, Attrs, CopyParam))
     {
-      CreateTargetDirectory(DestFullName, Attrs, CopyParam);
       Flags |= tfNewDirectory;
     }
   }
@@ -7006,17 +7014,7 @@ void __fastcall TTerminal::DirectorySource(
     // FTP
     if (PostCreateDir)
     {
-      TRemoteFile * File = NULL;
-      // ignore non-fatal error when the directory already exists
-      bool DoCreate =
-        !FileExists(DestFullName, &File) ||
-        !File->IsDirectory; // just try to create and make it fail
-      delete File;
-
-      if (DoCreate)
-      {
-        CreateTargetDirectory(DestFullName, Attrs, CopyParam);
-      }
+      CreateTargetDirectory(DestFullName, Attrs, CopyParam);
     }
 
     // TODO : Delete also read-only directories.
