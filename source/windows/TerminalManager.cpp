@@ -443,7 +443,14 @@ bool __fastcall TTerminalManager::ConnectActiveTerminal()
   // ad-hoc session cannot be reproduced from just a session name
   if (StoredSessions->FindSame(ActiveTerminal->SessionData) != NULL)
   {
-    WinConfiguration->AddSessionToJumpList(ActiveTerminal->SessionData->SessionName);
+    try
+    {
+      WinConfiguration->AddSessionToJumpList(ActiveTerminal->SessionData->SessionName);
+    }
+    catch (Exception & E)
+    {
+      ShowExtendedException(&E);
+    }
   }
 
   FAuthenticationCancelled = false;

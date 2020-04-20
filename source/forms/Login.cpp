@@ -1006,7 +1006,14 @@ void __fastcall TLoginDialog::DeleteSessionActionExecute(TObject * /*Sender*/)
     if (MessageDialog(Message,
           qtConfirmation, qaOK | qaCancel, HELP_DELETE_SESSION, &Params) == qaOK)
     {
-      WinConfiguration->DeleteSessionFromJumpList(Session->SessionName);
+      try
+      {
+        WinConfiguration->DeleteSessionFromJumpList(Session->SessionName);
+      }
+      catch (Exception & E)
+      {
+        ShowExtendedException(&E);
+      }
       Session->Remove();
       DestroySession(Session);
       SessionTree->Selected->Delete();
@@ -1053,7 +1060,14 @@ void __fastcall TLoginDialog::DeleteSessionActionExecute(TObject * /*Sender*/)
     {
       if (IsWorkspaceNode(Node))
       {
-        WinConfiguration->DeleteWorkspaceFromJumpList(Path);
+        try
+        {
+          WinConfiguration->DeleteWorkspaceFromJumpList(Path);
+        }
+        catch (Exception & E)
+        {
+          ShowExtendedException(&E);
+        }
       }
 
       Node = SessionTree->Selected;
@@ -1334,7 +1348,14 @@ void __fastcall TLoginDialog::SaveDataList(TList * DataList)
 
     if (IsWorkspaceNode(Node))
     {
-      WinConfiguration->AddWorkspaceToJumpList(Name);
+      try
+      {
+        WinConfiguration->AddWorkspaceToJumpList(Name);
+      }
+      catch (Exception & E)
+      {
+        ShowExtendedException(&E);
+      }
     }
 
     StoredSessions->GetFolderOrWorkspace(Name, DataList);
