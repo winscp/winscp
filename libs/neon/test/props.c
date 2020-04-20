@@ -324,7 +324,7 @@ static int two_oh_seven(void)
           "-status={999 French Fries};" 
         },
 
-        /* test multiple propstats in mulitple responses */
+        /* test multiple propstats in multiple responses */
         { MULTI_207(RESP_207("/al/pha", 
                              PSTAT_207(STAT_207("321 Une"))
                              PSTAT_207(STAT_207("432 Deux"))

@@ -441,7 +441,7 @@ static int clicert_import(void)
 }
 
 /* Test that 'cert', which is signed by CA_CERT, is accepted
- * unconditionaly. */
+ * unconditionally. */
 static int accept_signed_cert_for_hostname(char *cert, const char *hostname)
 {
     struct ssl_server_args args = {cert, 0};

@@ -46,6 +46,9 @@ matrix:
     - name: OpenSSL
       compiler: gcc
       env: CONF="--with-ssl=openssl"
+    - name: OpenSSL on arm64
+      arch: arm64
+      env: CONF="--with-ssl=openssl"
     - name: OpenSSL on trusty
       dist: trusty
       env: CONF="--with-ssl=openssl"

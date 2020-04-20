@@ -43,7 +43,7 @@
 <function>ne_qtoken</function> tokenize the string at the location
 stored in the pointer <parameter>str</parameter>.  Each time the
 function is called, it returns the next token, and modifies the
-<parameter>str</parameter> pointer to point to the remainer of the
+<parameter>str</parameter> pointer to point to the remainder of the
 string, or &null; if there are no more tokens in the string.  A token
 is delimited by the separator character <parameter>sep</parameter>; if
 <function>ne_qtoken</function> is used any quoted segments of the

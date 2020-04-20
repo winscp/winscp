@@ -1,5 +1,5 @@
 
-[![Travis CI Build Status](https://travis-ci.org/notroj/neon.svg?branch=master)](https://travis-ci.org/notroj/neon)
+[![Travis CI Build Status](https://travis-ci.org/notroj/neon.svg?branch=0.31.x)](https://travis-ci.org/notroj/neon)
 
 # neon
 
@@ -7,12 +7,10 @@ _neon_ is an HTTP and WebDAV client library, with a C language API.
 
 Mailing list: neon@lists.manyfish.co.uk || Web site: http://www.webdav.org/neon/
 
-PLEASE NOTE: The neon API is subject to backwards-incompatible change
-over minor releases (0.23.x -> 0.24.x) until the 1.0.0 release, but
-maintains source and binary backwards compatibility through patch
-releases (0.24.0 -> 0.24.7).
+The neon API and ABI are stable and maintain backwards compatibility
+from 0.27.x through 0.31.x.
 
-Current features:
+Features:
 
  - High-level interface to HTTP and WebDAV methods.
  - Low-level interface to HTTP request handling, to allow implementing

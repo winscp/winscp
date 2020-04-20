@@ -368,7 +368,7 @@ static ne_ssl_certificate *populate_cert(ne_ssl_certificate *cert, X509 *x5)
 }
 
 /* OpenSSL cert verification callback.  This is invoked for *each*
- * error which is encoutered whilst verifying the cert chain; multiple
+ * error which is encountered whilst verifying the cert chain; multiple
  * invocations for any particular cert in the chain are possible. */
 static int verify_callback(int ok, X509_STORE_CTX *ctx)
 {
@@ -578,7 +578,7 @@ ne_ssl_context *ne_ssl_context_create(int mode)
         /* enable workarounds for buggy SSL server implementations */
         SSL_CTX_set_options(ctx->ctx, SSL_OP_ALL);
         SSL_CTX_set_verify(ctx->ctx, SSL_VERIFY_PEER, verify_callback);
-#if OPENSSL_VERSION_NUMBER >= 0x10101000L
+#if !defined(LIBRESSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER >= 0x10101000L
         SSL_CTX_set_post_handshake_auth(ctx->ctx, 1);
 #endif
     } else if (mode == NE_SSL_CTX_SERVER) {
@@ -1138,7 +1138,7 @@ int ne_ssl_cert_digest(const ne_ssl_certificate *cert, char *digest)
 }
 
 #if defined(NE_HAVE_TS_SSL) && OPENSSL_VERSION_NUMBER < 0x10100000L
-/* From OpenSSL 1.1.0 locking callbacks are no longer neede. */
+/* From OpenSSL 1.1.0 locking callbacks are no longer needed. */
 #define WITH_OPENSSL_LOCKING (1)
 
 /* Implementation of locking callbacks to make OpenSSL thread-safe.
@@ -1286,73 +1286,4 @@ void ne__ssl_exit(void)
         free(locks);
     }
 #endif
-}
-
-struct ne_md5_ctx {
-    EVP_MD_CTX *ctx;
-};
-
-/* Returns zero on succes, non-zero on failure. */
-static int init_md5_ctx(struct ne_md5_ctx *ctx)
-{
-    ctx->ctx = EVP_MD_CTX_new();
-
-    if (EVP_DigestInit_ex(ctx->ctx, EVP_md5(), NULL) != 1) {
-        return 1;
-    }
-
-    return 0;
-}
-
-struct ne_md5_ctx *ne_md5_create_ctx(void)
-{
-    struct ne_md5_ctx *ctx = ne_malloc(sizeof *ctx);
-    
-    if (init_md5_ctx(ctx)) {
-        ne_free(ctx);
-        return NULL;
-    }
-    
-    return ctx;
-}
-
-void ne_md5_process_block(const void *buffer, size_t len,
-                          struct ne_md5_ctx *ctx)
-{
-    EVP_DigestUpdate(ctx->ctx, buffer, len);
-}
-
-void ne_md5_process_bytes(const void *buffer, size_t len,
-                          struct ne_md5_ctx *ctx)
-{
-    EVP_DigestUpdate(ctx->ctx, buffer, len);
-}
-
-void *ne_md5_finish_ctx(struct ne_md5_ctx *ctx, void *resbuf)
-{
-    EVP_DigestFinal(ctx->ctx, resbuf, NULL);
-    
-    return resbuf;
-}
-
-struct ne_md5_ctx *ne_md5_dup_ctx(struct ne_md5_ctx *ctx)
-{
-    struct ne_md5_ctx *r = ne_md5_create_ctx();
-
-    EVP_MD_CTX_copy_ex(r->ctx, ctx->ctx);
-    
-    return r;
-}
-
-void ne_md5_reset_ctx(struct ne_md5_ctx *ctx)
-{
-    EVP_MD_CTX_reset(ctx->ctx);
-
-    init_md5_ctx(ctx);    
-}
-    
-void ne_md5_destroy_ctx(struct ne_md5_ctx *ctx)
-{
-    EVP_MD_CTX_free(ctx->ctx);
-    ne_free(ctx);
 }

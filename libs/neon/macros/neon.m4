@@ -137,7 +137,7 @@ AC_DEFUN([NE_VERSIONS_BUNDLED], [
 # Define the current versions.
 NE_VERSION_MAJOR=0
 NE_VERSION_MINOR=31
-NE_VERSION_PATCH=0
+NE_VERSION_PATCH=1
 NE_VERSION_TAG=
 
 # 0.31.x is backwards-compatible to 0.27.x, so AGE=4
@@ -351,7 +351,7 @@ AC_SUBST(NEON_BUILD_BUNDLED)
 dnl AC_SEARCH_LIBS done differently. Usage:
 dnl   NE_SEARCH_LIBS(function, libnames, [extralibs], [actions-if-not-found],
 dnl                            [actions-if-found])
-dnl Tries to find 'function' by linking againt `-lLIB $NEON_LIBS' for each
+dnl Tries to find 'function' by linking against `-lLIB $NEON_LIBS' for each
 dnl LIB in libnames.  If link fails and 'extralibs' is given, will also
 dnl try linking against `-lLIB extralibs $NEON_LIBS`.
 dnl Once link succeeds, `-lLIB [extralibs]` is prepended to $NEON_LIBS, and

@@ -30,6 +30,10 @@
 # include <limits.h>
 #endif
 
+#ifdef HAVE_OPENSSL
+#include <openssl/md5.h>
+#endif
+
 #include "ne_md5.h"
 #include "ne_string.h" /* for NE_ASC2HEX */
 
@@ -48,7 +52,6 @@ typedef unsigned long md5_uint32;
 #define md5_stream ne_md5_stream
 #define md5_ctx ne_md5_ctx
 
-#ifndef HAVE_OPENSSL
 
 #ifdef WORDS_BIGENDIAN
 # define SWAP(n)							\
@@ -60,6 +63,9 @@ typedef unsigned long md5_uint32;
 /* Structure to save state of computation between the single steps.  */
 struct md5_ctx
 {
+#ifdef HAVE_OPENSSL
+  MD5_CTX ctx;
+#else
   md5_uint32 A;
   md5_uint32 B;
   md5_uint32 C;
@@ -68,8 +74,10 @@ struct md5_ctx
   md5_uint32 total[2];
   md5_uint32 buflen;
   char buffer[128];
+#endif
 };
 
+#ifndef HAVE_OPENSSL
 /* This array contains the bytes used to pad the buffer to the next
    64-byte boundary.  (RFC 1321, 3.1: Step 1)  */
 static const unsigned char fillbuf[64] = { 0x80, 0 /* , 0, 0, ...  */ };
@@ -113,22 +121,6 @@ void
 ne_md5_destroy_ctx(struct ne_md5_ctx *ctx)
 {
   ne_free(ctx);
-}
-
-/* Put result from CTX in first 16 bytes following RESBUF.  The result
-   must be in little endian byte order.
-
-   IMPORTANT: On some systems it is required that RESBUF is correctly
-   aligned for a 32 bits value.  */
-void *
-md5_read_ctx (const struct md5_ctx *ctx, void *resbuf)
-{
-  ((md5_uint32 *) resbuf)[0] = SWAP (ctx->A);
-  ((md5_uint32 *) resbuf)[1] = SWAP (ctx->B);
-  ((md5_uint32 *) resbuf)[2] = SWAP (ctx->C);
-  ((md5_uint32 *) resbuf)[3] = SWAP (ctx->D);
-
-  return resbuf;
 }
 
 /* Process the remaining bytes in the internal buffer and the usual
@@ -376,8 +368,77 @@ md5_process_block (const void *buffer, size_t len, struct md5_ctx *ctx)
   ctx->C = C;
   ctx->D = D;
 }
+#else /* HAVE_OPENSSL */
 
+struct ne_md5_ctx *ne_md5_create_ctx(void)
+{
+    struct ne_md5_ctx *ctx = ne_malloc(sizeof *ctx);
+    
+    if (MD5_Init(&ctx->ctx) != 1) {
+        ne_free(ctx);
+        return NULL;
+    }
+    
+    return ctx;
+}
+
+void ne_md5_process_block(const void *buffer, size_t len,
+                          struct ne_md5_ctx *ctx)
+{
+    MD5_Update(&ctx->ctx, buffer, len);
+}
+
+void ne_md5_process_bytes(const void *buffer, size_t len,
+                          struct ne_md5_ctx *ctx)
+{
+    MD5_Update(&ctx->ctx, buffer, len);
+}
+
+void *ne_md5_finish_ctx(struct ne_md5_ctx *ctx, void *resbuf)
+{
+    MD5_Final(resbuf, &ctx->ctx);
+    
+    return resbuf;
+}
+
+struct ne_md5_ctx *ne_md5_dup_ctx(struct ne_md5_ctx *ctx)
+{
+    return memcpy(ne_malloc(sizeof *ctx), ctx, sizeof *ctx);
+}
+
+void ne_md5_reset_ctx(struct ne_md5_ctx *ctx)
+{
+    MD5_Init(&ctx->ctx);
+}
+    
+void ne_md5_destroy_ctx(struct ne_md5_ctx *ctx)
+{
+    ne_free(ctx);
+}
+#endif /* HAVE_OPENSSL */
+
+/* Put result from CTX in first 16 bytes following RESBUF.  The result
+   must be in little endian byte order.
+
+   IMPORTANT: On some systems it is required that RESBUF is correctly
+   aligned for a 32 bits value.  */
+void *
+md5_read_ctx (const struct md5_ctx *ctx, void *resbuf)
+{
+#ifdef HAVE_OPENSSL
+#define SWAP_CTX(x) (ctx->ctx.x)
+#else
+#define SWAP_CTX(x) (ctx->x)
 #endif
+
+  ((md5_uint32 *) resbuf)[0] = SWAP_CTX (A);
+  ((md5_uint32 *) resbuf)[1] = SWAP_CTX (B);
+  ((md5_uint32 *) resbuf)[2] = SWAP_CTX (C);
+  ((md5_uint32 *) resbuf)[3] = SWAP_CTX (D);
+
+  return resbuf;
+}
+
 
 /* Compute MD5 message digest for bytes read from STREAM.  The
    resulting message digest number will be written into the 16 bytes
