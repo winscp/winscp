@@ -96,7 +96,7 @@ static RSA_METHOD *RSA_meth_new(const char *name, int flags)
 #define RSA_meth_set0_app_data(m, f) (m)->app_data = (void *)(f)
 #endif
 
-/* RSA_METHOD ->rsa_private_encrypt calback. */
+/* RSA_METHOD ->rsa_private_encrypt callback. */
 static int pk11_rsa_encrypt(int mlen, const unsigned char *m, 
                             unsigned char *sigret,
                             RSA *r, int padding)

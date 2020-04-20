@@ -84,7 +84,7 @@ typedef ssize_t (*ne_provide_body)(void *userdata,
  * body is 'length'; the callback must ensure that it returns no more
  * than 'length' bytes in total.  If 'length' is set to -1, then the
  * total size of the request is unknown by the caller and chunked 
- * tranfer will be used. */
+ * transfer will be used. */
 void ne_set_request_body_provider(ne_request *req, ne_off_t length,
                                   ne_provide_body provider, void *userdata)
     ne_attribute((nonnull (1)));

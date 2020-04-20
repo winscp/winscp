@@ -797,7 +797,7 @@ void ne_request_destroy(ne_request *req)
 /* Reads a block of the response into BUFFER, which is of size
  * *BUFLEN.  Returns zero on success or non-zero on error.  On
  * success, *BUFLEN is updated to be the number of bytes read into
- * BUFFER (which will be 0 to indicate the end of the repsonse).  On
+ * BUFFER (which will be 0 to indicate the end of the response).  On
  * error, the connection is closed and the session error string is
  * set.  */
 static int read_response_block(ne_request *req, struct ne_response *resp, 
@@ -960,7 +960,7 @@ static void dump_request(const char *request)
 	/* Display everything mode */
 	NE_DEBUG(NE_DBG_HTTP, "Sending request headers:\n%s", request);
     } else if (ne_debug_mask & NE_DBG_HTTP) {
-	/* Blank out the Authorization paramaters */
+	/* Blank out the Authorization parameters */
 	char *reqdebug = ne_strdup(request), *pnt = reqdebug;
 	while ((pnt = strstr(pnt, "Authorization: ")) != NULL) {
 	    for (pnt += 15; *pnt != '\r' && *pnt != '\0'; pnt++) {

@@ -615,7 +615,7 @@ static int error_ossl(ne_socket *sock, int sret);
 /* OpenSSL I/O function implementations. */
 static int readable_ossl(ne_socket *sock, int secs)
 {
-#if OPENSSL_VERSION_NUMBER < 0x10101000L
+#if defined(LIBRESSL_VERSION_NUMBER) || OPENSSL_VERSION_NUMBER < 0x10101000L
     /* Sufficient for TLSv1.2 and earlier. */
     if (SSL_pending(sock->ssl))
 	return 0;
@@ -960,7 +960,7 @@ ssize_t ne_sock_fullread(ne_socket *sock, char *buffer, size_t buflen)
 extern int h_errno;
 #endif
 
-/* This implemementation does not attempt to support IPv6 using
+/* This implementation does not attempt to support IPv6 using
  * gethostbyname2 et al.  */
 ne_sock_addr *ne_addr_resolve(const char *hostname, int flags)
 {
@@ -1411,7 +1411,7 @@ static int do_bind(int fd, int peer_family,
     
 
 #if defined(USE_GETADDRINFO) && defined(AF_INET6)
-    /* Use a sockaddr_in6 if an AF_INET6 local address is specifed, or
+    /* Use a sockaddr_in6 if an AF_INET6 local address is specified, or
      * if no address is specified and the peer address is AF_INET6: */
     if ((addr != &dummy_laddr && addr->ai_family == AF_INET6)
         || (addr == &dummy_laddr && peer_family == AF_INET6)) {

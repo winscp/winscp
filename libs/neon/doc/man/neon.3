@@ -2,12 +2,12 @@
 .\"     Title: neon
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
-.\"      Date: 11 March 2020
+.\"      Date: 17 April 2020
 .\"    Manual: neon API reference
-.\"    Source: neon 0.31.0
+.\"    Source: neon 0.31.1
 .\"  Language: English
 .\"
-.TH "NEON" "3" "11 March 2020" "neon 0.31.0" "neon API reference"
+.TH "NEON" "3" "17 April 2020" "neon 0.31.1" "neon API reference"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -187,7 +187,7 @@ xml[A\-Z], html[A\-Z], docb[A\-Z]
 Namespaces used by the libxml2 library; a relatively small number of symbols are used without these prefixes\&.
 .RE
 .PP
-inflate, deflate, crc32, compress, uncompres, adler32, zlib
+inflate, deflate, crc32, compress, uncompress, adler32, zlib
 .RS 4
 Namespaces used by the zlib library; a relatively small number of symbols are used without these prefixes\&.
 .RE
@@ -221,7 +221,7 @@ by the application; neon never performs any URI encoding or decoding internally\
 As a pure library interface, neon will never produce output on
 \fBstdout\fR
 or
-\fBstderr\fR; all user interaction is the responsibilty of the application\&.
+\fBstderr\fR; all user interaction is the responsibility of the application\&.
 .SS "Memory handling"
 .PP
 neon does not attempt to cope gracefully with an out\-of\-memory situation; instead, by default, the
@@ -254,7 +254,8 @@ macro definition\&.
 .SH "SEE ALSO"
 .PP
 ne_session_create(3),
-ne_oom_callback
+ne_oom_callback,
+\m[blue]\fB\%https://notroj.github.io/neon/\fR\m[]
 .SH "AUTHOR"
 .PP
 \fBJoe Orton\fR <\&neon@lists.manyfish.co.uk\&>

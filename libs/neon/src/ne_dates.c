@@ -238,6 +238,7 @@ time_t ne_asctime_parse(const char *date)
                &gmt.tm_year) != 7)
         return (time_t)-1;
 
+    gmt.tm_year -= 1900;
     for (n=0; n<12; n++)
 	if (strcmp(mon, short_months[n]) == 0)
 	    break;
