@@ -69,7 +69,7 @@ struct ne_propfind_handler_s {
 /* We build up the results of one 'response' element in memory. */
 struct prop {
     char *name, *nspace, *value, *lang;
-    /* Store a ne_propname here too, for convienience.  pname.name =
+    /* Store a ne_propname here too, for convenience.  pname.name =
      * name, pname.nspace = nspace, but they are const'ed in pname. */
     ne_propname pname;
 };

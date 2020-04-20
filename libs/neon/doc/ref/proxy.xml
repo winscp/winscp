@@ -72,7 +72,7 @@
           configures use of an HTTP proxy server for the session, the
           location of which is given by the
           <parameter>hostname</parameter> and
-          <parameter>port</parameter> paramters.  If the proxy
+          <parameter>port</parameter> parameters.  If the proxy
           requires authentication, <xref linkend="ne_set_proxy_auth"/>
           should be used.</para>
         </refsect2>

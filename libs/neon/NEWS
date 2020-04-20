@@ -1,3 +1,11 @@
+Changes in release 0.31.1:
+* ADMIN: The neon website has moved to https://notroj.github.io/neon/
+* Restore ne_md5_read_ctx() in OpenSSL build.
+* Fix gcc warnings on Ubuntu (Jan-Marek Glogowski).
+* Fix various spelling mistakes in docs and headers (thanks to FOSSIES).
+* Fix ne_asctime_parse() (Eugenij-W).
+* Fix build with LibreSSL (Juan RP).
+
 Changes in release 0.31.0:
 * Interface changes:
  - none, API and ABI backwards-compatible with 0.27.x and later

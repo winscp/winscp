@@ -572,7 +572,7 @@ static const unsigned char ascii_tolower[256] = {
 
 #define TOLOWER(ch) ascii_tolower[ch]
 
-const unsigned char *const ne_tolower_array(void)
+const unsigned char *ne_tolower_array(void)
 {
     return ascii_tolower;
 }

@@ -580,7 +580,7 @@ static int continue_negotiate(auth_session *sess, const char *token,
     return ret;
 }
 
-/* Process a Negotiate challange CHALL in session SESS; returns zero
+/* Process a Negotiate challenge CHALL in session SESS; returns zero
  * if challenge is accepted. */
 static int negotiate_challenge(auth_session *sess, int attempt,
                                struct auth_challenge *chall,
@@ -877,7 +877,7 @@ static int digest_challenge(auth_session *sess, int attempt,
         /* Non-stale challenge: clear session and request credentials. */
         clean_session(sess);
 
-        /* The domain paramater must be parsed after the session is
+        /* The domain parameter must be parsed after the session is
          * cleaned; ignore domain for proxy auth. */
         if (parms->domain && sess->spec == &ah_server_class
             && parse_domain(sess, parms->domain)) {
@@ -1770,7 +1770,7 @@ static int auth_challenge(auth_session *sess, int attempt,
 
             if ((proto->flags & AUTH_FLAG_OPAQUE_PARAM) && sep == ' ') {
                 /* Cope with the fact that the unquoted base64
-                 * paramater token doesn't match the 2617 auth-param
+                 * parameter token doesn't match the 2617 auth-param
                  * grammar: */
                 chall->opaque = ne_shave(ne_token(&pnt, ','), " \t");
                 NE_DEBUG(NE_DBG_HTTPAUTH, "auth: %s opaque parameter '%s'\n",
