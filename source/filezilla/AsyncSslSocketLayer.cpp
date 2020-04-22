@@ -983,12 +983,12 @@ BOOL CAsyncSslSocketLayer::ShutDown(int nHow /*=sends*/)
     }
 
     int res = SSL_shutdown(m_ssl);
-    if (res != -1)
+    if (res == 0)
     {
-      if (!res)
-      {
-        SSL_shutdown(m_ssl);
-      }
+      res = SSL_shutdown(m_ssl);
+    }
+    if (res >= 0)
+    {
       if (ShutDownComplete())
         return ShutDownNext();
       else
