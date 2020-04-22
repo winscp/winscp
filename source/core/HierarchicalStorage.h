@@ -64,7 +64,6 @@ public:
   __property TStorageAccessMode AccessMode = { read = FAccessMode, write = SetAccessMode };
   __property bool Explicit = { read = FExplicit, write = FExplicit };
   __property bool ForceSave = { read = FForceSave, write = FForceSave };
-  __property bool ForceAnsi = { read = FForceAnsi, write = FForceAnsi };
   __property bool MungeStringValues = { read = FMungeStringValues, write = FMungeStringValues };
   __property UnicodeString Source = { read = GetSource };
   __property bool Temporary = { read = GetTemporary };
@@ -87,6 +86,8 @@ protected:
   bool FForceAnsi;
   int FFakeReadOnlyOpens;
   int FRootAccess;
+
+  __property bool ForceAnsi = { read = FForceAnsi, write = FForceAnsi };
 
   UnicodeString __fastcall GetCurrentSubKey();
   UnicodeString __fastcall GetCurrentSubKeyMunged();
