@@ -3088,23 +3088,61 @@ UnicodeString __fastcall TSessionData::GetProtocolUrl(bool HttpForWebDAV)
   return Url;
 }
 //---------------------------------------------------------------------
+static bool HasIP6LiteralBrackets(const UnicodeString & HostName)
+{
+  return
+    (HostName.Length() >= 2) &&
+    (HostName[1] == L'[') &&
+    (HostName[HostName.Length()] == L']');
+}
+//---------------------------------------------------------------------
+static UnicodeString StripIP6LiteralBrackets(const UnicodeString & HostName)
+{
+  UnicodeString Result = HostName;
+  if (DebugAlwaysTrue(HasIP6LiteralBrackets(Result)))
+  {
+    Result = Result.SubString(2, Result.Length() - 2);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------
 bool __fastcall IsIPv6Literal(const UnicodeString & HostName)
 {
-  bool Result = (HostName.Pos(L":") > 0);
-  if (Result)
+  UnicodeString Buf = HostName;
+  if (HasIP6LiteralBrackets(Buf))
   {
-    for (int Index = 1; Result && (Index <= HostName.Length()); Index++)
+    Buf = StripIP6LiteralBrackets(Buf);
+  }
+  int Colons = 0;
+  bool Result = true;
+  for (int Index = 1; Result && (Index <= Buf.Length()); Index++)
+  {
+    wchar_t C = Buf[Index];
+    if (C == L'%')
     {
-      wchar_t C = HostName[Index];
-      Result = IsHex(C) || (C == L':');
+      break;
+    }
+    else if (C == L':')
+    {
+      Colons++;
+    }
+    else
+    {
+      Result = IsHex(C);
     }
   }
+  Result = Result && (Colons >= 2);
   return Result;
 }
 //---------------------------------------------------------------------
 UnicodeString __fastcall EscapeIPv6Literal(const UnicodeString & IP)
 {
-  return L"[" + IP + L"]";
+  UnicodeString Result = IP;
+  if (!HasIP6LiteralBrackets(Result))
+  {
+    Result = L"[" + IP + L"]";
+  }
+  return Result;
 }
 //---------------------------------------------------------------------
 TStrings * __fastcall TSessionData::GetRawSettingsForUrl()
@@ -4475,10 +4513,9 @@ void __fastcall TStoredSessionList::ImportFromKnownHosts(TStrings * Lines)
             PortNumber = StrToInt(PortNumberStr);
             HostNameStr.SetLength(P - 1);
           }
-          if ((HostNameStr.Length() >= 2) &&
-              (HostNameStr[1] == L'[') && (HostNameStr[HostNameStr.Length()] == L']'))
+          if (HasIP6LiteralBrackets(HostNameStr))
           {
-            HostNameStr = HostNameStr.SubString(2, HostNameStr.Length() - 2);
+            HostNameStr = StripIP6LiteralBrackets(HostNameStr);
           }
 
           UnicodeString NameStr = HostNameStr;
