@@ -1377,7 +1377,7 @@ TStoredSessionList * __fastcall TGUIConfiguration::SelectPuttySessionsForImport(
   ImportSessionList->DefaultSettings = Sessions->DefaultSettings;
 
   std::unique_ptr<TRegistryStorage> Storage(new TRegistryStorage(PuttySessionsKey));
-  Storage->ForceAnsi = true;
+  Storage->ConfigureForPutty();
   if (Storage->OpenRootKey(false))
   {
     ImportSessionList->Load(Storage.get(), false, true, true);

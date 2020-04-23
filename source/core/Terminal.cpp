@@ -6976,7 +6976,8 @@ void __fastcall TTerminal::DirectorySource(
     }
   }
 
-  if (FLAGCLEAR(Params, cpNoRecurse))
+  bool DoRecurse = FLAGCLEAR(Params, cpNoRecurse);
+  if (DoRecurse)
   {
     TSearchRecOwned SearchRec;
     bool FindOK = LocalFindFirstLoop(DirectoryName + L"*.*", SearchRec);
@@ -7010,42 +7011,44 @@ void __fastcall TTerminal::DirectorySource(
     }
 
     SearchRec.Close();
+  }
 
-    // FTP
-    if (PostCreateDir)
-    {
-      CreateTargetDirectory(DestFullName, Attrs, CopyParam);
-    }
+  // FTP
+  if (PostCreateDir)
+  {
+    CreateTargetDirectory(DestFullName, Attrs, CopyParam);
+  }
 
+  // Paralell transfers (cpNoRecurse) won't be allowed if any of these are set anyway (see CanParallel).
+  // Exception is ClearArchive, which is does not prevent parallel transfer, but is silently ignored for directories.
+  if (DoRecurse && !OperationProgress->Cancel)
+  {
     // TODO : Delete also read-only directories.
     // TODO : Show error message on failure.
-    if (!OperationProgress->Cancel)
+    if (IsCapable[fcPreservingTimestampDirs] && CopyParam->PreserveTime && CopyParam->PreserveTimeDirs)
     {
-      if (IsCapable[fcPreservingTimestampDirs] && CopyParam->PreserveTime && CopyParam->PreserveTimeDirs)
-      {
-        TRemoteProperties Properties;
-        Properties.Valid << vpModification;
+      TRemoteProperties Properties;
+      Properties.Valid << vpModification;
 
-        OpenLocalFile(
-          ExcludeTrailingBackslash(DirectoryName), GENERIC_READ, NULL, NULL, NULL,
-          &Properties.Modification, &Properties.LastAccess, NULL);
+      OpenLocalFile(
+        ExcludeTrailingBackslash(DirectoryName), GENERIC_READ, NULL, NULL, NULL,
+        &Properties.Modification, &Properties.LastAccess, NULL);
 
-        ChangeFileProperties(DestFullName, NULL, &Properties);
-      }
+      ChangeFileProperties(DestFullName, NULL, &Properties);
+    }
 
-      if (FLAGSET(Params, cpDelete))
+    if (FLAGSET(Params, cpDelete))
+    {
+      DebugAssert(FLAGCLEAR(Params, cpNoRecurse));
+      RemoveDir(ApiPath(DirectoryName));
+    }
+    else if (CopyParam->ClearArchive && FLAGSET(Attrs, faArchive))
+    {
+      FILE_OPERATION_LOOP_BEGIN
       {
-        DebugAssert(FLAGCLEAR(Params, cpNoRecurse));
-        RemoveDir(ApiPath(DirectoryName));
+        THROWOSIFFALSE(FileSetAttr(ApiPath(DirectoryName), Attrs & ~faArchive) == 0);
       }
-      else if (CopyParam->ClearArchive && FLAGSET(Attrs, faArchive))
-      {
-        FILE_OPERATION_LOOP_BEGIN
-        {
-          THROWOSIFFALSE(FileSetAttr(ApiPath(DirectoryName), Attrs & ~faArchive) == 0);
-        }
-        FILE_OPERATION_LOOP_END(FMTLOAD(CANT_SET_ATTRS, (DirectoryName)));
-      }
+      FILE_OPERATION_LOOP_END(FMTLOAD(CANT_SET_ATTRS, (DirectoryName)));
     }
   }
 }
