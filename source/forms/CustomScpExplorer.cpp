@@ -4885,7 +4885,8 @@ void __fastcall TCustomScpExplorerForm::DoOpenFolderOrWorkspace(const UnicodeStr
   std::unique_ptr<TObjectList> DataList(new TObjectList());
   StoredSessions->GetFolderOrWorkspace(Name, DataList.get());
   TManagedTerminal * FirstTerminal = Manager->NewTerminals(DataList.get());
-  if (!ConnectFirstTerminal)
+  // FirstTerminal can be null, if some of the
+  if (!ConnectFirstTerminal && (FirstTerminal != NULL))
   {
     FirstTerminal->Disconnected = true;
     FirstTerminal->DisconnectedTemporarily = true;
