@@ -187,13 +187,11 @@ void __fastcall LoadFormDimensions(
   const UnicodeString & LeftStr, const UnicodeString & TopStr, const UnicodeString & RightStr, const UnicodeString & BottomStr,
   int PixelsPerInch, Forms::TMonitor * Monitor, TForm * Form, TRect & Bounds, bool & DefaultPos)
 {
-  int Left = StrToDimensionDef(LeftStr, PixelsPerInch, Form, Bounds.Left);
-  int Top = StrToDimensionDef(TopStr, PixelsPerInch, Form, Bounds.Top);
-  DefaultPos = (Left == -1) && (Top == -1);
+  DefaultPos = (StrToIntDef(LeftStr, 0) == -1) && (StrToIntDef(TopStr, 0) == -1);
   if (!DefaultPos)
   {
-    Bounds.Left = Left;
-    Bounds.Top = Top;
+    Bounds.Left = StrToDimensionDef(LeftStr, PixelsPerInch, Form, Bounds.Left);
+    Bounds.Top = StrToDimensionDef(TopStr, PixelsPerInch, Form, Bounds.Top);
   }
   else
   {
