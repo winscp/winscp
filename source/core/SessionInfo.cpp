@@ -1271,8 +1271,8 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
          BooleanToEngStr(Data->AuthKI), BooleanToEngStr(Data->AuthGSSAPI)));
       if (Data->AuthGSSAPI)
       {
-        ADF(L"GSSAPI: Forwarding: %s; Libs: %s; Custom: %s",
-          (BooleanToEngStr(Data->GSSAPIFwdTGT), Data->GssLibList, Data->GssLibCustom));
+        ADF(L"GSSAPI: KEX: Forwarding: %s; Libs: %s; Custom: %s",
+          (BooleanToEngStr(Data->AuthGSSAPIKEX), BooleanToEngStr(Data->GSSAPIFwdTGT), Data->GssLibList, Data->GssLibCustom));
       }
       ADF(L"Ciphers: %s; Ssh2DES: %s",
         (Data->CipherList, BooleanToEngStr(Data->Ssh2DES)));

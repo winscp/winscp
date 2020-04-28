@@ -117,6 +117,7 @@ private:
   bool FAuthKI;
   bool FAuthKIPassword;
   bool FAuthGSSAPI;
+  bool FAuthGSSAPIKEX;
   bool FGSSAPIFwdTGT;
   bool FChangeUsername;
   bool FCompression;
@@ -255,6 +256,7 @@ private:
   void __fastcall SetAuthKI(bool value);
   void __fastcall SetAuthKIPassword(bool value);
   void __fastcall SetAuthGSSAPI(bool value);
+  void __fastcall SetAuthGSSAPIKEX(bool value);
   void __fastcall SetGSSAPIFwdTGT(bool value);
   void __fastcall SetChangeUsername(bool value);
   void __fastcall SetCompression(bool value);
@@ -534,6 +536,7 @@ public:
   __property bool AuthKI  = { read=FAuthKI, write=SetAuthKI };
   __property bool AuthKIPassword  = { read=FAuthKIPassword, write=SetAuthKIPassword };
   __property bool AuthGSSAPI  = { read=FAuthGSSAPI, write=SetAuthGSSAPI };
+  __property bool AuthGSSAPIKEX  = { read=FAuthGSSAPIKEX, write=SetAuthGSSAPIKEX };
   __property bool GSSAPIFwdTGT = { read=FGSSAPIFwdTGT, write=SetGSSAPIFwdTGT };
   __property bool ChangeUsername  = { read=FChangeUsername, write=SetChangeUsername };
   __property bool Compression  = { read=FCompression, write=SetCompression };

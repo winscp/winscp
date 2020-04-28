@@ -1442,6 +1442,7 @@ void __fastcall TTerminal::OpenTunnel()
 
     FTunnelData->SshNoUserAuth = FSessionData->SshNoUserAuth;
     FTunnelData->AuthGSSAPI = FSessionData->AuthGSSAPI;
+    FTunnelData->AuthGSSAPIKEX = FSessionData->AuthGSSAPIKEX;
     FTunnelData->GSSAPIFwdTGT = FSessionData->GSSAPIFwdTGT;
     FTunnelData->TryAgent = FSessionData->TryAgent;
     FTunnelData->AgentFwd = FSessionData->AgentFwd;

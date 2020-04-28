@@ -133,6 +133,7 @@ void __fastcall TSessionData::DefaultSettings()
   AuthKI = true;
   AuthKIPassword = true;
   AuthGSSAPI = true;
+  AuthGSSAPIKEX = true;
   GSSAPIFwdTGT = false;
   LogicalHostName = L"";
   ChangeUsername = false;
@@ -378,6 +379,7 @@ void __fastcall TSessionData::NonPersistant()
   PROPERTY(AuthKI); \
   PROPERTY(AuthKIPassword); \
   PROPERTY(AuthGSSAPI); \
+  PROPERTY(AuthGSSAPIKEX); \
   PROPERTY(GSSAPIFwdTGT); \
   PROPERTY(DeleteToRecycleBin); \
   PROPERTY(OverwrittenToRecycleBin); \
@@ -646,6 +648,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   // to allow imports from all putty versions.
   // Both vaclav tomec and official putty use AuthGSSAPI
   AuthGSSAPI = Storage->ReadBool(L"AuthGSSAPI", Storage->ReadBool(L"AuthSSPI", AuthGSSAPI));
+  AuthGSSAPIKEX = Storage->ReadBool(L"AuthGSSAPIKEX", AuthGSSAPIKEX);
   GSSAPIFwdTGT = Storage->ReadBool(L"GSSAPIFwdTGT", Storage->ReadBool(L"GssapiFwd", Storage->ReadBool(L"SSPIFwdTGT", GSSAPIFwdTGT)));
   // KerbPrincipal was used by Quest PuTTY
   // GSSAPIServerRealm was used by Vaclav Tomec
@@ -995,6 +998,7 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
   WRITE_DATA(String, Note);
 
   WRITE_DATA(Bool, AuthGSSAPI);
+  WRITE_DATA(Bool, AuthGSSAPIKEX);
   WRITE_DATA(Bool, GSSAPIFwdTGT);
   Storage->DeleteValue(L"TryGSSKEX");
   Storage->DeleteValue(L"UserNameFromEnvironment");
@@ -2552,6 +2556,11 @@ void __fastcall TSessionData::SetAuthKIPassword(bool value)
 void __fastcall TSessionData::SetAuthGSSAPI(bool value)
 {
   SET_SESSION_PROPERTY(AuthGSSAPI);
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetAuthGSSAPIKEX(bool value)
+{
+  SET_SESSION_PROPERTY(AuthGSSAPIKEX);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetGSSAPIFwdTGT(bool value)
@@ -4173,6 +4182,7 @@ void __fastcall TSessionData::DisableAuthentationsExceptPassword()
   AuthKI = false;
   AuthKIPassword = false;
   AuthGSSAPI = false;
+  AuthGSSAPIKEX = false;
   PublicKeyFile = L"";
   TlsCertificateFile = L"";
   Passphrase = L"";
