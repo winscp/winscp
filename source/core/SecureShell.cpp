@@ -263,6 +263,7 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
   conf_set_bool(conf, CONF_try_tis_auth, Data->AuthTIS);
   conf_set_bool(conf, CONF_try_ki_auth, Data->AuthKI);
   conf_set_bool(conf, CONF_try_gssapi_auth, Data->AuthGSSAPI);
+  conf_set_bool(conf, CONF_try_gssapi_kex, Data->AuthGSSAPIKEX);
   conf_set_bool(conf, CONF_gssapifwd, Data->GSSAPIFwdTGT);
   conf_set_bool(conf, CONF_change_username, Data->ChangeUsername);
 
