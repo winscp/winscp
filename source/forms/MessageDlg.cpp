@@ -1066,8 +1066,8 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
     if (!LabelMsg.IsEmpty())
     {
       TLabel * Message = new TLabel(Panel);
-      Message->Name = LabelName;
       Message->Parent = Panel;
+      Message->Name = LabelName;
       Message->WordWrap = true;
       Message->Caption = LabelMsg;
       Message->BiDiMode = Result->BiDiMode;
