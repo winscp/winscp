@@ -1026,6 +1026,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Text = 'S3DefaultRegionCombo'
             OnChange = DataChange
             Items.Strings = (
+              'af-south-1'
               'ap-east-1'
               'ap-northeast-1'
               'ap-northeast-2'
@@ -1038,6 +1039,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
               'cn-northwest-1'
               'eu-central-1'
               'eu-north-1'
+              'eu-south-1'
               'eu-west-1'
               'eu-west-2'
               'eu-west-3'
