@@ -581,6 +581,7 @@ bool __fastcall TWebDAVFileSystem::IsCapable(int Capability) const
     case fcPreservingTimestampDirs:
     case fcResumeSupport:
     case fcChangePassword:
+    case fcTransferOut:
       return false;
 
     case fcLocking:

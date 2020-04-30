@@ -196,7 +196,7 @@ protected:
   void __fastcall Progress(TFileOperationProgressType * OperationProgress);
   void AddPathString(TSFTPPacket & Packet, const UnicodeString & Value, bool EncryptNewFiles = false);
   void __fastcall WriteLocalFile(
-    TStream * FileStream, TFileBuffer & BlockBuf, const UnicodeString & LocalFileName,
+    const TCopyParamType * CopyParam, TStream * FileStream, TFileBuffer & BlockBuf, const UnicodeString & LocalFileName,
     TFileOperationProgressType * OperationProgress);
   bool __fastcall DoesFileLookLikeSymLink(TRemoteFile * File);
 };

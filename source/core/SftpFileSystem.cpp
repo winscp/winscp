@@ -2053,6 +2053,7 @@ bool __fastcall TSFTPFileSystem::IsCapable(int Capability) const
   switch (Capability) {
     case fcAnyCommand:
     case fcShellAnyCommand:
+    case fcLocking:
       return false;
 
     case fcNewerOnlyUpload:
@@ -2063,6 +2064,7 @@ bool __fastcall TSFTPFileSystem::IsCapable(int Capability) const
     case fcRemoveCtrlZUpload:
     case fcRemoveBOMUpload:
     case fcPreservingTimestampDirs:
+    case fcTransferOut:
       return true;
 
     case fcMoveToQueue:
@@ -2154,9 +2156,6 @@ bool __fastcall TSFTPFileSystem::IsCapable(int Capability) const
       return
         (FVersion >= 6) ||
         FSupportsHardlink;
-
-    case fcLocking:
-      return false;
 
     case fcChangePassword:
       return FSecureShell->CanChangePassword();
@@ -5210,14 +5209,21 @@ void __fastcall TSFTPFileSystem::DirectorySunk(
 }
 //---------------------------------------------------------------------------
 void __fastcall TSFTPFileSystem::WriteLocalFile(
-  TStream * FileStream, TFileBuffer & BlockBuf, const UnicodeString & LocalFileName,
+  const TCopyParamType * CopyParam, TStream * FileStream, TFileBuffer & BlockBuf, const UnicodeString & LocalFileName,
   TFileOperationProgressType * OperationProgress)
 {
-  FILE_OPERATION_LOOP_BEGIN
+  if (CopyParam->OnTransferOut != NULL)
   {
-    BlockBuf.WriteToStream(FileStream, BlockBuf.Size);
+    BlockBuf.WriteToOut(CopyParam->OnTransferOut, FTerminal, BlockBuf.Size);
   }
-  FILE_OPERATION_LOOP_END(FMTLOAD(WRITE_ERROR, (LocalFileName)));
+  else
+  {
+    FILE_OPERATION_LOOP_BEGIN
+    {
+      BlockBuf.WriteToStream(FileStream, BlockBuf.Size);
+    }
+    FILE_OPERATION_LOOP_END(FMTLOAD(WRITE_ERROR, (LocalFileName)));
+  }
 
   OperationProgress->AddLocallyUsed(BlockBuf.Size);
 }
@@ -5233,7 +5239,8 @@ void __fastcall TSFTPFileSystem::Sink(
     FLAGCLEAR(Params, cpTemporary) &&
     !OperationProgress->AsciiTransfer &&
     CopyParam->AllowResume(OperationProgress->TransferSize) &&
-    !FTerminal->IsEncryptingFiles();
+    !FTerminal->IsEncryptingFiles() &&
+    (CopyParam->OnTransferOut == NULL);
 
   HANDLE LocalHandle = NULL;
   TStream * FileStream = NULL;
@@ -5402,20 +5409,23 @@ void __fastcall TSFTPFileSystem::Sink(
 
     Action.Destination(ExpandUNCFileName(DestFullName));
 
-    // if not already opened (resume, append...), create new empty file
-    if (!LocalHandle)
+    if (CopyParam->OnTransferOut == NULL)
     {
-      if (!FTerminal->CreateLocalFile(LocalFileName, OperationProgress,
-             &LocalHandle, FLAGSET(Params, cpNoConfirmation)))
+      // if not already opened (resume, append...), create new empty file
+      if (!LocalHandle)
       {
-        throw ESkipFile();
+        if (!FTerminal->CreateLocalFile(LocalFileName, OperationProgress,
+               &LocalHandle, FLAGSET(Params, cpNoConfirmation)))
+        {
+          throw ESkipFile();
+        }
       }
+      DebugAssert(LocalHandle);
+
+      DeleteLocalFile = true;
+
+      FileStream = new TSafeHandleStream((THandle)LocalHandle);
     }
-    DebugAssert(LocalHandle);
-
-    DeleteLocalFile = true;
-
-    FileStream = new TSafeHandleStream((THandle)LocalHandle);
 
     // at end of this block queue is discarded
     {
@@ -5539,7 +5549,7 @@ void __fastcall TSFTPFileSystem::Sink(
               Encryption.Decrypt(BlockBuf);
             }
 
-            WriteLocalFile(FileStream, BlockBuf, LocalFileName, OperationProgress);
+            WriteLocalFile(CopyParam, FileStream, BlockBuf, LocalFileName, OperationProgress);
           }
 
           if (OperationProgress->Cancel != csContinue)
@@ -5565,7 +5575,7 @@ void __fastcall TSFTPFileSystem::Sink(
           TFileBuffer BlockBuf;
           if (Encryption.DecryptEnd(BlockBuf))
           {
-            WriteLocalFile(FileStream, BlockBuf, LocalFileName, OperationProgress);
+            WriteLocalFile(CopyParam, FileStream, BlockBuf, LocalFileName, OperationProgress);
           }
         }
       }
@@ -5576,30 +5586,33 @@ void __fastcall TSFTPFileSystem::Sink(
       // queue is discarded here
     }
 
-    if (CopyParam->PreserveTime)
+    if (LocalHandle)
     {
-      FTerminal->UpdateTargetTime(LocalHandle, Modification, FTerminal->SessionData->DSTMode);
-    }
-
-    CloseHandle(LocalHandle);
-    LocalHandle = NULL;
-
-    if (ResumeAllowed)
-    {
-      FILE_OPERATION_LOOP_BEGIN
+      if (CopyParam->PreserveTime)
       {
-        if (FileExists(ApiPath(DestFullName)))
-        {
-          DeleteFileChecked(DestFullName);
-        }
-        THROWOSIFFALSE(Sysutils::RenameFile(ApiPath(DestPartialFullName), ApiPath(DestFullName)));
+        FTerminal->UpdateTargetTime(LocalHandle, Modification, FTerminal->SessionData->DSTMode);
       }
-      FILE_OPERATION_LOOP_END(FMTLOAD(RENAME_AFTER_RESUME_ERROR, (ExtractFileName(DestPartialFullName), DestFileName)));
+
+      CloseHandle(LocalHandle);
+      LocalHandle = NULL;
+
+      if (ResumeAllowed)
+      {
+        FILE_OPERATION_LOOP_BEGIN
+        {
+          if (FileExists(ApiPath(DestFullName)))
+          {
+            DeleteFileChecked(DestFullName);
+          }
+          THROWOSIFFALSE(Sysutils::RenameFile(ApiPath(DestPartialFullName), ApiPath(DestFullName)));
+        }
+        FILE_OPERATION_LOOP_END(FMTLOAD(RENAME_AFTER_RESUME_ERROR, (ExtractFileName(DestPartialFullName), DestFileName)));
+      }
+
+      DeleteLocalFile = false;
+
+      FTerminal->UpdateTargetAttrs(DestFullName, File, CopyParam, Attrs);
     }
-
-    DeleteLocalFile = false;
-
-    FTerminal->UpdateTargetAttrs(DestFullName, File, CopyParam, Attrs);
 
   }
   __finally

@@ -9,6 +9,8 @@ enum TEOLType { eolLF /* \n */, eolCRLF /* \r\n */, eolCR /* \r */ };
 const int cpRemoveCtrlZ = 0x01;
 const int cpRemoveBOM =   0x02;
 //---------------------------------------------------------------------------
+typedef void __fastcall (__closure *TTransferOutEvent)(TObject * Sender, const unsigned char * Data, size_t Len);
+//---------------------------------------------------------------------------
 class TFileBuffer
 {
 public:
@@ -23,6 +25,7 @@ public:
   DWORD __fastcall LoadStream(TStream * Stream, const DWORD Len, bool ForceLen);
   DWORD __fastcall ReadStream(TStream * Stream, const DWORD Len, bool ForceLen);
   void __fastcall WriteToStream(TStream * Stream, const DWORD Len);
+  void __fastcall WriteToOut(TTransferOutEvent OnTransferOut, TObject * Sender, const DWORD Len);
   __property TMemoryStream * Memory  = { read=FMemory, write=SetMemory };
   __property char * Data = { read=GetData };
   __property int Size = { read=FSize, write=SetSize };

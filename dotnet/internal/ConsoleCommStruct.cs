@@ -12,6 +12,7 @@ namespace WinSCP
         public uint InputType;
         public uint OutputType;
         public bool WantsProgress; // since version 6
+        public bool UseStdErr; // since version 10
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
@@ -95,7 +96,7 @@ namespace WinSCP
 
     internal class ConsoleCommStruct : IDisposable
     {
-        public const int CurrentVersion = 0x0009;
+        public const int CurrentVersion = 0x000A;
 
         public ConsoleCommStruct(Session session, SafeFileHandle fileMapping)
         {

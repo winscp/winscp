@@ -46,6 +46,7 @@ enum TFSCapability { fcUserGroupListing, fcModeChanging, fcGroupChanging,
   fcSecondaryShell, fcRemoveCtrlZUpload, fcRemoveBOMUpload, fcMoveToQueue,
   fcLocking, fcPreservingTimestampDirs, fcResumeSupport,
   fcChangePassword, fcSkipTransfer, fcParallelTransfers, fcBackgroundTransfers,
+  fcTransferOut,
   fcCount };
 //---------------------------------------------------------------------------
 struct TFileSystemInfo

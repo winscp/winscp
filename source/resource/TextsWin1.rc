@@ -305,6 +305,7 @@ BEGIN
         USAGE_USERNAME, "An alternative way to provide a username"
         USAGE_PASSWORD, "An alternative way to provide a password"
         USAGE_INTERACTIVEINPUT, "All prompts are automatically cancelled"
+        USAGE_STDOUT, "Allows streaming files to stdout (and redirects status output to stderr)"
 
         WIN_FORMS_STRINGS, "WIN_FORMS_STRINGS"
         COPY_FILE, "%s file '%s' to %s:"
