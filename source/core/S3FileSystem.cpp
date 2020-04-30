@@ -671,6 +671,7 @@ bool __fastcall TS3FileSystem::IsCapable(int Capability) const
     case fcResumeSupport:
     case fcChangePassword:
     case fcLocking:
+    case fcTransferOut:
       return false;
 
     default:

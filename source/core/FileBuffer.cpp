@@ -234,6 +234,12 @@ void __fastcall TFileBuffer::WriteToStream(TStream * Stream, const DWORD Len)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TFileBuffer::WriteToOut(TTransferOutEvent OnTransferOut, TObject * Sender, const DWORD Len)
+{
+  OnTransferOut(Sender, Data + Position, Len);
+  FMemory->Seek(Len, soCurrent);
+}
+//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 __fastcall TSafeHandleStream::TSafeHandleStream(int AHandle) :
   THandleStream(AHandle)

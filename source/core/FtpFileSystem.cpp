@@ -1849,6 +1849,7 @@ bool __fastcall TFTPFileSystem::IsCapable(int Capability) const
     case fcPreservingTimestampDirs:
     case fcResumeSupport:
     case fcChangePassword:
+    case fcTransferOut:
       return false;
 
     default:

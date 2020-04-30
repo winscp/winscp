@@ -15,6 +15,7 @@
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
 const wchar_t * ToggleNames[] = { L"off", L"on" };
+const UnicodeString InOutParam(TraceInitStr(L"-"));
 //---------------------------------------------------------------------------
 __fastcall TScriptProcParams::TScriptProcParams(const UnicodeString & FullCommand, const UnicodeString & ParamsStr)
 {
@@ -306,6 +307,7 @@ __fastcall TScript::TScript(bool LimitedOutput)
   FGroups = false;
   FWantsProgress = false;
   FInteractive = false;
+  FOnTransferOut = NULL;
   FIncludeFileMaskOptionUsed = false;
   FPendingLogLines = new TStringList();
 
@@ -711,7 +713,6 @@ TStrings * __fastcall TScript::CreateFileList(TScriptProcParams * Parameters, in
 
   if (FLAGSET(ListType, fltOnlyFile))
   {
-    // For internal use by .NET assembly
     for (int Index = 0; Index < Result->Count; Index++)
     {
       TRemoteFile * File = dynamic_cast<TRemoteFile *>(Result->Objects[Index]);
@@ -1461,27 +1462,36 @@ void __fastcall TScript::GetProc(TScriptProcParams * Parameters)
 
   RequireParams(Parameters, 1);
   int LastFileParam = (Parameters->ParamCount == 1 ? 1 : Parameters->ParamCount - 1);
+  DebugAssert(CopyParam.OnTransferOut == NULL);
+  if ((OnTransferOut != NULL) && (Parameters->ParamCount > 1) && SameText(Parameters->Param[Parameters->ParamCount], InOutParam))
+  {
+    CopyParam.OnTransferOut = OnTransferOut;
+    OnlyFile = true;
+  }
   TStrings * FileList = CreateFileList(Parameters, 1, LastFileParam,
     (TFileListType)(fltQueryServer | fltMask | FLAGMASK(Latest, fltLatest) | FLAGMASK(OnlyFile, fltOnlyFile)));
   try
   {
     UnicodeString TargetDirectory;
-    if (Parameters->ParamCount == 1)
+    if (CopyParam.OnTransferOut == NULL)
     {
-      TargetDirectory = GetCurrentDir();
-      CopyParam.FileMask = L"";
-    }
-    else
-    {
-      UnicodeString Target = Parameters->Param[Parameters->ParamCount];
-      TargetDirectory = ExtractFilePath(Target);
-      if (TargetDirectory.IsEmpty())
+      if (Parameters->ParamCount == 1)
       {
         TargetDirectory = GetCurrentDir();
+        CopyParam.FileMask = L"";
       }
-      CopyParam.FileMask = ExtractFileName(Target);
-      Target = IncludeTrailingBackslash(TargetDirectory) + CopyParam.FileMask;
-      CheckMultiFilesToOne(FileList, Target, false);
+      else
+      {
+        UnicodeString Target = Parameters->Param[Parameters->ParamCount];
+        TargetDirectory = ExtractFilePath(Target);
+        if (TargetDirectory.IsEmpty())
+        {
+          TargetDirectory = GetCurrentDir();
+        }
+        CopyParam.FileMask = ExtractFileName(Target);
+        Target = IncludeTrailingBackslash(TargetDirectory) + CopyParam.FileMask;
+        CheckMultiFilesToOne(FileList, Target, false);
+      }
     }
 
     CheckParams(Parameters);

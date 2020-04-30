@@ -7168,6 +7168,11 @@ bool __fastcall TTerminal::CopyToLocal(
   DebugAssert(FilesToCopy != NULL);
   TOnceDoneOperation OnceDoneOperation = odoIdle;
 
+  if ((CopyParam->OnTransferOut != NULL) && !FFileSystem->IsCapable(fcTransferOut))
+  {
+    throw Exception(LoadStr(NOTSUPPORTED));
+  }
+
   FDestFileName = L"";
   FMultipleDestinationFiles = false;
 
@@ -7490,7 +7495,14 @@ void __fastcall TTerminal::Sink(
   }
   else
   {
-    LogEvent(FORMAT(L"Copying \"%s\" to local directory started.", (FileName)));
+    if (CopyParam->OnTransferOut != NULL)
+    {
+      LogEvent(FORMAT(L"Streaming \"%s\" to local machine started.", (FileName)));
+    }
+    else
+    {
+      LogEvent(FORMAT(L"Copying \"%s\" to local directory started.", (FileName)));
+    }
 
     // Will we use ASCII or BINARY file transfer?
     UnicodeString BaseFileName = GetBaseFileName(FileName);
@@ -7511,20 +7523,30 @@ void __fastcall TTerminal::Sink(
     OperationProgress->SetTransferSize(TransferSize);
 
     int Attrs;
-    FILE_OPERATION_LOOP_BEGIN
+    UnicodeString LogFileName;
+    if (CopyParam->OnTransferOut != NULL)
     {
-      Attrs = FileGetAttrFix(ApiPath(DestFullName));
-      if ((Attrs >= 0) && FLAGSET(Attrs, faDirectory))
-      {
-        EXCEPTION;
-      }
+      Attrs = -1;
+      LogFileName = L"-";
     }
-    FILE_OPERATION_LOOP_END(FMTLOAD(NOT_FILE_ERROR, (DestFullName)));
+    else
+    {
+      FILE_OPERATION_LOOP_BEGIN
+      {
+        Attrs = FileGetAttrFix(ApiPath(DestFullName));
+        if ((Attrs >= 0) && FLAGSET(Attrs, faDirectory))
+        {
+          EXCEPTION;
+        }
+      }
+      FILE_OPERATION_LOOP_END(FMTLOAD(NOT_FILE_ERROR, (DestFullName)));
+      LogFileName = ExpandUNCFileName(DestFullName);
+    }
 
     FFileSystem->Sink(
       FileName, File, TargetDir, DestFileName, Attrs, CopyParam, Params, OperationProgress, Flags, Action);
 
-    LogFileDone(OperationProgress, ExpandUNCFileName(DestFullName));
+    LogFileDone(OperationProgress, LogFileName);
     OperationProgress->Succeeded();
   }
 }
