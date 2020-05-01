@@ -236,7 +236,7 @@ void __fastcall TFileBuffer::WriteToStream(TStream * Stream, const DWORD Len)
 //---------------------------------------------------------------------------
 void __fastcall TFileBuffer::WriteToOut(TTransferOutEvent OnTransferOut, TObject * Sender, const DWORD Len)
 {
-  OnTransferOut(Sender, Data + Position, Len);
+  OnTransferOut(Sender, reinterpret_cast<const unsigned char *>(Data) + Position, Len);
   FMemory->Seek(Len, soCurrent);
 }
 //---------------------------------------------------------------------------
