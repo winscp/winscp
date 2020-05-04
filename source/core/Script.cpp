@@ -1548,7 +1548,7 @@ void __fastcall TScript::PutProc(TScriptProcParams * Parameters)
   }
   __finally
   {
-    FreeFileList(FileList);
+    delete FileList;
   }
 }
 //---------------------------------------------------------------------------
