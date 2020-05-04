@@ -466,7 +466,8 @@ void __fastcall TFullSynchronizeDialog::OkButtonClick(TObject *)
 void __fastcall TFullSynchronizeDialog::StartInNewWindow()
 {
   Submitted();
-  FOnFullSynchronizeInNewWindow(Mode, Params, LocalDirectory, RemoteDirectory, &CopyParams);
+  TCopyParamType ACopyParams = CopyParams;
+  FOnFullSynchronizeInNewWindow(Mode, Params, LocalDirectory, RemoteDirectory, &ACopyParams);
   Close();
 }
 //---------------------------------------------------------------------------
