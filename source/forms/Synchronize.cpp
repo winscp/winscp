@@ -725,8 +725,17 @@ void __fastcall TSynchronizeDialog::Minimize1Click(TObject * Sender)
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeDialog::MinimizetoTray1Click(TObject * Sender)
 {
-  WinConfiguration->MinimizeToTrayOnce();
-  Minimize(Sender);
+  bool MinimizeToTrayPrev = WinConfiguration->MinimizeToTray;
+  DebugAssert(!MinimizeToTrayPrev);
+  WinConfiguration->MinimizeToTray = true;
+  try
+  {
+    Minimize(Sender);
+  }
+  __finally
+  {
+    WinConfiguration->MinimizeToTray = MinimizeToTrayPrev;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeDialog::MinimizeButtonDropDownClick(TObject * /*Sender*/)

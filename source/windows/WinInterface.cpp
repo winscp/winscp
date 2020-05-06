@@ -1351,11 +1351,25 @@ void __fastcall CallGlobalMinimizeHandler(TObject * Sender)
   }
 }
 //---------------------------------------------------------------------------
+bool MinimizedToTray = false;
+//---------------------------------------------------------------------------
 static void __fastcall DoApplicationMinimizeRestore(bool Minimize)
 {
   TForm * MainForm = Application->MainForm;
   TForm * MainLikeForm = GetMainForm();
-  if ((MainLikeForm != MainForm) && !WinConfiguration->MinimizeToTray)
+  bool MinimizeToTray;
+  if (Minimize)
+  {
+    MinimizeToTray = WinConfiguration->MinimizeToTray;
+  }
+  else
+  {
+    // Use tray restore code, even if minimization to tray is not on anymore when restoring.
+    // This is particularly used for ad-hoc minimize to tray from "keep up to date" dialog.
+    MinimizeToTray = MinimizedToTray;
+  }
+  MinimizedToTray = false; // reset in any case, even if we somehow got restored from tray without invoking this code
+  if ((MainLikeForm != MainForm) && !MinimizeToTray)
   {
     static TWindowState PreviousWindowState = wsNormal;
     if (Minimize)
@@ -1393,6 +1407,7 @@ static void __fastcall DoApplicationMinimizeRestore(bool Minimize)
       if (Minimize)
       {
         Application->Minimize();
+        MinimizedToTray = WinConfiguration->MinimizeToTray;
       }
       else
       {
