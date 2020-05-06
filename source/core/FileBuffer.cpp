@@ -79,7 +79,7 @@ DWORD __fastcall TFileBuffer::ReadStream(TStream * Stream, const DWORD Len, bool
     {
       Size = Size - Len + Result;
     }
-    FMemory->Seek(Len, soCurrent);
+    FMemory->Seek(Result, soCurrent);
   }
   catch(EReadError &)
   {
