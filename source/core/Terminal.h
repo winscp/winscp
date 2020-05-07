@@ -786,7 +786,7 @@ struct TSpaceAvailable
 class TRobustOperationLoop
 {
 public:
-  TRobustOperationLoop(TTerminal * Terminal, TFileOperationProgressType * OperationProgress, bool * AnyTransfer = NULL);
+  TRobustOperationLoop(TTerminal * Terminal, TFileOperationProgressType * OperationProgress, bool * AnyTransfer = NULL, bool CanRetry = true);
   ~TRobustOperationLoop();
   bool TryReopen(Exception & E);
   bool ShouldRetry();
@@ -799,6 +799,7 @@ private:
   bool * FAnyTransfer;
   bool FPrevAnyTransfer;
   TDateTime FStart;
+  bool FCanRetry;
 };
 //---------------------------------------------------------------------------
 class TCollectedFileList : public TObject
