@@ -5504,7 +5504,7 @@ bool __fastcall TCustomScpExplorerForm::SynchronizeAllowSelectedOnly()
 {
   // can be called from command line
   return Visible &&
-    ((DirView(osOther)->SelCount > 0) ||
+    ((DirView(osRemote)->SelCount > 0) ||
      (HasDirView[osLocal] && (DirView(osLocal)->SelCount > 0)));
 }
 //---------------------------------------------------------------------------
