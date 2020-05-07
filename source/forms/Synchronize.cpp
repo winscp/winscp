@@ -200,11 +200,19 @@ void __fastcall TSynchronizeDialog::UpdateControls()
     !WinConfiguration->MinimizeToTray ? TCustomButton::bsSplitButton : TCustomButton::bsPushButton;
 
   StartButton->Style = AllowStartInNewWindow() ? TCustomButton::bsSplitButton : TCustomButton::bsPushButton;
+  StartInNewWindowItem->Enabled = CanStartInNewWindow();
 }
 //---------------------------------------------------------------------------
 bool __fastcall TSynchronizeDialog::AllowStartInNewWindow()
 {
   return !IsMainFormLike(this);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TSynchronizeDialog::CanStartInNewWindow()
+{
+  return
+    AllowStartInNewWindow() &&
+    (!SynchronizeSelectedOnlyCheck->Enabled || !SynchronizeSelectedOnlyCheck->Checked);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeDialog::ControlChange(TObject * /*Sender*/)
@@ -417,9 +425,16 @@ void __fastcall TSynchronizeDialog::DoLog(TSynchronizeController * /*Controller*
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeDialog::StartButtonClick(TObject * /*Sender*/)
 {
-  if (AllowStartInNewWindow() && OpenInNewWindow())
+  if (OpenInNewWindow())
   {
-    StartInNewWindow();
+    if (CanStartInNewWindow())
+    {
+      StartInNewWindow();
+    }
+    else
+    {
+      Beep();
+    }
   }
   else
   {
@@ -743,7 +758,7 @@ void __fastcall TSynchronizeDialog::MinimizeButtonDropDownClick(TObject * /*Send
   MenuPopup(MinimizeMenu, MinimizeButton);
 }
 //---------------------------------------------------------------------------
-void __fastcall TSynchronizeDialog::StartInNewWindow1Click(TObject * /*Sender*/)
+void __fastcall TSynchronizeDialog::StartInNewWindowItemClick(TObject * /*Sender*/)
 {
   StartInNewWindow();
 }

@@ -50,7 +50,7 @@ __published:
   TImage *Image;
   TPopupMenu *OkMenu;
   TMenuItem *Start1;
-  TMenuItem *StartInNewWindow1;
+  TMenuItem *StartInNewWindowItem;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall LocalDirectoryBrowseButtonClick(TObject *Sender);
   void __fastcall TransferSettingsButtonClick(TObject *Sender);
@@ -64,7 +64,7 @@ __published:
   void __fastcall Start1Click(TObject *Sender);
   void __fastcall OkButtonDropDownClick(TObject *Sender);
   void __fastcall OkButtonClick(TObject *Sender);
-  void __fastcall StartInNewWindow1Click(TObject *Sender);
+  void __fastcall StartInNewWindowItemClick(TObject *Sender);
 
 private:
   int FParams;
@@ -93,6 +93,7 @@ private:
   int __fastcall ActualCopyParamAttrs();
   void __fastcall CopyParamListPopup(TRect R, int AdditionalOptions);
   bool __fastcall AllowStartInNewWindow();
+  bool __fastcall CanStartInNewWindow();
   void __fastcall Submitted();
   void __fastcall StartInNewWindow();
 

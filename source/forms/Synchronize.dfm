@@ -322,9 +322,9 @@ object SynchronizeDialog: TSynchronizeDialog
       Default = True
       OnClick = StartButtonClick
     end
-    object StartInNewWindow1: TMenuItem
+    object StartInNewWindowItem: TMenuItem
       Caption = 'Start in &New Window'
-      OnClick = StartInNewWindow1Click
+      OnClick = StartInNewWindowItemClick
     end
   end
 end
