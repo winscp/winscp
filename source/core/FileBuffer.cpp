@@ -58,6 +58,15 @@ void __fastcall TFileBuffer::SetMemory(TMemoryStream * value)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TFileBuffer::ProcessRead(DWORD Len, DWORD Result)
+{
+  if (Result != Len)
+  {
+    Size = Size - Len + Result;
+  }
+  FMemory->Seek(Result, soCurrent);
+}
+//---------------------------------------------------------------------------
 DWORD __fastcall TFileBuffer::ReadStream(TStream * Stream, const DWORD Len, bool ForceLen)
 {
   DWORD Result;
@@ -75,11 +84,7 @@ DWORD __fastcall TFileBuffer::ReadStream(TStream * Stream, const DWORD Len, bool
     {
       Result = Stream->Read(Data + Position, Len);
     }
-    if (Result != Len)
-    {
-      Size = Size - Len + Result;
-    }
-    FMemory->Seek(Result, soCurrent);
+    ProcessRead(Len, Result);
   }
   catch(EReadError &)
   {
@@ -92,6 +97,16 @@ DWORD __fastcall TFileBuffer::LoadStream(TStream * Stream, const DWORD Len, bool
 {
   FMemory->Seek(0, soFromBeginning);
   return ReadStream(Stream, Len, ForceLen);
+}
+//---------------------------------------------------------------------------
+DWORD __fastcall TFileBuffer::LoadFromIn(TTransferInEvent OnTransferIn, TObject * Sender, DWORD Len)
+{
+  FMemory->Seek(0, soFromBeginning);
+  DebugAssert(Position == 0);
+  Size = Position + Len;
+  size_t Result = OnTransferIn(Sender, reinterpret_cast<unsigned char *>(Data) + Position, Len);
+  ProcessRead(Len, Result);
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TFileBuffer::Convert(char * Source, char * Dest, int Params,

@@ -308,6 +308,7 @@ __fastcall TScript::TScript(bool LimitedOutput)
   FWantsProgress = false;
   FInteractive = false;
   FOnTransferOut = NULL;
+  FOnTransferIn = NULL;
   FIncludeFileMaskOptionUsed = false;
   FPendingLogLines = new TStringList();
 
@@ -1518,9 +1519,23 @@ void __fastcall TScript::PutProc(TScriptProcParams * Parameters)
 
   RequireParams(Parameters, 1);
   int LastFileParam = (Parameters->ParamCount == 1 ? 1 : Parameters->ParamCount - 1);
-  TStrings * FileList =
-    CreateLocalFileList(
-      Parameters, 1, LastFileParam, (TFileListType)(fltMask | FLAGMASK(Latest, fltLatest)));
+  DebugAssert(CopyParam.OnTransferIn == NULL);
+  TStrings * FileList;
+  // We use stdin only if - is the very first parameter
+  if ((OnTransferIn != NULL) && SameText(Parameters->Param[1], InOutParam))
+  {
+    if (Parameters->ParamCount > 2)
+    {
+      throw Exception(LoadStr(STREAM_IN_SCRIPT_ERROR));
+    }
+
+    CopyParam.OnTransferIn = OnTransferIn;
+    FileList = new TStringList();
+  }
+  else
+  {
+    FileList = CreateLocalFileList(Parameters, 1, LastFileParam, (TFileListType)(fltMask | FLAGMASK(Latest, fltLatest)));
+  }
   try
   {
     UnicodeString TargetDirectory;
@@ -1540,6 +1555,15 @@ void __fastcall TScript::PutProc(TScriptProcParams * Parameters)
       CopyParam.FileMask = UnixExtractFileName(Target);
       Target = UnixIncludeTrailingBackslash(TargetDirectory) + CopyParam.FileMask;
       CheckMultiFilesToOne(FileList, Target, true);
+    }
+
+    if (CopyParam.OnTransferIn != NULL)
+    {
+      if (IsFileNameMask(CopyParam.FileMask))
+      {
+        throw Exception(LoadStr(STREAM_IN_SCRIPT_ERROR));
+      }
+      FileList->Add(CopyParam.FileMask);
     }
 
     CheckParams(Parameters);

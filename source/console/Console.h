@@ -21,7 +21,8 @@ struct TConsoleCommStruct
     unsigned int InputType;
     unsigned int OutputType;
     bool WantsProgress; // since version 6
-    bool UseStdErr; // since version 10
+    bool UseStdErr; // (implies "binary output") since version 10
+    bool BinaryInput; // since version 10
   };
 
   struct TPrintEvent
@@ -75,11 +76,12 @@ struct TConsoleCommStruct
   {
     unsigned char Data[20480];
     size_t Len;
+    bool Error;
   };
 
   size_t Size;
   int Version;
-  enum { NONE, PRINT, INPUT, CHOICE, TITLE, INIT, PROGRESS, TRANSFEROUT } Event;
+  enum { NONE, PRINT, INPUT, CHOICE, TITLE, INIT, PROGRESS, TRANSFEROUT, TRANSFERIN } Event;
 
   union
   {

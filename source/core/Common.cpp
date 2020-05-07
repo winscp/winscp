@@ -1404,6 +1404,18 @@ TSearchRecSmart::TSearchRecSmart()
   FLastWriteTimeSource.dwHighDateTime = 0;
 }
 //---------------------------------------------------------------------------
+void TSearchRecSmart::Clear()
+{
+  Size = 0;
+  Attr = 0;
+  Name = TFileName();
+  ExcludeAttr = 0;
+  FindHandle = 0;
+  memset(&FindData, 0, sizeof(FindData));
+  FLastWriteTimeSource.dwLowDateTime = 0;
+  FLastWriteTimeSource.dwHighDateTime = 0;
+}
+//---------------------------------------------------------------------------
 TDateTime TSearchRecSmart::GetLastWriteTime() const
 {
   if ((FindData.ftLastWriteTime.dwLowDateTime != FLastWriteTimeSource.dwLowDateTime) ||

@@ -72,6 +72,7 @@ private:
   __int64 FSize;
   TOnceDoneOperation FOnceDoneOperation;
   TTransferOutEvent FOnTransferOut;
+  TTransferInEvent FOnTransferIn;
   static const wchar_t TokenPrefix = L'%';
   static const wchar_t NoReplacement = wchar_t(false);
   static const wchar_t TokenReplacement = wchar_t(true);
@@ -149,6 +150,7 @@ public:
   __property __int64 Size = { read = FSize, write = FSize };
   __property TOnceDoneOperation OnceDoneOperation = { read = FOnceDoneOperation, write = FOnceDoneOperation };
   __property TTransferOutEvent OnTransferOut = { read = FOnTransferOut, write = FOnTransferOut };
+  __property TTransferInEvent OnTransferIn = { read = FOnTransferIn, write = FOnTransferIn };
 };
 //---------------------------------------------------------------------------
 unsigned long __fastcall GetSpeedLimit(const UnicodeString & Text);

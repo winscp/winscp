@@ -791,6 +791,11 @@ inline void ProcessInitEvent(TConsoleCommStruct::TInitEvent& Event)
     setmode(fileno(stdout), O_BINARY);
   }
 
+  if (Event.BinaryInput)
+  {
+    setmode(fileno(stdin), O_BINARY);
+  }
+
   OutputType = GetFileType(ConsoleOutput);
   // Until now we should not have printed anything.
   // Only in case of a fatal failure, we might have printed a pure ASCII error messages (and never got here).
@@ -813,6 +818,22 @@ inline void ProcessInitEvent(TConsoleCommStruct::TInitEvent& Event)
 inline void ProcessTransferOutEvent(TConsoleCommStruct::TTransferEvent& Event)
 {
   fwrite(Event.Data, 1, Event.Len, stdout);
+}
+//---------------------------------------------------------------------------
+inline void ProcessTransferInEvent(TConsoleCommStruct::TTransferEvent& Event)
+{
+  size_t Read = fread(Event.Data, 1, Event.Len, stdin);
+  if (Read != Event.Len)
+  {
+    if (ferror(stdin))
+    {
+      Event.Error = true;
+    }
+    else
+    {
+      Event.Len = Read;
+    }
+  }
 }
 //---------------------------------------------------------------------------
 void ProcessEvent(HANDLE ResponseEvent, HANDLE FileMapping)
@@ -849,6 +870,10 @@ void ProcessEvent(HANDLE ResponseEvent, HANDLE FileMapping)
 
       case TConsoleCommStruct::TRANSFEROUT:
         ProcessTransferOutEvent(CommStruct->TransferEvent);
+        break;
+
+      case TConsoleCommStruct::TRANSFERIN:
+        ProcessTransferInEvent(CommStruct->TransferEvent);
         break;
 
       default:

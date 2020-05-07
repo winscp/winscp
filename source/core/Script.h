@@ -77,6 +77,7 @@ public:
   __property bool WantsProgress = { read = FWantsProgress, write = FWantsProgress };
   __property bool Interactive = { read = FInteractive, write = FInteractive };
   __property TTransferOutEvent OnTransferOut = { read = FOnTransferOut, write = FOnTransferOut };
+  __property TTransferInEvent OnTransferIn = { read = FOnTransferIn, write = FOnTransferIn };
 
 protected:
   TTerminal * FTerminal;
@@ -105,6 +106,7 @@ protected:
   bool FWantsProgress;
   bool FInteractive;
   TTransferOutEvent FOnTransferOut;
+  TTransferInEvent FOnTransferIn;
   TStrings * FPendingLogLines;
   bool FWarnNonDefaultCopyParam;
   bool FWarnNonDefaultSynchronizeParams;
