@@ -1401,7 +1401,7 @@ bool __fastcall IsHex(wchar_t Ch)
 TSearchRecSmart::TSearchRecSmart()
 {
   FLastWriteTimeSource.dwLowDateTime = 0;
-  FLastWriteTimeSource.dwLowDateTime = 0;
+  FLastWriteTimeSource.dwHighDateTime = 0;
 }
 //---------------------------------------------------------------------------
 TDateTime TSearchRecSmart::GetLastWriteTime() const
