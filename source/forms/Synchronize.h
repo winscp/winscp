@@ -51,7 +51,7 @@ __published:
   TMenuItem *MinimizetoTray1;
   TPopupMenu *StartMenu;
   TMenuItem *Start1;
-  TMenuItem *StartInNewWindow1;
+  TMenuItem *StartInNewWindowItem;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall LocalDirectoryBrowseButtonClick(TObject *Sender);
   void __fastcall TransferSettingsButtonClick(TObject *Sender);
@@ -76,7 +76,7 @@ __published:
   void __fastcall Minimize1Click(TObject *Sender);
   void __fastcall MinimizetoTray1Click(TObject *Sender);
   void __fastcall MinimizeButtonDropDownClick(TObject *Sender);
-  void __fastcall StartInNewWindow1Click(TObject *Sender);
+  void __fastcall StartInNewWindowItemClick(TObject *Sender);
   void __fastcall StartButtonDropDownClick(TObject *Sender);
 
 private:
@@ -133,6 +133,7 @@ protected:
   void __fastcall SaveHistory();
   void __fastcall UpdateControls();
   bool __fastcall AllowStartInNewWindow();
+  bool __fastcall CanStartInNewWindow();
 
   INTERFACE_HOOK;
 

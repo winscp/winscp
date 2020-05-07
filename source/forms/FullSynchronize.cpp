@@ -139,6 +139,7 @@ void __fastcall TFullSynchronizeDialog::UpdateControls()
       TCustomButton::bsSplitButton : TCustomButton::bsPushButton;
 
   OkButton->Style = AllowStartInNewWindow() ? TCustomButton::bsSplitButton : TCustomButton::bsPushButton;
+  StartInNewWindowItem->Enabled = CanStartInNewWindow();
 }
 //---------------------------------------------------------------------------
 int __fastcall TFullSynchronizeDialog::ActualCopyParamAttrs()
@@ -443,6 +444,13 @@ bool __fastcall TFullSynchronizeDialog::AllowStartInNewWindow()
   return !IsMainFormLike(this);
 }
 //---------------------------------------------------------------------------
+bool __fastcall TFullSynchronizeDialog::CanStartInNewWindow()
+{
+  return
+    AllowStartInNewWindow() &&
+    (!SynchronizeSelectedOnlyCheck->Enabled || !SynchronizeSelectedOnlyCheck->Checked);
+}
+//---------------------------------------------------------------------------
 void __fastcall TFullSynchronizeDialog::Start1Click(TObject *)
 {
   OkButton->Click();
@@ -455,10 +463,17 @@ void __fastcall TFullSynchronizeDialog::OkButtonDropDownClick(TObject *)
 //---------------------------------------------------------------------------
 void __fastcall TFullSynchronizeDialog::OkButtonClick(TObject *)
 {
-  if (AllowStartInNewWindow() && OpenInNewWindow())
+  if (OpenInNewWindow())
   {
-    StartInNewWindow();
-    ModalResult = mrCancel;
+    if (CanStartInNewWindow())
+    {
+      StartInNewWindow();
+      ModalResult = mrCancel;
+    }
+    else
+    {
+      Beep();
+    }
     Abort();
   }
 }
@@ -471,7 +486,7 @@ void __fastcall TFullSynchronizeDialog::StartInNewWindow()
   Close();
 }
 //---------------------------------------------------------------------------
-void __fastcall TFullSynchronizeDialog::StartInNewWindow1Click(TObject *)
+void __fastcall TFullSynchronizeDialog::StartInNewWindowItemClick(TObject *)
 {
   StartInNewWindow();
 }
