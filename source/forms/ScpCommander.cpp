@@ -599,7 +599,8 @@ void __fastcall TScpCommanderForm::LocalDefaultDirectory()
     try
     {
       LocalDirView->HomeDirectory = L"";
-      if (IsUncPath(LocalDirView->HomeDirectory))
+      UnicodeString HomeDrive = DriveInfo->GetDriveKey(LocalDirView->HomeDirectory);
+      if (DriveInfo->Get(HomeDrive)->DriveType == DRIVE_REMOTE)
       {
         LocalDirView->Path = DriveInfo->AnyValidPath();
       }
