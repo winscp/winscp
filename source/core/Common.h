@@ -188,6 +188,7 @@ struct TSearchRecSmart : public TSearchRec
 {
 public:
   TSearchRecSmart();
+  void Clear();
   TDateTime GetLastWriteTime() const;
   bool IsRealFile() const;
   bool IsDirectory() const;

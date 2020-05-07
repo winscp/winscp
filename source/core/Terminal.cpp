@@ -5241,14 +5241,21 @@ bool __fastcall TTerminal::AllowLocalFileTransfer(
     TSearchRecSmart ASearchRec;
     if (SearchRec == NULL)
     {
-      FILE_OPERATION_LOOP_BEGIN
+      if (CopyParam->OnTransferIn != NULL)
       {
-        if (!FileSearchRec(FileName, ASearchRec))
-        {
-          RaiseLastOSError();
-        }
+        ASearchRec.Clear();
       }
-      FILE_OPERATION_LOOP_END(FMTLOAD(FILE_NOT_EXISTS, (FileName)));
+      else
+      {
+        FILE_OPERATION_LOOP_BEGIN
+        {
+          if (!FileSearchRec(FileName, ASearchRec))
+          {
+            RaiseLastOSError();
+          }
+        }
+        FILE_OPERATION_LOOP_END(FMTLOAD(FILE_NOT_EXISTS, (FileName)));
+      }
       SearchRec = &ASearchRec;
     }
 
@@ -6727,6 +6734,11 @@ bool __fastcall TTerminal::CopyToRemote(
   bool Result = false;
   TOnceDoneOperation OnceDoneOperation = odoIdle;
 
+  if ((CopyParam->OnTransferIn != NULL) && !FFileSystem->IsCapable(fcTransferIn))
+  {
+    throw Exception(LoadStr(NOTSUPPORTED));
+  }
+
   try
   {
     __int64 Size;
@@ -6899,7 +6911,8 @@ void __fastcall TTerminal::SourceRobust(
 {
   TUploadSessionAction Action(ActionLog);
   bool * AFileTransferAny = FLAGSET(Flags, tfUseFileTransferAny) ? &FFileTransferAny : NULL;
-  TRobustOperationLoop RobustLoop(this, OperationProgress, AFileTransferAny);
+  bool CanRetry = (CopyParam->OnTransferIn == NULL);
+  TRobustOperationLoop RobustLoop(this, OperationProgress, AFileTransferAny, CanRetry);
 
   do
   {
@@ -7108,7 +7121,12 @@ void __fastcall TTerminal::Source(
   const UnicodeString & TargetDir, const TCopyParamType * CopyParam, int Params,
   TFileOperationProgressType * OperationProgress, unsigned int Flags, TUploadSessionAction & Action, bool & ChildError)
 {
-  Action.FileName(ExpandUNCFileName(FileName));
+  UnicodeString ActionFileName = FileName;
+  if (CopyParam->OnTransferIn == NULL)
+  {
+    ActionFileName = ExpandUNCFileName(ActionFileName);
+  }
+  Action.FileName(ActionFileName);
 
   OperationProgress->SetFile(FileName, false);
 
@@ -7118,7 +7136,14 @@ void __fastcall TTerminal::Source(
   }
 
   TLocalFileHandle Handle;
-  OpenLocalFile(FileName, GENERIC_READ, Handle);
+  if (CopyParam->OnTransferIn == NULL)
+  {
+    OpenLocalFile(FileName, GENERIC_READ, Handle);
+  }
+  else
+  {
+    Handle.FileName = FileName;
+  }
 
   OperationProgress->SetFileInProgress();
 
@@ -7134,13 +7159,20 @@ void __fastcall TTerminal::Source(
   }
   else
   {
-    LogEvent(FORMAT(L"Copying \"%s\" to remote directory started.", (FileName)));
+    if (CopyParam->OnTransferIn != NULL)
+    {
+      LogEvent(FORMAT(L"Streaming \"%s\" to remote directory started.", (FileName)));
+    }
+    else
+    {
+      LogEvent(FORMAT(L"Copying \"%s\" to remote directory started.", (FileName)));
 
-    OperationProgress->SetLocalSize(Handle.Size);
+      OperationProgress->SetLocalSize(Handle.Size);
 
-    // Suppose same data size to transfer as to read
-    // (not true with ASCII transfer)
-    OperationProgress->SetTransferSize(OperationProgress->LocalSize);
+      // Suppose same data size to transfer as to read
+      // (not true with ASCII transfer)
+      OperationProgress->SetTransferSize(OperationProgress->LocalSize);
+    }
 
     if (IsCapable[fcTextMode])
     {

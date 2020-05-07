@@ -1850,6 +1850,7 @@ bool __fastcall TFTPFileSystem::IsCapable(int Capability) const
     case fcResumeSupport:
     case fcChangePassword:
     case fcTransferOut:
+    case fcTransferIn:
       return false;
 
     default:

@@ -463,6 +463,7 @@ bool __fastcall TSCPFileSystem::IsCapable(int Capability) const
     case fcSkipTransfer:
     case fcParallelTransfers: // does not implement cpNoRecurse
     case fcTransferOut:
+    case fcTransferIn:
       return false;
 
     case fcChangePassword:

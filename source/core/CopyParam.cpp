@@ -60,6 +60,7 @@ void __fastcall TCopyParamType::Default()
   Size = -1;
   OnceDoneOperation = odoIdle;
   OnTransferOut = NULL;
+  OnTransferIn = NULL;
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TCopyParamType::GetInfoStr(
@@ -577,6 +578,7 @@ void __fastcall TCopyParamType::Assign(const TCopyParamType * Source)
   COPY(Size);
   COPY(OnceDoneOperation);
   COPY(OnTransferOut);
+  COPY(OnTransferIn);
   #undef COPY
 }
 //---------------------------------------------------------------------------
@@ -903,6 +905,7 @@ void __fastcall TCopyParamType::Load(THierarchicalStorage * Storage)
   Size = -1;
   OnceDoneOperation = odoIdle;
   OnTransferOut = NULL;
+  OnTransferIn = NULL;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamType::Save(THierarchicalStorage * Storage, const TCopyParamType * Defaults) const
@@ -952,6 +955,7 @@ void __fastcall TCopyParamType::Save(THierarchicalStorage * Storage, const TCopy
   DebugAssert(Size < 0);
   DebugAssert(OnceDoneOperation == odoIdle);
   DebugAssert(OnTransferOut == NULL);
+  DebugAssert(OnTransferIn == NULL);
 }
 //---------------------------------------------------------------------------
 #define C(Property) (Property == rhp.Property)
@@ -960,9 +964,11 @@ bool __fastcall TCopyParamType::operator==(const TCopyParamType & rhp) const
   DebugAssert(FTransferSkipList.get() == NULL);
   DebugAssert(FTransferResumeFile.IsEmpty());
   DebugAssert(OnTransferOut == NULL);
+  DebugAssert(OnTransferIn == NULL);
   DebugAssert(rhp.FTransferSkipList.get() == NULL);
   DebugAssert(rhp.FTransferResumeFile.IsEmpty());
   DebugAssert(rhp.OnTransferOut == NULL);
+  DebugAssert(rhp.OnTransferIn == NULL);
   return
     C(AddXToDirectories) &&
     C(AsciiFileMask) &&

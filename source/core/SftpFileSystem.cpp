@@ -1498,6 +1498,7 @@ public:
     FEncryption(Encryption)
   {
     FStream = NULL;
+    FOnTransferIn = NULL;
     OperationProgress = NULL;
     FLastBlockSize = 0;
     FEnd = false;
@@ -1509,15 +1510,19 @@ public:
     delete FStream;
   }
 
-  bool __fastcall Init(const UnicodeString AFileName,
-    HANDLE AFile, TFileOperationProgressType * AOperationProgress,
+  bool __fastcall Init(const UnicodeString & AFileName,
+    HANDLE AFile, TTransferInEvent OnTransferIn, TFileOperationProgressType * AOperationProgress,
     const RawByteString AHandle, __int64 ATransferred,
     int ConvertParams)
   {
     FFileName = AFileName;
-    FStream = new TSafeHandleStream((THandle)AFile);
+    if (OnTransferIn == NULL)
+    {
+      FStream = new TSafeHandleStream((THandle)AFile);
+    }
     OperationProgress = AOperationProgress;
     FHandle = AHandle;
+    FOnTransferIn = OnTransferIn;
     FTransferred = ATransferred;
     FConvertParams = ConvertParams;
 
@@ -1541,11 +1546,21 @@ protected:
 
     if (Result)
     {
-      FILE_OPERATION_LOOP_BEGIN
+      bool Last;
+      if (FOnTransferIn != NULL)
       {
-        BlockBuf.LoadStream(FStream, BlockSize, false);
+        size_t Read = BlockBuf.LoadFromIn(FOnTransferIn, FTerminal, BlockSize);
+        Last = (Read < BlockSize);
       }
-      FILE_OPERATION_LOOP_END(FMTLOAD(READ_ERROR, (FFileName)));
+      else
+      {
+        FILE_OPERATION_LOOP_BEGIN
+        {
+          BlockBuf.LoadStream(FStream, BlockSize, false);
+        }
+        FILE_OPERATION_LOOP_END(FMTLOAD(READ_ERROR, (FFileName)));
+        Last = (FStream->Position >= FStream->Size);
+      }
 
       FEnd = (BlockBuf.Size == 0);
       Result = !FEnd;
@@ -1572,7 +1587,7 @@ protected:
 
         if (FEncryption != NULL)
         {
-          FEncryption->Encrypt(BlockBuf, (FStream->Position >= FStream->Size));
+          FEncryption->Encrypt(BlockBuf, Last);
         }
 
         Request->ChangeType(SSH_FXP_WRITE);
@@ -1641,6 +1656,7 @@ protected:
 
 private:
   TStream * FStream;
+  TTransferInEvent FOnTransferIn;
   TFileOperationProgressType * OperationProgress;
   UnicodeString FFileName;
   unsigned long FLastBlockSize;
@@ -2065,6 +2081,7 @@ bool __fastcall TSFTPFileSystem::IsCapable(int Capability) const
     case fcRemoveBOMUpload:
     case fcPreservingTimestampDirs:
     case fcTransferOut:
+    case fcTransferIn:
       return true;
 
     case fcMoveToQueue:
@@ -4486,7 +4503,8 @@ void __fastcall TSFTPFileSystem::Source(
     !OperationProgress->AsciiTransfer &&
     CopyParam->AllowResume(OperationProgress->LocalSize) &&
     IsCapable(fcRename) &&
-    !FTerminal->IsEncryptingFiles();
+    !FTerminal->IsEncryptingFiles() &&
+    (CopyParam->OnTransferIn == NULL);
 
   TOpenRemoteFileParams OpenParams;
   OpenParams.OverwriteMode = omOverwrite;
@@ -4612,7 +4630,7 @@ void __fastcall TSFTPFileSystem::Source(
   OpenParams.CopyParam = CopyParam;
   OpenParams.Params = Params;
   OpenParams.FileParams = &FileParams;
-  OpenParams.Confirmed = false;
+  OpenParams.Confirmed = (CopyParam->OnTransferIn != NULL);
   OpenParams.DontRecycle = false;
 
   FTerminal->LogEvent(0, L"Opening remote file.");
@@ -4636,19 +4654,22 @@ void __fastcall TSFTPFileSystem::Source(
   bool TransferFinished = false;
   __int64 DestWriteOffset = 0;
   TSFTPPacket CloseRequest;
-  bool SetRights = ((DoResume && DestFileExists) || CopyParam->PreserveRights);
-  bool SetProperties = (CopyParam->PreserveTime || SetRights);
+  bool PreserveRights = CopyParam->PreserveRights && (CopyParam->OnTransferIn == NULL);
+  bool PreserveExistingRights = DoResume && DestFileExists;
+  bool SetRights = (PreserveExistingRights || PreserveRights);
+  bool PreserveTime = CopyParam->PreserveTime && (CopyParam->OnTransferIn == NULL);
+  bool SetProperties = (PreserveTime || SetRights);
   TSFTPPacket PropertiesRequest(SSH_FXP_SETSTAT);
   TSFTPPacket PropertiesResponse;
   TRights Rights;
   if (SetProperties)
   {
     AddPathString(PropertiesRequest, DestFullName);
-    if (CopyParam->PreserveRights)
+    if (PreserveRights)
     {
       Rights = CopyParam->RemoteFileRights(Handle.Attrs);
     }
-    else if (DoResume && DestFileExists)
+    else if (PreserveExistingRights)
     {
       Rights = DestRights;
     }
@@ -4660,7 +4681,7 @@ void __fastcall TSFTPFileSystem::Source(
     unsigned short RightsNumber = Rights.NumberSet;
     PropertiesRequest.AddProperties(
       SetRights ? &RightsNumber : NULL, NULL, NULL,
-      CopyParam->PreserveTime ? &Handle.MTime : NULL,
+      PreserveTime ? &Handle.MTime : NULL,
       NULL, NULL, false, FVersion, FUtfStrings);
   }
 
@@ -4690,7 +4711,7 @@ void __fastcall TSFTPFileSystem::Source(
       int ConvertParams =
         FLAGMASK(CopyParam->RemoveCtrlZ, cpRemoveCtrlZ) |
         FLAGMASK(CopyParam->RemoveBOM, cpRemoveBOM);
-      Queue.Init(Handle.FileName, Handle.Handle, OperationProgress,
+      Queue.Init(Handle.FileName, Handle.Handle, CopyParam->OnTransferIn, OperationProgress,
         OpenParams.RemoteFileHandle,
         DestWriteOffset + OperationProgress->TransferredSize,
         ConvertParams);
@@ -4797,7 +4818,7 @@ void __fastcall TSFTPFileSystem::Source(
   if (SetProperties)
   {
     std::unique_ptr<TTouchSessionAction> TouchAction;
-    if (CopyParam->PreserveTime)
+    if (PreserveTime)
     {
       TDateTime MDateTime = UnixToDateTime(Handle.MTime, FTerminal->SessionData->DSTMode);
       FTerminal->LogEvent(FORMAT(L"Preserving timestamp [%s]",
@@ -4809,7 +4830,7 @@ void __fastcall TSFTPFileSystem::Source(
     // do record chmod only if it was explicitly requested,
     // not when it was implicitly performed to apply timestamp
     // of overwritten file to new file
-    if (CopyParam->PreserveRights)
+    if (PreserveRights)
     {
       ChmodAction.reset(new TChmodSessionAction(FTerminal->ActionLog, DestFullName, Rights));
     }
@@ -4842,7 +4863,7 @@ void __fastcall TSFTPFileSystem::Source(
         catch (...)
         {
           if (FTerminal->Active &&
-              (!CopyParam->PreserveRights && !CopyParam->PreserveTime))
+              (!PreserveRights && !PreserveTime))
           {
             DebugAssert(DoResume);
             FTerminal->LogEvent(L"Ignoring error preserving permissions of overwritten file");

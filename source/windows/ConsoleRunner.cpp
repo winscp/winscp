@@ -61,6 +61,7 @@ public:
   virtual void __fastcall WaitBeforeExit();
   virtual void __fastcall Progress(TScriptProgress & Progress);
   virtual void __fastcall TransferOut(const unsigned char * Data, size_t Len);
+  virtual size_t __fastcall TransferIn(unsigned char * Data, size_t Len);
   virtual UnicodeString __fastcall FinalLogMessage();
 
 protected:
@@ -473,6 +474,7 @@ bool __fastcall TOwnConsole::HasFlag(TConsoleFlag Flag) const
     case cfCommandLineOnly:
     case cfWantsProgress:
     case cfStdOut:
+    case cfStdIn:
       return false;
 
     default:
@@ -510,6 +512,12 @@ void __fastcall TOwnConsole::TransferOut(const unsigned char * DebugUsedArg(Data
   DebugFail();
 }
 //---------------------------------------------------------------------------
+size_t __fastcall TOwnConsole::TransferIn(unsigned char * DebugUsedArg(Data), size_t DebugUsedArg(Len))
+{
+  DebugFail();
+  return 0;
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall TOwnConsole::FinalLogMessage()
 {
   return UnicodeString();
@@ -518,7 +526,7 @@ UnicodeString __fastcall TOwnConsole::FinalLogMessage()
 class TExternalConsole : public TConsole
 {
 public:
-  __fastcall TExternalConsole(const UnicodeString Instance, bool NoInteractiveInput, bool StdOut);
+  __fastcall TExternalConsole(const UnicodeString Instance, bool NoInteractiveInput, bool StdOut, bool StdIn);
   virtual __fastcall ~TExternalConsole();
 
   virtual void __fastcall Print(UnicodeString Str, bool FromBeginning = false, bool Error = false);
@@ -532,6 +540,7 @@ public:
   virtual void __fastcall WaitBeforeExit();
   virtual void __fastcall Progress(TScriptProgress & Progress);
   virtual void __fastcall TransferOut(const unsigned char * Data, size_t Len);
+  virtual size_t __fastcall TransferIn(unsigned char * Data, size_t Len);
   virtual UnicodeString __fastcall FinalLogMessage();
 
 private:
@@ -545,6 +554,7 @@ private:
   bool FPipeOutput;
   bool FNoInteractiveInput;
   bool FStdOut;
+  bool FStdIn;
   bool FWantsProgress;
   bool FInteractive;
   unsigned int FMaxSend;
@@ -557,7 +567,7 @@ private:
 };
 //---------------------------------------------------------------------------
 __fastcall TExternalConsole::TExternalConsole(
-  const UnicodeString Instance, bool NoInteractiveInput, bool StdOut)
+  const UnicodeString Instance, bool NoInteractiveInput, bool StdOut, bool StdIn)
 {
   UnicodeString Name;
   Name = FORMAT(L"%s%s", (CONSOLE_EVENT_REQUEST, (Instance)));
@@ -601,6 +611,7 @@ __fastcall TExternalConsole::TExternalConsole(
 
   FNoInteractiveInput = NoInteractiveInput;
   FStdOut = StdOut;
+  FStdIn = StdIn;
   FMaxSend = 0;
 
   Init();
@@ -815,6 +826,7 @@ void __fastcall TExternalConsole::Init()
     CommStruct->Event = TConsoleCommStruct::INIT;
     CommStruct->InitEvent.WantsProgress = false;
     CommStruct->InitEvent.UseStdErr = FStdOut;
+    CommStruct->InitEvent.BinaryInput = FStdIn;
   }
   __finally
   {
@@ -865,6 +877,9 @@ bool __fastcall TExternalConsole::HasFlag(TConsoleFlag Flag) const
 
     case cfStdOut:
       return FStdOut;
+
+    case cfStdIn:
+      return FStdIn;
 
     default:
       DebugFail();
@@ -965,6 +980,49 @@ void __fastcall TExternalConsole::TransferOut(const unsigned char * Data, size_t
   }
 }
 //---------------------------------------------------------------------------
+size_t __fastcall TExternalConsole::TransferIn(unsigned char * Data, size_t Len)
+{
+  size_t Offset = 0;
+  size_t Result = 0;
+  while ((Result == Offset) && (Offset < Len))
+  {
+    TConsoleCommStruct * CommStruct;
+    size_t BlockLen = std::min(Len - Offset, sizeof(CommStruct->TransferEvent.Data));
+
+    CommStruct = GetCommStruct();
+    try
+    {
+      CommStruct->Event = TConsoleCommStruct::TRANSFERIN;
+      CommStruct->TransferEvent.Len = BlockLen;
+      CommStruct->TransferEvent.Error = false;
+    }
+    __finally
+    {
+      FreeCommStruct(CommStruct);
+    }
+
+    SendEvent(INFINITE);
+
+    CommStruct = GetCommStruct();
+    try
+    {
+      if (CommStruct->TransferEvent.Error)
+      {
+        throw Exception(LoadStr(STREAM_READ_ERROR));
+      }
+      DebugAssert(CommStruct->TransferEvent.Len <= BlockLen);
+      Result += CommStruct->TransferEvent.Len;
+      memcpy(Data + Offset, CommStruct->TransferEvent.Data, CommStruct->TransferEvent.Len);
+      Offset += BlockLen;
+    }
+    __finally
+    {
+      FreeCommStruct(CommStruct);
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 class TNullConsole : public TConsole
 {
 public:
@@ -982,6 +1040,7 @@ public:
 
   virtual void __fastcall Progress(TScriptProgress & Progress);
   virtual void __fastcall TransferOut(const unsigned char * Data, size_t Len);
+  virtual size_t __fastcall TransferIn(unsigned char * Data, size_t Len);
   virtual UnicodeString __fastcall FinalLogMessage();
 };
 //---------------------------------------------------------------------------
@@ -1042,6 +1101,7 @@ bool __fastcall TNullConsole::HasFlag(TConsoleFlag Flag) const
     case cfCommandLineOnly:
     case cfWantsProgress:
     case cfStdOut:
+    case cfStdIn:
       return false;
 
     default:
@@ -1065,6 +1125,12 @@ void __fastcall TNullConsole::Progress(TScriptProgress & /*Progress*/)
 void __fastcall TNullConsole::TransferOut(const unsigned char * DebugUsedArg(Data), size_t DebugUsedArg(Len))
 {
   DebugFail();
+}
+//---------------------------------------------------------------------------
+size_t __fastcall TNullConsole::TransferIn(unsigned char * DebugUsedArg(Data), size_t DebugUsedArg(Len))
+{
+  DebugFail();
+  return 0;
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TNullConsole::FinalLogMessage()
@@ -1141,6 +1207,7 @@ private:
   void __fastcall Failed(bool & AnyError);
   void __fastcall ScriptProgress(TScript * Script, TScriptProgress & Progress);
   void __fastcall ScriptTransferOut(TObject *, const unsigned char * Data, size_t Len);
+  size_t __fastcall ScriptTransferIn(TObject *, unsigned char * Data, size_t Len);
   void __fastcall ConfigurationChange(TObject * Sender);
 };
 //---------------------------------------------------------------------------
@@ -1782,6 +1849,11 @@ void __fastcall TConsoleRunner::ScriptTransferOut(TObject *, const unsigned char
   FConsole->TransferOut(Data, Len);
 }
 //---------------------------------------------------------------------------
+size_t __fastcall TConsoleRunner::ScriptTransferIn(TObject *, unsigned char * Data, size_t Len)
+{
+  return FConsole->TransferIn(Data, Len);
+}
+//---------------------------------------------------------------------------
 void __fastcall TConsoleRunner::SynchronizeControllerLog(
   TSynchronizeController * /*Controller*/, TSynchronizeLogEntry /*Entry*/,
   const UnicodeString Message)
@@ -2033,6 +2105,10 @@ int __fastcall TConsoleRunner::Run(const UnicodeString Session, TOptions * Optio
       {
         FScript->OnTransferOut = ScriptTransferOut;
       }
+      if (FConsole->HasFlag(cfStdIn))
+      {
+        FScript->OnTransferIn = ScriptTransferIn;
+      }
 
       UpdateTitle();
 
@@ -2225,7 +2301,7 @@ void __fastcall Usage(TConsole * Console)
     FORMAT(L"[/script=<file>] [/%s cmd1...] [/parameter // param1...]", (LowerCase(COMMAND_SWITCH))));
   if (CommandLineOnly)
   {
-    PrintUsageSyntax(Console, FORMAT(L"[/%s]", (LowerCase(STDOUT_SWITCH))));
+    PrintUsageSyntax(Console, FORMAT(L"[/%s] [/%s]", (LowerCase(STDOUT_SWITCH), LowerCase(STDIN_SWITCH))));
   }
   PrintUsageSyntax(Console,
     FORMAT(L"[/%s=<logfile> [/loglevel=<level>]] [/%s=[<count>%s]<size>]", (LowerCase(LOG_SWITCH), LowerCase(LOGSIZE_SWITCH), LOGSIZE_SEPARATOR)));
@@ -2285,6 +2361,7 @@ void __fastcall Usage(TConsole * Console)
   if (CommandLineOnly)
   {
     RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(STDOUT_SWITCH), USAGE_STDOUT);
+    RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(STDIN_SWITCH), USAGE_STDIN);
   }
   RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(LOG_SWITCH) + L"=", USAGE_LOG);
   RegisterSwitch(SwitchesUsage, L"/loglevel=", USAGE_LOGLEVEL);
@@ -2746,9 +2823,10 @@ int __fastcall Console(TConsoleMode Mode)
     if (Params->FindSwitch(L"consoleinstance", ConsoleInstance))
     {
       Configuration->Usage->Inc(L"ConsoleExternal");
-      bool NoInteractiveInput = Params->FindSwitch(NOINTERACTIVEINPUT_SWITCH);
       bool StdOut = Params->FindSwitch(STDOUT_SWITCH);
-      Console = new TExternalConsole(ConsoleInstance, NoInteractiveInput, StdOut);
+      bool StdIn = Params->FindSwitch(STDIN_SWITCH);
+      bool NoInteractiveInput = Params->FindSwitch(NOINTERACTIVEINPUT_SWITCH) || StdIn;
+      Console = new TExternalConsole(ConsoleInstance, NoInteractiveInput, StdOut, StdIn);
     }
     else if (Params->FindSwitch(L"Console") || (Mode != cmScripting))
     {

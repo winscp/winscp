@@ -51,6 +51,7 @@ const int mpAllowContinueOnError = 0x02;
 #define BROWSE_SWITCH L"Browse"
 #define NOINTERACTIVEINPUT_SWITCH L"NoInteractiveInput"
 #define STDOUT_SWITCH L"StdOut"
+#define STDIN_SWITCH L"StdIn"
 
 #define DUMPCALLSTACK_EVENT L"WinSCPCallstack%d"
 
@@ -623,7 +624,8 @@ enum TConsoleFlag
   cfInteractive,
   cfCommandLineOnly,
   cfWantsProgress,
-  cfStdOut
+  cfStdOut,
+  cfStdIn
 };
 //---------------------------------------------------------------------------
 class TConsole
@@ -642,6 +644,7 @@ public:
   virtual void __fastcall WaitBeforeExit() = 0;
   virtual void __fastcall Progress(TScriptProgress & Progress) = 0;
   virtual void __fastcall TransferOut(const unsigned char * Data, size_t Len) = 0;
+  virtual size_t __fastcall TransferIn(unsigned char * Data, size_t Len) = 0;
   virtual UnicodeString __fastcall FinalLogMessage() = 0;
 };
 //---------------------------------------------------------------------------
