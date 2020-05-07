@@ -412,11 +412,13 @@ bool __fastcall TCallbackGuard::Verify(Exception * E)
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
-TRobustOperationLoop::TRobustOperationLoop(TTerminal * Terminal, TFileOperationProgressType * OperationProgress, bool * AnyTransfer) :
+TRobustOperationLoop::TRobustOperationLoop(
+  TTerminal * Terminal, TFileOperationProgressType * OperationProgress, bool * AnyTransfer, bool CanRetry) :
   FTerminal(Terminal),
   FOperationProgress(OperationProgress),
   FRetry(false),
-  FAnyTransfer(AnyTransfer)
+  FAnyTransfer(AnyTransfer),
+  FCanRetry(CanRetry)
 {
   if (FAnyTransfer != NULL)
   {
@@ -436,7 +438,7 @@ TRobustOperationLoop::~TRobustOperationLoop()
 //---------------------------------------------------------------------------
 bool TRobustOperationLoop::TryReopen(Exception & E)
 {
-  FRetry = !FTerminal->Active;
+  FRetry = FCanRetry && !FTerminal->Active;
   if (FRetry)
   {
     if (FAnyTransfer != NULL)
@@ -7353,7 +7355,8 @@ void __fastcall TTerminal::SinkRobust(
 {
   TDownloadSessionAction Action(ActionLog);
   bool * AFileTransferAny = FLAGSET(Flags, tfUseFileTransferAny) ? &FFileTransferAny : NULL;
-  TRobustOperationLoop RobustLoop(this, OperationProgress, AFileTransferAny);
+  bool CanRetry = (CopyParam->OnTransferOut == NULL);
+  TRobustOperationLoop RobustLoop(this, OperationProgress, AFileTransferAny, CanRetry);
   bool Sunk = false;
 
   do
