@@ -5607,8 +5607,13 @@ void __fastcall TSFTPFileSystem::Sink(
       // queue is discarded here
     }
 
-    if (LocalHandle)
+    if (CopyParam->OnTransferOut != NULL)
     {
+      CopyParam->OnTransferOut(FTerminal, NULL, 0);
+    }
+    else
+    {
+      DebugAssert(LocalHandle);
       if (CopyParam->PreserveTime)
       {
         FTerminal->UpdateTargetTime(LocalHandle, Modification, FTerminal->SessionData->DSTMode);

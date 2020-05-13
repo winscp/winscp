@@ -523,10 +523,12 @@ UnicodeString __fastcall TOwnConsole::FinalLogMessage()
   return UnicodeString();
 }
 //---------------------------------------------------------------------------
+enum TStdInOutMode { siomOff, siomBinary, siomChunked };
+//---------------------------------------------------------------------------
 class TExternalConsole : public TConsole
 {
 public:
-  __fastcall TExternalConsole(const UnicodeString Instance, bool NoInteractiveInput, bool StdOut, bool StdIn);
+  __fastcall TExternalConsole(const UnicodeString Instance, bool NoInteractiveInput, TStdInOutMode StdOut, TStdInOutMode StdIn);
   virtual __fastcall ~TExternalConsole();
 
   virtual void __fastcall Print(UnicodeString Str, bool FromBeginning = false, bool Error = false);
@@ -553,8 +555,8 @@ private:
   bool FLiveOutput;
   bool FPipeOutput;
   bool FNoInteractiveInput;
-  bool FStdOut;
-  bool FStdIn;
+  TStdInOutMode FStdOut;
+  TStdInOutMode FStdIn;
   bool FWantsProgress;
   bool FInteractive;
   unsigned int FMaxSend;
@@ -564,10 +566,11 @@ private:
   inline void __fastcall SendEvent(int Timeout);
   void __fastcall Init();
   void __fastcall CheckHandle(HANDLE Handle, const UnicodeString & Desc);
+  void __fastcall DoTransferOut(const unsigned char * Data, size_t Len);
 };
 //---------------------------------------------------------------------------
 __fastcall TExternalConsole::TExternalConsole(
-  const UnicodeString Instance, bool NoInteractiveInput, bool StdOut, bool StdIn)
+  const UnicodeString Instance, bool NoInteractiveInput, TStdInOutMode StdOut, TStdInOutMode StdIn)
 {
   UnicodeString Name;
   Name = FORMAT(L"%s%s", (CONSOLE_EVENT_REQUEST, (Instance)));
@@ -825,8 +828,9 @@ void __fastcall TExternalConsole::Init()
   {
     CommStruct->Event = TConsoleCommStruct::INIT;
     CommStruct->InitEvent.WantsProgress = false;
-    CommStruct->InitEvent.UseStdErr = FStdOut;
-    CommStruct->InitEvent.BinaryInput = FStdIn;
+    CommStruct->InitEvent.UseStdErr = (FStdOut != siomOff);
+    CommStruct->InitEvent.BinaryOutput = (FStdOut != siomOff);
+    CommStruct->InitEvent.BinaryInput = (FStdIn != siomOff);
   }
   __finally
   {
@@ -876,10 +880,10 @@ bool __fastcall TExternalConsole::HasFlag(TConsoleFlag Flag) const
       return FWantsProgress;
 
     case cfStdOut:
-      return FStdOut;
+      return (FStdOut != siomOff);
 
     case cfStdIn:
-      return FStdIn;
+      return (FStdIn != siomOff);
 
     default:
       DebugFail();
@@ -958,7 +962,7 @@ void __fastcall TExternalConsole::Progress(TScriptProgress & Progress)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TExternalConsole::TransferOut(const unsigned char * Data, size_t Len)
+void __fastcall TExternalConsole::DoTransferOut(const unsigned char * Data, size_t Len)
 {
   size_t Offset = 0;
   while (Offset < Len)
@@ -977,6 +981,38 @@ void __fastcall TExternalConsole::TransferOut(const unsigned char * Data, size_t
       FreeCommStruct(CommStruct);
     }
     SendEvent(INFINITE);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TExternalConsole::TransferOut(const unsigned char * Data, size_t Len)
+{
+  DebugAssert((Data == NULL) == (Len == 0));
+  if (FStdOut == siomBinary)
+  {
+    if (Data != NULL)
+    {
+      DoTransferOut(Data, Len);
+    }
+  }
+  else if (FStdOut == siomChunked)
+  {
+    std::vector<unsigned char> Buf;
+    // 32 is more than enough for Len in hex + twice CRLF
+    Buf.reserve(Len + 32);
+    // static_cast should not lose digits with IntToHex
+    AnsiString S = AnsiString(IntToHex(static_cast<int>(Len), 0) + L"\r\n");
+    Buf.insert(Buf.end(), S.c_str(), S.c_str() + S.Length());
+    if (Data != NULL) // not really needed
+    {
+      Buf.insert(Buf.end(), Data, Data + Len);
+    }
+    S = "\r\n";
+    Buf.insert(Buf.end(), S.c_str(), S.c_str() + S.Length());
+    DoTransferOut(&Buf.front(), Buf.size());
+  }
+  else
+  {
+    DebugFail();
   }
 }
 //---------------------------------------------------------------------------
@@ -2301,7 +2337,10 @@ void __fastcall Usage(TConsole * Console)
     FORMAT(L"[/script=<file>] [/%s cmd1...] [/parameter // param1...]", (LowerCase(COMMAND_SWITCH))));
   if (CommandLineOnly)
   {
-    PrintUsageSyntax(Console, FORMAT(L"[/%s] [/%s]", (LowerCase(STDOUT_SWITCH), LowerCase(STDIN_SWITCH))));
+    PrintUsageSyntax(
+      Console, FORMAT(L"[/%s[=%s|%s]] [/%s[=%s|%s]]",
+      (LowerCase(STDOUT_SWITCH), STDINOUT_BINARY_VALUE, STDINOUT_CHUNKED_VALUE,
+       LowerCase(STDIN_SWITCH), STDINOUT_BINARY_VALUE, STDINOUT_CHUNKED_VALUE)));
   }
   PrintUsageSyntax(Console,
     FORMAT(L"[/%s=<logfile> [/loglevel=<level>]] [/%s=[<count>%s]<size>]", (LowerCase(LOG_SWITCH), LowerCase(LOGSIZE_SWITCH), LOGSIZE_SEPARATOR)));
@@ -2807,6 +2846,32 @@ int Info(TConsole * Console)
   return Result;
 }
 //---------------------------------------------------------------------------
+TStdInOutMode ParseStdInOutMode(TProgramParams * Params, const UnicodeString & Switch)
+{
+  TStdInOutMode Result;
+  UnicodeString Value;
+  if (!Params->FindSwitch(Switch, Value))
+  {
+    Result = siomOff;
+  }
+  else
+  {
+    if (Value.IsEmpty() || SameText(Value, STDINOUT_BINARY_VALUE))
+    {
+      Result = siomBinary;
+    }
+    else if (SameText(Value, STDINOUT_CHUNKED_VALUE))
+    {
+      Result = siomChunked;
+    }
+    else
+    {
+      throw Exception(FORMAT(SCRIPT_VALUE_UNKNOWN, (Value, Switch))); // abuse of the string
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 int __fastcall Console(TConsoleMode Mode)
 {
   DebugAssert(Mode != cmNone);
@@ -2823,9 +2888,9 @@ int __fastcall Console(TConsoleMode Mode)
     if (Params->FindSwitch(L"consoleinstance", ConsoleInstance))
     {
       Configuration->Usage->Inc(L"ConsoleExternal");
-      bool StdOut = Params->FindSwitch(STDOUT_SWITCH);
-      bool StdIn = Params->FindSwitch(STDIN_SWITCH);
-      bool NoInteractiveInput = Params->FindSwitch(NOINTERACTIVEINPUT_SWITCH) || StdIn;
+      TStdInOutMode StdOut = ParseStdInOutMode(Params, STDOUT_SWITCH);
+      TStdInOutMode StdIn = ParseStdInOutMode(Params, STDIN_SWITCH);
+      bool NoInteractiveInput = Params->FindSwitch(NOINTERACTIVEINPUT_SWITCH) || (StdIn != siomOff);
       Console = new TExternalConsole(ConsoleInstance, NoInteractiveInput, StdOut, StdIn);
     }
     else if (Params->FindSwitch(L"Console") || (Mode != cmScripting))

@@ -52,6 +52,8 @@ const int mpAllowContinueOnError = 0x02;
 #define NOINTERACTIVEINPUT_SWITCH L"NoInteractiveInput"
 #define STDOUT_SWITCH L"StdOut"
 #define STDIN_SWITCH L"StdIn"
+#define STDINOUT_BINARY_VALUE L"binary"
+#define STDINOUT_CHUNKED_VALUE L"chunked"
 
 #define DUMPCALLSTACK_EVENT L"WinSCPCallstack%d"
 

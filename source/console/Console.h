@@ -21,7 +21,8 @@ struct TConsoleCommStruct
     unsigned int InputType;
     unsigned int OutputType;
     bool WantsProgress; // since version 6
-    bool UseStdErr; // (implies "binary output") since version 10
+    bool UseStdErr; // since version 10
+    bool BinaryOutput; // since version 10
     bool BinaryInput; // since version 10
   };
 
