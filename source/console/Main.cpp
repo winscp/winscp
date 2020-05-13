@@ -788,6 +788,10 @@ inline void ProcessInitEvent(TConsoleCommStruct::TInitEvent& Event)
   if (Event.UseStdErr)
   {
     ConsoleOutput = ConsoleErrorOutput;
+  }
+
+  if (Event.BinaryOutput)
+  {
     setmode(fileno(stdout), O_BINARY);
   }
 

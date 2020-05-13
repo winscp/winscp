@@ -12,7 +12,8 @@ namespace WinSCP
         public uint InputType;
         public uint OutputType;
         public bool WantsProgress; // since version 6
-        public bool UseStdErr; // implies "binary output") since version 10
+        public bool UseStdErr; // since version 10
+        public bool BinaryOutput; // since version 10
         public bool BinaryInput; // since version 10
     }
 
