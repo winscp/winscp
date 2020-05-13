@@ -872,6 +872,12 @@ void TS3FileSystem::ReadDirectoryInternal(
 
       Retry = false;
 
+      // Backblack S3 API does not support "maxkeys" for bucket list
+      if (EndsText(L".backblazeb2.com", FTerminal->SessionData->HostNameExpanded))
+      {
+        MaxKeys = 0;
+      }
+
       S3_list_service(
         FLibS3Protocol, FAccessKeyId.c_str(), FSecretAccessKey.c_str(), 0, (FHostName + FPortSuffix).c_str(),
         StrToS3(FAuthRegion), MaxKeys, FRequestContext, FTimeout, &ListServiceHandler, &Data);
