@@ -3118,7 +3118,7 @@ void __fastcall TTerminal::RollbackAction(TSessionAction & Action,
   // ESkipFile without "cancel" is file skip,
   // and we do not want to record skipped actions.
   // But ESkipFile with "cancel" is abort and we want to record that.
-  // Note that TSCPFileSystem modifies the logic of RollbackAction little bit.
+  // Note that TScpFileSystem modifies the logic of RollbackAction little bit.
   if ((dynamic_cast<ESkipFile *>(E) != NULL) &&
       ((OperationProgress == NULL) ||
        (OperationProgress->Cancel == csContinue)))
