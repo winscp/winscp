@@ -474,7 +474,9 @@ __fastcall TSessionAction::~TSessionAction()
 {
   if (FRecord != NULL)
   {
-    Commit();
+    TSessionActionRecord * Record = FRecord;
+    FRecord = NULL;
+    Record->Commit();
   }
 }
 //---------------------------------------------------------------------------
@@ -483,16 +485,6 @@ void __fastcall TSessionAction::Restart()
   if (FRecord != NULL)
   {
     FRecord->Restart();
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall TSessionAction::Commit()
-{
-  if (FRecord != NULL)
-  {
-    TSessionActionRecord * Record = FRecord;
-    FRecord = NULL;
-    Record->Commit();
   }
 }
 //---------------------------------------------------------------------------
