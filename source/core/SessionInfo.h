@@ -104,7 +104,6 @@ public:
 
   void __fastcall Restart();
 
-  void __fastcall Commit();
   void __fastcall Rollback(Exception * E = NULL);
   void __fastcall Cancel();
 
