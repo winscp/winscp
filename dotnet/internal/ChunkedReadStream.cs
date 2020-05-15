@@ -6,9 +6,10 @@ namespace WinSCP
 {
     internal class ChunkedReadStream : Stream
     {
-        public ChunkedReadStream(Stream baseStream)
+        public ChunkedReadStream(Stream baseStream, Action onDispose)
         {
             _baseStream = baseStream;
+            _onDispose = onDispose;
             _remaining = 0;
             _eof = false;
         }
@@ -86,6 +87,13 @@ namespace WinSCP
                         throw new Exception("Expected LF");
                     }
                 }
+
+                if (_eof)
+                {
+                    // Throw any pending exception asap, not only once the stream is closed.
+                    // Also releases the lock.
+                    Closed();
+                }
             }
 
             return result;
@@ -106,7 +114,33 @@ namespace WinSCP
             throw new NotImplementedException();
         }
 
+        protected override void Dispose(bool disposing)
+        {
+            try
+            {
+                // Have to consume the rest of the buffered download data, otherwise we could not continue with other downloads
+                while (!_eof)
+                {
+                    byte[] buf = new byte[10240];
+                    Read(buf, 0, buf.Length);
+                }
+                base.Dispose(disposing);
+            }
+            finally
+            {
+                Closed();
+            }
+        }
+
+        private void Closed()
+        {
+            Action onDispose = _onDispose;
+            _onDispose = null;
+            onDispose?.Invoke();
+        }
+
         private Stream _baseStream;
+        private Action _onDispose;
         private int _remaining;
         private bool _eof;
     }

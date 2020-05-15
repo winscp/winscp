@@ -840,17 +840,7 @@ namespace WinSCP
         {
             using (Logger.CreateCallstack())
             {
-                if (options == null)
-                {
-                    options = new TransferOptions();
-                }
-
-                CheckOpened();
-
-                WriteCommand(
-                    string.Format(CultureInfo.InvariantCulture, "get {0} {1} {2} -- \"{3}\" \"{4}\"",
-                        BooleanSwitch(remove, "delete"), options.ToSwitches(), additionalParams,
-                        Tools.ArgumentEscape(remotePath), Tools.ArgumentEscape(localPath)));
+                StartGetCommand(remotePath, localPath, remove, options, additionalParams);
 
                 TransferOperationResult result = new TransferOperationResult();
 
@@ -885,6 +875,21 @@ namespace WinSCP
 
                 return result;
             }
+        }
+
+        private void StartGetCommand(string remotePath, string localPath, bool remove, TransferOptions options, string additionalParams)
+        {
+            if (options == null)
+            {
+                options = new TransferOptions();
+            }
+
+            CheckOpened();
+
+            WriteCommand(
+                string.Format(CultureInfo.InvariantCulture, "get {0} {1} {2} -- \"{3}\" \"{4}\"",
+                    BooleanSwitch(remove, "delete"), options.ToSwitches(), additionalParams,
+                    Tools.ArgumentEscape(remotePath), Tools.ArgumentEscape(localPath)));
         }
 
         public TransferOperationResult GetFilesToDirectory(
@@ -941,19 +946,24 @@ namespace WinSCP
         {
             using (Logger.CreateCallstack())
             {
-                if (string.IsNullOrEmpty(remoteFilePath))
-                {
-                    throw Logger.WriteException(new ArgumentException("File to path cannot be empty", nameof(remoteFilePath)));
-                }
-
-                string remoteDirectory = RemotePath.GetDirectoryName(remoteFilePath);
-                string filemask = RemotePath.EscapeFileMask(RemotePath.GetFileName(remoteFilePath));
+                ParseRemotePath(remoteFilePath, out string remoteDirectory, out string filemask);
 
                 TransferOperationResult operationResult =
                     DoGetFilesToDirectory(remoteDirectory, localDirectory, filemask, remove, options, additionalParams ?? string.Empty);
                 operationResult.Check();
                 return operationResult;
             }
+        }
+
+        private void ParseRemotePath(string remoteFilePath, out string remoteDirectory, out string filemask)
+        {
+            if (string.IsNullOrEmpty(remoteFilePath))
+            {
+                throw Logger.WriteException(new ArgumentException("File to path cannot be empty", nameof(remoteFilePath)));
+            }
+
+            remoteDirectory = RemotePath.GetDirectoryName(remoteFilePath);
+            filemask = RemotePath.EscapeFileMask(RemotePath.GetFileName(remoteFilePath));
         }
 
         private T GetOnlyFileOperation<T>(ICollection<T> operations)
@@ -969,6 +979,94 @@ namespace WinSCP
                 throw Logger.WriteException(new InvalidOperationException("More then one file has been unexpectedly found"));
             }
             return operations.First();
+        }
+
+        public Stream GetFile(string remoteFilePath, TransferOptions options = null)
+        {
+            using (CallstackAndLock callstackAndLock = Logger.CreateCallstackAndLock())
+            {
+                const string additionalParams = "-onlyfile";
+                ParseRemotePath(remoteFilePath, out string remoteDirectory, out string filemask);
+                string remotePath = RemotePath.Combine(remoteDirectory, filemask);
+
+                StartGetCommand(remotePath, "-", false, options, additionalParams);
+
+                // only to collect failures
+                TransferOperationResult result = new TransferOperationResult();
+
+                ElementLogReader groupReader = _reader.WaitForGroupAndCreateLogReader();
+                IDisposable operationResultGuard = RegisterOperationResult(result);
+                IDisposable progressHandler = CreateProgressHandler();
+
+                void onGetEnd()
+                {
+                    try
+                    {
+                        // This can throw
+                        progressHandler.Dispose();
+                    }
+                    finally
+                    {
+                        try
+                        {
+                            groupReader.Dispose();
+                        }
+                        finally
+                        {
+                            // This should not throw, so another pair of try ... finally is not necessary.
+                            // Only after disposing the groupr reader, so when called from onGetEndWithExit, the Check() has all failures.
+                            operationResultGuard.Dispose();
+                        }
+                    }
+                }
+
+                void onGetEndWithExit()
+                {
+                    try
+                    {
+                        onGetEnd();
+                    }
+                    finally
+                    {
+                        Logger.Lock.Exit();
+                        result.Check();
+                    }
+                }
+
+                try
+                {
+                    bool downloadFound;
+                    try
+                    {
+                        // Not using WaitForNonEmptyElement only to allow throwing better exception message below.
+                        // Not using ThrowFailures as we need to return the stream, is there's <download>, even if there's a <failure> as well.
+                        downloadFound = groupReader.TryWaitForNonEmptyElement(TransferEventArgs.DownloadTag, 0);
+                    }
+                    catch (StdOutException)
+                    {
+                        downloadFound = true;
+                    }
+                    if (downloadFound)
+                    {
+                        ChunkedReadStream stream = new ChunkedReadStream(_process.StdOut, onGetEndWithExit);
+                        callstackAndLock.DisarmLock();
+                        return stream;
+                    }
+                    else
+                    {
+                        // First throw any specific error from <failure>
+                        result.Check();
+                        // And only then fallback to the generic one.
+                        // See also the comment in GetOnlyFileOperation.
+                        throw Logger.WriteException(new FileNotFoundException("File not found"));
+                    }
+                }
+                catch
+                {
+                    onGetEnd();
+                    throw;
+                }
+            }
         }
 
         public RemovalOperationResult RemoveFiles(string path)
@@ -2121,6 +2219,11 @@ namespace WinSCP
             {
                 throw Logger.WriteException(new SessionLocalException(this, "Aborted."));
             }
+
+            if (_process.StdOut.ReadAvailable(1))
+            {
+                throw new StdOutException();
+            }
         }
 
         private void RaiseFileTransferredEvent(TransferEventArgs args)
@@ -2212,6 +2315,7 @@ namespace WinSCP
 
         internal void UnregisterOperationResult(OperationResultBase operationResult)
         {
+            // GetFile relies on this not to throw
             _operationResults.Remove(operationResult);
         }
 

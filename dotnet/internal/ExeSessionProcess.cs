@@ -19,6 +19,7 @@ namespace WinSCP
 
         public bool HasExited { get { return _process.HasExited; } }
         public int ExitCode { get { return _process.ExitCode; } }
+        public PipeStream StdOut { get; private set; }
 
         public static ExeSessionProcess CreateForSession(Session session)
         {
@@ -98,7 +99,7 @@ namespace WinSCP
                     string.Format(CultureInfo.InvariantCulture, "/dotnet={0} ", assemblyVersionStr);
 
                 string arguments =
-                    xmlLogSwitch + "/nointeractiveinput " + assemblyVersionSwitch +
+                    xmlLogSwitch + "/nointeractiveinput /stdout=chunked " + assemblyVersionSwitch +
                     configSwitch + logSwitch + logLevelSwitch + _session.AdditionalExecutableArguments;
 
                 Tools.AddRawParameters(ref arguments, _session.RawConfiguration, "/rawconfig", false);
@@ -140,6 +141,7 @@ namespace WinSCP
         {
             using (_logger.CreateCallstack())
             {
+                StdOut = new PipeStream();
                 InitializeConsole();
                 InitializeChild();
             }
@@ -319,6 +321,10 @@ namespace WinSCP
 
                         case ConsoleEvent.Progress:
                             ProcessProgressEvent(commStruct.ProgressEvent);
+                            break;
+
+                        case ConsoleEvent.TransferOut:
+                            ProcessTransferOutEvent(commStruct.TransferOutEvent);
                             break;
 
                         default:
@@ -517,6 +523,18 @@ namespace WinSCP
                 {
                     e.Cancel = true;
                 }
+            }
+        }
+
+        private void ProcessTransferOutEvent(ConsoleTransferEventStruct e)
+        {
+            using (_logger.CreateCallstack())
+            {
+                _logger.WriteLine("Len [{0}]", e.Len);
+
+                StdOut.Write(e.Data, 0, (int)e.Len);
+
+                _logger.WriteLine("Data written to the buffer");
             }
         }
 

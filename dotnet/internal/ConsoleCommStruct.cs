@@ -4,7 +4,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace WinSCP
 {
-    public enum ConsoleEvent { None, Print, Input, Choice, Title, Init, Progress }
+    public enum ConsoleEvent { None, Print, Input, Choice, Title, Init, Progress, TransferOut }
 
     [StructLayout(LayoutKind.Sequential)]
     internal class ConsoleInitEventStruct
@@ -86,6 +86,16 @@ namespace WinSCP
         public bool Cancel; // since version 8
     }
 
+    // Since version 10
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    internal class ConsoleTransferEventStruct
+    {
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 20480)]
+        public byte[] Data;
+        public UIntPtr Len;
+        public bool Error; // TransferIn only
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     internal class ConsoleCommHeader
     {
@@ -165,6 +175,8 @@ namespace WinSCP
 
         public ConsoleProgressEventStruct ProgressEvent { get { return UnmarshalPayload<ConsoleProgressEventStruct>(ConsoleEvent.Progress); } }
 
+        public ConsoleTransferEventStruct TransferOutEvent { get { return UnmarshalPayload<ConsoleTransferEventStruct>(ConsoleEvent.TransferOut); } }
+
         private T UnmarshalPayload<T>(ConsoleEvent e)
         {
             CheckNotDisposed();
@@ -197,7 +209,8 @@ namespace WinSCP
                 Type[] types =
                     new[] {
                         typeof(ConsolePrintEventStruct), typeof(ConsoleInitEventStruct), typeof(ConsoleInputEventStruct),
-                        typeof(ConsoleChoiceEventStruct), typeof(ConsoleTitleEventStruct), typeof(ConsoleProgressEventStruct) };
+                        typeof(ConsoleChoiceEventStruct), typeof(ConsoleTitleEventStruct), typeof(ConsoleProgressEventStruct),
+                        typeof(ConsoleTransferEventStruct) };
 
                 int maxSize = 0;
                 foreach (Type type in types)

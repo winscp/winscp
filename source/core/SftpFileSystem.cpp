@@ -5606,11 +5606,7 @@ void __fastcall TSFTPFileSystem::Sink(
       // queue is discarded here
     }
 
-    if (CopyParam->OnTransferOut != NULL)
-    {
-      CopyParam->OnTransferOut(FTerminal, NULL, 0);
-    }
-    else
+    if (CopyParam->OnTransferOut == NULL)
     {
       DebugAssert(LocalHandle);
       if (CopyParam->PreserveTime)

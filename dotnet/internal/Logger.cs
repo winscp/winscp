@@ -15,6 +15,7 @@ namespace WinSCP
         public string LogPath { get { return _logPath; } set { SetLogPath(value); } }
         public int LogLevel { get { return _logLevel; } set { SetLogLevel(value); } }
         public bool Logging { get { return (_writter != null) && _writter.BaseStream.CanWrite; } }
+        public Lock Lock { get; } = new Lock();
 
         public string GetAssemblyFilePath()
         {
@@ -282,9 +283,9 @@ namespace WinSCP
             return new Callstack(this, token);
         }
 
-        public Callstack CreateCallstackAndLock()
+        public CallstackAndLock CreateCallstackAndLock()
         {
-            return new CallstackAndLock(this, _lock);
+            return new CallstackAndLock(this, Lock);
         }
 
         public Exception WriteException(Exception e)
@@ -404,7 +405,6 @@ namespace WinSCP
         private string _logPath;
         private readonly Dictionary<int, int> _indents = new Dictionary<int, int>();
         private readonly object _logLock = new object();
-        private readonly Lock _lock = new Lock();
 #if !NETSTANDARD
         private List<PerformanceCounter> _performanceCounters = new List<PerformanceCounter>();
 #endif
