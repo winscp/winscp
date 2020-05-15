@@ -77,7 +77,7 @@ struct TConsoleCommStruct
   {
     unsigned char Data[20480];
     size_t Len;
-    bool Error;
+    bool Error; // TRANSFERIN only
   };
 
   size_t Size;
