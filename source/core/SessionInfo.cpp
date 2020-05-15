@@ -460,6 +460,7 @@ private:
 //---------------------------------------------------------------------------
 __fastcall TSessionAction::TSessionAction(TActionLog * Log, TLogAction Action)
 {
+  FCancelled = false;
   if (Log->FLogging)
   {
     FRecord = new TSessionActionRecord(Log, Action);
@@ -504,8 +505,14 @@ void __fastcall TSessionAction::Cancel()
   {
     TSessionActionRecord * Record = FRecord;
     FRecord = NULL;
+    FCancelled = true;
     Record->Cancel();
   }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TSessionAction::IsValid()
+{
+  return !FCancelled;
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

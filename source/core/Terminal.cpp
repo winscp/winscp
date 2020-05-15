@@ -7387,59 +7387,70 @@ void __fastcall TTerminal::SinkRobust(
   const TCopyParamType * CopyParam, int Params, TFileOperationProgressType * OperationProgress, unsigned int Flags)
 {
   TDownloadSessionAction Action(ActionLog);
-  bool * AFileTransferAny = FLAGSET(Flags, tfUseFileTransferAny) ? &FFileTransferAny : NULL;
-  bool CanRetry = (CopyParam->OnTransferOut == NULL);
-  TRobustOperationLoop RobustLoop(this, OperationProgress, AFileTransferAny, CanRetry);
-  bool Sunk = false;
-
-  do
+  try
   {
-    try
-    {
-      // If connection is lost while deleting the file, so not retry download on the next round.
-      // The file may not exist anymore and the download attempt might overwrite the (only) local copy.
-      if (!Sunk)
-      {
-        Sink(FileName, File, TargetDir, CopyParam, Params, OperationProgress, Flags, Action);
-        Sunk = true;
-      }
+    bool * AFileTransferAny = FLAGSET(Flags, tfUseFileTransferAny) ? &FFileTransferAny : NULL;
+    bool CanRetry = (CopyParam->OnTransferOut == NULL);
+    TRobustOperationLoop RobustLoop(this, OperationProgress, AFileTransferAny, CanRetry);
+    bool Sunk = false;
 
-      if (FLAGSET(Params, cpDelete))
-      {
-        DebugAssert(FLAGCLEAR(Params, cpNoRecurse));
-        // If file is directory, do not delete it recursively, because it should be
-        // empty already. If not, it should not be deleted (some files were
-        // skipped or some new files were copied to it, while we were downloading)
-        int Params = dfNoRecursive;
-        DeleteFile(FileName, File, &Params);
-      }
-    }
-    catch (Exception & E)
+    do
     {
-      if (!RobustLoop.TryReopen(E))
+      try
       {
+        // If connection is lost while deleting the file, so not retry download on the next round.
+        // The file may not exist anymore and the download attempt might overwrite the (only) local copy.
         if (!Sunk)
         {
-          RollbackAction(Action, OperationProgress, &E);
+          Sink(FileName, File, TargetDir, CopyParam, Params, OperationProgress, Flags, Action);
+          Sunk = true;
         }
-        throw;
+
+        if (FLAGSET(Params, cpDelete))
+        {
+          DebugAssert(FLAGCLEAR(Params, cpNoRecurse));
+          // If file is directory, do not delete it recursively, because it should be
+          // empty already. If not, it should not be deleted (some files were
+          // skipped or some new files were copied to it, while we were downloading)
+          int Params = dfNoRecursive;
+          DeleteFile(FileName, File, &Params);
+        }
+      }
+      catch (Exception & E)
+      {
+        if (!RobustLoop.TryReopen(E))
+        {
+          if (!Sunk)
+          {
+            RollbackAction(Action, OperationProgress, &E);
+          }
+          throw;
+        }
+      }
+
+      if (RobustLoop.ShouldRetry())
+      {
+        OperationProgress->RollbackTransfer();
+        Action.Restart();
+        DebugAssert(File != NULL);
+        if (!File->IsDirectory)
+        {
+          // prevent overwrite and resume confirmations
+          Params |= cpNoConfirmation;
+          Flags |= tfAutoResume;
+        }
       }
     }
-
-    if (RobustLoop.ShouldRetry())
+    while (RobustLoop.Retry());
+  }
+  __finally
+  {
+    // Once we issue <download> we must terminate the chunked stream
+    if (Action.IsValid() && (CopyParam->OnTransferOut != NULL) && DebugAlwaysTrue(IsCapable[fcTransferOut]))
     {
-      OperationProgress->RollbackTransfer();
-      Action.Restart();
-      DebugAssert(File != NULL);
-      if (!File->IsDirectory)
-      {
-        // prevent overwrite and resume confirmations
-        Params |= cpNoConfirmation;
-        Flags |= tfAutoResume;
-      }
+      CopyParam->OnTransferOut(this, NULL, 0);
     }
   }
-  while (RobustLoop.Retry());
 }
 //---------------------------------------------------------------------------
 struct TSinkFileParams

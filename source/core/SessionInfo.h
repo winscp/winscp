@@ -107,8 +107,11 @@ public:
   void __fastcall Rollback(Exception * E = NULL);
   void __fastcall Cancel();
 
+  bool __fastcall IsValid();
+
 protected:
   TSessionActionRecord * FRecord;
+  bool FCancelled;
 };
 //---------------------------------------------------------------------------
 class TFileSessionAction : public TSessionAction
