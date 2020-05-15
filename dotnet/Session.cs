@@ -2600,7 +2600,6 @@ namespace WinSCP
         private ElementLogReader _reader;
         private SessionLogReader _logReader;
         private readonly IList<OperationResultBase> _operationResults;
-        private delegate void Action();
         private readonly IList<Action> _events;
         private AutoResetEvent _eventsEvent;
         private ManualResetEvent _choiceEvent;
