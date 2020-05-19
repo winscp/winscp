@@ -1013,8 +1013,7 @@ namespace WinSCP
                         }
                         finally
                         {
-                            // This should not throw, so another pair of try ... finally is not necessary.
-                            // Only after disposing the groupr reader, so when called from onGetEndWithExit, the Check() has all failures.
+                            // Only after disposing the group reader, so when called from onGetEndWithExit, the Check() has all failures.
                             operationResultGuard.Dispose();
                         }
                     }
