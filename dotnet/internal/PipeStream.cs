@@ -145,7 +145,7 @@ namespace WinSCP
 
             lock (_buffer)
             {
-                while (!_isDisposed && !ReadAvailable(count))
+                while (!_isDisposed && !ReadAvailable(1))
                 {
                     Monitor.Wait(_buffer);
                 }
