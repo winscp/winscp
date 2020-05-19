@@ -49,12 +49,6 @@ namespace WinSCP
         private bool _isFlushed;
 
         /// <summary>
-        /// Setting this to true will cause Read() to block if it appears
-        /// that it will run out of data.
-        /// </summary>
-        private bool _canBlockLastRead;
-
-        /// <summary>
         /// Indicates whether the current <see cref="PipeStream"/> is disposed.
         /// </summary>
         private bool _isDisposed;
@@ -68,39 +62,6 @@ namespace WinSCP
         /// </summary>
         /// <value>The length of the max buffer.</value>
         public long MaxBufferLength { get; set; } = 200 * 1024 * 1024;
-
-        /// <summary>
-        /// Gets or sets a value indicating whether to block last read method before the buffer is empty.
-        /// When true, Read() will block until it can fill the passed in buffer and count.
-        /// When false, Read() will not block, returning all the available buffer data.
-        /// </summary>
-        /// <remarks>
-        /// Setting to true will remove the possibility of ending a stream reader prematurely.
-        /// </remarks>
-        /// <value>
-        ///   <c>true</c> if block last read method before the buffer is empty; otherwise, <c>false</c>.
-        /// </value>
-        /// <exception cref="ObjectDisposedException">Methods were called after the stream was closed.</exception>
-        public bool BlockLastReadBuffer
-        {
-            get
-            {
-                CheckDisposed();
-
-                return _canBlockLastRead;
-            }
-            set
-            {
-                CheckDisposed();
-
-                _canBlockLastRead = value;
-
-                // when turning off the block last read, signal Read() that it may now read the rest of the buffer.
-                if (!_canBlockLastRead)
-                    lock (_buffer)
-                        Monitor.Pulse(_buffer);
-            }
-        }
 
         #endregion
 
@@ -176,8 +137,6 @@ namespace WinSCP
                 throw new ArgumentException("The sum of offset and count is greater than the buffer length.");
             if (offset < 0 || count < 0)
                 throw new ArgumentOutOfRangeException("offset", "offset or count is negative.");
-            if (BlockLastReadBuffer && count >= MaxBufferLength)
-                throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, "count({0}) > mMaxBufferLength({1})", count, MaxBufferLength));
             CheckDisposed();
             if (count == 0)
                 return 0;
@@ -217,7 +176,7 @@ namespace WinSCP
         public bool ReadAvailable(int count)
         {
             var length = Length;
-            return (_isFlushed || length >= count) && (length >= (count + 1) || !BlockLastReadBuffer);
+            return (_isFlushed || length >= count);
         }
 
         ///<summary>
