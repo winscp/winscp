@@ -13,8 +13,9 @@ namespace WinSCP
         public uint OutputType;
         public bool WantsProgress; // since version 6
         public bool UseStdErr; // since version 10
-        public bool BinaryOutput; // since version 10
-        public bool BinaryInput; // since version 10
+        public enum StdInOut { Off, Binary, Chunked }
+        public StdInOut BinaryOutput; // since version 10
+        public StdInOut BinaryInput; // since version 10
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
