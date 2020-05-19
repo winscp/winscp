@@ -53,6 +53,14 @@ namespace WinSCP
         /// </summary>
         private bool _isDisposed;
 
+        private bool _closedWrite;
+        private Action _onDispose;
+
+        public PipeStream(Action onDispose)
+        {
+            _onDispose = onDispose;
+        }
+
         #endregion
 
         #region Public properties
@@ -145,7 +153,7 @@ namespace WinSCP
 
             lock (_buffer)
             {
-                while (!_isDisposed && !ReadAvailable(1))
+                while (!_isDisposed && !_closedWrite && !ReadAvailable(1))
                 {
                     Monitor.Wait(_buffer);
                 }
@@ -160,6 +168,13 @@ namespace WinSCP
                 for (; readLength < count && _buffer.Count > 0; readLength++)
                 {
                     buffer[readLength] = _buffer.Dequeue();
+                }
+
+                if (_closedWrite)
+                {
+                    // Throw any pending exception asap, not only once the stream is closed.
+                    // Also releases the lock.
+                    Closed();
                 }
 
                 Monitor.Pulse(_buffer);
@@ -202,6 +217,8 @@ namespace WinSCP
             CheckDisposed();
             if (count == 0)
                 return;
+            if (_closedWrite)
+                throw new InvalidOperationException("Stream closed for writes");
 
             lock (_buffer)
             {
@@ -239,6 +256,7 @@ namespace WinSCP
                     _isDisposed = true;
                     Monitor.Pulse(_buffer);
                 }
+                Closed();
             }
         }
 
@@ -308,12 +326,32 @@ namespace WinSCP
 
         #endregion
 
+        public void CloseWrite()
+        {
+            lock (_buffer)
+            {
+                CheckDisposed();
+                if (!_closedWrite)
+                {
+                    _closedWrite = true;
+                    Monitor.Pulse(_buffer);
+                }
+            }
+        }
+
         private void CheckDisposed()
         {
             if (_isDisposed)
             {
                 throw new ObjectDisposedException(GetType().FullName);
             }
+        }
+
+        private void Closed()
+        {
+            Action onDispose = _onDispose;
+            _onDispose = null;
+            onDispose?.Invoke();
         }
     }
 }

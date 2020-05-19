@@ -16,6 +16,8 @@ HANDLE ConsoleInput = NULL;
 HANDLE ConsoleOutput = NULL;
 HANDLE ConsoleStandardOutput = NULL;
 HANDLE ConsoleErrorOutput = NULL;
+TConsoleCommStruct::TInitEvent::STDINOUT OutputFormat;
+TConsoleCommStruct::TInitEvent::STDINOUT InputFormat;
 HANDLE Child = NULL;
 HANDLE CancelEvent = NULL;
 HANDLE InputTimerEvent = NULL;
@@ -790,12 +792,14 @@ inline void ProcessInitEvent(TConsoleCommStruct::TInitEvent& Event)
     ConsoleOutput = ConsoleErrorOutput;
   }
 
-  if (Event.BinaryOutput)
+  OutputFormat = Event.OutputFormat;
+  if (OutputFormat != TConsoleCommStruct::TInitEvent::OFF)
   {
     setmode(fileno(stdout), O_BINARY);
   }
 
-  if (Event.BinaryInput)
+  InputFormat = Event.InputFormat;
+  if (InputFormat != TConsoleCommStruct::TInitEvent::OFF)
   {
     setmode(fileno(stdin), O_BINARY);
   }
@@ -821,7 +825,16 @@ inline void ProcessInitEvent(TConsoleCommStruct::TInitEvent& Event)
 //---------------------------------------------------------------------------
 inline void ProcessTransferOutEvent(TConsoleCommStruct::TTransferEvent& Event)
 {
-  fwrite(Event.Data, 1, Event.Len, stdout);
+  if (OutputFormat == TConsoleCommStruct::TInitEvent::BINARY)
+  {
+    fwrite(Event.Data, 1, Event.Len, stdout);
+  }
+  else if (OutputFormat == TConsoleCommStruct::TInitEvent::CHUNKED)
+  {
+    fprintf(stdout, "%x\r\n", static_cast<int>(Event.Len));
+    fwrite(Event.Data, 1, Event.Len, stdout);
+    fputs("\r\n", stdout);
+  }
 }
 //---------------------------------------------------------------------------
 inline void ProcessTransferInEvent(TConsoleCommStruct::TTransferEvent& Event)

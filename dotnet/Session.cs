@@ -1013,6 +1013,7 @@ namespace WinSCP
                         }
                         finally
                         {
+                            _process.StdOut = null;
                             // Only after disposing the group reader, so when called from onGetEndWithExit, the Check() has all failures.
                             operationResultGuard.Dispose();
                         }
@@ -1032,6 +1033,15 @@ namespace WinSCP
                     }
                 }
 
+                // should never happen
+                if (_process.StdOut != null)
+                {
+                    throw Logger.WriteException(new InvalidOperationException("Data stream already exist"));
+                }
+
+                PipeStream stream = new PipeStream(onGetEndWithExit);
+                _process.StdOut = stream;
+
                 try
                 {
                     bool downloadFound;
@@ -1047,7 +1057,6 @@ namespace WinSCP
                     }
                     if (downloadFound)
                     {
-                        ChunkedReadStream stream = new ChunkedReadStream(_process.StdOut, onGetEndWithExit);
                         callstackAndLock.DisarmLock();
                         return stream;
                     }
@@ -2219,7 +2228,7 @@ namespace WinSCP
                 throw Logger.WriteException(new SessionLocalException(this, "Aborted."));
             }
 
-            if (_process.StdOut.ReadAvailable(1))
+            if ((_process.StdOut != null) && _process.StdOut.ReadAvailable(1))
             {
                 throw new StdOutException();
             }

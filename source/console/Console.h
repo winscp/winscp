@@ -22,8 +22,9 @@ struct TConsoleCommStruct
     unsigned int OutputType;
     bool WantsProgress; // since version 6
     bool UseStdErr; // since version 10
-    bool BinaryOutput; // since version 10
-    bool BinaryInput; // since version 10
+    enum STDINOUT { OFF, BINARY, CHUNKED };
+    STDINOUT OutputFormat; // since version 10
+    STDINOUT InputFormat; // since version 10
   };
 
   struct TPrintEvent

@@ -19,7 +19,7 @@ namespace WinSCP
 
         public bool HasExited { get { return _process.HasExited; } }
         public int ExitCode { get { return _process.ExitCode; } }
-        public PipeStream StdOut { get; private set; }
+        public PipeStream StdOut { get; set; }
 
         public static ExeSessionProcess CreateForSession(Session session)
         {
@@ -99,7 +99,7 @@ namespace WinSCP
                     string.Format(CultureInfo.InvariantCulture, "/dotnet={0} ", assemblyVersionStr);
 
                 string arguments =
-                    xmlLogSwitch + "/nointeractiveinput /stdout=chunked " + assemblyVersionSwitch +
+                    xmlLogSwitch + "/nointeractiveinput /stdout " + assemblyVersionSwitch +
                     configSwitch + logSwitch + logLevelSwitch + _session.AdditionalExecutableArguments;
 
                 Tools.AddRawParameters(ref arguments, _session.RawConfiguration, "/rawconfig", false);
@@ -141,7 +141,6 @@ namespace WinSCP
         {
             using (_logger.CreateCallstack())
             {
-                StdOut = new PipeStream();
                 InitializeConsole();
                 InitializeChild();
             }
@@ -468,6 +467,12 @@ namespace WinSCP
         {
             using (_logger.CreateCallstack())
             {
+                if (!e.UseStdErr ||
+                    (e.BinaryOutput != ConsoleInitEventStruct.StdInOut.Binary))
+                {
+                    _logger.WriteException(new InvalidOperationException("Unexpected console interface options"));
+                }
+
                 e.InputType = 3; // pipe
                 e.OutputType = 3; // pipe
                 e.WantsProgress = _session.WantsProgress;
@@ -532,9 +537,21 @@ namespace WinSCP
             {
                 _logger.WriteLine("Len [{0}]", e.Len);
 
-                StdOut.Write(e.Data, 0, (int)e.Len);
-
-                _logger.WriteLine("Data written to the buffer");
+                if (StdOut == null)
+                {
+                    throw _logger.WriteException(new InvalidOperationException("Unexpected data"));
+                }
+                int len = (int)e.Len;
+                if (len > 0)
+                {
+                    StdOut.Write(e.Data, 0, len);
+                    _logger.WriteLine("Data written to the buffer");
+                }
+                else
+                {
+                    StdOut.CloseWrite();
+                    _logger.WriteLine("Data buffer closed");
+                }
             }
         }
 

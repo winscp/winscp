@@ -7445,7 +7445,7 @@ void __fastcall TTerminal::SinkRobust(
   }
   __finally
   {
-    // Once we issue <download> we must terminate the chunked stream
+    // Once we issue <download> we must terminate the data stream
     if (Action.IsValid() && (CopyParam->OnTransferOut != NULL) && DebugAlwaysTrue(IsCapable[fcTransferOut]))
     {
       CopyParam->OnTransferOut(this, NULL, 0);
