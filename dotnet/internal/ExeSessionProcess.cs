@@ -20,6 +20,7 @@ namespace WinSCP
         public bool HasExited { get { return _process.HasExited; } }
         public int ExitCode { get { return _process.ExitCode; } }
         public PipeStream StdOut { get; set; }
+        public Stream StdIn { get; set; }
 
         public static ExeSessionProcess CreateForSession(Session session)
         {
@@ -99,7 +100,7 @@ namespace WinSCP
                     string.Format(CultureInfo.InvariantCulture, "/dotnet={0} ", assemblyVersionStr);
 
                 string arguments =
-                    xmlLogSwitch + "/nointeractiveinput /stdout " + assemblyVersionSwitch +
+                    xmlLogSwitch + "/nointeractiveinput /stdout /stdin " + assemblyVersionSwitch +
                     configSwitch + logSwitch + logLevelSwitch + _session.AdditionalExecutableArguments;
 
                 Tools.AddRawParameters(ref arguments, _session.RawConfiguration, "/rawconfig", false);
@@ -326,6 +327,10 @@ namespace WinSCP
                             ProcessTransferOutEvent(commStruct.TransferOutEvent);
                             break;
 
+                        case ConsoleEvent.TransferIn:
+                            ProcessTransferInEvent(commStruct.TransferInEvent);
+                            break;
+
                         default:
                             throw _logger.WriteException(new NotImplementedException());
                     }
@@ -468,7 +473,8 @@ namespace WinSCP
             using (_logger.CreateCallstack())
             {
                 if (!e.UseStdErr ||
-                    (e.BinaryOutput != ConsoleInitEventStruct.StdInOut.Binary))
+                    (e.BinaryOutput != ConsoleInitEventStruct.StdInOut.Binary) ||
+                    (e.BinaryInput != ConsoleInitEventStruct.StdInOut.Binary))
                 {
                     throw _logger.WriteException(new InvalidOperationException("Unexpected console interface options"));
                 }
@@ -551,6 +557,32 @@ namespace WinSCP
                 {
                     StdOut.CloseWrite();
                     _logger.WriteLine("Data buffer closed");
+                }
+            }
+        }
+
+        private void ProcessTransferInEvent(ConsoleTransferEventStruct e)
+        {
+            using (_logger.CreateCallstack())
+            {
+                _logger.WriteLine("Len [{0}]", e.Len);
+
+                if (StdIn == null)
+                {
+                    throw _logger.WriteException(new InvalidOperationException("Unexpected data request"));
+                }
+                try
+                {
+                    int len = (int)e.Len;
+                    len = StdIn.Read(e.Data, 0, len);
+                    _logger.WriteLine("{0} bytes read", len);
+                    e.Len = (UIntPtr)len;
+                }
+                catch (Exception ex)
+                {
+                    _logger.WriteLine("Error reading data stream");
+                    _logger.WriteException(ex);
+                    e.Error = true;
                 }
             }
         }
