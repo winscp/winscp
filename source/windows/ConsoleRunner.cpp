@@ -2307,9 +2307,8 @@ void __fastcall Usage(TConsole * Console)
   if (CommandLineOnly)
   {
     PrintUsageSyntax(
-      Console, FORMAT(L"[/%s[=%s|%s]] [/%s[=%s|%s]]",
-      (LowerCase(STDOUT_SWITCH), STDINOUT_BINARY_VALUE, STDINOUT_CHUNKED_VALUE,
-       LowerCase(STDIN_SWITCH), STDINOUT_BINARY_VALUE, STDINOUT_CHUNKED_VALUE)));
+      Console, FORMAT(L"[/%s[=%s|%s]] [/%s]",
+      (LowerCase(STDOUT_SWITCH), STDINOUT_BINARY_VALUE, STDINOUT_CHUNKED_VALUE, LowerCase(STDIN_SWITCH))));
   }
   PrintUsageSyntax(Console,
     FORMAT(L"[/%s=<logfile> [/loglevel=<level>]] [/%s=[<count>%s]<size>]", (LowerCase(LOG_SWITCH), LowerCase(LOGSIZE_SWITCH), LOGSIZE_SEPARATOR)));
@@ -2815,7 +2814,7 @@ int Info(TConsole * Console)
   return Result;
 }
 //---------------------------------------------------------------------------
-TStdInOutMode ParseStdInOutMode(TProgramParams * Params, const UnicodeString & Switch)
+TStdInOutMode ParseStdInOutMode(TProgramParams * Params, const UnicodeString & Switch, bool AllowChunked)
 {
   TStdInOutMode Result;
   UnicodeString Value;
@@ -2829,7 +2828,7 @@ TStdInOutMode ParseStdInOutMode(TProgramParams * Params, const UnicodeString & S
     {
       Result = TConsoleCommStruct::TInitEvent::BINARY;
     }
-    else if (SameText(Value, STDINOUT_CHUNKED_VALUE))
+    else if (SameText(Value, STDINOUT_CHUNKED_VALUE) && AllowChunked)
     {
       Result = TConsoleCommStruct::TInitEvent::CHUNKED;
     }
@@ -2857,8 +2856,8 @@ int __fastcall Console(TConsoleMode Mode)
     if (Params->FindSwitch(L"consoleinstance", ConsoleInstance))
     {
       Configuration->Usage->Inc(L"ConsoleExternal");
-      TStdInOutMode StdOut = ParseStdInOutMode(Params, STDOUT_SWITCH);
-      TStdInOutMode StdIn = ParseStdInOutMode(Params, STDIN_SWITCH);
+      TStdInOutMode StdOut = ParseStdInOutMode(Params, STDOUT_SWITCH, true);
+      TStdInOutMode StdIn = ParseStdInOutMode(Params, STDIN_SWITCH, false);
       bool NoInteractiveInput = Params->FindSwitch(NOINTERACTIVEINPUT_SWITCH) || (StdIn != TConsoleCommStruct::TInitEvent::OFF);
       Console = new TExternalConsole(ConsoleInstance, NoInteractiveInput, StdOut, StdIn);
     }
