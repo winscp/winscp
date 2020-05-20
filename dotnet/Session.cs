@@ -689,6 +689,14 @@ namespace WinSCP
         {
             using (Logger.CreateCallstackAndLock())
             {
+                return DoPutFiles(localPath, remotePath, remove, options);
+            }
+        }
+
+        public TransferOperationResult DoPutFiles(string localPath, string remotePath, bool remove, TransferOptions options)
+        {
+            using (Logger.CreateCallstack())
+            {
                 if (options == null)
                 {
                     options = new TransferOptions();
@@ -797,6 +805,38 @@ namespace WinSCP
 
                 TransferOperationResult operationResult = PutEntryToDirectory(localFilePath, remoteDirectory, remove, options);
                 return GetOnlyFileOperation(operationResult.Transfers);
+            }
+        }
+
+        public void PutFile(Stream stream, string remoteFilePath, TransferOptions options = null)
+        {
+            using (Logger.CreateCallstackAndLock())
+            {
+                if (stream == null)
+                {
+                    throw Logger.WriteException(new ArgumentNullException(nameof(stream)));
+                }
+                if (remoteFilePath == null)
+                {
+                    throw Logger.WriteException(new ArgumentNullException(nameof(remoteFilePath)));
+                }
+                if (_process.StdIn != null)
+                {
+                    throw Logger.WriteException(new InvalidOperationException("Already uploading from a stream"));
+                }
+                _process.StdIn = stream;
+                try
+                {
+                    remoteFilePath = RemotePath.EscapeFileMask(remoteFilePath);
+                    TransferOperationResult operationResult = DoPutFiles("-", remoteFilePath, false, options);
+                    operationResult.Check();
+                    // Assert that any transfer took place at all
+                    GetOnlyFileOperation(operationResult.Transfers);
+                }
+                finally
+                {
+                    _process.StdIn = null;
+                }
             }
         }
 

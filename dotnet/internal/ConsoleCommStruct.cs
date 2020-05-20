@@ -4,7 +4,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace WinSCP
 {
-    public enum ConsoleEvent { None, Print, Input, Choice, Title, Init, Progress, TransferOut }
+    public enum ConsoleEvent { None, Print, Input, Choice, Title, Init, Progress, TransferOut, TransferIn }
 
     [StructLayout(LayoutKind.Sequential)]
     internal class ConsoleInitEventStruct
@@ -181,6 +181,8 @@ namespace WinSCP
         public ConsoleProgressEventStruct ProgressEvent { get { return UnmarshalPayload<ConsoleProgressEventStruct>(ConsoleEvent.Progress); } }
 
         public ConsoleTransferEventStruct TransferOutEvent { get { return UnmarshalPayload<ConsoleTransferEventStruct>(ConsoleEvent.TransferOut); } }
+
+        public ConsoleTransferEventStruct TransferInEvent { get { return UnmarshalPayload<ConsoleTransferEventStruct>(ConsoleEvent.TransferIn); } }
 
         private T UnmarshalPayload<T>(ConsoleEvent e)
         {
