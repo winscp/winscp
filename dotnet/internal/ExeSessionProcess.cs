@@ -470,7 +470,7 @@ namespace WinSCP
                 if (!e.UseStdErr ||
                     (e.BinaryOutput != ConsoleInitEventStruct.StdInOut.Binary))
                 {
-                    _logger.WriteException(new InvalidOperationException("Unexpected console interface options"));
+                    throw _logger.WriteException(new InvalidOperationException("Unexpected console interface options"));
                 }
 
                 e.InputType = 3; // pipe
