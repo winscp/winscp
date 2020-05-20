@@ -5565,11 +5565,11 @@ void __fastcall TCustomScpExplorerForm::SynchronizeInNewWindow(
   UnicodeString SessionName = CreateHiddenDuplicateSession();
 
   UnicodeString AdditionalParams =
-    FORMAT(L"%s \"%s\" \"%s\" %d %d %s%s", (
-      TProgramParams::FormatSwitch(KEEP_UP_TO_DATE_SWITCH),
-      Params.LocalDirectory, Params.RemoteDirectory, Params.Params, Params.Options,
+    FORMAT(L"%s%s %s // \"%s\" \"%s\" %d %d", (
       TProgramParams::FormatSwitch(DEFAULTS_SWITCH),
-      SerializeCopyParamForCommandLine(CopyParams)));
+      SerializeCopyParamForCommandLine(CopyParams),
+      TProgramParams::FormatSwitch(KEEP_UP_TO_DATE_SWITCH),
+      Params.LocalDirectory, Params.RemoteDirectory, Params.Params, Params.Options));
 
   ExecuteNewInstance(SessionName, AdditionalParams);
 }
@@ -5777,11 +5777,11 @@ void __fastcall TCustomScpExplorerForm::FullSynchronizeInNewWindow(
   UnicodeString SessionName = CreateHiddenDuplicateSession();
 
   UnicodeString AdditionalParams =
-    FORMAT(L"%s \"%s\" \"%s\" %d %d %s%s", (
-      TProgramParams::FormatSwitch(SYNCHRONIZE_SWITCH),
-      LocalDirectory, RemoteDirectory, Mode, Params,
+    FORMAT(L"%s%s %s // \"%s\" \"%s\" %d %d", (
       TProgramParams::FormatSwitch(DEFAULTS_SWITCH),
-      SerializeCopyParamForCommandLine(CopyParams)));
+      SerializeCopyParamForCommandLine(CopyParams),
+      TProgramParams::FormatSwitch(SYNCHRONIZE_SWITCH),
+      LocalDirectory, RemoteDirectory, Mode, Params));
 
   ExecuteNewInstance(SessionName, AdditionalParams);
 }
