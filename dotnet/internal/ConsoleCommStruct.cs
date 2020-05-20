@@ -11,7 +11,9 @@ namespace WinSCP
     {
         public uint InputType;
         public uint OutputType;
+        [MarshalAs(UnmanagedType.I1)]
         public bool WantsProgress; // since version 6
+        [MarshalAs(UnmanagedType.I1)]
         public bool UseStdErr; // since version 10
         public enum StdInOut { Off, Binary, Chunked }
         public StdInOut BinaryOutput; // since version 10
@@ -84,6 +86,7 @@ namespace WinSCP
         public uint OverallProgress;
         public uint FileProgress;
         public uint CPS;
+        [MarshalAs(UnmanagedType.I1)]
         public bool Cancel; // since version 8
     }
 
@@ -94,6 +97,7 @@ namespace WinSCP
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 20480)]
         public byte[] Data;
         public UIntPtr Len;
+        [MarshalAs(UnmanagedType.I1)]
         public bool Error; // TransferIn only
     }
 
