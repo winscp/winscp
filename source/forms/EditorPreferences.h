@@ -47,10 +47,12 @@ public:
 
 private:
   void __fastcall UpdateControls();
-  void __fastcall DecideExternalEditorText();
+  TEditorData __fastcall GetExternalEditorDefaults();
+  void __fastcall ExternalEditorOptionsAutodetect();
 
   bool FMayRemote;
   UnicodeString FSystemExternalEditor;
+  TEditorData FExternalEditorDefaults;
 
   INTERFACE_HOOK;
 };
