@@ -3411,7 +3411,7 @@ void __fastcall TCustomScpExplorerForm::EditorAutoConfig()
         TEditorData EditorData;
         EditorData.Editor = edExternal;
         EditorData.ExternalEditor = FormatCommand(Executable, L"");
-        EditorData.DecideExternalEditorText();
+        EditorData.ExternalEditorOptionsAutodetect();
 
         TEditorList EditorList;
         EditorList = *WinConfiguration->EditorList;

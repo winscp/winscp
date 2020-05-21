@@ -109,32 +109,24 @@ bool __fastcall TEditorData::operator==(const TEditorData & rhd) const
 }
 #undef C
 //---------------------------------------------------------------------------
-bool __fastcall TEditorData::DecideExternalEditorText(UnicodeString ExternalEditor)
+void __fastcall TEditorData::ExternalEditorOptionsAutodetect()
 {
-  bool Result = false;
   // By default we use default transfer mode (binary),
   // as all reasonable 3rd party editors support all EOL styles.
   // A notable exception is Windows Notepad, so here's an exception for it.
   // Notepad support unix line endings since Windows 10 1809. Once that's widespread, remove this.
 
-  ReformatFileNameCommand(ExternalEditor);
-  UnicodeString ProgramName = ExtractProgramName(ExternalEditor);
+  UnicodeString Command = ExternalEditor;
+  ReformatFileNameCommand(Command);
+  UnicodeString ProgramName = ExtractProgramName(Command);
   // We explicitly do not use TEditorPreferences::GetDefaultExternalEditor(),
   // as we need to explicitly refer to the Notepad, even if the default external
   // editor ever changes
   UnicodeString NotepadProgramName = ExtractProgramName(NotepadName);
   if (SameText(ProgramName, NotepadProgramName))
   {
-    Result = true;
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
-void __fastcall TEditorData::DecideExternalEditorText()
-{
-  if (DecideExternalEditorText(ExternalEditor))
-  {
     ExternalEditorText = true;
+    SDIExternalEditor = true;
   }
 }
 //---------------------------------------------------------------------------
@@ -167,7 +159,7 @@ UnicodeString __fastcall TEditorPreferences::GetDefaultExternalEditor()
 void __fastcall TEditorPreferences::LegacyDefaults()
 {
   FData.ExternalEditor = GetDefaultExternalEditor();
-  FData.DecideExternalEditorText();
+  FData.ExternalEditorOptionsAutodetect();
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TEditorPreferences::ExtractExternalEditorName() const
