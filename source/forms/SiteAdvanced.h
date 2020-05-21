@@ -280,6 +280,7 @@ __published:
   TButton *PuttySettingsButton;
   TLabel *PuttySettingsLabel;
   TEdit *PuttySettingsEdit;
+  TCheckBox *AuthGSSAPIKEXCheck;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall PageControlChange(TObject *Sender);
