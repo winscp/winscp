@@ -2034,13 +2034,13 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           Left = 0
           Top = 6
           Width = 393
-          Height = 137
+          Height = 158
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Key exchange algorithm options'
           TabOrder = 0
           DesignSize = (
             393
-            137)
+            158)
           object Label28: TLabel
             Left = 12
             Top = 19
@@ -2083,10 +2083,19 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             TabOrder = 2
             OnClick = KexButtonClick
           end
+          object AuthGSSAPIKEXCheck: TCheckBox
+            Left = 12
+            Top = 131
+            Width = 285
+            Height = 17
+            Caption = 'Attempt &GSSAPI key exchange'
+            TabOrder = 3
+            OnClick = DataChange
+          end
         end
         object KexReexchangeGroup: TGroupBox
           Left = 0
-          Top = 150
+          Top = 171
           Width = 393
           Height = 69
           Anchors = [akLeft, akTop, akRight]

@@ -267,6 +267,8 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
         (TObject*)FSessionData->Kex[Index]);
     }
 
+    AuthGSSAPIKEXCheck->Checked = FSessionData->AuthGSSAPIKEX;
+
     RekeyTimeEdit->AsInteger = FSessionData->RekeyTime;
     RekeyDataEdit->Text = FSessionData->RekeyData;
 
@@ -458,6 +460,8 @@ void __fastcall TSiteAdvancedDialog::SaveSession(TSessionData * SessionData)
   {
     SessionData->Kex[Index] = (TKex)KexListBox->Items->Objects[Index];
   }
+
+  FSessionData->AuthGSSAPIKEX = AuthGSSAPIKEXCheck->Checked;
 
   SessionData->RekeyTime = RekeyTimeEdit->AsInteger;
   SessionData->RekeyData = RekeyDataEdit->Text;
