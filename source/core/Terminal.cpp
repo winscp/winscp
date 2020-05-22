@@ -439,8 +439,18 @@ TRobustOperationLoop::~TRobustOperationLoop()
 bool TRobustOperationLoop::TryReopen(Exception & E)
 {
   FRetry = FCanRetry && !FTerminal->Active;
-  if (FRetry)
+  if (!FCanRetry)
   {
+    FRetry = false;
+  }
+  else if (FTerminal->Active)
+  {
+    FTerminal->LogEvent(1, L"Session is open, will not retry transfer");
+    FRetry = false;
+  }
+  else
+  {
+    FRetry = true;
     if (FAnyTransfer != NULL)
     {
       // if there was any transfer, reset the global timestamp
@@ -453,6 +463,10 @@ bool TRobustOperationLoop::TryReopen(Exception & E)
       else
       {
         FRetry = FTerminal->ContinueReopen(FStart);
+        if (!FRetry)
+        {
+          FTerminal->LogEvent(L"Retry interval expired, will not retry transfer");
+        }
       }
     }
 

@@ -1191,8 +1191,10 @@ void CFtpControlSocket::OnReceive(int nErrorCode)
   {
     delete [] buffer;
     buffer = NULL;
-    if (GetLastError() != WSAEWOULDBLOCK)
+    int Error = GetLastError();
+    if (Error != WSAEWOULDBLOCK)
     {
+      LogError(Error);
       ShowStatus(IDS_STATUSMSG_DISCONNECTED, FZ_LOG_ERROR);
       DoClose();
     }
@@ -6199,8 +6201,10 @@ void CFtpControlSocket::OnSend(int nErrorCode)
   int res = CAsyncSocketEx::Send(m_sendBuffer, m_sendBufferLen);
   if (res == -1)
   {
-    if (GetLastError() != WSAEWOULDBLOCK)
+    int Error = GetLastError();
+    if (Error != WSAEWOULDBLOCK)
     {
+      LogError(Error);
       ShowStatus(IDS_ERRORMSG_CANTSENDCOMMAND, FZ_LOG_ERROR);
       DoClose();
     }
