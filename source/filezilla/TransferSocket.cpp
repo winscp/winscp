@@ -658,6 +658,7 @@ void CTransferSocket::OnSend(int nErrorCode)
         }
         else if (nError != WSAEWOULDBLOCK)
         {
+          LogError(nError);
           CloseOnShutDownOrError(CSMODE_TRANSFERERROR);
         }
         UpdateStatusBar(false);
@@ -770,6 +771,7 @@ void CTransferSocket::OnSend(int nErrorCode)
         }
         else
         {
+          LogError(nError);
           CloseOnShutDownOrError(CSMODE_TRANSFERERROR);
         }
         UpdateStatusBar(false);
@@ -1159,20 +1161,5 @@ void CTransferSocket::CloseOnShutDownOrError(int Mode)
       LogError(Error);
       CloseAndEnsureSendClose(Mode);
     }
-  }
-}
-
-void CTransferSocket::LogError(int Error)
-{
-  wchar_t * Buffer;
-  int Len = FormatMessage(
-    FORMAT_MESSAGE_FROM_SYSTEM |
-    FORMAT_MESSAGE_IGNORE_INSERTS |
-    FORMAT_MESSAGE_ARGUMENT_ARRAY |
-    FORMAT_MESSAGE_ALLOCATE_BUFFER, NULL, Error, 0, (LPTSTR)&Buffer, 0, NULL);
-  if (Len > 0)
-  {
-    m_pOwner->ShowStatus(Buffer, FZ_LOG_ERROR);
-    LocalFree(Buffer);
   }
 }

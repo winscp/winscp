@@ -82,7 +82,6 @@ protected:
   void CloseAndEnsureSendClose(int Mode);
   void EnsureSendClose(int Mode);
   void CloseOnShutDownOrError(int Mode);
-  void LogError(int Error);
   void SetBuffers();
 
   LARGE_INTEGER m_LastUpdateTime;
