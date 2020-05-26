@@ -3782,8 +3782,8 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
       }
       if (pData->nGotTransferEndReply==3)
       {
-          // Not really sure about a reason for the m_pDataFile condition here
-          TransferFinished(m_pDataFile != NULL);
+        // Not really sure about a reason for the m_pDataFile condition here
+        TransferFinished(m_pDataFile != NULL);
         return;
       }
       break;
