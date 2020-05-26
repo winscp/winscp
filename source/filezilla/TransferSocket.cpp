@@ -1129,7 +1129,12 @@ void CTransferSocket::EnsureSendClose(int Mode)
   {
     if (Mode != 0)
     {
+      m_pOwner->ShowStatus(L"Data connection failed", FZ_LOG_INFO);
       m_nMode |= Mode;
+    }
+    else
+    {
+      m_pOwner->ShowStatus(L"Data connection closed", FZ_LOG_INFO);
     }
     m_bSentClose = TRUE;
     DebugCheck(m_pOwner->m_pOwner->PostThreadMessage(m_nInternalMessageID, FZAPI_THREADMSG_TRANSFEREND, m_nMode));
