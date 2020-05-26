@@ -3752,6 +3752,17 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
       }
       break;
     case FILETRANSFER_WAITFINISH:
+      if (bFinish)
+      {
+        if (nError)
+        {
+          LogMessage(FZ_LOG_INFO, L"Transfer completed");
+        }
+        else
+        {
+          LogMessage(FZ_LOG_INFO, L"Transfer failed");
+        }
+      }
       if (!bFinish)
       {
         if (code == 1)
