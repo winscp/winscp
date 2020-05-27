@@ -133,7 +133,7 @@ void __fastcall TSessionData::DefaultSettings()
   AuthKI = true;
   AuthKIPassword = true;
   AuthGSSAPI = true;
-  AuthGSSAPIKEX = true;
+  AuthGSSAPIKEX = false;
   GSSAPIFwdTGT = false;
   LogicalHostName = L"";
   ChangeUsername = false;
