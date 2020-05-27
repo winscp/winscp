@@ -504,7 +504,10 @@ void __fastcall TTerminalManager::DisconnectActiveTerminal()
   OldQueue = reinterpret_cast<TTerminalQueue *>(FQueues->Items[Index]);
   NewQueue = this->NewQueue(ActiveTerminal);
   FQueues->Items[Index] = NewQueue;
-  ScpExplorer->Queue = NewQueue;
+  if (ScpExplorer != NULL)
+  {
+    ScpExplorer->Queue = NewQueue;
+  }
   delete OldQueue;
 
   ActiveTerminal->Disconnected = true;
