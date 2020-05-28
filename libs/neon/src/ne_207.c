@@ -188,6 +188,15 @@ end_element(void *userdata, int state, const char *nspace, const char *name)
                 cdata = hh;
             }
 
+            #ifdef WINSCP
+            if (p->flags & NE_207_LIBERAL_ESCAPING) {
+                hh = ne_path_escapef(cdata, NE_PATH_NONPC);
+                NE_DEBUG(NE_DBG_XML, "207: Enabled liberal href escaping [%s]->[%s]\n",
+                         cdata, hh);
+                cdata = hh;
+            }
+            #endif
+
             ret = ne_uri_parse(cdata, &ref);
             if (!ret) {
                 ne_uri_resolve(&p->base, &ref, &resolved);

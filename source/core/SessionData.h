@@ -231,6 +231,7 @@ private:
   UnicodeString FNote;
   UnicodeString FWinTitle;
   RawByteString FEncryptKey;
+  bool FWebDavLiberalEscaping;
 
   UnicodeString FOrigHostName;
   int FOrigPortNumber;
@@ -409,6 +410,7 @@ private:
   void __fastcall SetWinTitle(UnicodeString value);
   UnicodeString __fastcall GetEncryptKey() const;
   void __fastcall SetEncryptKey(UnicodeString value);
+  void __fastcall SetWebDavLiberalEscaping(bool value);
 
   TDateTime __fastcall GetTimeoutDT();
   void __fastcall SavePasswords(THierarchicalStorage * Storage, bool PuttyExport, bool DoNotEncryptPasswords, bool SaveAll);
@@ -671,6 +673,7 @@ public:
   __property UnicodeString Note = { read = FNote, write = SetNote };
   __property UnicodeString WinTitle = { read = FWinTitle, write = SetWinTitle };
   __property UnicodeString EncryptKey = { read = GetEncryptKey, write = SetEncryptKey };
+  __property bool WebDavLiberalEscaping = { read = FWebDavLiberalEscaping, write = SetWebDavLiberalEscaping };
 
   __property UnicodeString StorageKey = { read = GetStorageKey };
   __property UnicodeString SiteKey = { read = GetSiteKey };

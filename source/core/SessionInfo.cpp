@@ -1353,6 +1353,7 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
       FtpsOn = (Data->Ftps != ftpsNone);
       ADF(L"HTTPS: %s [Client certificate: %s]",
         (BooleanToEngStr(FtpsOn), LogSensitive(Data->TlsCertificateFile)));
+      ADF(L"WebDAV: Tolerate non-encoded: %s", (BooleanToEngStr(Data->WebDavLiberalEscaping)));
     }
     if (Data->FSProtocol == fsS3)
     {

@@ -293,6 +293,8 @@ void __fastcall TWebDAVFileSystem::InitSession(ne_session_s * Session)
   ne_set_connect_timeout(Session, Data->Timeout);
 
   ne_set_session_private(Session, SESSION_FS_KEY, this);
+
+  ne_set_session_flag(Session, NE_SESSFLAG_LIBERAL_ESCAPING, Data->WebDavLiberalEscaping);
 }
 //---------------------------------------------------------------------------
 void TWebDAVFileSystem::NeonOpen(UnicodeString & CorrectedUrl, const UnicodeString & Url)

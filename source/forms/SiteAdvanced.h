@@ -281,6 +281,9 @@ __published:
   TLabel *PuttySettingsLabel;
   TEdit *PuttySettingsEdit;
   TCheckBox *AuthGSSAPIKEXCheck;
+  TTabSheet *WebDavSheet;
+  TGroupBox *WebdavGroup;
+  TCheckBox *WebDavLiberalEscapingCheck;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall PageControlChange(TObject *Sender);
