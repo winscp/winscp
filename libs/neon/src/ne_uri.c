@@ -93,6 +93,9 @@
 
 /* any characters which should be path-escaped: */
 #define URI_ESCAPE ((URI_GENDELIM & ~(FS)) | URI_SUBDELIM | OT | PC)
+#ifdef WINSCP
+#define URI_NONPC (URI_ESCAPE & (~PC))
+#endif
 
 static const unsigned short uri_chars[256] = {
 /* 0xXX    x0      x2      x4      x6      x8      xA      xC      xE     */
@@ -493,6 +496,9 @@ char *ne_path_escapef(const char *path, unsigned int flags)
 
     if (flags & NE_PATH_NONRES) mask |= URI_ESCAPE;
     if (flags & NE_PATH_NONURI) mask |= URI_NONURI;
+    #ifdef WINSCP
+    if (flags & NE_PATH_NONPC) mask |= URI_NONPC;
+    #endif
 
     for (pnt = (const unsigned char *)path; *pnt != '\0'; pnt++) {
         count += path_escape_ch(*pnt, mask);

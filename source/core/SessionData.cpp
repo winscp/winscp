@@ -174,6 +174,8 @@ void __fastcall TSessionData::DefaultSettings()
 
   EncryptKey = UnicodeString();
 
+  WebDavLiberalEscaping = false;
+
   ProxyMethod = ::pmNone;
   ProxyHost = L"proxy";
   ProxyPort = ProxyPortNumber;
@@ -448,6 +450,8 @@ void __fastcall TSessionData::NonPersistant()
   PROPERTY(WinTitle); \
   \
   PROPERTY_HANDLER(EncryptKey, F); \
+  \
+  PROPERTY(WebDavLiberalEscaping); \
   \
   PROPERTY(PuttySettings); \
   \
@@ -849,6 +853,8 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
     SET_SESSION_PROPERTY_FROM(EncryptKey, AEncryptKey);
   }
 
+  WebDavLiberalEscaping = Storage->ReadBool(L"WebDavLiberalEscaping", WebDavLiberalEscaping);
+
   IsWorkspace = Storage->ReadBool(L"IsWorkspace", IsWorkspace);
   Link = Storage->ReadString(L"Link", Link);
   NameOverride = Storage->ReadString(L"NameOverride", NameOverride);
@@ -1186,6 +1192,8 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
 
     WRITE_DATA(Integer, MinTlsVersion);
     WRITE_DATA(Integer, MaxTlsVersion);
+
+    WRITE_DATA(Bool, WebDavLiberalEscaping);
 
     WRITE_DATA(Bool, IsWorkspace);
     WRITE_DATA(String, Link);
@@ -4105,6 +4113,11 @@ void __fastcall TSessionData::SetEncryptKey(UnicodeString avalue)
 {
   RawByteString value = EncryptPassword(avalue, UserName+HostName);
   SET_SESSION_PROPERTY(EncryptKey);
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetWebDavLiberalEscaping(bool value)
+{
+  SET_SESSION_PROPERTY(WebDavLiberalEscaping);
 }
 //---------------------------------------------------------------------
 UnicodeString __fastcall TSessionData::GetInfoTip()

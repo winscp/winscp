@@ -104,6 +104,10 @@ typedef enum ne_session_flag_e {
                              * to improve interoperability with
                              * SharePoint */
 
+    #ifdef WINSCP
+    NE_SESSFLAG_LIBERAL_ESCAPING,
+    #endif
+
     NE_SESSFLAG_LAST /* enum sentinel value */
 } ne_session_flag;
 
