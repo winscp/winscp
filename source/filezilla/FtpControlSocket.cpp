@@ -2777,6 +2777,14 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
         return;
       else
       {
+        if (nError)
+        {
+          LogMessage(FZ_LOG_INFO, L"Destroying data socket on error");
+        }
+        else
+        {
+          LogMessage(FZ_LOG_INFO, L"Destroying data socket after transfer completed");
+        }
         delete m_pTransferSocket;
         m_pTransferSocket=0;
       }
