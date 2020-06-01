@@ -116,6 +116,7 @@ protected:
   void SetFileExistsAction(int nAction, COverwriteRequestData * pData);
   void SetVerifyCertResult(int nResult, t_SslCertData * pData);
   void ResetOperation(int nSuccessful = -1);
+  void ResetTransferSocket(bool Error);
 
   void DoClose(int nError = 0);
   int GetReplyCode();

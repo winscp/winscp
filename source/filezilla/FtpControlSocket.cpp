@@ -1529,6 +1529,7 @@ int CFtpControlSocket::GetReplyCode()
 
 void CFtpControlSocket::DoClose(int nError /*=0*/)
 {
+  LogMessage(FZ_LOG_INFO, L"Connection closed");
   m_bCheckForTimeout=TRUE;
   m_pOwner->SetConnected(FALSE);
   m_bKeepAliveActive=FALSE;
@@ -2553,6 +2554,20 @@ void CFtpControlSocket::OnClose(int nErrorCode)
     DoClose();
 }
 
+void CFtpControlSocket::ResetTransferSocket(bool Error)
+{
+  if (Error)
+  {
+    LogMessage(FZ_LOG_INFO, L"Destroying data socket on error");
+  }
+  else
+  {
+    LogMessage(FZ_LOG_INFO, L"Destroying data socket after transfer completed");
+  }
+  delete m_pTransferSocket;
+  m_pTransferSocket = NULL;
+}
+
 void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFinish/*=FALSE*/,int nError/*=0*/)
 {
   USES_CONVERSION;
@@ -2709,11 +2724,14 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
       else if (nError&CSMODE_TRANSFERTIMEOUT)
         DoClose();
       else
+      {
         // we may get here when connection was closed, when the closure
         // was first detected while reading/writing,
         // when we abort file transfer with regular error,
         // possibly preventing automatic reconnect
+        LogMessage(FZ_LOG_INFO, L"Transfer error (%x)", nError);
         ResetOperation(FZ_REPLY_ERROR);
+      }
       return;
     }
     if (m_Operation.nOpState <= FILETRANSFER_LIST_PORTPASV)
@@ -2777,16 +2795,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
         return;
       else
       {
-        if (nError)
-        {
-          LogMessage(FZ_LOG_INFO, L"Destroying data socket on error");
-        }
-        else
-        {
-          LogMessage(FZ_LOG_INFO, L"Destroying data socket after transfer completed");
-        }
-        delete m_pTransferSocket;
-        m_pTransferSocket=0;
+        ResetTransferSocket(nError);
       }
     }
   }
@@ -3802,6 +3811,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
     }
     if (nReplyError)
     { //Error transferring the file
+      LogMessage(FZ_LOG_INFO, L"Transfer response error (%x)", nReplyError);
       ResetOperation(nReplyError);
       return;
     }
@@ -4304,6 +4314,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
   }
   if (bError)
   { //Error transferring the file
+    LogMessage(FZ_LOG_INFO, L"Transfer error");
     ResetOperation(FZ_REPLY_ERROR);
     return;
   }
@@ -4535,8 +4546,11 @@ void CFtpControlSocket::ResetOperation(int nSuccessful /*=FALSE*/)
     nSuccessful |= FZ_REPLY_ERROR;
 
   if (m_pTransferSocket)
+  {
+    ResetTransferSocket(!(nSuccessful & FZ_REPLY_ERROR));
     delete m_pTransferSocket;
-  m_pTransferSocket=0;
+    m_pTransferSocket=0;
+  }
 
   if (m_pDataFile)
     delete m_pDataFile;
