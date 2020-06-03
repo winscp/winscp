@@ -36,8 +36,7 @@ private:
   TNotifyEvent FOnChange;
   TFormatBytesStyle FFormatSizeBytes;
 
-  TQueueItemProxy * __fastcall QueueViewItemToQueueItem(
-    TListItem * Item, bool * Detail = NULL);
+  TQueueItemProxy * __fastcall QueueViewItemToQueueItem(TListItem * Item);
   void __fastcall QueueViewDblClick(TObject * Sender);
   void __fastcall QueueViewKeyDown(TObject * Sender, WORD & Key, TShiftState Shift);
   void __fastcall QueueViewCustomDrawItem(TCustomListView * Sender, TListItem * Item,

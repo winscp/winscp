@@ -40,29 +40,12 @@ __fastcall TQueueController::~TQueueController()
   FListView->OnCustomDrawItem = NULL;
 }
 //---------------------------------------------------------------------------
-TQueueItemProxy * __fastcall TQueueController::QueueViewItemToQueueItem(
-  TListItem * Item, bool * Detail)
+TQueueItemProxy * __fastcall TQueueController::QueueViewItemToQueueItem(TListItem * Item)
 {
   // previously this method was based on ActiveCount and DoneCount,
   // as if we were inconfident about validity of Item->Data pointers,
   // not sure why
-  TQueueItemProxy * QueueItem = static_cast<TQueueItemProxy *>(Item->Data);
-
-  if (Detail != NULL)
-  {
-    (*Detail) = false;
-    int Index = Item->Index;
-    if (Index > 0)
-    {
-      TQueueItemProxy * PrevQueueItem = static_cast<TQueueItemProxy *>(Item->Data);
-      if (PrevQueueItem == QueueItem)
-      {
-        (*Detail) = true;
-      }
-    }
-  }
-
-  return QueueItem;
+  return static_cast<TQueueItemProxy *>(Item->Data);
 }
 //---------------------------------------------------------------------------
 TQueueOperation __fastcall TQueueController::DefaultOperation()
