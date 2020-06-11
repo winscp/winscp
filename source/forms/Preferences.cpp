@@ -33,8 +33,6 @@
 #pragma link "PathLabel"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------
-const int BelowNormalLogLevels = 1;
-//---------------------------------------------------------------------
 bool __fastcall DoPreferencesDialog(TPreferencesMode APreferencesMode,
   TPreferencesDialogData * DialogData)
 {

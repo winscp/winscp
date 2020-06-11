@@ -372,4 +372,6 @@ extern const UnicodeString TlsFingerprintType;
 extern const UnicodeString FtpsCertificateStorageKey;
 extern const UnicodeString HttpsCertificateStorageKey;
 //---------------------------------------------------------------------------
+extern const int BelowNormalLogLevels;
+//---------------------------------------------------------------------------
 #endif

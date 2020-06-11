@@ -43,6 +43,8 @@ const UnicodeString DirectoryStatisticsCacheKey(L"DirectoryStatisticsCache");
 const UnicodeString CDCacheKey(L"CDCache");
 const UnicodeString BannersKey(L"Banners");
 //---------------------------------------------------------------------------
+const int BelowNormalLogLevels = 1;
+//---------------------------------------------------------------------------
 __fastcall TConfiguration::TConfiguration()
 {
   FCriticalSection = new TCriticalSection();
@@ -1737,7 +1739,7 @@ bool __fastcall TConfiguration::GetLogToFile()
 //---------------------------------------------------------------------
 void __fastcall TConfiguration::UpdateActualLogProtocol()
 {
-  FActualLogProtocol = FLogging ? FLogProtocol : 0;
+  FActualLogProtocol = FLogging ? FLogProtocol : (-BelowNormalLogLevels - 1);
 }
 //---------------------------------------------------------------------
 void __fastcall TConfiguration::SetLogProtocol(int value)
