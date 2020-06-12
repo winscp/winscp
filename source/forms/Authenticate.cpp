@@ -569,7 +569,7 @@ void __fastcall TAuthenticateForm::LogViewDrawItem(TWinControl * /*Control*/, in
   TRect & Rect, TOwnerDrawState /*State*/)
 {
   // Reset back to base colors. We do not want to render selection.
-  // + At initial phases the canvas font will not yet reflect he desktop font.
+  // + At initial phases the canvas font will not yet reflect the desktop font.
   LogView->Canvas->Font = LogView->Font;
   LogView->Canvas->Brush->Color = LogView->Color;
 
