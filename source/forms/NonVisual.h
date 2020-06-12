@@ -40,6 +40,7 @@
 #define fcSessionsTabs     0x25
 #define fcLocalPopup       0x26
 #define fcRemotePathComboBox 0x27
+#define fcQueueFileList    0x28
 
 #define fcExplorerMenuBand        0x31
 #define fcExplorerAddressBand     0x32
@@ -629,6 +630,10 @@ __published:    // IDE-managed Components
   TTBXItem *TBXItem81;
   TTBXSeparatorItem *TBXSeparatorItem12;
   TTBXItem *TBXItem82;
+  TAction *QueueFileListAction;
+  TTBXItem *TBXItem83;
+  TTBXItem *TBXItem84;
+  TTBXItem *TBXItem85;
   void __fastcall ExplorerActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall SessionIdleTimerTimer(TObject *Sender);

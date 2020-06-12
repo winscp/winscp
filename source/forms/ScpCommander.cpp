@@ -90,6 +90,8 @@ __fastcall TScpCommanderForm::TScpCommanderForm(TComponent* Owner)
   CopyPopup(QueueLabel, TopDock);
   CopyPopup(BottomDock, TopDock);
   CopyPopup(QueueSeparatorPanel, TopDock);
+  CopyPopup(QueueFileList, TopDock);
+  CopyPopup(QueueFileListSplitter, TopDock);
 
   LocalTopDock->PopupMenu = NonVisualDataModule->LocalPanelPopup;
   CopyPopup(LocalPathLabel, LocalTopDock);

@@ -1622,6 +1622,12 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = '&Toolbar'
       Hint = 'Hide/show queue list toolbar (on queue list panel)'
     end
+    object QueueFileListAction: TAction
+      Tag = 12
+      Category = 'Queue'
+      Caption = '&File List'
+      Hint = 'Hide/show full queue file list'
+    end
     object QueuePreferencesAction: TAction
       Tag = 12
       Category = 'Queue'
@@ -2361,6 +2367,9 @@ object NonVisualDataModule: TNonVisualDataModule
       object Toolbar5: TTBXItem
         Action = QueueToolbarAction
       end
+      object TBXItem85: TTBXItem
+        Action = QueueFileListAction
+      end
       object N70: TTBXSeparatorItem
       end
       object Customize5: TTBXItem
@@ -2503,6 +2512,9 @@ object NonVisualDataModule: TNonVisualDataModule
       end
       object Toolbar4: TTBXItem
         Action = QueueToolbarAction
+      end
+      object TBXItem84: TTBXItem
+        Action = QueueFileListAction
       end
       object N68: TTBXSeparatorItem
       end
@@ -2848,6 +2860,9 @@ object NonVisualDataModule: TNonVisualDataModule
       end
       object Toolbar3: TTBXItem
         Action = QueueToolbarAction
+      end
+      object TBXItem83: TTBXItem
+        Action = QueueFileListAction
       end
       object N65: TTBXSeparatorItem
       end

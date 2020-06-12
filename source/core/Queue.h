@@ -53,6 +53,7 @@ class TQueueItem;
 class TTerminalQueue;
 class TQueueItemProxy;
 class TTerminalQueueStatus;
+class TQueueFileList;
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure * TQueueListUpdate)
   (TTerminalQueue * Queue);
@@ -124,7 +125,7 @@ protected:
   void __fastcall FreeItemsList(TList * List);
   void __fastcall UpdateStatusForList(
     TTerminalQueueStatus * Status, TList * List, TTerminalQueueStatus * Current);
-  bool __fastcall ItemGetData(TQueueItem * Item, TQueueItemProxy * Proxy);
+  bool __fastcall ItemGetData(TQueueItem * Item, TQueueItemProxy * Proxy, TQueueFileList * FileList);
   bool __fastcall ItemProcessUserAction(TQueueItem * Item, void * Arg);
   bool __fastcall ItemMove(TQueueItem * Item, TQueueItem * BeforeItem);
   bool __fastcall ItemExecuteNow(TQueueItem * Item);
@@ -203,6 +204,7 @@ protected:
   virtual void __fastcall DoExecute(TTerminal * Terminal) = 0;
   void __fastcall SetProgress(TFileOperationProgressType & ProgressData);
   void __fastcall GetData(TQueueItemProxy * Proxy);
+  virtual bool __fastcall UpdateFileList(TQueueFileList * FileList);
   void __fastcall SetCPSLimit(unsigned long CPSLimit);
   unsigned long __fastcall GetCPSLimit();
   virtual unsigned long __fastcall DefaultCPSLimit();
@@ -220,6 +222,7 @@ friend class TTerminalQueue;
 
 public:
   bool __fastcall Update();
+  bool __fastcall UpdateFileList(TQueueFileList * FileList);
   bool __fastcall ProcessUserAction();
   bool __fastcall Move(bool Sooner);
   bool __fastcall Move(TQueueItemProxy * BeforeItem);
@@ -274,6 +277,8 @@ public:
   __property TQueueItemProxy * Items[int Index] = { read = GetItem };
 
   bool __fastcall IsOnlyOneActiveAndNoPending();
+
+  bool __fastcall UpdateFileList(TQueueItemProxy * ItemProxy, TQueueFileList * FileList);
 
 protected:
   __fastcall TTerminalQueueStatus();
@@ -339,13 +344,14 @@ protected:
   int FParams;
   bool FParallel;
   DWORD FLastParallelOperationAdded;
-  TParallelOperation * FParallelOperation;
+  std::unique_ptr<TParallelOperation> FParallelOperation;
 
   virtual unsigned long __fastcall DefaultCPSLimit();
   virtual void __fastcall DoExecute(TTerminal * Terminal);
   virtual void __fastcall DoTransferExecute(TTerminal * Terminal, TParallelOperation * ParallelOperation) = 0;
   virtual void __fastcall ProgressUpdated();
   virtual TQueueItem * __fastcall CreateParallelOperation();
+  virtual bool __fastcall UpdateFileList(TQueueFileList * FileList);
 };
 //---------------------------------------------------------------------------
 class TUploadQueueItem : public TTransferQueueItem
@@ -454,6 +460,25 @@ private:
   void __fastcall TerminalStartReadDirectory(TObject * Sender);
   void __fastcall TerminalReadDirectoryProgress(TObject * Sender, int Progress, int ResolvedLinks, bool & Cancel);
   void __fastcall TerminalInitializeLog(TObject * Sender);
+};
+//---------------------------------------------------------------------------
+enum TQueueFileState { qfsQueued = 0, qfsProcessed = 1 };
+//---------------------------------------------------------------------------
+class TQueueFileList
+{
+friend class TParallelOperation;
+public:
+  TQueueFileList();
+  void Clear();
+  void Add(const UnicodeString & FileName, int State);
+  UnicodeString GetFileName(int Index) const;
+  int GetState(int Index) const;
+  void SetState(int Index, int State);
+  int GetCount() const;
+private:
+  std::unique_ptr<TStrings> FList;
+  TParallelOperation * FLastParallelOperation;
+  int FLastParallelOperationVersion;
 };
 //---------------------------------------------------------------------------
 #endif

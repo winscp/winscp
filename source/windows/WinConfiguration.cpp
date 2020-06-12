@@ -652,6 +652,9 @@ void __fastcall TWinConfiguration::Default()
   FQueueView.LastHideShow = qvHideWhenEmpty;
   FQueueView.ToolBar = true;
   FQueueView.Label = true;
+  FQueueView.FileList = false;
+  FQueueView.FileListHeight = 90;
+  FQueueView.FileListHeightPixelsPerInch = USER_DEFAULT_SCREEN_DPI;
 
   FEnableQueueByDefault = true;
 
@@ -1054,6 +1057,9 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Integer,  QueueView.LastHideShow); \
     KEY(Bool,     QueueView.ToolBar); \
     KEY(Bool,     QueueView.Label); \
+    KEY(Bool,     QueueView.FileList); \
+    KEY(Integer,  QueueView.FileListHeight); \
+    KEY(Integer,  QueueView.FileListHeightPixelsPerInch); \
   ); \
   BLOCK(L"Interface\\Updates", CANCREATE, \
     KEY(Integer,  FUpdates.Period); \

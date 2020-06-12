@@ -722,8 +722,7 @@ TTerminalQueueStatus * __fastcall TTerminalQueue::CreateStatus(TTerminalQueueSta
   return Status;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TTerminalQueue::ItemGetData(TQueueItem * Item,
-  TQueueItemProxy * Proxy)
+bool __fastcall TTerminalQueue::ItemGetData(TQueueItem * Item, TQueueItemProxy * Proxy, TQueueFileList * FileList)
 {
   // to prevent deadlocks when closing queue from other thread
   bool Result = !FFinished;
@@ -734,7 +733,14 @@ bool __fastcall TTerminalQueue::ItemGetData(TQueueItem * Item,
     Result = (FDoneItems->IndexOf(Item) >= 0) || (FItems->IndexOf(Item) >= 0);
     if (Result)
     {
-      Item->GetData(Proxy);
+      if (FileList != NULL)
+      {
+        Result = Item->UpdateFileList(FileList);
+      }
+      else
+      {
+        Item->GetData(Proxy);
+      }
     }
   }
 
@@ -1713,6 +1719,12 @@ void __fastcall TQueueItem::GetData(TQueueItemProxy * Proxy)
   }
 }
 //---------------------------------------------------------------------------
+bool __fastcall TQueueItem::UpdateFileList(TQueueFileList *)
+{
+  // noop - implemented in TTransferQueueItem
+  return false;
+}
+//---------------------------------------------------------------------------
 void __fastcall TQueueItem::Execute(TTerminalItem * TerminalItem)
 {
   {
@@ -1796,7 +1808,7 @@ bool __fastcall TQueueItemProxy::Update()
 
   TQueueItem::TStatus PrevStatus = Status;
 
-  bool Result = FQueue->ItemGetData(FQueueItem, this);
+  bool Result = FQueue->ItemGetData(FQueueItem, this, NULL);
 
   if ((FQueueStatus != NULL) && (PrevStatus != Status))
   {
@@ -1804,6 +1816,11 @@ bool __fastcall TQueueItemProxy::Update()
   }
 
   return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TQueueItemProxy::UpdateFileList(TQueueFileList * FileList)
+{
+  return FQueue->ItemGetData(FQueueItem, NULL, FileList);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TQueueItemProxy::ExecuteNow()
@@ -2028,6 +2045,24 @@ TQueueItemProxy * __fastcall TTerminalQueueStatus::FindByQueueItem(
   return NULL;
 }
 //---------------------------------------------------------------------------
+bool __fastcall TTerminalQueueStatus::UpdateFileList(TQueueItemProxy * ItemProxy, TQueueFileList * FileList)
+{
+  bool Result;
+  if (ItemProxy != NULL)
+  {
+    Result = ItemProxy->UpdateFileList(FileList);
+  }
+  else
+  {
+    Result = (FileList->GetCount() > 0);
+    if (Result)
+    {
+      FileList->Clear();
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 // TBootstrapQueueItem
 //---------------------------------------------------------------------------
 __fastcall TBootstrapQueueItem::TBootstrapQueueItem()
@@ -2131,15 +2166,14 @@ void __fastcall TTransferQueueItem::DoExecute(TTerminal * Terminal)
   TLocatedQueueItem::DoExecute(Terminal);
 
   DebugAssert(Terminal != NULL);
-  TParallelOperation ParallelOperation(FInfo->Side);
-  FParallelOperation = &ParallelOperation;
+  FParallelOperation.reset(new TParallelOperation(FInfo->Side));
   try
   {
-    DoTransferExecute(Terminal, FParallelOperation);
+    DoTransferExecute(Terminal, FParallelOperation.get());
   }
   __finally
   {
-    FParallelOperation = NULL;
+    FParallelOperation->WaitFor();
   }
 }
 //---------------------------------------------------------------------------
@@ -2155,7 +2189,7 @@ void __fastcall TTransferQueueItem::ProgressUpdated()
 
     {
       TGuard Guard(FSection);
-      DebugAssert(FParallelOperation != NULL);
+      DebugAssert(FParallelOperation.get() != NULL);
       // Won't be initialized, if the operation is not eligible for parallel transfers (like cpDelete).
       // We can probably move the check outside of the guard.
       if (FParallelOperation->IsInitialized())
@@ -2192,10 +2226,25 @@ void __fastcall TTransferQueueItem::ProgressUpdated()
 //---------------------------------------------------------------------------
 TQueueItem * __fastcall TTransferQueueItem::CreateParallelOperation()
 {
-  DebugAssert(FParallelOperation != NULL);
+  DebugAssert(FParallelOperation.get() != NULL);
 
   FParallelOperation->AddClient();
-  return new TParallelTransferQueueItem(this, FParallelOperation);
+  return new TParallelTransferQueueItem(this, FParallelOperation.get());
+}
+//---------------------------------------------------------------------------
+bool __fastcall TTransferQueueItem::UpdateFileList(TQueueFileList * FileList)
+{
+  TGuard Guard(FSection);
+  bool Result;
+  if ((FParallelOperation.get() != NULL) && FParallelOperation->IsInitialized())
+  {
+    Result = FParallelOperation->UpdateFileList(FileList);
+  }
+  else
+  {
+    Result = false;
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 // TUploadQueueItem
@@ -2893,4 +2942,43 @@ bool __fastcall TTerminalThread::Release()
 bool __fastcall TTerminalThread::Finished()
 {
   return TSimpleThread::Finished() || FAbandoned;
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+TQueueFileList::TQueueFileList() :
+  FList(new TStringList())
+{
+  Clear();
+}
+//---------------------------------------------------------------------------
+void TQueueFileList::Clear()
+{
+  FList->Clear();
+  FLastParallelOperation = NULL;
+  FLastParallelOperationVersion = -1;
+}
+//---------------------------------------------------------------------------
+void TQueueFileList::Add(const UnicodeString & FileName, int State)
+{
+  FList->AddObject(FileName, reinterpret_cast<TObject *>(State));
+}
+//---------------------------------------------------------------------------
+UnicodeString TQueueFileList::GetFileName(int Index) const
+{
+  return FList->Strings[Index];
+}
+//---------------------------------------------------------------------------
+int TQueueFileList::GetState(int Index) const
+{
+  return reinterpret_cast<int>(FList->Objects[Index]);
+}
+//---------------------------------------------------------------------------
+void TQueueFileList::SetState(int Index, int State)
+{
+  FList->Objects[Index] = reinterpret_cast<TObject *>(State);
+}
+//---------------------------------------------------------------------------
+int TQueueFileList::GetCount() const
+{
+  return FList->Count;
 }

@@ -483,6 +483,9 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPDACT(QueueToolbarAction,
     ((TAction *)Action)->Enabled = ScpExplorer->ComponentVisible[fcQueueView];
     ((TAction *)Action)->Checked = ScpExplorer->ComponentVisible[fcQueueToolbar])
+  UPDACT(QueueFileListAction,
+    ((TAction *)Action)->Enabled = ScpExplorer->ComponentVisible[fcQueueView];
+    ((TAction *)Action)->Checked = ScpExplorer->ComponentVisible[fcQueueFileList])
   ;
 }
 //---------------------------------------------------------------------------
@@ -789,6 +792,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(QueueSuspendOnceEmptyAction2, SetQueueOnceEmptyAction(QueueSuspendOnceEmptyAction2))
     EXE(QueueShutDownOnceEmptyAction2, SetQueueOnceEmptyAction(QueueShutDownOnceEmptyAction2))
     EXECOMP(QueueToolbar)
+    EXECOMP(QueueFileList)
     EXE(QueueItemSpeedAction, )
     ;
   }

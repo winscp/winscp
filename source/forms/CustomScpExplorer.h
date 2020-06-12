@@ -106,6 +106,8 @@ __published:
   TApplicationEvents *ApplicationEvents;
   TTBXToolbar *ReconnectToolbar;
   TTBXItem *TBXItem254;
+  TSplitter *QueueFileListSplitter;
+  TListView *QueueFileList;
   void __fastcall ApplicationMinimize(TObject * Sender);
   void __fastcall ApplicationRestore(TObject * Sender);
   void __fastcall RemoteDirViewContextPopup(TObject *Sender,
@@ -207,6 +209,13 @@ __published:
   void __fastcall DirViewChangeFocus(TObject *Sender, TListItem *Item);
   void __fastcall RemoteStatusBarMouseDown(TObject *Sender, TMouseButton Button, TShiftState Shift, int X, int Y);
   void __fastcall RemoteDirViewResize(TObject *Sender);
+  void __fastcall QueueFileListSplitterCanResize(TObject *Sender, int &NewSize, bool &Accept);
+  void __fastcall QueueView3Change(TObject *Sender, TListItem *Item, TItemChange Change);
+  void __fastcall QueueLabelGetStatus(TCustomPathLabel *Sender, bool &Active);
+  void __fastcall QueueFileListEnterExit(TObject *Sender);
+  void __fastcall QueueFileListData(TObject *Sender, TListItem *Item);
+  void __fastcall QueueFileListCustomDrawItem(TCustomListView *Sender, TListItem *Item, TCustomDrawState State, bool &DefaultDraw);
+  void __fastcall QueueFileListResize(TObject *Sender);
 
 private:
   TManagedTerminal * FTerminal;
@@ -215,6 +224,7 @@ private:
   TCriticalSection * FQueueStatusSection;
   bool FQueueStatusInvalidated;
   bool FQueueItemInvalidated;
+  bool FQueueStatusUpdating;
   bool FFormRestored;
   bool FAutoOperation;
   TFileOperationFinishedEvent FOnFileOperationFinished;
@@ -281,6 +291,7 @@ private:
   TTerminal * FFileFindTerminal;
   UnicodeString FFileColorsCurrent;
   bool FInvalid;
+  std::auto_ptr<TQueueFileList> FQueueFileList;
   bool FStarted;
 
   bool __fastcall GetEnableFocusedOperation(TOperationSide Side, int FilesOnly);
@@ -300,6 +311,7 @@ private:
   void __fastcall AdHocCustomCommandValidate(const TCustomCommandType & Command);
   void __fastcall SetDockAllowDrag(bool value);
   void __fastcall QueueSplitterDblClick(TObject * Sender);
+  void __fastcall QueueFileListSplitterDblClick(TObject * Sender);
   void __fastcall AddQueueItem(TTerminalQueue * Queue, TTransferDirection Direction,
     TStrings * FileList, const UnicodeString TargetDirectory,
     const TGUICopyParamType & CopyParam, int Params);
@@ -332,6 +344,9 @@ private:
   void __fastcall LocalBookmarkClick(TObject * Sender);
   void __fastcall RemoteBookmarkClick(TObject * Sender);
   void __fastcall InitControls();
+  void __fastcall UpdateQueueFileList();
+  void __fastcall QueueFileListColumnAutoSize();
+  void __fastcall AdjustQueueLayout();
 
 protected:
   TOperationSide FCurrentSide;
@@ -691,6 +706,8 @@ protected:
   void __fastcall CenterReconnectToolbar();
   void __fastcall DoOpenFolderOrWorkspace(const UnicodeString & Name, bool ConnectFirstTerminal);
   virtual void __fastcall ThemeChanged();
+  int __fastcall GetStaticQueuePanelComponentsHeight();
+  int __fastcall GetMinQueueViewHeight();
   void __fastcall DetachTerminal(TObject * ATerminal);
 
 public:

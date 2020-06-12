@@ -212,6 +212,7 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   FDoNotIdleCurrentTerminal = 0;
   FIncrementalSearching = 0;
   FIncrementalSearchHaveNext = false;
+  FQueueFileList.reset(new TQueueFileList());
 
   FEditorManager = new TEditorManager();
   FEditorManager->OnFileChange = ExecutedFileChanged;
@@ -225,6 +226,7 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   FQueueStatusSection = new TCriticalSection();
   FQueueStatusInvalidated = false;
   FQueueItemInvalidated = false;
+  FQueueStatusUpdating = false;
   FQueueActedItem = NULL;
   FQueueController = new TQueueController(QueueView3);
 
@@ -260,11 +262,14 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   UseDesktopFont(RemoteDirView);
   UseDesktopFont(RemoteDriveView);
   UseDesktopFont(QueueView3);
+  UseDesktopFont(QueueFileList);
   UseDesktopFont(QueueLabel);
   UseDesktopFont(RemoteStatusBar);
 
   reinterpret_cast<TLabel*>(QueueSplitter)->OnDblClick = QueueSplitterDblClick;
   QueueSplitter->ShowHint = true;
+  reinterpret_cast<TLabel*>(QueueFileListSplitter)->OnDblClick = QueueFileListSplitterDblClick;
+  QueueFileListSplitter->ShowHint = true;
   RemotePanelSplitter->ShowHint = true;
 
   UpdateImages();
@@ -277,7 +282,6 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   FSessionColors->ColorDepth = cd32Bit;
   AddFixedSessionImages();
   SessionsPageControl->Images = FSessionColors;
-  QueueLabel->FocusControl = QueueView3;
   UpdateQueueLabel();
   FRemoteDirViewWasFocused = true;
 
@@ -687,7 +691,11 @@ void __fastcall TCustomScpExplorerForm::UpdateQueueStatus(bool QueueChanging)
     Configuration->Usage->SetMax(L"MaxQueueLength", FMaxQueueLength);
   }
 
-  FQueueController->UpdateQueueStatus(FQueueStatus);
+  {
+    TAutoFlag Flag(FQueueStatusUpdating);
+    FQueueController->UpdateQueueStatus(FQueueStatus);
+  }
+  UpdateQueueFileList();
   SetQueueProgress();
 
   UpdateQueueView();
@@ -746,6 +754,7 @@ void __fastcall TCustomScpExplorerForm::QueueChanged()
 {
   if (FQueueStatus != NULL)
   {
+    // UpdateFileList implementation relies on the status being recreated when session changes
     delete FQueueStatus;
     FQueueStatus = NULL;
   }
@@ -844,6 +853,7 @@ void __fastcall TCustomScpExplorerForm::RefreshQueueItems()
     {
       NonVisualDataModule->UpdateNonVisibleActions();
       SetQueueProgress();
+      UpdateQueueFileList();
     }
   }
 }
@@ -1279,16 +1289,27 @@ void __fastcall TCustomScpExplorerForm::RestoreParams()
   LoadListViewStr(QueueView3, WinConfiguration->QueueView.Layout);
   QueueDock->Visible = WinConfiguration->QueueView.ToolBar;
   QueueLabel->Visible = WinConfiguration->QueueView.Label;
+  QueueFileList->Visible = WinConfiguration->QueueView.FileList;
+  QueueFileList->Height =
+    LoadDimension(WinConfiguration->QueueView.FileListHeight, WinConfiguration->QueueView.FileListHeightPixelsPerInch, this);
+  if (QueueFileList->Visible)
+  {
+    AdjustQueueLayout();
+  }
   UpdateCustomCommandsToolbar();
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::StoreParams()
 {
+  int APixelsPerInch = GetControlPixelsPerInch(this);
   WinConfiguration->QueueView.Height = QueuePanel->Height;
-  WinConfiguration->QueueView.HeightPixelsPerInch = GetControlPixelsPerInch(this);
+  WinConfiguration->QueueView.HeightPixelsPerInch = APixelsPerInch;
   WinConfiguration->QueueView.Layout = GetListViewStr(QueueView3);
   WinConfiguration->QueueView.ToolBar = QueueDock->Visible;
   WinConfiguration->QueueView.Label = QueueLabel->Visible;
+  WinConfiguration->QueueView.FileList = QueueFileList->Visible;
+  WinConfiguration->QueueView.FileListHeight = QueueFileList->Height;
+  WinConfiguration->QueueView.FileListHeightPixelsPerInch = APixelsPerInch;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::CreateParams(TCreateParams & Params)
@@ -5068,6 +5089,26 @@ void __fastcall TCustomScpExplorerForm::ComponentShowing(Byte Component, bool va
     {
       UpdateCustomCommandsToolbar();
     }
+
+    if (Component == fcQueueFileList)
+    {
+      DebugAssert(!QueueFileListSplitter->Visible);
+      AdjustQueueLayout();
+      UpdateQueueFileList();
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::AdjustQueueLayout()
+{
+  int MinHeightLimit =
+    GetStaticQueuePanelComponentsHeight() +
+    QueueFileListSplitter->Height +
+    QueueFileList->Height +
+    GetMinQueueViewHeight();
+  if (QueuePanel->ClientHeight < MinHeightLimit)
+  {
+    QueuePanel->ClientHeight = MinHeightLimit;
   }
 }
 //---------------------------------------------------------------------------
@@ -5163,7 +5204,13 @@ void __fastcall TCustomScpExplorerForm::FixControlsPlacement()
     DirView(osOther)->ItemFocused->MakeVisible(false);
   }
   QueueSplitter->Visible = QueuePanel->Visible;
+  QueueFileListSplitter->Visible = QueueFileList->Visible;
   RemotePanelSplitter->Visible = RemoteDrivePanel->Visible;
+
+  TControl * QueueControlsOrder[] =
+    { QueueDock, QueueView3, QueueFileListSplitter, QueueFileList };
+  SetVerticalControlsOrder(QueueControlsOrder, LENOF(QueueControlsOrder));
+
 }
 //---------------------------------------------------------------------------
 TControl * __fastcall TCustomScpExplorerForm::GetComponent(Byte Component)
@@ -5175,6 +5222,7 @@ TControl * __fastcall TCustomScpExplorerForm::GetComponent(Byte Component)
     case fcQueueToolbar: return QueueDock;
     case fcRemoteTree: return RemoteDrivePanel;
     case fcSessionsTabs: return SessionsPageControl;
+    case fcQueueFileList: return QueueFileList;
     default: return NULL;
   }
 }
@@ -7899,6 +7947,19 @@ void __fastcall TCustomScpExplorerForm::QueueView3ContextPopup(
   return TopDock->Height + QueueSplitter->Height;
 }
 //---------------------------------------------------------------------------
+int __fastcall TCustomScpExplorerForm::GetStaticQueuePanelComponentsHeight()
+{
+  return
+    (QueueFileListSplitter->Visible ? QueueFileListSplitter->Height : 0) +
+    (QueueDock->Visible ? QueueDock->Height : 0) +
+    (QueueLabel->Visible ? QueueLabel->Height : 0);
+}
+//---------------------------------------------------------------------------
+int __fastcall TCustomScpExplorerForm::GetMinQueueViewHeight()
+{
+  return ScaleByTextHeight(this, 48);
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::QueueSplitterCanResize(
   TObject * /*Sender*/, int & NewSize, bool & Accept)
 {
@@ -7906,17 +7967,35 @@ void __fastcall TCustomScpExplorerForm::QueueSplitterCanResize(
   // resize the panel with strange value arrives, make sure it is ignored
   if (ComponentVisible[fcQueueView])
   {
-    int HeightLimit = ClientHeight - GetStaticComponentsHeight() -
-      RemotePanel->Constraints->MinHeight;
-
-    if (NewSize > HeightLimit)
+    int MaxHeightLimit = ClientHeight - GetStaticComponentsHeight() - RemotePanel->Constraints->MinHeight;
+    if (NewSize > MaxHeightLimit)
     {
-      NewSize = HeightLimit;
+      NewSize = MaxHeightLimit;
+    }
+
+    int MinHeightLimit =
+      GetStaticQueuePanelComponentsHeight() +
+      (QueueFileList->Visible ? QueueFileList->Height : 0) +
+      GetMinQueueViewHeight();
+    if (NewSize < MinHeightLimit)
+    {
+      NewSize = MinHeightLimit;
     }
   }
   else
   {
     Accept = false;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::QueueFileListSplitterCanResize(TObject *, int & NewSize, bool &)
+{
+  int TotalHeight = GetStaticQueuePanelComponentsHeight() + NewSize;
+  int QueueViewHeight = QueuePanel->ClientHeight - TotalHeight;
+
+  if (QueueViewHeight < GetMinQueueViewHeight())
+  {
+    NewSize -= (GetMinQueueViewHeight() - QueueViewHeight);
   }
 }
 //---------------------------------------------------------------------------
@@ -8605,6 +8684,9 @@ void __fastcall TCustomScpExplorerForm::UpdateControls()
     QueueView3->Enabled = HasTerminal && Terminal->IsCapable[fcBackgroundTransfers];
     QueueView3->Color = QueueView3->Enabled ? GetWindowColor() : DisabledPanelColor();
     QueueView3->Font->Color =  GetWindowTextColor(QueueView3->Color);
+    QueueFileList->Enabled = QueueView3->Enabled;
+    QueueFileList->Color = QueueView3->Color;
+    QueueFileList->Font->Color = QueueView3->Font->Color;
     QueueLabelUpdateStatus();
 
     RemoteDirView->DarkMode = WinConfiguration->UseDarkTheme();
@@ -8934,6 +9016,11 @@ void __fastcall TCustomScpExplorerForm::QueueSplitterDblClick(TObject * /*Sender
   // when queue panel is resized here directly, the status bar is stretched
   // over whole space the panel occupied
   PostComponentHide(fcQueueView);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::QueueFileListSplitterDblClick(TObject *)
+{
+  ComponentVisible[fcQueueFileList] = false;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::ThemeChanged()
@@ -10753,6 +10840,84 @@ void __fastcall TCustomScpExplorerForm::BrowseFile()
   {
     RemoteDirView->ItemFocused->Selected = true;
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::UpdateQueueFileList()
+{
+  if (!FQueueStatusUpdating)
+  {
+    bool Refresh;
+    if ((FQueueStatus != NULL) && QueueFileList->Visible)
+    {
+      Refresh = FQueueStatus->UpdateFileList(FQueueController->GetFocusedPrimaryItem(), FQueueFileList.get());
+    }
+    else
+    {
+      if (FQueueFileList->GetCount() > 0)
+      {
+        FQueueFileList->Clear();
+        Refresh = true;
+      }
+    }
+    int Count = FQueueFileList->GetCount();
+    if (QueueFileList->Items->Count != Count)
+    {
+      DebugAssert(Refresh);
+      QueueFileList->Items->Count = Count;
+    }
+    if (Refresh)
+    {
+      QueueFileList->Invalidate();
+    }
+    DebugAssert(QueueFileList->Items->Count == FQueueFileList->GetCount());
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::QueueFileListData(TObject *, TListItem * Item)
+{
+  Item->Caption = FQueueFileList->GetFileName(Item->Index);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::QueueView3Change(TObject *, TListItem *, TItemChange)
+{
+  // should be improved, once we do not refresh the list when switching between details of the same batch
+  if (QueueFileList->Items->Count > 0)
+  {
+    QueueFileList->Items->Item[0]->MakeVisible(false);
+  }
+  UpdateQueueFileList();
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::QueueLabelGetStatus(TCustomPathLabel *, bool & Active)
+{
+  Active = QueueView3->Focused() || QueueFileList->Focused();
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::QueueFileListEnterExit(TObject *)
+{
+  QueueLabelUpdateStatus();
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::QueueFileListCustomDrawItem(
+  TCustomListView * Sender, TListItem * Item, TCustomDrawState, bool & DebugUsedArg(DefaultDraw))
+{
+  int State = FQueueFileList->GetState(Item->Index);
+  if (State == qfsProcessed)
+  {
+    Sender->Canvas->Font->Color = clGrayText;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::QueueFileListColumnAutoSize()
+{
+  // We do not really need whole width, so we always preemptivelly keep free space for the vertical scrollbar
+  QueueFileList->Column[0]->Width =
+    QueueFileList->ClientWidth - GetSystemMetricsForControl(QueueFileList, SM_CXVSCROLL) - ScaleByTextHeight(QueueFileList, 8);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::QueueFileListResize(TObject *)
+{
+  QueueFileListColumnAutoSize();
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::CloseApp()
