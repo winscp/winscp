@@ -634,3 +634,20 @@ bool __fastcall TQueueController::NeedRefresh()
   RememberConfiguration();
   return Result;
 }
+//---------------------------------------------------------------------------
+TQueueItemProxy * __fastcall TQueueController::GetFocusedPrimaryItem()
+{
+  TQueueItemProxy * Result = NULL;
+  TListItem * PrimaryItemOfFocused = FListView->ItemFocused;
+  if (PrimaryItemOfFocused != NULL)
+  {
+    while (!QueueViewItemToQueueItem(PrimaryItemOfFocused)->Info->Primary &&
+           DebugAlwaysTrue(PrimaryItemOfFocused->Index > 0))
+    {
+      PrimaryItemOfFocused = FListView->Items->Item[PrimaryItemOfFocused->Index - 1];
+    }
+    Result = QueueViewItemToQueueItem(PrimaryItemOfFocused);
+  }
+
+  return Result;
+}

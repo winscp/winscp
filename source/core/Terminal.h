@@ -815,6 +815,8 @@ public:
   TObject * GetObject(int Index) const;
   bool IsDir(int Index) const;
   bool IsRecursed(int Index) const;
+  int GetState(int Index) const;
+  void SetState(int Index, int State);
 
 private:
   struct TFileData
@@ -823,10 +825,13 @@ private:
     TObject * Object;
     bool Dir;
     bool Recursed;
+    int State;
   };
   typedef std::vector<TFileData> TFileDataList;
   TFileDataList FList;
 };
+//---------------------------------------------------------------------------
+class TQueueFileList;
 //---------------------------------------------------------------------------
 class TParallelOperation
 {
@@ -847,6 +852,7 @@ public:
     TTerminal * Terminal, UnicodeString & FileName, TObject *& Object, UnicodeString & TargetDir,
     bool & Dir, bool & Recursed);
   void Done(const UnicodeString & FileName, bool Dir, bool Success);
+  bool UpdateFileList(TQueueFileList * UpdateFileList);
 
   __property TOperationSide Side = { read = FSide };
   __property const TCopyParamType * CopyParam = { read = FCopyParam };
@@ -863,6 +869,7 @@ private:
   };
 
   std::unique_ptr<TStrings> FFileList;
+  int FListIndex;
   int FIndex;
   typedef std::map<UnicodeString, TDirectoryData> TDirectories;
   TDirectories FDirectories;
@@ -875,8 +882,10 @@ private:
   TFileOperationProgressType * FMainOperationProgress;
   TOperationSide FSide;
   UnicodeString FMainName;
+  int FVersion;
 
   bool CheckEnd(TCollectedFileList * Files);
+  TCollectedFileList * GetFileList(int Index);
 };
 //---------------------------------------------------------------------------
 struct TLocalFileHandle

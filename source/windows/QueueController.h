@@ -27,6 +27,8 @@ public:
 
   bool __fastcall NeedRefresh();
 
+  TQueueItemProxy * __fastcall GetFocusedPrimaryItem();
+
   __property TNotifyEvent OnChange = { read = FOnChange, write = FOnChange };
   __property bool Empty = { read = GetEmpty };
 

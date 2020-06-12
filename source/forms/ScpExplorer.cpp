@@ -50,6 +50,8 @@ __fastcall TScpExplorerForm::TScpExplorerForm(TComponent* Owner)
   CopyPopup(BottomDock, TopDock);
   CopyPopup(LeftDock, TopDock);
   CopyPopup(RightDock, TopDock);
+  CopyPopup(QueueFileList, TopDock);
+  CopyPopup(QueueFileListSplitter, TopDock);
   reinterpret_cast<TLabel*>(RemotePanelSplitter)->OnDblClick = RemotePanelSplitterDblClick;
 
   QueuePanel->Parent = RemotePanel;

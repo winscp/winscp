@@ -615,6 +615,7 @@ int TCollectedFileList::Add(const UnicodeString & FileName, TObject * Object, bo
   Data.Object = Object;
   Data.Dir = Dir;
   Data.Recursed = true;
+  Data.State = 0;
   FList.push_back(Data);
   return Count() - 1;
 }
@@ -654,6 +655,16 @@ bool TCollectedFileList::IsRecursed(int Index) const
   return FList[Index].Recursed;
 }
 //---------------------------------------------------------------------------
+int TCollectedFileList::GetState(int Index) const
+{
+  return FList[Index].State;
+}
+//---------------------------------------------------------------------------
+void TCollectedFileList::SetState(int Index, int State)
+{
+  FList[Index].State = State;
+}
+//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 TParallelOperation::TParallelOperation(TOperationSide Side)
 {
@@ -664,6 +675,7 @@ TParallelOperation::TParallelOperation(TOperationSide Side)
   FMainOperationProgress = NULL;
   DebugAssert((Side == osLocal) || (Side == osRemote));
   FSide = Side;
+  FVersion = 0;
 }
 //---------------------------------------------------------------------------
 void TParallelOperation::Init(
@@ -681,6 +693,7 @@ void TParallelOperation::Init(
   FParams = Params;
   FMainOperationProgress = MainOperationProgress;
   FMainName = MainName;
+  FListIndex = 0;
   FIndex = 0;
 }
 //---------------------------------------------------------------------------
@@ -773,7 +786,7 @@ void TParallelOperation::Done(const UnicodeString & FileName, bool Dir, bool Suc
         // This is actually not useful at the moment, as when creating directory fails and "Skip" is pressed,
         // the current code in CopyToRemote/CreateDirectory will behave as, if it succedded, so Successs will be true here.
         FDirectories.erase(DirectoryIterator);
-        if (FFileList->Count > 0)
+        if (FFileList->Count > FListIndex)
         {
           UnicodeString FileNameWithSlash;
           if (FSide == osLocal)
@@ -787,7 +800,7 @@ void TParallelOperation::Done(const UnicodeString & FileName, bool Dir, bool Suc
 
           // It can actually be a different list than the one the directory was taken from,
           // but that does not matter that much. It should not happen anyway, as more lists should be in scripting only.
-          TCollectedFileList * Files = DebugNotNull(dynamic_cast<TCollectedFileList *>(FFileList->Objects[0]));
+          TCollectedFileList * Files = GetFileList(FListIndex);
           int Index = 0;
           while (Index < Files->Count())
           {
@@ -796,6 +809,8 @@ void TParallelOperation::Done(const UnicodeString & FileName, bool Dir, bool Suc
               // We should add the file to "skip" counters in the OperationProgress,
               // but an interactive foreground transfer is not doing that either yet.
               Files->Delete(Index);
+              // Force re-update
+              FVersion++;
               if (Index < FIndex)
               {
                 FIndex--;
@@ -817,10 +832,15 @@ bool TParallelOperation::CheckEnd(TCollectedFileList * Files)
   bool Result = (FIndex >= Files->Count());
   if (Result)
   {
-    FFileList->Delete(0);
+    FListIndex++;
     FIndex = 0;
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+TCollectedFileList * TParallelOperation::GetFileList(int Index)
+{
+  return DebugNotNull(dynamic_cast<TCollectedFileList *>(FFileList->Objects[Index]));
 }
 //---------------------------------------------------------------------------
 int TParallelOperation::GetNext(TTerminal * Terminal, UnicodeString & FileName, TObject *& Object, UnicodeString & TargetDir, bool & Dir, bool & Recursed)
@@ -830,9 +850,9 @@ int TParallelOperation::GetNext(TTerminal * Terminal, UnicodeString & FileName, 
   TCollectedFileList * Files;
   do
   {
-    if (FFileList->Count > 0)
+    if (FFileList->Count > FListIndex)
     {
-      Files = DebugNotNull(dynamic_cast<TCollectedFileList *>(FFileList->Objects[0]));
+      Files = GetFileList(FListIndex);
       // can happen if the file was excluded by file mask
       if (CheckEnd(Files))
       {
@@ -849,7 +869,7 @@ int TParallelOperation::GetNext(TTerminal * Terminal, UnicodeString & FileName, 
 
   if (Files != NULL)
   {
-    UnicodeString RootPath = FFileList->Strings[0];
+    UnicodeString RootPath = FFileList->Strings[FListIndex];
 
     FileName = Files->GetFileName(FIndex);
     Object = Files->GetObject(FIndex);
@@ -920,12 +940,57 @@ int TParallelOperation::GetNext(TTerminal * Terminal, UnicodeString & FileName, 
         FDirectories.insert(std::make_pair(FileName, DirectoryData));
       }
 
+      // The current implementation of UpdateFileList relies on this specific way of changing state
+      // (all files before FIndex one-by-one)
+      Files->SetState(FIndex, qfsProcessed);
       FIndex++;
       CheckEnd(Files);
     }
   }
 
-  FProbablyEmpty = (FFileList->Count == 0);
+  FProbablyEmpty = (FFileList->Count == FListIndex);
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool TParallelOperation::UpdateFileList(TQueueFileList * UpdateFileList)
+{
+  TGuard Guard(FSection.get());
+
+  bool Result =
+    (UpdateFileList->FLastParallelOperation != this) ||
+    (UpdateFileList->FLastParallelOperationVersion != FVersion);
+
+  DebugAssert(FFileList->Count == 1);
+  TCollectedFileList * Files = GetFileList(0);
+
+  if (!Result && (UpdateFileList->GetCount() != Files->Count()))
+  {
+    DebugAssert(false);
+    Result = true;
+  }
+
+  if (Result)
+  {
+    UpdateFileList->Clear();
+    for (int Index = 0; Index < Files->Count(); Index++)
+    {
+      UpdateFileList->Add(Files->GetFileName(Index), Files->GetState(Index));
+    }
+  }
+  else
+  {
+    int Index = ((FListIndex == 0) ? FIndex : Files->Count()) - 1;
+    while ((Index >= 0) && (UpdateFileList->GetState(Index) != Files->GetState(Index)))
+    {
+      UpdateFileList->SetState(Index, Files->GetState(Index));
+      Index--;
+      Result = true;
+    }
+  }
+
+  UpdateFileList->FLastParallelOperation = this;
+  UpdateFileList->FLastParallelOperationVersion = FVersion;
 
   return Result;
 }

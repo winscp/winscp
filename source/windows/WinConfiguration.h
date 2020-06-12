@@ -143,8 +143,12 @@ struct TQueueViewConfiguration {
   TQueueViewShow LastHideShow;
   bool ToolBar;
   bool Label;
+  bool FileList;
+  int FileListHeight;
+  int FileListHeightPixelsPerInch;
   bool __fastcall operator !=(TQueueViewConfiguration & rhc)
-    { return C(Height) C(HeightPixelsPerInch) C(Layout) C(Show) C(LastHideShow) C(ToolBar) C(Label) 0; };
+    { return C(Height) C(HeightPixelsPerInch) C(Layout) C(Show) C(LastHideShow) C(ToolBar) C(Label)
+        C(FileList) C(FileListHeight) C(FileListHeightPixelsPerInch) 0; };
 };
 //---------------------------------------------------------------------------
 struct TUpdatesData
