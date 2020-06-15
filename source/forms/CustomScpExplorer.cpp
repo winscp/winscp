@@ -6849,7 +6849,10 @@ void __fastcall TCustomScpExplorerForm::WMAppCommand(TMessage & Message)
   {
     if (Command == APPCOMMAND_BROWSER_FAVORITES)
     {
-      OpenDirectory(GetSide(osCurrent));
+      if (!NonVisualDataModule->Busy)
+      {
+        OpenDirectory(GetSide(osCurrent));
+      }
       Message.Result = 1;
     }
     else

@@ -1783,7 +1783,10 @@ void __fastcall TScpCommanderForm::Resize()
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::PathLabelDblClick(TObject * Sender)
 {
-  OpenDirectory(Sender == LocalPathLabel ? osLocal : osRemote);
+  if (!NonVisualDataModule->Busy)
+  {
+    OpenDirectory(Sender == LocalPathLabel ? osLocal : osRemote);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::LocalPathLabelGetStatus(
@@ -1803,26 +1806,32 @@ void __fastcall TScpCommanderForm::RemotePathLabelGetStatus(
 void __fastcall TScpCommanderForm::LocalPathLabelPathClick(
   TCustomPathLabel * /*Sender*/, UnicodeString Path)
 {
-  if (SamePaths(Path, LocalDirView->Path))
+  if (!NonVisualDataModule->Busy)
   {
-    OpenDirectory(osLocal);
-  }
-  else
-  {
-    LocalDirView->Path = Path;
+    if (SamePaths(Path, LocalDirView->Path))
+    {
+      OpenDirectory(osLocal);
+    }
+    else
+    {
+      LocalDirView->Path = Path;
+    }
   }
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::RemotePathLabelPathClick(
   TCustomPathLabel * /*Sender*/, UnicodeString Path)
 {
-  if (UnixSamePath(Path, DirView(osRemote)->Path))
+  if (!NonVisualDataModule->Busy)
   {
-    OpenDirectory(osRemote);
-  }
-  else
-  {
-    DirView(osRemote)->Path = Path;
+    if (UnixSamePath(Path, DirView(osRemote)->Path))
+    {
+      OpenDirectory(osRemote);
+    }
+    else
+    {
+      DirView(osRemote)->Path = Path;
+    }
   }
 }
 //---------------------------------------------------------------------------
