@@ -2566,6 +2566,12 @@ void CFtpControlSocket::ResetTransferSocket(bool Error)
   }
   delete m_pTransferSocket;
   m_pTransferSocket = NULL;
+  if (Error)
+  {
+    // close the control connection too to allow reconnect => transfer resume
+    LogMessage(FZ_LOG_WARNING, L"Transfer connection failed, closing");
+    DoClose();
+  }
 }
 
 void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFinish/*=FALSE*/,int nError/*=0*/)
