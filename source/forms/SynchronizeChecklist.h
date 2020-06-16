@@ -106,6 +106,7 @@ __published:
   void __fastcall UncheckDirectoryActionExecute(TObject *Sender);
   void __fastcall BrowseLocalActionExecute(TObject *Sender);
   void __fastcall BrowseRemoteActionExecute(TObject *Sender);
+  void __fastcall ListViewRecreate(TObject *Sender);
 
 public:
   __fastcall TSynchronizeChecklistDialog(
