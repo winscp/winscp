@@ -10880,7 +10880,8 @@ void __fastcall TCustomScpExplorerForm::QueueFileListData(TObject *, TListItem *
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::QueueView3Change(TObject *, TListItem *, TItemChange)
 {
-  // should be improved, once we do not refresh the list when switching between details of the same batch
+  // Should be improved, once we do not refresh the list when switching between details of the same batch.
+  // See TSynchronizeChecklistDialog::UpdateTimer
   if (QueueFileList->Items->Count > 0)
   {
     QueueFileList->Items->Item[0]->MakeVisible(false);
