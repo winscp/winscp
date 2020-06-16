@@ -4547,9 +4547,7 @@ void CFtpControlSocket::ResetOperation(int nSuccessful /*=FALSE*/)
 
   if (m_pTransferSocket)
   {
-    ResetTransferSocket(!(nSuccessful & FZ_REPLY_ERROR));
-    delete m_pTransferSocket;
-    m_pTransferSocket=0;
+    ResetTransferSocket(nSuccessful & FZ_REPLY_ERROR);
   }
 
   if (m_pDataFile)
