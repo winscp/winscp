@@ -1412,3 +1412,15 @@ void __fastcall TSynchronizeChecklistDialog::KeyDown(Word & Key, TShiftState Shi
 
   TForm::KeyDown(Key, Shift);
 }
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeChecklistDialog::ListViewRecreate(TObject *)
+{
+  FChecklistToListViewMap.clear();
+  for (int Index = 0; Index < ListView->Items->Count; Index++)
+  {
+    TListItem * Item = ListView->Items->Item[Index];
+    const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(Item);
+    FChecklistToListViewMap.insert(std::make_pair(ChecklistItem, Item));
+  }
+}
+//---------------------------------------------------------------------------

@@ -66,6 +66,7 @@ type
 
     FOnHeaderEndDrag: TNotifyEvent;
     FOnHeaderEndTrack: TNotifyEvent;
+    FOnRecreate: TNotifyEvent;
     FOnSecondaryColumnHeader: TListViewSecondaryColumnHeaderEvent;
 
     FDateTimeFormatStr: string;
@@ -91,6 +92,7 @@ type
     procedure CreateWnd; override;
     procedure ColClick(Column: TListColumn); override;
     procedure WMNotify(var Msg: TWMNotify); message WM_NOTIFY;
+    procedure CMRecreateWnd(var Message: TMessage); message CM_RECREATEWND;
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
@@ -120,6 +122,8 @@ type
       read  FOnHeaderEndDrag write FOnHeaderEndDrag;
     property OnHeaderEndTrack: TNotifyEvent
       read  FOnHeaderEndTrack write FOnHeaderEndTrack;
+    property OnRecreate: TNotifyEvent
+      read  FOnRecreate write FOnRecreate;
 
     property Align;
     property AllocBy;
@@ -548,6 +552,12 @@ begin
 
   inherited;
 end; { TCustomIEListView.WMNotify }
+
+procedure TCustomIEListView.CMRecreateWnd(var Message: TMessage);
+begin
+  inherited;
+  if Assigned(OnRecreate) then OnRecreate(Self);
+end;
 
 procedure TCustomIEListView.HeaderEndDrag(Sender : TObject);
 begin

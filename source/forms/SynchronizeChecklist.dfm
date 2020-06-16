@@ -1484,6 +1484,7 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     Top = 0
     Width = 571
     Height = 501
+    OnRecreate = ListViewRecreate
     Align = alClient
     Checkboxes = True
     Constraints.MinWidth = 240
