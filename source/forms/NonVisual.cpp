@@ -735,7 +735,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(ConsoleAction, ScpExplorer->OpenConsole())
     EXE(PuttyAction, TTerminalManager::Instance()->OpenInPutty())
     EXE(SynchronizeBrowsingAction, ScpExplorer->SynchronizeBrowsingChanged())
-    EXE(CloseApplicationAction, ScpExplorer->Close())
+    EXE(CloseApplicationAction, ScpExplorer->CloseApp())
     EXE(FileSystemInfoAction, ScpExplorer->FileSystemInfo())
     EXE(SessionGenerateUrlAction2, ScpExplorer->SessionGenerateUrl())
     EXE(ClearCachesAction, ScpExplorer->Terminal->ClearCaches())

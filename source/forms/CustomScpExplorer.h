@@ -821,6 +821,7 @@ public:
   bool __fastcall IsComponentPossible(Byte Component);
   void __fastcall ReplaceTerminal(TManagedTerminal * value);
   virtual void __fastcall BrowseFile();
+  void __fastcall CloseApp();
 
   __property bool ComponentVisible[Byte Component] = { read = GetComponentVisible, write = SetComponentVisible };
   __property bool EnableFocusedOperation[TOperationSide Side] = { read = GetEnableFocusedOperation, index = 0 };
