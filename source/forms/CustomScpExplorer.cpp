@@ -4930,7 +4930,12 @@ void __fastcall TCustomScpExplorerForm::OpenFolderOrWorkspace(const UnicodeStrin
 void __fastcall TCustomScpExplorerForm::FormCloseQuery(TObject * /*Sender*/,
       bool &CanClose)
 {
-  if (Terminal != NULL)
+  // See the comment in CloseApp()
+  if (NonVisualDataModule->Busy)
+  {
+    CanClose = false;
+  }
+  else if (Terminal != NULL)
   {
     if (Terminal->Active && WinConfiguration->ConfirmClosingSession)
     {
@@ -10904,3 +10909,19 @@ void __fastcall TCustomScpExplorerForm::QueueFileListResize(TObject *)
   QueueFileListColumnAutoSize();
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::CloseApp()
+{
+  // Called from TNonVisualDataModule::ExplorerActionsExecute, which sets busy flag.
+  // FormCloseQuery must check busy state, so that the application cannot be closed while busy by Alt+F4 and X button.
+  // So we clear the flag here.
+  DebugAssert(NonVisualDataModule->Busy);
+  NonVisualDataModule->EndBusy();
+  try
+  {
+    Close();
+  }
+  __finally
+  {
+    NonVisualDataModule->StartBusy();
+  }
+}
