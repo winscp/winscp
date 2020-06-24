@@ -690,6 +690,7 @@ protected:
   void __fastcall CenterReconnectToolbar();
   void __fastcall DoOpenFolderOrWorkspace(const UnicodeString & Name, bool ConnectFirstTerminal);
   virtual void __fastcall ThemeChanged();
+  void __fastcall DetachTerminal(TObject * ATerminal);
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();
