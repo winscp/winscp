@@ -895,7 +895,6 @@ static int fail_nul_cn(void)
     ne_free(ca);
     return OK;
 }
-#endif
 
 static int fail_nul_san(void)
 {
@@ -911,6 +910,7 @@ static int fail_nul_san(void)
     ne_free(ca);
     return OK;
 }
+#endif
 
 /* Check that an expired certificate is flagged as such. */
 static int fail_expired(void)
@@ -1933,12 +1933,10 @@ ne_test tests[] = {
 
     T(nulcn_identity),
 #ifndef HAVE_GNUTLS
-    /* test failing with GnuTLS since GnuTLS fails handshake?
-     * fail_nul_cn (no error in verification callback; request rv 1 error string: Server certificate was missing commonName attribute in subject name)
-     */
+    /* These certs were created with a SHA#1 digest so are rejected by GnuTLS. */
     T(fail_nul_cn),
-#endif
     T(fail_nul_san),
+#endif
 
 #if 0
     T(session_cache),

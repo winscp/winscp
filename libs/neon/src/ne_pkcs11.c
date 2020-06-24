@@ -24,6 +24,7 @@
 
 #ifdef HAVE_PAKCHOIS
 #include <string.h>
+#include <assert.h>
 
 #include <pakchois.h>
 
@@ -360,12 +361,12 @@ static void terminate_string(unsigned char *str, size_t len)
 {
     unsigned char *ptr = str + len - 1;
 
+    assert(len > 0);
+
     while ((*ptr == ' ' || *ptr == '\t' || *ptr == '\0') && ptr >= str)
         ptr--;
     
-    if (ptr == str - 1)
-        str[0] = '\0';
-    else if (ptr == str + len - 1)
+    if (ptr == str + len - 1)
         str[len-1] = '\0';
     else
         ptr[1] = '\0';

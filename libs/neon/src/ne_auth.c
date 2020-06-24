@@ -1618,7 +1618,7 @@ static void auth_register(ne_session *sess, int isproxy, unsigned protomask,
         protomask |= NE_AUTH_GSSAPI_ONLY | NE_AUTH_SSPI;
     }
 
-    if (protomask | NE_AUTH_DIGEST) {
+    if ((protomask & NE_AUTH_DIGEST) == NE_AUTH_DIGEST) {
         struct ne_md5_ctx *ctx = ne_md5_create_ctx();
 
         if (ctx) {
