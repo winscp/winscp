@@ -19,6 +19,7 @@
 #include "Tools.h"
 #include "WinApi.h"
 #include <DateUtils.hpp>
+#include <StrUtils.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -323,10 +324,25 @@ void __fastcall Usage(UnicodeString Param)
         UnicodeString Key = Pair.SubString(1, Pair.Length() - 1).Trim();
         Configuration->Usage->Inc(Key);
       }
+      else if (Pair[Pair.Length()] == L'@')
+      {
+        UnicodeString Key = Pair.SubString(1, Pair.Length() - 1).Trim();
+        UnicodeString Value;
+        if (SameText(Key, L"InstallationParentProcess"))
+        {
+          Value = GetAncestorProcessName(3).LowerCase();
+        }
+        else
+        {
+          Value = L"err-unknown-key";
+        }
+        Configuration->Usage->Set(Key, Value);
+      }
       else
       {
         UnicodeString Key = CutToChar(Pair, L':', true);
-        Configuration->Usage->Set(Key, Pair.Trim());
+        UnicodeString Value = Pair.Trim();
+        Configuration->Usage->Set(Key, Value);
       }
     }
   }
@@ -490,6 +506,18 @@ void __fastcall UpdateStaticUsage()
   Configuration->Usage->Set(L"Wine", IsWine());
   Configuration->Usage->Set(L"NetFrameworkVersion", GetNetVersionStr());
   Configuration->Usage->Set(L"PowerShellVersion", GetPowerShellVersionStr());
+
+  UnicodeString ParentProcess = GetAncestorProcessName();
+  // do not record the installer as a parent process
+  if (!ParentProcess.IsEmpty() &&
+      (!StartsText(L"winscp-", ParentProcess) || !EndsText(L"-setup", ParentProcess)))
+  {
+    UnicodeString ParentProcesses = Configuration->Usage->Get(L"ParentProcesses");
+    std::unique_ptr<TStringList> ParentProcessesList(CreateSortedStringList());
+    ParentProcessesList->CommaText = ParentProcesses;
+    ParentProcessesList->Add(ParentProcess.LowerCase());
+    Configuration->Usage->Set(L"ParentProcesses", ParentProcessesList->CommaText);
+  }
 
   WinConfiguration->UpdateStaticUsage();
 

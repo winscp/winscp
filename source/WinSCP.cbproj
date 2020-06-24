@@ -49,7 +49,7 @@
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Base)'!=''">
 		<_TCHARMapping>wchar_t</_TCHARMapping>
-		<AllPackageLibs>vcl.lib;rtl.lib;vclx.lib;ws2_32.lib;secur32.lib;My.lib;DriveDir.lib;DragDropP.lib;tb2k.lib;tbxp.lib;bcbie.lib;Crypt32.lib;PngComponents.lib;xmlrtl.lib;vclactnband.lib;vclimg.lib;winhttp.lib;jcl.lib;vclie.lib;urlmon.lib;shlwapi.lib;powrprof.lib;soaprtl.lib;fmx.lib;dbrtl.lib;inet.lib</AllPackageLibs>
+		<AllPackageLibs>vcl.lib;rtl.lib;vclx.lib;ws2_32.lib;secur32.lib;My.lib;DriveDir.lib;DragDropP.lib;tb2k.lib;tbxp.lib;bcbie.lib;Crypt32.lib;PngComponents.lib;xmlrtl.lib;vclactnband.lib;vclimg.lib;winhttp.lib;jcl.lib;vclie.lib;urlmon.lib;shlwapi.lib;powrprof.lib;soaprtl.lib;fmx.lib;dbrtl.lib;inet.lib;psapi.lib</AllPackageLibs>
 		<BCC_AllWarnings>true</BCC_AllWarnings>
 		<BCC_ExtendedErrorInfo>true</BCC_ExtendedErrorInfo>
 		<BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
@@ -106,7 +106,7 @@
 	<PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
 		<ILINK_DisableIncrementalLinking>true</ILINK_DisableIncrementalLinking>
 		<ILINK_LibraryPath>$(INTERM_PATH)\Win32\Debug\;$(BDS)\lib\Win32\Debug\;$(BDS)\lib\Win32\Release\;$(BDS)\lib\Win32\Release\psdk\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
-		<LinkPackageStatics>vcl.lib;rtl.lib;vclx.lib;ws2_32.lib;secur32.lib;My.lib;DriveDir.lib;DragDropP.lib;tb2k.lib;tbxp.lib;bcbie.lib;Crypt32.lib;PngComponents.lib;xmlrtl.lib;vclactnband.lib;vclimg.lib;winhttp.lib;jcl.lib;vclie.lib;urlmon.lib;shlwapi.lib;powrprof.lib;soaprtl.lib;fmx.lib;dbrtl.lib;inet.lib</LinkPackageStatics>
+		<LinkPackageStatics>vcl.lib;rtl.lib;vclx.lib;ws2_32.lib;secur32.lib;My.lib;DriveDir.lib;DragDropP.lib;tb2k.lib;tbxp.lib;bcbie.lib;Crypt32.lib;PngComponents.lib;xmlrtl.lib;vclactnband.lib;vclimg.lib;winhttp.lib;jcl.lib;vclie.lib;urlmon.lib;shlwapi.lib;powrprof.lib;soaprtl.lib;fmx.lib;dbrtl.lib;inet.lib;psapi.lib</LinkPackageStatics>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
 		<ILINK_LibraryPath>$(INTERM_PATH)\Win64\Debug\;$(BDS)\lib\Win64\Debug\;$(BDS)\lib\Win64\Release\;$(BDS)\lib\Win64\Release\psdk\;$(ILINK_LibraryPath)</ILINK_LibraryPath>

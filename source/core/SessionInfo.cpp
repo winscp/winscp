@@ -1175,6 +1175,7 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
     ADF(L"Local account: %s", (UserName));
     ADF(L"Working directory: %s", (GetCurrentDir()));
     ADF(L"Process ID: %d", (int(GetCurrentProcessId())));
+    ADF(L"Parent process: %s", (GetAncestorProcessName()));
     ADF(L"Command-line: %s", (GetCmdLineLog()));
     if (FConfiguration->LogProtocol >= 1)
     {

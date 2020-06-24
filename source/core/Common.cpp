@@ -13,6 +13,8 @@
 #include <shlobj.h>
 #include <limits>
 #include <shlwapi.h>
+#include <tlhelp32.h>
+#include <psapi.h>
 #include <CoreMain.h>
 #include <openssl/pkcs12.h>
 #include <openssl/pem.h>
@@ -4077,4 +4079,93 @@ void SetStringValueEvenIfEmpty(TStrings * Strings, const UnicodeString & Name, c
   {
     Strings->Values[Name] = Value;
   }
+}
+//---------------------------------------------------------------------------
+DWORD __fastcall GetParentProcessId(HANDLE Snapshot, DWORD ProcessId)
+{
+  DWORD Result = 0;
+
+  PROCESSENTRY32 ProcessEntry;
+  memset(&ProcessEntry, sizeof(ProcessEntry), 0);
+  ProcessEntry.dwSize = sizeof(PROCESSENTRY32);
+
+  if (Process32First(Snapshot, &ProcessEntry))
+  {
+    do
+    {
+      if (ProcessEntry.th32ProcessID == ProcessId)
+      {
+        Result = ProcessEntry.th32ParentProcessID;
+      }
+    } while (Process32Next(Snapshot, &ProcessEntry));
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString ParentProcessName;
+//---------------------------------------------------------------------------
+UnicodeString __fastcall GetAncestorProcessName(int Levels)
+{
+  UnicodeString Result;
+  bool Parent = (Levels == 1);
+  if (Parent && !ParentProcessName.IsEmpty())
+  {
+    Result = ParentProcessName;
+  }
+  else
+  {
+    try
+    {
+      HANDLE Snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+
+      DWORD ProcessId = GetCurrentProcessId();
+
+      while ((Levels > 0) && (ProcessId != 0))
+      {
+        ProcessId = GetParentProcessId(Snapshot, ProcessId);
+        Levels--;
+      }
+
+      if (ProcessId == 0)
+      {
+        Result = L"err-notfound";
+      }
+      else
+      {
+        HANDLE Process = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, ProcessId);
+        if (!Process)
+        {
+          // is common, when the parent process is installer, so we ignore it
+          Result = UnicodeString();
+        }
+        else
+        {
+          Result.SetLength(MAX_PATH);
+          DWORD Len = GetModuleFileNameEx(Process, NULL, Result.c_str(), Result.Length());
+          if (Len == 0)
+          {
+            Result = L"err-name";
+          }
+          else
+          {
+            Result.SetLength(Len);
+            Result = ExtractProgramName(FormatCommand(Result, UnicodeString()));
+          }
+          CloseHandle(Process);
+        }
+      }
+
+      CloseHandle(Snapshot);
+    }
+    catch (...)
+    {
+      Result = L"err-except";
+    }
+
+    if (Parent)
+    {
+      ParentProcessName = Result;
+    }
+  }
+  return Result;
 }

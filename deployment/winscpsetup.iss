@@ -1419,7 +1419,7 @@ begin
       // old style counter
       UsageData := UsageData + Format('TypicalInstallation:%d,', [Integer(IsTypicalInstallation)]);
 
-      UsageData := UsageData + 'InstallationsUser+,';
+      UsageData := UsageData + 'InstallationsUser+,InstallationParentProcess@,';
 
       Installations := 0; // default, if the counter does not exist
       RegQueryDWordValue(HKEY_LOCAL_MACHINE, '{#RegistryKey}', 'Installations', Installations);
