@@ -183,6 +183,7 @@ bool __fastcall IsRealFile(const UnicodeString & FileName);
 UnicodeString GetOSInfo();
 UnicodeString GetEnvironmentInfo();
 void SetStringValueEvenIfEmpty(TStrings * Strings, const UnicodeString & Name, const UnicodeString & Value);
+UnicodeString __fastcall GetAncestorProcessName(int Levels = 1);
 //---------------------------------------------------------------------------
 struct TSearchRecSmart : public TSearchRec
 {
