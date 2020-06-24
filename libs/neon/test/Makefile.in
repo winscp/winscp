@@ -11,9 +11,6 @@ top_srcdir = @top_srcdir@
 srcdir = @srcdir@
 VPATH = @srcdir@
 
-AR = ar
-
-RANLIB = @RANLIB@
 LIBS = @LIBS@
 TEST_LIBS = $(LIBTEST) $(LIBS)
 CC = @CC@

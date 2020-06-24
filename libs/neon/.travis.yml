@@ -49,6 +49,9 @@ matrix:
     - name: OpenSSL on arm64
       arch: arm64
       env: CONF="--with-ssl=openssl"
+    - name: OpenSSL on s390x
+      arch: s390x
+      env: CONF="--with-ssl=openssl"
     - name: OpenSSL on trusty
       dist: trusty
       env: CONF="--with-ssl=openssl"
@@ -60,18 +63,26 @@ matrix:
       compiler: gcc
       dist: bionic
       env: CONF="--with-ssl=openssl"
-    - name: GnuTLS
-      compiler: gcc
-      env: CONF="--with-ssl=gnutls"
     - name: OpenSSL memleak
       compiler: gcc
       env: CONF="--with-ssl=openssl --enable-memleak"
+    - name: GnuTLS
+      env: CONF="--with-ssl=gnutls"
+    - name: GnuTLS on bionic
+      dist: bionic
+      env: CONF="--with-ssl=gnutls"
+    - name: GnuTLS on trusty
+      dist: trusty
+      env: CONF="--with-ssl=gnutls"
+    - name: GnuTLS memleak
+      env: CONF="--with-ssl=gnutls --enable-memleak"
     - name: Copyright check
       compiler: gcc
       env: CONF="--without-libproxy --without-gssapi --without-zlib --disable-nls --disable-debug --disable-webdav" MARGS="update-copyright"
   allow_failures:
-    - name: GnuTLS
-      compiler: gcc
-      env: CONF="--with-ssl=gnutls"
+    # s390x builds currently flaky
+    - name: OpenSSL on s390x
+      arch: s390x
+      env: CONF="--with-ssl=openssl"
 
 script: ./autogen.sh && ./configure --enable-warnings $CONF && make $MARGS
