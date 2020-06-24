@@ -4872,6 +4872,7 @@ void __fastcall TCustomScpExplorerForm::DisconnectSession()
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::TerminalDisconnected()
 {
+  DetachTerminal(Terminal);
   RemoteDirView->Terminal = Terminal;
   UpdateRemotePathComboBox(false);
   UpdateControls();
@@ -6593,20 +6594,25 @@ void __fastcall TCustomScpExplorerForm::ExecuteCurrentFileWith(bool OnFocused)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::TerminalRemoved(TObject * Sender)
+void __fastcall TCustomScpExplorerForm::DetachTerminal(TObject * ATerminal)
 {
-  FEditorManager->ProcessFiles(FileTerminalRemoved, Sender);
+  FEditorManager->ProcessFiles(FileTerminalRemoved, ATerminal);
 
-  if (FFileFindTerminal == Sender)
+  if (FFileFindTerminal == ATerminal)
   {
     FFileFindTerminal = NULL;
     HideFileFindDialog();
   }
 
-  if (FClipboardTerminal == Sender)
+  if (FClipboardTerminal == ATerminal)
   {
     ClipboardClear(); // implies ClipboardStop
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::TerminalRemoved(TObject * Sender)
+{
+  DetachTerminal(Sender);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::FileTerminalRemoved(const UnicodeString FileName,

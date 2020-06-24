@@ -707,6 +707,7 @@ protected:
   virtual void __fastcall ThemeChanged();
   int __fastcall GetStaticQueuePanelComponentsHeight();
   int __fastcall GetMinQueueViewHeight();
+  void __fastcall DetachTerminal(TObject * ATerminal);
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();
