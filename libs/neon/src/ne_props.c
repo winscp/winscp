@@ -93,10 +93,10 @@ struct ne_prop_result_set_s {
 #define MAX_PROP_COUNTER (1024)
 
 static int 
-startelm(void *userdata, int state, const char *name, const char *nspace,
+startelm(void *userdata, int state, const char *nspace, const char *name,
 	 const char **atts);
 static int 
-endelm(void *userdata, int state, const char *name, const char *nspace);
+endelm(void *userdata, int state, const char *nspace, const char *name);
 
 /* Handle character data; flat property value. */
 static int chardata(void *userdata, int state, const char *data, size_t len)

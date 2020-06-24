@@ -1984,15 +1984,11 @@ int ne_sock_close(ne_socket *sock)
 {
     int ret;
 
-    /* Complete a bidirectional shutdown for SSL/TLS. */
+    /* Per API description - for an SSL connection, simply send the
+     * close_notify but do not wait for the peer's response. */
 #if defined(HAVE_OPENSSL)
     if (sock->ssl) {
-        if (SSL_shutdown(sock->ssl) == 0) {
-            #ifndef WINSCP
-            // Hangs with OneDrive
-            SSL_shutdown(sock->ssl);
-            #endif
-        }
+        SSL_shutdown(sock->ssl);
         SSL_free(sock->ssl);
     }
 #elif defined(HAVE_GNUTLS)

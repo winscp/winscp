@@ -70,6 +70,8 @@ typedef const unsigned char ne_d2i_uchar;
 #endif
 
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
+#define X509_get0_notBefore X509_get_notBefore
+#define X509_get0_notAfter X509_get_notAfter
 #define X509_up_ref(x) x->references++
 #define EVP_PKEY_up_ref(x) x->references++
 #define EVP_MD_CTX_new() ne_calloc(sizeof(EVP_MD_CTX))
@@ -232,10 +234,10 @@ void ne_ssl_cert_validity_time(const ne_ssl_certificate *cert,
                                time_t *from, time_t *until)
 {
     if (from) {
-        *from = asn1time_to_timet(X509_getm_notBefore(cert->subject));
+        *from = asn1time_to_timet(X509_get0_notBefore(cert->subject));
     }
     if (until) {
-        *until = asn1time_to_timet(X509_getm_notAfter(cert->subject));
+        *until = asn1time_to_timet(X509_get0_notAfter(cert->subject));
     }
 }
 

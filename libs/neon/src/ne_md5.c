@@ -426,9 +426,9 @@ void *
 md5_read_ctx (const struct md5_ctx *ctx, void *resbuf)
 {
 #ifdef HAVE_OPENSSL
-#define SWAP_CTX(x) (ctx->ctx.x)
+#define SWAP_CTX(x) SWAP(ctx->ctx.x)
 #else
-#define SWAP_CTX(x) (ctx->x)
+#define SWAP_CTX(x) SWAP(ctx->x)
 #endif
 
   ((md5_uint32 *) resbuf)[0] = SWAP_CTX (A);
