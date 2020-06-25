@@ -3483,6 +3483,7 @@ void __fastcall TSFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
             FTerminal->DoReadDirectoryProgress(Total, ResolvedLinks, isEOF);
             if (isEOF)
             {
+              FTerminal->LogEvent(L"Listing directory cancelled.");
               FTerminal->DoReadDirectoryProgress(-2, 0, isEOF);
             }
           }
