@@ -3489,7 +3489,8 @@ void __fastcall TSFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
           }
         }
 
-        if ((FVersion >= 6) &&
+        if (!isEOF &&
+            (FVersion >= 6) &&
             // As of 7.0.9 the Cerberus SFTP server always sets the end-of-list to true.
             // Fixed in 7.0.10.
             (FSecureShell->SshImplementation != sshiCerberus) &&
