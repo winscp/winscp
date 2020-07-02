@@ -15,9 +15,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#ifndef WINSCP
 // This is used in pageant, pscp, psftp and servers only
-#if defined _MSC_VER && _MSC_VER < 1800
+#if (!defined WINSCP) && defined _MSC_VER && _MSC_VER < 1800
 /* Work around lack of inttypes.h and strtoumax in older MSVC */
 #define PRIx32 "x"
 #define PRIu64 "I64u"
@@ -26,8 +25,12 @@
 #define SCNu64 "I64u"
 uintmax_t strtoumax(const char *nptr, char **endptr, int base);
 #else
+#ifndef WINSCP
+// Not needed by the code WinSCP uses
 #include <inttypes.h>
 #endif
+#define SIZEx "zx"
+#define SIZEu "zu"
 #endif
 
 typedef struct conf_tag Conf;

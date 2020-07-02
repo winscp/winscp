@@ -127,7 +127,8 @@ static void ssh1_login_free(PacketProtocolLayer *ppl)
     if (s->cur_prompt)
         free_prompts(s->cur_prompt);
     if (s->agent_keys) {
-        for (size_t i = 0; i < s->agent_keys_len; i++) {
+        size_t i; // WINSCP
+        for (i = 0; i < s->agent_keys_len; i++) {
             freersakey(&s->agent_keys[i].key);
             strbuf_free(s->agent_keys[i].comment);
         }
@@ -522,7 +523,9 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                 /*
                  * Check that the agent response is well formed.
                  */
-                for (size_t i = 0; i < nkeys; i++) {
+                { // WINSCP
+                size_t i; // WINSCP
+                for (i = 0; i < nkeys; i++) {
                     get_rsa_ssh1_pub(s->asrc, NULL, RSA_SSH1_EXPONENT_FIRST);
                     get_string(s->asrc); /* comment */
                     if (get_err(s->asrc)) {
@@ -530,6 +533,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                         goto parsed_agent_query;
                     }
                 }
+                } // WINSCP
 
                 /*
                  * Copy the list of public-key blobs out of the Pageant
@@ -538,13 +542,17 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                 BinarySource_REWIND_TO(s->asrc, origpos);
                 s->agent_keys_len = nkeys;
                 s->agent_keys = snewn(s->agent_keys_len, agent_key);
-                for (size_t i = 0; i < nkeys; i++) {
+                { // WINSCP
+                size_t i; // WINSCP
+                for (i = 0; i < nkeys; i++) {
                     memset(&s->agent_keys[i].key, 0,
                            sizeof(s->agent_keys[i].key));
 
+                    { // WINSCP
                     const char *blobstart = get_ptr(s->asrc);
                     get_rsa_ssh1_pub(s->asrc, &s->agent_keys[i].key,
                                      RSA_SSH1_EXPONENT_FIRST);
+                    { // WINSCP
                     const char *blobend = get_ptr(s->asrc);
 
                     s->agent_keys[i].comment = strbuf_new();
@@ -552,7 +560,10 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
 
                     s->agent_keys[i].blob = make_ptrlen(
                         blobstart, blobend - blobstart);
+                    } // WINSCP
+                    } // WINSCP
                 }
+                } // WINSCP
 
                 ppl_logevent("Pageant has %"SIZEu" SSH-1 keys", nkeys);
 
@@ -617,6 +628,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                         return;
                     }
 
+                    { // WINSCP
                     strbuf *agentreq = strbuf_new_for_agent_query();
                     put_byte(agentreq, SSH1_AGENTC_RSA_CHALLENGE);
 
@@ -633,6 +645,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                     ssh1_login_agent_query(s, agentreq);
                     strbuf_free(agentreq);
                     crMaybeWaitUntilV(!s->auth_agent_query);
+                    } // WINSCP
                 }
 
                 {

@@ -183,7 +183,8 @@ static void ssh2_userauth_free(PacketProtocolLayer *ppl)
         ssh_ppl_free(s->successor_layer);
 
     if (s->agent_keys) {
-        for (size_t i = 0; i < s->agent_keys_len; i++) {
+        size_t i; // WINSCP
+        for (i = 0; i < s->agent_keys_len; i++) {
             strbuf_free(s->agent_keys[i].blob);
             strbuf_free(s->agent_keys[i].comment);
         }
@@ -338,7 +339,9 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
             /*
              * Check that the agent response is well formed.
              */
-            for (size_t i = 0; i < nkeys; i++) {
+            { // WINSCP
+            size_t i; // WINSCP
+            for (i = 0; i < nkeys; i++) {
                 get_string(s->asrc);   /* blob */
                 get_string(s->asrc);   /* comment */
                 if (get_err(s->asrc)) {
@@ -346,6 +349,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                     goto done_agent_query;
                 }
             }
+            } // WINSCP
 
             /*
              * Copy the list of public-key blobs out of the Pageant
@@ -354,19 +358,24 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
             BinarySource_REWIND_TO(s->asrc, origpos);
             s->agent_keys_len = nkeys;
             s->agent_keys = snewn(s->agent_keys_len, agent_key);
-            for (size_t i = 0; i < nkeys; i++) {
+            { // WINSCP
+            size_t i; // WINSCP
+            for (i = 0; i < nkeys; i++) {
                 s->agent_keys[i].blob = strbuf_new();
                 put_datapl(s->agent_keys[i].blob, get_string(s->asrc));
                 s->agent_keys[i].comment = strbuf_new();
                 put_datapl(s->agent_keys[i].comment, get_string(s->asrc));
 
+                { // WINSCP
                 /* Also, extract the algorithm string from the start
                  * of the public-key blob. */
                 BinarySource src[1];
                 BinarySource_BARE_INIT_PL(src, ptrlen_from_strbuf(
                     s->agent_keys[i].blob));
                 s->agent_keys[i].algorithm = get_string(src);
+                } // WINSCP
             }
+            } // WINSCP
 
             ppl_logevent("Pageant has %"SIZEu" SSH-2 keys", nkeys);
 
