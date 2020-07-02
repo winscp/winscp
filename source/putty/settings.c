@@ -490,8 +490,7 @@ static void write_clip_setting(settings_w *sesskey, const char *savekey,
         break;
       case CLIPUI_CUSTOM:
         {
-            char *sval = dupcat("custom:", conf_get_str(conf, strconfkey),
-                                (const char *)NULL);
+            char *sval = dupcat("custom:", conf_get_str(conf, strconfkey));
             write_setting_s(sesskey, savekey, sval);
             sfree(sval);
         }
@@ -599,6 +598,7 @@ void save_open_settings(settings_w *sesskey, Conf *conf)
     wprefs(sesskey, "Cipher", ciphernames, CIPHER_MAX, conf, CONF_ssh_cipherlist);
     wprefs(sesskey, "KEX", kexnames, KEX_MAX, conf, CONF_ssh_kexlist);
     wprefs(sesskey, "HostKey", hknames, HK_MAX, conf, CONF_ssh_hklist);
+    write_setting_b(sesskey, "PreferKnownHostKeys", conf_get_bool(conf, CONF_ssh_prefer_known_hostkeys));
     write_setting_i(sesskey, "RekeyTime", conf_get_int(conf, CONF_ssh_rekey_time));
 #ifndef NO_GSSAPI
     write_setting_i(sesskey, "GssapiRekey", conf_get_int(conf, CONF_gssapirekey));
@@ -995,6 +995,7 @@ void load_open_settings(settings_r *sesskey, Conf *conf)
     }
     gprefs(sesskey, "HostKey", "ed25519,ecdsa,rsa,dsa,WARN",
            hknames, HK_MAX, conf, CONF_ssh_hklist);
+    gppb(sesskey, "PreferKnownHostKeys", true, conf, CONF_ssh_prefer_known_hostkeys);
     gppi(sesskey, "RekeyTime", 60, conf, CONF_ssh_rekey_time);
 #ifndef NO_GSSAPI
     gppi(sesskey, "GssapiRekey", GSS_DEF_REKEY_MINS, conf, CONF_gssapirekey);
