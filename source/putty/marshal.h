@@ -255,6 +255,10 @@ static inline void BinarySource_INIT__(BinarySource *src, ptrlen data)
               (object)->binarysource_)
 #define BinarySource_COPIED(obj) \
     ((obj)->binarysource_->binarysource_ = (obj)->binarysource_)
+#define BinarySource_REWIND_TO(src, pos) \
+    BinarySource_REWIND_TO__((src)->binarysource_, pos)
+#define BinarySource_REWIND(src) \
+    BinarySource_REWIND_TO__((src)->binarysource_, 0)
 
 #define get_data(src, len) \
     BinarySource_get_data(BinarySource_UPCAST(src), len)
@@ -302,6 +306,8 @@ const char *BinarySource_get_asciz(BinarySource *);
 ptrlen BinarySource_get_pstring(BinarySource *);
 mp_int *BinarySource_get_mp_ssh1(BinarySource *src);
 mp_int *BinarySource_get_mp_ssh2(BinarySource *src);
+
+void BinarySource_REWIND_TO__(BinarySource *src, size_t pos);
 
 /*
  * A couple of useful standard BinarySink implementations, which live
