@@ -235,6 +235,17 @@ ptrlen BinarySource_get_pstring(BinarySource *src)
     return make_ptrlen(consume(len), len);
 }
 
+void BinarySource_REWIND_TO__(BinarySource *src, size_t pos)
+{
+    if (pos <= src->len) {
+        src->pos = pos;
+        src->err = BSE_NO_ERROR;    /* clear any existing error */
+    } else {
+        src->pos = src->len;
+        src->err = BSE_OUT_OF_DATA; /* new error if we rewind out of range */
+    }
+}
+
 static void stdio_sink_write(BinarySink *bs, const void *data, size_t len)
 {
     stdio_sink *sink = BinarySink_DOWNCAST(bs, stdio_sink);
