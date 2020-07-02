@@ -790,6 +790,7 @@ bool load_settings(const char *section, Conf *conf)
     settings_r *sesskey;
 
     sesskey = open_settings_r(section);
+    { // WINSCP
     bool exists = (sesskey != NULL);
     load_open_settings(sesskey, conf);
     close_settings_r(sesskey);
@@ -798,6 +799,7 @@ bool load_settings(const char *section, Conf *conf)
         add_session_to_jumplist(section);
 
     return exists;
+    } // WINSCP
 }
 
 void load_open_settings(settings_r *sesskey, Conf *conf)

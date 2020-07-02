@@ -203,7 +203,7 @@ static int get_userpass_input(Seat * seat, prompts_t * p, bufchain * DebugUsedAr
       Prompts->AddObject(S, (TObject *)(FLAGMASK(Prompt->echo, pupEcho)));
       // this fails, when new passwords do not match on change password prompt,
       // and putty retries the prompt
-      DebugAssert(Prompt->resultsize == 0);
+      DebugAssert(strlen(prompt_get_result_ref(Prompt)) == 0);
       Results->Add(L"");
     }
 
