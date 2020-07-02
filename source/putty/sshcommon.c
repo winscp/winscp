@@ -110,8 +110,8 @@ static PktIn *pq_in_after(PacketQueueBase *pqb,
         if (set->ic_pktin_free == NULL)
         {
             set->pktin_freeq_head = snew(PacketQueueNode);
-            set->pktin_freeq_head->next = &set->pktin_freeq_head;
-            set->pktin_freeq_head->prev = &set->pktin_freeq_head;
+            set->pktin_freeq_head->next = set->pktin_freeq_head;
+            set->pktin_freeq_head->prev = set->pktin_freeq_head;
             set->pktin_freeq_head->on_free_queue = TRUE;
 
             set->ic_pktin_free = snew(IdempotentCallback);
@@ -130,7 +130,7 @@ static PktIn *pq_in_after(PacketQueueBase *pqb,
         node->prev->next = node;
         node->on_free_queue = true;
 
-        queue_idempotent_callback(&set->ic_pktin_free); // WINSCP
+        queue_idempotent_callback(set->ic_pktin_free); // WINSCP
     }
 
     return container_of(node, PktIn, qnode);
