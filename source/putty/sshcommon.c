@@ -35,6 +35,7 @@ void pq_base_push(PacketQueueBase *pqb, PacketQueueNode *node)
     node->prev = pqb->end.prev;
     node->next->prev = node;
     node->prev->next = node;
+    pqb->total_size += node->formal_size;
 
     if (pqb->ic)
         queue_idempotent_callback(pqb->ic);
@@ -47,6 +48,7 @@ void pq_base_push_front(PacketQueueBase *pqb, PacketQueueNode *node)
     node->next = pqb->end.next;
     node->next->prev = node;
     node->prev->next = node;
+    pqb->total_size += node->formal_size;
 
     if (pqb->ic)
         queue_idempotent_callback(pqb->ic);
@@ -77,6 +79,23 @@ static IdempotentCallback ic_pktin_free = {
 };
 #endif
 
+static inline void pq_unlink_common(PacketQueueBase *pqb,
+                                    PacketQueueNode *node)
+{
+    node->next->prev = node->prev;
+    node->prev->next = node->next;
+
+    /* Check total_size doesn't drift out of sync downwards, by
+     * ensuring it doesn't underflow when we do this subtraction */
+    assert(pqb->total_size >= node->formal_size);
+    pqb->total_size -= node->formal_size;
+
+    /* Check total_size doesn't drift out of sync upwards, by checking
+     * that it's returned to exactly zero whenever a queue is
+     * emptied */
+    assert(pqb->end.next != &pqb->end || pqb->total_size == 0);
+}
+
 static PktIn *pq_in_after(PacketQueueBase *pqb,
                           PacketQueueNode *prev, bool pop)
 {
@@ -91,8 +110,8 @@ static PktIn *pq_in_after(PacketQueueBase *pqb,
         if (set->ic_pktin_free == NULL)
         {
             set->pktin_freeq_head = snew(PacketQueueNode);
-            set->pktin_freeq_head->next = set->pktin_freeq_head;
-            set->pktin_freeq_head->prev = set->pktin_freeq_head;
+            set->pktin_freeq_head->next = &set->pktin_freeq_head;
+            set->pktin_freeq_head->prev = &set->pktin_freeq_head;
             set->pktin_freeq_head->on_free_queue = TRUE;
 
             set->ic_pktin_free = snew(IdempotentCallback);
@@ -103,8 +122,7 @@ static PktIn *pq_in_after(PacketQueueBase *pqb,
         }
         #endif
 
-        node->next->prev = node->prev;
-        node->prev->next = node->next;
+        pq_unlink_common(pqb, node);
 
         node->prev = set->pktin_freeq_head->prev; // WINSCP
         node->next = set->pktin_freeq_head; // WINSCP
@@ -112,7 +130,7 @@ static PktIn *pq_in_after(PacketQueueBase *pqb,
         node->prev->next = node;
         node->on_free_queue = true;
 
-        queue_idempotent_callback(set->ic_pktin_free); // WINSCP
+        queue_idempotent_callback(&set->ic_pktin_free); // WINSCP
     }
 
     return container_of(node, PktIn, qnode);
@@ -126,8 +144,8 @@ static PktOut *pq_out_after(PacketQueueBase *pqb,
         return NULL;
 
     if (pop) {
-        node->next->prev = node->prev;
-        node->prev->next = node->next;
+        pq_unlink_common(pqb, node);
+
         node->prev = node->next = NULL;
     }
 
@@ -140,6 +158,7 @@ void pq_in_init(PktInQueue *pq, Seat * seat) // WINSCP
     pq->pqb.seat = seat;
     pq->pqb.end.next = pq->pqb.end.prev = &pq->pqb.end;
     pq->after = pq_in_after;
+    pq->pqb.total_size = 0;
 }
 
 void pq_out_init(PktOutQueue *pq, Seat * seat) // WINSCP
@@ -148,6 +167,7 @@ void pq_out_init(PktOutQueue *pq, Seat * seat) // WINSCP
     pq->pqb.seat = seat;
     pq->pqb.end.next = pq->pqb.end.prev = &pq->pqb.end;
     pq->after = pq_out_after;
+    pq->pqb.total_size = 0;
 }
 
 void pq_in_clear(PktInQueue *pq)
@@ -179,6 +199,8 @@ void pq_base_concatenate(PacketQueueBase *qdest,
 {
     struct PacketQueueNode *head1, *tail1, *head2, *tail2;
 
+    size_t total_size = q1->total_size + q2->total_size;
+
     /*
      * Extract the contents from both input queues, and empty them.
      */
@@ -190,6 +212,7 @@ void pq_base_concatenate(PacketQueueBase *qdest,
 
     q1->end.next = q1->end.prev = &q1->end;
     q2->end.next = q2->end.prev = &q2->end;
+    q1->total_size = q2->total_size = 0;
 
     /*
      * Link the two lists together, handling the case where one or
@@ -232,6 +255,8 @@ void pq_base_concatenate(PacketQueueBase *qdest,
         if (qdest->ic)
             queue_idempotent_callback(qdest->ic);
     }
+
+    qdest->total_size = total_size;
 }
 
 /* ----------------------------------------------------------------------
@@ -261,6 +286,7 @@ static void ssh_pkt_adddata(PktOut *pkt, const void *data, int len)
     sgrowarrayn_nm(pkt->data, pkt->maxlen, pkt->length, len);
     memcpy(pkt->data + pkt->length, data, len);
     pkt->length += len;
+    pkt->qnode.formal_size = pkt->length;
 }
 
 static void ssh_pkt_BinarySink_write(BinarySink *bs,
@@ -834,6 +860,11 @@ void ssh_ppl_user_output_string_and_free(PacketProtocolLayer *ppl, char *text)
     int stderrflag = -1; // WINSCP
     seat_output(ppl->seat, *((bool*)&stderrflag), text, strlen(text)); // WINSCP
     sfree(text);
+}
+
+size_t ssh_ppl_default_queued_data_size(PacketProtocolLayer *ppl)
+{
+    return ppl->out_pq->pqb.total_size;
 }
 
 /* ----------------------------------------------------------------------

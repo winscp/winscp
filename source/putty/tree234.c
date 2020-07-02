@@ -1072,7 +1072,7 @@ int n_errors = 0;
 /*
  * Error reporting function.
  */
-void error(char *fmt, ...)
+PRINTF_LIKE(1, 2) void error(char *fmt, ...)
 {
     va_list ap;
     printf("ERROR: ");
