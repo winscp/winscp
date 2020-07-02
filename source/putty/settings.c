@@ -56,12 +56,12 @@ static const struct keyvalwhere hknames[] = {
  * gppmap() invocation for "TerminalModes".
  */
 const char *const ttymodes[] = {
-    "INTR",	"QUIT",     "ERASE",	"KILL",     "EOF",
-    "EOL",	"EOL2",     "START",	"STOP",     "SUSP",
-    "DSUSP",	"REPRINT",  "WERASE",	"LNEXT",    "FLUSH",
-    "SWTCH",	"STATUS",   "DISCARD",	"IGNPAR",   "PARMRK",
-    "INPCK",	"ISTRIP",   "INLCR",	"IGNCR",    "ICRNL",
-    "IUCLC",	"IXON",     "IXANY",	"IXOFF",    "IMAXBEL",
+    "INTR",     "QUIT",     "ERASE",    "KILL",     "EOF",
+    "EOL",      "EOL2",     "START",    "STOP",     "SUSP",
+    "DSUSP",    "REPRINT",  "WERASE",   "LNEXT",    "FLUSH",
+    "SWTCH",    "STATUS",   "DISCARD",  "IGNPAR",   "PARMRK",
+    "INPCK",    "ISTRIP",   "INLCR",    "IGNCR",    "ICRNL",
+    "IUCLC",    "IXON",     "IXANY",    "IXOFF",    "IMAXBEL",
     "IUTF8",    "ISIG",     "ICANON",   "XCASE",    "ECHO",
     "ECHOE",    "ECHOK",    "ECHONL",   "NOFLSH",   "TOSTOP",
     "IEXTEN",   "ECHOCTL",  "ECHOKE",   "PENDIN",   "OPOST",
@@ -78,8 +78,8 @@ const struct BackendVtable *backend_vt_from_name(const char *name)
 {
     const struct BackendVtable *const *p;
     for (p = backends; *p != NULL; p++)
-	if (!strcmp((*p)->name, name))
-	    return *p;
+        if (!strcmp((*p)->name, name))
+            return *p;
     return NULL;
 }
 
@@ -87,8 +87,8 @@ const struct BackendVtable *backend_vt_from_proto(int proto)
 {
     const struct BackendVtable *const *p;
     for (p = backends; *p != NULL; p++)
-	if ((*p)->protocol == proto)
-	    return *p;
+        if ((*p)->protocol == proto)
+            return *p;
     return NULL;
 }
 
@@ -96,12 +96,12 @@ char *get_remote_username(Conf *conf)
 {
     char *username = conf_get_str(conf, CONF_username);
     if (*username) {
-	return dupstr(username);
+        return dupstr(username);
     } else if (conf_get_bool(conf, CONF_username_from_env)) {
-	/* Use local username. */
-	return get_username();     /* might still be NULL */
+        /* Use local username. */
+        return get_username();     /* might still be NULL */
     } else {
-	return NULL;
+        return NULL;
     }
 }
 
@@ -109,14 +109,14 @@ static char *gpps_raw(settings_r *sesskey, const char *name, const char *def)
 {
     char *ret = read_setting_s(sesskey, name);
     if (!ret)
-	ret = platform_default_s(name);
+        ret = platform_default_s(name);
     if (!ret)
-	ret = def ? dupstr(def) : NULL;   /* permit NULL as final fallback */
+        ret = def ? dupstr(def) : NULL;   /* permit NULL as final fallback */
     return ret;
 }
 
 static void gpps(settings_r *sesskey, const char *name, const char *def,
-		 Conf *conf, int primary)
+                 Conf *conf, int primary)
 {
     char *val = gpps_raw(sesskey, name, def);
     conf_set_str(conf, primary, val);
@@ -142,7 +142,7 @@ static void gppfile(settings_r *sesskey, const char *name,
 {
     Filename *result = read_setting_filename(sesskey, name);
     if (!result)
-	result = platform_default_filename(name);
+        result = platform_default_filename(name);
     conf_set_filename(conf, primary, result);
     filename_free(result);
 }
@@ -195,27 +195,27 @@ static bool gppmap(settings_r *sesskey, const char *name,
      */
     buf = gpps_raw(sesskey, name, NULL);
     if (!buf)
-	return false;
+        return false;
 
     p = buf;
     while (*p) {
-	q = buf;
-	val = NULL;
-	while (*p && *p != ',') {
-	    int c = *p++;
-	    if (c == '=')
-		c = '\0';
-	    if (c == '\\')
-		c = *p++;
-	    *q++ = c;
-	    if (!c)
-		val = q;
-	}
-	if (*p == ',')
-	    p++;
-	if (!val)
-	    val = q;
-	*q = '\0';
+        q = buf;
+        val = NULL;
+        while (*p && *p != ',') {
+            int c = *p++;
+            if (c == '=')
+                c = '\0';
+            if (c == '\\')
+                c = *p++;
+            *q++ = c;
+            if (!c)
+                val = q;
+        }
+        if (*p == ',')
+            p++;
+        if (!val)
+            val = q;
+        *q = '\0';
 
         if (primary == CONF_portfwd && strchr(buf, 'D') != NULL) {
             /*
@@ -253,19 +253,19 @@ static void wmap(settings_w *sesskey, char const *outkey, Conf *conf,
     const char *val, *q;
     int len;
 
-    len = 1;			       /* allow for NUL */
+    len = 1;                           /* allow for NUL */
 
     for (val = conf_get_str_strs(conf, primary, NULL, &key);
-	 val != NULL;
-	 val = conf_get_str_strs(conf, primary, key, &key))
-	len += 2 + 2 * (strlen(key) + strlen(val));   /* allow for escaping */
+         val != NULL;
+         val = conf_get_str_strs(conf, primary, key, &key))
+        len += 2 + 2 * (strlen(key) + strlen(val));   /* allow for escaping */
 
     buf = snewn(len, char);
     p = buf;
 
     for (val = conf_get_str_strs(conf, primary, NULL, &key);
-	 val != NULL;
-	 val = conf_get_str_strs(conf, primary, key, &key)) {
+         val != NULL;
+         val = conf_get_str_strs(conf, primary, key, &key)) {
 
         if (primary == CONF_portfwd && !strcmp(val, "D")) {
             /*
@@ -286,13 +286,13 @@ static void wmap(settings_w *sesskey, char const *outkey, Conf *conf,
             realkey = NULL;
         }
 
-	if (p != buf)
-	    *p++ = ',';
-	for (q = key; *q; q++) {
-	    if (*q == '=' || *q == ',' || *q == '\\')
-		*p++ = '\\';
-	    *p++ = *q;
-	}
+        if (p != buf)
+            *p++ = ',';
+        for (q = key; *q; q++) {
+            if (*q == '=' || *q == ',' || *q == '\\')
+                *p++ = '\\';
+            *p++ = *q;
+        }
         if (include_values) {
             *p++ = '=';
             for (q = val; *q; q++) {
@@ -317,7 +317,7 @@ static int key2val(const struct keyvalwhere *mapping,
 {
     int i;
     for (i = 0; i < nmaps; i++)
-	if (!strcmp(mapping[i].s, key)) return mapping[i].v;
+        if (!strcmp(mapping[i].s, key)) return mapping[i].v;
     return -1;
 }
 
@@ -326,7 +326,7 @@ static const char *val2key(const struct keyvalwhere *mapping,
 {
     int i;
     for (i = 0; i < nmaps; i++)
-	if (mapping[i].v == val) return mapping[i].s;
+        if (mapping[i].v == val) return mapping[i].s;
     return NULL;
 }
 
@@ -337,13 +337,13 @@ static const char *val2key(const struct keyvalwhere *mapping,
  * XXX: assumes vals in 'mapping' are small +ve integers
  */
 static void gprefs_from_str(const char *str,
-			    const struct keyvalwhere *mapping, int nvals,
-			    Conf *conf, int primary)
+                            const struct keyvalwhere *mapping, int nvals,
+                            Conf *conf, int primary)
 {
     char *commalist = dupstr(str);
     char *p, *q;
     int i, j, n, v, pos;
-    unsigned long seen = 0;	       /* bitmap for weeding dups etc */
+    unsigned long seen = 0;            /* bitmap for weeding dups etc */
 
     /*
      * Go through that list and convert it into values.
@@ -361,10 +361,10 @@ static void gprefs_from_str(const char *str,
 
         v = key2val(mapping, nvals, q);
         if (v != -1 && !(seen & (1 << v))) {
-	    seen |= (1 << v);
+            seen |= (1 << v);
             conf_set_int_int(conf, primary, n, v);
             n++;
-	}
+        }
     }
 
     sfree(commalist);
@@ -377,10 +377,10 @@ static void gprefs_from_str(const char *str,
      */
     while (n < nvals) {
         for (i = 0; i < nvals; i++) {
-	    assert(mapping[i].v >= 0);
-	    assert(mapping[i].v < 32);
+            assert(mapping[i].v >= 0);
+            assert(mapping[i].v < 32);
 
-	    if (!(seen & (1 << mapping[i].v))) {
+            if (!(seen & (1 << mapping[i].v))) {
                 /*
                  * This element needs adding. But can we add it yet?
                  */
@@ -420,8 +420,8 @@ static void gprefs_from_str(const char *str,
  * Read a preference list.
  */
 static void gprefs(settings_r *sesskey, const char *name, const char *def,
-		   const struct keyvalwhere *mapping, int nvals,
-		   Conf *conf, int primary)
+                   const struct keyvalwhere *mapping, int nvals,
+                   Conf *conf, int primary)
 {
     /*
      * Fetch the string which we'll parse as a comma-separated list.
@@ -431,20 +431,20 @@ static void gprefs(settings_r *sesskey, const char *name, const char *def,
     sfree(value);
 }
 
-/* 
+/*
  * Write out a preference list.
  */
 static void wprefs(settings_w *sesskey, const char *name,
-		   const struct keyvalwhere *mapping, int nvals,
-		   Conf *conf, int primary)
+                   const struct keyvalwhere *mapping, int nvals,
+                   Conf *conf, int primary)
 {
     char *buf, *p;
     int i, maxlen;
 
     for (maxlen = i = 0; i < nvals; i++) {
-	const char *s = val2key(mapping, nvals,
+        const char *s = val2key(mapping, nvals,
                                 conf_get_int_int(conf, primary, i));
-	if (s) {
+        if (s) {
             maxlen += (maxlen > 0 ? 1 : 0) + strlen(s);
         }
     }
@@ -453,11 +453,11 @@ static void wprefs(settings_w *sesskey, const char *name,
     p = buf;
 
     for (i = 0; i < nvals; i++) {
-	const char *s = val2key(mapping, nvals,
+        const char *s = val2key(mapping, nvals,
                                 conf_get_int_int(conf, primary, i));
-	if (s) {
+        if (s) {
             p += sprintf(p, "%s%s", (p > buf ? "," : ""), s);
-	}
+        }
     }
 
     assert(p - buf == maxlen);
@@ -529,7 +529,7 @@ char *save_settings(const char *section, Conf *conf)
 
     sesskey = open_settings_w(section, &errmsg);
     if (!sesskey)
-	return errmsg;
+        return errmsg;
     save_open_settings(sesskey, conf);
     close_settings_w(sesskey);
     return NULL;
@@ -562,8 +562,8 @@ void save_open_settings(settings_w *sesskey, Conf *conf)
      * the standard FORCE_ON / FORCE_OFF / AUTO. */
     write_setting_i(sesskey, "CloseOnExit", (conf_get_int(conf, CONF_close_on_exit)+2)%3);
     write_setting_b(sesskey, "WarnOnClose", !!conf_get_bool(conf, CONF_warn_on_close));
-    write_setting_i(sesskey, "PingInterval", conf_get_int(conf, CONF_ping_interval) / 60);	/* minutes */
-    write_setting_i(sesskey, "PingIntervalSecs", conf_get_int(conf, CONF_ping_interval) % 60);	/* seconds */
+    write_setting_i(sesskey, "PingInterval", conf_get_int(conf, CONF_ping_interval) / 60);      /* minutes */
+    write_setting_i(sesskey, "PingIntervalSecs", conf_get_int(conf, CONF_ping_interval) % 60);  /* seconds */
     write_setting_b(sesskey, "TCPNoDelay", conf_get_bool(conf, CONF_tcp_nodelay));
     write_setting_b(sesskey, "TCPKeepalives", conf_get_bool(conf, CONF_tcp_keepalives));
     write_setting_s(sesskey, "TerminalType", conf_get_str(conf, CONF_termtype));
@@ -666,14 +666,14 @@ void save_open_settings(settings_w *sesskey, Conf *conf)
     write_setting_i(sesskey, "BellOverloadN", conf_get_int(conf, CONF_bellovl_n));
     write_setting_i(sesskey, "BellOverloadT", conf_get_int(conf, CONF_bellovl_t)
 #ifdef PUTTY_UNIX_H
-		    * 1000
+                    * 1000
 #endif
-		    );
+                    );
     write_setting_i(sesskey, "BellOverloadS", conf_get_int(conf, CONF_bellovl_s)
 #ifdef PUTTY_UNIX_H
-		    * 1000
+                    * 1000
 #endif
-		    );
+                    );
     write_setting_i(sesskey, "ScrollbackLines", conf_get_int(conf, CONF_savelines));
     write_setting_b(sesskey, "DECOriginMode", conf_get_bool(conf, CONF_dec_om));
     write_setting_b(sesskey, "AutoWrapMode", conf_get_bool(conf, CONF_wrap_mode));
@@ -696,13 +696,13 @@ void save_open_settings(settings_w *sesskey, Conf *conf)
     write_setting_i(sesskey, "BoldAsColour", conf_get_int(conf, CONF_bold_style)-1);
 
     for (i = 0; i < 22; i++) {
-	char buf[20], buf2[30];
-	sprintf(buf, "Colour%d", i);
-	sprintf(buf2, "%d,%d,%d",
-		conf_get_int_int(conf, CONF_colours, i*3+0),
-		conf_get_int_int(conf, CONF_colours, i*3+1),
-		conf_get_int_int(conf, CONF_colours, i*3+2));
-	write_setting_s(sesskey, buf, buf2);
+        char buf[20], buf2[30];
+        sprintf(buf, "Colour%d", i);
+        sprintf(buf2, "%d,%d,%d",
+                conf_get_int_int(conf, CONF_colours, i*3+0),
+                conf_get_int_int(conf, CONF_colours, i*3+1),
+                conf_get_int_int(conf, CONF_colours, i*3+2));
+        write_setting_s(sesskey, buf, buf2);
     }
     write_setting_b(sesskey, "RawCNP", conf_get_bool(conf, CONF_rawcnp));
     write_setting_b(sesskey, "UTF8linedraw", conf_get_bool(conf, CONF_utf8linedraw));
@@ -712,16 +712,16 @@ void save_open_settings(settings_w *sesskey, Conf *conf)
     write_setting_b(sesskey, "PasteControls", conf_get_bool(conf, CONF_paste_controls));
     write_setting_b(sesskey, "MouseOverride", conf_get_bool(conf, CONF_mouse_override));
     for (i = 0; i < 256; i += 32) {
-	char buf[20], buf2[256];
-	int j;
-	sprintf(buf, "Wordness%d", i);
-	*buf2 = '\0';
-	for (j = i; j < i + 32; j++) {
-	    sprintf(buf2 + strlen(buf2), "%s%d",
-		    (*buf2 ? "," : ""),
-		    conf_get_int_int(conf, CONF_wordness, j));
-	}
-	write_setting_s(sesskey, buf, buf2);
+        char buf[20], buf2[256];
+        int j;
+        sprintf(buf, "Wordness%d", i);
+        *buf2 = '\0';
+        for (j = i; j < i + 32; j++) {
+            sprintf(buf2 + strlen(buf2), "%s%d",
+                    (*buf2 ? "," : ""),
+                    conf_get_int_int(conf, CONF_wordness, j));
+        }
+        write_setting_s(sesskey, buf, buf2);
     }
     write_setting_b(sesskey, "MouseAutocopy",
                     conf_get_bool(conf, CONF_mouseautocopy));
@@ -826,8 +826,8 @@ void load_open_settings(settings_r *sesskey, Conf *conf)
         const struct BackendVtable *vt = backend_vt_from_name(prot);
         if (vt) {
             conf_set_int(conf, CONF_protocol, vt->protocol);
-	    gppi(sesskey, "PortNumber", default_port, conf, CONF_port);
-	}
+            gppi(sesskey, "PortNumber", default_port, conf, CONF_port);
+        }
     }
     sfree(prot);
 
@@ -839,65 +839,65 @@ void load_open_settings(settings_r *sesskey, Conf *conf)
     i = gppi_raw(sesskey, "CloseOnExit", 1); conf_set_int(conf, CONF_close_on_exit, (i+1)%3);
     gppb(sesskey, "WarnOnClose", true, conf, CONF_warn_on_close);
     {
-	/* This is two values for backward compatibility with 0.50/0.51 */
-	int pingmin, pingsec;
-	pingmin = gppi_raw(sesskey, "PingInterval", 0);
-	pingsec = gppi_raw(sesskey, "PingIntervalSecs", 0);
-	conf_set_int(conf, CONF_ping_interval, pingmin * 60 + pingsec);
+        /* This is two values for backward compatibility with 0.50/0.51 */
+        int pingmin, pingsec;
+        pingmin = gppi_raw(sesskey, "PingInterval", 0);
+        pingsec = gppi_raw(sesskey, "PingIntervalSecs", 0);
+        conf_set_int(conf, CONF_ping_interval, pingmin * 60 + pingsec);
     }
     gppb(sesskey, "TCPNoDelay", true, conf, CONF_tcp_nodelay);
     gppb(sesskey, "TCPKeepalives", false, conf, CONF_tcp_keepalives);
     gpps(sesskey, "TerminalType", "xterm", conf, CONF_termtype);
     gpps(sesskey, "TerminalSpeed", "38400,38400", conf, CONF_termspeed);
     if (gppmap(sesskey, "TerminalModes", conf, CONF_ttymodes)) {
-	/*
-	 * Backwards compatibility with old saved settings.
-	 *
-	 * From the invention of this setting through 0.67, the set of
-	 * terminal modes was fixed, and absence of a mode from this
-	 * setting meant the user had explicitly removed it from the
-	 * UI and we shouldn't send it.
-	 *
-	 * In 0.68, the IUTF8 mode was added, and in handling old
-	 * settings we inadvertently removed the ability to not send
-	 * a mode. Any mode not mentioned was treated as if it was
-	 * set to 'auto' (A).
-	 *
-	 * After 0.68, we added explicit notation to the setting format
-	 * when the user removes a known terminal mode from the list.
-	 *
-	 * So: if any of the modes from the original set is missing, we
-	 * assume this was an intentional removal by the user and add
-	 * an explicit removal ('N'); but if IUTF8 (or any other mode
-	 * added after 0.67) is missing, we assume that its absence is
-	 * due to the setting being old rather than intentional, and
-	 * add it with its default setting.
-	 *
-	 * (This does mean that if a 0.68 user explicitly removed IUTF8,
-	 * we add it back; but removing IUTF8 had no effect in 0.68, so
-	 * we're preserving behaviour, which is the best we can do.)
-	 */
-	for (i = 0; ttymodes[i]; i++) {
-	    if (!conf_get_str_str_opt(conf, CONF_ttymodes, ttymodes[i])) {
-		/* Mode not mentioned in setting. */
-		const char *def;
-		if (!strcmp(ttymodes[i], "IUTF8")) {
-		    /* Any new modes we add in future should be treated
-		     * this way too. */
-		    def = "A";  /* same as new-setting default below */
-		} else {
-		    /* One of the original modes. Absence is probably
-		     * deliberate. */
-		    def = "N";  /* don't send */
-		}
-		conf_set_str_str(conf, CONF_ttymodes, ttymodes[i], def);
-	    }
-	}
+        /*
+         * Backwards compatibility with old saved settings.
+         *
+         * From the invention of this setting through 0.67, the set of
+         * terminal modes was fixed, and absence of a mode from this
+         * setting meant the user had explicitly removed it from the
+         * UI and we shouldn't send it.
+         *
+         * In 0.68, the IUTF8 mode was added, and in handling old
+         * settings we inadvertently removed the ability to not send
+         * a mode. Any mode not mentioned was treated as if it was
+         * set to 'auto' (A).
+         *
+         * After 0.68, we added explicit notation to the setting format
+         * when the user removes a known terminal mode from the list.
+         *
+         * So: if any of the modes from the original set is missing, we
+         * assume this was an intentional removal by the user and add
+         * an explicit removal ('N'); but if IUTF8 (or any other mode
+         * added after 0.67) is missing, we assume that its absence is
+         * due to the setting being old rather than intentional, and
+         * add it with its default setting.
+         *
+         * (This does mean that if a 0.68 user explicitly removed IUTF8,
+         * we add it back; but removing IUTF8 had no effect in 0.68, so
+         * we're preserving behaviour, which is the best we can do.)
+         */
+        for (i = 0; ttymodes[i]; i++) {
+            if (!conf_get_str_str_opt(conf, CONF_ttymodes, ttymodes[i])) {
+                /* Mode not mentioned in setting. */
+                const char *def;
+                if (!strcmp(ttymodes[i], "IUTF8")) {
+                    /* Any new modes we add in future should be treated
+                     * this way too. */
+                    def = "A";  /* same as new-setting default below */
+                } else {
+                    /* One of the original modes. Absence is probably
+                     * deliberate. */
+                    def = "N";  /* don't send */
+                }
+                conf_set_str_str(conf, CONF_ttymodes, ttymodes[i], def);
+            }
+        }
     } else {
-	/* This hardcodes a big set of defaults in any new saved
-	 * sessions. Let's hope we don't change our mind. */
-	for (i = 0; ttymodes[i]; i++)
-	    conf_set_str_str(conf, CONF_ttymodes, ttymodes[i], "A");
+        /* This hardcodes a big set of defaults in any new saved
+         * sessions. Let's hope we don't change our mind. */
+        for (i = 0; ttymodes[i]; i++)
+            conf_set_str_str(conf, CONF_ttymodes, ttymodes[i], "A");
     }
 
     /* proxy settings */
@@ -929,7 +929,7 @@ void load_open_settings(settings_r *sesskey, Conf *conf)
     gpps(sesskey, "ProxyUsername", "", conf, CONF_proxy_username);
     gpps(sesskey, "ProxyPassword", "", conf, CONF_proxy_password);
     gpps(sesskey, "ProxyTelnetCommand", "connect %host %port\\n",
-	 conf, CONF_proxy_telnet_command);
+         conf, CONF_proxy_telnet_command);
     gppi(sesskey, "ProxyLogToTerm", FORCE_OFF, conf, CONF_proxy_log_to_term);
     gppmap(sesskey, "Environment", conf, CONF_environmt);
     gpps(sesskey, "UserName", "", conf, CONF_username);
@@ -945,53 +945,53 @@ void load_open_settings(settings_r *sesskey, Conf *conf)
     gppb(sesskey, "GssapiFwd", false, conf, CONF_gssapifwd);
 #endif
     gprefs(sesskey, "Cipher", "\0",
-	   ciphernames, CIPHER_MAX, conf, CONF_ssh_cipherlist);
+           ciphernames, CIPHER_MAX, conf, CONF_ssh_cipherlist);
     {
-	/* Backward-compatibility: before 0.58 (when the "KEX"
-	 * preference was first added), we had an option to
-	 * disable gex under the "bugs" panel after one report of
-	 * a server which offered it then choked, but we never got
-	 * a server version string or any other reports. */
-	const char *default_kexes,
-		   *normal_default = "ecdh,dh-gex-sha1,dh-group14-sha1,rsa,"
-		       "WARN,dh-group1-sha1",
-		   *bugdhgex2_default = "ecdh,dh-group14-sha1,rsa,"
-		       "WARN,dh-group1-sha1,dh-gex-sha1";
-	char *raw;
-	i = 2 - gppi_raw(sesskey, "BugDHGEx2", 0);
-	if (i == FORCE_ON)
+        /* Backward-compatibility: before 0.58 (when the "KEX"
+         * preference was first added), we had an option to
+         * disable gex under the "bugs" panel after one report of
+         * a server which offered it then choked, but we never got
+         * a server version string or any other reports. */
+        const char *default_kexes,
+                   *normal_default = "ecdh,dh-gex-sha1,dh-group14-sha1,rsa,"
+                       "WARN,dh-group1-sha1",
+                   *bugdhgex2_default = "ecdh,dh-group14-sha1,rsa,"
+                       "WARN,dh-group1-sha1,dh-gex-sha1";
+        char *raw;
+        i = 2 - gppi_raw(sesskey, "BugDHGEx2", 0);
+        if (i == FORCE_ON)
             default_kexes = bugdhgex2_default;
-	else
+        else
             default_kexes = normal_default;
-	/* Migration: after 0.67 we decided we didn't like
-	 * dh-group1-sha1. If it looks like the user never changed
-	 * the defaults, quietly upgrade their settings to demote it.
-	 * (If they did, they're on their own.) */
-	raw = gpps_raw(sesskey, "KEX", default_kexes);
-	assert(raw != NULL);
-	/* Lack of 'ecdh' tells us this was saved by 0.58-0.67
-	 * inclusive. If it was saved by a later version, we need
-	 * to leave it alone. */
-	if (strcmp(raw, "dh-group14-sha1,dh-group1-sha1,rsa,"
-		   "WARN,dh-gex-sha1") == 0) {
-	    /* Previously migrated from BugDHGEx2. */
-	    sfree(raw);
-	    raw = dupstr(bugdhgex2_default);
-	} else if (strcmp(raw, "dh-gex-sha1,dh-group14-sha1,"
-			  "dh-group1-sha1,rsa,WARN") == 0) {
-	    /* Untouched old default setting. */
-	    sfree(raw);
-	    raw = dupstr(normal_default);
-	}
-	/* (For the record: after 0.70, the default algorithm list
-	 * very briefly contained the string 'gss-sha1-krb5'; this was
-	 * never used in any committed version of code, but was left
-	 * over from a pre-commit version of GSS key exchange.
-	 * Mentioned here as it is remotely possible that it will turn
-	 * up in someone's saved settings in future.) */
+        /* Migration: after 0.67 we decided we didn't like
+         * dh-group1-sha1. If it looks like the user never changed
+         * the defaults, quietly upgrade their settings to demote it.
+         * (If they did, they're on their own.) */
+        raw = gpps_raw(sesskey, "KEX", default_kexes);
+        assert(raw != NULL);
+        /* Lack of 'ecdh' tells us this was saved by 0.58-0.67
+         * inclusive. If it was saved by a later version, we need
+         * to leave it alone. */
+        if (strcmp(raw, "dh-group14-sha1,dh-group1-sha1,rsa,"
+                   "WARN,dh-gex-sha1") == 0) {
+            /* Previously migrated from BugDHGEx2. */
+            sfree(raw);
+            raw = dupstr(bugdhgex2_default);
+        } else if (strcmp(raw, "dh-gex-sha1,dh-group14-sha1,"
+                          "dh-group1-sha1,rsa,WARN") == 0) {
+            /* Untouched old default setting. */
+            sfree(raw);
+            raw = dupstr(normal_default);
+        }
+        /* (For the record: after 0.70, the default algorithm list
+         * very briefly contained the string 'gss-sha1-krb5'; this was
+         * never used in any committed version of code, but was left
+         * over from a pre-commit version of GSS key exchange.
+         * Mentioned here as it is remotely possible that it will turn
+         * up in someone's saved settings in future.) */
 
         gprefs_from_str(raw, kexnames, KEX_MAX, conf, CONF_ssh_kexlist);
-	sfree(raw);
+        sfree(raw);
     }
     gprefs(sesskey, "HostKey", "ed25519,ecdsa,rsa,dsa,WARN",
            hknames, HK_MAX, conf, CONF_ssh_hklist);
@@ -1001,13 +1001,13 @@ void load_open_settings(settings_r *sesskey, Conf *conf)
 #endif
     gpps(sesskey, "RekeyBytes", "1G", conf, CONF_ssh_rekey_data);
     {
-	/* SSH-2 only by default */
-	int sshprot = gppi_raw(sesskey, "SshProt", 3);
-	/* Old sessions may contain the values corresponding to the fallbacks
-	 * we used to allow; migrate them */
-	if (sshprot == 1)      sshprot = 0; /* => "SSH-1 only" */
-	else if (sshprot == 2) sshprot = 3; /* => "SSH-2 only" */
-	conf_set_int(conf, CONF_sshprot, sshprot);
+        /* SSH-2 only by default */
+        int sshprot = gppi_raw(sesskey, "SshProt", 3);
+        /* Old sessions may contain the values corresponding to the fallbacks
+         * we used to allow; migrate them */
+        if (sshprot == 1)      sshprot = 0; /* => "SSH-1 only" */
+        else if (sshprot == 2) sshprot = 3; /* => "SSH-2 only" */
+        conf_set_int(conf, CONF_sshprot, sshprot);
     }
     gpps(sesskey, "LogHost", "", conf, CONF_loghost);
     gppb(sesskey, "SSH2DES", false, conf, CONF_ssh2_des_cbc);
@@ -1019,7 +1019,7 @@ void load_open_settings(settings_r *sesskey, Conf *conf)
     gppb(sesskey, "AuthGSSAPI", true, conf, CONF_try_gssapi_auth);
     gppb(sesskey, "AuthGSSAPIKEX", true, conf, CONF_try_gssapi_kex);
     gprefs(sesskey, "GSSLibs", "\0",
-	   gsslibkeywords, ngsslibs, conf, CONF_ssh_gsslist);
+           gsslibkeywords, ngsslibs, conf, CONF_ssh_gsslist);
     gppfile(sesskey, "GSSCustom", conf, CONF_ssh_gss_custom);
 #endif
     gppb(sesskey, "SshNoShell", false, conf, CONF_ssh_no_shell);
@@ -1039,14 +1039,14 @@ void load_open_settings(settings_r *sesskey, Conf *conf)
     gppb(sesskey, "NoRemoteClearScroll", false,
          conf, CONF_no_remote_clearscroll);
     {
-	/* Backward compatibility */
-	int no_remote_qtitle = gppi_raw(sesskey, "NoRemoteQTitle", 1);
-	/* We deliberately interpret the old setting of "no response" as
-	 * "empty string". This changes the behaviour, but hopefully for
-	 * the better; the user can always recover the old behaviour. */
-	gppi(sesskey, "RemoteQTitleAction",
-	     no_remote_qtitle ? TITLE_EMPTY : TITLE_REAL,
-	     conf, CONF_remote_qtitle_action);
+        /* Backward compatibility */
+        int no_remote_qtitle = gppi_raw(sesskey, "NoRemoteQTitle", 1);
+        /* We deliberately interpret the old setting of "no response" as
+         * "empty string". This changes the behaviour, but hopefully for
+         * the better; the user can always recover the old behaviour. */
+        gppi(sesskey, "RemoteQTitleAction",
+             no_remote_qtitle ? TITLE_EMPTY : TITLE_REAL,
+             conf, CONF_remote_qtitle_action);
     }
     gppb(sesskey, "NoDBackspace", false, conf, CONF_no_dbackspace);
     gppb(sesskey, "NoRemoteCharset", false, conf, CONF_no_remote_charset);
@@ -1083,24 +1083,24 @@ void load_open_settings(settings_r *sesskey, Conf *conf)
     gppi(sesskey, "BellOverloadN", 5, conf, CONF_bellovl_n);
     i = gppi_raw(sesskey, "BellOverloadT", 2*TICKSPERSEC
 #ifdef PUTTY_UNIX_H
-				   *1000
+                                   *1000
 #endif
-				   );
+                                   );
     conf_set_int(conf, CONF_bellovl_t, i
 #ifdef PUTTY_UNIX_H
-		 / 1000
+                 / 1000
 #endif
-		 );
+                 );
     i = gppi_raw(sesskey, "BellOverloadS", 5*TICKSPERSEC
 #ifdef PUTTY_UNIX_H
-				   *1000
+                                   *1000
 #endif
-				   );
+                                   );
     conf_set_int(conf, CONF_bellovl_s, i
 #ifdef PUTTY_UNIX_H
-		 / 1000
+                 / 1000
 #endif
-		 );
+                 );
     gppi(sesskey, "ScrollbackLines", 2000, conf, CONF_savelines);
     gppb(sesskey, "DECOriginMode", false, conf, CONF_dec_om);
     gppb(sesskey, "AutoWrapMode", true, conf, CONF_wrap_mode);
@@ -1123,23 +1123,23 @@ void load_open_settings(settings_r *sesskey, Conf *conf)
     i = gppi_raw(sesskey, "BoldAsColour", 1); conf_set_int(conf, CONF_bold_style, i+1);
 
     for (i = 0; i < 22; i++) {
-	static const char *const defaults[] = {
-	    "187,187,187", "255,255,255", "0,0,0", "85,85,85", "0,0,0",
-	    "0,255,0", "0,0,0", "85,85,85", "187,0,0", "255,85,85",
-	    "0,187,0", "85,255,85", "187,187,0", "255,255,85", "0,0,187",
-	    "85,85,255", "187,0,187", "255,85,255", "0,187,187",
-	    "85,255,255", "187,187,187", "255,255,255"
-	};
-	char buf[20], *buf2;
-	int c0, c1, c2;
-	sprintf(buf, "Colour%d", i);
-	buf2 = gpps_raw(sesskey, buf, defaults[i]);
-	if (sscanf(buf2, "%d,%d,%d", &c0, &c1, &c2) == 3) {
-	    conf_set_int_int(conf, CONF_colours, i*3+0, c0);
-	    conf_set_int_int(conf, CONF_colours, i*3+1, c1);
-	    conf_set_int_int(conf, CONF_colours, i*3+2, c2);
-	}
-	sfree(buf2);
+        static const char *const defaults[] = {
+            "187,187,187", "255,255,255", "0,0,0", "85,85,85", "0,0,0",
+            "0,255,0", "0,0,0", "85,85,85", "187,0,0", "255,85,85",
+            "0,187,0", "85,255,85", "187,187,0", "255,255,85", "0,0,187",
+            "85,85,255", "187,0,187", "255,85,255", "0,187,187",
+            "85,255,255", "187,187,187", "255,255,255"
+        };
+        char buf[20], *buf2;
+        int c0, c1, c2;
+        sprintf(buf, "Colour%d", i);
+        buf2 = gpps_raw(sesskey, buf, defaults[i]);
+        if (sscanf(buf2, "%d,%d,%d", &c0, &c1, &c2) == 3) {
+            conf_set_int_int(conf, CONF_colours, i*3+0, c0);
+            conf_set_int_int(conf, CONF_colours, i*3+1, c1);
+            conf_set_int_int(conf, CONF_colours, i*3+2, c2);
+        }
+        sfree(buf2);
     }
     gppb(sesskey, "RawCNP", false, conf, CONF_rawcnp);
     gppb(sesskey, "UTF8linedraw", false, conf, CONF_utf8linedraw);
@@ -1149,30 +1149,30 @@ void load_open_settings(settings_r *sesskey, Conf *conf)
     gppb(sesskey, "PasteControls", false, conf, CONF_paste_controls);
     gppb(sesskey, "MouseOverride", true, conf, CONF_mouse_override);
     for (i = 0; i < 256; i += 32) {
-	static const char *const defaults[] = {
-	    "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
-	    "0,1,2,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1",
-	    "1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,2",
-	    "1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,1",
-	    "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1",
-	    "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1",
-	    "2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,2,2,2,2,2,2,2,2",
-	    "2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,2,2,2,2,2,2,2,2"
-	};
-	char buf[20], *buf2, *p;
-	int j;
-	sprintf(buf, "Wordness%d", i);
-	buf2 = gpps_raw(sesskey, buf, defaults[i / 32]);
-	p = buf2;
-	for (j = i; j < i + 32; j++) {
-	    char *q = p;
-	    while (*p && *p != ',')
-		p++;
-	    if (*p == ',')
-		*p++ = '\0';
-	    conf_set_int_int(conf, CONF_wordness, j, atoi(q));
-	}
-	sfree(buf2);
+        static const char *const defaults[] = {
+            "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
+            "0,1,2,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1",
+            "1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,2",
+            "1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,1",
+            "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1",
+            "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1",
+            "2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,2,2,2,2,2,2,2,2",
+            "2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,2,2,2,2,2,2,2,2"
+        };
+        char buf[20], *buf2, *p;
+        int j;
+        sprintf(buf, "Wordness%d", i);
+        buf2 = gpps_raw(sesskey, buf, defaults[i / 32]);
+        p = buf2;
+        for (j = i; j < i + 32; j++) {
+            char *q = p;
+            while (*p && *p != ',')
+                p++;
+            if (*p == ',')
+                *p++ = '\0';
+            conf_set_int_int(conf, CONF_wordness, j, atoi(q));
+        }
+        sfree(buf2);
     }
     gppb(sesskey, "MouseAutocopy", CLIPUI_DEFAULT_AUTOCOPY,
          conf, CONF_mouseautocopy);
@@ -1213,13 +1213,13 @@ void load_open_settings(settings_r *sesskey, Conf *conf)
     i = gppi_raw(sesskey, "BugRSA1", 0); conf_set_int(conf, CONF_sshbug_rsa1, 2-i);
     i = gppi_raw(sesskey, "BugIgnore2", 0); conf_set_int(conf, CONF_sshbug_ignore2, 2-i);
     {
-	int i;
-	i = gppi_raw(sesskey, "BugHMAC2", 0); conf_set_int(conf, CONF_sshbug_hmac2, 2-i);
-	if (2-i == AUTO) {
-	    i = gppi_raw(sesskey, "BuggyMAC", 0);
-	    if (i == 1)
-		conf_set_int(conf, CONF_sshbug_hmac2, FORCE_ON);
-	}
+        int i;
+        i = gppi_raw(sesskey, "BugHMAC2", 0); conf_set_int(conf, CONF_sshbug_hmac2, 2-i);
+        if (2-i == AUTO) {
+            i = gppi_raw(sesskey, "BuggyMAC", 0);
+            if (i == 1)
+                conf_set_int(conf, CONF_sshbug_hmac2, FORCE_ON);
+        }
     }
     i = gppi_raw(sesskey, "BugDeriveKey2", 0); conf_set_int(conf, CONF_sshbug_derivekey2, 2-i);
     i = gppi_raw(sesskey, "BugRSAPad2", 0); conf_set_int(conf, CONF_sshbug_rsapad2, 2-i);
@@ -1269,14 +1269,14 @@ static int sessioncmp(const void *av, const void *bv)
      * special case and comes first.
      */
     if (!strcmp(a, "Default Settings"))
-	return -1;		       /* a comes first */
+        return -1;                     /* a comes first */
     if (!strcmp(b, "Default Settings"))
-	return +1;		       /* b comes first */
+        return +1;                     /* b comes first */
     /*
      * FIXME: perhaps we should ignore the first & in determining
      * sort order.
      */
-    return strcmp(a, b);	       /* otherwise, compare normally */
+    return strcmp(a, b);               /* otherwise, compare normally */
 }
 
 void get_sesslist(struct sesslist *list, bool allocate)
@@ -1288,47 +1288,47 @@ void get_sesslist(struct sesslist *list, bool allocate)
     if (allocate) {
         strbuf *sb = strbuf_new();
 
-	if ((handle = enum_settings_start()) != NULL) {
+        if ((handle = enum_settings_start()) != NULL) {
             while (enum_settings_next(handle, sb))
                 put_byte(sb, '\0');
-	    enum_settings_finish(handle);
-	}
+            enum_settings_finish(handle);
+        }
         put_byte(sb, '\0');
-	list->buffer = strbuf_to_str(sb);
+        list->buffer = strbuf_to_str(sb);
 
-	/*
-	 * Now set up the list of sessions. Note that "Default
-	 * Settings" must always be claimed to exist, even if it
-	 * doesn't really.
-	 */
+        /*
+         * Now set up the list of sessions. Note that "Default
+         * Settings" must always be claimed to exist, even if it
+         * doesn't really.
+         */
 
-	p = list->buffer;
-	list->nsessions = 1;	       /* "Default Settings" counts as one */
-	while (*p) {
-	    if (strcmp(p, "Default Settings"))
-		list->nsessions++;
-	    while (*p)
-		p++;
-	    p++;
-	}
+        p = list->buffer;
+        list->nsessions = 1;           /* "Default Settings" counts as one */
+        while (*p) {
+            if (strcmp(p, "Default Settings"))
+                list->nsessions++;
+            while (*p)
+                p++;
+            p++;
+        }
 
-	list->sessions = snewn(list->nsessions + 1, const char *);
-	list->sessions[0] = "Default Settings";
-	p = list->buffer;
-	i = 1;
-	while (*p) {
-	    if (strcmp(p, "Default Settings"))
-		list->sessions[i++] = p;
-	    while (*p)
-		p++;
-	    p++;
-	}
+        list->sessions = snewn(list->nsessions + 1, const char *);
+        list->sessions[0] = "Default Settings";
+        p = list->buffer;
+        i = 1;
+        while (*p) {
+            if (strcmp(p, "Default Settings"))
+                list->sessions[i++] = p;
+            while (*p)
+                p++;
+            p++;
+        }
 
-	qsort(list->sessions, i, sizeof(const char *), sessioncmp);
+        qsort(list->sessions, i, sizeof(const char *), sessioncmp);
     } else {
-	sfree(list->buffer);
-	sfree(list->sessions);
-	list->buffer = NULL;
-	list->sessions = NULL;
+        sfree(list->buffer);
+        sfree(list->sessions);
+        list->buffer = NULL;
+        list->sessions = NULL;
     }
 }
