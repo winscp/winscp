@@ -1178,7 +1178,7 @@ int proxy_socks5_negotiate (ProxySocket *p, int change)
             switch (data[3]) {
               case 1: len += 4; break; /* IPv4 address */
               case 4: len += 16; break;/* IPv6 address */
-              case 3: len += (unsigned char)data[4]; break; /* domain name */
+              case 3: len += 1+(unsigned char)data[4]; break; /* domain name */
               default:
                 plug_closing(p->plug, "Proxy error: SOCKS proxy returned "
                              "unrecognised address format",

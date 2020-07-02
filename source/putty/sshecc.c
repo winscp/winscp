@@ -1549,7 +1549,7 @@ bool ec_ed_alg_and_curve_by_bits(
     int bits, const struct ec_curve **curve, const ssh_keyalg **alg)
 {
     switch (bits) {
-      case 256: *alg = &ssh_ecdsa_ed25519; break;
+      case 255: case 256: *alg = &ssh_ecdsa_ed25519; break;
       default: return false;
     }
     *curve = ((struct ecsign_extra *)(*alg)->extra)->curve();

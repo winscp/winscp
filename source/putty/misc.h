@@ -24,29 +24,10 @@ char *host_strchr(const char *s, int c);
 char *host_strrchr(const char *s, int c);
 char *host_strduptrim(const char *s);
 
-#ifdef __GNUC__
-/*
- * On MinGW, the correct compiler format checking for vsnprintf() etc
- * can depend on compile-time flags; these control whether you get
- * ISO C or Microsoft's non-standard format strings.
- * We sometimes use __attribute__ ((format)) for our own printf-like
- * functions, which are ultimately interpreted by the toolchain-chosen
- * printf, so we need to take that into account to get correct warnings.
- */
-#ifdef __MINGW_PRINTF_FORMAT
-#define PUTTY_PRINTF_ARCHETYPE __MINGW_PRINTF_FORMAT
-#else
-#define PUTTY_PRINTF_ARCHETYPE printf
-#endif
-#endif /* __GNUC__ */
-
 char *dupstr(const char *s);
-char *dupcat(const char *s1, ...);
-char *dupprintf(const char *fmt, ...)
-#ifdef __GNUC__
-    __attribute__ ((format (PUTTY_PRINTF_ARCHETYPE, 1, 2)))
-#endif
-    ;
+char *dupcat_fn(const char *s1, ...);
+#define dupcat(...) dupcat_fn(__VA_ARGS__, (const char *)NULL)
+char *dupprintf(const char *fmt, ...) PRINTF_LIKE(1, 2);
 char *dupvprintf(const char *fmt, va_list ap);
 void burnstr(char *string);
 
@@ -72,9 +53,13 @@ strbuf *strbuf_new_nm(void);
 
 void strbuf_free(strbuf *buf);
 void *strbuf_append(strbuf *buf, size_t len);
+void strbuf_shrink_to(strbuf *buf, size_t new_len);
+void strbuf_shrink_by(strbuf *buf, size_t amount_to_remove);
 char *strbuf_to_str(strbuf *buf); /* does free buf, but you must free result */
-void strbuf_catf(strbuf *buf, const char *fmt, ...);
+void strbuf_catf(strbuf *buf, const char *fmt, ...) PRINTF_LIKE(2, 3);
 void strbuf_catfv(strbuf *buf, const char *fmt, va_list ap);
+static inline void strbuf_clear(strbuf *buf) { strbuf_shrink_to(buf, 0); }
+bool strbuf_chomp(strbuf *buf, char char_to_remove);
 
 strbuf *strbuf_new_for_agent_query(void);
 void strbuf_finalise_agent_query(strbuf *buf);
@@ -258,7 +243,7 @@ static inline NORETURN void unreachable_internal(void) { abort(); }
  */
 
 #ifdef DEBUG
-void debug_printf(const char *fmt, ...);
+void debug_printf(const char *fmt, ...) PRINTF_LIKE(1, 2);
 void debug_memdump(const void *buf, int len, bool L);
 #define debug(...) (debug_printf(__VA_ARGS__))
 #define dmemdump(buf,len) (debug_memdump(buf, len, false))

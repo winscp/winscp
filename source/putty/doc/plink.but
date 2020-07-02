@@ -39,9 +39,9 @@ Once you've got a console window to type into, you can just type
 version of Plink you're using, and gives you a brief summary of how to
 use Plink:
 
-\c Z:\sysosd>plink
+\c C:\>plink
 \c Plink: command-line connection utility
-\c Release 0.73
+\c Release 0.74
 \c Usage: plink [options] [user@]host [command]
 \c        ("host" can also be a PuTTY saved session name)
 \c Options:
@@ -100,7 +100,7 @@ Once this works, you are ready to use Plink.
 To make a simple interactive connection to a remote server, just
 type \c{plink} and then the host name:
 
-\c Z:\sysosd>plink login.example.com
+\c C:\>plink login.example.com
 \c
 \c Debian GNU/Linux 2.2 flunky.example.com
 \c flunky login:
@@ -117,7 +117,7 @@ In order to connect with a different protocol, you can give the
 command line options \c{-ssh}, \c{-telnet}, \c{-rlogin} or \c{-raw}.
 To make an SSH connection, for example:
 
-\c Z:\sysosd>plink -ssh login.example.com
+\c C:\>plink -ssh login.example.com
 \c login as:
 
 If you have already set up a PuTTY saved session, then instead of
@@ -125,7 +125,7 @@ supplying a host name, you can give the saved session name. This
 allows you to use public-key authentication, specify a user name,
 and use most of the other features of PuTTY:
 
-\c Z:\sysosd>plink my-ssh-session
+\c C:\>plink my-ssh-session
 \c Sent username "fred"
 \c Authenticating with public key "fred@winbox"
 \c Last login: Thu Dec  6 19:25:33 2001 from :0.0
@@ -196,18 +196,18 @@ Once you have done all this, you should be able to run a remote
 command on the SSH server machine and have it execute automatically
 with no prompting:
 
-\c Z:\sysosd>plink login.example.com -l fred echo hello, world
+\c C:\>plink login.example.com -l fred echo hello, world
 \c hello, world
 \c
-\c Z:\sysosd>
+\c C:\>
 
 Or, if you have set up a saved session with all the connection
 details:
 
-\c Z:\sysosd>plink mysession echo hello, world
+\c C:\>plink mysession echo hello, world
 \c hello, world
 \c
-\c Z:\sysosd>
+\c C:\>
 
 Then you can set up other programs to run this Plink command and
 talk to it as if it were a process on the server machine.

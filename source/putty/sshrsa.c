@@ -43,6 +43,24 @@ void BinarySource_get_rsa_ssh1_priv(
     rsa->private_exponent = get_mp_ssh1(src);
 }
 
+RSAKey *BinarySource_get_rsa_ssh1_priv_agent(BinarySource *src)
+{
+    RSAKey *rsa = snew(RSAKey);
+    memset(rsa, 0, sizeof(RSAKey));
+
+    get_rsa_ssh1_pub(src, rsa, RSA_SSH1_MODULUS_FIRST);
+    get_rsa_ssh1_priv(src, rsa);
+
+    /* SSH-1 names p and q the other way round, i.e. we have the
+     * inverse of p mod q and not of q mod p. We swap the names,
+     * because our internal RSA wants iqmp. */
+    rsa->iqmp = get_mp_ssh1(src);
+    rsa->q = get_mp_ssh1(src);
+    rsa->p = get_mp_ssh1(src);
+
+    return rsa;
+}
+
 bool rsa_ssh1_encrypt(unsigned char *data, int length, RSAKey *key)
 {
     mp_int *b1, *b2;
@@ -278,7 +296,7 @@ char *rsa_ssh1_fingerprint(RSAKey *key)
     ssh_hash_final(hash, digest);
 
     out = strbuf_new();
-    strbuf_catf(out, "%d ", mp_get_nbits(key->modulus));
+    strbuf_catf(out, "%"SIZEu" ", mp_get_nbits(key->modulus));
     for (i = 0; i < 16; i++)
         strbuf_catf(out, "%s%02x", i ? ":" : "", digest[i]);
     if (key->comment)
@@ -761,7 +779,7 @@ char *rsa2_invalid(ssh_key *key, unsigned flags)
     const ssh_hashalg *halg = rsa2_hash_alg_for_flags(flags, &sign_alg_name);
     if (nbytes < rsa_pkcs1_length_of_fixed_parts(halg)) {
         return dupprintf(
-            "%zu-bit RSA key is too short to generate %s signatures",
+            "%"SIZEu"-bit RSA key is too short to generate %s signatures",
             bits, sign_alg_name);
     }
 
@@ -980,7 +998,7 @@ mp_int *ssh_rsakex_decrypt(
         if (out[i] == 1) {
             i++;  /* skip over the 1 byte */
             break;
-        } else if (out[i] != 1) {
+        } else if (out[i] != 0) {
             sfree(out);
             return NULL;
         }

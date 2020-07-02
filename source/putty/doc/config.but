@@ -2544,6 +2544,27 @@ If the first key type PuTTY finds is below the \q{warn below here}
 line, you will see a warning box when you make the connection, similar
 to that for cipher selection (see \k{config-ssh-encryption}).
 
+\S{config-ssh-prefer-known-hostkeys} Preferring known host keys
+
+By default, PuTTY will adjust the preference order for host key
+algorithms so that any host keys it already knows are moved to the top
+of the list.
+
+This prevents you from having to check and confirm a new host key for
+a server you already had one for (e.g. because the server has
+generated an alternative key of a type higher in PuTTY's preference
+order, or because you changed the preference order itself).
+
+However, on the other hand, it can leak information to a listener in
+the network about \e{whether} you already know a host key for this
+server.
+
+For this reason, this policy is configurable. By turning this checkbox
+off, you can reset PuTTY to always use the exact order of host key
+algorithms configured in the preference list described in
+\k{config-ssh-hostkey-order}, so that a listener will find out nothing
+about what keys you had stored.
+
 \S{config-ssh-kex-manual-hostkeys} \ii{Manually configuring host keys}
 
 In some situations, if PuTTY's automated host key management is not

@@ -12,6 +12,12 @@
 #include "sshppl.h"
 #include "sshcr.h"
 
+typedef struct agent_key {
+    RSAKey key;
+    strbuf *comment;
+    ptrlen blob; /* only used during initial parsing of agent response */
+} agent_key;
+
 struct ssh1_login_state {
     int crState;
 
@@ -47,11 +53,11 @@ struct ssh1_login_state {
     void *agent_response_to_free;
     ptrlen agent_response;
     BinarySource asrc[1];          /* response from SSH agent */
-    int keyi, nkeys;
+    size_t agent_keys_len;
+    agent_key *agent_keys;
+    size_t agent_key_index, agent_key_limit;
     bool authed;
     RSAKey key;
-    mp_int *challenge;
-    strbuf *agent_comment;
     int dlgret;
     Filename *keyfile;
     RSAKey servkey, hostkey;
@@ -80,6 +86,7 @@ static const struct PacketProtocolLayerVtable ssh1_login_vtable = {
     ssh1_login_want_user_input,
     ssh1_login_got_user_input,
     ssh1_login_reconfigure,
+    ssh_ppl_default_queued_data_size,
     NULL /* no layer names in SSH-1 */,
 };
 
@@ -98,7 +105,6 @@ PacketProtocolLayer *ssh1_login_new(
     s->savedhost = dupstr(host);
     s->savedport = port;
     s->successor_layer = successor_layer;
-    s->agent_comment = strbuf_new();
     return &s->ppl;
 }
 
@@ -117,9 +123,15 @@ static void ssh1_login_free(PacketProtocolLayer *ppl)
     if (s->publickey_blob)
         strbuf_free(s->publickey_blob);
     sfree(s->publickey_comment);
-    strbuf_free(s->agent_comment);
     if (s->cur_prompt)
         free_prompts(s->cur_prompt);
+    if (s->agent_keys) {
+        for (size_t i = 0; i < s->agent_keys_len; i++) {
+            freersakey(&s->agent_keys[i].key);
+            strbuf_free(s->agent_keys[i].comment);
+        }
+        sfree(s->agent_keys);
+    }
     sfree(s->agent_response_to_free);
     if (s->auth_agent_query)
         agent_cancel_query(s->auth_agent_query);
@@ -416,7 +428,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
             ssh_user_close(s->ppl.ssh, "No username provided");
             return;
         }
-        s->username = dupstr(s->cur_prompt->prompts[0]->result);
+        s->username = prompt_get_result(s->cur_prompt->prompts[0]);
         free_prompts(s->cur_prompt);
         s->cur_prompt = NULL;
     }
@@ -503,122 +515,165 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
 
             get_uint32(s->asrc); /* skip length field */
             if (get_byte(s->asrc) == SSH1_AGENT_RSA_IDENTITIES_ANSWER) {
-                s->nkeys = toint(get_uint32(s->asrc));
-                if (s->nkeys < 0) {
-                    ppl_logevent("Pageant reported negative key count %d",
-                                 s->nkeys);
-                    s->nkeys = 0;
-                }
-                ppl_logevent("Pageant has %d SSH-1 keys", s->nkeys);
-                for (s->keyi = 0; s->keyi < s->nkeys; s->keyi++) {
-                    size_t start, end;
-                    start = s->asrc->pos;
-                    get_rsa_ssh1_pub(s->asrc, &s->key,
-                                     RSA_SSH1_EXPONENT_FIRST);
-                    end = s->asrc->pos;
-                    s->agent_comment->len = 0;
-                    put_datapl(s->agent_comment, get_string(s->asrc));
-                    if (get_err(s->asrc)) {
-                        ppl_logevent("Pageant key list packet was truncated");
-                        break;
-                    }
-                    if (s->publickey_blob) {
-                        ptrlen keystr = make_ptrlen(
-                            (const char *)s->asrc->data + start, end - start);
+                size_t nkeys = get_uint32(s->asrc);
+                size_t origpos = s->asrc->pos;
 
-                        if (keystr.len == s->publickey_blob->len &&
-                            !memcmp(keystr.ptr, s->publickey_blob->s,
-                                    s->publickey_blob->len)) {
-                            ppl_logevent("Pageant key #%d matches "
-                                         "configured key file", s->keyi);
-                            s->tried_publickey = true;
-                        } else
-                            /* Skip non-configured key */
-                            continue;
+                /*
+                 * Check that the agent response is well formed.
+                 */
+                for (size_t i = 0; i < nkeys; i++) {
+                    get_rsa_ssh1_pub(s->asrc, NULL, RSA_SSH1_EXPONENT_FIRST);
+                    get_string(s->asrc); /* comment */
+                    if (get_err(s->asrc)) {
+                        ppl_logevent("Pageant's response was truncated");
+                        goto parsed_agent_query;
                     }
-                    ppl_logevent("Trying Pageant key #%d", s->keyi);
-                    pkt = ssh_bpp_new_pktout(s->ppl.bpp, SSH1_CMSG_AUTH_RSA);
-                    put_mp_ssh1(pkt, s->key.modulus);
-                    pq_push(s->ppl.out_pq, pkt);
-                    crMaybeWaitUntilV((pktin = ssh1_login_pop(s))
-                                      != NULL);
-                    if (pktin->type != SSH1_SMSG_AUTH_RSA_CHALLENGE) {
-                        ppl_logevent("Key refused");
-                        continue;
+                }
+
+                /*
+                 * Copy the list of public-key blobs out of the Pageant
+                 * response.
+                 */
+                BinarySource_REWIND_TO(s->asrc, origpos);
+                s->agent_keys_len = nkeys;
+                s->agent_keys = snewn(s->agent_keys_len, agent_key);
+                for (size_t i = 0; i < nkeys; i++) {
+                    memset(&s->agent_keys[i].key, 0,
+                           sizeof(s->agent_keys[i].key));
+
+                    const char *blobstart = get_ptr(s->asrc);
+                    get_rsa_ssh1_pub(s->asrc, &s->agent_keys[i].key,
+                                     RSA_SSH1_EXPONENT_FIRST);
+                    const char *blobend = get_ptr(s->asrc);
+
+                    s->agent_keys[i].comment = strbuf_new();
+                    put_datapl(s->agent_keys[i].comment, get_string(s->asrc));
+
+                    s->agent_keys[i].blob = make_ptrlen(
+                        blobstart, blobend - blobstart);
+                }
+
+                ppl_logevent("Pageant has %"SIZEu" SSH-1 keys", nkeys);
+
+                if (s->publickey_blob) {
+                    /*
+                     * If we've been given a specific public key blob,
+                     * filter the list of keys to try from the agent
+                     * down to only that one, or none if it's not
+                     * there.
+                     */
+                    ptrlen our_blob = ptrlen_from_strbuf(s->publickey_blob);
+                    size_t i;
+
+                    for (i = 0; i < nkeys; i++) {
+                        if (ptrlen_eq_ptrlen(our_blob, s->agent_keys[i].blob))
+                            break;
                     }
-                    ppl_logevent("Received RSA challenge");
-                    s->challenge = get_mp_ssh1(pktin);
+
+                    if (i < nkeys) {
+                        ppl_logevent("Pageant key #%"SIZEu" matches "
+                                     "configured key file", i);
+                        s->agent_key_index = i;
+                        s->agent_key_limit = i+1;
+                    } else {
+                        ppl_logevent("Configured key file not in Pageant");
+                        s->agent_key_index = 0;
+                        s->agent_key_limit = 0;
+                    }
+                } else {
+                    /*
+                     * Otherwise, try them all.
+                     */
+                    s->agent_key_index = 0;
+                    s->agent_key_limit = nkeys;
+                }
+            } else {
+                ppl_logevent("Failed to get reply from Pageant");
+            }
+          parsed_agent_query:;
+
+            for (; s->agent_key_index < s->agent_key_limit;
+                 s->agent_key_index++) {
+                ppl_logevent("Trying Pageant key #%"SIZEu, s->agent_key_index);
+                pkt = ssh_bpp_new_pktout(s->ppl.bpp, SSH1_CMSG_AUTH_RSA);
+                put_mp_ssh1(pkt,
+                            s->agent_keys[s->agent_key_index].key.modulus);
+                pq_push(s->ppl.out_pq, pkt);
+                crMaybeWaitUntilV((pktin = ssh1_login_pop(s))
+                                  != NULL);
+                if (pktin->type != SSH1_SMSG_AUTH_RSA_CHALLENGE) {
+                    ppl_logevent("Key refused");
+                    continue;
+                }
+                ppl_logevent("Received RSA challenge");
+
+                {
+                    mp_int *challenge = get_mp_ssh1(pktin);
                     if (get_err(pktin)) {
-                        mp_free(s->challenge);
+                        mp_free(challenge);
                         ssh_proto_error(s->ppl.ssh, "Server's RSA challenge "
                                         "was badly formatted");
                         return;
                     }
 
-                    {
-                        strbuf *agentreq;
-                        const char *ret;
+                    strbuf *agentreq = strbuf_new_for_agent_query();
+                    put_byte(agentreq, SSH1_AGENTC_RSA_CHALLENGE);
 
-                        agentreq = strbuf_new_for_agent_query();
-                        put_byte(agentreq, SSH1_AGENTC_RSA_CHALLENGE);
-                        put_uint32(agentreq, mp_get_nbits(s->key.modulus));
-                        put_mp_ssh1(agentreq, s->key.exponent);
-                        put_mp_ssh1(agentreq, s->key.modulus);
-                        put_mp_ssh1(agentreq, s->challenge);
-                        put_data(agentreq, s->session_id, 16);
-                        put_uint32(agentreq, 1);    /* response format */
-                        ssh1_login_agent_query(s, agentreq);
-                        strbuf_free(agentreq);
-                        crMaybeWaitUntilV(!s->auth_agent_query);
+                    rsa_ssh1_public_blob(
+                        BinarySink_UPCAST(agentreq),
+                        &s->agent_keys[s->agent_key_index].key,
+                        RSA_SSH1_EXPONENT_FIRST);
 
-                        ret = s->agent_response.ptr;
-                        if (ret) {
-                            if (s->agent_response.len >= 5+16 &&
-                                ret[4] == SSH1_AGENT_RSA_RESPONSE) {
-                                ppl_logevent("Sending Pageant's response");
-                                pkt = ssh_bpp_new_pktout(
-                                    s->ppl.bpp, SSH1_CMSG_AUTH_RSA_RESPONSE);
-                                put_data(pkt, ret + 5, 16);
-                                pq_push(s->ppl.out_pq, pkt);
-                                crMaybeWaitUntilV(
-                                    (pktin = ssh1_login_pop(s))
-                                    != NULL);
-                                if (pktin->type == SSH1_SMSG_SUCCESS) {
-                                    ppl_logevent("Pageant's response "
-                                                 "accepted");
-                                    if (flags & FLAG_VERBOSE) {
-                                        ptrlen comment = ptrlen_from_strbuf(
-                                            s->agent_comment);
-                                        ppl_printf("Authenticated using RSA "
-                                                   "key \"%.*s\" from "
-                                                   "agent\r\n",
-                                                   PTRLEN_PRINTF(comment));
-                                    }
-                                    s->authed = true;
-                                } else
-                                    ppl_logevent("Pageant's response not "
-                                                 "accepted");
-                            } else {
-                                ppl_logevent("Pageant failed to answer "
-                                             "challenge");
-                                sfree((char *)ret);
-                            }
-                        } else {
-                            ppl_logevent("No reply received from Pageant");
-                        }
-                    }
-                    mp_free(s->key.exponent);
-                    mp_free(s->key.modulus);
-                    mp_free(s->challenge);
-                    if (s->authed)
-                        break;
+                    put_mp_ssh1(agentreq, challenge);
+                    mp_free(challenge);
+
+                    put_data(agentreq, s->session_id, 16);
+                    put_uint32(agentreq, 1);    /* response format */
+                    ssh1_login_agent_query(s, agentreq);
+                    strbuf_free(agentreq);
+                    crMaybeWaitUntilV(!s->auth_agent_query);
                 }
-                sfree(s->agent_response_to_free);
-                s->agent_response_to_free = NULL;
-                if (s->publickey_blob && !s->tried_publickey)
-                    ppl_logevent("Configured key file not in Pageant");
-            } else {
-                ppl_logevent("Failed to get reply from Pageant");
+
+                {
+                    const unsigned char *ret = s->agent_response.ptr;
+                    if (ret) {
+                        if (s->agent_response.len >= 5+16 &&
+                            ret[4] == SSH1_AGENT_RSA_RESPONSE) {
+                            ppl_logevent("Sending Pageant's response");
+                            pkt = ssh_bpp_new_pktout(
+                                s->ppl.bpp, SSH1_CMSG_AUTH_RSA_RESPONSE);
+                            put_data(pkt, ret + 5, 16);
+                            pq_push(s->ppl.out_pq, pkt);
+                            crMaybeWaitUntilV(
+                                (pktin = ssh1_login_pop(s))
+                                != NULL);
+                            if (pktin->type == SSH1_SMSG_SUCCESS) {
+                                ppl_logevent("Pageant's response "
+                                             "accepted");
+                                if (flags & FLAG_VERBOSE) {
+                                    ptrlen comment = ptrlen_from_strbuf(
+                                        s->agent_keys[s->agent_key_index].
+                                        comment);
+                                    ppl_printf("Authenticated using RSA "
+                                               "key \"%.*s\" from "
+                                               "agent\r\n",
+                                               PTRLEN_PRINTF(comment));
+                                }
+                                s->authed = true;
+                            } else
+                                ppl_logevent("Pageant's response not "
+                                             "accepted");
+                        } else {
+                            ppl_logevent("Pageant failed to answer "
+                                         "challenge");
+                            sfree((char *)ret);
+                        }
+                    } else {
+                        ppl_logevent("No reply received from Pageant");
+                    }
+                }
+                if (s->authed)
+                    break;
             }
             if (s->authed)
                 break;
@@ -648,7 +703,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                         ppl_printf("No passphrase required.\r\n");
                     passphrase = NULL;
                 } else {
-                    s->cur_prompt = new_prompts(s->ppl.seat);
+                    s->cur_prompt = new_prompts();
                     s->cur_prompt->to_server = false;
                     s->cur_prompt->from_server = false;
                     s->cur_prompt->name = dupstr("SSH key passphrase");
@@ -676,7 +731,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                                        "User aborted at passphrase prompt");
                         return;
                     }
-                    passphrase = dupstr(s->cur_prompt->prompts[0]->result);
+                    passphrase = prompt_get_result(s->cur_prompt->prompts[0]);
                     free_prompts(s->cur_prompt);
                     s->cur_prompt = NULL;
                 }
@@ -787,7 +842,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
         /*
          * Otherwise, try various forms of password-like authentication.
          */
-        s->cur_prompt = new_prompts(s->ppl.seat);
+        s->cur_prompt = new_prompts();
 
         if (conf_get_bool(s->conf, CONF_try_tis_auth) &&
             (s->supported_auths_mask & (1 << SSH1_AUTH_TIS)) &&
@@ -988,8 +1043,10 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                  * we can use the primary defence.
                  */
                 int bottom, top, pwlen, i;
+                const char *pw = prompt_get_result_ref(
+                    s->cur_prompt->prompts[0]);
 
-                pwlen = strlen(s->cur_prompt->prompts[0]->result);
+                pwlen = strlen(pw);
                 if (pwlen < 16) {
                     bottom = 0;    /* zero length passwords are OK! :-) */
                     top = 15;
@@ -1003,7 +1060,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                 for (i = bottom; i <= top; i++) {
                     if (i == pwlen) {
                         pkt = ssh_bpp_new_pktout(s->ppl.bpp, s->pwpkt_type);
-                        put_stringz(pkt, s->cur_prompt->prompts[0]->result);
+                        put_stringz(pkt, pw);
                         pq_push(s->ppl.out_pq, pkt);
                     } else {
                         strbuf *random_data = strbuf_new_nm();
@@ -1026,7 +1083,8 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
 
                 ppl_logevent("Sending length-padded password");
                 pkt = ssh_bpp_new_pktout(s->ppl.bpp, s->pwpkt_type);
-                put_asciz(padded_pw, s->cur_prompt->prompts[0]->result);
+                put_asciz(padded_pw, prompt_get_result_ref(
+                              s->cur_prompt->prompts[0]));
                 size_t pad = 63 & -padded_pw->len;
                 random_read(strbuf_append(padded_pw, pad), pad);
                 put_stringsb(pkt, padded_pw);
@@ -1038,12 +1096,13 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                  */
                 ppl_logevent("Sending unpadded password");
                 pkt = ssh_bpp_new_pktout(s->ppl.bpp, s->pwpkt_type);
-                put_stringz(pkt, s->cur_prompt->prompts[0]->result);
+                put_stringz(pkt, prompt_get_result_ref(
+                                s->cur_prompt->prompts[0]));
                 pq_push(s->ppl.out_pq, pkt);
             }
         } else {
             pkt = ssh_bpp_new_pktout(s->ppl.bpp, s->pwpkt_type);
-            put_stringz(pkt, s->cur_prompt->prompts[0]->result);
+            put_stringz(pkt, prompt_get_result_ref(s->cur_prompt->prompts[0]));
             pq_push(s->ppl.out_pq, pkt);
         }
         ppl_logevent("Sent password");

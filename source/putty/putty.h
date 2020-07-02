@@ -636,19 +636,7 @@ GLOBAL char *cmdline_session_name;
 typedef struct {
     char *prompt;
     bool echo;
-    /*
-     * 'result' must be a dynamically allocated array of exactly
-     * 'resultsize' chars. The code for actually reading input may
-     * realloc it bigger (and adjust resultsize accordingly) if it has
-     * to. The caller should free it again when finished with it.
-     *
-     * If resultsize==0, then result may be NULL. When setting up a
-     * prompt_t, it's therefore easiest to initialise them this way,
-     * which means all actual allocation is done by the callee. This
-     * is what add_prompt does.
-     */
-    char *result;
-    size_t resultsize;
+    strbuf *result;
 } prompt_t;
 typedef struct {
     /*
@@ -679,11 +667,11 @@ typedef struct {
     void *data;         /* slot for housekeeping data, managed by
                          * seat_get_userpass_input(); initially NULL */
 } prompts_t;
-prompts_t *new_prompts();
+prompts_t *new_prompts(void);
 void add_prompt(prompts_t *p, char *promptstr, bool echo);
 void prompt_set_result(prompt_t *pr, const char *newstr);
-void prompt_ensure_result_size(prompt_t *pr, int len);
-/* Burn the evidence. (Assumes _all_ strings want free()ing.) */
+char *prompt_get_result(prompt_t *pr);
+const char *prompt_get_result_ref(prompt_t *pr);
 void free_prompts(prompts_t *p);
 
 /*
@@ -1015,7 +1003,7 @@ static inline bool seat_set_trust_status(Seat *seat, bool trusted)
 /* Unlike the seat's actual method, the public entry point
  * seat_connection_fatal is a wrapper function with a printf-like API,
  * defined in misc.c. */
-void seat_connection_fatal(Seat *seat, const char *fmt, ...);
+void seat_connection_fatal(Seat *seat, const char *fmt, ...) PRINTF_LIKE(2, 3);
 
 /* Handy aliases for seat_output which set is_stderr to a fixed value. */
 static inline size_t seat_stdout(Seat *seat, const void *data, size_t len)
@@ -1230,8 +1218,8 @@ static inline bool win_is_utf8(TermWin *win)
 /*
  * Global functions not specific to a connection instance.
  */
-void nonfatal(const char *, ...);
-NORETURN void modalfatalbox(const char *, ...);
+void nonfatal(const char *, ...) PRINTF_LIKE(1, 2);
+NORETURN void modalfatalbox(const char *, ...) PRINTF_LIKE(1, 2);
 NORETURN void cleanup_exit(int);
 
 /*
@@ -1268,6 +1256,7 @@ NORETURN void cleanup_exit(int);
     X(BOOL, NONE, compression) \
     X(INT, INT, ssh_kexlist) \
     X(INT, INT, ssh_hklist) \
+    X(BOOL, NONE, ssh_prefer_known_hostkeys) \
     X(INT, NONE, ssh_rekey_time) /* in minutes */ \
     X(STR, NONE, ssh_rekey_data) /* string encoding e.g. "100K", "2M", "1G" */ \
     X(BOOL, NONE, tryagent) \
@@ -1715,7 +1704,7 @@ void logfclose(LogContext *logctx);
 void logtraffic(LogContext *logctx, unsigned char c, int logmode);
 void logflush(LogContext *logctx);
 void logevent(LogContext *logctx, const char *event);
-void logeventf(LogContext *logctx, const char *fmt, ...);
+void logeventf(LogContext *logctx, const char *fmt, ...) PRINTF_LIKE(2, 3);
 void logeventvf(LogContext *logctx, const char *fmt, va_list ap);
 
 /*
@@ -1929,7 +1918,8 @@ bool is_interactive(void);
 void console_print_error_msg(const char *prefix, const char *msg);
 void console_print_error_msg_fmt_v(
     const char *prefix, const char *fmt, va_list ap);
-void console_print_error_msg_fmt(const char *prefix, const char *fmt, ...);
+void console_print_error_msg_fmt(const char *prefix, const char *fmt, ...)
+    PRINTF_LIKE(2, 3);
 
 /*
  * Exports from printing.c.
@@ -1967,7 +1957,7 @@ bool cmdline_host_ok(Conf *);
 #define TOOLTYPE_PORT_ARG 64
 extern int cmdline_tooltype;
 
-void cmdline_error(const char *, ...);
+void cmdline_error(const char *, ...) PRINTF_LIKE(1, 2);
 
 /*
  * Exports from config.c.

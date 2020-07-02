@@ -25,7 +25,7 @@ static Ssh_gss_stat ssh_gssapi_import_name(struct ssh_gss_library *lib,
     gss_buffer_desc host_buf;
     char *pStr;
 
-    pStr = dupcat("host@", host, NULL);
+    pStr = dupcat("host@", host);
 
     host_buf.value = pStr;
     host_buf.length = strlen(pStr);

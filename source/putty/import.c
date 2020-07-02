@@ -538,8 +538,10 @@ static ssh2_userkey *openssh_pem_read(
     strbuf *blob = strbuf_new_nm();
     int privptr = 0, publen;
 
-    if (!key)
+    if (!key) {
+        strbuf_free(blob);
         return NULL;
+    }
 
     if (key->encrypted) {
         unsigned char keybuf[32];

@@ -315,7 +315,11 @@ SshChannel *ssh2_serverside_agent_open(ConnectionLayer *cl, Channel *chan)
 static void ssh2_channel_response(
     struct ssh2_channel *c, PktIn *pkt, void *ctx)
 {
-    chan_request_response(c->chan, pkt->type == SSH2_MSG_CHANNEL_SUCCESS);
+    /* If pkt==NULL (because this handler has been called in response
+     * to CHANNEL_CLOSE arriving while the request was still
+     * outstanding), we treat that the same as CHANNEL_FAILURE. */
+    chan_request_response(c->chan,
+                          pkt && pkt->type == SSH2_MSG_CHANNEL_SUCCESS);
 }
 
 void ssh2channel_start_shell(SshChannel *sc, bool want_reply)
