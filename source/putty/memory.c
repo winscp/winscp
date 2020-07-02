@@ -121,9 +121,11 @@ void *safegrowarray(void *ptr, size_t *allocated, size_t eltsize,
     void *toret;
     if (secret) {
         toret = safemalloc(newsize, eltsize, 0);
-        memcpy(toret, ptr, oldsize * eltsize);
-        smemclr(ptr, oldsize * eltsize);
-        sfree(ptr);
+        if (oldsize) {
+            memcpy(toret, ptr, oldsize * eltsize);
+            smemclr(ptr, oldsize * eltsize);
+            sfree(ptr);
+        }
     } else {
         toret = saferealloc(ptr, newsize, eltsize);
     }

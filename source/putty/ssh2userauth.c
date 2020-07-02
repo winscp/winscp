@@ -125,6 +125,7 @@ static const struct PacketProtocolLayerVtable ssh2_userauth_vtable = {
     ssh2_userauth_want_user_input,
     ssh2_userauth_got_user_input,
     ssh2_userauth_reconfigure,
+    ssh_ppl_default_queued_data_size,
     "ssh-userauth",
 };
 
@@ -469,7 +470,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
             }
             sfree(s->locally_allocated_username); /* for change_username */
             s->username = s->locally_allocated_username =
-                dupstr(s->cur_prompt->prompts[0]->result);
+                prompt_get_result(s->cur_prompt->prompts[0]);
             free_prompts(s->cur_prompt);
         } else {
             if ((flags & FLAG_VERBOSE) || (flags & FLAG_INTERACTIVE))
@@ -536,9 +537,9 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                 while (bufchain_size(&s->banner) > 0) {
                     ptrlen data = bufchain_prefix(&s->banner);
                     seat_stderr_pl(s->ppl.seat, data);
-                    bufchain_consume(&s->banner, data.len);
                     mid_line =
                         (((const char *)data.ptr)[data.len-1] != '\n');
+                    bufchain_consume(&s->banner, data.len);
                 }
                 bufchain_clear(&s->banner);
 
@@ -647,7 +648,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                 /*
                  * Save the methods string for use in error messages.
                  */
-                s->last_methods_string->len = 0;
+                strbuf_clear(s->last_methods_string);
                 put_datapl(s->last_methods_string, methods);
 
                 /*
@@ -811,7 +812,15 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                             ppl_printf("Pageant failed to "
                                        "provide a signature\r\n");
                             s->suppress_wait_for_response_packet = true;
+                            ssh_free_pktout(s->pktout);
                         }
+                    } else {
+                        ppl_logevent("Pageant failed to respond to "
+                                     "signing request");
+                        ppl_printf("Pageant failed to "
+                                   "respond to signing request\r\n");
+                        s->suppress_wait_for_response_packet = true;
+                        ssh_free_pktout(s->pktout);
                     }
                 }
 
@@ -907,7 +916,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                             return;
                         }
                         passphrase =
-                            dupstr(s->cur_prompt->prompts[0]->result);
+                            prompt_get_result(s->cur_prompt->prompts[0]);
                         free_prompts(s->cur_prompt);
                     } else {
                         passphrase = NULL; /* no passphrase needed */
@@ -1357,6 +1366,8 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                     }
                     if (sb->len)
                         s->cur_prompt->instruction = strbuf_to_str(sb);
+                    else
+                        strbuf_free(sb);
 
                     /*
                      * Our prompts_t is fully constructed now. Get the
@@ -1397,8 +1408,8 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                         s->ppl.bpp, SSH2_MSG_USERAUTH_INFO_RESPONSE);
                     put_uint32(s->pktout, s->num_prompts);
                     for (uint32_t i = 0; i < s->num_prompts; i++) {
-                        put_stringz(s->pktout,
-                                    s->cur_prompt->prompts[i]->result);
+                        put_stringz(s->pktout, prompt_get_result_ref(
+                                        s->cur_prompt->prompts[i]));
                     }
                     s->pktout->minlen = 256;
                     pq_push(s->ppl.out_pq, s->pktout);
@@ -1480,7 +1491,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                  * Squirrel away the password. (We may need it later if
                  * asked to change it.)
                  */
-                s->password = dupstr(s->cur_prompt->prompts[0]->result);
+                s->password = prompt_get_result(s->cur_prompt->prompts[0]);
                 free_prompts(s->cur_prompt);
 
                 /*
@@ -1606,20 +1617,20 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                          * (A side effect is that the user doesn't have to
                          * re-enter it if they louse up the new password.)
                          */
-                        if (s->cur_prompt->prompts[0]->result[0]) {
+                        if (s->cur_prompt->prompts[0]->result->s[0]) {
                             smemclr(s->password, strlen(s->password));
                                 /* burn the evidence */
                             sfree(s->password);
-                            s->password =
-                                dupstr(s->cur_prompt->prompts[0]->result);
+                            s->password = prompt_get_result(
+                                s->cur_prompt->prompts[0]);
                         }
 
                         /*
                          * Check the two new passwords match.
                          */
-                        got_new = (strcmp(s->cur_prompt->prompts[1]->result,
-                                          s->cur_prompt->prompts[2]->result)
-                                   == 0);
+                        got_new = !strcmp(
+                            prompt_get_result_ref(s->cur_prompt->prompts[1]),
+                            prompt_get_result_ref(s->cur_prompt->prompts[2]));
                         if (!got_new)
                             /* They don't. Silly user. */
                             ppl_printf("Passwords do not match\r\n");
@@ -1637,8 +1648,8 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                     put_stringz(s->pktout, "password");
                     put_bool(s->pktout, true);
                     put_stringz(s->pktout, s->password);
-                    put_stringz(s->pktout,
-                                       s->cur_prompt->prompts[1]->result);
+                    put_stringz(s->pktout, prompt_get_result_ref(
+                                    s->cur_prompt->prompts[1]));
                     free_prompts(s->cur_prompt);
                     s->pktout->minlen = 256;
                     pq_push(s->ppl.out_pq, s->pktout);
@@ -1800,7 +1811,7 @@ static void ssh2_userauth_add_sigblob(
         /* debug("modulus length is %d\n", len); */
         /* debug("signature length is %d\n", siglen); */
 
-        if (mod_mp.len != sig_mp.len) {
+        if (mod_mp.len > sig_mp.len) {
             strbuf *substr = strbuf_new();
             put_data(substr, sigblob.ptr, sig_prefix_len);
             put_uint32(substr, mod_mp.len);

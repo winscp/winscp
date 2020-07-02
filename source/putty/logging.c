@@ -58,7 +58,7 @@ static void logwrite(LogContext *ctx, ptrlen data)
  * Convenience wrapper on logwrite() which printf-formats the
  * string.
  */
-static void logprintf(LogContext *ctx, const char *fmt, ...)
+static PRINTF_LIKE(2, 3) void logprintf(LogContext *ctx, const char *fmt, ...)
 {
     va_list ap;
     char *data;
@@ -344,7 +344,7 @@ void log_packet(LogContext *ctx, int direction, int type,
         /* If we're about to stop omitting, it's time to say how
          * much we omitted. */
         if ((blktype != PKTLOG_OMIT) && omitted) {
-            logprintf(ctx, "  (%d byte%s omitted)\r\n",
+            logprintf(ctx, "  (%"SIZEu" byte%s omitted)\r\n",
                       omitted, (omitted==1?"":"s"));
             omitted = 0;
         }
@@ -352,7 +352,8 @@ void log_packet(LogContext *ctx, int direction, int type,
         /* (Re-)initialise dumpdata as necessary
          * (start of row, or if we've just stopped omitting) */
         if (!output_pos && !omitted)
-            sprintf(dumpdata, "  %08zx%*s\r\n", p-(p%16), 1+3*16+2+16, "");
+            sprintf(dumpdata, "  %08"SIZEx"%*s\r\n",
+                    p-(p%16), 1+3*16+2+16, "");
 
         /* Deal with the current byte. */
         if (blktype == PKTLOG_OMIT) {
@@ -387,7 +388,7 @@ void log_packet(LogContext *ctx, int direction, int type,
 
     /* Tidy up */
     if (omitted)
-        logprintf(ctx, "  (%d byte%s omitted)\r\n",
+        logprintf(ctx, "  (%"SIZEu" byte%s omitted)\r\n",
                   omitted, (omitted==1?"":"s"));
     logflush(ctx);
 }

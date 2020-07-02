@@ -400,8 +400,8 @@ bool rsa_ssh1_savekey(const Filename *filename, RSAKey *key,
 /*
  * PuTTY's own format for SSH-2 keys is as follows:
  *
- * The file is text. Lines are terminated by CRLF, although CR-only
- * and LF-only are tolerated on input.
+ * The file is text. Lines are terminated by LF by preference,
+ * although CRLF and CR-only are tolerated on input.
  *
  * The first line says "PuTTY-User-Key-File-2: " plus the name of the
  * algorithm ("ssh-dss", "ssh-rsa" etc).
@@ -1362,8 +1362,8 @@ char *ssh1_pubkey_str(RSAKey *key)
 
     dec1 = mp_get_decimal(key->exponent);
     dec2 = mp_get_decimal(key->modulus);
-    buffer = dupprintf("%zd %s %s%s%s", mp_get_nbits(key->modulus), dec1, dec2,
-                       key->comment ? " " : "",
+    buffer = dupprintf("%"SIZEu" %s %s%s%s", mp_get_nbits(key->modulus),
+                       dec1, dec2, key->comment ? " " : "",
                        key->comment ? key->comment : "");
     sfree(dec1);
     sfree(dec2);

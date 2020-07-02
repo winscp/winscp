@@ -233,7 +233,7 @@ HMODULE load_system32_dll(const char *libname)
             sgrowarray(sysdir, sysdirsize, len);
     }
 
-    fullpath = dupcat(sysdir, "\\", libname, NULL);
+    fullpath = dupcat(sysdir, "\\", libname);
     ret = LoadLibrary(fullpath);
     sfree(fullpath);
     return ret;

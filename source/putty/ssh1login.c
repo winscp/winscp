@@ -86,6 +86,7 @@ static const struct PacketProtocolLayerVtable ssh1_login_vtable = {
     ssh1_login_want_user_input,
     ssh1_login_got_user_input,
     ssh1_login_reconfigure,
+    ssh_ppl_default_queued_data_size,
     NULL /* no layer names in SSH-1 */,
 };
 
@@ -427,7 +428,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
             ssh_user_close(s->ppl.ssh, "No username provided");
             return;
         }
-        s->username = dupstr(s->cur_prompt->prompts[0]->result);
+        s->username = prompt_get_result(s->cur_prompt->prompts[0]);
         free_prompts(s->cur_prompt);
         s->cur_prompt = NULL;
     }
@@ -702,7 +703,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                         ppl_printf("No passphrase required.\r\n");
                     passphrase = NULL;
                 } else {
-                    s->cur_prompt = new_prompts(s->ppl.seat);
+                    s->cur_prompt = new_prompts();
                     s->cur_prompt->to_server = false;
                     s->cur_prompt->from_server = false;
                     s->cur_prompt->name = dupstr("SSH key passphrase");
@@ -730,7 +731,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                                        "User aborted at passphrase prompt");
                         return;
                     }
-                    passphrase = dupstr(s->cur_prompt->prompts[0]->result);
+                    passphrase = prompt_get_result(s->cur_prompt->prompts[0]);
                     free_prompts(s->cur_prompt);
                     s->cur_prompt = NULL;
                 }
@@ -841,7 +842,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
         /*
          * Otherwise, try various forms of password-like authentication.
          */
-        s->cur_prompt = new_prompts(s->ppl.seat);
+        s->cur_prompt = new_prompts();
 
         if (conf_get_bool(s->conf, CONF_try_tis_auth) &&
             (s->supported_auths_mask & (1 << SSH1_AUTH_TIS)) &&
@@ -1042,8 +1043,10 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                  * we can use the primary defence.
                  */
                 int bottom, top, pwlen, i;
+                const char *pw = prompt_get_result_ref(
+                    s->cur_prompt->prompts[0]);
 
-                pwlen = strlen(s->cur_prompt->prompts[0]->result);
+                pwlen = strlen(pw);
                 if (pwlen < 16) {
                     bottom = 0;    /* zero length passwords are OK! :-) */
                     top = 15;
@@ -1057,7 +1060,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                 for (i = bottom; i <= top; i++) {
                     if (i == pwlen) {
                         pkt = ssh_bpp_new_pktout(s->ppl.bpp, s->pwpkt_type);
-                        put_stringz(pkt, s->cur_prompt->prompts[0]->result);
+                        put_stringz(pkt, pw);
                         pq_push(s->ppl.out_pq, pkt);
                     } else {
                         strbuf *random_data = strbuf_new_nm();
@@ -1080,7 +1083,8 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
 
                 ppl_logevent("Sending length-padded password");
                 pkt = ssh_bpp_new_pktout(s->ppl.bpp, s->pwpkt_type);
-                put_asciz(padded_pw, s->cur_prompt->prompts[0]->result);
+                put_asciz(padded_pw, prompt_get_result_ref(
+                              s->cur_prompt->prompts[0]));
                 size_t pad = 63 & -padded_pw->len;
                 random_read(strbuf_append(padded_pw, pad), pad);
                 put_stringsb(pkt, padded_pw);
@@ -1092,12 +1096,13 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                  */
                 ppl_logevent("Sending unpadded password");
                 pkt = ssh_bpp_new_pktout(s->ppl.bpp, s->pwpkt_type);
-                put_stringz(pkt, s->cur_prompt->prompts[0]->result);
+                put_stringz(pkt, prompt_get_result_ref(
+                                s->cur_prompt->prompts[0]));
                 pq_push(s->ppl.out_pq, pkt);
             }
         } else {
             pkt = ssh_bpp_new_pktout(s->ppl.bpp, s->pwpkt_type);
-            put_stringz(pkt, s->cur_prompt->prompts[0]->result);
+            put_stringz(pkt, prompt_get_result_ref(s->cur_prompt->prompts[0]));
             pq_push(s->ppl.out_pq, pkt);
         }
         ppl_logevent("Sent password");

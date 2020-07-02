@@ -71,6 +71,7 @@ static void ssh2_transport_special_cmd(PacketProtocolLayer *ppl,
 static bool ssh2_transport_want_user_input(PacketProtocolLayer *ppl);
 static void ssh2_transport_got_user_input(PacketProtocolLayer *ppl);
 static void ssh2_transport_reconfigure(PacketProtocolLayer *ppl, Conf *conf);
+static size_t ssh2_transport_queued_data_size(PacketProtocolLayer *ppl);
 
 static void ssh2_transport_set_max_data_size(struct ssh2_transport_state *s);
 static unsigned long sanitise_rekey_time(int rekey_time, unsigned long def);
@@ -84,6 +85,7 @@ static const struct PacketProtocolLayerVtable ssh2_transport_vtable = {
     ssh2_transport_want_user_input,
     ssh2_transport_got_user_input,
     ssh2_transport_reconfigure,
+    ssh2_transport_queued_data_size,
     NULL, /* no protocol name for this layer */
 };
 
@@ -265,7 +267,7 @@ static void ssh2_mkkey(
      */
     keylen_padded = ((keylen + hlen - 1) / hlen) * hlen;
 
-    out->len = 0;
+    strbuf_clear(out);
     key = strbuf_append(out, keylen_padded);
 
     /* First hlen bytes. */
@@ -569,9 +571,10 @@ static void ssh2_write_kexinit_lists(
         }
     } else if (first_time) {
         /*
-         * In the first key exchange, we list all the algorithms
-         * we're prepared to cope with, but prefer those algorithms
-         * for which we have a host key for this host.
+         * In the first key exchange, we list all the algorithms we're
+         * prepared to cope with, but (if configured to) we prefer
+         * those algorithms for which we have a host key for this
+         * host.
          *
          * If the host key algorithm is below the warning
          * threshold, we warn even if we did already have a key
@@ -587,7 +590,8 @@ static void ssh2_write_kexinit_lists(
             for (j = 0; j < lenof(ssh2_hostkey_algs); j++) {
                 if (ssh2_hostkey_algs[j].id != preferred_hk[i])
                     continue;
-                if (have_ssh_host_key(hk_host, hk_port,
+                if (conf_get_bool(conf, CONF_ssh_prefer_known_hostkeys) &&
+                    have_ssh_host_key(hk_host, hk_port,
                                       ssh2_hostkey_algs[j].alg->cache_id)) {
                     alg = ssh2_kexinit_addalg(kexlists[KEXLIST_HOSTKEY],
                                               ssh2_hostkey_algs[j].alg->ssh_id);
@@ -1083,7 +1087,7 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
      * Construct our KEXINIT packet, in a strbuf so we can refer to it
      * later.
      */
-    s->client_kexinit->len = 0;
+    strbuf_clear(s->client_kexinit);
     put_byte(s->outgoing_kexinit, SSH2_MSG_KEXINIT);
     random_read(strbuf_append(s->outgoing_kexinit, 16), 16);
     ssh2_write_kexinit_lists(
@@ -1121,7 +1125,7 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
                                       s->ppl.bpp->pls->actx, pktin->type));
         return;
     }
-    s->incoming_kexinit->len = 0;
+    strbuf_clear(s->incoming_kexinit);
     put_byte(s->incoming_kexinit, SSH2_MSG_KEXINIT);
     put_data(s->incoming_kexinit, get_ptr(pktin), get_avail(pktin));
 
@@ -1200,9 +1204,7 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
             if (better) {
                 if (betteralgs) {
                     char *old_ba = betteralgs;
-                    betteralgs = dupcat(betteralgs, ",",
-                                        hktype->alg->ssh_id,
-                                        (const char *)NULL);
+                    betteralgs = dupcat(betteralgs, ",", hktype->alg->ssh_id);
                     sfree(old_ba);
                 } else {
                     betteralgs = dupstr(hktype->alg->ssh_id);
@@ -2029,4 +2031,13 @@ static int ssh2_transport_confirm_weak_crypto_primitive(
 
     return seat_confirm_weak_crypto_primitive(
         s->ppl.seat, type, name, ssh2_transport_dialog_callback, s);
+}
+
+static size_t ssh2_transport_queued_data_size(PacketProtocolLayer *ppl)
+{
+    struct ssh2_transport_state *s =
+        container_of(ppl, struct ssh2_transport_state, ppl);
+
+    return (ssh_ppl_default_queued_data_size(ppl) +
+            ssh_ppl_queued_data_size(s->higher_layer));
 }

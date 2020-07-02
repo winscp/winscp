@@ -350,7 +350,7 @@ DECL_WINDOWS_FUNCTION(GLOBAL, int, select,
  * Provided by each client of winnet.c, and called by winnet.c to turn
  * on or off WSA*Select for a given socket.
  */
-char *do_select(SOCKET skt, bool startup);
+char *do_select(SOCKET skt, bool enable);
 
 /*
  * Network-subsystem-related functions provided in other Windows modules.

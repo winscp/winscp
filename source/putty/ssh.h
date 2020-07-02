@@ -52,6 +52,7 @@ struct ssh_channel;
 typedef struct PacketQueueNode PacketQueueNode;
 struct PacketQueueNode {
     PacketQueueNode *next, *prev;
+    size_t formal_size;    /* contribution to PacketQueueBase's total_size */
     bool on_free_queue;     /* is this packet scheduled for freeing? */
 };
 
@@ -84,6 +85,7 @@ typedef struct PktOut {
 
 typedef struct PacketQueueBase {
     PacketQueueNode end;
+    size_t total_size;    /* sum of all formal_size fields on the queue */
     struct IdempotentCallback *ic;
 } PacketQueueBase;
 
@@ -403,12 +405,12 @@ void ssh_conn_processed_data(Ssh *ssh);
 void ssh_check_frozen(Ssh *ssh);
 
 /* Functions to abort the connection, for various reasons. */
-void ssh_remote_error(Ssh *ssh, const char *fmt, ...);
-void ssh_remote_eof(Ssh *ssh, const char *fmt, ...);
-void ssh_proto_error(Ssh *ssh, const char *fmt, ...);
-void ssh_sw_abort(Ssh *ssh, const char *fmt, ...);
-void ssh_sw_abort_deferred(Ssh *ssh, const char *fmt, ...);
-void ssh_user_close(Ssh *ssh, const char *fmt, ...);
+void ssh_remote_error(Ssh *ssh, const char *fmt, ...) PRINTF_LIKE(2, 3);
+void ssh_remote_eof(Ssh *ssh, const char *fmt, ...) PRINTF_LIKE(2, 3);
+void ssh_proto_error(Ssh *ssh, const char *fmt, ...) PRINTF_LIKE(2, 3);
+void ssh_sw_abort(Ssh *ssh, const char *fmt, ...) PRINTF_LIKE(2, 3);
+void ssh_sw_abort_deferred(Ssh *ssh, const char *fmt, ...) PRINTF_LIKE(2, 3);
+void ssh_user_close(Ssh *ssh, const char *fmt, ...) PRINTF_LIKE(2, 3);
 
 /* Bit positions in the SSH-1 cipher protocol word */
 #define SSH1_CIPHER_IDEA        1
@@ -539,6 +541,7 @@ void BinarySource_get_rsa_ssh1_pub(
     BinarySource *src, RSAKey *result, RsaSsh1Order order);
 void BinarySource_get_rsa_ssh1_priv(
     BinarySource *src, RSAKey *rsa);
+RSAKey *BinarySource_get_rsa_ssh1_priv_agent(BinarySource *src);
 bool rsa_ssh1_encrypt(unsigned char *data, int length, RSAKey *key);
 mp_int *rsa_ssh1_decrypt(mp_int *input, RSAKey *key);
 bool rsa_ssh1_decrypt_pkcs1(mp_int *input, RSAKey *key, strbuf *outbuf);
