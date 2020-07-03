@@ -136,7 +136,7 @@ void path_reg_propagate()
   {
     err_out_sys(_T("Cannot propagate the new enviroment to ")
                 _T("other processes. The new value will be ")
-                _T("avaible after a reboot."), GetLastError());
+                _T("available after a reboot."), GetLastError());
     SimpleErrorDialog(LastPathError);
     LastPathError = L"";
   }
