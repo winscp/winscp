@@ -1535,11 +1535,11 @@ void __fastcall inline TSecureShell::LogEvent(const UnicodeString & Str)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSecureShell::SocketEventSelect(SOCKET Socket, HANDLE Event, bool Startup)
+void __fastcall TSecureShell::SocketEventSelect(SOCKET Socket, HANDLE Event, bool Enable)
 {
   int Events;
 
-  if (Startup)
+  if (Enable)
   {
     Events = (FD_CONNECT | FD_READ | FD_WRITE | FD_OOB | FD_CLOSE | FD_ACCEPT);
   }
@@ -1560,16 +1560,16 @@ void __fastcall TSecureShell::SocketEventSelect(SOCKET Socket, HANDLE Event, boo
       LogEvent(FORMAT(L"Error selecting events %d for socket %d", (int(Events), int(Socket))));
     }
 
-    if (Startup)
+    if (Enable)
     {
       FatalError(FMTLOAD(EVENT_SELECT_ERROR, (WSAGetLastError())));
     }
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSecureShell::UpdateSocket(SOCKET value, bool Startup)
+void __fastcall TSecureShell::UpdateSocket(SOCKET value, bool Enable)
 {
-  if (!FActive && !Startup)
+  if (!FActive && !Enable)
   {
     // no-op
     // Remove the branch eventually:
@@ -1581,19 +1581,19 @@ void __fastcall TSecureShell::UpdateSocket(SOCKET value, bool Startup)
   else
   {
     DebugAssert(value);
-    DebugAssert((FActive && (FSocket == value)) || (!FActive && Startup));
+    DebugAssert((FActive && (FSocket == value)) || (!FActive && Enable));
 
     // filter our "local proxy" connection, which have no socket
     if (value != INVALID_SOCKET)
     {
-      SocketEventSelect(value, FSocketEvent, Startup);
+      SocketEventSelect(value, FSocketEvent, Enable);
     }
     else
     {
       DebugAssert(FSessionData->ProxyMethod == pmCmd);
     }
 
-    if (Startup)
+    if (Enable)
     {
       FSocket = value;
       FActive = true;
@@ -1606,16 +1606,16 @@ void __fastcall TSecureShell::UpdateSocket(SOCKET value, bool Startup)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSecureShell::UpdatePortFwdSocket(SOCKET value, bool Startup)
+void __fastcall TSecureShell::UpdatePortFwdSocket(SOCKET value, bool Enable)
 {
   if (Configuration->ActualLogProtocol >= 2)
   {
-    LogEvent(FORMAT(L"Updating forwarding socket %d (%d)", (int(value), int(Startup))));
+    LogEvent(FORMAT(L"Updating forwarding socket %d (%d)", (int(value), int(Enable))));
   }
 
-  SocketEventSelect(value, FSocketEvent, Startup);
+  SocketEventSelect(value, FSocketEvent, Enable);
 
-  if (Startup)
+  if (Enable)
   {
     FPortFwdSockets.insert(value);
   }
