@@ -88,7 +88,7 @@ private:
     const UnicodeString & Line);
   void __fastcall ResetConnection();
   void __fastcall ResetSessionInfo();
-  void __fastcall SocketEventSelect(SOCKET Socket, HANDLE Event, bool Startup);
+  void __fastcall SocketEventSelect(SOCKET Socket, HANDLE Event, bool Enable);
   bool __fastcall EnumNetworkEvents(SOCKET Socket, WSANETWORKEVENTS & Events);
   void __fastcall HandleNetworkEvents(SOCKET Socket, WSANETWORKEVENTS & Events);
   bool __fastcall ProcessNetworkEvents(SOCKET Socket);
@@ -153,8 +153,8 @@ public:
   void __fastcall UnregisterReceiveHandler(TNotifyEvent Handler);
 
   // interface to PuTTY core
-  void __fastcall UpdateSocket(SOCKET value, bool Startup);
-  void __fastcall UpdatePortFwdSocket(SOCKET value, bool Startup);
+  void __fastcall UpdateSocket(SOCKET value, bool Enable);
+  void __fastcall UpdatePortFwdSocket(SOCKET value, bool Enable);
   void __fastcall PuttyFatalError(UnicodeString Error);
   TPromptKind __fastcall IdentifyPromptKind(UnicodeString & Name);
   bool __fastcall PromptUser(bool ToServer,

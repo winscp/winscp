@@ -133,17 +133,17 @@ struct callback_set * get_seat_callback_set(Seat * seat)
   return SecureShell->GetCallbackSet();
 }
 //---------------------------------------------------------------------------
-extern "C" char * do_select(Plug * plug, SOCKET skt, bool startup)
+extern "C" char * do_select(Plug * plug, SOCKET skt, bool enable)
 {
   bool pfwd;
   TSecureShell * SecureShell = GetSecureShell(plug, pfwd);
   if (!pfwd)
   {
-    SecureShell->UpdateSocket(skt, startup);
+    SecureShell->UpdateSocket(skt, enable);
   }
   else
   {
-    SecureShell->UpdatePortFwdSocket(skt, startup);
+    SecureShell->UpdatePortFwdSocket(skt, enable);
   }
 
   return NULL;
