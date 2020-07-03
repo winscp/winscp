@@ -28,6 +28,7 @@ bool __fastcall AnyOtherInstanceOfSelf();
 bool __fastcall IsInstalled();
 UnicodeString __fastcall ProgramUrl(UnicodeString URL);
 void __fastcall AutoShowNewTip();
+bool __fastcall AnyTips();
 void __fastcall ShowTips();
 UnicodeString __fastcall FirstUnshownTip();
 void __fastcall TipsUpdateStaticUsage();

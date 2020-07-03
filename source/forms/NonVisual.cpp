@@ -303,7 +303,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(UpdatesPreferencesAction, true)
   UPD(DonatePageAction, true)
   UPD(DownloadPageAction, true)
-  UPD(TipsAction, true)
+  UPDEX1(TipsAction, true, TipsAction->Visible = AnyTips())
 
   // VIEW
   UPDCOMP(SessionsTabs)

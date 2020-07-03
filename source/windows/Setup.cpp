@@ -2135,6 +2135,11 @@ void __fastcall AutoShowNewTip()
   ShowTip(true);
 }
 //---------------------------------------------------------------------------
+bool __fastcall AnyTips()
+{
+  return !WinConfiguration->Updates.Results.Tips.IsEmpty();
+}
+//---------------------------------------------------------------------------
 void __fastcall ShowTips()
 {
   {
@@ -2142,7 +2147,7 @@ void __fastcall ShowTips()
     DoQueryUpdates(false);
   }
 
-  if (WinConfiguration->Updates.Results.Tips.IsEmpty())
+  if (!AnyTips())
   {
     throw Exception(MainInstructions(LoadStr(TIPS_NONE)));
   }

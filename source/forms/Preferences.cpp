@@ -1401,6 +1401,7 @@ void __fastcall TPreferencesDialog::UpdateControls()
     EnableControl(AutoSaveWorkspacePasswordsCheck,
       !Configuration->DisablePasswordStoring &&
       AutoWorkspaceCombo->Enabled);
+    EnableControl(ShowTipsCheck, AnyTips());
 
     // integration
     EnableControl(ShellIconsGroup, !IsUWP());
