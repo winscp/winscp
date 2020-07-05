@@ -1383,13 +1383,13 @@ UnicodeString __fastcall TCustomScpExplorerForm::GetToolbarItemName(TTBCustomIte
   if (Item->Action != NULL)
   {
     Result = Item->Action->Name;
-    Result = RemoveSuffix(Result, L"Action");
+    Result = RemoveSuffix(Result, L"Action", true);
   }
   else
   {
     Result = Item->Name;
-    Result = RemoveSuffix(Result, L"SubmenuItem");
-    Result = RemoveSuffix(Result, L"Item");
+    Result = RemoveSuffix(Result, L"SubmenuItem", true);
+    Result = RemoveSuffix(Result, L"Item", true);
   }
   return Result;
 }
