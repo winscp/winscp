@@ -53,23 +53,23 @@ inherited ScpExplorerForm: TScpExplorerForm
           Action = NonVisualDataModule.CurrentOpenAction
         end
         object TBXItem26: TTBXSubmenuItem
-          Action = NonVisualDataModule.RemoteEditAction
+          Action = NonVisualDataModule.RemoteEditAction2
           DropdownCombo = True
           OnPopup = EditMenuItemPopup
         end
         object TBXItem4: TTBXItem
-          Action = NonVisualDataModule.RemoteAddEditLinkAction2
+          Action = NonVisualDataModule.RemoteAddEditLinkAction3
         end
         object TBXSeparatorItem7: TTBXSeparatorItem
         end
         object TBXItem34: TTBXItem
-          Action = NonVisualDataModule.RemoteDeleteAction
+          Action = NonVisualDataModule.RemoteDeleteAction2
         end
         object TBXItem35: TTBXItem
-          Action = NonVisualDataModule.RemoteRenameAction
+          Action = NonVisualDataModule.RemoteRenameAction2
         end
         object TBXItem41: TTBXItem
-          Action = NonVisualDataModule.RemotePropertiesAction
+          Action = NonVisualDataModule.RemotePropertiesAction2
         end
         object TBXSeparatorItem8: TTBXSeparatorItem
         end
@@ -137,7 +137,7 @@ inherited ScpExplorerForm: TScpExplorerForm
           Action = NonVisualDataModule.CloseSessionAction2
         end
         object TBXItem2: TTBXItem
-          Action = NonVisualDataModule.CloseApplicationAction
+          Action = NonVisualDataModule.CloseApplicationAction2
         end
       end
       object TBXSubmenuItem7: TTBXSubmenuItem
@@ -151,7 +151,7 @@ inherited ScpExplorerForm: TScpExplorerForm
           Action = NonVisualDataModule.FullSynchronizeAction
         end
         object TBXItem3: TTBXItem
-          Action = NonVisualDataModule.RemoteFindFilesAction
+          Action = NonVisualDataModule.RemoteFindFilesAction2
         end
         object QueueSubmenuItem: TTBXSubmenuItem
           Caption = 'Q&ueue'
@@ -228,10 +228,10 @@ inherited ScpExplorerForm: TScpExplorerForm
         object TBXSeparatorItem13: TTBXSeparatorItem
         end
         object TBXItem5: TTBXItem
-          Action = NonVisualDataModule.RemoteAddBookmarkAction
+          Action = NonVisualDataModule.RemoteAddBookmarkAction2
         end
         object TBXItem6: TTBXItem
-          Action = NonVisualDataModule.RemotePathToClipboardAction
+          Action = NonVisualDataModule.RemotePathToClipboardAction2
         end
         object TBXSeparatorItem2: TTBXSeparatorItem
         end
@@ -540,28 +540,28 @@ inherited ScpExplorerForm: TScpExplorerForm
           HelpKeyword = 'ui_file_panel#selecting_columns'
           Hint = 'Select columns to show in panel'
           object TBXItem101: TTBXItem
-            Action = NonVisualDataModule.ShowHideRemoteNameColumnAction
+            Action = NonVisualDataModule.ShowHideRemoteNameColumnAction2
           end
           object TBXItem102: TTBXItem
-            Action = NonVisualDataModule.ShowHideRemoteSizeColumnAction
+            Action = NonVisualDataModule.ShowHideRemoteSizeColumnAction2
           end
           object TBXItem131: TTBXItem
-            Action = NonVisualDataModule.ShowHideRemoteTypeColumnAction
+            Action = NonVisualDataModule.ShowHideRemoteTypeColumnAction2
           end
           object TBXItem103: TTBXItem
-            Action = NonVisualDataModule.ShowHideRemoteChangedColumnAction
+            Action = NonVisualDataModule.ShowHideRemoteChangedColumnAction2
           end
           object TBXItem104: TTBXItem
-            Action = NonVisualDataModule.ShowHideRemoteRightsColumnAction
+            Action = NonVisualDataModule.ShowHideRemoteRightsColumnAction2
           end
           object TBXItem105: TTBXItem
-            Action = NonVisualDataModule.ShowHideRemoteOwnerColumnAction
+            Action = NonVisualDataModule.ShowHideRemoteOwnerColumnAction2
           end
           object TBXItem106: TTBXItem
-            Action = NonVisualDataModule.ShowHideRemoteGroupColumnAction
+            Action = NonVisualDataModule.ShowHideRemoteGroupColumnAction2
           end
           object TBXItem76: TTBXItem
-            Action = NonVisualDataModule.ShowHideRemoteLinkTargetColumnAction
+            Action = NonVisualDataModule.ShowHideRemoteLinkTargetColumnAction2
           end
         end
         object TBXItem138: TTBXItem
@@ -647,7 +647,7 @@ inherited ScpExplorerForm: TScpExplorerForm
       object TBXSeparatorItem24: TTBXSeparatorItem
       end
       object TBXItem139: TTBXItem
-        Action = NonVisualDataModule.RemoteFindFilesAction
+        Action = NonVisualDataModule.RemoteFindFilesAction2
         DisplayMode = nbdmImageAndText
       end
       object TBXSeparatorItem15: TTBXSeparatorItem
@@ -671,7 +671,7 @@ inherited ScpExplorerForm: TScpExplorerForm
       object TBXSeparatorItem27: TTBXSeparatorItem
       end
       object TBXItem42: TTBXSubmenuItem
-        Action = NonVisualDataModule.RemoteEditAction
+        Action = NonVisualDataModule.RemoteEditAction2
         DisplayMode = nbdmImageAndText
         DropdownCombo = True
         OnPopup = EditMenuItemPopup
@@ -680,14 +680,14 @@ inherited ScpExplorerForm: TScpExplorerForm
         Action = NonVisualDataModule.CurrentOpenAction
       end
       object TBXItem58: TTBXItem
-        Action = NonVisualDataModule.RemoteDeleteAction
+        Action = NonVisualDataModule.RemoteDeleteAction2
       end
       object TBXItem59: TTBXItem
-        Action = NonVisualDataModule.RemotePropertiesAction
+        Action = NonVisualDataModule.RemotePropertiesAction2
         DisplayMode = nbdmImageAndText
       end
       object TBXItem60: TTBXItem
-        Action = NonVisualDataModule.RemoteRenameAction
+        Action = NonVisualDataModule.RemoteRenameAction2
       end
       object TBXSeparatorItem16: TTBXSeparatorItem
       end
@@ -701,10 +701,10 @@ inherited ScpExplorerForm: TScpExplorerForm
           Action = NonVisualDataModule.RemoteNewFileAction
         end
         object TBXItem244: TTBXItem
-          Action = NonVisualDataModule.RemoteCreateDirAction2
+          Action = NonVisualDataModule.RemoteCreateDirAction3
         end
         object TBXItem246: TTBXItem
-          Action = NonVisualDataModule.RemoteAddEditLinkAction2
+          Action = NonVisualDataModule.RemoteAddEditLinkAction3
         end
       end
       object TBXItem63: TTBXItem

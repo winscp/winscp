@@ -9415,14 +9415,14 @@ void __fastcall TCustomScpExplorerForm::ReadDirectoryCancelled()
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::SynchronizeBrowsingChanged()
 {
-  if (NonVisualDataModule->SynchronizeBrowsingAction->Checked)
+  if (NonVisualDataModule->SynchronizeBrowsingAction2->Checked)
   {
     Configuration->Usage->Inc(L"SynchronizeBrowsingEnabled");
   }
 
   PostNote(FORMAT(LoadStrPart(SYNC_DIR_BROWSE_TOGGLE, 1),
     (LoadStrPart(SYNC_DIR_BROWSE_TOGGLE,
-      (NonVisualDataModule->SynchronizeBrowsingAction->Checked ? 2 : 3)))),
+      (NonVisualDataModule->SynchronizeBrowsingAction2->Checked ? 2 : 3)))),
     0, NULL, NULL);
 }
 //---------------------------------------------------------------------------
@@ -10316,7 +10316,7 @@ void __fastcall TCustomScpExplorerForm::CreateOpenDirMenuList(
       {
         std::unique_ptr<TTBCustomItem> Item(new TTBXSubmenuItem(Owner));
         Item->Caption = Folders->Strings[Index];
-        Item->ImageIndex = NonVisualDataModule->RemoteChangePathAction->ImageIndex;
+        Item->ImageIndex = NonVisualDataModule->RemoteChangePathAction2->ImageIndex;
         Folders->Objects[Index] = Item.get();
         Menu->Add(Item.release());
       }
@@ -10388,7 +10388,7 @@ void __fastcall TCustomScpExplorerForm::CreateOpenDirMenu(TTBCustomItem * Menu, 
   CreateOpenDirMenuList(Menu, Side, WinConfiguration->SharedBookmarks);
 
   Item.reset(new TTBXItem(Owner));
-  Item->Action = (Side == osLocal) ? NonVisualDataModule->LocalAddBookmarkAction : NonVisualDataModule->RemoteAddBookmarkAction;
+  Item->Action = (Side == osLocal) ? NonVisualDataModule->LocalAddBookmarkAction2 : NonVisualDataModule->RemoteAddBookmarkAction2;
   Menu->Add(Item.release());
 }
 //---------------------------------------------------------------------------

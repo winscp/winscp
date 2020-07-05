@@ -52,13 +52,13 @@ class TSynchronizedBrowsingGuard
 public:
   TSynchronizedBrowsingGuard()
   {
-    FWasSynchronisingBrowsing = NonVisualDataModule->SynchronizeBrowsingAction->Checked;
-    NonVisualDataModule->SynchronizeBrowsingAction->Checked = false;
+    FWasSynchronisingBrowsing = NonVisualDataModule->SynchronizeBrowsingAction2->Checked;
+    NonVisualDataModule->SynchronizeBrowsingAction2->Checked = false;
   }
 
   ~TSynchronizedBrowsingGuard()
   {
-    NonVisualDataModule->SynchronizeBrowsingAction->Checked = FWasSynchronisingBrowsing;
+    NonVisualDataModule->SynchronizeBrowsingAction2->Checked = FWasSynchronisingBrowsing;
   }
 
 private:
@@ -269,7 +269,7 @@ void __fastcall TScpCommanderForm::UpdateSessionData(TSessionData * Data)
 
   DebugAssert(LocalDirView);
   Data->LocalDirectory = LocalDirView->PathName;
-  Data->SynchronizeBrowsing = NonVisualDataModule->SynchronizeBrowsingAction->Checked;
+  Data->SynchronizeBrowsing = NonVisualDataModule->SynchronizeBrowsingAction2->Checked;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TScpCommanderForm::InternalDDDownload(UnicodeString & TargetDirectory)
@@ -516,7 +516,7 @@ void __fastcall TScpCommanderForm::StartingDisconnected()
 void __fastcall TScpCommanderForm::TerminalChanged(bool Replaced)
 {
   DebugAssert(!IsLocalBrowserMode());
-  NonVisualDataModule->SynchronizeBrowsingAction->Checked = false;
+  NonVisualDataModule->SynchronizeBrowsingAction2->Checked = false;
 
   TCustomScpExplorerForm::TerminalChanged(Replaced);
 
@@ -575,7 +575,7 @@ void __fastcall TScpCommanderForm::TerminalChanged(bool Replaced)
         LocalDirView->ClearState();
       }
 
-      NonVisualDataModule->SynchronizeBrowsingAction->Checked = Terminal->StateData->SynchronizeBrowsing;
+      NonVisualDataModule->SynchronizeBrowsingAction2->Checked = Terminal->StateData->SynchronizeBrowsing;
     }
   }
 }
@@ -687,8 +687,8 @@ void __fastcall TScpCommanderForm::ConfigurationChanged()
     MenuToolbar->Items->Move(LocalIndex, RemoteIndex);
     RemoteIndex = MenuToolbar->Items->IndexOf(RemoteMenuButton);
     MenuToolbar->Items->Move(RemoteIndex, LocalIndex);
-    SWAP(TShortCut, NonVisualDataModule->LocalChangePathAction->ShortCut,
-      NonVisualDataModule->RemoteChangePathAction->ShortCut);
+    SWAP(TShortCut, NonVisualDataModule->LocalChangePathAction2->ShortCut,
+      NonVisualDataModule->RemoteChangePathAction2->ShortCut);
   }
 
   if ((RemoteDrivePanel->Align == alLeft) != WinConfiguration->ScpCommander.TreeOnLeft)
@@ -1261,7 +1261,7 @@ void __fastcall TScpCommanderForm::SynchronizeBrowsing(TCustomDirView * ADirView
     FPrevPath[ADirView == LocalDirView] = ADirView->Path;
   }
 
-  if (!FSynchronisingBrowse && NonVisualDataModule->SynchronizeBrowsingAction->Checked &&
+  if (!FSynchronisingBrowse && NonVisualDataModule->SynchronizeBrowsingAction2->Checked &&
       !PrevPath.IsEmpty() && PrevPath != ADirView->Path)
   {
     DebugAssert(!IsLocalBrowserMode());
@@ -1327,14 +1327,14 @@ void __fastcall TScpCommanderForm::SynchronizeBrowsing(TCustomDirView * ADirView
         }
         else
         {
-          NonVisualDataModule->SynchronizeBrowsingAction->Checked = false;
+          NonVisualDataModule->SynchronizeBrowsingAction2->Checked = false;
         }
       }
 
     }
     catch(Exception & E)
     {
-      NonVisualDataModule->SynchronizeBrowsingAction->Checked = false;
+      NonVisualDataModule->SynchronizeBrowsingAction2->Checked = false;
       // what does this say?
       if (Application->Terminated)
       {
@@ -2125,7 +2125,7 @@ void __fastcall TScpCommanderForm::LocalDriveViewRefreshDrives(TObject * /*Sende
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::HomeDirectory(TOperationSide Side)
 {
-  bool SynchronizeBrowsing = NonVisualDataModule->SynchronizeBrowsingAction->Checked;
+  bool SynchronizeBrowsing = NonVisualDataModule->SynchronizeBrowsingAction2->Checked;
 
   TSynchronizedBrowsingGuard SynchronizedBrowsingGuard;
 
@@ -2158,7 +2158,7 @@ TOperationSide __fastcall TScpCommanderForm::GetOtherSize(TOperationSide Side)
 void __fastcall TScpCommanderForm::HistoryGo(TOperationSide Side, int Index)
 {
   TOperationSide OtherSide = GetOtherSize(Side);
-  if (NonVisualDataModule->SynchronizeBrowsingAction->Checked &&
+  if (NonVisualDataModule->SynchronizeBrowsingAction2->Checked &&
       ((Index < 0) ? (-Index < DirView(OtherSide)->BackCount) : (Index < DirView(OtherSide)->ForwardCount)))
   {
     TSynchronizedBrowsingGuard SynchronizedBrowsingGuard;
