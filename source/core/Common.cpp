@@ -269,12 +269,20 @@ UnicodeString CopyToChar(const UnicodeString & Str, wchar_t Ch, bool Trim)
   return CopyToChars(Str, From, UnicodeString(Ch), Trim);
 }
 //---------------------------------------------------------------------------
-UnicodeString RemoveSuffix(const UnicodeString & Str, const UnicodeString & Suffix)
+UnicodeString RemoveSuffix(const UnicodeString & Str, const UnicodeString & Suffix, bool RemoveNumbersAfterSuffix)
 {
   UnicodeString Result = Str;
-  if (EndsStr(Suffix, Result))
+  UnicodeString Buf = Str;
+  if (RemoveNumbersAfterSuffix)
   {
-    Result.SetLength(Result.Length() - Suffix.Length());
+    while (!Buf.IsEmpty() && IsDigit(Buf[Buf.Length()]))
+    {
+      Buf.SetLength(Buf.Length() - 1);
+    }
+  }
+  if (EndsStr(Suffix, Buf))
+  {
+    Result.SetLength(Buf.Length() - Suffix.Length());
   }
   return Result;
 }
