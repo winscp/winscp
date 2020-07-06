@@ -868,8 +868,7 @@ inherited ScpExplorerForm: TScpExplorerForm
         Action = NonVisualDataModule.CurrentSortByExtAction
       end
       object TBXItem133: TTBXItem
-        Action = NonVisualDataModule.RemoteSortByTypeAction
-        RadioItem = True
+        Action = NonVisualDataModule.CurrentSortByTypeAction
       end
       object TBXItem149: TTBXItem
         Action = NonVisualDataModule.CurrentSortByChangedAction
