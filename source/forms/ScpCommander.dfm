@@ -517,16 +517,16 @@ inherited ScpCommanderForm: TScpCommanderForm
           HelpKeyword = 'ui_file_panel'
           Hint = 'Change local panel layout'
           object TBXItem65: TTBXItem
-            Action = NonVisualDataModule.CommanderLocalHistoryBandAction
+            Action = NonVisualDataModule.CommanderLocalHistoryBandAction2
           end
           object TBXItem66: TTBXItem
-            Action = NonVisualDataModule.CommanderLocalNavigationBandAction
+            Action = NonVisualDataModule.CommanderLocalNavigationBandAction2
           end
           object TBXItem59: TTBXItem
-            Action = NonVisualDataModule.CommanderLocalFileBandAction
+            Action = NonVisualDataModule.CommanderLocalFileBandAction2
           end
           object TBXItem61: TTBXItem
-            Action = NonVisualDataModule.CommanderLocalSelectionBandAction
+            Action = NonVisualDataModule.CommanderLocalSelectionBandAction2
           end
           object TBXSeparatorItem16: TTBXSeparatorItem
           end
@@ -536,7 +536,7 @@ inherited ScpCommanderForm: TScpCommanderForm
           object TBXSeparatorItem17: TTBXSeparatorItem
           end
           object TBXItem68: TTBXItem
-            Action = NonVisualDataModule.LocalStatusBarAction
+            Action = NonVisualDataModule.LocalStatusBarAction2
           end
         end
         object TBXSubmenuItem12: TTBXSubmenuItem
@@ -544,16 +544,16 @@ inherited ScpCommanderForm: TScpCommanderForm
           HelpKeyword = 'ui_file_panel'
           Hint = 'Change remote panel layout'
           object TBXItem69: TTBXItem
-            Action = NonVisualDataModule.CommanderRemoteHistoryBandAction
+            Action = NonVisualDataModule.CommanderRemoteHistoryBandAction2
           end
           object TBXItem70: TTBXItem
-            Action = NonVisualDataModule.CommanderRemoteNavigationBandAction
+            Action = NonVisualDataModule.CommanderRemoteNavigationBandAction2
           end
           object TBXItem136: TTBXItem
-            Action = NonVisualDataModule.CommanderRemoteFileBandAction
+            Action = NonVisualDataModule.CommanderRemoteFileBandAction2
           end
           object TBXItem131: TTBXItem
-            Action = NonVisualDataModule.CommanderRemoteSelectionBandAction
+            Action = NonVisualDataModule.CommanderRemoteSelectionBandAction2
           end
           object TBXSeparatorItem18: TTBXSeparatorItem
           end
@@ -563,7 +563,7 @@ inherited ScpCommanderForm: TScpCommanderForm
           object TBXSeparatorItem19: TTBXSeparatorItem
           end
           object TBXItem72: TTBXItem
-            Action = NonVisualDataModule.RemoteStatusBarAction
+            Action = NonVisualDataModule.RemoteStatusBarAction2
           end
         end
         object TBXSeparatorItem20: TTBXSeparatorItem

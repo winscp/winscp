@@ -40,11 +40,13 @@ TNonVisualDataModule *NonVisualDataModule;
   Command; Handled = true; } else
 #define UPDACT(HandleAction, Command) \
   EXE(HandleAction, ((TCustomAction *)Action)->Enabled = true; Command)
-#define UPDCOMP(COMP) if (Action == COMP ## Action) { COMP ## Action->Enabled = true; \
-  COMP ## Action->Visible = ScpExplorer->IsComponentPossible(fc ## COMP); \
-  COMP ## Action->Checked = ScpExplorer->ComponentVisible[fc ## COMP]; Handled = true; } else
-#define EXECOMP(COMP) EXE(COMP ## Action, \
+#define UPDCOMP2(COMP, NUM) if (Action == COMP ## Action ## NUM) { COMP ## Action ## NUM->Enabled = true; \
+  COMP ## Action ## NUM->Visible = ScpExplorer->IsComponentPossible(fc ## COMP); \
+  COMP ## Action ## NUM->Checked = ScpExplorer->ComponentVisible[fc ## COMP]; Handled = true; } else
+#define UPDCOMP(COMP) UPDCOMP2(COMP, )
+#define EXECOMP2(COMP, NUM) EXE(COMP ## Action ## NUM, \
   ScpExplorer->ComponentVisible[fc ## COMP] = !ScpExplorer->ComponentVisible[fc ## COMP] )
+#define EXECOMP(COMP) EXECOMP2(COMP, )
 #define COLPROPS(SIDE) \
   ((TCustomDirViewColProperties*)ScpExplorer->DirView(os ## SIDE)->ColProperties)
 #define UPDSORT(SIDE, PREFIX, COL) if (Action == SIDE ## SortBy ## COL ## Action2) { \
@@ -100,14 +102,15 @@ TNonVisualDataModule *NonVisualDataModule;
   EMIT_BAND_COMPONENT(CommanderUpdatesBand) \
   EMIT_BAND_COMPONENT(CommanderTransferBand) \
   EMIT_BAND_COMPONENT(CommanderCustomCommandsBand) \
-  EMIT_BAND_COMPONENT(CommanderLocalHistoryBand) \
-  EMIT_BAND_COMPONENT(CommanderLocalNavigationBand) \
-  EMIT_BAND_COMPONENT(CommanderLocalFileBand) \
-  EMIT_BAND_COMPONENT(CommanderLocalSelectionBand) \
-  EMIT_BAND_COMPONENT(CommanderRemoteHistoryBand) \
-  EMIT_BAND_COMPONENT(CommanderRemoteNavigationBand) \
-  EMIT_BAND_COMPONENT(CommanderRemoteFileBand) \
-  EMIT_BAND_COMPONENT(CommanderRemoteSelectionBand)
+  EMIT_BAND_COMPONENT2(CommanderLocalHistoryBand, 2) \
+  EMIT_BAND_COMPONENT2(CommanderLocalNavigationBand, 2) \
+  EMIT_BAND_COMPONENT2(CommanderLocalFileBand, 2) \
+  EMIT_BAND_COMPONENT2(CommanderLocalSelectionBand, 2) \
+  EMIT_BAND_COMPONENT2(CommanderRemoteHistoryBand, 2) \
+  EMIT_BAND_COMPONENT2(CommanderRemoteNavigationBand, 2) \
+  EMIT_BAND_COMPONENT2(CommanderRemoteFileBand, 2) \
+  EMIT_BAND_COMPONENT2(CommanderRemoteSelectionBand, 2)
+#define EMIT_BAND_COMPONENT(COMP) EMIT_BAND_COMPONENT2(COMP, )
 //---------------------------------------------------------------------------
 __fastcall TNonVisualDataModule::TNonVisualDataModule(TComponent* Owner)
         : TDataModule(Owner)
@@ -309,14 +312,14 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPDCOMP(SessionsTabs)
   UPDCOMP(StatusBar)
   UPDCOMP(ToolBar2)
-  UPDCOMP(LocalStatusBar)
-  UPDCOMP(RemoteStatusBar)
+  UPDCOMP2(LocalStatusBar, 2)
+  UPDCOMP2(RemoteStatusBar, 2)
   UPDCOMP(CommandLinePanel)
   UPDCOMP(RemoteTree)
   UPDCOMP(LocalTree)
-  #define EMIT_BAND_COMPONENT(COMP) UPDCOMP(COMP)
+  #define EMIT_BAND_COMPONENT2(COMP, NUM) UPDCOMP2(COMP, NUM)
   BAND_COMPONENTS
-  #undef EMIT_BAND_COMPONENT
+  #undef EMIT_BAND_COMPONENT2
 
   UPD(GoToCommandLineAction, true)
   UPD(GoToTreeAction, true)
@@ -638,11 +641,11 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXECOMP(SessionsTabs)
     EXECOMP(StatusBar)
     EXECOMP(ToolBar2)
-    EXECOMP(LocalStatusBar)
-    EXECOMP(RemoteStatusBar)
-    #define EMIT_BAND_COMPONENT(COMP) EXECOMP(COMP)
+    EXECOMP2(LocalStatusBar, 2)
+    EXECOMP2(RemoteStatusBar, 2)
+    #define EMIT_BAND_COMPONENT2(COMP, NUM) EXECOMP2(COMP, NUM)
     BAND_COMPONENTS
-    #undef EMIT_BAND_COMPONENT
+    #undef EMIT_BAND_COMPONENT2
     EXECOMP(CommandLinePanel)
     EXECOMP(RemoteTree)
     EXECOMP(LocalTree)

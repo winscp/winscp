@@ -808,73 +808,73 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'ui_toolbars'
       Hint = 'Hide/show custom commands toolbar'
     end
-    object CommanderLocalHistoryBandAction: TAction
+    object CommanderLocalHistoryBandAction2: TAction
       Tag = 11
       Category = 'View'
       Caption = '&History Buttons'
       HelpKeyword = 'ui_toolbars'
-      Hint = 'Hide/show local history toolbar'
+      Hint = 'Hide/show history toolbar'
     end
-    object CommanderLocalNavigationBandAction: TAction
+    object CommanderLocalNavigationBandAction2: TAction
       Tag = 11
       Category = 'View'
       Caption = '&Navigation Buttons'
       HelpKeyword = 'ui_toolbars'
-      Hint = 'Hide/show local navigation toolbar'
+      Hint = 'Hide/show navigation toolbar'
     end
-    object CommanderLocalFileBandAction: TAction
+    object CommanderLocalFileBandAction2: TAction
       Tag = 11
       Category = 'View'
       Caption = '&File Buttons'
       HelpKeyword = 'ui_toolbars'
-      Hint = 'Hide/show local file toolbar'
+      Hint = 'Hide/show file toolbar'
     end
-    object CommanderLocalSelectionBandAction: TAction
+    object CommanderLocalSelectionBandAction2: TAction
       Tag = 11
       Category = 'View'
       Caption = 'Se&lection Buttons'
       HelpKeyword = 'ui_toolbars'
-      Hint = 'Hide/show local selection toolbar'
+      Hint = 'Hide/show selection toolbar'
     end
-    object CommanderRemoteHistoryBandAction: TAction
+    object CommanderRemoteHistoryBandAction2: TAction
       Tag = 11
       Category = 'View'
       Caption = '&History Buttons'
       HelpKeyword = 'ui_toolbars'
-      Hint = 'Hide/show remote history toolbar'
+      Hint = 'Hide/show history toolbar'
     end
-    object CommanderRemoteNavigationBandAction: TAction
+    object CommanderRemoteNavigationBandAction2: TAction
       Tag = 11
       Category = 'View'
       Caption = '&Navigation Buttons'
       HelpKeyword = 'ui_toolbars'
-      Hint = 'Hide/show remote navigation toolbar'
+      Hint = 'Hide/show navigation toolbar'
     end
-    object CommanderRemoteFileBandAction: TAction
+    object CommanderRemoteFileBandAction2: TAction
       Tag = 11
       Category = 'View'
       Caption = '&File Buttons'
       HelpKeyword = 'ui_toolbars'
-      Hint = 'Hide/show remote file toolbar'
+      Hint = 'Hide/show file toolbar'
     end
-    object CommanderRemoteSelectionBandAction: TAction
+    object CommanderRemoteSelectionBandAction2: TAction
       Tag = 11
       Category = 'View'
       Caption = 'Se&lection Buttons'
       HelpKeyword = 'ui_toolbars'
-      Hint = 'Hide/show remote selection toolbar'
+      Hint = 'Hide/show selection toolbar'
     end
-    object LocalStatusBarAction: TAction
+    object LocalStatusBarAction2: TAction
       Tag = 11
       Category = 'View'
       Caption = 'Status &Bar'
-      Hint = 'Hide/show local panel status bar'
+      Hint = 'Hide/show panel status bar'
     end
-    object RemoteStatusBarAction: TAction
+    object RemoteStatusBarAction2: TAction
       Tag = 11
       Category = 'View'
       Caption = 'Status &Bar'
-      Hint = 'Hide/show remote panel status bar'
+      Hint = 'Hide/show panel status bar'
     end
     object LocalSortByNameAction2: TAction
       Tag = 9
@@ -2431,16 +2431,16 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'ui_file_panel'
       Hint = 'Change local panel layout'
       object HistoryButtons3: TTBXItem
-        Action = CommanderLocalHistoryBandAction
+        Action = CommanderLocalHistoryBandAction2
       end
       object NavigationButtons3: TTBXItem
-        Action = CommanderLocalNavigationBandAction
+        Action = CommanderLocalNavigationBandAction2
       end
       object TBXItem40: TTBXItem
-        Action = CommanderLocalFileBandAction
+        Action = CommanderLocalFileBandAction2
       end
       object TBXItem43: TTBXItem
-        Action = CommanderLocalSelectionBandAction
+        Action = CommanderLocalSelectionBandAction2
       end
       object N23: TTBXSeparatorItem
       end
@@ -2450,7 +2450,7 @@ object NonVisualDataModule: TNonVisualDataModule
       object N77: TTBXSeparatorItem
       end
       object StatusBar6: TTBXItem
-        Action = LocalStatusBarAction
+        Action = LocalStatusBarAction2
       end
     end
     object RemotePanel2: TTBXSubmenuItem
@@ -2458,16 +2458,16 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'ui_file_panel'
       Hint = 'Change remote panel layout'
       object HistoryButtons4: TTBXItem
-        Action = CommanderRemoteHistoryBandAction
+        Action = CommanderRemoteHistoryBandAction2
       end
       object NavigationButtons4: TTBXItem
-        Action = CommanderRemoteNavigationBandAction
+        Action = CommanderRemoteNavigationBandAction2
       end
       object TBXItem41: TTBXItem
-        Action = CommanderRemoteFileBandAction
+        Action = CommanderRemoteFileBandAction2
       end
       object TBXItem42: TTBXItem
-        Action = CommanderRemoteSelectionBandAction
+        Action = CommanderRemoteSelectionBandAction2
       end
       object N25: TTBXSeparatorItem
       end
@@ -2477,7 +2477,7 @@ object NonVisualDataModule: TNonVisualDataModule
       object N78: TTBXSeparatorItem
       end
       object StatusBar7: TTBXItem
-        Action = RemoteStatusBarAction
+        Action = RemoteStatusBarAction2
       end
     end
     object Options1: TTBXSubmenuItem
@@ -2534,16 +2534,16 @@ object NonVisualDataModule: TNonVisualDataModule
     object N51: TTBXSeparatorItem
     end
     object HistoryButtons5: TTBXItem
-      Action = CommanderRemoteHistoryBandAction
+      Action = CommanderRemoteHistoryBandAction2
     end
     object NavigationButtons5: TTBXItem
-      Action = CommanderRemoteNavigationBandAction
+      Action = CommanderRemoteNavigationBandAction2
     end
     object TBXItem14: TTBXItem
-      Action = CommanderRemoteFileBandAction
+      Action = CommanderRemoteFileBandAction2
     end
     object TBXItem45: TTBXItem
-      Action = CommanderRemoteSelectionBandAction
+      Action = CommanderRemoteSelectionBandAction2
     end
     object TBXItem37: TTBXItem
       Action = LockToolbarsAction
@@ -2562,7 +2562,7 @@ object NonVisualDataModule: TNonVisualDataModule
     object N75: TTBXSeparatorItem
     end
     object StatusBar9: TTBXItem
-      Action = RemoteStatusBarAction
+      Action = RemoteStatusBarAction2
     end
   end
   object LocalPanelPopup: TTBXPopupMenu
@@ -2588,16 +2588,16 @@ object NonVisualDataModule: TNonVisualDataModule
     object N52: TTBXSeparatorItem
     end
     object HistoryButtons6: TTBXItem
-      Action = CommanderLocalHistoryBandAction
+      Action = CommanderLocalHistoryBandAction2
     end
     object NavigationButtons6: TTBXItem
-      Action = CommanderLocalNavigationBandAction
+      Action = CommanderLocalNavigationBandAction2
     end
     object TBXItem39: TTBXItem
-      Action = CommanderLocalFileBandAction
+      Action = CommanderLocalFileBandAction2
     end
     object TBXItem44: TTBXItem
-      Action = CommanderLocalSelectionBandAction
+      Action = CommanderLocalSelectionBandAction2
     end
     object TBXItem38: TTBXItem
       Action = LockToolbarsAction
@@ -2616,7 +2616,7 @@ object NonVisualDataModule: TNonVisualDataModule
     object N76: TTBXSeparatorItem
     end
     object StatusBar10: TTBXItem
-      Action = LocalStatusBarAction
+      Action = LocalStatusBarAction2
     end
   end
   object LocalDirViewColumnPopup: TTBXPopupMenu
