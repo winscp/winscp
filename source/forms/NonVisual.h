@@ -74,9 +74,9 @@
 class TNonVisualDataModule : public TDataModule
 {
 __published:    // IDE-managed Components
-  TAction *LocalSortByNameAction;
-  TAction *LocalSortAscendingAction;
-  TAction *LocalSortBySizeAction;
+  TAction *LocalSortByNameAction2;
+  TAction *LocalSortAscendingAction2;
+  TAction *LocalSortBySizeAction2;
   TActionList *ExplorerActions;
   TAction *CurrentRenameAction;
   TAction *CurrentDeleteAction;
@@ -136,17 +136,17 @@ __published:    // IDE-managed Components
   TAction *CommanderRemoteNavigationBandAction;
   TAction *LocalStatusBarAction;
   TAction *RemoteStatusBarAction;
-  TAction *LocalSortByAttrAction;
-  TAction *LocalSortByTypeAction;
-  TAction *LocalSortByChangedAction;
+  TAction *LocalSortByAttrAction2;
+  TAction *LocalSortByTypeAction2;
+  TAction *LocalSortByChangedAction2;
   TAction *CommanderSortBandAction;
-  TAction *RemoteSortAscendingAction;
-  TAction *RemoteSortByNameAction;
-  TAction *RemoteSortBySizeAction;
-  TAction *RemoteSortByRightsAction;
-  TAction *RemoteSortByChangedAction;
-  TAction *RemoteSortByOwnerAction;
-  TAction *RemoteSortByGroupAction;
+  TAction *RemoteSortAscendingAction2;
+  TAction *RemoteSortByNameAction2;
+  TAction *RemoteSortBySizeAction2;
+  TAction *RemoteSortByRightsAction2;
+  TAction *RemoteSortByChangedAction2;
+  TAction *RemoteSortByOwnerAction2;
+  TAction *RemoteSortByGroupAction2;
   TAction *CurrentSortByTypeAction;
   TAction *CurrentSortAscendingAction;
   TAction *CurrentSortByNameAction;
@@ -161,8 +161,8 @@ __published:    // IDE-managed Components
   TAction *HomepageAction;
   TAction *HistoryPageAction;
   TAction *SaveCurrentSessionAction2;
-  TAction *LocalSortByExtAction;
-  TAction *RemoteSortByExtAction;
+  TAction *LocalSortByExtAction2;
+  TAction *RemoteSortByExtAction2;
   TAction *CurrentSortByExtAction;
   TAction *ShowHideRemoteNameColumnAction2;
   TAction *ShowHideRemoteExtColumnAction2;
@@ -421,7 +421,7 @@ __published:    // IDE-managed Components
   TTBXItem *TBXItem7;
   TAction *ShowHideRemoteTypeColumnAction2;
   TTBXItem *TBXItem8;
-  TAction *RemoteSortByTypeAction;
+  TAction *RemoteSortByTypeAction2;
   TAction *QueueItemPauseAction;
   TTBXItem *TBXItem9;
   TAction *QueueItemResumeAction;

@@ -96,37 +96,37 @@ inherited ScpCommanderForm: TScpCommanderForm
           HelpKeyword = 'ui_file_panel#sorting_files'
           Hint = 'Change file order in local panel'
           object TBXItem12: TTBXItem
-            Action = NonVisualDataModule.LocalSortAscendingAction
+            Action = NonVisualDataModule.LocalSortAscendingAction2
           end
           object TBXSeparatorItem5: TTBXSeparatorItem
           end
           object TBXItem13: TTBXItem
-            Action = NonVisualDataModule.LocalSortByNameAction
+            Action = NonVisualDataModule.LocalSortByNameAction2
             GroupIndex = 1
             RadioItem = True
           end
           object TBXItem14: TTBXItem
-            Action = NonVisualDataModule.LocalSortByExtAction
+            Action = NonVisualDataModule.LocalSortByExtAction2
             GroupIndex = 1
             RadioItem = True
           end
           object TBXItem15: TTBXItem
-            Action = NonVisualDataModule.LocalSortByTypeAction
+            Action = NonVisualDataModule.LocalSortByTypeAction2
             GroupIndex = 1
             RadioItem = True
           end
           object TBXItem16: TTBXItem
-            Action = NonVisualDataModule.LocalSortByChangedAction
+            Action = NonVisualDataModule.LocalSortByChangedAction2
             GroupIndex = 1
             RadioItem = True
           end
           object TBXItem17: TTBXItem
-            Action = NonVisualDataModule.LocalSortBySizeAction
+            Action = NonVisualDataModule.LocalSortBySizeAction2
             GroupIndex = 1
             RadioItem = True
           end
           object TBXItem18: TTBXItem
-            Action = NonVisualDataModule.LocalSortByAttrAction
+            Action = NonVisualDataModule.LocalSortByAttrAction2
             GroupIndex = 1
             RadioItem = True
           end
@@ -684,46 +684,46 @@ inherited ScpCommanderForm: TScpCommanderForm
           HelpKeyword = 'ui_file_panel#sorting_files'
           Hint = 'Change file order in remote panel'
           object TBXItem93: TTBXItem
-            Action = NonVisualDataModule.RemoteSortAscendingAction
+            Action = NonVisualDataModule.RemoteSortAscendingAction2
           end
           object TBXSeparatorItem28: TTBXSeparatorItem
           end
           object TBXItem94: TTBXItem
-            Action = NonVisualDataModule.RemoteSortByNameAction
+            Action = NonVisualDataModule.RemoteSortByNameAction2
             GroupIndex = 1
             RadioItem = True
           end
           object TBXItem95: TTBXItem
-            Action = NonVisualDataModule.RemoteSortByExtAction
+            Action = NonVisualDataModule.RemoteSortByExtAction2
             GroupIndex = 1
             RadioItem = True
           end
           object TBXItem193: TTBXItem
-            Action = NonVisualDataModule.RemoteSortByTypeAction
+            Action = NonVisualDataModule.RemoteSortByTypeAction2
             RadioItem = True
           end
           object TBXItem96: TTBXItem
-            Action = NonVisualDataModule.RemoteSortByChangedAction
+            Action = NonVisualDataModule.RemoteSortByChangedAction2
             GroupIndex = 1
             RadioItem = True
           end
           object TBXItem97: TTBXItem
-            Action = NonVisualDataModule.RemoteSortBySizeAction
+            Action = NonVisualDataModule.RemoteSortBySizeAction2
             GroupIndex = 1
             RadioItem = True
           end
           object TBXItem98: TTBXItem
-            Action = NonVisualDataModule.RemoteSortByRightsAction
+            Action = NonVisualDataModule.RemoteSortByRightsAction2
             GroupIndex = 1
             RadioItem = True
           end
           object TBXItem99: TTBXItem
-            Action = NonVisualDataModule.RemoteSortByOwnerAction
+            Action = NonVisualDataModule.RemoteSortByOwnerAction2
             GroupIndex = 1
             RadioItem = True
           end
           object TBXItem100: TTBXItem
-            Action = NonVisualDataModule.RemoteSortByGroupAction
+            Action = NonVisualDataModule.RemoteSortByGroupAction2
             GroupIndex = 1
             RadioItem = True
           end

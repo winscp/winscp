@@ -286,14 +286,14 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 'Rename|Rename selected file'
       ImageIndex = 3
     end
-    object LocalSortAscendingAction: TAction
+    object LocalSortAscendingAction2: TAction
       Tag = 9
       Category = 'Sort'
       Caption = '&Ascending'
       HelpKeyword = 'ui_file_panel#sorting_files'
       Hint = 
-        'Ascending/descending|Toggle ascending/descending sort of local p' +
-        'anel'
+        'Ascending/descending|Toggle ascending/descending sorting of file' +
+        's in the panel'
       ImageIndex = 37
     end
     object CurrentEditAction: TAction
@@ -876,138 +876,138 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = 'Status &Bar'
       Hint = 'Hide/show remote panel status bar'
     end
-    object LocalSortByNameAction: TAction
+    object LocalSortByNameAction2: TAction
       Tag = 9
       Category = 'Sort'
       Caption = 'By &Name'
       HelpKeyword = 'ui_file_panel#sorting_files'
-      Hint = 'Sort by name|Sort local panel by name'
+      Hint = 'Sort by name|Sort panel by name'
       ImageIndex = 31
       ShortCut = 16498
     end
-    object LocalSortByExtAction: TAction
+    object LocalSortByExtAction2: TAction
       Tag = 9
       Category = 'Sort'
       Caption = 'By &Extension'
       HelpKeyword = 'ui_file_panel#sorting_files'
-      Hint = 'Sort by extension|Sort local panel by file name extension'
+      Hint = 'Sort by extension|Sort panel by file name extension'
       ImageIndex = 32
       ShortCut = 16499
     end
-    object LocalSortBySizeAction: TAction
+    object LocalSortBySizeAction2: TAction
       Tag = 9
       Category = 'Sort'
       Caption = 'By &Size'
       HelpKeyword = 'ui_file_panel#sorting_files'
-      Hint = 'Sort by size|Sort local panel by file size'
+      Hint = 'Sort by size|Sort panel by file size'
       ImageIndex = 35
       ShortCut = 16501
     end
-    object LocalSortByAttrAction: TAction
+    object LocalSortByAttrAction2: TAction
       Tag = 9
       Category = 'Sort'
       Caption = 'By A&ttributes'
       HelpKeyword = 'ui_file_panel#sorting_files'
-      Hint = 'Sort by attributes|Sort local panel by attributes'
+      Hint = 'Sort by attributes|Sort panel by attributes'
       ImageIndex = 36
       ShortCut = 16502
     end
-    object LocalSortByTypeAction: TAction
+    object LocalSortByTypeAction2: TAction
       Tag = 9
       Category = 'Sort'
       Caption = 'By &Type'
       HelpKeyword = 'ui_file_panel#sorting_files'
-      Hint = 'Sort by type|Sort local panel by file type'
+      Hint = 'Sort by type|Sort panel by file type'
       ImageIndex = 34
     end
-    object LocalSortByChangedAction: TAction
+    object LocalSortByChangedAction2: TAction
       Tag = 9
       Category = 'Sort'
       Caption = 'By &Modification'
       HelpKeyword = 'ui_file_panel#sorting_files'
-      Hint = 'Sort by time|Sort local panel by last modification time'
+      Hint = 'Sort by time|Sort panel by last modification time'
       ImageIndex = 33
       ShortCut = 16500
     end
-    object RemoteSortAscendingAction: TAction
+    object RemoteSortAscendingAction2: TAction
       Tag = 14
       Category = 'Sort'
       Caption = '&Ascending'
       HelpKeyword = 'ui_file_panel#sorting_files'
       Hint = 
-        'Ascending/descending|Toggle ascending/descending sort of remote ' +
-        'panel'
+        'Ascending/descending|Toggle ascending/descending sorting of file' +
+        's in the panel'
       ImageIndex = 37
     end
-    object RemoteSortByNameAction: TAction
+    object RemoteSortByNameAction2: TAction
       Tag = 14
       Category = 'Sort'
       Caption = 'By &Name'
       HelpKeyword = 'ui_file_panel#sorting_files'
-      Hint = 'Sort by name|Sort remote panel by name'
+      Hint = 'Sort by name|Sort panel by name'
       ImageIndex = 31
       ShortCut = 16498
     end
-    object RemoteSortByExtAction: TAction
+    object RemoteSortByExtAction2: TAction
       Tag = 14
       Category = 'Sort'
       Caption = 'By &Extension'
       HelpKeyword = 'ui_file_panel#sorting_files'
-      Hint = 'Sort by extension|Sort remote panel by file name extension'
+      Hint = 'Sort by extension|Sort panel by file name extension'
       ImageIndex = 32
       ShortCut = 16499
     end
-    object RemoteSortBySizeAction: TAction
+    object RemoteSortBySizeAction2: TAction
       Tag = 14
       Category = 'Sort'
       Caption = 'By &Size'
       HelpKeyword = 'ui_file_panel#sorting_files'
-      Hint = 'Sort by size|Sort remote panel by file size'
+      Hint = 'Sort by size|Sort panel by file size'
       ImageIndex = 35
       ShortCut = 16501
     end
-    object RemoteSortByRightsAction: TAction
+    object RemoteSortByRightsAction2: TAction
       Tag = 14
       Category = 'Sort'
       Caption = 'By &Permissions'
       HelpKeyword = 'ui_file_panel#sorting_files'
-      Hint = 'Sort by permissions|Sort remote panel by permissions'
+      Hint = 'Sort by permissions|Sort panel by permissions'
       ImageIndex = 36
       ShortCut = 16502
     end
-    object RemoteSortByChangedAction: TAction
+    object RemoteSortByChangedAction2: TAction
       Tag = 14
       Category = 'Sort'
       Caption = 'By &Modification'
       HelpKeyword = 'ui_file_panel#sorting_files'
-      Hint = 'Sort by time|Sort remote panel by last modification time'
+      Hint = 'Sort by time|Sort panel by last modification time'
       ImageIndex = 33
       ShortCut = 16500
     end
-    object RemoteSortByOwnerAction: TAction
+    object RemoteSortByOwnerAction2: TAction
       Tag = 14
       Category = 'Sort'
       Caption = 'By &Owner'
       HelpKeyword = 'ui_file_panel#sorting_files'
-      Hint = 'Sort by owner|Sort remote panel by file owner'
+      Hint = 'Sort by owner|Sort panel by file owner'
       ImageIndex = 38
       ShortCut = 16503
     end
-    object RemoteSortByGroupAction: TAction
+    object RemoteSortByGroupAction2: TAction
       Tag = 14
       Category = 'Sort'
       Caption = 'By &Group'
       HelpKeyword = 'ui_file_panel#sorting_files'
-      Hint = 'Sort by group|Sort remote panel by file group'
+      Hint = 'Sort by group|Sort panel by file group'
       ImageIndex = 39
       ShortCut = 16504
     end
-    object RemoteSortByTypeAction: TAction
+    object RemoteSortByTypeAction2: TAction
       Tag = 14
       Category = 'Sort'
       Caption = 'By &Type'
       HelpKeyword = 'ui_file_panel#sorting_files'
-      Hint = 'Sort by type|Sort remote panel by file type'
+      Hint = 'Sort by type|Sort panel by file type'
       ImageIndex = 34
     end
     object CurrentSortAscendingAction: TAction
@@ -2631,7 +2631,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Action = SortColumnDescendingAction
     end
     object LocalSortByExtColumnPopupItem: TTBXItem
-      Action = LocalSortByExtAction
+      Action = LocalSortByExtAction2
     end
     object Hidecolumn1: TTBXItem
       Action = HideColumnAction
@@ -2689,7 +2689,7 @@ object NonVisualDataModule: TNonVisualDataModule
       RadioItem = True
     end
     object RemoteSortByExtColumnPopupItem: TTBXItem
-      Action = RemoteSortByExtAction
+      Action = RemoteSortByExtAction2
     end
     object Hidecolumn2: TTBXItem
       Action = HideColumnAction

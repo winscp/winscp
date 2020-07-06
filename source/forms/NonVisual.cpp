@@ -47,17 +47,17 @@ TNonVisualDataModule *NonVisualDataModule;
   ScpExplorer->ComponentVisible[fc ## COMP] = !ScpExplorer->ComponentVisible[fc ## COMP] )
 #define COLPROPS(SIDE) \
   ((TCustomDirViewColProperties*)ScpExplorer->DirView(os ## SIDE)->ColProperties)
-#define UPDSORT(SIDE, PREFIX, COL) if (Action == SIDE ## SortBy ## COL ## Action) { \
-  SIDE ## SortBy ## COL ## Action->Enabled = true; Handled = true; \
-  SIDE ## SortBy ## COL ## Action->Checked = (COLPROPS(SIDE)->SortColumn == PREFIX ## COL); } else
-#define EXESORT(SIDE, PREFIX, COL) EXE(SIDE ## SortBy ## COL ## Action, \
+#define UPDSORT(SIDE, PREFIX, COL) if (Action == SIDE ## SortBy ## COL ## Action2) { \
+  SIDE ## SortBy ## COL ## Action2->Enabled = true; Handled = true; \
+  SIDE ## SortBy ## COL ## Action2->Checked = (COLPROPS(SIDE)->SortColumn == PREFIX ## COL); } else
+#define EXESORT(SIDE, PREFIX, COL) EXE(SIDE ## SortBy ## COL ## Action2, \
     if (COLPROPS(SIDE)->SortColumn == PREFIX ## COL) \
       COLPROPS(SIDE)->SortAscending = !COLPROPS(SIDE)->SortAscending; \
     else COLPROPS(SIDE)->SortColumn = PREFIX ## COL )
-#define UPDSORTA(SIDE) if (Action == SIDE ## SortAscendingAction) { \
-  SIDE ## SortAscendingAction->Enabled = true; Handled = true; \
-  SIDE ## SortAscendingAction->Checked = COLPROPS(SIDE)->SortAscending; } else
-#define EXESORTA(SIDE) EXE(SIDE ## SortAscendingAction, \
+#define UPDSORTA(SIDE, NUM) if (Action == SIDE ## SortAscendingAction ## NUM) { \
+  SIDE ## SortAscendingAction ## NUM->Enabled = true; Handled = true; \
+  SIDE ## SortAscendingAction ## NUM->Checked = COLPROPS(SIDE)->SortAscending; } else
+#define EXESORTA(SIDE, NUM) EXE(SIDE ## SortAscendingAction ## NUM, \
   COLPROPS(SIDE)->SortAscending = !COLPROPS(SIDE)->SortAscending; )
 #define UPDSORTC(LPREFIX, LCOL, RPREFIX, RCOL) if (Action == CurrentSortBy ## RCOL ## Action) { \
   CurrentSortBy ## RCOL ## Action->Enabled = ScpExplorer->AllowedAction((TAction *)Action, aaShortCut); \
@@ -343,14 +343,14 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(CustomizeToolbarAction, IsToolbarCustomizable())
 
   // SORT
-  UPDSORTA(Local)
+  UPDSORTA(Local, 2)
   UPDSORT(Local, dv, Name)
   UPDSORT(Local, dv, Ext)
   UPDSORT(Local, dv, Size)
   UPDSORT(Local, dv, Type)
   UPDSORT(Local, dv, Changed)
   UPDSORT(Local, dv, Attr)
-  UPDSORTA(Remote)
+  UPDSORTA(Remote, 2)
   UPDSORT(Remote, uv, Name)
   UPDSORT(Remote, uv, Ext)
   UPDSORT(Remote, uv, Size)
@@ -359,7 +359,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPDSORT(Remote, uv, Owner)
   UPDSORT(Remote, uv, Group)
   UPDSORT(Remote, uv, Type)
-  UPDSORTA(Current)
+  UPDSORTA(Current, )
   UPDSORTC(dv, Name, uv, Name)
   UPDSORTC(dv, Ext, uv, Ext)
   UPDSORTC(dv, Size, uv, Size)
@@ -666,14 +666,14 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
 
     #define COLVIEWPROPS ((TCustomDirViewColProperties*)(((TCustomDirView*)(((TListColumns*)(ListColumn->Collection))->Owner()))->ColProperties))
     // SORT
-    EXESORTA(Local)
+    EXESORTA(Local, 2)
     EXESORT(Local, dv, Name)
     EXESORT(Local, dv, Ext)
     EXESORT(Local, dv, Size)
     EXESORT(Local, dv, Type)
     EXESORT(Local, dv, Changed)
     EXESORT(Local, dv, Attr)
-    EXESORTA(Remote)
+    EXESORTA(Remote, 2)
     EXESORT(Remote, uv, Name)
     EXESORT(Remote, uv, Ext)
     EXESORT(Remote, uv, Size)
@@ -682,7 +682,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXESORT(Remote, uv, Owner)
     EXESORT(Remote, uv, Group)
     EXESORT(Remote, uv, Type)
-    EXESORTA(Current)
+    EXESORTA(Current, )
     EXESORTC(Name, dvName, uvName)
     EXESORTC(Ext, dvExt, uvExt)
     EXESORTC(Size, dvSize, uvSize)
@@ -912,9 +912,9 @@ void __fastcall TNonVisualDataModule::CommanderShortcuts()
   CloseApplicationAction2->ShortCut = ShortCut(VK_F10, NONE);
 
   TShortCut CtrlF4 = ShortCut(VK_F4, CTRL);
-  LocalSortByExtAction->ShortCut = ExplorerKeyboardShortcuts ? TShortCut(0) : CtrlF4;
-  RemoteSortByExtAction->ShortCut = LocalSortByExtAction->ShortCut;
-  CurrentSortByExtAction->ShortCut = LocalSortByExtAction->ShortCut;
+  LocalSortByExtAction2->ShortCut = ExplorerKeyboardShortcuts ? TShortCut(0) : CtrlF4;
+  RemoteSortByExtAction2->ShortCut = LocalSortByExtAction2->ShortCut;
+  CurrentSortByExtAction->ShortCut = LocalSortByExtAction2->ShortCut;
   int Index = CloseSessionAction2->SecondaryShortCuts->IndexOfShortCut(CtrlF4);
   if (ExplorerKeyboardShortcuts && (Index < 0))
   {
