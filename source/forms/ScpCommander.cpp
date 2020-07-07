@@ -360,9 +360,9 @@ void __fastcall TScpCommanderForm::DoShow()
   // Make sure the RemoteDirView is disabled (if not connected yet)
   // before the focusing below,
   // otherwise we disable the view while setting it focused
-  // (UpdateControls gets calling within the SetFocus),
-  // leading to VCL focus inconsistency wih Windows,
-  // and the view [anothing actually] not getting focused after the session
+  // (UpdateControls gets called within the SetFocus),
+  // leading to VCL focus inconsistency with Windows,
+  // and the view [anything actually] not getting focused after the session
   // is finally connected
   UpdateControls();
 
