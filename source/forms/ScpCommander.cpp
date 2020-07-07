@@ -687,8 +687,11 @@ void __fastcall TScpCommanderForm::ConfigurationChanged()
     MenuToolbar->Items->Move(LocalIndex, RemoteIndex);
     RemoteIndex = MenuToolbar->Items->IndexOf(RemoteMenuButton);
     MenuToolbar->Items->Move(RemoteIndex, LocalIndex);
-    SWAP(TShortCut, NonVisualDataModule->LocalChangePathAction2->ShortCut,
-      NonVisualDataModule->RemoteChangePathAction2->ShortCut);
+
+    SWAP(TShortCut, NonVisualDataModule->LocalChangePathAction2->ShortCut, NonVisualDataModule->RemoteChangePathAction2->ShortCut);
+
+    SWAP(UnicodeString, NonVisualDataModule->CommanderLocalPanelAction->Caption, NonVisualDataModule->CommanderRemotePanelAction->Caption);
+    SWAP(UnicodeString, NonVisualDataModule->CommanderLocalPanelAction->Hint, NonVisualDataModule->CommanderRemotePanelAction->Hint);
   }
 
   if ((RemoteDrivePanel->Align == alLeft) != WinConfiguration->ScpCommander.TreeOnLeft)

@@ -634,6 +634,8 @@ __published:    // IDE-managed Components
   TTBXItem *TBXItem83;
   TTBXItem *TBXItem84;
   TTBXItem *TBXItem85;
+  TAction *CommanderLocalPanelAction;
+  TAction *CommanderRemotePanelAction;
   void __fastcall ExplorerActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall SessionIdleTimerTimer(TObject *Sender);

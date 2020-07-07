@@ -513,9 +513,7 @@ inherited ScpCommanderForm: TScpCommanderForm
           end
         end
         object TBXSubmenuItem11: TTBXSubmenuItem
-          Caption = '&Local Panel'
-          HelpKeyword = 'ui_file_panel'
-          Hint = 'Change local panel layout'
+          Action = NonVisualDataModule.CommanderLocalPanelAction
           object TBXItem65: TTBXItem
             Action = NonVisualDataModule.CommanderLocalHistoryBandAction2
           end
@@ -540,9 +538,7 @@ inherited ScpCommanderForm: TScpCommanderForm
           end
         end
         object TBXSubmenuItem12: TTBXSubmenuItem
-          Caption = '&Remote Panel'
-          HelpKeyword = 'ui_file_panel'
-          Hint = 'Change remote panel layout'
+          Action = NonVisualDataModule.CommanderRemotePanelAction
           object TBXItem69: TTBXItem
             Action = NonVisualDataModule.CommanderRemoteHistoryBandAction2
           end

@@ -320,6 +320,8 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   #define EMIT_BAND_COMPONENT2(COMP, NUM) UPDCOMP2(COMP, NUM)
   BAND_COMPONENTS
   #undef EMIT_BAND_COMPONENT2
+  UPD(CommanderLocalPanelAction, true)
+  UPD(CommanderRemotePanelAction, true)
 
   UPD(GoToCommandLineAction, true)
   UPD(GoToTreeAction, true)
@@ -649,6 +651,8 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXECOMP(CommandLinePanel)
     EXECOMP(RemoteTree)
     EXECOMP(LocalTree)
+    EXE(CommanderLocalPanelAction, )
+    EXE(CommanderRemotePanelAction, )
     EXE(GoToCommandLineAction, ScpExplorer->GoToCommandLine())
     EXE(GoToTreeAction, ScpExplorer->GoToTree())
 

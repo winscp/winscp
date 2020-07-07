@@ -2282,6 +2282,20 @@ object NonVisualDataModule: TNonVisualDataModule
       ImageIndex = 111
       ShortCut = 16451
     end
+    object CommanderLocalPanelAction: TAction
+      Tag = 11
+      Category = 'View'
+      Caption = '&Left Panel'
+      HelpKeyword = 'ui_file_panel'
+      Hint = 'Change left panel layout'
+    end
+    object CommanderRemotePanelAction: TAction
+      Tag = 11
+      Category = 'View'
+      Caption = '&Right Panel'
+      HelpKeyword = 'ui_file_panel'
+      Hint = 'Change right panel layout'
+    end
   end
   object ExplorerBarPopup: TTBXPopupMenu
     Images = GlyphsModule.ExplorerImages
@@ -2427,9 +2441,7 @@ object NonVisualDataModule: TNonVisualDataModule
     object N27: TTBXSeparatorItem
     end
     object LocalPanel1: TTBXSubmenuItem
-      Caption = '&Local Panel'
-      HelpKeyword = 'ui_file_panel'
-      Hint = 'Change local panel layout'
+      Action = CommanderLocalPanelAction
       object HistoryButtons3: TTBXItem
         Action = CommanderLocalHistoryBandAction2
       end
@@ -2454,9 +2466,7 @@ object NonVisualDataModule: TNonVisualDataModule
       end
     end
     object RemotePanel2: TTBXSubmenuItem
-      Caption = '&Remote Panel'
-      HelpKeyword = 'ui_file_panel'
-      Hint = 'Change remote panel layout'
+      Action = CommanderRemotePanelAction
       object HistoryButtons4: TTBXItem
         Action = CommanderRemoteHistoryBandAction2
       end
