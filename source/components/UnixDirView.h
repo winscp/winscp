@@ -23,6 +23,7 @@ class PACKAGE TUnixDirView : public TCustomUnixDirView
 {
 friend class TCustomUnixDriveView;
 private:
+  bool FDDAllowMove;
   bool FDirLoadedAfterChangeDir;
   TNotifyEvent FOnDisplayProperties;
   bool FFullLoad;
@@ -103,6 +104,7 @@ public:
   __property bool Active = { read = GetActive };
   __property TTerminal *Terminal = { read = FTerminal, write = SetTerminal };
 __published:
+  __property bool DDAllowMove = { read = FDDAllowMove, write = FDDAllowMove, default = false };
   __property TDDDragFileName OnDDDragFileName = { read = FOnDDDragFileName,
     write = FOnDDDragFileName};
   __property OnBusy;

@@ -1017,6 +1017,7 @@ void __fastcall TCustomScpExplorerForm::ConfigurationChanged()
   Color = GetBtnFaceColor();
 
   DebugAssert(Configuration && RemoteDirView);
+  RemoteDirView->DDAllowMove = !WinConfiguration->DDDisableMove;
   RemoteDirView->DimmHiddenFiles = WinConfiguration->DimmHiddenFiles;
   RemoteDirView->ShowHiddenFiles = WinConfiguration->ShowHiddenFiles;
   RemoteDirView->FormatSizeBytes = WinConfiguration->FormatSizeBytes;
@@ -1030,6 +1031,7 @@ void __fastcall TCustomScpExplorerForm::ConfigurationChanged()
     RemoteDirView->Invalidate();
   }
 
+  RemoteDriveView->DDAllowMove = !WinConfiguration->DDDisableMove;
   RemoteDriveView->DimmHiddenDirs = WinConfiguration->DimmHiddenFiles;
   RemoteDriveView->ShowHiddenDirs = WinConfiguration->ShowHiddenFiles;
   RemoteDriveView->ShowInaccesibleDirectories = WinConfiguration->ShowInaccesibleDirectories;
