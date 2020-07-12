@@ -104,8 +104,9 @@
 		<TASM_DisplaySourceLines>true</TASM_DisplaySourceLines>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
+		<Debugger_RunParams>/rawconfig Interface\DDDisableMove=1</Debugger_RunParams>
 		<ILINK_DisableIncrementalLinking>true</ILINK_DisableIncrementalLinking>
-		<ILINK_LibraryPath>$(INTERM_PATH)\Win32\Debug\;$(BDS)\lib\Win32\Debug\;$(BDS)\lib\Win32\Release\;$(BDS)\lib\Win32\Release\psdk\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+		<ILINK_LibraryPath>C:\Misto\bin\interm\Win32\Debug\;$(INTERM_PATH)\Win32\Debug\;$(BDS)\lib\Win32\Debug\;$(BDS)\lib\Win32\Release\;$(BDS)\lib\Win32\Release\psdk\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
 		<LinkPackageStatics>vcl.lib;rtl.lib;vclx.lib;ws2_32.lib;secur32.lib;My.lib;DriveDir.lib;DragDropP.lib;tb2k.lib;tbxp.lib;bcbie.lib;Crypt32.lib;PngComponents.lib;xmlrtl.lib;vclactnband.lib;vclimg.lib;winhttp.lib;jcl.lib;vclie.lib;urlmon.lib;shlwapi.lib;powrprof.lib;soaprtl.lib;fmx.lib;dbrtl.lib;inet.lib;psapi.lib</LinkPackageStatics>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">

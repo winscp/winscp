@@ -527,6 +527,7 @@ void __fastcall TWinConfiguration::Default()
   int WorkAreaHeightScaled = DimensionToDefaultPixelsPerInch(Screen->WorkAreaHeight);
   UnicodeString PixelsPerInchToolbarValue = "PixelsPerInch=" + SaveDefaultPixelsPerInch();
 
+  FDDDisableMove = false;
   FDDTransferConfirmation = asAuto;
   FDDTemporaryDirectory = L"";
   FDDDrives = L"";
@@ -942,6 +943,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
   BLOCK(L"Interface", CANCREATE, \
     KEYEX(Integer,DoubleClickAction, L"CopyOnDoubleClick"); \
     KEY(Bool,     CopyOnDoubleClickConfirmation); \
+    KEY(Bool,     DDDisableMove); \
     KEYEX(Integer, DDTransferConfirmation, L"DDTransferConfirmation2"); \
     KEY(String,   DDTemporaryDirectory); \
     KEY(String,   DDDrives); \
@@ -1886,6 +1888,11 @@ void __fastcall TWinConfiguration::EndMasterPasswordSession()
     FMasterPasswordSession--;
   }
   FMasterPasswordSessionAsked = false;
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetDDDisableMove(bool value)
+{
+  SET_CONFIG_PROPERTY(DDDisableMove);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetDDTransferConfirmation(TAutoSwitch value)

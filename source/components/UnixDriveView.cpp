@@ -47,6 +47,7 @@ __fastcall TCustomUnixDriveView::TCustomUnixDriveView(TComponent* Owner) :
   FRootName = Customunixdirview_SUnixDefaultRootName;
   FIgnoreChange = false;
   FPrevSelected = NULL;
+  FDDAllowMove = false;
   FShowInaccesibleDirectories = true;
   FDummyDragFile = NULL;
   FPendingDelete = new TList();
@@ -645,7 +646,13 @@ bool __fastcall TCustomUnixDriveView::DragCompleteFileList()
 //---------------------------------------------------------------------------
 TDropEffectSet __fastcall TCustomUnixDriveView::DDSourceEffects()
 {
-  return TDropEffectSet() << deCopy << deMove;
+  TDropEffectSet Result;
+  Result << deCopy;
+  if (DDAllowMove)
+  {
+    Result << deMove;
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TCustomUnixDriveView::NodePathName(TTreeNode * Node)
