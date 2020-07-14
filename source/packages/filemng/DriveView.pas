@@ -1810,6 +1810,7 @@ begin {CallBackValidateDir}
       ParentDir := IncludeTrailingBackslash(NodePath(Node));
       {Build list of existing subnodes:}
       SubDirList := TStringList.Create;
+      SubDirList.CaseSensitive := True; // We want to reflect changes in subfolder name case
       while Assigned(WorkNode) do
       begin
         SubDirList.Add(TNodeData(WorkNode.Data).DirName);
@@ -1818,6 +1819,7 @@ begin {CallBackValidateDir}
       {Sorting not required, because the subnodes are already sorted!}
 
       SRecList := TStringList.Create;
+      SRecList.CaseSensitive := True;
       DosError := FindFirst(ApiPath(ParentDir + '*.*'), DirAttrMask, SRec);
       while DosError = 0 do
       begin
