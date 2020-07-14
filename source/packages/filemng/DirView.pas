@@ -1489,7 +1489,9 @@ begin
         FChangeTimer.Interval := 0;
 
         EItems := TStringlist.Create;
+        EItems.CaseSensitive := True; // We want to reflect changes in file name case
         FItems := TStringlist.Create;
+        FItems.CaseSensitive := True;
         NewItems := TStringlist.Create;
 
         PUpdate := False;
