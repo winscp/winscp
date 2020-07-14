@@ -2528,20 +2528,44 @@ object NonVisualDataModule: TNonVisualDataModule
     Options = [tboShowHint]
     Left = 312
     Top = 264
+    object TBXSubmenuItem8: TTBXSubmenuItem
+      Caption = '&Go To'
+      HelpKeyword = 'task_navigate'
+      Hint = 'Go to directory'
+      object TBXItem86: TTBXItem
+        Action = RemoteOpenDirAction
+      end
+      object TBXSeparatorItem13: TTBXSeparatorItem
+      end
+      object TBXItem87: TTBXItem
+        Action = RemoteParentDirAction
+      end
+      object TBXItem88: TTBXItem
+        Action = RemoteRootDirAction
+      end
+      object TBXItem89: TTBXItem
+        Action = RemoteHomeDirAction
+      end
+      object TBXSeparatorItem14: TTBXSeparatorItem
+      end
+      object TBXItem90: TTBXItem
+        Action = RemoteBackAction
+      end
+      object TBXItem91: TTBXItem
+        Action = RemoteForwardAction
+      end
+    end
     object TBXItem32: TTBXItem
       Action = RemoteRefreshAction
     end
     object TBXItem30: TTBXItem
       Action = RemoteAddBookmarkAction
     end
-    object CopyPathtoClipboard1: TTBXItem
-      Action = RemotePathToClipboardAction
-    end
-    object OpenDirectoryBookmark1: TTBXItem
-      Action = RemoteOpenDirAction
-    end
     object TBXItem26: TTBXItem
       Action = RemoteFilterAction
+    end
+    object CopyPathtoClipboard1: TTBXItem
+      Action = RemotePathToClipboardAction
     end
     object N51: TTBXSeparatorItem
     end
@@ -2582,20 +2606,47 @@ object NonVisualDataModule: TNonVisualDataModule
     Options = [tboShowHint]
     Left = 312
     Top = 336
+    object TBXSubmenuItem10: TTBXSubmenuItem
+      Caption = '&Go To'
+      HelpKeyword = 'task_navigate'
+      Hint = 'Go to directory'
+      object TBXItem92: TTBXItem
+        Action = LocalOpenDirAction
+      end
+      object TBXItem93: TTBXItem
+        Action = LocalExploreDirectoryAction2
+      end
+      object TBXSeparatorItem15: TTBXSeparatorItem
+      end
+      object TBXItem94: TTBXItem
+        Action = LocalParentDirAction
+      end
+      object TBXItem95: TTBXItem
+        Action = LocalRootDirAction
+      end
+      object TBXItem96: TTBXItem
+        Action = LocalHomeDirAction
+      end
+      object TBXSeparatorItem16: TTBXSeparatorItem
+      end
+      object TBXItem97: TTBXItem
+        Action = LocalBackAction
+      end
+      object TBXItem98: TTBXItem
+        Action = LocalForwardAction
+      end
+    end
     object TBXItem34: TTBXItem
       Action = LocalRefreshAction
+    end
+    object TBXItem27: TTBXItem
+      Action = LocalFilterAction
     end
     object TBXItem31: TTBXItem
       Action = LocalAddBookmarkAction
     end
     object CopyPathtoClipboard2: TTBXItem
       Action = LocalPathToClipboardAction
-    end
-    object OpenDirectoryBookmark2: TTBXItem
-      Action = LocalOpenDirAction
-    end
-    object TBXItem27: TTBXItem
-      Action = LocalFilterAction
     end
     object N52: TTBXSeparatorItem
     end
