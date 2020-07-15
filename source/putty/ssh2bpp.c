@@ -129,8 +129,8 @@ void ssh2_bpp_new_outgoing_crypto(
             (ssh_cipher_alg(s->out.cipher)->flags & SSH_CIPHER_IS_CBC) &&
             !(s->bpp.remote_bugs & BUG_CHOKES_ON_SSH2_IGNORE));
 
-        bpp_logevent("Initialised %s outbound encryption",
-                     ssh_cipher_alg(s->out.cipher)->text_name);
+        bpp_logevent("Initialised %s [%s] outbound encryption",
+                     ssh_cipher_alg(s->out.cipher)->text_name, ssh_cipher_alg(s->out.cipher)->ssh2_id);
     } else {
         s->out.cipher = NULL;
         s->cbc_ignore_workaround = false;
@@ -187,8 +187,8 @@ void ssh2_bpp_new_incoming_crypto(
         ssh_cipher_setkey(s->in.cipher, ckey);
         ssh_cipher_setiv(s->in.cipher, iv);
 
-        bpp_logevent("Initialised %s inbound encryption",
-                     ssh_cipher_alg(s->in.cipher)->text_name);
+        bpp_logevent("Initialised %s [%s] inbound encryption",
+                     ssh_cipher_alg(s->in.cipher)->text_name, ssh_cipher_alg(s->in.cipher)->ssh2_id);
     } else {
         s->in.cipher = NULL;
     }
