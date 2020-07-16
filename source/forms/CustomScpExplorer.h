@@ -709,6 +709,7 @@ protected:
   int __fastcall GetStaticQueuePanelComponentsHeight();
   int __fastcall GetMinQueueViewHeight();
   void __fastcall DetachTerminal(TObject * ATerminal);
+  bool __fastcall IsActiveTerminal(TTerminal * Terminal);
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();
@@ -738,6 +739,7 @@ public:
   void __fastcall UnlockWindow();
   void __fastcall SuspendWindowLock();
   void __fastcall ResumeWindowLock();
+  bool __fastcall HasActiveTerminal();
 
   void __fastcall NewSession(bool FromSite, const UnicodeString & SessionUrl = L"");
   void __fastcall DuplicateSession();
