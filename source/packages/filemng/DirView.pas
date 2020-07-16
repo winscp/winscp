@@ -150,6 +150,7 @@ type
     SelectNewFiles: Boolean;
     FHiddenCount: Integer;
     FFilteredCount: Integer;
+    FNotRelative: Boolean;
 
     {shFileOperation-shell component TFileOperator:}
     FFileOperator: TFileOperator;
@@ -813,6 +814,7 @@ begin
   DragOnDriveIsMove := True;
   FHiddenCount := 0;
   FFilteredCount := 0;
+  FNotRelative := False;
 
   FFileOperator := TFileOperator.Create(Self);
   FFileOperator.ProgressTitle := coFileOperatorTitle;
@@ -946,7 +948,7 @@ begin
   try
     while (Length(Value) > 0) and (Value[Length(Value)] = '\') do
       SetLength(Value, Length(Value) - 1);
-    PathChanging(True);
+    PathChanging(not FNotRelative);
     FPath := Value;
     Load(True);
   finally
@@ -2836,12 +2838,13 @@ end;
 procedure TDirView.ExecuteRootDirectory;
 begin
   if Valid then
-  try
-    PathChanging(False);
-    FPath := ExtractFileDrive(Path);
-    Load(True);
-  finally
-    PathChanged;
+  begin
+    FNotRelative := True;
+    try
+      Path := ExtractFileDrive(Path);
+    finally
+      FNotRelative := False;
+    end;
   end;
 end;
 
