@@ -407,7 +407,7 @@ void __fastcall TCustomScpExplorerForm::RefreshPanel(const UnicodeString & Sessi
   }
 
   // We should flag a pending refresh for the background terminals or busy foreground terminals
-  if ((Terminal != NULL) && Terminal->Active &&
+  if (HasActiveTerminal() &&
       CanCommandLineFromAnotherInstance() &&
       (Session.IsEmpty() || Terminal->SessionData->IsSameSite(Data.get())) &&
       (Path.IsEmpty() || UnixIsChildPath(Path, Terminal->CurrentDirectory)))
@@ -480,8 +480,7 @@ void __fastcall TCustomScpExplorerForm::CreateHiddenWindow()
 bool __fastcall TCustomScpExplorerForm::CanConsole()
 {
   return
-    (Terminal != NULL) &&
-    Terminal->Active &&
+    HasActiveTerminal() &&
     (Terminal->IsCapable[fcAnyCommand] || Terminal->IsCapable[fcSecondaryShell]);
 }
 //---------------------------------------------------------------------------
@@ -977,7 +976,7 @@ void __fastcall TCustomScpExplorerForm::UpdateTransferList()
     TransferDropDown->Hint = FORMAT(L"%s|%s:\n%s",
       (FTransferDropDownHint, StripHotkey(Name),
        GUIConfiguration->CurrentCopyParam.GetInfoStr(L"; ",
-         FLAGMASK(((Terminal != NULL) && Terminal->Active), Terminal->UsableCopyParamAttrs(0).General))));
+         FLAGMASK(HasActiveTerminal(), Terminal->UsableCopyParamAttrs(0).General))));
     // update the label, otherwise when it is updated only on the first draw
     // of the list, it is drawn "bold" for some reason
     FTransferListHoverIndex = TransferList->ItemIndex;
@@ -1125,7 +1124,7 @@ bool __fastcall TCustomScpExplorerForm::CopyParamDialog(
   bool Confirm, bool DragDrop, int Options)
 {
   bool Result = true;
-  DebugAssert(Terminal && Terminal->Active);
+  DebugAssert(HasActiveTerminal());
 
   // these parameters are known in advance
   int Params =
@@ -1701,7 +1700,7 @@ bool __fastcall TCustomScpExplorerForm::DirViewEnabled(TOperationSide Side)
 {
   DebugAssert(GetSide(Side) == osRemote);
   DebugUsedParam(Side);
-  return (Terminal != NULL) && Terminal->Active;
+  return HasActiveTerminal();
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::GetEnableFocusedOperation(
@@ -1792,7 +1791,7 @@ bool __fastcall TCustomScpExplorerForm::CustomCommandRemoteAllowed()
 {
   // remote custom commands can be executed only if the server supports shell commands
   // or have secondary shell
-  return (FTerminal != NULL) && FTerminal->Active && (FTerminal->IsCapable[fcSecondaryShell] || FTerminal->IsCapable[fcShellAnyCommand]);
+  return HasActiveTerminal() && (FTerminal->IsCapable[fcSecondaryShell] || FTerminal->IsCapable[fcShellAnyCommand]);
 }
 //---------------------------------------------------------------------------
 int __fastcall TCustomScpExplorerForm::CustomCommandState(
@@ -3660,7 +3659,7 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(const UnicodeString 
   TEditedFileData * Data, HANDLE UploadCompleteEvent)
 {
   TTerminalManager * Manager = TTerminalManager::Instance();
-  if ((Data->Terminal == NULL) || !Data->Terminal->Active)
+  if (!IsActiveTerminal(Data->Terminal))
   {
     if (!NonVisualDataModule->Busy)
     {
@@ -3709,7 +3708,7 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(const UnicodeString 
       }
     }
 
-    if ((Data->Terminal == NULL) || !Data->Terminal->Active)
+    if (!IsActiveTerminal(Data->Terminal))
     {
       Configuration->Usage->Inc(L"EditInactiveSession");
       // Prevent this when not idle (!NonVisualDataModule->Busy)?
@@ -3761,7 +3760,7 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileReload(
   // Sanity check, we should not be busy otherwise user would not be able to click Reload button.
   DebugAssert(!NonVisualDataModule->Busy);
 
-  if ((Data->Terminal == NULL) || !Data->Terminal->Active)
+  if (!IsActiveTerminal(Data->Terminal))
   {
     throw Exception(FMTLOAD(EDIT_SESSION_CLOSED_RELOAD,
       (ExtractFileName(FileName), Data->SessionName)));
@@ -4571,13 +4570,13 @@ void __fastcall TCustomScpExplorerForm::UpdateStatusBar()
 {
   TTBXStatusBar * SessionStatusBar = (TTBXStatusBar *)GetComponent(fcStatusBar);
   DebugAssert(SessionStatusBar != NULL);
-  if (!Terminal || !Terminal->Active || Terminal->Status < ssOpened)
+  if (!HasActiveTerminal() || (Terminal->Status < ssOpened))
   {
     // note: (Terminal->Status < sshReady) currently never happens here,
     // so STATUS_CONNECTING is never used
     SessionStatusBar->SimplePanel = true;
     SessionStatusBar->SimpleText = LoadStr(
-      !Terminal || !Terminal->Active ? STATUS_NOT_CONNECTED : STATUS_CONNECTING);
+      !HasActiveTerminal() ? STATUS_NOT_CONNECTED : STATUS_CONNECTING);
   }
   else
   {
@@ -6523,8 +6522,7 @@ bool __fastcall TCustomScpExplorerForm::CanAddEditLink(TOperationSide Side)
 {
   return
     (IsSideLocalBrowser(Side) ||
-     ((Terminal != NULL) &&
-      Terminal->Active &&
+     (HasActiveTerminal() &&
       Terminal->ResolvingSymlinks &&
       Terminal->IsCapable[fcSymbolicLink]));
 }
@@ -6866,7 +6864,7 @@ void __fastcall TCustomScpExplorerForm::UpdateTransferLabel()
       UnicodeString InfoStr =
         GUIConfiguration->CopyParamPreset[Name].
           GetInfoStr(L"; ",
-            FLAGMASK(((Terminal != NULL) && Terminal->Active), Terminal->UsableCopyParamAttrs(0).General));
+            FLAGMASK(HasActiveTerminal(), Terminal->UsableCopyParamAttrs(0).General));
       int MaxWidth = TransferList->MinWidth - (2 * TransferLabel->Margin) - ScaleByTextHeight(this, 10);
       if (Canvas->TextExtent(InfoStr).cx > MaxWidth)
       {
@@ -8642,7 +8640,7 @@ void __fastcall TCustomScpExplorerForm::UpdateControls()
     // ReconnectSessionAction is hidden when disabled, so enabling it actualy resizes the toolbar
     CenterReconnectToolbar();
 
-    bool HasTerminal = (Terminal != NULL) && Terminal->Active;
+    bool HasTerminal = HasActiveTerminal();
 
     if (HasTerminal)
     {
@@ -10190,7 +10188,7 @@ void __fastcall TCustomScpExplorerForm::SessionsPageControlContextPopup(TObject 
 //---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::CanChangePassword()
 {
-  return (Terminal != NULL) && Terminal->Active && Terminal->IsCapable[fcChangePassword];
+  return HasActiveTerminal() && Terminal->IsCapable[fcChangePassword];
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::ChangePassword()
@@ -10217,7 +10215,7 @@ void __fastcall TCustomScpExplorerForm::ChangePassword()
 bool __fastcall TCustomScpExplorerForm::CanPrivateKeyUpload()
 {
   // No nice way to assert SSH2
-  return (Terminal != NULL) && Terminal->Active && (Terminal->FSProtocol == cfsSFTP);
+  return HasActiveTerminal() && (Terminal->FSProtocol == cfsSFTP);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::PrivateKeyUpload()
@@ -10932,4 +10930,14 @@ void __fastcall TCustomScpExplorerForm::CloseApp()
   {
     NonVisualDataModule->StartBusy();
   }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TCustomScpExplorerForm::IsActiveTerminal(TTerminal * Terminal)
+{
+  return (Terminal != NULL) && Terminal->Active;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TCustomScpExplorerForm::HasActiveTerminal()
+{
+  return IsActiveTerminal(Terminal);
 }
