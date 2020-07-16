@@ -1325,7 +1325,15 @@ bool __fastcall TFileCustomCommand::IsFileCommand(const UnicodeString & Command)
 //---------------------------------------------------------------------------
 bool __fastcall TFileCustomCommand::IsSiteCommand(const UnicodeString & Command)
 {
-  return FindPattern(Command, L'@');
+  return FindPattern(Command, L'@') || FindPattern(Command, L'S') || FindPattern(Command, L'E');
+}
+//---------------------------------------------------------------------------
+bool __fastcall TFileCustomCommand::IsSessionCommand(const UnicodeString & Command)
+{
+  return
+    IsSiteCommand(Command) || IsPasswordCommand(Command) ||
+    FindPattern(Command, L'U') || FindPattern(Command, L'#') || FindPattern(Command, L'N') ||
+    FindPattern(Command, L'/');
 }
 //---------------------------------------------------------------------------
 bool __fastcall TFileCustomCommand::IsPasswordCommand(const UnicodeString & Command)

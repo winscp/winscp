@@ -55,7 +55,7 @@ BEGIN
         ALREADY_EDITED_EXTERNALLY_OR_UPLOADED, "The file '%s' is already opened in external editor (application) or is being uploaded."
         COPY_PARAM_NO_RULE, "You have not specified any autoselection rule mask."
         COPY_PARAM_DUPLICATE, "Transfer settings preset with description '%s' already exists."
-        CUSTOM_COMMAND_IMPOSSIBLE, "Custom command '%s' cannot be executed right now. Please select files for the command first."
+        CUSTOM_COMMAND_IMPOSSIBLE2, "**Custom command '%s' cannot be executed right now.** You may need to select files for the command or open a session first."
         CUSTOM_COMMAND_AD_HOC_NAME, "Ad Hoc"
         EDIT_SESSION_CLOSED_RELOAD, "Cannot reload file '%s', the session '%s' has been already closed."
         DECRYPT_PASSWORD_ERROR, "The password cannot be decrypted."
