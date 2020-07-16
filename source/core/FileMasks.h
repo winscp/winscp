@@ -224,6 +224,7 @@ public:
   virtual bool __fastcall IsFileCommand(const UnicodeString & Command);
   bool __fastcall IsRemoteFileCommand(const UnicodeString & Command);
   bool __fastcall IsSiteCommand(const UnicodeString & Command);
+  bool __fastcall IsSessionCommand(const UnicodeString & Command);
   bool __fastcall IsPasswordCommand(const UnicodeString & Command);
 
 protected:

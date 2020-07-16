@@ -1797,6 +1797,7 @@ bool __fastcall TCustomScpExplorerForm::CustomCommandRemoteAllowed()
 int __fastcall TCustomScpExplorerForm::CustomCommandState(
   const TCustomCommandType & Command, bool OnFocused, TCustomCommandListType ListType)
 {
+  // -1 = hidden, 0 = disabled, 1 = enabled
   int Result;
 
   TFileCustomCommand RemoteCustomCommand;
@@ -1876,6 +1877,13 @@ int __fastcall TCustomScpExplorerForm::CustomCommandState(
       {
         Result = -1;
       }
+    }
+
+    if ((Result > 0) &&
+        LocalCustomCommand.IsSessionCommand(Cmd) &&
+        !HasActiveTerminal())
+    {
+      Result = 0;
     }
   }
 
@@ -2392,7 +2400,7 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
   TCustomCommandData Data;
   UnicodeString Site;
   UnicodeString RemotePath;
-  if (Terminal != NULL)
+  if (HasActiveTerminal())
   {
     Data = TCustomCommandData(Terminal);
     Site = Terminal->SessionData->SessionKey;
@@ -8939,7 +8947,7 @@ void __fastcall TCustomScpExplorerForm::AdHocCustomCommandValidate(
 {
   if (CustomCommandState(Command, FEditingFocusedAdHocCommand, ccltAll) <= 0)
   {
-    throw Exception(FMTLOAD(CUSTOM_COMMAND_IMPOSSIBLE, (Command.Command)));
+    throw Exception(FMTLOAD(CUSTOM_COMMAND_IMPOSSIBLE2, (Command.Command)));
   }
 }
 //---------------------------------------------------------------------------
@@ -8979,7 +8987,7 @@ void __fastcall TCustomScpExplorerForm::LastCustomCommand(bool OnFocused)
   DebugAssert(State > 0);
   if (State <= 0)
   {
-    throw Exception(FMTLOAD(CUSTOM_COMMAND_IMPOSSIBLE, (FLastCustomCommand.Command)));
+    throw Exception(FMTLOAD(CUSTOM_COMMAND_IMPOSSIBLE2, (FLastCustomCommand.Command)));
   }
 
   ExecuteFileOperation(foCustomCommand, osRemote, OnFocused, false, &FLastCustomCommand);
