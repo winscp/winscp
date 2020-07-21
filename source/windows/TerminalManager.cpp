@@ -1696,14 +1696,25 @@ void __fastcall TTerminalManager::SaveWorkspace(TList * DataList)
   }
 }
 //---------------------------------------------------------------------------
+bool __fastcall TTerminalManager::IsActiveTerminalForSite(TTerminal * Terminal, TSessionData * Data)
+{
+  bool Result = Terminal->Active;
+  if (Result)
+  {
+    std::unique_ptr<TSessionData> TerminalData(Terminal->SessionData->Clone());
+    Terminal->UpdateSessionCredentials(TerminalData.get());
+    Result = TerminalData->IsSameSite(Data);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 TTerminal * __fastcall TTerminalManager::FindActiveTerminalForSite(TSessionData * Data)
 {
   TTerminal * Result = NULL;
   for (int Index = 0; (Result == NULL) && (Index < Count); Index++)
   {
     TTerminal * Terminal = Terminals[Index];
-    if (Terminal->Active &&
-        Terminal->SessionData->IsSameSite(Data))
+    if (IsActiveTerminalForSite(Terminal, Data))
     {
       Result = Terminal;
     }
