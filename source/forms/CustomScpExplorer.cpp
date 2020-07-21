@@ -393,7 +393,7 @@ void __fastcall TCustomScpExplorerForm::RefreshPanel(const UnicodeString & Sessi
   {
     TTerminal * Terminal = Manager->Terminals[Index];
     if (Session.IsEmpty() ||
-        Terminal->SessionData->IsSameSite(Data.get()))
+        Manager->IsActiveTerminalForSite(Terminal, Data.get()))
     {
       if (Path.IsEmpty())
       {
@@ -409,7 +409,7 @@ void __fastcall TCustomScpExplorerForm::RefreshPanel(const UnicodeString & Sessi
   // We should flag a pending refresh for the background terminals or busy foreground terminals
   if (HasActiveTerminal() &&
       CanCommandLineFromAnotherInstance() &&
-      (Session.IsEmpty() || Terminal->SessionData->IsSameSite(Data.get())) &&
+      (Session.IsEmpty() || Manager->IsActiveTerminalForSite(Terminal, Data.get())) &&
       (Path.IsEmpty() || UnixIsChildPath(Path, Terminal->CurrentDirectory)))
   {
     Terminal->ReloadDirectory();
