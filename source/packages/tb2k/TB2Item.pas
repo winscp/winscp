@@ -909,6 +909,21 @@ const
 
 { Misc. }
 
+var
+  ShortCutToTextFixes: TStrings = nil;
+
+function ShortCutToTextFix(AShortCut: TShortCut): string;
+begin
+  Result := ShortCutToText(AShortCut);
+  // WORKAROUND: German keyboard driver is giving wrong name for VK_MULTIPLY
+  if (AShortCut = ShortCut(VK_MULTIPLY, [])) and
+     (Result = ' (ZEHNERTASTATUR)') then
+  begin
+    Result := ShortCutToText(ShortCut(VK_ADD, []));
+    Result := StringReplace(Result, '+', '*', []);
+  end;
+end;
+
 procedure DestroyClickWnd;
 begin
   if ClickWnd <> 0 then begin
@@ -2235,7 +2250,7 @@ begin
   P := Pos(#9, Caption);
   if P = 0 then begin
     if ShortCut <> 0 then
-      Result := ShortCutToText(ShortCut)
+      Result := ShortCutToTextFix(ShortCut)
     else
       Result := '';
   end
@@ -2781,7 +2796,7 @@ begin
       Result := Format('%s (%s)', [Result, Copy(Item.Caption, P+ 1, MaxInt)])
     else
       if (Item.ShortCut <> scNone) then
-        Result := Format('%s (%s)', [Result, ShortCutToText(Item.ShortCut)]);
+        Result := Format('%s (%s)', [Result, ShortCutToTextFix(Item.ShortCut)]);
   end;
   if LongHint <> '' then
     Result := Result + '|' + GetLongHint(LongHint);
