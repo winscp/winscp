@@ -675,6 +675,9 @@ begin
     Result := StrCmpLogicalW(PChar(S1), PChar(S2))
   else
     Result := lstrcmpi(PChar(S1), PChar(S2));
+  // For deterministics results
+  if Result = 0 then
+    Result := lstrcmp(PChar(S1), PChar(S2));
 end;
 
 { Shortcut-handling }
