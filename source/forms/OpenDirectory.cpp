@@ -254,16 +254,13 @@ bool __fastcall TOpenDirectoryDialog::Execute()
 
   FBookmarkSelected = false;
   Result = (ShowModal() == DefaultResult(this));
-  if (Terminal)
+  WinConfiguration->SharedBookmarks = FSharedBookmarkList;
+  if (Terminal != NULL)
   {
-    WinConfiguration->SharedBookmarks = FSharedBookmarkList;
-    if (Terminal != NULL)
-    {
-      WinConfiguration->Bookmarks[SessionKey] = FSessionBookmarkList;
-      // Do not remember that shared page was selected,
-      // if it was selected implicitly because there's no site page.
-      WinConfiguration->UseSharedBookmarks = (PageControl->ActivePage == SharedBookmarksSheet);
-    }
+    WinConfiguration->Bookmarks[SessionKey] = FSessionBookmarkList;
+    // Do not remember that shared page was selected,
+    // if it was selected implicitly because there's no site page.
+    WinConfiguration->UseSharedBookmarks = (PageControl->ActivePage == SharedBookmarksSheet);
   }
   if (Result)
   {
