@@ -147,7 +147,7 @@ __published:    // IDE-managed Components
   TAction *RemoteSortByChangedAction2;
   TAction *RemoteSortByOwnerAction2;
   TAction *RemoteSortByGroupAction2;
-  TAction *CurrentSortByTypeAction;
+  TAction *CurrentSortByTypeAction2;
   TAction *CurrentSortAscendingAction;
   TAction *CurrentSortByNameAction;
   TAction *CurrentSortBySizeAction;

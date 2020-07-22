@@ -1047,12 +1047,12 @@ object NonVisualDataModule: TNonVisualDataModule
       ImageIndex = 35
       ShortCut = 16501
     end
-    object CurrentSortByTypeAction: TAction
+    object CurrentSortByTypeAction2: TAction
       Tag = 15
       Category = 'Sort'
       Caption = 'By &Type'
       HelpKeyword = 'ui_file_panel#sorting_files'
-      Hint = 'Sort by type|Sort current panel by file type (local panel only)'
+      Hint = 'Sort by type|Sort current panel by file type'
       ImageIndex = 34
     end
     object CurrentSortByRightsAction: TAction

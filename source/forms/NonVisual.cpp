@@ -61,15 +61,15 @@ TNonVisualDataModule *NonVisualDataModule;
   SIDE ## SortAscendingAction ## NUM->Checked = COLPROPS(SIDE)->SortAscending; } else
 #define EXESORTA(SIDE, NUM) EXE(SIDE ## SortAscendingAction ## NUM, \
   COLPROPS(SIDE)->SortAscending = !COLPROPS(SIDE)->SortAscending; )
-#define UPDSORTC(LPREFIX, LCOL, RPREFIX, RCOL) if (Action == CurrentSortBy ## RCOL ## Action) { \
-  CurrentSortBy ## RCOL ## Action->Enabled = ScpExplorer->AllowedAction(Action, aaShortCut); \
-  if (CurrentSortBy ## RCOL ## Action->Enabled) { \
+#define UPDSORTC(LPREFIX, LCOL, RPREFIX, RCOL, NUM) if (Action == CurrentSortBy ## RCOL ## Action ## NUM) { \
+  Action->Enabled = ScpExplorer->AllowedAction(Action, aaShortCut); \
+  if (Action->Enabled) { \
     if (ScpExplorer->DirView(osCurrent) == ScpExplorer->DirView(osRemote)) \
-         CurrentSortBy ## RCOL ## Action->Checked = (COLPROPS(Current)->SortColumn == RPREFIX ## RCOL); \
-    else CurrentSortBy ## RCOL ## Action->Checked = (COLPROPS(Current)->SortColumn == LPREFIX ## LCOL); \
-  } else CurrentSortBy ## RCOL ## Action->Checked =  false; Handled = true; } else
-#define EXESORTC(COL, LCOL, RCOL) \
-  EXE(CurrentSortBy ## COL ## Action, \
+         Action->Checked = (COLPROPS(Current)->SortColumn == RPREFIX ## RCOL); \
+    else Action->Checked = (COLPROPS(Current)->SortColumn == LPREFIX ## LCOL); \
+  } else Action->Checked =  false; Handled = true; } else
+#define EXESORTC(COL, LCOL, RCOL, NUM) \
+  EXE(Action, \
     Integer NewSortCol = \
       ((ScpExplorer->DirView(osCurrent) == ScpExplorer->DirView(osRemote)) ? RCOL : LCOL); \
     if (COLPROPS(Current)->SortColumn == NewSortCol) \
@@ -366,14 +366,14 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPDSORT(Remote, uv, Group)
   UPDSORT(Remote, uv, Type)
   UPDSORTA(Current, )
-  UPDSORTC(dv, Name, uv, Name)
-  UPDSORTC(dv, Ext, uv, Ext)
-  UPDSORTC(dv, Size, uv, Size)
-  UPDSORTC(dv, Type, uv, Type)
-  UPDSORTC(dv, Changed, uv, Changed)
-  UPDSORTC(dv, Attr, uv, Rights)
-  UPDSORTC(dv, Name, uv, Owner)
-  UPDSORTC(dv, Name, uv, Group)
+  UPDSORTC(dv, Name, uv, Name, )
+  UPDSORTC(dv, Ext, uv, Ext, )
+  UPDSORTC(dv, Size, uv, Size, )
+  UPDSORTC(dv, Type, uv, Type, 2)
+  UPDSORTC(dv, Changed, uv, Changed, )
+  UPDSORTC(dv, Attr, uv, Rights, )
+  UPDSORTC(dv, Name, uv, Owner, )
+  UPDSORTC(dv, Name, uv, Group, )
   #define COLVIEWPROPS ((TCustomDirViewColProperties*)(((TCustomDirView*)(((TListColumns*)(ListColumn->Collection))->Owner()))->ColProperties))
   UPDEX(SortColumnAscendingAction, (ListColumn != NULL), SortColumnAscendingAction->Checked =
     (COLVIEWPROPS->SortColumn == ListColumn->Index) && COLVIEWPROPS->SortAscending, /*DebugFail()*/  )
@@ -692,14 +692,14 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXESORT(Remote, uv, Group)
     EXESORT(Remote, uv, Type)
     EXESORTA(Current, )
-    EXESORTC(Name, dvName, uvName)
-    EXESORTC(Ext, dvExt, uvExt)
-    EXESORTC(Size, dvSize, uvSize)
-    EXESORTC(Type, dvType, uvType)
-    EXESORTC(Changed, dvChanged, uvChanged)
-    EXESORTC(Rights, dvAttr, uvRights)
-    EXESORTC(Owner, dvName, uvOwner)
-    EXESORTC(Group, dvName, uvGroup)
+    EXESORTC(Name, dvName, uvName, )
+    EXESORTC(Ext, dvExt, uvExt, )
+    EXESORTC(Size, dvSize, uvSize, )
+    EXESORTC(Type, dvType, uvType, 2)
+    EXESORTC(Changed, dvChanged, uvChanged, )
+    EXESORTC(Rights, dvAttr, uvRights, )
+    EXESORTC(Owner, dvName, uvOwner, )
+    EXESORTC(Group, dvName, uvGroup, )
     EXE(SortColumnAscendingAction, DebugAssert(ListColumn);
       COLVIEWPROPS->SortColumn = ListColumn->Index; COLVIEWPROPS->SortAscending = true; ListColumn = NULL )
     EXE(SortColumnDescendingAction, DebugAssert(ListColumn);
