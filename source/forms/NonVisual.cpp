@@ -62,7 +62,7 @@ TNonVisualDataModule *NonVisualDataModule;
 #define EXESORTA(SIDE, NUM) EXE(SIDE ## SortAscendingAction ## NUM, \
   COLPROPS(SIDE)->SortAscending = !COLPROPS(SIDE)->SortAscending; )
 #define UPDSORTC(LPREFIX, LCOL, RPREFIX, RCOL) if (Action == CurrentSortBy ## RCOL ## Action) { \
-  CurrentSortBy ## RCOL ## Action->Enabled = ScpExplorer->AllowedAction((TAction *)Action, aaShortCut); \
+  CurrentSortBy ## RCOL ## Action->Enabled = ScpExplorer->AllowedAction(Action, aaShortCut); \
   if (CurrentSortBy ## RCOL ## Action->Enabled) { \
     if (ScpExplorer->DirView(osCurrent) == ScpExplorer->DirView(osRemote)) \
          CurrentSortBy ## RCOL ## Action->Checked = (COLPROPS(Current)->SortColumn == RPREFIX ## RCOL); \
@@ -128,11 +128,12 @@ __fastcall TNonVisualDataModule::~TNonVisualDataModule()
 }
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
-      TBasicAction *Action, bool &Handled)
+  TBasicAction * BasicAction, bool & Handled)
 {
-  if (!ScpExplorer || !ScpExplorer->AllowedAction((TAction *)Action, aaUpdate))
+  TAction * Action = DebugNotNull(dynamic_cast<TAction *>(BasicAction));
+  if (!ScpExplorer || !ScpExplorer->AllowedAction(Action, aaUpdate))
   {
-    ((TAction *)Action)->Enabled = false;
+    Action->Enabled = false;
     Handled = true;
     return;
   }
@@ -173,7 +174,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(CurrentOpenAction, EnabledFocusedOperation &&
     !WinConfiguration->DisableOpenEdit)
   UPDEX1(CurrentAddEditLinkContextAction, ScpExplorer->CanAddEditLink(osCurrent),
-    ((TAction *)Action)->Visible = ScpExplorer->LinkFocused())
+    Action->Visible = ScpExplorer->LinkFocused())
   UPD(NewLinkAction, ScpExplorer->CanAddEditLink(osCurrent))
   // selected operation
   UPD(CurrentDeleteAction, EnabledSelectedOperation)
@@ -290,7 +291,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
     UPD(SIDE ## ChangePathAction2, DirViewEnabled(os ## SIDE)) \
     UPD(SIDE ## AddBookmarkAction2, DirViewEnabled(os ## SIDE)) \
     UPD(SIDE ## PathToClipboardAction2, DirViewEnabled(os ## SIDE)) \
-    UPDEX1(SIDE ## FilterAction, DirViewEnabled(os ## SIDE), ((TAction *)Action)->Checked = !DirView(os ## SIDE)->Mask.IsEmpty())
+    UPDEX1(SIDE ## FilterAction, DirViewEnabled(os ## SIDE), Action->Checked = !DirView(os ## SIDE)->Mask.IsEmpty())
   PANEL_ACTIONS(Local)
   PANEL_ACTIONS(Remote)
   #undef PANEL_ACTIONS
@@ -439,26 +440,26 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(CustomCommandsCustomizeAction, true)
 
   // QUEUE
-  UPDEX(QueueEnableAction, HasTerminal, ((TAction *)Action)->Checked = ScpExplorer->GetQueueEnabled(), )
+  UPDEX(QueueEnableAction, HasTerminal, Action->Checked = ScpExplorer->GetQueueEnabled(), )
   #define UPDQUEUE(OPERATION) UPD(Queue ## OPERATION ## Action, \
     ScpExplorer->AllowQueueOperation(qo ## OPERATION))
   UPDQUEUE(GoTo)
   UPDQUEUE(Preferences)
   UPDEX(QueueItemQueryAction, ScpExplorer->AllowQueueOperation(qoItemQuery),
-    ((TAction *)Action)->Visible = true, ((TAction *)Action)->Visible = false)
+    Action->Visible = true, Action->Visible = false)
   UPDEX(QueueItemErrorAction, ScpExplorer->AllowQueueOperation(qoItemError),
-    ((TAction *)Action)->Visible = true, ((TAction *)Action)->Visible = false)
+    Action->Visible = true, Action->Visible = false)
   UPDEX(QueueItemPromptAction, ScpExplorer->AllowQueueOperation(qoItemPrompt),
-    ((TAction *)Action)->Visible = true, ((TAction *)Action)->Visible = false)
+    Action->Visible = true, Action->Visible = false)
   UPDQUEUE(ItemDelete)
   UPDEX(QueueItemExecuteAction, ScpExplorer->AllowQueueOperation(qoItemExecute),
-    ((TAction *)Action)->Visible = true, ((TAction *)Action)->Visible =
+    Action->Visible = true, Action->Visible =
       !ScpExplorer->AllowQueueOperation(qoItemPause) &&
       !ScpExplorer->AllowQueueOperation(qoItemResume))
   UPDEX(QueueItemPauseAction, ScpExplorer->AllowQueueOperation(qoItemPause),
-    ((TAction *)Action)->Visible = true, ((TAction *)Action)->Visible = false)
+    Action->Visible = true, Action->Visible = false)
   UPDEX(QueueItemResumeAction, ScpExplorer->AllowQueueOperation(qoItemResume),
-    ((TAction *)Action)->Visible = true, ((TAction *)Action)->Visible = false)
+    Action->Visible = true, Action->Visible = false)
   UPDQUEUE(ItemUp)
   UPDQUEUE(ItemDown)
   UPDQUEUE(PauseAll)
@@ -470,9 +471,9 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
     QueueItemSpeedAction->Text = SetSpeedLimit(reinterpret_cast<unsigned long>(Param)),
     QueueItemSpeedAction->Text = L"")
   UPDACT(QueueToggleShowAction,
-    ((TAction *)Action)->Checked = ScpExplorer->ComponentVisible[fcQueueView])
+    Action->Checked = ScpExplorer->ComponentVisible[fcQueueView])
   #define QUEUEACTION(SHOW) UPDACT(Queue ## SHOW ## Action, \
-    ((TAction *)Action)->Checked = WinConfiguration->QueueView.Show == qv ## SHOW)
+    Action->Checked = WinConfiguration->QueueView.Show == qv ## SHOW)
   QUEUEACTION(Show)
   QUEUEACTION(HideWhenEmpty)
   QUEUEACTION(Hide)
@@ -486,19 +487,20 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(QueueShutDownOnceEmptyAction2, ScpExplorer->AllowQueueOperation(qoOnceEmpty))
   UPDCOMP(CommanderPreferencesBand)
   UPDACT(QueueToolbarAction,
-    ((TAction *)Action)->Enabled = ScpExplorer->ComponentVisible[fcQueueView];
-    ((TAction *)Action)->Checked = ScpExplorer->ComponentVisible[fcQueueToolbar])
+    Action->Enabled = ScpExplorer->ComponentVisible[fcQueueView];
+    Action->Checked = ScpExplorer->ComponentVisible[fcQueueToolbar])
   UPDACT(QueueFileListAction,
-    ((TAction *)Action)->Enabled = ScpExplorer->ComponentVisible[fcQueueView];
-    ((TAction *)Action)->Checked = ScpExplorer->ComponentVisible[fcQueueFileList])
+    Action->Enabled = ScpExplorer->ComponentVisible[fcQueueView];
+    Action->Checked = ScpExplorer->ComponentVisible[fcQueueFileList])
   ;
 }
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
-      TBasicAction *Action, bool &Handled)
+  TBasicAction * BasicAction, bool & Handled)
 {
   DebugAssert(ScpExplorer);
-  if (!ScpExplorer->AllowedAction((TAction *)Action, aaExecute))
+  TAction * Action = DebugNotNull(dynamic_cast<TAction *>(BasicAction));
+  if (!ScpExplorer->AllowedAction(Action, aaExecute))
   {
     Handled = true;
     return;
