@@ -69,7 +69,7 @@ TNonVisualDataModule *NonVisualDataModule;
     else Action->Checked = (COLPROPS(Current)->SortColumn == LPREFIX ## LCOL); \
   } else Action->Checked =  false; Handled = true; } else
 #define EXESORTC(COL, LCOL, RCOL, NUM) \
-  EXE(Action, \
+  EXE(CurrentSortBy ## COL ## Action ## NUM, \
     Integer NewSortCol = \
       ((ScpExplorer->DirView(osCurrent) == ScpExplorer->DirView(osRemote)) ? RCOL : LCOL); \
     if (COLPROPS(Current)->SortColumn == NewSortCol) \
