@@ -671,6 +671,8 @@ function StrCmpLogicalW(const sz1, sz2: UnicodeString): Integer; stdcall; extern
 
 function CompareLogicalTextPas(const S1, S2: string; NaturalOrderNumericalSorting: Boolean): Integer;
 begin
+  // Keep in sync with CompareLogicalText
+
   if NaturalOrderNumericalSorting then
     Result := StrCmpLogicalW(PChar(S1), PChar(S2))
   else
