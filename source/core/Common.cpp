@@ -904,14 +904,23 @@ bool __fastcall SamePaths(const UnicodeString & Path1, const UnicodeString & Pat
 int __fastcall CompareLogicalText(
   const UnicodeString & S1, const UnicodeString & S2, bool NaturalOrderNumericalSorting)
 {
+  // Keep in sync with CompareLogicalTextPas
+
+  int Result;
   if (NaturalOrderNumericalSorting)
   {
-    return StrCmpLogicalW(S1.c_str(), S2.c_str());
+    Result = StrCmpLogicalW(S1.c_str(), S2.c_str());
   }
   else
   {
-    return lstrcmpi(S1.c_str(), S2.c_str());
+    Result = lstrcmpi(S1.c_str(), S2.c_str());
   }
+  // For deterministics results
+  if (Result == 0)
+  {
+    Result = lstrcmp(S1.c_str(), S2.c_str());
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 int __fastcall CompareNumber(__int64 Value1, __int64 Value2)
