@@ -777,8 +777,7 @@ TTreeNode * __fastcall TCustomUnixDriveView::FindNodeToPath(UnicodeString Path)
     {
       UnicodeString DirName = UnixExtractFileName(Path);
       int StartIndex = 0;
-      int LastIndex = Parent->Count - 1;
-      int EndIndex = LastIndex;
+      int EndIndex = Parent->Count - 1;
 
       while (true)
       {
@@ -787,20 +786,6 @@ TTreeNode * __fastcall TCustomUnixDriveView::FindNodeToPath(UnicodeString Path)
         int C = DoCompareText(DirName, NodeDir);
         if (C == 0)
         {
-          // In case there are more items that are case insensitivelly or logically equivalent,
-          // walk back to find the first such one and then walk forward through all such items,
-          // looking for an exact binary match.
-          // If so such match is found (can it even happen?), return the last equivalent item.
-          while ((Index > 0) && (DoCompareText(DirName, Parent->Item[Index - 1]->Text) == 0))
-          {
-            Index--;
-          }
-          while (!SameStr(DirName, Parent->Item[Index]->Text) &&
-                 (Index < LastIndex) &&
-                 (DoCompareText(DirName, Parent->Item[Index + 1]->Text) == 0))
-          {
-            Index++;
-          }
           Result = Parent->Item[Index];
           break;
         }
