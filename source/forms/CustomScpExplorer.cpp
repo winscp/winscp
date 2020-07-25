@@ -1,3 +1,4 @@
+// TODO_OTHER_LOCAL
 //---------------------------------------------------------------------------
 #define NO_WIN32_LEAN_AND_MEAN
 #include <vcl.h>
@@ -213,6 +214,7 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   FIncrementalSearching = 0;
   FIncrementalSearchHaveNext = false;
   FQueueFileList.reset(new TQueueFileList());
+  FProgressSide = osCurrent;
 
   FEditorManager = new TEditorManager();
   FEditorManager->OnFileChange = ExecutedFileChanged;
@@ -283,7 +285,6 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   AddFixedSessionImages();
   SessionsPageControl->Images = FSessionColors;
   UpdateQueueLabel();
-  FRemoteDirViewWasFocused = true;
 
   CreateHiddenWindow();
   StartUpdates();
@@ -1011,6 +1012,16 @@ void __fastcall TCustomScpExplorerForm::UpdateSessionsPageControlHeight()
   SessionsPageControl->Height = SessionsPageControl->GetTabsHeight();
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::UpdateRowSelect(TCustomDirView * DirView)
+{
+  if (DirView->RowSelect != WinConfiguration->FullRowSelect)
+  {
+    DirView->RowSelect = WinConfiguration->FullRowSelect;
+    // selection is not redrawn automatically when RowSelect changes
+    DirView->Invalidate();
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::ConfigurationChanged()
 {
   Color = GetBtnFaceColor();
@@ -1023,12 +1034,7 @@ void __fastcall TCustomScpExplorerForm::ConfigurationChanged()
   RemoteDirView->ShowInaccesibleDirectories = WinConfiguration->ShowInaccesibleDirectories;
   RemoteDirView->NaturalOrderNumericalSorting = WinConfiguration->NaturalOrderNumericalSorting;
 
-  if (RemoteDirView->RowSelect != WinConfiguration->FullRowSelect)
-  {
-    RemoteDirView->RowSelect = WinConfiguration->FullRowSelect;
-    // selection is not redrawn automatically when RowSelect changes
-    RemoteDirView->Invalidate();
-  }
+  UpdateRowSelect(RemoteDirView);
 
   RemoteDriveView->DDAllowMove = !WinConfiguration->DDDisableMove;
   RemoteDriveView->DimmHiddenDirs = WinConfiguration->DimmHiddenFiles;
@@ -1610,8 +1616,19 @@ void __fastcall TCustomScpExplorerForm::DoOperationFinished(
       }
       else
       {
-        TCustomDirView * DView = DirView(Side);
-        UnicodeString FileNameOnly = ExtractFileName(FileName, !IsSideLocalBrowser(Side));
+        TOperationSide DViewSide;
+        if ((FProgressSide != osCurrent) &&
+            IsLocalBrowserMode() && (Side == osLocal)) // Only to limit the impact
+        {
+          // assume the operation is over the focused panel
+          DViewSide = FProgressSide;
+        }
+        else
+        {
+          DViewSide = Side;
+        }
+        TCustomDirView * DView = DirView(DViewSide);
+        UnicodeString FileNameOnly = ExtractFileName(FileName, !IsSideLocalBrowser(DViewSide));
         TListItem *Item = DView->FindFileItem(FileNameOnly);
         // this can happen when local drive is unplugged in the middle of the operation
         if (Item != NULL)
@@ -1624,14 +1641,17 @@ void __fastcall TCustomScpExplorerForm::DoOperationFinished(
 
     if ((Operation == foCopy) || (Operation == foMove))
     {
-      DebugAssert(!IsLocalBrowserMode()); // TODO
-      if (Side == osLocal)
+      // TODO_OTHER_LOCAL
+      if (!IsLocalBrowserMode())
       {
-        Configuration->Usage->Inc(L"UploadedFiles");
-      }
-      else
-      {
-        Configuration->Usage->Inc(L"DownloadedFiles");
+        if (Side == osLocal)
+        {
+          Configuration->Usage->Inc(L"UploadedFiles");
+        }
+        else
+        {
+          Configuration->Usage->Inc(L"DownloadedFiles");
+        }
       }
     }
   }
@@ -2247,7 +2267,7 @@ void __fastcall TCustomScpExplorerForm::LocalCustomCommandWithLocalFiles(
   const TCustomCommandType & ACommand, const UnicodeString & Command, const TCustomCommandData & Data,
   bool FileListCommand, UnicodeString * POutput)
 {
-  std::unique_ptr<TStrings> SelectedFileList(DirView(osLocal)->CreateFileList(false, true, NULL));
+  std::unique_ptr<TStrings> SelectedFileList(DirView(osCurrent)->CreateFileList(false, true, NULL));
 
   std::unique_ptr<TStrings> LocalFileList(new TStringList());
 
@@ -2344,12 +2364,15 @@ void __fastcall TCustomScpExplorerForm::LocalCustomCommand(TStrings * FileList,
     POutput.reset(new UnicodeString());
   }
 
+  TValueRestorer<TOperationSide> ProgressSideRestorer(FProgressSide);
+  FProgressSide = FCurrentSide;
+
   if (!LocalCustomCommand.IsFileCommand(Command))
   {
     ExecuteProcessChecked(LocalCustomCommand.Complete(Command, true), HelpKeyword, POutput.get());
   }
   // remote files?
-  else if ((FCurrentSide == osRemote) || LocalFileCommand)
+  else if (!IsSideLocalBrowser(FCurrentSide) || LocalFileCommand)
   {
     LocalCustomCommandPure(FileList, ACommand, Command, ALocalFileList, Data, LocalFileCommand, FileListCommand, POutput.get());
   }
@@ -3984,6 +4007,8 @@ void __fastcall TCustomScpExplorerForm::DeleteFiles(TOperationSide Side,
     }
     else
     {
+      TValueRestorer<TOperationSide> ProgressSideRestorer(FProgressSide);
+      FProgressSide = FCurrentSide;
       try
       {
         TTerminalManager::Instance()->LocalTerminal->DeleteLocalFiles(FileList, FLAGMASK(Alternative, dfAlternative));
@@ -4473,6 +4498,8 @@ void __fastcall TCustomScpExplorerForm::KeyDown(Word & Key, Classes::TShiftState
     TShortCut KeyShortCut = ShortCut(Key, Shift);
     for (int Index = 0; Index < NonVisualDataModule->ExplorerActions->ActionCount; Index++)
     {
+      // Note that handling shortcuts on panel (current control) popup menu has precendence over this.
+      // But so far it's not a problem, as it does what we want.
       TAction * Action = (TAction *)NonVisualDataModule->ExplorerActions->Actions[Index];
       if (((Action->ShortCut == KeyShortCut) ||
            (Action->SecondaryShortCuts->IndexOfShortCut(KeyShortCut) >= 0)) &&
@@ -5200,12 +5227,17 @@ bool __fastcall TCustomScpExplorerForm::IsComponentPossible(Byte Component)
   return Result;
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::MakeFocusedItemVisible(TCustomDirView * DirView)
+{
+  if (DirView->ItemFocused != NULL)
+  {
+    DirView->ItemFocused->MakeVisible(false);
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::FixControlsPlacement()
 {
-  if (DirView(osOther)->ItemFocused != NULL)
-  {
-    DirView(osOther)->ItemFocused->MakeVisible(false);
-  }
+  MakeFocusedItemVisible(RemoteDirView);
   QueueSplitter->Visible = QueuePanel->Visible;
   QueueFileListSplitter->Visible = QueueFileList->Visible;
   RemotePanelSplitter->Visible = RemoteDrivePanel->Visible;
@@ -5236,7 +5268,7 @@ void __fastcall TCustomScpExplorerForm::DirViewColumnRightClick(
   DebugAssert(NonVisualDataModule && Column && Sender);
   NonVisualDataModule->ListColumn = Column;
   TPopupMenu * DirViewColumnMenu;
-  if (dynamic_cast<TUnixDirView *>(Sender) != NULL)
+  if (Sender == DirView(osOther))
   {
     DirViewColumnMenu = NonVisualDataModule->RemoteDirViewColumnPopup;
     NonVisualDataModule->RemoteSortByExtColumnPopupItem->Visible =
@@ -6352,7 +6384,8 @@ void __fastcall TCustomScpExplorerForm::DoOpenDirectoryDialog(
       do
       {
         Repeat = false;
-        if (::DoOpenDirectoryDialog(Mode, Side, Name, VisitedDirectories, Terminal,
+        TOperationSide BookmarkSide = IsSideLocalBrowser(Side) ? osLocal : osRemote;
+        if (::DoOpenDirectoryDialog(Mode, BookmarkSide, Name, VisitedDirectories, Terminal,
               // do not allow switching to location profiles,
               // if we are not connected
               HasDirView[osLocal] && (Terminal != NULL)))
@@ -7062,6 +7095,7 @@ void __fastcall TCustomScpExplorerForm::UpdatePixelsPerInchMainWindowCounter()
 void __fastcall TCustomScpExplorerForm::StartingDisconnected()
 {
   DoTerminalListChanged();
+  UpdateControls();
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::PopupTrayBalloon(TTerminal * Terminal,
@@ -8552,9 +8586,9 @@ void __fastcall TCustomScpExplorerForm::UpdateFileStatusExtendedPanels(
 void __fastcall TCustomScpExplorerForm::RemoteStatusBarClick(
   TObject * /*Sender*/)
 {
-  if (DirView(osRemote)->Enabled)
+  if (DirView(osOther)->Enabled)
   {
-    DirView(osRemote)->SetFocus();
+    DirView(osOther)->SetFocus();
   }
 }
 //---------------------------------------------------------------------------
@@ -8650,33 +8684,8 @@ void __fastcall TCustomScpExplorerForm::UpdateControls()
 
     bool HasTerminal = HasActiveTerminal();
 
-    if (HasTerminal)
-    {
-      // TODO needed yet with second local browser?
-      if (!RemoteDirView->Enabled)
-      {
-        RemoteDirView->Enabled = true;
-        if (FRemoteDirViewWasFocused)
-        {
-          ActiveControl = RemoteDirView;
-        }
-      }
-      RemoteDirView->Color = PanelColor();
-    }
-    else
-    {
-      if (RemoteDirView->Enabled)
-      {
-        // This is first called when the form is being constructed
-        // (not anymore due to Showing test above)
-        // but the false is overriden in the constructor later.
-        // An even later in TScpCommanderForm::DoShow()
-        FRemoteDirViewWasFocused = (ActiveControl == RemoteDirView);
-        RemoteDirView->Enabled = false;
-      }
-      RemoteDirView->Color = DisabledPanelColor();
-    }
-
+    RemoteDirView->Enabled = HasTerminal;
+    RemoteDirView->Color = HasTerminal ? PanelColor() : DisabledPanelColor();
     RemoteDirView->Font->Color = GetWindowTextColor(RemoteDirView->Color);
 
     RemoteDriveView->Enabled = RemoteDirView->Enabled;
@@ -10403,9 +10412,10 @@ void __fastcall TCustomScpExplorerForm::CreateOpenDirMenu(TTBCustomItem * Menu, 
 bool __fastcall TCustomScpExplorerForm::TryOpenDirectory(TOperationSide Side, const UnicodeString & Path)
 {
   bool Result = true;
+  bool Remote = !IsSideLocalBrowser(Side);
   try
   {
-    if (Side == osRemote)
+    if (Remote)
     {
       Terminal->ExceptionOnFail = true;
     }
@@ -10416,7 +10426,7 @@ bool __fastcall TCustomScpExplorerForm::TryOpenDirectory(TOperationSide Side, co
     }
     __finally
     {
-      if (Side == osRemote)
+      if (Remote)
       {
         Terminal->ExceptionOnFail = false;
       }
@@ -10424,7 +10434,7 @@ bool __fastcall TCustomScpExplorerForm::TryOpenDirectory(TOperationSide Side, co
   }
   catch (Exception & E)
   {
-    if ((Side != osRemote) || Terminal->Active)
+    if (!Remote || Terminal->Active)
     {
       ShowExtendedExceptionEx(Terminal, &E);
       Result = false;

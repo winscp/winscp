@@ -49,39 +49,34 @@ TNonVisualDataModule *NonVisualDataModule;
 #define EXECOMP(COMP) EXECOMP2(COMP, )
 #define COLPROPS(SIDE) \
   ((TCustomDirViewColProperties*)ScpExplorer->DirView(os ## SIDE)->ColProperties)
-#define UPDSORT(SIDE, PREFIX, COL) if (Action == SIDE ## SortBy ## COL ## Action2) { \
-  SIDE ## SortBy ## COL ## Action2->Enabled = true; Handled = true; \
-  SIDE ## SortBy ## COL ## Action2->Checked = (COLPROPS(SIDE)->SortColumn == PREFIX ## COL); } else
-#define EXESORT(SIDE, PREFIX, COL) EXE(SIDE ## SortBy ## COL ## Action2, \
-    if (COLPROPS(SIDE)->SortColumn == PREFIX ## COL) \
+#define UPDSORT(SIDE, NAME, LCOL, RCOL, NUM) \
+  UPDEX(SIDE ## SortBy ## NAME ## Action ## NUM, (AuxInt = (ScpExplorer->IsSideLocalBrowser(os ## SIDE) ? LCOL : RCOL)) >= 0, \
+    Action->Checked = (COLPROPS(SIDE)->SortColumn == AuxInt), \
+    Action->Checked = false \
+  )
+#define EXESORT(SIDE, NAME, LCOL, RCOL, NUM) \
+  EXE(SIDE ## SortBy ## NAME ## Action ## NUM, \
+    int Col = (ScpExplorer->IsSideLocalBrowser(os ## SIDE) ? LCOL : RCOL); \
+    if (COLPROPS(SIDE)->SortColumn == Col) \
       COLPROPS(SIDE)->SortAscending = !COLPROPS(SIDE)->SortAscending; \
-    else COLPROPS(SIDE)->SortColumn = PREFIX ## COL )
+    else \
+      COLPROPS(SIDE)->SortColumn = Col; \
+  )
 #define UPDSORTA(SIDE, NUM) if (Action == SIDE ## SortAscendingAction ## NUM) { \
   SIDE ## SortAscendingAction ## NUM->Enabled = true; Handled = true; \
   SIDE ## SortAscendingAction ## NUM->Checked = COLPROPS(SIDE)->SortAscending; } else
 #define EXESORTA(SIDE, NUM) EXE(SIDE ## SortAscendingAction ## NUM, \
   COLPROPS(SIDE)->SortAscending = !COLPROPS(SIDE)->SortAscending; )
-#define UPDSORTC(LPREFIX, LCOL, RPREFIX, RCOL, NUM) if (Action == CurrentSortBy ## RCOL ## Action ## NUM) { \
-  Action->Enabled = ScpExplorer->AllowedAction(Action, aaShortCut); \
-  if (Action->Enabled) { \
-    if (ScpExplorer->DirView(osCurrent) == ScpExplorer->DirView(osRemote)) \
-         Action->Checked = (COLPROPS(Current)->SortColumn == RPREFIX ## RCOL); \
-    else Action->Checked = (COLPROPS(Current)->SortColumn == LPREFIX ## LCOL); \
-  } else Action->Checked =  false; Handled = true; } else
-#define EXESORTC(COL, LCOL, RCOL, NUM) \
-  EXE(CurrentSortBy ## COL ## Action ## NUM, \
-    Integer NewSortCol = \
-      ((ScpExplorer->DirView(osCurrent) == ScpExplorer->DirView(osRemote)) ? RCOL : LCOL); \
-    if (COLPROPS(Current)->SortColumn == NewSortCol) \
-      COLPROPS(Current)->SortAscending = !COLPROPS(Current)->SortAscending; \
-    else COLPROPS(Current)->SortColumn = NewSortCol \
+#define UPDSHCOL(SIDE, NAME, LCOL, RCOL) \
+  UPDFUNC(ShowHide ## SIDE ## NAME ## ColumnAction2, \
+    int Col = (ScpExplorer->IsSideLocalBrowser(os ## SIDE) ? LCOL : RCOL); \
+    Action->Enabled = (Col >= 0); \
+    Action->Checked = Action->Enabled && COLPROPS(SIDE)->Visible[Col]; \
   )
-#define UPDSHCOL(SIDE, PREFIX, COL) \
-  EXE(ShowHide ## SIDE ## COL ## ColumnAction2, \
-    ShowHide ## SIDE ## COL ## ColumnAction2->Checked = COLPROPS(SIDE)->Visible[PREFIX ## COL])
-#define EXESHCOL(SIDE, PREFIX, COL) \
-  EXE(ShowHide ## SIDE ## COL ## ColumnAction2, \
-    COLPROPS(SIDE)->Visible[PREFIX ## COL] = !COLPROPS(SIDE)->Visible[PREFIX ## COL])
+#define EXESHCOL(SIDE, NAME, LCOL, RCOL) \
+  EXE(ShowHide ## SIDE ## NAME ## ColumnAction2, \
+    int Col = (ScpExplorer->IsSideLocalBrowser(os ## SIDE) ? LCOL : RCOL); \
+    COLPROPS(SIDE)->Visible[Col] = !COLPROPS(SIDE)->Visible[Col])
 
 #define BAND_COMPONENTS \
   EMIT_BAND_COMPONENT(ExplorerMenuBand) \
@@ -137,7 +132,8 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
     Handled = true;
     return;
   }
-  void * Param;
+  void * AuxVoidPtr;
+  int AuxInt;
   #define HasTerminal ScpExplorer->HasActiveTerminal()
   // CURRENT DIRVIEW
   #define EnabledSelectedOperation (ScpExplorer->EnableSelectedOperation[osCurrent])
@@ -147,9 +143,9 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   #define EnabledLocalSelectedOperation (ScpExplorer->HasDirView[osLocal] && ScpExplorer->EnableSelectedOperation[osLocal])
   #define EnabledLocalFocusedOperation (ScpExplorer->HasDirView[osLocal] && ScpExplorer->EnableFocusedOperation[osLocal])
   #define EnabledLocalSelectedFileOperation (ScpExplorer->HasDirView[osLocal] && ScpExplorer->EnableSelectedFileOperation[osLocal])
-  #define EnabledRemoteSelectedOperation (ScpExplorer->EnableSelectedOperation[osRemote])
-  #define EnabledRemoteFocusedOperation (ScpExplorer->EnableFocusedOperation[osRemote])
-  #define EnabledRemoteSelectedFileOperation (ScpExplorer->EnableSelectedFileOperation[osRemote])
+  #define EnabledRemoteSelectedOperation (ScpExplorer->EnableSelectedOperation[osRemote] && HasTerminal)
+  #define EnabledRemoteFocusedOperation (ScpExplorer->EnableFocusedOperation[osRemote] && HasTerminal)
+  #define EnabledRemoteSelectedFileOperation (ScpExplorer->EnableSelectedFileOperation[osRemote] && HasTerminal)
   // focused operation
   UPD(CurrentDeleteFocusedAction, EnabledFocusedOperation)
   UPD(CurrentPropertiesFocusedAction, EnabledFocusedOperation)
@@ -163,8 +159,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(CurrentCopyToClipboardFocusedAction, EnabledFocusedOperation)
   // file operation
   UPD(CurrentRenameAction, EnabledFocusedOperation &&
-    ((ScpExplorer->HasDirView[osLocal] && DirView(osLocal) == DirView(osCurrent)) ||
-      ScpExplorer->Terminal->IsCapable[fcRename]))
+    (ScpExplorer->IsSideLocalBrowser(osCurrent) || ScpExplorer->Terminal->IsCapable[fcRename]))
   UPD(CurrentEditAction, EnabledSelectedFileOperation &&
     !WinConfiguration->DisableOpenEdit)
   UPD(CurrentEditInternalAction, EnabledSelectedFileOperation &&
@@ -182,21 +177,21 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(CurrentPropertiesAction, EnabledSelectedOperation)
   UPD(CurrentCopyToClipboardAction, EnabledSelectedOperation)
   UPD(RemoteMoveToAction, EnabledSelectedOperation &&
-    (DirView(osRemote) == DirView(osCurrent)) &&
+    !ScpExplorer->IsSideLocalBrowser(osCurrent) &&
     ScpExplorer->Terminal->IsCapable[fcRemoteMove])
   UPD(RemoteCopyToAction, EnabledSelectedOperation &&
-    (DirView(osRemote) == DirView(osCurrent)))
+    !ScpExplorer->IsSideLocalBrowser(osCurrent))
   UPD(FileListToCommandLineAction, EnabledSelectedOperation)
   UPD(FileListToClipboardAction, EnabledSelectedOperation)
   UPD(FullFileListToClipboardAction, EnabledSelectedOperation)
-  UPD(FileGenerateUrlAction2, EnabledSelectedOperation && (DirView(osRemote) == DirView(osCurrent)))
+  UPD(FileGenerateUrlAction2, EnabledSelectedOperation && !ScpExplorer->IsSideLocalBrowser(osCurrent))
   UPD(FileListFromClipboardAction, IsFormatInClipboard(CF_TEXT))
   UPD(CurrentAddEditLinkAction, ScpExplorer->CanAddEditLink(osCurrent))
   UPD(LockAction,
-    EnabledSelectedOperation && (DirView(osRemote) == DirView(osCurrent)) &&
+    EnabledSelectedOperation && !ScpExplorer->IsSideLocalBrowser(osCurrent) &&
     ScpExplorer->Terminal->IsCapable[fcLocking])
   UPD(UnlockAction,
-    EnabledSelectedOperation && (DirView(osRemote) == DirView(osCurrent)) &&
+    EnabledSelectedOperation && !ScpExplorer->IsSideLocalBrowser(osCurrent) &&
     ScpExplorer->Terminal->IsCapable[fcLocking])
   // local selected operation
   UPD(LocalCopyAction, HasTerminal && EnabledLocalSelectedOperation)
@@ -234,14 +229,14 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(RemoteCopyFocusedNonQueueAction, EnabledRemoteFocusedOperation)
   UPD(RemoteMoveFocusedAction, EnabledRemoteFocusedOperation)
   UPD(RemoteMoveToFocusedAction, EnabledFocusedOperation &&
-    (DirView(osRemote) == DirView(osCurrent)) &&
+    !ScpExplorer->IsSideLocalBrowser(osCurrent) &&
     ScpExplorer->Terminal->IsCapable[fcRemoteMove])
   UPD(RemoteCopyToFocusedAction, EnabledFocusedOperation &&
-    DirView(osRemote) == DirView(osCurrent))
+    !ScpExplorer->IsSideLocalBrowser(osCurrent))
   // directory
   UPD(CurrentCreateDirAction, DirViewEnabled(osCurrent))
   UPD(NewDirAction, DirViewEnabled(osCurrent))
-  UPD(RemoteFindFilesAction2, DirViewEnabled(osRemote))
+  UPD(RemoteFindFilesAction2, HasTerminal)
   // selection
   UPD(SelectOneAction, DirView(osCurrent)->FilesCount)
   UPD(SelectAction, DirView(osCurrent)->FilesCount)
@@ -350,30 +345,32 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
 
   // SORT
   UPDSORTA(Local, 2)
-  UPDSORT(Local, dv, Name)
-  UPDSORT(Local, dv, Ext)
-  UPDSORT(Local, dv, Size)
-  UPDSORT(Local, dv, Type)
-  UPDSORT(Local, dv, Changed)
-  UPDSORT(Local, dv, Attr)
+  #define UPDSORTL(NAME, COL) UPDSORT(Local, NAME, COL, -1, 2)
+  UPDSORTL(Name, dvName)
+  UPDSORTL(Ext, dvExt)
+  UPDSORTL(Size, dvSize)
+  UPDSORTL(Type, dvType)
+  UPDSORTL(Changed, dvChanged)
+  UPDSORTL(Attr, dvAttr)
+  #undef UPDSORTL
   UPDSORTA(Remote, 2)
-  UPDSORT(Remote, uv, Name)
-  UPDSORT(Remote, uv, Ext)
-  UPDSORT(Remote, uv, Size)
-  UPDSORT(Remote, uv, Changed)
-  UPDSORT(Remote, uv, Rights)
-  UPDSORT(Remote, uv, Owner)
-  UPDSORT(Remote, uv, Group)
-  UPDSORT(Remote, uv, Type)
+  UPDSORT(Remote, Name, dvName, uvName, 2)
+  UPDSORT(Remote, Ext, dvExt, uvExt, 2)
+  UPDSORT(Remote, Size, dvSize, uvSize, 2)
+  UPDSORT(Remote, Changed, dvChanged, uvChanged, 2)
+  UPDSORT(Remote, Rights, dvAttr, uvRights, 2)
+  UPDSORT(Remote, Owner, -1, uvOwner, 2)
+  UPDSORT(Remote, Group, -1, uvGroup, 2)
+  UPDSORT(Remote, Type, dvType, uvType, 2)
   UPDSORTA(Current, )
-  UPDSORTC(dv, Name, uv, Name, )
-  UPDSORTC(dv, Ext, uv, Ext, )
-  UPDSORTC(dv, Size, uv, Size, )
-  UPDSORTC(dv, Type, uv, Type, 2)
-  UPDSORTC(dv, Changed, uv, Changed, )
-  UPDSORTC(dv, Attr, uv, Rights, )
-  UPDSORTC(dv, Name, uv, Owner, )
-  UPDSORTC(dv, Name, uv, Group, )
+  UPDSORT(Current, Name, dvName, uvName, )
+  UPDSORT(Current, Ext, dvExt, uvExt, )
+  UPDSORT(Current, Size, dvSize, uvSize, )
+  UPDSORT(Current, Type, dvType, uvType, 2)
+  UPDSORT(Current, Changed, dvChanged, uvChanged, )
+  UPDSORT(Current, Rights, dvAttr, uvRights, )
+  UPDSORT(Current, Owner, -1, uvOwner, )
+  UPDSORT(Current, Group, -1, uvGroup, )
   #define COLVIEWPROPS ((TCustomDirViewColProperties*)(((TCustomDirView*)(((TListColumns*)(ListColumn->Collection))->Owner()))->ColProperties))
   UPDEX(SortColumnAscendingAction, (ListColumn != NULL), SortColumnAscendingAction->Checked =
     (COLVIEWPROPS->SortColumn == ListColumn->Index) && COLVIEWPROPS->SortAscending, )
@@ -382,21 +379,23 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   #undef COLVIEWPROPS
 
   // SHOW/HIDE COLUMN
-  UPDSHCOL(Local, dv, Name)
-  UPDSHCOL(Local, dv, Ext)
-  UPDSHCOL(Local, dv, Size)
-  UPDSHCOL(Local, dv, Type)
-  UPDSHCOL(Local, dv, Changed)
-  UPDSHCOL(Local, dv, Attr)
-  UPDSHCOL(Remote, uv, Name)
-  UPDSHCOL(Remote, uv, Ext)
-  UPDSHCOL(Remote, uv, Size)
-  UPDSHCOL(Remote, uv, Changed)
-  UPDSHCOL(Remote, uv, Rights)
-  UPDSHCOL(Remote, uv, Owner)
-  UPDSHCOL(Remote, uv, Group)
-  UPDSHCOL(Remote, uv, LinkTarget)
-  UPDSHCOL(Remote, uv, Type)
+  #define UPDSHCOLL(NAME) UPDSHCOL(Local, NAME, dv ## NAME, -1)
+  UPDSHCOLL(Name)
+  UPDSHCOLL(Ext)
+  UPDSHCOLL(Size)
+  UPDSHCOLL(Type)
+  UPDSHCOLL(Changed)
+  UPDSHCOLL(Attr)
+  #undef UPDSHCOLL
+  UPDSHCOL(Remote, Name, dvName, uvName)
+  UPDSHCOL(Remote, Ext, dvExt, uvExt)
+  UPDSHCOL(Remote, Size, dvSize, uvSize)
+  UPDSHCOL(Remote, Changed, dvChanged, uvChanged)
+  UPDSHCOL(Remote, Rights, dvAttr, uvRights)
+  UPDSHCOL(Remote, Owner, -1, uvOwner)
+  UPDSHCOL(Remote, Group, -1, uvGroup)
+  UPDSHCOL(Remote, LinkTarget, -1, uvLinkTarget)
+  UPDSHCOL(Remote, Type, dvType, uvType)
   UPD(HideColumnAction, (ListColumn != NULL))
   UPD(BestFitColumnAction, (ListColumn != NULL))
 
@@ -467,8 +466,8 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPDQUEUE(DeleteAll)
   UPDQUEUE(DeleteAllDone)
   #undef UPDQUEUE
-  UPDEX(QueueItemSpeedAction, ScpExplorer->AllowQueueOperation(qoItemSpeed, &Param),
-    QueueItemSpeedAction->Text = SetSpeedLimit(reinterpret_cast<unsigned long>(Param)),
+  UPDEX(QueueItemSpeedAction, ScpExplorer->AllowQueueOperation(qoItemSpeed, &AuxVoidPtr),
+    QueueItemSpeedAction->Text = SetSpeedLimit(reinterpret_cast<unsigned long>(AuxVoidPtr)),
     QueueItemSpeedAction->Text = L"")
   UPDACT(QueueToggleShowAction,
     Action->Checked = ScpExplorer->ComponentVisible[fcQueueView])
@@ -675,52 +674,55 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
 
     #define COLVIEWPROPS ((TCustomDirViewColProperties*)(((TCustomDirView*)(((TListColumns*)(ListColumn->Collection))->Owner()))->ColProperties))
     // SORT
-    EXESORTA(Local, 2)
-    EXESORT(Local, dv, Name)
-    EXESORT(Local, dv, Ext)
-    EXESORT(Local, dv, Size)
-    EXESORT(Local, dv, Type)
-    EXESORT(Local, dv, Changed)
-    EXESORT(Local, dv, Attr)
+    #define EXESORTL(NAME, COL) EXESORT(Local, NAME, COL, COL, 2)
+    EXESORTL(Name, dvName)
+    EXESORTL(Ext, dvExt)
+    EXESORTL(Size, dvSize)
+    EXESORTL(Type, dvType)
+    EXESORTL(Changed, dvChanged)
+    EXESORTL(Attr, dvAttr)
+    #undef EXESORTL
     EXESORTA(Remote, 2)
-    EXESORT(Remote, uv, Name)
-    EXESORT(Remote, uv, Ext)
-    EXESORT(Remote, uv, Size)
-    EXESORT(Remote, uv, Changed)
-    EXESORT(Remote, uv, Rights)
-    EXESORT(Remote, uv, Owner)
-    EXESORT(Remote, uv, Group)
-    EXESORT(Remote, uv, Type)
+    EXESORT(Remote, Name, dvName, uvName, 2)
+    EXESORT(Remote, Ext, dvExt, uvExt, 2)
+    EXESORT(Remote, Size, dvSize, uvSize, 2)
+    EXESORT(Remote, Changed, dvChanged, uvChanged, 2)
+    EXESORT(Remote, Rights, dvAttr, uvRights, 2)
+    EXESORT(Remote, Owner, -1, uvOwner, 2)
+    EXESORT(Remote, Group, -1, uvGroup, 2)
+    EXESORT(Remote, Type, dvType, uvType, 2)
     EXESORTA(Current, )
-    EXESORTC(Name, dvName, uvName, )
-    EXESORTC(Ext, dvExt, uvExt, )
-    EXESORTC(Size, dvSize, uvSize, )
-    EXESORTC(Type, dvType, uvType, 2)
-    EXESORTC(Changed, dvChanged, uvChanged, )
-    EXESORTC(Rights, dvAttr, uvRights, )
-    EXESORTC(Owner, dvName, uvOwner, )
-    EXESORTC(Group, dvName, uvGroup, )
+    EXESORT(Current, Name, dvName, uvName, )
+    EXESORT(Current, Ext, dvExt, uvExt, )
+    EXESORT(Current, Size, dvSize, uvSize, )
+    EXESORT(Current, Type, dvType, uvType, 2)
+    EXESORT(Current, Changed, dvChanged, uvChanged, )
+    EXESORT(Current, Rights, dvAttr, uvRights, )
+    EXESORT(Current, Owner, -1, uvOwner, )
+    EXESORT(Current, Group, -1, uvGroup, )
     EXE(SortColumnAscendingAction, DebugAssert(ListColumn);
       COLVIEWPROPS->SortColumn = ListColumn->Index; COLVIEWPROPS->SortAscending = true; ListColumn = NULL )
     EXE(SortColumnDescendingAction, DebugAssert(ListColumn);
       COLVIEWPROPS->SortColumn = ListColumn->Index; COLVIEWPROPS->SortAscending = false; ListColumn = NULL )
 
     // SHOW/HIDE COLUMN
-    EXESHCOL(Local, dv, Name)
-    EXESHCOL(Local, dv, Ext)
-    EXESHCOL(Local, dv, Size)
-    EXESHCOL(Local, dv, Type)
-    EXESHCOL(Local, dv, Changed)
-    EXESHCOL(Local, dv, Attr)
-    EXESHCOL(Remote, uv, Name)
-    EXESHCOL(Remote, uv, Ext)
-    EXESHCOL(Remote, uv, Size)
-    EXESHCOL(Remote, uv, Changed)
-    EXESHCOL(Remote, uv, Rights)
-    EXESHCOL(Remote, uv, Owner)
-    EXESHCOL(Remote, uv, Group)
-    EXESHCOL(Remote, uv, LinkTarget)
-    EXESHCOL(Remote, uv, Type)
+    #define EXESHCOLL(NAME) EXESHCOL(Local, NAME, dv ## NAME, -1)
+    EXESHCOLL(Name)
+    EXESHCOLL(Ext)
+    EXESHCOLL(Size)
+    EXESHCOLL(Type)
+    EXESHCOLL(Changed)
+    EXESHCOLL(Attr)
+    #undef EXESHCOLL
+    EXESHCOL(Remote, Name, dvName, uvName)
+    EXESHCOL(Remote, Ext, dvExt, uvExt)
+    EXESHCOL(Remote, Size, dvSize, uvSize)
+    EXESHCOL(Remote, Changed, dvChanged, uvChanged)
+    EXESHCOL(Remote, Rights, dvAttr, uvRights)
+    EXESHCOL(Remote, Owner, -1, uvOwner)
+    EXESHCOL(Remote, Group, -1, uvGroup)
+    EXESHCOL(Remote, LinkTarget, -1, uvLinkTarget)
+    EXESHCOL(Remote, Type, dvType, uvType)
     EXE(HideColumnAction, DebugAssert(ListColumn);
       COLVIEWPROPS->Visible[ListColumn->Index] = false; ListColumn = NULL )
     EXE(BestFitColumnAction, DebugAssert(ListColumn); ListColumn = NULL ) // TODO

@@ -1119,6 +1119,52 @@ inherited ScpCommanderForm: TScpCommanderForm
         OnHistoryGo = DirViewHistoryGo
         OnPathChange = RemoteDirViewPathChange
       end
+      inherited ReconnectToolbar: TTBXToolbar
+        TabOrder = 2
+      end
+      object OtherLocalDirView: TDirView
+        Left = 280
+        Top = 0
+        Width = 178
+        Height = 124
+        Align = alRight
+        Constraints.MinHeight = 70
+        DoubleBuffered = True
+        FullDrag = True
+        HideSelection = False
+        ParentDoubleBuffered = False
+        PopupMenu = NonVisualDataModule.RemoteDirViewPopup
+        TabOrder = 1
+        ViewStyle = vsReport
+        OnColumnRightClick = DirViewColumnRightClick
+        OnEditing = DirViewEditing
+        OnEnter = OtherLocalDirViewEnter
+        OnExit = DirViewExit
+        OnKeyDown = DirViewKeyDown
+        OnKeyPress = DirViewKeyPress
+        DirColProperties.ExtVisible = False
+        OnUpdateStatusBar = OtherLocalDirViewUpdateStatusBar
+        AddParentDir = True
+        OnSelectItem = DirViewSelectItem
+        OnLoaded = DirViewLoaded
+        OnDDDragEnter = LocalFileControlDDDragEnter
+        OnDDDragLeave = FileControlDDDragLeave
+        OnDDTargetHasDropHandler = LocalDirViewDDTargetHasDropHandler
+        OnDDFileOperation = LocalFileControlDDFileOperation
+        OnExecFile = LocalDirViewExecFile
+        OnMatchMask = DirViewMatchMask
+        OnGetOverlay = DirViewGetOverlay
+        ConfirmDelete = False
+        UseIconUpdateThread = True
+        WatchForChanges = True
+        OnFileIconForName = LocalDirViewFileIconForName
+        OnContextPopup = OtherLocalDirViewContextPopup
+        OnHistoryChange = DirViewHistoryChange
+        OnHistoryGo = DirViewHistoryGo
+        OnPathChange = LocalDirViewPathChange
+        OnBusy = DirViewBusy
+        OnChangeFocus = DirViewChangeFocus
+      end
     end
     inherited RemoteDrivePanel: TPanel
       Top = 98
@@ -1126,8 +1172,30 @@ inherited ScpCommanderForm: TScpCommanderForm
       Height = 45
       Align = alTop
       Constraints.MinHeight = 30
+      object OtherLocalDriveView: TDriveView [0]
+        Left = 280
+        Top = 0
+        Width = 178
+        Height = 45
+        WatchDirectory = True
+        DirView = OtherLocalDirView
+        OnBusy = DirViewBusy
+        OnDDDragEnter = LocalFileControlDDDragEnter
+        OnDDDragLeave = FileControlDDDragLeave
+        OnDDFileOperation = LocalFileControlDDFileOperation
+        Align = alRight
+        Constraints.MinHeight = 30
+        DoubleBuffered = True
+        HideSelection = False
+        Indent = 19
+        ParentColor = False
+        ParentDoubleBuffered = False
+        TabOrder = 1
+        TabStop = False
+        OnEnter = OtherLocalDriveViewEnter
+      end
       inherited RemoteDriveView: TUnixDriveView
-        Width = 458
+        Width = 280
         Height = 45
         TabStop = False
       end

@@ -438,6 +438,8 @@ __published:
   TTBXItem *TBXItem255;
   TTBXSeparatorItem *TBXSeparatorItem65;
   TTBXItem *TBXItem256;
+  TDriveView *OtherLocalDriveView;
+  TDirView *OtherLocalDirView;
   void __fastcall SplitterMoved(TObject *Sender);
   void __fastcall SplitterCanResize(TObject *Sender, int &NewSize,
     bool &Accept);
@@ -495,6 +497,10 @@ __published:
   void __fastcall LocalPathLabelMaskClick(TObject *Sender);
   void __fastcall LocalOpenDirButtonPopup(TTBCustomItem *Sender, bool FromLink);
   void __fastcall RemoteOpenDirButtonPopup(TTBCustomItem *Sender, bool FromLink);
+  void __fastcall OtherLocalDirViewEnter(TObject *Sender);
+  void __fastcall OtherLocalDriveViewEnter(TObject *Sender);
+  void __fastcall OtherLocalDirViewContextPopup(TObject *Sender, TPoint &MousePos, bool &Handled);
+  void __fastcall OtherLocalDirViewUpdateStatusBar(TObject *Sender, const TStatusFileInfo &FileInfo);
 
 private:
   bool FConstructed;
@@ -526,8 +532,10 @@ private:
   void __fastcall UpdateToolbar2ItemCaption(TTBCustomItem * Item);
   void __fastcall SetShortcuts();
   void __fastcall UpdatePanelsPathLabelsStatus();
+  void __fastcall DoLocalDefaultDirectory(TDirView * DirView, const UnicodeString & LastPath);
   void __fastcall LocalDefaultDirectory();
   TOperationSide __fastcall GetOtherSize(TOperationSide Side);
+  void __fastcall DoLocalDirViewContextPopup(TOperationSide Side, TPoint & MousePos, bool & Handled);
 
 protected:
   virtual bool __fastcall CopyParamDialog(TTransferDirection Direction,
@@ -550,7 +558,6 @@ protected:
   virtual void __fastcall TerminalChanged(bool Replaced);
   virtual void __fastcall ConfigurationChanged();
   virtual bool __fastcall GetHasDirView(TOperationSide Side);
-  virtual bool IsSideLocalBrowser(TOperationSide Side);
   virtual TCustomDirView * GetCurrentLocalBrowser();
   virtual void __fastcall UpdateControls();
   virtual void __fastcall FileOperationProgress(
@@ -602,6 +609,8 @@ protected:
   virtual void __fastcall UpdateImages();
   virtual void __fastcall FileColorsChanged();
   virtual void __fastcall ThemeChanged();
+  virtual bool IsLocalBrowserMode();
+  void __fastcall DoPathLabelPathClick(TOperationSide Side, const UnicodeString & Path);
 
 public:
   __fastcall TScpCommanderForm(TComponent* Owner);
@@ -627,6 +636,7 @@ public:
   virtual void __fastcall CopyFilesToClipboard(TOperationSide Side, bool OnFocused);
   virtual void __fastcall PasteFromClipBoard();
   virtual void __fastcall BrowseFile();
+  virtual bool IsSideLocalBrowser(TOperationSide Side);
 
   __property double LeftPanelWidth = { read = GetLeftPanelWidth, write = SetLeftPanelWidth };
 };

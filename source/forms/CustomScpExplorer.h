@@ -372,13 +372,13 @@ protected:
   TDragDropFilesEx * FSessionsDragDropFilesEx;
   TDragDropFilesEx * FQueueDragDropFilesEx;
   TPoint FLastContextPopupScreenPoint;
-  bool FRemoteDirViewWasFocused;
   int FDoNotIdleCurrentTerminal;
   UnicodeString FFakeFileDropTarget;
   TFileColorData::TList FFileColors;
   UnicodeString FIncrementalSearch;
   int FIncrementalSearching;
   bool FIncrementalSearchHaveNext;
+  TOperationSide FProgressSide;
 
   virtual bool __fastcall CopyParamDialog(TTransferDirection Direction,
     TTransferType Type, bool Temp, TStrings * FileList,
@@ -399,7 +399,6 @@ protected:
   virtual TCustomDriveView * __fastcall DriveView(TOperationSide Side);
   virtual bool IsLocalBrowserMode();
   virtual TCustomDirView * GetCurrentLocalBrowser();
-  virtual bool IsSideLocalBrowser(TOperationSide Side);
   DYNAMIC void __fastcall KeyDown(Word & Key, Classes::TShiftState Shift);
   virtual void __fastcall RestoreFormParams();
   virtual void __fastcall RestoreParams();
@@ -709,6 +708,8 @@ protected:
   int __fastcall GetMinQueueViewHeight();
   void __fastcall DetachTerminal(TObject * ATerminal);
   bool __fastcall IsActiveTerminal(TTerminal * Terminal);
+  void __fastcall UpdateRowSelect(TCustomDirView * DirView);
+  void __fastcall MakeFocusedItemVisible(TCustomDirView * DirView);
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();
@@ -842,6 +843,7 @@ public:
   void __fastcall ReplaceTerminal(TManagedTerminal * value);
   virtual void __fastcall BrowseFile();
   void __fastcall CloseApp();
+  virtual bool IsSideLocalBrowser(TOperationSide Side);
 
   __property bool ComponentVisible[Byte Component] = { read = GetComponentVisible, write = SetComponentVisible };
   __property bool EnableFocusedOperation[TOperationSide Side] = { read = GetEnableFocusedOperation, index = 0 };

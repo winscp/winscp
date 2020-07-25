@@ -169,11 +169,10 @@ void __fastcall TScpExplorerForm::DoShow()
   // See comment in TScpCommanderForm::DoShow()
   UpdateControls();
 
-  if (RemoteDirView->Enabled)
+  if (DirView(osOther)->Enabled)
   {
-    RemoteDirView->SetFocus();
+    DirView(osOther)->SetFocus();
   }
-  FRemoteDirViewWasFocused = true;
 
   TCustomScpExplorerForm::DoShow();
 }

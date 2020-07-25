@@ -969,9 +969,11 @@ object NonVisualDataModule: TNonVisualDataModule
     object RemoteSortByRightsAction2: TAction
       Tag = 14
       Category = 'Sort'
-      Caption = 'By &Permissions'
+      Caption = 'By &Permissions/Attributes'
       HelpKeyword = 'ui_file_panel#sorting_files'
-      Hint = 'Sort by permissions|Sort panel by permissions'
+      Hint = 
+        'Sort by attributes/permissions|Sort current panel by attributes/' +
+        'permissions'
       ImageIndex = 36
       ShortCut = 16502
     end
@@ -1058,7 +1060,7 @@ object NonVisualDataModule: TNonVisualDataModule
     object CurrentSortByRightsAction: TAction
       Tag = 15
       Category = 'Sort'
-      Caption = 'By &Attributes'
+      Caption = 'By &Permissions/Attributes'
       HelpKeyword = 'ui_file_panel#sorting_files'
       Hint = 
         'Sort by attributes/permissions|Sort current panel by attributes/' +
