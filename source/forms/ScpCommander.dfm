@@ -110,6 +110,11 @@ inherited ScpCommanderForm: TScpCommanderForm
             GroupIndex = 1
             RadioItem = True
           end
+          object TBXItem17: TTBXItem
+            Action = NonVisualDataModule.LocalSortBySizeAction2
+            GroupIndex = 1
+            RadioItem = True
+          end
           object TBXItem15: TTBXItem
             Action = NonVisualDataModule.LocalSortByTypeAction2
             GroupIndex = 1
@@ -117,11 +122,6 @@ inherited ScpCommanderForm: TScpCommanderForm
           end
           object TBXItem16: TTBXItem
             Action = NonVisualDataModule.LocalSortByChangedAction2
-            GroupIndex = 1
-            RadioItem = True
-          end
-          object TBXItem17: TTBXItem
-            Action = NonVisualDataModule.LocalSortBySizeAction2
             GroupIndex = 1
             RadioItem = True
           end
@@ -694,17 +694,17 @@ inherited ScpCommanderForm: TScpCommanderForm
             GroupIndex = 1
             RadioItem = True
           end
+          object TBXItem97: TTBXItem
+            Action = NonVisualDataModule.RemoteSortBySizeAction2
+            GroupIndex = 1
+            RadioItem = True
+          end
           object TBXItem193: TTBXItem
             Action = NonVisualDataModule.RemoteSortByTypeAction2
             RadioItem = True
           end
           object TBXItem96: TTBXItem
             Action = NonVisualDataModule.RemoteSortByChangedAction2
-            GroupIndex = 1
-            RadioItem = True
-          end
-          object TBXItem97: TTBXItem
-            Action = NonVisualDataModule.RemoteSortBySizeAction2
             GroupIndex = 1
             RadioItem = True
           end
@@ -888,14 +888,14 @@ inherited ScpCommanderForm: TScpCommanderForm
       object TBXItem147: TTBXItem
         Action = NonVisualDataModule.CurrentSortByExtAction
       end
+      object TBXItem150: TTBXItem
+        Action = NonVisualDataModule.CurrentSortBySizeAction
+      end
       object TBXItem148: TTBXItem
         Action = NonVisualDataModule.CurrentSortByTypeAction2
       end
       object TBXItem149: TTBXItem
         Action = NonVisualDataModule.CurrentSortByChangedAction
-      end
-      object TBXItem150: TTBXItem
-        Action = NonVisualDataModule.CurrentSortBySizeAction
       end
       object TBXItem151: TTBXItem
         Action = NonVisualDataModule.CurrentSortByRightsAction

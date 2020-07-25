@@ -510,16 +510,16 @@ inherited ScpExplorerForm: TScpExplorerForm
             Action = NonVisualDataModule.RemoteSortByExtAction2
             GroupIndex = 1
           end
+          object TBXItem97: TTBXItem
+            Action = NonVisualDataModule.RemoteSortBySizeAction2
+            GroupIndex = 1
+          end
           object TBXItem132: TTBXItem
             Action = NonVisualDataModule.RemoteSortByTypeAction2
             RadioItem = True
           end
           object TBXItem96: TTBXItem
             Action = NonVisualDataModule.RemoteSortByChangedAction2
-            GroupIndex = 1
-          end
-          object TBXItem97: TTBXItem
-            Action = NonVisualDataModule.RemoteSortBySizeAction2
             GroupIndex = 1
           end
           object TBXItem98: TTBXItem
