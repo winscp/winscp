@@ -1018,7 +1018,7 @@ inherited ScpExplorerForm: TScpExplorerForm
       end
     end
     object CustomCommandsToolbar: TTBXToolbar
-      Left = 300
+      Left = 299
       Top = 182
       Caption = 'Custom Commands'
       DockPos = 193

@@ -1025,7 +1025,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       end
     end
     object CustomCommandsToolbar: TTBXToolbar
-      Left = 300
+      Left = 299
       Top = 129
       Caption = 'Custom Commands'
       DockPos = 168
