@@ -889,7 +889,7 @@ inherited ScpCommanderForm: TScpCommanderForm
         Action = NonVisualDataModule.CurrentSortByExtAction
       end
       object TBXItem148: TTBXItem
-        Action = NonVisualDataModule.CurrentSortByTypeAction
+        Action = NonVisualDataModule.CurrentSortByTypeAction2
       end
       object TBXItem149: TTBXItem
         Action = NonVisualDataModule.CurrentSortByChangedAction

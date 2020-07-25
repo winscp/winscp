@@ -868,7 +868,7 @@ inherited ScpExplorerForm: TScpExplorerForm
         Action = NonVisualDataModule.CurrentSortByExtAction
       end
       object TBXItem133: TTBXItem
-        Action = NonVisualDataModule.CurrentSortByTypeAction
+        Action = NonVisualDataModule.CurrentSortByTypeAction2
       end
       object TBXItem149: TTBXItem
         Action = NonVisualDataModule.CurrentSortByChangedAction
