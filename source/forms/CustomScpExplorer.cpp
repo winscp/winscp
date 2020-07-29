@@ -9035,7 +9035,7 @@ void __fastcall TCustomScpExplorerForm::ThemeChanged()
 {
   // We hoped this will refresh scrollbar colors, but it does not have any effect here.
   RefreshColorMode();
-  WinConfiguration->ResetSysDarkTheme();
+  ResetSysDarkTheme();
   ConfigurationChanged();
   ConfigureInterface();
   // Should be called for all controls

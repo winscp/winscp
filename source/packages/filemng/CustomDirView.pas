@@ -921,8 +921,10 @@ end;
 
 procedure TCustomDirView.WMNotify(var Msg: TWMNotify);
 begin
-  // This all is to make header text white in dark mode
-  if DarkMode and SupportsDarkMode and (FHeaderHandle <> 0) and (Msg.NMHdr^.hWndFrom = FHeaderHandle) then
+  // This all is to make header text white in dark mode.
+  if DarkMode and SupportsDarkMode and
+     GetSysDarkTheme and // When system app theme is light, headers are not dark
+     (FHeaderHandle <> 0) and (Msg.NMHdr^.hWndFrom = FHeaderHandle) then
   begin
     if Msg.NMHdr.code = NM_CUSTOMDRAW then
     begin

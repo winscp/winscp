@@ -657,7 +657,6 @@ public:
   bool __fastcall IsDDExtRunning();
   bool __fastcall IsDDExtBroken();
   bool __fastcall UseDarkTheme();
-  void __fastcall ResetSysDarkTheme();
 
   static void __fastcall RestoreFont(const TFontConfiguration & Configuration, TFont * Font);
   static void __fastcall StoreFont(TFont * Font, TFontConfiguration & Configuration);
