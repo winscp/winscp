@@ -472,7 +472,6 @@ bool __fastcall TEditorList::IsDefaultList() const
 //---------------------------------------------------------------------------
 __fastcall TWinConfiguration::TWinConfiguration(): TCustomWinConfiguration()
 {
-  ResetSysDarkTheme();
   FInvalidDefaultTranslationMessage = L"";
   FDDExtInstalled = -1;
   FBookmarks = new TBookmarks();
@@ -2122,26 +2121,8 @@ static int __fastcall SysDarkTheme(HKEY RootKey)
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TWinConfiguration::ResetSysDarkTheme()
-{
-  FSysDarkTheme = -1;
-}
-//---------------------------------------------------------------------------
 bool __fastcall TWinConfiguration::UseDarkTheme()
 {
-  if (FSysDarkTheme < 0)
-  {
-    FSysDarkTheme = SysDarkTheme(HKEY_CURRENT_USER);
-    if (FSysDarkTheme < 0)
-    {
-      FSysDarkTheme = SysDarkTheme(HKEY_LOCAL_MACHINE);
-      if (FSysDarkTheme < 0)
-      {
-        FSysDarkTheme = 0;
-      }
-    }
-  }
-
   switch (WinConfiguration->DarkTheme)
   {
     case asOn:
@@ -2149,7 +2130,7 @@ bool __fastcall TWinConfiguration::UseDarkTheme()
     case asOff:
       return false;
     default:
-      return (FSysDarkTheme > 0);
+      return (GetSysDarkTheme() > 0);
   }
 }
 //---------------------------------------------------------------------------

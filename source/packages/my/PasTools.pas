@@ -84,6 +84,8 @@ function SupportsDarkMode: Boolean;
 procedure AllowDarkModeForWindow(Control: TWinControl; Allow: Boolean); overload;
 procedure AllowDarkModeForWindow(Handle: THandle; Allow: Boolean); overload;
 procedure RefreshColorMode;
+procedure ResetSysDarkTheme;
+function GetSysDarkTheme: Boolean;
 
 type
   TApiPathEvent = function(Path: string): string;
@@ -148,7 +150,7 @@ type
 implementation
 
 uses
-  SysUtils, StdCtrls, Graphics, MultiMon, ShellAPI, Generics.Collections, CommCtrl, ImgList;
+  SysUtils, StdCtrls, Graphics, MultiMon, ShellAPI, Generics.Collections, CommCtrl, ImgList, Registry;
 
 const
   DDExpandDelay = 15000000;
@@ -1026,6 +1028,54 @@ begin
 end;
 
 var
+  SysDarkTheme: Integer;
+
+procedure ResetSysDarkTheme;
+begin
+  SysDarkTheme := -1;
+end;
+
+function DoGetSysDarkTheme(RootKey: HKEY): Integer;
+const
+  ThemesPersonalizeKey = 'Software\Microsoft\Windows\CurrentVersion\Themes\Personalize';
+  AppsUseLightThemeValue = 'AppsUseLightTheme';
+var
+  Registry: TRegistry;
+begin
+  Registry := TRegistry.Create;
+  try
+    Registry.RootKey := RootKey;
+    Result := -1;
+    if Registry.OpenKeyReadOnly(ThemesPersonalizeKey) and
+       Registry.ValueExists(AppsUseLightThemeValue) then
+    begin
+      if Registry.ReadBool(AppsUseLightThemeValue) then Result := 0
+        else Result := 1;
+    end;
+  finally
+    Registry.Free;
+  end;
+end;
+
+function GetSysDarkTheme: Boolean;
+begin
+  if SysDarkTheme < 0 then
+  begin
+    SysDarkTheme := DoGetSysDarkTheme(HKEY_CURRENT_USER);
+    if SysDarkTheme < 0 then
+    begin
+      SysDarkTheme := DoGetSysDarkTheme(HKEY_LOCAL_MACHINE);
+      if SysDarkTheme < 0 then
+      begin
+        SysDarkTheme := 0;
+      end;
+    end;
+  end;
+
+  Result := (SysDarkTheme > 0);
+end;
+
+var
   Lib: THandle;
   OSVersionInfo: TOSVersionInfoEx;
 initialization
@@ -1071,6 +1121,8 @@ initialization
       end;
     end;
   end;
+
+  ResetSysDarkTheme;
 
 finalization
   // No need to release individual image lists as they are owned by Application object.
