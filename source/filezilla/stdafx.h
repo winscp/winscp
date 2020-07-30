@@ -35,10 +35,7 @@ class CFileFix;
 //---------------------------------------------------------------------------
 #include "MFC64bitFix.h"
 #include <ApiLog.h>
-#include <FileZillaApi.h>
-#include <FileZillaOpt.h>
 #include <TextsFileZilla.h>
-#include <structures.h>
 //---------------------------------------------------------------------------
 #include <oleauto.h>
 #include <afxdisp.h>
@@ -524,5 +521,8 @@ inline CStringA AFXAPI operator+(const CStringA & string1, char ch)
   s.ConcatCopy(string1.GetData()->nDataLength, string1.m_pchData, 1, &ch);
   return s;
 }
+//---------------------------------------------------------------------------
+#include <FileZillaApi.h>
+#include <FileZillaOpt.h>
 //---------------------------------------------------------------------------
 #endif

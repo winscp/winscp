@@ -12,6 +12,7 @@
 
 #include <openssl/x509v3.h>
 #include <openssl/err.h>
+#include <openssl/tls1.h>
 
 /////////////////////////////////////////////////////////////////////////////
 // CAsyncSslSocketLayer
@@ -613,6 +614,7 @@ void CAsyncSslSocketLayer::Close()
 
 BOOL CAsyncSslSocketLayer::Connect(const SOCKADDR *lpSockAddr, int nSockAddrLen)
 {
+  m_HostName = CStringA();
   BOOL res = ConnectNext(lpSockAddr, nSockAddrLen);
   if (!res)
   {
@@ -626,6 +628,7 @@ BOOL CAsyncSslSocketLayer::Connect(const SOCKADDR *lpSockAddr, int nSockAddrLen)
 
 BOOL CAsyncSslSocketLayer::Connect(LPCTSTR lpszHostAddress, UINT nHostPort)
 {
+  m_HostName = AnsiString(lpszHostAddress).c_str();
   BOOL res = ConnectNext(lpszHostAddress, nHostPort);
   if (!res)
   {
@@ -752,6 +755,11 @@ int CAsyncSslSocketLayer::InitSSLConnection(bool clientMode,
     ResetSslSession();
     return SSL_FAILURE_INITSSL;
   }
+
+   if (clientMode && (m_HostName.GetLength() > 0))
+   {
+     SSL_set_tlsext_host_name(m_ssl, static_cast<const char *>(m_HostName));
+   }
 
 #ifdef _DEBUG
   if ((main == NULL) && LoggingSocketMessage(FZ_LOG_INFO))
