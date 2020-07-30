@@ -1253,7 +1253,7 @@ begin
   if SupportsDarkMode then
   begin
     // This enables dark mode - List view itself supports dark mode somewhat even in the our 'Explorer' theme.
-    // The 'ItemsView' has better dark mode selection color, but on the other hand is does not have dark scrollbars.
+    // The 'ItemsView' has better dark mode selection color, but on the other hand it does not have dark scrollbars.
     // win32-darkmode has ugly fix for that (FixDarkScrollBar), which we do not want to employ.
     SetWindowTheme(FHeaderHandle, 'ItemsView', nil);
     if DarkMode then UpdateDarkMode;
