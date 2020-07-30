@@ -191,6 +191,7 @@ private:
   CString m_CertStorage;
   int m_nVerificationResult;
   int m_nVerificationDepth;
+  CStringA m_HostName;
 
   static struct t_SslLayerList
   {
