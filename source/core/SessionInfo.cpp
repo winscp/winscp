@@ -432,11 +432,11 @@ protected:
   void __fastcall SynchronizeChecklistItemFileInfo(
     const UnicodeString & AFileName, bool IsDirectory, const TSynchronizeChecklist::TItem::TFileInfo FileInfo)
   {
-    Parameter(L"type", XmlAttributeEscape(IsDirectory ? L'D' : L'-'));
-    FileName(XmlAttributeEscape(AFileName));
+    Parameter(L"type", (IsDirectory ? L'D' : L'-'));
+    FileName(AFileName);
     if (!IsDirectory)
     {
-      Parameter(L"size", XmlAttributeEscape(IntToStr(FileInfo.Size)));
+      Parameter(L"size", IntToStr(FileInfo.Size));
     }
     if (FileInfo.ModificationFmt != mfNone)
     {
