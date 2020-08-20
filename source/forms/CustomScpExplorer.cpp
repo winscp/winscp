@@ -2402,7 +2402,8 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
   UnicodeString RemotePath;
   if (HasActiveTerminal())
   {
-    Data = TCustomCommandData(Terminal);
+    std::unique_ptr<TSessionData> SessionData(SessionDataForCode());
+    Data = TCustomCommandData(SessionData.get());
     Site = Terminal->SessionData->SessionKey;
     RemotePath = Terminal->CurrentDirectory;
   }

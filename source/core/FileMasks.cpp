@@ -1118,13 +1118,19 @@ bool __fastcall TInteractiveCustomCommand::PatternReplacement(int Index, const U
 //---------------------------------------------------------------------------
 __fastcall TCustomCommandData::TCustomCommandData()
 {
-  Init(NULL, UnicodeString(), UnicodeString(), UnicodeString());
+  Init(NULL);
 }
 //---------------------------------------------------------------------------
 __fastcall TCustomCommandData::TCustomCommandData(TTerminal * Terminal)
 {
+  // Should use FillSessionDataForCode as in TCustomScpExplorerForm::SessionDataForCode
   Init(Terminal->SessionData, Terminal->UserName, Terminal->Password,
     Terminal->GetSessionInfo().HostKeyFingerprintSHA256);
+}
+//---------------------------------------------------------------------------
+__fastcall TCustomCommandData::TCustomCommandData(TSessionData * SessionData)
+{
+  Init(SessionData);
 }
 //---------------------------------------------------------------------------
 __fastcall TCustomCommandData::TCustomCommandData(
@@ -1133,15 +1139,20 @@ __fastcall TCustomCommandData::TCustomCommandData(
   Init(SessionData, UserName, Password, UnicodeString());
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomCommandData::Init(
-  TSessionData * ASessionData, const UnicodeString & AUserName,
-  const UnicodeString & APassword, const UnicodeString & AHostKey)
+void __fastcall TCustomCommandData::Init(TSessionData * ASessionData)
 {
   FSessionData.reset(new TSessionData(L""));
   if (ASessionData != NULL)
   {
     FSessionData->Assign(ASessionData);
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomCommandData::Init(
+  TSessionData * ASessionData, const UnicodeString & AUserName,
+  const UnicodeString & APassword, const UnicodeString & AHostKey)
+{
+  Init(ASessionData);
   FSessionData->UserName = AUserName;
   FSessionData->Password = APassword;
   FSessionData->HostKey = AHostKey;
