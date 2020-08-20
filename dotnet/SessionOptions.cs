@@ -227,7 +227,22 @@ namespace WinSCP
                     const string RawSettingsPrefix = "x-";
                     if (parameterName.Equals("fingerprint", StringComparison.OrdinalIgnoreCase))
                     {
-                        SshHostKeyFingerprint = parameter;
+                        switch (Protocol)
+                        {
+                            case Protocol.Sftp:
+                            case Protocol.Scp:
+                                SshHostKeyFingerprint = parameter;
+                                break;
+
+                            case Protocol.Ftp:
+                            case Protocol.Webdav:
+                            case Protocol.S3:
+                                TlsHostCertificateFingerprint = parameter;
+                                break;
+
+                            default:
+                                throw new ArgumentException();
+                        }
                     }
                     else if (parameterName.StartsWith(RawSettingsPrefix, StringComparison.OrdinalIgnoreCase))
                     {
