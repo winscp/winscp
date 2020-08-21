@@ -614,7 +614,6 @@ void CAsyncSslSocketLayer::Close()
 
 BOOL CAsyncSslSocketLayer::Connect(const SOCKADDR *lpSockAddr, int nSockAddrLen)
 {
-  m_HostName = CStringA();
   BOOL res = ConnectNext(lpSockAddr, nSockAddrLen);
   if (!res)
   {
@@ -628,7 +627,6 @@ BOOL CAsyncSslSocketLayer::Connect(const SOCKADDR *lpSockAddr, int nSockAddrLen)
 
 BOOL CAsyncSslSocketLayer::Connect(LPCTSTR lpszHostAddress, UINT nHostPort)
 {
-  m_HostName = AnsiString(lpszHostAddress).c_str();
   BOOL res = ConnectNext(lpszHostAddress, nHostPort);
   if (!res)
   {
@@ -691,7 +689,7 @@ int CAsyncSslSocketLayer::NewSessionCallback(struct ssl_st * Ssl, SSL_SESSION * 
 }
 
 int CAsyncSslSocketLayer::InitSSLConnection(bool clientMode,
-  CAsyncSslSocketLayer* main, bool sessionreuse,
+  CAsyncSslSocketLayer* main, bool sessionreuse, const CString & host,
   CFileZillaTools * tools,
   void* pSslContext /*=0*/)
 {
@@ -756,10 +754,11 @@ int CAsyncSslSocketLayer::InitSSLConnection(bool clientMode,
     return SSL_FAILURE_INITSSL;
   }
 
-   if (clientMode && (m_HostName.GetLength() > 0))
-   {
-     SSL_set_tlsext_host_name(m_ssl, static_cast<const char *>(m_HostName));
-   }
+  if (clientMode && (host.GetLength() > 0))
+  {
+    USES_CONVERSION;
+    SSL_set_tlsext_host_name(m_ssl, T2CA(host));
+  }
 
 #ifdef _DEBUG
   if ((main == NULL) && LoggingSocketMessage(FZ_LOG_INFO))

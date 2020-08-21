@@ -135,7 +135,7 @@ public:
   bool IsUsingSSL();
   int InitSSLConnection(bool clientMode,
     CAsyncSslSocketLayer * main,
-    bool sessionreuse, CFileZillaTools * tools,
+    bool sessionreuse, const CString & host, CFileZillaTools * tools,
     void* pContext = 0);
 
   // Send raw text, useful to send a confirmation after the ssl connection
@@ -191,7 +191,6 @@ private:
   CString m_CertStorage;
   int m_nVerificationResult;
   int m_nVerificationDepth;
-  CStringA m_HostName;
 
   static struct t_SslLayerList
   {
