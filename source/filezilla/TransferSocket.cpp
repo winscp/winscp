@@ -413,7 +413,7 @@ void CTransferSocket::Start()
   {
     AddLayer(m_pSslLayer);
     int res = m_pSslLayer->InitSSLConnection(true, m_pOwner->m_pSslLayer,
-      GetOptionVal(OPTION_MPEXT_SSLSESSIONREUSE),
+      GetOptionVal(OPTION_MPEXT_SSLSESSIONREUSE), CString(),
       m_pOwner->m_pTools);
     if (res == SSL_FAILURE_INITSSL)
     {
