@@ -51,6 +51,7 @@ __published:
   TPopupMenu *OkMenu;
   TMenuItem *Start1;
   TMenuItem *StartInNewWindowItem;
+  TCheckBox *SynchronizeCaseSensitiveCheck;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall LocalDirectoryBrowseButtonClick(TObject *Sender);
   void __fastcall TransferSettingsButtonClick(TObject *Sender);

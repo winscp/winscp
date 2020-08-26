@@ -5358,7 +5358,8 @@ bool __fastcall TCustomScpExplorerForm::DoSynchronizeDirectories(
   Params.RemoteDirectory = RemoteDirectory;
   int UnusedParams =
     (GUIConfiguration->SynchronizeParams &
-      (TTerminal::spPreviewChanges | TTerminal::spTimestamp | TTerminal::spNotByTime | TTerminal::spBySize));
+      (TTerminal::spPreviewChanges | TTerminal::spTimestamp | TTerminal::spNotByTime | TTerminal::spBySize |
+       TTerminal::spCaseSensitive));
   Params.Params = GUIConfiguration->SynchronizeParams & ~UnusedParams;
   Params.Options = GUIConfiguration->SynchronizeOptions;
   bool SaveSettings = false;

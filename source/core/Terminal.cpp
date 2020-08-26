@@ -5600,6 +5600,7 @@ UnicodeString __fastcall TTerminal::SynchronizeParamsStr(int Params)
   AddFlagName(ParamsStr, Params, spTimestamp, L"Timestamp");
   AddFlagName(ParamsStr, Params, spNotByTime, L"NotByTime");
   AddFlagName(ParamsStr, Params, spBySize, L"BySize");
+  AddFlagName(ParamsStr, Params, spCaseSensitive, L"CaseSensitive");
   AddFlagName(ParamsStr, Params, spSelectedOnly, L"*SelectedOnly"); // GUI only
   AddFlagName(ParamsStr, Params, spMirror, L"Mirror");
   if (Params > 0)
@@ -5705,7 +5706,7 @@ void __fastcall TTerminal::DoSynchronizeCollectDirectory(const UnicodeString Loc
 
   try
   {
-    Data.LocalFileList = CreateSortedStringList();
+    Data.LocalFileList = CreateSortedStringList(FLAGSET(Params, spCaseSensitive));
 
     TSearchRecOwned SearchRec;
     if (LocalFindFirstLoop(Data.LocalDirectory + L"*.*", SearchRec))
