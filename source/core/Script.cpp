@@ -428,7 +428,7 @@ void __fastcall TScript::SetSynchronizeParams(int value)
 {
   const int AcceptedParams =
     TTerminal::spExistingOnly | TTerminal::spTimestamp |
-    TTerminal::spNotByTime | TTerminal::spBySize;
+    TTerminal::spNotByTime | TTerminal::spBySize | TTerminal::spCaseSensitive;
   FSynchronizeParams = (value & AcceptedParams);
   FWarnNonDefaultSynchronizeParams =
     (FSynchronizeParams != (TTerminal::spDefault & AcceptedParams));

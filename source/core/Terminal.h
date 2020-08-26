@@ -142,6 +142,7 @@ public:
   static const int spBySize = 0x400; // cannot be combined with smBoth, has opposite meaning for spTimestamp
   static const int spSelectedOnly = 0x800; // not used by core
   static const int spMirror = 0x1000;
+  static const int spCaseSensitive = 0x2000;
   static const int spDefault = TTerminal::spNoConfirmation | TTerminal::spPreviewChanges;
 
 // for TranslateLockedPath()
