@@ -947,7 +947,7 @@ void __fastcall TScpCommanderForm::UpdateControls()
   OtherLocalDirView->Font->Color = LocalDirView->Font->Color;
   OtherLocalDriveView->Font->Color = LocalDirView->Font->Color;
 
-  // TODO
+  // TODO_OTHER_LOCAL
   bool LocalSide = (FCurrentSide == osLocal);
   TAction * CurrentCopyAction = LocalSide ? NonVisualDataModule->LocalCopyAction : NonVisualDataModule->RemoteCopyAction;
   if (CurrentCopyItem->Action != CurrentCopyAction)
