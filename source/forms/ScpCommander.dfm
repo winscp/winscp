@@ -42,9 +42,8 @@ inherited ScpCommanderForm: TScpCommanderForm
       Stretch = True
       TabOrder = 4
       object LocalMenuButton: TTBXSubmenuItem
-        Caption = '&Local'
+        Caption = '&LocalX'
         HelpKeyword = 'ui_commander_menu#local'
-        Hint = 'Change local panel layout or change displayed directory/drive'
         object TBXItem1: TTBXItem
           Action = NonVisualDataModule.LocalChangePathAction2
         end
@@ -629,9 +628,8 @@ inherited ScpCommanderForm: TScpCommanderForm
         end
       end
       object RemoteMenuButton: TTBXSubmenuItem
-        Caption = '&Remote'
+        Caption = '&RemoteX'
         HelpKeyword = 'ui_commander_menu#remote'
-        Hint = 'Change remote panel layout or change displayed directory'
         object TBXItem83: TTBXItem
           Action = NonVisualDataModule.RemoteChangePathAction2
         end

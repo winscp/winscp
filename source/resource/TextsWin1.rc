@@ -645,6 +645,10 @@ BEGIN
         SYNCHRONIZE_CHECKLIST_DELETE_REMOTE, "Delete obsolete remote file"
         SYNCHRONIZE_CHECKLIST_DELETE_LOCAL, "Delete obsolete local file"
         SYNCHRONIZE_CHECKLIST_REVERSE, "Click to reverse"
+        LOCAL_MENU_CAPTION, "&Local"
+        REMOTE_MENU_CAPTION, "&Remote"
+        LEFT_MENU_CAPTION, "&Left"
+        RIGHT_MENU_CAPTION, "&Right"
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
         WINSCP_COPYRIGHT, "Copyright © 2000-2020 Martin Prikryl"

@@ -972,10 +972,14 @@ void __fastcall TScpCommanderForm::UpdateControls()
   // otherwise it shines too much on the toolbar.
   RemoteNewSubmenuItem->Enabled = DirViewEnabled(osRemote);
 
+  bool HasTerminal = (Terminal != NULL);
   RemoteDirView->Visible = (Terminal != NULL);
-  RemoteDriveView->Visible = RemoteDirView->Visible;
-  OtherLocalDirView->Visible = !RemoteDirView->Visible;
-  OtherLocalDriveView->Visible = OtherLocalDirView->Visible;
+  RemoteDriveView->Visible = HasTerminal;
+  OtherLocalDirView->Visible = !HasTerminal;
+  OtherLocalDriveView->Visible = !HasTerminal;
+  bool LocalOnLeft = (Panel(true) == LocalPanel);
+  LocalMenuButton->Caption = LoadStr(HasTerminal ? LOCAL_MENU_CAPTION : (LocalOnLeft ? LEFT_MENU_CAPTION : RIGHT_MENU_CAPTION));
+  RemoteMenuButton->Caption = LoadStr(HasTerminal ? REMOTE_MENU_CAPTION : (LocalOnLeft ? RIGHT_MENU_CAPTION : LEFT_MENU_CAPTION));
   if (DirViewWasFocused)
   {
     if (DirView(osOther)->Enabled)
