@@ -553,7 +553,7 @@ BEGIN
         ABOUT_JCL_URL, "https://jcl.delphi-jedi.org/"
         ABOUT_PNG, "PngComponents 1.4.1"
         ABOUT_PNG_COPYRIGHT, "Copyright © Uwe Raabe and Martijn Saly"
-        ABOUT_PNG_URL, "https://bitbucket.org/uweraabe/pngcomponents"
+        ABOUT_PNG_URL, "https://github.com/UweRaabe/PngComponents"
         EDITOR_SAVING, "Saving..."
         ABOUT_TRANSLATIONS_HEADER, "{language} translation:"
         ABOUT_TRANSLATIONS_COPYRIGHT, "Copyright %s"
