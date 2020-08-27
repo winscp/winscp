@@ -15,6 +15,7 @@
 
   static char data[][110]={
     "-rw-r--r--   1 root     other        531 Jan 29 03:26 01-unix-std file",
+    "-rw-r--r--   1 root     other        531 Jan 29 03:26 01-unix-std file with trailing space ",
     "dr-xr-xr-x   2 root     other        512 Apr  8  1994 02-unix-std dir",
     "dr-xr-xr-x   2 root                  512 Apr  8  1994 03-unix-nogroup dir",
     "lrwxrwxrwx   1 root     other          7 Jan 25 00:17 04-unix-std link -> usr/bin",
@@ -700,17 +701,9 @@ char * CFtpListResult::GetLine()
   int startpos=pos;
   int reslen=0;
 
-  int emptylen=0;
-
   while ((curpos->buffer[pos]!='\n')&&(curpos->buffer[pos]!='\r'))
   {
-    if (curpos->buffer[pos]!=' ' && curpos->buffer[pos]!='\t')
-    {
-      reslen+=emptylen+1;
-      emptylen=0;
-    }
-    else
-      emptylen++;
+    reslen++;
     pos++;
     if (pos>=len)
     {
