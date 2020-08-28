@@ -1029,33 +1029,40 @@ namespace WinSCP
                 ParseRemotePath(remoteFilePath, out string remoteDirectory, out string filemask);
                 string remotePath = RemotePath.Combine(remoteDirectory, filemask);
 
-                StartGetCommand(remotePath, "-", false, options, additionalParams);
-
                 // only to collect failures
                 TransferOperationResult result = new TransferOperationResult();
 
-                ElementLogReader groupReader = _reader.WaitForGroupAndCreateLogReader();
-                IDisposable operationResultGuard = RegisterOperationResult(result);
-                IDisposable progressHandler = CreateProgressHandler();
+                ElementLogReader groupReader = null;
+                IDisposable operationResultGuard = null;
+                IDisposable progressHandler = null;
+
+                // should never happen
+                if (_process.StdOut != null)
+                {
+                    throw Logger.WriteException(new InvalidOperationException("Data stream already exist"));
+                }
+
+                PipeStream stream = new PipeStream();
+                _process.StdOut = stream;
 
                 void onGetEnd()
                 {
                     try
                     {
                         // This can throw
-                        progressHandler.Dispose();
+                        progressHandler?.Dispose();
                     }
                     finally
                     {
                         try
                         {
-                            groupReader.Dispose();
+                            groupReader?.Dispose();
                         }
                         finally
                         {
                             _process.StdOut = null;
                             // Only after disposing the group reader, so when called from onGetEndWithExit, the Check() has all failures.
-                            operationResultGuard.Dispose();
+                            operationResultGuard?.Dispose();
                         }
                     }
                 }
@@ -1073,17 +1080,14 @@ namespace WinSCP
                     }
                 }
 
-                // should never happen
-                if (_process.StdOut != null)
-                {
-                    throw Logger.WriteException(new InvalidOperationException("Data stream already exist"));
-                }
-
-                PipeStream stream = new PipeStream(onGetEndWithExit);
-                _process.StdOut = stream;
-
                 try
                 {
+                    StartGetCommand(remotePath, "-", false, options, additionalParams);
+
+                    groupReader = _reader.WaitForGroupAndCreateLogReader();
+                    operationResultGuard = RegisterOperationResult(result);
+                    progressHandler = CreateProgressHandler();
+
                     bool downloadFound;
                     try
                     {
@@ -1099,6 +1103,7 @@ namespace WinSCP
                     if (downloadFound)
                     {
                         callstackAndLock.DisarmLock();
+                        stream.OnDispose = onGetEndWithExit;
                         return stream;
                     }
                     else
