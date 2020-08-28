@@ -28,6 +28,7 @@
 #include <HistoryComboBox.hpp>
 #include <vssym32.h>
 #include <DateUtils.hpp>
+#include <IOUtils.hpp>
 
 #include "Animations96.h"
 #include "Animations120.h"
@@ -39,9 +40,19 @@
 extern const UnicodeString PageantTool = L"pageant.exe";
 extern const UnicodeString PuttygenTool = L"puttygen.exe";
 //---------------------------------------------------------------------------
+static bool __fastcall FileExistsFix(const UnicodeString & Path)
+{
+  // WORKAROUND
+  ::SetLastError(ERROR_SUCCESS);
+  return
+    FileExists(ApiPath(Path)) ||
+    // returned when resolving symlinks in %LOCALAPPDATA%\Microsoft\WindowsApps
+    (GetLastError() == ERROR_CANT_ACCESS_FILE);
+}
+//---------------------------------------------------------------------------
 bool __fastcall FindFile(UnicodeString & Path)
 {
-  bool Result = FileExists(ApiPath(Path));
+  bool Result = FileExistsFix(Path);
 
   if (!Result)
   {
@@ -61,16 +72,31 @@ bool __fastcall FindFile(UnicodeString & Path)
     }
   }
 
-  if (!Result)
+  if (!Result && SameText(ExtractFileName(Path), Path))
   {
     UnicodeString Paths = GetEnvironmentVariable(L"PATH");
     if (!Paths.IsEmpty())
     {
-      UnicodeString NewPath = FileSearch(ExtractFileName(Path), Paths);
+      UnicodeString NewPath = FileSearch(Path, Paths);
       Result = !NewPath.IsEmpty();
       if (Result)
       {
         Path = NewPath;
+      }
+      else
+      {
+        // Basically the same what FileSearch does, except for FileExistsFix.
+        // Once this proves working, we can ged rid of the FileSearch call.
+        while (!Result && !Paths.IsEmpty())
+        {
+          UnicodeString P = CutToChar(Paths, L';', false);
+          NewPath = TPath::Combine(P, Path);
+          Result = FileExistsFix(NewPath);
+          if (Result)
+          {
+            Path = NewPath;
+          }
+        }
       }
     }
   }
