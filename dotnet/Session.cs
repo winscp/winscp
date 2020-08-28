@@ -1088,7 +1088,8 @@ namespace WinSCP
                     try
                     {
                         // Not using WaitForNonEmptyElement only to allow throwing better exception message below.
-                        // Not using ThrowFailures as we need to return the stream, is there's <download>, even if there's a <failure> as well.
+                        // Not using ThrowFailures as we need to return the stream, if there's <download>,
+                        // even if there's a <failure> as well.
                         downloadFound = groupReader.TryWaitForNonEmptyElement(TransferEventArgs.DownloadTag, 0);
                     }
                     catch (StdOutException)
