@@ -21,8 +21,8 @@ namespace WinSCP
                 {
                     StackFrame frame = stackTrace.GetFrame(i);
                     method = frame.GetMethod();
-                    if ((method.IsConstructor && ((method.DeclaringType == type) || method.DeclaringType.IsSubclassOf(type))) ||
-                        ((method.MemberType == MemberTypes.Method) && ((MethodInfo)method).ReturnType == type))
+                    if ((method.IsConstructor && IsTypeOrSubType(method.DeclaringType, type)) ||
+                        ((method.MemberType == MemberTypes.Method) && IsTypeOrSubType(((MethodInfo)method).ReturnType, type)))
                     {
                         method = null;
                     }
@@ -45,6 +45,11 @@ namespace WinSCP
                     _logger.Indent();
                 }
             }
+        }
+
+        private static bool IsTypeOrSubType(Type tested, Type type)
+        {
+            return (tested == type) || tested.IsSubclassOf(type);
         }
 
         public virtual void Dispose()
