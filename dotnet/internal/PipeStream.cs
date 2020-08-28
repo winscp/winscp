@@ -54,12 +54,6 @@ namespace WinSCP
         private bool _isDisposed;
 
         private bool _closedWrite;
-        private Action _onDispose;
-
-        public PipeStream(Action onDispose)
-        {
-            _onDispose = onDispose;
-        }
 
         #endregion
 
@@ -70,6 +64,8 @@ namespace WinSCP
         /// </summary>
         /// <value>The length of the max buffer.</value>
         public long MaxBufferLength { get; set; } = 200 * 1024 * 1024;
+
+        public Action OnDispose { get; set; }
 
         #endregion
 
@@ -349,8 +345,8 @@ namespace WinSCP
 
         private void Closed()
         {
-            Action onDispose = _onDispose;
-            _onDispose = null;
+            Action onDispose = OnDispose;
+            OnDispose = null;
             onDispose?.Invoke();
         }
     }
