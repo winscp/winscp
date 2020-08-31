@@ -1107,7 +1107,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       Height = 124
       Constraints.MinHeight = 70
       inherited RemoteDirView: TUnixDirView
-        Width = 458
+        Width = 280
         Height = 124
         NortonLike = nlOn
         OnUpdateStatusBar = RemoteDirViewUpdateStatusBar
