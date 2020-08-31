@@ -190,9 +190,9 @@ void __fastcall TScpCommanderForm::RestoreParams()
   SessionsPageControl->Visible = WinConfiguration->ScpCommander.SessionsTabs;
   StatusBar->Visible = WinConfiguration->ScpCommander.StatusBar;
 
-  // TODO_OTHER_LOCAL
   RestorePanelParams(LocalDirView, LocalDriveView, LocalStatusBar, WinConfiguration->ScpCommander.LocalPanel);
   RestorePanelParams(RemoteDirView, RemoteDrivePanel, RemoteStatusBar, WinConfiguration->ScpCommander.RemotePanel);
+  OtherLocalDirView->ColProperties->ParamsStr = WinConfiguration->ScpCommander.OtherLocalPanelDirViewParams;
   FPanelsRestored = true;
 
   // just to make sure
@@ -238,12 +238,12 @@ void __fastcall TScpCommanderForm::StoreParams()
 
     CommanderConfiguration.CurrentPanel = FCurrentSide;
 
-    // TODO_OTHER_LOCAL
     StorePanelParams(LocalDirView, LocalDriveView, LocalStatusBar, CommanderConfiguration.LocalPanel);
     StorePanelParams(RemoteDirView, RemoteDrivePanel, RemoteStatusBar, CommanderConfiguration.RemotePanel);
+    CommanderConfiguration.OtherLocalPanelDirViewParams = OtherLocalDirView->ColProperties->ParamsStr;
 
-    // TODO_OTHER_LOCAL
     CommanderConfiguration.LocalPanel.LastPath = LocalDirView->Path;
+    CommanderConfiguration.OtherLocalPanelLastPath = OtherLocalDirView->Path;
 
     CommanderConfiguration.WindowParams = StoreForm(this);
 
@@ -377,8 +377,7 @@ void __fastcall TScpCommanderForm::DoShow()
   // is finally connected
   UpdateControls();
 
-  // TODO_OTHER_LOCAL (persistent "other" local path)
-  DoLocalDefaultDirectory(OtherLocalDirView, UnicodeString());
+  DoLocalDefaultDirectory(OtherLocalDirView, WinConfiguration->ScpCommander.OtherLocalPanelLastPath);
 
   // If we do not call SetFocus on any control before DoShow,
   // no control will get focused on Login dialog

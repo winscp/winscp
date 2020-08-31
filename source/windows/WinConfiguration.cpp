@@ -760,6 +760,8 @@ void __fastcall TWinConfiguration::Default()
   FScpCommander.LocalPanel.DriveViewWidth = 100;
   FScpCommander.LocalPanel.DriveViewWidthPixelsPerInch = USER_DEFAULT_SCREEN_DPI;
   FScpCommander.LocalPanel.LastPath = UnicodeString();
+  FScpCommander.OtherLocalPanelDirViewParams = FScpCommander.LocalPanel.DirViewParams;
+  FScpCommander.OtherLocalPanelLastPath = UnicodeString();
 
   FBookmarks->Clear();
 }
@@ -1149,6 +1151,10 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Integer, ScpCommander.RemotePanel.DriveViewWidth); \
     KEY(Integer, ScpCommander.RemotePanel.DriveViewWidthPixelsPerInch); \
     KEY(String,  ScpCommander.RemotePanel.LastPath); \
+  ); \
+  BLOCK(L"Interface\\Commander\\OtherLocalPanel", CANCREATE, \
+    KEYEX(String, ScpCommander.OtherLocalPanelDirViewParams, L"DirViewParams"); \
+    KEYEX(String, ScpCommander.OtherLocalPanelLastPath, L"LastPath"); \
   ); \
   BLOCK(L"Security", CANCREATE, \
     KEY(Bool,    FUseMasterPassword); \

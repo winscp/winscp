@@ -66,13 +66,16 @@ struct TScpCommanderConfiguration {
   bool TreeOnLeft;
   bool ExplorerKeyboardShortcuts;
   bool SystemContextMenu;
+  UnicodeString OtherLocalPanelDirViewParams;
+  UnicodeString OtherLocalPanelLastPath;
   bool __fastcall operator !=(TScpCommanderConfiguration & rhc)
     { return C(WindowParams) C(LocalPanelWidth) C(ToolbarsLayout) C(ToolbarsButtons)
       C(SessionsTabs) C(StatusBar)
       C(LocalPanel) C(RemotePanel) C(CurrentPanel)
       C(NortonLikeMode) C(PreserveLocalDirectory)
       C(CompareBySize) C(CompareByTime) C(SwappedPanels)
-      C(TreeOnLeft) C(ExplorerKeyboardShortcuts) C(SystemContextMenu) 0; };
+      C(TreeOnLeft) C(ExplorerKeyboardShortcuts) C(SystemContextMenu)
+      C(OtherLocalPanelDirViewParams) C(OtherLocalPanelLastPath) 0; };
 
   TCompareCriterias __fastcall CompareCriterias()
   {
