@@ -76,7 +76,7 @@ void __fastcall TFileZillaIntf::Destroying()
 bool __fastcall TFileZillaIntf::SetCurrentPath(const wchar_t * APath)
 {
   DebugAssert(FFileZillaApi != NULL);
-  CServerPath Path(APath);
+  CServerPath Path(APath, false);
   return Check(FFileZillaApi->SetCurrentPath(Path), L"setcurrentpath");
 }
 //---------------------------------------------------------------------------
@@ -176,7 +176,7 @@ bool __fastcall TFileZillaIntf::CustomCommand(const wchar_t * Command)
 bool __fastcall TFileZillaIntf::MakeDir(const wchar_t* APath)
 {
   DebugAssert(FFileZillaApi != NULL);
-  CServerPath Path(APath);
+  CServerPath Path(APath, false);
   return Check(FFileZillaApi->MakeDir(Path), L"makedir");
 }
 //---------------------------------------------------------------------------
@@ -184,21 +184,21 @@ bool __fastcall TFileZillaIntf::Chmod(int Value, const wchar_t* FileName,
   const wchar_t* APath)
 {
   DebugAssert(FFileZillaApi != NULL);
-  CServerPath Path(APath);
+  CServerPath Path(APath, false);
   return Check(FFileZillaApi->Chmod(Value, FileName, Path), L"chmod");
 }
 //---------------------------------------------------------------------------
 bool __fastcall TFileZillaIntf::Delete(const wchar_t* FileName, const wchar_t* APath, bool FileNameOnly)
 {
   DebugAssert(FFileZillaApi != NULL);
-  CServerPath Path(APath);
+  CServerPath Path(APath, false);
   return Check(FFileZillaApi->Delete(FileName, Path, FileNameOnly), L"delete");
 }
 //---------------------------------------------------------------------------
 bool __fastcall TFileZillaIntf::RemoveDir(const wchar_t* FileName, const wchar_t* APath)
 {
   DebugAssert(FFileZillaApi != NULL);
-  CServerPath Path(APath);
+  CServerPath Path(APath, false);
   return Check(FFileZillaApi->RemoveDir(FileName, Path), L"removedir");
 }
 //---------------------------------------------------------------------------
@@ -206,22 +206,22 @@ bool __fastcall TFileZillaIntf::Rename(const wchar_t* OldName,
   const wchar_t* NewName, const wchar_t* APath, const wchar_t* ANewPath)
 {
   DebugAssert(FFileZillaApi != NULL);
-  CServerPath Path(APath);
-  CServerPath NewPath(ANewPath);
+  CServerPath Path(APath, false);
+  CServerPath NewPath(ANewPath, false);
   return Check(FFileZillaApi->Rename(OldName, NewName, Path, NewPath), L"rename");
 }
 //---------------------------------------------------------------------------
 bool __fastcall TFileZillaIntf::List(const wchar_t * APath)
 {
   DebugAssert(FFileZillaApi != NULL);
-  CServerPath Path(APath);
+  CServerPath Path(APath, false);
   return Check(FFileZillaApi->List(Path), L"list");
 }
 //---------------------------------------------------------------------------
 bool __fastcall TFileZillaIntf::ListFile(const wchar_t * FileName, const wchar_t * APath)
 {
   DebugAssert(FFileZillaApi != NULL);
-  CServerPath Path(APath);
+  CServerPath Path(APath, false);
   return Check(FFileZillaApi->ListFile(FileName, Path), L"listfile");
 }
 //---------------------------------------------------------------------------
@@ -233,7 +233,7 @@ bool __fastcall TFileZillaIntf::FileTransfer(const wchar_t * LocalFile,
 
   Transfer.localfile = LocalFile;
   Transfer.remotefile = RemoteFile;
-  Transfer.remotepath = CServerPath(RemotePath);
+  Transfer.remotepath = CServerPath(RemotePath, false);
   Transfer.get = Get;
   Transfer.size = Size;
   Transfer.server = *FServer;
