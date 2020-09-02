@@ -501,6 +501,7 @@ __published:
   void __fastcall OtherLocalDriveViewEnter(TObject *Sender);
   void __fastcall OtherLocalDirViewContextPopup(TObject *Sender, TPoint &MousePos, bool &Handled);
   void __fastcall OtherLocalDirViewUpdateStatusBar(TObject *Sender, const TStatusFileInfo &FileInfo);
+  void __fastcall OtherLocalDirViewPathChange(TCustomDirView *Sender);
 
 private:
   bool FConstructed;
@@ -595,7 +596,7 @@ protected:
   void __fastcall CreateLocalDirectory(const UnicodeString & Path);
   void __fastcall CreateRemoteDirectory(const UnicodeString & Path);
   void __fastcall LocalPathComboUpdateDrives();
-  void __fastcall LocalPathComboUpdate();
+  void __fastcall LocalPathComboUpdate(TCustomDirView * ADirView, TTBXComboBoxItem * PathComboBox);
   virtual void __fastcall ToolbarItemResize(TTBXCustomDropDownItem * Item, int Width);
   void __fastcall DoOpenBookmark(UnicodeString Local, UnicodeString Remote);
   virtual bool __fastcall OpenBookmark(TOperationSide Side, TBookmark * Bookmark);
@@ -611,6 +612,14 @@ protected:
   virtual void __fastcall ThemeChanged();
   virtual bool IsLocalBrowserMode();
   void __fastcall DoPathLabelPathClick(TOperationSide Side, const UnicodeString & Path);
+  virtual void __fastcall DoRemotePathComboBoxAdjustImageIndex(
+    TTBXComboBoxItem * Sender, const UnicodeString AText, int AIndex, int & ImageIndex);
+  virtual void __fastcall DoRemotePathComboBoxCancel(TObject * Sender);
+  void __fastcall DoLocalDirViewPathChange(TCustomDirView * Sender, TTBXComboBoxItem * PathComboBox);
+  void __fastcall DoLocalPathComboBoxAdjustImageIndex(TTBXComboBoxItem * Sender, const UnicodeString AText, int AIndex, int & ImageIndex);
+  void __fastcall DoLocalPathComboBoxItemClick(TDirView * ADirView, TTBXComboBoxItem * PathComboBox);
+  virtual void __fastcall DoRemotePathComboBoxItemClick(TObject * Sender);
+  virtual void __fastcall UpdateRemotePathComboBox(bool TextOnly);
 
 public:
   __fastcall TScpCommanderForm(TComponent* Owner);

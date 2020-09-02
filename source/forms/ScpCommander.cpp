@@ -1018,7 +1018,6 @@ void __fastcall TScpCommanderForm::ChangePath(TOperationSide Side)
 {
   DebugAssert((Side == osLocal) || (Side == osRemote));
   TTBXComboBoxItem * PathComboBox;
-  // TODO
   if (Side == osLocal)
   {
     PathComboBox = LocalPathComboBox;
@@ -2048,7 +2047,6 @@ void __fastcall TScpCommanderForm::UpdateImages()
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::LocalPathComboUpdateDrives()
 {
-  // TODO
   FLocalSpecialPaths = 0;
   TStrings* Strings = LocalPathComboBox->Strings;
   Strings->BeginUpdate();
@@ -2087,21 +2085,25 @@ void __fastcall TScpCommanderForm::LocalPathComboUpdateDrives()
   {
     Strings->EndUpdate();
   }
+
+  if (IsLocalBrowserMode())
+  {
+    UpdateRemotePathComboBox(false);
+  }
 }
 //---------------------------------------------------------------------------
-void __fastcall TScpCommanderForm::LocalPathComboUpdate()
+void __fastcall TScpCommanderForm::LocalPathComboUpdate(TCustomDirView * ADirView, TTBXComboBoxItem * PathComboBox)
 {
-  // TODO_OTHER_LOCAL
   // this may get called even after destructor finishes
   // (e.g. from SetDockAllowDrag invoked [indirectly] from StoreParams)
   if (FLocalPathComboBoxPaths != NULL)
   {
-    DebugAssert(FLocalPathComboBoxPaths->Count == LocalPathComboBox->Strings->Count);
+    DebugAssert(FLocalPathComboBoxPaths->Count == PathComboBox->Strings->Count);
 
     int Index = 0;
     while ((Index < FLocalPathComboBoxPaths->Count) &&
            !SamePaths(FLocalPathComboBoxPaths->Strings[Index],
-             LocalDirView->Path.SubString(1, FLocalPathComboBoxPaths->Strings[Index].Length())))
+             ADirView->Path.SubString(1, FLocalPathComboBoxPaths->Strings[Index].Length())))
     {
       Index++;
     }
@@ -2109,14 +2111,14 @@ void __fastcall TScpCommanderForm::LocalPathComboUpdate()
     // what to do if not?
     if (Index < FLocalPathComboBoxPaths->Count)
     {
-      LocalPathComboBox->ItemIndex = Index;
+      PathComboBox->ItemIndex = Index;
     }
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TScpCommanderForm::LocalDirViewPathChange(TCustomDirView * Sender)
+void __fastcall TScpCommanderForm::DoLocalDirViewPathChange(TCustomDirView * Sender, TTBXComboBoxItem * PathComboBox)
 {
-  LocalPathComboUpdate();
+  LocalPathComboUpdate(Sender, PathComboBox);
   ResetIncrementalSearch();
   if (IsUncPath(Sender->Path))
   {
@@ -2124,25 +2126,30 @@ void __fastcall TScpCommanderForm::LocalDirViewPathChange(TCustomDirView * Sende
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TScpCommanderForm::LocalPathComboBoxCancel(TObject * /*Sender*/)
+void __fastcall TScpCommanderForm::LocalDirViewPathChange(TCustomDirView * Sender)
 {
-  LocalPathComboUpdate();
+  DoLocalDirViewPathChange(Sender, LocalPathComboBox);
 }
 //---------------------------------------------------------------------------
-void __fastcall TScpCommanderForm::LocalPathComboBoxAdjustImageIndex(
-  TTBXComboBoxItem * /*Sender*/, const UnicodeString AText, int AIndex,
-  int & ImageIndex)
+void __fastcall TScpCommanderForm::LocalPathComboBoxCancel(TObject * /*Sender*/)
+{
+  LocalPathComboUpdate(LocalDirView, LocalPathComboBox);
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::DoLocalPathComboBoxAdjustImageIndex(
+  TTBXComboBoxItem * Sender, const UnicodeString AText, int AIndex, int & ImageIndex)
 {
   // this may get called even before constructor starts
   // (e.g. from FixControlsPlacement)
   if (FLocalPathComboBoxPaths != NULL)
   {
-    DebugAssert(FLocalPathComboBoxPaths->Count == LocalPathComboBox->Strings->Count);
+    TTBXComboBoxItem * PathComboBox = DebugNotNull(dynamic_cast<TTBXComboBoxItem *>(Sender));
+    DebugAssert(FLocalPathComboBoxPaths->Count == PathComboBox->Strings->Count);
     DebugAssert(AIndex < FLocalPathComboBoxPaths->Count);
 
     if (AIndex < 0)
     {
-      AIndex = LocalPathComboBox->ItemIndex;
+      AIndex = PathComboBox->ItemIndex;
     }
 
     if (AIndex >= 0)
@@ -2152,20 +2159,32 @@ void __fastcall TScpCommanderForm::LocalPathComboBoxAdjustImageIndex(
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TScpCommanderForm::LocalPathComboBoxItemClick(TObject * /*Sender*/)
+void __fastcall TScpCommanderForm::LocalPathComboBoxAdjustImageIndex(
+  TTBXComboBoxItem * Sender, const UnicodeString AText, int AIndex,
+  int & ImageIndex)
 {
-  DebugAssert(FLocalPathComboBoxPaths->Count == LocalPathComboBox->Strings->Count);
-  DebugAssert((LocalPathComboBox->ItemIndex >= 0) && (LocalPathComboBox->ItemIndex < FLocalPathComboBoxPaths->Count));
+  DoLocalPathComboBoxAdjustImageIndex(Sender, AText, AIndex, ImageIndex);
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::DoLocalPathComboBoxItemClick(TDirView * ADirView, TTBXComboBoxItem * PathComboBox)
+{
+  DebugAssert(FLocalPathComboBoxPaths->Count == PathComboBox->Strings->Count);
+  DebugAssert((PathComboBox->ItemIndex >= 0) && (PathComboBox->ItemIndex < FLocalPathComboBoxPaths->Count));
 
-  UnicodeString Path = FLocalPathComboBoxPaths->Strings[LocalPathComboBox->ItemIndex];
-  if (LocalPathComboBox->ItemIndex >= FLocalSpecialPaths)
+  UnicodeString Path = FLocalPathComboBoxPaths->Strings[PathComboBox->ItemIndex];
+  if (PathComboBox->ItemIndex >= FLocalSpecialPaths)
   {
-    LocalDirView->ExecuteDrive(DriveInfo->GetDriveKey(Path));
+    ADirView->ExecuteDrive(DriveInfo->GetDriveKey(Path));
   }
   else
   {
-    LocalDirView->Path = Path;
+    ADirView->Path = Path;
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::LocalPathComboBoxItemClick(TObject *)
+{
+  DoLocalPathComboBoxItemClick(LocalDirView, LocalPathComboBox);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::ToolbarItemResize(TTBXCustomDropDownItem * Item, int Width)
@@ -2240,9 +2259,12 @@ void __fastcall TScpCommanderForm::CommandLineComboEditWndProc(TMessage & Messag
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::LocalDriveViewRefreshDrives(TObject * /*Sender*/)
 {
-  // TODO_OTHER_LOCAL
   LocalPathComboUpdateDrives();
-  LocalPathComboUpdate();
+  LocalPathComboUpdate(LocalDirView, LocalPathComboBox);
+  if (IsLocalBrowserMode())
+  {
+    LocalPathComboUpdate(OtherLocalDirView, RemotePathComboBox);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::HomeDirectory(TOperationSide Side)
@@ -2475,3 +2497,61 @@ void __fastcall TScpCommanderForm::OtherLocalDriveViewEnter(TObject *)
   SideEnter(osOther);
 }
 //---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::DoRemotePathComboBoxAdjustImageIndex(
+  TTBXComboBoxItem * Sender, const UnicodeString AText, int AIndex, int & ImageIndex)
+{
+  if (!IsLocalBrowserMode())
+  {
+    TCustomScpExplorerForm::DoRemotePathComboBoxAdjustImageIndex(Sender, AText, AIndex, ImageIndex);
+  }
+  else
+  {
+    DoLocalPathComboBoxAdjustImageIndex(Sender, AText, AIndex, ImageIndex);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::DoRemotePathComboBoxCancel(TObject * Sender)
+{
+  if (!IsLocalBrowserMode())
+  {
+    TCustomScpExplorerForm::DoRemotePathComboBoxCancel(Sender);
+  }
+  else
+  {
+    LocalPathComboUpdate(OtherLocalDirView, RemotePathComboBox);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::OtherLocalDirViewPathChange(TCustomDirView * Sender)
+{
+  DebugAssert(IsLocalBrowserMode());
+  DoLocalDirViewPathChange(Sender, RemotePathComboBox);
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::DoRemotePathComboBoxItemClick(TObject * Sender)
+{
+  if (!IsLocalBrowserMode())
+  {
+    TCustomScpExplorerForm::DoRemotePathComboBoxItemClick(Sender);
+  }
+  else
+  {
+    DoLocalPathComboBoxItemClick(OtherLocalDirView, RemotePathComboBox);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::UpdateRemotePathComboBox(bool TextOnly)
+{
+  if (!IsLocalBrowserMode())
+  {
+    TCustomScpExplorerForm::UpdateRemotePathComboBox(TextOnly);
+  }
+  else
+  {
+    if (!TextOnly)
+    {
+      RemotePathComboBox->Strings->Assign(LocalPathComboBox->Strings);
+    }
+    LocalPathComboUpdate(OtherLocalDirView, RemotePathComboBox);
+  }
+}

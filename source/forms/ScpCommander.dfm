@@ -1159,7 +1159,7 @@ inherited ScpCommanderForm: TScpCommanderForm
         OnContextPopup = OtherLocalDirViewContextPopup
         OnHistoryChange = DirViewHistoryChange
         OnHistoryGo = DirViewHistoryGo
-        OnPathChange = LocalDirViewPathChange
+        OnPathChange = OtherLocalDirViewPathChange
         OnBusy = DirViewBusy
         OnChangeFocus = DirViewChangeFocus
       end

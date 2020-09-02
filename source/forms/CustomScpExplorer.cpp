@@ -8705,7 +8705,7 @@ void __fastcall TCustomScpExplorerForm::UpdateControls()
     RemoteDirView->DarkMode = WinConfiguration->UseDarkTheme();
     RemoteDriveView->DarkMode = RemoteDirView->DarkMode;
 
-    reinterpret_cast<TTBCustomItem *>(GetComponent(fcRemotePathComboBox))->Enabled = HasTerminal;
+    reinterpret_cast<TTBCustomItem *>(GetComponent(fcRemotePathComboBox))->Enabled = HasTerminal || IsLocalBrowserMode();
   }
 }
 //---------------------------------------------------------------------------
@@ -9605,9 +9605,8 @@ void __fastcall TCustomScpExplorerForm::UpdateRemotePathComboBox(bool TextOnly)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::RemotePathComboBoxAdjustImageIndex(
-  TTBXComboBoxItem * Sender, const UnicodeString /*AText*/, int AIndex,
-  int & ImageIndex)
+void __fastcall TCustomScpExplorerForm::DoRemotePathComboBoxAdjustImageIndex(
+  TTBXComboBoxItem * Sender, const UnicodeString DebugUsedArg(AText), int AIndex, int & ImageIndex)
 {
   if (AIndex < 0)
   {
@@ -9616,11 +9615,21 @@ void __fastcall TCustomScpExplorerForm::RemotePathComboBoxAdjustImageIndex(
   ImageIndex = (AIndex < Sender->Strings->Count - 1 ? StdDirIcon : StdDirSelIcon);
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::RemotePathComboBoxAdjustImageIndex(
+  TTBXComboBoxItem * Sender, const UnicodeString AText, int AIndex,
+  int & ImageIndex)
+{
+  DoRemotePathComboBoxAdjustImageIndex(Sender, AText, AIndex, ImageIndex);
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::RemotePathComboBoxDrawItem(
   TTBXCustomList * /*Sender*/, TCanvas * /*ACanvas*/, TRect & ARect, int AIndex,
   int /*AHoverIndex*/, bool & /*DrawDefault*/)
 {
-  ARect.Left += (10 * AIndex);
+  if (!IsLocalBrowserMode())
+  {
+    ARect.Left += (10 * AIndex);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::RemotePathComboBoxMeasureWidth(
@@ -9629,8 +9638,7 @@ void __fastcall TCustomScpExplorerForm::RemotePathComboBoxMeasureWidth(
   AWidth += (10 * AIndex);
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::RemotePathComboBoxItemClick(
-  TObject * Sender)
+void __fastcall TCustomScpExplorerForm::DoRemotePathComboBoxItemClick(TObject * Sender)
 {
   TTBXComboBoxItem * RemotePathComboBox = dynamic_cast<TTBXComboBoxItem*>(Sender);
 
@@ -9653,11 +9661,21 @@ void __fastcall TCustomScpExplorerForm::RemotePathComboBoxItemClick(
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::RemotePathComboBoxCancel(TObject * Sender)
+void __fastcall TCustomScpExplorerForm::RemotePathComboBoxItemClick(TObject * Sender)
+{
+  DoRemotePathComboBoxItemClick(Sender);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::DoRemotePathComboBoxCancel(TObject * Sender)
 {
   DebugAssert(Sender == GetComponent(fcRemotePathComboBox));
   DebugUsedParam(Sender);
   UpdateRemotePathComboBox(true);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::RemotePathComboBoxCancel(TObject * Sender)
+{
+  DoRemotePathComboBoxCancel(Sender);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::DirViewEditing(

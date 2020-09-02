@@ -710,6 +710,10 @@ protected:
   bool __fastcall IsActiveTerminal(TTerminal * Terminal);
   void __fastcall UpdateRowSelect(TCustomDirView * DirView);
   void __fastcall MakeFocusedItemVisible(TCustomDirView * DirView);
+  virtual void __fastcall DoRemotePathComboBoxAdjustImageIndex(
+    TTBXComboBoxItem * Sender, const UnicodeString AText, int AIndex, int & ImageIndex);
+  virtual void __fastcall DoRemotePathComboBoxCancel(TObject * Sender);
+  virtual void __fastcall DoRemotePathComboBoxItemClick(TObject * Sender);
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();
