@@ -9568,11 +9568,11 @@ void __fastcall TCustomScpExplorerForm::ResumeWindowLock()
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::UpdateRemotePathComboBox(bool TextOnly)
 {
+  TTBXComboBoxItem * RemotePathComboBox =
+    reinterpret_cast<TTBXComboBoxItem *>(GetComponent(fcRemotePathComboBox));
+
   if (!TextOnly)
   {
-    TTBXComboBoxItem * RemotePathComboBox =
-      reinterpret_cast<TTBXComboBoxItem *>(GetComponent(fcRemotePathComboBox));
-
     TStrings * Items = RemotePathComboBox->Strings;
     Items->BeginUpdate();
     try
@@ -9593,14 +9593,15 @@ void __fastcall TCustomScpExplorerForm::UpdateRemotePathComboBox(bool TextOnly)
     }
     __finally
     {
-      RemotePathComboBox->ItemIndex = Items->Count - 1;
-      // Setting ItemIndex to -1 does not reset its text
-      if (Items->Count == 0)
-      {
-        RemotePathComboBox->Text = L"";
-      }
       Items->EndUpdate();
     }
+  }
+
+  RemotePathComboBox->ItemIndex = RemotePathComboBox->Strings->Count - 1;
+  // Setting ItemIndex to -1 does not reset its text
+  if (RemotePathComboBox->Strings->Count == 0)
+  {
+    RemotePathComboBox->Text = L"";
   }
 }
 //---------------------------------------------------------------------------
