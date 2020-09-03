@@ -527,6 +527,7 @@ UnicodeString DumpCallstackEventName(int ProcessId);
 UnicodeString DumpCallstackFileName(int ProcessId);
 
 void CheckConfigurationForceSave();
+void InterfaceStarted();
 //---------------------------------------------------------------------------
 #define HIDDEN_WINDOW_NAME L"WinSCPHiddenWindow3"
 //---------------------------------------------------------------------------
