@@ -17,7 +17,6 @@
 #include "TBX.hpp"
 #include "TB2ExtItems.hpp"
 #include "TBXExtItems.hpp"
-#include <ShellAnimations.hpp>
 #include "TBXToolPals.hpp"
 #include <System.Actions.hpp>
 //---------------------------------------------------------------------------
@@ -493,7 +492,6 @@ __published:    // IDE-managed Components
   TTBXItem *TBXItem36;
   TTBXItem *TBXItem37;
   TTBXItem *TBXItem38;
-  TShellResources *ShellResources;
   TTBXColorItem *ColorMenuItem;
   TAction *CurrentEditInternalAction;
   TAction *SaveWorkspaceAction;
