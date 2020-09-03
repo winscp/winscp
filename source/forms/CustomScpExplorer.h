@@ -292,6 +292,7 @@ private:
   UnicodeString FFileColorsCurrent;
   bool FInvalid;
   std::auto_ptr<TQueueFileList> FQueueFileList;
+  bool FStarted;
 
   bool __fastcall GetEnableFocusedOperation(TOperationSide Side, int FilesOnly);
   bool __fastcall GetEnableSelectedOperation(TOperationSide Side, int FilesOnly);

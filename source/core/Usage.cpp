@@ -213,27 +213,37 @@ void __fastcall TUsage::ResetLastExceptions()
   ResetValue(LastUpdateExceptionCounter);
 }
 //---------------------------------------------------------------------------
-void __fastcall TUsage::Inc(const UnicodeString & Key, int Increment)
+int __fastcall TUsage::Inc(const UnicodeString & Key, int Increment)
 {
+  int Result;
   if (Collect)
   {
     TGuard Guard(FCriticalSection);
     Inc(Key, FPeriodCounters, Increment);
-    Inc(Key, FLifetimeCounters, Increment);
+    Result = Inc(Key, FLifetimeCounters, Increment);
   }
+  else
+  {
+    Result = -1;
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TUsage::Inc(const UnicodeString & Key, TCounters & Counters, int Increment)
+int __fastcall TUsage::Inc(const UnicodeString & Key, TCounters & Counters, int Increment)
 {
+  int Result;
   TCounters::iterator i = Counters.find(Key);
   if (i != Counters.end())
   {
     i->second += Increment;
+    Result = i->second;
   }
   else
   {
     Counters.insert(std::make_pair(Key, Increment));
+    Result = Increment;
   }
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TUsage::SetMax(const UnicodeString & Key, int Value)

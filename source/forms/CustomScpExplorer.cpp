@@ -4681,6 +4681,12 @@ void __fastcall TCustomScpExplorerForm::Idle()
           RemoteDirView->ReloadDirectory();
         }
       }
+
+      if (!FStarted)
+      {
+        FStarted = true;
+        InterfaceStarted();
+      }
     }
   }
 

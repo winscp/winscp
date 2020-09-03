@@ -405,9 +405,30 @@ static UnicodeString ColorToRGBStr(TColor Color)
   return Result;
 }
 //---------------------------------------------------------------------------
+TDateTime Started(Now());
+int LifetimeRuns = -1;
+//---------------------------------------------------------------------------
+void InterfaceStarted()
+{
+  // deliberate downcast
+  int StartupSeconds = static_cast<int>(SecondsBetween(Now(), Started));
+  if (LifetimeRuns > 0)
+  {
+    if (LifetimeRuns == 1)
+    {
+      Configuration->Usage->Set(L"StartupSeconds1", StartupSeconds);
+    }
+    else if (LifetimeRuns == 2)
+    {
+      Configuration->Usage->Set(L"StartupSeconds2", StartupSeconds);
+    }
+    Configuration->Usage->Set(L"StartupSecondsLast", StartupSeconds);
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall UpdateStaticUsage()
 {
-  Configuration->Usage->Inc(L"Runs");
+  LifetimeRuns = Configuration->Usage->Inc(L"Runs");
 
   Configuration->Usage->UpdateCurrentVersion();
 
