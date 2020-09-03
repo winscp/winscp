@@ -674,6 +674,7 @@ private:
   bool FSessionIdleTimerExecuting;
   int FBusy;
   TTBCustomToolbar * FCustomizedToolbar;
+  int FRemoteRootDirImageIndex;
 
   void __fastcall SetScpExplorer(TCustomScpExplorerForm * value);
   bool __fastcall GetBusy();

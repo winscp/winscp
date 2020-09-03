@@ -116,6 +116,7 @@ __fastcall TNonVisualDataModule::TNonVisualDataModule(TComponent* Owner)
   FBusy = 0;
 
   QueueSpeedComboBoxItem(QueuePopupSpeedComboBoxItem);
+  FRemoteRootDirImageIndex = RemoteRootDirAction->ImageIndex;
 }
 //---------------------------------------------------------------------------
 __fastcall TNonVisualDataModule::~TNonVisualDataModule()
@@ -279,7 +280,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   #undef HISTORYACTION
   #define PANEL_ACTIONS(SIDE) \
     UPD(SIDE ## ParentDirAction, DirViewEnabled(os ## SIDE) && !DirView(os ## SIDE)->IsRoot) \
-    UPD(SIDE ## RootDirAction, DirViewEnabled(os ## SIDE) &&!DirView(os ## SIDE)->IsRoot) \
+    UPDEX1(SIDE ## RootDirAction, DirViewEnabled(os ## SIDE) && !DirView(os ## SIDE)->IsRoot, Action->ImageIndex = (ScpExplorer->IsSideLocalBrowser(os ## SIDE) ? LocalRootDirAction->ImageIndex : FRemoteRootDirImageIndex)) \
     UPD(SIDE ## HomeDirAction, DirViewEnabled(os ## SIDE)) \
     UPD(SIDE ## RefreshAction, DirViewEnabled(os ## SIDE) && DirView(os ## SIDE)->DirOK) \
     UPD(SIDE ## OpenDirAction, DirViewEnabled(os ## SIDE)) \
