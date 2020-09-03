@@ -3149,10 +3149,6 @@ object NonVisualDataModule: TNonVisualDataModule
       Action = SessionsTabsAction
     end
   end
-  object ShellResources: TShellResources
-    Left = 48
-    Top = 424
-  end
   object LocalFilePopup: TTBXPopupMenu
     Images = GlyphsModule.ExplorerImages
     Options = [tboShowHint]
