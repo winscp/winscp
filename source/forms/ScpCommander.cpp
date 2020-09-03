@@ -1140,9 +1140,10 @@ void __fastcall TScpCommanderForm::FullSynchronizeDirectories()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TScpCommanderForm::ExploreLocalDirectory()
+void __fastcall TScpCommanderForm::ExploreLocalDirectory(TOperationSide Side)
 {
-  OpenFolderInExplorer(GetCurrentLocalBrowser()->Path);
+  DebugAssert(IsSideLocalBrowser(Side));
+  OpenFolderInExplorer(DirView(Side)->Path);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::LocalDirViewExecFile(TObject *Sender,

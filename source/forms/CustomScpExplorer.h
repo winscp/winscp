@@ -770,7 +770,7 @@ public:
   virtual void __fastcall UpdateTerminal(TManagedTerminal * Terminal);
   virtual void __fastcall SynchronizeDirectories();
   virtual void __fastcall FullSynchronizeDirectories() = 0;
-  virtual void __fastcall ExploreLocalDirectory();
+  virtual void __fastcall ExploreLocalDirectory(TOperationSide Side);
   virtual void __fastcall GoToCommandLine();
   virtual void __fastcall GoToTree();
   void __fastcall PanelExport(TOperationSide Side, TPanelExport Export,

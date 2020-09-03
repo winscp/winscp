@@ -6054,7 +6054,7 @@ void __fastcall TCustomScpExplorerForm::StandaloneEdit(const UnicodeString & Fil
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::ExploreLocalDirectory()
+void __fastcall TCustomScpExplorerForm::ExploreLocalDirectory(TOperationSide)
 {
   DebugFail();
 }

@@ -185,7 +185,7 @@ __published:    // IDE-managed Components
   TAction *LocalAddBookmarkAction2;
   TAction *RemoteAddBookmarkAction2;
   TAction *ConsoleAction;
-  TAction *LocalExploreDirectoryAction2;
+  TAction *LocalExploreDirectoryAction;
   TAction *CurrentEditAction;
   TAction *CurrentOpenAction;
   TAction *SynchronizeBrowsingAction2;
@@ -653,6 +653,9 @@ __published:    // IDE-managed Components
   TTBXSeparatorItem *TBXSeparatorItem16;
   TTBXItem *TBXItem97;
   TTBXItem *TBXItem98;
+  TAction *RemoteExploreDirectoryAction;
+  TTBXItem *TBXItem99;
+  TTBXItem *TBXItem100;
   void __fastcall ExplorerActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall SessionIdleTimerTimer(TObject *Sender);

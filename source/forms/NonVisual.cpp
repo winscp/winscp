@@ -286,11 +286,11 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
     UPD(SIDE ## ChangePathAction2, DirViewEnabled(os ## SIDE)) \
     UPD(SIDE ## AddBookmarkAction2, DirViewEnabled(os ## SIDE)) \
     UPD(SIDE ## PathToClipboardAction2, DirViewEnabled(os ## SIDE)) \
-    UPDEX1(SIDE ## FilterAction, DirViewEnabled(os ## SIDE), Action->Checked = !DirView(os ## SIDE)->Mask.IsEmpty())
+    UPDEX1(SIDE ## FilterAction, DirViewEnabled(os ## SIDE), Action->Checked = !DirView(os ## SIDE)->Mask.IsEmpty()) \
+    UPD(SIDE ## ExploreDirectoryAction, ScpExplorer->IsSideLocalBrowser(os ## SIDE))
   PANEL_ACTIONS(Local)
   PANEL_ACTIONS(Remote)
   #undef PANEL_ACTIONS
-  UPD(LocalExploreDirectoryAction2, true)
 
   // HELP
   UPD(AboutAction, true)
@@ -622,11 +622,11 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
       EXE(SIDE ## ChangePathAction2, ScpExplorer->ChangePath(os ## SIDE)) \
       EXE(SIDE ## AddBookmarkAction2, ScpExplorer->AddBookmark(os ## SIDE)) \
       EXE(SIDE ## PathToClipboardAction2, ScpExplorer->PanelExport(os ## SIDE, pePath, pedClipboard)) \
-      EXE(SIDE ## FilterAction, ScpExplorer->Filter(os ## SIDE))
+      EXE(SIDE ## FilterAction, ScpExplorer->Filter(os ## SIDE)) \
+      EXE(SIDE ## ExploreDirectoryAction, ScpExplorer->ExploreLocalDirectory(os ## SIDE))
     PANEL_ACTIONS(Local)
     PANEL_ACTIONS(Remote)
     #undef PANEL_ACTIONS
-    EXE(LocalExploreDirectoryAction2, ScpExplorer->ExploreLocalDirectory())
 
     //HELP
     EXE(AboutAction, DoAboutDialog(Configuration))

@@ -1322,11 +1322,11 @@ object NonVisualDataModule: TNonVisualDataModule
       ImageIndex = 64
       ShortCut = 16464
     end
-    object LocalExploreDirectoryAction2: TAction
-      Tag = 15
+    object LocalExploreDirectoryAction: TAction
+      Tag = 9
       Category = 'Local Directory'
       Caption = '&Explore Directory'
-      Hint = 'Opens Windows File Explorer with the current directory'
+      Hint = 'Opens Windows File Explorer with the current local directory'
       ImageIndex = 56
       ShortCut = 49221
     end
@@ -2298,6 +2298,14 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'ui_file_panel'
       Hint = 'Change right panel layout'
     end
+    object RemoteExploreDirectoryAction: TAction
+      Tag = 14
+      Category = 'Remote Directory'
+      Caption = '&Explore Directory'
+      Hint = 'Opens Windows File Explorer with the current local directory'
+      ImageIndex = 56
+      ShortCut = 49221
+    end
   end
   object ExplorerBarPopup: TTBXPopupMenu
     Images = GlyphsModule.ExplorerImages
@@ -2535,6 +2543,9 @@ object NonVisualDataModule: TNonVisualDataModule
       object TBXItem86: TTBXItem
         Action = RemoteOpenDirAction
       end
+      object TBXItem99: TTBXItem
+        Action = RemoteExploreDirectoryAction
+      end
       object TBXSeparatorItem13: TTBXSeparatorItem
       end
       object TBXItem87: TTBXItem
@@ -2614,7 +2625,7 @@ object NonVisualDataModule: TNonVisualDataModule
         Action = LocalOpenDirAction
       end
       object TBXItem93: TTBXItem
-        Action = LocalExploreDirectoryAction2
+        Action = LocalExploreDirectoryAction
       end
       object TBXSeparatorItem15: TTBXSeparatorItem
       end
@@ -2935,6 +2946,9 @@ object NonVisualDataModule: TNonVisualDataModule
       object OpenDirectoryBookmark3: TTBXItem
         Action = RemoteOpenDirAction
       end
+      object TBXItem100: TTBXItem
+        Action = RemoteExploreDirectoryAction
+      end
       object N81: TTBXSeparatorItem
       end
       object ParentDirectory4: TTBXItem
@@ -3004,7 +3018,7 @@ object NonVisualDataModule: TNonVisualDataModule
         Action = LocalOpenDirAction
       end
       object ExploreDirectory2: TTBXItem
-        Action = LocalExploreDirectoryAction2
+        Action = LocalExploreDirectoryAction
       end
       object N84: TTBXSeparatorItem
       end

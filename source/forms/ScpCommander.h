@@ -440,6 +440,7 @@ __published:
   TTBXItem *TBXItem256;
   TDriveView *OtherLocalDriveView;
   TDirView *OtherLocalDirView;
+  TTBXItem *TBXItem257;
   void __fastcall SplitterMoved(TObject *Sender);
   void __fastcall SplitterCanResize(TObject *Sender, int &NewSize,
     bool &Accept);
@@ -633,7 +634,7 @@ public:
   virtual void __fastcall SynchronizeDirectories();
   virtual void __fastcall FullSynchronizeDirectories();
   virtual void __fastcall StoreParams();
-  virtual void __fastcall ExploreLocalDirectory();
+  virtual void __fastcall ExploreLocalDirectory(TOperationSide Side);
   virtual void __fastcall GoToCommandLine();
   virtual void __fastcall GoToTree();
   virtual void __fastcall OpenConsole(UnicodeString Command = L"");

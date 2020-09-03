@@ -57,7 +57,7 @@ inherited ScpCommanderForm: TScpCommanderForm
             Action = NonVisualDataModule.LocalOpenDirAction
           end
           object TBXItem3: TTBXItem
-            Action = NonVisualDataModule.LocalExploreDirectoryAction2
+            Action = NonVisualDataModule.LocalExploreDirectoryAction
           end
           object TBXSeparatorItem2: TTBXSeparatorItem
           end
@@ -641,6 +641,9 @@ inherited ScpCommanderForm: TScpCommanderForm
           Hint = 'Go to directory'
           object TBXItem84: TTBXItem
             Action = NonVisualDataModule.RemoteOpenDirAction
+          end
+          object TBXItem257: TTBXItem
+            Action = NonVisualDataModule.RemoteExploreDirectoryAction
           end
           object TBXSeparatorItem25: TTBXSeparatorItem
           end
