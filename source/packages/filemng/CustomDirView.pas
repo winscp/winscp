@@ -1042,21 +1042,23 @@ begin
 
   inherited;
 
-  if (Message.NMHdr.code = LVN_GETDISPINFO) and
-     FNotifyEnabled and Valid and (not Loading) then
-    with PLVDispInfo(Pointer(Message.NMHdr))^.Item do
-      try
-        InfoMask := PLVDispInfo(Pointer(Message.NMHdr))^.item.Mask;
+  if Message.NMHdr.code = LVN_GETDISPINFO then
+  begin
+    if FNotifyEnabled and Valid and (not Loading) then
+      with PLVDispInfo(Pointer(Message.NMHdr))^.Item do
+        try
+          InfoMask := PLVDispInfo(Pointer(Message.NMHdr))^.item.Mask;
 
-        if (InfoMask and LVIF_PARAM) <> 0 then Item := TListItem(lParam)
-          else
-        if iItem < Items.Count then Item := Items[iItem]
-          else Item := nil;
+          if (InfoMask and LVIF_PARAM) <> 0 then Item := TListItem(lParam)
+            else
+          if iItem < Items.Count then Item := Items[iItem]
+            else Item := nil;
 
-        if Assigned(Item) and Assigned(Item.Data) then
-          GetDisplayInfo(Item, PLVDispInfo(Pointer(Message.NMHdr))^.item);
-      except
-      end;
+          if Assigned(Item) and Assigned(Item.Data) then
+            GetDisplayInfo(Item, PLVDispInfo(Pointer(Message.NMHdr))^.item);
+        except
+        end;
+  end;
 
   if (Message.NMHdr.code = NM_CUSTOMDRAW) and
      Valid and (not Loading) then
