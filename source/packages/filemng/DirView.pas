@@ -1829,7 +1829,7 @@ begin
               if (FileInfo.iIcon <= 0) or (FileInfo.iIcon > SmallImages.Count) then
               begin
                 {Invalid icon returned: retry with access file attribute flag:}
-                SHGetFileInfo(PChar(fPath + '\' + FileName), FILE_ATTRIBUTE_DIRECTORY,
+                SHGetFileInfo(PChar(FPath + '\' + FileName), FILE_ATTRIBUTE_DIRECTORY,
                   FileInfo, SizeOf(FileInfo),
                   SHGFI_TYPENAME or SHGFI_SYSICONINDEX or SHGFI_USEFILEATTRIBUTES);
               end;
