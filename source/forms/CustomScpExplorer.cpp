@@ -1,4 +1,3 @@
-// TODO_OTHER_LOCAL
 //---------------------------------------------------------------------------
 #define NO_WIN32_LEAN_AND_MEAN
 #include <vcl.h>
@@ -1641,8 +1640,7 @@ void __fastcall TCustomScpExplorerForm::DoOperationFinished(
 
     if ((Operation == foCopy) || (Operation == foMove))
     {
-      // TODO_OTHER_LOCAL
-      if (!IsLocalBrowserMode())
+      if (DebugAlwaysTrue(!IsLocalBrowserMode()))
       {
         if (Side == osLocal)
         {

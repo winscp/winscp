@@ -750,7 +750,6 @@ void __fastcall TScpCommanderForm::ConfigurationChanged()
     // save value only if it was set yet
     if (FPanelsRestored)
     {
-      // TODO_OTHER_LOCAL
       if (TreeOnLeft)
       {
         // want to be on left, so it is on top, saving height
@@ -777,7 +776,6 @@ void __fastcall TScpCommanderForm::ConfigurationChanged()
     RemotePanelSplitter->Cursor = SplitterCursor;
     FixControlsPlacement();
 
-    // TODO_OTHER_LOCAL
     if (TreeOnLeft)
     {
       LocalDriveView->Width = LocalPanel.DriveViewWidth;
