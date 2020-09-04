@@ -4292,7 +4292,8 @@ void __fastcall TCustomScpExplorerForm::OpenDirectory(TOperationSide Side)
 //---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::OpenBookmark(TOperationSide Side, TBookmark * Bookmark)
 {
-  UnicodeString Path = Bookmark->GetSideDirectory(Side);
+  TOperationSide BookmarkSide = IsLocalBrowserMode() ? osLocal : Side;
+  UnicodeString Path = Bookmark->GetSideDirectory(BookmarkSide);
 
   bool Result = !Path.IsEmpty();
   if (Result)
@@ -10317,10 +10318,13 @@ void __fastcall TCustomScpExplorerForm::RemoteBookmarkClick(TObject * Sender)
 void __fastcall TCustomScpExplorerForm::CreateOpenDirMenuList(
   TTBCustomItem * Menu, TOperationSide Side, TBookmarkList * BookmarkList)
 {
-  // TODO
   if (BookmarkList != NULL)
   {
     TNotifyEvent OnBookmarkClick = (Side == osLocal) ? &LocalBookmarkClick : &RemoteBookmarkClick;
+    if (IsLocalBrowserMode())
+    {
+      Side = osLocal;
+    }
 
     if (!WinConfiguration->UseLocationProfiles)
     {

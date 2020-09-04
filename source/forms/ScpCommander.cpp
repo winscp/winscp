@@ -1602,10 +1602,8 @@ void __fastcall TScpCommanderForm::DoOpenBookmark(UnicodeString Local, UnicodeSt
 //---------------------------------------------------------------------------
 bool __fastcall TScpCommanderForm::OpenBookmark(TOperationSide Side, TBookmark * Bookmark)
 {
-  // TODO_OTHER_LOCAL
-  DebugAssert(!IsLocalBrowserMode());
   bool Result;
-  if (WinConfiguration->UseLocationProfiles)
+  if (WinConfiguration->UseLocationProfiles && !IsLocalBrowserMode())
   {
     DoOpenBookmark(Bookmark->Local, Bookmark->Remote);
     Result = true;
