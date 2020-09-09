@@ -404,6 +404,7 @@ function DropFiles(
   RenameOnCollision: Boolean; IsRecycleBin: Boolean; ConfirmDelete: Boolean; ConfirmOverwrite: Boolean; Paste: Boolean;
   Sender: TObject; OnDDFileOperation: TDDFileOperationEvent;
   out SourcePath: string; out SourceIsDirectory: Boolean): Boolean;
+procedure CheckCanOpenDirectory(Path: string);
 
 var
   LastClipBoardOperation: TClipBoardOperation;
@@ -618,6 +619,24 @@ begin
   end
     else Result := False;
 end; {GetShellDisplayName}
+
+procedure CheckCanOpenDirectory(Path: string);
+var
+  DosError: Integer;
+  SRec: SysUtils.TSearchRec;
+begin
+  if not DirectoryExistsFix(Path) then
+    raise Exception.CreateFmt(SDirNotExists, [Path]);
+  DosError := SysUtils.FindFirst(ApiPath(IncludeTrailingPathDelimiter(Path) + '*.*'), FileAttr, SRec);
+  if DosError = 0 then
+  begin
+    FindClose(SRec);
+  end
+    else
+  begin
+    RaiseLastOSError;
+  end;
+end;
 
 { TIconUpdateThread }
 
@@ -934,9 +953,12 @@ begin
   // do checks before passing directory to drive view, because
   // it would truncate non-existing directory to first superior existing
   Value := ReplaceStr(Value, '/', '\');
+  while ExcludeTrailingPathDelimiter(Value) <> Value do
+  begin
+    Value := ExcludeTrailingPathDelimiter(Value);
+  end;
 
-  if not DirectoryExists(ApiPath(Value)) then
-    raise Exception.CreateFmt(SDirNotExists, [Value]);
+  CheckCanOpenDirectory(Value);
 
   if Assigned(FDriveView) and
      (FDriveView.Directory <> Value) then
@@ -946,8 +968,6 @@ begin
     else
   if FPath <> Value then
   try
-    while (Length(Value) > 0) and (Value[Length(Value)] = '\') do
-      SetLength(Value, Length(Value) - 1);
     PathChanging(not FNotRelative);
     FPath := Value;
     Load(True);
@@ -2748,7 +2768,7 @@ begin
     if PFileRec(Item.Data)^.IsDirectory then
     begin
       FileName := ItemFullFileName(Item);
-      if not DirectoryExists(FileName) then
+      if not DirectoryExistsFix(FileName) then
       begin
         Reload2;
         if Assigned(FDriveView) and Assigned(FDriveView.Selected) then
@@ -2760,13 +2780,13 @@ begin
       else
     FileName := ResolveFileShortCut(ItemFullFileName(Item), True);
 
-    if DirectoryExists(FileName) then
+    if DirectoryExistsFix(FileName) then
     begin
       Path := FileName;
       Exit;
     end
       else
-    if not FileExists(ApiPath(FileName)) then
+    if not FileExistsFix(ApiPath(FileName)) then
     begin
       Exit;
     end;

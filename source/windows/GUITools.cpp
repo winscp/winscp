@@ -40,16 +40,6 @@
 extern const UnicodeString PageantTool = L"pageant.exe";
 extern const UnicodeString PuttygenTool = L"puttygen.exe";
 //---------------------------------------------------------------------------
-static bool __fastcall FileExistsFix(const UnicodeString & Path)
-{
-  // WORKAROUND
-  ::SetLastError(ERROR_SUCCESS);
-  return
-    FileExists(ApiPath(Path)) ||
-    // returned when resolving symlinks in %LOCALAPPDATA%\Microsoft\WindowsApps
-    (GetLastError() == ERROR_CANT_ACCESS_FILE);
-}
-//---------------------------------------------------------------------------
 bool __fastcall FindFile(UnicodeString & Path)
 {
   bool Result = FileExistsFix(Path);
