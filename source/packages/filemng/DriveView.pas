@@ -254,10 +254,6 @@ type
 
     function GetFQPIDL(Node: TTreeNode): PItemIDList;
 
-    {Directory update:}
-    function  CreateDirectory(ParentNode: TTreeNode; NewName: string): TTreeNode; dynamic;
-    function  DeleteDirectory(Node: TTreeNode; AllowUndo: Boolean): Boolean; dynamic;
-
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
 
@@ -1969,111 +1965,6 @@ begin
 
   Result := DriveInfo.Get(GetDriveToNode(Node)).DriveType;
 end; {GetDriveTypeToNode}
-
-function TDriveView.CreateDirectory(ParentNode: TTreeNode; NewName: string): TTreeNode;
-var
-  SRec: TSearchRec;
-begin
-  Assert(Assigned(ParentNode));
-
-  Result := nil;
-  if not TNodeData(ParentNode.Data).Scanned then
-    ValidateDirectory(ParentNode);
-
-  StopWatchThread;
-
-  try
-    if Assigned(FDirView) then
-      FDirView.StopWatchThread;
-
-    {create phyical directory:}
-    LastIOResult := 0;
-    if not Windows.CreateDirectory(PChar(NodePath(ParentNode) + '\' + NewName), nil) then
-      LastIOResult := GetLastError;
-    if LastIOResult = 0 then
-    begin
-      {Create treenode:}
-      FindFirst(ApiPath(NodePath(ParentNode) + '\' + NewName), faAnyFile, SRec);
-      Result := AddChildNode(ParentNode, Srec);
-      FindClose(Srec);
-      TNodeData(Result.Data).Scanned := True;
-      SortChildren(ParentNode, False);
-      ParentNode.Expand(False);
-    end;
-  finally
-    StartWatchThread;
-    if Assigned(FDirView) then
-    begin
-      FDirView.StartWatchThread;
-      FDirView.Reload2;
-    end;
-  end;
-end; {CreateDirectory}
-
-function TDriveView.DeleteDirectory(Node: TTreeNode; AllowUndo: Boolean): Boolean;
-var
-  DelDir: string;
-  OperatorResult: Boolean;
-  FileOperator: TFileOperator;
-  SaveCursor: TCursor;
-begin
-  Assert(Assigned(Node));
-
-  Result := False;
-  if Assigned(Node) and (Node.Level > 0) then
-  begin
-    SaveCursor := Screen.Cursor;
-    Screen.Cursor := crHourGlass;
-    FileOperator := TFileOperator.Create(Self);
-    DelDir := NodePathName(Node);
-    FileOperator.OperandFrom.Add(DelDir);
-    FileOperator.Operation := foDelete;
-    if AllowUndo then
-      FileOperator.Flags := FileOperator.Flags + [foAllowUndo]
-    else
-      FileOperator.Flags := FileOperator.Flags - [foAllowUndo];
-
-    if not ConfirmDelete then
-      FileOperator.Flags := FileOperator.Flags + [foNoConfirmation];
-
-    try
-      if DirectoryExists(DelDir) then
-      begin
-        StopWatchThread;
-        OperatorResult := FileOperator.Execute;
-
-        if OperatorResult and (not FileOperator.OperationAborted) and
-           (not DirectoryExists(DelDir)) then
-        begin
-          Node.Delete
-        end
-          else
-        begin
-          Result := False;
-          if not AllowUndo then
-          begin
-            {WinNT4-Bug: FindFirst still returns the directories search record, even if the
-             directory was deleted:}
-            ChDir(DelDir);
-            if IOResult <> 0 then
-              Node.Delete;
-          end;
-        end;
-      end
-        else
-      begin
-        Node.Delete;
-        Result := True;
-      end;
-    finally
-      StartWatchThread;
-      if Assigned(DirView) and Assigned(Selected) then
-        DirView.Path := NodePathName(Selected);
-      FileOperator.Free;
-      Screen.Cursor := SaveCursor;
-    end;
-  end;
-end; {DeleteDirectory}
 
 procedure TDriveView.CreateWatchThread(Drive: string);
 begin

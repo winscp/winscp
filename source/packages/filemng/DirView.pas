@@ -284,8 +284,6 @@ type
     {Other additional functions: }
     procedure ClearIconCache;
 
-    {Create a new file:}
-    function CreateFile(NewName: string): TListItem; dynamic;
     {Create a new subdirectory:}
     procedure CreateDirectory(DirName: string); override;
     {Delete all selected files:}
@@ -408,7 +406,6 @@ procedure CheckCanOpenDirectory(Path: string);
 
 var
   LastClipBoardOperation: TClipBoardOperation;
-  LastIOResult: DWORD;
 
 implementation
 
@@ -2208,51 +2205,6 @@ begin
   end;
 end; {ValidateSelectedFiles}
 
-function TDirView.CreateFile(NewName: string): TListItem;
-var
-  F: file;
-  SRec: SysUtils.TSearchRec;
-begin
-  Result := nil;
-  {Neue Datei anlegen:}
-  NewName := Path + '\' + NewName;
-
-  {Ermitteln des neuen Dateinamens:}
-  if not FileExists(ApiPath(NewName)) then
-  begin
-    if FWatchForChanges then
-      StopWatchThread;
-    StopIconUpdateThread;
-
-    try
-      {Create the desired file as empty file:}
-      AssignFile(F, ApiPath(NewName));
-      Rewrite(F);
-      LastIOResult := IOResult;
-      if LastIOResult = 0 then
-      begin
-        CloseFile(F);
-
-        {Anlegen der Datei als TListItem:}
-        if FindFirst(ApiPath(NewName), faAnyFile, SRec) = 0 then
-        begin
-          Result := AddItem(SRec);
-          ItemFocused := FindFileItem(GetFileRec(Result.Index)^.FileName);
-          if Assigned(ItemFocused) then
-            ItemFocused.MakeVisible(False);
-        end;
-        FindClose(Srec);
-      end;
-    finally
-      if FUseIconUpdateThread then
-        StartIconUpdateThread;
-      if WatchForChanges then
-        StartWatchThread;
-    end;
-  end
-    else LastIOResult := 183;
-end; {CreateFile}
-
 procedure TDirView.CreateDirectory(DirName: string);
 var
   SRec: SysUtils.TSearchRec;
@@ -3471,6 +3423,5 @@ end;
 
 initialization
   LastClipBoardOperation := cboNone;
-  LastIOResult := 0;
   DaylightHack := (not IsWin7);
 end.
