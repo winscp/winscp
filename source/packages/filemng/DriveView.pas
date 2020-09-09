@@ -1021,9 +1021,10 @@ begin
           Result := False;
         end
           else
-        if not DirectoryExists(ApiPath(Path)) then
-        begin
-          MessageDlg(Format(SDirNotExists, [Path]), mtError, [mbOK], 0);
+        try
+          CheckCanOpenDirectory(Path);
+        except
+          Application.HandleException(Self);
           Result := False;
         end;
       end;

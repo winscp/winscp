@@ -79,6 +79,8 @@ procedure SetAppTerminated(Value: Boolean);
 procedure ForceColorChange(Control: TWinControl);
 
 function IsUncPath(Path: string): Boolean;
+function FileExistsFix(Path: string): Boolean;
+function DirectoryExistsFix(Path: string): Boolean;
 
 function SupportsDarkMode: Boolean;
 procedure AllowDarkModeForWindow(Control: TWinControl; Allow: Boolean); overload;
@@ -988,6 +990,38 @@ end;
 function IsUncPath(Path: string): Boolean;
 begin
   Result := (Copy(Path, 1, 2) = '\\') or (Copy(Path, 1, 2) = '//');
+end;
+
+const ERROR_CANT_ACCESS_FILE = 1920;
+
+function DoExists(R: Boolean; Path: string): Boolean;
+var
+  Error: Integer;
+begin
+  Result := R;
+  if not Result then
+  begin
+    Error := GetLastError();
+    if (Error = ERROR_CANT_ACCESS_FILE) or // returned when resolving symlinks in %LOCALAPPDATA%\Microsoft\WindowsApps
+       (Error = ERROR_ACCESS_DENIED) then // returned for %USERPROFILE%\Application Data symlink
+    begin
+      Result := DirectoryExists(ApiPath(ExtractFileDir(Path)));
+    end;
+  end;
+end;
+
+function FileExistsFix(Path: string): Boolean;
+begin
+  // WORKAROUND
+  SetLastError(ERROR_SUCCESS);
+  Result := DoExists(FileExists(ApiPath(Path)), Path);
+end;
+
+function DirectoryExistsFix(Path: string): Boolean;
+begin
+  // WORKAROUND
+  SetLastError(ERROR_SUCCESS);
+  Result := DoExists(DirectoryExists(ApiPath(Path)), Path);
 end;
 
 type TPreferredAppMode = (pamDefault, pamAllowDark, pamForceDark, pamForceLight, pamMax);
