@@ -738,7 +738,6 @@ void __fastcall TTerminalManager::DoSetActiveTerminal(TManagedTerminal * value, 
       }
     }
 
-
     if ((ActiveTerminal != NULL) && !ActiveTerminal->Active &&
         !ActiveTerminal->Disconnected)
     {
