@@ -950,10 +950,6 @@ begin
   // do checks before passing directory to drive view, because
   // it would truncate non-existing directory to first superior existing
   Value := ReplaceStr(Value, '/', '\');
-  while ExcludeTrailingPathDelimiter(Value) <> Value do
-  begin
-    Value := ExcludeTrailingPathDelimiter(Value);
-  end;
 
   CheckCanOpenDirectory(Value);
 
@@ -965,6 +961,10 @@ begin
     else
   if FPath <> Value then
   try
+    while ExcludeTrailingPathDelimiter(Value) <> Value do
+    begin
+      Value := ExcludeTrailingPathDelimiter(Value);
+    end;
     PathChanging(not FNotRelative);
     FPath := Value;
     Load(True);
