@@ -1177,7 +1177,6 @@ void __fastcall TScpCommanderForm::LocalFileControlDDDragEnter(TObject *Sender,
 bool __fastcall TScpCommanderForm::PanelOperation(TOperationSide Side,
   bool DragDrop)
 {
-  // TODO
   return TCustomScpExplorerForm::PanelOperation(Side, DragDrop) ||
     (DropSourceControl == LocalDirView);
 }
@@ -1188,7 +1187,6 @@ void __fastcall TScpCommanderForm::FileOperationProgress(
   // Heuristic: When operation finishes and DD target is local dir view,
   // we suppose that drag&drop download finished, so local dir view should be
   // reloaded
-  // TODO
   if (!ProgressData.InProgress && FProgressForm &&
       IsFileControl(FDDTargetControl, osLocal) &&
       ((ProgressData.Operation == ::foCopy) || (ProgressData.Operation == ::foMove)))
