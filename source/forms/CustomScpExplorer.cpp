@@ -5281,18 +5281,17 @@ void __fastcall TCustomScpExplorerForm::DoDirViewExecFile(TObject * Sender,
   DebugAssert(AllowExec);
   TCustomDirView * ADirView = (TCustomDirView *)Sender;
   bool Remote = (ADirView == DirView(osRemote)) && !IsSideLocalBrowser(osRemote);
-  bool ResolvedSymlinks = !Remote || Terminal->ResolvingSymlinks;
+  bool ResolvedSymlinks = !Remote || Terminal->ResolvingSymlinks || Terminal->IsEncryptingFiles();
   TOperationSide Side = (Remote ? osRemote : osLocal); // TODO
 
   // Anything special is done on double click only (not on "open" indicated by FForceExecution),
   // on files only (not directories)
   // and only when symlinks are resolved (apply to remote panel only)
   if (!ADirView->ItemIsDirectory(Item) &&
-      (ResolvedSymlinks || FForceExecution || Terminal->IsEncryptingFiles()))
+      (ResolvedSymlinks || FForceExecution))
   {
     if ((WinConfiguration->DoubleClickAction != dcaOpen) &&
-        !FForceExecution &&
-        (ResolvedSymlinks || Terminal->IsEncryptingFiles()))
+        !FForceExecution && ResolvedSymlinks)
     {
       if (WinConfiguration->DoubleClickAction == dcaCopy)
       {
