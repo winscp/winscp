@@ -1169,7 +1169,7 @@ void __fastcall TScpCommanderForm::LocalFileControlDDDragEnter(TObject *Sender,
 {
   // LocalDirViewDDDragEnter is duplication of
   // TCustomScpExplorerForm::DirViewDDDragEnter, but it differs in
-  // literal type of 'DataObj' parameter.Actual type is however same
+  // literal type of 'DataObj' parameter. The actual type is however the same.
   FileControlDDDragEnter(Sender, DataObj, grfKeyState, Point, dwEffect, Accept);
 }
 //---------------------------------------------------------------------------
@@ -1184,7 +1184,7 @@ bool __fastcall TScpCommanderForm::PanelOperation(TOperationSide Side,
 void __fastcall TScpCommanderForm::FileOperationProgress(
   TFileOperationProgressType & ProgressData)
 {
-  // Heuristic: When operation finishes and DD targed is local dir view,
+  // Heuristic: When operation finishes and DD target is local dir view,
   // we suppose that drag&drop download finished, so local dir view should be
   // reloaded
   // TODO

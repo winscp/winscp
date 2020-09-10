@@ -1603,7 +1603,7 @@ void __fastcall TCustomScpExplorerForm::DoOperationFinished(
 {
   if (!FAutoOperation)
   {
-    // no selection on "/upload", form servers only as event handler
+    // no selection on "/upload", form serves only as event handler
     // (it is not displayed)
     if (PanelOperation(Side, FDragDropOperation) &&
         Visible && (Operation != foCalculateSize) &&
