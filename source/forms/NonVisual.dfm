@@ -48,7 +48,7 @@ object NonVisualDataModule: TNonVisualDataModule
     object TBXSeparatorItem12: TTBXSeparatorItem
     end
     object TBXItem82: TTBXItem
-      Action = CurrentCopyToClipboardFocusedAction
+      Action = CurrentCopyToClipboardFocusedAction2
     end
     object N45: TTBXSeparatorItem
     end
@@ -1626,15 +1626,15 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 'Customize queue list'
       ImageIndex = 28
     end
-    object PasteAction2: TAction
+    object PasteAction3: TAction
       Tag = 15
       Category = 'Command'
-      Caption = '&Paste'
-      HelpKeyword = 'task_upload#using_copy_amp:paste'
+      Caption = '&Paste from Clipboard'
+      HelpKeyword = 'task_upload#copy_paste'
       Hint = 
-        'Paste files from clipboard to current directory in active panel;' +
-        ' or opens path from clipboard in active panel; or opens session ' +
-        'URL from clipboard'
+        'Paste files from the clipboard to the current directory in the a' +
+        'ctive panel; or open a path from the clipboard in the active pan' +
+        'el; or open a session URL from the clipboard'
       ImageIndex = 75
       ShortCut = 16470
     end
@@ -2261,11 +2261,11 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'task_connections#renaming'
       Hint = 'Rename session|Changes name of the current session'
     end
-    object CurrentCopyToClipboardAction: TAction
+    object CurrentCopyToClipboardAction2: TAction
       Tag = 15
       Category = 'Selected Operation'
-      Caption = '&Copy'
-      Hint = 'Copy|Copy the selected files to clipboard'
+      Caption = '&Copy to Clipboard'
+      Hint = 'Copy the selected files to the clipboard'
       ImageIndex = 111
       ShortCut = 16451
     end
@@ -2276,11 +2276,11 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'ui_pref_file_colors'
       Hint = 'Configure file color rules'
     end
-    object CurrentCopyToClipboardFocusedAction: TAction
+    object CurrentCopyToClipboardFocusedAction2: TAction
       Tag = 12
       Category = 'Focused Operation'
-      Caption = '&Copy'
-      Hint = 'Copy|Copy the selected files to clipboard'
+      Caption = '&Copy to Clipboard'
+      Hint = 'Copy the selected files to the clipboard'
       ImageIndex = 111
       ShortCut = 16451
     end
@@ -2998,7 +2998,7 @@ object NonVisualDataModule: TNonVisualDataModule
       end
     end
     object TBXItem75: TTBXItem
-      Action = PasteAction2
+      Action = PasteAction3
     end
     object RemoteDirViewPopupCustomCommandsMenu: TTBXSubmenuItem
       Action = CustomCommandsNonFileAction
@@ -3066,7 +3066,7 @@ object NonVisualDataModule: TNonVisualDataModule
       end
     end
     object TBXItem76: TTBXItem
-      Action = PasteAction2
+      Action = PasteAction3
     end
   end
   object RemoteAddressPopup: TTBXPopupMenu
@@ -3200,7 +3200,7 @@ object NonVisualDataModule: TNonVisualDataModule
     object TBXSeparatorItem11: TTBXSeparatorItem
     end
     object TBXItem81: TTBXItem
-      Action = CurrentCopyToClipboardFocusedAction
+      Action = CurrentCopyToClipboardFocusedAction2
     end
     object TBXSeparatorItem3: TTBXSeparatorItem
     end

@@ -225,7 +225,7 @@ __published:    // IDE-managed Components
   TAction *QueueHideAction;
   TAction *QueueToolbarAction;
   TAction *QueuePreferencesAction;
-  TAction *PasteAction2;
+  TAction *PasteAction3;
   TAction *RemoteTreeAction;
   TAction *LocalTreeAction;
   TAction *GoToTreeAction;
@@ -615,13 +615,13 @@ __published:    // IDE-managed Components
   TAction *PrivateKeyUploadAction;
   TAction *RenameSessionAction;
   TTBXItem *TBXItem78;
-  TAction *CurrentCopyToClipboardAction;
+  TAction *CurrentCopyToClipboardAction2;
   TAction *FileColorsPreferencesAction;
   TAction *DisconnectSessionAction;
   TTBXItem *TBXItem79;
   TAction *ReconnectSessionAction;
   TTBXItem *TBXItem80;
-  TAction *CurrentCopyToClipboardFocusedAction;
+  TAction *CurrentCopyToClipboardFocusedAction2;
   TTBXSeparatorItem *TBXSeparatorItem11;
   TTBXItem *TBXItem81;
   TTBXSeparatorItem *TBXSeparatorItem12;

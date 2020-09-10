@@ -157,7 +157,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
     !WinConfiguration->DisableOpenEdit)
   UPD(CurrentEditInternalFocusedAction, EnabledFocusedFileOperation &&
     !WinConfiguration->DisableOpenEdit)
-  UPD(CurrentCopyToClipboardFocusedAction, EnabledFocusedOperation)
+  UPD(CurrentCopyToClipboardFocusedAction2, EnabledFocusedOperation)
   // file operation
   UPD(CurrentRenameAction, EnabledFocusedOperation &&
     (ScpExplorer->IsSideLocalBrowser(osCurrent) || ScpExplorer->Terminal->IsCapable[fcRename]))
@@ -176,7 +176,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(CurrentDeleteAction, EnabledSelectedOperation)
   UPD(CurrentDeleteAlternativeAction, EnabledSelectedOperation)
   UPD(CurrentPropertiesAction, EnabledSelectedOperation)
-  UPD(CurrentCopyToClipboardAction, EnabledSelectedOperation)
+  UPD(CurrentCopyToClipboardAction2, EnabledSelectedOperation)
   UPD(RemoteMoveToAction, EnabledSelectedOperation &&
     !ScpExplorer->IsSideLocalBrowser(osCurrent) &&
     ScpExplorer->Terminal->IsCapable[fcRemoteMove])
@@ -248,7 +248,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(RestoreSelectionAction, DirView(osCurrent)->SelectedNamesSaved)
   UPD(SelectSameExtAction, EnabledFocusedFileOperation)
   UPD(UnselectSameExtAction, EnabledFocusedFileOperation)
-  UPD(PasteAction2, ScpExplorer->CanPasteFromClipBoard())
+  UPD(PasteAction3, ScpExplorer->CanPasteFromClipBoard())
   UPD(LocalSelectAction2, ScpExplorer->HasDirView[osLocal] && DirView(osLocal)->FilesCount)
   UPD(LocalUnselectAction2, ScpExplorer->HasDirView[osLocal] && DirView(osLocal)->SelCount)
   UPD(LocalSelectAllAction2, ScpExplorer->HasDirView[osLocal] && DirView(osLocal)->FilesCount)
@@ -518,7 +518,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(CurrentSystemMenuFocusedAction, ScpExplorer->DisplaySystemContextMenu())
     EXE(CurrentEditWithFocusedAction, ScpExplorer->ExecuteCurrentFileWith(true))
     EXE(CurrentEditInternalFocusedAction, ScpExplorer->ExecuteFile(osCurrent, efInternalEditor, NULL, true, true))
-    EXE(CurrentCopyToClipboardFocusedAction, ScpExplorer->CopyFilesToClipboard(osCurrent, true))
+    EXE(CurrentCopyToClipboardFocusedAction2, ScpExplorer->CopyFilesToClipboard(osCurrent, true))
     // operation
     EXE(CurrentEditAction, ScpExplorer->ExecuteFile(osCurrent, efDefaultEditor, NULL, true, false))
     EXE(CurrentEditInternalAction, ScpExplorer->ExecuteFile(osCurrent, efInternalEditor, NULL, true, false))
@@ -531,7 +531,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(CurrentDeleteAction, ScpExplorer->ExecuteFileOperationCommand(foDelete, osCurrent, false))
     EXE(CurrentDeleteAlternativeAction, ScpExplorer->ExecuteFileOperationCommand(foDelete, osCurrent, false, false, (void*)true))
     EXE(CurrentPropertiesAction, ScpExplorer->ExecuteFileOperationCommand(foSetProperties, osCurrent, false))
-    EXE(CurrentCopyToClipboardAction, ScpExplorer->CopyFilesToClipboard(osCurrent, false))
+    EXE(CurrentCopyToClipboardAction2, ScpExplorer->CopyFilesToClipboard(osCurrent, false))
     EXE(FileListToCommandLineAction, ScpExplorer->PanelExport(osCurrent, peFileList, pedCommandLine))
     EXE(FileListToClipboardAction, ScpExplorer->PanelExport(osCurrent, peFileList, pedClipboard))
     EXE(FullFileListToClipboardAction, ScpExplorer->PanelExport(osCurrent, peFullFileList, pedClipboard))
@@ -597,7 +597,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(RemoteSelectAction2, ScpExplorer->SelectByMask(osRemote, true))
     EXE(RemoteUnselectAction2, ScpExplorer->SelectByMask(osRemote, false))
     EXE(RemoteSelectAllAction2, ScpExplorer->SelectAll(osRemote, smAll))
-    EXE(PasteAction2, ScpExplorer->PasteFromClipBoard())
+    EXE(PasteAction3, ScpExplorer->PasteFromClipBoard())
 
     // style
     EXE(CurrentCycleStyleAction,
