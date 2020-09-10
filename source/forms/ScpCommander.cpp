@@ -970,7 +970,7 @@ void __fastcall TScpCommanderForm::UpdateControls()
   RemoteNewSubmenuItem->Enabled = DirViewEnabled(osRemote);
 
   bool HasTerminal = (Terminal != NULL);
-  RemoteDirView->Visible = (Terminal != NULL);
+  RemoteDirView->Visible = HasTerminal;
   RemoteDriveView->Visible = HasTerminal;
   OtherLocalDirView->Visible = !HasTerminal;
   OtherLocalDriveView->Visible = !HasTerminal;
