@@ -969,7 +969,10 @@ void __fastcall TScpCommanderForm::UpdateControls()
   // otherwise it shines too much on the toolbar.
   RemoteNewSubmenuItem->Enabled = DirViewEnabled(osRemote);
 
-  bool HasTerminal = (Terminal != NULL);
+  // When implicitly connecting a not-yet-connected session by switching to its tab opened with workspace,
+  // Terminal property is still NULL, but ActiveTerminal is already set.
+  // Had we used Terminal for the test, the window would switch to local-local mode temporarily while session is opening.
+  bool HasTerminal = (TTerminalManager::Instance()->ActiveTerminal != NULL);
   RemoteDirView->Visible = HasTerminal;
   RemoteDriveView->Visible = HasTerminal;
   OtherLocalDirView->Visible = !HasTerminal;
