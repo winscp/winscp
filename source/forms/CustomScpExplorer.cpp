@@ -6687,7 +6687,8 @@ void __fastcall TCustomScpExplorerForm::NeedSession(bool Startup)
 {
   try
   {
-    // Cache, as the login dialog can change its value
+    // Cache, as the login dialog can change its value.
+    // See also DoShow.
     bool ShowLogin = WinConfiguration->ShowLoginWhenNoSession;
     try
     {
@@ -6695,13 +6696,6 @@ void __fastcall TCustomScpExplorerForm::NeedSession(bool Startup)
       {
         bool ReloadSessions = !Startup;
         TTerminalManager::Instance()->NewSession(false, L"", ReloadSessions, this);
-      }
-      else if (Startup && WinConfiguration->AutoSaveWorkspace && !WinConfiguration->AutoWorkspace.IsEmpty() &&
-               // This detects if workspace was saved the last time the main widow was closed
-               SameText(WinConfiguration->LastStoredSession, WinConfiguration->AutoWorkspace))
-      {
-        DoOpenFolderOrWorkspace(WinConfiguration->AutoWorkspace, false);
-        Configuration->Usage->Inc(L"OpenedWorkspacesAuto");
       }
     }
     __finally
@@ -7083,6 +7077,18 @@ void __fastcall TCustomScpExplorerForm::DoShow()
 
   FSessionsDragDropFilesEx->DragDropControl = SessionsPageControl;
   FQueueDragDropFilesEx->DragDropControl = QueueView3;
+
+  // This was previously in NeedSession, where other related code is.
+  // But that is called form CMShowingChanged, when the window is already visible and the local-local window state
+  // unpleasanly shows briefly.
+  if (!WinConfiguration->ShowLoginWhenNoSession &&
+      WinConfiguration->AutoSaveWorkspace && !WinConfiguration->AutoWorkspace.IsEmpty() &&
+      // This detects if workspace was saved the last time the main widow was closed
+      SameText(WinConfiguration->LastStoredSession, WinConfiguration->AutoWorkspace))
+  {
+    DoOpenFolderOrWorkspace(WinConfiguration->AutoWorkspace, false);
+    Configuration->Usage->Inc(L"OpenedWorkspacesAuto");
+  }
 
   if (Terminal == NULL)
   {
