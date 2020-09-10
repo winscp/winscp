@@ -584,7 +584,7 @@ void __fastcall TCustomScpExplorerForm::TerminalChanged(bool Replaced)
   }
   DoTerminalListChanged();
 
-  DebugAssert(!IsLocalBrowserMode()); // TODO
+  DebugAssert(!IsLocalBrowserMode());
   if (Replaced)
   {
     RemoteDirView->ReplaceTerminal(Terminal);
@@ -5311,9 +5311,9 @@ void __fastcall TCustomScpExplorerForm::DoDirViewExecFile(TObject * Sender,
   DebugAssert(Sender && Item && Configuration);
   DebugAssert(AllowExec);
   TCustomDirView * ADirView = (TCustomDirView *)Sender;
-  bool Remote = (ADirView == DirView(osRemote)) && !IsSideLocalBrowser(osRemote);
+  TOperationSide Side = ((ADirView == DirView(osRemote)) ? osRemote : osLocal);
+  bool Remote = !IsSideLocalBrowser(Side);
   bool ResolvedSymlinks = !Remote || Terminal->ResolvingSymlinks || Terminal->IsEncryptingFiles();
-  TOperationSide Side = (Remote ? osRemote : osLocal); // TODO
 
   // Anything special is done on double click only (not on "open" indicated by FForceExecution),
   // on files only (not directories)
