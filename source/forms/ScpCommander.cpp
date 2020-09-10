@@ -1738,7 +1738,6 @@ void __fastcall TScpCommanderForm::SideEnter(TOperationSide Side)
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::UpdatePanelsPathLabelsStatus()
 {
-  // TODO_OTHER_LOCAL
   LocalPathLabel->UpdateStatus();
   RemotePathLabel->UpdateStatus();
 }
