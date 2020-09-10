@@ -501,6 +501,7 @@ void __fastcall TScpCommanderForm::ReloadLocalDirectory(const UnicodeString Dire
     LocalDirView->ReloadDirectory();
     LocalDriveView->ValidateDirectory(LocalDriveView->Selected);
   }
+  // we may postpone reload, when hidden, as an optimization
   if (Directory.IsEmpty() || SamePaths(Directory, OtherLocalDirView->Path))
   {
     OtherLocalDirView->ReloadDirectory();
