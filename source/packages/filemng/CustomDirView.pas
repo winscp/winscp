@@ -2034,7 +2034,7 @@ begin
             begin
               LastDirName := Copy(LastDirName, 2, MaxInt);
             end;
-            if LastDelimiter('\:/', LastDirName) = 0 then
+            if LastDelimiter(Delimiters, LastDirName) = 0 then
             begin
               ItemFocused := FindFileItem(LastDirName);
             end;
