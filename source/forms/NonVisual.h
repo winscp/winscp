@@ -717,6 +717,7 @@ protected:
   TAction * __fastcall CurrentQueueOnceEmptyAction();
   void __fastcall CloneShortcuts();
   void __fastcall ToolbarButtonItemClick(TObject * Sender);
+  void __fastcall CustomCommandsCustomize(TObject * Sender);
 
 public:
   __fastcall TNonVisualDataModule(TComponent * Owner);

@@ -766,7 +766,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(CustomCommandsEnterFocusedAction, ScpExplorer->AdHocCustomCommand(true))
     EXE(CustomCommandsLastAction, ScpExplorer->LastCustomCommand(false))
     EXE(CustomCommandsLastFocusedAction, ScpExplorer->LastCustomCommand(true))
-    EXE(CustomCommandsCustomizeAction, PreferencesDialog(pmCustomCommands))
+    EXE(CustomCommandsCustomizeAction, CustomCommandsCustomize(NULL))
 
     // QUEUE
     EXE(QueueEnableAction, ScpExplorer->ToggleQueueEnabled())
@@ -1118,6 +1118,11 @@ int __fastcall TNonVisualDataModule::CreateCustomCommandsListMenu(
   return Result;
 }
 //---------------------------------------------------------------------------
+void __fastcall TNonVisualDataModule::CustomCommandsCustomize(TObject *)
+{
+  PreferencesDialog(pmCustomCommands);
+}
+//---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(
   TTBCustomItem * Menu, bool OnFocused, bool Toolbar, TCustomCommandListType ListType, TStrings * HiddenCommands)
 {
@@ -1172,6 +1177,11 @@ void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(
 
   Item = new TTBXItem(Menu);
   Item->Action = CustomCommandsCustomizeAction;
+  if (ListType == ccltBoth)
+  {
+    // Hack. Bypass the Busy test in ExplorerActionsExecute.
+    Item->OnClick = CustomCommandsCustomize;
+  }
   Menu->Add(Item);
 }
 //---------------------------------------------------------------------------
