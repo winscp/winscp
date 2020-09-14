@@ -1613,30 +1613,17 @@ function TDriveView.FindNodeToPath(Path: string): TTreeNode;
   end;
 
   function SearchSubDirs(ParentNode: TTreeNode; Path: string): TTreeNode;
-  var
-    Read: Boolean;
   begin
     Result := nil;
     if Length(Path) > 0 then
     begin
-      Read := False;
-
       if not TNodeData(ParentNode.Data).Scanned then
       begin
         ReadSubDirs(ParentNode, GetDriveTypetoNode(ParentNode));
-        Read := True;
       end;
 
+      // Factored out of DoSearchSubDirs is remnant of Bug 956 superceded by Bug 1320
       Result := DoSearchSubDirs(ParentNode, Path);
-
-      // reread subfolders, just in case the directory we look for was just created
-      // (as can happen when navigating to new remote directory with synchronized
-      // browsing enabled and opting to create the non-existing local directory)
-      if (not Assigned(Result)) and (not Read) then
-      begin
-        ValidateDirectoryEx(ParentNode, rsNoRecursive, True);
-        Result := DoSearchSubDirs(ParentNode, Path);
-      end;
     end;
   end; {SearchSubDirs}
 
