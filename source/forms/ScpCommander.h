@@ -503,6 +503,7 @@ __published:
   void __fastcall OtherLocalDirViewContextPopup(TObject *Sender, TPoint &MousePos, bool &Handled);
   void __fastcall OtherLocalDirViewUpdateStatusBar(TObject *Sender, const TStatusFileInfo &FileInfo);
   void __fastcall OtherLocalDirViewPathChange(TCustomDirView *Sender);
+  void __fastcall LocalDriveViewNeedHiddenDirectories(TObject *Sender);
 
 private:
   bool FConstructed;

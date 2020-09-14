@@ -1194,6 +1194,7 @@ inherited ScpCommanderForm: TScpCommanderForm
         TabOrder = 1
         TabStop = False
         OnEnter = OtherLocalDriveViewEnter
+        OnNeedHiddenDirectories = LocalDriveViewNeedHiddenDirectories
       end
       inherited RemoteDriveView: TUnixDriveView
         Width = 280
@@ -1766,6 +1767,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       TabOrder = 2
       TabStop = False
       OnEnter = LocalDriveViewEnter
+      OnNeedHiddenDirectories = LocalDriveViewNeedHiddenDirectories
     end
     object LocalBottomDock: TTBXDock
       Left = 0

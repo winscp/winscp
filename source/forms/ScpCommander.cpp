@@ -2553,3 +2553,12 @@ void __fastcall TScpCommanderForm::UpdateRemotePathComboBox(bool TextOnly)
     LocalPathComboUpdate(OtherLocalDirView, RemotePathComboBox);
   }
 }
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::LocalDriveViewNeedHiddenDirectories(TObject *)
+{
+  if (DebugAlwaysTrue(!WinConfiguration->ShowHiddenFiles))
+  {
+    ToggleShowHiddenFiles();
+  }
+}
+//---------------------------------------------------------------------------
