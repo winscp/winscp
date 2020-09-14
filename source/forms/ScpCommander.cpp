@@ -2329,3 +2329,11 @@ void __fastcall TScpCommanderForm::ThemeChanged()
   LocalDirView->Perform(WM_THEMECHANGED, 0, 0);
 }
 //---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::LocalDriveViewNeedHiddenDirectories(TObject *)
+{
+  if (DebugAlwaysTrue(!WinConfiguration->ShowHiddenFiles))
+  {
+    ToggleShowHiddenFiles();
+  }
+}
+//---------------------------------------------------------------------------

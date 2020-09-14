@@ -141,6 +141,7 @@ type
     {Additional events:}
     FOnDisplayContextMenu: TNotifyEvent;
     FOnRefreshDrives: TNotifyEvent;
+    FOnNeedHiddenDirectories: TNotifyEvent;
 
     {used components:}
     FDirView: TDirView;
@@ -388,6 +389,7 @@ type
     property OnMouseUp;
     property OnStartDock;
     property OnStartDrag;
+    property OnNeedHiddenDirectories: TNotifyEvent read FOnNeedHiddenDirectories write FOnNeedHiddenDirectories;
   end;
 
 procedure Register;
@@ -2185,7 +2187,34 @@ begin
 end; {SetAutoScan}
 
 function TDriveView.FindPathNode(Path: string): TTreeNode;
+var
+  PossiblyHiddenPath: string;
+  Attrs: Integer;
 begin
+  if Assigned(FOnNeedHiddenDirectories) and
+     (not ShowHiddenDirs) and
+     DirectoryExistsFix(Path) then // do not even bother if the path does not exist
+  begin
+    PossiblyHiddenPath := ExcludeTrailingPathDelimiter(Path);
+    while (PossiblyHiddenPath <> '') and
+          (not IsRootPath(PossiblyHiddenPath)) do // Drives have hidden attribute
+    begin
+      Attrs := FileGetAttr(PossiblyHiddenPath, False);
+      if (Attrs and faHidden) = faHidden then
+      begin
+        if Assigned(FOnNeedHiddenDirectories) then
+        begin
+          FOnNeedHiddenDirectories(Self);
+        end;
+        Break;
+      end
+        else
+      begin
+        PossiblyHiddenPath := ExtractFileDir(PossiblyHiddenPath);
+      end;
+    end;
+  end;
+
   {Find existing path or parent path of not existing path:}
   repeat
     Result := FindNodeToPath(Path);

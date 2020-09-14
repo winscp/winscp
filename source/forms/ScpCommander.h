@@ -495,6 +495,7 @@ __published:
   void __fastcall LocalPathLabelMaskClick(TObject *Sender);
   void __fastcall LocalOpenDirButtonPopup(TTBCustomItem *Sender, bool FromLink);
   void __fastcall RemoteOpenDirButtonPopup(TTBCustomItem *Sender, bool FromLink);
+  void __fastcall LocalDriveViewNeedHiddenDirectories(TObject *Sender);
 
 private:
   bool FConstructed;
