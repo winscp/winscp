@@ -4628,11 +4628,10 @@ void __fastcall TCustomScpExplorerForm::UpdateStatusBar()
       UpdateStatusPanelText(SessionStatusBar->Panels->Items[0]);
     }
 
-    SessionStatusBar->Panels->Items[0]->Hint = FNoteHints;
-
     SessionStatusBar->Panels->Items[SessionStatusBar->Panels->Count - 1]->Caption =
       FormatDateTimeSpan(Configuration->TimeFormat, Now() - SessionInfo.LoginTime);
   }
+  SessionStatusBar->Panels->Items[0]->Hint = FNoteHints;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::UpdateStatusPanelText(TTBXStatusPanel * Panel)
