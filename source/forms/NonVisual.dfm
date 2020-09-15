@@ -1640,7 +1640,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'Command'
       Caption = '&Paste'
-      HelpKeyword = 'task_upload#using_copy_amp:paste'
+      HelpKeyword = 'clipboard'
       Hint = 
         'Paste files from clipboard to current directory in active panel;' +
         ' or opens path from clipboard in active panel; or opens session ' +
@@ -1705,6 +1705,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'Selected Operation'
       Caption = '&Transfer Files in Clipboard'
+      HelpKeyword = 'clipboard'
       Hint = 'Transfer files whose names are in clipboard'
     end
     object LocalCopyAction: TAction
@@ -2275,6 +2276,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'Selected Operation'
       Caption = '&Copy'
+      HelpKeyword = 'clipboard#copy'
       Hint = 'Copy|Copy the selected files to clipboard'
       ImageIndex = 111
       ShortCut = 16451
@@ -2290,6 +2292,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 12
       Category = 'Focused Operation'
       Caption = '&Copy'
+      HelpKeyword = 'clipboard#copy'
       Hint = 'Copy|Copy the selected files to clipboard'
       ImageIndex = 111
       ShortCut = 16451
