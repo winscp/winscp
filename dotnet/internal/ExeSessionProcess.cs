@@ -1019,17 +1019,40 @@ namespace WinSCP
 
                     _logger.WriteLine("Version of {0} is {1}, product {2} version is {3}", exePath, version.FileVersion, version.ProductName, version.ProductVersion);
 
+                    Exception accessException = null;
+                    try
+                    {
+                        using (File.OpenRead(exePath))
+                        {
+                        }
+                        long size = new FileInfo(exePath).Length;
+                        _logger.WriteLine($"Size of the executable file is {size}");
+                    }
+                    catch (Exception e)
+                    {
+                        _logger.WriteLine("Accessing executable file failed");
+                        _logger.WriteException(e);
+                        accessException = e;
+                    }
+
                     if (_session.DisableVersionCheck)
                     {
                         _logger.WriteLine("Version check disabled (not recommended)");
                     }
                     else if (assemblyVersion.ProductVersion != version.ProductVersion)
                     {
-                        throw _logger.WriteException(
-                            new SessionLocalException(
-                                _session, string.Format(CultureInfo.CurrentCulture,
-                                    "The version of {0} ({1}) does not match version of this assembly {2} ({3}).",
-                                    exePath, version.ProductVersion, _logger.GetAssemblyFilePath(), assemblyVersion.ProductVersion)));
+                        string message;
+                        if (string.IsNullOrEmpty(version.ProductVersion) && (accessException != null))
+                        {
+                            message = $"Cannot access {exePath}";
+                        }
+                        else
+                        {
+                            message =
+                                $"The version of {exePath} ({version.ProductVersion}) does not match " + 
+                                $"version of this assembly {_logger.GetAssemblyFilePath()} ({assemblyVersion.ProductVersion}).";
+                        }
+                        throw _logger.WriteException(new SessionLocalException(_session, message, accessException));
                     }
                 }
             }
