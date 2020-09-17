@@ -34,7 +34,7 @@ object NonVisualDataModule: TNonVisualDataModule
       end
     end
     object Duplicate3: TTBXItem
-      Action = RemoteCopyToAction
+      Action = RemoteCopyToFocusedAction
     end
     object Moveto6: TTBXItem
       Action = RemoteMoveToFocusedAction
