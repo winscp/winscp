@@ -539,7 +539,7 @@ begin
     end;
   end;
 
-  FileOperator.Flags := [foAllowUndo, foNoConfirmMkDir];
+  FileOperator.Flags := FileOperatorDefaultFlags;
   if RenameOnCollision then
   begin
     FileOperator.Flags := FileOperator.Flags + [foRenameOnCollision];
@@ -833,7 +833,6 @@ begin
   FNotRelative := False;
 
   FFileOperator := TFileOperator.Create(Self);
-  FFileOperator.Flags := [foAllowUndo, foNoConfirmMkDir];
   FDirOK := True;
   FPath := '';
 
@@ -2851,7 +2850,7 @@ begin
 
   with FFileOperator do
   begin
-    Flags := [foAllowUndo, foNoConfirmation];
+    Flags := FileOperatorDefaultFlags + [foNoConfirmation];
     Operation := foRename;
     OperandFrom.Clear;
     OperandTo.Clear;

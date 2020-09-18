@@ -175,6 +175,9 @@ Type
     Property WantMappingHandle :Boolean  Read GetWantMappingHandle Write SetWantMappingHandle Stored false;
   end;
 
+const
+  FileOperatorDefaultFlags = [foAllowUndo, foNoConfirmMkDir];
+
 procedure Register;
 
 resourcestring
@@ -296,7 +299,8 @@ begin
  fLastFrom := TStringList.Create;
  fLastTo   := TStringList.Create;
  fCanUndo  := False;
- FData.fFlags := FOF_ALLOWUNDO OR FOF_NOCONFIRMMKDIR;
+ FData.fFlags := 0;
+ Flags := FileOperatorDefaultFlags;
 end; {Create}
 
 

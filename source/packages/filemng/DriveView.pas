@@ -478,7 +478,6 @@ begin
   end;
 
   FFileOperator := TFileOperator.Create(Self);
-  FFileOperator.Flags := [foAllowUndo, foNoConfirmMkDir];
 
   FShowVolLabel := True;
   FChangeFlag := False;
@@ -835,7 +834,7 @@ begin
 
     with FFileOperator do
     begin
-      Flags := [foAllowUndo, foNoConfirmation];
+      Flags := FileOperatorDefaultFlags + [foNoConfirmation];
       Operation := foRename;
       OperandFrom.Clear;
       OperandTo.Clear;
