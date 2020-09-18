@@ -132,7 +132,6 @@ Type
     FLastOperation : TFileOperation;
     fLastFlags     : TFileOperationFlags;
     fCanUndo       : Boolean;
-    FOwner         : TComponent;
     Procedure SetOperation( Value :TFileOperation );
     Function  GetOperation :TFileOperation;
     Function  GetWantMappingHandle :Boolean;
@@ -293,7 +292,6 @@ end;
 Constructor TFileOperator.Create(aOwner :TComponent);
 begin
  inherited Create(aOwner);
- FOwner    := aOwner;
  fFrom     := TStringList.Create;
  fTo       := TStringList.Create;
  fLastFrom := TStringList.Create;
@@ -329,8 +327,8 @@ begin {Execute}
   STo   := ConvertOperand(FTo);
   FData.pFrom := PChar( SFrom );
   FData.pTo := PChar( STo );
-  IF (FOwner is TWinControl) And TWinControl(FOwner).HandleAllocated Then
-    FData.Wnd := GetParentForm(TWinControl(FOwner)).Handle
+  IF (Owner is TWinControl) And TWinControl(Owner).HandleAllocated Then
+    FData.Wnd := GetParentForm(TWinControl(Owner)).Handle
   Else
     FData.Wnd := Application.Handle;
 
