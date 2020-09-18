@@ -1069,6 +1069,7 @@ namespace WinSCP
 
                 void onGetEndWithExit()
                 {
+                    Logger.WriteLine("Closing download stream");
                     try
                     {
                         onGetEnd();
@@ -1076,6 +1077,7 @@ namespace WinSCP
                     finally
                     {
                         Logger.Lock.Exit();
+                        Logger.WriteLine("Closed download stream");
                         result.Check();
                     }
                 }
