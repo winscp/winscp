@@ -478,7 +478,6 @@ begin
   end;
 
   FFileOperator := TFileOperator.Create(Self);
-  FFileOperator.ProgressTitle := coFileOperatorTitle;
   FFileOperator.Flags := [foAllowUndo, foNoConfirmMkDir];
 
   FShowVolLabel := True;
