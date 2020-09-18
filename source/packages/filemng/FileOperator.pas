@@ -132,7 +132,6 @@ Type
     FLastOperation : TFileOperation;
     fLastFlags     : TFileOperationFlags;
     fCanUndo       : Boolean;
-    FProgressTitle : String;
     FOwner         : TComponent;
     Procedure SetOperation( Value :TFileOperation );
     Function  GetOperation :TFileOperation;
@@ -173,7 +172,6 @@ Type
 {==============================================================}
     Property Operation : TFileOperation  Read GetOperation Write SetOperation Stored false;
     Property Flags : TFileOperationFlags Read GetFlags     Write SetFlags     Stored false;
-    Property ProgressTitle : String      Read FProgressTitle Write FProgressTitle;
     Property WantMappingHandle :Boolean  Read GetWantMappingHandle Write SetWantMappingHandle Stored false;
   end;
 
@@ -299,7 +297,6 @@ begin
  fLastTo   := TStringList.Create;
  fCanUndo  := False;
  FData.fFlags := FOF_ALLOWUNDO OR FOF_NOCONFIRMMKDIR;
- FProgressTitle := SFileOperation;
 end; {Create}
 
 

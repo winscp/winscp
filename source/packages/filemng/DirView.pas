@@ -833,7 +833,6 @@ begin
   FNotRelative := False;
 
   FFileOperator := TFileOperator.Create(Self);
-  FFileOperator.ProgressTitle := coFileOperatorTitle;
   FFileOperator.Flags := [foAllowUndo, foNoConfirmMkDir];
   FDirOK := True;
   FPath := '';
