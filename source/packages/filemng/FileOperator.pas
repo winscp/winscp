@@ -179,8 +179,6 @@ const
 
 procedure Register;
 
-resourcestring
-  SFileOperation = 'File Operation';
 {==============================================================}
 implementation
 {==============================================================}
