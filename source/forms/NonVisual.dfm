@@ -2309,6 +2309,48 @@ object NonVisualDataModule: TNonVisualDataModule
       ImageIndex = 56
       ShortCut = 49221
     end
+    object LocalLocalCopyAction: TAction
+      Tag = 9
+      Category = 'Local Selected Operation'
+      Caption = '&Copy'
+      Hint = 'Copy the selected file(s) to another directory or another name'
+      ImageIndex = 78
+    end
+    object LocalLocalMoveAction: TAction
+      Tag = 9
+      Category = 'Local Selected Operation'
+      Caption = '&Move'
+      Hint = 'Move the selected file(s) to another directory or rename them'
+      ImageIndex = 100
+    end
+    object LocalOtherCopyAction: TAction
+      Tag = 14
+      Category = 'Local Selected Operation'
+      Caption = '&Copy'
+      Hint = 'Copy the selected file(s) to another directory or another name'
+      ImageIndex = 78
+    end
+    object LocalOtherMoveAction: TAction
+      Tag = 14
+      Category = 'Local Selected Operation'
+      Caption = '&Move'
+      Hint = 'Move the selected file(s) to another directory or rename them'
+      ImageIndex = 100
+    end
+    object LocalLocalCopyFocusedAction: TAction
+      Tag = 8
+      Category = 'Local Focused Operation'
+      Caption = '&Copy'
+      Hint = 'Copy the selected file(s) to another directory or another name'
+      ImageIndex = 78
+    end
+    object LocalLocalMoveFocusedAction: TAction
+      Tag = 8
+      Category = 'Local Focused Operation'
+      Caption = '&Move'
+      Hint = 'Move the selected file(s) to another directory or rename them'
+      ImageIndex = 100
+    end
   end
   object ExplorerBarPopup: TTBXPopupMenu
     Images = GlyphsModule.ExplorerImages
@@ -3193,6 +3235,12 @@ object NonVisualDataModule: TNonVisualDataModule
       object TBXItem54: TTBXItem
         Action = LocalMoveFocusedAction
       end
+    end
+    object TBXItem102: TTBXItem
+      Action = LocalLocalCopyFocusedAction
+    end
+    object TBXItem101: TTBXItem
+      Action = LocalLocalMoveFocusedAction
     end
     object TBXItem57: TTBXItem
       Action = CurrentDeleteFocusedAction

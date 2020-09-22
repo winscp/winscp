@@ -129,9 +129,9 @@ __published:
   TTBXItem *TBXItem29;
   TTBXSeparatorItem *TBXSeparatorItem7;
   TTBXSubmenuItem *CurrentCopyItem;
-  TTBXItem *TBXItem31;
+  TTBXItem *CurrentCopyToItem;
   TTBXItem *CurrentMoveItem;
-  TTBXItem *TBXItem33;
+  TTBXItem *CurrentMoveToItem;
   TTBXItem *TBXItem34;
   TTBXItem *TBXItem35;
   TTBXItem *TBXItem36;
@@ -354,8 +354,8 @@ __published:
   TTBXItem *TBXItem230;
   TTBXSubmenuItem *TBXSubmenuItem231;
   TTBXToolbar *LocalFileToolbar;
-  TTBXSubmenuItem *TBXItem231;
-  TTBXItem *TBXItem232;
+  TTBXSubmenuItem *LocalCopyItem;
+  TTBXItem *LocalMoveItem;
   TTBXItem *TBXItem233;
   TTBXItem *TBXItem234;
   TTBXSubmenuItem *TBXItem235;
@@ -363,8 +363,8 @@ __published:
   TTBXItem *TBXItem236;
   TTBXSeparatorItem *TBXSeparatorItem54;
   TTBXToolbar *RemoteFileToolbar;
-  TTBXSubmenuItem *TBXItem238;
-  TTBXItem *TBXItem239;
+  TTBXSubmenuItem *RemoteCopyItem;
+  TTBXItem *RemoteMoveItem;
   TTBXSeparatorItem *TBXSeparatorItem55;
   TTBXItem *TBXItem240;
   TTBXItem *TBXItem241;
@@ -612,7 +612,6 @@ protected:
   virtual void __fastcall UpdateImages();
   virtual void __fastcall FileColorsChanged();
   virtual void __fastcall ThemeChanged();
-  virtual bool IsLocalBrowserMode();
   void __fastcall DoPathLabelPathClick(TOperationSide Side, const UnicodeString & Path);
   virtual void __fastcall DoRemotePathComboBoxAdjustImageIndex(
     TTBXComboBoxItem * Sender, const UnicodeString AText, int AIndex, int & ImageIndex);
@@ -622,6 +621,7 @@ protected:
   void __fastcall DoLocalPathComboBoxItemClick(TDirView * ADirView, TTBXComboBoxItem * PathComboBox);
   virtual void __fastcall DoRemotePathComboBoxItemClick(TObject * Sender);
   virtual void __fastcall UpdateRemotePathComboBox(bool TextOnly);
+  void __fastcall SetToolbar2ItemAction(TTBXItem * Item, TBasicAction * Action);
 
 public:
   __fastcall TScpCommanderForm(TComponent* Owner);
@@ -648,6 +648,8 @@ public:
   virtual void __fastcall PasteFromClipBoard();
   virtual void __fastcall BrowseFile();
   virtual bool IsSideLocalBrowser(TOperationSide Side);
+  virtual bool IsLocalBrowserMode();
+  virtual void LocalLocalCopy(::TFileOperation Operation, TOperationSide Side, bool OnFocused);
 
   __property double LeftPanelWidth = { read = GetLeftPanelWidth, write = SetLeftPanelWidth };
 };

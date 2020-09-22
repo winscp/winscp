@@ -147,6 +147,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   #define EnabledRemoteSelectedOperation (ScpExplorer->EnableSelectedOperation[osRemote] && HasTerminal)
   #define EnabledRemoteFocusedOperation (ScpExplorer->EnableFocusedOperation[osRemote] && HasTerminal)
   #define EnabledRemoteSelectedFileOperation (ScpExplorer->EnableSelectedFileOperation[osRemote] && HasTerminal)
+  #define EnabledOtherSelectedOperation ScpExplorer->IsLocalBrowserMode() && ScpExplorer->EnableSelectedOperation[osOther]
   // focused operation
   UPD(CurrentDeleteFocusedAction, EnabledFocusedOperation)
   UPD(CurrentPropertiesFocusedAction, EnabledFocusedOperation)
@@ -196,8 +197,10 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
     ScpExplorer->Terminal->IsCapable[fcLocking])
   // local selected operation
   UPD(LocalCopyAction, HasTerminal && EnabledLocalSelectedOperation)
-  UPD(LocalCopyQueueAction, HasTerminal && EnabledLocalSelectedOperation && ScpExplorer->Terminal->IsCapable[fcBackgroundTransfers])
-  UPD(LocalCopyNonQueueAction, HasTerminal && EnabledLocalSelectedOperation)
+  UPDEX1(LocalCopyQueueAction,
+    HasTerminal && EnabledLocalSelectedOperation && ScpExplorer->Terminal->IsCapable[fcBackgroundTransfers],
+    Action->Visible = !ScpExplorer->IsLocalBrowserMode())
+  UPDEX1(LocalCopyNonQueueAction, HasTerminal && EnabledLocalSelectedOperation, Action->Visible = !ScpExplorer->IsLocalBrowserMode())
   UPD(LocalRenameAction2, EnabledLocalSelectedOperation)
   UPD(LocalEditAction2, EnabledLocalSelectedFileOperation && !WinConfiguration->DisableOpenEdit)
   UPD(LocalMoveAction, HasTerminal && EnabledLocalSelectedOperation)
@@ -206,15 +209,23 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(LocalPropertiesAction2, EnabledLocalSelectedOperation)
   UPD(LocalAddEditLinkAction3, ScpExplorer->CanAddEditLink(osLocal))
   UPD(LocalNewFileAction, !WinConfiguration->DisableOpenEdit)
+  UPD(LocalLocalCopyAction, ScpExplorer->IsLocalBrowserMode() && EnabledLocalSelectedOperation)
+  UPD(LocalLocalMoveAction, ScpExplorer->IsLocalBrowserMode() && EnabledLocalSelectedOperation)
+  UPD(LocalOtherCopyAction, EnabledOtherSelectedOperation)
+  UPD(LocalOtherMoveAction, EnabledOtherSelectedOperation)
   // local focused operation
-  UPD(LocalCopyFocusedAction, HasTerminal && EnabledLocalFocusedOperation)
+  UPDEX1(LocalCopyFocusedAction, HasTerminal && EnabledLocalFocusedOperation, Action->Visible = !ScpExplorer->IsLocalBrowserMode())
   UPD(LocalCopyFocusedQueueAction, HasTerminal && EnabledLocalFocusedOperation && ScpExplorer->Terminal->IsCapable[fcBackgroundTransfers])
   UPD(LocalCopyFocusedNonQueueAction, HasTerminal && EnabledLocalFocusedOperation)
   UPD(LocalMoveFocusedAction, HasTerminal && EnabledLocalFocusedOperation)
+  UPDEX1(LocalLocalCopyFocusedAction, ScpExplorer->IsLocalBrowserMode() && EnabledFocusedOperation, Action->Visible = ScpExplorer->IsLocalBrowserMode())
+  UPDEX1(LocalLocalMoveFocusedAction, ScpExplorer->IsLocalBrowserMode() && EnabledFocusedOperation, Action->Visible = ScpExplorer->IsLocalBrowserMode())
   // remote selected operation
   UPD(RemoteCopyAction, EnabledRemoteSelectedOperation)
-  UPD(RemoteCopyQueueAction, EnabledRemoteSelectedOperation && ScpExplorer->Terminal->IsCapable[fcBackgroundTransfers])
-  UPD(RemoteCopyNonQueueAction, EnabledRemoteSelectedOperation)
+  UPDEX1(RemoteCopyQueueAction,
+    EnabledRemoteSelectedOperation && ScpExplorer->Terminal->IsCapable[fcBackgroundTransfers],
+    Action->Visible = !ScpExplorer->IsLocalBrowserMode())
+  UPDEX1(RemoteCopyNonQueueAction, EnabledRemoteSelectedOperation, Action->Visible = !ScpExplorer->IsLocalBrowserMode())
   UPD(RemoteRenameAction2, EnabledRemoteSelectedOperation &&
     ScpExplorer->Terminal->IsCapable[fcRename])
   UPD(RemoteEditAction2, EnabledRemoteSelectedFileOperation && !WinConfiguration->DisableOpenEdit)
@@ -551,11 +562,17 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(LocalPropertiesAction2, ScpExplorer->ExecuteFileOperationCommand(foSetProperties, osLocal, false))
     EXE(LocalAddEditLinkAction3, ScpExplorer->AddEditLink(osLocal, false))
     EXE(LocalNewFileAction, ScpExplorer->EditNew(osLocal))
+    EXE(LocalLocalCopyAction, ScpExplorer->LocalLocalCopy(foCopy, osLocal, false))
+    EXE(LocalLocalMoveAction, ScpExplorer->LocalLocalCopy(foMove, osLocal, false))
+    EXE(LocalOtherCopyAction, ScpExplorer->LocalLocalCopy(foCopy, osOther, false))
+    EXE(LocalOtherMoveAction, ScpExplorer->LocalLocalCopy(foMove, osOther, false))
     // local focused operation
     EXE(LocalCopyFocusedAction, ScpExplorer->ExecuteCopyOperationCommand(osLocal, true, ShortCutFlag))
     EXE(LocalCopyFocusedQueueAction, ScpExplorer->ExecuteCopyOperationCommand(osLocal, true, cocQueue))
     EXE(LocalCopyFocusedNonQueueAction, ScpExplorer->ExecuteCopyOperationCommand(osLocal, true, cocNonQueue))
     EXE(LocalMoveFocusedAction, ScpExplorer->ExecuteFileOperationCommand(foMove, osLocal, true))
+    EXE(LocalLocalCopyFocusedAction, ScpExplorer->LocalLocalCopy(foCopy, osCurrent, true))
+    EXE(LocalLocalMoveFocusedAction, ScpExplorer->LocalLocalCopy(foMove, osCurrent, true))
     // remote selected operation
     EXE(RemoteCopyAction, ScpExplorer->ExecuteCopyOperationCommand(osRemote, false, ShortCutFlag))
     EXE(RemoteCopyQueueAction, ScpExplorer->ExecuteCopyOperationCommand(osRemote, false, cocQueue))
@@ -962,15 +979,21 @@ void __fastcall TNonVisualDataModule::CloneShortcuts()
   CurrentPropertiesAction->ShortCut = CurrentPropertiesFocusedAction->ShortCut;
   // local selected operation
   LocalCopyAction->ShortCut = RemoteCopyAction->ShortCut;
+  LocalLocalCopyAction->ShortCut = RemoteCopyAction->ShortCut;
+  LocalOtherCopyAction->ShortCut = RemoteCopyAction->ShortCut;
   LocalRenameAction2->ShortCut = CurrentRenameAction->ShortCut;
   LocalEditAction2->ShortCut = CurrentEditAction->ShortCut;
   LocalMoveAction->ShortCut = RemoteMoveAction->ShortCut;
+  LocalLocalMoveAction->ShortCut = LocalMoveAction->ShortCut;
+  LocalOtherMoveAction->ShortCut = LocalMoveAction->ShortCut;
   LocalCreateDirAction3->ShortCut = CurrentCreateDirAction->ShortCut;
   LocalDeleteAction2->ShortCut = CurrentDeleteAction->ShortCut;
   LocalPropertiesAction2->ShortCut = CurrentPropertiesAction->ShortCut;
   // local focused operation
   LocalCopyFocusedAction->ShortCut = LocalCopyAction->ShortCut;
   LocalMoveFocusedAction->ShortCut = LocalMoveAction->ShortCut;
+  LocalLocalCopyFocusedAction->ShortCut = LocalCopyAction->ShortCut;
+  LocalLocalMoveFocusedAction->ShortCut = LocalMoveAction->ShortCut;
   // remote selected operation
   RemoteRenameAction2->ShortCut = CurrentRenameAction->ShortCut;
   RemoteEditAction2->ShortCut = CurrentEditAction->ShortCut;

@@ -398,7 +398,6 @@ protected:
   bool __fastcall GetComponentVisible(Byte Component);
   virtual Boolean __fastcall GetHasDirView(TOperationSide Side);
   virtual TCustomDriveView * __fastcall DriveView(TOperationSide Side);
-  virtual bool IsLocalBrowserMode();
   virtual TCustomDirView * GetCurrentLocalBrowser();
   DYNAMIC void __fastcall KeyDown(Word & Key, Classes::TShiftState Shift);
   virtual void __fastcall RestoreFormParams();
@@ -730,6 +729,7 @@ public:
     bool OnFocused, bool NoConfirmation = false, void * Param = NULL);
   void __fastcall ExecuteCopyOperationCommand(
     TOperationSide Side, bool OnFocused, unsigned int Flags);
+  virtual void LocalLocalCopy(TFileOperation Operation, TOperationSide Side, bool OnFocused);
   void __fastcall AdHocCustomCommand(bool OnFocused);
   virtual TCustomDirView * __fastcall DirView(TOperationSide Side);
   virtual bool __fastcall DirViewEnabled(TOperationSide Side);
@@ -745,6 +745,7 @@ public:
   void __fastcall SuspendWindowLock();
   void __fastcall ResumeWindowLock();
   bool __fastcall HasActiveTerminal();
+  virtual bool IsLocalBrowserMode();
 
   void __fastcall NewSession(bool FromSite, const UnicodeString & SessionUrl = L"");
   void __fastcall DuplicateSession();
@@ -859,6 +860,17 @@ public:
   __property TManagedTerminal * Terminal = { read = FTerminal, write = SetTerminal };
   __property TTerminalQueue * Queue = { read = FQueue, write = SetQueue };
   __property TColor SessionColor = { read = FSessionColor, write = SetSessionColor };
+};
+//---------------------------------------------------------------------------
+class TAutoBatch
+{
+public:
+  TAutoBatch(TCustomScpExplorerForm * Form);
+  ~TAutoBatch();
+
+private:
+  TCustomScpExplorerForm * FForm;
+  void * FBatchStorage;
 };
 //---------------------------------------------------------------------------
 #endif

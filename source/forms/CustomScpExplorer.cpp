@@ -106,24 +106,16 @@ private:
   TCustomScpExplorerForm * FForm;
 };
 //---------------------------------------------------------------------------
-class TAutoBatch
+TAutoBatch::TAutoBatch(TCustomScpExplorerForm * Form) :
+  FForm(Form)
 {
-public:
-  TAutoBatch(TCustomScpExplorerForm * Form) :
-    FForm(Form)
-  {
-    FForm->BatchStart(FBatchStorage);
-  }
-
-  ~TAutoBatch()
-  {
-    FForm->BatchEnd(FBatchStorage);
-  }
-
-private:
-  TCustomScpExplorerForm * FForm;
-  void * FBatchStorage;
-};
+  FForm->BatchStart(FBatchStorage);
+}
+//---------------------------------------------------------------------------
+TAutoBatch::~TAutoBatch()
+{
+  FForm->BatchEnd(FBatchStorage);
+}
 //---------------------------------------------------------------------------
 struct TTransferOperationParam
 {
@@ -10162,14 +10154,27 @@ bool __fastcall TCustomScpExplorerForm::IsBusy()
   return (FLockLevel > 0) || DirView(osCurrent)->IsEditing();
 }
 //---------------------------------------------------------------------------
-Boolean __fastcall TCustomScpExplorerForm::AllowedAction(TAction * /*Action*/, TActionAllowed Allowed)
+Boolean __fastcall TCustomScpExplorerForm::AllowedAction(TAction * Action, TActionAllowed Allowed)
 {
   // While the window is disabled, we still seem to process menu shortcuts at least,
   // so stop it at least here.
   // See also TCustomScpExplorerForm::RemoteDirViewBusy
-  return
-    (Allowed == aaUpdate) ||
-    !NonVisualDataModule->Busy;
+  bool Result;
+  if (Allowed == aaUpdate)
+  {
+    Result = true;
+  }
+  else
+  {
+    Result = !NonVisualDataModule->Busy;
+    if (Result && (Allowed == aaShortCut))
+    {
+      // Otherwise F5 for local-local will be swallowed by disabled local<>remote actions in TCustomScpExplorerForm::KeyDown
+      Action->Update();
+      Result = Action->Enabled;
+    }
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::EditMenuItemPopup(TTBCustomItem * Sender, bool FromLink)
@@ -10991,4 +10996,9 @@ bool __fastcall TCustomScpExplorerForm::IsActiveTerminal(TTerminal * Terminal)
 bool __fastcall TCustomScpExplorerForm::HasActiveTerminal()
 {
   return IsActiveTerminal(Terminal);
+}
+//---------------------------------------------------------------------------
+void TCustomScpExplorerForm::LocalLocalCopy(TFileOperation, TOperationSide, bool DebugUsedArg(OnFocused))
+{
+  DebugFail();
 }

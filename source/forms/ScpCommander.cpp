@@ -15,6 +15,7 @@
 #include <GUITools.h>
 #include <DragDrop.hpp>
 #include <StrUtils.hpp>
+#include <IOUtils.hpp>
 
 #include "Glyphs.h"
 #include "NonVisual.h"
@@ -908,6 +909,15 @@ void __fastcall TScpCommanderForm::PanelSplitterDblClick(TObject * Sender)
   FixControlsPlacement();
 }
 //---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::SetToolbar2ItemAction(TTBXItem * Item, TBasicAction * Action)
+{
+  if (Item->Action != Action)
+  {
+    Item->Action = Action;
+    UpdateToolbar2ItemCaption(Item);
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::UpdateControls()
 {
   // Before TCustomScpExplorerForm disables them (when disconnecting)
@@ -946,21 +956,51 @@ void __fastcall TScpCommanderForm::UpdateControls()
   OtherLocalDriveView->Font->Color = LocalDirView->Font->Color;
 
   // TODO_OTHER_LOCAL
-  bool LocalSide = (FCurrentSide == osLocal);
-  TAction * CurrentCopyAction = LocalSide ? NonVisualDataModule->LocalCopyAction : NonVisualDataModule->RemoteCopyAction;
-  if (CurrentCopyItem->Action != CurrentCopyAction)
+  if (IsLocalBrowserMode())
   {
-    CurrentCopyItem->Action = CurrentCopyAction;
-    CurrentCopyToolbar2Item->Action = CurrentCopyAction;
-    UpdateToolbar2ItemCaption(CurrentCopyToolbar2Item);
-
-    CurrentCopyNonQueueItem->Action = LocalSide ? NonVisualDataModule->LocalCopyNonQueueAction : NonVisualDataModule->RemoteCopyNonQueueAction;
-    CurrentCopyQueueItem->Action = LocalSide ? NonVisualDataModule->LocalCopyQueueAction : NonVisualDataModule->RemoteCopyQueueAction;
-
-    TAction * CurrentMoveAction = LocalSide ? NonVisualDataModule->LocalMoveAction : NonVisualDataModule->RemoteMoveAction;
-    CurrentMoveItem->Action = CurrentMoveAction;
-    CurrentMoveToolbar2Item->Action = CurrentMoveAction;
-    UpdateToolbar2ItemCaption(CurrentMoveToolbar2Item);
+    CurrentCopyItem->Visible = false;
+    if (FCurrentSide == osLocal)
+    {
+      CurrentCopyToItem->Action = NonVisualDataModule->LocalLocalCopyAction;
+      CurrentMoveToItem->Action = NonVisualDataModule->LocalLocalMoveAction;
+    }
+    else
+    {
+      CurrentCopyToItem->Action = NonVisualDataModule->LocalOtherCopyAction;
+      CurrentMoveToItem->Action = NonVisualDataModule->LocalOtherMoveAction;
+    }
+    LocalCopyItem->Action = NonVisualDataModule->LocalLocalCopyAction;
+    LocalMoveItem->Action = NonVisualDataModule->LocalLocalMoveAction;
+    RemoteCopyItem->Action = NonVisualDataModule->LocalOtherCopyAction;
+    RemoteMoveItem->Action = NonVisualDataModule->LocalOtherMoveAction;
+    SetToolbar2ItemAction(CurrentCopyToolbar2Item, CurrentCopyToItem->Action);
+    SetToolbar2ItemAction(CurrentMoveToolbar2Item, CurrentMoveToItem->Action);
+  }
+  else
+  {
+    CurrentCopyItem->Visible = true;
+    CurrentCopyToItem->Action = NonVisualDataModule->RemoteCopyToAction;
+    CurrentMoveToItem->Action = NonVisualDataModule->RemoteMoveToAction;
+    if (IsSideLocalBrowser(FCurrentSide))
+    {
+      CurrentCopyItem->Action = NonVisualDataModule->LocalCopyAction;
+      CurrentMoveItem->Action = NonVisualDataModule->LocalMoveAction;
+      CurrentCopyNonQueueItem->Action = NonVisualDataModule->LocalCopyNonQueueAction;
+      CurrentCopyQueueItem->Action = NonVisualDataModule->LocalCopyQueueAction;
+    }
+    else
+    {
+      CurrentCopyItem->Action = NonVisualDataModule->RemoteCopyAction;
+      CurrentMoveItem->Action = NonVisualDataModule->RemoteMoveAction;
+      CurrentCopyNonQueueItem->Action = NonVisualDataModule->RemoteCopyNonQueueAction;
+      CurrentCopyQueueItem->Action = NonVisualDataModule->RemoteCopyQueueAction;
+    }
+    LocalCopyItem->Action = NonVisualDataModule->LocalCopyAction;
+    LocalMoveItem->Action = NonVisualDataModule->LocalMoveAction;
+    RemoteCopyItem->Action = NonVisualDataModule->RemoteCopyAction;
+    RemoteMoveItem->Action = NonVisualDataModule->RemoteMoveAction;
+    SetToolbar2ItemAction(CurrentCopyToolbar2Item, CurrentCopyItem->Action);
+    SetToolbar2ItemAction(CurrentMoveToolbar2Item, CurrentMoveItem->Action);
   }
 
   CommandLineCombo->Enabled = IsSideLocalBrowser(FCurrentSide) || CanConsole();
@@ -2562,3 +2602,63 @@ void __fastcall TScpCommanderForm::LocalDriveViewNeedHiddenDirectories(TObject *
   }
 }
 //---------------------------------------------------------------------------
+void TScpCommanderForm::LocalLocalCopy(::TFileOperation Operation, TOperationSide Side, bool OnFocused)
+{
+  std::unique_ptr<TFileOperator> FileOperator(new TFileOperator(NULL));
+  switch (Operation)
+  {
+    case ::foCopy:
+      FileOperator->Operation = Fileoperator::foCopy;
+      break;
+    case ::foMove:
+      FileOperator->Operation = Fileoperator::foMove;
+      break;
+    default:
+      DebugFail();
+      Abort();
+  }
+
+  TOperationSide OtherSide;
+  switch (GetSide(Side))
+  {
+    case osLocal:
+      OtherSide = osOther;
+      break;
+    case osOther:
+      OtherSide = osLocal;
+      break;
+    default:
+      DebugFail();
+      Abort();
+  }
+
+  TCustomDirView * SourceDirView = DirView(Side);
+  UnicodeString DestinationDir = DirView(OtherSide)->PathName;
+  FileOperator->Flags = FileOperator->Flags << foMultiDestFiles;
+  FileOperator->OperandFrom->Clear();
+  SourceDirView->CreateFileList(OnFocused, true, FileOperator->OperandFrom);
+  FileOperator->OperandTo->Clear();
+  for (int Index = 0; Index < FileOperator->OperandFrom->Count; Index++)
+  {
+    UnicodeString SourcePath = FileOperator->OperandFrom->Strings[Index];
+    UnicodeString DestinationPath = TPath::Combine(DestinationDir, TPath::GetFileName(SourcePath));
+    FileOperator->OperandTo->Add(DestinationPath);
+  }
+
+  SourceDirView->ClearSelection();
+
+  {
+    TAutoBatch AutoBatch(this);
+    FileOperator->Execute();
+  }
+
+  ReloadLocalDirectory(DestinationDir);
+  if (Operation == ::foMove)
+  {
+    UnicodeString SourceDir = SourceDirView->PathName;
+    if (!SamePaths(SourceDir, DestinationDir))
+    {
+      ReloadLocalDirectory(SourceDir);
+    }
+  }
+}

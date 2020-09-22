@@ -238,10 +238,10 @@ inherited ScpCommanderForm: TScpCommanderForm
             Action = NonVisualDataModule.RemoteMoveAction
           end
         end
-        object TBXItem31: TTBXItem
+        object CurrentCopyToItem: TTBXItem
           Action = NonVisualDataModule.RemoteCopyToAction
         end
-        object TBXItem33: TTBXItem
+        object CurrentMoveToItem: TTBXItem
           Action = NonVisualDataModule.RemoteMoveToAction
         end
         object TBXItem34: TTBXItem
@@ -1321,7 +1321,7 @@ inherited ScpCommanderForm: TScpCommanderForm
         ParentShowHint = False
         ShowHint = True
         TabOrder = 3
-        object TBXItem238: TTBXSubmenuItem
+        object RemoteCopyItem: TTBXSubmenuItem
           Action = NonVisualDataModule.RemoteCopyAction
           DisplayMode = nbdmImageAndText
           DropdownCombo = True
@@ -1333,7 +1333,7 @@ inherited ScpCommanderForm: TScpCommanderForm
           end
           object TBXSeparatorItem59: TTBXSeparatorItem
           end
-          object TBXItem239: TTBXItem
+          object RemoteMoveItem: TTBXItem
             Action = NonVisualDataModule.RemoteMoveAction
           end
         end
@@ -1670,7 +1670,7 @@ inherited ScpCommanderForm: TScpCommanderForm
         ParentShowHint = False
         ShowHint = True
         TabOrder = 3
-        object TBXItem231: TTBXSubmenuItem
+        object LocalCopyItem: TTBXSubmenuItem
           Action = NonVisualDataModule.LocalCopyAction
           DisplayMode = nbdmImageAndText
           DropdownCombo = True
@@ -1682,7 +1682,7 @@ inherited ScpCommanderForm: TScpCommanderForm
           end
           object TBXSeparatorItem58: TTBXSeparatorItem
           end
-          object TBXItem232: TTBXItem
+          object LocalMoveItem: TTBXItem
             Action = NonVisualDataModule.LocalMoveAction
           end
         end

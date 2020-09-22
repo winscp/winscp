@@ -654,6 +654,14 @@ __published:    // IDE-managed Components
   TAction *RemoteExploreDirectoryAction;
   TTBXItem *TBXItem99;
   TTBXItem *TBXItem100;
+  TAction *LocalLocalCopyAction;
+  TAction *LocalLocalMoveAction;
+  TAction *LocalOtherCopyAction;
+  TAction *LocalOtherMoveAction;
+  TAction *LocalLocalCopyFocusedAction;
+  TAction *LocalLocalMoveFocusedAction;
+  TTBXItem *TBXItem101;
+  TTBXItem *TBXItem102;
   void __fastcall ExplorerActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall SessionIdleTimerTimer(TObject *Sender);
