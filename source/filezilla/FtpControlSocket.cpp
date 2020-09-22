@@ -550,6 +550,14 @@ void CFtpControlSocket::Connect(t_server &server)
       DoClose();
       return;
     }
+    else
+    {
+      LogMessage(FZ_LOG_INFO, L"Connection pending");
+    }
+  }
+  else
+  {
+    LogMessage(FZ_LOG_INFO, L"Connected");
   }
   m_ServerName = logontype?fwhost:hostname;
   m_LastRecvTime = m_LastSendTime = CTime::GetCurrentTime();
@@ -2310,6 +2318,14 @@ bool CFtpControlSocket::ConnectTransferSocket(const CString & host, UINT port)
     {
       result = false;
     }
+    else
+    {
+      LogMessage(FZ_LOG_INFO, L"Connection pending");
+    }
+  }
+  else
+  {
+    LogMessage(FZ_LOG_INFO, L"Connected");
   }
   return result;
 }
