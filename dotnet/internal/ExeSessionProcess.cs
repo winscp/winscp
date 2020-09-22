@@ -10,6 +10,7 @@ using System.Runtime.InteropServices;
 using System.Reflection;
 using System.Security.Principal;
 using System.Security.AccessControl;
+using System.ComponentModel;
 
 namespace WinSCP
 {
@@ -1001,6 +1002,9 @@ namespace WinSCP
             return path;
         }
 
+        [DllImport("version.dll", CharSet = CharSet.Auto, SetLastError = true, BestFitMapping = false)]
+        public static extern int GetFileVersionInfoSize(string lptstrFilename, out int handle);
+
         private void CheckVersion(string exePath, FileVersionInfo assemblyVersion)
         {
             using (_logger.CreateCallstack())
@@ -1027,6 +1031,17 @@ namespace WinSCP
                         }
                         long size = new FileInfo(exePath).Length;
                         _logger.WriteLine($"Size of the executable file is {size}");
+
+                        int handle;
+                        int verInfoSize = GetFileVersionInfoSize(exePath, out handle);
+                        if (verInfoSize == 0)
+                        {
+                            throw new Exception($"Cannot retrieve {exePath} version info", new Win32Exception());
+                        }
+                        else
+                        {
+                            _logger.WriteLine($"Size of the executable file version info is {verInfoSize}");
+                        }
                     }
                     catch (Exception e)
                     {
@@ -1044,12 +1059,12 @@ namespace WinSCP
                         string message;
                         if (string.IsNullOrEmpty(version.ProductVersion) && (accessException != null))
                         {
-                            message = $"Cannot access {exePath}";
+                            message = $"Cannot use {exePath}";
                         }
                         else
                         {
                             message =
-                                $"The version of {exePath} ({version.ProductVersion}) does not match " + 
+                                $"The version of {exePath} ({version.ProductVersion}) does not match " +
                                 $"version of this assembly {_logger.GetAssemblyFilePath()} ({assemblyVersion.ProductVersion}).";
                         }
                         throw _logger.WriteException(new SessionLocalException(_session, message, accessException));
