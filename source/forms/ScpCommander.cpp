@@ -2393,7 +2393,14 @@ void __fastcall TScpCommanderForm::DoLocalDirViewContextPopup(TOperationSide Sid
   {
     DirViewContextPopupDefaultItem(Side, NonVisualDataModule->LocalOpenMenuItem, dcaOpen);
     DirViewContextPopupDefaultItem(Side, NonVisualDataModule->LocalEditMenuItem, dcaEdit);
-    DirViewContextPopupDefaultItem(Side, NonVisualDataModule->LocalCopyMenuItem, dcaCopy);
+    if (IsLocalBrowserMode())
+    {
+      DirViewContextPopupDefaultItem(Side, NonVisualDataModule->LocalLocalCopyMenuItem, dcaCopy);
+    }
+    else
+    {
+      DirViewContextPopupDefaultItem(Side, NonVisualDataModule->LocalCopyMenuItem, dcaCopy);
+    }
 
     DirViewContextPopup(Side, fcLocalPopup, MousePos);
     Handled = true;
@@ -2602,7 +2609,8 @@ void __fastcall TScpCommanderForm::LocalDriveViewNeedHiddenDirectories(TObject *
   }
 }
 //---------------------------------------------------------------------------
-void TScpCommanderForm::LocalLocalCopy(::TFileOperation Operation, TOperationSide Side, bool OnFocused)
+void TScpCommanderForm::LocalLocalCopy(
+  ::TFileOperation Operation, TOperationSide Side, bool OnFocused, bool DebugUsedArg(NoConfirmation))
 {
   std::unique_ptr<TFileOperator> FileOperator(new TFileOperator(NULL));
   switch (Operation)

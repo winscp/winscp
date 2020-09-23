@@ -3236,7 +3236,7 @@ object NonVisualDataModule: TNonVisualDataModule
         Action = LocalMoveFocusedAction
       end
     end
-    object TBXItem102: TTBXItem
+    object LocalLocalCopyMenuItem: TTBXItem
       Action = LocalLocalCopyFocusedAction
     end
     object TBXItem101: TTBXItem

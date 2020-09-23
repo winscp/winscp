@@ -5321,8 +5321,14 @@ void __fastcall TCustomScpExplorerForm::DoDirViewExecFile(TObject * Sender,
         UnlockWindow();
         try
         {
-          ExecuteFileOperation(
-            foCopy, Side, true, !WinConfiguration->CopyOnDoubleClickConfirmation);
+          if (IsLocalBrowserMode())
+          {
+            LocalLocalCopy(foCopy, Side, true, !WinConfiguration->CopyOnDoubleClickConfirmation);
+          }
+          else
+          {
+            ExecuteFileOperation(foCopy, Side, true, !WinConfiguration->CopyOnDoubleClickConfirmation);
+          }
         }
         __finally
         {
@@ -10999,7 +11005,8 @@ bool __fastcall TCustomScpExplorerForm::HasActiveTerminal()
   return IsActiveTerminal(Terminal);
 }
 //---------------------------------------------------------------------------
-void TCustomScpExplorerForm::LocalLocalCopy(TFileOperation, TOperationSide, bool DebugUsedArg(OnFocused))
+void TCustomScpExplorerForm::LocalLocalCopy(
+  TFileOperation, TOperationSide, bool DebugUsedArg(OnFocused), bool DebugUsedArg(NoConfirmation))
 {
   DebugFail();
 }

@@ -661,7 +661,7 @@ __published:    // IDE-managed Components
   TAction *LocalLocalCopyFocusedAction;
   TAction *LocalLocalMoveFocusedAction;
   TTBXItem *TBXItem101;
-  TTBXItem *TBXItem102;
+  TTBXItem *LocalLocalCopyMenuItem;
   void __fastcall ExplorerActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall SessionIdleTimerTimer(TObject *Sender);

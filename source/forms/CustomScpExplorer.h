@@ -729,7 +729,7 @@ public:
     bool OnFocused, bool NoConfirmation = false, void * Param = NULL);
   void __fastcall ExecuteCopyOperationCommand(
     TOperationSide Side, bool OnFocused, unsigned int Flags);
-  virtual void LocalLocalCopy(TFileOperation Operation, TOperationSide Side, bool OnFocused);
+  virtual void LocalLocalCopy(TFileOperation Operation, TOperationSide Side, bool OnFocused, bool NoConfirmation);
   void __fastcall AdHocCustomCommand(bool OnFocused);
   virtual TCustomDirView * __fastcall DirView(TOperationSide Side);
   virtual bool __fastcall DirViewEnabled(TOperationSide Side);
