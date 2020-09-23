@@ -8397,7 +8397,8 @@ bool __fastcall TCustomScpExplorerForm::CanPasteFromClipBoard()
   else
   {
     UnicodeString ClipboardText;
-    if (NonEmptyTextFromClipboard(ClipboardText))
+    if (NonEmptyTextFromClipboard(ClipboardText) &&
+        (ClipboardText.Pos(L"\n") == 0)) // it's already trimmed
     {
       if (StoredSessions->IsUrl(ClipboardText))
       {
