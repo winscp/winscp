@@ -215,5 +215,6 @@ void __fastcall RethrowException(Exception * E);
 UnicodeString __fastcall GetExceptionHelpKeyword(Exception * E);
 UnicodeString __fastcall MergeHelpKeyword(const UnicodeString & PrimaryHelpKeyword, const UnicodeString & SecondaryHelpKeyword);
 bool __fastcall IsInternalErrorHelpKeyword(const UnicodeString & HelpKeyword);
+UnicodeString __fastcall AddContextToExceptionMessage(const Exception & E, const UnicodeString & NewContext);
 //---------------------------------------------------------------------------
 #endif  // Exceptions

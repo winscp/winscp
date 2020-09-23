@@ -59,7 +59,13 @@ static bool __fastcall WellKnownException(
     {
       throw EAccessViolation(E->Message);
     }
-    Message = MainInstructions(LoadStr(ACCESS_VIOLATION_ERROR3));
+    UnicodeString S = E->Message;
+    UnicodeString Dummy;
+    if (!ExtractMainInstructions(S, Dummy))
+    {
+      S = UnicodeString();
+    }
+    Message = MainInstructions(LoadStr(ACCESS_VIOLATION_ERROR3)) + S;
     CounterName = L"AccessViolations";
     Clone.reset(new EAccessViolation(E->Message));
   }
@@ -521,4 +527,21 @@ void __fastcall RethrowException(Exception * E)
   {
     throw ExtException(E, L"");
   }
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall AddContextToExceptionMessage(const Exception & E, const UnicodeString & NewContext)
+{
+  UnicodeString MainMessage;
+  UnicodeString Context = E.Message;
+  if (!ExtractMainInstructions(Context, MainMessage))
+  {
+    MainMessage = E.Message;
+    Context = NewContext;
+  }
+  else
+  {
+    Context += L"\n" + NewContext;
+  }
+  UnicodeString Result = MainInstructions(MainMessage) + Context;
+  return Result;
 }
