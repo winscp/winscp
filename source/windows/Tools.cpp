@@ -796,58 +796,94 @@ bool __fastcall IsFormatInClipboard(unsigned int Format)
 //---------------------------------------------------------------------------
 HANDLE __fastcall OpenTextFromClipboard(const wchar_t *& Text)
 {
-  HANDLE Result = NULL;
-  if (OpenClipboard(0))
+  UnicodeString ErrorContext;
+  try
   {
-    // Check also for CF_TEXT?
-    Result = GetClipboardData(CF_UNICODETEXT);
-    if (Result != NULL)
+    HANDLE Result = NULL;
+    ErrorContext = L"open";
+    if (OpenClipboard(0))
     {
-      Text = static_cast<const wchar_t*>(GlobalLock(Result));
+      // Check also for CF_TEXT?
+      ErrorContext = L"getdata";
+      Result = GetClipboardData(CF_UNICODETEXT);
+      if (Result != NULL)
+      {
+        ErrorContext = L"lock";
+        Text = static_cast<const wchar_t*>(GlobalLock(Result));
+      }
+      else
+      {
+        ErrorContext = L"close";
+        CloseClipboard();
+      }
     }
-    else
-    {
-      CloseClipboard();
-    }
+    return Result;
   }
-  return Result;
+  catch (EAccessViolation & E)
+  {
+    throw EAccessViolation(AddContextToExceptionMessage(E, ErrorContext));
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall CloseTextFromClipboard(HANDLE Handle)
 {
-  if (Handle != NULL)
+  UnicodeString ErrorContext;
+  try
   {
-    GlobalUnlock(Handle);
+    if (Handle != NULL)
+    {
+      ErrorContext = "unlock";
+      GlobalUnlock(Handle);
+    }
+    ErrorContext = "close";
+    CloseClipboard();
   }
-  CloseClipboard();
+  catch (EAccessViolation & E)
+  {
+    throw EAccessViolation(AddContextToExceptionMessage(E, ErrorContext));
+  }
 }
 //---------------------------------------------------------------------------
 bool __fastcall TextFromClipboard(UnicodeString & Text, bool Trim)
 {
-  const wchar_t * AText = NULL;
-  HANDLE Handle = OpenTextFromClipboard(AText);
-  bool Result = (Handle != NULL);
-  if (Result)
+  UnicodeString ErrorContext;
+  try
   {
-    // For all current uses (URL pasting, key/fingerprint pasting, known_hosts pasting, "more messages" copying,
-    // permissions pasting), 64KB is large enough.
-    const size_t Limit = 64*1024;
-    size_t Size = GlobalSize(Handle);
-    if (Size > Limit)
+    const wchar_t * AText = NULL;
+    ErrorContext = L"open";
+    HANDLE Handle = OpenTextFromClipboard(AText);
+    bool Result = (Handle != NULL);
+    if (Result)
     {
-      Text = UnicodeString(AText, Limit);
+      // For all current uses (URL pasting, key/fingerprint pasting, known_hosts pasting, "more messages" copying,
+      // permissions pasting), 64KB is large enough.
+      const size_t Limit = 64*1024;
+      ErrorContext = L"size";
+      size_t Size = GlobalSize(Handle);
+      if (Size > Limit)
+      {
+        ErrorContext = FORMAT(L"substring(%d)", (int(Size)));
+        Text = UnicodeString(AText, Limit);
+      }
+      else
+      {
+        ErrorContext = FORMAT(L"string(%d)", (int(Size)));
+        Text = AText;
+      }
+      if (Trim)
+      {
+        ErrorContext = L"trim";
+        Text = Text.Trim();
+      }
+      ErrorContext = L"close";
+      CloseTextFromClipboard(Handle);
     }
-    else
-    {
-      Text = AText;
-    }
-    if (Trim)
-    {
-      Text = Text.Trim();
-    }
-    CloseTextFromClipboard(Handle);
+    return Result;
   }
-  return Result;
+  catch (EAccessViolation & E)
+  {
+    throw EAccessViolation(AddContextToExceptionMessage(E, ErrorContext));
+  }
 }
 //---------------------------------------------------------------------------
 bool __fastcall NonEmptyTextFromClipboard(UnicodeString & Text)
