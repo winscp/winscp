@@ -591,6 +591,7 @@ protected:
   void __fastcall PostNote(UnicodeString Note, unsigned int Seconds,
     TNotifyEvent OnNoteClick, TObject * NoteData);
   bool __fastcall CancelNote(bool Force);
+  void __fastcall UpdateNoteHints();
   void __fastcall UpdatesChecked();
   void __fastcall UpdatesNoteClicked(TObject * Sender);
   void __fastcall TransferPresetNoteClicked(TObject * Sender);
