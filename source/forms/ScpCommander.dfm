@@ -1876,13 +1876,6 @@ inherited ScpCommanderForm: TScpCommanderForm
       end
       item
         Alignment = taCenter
-        ImageIndex = 1
-        MaxSize = 35
-        Size = 35
-        Tag = 0
-      end
-      item
-        Alignment = taCenter
         MaxSize = 70
         ViewPriority = 98
         Size = 70
@@ -1891,7 +1884,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       end
       item
         Alignment = taCenter
-        ImageIndex = 0
+        ImageIndex = 1
         MaxSize = 35
         Size = 35
         Tag = 0

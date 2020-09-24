@@ -352,7 +352,7 @@ BEGIN
         EDITOR_INVALID_LINE, "Invalid line number."
         LINK_EDIT_CAPTION, "Edit link/shortcut"
         LINK_ADD_CAPTION, "Add link/shortcut"
-        STATUS_NOT_CONNECTED, "Not connected."
+        STATUS_NOT_CONNECTED2, "Not connected"
         STATUS_CONNECTING, "Connecting..."
         OPENEDSESSION_HINT, "Select session '%s'"
         ADD_BOOKMARK_CAPTION, "Add Location Profile"

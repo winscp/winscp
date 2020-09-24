@@ -56,7 +56,7 @@
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
 #define WM_COMPONENT_HIDE (WM_WINSCP_USER + 4)
-static const int SessionPanelCount = 4;
+static const int SessionPanelCount = 3;
 //---------------------------------------------------------------------------
 class TMutexGuard
 {
@@ -605,13 +605,9 @@ void __fastcall TCustomScpExplorerForm::TerminalChanged(bool Replaced)
         DirView(osRemote)->ClearState();
       }
     }
-
-    if (!Replaced && Terminal->Active)
-    {
-      InitStatusBar();
-    }
   }
 
+  InitStatusBar();
   UpdateTransferList();
   // Update panels Enable state before refreshing the labels
   UpdateControls();
@@ -4547,48 +4543,77 @@ void __fastcall TCustomScpExplorerForm::KeyDown(Word & Key, Classes::TShiftState
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::InitStatusBar()
 {
-  DebugAssert(Terminal != NULL);
-  const TSessionInfo & SessionInfo = Terminal->GetSessionInfo();
-  const TFileSystemInfo & FileSystemInfo = Terminal->GetFileSystemInfo();
+  bool OpenedTerminal = false;
+  UnicodeString ProtocolName;
+  UnicodeString ProtocolNameHint;
+  UnicodeString SecurityProtocolName;
+  UnicodeString DurationHint;
+
+  // See the comment in TScpCommanderForm::UpdateControls()
+  TTerminal * ActiveTerminal = TTerminalManager::Instance()->ActiveTerminal;
+  if (ActiveTerminal != NULL)
+  {
+    // Active is not enough here
+    if (ActiveTerminal->Status == ssOpened)
+    {
+      const TSessionInfo & SessionInfo = ActiveTerminal->GetSessionInfo();
+      const TFileSystemInfo & FileSystemInfo = ActiveTerminal->GetFileSystemInfo();
+      if (FileSystemInfo.ProtocolName.IsEmpty())
+      {
+        ProtocolName = SessionInfo.ProtocolName;
+      }
+      else
+      {
+        ProtocolName = FileSystemInfo.ProtocolName;
+      }
+      ProtocolNameHint = LoadStr(STATUS_PROTOCOL_HINT);
+      SecurityProtocolName = SessionInfo.SecurityProtocolName;
+
+      DurationHint = LoadStr(STATUS_DURATION_HINT);
+      OpenedTerminal = true;
+    }
+    else if (ActiveTerminal->Status > ssClosed)
+    {
+      ProtocolName = LoadStr(STATUS_CONNECTING);
+    }
+    else
+    {
+      ProtocolName = LoadStr(STATUS_NOT_CONNECTED2);
+    }
+  }
+
   TTBXStatusBar * SessionStatusBar = (TTBXStatusBar *)GetComponent(fcStatusBar);
 
   int Offset = SessionStatusBar->Panels->Count - SessionPanelCount;
 
-  bool SecurityEnabled = !SessionInfo.SecurityProtocolName.IsEmpty();
-  SessionStatusBar->Panels->Items[Offset + 0]->Enabled = SecurityEnabled;
-  // expanded from ?: to avoid memory leaks
+  TTBXStatusPanel * ProtocolStatusPanel = SessionStatusBar->Panels->Items[Offset + 0];
+  ProtocolStatusPanel->ViewPriority = (ActiveTerminal != NULL) ? 100 : 0;
+  if (ProtocolStatusPanel->Caption != ProtocolName)
+  {
+    ProtocolStatusPanel->Caption = ProtocolName;
+    std::unique_ptr<TCanvas> Canvas(CreateControlCanvas(SessionStatusBar));
+    ProtocolStatusPanel->Size = Canvas->TextWidth(ProtocolName) + ScaleByTextHeight(SessionStatusBar, 32);
+  }
+  ProtocolStatusPanel->Hint = ProtocolNameHint;
+
+  TTBXStatusPanel * SecurityStatusPanel = SessionStatusBar->Panels->Items[Offset + 1];
+  SecurityStatusPanel->ViewPriority = OpenedTerminal ? 98 : 0;
+  bool SecurityEnabled = !SecurityProtocolName.IsEmpty();
+  SecurityStatusPanel->Enabled = SecurityEnabled;
+  UnicodeString SecurityProtocolHint;
   if (SecurityEnabled)
   {
-    SessionStatusBar->Panels->Items[Offset + 0]->Hint =
-      FMTLOAD(STATUS_SECURE, (SessionInfo.SecurityProtocolName));
+    SecurityProtocolHint = FMTLOAD(STATUS_SECURE, (SecurityProtocolName));
   }
   else
   {
-    SessionStatusBar->Panels->Items[Offset + 0]->Hint = LoadStr(STATUS_INSECURE);
+    SecurityProtocolHint = LoadStr(STATUS_INSECURE);
   }
+  SecurityStatusPanel->Hint = SecurityProtocolHint;
 
-  if (FileSystemInfo.ProtocolName.IsEmpty())
-  {
-    SessionStatusBar->Panels->Items[Offset + 1]->Caption = SessionInfo.ProtocolName;
-  }
-  else
-  {
-    SessionStatusBar->Panels->Items[Offset + 1]->Caption = FileSystemInfo.ProtocolName;
-  }
-  SessionStatusBar->Panels->Items[Offset + 1]->Hint = LoadStr(STATUS_PROTOCOL_HINT);
-
-  SessionStatusBar->Panels->Items[Offset + 2]->Enabled =
-    (!SessionInfo.CSCompression.IsEmpty() || !SessionInfo.SCCompression.IsEmpty());
-  UnicodeString CSCompressionStr = DefaultStr(SessionInfo.CSCompression, LoadStr(NO_STR));
-  UnicodeString SCCompressionStr = DefaultStr(SessionInfo.SCCompression, LoadStr(NO_STR));
-  UnicodeString CompressionStr = CSCompressionStr;
-  if (CSCompressionStr != SCCompressionStr)
-  {
-    CompressionStr += UnicodeString(L"/") + SCCompressionStr;
-  }
-  SessionStatusBar->Panels->Items[Offset + 2]->Hint = FMTLOAD(STATUS_COMPRESSION_HINT, (CompressionStr));
-
-  SessionStatusBar->Panels->Items[Offset + 3]->Hint = LoadStr(STATUS_DURATION_HINT);
+  TTBXStatusPanel * DurationStatusPanel = SessionStatusBar->Panels->Items[Offset + 2];
+  DurationStatusPanel->ViewPriority = OpenedTerminal ? 99 : 0;
+  DurationStatusPanel->Hint = DurationHint;
 
   UpdateStatusBar();
 }
@@ -4597,33 +4622,29 @@ void __fastcall TCustomScpExplorerForm::UpdateStatusBar()
 {
   TTBXStatusBar * SessionStatusBar = (TTBXStatusBar *)GetComponent(fcStatusBar);
   DebugAssert(SessionStatusBar != NULL);
-  if (!HasActiveTerminal() || (Terminal->Status < ssOpened))
+
+  TTBXStatusPanel * NoteStatusPanel = SessionStatusBar->Panels->Items[0];
+  if (!FNote.IsEmpty())
   {
-    // note: (Terminal->Status < sshReady) currently never happens here,
-    // so STATUS_CONNECTING is never used
-    SessionStatusBar->SimplePanel = true;
-    SessionStatusBar->SimpleText = LoadStr(
-      !HasActiveTerminal() ? STATUS_NOT_CONNECTED : STATUS_CONNECTING);
+    NoteStatusPanel->Caption = FNote;
   }
   else
   {
-    DebugAssert(Terminal);
-    SessionStatusBar->SimplePanel = false;
-    const TSessionInfo & SessionInfo = Terminal->GetSessionInfo();
-
-    if (!FNote.IsEmpty())
-    {
-      SessionStatusBar->Panels->Items[0]->Caption = FNote;
-    }
-    else
-    {
-      UpdateStatusPanelText(SessionStatusBar->Panels->Items[0]);
-    }
-
-    SessionStatusBar->Panels->Items[SessionStatusBar->Panels->Count - 1]->Caption =
-      FormatDateTimeSpan(Configuration->TimeFormat, Now() - SessionInfo.LoginTime);
+    UpdateStatusPanelText(NoteStatusPanel);
   }
-  SessionStatusBar->Panels->Items[0]->Hint = FNoteHints;
+  NoteStatusPanel->Hint = FNoteHints;
+
+  UnicodeString LoginTime;
+  // See the comment in TScpCommanderForm::UpdateControls()
+  TTerminal * ActiveTerminal = TTerminalManager::Instance()->ActiveTerminal;
+  // Active is not enough here
+  if ((ActiveTerminal != NULL) && (ActiveTerminal->Status == ssOpened))
+  {
+    const TSessionInfo & SessionInfo = ActiveTerminal->GetSessionInfo();
+    LoginTime = FormatDateTimeSpan(Configuration->TimeFormat, Now() - SessionInfo.LoginTime);
+  }
+  TTBXStatusPanel * DurationStatusPanel = SessionStatusBar->Panels->Items[SessionStatusBar->Panels->Count - 1];
+  DurationStatusPanel->Caption = LoginTime;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::UpdateStatusPanelText(TTBXStatusPanel * Panel)
@@ -4908,7 +4929,13 @@ void __fastcall TCustomScpExplorerForm::TerminalDisconnected()
   DetachTerminal(Terminal);
   RemoteDirView->Terminal = Terminal;
   UpdateRemotePathComboBox(false);
+  InitStatusBar();
   UpdateControls();
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::TerminalConnecting()
+{
+  InitStatusBar();
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::ReconnectSession()
@@ -7104,6 +7131,7 @@ void __fastcall TCustomScpExplorerForm::UpdatePixelsPerInchMainWindowCounter()
 void __fastcall TCustomScpExplorerForm::StartingDisconnected()
 {
   DoTerminalListChanged();
+  InitStatusBar();
   UpdateControls();
 }
 //---------------------------------------------------------------------------
@@ -9495,7 +9523,8 @@ void __fastcall TCustomScpExplorerForm::StatusBarPanelDblClick(
       OnNoteClick(NoteData.get());
     }
   }
-  if (Panel->Index >= Sender->Panels->Count - SessionPanelCount)
+  if (HasActiveTerminal() &&
+      (Panel->Index >= Sender->Panels->Count - SessionPanelCount))
   {
     FileSystemInfo();
   }

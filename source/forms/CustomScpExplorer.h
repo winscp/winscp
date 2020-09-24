@@ -792,6 +792,7 @@ public:
   void __fastcall LastTerminalClosed(TObject * Sender);
   void __fastcall TerminalRemoved(TObject * Sender);
   void __fastcall TerminalDisconnected();
+  void __fastcall TerminalConnecting();
   void __fastcall TerminalListChanged(TObject * Sender);
   void __fastcall ApplicationTitleChanged();
   unsigned int __fastcall MoreMessageDialog(const UnicodeString Message,
