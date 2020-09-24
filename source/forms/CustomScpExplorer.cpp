@@ -9458,10 +9458,11 @@ void __fastcall TCustomScpExplorerForm::SynchronizeBrowsingChanged()
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::ToggleShowHiddenFiles()
 {
-  WinConfiguration->ShowHiddenFiles = !WinConfiguration->ShowHiddenFiles;
   PostNote(FORMAT(LoadStrPart(SHOW_HIDDEN_FILES_TOGGLE, 1),
     (LoadStrPart(SHOW_HIDDEN_FILES_TOGGLE,
       (WinConfiguration->ShowHiddenFiles ? 2 : 3)))), 0, NULL, NULL);
+  GetComponent(fcStatusBar)->Repaint(); // toggling ShowHiddenFiles takes time, force repaint beforehand
+  WinConfiguration->ShowHiddenFiles = !WinConfiguration->ShowHiddenFiles;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::SetFormatSizeBytes(TFormatBytesStyle Style)
