@@ -9373,6 +9373,11 @@ void __fastcall TCustomScpExplorerForm::NoteTimer(TObject * /*Sender*/)
   CancelNote(true);
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::UpdateNoteHints()
+{
+  FNoteHints = FNotes->Text.TrimRight();
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::AddNote(UnicodeString Note, bool UpdateNow)
 {
   int P = Note.Pos(L"\n");
@@ -9390,8 +9395,7 @@ void __fastcall TCustomScpExplorerForm::AddNote(UnicodeString Note, bool UpdateN
 
   if (UpdateNow)
   {
-    FNoteHints = FNotes->Text;
-    FNoteHints.Delete(FNoteHints.Length() - 1, 2);
+    UpdateNoteHints();
     UpdateStatusBar();
   }
 }
@@ -9405,8 +9409,7 @@ void __fastcall TCustomScpExplorerForm::PostNote(UnicodeString Note,
     Note.SetLength(P - 1);
   }
 
-  FNoteHints = FNotes->Text;
-  FNoteHints.Delete(FNoteHints.Length() - 1, 2);
+  UpdateNoteHints();
   FNote = Note;
   SAFE_DESTROY(FNoteData);
   FNoteData = NoteData;
