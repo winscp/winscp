@@ -1450,7 +1450,7 @@ bool __fastcall TLocalCustomCommand::PatternReplacement(
   bool Result;
   if (Pattern == L"!\\")
   {
-    // When used as "!\" in an argument to PowerShell, the trailing \ would escpae the ",
+    // When used as "!\" in an argument to PowerShell, the trailing \ would escape the ",
     // so we exclude it
     Replacement = ExcludeTrailingBackslash(FLocalPath);
     Result = true;
