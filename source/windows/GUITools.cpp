@@ -171,16 +171,16 @@ void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
         Password = SessionData->Password;
       }
     }
-    TCustomCommandData Data(SessionData, SessionData->UserName, Password);
-    TRemoteCustomCommand RemoteCustomCommand(Data, SessionData->RemoteDirectory);
+    TCustomCommandData Data(SessionData, L"domain\\username"/*SessionData->UserName*/, Password);
+    TLocalCustomCommand LocalCustomCommand(Data, SessionData->RemoteDirectory, SessionData->LocalDirectory);
     TWinInteractiveCustomCommand InteractiveCustomCommand(
-      &RemoteCustomCommand, L"PuTTY", UnicodeString());
+      &LocalCustomCommand, L"PuTTY", UnicodeString());
 
     UnicodeString Params =
-      RemoteCustomCommand.Complete(InteractiveCustomCommand.Complete(AParams, false), true);
+      LocalCustomCommand.Complete(InteractiveCustomCommand.Complete(AParams, false), true);
     UnicodeString PuttyParams;
 
-    if (!RemoteCustomCommand.IsSiteCommand(AParams))
+    if (!LocalCustomCommand.IsSiteCommand(AParams))
     {
       {
         bool SessionList = false;
@@ -272,7 +272,7 @@ void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
       }
     }
 
-    if (!Password.IsEmpty() && !RemoteCustomCommand.IsPasswordCommand(AParams))
+    if (!Password.IsEmpty() && !LocalCustomCommand.IsPasswordCommand(AParams))
     {
       Password = NormalizeString(Password); // if password is empty, we should quote it always
       AddToList(PuttyParams, FORMAT(L"-pw %s", (EscapePuttyCommandParam(Password))), L" ");
