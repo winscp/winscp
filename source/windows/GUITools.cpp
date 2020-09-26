@@ -171,7 +171,7 @@ void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
         Password = SessionData->Password;
       }
     }
-    TCustomCommandData Data(SessionData, L"domain\\username"/*SessionData->UserName*/, Password);
+    TCustomCommandData Data(SessionData, SessionData->UserName, Password);
     TLocalCustomCommand LocalCustomCommand(Data, SessionData->RemoteDirectory, SessionData->LocalDirectory);
     TWinInteractiveCustomCommand InteractiveCustomCommand(
       &LocalCustomCommand, L"PuTTY", UnicodeString());
