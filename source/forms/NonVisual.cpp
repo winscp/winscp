@@ -226,14 +226,13 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
     EnabledRemoteSelectedOperation && ScpExplorer->Terminal->IsCapable[fcBackgroundTransfers],
     Action->Visible = !ScpExplorer->IsLocalBrowserMode())
   UPDEX1(RemoteCopyNonQueueAction, EnabledRemoteSelectedOperation, Action->Visible = !ScpExplorer->IsLocalBrowserMode())
-  UPD(RemoteRenameAction2, EnabledRemoteSelectedOperation &&
-    ScpExplorer->Terminal->IsCapable[fcRename])
-  UPD(RemoteEditAction2, EnabledRemoteSelectedFileOperation && !WinConfiguration->DisableOpenEdit)
+  UPD(RemoteRenameAction2, (EnabledRemoteSelectedOperation && ScpExplorer->Terminal->IsCapable[fcRename]) || EnabledOtherSelectedOperation)
+  UPD(RemoteEditAction2, (EnabledRemoteSelectedFileOperation || EnabledOtherSelectedOperation) && !WinConfiguration->DisableOpenEdit)
   UPD(RemoteMoveAction, EnabledRemoteSelectedOperation)
   UPD(RemoteCreateDirAction3, DirViewEnabled(osRemote))
   UPD(RemoteNewFileAction, DirViewEnabled(osRemote) && !WinConfiguration->DisableOpenEdit)
-  UPD(RemoteDeleteAction2, EnabledRemoteSelectedOperation)
-  UPD(RemotePropertiesAction2, EnabledRemoteSelectedOperation)
+  UPD(RemoteDeleteAction2, EnabledRemoteSelectedOperation || EnabledOtherSelectedOperation)
+  UPD(RemotePropertiesAction2, EnabledRemoteSelectedOperation || EnabledOtherSelectedOperation)
   UPD(RemoteAddEditLinkAction3, ScpExplorer->CanAddEditLink(osRemote))
   // remote focused operation
   UPD(RemoteCopyFocusedAction, EnabledRemoteFocusedOperation)
