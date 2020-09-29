@@ -2211,7 +2211,17 @@ void __fastcall TScpCommanderForm::DoLocalPathComboBoxItemClick(TDirView * ADirV
   UnicodeString Path = FLocalPathComboBoxPaths->Strings[PathComboBox->ItemIndex];
   if (PathComboBox->ItemIndex >= FLocalSpecialPaths)
   {
-    ADirView->ExecuteDrive(DriveInfo->GetDriveKey(Path));
+    UnicodeString Drive = DriveInfo->GetDriveKey(Path);
+    TDirView * CurrentDirView = dynamic_cast<TDirView *>(DirView(osCurrent));
+    if (IsLocalBrowserMode() && (ADirView != CurrentDirView) &&
+        SamePaths(DriveInfo->GetDriveKey(CurrentDirView->PathName), Drive))
+    {
+      ADirView->Path = CurrentDirView->PathName;
+    }
+    else
+    {
+      ADirView->ExecuteDrive(Drive);
+    }
   }
   else
   {
