@@ -808,7 +808,7 @@ void __fastcall TTerminalManager::UpdateAppTitle()
     {
       NewTitle = ProgressTitle + L" - " + NewTitle;
     }
-    else if (ActiveTerminal && (ScpExplorer != NULL))
+    else if (ScpExplorer != NULL)
     {
       UnicodeString Path = ScpExplorer->PathForCaption();
       if (!Path.IsEmpty())

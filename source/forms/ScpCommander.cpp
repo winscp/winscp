@@ -2031,8 +2031,9 @@ UnicodeString __fastcall TScpCommanderForm::PathForCaption()
   UnicodeString Result;
   if (IsSideLocalBrowser(FCurrentSide))
   {
-    // for consistency do not show even local path when there is no terminal
-    if (Terminal != NULL)
+    // make sure the path corresponds to the terminal in title
+    // (there's a mismatch, while opening a new session)
+    if (Terminal == TTerminalManager::Instance()->ActiveTerminal)
     {
       switch (WinConfiguration->PathInCaption)
       {
