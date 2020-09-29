@@ -1,4 +1,3 @@
-// TODO_OTHER_LOCAL
 //---------------------------------------------------------------------------
 #include <vcl.h>
 #pragma hdrstop
@@ -955,7 +954,6 @@ void __fastcall TScpCommanderForm::UpdateControls()
   OtherLocalDirView->Font->Color = LocalDirView->Font->Color;
   OtherLocalDriveView->Font->Color = LocalDirView->Font->Color;
 
-  // TODO_OTHER_LOCAL
   if (IsLocalBrowserMode())
   {
     CurrentCopyItem->Visible = false;
