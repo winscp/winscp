@@ -117,7 +117,7 @@ void __fastcall TCopyDialog::AdjustTransferControls()
       UnicodeString TransferStr =
         LoadStr(RemotePaths() ? COPY_COPY_TOREMOTE : COPY_COPY_TOLOCAL);
       // currently the copy dialog is shown when downloading to temp folder
-      // only for drag&drop downloads, for we dare to display d&d specific prompt
+      // only for drag&drop downloads, so we dare to display d&d specific prompt
       UnicodeString DirectionStr =
         LoadStr(((FOptions & coTemp) != 0) ? COPY_TODROP :
           (RemotePaths() ? COPY_TOREMOTE : COPY_TOLOCAL));
@@ -218,6 +218,7 @@ void __fastcall TCopyDialog::AdjustControls()
 
   if (FLAGCLEAR(FOptions, coDoNotShowAgain))
   {
+    // Command-line transfers
     NeverShowAgainCheck->Visible = false;
     ClientHeight = ClientHeight -
       (ShortCutHintPanel->Top - NeverShowAgainCheck->Top);
