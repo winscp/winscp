@@ -2800,7 +2800,15 @@ bool __fastcall TFTPFileSystem::ProcessMessage()
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::DiscardMessages()
 {
-  while (ProcessMessage());
+  try
+  {
+    while (ProcessMessage());
+  }
+  __finally
+  {
+    FReply = 0;
+    FCommandReply = 0;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::WaitForMessages()
