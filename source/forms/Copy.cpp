@@ -403,6 +403,8 @@ void __fastcall TCopyDialog::FormCloseQuery(TObject * /*Sender*/,
 {
   if (ModalResult == DefaultResult(this))
   {
+    ExitActiveControl(this);
+
     if (!RemotePaths() && ((FOptions & coTemp) == 0))
     {
       UnicodeString Dir = Directory;
@@ -437,11 +439,6 @@ void __fastcall TCopyDialog::FormCloseQuery(TObject * /*Sender*/,
         FormatMultiFilesToOneConfirmation(DirectoryEdit->Text, RemotePaths());
       CanClose =
         (MessageDialog(Message, qtConfirmation, qaOK | qaCancel, HELP_NONE) != qaCancel);
-    }
-
-    if (CanClose)
-    {
-      ExitActiveControl(this);
     }
   }
 }
@@ -572,5 +569,16 @@ void __fastcall TCopyDialog::NeverShowAgainCheckClick(TObject * /*Sender*/)
 void __fastcall TCopyDialog::ShortCutHintLabelClick(TObject * /*Sender*/)
 {
   DoPreferencesDialog(pmCommander);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCopyDialog::LocalDirectoryEditExit(TObject *)
+{
+  if (!RemotePaths())
+  {
+    if (DirectoryExistsFix(LocalDirectoryEdit->Text))
+    {
+      LocalDirectoryEdit->Text = IncludeTrailingBackslash(LocalDirectoryEdit->Text) + AnyMask;
+    }
+  }
 }
 //---------------------------------------------------------------------------

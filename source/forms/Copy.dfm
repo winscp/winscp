@@ -43,6 +43,7 @@ object CopyDialog: TCopyDialog
     TabOrder = 0
     Text = 'LocalDirectoryEdit'
     OnChange = ControlChange
+    OnExit = LocalDirectoryEditExit
   end
   object RemoteDirectoryEdit: THistoryComboBox
     Left = 46
