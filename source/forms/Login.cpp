@@ -71,6 +71,7 @@ __fastcall TLoginDialog::TLoginDialog(TComponent* AOwner)
   FSortEnablePending = false;
   FSiteSearch = isName;
   FLinkedForm = NULL;
+  FRestoring = false;
   FPrevPos = TPoint(std::numeric_limits<LONG>::min(), std::numeric_limits<LONG>::min());
 
   // we need to make sure that window procedure is set asap
@@ -1590,23 +1591,34 @@ void __fastcall TLoginDialog::CMDialogKey(TWMKeyDown & Message)
   TForm::Dispatch(&Message);
 }
 //---------------------------------------------------------------------------
-void __fastcall TLoginDialog::WMMoving(TMessage & Message)
+void __fastcall TLoginDialog::WMWindowPosChanged(TWMWindowPosChanged & Message)
 {
   TForm::Dispatch(&Message);
-
-  if (FLinkedForm != NULL)
+  if (FLAGCLEAR(Message.WindowPos->flags, SWP_NOMOVE) && (FLinkedForm != NULL))
   {
     if (FPrevPos.X == std::numeric_limits<LONG>::min())
     {
       FPrevPos = BoundsRect.TopLeft();
     }
-    TRect Rect = *reinterpret_cast<RECT*>(Message.LParam);
-    FLinkedForm->SetBounds(
-      FLinkedForm->Left + (Rect.Left - FPrevPos.X),
-      FLinkedForm->Top + (Rect.Top - FPrevPos.Y),
-      FLinkedForm->Width, FLinkedForm->Height);
-    FPrevPos = Rect.TopLeft();
+    TPoint P = TPoint(Message.WindowPos->x, Message.WindowPos->y);
+    if (FPrevPos != P)
+    {
+      if (!FRestoring)
+      {
+        FLinkedForm->SetBounds(
+          FLinkedForm->Left + (P.X - FPrevPos.X),
+          FLinkedForm->Top + (P.Y - FPrevPos.Y),
+          FLinkedForm->Width, FLinkedForm->Height);
+      }
+      FPrevPos = P;
+    }
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::CMVisibleChanged(TMessage & Message)
+{
+  TAutoFlag RestoringSwitch(FRestoring);
+  TForm::Dispatch(&Message);
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::CMDpiChanged(TMessage & Message)
@@ -1654,9 +1666,13 @@ void __fastcall TLoginDialog::Dispatch(void * Message)
       TForm::Dispatch(Message);
     }
   }
-  else if (M->Msg == WM_MOVING)
+  else if (M->Msg == WM_WINDOWPOSCHANGED)
   {
-    WMMoving(*M);
+    WMWindowPosChanged(*reinterpret_cast<TWMWindowPosChanged *>(M));
+  }
+  else if (M->Msg == CM_VISIBLECHANGED)
+  {
+    CMVisibleChanged(*M);
   }
   else if (M->Msg == CM_DPICHANGED)
   {
