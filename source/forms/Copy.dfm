@@ -168,9 +168,9 @@ object CopyDialog: TCopyDialog
       Height = 28
       AutoSize = False
       Caption = 
-        'In Commander interface a keyboard shortcut F5 is used to transfe' +
-        'r files. Should you want to use it to refresh a file panel, clic' +
-        'k here to go to preferences.'
+        'In Commander interface the keyboard shortcut F5 is used to trans' +
+        'fer files. Should you want to use it to refresh a file panel, cl' +
+        'ick here to go to preferences.'
       ShowAccelChar = False
       WordWrap = True
       OnClick = ShortCutHintLabelClick
