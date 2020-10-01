@@ -45,6 +45,7 @@ __published:
   void __fastcall TransferSettingsButtonDropDownClick(TObject *Sender);
   void __fastcall NeverShowAgainCheckClick(TObject *Sender);
   void __fastcall ShortCutHintLabelClick(TObject *Sender);
+  void __fastcall LocalDirectoryEditExit(TObject *Sender);
 private:
   bool FDefaultToRemote;
   bool FToRemote;
