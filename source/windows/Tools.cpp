@@ -753,6 +753,12 @@ void __fastcall OpenBrowser(UnicodeString URL)
   }
   if (!CopyCommandToClipboard(URL))
   {
+    // Rather arbitrary limit. Opening a URL over approx. 5 KB fails in Chrome, Firefox and Edge.
+    const int URLLimit = 4*1024;
+    if (URL.Length() > URLLimit)
+    {
+      URL.SetLength(URLLimit);
+    }
     ShellExecute(Application->Handle, L"open", URL.c_str(), NULL, NULL, SW_SHOWNORMAL);
   }
 }
