@@ -1206,6 +1206,10 @@ void CFtpControlSocket::OnReceive(int nErrorCode)
       ShowStatus(IDS_STATUSMSG_DISCONNECTED, FZ_LOG_ERROR);
       DoClose();
     }
+    else
+    {
+      LogSocketMessageRaw(FZ_LOG_INFO, L"No data to read");
+    }
     return;
   }
   if (!numread)
@@ -1214,6 +1218,12 @@ void CFtpControlSocket::OnReceive(int nErrorCode)
     buffer = NULL;
     ShowStatus(IDS_STATUSMSG_DISCONNECTED, FZ_LOG_ERROR);
     DoClose();
+  }
+  if (LoggingMessageType(FZ_LOG_INFO))
+  {
+    CString str;
+    str.Format(L"Read %d bytes", numread);
+    LogSocketMessageRaw(FZ_LOG_INFO, str);
   }
 
   for (int i=0; i < numread; i++)
