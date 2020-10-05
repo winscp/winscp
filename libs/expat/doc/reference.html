@@ -1298,7 +1298,7 @@ typedef void
                                     int len);
 </pre>
 <p>Set a text handler. The string your handler receives
-is <em>NOT nul-terminated</em>. You have to use the length argument
+is <em>NOT null-terminated</em>. You have to use the length argument
 to deal with the end of the string. A single block of contiguous text
 free of markup may still result in a sequence of calls to this handler.
 In other words, if you're searching for a pattern in the text, it may
@@ -1576,7 +1576,7 @@ call to the function pointed at by convert. This function may return -1
 if the sequence itself is invalid. The convert pointer may be null if
 there are only single byte codes. The data parameter passed to the convert
 function is the data pointer from <code>XML_Encoding</code>. The
-string s is <em>NOT</em> nul-terminated and points at the sequence of
+string s is <em>NOT</em> null-terminated and points at the sequence of
 bytes to be converted.</p>
 
 <p>The function pointed at by <code>release</code> is called by the
@@ -1904,7 +1904,7 @@ of errors. The position reported is the byte position (in the original
 document or entity encoding) of the first of the sequence of
 characters that generated the current event (or the error that caused
 the parse functions to return <code>XML_STATUS_ERROR</code>.)  The
-exceptions are callbacks trigged by declarations in the document
+exceptions are callbacks triggered by declarations in the document
 prologue, in which case they exact position reported is somewhere in the
 relevant markup, but not necessarily as meaningful as for other
 events.</p>

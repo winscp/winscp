@@ -38,9 +38,11 @@
 #  define WIN32_LEAN_AND_MEAN 1
 
 #  include <windows.h>
+#endif /* defined(_WIN32) */
 
 int
 codepageMap(int cp, int *map) {
+#if defined(_WIN32)
   int i;
   CPINFO info;
   if (! GetCPInfo(cp, &info) || info.MaxCharSize > 2)
@@ -68,32 +70,25 @@ codepageMap(int cp, int *map) {
     }
   }
   return 1;
+#else
+  UNUSED_P(cp);
+  UNUSED_P(map);
+  return 0;
+#endif
 }
 
 int
 codepageConvert(int cp, const char *p) {
+#if defined(_WIN32)
   unsigned short c;
   if (MultiByteToWideChar(cp, MB_PRECOMPOSED | MB_ERR_INVALID_CHARS, p, 2, &c,
                           1)
       == 1)
     return c;
   return -1;
-}
-
-#else /* not _WIN32 */
-
-int
-codepageMap(int cp, int *map) {
-  UNUSED_P(cp);
-  UNUSED_P(map);
-  return 0;
-}
-
-int
-codepageConvert(int cp, const char *p) {
+#else
   UNUSED_P(cp);
   UNUSED_P(p);
   return -1;
+#endif
 }
-
-#endif /* not _WIN32 */

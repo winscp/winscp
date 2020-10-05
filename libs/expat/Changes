@@ -2,7 +2,68 @@ NOTE: We are looking for help with a few things:
       https://github.com/libexpat/libexpat/labels/help%20wanted
       If you can help, please get in touch.  Thanks!
 
-Release 2.2.9 Wed Septemper 25 2019
+Release 2.2.10 Sat October 3 2020
+        Bug fixes:
+  #390 #395 #398  Fix undefined behavior during parsing caused by
+                    pointer arithmetic with NULL pointers
+       #404 #405  Fix reading uninitialized variable during parsing
+            #406  xmlwf: Add missing check for malloc NULL return
+
+        Other changes:
+            #396  Windows: Drop support for Visual Studio <=8.0/2005
+            #409  Windows: Add missing file "Changes" to the installer
+                    to fix compilation with CMake from installed sources
+            #403  xmlwf: Document exit codes in xmlwf manpage and
+                    exit with code 3 (rather than code 1) for output errors
+                    when used with "-d DIRECTORY"
+       #356 #359  MinGW: Provide declaration of rand_s for mingwrt <5.3.0
+       #383 #392  Autotools: Use -Werror while configure tests the compiler
+                    for supported compile flags to avoid false positives
+  #383 #393 #394  Autotools: Improve handling of user (C|CPP|CXX|LD)FLAGS,
+                    e.g. ensure that they have the last word over flags added
+                    while running ./configure
+            #360  CMake: Create libexpatw.{dll,so} and expatw.pc (with emphasis
+                    on suffix "w") with -DEXPAT_CHAR_TYPE=(ushort|wchar_t)
+            #360  CMake: Detect and deny unsupported build combinations
+                    involving -DEXPAT_CHAR_TYPE=(ushort|wchar_t)
+            #360  CMake: Install pre-compiled shipped xmlwf.1 manpage in case
+                    of -DEXPAT_BUILD_DOCS=OFF
+  #375 #380 #419  CMake: Fix use of Expat by means of add_subdirectory
+       #407 #408  CMake: Keep expat target name constant at "expat"
+                    (i.e. refrain from using the target name to control
+                    build artifact filenames)
+            #385  CMake: Fix compilation with -DEXPAT_SHARED_LIBS=OFF for
+                    Windows
+                  CMake: Expose man page compilation as target "xmlwf-manpage"
+       #413 #414  CMake: Introduce option EXPAT_BUILD_PKGCONFIG
+                    to control generation of pkg-config file "expat.pc"
+            #424  CMake: Add minimalistic support for building binary packages
+                    with CMake target "package"; based on CPack
+            #366  CMake: Add option -DEXPAT_OSSFUZZ_BUILD=(ON|OFF) with
+                    default OFF to build fuzzer code against OSS-Fuzz and
+                    related environment variable LIB_FUZZING_ENGINE
+            #354  Fix testsuite for -DEXPAT_DTD=OFF and -DEXPAT_NS=OFF, each
+    #354 #355 ..
+       #356 #412  Address compiler warnings
+       #368 #369  Address pngcheck warnings with doc/*.png images
+                  Version info bumped from 7:11:6 to 7:12:6
+
+        Special thanks to:
+            asavah
+            Ben Wagner
+            Bhargava Shastry
+            Frank Landgraf
+            Jeffrey Walton
+            Joe Orton
+            Kleber Tarcísio
+            Ma Lin
+            Maciej Sroczyński
+            Mohammed Khajapasha
+            Vadim Zeitlin
+                 and
+            Cppcheck 2.0 and the Cppcheck team
+
+Release 2.2.9 Wed September 25 2019
         Other changes:
                   examples: Drop executable bits from elements.c
             #349  Windows: Change the name of the Windows DLLs from expat*.dll
@@ -17,7 +78,7 @@ Release 2.2.9 Wed Septemper 25 2019
         Special thanks to:
             Ben Wagner
 
-Release 2.2.8 Fri Septemper 13 2019
+Release 2.2.8 Fri September 13 2019
         Security fixes:
        #317 #318  CVE-2019-15903 -- Fix heap overflow triggered by
                     XML_GetCurrentLineNumber (or XML_GetCurrentColumnNumber),
@@ -115,10 +176,10 @@ Release 2.2.8 Fri Septemper 13 2019
         Special thanks to:
             David Loffredo
             Joonun Jang
-            Khajapasha Mohammed
             Kishore Kunche
             Marco Maggi
             Mitch Phillips
+            Mohammed Khajapasha
             Rolf Ade
             xantares
             Zhongyuan Zhou
