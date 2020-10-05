@@ -36,6 +36,7 @@ include_HEADERS = \
 lib_LTLIBRARIES = libexpat.la
 
 libexpat_la_LDFLAGS = \
+    @AM_LDFLAGS@ \
     -no-undefined \
     -version-info @LIBCURRENT@:@LIBREVISION@:@LIBAGE@
 
