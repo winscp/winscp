@@ -9,6 +9,7 @@
 #include <Terminal.h>
 #include <SynchronizeController.h>
 #include <Script.h>
+#include "HistoryComboBox.hpp"
 
 #ifdef LOCALINTERFACE
 #include <LocalInterface.h>
@@ -223,6 +224,15 @@ bool __fastcall DoCopyDialog(
   bool ToRemote, bool Move, TStrings * FileList, UnicodeString & TargetDirectory,
   TGUICopyParamType * Params, int Options, int CopyParamAttrs,
   TSessionData * SessionData, int * OutputOptions, int AutoSubmit);
+bool CopyDialogValidateLocalDirectory(const UnicodeString & Directory, THistoryComboBox * DirectoryEdit);
+bool CopyDialogValidateFileMask(
+  const UnicodeString & FileMask, THistoryComboBox * DirectoryEdit, bool MultipleFiles, bool RemotePaths);
+
+// forms\CopyLocal.cpp
+const cloShortCutHint = 0x01;
+const cloMultipleFiles = 0x02;
+const clooDoNotShowAgain = 0x01;
+bool DoCopyLocalDialog(bool Move, int Options, UnicodeString & TargetDirectory, UnicodeString & FileMask, int & OutputOptions);
 
 // forms\CreateDirectory.cpp
 bool __fastcall DoCreateDirectoryDialog(UnicodeString & Directory,

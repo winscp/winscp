@@ -2619,16 +2619,19 @@ void __fastcall TScpCommanderForm::LocalDriveViewNeedHiddenDirectories(TObject *
 }
 //---------------------------------------------------------------------------
 void TScpCommanderForm::LocalLocalCopy(
-  ::TFileOperation Operation, TOperationSide Side, bool OnFocused, bool DebugUsedArg(NoConfirmation))
+  ::TFileOperation Operation, TOperationSide Side, bool OnFocused, bool NoConfirmation, bool DragDrop, unsigned int Flags)
 {
   std::unique_ptr<TFileOperator> FileOperator(new TFileOperator(NULL));
+  bool Move;
   switch (Operation)
   {
     case ::foCopy:
       FileOperator->Operation = Fileoperator::foCopy;
+      Move = false;
       break;
     case ::foMove:
       FileOperator->Operation = Fileoperator::foMove;
+      Move = true;
       break;
     default:
       DebugFail();
@@ -2651,29 +2654,49 @@ void TScpCommanderForm::LocalLocalCopy(
 
   TCustomDirView * SourceDirView = DirView(Side);
   UnicodeString DestinationDir = DirView(OtherSide)->PathName;
-  FileOperator->Flags = FileOperator->Flags << foMultiDestFiles;
   SourceDirView->CreateFileList(OnFocused, true, FileOperator->OperandFrom);
-  for (int Index = 0; Index < FileOperator->OperandFrom->Count; Index++)
-  {
-    UnicodeString SourcePath = FileOperator->OperandFrom->Strings[Index];
-    UnicodeString DestinationPath = TPath::Combine(DestinationDir, TPath::GetFileName(SourcePath));
-    FileOperator->OperandTo->Add(DestinationPath);
-  }
 
-  SourceDirView->ClearSelection();
+  int OutputOptions =
+    FLAGMASK(GetDoNotShowCopyDialogDefault(DragDrop), clooDoNotShowAgain);
+  bool MultipleFiles = (FileOperator->OperandFrom->Count > 1);
+  int Options =
+    FLAGMASK(FLAGSET(Flags, cocShortCutHint), cloShortCutHint) |
+    FLAGMASK(MultipleFiles, cloMultipleFiles);
+  UnicodeString FileMask = AnyMask;
 
-  {
-    TAutoBatch AutoBatch(this);
-    FileOperator->Execute();
-  }
+  bool Confirmed =
+    NoConfirmation ||
+    DoCopyLocalDialog(Move, Options, DestinationDir, FileMask, OutputOptions);
 
-  ReloadLocalDirectory(DestinationDir);
-  if (Operation == ::foMove)
+  if (Confirmed)
   {
-    UnicodeString SourceDir = SourceDirView->PathName;
-    if (!SamePaths(SourceDir, DestinationDir))
+    HandleDoNotShowCopyDialogAgain(DragDrop, FLAGSET(OutputOptions, clooDoNotShowAgain));
+
+    FileOperator->Flags = FileOperator->Flags << foMultiDestFiles;
+    for (int Index = 0; Index < FileOperator->OperandFrom->Count; Index++)
     {
-      ReloadLocalDirectory(SourceDir);
+      UnicodeString SourcePath = FileOperator->OperandFrom->Strings[Index];
+      UnicodeString FileName = TPath::GetFileName(SourcePath);
+      FileName = MaskFileName(FileName, FileMask);
+      UnicodeString DestinationPath = TPath::Combine(DestinationDir, FileName);
+      FileOperator->OperandTo->Add(DestinationPath);
+    }
+
+    SourceDirView->ClearSelection();
+
+    {
+      TAutoBatch AutoBatch(this);
+      FileOperator->Execute();
+    }
+
+    ReloadLocalDirectory(DestinationDir);
+    if (Operation == ::foMove)
+    {
+      UnicodeString SourceDir = SourceDirView->PathName;
+      if (!SamePaths(SourceDir, DestinationDir))
+      {
+        ReloadLocalDirectory(SourceDir);
+      }
     }
   }
 }

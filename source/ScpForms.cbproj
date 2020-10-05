@@ -104,6 +104,13 @@
 			<BuildOrder>23</BuildOrder>
 		</CppCompile>
 		<FormResources Include="forms\Copy.dfm"/>
+		<CppCompile Include="forms\CopyLocal.cpp">
+			<Form>CopyLocalDialog</Form>
+			<FormType>dfm</FormType>
+			<DependentOn>forms\CopyLocal.h</DependentOn>
+			<BuildOrder>37</BuildOrder>
+		</CppCompile>
+		<FormResources Include="forms\CopyLocal.dfm"/>
 		<CppCompile Include="forms\CopyParamCustom.cpp">
 			<BuildOrder>32</BuildOrder>
 			<Form>CopyParamCustomDialog</Form>

@@ -644,6 +644,8 @@
 #define REMOTE_MENU_CAPTION     6035
 #define LEFT_MENU_CAPTION       6036
 #define RIGHT_MENU_CAPTION      6037
+#define COPY_LOCAL_COPY_CAPTION 6038
+#define COPY_LOCAL_MOVE_CAPTION 6039
 
 // 2xxx is reserved for TextsFileZilla.h
 

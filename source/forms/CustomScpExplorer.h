@@ -715,6 +715,8 @@ protected:
     TTBXComboBoxItem * Sender, const UnicodeString AText, int AIndex, int & ImageIndex);
   virtual void __fastcall DoRemotePathComboBoxCancel(TObject * Sender);
   virtual void __fastcall DoRemotePathComboBoxItemClick(TObject * Sender);
+  bool GetDoNotShowCopyDialogDefault(bool DragDrop);
+  void HandleDoNotShowCopyDialogAgain(bool DragDrop, bool DoNotShowAgain);
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();
@@ -730,7 +732,9 @@ public:
     bool OnFocused, bool NoConfirmation = false, void * Param = NULL);
   void __fastcall ExecuteCopyOperationCommand(
     TOperationSide Side, bool OnFocused, unsigned int Flags);
-  virtual void LocalLocalCopy(TFileOperation Operation, TOperationSide Side, bool OnFocused, bool NoConfirmation);
+  virtual void LocalLocalCopy(
+    TFileOperation Operation, TOperationSide Side, bool OnFocused, bool NoConfirmation, bool DragDrop, unsigned int Flags);
+  void LocalLocalCopyCommand(TFileOperation Operation, TOperationSide Side, bool OnFocused, unsigned int Flags);
   void __fastcall AdHocCustomCommand(bool OnFocused);
   virtual TCustomDirView * __fastcall DirView(TOperationSide Side);
   virtual bool __fastcall DirViewEnabled(TOperationSide Side);

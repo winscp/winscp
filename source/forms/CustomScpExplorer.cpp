@@ -1111,6 +1111,40 @@ void __fastcall TCustomScpExplorerForm::CopyParamDialogAfter(
   // noop
 }
 //---------------------------------------------------------------------------
+bool TCustomScpExplorerForm::GetDoNotShowCopyDialogDefault(bool DragDrop)
+{
+  return DragDrop && (WinConfiguration->DDTransferConfirmation == asAuto);
+}
+//---------------------------------------------------------------------------
+void TCustomScpExplorerForm::HandleDoNotShowCopyDialogAgain(bool DragDrop, bool DoNotShowAgain)
+{
+  if (DoNotShowAgain)
+  {
+    if (DragDrop)
+    {
+      if (WinConfiguration->DDTransferConfirmation == asAuto)
+      {
+        PopupTrayBalloon(
+          NULL, LoadStr(DD_TRANSFER_CONFIRM_OFF2), qtInformation, NULL, 0, EnableDDTransferConfirmation, NULL);
+      }
+      WinConfiguration->DDTransferConfirmation = asOff;
+    }
+    else
+    {
+      WinConfiguration->ConfirmTransferring = false;
+    }
+  }
+  else
+  {
+    // User explicitly unchecked "do not show again",
+    // so show him the dialog the next time
+    if (DragDrop && (WinConfiguration->DDTransferConfirmation == asAuto))
+    {
+      WinConfiguration->DDTransferConfirmation = asOn;
+    }
+  }
+}
+//---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::CopyParamDialog(
   TTransferDirection Direction, TTransferType Type, bool Temp,
   TStrings * FileList, UnicodeString & TargetDirectory, TGUICopyParamType & CopyParam,
@@ -1136,9 +1170,7 @@ bool __fastcall TCustomScpExplorerForm::CopyParamDialog(
     int CopyParamAttrs = (Direction == tdToRemote ?
       UsableCopyParamAttrs.Upload : UsableCopyParamAttrs.Download) |
       FLAGMASK(DisableNewerOnly, cpaNoNewerOnly);
-    int OutputOptions =
-      FLAGMASK(DragDrop && (WinConfiguration->DDTransferConfirmation == asAuto),
-        cooDoNotShowAgain);
+    int OutputOptions = FLAGMASK(GetDoNotShowCopyDialogDefault(DragDrop), cooDoNotShowAgain);
     std::unique_ptr<TSessionData> SessionData(SessionDataForCode());
     FlashOnBackground(); // Particularly when called from ClipboardFakeCreated
     Result = DoCopyDialog(Direction == tdToRemote, Type == ttMove,
@@ -1146,31 +1178,7 @@ bool __fastcall TCustomScpExplorerForm::CopyParamDialog(
 
     if (Result)
     {
-      if (FLAGSET(OutputOptions, cooDoNotShowAgain))
-      {
-        if (DragDrop)
-        {
-          if (WinConfiguration->DDTransferConfirmation == asAuto)
-          {
-            PopupTrayBalloon(NULL, LoadStr(DD_TRANSFER_CONFIRM_OFF2), qtInformation,
-              NULL, 0, EnableDDTransferConfirmation, NULL);
-          }
-          WinConfiguration->DDTransferConfirmation = asOff;
-        }
-        else
-        {
-          WinConfiguration->ConfirmTransferring = false;
-        }
-      }
-      else
-      {
-        // User explicitly unchecked "do not show again",
-        // so show him the dialog the next time
-        if (DragDrop && (WinConfiguration->DDTransferConfirmation == asAuto))
-        {
-          WinConfiguration->DDTransferConfirmation = asOn;
-        }
-      }
+      HandleDoNotShowCopyDialogAgain(DragDrop, FLAGSET(OutputOptions, cooDoNotShowAgain));
 
       CopyParamDialogAfter(Direction, Temp, TargetDirectory);
     }
@@ -5350,7 +5358,7 @@ void __fastcall TCustomScpExplorerForm::DoDirViewExecFile(TObject * Sender,
         {
           if (IsLocalBrowserMode())
           {
-            LocalLocalCopy(foCopy, Side, true, !WinConfiguration->CopyOnDoubleClickConfirmation);
+            LocalLocalCopy(foCopy, Side, true, !WinConfiguration->CopyOnDoubleClickConfirmation, false, 0);
           }
           else
           {
@@ -11039,7 +11047,13 @@ bool __fastcall TCustomScpExplorerForm::HasActiveTerminal()
 }
 //---------------------------------------------------------------------------
 void TCustomScpExplorerForm::LocalLocalCopy(
-  TFileOperation, TOperationSide, bool DebugUsedArg(OnFocused), bool DebugUsedArg(NoConfirmation))
+  TFileOperation, TOperationSide, bool DebugUsedArg(OnFocused), bool DebugUsedArg(NoConfirmation),
+  bool DebugUsedArg(DragDrop), unsigned int DebugUsedArg(Flags))
 {
   DebugFail();
+}
+//---------------------------------------------------------------------------
+void TCustomScpExplorerForm::LocalLocalCopyCommand(TFileOperation Operation, TOperationSide Side, bool OnFocused, unsigned int Flags)
+{
+  LocalLocalCopy(Operation, Side, OnFocused, !WinConfiguration->ConfirmTransferring, false, Flags);
 }

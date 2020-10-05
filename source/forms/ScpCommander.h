@@ -649,7 +649,8 @@ public:
   virtual void __fastcall BrowseFile();
   virtual bool IsSideLocalBrowser(TOperationSide Side);
   virtual bool IsLocalBrowserMode();
-  virtual void LocalLocalCopy(::TFileOperation Operation, TOperationSide Side, bool OnFocused, bool NoConfirmation);
+  virtual void LocalLocalCopy(
+    ::TFileOperation Operation, TOperationSide Side, bool OnFocused, bool NoConfirmation, bool DragDrop, unsigned int Flags);
 
   __property double LeftPanelWidth = { read = GetLeftPanelWidth, write = SetLeftPanelWidth };
 };
