@@ -2652,9 +2652,7 @@ void TScpCommanderForm::LocalLocalCopy(
   TCustomDirView * SourceDirView = DirView(Side);
   UnicodeString DestinationDir = DirView(OtherSide)->PathName;
   FileOperator->Flags = FileOperator->Flags << foMultiDestFiles;
-  FileOperator->OperandFrom->Clear();
   SourceDirView->CreateFileList(OnFocused, true, FileOperator->OperandFrom);
-  FileOperator->OperandTo->Clear();
   for (int Index = 0; Index < FileOperator->OperandFrom->Count; Index++)
   {
     UnicodeString SourcePath = FileOperator->OperandFrom->Strings[Index];
