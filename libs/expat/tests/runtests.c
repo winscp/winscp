@@ -109,6 +109,16 @@ typedef unsigned __int64 uint64_t;
 static XML_Parser g_parser = NULL;
 
 static void
+tcase_add_test__ifdef_xml_dtd(TCase *tc, tcase_test_function test) {
+#ifdef XML_DTD
+  tcase_add_test(tc, test);
+#else
+  UNUSED_P(tc);
+  UNUSED_P(test);
+#endif
+}
+
+static void
 basic_setup(void) {
   g_parser = XML_ParserCreate(NULL);
   if (g_parser == NULL)
@@ -2255,6 +2265,7 @@ START_TEST(test_long_cdata_utf16) {
 END_TEST
 
 /* Test handling of multiple unit UTF-16 characters */
+#ifndef XML_MIN_SIZE /* FIXME workaround -DXML_MIN_SIZE + ASan (issue #332) */
 START_TEST(test_multichar_cdata_utf16) {
   /* Test data is:
    *   <?xml version='1.0' encoding='utf-16'?>
@@ -2276,11 +2287,11 @@ START_TEST(test_multichar_cdata_utf16) {
                       "\0<\0a\0>\0<\0!\0[\0C\0D\0A\0T\0A\0["
                       "\xd8\x34\xdd\x5e\xd8\x34\xdd\x5f"
                       "\0]\0]\0>\0<\0/\0a\0>";
-#ifdef XML_UNICODE
+#  ifdef XML_UNICODE
   const XML_Char *expected = XCS("\xd834\xdd5e\xd834\xdd5f");
-#else
+#  else
   const XML_Char *expected = XCS("\xf0\x9d\x85\x9e\xf0\x9d\x85\x9f");
-#endif
+#  endif
   CharData storage;
 
   CharData_Init(&storage);
@@ -2293,6 +2304,7 @@ START_TEST(test_multichar_cdata_utf16) {
   CharData_CheckXMLChars(&storage, expected);
 }
 END_TEST
+#endif /* ifndef XML_MIN_SIZE */
 
 /* Test that an element name with a UTF-16 surrogate pair is rejected */
 START_TEST(test_utf16_bad_surrogate_pair) {
@@ -2377,6 +2389,7 @@ START_TEST(test_bad_cdata) {
 END_TEST
 
 /* Test failures in UTF-16 CDATA */
+#ifndef XML_MIN_SIZE /* FIXME workaround -DXML_MIN_SIZE + ASan (issue #332) */
 START_TEST(test_bad_cdata_utf16) {
   struct CaseData {
     size_t text_bytes;
@@ -2449,6 +2462,7 @@ START_TEST(test_bad_cdata_utf16) {
   }
 }
 END_TEST
+#endif /* ifndef XML_MIN_SIZE */
 
 static const char *long_cdata_text
     = "<s><![CDATA["
@@ -7049,17 +7063,39 @@ END_TEST
 /* Test that too many colons are rejected */
 START_TEST(test_ns_double_colon) {
   const char *text = "<foo:e xmlns:foo='http://example.org/' foo:a:b='bar' />";
-
-  expect_failure(text, XML_ERROR_INVALID_TOKEN,
-                 "Double colon in attribute name not faulted");
+  const enum XML_Status status
+      = _XML_Parse_SINGLE_BYTES(g_parser, text, (int)strlen(text), XML_TRUE);
+#ifdef XML_NS
+  if ((status == XML_STATUS_OK)
+      || (XML_GetErrorCode(g_parser) != XML_ERROR_INVALID_TOKEN)) {
+    fail("Double colon in attribute name not faulted"
+         " (despite active namespace support)");
+  }
+#else
+  if (status != XML_STATUS_OK) {
+    fail("Double colon in attribute name faulted"
+         " (despite inactive namespace support");
+  }
+#endif
 }
 END_TEST
 
 START_TEST(test_ns_double_colon_element) {
   const char *text = "<foo:bar:e xmlns:foo='http://example.org/' />";
-
-  expect_failure(text, XML_ERROR_INVALID_TOKEN,
-                 "Double colon in element name not faulted");
+  const enum XML_Status status
+      = _XML_Parse_SINGLE_BYTES(g_parser, text, (int)strlen(text), XML_TRUE);
+#ifdef XML_NS
+  if ((status == XML_STATUS_OK)
+      || (XML_GetErrorCode(g_parser) != XML_ERROR_INVALID_TOKEN)) {
+    fail("Double colon in element name not faulted"
+         " (despite active namespace support)");
+  }
+#else
+  if (status != XML_STATUS_OK) {
+    fail("Double colon in element name faulted"
+         " (despite inactive namespace support");
+  }
+#endif
 }
 END_TEST
 
@@ -7329,7 +7365,7 @@ START_TEST(test_misc_version) {
     fail("Version mismatch");
 
 #if ! defined(XML_UNICODE) || defined(XML_UNICODE_WCHAR_T)
-  if (xcstrcmp(version_text, XCS("expat_2.2.9"))) /* needs bump on releases */
+  if (xcstrcmp(version_text, XCS("expat_2.2.10"))) /* needs bump on releases */
     fail("XML_*_VERSION in expat.h out of sync?\n");
 #else
   /* If we have XML_UNICODE defined but not XML_UNICODE_WCHAR_T
@@ -7480,7 +7516,6 @@ START_TEST(test_misc_stop_during_end_handler_issue_240_2) {
 }
 END_TEST
 
-#ifdef XML_DTD
 START_TEST(test_misc_deny_internal_entity_closing_doctype_issue_317) {
   const char *const inputOne = "<!DOCTYPE d [\n"
                                "<!ENTITY % e ']><d/>'>\n"
@@ -7541,7 +7576,6 @@ START_TEST(test_misc_deny_internal_entity_closing_doctype_issue_317) {
   }
 }
 END_TEST
-#endif
 
 static void
 alloc_setup(void) {
@@ -11259,13 +11293,14 @@ make_suite(void) {
                  test_wfc_undeclared_entity_with_external_subset_standalone);
   tcase_add_test(tc_basic, test_entity_with_external_subset_unless_standalone);
   tcase_add_test(tc_basic, test_wfc_no_recursive_entity_refs);
-  tcase_add_test(tc_basic, test_ext_entity_set_encoding);
-  tcase_add_test(tc_basic, test_ext_entity_no_handler);
-  tcase_add_test(tc_basic, test_ext_entity_set_bom);
-  tcase_add_test(tc_basic, test_ext_entity_bad_encoding);
-  tcase_add_test(tc_basic, test_ext_entity_bad_encoding_2);
-  tcase_add_test(tc_basic, test_ext_entity_invalid_parse);
-  tcase_add_test(tc_basic, test_ext_entity_invalid_suspended_parse);
+  tcase_add_test__ifdef_xml_dtd(tc_basic, test_ext_entity_set_encoding);
+  tcase_add_test__ifdef_xml_dtd(tc_basic, test_ext_entity_no_handler);
+  tcase_add_test__ifdef_xml_dtd(tc_basic, test_ext_entity_set_bom);
+  tcase_add_test__ifdef_xml_dtd(tc_basic, test_ext_entity_bad_encoding);
+  tcase_add_test__ifdef_xml_dtd(tc_basic, test_ext_entity_bad_encoding_2);
+  tcase_add_test__ifdef_xml_dtd(tc_basic, test_ext_entity_invalid_parse);
+  tcase_add_test__ifdef_xml_dtd(tc_basic,
+                                test_ext_entity_invalid_suspended_parse);
   tcase_add_test(tc_basic, test_dtd_default_handling);
   tcase_add_test(tc_basic, test_dtd_attr_handling);
   tcase_add_test(tc_basic, test_empty_ns_without_namespaces);
@@ -11290,12 +11325,13 @@ make_suite(void) {
   tcase_add_test(tc_basic, test_memory_allocation);
   tcase_add_test(tc_basic, test_default_current);
   tcase_add_test(tc_basic, test_dtd_elements);
-  tcase_add_test(tc_basic, test_set_foreign_dtd);
-  tcase_add_test(tc_basic, test_foreign_dtd_not_standalone);
-  tcase_add_test(tc_basic, test_invalid_foreign_dtd);
-  tcase_add_test(tc_basic, test_foreign_dtd_with_doctype);
-  tcase_add_test(tc_basic, test_foreign_dtd_without_external_subset);
-  tcase_add_test(tc_basic, test_empty_foreign_dtd);
+  tcase_add_test__ifdef_xml_dtd(tc_basic, test_set_foreign_dtd);
+  tcase_add_test__ifdef_xml_dtd(tc_basic, test_foreign_dtd_not_standalone);
+  tcase_add_test__ifdef_xml_dtd(tc_basic, test_invalid_foreign_dtd);
+  tcase_add_test__ifdef_xml_dtd(tc_basic, test_foreign_dtd_with_doctype);
+  tcase_add_test__ifdef_xml_dtd(tc_basic,
+                                test_foreign_dtd_without_external_subset);
+  tcase_add_test__ifdef_xml_dtd(tc_basic, test_empty_foreign_dtd);
   tcase_add_test(tc_basic, test_set_base);
   tcase_add_test(tc_basic, test_attributes);
   tcase_add_test(tc_basic, test_reset_in_entity);
@@ -11312,8 +11348,8 @@ make_suite(void) {
   tcase_add_test(tc_basic, test_trailing_rsqb);
   tcase_add_test(tc_basic, test_ext_entity_trailing_rsqb);
   tcase_add_test(tc_basic, test_ext_entity_good_cdata);
-  tcase_add_test(tc_basic, test_user_parameters);
-  tcase_add_test(tc_basic, test_ext_entity_ref_parameter);
+  tcase_add_test__ifdef_xml_dtd(tc_basic, test_user_parameters);
+  tcase_add_test__ifdef_xml_dtd(tc_basic, test_ext_entity_ref_parameter);
   tcase_add_test(tc_basic, test_empty_parse);
   tcase_add_test(tc_basic, test_get_buffer_1);
   tcase_add_test(tc_basic, test_get_buffer_2);
@@ -11321,25 +11357,26 @@ make_suite(void) {
   tcase_add_test(tc_basic, test_byte_info_at_error);
   tcase_add_test(tc_basic, test_byte_info_at_cdata);
   tcase_add_test(tc_basic, test_predefined_entities);
-  tcase_add_test(tc_basic, test_invalid_tag_in_dtd);
+  tcase_add_test__ifdef_xml_dtd(tc_basic, test_invalid_tag_in_dtd);
   tcase_add_test(tc_basic, test_not_predefined_entities);
-  tcase_add_test(tc_basic, test_ignore_section);
-  tcase_add_test(tc_basic, test_ignore_section_utf16);
-  tcase_add_test(tc_basic, test_ignore_section_utf16_be);
-  tcase_add_test(tc_basic, test_bad_ignore_section);
-  tcase_add_test(tc_basic, test_external_entity_values);
-  tcase_add_test(tc_basic, test_ext_entity_not_standalone);
-  tcase_add_test(tc_basic, test_ext_entity_value_abort);
+  tcase_add_test__ifdef_xml_dtd(tc_basic, test_ignore_section);
+  tcase_add_test__ifdef_xml_dtd(tc_basic, test_ignore_section_utf16);
+  tcase_add_test__ifdef_xml_dtd(tc_basic, test_ignore_section_utf16_be);
+  tcase_add_test__ifdef_xml_dtd(tc_basic, test_bad_ignore_section);
+  tcase_add_test__ifdef_xml_dtd(tc_basic, test_external_entity_values);
+  tcase_add_test__ifdef_xml_dtd(tc_basic, test_ext_entity_not_standalone);
+  tcase_add_test__ifdef_xml_dtd(tc_basic, test_ext_entity_value_abort);
   tcase_add_test(tc_basic, test_bad_public_doctype);
   tcase_add_test(tc_basic, test_attribute_enum_value);
   tcase_add_test(tc_basic, test_predefined_entity_redefinition);
-  tcase_add_test(tc_basic, test_dtd_stop_processing);
+  tcase_add_test__ifdef_xml_dtd(tc_basic, test_dtd_stop_processing);
   tcase_add_test(tc_basic, test_public_notation_no_sysid);
   tcase_add_test(tc_basic, test_nested_groups);
   tcase_add_test(tc_basic, test_group_choice);
   tcase_add_test(tc_basic, test_standalone_parameter_entity);
-  tcase_add_test(tc_basic, test_skipped_parameter_entity);
-  tcase_add_test(tc_basic, test_recursive_external_parameter_entity);
+  tcase_add_test__ifdef_xml_dtd(tc_basic, test_skipped_parameter_entity);
+  tcase_add_test__ifdef_xml_dtd(tc_basic,
+                                test_recursive_external_parameter_entity);
   tcase_add_test(tc_basic, test_undefined_ext_entity_in_external_dtd);
   tcase_add_test(tc_basic, test_suspend_xdecl);
   tcase_add_test(tc_basic, test_abort_epilog);
@@ -11349,9 +11386,9 @@ make_suite(void) {
   tcase_add_test(tc_basic, test_unfinished_epilog);
   tcase_add_test(tc_basic, test_partial_char_in_epilog);
   tcase_add_test(tc_basic, test_hash_collision);
-  tcase_add_test(tc_basic, test_suspend_resume_internal_entity);
-  tcase_add_test(tc_basic, test_resume_entity_with_syntax_error);
-  tcase_add_test(tc_basic, test_suspend_resume_parameter_entity);
+  tcase_add_test__ifdef_xml_dtd(tc_basic, test_suspend_resume_internal_entity);
+  tcase_add_test__ifdef_xml_dtd(tc_basic, test_resume_entity_with_syntax_error);
+  tcase_add_test__ifdef_xml_dtd(tc_basic, test_suspend_resume_parameter_entity);
   tcase_add_test(tc_basic, test_restart_on_error);
   tcase_add_test(tc_basic, test_reject_lt_in_attribute_value);
   tcase_add_test(tc_basic, test_reject_unfinished_param_in_att_value);
@@ -11360,7 +11397,7 @@ make_suite(void) {
   tcase_add_test(tc_basic, test_skipped_external_entity);
   tcase_add_test(tc_basic, test_skipped_null_loaded_ext_entity);
   tcase_add_test(tc_basic, test_skipped_unloaded_ext_entity);
-  tcase_add_test(tc_basic, test_param_entity_with_trailing_cr);
+  tcase_add_test__ifdef_xml_dtd(tc_basic, test_param_entity_with_trailing_cr);
   tcase_add_test(tc_basic, test_invalid_character_entity);
   tcase_add_test(tc_basic, test_invalid_character_entity_2);
   tcase_add_test(tc_basic, test_invalid_character_entity_3);
@@ -11403,7 +11440,7 @@ make_suite(void) {
   tcase_add_test(tc_basic, test_utf16_attribute);
   tcase_add_test(tc_basic, test_utf16_second_attr);
   tcase_add_test(tc_basic, test_attr_after_solidus);
-  tcase_add_test(tc_basic, test_utf16_pe);
+  tcase_add_test__ifdef_xml_dtd(tc_basic, test_utf16_pe);
   tcase_add_test(tc_basic, test_bad_attr_desc_keyword);
   tcase_add_test(tc_basic, test_bad_attr_desc_keyword_utf16);
   tcase_add_test(tc_basic, test_bad_doctype);
@@ -11411,11 +11448,11 @@ make_suite(void) {
   tcase_add_test(tc_basic, test_bad_doctype_plus);
   tcase_add_test(tc_basic, test_bad_doctype_star);
   tcase_add_test(tc_basic, test_bad_doctype_query);
-  tcase_add_test(tc_basic, test_unknown_encoding_bad_ignore);
+  tcase_add_test__ifdef_xml_dtd(tc_basic, test_unknown_encoding_bad_ignore);
   tcase_add_test(tc_basic, test_entity_in_utf16_be_attr);
   tcase_add_test(tc_basic, test_entity_in_utf16_le_attr);
-  tcase_add_test(tc_basic, test_entity_public_utf16_be);
-  tcase_add_test(tc_basic, test_entity_public_utf16_le);
+  tcase_add_test__ifdef_xml_dtd(tc_basic, test_entity_public_utf16_be);
+  tcase_add_test__ifdef_xml_dtd(tc_basic, test_entity_public_utf16_le);
   tcase_add_test(tc_basic, test_short_doctype);
   tcase_add_test(tc_basic, test_short_doctype_2);
   tcase_add_test(tc_basic, test_short_doctype_3);
@@ -11434,7 +11471,8 @@ make_suite(void) {
   tcase_add_test(tc_namespace, test_ns_tagname_overwrite);
   tcase_add_test(tc_namespace, test_ns_tagname_overwrite_triplet);
   tcase_add_test(tc_namespace, test_start_ns_clears_start_element);
-  tcase_add_test(tc_namespace, test_default_ns_from_ext_subset_and_ext_ge);
+  tcase_add_test__ifdef_xml_dtd(tc_namespace,
+                                test_default_ns_from_ext_subset_and_ext_ge);
   tcase_add_test(tc_namespace, test_ns_prefix_with_empty_uri_1);
   tcase_add_test(tc_namespace, test_ns_prefix_with_empty_uri_2);
   tcase_add_test(tc_namespace, test_ns_prefix_with_empty_uri_3);
@@ -11475,10 +11513,8 @@ make_suite(void) {
   tcase_add_test(tc_misc, test_misc_utf16le);
   tcase_add_test(tc_misc, test_misc_stop_during_end_handler_issue_240_1);
   tcase_add_test(tc_misc, test_misc_stop_during_end_handler_issue_240_2);
-#ifdef XML_DTD
-  tcase_add_test(tc_misc,
-                 test_misc_deny_internal_entity_closing_doctype_issue_317);
-#endif
+  tcase_add_test__ifdef_xml_dtd(
+      tc_misc, test_misc_deny_internal_entity_closing_doctype_issue_317);
 
   suite_add_tcase(s, tc_alloc);
   tcase_add_checked_fixture(tc_alloc, alloc_setup, alloc_teardown);
@@ -11489,45 +11525,49 @@ make_suite(void) {
   tcase_add_test(tc_alloc, test_alloc_parse_pi_3);
   tcase_add_test(tc_alloc, test_alloc_parse_comment);
   tcase_add_test(tc_alloc, test_alloc_parse_comment_2);
-  tcase_add_test(tc_alloc, test_alloc_create_external_parser);
-  tcase_add_test(tc_alloc, test_alloc_run_external_parser);
-  tcase_add_test(tc_alloc, test_alloc_dtd_copy_default_atts);
-  tcase_add_test(tc_alloc, test_alloc_external_entity);
-  tcase_add_test(tc_alloc, test_alloc_ext_entity_set_encoding);
-  tcase_add_test(tc_alloc, test_alloc_internal_entity);
-  tcase_add_test(tc_alloc, test_alloc_dtd_default_handling);
+  tcase_add_test__ifdef_xml_dtd(tc_alloc, test_alloc_create_external_parser);
+  tcase_add_test__ifdef_xml_dtd(tc_alloc, test_alloc_run_external_parser);
+  tcase_add_test__ifdef_xml_dtd(tc_alloc, test_alloc_dtd_copy_default_atts);
+  tcase_add_test__ifdef_xml_dtd(tc_alloc, test_alloc_external_entity);
+  tcase_add_test__ifdef_xml_dtd(tc_alloc, test_alloc_ext_entity_set_encoding);
+  tcase_add_test__ifdef_xml_dtd(tc_alloc, test_alloc_internal_entity);
+  tcase_add_test__ifdef_xml_dtd(tc_alloc, test_alloc_dtd_default_handling);
   tcase_add_test(tc_alloc, test_alloc_explicit_encoding);
   tcase_add_test(tc_alloc, test_alloc_set_base);
   tcase_add_test(tc_alloc, test_alloc_realloc_buffer);
   tcase_add_test(tc_alloc, test_alloc_ext_entity_realloc_buffer);
   tcase_add_test(tc_alloc, test_alloc_realloc_many_attributes);
-  tcase_add_test(tc_alloc, test_alloc_public_entity_value);
-  tcase_add_test(tc_alloc, test_alloc_realloc_subst_public_entity_value);
+  tcase_add_test__ifdef_xml_dtd(tc_alloc, test_alloc_public_entity_value);
+  tcase_add_test__ifdef_xml_dtd(tc_alloc,
+                                test_alloc_realloc_subst_public_entity_value);
   tcase_add_test(tc_alloc, test_alloc_parse_public_doctype);
   tcase_add_test(tc_alloc, test_alloc_parse_public_doctype_long_name);
-  tcase_add_test(tc_alloc, test_alloc_set_foreign_dtd);
-  tcase_add_test(tc_alloc, test_alloc_attribute_enum_value);
-  tcase_add_test(tc_alloc, test_alloc_realloc_attribute_enum_value);
-  tcase_add_test(tc_alloc, test_alloc_realloc_implied_attribute);
-  tcase_add_test(tc_alloc, test_alloc_realloc_default_attribute);
+  tcase_add_test__ifdef_xml_dtd(tc_alloc, test_alloc_set_foreign_dtd);
+  tcase_add_test__ifdef_xml_dtd(tc_alloc, test_alloc_attribute_enum_value);
+  tcase_add_test__ifdef_xml_dtd(tc_alloc,
+                                test_alloc_realloc_attribute_enum_value);
+  tcase_add_test__ifdef_xml_dtd(tc_alloc, test_alloc_realloc_implied_attribute);
+  tcase_add_test__ifdef_xml_dtd(tc_alloc, test_alloc_realloc_default_attribute);
   tcase_add_test(tc_alloc, test_alloc_notation);
   tcase_add_test(tc_alloc, test_alloc_public_notation);
   tcase_add_test(tc_alloc, test_alloc_system_notation);
-  tcase_add_test(tc_alloc, test_alloc_nested_groups);
-  tcase_add_test(tc_alloc, test_alloc_realloc_nested_groups);
+  tcase_add_test__ifdef_xml_dtd(tc_alloc, test_alloc_nested_groups);
+  tcase_add_test__ifdef_xml_dtd(tc_alloc, test_alloc_realloc_nested_groups);
   tcase_add_test(tc_alloc, test_alloc_large_group);
-  tcase_add_test(tc_alloc, test_alloc_realloc_group_choice);
+  tcase_add_test__ifdef_xml_dtd(tc_alloc, test_alloc_realloc_group_choice);
   tcase_add_test(tc_alloc, test_alloc_pi_in_epilog);
   tcase_add_test(tc_alloc, test_alloc_comment_in_epilog);
-  tcase_add_test(tc_alloc, test_alloc_realloc_long_attribute_value);
+  tcase_add_test__ifdef_xml_dtd(tc_alloc,
+                                test_alloc_realloc_long_attribute_value);
   tcase_add_test(tc_alloc, test_alloc_attribute_whitespace);
   tcase_add_test(tc_alloc, test_alloc_attribute_predefined_entity);
   tcase_add_test(tc_alloc, test_alloc_long_attr_default_with_char_ref);
   tcase_add_test(tc_alloc, test_alloc_long_attr_value);
-  tcase_add_test(tc_alloc, test_alloc_nested_entities);
-  tcase_add_test(tc_alloc, test_alloc_realloc_param_entity_newline);
-  tcase_add_test(tc_alloc, test_alloc_realloc_ce_extends_pe);
-  tcase_add_test(tc_alloc, test_alloc_realloc_attributes);
+  tcase_add_test__ifdef_xml_dtd(tc_alloc, test_alloc_nested_entities);
+  tcase_add_test__ifdef_xml_dtd(tc_alloc,
+                                test_alloc_realloc_param_entity_newline);
+  tcase_add_test__ifdef_xml_dtd(tc_alloc, test_alloc_realloc_ce_extends_pe);
+  tcase_add_test__ifdef_xml_dtd(tc_alloc, test_alloc_realloc_attributes);
   tcase_add_test(tc_alloc, test_alloc_long_doc_name);
   tcase_add_test(tc_alloc, test_alloc_long_base);
   tcase_add_test(tc_alloc, test_alloc_long_public_id);

@@ -383,19 +383,40 @@ supports both.
 	<command>&dhpackage;</command> prints a single line describing
 	the problem to standard output.  If a file is well formed,
 	<command>&dhpackage;</command> outputs nothing.
-	Note that the result code is <emphasis>not</emphasis> set.
 	</para>
   </refsect1>
+
+  <refsect1>
+  <title>EXIT STATUS</title>
+    <para>For option <option>-v</option> or <option>-h</option>, <command>&dhpackage;</command> always exits with status code 0.  For other cases, the following exit status codes are returned:
+    <variablelist>
+      <varlistentry>
+        <term><option>0</option></term>
+        <listitem><para>The input files are well-formed.</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><option>1</option></term>
+        <listitem><para>An internal error occurred.</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><option>2</option></term>
+        <listitem><para>An input file was not well-formed or could not be parsed.</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><option>3</option></term>
+        <listitem><para>If using the <option>-d</option> option, an error occurred opening an output file.</para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+	</para>
+  </refsect1>
+
   
   <refsect1>
     <title>BUGS</title>
-	<para>
-	<command>&dhpackage;</command> returns a 0 - noerr result,
-	even if the file is not well-formed.  There is no good way for
-	a program to use <command>&dhpackage;</command> to quickly
-	check a file -- it must parse <command>&dhpackage;</command>'s
-	standard output.
-	</para>
 	<para>
 	The errors should go to standard error, not standard output.
 	</para>

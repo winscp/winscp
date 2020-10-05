@@ -30,7 +30,7 @@
 
 SUBDIRS = . benchmark
 
-AM_CPPFLAGS = -I$(srcdir)/../lib
+AM_CPPFLAGS = @AM_CPPFLAGS@ -I$(srcdir)/../lib
 
 noinst_LIBRARIES = libruntests.a
 
