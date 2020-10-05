@@ -1301,6 +1301,7 @@ bool __fastcall SelectDirectory(UnicodeString & Path, const UnicodeString Prompt
   {
     UnicodeString Directory;
     UnicodeString FileName;
+    // We do not have any real use for the PreserveFileName
     if (!PreserveFileName || DirectoryExists(ApiPath(Path)))
     {
       Directory = Path;
