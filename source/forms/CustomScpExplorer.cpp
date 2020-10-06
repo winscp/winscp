@@ -3052,7 +3052,7 @@ void __fastcall TCustomScpExplorerForm::EditNew(TOperationSide Side)
   UnicodeString Names = Name;
   std::unique_ptr<TStrings> History(CloneStrings(CustomWinConfiguration->History[L"EditFile"]));
   if (InputDialog(LoadStr(EDIT_FILE_CAPTION), LoadStr(EDIT_FILE_PROMPT), Names,
-        HELP_EDIT_NEW, History.get(), true))
+        HELP_EDIT_NEW, History.get(), true, NULL, true, 400))
   {
     while (!Names.IsEmpty())
     {
