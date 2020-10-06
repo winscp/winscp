@@ -68,5 +68,6 @@
 #define HELP_SITE_RAW                "ui_login_raw"
 #define HELP_PUTTY_SETTINGS          "ui_login_environment#putty"
 #define HELP_CLOSE_SESSION_WORKSPACE "workspace"
+#define HELP_ADD_EXTENSION           "ui_pref_commands#extensions"
 
 #endif // TextsWin
