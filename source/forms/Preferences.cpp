@@ -2626,7 +2626,7 @@ void __fastcall TPreferencesDialog::AddExtension()
   std::unique_ptr<TStrings> History(CloneStrings(CustomWinConfiguration->History[HistoryKey]));
   UnicodeString Path;
   if (InputDialog(LoadStr(ADD_EXTENSION_CAPTION), LoadStr(ADD_EXTENSION_PROMPT), Path,
-        HELP_NONE, History.get(), true) &&
+        HELP_ADD_EXTENSION, History.get(), true, NULL, true, 400) &&
       !Path.IsEmpty())
   {
     CustomWinConfiguration->History[HistoryKey] = History.get();
