@@ -2673,6 +2673,11 @@ void TScpCommanderForm::LocalLocalCopy(
     HandleDoNotShowCopyDialogAgain(DragDrop, FLAGSET(OutputOptions, clooDoNotShowAgain));
 
     FileOperator->Flags = FileOperator->Flags << foMultiDestFiles;
+    if (!WinConfiguration->ConfirmOverwriting)
+    {
+      FileOperator->Flags = FileOperator->Flags << foNoConfirmation;
+    }
+
     for (int Index = 0; Index < FileOperator->OperandFrom->Count; Index++)
     {
       UnicodeString SourcePath = FileOperator->OperandFrom->Strings[Index];
