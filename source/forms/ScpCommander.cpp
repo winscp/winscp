@@ -1697,7 +1697,7 @@ void __fastcall TScpCommanderForm::DDFakeFileInitDrag(TFileList * FileList,
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::LocalFileControlDDFileOperation(
-  TObject * /*Sender*/, int dwEffect, UnicodeString SourcePath,
+  TObject * Sender, int dwEffect, UnicodeString SourcePath,
   UnicodeString TargetPath, bool Paste, bool & DoOperation)
 {
   if (IsFileControl(DropSourceControl, osRemote) && !IsLocalBrowserMode())
@@ -1731,6 +1731,20 @@ void __fastcall TScpCommanderForm::LocalFileControlDDFileOperation(
         }
       }
       DoOperation = false;
+    }
+  }
+
+  if (IsLocalBrowserMode() &&
+      ((IsFileControl(Sender, osRemote) && IsFileControl(DropSourceControl, osLocal)) ||
+       (IsFileControl(Sender, osLocal) && IsFileControl(DropSourceControl, osRemote))))
+  {
+    if (dwEffect == DROPEFFECT_MOVE)
+    {
+      Configuration->Usage->Inc(L"LocalLocalMovesDragDropInterpanel");
+    }
+    else
+    {
+      Configuration->Usage->Inc(L"LocalLocalCopiesDragDropInterpanel");
     }
   }
 }
@@ -2676,6 +2690,15 @@ void TScpCommanderForm::LocalLocalCopy(
     if (!WinConfiguration->ConfirmOverwriting)
     {
       FileOperator->Flags = FileOperator->Flags << foNoConfirmation;
+    }
+
+    if (Move)
+    {
+      Configuration->Usage->Inc(L"LocalLocalMovesCommand");
+    }
+    else
+    {
+      Configuration->Usage->Inc(L"LocalLocalCopiesCommand");
     }
 
     for (int Index = 0; Index < FileOperator->OperandFrom->Count; Index++)

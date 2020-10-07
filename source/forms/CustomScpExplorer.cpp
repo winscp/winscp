@@ -4002,6 +4002,10 @@ void __fastcall TCustomScpExplorerForm::DeleteFiles(TOperationSide Side,
     }
     else
     {
+      if (IsLocalBrowserMode())
+      {
+        Configuration->Usage->Inc(L"LocalLocalDeletes");
+      }
       TValueRestorer<TOperationSide> ProgressSideRestorer(FProgressSide);
       FProgressSide = FCurrentSide;
       try
