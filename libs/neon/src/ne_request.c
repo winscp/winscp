@@ -1650,6 +1650,9 @@ static int do_connect(ne_session *sess, struct host_info *host)
     if (sess->rdtimeout)
 	ne_sock_read_timeout(sess->socket, sess->rdtimeout);
 
+    // WINSCP
+    ne_sock_set_buffers(sess->socket, ne_get_session_flag(sess, SE_SESSFLAG_SNDBUF));
+
     notify_status(sess, ne_status_connected);
     sess->nexthop = host;
 

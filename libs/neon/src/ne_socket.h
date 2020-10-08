@@ -307,6 +307,9 @@ int ne_sock_proxy(ne_socket *sock, enum ne_sock_sversion vers,
                   unsigned int port,
                   const char *username, const char *password);
 
+// WINSCP
+void ne_sock_set_buffers(ne_socket *sock, unsigned int sndbuf);
+
 NE_END_DECLS
 
 #endif /* NE_SOCKET_H */

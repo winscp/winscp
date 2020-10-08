@@ -181,6 +181,8 @@ void TS3FileSystem::LibS3SessionCallback(ne_session_s * Session, void * Callback
 
   SetNeonTlsInit(Session, FileSystem->InitSslSession);
 
+  ne_set_session_flag(Session, SE_SESSFLAG_SNDBUF, Data->SendBuf);
+
   // Data->Timeout is propagated via timeoutMs parameter of functions like S3_list_service
 
   FileSystem->FNeonSession = Session;

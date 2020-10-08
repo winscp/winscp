@@ -106,6 +106,7 @@ typedef enum ne_session_flag_e {
 
     #ifdef WINSCP
     NE_SESSFLAG_LIBERAL_ESCAPING,
+    SE_SESSFLAG_SNDBUF,
     #endif
 
     NE_SESSFLAG_LAST /* enum sentinel value */

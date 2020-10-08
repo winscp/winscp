@@ -2008,3 +2008,24 @@ int ne_sock_close(ne_socket *sock)
     ne_free(sock);
     return ret;
 }
+
+// WINSCP
+void do_ne_sock_sndbuf(ne_socket *sock, int opt, unsigned int buf)
+{
+    unsigned int value = 0;
+    int len = sizeof(value);
+    getsockopt(sock->fd, SOL_SOCKET, opt, &value, &len);
+    if (value < buf)
+    {
+        setsockopt(sock->fd, SOL_SOCKET, opt, &buf, sizeof(buf));
+    }
+}
+
+void ne_sock_set_buffers(ne_socket *sock, unsigned int sndbuf)
+{
+    if (sndbuf > 0)
+    {
+        do_ne_sock_sndbuf(sock, SO_SNDBUF, sndbuf);
+        do_ne_sock_sndbuf(sock, SO_RCVBUF, 4 * 1024 * 1024);
+    }
+}
