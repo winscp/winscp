@@ -1267,7 +1267,10 @@ void __fastcall TTerminalManager::AuthenticatingDone()
 void __fastcall TTerminalManager::TerminalInformation(
   TTerminal * Terminal, const UnicodeString & Str, bool /*Status*/, int Phase)
 {
-  ScpExplorer->TerminalConnecting();
+  if (ScpExplorer != NULL)
+  {
+    ScpExplorer->TerminalConnecting();
+  }
   if (Phase == 1)
   {
     if (FAuthenticating == 0)
