@@ -6935,7 +6935,8 @@ void __fastcall TTerminal::DoCopyToRemote(
 
   FFileSystem->TransferOnDirectory(ATargetDir, CopyParam, Params);
 
-  UnicodeString TargetDir = AbsolutePath(ATargetDir, false);
+  // Must be local resolving, as this is outside of robust loop
+  UnicodeString TargetDir = AbsolutePath(ATargetDir, true);
   UnicodeString FullTargetDir = UnixIncludeTrailingBackslash(TargetDir);
   int Index = 0;
   while ((Index < FilesToCopy->Count) && !OperationProgress->Cancel)
