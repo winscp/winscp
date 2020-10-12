@@ -223,6 +223,7 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     {
       S3UrlStyleCombo->ItemIndex = 0;
     }
+    S3SessionTokenMemo->Lines->Text = FSessionData->S3SessionToken;
 
     // Authentication page
     SshNoUserAuthCheck->Checked = FSessionData->SshNoUserAuth;
@@ -633,6 +634,8 @@ void __fastcall TSiteAdvancedDialog::SaveSession(TSessionData * SessionData)
   {
     SessionData->S3UrlStyle = s3usVirtualHost;
   }
+  // Trim not to try to authenticate with a stray new-line
+  SessionData->S3SessionToken = S3SessionTokenMemo->Lines->Text.Trim();
 
   // Proxy page
   SessionData->ProxyMethod = GetProxyMethod();

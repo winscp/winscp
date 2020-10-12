@@ -115,6 +115,8 @@ protected:
   TSessionInfo FSessionInfo;
   UTF8String FAccessKeyId;
   UTF8String FSecretAccessKey;
+  UTF8String FSecurityTokenBuf;
+  const char * FSecurityToken;
   UTF8String FHostName;
   UTF8String FPortSuffix;
   int FTimeout;
