@@ -1032,8 +1032,7 @@ namespace WinSCP
                         long size = new FileInfo(exePath).Length;
                         _logger.WriteLine($"Size of the executable file is {size}");
 
-                        int handle;
-                        int verInfoSize = GetFileVersionInfoSize(exePath, out handle);
+                        int verInfoSize = GetFileVersionInfoSize(exePath, out int handle);
                         if (verInfoSize == 0)
                         {
                             throw new Exception($"Cannot retrieve {exePath} version info", new Win32Exception());
