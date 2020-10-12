@@ -233,6 +233,7 @@ void __fastcall TSessionData::DefaultSettings()
   NotUtf = asAuto;
 
   S3DefaultRegion = L"";
+  S3SessionToken = L"";
   S3UrlStyle = s3usVirtualHost;
 
   // SFTP
@@ -390,6 +391,7 @@ void __fastcall TSessionData::NonPersistant()
   PROPERTY(PostLoginCommands); \
   \
   PROPERTY(S3DefaultRegion); \
+  PROPERTY(S3SessionToken); \
   PROPERTY(S3UrlStyle); \
   \
   PROPERTY(ProxyMethod); \
@@ -721,6 +723,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   InternalEditorEncoding = Storage->ReadInteger(L"InternalEditorEncoding", InternalEditorEncoding);
 
   S3DefaultRegion = Storage->ReadString(L"S3DefaultRegion", S3DefaultRegion);
+  S3SessionToken = Storage->ReadString(L"S3SessionToken", S3SessionToken);
   S3UrlStyle = (TS3UrlStyle)Storage->ReadInteger(L"S3UrlStyle", S3UrlStyle);
 
   // PuTTY defaults to TcpNoDelay, but the psftp/pscp ignores this preference, and always set this to off (what is our default too)
@@ -1100,6 +1103,7 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
     WRITE_DATA_EX(Integer, L"Utf", NotUtf, );
     WRITE_DATA(Integer, InternalEditorEncoding);
     WRITE_DATA(String, S3DefaultRegion);
+    WRITE_DATA(String, S3SessionToken);
     WRITE_DATA(Integer, S3UrlStyle);
     WRITE_DATA(Integer, SendBuf);
     WRITE_DATA(String, SourceAddress);
@@ -4067,6 +4071,11 @@ void __fastcall TSessionData::SetInternalEditorEncoding(int value)
 void __fastcall TSessionData::SetS3DefaultRegion(UnicodeString value)
 {
   SET_SESSION_PROPERTY(S3DefaultRegion);
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetS3SessionToken(UnicodeString value)
+{
+  SET_SESSION_PROPERTY(S3SessionToken);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetS3UrlStyle(TS3UrlStyle value)

@@ -117,6 +117,9 @@ void __fastcall TS3FileSystem::Open()
   }
   FSecretAccessKey = UTF8String(SecretAccessKey);
 
+  FSecurityTokenBuf = UTF8String(Data->S3SessionToken);
+  FSecurityToken = static_cast<const char *>(FSecurityTokenBuf.data());
+
   FHostName = UTF8String(Data->HostNameExpanded);
   FPortSuffix = UTF8String();
   int ADefaultPort = DefaultPort(FTerminal->SessionData->FSProtocol, FTerminal->SessionData->Ftps);
@@ -523,7 +526,7 @@ TLibS3BucketContext TS3FileSystem::GetBucketContext(const UnicodeString & Bucket
     Result.uriStyle = UriStyle;
     Result.accessKeyId = FAccessKeyId.c_str();
     Result.secretAccessKey = FSecretAccessKey.c_str();
-    Result.securityToken = NULL;
+    Result.securityToken = FSecurityToken;
     Result.AuthRegionBuf = UTF8String(Region);
     if (Result.AuthRegionBuf.Length() > S3_MAX_REGION_LENGTH)
     {
@@ -887,7 +890,7 @@ void TS3FileSystem::ReadDirectoryInternal(
       Retry = false;
 
       S3_list_service(
-        FLibS3Protocol, FAccessKeyId.c_str(), FSecretAccessKey.c_str(), 0, (FHostName + FPortSuffix).c_str(),
+        FLibS3Protocol, FAccessKeyId.c_str(), FSecretAccessKey.c_str(), FSecurityToken, (FHostName + FPortSuffix).c_str(),
         StrToS3(FAuthRegion), MaxKeys, FRequestContext, FTimeout, &ListServiceHandler, &Data);
 
       HandleNonBucketStatus(Data, Retry);
@@ -1109,7 +1112,8 @@ void __fastcall TS3FileSystem::CreateDirectory(const UnicodeString & ADirName, b
       Retry = false;
 
       S3_create_bucket(
-        FLibS3Protocol, FAccessKeyId.c_str(), FSecretAccessKey.c_str(), NULL, (FHostName + FPortSuffix).c_str(), StrToS3(BucketName),
+        FLibS3Protocol, FAccessKeyId.c_str(), FSecretAccessKey.c_str(), FSecurityToken,
+        (FHostName + FPortSuffix).c_str(), StrToS3(BucketName),
         StrToS3(FAuthRegion), S3CannedAclPrivate, Region, FRequestContext, FTimeout, &ResponseHandler, &Data);
 
       HandleNonBucketStatus(Data, Retry);

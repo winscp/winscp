@@ -221,6 +221,7 @@ private:
   TAutoSwitch FNotUtf;
   int FInternalEditorEncoding;
   UnicodeString FS3DefaultRegion;
+  UnicodeString FS3SessionToken;
   TS3UrlStyle FS3UrlStyle;
   bool FIsWorkspace;
   UnicodeString FLink;
@@ -400,6 +401,7 @@ private:
   void __fastcall SetNotUtf(TAutoSwitch value);
   void __fastcall SetInternalEditorEncoding(int value);
   void __fastcall SetS3DefaultRegion(UnicodeString value);
+  void __fastcall SetS3SessionToken(UnicodeString value);
   void __fastcall SetS3UrlStyle(TS3UrlStyle value);
   void __fastcall SetLogicalHostName(UnicodeString value);
   void __fastcall SetIsWorkspace(bool value);
@@ -663,6 +665,7 @@ public:
   __property TAutoSwitch NotUtf = { read = FNotUtf, write = SetNotUtf };
   __property int InternalEditorEncoding = { read = FInternalEditorEncoding, write = SetInternalEditorEncoding };
   __property UnicodeString S3DefaultRegion = { read = FS3DefaultRegion, write = SetS3DefaultRegion };
+  __property UnicodeString S3SessionToken = { read = FS3SessionToken, write = SetS3SessionToken };
   __property TS3UrlStyle S3UrlStyle = { read = FS3UrlStyle, write = SetS3UrlStyle };
   __property bool IsWorkspace = { read = FIsWorkspace, write = SetIsWorkspace };
   __property UnicodeString Link = { read = FLink, write = SetLink };

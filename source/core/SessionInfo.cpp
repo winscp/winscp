@@ -1365,6 +1365,10 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
       {
         ADF(L"S3: Default region: %s", (Data->S3DefaultRegion));
       }
+      if (!Data->S3SessionToken.IsEmpty())
+      {
+        ADF(L"S3: Session token: %s", (Data->S3SessionToken));
+      }
     }
     if (FtpsOn)
     {

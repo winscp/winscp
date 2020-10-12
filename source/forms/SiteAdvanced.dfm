@@ -1067,6 +1067,36 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
               'Path')
           end
         end
+        object S3AuthenticationGroup: TGroupBox
+          Left = 1
+          Top = 82
+          Width = 393
+          Height = 143
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'Authentication'
+          TabOrder = 1
+          DesignSize = (
+            393
+            143)
+          object Label5: TLabel
+            Left = 12
+            Top = 20
+            Width = 73
+            Height = 13
+            Caption = '&Security token:'
+          end
+          object S3SessionTokenMemo: TMemo
+            Left = 11
+            Top = 36
+            Width = 371
+            Height = 93
+            Anchors = [akLeft, akTop, akRight, akBottom]
+            MaxLength = 10000
+            TabOrder = 0
+            OnChange = DataChange
+            OnKeyDown = NoteMemoKeyDown
+          end
+        end
       end
       object WebDavSheet: TTabSheet
         Tag = 2
