@@ -1288,10 +1288,6 @@ bool __fastcall TLoginDialog::Execute(TList * DataList)
       FNewSiteData->CopyData(SessionData);
       FNewSiteData->Special = false;
 
-      // This is actualy bit pointless.
-      // As of now, we hardly ever get any useful data in ad-hoc DataList.
-      // (this was implemented for support taking session url from clipboard instead
-      // of command-line, but without autoconnect, but this functionality was cancelled)
       if (!FNewSiteData->IsSameDecrypted(StoredSessions->DefaultSettings))
       {
         // we want to start with new site page

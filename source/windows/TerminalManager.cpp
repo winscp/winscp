@@ -1522,15 +1522,52 @@ void __fastcall TTerminalManager::NewSession(const UnicodeString & SessionUrl, b
     StoredSessions->Reload();
   }
 
-  UnicodeString DownloadFile; // unused
-  std::unique_ptr<TObjectList> DataList(new TObjectList());
+  std::unique_ptr<TObjectList> DataList;
 
-  GetLoginData(SessionUrl, NULL, DataList.get(), DownloadFile, true, LinkedForm);
-
-  if (DataList->Count > 0)
+  bool Retry;
+  do
   {
-    ActiveTerminal = NewTerminals(DataList.get());
+    Retry = false;
+    if (!DataList) // first round
+    {
+      DataList.reset(new TObjectList());
+      UnicodeString DownloadFile; // unused
+      GetLoginData(SessionUrl, NULL, DataList.get(), DownloadFile, true, LinkedForm);
+    }
+    else
+    {
+      if (!DoLoginDialog(DataList.get(), LinkedForm))
+      {
+        Abort(); // As GetLoginData would do
+      }
+    }
+
+    if (DataList->Count > 0)
+    {
+      TManagedTerminal * ANewTerminal = NewTerminals(DataList.get());
+      bool AdHoc = (DataList->Count == 1) && (StoredSessions->FindSame(reinterpret_cast<TSessionData *>(DataList->Items[0])) == NULL);
+      bool CanRetry = SessionUrl.IsEmpty() && AdHoc;
+      bool ShowLoginWhenNoSession = WinConfiguration->ShowLoginWhenNoSession;
+      if (CanRetry)
+      {
+        // we will show our own login dialog, so prevent opening an empty one
+        WinConfiguration->ShowLoginWhenNoSession = false;
+      }
+      try
+      {
+        ActiveTerminal = ANewTerminal;
+      }
+      __finally
+      {
+        if (CanRetry) // do not reset the value, unless really needed, as it can theoretically be changed meanwhile by the user
+        {
+          WinConfiguration->ShowLoginWhenNoSession = ShowLoginWhenNoSession;
+        }
+      }
+      Retry = CanRetry && (ActiveTerminal != ANewTerminal);
+    }
   }
+  while (Retry);
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::Idle(bool SkipCurrentTerminal)
