@@ -1515,7 +1515,7 @@ void __fastcall TTerminalManager::OpenInPutty()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminalManager::NewSession(bool /*FromSite*/, const UnicodeString & SessionUrl, bool ReloadSessions, TForm * LinkedForm)
+void __fastcall TTerminalManager::NewSession(const UnicodeString & SessionUrl, bool ReloadSessions, TForm * LinkedForm)
 {
   if (ReloadSessions)
   {

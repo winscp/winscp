@@ -752,7 +752,7 @@ public:
   bool __fastcall HasActiveTerminal();
   virtual bool IsLocalBrowserMode();
 
-  void __fastcall NewSession(bool FromSite, const UnicodeString & SessionUrl = L"");
+  void __fastcall NewSession(const UnicodeString & SessionUrl = L"");
   void __fastcall DuplicateSession();
   void __fastcall RenameSession();
   void __fastcall CloseSession();
