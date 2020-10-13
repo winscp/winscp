@@ -77,7 +77,7 @@ void __fastcall GetLoginData(UnicodeString SessionName, TOptions * Options,
       DefaultsOnly)
   {
     // Note that GetFolderOrWorkspace never returns sites that !CanLogin,
-    // so we should not get here with more then one site.
+    // so we should not get here with more than one site.
     // Though we should be good, if we ever do.
 
     // We get here when:
