@@ -742,7 +742,7 @@ public:
   void __fastcall ResumeWindowLock();
   bool __fastcall HasActiveTerminal();
 
-  void __fastcall NewSession(bool FromSite, const UnicodeString & SessionUrl = L"");
+  void __fastcall NewSession(const UnicodeString & SessionUrl = L"");
   void __fastcall DuplicateSession();
   void __fastcall RenameSession();
   void __fastcall CloseSession();

@@ -720,8 +720,8 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     #undef COLVIEWPROPS
 
     // SESSION
-    EXE(NewSessionAction, ScpExplorer->NewSession(false))
-    EXE(SiteManagerAction, ScpExplorer->NewSession(true))
+    EXE(NewSessionAction, ScpExplorer->NewSession())
+    EXE(SiteManagerAction, ScpExplorer->NewSession())
     EXE(DuplicateSessionAction, ScpExplorer->DuplicateSession())
     EXE(RenameSessionAction, ScpExplorer->RenameSession())
     EXE(CloseSessionAction2, ScpExplorer->CloseSession())

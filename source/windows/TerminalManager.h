@@ -60,7 +60,7 @@ public:
   void __fastcall UpdateAppTitle();
   bool __fastcall CanOpenInPutty();
   void __fastcall OpenInPutty();
-  void __fastcall NewSession(bool FromSite, const UnicodeString & SessionUrl, bool ReloadSessions = true, TForm * LinkedForm = NULL);
+  void __fastcall NewSession(const UnicodeString & SessionUrl, bool ReloadSessions = true, TForm * LinkedForm = NULL);
   void __fastcall Idle(bool SkipCurrentTerminal);
   UnicodeString __fastcall GetTerminalShortPath(TTerminal * Terminal);
   UnicodeString __fastcall GetTerminalTitle(TTerminal * Terminal, bool Unique);

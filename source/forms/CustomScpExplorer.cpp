@@ -4787,7 +4787,7 @@ void __fastcall TCustomScpExplorerForm::TrayIconClick(TObject * /*Sender*/)
   RestoreApp();
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::NewSession(bool FromSite, const UnicodeString & SessionUrl)
+void __fastcall TCustomScpExplorerForm::NewSession(const UnicodeString & SessionUrl)
 {
   if (OpenInNewWindow())
   {
@@ -4796,7 +4796,7 @@ void __fastcall TCustomScpExplorerForm::NewSession(bool FromSite, const UnicodeS
   }
   else
   {
-    TTerminalManager::Instance()->NewSession(FromSite, SessionUrl);
+    TTerminalManager::Instance()->NewSession(SessionUrl);
   }
 }
 //---------------------------------------------------------------------------
@@ -6660,7 +6660,7 @@ void __fastcall TCustomScpExplorerForm::NeedSession(bool Startup)
       if (ShowLogin)
       {
         bool ReloadSessions = !Startup;
-        TTerminalManager::Instance()->NewSession(false, L"", ReloadSessions, this);
+        TTerminalManager::Instance()->NewSession(L"", ReloadSessions, this);
       }
       else if (Startup && WinConfiguration->AutoSaveWorkspace && !WinConfiguration->AutoWorkspace.IsEmpty() &&
                // This detects if workspace was saved the last time the main widow was closed
@@ -6806,7 +6806,7 @@ bool __fastcall TCustomScpExplorerForm::SessionTabSwitched()
   {
     try
     {
-      NewSession(false);
+      NewSession();
     }
     __finally
     {
@@ -8408,7 +8408,7 @@ void __fastcall TCustomScpExplorerForm::PasteFromClipBoard()
     {
       if (StoredSessions->IsUrl(ClipboardText))
       {
-        NewSession(false, ClipboardText);
+        NewSession(ClipboardText);
       }
       else
       {
