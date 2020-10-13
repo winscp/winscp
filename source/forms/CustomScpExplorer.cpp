@@ -6654,6 +6654,7 @@ void __fastcall TCustomScpExplorerForm::NeedSession(bool Startup)
   try
   {
     // Cache, as the login dialog can change its value
+    // See also DoShow. Also see TTerminalManager::NewSession.
     bool ShowLogin = WinConfiguration->ShowLoginWhenNoSession;
     try
     {
