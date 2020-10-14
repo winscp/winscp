@@ -4539,38 +4539,8 @@ void CFtpControlSocket::ResumeTransfer()
 
 BOOL CFtpControlSocket::Create()
 {
-  if (!GetOptionVal(OPTION_LIMITPORTRANGE))
-    return CAsyncSocketEx::Create(0, SOCK_STREAM, FD_READ | FD_WRITE | FD_OOB | FD_ACCEPT |  FD_CONNECT | FD_CLOSE, 0, GetOptionVal(OPTION_ENABLE_IPV6) ? AF_UNSPEC : AF_INET);
-  else
-  {
-    int min=GetOptionVal(OPTION_PORTRANGELOW);
-    int max=GetOptionVal(OPTION_PORTRANGEHIGH);
-    if (min>=max)
-    {
-      ShowStatus(IDS_ERRORMSG_CANTCREATEDUETOPORTRANGE,FZ_LOG_ERROR);
-      return FALSE;
-    }
-    int startport = static_cast<int>(min+((double)rand()*(max-min))/(RAND_MAX+1));
-    int port = startport;
-
-    while (!CAsyncSocketEx::Create(port, SOCK_STREAM, FD_READ | FD_WRITE | FD_OOB | FD_ACCEPT |  FD_CONNECT | FD_CLOSE, 0, GetOptionVal(OPTION_ENABLE_IPV6) ? AF_UNSPEC : AF_INET))
-    {
-      port++;
-      if (port>max)
-        port=min;
-      if (port==startport)
-      {
-        ShowStatus(IDS_ERRORMSG_CANTCREATEDUETOPORTRANGE,FZ_LOG_ERROR);
-        return FALSE;
-      }
-
-      if (!InitConnect())
-        return FALSE;
-    }
-  }
-  return TRUE;
+  return CAsyncSocketEx::Create(0, SOCK_STREAM, FD_READ | FD_WRITE | FD_OOB | FD_ACCEPT |  FD_CONNECT | FD_CLOSE, 0, GetOptionVal(OPTION_ENABLE_IPV6) ? AF_UNSPEC : AF_INET);
 }
-
 
 void CFtpControlSocket::ResetOperation(int nSuccessful /*=FALSE*/)
 {
