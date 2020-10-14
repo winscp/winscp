@@ -913,24 +913,29 @@ BOOL CTransferSocket::Create(BOOL bUseSsl)
   {
     int min=GetOptionVal(OPTION_PORTRANGELOW);
     int max=GetOptionVal(OPTION_PORTRANGEHIGH);
-    if (min>=max)
+    if (min > max)
     {
       m_pOwner->ShowStatus(IDS_ERRORMSG_CANTCREATEDUETOPORTRANGE,FZ_LOG_ERROR);
       return FALSE;
     }
     int startport=static_cast<int>(min+((double)rand()*(max-min))/(RAND_MAX+1));
     int port=startport;
-    while (!CAsyncSocketEx::Create(port, SOCK_STREAM, FD_READ | FD_WRITE | FD_OOB | FD_ACCEPT | FD_CONNECT | FD_CLOSE, 0, GetFamily()))
+    // Failure to create the socket, calls Close(), which resets the family. We want to keep trying the original faimily with each port.
+    // Only with the specific family set, the Create actually does bind(), without which the port testing does not work.
+    int family = GetFamily();
+    DebugAssert(family != AF_UNSPEC);
+    while (!CAsyncSocketEx::Create(port, SOCK_STREAM, FD_READ | FD_WRITE | FD_OOB | FD_ACCEPT | FD_CONNECT | FD_CLOSE, 0, family))
     {
       port++;
       if (port>max)
         port=min;
       if (port==startport)
       {
-        m_pOwner->ShowStatus(IDS_ERRORMSG_CANTCREATEDUETOPORTRANGE,FZ_LOG_ERROR);
+        m_pOwner->ShowStatus(IDS_ERRORMSG_CANTCREATEDUETOPORTRANGE, FZ_LOG_ERROR);
         return FALSE;
       }
     }
+    LogMessage(FZ_LOG_INFO, L"Selected port %d", port);
   }
 
   return TRUE;

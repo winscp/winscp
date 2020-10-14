@@ -2776,17 +2776,24 @@ object PreferencesDialog: TPreferencesDialog
         DesignSize = (
           405
           398)
-        object ExternalIpAddressGroupBox: TGroupBox
+        object ExternalIpAddressGroupBox2: TGroupBox
           Left = 8
           Top = 8
           Width = 389
-          Height = 98
+          Height = 152
           Anchors = [akLeft, akTop, akRight]
-          Caption = 'External IP address'
+          Caption = 'Incoming FTP connections (active mode)'
           TabOrder = 0
           DesignSize = (
             389
-            98)
+            152)
+          object LocalPortNumberRangeLabel: TLabel
+            Left = 133
+            Top = 120
+            Width = 6
+            Height = 13
+            Caption = #8211
+          end
           object RetrieveExternalIpAddressButton: TRadioButton
             Left = 16
             Top = 21
@@ -2810,15 +2817,53 @@ object PreferencesDialog: TPreferencesDialog
           object CustomExternalIpAddressEdit: TEdit
             Left = 45
             Top = 67
-            Width = 136
+            Width = 182
             Height = 21
             TabOrder = 2
             OnClick = ControlChange
           end
+          object LocalPortNumberCheck: TCheckBox
+            Left = 16
+            Top = 94
+            Width = 361
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Limit listening &ports to:'
+            TabOrder = 3
+            OnClick = ControlChange
+          end
+          object LocalPortNumberMinEdit: TUpDownEdit
+            Left = 45
+            Top = 117
+            Width = 82
+            Height = 21
+            Alignment = taRightJustify
+            MaxValue = 65535.000000000000000000
+            MinValue = 1024.000000000000000000
+            Value = 1.000000000000000000
+            Anchors = [akTop, akRight]
+            TabOrder = 4
+            OnChange = ControlChange
+            OnExit = LocalPortNumberMinEditExit
+          end
+          object LocalPortNumberMaxEdit: TUpDownEdit
+            Left = 145
+            Top = 117
+            Width = 82
+            Height = 21
+            Alignment = taRightJustify
+            MaxValue = 65535.000000000000000000
+            MinValue = 1024.000000000000000000
+            Value = 1.000000000000000000
+            Anchors = [akTop, akRight]
+            TabOrder = 5
+            OnChange = ControlChange
+            OnExit = LocalPortNumberMaxEditExit
+          end
         end
         object ConnectionsGroup: TGroupBox
           Left = 8
-          Top = 112
+          Top = 166
           Width = 389
           Height = 53
           Anchors = [akLeft, akTop, akRight]

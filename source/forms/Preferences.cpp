@@ -33,6 +33,8 @@
 #pragma link "PathLabel"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------
+const int PrivatePortMin = 49152; // https://en.wikipedia.org/wiki/List_of_TCP_and_UDP_port_numbers#Dynamic,_private_or_ephemeral_ports
+//---------------------------------------------------------------------
 bool __fastcall DoPreferencesDialog(TPreferencesMode APreferencesMode,
   TPreferencesDialogData * DialogData)
 {
@@ -628,6 +630,11 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     RetrieveExternalIpAddressButton->Checked = Configuration->ExternalIpAddress.IsEmpty();
     CustomExternalIpAddressButton->Checked = !RetrieveExternalIpAddressButton->Checked;
     CustomExternalIpAddressEdit->Text = Configuration->ExternalIpAddress;
+    LocalPortNumberCheck->Checked = Configuration->HasLocalPortNumberLimits();
+    LocalPortNumberMinEdit->AsInteger =
+      (Configuration->LocalPortNumberMin > 0 ? Configuration->LocalPortNumberMin : PrivatePortMin);
+    LocalPortNumberMaxEdit->AsInteger =
+      (Configuration->LocalPortNumberMax >= LocalPortNumberMinEdit->AsInteger ? Configuration->LocalPortNumberMax : static_cast<int>(LocalPortNumberMaxEdit->MaxValue));
     TryFtpWhenSshFailsCheck->Checked = Configuration->TryFtpWhenSshFails;
 
     // logging
@@ -960,6 +967,8 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     // network
     Configuration->ExternalIpAddress =
       (CustomExternalIpAddressButton->Checked ? CustomExternalIpAddressEdit->Text : UnicodeString());
+    Configuration->LocalPortNumberMin = LocalPortNumberCheck->Checked ? LocalPortNumberMinEdit->AsInteger : 0;
+    Configuration->LocalPortNumberMax = LocalPortNumberCheck->Checked ? LocalPortNumberMaxEdit->AsInteger : 0;
     Configuration->TryFtpWhenSshFails = TryFtpWhenSshFailsCheck->Checked;
 
     // security
@@ -1394,6 +1403,9 @@ void __fastcall TPreferencesDialog::UpdateControls()
 
     // network
     EnableControl(CustomExternalIpAddressEdit, CustomExternalIpAddressButton->Checked);
+    EnableControl(LocalPortNumberMinEdit, LocalPortNumberCheck->Checked);
+    EnableControl(LocalPortNumberMaxEdit, LocalPortNumberCheck->Checked);
+    EnableControl(LocalPortNumberRangeLabel, LocalPortNumberCheck->Checked);
 
     // window
     EnableControl(AutoWorkspaceCombo, AutoSaveWorkspaceCheck->Checked);
@@ -3179,5 +3191,28 @@ void __fastcall TPreferencesDialog::UpDownFileColorButtonClick(TObject * Sender)
 {
   int DestIndex = FileColorsView->ItemIndex + (Sender == UpFileColorButton ? -1 : 1);
   FileColorMove(FileColorsView->ItemIndex, DestIndex);
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::LocalPortNumberMinEditExit(TObject *)
+{
+  if (LocalPortNumberMinEdit->AsInteger > LocalPortNumberMaxEdit->AsInteger)
+  {
+    LocalPortNumberMaxEdit->Value = LocalPortNumberMaxEdit->MaxValue;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::LocalPortNumberMaxEditExit(TObject *)
+{
+  if (LocalPortNumberMaxEdit->AsInteger < LocalPortNumberMinEdit->AsInteger)
+  {
+    if (LocalPortNumberMaxEdit->AsInteger >= PrivatePortMin)
+    {
+      LocalPortNumberMinEdit->AsInteger = PrivatePortMin;
+    }
+    else
+    {
+      LocalPortNumberMinEdit->Value = LocalPortNumberMinEdit->MinValue;
+    }
+  }
 }
 //---------------------------------------------------------------------------

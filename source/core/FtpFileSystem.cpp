@@ -2667,14 +2667,15 @@ int __fastcall TFTPFileSystem::GetOptionVal(int OptionID) const
       break;
 
     case OPTION_LIMITPORTRANGE:
-      Result = FALSE;
+      Result = !FTerminal->SessionData->FtpPasvMode && FTerminal->Configuration->HasLocalPortNumberLimits();
       break;
 
     case OPTION_PORTRANGELOW:
+      Result = FTerminal->Configuration->LocalPortNumberMin;
+      break;
+
     case OPTION_PORTRANGEHIGH:
-      // should never get here OPTION_LIMITPORTRANGE being zero
-      DebugFail();
-      Result = 0;
+      Result = FTerminal->Configuration->LocalPortNumberMax;
       break;
 
     case OPTION_ENABLE_IPV6:
