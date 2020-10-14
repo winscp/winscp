@@ -2793,7 +2793,7 @@ object PreferencesDialog: TPreferencesDialog
             Width = 361
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Retrieve external IP address from &operating system'
+            Caption = 'Retrieve the external IP address from &operating system'
             TabOrder = 0
             OnClick = ControlChange
           end
@@ -2803,7 +2803,7 @@ object PreferencesDialog: TPreferencesDialog
             Width = 361
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Use &following external IP address:'
+            Caption = 'Use the &following external IP address:'
             TabOrder = 1
             OnClick = ControlChange
           end
