@@ -796,7 +796,7 @@ BOOL CAsyncSocketEx::Bind(UINT nSocketPort, LPCTSTR lpszSocketAddress)
       return FALSE;
 
     for (res = res0; res; res = res->ai_next)
-      if (Bind(res->ai_addr, res->ai_addrlen))
+      if (BindToAddr(res->ai_addr, res->ai_addrlen))
       {
         ret = TRUE;
         break;
@@ -817,7 +817,7 @@ BOOL CAsyncSocketEx::Bind(UINT nSocketPort, LPCTSTR lpszSocketAddress)
     sockAddr6.sin6_addr = in6addr_any ;
     sockAddr6.sin6_port = htons((u_short)nSocketPort);
 
-    return Bind((SOCKADDR*)&sockAddr6, sizeof(sockAddr6));
+    return BindToAddr((SOCKADDR*)&sockAddr6, sizeof(sockAddr6));
   }
   else if (!lpszAscii && m_SocketData.nFamily == AF_INET)
   {
@@ -828,13 +828,13 @@ BOOL CAsyncSocketEx::Bind(UINT nSocketPort, LPCTSTR lpszSocketAddress)
     sockAddr.sin_addr.s_addr = INADDR_ANY ;
     sockAddr.sin_port = htons((u_short)nSocketPort);
 
-    return Bind((SOCKADDR*)&sockAddr, sizeof(sockAddr));
+    return BindToAddr((SOCKADDR*)&sockAddr, sizeof(sockAddr));
   }
   else
     return FALSE ;
 }
 
-BOOL CAsyncSocketEx::Bind(const SOCKADDR* lpSockAddr, int nSockAddrLen)
+BOOL CAsyncSocketEx::BindToAddr(const SOCKADDR* lpSockAddr, int nSockAddrLen)
 {
   if (!bind(m_SocketData.hSocket, lpSockAddr, nSockAddrLen))
     return TRUE;

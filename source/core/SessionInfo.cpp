@@ -1413,6 +1413,14 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
         (BooleanToEngStr(Data->Compression)));
     }
 
+    if ((Data->FSProtocol == fsFTP) && !Data->FtpPasvMode)
+    {
+      if (!Configuration->ExternalIpAddress.IsEmpty() || Configuration->HasLocalPortNumberLimits())
+      {
+        AddSeparator();
+        ADF(L"FTP active mode interface: %s:%d-%d", (DefaultStr(Configuration->ExternalIpAddress, L"<system address>"), Configuration->LocalPortNumberMin, Configuration->LocalPortNumberMax));
+      }
+    }
     AddSeparator();
   }
 }

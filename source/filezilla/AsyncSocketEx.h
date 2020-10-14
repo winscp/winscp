@@ -131,8 +131,8 @@ public:
   BOOL AsyncSelect(long lEvent = FD_READ | FD_WRITE | FD_OOB | FD_ACCEPT | FD_CONNECT | FD_CLOSE);
 
   // Associates a local address with the socket.
-  BOOL Bind(UINT nSocketPort, LPCTSTR lpszSocketAddress);
-  BOOL Bind(const SOCKADDR* lpSockAddr, int nSockAddrLen);
+  virtual BOOL Bind(UINT nSocketPort, LPCTSTR lpszSocketAddress);
+  BOOL BindToAddr(const SOCKADDR* lpSockAddr, int nSockAddrLen);
 
   // Closes the socket.
   virtual void Close();

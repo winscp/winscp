@@ -71,6 +71,8 @@ private:
   UnicodeString FRandomSeedFile;
   UnicodeString FPuttyRegistryStorageKey;
   UnicodeString FExternalIpAddress;
+  int FLocalPortNumberMin;
+  int FLocalPortNumberMax;
   bool FTryFtpWhenSshFails;
   int FParallelDurationThreshold;
   bool FScripting;
@@ -146,6 +148,8 @@ private:
   void __fastcall SetCollectUsage(bool value);
   bool __fastcall GetIsUnofficial();
   bool __fastcall GetPersistent();
+  void SetLocalPortNumberMin(int value);
+  void SetLocalPortNumberMax(int value);
 
 protected:
   TStorage FStorage;
@@ -260,6 +264,7 @@ public:
   UnicodeString __fastcall GetFileVersion(const UnicodeString & FileName);
   UnicodeString __fastcall GetFileMimeType(const UnicodeString & FileName);
   bool RegistryPathExists(const UnicodeString & RegistryPath);
+  bool HasLocalPortNumberLimits();
 
   TStoredSessionList * __fastcall SelectFilezillaSessionsForImport(
     TStoredSessionList * Sessions, UnicodeString & Error);
@@ -318,6 +323,8 @@ public:
   __property int CacheDirectoryChangesMaxSize = { read = FCacheDirectoryChangesMaxSize, write = SetCacheDirectoryChangesMaxSize };
   __property bool ShowFtpWelcomeMessage = { read = FShowFtpWelcomeMessage, write = SetShowFtpWelcomeMessage };
   __property UnicodeString ExternalIpAddress = { read = FExternalIpAddress, write = SetExternalIpAddress };
+  __property int LocalPortNumberMin = { read = FLocalPortNumberMin, write = SetLocalPortNumberMin };
+  __property int LocalPortNumberMax = { read = FLocalPortNumberMax, write = SetLocalPortNumberMax };
   __property bool TryFtpWhenSshFails = { read = FTryFtpWhenSshFails, write = SetTryFtpWhenSshFails };
   __property int ParallelDurationThreshold = { read = FParallelDurationThreshold, write = SetParallelDurationThreshold };
   __property UnicodeString MimeTypes = { read = FMimeTypes, write = SetMimeTypes };

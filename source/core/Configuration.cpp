@@ -111,6 +111,8 @@ void __fastcall TConfiguration::Default()
   FCacheDirectoryChangesMaxSize = 100;
   FShowFtpWelcomeMessage = false;
   FExternalIpAddress = L"";
+  FLocalPortNumberMin = 0;
+  FLocalPortNumberMax = 0;
   FTryFtpWhenSshFails = true;
   FParallelDurationThreshold = 10;
   FMimeTypes = UnicodeString();
@@ -244,6 +246,8 @@ UnicodeString __fastcall TConfiguration::PropertyToKey(const UnicodeString & Pro
     KEY(Integer,  CacheDirectoryChangesMaxSize); \
     KEY(Bool,     ShowFtpWelcomeMessage); \
     KEY(String,   ExternalIpAddress); \
+    KEY(Integer,  LocalPortNumberMin); \
+    KEY(Integer,  LocalPortNumberMax); \
     KEY(Bool,     TryFtpWhenSshFails); \
     KEY(Integer,  ParallelDurationThreshold); \
     KEY(String,   MimeTypes); \
@@ -1595,6 +1599,21 @@ UnicodeString __fastcall TConfiguration::GetRandomSeedFileName()
 void __fastcall TConfiguration::SetExternalIpAddress(UnicodeString value)
 {
   SET_CONFIG_PROPERTY(ExternalIpAddress);
+}
+//---------------------------------------------------------------------
+bool TConfiguration::HasLocalPortNumberLimits()
+{
+  return (LocalPortNumberMin > 0) && (LocalPortNumberMax >= LocalPortNumberMin);
+}
+//---------------------------------------------------------------------
+void TConfiguration::SetLocalPortNumberMin(int value)
+{
+  SET_CONFIG_PROPERTY(LocalPortNumberMin);
+}
+//---------------------------------------------------------------------
+void TConfiguration::SetLocalPortNumberMax(int value)
+{
+  SET_CONFIG_PROPERTY(LocalPortNumberMax);
 }
 //---------------------------------------------------------------------
 void __fastcall TConfiguration::SetMimeTypes(UnicodeString value)
