@@ -2592,8 +2592,11 @@ void __fastcall TScpCommanderForm::DoRemotePathComboBoxCancel(TObject * Sender)
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::OtherLocalDirViewPathChange(TCustomDirView * Sender)
 {
-  DebugAssert(IsLocalBrowserMode());
-  DoLocalDirViewPathChange(Sender, RemotePathComboBox);
+  // should happen only when called from TScpCommanderForm::DoShow while starting connected
+  if (IsLocalBrowserMode())
+  {
+    DoLocalDirViewPathChange(Sender, RemotePathComboBox);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::DoRemotePathComboBoxItemClick(TObject * Sender)

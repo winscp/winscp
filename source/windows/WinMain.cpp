@@ -408,12 +408,17 @@ static UnicodeString ColorToRGBStr(TColor Color)
 TDateTime Started(Now());
 int LifetimeRuns = -1;
 //---------------------------------------------------------------------------
+void InterfaceStartDontMeasure()
+{
+  Started = TDateTime();
+}
+//---------------------------------------------------------------------------
 void InterfaceStarted()
 {
-  // deliberate downcast
-  int StartupSeconds = static_cast<int>(SecondsBetween(Now(), Started));
-  if (LifetimeRuns > 0)
+  if ((Started != TDateTime()) && (LifetimeRuns > 0))
   {
+    // deliberate downcast
+    int StartupSeconds = static_cast<int>(SecondsBetween(Now(), Started));
     if (LifetimeRuns == 1)
     {
       Configuration->Usage->Set(L"StartupSeconds1", StartupSeconds);
@@ -428,7 +433,7 @@ void InterfaceStarted()
 //---------------------------------------------------------------------------
 void __fastcall UpdateStaticUsage()
 {
-  LifetimeRuns = Configuration->Usage->Inc(L"Runs");
+  Configuration->Usage->Inc(L"Runs");
 
   Configuration->Usage->UpdateCurrentVersion();
 
@@ -1228,6 +1233,13 @@ int __fastcall Execute()
                   {
                     Download(TerminalManager->ActiveTerminal, DownloadFile,
                       UseDefaults);
+                  }
+                  else
+                  {
+                    if (DataList->Count == 0)
+                    {
+                      LifetimeRuns = Configuration->Usage->Inc(L"RunsNormal");
+                    }
                   }
 
                   if (Browse)

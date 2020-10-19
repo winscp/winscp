@@ -4704,12 +4704,6 @@ void __fastcall TCustomScpExplorerForm::Idle()
           RemoteDirView->ReloadDirectory();
         }
       }
-
-      if (!FStarted)
-      {
-        FStarted = true;
-        InterfaceStarted();
-      }
     }
   }
 
@@ -9246,6 +9240,13 @@ void __fastcall TCustomScpExplorerForm::WMClose(TMessage & Message)
 void __fastcall TCustomScpExplorerForm::CMShowingChanged(TMessage & Message)
 {
   TForm::Dispatch(&Message);
+
+  // Now the window is visible (TForm::Dispatch is what usually takes long, like when loading a "local" network directory)
+  if (Showing && !FStarted)
+  {
+    FStarted = true;
+    InterfaceStarted();
+  }
 
   if (Showing && (Terminal == NULL))
   {
