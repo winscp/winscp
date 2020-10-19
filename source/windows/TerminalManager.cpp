@@ -956,6 +956,7 @@ void __fastcall TTerminalManager::ApplicationMessage(TMsg & Msg, bool & Handled)
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::ApplicationModalBegin(TObject * /*Sender*/)
 {
+  InterfaceStartDontMeasure();
   NonVisualDataModule->StartBusy();
   if (ScpExplorer != NULL)
   {
