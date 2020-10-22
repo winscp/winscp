@@ -100,6 +100,10 @@ void __fastcall TS3FileSystem::Open()
     }
   }
   FAccessKeyId = UTF8String(AccessKeyId);
+  if (FAccessKeyId.Length() > MAX_ACCESS_KEY_ID_LENGTH)
+  {
+    FAccessKeyId.SetLength(MAX_ACCESS_KEY_ID_LENGTH);
+  }
 
   UnicodeString SecretAccessKey = UTF8String(NormalizeString(Data->Password));
   if (SecretAccessKey.IsEmpty() && !FTerminal->SessionData->FingerprintScan)
@@ -524,6 +528,10 @@ TLibS3BucketContext TS3FileSystem::GetBucketContext(const UnicodeString & Bucket
     Result.secretAccessKey = FSecretAccessKey.c_str();
     Result.securityToken = FSecurityToken;
     Result.AuthRegionBuf = UTF8String(Region);
+    if (Result.AuthRegionBuf.Length() > S3_MAX_REGION_LENGTH)
+    {
+      Result.AuthRegionBuf.SetLength(S3_MAX_REGION_LENGTH);
+    }
     Result.authRegion = Result.AuthRegionBuf.c_str();
 
     if (Retry)

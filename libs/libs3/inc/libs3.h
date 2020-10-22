@@ -246,6 +246,11 @@ extern "C" {
  */
 #define S3_DEFAULT_REGION                  "us-east-1"
 
+// WINSCP
+// according to https://docs.aws.amazon.com/IAM/latest/APIReference/API_AccessKey.html max length is nowadays 128
+#define S3_MAX_ACCESS_KEY_ID_LENGTH 128
+#define S3_MAX_REGION_LENGTH 32
+
 
 /** **************************************************************************
  * Enumerations
