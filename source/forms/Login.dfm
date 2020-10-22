@@ -191,7 +191,7 @@ object LoginDialog: TLoginDialog
           Top = 139
           Width = 159
           Height = 21
-          MaxLength = 100
+          MaxLength = 128
           TabOrder = 7
           Text = 'UserNameEdit'
           OnChange = DataChange
