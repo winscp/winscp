@@ -2276,7 +2276,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Width = 353
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Respond with pass&word to the first prompt'
+            Caption = 'Respond with a pass&word to the first prompt'
             TabOrder = 2
             OnClick = DataChange
           end
