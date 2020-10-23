@@ -100,9 +100,9 @@ void __fastcall TS3FileSystem::Open()
     }
   }
   FAccessKeyId = UTF8String(AccessKeyId);
-  if (FAccessKeyId.Length() > MAX_ACCESS_KEY_ID_LENGTH)
+  if (FAccessKeyId.Length() > S3_MAX_ACCESS_KEY_ID_LENGTH)
   {
-    FAccessKeyId.SetLength(MAX_ACCESS_KEY_ID_LENGTH);
+    FAccessKeyId.SetLength(S3_MAX_ACCESS_KEY_ID_LENGTH);
   }
 
   UnicodeString SecretAccessKey = UTF8String(NormalizeString(Data->Password));
