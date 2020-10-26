@@ -11,6 +11,7 @@ using System.Reflection;
 using System.Security.Principal;
 using System.Security.AccessControl;
 using System.ComponentModel;
+using System.Security.Cryptography;
 
 namespace WinSCP
 {
@@ -1055,6 +1056,21 @@ namespace WinSCP
                     }
                     else if (assemblyVersion.ProductVersion != version.ProductVersion)
                     {
+                        try
+                        {
+                            using (SHA256 SHA256 = SHA256.Create())
+                            using (FileStream stream = File.OpenRead(exePath))
+                            {
+                                string sha256 = Convert.ToBase64String(SHA256.ComputeHash(stream));
+                                _logger.WriteLine($"SHA-256 of the executable file is {sha256}");
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            _logger.WriteLine("Calculating SHA-256 of the executable file failed");
+                            _logger.WriteException(e);
+                        }
+
                         string message;
                         if (string.IsNullOrEmpty(version.ProductVersion) && (accessException != null))
                         {
