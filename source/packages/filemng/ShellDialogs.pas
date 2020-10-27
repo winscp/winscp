@@ -23,7 +23,7 @@ Unit ShellDialogs;
     Credits:
     ========
     This unit is partly based on the work of
-    Gerald Nunn (GXExplorer), https://gexperts.com
+    Gerald Nunn (GXExplorer)
     and
     Brad Stowers (ItemProp)
 
