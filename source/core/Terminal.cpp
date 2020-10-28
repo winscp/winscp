@@ -2427,7 +2427,7 @@ UnicodeString __fastcall TTerminal::GetCurrentDirectory()
   if (FFileSystem != NULL)
   {
     // there's occasional crash when assigning FFileSystem->CurrentDirectory
-    // to FCurrentDirectory, splitting the assignment to two statemets
+    // to FCurrentDirectory, splitting the assignment to two statements
     // to locate the crash more closely
     UnicodeString CurrentDirectory = FFileSystem->CurrentDirectory;
     FCurrentDirectory = CurrentDirectory;
