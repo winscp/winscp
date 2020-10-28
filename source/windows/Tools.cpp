@@ -863,17 +863,18 @@ bool __fastcall TextFromClipboard(UnicodeString & Text, bool Trim)
     {
       // For all current uses (URL pasting, key/fingerprint pasting, known_hosts pasting, "more messages" copying,
       // permissions pasting), 64KB is large enough.
-      const size_t Limit = 64*1024;
+      const int Limit = 64*1024;
       ErrorContext = L"size";
       size_t Size = GlobalSize(Handle);
-      if (Size > Limit)
+      int Len = (Size / sizeof(*AText)) - 1;
+      if (Len > Limit)
       {
-        ErrorContext = FORMAT(L"substring(%d)", (int(Size)));
+        ErrorContext = FORMAT(L"substring(%d,%d)", (int(Size), Len));
         Text = UnicodeString(AText, Limit);
       }
       else
       {
-        ErrorContext = FORMAT(L"string(%d)", (int(Size)));
+        ErrorContext = FORMAT(L"string(%d,%d)", (int(Size), Len));
         Text = AText;
       }
       if (Trim)
