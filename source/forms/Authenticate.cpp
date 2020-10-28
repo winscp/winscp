@@ -45,8 +45,6 @@ void __fastcall TAuthenticateForm::Init(TTerminal * Terminal)
   FHorizontalLogPadding = ScaleByTextHeight(this, 4);
   FVerticalLogPadding = ScaleByTextHeight(this, 3);
   FLogTextFormat << tfNoPrefix << tfWordBreak << tfVerticalCenter;
-
-  ClearLog();
 }
 //---------------------------------------------------------------------------
 __fastcall TAuthenticateForm::~TAuthenticateForm()
@@ -146,13 +144,6 @@ void __fastcall TAuthenticateForm::FormShow(TObject * /*Sender*/)
   UnicodeString AnimationName = FSessionData->IsSecure() ? L"ConnectingSecure" : L"ConnectingInsecure";
   FFrameAnimation.Init(AnimationPaintBox, AnimationName);
   FFrameAnimation.Start();
-}
-//---------------------------------------------------------------------------
-void __fastcall TAuthenticateForm::ClearLog()
-{
-  // TListItems::Clear() does nothing without allocated handle
-  LogView->HandleNeeded();
-  LogView->Items->Clear();
 }
 //---------------------------------------------------------------------------
 void __fastcall TAuthenticateForm::Log(const UnicodeString Message)

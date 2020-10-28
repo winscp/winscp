@@ -76,7 +76,6 @@ public:
   __property TNotifyEvent OnCancel = { read = FOnCancel, write = FOnCancel };
 
 protected:
-  void __fastcall ClearLog();
   void __fastcall AdjustControls();
   bool __fastcall Execute(UnicodeString Status, TPanel * Panel,
     TWinControl * FocusControl, TButton * DefaultButton, TButton * CancelButton,
