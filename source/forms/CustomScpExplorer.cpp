@@ -1805,7 +1805,7 @@ bool __fastcall TCustomScpExplorerForm::CustomCommandRemoteAllowed()
 {
   // remote custom commands can be executed only if the server supports shell commands
   // or have secondary shell
-  return HasActiveTerminal() && (FTerminal->IsCapable[fcSecondaryShell] || FTerminal->IsCapable[fcShellAnyCommand]);
+  return HasActiveTerminal() && (Terminal->IsCapable[fcSecondaryShell] || Terminal->IsCapable[fcShellAnyCommand]);
 }
 //---------------------------------------------------------------------------
 int __fastcall TCustomScpExplorerForm::CustomCommandState(
@@ -2210,7 +2210,7 @@ void __fastcall TCustomScpExplorerForm::LocalCustomCommandPure(
           {
             UnicodeString RemoteDir =
               UnixExtractFileDir(
-                UnixIncludeTrailingBackslash(FTerminal->CurrentDirectory) +
+                UnixIncludeTrailingBackslash(Terminal->CurrentDirectory) +
                 ToUnixPath(FileName.SubString(TempDir.Length() + 1, FileName.Length() - TempDir.Length())));
 
             TDateTime NewTime;
@@ -2225,7 +2225,7 @@ void __fastcall TCustomScpExplorerForm::LocalCustomCommandPure(
               std::unique_ptr<TStrings> TemporaryFilesList(new TStringList());
               TemporaryFilesList->Add(FileName);
 
-              FTerminal->CopyToRemote(TemporaryFilesList.get(), RemoteDir, &CopyParam, cpTemporary, NULL);
+              Terminal->CopyToRemote(TemporaryFilesList.get(), RemoteDir, &CopyParam, cpTemporary, NULL);
             }
           }
         }
@@ -3066,10 +3066,10 @@ void __fastcall TCustomScpExplorerForm::EditNew(TOperationSide Side)
       bool ExistingFile = false;
       if (!IsSideLocalBrowser(Side))
       {
-        Name = AbsolutePath(FTerminal->CurrentDirectory, Name);
+        Name = AbsolutePath(Terminal->CurrentDirectory, Name);
 
         TRemoteFile * File = NULL;
-        if (FTerminal->FileExists(Name, &File) &&
+        if (Terminal->FileExists(Name, &File) &&
             !File->IsDirectory)
         {
           try
@@ -3093,7 +3093,7 @@ void __fastcall TCustomScpExplorerForm::EditNew(TOperationSide Side)
           TCopyParamType CopyParam = GUIConfiguration->CurrentCopyParam;
           LocalFileName = TempDir +
             // We probably do not want to trim the VMS version here
-            FTerminal->ChangeFileName(&CopyParam, TargetFileName, osRemote, false);
+            Terminal->ChangeFileName(&CopyParam, TargetFileName, osRemote, false);
         }
       }
       else
@@ -3387,7 +3387,7 @@ void __fastcall TCustomScpExplorerForm::TemporarilyDownloadFiles(
 
   if (TempDir.IsEmpty())
   {
-    TemporaryDirectoryForRemoteFiles(FTerminal->CurrentDirectory, CopyParam, TempDir, RootTempDir);
+    TemporaryDirectoryForRemoteFiles(Terminal->CurrentDirectory, CopyParam, TempDir, RootTempDir);
   }
 
   DebugAssert(!FAutoOperation);
@@ -3522,7 +3522,7 @@ void __fastcall TCustomScpExplorerForm::ExecuteFile(TOperationSide Side,
   {
     // We need to trim VMS version here, so that we use name without version
     // when uploading back to create a new version of the file
-    OriginalFileName = FTerminal->GetBaseFileName(UnixExtractFileName(FullFileName));
+    OriginalFileName = Terminal->GetBaseFileName(UnixExtractFileName(FullFileName));
     RemoteDirectory = UnixExtractFilePath(FullFileName);
     TObject * Token = NULL;
     UnicodeString LocalDirectory;
@@ -3800,11 +3800,11 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileReload(
     std::unique_ptr<TRemoteFile> File;
     UnicodeString RemoteFileName =
       UnixIncludeTrailingBackslash(Data->RemoteDirectory) + Data->OriginalFileName;
-    FTerminal->ExceptionOnFail = true;
+    Terminal->ExceptionOnFail = true;
     try
     {
       TRemoteFile * AFile = NULL;
-      FTerminal->ReadFile(RemoteFileName, AFile);
+      Terminal->ReadFile(RemoteFileName, AFile);
       File.reset(AFile);
       if (!File->HaveFullFileName)
       {
@@ -3813,7 +3813,7 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileReload(
     }
     __finally
     {
-      FTerminal->ExceptionOnFail = false;
+      Terminal->ExceptionOnFail = false;
     }
     std::unique_ptr<TStrings> FileList(new TStringList());
     FileList->AddObject(RemoteFileName, File.get());
@@ -4098,7 +4098,7 @@ bool __fastcall TCustomScpExplorerForm::RemoteTransferDialog(TManagedTerminal *&
   {
     FileMask = AnyMask;
   }
-  DirectCopy = FTerminal->IsCapable[fcRemoteCopy] || FTerminal->IsCapable[fcSecondaryShell];
+  DirectCopy = Terminal->IsCapable[fcRemoteCopy] || Terminal->IsCapable[fcSecondaryShell];
   bool Result = true;
   if (!NoConfirmation)
   {
@@ -4122,12 +4122,12 @@ bool __fastcall TCustomScpExplorerForm::RemoteTransferDialog(TManagedTerminal *&
         }
 
         TDirectRemoteCopy AllowDirectCopy;
-        if (FTerminal->IsCapable[fcRemoteCopy] || FTerminal->CommandSessionOpened)
+        if (Terminal->IsCapable[fcRemoteCopy] || Terminal->CommandSessionOpened)
         {
           DebugAssert(DirectCopy);
           AllowDirectCopy = drcAllow;
         }
-        else if (FTerminal->IsCapable[fcSecondaryShell])
+        else if (Terminal->IsCapable[fcSecondaryShell])
         {
           DebugAssert(DirectCopy);
           AllowDirectCopy = drcConfirmCommandSession;
@@ -4179,7 +4179,7 @@ bool __fastcall TCustomScpExplorerForm::RemoteTransferFiles(
         MakeFileListParam.IncludeDirs = true;
         MakeFileListParam.Recursive = false;
 
-        ProcessLocalDirectory(TempDir, FTerminal->MakeLocalFileList, &MakeFileListParam);
+        ProcessLocalDirectory(TempDir, Terminal->MakeLocalFileList, &MakeFileListParam);
 
         TTerminalManager::Instance()->ActiveTerminal = Session;
 
@@ -4190,7 +4190,7 @@ bool __fastcall TCustomScpExplorerForm::RemoteTransferFiles(
 
           DebugAssert(!FAutoOperation);
           FAutoOperation = true;
-          FTerminal->CopyToRemote(TemporaryFilesList, Target, &CopyParam, cpTemporary, NULL);
+          Terminal->CopyToRemote(TemporaryFilesList, Target, &CopyParam, cpTemporary, NULL);
         }
       }
       __finally
@@ -4221,10 +4221,10 @@ bool __fastcall TCustomScpExplorerForm::RemoteTransferFiles(
           Configuration->Usage->Inc("RemoteCopyDirect");
 
           DebugAssert(DirectCopy);
-          DebugAssert(Session == FTerminal);
+          DebugAssert(Session == Terminal);
 
-          if (FTerminal->IsCapable[fcRemoteCopy] ||
-              FTerminal->CommandSessionOpened ||
+          if (Terminal->IsCapable[fcRemoteCopy] ||
+              Terminal->CommandSessionOpened ||
               CommandSessionFallback())
           {
             Terminal->CopyFiles(FileList, Target, FileMask);
@@ -6065,7 +6065,7 @@ void __fastcall TCustomScpExplorerForm::TerminalSynchronizeDirectory(
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::StandaloneEdit(const UnicodeString & FileName)
 {
-  UnicodeString FullFileName = AbsolutePath(FTerminal->CurrentDirectory, FileName);
+  UnicodeString FullFileName = AbsolutePath(Terminal->CurrentDirectory, FileName);
 
   TRemoteFile * File = NULL;
   Terminal->ReadFile(FullFileName, File);
@@ -6445,19 +6445,19 @@ void __fastcall TCustomScpExplorerForm::DoOpenDirectoryDialog(
 //---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::CommandSessionFallback()
 {
-  DebugAssert(!FTerminal->CommandSessionOpened);
+  DebugAssert(!Terminal->CommandSessionOpened);
 
-  return TTerminalManager::Instance()->ConnectTerminal(FTerminal->CommandSession);
+  return TTerminalManager::Instance()->ConnectTerminal(Terminal->CommandSession);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::EnsureCommandSessionFallback(TFSCapability Capability)
 {
-  bool Result = FTerminal->IsCapable[Capability] ||
-    FTerminal->CommandSessionOpened;
+  bool Result = Terminal->IsCapable[Capability] ||
+    Terminal->CommandSessionOpened;
 
   if (!Result)
   {
-    DebugAssert(FTerminal->IsCapable[fcSecondaryShell]);
+    DebugAssert(Terminal->IsCapable[fcSecondaryShell]);
     if (!GUIConfiguration->ConfirmCommandSession)
     {
       Result = true;
@@ -6835,7 +6835,7 @@ void __fastcall TCustomScpExplorerForm::UpdateSessionTab(TTabSheet * TabSheet)
     TManagedTerminal * ATerminal = GetSessionTabTerminal(TabSheet);
     if (DebugAlwaysTrue(ATerminal != NULL))
     {
-      TColor Color = (ATerminal == FTerminal) ? FSessionColor : ATerminal->StateData->Color;
+      TColor Color = (ATerminal == Terminal) ? FSessionColor : ATerminal->StateData->Color;
       TabSheet->ImageIndex = AddSessionColor(Color);
 
       UnicodeString TabCaption = TTerminalManager::Instance()->GetTerminalTitle(ATerminal, true);
@@ -8280,7 +8280,7 @@ void __fastcall TCustomScpExplorerForm::RemoteFileContolDDChooseEffect(
     {
       if (dwEffect == DROPEFFECT_COPY)
       {
-        bool MoveCapable = FTerminal->IsCapable[fcRemoteMove];
+        bool MoveCapable = Terminal->IsCapable[fcRemoteMove];
         // currently we support copying always (at least via temporary directory);
         // remove associated checks once this all proves stable and working
         bool CopyCapable = true;
@@ -8675,16 +8675,16 @@ void __fastcall TCustomScpExplorerForm::ToggleQueueVisibility()
 UnicodeString __fastcall TCustomScpExplorerForm::PathForCaption()
 {
   UnicodeString Result;
-  if (FTerminal != NULL)
+  if (Terminal != NULL)
   {
     switch (WinConfiguration->PathInCaption)
     {
       case picShort:
-        Result = TTerminalManager::Instance()->GetTerminalShortPath(FTerminal);
+        Result = TTerminalManager::Instance()->GetTerminalShortPath(Terminal);
         break;
 
       case picFull:
-        Result = FTerminal->CurrentDirectory;
+        Result = Terminal->CurrentDirectory;
         break;
     }
   }
@@ -9810,7 +9810,7 @@ void __fastcall TCustomScpExplorerForm::DoFindFiles(
     WinConfiguration->LockedInterface = true;
     try
     {
-      FTerminal->FilesFind(Directory, FileMask, OnFileFound, OnFindingFile);
+      Terminal->FilesFind(Directory, FileMask, OnFileFound, OnFindingFile);
     }
     __finally
     {
@@ -10603,7 +10603,7 @@ void __fastcall TCustomScpExplorerForm::CopyFilesToClipboard(TOperationSide Side
     FClipboardDragDropFilesEx->FileList->AddItem(NULL, FClipboardFakeDirectory);
     FClipboardDragDropFilesEx->CopyToClipboard();
 
-    FClipboardTerminal = FTerminal;
+    FClipboardTerminal = Terminal;
 
     // Need full paths, as cwd can be different once files are pasted
     FClipboardFileList.reset(TRemoteFileList::CloneStrings(RemoteDirView->CreateFileList(OnFocused, true)));
