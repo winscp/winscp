@@ -38,9 +38,12 @@ object AuthenticateForm: TAuthenticateForm
       BorderStyle = bsNone
       DoubleBuffered = True
       ParentDoubleBuffered = False
+      ParentShowHint = False
+      ShowHint = True
       TabOrder = 0
       OnDrawItem = LogViewDrawItem
       OnMeasureItem = LogViewMeasureItem
+      OnMouseMove = LogViewMouseMove
     end
     object LeftPanel: TPanel
       Left = 0

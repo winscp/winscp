@@ -1930,15 +1930,15 @@ void __fastcall TTerminal::ShowExtendedException(Exception * E)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::DoInformation(const UnicodeString & Str, bool Status,
-  int Phase)
+void __fastcall TTerminal::DoInformation(
+  const UnicodeString & Str, bool Status, int Phase, const UnicodeString & Additional)
 {
   if (OnInformation)
   {
     TCallbackGuard Guard(this);
     try
     {
-      OnInformation(this, Str, Status, Phase);
+      OnInformation(this, Str, Status, Phase, Additional);
       Guard.Verify();
     }
     catch (Exception & E)
@@ -2656,7 +2656,7 @@ void __fastcall TTerminal::DoEndTransaction(bool Inform)
         {
           if (Inform)
           {
-            DoInformation(LoadStr(STATUS_OPEN_DIRECTORY), true);
+            DoInformation(LoadStr(STATUS_OPEN_DIRECTORY), true, -1, CurrentDirectory);
           }
           ReadDirectory(!FReadCurrentDirectoryPending);
         }

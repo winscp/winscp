@@ -45,10 +45,12 @@ void __fastcall TAuthenticateForm::Init(TTerminal * Terminal)
   FHorizontalLogPadding = ScaleByTextHeight(this, 4);
   FVerticalLogPadding = ScaleByTextHeight(this, 3);
   FLogTextFormat << tfNoPrefix << tfWordBreak << tfVerticalCenter;
+  FHintIndex = -1;
 }
 //---------------------------------------------------------------------------
 __fastcall TAuthenticateForm::~TAuthenticateForm()
 {
+  Application->CancelHint();
   if (ReleaseAsModal(this, FShowAsModalStorage))
   {
     UnhookFormActivation(this);
@@ -146,7 +148,7 @@ void __fastcall TAuthenticateForm::FormShow(TObject * /*Sender*/)
   FFrameAnimation.Start();
 }
 //---------------------------------------------------------------------------
-void __fastcall TAuthenticateForm::Log(const UnicodeString Message)
+void __fastcall TAuthenticateForm::Log(const UnicodeString & Message, const UnicodeString & Additional)
 {
   // HACK
   // The first call to Repaint from TFrameAnimation happens
@@ -159,6 +161,7 @@ void __fastcall TAuthenticateForm::Log(const UnicodeString Message)
   }
 
   int Index = LogView->Items->Add(Message);
+  FHints.push_back(Additional);
   MakeLogItemVisible(Index);
   LogView->Repaint();
 }
@@ -629,5 +632,20 @@ void __fastcall TAuthenticateForm::BannerMonospacedFontActionExecute(TObject * /
 {
   BannerMonospacedFontAction->Checked = !BannerMonospacedFontAction->Checked;
   UpdateBannerFont();
+}
+//---------------------------------------------------------------------------
+void __fastcall TAuthenticateForm::LogViewMouseMove(TObject *, TShiftState, int X, int Y)
+{
+  int Index = LogView->ItemAtPos(TPoint(X, Y), true);
+
+  if (FHintIndex != Index)
+  {
+    Application->CancelHint();
+    FHintIndex = Index;
+    if (Index >= 0)
+    {
+      LogView->Hint = FHints[Index];
+    }
+  }
 }
 //---------------------------------------------------------------------------

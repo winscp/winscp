@@ -64,7 +64,7 @@ public:
   {
     if (OnInformation != NULL)
     {
-      OnInformation(Terminal, Str, Status, Phase);
+      OnInformation(Terminal, Str, Status, Phase, Additional);
     }
   }
 
@@ -80,6 +80,7 @@ public:
   UnicodeString Str;
   bool Status;
   int Phase;
+  UnicodeString Additional;
 };
 //---------------------------------------------------------------------------
 class TQueryUserAction : public TUserAction
@@ -2783,13 +2784,14 @@ void __fastcall TTerminalThread::WaitForUserAction(TUserAction * UserAction)
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalThread::TerminalInformation(
-  TTerminal * Terminal, const UnicodeString & Str, bool Status, int Phase)
+  TTerminal * Terminal, const UnicodeString & Str, bool Status, int Phase, const UnicodeString & Additional)
 {
   TInformationUserAction Action(FOnInformation);
   Action.Terminal = Terminal;
   Action.Str = Str;
   Action.Status = Status;
   Action.Phase = Phase;
+  Action.Additional = Additional;
 
   WaitForUserAction(&Action);
 }
