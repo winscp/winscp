@@ -1266,7 +1266,7 @@ void __fastcall TTerminalManager::AuthenticatingDone()
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::TerminalInformation(
-  TTerminal * Terminal, const UnicodeString & Str, bool /*Status*/, int Phase)
+  TTerminal * Terminal, const UnicodeString & Str, bool DebugUsedArg(Status), int Phase, const UnicodeString & Additional)
 {
   if (ScpExplorer != NULL)
   {
@@ -1295,7 +1295,7 @@ void __fastcall TTerminalManager::TerminalInformation(
         FAuthenticateForm = MakeAuthenticateForm(Terminal);
         ShowPending = true;
       }
-      FAuthenticateForm->Log(Str);
+      FAuthenticateForm->Log(Str, Additional);
       if (ShowPending)
       {
         FAuthenticateForm->ShowAsModal();

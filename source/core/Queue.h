@@ -443,7 +443,7 @@ private:
   void __fastcall TerminalReopenEvent(TObject * Sender);
 
   void __fastcall TerminalInformation(
-    TTerminal * Terminal, const UnicodeString & Str, bool Status, int Phase);
+    TTerminal * Terminal, const UnicodeString & Str, bool Status, int Phase, const UnicodeString & Additional);
   void __fastcall TerminalQueryUser(TObject * Sender,
     const UnicodeString Query, TStrings * MoreMessages, unsigned int Answers,
     const TQueryParams * Params, unsigned int & Answer, TQueryType Type, void * Arg);

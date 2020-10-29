@@ -64,7 +64,7 @@ typedef void __fastcall (__closure *TDeleteLocalFileEvent)(
 typedef int __fastcall (__closure *TDirectoryModifiedEvent)
   (TTerminal * Terminal, const UnicodeString Directory, bool SubDirs);
 typedef void __fastcall (__closure *TInformationEvent)
-  (TTerminal * Terminal, const UnicodeString & Str, bool Status, int Phase);
+  (TTerminal * Terminal, const UnicodeString & Str, bool Status, int Phase, const UnicodeString & Additional);
 typedef void __fastcall (__closure *TCustomCommandEvent)
   (TTerminal * Terminal, const UnicodeString & Command, bool & Handled);
 //---------------------------------------------------------------------------
@@ -373,7 +373,8 @@ protected:
     TStrings * Response);
   void __fastcall OpenTunnel();
   void __fastcall CloseTunnel();
-  void __fastcall DoInformation(const UnicodeString & Str, bool Status, int Phase = -1);
+  void __fastcall DoInformation(
+    const UnicodeString & Str, bool Status, int Phase = -1, const UnicodeString & Additional = UnicodeString());
   bool __fastcall PromptUser(TSessionData * Data, TPromptKind Kind,
     UnicodeString Name, UnicodeString Instructions, UnicodeString Prompt, bool Echo,
     int MaxLen, UnicodeString & Result);

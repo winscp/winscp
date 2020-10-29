@@ -59,6 +59,7 @@ __published:
   void __fastcall FormResize(TObject *Sender);
   void __fastcall BannerMemoContextPopup(TObject *Sender, TPoint &MousePos, bool &Handled);
   void __fastcall BannerMonospacedFontActionExecute(TObject *Sender);
+  void __fastcall LogViewMouseMove(TObject *Sender, TShiftState Shift, int X, int Y);
 
 public:
   __fastcall TAuthenticateForm(TComponent * Owner);
@@ -66,7 +67,7 @@ public:
 
   void __fastcall Init(TTerminal * Terminal);
   void __fastcall ShowAsModal();
-  void __fastcall Log(const UnicodeString Message);
+  void __fastcall Log(const UnicodeString & Message, const UnicodeString & Additional = UnicodeString());
   bool __fastcall PromptUser(TPromptKind Kind, UnicodeString Name, UnicodeString Instructions,
     TStrings * Prompts, TStrings * Results, bool ForceLog, bool StoredCredentialsTried);
   void __fastcall Banner(const UnicodeString & Banner, bool & NeverShowAgain,
@@ -115,6 +116,8 @@ private:
   int FVerticalLogPadding;
   TTextFormat FLogTextFormat;
   bool FShowNoActivate;
+  std::vector<UnicodeString> FHints;
+  int FHintIndex;
 
   INTERFACE_HOOK;
 };
