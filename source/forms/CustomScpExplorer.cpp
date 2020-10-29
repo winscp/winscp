@@ -7108,7 +7108,7 @@ void __fastcall TCustomScpExplorerForm::DoShow()
   FQueueDragDropFilesEx->DragDropControl = QueueView3;
 
   // This was previously in NeedSession, where other related code is.
-  // But that is called form CMShowingChanged, when the window is already visible and the local-local window state
+  // But that is called from CMShowingChanged, when the window is already visible and the local-local window state
   // unpleasanly shows briefly.
   if (!WinConfiguration->ShowLoginWhenNoSession &&
       WinConfiguration->AutoSaveWorkspace && !WinConfiguration->AutoWorkspace.IsEmpty() &&
