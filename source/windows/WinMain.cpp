@@ -1148,7 +1148,7 @@ int __fastcall Execute()
 
             try
             {
-              DebugAssert(!TerminalManager->ActiveTerminal);
+              DebugAssert(TerminalManager->ActiveSession == NULL);
 
               bool CanStart;
               bool Browse = false;
@@ -1177,7 +1177,7 @@ int __fastcall Execute()
                   Terminal->SessionData->RemoteDirectory = L"";
                   Terminal->StateData->RemoteDirectory = Terminal->SessionData->RemoteDirectory;
                 }
-                TerminalManager->ActiveTerminal = Terminal;
+                TerminalManager->ActiveSession = Terminal;
                 CanStart = (TerminalManager->Count > 0);
               }
               else
@@ -1213,16 +1213,16 @@ int __fastcall Execute()
 
                   if (ParamCommand == pcUpload)
                   {
-                    Upload(TerminalManager->ActiveTerminal, CommandParams, UseDefaults);
+                    Upload(TerminalManager->ActiveSession, CommandParams, UseDefaults);
                   }
                   else if (ParamCommand == pcFullSynchronize)
                   {
-                    FullSynchronize(TerminalManager->ActiveTerminal, ScpExplorer,
+                    FullSynchronize(TerminalManager->ActiveSession, ScpExplorer,
                       CommandParams, UseDefaults);
                   }
                   else if (ParamCommand == pcSynchronize)
                   {
-                    Synchronize(TerminalManager->ActiveTerminal, ScpExplorer,
+                    Synchronize(TerminalManager->ActiveSession, ScpExplorer,
                       CommandParams, UseDefaults);
                   }
                   else if (ParamCommand == pcEdit)
@@ -1231,7 +1231,7 @@ int __fastcall Execute()
                   }
                   else if (!DownloadFile.IsEmpty())
                   {
-                    Download(TerminalManager->ActiveTerminal, DownloadFile,
+                    Download(TerminalManager->ActiveSession, DownloadFile,
                       UseDefaults);
                   }
                   else

@@ -218,7 +218,7 @@ __published:
   void __fastcall QueueFileListResize(TObject *Sender);
 
 private:
-  TManagedTerminal * FTerminal;
+  TManagedTerminal * FManagedSession;
   TTerminalQueue * FQueue;
   TTerminalQueueStatus * FQueueStatus;
   TCriticalSection * FQueueStatusSection;
@@ -296,8 +296,9 @@ private:
 
   bool __fastcall GetEnableFocusedOperation(TOperationSide Side, int FilesOnly);
   bool __fastcall GetEnableSelectedOperation(TOperationSide Side, int FilesOnly);
-  void __fastcall SetTerminal(TManagedTerminal * value);
-  void __fastcall DoSetTerminal(TManagedTerminal * value, bool Replace);
+  void __fastcall SetManagedSession(TManagedTerminal * value);
+  void __fastcall DoSetManagedSession(TManagedTerminal * value, bool Replace);
+  TManagedTerminal * GetTerminal();
   void __fastcall SetQueue(TTerminalQueue * value);
   void __fastcall TransferListChange(TObject * Sender);
   void __fastcall TransferListDrawItem(TTBXCustomList * Sender, TCanvas * ACanvas,
@@ -644,7 +645,7 @@ protected:
   void __fastcall SetTaskbarListProgressState(TBPFLAG Flags);
   void __fastcall SetTaskbarListProgressValue(int Progress);
   void __fastcall SetTaskbarListProgressValue(TFileOperationProgressType * ProgressData);
-  TManagedTerminal * __fastcall GetSessionTabTerminal(TTabSheet * TabSheet);
+  TManagedTerminal * __fastcall GetSessionTabSession(TTabSheet * TabSheet);
   bool __fastcall SessionTabSwitched();
   void __fastcall RestoreApp();
   void __fastcall GoToQueue();
@@ -796,7 +797,7 @@ public:
   void __fastcall TerminalRemoved(TObject * Sender);
   void __fastcall TerminalDisconnected();
   void __fastcall TerminalConnecting();
-  void __fastcall TerminalListChanged();
+  void __fastcall SessionListChanged();
   void __fastcall ApplicationTitleChanged();
   unsigned int __fastcall MoreMessageDialog(const UnicodeString Message,
     TStrings * MoreMessages, TQueryType Type, unsigned int Answers,
@@ -808,7 +809,7 @@ public:
   UnicodeString __fastcall GetProgressTitle();
   void __fastcall ShowExtendedException(TTerminal * Terminal, Exception * E);
   void __fastcall InactiveTerminalException(TTerminal * Terminal, Exception * E);
-  void __fastcall TerminalReady();
+  void __fastcall SessionReady();
   void __fastcall QueueEvent(TManagedTerminal * Terminal, TTerminalQueue * Queue, TQueueEvent Event);
   void __fastcall QueueEmptyNoteClicked(TObject * Sender);
   bool __fastcall DoSynchronizeDirectories(
@@ -862,7 +863,8 @@ public:
   __property bool EnableFocusedFileOperation[TOperationSide Side] = { read = GetEnableFocusedOperation, index = 1 };
   __property bool EnableSelectedFileOperation[TOperationSide Side] = { read = GetEnableSelectedOperation, index = 1 };
   __property bool HasDirView[TOperationSide Side] = { read = GetHasDirView };
-  __property TManagedTerminal * Terminal = { read = FTerminal, write = SetTerminal };
+  __property TManagedTerminal * ManagedSession = { read = FManagedSession, write = SetManagedSession };
+  __property TManagedTerminal * Terminal = { read = GetTerminal };
   __property TTerminalQueue * Queue = { read = FQueue, write = SetQueue };
   __property TColor SessionColor = { read = FSessionColor, write = SetSessionColor };
 };

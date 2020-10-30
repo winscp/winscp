@@ -21,6 +21,7 @@ public:
   __fastcall TManagedTerminal(TSessionData * SessionData, TConfiguration * Configuration);
   virtual __fastcall ~TManagedTerminal();
 
+  bool LocalBrowser;
   TSessionData * StateData;
   TObject * LocalExplorerState;
   TObject * RemoteExplorerState;
@@ -76,12 +77,13 @@ public:
   bool __fastcall UploadPublicKey(TTerminal * Terminal, TSessionData * Data, UnicodeString & FileName);
 
   __property TCustomScpExplorerForm * ScpExplorer = { read = FScpExplorer, write = SetScpExplorer };
-  __property TManagedTerminal * ActiveTerminal = { read = FActiveTerminal, write = SetActiveTerminal };
+  __property TManagedTerminal * ActiveSession = { read = FActiveSession, write = SetActiveSession };
+  __property TManagedTerminal * ActiveTerminal = { read = GetActiveTerminal };
   __property TTerminalQueue * ActiveQueue = { read = GetActiveQueue };
-  __property int ActiveTerminalIndex = { read = GetActiveTerminalIndex, write = SetActiveTerminalIndex };
-  __property TStrings * TerminalList = { read = GetTerminalList };
+  __property int ActiveSessionIndex = { read = GetActiveSessionIndex, write = SetActiveSessionIndex };
+  __property TStrings * SessionList = { read = GetSessionList };
   __property TTerminal * LocalTerminal = { read = FLocalTerminal };
-  __property TManagedTerminal * Terminals[int Index]  = { read=GetTerminal };
+  __property TManagedTerminal * Sessions[int Index]  = { read = GetSession };
 
 protected:
   virtual TTerminal * __fastcall CreateTerminal(TSessionData * Data);
@@ -91,11 +93,11 @@ protected:
 private:
   static TTerminalManager * FInstance;
   TCustomScpExplorerForm * FScpExplorer;
-  TManagedTerminal * FActiveTerminal;
+  TManagedTerminal * FActiveSession;
   TTerminal * FLocalTerminal;
   bool FDestroying;
   TTerminalPendingAction FTerminalPendingAction;
-  TStrings * FTerminalList;
+  TStrings * FSessionList;
   TList * FQueues;
   TStrings * FTerminationMessages;
   UnicodeString FProgressTitle;
@@ -119,8 +121,9 @@ private:
   bool __fastcall ConnectActiveTerminal();
   TTerminalQueue * __fastcall NewQueue(TTerminal * Terminal);
   void __fastcall SetScpExplorer(TCustomScpExplorerForm * value);
-  void __fastcall DoSetActiveTerminal(TManagedTerminal * value, bool AutoReconnect);
-  void __fastcall SetActiveTerminal(TManagedTerminal * value);
+  void __fastcall DoSetActiveSession(TManagedTerminal * value, bool AutoReconnect);
+  void __fastcall SetActiveSession(TManagedTerminal * value);
+  TManagedTerminal * GetActiveTerminal();
   void __fastcall UpdateAll();
   void __fastcall ApplicationException(TObject * Sender, Exception * E);
   void __fastcall ApplicationShowHint(UnicodeString & HintStr, bool & CanShow,
@@ -146,11 +149,11 @@ private:
   void __fastcall TerminalCustomCommand(TTerminal * Terminal, const UnicodeString & Command, bool & Handled);
   void __fastcall FreeAll();
   void __fastcall TerminalReady();
-  TStrings * __fastcall GetTerminalList();
-  int __fastcall GetActiveTerminalIndex();
+  TStrings * __fastcall GetSessionList();
+  int __fastcall GetActiveSessionIndex();
   TTerminalQueue * __fastcall GetActiveQueue();
   void __fastcall SaveTerminal(TTerminal * Terminal);
-  void __fastcall SetActiveTerminalIndex(int value);
+  void __fastcall SetActiveSessionIndex(int value);
   void __fastcall OperationFinished(::TFileOperation Operation, TOperationSide Side,
     bool Temp, const UnicodeString & FileName, bool Success,
     TOnceDoneOperation & OnceDoneOperation);
@@ -166,7 +169,7 @@ private:
   void __fastcall CreateTaskbarList();
   void __fastcall UpdateTaskbarList();
   void __fastcall AuthenticateFormCancel(TObject * Sender);
-  void __fastcall DoTerminalListChanged();
+  void __fastcall DoSessionListChanged();
   TManagedTerminal * __fastcall DoNewTerminal(TSessionData * Data);
   static void __fastcall TerminalThreadIdle(void * Data, TObject * Sender);
   void __fastcall SetQueueConfiguration(TTerminalQueue * Queue);
@@ -181,7 +184,7 @@ private:
   TRemoteFile * __fastcall CheckRights(
     TTerminal * Terminal, const UnicodeString & EntryType, const UnicodeString & FileName, bool & WrongRights);
   TManagedTerminal * __fastcall CreateManagedTerminal(TSessionData * Data);
-  TManagedTerminal * __fastcall GetTerminal(int Index);
+  TManagedTerminal * __fastcall GetSession(int Index);
 };
 //---------------------------------------------------------------------------
 #endif

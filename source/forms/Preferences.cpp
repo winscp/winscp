@@ -2858,7 +2858,7 @@ void __fastcall TPreferencesDialog::AddCommandButtonDropDownClick(TObject * /*Se
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TPreferencesDialog::GetSessionKey()
 {
-  TTerminal * Terminal = TTerminalManager::Instance()->ActiveTerminal;
+  TTerminal * Terminal = TTerminalManager::Instance()->ActiveSession;
   UnicodeString Result;
   if (Terminal != NULL)
   {

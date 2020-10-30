@@ -1535,7 +1535,7 @@ void __fastcall TNonVisualDataModule::CreateOpenedSessionListMenu(TAction * Acti
   TTBCustomItem * OpenedSessionsMenu = dynamic_cast<TTBCustomItem *>(Action->ActionComponent);
   DebugAssert(OpenedSessionsMenu != NULL);
   TTerminalManager * Manager = TTerminalManager::Instance();
-  TStrings * TerminalList = Manager->TerminalList;
+  TStrings * TerminalList = Manager->SessionList;
   int PrevCount = OpenedSessionsMenu->Count;
   for (int Index = 0; Index < TerminalList->Count; Index++)
   {
@@ -1559,7 +1559,7 @@ void __fastcall TNonVisualDataModule::CreateOpenedSessionListMenu(TAction * Acti
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::OpenedSessionItemClick(TObject * Sender)
 {
-  TTerminalManager::Instance()->ActiveTerminal = (TManagedTerminal*)(((TMenuItem *)Sender)->Tag);
+  TTerminalManager::Instance()->ActiveSession = (TManagedTerminal*)(((TMenuItem *)Sender)->Tag);
 }
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::CreateEditorListMenu(TTBCustomItem * Menu, bool OnFocused)
