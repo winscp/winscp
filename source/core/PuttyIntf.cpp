@@ -1046,7 +1046,13 @@ TStrings * SshMacList()
   for (int Index = 0; Index < Count; Index++)
   {
     UnicodeString Name = UnicodeString(Macs[Index]->name);
-    Result->Add(Name);
+    UnicodeString S = Name;
+    UnicodeString ETMName = UnicodeString(Macs[Index]->etm_name);
+    if (!ETMName.IsEmpty())
+    {
+      S = FORMAT(L"%s (%s)", (S, ETMName));
+    }
+    Result->Add(S);
   }
   return Result.release();
 }
