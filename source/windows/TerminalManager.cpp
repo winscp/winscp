@@ -92,8 +92,6 @@ __fastcall TTerminalManager::TTerminalManager() :
 
   DebugAssert(Configuration && !Configuration->OnChange);
   Configuration->OnChange = ConfigurationChange;
-  FOnLastTerminalClosed = NULL;
-  FOnTerminalListChanged = NULL;
 
   FTerminalList = new TStringList();
   FQueues = new TList();
@@ -642,14 +640,7 @@ void __fastcall TTerminalManager::SetScpExplorer(TCustomScpExplorerForm * value)
     {
       FScpExplorer->Terminal = ActiveTerminal;
       FScpExplorer->Queue = ActiveQueue;
-      FOnLastTerminalClosed = FScpExplorer->LastTerminalClosed;
-      FOnTerminalListChanged = FScpExplorer->TerminalListChanged;
       UpdateTaskbarList();
-    }
-    else
-    {
-      FOnLastTerminalClosed = NULL;
-      FOnTerminalListChanged = NULL;
     }
   }
 }
@@ -732,9 +723,9 @@ void __fastcall TTerminalManager::DoSetActiveTerminal(TManagedTerminal * value, 
     }
     else
     {
-      if (OnLastTerminalClosed)
+      if (FScpExplorer != NULL)
       {
-        OnLastTerminalClosed(this);
+        FScpExplorer->LastTerminalClosed();
       }
     }
 
@@ -1720,9 +1711,9 @@ void __fastcall TTerminalManager::Move(TTerminal * Source, TTerminal * Target)
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::DoTerminalListChanged()
 {
-  if (OnTerminalListChanged)
+  if (FScpExplorer != NULL)
   {
-    OnTerminalListChanged(this);
+    FScpExplorer->TerminalListChanged();
   }
 }
 //---------------------------------------------------------------------------

@@ -80,8 +80,6 @@ public:
   __property TTerminalQueue * ActiveQueue = { read = GetActiveQueue };
   __property int ActiveTerminalIndex = { read = GetActiveTerminalIndex, write = SetActiveTerminalIndex };
   __property TStrings * TerminalList = { read = GetTerminalList };
-  __property TNotifyEvent OnLastTerminalClosed = { read = FOnLastTerminalClosed, write = FOnLastTerminalClosed };
-  __property TNotifyEvent OnTerminalListChanged = { read = FOnTerminalListChanged, write = FOnTerminalListChanged };
   __property TTerminal * LocalTerminal = { read = FLocalTerminal };
   __property TManagedTerminal * Terminals[int Index]  = { read=GetTerminal };
 
@@ -97,8 +95,6 @@ private:
   TTerminal * FLocalTerminal;
   bool FDestroying;
   TTerminalPendingAction FTerminalPendingAction;
-  TNotifyEvent FOnLastTerminalClosed;
-  TNotifyEvent FOnTerminalListChanged;
   TStrings * FTerminalList;
   TList * FQueues;
   TStrings * FTerminationMessages;

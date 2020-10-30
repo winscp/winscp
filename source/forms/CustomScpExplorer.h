@@ -659,7 +659,6 @@ protected:
     void * Arg);
   void __fastcall AnyInternalEditorModified(TObject * Sender, bool & Modified);
   virtual void __fastcall StartingDisconnected();
-  void __fastcall DoTerminalListChanged();
   void __fastcall NeedSession(bool Startup);
   bool __fastcall DraggingAllFilesFromDirView(TOperationSide Side, TStrings * FileList);
   bool __fastcall SelectedAllFilesInDirView(TCustomDirView * DView);
@@ -793,11 +792,11 @@ public:
   bool __fastcall GetQueueEnabled();
   void __fastcall ToggleQueueEnabled();
   UnicodeString __fastcall GetQueueProgressTitle();
-  void __fastcall LastTerminalClosed(TObject * Sender);
+  void __fastcall LastTerminalClosed();
   void __fastcall TerminalRemoved(TObject * Sender);
   void __fastcall TerminalDisconnected();
   void __fastcall TerminalConnecting();
-  void __fastcall TerminalListChanged(TObject * Sender);
+  void __fastcall TerminalListChanged();
   void __fastcall ApplicationTitleChanged();
   unsigned int __fastcall MoreMessageDialog(const UnicodeString Message,
     TStrings * MoreMessages, TQueryType Type, unsigned int Answers,

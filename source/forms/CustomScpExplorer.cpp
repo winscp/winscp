@@ -353,7 +353,7 @@ __fastcall TCustomScpExplorerForm::~TCustomScpExplorerForm()
   SAFE_DESTROY(FDocks);
 
   SessionsPageControl->Images = NULL;
-  // only after clearing Terminal (after DoTerminalListChanged => ... => AddSessionColor is called)
+  // only after clearing Terminal (after TerminalListChanged => ... => AddSessionColor is called)
   SAFE_DESTROY(FSessionColors);
   SAFE_DESTROY(FSessionsDragDropFilesEx);
 
@@ -574,7 +574,7 @@ void __fastcall TCustomScpExplorerForm::TerminalChanged(bool Replaced)
   {
     UpdateSessionColor((TColor)Terminal->StateData->Color);
   }
-  DoTerminalListChanged();
+  TerminalListChanged();
 
   DebugAssert(!IsLocalBrowserMode());
   if (Replaced)
@@ -4893,7 +4893,7 @@ void __fastcall TCustomScpExplorerForm::RenameSession()
 
     UpdateControls();
     // Add/Remove distinguishing paths from sessions of the same name.
-    DoTerminalListChanged();
+    TerminalListChanged();
   }
 }
 //---------------------------------------------------------------------------
@@ -6704,7 +6704,7 @@ void __fastcall TCustomScpExplorerForm::FileTerminalRemoved(const UnicodeString 
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::LastTerminalClosed(TObject * /*Sender*/)
+void __fastcall TCustomScpExplorerForm::LastTerminalClosed()
 {
   UpdateControls();
   SessionColor = TColor(0);
@@ -6747,7 +6747,7 @@ void __fastcall TCustomScpExplorerForm::NeedSession(bool Startup)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::DoTerminalListChanged()
+void __fastcall TCustomScpExplorerForm::TerminalListChanged()
 {
   TStrings * TerminalList = TTerminalManager::Instance()->TerminalList;
   int ActiveTerminalIndex = TTerminalManager::Instance()->ActiveTerminalIndex;
@@ -6806,11 +6806,6 @@ void __fastcall TCustomScpExplorerForm::DoTerminalListChanged()
   SessionsPageControl->ActivePageIndex = ActiveTerminalIndex;
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::TerminalListChanged(TObject * /*Sender*/)
-{
-  DoTerminalListChanged();
-}
-//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::UpdateNewSessionTab()
 {
   TTabSheet * TabSheet = SessionsPageControl->Pages[SessionsPageControl->PageCount - 1];
@@ -6867,7 +6862,7 @@ bool __fastcall TCustomScpExplorerForm::SessionTabSwitched()
     }
     __finally
     {
-      DoTerminalListChanged();
+      TerminalListChanged();
     }
 
     FSessionsPageControlNewSessionTime = Now();
@@ -7136,7 +7131,7 @@ void __fastcall TCustomScpExplorerForm::UpdatePixelsPerInchMainWindowCounter()
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::StartingDisconnected()
 {
-  DoTerminalListChanged();
+  TerminalListChanged();
   InitStatusBar();
   UpdateControls();
 }
@@ -9957,7 +9952,7 @@ void __fastcall TCustomScpExplorerForm::SessionsPageControlDragDrop(
       (SessionsPageControl->ActivePage->PageIndex != Index))
   {
     Configuration->Usage->Inc(L"SessionTabMoves");
-    // this is almost redundant as we would recreate tabs in DoTerminalListChanged,
+    // this is almost redundant as we would recreate tabs in TerminalListChanged,
     // but we want to actually prevent that to avoid flicker
     SessionsPageControl->ActivePage->PageIndex = Index;
     TTerminal * Terminal = GetSessionTabTerminal(SessionsPageControl->ActivePage);
