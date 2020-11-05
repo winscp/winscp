@@ -9774,6 +9774,13 @@ void __fastcall TCustomScpExplorerForm::CreateWnd()
 
   // win32-darkmode calls AllowDarkModeForWindow(this, true) here, but it does not seem to have any effect
 
+  if (IsWin10Build(2004))
+  {
+    BOOL DarkMode = TRUE;
+    const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
+    DwmSetWindowAttribute(Handle, DWMWA_USE_IMMERSIVE_DARK_MODE, &DarkMode, sizeof(DarkMode));
+  }
+
   if (FSessionsDragDropFilesEx == NULL)
   {
     FSessionsDragDropFilesEx = CreateDragDropFilesEx();

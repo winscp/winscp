@@ -2980,6 +2980,28 @@ bool __fastcall IsWin10()
   return CheckWin32Version(10, 0);
 }
 //---------------------------------------------------------------------------
+static OSVERSIONINFO __fastcall GetWindowsVersion()
+{
+  OSVERSIONINFO Result;
+  memset(&Result, 0, sizeof(Result));
+  Result.dwOSVersionInfoSize = sizeof(Result);
+  // Cannot use the VCL Win32MajorVersion+Win32MinorVersion+Win32BuildNumber as
+  // on Windows 10 due to some hacking in InitPlatformId, the Win32BuildNumber is lost
+  GetVersionEx(&Result);
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall IsWin10Build(unsigned int BuildNumber)
+{
+  // It might be enough to check the dwBuildNumber, as we do in TWinConfiguration::IsDDExtBroken()
+  OSVERSIONINFO OSVersionInfo = GetWindowsVersion();
+  return
+    (OSVersionInfo.dwMajorVersion > 10) ||
+    ((OSVersionInfo.dwMajorVersion == 10) && (OSVersionInfo.dwMinorVersion > 0)) ||
+    ((OSVersionInfo.dwMajorVersion == 10) && (OSVersionInfo.dwMinorVersion == 0) &&
+     (OSVersionInfo.dwBuildNumber >= BuildNumber));
+}
+//---------------------------------------------------------------------------
 bool __fastcall IsWine()
 {
   HMODULE NtDll = GetModuleHandle(L"ntdll.dll");
@@ -3062,17 +3084,6 @@ UnicodeString __fastcall WindowsProductName()
   catch(...)
   {
   }
-  return Result;
-}
-//---------------------------------------------------------------------------
-static OSVERSIONINFO __fastcall GetWindowsVersion()
-{
-  OSVERSIONINFO Result;
-  memset(&Result, 0, sizeof(Result));
-  Result.dwOSVersionInfoSize = sizeof(Result);
-  // Cannot use the VCL Win32MajorVersion+Win32MinorVersion+Win32BuildNumber as
-  // on Windows 10 due to some hacking in InitPlatformId, the Win32BuildNumber is lost
-  GetVersionEx(&Result);
   return Result;
 }
 //---------------------------------------------------------------------------
