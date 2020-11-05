@@ -138,6 +138,7 @@ bool __fastcall IsWinVista();
 bool __fastcall IsWin7();
 bool __fastcall IsWin8();
 bool __fastcall IsWin10();
+bool __fastcall IsWin10Build(unsigned int BuildNumber);
 bool __fastcall IsWine();
 bool __fastcall IsUWP();
 TLibModule * __fastcall FindModule(void * Instance);
