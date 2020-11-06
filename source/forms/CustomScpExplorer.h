@@ -381,6 +381,7 @@ protected:
   int FIncrementalSearching;
   bool FIncrementalSearchHaveNext;
   TOperationSide FProgressSide;
+  bool FImmersiveDarkMode;
 
   virtual bool __fastcall CopyParamDialog(TTransferDirection Direction,
     TTransferType Type, bool Temp, TStrings * FileList,
@@ -717,6 +718,7 @@ protected:
   virtual void __fastcall DoRemotePathComboBoxItemClick(TObject * Sender);
   bool GetDoNotShowCopyDialogDefault(bool DragDrop);
   void HandleDoNotShowCopyDialogAgain(bool DragDrop, bool DoNotShowAgain);
+  void __fastcall UpdateDarkMode();
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();
