@@ -8695,6 +8695,10 @@ void __fastcall TCustomScpExplorerForm::UpdateControls()
 
     RemoteDirView->DarkMode = WinConfiguration->UseDarkTheme();
     RemoteDriveView->DarkMode = RemoteDirView->DarkMode;
+    if (FImmersiveDarkMode != WinConfiguration->UseDarkTheme())
+    {
+      UpdateDarkMode();
+    }
 
     reinterpret_cast<TTBCustomItem *>(GetComponent(fcRemotePathComboBox))->Enabled = HasTerminal;
   }
@@ -9690,18 +9694,23 @@ TDragDropFilesEx * __fastcall TCustomScpExplorerForm::CreateDragDropFilesEx()
   return Result;
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::UpdateDarkMode()
+{
+  if (IsWin10Build(2004))
+  {
+    FImmersiveDarkMode = WinConfiguration->UseDarkTheme();
+    BOOL DarkMode = FImmersiveDarkMode ? TRUE : FALSE;
+    const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
+    DwmSetWindowAttribute(Handle, DWMWA_USE_IMMERSIVE_DARK_MODE, &DarkMode, sizeof(DarkMode));
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::CreateWnd()
 {
   TForm::CreateWnd();
 
   // win32-darkmode calls AllowDarkModeForWindow(this, true) here, but it does not seem to have any effect
-
-  if (IsWin10Build(2004))
-  {
-    BOOL DarkMode = TRUE;
-    const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
-    DwmSetWindowAttribute(Handle, DWMWA_USE_IMMERSIVE_DARK_MODE, &DarkMode, sizeof(DarkMode));
-  }
+  UpdateDarkMode();
 
   if (FSessionsDragDropFilesEx == NULL)
   {

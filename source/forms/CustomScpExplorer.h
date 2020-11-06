@@ -380,6 +380,7 @@ protected:
   UnicodeString FIncrementalSearch;
   int FIncrementalSearching;
   bool FIncrementalSearchHaveNext;
+  bool FImmersiveDarkMode;
 
   virtual bool __fastcall CopyParamDialog(TTransferDirection Direction,
     TTransferType Type, bool Temp, TStrings * FileList,
@@ -711,6 +712,7 @@ protected:
   int __fastcall GetMinQueueViewHeight();
   void __fastcall DetachTerminal(TObject * ATerminal);
   bool __fastcall IsActiveTerminal(TTerminal * Terminal);
+  void __fastcall UpdateDarkMode();
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();
