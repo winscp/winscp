@@ -2268,6 +2268,7 @@ namespace WinSCP
                 {
                     _logReader.SetTimeouted();
                 }
+                Cleanup();
                 throw Logger.WriteException(new TimeoutException(message));
             }
 
