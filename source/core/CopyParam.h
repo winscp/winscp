@@ -100,7 +100,7 @@ public:
   TRights __fastcall RemoteFileRights(int Attrs) const;
   bool __fastcall UseAsciiTransfer(UnicodeString FileName, TOperationSide Side,
     const TFileMasks::TParams & Params) const;
-  bool __fastcall AllowResume(__int64 Size) const;
+  bool __fastcall AllowResume(__int64 Size, const UnicodeString & FileName) const;
   bool __fastcall ResumeTransfer(UnicodeString FileName) const;
   UnicodeString __fastcall ValidLocalFileName(UnicodeString FileName) const;
   UnicodeString __fastcall ValidLocalPath(UnicodeString Path) const;

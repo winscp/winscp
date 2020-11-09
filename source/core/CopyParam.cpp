@@ -775,15 +775,24 @@ int __fastcall TCopyParamType::LocalFileAttrs(const TRights & Rights) const
   return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TCopyParamType::AllowResume(__int64 Size) const
+bool __fastcall TCopyParamType::AllowResume(__int64 Size, const UnicodeString & FileName) const
 {
-  switch (ResumeSupport)
+  bool Result;
+  if (FileName.Length() + UnicodeString(PARTIAL_EXT).Length() > 255) // it's a different limit than MAX_PATH
   {
-    case rsOn: return true;
-    case rsOff: return false;
-    case rsSmart: return (Size >= ResumeThreshold);
-    default: DebugFail(); return false;
+    Result = false;
   }
+  else
+  {
+    switch (ResumeSupport)
+    {
+      case rsOn: Result = true; break;
+      case rsOff: Result = false; break;
+      case rsSmart: Result = (Size >= ResumeThreshold); break;
+      default: DebugFail(); Result = false; break;
+    }
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCopyParamType::AllowAnyTransfer() const
