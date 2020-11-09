@@ -4502,7 +4502,7 @@ void __fastcall TSFTPFileSystem::Source(
   // should we check for interrupted transfer?
   ResumeAllowed =
     !OperationProgress->AsciiTransfer &&
-    CopyParam->AllowResume(OperationProgress->LocalSize) &&
+    CopyParam->AllowResume(OperationProgress->LocalSize, DestFileName) &&
     IsCapable(fcRename) &&
     !FTerminal->IsEncryptingFiles() &&
     (CopyParam->OnTransferIn == NULL);
@@ -5260,7 +5260,7 @@ void __fastcall TSFTPFileSystem::Sink(
   bool ResumeAllowed =
     FLAGCLEAR(Params, cpTemporary) &&
     !OperationProgress->AsciiTransfer &&
-    CopyParam->AllowResume(OperationProgress->TransferSize) &&
+    CopyParam->AllowResume(OperationProgress->TransferSize, DestFileName) &&
     !FTerminal->IsEncryptingFiles() &&
     (CopyParam->OnTransferOut == NULL);
 
