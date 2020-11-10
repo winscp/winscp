@@ -788,7 +788,7 @@ void __fastcall TScpCommanderForm::ConfigurationChanged()
       RemoteDrivePanel->Height = RemotePanel.DriveViewHeight;
     }
 
-    // in case it trigges config-changed event (does not),
+    // in case it triggers config-changed event (does not),
     // make sure it does only after we apply the TreeOnLeft change to avoid endless recursion
     WinConfiguration->ScpCommander.LocalPanel = LocalPanel;
     WinConfiguration->ScpCommander.RemotePanel = RemotePanel;
