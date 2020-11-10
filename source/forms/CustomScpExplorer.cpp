@@ -619,6 +619,10 @@ void __fastcall TCustomScpExplorerForm::TerminalChanged(bool Replaced)
       }
     }
   }
+  else
+  {
+    RemoteDirView->Terminal = NULL;
+  }
 
   InitStatusBar();
   UpdateTransferList();
