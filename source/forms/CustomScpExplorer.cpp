@@ -4892,8 +4892,13 @@ void __fastcall TCustomScpExplorerForm::DuplicateSession()
     std::unique_ptr<TSessionData> SessionData(CloneCurrentSessionData());
 
     TTerminalManager * Manager = TTerminalManager::Instance();
-    TManagedTerminal * Terminal = Manager->NewManagedTerminal(SessionData.get());
-    Manager->ActiveSession = Terminal;
+    TManagedTerminal * ATerminal = Manager->NewManagedTerminal(SessionData.get());
+    // We definitelly want this
+    ATerminal->Disconnected = Terminal->Disconnected;
+    // Not sure about these two
+    ATerminal->Permanent = Terminal->Permanent;
+    ATerminal->DisconnectedTemporarily = Terminal->DisconnectedTemporarily; // maybe
+    Manager->ActiveSession = ATerminal;
   }
 }
 //---------------------------------------------------------------------------
