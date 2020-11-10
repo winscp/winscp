@@ -3670,7 +3670,7 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestOverwrite(
       }
 
       bool AllowResume = UserData.CopyParam->AllowResume(FileParams.SourceSize, UnicodeString());
-      bool AutoResume = UserData.AutoResume;
+      bool AutoResume = UserData.AutoResume && AllowResume;
       if (ConfirmOverwrite(SourceFullFileName, TargetFileName, OverwriteMode, OperationProgress,
             (NoFileParams ? NULL : &FileParams), UserData.CopyParam, UserData.Params, AutoResume))
       {
