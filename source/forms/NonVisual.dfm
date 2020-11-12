@@ -627,12 +627,12 @@ object NonVisualDataModule: TNonVisualDataModule
         'Site Manager|Opens site manager (hold down Shift to open site ma' +
         'nager in new window)'
     end
-    object CloseSessionAction2: TAction
+    object CloseTabAction: TAction
       Tag = 15
-      Category = 'Session'
-      Caption = '&Close Session'
+      Category = 'Tab'
+      Caption = '&Close Tab'
       HelpKeyword = 'task_connections#closing'
-      Hint = 'Terminate the current session and close the tab'
+      Hint = 'Close the current tab'
       ImageIndex = 26
       SecondaryShortCuts.Strings = (
         'Ctrl+W')
@@ -662,7 +662,7 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object WorkspacesAction: TAction
       Tag = 15
-      Category = 'Session'
+      Category = 'Tab'
       Caption = '&Workspaces'
       HelpKeyword = 'workspace'
       Hint = 'Open workspace'
@@ -1376,22 +1376,22 @@ object NonVisualDataModule: TNonVisualDataModule
         'Exit application|Close application (any opened sessions are clos' +
         'ed)'
     end
-    object OpenedSessionsAction: TAction
+    object OpenedTabsAction: TAction
       Tag = 15
-      Category = 'Session'
-      Caption = '&Opened Sessions'
+      Category = 'Tab'
+      Caption = '&Opened Tabs'
       HelpKeyword = 'task_connections#switch'
-      Hint = 'Select session|Select opened session to activate'
+      Hint = 'Select tab|Select tab to activate'
       ImageIndex = 62
     end
-    object DuplicateSessionAction: TAction
+    object DuplicateTabAction: TAction
       Tag = 15
-      Category = 'Session'
-      Caption = 'Du&plicate Session'
-      HelpKeyword = 'task_connections'
+      Category = 'Tab'
+      Caption = 'Du&plicate Tab'
+      HelpKeyword = 'ui_sessiontabs'
       Hint = 
-        'Duplicate session|Opens the same session again (hold down Shift ' +
-        'to open session in new window)'
+        'Duplicate tab|Open new tab with the same folder (hold down Shift' +
+        ' to open the tab in new window)'
       ImageIndex = 91
     end
     object NewLinkAction: TAction
@@ -1778,12 +1778,12 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'ui_toolbars'
       Hint = 'Hide/show custom commands toolbar'
     end
-    object ColorMenuAction: TAction
+    object ColorMenuAction2: TAction
       Tag = 15
       Category = 'View'
       Caption = 'C&olor'
       HelpKeyword = 'task_connections#session_color'
-      Hint = 'Change color of current session'
+      Hint = 'Change color of the current tab'
     end
     object AutoReadDirectoryAfterOpAction: TAction
       Tag = 15
@@ -1990,7 +1990,7 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object SaveWorkspaceAction: TAction
       Tag = 15
-      Category = 'Session'
+      Category = 'Tab'
       Caption = 'Save Wor&kspace...'
       HelpKeyword = 'workspace'
       Hint = 'Save workspace|Save workspace'
@@ -2255,12 +2255,12 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'ui_toolbars'
       Hint = 'Show/hide toolbar buttons'
     end
-    object RenameSessionAction: TAction
+    object RenameTabAction: TAction
       Tag = 15
-      Category = 'Session'
-      Caption = '&Rename Session'
-      HelpKeyword = 'task_connections#renaming'
-      Hint = 'Rename session|Changes name of the current session'
+      Category = 'Tab'
+      Caption = '&Rename Tab'
+      HelpKeyword = 'ui_sessiontabs'
+      Hint = 'Rename tab|Changes the name of the current tab'
     end
     object CurrentCopyToClipboardAction2: TAction
       Tag = 15
@@ -3162,7 +3162,7 @@ object NonVisualDataModule: TNonVisualDataModule
     Left = 480
     Top = 176
     object TBXItem124: TTBXItem
-      Action = CloseSessionAction2
+      Action = CloseTabAction
     end
     object TBXItem79: TTBXItem
       Action = DisconnectSessionAction
@@ -3171,10 +3171,10 @@ object NonVisualDataModule: TNonVisualDataModule
       Action = ReconnectSessionAction
     end
     object TBXItem219: TTBXItem
-      Action = DuplicateSessionAction
+      Action = DuplicateTabAction
     end
     object TBXItem78: TTBXItem
-      Action = RenameSessionAction
+      Action = RenameTabAction
     end
     object TBXItem125: TTBXItem
       Action = SaveCurrentSessionAction2
@@ -3190,7 +3190,7 @@ object NonVisualDataModule: TNonVisualDataModule
     object TBXSeparatorItem52: TTBXSeparatorItem
     end
     object ColorMenuItem: TTBXColorItem
-      Action = ColorMenuAction
+      Action = ColorMenuAction2
       Color = clNone
     end
     object TBXSeparatorItem34: TTBXSeparatorItem

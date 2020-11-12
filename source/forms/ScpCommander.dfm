@@ -406,6 +406,37 @@ inherited ScpCommanderForm: TScpCommanderForm
           Action = NonVisualDataModule.CloseApplicationAction2
         end
       end
+      object TBXSubmenuItem29: TTBXSubmenuItem
+        Caption = '&Tab'
+        HelpKeyword = 'ui_sessiontabs'
+        Hint = 'Tab commands'
+        object TBXItem115: TTBXItem
+          Action = NonVisualDataModule.CloseTabAction
+        end
+        object TBXItem218: TTBXItem
+          Action = NonVisualDataModule.DuplicateTabAction
+        end
+        object TBXItem127: TTBXItem
+          Action = NonVisualDataModule.RenameTabAction
+        end
+        object TBXSeparatorItem53: TTBXSeparatorItem
+        end
+        object ColorMenuItem: TTBXColorItem
+          Action = NonVisualDataModule.ColorMenuAction2
+          Color = clNone
+        end
+        object TBXSeparatorItem29: TTBXSeparatorItem
+        end
+        object TBXSubmenuItem21: TTBXSubmenuItem
+          Action = NonVisualDataModule.OpenedTabsAction
+        end
+        object TBXSubmenuItem231: TTBXSubmenuItem
+          Action = NonVisualDataModule.WorkspacesAction
+        end
+        object TBXItem230: TTBXItem
+          Action = NonVisualDataModule.SaveWorkspaceAction
+        end
+      end
       object TBXSubmenuItem19: TTBXSubmenuItem
         Caption = '&Session'
         HelpKeyword = 'ui_commander_menu#session'
@@ -413,20 +444,11 @@ inherited ScpCommanderForm: TScpCommanderForm
         object TBXItem113: TTBXItem
           Action = NonVisualDataModule.NewSessionAction
         end
-        object TBXItem115: TTBXItem
-          Action = NonVisualDataModule.CloseSessionAction2
-        end
         object TBXItem252: TTBXItem
           Action = NonVisualDataModule.DisconnectSessionAction
         end
         object TBXItem253: TTBXItem
           Action = NonVisualDataModule.ReconnectSessionAction
-        end
-        object TBXItem218: TTBXItem
-          Action = NonVisualDataModule.DuplicateSessionAction
-        end
-        object TBXItem127: TTBXItem
-          Action = NonVisualDataModule.RenameSessionAction
         end
         object TBXItem114: TTBXItem
           Action = NonVisualDataModule.SaveCurrentSessionAction2
@@ -446,23 +468,6 @@ inherited ScpCommanderForm: TScpCommanderForm
           Action = NonVisualDataModule.PrivateKeyUploadAction
         end
         object TBXSeparatorItem23: TTBXSeparatorItem
-        end
-        object ColorMenuItem: TTBXColorItem
-          Action = NonVisualDataModule.ColorMenuAction
-          Color = clNone
-        end
-        object TBXSeparatorItem29: TTBXSeparatorItem
-        end
-        object TBXSubmenuItem21: TTBXSubmenuItem
-          Action = NonVisualDataModule.OpenedSessionsAction
-        end
-        object TBXSubmenuItem231: TTBXSubmenuItem
-          Action = NonVisualDataModule.WorkspacesAction
-        end
-        object TBXItem230: TTBXItem
-          Action = NonVisualDataModule.SaveWorkspaceAction
-        end
-        object TBXSeparatorItem53: TTBXSeparatorItem
         end
         object TBXSubmenuItem20: TTBXSubmenuItem
           Action = NonVisualDataModule.SavedSessionsAction2
@@ -850,14 +855,16 @@ inherited ScpCommanderForm: TScpCommanderForm
         Action = NonVisualDataModule.NewSessionAction
         DisplayMode = nbdmImageAndText
       end
-      object TBXItem219: TTBXItem
-        Action = NonVisualDataModule.DuplicateSessionAction
-      end
-      object TBXItem124: TTBXItem
-        Action = NonVisualDataModule.CloseSessionAction2
-      end
       object TBXItem125: TTBXItem
         Action = NonVisualDataModule.SaveCurrentSessionAction2
+      end
+      object TBXSeparatorItem66: TTBXSeparatorItem
+      end
+      object TBXItem219: TTBXItem
+        Action = NonVisualDataModule.DuplicateTabAction
+      end
+      object TBXItem124: TTBXItem
+        Action = NonVisualDataModule.CloseTabAction
       end
       object TBXSeparatorItem34: TTBXSeparatorItem
       end

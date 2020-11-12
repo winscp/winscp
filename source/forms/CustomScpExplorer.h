@@ -752,6 +752,7 @@ public:
   void __fastcall SuspendWindowLock();
   void __fastcall ResumeWindowLock();
   bool __fastcall HasActiveTerminal();
+  bool __fastcall HasManagedSession();
   virtual bool IsLocalBrowserMode();
 
   void __fastcall NewSession(const UnicodeString & SessionUrl = L"");

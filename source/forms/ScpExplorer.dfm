@@ -134,7 +134,7 @@ inherited ScpExplorerForm: TScpExplorerForm
         object TBXSeparatorItem1: TTBXSeparatorItem
         end
         object TBXItem1: TTBXItem
-          Action = NonVisualDataModule.CloseSessionAction2
+          Action = NonVisualDataModule.CloseTabAction
         end
         object TBXItem2: TTBXItem
           Action = NonVisualDataModule.CloseApplicationAction2
@@ -283,6 +283,37 @@ inherited ScpExplorerForm: TScpExplorerForm
           Action = NonVisualDataModule.UnselectSameExtAction
         end
       end
+      object TBXSubmenuItem29: TTBXSubmenuItem
+        Caption = '&Tab'
+        HelpKeyword = 'ui_sessiontabs'
+        Hint = 'Tab commands'
+        object TBXItem166: TTBXItem
+          Action = NonVisualDataModule.CloseTabAction
+        end
+        object TBXItem218: TTBXItem
+          Action = NonVisualDataModule.DuplicateTabAction
+        end
+        object TBXItem167: TTBXItem
+          Action = NonVisualDataModule.RenameTabAction
+        end
+        object TBXSeparatorItem47: TTBXSeparatorItem
+        end
+        object ColorMenuItem: TTBXColorItem
+          Action = NonVisualDataModule.ColorMenuAction2
+          Color = clNone
+        end
+        object TBXSeparatorItem49: TTBXSeparatorItem
+        end
+        object TBXSubmenuItem9: TTBXSubmenuItem
+          Action = NonVisualDataModule.OpenedTabsAction
+        end
+        object TBXSubmenuItem10: TTBXSubmenuItem
+          Action = NonVisualDataModule.WorkspacesAction
+        end
+        object TBXItem168: TTBXItem
+          Action = NonVisualDataModule.SaveWorkspaceAction
+        end
+      end
       object TBXSubmenuItem19: TTBXSubmenuItem
         Caption = '&Session'
         HelpKeyword = 'ui_explorer_menu#session'
@@ -290,20 +321,11 @@ inherited ScpExplorerForm: TScpExplorerForm
         object TBXItem113: TTBXItem
           Action = NonVisualDataModule.NewSessionAction
         end
-        object TBXItem115: TTBXItem
-          Action = NonVisualDataModule.CloseSessionAction2
-        end
         object TBXItem162: TTBXItem
           Action = NonVisualDataModule.DisconnectSessionAction
         end
         object TBXItem163: TTBXItem
           Action = NonVisualDataModule.ReconnectSessionAction
-        end
-        object TBXItem90: TTBXItem
-          Action = NonVisualDataModule.DuplicateSessionAction
-        end
-        object TBXItem61: TTBXItem
-          Action = NonVisualDataModule.RenameSessionAction
         end
         object TBXItem114: TTBXItem
           Action = NonVisualDataModule.SaveCurrentSessionAction2
@@ -321,23 +343,6 @@ inherited ScpExplorerForm: TScpExplorerForm
         end
         object TBXItem14: TTBXItem
           Action = NonVisualDataModule.PrivateKeyUploadAction
-        end
-        object TBXSeparatorItem23: TTBXSeparatorItem
-        end
-        object ColorMenuItem: TTBXColorItem
-          Action = NonVisualDataModule.ColorMenuAction
-          Color = clNone
-        end
-        object TBXSeparatorItem29: TTBXSeparatorItem
-        end
-        object TBXSubmenuItem21: TTBXSubmenuItem
-          Action = NonVisualDataModule.OpenedSessionsAction
-        end
-        object TBXSubmenuItem231: TTBXSubmenuItem
-          Action = NonVisualDataModule.WorkspacesAction
-        end
-        object TBXItem230: TTBXItem
-          Action = NonVisualDataModule.SaveWorkspaceAction
         end
         object TBXSeparatorItem53: TTBXSeparatorItem
         end
@@ -770,14 +775,16 @@ inherited ScpExplorerForm: TScpExplorerForm
         Action = NonVisualDataModule.NewSessionAction
         DisplayMode = nbdmImageAndText
       end
-      object TBXItem137: TTBXItem
-        Action = NonVisualDataModule.DuplicateSessionAction
-      end
-      object TBXItem124: TTBXItem
-        Action = NonVisualDataModule.CloseSessionAction2
-      end
       object TBXItem125: TTBXItem
         Action = NonVisualDataModule.SaveCurrentSessionAction2
+      end
+      object TBXSeparatorItem23: TTBXSeparatorItem
+      end
+      object TBXItem137: TTBXItem
+        Action = NonVisualDataModule.DuplicateTabAction
+      end
+      object TBXItem124: TTBXItem
+        Action = NonVisualDataModule.CloseTabAction
       end
       object TBXSeparatorItem34: TTBXSeparatorItem
       end

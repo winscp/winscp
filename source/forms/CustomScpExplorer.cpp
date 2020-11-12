@@ -11079,6 +11079,11 @@ bool __fastcall TCustomScpExplorerForm::IsActiveTerminal(TTerminal * Terminal)
   return (Terminal != NULL) && Terminal->Active;
 }
 //---------------------------------------------------------------------------
+bool __fastcall TCustomScpExplorerForm::HasManagedSession()
+{
+  return (ManagedSession != NULL);
+}
+//---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::HasActiveTerminal()
 {
   return IsActiveTerminal(Terminal);

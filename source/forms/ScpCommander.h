@@ -350,7 +350,6 @@ __published:
   TTBXItem *TBXItem210;
   TTBXSubmenuItem *TBXItem228;
   TTBXSubmenuItem *TBXItem229;
-  TTBXSeparatorItem *TBXSeparatorItem53;
   TTBXItem *TBXItem230;
   TTBXSubmenuItem *TBXSubmenuItem231;
   TTBXToolbar *LocalFileToolbar;
@@ -441,6 +440,9 @@ __published:
   TDriveView *OtherLocalDriveView;
   TDirView *OtherLocalDirView;
   TTBXItem *TBXItem257;
+  TTBXSubmenuItem *TBXSubmenuItem29;
+  TTBXSeparatorItem *TBXSeparatorItem53;
+  TTBXSeparatorItem *TBXSeparatorItem66;
   void __fastcall SplitterMoved(TObject *Sender);
   void __fastcall SplitterCanResize(TObject *Sender, int &NewSize,
     bool &Accept);

@@ -354,7 +354,7 @@ BEGIN
         LINK_ADD_CAPTION, "Add link/shortcut"
         STATUS_NOT_CONNECTED2, "Not connected"
         STATUS_CONNECTING, "Connecting..."
-        OPENEDSESSION_HINT, "Select session '%s'"
+        OPENED_TAB_HINT, "Select tab '%s'"
         ADD_BOOKMARK_CAPTION, "Add Location Profile"
         ADD_BOOKMARK_PROMPT, "Location Profile name:"
         MOVE_BOOKMARK_CAPTION, "Move Location Profile"

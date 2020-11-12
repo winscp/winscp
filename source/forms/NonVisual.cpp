@@ -135,6 +135,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   }
   void * AuxVoidPtr;
   int AuxInt;
+  #define HasManagedSession ScpExplorer->HasManagedSession()
   #define HasTerminal ScpExplorer->HasActiveTerminal()
   // CURRENT DIRVIEW
   #define EnabledSelectedOperation (ScpExplorer->EnableSelectedOperation[osCurrent])
@@ -350,7 +351,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPDEX(SelectiveToolbarTextAction, true,
     SelectiveToolbarTextAction->Checked = WinConfiguration->SelectiveToolbarText, )
   UPDCOMP(CustomCommandsBand)
-  UPD(ColorMenuAction, HasTerminal)
+  UPD(ColorMenuAction2, HasTerminal)
   UPD(GoToAddressAction, true)
   UPD(CustomizeToolbarAction, IsToolbarCustomizable())
 
@@ -413,14 +414,14 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   // SESSION
   UPD(NewSessionAction, true)
   UPD(SiteManagerAction, true)
-  UPD(DuplicateSessionAction, (ScpExplorer->Terminal != NULL))
-  UPD(RenameSessionAction, (ScpExplorer->Terminal != NULL))
-  UPD(CloseSessionAction2, (ScpExplorer->Terminal != NULL))
+  UPD(DuplicateTabAction, HasManagedSession)
+  UPD(RenameTabAction, HasManagedSession)
+  UPD(CloseTabAction, HasManagedSession)
   UPDEX1(DisconnectSessionAction, HasTerminal, DisconnectSessionAction->Visible = (ScpExplorer->Terminal == NULL) || !ScpExplorer->Terminal->Disconnected)
   UPDEX1(ReconnectSessionAction, (ScpExplorer->Terminal != NULL) && ScpExplorer->Terminal->Disconnected, ReconnectSessionAction->Visible = ReconnectSessionAction->Enabled)
   UPD(SavedSessionsAction2, true)
   UPD(WorkspacesAction, StoredSessions->HasAnyWorkspace())
-  UPD(OpenedSessionsAction, HasTerminal)
+  UPD(OpenedTabsAction, HasManagedSession)
   UPD(SaveCurrentSessionAction2, HasTerminal)
   UPD(SaveWorkspaceAction, HasTerminal)
 
@@ -685,7 +686,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(LockToolbarsAction, WinConfiguration->LockToolbars = !WinConfiguration->LockToolbars)
     EXE(SelectiveToolbarTextAction, WinConfiguration->SelectiveToolbarText = !WinConfiguration->SelectiveToolbarText)
     EXECOMP(CustomCommandsBand)
-    EXE(ColorMenuAction, CreateSessionColorMenu(ColorMenuAction))
+    EXE(ColorMenuAction2, CreateSessionColorMenu(ColorMenuAction2))
     EXE(GoToAddressAction, ScpExplorer->GoToAddress())
     EXE(CustomizeToolbarAction, CreateToolbarButtonsList())
 
@@ -748,14 +749,14 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     // SESSION
     EXE(NewSessionAction, ScpExplorer->NewSession())
     EXE(SiteManagerAction, ScpExplorer->NewSession())
-    EXE(DuplicateSessionAction, ScpExplorer->DuplicateSession())
-    EXE(RenameSessionAction, ScpExplorer->RenameSession())
-    EXE(CloseSessionAction2, ScpExplorer->CloseSession())
+    EXE(DuplicateTabAction, ScpExplorer->DuplicateSession())
+    EXE(RenameTabAction, ScpExplorer->RenameSession())
+    EXE(CloseTabAction, ScpExplorer->CloseSession())
     EXE(DisconnectSessionAction, ScpExplorer->DisconnectSession())
     EXE(ReconnectSessionAction, ScpExplorer->ReconnectSession())
     EXE(SavedSessionsAction2, CreateSessionListMenu(SavedSessionsAction2))
     EXE(WorkspacesAction, CreateWorkspacesMenu(WorkspacesAction))
-    EXE(OpenedSessionsAction, CreateOpenedSessionListMenu(OpenedSessionsAction))
+    EXE(OpenedTabsAction, CreateOpenedSessionListMenu(OpenedTabsAction))
     EXE(SaveCurrentSessionAction2, ScpExplorer->SaveCurrentSession())
     EXE(SaveWorkspaceAction, ScpExplorer->SaveWorkspace(false))
 
@@ -943,14 +944,14 @@ void __fastcall TNonVisualDataModule::CommanderShortcuts()
   LocalSortByExtAction2->ShortCut = ExplorerKeyboardShortcuts ? TShortCut(0) : CtrlF4;
   RemoteSortByExtAction2->ShortCut = LocalSortByExtAction2->ShortCut;
   CurrentSortByExtAction->ShortCut = LocalSortByExtAction2->ShortCut;
-  int Index = CloseSessionAction2->SecondaryShortCuts->IndexOfShortCut(CtrlF4);
+  int Index = CloseTabAction->SecondaryShortCuts->IndexOfShortCut(CtrlF4);
   if (ExplorerKeyboardShortcuts && (Index < 0))
   {
-    CloseSessionAction2->SecondaryShortCuts->Add(ShortCutToText(CtrlF4));
+    CloseTabAction->SecondaryShortCuts->Add(ShortCutToText(CtrlF4));
   }
   else if (!ExplorerKeyboardShortcuts && (Index >= 0))
   {
-    CloseSessionAction2->SecondaryShortCuts->Delete(Index);
+    CloseTabAction->SecondaryShortCuts->Delete(Index);
   }
 
   CloneShortcuts();
@@ -1544,7 +1545,7 @@ void __fastcall TNonVisualDataModule::CreateOpenedSessionListMenu(TAction * Acti
     TTBCustomItem * Item = new TTBXItem(OpenedSessionsMenu);
     Item->Caption = TerminalList->Strings[Index];
     Item->Tag = int(Terminal);
-    Item->Hint = FMTLOAD(OPENEDSESSION_HINT, (Item->Caption));
+    Item->Hint = FMTLOAD(OPENED_TAB_HINT, (Item->Caption));
     Item->Checked = (Manager->ActiveTerminal == Terminal);
     Item->ShortCut = OpenSessionShortCut(Index);
     Item->OnClick = OpenedSessionItemClick;

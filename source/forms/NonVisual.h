@@ -110,7 +110,7 @@ __published:    // IDE-managed Components
   TTimer *SessionIdleTimer;
   TAction *NewSessionAction;
   TAction *SiteManagerAction;
-  TAction *CloseSessionAction2;
+  TAction *CloseTabAction;
   TAction *SavedSessionsAction2;
   TAction *WorkspacesAction;
   TAction *ExplorerSessionBandAction;
@@ -190,7 +190,7 @@ __published:    // IDE-managed Components
   TAction *SynchronizeBrowsingAction2;
   TAction *CurrentAddEditLinkAction;
   TAction *CloseApplicationAction2;
-  TAction *OpenedSessionsAction;
+  TAction *OpenedTabsAction;
   TAction *CustomCommandsFileAction;
   TAction *CustomCommandsCustomizeAction;
   TAction *CheckForUpdatesAction;
@@ -448,7 +448,7 @@ __published:    // IDE-managed Components
   TTBXItem *TBXItem15;
   TTBXItem *TBXItem16;
   TAction *CustomCommandsBandAction;
-  TAction *ColorMenuAction;
+  TAction *ColorMenuAction2;
   TAction *AutoReadDirectoryAfterOpAction;
   TTBXPopupMenu *RemoteAddressPopup;
   TTBXSubmenuItem *TBXSubmenuItem2;
@@ -462,7 +462,7 @@ __published:    // IDE-managed Components
   TTBXItem *TBXItem22;
   TTBXItem *TBXItem24;
   TTBXItem *TBXItem25;
-  TAction *DuplicateSessionAction;
+  TAction *DuplicateTabAction;
   TAction *CustomCommandsLastAction;
   TAction *CustomCommandsLastFocusedAction;
   TAction *CustomCommandsEnterFocusedAction;
@@ -613,7 +613,7 @@ __published:    // IDE-managed Components
   TTBXSubmenuItem *TBXSubmenuItem6;
   TTBXSubmenuItem *TBXSubmenuItem9;
   TAction *PrivateKeyUploadAction;
-  TAction *RenameSessionAction;
+  TAction *RenameTabAction;
   TTBXItem *TBXItem78;
   TAction *CurrentCopyToClipboardAction2;
   TAction *FileColorsPreferencesAction;
