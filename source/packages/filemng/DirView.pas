@@ -2462,6 +2462,8 @@ end;
 
 procedure TDirView.GetDisplayInfo(ListItem: TListItem;
   var DispInfo: TLVItem);
+var
+  Value: string;
 begin
   Assert(Assigned(ListItem) and Assigned(ListItem.Data));
   with PFileRec(ListItem.Data)^, DispInfo  do
@@ -2494,25 +2496,25 @@ begin
 
     if (DispInfo.Mask and LVIF_TEXT) <> 0 then
     begin
-      if iSubItem = 0 then StrPLCopy(pszText, DisplayName, cchTextMax)
+      Value := '';
+      if iSubItem = 0 then Value := DisplayName
         else
       if iSubItem < DirViewColumns then
       begin
         case TDirViewCol(iSubItem) of
           dvSize: {Size:     }
-            if not IsDirectory then
-                 StrPLCopy(pszText, FormatPanelBytes(Size, FormatSizeBytes), cchTextMax);
+            if not IsDirectory then Value := FormatPanelBytes(Size, FormatSizeBytes);
           dvType: {FileType: }
-            StrPLCopy(pszText, TypeName, cchTextMax);
+            Value := TypeName;
           dvChanged: {Date}
-            StrPLCopy(pszText, FormatFileTime(FileTime), cchTextMax);
+            Value := FormatFileTime(FileTime);
           dvAttr: {Attrs:}
-            StrPLCopy(pszText, GetAttrString(Attr), cchTextMax);
+            Value := GetAttrString(Attr);
           dvExt:
-            StrPLCopy(pszText, FileExt, cchTextMax);
+            Value := FileExt;
         end {Case}
-      end {SubItem}
-        else pszText[0] := #0;
+      end; {SubItem}
+      StrPLCopy(pszText, Value, cchTextMax - 1);
     end;
 
     {Set display icon of current file:}

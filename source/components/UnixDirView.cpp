@@ -401,7 +401,7 @@ void __fastcall TUnixDirView::GetDisplayInfo(TListItem * Item, tagLVITEMW &DispI
         case uvType: Value = File->TypeName; break;
         default: DebugFail();
       }
-      StrPLCopy(DispInfo.pszText, Value, DispInfo.cchTextMax);
+      StrPLCopy(DispInfo.pszText, Value, DispInfo.cchTextMax - 1);
     }
 
     if (DispInfo.iSubItem == 0 && DispInfo.mask & LVIF_IMAGE)
