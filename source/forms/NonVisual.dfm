@@ -3211,9 +3211,6 @@ object NonVisualDataModule: TNonVisualDataModule
       object TBXItem61: TTBXItem
         Action = FullFileListToClipboardAction
       end
-      object TBXItem62: TTBXItem
-        Action = FileGenerateUrlAction2
-      end
     end
     object TBXSeparatorItem4: TTBXSeparatorItem
     end
