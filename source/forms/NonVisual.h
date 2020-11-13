@@ -547,7 +547,6 @@ __published:    // IDE-managed Components
   TTBXItem *TBXItem59;
   TTBXItem *TBXItem60;
   TTBXItem *TBXItem61;
-  TTBXItem *TBXItem62;
   TTBXSeparatorItem *TBXSeparatorItem4;
   TTBXItem *TBXItem63;
   TAction *LocalCopyFocusedAction;
