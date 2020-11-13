@@ -3164,17 +3164,25 @@ object NonVisualDataModule: TNonVisualDataModule
     object TBXItem124: TTBXItem
       Action = CloseTabAction
     end
-    object TBXItem79: TTBXItem
-      Action = DisconnectSessionAction
-    end
-    object TBXItem80: TTBXItem
-      Action = ReconnectSessionAction
-    end
     object TBXItem219: TTBXItem
       Action = DuplicateTabAction
     end
     object TBXItem78: TTBXItem
       Action = RenameTabAction
+    end
+    object TBXSeparatorItem17: TTBXSeparatorItem
+    end
+    object ColorMenuItem: TTBXColorItem
+      Action = ColorMenuAction2
+      Color = clNone
+    end
+    object TBXSeparatorItem52: TTBXSeparatorItem
+    end
+    object TBXItem79: TTBXItem
+      Action = DisconnectSessionAction
+    end
+    object TBXItem80: TTBXItem
+      Action = ReconnectSessionAction
     end
     object TBXItem125: TTBXItem
       Action = SaveCurrentSessionAction2
@@ -3186,12 +3194,6 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object TBXItem52: TTBXItem
       Action = SessionGenerateUrlAction2
-    end
-    object TBXSeparatorItem52: TTBXSeparatorItem
-    end
-    object ColorMenuItem: TTBXColorItem
-      Action = ColorMenuAction2
-      Color = clNone
     end
     object TBXSeparatorItem34: TTBXSeparatorItem
     end
