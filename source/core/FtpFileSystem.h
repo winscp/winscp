@@ -204,6 +204,8 @@ protected:
     TFileOperationProgressType * OperationProgress, bool FirstLevel);
   void __fastcall HandleFeatReply();
   void __fastcall ResetFeatures();
+  void ProcessFeatures();
+  UnicodeString CutFeature(UnicodeString & Buf);
   bool __fastcall SupportsSiteCommand(const UnicodeString & Command) const;
   bool __fastcall SupportsCommand(const UnicodeString & Command) const;
   void __fastcall RegisterChecksumAlgCommand(const UnicodeString & Alg, const UnicodeString & Command);

@@ -164,6 +164,7 @@ void __fastcall TSessionData::DefaultSettings()
   TcpNoDelay = false;
   SendBuf = DefaultSendBuf;
   SourceAddress = L"";
+  ProtocolFeatures = L"";
   SshSimple = true;
   HostKey = L"";
   FingerprintScan = false;
@@ -378,6 +379,7 @@ void __fastcall TSessionData::NonPersistant()
   PROPERTY(TcpNoDelay); \
   PROPERTY(SendBuf); \
   PROPERTY(SourceAddress); \
+  PROPERTY(ProtocolFeatures); \
   PROPERTY(SshSimple); \
   PROPERTY(AuthKI); \
   PROPERTY(AuthKIPassword); \
@@ -733,6 +735,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   }
   SendBuf = Storage->ReadInteger(L"SendBuf", Storage->ReadInteger("SshSendBuf", SendBuf));
   SourceAddress = Storage->ReadString(L"SourceAddress", SourceAddress);
+  ProtocolFeatures = Storage->ReadString(L"ProtocolFeatures", ProtocolFeatures);
   SshSimple = Storage->ReadBool(L"SshSimple", SshSimple);
 
   ProxyMethod = (TProxyMethod)Storage->ReadInteger(L"ProxyMethod", ProxyMethod);
@@ -1107,6 +1110,7 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
     WRITE_DATA(Integer, S3UrlStyle);
     WRITE_DATA(Integer, SendBuf);
     WRITE_DATA(String, SourceAddress);
+    WRITE_DATA(String, ProtocolFeatures);
     WRITE_DATA(Bool, SshSimple);
   }
 
@@ -3751,6 +3755,11 @@ void __fastcall TSessionData::SetSendBuf(int value)
 void __fastcall TSessionData::SetSourceAddress(const UnicodeString & value)
 {
   SET_SESSION_PROPERTY(SourceAddress);
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetProtocolFeatures(const UnicodeString & value)
+{
+  SET_SESSION_PROPERTY(ProtocolFeatures);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetSshSimple(bool value)

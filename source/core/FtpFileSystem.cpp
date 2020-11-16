@@ -199,6 +199,8 @@ const UnicodeString CopySiteCommand(L"COPY");
 const UnicodeString HashCommand(L"HASH"); // Cerberos + FileZilla servers
 const UnicodeString AvblCommand(L"AVBL");
 const UnicodeString XQuotaCommand(L"XQUOTA");
+const UnicodeString MdtmCommand(L"MDTM");
+const UnicodeString SizeCommand(L"SIZE");
 const UnicodeString DirectoryHasBytesPrefix(L"226-Directory has");
 //---------------------------------------------------------------------------
 class TFileListHelper
@@ -524,6 +526,8 @@ void __fastcall TFTPFileSystem::Open()
     }
   }
   while (FPasswordFailed);
+
+  ProcessFeatures();
 
   // see also TWebDAVFileSystem::CollectTLSSessionInfo()
   FSessionInfo.CSCipher = FFileZillaIntf->GetCipherName().c_str();
@@ -2289,8 +2293,7 @@ bool __fastcall TFTPFileSystem::SupportsReadingFile()
 {
   return
     FFileZillaIntf->UsingMlsd() ||
-    ((FServerCapabilities->GetCapability(mdtm_command) == yes) &&
-     (FServerCapabilities->GetCapability(size_command) == yes));
+    (SupportsCommand(MdtmCommand) && SupportsCommand(SizeCommand));
 }
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::ReadFile(const UnicodeString FileName,
@@ -3402,6 +3405,136 @@ void __fastcall TFTPFileSystem::ResetFeatures()
   FSupportsAnyChecksumFeature = false;
 }
 //---------------------------------------------------------------------------
+UnicodeString TFTPFileSystem::CutFeature(UnicodeString & Buf)
+{
+  UnicodeString Result;
+  if (Buf.SubString(1, 1) == L"\"")
+  {
+    Buf.Delete(1, 1);
+    int P = Buf.Pos(L"\",");
+    if (P == 0)
+    {
+      Result = Buf;
+      Buf = UnicodeString();
+      // there should be the ending quote, but if not, just do nothing
+      if (Result.SubString(Result.Length(), 1) == L"\"")
+      {
+        Result.SetLength(Result.Length() - 1);
+      }
+    }
+    else
+    {
+      Result = Buf.SubString(1, P - 1);
+      Buf.Delete(1, P + 1);
+    }
+    Buf = Buf.TrimLeft();
+  }
+  else
+  {
+    Result = CutToChar(Buf, L',', true);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void TFTPFileSystem::ProcessFeatures()
+{
+  std::unique_ptr<TStrings> Features(new TStringList());
+  UnicodeString FeaturesOverride = FTerminal->SessionData->ProtocolFeatures.Trim();
+  if (FeaturesOverride.SubString(1, 1) == L"*")
+  {
+    FeaturesOverride.Delete(1, 1);
+    while (!FeaturesOverride.IsEmpty())
+    {
+      UnicodeString Feature = CutFeature(FeaturesOverride);
+      Features->Add(Feature);
+    }
+  }
+  else
+  {
+    std::unique_ptr<TStrings> DeleteFeatures(CreateSortedStringList());
+    std::unique_ptr<TStrings> AddFeatures(new TStringList());
+    while (!FeaturesOverride.IsEmpty())
+    {
+      UnicodeString Feature = CutFeature(FeaturesOverride);
+      if (Feature.SubString(1, 1) == L"-")
+      {
+        Feature.Delete(1, 1);
+        DeleteFeatures->Add(Feature.LowerCase());
+      }
+      else
+      {
+        if (Feature.SubString(1, 1) == L"+")
+        {
+          Feature.Delete(1, 1);
+        }
+        AddFeatures->Add(Feature);
+      }
+    }
+
+    for (int Index = 0; Index < FFeatures->Count; Index++)
+    {
+      // IIS 2003 indents response by 4 spaces, instead of one,
+      // see example in HandleReplyStatus
+      UnicodeString Feature = FFeatures->Strings[Index].Trim();
+      if (DeleteFeatures->IndexOf(Feature) < 0)
+      {
+        Features->Add(Feature);
+      }
+    }
+
+    Features->AddStrings(AddFeatures.get());
+  }
+
+  for (int Index = 0; Index < Features->Count; Index++)
+  {
+    UnicodeString Feature = Features->Strings[Index];
+
+    UnicodeString Args = Feature;
+    UnicodeString Command = CutToChar(Args, L' ', true);
+
+    // Serv-U lists Xalg commands like:
+    //  XSHA1 filename;start;end
+    FSupportedCommands->Add(Command);
+
+    if (SameText(Command, SiteCommand))
+    {
+      // Serv-U lists all SITE commands in one line like:
+      //  SITE PSWD;SET;ZONE;CHMOD;MSG;EXEC;HELP
+      // But ProFTPD lists them separatelly:
+      //  SITE UTIME
+      //  SITE RMDIR
+      //  SITE COPY
+      //  SITE MKDIR
+      //  SITE SYMLINK
+      while (!Args.IsEmpty())
+      {
+        UnicodeString Arg = CutToChar(Args, L';', true);
+        FSupportedSiteCommands->Add(Arg);
+      }
+    }
+    else if (SameText(Command, HashCommand))
+    {
+      while (!Args.IsEmpty())
+      {
+        UnicodeString Alg = CutToChar(Args, L';', true);
+        if ((Alg.Length() > 0) && (Alg[Alg.Length()] == L'*'))
+        {
+          Alg.Delete(Alg.Length(), 1);
+        }
+        // FTP HASH alg names follow IANA as we do,
+        // but using uppercase and we use lowercase
+        FHashAlgs->Add(LowerCase(Alg));
+        FSupportsAnyChecksumFeature = true;
+      }
+    }
+
+    if (FChecksumCommands->IndexOf(Command) >= 0)
+    {
+      FSupportsAnyChecksumFeature = true;
+    }
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::HandleFeatReply()
 {
   ResetFeatures();
@@ -3412,56 +3545,6 @@ void __fastcall TFTPFileSystem::HandleFeatReply()
     FLastResponse->Delete(0);
     FLastResponse->Delete(FLastResponse->Count - 1);
     FFeatures->Assign(FLastResponse);
-    for (int Index = 0; Index < FFeatures->Count; Index++)
-    {
-      // IIS 2003 indents response by 4 spaces, instead of one,
-      // see example in HandleReplyStatus
-      UnicodeString Feature = TrimLeft(FFeatures->Strings[Index]);
-
-      UnicodeString Args = Feature;
-      UnicodeString Command = CutToChar(Args, L' ', true);
-
-      // Serv-U lists Xalg commands like:
-      //  XSHA1 filename;start;end
-      FSupportedCommands->Add(Command);
-
-      if (SameText(Command, SiteCommand))
-      {
-        // Serv-U lists all SITE commands in one line like:
-        //  SITE PSWD;SET;ZONE;CHMOD;MSG;EXEC;HELP
-        // But ProFTPD lists them separatelly:
-        //  SITE UTIME
-        //  SITE RMDIR
-        //  SITE COPY
-        //  SITE MKDIR
-        //  SITE SYMLINK
-        while (!Args.IsEmpty())
-        {
-          UnicodeString Arg = CutToChar(Args, L';', true);
-          FSupportedSiteCommands->Add(Arg);
-        }
-      }
-      else if (SameText(Command, HashCommand))
-      {
-        while (!Args.IsEmpty())
-        {
-          UnicodeString Alg = CutToChar(Args, L';', true);
-          if ((Alg.Length() > 0) && (Alg[Alg.Length()] == L'*'))
-          {
-            Alg.Delete(Alg.Length(), 1);
-          }
-          // FTP HASH alg names follow IANA as we do,
-          // but using uppercase and we use lowercase
-          FHashAlgs->Add(LowerCase(Alg));
-          FSupportsAnyChecksumFeature = true;
-        }
-      }
-
-      if (FChecksumCommands->IndexOf(Command) >= 0)
-      {
-        FSupportsAnyChecksumFeature = true;
-      }
-    }
   }
 }
 //---------------------------------------------------------------------------
