@@ -251,7 +251,6 @@ enum ftp_capability_names_t
   mfmt_command,
   pret_command,
   mdtm_command,
-  size_command,
   mode_z_support,
   tvfs_support, // Trivial virtual file store (RFC 3659)
   list_hidden_support, // LIST -a command

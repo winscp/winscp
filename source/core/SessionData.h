@@ -159,6 +159,7 @@ private:
   bool FTcpNoDelay;
   int FSendBuf;
   UnicodeString FSourceAddress;
+  UnicodeString FProtocolFeatures;
   bool FSshSimple;
   TProxyMethod FProxyMethod;
   UnicodeString FProxyHost;
@@ -322,6 +323,7 @@ private:
   void __fastcall SetTcpNoDelay(bool value);
   void __fastcall SetSendBuf(int value);
   void __fastcall SetSourceAddress(const UnicodeString & value);
+  void __fastcall SetProtocolFeatures(const UnicodeString & value);
   void __fastcall SetSshSimple(bool value);
   UnicodeString __fastcall GetSshProtStr();
   bool __fastcall GetUsesSsh();
@@ -596,6 +598,7 @@ public:
   __property bool TcpNoDelay  = { read=FTcpNoDelay, write=SetTcpNoDelay };
   __property int SendBuf  = { read=FSendBuf, write=SetSendBuf };
   __property UnicodeString SourceAddress = { read=FSourceAddress, write=SetSourceAddress };
+  __property UnicodeString ProtocolFeatures = { read=FProtocolFeatures, write=SetProtocolFeatures };
   __property bool SshSimple  = { read=FSshSimple, write=SetSshSimple };
   __property UnicodeString SshProtStr  = { read=GetSshProtStr };
   __property UnicodeString CipherList  = { read=GetCipherList, write=SetCipherList };

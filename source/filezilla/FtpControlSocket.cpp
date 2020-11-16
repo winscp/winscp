@@ -6102,10 +6102,6 @@ void CFtpControlSocket::DiscardLine(CStringA line)
     {
       m_serverCapabilities.SetCapability(mdtm_command, yes);
     }
-    else if (line == "SIZE")
-    {
-      m_serverCapabilities.SetCapability(size_command, yes);
-    }
     else if (line.Left(4) == "MLST")
     {
       USES_CONVERSION;

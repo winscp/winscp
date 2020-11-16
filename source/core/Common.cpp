@@ -183,6 +183,7 @@ UnicodeString DefaultStr(const UnicodeString & Str, const UnicodeString & Defaul
   }
 }
 //---------------------------------------------------------------------------
+// For alternative with quoting support, see TFTPFileSystem::CutFeature
 UnicodeString CutToChar(UnicodeString &Str, wchar_t Ch, bool Trim)
 {
   Integer P = Str.Pos(Ch);
