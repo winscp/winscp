@@ -773,7 +773,7 @@ void __fastcall TLoginDialog::SessionTreeDblClick(TObject * /*Sender*/)
       {
         CloneToNewSite();
       }
-      // this can hardle be false
+      // this can hardly be false
       // (after editing and clone tests above)
       // (except for empty folders, but those do not pass a condition below)
       else if (CanLogin())
