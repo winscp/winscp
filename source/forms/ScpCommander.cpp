@@ -257,29 +257,37 @@ void __fastcall TScpCommanderForm::StoreParams()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TScpCommanderForm::UpdateTerminal(TManagedTerminal * Terminal)
+void __fastcall TScpCommanderForm::UpdateSession(TManagedTerminal * Session)
 {
-  DebugAssert(!IsLocalBrowserMode());
-  TCustomScpExplorerForm::UpdateTerminal(Terminal);
+  TCustomScpExplorerForm::UpdateSession(Session);
 
   DebugAssert(LocalDirView != NULL);
 
-  SAFE_DESTROY(Terminal->LocalExplorerState);
+  SAFE_DESTROY(Session->LocalExplorerState);
+  SAFE_DESTROY(Session->OtherLocalExplorerState);
 
   if (WinConfiguration->PreservePanelState)
   {
-    Terminal->LocalExplorerState = LocalDirView->SaveState();
+    Session->LocalExplorerState = LocalDirView->SaveState();
+
+    if (IsLocalBrowserMode())
+    {
+      Session->OtherLocalExplorerState = OtherLocalDirView->SaveState();
+    }
   }
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::UpdateSessionData(TSessionData * Data)
 {
-  DebugAssert(!IsLocalBrowserMode());
   // Keep in sync with TSessionData::CopyStateData
   TCustomScpExplorerForm::UpdateSessionData(Data);
 
   DebugAssert(LocalDirView);
   Data->LocalDirectory = LocalDirView->PathName;
+  if (IsLocalBrowserMode())
+  {
+    Data->OtherLocalDirectory = OtherLocalDirView->PathName;
+  }
   Data->SynchronizeBrowsing = NonVisualDataModule->SynchronizeBrowsingAction2->Checked;
 }
 //---------------------------------------------------------------------------
@@ -392,6 +400,33 @@ void __fastcall TScpCommanderForm::DoShow()
   }
 
   TCustomScpExplorerForm::DoShow();
+
+  // Need to do do this before the main window really displays.
+  // Also the NoSession test in TCustomScpExplorerForm::CMShowingChanged rely on this happening here.
+  if (ManagedSession == NULL)
+  {
+    TTerminalManager * Manager = TTerminalManager::Instance();
+    Manager->ActiveSession = Manager->NewLocalBrowser();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::NeedSession(bool Startup)
+{
+  if (ManagedSession == NULL)
+  {
+    // in the LastTerminalClosed, new session should have already been created by GetReplacementForLastSession
+    DebugAssert(Startup);
+
+    TTerminalManager * Manager = TTerminalManager::Instance();
+    Manager->ActiveSession = Manager->NewLocalBrowser();
+  }
+
+  TCustomScpExplorerForm::NeedSession(Startup);
+}
+//---------------------------------------------------------------------------
+TManagedTerminal * TScpCommanderForm::GetReplacementForLastSession()
+{
+  return TTerminalManager::Instance()->NewLocalBrowser();
 }
 //---------------------------------------------------------------------------
 Boolean __fastcall TScpCommanderForm::AllowedAction(TAction * Action, TActionAllowed Allowed)
@@ -536,75 +571,89 @@ void __fastcall TScpCommanderForm::BatchEnd(void * Storage)
   delete Storage;
 }
 //---------------------------------------------------------------------------
-void __fastcall TScpCommanderForm::StartingDisconnected()
+void __fastcall TScpCommanderForm::StartingWithoutSession()
 {
-  TCustomScpExplorerForm::StartingDisconnected();
+  TCustomScpExplorerForm::StartingWithoutSession();
 
   LocalDefaultDirectory();
 }
 //---------------------------------------------------------------------------
-void __fastcall TScpCommanderForm::TerminalChanged(bool Replaced)
+void TScpCommanderForm::RestoreSessionLocalDirView(TDirView * ALocalDirView, const UnicodeString & LocalDirectory)
+{
+  // we will load completely different directory, so particularly
+  // do not attempt to select previously selected directory
+  ALocalDirView->ContinueSession(false);
+
+  // reset home directory
+  ALocalDirView->HomeDirectory = L"";
+
+  if (!LocalDirectory.IsEmpty() &&
+      (FFirstTerminal || !WinConfiguration->ScpCommander.PreserveLocalDirectory || ManagedSession->LocalBrowser))
+  {
+    try
+    {
+      ALocalDirView->Path = LocalDirectory;
+    }
+    catch(Exception & E)
+    {
+      if (!ManagedSession->SessionData->UpdateDirectories)
+      {
+        ManagedSession->ShowExtendedException(&E);
+      }
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::SessionChanged(bool Replaced)
 {
   NonVisualDataModule->SynchronizeBrowsingAction2->Checked = false;
 
-  TCustomScpExplorerForm::TerminalChanged(Replaced);
+  TCustomScpExplorerForm::SessionChanged(Replaced);
 
-  if (Terminal)
+  if (ManagedSession != NULL)
   {
-    // we will load completelly different directory, so particularly
-    // do not attempt to select previously selected directory
-    LocalDirView->ContinueSession(false);
+    RestoreSessionLocalDirView(LocalDirView, ManagedSession->StateData->LocalDirectory);
 
-    // reset home directory
-    LocalDirView->HomeDirectory = L"";
-
-    if (FFirstTerminal || !WinConfiguration->ScpCommander.PreserveLocalDirectory)
+    if (ManagedSession->LocalBrowser)
     {
-      UnicodeString LocalDirectory = Terminal->StateData->LocalDirectory;
-
-      if (!LocalDirectory.IsEmpty())
-      {
-        try
-        {
-          LocalDirView->Path = LocalDirectory;
-        }
-        catch(Exception & E)
-        {
-          if (!Terminal->SessionData->UpdateDirectories)
-          {
-            Terminal->ShowExtendedException(&E);
-          }
-        }
-      }
+      RestoreSessionLocalDirView(OtherLocalDirView, ManagedSession->StateData->OtherLocalDirectory);
     }
+
     FFirstTerminal = false;
 
-    // Happens when opening a connection from a command-line (StartingDisconnected was not called),
+    // Happens when opening a connection from a command-line (StartingWithoutSession was not called),
     // which does not have a local directory set yet.
+    // Or when starting with vanila local browser.
     if (LocalDirView->Path.IsEmpty())
     {
       LocalDefaultDirectory();
     }
 
     if (WinConfiguration->DefaultDirIsHome &&
-        !Terminal->SessionData->UpdateDirectories)
+        !ManagedSession->SessionData->UpdateDirectories &&
+        DebugAlwaysTrue(!ManagedSession->LocalBrowser))
     {
-      LocalDirView->HomeDirectory = Terminal->SessionData->LocalDirectoryExpanded;
+      LocalDirView->HomeDirectory = ManagedSession->SessionData->LocalDirectoryExpanded;
     }
 
     if (WinConfiguration->PreservePanelState &&
-        !WinConfiguration->ScpCommander.PreserveLocalDirectory)
+        (!WinConfiguration->ScpCommander.PreserveLocalDirectory || ManagedSession->LocalBrowser))
     {
-      if (Terminal->LocalExplorerState != NULL)
-      {
-        LocalDirView->RestoreState(Terminal->LocalExplorerState);
-      }
-      else
-      {
-        LocalDirView->ClearState();
-      }
+      LocalDirView->RestoreState(ManagedSession->LocalExplorerState);
 
-      NonVisualDataModule->SynchronizeBrowsingAction2->Checked = Terminal->StateData->SynchronizeBrowsing;
+      if (ManagedSession->LocalBrowser)
+      {
+        OtherLocalDirView->RestoreState(ManagedSession->OtherLocalExplorerState);
+      }
+      NonVisualDataModule->SynchronizeBrowsingAction2->Checked = ManagedSession->StateData->SynchronizeBrowsing;
+    }
+
+    if (ManagedSession->LocalBrowser)
+    {
+      // Particularly, when switching from a remote to a local-local session,
+      // the other local dir view path may not change at all,
+      // so the path combo box would retain the remote path.
+      UpdateRemotePathComboBox(false);
     }
   }
 }
@@ -655,10 +704,10 @@ void __fastcall TScpCommanderForm::LocalDefaultDirectory()
 void __fastcall TScpCommanderForm::ConfigurationChanged()
 {
   TCustomScpExplorerForm::ConfigurationChanged();
-  if (WinConfiguration->DefaultDirIsHome && Terminal &&
-      !Terminal->SessionData->UpdateDirectories)
+  if (WinConfiguration->DefaultDirIsHome && (ManagedSession != NULL) &&
+      !ManagedSession->SessionData->UpdateDirectories)
   {
-    LocalDirView->HomeDirectory = Terminal->SessionData->LocalDirectoryExpanded;
+    LocalDirView->HomeDirectory = ManagedSession->SessionData->LocalDirectoryExpanded;
   }
   else
   {
@@ -923,6 +972,16 @@ void __fastcall TScpCommanderForm::UpdateControls()
   bool DirViewWasFocused = DirView(osOther)->Focused();
   bool DriveViewWasFocused = DriveView(osOther)->Focused();
 
+  // When implicitly connecting a not-yet-connected session by switching to its tab opened with workspace,
+  // Terminal property is still NULL, but ActiveTerminal is already set.
+  // Had we used Terminal for the test, the window would switch to local-local mode temporarily while session is opening.
+  bool HasTerminal = (TTerminalManager::Instance()->ActiveTerminal != NULL);
+  // Set asap, so that TCustomScpExplorerForm already knows if we are in local-local mode.
+  RemoteDirView->Visible = HasTerminal;
+  RemoteDriveView->Visible = HasTerminal;
+  OtherLocalDirView->Visible = !HasTerminal;
+  OtherLocalDriveView->Visible = !HasTerminal;
+
   TCustomScpExplorerForm::UpdateControls();
 
   UnicodeString SplitterLongHint = Splitter->Hint;
@@ -1008,14 +1067,6 @@ void __fastcall TScpCommanderForm::UpdateControls()
   // otherwise it shines too much on the toolbar.
   RemoteNewSubmenuItem->Enabled = DirViewEnabled(osRemote);
 
-  // When implicitly connecting a not-yet-connected session by switching to its tab opened with workspace,
-  // Terminal property is still NULL, but ActiveTerminal is already set.
-  // Had we used Terminal for the test, the window would switch to local-local mode temporarily while session is opening.
-  bool HasTerminal = (TTerminalManager::Instance()->ActiveTerminal != NULL);
-  RemoteDirView->Visible = HasTerminal;
-  RemoteDriveView->Visible = HasTerminal;
-  OtherLocalDirView->Visible = !HasTerminal;
-  OtherLocalDriveView->Visible = !HasTerminal;
   bool LocalOnLeft = (Panel(true) == LocalPanel);
   LocalMenuButton->Caption = LoadStr(HasTerminal ? LOCAL_MENU_CAPTION : (LocalOnLeft ? LEFT_MENU_CAPTION : RIGHT_MENU_CAPTION));
   RemoteMenuButton->Caption = LoadStr(HasTerminal ? REMOTE_MENU_CAPTION : (LocalOnLeft ? RIGHT_MENU_CAPTION : LEFT_MENU_CAPTION));
@@ -2045,18 +2096,12 @@ UnicodeString __fastcall TScpCommanderForm::PathForCaption()
   {
     // make sure the path corresponds to the terminal in title
     // (there's a mismatch, while opening a new session)
-    if (Terminal == TTerminalManager::Instance()->ActiveTerminal)
+    if (ManagedSession == TTerminalManager::Instance()->ActiveSession)
     {
       switch (WinConfiguration->PathInCaption)
       {
         case picShort:
-          {
-            Result = ExtractFileName(GetCurrentLocalBrowser()->PathName);
-            if (Result.IsEmpty())
-            {
-              Result = GetCurrentLocalBrowser()->PathName;
-            }
-          }
+          Result = ExtractShortName(GetCurrentLocalBrowser()->PathName, false);
           break;
 
         case picFull:
@@ -2595,7 +2640,8 @@ void __fastcall TScpCommanderForm::OtherLocalDirViewPathChange(TCustomDirView * 
   // should happen only when called from TScpCommanderForm::DoShow while starting connected
   if (IsLocalBrowserMode())
   {
-    DoLocalDirViewPathChange(Sender, RemotePathComboBox);
+    DebugAssert(Sender == OtherLocalDirView);
+    UpdateRemotePathComboBox(!FSessionChanging);
   }
 }
 //---------------------------------------------------------------------------
@@ -2730,4 +2776,29 @@ void TScpCommanderForm::LocalLocalCopy(
       }
     }
   }
+}
+//---------------------------------------------------------------------------
+UnicodeString TScpCommanderForm::GetLocalBrowserSessionTitle(TManagedTerminal * ASession)
+{
+  DebugAssert(ASession->LocalBrowser);
+  UnicodeString Path1;
+  UnicodeString Path2;
+  TTerminalManager * Manager = TTerminalManager::Instance();
+  if ((ASession == ManagedSession) &&
+      // prevent tab title flicker, when switching to local-local tab, as the path changes in individual local panels
+      !FSessionChanging)
+  {
+    Path1 = LocalDirView->PathName;
+    Path2 = OtherLocalDirView->PathName;
+  }
+  else
+  {
+    Path1 = ASession->StateData->LocalDirectory;
+    Path2 = ASession->StateData->OtherLocalDirectory;
+  }
+  // See also TSessionData::GetDefaultSessionName()
+  Path1 = Manager->GetPathForSessionTabName(ExtractShortName(Path1, false));
+  Path2 = Manager->GetPathForSessionTabName(ExtractShortName(Path2, false));
+  UnicodeString Result = FORMAT(L"%s - %s", (Path1, Path2));
+  return Result;
 }

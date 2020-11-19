@@ -73,17 +73,17 @@ void __fastcall GetLoginData(UnicodeString SessionName, TOptions * Options,
     DataList->Clear();
   }
   else if ((DataList->Count == 0) ||
-      !dynamic_cast<TSessionData *>(DataList->Items[0])->CanLogin ||
+      !dynamic_cast<TSessionData *>(DataList->Items[0])->CanOpen ||
       DefaultsOnly)
   {
-    // Note that GetFolderOrWorkspace never returns sites that !CanLogin,
+    // Note that GetFolderOrWorkspace never returns sites that !CanOpen,
     // so we should not get here with more than one site.
     // Though we should be good, if we ever do.
 
     // We get here when:
     // - we need session for explicit command-line operation
     // - after we handle "save" URL.
-    // - the specified session does not contain enough information to login [= not even hostname]
+    // - the specified session does not contain enough information to open [= not even hostname nor local browser]
 
     DebugAssert(DataList->Count <= 1);
     if (!DoLoginDialog(DataList, LinkedForm))

@@ -560,7 +560,7 @@ protected:
     TScpCommanderPanelConfiguration & PanelConfiguration);
   virtual void __fastcall RestoreParams();
   virtual void __fastcall FixControlsPlacement();
-  virtual void __fastcall TerminalChanged(bool Replaced);
+  virtual void __fastcall SessionChanged(bool Replaced);
   virtual void __fastcall ConfigurationChanged();
   virtual bool __fastcall GetHasDirView(TOperationSide Side);
   virtual TCustomDirView * GetCurrentLocalBrowser();
@@ -610,7 +610,7 @@ protected:
   virtual bool __fastcall UpdateToolbarDisplayMode();
   virtual void __fastcall QueueLabelUpdateStatus();
   virtual UnicodeString __fastcall DefaultDownloadTargetDirectory();
-  virtual void __fastcall StartingDisconnected();
+  virtual void __fastcall StartingWithoutSession();
   virtual void __fastcall UpdateImages();
   virtual void __fastcall FileColorsChanged();
   virtual void __fastcall ThemeChanged();
@@ -624,6 +624,8 @@ protected:
   virtual void __fastcall DoRemotePathComboBoxItemClick(TObject * Sender);
   virtual void __fastcall UpdateRemotePathComboBox(bool TextOnly);
   void __fastcall SetToolbar2ItemAction(TTBXItem * Item, TBasicAction * Action);
+  virtual void __fastcall NeedSession(bool Startup);
+  void RestoreSessionLocalDirView(TDirView * ALocalDirView, const UnicodeString & LocalDirectory);
 
 public:
   __fastcall TScpCommanderForm(TComponent* Owner);
@@ -633,7 +635,7 @@ public:
   virtual bool __fastcall AllowedAction(TAction * Action, TActionAllowed Allowed);
   virtual void __fastcall ChangePath(TOperationSide Side);
   virtual void __fastcall CompareDirectories();
-  virtual void __fastcall UpdateTerminal(TManagedTerminal * Terminal);
+  virtual void __fastcall UpdateSession(TManagedTerminal * Terminal);
   virtual void __fastcall SynchronizeDirectories();
   virtual void __fastcall FullSynchronizeDirectories();
   virtual void __fastcall StoreParams();
@@ -653,6 +655,8 @@ public:
   virtual bool IsLocalBrowserMode();
   virtual void LocalLocalCopy(
     ::TFileOperation Operation, TOperationSide Side, bool OnFocused, bool NoConfirmation, bool DragDrop, unsigned int Flags);
+  virtual UnicodeString GetLocalBrowserSessionTitle(TManagedTerminal * Session);
+  virtual TManagedTerminal * GetReplacementForLastSession();
 
   __property double LeftPanelWidth = { read = GetLeftPanelWidth, write = SetLeftPanelWidth };
 };

@@ -378,7 +378,6 @@ type
     function PasteFromClipBoard(TargetPath: string = ''): Boolean; virtual; abstract;
     function SaveState: TObject;
     procedure RestoreState(AState: TObject);
-    procedure ClearState;
     procedure DisplayContextMenu(Where: TPoint); virtual; abstract;
     procedure DisplayContextMenuInSitu;
     procedure UpdateStatusBar;
@@ -3269,38 +3268,40 @@ var
   DirColProperties: TCustomDirViewColProperties;
   ListItem: TListItem;
 begin
-  Assert(AState is TDirViewState);
-  State := AState as TDirViewState;
-  Assert(Assigned(State));
+  if Assigned(AState) then
+  begin
+    Assert(AState is TDirViewState);
+    State := AState as TDirViewState;
+    Assert(Assigned(State));
 
-  if Assigned(State.HistoryPaths) then
-    FHistoryPaths.Assign(State.HistoryPaths);
-  FBackCount := State.BackCount;
-  DoHistoryChange;
-  if State.SortStr <> '' then
-  begin
-    // TCustomDirViewColProperties should not be here
-    DirColProperties := ColProperties as TCustomDirViewColProperties;
-    Assert(Assigned(DirColProperties));
-    DirColProperties.SortStr := State.SortStr;
-  end;
-  Mask := State.Mask;
-  if State.FocusedItem <> '' then
-  begin
-    ListItem := FindFileItem(State.FocusedItem);
-    if Assigned(ListItem) then
+    if Assigned(State.HistoryPaths) then
+      FHistoryPaths.Assign(State.HistoryPaths);
+    FBackCount := State.BackCount;
+    DoHistoryChange;
+    if State.SortStr <> '' then
     begin
-      ItemFocused := ListItem;
-      ListItem.MakeVisible(False);
+      // TCustomDirViewColProperties should not be here
+      DirColProperties := ColProperties as TCustomDirViewColProperties;
+      Assert(Assigned(DirColProperties));
+      DirColProperties.SortStr := State.SortStr;
     end;
+    Mask := State.Mask;
+    if State.FocusedItem <> '' then
+    begin
+      ListItem := FindFileItem(State.FocusedItem);
+      if Assigned(ListItem) then
+      begin
+        ItemFocused := ListItem;
+        ListItem.MakeVisible(False);
+      end;
+    end;
+  end
+    else
+  begin
+    FHistoryPaths.Clear;
+    FBackCount := 0;
+    DoHistoryChange;
   end;
-end;
-
-procedure TCustomDirView.ClearState;
-begin
-  FHistoryPaths.Clear;
-  FBackCount := 0;
-  DoHistoryChange;
 end;
 
 procedure TCustomDirView.SetMask(Value: string);

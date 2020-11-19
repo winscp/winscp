@@ -200,6 +200,7 @@ void __fastcall TSessionData::DefaultSettings()
 
   // FS common
   LocalDirectory = L"";
+  OtherLocalDirectory = L"";
   RemoteDirectory = L"";
   SynchronizeBrowsing = false;
   UpdateDirectories = true;
@@ -318,6 +319,7 @@ void __fastcall TSessionData::NonPersistant()
   PROPERTY(FSProtocol); \
   PROPERTY(Ftps); \
   PROPERTY(LocalDirectory); \
+  PROPERTY(OtherLocalDirectory); \
   PROPERTY(RemoteDirectory); \
   PROPERTY(Color); \
   PROPERTY(SynchronizeBrowsing); \
@@ -516,6 +518,7 @@ void __fastcall TSessionData::CopyDirectoriesStateData(TSessionData * SourceData
 {
   RemoteDirectory = SourceData->RemoteDirectory;
   LocalDirectory = SourceData->LocalDirectory;
+  OtherLocalDirectory = SourceData->OtherLocalDirectory;
   SynchronizeBrowsing = SourceData->SynchronizeBrowsing;
 }
 //---------------------------------------------------------------------
@@ -524,6 +527,7 @@ bool __fastcall TSessionData::HasStateData()
   return
     !RemoteDirectory.IsEmpty() ||
     !LocalDirectory.IsEmpty() ||
+    !OtherLocalDirectory.IsEmpty() ||
     (Color != 0);
 }
 //---------------------------------------------------------------------
@@ -689,6 +693,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
 
   FSProtocol = (TFSProtocol)Storage->ReadInteger(L"FSProtocol", FSProtocol);
   LocalDirectory = Storage->ReadString(L"LocalDirectory", LocalDirectory);
+  OtherLocalDirectory = Storage->ReadString(L"OtherLocalDirectory", OtherLocalDirectory);
   RemoteDirectory = Storage->ReadString(L"RemoteDirectory", RemoteDirectory);
   SynchronizeBrowsing = Storage->ReadBool(L"SynchronizeBrowsing", SynchronizeBrowsing);
   UpdateDirectories = Storage->ReadBool(L"UpdateDirectories", UpdateDirectories);
@@ -1056,6 +1061,7 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
     WRITE_DATA(String, PublicKeyFile);
     WRITE_DATA(Integer, FSProtocol);
     WRITE_DATA(String, LocalDirectory);
+    WRITE_DATA(String, OtherLocalDirectory);
     WRITE_DATA(String, RemoteDirectory);
     WRITE_DATA(Bool, SynchronizeBrowsing);
     WRITE_DATA(Bool, UpdateDirectories);
@@ -2379,6 +2385,16 @@ bool __fastcall TSessionData::GetCanLogin()
 {
   return !FHostName.IsEmpty();
 }
+//---------------------------------------------------------------------
+bool __fastcall TSessionData::GetIsLocalBrowser()
+{
+  return !LocalDirectory.IsEmpty() && !OtherLocalDirectory.IsEmpty();
+}
+//---------------------------------------------------------------------
+bool __fastcall TSessionData::GetCanOpen()
+{
+  return CanLogin || IsLocalBrowser;
+}
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TSessionData::GetSessionKey()
 {
@@ -2977,7 +2993,14 @@ void __fastcall TSessionData::SetRekeyTime(unsigned int value)
 //---------------------------------------------------------------------
 UnicodeString __fastcall TSessionData::GetDefaultSessionName()
 {
-  if (!HostName.IsEmpty() && !UserName.IsEmpty())
+  if (IsLocalBrowser)
+  {
+    // See also TScpCommanderForm::GetLocalBrowserSessionTitle
+    UnicodeString Path1 = ExtractShortName(LocalDirectory, false);
+    UnicodeString Path2 = ExtractShortName(OtherLocalDirectory, false);
+    return FORMAT(L"%s - %s", (Path1, Path2));
+  }
+  else if (!HostName.IsEmpty() && !UserName.IsEmpty())
   {
     // If we ever choose to include port number,
     // we have to escape IPv6 literals in HostName
@@ -3655,6 +3678,11 @@ void __fastcall TSessionData::SetTimeDifferenceAuto(bool value)
 void __fastcall TSessionData::SetLocalDirectory(UnicodeString value)
 {
   SET_SESSION_PROPERTY(LocalDirectory);
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetOtherLocalDirectory(const UnicodeString & value)
+{
+  SET_SESSION_PROPERTY(OtherLocalDirectory);
 }
 //---------------------------------------------------------------------
 UnicodeString __fastcall TSessionData::GetLocalDirectoryExpanded()
@@ -5016,7 +5044,7 @@ TSessionData * __fastcall TStoredSessionList::CheckIsInFolderOrWorkspaceAndResol
   {
     Data = ResolveWorkspaceData(Data);
 
-    if ((Data != NULL) && Data->CanLogin &&
+    if ((Data != NULL) && Data->CanOpen &&
         DebugAlwaysTrue(Data->Link.IsEmpty()))
     {
       return Data;
@@ -5207,10 +5235,10 @@ TSessionData * __fastcall TStoredSessionList::SaveWorkspaceData(TSessionData * D
   return Result.release();
 }
 //---------------------------------------------------------------------
-bool __fastcall TStoredSessionList::CanLogin(TSessionData * Data)
+bool __fastcall TStoredSessionList::CanOpen(TSessionData * Data)
 {
   Data = ResolveWorkspaceData(Data);
-  return (Data != NULL) && Data->CanLogin;
+  return (Data != NULL) && Data->CanOpen;
 }
 //---------------------------------------------------------------------
 UnicodeString GetExpandedLogFileName(UnicodeString LogFileName, TDateTime Started, TSessionData * SessionData)

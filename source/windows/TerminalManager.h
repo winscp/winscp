@@ -25,6 +25,7 @@ public:
   TSessionData * StateData;
   TObject * LocalExplorerState;
   TObject * RemoteExplorerState;
+  TObject * OtherLocalExplorerState;
   TDateTime ReopenStart;
   TDateTime DirectoryLoaded;
   TTerminalThread * TerminalThread;
@@ -48,6 +49,7 @@ public:
   __fastcall ~TTerminalManager();
 
   TManagedTerminal * __fastcall NewManagedTerminal(TSessionData * Data);
+  TManagedTerminal * __fastcall NewLocalBrowser();
   TManagedTerminal * __fastcall NewTerminals(TList * DataList);
   virtual void __fastcall FreeTerminal(TTerminal * Terminal);
   void __fastcall Move(TTerminal * Source, TTerminal * Target);
@@ -61,11 +63,11 @@ public:
   void __fastcall UpdateAppTitle();
   bool __fastcall CanOpenInPutty();
   void __fastcall OpenInPutty();
-  void __fastcall NewSession(const UnicodeString & SessionUrl, bool ReloadSessions = true, TForm * LinkedForm = NULL);
+  void __fastcall NewSession(
+    const UnicodeString & SessionUrl, bool ReloadSessions = true, TForm * LinkedForm = NULL, bool ReplaceExisting = false);
   void __fastcall Idle(bool SkipCurrentTerminal);
-  UnicodeString __fastcall GetTerminalShortPath(TTerminal * Terminal);
-  UnicodeString __fastcall GetTerminalTitle(TTerminal * Terminal, bool Unique);
-  UnicodeString __fastcall GetActiveTerminalTitle(bool Unique);
+  UnicodeString __fastcall GetSessionTitle(TManagedTerminal * Terminal, bool Unique);
+  UnicodeString __fastcall GetActiveSessionAppTitle();
   UnicodeString __fastcall GetAppProgressTitle();
   UnicodeString __fastcall FormatFormCaptionWithSession(TCustomForm * Form, const UnicodeString & Caption);
   void __fastcall HandleException(Exception * E);
@@ -75,6 +77,7 @@ public:
   TTerminal * __fastcall FindActiveTerminalForSite(TSessionData * Data);
   TTerminalQueue * __fastcall FindQueueForTerminal(TTerminal * Terminal);
   bool __fastcall UploadPublicKey(TTerminal * Terminal, TSessionData * Data, UnicodeString & FileName);
+  UnicodeString GetPathForSessionTabName(const UnicodeString & Result);
 
   __property TCustomScpExplorerForm * ScpExplorer = { read = FScpExplorer, write = SetScpExplorer };
   __property TManagedTerminal * ActiveSession = { read = FActiveSession, write = SetActiveSession };
@@ -84,6 +87,7 @@ public:
   __property TStrings * SessionList = { read = GetSessionList };
   __property TTerminal * LocalTerminal = { read = FLocalTerminal };
   __property TManagedTerminal * Sessions[int Index]  = { read = GetSession };
+  __property bool Updating = { read = IsUpdating };
 
 protected:
   virtual TTerminal * __fastcall CreateTerminal(TSessionData * Data);
@@ -116,12 +120,13 @@ private:
   bool FAuthenticationCancelled;
   std::unique_ptr<TApplicationEvents> FApplicationsEvents;
   bool FKeepAuthenticateForm;
+  int FUpdating;
 
   bool __fastcall ConnectActiveTerminalImpl(bool Reopen);
   bool __fastcall ConnectActiveTerminal();
   TTerminalQueue * __fastcall NewQueue(TTerminal * Terminal);
   void __fastcall SetScpExplorer(TCustomScpExplorerForm * value);
-  void __fastcall DoSetActiveSession(TManagedTerminal * value, bool AutoReconnect);
+  void __fastcall DoSetActiveSession(TManagedTerminal * value, bool AutoReconnect, bool LastTerminalClosed);
   void __fastcall SetActiveSession(TManagedTerminal * value);
   TManagedTerminal * GetActiveTerminal();
   void __fastcall UpdateAll();
@@ -148,7 +153,7 @@ private:
     TTerminal * Terminal, const UnicodeString & Str, bool Status, int Phase, const UnicodeString & Additional);
   void __fastcall TerminalCustomCommand(TTerminal * Terminal, const UnicodeString & Command, bool & Handled);
   void __fastcall FreeAll();
-  void __fastcall TerminalReady();
+  void __fastcall SessionReady();
   TStrings * __fastcall GetSessionList();
   int __fastcall GetActiveSessionIndex();
   TTerminalQueue * __fastcall GetActiveQueue();
@@ -185,6 +190,7 @@ private:
     TTerminal * Terminal, const UnicodeString & EntryType, const UnicodeString & FileName, bool & WrongRights);
   TManagedTerminal * __fastcall CreateManagedTerminal(TSessionData * Data);
   TManagedTerminal * __fastcall GetSession(int Index);
+  bool IsUpdating();
 };
 //---------------------------------------------------------------------------
 #endif

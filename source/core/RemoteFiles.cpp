@@ -144,6 +144,16 @@ UnicodeString __fastcall ExtractFileName(const UnicodeString & Path, bool Unix)
   }
 }
 //---------------------------------------------------------------------------
+UnicodeString ExtractShortName(const UnicodeString & Path, bool Unix)
+{
+  UnicodeString Result = ExtractFileName(Path, Unix);
+  if (Result.IsEmpty())
+  {
+    Result = Path;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 bool __fastcall ExtractCommonPath(TStrings * Files, UnicodeString & Path)
 {
   DebugAssert(Files->Count > 0);

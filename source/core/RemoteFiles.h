@@ -547,6 +547,7 @@ UnicodeString __fastcall UnixCombinePaths(const UnicodeString & Path1, const Uni
 UnicodeString __fastcall UnixExtractFileDir(const UnicodeString Path);
 UnicodeString __fastcall UnixExtractFilePath(const UnicodeString Path);
 UnicodeString __fastcall UnixExtractFileName(const UnicodeString Path);
+UnicodeString ExtractShortName(const UnicodeString & Path, bool Unix);
 UnicodeString __fastcall UnixExtractFileExt(const UnicodeString Path);
 Boolean __fastcall UnixSamePath(const UnicodeString Path1, const UnicodeString Path2);
 bool __fastcall UnixIsChildPath(UnicodeString Parent, UnicodeString Child);

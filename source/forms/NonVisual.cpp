@@ -414,9 +414,9 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   // SESSION
   UPD(NewSessionAction, true)
   UPD(SiteManagerAction, true)
-  UPD(DuplicateTabAction, HasManagedSession)
-  UPD(RenameTabAction, HasManagedSession)
-  UPD(CloseTabAction, HasManagedSession)
+  UPD(DuplicateTabAction, HasTerminal)
+  UPD(RenameTabAction, HasTerminal)
+  UPD(CloseTabAction, HasManagedSession && ScpExplorer->CanCloseSession(ScpExplorer->ManagedSession))
   UPDEX1(DisconnectSessionAction, HasTerminal, DisconnectSessionAction->Visible = (ScpExplorer->Terminal == NULL) || !ScpExplorer->Terminal->Disconnected)
   UPDEX1(ReconnectSessionAction, (ScpExplorer->Terminal != NULL) && ScpExplorer->Terminal->Disconnected, ReconnectSessionAction->Visible = ReconnectSessionAction->Enabled)
   UPD(SavedSessionsAction2, true)

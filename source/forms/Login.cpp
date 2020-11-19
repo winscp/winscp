@@ -766,7 +766,7 @@ void __fastcall TLoginDialog::SessionTreeDblClick(TObject * /*Sender*/)
   // as that may pop-up modal box.
   if (Node == SessionTree->Selected)
   {
-    // EnsureNotEditing must be before CanLogin, as CanLogin checks for FEditing
+    // EnsureNotEditing must be before CanOpen, as CanOpen checks for FEditing
     if (EnsureNotEditing())
     {
       if (IsCloneToNewSiteDefault())
@@ -776,7 +776,7 @@ void __fastcall TLoginDialog::SessionTreeDblClick(TObject * /*Sender*/)
       // this can hardly be false
       // (after editing and clone tests above)
       // (except for empty folders, but those do not pass a condition below)
-      else if (CanLogin())
+      else if (CanOpen())
       {
         if (IsSessionNode(Node) || IsWorkspaceNode(Node))
         {
@@ -1176,11 +1176,12 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction * BasicAction,
   }
   else if (Action == LoginAction)
   {
-    LoginAction->Enabled = CanLogin();
+    LoginAction->Enabled = CanOpen();
   }
   else if (Action == PuttyAction)
   {
-    Action->Enabled = (NewSiteSelected || SiteSelected) && CanLogin();
+    TSessionData * Data = GetSessionData();
+    Action->Enabled = (NewSiteSelected || SiteSelected) && CanOpen() && !Data->IsLocalBrowser;
   }
   else if (Action == SaveSessionAction)
   {
@@ -1251,14 +1252,14 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction * BasicAction,
 //---------------------------------------------------------------------------
 bool __fastcall TLoginDialog::IsCloneToNewSiteDefault()
 {
-  return !FEditing && !FRenaming && IsSiteNode(SessionTree->Selected) && !StoredSessions->CanLogin(GetSessionData());
+  return !FEditing && !FRenaming && IsSiteNode(SessionTree->Selected) && !StoredSessions->CanOpen(GetSessionData());
 }
 //---------------------------------------------------------------------------
-bool __fastcall TLoginDialog::CanLogin()
+bool __fastcall TLoginDialog::CanOpen()
 {
   TSessionData * Data = GetSessionData();
   return
-    ((Data != NULL) && StoredSessions->CanLogin(Data) && !FEditing) ||
+    ((Data != NULL) && StoredSessions->CanOpen(Data) && !FEditing) ||
     (IsFolderOrWorkspaceNode(SessionTree->Selected) && HasNodeAnySession(SessionTree->Selected, true));
 }
 //---------------------------------------------------------------------------
@@ -1309,8 +1310,8 @@ bool __fastcall TLoginDialog::Execute(TList * DataList)
   // Not calling LoadState here.
   // It's redundant and does not work anyway, see comment in the method.
   int AResult = ShowModal();
-  // When CanLogin is false, the DefaultResult() will fail finding a default button.
-  bool Result = CanLogin() && (AResult == DefaultResult());
+  // When CanOpen is false, the DefaultResult() will fail finding a default button.
+  bool Result = CanOpen() && (AResult == DefaultResult());
   SaveState();
   if (Result)
   {
@@ -1761,7 +1762,7 @@ void __fastcall TLoginDialog::SendToHookActionExecute(TObject * /*Sender*/)
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall TLoginDialog::HasNodeAnySession(TTreeNode * Node, bool NeedCanLogin)
+bool __fastcall TLoginDialog::HasNodeAnySession(TTreeNode * Node, bool NeedCanOpen)
 {
   bool Result = false;
   TTreeNode * ANode = Node->GetNext();
@@ -1769,7 +1770,7 @@ bool __fastcall TLoginDialog::HasNodeAnySession(TTreeNode * Node, bool NeedCanLo
   {
     Result =
       IsSessionNode(ANode) &&
-      (!NeedCanLogin || StoredSessions->CanLogin(GetNodeSession(ANode)));
+      (!NeedCanOpen || StoredSessions->CanOpen(GetNodeSession(ANode)));
     ANode = ANode->GetNext();
   }
   return Result;
@@ -1825,8 +1826,8 @@ void __fastcall TLoginDialog::FormCloseQuery(TObject * /*Sender*/,
   // CanClose test is now probably redundant,
   // once we have a fallback to LoginButton in DefaultResult
   CanClose = EnsureNotEditing();
-  // When CanLogin is false, the DefaultResult() will fail finding a default button
-  if (CanClose && CanLogin() && (ModalResult == DefaultResult()))
+  // When CanOpen is false, the DefaultResult() will fail finding a default button
+  if (CanClose && CanOpen() && (ModalResult == DefaultResult()))
   {
     SaveDataList(FDataList);
   }

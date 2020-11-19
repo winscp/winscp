@@ -185,6 +185,7 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   FDragDropOperation = false;
   memset(&FHistoryMenu, 0, sizeof(FHistoryMenu));
   FAllowTransferPresetAutoSelect = true;
+  FSessionChanging = false;
   FCopyParamDefault = L"";
   FSynchronizeController = NULL;
   FPendingQueueActionItem = NULL;
@@ -544,7 +545,7 @@ void __fastcall TCustomScpExplorerForm::SetManagedSession(TManagedTerminal * val
 {
   if (FManagedSession != value)
   {
-    TerminalChanging();
+    SessionChanging();
     DoSetManagedSession(value, false);
   }
 }
@@ -553,21 +554,20 @@ void __fastcall TCustomScpExplorerForm::DoSetManagedSession(TManagedTerminal * v
 {
   DebugAssert(!Replace || ((value != NULL) && !value->LocalBrowser));
   FManagedSession = value;
-  bool PrevAllowTransferPresetAutoSelect = FAllowTransferPresetAutoSelect;
-  FAllowTransferPresetAutoSelect = false;
-  try
   {
-    TerminalChanged(Replace);
-  }
-  __finally
-  {
-    FAllowTransferPresetAutoSelect = PrevAllowTransferPresetAutoSelect;
+    TValueRestorer<bool> AllowTransferPresetAutoSelectRestorer(FAllowTransferPresetAutoSelect);
+    FAllowTransferPresetAutoSelect = false;
+    TAutoFlag SessionChangingFlag(FSessionChanging);
+
+    SessionChanged(Replace);
   }
 
   if (Terminal != NULL)
   {
     TransferPresetAutoSelect();
   }
+  // Update app and tab titles, prevented above by FSessionChanging.
+  UpdateControls();
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::ReplaceTerminal(TManagedTerminal * value)
@@ -575,21 +575,24 @@ void __fastcall TCustomScpExplorerForm::ReplaceTerminal(TManagedTerminal * value
   DoSetManagedSession(value, true);
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::TerminalChanging()
+void __fastcall TCustomScpExplorerForm::SessionChanging()
 {
   if (ManagedSession != NULL)
   {
-    UpdateTerminal(ManagedSession);
+    UpdateSession(ManagedSession);
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::TerminalChanged(bool Replaced)
+void __fastcall TCustomScpExplorerForm::SessionChanged(bool Replaced)
 {
   if (Terminal != NULL)
   {
     UpdateSessionColor((TColor)Terminal->StateData->Color);
   }
-  SessionListChanged();
+  if (!TTerminalManager::Instance()->Updating)
+  {
+    SessionListChanged();
+  }
 
   if (Terminal != NULL)
   {
@@ -609,14 +612,7 @@ void __fastcall TCustomScpExplorerForm::TerminalChanged(bool Replaced)
 
     if (WinConfiguration->PreservePanelState)
     {
-      if (Terminal->RemoteExplorerState != NULL)
-      {
-        DirView(osRemote)->RestoreState(Terminal->RemoteExplorerState);
-      }
-      else
-      {
-        DirView(osRemote)->ClearState();
-      }
+      DirView(osRemote)->RestoreState(Terminal->RemoteExplorerState);
     }
   }
   else
@@ -4078,7 +4074,7 @@ bool __fastcall TCustomScpExplorerForm::RemoteTransferDialog(TManagedTerminal *&
   DebugAssert(Terminal != NULL);
   DebugAssert(!IsLocalBrowserMode());
   // update Terminal->StateData->RemoteDirectory
-  UpdateTerminal(Terminal);
+  UpdateSession(Terminal);
 
   if (Session == NULL)
   {
@@ -6111,6 +6107,7 @@ void __fastcall TCustomScpExplorerForm::ExploreLocalDirectory(TOperationSide)
 //---------------------------------------------------------------------------
 TSessionData * __fastcall TCustomScpExplorerForm::CloneCurrentSessionData()
 {
+  DebugAssert(!IsLocalBrowserMode()); // untested
   std::unique_ptr<TSessionData> SessionData(new TSessionData(L""));
   SessionData->Assign(Terminal->SessionData);
   UpdateSessionData(SessionData.get());
@@ -6145,10 +6142,10 @@ TObjectList * __fastcall TCustomScpExplorerForm::DoCollectWorkspace()
   TTerminalManager * Manager = TTerminalManager::Instance();
   std::unique_ptr<TObjectList> DataList(new TObjectList());
 
-  if (DebugAlwaysTrue(Terminal != NULL))
+  if (DebugAlwaysTrue(ManagedSession != NULL))
   {
-    // Update (Managed)Terminal->StateData
-    UpdateTerminal(Terminal);
+    // Update ManagedSession->StateData
+    UpdateSession(ManagedSession);
   }
   Manager->SaveWorkspace(DataList.get());
 
@@ -6270,38 +6267,43 @@ bool __fastcall TCustomScpExplorerForm::SaveWorkspace(bool EnableAutoSave)
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::UpdateTerminal(TManagedTerminal * Terminal)
+void __fastcall TCustomScpExplorerForm::UpdateSession(TManagedTerminal * Session)
 {
-  DebugAssert(!IsLocalBrowserMode());
-  SAFE_DESTROY(Terminal->RemoteExplorerState);
-
-  if (WinConfiguration->PreservePanelState)
+  DebugAssert(IsLocalBrowserMode() == Session->LocalBrowser);
+  DebugAssert(Session == ManagedSession);
+  if (!IsLocalBrowserMode())
   {
-    Terminal->RemoteExplorerState = RemoteDirView->SaveState();
-  }
+    SAFE_DESTROY(Session->RemoteExplorerState);
 
-  UpdateSessionData(Terminal->StateData);
+    if (WinConfiguration->PreservePanelState)
+    {
+      Session->RemoteExplorerState = RemoteDirView->SaveState();
+    }
+  }
+  UpdateSessionData(Session->StateData);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::UpdateSessionData(TSessionData * Data)
 {
   // Keep in sync with TSessionData::CopyStateData
 
-  DebugAssert(!IsLocalBrowserMode());
   DebugAssert(Data != NULL);
 
   // This is inconsistent with how color (for example) is handled.
-  Data->Name = Terminal->SessionData->Name;
+  Data->Name = ManagedSession->SessionData->Name;
 
-  // cannot use RemoteDirView->Path, because it is empty if connection
-  // was already closed
-  // also only peek, we may not be connected at all atm
-  // so make sure we do not try retrieving current directory from the server
-  // (particularly with FTP)
-  UnicodeString ACurrentDirectory = Terminal->PeekCurrentDirectory();
-  if (!ACurrentDirectory.IsEmpty())
+  if (!IsLocalBrowserMode())
   {
-    Data->RemoteDirectory = ACurrentDirectory;
+    // cannot use RemoteDirView->Path, because it is empty if connection
+    // was already closed
+    // also only peek, we may not be connected at all atm
+    // so make sure we do not try retrieving current directory from the server
+    // (particularly with FTP)
+    UnicodeString ACurrentDirectory = Terminal->PeekCurrentDirectory();
+    if (!ACurrentDirectory.IsEmpty())
+    {
+      Data->RemoteDirectory = ACurrentDirectory;
+    }
   }
   Data->Color = SessionColor;
 }
@@ -6726,6 +6728,11 @@ void __fastcall TCustomScpExplorerForm::FileTerminalRemoved(const UnicodeString 
   }
 }
 //---------------------------------------------------------------------------
+TManagedTerminal * TCustomScpExplorerForm::GetReplacementForLastSession()
+{
+  return NULL;
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::LastTerminalClosed()
 {
   UpdateControls();
@@ -6746,7 +6753,7 @@ void __fastcall TCustomScpExplorerForm::NeedSession(bool Startup)
       if (ShowLogin)
       {
         bool ReloadSessions = !Startup;
-        TTerminalManager::Instance()->NewSession(L"", ReloadSessions, this);
+        TTerminalManager::Instance()->NewSession(L"", ReloadSessions, this, true);
       }
     }
     __finally
@@ -6755,6 +6762,7 @@ void __fastcall TCustomScpExplorerForm::NeedSession(bool Startup)
       // (so there was no chance for the user to open any session yet)
       if ((ShowLogin || !Startup) &&
           !WinConfiguration->KeepOpenWhenNoSession &&
+          // this rules out the implicit Commander's local-local browser
           ((Terminal == NULL) || (!Terminal->Active && !Terminal->Permanent)))
       {
         TerminateApplication();
@@ -6771,8 +6779,10 @@ void __fastcall TCustomScpExplorerForm::NeedSession(bool Startup)
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::SessionListChanged()
 {
-  TStrings * SessionList = TTerminalManager::Instance()->SessionList;
-  int ActiveSessionIndex = TTerminalManager::Instance()->ActiveSessionIndex;
+  TTerminalManager * Manager = TTerminalManager::Instance();
+  DebugAssert(!Manager->Updating);
+  TStrings * SessionList = Manager->SessionList;
+  int ActiveSessionIndex = Manager->ActiveSessionIndex;
 
   Configuration->Usage->SetMax(L"MaxOpenedSessions", SessionList->Count);
 
@@ -6813,11 +6823,10 @@ void __fastcall TCustomScpExplorerForm::SessionListChanged()
         TabSheet->ImageIndex = FNewSessionTabImageIndex;
         TabSheet->Tag = 0; // not really needed
         TabSheet->Shadowed = false;
+        TabSheet->ShowCloseButton = false;
         // We know that we are at the last page, otherwise we could not call this (it assumes that new session tab is the last one)
         UpdateNewSessionTab();
       }
-
-      TabSheet->ShowCloseButton = IsSessionTab;
     }
   }
   __finally
@@ -6845,26 +6854,51 @@ TManagedTerminal * __fastcall TCustomScpExplorerForm::GetSessionTabSession(TTabS
   return reinterpret_cast<TManagedTerminal *>(TabSheet->Tag);
 }
 //---------------------------------------------------------------------------
+UnicodeString TCustomScpExplorerForm::GetLocalBrowserSessionTitle(TManagedTerminal *)
+{
+  DebugFail();
+  return UnicodeString();
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::UpdateSessionTab(TTabSheet * TabSheet)
 {
   if (DebugAlwaysTrue(TabSheet != NULL))
   {
-    TManagedTerminal * ATerminal = GetSessionTabSession(TabSheet);
-    if (DebugAlwaysTrue(ATerminal != NULL))
+    TManagedTerminal * ASession = GetSessionTabSession(TabSheet);
+    if (DebugAlwaysTrue(ASession != NULL))
     {
-      TColor Color = (ATerminal == Terminal) ? FSessionColor : ATerminal->StateData->Color;
-      TabSheet->ImageIndex = AddSessionColor(Color);
+      TColor Color = (ASession == Terminal) ? FSessionColor : ASession->StateData->Color;
+      if (ASession->LocalBrowser)
+      {
+        TabSheet->ImageIndex = FLocalBrowserTabImageIndex;
+      }
+      else
+      {
+        TabSheet->ImageIndex = AddSessionColor(Color);
+      }
 
-      UnicodeString TabCaption = TTerminalManager::Instance()->GetTerminalTitle(ATerminal, true);
-      TabSheet->Caption = SessionsPageControl->FormatCaptionWithCloseButton(TabCaption);
+      TTerminalManager * Manager = TTerminalManager::Instance();
+      UnicodeString TabCaption = Manager->GetSessionTitle(ASession, true);
 
       TThemeTabSheet * ThemeTabSheet = dynamic_cast<TThemeTabSheet *>(TabSheet);
       if (DebugAlwaysTrue(ThemeTabSheet != NULL))
       {
-        ThemeTabSheet->Shadowed = !ATerminal->Active;
+        ThemeTabSheet->Shadowed = !ASession->Active && !ASession->LocalBrowser;
+        ThemeTabSheet->ShowCloseButton = CanCloseSession(ASession);
+        if (ThemeTabSheet->ShowCloseButton)
+        {
+          TabCaption = SessionsPageControl->FormatCaptionWithCloseButton(TabCaption);
+        }
       }
+
+      TabSheet->Caption = TabCaption;
     }
   }
+}
+//---------------------------------------------------------------------------
+bool TCustomScpExplorerForm::CanCloseSession(TManagedTerminal * Session)
+{
+  return !Session->LocalBrowser || (TTerminalManager::Instance()->Count > 1);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::SessionTabSwitched()
@@ -7097,6 +7131,7 @@ void __fastcall TCustomScpExplorerForm::SysResizing(unsigned int /*Cmd*/)
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::DoShow()
 {
+  // Called from TCustomScpExplorerForm::CMShowingChanged
   // only now are the controls resized finally, so the size constraints
   // will not conflict with possibly very small window size
   RestoreFormParams();
@@ -7136,9 +7171,10 @@ void __fastcall TCustomScpExplorerForm::DoShow()
     Configuration->Usage->Inc(L"OpenedWorkspacesAuto");
   }
 
-  if (Terminal == NULL)
+  // Before main window displays
+  if (ManagedSession == NULL)
   {
-    StartingDisconnected();
+    StartingWithoutSession();
   }
 
   UpdatePixelsPerInchMainWindowCounter();
@@ -7151,7 +7187,7 @@ void __fastcall TCustomScpExplorerForm::UpdatePixelsPerInchMainWindowCounter()
   Configuration->Usage->Set(L"PixelsPerInchMainWindow", PixelsPerInch);
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::StartingDisconnected()
+void __fastcall TCustomScpExplorerForm::StartingWithoutSession()
 {
   SessionListChanged();
   InitStatusBar();
@@ -7189,8 +7225,9 @@ void __fastcall TCustomScpExplorerForm::PopupTrayBalloon(TTerminal * Terminal,
       Title = LoadResourceString(Captions[Type]);
       if (Terminal != NULL)
       {
+        TManagedTerminal * Session = DebugNotNull(dynamic_cast<TManagedTerminal *>(Terminal));
         Title = FORMAT(L"%s - %s",
-          (TTerminalManager::Instance()->GetTerminalTitle(Terminal, true), Title));
+          (TTerminalManager::Instance()->GetSessionTitle(Session, true), Title));
       }
     }
 
@@ -7281,10 +7318,7 @@ void __fastcall TCustomScpExplorerForm::ShowExtendedException(
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::SessionReady()
 {
-  if (Terminal->Active)
-  {
-    InitStatusBar();
-  }
+  InitStatusBar();
   // cannot rely on active page being page for active terminal,
   // as it can happen that active page is the "new session" page
   // (e.g. when reconnecting active terminal, while login dialog
@@ -7324,8 +7358,9 @@ void __fastcall TCustomScpExplorerForm::Notify(TTerminal * Terminal,
     UnicodeString NoteMessage(UnformatMessage(Message));
     if (Terminal != NULL)
     {
+      TManagedTerminal * Session = DebugNotNull(dynamic_cast<TManagedTerminal *>(Terminal));
       NoteMessage = FORMAT(L"%s: %s",
-        (TTerminalManager::Instance()->GetTerminalTitle(Terminal, true), NoteMessage));
+        (TTerminalManager::Instance()->GetSessionTitle(Session, true), NoteMessage));
     }
 
     if (WinConfiguration->BalloonNotifications)
@@ -8697,7 +8732,7 @@ UnicodeString __fastcall TCustomScpExplorerForm::PathForCaption()
     switch (WinConfiguration->PathInCaption)
     {
       case picShort:
-        Result = TTerminalManager::Instance()->GetTerminalShortPath(Terminal);
+        Result = ExtractShortName(Terminal->CurrentDirectory, true);
         break;
 
       case picFull:
@@ -8723,16 +8758,19 @@ TColor __fastcall TCustomScpExplorerForm::DisabledPanelColor()
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::UpdateControls()
 {
-  TTerminalManager::Instance()->UpdateAppTitle();
+  if (!FSessionChanging)
+  {
+    TTerminalManager::Instance()->UpdateAppTitle();
+  }
   // WORAKRDOUND: Disabling list view when it is not showing yet does not set its
   // background to gray on Windows 7 (works on Windows 10).
   // See also EnableControl
   if (Showing)
   {
-    if (Terminal != NULL)
+    if (ManagedSession != NULL)
     {
       // Update path when it changes
-      if ((SessionsPageControl->ActivePage != NULL) && (GetSessionTabSession(SessionsPageControl->ActivePage) == Terminal))
+      if ((SessionsPageControl->ActivePage != NULL) && (GetSessionTabSession(SessionsPageControl->ActivePage) == ManagedSession))
       {
         UpdateSessionTab(SessionsPageControl->ActivePage);
       }
@@ -9260,6 +9298,9 @@ void __fastcall TCustomScpExplorerForm::WMClose(TMessage & Message)
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::CMShowingChanged(TMessage & Message)
 {
+  // Ignoring implicit local-local browser of Commander, opened from DoShow
+  bool NoSession = (ManagedSession == NULL);
+  // This calls TCustomScpExplorerForm::DoShow
   TForm::Dispatch(&Message);
 
   // Now the window is visible (TForm::Dispatch is what usually takes long, like when loading a "local" network directory)
@@ -9269,7 +9310,7 @@ void __fastcall TCustomScpExplorerForm::CMShowingChanged(TMessage & Message)
     InterfaceStarted();
   }
 
-  if (Showing && (Terminal == NULL))
+  if (Showing && NoSession)
   {
     // When we are starting minimized (i.e. from an installer),
     // postpone showing Login dialog until we get restored.
@@ -10022,13 +10063,13 @@ void __fastcall TCustomScpExplorerForm::SessionsDDDragOver(
   }
   else
   {
-    TTerminal * TargetTerminal = GetSessionTabSession(SessionsPageControl->Pages[Index]);
-    // do not allow dropping on the "+" tab
-    if (TargetTerminal == NULL)
+    TManagedTerminal * TargetSession = GetSessionTabSession(SessionsPageControl->Pages[Index]);
+    // do not allow dropping on the "+" tab or on local-local tabs
+    if ((TargetSession == NULL) || TargetSession->LocalBrowser)
     {
       Effect = DROPEFFECT_NONE;
     }
-    else if ((TargetTerminal != Terminal) && (Effect == DROPEFFECT_MOVE))
+    else if ((TargetSession != Terminal) && (Effect == DROPEFFECT_MOVE))
     {
       Effect = DROPEFFECT_COPY;
     }
@@ -10075,7 +10116,7 @@ void __fastcall TCustomScpExplorerForm::FormClose(TObject * /*Sender*/, TCloseAc
   FShowing = false;
 
   // Do not save empty workspace
-  if (WinConfiguration->AutoSaveWorkspace && (Terminal != NULL))
+  if (WinConfiguration->AutoSaveWorkspace && (ManagedSession != NULL))
   {
     std::unique_ptr<TObjectList> DataList(DoCollectWorkspace());
     UnicodeString Name = WorkspaceName();
@@ -10140,6 +10181,7 @@ void __fastcall TCustomScpExplorerForm::AddFixedSessionImages()
   FNewSessionTabImageIndex = AddFixedSessionImage(NonVisualDataModule->NewSessionAction->ImageIndex);
   FSessionTabImageIndex = AddFixedSessionImage(SiteImageIndex);
   FSessionColorMaskImageIndex = AddFixedSessionImage(SiteColorMaskImageIndex);
+  FLocalBrowserTabImageIndex = AddFixedSessionImage(LocalBrowserImageIndex);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::CollectItemsWithTextDisplayMode(TWinControl * Control)

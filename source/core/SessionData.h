@@ -139,6 +139,7 @@ private:
   bool FModified;
   UnicodeString FLocalDirectory;
   UnicodeString FRemoteDirectory;
+  UnicodeString FOtherLocalDirectory;
   bool FLockInHome;
   bool FSpecial;
   bool FSynchronizeBrowsing;
@@ -281,6 +282,8 @@ private:
 
   void __fastcall SetPuttyProtocol(UnicodeString value);
   bool __fastcall GetCanLogin();
+  bool __fastcall GetCanOpen();
+  bool __fastcall GetIsLocalBrowser();
   void __fastcall SetPingIntervalDT(TDateTime value);
   TDateTime __fastcall GetPingIntervalDT();
   TDateTime __fastcall GetFtpPingIntervalDT();
@@ -293,6 +296,7 @@ private:
   void __fastcall SetFSProtocol(TFSProtocol value);
   UnicodeString __fastcall GetFSProtocolStr();
   void __fastcall SetLocalDirectory(UnicodeString value);
+  void __fastcall SetOtherLocalDirectory(const UnicodeString & value);
   UnicodeString __fastcall GetLocalDirectoryExpanded();
   void __fastcall SetRemoteDirectory(UnicodeString value);
   void __fastcall SetSynchronizeBrowsing(bool value);
@@ -562,6 +566,8 @@ public:
   __property UnicodeString FSProtocolStr  = { read=GetFSProtocolStr };
   __property bool Modified  = { read=FModified, write=FModified };
   __property bool CanLogin  = { read=GetCanLogin };
+  __property bool CanOpen = { read=GetCanOpen };
+  __property bool IsLocalBrowser = { read=GetIsLocalBrowser };
   __property bool ClearAliases = { read = FClearAliases, write = SetClearAliases };
   __property TDateTime PingIntervalDT = { read = GetPingIntervalDT, write = SetPingIntervalDT };
   __property TDateTime TimeDifference = { read = FTimeDifference, write = SetTimeDifference };
@@ -571,6 +577,7 @@ public:
   __property UnicodeString DefaultSessionName  = { read=GetDefaultSessionName };
   __property UnicodeString LocalDirectory  = { read=FLocalDirectory, write=SetLocalDirectory };
   __property UnicodeString LocalDirectoryExpanded = { read = GetLocalDirectoryExpanded };
+  __property UnicodeString OtherLocalDirectory = { read=FOtherLocalDirectory, write=SetOtherLocalDirectory };
   __property UnicodeString RemoteDirectory  = { read=FRemoteDirectory, write=SetRemoteDirectory };
   __property bool SynchronizeBrowsing = { read=FSynchronizeBrowsing, write=SetSynchronizeBrowsing };
   __property bool UpdateDirectories = { read=FUpdateDirectories, write=SetUpdateDirectories };
@@ -721,7 +728,7 @@ public:
   TSessionData * __fastcall ParseUrl(UnicodeString Url, TOptions * Options, bool & DefaultsOnly,
     UnicodeString * FileName = NULL, bool * ProtocolDefined = NULL, UnicodeString * MaskedUrl = NULL, int Flags = 0);
   bool __fastcall IsUrl(UnicodeString Url);
-  bool __fastcall CanLogin(TSessionData * Data);
+  bool __fastcall CanOpen(TSessionData * Data);
   void __fastcall GetFolderOrWorkspace(const UnicodeString & Name, TList * List);
   TStrings * __fastcall GetFolderOrWorkspaceList(const UnicodeString & Name);
   TStrings * __fastcall GetWorkspaces();

@@ -353,7 +353,7 @@ private:
   void __fastcall MasterPasswordRecrypt(TObject * Sender);
   void __fastcall LoadOpenedStoredSessionFolders(
     TTreeNode * Node, TStrings * OpenedStoredSessionFolders);
-  bool __fastcall HasNodeAnySession(TTreeNode * Node, bool NeedCanLogin = false);
+  bool __fastcall HasNodeAnySession(TTreeNode * Node, bool NeedCanOpen = false);
   void __fastcall SaveDataList(TList * DataList);
   inline bool __fastcall IsFolderNode(TTreeNode * Node);
   inline bool __fastcall IsWorkspaceNode(TTreeNode * Node);
@@ -381,7 +381,7 @@ private:
   TSessionData * __fastcall GetEditingSessionData();
   void __fastcall SaveAsSession(bool ForceDialog);
   void __fastcall InvalidateSessionData();
-  bool __fastcall CanLogin();
+  bool __fastcall CanOpen();
   bool __fastcall IsCloneToNewSiteDefault();
   bool __fastcall IsDefaultResult(TModalResult Result);
   void __fastcall UpdateNodeImage(TTreeNode * Node);

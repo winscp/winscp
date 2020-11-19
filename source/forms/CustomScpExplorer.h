@@ -269,6 +269,7 @@ private:
   int FNewSessionTabImageIndex;
   int FSessionTabImageIndex;
   int FSessionColorMaskImageIndex;
+  int FLocalBrowserTabImageIndex;
   ::TTrayIcon * FTrayIcon;
   TCustomCommandType FLastCustomCommand;
   TFileMasks FDirViewMatchMask;
@@ -360,6 +361,7 @@ protected:
   TQueueItemProxy * FPendingQueueActionItem;
   TTBXPopupMenu * FHistoryMenu[2][2];
   bool FAllowTransferPresetAutoSelect;
+  bool FSessionChanging;
   TStrings * FNotes;
   TTimer * FNoteTimer;
   TDateTime FNoteShown;
@@ -422,8 +424,8 @@ protected:
   void __fastcall LocalCustomCommand(TStrings * FileList,
     const TCustomCommandType & ACommand, TStrings * ALocalFileList,
     const TCustomCommandData & Data, const UnicodeString & CommandCommand);
-  virtual void __fastcall TerminalChanging();
-  virtual void __fastcall TerminalChanged(bool Replaced);
+  virtual void __fastcall SessionChanging();
+  virtual void __fastcall SessionChanged(bool Replaced);
   virtual void __fastcall QueueChanged();
   void __fastcall InitStatusBar();
   void __fastcall UpdateStatusBar();
@@ -660,8 +662,8 @@ protected:
     const UnicodeString FileName, TEditedFileData * Data, TObject * Token,
     void * Arg);
   void __fastcall AnyInternalEditorModified(TObject * Sender, bool & Modified);
-  virtual void __fastcall StartingDisconnected();
-  void __fastcall NeedSession(bool Startup);
+  virtual void __fastcall StartingWithoutSession();
+  virtual void __fastcall NeedSession(bool Startup);
   bool __fastcall DraggingAllFilesFromDirView(TOperationSide Side, TStrings * FileList);
   bool __fastcall SelectedAllFilesInDirView(TCustomDirView * DView);
   TSessionData * __fastcall SessionDataForCode();
@@ -754,6 +756,7 @@ public:
   bool __fastcall HasActiveTerminal();
   bool __fastcall HasManagedSession();
   virtual bool IsLocalBrowserMode();
+  bool CanCloseSession(TManagedTerminal * Session);
 
   void __fastcall NewSession(const UnicodeString & SessionUrl = L"");
   void __fastcall DuplicateSession();
@@ -776,7 +779,7 @@ public:
   virtual void __fastcall CompareDirectories();
   void __fastcall ExecuteCurrentFile();
   virtual void __fastcall OpenConsole(UnicodeString Command = L"");
-  virtual void __fastcall UpdateTerminal(TManagedTerminal * Terminal);
+  virtual void __fastcall UpdateSession(TManagedTerminal * Terminal);
   virtual void __fastcall SynchronizeDirectories();
   virtual void __fastcall FullSynchronizeDirectories() = 0;
   virtual void __fastcall ExploreLocalDirectory(TOperationSide Side);
@@ -797,6 +800,7 @@ public:
   void __fastcall ToggleQueueEnabled();
   UnicodeString __fastcall GetQueueProgressTitle();
   void __fastcall LastTerminalClosed();
+  virtual TManagedTerminal * GetReplacementForLastSession();
   void __fastcall TerminalRemoved(TObject * Sender);
   void __fastcall TerminalDisconnected();
   void __fastcall TerminalConnecting();
@@ -859,6 +863,7 @@ public:
   virtual void __fastcall BrowseFile();
   void __fastcall CloseApp();
   virtual bool IsSideLocalBrowser(TOperationSide Side);
+  virtual UnicodeString GetLocalBrowserSessionTitle(TManagedTerminal * Session);
 
   __property bool ComponentVisible[Byte Component] = { read = GetComponentVisible, write = SetComponentVisible };
   __property bool EnableFocusedOperation[TOperationSide Side] = { read = GetEnableFocusedOperation, index = 0 };
