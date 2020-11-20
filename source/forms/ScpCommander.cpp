@@ -2640,6 +2640,7 @@ void __fastcall TScpCommanderForm::OtherLocalDirViewPathChange(TCustomDirView * 
   // should happen only when called from TScpCommanderForm::DoShow while starting connected
   if (IsLocalBrowserMode())
   {
+    DebugUsedParam(Sender);
     DebugAssert(Sender == OtherLocalDirView);
     UpdateRemotePathComboBox(!FSessionChanging);
   }
