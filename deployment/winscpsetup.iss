@@ -73,7 +73,7 @@
 #define Minor
 #define Rev
 #define Build
-#expr ParseVersion(MainFileSource, Major, Minor, Rev, Build)
+#expr GetVersionComponents(MainFileSource, Major, Minor, Rev, Build)
 #define VersionOnly Str(Major)+"."+Str(Minor)+(Rev > 0 ? "."+Str(Rev) : "")
 #define Version VersionOnly+(Status != "" ? " "+Status : "")
 
@@ -123,7 +123,6 @@ PrivilegesRequiredOverridesAllowed=commandline dialog
 ShowLanguageDialog=auto
 UsePreviousLanguage=yes
 DisableProgramGroupPage=yes
-MinVersion=6.0
 SetupIconFile=winscpsetup.ico
 DisableDirPage=no
 WizardStyle=modern
@@ -271,11 +270,11 @@ Source: "license.txt"; DestDir: "{app}"; \
 Source: "{#ShellExtFileSource}"; DestDir: "{app}"; \
   Components: shellext; \
   Flags: regserver restartreplace uninsrestartdelete ignoreversion; \
-  Check: not IsWin64 and ShouldInstallShellExt(ExpandConstant('{app}\{#ShellExtFileName}'), '{#GetFileVersion(ShellExtFileSource)}')
+  Check: not IsWin64 and ShouldInstallShellExt(ExpandConstant('{app}\{#ShellExtFileName}'), '{#GetVersionNumbersString(ShellExtFileSource)}')
 Source: "{#ShellExt64FileSource}"; DestDir: "{app}"; \
   Components: shellext; \
   Flags: regserver restartreplace uninsrestartdelete ignoreversion; \
-  Check: IsWin64 and ShouldInstallShellExt(ExpandConstant('{app}\{#ShellExt64FileName}'), '{#GetFileVersion(ShellExt64FileSource)}')
+  Check: IsWin64 and ShouldInstallShellExt(ExpandConstant('{app}\{#ShellExt64FileName}'), '{#GetVersionNumbersString(ShellExt64FileSource)}')
 Source: "{#PuttySourceDir}\LICENCE"; DestDir: "{app}\PuTTY"; \
   Components: pageant puttygen; Flags: ignoreversion
 Source: "{#PuttySourceDir}\putty.chm"; DestDir: "{app}\PuTTY"; \
