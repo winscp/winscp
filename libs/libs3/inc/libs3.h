@@ -1631,7 +1631,7 @@ S3Status S3_create_request_context(S3RequestContext **requestContextReturn);
  * for curl_multi_socket_action CURLM handles that will be managed by libs3 user.
  * This type of handles offer better performance for applications with large
  * number of simultaneous connections. For details, see MULTI_SOCKET chapter here:
- * https://curl.haxx.se/libcurl/c/libcurl-multi.html
+ * https://curl.se/libcurl/c/libcurl-multi.html
  *
  * In this mode libs3 user will
  *  - create its own CURLM using curl_multi_init()
