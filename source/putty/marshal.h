@@ -286,6 +286,8 @@ static inline void BinarySource_INIT__(BinarySource *src, ptrlen data)
     BinarySource_get_rsa_ssh1_pub(BinarySource_UPCAST(src), rsa, order)
 #define get_rsa_ssh1_priv(src, rsa) \
     BinarySource_get_rsa_ssh1_priv(BinarySource_UPCAST(src), rsa)
+#define get_rsa_ssh1_priv_agent(src) \
+    BinarySource_get_rsa_ssh1_priv_agent(BinarySource_UPCAST(src))
 
 #define get_err(src) (BinarySource_UPCAST(src)->err)
 #define get_avail(src) (BinarySource_UPCAST(src)->len - \

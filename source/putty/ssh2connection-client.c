@@ -319,6 +319,9 @@ SshChannel *ssh2_serverside_agent_open(ConnectionLayer *cl, Channel *chan)
 static void ssh2_channel_response(
     struct ssh2_channel *c, PktIn *pkt, void *ctx)
 {
+    /* If pkt==NULL (because this handler has been called in response
+     * to CHANNEL_CLOSE arriving while the request was still
+     * outstanding), we treat that the same as CHANNEL_FAILURE. */
     chan_request_response(c->chan,
                           pkt && pkt->type == SSH2_MSG_CHANNEL_SUCCESS);
 }

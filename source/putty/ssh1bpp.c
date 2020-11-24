@@ -236,6 +236,7 @@ static void ssh1_bpp_handle_input(BinaryPacketProtocol *bpp)
                        NULL, 0, NULL);
         }
 
+        s->pktin->qnode.formal_size = get_avail(s->pktin);
         pq_push(&s->bpp.in_pq, s->pktin);
 
         {
