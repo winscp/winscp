@@ -505,8 +505,7 @@ void CFtpControlSocket::Connect(t_server &server)
     }
     int res = m_pSslLayer->InitSSLConnection(true, NULL,
       GetOptionVal(OPTION_MPEXT_SSLSESSIONREUSE),
-      GetOptionVal(OPTION_MPEXT_MIN_TLS_VERSION),
-      GetOptionVal(OPTION_MPEXT_MAX_TLS_VERSION));
+      m_pTools);
     if (res == SSL_FAILURE_INITSSL)
       ShowStatus(IDS_ERRORMSG_CANTINITSSL, FZ_LOG_ERROR);
     if (res)
@@ -556,6 +555,11 @@ void CFtpControlSocket::Connect(t_server &server)
   m_LastRecvTime = m_LastSendTime = CTime::GetCurrentTime();
 
   m_Operation.pData = new CLogonData();
+}
+
+static CString NormalizePass(const CString & pass)
+{
+  return CString(NormalizeString(UnicodeString(T2CW(pass))).c_str());
 }
 
 void CFtpControlSocket::LogOnToServer(BOOL bSkipReply /*=FALSE*/)
@@ -631,8 +635,7 @@ void CFtpControlSocket::LogOnToServer(BOOL bSkipReply /*=FALSE*/)
       }
       int res = m_pSslLayer->InitSSLConnection(true, NULL,
         GetOptionVal(OPTION_MPEXT_SSLSESSIONREUSE),
-        GetOptionVal(OPTION_MPEXT_MIN_TLS_VERSION),
-        GetOptionVal(OPTION_MPEXT_MAX_TLS_VERSION));
+        m_pTools);
       if (res == SSL_FAILURE_INITSSL)
         ShowStatus(IDS_ERRORMSG_CANTINITSSL, FZ_LOG_ERROR);
       if (res)
@@ -875,8 +878,9 @@ void CFtpControlSocket::LogOnToServer(BOOL bSkipReply /*=FALSE*/)
         for (int i = 0; i < m_CurrentServer.user.GetLength(); i++)
           if (m_CurrentServer.user.GetAt(i) > 127)
             asciiOnly = false;
-        for (int i = 0; i < m_CurrentServer.pass.GetLength(); i++)
-          if (m_CurrentServer.pass.GetAt(i) > 127)
+        CString pass = NormalizePass(m_CurrentServer.pass);
+        for (int i = 0; i < pass.GetLength(); i++)
+          if (pass.GetAt(i) > 127)
             asciiOnly = false;
         for (int i = 0; i < m_CurrentServer.account.GetLength(); i++)
           if (m_CurrentServer.account.GetAt(i) > 127)
@@ -1080,7 +1084,7 @@ void CFtpControlSocket::LogOnToServer(BOOL bSkipReply /*=FALSE*/)
       }
       else if (!needpass || pData->gotPassword)
       {
-        temp=L"PASS "+m_CurrentServer.pass;
+        temp=L"PASS "+NormalizePass(m_CurrentServer.pass);
       }
       else
       {
@@ -1135,7 +1139,7 @@ void CFtpControlSocket::LogOnToServer(BOOL bSkipReply /*=FALSE*/)
       }
       else if (!needpass || pData->gotPassword)
       {
-        temp=L"PASS "+m_CurrentServer.pass+L"@"+GetOption(OPTION_FWPASS);
+        temp=L"PASS "+NormalizePass(m_CurrentServer.pass)+L"@"+GetOption(OPTION_FWPASS);
       }
       else
       {

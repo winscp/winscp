@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <limits.h>
 #include "putty.h"
 #ifndef SECURITY_WIN32
 #define SECURITY_WIN32
@@ -13,7 +14,7 @@
 #include <assert.h>
 #endif
 
-OSVERSIONINFO osVersion;
+DWORD osMajorVersion, osMinorVersion, osPlatformId;
 
 char *platform_get_x_display(void) {
     /* We may as well check for DISPLAY in case it's useful. */
@@ -37,12 +38,12 @@ const char *filename_to_str(const Filename *fn)
     return fn->path;
 }
 
-int filename_equal(const Filename *f1, const Filename *f2)
+bool filename_equal(const Filename *f1, const Filename *f2)
 {
     return !strcmp(f1->path, f2->path);
 }
 
-int filename_is_null(const Filename *fn)
+bool filename_is_null(const Filename *fn)
 {
     return !*fn->path;
 }
@@ -53,25 +54,13 @@ void filename_free(Filename *fn)
     sfree(fn);
 }
 
-int filename_serialise(const Filename *f, void *vdata)
+void filename_serialise(BinarySink *bs, const Filename *f)
 {
-    char *data = (char *)vdata;
-    int len = strlen(f->path) + 1;     /* include trailing NUL */
-    if (data) {
-        strcpy(data, f->path);
-    }
-    return len;
+    put_asciz(bs, f->path);
 }
-Filename *filename_deserialise(void *vdata, int maxsize, int *used)
+Filename *filename_deserialise(BinarySource *src)
 {
-    char *data = (char *)vdata;
-    char *end;
-    end = memchr(data, '\0', maxsize);
-    if (!end)
-        return NULL;
-    end++;
-    *used = end - data;
-    return filename_from_str(data);
+    return filename_from_str(get_asciz(src));
 }
 
 char filename_char_sanitise(char c)
@@ -115,77 +104,68 @@ FILE * mp_wfopen(const char *filename, const char *mode)
 
 #endif
 
-#ifndef NO_SECUREZEROMEMORY
-/*
- * Windows implementation of smemclr (see misc.c) using SecureZeroMemory.
- */
-void smemclr(void *b, size_t n) {
-    if (b && n > 0)
-        SecureZeroMemory(b, n);
-}
-#endif
-
 char *get_username(void)
 {
     DWORD namelen;
     char *user;
-    int got_username = FALSE;
+    bool got_username = false;
     DECL_WINDOWS_FUNCTION(static, BOOLEAN, GetUserNameExA,
-			  (EXTENDED_NAME_FORMAT, LPSTR, PULONG));
+                          (EXTENDED_NAME_FORMAT, LPSTR, PULONG));
 
     {
-	static int tried_usernameex = FALSE;
-	if (!tried_usernameex) {
-	    /* Not available on Win9x, so load dynamically */
-	    HMODULE secur32 = load_system32_dll("secur32.dll");
-	    /* If MIT Kerberos is installed, the following call to
-	       GET_WINDOWS_FUNCTION makes Windows implicitly load
-	       sspicli.dll WITHOUT proper path sanitizing, so better
-	       load it properly before */
-	    HMODULE sspicli = load_system32_dll("sspicli.dll");
-	    GET_WINDOWS_FUNCTION(secur32, GetUserNameExA);
-	    tried_usernameex = TRUE;
-	}
+        static bool tried_usernameex = false;
+        if (!tried_usernameex) {
+            /* Not available on Win9x, so load dynamically */
+            HMODULE secur32 = load_system32_dll("secur32.dll");
+            /* If MIT Kerberos is installed, the following call to
+               GET_WINDOWS_FUNCTION makes Windows implicitly load
+               sspicli.dll WITHOUT proper path sanitizing, so better
+               load it properly before */
+            HMODULE sspicli = load_system32_dll("sspicli.dll");
+            (void)sspicli; /* squash compiler warning about unused variable */
+            GET_WINDOWS_FUNCTION(secur32, GetUserNameExA);
+            tried_usernameex = true;
+        }
     }
 
     if (p_GetUserNameExA) {
-	/*
-	 * If available, use the principal -- this avoids the problem
-	 * that the local username is case-insensitive but Kerberos
-	 * usernames are case-sensitive.
-	 */
+        /*
+         * If available, use the principal -- this avoids the problem
+         * that the local username is case-insensitive but Kerberos
+         * usernames are case-sensitive.
+         */
 
-	/* Get the length */
-	namelen = 0;
-	(void) p_GetUserNameExA(NameUserPrincipal, NULL, &namelen);
+        /* Get the length */
+        namelen = 0;
+        (void) p_GetUserNameExA(NameUserPrincipal, NULL, &namelen);
 
-	user = snewn(namelen, char);
-	got_username = p_GetUserNameExA(NameUserPrincipal, user, &namelen);
-	if (got_username) {
-	    char *p = strchr(user, '@');
-	    if (p) *p = 0;
-	} else {
-	    sfree(user);
-	}
+        user = snewn(namelen, char);
+        got_username = p_GetUserNameExA(NameUserPrincipal, user, &namelen);
+        if (got_username) {
+            char *p = strchr(user, '@');
+            if (p) *p = 0;
+        } else {
+            sfree(user);
+        }
     }
 
     if (!got_username) {
-	/* Fall back to local user name */
-	namelen = 0;
-	if (GetUserName(NULL, &namelen) == FALSE) {
-	    /*
-	     * Apparently this doesn't work at least on Windows XP SP2.
-	     * Thus assume a maximum of 256. It will fail again if it
-	     * doesn't fit.
-	     */
-	    namelen = 256;
-	}
+        /* Fall back to local user name */
+        namelen = 0;
+        if (!GetUserName(NULL, &namelen)) {
+            /*
+             * Apparently this doesn't work at least on Windows XP SP2.
+             * Thus assume a maximum of 256. It will fail again if it
+             * doesn't fit.
+             */
+            namelen = 256;
+        }
 
-	user = snewn(namelen, char);
-	got_username = GetUserName(user, &namelen);
-	if (!got_username) {
-	    sfree(user);
-	}
+        user = snewn(namelen, char);
+        got_username = GetUserName(user, &namelen);
+        if (!got_username) {
+            sfree(user);
+        }
     }
 
     return got_username ? user : NULL;
@@ -234,11 +214,41 @@ void dll_hijacking_protection(void)
     }
 }
 
-BOOL init_winver(void)
+void init_winver(void)
 {
+    OSVERSIONINFO osVersion;
+    static HMODULE kernel32_module;
+    DECL_WINDOWS_FUNCTION(static, BOOL, GetVersionExA, (LPOSVERSIONINFO));
+
+    if (!kernel32_module) {
+        kernel32_module = load_system32_dll("kernel32.dll");
+        /* Deliberately don't type-check this function, because that
+         * would involve using its declaration in a header file which
+         * triggers a deprecation warning. I know it's deprecated (see
+         * below) and don't need telling. */
+        GET_WINDOWS_FUNCTION_NO_TYPECHECK(kernel32_module, GetVersionExA);
+    }
+
     ZeroMemory(&osVersion, sizeof(osVersion));
     osVersion.dwOSVersionInfoSize = sizeof (OSVERSIONINFO);
-    return GetVersionEx ( (OSVERSIONINFO *) &osVersion);
+    if (p_GetVersionExA && p_GetVersionExA(&osVersion)) {
+        osMajorVersion = osVersion.dwMajorVersion;
+        osMinorVersion = osVersion.dwMinorVersion;
+        osPlatformId = osVersion.dwPlatformId;
+    } else {
+        /*
+         * GetVersionEx is deprecated, so allow for it perhaps going
+         * away in future API versions. If it's not there, simply
+         * assume that's because Windows is too _new_, so fill in the
+         * variables we care about to a value that will always compare
+         * higher than any given test threshold.
+         *
+         * Normally we should be checking against the presence of a
+         * specific function if possible in any case.
+         */
+        osMajorVersion = osMinorVersion = UINT_MAX; /* a very high number */
+        osPlatformId = VER_PLATFORM_WIN32_NT; /* not Win32s or Win95-like */
+    }
 }
 
 #ifdef MPEXT
@@ -261,16 +271,14 @@ HMODULE load_system32_dll(const char *libname)
 #ifndef MPEXT
     static char *sysdir = NULL;
 #endif
+    static size_t sysdirsize = 0;
     char *fullpath;
     HMODULE ret;
 
     if (!sysdir) {
-	int size = 0, len;
-	do {
-	    size = 3*size/2 + 512;
-	    sysdir = sresize(sysdir, size, char);
-	    len = GetSystemDirectory(sysdir, size);
-	} while (len >= size);
+        size_t len;
+        while ((len = GetSystemDirectory(sysdir, sysdirsize)) >= sysdirsize)
+            sgrowarray(sysdir, sysdirsize, len);
     }
 
     fullpath = dupcat(sysdir, "\\", libname, NULL);
@@ -339,256 +347,7 @@ const char *win_strerror(int error)
     return es->text;
 }
 
-#ifdef DEBUG
-static FILE *debug_fp = NULL;
-static HANDLE debug_hdl = INVALID_HANDLE_VALUE;
-static int debug_got_console = 0;
-
-void dputs(const char *buf)
-{
-    DWORD dw;
-
-    if (!debug_got_console) {
-	if (AllocConsole()) {
-	    debug_got_console = 1;
-	    debug_hdl = GetStdHandle(STD_OUTPUT_HANDLE);
-	}
-    }
-    if (!debug_fp) {
-	debug_fp = fopen("debug.log", "w");
-    }
-
-    if (debug_hdl != INVALID_HANDLE_VALUE) {
-	WriteFile(debug_hdl, buf, strlen(buf), &dw, NULL);
-    }
-    fputs(buf, debug_fp);
-    fflush(debug_fp);
-}
-#endif
-
-#ifdef MINEFIELD
-/*
- * Minefield - a Windows equivalent for Electric Fence
- */
-
-#define PAGESIZE 4096
-
-/*
- * Design:
- * 
- * We start by reserving as much virtual address space as Windows
- * will sensibly (or not sensibly) let us have. We flag it all as
- * invalid memory.
- * 
- * Any allocation attempt is satisfied by committing one or more
- * pages, with an uncommitted page on either side. The returned
- * memory region is jammed up against the _end_ of the pages.
- * 
- * Freeing anything causes instantaneous decommitment of the pages
- * involved, so stale pointers are caught as soon as possible.
- */
-
-static int minefield_initialised = 0;
-static void *minefield_region = NULL;
-static long minefield_size = 0;
-static long minefield_npages = 0;
-static long minefield_curpos = 0;
-static unsigned short *minefield_admin = NULL;
-static void *minefield_pages = NULL;
-
-static void minefield_admin_hide(int hide)
-{
-    int access = hide ? PAGE_NOACCESS : PAGE_READWRITE;
-    VirtualProtect(minefield_admin, minefield_npages * 2, access, NULL);
-}
-
-static void minefield_init(void)
-{
-    int size;
-    int admin_size;
-    int i;
-
-    for (size = 0x40000000; size > 0; size = ((size >> 3) * 7) & ~0xFFF) {
-	minefield_region = VirtualAlloc(NULL, size,
-					MEM_RESERVE, PAGE_NOACCESS);
-	if (minefield_region)
-	    break;
-    }
-    minefield_size = size;
-
-    /*
-     * Firstly, allocate a section of that to be the admin block.
-     * We'll need a two-byte field for each page.
-     */
-    minefield_admin = minefield_region;
-    minefield_npages = minefield_size / PAGESIZE;
-    admin_size = (minefield_npages * 2 + PAGESIZE - 1) & ~(PAGESIZE - 1);
-    minefield_npages = (minefield_size - admin_size) / PAGESIZE;
-    minefield_pages = (char *) minefield_region + admin_size;
-
-    /*
-     * Commit the admin region.
-     */
-    VirtualAlloc(minefield_admin, minefield_npages * 2,
-		 MEM_COMMIT, PAGE_READWRITE);
-
-    /*
-     * Mark all pages as unused (0xFFFF).
-     */
-    for (i = 0; i < minefield_npages; i++)
-	minefield_admin[i] = 0xFFFF;
-
-    /*
-     * Hide the admin region.
-     */
-    minefield_admin_hide(1);
-
-    minefield_initialised = 1;
-}
-
-static void minefield_bomb(void)
-{
-    div(1, *(int *) minefield_pages);
-}
-
-static void *minefield_alloc(int size)
-{
-    int npages;
-    int pos, lim, region_end, region_start;
-    int start;
-    int i;
-
-    npages = (size + PAGESIZE - 1) / PAGESIZE;
-
-    minefield_admin_hide(0);
-
-    /*
-     * Search from current position until we find a contiguous
-     * bunch of npages+2 unused pages.
-     */
-    pos = minefield_curpos;
-    lim = minefield_npages;
-    while (1) {
-	/* Skip over used pages. */
-	while (pos < lim && minefield_admin[pos] != 0xFFFF)
-	    pos++;
-	/* Count unused pages. */
-	start = pos;
-	while (pos < lim && pos - start < npages + 2 &&
-	       minefield_admin[pos] == 0xFFFF)
-	    pos++;
-	if (pos - start == npages + 2)
-	    break;
-	/* If we've reached the limit, reset the limit or stop. */
-	if (pos >= lim) {
-	    if (lim == minefield_npages) {
-		/* go round and start again at zero */
-		lim = minefield_curpos;
-		pos = 0;
-	    } else {
-		minefield_admin_hide(1);
-		return NULL;
-	    }
-	}
-    }
-
-    minefield_curpos = pos - 1;
-
-    /*
-     * We have npages+2 unused pages starting at start. We leave
-     * the first and last of these alone and use the rest.
-     */
-    region_end = (start + npages + 1) * PAGESIZE;
-    region_start = region_end - size;
-    /* FIXME: could align here if we wanted */
-
-    /*
-     * Update the admin region.
-     */
-    for (i = start + 2; i < start + npages + 1; i++)
-	minefield_admin[i] = 0xFFFE;   /* used but no region starts here */
-    minefield_admin[start + 1] = region_start % PAGESIZE;
-
-    minefield_admin_hide(1);
-
-    VirtualAlloc((char *) minefield_pages + region_start, size,
-		 MEM_COMMIT, PAGE_READWRITE);
-    return (char *) minefield_pages + region_start;
-}
-
-static void minefield_free(void *ptr)
-{
-    int region_start, i, j;
-
-    minefield_admin_hide(0);
-
-    region_start = (char *) ptr - (char *) minefield_pages;
-    i = region_start / PAGESIZE;
-    if (i < 0 || i >= minefield_npages ||
-	minefield_admin[i] != region_start % PAGESIZE)
-	minefield_bomb();
-    for (j = i; j < minefield_npages && minefield_admin[j] != 0xFFFF; j++) {
-	minefield_admin[j] = 0xFFFF;
-    }
-
-    VirtualFree(ptr, j * PAGESIZE - region_start, MEM_DECOMMIT);
-
-    minefield_admin_hide(1);
-}
-
-static int minefield_get_size(void *ptr)
-{
-    int region_start, i, j;
-
-    minefield_admin_hide(0);
-
-    region_start = (char *) ptr - (char *) minefield_pages;
-    i = region_start / PAGESIZE;
-    if (i < 0 || i >= minefield_npages ||
-	minefield_admin[i] != region_start % PAGESIZE)
-	minefield_bomb();
-    for (j = i; j < minefield_npages && minefield_admin[j] != 0xFFFF; j++);
-
-    minefield_admin_hide(1);
-
-    return j * PAGESIZE - region_start;
-}
-
-void *minefield_c_malloc(size_t size)
-{
-    if (!minefield_initialised)
-	minefield_init();
-    return minefield_alloc(size);
-}
-
-void minefield_c_free(void *p)
-{
-    if (!minefield_initialised)
-	minefield_init();
-    minefield_free(p);
-}
-
-/*
- * realloc _always_ moves the chunk, for rapid detection of code
- * that assumes it won't.
- */
-void *minefield_c_realloc(void *p, size_t size)
-{
-    size_t oldsize;
-    void *q;
-    if (!minefield_initialised)
-	minefield_init();
-    q = minefield_alloc(size);
-    oldsize = minefield_get_size(p);
-    memcpy(q, p, (oldsize < size ? oldsize : size));
-    minefield_free(p);
-    return q;
-}
-
-#endif				/* MINEFIELD */
-
-FontSpec *fontspec_new(const char *name,
-                        int bold, int height, int charset)
+FontSpec *fontspec_new(const char *name, bool bold, int height, int charset)
 {
     FontSpec *f = snew(FontSpec);
     f->name = dupstr(name);
@@ -606,31 +365,157 @@ void fontspec_free(FontSpec *f)
     sfree(f->name);
     sfree(f);
 }
-int fontspec_serialise(FontSpec *f, void *vdata)
+void fontspec_serialise(BinarySink *bs, FontSpec *f)
 {
-    char *data = (char *)vdata;
-    int len = strlen(f->name) + 1;     /* include trailing NUL */
-    if (data) {
-        strcpy(data, f->name);
-        PUT_32BIT_MSB_FIRST(data + len, f->isbold);
-        PUT_32BIT_MSB_FIRST(data + len + 4, f->height);
-        PUT_32BIT_MSB_FIRST(data + len + 8, f->charset);
-    }
-    return len + 12;                   /* also include three 4-byte ints */
+    put_asciz(bs, f->name);
+    put_uint32(bs, f->isbold);
+    put_uint32(bs, f->height);
+    put_uint32(bs, f->charset);
 }
-FontSpec *fontspec_deserialise(void *vdata, int maxsize, int *used)
+FontSpec *fontspec_deserialise(BinarySource *src)
 {
-    char *data = (char *)vdata;
-    char *end;
-    if (maxsize < 13)
-        return NULL;
-    end = memchr(data, '\0', maxsize-12);
-    if (!end)
-        return NULL;
-    end++;
-    *used = end - data + 12;
-    return fontspec_new(data,
-                        GET_32BIT_MSB_FIRST(end),
-                        GET_32BIT_MSB_FIRST(end + 4),
-                        GET_32BIT_MSB_FIRST(end + 8));
+    const char *name = get_asciz(src);
+    unsigned isbold = get_uint32(src);
+    unsigned height = get_uint32(src);
+    unsigned charset = get_uint32(src);
+    return fontspec_new(name, isbold, height, charset);
+}
+
+bool open_for_write_would_lose_data(const Filename *fn)
+{
+    WIN32_FILE_ATTRIBUTE_DATA attrs;
+    if (!GetFileAttributesEx(fn->path, GetFileExInfoStandard, &attrs)) {
+        /*
+         * Generally, if we don't identify a specific reason why we
+         * should return true from this function, we return false, and
+         * let the subsequent attempt to open the file for real give a
+         * more useful error message.
+         */
+        return false;
+    }
+    if (attrs.dwFileAttributes & (FILE_ATTRIBUTE_DEVICE |
+                                  FILE_ATTRIBUTE_DIRECTORY)) {
+        /*
+         * File is something other than an ordinary disk file, so
+         * opening it for writing will not cause truncation. (It may
+         * not _succeed_ either, but that's not our problem here!)
+         */
+        return false;
+    }
+    if (attrs.nFileSizeHigh == 0 && attrs.nFileSizeLow == 0) {
+        /*
+         * File is zero-length (or may be a named pipe, which
+         * dwFileAttributes can't tell apart from a regular file), so
+         * opening it for writing won't truncate any data away because
+         * there's nothing to truncate anyway.
+         */
+        return false;
+    }
+    return true;
+}
+
+void escape_registry_key(const char *in, strbuf *out)
+{
+    bool candot = false;
+    static const char hex[16] = "0123456789ABCDEF";
+
+    while (*in) {
+        if (*in == ' ' || *in == '\\' || *in == '*' || *in == '?' ||
+            *in == '%' || *in < ' ' || *in > '~' || (*in == '.'
+                                                     && !candot)) {
+            put_byte(out, '%');
+            put_byte(out, hex[((unsigned char) *in) >> 4]);
+            put_byte(out, hex[((unsigned char) *in) & 15]);
+        } else
+            put_byte(out, *in);
+        in++;
+        candot = true;
+    }
+}
+
+void unescape_registry_key(const char *in, strbuf *out)
+{
+    while (*in) {
+        if (*in == '%' && in[1] && in[2]) {
+            int i, j;
+
+            i = in[1] - '0';
+            i -= (i > 9 ? 7 : 0);
+            j = in[2] - '0';
+            j -= (j > 9 ? 7 : 0);
+
+            put_byte(out, (i << 4) + j);
+            in += 3;
+        } else {
+            put_byte(out, *in++);
+        }
+    }
+}
+
+#ifdef DEBUG
+static FILE *debug_fp = NULL;
+static HANDLE debug_hdl = INVALID_HANDLE_VALUE;
+static int debug_got_console = 0;
+
+void dputs(const char *buf)
+{
+    DWORD dw;
+
+    if (!debug_got_console) {
+        if (AllocConsole()) {
+            debug_got_console = 1;
+            debug_hdl = GetStdHandle(STD_OUTPUT_HANDLE);
+        }
+    }
+    if (!debug_fp) {
+        debug_fp = fopen("debug.log", "w");
+    }
+
+    if (debug_hdl != INVALID_HANDLE_VALUE) {
+        WriteFile(debug_hdl, buf, strlen(buf), &dw, NULL);
+    }
+    fputs(buf, debug_fp);
+    fflush(debug_fp);
+}
+#endif
+
+char *registry_get_string(HKEY root, const char *path, const char *leaf)
+{
+    HKEY key = root;
+    bool need_close_key = false;
+    char *toret = NULL, *str = NULL;
+
+    if (path) {
+        if (RegCreateKey(key, path, &key) != ERROR_SUCCESS)
+            goto out;
+        need_close_key = true;
+    }
+
+    { // WINSCP
+    DWORD type, size;
+    if (RegQueryValueEx(key, leaf, 0, &type, NULL, &size) != ERROR_SUCCESS)
+        goto out;
+    if (type != REG_SZ)
+        goto out;
+
+    str = snewn(size + 1, char);
+    { // WINSCP
+    DWORD size_got = size;
+    if (RegQueryValueEx(key, leaf, 0, &type, (LPBYTE)str,
+                        &size_got) != ERROR_SUCCESS)
+        goto out;
+    if (type != REG_SZ || size_got > size)
+        goto out;
+    str[size_got] = '\0';
+
+    toret = str;
+    str = NULL;
+
+  out:
+    if (need_close_key)
+        RegCloseKey(key);
+    sfree(str);
+    return toret;
+    } // WINSCP
+    } // WINSCP
 }

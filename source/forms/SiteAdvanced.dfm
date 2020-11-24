@@ -12,6 +12,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
   ParentFont = True
   OldCreateOrder = True
   Position = poOwnerFormCenter
+  OnClose = FormClose
   OnCloseQuery = FormCloseQuery
   OnShow = FormShow
   DesignSize = (
@@ -67,7 +68,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Top = 20
             Width = 241
             Height = 13
-            Caption = '&End-of-line characters (if not indicated by server):'
+            Caption = 'End-of-line &characters (if not indicated by server):'
             FocusControl = EOLTypeCombo
           end
           object UtfLabel: TLabel
@@ -211,6 +212,47 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Caption = 'Preser&ve remote timestamp'
             TabOrder = 2
             OnClick = DataChange
+          end
+        end
+        object PuttyGroup: TGroupBox
+          Left = 0
+          Top = 252
+          Width = 393
+          Height = 98
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'PuTTY'
+          TabOrder = 2
+          DesignSize = (
+            393
+            98)
+          object PuttySettingsLabel: TLabel
+            Left = 12
+            Top = 18
+            Width = 116
+            Height = 13
+            Caption = '&PuTTY terminal settings:'
+            FocusControl = EncryptKeyPasswordEdit
+          end
+          object PuttySettingsButton: TButton
+            Left = 12
+            Top = 61
+            Width = 125
+            Height = 25
+            Anchors = [akTop, akRight]
+            Caption = '&Edit in PuTTY...'
+            TabOrder = 1
+            OnClick = PuttySettingsButtonClick
+          end
+          object PuttySettingsEdit: TEdit
+            Left = 12
+            Top = 34
+            Width = 370
+            Height = 21
+            MaxLength = 64
+            TabOrder = 0
+            Text = 'PuttySettingsEdit'
+            OnChange = DataChange
+            OnExit = EncryptKeyEditExit
           end
         end
       end
@@ -612,6 +654,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             MaxLength = 255
             TabOrder = 0
             Text = 'SftpServerEdit'
+            OnChange = DataChange
             Items.Strings = (
               'Default'
               '/bin/sftp-server'
@@ -731,6 +774,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
               'Default'
               '/bin/bash'
               '/bin/ksh'
+              '/bin/sh'
               'sudo su -')
           end
           object ReturnVarEdit: TComboBox
@@ -931,6 +975,96 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Anchors = [akTop, akRight]
             TabOrder = 5
             OnChange = DataChange
+          end
+        end
+      end
+      object S3Sheet: TTabSheet
+        Tag = 2
+        HelpType = htKeyword
+        HelpKeyword = 'ui_login_s3'
+        Caption = 'S3'
+        ImageIndex = 16
+        TabVisible = False
+        DesignSize = (
+          401
+          382)
+        object S3Group: TGroupBox
+          Left = 0
+          Top = 6
+          Width = 393
+          Height = 70
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'Protocol options'
+          TabOrder = 0
+          DesignSize = (
+            393
+            70)
+          object Label27: TLabel
+            Left = 12
+            Top = 20
+            Width = 72
+            Height = 13
+            Caption = '&Default region:'
+            FocusControl = S3DefaultReqionCombo
+          end
+          object S3UrlStyleLabel: TLabel
+            Left = 12
+            Top = 44
+            Width = 49
+            Height = 13
+            Caption = '&URL style:'
+            FocusControl = S3UrlStyleCombo
+          end
+          object S3DefaultReqionCombo: TComboBox
+            Left = 168
+            Top = 15
+            Width = 213
+            Height = 21
+            Anchors = [akLeft, akTop, akRight]
+            MaxLength = 32
+            TabOrder = 0
+            Text = 'S3DefaultRegionCombo'
+            OnChange = DataChange
+            Items.Strings = (
+              'af-south-1'
+              'ap-east-1'
+              'ap-northeast-1'
+              'ap-northeast-2'
+              'ap-northeast-3'
+              'ap-south-1'
+              'ap-southeast-1'
+              'ap-southeast-2'
+              'ca-central-1'
+              'cn-north-1'
+              'cn-northwest-1'
+              'eu-central-1'
+              'eu-north-1'
+              'eu-south-1'
+              'eu-west-1'
+              'eu-west-2'
+              'eu-west-3'
+              'me-south-1'
+              'sa-east-1'
+              'us-east-1'
+              'us-east-2'
+              'us-gov-east-1'
+              'us-gov-west-1'
+              'us-west-1'
+              'us-west-2')
+          end
+          object S3UrlStyleCombo: TComboBox
+            Left = 168
+            Top = 39
+            Width = 213
+            Height = 21
+            AutoComplete = False
+            Style = csDropDownList
+            Anchors = [akLeft, akTop, akRight]
+            MaxLength = 50
+            TabOrder = 1
+            Items.Strings = (
+              'Virtual Host'
+              'Path')
           end
         end
       end
@@ -1288,7 +1422,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Top = 102
             Width = 182
             Height = 21
-            MaxLength = 50
+            MaxLength = 100
             TabOrder = 5
             Text = 'ProxyUsernameEdit'
             OnChange = DataChange
@@ -1299,7 +1433,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Width = 182
             Height = 21
             Anchors = [akLeft, akTop, akRight]
-            MaxLength = 50
+            MaxLength = 100
             TabOrder = 6
             Text = 'ProxyPasswordEdit'
             OnChange = DataChange
@@ -1536,7 +1670,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Top = 85
             Width = 182
             Height = 21
-            MaxLength = 50
+            MaxLength = 100
             TabOrder = 2
             Text = 'TunnelUserNameEdit'
             OnChange = DataChange
@@ -1547,7 +1681,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Width = 182
             Height = 21
             Anchors = [akLeft, akTop, akRight]
-            MaxLength = 50
+            MaxLength = 100
             TabOrder = 3
             Text = 'TunnelPasswordEdit'
             OnChange = DataChange
@@ -1699,7 +1833,8 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
               'SSL 3.0'
               'TLS 1.0'
               'TLS 1.1'
-              'TLS 1.2')
+              'TLS 1.2'
+              'TLS 1.3')
           end
           object MaxTlsVersionCombo: TComboBox
             Left = 304
@@ -1714,7 +1849,8 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
               'SSL 3.0'
               'TLS 1.0'
               'TLS 1.1'
-              'TLS 1.2')
+              'TLS 1.2'
+              'TLS 1.3')
           end
           object SslSessionReuseCheck: TCheckBox
             Left = 12
@@ -2070,7 +2206,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Width = 353
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Respond with pass&word to the first prompt'
+            Caption = 'Respond with a pass&word to the first prompt'
             TabOrder = 2
             OnClick = DataChange
           end
@@ -2460,7 +2596,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
         OnCollapsing = NavigationTreeCollapsing
         Items.NodeData = {
           030400000036000000000000000000000000000000FFFFFFFF00000000000000
-          0006000000010C45006E007600690072006F006E006D0065006E007400580036
+          0007000000010C45006E007600690072006F006E006D0065006E007400580036
           000000000000000000000000000000FFFFFFFF00000000000000000000000001
           0C4400690072006500630074006F007200690065007300580036000000000000
           000000000000000000FFFFFFFF000000000000000000000000010C5200650063
@@ -2470,19 +2606,21 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           0000000000000000000000010553004600540050005800260000000000000000
           00000000000000FFFFFFFF000000000000000000000000010453004300500058
           00260000000000000000000000FFFFFFFFFFFFFFFF0000000000000000000000
-          000104460054005000580034000000000000000000000000000000FFFFFFFF00
-          0000000000000002000000010B43006F006E006E0065006300740069006F006E
-          0058002A000000000000000000000000000000FFFFFFFF000000000000000000
-          0000000106500072006F007800790058002C0000000000000000000000000000
-          00FFFFFFFF0000000000000000000000000107540075006E006E0065006C0058
-          0026000000000000000000000000000000FFFFFFFF0000000000000000030000
-          000104530053004800580038000000000000000000000000000000FFFFFFFF00
-          0000000000000000000000010D4B00650078002000650078006300680061006E
-          006700650058003C000000000000000000000000000000FFFFFFFF0000000000
-          00000000000000010F410075007400680065006E007400690063006100740069
-          006F006E00580028000000000000000000000000000000FFFFFFFF0000000000
-          0000000000000001054200750067007300580028000000000000000000000000
-          000000FFFFFFFF00000000000000000000000001054E006F00740065005800}
+          000104460054005000580024000000000000000000000000000000FFFFFFFF00
+          0000000000000000000000010353003300580034000000000000000000000000
+          000000FFFFFFFF000000000000000002000000010B43006F006E006E00650063
+          00740069006F006E0058002A000000000000000000000000000000FFFFFFFF00
+          00000000000000000000000106500072006F007800790058002C000000000000
+          000000000000000000FFFFFFFF0000000000000000000000000107540075006E
+          006E0065006C00580026000000000000000000000000000000FFFFFFFF000000
+          0000000000030000000104530053004800580038000000000000000000000000
+          000000FFFFFFFF000000000000000000000000010D4B00650078002000650078
+          006300680061006E006700650058003C000000000000000000000000000000FF
+          FFFFFF000000000000000000000000010F410075007400680065006E00740069
+          0063006100740069006F006E00580028000000000000000000000000000000FF
+          FFFFFF0000000000000000000000000105420075006700730058002800000000
+          0000000000000000000000FFFFFFFF00000000000000000000000001054E006F
+          00740065005800}
       end
     end
   end

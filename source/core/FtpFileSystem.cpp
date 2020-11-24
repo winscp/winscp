@@ -15,6 +15,7 @@
 #include "TextsFileZilla.h"
 #include "HelpCore.h"
 #include "Security.h"
+#include "NeonIntf.h"
 #include <StrUtils.hpp>
 #include <DateUtils.hpp>
 #include <openssl/x509_vfy.h>
@@ -61,6 +62,7 @@ protected:
   virtual bool GetFileModificationTimeInUtc(const wchar_t * FileName, struct tm & Time);
   virtual wchar_t * LastSysErrorMessage();
   virtual std::wstring GetClientString();
+  virtual void SetupSsl(ssl_st * Ssl);
 
 private:
   TFTPFileSystem * FFileSystem;
@@ -162,6 +164,11 @@ std::wstring TFileZillaImpl::GetClientString()
   return std::wstring(SshVersionString().c_str());
 }
 //---------------------------------------------------------------------------
+void TFileZillaImpl::SetupSsl(ssl_st * Ssl)
+{
+  ::SetupSsl(Ssl, FFileSystem->FTerminal->SessionData->MinTlsVersion, FFileSystem->FTerminal->SessionData->MaxTlsVersion);
+}
+//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 class TMessageQueue : public std::list<std::pair<WPARAM, LPARAM> >
 {
@@ -186,7 +193,6 @@ struct TFileTransferData
   TDateTime Modification;
 };
 //---------------------------------------------------------------------------
-const UnicodeString CertificateStorageKey(L"FtpsCertificates");
 const UnicodeString SiteCommand(L"SITE");
 const UnicodeString SymlinkSiteCommand(L"SYMLINK");
 const UnicodeString CopySiteCommand(L"COPY");
@@ -262,6 +268,7 @@ __fastcall TFTPFileSystem::TFTPFileSystem(TTerminal * ATerminal):
   FBytesAvailable = -1;
   FBytesAvailableSuppoted = false;
   FLoggedIn = false;
+  FAnyTransferSucceeded = false; // Do not reset on reconnect
 
   FChecksumAlgs.reset(new TStringList());
   FChecksumCommands.reset(new TStringList());
@@ -371,7 +378,7 @@ void __fastcall TFTPFileSystem::Open()
 
   UnicodeString HostName = Data->HostNameExpanded;
   UnicodeString UserName = Data->UserNameExpanded;
-  UnicodeString Password = NormalizeString(Data->Password);
+  UnicodeString Password = Data->Password;
   UnicodeString Account = Data->FtpAccount;
   UnicodeString Path = Data->RemoteDirectory;
   int ServerType;
@@ -544,8 +551,7 @@ void __fastcall TFTPFileSystem::Close()
   if (DebugAlwaysTrue(Result))
   {
     DebugAssert(FActive);
-    Discard();
-    FTerminal->Closed();
+    Disconnect();
   }
 }
 //---------------------------------------------------------------------------
@@ -1516,6 +1522,7 @@ void __fastcall TFTPFileSystem::FileTransfer(const UnicodeString & FileName,
     // call non-guarded variant to avoid deadlock with keepalives
     // (we are not waiting for reply anymore so keepalives are free to proceed)
     DoFileTransferProgress(OperationProgress->TransferSize, OperationProgress->TransferSize);
+    FAnyTransferSucceeded = true;
   }
 }
 //---------------------------------------------------------------------------
@@ -1965,6 +1972,7 @@ void __fastcall TFTPFileSystem::DoReadDirectory(TRemoteFileList * FileList)
   }
 
   FLastDataSent = Now();
+  FAnyTransferSucceeded = true;
 }
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::CheckTimeDifference()
@@ -2113,6 +2121,7 @@ void __fastcall TFTPFileSystem::AutoDetectTimeDifference(TRemoteFileList * FileL
           // and using LIST (no conversion, expecting the server uses the same timezone as the client).
           // Note that FormatTimeZone reverses the value.
           FTimeDifference = static_cast<__int64>(SecsPerDay * (UtcModification - File->Modification));
+          double Hours = TTimeSpan::FromSeconds(FTimeDifference).TotalHours;
 
           UnicodeString FileLog =
             FORMAT(L"%s (Listing: %s, UTC: %s)", (File->FullFileName, StandardTimestamp(File->Modification), StandardTimestamp(UtcModification)));
@@ -2120,6 +2129,12 @@ void __fastcall TFTPFileSystem::AutoDetectTimeDifference(TRemoteFileList * FileL
           if (FTimeDifference == 0)
           {
             LogMessage = FORMAT(L"No timezone difference detected using file %s", (FileLog));
+          }
+          // Seen with "GamingDeluxe FTP Server", which returns "213 00010101000000"
+          else if (fabs(Hours) >= 48)
+          {
+            FTimeDifference = 0;
+            LogMessage = FORMAT(L"Ignoring suspicious timezone difference of %s hours, detected using file %s", (IntToStr(__int64(Hours)), FileLog));
           }
           else
           {
@@ -2695,14 +2710,6 @@ int __fastcall TFTPFileSystem::GetOptionVal(int OptionID) const
       Result = (Data->SslSessionReuse ? TRUE : FALSE);
       break;
 
-    case OPTION_MPEXT_MIN_TLS_VERSION:
-      Result = Data->MinTlsVersion;
-      break;
-
-    case OPTION_MPEXT_MAX_TLS_VERSION:
-      Result = Data->MaxTlsVersion;
-      break;
-
     case OPTION_MPEXT_SNDBUF:
       Result = Data->SendBuf;
       break;
@@ -2958,6 +2965,12 @@ void __fastcall TFTPFileSystem::GotNonCommandReply(unsigned int Reply)
   DebugFail();
 }
 //---------------------------------------------------------------------------
+void __fastcall TFTPFileSystem::Disconnect()
+{
+  Discard();
+  FTerminal->Closed();
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall TFTPFileSystem::GotReply(unsigned int Reply, unsigned int Flags,
   UnicodeString Error, unsigned int * Code, TStrings ** Response)
 {
@@ -3008,6 +3021,7 @@ UnicodeString __fastcall TFTPFileSystem::GotReply(unsigned int Reply, unsigned i
       bool Disconnected =
         FLAGSET(Reply, TFileZillaIntf::REPLY_DISCONNECTED) ||
         FLAGSET(Reply, TFileZillaIntf::REPLY_NOTCONNECTED);
+      bool DoClose = false;
 
       UnicodeString HelpKeyword;
       TStrings * MoreMessages = new TStringList();
@@ -3018,8 +3032,7 @@ UnicodeString __fastcall TFTPFileSystem::GotReply(unsigned int Reply, unsigned i
           if (FLAGCLEAR(Flags, REPLY_CONNECT))
           {
             MoreMessages->Add(LoadStr(LOST_CONNECTION));
-            Discard();
-            FTerminal->Closed();
+            Disconnect();
           }
           else
           {
@@ -3069,6 +3082,22 @@ UnicodeString __fastcall TFTPFileSystem::GotReply(unsigned int Reply, unsigned i
           HelpKeyword = HELP_STATUSMSG_DISCONNECTED;
         }
 
+        if (FAnyTransferSucceeded && (FLastError->Count > 0))
+        {
+          UnicodeString CantOpenTransferChannelMessage = LoadStr(IDS_ERRORMSG_CANTOPENTRANSFERCHANNEL);
+          int P = CantOpenTransferChannelMessage.Pos(L"%");
+          if (DebugAlwaysTrue(P > 0))
+          {
+            CantOpenTransferChannelMessage.SetLength(P - 1);
+          }
+          if (ContainsText(FLastError->Strings[0], CantOpenTransferChannelMessage))
+          {
+            Disconnected = true;
+            // Close only later, as we still need to use FLast* fields
+            DoClose = true;
+          }
+        }
+
         MoreMessages->AddStrings(FLastError);
         // already cleared from WaitForReply, but GotReply can be also called
         // from Closed. then make sure that error from previous command not
@@ -3102,6 +3131,10 @@ UnicodeString __fastcall TFTPFileSystem::GotReply(unsigned int Reply, unsigned i
 
       if (Disconnected)
       {
+        if (DoClose)
+        {
+          Close();
+        }
         // for fatal error, it is essential that there is some message
         DebugAssert(!Error.IsEmpty());
         ExtException * E = new ExtException(Error, MoreMessages, true, HelpKeyword);
@@ -3944,7 +3977,7 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestVerifyCertificate(
 
       if (!VerificationResult)
       {
-        if (FTerminal->VerifyCertificate(CertificateStorageKey, FTerminal->SessionData->SiteKey,
+        if (FTerminal->VerifyCertificate(FtpsCertificateStorageKey, FTerminal->SessionData->SiteKey,
               FSessionInfo.CertificateFingerprint, CertificateSubject, Data.VerificationResult))
         {
           // certificate is trusted, but for not purposes of info dialog
@@ -4009,7 +4042,7 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestVerifyCertificate(
 
       if (RequestResult == 0)
       {
-        if (FTerminal->ConfirmCertificate(FSessionInfo, Data.VerificationResult, CertificateStorageKey, true))
+        if (FTerminal->ConfirmCertificate(FSessionInfo, Data.VerificationResult, FtpsCertificateStorageKey, true))
         {
           // FZ's VerifyCertDlg.cpp returns 2 for "cached", what we do nto distinguish here,
           // however FZAPI takes all non-zero values equally.

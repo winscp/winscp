@@ -8,6 +8,7 @@
 //---------------------------------------------------------------------------
 #include "stdafx.h"
 #include "AsyncSslSocketLayer.h"
+#include "FilezillaTools.h"
 
 #include <openssl/x509v3.h>
 #include <openssl/err.h>
@@ -53,6 +54,7 @@ CAsyncSslSocketLayer::CAsyncSslSocketLayer()
   m_Main = NULL;
   m_sessionid = NULL;
   m_sessionreuse = true;
+  m_sessionreuse_failed = false;
 
   FCertificate = NULL;
   FPrivateKey = NULL;
@@ -74,8 +76,7 @@ int CAsyncSslSocketLayer::InitSSL()
 
   if (!m_nSslRefCount)
   {
-    SSL_load_error_strings();
-    if (!SSL_library_init())
+    if (!OPENSSL_init_ssl(OPENSSL_INIT_LOAD_SSL_STRINGS | OPENSSL_INIT_LOAD_CRYPTO_STRINGS, NULL))
     {
       return SSL_FAILURE_INITSSL;
     }
@@ -636,9 +637,59 @@ BOOL CAsyncSslSocketLayer::Connect(LPCTSTR lpszHostAddress, UINT nHostPort)
   return res;
 }
 
+bool CAsyncSslSocketLayer::HandleSession(SSL_SESSION * Session)
+{
+  bool Result = false;
+  if (m_sessionreuse)
+  {
+    if (m_sessionid != Session)
+    {
+      if (m_sessionid == NULL)
+      {
+        if (SSL_session_reused(m_ssl))
+        {
+          LogSocketMessageRaw(FZ_LOG_PROGRESS, L"Session ID reused");
+        }
+        else
+        {
+          if ((m_Main != NULL) && !m_Main->m_sessionreuse_failed)
+          {
+            LogSocketMessageRaw(FZ_LOG_INFO, L"Main TLS session ID not reused, will not try again");
+            m_Main->m_sessionreuse_failed = true;
+          }
+        }
+        LogSocketMessageRaw(FZ_LOG_DEBUG, L"Saving session ID");
+      }
+      else
+      {
+        SSL_SESSION_free(m_sessionid);
+        LogSocketMessageRaw(FZ_LOG_INFO, L"Session ID changed");
+      }
+      m_sessionid = Session;
+      Result = true;
+    }
+  }
+  return Result;
+}
+
+int CAsyncSslSocketLayer::NewSessionCallback(struct ssl_st * Ssl, SSL_SESSION * Session)
+{
+  CAsyncSslSocketLayer * Layer = LookupLayer(Ssl);
+
+  int Result = 0;
+  // This is not called for TLS 1.2 and older when session is reused (so "Session ID reused" won't be logged).
+  // So for 1.2 and older, we call HandleSession from apps_ssl_info_callback as we always did.
+  if ((SSL_version(Ssl) >= TLS1_3_VERSION) && Layer->HandleSession(Session))
+  {
+    Result = 1;
+  }
+
+  return Result;
+}
+
 int CAsyncSslSocketLayer::InitSSLConnection(bool clientMode,
   CAsyncSslSocketLayer* main, bool sessionreuse,
-  int minTlsVersion, int maxTlsVersion,
+  CFileZillaTools * tools,
   void* pSslContext /*=0*/)
 {
   if (m_bUseSSL)
@@ -683,6 +734,9 @@ int CAsyncSslSocketLayer::InitSSLConnection(bool clientMode,
       USES_CONVERSION;
       SSL_CTX_set_verify(m_ssl_ctx, SSL_VERIFY_PEER, verify_callback);
       SSL_CTX_set_client_cert_cb(m_ssl_ctx, ProvideClientCert);
+      // https://www.mail-archive.com/openssl-users@openssl.org/msg86186.html
+      SSL_CTX_set_session_cache_mode(m_ssl_ctx, SSL_SESS_CACHE_CLIENT | SSL_SESS_CACHE_NO_INTERNAL_STORE | SSL_SESS_CACHE_NO_AUTO_CLEAR);
+      SSL_CTX_sess_set_new_cb(m_ssl_ctx, NewSessionCallback);
       CFileStatus Dummy;
       if (CFile::GetStatus((LPCTSTR)m_CertStorage, Dummy))
       {
@@ -707,8 +761,8 @@ int CAsyncSslSocketLayer::InitSSLConnection(bool clientMode,
     STACK_OF(SSL_CIPHER) * ciphers = SSL_get_ciphers(m_ssl);
     for (int i = 0; i < sk_SSL_CIPHER_num(ciphers); i++)
     {
-      SSL_CIPHER * cipher = sk_SSL_CIPHER_value(ciphers, i);
-      LogSocketMessageRaw(FZ_LOG_INFO, A2CT(cipher->name));
+      const SSL_CIPHER * cipher = sk_SSL_CIPHER_value(ciphers, i);
+      LogSocketMessageRaw(FZ_LOG_INFO, A2CT(SSL_CIPHER_get_name(cipher)));
     }
   }
 #endif
@@ -732,17 +786,7 @@ int CAsyncSslSocketLayer::InitSSLConnection(bool clientMode,
     return SSL_FAILURE_INITSSL;
   }
 
-  // See also TWebDAVFileSystem::InitSslSession
-  #define MASK_TLS_VERSION(VERSION, FLAG) ((minTlsVersion > VERSION) || (maxTlsVersion < VERSION) ? FLAG : 0)
-  long options =
-    SSL_OP_ALL |
-    MASK_TLS_VERSION(SSL_VERSION_SSL2, SSL_OP_NO_SSLv2) |
-    MASK_TLS_VERSION(SSL_VERSION_SSL3, SSL_OP_NO_SSLv3) |
-    MASK_TLS_VERSION(SSL_VERSION_TLS10, SSL_OP_NO_TLSv1) |
-    MASK_TLS_VERSION(SSL_VERSION_TLS11, SSL_OP_NO_TLSv1_1) |
-    MASK_TLS_VERSION(SSL_VERSION_TLS12, SSL_OP_NO_TLSv1_2);
-  // SSL_ctrl() with SSL_CTRL_OPTIONS adds flags (not sets)
-  SSL_ctrl(m_ssl, SSL_CTRL_OPTIONS, options, NULL);
+  tools->SetupSsl(m_ssl);
 
   //Init SSL connection
   void *ssl_sessionid = NULL;
@@ -750,7 +794,12 @@ int CAsyncSslSocketLayer::InitSSLConnection(bool clientMode,
   m_sessionreuse = sessionreuse;
   if ((m_Main != NULL) && m_sessionreuse)
   {
-    if (m_Main->m_sessionid != NULL)
+    if (m_Main->m_sessionid == NULL)
+    {
+      DebugFail();
+      SSL_set_session(m_ssl, NULL);
+    }
+    else if (!m_Main->m_sessionreuse_failed)
     {
       if (!SSL_set_session(m_ssl, m_Main->m_sessionid))
       {
@@ -892,6 +941,7 @@ void CAsyncSslSocketLayer::ResetSslSession()
     m_sessionid = NULL;
   }
   m_sessionreuse = true;
+  m_sessionreuse_failed = false;
 
   m_sCriticalSection.Unlock();
 }
@@ -933,12 +983,17 @@ BOOL CAsyncSslSocketLayer::ShutDown(int nHow /*=sends*/)
     }
 
     int res = SSL_shutdown(m_ssl);
-    if (res != -1)
+    if (res == 0)
     {
-      if (!res)
+      res = SSL_shutdown(m_ssl);
+      // While this should not be necessary, with IIS we get timeout otherwise
+      if (SSL_version(m_ssl) <= TLS1_2_VERSION)
       {
-        SSL_shutdown(m_ssl);
+        res = 0;
       }
+    }
+    if (res >= 0)
+    {
       if (ShutDownComplete())
         return ShutDownNext();
       else
@@ -1042,40 +1097,6 @@ void CAsyncSslSocketLayer::apps_ssl_info_callback(const SSL *s, int where, int r
   if (w & SSL_ST_CONNECT)
   {
     str = "TLS connect";
-    if (pLayer->m_sessionreuse)
-    {
-      SSL_SESSION * sessionid = SSL_get1_session(pLayer->m_ssl);
-      if (pLayer->m_sessionid != sessionid)
-      {
-        if (pLayer->m_sessionid == NULL)
-        {
-          if (SSL_session_reused(pLayer->m_ssl))
-          {
-            pLayer->LogSocketMessageRaw(FZ_LOG_PROGRESS, L"Session ID reused");
-          }
-          else
-          {
-            if ((pLayer->m_Main != NULL) && (pLayer->m_Main->m_sessionid != NULL))
-            {
-              pLayer->LogSocketMessageRaw(FZ_LOG_INFO, L"Main TLS session ID not reused, will not try again");
-              SSL_SESSION_free(pLayer->m_Main->m_sessionid);
-              pLayer->m_Main->m_sessionid = NULL;
-            }
-          }
-          pLayer->LogSocketMessageRaw(FZ_LOG_DEBUG, L"Saving session ID");
-        }
-        else
-        {
-          SSL_SESSION_free(pLayer->m_sessionid);
-          pLayer->LogSocketMessageRaw(FZ_LOG_INFO, L"Session ID changed");
-        }
-        pLayer->m_sessionid = sessionid;
-      }
-      else
-      {
-        SSL_SESSION_free(sessionid);
-      }
-    }
   }
   else if (w & SSL_ST_ACCEPT)
     str = "TLS accept";
@@ -1163,6 +1184,16 @@ void CAsyncSslSocketLayer::apps_ssl_info_callback(const SSL *s, int where, int r
   }
   if (where & SSL_CB_HANDSHAKE_DONE)
   {
+    // For 1.2 and older, session is always established at this point.
+    // For 1.3, session can be restarted later, so this is handled in NewSessionCallback.
+    if (SSL_version(pLayer->m_ssl) < TLS1_3_VERSION)
+    {
+      SSL_SESSION * sessionid = SSL_get1_session(pLayer->m_ssl);
+      if (!pLayer->HandleSession(sessionid))
+      {
+        SSL_SESSION_free(sessionid);
+      }
+    }
     int error = SSL_get_verify_result(pLayer->m_ssl);
     pLayer->DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, SSL_VERIFY_CERT, error);
     pLayer->m_bBlocking = TRUE;
@@ -1304,7 +1335,7 @@ BOOL CAsyncSslSocketLayer::GetPeerCertificateData(t_SslCertData &SslCertData, LP
 #endif
         }
         delete [] unicode;
-        CRYPTO_free(out);
+        OPENSSL_free(out);
       }
 
       switch(OBJ_obj2nid(pObject))
@@ -1413,7 +1444,7 @@ BOOL CAsyncSslSocketLayer::GetPeerCertificateData(t_SslCertData &SslCertData, LP
 #endif
         }
         delete [] unicode;
-        CRYPTO_free(out);
+        OPENSSL_free(out);
       }
 
       switch(OBJ_obj2nid(pObject))
@@ -1487,7 +1518,7 @@ BOOL CAsyncSslSocketLayer::GetPeerCertificateData(t_SslCertData &SslCertData, LP
   //Set date fields
 
   //Valid from
-  ASN1_TIME *pTime=X509_get_notBefore(pX509);
+  ASN1_TIME *pTime=X509_getm_notBefore(pX509);
   if (!pTime)
   {
     X509_free(pX509);
@@ -1503,7 +1534,7 @@ BOOL CAsyncSslSocketLayer::GetPeerCertificateData(t_SslCertData &SslCertData, LP
   }
 
   //Valid until
-  pTime = X509_get_notAfter(pX509);
+  pTime = X509_getm_notAfter(pX509);
   if (!pTime)
   {
     X509_free(pX509);
@@ -1617,14 +1648,12 @@ void CAsyncSslSocketLayer::PrintSessionInfo()
       if (0)
         ;
 #ifndef NO_RSA
-      else if (pkey->type == EVP_PKEY_RSA && pkey->pkey.rsa != NULL
-        && pkey->pkey.rsa->n != NULL)
-        sprintf(enc,  "%d bit RSA", BN_num_bits(pkey->pkey.rsa->n));
+      else if (EVP_PKEY_id(pkey) == EVP_PKEY_RSA)
+        sprintf(enc,  "%d bit RSA", EVP_PKEY_bits(pkey));
 #endif
 #ifndef NO_DSA
-      else if (pkey->type == EVP_PKEY_DSA && pkey->pkey.dsa != NULL
-          && pkey->pkey.dsa->p != NULL)
-        sprintf(enc,  "%d bit DSA", BN_num_bits(pkey->pkey.dsa->p));
+      else if (EVP_PKEY_id(pkey) == EVP_PKEY_DSA)
+        sprintf(enc,  "%d bit DSA", EVP_PKEY_bits(pkey));
 #endif
       EVP_PKEY_free(pkey);
     }
@@ -1761,7 +1790,7 @@ int CAsyncSslSocketLayer::ProvideClientCert(
   {
     Level = FZ_LOG_PROGRESS;
     *Certificate = X509_dup(Layer->FCertificate);
-    CRYPTO_add(&Layer->FPrivateKey->references, 1, CRYPTO_LOCK_EVP_PKEY);
+    EVP_PKEY_up_ref(Layer->FPrivateKey);
     *PrivateKey = Layer->FPrivateKey;
     Result = 1;
   }

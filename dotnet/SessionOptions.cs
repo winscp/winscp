@@ -46,6 +46,7 @@ namespace WinSCP
             RawSettings = new Dictionary<string,string>();
         }
 
+        public string Name { get { return GetName(); } set { _name = value; } }
         public Protocol Protocol { get { return _protocol; } set { SetProtocol(value); } }
         public string HostName { get; set; }
         public int PortNumber { get { return _portNumber; } set { SetPortNumber(value); } }
@@ -58,6 +59,7 @@ namespace WinSCP
         public int TimeoutInMilliseconds { get { return Tools.TimeSpanToMilliseconds(Timeout); } set { Timeout = Tools.MillisecondsToTimeSpan(value); } }
         public string PrivateKeyPassphrase { get { return GetPassword(_securePrivateKeyPassphrase); } set { SetPassword(ref _securePrivateKeyPassphrase, value); } }
         public SecureString SecurePrivateKeyPassphrase { get { return _securePrivateKeyPassphrase; } set { _securePrivateKeyPassphrase = value; } }
+        public string RootPath { get { return _rootPath; } set { SetRootPath(value); } }
 
         // SSH
         public string SshHostKeyFingerprint { get { return _sshHostKeyFingerprint; } set { SetSshHostKeyFingerprint(value); } }
@@ -72,7 +74,8 @@ namespace WinSCP
 
         // WebDAV
         public bool WebdavSecure { get; set; }
-        public string WebdavRoot { get { return _webdavRoot; } set { SetWebdavRoot(value); } }
+        [Obsolete("Use RootPath")]
+        public string WebdavRoot { get { return RootPath; } set { RootPath = value; } }
 
         // TLS
         public string TlsHostCertificateFingerprint { get { return _tlsHostCertificateFingerprint; } set { SetHostTlsCertificateFingerprint(value); } }
@@ -88,7 +91,7 @@ namespace WinSCP
         {
             if (url == null)
             {
-                throw new ArgumentNullException("url");
+                throw new ArgumentNullException(nameof(url));
             }
 
             url = url.Trim();
@@ -96,18 +99,18 @@ namespace WinSCP
             int index = url.IndexOf(protocolSeparator, StringComparison.OrdinalIgnoreCase);
             if (index < 0)
             {
-                throw new ArgumentException("Protocol not specified", "url");
+                throw new ArgumentException("Protocol not specified", nameof(url));
             }
 
             string protocol = url.Substring(0, index).Trim();
             if (!ParseProtocol(protocol))
             {
-                throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, "Unknown protocol {0}", protocol), "url");
+                throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, "Unknown protocol {0}", protocol), nameof(url));
             }
 
             url = url.Substring(index + protocolSeparator.Length).Trim();
             index = url.IndexOf('/');
-            WebdavRoot = null;
+            RootPath = null;
             if (index >= 0)
             {
                 string path = url.Substring(index).Trim();
@@ -116,17 +119,17 @@ namespace WinSCP
                 path = CutToChar(ref parameters, ';');
                 if (!string.IsNullOrEmpty(path) && (path != "/"))
                 {
-                    if (Protocol != Protocol.Webdav)
+                    if ((Protocol != Protocol.Webdav) && (Protocol != Protocol.S3))
                     {
-                        throw new ArgumentException("Root folder can be specified for WebDAV protocol only", "url");
+                        throw new ArgumentException("Root path can be specified for WebDAV and S3 protocols only", nameof(url));
                     }
-                    WebdavRoot = path;
+                    RootPath = path;
                 }
 
                 // forward compatibility
                 if (!string.IsNullOrEmpty(parameters))
                 {
-                    throw new ArgumentException("No session parameters are supported", "url");
+                    throw new ArgumentException("No session parameters are supported", nameof(url));
                 }
             }
 
@@ -154,7 +157,7 @@ namespace WinSCP
                 {
                     if (hostInfo[0] != ':')
                     {
-                        throw new ArgumentException("Unexpected syntax after ]", "url");
+                        throw new ArgumentException("Unexpected syntax after ]", nameof(url));
                     }
                     else
                     {
@@ -170,7 +173,7 @@ namespace WinSCP
 
             if (string.IsNullOrEmpty(HostName))
             {
-                throw new ArgumentException("No host name", "url");
+                throw new ArgumentException("No host name", nameof(url));
             }
 
             if (string.IsNullOrEmpty(portNumber))
@@ -182,7 +185,7 @@ namespace WinSCP
                 portNumber = UriUnescape(portNumber);
                 if (!int.TryParse(portNumber, 0, CultureInfo.InvariantCulture, out int number))
                 {
-                    throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, "{0} is not a valid port number", portNumber), "url");
+                    throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, "{0} is not a valid port number", portNumber), nameof(url));
                 }
                 else
                 {
@@ -217,11 +220,19 @@ namespace WinSCP
                     }
                     else if (parameterName.StartsWith(RawSettingsPrefix, StringComparison.OrdinalIgnoreCase))
                     {
-                        AddRawSettings(UriUnescape(parameterName.Substring(RawSettingsPrefix.Length)), parameter);
+                        parameterName = UriUnescape(parameterName.Substring(RawSettingsPrefix.Length));
+                        if (parameterName.Equals("name", StringComparison.OrdinalIgnoreCase))
+                        {
+                            Name = parameter;
+                        }
+                        else
+                        {
+                            AddRawSettings(parameterName, parameter);
+                        }
                     }
                     else
                     {
-                        throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, "Unsupported connection parameter {0}", parameterName), "url");
+                        throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, "Unsupported connection parameter {0}", parameterName), nameof(url));
                     }
                 }
             }
@@ -381,13 +392,13 @@ namespace WinSCP
             }
         }
 
-        private void SetWebdavRoot(string value)
+        private void SetRootPath(string value)
         {
             if (!string.IsNullOrEmpty(value) && (value[0] != '/'))
             {
-                throw new ArgumentException("WebDAV root path has to start with slash");
+                throw new ArgumentException("Root path has to start with a slash");
             }
-            _webdavRoot = value;
+            _rootPath = value;
         }
 
         private static void SetPassword(ref SecureString securePassword, string value)
@@ -427,6 +438,36 @@ namespace WinSCP
             }
         }
 
+        private string GetName()
+        {
+            string result;
+            if (_name != null)
+            {
+                result = _name;
+            }
+            else
+            {
+                if (!string.IsNullOrEmpty(HostName) && !string.IsNullOrEmpty(UserName))
+                {
+                    result = $"{UserName}@{HostName}";
+                }
+                else if (!string.IsNullOrEmpty(HostName))
+                {
+                    result = HostName;
+                }
+                else
+                {
+                    result = "session";
+                }
+            }
+            return result;
+        }
+
+        public override string ToString()
+        {
+            return Name;
+        }
+
         private SecureString _securePassword;
         private SecureString _secureNewPassword;
         private SecureString _securePrivateKeyPassphrase;
@@ -434,14 +475,15 @@ namespace WinSCP
         private string _tlsHostCertificateFingerprint;
         private TimeSpan _timeout;
         private int _portNumber;
-        private string _webdavRoot;
+        private string _rootPath;
         private Protocol _protocol;
+        private string _name;
 
         private const string _listPattern = @"{0}(;{0})*";
-        private const string _sshHostKeyPattern = @"((ssh-rsa|ssh-dss|ssh-ed25519|ecdsa-sha2-nistp(256|384|521))( |-))?(\d+ )?(([0-9a-f]{2}(:|-)){15}[0-9a-f]{2}|[0-9a-zA-Z+/]{43}=)";
+        private const string _sshHostKeyPattern = @"((ssh-rsa|ssh-dss|ssh-ed25519|ecdsa-sha2-nistp(256|384|521))( |-))?(\d+ )?(([0-9a-fA-F]{2}(:|-)){15}[0-9a-fA-F]{2}|[0-9a-zA-Z+/\-_]{43}=?)";
         private static readonly Regex _sshHostKeyRegex =
             new Regex(string.Format(CultureInfo.InvariantCulture, _listPattern, _sshHostKeyPattern));
-        private const string _tlsCertificatePattern = @"([0-9a-f]{2}:){19}[0-9a-f]{2}";
+        private const string _tlsCertificatePattern = @"([0-9a-fA-F]{2}[:\-]){19}[0-9a-fA-F]{2}";
         private static readonly Regex _tlsCertificateRegex =
             new Regex(string.Format(CultureInfo.InvariantCulture, _listPattern, _tlsCertificatePattern));
     }

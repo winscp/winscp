@@ -167,7 +167,9 @@ var
 begin
   Result := '';
   for Index := 0 to Count-1 do
+  begin
     Result := Format('%s;%d,%d', [Result, SaveDimension(Widths[Index]), Integer(Visible[Index])]);
+  end;
   Delete(Result, 1, 1);
 end;
 
@@ -325,6 +327,7 @@ var
   OrderStr: string;
   PixelsPerInch: Integer;
 begin
+  // TFileFindDialog uses / as separator of its settings
   S := CutToChar(Value, '|', True);
   WidthsStr := CutToChar(S, '@', True);
   PixelsPerInch := LoadPixelsPerInch(S, FListView);
@@ -507,8 +510,14 @@ end;
 function TCustomListViewColProperties.GetWidths(Index: Integer): Integer;
 begin
   CheckBounds(Index);
-  if ColumnsExists and Visible[Index] then Result := GetColumn(Index).Width
-    else Result := GetProperties(Index).Width;
+  if ColumnsExists and Visible[Index] then
+  begin
+    Result := GetColumn(Index).Width;
+  end
+    else
+  begin
+    Result := GetProperties(Index).Width;
+  end;
 end;
 
 procedure TCustomListViewColProperties.RecreateColumns;

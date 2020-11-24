@@ -11,9 +11,10 @@
 // WM_WINSCP_USER + 6 was WM_LOG_UPDATE
 #define WM_MANAGES_CAPTION (WM_WINSCP_USER + 7)
 #define WM_WANTS_MOUSEWHEEL (WM_WINSCP_USER + 8)
-#define WM_CAN_DISPLAY_UPDATES (WM_WINSCP_USER + 10)
+#define WM_CAN_DISPLAY_UPDATES (WM_WINSCP_USER + 9)
 // CM_DPICHANGED + 10 (packages/my/PasTools.pas)
 #define WM_WANTS_MOUSEWHEEL_INACTIVE (WM_WINSCP_USER + 11)
+#define WM_WANTS_SCREEN_TIPS (WM_WINSCP_USER + 12)
 //---------------------------------------------------------------------------
 #define C(Property) (Property != rhc.Property) ||
 struct TSynchronizeChecklistConfiguration
@@ -62,6 +63,8 @@ private:
   bool FCopyShortCutHintShown;
   bool FHttpForWebDAV;
   TNotifyEvent FOnMasterPasswordRecrypt;
+  UnicodeString FDefaultFixedWidthFontName;
+  int FDefaultFixedWidthFontSize;
 
   void __fastcall SetInterface(TInterface value);
   void __fastcall SetHistory(const UnicodeString Index, TStrings * value);

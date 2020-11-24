@@ -79,6 +79,7 @@ __published:
   void __fastcall SelectAllActionExecute(TObject *Sender);
   void __fastcall DownloadActionExecute(TObject *Sender);
   void __fastcall EditActionExecute(TObject *Sender);
+  void __fastcall FileViewCompare(TObject *Sender, TListItem *Item1, TListItem *Item2, int Data, int &Compare);
 
 public:
   __fastcall TFileFindDialog(TComponent * Owner);
@@ -135,6 +136,8 @@ private:
   void __fastcall FileDownloadFinished(const UnicodeString & FileName, bool Success);
   TListItem * __fastcall FileOperationFinished(const UnicodeString & FileName);
   void __fastcall FileListOperation(TFileListOperationEvent Operation, TFileOperationFinishedEvent OnFileOperationFinished);
+  TIEListViewColProperties * GetColProperties();
+  int FilesCompare(const TRemoteFile * File1, const TRemoteFile * File2);
 
   INTERFACE_HOOK;
 };

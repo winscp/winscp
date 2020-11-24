@@ -246,6 +246,11 @@ extern "C" {
  */
 #define S3_DEFAULT_REGION                  "us-east-1"
 
+// WINSCP
+// according to https://docs.aws.amazon.com/IAM/latest/APIReference/API_AccessKey.html max length is nowadays 128
+#define S3_MAX_ACCESS_KEY_ID_LENGTH 128
+#define S3_MAX_REGION_LENGTH 32
+
 
 /** **************************************************************************
  * Enumerations
@@ -703,6 +708,7 @@ typedef struct S3BucketContext
      * The name of the host to connect to when making S3 requests.  If set to
      * NULL, the default S3 hostname passed in to S3_initialize will be used.
      **/
+    // WINSCP: Can contain port number
     const char *hostName;
 
     /**
@@ -1625,7 +1631,7 @@ S3Status S3_create_request_context(S3RequestContext **requestContextReturn);
  * for curl_multi_socket_action CURLM handles that will be managed by libs3 user.
  * This type of handles offer better performance for applications with large
  * number of simultaneous connections. For details, see MULTI_SOCKET chapter here:
- * https://curl.haxx.se/libcurl/c/libcurl-multi.html
+ * https://curl.se/libcurl/c/libcurl-multi.html
  *
  * In this mode libs3 user will
  *  - create its own CURLM using curl_multi_init()
@@ -1830,6 +1836,7 @@ void S3_set_request_context_verify_peer(S3RequestContext *requestContext,
  * S3 Utility Functions
  ************************************************************************** **/
 
+ #ifndef WINSCP
 /**
  * Generates an HTTP authenticated query string, which may then be used by
  * a browser (or other web client) to issue the request.  The request is
@@ -1861,6 +1868,7 @@ S3Status S3_generate_authenticated_query_string
     (char *buffer, const S3BucketContext *bucketContext,
      const char *key, int expires, const char *resource,
      const char *httpMethod);
+#endif
 
 
 /** **************************************************************************

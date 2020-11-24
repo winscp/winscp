@@ -111,7 +111,7 @@ protected:
     TRemoteProperties & Properties);
   void __fastcall StoreRemoteToken(unsigned int ID, const UnicodeString & Text,
     const TRemoteTokenList * List, TRemoteToken & Result);
-  void __fastcall ResolveRemoteToken(
+  void __fastcall ValidateRemoteToken(
     const TRemoteToken & Orig, int Message, TComboBox * ComboBox,
     const TRemoteTokenList * List);
   void __fastcall UpdateControls();

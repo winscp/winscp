@@ -21,7 +21,7 @@ namespace WinSCP
         public string Owner { get; internal set; }
         public string Group { get; internal set; }
 
-        public bool IsDirectory { get { return (Char.ToUpper(FileType, CultureInfo.InvariantCulture) == 'D'); } }
+        public bool IsDirectory { get { return IsDirectoryFileType(FileType); } }
         public bool IsThisDirectory { get { return IsDirectory && (Name == "."); } }
         public bool IsParentDirectory { get { return IsDirectory && (Name == ".."); } }
 
@@ -42,6 +42,11 @@ namespace WinSCP
         private void SetLength32(int value)
         {
             Length = value;
+        }
+
+        internal static bool IsDirectoryFileType(char fileType)
+        {
+            return (char.ToUpper(fileType, CultureInfo.InvariantCulture) == 'D');
         }
     }
 }

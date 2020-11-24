@@ -25,7 +25,7 @@ bool __fastcall HasGSSAPI(UnicodeString CustomPath);
 void __fastcall AES256EncodeWithMAC(char * Data, size_t Len, const char * Password,
   size_t PasswordLen, const char * Salt);
 //---------------------------------------------------------------------------
-UnicodeString __fastcall NormalizeFingerprint(UnicodeString Fingerprint);
+void __fastcall NormalizeFingerprint(UnicodeString & Fingerprint, UnicodeString & KeyName);
 UnicodeString __fastcall KeyTypeFromFingerprint(UnicodeString Fingerprint);
 //---------------------------------------------------------------------------
 UnicodeString __fastcall GetPuTTYVersion();
@@ -34,9 +34,10 @@ UnicodeString __fastcall Sha256(const char * Data, size_t Size);
 //---------------------------------------------------------------------------
 void __fastcall DllHijackingProtection();
 //---------------------------------------------------------------------------
-UnicodeString __fastcall ParseOpenSshPubLine(const UnicodeString & Line, const struct ssh_signkey *& Algorithm);
+UnicodeString __fastcall ParseOpenSshPubLine(const UnicodeString & Line, const struct ssh_keyalg *& Algorithm);
 //---------------------------------------------------------------------------
 UnicodeString __fastcall GetKeyTypeHuman(const UnicodeString & KeyType);
+UnicodeString __fastcall GetSsh1KeyType();
 //---------------------------------------------------------------------------
 bool IsOpenSSH(const UnicodeString & SshImplementation);
 //---------------------------------------------------------------------------
@@ -44,5 +45,13 @@ TStrings * SshCipherList();
 TStrings * SshKexList();
 TStrings * SshHostKeyList();
 TStrings * SshMacList();
+//---------------------------------------------------------------------------
+class TSessionData;
+void SaveAsPutty(const UnicodeString & Name, TSessionData * Data);
+class THierarchicalStorage;
+void WritePuttySettings(THierarchicalStorage * Storage, const UnicodeString & Settings);
+void SavePuttyDefaults(const UnicodeString & Name);
+//---------------------------------------------------------------------------
+bool RandomSeedExists();
 //---------------------------------------------------------------------------
 #endif

@@ -508,13 +508,13 @@ void SetupSsl(ssl_st * Ssl, TTlsVersion MinTlsVersion, TTlsVersion MaxTlsVersion
 {
   #define MASK_TLS_VERSION(VERSION, FLAG) ((MinTlsVersion > VERSION) || (MaxTlsVersion < VERSION) ? FLAG : 0)
   int Options =
-    MASK_TLS_VERSION(ssl2, SSL_OP_NO_SSLv2) |
     MASK_TLS_VERSION(ssl3, SSL_OP_NO_SSLv3) |
     MASK_TLS_VERSION(tls10, SSL_OP_NO_TLSv1) |
     MASK_TLS_VERSION(tls11, SSL_OP_NO_TLSv1_1) |
-    MASK_TLS_VERSION(tls12, SSL_OP_NO_TLSv1_2);
-  // SSL_ctrl() with SSL_CTRL_OPTIONS adds flags (not sets)
-  SSL_ctrl(Ssl, SSL_CTRL_OPTIONS, Options, NULL);
+    MASK_TLS_VERSION(tls12, SSL_OP_NO_TLSv1_2) |
+    MASK_TLS_VERSION(tls13, SSL_OP_NO_TLSv1_3);
+  // adds flags (not sets)
+  SSL_set_options(Ssl, Options);
 }
 //---------------------------------------------------------------------------
 void UpdateNeonDebugMask()

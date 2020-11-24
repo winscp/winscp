@@ -73,10 +73,10 @@ void __fastcall TCustomWinConfiguration::DefaultHistory()
   // If we need to solve this for another history, we should introduce
   // a generic solution, like language-specific history ("SpeedLimitEN")
   Strings->Add(LoadStr(SPEED_UNLIMITED));
-  unsigned long Speed = 8192;
-  while (Speed >= 8)
+  unsigned long Speed = MaxSpeed;
+  while (Speed >= MinSpeed)
   {
-    Strings->Add(IntToStr(int(Speed)));
+    Strings->Add(SetSpeedLimit(Speed));
     Speed = Speed / 2;
   }
   FHistory->AddObject(L"SpeedLimit", Strings.release());
@@ -86,6 +86,8 @@ void __fastcall TCustomWinConfiguration::DefaultHistory()
   Strings->Add(FormatCommand(DefaultPuttyPath, L"-t -m \"%TEMP%\\putty.txt\" !`cmd.exe /c echo cd '!/' ; /bin/bash -login > \"%TEMP%\\putty.txt\"`"));
   Strings->Add(KittyExecutable);
   Strings->Add(FORMAT(L"%s -cmd \"cd '!/'\" !U@!@ -P !# -title \"!N\"", (KittyExecutable)));
+  Strings->Add(L"%SystemRoot%\\Sysnative\\OpenSSH\\ssh.exe !U@!@ -p !#");
+  Strings->Add(L"%SystemRoot%\\Sysnative\\OpenSSH\\ssh.exe !U@!@ -p !# -t \"cd !/ ; /bin/bash\"");
   FHistory->AddObject(L"PuttyPath", Strings.release());
 }
 //---------------------------------------------------------------------------
@@ -113,7 +115,7 @@ void __fastcall TCustomWinConfiguration::Default()
   FSynchronizeChecklist.WindowParams = L"0;" + FormatDefaultWindowParams(ChecklistWidth, ChecklistHeight);
   FSynchronizeChecklist.ListParams = L"1;1|150,1;100,1;80,1;130,1;25,1;100,1;80,1;130,1;@" + SaveDefaultPixelsPerInch() + L"|0;1;2;3;4;5;6;7";
   FFindFile.WindowParams = FormatDefaultWindowSize(646, 481);
-  FFindFile.ListParams = L"3;1|125,1;181,1;80,1;122,1;@" + SaveDefaultPixelsPerInch() + L"|0;1;2;3";
+  FFindFile.ListParams = L"1;1|125,1;181,1;80,1;122,1;@" + SaveDefaultPixelsPerInch() + L"|0;1;2;3|/1";
   FConsoleWin.WindowSize = FormatDefaultWindowSize(570, 430);
   FLoginDialog.WindowSize = FormatDefaultWindowSize(640, 430);
   FLoginDialog.SiteSearch = isName;
@@ -123,6 +125,8 @@ void __fastcall TCustomWinConfiguration::Default()
   FFontColors = L"";
   FCopyShortCutHintShown = false;
   FHttpForWebDAV = false;
+  FDefaultFixedWidthFontName = L"";
+  FDefaultFixedWidthFontSize = 0;
 
   DefaultHistory();
 }
@@ -141,10 +145,9 @@ void __fastcall TCustomWinConfiguration::Saved()
 }
 //---------------------------------------------------------------------------
 // duplicated from core\configuration.cpp
-#define LASTELEM(ELEM) \
-  ELEM.SubString(ELEM.LastDelimiter(L".>")+1, ELEM.Length() - ELEM.LastDelimiter(L".>"))
 #define BLOCK(KEY, CANCREATE, BLOCK) \
-  if (Storage->OpenSubKey(KEY, CANCREATE, true)) try { BLOCK } __finally { Storage->CloseSubKey(); }
+  if (Storage->OpenSubKeyPath(KEY, CANCREATE)) try { BLOCK } __finally { Storage->CloseSubKeyPath(); }
+#define KEY(TYPE, VAR) KEYEX(TYPE, VAR, PropertyToKey(TEXT(#VAR)))
 #define REGCONFIG(CANCREATE) \
   BLOCK(L"Interface", CANCREATE, \
     KEY(Integer,  Interface); \
@@ -154,6 +157,8 @@ void __fastcall TCustomWinConfiguration::Saved()
     KEY(String,   FontColors); \
     KEY(Bool,     CopyShortCutHintShown); \
     KEY(Bool,     HttpForWebDAV); \
+    KEY(String,   FDefaultFixedWidthFontName); \
+    KEY(Integer,  FDefaultFixedWidthFontSize); \
   ) \
   BLOCK(L"Interface\\SynchronizeChecklist", CANCREATE, \
     KEY(String,   SynchronizeChecklist.WindowParams); \
@@ -177,9 +182,11 @@ void __fastcall TCustomWinConfiguration::SaveData(
   TGUIConfiguration::SaveData(Storage, All);
 
   // duplicated from core\configuration.cpp
-  #define KEY(TYPE, VAR) Storage->Write ## TYPE(LASTELEM(UnicodeString(TEXT(#VAR))), VAR)
+  #define KEYEX(TYPE, VAR, NAME) Storage->Write ## TYPE(NAME, VAR)
+  #pragma warn -eas
   REGCONFIG(true);
-  #undef KEY
+  #pragma warn +eas
+  #undef KEYEX
 
   if (FHistory->Count > 0)
   {
@@ -270,11 +277,11 @@ void __fastcall TCustomWinConfiguration::LoadData(
   FAppliedInterface = FInterface;
 
   // duplicated from core\configuration.cpp
-  #define KEY(TYPE, VAR) VAR = Storage->Read ## TYPE(LASTELEM(UnicodeString(TEXT(#VAR))), VAR)
+  #define KEYEX(TYPE, VAR, NAME) VAR = Storage->Read ## TYPE(NAME, VAR)
   #pragma warn -eas
   REGCONFIG(false);
   #pragma warn +eas
-  #undef KEY
+  #undef KEYEX
 
   DefaultHistory();
   if (Storage->OpenSubKey(L"History", false))
@@ -510,7 +517,11 @@ UnicodeString __fastcall TCustomWinConfiguration::GetDefaultFixedWidthFontName()
 {
   // These are defaults for respective version of Windows Notepad
   UnicodeString Result;
-  if (IsWin8())
+  if (!FDefaultFixedWidthFontName.IsEmpty())
+  {
+    Result = FDefaultFixedWidthFontName;
+  }
+  else if (IsWin8())
   {
     Result = L"Consolas";
   }
@@ -525,7 +536,11 @@ int __fastcall TCustomWinConfiguration::GetDefaultFixedWidthFontSize()
 {
   // These are defaults for respective version of Windows Notepad
   int Result;
-  if (IsWin8())
+  if (FDefaultFixedWidthFontSize != 0)
+  {
+    Result = FDefaultFixedWidthFontSize;
+  }
+  else if (IsWin8())
   {
     Result = 11;
   }

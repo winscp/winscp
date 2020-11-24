@@ -25,9 +25,9 @@
 
 #ifdef WIN32
 
-#define NEON_VERSION "0.30.2"
+#define NEON_VERSION "0.31.1"
 #define NE_VERSION_MAJOR (0)
-#define NE_VERSION_MINOR (30)
+#define NE_VERSION_MINOR (31)
 
 #define HAVE_ERRNO_H
 #define HAVE_LIMITS_H
@@ -97,6 +97,8 @@
 #ifndef USE_GETADDRINFO
 #define in_addr_t                       unsigned int
 #endif
+
+#define HAVE_CRYPTO_SET_IDPTR_CALLBACK
 
 typedef int socklen_t;
 

@@ -4,7 +4,7 @@
 //---------------------------------------------------------------------------
 #include <vector>
 //---------------------------------------------------------------------------
-class TTerminal;
+class TManagedTerminal;
 class TTerminalQueue;
 //---------------------------------------------------------------------------
 struct TEditedFileData
@@ -15,7 +15,7 @@ struct TEditedFileData
   UnicodeString LocalRootDirectory;
   UnicodeString RemoteDirectory;
   bool ForceText;
-  TTerminal * Terminal;
+  TManagedTerminal * Terminal;
   TSessionData * SessionData;
   TTerminalQueue * Queue;
   UnicodeString SessionName;

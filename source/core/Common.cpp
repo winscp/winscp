@@ -35,7 +35,6 @@ const wchar_t TokenReplacement = wchar_t(true);
 const UnicodeString LocalInvalidChars(TraceInitStr(L"/\\:*?\"<>|"));
 const UnicodeString PasswordMask(TraceInitStr(L"***"));
 const UnicodeString Ellipsis(TraceInitStr(L"..."));
-const UnicodeString EmptyString(TraceInitStr(L"\1\1\1")); // magic
 //---------------------------------------------------------------------------
 UnicodeString ReplaceChar(UnicodeString Str, wchar_t A, wchar_t B)
 {
@@ -442,6 +441,46 @@ bool IsNumber(const UnicodeString Str)
 {
   int Value;
   return TryStrToInt(Str, Value);
+}
+//---------------------------------------------------------------------------
+UnicodeString Base64ToUrlSafe(const UnicodeString & S)
+{
+  UnicodeString Result = S;
+  while (EndsStr(L"=", Result))
+  {
+    Result.SetLength(Result.Length() - 1);
+  }
+  // See https://en.wikipedia.org/wiki/Base64#Implementations_and_history
+  Result = ReplaceChar(Result, L'+', L'-');
+  Result = ReplaceChar(Result, L'/', L'_');
+  return Result;
+}
+//---------------------------------------------------------------------------
+const wchar_t NormalizedFingerprintSeparator = L'-';
+//---------------------------------------------------------------------------
+UnicodeString MD5ToUrlSafe(const UnicodeString & S)
+{
+  return ReplaceChar(S, L':', NormalizedFingerprintSeparator);
+}
+//---------------------------------------------------------------------------
+bool SameChecksum(const UnicodeString & AChecksum1, const UnicodeString & AChecksum2, bool Base64)
+{
+  UnicodeString Checksum1(AChecksum1);
+  UnicodeString Checksum2(AChecksum2);
+  bool Result;
+  if (Base64)
+  {
+    Checksum1 = Base64ToUrlSafe(Checksum1);
+    Checksum2 = Base64ToUrlSafe(Checksum2);
+    Result = SameStr(Checksum1, Checksum2);
+  }
+  else
+  {
+    Checksum1 = MD5ToUrlSafe(Checksum1);
+    Checksum2 = MD5ToUrlSafe(Checksum2);
+    Result = SameText(Checksum1, Checksum2);
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall SystemTemporaryDirectory()
@@ -863,6 +902,24 @@ int __fastcall CompareLogicalText(
   {
     return lstrcmpi(S1.c_str(), S2.c_str());
   }
+}
+//---------------------------------------------------------------------------
+int __fastcall CompareNumber(__int64 Value1, __int64 Value2)
+{
+  int Result;
+  if (Value1 < Value2)
+  {
+    Result = -1;
+  }
+  else if (Value1 == Value2)
+  {
+    Result = 0;
+  }
+  else
+  {
+    Result = 1;
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 bool ContainsTextSemiCaseSensitive(const UnicodeString & Text, const UnicodeString & SubText)
@@ -2709,9 +2766,9 @@ UnicodeString __fastcall DoEncodeUrl(UnicodeString S, const UnicodeString & DoNo
   return S;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall EncodeUrlString(UnicodeString S, const UnicodeString & DoNotEncode)
+UnicodeString __fastcall EncodeUrlString(UnicodeString S)
 {
-  return DoEncodeUrl(S, DoNotEncode);
+  return DoEncodeUrl(S, UnicodeString());
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall EncodeUrlPath(UnicodeString S)
@@ -3212,6 +3269,7 @@ void __fastcall ParseCertificate(const UnicodeString & Path,
 {
   Certificate = NULL;
   PrivateKey = NULL;
+  WrongPassphrase = false;
   bool HasPassphrase = !Passphrase.IsEmpty();
 
   FILE * File;
@@ -3225,17 +3283,10 @@ void __fastcall ParseCertificate(const UnicodeString & Path,
 
   if (Pkcs12 != NULL)
   {
-    // Modeled after OPENSSL_asc2uni (reversed bitness to what UnicodeString/wchar_t use)
-    std::vector<char> Buf;
-    Buf.resize(Passphrase.Length() * sizeof(wchar_t) + sizeof(wchar_t));
-    for (int Index = 0; Index <= Passphrase.Length(); Index++)
-    {
-      Buf[(Index * 2)] = (Passphrase.c_str()[Index] >> 8);
-      Buf[(Index * 2) + 1] = (Passphrase.c_str()[Index] & 0x00FF);
-    }
+    UTF8String PassphraseUtf(Passphrase);
 
     bool Result =
-      (PKCS12_parse(Pkcs12, &Buf[0], &PrivateKey, &Certificate, NULL) == 1);
+      (PKCS12_parse(Pkcs12, PassphraseUtf.c_str(), &PrivateKey, &Certificate, NULL) == 1);
     PKCS12_free(Pkcs12);
 
     if (!Result)
@@ -3927,7 +3978,7 @@ UnicodeString __fastcall AssemblyAddRawSettings(
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall LoadScriptFromFile(UnicodeString FileName, TStrings * Lines)
+void __fastcall LoadScriptFromFile(UnicodeString FileName, TStrings * Lines, bool FallbackToAnsi)
 {
   std::auto_ptr<TFileStream> Stream(new TFileStream(ApiPath(FileName), fmOpenRead | fmShareDenyWrite));
   Lines->DefaultEncoding = TEncoding::UTF8;
@@ -3937,7 +3988,17 @@ void __fastcall LoadScriptFromFile(UnicodeString FileName, TStrings * Lines)
   }
   catch (EEncodingError & E)
   {
-    throw ExtException(LoadStr(TEXT_FILE_ENCODING), &E);
+    if (FallbackToAnsi)
+    {
+      Lines->DefaultEncoding = TEncoding::ANSI;
+      Lines->Clear();
+      Stream->Position = 0;
+      Lines->LoadFromStream(Stream.get());
+    }
+    else
+    {
+      throw ExtException(LoadStr(TEXT_FILE_ENCODING), &E);
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -3964,21 +4025,11 @@ UnicodeString __fastcall GetFileMimeType(const UnicodeString & FileName)
   return Result;
 }
 //---------------------------------------------------------------------------
-UnicodeString NormalizeString(const UnicodeString & S)
-{
-  UnicodeString Result = S;
-  if (Result == EmptyString)
-  {
-    Result = UnicodeString();
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
 TStrings * TlsCipherList()
 {
   // OpenSSL initialization happens in NeonInitialize
   std::unique_ptr<TStrings> Result(new TStringList());
-  const SSL_METHOD * Method = TLSv1_client_method();
+  const SSL_METHOD * Method = DTLS_client_method();
   SSL_CTX * Ctx = SSL_CTX_new(Method);
   SSL * Ssl = SSL_new(Ctx);
 
@@ -3996,4 +4047,22 @@ TStrings * TlsCipherList()
   while (CipherName != NULL);
 
   return Result.release();
+}
+//---------------------------------------------------------------------------
+void SetStringValueEvenIfEmpty(TStrings * Strings, const UnicodeString & Name, const UnicodeString & Value)
+{
+  if (Value.IsEmpty())
+  {
+    int Index = Strings->IndexOfName(Name);
+    if (Index < 0)
+    {
+      Index = Strings->Add(L"");
+    }
+    UnicodeString Line = Name + Strings->NameValueSeparator;
+    Strings->Strings[Index] = Line;
+  }
+  else
+  {
+    Strings->Values[Name] = Value;
+  }
 }

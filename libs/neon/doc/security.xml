@@ -70,7 +70,7 @@
       
       <listitem>
         <para>the subjectAltName extension of the certificate is used
-        for comparision against the expected identity, in preference
+        for comparison against the expected identity, in preference
         to the Subject name's commonName attribute.</para>
       </listitem>
 

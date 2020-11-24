@@ -30,22 +30,12 @@
 # include <limits.h>
 #endif
 
+#ifdef HAVE_OPENSSL
+#include <openssl/md5.h>
+#endif
+
 #include "ne_md5.h"
 #include "ne_string.h" /* for NE_ASC2HEX */
-
-#define md5_process_block ne_md5_process_block
-#define md5_process_bytes ne_md5_process_bytes
-#define md5_finish_ctx ne_md5_finish_ctx
-#define md5_read_ctx ne_md5_read_ctx
-#define md5_stream ne_md5_stream
-#define md5_ctx ne_md5_ctx
-
-#ifdef WORDS_BIGENDIAN
-# define SWAP(n)							\
-    (((n) << 24) | (((n) & 0xff00) << 8) | (((n) >> 8) & 0xff00) | ((n) >> 24))
-#else
-# define SWAP(n) (n)
-#endif
 
 #if SIZEOF_INT == 4
 typedef unsigned int md5_uint32;
@@ -55,9 +45,27 @@ typedef unsigned long md5_uint32;
 # error "Cannot determine unsigned 32-bit data type."
 #endif
 
+#define md5_process_block ne_md5_process_block
+#define md5_process_bytes ne_md5_process_bytes
+#define md5_finish_ctx ne_md5_finish_ctx
+#define md5_read_ctx ne_md5_read_ctx
+#define md5_stream ne_md5_stream
+#define md5_ctx ne_md5_ctx
+
+
+#ifdef WORDS_BIGENDIAN
+# define SWAP(n)							\
+    (((n) << 24) | (((n) & 0xff00) << 8) | (((n) >> 8) & 0xff00) | ((n) >> 24))
+#else
+# define SWAP(n) (n)
+#endif
+
 /* Structure to save state of computation between the single steps.  */
 struct md5_ctx
 {
+#ifdef HAVE_OPENSSL
+  MD5_CTX ctx;
+#else
   md5_uint32 A;
   md5_uint32 B;
   md5_uint32 C;
@@ -66,8 +74,10 @@ struct md5_ctx
   md5_uint32 total[2];
   md5_uint32 buflen;
   char buffer[128];
+#endif
 };
 
+#ifndef HAVE_OPENSSL
 /* This array contains the bytes used to pad the buffer to the next
    64-byte boundary.  (RFC 1321, 3.1: Step 1)  */
 static const unsigned char fillbuf[64] = { 0x80, 0 /* , 0, 0, ...  */ };
@@ -113,22 +123,6 @@ ne_md5_destroy_ctx(struct ne_md5_ctx *ctx)
   ne_free(ctx);
 }
 
-/* Put result from CTX in first 16 bytes following RESBUF.  The result
-   must be in little endian byte order.
-
-   IMPORTANT: On some systems it is required that RESBUF is correctly
-   aligned for a 32 bits value.  */
-void *
-md5_read_ctx (const struct md5_ctx *ctx, void *resbuf)
-{
-  ((md5_uint32 *) resbuf)[0] = SWAP (ctx->A);
-  ((md5_uint32 *) resbuf)[1] = SWAP (ctx->B);
-  ((md5_uint32 *) resbuf)[2] = SWAP (ctx->C);
-  ((md5_uint32 *) resbuf)[3] = SWAP (ctx->D);
-
-  return resbuf;
-}
-
 /* Process the remaining bytes in the internal buffer and the usual
    prolog according to the standard and write the result to RESBUF.
 
@@ -162,60 +156,6 @@ md5_finish_ctx (struct md5_ctx *ctx, void *resbuf)
   md5_process_block (ctx->buffer, bytes + pad + 8, ctx);
 
   return md5_read_ctx (ctx, resbuf);
-}
-
-/* Compute MD5 message digest for bytes read from STREAM.  The
-   resulting message digest number will be written into the 16 bytes
-   beginning at RESBLOCK.  */
-int
-md5_stream (FILE *stream, void *resblock)
-{
-  /* Important: BLOCKSIZE must be a multiple of 64.  */
-#define BLOCKSIZE 4096
-  struct md5_ctx ctx;
-  char buffer[BLOCKSIZE + 72];
-  size_t sum;
-
-  /* Initialize the computation context.  */
-  md5_init_ctx (&ctx);
-
-  /* Iterate over full file contents.  */
-  while (1)
-    {
-      /* We read the file in blocks of BLOCKSIZE bytes.  One call of the
-	 computation function processes the whole buffer so that with the
-	 next round of the loop another block can be read.  */
-      size_t n;
-      sum = 0;
-
-      /* Read block.  Take care for partial reads.  */
-      do
-	{
-	  n = fread (buffer + sum, 1, BLOCKSIZE - sum, stream);
-
-	  sum += n;
-	}
-      while (sum < BLOCKSIZE && n != 0);
-      if (n == 0 && ferror (stream))
-        return 1;
-
-      /* If end of file is reached, end the loop.  */
-      if (n == 0)
-	break;
-
-      /* Process buffer with BLOCKSIZE bytes.  Note that
-			BLOCKSIZE % 64 == 0
-       */
-      md5_process_block (buffer, BLOCKSIZE, &ctx);
-    }
-
-  /* Add the last bytes if necessary.  */
-  if (sum > 0)
-    md5_process_bytes (buffer, sum, &ctx);
-
-  /* Construct result in desired memory.  */
-  md5_finish_ctx (&ctx, resblock);
-  return 0;
 }
 
 void
@@ -427,6 +367,133 @@ md5_process_block (const void *buffer, size_t len, struct md5_ctx *ctx)
   ctx->B = B;
   ctx->C = C;
   ctx->D = D;
+}
+#else /* HAVE_OPENSSL */
+
+struct ne_md5_ctx *ne_md5_create_ctx(void)
+{
+    struct ne_md5_ctx *ctx = ne_malloc(sizeof *ctx);
+    
+    if (MD5_Init(&ctx->ctx) != 1) {
+        ne_free(ctx);
+        return NULL;
+    }
+    
+    return ctx;
+}
+
+void ne_md5_process_block(const void *buffer, size_t len,
+                          struct ne_md5_ctx *ctx)
+{
+    MD5_Update(&ctx->ctx, buffer, len);
+}
+
+void ne_md5_process_bytes(const void *buffer, size_t len,
+                          struct ne_md5_ctx *ctx)
+{
+    MD5_Update(&ctx->ctx, buffer, len);
+}
+
+void *ne_md5_finish_ctx(struct ne_md5_ctx *ctx, void *resbuf)
+{
+    MD5_Final(resbuf, &ctx->ctx);
+    
+    return resbuf;
+}
+
+struct ne_md5_ctx *ne_md5_dup_ctx(struct ne_md5_ctx *ctx)
+{
+    return memcpy(ne_malloc(sizeof *ctx), ctx, sizeof *ctx);
+}
+
+void ne_md5_reset_ctx(struct ne_md5_ctx *ctx)
+{
+    MD5_Init(&ctx->ctx);
+}
+    
+void ne_md5_destroy_ctx(struct ne_md5_ctx *ctx)
+{
+    ne_free(ctx);
+}
+#endif /* HAVE_OPENSSL */
+
+/* Put result from CTX in first 16 bytes following RESBUF.  The result
+   must be in little endian byte order.
+
+   IMPORTANT: On some systems it is required that RESBUF is correctly
+   aligned for a 32 bits value.  */
+void *
+md5_read_ctx (const struct md5_ctx *ctx, void *resbuf)
+{
+#ifdef HAVE_OPENSSL
+#define SWAP_CTX(x) SWAP(ctx->ctx.x)
+#else
+#define SWAP_CTX(x) SWAP(ctx->x)
+#endif
+
+  ((md5_uint32 *) resbuf)[0] = SWAP_CTX (A);
+  ((md5_uint32 *) resbuf)[1] = SWAP_CTX (B);
+  ((md5_uint32 *) resbuf)[2] = SWAP_CTX (C);
+  ((md5_uint32 *) resbuf)[3] = SWAP_CTX (D);
+
+  return resbuf;
+}
+
+
+/* Compute MD5 message digest for bytes read from STREAM.  The
+   resulting message digest number will be written into the 16 bytes
+   beginning at RESBLOCK.  */
+int
+md5_stream (FILE *stream, void *resblock)
+{
+  /* Important: BLOCKSIZE must be a multiple of 64.  */
+#define BLOCKSIZE 4096
+  struct ne_md5_ctx *ctx;
+  char buffer[BLOCKSIZE + 72];
+  size_t sum;
+
+  /* Initialize the computation context.  */
+  ctx = ne_md5_create_ctx ();
+
+  /* Iterate over full file contents.  */
+  while (1)
+    {
+      /* We read the file in blocks of BLOCKSIZE bytes.  One call of the
+	 computation function processes the whole buffer so that with the
+	 next round of the loop another block can be read.  */
+      size_t n;
+      sum = 0;
+
+      /* Read block.  Take care for partial reads.  */
+      do
+	{
+	  n = fread (buffer + sum, 1, BLOCKSIZE - sum, stream);
+
+	  sum += n;
+	}
+      while (sum < BLOCKSIZE && n != 0);
+      if (n == 0 && ferror (stream))
+        return 1;
+
+      /* If end of file is reached, end the loop.  */
+      if (n == 0)
+	break;
+
+      /* Process buffer with BLOCKSIZE bytes.  Note that
+			BLOCKSIZE % 64 == 0
+       */
+      md5_process_block (buffer, BLOCKSIZE, ctx);
+    }
+
+  /* Add the last bytes if necessary.  */
+  if (sum > 0)
+    md5_process_bytes (buffer, sum, ctx);
+
+  /* Construct result in desired memory.  */
+  md5_finish_ctx (ctx, resblock);
+  ne_md5_destroy_ctx (ctx);
+  
+  return 0;
 }
 
 /* Writes the ASCII representation of the MD5 digest into the

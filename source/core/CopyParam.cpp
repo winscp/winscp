@@ -989,6 +989,9 @@ bool __fastcall TCopyParamType::operator==(const TCopyParamType & rhp) const
 }
 #undef C
 //---------------------------------------------------------------------------
+const unsigned long MinSpeed = 8 * 1024;
+const unsigned long MaxSpeed = 8 * 1024 * 1024;
+//---------------------------------------------------------------------------
 static bool __fastcall TryGetSpeedLimit(const UnicodeString & Text, unsigned long & Speed)
 {
   bool Result;

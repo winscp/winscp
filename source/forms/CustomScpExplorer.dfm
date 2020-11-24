@@ -65,79 +65,113 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       OnClick = RemoteStatusBarClick
       OnMouseDown = RemoteStatusBarMouseDown
     end
-    object RemoteDirView: TUnixDirView
+    object RemoteDirPanel: TPanel
       Left = 172
       Top = 0
       Width = 448
       Height = 240
       Align = alClient
-      DoubleBuffered = True
-      FullDrag = True
-      HideSelection = False
-      ParentDoubleBuffered = False
-      PopupMenu = NonVisualDataModule.RemoteDirViewPopup
+      BevelOuter = bvNone
       TabOrder = 1
-      ViewStyle = vsReport
-      OnColumnRightClick = DirViewColumnRightClick
-      OnEditing = DirViewEditing
-      OnEnter = RemoteDirViewEnter
-      OnExit = DirViewExit
-      OnKeyDown = DirViewKeyDown
-      OnKeyPress = DirViewKeyPress
-      NortonLike = nlOff
-      UnixColProperties.ExtWidth = 20
-      UnixColProperties.TypeVisible = False
-      OnDDDragFileName = RemoteFileControlDDDragFileName
-      OnBusy = DirViewBusy
-      OnChangeFocus = DirViewChangeFocus
-      OnSelectItem = DirViewSelectItem
-      OnLoaded = DirViewLoaded
-      OnExecFile = DirViewExecFile
-      OnMatchMask = DirViewMatchMask
-      OnGetOverlay = DirViewGetOverlay
-      OnDDDragEnter = FileControlDDDragEnter
-      OnDDDragLeave = FileControlDDDragLeave
-      OnDDQueryContinueDrag = RemoteFileControlDDQueryContinueDrag
-      OnDDGiveFeedback = RemoteFileControlDDGiveFeedback
-      OnDDChooseEffect = RemoteFileContolDDChooseEffect
-      OnDDDragDetect = RemoteFileControlDDDragDetect
-      OnDDEnd = RemoteFileControlDDEnd
-      OnDDCreateDragFileList = RemoteFileControlDDCreateDragFileList
-      OnDDFileOperation = RemoteFileControlDDFileOperation
-      OnDDCreateDataObject = RemoteFileControlDDCreateDataObject
-      OnContextPopup = RemoteDirViewContextPopup
-      OnHistoryChange = DirViewHistoryChange
-      OnDisplayProperties = RemoteDirViewDisplayProperties
-      OnRead = RemoteDirViewRead
+      object RemoteDirView: TUnixDirView
+        Left = 0
+        Top = 0
+        Width = 448
+        Height = 240
+        Align = alClient
+        DoubleBuffered = True
+        FullDrag = True
+        HideSelection = False
+        ParentDoubleBuffered = False
+        PopupMenu = NonVisualDataModule.RemoteDirViewPopup
+        TabOrder = 0
+        ViewStyle = vsReport
+        OnColumnRightClick = DirViewColumnRightClick
+        OnEditing = DirViewEditing
+        OnEnter = RemoteDirViewEnter
+        OnExit = DirViewExit
+        OnKeyDown = DirViewKeyDown
+        OnKeyPress = DirViewKeyPress
+        OnResize = RemoteDirViewResize
+        NortonLike = nlOff
+        UnixColProperties.ExtWidth = 20
+        UnixColProperties.TypeVisible = False
+        OnDDDragFileName = RemoteFileControlDDDragFileName
+        OnBusy = DirViewBusy
+        OnChangeFocus = DirViewChangeFocus
+        OnSelectItem = DirViewSelectItem
+        OnLoaded = DirViewLoaded
+        OnExecFile = DirViewExecFile
+        OnMatchMask = DirViewMatchMask
+        OnGetOverlay = DirViewGetOverlay
+        OnDDDragEnter = FileControlDDDragEnter
+        OnDDDragLeave = FileControlDDDragLeave
+        OnDDQueryContinueDrag = RemoteFileControlDDQueryContinueDrag
+        OnDDGiveFeedback = RemoteFileControlDDGiveFeedback
+        OnDDChooseEffect = RemoteFileContolDDChooseEffect
+        OnDDDragDetect = RemoteFileControlDDDragDetect
+        OnDDEnd = RemoteFileControlDDEnd
+        OnDDCreateDragFileList = RemoteFileControlDDCreateDragFileList
+        OnDDFileOperation = RemoteFileControlDDFileOperation
+        OnDDCreateDataObject = RemoteFileControlDDCreateDataObject
+        OnContextPopup = RemoteDirViewContextPopup
+        OnHistoryChange = DirViewHistoryChange
+        OnDisplayProperties = RemoteDirViewDisplayProperties
+        OnRead = RemoteDirViewRead
+      end
+      object ReconnectToolbar: TTBXToolbar
+        Left = 136
+        Top = 112
+        Width = 107
+        Height = 21
+        Caption = 'ReconnectToolbar'
+        Images = GlyphsModule.ExplorerImages
+        Options = [tboShowHint]
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 1
+        object TBXItem254: TTBXItem
+          Action = NonVisualDataModule.ReconnectSessionAction
+        end
+      end
     end
-    object RemoteDriveView: TUnixDriveView
+    object RemoteDrivePanel: TPanel
       Left = 0
       Top = 0
       Width = 169
       Height = 240
-      DirView = RemoteDirView
-      OnDDDragFileName = RemoteFileControlDDDragFileName
-      OnDDEnd = RemoteFileControlDDEnd
-      UseSystemContextMenu = False
-      OnDDDragEnter = FileControlDDDragEnter
-      OnDDDragLeave = FileControlDDDragLeave
-      OnDDQueryContinueDrag = RemoteFileControlDDQueryContinueDrag
-      OnDDChooseEffect = RemoteFileContolDDChooseEffect
-      OnDDGiveFeedback = RemoteFileControlDDGiveFeedback
-      OnDDDragDetect = RemoteFileControlDDDragDetect
-      OnDDFileOperation = RemoteFileControlDDFileOperation
-      OnDDCreateDragFileList = RemoteFileControlDDCreateDragFileList
-      OnDDCreateDataObject = RemoteFileControlDDCreateDataObject
       Align = alLeft
-      DoubleBuffered = True
-      HideSelection = False
-      Indent = 19
-      ParentColor = False
-      ParentDoubleBuffered = False
-      ReadOnly = True
+      BevelOuter = bvNone
       TabOrder = 2
-      OnEnter = RemoteDriveViewEnter
-      OnBusy = DirViewBusy
+      object RemoteDriveView: TUnixDriveView
+        Left = 0
+        Top = 0
+        Width = 169
+        Height = 240
+        DirView = RemoteDirView
+        OnDDDragFileName = RemoteFileControlDDDragFileName
+        OnDDEnd = RemoteFileControlDDEnd
+        UseSystemContextMenu = False
+        OnDDDragEnter = FileControlDDDragEnter
+        OnDDDragLeave = FileControlDDDragLeave
+        OnDDQueryContinueDrag = RemoteFileControlDDQueryContinueDrag
+        OnDDChooseEffect = RemoteFileContolDDChooseEffect
+        OnDDGiveFeedback = RemoteFileControlDDGiveFeedback
+        OnDDDragDetect = RemoteFileControlDDDragDetect
+        OnDDFileOperation = RemoteFileControlDDFileOperation
+        OnDDCreateDragFileList = RemoteFileControlDDCreateDragFileList
+        OnDDCreateDataObject = RemoteFileControlDDCreateDataObject
+        Align = alClient
+        DoubleBuffered = True
+        HideSelection = False
+        Indent = 19
+        ParentColor = False
+        ParentDoubleBuffered = False
+        ReadOnly = True
+        TabOrder = 0
+        OnEnter = RemoteDriveViewEnter
+        OnBusy = DirViewBusy
+      end
     end
   end
   object QueuePanel: TPanel

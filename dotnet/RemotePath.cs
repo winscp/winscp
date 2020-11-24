@@ -14,13 +14,13 @@ namespace WinSCP
         {
             if (fileMask == null)
             {
-                throw new ArgumentNullException("fileMask");
+                throw new ArgumentNullException(nameof(fileMask));
             }
             int lastSlash = fileMask.LastIndexOf('/');
             string path = lastSlash > 0 ? fileMask.Substring(0, lastSlash + 1) : string.Empty;
             string mask = lastSlash > 0 ? fileMask.Substring(lastSlash + 1) : fileMask;
             // Keep in sync with EscapeFileMask in GenerateUrl.cpp
-            mask = mask.Replace("[", "[[]").Replace("*", "[*]").Replace("?", "[?]");
+            mask = mask.Replace("[", "[[]").Replace("*", "[*]").Replace("?", "[?]").Replace("<", "<<").Replace(">", ">>");
             return path + mask;
         }
 
@@ -34,12 +34,12 @@ namespace WinSCP
         {
             if (path1 == null)
             {
-                throw new ArgumentNullException("path1");
+                throw new ArgumentNullException(nameof(path1));
             }
 
             if (path2 == null)
             {
-                throw new ArgumentNullException("path2");
+                throw new ArgumentNullException(nameof(path2));
             }
 
             string result;
@@ -62,33 +62,25 @@ namespace WinSCP
         {
             if (remotePath == null)
             {
-                throw new ArgumentNullException("remotePath");
+                throw new ArgumentNullException(nameof(remotePath));
             }
 
             if (remoteRoot == null)
             {
-                throw new ArgumentNullException("remoteRoot");
+                throw new ArgumentNullException(nameof(remoteRoot));
             }
 
             if (localRoot == null)
             {
-                throw new ArgumentNullException("localRoot");
+                throw new ArgumentNullException(nameof(localRoot));
             }
 
-            if ((localRoot.Length > 0) && !localRoot.EndsWith("\\", StringComparison.Ordinal))
-            {
-                localRoot += "\\";
-            }
-
-            // not adding to empty root paths, because the path may not even start with slash
-            if ((remoteRoot.Length > 0) && !remoteRoot.EndsWith("/", StringComparison.Ordinal))
-            {
-                remoteRoot += "/";
-            }
+            localRoot = AddSeparator(localRoot, @"\");
+            remoteRoot = AddSeparator(remoteRoot, "/");
 
             string localPath;
             // special case
-            if (remotePath == remoteRoot)
+            if (AddSeparator(remotePath, "/") == remoteRoot)
             {
                 localPath = localRoot;
             }
@@ -111,37 +103,39 @@ namespace WinSCP
             return localPath;
         }
 
+        private static string AddSeparator(string path, string separator)
+        {
+            // not adding to empty root paths, because the path may not even start with slash
+            if ((path.Length > 0) && !path.EndsWith(separator, StringComparison.Ordinal))
+            {
+                path += separator;
+            }
+            return path;
+        }
+
         public static string TranslateLocalPathToRemote(string localPath, string localRoot, string remoteRoot)
         {
             if (localPath == null)
             {
-                throw new ArgumentNullException("localPath");
+                throw new ArgumentNullException(nameof(localPath));
             }
 
             if (localRoot == null)
             {
-                throw new ArgumentNullException("localRoot");
+                throw new ArgumentNullException(nameof(localRoot));
             }
 
             if (remoteRoot == null)
             {
-                throw new ArgumentNullException("remoteRoot");
+                throw new ArgumentNullException(nameof(remoteRoot));
             }
 
-            if ((localRoot.Length > 0) && !localRoot.EndsWith("\\", StringComparison.Ordinal))
-            {
-                localRoot += "\\";
-            }
-
-            // not adding to empty root paths, because the path may not even start with slash
-            if ((remoteRoot.Length > 0) && !remoteRoot.EndsWith("/", StringComparison.Ordinal))
-            {
-                remoteRoot += "/";
-            }
+            localRoot = AddSeparator(localRoot, @"\");
+            remoteRoot = AddSeparator(remoteRoot, "/");
 
             string remotePath;
             // special case
-            if (localPath == localRoot)
+            if (AddSeparator(localPath, @"\") == localRoot)
             {
                 remotePath = remoteRoot;
             }
@@ -173,7 +167,7 @@ namespace WinSCP
             }
             else if (path.Length == 0)
             {
-                throw new ArgumentException("Path cannot be empty", "path");
+                throw new ArgumentException("Path cannot be empty", nameof(path));
             }
             else
             {
@@ -205,7 +199,7 @@ namespace WinSCP
         {
             if (string.IsNullOrEmpty(path))
             {
-                throw new ArgumentException("Path cannot be empty", "path");
+                throw new ArgumentException("Path cannot be empty", nameof(path));
             }
 
             if (!path.EndsWith("/", StringComparison.Ordinal))
@@ -292,7 +286,7 @@ namespace WinSCP
         {
             if (target == null)
             {
-                throw new ArgumentNullException("target");
+                throw new ArgumentNullException(nameof(target));
             }
 
             Type type = target.GetType();

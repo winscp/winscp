@@ -57,7 +57,7 @@
 		<BCC_wsus>false</BCC_wsus>
 		<DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
 		<DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;$(DCC_Namespace)</DCC_Namespace>
-		<Defines>SECURITY_WIN32;MPEXT;_WINDOWS;$(Defines)</Defines>
+		<Defines>SECURITY_WIN32;WINSCP;MPEXT;PLATFORM_HAS_SMEMCLR;_WINDOWS;$(Defines)</Defines>
 		<FinalOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</FinalOutputDir>
 		<IncludePath>putty\;putty\windows\;$(BDS)\include;$(IncludePath)</IncludePath>
 		<IntermediateOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</IntermediateOutputDir>
@@ -66,7 +66,7 @@
 		<OutputExt>lib</OutputExt>
 		<ProjectType>CppStaticLibrary</ProjectType>
 		<SanitizedProjectName>Putty</SanitizedProjectName>
-		<TLIB_PageSize>64</TLIB_PageSize>
+		<TLIB_PageSize>128</TLIB_PageSize>
 		<VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
 		<VerInfo_Locale>1033</VerInfo_Locale>
 	</PropertyGroup>
@@ -94,8 +94,14 @@
 		<TASM_Debugging>None</TASM_Debugging>
 	</PropertyGroup>
 	<ItemGroup>
+		<CppCompile Include="putty\agentf.c">
+			<BuildOrder>60</BuildOrder>
+		</CppCompile>
 		<CppCompile Include="putty\be_misc.c">
 			<BuildOrder>47</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\be_ssh.c">
+			<BuildOrder>84</BuildOrder>
 		</CppCompile>
 		<CppCompile Include="putty\callback.c">
 			<BuildOrder>5</BuildOrder>
@@ -109,19 +115,27 @@
 			<BuildOrder>5</BuildOrder>
 			<BuildOrder>25</BuildOrder>
 		</CppCompile>
+		<CppCompile Include="putty\ecc.c">
+			<BuildOrder>73</BuildOrder>
+		</CppCompile>
 		<CppCompile Include="putty\errsock.c">
 			<BuildOrder>44</BuildOrder>
 		</CppCompile>
 		<CppCompile Include="putty\import.c">
 			<BuildOrder>46</BuildOrder>
 		</CppCompile>
-		<CppCompile Include="putty\int64.c">
-			<BuildOrder>8</BuildOrder>
-			<BuildOrder>24</BuildOrder>
-		</CppCompile>
 		<CppCompile Include="putty\logging.c">
 			<BuildOrder>27</BuildOrder>
 			<BuildOrder>11</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\mainchan.c">
+			<BuildOrder>69</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\marshal.c">
+			<BuildOrder>55</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\memory.c">
+			<BuildOrder>73</BuildOrder>
 		</CppCompile>
 		<CppCompile Include="putty\misc.c">
 			<BuildOrder>26</BuildOrder>
@@ -130,8 +144,14 @@
 		<CppCompile Include="putty\miscucs.c">
 			<BuildOrder>51</BuildOrder>
 		</CppCompile>
+		<CppCompile Include="putty\mpint.c">
+			<BuildOrder>74</BuildOrder>
+		</CppCompile>
 		<CppCompile Include="putty\noshare.c">
 			<BuildOrder>41</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\nullplug.c">
+			<BuildOrder>56</BuildOrder>
 		</CppCompile>
 		<CppCompile Include="putty\pgssapi.c">
 			<BuildOrder>37</BuildOrder>
@@ -143,17 +163,68 @@
 		<CppCompile Include="putty\proxy.c">
 			<BuildOrder>20</BuildOrder>
 		</CppCompile>
+		<CppCompile Include="putty\settings.c">
+			<BuildOrder>82</BuildOrder>
+		</CppCompile>
 		<CppCompile Include="putty\ssh.c">
 			<BuildOrder>23</BuildOrder>
 			<BuildOrder>19</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\ssh1bpp.c">
+			<BuildOrder>53</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\ssh1censor.c">
+			<BuildOrder>57</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\ssh1connection.c">
+			<BuildOrder>64</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\ssh1connection-client.c">
+			<BuildOrder>71</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\ssh1login.c">
+			<BuildOrder>65</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\ssh2bpp.c">
+			<BuildOrder>54</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\ssh2bpp-bare.c">
+			<BuildOrder>59</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\ssh2censor.c">
+			<BuildOrder>58</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\ssh2connection.c">
+			<BuildOrder>66</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\ssh2connection-client.c">
+			<BuildOrder>72</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\ssh2kex-client.c">
+			<BuildOrder>73</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\ssh2transhk.c">
+			<BuildOrder>70</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\ssh2transport.c">
+			<BuildOrder>67</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\ssh2userauth.c">
+			<BuildOrder>68</BuildOrder>
 		</CppCompile>
 		<CppCompile Include="putty\sshaes.c">
 			<BuildOrder>26</BuildOrder>
 			<BuildOrder>22</BuildOrder>
 		</CppCompile>
+		<CppCompile Include="putty\sshaesold.c">
+			<BuildOrder>77</BuildOrder>
+		</CppCompile>
 		<CppCompile Include="putty\ssharcf.c">
 			<BuildOrder>29</BuildOrder>
 			<BuildOrder>21</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\sshauxcrypt.c">
+			<BuildOrder>78</BuildOrder>
 		</CppCompile>
 		<CppCompile Include="putty\sshbcrypt.c">
 			<BuildOrder>50</BuildOrder>
@@ -162,12 +233,11 @@
 			<BuildOrder>34</BuildOrder>
 			<BuildOrder>32</BuildOrder>
 		</CppCompile>
-		<CppCompile Include="putty\sshbn.c">
-			<BuildOrder>35</BuildOrder>
-			<BuildOrder>33</BuildOrder>
-		</CppCompile>
 		<CppCompile Include="putty\sshccp.c">
 			<BuildOrder>49</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\sshcommon.c">
+			<BuildOrder>62</BuildOrder>
 		</CppCompile>
 		<CppCompile Include="putty\sshcrc.c">
 			<BuildOrder>38</BuildOrder>
@@ -195,9 +265,18 @@
 		<CppCompile Include="putty\sshgssc.c">
 			<BuildOrder>38</BuildOrder>
 		</CppCompile>
+		<CppCompile Include="putty\sshhmac.c">
+			<BuildOrder>79</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\sshmac.c">
+			<BuildOrder>61</BuildOrder>
+		</CppCompile>
 		<CppCompile Include="putty\sshmd5.c">
 			<BuildOrder>53</BuildOrder>
 			<BuildOrder>31</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\sshprng.c">
+			<BuildOrder>80</BuildOrder>
 		</CppCompile>
 		<CppCompile Include="putty\sshpubk.c">
 			<BuildOrder>56</BuildOrder>
@@ -226,17 +305,29 @@
 		<CppCompile Include="putty\sshshare.c">
 			<BuildOrder>42</BuildOrder>
 		</CppCompile>
+		<CppCompile Include="putty\sshverstring.c">
+			<BuildOrder>63</BuildOrder>
+		</CppCompile>
 		<CppCompile Include="putty\sshzlib.c">
 			<BuildOrder>74</BuildOrder>
 			<BuildOrder>4</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\stripctrl.c">
+			<BuildOrder>81</BuildOrder>
 		</CppCompile>
 		<CppCompile Include="putty\tree234.c">
 			<BuildOrder>77</BuildOrder>
 			<BuildOrder>1</BuildOrder>
 		</CppCompile>
+		<CppCompile Include="putty\utils.c">
+			<BuildOrder>75</BuildOrder>
+		</CppCompile>
 		<CppCompile Include="putty\wildcard.c">
 			<BuildOrder>83</BuildOrder>
 			<BuildOrder>3</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\windows\windefs.c">
+			<BuildOrder>83</BuildOrder>
 		</CppCompile>
 		<CppCompile Include="putty\windows\wingss.c">
 			<BuildOrder>86</BuildOrder>
@@ -251,6 +342,9 @@
 		<CppCompile Include="putty\windows\winmisc.c">
 			<BuildOrder>92</BuildOrder>
 			<BuildOrder>14</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\windows\winmiscs.c">
+			<BuildOrder>76</BuildOrder>
 		</CppCompile>
 		<CppCompile Include="putty\windows\winnet.c">
 			<BuildOrder>95</BuildOrder>
@@ -282,7 +376,7 @@
 			<BuildOrder>12</BuildOrder>
 			<BuildOrder>110</BuildOrder>
 		</CppCompile>
-		<CppCompile Include="putty\WINDOWS\winucs.c">
+		<CppCompile Include="putty\windows\winucs.c">
 			<BuildOrder>52</BuildOrder>
 		</CppCompile>
 		<CppCompile Include="putty\x11fwd.c">

@@ -4,139 +4,102 @@
 
 #include <Common.h>
 #include <VCLCommon.h>
+#include <CoreMain.h>
 #include <WinConfiguration.h>
 #include <TextsWin.h>
+#include <HelpWin.h>
+#include <PuttyTools.h>
 #include "Cleanup.h"
 //---------------------------------------------------------------------
-#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
-#endif
 //---------------------------------------------------------------------
-Boolean __fastcall DoCleanupDialog(TStoredSessionList *SessionList,
-  TConfiguration *Configuration)
+bool __fastcall DoCleanupDialog()
 {
-  Boolean Result;
-  TCleanupDialog *CleanupDialog;
-  try {
-    CleanupDialog = SafeFormCreate<TCleanupDialog>();
-
-    CleanupDialog->SessionList = SessionList;
-    CleanupDialog->Configuration = Configuration;
-
-    Result = (CleanupDialog->ShowModal() == DefaultResult(CleanupDialog));
-    if (Result)
-    {
-      Configuration->Usage->Inc(L"Cleanups");
-
-      for (int i = wdConfiguration; i <= wdTemporaryFolders; i++)
-      {
-        if (CleanupDialog->CleanupData[(TWinSCPData)i])
-        {
-          try
-          {
-            switch (i)
-            {
-              case wdConfiguration:
-                Configuration->CleanupConfiguration();
-                break;
-
-              case wdStoredSessions:
-                SessionList->Cleanup();
-                break;
-
-              case wdHostKeys:
-                Configuration->CleanupHostKeys();
-                break;
-
-              case wdConfigurationIniFile:
-                Configuration->CleanupIniFile();
-                break;
-
-              case wdRandomSeedFile:
-                Configuration->CleanupRandomSeedFile();
-                break;
-
-              case wdTemporaryFolders:
-                WinConfiguration->CleanupTemporaryFolders();
-                break;
-            }
-          }
-          catch(Exception & E)
-          {
-            ShowExtendedException(&E);
-          }
-        }
-      }
-    }
-  } __finally {
-    delete CleanupDialog;
+  std::unique_ptr<TCleanupDialog> CleanupDialog(SafeFormCreate<TCleanupDialog>());
+  return CleanupDialog->Execute();
+}
+//---------------------------------------------------------------------
+void __fastcall DoCleanupDialogIfAnyDataAndWanted()
+{
+  std::unique_ptr<TCleanupDialog> CleanupDialog(SafeFormCreate<TCleanupDialog>());
+  if (CleanupDialog->AnyData() &&
+      (MessageDialog(LoadStr(UNINSTALL_CLEANUP), qtConfirmation, qaYes | qaNo, HELP_UNINSTALL_CLEANUP) == qaYes))
+  {
+    CleanupDialog->Execute();
   }
-  return Result;
 }
 //---------------------------------------------------------------------
 __fastcall TCleanupDialog::TCleanupDialog(TComponent* AOwner)
   : TForm(AOwner)
 {
+  FAnyData = false;
+  FindData();
   UseSystemSettings(this);
+}
+//---------------------------------------------------------------------
+void __fastcall TCleanupDialog::AddLocation(int CaptionId, const UnicodeString & Location, TCleanupEvent Event)
+{
+  FCaptions.push_back(LoadStr(CaptionId));
+  FLocations.push_back(Location);
+  FCleanupEvents.push_back(Event);
+  FAnyData = true;
+}
+//---------------------------------------------------------------------
+void __fastcall TCleanupDialog::AddRegistryLocation(int CaptionId, const UnicodeString & Location, TCleanupEvent Event)
+{
+  AddLocation(CaptionId, Configuration->RootKeyStr + L'\\' + Configuration->RegistryStorageKey + L'\\' + Location, Event);
+}
+//---------------------------------------------------------------------
+bool __fastcall TCleanupDialog::AnyData()
+{
+  return FAnyData;
+}
+//---------------------------------------------------------------------
+void __fastcall TCleanupDialog::FindData()
+{
+  // Add unconditionally (as it has a side effect of not saving the configuration)
+  AddRegistryLocation(CLEANUP_CONFIG, Configuration->ConfigurationSubKey, Configuration->CleanupConfiguration);
+  // But count as real data, only if it really exists
+  FAnyData = Configuration->RegistryPathExists(Configuration->ConfigurationSubKey);
+
+  if (Configuration->RegistryPathExists(Configuration->StoredSessionsSubKey))
+  {
+    AddRegistryLocation(CLEANUP_SESSIONS, Configuration->StoredSessionsSubKey, StoredSessions->Cleanup);
+  }
+
+  if (Configuration->HasAnyCache())
+  {
+    AddRegistryLocation(CLEANUP_HOSTKEYS, L"...", Configuration->CleanupCaches);
+  }
+
+  UnicodeString IniFilePath = ExpandEnvironmentVariables(Configuration->IniFileStorageNameForReading);
+  if (FileExists(IniFilePath))
+  {
+    AddLocation(CLEANUP_INIFILE, IniFilePath, Configuration->CleanupIniFile);
+  }
+
+  if (RandomSeedExists())
+  {
+    AddLocation(CLEANUP_SEEDFILE, Configuration->RandomSeedFileName, Configuration->CleanupRandomSeedFile);
+  }
+
+  if (WinConfiguration->AnyTemporaryFolders())
+  {
+    AddLocation(CLEANUP_TEMP_FOLDERS, WinConfiguration->TemporaryDir(true), WinConfiguration->CleanupTemporaryFolders);
+  }
 }
 //---------------------------------------------------------------------
 void __fastcall TCleanupDialog::InitControls()
 {
+  DebugAssert(FCaptions.size() == FLocations.size());
+  DebugAssert(FCaptions.size() == FCleanupEvents.size());
   // Particularly in response to WM_DPICHANGED, the form may re-show
   DataListView->Items->Clear();
-
-  for (int i = wdConfiguration; i <= wdTemporaryFolders; i++)
+  for (size_t Index = 0; Index < FCaptions.size(); Index++)
   {
-    UnicodeString Caption;
-    UnicodeString Location;
-
-    switch (i)
-    {
-      case wdConfiguration:
-        Caption = LoadStr(CLEANUP_CONFIG);
-        Location = Configuration->ConfigurationSubKey;
-        break;
-
-      case wdStoredSessions:
-        Caption = LoadStr(CLEANUP_SESSIONS);
-        Location = Configuration->StoredSessionsSubKey;
-        break;
-
-      case wdHostKeys:
-        Caption = LoadStr(CLEANUP_HOSTKEYS);
-        Location = Configuration->SshHostKeysSubKey;
-        break;
-
-      case wdConfigurationIniFile:
-        Caption = LoadStr(CLEANUP_INIFILE);
-        Location = ExpandEnvironmentVariables(Configuration->IniFileStorageNameForReading);
-        break;
-
-      case wdRandomSeedFile:
-        Caption = LoadStr(CLEANUP_SEEDFILE);
-        Location = ExpandEnvironmentVariables(Configuration->RandomSeedFile);
-        break;
-
-      case wdTemporaryFolders:
-        Caption = LoadStr(CLEANUP_TEMP_FOLDERS);
-        Location = WinConfiguration->TemporaryDir(true);
-        break;
-
-      default:
-        DebugFail();
-        break;
-    }
-
     TListItem * Item = DataListView->Items->Add();
-    Item->Caption = Caption;
-    if (i < wdConfigurationIniFile)
-    {
-      Location = Configuration->RootKeyStr + L'\\' +
-        Configuration->RegistryStorageKey + L'\\' + Location;
-    }
-
-    Item->SubItems->Add(Location);
-    DebugAssert(Item->Index == i - 1);
+    Item->Caption = FCaptions[Index];
+    Item->SubItems->Add(FLocations[Index]);
   }
 
   AutoSizeListColumnsWidth(DataListView);
@@ -179,13 +142,33 @@ void __fastcall TCleanupDialog::DataListViewInfoTip(TObject * /*Sender*/,
     ARRAYOFCONST((Item->Caption, Item->SubItems->Strings[0])));
 }
 //---------------------------------------------------------------------------
-bool __fastcall TCleanupDialog::GetCleanupData(TWinSCPData Data)
-{
-  return DataListView->Items->Item[Data - 1]->Checked;
-}
-//---------------------------------------------------------------------------
 void __fastcall TCleanupDialog::HelpButtonClick(TObject * /*Sender*/)
 {
   FormHelp(this);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TCleanupDialog::Execute()
+{
+  bool Result = (ShowModal() == DefaultResult(this));
+  if (Result)
+  {
+    Configuration->Usage->Inc(L"Cleanups");
+
+    for (int Index = 0; Index < DataListView->Items->Count; Index++)
+    {
+      if (DataListView->Items->Item[Index]->Checked)
+      {
+        try
+        {
+          FCleanupEvents[Index]();
+        }
+        catch (Exception & E)
+        {
+          ShowExtendedException(&E);
+        }
+      }
+    }
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------

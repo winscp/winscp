@@ -176,7 +176,6 @@ __published:
   TMenuItem *TransferSettingsRule1;
   TGroupBox *NoteGroup;
   TMemo *NoteMemo;
-  TPanel *ComponentsPanel;
   TPngImageList *SessionImageList120;
   TPngImageList *ActionImageList120;
   TAction *SearchSiteNameStartOnlyAction;
@@ -206,6 +205,10 @@ __published:
   TPngImageList *SessionImageList192;
   TPngImageList *ActionImageList144;
   TPngImageList *ActionImageList192;
+  TAction *SessionRawAction;
+  TMenuItem *EditRawSettings1;
+  TPanel *ShowAgainPanel;
+  TCheckBox *ShowAgainCheck;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall SessionTreeDblClick(TObject *Sender);
@@ -282,14 +285,13 @@ __published:
   void __fastcall SearchSiteNameStartOnlyActionExecute(TObject *Sender);
   void __fastcall SearchSiteNameActionExecute(TObject *Sender);
   void __fastcall SearchSiteActionExecute(TObject *Sender);
-  void __fastcall ButtonPanelMouseDown(TObject *Sender, TMouseButton Button, TShiftState Shift, int X, int Y);
+  void __fastcall PanelMouseDown(TObject *Sender, TMouseButton Button, TShiftState Shift, int X, int Y);
 
 private:
   int NoUpdate;
   TSessionData * FNewSiteData;
   bool FNewSiteKeepName;
   TSessionData * FSessionData;
-  TStoredSessionList * FStoredSessions;
   bool FInitialized;
   TWndMethod FOldSessionTreeProc;
   TTreeNode * FHintNode;
@@ -314,6 +316,7 @@ private:
   int FSiteButtonsPadding;
   UnicodeString FUserNameLabel;
   UnicodeString FPasswordLabel;
+  int FFixedSessionImages;
 
   void __fastcall LoadSession(TSessionData * SessionData);
   void __fastcall LoadContents();
@@ -381,7 +384,6 @@ private:
   bool __fastcall IsCloneToNewSiteDefault();
   bool __fastcall IsDefaultResult(TModalResult Result);
   void __fastcall UpdateNodeImage(TTreeNode * Node);
-  void __fastcall UpdateNodeImages();
   int __fastcall GetSessionImageIndex(TSessionData * Data);
   void __fastcall SetNodeImage(TTreeNode * Node, int ImageIndex);
   void __fastcall CancelEditing();
@@ -396,7 +398,7 @@ private:
   int __fastcall AddLoginButtonImage(bool Enabled);
   void __fastcall WMMoving(TMessage & Message);
   void __fastcall CMDpiChanged(TMessage & Message);
-  void __fastcall GenerateButtonImages();
+  void __fastcall GenerateImages();
 
 protected:
   void __fastcall Default();
@@ -418,7 +420,7 @@ protected:
 public:
   virtual __fastcall TLoginDialog(TComponent* AOwner);
   __fastcall ~TLoginDialog();
-  void __fastcall Init(TStoredSessionList *SessionList, TForm * LinkedForm);
+  void __fastcall Init(TForm * LinkedForm);
   bool __fastcall Execute(TList * DataList);
 };
 //----------------------------------------------------------------------------

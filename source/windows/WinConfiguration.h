@@ -341,6 +341,7 @@ class TBookmarks;
 class TBookmarkList;
 class TCustomCommandList;
 enum TPathInCaption { picShort, picFull, picNone };
+enum TSessionTabNameFormat { stnfNone, stnfShortPath, stnfShortPathTrunc };
 // constants must be compatible with legacy CopyOnDoubleClick
 enum TDoubleClickAction { dcaOpen = 0, dcaCopy = 1, dcaEdit = 2 };
 //---------------------------------------------------------------------------
@@ -410,8 +411,8 @@ private:
   bool FAutoSaveWorkspacePasswords;
   UnicodeString FAutoWorkspace;
   TPathInCaption FPathInCaption;
+  TSessionTabNameFormat FSessionTabNameFormat;
   bool FMinimizeToTray;
-  bool FMinimizeToTrayOnce;
   bool FBalloonNotifications;
   unsigned int FNotificationsTimeout;
   unsigned int FNotificationsStickTime;
@@ -443,6 +444,7 @@ private:
   TScriptFormat FGenerateUrlScriptFormat;
   TAssemblyLanguage FGenerateUrlAssemblyLanguage;
   bool FExternalSessionInExistingInstance;
+  bool FShowLoginWhenNoSession;
   bool FKeepOpenWhenNoSession;
   bool FLocalIconsByExt;
   TLocaleFlagOverride FBidiModeOverride;
@@ -454,6 +456,7 @@ private:
   int FRunsSinceLastTip;
   bool FLockedInterface;
   bool FTimeoutShellIconRetrieval;
+  bool FUseIconUpdateThread;
   bool FAllowWindowPrint;
   int FDontDecryptPasswords;
   int FMasterPasswordSession;
@@ -515,8 +518,8 @@ private:
   void __fastcall SetAutoSaveWorkspacePasswords(bool value);
   void __fastcall SetAutoWorkspace(UnicodeString value);
   void __fastcall SetPathInCaption(TPathInCaption value);
+  void __fastcall SetSessionTabNameFormat(TSessionTabNameFormat value);
   void __fastcall SetMinimizeToTray(bool value);
-  bool __fastcall GetMinimizeToTray();
   void __fastcall SetBalloonNotifications(bool value);
   void __fastcall SetNotificationsTimeout(unsigned int value);
   void __fastcall SetNotificationsStickTime(unsigned int value);
@@ -544,6 +547,7 @@ private:
   void __fastcall SetGenerateUrlScriptFormat(TScriptFormat value);
   void __fastcall SetGenerateUrlAssemblyLanguage(TAssemblyLanguage value);
   void __fastcall SetExternalSessionInExistingInstance(bool value);
+  void __fastcall SetShowLoginWhenNoSession(bool value);
   void __fastcall SetKeepOpenWhenNoSession(bool value);
   void __fastcall SetLocalIconsByExt(bool value);
   void __fastcall SetBidiModeOverride(TLocaleFlagOverride value);
@@ -562,6 +566,7 @@ private:
   bool __fastcall GetTimeoutShellOperations();
   void __fastcall SetTimeoutShellOperations(bool value);
   void __fastcall SetTimeoutShellIconRetrieval(bool value);
+  void __fastcall SetUseIconUpdateThread(bool value);
   void __fastcall SetAllowWindowPrint(bool value);
   int __fastcall GetLocaleCompletenessTreshold();
 
@@ -606,6 +611,7 @@ protected:
   void __fastcall LoadExtensionList();
   void __fastcall ReleaseExtensionTranslations();
   void __fastcall LoadExtensionTranslations();
+  TStrings * __fastcall DoFindTemporaryFolders(bool OnlyFirst);
 
 public:
   __fastcall TWinConfiguration();
@@ -615,6 +621,8 @@ public:
   virtual THierarchicalStorage * CreateScpStorage(bool & SessionList);
   UnicodeString __fastcall TemporaryDir(bool Mask = false);
   TStrings * __fastcall FindTemporaryFolders();
+  bool __fastcall AnyTemporaryFolders();
+  void __fastcall CleanupTemporaryFolders();
   void __fastcall CleanupTemporaryFolders(TStrings * Folders = NULL);
   UnicodeString __fastcall ExpandedTemporaryDirectory();
   void __fastcall CheckDefaultTranslation();
@@ -635,7 +643,6 @@ public:
   void __fastcall DeleteWorkspaceFromJumpList(UnicodeString Workspace);
   void __fastcall UpdateJumpList();
   virtual void __fastcall UpdateStaticUsage();
-  void __fastcall MinimizeToTrayOnce();
   void __fastcall CustomCommandShortCuts(TShortCuts & ShortCuts) const;
   UnicodeString __fastcall GetUserExtensionsPath();
   UnicodeString __fastcall GetExtensionId(const UnicodeString & ExtensionPath);
@@ -707,7 +714,8 @@ public:
   __property bool AutoSaveWorkspacePasswords = { read = FAutoSaveWorkspacePasswords, write = SetAutoSaveWorkspacePasswords };
   __property UnicodeString AutoWorkspace = { read = FAutoWorkspace, write = SetAutoWorkspace };
   __property TPathInCaption PathInCaption = { read = FPathInCaption, write = SetPathInCaption };
-  __property bool MinimizeToTray = { read = GetMinimizeToTray, write = SetMinimizeToTray };
+  __property TSessionTabNameFormat SessionTabNameFormat = { read = FSessionTabNameFormat, write = FSessionTabNameFormat };
+  __property bool MinimizeToTray = { read = FMinimizeToTray, write = SetMinimizeToTray };
   __property bool BalloonNotifications = { read = FBalloonNotifications, write = SetBalloonNotifications };
   __property unsigned int NotificationsTimeout = { read = FNotificationsTimeout, write = SetNotificationsTimeout };
   __property unsigned int NotificationsStickTime = { read = FNotificationsStickTime, write = SetNotificationsStickTime };
@@ -732,6 +740,7 @@ public:
   __property TScriptFormat GenerateUrlScriptFormat = { read = FGenerateUrlScriptFormat, write = SetGenerateUrlScriptFormat };
   __property TAssemblyLanguage GenerateUrlAssemblyLanguage = { read = FGenerateUrlAssemblyLanguage, write = SetGenerateUrlAssemblyLanguage };
   __property bool ExternalSessionInExistingInstance = { read = FExternalSessionInExistingInstance, write = SetExternalSessionInExistingInstance };
+  __property bool ShowLoginWhenNoSession = { read = FShowLoginWhenNoSession, write = SetShowLoginWhenNoSession };
   __property bool KeepOpenWhenNoSession = { read = FKeepOpenWhenNoSession, write = SetKeepOpenWhenNoSession };
   __property bool LocalIconsByExt = { read = FLocalIconsByExt, write = SetLocalIconsByExt };
   __property TLocaleFlagOverride BidiModeOverride = { read = FBidiModeOverride, write = SetBidiModeOverride };
@@ -747,6 +756,7 @@ public:
   __property bool LockedInterface = { read = FLockedInterface, write = SetLockedInterface };
   __property bool TimeoutShellOperations = { read = GetTimeoutShellOperations, write = SetTimeoutShellOperations };
   __property bool TimeoutShellIconRetrieval = { read = FTimeoutShellIconRetrieval, write = SetTimeoutShellIconRetrieval };
+  __property bool UseIconUpdateThread = { read = FUseIconUpdateThread, write = SetUseIconUpdateThread };
   __property bool AllowWindowPrint = { read = FAllowWindowPrint, write = SetAllowWindowPrint };
   __property LCID DefaultLocale = { read = FDefaultLocale };
   __property int LocaleCompletenessTreshold = { read = GetLocaleCompletenessTreshold };

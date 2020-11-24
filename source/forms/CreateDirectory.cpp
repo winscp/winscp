@@ -14,9 +14,7 @@
 #include "CreateDirectory.h"
 //---------------------------------------------------------------------
 #pragma link "Rights"
-#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
-#endif
 //---------------------------------------------------------------------
 bool __fastcall DoCreateDirectoryDialog(UnicodeString & Directory,
   TRemoteProperties * Properties, int AllowedChanges, bool & SaveSettings)

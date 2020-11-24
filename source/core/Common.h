@@ -29,7 +29,6 @@ extern const wchar_t TokenReplacement;
 extern const UnicodeString LocalInvalidChars;
 extern const UnicodeString PasswordMask;
 extern const UnicodeString Ellipsis;
-extern const UnicodeString EmptyString;
 //---------------------------------------------------------------------------
 extern const UnicodeString HttpProtocol;
 extern const UnicodeString HttpsProtocol;
@@ -67,8 +66,11 @@ UnicodeString RemoveMainInstructionsTag(UnicodeString S);
 UnicodeString UnformatMessage(UnicodeString S);
 UnicodeString RemoveInteractiveMsgTag(UnicodeString S);
 UnicodeString RemoveEmptyLines(const UnicodeString & S);
-UnicodeString NormalizeString(const UnicodeString & S);
 bool IsNumber(const UnicodeString Str);
+extern const wchar_t NormalizedFingerprintSeparator;
+UnicodeString Base64ToUrlSafe(const UnicodeString & S);
+UnicodeString MD5ToUrlSafe(const UnicodeString & S);
+bool SameChecksum(const UnicodeString & AChecksum1, const UnicodeString & AChecksum2, bool Base64);
 UnicodeString __fastcall SystemTemporaryDirectory();
 UnicodeString __fastcall GetShellFolderPath(int CSIdl);
 UnicodeString __fastcall GetPersonalFolder();
@@ -96,6 +98,7 @@ bool __fastcall SamePaths(const UnicodeString & Path1, const UnicodeString & Pat
 bool __fastcall IsPathToSameFile(const UnicodeString & Path1, const UnicodeString & Path2);
 int __fastcall CompareLogicalText(
   const UnicodeString & S1, const UnicodeString & S2, bool NaturalOrderNumericalSorting);
+int __fastcall CompareNumber(__int64 Value1, __int64 Value2);
 bool ContainsTextSemiCaseSensitive(const UnicodeString & Text, const UnicodeString & SubText);
 bool __fastcall IsReservedName(UnicodeString FileName);
 UnicodeString __fastcall ApiPath(UnicodeString Path);
@@ -112,7 +115,7 @@ bool __fastcall IsLetter(wchar_t Ch);
 bool __fastcall IsDigit(wchar_t Ch);
 bool __fastcall IsHex(wchar_t Ch);
 UnicodeString __fastcall DecodeUrlChars(UnicodeString S);
-UnicodeString __fastcall EncodeUrlString(UnicodeString S, const UnicodeString & DoNotEncode = UnicodeString());
+UnicodeString __fastcall EncodeUrlString(UnicodeString S);
 UnicodeString __fastcall EncodeUrlPath(UnicodeString S);
 UnicodeString __fastcall AppendUrlParams(UnicodeString URL, UnicodeString Params);
 UnicodeString __fastcall ExtractFileNameFromUrl(const UnicodeString & Url);
@@ -173,12 +176,13 @@ void __fastcall ParseCertificate(const UnicodeString & Path,
 bool __fastcall IsHttpUrl(const UnicodeString & S);
 bool __fastcall IsHttpOrHttpsUrl(const UnicodeString & S);
 UnicodeString __fastcall ChangeUrlProtocol(const UnicodeString & S, const UnicodeString & Protocol);
-void __fastcall LoadScriptFromFile(UnicodeString FileName, TStrings * Lines);
+void __fastcall LoadScriptFromFile(UnicodeString FileName, TStrings * Lines, bool FallbackToAnsi = false);
 UnicodeString __fastcall StripEllipsis(const UnicodeString & S);
 UnicodeString __fastcall GetFileMimeType(const UnicodeString & FileName);
 bool __fastcall IsRealFile(const UnicodeString & FileName);
 UnicodeString GetOSInfo();
 UnicodeString GetEnvironmentInfo();
+void SetStringValueEvenIfEmpty(TStrings * Strings, const UnicodeString & Name, const UnicodeString & Value);
 //---------------------------------------------------------------------------
 struct TSearchRecSmart : public TSearchRec
 {

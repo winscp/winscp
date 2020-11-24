@@ -64,12 +64,14 @@ __published:
   TMenuItem *N3;
   TMenuItem *CheckAllFilesinThisDirectory1;
   TMenuItem *UncheckAllActionsinThisDirectory1;
+  TAction *BrowseLocalAction;
+  TAction *BrowseRemoteAction;
+  TMenuItem *BrowseLocalDirectory1;
+  TMenuItem *BrowseLocalDirectory2;
   void __fastcall HelpButtonClick(TObject * Sender);
   void __fastcall FormShow(TObject * Sender);
   void __fastcall StatusBarDrawPanel(TStatusBar *StatusBar,
           TStatusPanel *Panel, const TRect &Rect);
-  void __fastcall StatusBarMouseMove(TObject *Sender, TShiftState Shift,
-          int X, int Y);
   void __fastcall ListViewChange(TObject *Sender, TListItem *Item,
           TItemChange Change);
   void __fastcall ListViewChanging(TObject *Sender, TListItem *Item,
@@ -102,6 +104,9 @@ __published:
   void __fastcall MoveActionExecute(TObject *Sender);
   void __fastcall CheckDirectoryActionExecute(TObject *Sender);
   void __fastcall UncheckDirectoryActionExecute(TObject *Sender);
+  void __fastcall BrowseLocalActionExecute(TObject *Sender);
+  void __fastcall BrowseRemoteActionExecute(TObject *Sender);
+  void __fastcall ListViewRecreate(TObject *Sender);
 
 public:
   __fastcall TSynchronizeChecklistDialog(
@@ -109,7 +114,7 @@ public:
     const UnicodeString & LocalDirectory, const UnicodeString & RemoteDirectory,
     TCustomCommandMenuEvent OnCustomCommandMenu, TFullSynchronizeEvent OnSynchronize,
     TSynchronizeChecklistCalculateSize OnSynchronizeChecklistCalculateSize, TSynchronizeMoveEvent OnSynchronizeMove,
-    void * Token);
+    TSynchronizeBrowseEvent OnSynchronizeBrowse, void * Token);
   virtual __fastcall ~TSynchronizeChecklistDialog();
 
   bool __fastcall Execute(TSynchronizeChecklist * Checklist);
@@ -122,6 +127,7 @@ protected:
   UnicodeString FLocalDirectory;
   UnicodeString FRemoteDirectory;
   TWndMethod FOrigListViewWindowProc;
+  TWndMethod FOrigStatusBarWindowProc;
   int FTotals[1 + TSynchronizeChecklist::ActionCount];
   int FChecked[1 + TSynchronizeChecklist::ActionCount];
   __int64 FCheckedSize[1 + TSynchronizeChecklist::ActionCount];
@@ -129,10 +135,10 @@ protected:
   bool FChangingItemChecked;
   bool FChangingItemIgnore;
   bool FChangingItemMass;
-  UnicodeString FGeneralHint;
   TCustomCommandMenuEvent FOnCustomCommandMenu;
   TSynchronizeChecklistCalculateSize FOnSynchronizeChecklistCalculateSize;
   TSynchronizeMoveEvent FOnSynchronizeMove;
+  TSynchronizeBrowseEvent FOnSynchronizeBrowse;
   typedef std::map<const TSynchronizeChecklist::TItem *, TSynchronizeChecklist::TAction> TActions;
   TActions FActions;
   TFullSynchronizeEvent FOnSynchronize;
@@ -147,6 +153,7 @@ protected:
   void __fastcall LoadItem(TListItem * Item);
   void __fastcall LoadList();
   void __fastcall ListViewWindowProc(TMessage & Message);
+  void __fastcall StatusBarWindowProc(TMessage & Message);
   int __fastcall PanelAt(int X);
   void __fastcall CheckAll(bool Check);
   void __fastcall Check(bool Check);
@@ -172,7 +179,10 @@ protected:
   TSynchronizeMoveItems __fastcall GetMoveItems();
   void __fastcall DeleteItem(TListItem * Item);
   void __fastcall CheckDirectory(bool Check);
-  static int __fastcall CompareNumber(__int64 Value1, __int64 Value2);
+  void __fastcall DoBrowse(TOperationSide Side);
+  void __fastcall ListViewHintShow(TCMHintShow & HintShow);
+  void __fastcall StatusBarHintShow(TCMHintShow & HintShow);
+  DYNAMIC void __fastcall KeyDown(Word & Key, TShiftState Shift);
 };
 //----------------------------------------------------------------------------
 #endif

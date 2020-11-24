@@ -45,6 +45,11 @@ object NonVisualDataModule: TNonVisualDataModule
     object Rename1: TTBXItem
       Action = CurrentRenameAction
     end
+    object TBXSeparatorItem12: TTBXSeparatorItem
+    end
+    object TBXItem82: TTBXItem
+      Action = CurrentCopyToClipboardFocusedAction
+    end
     object N45: TTBXSeparatorItem
     end
     object RemoteFilePopupCustomCommandsMenu: TTBXSubmenuItem
@@ -622,16 +627,30 @@ object NonVisualDataModule: TNonVisualDataModule
         'Site Manager|Opens site manager (hold down Shift to open site ma' +
         'nager in new window)'
     end
-    object CloseSessionAction: TAction
+    object CloseSessionAction2: TAction
       Tag = 15
       Category = 'Session'
-      Caption = '&Disconnect'
-      Hint = 'Close session|Terminate current session'
+      Caption = '&Close Session'
       HelpKeyword = 'task_connections#closing'
+      Hint = 'Terminate the current session and close the tab'
       ImageIndex = 26
       SecondaryShortCuts.Strings = (
         'Ctrl+W')
       ShortCut = 24644
+    end
+    object DisconnectSessionAction: TAction
+      Tag = 15
+      Category = 'Session'
+      Caption = '&Disconnect Session'
+      HelpKeyword = 'task_connections#closing'
+      Hint = 'Disconnect the current session, but keep the tab opened'
+    end
+    object ReconnectSessionAction: TAction
+      Tag = 15
+      Category = 'Session'
+      Caption = '&Reconnect Session'
+      HelpKeyword = 'task_connections'
+      Hint = 'Reconnect the current disconnected session'
     end
     object SavedSessionsAction2: TAction
       Tag = 15
@@ -1315,7 +1334,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'Local Directory'
       Caption = '&Explore Directory'
-      Hint = 'Opens Windows Explorer with current local directory'
+      Hint = 'Opens Windows File Explorer with current local directory'
       ImageIndex = 56
       ShortCut = 49221
     end
@@ -1495,7 +1514,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'View'
       Caption = 'Show/Hide &Hidden Files'
-      HelpKeyword = 'ui_file_panel#special_files'
+      HelpKeyword = 'ui_file_panel#hidden_files'
       Hint = 'Toggle showing hidden files in panel(s)'
       ShortCut = 49224
     end
@@ -2246,7 +2265,7 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'task_connections#renaming'
       Hint = 'Rename session|Changes name of the current session'
     end
-    object CurrentCopyAction: TAction
+    object CurrentCopyToClipboardAction: TAction
       Tag = 15
       Category = 'Selected Operation'
       Caption = '&Copy'
@@ -2260,6 +2279,14 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = 'File &Colors...'
       HelpKeyword = 'ui_pref_file_colors'
       Hint = 'Configure file color rules'
+    end
+    object CurrentCopyToClipboardFocusedAction: TAction
+      Tag = 12
+      Category = 'Focused Operation'
+      Caption = '&Copy'
+      Hint = 'Copy|Copy the selected files to clipboard'
+      ImageIndex = 111
+      ShortCut = 16451
     end
   end
   object ExplorerBarPopup: TTBXPopupMenu
@@ -3010,7 +3037,13 @@ object NonVisualDataModule: TNonVisualDataModule
     Left = 480
     Top = 176
     object TBXItem124: TTBXItem
-      Action = CloseSessionAction
+      Action = CloseSessionAction2
+    end
+    object TBXItem79: TTBXItem
+      Action = DisconnectSessionAction
+    end
+    object TBXItem80: TTBXItem
+      Action = ReconnectSessionAction
     end
     object TBXItem219: TTBXItem
       Action = DuplicateSessionAction
@@ -3087,6 +3120,11 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object TBXItem58: TTBXItem
       Action = CurrentRenameAction
+    end
+    object TBXSeparatorItem11: TTBXSeparatorItem
+    end
+    object TBXItem81: TTBXItem
+      Action = CurrentCopyToClipboardFocusedAction
     end
     object TBXSeparatorItem3: TTBXSeparatorItem
     end

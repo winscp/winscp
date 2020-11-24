@@ -90,7 +90,7 @@ void __fastcall TS3FileSystem::Open()
   FLibS3Protocol = (Data->Ftps != ftpsNone) ? S3ProtocolHTTPS : S3ProtocolHTTP;
 
   UnicodeString AccessKeyId = Data->UserNameExpanded;
-  if (AccessKeyId.IsEmpty())
+  if (AccessKeyId.IsEmpty() && !FTerminal->SessionData->FingerprintScan)
   {
     if (!FTerminal->PromptUser(Data, pkUserName, LoadStr(S3_ACCESS_KEY_ID_TITLE), L"",
           LoadStr(S3_ACCESS_KEY_ID_PROMPT), true, 0, AccessKeyId))
@@ -100,9 +100,13 @@ void __fastcall TS3FileSystem::Open()
     }
   }
   FAccessKeyId = UTF8String(AccessKeyId);
+  if (FAccessKeyId.Length() > S3_MAX_ACCESS_KEY_ID_LENGTH)
+  {
+    FAccessKeyId.SetLength(S3_MAX_ACCESS_KEY_ID_LENGTH);
+  }
 
   UnicodeString SecretAccessKey = UTF8String(NormalizeString(Data->Password));
-  if (SecretAccessKey.IsEmpty())
+  if (SecretAccessKey.IsEmpty() && !FTerminal->SessionData->FingerprintScan)
   {
     if (!FTerminal->PromptUser(Data, pkPassword, LoadStr(S3_SECRET_ACCESS_KEY_TITLE), L"",
           LoadStr(S3_SECRET_ACCESS_KEY_PROMPT), false, 0, SecretAccessKey))
@@ -114,6 +118,13 @@ void __fastcall TS3FileSystem::Open()
   FSecretAccessKey = UTF8String(SecretAccessKey);
 
   FHostName = UTF8String(Data->HostNameExpanded);
+  FPortSuffix = UTF8String();
+  int ADefaultPort = DefaultPort(FTerminal->SessionData->FSProtocol, FTerminal->SessionData->Ftps);
+  DebugAssert(ADefaultPort == HTTPSPortNumber);
+  if (FTerminal->SessionData->PortNumber != ADefaultPort)
+  {
+    FPortSuffix = UTF8String(FORMAT(L":%d", (FTerminal->SessionData->PortNumber)));
+  }
   FTimeout = Data->Timeout;
 
   RegisterForNeonDebug(FTerminal);
@@ -181,7 +192,6 @@ void TS3FileSystem::LibS3SessionCallback(ne_session_s * Session, void * Callback
 //------------------------------------------------------------------------------
 void TS3FileSystem::InitSslSession(ssl_st * Ssl, ne_session * /*Session*/)
 {
-  // See also CAsyncSslSocketLayer::InitSSLConnection
   SetupSsl(Ssl, FTerminal->SessionData->MinTlsVersion, FTerminal->SessionData->MaxTlsVersion);
 }
 //---------------------------------------------------------------------------
@@ -465,6 +475,10 @@ TLibS3BucketContext TS3FileSystem::GetBucketContext(const UnicodeString & Bucket
     if (I != FRegions.end())
     {
       Region = I->second;
+      if (Region.IsEmpty())
+      {
+        Region = FAuthRegion;
+      }
     }
     else
     {
@@ -477,27 +491,40 @@ TLibS3BucketContext TS3FileSystem::GetBucketContext(const UnicodeString & Bucket
       Retry = true;
     }
 
+    S3UriStyle UriStyle = S3UriStyle(FTerminal->SessionData->S3UrlStyle);
+
     I = FHostNames.find(BucketName);
     UnicodeString HostName;
     if (I != FHostNames.end())
     {
       HostName = I->second;
+      if (SameText(HostName.SubString(1, BucketName.Length() + 1), BucketName + L"."))
+      {
+        HostName.Delete(1, BucketName.Length() + 1);
+        // Even when using path-style URL Amazon seems to redirect us to bucket hostname and
+        // we need to switch to virtual host style URL (without bucket name in the path)
+        UriStyle = S3UriStyleVirtualHost;
+      }
     }
     else
     {
       HostName = UnicodeString(FHostName);
     }
 
-    Result.HostNameBuf = UTF8String(HostName);
+    Result.HostNameBuf = UTF8String(HostName + UnicodeString(FPortSuffix));
     Result.hostName = Result.HostNameBuf.c_str();
     Result.BucketNameBuf = UTF8String(BucketName);
     Result.bucketName = Result.BucketNameBuf.c_str();
     Result.protocol = FLibS3Protocol;
-    Result.uriStyle = S3UriStyleVirtualHost;
+    Result.uriStyle = UriStyle;
     Result.accessKeyId = FAccessKeyId.c_str();
     Result.secretAccessKey = FSecretAccessKey.c_str();
     Result.securityToken = NULL;
     Result.AuthRegionBuf = UTF8String(Region);
+    if (Result.AuthRegionBuf.Length() > S3_MAX_REGION_LENGTH)
+    {
+      Result.AuthRegionBuf.SetLength(S3_MAX_REGION_LENGTH);
+    }
     Result.authRegion = Result.AuthRegionBuf.c_str();
 
     if (Retry)
@@ -523,16 +550,18 @@ TLibS3BucketContext TS3FileSystem::GetBucketContext(const UnicodeString & Bucket
                !Data.EndpointDetail.IsEmpty())
       {
         UnicodeString Endpoint = Data.EndpointDetail;
-        if (SameText(Endpoint.SubString(1, BucketName.Length() + 1), BucketName + L"."))
-        {
-          Endpoint.Delete(1, BucketName.Length() + 1);
-        }
         if (HostName != Endpoint)
         {
           FTerminal->LogEvent(FORMAT("Will use endpoint \"%s\" for bucket \"%s\" from now on.", (Endpoint, BucketName)));
           FHostNames.insert(std::make_pair(BucketName, Endpoint));
           Retry = true;
         }
+      }
+      // Minio
+      else if (Data.Status == S3StatusOK)
+      {
+        FTerminal->LogEvent(FORMAT("Will use default region for bucket \"%s\" from now on.", (BucketName)));
+        FRegions.insert(std::make_pair(BucketName, UnicodeString()));
       }
     }
   }
@@ -852,7 +881,7 @@ void TS3FileSystem::ReadDirectoryInternal(
       Retry = false;
 
       S3_list_service(
-        FLibS3Protocol, FAccessKeyId.c_str(), FSecretAccessKey.c_str(), 0, FHostName.c_str(),
+        FLibS3Protocol, FAccessKeyId.c_str(), FSecretAccessKey.c_str(), 0, (FHostName + FPortSuffix).c_str(),
         StrToS3(FAuthRegion), MaxKeys, FRequestContext, FTimeout, &ListServiceHandler, &Data);
 
       HandleNonBucketStatus(Data, Retry);
@@ -1074,7 +1103,7 @@ void __fastcall TS3FileSystem::CreateDirectory(const UnicodeString & ADirName, b
       Retry = false;
 
       S3_create_bucket(
-        FLibS3Protocol, FAccessKeyId.c_str(), FSecretAccessKey.c_str(), NULL, FHostName.c_str(), StrToS3(BucketName),
+        FLibS3Protocol, FAccessKeyId.c_str(), FSecretAccessKey.c_str(), NULL, (FHostName + FPortSuffix).c_str(), StrToS3(BucketName),
         StrToS3(FAuthRegion), S3CannedAclPrivate, Region, FRequestContext, FTimeout, &ResponseHandler, &Data);
 
       HandleNonBucketStatus(Data, Retry);

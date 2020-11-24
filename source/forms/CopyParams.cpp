@@ -16,9 +16,7 @@
 #pragma link "Rights"
 #pragma link "HistoryComboBox"
 #pragma link "ComboEdit"
-#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
-#endif
 //---------------------------------------------------------------------------
 __fastcall TCopyParamsFrame::TCopyParamsFrame(TComponent* Owner)
         : TFrame(Owner)
@@ -311,7 +309,7 @@ void __fastcall TCopyParamsFrame::UpdateRightsByStr()
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamsFrame::RightsEditExit(TObject * /*Sender*/)
 {
-  if (RightsEdit->Modified)
+  if (RightsEdit->Modified && !IsCancelButtonBeingClicked(this))
   {
     try
     {
@@ -334,16 +332,19 @@ void __fastcall TCopyParamsFrame::RightsEditContextPopup(TObject * Sender,
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamsFrame::SpeedComboExit(TObject * /*Sender*/)
 {
-  try
+  if (!IsCancelButtonBeingClicked(this))
   {
-    SpeedCombo->Text = SetSpeedLimit(GetSpeedLimit(SpeedCombo->Text));
-  }
-  catch (Exception & E)
-  {
-    ShowExtendedException(&E);
-    SpeedCombo->SetFocus();
-    SpeedCombo->SelectAll();
-    Abort();
+    try
+    {
+      SpeedCombo->Text = SetSpeedLimit(GetSpeedLimit(SpeedCombo->Text));
+    }
+    catch (Exception & E)
+    {
+      ShowExtendedException(&E);
+      SpeedCombo->SetFocus();
+      SpeedCombo->SelectAll();
+      Abort();
+    }
   }
 }
 //---------------------------------------------------------------------------

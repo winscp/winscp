@@ -198,6 +198,7 @@ protected:
   void __fastcall WriteLocalFile(
     TStream * FileStream, TFileBuffer & BlockBuf, const UnicodeString & LocalFileName,
     TFileOperationProgressType * OperationProgress);
+  bool __fastcall DoesFileLookLikeSymLink(TRemoteFile * File);
 };
 //---------------------------------------------------------------------------
 #endif // SftpFileSystemH

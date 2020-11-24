@@ -174,6 +174,7 @@ type
     FOnChangeFocus: TDirViewChangeFocusEvent;
 
     procedure CNNotify(var Message: TWMNotify); message CN_NOTIFY;
+    procedure WMNotify(var Msg: TWMNotify); message WM_NOTIFY;
     procedure WMKeyDown(var Message: TWMKeyDown); message WM_KEYDOWN;
     procedure WMLButtonDblClk(var Message: TWMLButtonDblClk); message WM_LBUTTONDBLCLK;
     procedure WMLButtonUp(var Message: TWMLButtonUp); message WM_LBUTTONUP;
@@ -229,8 +230,8 @@ type
     procedure DDDragDetect(grfKeyState: Longint; DetectStart, Point: TPoint; DragStatus: TDragDetectStatus); virtual;
     procedure DDDragEnter(DataObj: IDataObject; grfKeyState: Longint; Point: TPoint; var dwEffect: longint; var Accept: Boolean);
     procedure DDDragLeave;
-    procedure DDDragOver(grfKeyState: Longint; Point: TPoint; var dwEffect: Longint);
-    procedure DDChooseEffect(grfKeyState: Integer; var dwEffect: Integer); virtual;
+    procedure DDDragOver(grfKeyState: Longint; Point: TPoint; var dwEffect: Longint; PreferredEffect: LongInt);
+    procedure DDChooseEffect(grfKeyState: Integer; var dwEffect: Integer; PreferredEffect: Integer); virtual;
     procedure DDDrop(DataObj: IDataObject; grfKeyState: LongInt; Point: TPoint; var dwEffect: Longint);
     procedure DDDropHandlerSucceeded(Sender: TObject; grfKeyState: Longint; Point: TPoint; dwEffect: Longint); virtual;
     procedure DDGiveFeedback(dwEffect: Longint; var Result: HResult); virtual;
@@ -250,6 +251,7 @@ type
     procedure ColClick(Column: TListColumn); override;
     procedure CreateWnd; override;
     procedure DestroyWnd; override;
+    function OperateOnFocusedFile(Focused: Boolean; OnlyFocused: Boolean = False): Boolean;
     function CustomCreateFileList(Focused, OnlyFocused: Boolean;
       FullPath: Boolean; FileList: TStrings = nil; ItemObject: Boolean = False): TStrings;
     function CustomDrawItem(Item: TListItem; State: TCustomDrawState;
@@ -317,6 +319,7 @@ type
     procedure DoHistoryGo(Index: Integer);
     procedure WMSetFocus(var Message: TWMSetFocus); message WM_SETFOCUS;
     procedure WMKillFocus(var Message: TWMKillFocus); message WM_KILLFOCUS;
+    procedure WMThemeChanged(var Message: TMessage); message WM_THEMECHANGED;
     procedure EnsureSelectionRedrawn;
     function HiddenCount: Integer; virtual; abstract;
     function FilteredCount: Integer; virtual; abstract;
@@ -331,6 +334,7 @@ type
     procedure Load(DoFocusSomething: Boolean); virtual;
     procedure NeedImageLists(Recreate: Boolean);
     procedure FreeImageLists;
+    procedure UpdateDarkMode;
     procedure DoUpdateStatusBar(Force: Boolean = False);
     procedure DoCustomDrawItem(Item: TListItem; Stage: TCustomDrawStage);
     property ImageList16: TImageList read FImageList16;
@@ -501,6 +505,8 @@ resourcestring
   SDriveNotReady = 'Drive ''%s:'' is not ready.';
   SDirNotExists = 'Directory ''%s'' doesn''t exist.';
 
+function CreateDirViewStateForFocusedItem(FocusedItem: string): TObject;
+
 {Additional non-component specific functions:}
 
 {Create and resolve a shell link (file shortcut):}
@@ -532,7 +538,7 @@ var
 implementation
 
 uses
-  Math, DirViewColProperties, UITypes, Types, OperationWithTimeout;
+  Math, DirViewColProperties, UITypes, Types, OperationWithTimeout, Winapi.UxTheme, Vcl.Themes;
 
 const
   Space = ' ';
@@ -616,6 +622,15 @@ begin
   HistoryPaths.Free;
 
   inherited;
+end;
+
+function CreateDirViewStateForFocusedItem(FocusedItem: string): TObject;
+var
+  State: TDirViewState;
+begin
+  State := TDirViewState.Create;
+  State.FocusedItem := FocusedItem;
+  Result := State;
 end;
 
 function IsExecutable(FileName: string): Boolean;
@@ -899,6 +914,35 @@ begin
   end;
 end;
 
+procedure TCustomDirView.WMNotify(var Msg: TWMNotify);
+begin
+  // This all is to make header text white in dark mode
+  if DarkMode and SupportsDarkMode and (FHeaderHandle <> 0) and (Msg.NMHdr^.hWndFrom = FHeaderHandle) then
+  begin
+    if Msg.NMHdr.code = NM_CUSTOMDRAW then
+    begin
+      with PNMLVCustomDraw(Msg.NMHdr)^ do
+      begin
+        if nmcd.dwDrawStage = CDDS_PREPAINT then
+        begin
+          inherited;
+          Msg.Result := Msg.Result or CDRF_NOTIFYITEMDRAW;
+        end
+          else
+        if nmcd.dwDrawStage = CDDS_ITEMPREPAINT then
+        begin
+          SetTextColor(nmcd.hdc, ColorToRGB(Font.Color));
+          Msg.Result := CDRF_DODEFAULT;
+          inherited;
+        end
+          else inherited;
+      end;
+    end
+      else inherited;
+  end
+    else inherited;
+end;
+
 procedure TCustomDirView.CNNotify(var Message: TWMNotify);
 
   procedure DrawOverlayImage(DC: HDC; Image: Integer);
@@ -1166,6 +1210,31 @@ begin
   LargeImages := nil;
 end;
 
+procedure TCustomDirView.WMThemeChanged(var Message: TMessage);
+begin
+  if SupportsDarkMode then // To reduce impact
+  begin
+    UpdateDarkMode;
+    RedrawWindow(Handle, nil, 0, RDW_FRAME or RDW_INVALIDATE);
+  end;
+
+  inherited;
+end;
+
+procedure TCustomDirView.UpdateDarkMode;
+begin
+  if SupportsDarkMode then // To reduce impact
+  begin
+    AllowDarkModeForWindow(Self, DarkMode);
+
+    if FHeaderHandle <> 0 then
+    begin
+      AllowDarkModeForWindow(FHeaderHandle, DarkMode);
+      SendMessage(FHeaderHandle, WM_THEMECHANGED, 0, 0);
+    end;
+  end;
+end;
+
 procedure TCustomDirView.CreateWnd;
 begin
   inherited;
@@ -1174,7 +1243,14 @@ begin
     PopupMenu.Autopopup := False;
   FDragDropFilesEx.DragDropControl := Self;
 
-  if DarkMode then AllowDarkModeForWindow(Self, DarkMode);
+  if SupportsDarkMode then
+  begin
+    // This enabled dark mode - List view itself supports dark mode somewhat even in the our 'Explorer' theme.
+    // The 'ItemsView' has better dark mode selection color, but on the other hand is does not have dark scrollbars.
+    // win32-darkmode has ugly fix for that (FixDarkScrollBar), which we do not want to employ.
+    SetWindowTheme(FHeaderHandle, 'ItemsView', nil);
+    if DarkMode then UpdateDarkMode;
+  end;
 
   NeedImageLists(False);
 end;
@@ -2114,7 +2190,7 @@ begin
 end;
 
 procedure TCustomDirView.DDDragOver(grfKeyState: Integer; Point: TPoint;
-  var dwEffect: Integer);
+  var dwEffect: Integer; PreferredEffect: Integer);
 var
   DropItem: TListItem;
   CanDrop: Boolean;
@@ -2159,7 +2235,7 @@ begin
   {Set dropeffect:}
   if (not HasDropHandler) and (not Loading) then
   begin
-    DDChooseEffect(grfKeyState, dwEffect);
+    DDChooseEffect(grfKeyState, dwEffect, PreferredEffect);
 
     if Assigned(FOnDDDragOver) then
       FOnDDDragOver(Self, grfKeyState, Point, dwEffect);
@@ -2200,6 +2276,13 @@ begin
   Result := nil;
 end;
 
+function TCustomDirView.OperateOnFocusedFile(Focused, OnlyFocused: Boolean): Boolean;
+begin
+  Result :=
+    Assigned(ItemFocused) and
+    ((Focused and (not ItemFocused.Selected)) or (SelCount = 0) or OnlyFocused);
+end;
+
 function TCustomDirView.CustomCreateFileList(Focused, OnlyFocused: Boolean;
   FullPath: Boolean; FileList: TStrings; ItemObject: Boolean): TStrings;
 
@@ -2222,8 +2305,7 @@ begin
     else Result := TStringList.Create;
 
   try
-    if Assigned(ItemFocused) and
-       ((Focused and (not ItemFocused.Selected)) or (SelCount = 0) or OnlyFocused) then
+    if OperateOnFocusedFile(Focused, OnlyFocused) then
     begin
       AddItem(ItemFocused)
     end
@@ -2360,7 +2442,7 @@ begin
   DropTarget := nil;
 end;
 
-procedure TCustomDirView.DDChooseEffect(grfKeyState: Integer; var dwEffect: Integer);
+procedure TCustomDirView.DDChooseEffect(grfKeyState: Integer; var dwEffect: Integer; PreferredEffect: Integer);
 begin
   if Assigned(FOnDDChooseEffect) then
     FOnDDChooseEffect(Self, grfKeyState, dwEffect);
@@ -3178,13 +3260,17 @@ begin
   State := AState as TDirViewState;
   Assert(Assigned(State));
 
-  FHistoryPaths.Assign(State.HistoryPaths);
+  if Assigned(State.HistoryPaths) then
+    FHistoryPaths.Assign(State.HistoryPaths);
   FBackCount := State.BackCount;
   DoHistoryChange;
-  // TCustomDirViewColProperties should not be here
-  DirColProperties := ColProperties as TCustomDirViewColProperties;
-  Assert(Assigned(DirColProperties));
-  DirColProperties.SortStr := State.SortStr;
+  if State.SortStr <> '' then
+  begin
+    // TCustomDirViewColProperties should not be here
+    DirColProperties := ColProperties as TCustomDirViewColProperties;
+    Assert(Assigned(DirColProperties));
+    DirColProperties.SortStr := State.SortStr;
+  end;
   Mask := State.Mask;
   if State.FocusedItem <> '' then
   begin
@@ -3230,7 +3316,7 @@ begin
     FDarkMode := Value;
     // Call only when switching to dark more and when switching back to the light mode.
     // But not for initial light mode - To reduce an impact of calling an undocumented function.
-    if HandleAllocated then AllowDarkModeForWindow(Self, DarkMode);
+    if HandleAllocated then UpdateDarkMode;
   end;
 end;
 

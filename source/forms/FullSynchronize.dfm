@@ -330,9 +330,9 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
       Default = True
       OnClick = Start1Click
     end
-    object StartInNewWindow1: TMenuItem
+    object StartInNewWindowItem: TMenuItem
       Caption = 'Start in &New Window'
-      OnClick = StartInNewWindow1Click
+      OnClick = StartInNewWindowItemClick
     end
   end
 end

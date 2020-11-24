@@ -76,7 +76,11 @@
 #expr ParseVersion(MainFileSource, Major, Minor, Rev, Build)
 #define VersionOnly Str(Major)+"."+Str(Minor)+(Rev > 0 ? "."+Str(Rev) : "")
 #define Version VersionOnly+(Status != "" ? " "+Status : "")
-#define FTag VersionOnly+(Status != "" ? "."+Status : "")
+
+#ifndef BaseFilename
+  #define FTag VersionOnly+(Status != "" ? "."+Status : "")
+  #define BaseFilename "WinSCP-" + FTag + "-Setup"
+#endif
 
 #define WebArguments "ver=" +VersionOnly + "&lang={language}&utm_source=winscp&utm_medium=setup&utm_campaign=" + VersionOnly
 #define WebGettingStarted WebRoot + "eng/installed.php?" + WebArguments + "&prevver="
@@ -85,8 +89,6 @@
 
 #define ExplorerFileBase "Explorer"
 #define CommanderFileBase "Commander"
-#define WizardImageFileBase "Tall"
-#define WizardSmallImageFileBase "Square"
 #define SelectDirFileBase "Opened bookmark folder-stored session folder"
 
 [Setup]
@@ -101,29 +103,33 @@ VersionInfoDescription=Setup for WinSCP {#Version} (SFTP, FTP, WebDAV and SCP cl
 VersionInfoVersion={#Major}.{#Minor}.{#Rev}.{#Build}
 VersionInfoTextVersion={#Version}
 VersionInfoCopyright=(c) 2000-{#Year} Martin Prikryl
-DefaultDirName={pf}\WinSCP
+VersionInfoOriginalFileName={#BaseFilename}.exe
+DefaultDirName={autopf}\WinSCP
 LicenseFile=license.setup.txt
 UninstallDisplayIcon={app}\WinSCP.exe
 OutputDir={#OutputDir}
 DisableStartupPrompt=yes
 AppVersion={#Version}
 AppVerName=WinSCP {#Version}
-OutputBaseFilename=WinSCP-{#FTag}-Setup
+OutputBaseFilename={#BaseFilename}
 SolidCompression=yes
 #ifdef ImagesDir
-WizardImageFile={#ImagesDir}\{#WizardImageFileBase} 100.bmp
-WizardSmallImageFile={#ImagesDir}\{#WizardSmallImageFileBase} 100.bmp
+WizardImageFile={#ImagesDir}\Tall *.bmp
+WizardSmallImageFile={#ImagesDir}\Square *.bmp
 #endif
 ShowTasksTreeLines=yes
-PrivilegesRequired=none
+PrivilegesRequired=admin
+PrivilegesRequiredOverridesAllowed=commandline dialog
 ShowLanguageDialog=auto
 UsePreviousLanguage=yes
 DisableProgramGroupPage=yes
-MinVersion=0,5.1
+MinVersion=6.0
 SetupIconFile=winscpsetup.ico
 DisableDirPage=no
+WizardStyle=modern
 ; We do not want the Explorer restarts as that is not pleasant to the user
 CloseApplications=no
+UsedUserAreasWarning=no
 #ifdef Sign
 SignTool=sign $f "WinSCP Installer" https://winscp.net/eng/docs/installation
 #endif
@@ -204,29 +210,17 @@ Name: enableupdates; Description: {cm:EnableUpdates}
 Name: enableupdates\enablecollectusage; Description: {cm:EnableCollectUsage}
 ; Windows integration
 Name: desktopicon; Description: {cm:DesktopIconTask}
-Name: desktopicon\user; Description: {cm:DesktopIconUserTask}; \
-  Flags: exclusive unchecked
-Name: desktopicon\common; Description: {cm:DesktopIconCommonTask}; \
-  Flags: exclusive
-; No Quick Launch on Win7
-Name: quicklaunchicon; Description: {cm:QuickLaunchIconTask}; \
-  Flags: unchecked; OnlyBelowVersion: 6.1.7600
 Name: sendtohook; Description: {cm:SendToHookTask}
 Name: urlhandler; Description: {cm:RegisterAsUrlHandlers}
 Name: searchpath; Description: {cm:AddSearchPath}; \
-  Flags: unchecked; Check: IsAdminLoggedOn
+  Flags: unchecked; Check: IsAdminInstallMode
 
 [Icons]
-Name: "{commonprograms}\WinSCP"; Filename: "{app}\WinSCP.exe"; Components: main; \
+Name: "{autoprograms}\WinSCP"; Filename: "{app}\WinSCP.exe"; Components: main; \
   Comment: "{cm:ProgramComment2}"
 ; This is created when desktopicon task is selected
-Name: "{userdesktop}\WinSCP"; Filename: "{app}\WinSCP.exe"; \
-  Tasks: desktopicon\user; Comment: "{cm:ProgramComment2}"
-Name: "{commondesktop}\WinSCP"; Filename: "{app}\WinSCP.exe"; \
-  Tasks: desktopicon\common; Comment: "{cm:ProgramComment2}"
-; This is created when quicklaunchicon task is selected
-Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\WinSCP"; \
-  Filename: "{app}\WinSCP.exe"; Tasks: quicklaunchicon
+Name: "{autodesktop}\WinSCP"; Filename: "{app}\WinSCP.exe"; \
+  Tasks: desktopicon; Comment: "{cm:ProgramComment2}"
 ; This is created when sendtohook task is selected
 Name: "{usersendto}\{cm:SendToHookNew}"; Filename: "{app}\WinSCP.exe"; \
   Parameters: "/upload"; Tasks: sendtohook
@@ -259,12 +253,6 @@ Type: files; Name: "{app}\WinSCP.cgl"
 ; that can take long with solid compression enabled
 Source: "{#ImagesDir}\{#ExplorerFileBase} *.bmp"; Flags: dontcopy
 Source: "{#ImagesDir}\{#CommanderFileBase} *.bmp"; Flags: dontcopy
-; We do not need 100% images here, they are embedded already automatically
-; by WizardImageFile and WizardSmallImageFile
-Source: "{#ImagesDir}\{#WizardImageFileBase} *.bmp"; Excludes: "* 100.bmp"; \
-  Flags: dontcopy
-Source: "{#ImagesDir}\{#WizardSmallImageFileBase} *.bmp"; Excludes: "* 100.bmp"; \
-  Flags: dontcopy
 Source: "{#ImagesDir}\{#SelectDirFileBase} *.bmp"; Flags: dontcopy
 #ifdef Donations
 Source: "{#ImagesDir}\{#PayPalCardImage}"; Flags: dontcopy
@@ -319,13 +307,13 @@ Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface"; ValueType: dword; 
   ValueName: "Interface"; ValueData: 0; Check: UserSettings(1)
 Root: HKLM; SubKey: "{#RegistryKey}"; ValueType: dword; \
   ValueName: "DefaultInterfaceInterface"; ValueData: 0; \
-  Check: UserSettings(1); Flags: noerror
+  Check: UserSettings(1) and IsAdminInstallMode; Flags: noerror
 ; Explorer-like interface
 Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface"; ValueType: dword; \
   ValueName: "Interface"; ValueData: 1; Check: not UserSettings(1)
 Root: HKLM; SubKey: "{#RegistryKey}"; ValueType: dword; \
   ValueName: "DefaultInterfaceInterface"; ValueData: 1; \
-  Check: not UserSettings(1); Flags: noerror
+  Check: (not UserSettings(1)) and IsAdminInstallMode; Flags: noerror
 ; If installer enabled ddext, let it reset the settings on uninstall,
 ; so the default is used on the next run
 Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface"; ValueType: dword; \
@@ -337,10 +325,10 @@ Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface\Updates"; \
   Tasks: enableupdates; Check: not UpdatesEnabled
 Root: HKLM; SubKey: "{#RegistryKey}"; \
   ValueType: dword; ValueName: "DefaultUpdatesPeriod"; ValueData: 7; \
-  Tasks: enableupdates; Flags: noerror
+  Tasks: enableupdates; Flags: noerror; Check: IsAdminInstallMode
 Root: HKLM; SubKey: "{#RegistryKey}"; \
   ValueType: dword; ValueName: "DefaultCollectUsage"; ValueData: 1; \
-  Tasks: enableupdates\enablecollectusage; Flags: noerror
+  Tasks: enableupdates\enablecollectusage; Flags: noerror; Check: IsAdminInstallMode
 
 #sub EmitLang
 
@@ -421,10 +409,12 @@ begin
   MsgBox(Text, mbInformation, MB_OK);
 end;
 
+#ifdef Sponsor
 function IsWinVista: Boolean;
 begin
   Result := (GetWindowsVersion >= $06000000);
 end;
+#endif
 
 procedure CutVersionPart(var VersionString: string; var VersionPart: Word);
 var
@@ -713,9 +703,9 @@ const
 
 procedure LoadBitmap(Image: TBitmapImage; FileName: string; BackgroundColor: TColor);
 var
-  Bitmap: TAlphaBitmap;
+  Bitmap: TBitmap;
 begin
-  Bitmap := TAlphaBitmap.Create();
+  Bitmap := TBitmap.Create();
   Bitmap.AlphaFormat := afDefined;
   Bitmap.LoadFromFile(FileName);
   Image.Bitmap := Bitmap;
@@ -744,17 +734,12 @@ begin
     else Result := 100;
 end;
 
-procedure LoadEmbededScaledBitmap(Image: TBitmapImage; NameBase: string; SizeBase: Integer; BackgroundColor: TColor);
+procedure LoadEmbededScaledIcon(Image: TBitmapImage; NameBase: string; SizeBase: Integer; BackgroundColor: TColor);
 var
   Name: String;
 begin
   Name := Format('%s %d.bmp', [NameBase, SizeBase * GetScalingFactor div 100]);
   LoadEmbededBitmap(Image, Name, BackgroundColor);
-end;
-
-procedure LoadEmbededScaledIcon(Image: TBitmapImage; NameBase: string; SizeBase: Integer; BackgroundColor: TColor);
-begin
-  LoadEmbededScaledBitmap(Image, NameBase, SizeBase, BackgroundColor);
   Image.AutoSize := True;
 end;
 
@@ -829,88 +814,14 @@ begin
   Result := True;
 end;
 
-function IsElevated: Boolean;
+function Bullet(S: string): string;
 begin
-  Result := IsAdminLoggedOn or IsPowerUserLoggedOn;
-end;
-
-function HaveWriteAccessToApp: Boolean;
-var
-  FileName: string;
-begin
-  FileName := AddBackslash(WizardDirValue) + 'writetest.tmp';
-  Result := SaveStringToFile(FileName, 'test', False);
-  if Result then
-  begin
-    Log(Format('Have write access to the last installation path [%s]', [WizardDirValue]));
-    DeleteFile(FileName);
-  end
-    else
-  begin
-    Log(Format('Does not have write access to the last installation path [%s]', [WizardDirValue]));
-  end;
-end;
-
-procedure ExitProcess(uExitCode: UINT);
-  external 'ExitProcess@kernel32.dll stdcall';
-function ShellExecute(hwnd: HWND; lpOperation: string; lpFile: string;
-  lpParameters: string; lpDirectory: string; nShowCmd: Integer): THandle;
-  external 'ShellExecuteW@shell32.dll stdcall';
-
-function Elevate: Boolean;
-var
-  I: Integer;
-  RetVal: Integer;
-  Params: string;
-  S: string;
-begin
-  Result := not CmdLineParamExists('/Elevated');
-  if not Result then
-  begin
-    Log('Elevation already attempted and silently failed, continuing unelevated');
-  end
-    else
-  begin
-    // Collect current instance parameters
-    for I := 1 to ParamCount do
-    begin
-      S := ParamStr(I);
-      // Unique log file name for the elevated instance
-      if CompareText(Copy(S, 1, 5), '/LOG=') = 0 then
-      begin
-        S := S + '-elevated';
-      end;
-      // Do not pass our /SL5 switch
-      if CompareText(Copy(S, 1, 5), '/SL5=') <> 0 then
-      begin
-        Params := Params + AddQuotes(S) + ' ';
-      end;
-    end;
-
-    // ... and add selected language
-    Params := Params + '/LANG=' + ActiveLanguage + ' /Elevated';
-
-    Log(Format('Elevating setup with parameters [%s]', [Params]));
-    RetVal := ShellExecute(0, 'runas', ExpandConstant('{srcexe}'), Params, '', SW_SHOW);
-    Log(Format('Running elevated setup returned [%d]', [RetVal]));
-    Result := (RetVal > 32);
-    // if elevated executing of this setup succeeded, then...
-    if Result then
-    begin
-      Log('Elevation succeeded');
-      // exit this non-elevated setup instance
-      ExitProcess(0);
-    end
-      else
-    begin
-      Log(Format('Elevation failed [%s]', [SysErrorMessage(RetVal)]));
-    end;
-  end;
+  if Copy(S, 1, 1) = '-' then S := #$2022'  ' + Trim(Copy(S, 2, Length(S) - 1));
+  Result := S;
 end;
 
 procedure InitializeWizard;
 var
-  DefaultLang: Boolean;
   UserInterface: Cardinal;
   UpdatesPeriod: Cardinal;
   Caption: TLabel;
@@ -931,9 +842,10 @@ begin
   LicenseAccepted := False;
   InitInterface := -1;
 
-  DefaultLang := (ActiveLanguage = '{#DefaultLang}');
-
   Upgrade :=
+    // We may want to use HKA to work correctly with side-by-side installations.
+    // But as Updade is really used for changing REGISTRY configuration options only,
+    // which are shared between all-users and current-user installations, it does not really matter.
     RegQueryStringValue(HKLM, '{#InnoSetupReg}', '{#InnoSetupAppPathReg}', S) or
     RegQueryStringValue(HKCU, '{#InnoSetupReg}', '{#InnoSetupAppPathReg}', S);
 
@@ -954,8 +866,6 @@ begin
 
   WizardForm.KeyPreview := True;
   WizardForm.OnKeyDown := @FormKeyDown;
-  // to accomodate one more task
-  WizardForm.TasksList.Height := WizardForm.TasksList.Height + ScaleY(8);
 
   // allow installation without requiring user to accept license
   WizardForm.LicenseAcceptedRadio.Checked := True;
@@ -975,6 +885,7 @@ begin
   // add help button
   HelpButton := TButton.Create(WizardForm);
   HelpButton.Parent := WizardForm;
+  HelpButton.Anchors := [akLeft, akBottom];
   HelpButton.Left := WizardForm.ClientWidth - GetRight(WizardForm.CancelButton);
   HelpButton.Top := WizardForm.CancelButton.Top;
   HelpButton.Width := WizardForm.CancelButton.Width;
@@ -982,38 +893,6 @@ begin
   HelpButton.Caption := CustomMessage('HelpButton');
   HelpButton.OnClick := @HelpButtonClick;
 
-  // elevate
-
-  if not IsWinVista then
-  begin
-    Log(Format('This version of Windows [%x] does not support elevation', [GetWindowsVersion]));
-  end
-    else
-  if IsElevated then
-  begin
-    Log('Running elevated');
-  end
-    else
-  begin
-    Log('Running non-elevated');
-    if Upgrade then
-    begin
-      if not HaveWriteAccessToApp then
-      begin
-        Elevate;
-      end;
-    end
-      else
-    begin
-      if not Elevate then
-      begin
-        WizardForm.DirEdit.Text := ExpandConstant('{localappdata}\WinSCP');
-        Log(Format('Falling back to local application user folder [%s]', [WizardForm.DirEdit.Text]));
-      end;
-    end;
-  end;
-
-  // Only after elevating, not to show the message twice
   Completeness := LanguageCompleteness(ActiveLanguage);
   if (Completeness < 100) and (not WizardSilent) then
   begin
@@ -1052,14 +931,14 @@ begin
   if not Upgrade then
   begin
     Caption.Caption :=
-      CustomMessage('TypicalType1') + NewLine +
-      CustomMessage('TypicalType2') + NewLine +
-      CustomMessage('TypicalType3');
+      Bullet(CustomMessage('TypicalType1')) + NewLine +
+      Bullet(CustomMessage('TypicalType2')) + NewLine +
+      Bullet(CustomMessage('TypicalType3'));
   end
     else
   begin
     Caption.Caption :=
-      CustomMessage('TypicalUpgradeType1');
+      Bullet(CustomMessage('TypicalUpgradeType1'));
   end;
   Caption.Left := ScaleX(4) + ScaleX(20);
   Caption.Width := SetupTypePage.SurfaceWidth - Caption.Left;
@@ -1086,13 +965,13 @@ begin
   if not Upgrade then
   begin
     Caption.Caption :=
-      CustomMessage('CustomType1');
+      Bullet(CustomMessage('CustomType1'));
   end
     else
   begin
     Caption.Caption :=
-      CustomMessage('CustomUpgradeType1') + NewLine +
-      CustomMessage('CustomUpgradeType2');
+      Bullet(CustomMessage('CustomUpgradeType1')) + NewLine +
+      Bullet(CustomMessage('CustomUpgradeType2'));
   end;
   Caption.Left := ScaleX(4) + ScaleX(20);
   Caption.Width := SetupTypePage.SurfaceWidth - Caption.Left;
@@ -1143,9 +1022,10 @@ begin
   Caption := TLabel.Create(InterfacePage);
   Caption.WordWrap := True;
   Caption.Caption :=
-      CustomMessage('NortonCommanderInterface1') + NewLine +
-      CustomMessage('NortonCommanderInterface2') + NewLine +
-      CustomMessage('NortonCommanderInterface3');
+      Bullet(CustomMessage('NortonCommanderInterface1')) + NewLine +
+      Bullet(CustomMessage('NortonCommanderInterface2')) + NewLine +
+      Bullet(CustomMessage('NortonCommanderInterface3'));
+  Caption.Anchors := [akLeft, akTop, akRight];
   Caption.Left := GetRight(CommanderRadioButton);
   Caption.Width := InterfacePage.SurfaceWidth - Caption.Left;
   Caption.Top := CommanderRadioButton.Top;
@@ -1175,9 +1055,10 @@ begin
   Caption := TLabel.Create(InterfacePage);
   Caption.WordWrap := True;
   Caption.Caption :=
-      CustomMessage('ExplorerInterface1') + NewLine +
-      CustomMessage('ExplorerInterface2') + NewLine +
-      CustomMessage('ExplorerInterface3');
+      Bullet(CustomMessage('ExplorerInterface1')) + NewLine +
+      Bullet(CustomMessage('ExplorerInterface2')) + NewLine +
+      Bullet(CustomMessage('ExplorerInterface3'));
+  Caption.Anchors := [akLeft, akTop, akRight];
   Caption.Left := GetRight(ExplorerRadioButton);
   Caption.Width := InterfacePage.SurfaceWidth - Caption.Left;
   Caption.Top := ExplorerRadioButton.Top;
@@ -1214,6 +1095,7 @@ begin
   Caption := TLabel.Create(DonationPanel);
   Caption.WordWrap := True;
   Caption.Caption := CustomMessage('PleaseDonate');
+  Caption.Anchors := [akLeft, akTop, akRight];
   Caption.Left := 0;
   Caption.Top := 0;
   Caption.Width := DonationPanel.Width;
@@ -1256,15 +1138,6 @@ begin
   WizardForm.YesRadio.OnClick := @UpdatePostInstallRunCheckboxes;
   WizardForm.NoRadio.OnClick := @UpdatePostInstallRunCheckboxes;
   UpdatePostInstallRunCheckboxes(nil);
-
-  // 100% images are automatically loaded by
-  // WizardImageFile and WizardSmallImageFile
-  if GetScalingFactor > 100 then
-  begin
-    LoadEmbededScaledBitmap(WizardForm.WizardBitmapImage, '{#WizardImageFileBase}', 100, 0);
-    LoadEmbededScaledBitmap(WizardForm.WizardBitmapImage2, '{#WizardImageFileBase}', 100, 0);
-    LoadEmbededScaledBitmap(WizardForm.WizardSmallBitmapImage, '{#WizardSmallImageFileBase}', 100, 0);
-  end;
 
 #ifdef ImagesDir
   // Text does not scale as quick as with DPI,
@@ -1399,6 +1272,7 @@ begin
 
       // Hide "about donations" if it does not fit nicely
       // (happens on "long" languages, as German)
+      // Should not happen anymore with "modern" style of IS6.
       if (DonationPanel.Top + GetBottom(AboutDonationCaption)) >
          (WizardForm.FinishedPage.Height - ScaleY(8)) then
       begin
@@ -1595,7 +1469,7 @@ begin
         UsageData := UsageData + 'InstallationsRestart+,';
       if Donated then
         UsageData := UsageData + 'InstallationsDonate+,';
-      if not IsElevated then
+      if not IsAdminInstallMode then
         UsageData := UsageData + 'InstallationsNonElevated+,';
 
       // have to do this before running WinSCP GUI instance below,

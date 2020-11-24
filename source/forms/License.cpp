@@ -11,9 +11,7 @@
 #include "Tools.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
-#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
-#endif
 //---------------------------------------------------------------------------
 UnicodeString LicenseStr[2] =
   { L"LICENSE", L"LICENSE_EXPAT" };

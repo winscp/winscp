@@ -18,11 +18,10 @@
 #pragma link "IEListView"
 #pragma link "NortonLikeListView"
 #pragma link "PngImageList"
-#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
-#endif
 //---------------------------------------------------------------------------
 TFileFindDialog * FileFindDialog = NULL;
+static const int NoSort = 1;
 //---------------------------------------------------------------------------
 void __fastcall ShowFileFindDialog(
   TTerminal * Terminal, UnicodeString Directory, TFindEvent OnFind, TFocusFileEvent OnFocusFile,
@@ -59,7 +58,6 @@ __fastcall TFileFindDialog::TFileFindDialog(TComponent * Owner)
       LoadStr(MASK_HELP))));
 
   UpdateImages();
-  FileView->ShowColumnIcon = false;
 
   UseDesktopFont(FileView);
   UseDesktopFont(StatusBar);
@@ -71,7 +69,9 @@ __fastcall TFileFindDialog::TFileFindDialog(TComponent * Owner)
 __fastcall TFileFindDialog::~TFileFindDialog()
 {
   TFindFileConfiguration FormConfiguration = CustomWinConfiguration->FindFile;
-  FormConfiguration.ListParams = FileView->ColProperties->ParamsStr;
+  // | is there to make TCustomListViewColProperties.SetParamsStr stop there
+  // (and it allows adding new parameters to the col properties in the future)
+  FormConfiguration.ListParams = FORMAT(L"%s|/%d", (FileView->ColProperties->ParamsStr, 1));
   UnicodeString WindowParams = StoreFormSize(this);
   // this is particularly to prevent saving the form state
   // for the first time, keeping default positioning by a system
@@ -283,7 +283,47 @@ void __fastcall TFileFindDialog::Start()
 void __fastcall TFileFindDialog::FileFound(TTerminal * /*Terminal*/,
   const UnicodeString FileName, const TRemoteFile * AFile, bool & Cancel)
 {
-  TListItem * Item = FileView->Items->Add();
+  TListItem * Item;
+  int Count = FileView->Items->Count;
+  if ((GetColProperties()->SortColumn == NoSort) || (Count == 0))
+  {
+    Item = FileView->Items->Add();
+  }
+  else
+  {
+    TRemoteFile * FirstFile = static_cast<TRemoteFile *>(FileView->Items->Item[0]->Data);
+    TRemoteFile * LastFile = static_cast<TRemoteFile *>(FileView->Items->Item[Count - 1]->Data);
+    if (FilesCompare(AFile, FirstFile) < 0)
+    {
+      Item = FileView->Items->Insert(0);
+    }
+    else if (FilesCompare(LastFile, AFile) < 0)
+    {
+      Item = FileView->Items->Add();
+    }
+    else
+    {
+      int Start = 0;
+      int End = Count;
+      while (Start < End - 1)
+      {
+        int Index = (Start + End) / 2;
+        DebugAssert((Index >= 0) && (Index < End));
+        TRemoteFile * FileAtIndex = static_cast<TRemoteFile *>(FileView->Items->Item[Index]->Data);
+        int Compare = FilesCompare(AFile, FileAtIndex);
+        if (Compare <= 0)
+        {
+          End = Index;
+        }
+        else
+        {
+          Start = Index;
+        }
+      }
+      Item = FileView->Items->Insert(Start + 1);
+    }
+  }
+
   TRemoteFile * File = AFile->Duplicate(true);
   Item->Data = File;
 
@@ -374,7 +414,15 @@ void __fastcall TFileFindDialog::FormShow(TObject * /*Sender*/)
 
   UpdateFormPosition(this, poOwnerFormCenter);
   RestoreFormSize(CustomWinConfiguration->FindFile.WindowParams, this);
-  FileView->ColProperties->ParamsStr = CustomWinConfiguration->FindFile.ListParams;
+  UnicodeString S = CustomWinConfiguration->FindFile.ListParams;
+  UnicodeString ParamsStr = CutToChar(S, L'/', true);
+  FileView->ColProperties->ParamsStr = ParamsStr;
+  UnicodeString V = CutToChar(S, L'/', true);
+  if (StrToIntDef(V, 0) == 0)
+  {
+    // Old versions had non-sense (while unused) default to sorting by "Changed", ignore it.
+    GetColProperties()->SortColumn = NoSort;
+  }
 
   DebugAssert(FWindowParams.IsEmpty());
   if (FWindowParams.IsEmpty())
@@ -642,5 +690,57 @@ void __fastcall TFileFindDialog::DownloadActionExecute(TObject * /*Sender*/)
 void __fastcall TFileFindDialog::EditActionExecute(TObject * /*Sender*/)
 {
   FileListOperation(FOnEditFiles, FileDownloadFinished);
+}
+//---------------------------------------------------------------------------
+TIEListViewColProperties * TFileFindDialog::GetColProperties()
+{
+  return dynamic_cast<TIEListViewColProperties *>(FileView->ColProperties);
+}
+//---------------------------------------------------------------------------
+int TFileFindDialog::FilesCompare(const TRemoteFile * File1, const TRemoteFile * File2)
+{
+  int Result = 0;
+  switch (GetColProperties()->SortColumn)
+  {
+    case 0: // name
+      Result = CompareText(File1->FileName, File2->FileName);
+      break;
+
+    case NoSort: // directories
+      Result = 0; // default sort
+      break;
+
+    case 2: // size
+      Result = CompareNumber(File1->Size, File2->Size);
+      break;
+
+    case 3: // changed
+      Result = CompareFileTime(File1->Modification, File2->Modification);
+      break;
+  }
+
+  if (Result == 0)
+  {
+    Result = CompareText(UnixExtractFilePath(File1->FullFileName), UnixExtractFilePath(File2->FullFileName));
+
+    if (Result == 0)
+    {
+      Result = CompareText(File1->FileName, File2->FileName);
+    }
+  }
+
+  if (!GetColProperties()->SortAscending)
+  {
+    Result = -Result;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TFileFindDialog::FileViewCompare(TObject *, TListItem * Item1, TListItem * Item2, int DebugUsedArg(Data), int & Compare)
+{
+  TRemoteFile * File1 = static_cast<TRemoteFile *>(Item1->Data);
+  TRemoteFile * File2 = static_cast<TRemoteFile *>(Item2->Data);
+
+  Compare = FilesCompare(File1, File2);
 }
 //---------------------------------------------------------------------------

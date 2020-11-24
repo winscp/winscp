@@ -10,9 +10,6 @@
 #include "Configuration.h"
 #include <Xml.XMLIntf.hpp>
 //---------------------------------------------------------------------------
-#define SET_SESSION_PROPERTY(Property) \
-  if (F##Property != value) { F##Property = value; Modify(); }
-//---------------------------------------------------------------------------
 enum TCipher { cipWarn, cip3DES, cipBlowfish, cipAES, cipDES, cipArcfour, cipChaCha20 };
 #define CIPHER_COUNT (cipChaCha20+1)
 // explicit values to skip obsoleted fsExternalSSH, fsExternalSFTP
@@ -38,7 +35,10 @@ enum TPingType { ptOff, ptNullPacket, ptDummyCommand };
 enum TAddressFamily { afAuto, afIPv4, afIPv6 };
 enum TFtps { ftpsNone, ftpsImplicit, ftpsExplicitSsl, ftpsExplicitTls };
 // has to match SSL_VERSION_XXX constants in AsyncSslSocketLayer.h
-enum TTlsVersion { ssl2 = 2, ssl3 = 3, tls10 = 10, tls11 = 11, tls12 = 12 };
+// ssl2 has no effect now
+enum TTlsVersion { ssl2 = 2, ssl3 = 3, tls10 = 10, tls11 = 11, tls12 = 12, tls13 = 13 };
+// has to match libs3 S3UriStyle
+enum TS3UrlStyle { s3usVirtualHost, s3usPath };
 enum TSessionSource { ssNone, ssStored, ssStoredModified };
 enum TSessionUrlFlags
 {
@@ -158,6 +158,7 @@ private:
   bool FIgnoreLsWarnings;
   bool FTcpNoDelay;
   int FSendBuf;
+  UnicodeString FSourceAddress;
   bool FSshSimple;
   TProxyMethod FProxyMethod;
   UnicodeString FProxyHost;
@@ -170,6 +171,7 @@ private:
   bool FProxyLocalhost;
   int FFtpProxyLogonType;
   TAutoSwitch FBugs[BUG_COUNT];
+  UnicodeString FPuttySettings;
   UnicodeString FCustomParam1;
   UnicodeString FCustomParam2;
   bool FResolveSymlinks;
@@ -219,6 +221,7 @@ private:
   TAutoSwitch FNotUtf;
   int FInternalEditorEncoding;
   UnicodeString FS3DefaultRegion;
+  TS3UrlStyle FS3UrlStyle;
   bool FIsWorkspace;
   UnicodeString FLink;
   UnicodeString FNameOverride;
@@ -286,6 +289,7 @@ private:
   void __fastcall SetFSProtocol(TFSProtocol value);
   UnicodeString __fastcall GetFSProtocolStr();
   void __fastcall SetLocalDirectory(UnicodeString value);
+  UnicodeString __fastcall GetLocalDirectoryExpanded();
   void __fastcall SetRemoteDirectory(UnicodeString value);
   void __fastcall SetSynchronizeBrowsing(bool value);
   void __fastcall SetUpdateDirectories(bool value);
@@ -314,6 +318,7 @@ private:
   void __fastcall SetIgnoreLsWarnings(bool value);
   void __fastcall SetTcpNoDelay(bool value);
   void __fastcall SetSendBuf(int value);
+  void __fastcall SetSourceAddress(const UnicodeString & value);
   void __fastcall SetSshSimple(bool value);
   UnicodeString __fastcall GetSshProtStr();
   bool __fastcall GetUsesSsh();
@@ -339,6 +344,7 @@ private:
   void __fastcall SetBug(TSshBug Bug, TAutoSwitch value);
   TAutoSwitch __fastcall GetBug(TSshBug Bug) const;
   UnicodeString __fastcall GetSessionKey();
+  void __fastcall SetPuttySettings(UnicodeString value);
   void __fastcall SetCustomParam1(UnicodeString value);
   void __fastcall SetCustomParam2(UnicodeString value);
   void __fastcall SetResolveSymlinks(bool value);
@@ -392,6 +398,7 @@ private:
   void __fastcall SetNotUtf(TAutoSwitch value);
   void __fastcall SetInternalEditorEncoding(int value);
   void __fastcall SetS3DefaultRegion(UnicodeString value);
+  void __fastcall SetS3UrlStyle(TS3UrlStyle value);
   void __fastcall SetLogicalHostName(UnicodeString value);
   void __fastcall SetIsWorkspace(bool value);
   void __fastcall SetLink(UnicodeString value);
@@ -403,7 +410,7 @@ private:
   void __fastcall SetEncryptKey(UnicodeString value);
 
   TDateTime __fastcall GetTimeoutDT();
-  void __fastcall SavePasswords(THierarchicalStorage * Storage, bool PuttyExport, bool DoNotEncryptPasswords);
+  void __fastcall SavePasswords(THierarchicalStorage * Storage, bool PuttyExport, bool DoNotEncryptPasswords, bool SaveAll);
   UnicodeString __fastcall GetLocalName();
   UnicodeString __fastcall GetFolderName();
   void __fastcall Modify();
@@ -416,7 +423,7 @@ private:
   _di_IXMLNode __fastcall FindSettingsNode(_di_IXMLNode Node, const UnicodeString & Name);
   UnicodeString __fastcall ReadSettingsNode(_di_IXMLNode Node, const UnicodeString & Name, const UnicodeString & Default);
   int __fastcall ReadSettingsNode(_di_IXMLNode Node, const UnicodeString & Name, int Default);
-  bool __fastcall IsSame(const TSessionData * Default, bool AdvancedOnly, TStrings * DifferentProperties);
+  bool __fastcall IsSame(const TSessionData * Default, bool AdvancedOnly, TStrings * DifferentProperties, bool Decrypted);
   UnicodeString __fastcall GetNameWithoutHiddenPrefix();
   bool __fastcall HasStateData();
   void __fastcall CopyStateData(TSessionData * SourceData);
@@ -444,9 +451,8 @@ private:
   void __fastcall AddAssemblyProperty(
     UnicodeString & Result, TAssemblyLanguage Language,
     const UnicodeString & Name, bool Value);
-  TStrings * __fastcall SaveToOptions(const TSessionData * Default);
-  void __fastcall ApplyRawSettings(TStrings * RawSettings);
   TStrings * __fastcall GetRawSettingsForUrl();
+  void __fastcall DoCopyData(TSessionData * SourceData, bool NoRecrypt);
   template<class AlgoT>
   void __fastcall SetAlgoList(AlgoT * List, const AlgoT * DefaultList, const UnicodeString * Names,
     int Count, AlgoT WarnAlgo, UnicodeString value);
@@ -459,8 +465,10 @@ public:
   virtual __fastcall ~TSessionData();
   TSessionData * __fastcall Clone();
   void __fastcall Default();
+  void __fastcall DefaultSettings();
   void __fastcall NonPersistant();
   void __fastcall Load(THierarchicalStorage * Storage, bool PuttyImport);
+  void __fastcall ApplyRawSettings(TStrings * RawSettings);
   void __fastcall ApplyRawSettings(THierarchicalStorage * Storage);
   void __fastcall ImportFromFilezilla(_di_IXMLNode Node, const UnicodeString & Path, _di_IXMLNode SettingsNode);
   void __fastcall Save(THierarchicalStorage * Storage, bool PuttyExport,
@@ -477,16 +485,18 @@ public:
   virtual void __fastcall Assign(TPersistent * Source);
   virtual int __fastcall Compare(TNamedObject * Other);
   void __fastcall CopyData(TSessionData * Source);
+  void __fastcall CopyDataNoRecrypt(TSessionData * SourceData);
   void __fastcall CopyDirectoriesStateData(TSessionData * SourceData);
   bool __fastcall ParseUrl(UnicodeString Url, TOptions * Options,
     TStoredSessionList * StoredSessions, bool & DefaultsOnly,
     UnicodeString * FileName, bool * AProtocolDefined, UnicodeString * MaskedUrl, int Flags);
-  bool __fastcall ParseOptions(TOptions * Options);
+  TStrings * __fastcall SaveToOptions(const TSessionData * Default, bool SaveName, bool PuttyExport);
   void __fastcall ConfigureTunnel(int PortNumber);
   void __fastcall RollbackTunnel();
   void __fastcall ExpandEnvironmentVariables();
   void __fastcall DisableAuthentationsExceptPassword();
   bool __fastcall IsSame(const TSessionData * Default, bool AdvancedOnly);
+  bool __fastcall IsSameDecrypted(const TSessionData * Default);
   bool __fastcall IsSameSite(const TSessionData * Default);
   bool __fastcall IsInFolderOrWorkspace(UnicodeString Name);
   UnicodeString __fastcall GenerateSessionUrl(unsigned int Flags);
@@ -507,6 +517,7 @@ public:
   static bool __fastcall IsOptionWithParameters(const UnicodeString & Option);
   static bool __fastcall MaskPasswordInOptionParameter(const UnicodeString & Option, UnicodeString & Param);
   static UnicodeString __fastcall FormatSiteKey(const UnicodeString & HostName, int PortNumber);
+  static TStrings * GetAllOptionNames(bool PuttyExport);
 
   __property UnicodeString HostName  = { read=FHostName, write=SetHostName };
   __property UnicodeString HostNameExpanded  = { read=GetHostNameExpanded };
@@ -551,6 +562,7 @@ public:
   __property UnicodeString SessionName  = { read=GetSessionName };
   __property UnicodeString DefaultSessionName  = { read=GetDefaultSessionName };
   __property UnicodeString LocalDirectory  = { read=FLocalDirectory, write=SetLocalDirectory };
+  __property UnicodeString LocalDirectoryExpanded = { read = GetLocalDirectoryExpanded };
   __property UnicodeString RemoteDirectory  = { read=FRemoteDirectory, write=SetRemoteDirectory };
   __property bool SynchronizeBrowsing = { read=FSynchronizeBrowsing, write=SetSynchronizeBrowsing };
   __property bool UpdateDirectories = { read=FUpdateDirectories, write=SetUpdateDirectories };
@@ -577,6 +589,7 @@ public:
   __property bool IgnoreLsWarnings  = { read=FIgnoreLsWarnings, write=SetIgnoreLsWarnings };
   __property bool TcpNoDelay  = { read=FTcpNoDelay, write=SetTcpNoDelay };
   __property int SendBuf  = { read=FSendBuf, write=SetSendBuf };
+  __property UnicodeString SourceAddress = { read=FSourceAddress, write=SetSourceAddress };
   __property bool SshSimple  = { read=FSshSimple, write=SetSshSimple };
   __property UnicodeString SshProtStr  = { read=GetSshProtStr };
   __property UnicodeString CipherList  = { read=GetCipherList, write=SetCipherList };
@@ -594,6 +607,7 @@ public:
   __property bool ProxyLocalhost  = { read=FProxyLocalhost, write=SetProxyLocalhost };
   __property int FtpProxyLogonType  = { read=FFtpProxyLogonType, write=SetFtpProxyLogonType };
   __property TAutoSwitch Bug[TSshBug Bug]  = { read=GetBug, write=SetBug };
+  __property UnicodeString PuttySettings = { read = FPuttySettings, write = SetPuttySettings };
   __property UnicodeString CustomParam1 = { read = FCustomParam1, write = SetCustomParam1 };
   __property UnicodeString CustomParam2 = { read = FCustomParam2, write = SetCustomParam2 };
   __property UnicodeString SessionKey = { read = GetSessionKey };
@@ -645,6 +659,7 @@ public:
   __property TAutoSwitch NotUtf = { read = FNotUtf, write = SetNotUtf };
   __property int InternalEditorEncoding = { read = FInternalEditorEncoding, write = SetInternalEditorEncoding };
   __property UnicodeString S3DefaultRegion = { read = FS3DefaultRegion, write = SetS3DefaultRegion };
+  __property TS3UrlStyle S3UrlStyle = { read = FS3UrlStyle, write = SetS3UrlStyle };
   __property bool IsWorkspace = { read = FIsWorkspace, write = SetIsWorkspace };
   __property UnicodeString Link = { read = FLink, write = SetLink };
   __property UnicodeString NameOverride = { read = FNameOverride, write = SetNameOverride };
@@ -729,6 +744,7 @@ private:
   TSessionData * __fastcall CheckIsInFolderOrWorkspaceAndResolve(
     TSessionData * Data, const UnicodeString & Name);
   void __fastcall ImportLevelFromFilezilla(_di_IXMLNode Node, const UnicodeString & Path, _di_IXMLNode SettingsNode);
+  void __fastcall DoGetFolderOrWorkspace(const UnicodeString & Name, TList * List, bool NoRecrypt);
   static THierarchicalStorage * __fastcall CreateHostKeysStorageForWritting();
 };
 //---------------------------------------------------------------------------

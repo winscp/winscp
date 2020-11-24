@@ -116,6 +116,7 @@ struct t_SslCertData
 };
 //---------------------------------------------------------------------------
 class CCriticalSectionWrapper;
+class CFileZillaTools;
 //---------------------------------------------------------------------------
 class CAsyncSslSocketLayer : public CAsyncSocketExLayer
 {
@@ -133,7 +134,7 @@ public:
   bool IsUsingSSL();
   int InitSSLConnection(bool clientMode,
     CAsyncSslSocketLayer * main,
-    bool sessionreuse, int minTlsVersion, int maxTlsVersion,
+    bool sessionreuse, CFileZillaTools * tools,
     void* pContext = 0);
 
   // Send raw text, useful to send a confirmation after the ssl connection
@@ -160,6 +161,7 @@ private:
   int InitSSL();
   void UnloadSSL();
   void PrintLastErrorMsg();
+  bool HandleSession(SSL_SESSION * Session);
 
   void TriggerEvents();
 
@@ -168,6 +170,7 @@ private:
   static int verify_callback(int preverify_ok, X509_STORE_CTX * ctx);
   static int ProvideClientCert(
     SSL * Ssl, X509 ** Certificate, EVP_PKEY ** PrivateKey);
+  static int NewSessionCallback(struct ssl_st * Ssl, SSL_SESSION * Session);
   static CAsyncSslSocketLayer * LookupLayer(SSL * Ssl);
 
   bool m_bUseSSL;
@@ -200,6 +203,7 @@ private:
   SSL* m_ssl;      // current session handle
   SSL_SESSION * m_sessionid;
   bool m_sessionreuse;
+  bool m_sessionreuse_failed;
   CAsyncSslSocketLayer * m_Main;
 
   // Data channels for encrypted/unencrypted data
@@ -242,10 +246,10 @@ private:
 #define SSL_FAILURE_VERIFYCERT 8
 #define SSL_FAILURE_CERTREJECTED 0x10
 //---------------------------------------------------------------------------
-#define SSL_VERSION_SSL2 2
 #define SSL_VERSION_SSL3 3
 #define SSL_VERSION_TLS10 10
 #define SSL_VERSION_TLS11 11
 #define SSL_VERSION_TLS12 12
+#define SSL_VERSION_TLS13 13
 //---------------------------------------------------------------------------
 #endif // AsyncSslSocketLayerH

@@ -31,6 +31,7 @@ protected:
   DYNAMIC void __fastcall Delete(TTreeNode * Node);
   DYNAMIC void __fastcall Change(TTreeNode * Node);
   virtual void __fastcall CreateWnd();
+  virtual void __fastcall DestroyWnd();
 
   void __fastcall LoadDirectory();
   TTreeNode * __fastcall LoadPath(UnicodeString Path);
@@ -53,7 +54,7 @@ protected:
   void __fastcall SetDirView(TUnixDirView * Value);
 
   virtual void __fastcall PerformDragDropFileOperation(TTreeNode * Node, int Effect);
-  virtual void __fastcall DDChooseEffect(int KeyState, int & Effect);
+  virtual void __fastcall DDChooseEffect(int KeyState, int & Effect, int PreferredEffect);
   virtual bool __fastcall DragCompleteFileList();
   virtual TDropEffectSet __fastcall DDSourceEffects();
 

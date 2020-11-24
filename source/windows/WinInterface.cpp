@@ -28,6 +28,7 @@
 #include <StrUtils.hpp>
 #include <WinApi.h>
 #include "Tools.h"
+#include <Vcl.AppEvnts.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -322,11 +323,7 @@ void __fastcall TMessageTimer::DoTimer(TObject * /*Sender*/)
 class TMessageTimeout : public TTimer
 {
 public:
-  __fastcall TMessageTimeout(TComponent * AOwner, unsigned int Timeout,
-    TButton * Button);
-
-  void __fastcall MouseMove();
-  void __fastcall Cancel();
+  __fastcall TMessageTimeout(TComponent * AOwner, unsigned int Timeout, TButton * Button);
 
 protected:
   unsigned int FOrigTimeout;
@@ -334,9 +331,13 @@ protected:
   TButton * FButton;
   UnicodeString FOrigCaption;
   TPoint FOrigCursorPos;
+  std::unique_ptr<TApplicationEvents> FApplicationEvents;
 
   void __fastcall DoTimer(TObject * Sender);
   void __fastcall UpdateButton();
+  void __fastcall ApplicationMessage(TMsg & Msg, bool & Handled);
+  void __fastcall MouseMove();
+  void __fastcall Cancel();
 };
 //---------------------------------------------------------------------------
 __fastcall TMessageTimeout::TMessageTimeout(TComponent * AOwner,
@@ -347,7 +348,22 @@ __fastcall TMessageTimeout::TMessageTimeout(TComponent * AOwner,
   Interval = MSecsPerSec;
   FOrigCaption = FButton->Caption;
   FOrigCursorPos = Mouse->CursorPos;
+  FApplicationEvents.reset(new TApplicationEvents(Application));
+  FApplicationEvents->OnMessage = ApplicationMessage;
   UpdateButton();
+}
+//---------------------------------------------------------------------------
+void __fastcall TMessageTimeout::ApplicationMessage(TMsg & Msg, bool & DebugUsedArg(Handled))
+{
+  if (Msg.message == WM_MOUSEMOVE)
+  {
+    MouseMove();
+  }
+  else if ((Msg.message == WM_LBUTTONDOWN) || (Msg.message == WM_RBUTTONDOWN) ||
+           (Msg.message == WM_KEYDOWN) || (Msg.message == WM_SYSKEYDOWN))
+  {
+    Cancel();
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TMessageTimeout::MouseMove()
@@ -388,10 +404,10 @@ void __fastcall TMessageTimeout::DoTimer(TObject * /*Sender*/)
   if (FTimeout <= Interval)
   {
     DebugAssert(FButton != NULL);
-    TForm * Dialog = dynamic_cast<TForm *>(FButton->Parent);
-    DebugAssert(Dialog != NULL);
 
-    Dialog->ModalResult = FButton->ModalResult;
+    // Needed particularly for "keep up to date" dialog, which does not close on the button click
+    Enabled = false;
+    FButton->Click();
   }
   else
   {
@@ -399,65 +415,18 @@ void __fastcall TMessageTimeout::DoTimer(TObject * /*Sender*/)
     UpdateButton();
   }
 }
+//---------------------------------------------------------------------------
+void InitiateDialogTimeout(TForm * Dialog, unsigned int Timeout, TButton * Button)
+{
+  TMessageTimeout * MessageTimeout = new TMessageTimeout(Application, Timeout, Button);
+  MessageTimeout->Name = L"MessageTimeout";
+  Dialog->InsertComponent(MessageTimeout);
+}
 //---------------------------------------------------------------------
 class TPublicControl : public TControl
 {
 friend void __fastcall MenuPopup(TObject * Sender, const TPoint & MousePos, bool & Handled);
-friend void __fastcall SetTimeoutEvents(TControl * Control, TMessageTimeout * Timeout);
 };
-//---------------------------------------------------------------------
-class TPublicWinControl : public TWinControl
-{
-friend void __fastcall SetTimeoutEvents(TControl * Control, TMessageTimeout * Timeout);
-};
-//---------------------------------------------------------------------------
-static void __fastcall MessageDialogMouseMove(void * Data, TObject * /*Sender*/,
-  TShiftState /*Shift*/, int /*X*/, int /*Y*/)
-{
-  DebugAssert(Data != NULL);
-  TMessageTimeout * Timeout = static_cast<TMessageTimeout *>(Data);
-  Timeout->MouseMove();
-}
-//---------------------------------------------------------------------------
-static void __fastcall MessageDialogMouseDown(void * Data, TObject * /*Sender*/,
-  TMouseButton /*Button*/, TShiftState /*Shift*/, int /*X*/, int /*Y*/)
-{
-  DebugAssert(Data != NULL);
-  TMessageTimeout * Timeout = static_cast<TMessageTimeout *>(Data);
-  Timeout->Cancel();
-}
-//---------------------------------------------------------------------------
-static void __fastcall MessageDialogKeyDownUp(void * Data, TObject * /*Sender*/,
-  Word & /*Key*/, TShiftState /*Shift*/)
-{
-  DebugAssert(Data != NULL);
-  TMessageTimeout * Timeout = static_cast<TMessageTimeout *>(Data);
-  Timeout->Cancel();
-}
-//---------------------------------------------------------------------------
-void __fastcall SetTimeoutEvents(TControl * Control, TMessageTimeout * Timeout)
-{
-  TPublicControl * PublicControl = reinterpret_cast<TPublicControl *>(Control);
-  DebugAssert(PublicControl->OnMouseMove == NULL);
-  PublicControl->OnMouseMove = MakeMethod<TMouseMoveEvent>(Timeout, MessageDialogMouseMove);
-  DebugAssert(PublicControl->OnMouseDown == NULL);
-  PublicControl->OnMouseDown = MakeMethod<TMouseEvent>(Timeout, MessageDialogMouseDown);
-
-  TWinControl * WinControl = dynamic_cast<TWinControl *>(Control);
-  if (WinControl != NULL)
-  {
-    TPublicWinControl * PublicWinControl = reinterpret_cast<TPublicWinControl *>(Control);
-    DebugAssert(PublicWinControl->OnKeyDown == NULL);
-    PublicWinControl->OnKeyDown = MakeMethod<TKeyEvent>(Timeout, MessageDialogKeyDownUp);
-    DebugAssert(PublicWinControl->OnKeyUp == NULL);
-    PublicWinControl->OnKeyUp = MakeMethod<TKeyEvent>(Timeout, MessageDialogKeyDownUp);
-
-    for (int Index = 0; Index < WinControl->ControlCount; Index++)
-    {
-      SetTimeoutEvents(WinControl->Controls[Index], Timeout);
-    }
-  }
-}
 //---------------------------------------------------------------------------
 // Merge with CreateMessageDialogEx
 TForm * __fastcall CreateMoreMessageDialogEx(const UnicodeString Message, TStrings * MoreMessages,
@@ -502,10 +471,7 @@ TForm * __fastcall CreateMoreMessageDialogEx(const UnicodeString Message, TStrin
   {
     if (Params->Timeout > 0)
     {
-      TMessageTimeout * Timeout = new TMessageTimeout(Application, Params->Timeout, TimeoutButton);
-      SetTimeoutEvents(Dialog.get(), Timeout);
-      Timeout->Name = L"MessageTimeout";
-      Dialog->InsertComponent(Timeout);
+      InitiateDialogTimeout(Dialog.get(), Params->Timeout, TimeoutButton);
     }
   }
 
@@ -657,6 +623,10 @@ unsigned int __fastcall ExceptionMessageDialog(Exception * E, TQueryType Type,
   // this is always called from within ExceptionMessage check,
   // so it should never fail here
   DebugCheck(ExceptionMessageFormatted(E, Message));
+  if (!MessageFormat.IsEmpty())
+  {
+    Message = FORMAT(MessageFormat, (UnformatMessage(Message)));
+  }
 
   HelpKeyword = MergeHelpKeyword(HelpKeyword, GetExceptionHelpKeyword(E));
 
@@ -667,8 +637,7 @@ unsigned int __fastcall ExceptionMessageDialog(Exception * E, TQueryType Type,
   }
 
   return MoreMessageDialog(
-    FORMAT(MessageFormat.IsEmpty() ? UnicodeString(L"%s") : MessageFormat, (Message)),
-    MoreMessages, Type, Answers, HelpKeyword, Params);
+    Message, MoreMessages, Type, Answers, HelpKeyword, Params);
 }
 //---------------------------------------------------------------------------
 unsigned int __fastcall FatalExceptionMessageDialog(Exception * E, TQueryType Type,
@@ -1293,9 +1262,7 @@ void __fastcall CenterButtonImage(TButton * Button)
     Button->ImageAlignment = iaCenter;
     int ImageWidth = Button->Images->Width;
 
-    std::unique_ptr<TControlCanvas> Canvas(new TControlCanvas());
-    Canvas->Control = Button;
-    Canvas->Font = Button->Font;
+    std::unique_ptr<TCanvas> Canvas(CreateControlCanvas(Button));
 
     UnicodeString Caption = Button->Caption.Trim();
     UnicodeString Padding;
@@ -1384,11 +1351,25 @@ void __fastcall CallGlobalMinimizeHandler(TObject * Sender)
   }
 }
 //---------------------------------------------------------------------------
+bool MinimizedToTray = false;
+//---------------------------------------------------------------------------
 static void __fastcall DoApplicationMinimizeRestore(bool Minimize)
 {
   TForm * MainForm = Application->MainForm;
   TForm * MainLikeForm = GetMainForm();
-  if ((MainLikeForm != MainForm) && !WinConfiguration->MinimizeToTray)
+  bool MinimizeToTray;
+  if (Minimize)
+  {
+    MinimizeToTray = WinConfiguration->MinimizeToTray;
+  }
+  else
+  {
+    // Use tray restore code, even if minimization to tray is not on anymore when restoring.
+    // This is particularly used for ad-hoc minimize to tray from "keep up to date" dialog.
+    MinimizeToTray = MinimizedToTray;
+  }
+  MinimizedToTray = false; // reset in any case, even if we somehow got restored from tray without invoking this code
+  if ((MainLikeForm != MainForm) && !MinimizeToTray)
   {
     static TWindowState PreviousWindowState = wsNormal;
     if (Minimize)
@@ -1426,6 +1407,7 @@ static void __fastcall DoApplicationMinimizeRestore(bool Minimize)
       if (Minimize)
       {
         Application->Minimize();
+        MinimizedToTray = WinConfiguration->MinimizeToTray;
       }
       else
       {

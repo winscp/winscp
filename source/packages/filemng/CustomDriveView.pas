@@ -43,6 +43,7 @@ type
     FContinue: Boolean;
     FImageList: TImageList;
     FScrollOnDragOver: TTreeViewScrollOnDragOver;
+    FRecreatingHandle: Boolean;
 
     FOnDDDragEnter: TDDOnDragEnter;
     FOnDDDragLeave: TDDOnDragLeave;
@@ -108,7 +109,7 @@ type
     procedure DDDragEnter(DataObj: IDataObject; KeyState: Longint;
       Point: TPoint; var Effect: Longint; var Accept: Boolean);
     procedure DDDragLeave;
-    procedure DDDragOver(KeyState: Longint; Point: TPoint; var Effect: Longint);
+    procedure DDDragOver(KeyState: Longint; Point: TPoint; var Effect: Longint; PreferredEffect: LongInt);
     procedure DDDrop(DataObj: IDataObject; KeyState: Longint; Point: TPoint;
       var Effect: Longint);
     procedure DDQueryContinueDrag(EscapePressed: BOOL; KeyState: Longint;
@@ -125,7 +126,7 @@ type
       DragStatus: TDragDetectStatus); virtual;
     procedure PerformDragDropFileOperation(Node: TTreeNode; Effect: Integer); virtual; abstract;
 
-    procedure DDChooseEffect(KeyState: Integer; var Effect: Integer); virtual;
+    procedure DDChooseEffect(KeyState: Integer; var Effect: Integer; PreferredEffect: Integer); virtual;
     function DragCompleteFileList: Boolean; virtual; abstract;
     function DDExecute: TDragResult; virtual;
     function DDSourceEffects: TDropEffectSet; virtual; abstract;
@@ -247,6 +248,7 @@ begin
   FContinue := True;
   FNaturalOrderNumericalSorting := True;
   FDarkMode := False;
+  FRecreatingHandle := False;
   OnCompare := DoCompare;
 
   FDragDropFilesEx := TCustomizableDragDropFilesEx.Create(Self);
@@ -387,6 +389,11 @@ begin
     begin
       Canvas.Brush.Color := clBtnFace;
       Canvas.Font.Color := clBtnText;
+    end
+      else
+    if Node.Selected and (not Self.Focused) and DarkMode then
+    begin
+      Canvas.Font.Color := Font.Color;
     end;
   end;
 end; {InternalOnDrawItem}
@@ -462,7 +469,7 @@ begin
     FOnDDDragLeave(Self);
 end; {DragLeave}
 
-procedure TCustomDriveView.DDDragOver(KeyState: Longint; Point: TPoint; var Effect: Longint);
+procedure TCustomDriveView.DDDragOver(KeyState: Longint; Point: TPoint; var Effect: Longint; PreferredEffect: Longint);
 var
   Node: TTreeNode;
   Rect1: TRect;
@@ -523,7 +530,7 @@ begin
     end;
   end;
 
-  DDChooseEffect(KeyState, Effect);
+  DDChooseEffect(KeyState, Effect, PreferredEffect);
 
   if Assigned(FOnDDDragOver) then
     FOnDDDragOver(Self, KeyState, Point, Effect);
@@ -601,7 +608,7 @@ begin
   DropTarget := nil;
 end;
 
-procedure TCustomDriveView.DDChooseEffect(KeyState: Integer; var Effect: Integer);
+procedure TCustomDriveView.DDChooseEffect(KeyState: Integer; var Effect: Integer; PreferredEffect: Integer);
 begin
   if Assigned(FOnDDChooseEffect) then
     FOnDDChooseEffect(Self, KeyState, Effect);
@@ -956,7 +963,13 @@ begin
   // (as the handle is implicitly created somewhere in the middle of the reload and chaos ensures).
   if HadHandle then
   begin
-    HandleNeeded;
+    Assert(not FRecreatingHandle);
+    FRecreatingHandle := True;
+    try
+      HandleNeeded;
+    finally
+      FRecreatingHandle := False;
+    end;
   end;
 end;
 

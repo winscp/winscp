@@ -110,6 +110,7 @@ TColor __fastcall GetWindowTextColor(TColor BackgroundColor, TColor Color)
 {
   if (Color == TColor(0))
   {
+    // Could use current theme TMT_TEXTCOLOR - see https://github.com/ysc3839/win32-darkmode
     Color = (IsDarkColor(BackgroundColor) ? clWhite : clWindowText);
     SetContrast(Color, BackgroundColor, 180);
   }
@@ -120,6 +121,7 @@ TColor __fastcall GetWindowColor(TColor Color)
 {
   if (Color == TColor(0))
   {
+    // Could use current theme TMT_FILLCOLOR - see https://github.com/ysc3839/win32-darkmode
     Color = (WinConfiguration->UseDarkTheme() ? static_cast<TColor>(RGB(0x20, 0x20, 0x20)) : clWindow);
   }
   return Color;
@@ -185,13 +187,11 @@ void __fastcall LoadFormDimensions(
   const UnicodeString & LeftStr, const UnicodeString & TopStr, const UnicodeString & RightStr, const UnicodeString & BottomStr,
   int PixelsPerInch, Forms::TMonitor * Monitor, TForm * Form, TRect & Bounds, bool & DefaultPos)
 {
-  int Left = StrToDimensionDef(LeftStr, PixelsPerInch, Form, Bounds.Left);
-  int Top = StrToDimensionDef(TopStr, PixelsPerInch, Form, Bounds.Top);
-  DefaultPos = (Left == -1) && (Top == -1);
+  DefaultPos = (StrToIntDef(LeftStr, 0) == -1) && (StrToIntDef(TopStr, 0) == -1);
   if (!DefaultPos)
   {
-    Bounds.Left = Left;
-    Bounds.Top = Top;
+    Bounds.Left = StrToDimensionDef(LeftStr, PixelsPerInch, Form, Bounds.Left);
+    Bounds.Top = StrToDimensionDef(TopStr, PixelsPerInch, Form, Bounds.Top);
   }
   else
   {
@@ -239,11 +239,12 @@ void __fastcall RestoreForm(UnicodeString Data, TForm * Form, bool PositionOnly)
       TRect Bounds = OriginalBounds;
       LoadFormDimensions(LeftStr, TopStr, RightStr, BottomStr, PixelsPerInch, Monitor, Form, Bounds, DefaultPos);
 
+      int Padding = ScaleByPixelsPerInch(20, Monitor);
       if (DefaultPos ||
-          ((Bounds.Left < Monitor->Left) ||
-           (Bounds.Left > Monitor->Left + Monitor->WorkareaRect.Width() - 20) ||
-           (Bounds.Top < Monitor->Top) ||
-           (Bounds.Top > Monitor->Top + Monitor->WorkareaRect.Height() - 20)))
+          ((Bounds.Left < Monitor->Left - Padding) ||
+           (Bounds.Left > Monitor->Left + Monitor->WorkareaRect.Width() - Padding) ||
+           (Bounds.Top < Monitor->Top - Padding) ||
+           (Bounds.Top > Monitor->Top + Monitor->WorkareaRect.Height() - Padding)))
       {
         bool ExplicitPlacing = !Monitor->Primary;
         if (!ExplicitPlacing)
@@ -516,77 +517,75 @@ IShellLink * __fastcall CreateDesktopShortCut(const UnicodeString & Name,
 
   try
   {
-    if (SUCCEEDED(CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER,
-         IID_IShellLink, (void **) &pLink)))
-    {
-      try
-      {
-        pLink->SetPath(File.c_str());
-        pLink->SetDescription(Description.c_str());
-        pLink->SetArguments(Params.c_str());
-        pLink->SetShowCmd(SW_SHOW);
-        // Explicitly setting icon file,
-        // without this icons are not shown at least in Windows 7 jumplist
-        pLink->SetIconLocation(File.c_str(), IconIndex);
+    OleCheck(CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, IID_IShellLink, (void **) &pLink));
 
-        IPersistFile* pPersistFile;
-        if (!Return &&
-            SUCCEEDED(pLink->QueryInterface(IID_IPersistFile, (void **)&pPersistFile)))
+    try
+    {
+      pLink->SetPath(File.c_str());
+      pLink->SetDescription(Description.c_str());
+      pLink->SetArguments(Params.c_str());
+      pLink->SetShowCmd(SW_SHOW);
+      // Explicitly setting icon file,
+      // without this icons are not shown at least in Windows 7 jumplist
+      pLink->SetIconLocation(File.c_str(), IconIndex);
+
+      IPersistFile* pPersistFile;
+      if (!Return &&
+          SUCCEEDED(pLink->QueryInterface(IID_IPersistFile, (void **)&pPersistFile)))
+      {
+        try
         {
+          LPMALLOC      ShellMalloc;
+          LPITEMIDLIST  DesktopPidl;
+          wchar_t DesktopDir[MAX_PATH];
+
+          OleCheck(SHGetMalloc(&ShellMalloc));
+
           try
           {
-            LPMALLOC      ShellMalloc;
-            LPITEMIDLIST  DesktopPidl;
-            wchar_t DesktopDir[MAX_PATH];
+            OleCheck(SHGetSpecialFolderLocation(NULL, SpecialFolder, &DesktopPidl));
 
-            OleCheck(SHGetMalloc(&ShellMalloc));
-
-            try
-            {
-              OleCheck(SHGetSpecialFolderLocation(NULL, SpecialFolder, &DesktopPidl));
-
-              OleCheck(SHGetPathFromIDList(DesktopPidl, DesktopDir));
-            }
-            __finally
-            {
-              ShellMalloc->Free(DesktopPidl);
-              ShellMalloc->Release();
-            }
-
-            WideString strShortCutLocation(DesktopDir);
-            // Name can contain even path (e.g. to create quick launch icon)
-            strShortCutLocation += UnicodeString(L"\\") + Name + L".lnk";
-            OleCheck(pPersistFile->Save(strShortCutLocation.c_bstr(), TRUE));
+            OleCheck(SHGetPathFromIDList(DesktopPidl, DesktopDir));
           }
           __finally
           {
-            pPersistFile->Release();
+            ShellMalloc->Free(DesktopPidl);
+            ShellMalloc->Release();
           }
-        }
 
-        // this is necessary for Windows 7 taskbar jump list links
-        IPropertyStore * PropertyStore;
-        if (SUCCEEDED(pLink->QueryInterface(IID_IPropertyStore, (void**)&PropertyStore)))
+          WideString strShortCutLocation(DesktopDir);
+          // Name can contain even path (e.g. to create quick launch icon)
+          strShortCutLocation += UnicodeString(L"\\") + Name + L".lnk";
+          OleCheck(pPersistFile->Save(strShortCutLocation.c_bstr(), TRUE));
+        }
+        __finally
         {
-          PROPVARIANT Prop;
-          Prop.vt = VT_LPWSTR;
-          Prop.pwszVal = Name.c_str();
-          PropertyStore->SetValue(PKEY_Title, Prop);
-          PropertyStore->Commit();
-          PropertyStore->Release();
+          pPersistFile->Release();
         }
       }
-      catch(...)
-      {
-        pLink->Release();
-        throw;
-      }
 
-      if (!Return)
+      // this is necessary for Windows 7 taskbar jump list links
+      IPropertyStore * PropertyStore;
+      if (SUCCEEDED(pLink->QueryInterface(IID_IPropertyStore, (void**)&PropertyStore)))
       {
-        pLink->Release();
-        pLink = NULL;
+        PROPVARIANT Prop;
+        Prop.vt = VT_LPWSTR;
+        Prop.pwszVal = Name.c_str();
+        PropertyStore->SetValue(PKEY_Title, Prop);
+        PropertyStore->Commit();
+        PropertyStore->Release();
       }
+    }
+    catch(...)
+    {
+      pLink->Release();
+      throw;
+    }
+
+    if (!Return)
+    {
+      pLink->Release();
+      pLink = NULL;
     }
   }
   catch(Exception & E)
@@ -595,6 +594,23 @@ IShellLink * __fastcall CreateDesktopShortCut(const UnicodeString & Name,
   }
 
   return pLink;
+}
+//---------------------------------------------------------------------------
+IShellLink * __fastcall CreateAppDesktopShortCut(
+  const UnicodeString & Name, const UnicodeString & AParams, const UnicodeString & Description,
+  int SpecialFolder, int IconIndex, bool Return)
+{
+  UnicodeString ParamValue = Configuration->GetIniFileParamValue();
+
+  UnicodeString Params;
+  if (!ParamValue.IsEmpty())
+  {
+    Params = TProgramParams::FormatSwitch(INI_SWITCH) + L"=" + AddQuotes(ParamValue);
+  }
+
+  AddToList(Params, AParams, L" ");
+
+  return CreateDesktopShortCut(Name, Application->ExeName, Params, Description, SpecialFolder, IconIndex, Return);
 }
 //---------------------------------------------------------------------------
 IShellLink * __fastcall CreateDesktopSessionShortCut(
@@ -636,29 +652,37 @@ IShellLink * __fastcall CreateDesktopSessionShortCut(
   }
 
   return
-    CreateDesktopShortCut(ValidLocalFileName(Name), Application->ExeName,
+    CreateAppDesktopShortCut(ValidLocalFileName(Name),
       FORMAT(L"\"%s\"%s%s", (EncodeUrlString(SessionName), (AdditionalParams.IsEmpty() ? L"" : L" "), AdditionalParams)),
       InfoTip, SpecialFolder, IconIndex, Return);
+}
+//---------------------------------------------------------------------------
+void ValidateMask(const UnicodeString & Mask, int ForceDirectoryMasks)
+{
+  TFileMasks Masks(ForceDirectoryMasks);
+  Masks = Mask;
 }
 //---------------------------------------------------------------------------
 template<class TEditControl>
 void __fastcall ValidateMaskEditT(const UnicodeString & Mask, TEditControl * Edit, int ForceDirectoryMasks)
 {
   DebugAssert(Edit != NULL);
-  TFileMasks Masks(ForceDirectoryMasks);
-  try
+  if (!IsCancelButtonBeingClicked(Edit))
   {
-    Masks = Mask;
-  }
-  catch(EFileMasksException & E)
-  {
-    ShowExtendedException(&E);
-    Edit->SetFocus();
-    // This does not work for TEdit and TMemo (descendants of TCustomEdit) anymore,
-    // as it re-selects whole text on exception in TCustomEdit.CMExit
-    Edit->SelStart = E.ErrorStart - 1;
-    Edit->SelLength = E.ErrorLen;
-    Abort();
+    try
+    {
+      ValidateMask(Mask, ForceDirectoryMasks);
+    }
+    catch(EFileMasksException & E)
+    {
+      ShowExtendedException(&E);
+      Edit->SetFocus();
+      // This does not work for TEdit and TMemo (descendants of TCustomEdit) anymore,
+      // as it re-selects whole text on exception in TCustomEdit.CMExit
+      Edit->SelStart = E.ErrorStart - 1;
+      Edit->SelLength = E.ErrorLen;
+      Abort();
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -674,13 +698,16 @@ void __fastcall ValidateMaskEdit(TEdit * Edit)
 //---------------------------------------------------------------------------
 void __fastcall ValidateMaskEdit(TMemo * Edit, bool Directory)
 {
-  UnicodeString Mask = TFileMasks::ComposeMaskStr(GetUnwrappedMemoLines(Edit), Directory);
-  ValidateMaskEditT(Mask, Edit, Directory ? 1 : 0);
+  if (!IsCancelButtonBeingClicked(Edit))
+  {
+    UnicodeString Mask = TFileMasks::ComposeMaskStr(GetUnwrappedMemoLines(Edit), Directory);
+    ValidateMaskEditT(Mask, Edit, Directory ? 1 : 0);
+  }
 }
 //---------------------------------------------------------------------------
 TStrings * __fastcall GetUnwrappedMemoLines(TMemo * Memo)
 {
-  // This removes soft linebreakes when text in memo wraps
+  // This removes soft linebreaks when text in memo wraps
   // (Memo->Lines includes soft linebreaks, while Memo->Text does not)
   return TextToStringList(Memo->Text);
 }
@@ -724,7 +751,16 @@ void __fastcall OpenBrowser(UnicodeString URL)
     DebugAssert(!IsHttpUrl(URL));
     URL = CampaignUrl(URL);
   }
-  ShellExecute(Application->Handle, L"open", URL.c_str(), NULL, NULL, SW_SHOWNORMAL);
+  if (!CopyCommandToClipboard(URL))
+  {
+    // Rather arbitrary limit. Opening a URL over approx. 5 KB fails in Chrome, Firefox and Edge.
+    const int URLLimit = 4*1024;
+    if (URL.Length() > URLLimit)
+    {
+      URL.SetLength(URLLimit);
+    }
+    ShellExecute(Application->Handle, L"open", URL.c_str(), NULL, NULL, SW_SHOWNORMAL);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall OpenFolderInExplorer(const UnicodeString & Path)
@@ -766,58 +802,95 @@ bool __fastcall IsFormatInClipboard(unsigned int Format)
 //---------------------------------------------------------------------------
 HANDLE __fastcall OpenTextFromClipboard(const wchar_t *& Text)
 {
-  HANDLE Result = NULL;
-  if (OpenClipboard(0))
+  UnicodeString ErrorContext;
+  try
   {
-    // Check also for CF_TEXT?
-    Result = GetClipboardData(CF_UNICODETEXT);
-    if (Result != NULL)
+    HANDLE Result = NULL;
+    ErrorContext = L"open";
+    if (OpenClipboard(0))
     {
-      Text = static_cast<const wchar_t*>(GlobalLock(Result));
+      // Check also for CF_TEXT?
+      ErrorContext = L"getdata";
+      Result = GetClipboardData(CF_UNICODETEXT);
+      if (Result != NULL)
+      {
+        ErrorContext = L"lock";
+        Text = static_cast<const wchar_t*>(GlobalLock(Result));
+      }
+      else
+      {
+        ErrorContext = L"close";
+        CloseClipboard();
+      }
     }
-    else
-    {
-      CloseClipboard();
-    }
+    return Result;
   }
-  return Result;
+  catch (EAccessViolation & E)
+  {
+    throw EAccessViolation(AddContextToExceptionMessage(E, ErrorContext));
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall CloseTextFromClipboard(HANDLE Handle)
 {
-  if (Handle != NULL)
+  UnicodeString ErrorContext;
+  try
   {
-    GlobalUnlock(Handle);
+    if (Handle != NULL)
+    {
+      ErrorContext = "unlock";
+      GlobalUnlock(Handle);
+    }
+    ErrorContext = "close";
+    CloseClipboard();
   }
-  CloseClipboard();
+  catch (EAccessViolation & E)
+  {
+    throw EAccessViolation(AddContextToExceptionMessage(E, ErrorContext));
+  }
 }
 //---------------------------------------------------------------------------
 bool __fastcall TextFromClipboard(UnicodeString & Text, bool Trim)
 {
-  const wchar_t * AText = NULL;
-  HANDLE Handle = OpenTextFromClipboard(AText);
-  bool Result = (Handle != NULL);
-  if (Result)
+  UnicodeString ErrorContext;
+  try
   {
-    // For all current uses (URL pasting, key/fingerprint pasting, known_hosts pasting, "more messages" copying,
-    // permissions pasting), 64KB is large enough.
-    const size_t Limit = 64*1024;
-    size_t Size = GlobalSize(Handle);
-    if (Size > Limit)
+    const wchar_t * AText = NULL;
+    ErrorContext = L"open";
+    HANDLE Handle = OpenTextFromClipboard(AText);
+    bool Result = (Handle != NULL);
+    if (Result)
     {
-      Text = UnicodeString(AText, Limit);
+      // For all current uses (URL pasting, key/fingerprint pasting, known_hosts pasting, "more messages" copying,
+      // permissions pasting), 64KB is large enough.
+      const int Limit = 64*1024;
+      ErrorContext = L"size";
+      size_t Size = GlobalSize(Handle);
+      int Len = (Size / sizeof(*AText)) - 1;
+      if (Len > Limit)
+      {
+        ErrorContext = FORMAT(L"substring(%d,%d)", (int(Size), Len));
+        Text = UnicodeString(AText, Limit);
+      }
+      else
+      {
+        ErrorContext = FORMAT(L"string(%d,%d)", (int(Size), Len));
+        Text = AText;
+      }
+      if (Trim)
+      {
+        ErrorContext = L"trim";
+        Text = Text.Trim();
+      }
+      ErrorContext = L"close";
+      CloseTextFromClipboard(Handle);
     }
-    else
-    {
-      Text = AText;
-    }
-    if (Trim)
-    {
-      Text = Text.Trim();
-    }
-    CloseTextFromClipboard(Handle);
+    return Result;
   }
-  return Result;
+  catch (EAccessViolation & E)
+  {
+    throw EAccessViolation(AddContextToExceptionMessage(E, ErrorContext));
+  }
 }
 //---------------------------------------------------------------------------
 bool __fastcall NonEmptyTextFromClipboard(UnicodeString & Text)

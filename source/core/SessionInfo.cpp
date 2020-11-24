@@ -405,7 +405,7 @@ protected:
   {
     FLog->AddIndented(Indent + L"<file>");
     FLog->AddIndented(Indent + FORMAT(L"  <filename value=\"%s\" />", (XmlAttributeEscape(File->FileName))));
-    FLog->AddIndented(Indent + FORMAT(L"  <type value=\"%s\" />", (XmlAttributeEscape(File->Type))));
+    FLog->AddIndented(Indent + FORMAT(L"  <type value=\"%s\" />", (XmlAttributeEscape(towupper(File->Type)))));
     if (!File->IsDirectory)
     {
       FLog->AddIndented(Indent + FORMAT(L"  <size value=\"%s\" />", (IntToStr(File->Size))));
@@ -432,11 +432,11 @@ protected:
   void __fastcall SynchronizeChecklistItemFileInfo(
     const UnicodeString & AFileName, bool IsDirectory, const TSynchronizeChecklist::TItem::TFileInfo FileInfo)
   {
-    Parameter(L"type", XmlAttributeEscape(IsDirectory ? L'D' : L'-'));
-    FileName(XmlAttributeEscape(AFileName));
+    Parameter(L"type", (IsDirectory ? L'D' : L'-'));
+    FileName(AFileName);
     if (!IsDirectory)
     {
-      Parameter(L"size", XmlAttributeEscape(IntToStr(FileInfo.Size)));
+      Parameter(L"size", IntToStr(FileInfo.Size));
     }
     if (FileInfo.ModificationFmt != mfNone)
     {
@@ -925,7 +925,7 @@ void __fastcall TSessionLog::Add(TLogLineType Type, const UnicodeString & Line)
       FConfiguration->Logging = false;
       try
       {
-        throw ExtException(&E, LoadStr(LOG_GEN_ERROR));
+        throw ExtException(&E, MainInstructions(LoadStr(LOG_GEN_ERROR)));
       }
       catch (Exception &E)
       {
@@ -1008,7 +1008,7 @@ void __fastcall TSessionLog::OpenLogFile()
     FConfiguration->LogFileName = UnicodeString();
     try
     {
-      throw ExtException(&E, LoadStr(LOG_GEN_ERROR));
+      throw ExtException(&E, MainInstructions(LoadStr(LOG_GEN_ERROR)));
     }
     catch (Exception & E)
     {
@@ -1069,6 +1069,8 @@ UnicodeString __fastcall TSessionLog::GetTlsVersionName(TTlsVersion TlsVersion)
       return "TLSv1.1";
     case tls12:
       return "TLSv1.2";
+    case tls13:
+      return "TLSv1.3";
   }
 }
 //---------------------------------------------------------------------------
@@ -1076,7 +1078,7 @@ UnicodeString __fastcall TSessionLog::LogSensitive(const UnicodeString & Str)
 {
   if (FConfiguration->LogSensitive && !Str.IsEmpty())
   {
-    return Str;
+    return NormalizeString(Str);
   }
   else
   {
@@ -1190,9 +1192,14 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
   else
   {
     ADF(L"Session name: %s (%s)", (Data->SessionName, Data->Source));
-    ADF(L"Host name: %s (Port: %d)", (Data->HostNameExpanded, Data->PortNumber));
+    UnicodeString AddressFamily;
+    if (Data->AddressFamily != afAuto)
+    {
+      AddressFamily = FORMAT(L"%s, ", (Data->AddressFamily == afIPv4 ? L"IPv4" : L"IPv6"));
+    }
+    ADF(L"Host name: %s (%sPort: %d)", (Data->HostNameExpanded, AddressFamily, Data->PortNumber));
     ADF(L"User name: %s (Password: %s, Key file: %s, Passphrase: %s)",
-      (Data->UserNameExpanded, LogSensitive(NormalizeString(Data->Password)),
+      (Data->UserNameExpanded, LogSensitive(Data->Password),
        LogSensitive(Data->PublicKeyFile), LogSensitive(Data->Passphrase)));
     if (Data->UsesSsh)
     {
@@ -1248,6 +1255,10 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
     if (Data->UsesSsh || (Data->FSProtocol == fsFTP))
     {
       ADF(L"Send buffer: %d", (Data->SendBuf));
+    }
+    if (Data->UsesSsh && !Data->SourceAddress.IsEmpty())
+    {
+      ADF(L"Source address: %s", (Data->SourceAddress));
     }
     if (Data->UsesSsh)
     {
@@ -1348,6 +1359,7 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
     {
       FtpsOn = (Data->Ftps != ftpsNone);
       ADF(L"HTTPS: %s", (BooleanToEngStr(FtpsOn)));
+      ADF(L"S3: URL Style: %s", (EnumName(Data->S3UrlStyle, L"Virtual Host;Path")));
       if (!Data->S3DefaultRegion.IsEmpty())
       {
         ADF(L"S3: Default region: %s", (Data->S3DefaultRegion));

@@ -14,9 +14,7 @@
 #include <GUITools.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
-#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
-#endif
 //---------------------------------------------------------------------------
 const UnicodeString AllFilesMask(L"*");
 const UnicodeString NoOpOperationMask(L"*");
@@ -247,7 +245,9 @@ static UnicodeString __fastcall QuoteStringParam(UnicodeString S)
 // Keep in sync with .NET Session.EscapeFileMask
 static UnicodeString __fastcall EscapeFileMask(UnicodeString S)
 {
-  return ReplaceStr(ReplaceStr(ReplaceStr(S, L"[", L"[[]"), L"*", L"[*]"), L"?", L"[?]");
+  return
+    ReplaceStr(ReplaceStr(ReplaceStr(ReplaceStr(ReplaceStr(
+      S, L"[", L"[[]"), L"*", L"[*]"), L"?", L"[?]"), L">", L">>"), L"<", L"<<");
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TGenerateUrlDialog::GenerateUrl()

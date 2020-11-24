@@ -17,9 +17,7 @@
 #pragma link "HistoryComboBox"
 #pragma link "PathLabel"
 #pragma link "PngImageList"
-#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
-#endif
 //---------------------------------------------------------------------
 void __fastcall DoConsoleDialog(TTerminal * Terminal, const UnicodeString Command,
   const TStrings * Log)

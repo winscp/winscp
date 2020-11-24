@@ -4,6 +4,7 @@
  */
 
 #include <stddef.h>
+#include <assert.h> // WINSCP
 
 #include "putty.h"
 
@@ -14,34 +15,99 @@ struct callback {
     void *ctx;
 };
 
-struct callback *cbhead = NULL, *cbtail = NULL;
+#ifdef MPEXT
+// PuTTY has one thread only, so run_toplevel_callbacks does not cater for multi threaded uses.
+// It would call callbacks registered any on thread from the thread that happens to call it.
+// We need to create separate callback queue for every SSH session.
+#define CALLBACK_SET_VAR callback_set_v
+#define cbcurr CALLBACK_SET_VAR->cbcurr
+#define cbhead CALLBACK_SET_VAR->cbhead
+#define cbtail CALLBACK_SET_VAR->cbtail
+#else
+struct callback *cbcurr = NULL, *cbhead = NULL, *cbtail = NULL;
+#endif
 
+#ifndef MPEXT
 toplevel_callback_notify_fn_t notify_frontend = NULL;
-void *frontend = NULL;
+void *notify_ctx = NULL;
 
 void request_callback_notifications(toplevel_callback_notify_fn_t fn,
-                                    void *fr)
+                                    void *ctx)
 {
-    MPEXT_PUTTY_SECTION_ENTER;
     notify_frontend = fn;
-    frontend = fr;
-    MPEXT_PUTTY_SECTION_LEAVE;
+    notify_ctx = ctx;
+}
+#endif
+
+static void run_idempotent_callback(void *ctx)
+{
+    struct IdempotentCallback *ic = (struct IdempotentCallback *)ctx;
+    ic->queued = false;
+    ic->fn(ic->ctx);
 }
 
-void queue_toplevel_callback(toplevel_callback_fn_t fn, void *ctx)
+void queue_idempotent_callback(struct IdempotentCallback *ic)
+{
+    if (ic->queued)
+        return;
+    ic->queued = true;
+#ifdef MPEXT
+    assert(ic->set != NULL);
+#endif
+    queue_toplevel_callback(ic->set, run_idempotent_callback, ic);
+}
+
+void delete_callbacks_for_context(CALLBACK_SET void *ctx)
+{
+    struct callback *newhead, *newtail;
+
+    newhead = newtail = NULL;
+    while (cbhead) {
+        struct callback *cb = cbhead;
+        cbhead = cbhead->next;
+        if (cb->ctx == ctx ||
+            (cb->fn == run_idempotent_callback &&
+             ((struct IdempotentCallback *)cb->ctx)->ctx == ctx)) {
+            sfree(cb);
+        } else {
+            if (!newhead)
+                newhead = cb;
+            else
+                newtail->next = cb;
+
+            newtail = cb;
+        }
+    }
+
+    cbhead = newhead;
+    cbtail = newtail;
+    if (newtail)
+        newtail->next = NULL;
+}
+
+void queue_toplevel_callback(CALLBACK_SET toplevel_callback_fn_t fn, void *ctx)
 {
     struct callback *cb;
 
-    MPEXT_PUTTY_SECTION_ENTER;
     cb = snew(struct callback);
     cb->fn = fn;
     cb->ctx = ctx;
 
-    /* If the front end has requested notification of pending
+#ifndef MPEXT
+    /*
+     * If the front end has requested notification of pending
      * callbacks, and we didn't already have one queued, let it know
-     * we do have one now. */
-    if (notify_frontend && !cbhead)
-        notify_frontend(frontend);
+     * we do have one now.
+     *
+     * If cbcurr is non-NULL, i.e. we are actually in the middle of
+     * executing a callback right now, then we count that as the queue
+     * already having been non-empty. That saves the front end getting
+     * a constant stream of needless re-notifications if the last
+     * callback keeps re-scheduling itself.
+     */
+    if (notify_frontend && !cbhead && !cbcurr)
+        notify_frontend(notify_ctx);
+#endif
 
     if (cbtail)
         cbtail->next = cb;
@@ -49,50 +115,49 @@ void queue_toplevel_callback(toplevel_callback_fn_t fn, void *ctx)
         cbhead = cb;
     cbtail = cb;
     cb->next = NULL;
-    MPEXT_PUTTY_SECTION_LEAVE;
 }
 
-void run_toplevel_callbacks(void)
+bool run_toplevel_callbacks(CALLBACK_SET_ONLY)
 {
-    MPEXT_PUTTY_SECTION_ENTER;
+    bool done_something = false;
+
     if (cbhead) {
-        struct callback *cb = cbhead;
-        #ifdef MPEXT
-        toplevel_callback_fn_t fn = cb->fn;
-        void * ctx = cb->ctx;
-        cbhead = cb->next;
-        if (!cbhead)
-            cbtail = NULL;
-        cbhead = cb->next;
-        sfree(cb);
-        MPEXT_PUTTY_SECTION_LEAVE;
-        fn(ctx);
-        #else
         /*
-         * Careful ordering here. We call the function _before_
-         * advancing cbhead (though, of course, we must free cb
-         * _after_ advancing it). This means that if the very last
-         * callback schedules another callback, cbhead does not become
-         * NULL at any point, and so the frontend notification
-         * function won't be needlessly pestered.
+         * Transfer the head callback into cbcurr to indicate that
+         * it's being executed. Then operations which transform the
+         * queue, like delete_callbacks_for_context, can proceed as if
+         * it's not there.
          */
-        cb->fn(cb->ctx);
-        cbhead = cb->next;
-        sfree(cb);
+        cbcurr = cbhead;
+        cbhead = cbhead->next;
         if (!cbhead)
             cbtail = NULL;
-        #endif
+
+        /*
+         * Now run the callback, and then clear it out of cbcurr.
+         */
+        cbcurr->fn(cbcurr->ctx);
+        sfree(cbcurr);
+        // WINSCP: this does not happen, when exception (disconnect) occurs while the callback is called.
+        // See also the comment in TSecureShell::FreeBackend().
+        cbcurr = NULL;
+
+        done_something = true;
     }
-    #ifdef MPEXT
-    else
-    {
-      MPEXT_PUTTY_SECTION_LEAVE;
-    }
-    #endif
+    return done_something;
 }
 
-int toplevel_callback_pending(void)
+bool toplevel_callback_pending(CALLBACK_SET_ONLY)
 {
     // MP does not have to be guarded
-    return cbhead != NULL;
+    return cbcurr != NULL || cbhead != NULL;
+}
+
+// WINSCP
+bool is_idempotent_callback_pending(CALLBACK_SET struct IdempotentCallback *ic)
+{
+    return
+      (cbhead != NULL) &&
+      (cbhead->fn == run_idempotent_callback) &&
+      (cbhead->ctx == ic);
 }

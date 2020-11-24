@@ -81,7 +81,9 @@ procedure ForceColorChange(Control: TWinControl);
 function IsUncPath(Path: string): Boolean;
 
 function SupportsDarkMode: Boolean;
-procedure AllowDarkModeForWindow(Control: TWinControl; Allow: Boolean);
+procedure AllowDarkModeForWindow(Control: TWinControl; Allow: Boolean); overload;
+procedure AllowDarkModeForWindow(Handle: THandle; Allow: Boolean); overload;
+procedure RefreshColorMode;
 
 type
   TApiPathEvent = function(Path: string): string;
@@ -985,30 +987,16 @@ begin
   Result := (Copy(Path, 1, 2) = '\\') or (Copy(Path, 1, 2) = '//');
 end;
 
+type TPreferredAppMode = (pamDefault, pamAllowDark, pamForceDark, pamForceLight, pamMax);
+
 var
-  AllowDarkModeForWindowLoaded: Boolean = False;
   AAllowDarkModeForWindow: function(hWnd: HWND; Allow: BOOL): BOOL; stdcall;
+  ARefreshImmersiveColorPolicyState: procedure; stdcall;
+  ASetPreferredAppMode: function(AppMode: TPreferredAppMode): TPreferredAppMode; stdcall;
 
 function SupportsDarkMode: Boolean;
-var
-  OSVersionInfo: TOSVersionInfoEx;
-  UxThemeLib: HMODULE;
 begin
-  if not AllowDarkModeForWindowLoaded then
-  begin
-    OSVersionInfo.dwOSVersionInfoSize := SizeOf(OSVersionInfo);
-    if GetVersionEx(OSVersionInfo) and (OSVersionInfo.dwBuildNumber >= 17763) then
-    begin
-      UxThemeLib := GetModuleHandle('UxTheme');
-      if UxThemeLib <> 0 then
-      begin
-        AAllowDarkModeForWindow := GetProcAddress(UxThemeLib, MakeIntResource(133));
-      end;
-    end;
-    AllowDarkModeForWindowLoaded := True;
-  end;
-
-  Result := Assigned(AAllowDarkModeForWindow);
+  Result := Assigned(AAllowDarkModeForWindow) and Assigned(ARefreshImmersiveColorPolicyState);
 end;
 
 procedure AllowDarkModeForWindow(Control: TWinControl; Allow: Boolean);
@@ -1020,8 +1008,25 @@ begin
   end;
 end;
 
+procedure AllowDarkModeForWindow(Handle: THandle; Allow: Boolean);
+begin
+  if SupportsDarkMode then
+  begin
+    AAllowDarkModeForWindow(Handle, Allow);
+  end;
+end;
+
+procedure RefreshColorMode;
+begin
+  if SupportsDarkMode then
+  begin
+    ARefreshImmersiveColorPolicyState;
+  end;
+end;
+
 var
   Lib: THandle;
+  OSVersionInfo: TOSVersionInfoEx;
 initialization
   Lib := LoadLibrary('shcore');
   if Lib <> 0 then
@@ -1034,6 +1039,36 @@ initialization
   begin
     GetSystemMetricsForDpi := GetProcAddress(Lib, 'GetSystemMetricsForDpi');
     SystemParametersInfoForDpi := GetProcAddress(Lib, 'SystemParametersInfoForDpi');
+  end;
+
+  AAllowDarkModeForWindow := nil;
+  ARefreshImmersiveColorPolicyState := nil;
+  ASetPreferredAppMode := nil;
+
+  OSVersionInfo.dwOSVersionInfoSize := SizeOf(OSVersionInfo);
+  if GetVersionEx(OSVersionInfo) and (OSVersionInfo.dwBuildNumber >= 17763) then
+  begin
+    Lib := GetModuleHandle('uxtheme');
+    if Lib <> 0 then
+    begin
+      AAllowDarkModeForWindow := GetProcAddress(Lib, MakeIntResource(133));
+      ARefreshImmersiveColorPolicyState := GetProcAddress(Lib, MakeIntResource(104));
+      if OSVersionInfo.dwBuildNumber >= 18334 then
+      begin
+        ASetPreferredAppMode := GetProcAddress(Lib, MakeIntResource(135));
+      end;
+
+      if SupportsDarkMode then
+      begin
+        // Both SetPreferredAppMode and RefreshImmersiveColorPolicyState is needed for
+        // dark list view headers and dark list view and tree view scrollbars
+        if Assigned(ASetPreferredAppMode) then
+        begin
+          ASetPreferredAppMode(pamAllowDark);
+        end;
+        ARefreshImmersiveColorPolicyState;
+      end;
+    end;
   end;
 
 finalization

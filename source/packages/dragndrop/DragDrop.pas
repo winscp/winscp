@@ -79,7 +79,7 @@ type
   TOnDragEnter = procedure(DataObj: IDataObject; grfKeyState: LongInt; pt: TPoint;
      var dwEffect: LongInt; var Accept: Boolean) of object;
   TOnDragLeave = procedure of object;
-  TOnDragOver = procedure(grfKeyState: LongInt; pt: TPoint; var dwEffect: LongInt) of object;
+  TOnDragOver = procedure(grfKeyState: LongInt; pt: TPoint; var dwEffect: LongInt; PreferredEffect: LongInt) of object;
   TOnDrop = procedure(DataObj: IDataObject; grfKeyState: LongInt;  pt: TPoint; var dwEffect: LongInt) of object;
   TOnQueryContinueDrag = procedure(fEscapePressed: BOOL; grfKeyState: LongInt; var Result: HResult) of object;
   TOnGiveFeedback = procedure(dwEffect: LongInt; var Result: HResult) of object;
@@ -180,6 +180,7 @@ type
     VertScrollTimer: TTimer;
     FVScrollCode: Integer;
     FHScrollCode: Integer;
+    FPreferredEffect: LongInt;
     procedure InitScroll(VerticalScroll: Boolean; ScrollCode: Integer);
     procedure TermScroll(VerticalScroll: Boolean);
     procedure DetermineScrollDir(VertScrolling: Boolean; var ScrollCode: Integer);
@@ -386,6 +387,9 @@ resourcestring
   MIAbortStr = '&Abort';
 
 implementation
+
+uses
+  PIDL;
 
 const
   CmdAbort = 0;
@@ -1172,10 +1176,12 @@ procedure TDropTarget.SuggestDropEffect(grfKeyState: LongInt; var dwEffect: Long
 begin
   if (not FOwner.FAcceptOwnDnD) and FOwner.FOwnerIsSource then dwEffect := DROPEFFECT_NONE
     else
-  if (grfKeyState and MK_CONTROL = 0) and (grfKeyState and MK_SHIFT <> 0) and
+  if (((grfKeyState and MK_CONTROL = 0) and (grfKeyState and MK_SHIFT <> 0)) or
+      (FPreferredEffect and DROPEFFECT_MOVE <> 0)) and
      (FOwner.FTargetEffects and DROPEFFECT_MOVE <> 0) then dwEffect := DROPEFFECT_MOVE
     else
-  if (grfKeyState and MK_CONTROL <> 0) and (grfKeyState and MK_SHIFT <> 0) and
+  if (((grfKeyState and MK_CONTROL <> 0) and (grfKeyState and MK_SHIFT <> 0)) or
+      (FPreferredEffect and DROPEFFECT_LINK <> 0)) and
      (FOwner.FTargetEffects and DROPEFFECT_LINK <> 0) then dwEffect := DROPEFFECT_LINK
     else
   if (deCopy in FOwner.FTargetEffectsSet) and (dwEffect and DROPEFFECT_COPY <> 0) then dwEffect := DROPEFFECT_COPY
@@ -1197,6 +1203,10 @@ function TDropTarget.DragEnter(
   const dataObj: IDataObject; grfKeyState: LongInt; pt: TPoint; var dwEffect: LongInt): HResult;
 // Is called if the d&d-mouse cursor moves ON (one call only) the TargeTWinControl. Here,
 // you influence if a drop can be accepted and the drop's effect if accepted.
+var
+  FormatEtc: TFormatEtc;
+  StgMedium: TStgMedium;
+  Ptr: Pointer;
 begin
   TDragDrop(FOwner).FInternalSource := GInternalSource;
   FOwner.FAvailableDropEffects := dwEffect;
@@ -1206,6 +1216,33 @@ begin
   begin
     RenderDropped(DataObj, grfKeyState, pt, dwEffect);
   end;
+
+  FPreferredEffect := 0;
+  with FormatEtc do
+  begin
+    cfFormat := CF_PREFERREDDROPEFFECT;
+    ptd := nil;
+    dwAspect := DVASPECT_CONTENT;
+    lindex := -1;
+    tymed := TYMED_HGLOBAL;
+  end;
+  if dataObj.GetData(FormatEtc, StgMedium) = S_OK then
+  begin
+    try
+      if GlobalSize(StgMedium.HGlobal) = SizeOf(FPreferredEffect) then
+      begin
+        Ptr := GlobalLock(StgMedium.HGlobal);
+        try
+          FPreferredEffect := PLongInt(Ptr)^;
+        finally
+          GlobalUnLock(StgMedium.HGlobal);
+        end;
+      end;
+    finally
+      ReleaseStgMedium(StgMedium);
+    end;
+  end;
+
   SuggestDropEffect(grfKeyState, dwEffect);
   AcceptDataObject(DataObj, FAccept);
   if Assigned(FOwner.OnDragEnter) then
@@ -1264,7 +1301,7 @@ begin
   SuggestDropEffect(grfKeyState, dwEffect);
   if Assigned(FOwner.OnDragOver) then
   begin
-    FOwner.OnDragOver(grfKeyState, FOwner.FDragDropControl.ScreenToClient(pt), dwEffect);
+    FOwner.OnDragOver(grfKeyState, FOwner.FDragDropControl.ScreenToClient(pt), dwEffect, FPreferredEffect);
   end;
   if ((not FOwner.FAcceptOwnDnD) and FOwner.FOwnerIsSource) or
      (not FAccept) then
@@ -1320,7 +1357,7 @@ begin
     else dwEffect := DROPEFFECT_NONE;
   if Assigned(FOwner.OnDragOver) then
   begin
-    FOwner.OnDragOver(KeyState, FOwner.FDragDropControl.ScreenToClient(pt), dwEffect);
+    FOwner.OnDragOver(KeyState, FOwner.FDragDropControl.ScreenToClient(pt), dwEffect, FPreferredEffect);
   end;
   if ((not FOwner.FAcceptOwnDnD) and FOwner.FOwnerIsSource) or (not FAccept) then dwEffect := DROPEFFECT_NONE;
   TermScroll(True);

@@ -16,15 +16,14 @@
 #include <TextsWin.h>
 #include <HelpWin.h>
 #include <WinConfiguration.h>
+#include <TerminalManager.h>
 #include <StrUtils.hpp>
 #include <Tools.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "HistoryComboBox"
 #pragma link "GrayedCheckBox"
-#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
-#endif
 //---------------------------------------------------------------------------
 const int WM_USER_STOP = WM_WINSCP_USER + 2;
 //---------------------------------------------------------------------------
@@ -35,12 +34,12 @@ bool __fastcall DoSynchronizeDialog(TSynchronizeParamType & Params,
   TSynchronizeSessionLog OnSynchronizeSessionLog,
   TFeedSynchronizeError & OnFeedSynchronizeError,
   TSynchronizeInNewWindow OnSynchronizeInNewWindow,
-  bool Start)
+  int AutoSubmit)
 {
   bool Result;
   TSynchronizeDialog * Dialog = SafeFormCreate<TSynchronizeDialog>(Application);
 
-  Dialog->Init(OnStartStop, OnGetOptions, OnSynchronizeSessionLog, OnFeedSynchronizeError, OnSynchronizeInNewWindow, Start);
+  Dialog->Init(OnStartStop, OnGetOptions, OnSynchronizeSessionLog, OnFeedSynchronizeError, OnSynchronizeInNewWindow, AutoSubmit);
 
   try
   {
@@ -97,7 +96,7 @@ void __fastcall TSynchronizeDialog::Init(TSynchronizeStartStopEvent OnStartStop,
   TSynchronizeSessionLog OnSynchronizeSessionLog,
   TFeedSynchronizeError & OnFeedSynchronizeError,
   TSynchronizeInNewWindow OnSynchronizeInNewWindow,
-  bool StartImmediately)
+  int AutoSubmit)
 {
   FOnStartStop = OnStartStop;
   FOnGetOptions = OnGetOptions;
@@ -105,7 +104,19 @@ void __fastcall TSynchronizeDialog::Init(TSynchronizeStartStopEvent OnStartStop,
   FOnFeedSynchronizeError = &OnFeedSynchronizeError;
   DebugAssert(OnSynchronizeInNewWindow != NULL);
   FOnSynchronizeInNewWindow = OnSynchronizeInNewWindow;
-  FStartImmediately = StartImmediately;
+  if (AutoSubmit == 0)
+  {
+    FStartImmediately = true;
+  }
+  else
+  {
+    FStartImmediately = false;
+
+    if (AutoSubmit > 0)
+    {
+      InitiateDialogTimeout(this, AutoSubmit * MSecsPerSec, StartButton);
+    }
+  }
 }
 //---------------------------------------------------------------------------
 __fastcall TSynchronizeDialog::~TSynchronizeDialog()
@@ -150,7 +161,9 @@ void __fastcall TSynchronizeDialog::UpdateControls()
     // some of the above steps hides accelerators when start button is pressed with mouse
     ResetSystemSettings(this);
   }
-  Caption = FormatFormCaption(this, LoadStr(FSynchronizing ? SYNCHRONIZE_SYCHRONIZING : SYNCHRONIZE_TITLE));
+  TTerminalManager * Manager = TTerminalManager::Instance();
+  UnicodeString Title = LoadStr(FSynchronizing ? SYNCHRONIZE_SYCHRONIZING : SYNCHRONIZE_TITLE);
+  Caption = Manager->FormatFormCaptionWithSession(this, Title);
   EnableControl(TransferSettingsButton, !FSynchronizing);
   CancelButton->Visible = !FSynchronizing || FLAGSET(FOptions, soNoMinimize);
   EnableControl(CancelButton, !FSynchronizing);
@@ -187,11 +200,19 @@ void __fastcall TSynchronizeDialog::UpdateControls()
     !WinConfiguration->MinimizeToTray ? TCustomButton::bsSplitButton : TCustomButton::bsPushButton;
 
   StartButton->Style = AllowStartInNewWindow() ? TCustomButton::bsSplitButton : TCustomButton::bsPushButton;
+  StartInNewWindowItem->Enabled = CanStartInNewWindow();
 }
 //---------------------------------------------------------------------------
 bool __fastcall TSynchronizeDialog::AllowStartInNewWindow()
 {
   return !IsMainFormLike(this);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TSynchronizeDialog::CanStartInNewWindow()
+{
+  return
+    AllowStartInNewWindow() &&
+    (!SynchronizeSelectedOnlyCheck->Enabled || !SynchronizeSelectedOnlyCheck->Checked);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeDialog::ControlChange(TObject * /*Sender*/)
@@ -404,9 +425,16 @@ void __fastcall TSynchronizeDialog::DoLog(TSynchronizeController * /*Controller*
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeDialog::StartButtonClick(TObject * /*Sender*/)
 {
-  if (AllowStartInNewWindow() && OpenInNewWindow())
+  if (OpenInNewWindow())
   {
-    StartInNewWindow();
+    if (CanStartInNewWindow())
+    {
+      StartInNewWindow();
+    }
+    else
+    {
+      Beep();
+    }
   }
   else
   {
@@ -712,8 +740,17 @@ void __fastcall TSynchronizeDialog::Minimize1Click(TObject * Sender)
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeDialog::MinimizetoTray1Click(TObject * Sender)
 {
-  WinConfiguration->MinimizeToTrayOnce();
-  Minimize(Sender);
+  bool MinimizeToTrayPrev = WinConfiguration->MinimizeToTray;
+  DebugAssert(!MinimizeToTrayPrev);
+  WinConfiguration->MinimizeToTray = true;
+  try
+  {
+    Minimize(Sender);
+  }
+  __finally
+  {
+    WinConfiguration->MinimizeToTray = MinimizeToTrayPrev;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeDialog::MinimizeButtonDropDownClick(TObject * /*Sender*/)
@@ -721,7 +758,7 @@ void __fastcall TSynchronizeDialog::MinimizeButtonDropDownClick(TObject * /*Send
   MenuPopup(MinimizeMenu, MinimizeButton);
 }
 //---------------------------------------------------------------------------
-void __fastcall TSynchronizeDialog::StartInNewWindow1Click(TObject * /*Sender*/)
+void __fastcall TSynchronizeDialog::StartInNewWindowItemClick(TObject * /*Sender*/)
 {
   StartInNewWindow();
 }

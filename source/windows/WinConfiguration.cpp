@@ -115,6 +115,7 @@ bool __fastcall TEditorData::DecideExternalEditorText(UnicodeString ExternalEdit
   // By default we use default transfer mode (binary),
   // as all reasonable 3rd party editors support all EOL styles.
   // A notable exception is Windows Notepad, so here's an exception for it.
+  // Notepad support unix line endings since Windows 10 1809. Once that's widespread, remove this.
 
   ReformatFileNameCommand(ExternalEditor);
   UnicodeString ProgramName = ExtractProgramName(ExternalEditor);
@@ -577,8 +578,8 @@ void __fastcall TWinConfiguration::Default()
   FAutoSaveWorkspacePasswords = false;
   FAutoWorkspace = L"";
   FPathInCaption = picShort;
+  FSessionTabNameFormat = stnfShortPathTrunc;
   FMinimizeToTray = false;
-  FMinimizeToTrayOnce = false;
   FBalloonNotifications = true;
   FNotificationsTimeout = 10;
   FNotificationsStickTime = 2;
@@ -608,7 +609,8 @@ void __fastcall TWinConfiguration::Default()
   FGenerateUrlScriptFormat = sfScriptFile;
   FGenerateUrlAssemblyLanguage = alCSharp;
   FExternalSessionInExistingInstance = true;
-  FKeepOpenWhenNoSession = false;
+  FShowLoginWhenNoSession = true;
+  FKeepOpenWhenNoSession = true;
   FLocalIconsByExt = false;
   FBidiModeOverride = lfoLanguageIfRecommended;
   FFlipChildrenOverride = lfoLanguageIfRecommended;
@@ -623,6 +625,7 @@ void __fastcall TWinConfiguration::Default()
   HonorDrivePolicy = true;
   TimeoutShellOperations = true;
   TimeoutShellIconRetrieval = false;
+  UseIconUpdateThread = true;
   AllowWindowPrint = false;
 
   FEditor.Font.FontName = DefaultFixedWidthFontName;
@@ -937,10 +940,8 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
 }
 //---------------------------------------------------------------------------
 // duplicated from core\configuration.cpp
-#define LASTELEM(ELEM) \
-  ELEM.SubString(ELEM.LastDelimiter(L".>")+1, ELEM.Length() - ELEM.LastDelimiter(L".>"))
 #define BLOCK(KEY, CANCREATE, BLOCK) \
-  if (Storage->OpenSubKey(KEY, CANCREATE, true)) try { BLOCK } __finally { Storage->CloseSubKey(); }
+  if (Storage->OpenSubKeyPath(KEY, CANCREATE)) try { BLOCK } __finally { Storage->CloseSubKeyPath(); }
 #define KEY(TYPE, VAR) KEYEX(TYPE, VAR, PropertyToKey(TEXT(#VAR)))
 #define REGCONFIG(CANCREATE) \
   BLOCK(L"Interface", CANCREATE, \
@@ -983,6 +984,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Bool,     AutoSaveWorkspacePasswords); \
     KEY(String,   AutoWorkspace); \
     KEY(Integer,  PathInCaption); \
+    KEY(Integer,  SessionTabNameFormat); \
     KEY(Bool,     MinimizeToTray); \
     KEY(Bool,     BalloonNotifications); \
     KEY(Integer,  NotificationsTimeout); \
@@ -1010,6 +1012,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Integer,  GenerateUrlScriptFormat); \
     KEY(Integer,  GenerateUrlAssemblyLanguage); \
     KEY(Bool,     ExternalSessionInExistingInstance); \
+    KEY(Bool,     ShowLoginWhenNoSession); \
     KEY(Bool,     KeepOpenWhenNoSession); \
     KEY(Bool,     LocalIconsByExt); \
     KEY(Integer,  BidiModeOverride); \
@@ -1021,11 +1024,12 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Integer,  RunsSinceLastTip); \
     KEY(Bool,     HonorDrivePolicy); \
     KEY(Integer,  LastMachineInstallations); \
-    KEYEX(String, FExtensionsDeleted, L"ExtensionsDeleted"); \
-    KEYEX(String, FExtensionsOrder, L"ExtensionsOrder"); \
-    KEYEX(String, FExtensionsShortCuts, L"ExtensionsShortCuts"); \
+    KEY(String,   FExtensionsDeleted); \
+    KEY(String,   FExtensionsOrder); \
+    KEY(String,   FExtensionsShortCuts); \
     KEY(Bool,     TimeoutShellOperations); \
     KEY(Bool,     TimeoutShellIconRetrieval); \
+    KEY(Bool,     UseIconUpdateThread); \
     KEY(Bool,     AllowWindowPrint); \
   ); \
   BLOCK(L"Interface\\Editor", CANCREATE, \
@@ -1148,8 +1152,8 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(String,  ScpCommander.RemotePanel.LastPath); \
   ); \
   BLOCK(L"Security", CANCREATE, \
-    KEYEX(Bool,  FUseMasterPassword, L"UseMasterPassword"); \
-    KEYEX(String,FMasterPasswordVerifier, L"MasterPasswordVerifier"); \
+    KEY(Bool,    FUseMasterPassword); \
+    KEY(String,  FMasterPasswordVerifier); \
   );
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SaveData(THierarchicalStorage * Storage, bool All)
@@ -1182,14 +1186,14 @@ void __fastcall TWinConfiguration::SaveData(THierarchicalStorage * Storage, bool
   }
 
   if ((All || FEditorList->Modified) &&
-      Storage->OpenSubKey(L"Interface\\Editor", true, true))
+      Storage->OpenSubKeyPath(L"Interface\\Editor", true))
   try
   {
     FEditorList->Save(Storage);
   }
   __finally
   {
-    Storage->CloseSubKey();
+    Storage->CloseSubKeyPath();
   }
 }
 //---------------------------------------------------------------------------
@@ -1502,7 +1506,7 @@ void __fastcall TWinConfiguration::LoadData(THierarchicalStorage * Storage)
     Storage->CloseSubKey();
   }
 
-  if (Storage->HasSubKey(L"CustomCommands"))
+  if (Storage->KeyExists(L"CustomCommands"))
   {
     FCustomCommandList->Load(Storage);
     FCustomCommandsDefaults = false;
@@ -1524,7 +1528,7 @@ void __fastcall TWinConfiguration::LoadData(THierarchicalStorage * Storage)
     FCustomCommandOptionsModified = false;
   }
 
-  if (Storage->OpenSubKey(L"Interface\\Editor", false, true))
+  if (Storage->OpenSubKeyPath(L"Interface\\Editor", false))
   try
   {
     FEditorList->Clear();
@@ -1532,12 +1536,12 @@ void __fastcall TWinConfiguration::LoadData(THierarchicalStorage * Storage)
   }
   __finally
   {
-    Storage->CloseSubKey();
+    Storage->CloseSubKeyPath();
   }
 
   // load legacy editor configuration
   DebugAssert(FLegacyEditor != NULL);
-  if (Storage->OpenSubKey(L"Interface\\Editor", false, true))
+  if (Storage->OpenSubKeyPath(L"Interface\\Editor", false))
   {
     try
     {
@@ -1545,7 +1549,7 @@ void __fastcall TWinConfiguration::LoadData(THierarchicalStorage * Storage)
     }
     __finally
     {
-      Storage->CloseSubKey();
+      Storage->CloseSubKeyPath();
     }
   }
 }
@@ -1562,14 +1566,12 @@ void __fastcall TWinConfiguration::CopyData(THierarchicalStorage * Source, THier
 {
   TCustomWinConfiguration::CopyData(Source, Target);
 
-  if (Source->OpenSubKey(ConfigurationSubKey, false))
+  if (CopySubKey(Source, Target, ConfigurationSubKey))
   {
-    if (Target->OpenSubKey(ConfigurationSubKey, true))
-    {
-      Target->WriteString(L"JumpList", Source->ReadString(L"JumpList", L""));
-      Target->WriteString(L"JumpListWorkspaces", Source->ReadString(L"JumpListWorkspaces", L""));
-      Target->CloseSubKey();
-    }
+    Target->WriteString(L"JumpList", Source->ReadString(L"JumpList", L""));
+    Target->WriteString(L"JumpListWorkspaces", Source->ReadString(L"JumpListWorkspaces", L""));
+
+    Target->CloseSubKey();
     Source->CloseSubKey();
   }
 }
@@ -1730,7 +1732,8 @@ RawByteString __fastcall TWinConfiguration::StronglyRecryptPassword(RawByteStrin
       TCustomWinConfiguration::DecryptPassword(Password, Key);
     if (!PasswordText.IsEmpty())
     {
-      // can be not set for instance, when editing=>saving site with no prior password
+      // Can be not set for instance, when editing=>saving site with no prior password.
+      // Though it should not actually happen, as we call AskForMasterPasswordIfNotSetAndNeededToPersistSessionData in DoSaveSession.
       AskForMasterPasswordIfNotSet();
       Password = ScramblePassword(PasswordText);
       AES256EncyptWithMAC(Password, FPlainMasterPasswordEncrypt, Result);
@@ -2175,18 +2178,6 @@ void __fastcall TWinConfiguration::SetMinimizeToTray(bool value)
   SET_CONFIG_PROPERTY(MinimizeToTray);
 }
 //---------------------------------------------------------------------------
-void __fastcall TWinConfiguration::MinimizeToTrayOnce()
-{
-  FMinimizeToTrayOnce = true;
-}
-//---------------------------------------------------------------------------
-bool __fastcall TWinConfiguration::GetMinimizeToTray()
-{
-  bool Result = FMinimizeToTrayOnce || FMinimizeToTray;
-  FMinimizeToTrayOnce = false;
-  return Result;
-}
-//---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetBalloonNotifications(bool value)
 {
   SET_CONFIG_PROPERTY(BalloonNotifications);
@@ -2290,6 +2281,11 @@ void __fastcall TWinConfiguration::SetGenerateUrlAssemblyLanguage(TAssemblyLangu
 void __fastcall TWinConfiguration::SetExternalSessionInExistingInstance(bool value)
 {
   SET_CONFIG_PROPERTY(ExternalSessionInExistingInstance);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetShowLoginWhenNoSession(bool value)
+{
+  SET_CONFIG_PROPERTY(ShowLoginWhenNoSession);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetKeepOpenWhenNoSession(bool value)
@@ -2477,87 +2473,75 @@ UnicodeString __fastcall TWinConfiguration::TemporaryDir(bool Mask)
   return UniqTempDir(ExpandedTemporaryDirectory(), L"scp", Mask);
 }
 //---------------------------------------------------------------------------
+TStrings * __fastcall TWinConfiguration::DoFindTemporaryFolders(bool OnlyFirst)
+{
+  std::unique_ptr<TStrings> Result(new TStringList());
+  TSearchRecOwned SRec;
+  UnicodeString Mask = TemporaryDir(true);
+  UnicodeString Directory = ExtractFilePath(Mask);
+  if (FindFirstUnchecked(Mask, faDirectory | faHidden, SRec) == 0)
+  {
+    do
+    {
+      if (SRec.IsDirectory())
+      {
+        Result->Add(Directory + SRec.Name);
+      }
+    }
+    while ((FindNextChecked(SRec) == 0) && (!OnlyFirst || Result->Count == 0));
+  }
+
+  if (Result->Count == 0)
+  {
+    Result.reset(NULL);
+  }
+
+  return Result.release();
+}
+//---------------------------------------------------------------------------
 TStrings * __fastcall TWinConfiguration::FindTemporaryFolders()
 {
-  TStrings * Result = new TStringList();
-  try
+  return DoFindTemporaryFolders(false);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TWinConfiguration::AnyTemporaryFolders()
+{
+  std::unique_ptr<TStrings> Folders(DoFindTemporaryFolders(true));
+  return (Folders.get() != NULL);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::CleanupTemporaryFolders()
+{
+  std::unique_ptr<TStrings> Folders(FindTemporaryFolders());
+  if (Folders.get() != NULL)
   {
-    TSearchRecOwned SRec;
-    UnicodeString Mask = TemporaryDir(true);
-    UnicodeString Directory = ExtractFilePath(Mask);
-    if (FindFirstUnchecked(Mask, faDirectory | faHidden, SRec) == 0)
-    {
-      do
-      {
-        if (SRec.IsDirectory())
-        {
-          Result->Add(Directory + SRec.Name);
-        }
-      }
-      while (FindNextChecked(SRec) == 0);
-    }
-
-    if (Result->Count == 0)
-    {
-      delete Result;
-      Result = NULL;
-    }
+    CleanupTemporaryFolders(Folders.get());
   }
-  catch(...)
-  {
-    delete Result;
-    throw;
-  }
-
-  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::CleanupTemporaryFolders(TStrings * Folders)
 {
+  if (DebugAlwaysTrue(Folders->Count > 0))
+  {
+    Usage->Inc(L"TemporaryDirectoryCleanups");
+  }
+
   UnicodeString ErrorList;
-  TStrings * F;
-  if (Folders == NULL)
+  for (int i = 0; i < Folders->Count; i++)
   {
-    F = FindTemporaryFolders();
+    if (!DeleteDirectory(Folders->Strings[i]))
+    {
+      if (!ErrorList.IsEmpty())
+      {
+        ErrorList += L"\n";
+      }
+      ErrorList += Folders->Strings[i];
+    }
   }
-  else
+
+  if (!ErrorList.IsEmpty())
   {
-    F = Folders;
-  }
-
-  if (F != NULL)
-  {
-    try
-    {
-      if (DebugAlwaysTrue(F->Count > 0))
-      {
-        Usage->Inc(L"TemporaryDirectoryCleanups");
-      }
-
-      for (int i = 0; i < F->Count; i++)
-      {
-        if (!DeleteDirectory(F->Strings[i]))
-        {
-          if (!ErrorList.IsEmpty())
-          {
-            ErrorList += L"\n";
-          }
-          ErrorList += F->Strings[i];
-        }
-      }
-    }
-    __finally
-    {
-      if (Folders == NULL)
-      {
-        delete F;
-      }
-    }
-
-    if (!ErrorList.IsEmpty())
-    {
-      throw ExtException(LoadStr(CLEANUP_TEMP_ERROR), ErrorList);
-    }
+    throw ExtException(LoadStr(CLEANUP_TEMP_ERROR), ErrorList);
   }
 }
 //---------------------------------------------------------------------------
@@ -2684,6 +2668,11 @@ void __fastcall TWinConfiguration::SetTimeoutShellIconRetrieval(bool value)
   SET_CONFIG_PROPERTY(TimeoutShellIconRetrieval);
 }
 //---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetUseIconUpdateThread(bool value)
+{
+  SET_CONFIG_PROPERTY(UseIconUpdateThread);
+}
+//---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetAllowWindowPrint(bool value)
 {
   SET_CONFIG_PROPERTY(AllowWindowPrint);
@@ -2729,7 +2718,9 @@ void __fastcall TWinConfiguration::UpdateEntryInJumpList(
     FDontDecryptPasswords++;
     Storage->AccessMode = smReadWrite;
 
-    if (Storage->OpenSubKey(ConfigurationSubKey, true))
+    // For initial call from UpdateJumpList, do not create the key if it does ot exist yet.
+    // To avoid creating the key if we are being started just for a maintenance task.
+    if (Storage->OpenSubKey(ConfigurationSubKey, !Name.IsEmpty()))
     {
       std::unique_ptr<TStringList> ListSessions(LoadJumpList(Storage, L"JumpList"));
       std::unique_ptr<TStringList> ListWorkspaces(LoadJumpList(Storage, L"JumpListWorkspaces"));
@@ -2815,6 +2806,8 @@ void __fastcall TWinConfiguration::UpdateStaticUsage()
   Usage->Set(L"FileColors", !FileColors.IsEmpty());
   Usage->Set(L"DragDropDrives", !DDDrives.IsEmpty());
   Usage->Set(L"ShowingTips", ShowTips);
+  Usage->Set(L"KeepingOpenWhenNoSession", KeepOpenWhenNoSession);
+  Usage->Set(L"ShowingLoginWhenNoSession", ShowLoginWhenNoSession);
   TipsUpdateStaticUsage();
 
   Usage->Set(L"CommanderNortonLikeMode", int(ScpCommander.NortonLikeMode));

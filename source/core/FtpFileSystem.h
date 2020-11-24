@@ -209,6 +209,7 @@ protected:
   void __fastcall RegisterChecksumAlgCommand(const UnicodeString & Alg, const UnicodeString & Command);
   void __fastcall SendCommand(const UnicodeString & Command);
   bool __fastcall CanTransferSkipList(int Params, unsigned int Flags, const TCopyParamType * CopyParam);
+  void __fastcall Disconnect();
 
   static bool __fastcall Unquote(UnicodeString & Str);
 
@@ -270,6 +271,7 @@ private:
   bool FDoListAll;
   TFTPServerCapabilities * FServerCapabilities;
   TDateTime FLastDataSent;
+  bool FAnyTransferSucceeded;
   bool FDetectTimeDifference;
   __int64 FTimeDifference;
   std::unique_ptr<TStrings> FChecksumAlgs;

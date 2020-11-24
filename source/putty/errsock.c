@@ -5,69 +5,73 @@
 #include <stdio.h>
 #include <assert.h>
 
-#define DEFINE_PLUG_METHOD_MACROS
 #include "tree234.h"
 #include "putty.h"
 #include "network.h"
 
-typedef struct Socket_error_tag *Error_Socket;
-
-struct Socket_error_tag {
-    const struct socket_function_table *fn;
-    /* the above variable absolutely *must* be the first in this structure */
-
+typedef struct {
     char *error;
-    Plug plug;
-};
+    Plug *plug;
 
-static Plug sk_error_plug(Socket s, Plug p)
+    Socket sock;
+} ErrorSocket;
+
+static Plug *sk_error_plug(Socket *s, Plug *p)
 {
-    Error_Socket ps = (Error_Socket) s;
-    Plug ret = ps->plug;
+    ErrorSocket *es = container_of(s, ErrorSocket, sock);
+    Plug *ret = es->plug;
     if (p)
-	ps->plug = p;
+        es->plug = p;
     return ret;
 }
 
-static void sk_error_close(Socket s)
+static void sk_error_close(Socket *s)
 {
-    Error_Socket ps = (Error_Socket) s;
+    ErrorSocket *es = container_of(s, ErrorSocket, sock);
 
-    sfree(ps->error);
-    sfree(ps);
+    sfree(es->error);
+    sfree(es);
 }
 
-static const char *sk_error_socket_error(Socket s)
+static const char *sk_error_socket_error(Socket *s)
 {
-    Error_Socket ps = (Error_Socket) s;
-    return ps->error;
+    ErrorSocket *es = container_of(s, ErrorSocket, sock);
+    return es->error;
 }
 
-static char *sk_error_peer_info(Socket s)
+static SocketPeerInfo *sk_error_peer_info(Socket *s)
 {
     return NULL;
 }
 
-Socket new_error_socket(const char *errmsg, Plug plug)
+static const SocketVtable ErrorSocket_sockvt = {
+    sk_error_plug,
+    sk_error_close,
+    NULL /* write */,
+    NULL /* write_oob */,
+    NULL /* write_eof */,
+    NULL /* set_frozen */,
+    sk_error_socket_error,
+    sk_error_peer_info,
+};
+
+static Socket *new_error_socket_internal(char *errmsg, Plug *plug)
 {
-    static const struct socket_function_table socket_fn_table = {
-	sk_error_plug,
-	sk_error_close,
-	NULL /* write */,
-	NULL /* write_oob */,
-	NULL /* write_eof */,
-	NULL /* flush */,
-	NULL /* set_frozen */,
-	sk_error_socket_error,
-	sk_error_peer_info,
-    };
+    ErrorSocket *es = snew(ErrorSocket);
+    es->sock.vt = &ErrorSocket_sockvt;
+    es->plug = plug;
+    es->error = errmsg;
+    return &es->sock;
+}
 
-    Error_Socket ret;
+Socket *new_error_socket_fmt(Plug *plug, const char *fmt, ...)
+{
+    va_list ap;
+    char *msg;
 
-    ret = snew(struct Socket_error_tag);
-    ret->fn = &socket_fn_table;
-    ret->plug = plug;
-    ret->error = dupstr(errmsg);
+    va_start(ap, fmt);
+    msg = dupvprintf(fmt, ap);
+    va_end(ap);
 
-    return (Socket) ret;
+    return new_error_socket_internal(msg, plug);
 }

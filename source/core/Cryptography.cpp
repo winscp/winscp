@@ -53,20 +53,39 @@
 
 #include <memory.h>
 
-#define sha1_ctx                  SHA_State
-#define sha1_begin(ctx)           putty_SHA_Init(ctx)
-#define sha1_hash(buf, len, ctx)  SHA_Bytes(ctx, buf, len)
-#define sha1_end(dig, ctx)        putty_SHA_Final(ctx, dig)
+#define sha1_begin(ctx)           ctx = (&ssh_sha1)->_new_(&ssh_sha1)
+#define sha1_hash(buf, len, ctx)  put_data(ctx, buf, len)
+#define sha1_end(dig, ctx)        ssh_hash_final(ctx, dig); ctx = NULL
 
 #define IN_BLOCK_LENGTH     64
 #define OUT_BLOCK_LENGTH    20
 #define HMAC_IN_DATA        0xffffffff
 
-typedef struct
+struct hmac_ctx
 {   unsigned char   key[IN_BLOCK_LENGTH];
-    sha1_ctx        ctx[1];
+    ssh_hash       *ctx;
     unsigned int    klen;
-} hmac_ctx;
+    hmac_ctx()
+    {
+        memset(this, 0, sizeof(*this));
+    }
+    ~hmac_ctx()
+    {
+        if (ctx != NULL) ssh_hash_free(ctx);
+    }
+    void CopyFrom(hmac_ctx * Source)
+    {
+        if (ctx != NULL)
+        {
+            ssh_hash_free(ctx);
+        }
+        memmove(this, Source, sizeof(*this));
+        if (Source->ctx != NULL)
+        {
+            ctx = ssh_hash_copy(Source->ctx);
+        }
+    }
+};
 
 /* initialise the HMAC context to zero */
 static void hmac_sha1_begin(hmac_ctx cx[1])
@@ -156,7 +175,7 @@ static void hmac_sha1_end(unsigned char mac[], unsigned long mac_len, hmac_ctx c
 
 void aes_set_encrypt_key(const unsigned char in_key[], unsigned int klen, void * cx)
 {
-  call_aes_setup(cx, BLOCK_SIZE, const_cast<unsigned char *>(in_key), klen);
+  call_aes_setup(cx, const_cast<unsigned char *>(in_key), klen);
 }
 
 void aes_encrypt_block(const unsigned char in_blk[], unsigned char out_blk[], void * cx)
@@ -173,7 +192,7 @@ void aes_encrypt_block(const unsigned char in_blk[], unsigned char out_blk[], vo
     out_blk[Index * 4 + 1] = out_blk[Index * 4 + 2];
     out_blk[Index * 4 + 2] = t;
   }
-  call_aes_encrypt(cx, reinterpret_cast<unsigned int*>(out_blk));
+  call_aesold_encrypt(cx, reinterpret_cast<unsigned int*>(out_blk));
   for (Index = 0; Index < 4; Index++)
   {
     unsigned char t;
@@ -189,7 +208,7 @@ void aes_encrypt_block(const unsigned char in_blk[], unsigned char out_blk[], vo
 typedef struct
 {   unsigned char   nonce[BLOCK_SIZE];          /* the CTR nonce          */
     unsigned char   encr_bfr[BLOCK_SIZE];       /* encrypt buffer         */
-    void *          encr_ctx;                   /* encryption context     */
+    AESContext *    encr_ctx;                   /* encryption context     */
     hmac_ctx        auth_ctx;                   /* authentication context */
     unsigned int    encr_pos;                   /* block position (enc)   */
     unsigned int    pwd_len;                    /* password length        */
@@ -236,7 +255,7 @@ static void derive_key(const unsigned char pwd[],  /* the PASSWORD     */
     hmac_sha1_key(pwd, pwd_len, c1);
 
     /* set HMAC context (c2) for password and salt      */
-    memmove(c2, c1, sizeof(hmac_ctx));
+    c2->CopyFrom(c1);
     hmac_sha1_data(salt, salt_len, c2);
 
     /* find the number of SHA blocks in the key         */
@@ -248,7 +267,7 @@ static void derive_key(const unsigned char pwd[],  /* the PASSWORD     */
         memset(ux, 0, OUT_BLOCK_LENGTH);
 
         /* set HMAC context (c3) for password and salt  */
-        memmove(c3, c2, sizeof(hmac_ctx));
+        c3->CopyFrom(c2);
 
         /* enter additional data for 1st block into uu  */
         uu[0] = (unsigned char)((i + 1) >> 24);
@@ -270,7 +289,7 @@ static void derive_key(const unsigned char pwd[],  /* the PASSWORD     */
                 ux[k] ^= uu[k];
 
             /* set HMAC context (c3) for password   */
-            memmove(c3, c1, sizeof(hmac_ctx));
+            c3->CopyFrom(c1);
         }
 
         /* compile key blocks into the key output   */
@@ -325,8 +344,8 @@ static void fcrypt_init(
     memset(cx->nonce, 0, BLOCK_SIZE * sizeof(unsigned char));
 
     /* initialise for encryption using key 1            */
-    cx->encr_ctx = call_aes_make_context();
-    aes_set_encrypt_key(kbuf, KEY_LENGTH(mode), cx->encr_ctx);
+    cx->encr_ctx = aesold_make_context();
+    call_aesold_setup(cx->encr_ctx, BLOCK_SIZE, kbuf, KEY_LENGTH(mode));
 
     /* initialise for authentication using key 2        */
     hmac_sha1_begin(&cx->auth_ctx);
@@ -354,7 +373,7 @@ static void fcrypt_decrypt(unsigned char data[], unsigned int data_len, fcrypt_c
 static int fcrypt_end(unsigned char mac[], fcrypt_ctx cx[1])
 {
     hmac_sha1_end(mac, MAC_LENGTH(cx->mode), &cx->auth_ctx);
-    call_aes_free_context(cx->encr_ctx);
+    aesold_free_context(cx->encr_ctx);
     return MAC_LENGTH(cx->mode);    /* return MAC length in bytes   */
 }
 //---------------------------------------------------------------------------
@@ -363,14 +382,14 @@ static int fcrypt_end(unsigned char mac[], fcrypt_ctx cx[1])
 static void AES256Salt(RawByteString & Salt)
 {
   Salt.SetLength(SALT_LENGTH(PASSWORD_MANAGER_AES_MODE));
-  RAND_pseudo_bytes(reinterpret_cast<unsigned char *>(Salt.c_str()), Salt.Length());
+  RAND_bytes(reinterpret_cast<unsigned char *>(Salt.c_str()), Salt.Length());
 }
 //---------------------------------------------------------------------------
 RawByteString GenerateEncryptKey()
 {
   RawByteString Result;
   Result.SetLength(KEY_LENGTH(PASSWORD_MANAGER_AES_MODE));
-  RAND_pseudo_bytes(reinterpret_cast<unsigned char *>(Result.c_str()), Result.Length());
+  RAND_bytes(reinterpret_cast<unsigned char *>(Result.c_str()), Result.Length());
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -648,7 +667,7 @@ TEncryption::TEncryption(const RawByteString & Key)
   if (!FKey.IsEmpty())
   {
     DebugAssert(FKey.Length() == KEY_LENGTH(PASSWORD_MANAGER_AES_MODE));
-    FContext = call_aes_make_context();
+    FContext = aes_make_context();
     aes_set_encrypt_key(reinterpret_cast<unsigned char *>(FKey.c_str()), FKey.Length(), FContext);
   }
   else
@@ -661,7 +680,7 @@ TEncryption::~TEncryption()
 {
   if (FContext != NULL)
   {
-    call_aes_free_context(FContext);
+    aes_free_context(FContext);
   }
   Shred(FKey);
   if ((FInputHeader.Length() > 0) && (FInputHeader.Length() < GetOverhead()))
@@ -672,7 +691,7 @@ TEncryption::~TEncryption()
 //---------------------------------------------------------------------------
 void TEncryption::SetSalt()
 {
-  aes_iv(FContext, reinterpret_cast<unsigned char *>(FSalt.c_str()));
+  aes_iv(FContext, reinterpret_cast<const void *>(FSalt.c_str()));
 }
 //---------------------------------------------------------------------------
 void TEncryption::NeedSalt()

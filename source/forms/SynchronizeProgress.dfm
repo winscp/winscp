@@ -4,7 +4,7 @@ object SynchronizeProgressForm: TSynchronizeProgressForm
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Synchronization X'
-  ClientHeight = 193
+  ClientHeight = 219
   ClientWidth = 424
   Color = clWindow
   ParentFont = True
@@ -12,9 +12,26 @@ object SynchronizeProgressForm: TSynchronizeProgressForm
   Position = poOwnerFormCenter
   DesignSize = (
     424
-    193)
+    219)
   PixelsPerInch = 96
   TextHeight = 13
+  object TimeLeftLabel: TLabel
+    Left = 141
+    Top = 49
+    Width = 79
+    Height = 13
+    AutoSize = False
+    Caption = '00:00:00'
+    ShowAccelChar = False
+  end
+  object TimeLeftLabelLabel: TLabel
+    Left = 49
+    Top = 49
+    Width = 45
+    Height = 13
+    Caption = 'Time left:'
+    ShowAccelChar = False
+  end
   object Label1: TLabel
     Left = 49
     Top = 9
@@ -63,7 +80,7 @@ object SynchronizeProgressForm: TSynchronizeProgressForm
     Caption = '00:00:00'
     ShowAccelChar = False
   end
-  object Label4: TLabel
+  object StartTimeLabelLabel: TLabel
     Left = 49
     Top = 49
     Width = 51
@@ -96,7 +113,7 @@ object SynchronizeProgressForm: TSynchronizeProgressForm
   end
   object ToolbarPanel: TPanel
     Left = 49
-    Top = 92
+    Top = 115
     Width = 185
     Height = 28
     Anchors = [akLeft, akBottom]
@@ -138,7 +155,7 @@ object SynchronizeProgressForm: TSynchronizeProgressForm
   end
   object ComponentsPanel: TPanel
     Left = 0
-    Top = 127
+    Top = 153
     Width = 424
     Height = 66
     Align = alBottom
@@ -147,11 +164,21 @@ object SynchronizeProgressForm: TSynchronizeProgressForm
     BevelOuter = bvNone
     TabOrder = 1
   end
+  object OperationProgress: TProgressBar
+    Left = 49
+    Top = 88
+    Width = 365
+    Height = 16
+    Anchors = [akLeft, akTop, akRight]
+    ParentShowHint = False
+    ShowHint = True
+    TabOrder = 2
+  end
   object UpdateTimer: TTimer
     Enabled = False
     OnTimer = UpdateTimerTimer
     Left = 393
-    Top = 140
+    Top = 166
   end
   object ImageList: TPngImageList
     PngImages = <
@@ -353,7 +380,7 @@ object SynchronizeProgressForm: TSynchronizeProgressForm
           574C0000000049454E44AE426082}
       end>
     Left = 40
-    Top = 140
+    Top = 166
     Bitmap = {}
   end
   object ImageList120: TPngImageList
@@ -559,7 +586,7 @@ object SynchronizeProgressForm: TSynchronizeProgressForm
           02001CD843D9E9F4EAFC0000000049454E44AE426082}
       end>
     Left = 136
-    Top = 140
+    Top = 166
     Bitmap = {}
   end
   object ImageList144: TPngImageList
@@ -765,7 +792,7 @@ object SynchronizeProgressForm: TSynchronizeProgressForm
           5ED71FD84ED953D17B83BCD30000000049454E44AE426082}
       end>
     Left = 224
-    Top = 140
+    Top = 166
     Bitmap = {}
   end
   object ImageList192: TPngImageList
@@ -979,7 +1006,7 @@ object SynchronizeProgressForm: TSynchronizeProgressForm
           82}
       end>
     Left = 312
-    Top = 140
+    Top = 166
     Bitmap = {}
   end
 end

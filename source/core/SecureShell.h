@@ -8,6 +8,7 @@
 #include "SessionInfo.h"
 //---------------------------------------------------------------------------
 #ifndef PuttyIntfH
+struct Backend_vtable;
 struct Backend;
 struct Conf;
 #endif
@@ -17,7 +18,11 @@ typedef struct _WSANETWORKEVENTS WSANETWORKEVENTS;
 typedef UINT_PTR SOCKET;
 typedef std::set<SOCKET> TSockets;
 struct TPuttyTranslation;
+struct callback_set;
 enum TSshImplementation { sshiUnknown, sshiOpenSSH, sshiProFTPD, sshiBitvise, sshiTitan, sshiOpenVMS, sshiCerberus };
+struct ScpLogPolicy;
+struct LogContext;
+struct ScpSeat;
 //---------------------------------------------------------------------------
 class TSecureShell
 {
@@ -33,9 +38,7 @@ private:
   TSessionInfo FSessionInfo;
   bool FSessionInfoValid;
   TDateTime FLastDataSent;
-  Backend * FBackend;
-  void * FBackendHandle;
-  const unsigned int * FMaxPacketSize;
+  Backend * FBackendHandle;
   TNotifyEvent FOnReceive;
   bool FFrozen;
   bool FDataWhileFrozen;
@@ -69,10 +72,11 @@ private:
   bool FUtfStrings;
   DWORD FLastSendBufferUpdate;
   int FSendBuf;
+  std::auto_ptr<callback_set> FCallbackSet;
+  ScpLogPolicy * FLogPolicy;
+  ScpSeat * FSeat;
+  LogContext * FLogCtx;
 
-  static TCipher __fastcall FuncToSsh1Cipher(const void * Cipher);
-  static TCipher __fastcall FuncToSsh2Cipher(const void * Cipher);
-  UnicodeString __fastcall FuncToCompression(int SshVersion, const void * Compress) const;
   void __fastcall Init();
   void __fastcall SetActive(bool value);
   void inline __fastcall CheckConnection(int Message = -1);
@@ -108,7 +112,6 @@ protected:
     size_t Count, UnicodeString & Message, UnicodeString * HelpKeyword = NULL);
   int __fastcall TranslateAuthenticationMessage(UnicodeString & Message, UnicodeString * HelpKeyword = NULL);
   int __fastcall TranslateErrorMessage(UnicodeString & Message, UnicodeString * HelpKeyword = NULL);
-  void __fastcall AddStdError(UnicodeString Str);
   void __fastcall AddStdErrorLine(const UnicodeString & Str);
   void __fastcall inline LogEvent(const UnicodeString & Str);
   void __fastcall FatalError(UnicodeString Error, UnicodeString HelpKeyword = L"");
@@ -128,7 +131,6 @@ public:
   void __fastcall Send(const unsigned char * Buf, int Len);
   void __fastcall SendSpecial(int Code);
   void __fastcall Idle(unsigned int MSec = 0);
-  void __fastcall SendEOF();
   void __fastcall SendLine(const UnicodeString & Line);
   void __fastcall SendNull();
 
@@ -153,8 +155,9 @@ public:
     UnicodeString AName, bool NameRequired,
     UnicodeString Instructions, bool InstructionsRequired,
     TStrings * Prompts, TStrings * Results);
-  void __fastcall FromBackend(bool IsStdErr, const unsigned char * Data, int Length);
-  void __fastcall CWrite(const char * Data, int Length);
+  void __fastcall FromBackend(const unsigned char * Data, size_t Length);
+  void __fastcall CWrite(const char * Data, size_t Length);
+  void __fastcall AddStdError(const char * Data, size_t Length);
   const UnicodeString & __fastcall GetStdError();
   void __fastcall VerifyHostKey(
     const UnicodeString & Host, int Port, const UnicodeString & KeyType, const UnicodeString & KeyStr,
@@ -165,6 +168,7 @@ public:
   void __fastcall OldKeyfileWarning();
   void __fastcall PuttyLogEvent(const char * Str);
   UnicodeString __fastcall ConvertFromPutty(const char * Str, int Length);
+  struct callback_set * GetCallbackSet();
 
   __property bool Active = { read = FActive, write = SetActive };
   __property bool Ready = { read = GetReady };

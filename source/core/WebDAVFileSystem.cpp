@@ -1325,7 +1325,7 @@ void __fastcall TWebDAVFileSystem::Source(
           // But it announces itself as "Server: Apache",
           // so it's not reliable to autodetect the support.
           // Microsoft Office alegedly uses <Win32LastModifiedTime>
-          // http://sabre.io/dav/clients/msoffice/
+          // https://sabre.io/dav/clients/msoffice/
           // Carot DAV does that too. But we do not know what server does support this.
           TouchAction.Cancel();
         }
@@ -1401,7 +1401,7 @@ void TWebDAVFileSystem::NeonPreSend(
     // Without it files like .001 return 404 (Not found) HTTP code.
     // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-wdv/e37a9543-9290-4843-8c04-66457c60fa0a
     // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-wdvse/501879f9-3875-4d7a-ab88-3cecab440034
-    // http://lists.manyfish.co.uk/pipermail/neon/2012-April/001452.html
+    // http://lists.manyfish.co.uk/pipermail/neon/2012-April/000582.html
     // It's also supported by Oracle server:
     // https://docs.oracle.com/cd/E19146-01/821-1828/gczya/index.html
     // We do not know yet of any server that fails when the header is used,
@@ -1957,7 +1957,6 @@ void TWebDAVFileSystem::NeonNotifier(void * UserData, ne_session_status Status, 
 //------------------------------------------------------------------------------
 void TWebDAVFileSystem::InitSslSession(ssl_st * Ssl, ne_session * /*Session*/)
 {
-  // See also CAsyncSslSocketLayer::InitSSLConnection
   SetupSsl(Ssl, FTerminal->SessionData->MinTlsVersion, FTerminal->SessionData->MaxTlsVersion);
 }
 //---------------------------------------------------------------------------

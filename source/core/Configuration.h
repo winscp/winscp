@@ -18,6 +18,7 @@ extern const wchar_t * NotAutoSwitchNames;
 enum TAutoSwitch { asOn, asOff, asAuto }; // Has to match PuTTY FORCE_ON, FORCE_OFF, AUTO
 //---------------------------------------------------------------------------
 class TStoredSessionList;
+class TCopyParamType;
 //---------------------------------------------------------------------------
 class TConfiguration : public TObject
 {
@@ -92,6 +93,7 @@ private:
   UnicodeString __fastcall GetFileVersion(TVSFixedFileInfo * Info);
   UnicodeString __fastcall GetStoredSessionsSubKey();
   UnicodeString __fastcall GetPuttySessionsKey();
+  UnicodeString __fastcall GetPuttySessionsSubKey();
   void __fastcall SetRandomSeedFile(UnicodeString value);
   UnicodeString __fastcall GetRandomSeedFileName();
   void __fastcall SetPuttyRegistryStorageKey(UnicodeString value);
@@ -122,7 +124,6 @@ private:
   UnicodeString __fastcall GetIniFileStorageNameForReadingWriting();
   UnicodeString __fastcall GetIniFileStorageNameForReading();
   UnicodeString __fastcall GetIniFileStorageName(bool ReadingOnly);
-  void __fastcall SetIniFileStorageName(UnicodeString value);
   void __fastcall SetOptionsStorage(TStrings * value);
   TStrings * __fastcall GetOptionsStorage();
   UnicodeString __fastcall GetPartialExt() const;
@@ -159,13 +160,19 @@ protected:
   virtual void __fastcall LoadAdmin(THierarchicalStorage * Storage);
   virtual UnicodeString __fastcall GetDefaultKeyFile();
   virtual void __fastcall Saved();
-  void __fastcall CleanupRegistry(UnicodeString CleanupSubKey);
+  void __fastcall CleanupRegistry(const UnicodeString & RegistryPath);
+  void __fastcall CopyAllStringsInSubKey(
+    THierarchicalStorage * Source, THierarchicalStorage * Target, const UnicodeString & Name);
+  bool __fastcall CopySubKey(THierarchicalStorage * Source, THierarchicalStorage * Target, const UnicodeString & Name);
   UnicodeString __fastcall BannerHash(const UnicodeString & Banner);
   void __fastcall SetBannerData(const UnicodeString & SessionKey, const UnicodeString & BannerHash, unsigned int Params);
   void __fastcall GetBannerData(const UnicodeString & SessionKey, UnicodeString & BannerHash, unsigned int & Params);
   static UnicodeString __fastcall PropertyToKey(const UnicodeString & Property);
   virtual void __fastcall DoSave(bool All, bool Explicit);
   UnicodeString __fastcall FormatFingerprintKey(const UnicodeString & SiteKey, const UnicodeString & FingerprintType);
+  THierarchicalStorage * OpenDirectoryStatisticsCache(bool CanCreate);
+  UnicodeString __fastcall GetDirectoryStatisticsCacheKey(
+    const UnicodeString & SessionKey, const UnicodeString & Path, const TCopyParamType & CopyParam);
 
   virtual bool __fastcall GetConfirmOverwriting();
   virtual void __fastcall SetConfirmOverwriting(bool value);
@@ -178,6 +185,7 @@ protected:
   UnicodeString __fastcall LoadCustomIniFileStorageName();
   void __fastcall SaveCustomIniFileStorageName();
   UnicodeString __fastcall GetRegistryStorageOverrideKey();
+  TStrings * GetCaches();
 
   virtual UnicodeString __fastcall ModuleFileName();
 
@@ -207,15 +215,18 @@ public:
   void __fastcall SaveExplicit();
   void __fastcall MoveStorage(TStorage AStorage, const UnicodeString & ACustomIniFileStorageName);
   void __fastcall ScheduleCustomIniFileStorageUse(const UnicodeString & ACustomIniFileStorageName);
+  void __fastcall SetExplicitIniFileStorageName(const UnicodeString & FileName);
   void __fastcall SetNulStorage();
   void __fastcall SetDefaultStorage();
   UnicodeString __fastcall GetAutomaticIniFileStorageName(bool ReadingOnly);
   UnicodeString __fastcall GetDefaultIniFileExportPath();
+  UnicodeString __fastcall GetIniFileParamValue();
   void __fastcall Export(const UnicodeString & FileName);
   void __fastcall Import(const UnicodeString & FileName);
   void __fastcall CleanupConfiguration();
   void __fastcall CleanupIniFile();
-  void __fastcall CleanupHostKeys();
+  void __fastcall CleanupCaches();
+  bool __fastcall HasAnyCache();
   void __fastcall CleanupRandomSeedFile();
   void __fastcall BeginUpdate();
   void __fastcall EndUpdate();
@@ -224,6 +235,10 @@ public:
     TRemoteDirectoryChangesCache * DirectoryChangesCache);
   void __fastcall SaveDirectoryChangesCache(const UnicodeString SessionKey,
     TRemoteDirectoryChangesCache * DirectoryChangesCache);
+  TStrings * __fastcall LoadDirectoryStatisticsCache(
+    const UnicodeString & SessionKey, const UnicodeString & Path, const TCopyParamType & CopyParam);
+  void __fastcall SaveDirectoryStatisticsCache(
+    const UnicodeString & SessionKey, const UnicodeString & Path, const TCopyParamType & CopyParam, TStrings * DataList);
   bool __fastcall ShowBanner(const UnicodeString & SessionKey, const UnicodeString & Banner, unsigned int & Params);
   void __fastcall NeverShowBanner(const UnicodeString & SessionKey, const UnicodeString & Banner);
   void __fastcall SetBannerParams(const UnicodeString & SessionKey, unsigned int Params);
@@ -243,6 +258,7 @@ public:
   UnicodeString __fastcall GetFileDescription(const UnicodeString & FileName);
   UnicodeString __fastcall GetFileVersion(const UnicodeString & FileName);
   UnicodeString __fastcall GetFileMimeType(const UnicodeString & FileName);
+  bool RegistryPathExists(const UnicodeString & RegistryPath);
 
   TStoredSessionList * __fastcall SelectFilezillaSessionsForImport(
     TStoredSessionList * Sessions, UnicodeString & Error);
@@ -259,6 +275,7 @@ public:
   __property UnicodeString StoredSessionsSubKey = {read=GetStoredSessionsSubKey};
   __property UnicodeString PuttyRegistryStorageKey  = { read=FPuttyRegistryStorageKey, write=SetPuttyRegistryStorageKey };
   __property UnicodeString PuttySessionsKey  = { read=GetPuttySessionsKey };
+  __property UnicodeString PuttySessionsSubKey  = { read=GetPuttySessionsSubKey };
   __property UnicodeString RandomSeedFile  = { read=FRandomSeedFile, write=SetRandomSeedFile };
   __property UnicodeString RandomSeedFileName  = { read=GetRandomSeedFileName };
   __property UnicodeString SshHostKeysSubKey  = { read=GetSshHostKeysSubKey };
@@ -310,7 +327,8 @@ public:
   __property TStorage Storage  = { read=GetStorage };
   __property UnicodeString RegistryStorageKey  = { read=GetRegistryStorageKey };
   __property UnicodeString CustomIniFileStorageName  = { read=FCustomIniFileStorageName };
-  __property UnicodeString IniFileStorageName  = { read=GetIniFileStorageNameForReadingWriting, write=SetIniFileStorageName };
+  __property UnicodeString ExplicitIniFileStorageName  = { read=FIniFileStorageName };
+  __property UnicodeString IniFileStorageName  = { read=GetIniFileStorageNameForReadingWriting };
   __property UnicodeString IniFileStorageNameForReading  = { read=GetIniFileStorageNameForReading };
   __property TStrings * OptionsStorage = { read = GetOptionsStorage, write = SetOptionsStorage };
   __property bool Persistent = { read = GetPersistent };
@@ -350,6 +368,7 @@ extern const UnicodeString Crc32ChecksumAlg;
 extern const UnicodeString SshFingerprintType;
 extern const UnicodeString TlsFingerprintType;
 //---------------------------------------------------------------------------
+extern const UnicodeString FtpsCertificateStorageKey;
 extern const UnicodeString HttpsCertificateStorageKey;
 //---------------------------------------------------------------------------
 #endif

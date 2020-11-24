@@ -20,14 +20,13 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "HistoryComboBox"
-#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
-#endif
 //---------------------------------------------------------------------------
 bool __fastcall DoFullSynchronizeDialog(TSynchronizeMode & Mode, int & Params,
   UnicodeString & LocalDirectory, UnicodeString & RemoteDirectory,
   TCopyParamType * CopyParams, bool & SaveSettings, bool & SaveMode, int Options,
-  const TUsableCopyParamAttrs & CopyParamAttrs, TFullSynchronizeInNewWindow OnFullSynchronizeInNewWindow)
+  const TUsableCopyParamAttrs & CopyParamAttrs, TFullSynchronizeInNewWindow OnFullSynchronizeInNewWindow,
+  int AutoSubmit)
 {
   bool Result;
   TFullSynchronizeDialog * Dialog = SafeFormCreate<TFullSynchronizeDialog>();
@@ -41,6 +40,10 @@ bool __fastcall DoFullSynchronizeDialog(TSynchronizeMode & Mode, int & Params,
     Dialog->CopyParams = *CopyParams;
     Dialog->SaveSettings = SaveSettings;
     Dialog->SaveMode = SaveMode;
+    if (AutoSubmit > 0)
+    {
+      InitiateDialogTimeout(Dialog, AutoSubmit * MSecsPerSec, Dialog->OkButton);
+    }
     Result = Dialog->Execute();
     if (Result)
     {
@@ -136,6 +139,7 @@ void __fastcall TFullSynchronizeDialog::UpdateControls()
       TCustomButton::bsSplitButton : TCustomButton::bsPushButton;
 
   OkButton->Style = AllowStartInNewWindow() ? TCustomButton::bsSplitButton : TCustomButton::bsPushButton;
+  StartInNewWindowItem->Enabled = CanStartInNewWindow();
 }
 //---------------------------------------------------------------------------
 int __fastcall TFullSynchronizeDialog::ActualCopyParamAttrs()
@@ -440,6 +444,13 @@ bool __fastcall TFullSynchronizeDialog::AllowStartInNewWindow()
   return !IsMainFormLike(this);
 }
 //---------------------------------------------------------------------------
+bool __fastcall TFullSynchronizeDialog::CanStartInNewWindow()
+{
+  return
+    AllowStartInNewWindow() &&
+    (!SynchronizeSelectedOnlyCheck->Enabled || !SynchronizeSelectedOnlyCheck->Checked);
+}
+//---------------------------------------------------------------------------
 void __fastcall TFullSynchronizeDialog::Start1Click(TObject *)
 {
   OkButton->Click();
@@ -452,10 +463,17 @@ void __fastcall TFullSynchronizeDialog::OkButtonDropDownClick(TObject *)
 //---------------------------------------------------------------------------
 void __fastcall TFullSynchronizeDialog::OkButtonClick(TObject *)
 {
-  if (AllowStartInNewWindow() && OpenInNewWindow())
+  if (OpenInNewWindow())
   {
-    StartInNewWindow();
-    ModalResult = mrCancel;
+    if (CanStartInNewWindow())
+    {
+      StartInNewWindow();
+      ModalResult = mrCancel;
+    }
+    else
+    {
+      Beep();
+    }
     Abort();
   }
 }
@@ -463,11 +481,12 @@ void __fastcall TFullSynchronizeDialog::OkButtonClick(TObject *)
 void __fastcall TFullSynchronizeDialog::StartInNewWindow()
 {
   Submitted();
-  FOnFullSynchronizeInNewWindow(Mode, Params, LocalDirectory, RemoteDirectory, &CopyParams);
+  TCopyParamType ACopyParams = CopyParams;
+  FOnFullSynchronizeInNewWindow(Mode, Params, LocalDirectory, RemoteDirectory, &ACopyParams);
   Close();
 }
 //---------------------------------------------------------------------------
-void __fastcall TFullSynchronizeDialog::StartInNewWindow1Click(TObject *)
+void __fastcall TFullSynchronizeDialog::StartInNewWindowItemClick(TObject *)
 {
   StartInNewWindow();
 }

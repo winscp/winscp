@@ -3,9 +3,6 @@
 rem ==== OpenSSL ====
 
 echo Cleaning up OpenSSL ...
-cd openssl\crypto
-del /s *.obj
-cd ..\..
 rmdir /s /q openssl\tmp
 
 rem ==== Expat ====

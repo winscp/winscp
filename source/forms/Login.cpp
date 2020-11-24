@@ -24,9 +24,7 @@
 #pragma link "ComboEdit"
 #pragma link "PasswordEdit"
 #pragma link "UpDownEdit"
-#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
-#endif
 //---------------------------------------------------------------------------
 const int SiteImageIndex = 1;
 const int OpenFolderImageIndex = 2;
@@ -35,14 +33,14 @@ const int WorkspaceImageIndex = 4;
 const int NewSiteImageIndex = 6;
 const int SiteColorMaskImageIndex = 8;
 //---------------------------------------------------------------------------
-bool __fastcall DoLoginDialog(TStoredSessionList *SessionList, TList * DataList, TForm * LinkedForm)
+bool __fastcall DoLoginDialog(TList * DataList, TForm * LinkedForm)
 {
   DebugAssert(DataList != NULL);
   TLoginDialog * LoginDialog = SafeFormCreate<TLoginDialog>();
   bool Result;
   try
   {
-    LoginDialog->Init(SessionList, LinkedForm);
+    LoginDialog->Init(LinkedForm);
     Result = LoginDialog->Execute(DataList);
   }
   __finally
@@ -79,13 +77,15 @@ __fastcall TLoginDialog::TLoginDialog(TComponent* AOwner)
   // (so that CM_SHOWINGCHANGED handling is applied)
   UseSystemSettingsPre(this);
 
+  FFixedSessionImages = SessionImageList->Count;
+  DebugAssert(SiteColorMaskImageIndex == FFixedSessionImages - 1);
+
   FBasicGroupBaseHeight = BasicGroup->Height - BasicSshPanel->Height - BasicFtpPanel->Height;
   FNoteGroupOffset = NoteGroup->Top - (BasicGroup->Top + BasicGroup->Height);
   FUserNameLabel = UserNameLabel->Caption;
   FPasswordLabel = PasswordLabel->Caption;
 
   FSiteButtonsPadding = SitesPanel->ClientHeight - ToolsMenuButton->Top - ToolsMenuButton->Height;
-  HideComponentsPanel(this);
 }
 //---------------------------------------------------------------------
 __fastcall TLoginDialog::~TLoginDialog()
@@ -101,9 +101,8 @@ void __fastcall TLoginDialog::InvalidateSessionData()
   FSessionData = NULL;
 }
 //---------------------------------------------------------------------
-void __fastcall TLoginDialog::Init(TStoredSessionList *SessionList, TForm * LinkedForm)
+void __fastcall TLoginDialog::Init(TForm * LinkedForm)
 {
-  FStoredSessions = SessionList;
   FLinkedForm = LinkedForm;
   LoadSessions();
   UnicodeString Dummy;
@@ -146,11 +145,9 @@ void __fastcall TLoginDialog::InitControls()
   CenterButtonImage(LoginButton);
 
   SelectScaledImageList(SessionImageList);
-  // have to recreate the site images
-  UpdateNodeImages();
   SelectScaledImageList(ActionImageList);
 
-  GenerateButtonImages();
+  GenerateImages();
 
   if (SessionTree->Items->Count > 0)
   {
@@ -158,7 +155,7 @@ void __fastcall TLoginDialog::InitControls()
   }
 }
 //---------------------------------------------------------------------
-void __fastcall TLoginDialog::GenerateButtonImages()
+void __fastcall TLoginDialog::GenerateImages()
 {
   // Generate button images.
   // The button does not support alpha channel,
@@ -169,6 +166,20 @@ void __fastcall TLoginDialog::GenerateButtonImages()
 
   LoginButton->ImageIndex = AddLoginButtonImage(true);
   LoginButton->DisabledImageIndex = AddLoginButtonImage(false);
+
+  SessionImageList->BeginUpdate();
+  try
+  {
+    while (SessionImageList->Count > FFixedSessionImages)
+    {
+      SessionImageList->Delete(SessionImageList->Count - 1);
+    }
+    RegenerateSessionColorsImageList(SessionImageList, SiteColorMaskImageIndex);
+  }
+  __finally
+  {
+    SessionImageList->EndUpdate();
+  }
 }
 //---------------------------------------------------------------------
 int __fastcall TLoginDialog::AddLoginButtonImage(bool Enabled)
@@ -327,27 +338,6 @@ TTreeNode * __fastcall TLoginDialog::AddSession(TSessionData * Data)
   return Node;
 }
 //---------------------------------------------------------------------------
-void __fastcall TLoginDialog::UpdateNodeImages()
-{
-  SessionTree->Images->BeginUpdate();
-  try
-  {
-    TTreeNode * Node = SessionTree->Items->GetFirstNode();
-    while (Node != NULL)
-    {
-      if (IsSiteNode(Node))
-      {
-        UpdateNodeImage(Node);
-      }
-      Node = Node->GetNext();
-    }
-  }
-  __finally
-  {
-    SessionTree->Images->EndUpdate();
-  }
-}
-//---------------------------------------------------------------------------
 void __fastcall TLoginDialog::UpdateNodeImage(TTreeNode * Node)
 {
   SetNodeImage(Node, GetSessionImageIndex(GetNodeSession(Node)));
@@ -392,35 +382,39 @@ void __fastcall TLoginDialog::SetNewSiteNodeLabel()
 //---------------------------------------------------------------------
 void __fastcall TLoginDialog::LoadSessions()
 {
-  TAutoFlag LoadingFlag(FLoading);
-  SessionTree->Items->BeginUpdate();
-  SessionTree->Images->BeginUpdate();
-  try
   {
-    // optimization
-    SessionTree->SortType = Comctrls::stNone;
-
-    SessionTree->Items->Clear();
-
-    TTreeNode * Node = SessionTree->Items->AddChild(NULL, L"");
-    Node->Data = FNewSiteData;
-    SetNewSiteNodeLabel();
-    SetNodeImage(Node, NewSiteImageIndex);
-
-    DebugAssert(StoredSessions != NULL);
-    for (int Index = 0; Index < StoredSessions->Count; Index++)
+    // Otherwise, once the selected node is deleted, another node is selected and we get failure
+    // while trying to access its data somewhere in LoadContents
+    TAutoFlag LoadingFlag(FLoading);
+    SessionTree->Items->BeginUpdate();
+    SessionTree->Images->BeginUpdate();
+    try
     {
-      AddSession(StoredSessions->Sessions[Index]);
+      // optimization
+      SessionTree->SortType = Comctrls::stNone;
+
+      SessionTree->Items->Clear();
+
+      TTreeNode * Node = SessionTree->Items->AddChild(NULL, L"");
+      Node->Data = FNewSiteData;
+      SetNewSiteNodeLabel();
+      SetNodeImage(Node, NewSiteImageIndex);
+
+      DebugAssert(StoredSessions != NULL);
+      for (int Index = 0; Index < StoredSessions->Count; Index++)
+      {
+        AddSession(StoredSessions->Sessions[Index]);
+      }
     }
-  }
-  __finally
-  {
-    // Restore sorting. Moreover, folders would not be sorted automatically even when
-    // SortType is set (not having set the data property), so we would have to
-    // call AlphaSort here explicitly
-    SessionTree->SortType = Comctrls::stBoth;
-    SessionTree->Images->EndUpdate();
-    SessionTree->Items->EndUpdate();
+    __finally
+    {
+      // Restore sorting. Moreover, folders would not be sorted automatically even when
+      // SortType is set (not having set the data property), so we would have to
+      // call AlphaSort here explicitly
+      SessionTree->SortType = Comctrls::stBoth;
+      SessionTree->Images->EndUpdate();
+      SessionTree->Items->EndUpdate();
+    }
   }
   SessionTree->Selected = SessionTree->Items->GetFirstNode();
   UpdateControls();
@@ -600,8 +594,6 @@ void __fastcall TLoginDialog::UpdateControls()
     bool S3Protocol = (FSProtocol == fsS3);
 
     // session
-    PortNumberEdit->Visible = !S3Protocol;
-    Label2->Visible = PortNumberEdit->Visible;
     FtpsCombo->Visible = Editable && FtpProtocol;
     FtpsLabel->Visible = FtpProtocol;
     WebDavsCombo->Visible = Editable && WebDavProtocol;
@@ -705,10 +697,14 @@ void __fastcall TLoginDialog::FormShow(TObject * /*Sender*/)
   }
 
   // WORKAROUND for a bug in the VCL layout code for bottom aligned controls
+  // This is probably no longer needed after ComponentsPanel was removed
   int Offset = (SitesPanel->ClientHeight - FSiteButtonsPadding - ToolsMenuButton->Height) - ToolsMenuButton->Top;
   ToolsMenuButton->Top = ToolsMenuButton->Top + Offset;
   ManageButton->Top = ManageButton->Top + Offset;
   SessionTree->Height = SessionTree->Height + Offset;
+
+  // Bit of a hack: Assume an auto open, when we are linked to the main form
+  ShowAgainPanel->Visible = (FLinkedForm != NULL);
 
   // among other this makes the expanded nodes look like expanded,
   // because the LoadState call in Execute would be too early,
@@ -731,17 +727,20 @@ void __fastcall TLoginDialog::FormShow(TObject * /*Sender*/)
 void __fastcall TLoginDialog::SessionTreeChange(TObject * /*Sender*/,
   TTreeNode * /*Node*/)
 {
-  if (FIncrementalSearching <= 0)
+  if (!FLoading)
   {
-    // Make sure UpdateControls is called here, no matter what,
-    // now it is always called from ResetSitesIncrementalSearch.
-    // For the "else" scenario, UpdateControls is called later from SitesIncrementalSearch.
-    ResetSitesIncrementalSearch();
-  }
+    if (FIncrementalSearching <= 0)
+    {
+      // Make sure UpdateControls is called here, no matter what,
+      // now it is always called from ResetSitesIncrementalSearch.
+      // For the "else" scenario, UpdateControls is called later from SitesIncrementalSearch.
+      ResetSitesIncrementalSearch();
+    }
 
-  if (FInitialized)
-  {
-    LoadContents();
+    if (FInitialized)
+    {
+      LoadContents();
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -1105,7 +1104,7 @@ void __fastcall TLoginDialog::ImportSessionsActionExecute(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::CleanUpActionExecute(TObject * /*Sender*/)
 {
-  if (DoCleanupDialog(StoredSessions, Configuration))
+  if (DoCleanupDialog())
   {
     SaveState();
     LoadSessions();
@@ -1176,6 +1175,10 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction * BasicAction,
   {
     SessionAdvancedAction->Enabled = Editable;
   }
+  else if (Action == SessionRawAction)
+  {
+    SessionRawAction->Enabled = Editable;
+  }
   else if (Action == SaveAsSessionAction)
   {
     // Save as is needed for new site only when !SupportsSplitButton()
@@ -1233,14 +1236,14 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction * BasicAction,
 //---------------------------------------------------------------------------
 bool __fastcall TLoginDialog::IsCloneToNewSiteDefault()
 {
-  return !FEditing && !FRenaming && IsSiteNode(SessionTree->Selected) && !FStoredSessions->CanLogin(GetSessionData());
+  return !FEditing && !FRenaming && IsSiteNode(SessionTree->Selected) && !StoredSessions->CanLogin(GetSessionData());
 }
 //---------------------------------------------------------------------------
 bool __fastcall TLoginDialog::CanLogin()
 {
   TSessionData * Data = GetSessionData();
   return
-    ((Data != NULL) && FStoredSessions->CanLogin(Data) && !FEditing) ||
+    ((Data != NULL) && StoredSessions->CanLogin(Data) && !FEditing) ||
     (IsFolderOrWorkspaceNode(SessionTree->Selected) && HasNodeAnySession(SessionTree->Selected, true));
 }
 //---------------------------------------------------------------------------
@@ -1270,12 +1273,11 @@ bool __fastcall TLoginDialog::Execute(TList * DataList)
       FNewSiteData->CopyData(SessionData);
       FNewSiteData->Special = false;
 
-      // This is actualy bit pointless, as we focus the last selected site anyway
-      // in LoadState(). As of now, we hardly get any useful data
-      // in ad-hoc DataList anyway, so it is not a big deal
+      // This is actualy bit pointless.
+      // As of now, we hardly ever get any useful data in ad-hoc DataList.
       // (this was implemented for support taking session url from clipboard instead
       // of command-line, but without autoconnect, but this functionality was cancelled)
-      if (!FNewSiteData->IsSame(StoredSessions->DefaultSettings, false))
+      if (!FNewSiteData->IsSameDecrypted(StoredSessions->DefaultSettings))
       {
         // we want to start with new site page
         FForceNewSite = true;
@@ -1304,6 +1306,12 @@ bool __fastcall TLoginDialog::Execute(TList * DataList)
     SaveConfiguration();
     // DataList saved already from FormCloseQuery
   }
+
+  if (!ShowAgainCheck->Checked)
+  {
+    WinConfiguration->ShowLoginWhenNoSession = false;
+  }
+
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -1446,7 +1454,7 @@ void __fastcall TLoginDialog::LoadState()
   // calling TTreeNode::MakeVisible() when tree view is not visible yet,
   // sometimes scrolls view horizontally when not needed
   // (seems like it happens for sites that are at the same level
-  // as site folders, e.g. for the very last root-level site, at long as
+  // as site folders, e.g. for the very last root-level site, as long as
   // there are any folders)
   if (!FForceNewSite &&
       !WinConfiguration->LastStoredSession.IsEmpty() && DebugAlwaysTrue(Visible))
@@ -1583,7 +1591,7 @@ void __fastcall TLoginDialog::WMMoving(TMessage & Message)
 void __fastcall TLoginDialog::CMDpiChanged(TMessage & Message)
 {
   TForm::Dispatch(&Message);
-  GenerateButtonImages();
+  GenerateImages();
   CenterButtonImage(LoginButton);
 }
 //---------------------------------------------------------------------------
@@ -1648,6 +1656,7 @@ void __fastcall TLoginDialog::SetDefaultSessionActionExecute(
   {
     std::unique_ptr<TSessionData> SessionData(new TSessionData(L""));
     SaveSession(SessionData.get());
+    // See the comment to the other use of the method in DoSaveSession.
     CustomWinConfiguration->AskForMasterPasswordIfNotSetAndNeededToPersistSessionData(SessionData.get());
     StoredSessions->DefaultSettings = SessionData.get();
 
@@ -1727,7 +1736,7 @@ bool __fastcall TLoginDialog::HasNodeAnySession(TTreeNode * Node, bool NeedCanLo
   {
     Result =
       IsSessionNode(ANode) &&
-      (!NeedCanLogin || FStoredSessions->CanLogin(GetNodeSession(ANode)));
+      (!NeedCanLogin || StoredSessions->CanLogin(GetNodeSession(ANode)));
     ANode = ANode->GetNext();
   }
   return Result;
@@ -2343,7 +2352,7 @@ UnicodeString __fastcall TLoginDialog::GetFolderOrWorkspaceContents(
   UnicodeString Contents;
 
   UnicodeString Path = SessionNodePath(Node);
-  std::unique_ptr<TStrings> Names(FStoredSessions->GetFolderOrWorkspaceList(Path));
+  std::unique_ptr<TStrings> Names(StoredSessions->GetFolderOrWorkspaceList(Path));
   for (int Index = 0; Index < Names->Count; Index++)
   {
     UnicodeString Name = Names->Strings[Index];
@@ -2767,7 +2776,7 @@ void __fastcall TLoginDialog::PersistNewSiteIfNeeded()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TLoginDialog::SessionAdvancedActionExecute(TObject * /*Sender*/)
+void __fastcall TLoginDialog::SessionAdvancedActionExecute(TObject * Sender)
 {
   // If we ever allow showing advanced settings, while read-only,
   // we must make sure that FSessionData actually holds the advanced settings,
@@ -2783,7 +2792,14 @@ void __fastcall TLoginDialog::SessionAdvancedActionExecute(TObject * /*Sender*/)
     ParseHostName();
 
     SaveSession(FSessionData);
-    DoSiteAdvancedDialog(FSessionData);
+    if (Sender == SessionAdvancedAction)
+    {
+      DoSiteAdvancedDialog(FSessionData);
+    }
+    else
+    {
+      DoSiteRawDialog(FSessionData);
+    }
     // Needed only for Note.
     // The only other property visible on Login dialog that Advanced site dialog
     // can change is protocol (between fsSFTP and fsSFTPonly),
@@ -2887,7 +2903,7 @@ void __fastcall TLoginDialog::CancelEditing()
 void __fastcall TLoginDialog::CloneToNewSite()
 {
   FNewSiteData->CopyData(SelectedSession);
-  FNewSiteData->MakeUniqueIn(FStoredSessions);
+  FNewSiteData->MakeUniqueIn(StoredSessions);
   FNewSiteKeepName = true;
   NewSite();
   EditSession();
@@ -3070,7 +3086,7 @@ void __fastcall TLoginDialog::ChangeScale(int M, int D)
   FNoteGroupOffset = MulDiv(FNoteGroupOffset, M, D);
 }
 //---------------------------------------------------------------------------
-void __fastcall TLoginDialog::ButtonPanelMouseDown(TObject *, TMouseButton, TShiftState, int, int)
+void __fastcall TLoginDialog::PanelMouseDown(TObject *, TMouseButton, TShiftState, int, int)
 {
   CountClicksForWindowPrint(this);
 }

@@ -71,12 +71,12 @@
 #define MAX_CANONICALIZED_RESOURCE_SIZE \
     (1 + 255 + 1 + MAX_URLENCODED_KEY_SIZE + (sizeof("?torrent") - 1) + 1)
 
-#define MAX_ACCESS_KEY_ID_LENGTH 32
+#define MAX_ACCESS_KEY_ID_LENGTH S3_MAX_ACCESS_KEY_ID_LENGTH
 
 // Maximum length of a credential string
 // <access key>/<yyyymmdd>/<region>/s3/aws4_request
 #define MAX_CREDENTIAL_SIZE \
-   (MAX_ACCESS_KEY_ID_LENGTH + 1) + 8 + 1 + 32 + sizeof("/s3/aws4_request")
+   (MAX_ACCESS_KEY_ID_LENGTH + 1) + 8 + 1 + S3_MAX_REGION_LENGTH + sizeof("/s3/aws4_request")
 
 // Utilities -----------------------------------------------------------------
 

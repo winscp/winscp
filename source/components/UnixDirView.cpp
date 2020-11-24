@@ -401,7 +401,7 @@ void __fastcall TUnixDirView::GetDisplayInfo(TListItem * Item, tagLVITEMW &DispI
         case uvType: Value = File->TypeName; break;
         default: DebugFail();
       }
-      StrPLCopy(DispInfo.pszText, Value, DispInfo.cchTextMax);
+      StrPLCopy(DispInfo.pszText, Value, DispInfo.cchTextMax - 1);
     }
 
     if (DispInfo.iSubItem == 0 && DispInfo.mask & LVIF_IMAGE)
@@ -507,7 +507,8 @@ void __fastcall TUnixDirView::SetDriveView(TCustomUnixDriveView * Value)
 void __fastcall TUnixDirView::DoSetTerminal(TTerminal * value, bool Replace)
 {
   DebugUsedParam(Replace);
-  if (FTerminal != value)
+  if ((FTerminal != value) ||
+      ((FTerminal != NULL) && !FTerminal->Active)) // Abused by TCustomScpExplorerForm::DisconnectSession
   {
     if (FTerminal)
     {
@@ -549,6 +550,10 @@ void __fastcall TUnixDirView::DoSetTerminal(TTerminal * value, bool Replace)
         DoStartReadDirectory(FTerminal); // just for style and the assertions
         DoReadDirectoryImpl(FTerminal, false);
       }
+      else
+      {
+        PathChanged(); // To clear path combo box
+      }
     }
     UpdatePathLabel();
   }
@@ -586,10 +591,9 @@ void __fastcall TUnixDirView::DoReadDirectoryImpl(TObject * /*Sender*/, bool Rel
   FLoading = false;
 
 #ifndef DESIGN_ONLY
+  CancelEdit();
   if (Terminal->Active)
   {
-    CancelEdit();
-
     if (ReloadOnly)
     {
       Reload(false);
@@ -810,14 +814,14 @@ bool __fastcall TUnixDirView::TargetHasDropHandler(TListItem * /* Item */, int /
   return false;
 }
 //---------------------------------------------------------------------------
-void __fastcall TUnixDirView::DDChooseEffect(int grfKeyState, int &dwEffect)
+void __fastcall TUnixDirView::DDChooseEffect(int grfKeyState, int &dwEffect, int PreferredEffect)
 {
   if ((grfKeyState & (MK_CONTROL | MK_SHIFT)) == 0)
   {
     dwEffect = DROPEFFECT_COPY;
   }
 
-  TCustomDirView::DDChooseEffect(grfKeyState, dwEffect);
+  TCustomDirView::DDChooseEffect(grfKeyState, dwEffect, PreferredEffect);
 }
 //---------------------------------------------------------------------------
 TDropEffectSet __fastcall TUnixDirView::GetDragSourceEffects()

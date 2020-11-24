@@ -545,8 +545,8 @@ object PreferencesDialog: TPreferencesDialog
             Anchors = [akLeft, akTop, akRight]
             AutoSize = False
             Caption = 
-              '- only remote directory'#13#10'- keyboard shortcuts like in Windows Ex' +
-              'plorer'#13#10'- drag && drop'
+              '- only remote directory'#13#10'- keyboard shortcuts like in Windows Fi' +
+              'le Explorer'#13#10'- drag && drop'
             WordWrap = True
             OnClick = ExplorerClick
           end
@@ -1162,13 +1162,13 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 8
           Width = 389
-          Height = 206
+          Height = 174
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Windows Shell'
           TabOrder = 0
           DesignSize = (
             389
-            206)
+            174)
           object DesktopIconButton: TButton
             Left = 16
             Top = 24
@@ -1179,49 +1179,39 @@ object PreferencesDialog: TPreferencesDialog
             TabOrder = 0
             OnClick = IconButtonClick
           end
-          object QuickLaunchIconButton: TButton
+          object SendToHookButton: TButton
             Left = 16
             Top = 56
             Width = 357
             Height = 25
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Create a &Quick Launch icon'
+            Caption = 'Add upload shortcut to Explorer'#39's '#39'&Send to'#39' context menu'
             TabOrder = 1
             OnClick = IconButtonClick
           end
-          object SendToHookButton: TButton
+          object RegisterAsUrlHandlersButton: TButton
             Left = 16
-            Top = 88
+            Top = 103
             Width = 357
             Height = 25
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Add upload shortcut to Explorer'#39's '#39'&Send to'#39' context menu'
-            TabOrder = 2
-            OnClick = IconButtonClick
+            Caption = 'Register to handle &URL addresses'
+            TabOrder = 3
+            OnClick = RegisterAsUrlHandlersButtonClick
           end
-          object RegisterAsUrlHandlersButton: TButton
+          object AddSearchPathButton: TButton
             Left = 16
             Top = 135
             Width = 357
             Height = 25
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Register to handle &URL addresses'
-            TabOrder = 4
-            OnClick = RegisterAsUrlHandlersButtonClick
-          end
-          object AddSearchPathButton: TButton
-            Left = 16
-            Top = 167
-            Width = 357
-            Height = 25
-            Anchors = [akLeft, akTop, akRight]
             Caption = 'Add WinSCP to &search path'
-            TabOrder = 5
+            TabOrder = 4
             OnClick = AddSearchPathButtonClick
           end
           object ShellIconsText2: TStaticText
             Left = 43
-            Top = 116
+            Top = 84
             Width = 330
             Height = 17
             Hint = 
@@ -1231,7 +1221,7 @@ object PreferencesDialog: TPreferencesDialog
             Anchors = [akTop, akRight]
             AutoSize = False
             Caption = 'Associate the icons with site'
-            TabOrder = 3
+            TabOrder = 2
             TabStop = True
           end
         end
@@ -1391,10 +1381,10 @@ object PreferencesDialog: TPreferencesDialog
             Anchors = [akLeft, akTop, akRight]
             AutoSize = False
             Caption = 
-              'Allows direct downloads to regular local folders (e.g. Windows E' +
-              'xplorer). Does not allow downloads to other destinations (ZIP ar' +
-              'chives,  FTP, etc.). Uses drag&&drop shell extension, when avail' +
-              'able.'
+              'Allows direct downloads to regular local folders (e.g. Windows F' +
+              'ile Explorer). Does not allow downloads to other destinations (Z' +
+              'IP archives,  FTP, etc.). Uses drag&&drop shell extension, when ' +
+              'available.'
             WordWrap = True
             OnClick = DDLabelClick
           end
@@ -2493,13 +2483,13 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 231
           Width = 389
-          Height = 126
+          Height = 150
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Miscellaneous'
           TabOrder = 2
           DesignSize = (
             389
-            126)
+            150)
           object MinimizeToTrayCheck: TCheckBox
             Left = 16
             Top = 21
@@ -2522,22 +2512,34 @@ object PreferencesDialog: TPreferencesDialog
           end
           object KeepOpenWhenNoSessionCheck: TCheckBox
             Left = 16
-            Top = 69
-            Width = 361
-            Height = 17
-            Anchors = [akLeft, akTop, akRight]
-            Caption = '&Keep main window open when the last session is closed'
-            TabOrder = 2
-            OnClick = ControlChange
-          end
-          object ShowTipsCheck: TCheckBox
-            Left = 16
             Top = 93
             Width = 361
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = '&Display tips on startup'
+            Caption = '&Keep main window open when the last session is closed'
             TabOrder = 3
+            OnClick = ControlChange
+          end
+          object ShowTipsCheck: TCheckBox
+            Left = 16
+            Top = 117
+            Width = 361
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = '&Display tips on startup'
+            TabOrder = 4
+            OnClick = ControlChange
+          end
+          object ShowLoginWhenNoSessionCheck: TCheckBox
+            Left = 16
+            Top = 69
+            Width = 361
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 
+              '&Show Login dialog on startup and when the last session is close' +
+              'd'
+            TabOrder = 2
             OnClick = ControlChange
           end
         end

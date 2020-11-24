@@ -5,12 +5,11 @@
 #include <stdarg.h>
 
 /*
- * FIXME: it would be nice not to have this arbitrary limit. It's
- * currently needed because the Windows Pageant IPC system needs an
- * upper bound known to the client, but it's also reused as a basic
- * sanity check on incoming messages' length fields.
+ * Upper limit on length of any agent message. Used as a basic sanity
+ * check on messages' length fields, and used by the Windows Pageant
+ * client IPC to decide how large a file mapping to allocate.
  */
-#define AGENT_MAX_MSGLEN  8192
+#define AGENT_MAX_MSGLEN  262144
 
 typedef void (*pageant_logfn_t)(void *logctx, const char *fmt, va_list ap);
 
@@ -28,21 +27,26 @@ void pageant_init(void);
  * Returns a fully formatted message as output, *with* its initial
  * length field, and sets *outlen to the full size of that message.
  */
-void *pageant_handle_msg(const void *msg, int msglen, int *outlen,
-                         void *logctx, pageant_logfn_t logfn);
+void pageant_handle_msg(BinarySink *bs,
+                        const void *msg, int msglen,
+                        void *logctx, pageant_logfn_t logfn);
 
 /*
  * Construct a failure response. Useful for agent front ends which
  * suffer a problem before they even get to pageant_handle_msg.
+ *
+ * 'log_reason' is only used if logfn is not NULL.
  */
-void *pageant_failure_msg(int *outlen);
+void pageant_failure_msg(BinarySink *bs,
+                         const char *log_reason,
+                         void *logctx, pageant_logfn_t logfn);
 
 /*
  * Construct a list of public keys, just as the two LIST_IDENTITIES
  * requests would have returned them.
  */
-void *pageant_make_keylist1(int *length);
-void *pageant_make_keylist2(int *length);
+void pageant_make_keylist1(BinarySink *);
+void pageant_make_keylist2(BinarySink *);
 
 /*
  * Accessor functions for Pageant's internal key lists. Fetch the nth
@@ -52,14 +56,14 @@ void *pageant_make_keylist2(int *length);
  * on success, in which case the ownership of the key structure is
  * passed back to the client).
  */
-struct RSAKey *pageant_nth_ssh1_key(int i);
-struct ssh2_userkey *pageant_nth_ssh2_key(int i);
+RSAKey *pageant_nth_ssh1_key(int i);
+ssh2_userkey *pageant_nth_ssh2_key(int i);
 int pageant_count_ssh1_keys(void);
 int pageant_count_ssh2_keys(void);
-int pageant_add_ssh1_key(struct RSAKey *rkey);
-int pageant_add_ssh2_key(struct ssh2_userkey *skey);
-int pageant_delete_ssh1_key(struct RSAKey *rkey);
-int pageant_delete_ssh2_key(struct ssh2_userkey *skey);
+bool pageant_add_ssh1_key(RSAKey *rkey);
+bool pageant_add_ssh2_key(ssh2_userkey *skey);
+bool pageant_delete_ssh1_key(RSAKey *rkey);
+bool pageant_delete_ssh2_key(ssh2_userkey *skey);
 
 /*
  * This callback must be provided by the Pageant front end code.
@@ -74,14 +78,14 @@ void keylist_update(void);
 /*
  * Functions to establish a listening socket speaking the SSH agent
  * protocol. Call pageant_listener_new() to set up a state; then
- * create a socket using the returned pointer as a Plug; then call
+ * create a socket using the returned Plug; then call
  * pageant_listener_got_socket() to give the listening state its own
  * socket pointer. Also, provide a logging function later if you want
  * to.
  */
 struct pageant_listen_state;
-struct pageant_listen_state *pageant_listener_new(void);
-void pageant_listener_got_socket(struct pageant_listen_state *pl, Socket sock);
+struct pageant_listen_state *pageant_listener_new(Plug **plug);
+void pageant_listener_got_socket(struct pageant_listen_state *pl, Socket *);
 void pageant_listener_set_logfn(struct pageant_listen_state *pl,
                                 void *logctx, pageant_logfn_t logfn);
 void pageant_listener_free(struct pageant_listen_state *pl);
@@ -125,8 +129,7 @@ struct pageant_pubkey {
     /* Everything needed to identify a public key found by
      * pageant_enum_keys and pass it back to the agent or other code
      * later */
-    void *blob;
-    int bloblen;
+    strbuf *blob;
     char *comment;
     int ssh_version;
 };

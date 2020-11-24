@@ -270,6 +270,16 @@ __published:
   TCheckBox *ShowEncryptionKeyCheck;
   TButton *GenerateKeyButton;
   TEdit *EncryptKeyVisibleEdit;
+  TTabSheet *S3Sheet;
+  TGroupBox *S3Group;
+  TLabel *Label27;
+  TComboBox *S3DefaultReqionCombo;
+  TLabel *S3UrlStyleLabel;
+  TComboBox *S3UrlStyleCombo;
+  TGroupBox *PuttyGroup;
+  TButton *PuttySettingsButton;
+  TLabel *PuttySettingsLabel;
+  TEdit *PuttySettingsEdit;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall PageControlChange(TObject *Sender);
@@ -309,6 +319,8 @@ __published:
   void __fastcall ShowEncryptionKeyCheckClick(TObject *Sender);
   void __fastcall GenerateKeyButtonClick(TObject *Sender);
   void __fastcall EncryptKeyEditExit(TObject *Sender);
+  void __fastcall PuttySettingsButtonClick(TObject *Sender);
+  void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
 
 
 public:
@@ -317,10 +329,12 @@ public:
 
 protected:
   void __fastcall ChangePage(TTabSheet * Tab);
+  void __fastcall PageChanged();
   virtual void __fastcall Dispatch(void * Message);
   bool __fastcall AllowAlgDrag(TListBox * AlgListBox, int X, int Y);
   void __fastcall AlgMove(TListBox * AlgListBox, int Source, int Dest);
   void __fastcall InitControls();
+  bool IsDefaultSftpServer();
 
 private:
   int NoUpdate;
@@ -333,10 +347,13 @@ private:
   TColor FColor;
   std::unique_ptr<TPopupMenu> FColorPopupMenu;
   std::unique_ptr<TObjectList> FPrivateKeyMonitors;
+  std::unique_ptr<TStrings> FPuttyRegSettings;
+  std::unique_ptr<TTimer> FPuttySettingsTimer;
 
   void __fastcall LoadSession();
   void __fastcall UpdateControls();
-  void __fastcall SaveSession();
+  TSessionData * __fastcall GetSessionData();
+  void __fastcall SaveSession(TSessionData * SessionData);
   void __fastcall CMDialogKey(TWMKeyDown & Message);
   void __fastcall WMHelp(TWMHelp & Message);
   int __fastcall LastSupportedFtpProxyMethod();
@@ -353,6 +370,11 @@ private:
   bool __fastcall IsNeon(TFSProtocol FSProtocol);
   void __fastcall PrivateKeyCreatedOrModified(TObject * Sender, const UnicodeString FileName);
   TCustomEdit * __fastcall GetEncryptKeyEdit(bool AShow = true);
+  void __fastcall PuttySettingsTimer(TObject * Sender);
+  UnicodeString __fastcall GetPuttySiteName();
+  UnicodeString __fastcall GetPuttySiteKey();
+  void __fastcall ClosePuttySettings();
+  void SerializePuttyRegistry(const UnicodeString & Key, TStrings * Values);
 
   INTERFACE_HOOK;
 };

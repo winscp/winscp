@@ -70,15 +70,24 @@ void __fastcall TCustomUnixDriveView::CreateWnd()
   TCustomDriveView::CreateWnd();
 
   FDragDropFilesEx->TargetEffects = TDropEffectSet() << deCopy << deMove;
+  // in case the items were recreated
+  FPrevSelected = Selected;
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomUnixDriveView::DestroyWnd()
+{
+  // in case we are recreating (TCustomTreeView.DestroyWnd deletes items)
+  FPrevSelected = NULL;
+  TCustomDriveView::DestroyWnd();
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomUnixDriveView::SetTerminal(TTerminal * value)
 {
-  if (FTerminal != value)
+  #ifndef DESIGN_ONLY
+  if ((FTerminal != value) || ((FTerminal != NULL) && !FTerminal->Active)) // Abused by TCustomScpExplorerForm::DisconnectSession
   {
     FTerminal = value;
     Items->Clear();
-    #ifndef DESIGN_ONLY
     // If terminal is not active initially, we will never load fixed paths, when it become active.
     // But actually terminal is not active here, only when we are replacing an abandoned terminal
     // with a dummy one (which will never become active)
@@ -93,8 +102,10 @@ void __fastcall TCustomUnixDriveView::SetTerminal(TTerminal * value)
         }
       }
     }
-    #endif
   }
+  #else
+  DebugUsedParam(value);
+  #endif
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomUnixDriveView::SetDirView(TUnixDirView * Value)
@@ -459,7 +470,7 @@ void __fastcall TCustomUnixDriveView::Change(TTreeNode * Node)
   {
     // During D&D Selected is set to NULL and then back to previous selection,
     // prevent actually changing directory in such case
-    if (Reading || ControlState.Contains(csRecreating) ||
+    if (Reading || ControlState.Contains(csRecreating) || FRecreatingHandle ||
         (Node == NULL) || (Node == FPrevSelected))
     {
       TCustomDriveView::Change(Node);
@@ -483,7 +494,11 @@ void __fastcall TCustomUnixDriveView::Change(TTreeNode * Node)
         }
 
         FDirectoryLoaded = false;
-        StartBusy();
+        bool SetBusy = !ControlState.Contains(csRecreating);
+        if (SetBusy)
+        {
+          StartBusy();
+        }
         try
         {
           Terminal->ChangeDirectory(NodePathName(Node));
@@ -491,7 +506,10 @@ void __fastcall TCustomUnixDriveView::Change(TTreeNode * Node)
         }
         __finally
         {
-          EndBusy();
+          if (SetBusy)
+          {
+            EndBusy();
+          }
           if (!FDirectoryLoaded)
           {
             DebugAssert(!FIgnoreChange);
@@ -561,7 +579,7 @@ void __fastcall TCustomUnixDriveView::PerformDragDropFileOperation(
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomUnixDriveView::DDChooseEffect(int KeyState, int & Effect)
+void __fastcall TCustomUnixDriveView::DDChooseEffect(int KeyState, int & Effect, int PreferredEffect)
 {
   // if any drop effect is allowed at all (e.g. no drop to self and drop to parent)
   if (Effect != DROPEFFECT_NONE)
@@ -579,7 +597,7 @@ void __fastcall TCustomUnixDriveView::DDChooseEffect(int KeyState, int & Effect)
     }
   }
 
-  TCustomDriveView::DDChooseEffect(KeyState, Effect);
+  TCustomDriveView::DDChooseEffect(KeyState, Effect, PreferredEffect);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomUnixDriveView::UpdateDropTarget()

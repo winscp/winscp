@@ -21,9 +21,7 @@
 #include <WinApi.h>
 #include "MessageDlg.h"
 //---------------------------------------------------------------------------
-#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
-#endif
 //---------------------------------------------------------------------------
 const UnicodeString MessagePanelName(L"Panel");
 const UnicodeString MainMessageLabelName(L"MainMessage");
@@ -1068,8 +1066,8 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
     if (!LabelMsg.IsEmpty())
     {
       TLabel * Message = new TLabel(Panel);
-      Message->Name = LabelName;
       Message->Parent = Panel;
+      Message->Name = LabelName;
       Message->WordWrap = true;
       Message->Caption = LabelMsg;
       Message->BiDiMode = Result->BiDiMode;

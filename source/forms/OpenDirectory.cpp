@@ -15,9 +15,7 @@
 #include "WinConfiguration.h"
 //---------------------------------------------------------------------
 #pragma link "HistoryComboBox"
-#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
-#endif
 //---------------------------------------------------------------------
 bool __fastcall DoOpenDirectoryDialog(TOpenDirectoryMode Mode, TOperationSide Side,
   UnicodeString & Directory, TStrings * Directories, TTerminal * Terminal,

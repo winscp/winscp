@@ -25,6 +25,7 @@ type
 
   { TCustomComboEdit }
 
+  // Could be replaced by TCustomButtonedEdit
   TCustomComboEdit = class(TCustomEdit)
   private
     FButton: TButton;

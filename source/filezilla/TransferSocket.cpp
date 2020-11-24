@@ -414,8 +414,7 @@ void CTransferSocket::Start()
     AddLayer(m_pSslLayer);
     int res = m_pSslLayer->InitSSLConnection(true, m_pOwner->m_pSslLayer,
       GetOptionVal(OPTION_MPEXT_SSLSESSIONREUSE),
-      GetOptionVal(OPTION_MPEXT_MIN_TLS_VERSION),
-      GetOptionVal(OPTION_MPEXT_MAX_TLS_VERSION));
+      m_pOwner->m_pTools);
     if (res == SSL_FAILURE_INITSSL)
     {
       m_pOwner->ShowStatus(IDS_ERRORMSG_CANTINITSSL, FZ_LOG_ERROR);
@@ -786,8 +785,12 @@ void CTransferSocket::OnSend(int nErrorCode)
           CloseOnShutDownOrError(CSMODE_TRANSFERERROR);
           return;
         }
-        else if (!pos && numread < (currentBufferSize-m_bufferpos) && m_bufferpos != currentBufferSize)
+        else if (!pos && // all data in buffer were sent
+                 numread < (currentBufferSize-m_bufferpos) && // was read less then wanted (eof reached?)
+                 m_bufferpos != currentBufferSize) // and it's not because the buffer is full?
         {
+          // With TLS 1.3 we can get back
+          m_bufferpos = 0;
           CloseOnShutDownOrError(0);
           return;
         }
